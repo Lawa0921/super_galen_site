@@ -515,8 +515,10 @@ describe('BattleScene loot and stat cues', () => {
     const robe = [...root.querySelectorAll('.slx-result-lines p')].find((p) => p.textContent!.includes('布袍'))!;
     expect(robe.classList.contains('slx-rarity-common')).toBe(true);
     const lines = [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
-    expect(lines).toContain('背包已滿，留下了 獵弓');
-    expect(root.querySelector('.slx-result-lines .slx-rarity-magic')!.textContent).toBe('獵弓');
+    expect(lines).toContain('背包已滿，留下了 獵弓・魔法');
+    expect(lines).toContain('鐵劍・稀有');
+    expect(lines).toContain('布袍');   // common carries no word
+    expect(root.querySelector('.slx-result-lines .slx-rarity-magic')!.textContent).toBe('獵弓・魔法');
   });
 
   it('shows MISS, crit and TP pops on the struck member, and no message line for TP regen', async () => {
@@ -547,7 +549,6 @@ describe('BattleScene loot and stat cues', () => {
     ] }, end: null }));
     for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }
     await flush();
-    expect(root.querySelector('.slx-msg')!.textContent).not.toContain('TP');
-    expect(root.querySelector('.slx-msg')!.textContent!.trim()).not.toBe('');
+    expect(root.querySelector('.slx-msg')!.textContent).toBe(`${game.battle!.party[0].name}：防禦`);   // no blank second line
   });
 });

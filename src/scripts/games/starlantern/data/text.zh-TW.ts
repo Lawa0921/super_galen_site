@@ -1,9 +1,12 @@
-import type { BuffStat, Slot, StatKey } from '../engine/types';
+import type { BuffStat, Rarity, Slot, StatKey } from '../engine/types';
 
 const STAT: Record<StatKey, string> = { hp: 'HP', tp: 'TP', atk: '攻擊', def: '防禦', mag: '魔力', res: '魔防', spd: '速度' };
 const SLOT: Record<Slot, string> = {
   weapon: '武器', offhand: '副手', head: '頭部', body: '身體', hands: '手部', feet: '腳部', neck: '項鍊', ring1: '戒指 1', ring2: '戒指 2',
 };
+
+/** The homecoming sentence, alone or ahead of what came home. */
+const home = (viaLamp: boolean) => (viaLamp ? '歸還之燈的光芒把隊伍帶回了城鎮。' : '平安回城。');
 
 export const T = {
   stat: STAT,
@@ -11,6 +14,9 @@ export const T = {
   /** Gear kinds, for a base's own slot: a ring is one "戒指" here, "戒指 1" / "戒指 2" only where a member's slots are listed. */
   slotKind: { ...SLOT, ring: '戒指' } as Record<Slot | 'ring', string>,
   gold: (n: number) => `${n} G`,
+  /** Rarity words (spec §4). Loot lines show the word after a gear name; common gear leaves it out. */
+  rarity: { common: '普通', magic: '魔法', rare: '稀有', legendary: '傳說', unique: '獨特', set: '套裝' } as Record<Rarity, string>,
+  gearLabel: (name: string, rarity: string) => `${name}・${rarity}`,
   tabs: { guild: '公會', shop: '商店', inn: '旅館', depart: '出發' },
   shop: {
     sell: '賣出素材', sellOne: '賣 1 個', sellAll: '全部賣出', buy: '購買', nothing: '沒有可賣的素材',
@@ -196,8 +202,8 @@ export const T = {
         noGear: '冒險背包裡沒有裝備可以丟。回城整理背包之後再來吧。',
       },
     },
-    home: (viaLamp: boolean) => (viaLamp ? '歸還之燈的光芒把隊伍帶回了城鎮。' : '平安回城。'),
-    banked: (viaLamp: boolean, list: string) => `${viaLamp ? '歸還之燈的光芒把隊伍帶回了城鎮。' : '平安回城。'}帶回了：${list}。`,
+    home,
+    banked: (viaLamp: boolean, list: string) => `${home(viaLamp)}帶回了：${list}。`,
     bankedLost: (n: number, list: string) => `背包已滿（${n} 件），沒能帶回：${list}。`,
     shop: {
       buy: '購買', sell: '販賣', owned: (n: number) => `持有 ${n}`, bagFull: '背包已滿（60 件）', needs: (text: string) => `需要 ${text}`,

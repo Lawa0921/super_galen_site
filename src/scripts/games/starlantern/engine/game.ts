@@ -432,7 +432,9 @@ export class Game {
     return { uid: () => mintUid(this.state), depth: this.floor, region: run.region, condition: run.condition, source };
   }
 
+  /** The inn: town only, so a run can never rest (or save) mid-labyrinth. */
   rest(): TownResult {
+    if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
     const r = innRest(this.state);
     if (!r.ok) return r;
     this.state = r.state;

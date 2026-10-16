@@ -427,6 +427,14 @@ describe('inn', () => {
     expect(g.rest().ok).toBe(true);
     expect([g.notice, g.state.gold]).toEqual(['save-failed', 130]);
   });
+  it('refuses to rest outside town, and saves nothing', () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    const gold = g.state.gold;
+    expect(g.rest()).toEqual({ ok: false, reason: 'invalid' });
+    expect([g.state.gold, g.notice, storage.map.has(SAVE_KEY)]).toEqual([gold, null, false]);
+  });
   it('does not save when the rest is refused', () => {
     const storage = memoryStorage();
     const g = new Game(calm(), storage);

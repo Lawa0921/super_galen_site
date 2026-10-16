@@ -113,8 +113,8 @@ describe('TownScene banked gear', () => {
     game.notice = 'banked';
     game.banked = { items: {}, gold: 40, viaLamp: false, gear: [gearOf(1, 'iron-sword', 'rare')], overflow: [] };
     const root = enter(game);
-    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('平安回城。帶回了：鐵劍、40 G。');
-    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-rare')!.textContent).toBe('鐵劍');
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('平安回城。帶回了：鐵劍・稀有、40 G。');
+    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-rare')!.textContent).toBe('鐵劍・稀有');
   });
 
   it('says plainly which gear was lost because the bag was full', () => {
@@ -123,7 +123,7 @@ describe('TownScene banked gear', () => {
     game.banked = { items: {}, gold: 0, viaLamp: false, gear: [gearOf(1, 'iron-sword', 'rare')], overflow: [gearOf(2, 'hunter-bow', 'magic'), gearOf(3, 'cloth-robe', 'common')] };
     const root = enter(game);
     const text = root.querySelector('.slx-talk .slx-text')!.textContent!;
-    expect(text).toContain('背包已滿（60 件），沒能帶回：獵弓、布袍。');
-    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-magic')!.textContent).toBe('獵弓');
+    expect(text).toContain('背包已滿（60 件），沒能帶回：獵弓・魔法、布袍。');
+    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-magic')!.textContent).toBe('獵弓・魔法');
   });
 });

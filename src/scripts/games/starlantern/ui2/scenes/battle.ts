@@ -9,14 +9,13 @@ import { ULTIMATES } from '../../data/ultimates';
 import { LIMIT_MAX, intentLabel, skillCost, skillFor, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
 import type { BattleEnd } from '../../engine/game';
-import { itemName as gearName } from '../../engine/loot/item';
 import { learnedSkills } from '../../engine/party';
 import type { CharacterId, Target } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el, itemName } from '../../ui/dom';
 import { playCutIn } from '../../ui/cutin';
 import { battleLines } from '../battleText';
-import { fillRich, gearPart } from '../loot';
+import { fillRich, gearLabel, gearPart } from '../loot';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import { PartyBar, type PulseOpts } from '../partyBar';
@@ -453,7 +452,7 @@ export class BattleScene implements Scene {
     if (end.outcome === 'win') {
       if (fanfare) this.ctx.sfx.win?.();
       lines.push({ text: T.battle.exp(end.exp) }, { text: T.battle.gold(end.gold) });
-      for (const it of end.gear) lines.push({ text: gearName(it), cls: `slx-loot-gear slx-rarity-${it.rarity}` });
+      for (const it of end.gear) lines.push({ text: gearLabel(it), cls: `slx-loot-gear slx-rarity-${it.rarity}` });
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
       for (const [id, n] of Object.entries(end.left)) lines.push({ text: T.battle.leftBehind(itemName(id), n) });
       for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it)]), cls: 'slx-loot-left' });

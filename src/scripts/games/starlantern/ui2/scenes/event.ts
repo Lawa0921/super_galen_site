@@ -4,7 +4,7 @@ import { weightOf } from '../../data/weights';
 import type { Content } from '../../engine/dungeon/rooms';
 import { altarAt } from '../../engine/events';
 import { BAG_SIZE } from '../../engine/loot/bag';
-import { itemName as gearName } from '../../engine/loot/item';
+import { itemWeight } from '../../engine/loot/item';
 import type { MoveResult } from '../../engine/game';
 import type { Pos } from '../../engine/types';
 import { ART_BASE } from '../../render/artPaths';
@@ -12,7 +12,7 @@ import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { fillRich, gearPart, joinParts } from '../loot';
+import { fillRich, gearLabel, gearPart, joinParts } from '../loot';
 import { MenuView, confirmBox, richNodes, win, type Rich, type RichPart } from '../widgets';
 
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
@@ -170,82 +170,53 @@ function carriedItems(host: EventHost): Record<string, number> {
 }
 
 /**
- * 背包已滿（60 件）: the town bag, with the run pack's gear promised to it, has no slot for the gear in this pick-up. The
- * window names that gear and lists the run pack's gear; throwing one away (after a yes) frees a slot and retries the pick-up.
- * When the pack is also too heavy, the carried materials are listed too.
- */
-function bagFullLayer(host: EventHost, r: FullResult, retry?: () => void): Layer {
-  const F = T.ui2.event.full;
-  const { ctx } = host;
-  const g = ctx.game;
-  const body = [
-    ...(r.gear ? [richLine(fillRich(F.bagDesc, [gearPart(r.gear)]))] : []),
-    ...(r.need > 0 ? [line(F.desc(itemName(r.item), r.qty, Number(fmtWeight(r.need))))] : []),
-    line(g.run?.loot.gear.length ? F.whichGear : F.noGear, 'slx-event-ask'),
-  ];
-  const held = r.need > 0 ? carriedItems(host) : {};
-  const items: MenuItem[] = [
-    ...(g.run?.loot.gear ?? []).map((it) => ({ id: `gear:${it.uid}`, label: gearName(it), cls: `slx-rarity-${it.rarity}` })),
-    ...Object.entries(held).map(([id, n]) => ({ id, label: itemName(id), right: `×${n}` })),
-    { id: 'leave', label: F.giveUp },
-  ];
-  const giveUp = () => { ctx.sfx.cancel(); host.pop(); host.say(F.left); };
-  const after = () => { host.popAll(); host.refresh(); if (retry) retry(); else host.say(F.freed); };
-  return eventWindow(host, 'full', F.bagTitle(BAG_SIZE), body, items, (id) => {
-    const gear = id.startsWith('gear:') ? g.run?.loot.gear.find((it) => `gear:${it.uid}` === id) : undefined;
-    const n = gear ? 1 : Math.min(held[id], Math.ceil(r.need / weightOf(id)));
-    const box = confirmBox(gear ? F.askGear(gearName(gear)) : F.ask(itemName(id), n), (yes) => {
-      host.pop();
-      if (!yes) return;
-      if (gear) g.discardGear(gear.uid); else g.discard(id, n);
-      after();   // a retry that still does not fit opens this window again with what is left
-    });
-    box.view.menu.setCursor(1);
-    box.view.render();
-    host.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
-  }, giveUp);
-}
-
-/**
- * 背包已滿: the pick-up stays where it is. Pick something to throw away (enough of it to make room, after a yes), or give up.
- * Once there is room, `retry` takes the pick-up (Game.pickUpHere through showPickUp); without it the line says to step on it again.
+ * 背包已滿: the pick-up stays where it is until something is thrown away (after a yes), or the player gives up. Two limits:
+ * - weight (`r.need` over the limit): carried materials and consumables, and run-pack gear (it has weight), all help;
+ * - bag slots (`r.bag`, titled 背包已滿（60 件）): only throwing away run-pack gear frees a slot, so when the run pack holds
+ *   none, nothing is offered but 放棄.
+ * Once both fit, `retry` takes the pick-up (Game.pickUpHere through showPickUp; still not fitting opens this window again);
+ * without it the line says to step on it again.
  */
 export function fullLayer(host: EventHost, r: FullResult, retry?: () => void): Layer {
-  if (r.bag) return bagFullLayer(host, r, retry);
   const F = T.ui2.event.full;
   const { ctx } = host;
   const g = ctx.game;
-  let need = r.need;
-  const desc = line('');
-  const show = () => { desc.textContent = F.desc(itemName(r.item), r.qty, Number(fmtWeight(need))); };
-  show();
-  const held = carriedItems(host);
+  const gear = g.run?.loot.gear ?? [];
+  const stuck = !!r.bag && gear.length === 0;   // no slot can be freed from here
+  const body: HTMLElement[] = [];
+  if (r.bag && r.gear) body.push(richLine(fillRich(F.bagDesc, [gearPart(r.gear)])));
+  if (r.need > 0) body.push(line(F.desc(itemName(r.item), r.qty, Number(fmtWeight(r.need)))));
+  body.push(line(stuck ? F.noGear : r.bag ? F.whichGear : F.which, 'slx-event-ask'));
+  const held = r.need > 0 && !stuck ? carriedItems(host) : {};
   const items: MenuItem[] = [
+    ...(stuck || !(r.bag || r.need > 0) ? [] : gear).map((it) => ({ id: `gear:${it.uid}`, label: gearLabel(it), cls: `slx-rarity-${it.rarity}` })),
     ...Object.entries(held).map(([id, n]) => ({ id, label: itemName(id), right: `×${n}` })),
     { id: 'leave', label: F.giveUp },
   ];
   const giveUp = () => { ctx.sfx.cancel(); host.pop(); host.say(F.left); };
-  const self = eventWindow(host, 'full', F.title, [desc, line(F.which, 'slx-event-ask')], items, (id) => {
-    const n = Math.min(held[id], Math.ceil(need / weightOf(id)));
-    const box = confirmBox(F.ask(itemName(id), n), (yes) => {
+  return eventWindow(host, 'full', r.bag ? F.bagTitle(BAG_SIZE) : F.title, body, items, (id) => {
+    const piece = gear.find((it) => `gear:${it.uid}` === id);
+    const n = piece ? 1 : Math.min(held[id], Math.ceil(r.need / weightOf(id)));
+    const ask = piece ? fillRich(F.askGear, [gearPart(piece)]) : F.ask(itemName(id), n);
+    const box = confirmBox(ask, (yes) => {
       host.pop();
       if (!yes) return;
-      const gone = g.discard(id, n);
-      need -= gone * weightOf(id);
-      if (need > 0) {
-        // Still short: show the window again with what is left.
+      let need = r.need;
+      if (piece) { if (g.discardGear(piece.uid)) need -= itemWeight(piece); }
+      else need -= g.discard(id, n) * weightOf(id);
+      if (need > 0 && !r.bag) {
+        // Still too heavy: show the window again with what is left.
         host.pop();
         host.push(fullLayer(host, { ...r, need }, retry));
         return;
       }
       host.popAll();
       host.refresh();
-      if (retry) retry();
+      if (retry) retry();   // a pick-up that still does not fit (a bag slot, or weight) opens this window again
       else host.say(F.freed);
     });
     box.view.menu.setCursor(1);
     box.view.render();
     host.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
   }, giveUp);
-  return self;
 }

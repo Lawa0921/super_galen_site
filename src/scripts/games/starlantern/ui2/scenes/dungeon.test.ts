@@ -322,8 +322,8 @@ describe('DungeonScene loot', () => {
     const dir = gearChest(game, gearOf(77, 'iron-sword', 'legendary'));
     s.onAction(dir);
     expect(text()).toContain('打開寶箱');
-    expect(text()).toContain('鐵劍');
-    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-legendary')!.textContent).toBe('鐵劍');
+    expect(text()).toContain('鐵劍・傳說');
+    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-legendary')!.textContent).toBe('鐵劍・傳說');
     expect(game.run!.loot.gear.map((g) => g.uid)).toEqual([77]);
   });
 

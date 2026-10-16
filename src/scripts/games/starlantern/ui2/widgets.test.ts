@@ -245,3 +245,46 @@ describe('Dialogue rich lines', () => {
     expect(text.querySelector('.slx-rarity-rare')!.textContent).toBe('鐵劍');
   });
 });
+
+describe('MenuView pointer scrolling', () => {
+  const long = () => new Menu(Array.from({ length: 10 }, (_, i) => ({ id: `r${i}`, label: `row ${i}` })));
+
+  it('reaches the last row of a scrolled list by clicking the ▼ marker, and back with ▲', () => {
+    const pick = vi.fn();
+    const v = new MenuView(long(), { pick }, 6);
+    expect(v.el.querySelector('[data-id=r9]')).toBeNull();
+    for (let i = 0; i < 10 && !v.el.querySelector('[data-id=r9]'); i++) (v.el.querySelector('.slx-more-down') as HTMLElement).click();
+    const last = v.el.querySelector('[data-id=r9]') as HTMLElement;
+    expect(last).not.toBeNull();
+    last.click();
+    expect(pick).toHaveBeenCalledWith(expect.objectContaining({ id: 'r9' }));
+    for (let i = 0; i < 10 && !v.el.querySelector('[data-id=r0]'); i++) (v.el.querySelector('.slx-more-up') as HTMLElement).click();
+    expect(v.el.querySelector('[data-id=r0]')).not.toBeNull();
+  });
+
+  it('scrolls with the mouse wheel', () => {
+    const v = new MenuView(long(), { pick: vi.fn() }, 6);
+    for (let i = 0; i < 6; i++) v.el.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true }));
+    expect(v.el.querySelector('[data-id=r9]')).not.toBeNull();
+    v.el.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, cancelable: true }));
+    expect(v.el.querySelector('[data-id=r3]')).not.toBeNull();
+  });
+
+  it('ignores marker clicks and the wheel under an inert window', () => {
+    const wrap = document.createElement('div');
+    const v = new MenuView(long(), { pick: vi.fn() }, 6);
+    wrap.append(v.el);
+    wrap.setAttribute('inert', '');
+    (v.el.querySelector('.slx-more-down') as HTMLElement).click();
+    v.el.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true }));
+    expect(v.el.querySelector('[data-id=r0]')).not.toBeNull();
+  });
+});
+
+describe('confirmBox rich question', () => {
+  it('keeps coloured parts of the question', () => {
+    const box = confirmBox(['要丟掉 ', { text: '鐵劍・魔法', cls: 'slx-rarity-magic' }, ' 嗎？'], vi.fn());
+    expect(box.el.querySelector('p')!.textContent).toBe('要丟掉 鐵劍・魔法 嗎？');
+    expect(box.el.querySelector('.slx-rarity-magic')!.textContent).toBe('鐵劍・魔法');
+  });
+});

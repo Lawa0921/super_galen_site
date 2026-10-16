@@ -36,6 +36,27 @@ export class MenuView {
   constructor(readonly menu: Menu, private on: { pick(item: MenuItem): void; moved?(): void; cancel?(): void }, private rows = Infinity) {
     this.list = el('ul', { class: 'slx-menu', attrs: { role: 'listbox' } });
     this.el = this.list;
+    // Mouse and touch reach every row of a long list: the wheel scrolls it, and the ▲/▼ markers are clickable.
+    this.list.addEventListener('wheel', (e) => {
+      if (this.locked() || this.rows >= this.menu.items.length || !e.deltaY) return;
+      e.preventDefault();
+      this.scrollBy(e.deltaY > 0 ? 1 : -1);
+    }, { passive: false });
+    this.render();
+  }
+
+  /** Move the visible window by `d` rows; the cursor follows into view when it would fall outside. */
+  scrollBy(d: 1 | -1): void {
+    const n = this.menu.items.length;
+    const top = Math.max(0, Math.min(n - Math.min(n, this.rows), this.top + d));
+    if (top === this.top) return;
+    this.top = top;
+    const c = this.menu.cursor;
+    if (c < top || c >= top + this.rows) {
+      const visible = [...Array(Math.min(this.rows, n - top)).keys()].map((k) => top + k);
+      const next = (c < top ? visible : visible.reverse()).find((i) => !this.menu.items[i].disabled);
+      if (next !== undefined && this.menu.setCursor(next)) this.on.moved?.();
+    }
     this.render();
   }
 
@@ -46,7 +67,11 @@ export class MenuView {
     if (c >= this.top + this.rows) this.top = c - this.rows + 1;
     this.top = Math.max(0, Math.min(this.top, n - Math.min(n, this.rows)));
     const end = Math.min(n, this.top + this.rows);
-    const marker = (cls: string, text: string) => el('li', { class: `slx-more ${cls}`, text, attrs: { 'aria-hidden': 'true' } });
+    const marker = (cls: string, text: string, d: 1 | -1) => {
+      const li = el('li', { class: `slx-more ${cls}`, text, attrs: { 'aria-hidden': 'true' } });
+      li.addEventListener('click', () => { if (!this.locked()) this.scrollBy(d); });
+      return li;
+    };
     const rows = this.menu.items.slice(this.top, end).map((item, k) => {
       const i = this.top + k;
       const li = el('li', { class: i === this.menu.cursor ? 'slx-opt slx-sel' : 'slx-opt', attrs: {
@@ -65,7 +90,7 @@ export class MenuView {
       li.addEventListener('click', () => { if (this.locked()) return; if (!item.disabled && this.menu.setCursor(i)) { this.render(); this.flashPick(); this.on.pick(item); } });
       return li;
     });
-    this.list.replaceChildren(...(this.top > 0 ? [marker('slx-more-up', '▲')] : []), ...rows, ...(end < n ? [marker('slx-more-down', '▼')] : []));
+    this.list.replaceChildren(...(this.top > 0 ? [marker('slx-more-up', '▲', -1)] : []), ...rows, ...(end < n ? [marker('slx-more-down', '▼', 1)] : []));
   }
 
   /** A quick flash on the chosen row, so a pick is felt even when the next window opens at once. */
@@ -161,12 +186,13 @@ export class Dialogue {
   }
 }
 
-export function confirmBox(question: string, on: (yes: boolean) => void): { el: HTMLElement; view: MenuView } {
+export function confirmBox(question: string | Rich, on: (yes: boolean) => void): { el: HTMLElement; view: MenuView } {
   const view = new MenuView(new Menu([{ id: 'yes', label: '是' }, { id: 'no', label: '否' }]), {
     pick: (it) => on(it.id === 'yes'),
     cancel: () => on(false),
   });
-  return { el: win('slx-confirm', [el('p', { text: question }), view.el]), view };
+  const q = typeof question === 'string' ? el('p', { text: question }) : el('p', {}, richNodes(question));
+  return { el: win('slx-confirm', [q, view.el]), view };
 }
 
 export class QtyView {

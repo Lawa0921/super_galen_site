@@ -126,7 +126,9 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 @media (prefers-reduced-motion: reduce) { .slx-night { animation: none; } }
 
 // Interface fixes after the first facility screenshots
-.slx-more { list-style: none; text-align: center; font-size: 8px; line-height: 10px; color: $slx-dim; }
+// ▲/▼ scroll a long list by mouse or touch (ui2/widgets.ts MenuView.scrollBy); padded so a finger can hit them.
+.slx-more { list-style: none; text-align: center; font-size: 8px; line-height: 10px; padding: 2px 0; color: $slx-dim; cursor: pointer; }
+.slx-more:hover { color: $slx-gold; }
 .slx-layer.slx-confirm { left: 50%; top: 45%; }
 .slx-list.slx-depth-1 { translate: 24px 16px; }
 .slx-list.slx-depth-2 { translate: 48px 32px; }
@@ -466,7 +468,8 @@ $slx-battle-left: 150px;
 .slx-rarity-magic { color: #6fa8ff; }
 .slx-rarity-rare { color: #f2d45c; }
 .slx-rarity-legendary { color: #ff9a3c; }
-.slx-rarity-unique { color: #c78cff; }
+// Unique is 獨特（金） in spec §4: a deeper, warmer gold than rare's yellow, glowing like the other top rarities.
+.slx-rarity-unique { color: #d4a017; }
 .slx-rarity-set { color: #6fe0a0; }
 .slx-skill { padding: 3px 0; border-bottom: 1px solid #2a2840; }
 .slx-skill-head { display: flex; gap: 10px; }
