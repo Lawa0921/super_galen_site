@@ -1,6 +1,6 @@
 import { el } from './dom';
 
-/** Length of the ultimate cut-in; the CSS animations in _starlantern.scss are timed to match. */
+/** Length of the ultimate cut-in; the CSS animations in _starlantern-ui.scss are timed to match. */
 export const CUTIN_MS = 1200;
 
 /** Darken the screen, slide in a diagonal band with the ultimate portrait and name, flash, then clear. */
