@@ -26,6 +26,8 @@ export interface Run {
   rolls: Record<string, { item: string; qty: number }>;
   /** Chest and vault gear, fixed the first time it is rolled (key `chest:`/`vault:` + depth:x,y). */
   gearRolls: Record<string, ItemInstance | null>;
+  /** Gear left in an opened chest or vault because it did not fit (weight or a bag slot), by spot (`depth:x,y`); taken with `pickUpHere`. */
+  waiting: Record<string, ItemInstance>;
   /** Loot draws taken so far; `lootRng` seeds each from the run seed and this count. */
   lootDraws: number;
   usedFountain: boolean;
@@ -37,7 +39,7 @@ export interface Run {
 export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number): Run {
   return {
     seed, region, condition, startDepth, floors: new Map(), opened: new Set(), explored: {},
-    loot: { items: {}, gold: 0, gear: [] }, rolls: {}, gearRolls: {}, lootDraws: 0, usedFountain: false, altarBuffs: [], keys: new Set(),
+    loot: { items: {}, gold: 0, gear: [] }, rolls: {}, gearRolls: {}, waiting: {}, lootDraws: 0, usedFountain: false, altarBuffs: [], keys: new Set(),
   };
 }
 

@@ -801,16 +801,23 @@ describe('dungeon gear', () => {
     expect(gear.ilvl).toBe(itemLevel(1, 'chest'));
     const want = 2 * weightOf('old-coin') + itemWeight(gear);
     expect(full.need).toBeCloseTo(want - room());
-    // Room for the coins alone is not enough: the gear weighs too.
+    // Room for the coins alone: the chest opens and pays them, and the gear (too heavy) waits in it.
     g.run!.loot.items['star-stone'] -= Math.ceil((2 * weightOf('old-coin') - room()) * 2);
     expect(room()).toBeGreaterThanOrEqual(2 * weightOf('old-coin'));
     expect(room()).toBeLessThan(want);
-    expect(stepOnto(g, chest)).toMatchObject({ kind: 'full', gear });   // the same roll, kept
-    g.run!.loot.items['star-stone'] -= Math.ceil((want - room()) * 2);
-    expect(stepOnto(g, chest)).toEqual({ kind: 'chest', item: 'old-coin', qty: 2, gear });
+    const opened = stepOnto(g, chest) as Extract<MoveResult, { kind: 'chest' }>;
+    expect(opened).toMatchObject({ kind: 'chest', item: 'old-coin', qty: 2, waiting: { kind: 'full', gear } });   // the same roll, kept
+    expect(opened.gear).toBeUndefined();
+    expect(opened.waiting!.bag).toBeUndefined();
+    expect(opened.waiting!.need).toBeCloseTo(itemWeight(gear) - room());
     expect(g.run!.loot.items['old-coin']).toBe(2);
+    expect(g.run!.loot.gear).toEqual([]);
+    g.run!.loot.items['star-stone'] -= Math.ceil((itemWeight(gear) - room()) * 2);
+    expect(stepOnto(g, chest)).toEqual({ kind: 'pickup', gear });
+    expect(g.run!.loot.items['old-coin']).toBe(2);   // paid once
     expect(g.run!.loot.gear).toEqual([gear]);
     expect(g.run!.gearRolls[`chest:1:${posKey(chest)}`]).toEqual(gear);
+    expect(stepOnto(g, chest)).toEqual({ kind: 'moved' });   // nothing left in it
   });
 
   it('a vault triples materials only and adds a rare material and a rare-or-better item', () => {
@@ -883,23 +890,57 @@ describe('dungeon gear', () => {
     expect(g.state.codex).toEqual(['lg-noel']);
   });
 
-  it('a full bag (60 with the run pack) keeps the chest shut and reports full with bag: true; discarding makes room', () => {
+  it('a full bag (60 with the run pack) still opens a gear chest and pays its materials; the gear waits in it until a discard', () => {
     const g = inMap(1);
     const chest = chestWhere(g, true);
     g.state.bag = Array.from({ length: BAG_SIZE - 1 }, (_, i) => gearItem(1000 + i));
     const carriedOne = gearItem(901);
     g.run!.loot.gear = [carriedOne];
-    const r = stepOnto(g, chest);
-    expect(r).toMatchObject({ kind: 'full', item: 'old-coin', qty: 2, bag: true });
-    expect((r as { gear?: ItemInstance }).gear).toBeDefined();
-    expect(g.run!.opened.has(`1:${posKey(chest)}`)).toBe(false);
-    expect(g.run!.loot.items['old-coin']).toBeUndefined();
+    const r = stepOnto(g, chest) as Extract<MoveResult, { kind: 'chest' }>;
+    expect(r).toMatchObject({ kind: 'chest', item: 'old-coin', qty: 2, waiting: { kind: 'full', need: 0, bag: true } });
+    expect(r.gear).toBeUndefined();
+    const gear = r.waiting!.gear!;
+    expect(gear).toEqual(g.run!.gearRolls[`chest:1:${posKey(chest)}`]);
+    expect(g.run!.opened.has(`1:${posKey(chest)}`)).toBe(true);
+    expect(g.run!.loot.items['old-coin']).toBe(2);   // the materials are paid at once
+    expect(g.run!.loot.gear).toEqual([carriedOne]);
+    // Still full: the gear is still waiting there, the materials are not paid again.
+    expect(g.pickUpHere()).toMatchObject({ kind: 'full', need: 0, bag: true, gear });
+    expect(stepOnto(g, chest)).toMatchObject({ kind: 'full', bag: true, gear });
+    expect(g.run!.loot.items['old-coin']).toBe(2);
     expect(g.discardGear(12345)).toBe(false);
     expect(g.discardGear(carriedOne.uid)).toBe(true);
-    expect(g.run!.loot.gear).toEqual([]);
-    const opened = stepOnto(g, chest);
-    expect(opened).toMatchObject({ kind: 'chest', item: 'old-coin', qty: 2 });
-    expect(g.run!.loot.gear).toEqual([(opened as { gear: ItemInstance }).gear]);
+    expect(g.pickUpHere()).toEqual({ kind: 'pickup', gear });
+    expect(g.run!.loot.gear).toEqual([gear]);
+    expect(g.run!.loot.items['old-coin']).toBe(2);
+    expect(g.pickUpHere()).toBeNull();   // taken: nothing waits here any more
+  });
+
+  it('a full bag still opens the vault: all its materials and the rare material are paid, the gear waits on the vault tile', () => {
+    const g = inMap(1);
+    const at = plantAt(g, 'vault');
+    g.run!.keys.add(1);
+    g.state.bag = Array.from({ length: BAG_SIZE }, (_, i) => gearItem(1000 + i));
+    expect(stepOnto(g, at).kind).toBe('event');
+    const r = g.openVault(at) as Extract<MoveResult, { kind: 'vault' }>;
+    expect(r).toMatchObject({ kind: 'vault', gear: [], waiting: { kind: 'full', need: 0, bag: true } });
+    expect(r.loot['old-coin']).toBe(2 * 3);
+    expect(rareCount(r.loot)).toBe(1);
+    expect(rareCount(g.run!.loot.items)).toBe(1);
+    expect(g.run!.loot.items['old-coin']).toBe(6);
+    const gear = r.waiting!.gear!;
+    expect(['common', 'magic']).not.toContain(gear.rarity);
+    expect(g.openVault(at)).toBeNull();   // it never pays twice
+    expect(tileAt(g.map(), at)).toBe('vault');   // the gear still waits there
+    expect(g.pickUpHere()).toMatchObject({ kind: 'full', bag: true, gear });
+    // Walking off and back onto the vault offers the waiting gear, not the vault window.
+    expect(stepOnto(g, at)).toMatchObject({ kind: 'full', bag: true, gear });
+    g.state.bag.pop();   // one slot freed
+    expect(g.pickUpHere()).toEqual({ kind: 'pickup', gear });
+    expect(g.run!.loot.gear).toEqual([gear]);
+    expect(tileAt(g.map(), at)).toBe('floor');
+    expect(rareCount(g.run!.loot.items)).toBe(1);
+    expect(g.run!.loot.items['old-coin']).toBe(6);
   });
 
   it('discardGear only works on the map', () => {
@@ -935,13 +976,13 @@ describe('dungeon gear', () => {
       g.state.autoJunk = 'magic';
       const chest = chestWhere(g, true);
       g.state.bag = Array.from({ length: BAG_SIZE }, (_, i) => gearItem(1000 + i));
-      const full = stepOnto(g, chest) as Extract<MoveResult, { kind: 'full' }>;
+      const full = (stepOnto(g, chest) as Extract<MoveResult, { kind: 'chest' }>).waiting!;
       expect(full).toMatchObject({ kind: 'full', bag: true });
       if (full.gear!.rarity !== 'common' && full.gear!.rarity !== 'magic') continue;
       checked++;
       expect(full.gear!.junk).toBe(true);
       g.state.bag = [];
-      const r = stepOnto(g, chest) as Extract<MoveResult, { kind: 'chest' }>;
+      const r = stepOnto(g, chest) as Extract<MoveResult, { kind: 'pickup' }>;
       expect(r.gear).toEqual(full.gear);   // shown exactly as it is picked up
     }
     expect(checked).toBe(1);

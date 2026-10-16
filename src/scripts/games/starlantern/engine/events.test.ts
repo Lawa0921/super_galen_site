@@ -322,7 +322,7 @@ describe('fix round 1: weight at the merchant, picking up again', () => {
     expect(r.kind).toBe('full');
     expect(g.pickUpHere()).toMatchObject({ kind: 'full' });   // still no room
     g.run!.loot.items['old-coin'] = 0;
-    const { item, qty } = r as Extract<MoveResult, { kind: 'full' }>;
+    const { item = '', qty = 0 } = r as Extract<MoveResult, { kind: 'full' }>;   // a shut chest names its materials
     const before = (ITEMS[item] ? g.state.inventory[item] : g.run!.loot.items[item]) ?? 0;
     expect(g.pickUpHere()).toEqual({ kind: 'chest', item, qty });
     expect((ITEMS[item] ? g.state.inventory[item] : g.run!.loot.items[item]) ?? 0).toBe(before + qty);

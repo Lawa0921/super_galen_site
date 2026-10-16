@@ -27,21 +27,29 @@ export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp' | 
 export type MoveResult =
   | { kind: 'ignored' } | { kind: 'blocked' } | { kind: 'moved' } | { kind: 'battle' } | { kind: 'boss' }
   | { kind: 'entrance' } | { kind: 'floor'; floor: number }
-  /** A chest's materials, and its gear when it holds any (`chestHasGear`). */
-  | { kind: 'chest'; item: string; qty: number; gear?: ItemInstance }
+  /**
+   * A chest's materials, and its gear when it holds any (`chestHasGear`). Gear that does not fit stays in the opened chest:
+   * `waiting` says why (as a `full` result), and `pickUpHere` takes it once there is room.
+   */
+  | { kind: 'chest'; item: string; qty: number; gear?: ItemInstance; waiting?: FullResult }
+  /** Gear that waited in an opened chest or vault, taken now. */
+  | { kind: 'pickup'; gear: ItemInstance }
   /** Stepped onto a fountain, merchant, altar or vault: the screen offers its choice (useFountain, buy, altar, openVault). */
   | { kind: 'event'; content: Content }
   | { kind: 'trap'; effect: 'hurt' | 'poison'; amount: number; tp: number }
   | { kind: 'key' }
   /** Stepped onto stairs down: the screen asks first (descend goes). `level` is the next depth's suggested level; `warn` when the party's best is below it. */
   | { kind: 'stairs'; floor: number; level: number; warn: boolean }
-  /**
-   * The pack cannot take the pick-up: it stays on the ground (the chest stays shut) until something is discarded.
-   * `need` is the weight over the limit (0 when only the bag is short); `gear` is the piece that comes with it;
-   * `bag` is set when the town bag (with the run pack's gear) has no slot left for that gear.
-   */
-  | { kind: 'full'; item: string; qty: number; need: number; gear?: ItemInstance; bag?: boolean }
-  | { kind: 'vault'; loot: Record<string, number>; gear: ItemInstance[] };
+  | FullResult
+  /** An opened vault: its materials always; its gear in `gear`, or in `waiting` when it does not fit (see `chest`). */
+  | { kind: 'vault'; loot: Record<string, number>; gear: ItemInstance[]; waiting?: FullResult };
+/**
+ * The pack cannot take the pick-up, which stays where it is until something is discarded. `item`/`qty` are the materials
+ * of a chest or vault kept shut for weight (absent when only waiting gear is short); `need` is the weight over the limit
+ * (0 when only the bag is short); `gear` is the piece in question; `bag` is set when the town bag (with the run pack's
+ * gear) has no slot left for that gear. A bag slot never keeps a chest or vault shut: only its gear waits.
+ */
+export type FullResult = { kind: 'full'; item?: string; qty?: number; need: number; gear?: ItemInstance; bag?: boolean };
 export interface BattleEnd {
   /** `drops` lists only what went into the party's hands. */
   outcome: 'win' | 'lose' | 'fled'; exp: number; gold: number; drops: Record<string, number>;
@@ -149,7 +157,9 @@ export class Game {
       case 'chest': return this.openChest() ?? { kind: 'moved' };
       case 'fountain': return this.run!.usedFountain ? this.walk() : this.eventHere();
       case 'altar': return this.run!.opened.has(this.spotId()) ? this.walk() : this.eventHere();
-      case 'merchant': case 'vault': return this.eventHere();
+      case 'merchant': return this.eventHere();
+      // An opened vault still on the map holds gear that did not fit: stepping on it again offers that gear.
+      case 'vault': return this.run!.opened.has(this.spotId()) ? this.takeWaiting() ?? this.walk() : this.eventHere();
       case 'trap': return this.springTrap();
       case 'key': {
         this.run!.keys.add(this.floor);
@@ -245,13 +255,39 @@ export class Game {
     return r;
   }
 
-  /** Try again to take what lies under the party (a chest, or the vault) after the pack was too full; null when nothing is here. */
+  /**
+   * Try again to take what lies under the party after the pack was too full: a shut chest or vault, or the gear waiting in
+   * an opened one; null when nothing is here.
+   */
   pickUpHere(): MoveResult | null {
     if (this.phase !== 'map' || !this.run) return null;
+    if (this.run.opened.has(this.spotId())) return this.takeWaiting();
     const t = tileAt(this.map(), this.pos);
     if (t === 'chest') return this.openChest();
     if (t === 'vault') return this.openVault(this.pos);
     return null;
+  }
+
+  /** The gear waiting in the opened chest or vault under the party: taken when it fits, else why not; null when none waits. */
+  private takeWaiting(): MoveResult | null {
+    const id = this.spotId();
+    const gear = this.run!.waiting[id];
+    if (!gear) return null;
+    const r = this.offerGear(id, gear);
+    if (r.waiting) return r.waiting;
+    if (tileAt(this.map(), this.pos) === 'vault') this.map().tiles[this.pos.y][this.pos.x] = 'floor';   // an emptied vault is spent
+    return { kind: 'pickup', gear: r.gear! };
+  }
+
+  /** Gear from an opened chest or vault: packed when it fits; otherwise left waiting at spot `id`, with the reason. */
+  private offerGear(id: string, gear: ItemInstance): { gear?: ItemInstance; waiting?: FullResult } {
+    const short = this.wontFit({}, [gear]);
+    if (short) {
+      this.run!.waiting[id] = gear;
+      return { waiting: { kind: 'full', ...short, gear: this.junkMarked(gear) } };
+    }
+    delete this.run!.waiting[id];
+    return { gear: this.pack(gear) };
   }
 
   /** Accept or decline the altar the party stands at. Accepting pays its cost and adds its bonus for the whole run; each altar works once. */
@@ -272,11 +308,15 @@ export class Game {
     return true;
   }
 
-  /** Open the vault the party stands at: needs this floor's key. Pays three chests' worth of materials, one rare material and one piece of vault gear. */
+  /**
+   * Open the vault the party stands at: needs this floor's key. Pays three chests' worth of materials, one rare material
+   * and one piece of vault gear. Only the materials' weight keeps it shut; gear that does not fit waits on the vault tile.
+   */
   openVault(at: Pos): MoveResult | null {
     if (!this.contentAt('vault', at) || tileAt(this.map(), at) !== 'vault' || !this.run!.keys.has(this.floor)) return null;
     const run = this.run!;
     const id = this.spotId(at);
+    if (run.opened.has(id)) return null;   // opened already: only its waiting gear is left (pickUpHere)
     const loot: Record<string, number> = {};
     if (FLOORS[this.terrain() - 1].chestLoot.length) {
       const one = this.rollChest(`vault:${id}`);
@@ -287,15 +327,25 @@ export class Game {
     const rare = run.rolls[rareKey];
     loot[rare.item] = (loot[rare.item] ?? 0) + rare.qty;
     const gear = this.fixedGear(`vault:${id}`, 'vault');
-    const short = this.wontFit(loot, [gear]);
-    if (short) {
-      const [item, qty] = Object.entries(loot)[0];
-      return { kind: 'full', item, qty, ...short, gear: this.junkMarked(gear) };
-    }
+    const shut = this.shutFor(loot, gear);
+    if (shut) return shut;
+    run.opened.add(id);
     for (const [item, qty] of Object.entries(loot)) this.grant(item, qty);
-    const taken = this.pack(gear);
+    const r = this.offerGear(id, gear);
+    if (r.waiting) return { kind: 'vault', loot, gear: [], waiting: r.waiting };
     this.map().tiles[at.y][at.x] = 'floor';
-    return { kind: 'vault', loot, gear: [taken] };
+    return { kind: 'vault', loot, gear: [r.gear!] };
+  }
+
+  /**
+   * Why a chest or vault stays shut: only when its materials are over the weight limit. `need` then also counts the gear,
+   * when the bag has a slot for it, so one round of discarding can take both.
+   */
+  private shutFor(loot: Record<string, number>, gear?: ItemInstance): FullResult | null {
+    if (this.shortBy(loot) <= 0) return null;
+    const [item, qty] = Object.entries(loot)[0];
+    const withGear = gear && this.bagHasRoom(1) ? [gear] : [];
+    return { kind: 'full', item, qty, need: this.shortBy(loot, withGear), ...(gear ? { gear: this.junkMarked(gear) } : {}) };
   }
 
   /** Go down the stairs the party stands on; null when not on stairs. */
@@ -556,16 +606,16 @@ export class Game {
   private openChest(): MoveResult | null {
     const run = this.run!;
     const id = this.spotId();
-    if (run.opened.has(id)) return null;
+    if (run.opened.has(id)) return this.takeWaiting();
     if (!FLOORS[this.terrain() - 1].chestLoot.length) return null;
     const { item, qty } = this.rollChest(`chest:${id}`);
     const gear = chestHasGear(run, this.floor, this.pos) ? this.fixedGear(`chest:${id}`, 'chest') : undefined;
-    const short = this.wontFit({ [item]: qty }, gear ? [gear] : []);
-    if (short) return { kind: 'full', item, qty, ...short, ...(gear ? { gear: this.junkMarked(gear) } : {}) };
+    const shut = this.shutFor({ [item]: qty }, gear);
+    if (shut) return shut;
     run.opened.add(id);
     this.grant(item, qty);
     if (!gear) return { kind: 'chest', item, qty };
-    return { kind: 'chest', item, qty, gear: this.pack(gear) };
+    return { kind: 'chest', item, qty, ...this.offerGear(id, gear) };
   }
 
   private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string): void {
