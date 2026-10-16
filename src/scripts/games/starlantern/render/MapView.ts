@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture, TilingSprite } from 'pixi.js';
 import type { Game } from '../engine/game';
 import type { Tile } from '../engine/map';
 import { art, tileKey } from './artPaths';
@@ -11,51 +11,68 @@ const COLORS: Record<Tile, number> = {
 const FOG = 0x05060a;
 /** Remembered tiles are drawn darker so the area around the party stands out. */
 const MEMORY_TINT = 0x6a6e86;
+/** Screen pixels per map cell; the view follows the party instead of shrinking the whole floor to fit. */
+export const MAP_CELL = 48;
+/** Fog reaches this many cells past the map edge so the view never shows bare black around a small floor. */
+const FOG_PAD = 14;
+const HOP_FRAMES = 10;
 
 function dim(color: number): number {
   const r = (color >> 16) & 0xff, g = (color >> 8) & 0xff, b = color & 0xff;
   return (Math.floor(r * 0.45) << 16) | (Math.floor(g * 0.45) << 8) | Math.floor(b * 0.5);
 }
-const HOP_FRAMES = 10;
 
+/**
+ * The labyrinth from above: large cells, one seamless fog over everything unexplored, and a camera that keeps the party
+ * in the middle of the view, easing along as it walks.
+ */
 export class MapView {
   readonly root = new Container();
+  private world = new Container();
+  private fogLayer: TilingSprite | Graphics | null = null;
   private tiles = new Container();
-  private blocks = new Graphics();
-  private fog = new Graphics();
+  /** Dark gradients along explored cells that border the fog, so the edge fades instead of cutting off. */
+  private edges = new Container();
+  private edgeTex: Texture | null = null;
   private marker = new Container();
   private dot = new Graphics();
   private icon = new Sprite();
   private target = { x: 0, y: 0 };
-  private cell = 0;
+  private view = { width: 640, height: 296 };
   private hop = 0;
+  private floor = 0;
 
   constructor(private bank: TextureBank | null = null) {
     this.marker.addChild(this.dot, this.icon);
-    this.root.addChild(this.blocks, this.tiles, this.fog, this.marker);
+    this.world.addChild(this.tiles, this.edges, this.marker);
+    this.root.addChild(this.world);
+  }
+
+  /** Tiles drawn for the cells the party has seen (for tests and diagnostics). */
+  tileCount(): number {
+    return this.tiles.children.length;
+  }
+
+  /** Fog edges drawn on the last draw (for tests). */
+  edgeCount(): number {
+    return this.edges.children.length;
   }
 
   draw(game: Game, size: { width: number; height: number }): void {
+    this.view = size;
     const map = game.map();
+    const cell = MAP_CELL;
     const seen = new Set(game.state.dungeon.explored[String(game.floor)] ?? []);
-    const cell = Math.max(8, Math.floor(Math.min(size.width / map.width, size.height / map.height)));
-    this.cell = cell;
-    this.root.x = Math.floor((size.width - cell * map.width) / 2);
-    this.root.y = Math.floor((size.height - cell * map.height) / 2);
-    this.blocks.clear();
-    this.fog.clear();
+    const fresh = this.floor !== game.floor || !this.fogLayer;   // first draw or a new floor: no slide from elsewhere
+    if (fresh) this.layFog(map.width, map.height);
+    this.floor = game.floor;
     for (const s of this.tiles.removeChildren()) s.destroy();
-    const fogTex = this.bank?.get(art.fog) ?? null;
     for (let y = 0; y < map.height; y++) {
       for (let x = 0; x < map.width; x++) {
+        const state = fogState(seen, game.pos, x, y);
+        if (state === 'hidden') continue;   // the fog layer underneath shows through
         const t = map.tiles[y][x];
         const opened = t === 'chest' && game.state.dungeon.opened.includes(`${game.floor}:${x},${y}`);
-        const state = fogState(seen, game.pos, x, y);
-        if (state === 'hidden') {
-          if (fogTex) this.tiles.addChild(this.cellSprite(fogTex, x, y, cell));
-          else this.fog.rect(x * cell, y * cell, cell, cell).fill(FOG);
-          continue;
-        }
         const tex = this.bank?.get(art.tile(game.floor, tileKey(t, opened))) ?? null;
         if (tex) {
           const s = this.cellSprite(tex, x, y, cell);
@@ -63,16 +80,18 @@ export class MapView {
           this.tiles.addChild(s);
         } else {
           const color = COLORS[opened ? 'floor' : t];
-          this.blocks.rect(x * cell, y * cell, cell, cell).fill(state === 'memory' ? dim(color) : color);
+          const g = new Graphics().rect(x * cell, y * cell, cell, cell).fill(state === 'memory' ? dim(color) : color);
+          this.tiles.addChild(g);
         }
       }
     }
+    this.drawEdges(game, seen);
     const tex = this.bank?.get(art.party(game.facing)) ?? null;
     this.dot.clear();
     this.icon.visible = !!tex;
     if (tex) {
       this.icon.texture = tex;
-      const k = (cell * 0.9) / Math.max(tex.width, tex.height);
+      const k = (cell * 0.95) / Math.max(tex.width, tex.height);
       this.icon.scale.set(k);
       this.icon.anchor.set(0.5, 1);
       this.icon.x = cell / 2; this.icon.y = cell * 0.95;
@@ -80,10 +99,78 @@ export class MapView {
       this.dot.circle(cell / 2, cell / 2, cell * 0.35).fill(0xffd166).stroke({ width: 2, color: 0x1d1d1d });
     }
     const tx = game.pos.x * cell, ty = game.pos.y * cell;
-    const far = Math.abs(tx - this.marker.x) > cell * 1.5 || Math.abs(ty - this.marker.y) > cell * 1.5;
+    const far = fresh || Math.abs(tx - this.marker.x) > cell * 1.5 || Math.abs(ty - this.marker.y) > cell * 1.5;
     if (far) { this.marker.x = tx; this.marker.y = ty; }
     else if (tx !== this.target.x || ty !== this.target.y) this.hop = HOP_FRAMES;
     this.target = { x: tx, y: ty };
+    this.follow();
+  }
+
+  /** A tiny dark-to-clear strip, made once; edges are sprites of it turned to face the fog. */
+  private edgeTexture(): Texture {
+    if (this.edgeTex) return this.edgeTex;
+    let tex = Texture.WHITE;
+    try {
+      const c = document.createElement('canvas');
+      c.width = 1; c.height = 16;
+      const g = c.getContext('2d');
+      if (g) {
+        const grad = g.createLinearGradient(0, 0, 0, 16);
+        grad.addColorStop(0, 'rgba(5,8,18,0.92)');
+        grad.addColorStop(1, 'rgba(5,8,18,0)');
+        g.fillStyle = grad;
+        g.fillRect(0, 0, 1, 16);
+        tex = Texture.from(c);
+      }
+    } catch { /* no canvas (tests): a plain strip still marks the edge */ }
+    this.edgeTex = tex;
+    return tex;
+  }
+
+  private drawEdges(game: Game, seen: ReadonlySet<string>): void {
+    const map = game.map();
+    const cell = MAP_CELL;
+    const band = Math.round(cell * 0.45);
+    const tex = this.edgeTexture();
+    const hidden = (x: number, y: number) => x < 0 || y < 0 || x >= map.width || y >= map.height || fogState(seen, game.pos, x, y) === 'hidden';
+    // The strip runs dark at its top; rotate it so the dark side lies against the fog.
+    const strip = (cx: number, cy: number, rot: number) => {
+      const sp = new Sprite(tex);
+      sp.anchor.set(0.5, 0);
+      sp.width = cell; sp.height = band;
+      sp.rotation = rot;
+      sp.x = cx; sp.y = cy;
+      if (tex === Texture.WHITE) { sp.tint = 0x050812; sp.alpha = 0.5; }
+      this.edges.addChild(sp);
+    };
+    for (const c of this.edges.removeChildren()) c.destroy();
+    for (let y = 0; y < map.height; y++) {
+      for (let x = 0; x < map.width; x++) {
+        if (hidden(x, y)) continue;
+        const px = x * cell, py = y * cell;
+        if (hidden(x, y - 1)) strip(px + cell / 2, py, 0);
+        if (hidden(x, y + 1)) strip(px + cell / 2, py + cell, Math.PI);
+        if (hidden(x - 1, y)) strip(px, py + cell / 2, -Math.PI / 2);
+        if (hidden(x + 1, y)) strip(px + cell, py + cell / 2, Math.PI / 2);
+      }
+    }
+  }
+
+  /** One fog layer for the whole floor and a margin around it: the fog art tiles seamlessly at its own size. */
+  private layFog(w: number, h: number): void {
+    this.fogLayer?.destroy();
+    const cell = MAP_CELL;
+    const x = -FOG_PAD * cell, y = -FOG_PAD * cell;
+    const width = (w + FOG_PAD * 2) * cell, height = (h + FOG_PAD * 2) * cell;
+    const fogTex = this.bank?.get(art.fog) ?? null;
+    if (fogTex) {
+      const f = new TilingSprite({ texture: fogTex, width, height });
+      f.x = x; f.y = y;
+      this.fogLayer = f;
+    } else {
+      this.fogLayer = new Graphics().rect(x, y, width, height).fill(FOG);
+    }
+    this.world.addChildAt(this.fogLayer, 0);
   }
 
   private cellSprite(tex: Texture, x: number, y: number, cell: number): Sprite {
@@ -92,14 +179,23 @@ export class MapView {
     return s;
   }
 
-  /** Slide toward the tile with a small hop; called from the Pixi ticker. */
+  /** Keep the party marker in the middle of the view. */
+  private follow(): void {
+    this.world.x = Math.round(this.view.width / 2 - (this.marker.x + MAP_CELL / 2));
+    this.world.y = Math.round(this.view.height / 2 - (this.marker.y + MAP_CELL / 2));
+  }
+
+  /** Slide toward the tile with a small hop, the view following; called from the Pixi ticker. */
   update(dt: number): void {
     const k = Math.min(1, 0.35 * dt);
     this.marker.x += (this.target.x - this.marker.x) * k;
     this.marker.y += (this.target.y - this.marker.y) * k;
+    if (Math.abs(this.target.x - this.marker.x) < 0.5) this.marker.x = this.target.x;
+    if (Math.abs(this.target.y - this.marker.y) < 0.5) this.marker.y = this.target.y;
     this.hop = Math.max(0, this.hop - dt);
-    const lift = Math.sin((this.hop / HOP_FRAMES) * Math.PI) * this.cell * 0.12;
+    const lift = Math.sin((this.hop / HOP_FRAMES) * Math.PI) * MAP_CELL * 0.12;
     this.dot.y = -lift;
-    this.icon.y = this.cell * 0.95 - lift;
+    this.icon.y = MAP_CELL * 0.95 - lift;
+    this.follow();
   }
 }
