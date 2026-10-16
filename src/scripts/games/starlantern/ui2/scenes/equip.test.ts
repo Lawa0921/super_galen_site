@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { POWERS } from '../../data/gear';
 import { T } from '../../data/text.zh-TW';
 import { Game } from '../../engine/game';
 import { itemWeight } from '../../engine/loot/item';
@@ -381,7 +382,7 @@ describe('EquipScene', () => {
     const { press, detail } = setup((g) => { g.state.bag = [gear('cloth-gloves', 2, 'legendary', { special: 'lg-bobby' })]; });
     press('swap');
     const line = detail().querySelector('.slx-line-off')!;
-    expect(line.querySelector('.slx-line-dim')!.textContent).toBe('砲台持續 5 回合');
+    expect(line.querySelector('.slx-line-dim')!.textContent).toBe(POWERS['lg-bobby'].text);
     expect(line.querySelector('.slx-line-dim .slx-line-note')).toBeNull();
     expect(line.querySelector(':scope > .slx-line-note')!.textContent).toBe(T.gear.cannotUse);
   });

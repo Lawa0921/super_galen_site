@@ -93,7 +93,7 @@ const POWER_LIST: PowerDef[] = [
   { id: 'lg-scarlet', skill: 'provoke', text: '挑釁額外使自己防禦 +25%，持續 3 回合', mod: { extra: [{ kind: 'buff', stat: 'def', pct: 25, turns: 3 }] } },
   { id: 'lg-selene', skill: 'moonlight', text: '月光改為治療全體，威力 60%', mod: { target: 'allies', powerPct: 60 } },
   { id: 'lg-safira', skill: 'blade-dance', text: '刃舞改為 4 段', mod: { hits: 4 } },
-  { id: 'lg-bobby', skill: 'turret', text: '砲台持續 5 回合', mod: { turns: 5 } },
+  { id: 'lg-bobby', skill: 'turret', text: '砲台持續回合固定為 5（雙砲台的 +1 回合不再疊加）', mod: { turns: 5 } },
   { id: 'blaze-heart-sword', skill: 'flame-burst', text: '爆炎斬不再消耗 HP', mod: { hpCost: 0 } },
   { id: 'frost-bloom-neck', skill: 'ice-star', text: '冰之星彈改為打全體，威力 70%', mod: { target: 'enemies', powerPct: 70 } },
   { id: 'storm-thunder-bow', skill: 'aimed-shot', text: '瞄準射擊改為雷屬性，威力 120%', mod: { element: 'thunder', powerPct: 120 } },

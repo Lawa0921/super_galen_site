@@ -113,7 +113,7 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'buff', stat: 'def', pct: 20, turns: 3 }] },
   { id: 'unbreakable', name: '不屈', owner: 'scarlet', tp: 10, target: 'self', desc: '4 回合內吸引敵人單體攻擊，並大幅提升自身防禦',
     effects: [{ kind: 'taunt', turns: 4 }, { kind: 'buff', stat: 'def', pct: 60, turns: 4 }] },
-  { id: 'blaze-ring', name: '炎環斬', owner: 'scarlet', tp: 5, hpCost: 0.1, target: 'enemies', desc: '消耗 10% HP 的火屬性全體斬擊',
+  { id: 'blaze-ring', name: '炎環斬', owner: 'scarlet', tp: 5, hpCost: 0.1, target: 'enemies', desc: '消耗 HP 的火屬性全體斬擊',
     effects: [{ kind: 'damage', power: 85, element: 'fire', scale: 'atk', melee: true }] },
   { id: 'crimson-end', name: '紅蓮終焉', owner: 'scarlet', tp: 8, hpCost: 0.3, target: 'enemy', desc: '消耗 30% HP 的火屬性極大一擊',
     effects: [{ kind: 'damage', power: 380, element: 'fire', scale: 'atk', melee: true }] },

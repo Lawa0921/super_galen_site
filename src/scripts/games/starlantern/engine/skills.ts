@@ -6,8 +6,12 @@ import { KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 
 export interface EffectContext { rng: Rng; itemBoost: boolean; revealed: Record<string, Element[]>; log: BattleEvent[] }
 
-/** A power's percentage of a number: `Math.round(base * pct / 100)`. */
-const pctOf = (base: number, pct: number | undefined): number => (pct === undefined ? base : Math.round((base * pct) / 100));
+/** A power's percentage of a number, rounded half away from zero so a debuff (-37.5) rounds as deep as a buff (37.5). */
+const pctOf = (base: number, pct: number | undefined): number => {
+  if (pct === undefined) return base;
+  const v = (base * pct) / 100;
+  return Math.sign(v) * Math.round(Math.abs(v)) || 0;   // `|| 0`: never -0
+};
 
 /**
  * A skill as one mod rewrites it; the original is never touched. `target` and `hpCost` replace the skill's own (an hpCost

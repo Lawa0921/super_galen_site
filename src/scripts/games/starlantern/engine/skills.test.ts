@@ -182,6 +182,16 @@ describe('review fixes', () => {
     expect(r.log.some((e) => e.type === 'act' && e.actor === 'p')).toBe(false);
   });
 
+  it('a percent rounds half away from zero, so a debuff rounds as deep as the matching buff', () => {
+    const def: SkillDef = {
+      id: 'x', name: 'x', owner: 'noel', tp: 5, target: 'enemy', desc: '',
+      effects: [{ kind: 'buff', stat: 'atk', pct: -25, turns: 3 }, { kind: 'buff', stat: 'atk', pct: 25, turns: 3 }],
+    };
+    expect(patchSkill(def, { buffPct: 150 }).effects.map((e) => (e as { pct: number }).pct)).toEqual([-38, 38]);   // 37.5 both ways
+    expect(patchSkill(def, { buffPct: 130 }).effects.map((e) => (e as { pct: number }).pct)).toEqual([-33, 33]);   // 32.5
+    expect(patchSkill(def, { buffPct: 115 }).effects.map((e) => (e as { pct: number }).pct)).toEqual([-29, 29]);   // 28.75
+  });
+
   it('a tpCost of 100 or more still charges 1 TP', () => {
     for (const tpCost of [100, 150, 1e6]) expect(skillCost(party({ x: { tpCost } }), 'twin-slash'), String(tpCost)).toBe(1);
   });
@@ -280,7 +290,8 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
         .toEqual(bind0.map((e) => (e.kind === 'damage' ? { ...e, power: pw(e.power, ACTIVE_RANK_PCT[r - 1]) } : e)));
     }
     const baseDebuff = bind0.find((e) => e.kind === 'buff');
-    expect(fx(caster({ 'frost-bind': 1, 'noel-bind-up': 3 }), 'frost-bind').find((e) => e.kind === 'buff')).toEqual(baseDebuff);   // 「強化冰縛的威力」
+    expect(fx(caster({ 'frost-bind': 1, 'noel-bind-up': 3 }), 'frost-bind').find((e) => e.kind === 'buff'))
+      .toEqual({ ...baseDebuff, pct: -45 });   // 「並加深速度削弱」: -30 x 150%
     const smoke = fx(caster({ 'smoke-bomb': 1, 'liz-smoke-up': 2 }), 'smoke-bomb')[0] as { pct: number };
     const smoke0 = SKILLS['smoke-bomb'].effects[0] as { pct: number };
     expect(smoke.pct).toBe(pw(smoke0.pct, mod('liz-smoke-up', 2).buffPct!));                                    // 「加深煙霧彈的攻擊削弱」

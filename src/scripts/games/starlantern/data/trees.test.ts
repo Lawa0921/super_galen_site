@@ -102,7 +102,41 @@ describe('skill trees', () => {
     }
   });
 
-  it('an active above rank 1 has an effect that powerPct scales (damage, heal, buff, turret)', () => {
+  it('the frost-bind and snare-shot upgrades deepen the debuff along with the power, and say so', () => {
+    for (const id of ['noel-bind-up', 'sylvie-snare-up']) {
+      const n = NODES[id].node;
+      expect(n.desc, id).toMatch(/削弱/);
+      expect(n.mods!.map((m) => m.buffPct), id).toEqual(n.mods!.map((m) => m.powerPct));
+    }
+  });
+
+  it('every power mod node (powerPct or powerDelta) names a skill that deals damage, heals or sets a turret', () => {
+    const power = allNodes().filter((n) => n.kind === 'mod' && n.mods!.some((m) => m.powerPct !== undefined || m.powerDelta !== undefined));
+    expect(power.map((n) => n.id)).toContain('twin-turret');
+    for (const n of power) {
+      expect(SKILLS[n.skill].effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'turret'), n.id).toBe(true);
+    }
+  });
+
+  it('a skill whose HP cost a mod node lowers does not state a fixed HP percent', () => {
+    const lowered = [...new Set(allNodes().filter((n) => n.mods?.some((m) => m.hpCost !== undefined)).map((n) => n.skill))];
+    expect(lowered).toEqual(['blaze-ring']);
+    for (const s of lowered) expect(SKILLS[s].desc, s).not.toMatch(/\d+\s*%/);
+  });
+
+  it("a power with absolute turns names each tree node whose turn bonus it overrides (lg-bobby and twin-turret)", () => {
+    let checked = 0;
+    for (const p of Object.values(POWERS).filter((x) => x.mod.turns !== undefined)) {
+      expect(p.text, p.id).toContain(String(p.mod.turns));
+      for (const n of allNodes().filter((x) => x.skill === p.skill && x.mods?.some((m) => m.turnsDelta !== undefined))) {
+        expect(p.text, `${p.id} vs ${n.id}`).toContain(n.name!);
+        checked++;
+      }
+    }
+    expect(checked).toBe(1);
+  });
+
+  it('an active above rank 1 has an effect its rank scales (damage, heal or turret by powerPct; a pure buff by buffPct)', () => {
     for (const n of allNodes().filter((x) => x.kind === 'active' && x.maxRank > 1)) {
       const kinds = SKILLS[n.skill].effects.map((e) => e.kind);
       expect(kinds.some((k) => ['damage', 'heal', 'buff', 'turret'].includes(k)), n.id).toBe(true);

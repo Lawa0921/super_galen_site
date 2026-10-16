@@ -30,6 +30,8 @@ const M = (id: string, name: string, skill: string, desc: string, mods: SkillMod
   ({ id, kind: 'mod', skill, maxRank: mods.length as 1 | 2 | 3, name, desc, mods });
 const pct = (...v: number[]): SkillMod[] => v.map((powerPct) => ({ powerPct }));
 const buff = (...v: number[]): SkillMod[] => v.map((buffPct) => ({ buffPct }));
+/** Power and the debuff riding on it, by the same percent. */
+const deepen = (...v: number[]): SkillMod[] => v.map((p) => ({ powerPct: p, buffPct: p }));
 const turns = (...v: number[]): SkillMod[] => v.map((t) => ({ turns: t }));
 const chance = (...v: number[]): SkillMod[] => v.map((c) => ({ chance: c }));
 const hp = (...v: number[]): SkillMod[] => v.map((hpCost) => ({ hpCost }));
@@ -48,7 +50,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('ice-star', 3),
       M('noel-ice-up', '冰星強化', 'ice-star', '強化冰之星彈的威力', pct(110, 120, 135)),
       A('frost-bind', 3),
-      M('noel-bind-up', '寒縛強化', 'frost-bind', '強化冰縛的威力', pct(115, 130, 150)),
+      M('noel-bind-up', '寒縛強化', 'frost-bind', '強化冰縛的威力，並加深速度削弱', deepen(115, 130, 150)),
       A('blizzard', 1),
     ] },
     { name: '雷咒', nodes: [
@@ -117,7 +119,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('pin-shot', 3),
       M('sylvie-pin-up', '釘足延長', 'pin-shot', '延長釘足箭的減速回合', turns(4, 5, 6)),
       A('snare-shot', 3),
-      M('sylvie-snare-up', '絆索強化', 'snare-shot', '強化絆索箭的威力', pct(115, 130, 150)),
+      M('sylvie-snare-up', '絆索強化', 'snare-shot', '強化絆索箭的威力，並加深攻擊削弱', deepen(115, 130, 150)),
       A('hunters-mark', 1),
     ] },
     { name: '箭雨', nodes: [
@@ -147,7 +149,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('iron-wall', 3),
       M('scarlet-wall-up', '鐵壁延長', 'iron-wall', '延長鐵壁的持續回合', turns(4, 5, 6)),
       A('shield-bash', 3),
-      M('scarlet-bash-up', '盾擊強化', 'shield-bash', '強化盾擊的威力，並加深攻擊削弱', pct(115, 130, 150).map((m) => ({ ...m, buffPct: m.powerPct }))),
+      M('scarlet-bash-up', '盾擊強化', 'shield-bash', '強化盾擊的威力，並加深攻擊削弱', deepen(115, 130, 150)),
       A('fortress', 1),
     ] },
   ] },
