@@ -1,0 +1,19 @@
+{
+  "assets": {
+    "portal-card-blaze": {
+      "final": "art-factory/starlantern/work/portal-card-blaze/cand/a2/portal-card-blaze.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-blaze\\portal-card-blaze-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 32.91590909090909,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

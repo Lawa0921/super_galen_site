@@ -226,6 +226,20 @@ def _sample(img, w, h):
     return Image.fromarray(a[ys][:, xs], img.mode)
 
 
+def fit_opaque(img, w, h):
+    """Centre-crop to the w:h aspect, then centre-sample to exactly w x h art pixels (no new colours)."""
+    W, H = img.size
+    cw, ch = (W, round(W * h / w)) if W * h <= H * w else (round(H * w / h), H)
+    x0, y0 = (W - cw) // 2, (H - ch) // 2
+    return _sample(img.crop((x0, y0, x0 + cw, y0 + ch)), w, h)
+
+
+def shared_block(cells, max_side):
+    """One block for a whole sheet: the largest subject side over all cells becomes about `max_side` art pixels."""
+    side = max((max(b[2] - b[0], b[3] - b[1]) for b in (cutout(c).getbbox() for c in cells) if b), default=0)
+    return max(1, round(side / max_side))
+
+
 def _final_path(final):
     p = Path(final); return p if p.is_absolute() else ROOT.parents[1] / p
 
@@ -305,6 +319,35 @@ def deblend(img, passes=3):
         mask, src = _blend_fit(arr)
         if not mask.any(): break
         arr[mask, :3] = np.round(src[mask]).astype(np.uint8)
+    return Image.fromarray(arr, 'RGBA')
+
+
+def _key_tint(rgb):
+    """Purple and pink pixels: red and blue both clearly above green, blue at least 0.6 of red (crimson and
+    red gems, whose blue stays low, are not included)."""
+    c = rgb.astype(np.int16); r, g, b = c[..., 0], c[..., 1], c[..., 2]
+    return (r - g >= 30) & (b - g >= 15) & (b * 10 >= r * 6)
+
+
+def neutralize_key_tint(img, passes=4):
+    """Opt-in for art that has no intended purple or pink (registry `neutralize_tint: true`): every opaque
+    purple or pink pixel (`_key_tint`) (a shadow or glow mixed with the key) takes the colour of its 8-neighbour that is clean and
+    closest in luminance; pixels with no clean neighbour after `passes` become grey of their own luminance.
+    Alpha is never changed, and only colours already in the sprite are used (plus that grey fallback)."""
+    arr = np.asarray(img.convert('RGBA')).copy(); h, w = arr.shape[:2]
+    for _ in range(passes):
+        op = arr[..., 3] == 255; bad = op & _key_tint(arr[..., :3])
+        if not bad.any(): break
+        clean = op & ~bad; lum = _lum(arr[..., :3].astype(np.float32))
+        best = np.full((h, w), np.inf, np.float32); src = np.zeros((h, w, 3), np.uint8)
+        pad = np.pad(arr[..., :3], ((1, 1), (1, 1), (0, 0))); cp = np.pad(clean, 1); lp = np.pad(lum, 1)
+        for dy, dx in _SHIFTS:
+            ok = cp[1 + dy:1 + dy + h, 1 + dx:1 + dx + w]; d = np.abs(lp[1 + dy:1 + dy + h, 1 + dx:1 + dx + w] - lum)
+            take = bad & ok & (d < best); best[take] = d[take]; src[take] = pad[1 + dy:1 + dy + h, 1 + dx:1 + dx + w][take]
+        fix = np.isfinite(best); arr[fix, :3] = src[fix]
+    op = arr[..., 3] == 255; rest = op & _key_tint(arr[..., :3])
+    if rest.any():
+        g = np.round(_lum(arr[..., :3].astype(np.float32))).astype(np.uint8); arr[rest, 0] = arr[rest, 1] = arr[rest, 2] = g[rest]
     return Image.fromarray(arr, 'RGBA')
 
 
@@ -443,7 +486,7 @@ class Registry:
         out.write_text(json.dumps({'version': 1, 'urls': urls}, indent=2) + '\n', encoding='utf-8')
 
 
-def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None, block=None, height=None, frames=4, wrap='xy', size=62):
+def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None, block=None, height=None, frames=4, wrap='xy', size=62, fit=None, canvas=None):
     """Postprocess one raw codex PNG into final file(s) under art-factory/starlantern/work/<aid>/ and record QA."""
     workdir = Path(workdir or ROOT / 'work' / aid); workdir.mkdir(parents=True, exist_ok=True)
     img = Image.open(raw).convert('RGB')
@@ -459,10 +502,16 @@ def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None, b
             results[cid] = _finish(reg, cid, cell, 'opaque' if kind == 'tile-sheet' else 'sprite', workdir, raw, block, height)
         reg.set(aid, status='processed', raw=str(raw), parts=targets)
         return results
-    return {aid: _finish(reg, aid, img, kind, workdir, raw, block, height)}
+    return {aid: _finish(reg, aid, img, kind, workdir, raw, block, height, fit=fit, canvas=canvas)}
 
 
-def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None):
+def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None, fit=None, canvas=None):
+    """fit=(w, h): opaque art sampled to exactly w x h. canvas=n: a sprite centred on an n x n transparent canvas."""
+    if kind == 'opaque' and fit:
+        final = fit_opaque(img.convert('RGB'), *fit).convert('RGBA')
+        qa = {'pass': True, 'reasons': [], 'seam': seam_score(final),
+              'block': round(min(img.width / fit[0], img.height / fit[1]), 3), 'size': list(final.size)}
+        return _save_final(reg, aid, final, qa, workdir, raw)
     if block is None and height and kind != 'opaque':
         box = cutout(img).getbbox()
         block = max(1, round((box[3] - box[1]) / height)) if box else 1
@@ -483,6 +532,10 @@ def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None):
             pad = Image.new('RGBA', (subject.width + 2 * block, subject.height + 2 * block))
             pad.paste(subject, (block, block))
             final = defringe(to_art_pixels(pad, block), strong=reg.data['assets'].get(aid, {}).get('defringe') == 'strong')
+            # Opt-in (registry `deblend: true`) for art far from magenta: outline pixels mixed with the key are
+            # replaced by the neighbouring colour they were mixed from (same repair the fx-anim sheets use).
+            if reg.data['assets'].get(aid, {}).get('deblend'): final = deblend(final)
+            if reg.data['assets'].get(aid, {}).get('neutralize_tint'): final = neutralize_key_tint(final)
             src = Image.new('RGB', pad.size, (255, 0, 255)); src.paste(img.crop(bbox), (block, block))
             hint = _near_magenta(np.asarray(to_art_pixels(src, block)), 30)
             entry = reg.data['assets'].get(aid, {})
@@ -492,7 +545,20 @@ def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None):
             sides = {'left': bbox[0] == 0, 'top': bbox[1] == 0, 'right': bbox[2] == img.width, 'bottom': bbox[3] == img.height}
             if any(cut_side and side not in entry.get('allow_edge', []) for side, cut_side in sides.items()):
                 qa['reasons'].append('subject cut by the canvas edge'); qa['pass'] = False
+            if canvas:
+                # Map-cell overlay: the padded subject is centred on an n x n canvas and must fit inside it.
+                qa['subject'] = [final.width - 2, final.height - 2]
+                if final.width > canvas or final.height > canvas:
+                    qa['reasons'].append('larger than the canvas'); qa['pass'] = False
+                else:
+                    cell = Image.new('RGBA', (canvas, canvas))
+                    cell.paste(final, ((canvas - final.width) // 2, (canvas - final.height) // 2)); final = cell
     qa.update(block=block, size=list(final.size))
+    return _save_final(reg, aid, final, qa, workdir, raw)
+
+
+def _save_final(reg, aid, final, qa, workdir, raw):
+    Path(workdir).mkdir(parents=True, exist_ok=True)
     out = Path(workdir) / f'{aid}.png'; final.save(out)
     (Path(workdir) / f'{aid}.qa.json').write_text(json.dumps(qa, indent=2), encoding='utf-8')
     repo = ROOT.parents[1]
@@ -511,6 +577,8 @@ def main(argv=None):
     p.add_argument('--ids'); p.add_argument('--cols', type=int); p.add_argument('--rows', type=int)
     p.add_argument('--block', type=int, help='art-pixel size override when grid detection misreads painterly art')
     p.add_argument('--height', type=int, help='target art-pixel height for sprites; sets the block from the subject height')
+    p.add_argument('--fit', help='opaque: exact output size WxH (centre crop to the aspect, then sample)')
+    p.add_argument('--canvas', type=int, help='sprite: centre the result on an N x N transparent canvas (map-cell overlay)')
     a = sub.add_parser('approve'); a.add_argument('--id', required=True)
     r = sub.add_parser('reject'); r.add_argument('--id', required=True); r.add_argument('--reason', required=True)
     pub = sub.add_parser('publish'); pub.add_argument('--approved', action='store_true', required=True)
@@ -518,7 +586,8 @@ def main(argv=None):
     args = ap.parse_args(argv)
     reg = Registry(ROOT / 'registry.json'); public = ROOT.parents[1] / 'public'
     if args.cmd == 'process':
-        out = process(reg, args.id, args.raw, args.kind, args.ids.split(',') if args.ids else None, args.cols, args.rows, block=args.block, height=args.height, frames=args.frames, wrap=args.wrap, size=args.size)
+        out = process(reg, args.id, args.raw, args.kind, args.ids.split(',') if args.ids else None, args.cols, args.rows, block=args.block, height=args.height, frames=args.frames, wrap=args.wrap, size=args.size,
+                      fit=tuple(int(v) for v in args.fit.lower().split('x')) if args.fit else None, canvas=args.canvas)
         print(json.dumps(out, ensure_ascii=False)); return 0 if all(q['pass'] for q in out.values()) else 1
     if args.cmd == 'approve': reg.approve(args.id)
     if args.cmd == 'reject': reg.reject(args.id, args.reason, public)

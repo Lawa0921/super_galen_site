@@ -1,0 +1,132 @@
+{
+  "assets": {
+    "icon-trait-fire": {
+      "defringe": "strong",
+      "deblend": true,
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/sheet-trait-icons/cand/a4/icon-trait-fire.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          29,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-trait-ice": {
+      "defringe": "strong",
+      "deblend": true,
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/sheet-trait-icons/cand/a4/icon-trait-ice.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 12,
+        "size": [
+          29,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-trait-thunder": {
+      "defringe": "strong",
+      "deblend": true,
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/sheet-trait-icons/cand/a4/icon-trait-thunder.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 12,
+        "size": [
+          26,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-trait-poison": {
+      "final": "art-factory/starlantern/work/sheet-trait-icons/cand/a4/icon-trait-poison.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 10,
+        "size": [
+          29,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-trait-shade": {
+      "final": "art-factory/starlantern/work/sheet-trait-icons/cand/a4/icon-trait-shade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          31,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-trait-iron": {
+      "defringe": "strong",
+      "deblend": true,
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/sheet-trait-icons/cand/a4/icon-trait-iron.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          30,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

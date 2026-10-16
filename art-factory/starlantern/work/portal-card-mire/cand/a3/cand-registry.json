@@ -1,0 +1,19 @@
+{
+  "assets": {
+    "portal-card-mire": {
+      "final": "art-factory/starlantern/work/portal-card-mire/cand/a3/portal-card-mire.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-mire\\portal-card-mire-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 45.773737373737376,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

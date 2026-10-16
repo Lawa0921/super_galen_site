@@ -5037,6 +5037,621 @@
       "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f3-wall-face.png",
       "approved_by": "user 2026-10-16: 牆壁你可以拼接讓我看看效果"
+    },
+    "scene-portal-plaza": {
+      "final": "art-factory/starlantern/work/scene-portal-plaza/scene-portal-plaza.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-portal-plaza\\scene-portal-plaza-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 25.96974278054905,
+        "block": 4.0,
+        "size": [
+          418,
+          235
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a3",
+      "source_id": "scene-portal-plaza",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/scene/portal-plaza.png",
+      "rejected_attempts": {
+        "a1": "三座門整體偏右，卡片置中時對不齊；漩渦是柔和噴槍漸層，不像像素畫",
+        "a2": "門群更偏右；漩渦仍偏柔和漸層（像素感比 a1 好，但 a3 置中且漩渦改成分階色帶）"
+      }
+    },
+    "portal-card-mainline": {
+      "final": "art-factory/starlantern/work/portal-card-mainline/portal-card-mainline.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-mainline\\portal-card-mainline-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 37.443518518518516,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a3",
+      "source_id": "portal-card-mainline",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/mainline.png",
+      "rejected_attempts": {
+        "a1": "遺跡拱門太小、焦點光源只是一個小點，1× 看起來雜",
+        "a2": "比 a1 清楚，但拱門仍小、暖光弱；a3 拱門占畫面中央三分之一、暖光明確"
+      }
+    },
+    "portal-card-blaze": {
+      "final": "art-factory/starlantern/work/portal-card-blaze/portal-card-blaze.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-blaze\\portal-card-blaze-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 28.112794612794612,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "portal-card-blaze",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/blaze.png",
+      "rejected_attempts": {
+        "a2": "熔岩瀑布與岩柱較雜，路徑不如 a1 清楚，與整組「路徑從下方中央延伸」的構圖不一致"
+      }
+    },
+    "portal-card-storm": {
+      "final": "art-factory/starlantern/work/portal-card-storm/portal-card-storm.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-storm\\portal-card-storm-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 39.23813131313131,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "portal-card-storm",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/storm.png",
+      "rejected_attempts": {
+        "a2": "整體偏暗、偏灰綠，1× 下地標與背景分不開，雷鳴之地的藍黃色調不鮮明"
+      }
+    },
+    "portal-card-mire": {
+      "final": "art-factory/starlantern/work/portal-card-mire/portal-card-mire.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-mire\\portal-card-mire-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 45.773737373737376,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a3",
+      "source_id": "portal-card-mire",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/mire.png",
+      "rejected_attempts": {
+        "a1": "對比低、沒有明確焦點，1× 糊成一片",
+        "a2": "有發光神龕但太小，路徑不明顯；a3 加強焦點與明暗"
+      }
+    },
+    "portal-card-shade": {
+      "final": "art-factory/starlantern/work/portal-card-shade/portal-card-shade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-shade\\portal-card-shade-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 6.723232323232323,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "portal-card-shade",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/shade.png",
+      "rejected_attempts": {
+        "a1": "前景台座雜、構圖左右失衡，遠方門光弱；a2 柱廊對稱、深處光源清楚"
+      }
+    },
+    "portal-card-iron": {
+      "final": "art-factory/starlantern/work/portal-card-iron/portal-card-iron.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-iron\\portal-card-iron-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 57.89040404040404,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "portal-card-iron",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/iron.png",
+      "rejected_attempts": {
+        "a1": "前景旗幟、樹叢雜，城門焦點不如 a2 明確、偏冷灰"
+      }
+    },
+    "tile-event-fountain": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-fountain/tile-event-fountain.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          38,
+          46
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-fountain.png",
+      "neutralize_tint": true
+    },
+    "tile-event-merchant": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-merchant/tile-event-merchant.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          47,
+          48
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-merchant.png",
+      "neutralize_tint": true
+    },
+    "tile-event-altar": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-altar/tile-event-altar.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          42,
+          42
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-altar.png",
+      "neutralize_tint": true
+    },
+    "tile-event-elite": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-elite/tile-event-elite.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          51,
+          49
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-elite.png",
+      "neutralize_tint": true
+    },
+    "tile-event-vault": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-vault/tile-event-vault.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          46,
+          43
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-vault.png",
+      "neutralize_tint": true
+    },
+    "tile-event-vault-open": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-vault-open/tile-event-vault-open.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          45,
+          50
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-vault-open.png",
+      "neutralize_tint": true
+    },
+    "tile-event-key": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-key/tile-event-key.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "subject": [
+          37,
+          29
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a3",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-key.png",
+      "neutralize_tint": true
+    },
+    "tile-event-trap": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-trap/tile-event-trap.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          48,
+          44
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a3",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-trap.png",
+      "neutralize_tint": true
+    },
+    "sheet-event-tiles": {
+      "rejected_attempts": {
+        "a1": "未採用：接地陰影混到洋紅變紫色、鑰匙周圍粉紅雜點、精英法陣散點雜訊、陷阱的灰石與地板混在一起看不出地刺",
+        "a2": "採用泉水、商人、祭壇、精英、寶庫（關／開成對）；鑰匙光環偏粉紅、陷阱地刺不清楚，改用 a3",
+        "a3": "採用鑰匙、陷阱；其餘件的接地陰影仍有紫色殘影、精英法陣線條細碎，寶庫為保持關／開成對沿用 a2"
+      },
+      "status": "processed",
+      "parts": [
+        "tile-event-fountain",
+        "tile-event-merchant",
+        "tile-event-altar",
+        "tile-event-elite",
+        "tile-event-vault",
+        "tile-event-vault-open",
+        "tile-event-key",
+        "tile-event-trap"
+      ],
+      "batch": "portal-dungeon",
+      "kind": "event-sheet",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles"
+    },
+    "sheet-trait-icons": {
+      "rejected_attempts": {
+        "a3": "影：改成黑靛色後在深色介面上幾乎看不見，周圍有暗紫雜點；其他圖示與 a1/a2 相當",
+        "a1": "未採用：冰、火外緣留有暗紫色去背殘邊；影的眼白被去背挖出洞（淡紫色太接近洋紅）",
+        "a2": "採用毒（綠色水滴＋紫色底影最有毒的意象）；影有洋紅殘留（QA 失敗），其他件外緣雜邊比 a4 多",
+        "a4": "採用火、冰、雷、鋼、影（影改藍紫加冷色輪廓光，在深色介面上清楚、無殘色）；毒的底影變成藍色、意象變弱，改用 a2"
+      },
+      "status": "processed",
+      "parts": [
+        "icon-trait-fire",
+        "icon-trait-ice",
+        "icon-trait-thunder",
+        "icon-trait-poison",
+        "icon-trait-shade",
+        "icon-trait-iron"
+      ],
+      "batch": "portal-dungeon",
+      "kind": "icon-sheet",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons"
+    },
+    "portal-card-frost": {
+      "final": "art-factory/starlantern/work/portal-card-frost/portal-card-frost.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-frost\\portal-card-frost-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 59.82828282828282,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a3",
+      "source_id": "portal-card-frost",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/frost.png",
+      "rejected_attempts": {
+        "a1": "冰瀑地標最醒目，但沒有從下方中央延伸的路徑，與整組卡片的構圖語言不一致",
+        "a2": "畫面雜、前景岩塊多，路徑不清楚"
+      }
+    },
+    "icon-trait-fire": {
+      "defringe": "strong",
+      "deblend": true,
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/icon-trait-fire/icon-trait-fire.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          29,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-trait-icons",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/icon/trait-fire.png"
+    },
+    "icon-trait-ice": {
+      "defringe": "strong",
+      "deblend": true,
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/icon-trait-ice/icon-trait-ice.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 12,
+        "size": [
+          29,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-trait-icons",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/icon/trait-ice.png"
+    },
+    "icon-trait-iron": {
+      "defringe": "strong",
+      "deblend": true,
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/icon-trait-iron/icon-trait-iron.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          30,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-trait-icons",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/icon/trait-iron.png"
+    },
+    "icon-trait-thunder": {
+      "defringe": "strong",
+      "deblend": true,
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/icon-trait-thunder/icon-trait-thunder.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 12,
+        "size": [
+          26,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-trait-icons",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/icon/trait-thunder.png"
+    },
+    "icon-trait-shade": {
+      "final": "art-factory/starlantern/work/icon-trait-shade/icon-trait-shade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          31,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-trait-icons",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/icon/trait-shade.png"
+    },
+    "icon-trait-poison": {
+      "final": "art-factory/starlantern/work/icon-trait-poison/icon-trait-poison.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 12,
+        "size": [
+          28,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-trait-icons",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/icon/trait-poison.png"
     }
   }
 }

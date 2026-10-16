@@ -490,3 +490,106 @@ def test_process_tile_wrap_records_the_join_with_the_wall_top_above(tmp_path):
     A.process(reg, 'tile-f1-wall-top', _wrap_raw(tmp_path, noise_tile(62, 62), name='t.png'), 'tile-wrap', workdir=tmp_path / 'w', wrap='xy', size=62)
     q = A.process(reg, 'tile-f1-wall-face', _wrap_raw(tmp_path, noise_tile(62, 62, seed=2), name='f.png'), 'tile-wrap', workdir=tmp_path / 'w2', wrap='x', size=62)['tile-f1-wall-face']
     assert 'top_join' in q and q['top_join']['ratio'] >= 0
+
+
+# --- portal dungeon batch: exact-size opaque fit, event tiles on a map-cell canvas, shared sheet scale ---
+
+def test_fit_opaque_centre_crops_to_the_aspect_and_samples_exact_size():
+    arr = np.zeros((100, 300, 3), np.uint8); arr[:, :50] = (255, 0, 0); arr[:, 250:] = (0, 0, 255); arr[:, 50:250] = (0, 200, 0)
+    out = A.fit_opaque(Image.fromarray(arr, 'RGB'), 18, 11)
+    assert out.size == (18, 11)
+    o = np.asarray(out)
+    # 300x100 cropped to 164x100 around the centre: the red and blue side bands are cut away
+    assert (o == (0, 200, 0)).all()
+
+
+def test_fit_opaque_keeps_only_source_colours():
+    rng = np.random.default_rng(1); arr = rng.integers(0, 4, (90, 160, 1)) * np.array([[[60, 50, 40]]])
+    img = Image.fromarray(arr.astype(np.uint8), 'RGB')
+    src = {tuple(c) for c in np.asarray(img).reshape(-1, 3)}
+    out = {tuple(c) for c in np.asarray(A.fit_opaque(img, 41, 23)).reshape(-1, 3)}
+    assert out <= src
+
+
+def test_finish_opaque_with_fit_records_exact_size(tmp_path):
+    raw = tmp_path / 'r.png'; Image.new('RGB', (1536, 1024), (30, 60, 90)).save(raw)
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A._finish(reg, 'portal-card-frost', Image.open(raw).convert('RGB'), 'opaque', tmp_path / 'w', raw, fit=(180, 110))
+    assert q['pass'] and q['size'] == [180, 110]
+    assert Image.open(tmp_path / 'w' / 'portal-card-frost.png').size == (180, 110)
+
+
+def test_finish_sprite_on_canvas_centres_the_subject_in_a_map_cell(tmp_path):
+    img = blob(200, 200, (60, 80, 140, 120))   # 80x40 px subject, block 2 -> 40x20 art px
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A._finish(reg, 'tile-event-key', img, 'sprite', tmp_path / 'w', tmp_path / 'raw.png', block=2, canvas=62)
+    out = np.asarray(Image.open(tmp_path / 'w' / 'tile-event-key.png'))
+    assert q['pass'] and q['size'] == [62, 62] and out.shape[:2] == (62, 62)
+    ys, xs = np.nonzero(out[..., 3])
+    assert xs.max() - xs.min() + 1 == 40 and ys.max() - ys.min() + 1 == 20
+    assert abs((xs.min() + xs.max()) / 2 - 30.5) <= 1 and abs((ys.min() + ys.max()) / 2 - 30.5) <= 1
+
+
+def test_finish_sprite_on_canvas_fails_when_the_subject_does_not_fit(tmp_path):
+    img = blob(400, 400, (20, 20, 380, 380))   # 360 px subject at block 4 -> 90 art px > 62
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A._finish(reg, 'tile-event-vault', img, 'sprite', tmp_path / 'w', tmp_path / 'raw.png', block=4, canvas=62)
+    assert not q['pass'] and 'larger than the canvas' in q['reasons']
+    assert reg.get('tile-event-vault')['status'] == 'qa_failed'
+
+
+def test_shared_block_scales_the_largest_subject_to_the_target_side():
+    cells = [blob(300, 300, (50, 50, 250, 150)), blob(300, 300, (100, 100, 160, 160))]   # largest side 200 px
+    assert A.shared_block(cells, 50) == 4
+    assert A.shared_block([blob(100, 100, (40, 40, 45, 45))], 50) == 1
+
+
+def test_finish_sprite_with_deblend_flag_repairs_dark_magenta_outline_blends(tmp_path):
+    arr = np.asarray(blob(60, 60, (10, 10, 50, 50), (40, 120, 200))).copy()
+    arr[10:50, 10] = (20, 15, 30)                # dark outline column
+    arr[30, 10] = (101, 10, 109)                 # outline mixed with the magenta key
+    img = Image.fromarray(arr, 'RGB')
+    reg = A.Registry(tmp_path / 'r.json')
+    A._finish(reg, 'icon-x', img, 'sprite', tmp_path / 'w', tmp_path / 'raw.png', block=1)
+    plain = np.asarray(Image.open(tmp_path / 'w' / 'icon-x.png'))
+    reg.set('icon-y', deblend=True)
+    A._finish(reg, 'icon-y', img, 'sprite', tmp_path / 'w', tmp_path / 'raw.png', block=1)
+    fixed = np.asarray(Image.open(tmp_path / 'w' / 'icon-y.png'))
+    assert tuple(plain[21, 1, :3]) == (101, 10, 109)        # padded by one block: (30,10) -> (21,1) after bbox crop
+    assert tuple(fixed[21, 1, :3]) == (20, 15, 30) and fixed[21, 1, 3] == 255
+
+
+def test_neutralize_key_tint_recolours_purple_shadow_and_pink_glow_from_neighbours():
+    rgba = np.zeros((10, 12, 4), np.uint8)
+    rgba[2:8, 2:6] = (60, 55, 50, 255)           # dark grey-brown shadow
+    rgba[4, 4] = (90, 30, 100, 255)              # shadow mixed with the key: purple
+    rgba[2:8, 6:10] = (250, 200, 60, 255)        # gold glow
+    rgba[5, 8] = (245, 150, 170, 255)            # glow mixed with the key: pink
+    rgba[8, 2:4] = (95, 35, 110, 255)            # purple with no clean neighbour of its own kind nearby... but grey above
+    out = np.asarray(A.neutralize_key_tint(Image.fromarray(rgba, 'RGBA')))
+    assert tuple(out[4, 4]) == (60, 55, 50, 255)
+    assert tuple(out[5, 8]) == (250, 200, 60, 255)
+    assert not A._key_tint(out[..., :3])[out[..., 3] == 255].any()
+    assert (out[..., 3] == rgba[..., 3]).all()                  # never changes alpha
+    assert tuple(out[3, 3]) == (60, 55, 50, 255)                 # clean pixels untouched
+
+
+def test_neutralize_key_tint_greys_an_isolated_purple_pixel():
+    rgba = np.zeros((5, 5, 4), np.uint8); rgba[2, 2] = (90, 30, 100, 255)
+    out = np.asarray(A.neutralize_key_tint(Image.fromarray(rgba, 'RGBA')))
+    r, g, b, a = map(int, out[2, 2])
+    assert a == 255 and r == g == b
+
+
+def test_finish_sprite_with_neutralize_flag_applies_it(tmp_path):
+    arr = np.asarray(blob(60, 60, (10, 10, 50, 50), (60, 55, 50))).copy(); arr[30, 30] = (90, 30, 100)
+    reg = A.Registry(tmp_path / 'r.json'); reg.set('tile-event-x', neutralize_tint=True)
+    A._finish(reg, 'tile-event-x', Image.fromarray(arr, 'RGB'), 'sprite', tmp_path / 'w', tmp_path / 'raw.png', block=1)
+    out = np.asarray(Image.open(tmp_path / 'w' / 'tile-event-x.png'))
+    assert not A._key_tint(out[..., :3])[out[..., 3] == 255].any()
+
+
+def test_neutralize_key_tint_keeps_crimson_and_red_gems():
+    rgba = np.zeros((5, 5, 4), np.uint8); rgba[1:4, 1:4] = (200, 20, 40, 255); rgba[2, 2] = (200, 30, 60, 255)
+    out = np.asarray(A.neutralize_key_tint(Image.fromarray(rgba, 'RGBA')))
+    assert (out == rgba).all()

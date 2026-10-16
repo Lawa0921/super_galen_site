@@ -63,6 +63,21 @@
   - `top_join`（僅記錄，不擋）：牆頂最後一列與同層牆面第一列的平均差，對牆面內相鄰列平均差的比值，供審核頁參考接合是否自然。
 - 審核頁：`tmp/starlantern/review-walls/index.html`（`python art-factory/starlantern/tools/review_walls.py` 產生），每層一個 7×5 迷宮示範新舊並排、放大 3 倍，附牆頂 2×2、牆面 1×3 平鋪預覽與 QA 數字。登錄表狀態最多到 `qa_passed`，核准與發布由使用者在審核頁確認後另行執行。
 
+## 傳送門 roguelike（計畫 4 Task 10）
+- 工具：`tools/portal.py`（prompt 與 job 定義、`gen` 生成、`cand` 把每一版後處理到 `work/<id>/cand/a<N>/`、`pick` 把選中的版本寫進登錄表、`note` 記錄未採用原因）；審核頁 `tools/review_portal.py` → `tmp/starlantern/review-portal/index.html`。
+- 品質優先（使用者要求）：每種素材至少 2 版，取最好的一版；這批每個 id 最多 5 次。未採用的版本在登錄表的 `rejected_attempts` 記錄原因；sheet 類可以逐一部件從不同版本挑（`chosen_attempt`）。
+- 參考圖：已發布場景、圖示、f1 圖塊以最近鄰放大的複本，放在 `raw/portal-refs/`（不進 repo）。
+
+| 類別 | id | runtime 路徑（核准後才發布） | 去背 | 尺寸 |
+|---|---|---|---|---|
+| 傳送門廣場 | `scene-portal-plaza` | `/assets/games/starlantern/scene/portal-plaza.png` | 不透明 | 418×235（同其他場景；`--fit 418x235`） |
+| 傳送門卡片 | `portal-card-<mainline\|blaze\|frost\|storm\|mire\|shade\|iron>` | `/assets/games/starlantern/portal/<region>.png` | 不透明 | 180×110（`--fit 180x110`） |
+| 屬性圖示 | `icon-trait-<fire\|ice\|thunder\|poison\|shade\|iron>`（來源 `sheet-trait-icons`，3×2） | `/assets/games/starlantern/icon/trait-<k>.png` | 透明 | 高 32 |
+| 事件地磚 | `tile-event-<fountain\|merchant\|altar\|elite\|vault\|vault-open\|key\|trap>`（來源 `sheet-event-tiles`，4×2） | `/assets/games/starlantern/tiles/event-<k>.png` | 透明 | 62×62 畫布（一格地圖），主體置中 |
+
+- `--fit WxH`（不透明）：置中裁成 W:H，再以最近鄰取樣成正好 W×H，不產生新顏色（試過 box 平均＋量化，會讓火把等亮點變灰，不採用）。
+- 事件地磚：同一張 sheet 共用一個 block（`shared_block`：最大的主體邊長約 50 美術像素），所以鑰匙與寶庫的大小比例保留；每個主體置中貼到 62×62 透明畫布（`--canvas 62`），放不下時 QA 失敗（`larger than the canvas`）。其餘透明 QA 同共通規定。
+
 ## 地形與敵人描述
 - f1 林間遺跡：mossy forest ruins, green and grey stone, roots, soft daylight.
 - f2 水晶洞窟：dark blue crystal cave, glowing cyan crystals, wet rock.

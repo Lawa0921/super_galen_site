@@ -1,0 +1,19 @@
+{
+  "assets": {
+    "portal-card-mainline": {
+      "final": "art-factory/starlantern/work/portal-card-mainline/cand/a1/portal-card-mainline.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-mainline\\portal-card-mainline-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 30.11287878787879,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}
