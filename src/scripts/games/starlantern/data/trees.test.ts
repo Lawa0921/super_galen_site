@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ACTIVE_RANK_PCT, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES, nodeDesc, nodeName } from './trees';
+import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES, nodeDesc, nodeName } from './trees';
 import { CHARACTERS } from './characters';
 import { SKILLS } from './skills';
 import { POWERS } from './gear';
@@ -9,8 +9,50 @@ const ids = Object.keys(TREES) as CharacterId[];
 const allNodes = () => ids.flatMap((id) => TREES[id]!.branches.flatMap((b) => b.nodes));
 
 describe('skill trees', () => {
-  it('covers the first four characters', () => {
-    expect(ids.sort()).toEqual(['chizuru', 'liz', 'noel', 'sylvie']);
+  it('every character has a tree', () => {
+    expect([...ids].sort()).toEqual(Object.keys(CHARACTERS).sort());
+    expect(ids).toHaveLength(8);
+  });
+
+  it("every skill in SKILLS is an active node of exactly one tree, its owner's", () => {
+    for (const s of Object.values(SKILLS)) {
+      const owners = ids.filter((id) => TREES[id]!.branches.some((b) => b.nodes.some((n) => n.kind === 'active' && n.id === s.id)));
+      expect(owners, s.id).toEqual([s.owner]);
+    }
+  });
+
+  it('DEFAULT_CAPSTONE names a branch for every character; scarlet takes the flame', () => {
+    for (const id of ids) expect([0, 1, 2], id).toContain(DEFAULT_CAPSTONE[id]);
+    expect(DEFAULT_CAPSTONE.scarlet).toBe(1);
+    expect(TREES.scarlet.branches[1].nodes[4].id).toBe('crimson-end');
+    for (const id of ids.filter((x) => x !== 'scarlet')) expect(DEFAULT_CAPSTONE[id], id).toBe(0);
+  });
+
+  it('mod nodes that lower hpCost do so rank by rank', () => {
+    const hp = allNodes().filter((n) => n.mods?.some((m) => m.hpCost !== undefined));
+    expect(hp.map((n) => n.id)).toEqual(['scarlet-ring-up']);
+    expect(hp[0].mods!.map((m) => m.hpCost)).toEqual([0.08, 0.06, 0.04]);
+  });
+
+  it('the default build learns every legacy skill by its old level', () => {
+    const skillPoints = (L: number) => (L <= 4 ? L - 1 : 3 + Math.floor((L - 3) / 2));
+    for (const id of ids) {
+      const tree = TREES[id]!;
+      const legacy = tree.branches.flatMap((b, bi) => b.nodes.map((n, tier) => ({ n, bi, tier })))
+        .filter(({ n }) => n.kind === 'active' && LEGACY_LEARN_LEVEL[n.id] !== undefined);
+      for (const { n } of legacy) {
+        const L = LEGACY_LEARN_LEVEL[n.id];
+        // Cheapest build holding every legacy skill of level <= L: per branch, climb to the deepest such tier.
+        let cost = 0;
+        tree.branches.forEach((_, bi) => {
+          const deepest = Math.max(-1, ...legacy.filter((x) => x.bi === bi && LEGACY_LEARN_LEVEL[x.n.id] <= L).map((x) => x.tier));
+          if (deepest < 0 || (bi === 0 && deepest === 0)) return;
+          const free = bi === 0 ? 1 : 0;
+          cost += Math.max(deepest - free, TIER_GATE[deepest]) + 1;
+        });
+        expect(skillPoints(L), `${id}:${n.id} at level ${L}`).toBeGreaterThanOrEqual(cost);
+      }
+    }
   });
 
   it('each tree has 3 branches of 5 nodes and node ids are unique across trees', () => {
@@ -102,19 +144,22 @@ describe('skill trees', () => {
         count++;
       }
     }
-    expect(count).toBe(14);
-    expect(Object.keys(LEGACY_LEARN_LEVEL)).toHaveLength(14);
+    expect(count).toBe(27);
+    expect(Object.keys(LEGACY_LEARN_LEVEL)).toHaveLength(27);
   });
 
   it('ACTIVE_RANK_PCT[0] is 100', () => {
     expect(ACTIVE_RANK_PCT).toEqual([100, 110, 120]);
   });
 
-  it('every legendary power names an active node of a tree', () => {
+  it("every legendary power names an active node of its owner's tree", () => {
     for (const p of Object.values(POWERS)) {
-      const owner = SKILLS[p.skill]?.owner as CharacterId | undefined;
-      if (!owner || !TREES[owner]) continue;
+      const owner = SKILLS[p.skill]?.owner as CharacterId;
+      expect(owner, p.id).toBeDefined();
       expect(NODES[p.skill]?.node.kind, p.id).toBe('active');
+      expect(NODES[p.skill].owner, p.id).toBe(owner);
     }
+    expect(NODES.turret.owner).toBe('bobby');
+    expect(NODES['iron-wall'].owner).toBe('scarlet');
   });
 });

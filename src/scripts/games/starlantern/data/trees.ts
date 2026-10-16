@@ -28,9 +28,10 @@ const M = (id: string, name: string, skill: string, desc: string, mods: SkillMod
 const pct = (...v: number[]): SkillMod[] => v.map((powerPct) => ({ powerPct }));
 const turns = (...v: number[]): SkillMod[] => v.map((t) => ({ turns: t }));
 const chance = (...v: number[]): SkillMod[] => v.map((c) => ({ chance: c }));
+const hp = (...v: number[]): SkillMod[] => v.map((hpCost) => ({ hpCost }));
 const tp = (...v: number[]): SkillMod[] => v.map((tpDelta) => ({ tpDelta }));
 
-export const TREES: Partial<Record<CharacterId, TreeDef>> = {
+export const TREES: Record<CharacterId, TreeDef> = {
   noel: { branches: [
     { name: '火', nodes: [
       A('fire-star', 3),
@@ -123,6 +124,103 @@ export const TREES: Partial<Record<CharacterId, TreeDef>> = {
       A('storm-volley', 1),
     ] },
   ] },
+  scarlet: { branches: [
+    { name: '守護', nodes: [
+      A('provoke', 1),
+      M('scarlet-provoke-up', '挑釁延長', 'provoke', '延長挑釁的持續回合', turns(4, 5, 6)),
+      A('guardian-roar', 3),
+      M('scarlet-roar-up', '咆哮強化', 'guardian-roar', '提高守護咆哮的防禦提升幅度', pct(120, 140, 160)),
+      A('unbreakable', 1),
+    ] },
+    { name: '烈焰', nodes: [
+      A('flame-burst', 3),
+      M('scarlet-burst-up', '爆炎強化', 'flame-burst', '強化爆炎斬的威力', pct(110, 120, 135)),
+      A('blaze-ring', 3),
+      M('scarlet-ring-up', '炎環節制', 'blaze-ring', '降低炎環斬的 HP 消耗', hp(0.08, 0.06, 0.04)),
+      A('crimson-end', 1),
+    ] },
+    { name: '鐵壁', nodes: [
+      A('iron-wall', 3),
+      M('scarlet-wall-up', '鐵壁延長', 'iron-wall', '延長鐵壁的持續回合', turns(4, 5, 6)),
+      A('shield-bash', 3),
+      M('scarlet-bash-up', '盾擊強化', 'shield-bash', '強化盾擊的威力，並加深攻擊削弱', pct(115, 130, 150)),
+      A('fortress', 1),
+    ] },
+  ] },
+  selene: { branches: [
+    { name: '月光', nodes: [
+      A('moonlight', 3),
+      M('selene-moon-up', '月光強化', 'moonlight', '強化月光的回復量', pct(110, 120, 135)),
+      A('moon-rain', 3),
+      M('selene-rain-up', '月光雨強化', 'moon-rain', '強化月光雨的回復量', pct(115, 130, 150)),
+      A('full-moon', 1),
+    ] },
+    { name: '祈禱', nodes: [
+      A('cleanse', 1),
+      A('rebirth', 1),
+      M('selene-rebirth-up', '再生節流', 'rebirth', '降低月之再生的 TP 消耗', tp(-2, -4, -5)),
+      A('blessing', 3),
+      A('sanctuary', 1),
+    ] },
+    { name: '夢境', nodes: [
+      A('dream', 1),
+      M('selene-dream-up', '安眠節流', 'dream', '降低夢境的 TP 消耗', tp(-1, -2, -3)),
+      A('moon-arrow', 3),
+      M('selene-arrow-up', '月影強化', 'moon-arrow', '強化月影箭的威力', pct(115, 130, 150)),
+      A('lunar-eclipse', 1),
+    ] },
+  ] },
+  safira: { branches: [
+    { name: '刃舞', nodes: [
+      A('blade-dance', 3),
+      M('safira-dance-up', '刃舞強化', 'blade-dance', '強化刃舞的威力', pct(110, 120, 135)),
+      A('sand-cyclone', 3),
+      M('safira-cyclone-up', '旋舞強化', 'sand-cyclone', '強化沙暴旋舞的威力', pct(115, 130, 150)),
+      A('thousand-shadows', 1),
+    ] },
+    { name: '戰舞', nodes: [
+      A('war-dance', 3),
+      M('safira-war-up', '戰舞強化', 'war-dance', '提高戰舞的攻擊提升幅度', pct(115, 130, 150)),
+      A('veil-dance', 3),
+      M('safira-veil-up', '紗舞延長', 'veil-dance', '延長紗之舞的持續回合', turns(4, 5, 6)),
+      A('desert-festival', 1),
+    ] },
+    { name: '幻步', nodes: [
+      A('mirage', 3),
+      M('safira-mirage-up', '幻步延長', 'mirage', '延長幻步的持續回合', turns(4, 5, 6)),
+      A('shadow-step', 3),
+      M('safira-shadow-up', '影步強化', 'shadow-step', '強化影步斬的威力', pct(115, 130, 150)),
+      A('sirocco', 1),
+    ] },
+  ] },
+  bobby: { branches: [
+    { name: '砲台', nodes: [
+      A('turret', 3),
+      M('bobby-turret-up', '砲台強化', 'turret', '強化砲台的威力', pct(110, 120, 135)),
+      A('cannon', 3),
+      M('bobby-cannon-up', '加農強化', 'cannon', '強化加農砲的威力', pct(115, 130, 150)),
+      M('twin-turret', '雙砲台', 'turret', '砲台威力提高至 160%，持續 4 回合', [{ powerPct: 160, turns: 4 }]),
+    ] },
+    { name: '整備', nodes: [
+      A('tinker', 1),
+      A('repair-kit', 3),
+      M('bobby-repair-up', '修理強化', 'repair-kit', '強化修理包的回復量', pct(115, 130, 150)),
+      A('overclock', 3),
+      A('emergency-repair', 1),
+    ] },
+    { name: '護盾', nodes: [
+      A('barrier', 3),
+      M('bobby-barrier-up', '護盾延長', 'barrier', '延長護盾裝置的持續回合', turns(4, 5, 6)),
+      A('shock-mine', 3),
+      M('bobby-mine-up', '地雷強化', 'shock-mine', '強化電擊地雷的威力', pct(115, 130, 150)),
+      A('tesla-coil', 1),
+    ] },
+  ] },
+};
+
+/** Which branch's ultimate the default build aims for (read by the auto-allocation of skill points). */
+export const DEFAULT_CAPSTONE: Record<CharacterId, 0 | 1 | 2> = {
+  noel: 0, chizuru: 0, liz: 0, sylvie: 0, scarlet: 1, selene: 0, safira: 0, bobby: 0,
 };
 
 export const NODES: Record<string, { node: TreeNode; owner: CharacterId; branch: number; tier: number }> = {};
@@ -136,6 +234,10 @@ export const LEGACY_LEARN_LEVEL: Record<string, number> = {
   sweep: 1, ward: 3, pierce: 5,
   'twin-slash': 1, stealth: 2, 'treasure-sense': 4, 'triple-slash': 6,
   'aimed-shot': 1, 'pin-shot': 3, 'arrow-rain': 6,
+  provoke: 1, 'flame-burst': 3, 'iron-wall': 5,
+  moonlight: 1, cleanse: 2, dream: 4, rebirth: 6,
+  'blade-dance': 1, 'war-dance': 3, mirage: 5,
+  turret: 1, tinker: 2, barrier: 4,
 };
 
 export const nodeName = (id: string): string => NODES[id].node.name ?? SKILLS[NODES[id].node.skill].name;
