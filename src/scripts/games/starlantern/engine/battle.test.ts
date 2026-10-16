@@ -9,6 +9,9 @@ import { SECONDARY_KEYS } from './stats';
 import { choose, partyAt } from './sim';
 import { dealDamage, type BattleEvent } from './combatant';
 import { constRng, makeBattle, makeCombatant, plainItem } from './testing';
+import { KEYSTONE_GATE, KEYSTONE_VALUES as V, MAX_KEYSTONES, type KeystoneId } from '../data/talents';
+import { keystonesOf } from './progression';
+import { mulberry32 } from './rng';
 
 const rng = constRng(0.5); // enemies never use skills (all chances < 0.5), variance 1.0
 const P = (key: string, over = {}) => makeCombatant({ key, side: 'party', ...over });
@@ -338,5 +341,62 @@ describe('skills from the tree (Task 8)', () => {
     const r = resolveRound(s, { p: { kind: 'skill', skill: 'flame-wave' } }, rng);
     expect(r.party[0].tp).toBe(20 - skillCost(p, 'flame-wave'));
     expect(skillCost(p, 'flame-wave')).toBeLessThan(skillCost(P('q'), 'flame-wave'));
+  });
+});
+
+describe('keystones in battle', () => {
+  it('opening-gauge starts the gauge at +openingGauge, held to 100', () => {
+    // Enough talent points for both default keystones; selene's are regen and opening-gauge.
+    const party = partyAt(2 * (KEYSTONE_GATE + MAX_KEYSTONES) + 4);
+    expect(keystonesOf(party.roster.selene)).toContain('opening-gauge');
+    expect(keystonesOf(party.roster.scarlet)).not.toContain('opening-gauge');
+    const start = (limit: number) => {
+      party.roster.selene = { ...party.roster.selene, limit };
+      party.roster.scarlet = { ...party.roster.scarlet, limit };
+      const s = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+      const c = (k: string) => s.party.find((x) => x.key === k)!;
+      expect(c('selene').keystones).toEqual(keystonesOf(party.roster.selene));
+      return [c('selene').limit, c('scarlet').limit];
+    };
+    expect(start(0)).toEqual([V.openingGauge, 0]);
+    expect(start(LIMIT_MAX - 1)).toEqual([LIMIT_MAX, LIMIT_MAX - 1]);
+  });
+
+  it('regen heals regenPct of max HP at the end of each round', () => {
+    const run = (keystones: KeystoneId[]) => {
+      let draws = 0;
+      const counted = () => { draws++; return 0.5; };
+      const party = [
+        P('p', { hp: 50, max: { hp: 200 } as never, keystones }),
+        P('full', { hp: 99, keystones }),
+        P('down', { hp: 0, alive: false, keystones }),
+      ];
+      const s = resolveRound(makeBattle(party, [E('e0', { sleep: 5 })]), {}, counted);   // the enemy sleeps; nobody acts
+      return { s, draws };
+    };
+    const { s, draws } = run(['regen']);
+    const gain = Math.floor((200 * V.regenPct) / 100);
+    expect(s.party.map((c) => c.hp)).toEqual([50 + gain, 100, 0]);
+    expect(s.log).toContainEqual({ type: 'heal', target: 'p', amount: gain });
+    expect(s.log).toContainEqual({ type: 'heal', target: 'full', amount: 1 });
+    expect(s.log.some((e) => e.type === 'heal' && e.target === 'down')).toBe(false);
+    const plain = run([]);
+    expect(plain.s.party.map((c) => c.hp)).toEqual([50, 99, 0]);
+    expect(draws).toBe(plain.draws);
+  });
+
+  it('a fight with no keystones replays the pre-change baseline', () => {
+    // Recorded at 625b4e16, before keystones reached the battle code (plan 5b Task 10, Step 0). Lv20 has 8 talent points,
+    // under KEYSTONE_GATE, so nobody holds a keystone.
+    const party = partyAt(20);
+    expect(Object.values(party.roster).every((m) => keystonesOf(m).length === 0)).toBe(true);
+    const base = mulberry32(7919);
+    let draws = 0;
+    const counted = () => { draws++; return base(); };
+    let s = createBattle({ party, enemyIds: ['golem', 'shade'], inventory: {}, revealed: {}, scale: { depth: 5, region: 'mainline' } });
+    let rounds = 0;
+    while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, choose(s, party), counted); rounds++; }
+    expect({ outcome: s.outcome, rounds, draws, hp: Object.fromEntries(s.party.map((c) => [c.key, c.hp])) })
+      .toEqual({ outcome: 'win', rounds: 3, draws: 81, hp: { scarlet: 141, chizuru: 166, liz: 2, noel: 0, selene: 0 } });
   });
 });

@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { addBuff, calcDamage, dealDamage, roll, stat, MAX_BUFFS, type BattleEvent } from './combatant';
 import { applyEffect } from './skills';
 import { constRng, makeCombatant } from './testing';
+import { KEYSTONE_VALUES as V } from '../data/talents';
+import type { Combatant } from './combatant';
 
 const rng = constRng(0.5); // variance factor exactly 1.0
 const phys = { power: 100, element: 'phys' as const, scale: 'atk' as const, melee: true };
@@ -206,5 +208,22 @@ describe('dealDamage', () => {
     const c = makeCombatant({ key: 'a', side: 'party', poison: true, taunt: 2, buffs: [{ stat: 'atk', pct: 10, turns: 2 }] });
     dealDamage(c, 500);
     expect(c).toMatchObject({ hp: 0, alive: false, poison: false, taunt: 0, buffs: [], turret: null });
+  });
+});
+
+describe('keystones in calcDamage', () => {
+  const foe = makeCombatant({ key: 't', side: 'enemy' });
+  it('last-stand: below the threshold a hit deals lastStandPct more', () => {
+    const edge = Math.round(V.lastStandHp * 100);   // HP at the threshold of a 100 max HP attacker
+    const a = (hp: number, keystones: Combatant['keystones'] = ['last-stand']) => makeCombatant({ key: 'a', side: 'party', hp, keystones });
+    expect(calcDamage(a(edge - 1), foe, phys, rng).amount).toBe(Math.floor(20 * (1 + V.lastStandPct / 100)));
+    expect(calcDamage(a(edge), foe, phys, rng).amount).toBe(20);
+    expect(calcDamage(a(edge - 1, []), foe, phys, rng).amount).toBe(20);
+  });
+  it('taunt-guard: a taunting member takes tauntGuardPct less', () => {
+    const m = (over: Partial<Combatant>) => makeCombatant({ key: 'm', side: 'party', ...over });
+    expect(calcDamage(foe, m({ taunt: 2, keystones: ['taunt-guard'] }), phys, rng).amount).toBe(Math.floor(20 * (1 - V.tauntGuardPct / 100)));
+    expect(calcDamage(foe, m({ keystones: ['taunt-guard'] }), phys, rng).amount).toBe(20);   // not taunting
+    expect(calcDamage(foe, m({ taunt: 2 }), phys, rng).amount).toBe(20);                      // no keystone
   });
 });

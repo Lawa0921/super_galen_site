@@ -2,6 +2,7 @@ import { addBuff, calcDamage, dealDamage, roll, stat, SLEEP_TURNS, type BattleEv
 import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
+import { KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 
 export interface EffectContext { rng: Rng; itemBoost: boolean; revealed: Record<string, Element[]>; log: BattleEvent[] }
 
@@ -68,6 +69,14 @@ function reveal(revealed: Record<string, Element[]>, defId: string, el: Element)
   if (!list.includes(el)) list.push(el);
 }
 
+/** A keystone's TP refill on one hit: only when held, held to the maximum, logged when anything was gained. */
+function keystoneTp(actor: Combatant, id: KeystoneId, n: number, ctx: EffectContext): void {
+  if (!actor.keystones.includes(id) || actor.tp >= actor.max.tp) return;
+  const before = actor.tp;
+  actor.tp = Math.min(actor.max.tp, actor.tp + n);
+  ctx.log.push({ type: 'tp', target: actor.key, amount: actor.tp - before });
+}
+
 function gainHp(t: Combatant, amount: number): number {
   const before = t.hp;
   t.hp = Math.min(t.max.hp, t.hp + amount);
@@ -86,6 +95,10 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         if (target.side === 'enemy') reveal(ctx.revealed, target.defId, eff.element);
         ctx.log.push({ type: 'damage', target: target.key, amount, element: eff.element, mult, ...(crit ? { crit } : {}) });
         if (!target.alive) ctx.log.push({ type: 'ko', target: target.key });
+        // crit-tp, weak-tp and kill-tp settle on every hit; none of them draws.
+        if (crit) keystoneTp(actor, 'crit-tp', KEYSTONE_VALUES.critTp, ctx);
+        if (target.weak.includes(eff.element)) keystoneTp(actor, 'weak-tp', KEYSTONE_VALUES.weakTp, ctx);
+        if (!target.alive) keystoneTp(actor, 'kill-tp', KEYSTONE_VALUES.killTp, ctx);
       }
       return;
     }

@@ -13,7 +13,8 @@ import { pick, type Rng } from './rng';
 import { depthLevel, empower, homeLevel, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, stackMods, type EffectContext } from './skills';
-import { nodeMods, rankMod } from './progression';
+import { keystonesOf, nodeMods, rankMod } from './progression';
+import { KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, SecondaryKey, SkillDef, Target } from './types';
 
 export type Action =
@@ -45,7 +46,7 @@ export const LIMIT_PER_ACTION = 12;
 /** Damage taken adds floor(damage / max HP * this), at least 1 (see dealDamage). */
 export const LIMIT_PER_HIT_SCALE = 40;
 
-const fresh = () => ({ poison: false, sleep: 0, buffs: [], taunt: 0, turret: null, defending: false, limit: 0 });
+const fresh = () => ({ poison: false, sleep: 0, buffs: [], taunt: 0, turret: null, defending: false, limit: 0, keystones: [] as KeystoneId[] });
 
 function fromMember(m: Member, cell: number): Combatant {
   const row: Row = rowOfCell(cell);
@@ -56,7 +57,7 @@ function fromMember(m: Member, cell: number): Combatant {
   for (const k of SECONDARY_KEYS) if (sheet[k]) x[k] = sheet[k];
   return { ...fresh(), key: m.id, side: 'party', defId: m.id, name: def.name, max: statsOf(m), hp: m.hp, tp: m.tp,
     row, cell, melee: def.melee, weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0,
-    x, level: m.level, powers: powersOf(m), ranks: { ...m.tree } };
+    x, level: m.level, powers: powersOf(m), ranks: { ...m.tree }, keystones: keystonesOf(m) };
 }
 
 /** An enemy carries only its non-zero secondaries, like a member; a missing key reads as 0. */
@@ -85,6 +86,7 @@ export function createBattle(o: {
   const altar = new Map<BuffStat, number>();
   for (const b of o.altar ?? []) altar.set(b.stat, (altar.get(b.stat) ?? 0) + b.pct);
   for (const c of party) for (const [k, pct] of altar) c.max[k] = Math.floor(c.max[k] * (1 + pct / 100));
+  for (const c of party) if (c.keystones.includes('opening-gauge')) c.limit = Math.min(LIMIT_MAX, c.limit + KEYSTONE_VALUES.openingGauge);
   const counts: Record<string, number> = {};
   for (const id of o.enemyIds) counts[id] = (counts[id] ?? 0) + 1;
   const seen: Record<string, number> = {};
@@ -289,6 +291,10 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
       dealDamage(c, amount);
       s.log.push({ type: 'poison-tick', target: c.key, amount });
       if (!c.alive) s.log.push({ type: 'ko', target: c.key });
+    }
+    if (c.alive && c.keystones.includes('regen')) {
+      const amount = Math.min(c.max.hp - c.hp, Math.floor((c.max.hp * KEYSTONE_VALUES.regenPct) / 100));
+      if (amount > 0) { c.hp += amount; s.log.push({ type: 'heal', target: c.key, amount }); }
     }
     const regen = Math.floor(c.x.tpRegen ?? 0);
     if (c.alive && regen > 0 && c.tp < c.max.tp) {

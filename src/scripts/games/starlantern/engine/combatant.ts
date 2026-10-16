@@ -2,6 +2,7 @@ import { ROW_MELEE } from './formation';
 import type { Rng } from './rng';
 import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats } from './types';
+import { KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 
 export interface Buff { stat: BuffStat; pct: number; turns: number }
 
@@ -25,6 +26,8 @@ export interface Combatant {
   ranks?: Record<string, number>;
   /** Legendary powers worn (members only). */
   powers: string[];
+  /** Keystone talents held (members only; engine/progression.keystonesOf). */
+  keystones: KeystoneId[];
 }
 
 export type BattleEvent =
@@ -109,6 +112,9 @@ export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rn
   }
   mult *= 1 - tx(spec.melee ? 'meleeDR' : 'rangedDR') / 100;
   if (t.defending) mult *= 0.5;
+  // Keystones (data/talents.ts): a factor only when held, and no draws, so a fight without them keeps its sequence.
+  if (a.keystones.includes('last-stand') && a.hp < a.max.hp * KEYSTONE_VALUES.lastStandHp) mult *= 1 + KEYSTONE_VALUES.lastStandPct / 100;
+  if (t.keystones.includes('taunt-guard') && t.taunt > 0) mult *= 1 - KEYSTONE_VALUES.tauntGuardPct / 100;
   return { amount: Math.max(1, Math.floor(base * mult * variance)), mult: el, crit, miss: false };
 }
 

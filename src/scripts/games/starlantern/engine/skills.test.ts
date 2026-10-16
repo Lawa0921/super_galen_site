@@ -8,6 +8,9 @@ import { SKILLS } from '../data/skills';
 import { newParty } from './party';
 import { constRng, makeBattle, makeCombatant, plainItem } from './testing';
 import type { SkillDef } from './types';
+import { KEYSTONE_VALUES as V, type KeystoneId } from '../data/talents';
+import type { Combatant } from './combatant';
+import type { Element } from './types';
 
 const ctx = (over: Partial<EffectContext> = {}): EffectContext => ({ rng: constRng(0.5), itemBoost: false, revealed: {}, log: [], ...over });
 const party = (over = {}) => makeCombatant({ key: 'p', side: 'party', ...over });
@@ -303,5 +306,44 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
     expect(treeMods({ 'guardian-roar': 2 }, 'guardian-roar')).toEqual([{ buffPct: ACTIVE_RANK_PCT[1] }]);
     expect(treeMods({ turret: 1 }, 'turret')).toEqual([]);
     expect(treeMods({}, 'no-such-skill')).toEqual([]);
+  });
+});
+
+describe('keystone TP refills', () => {
+  /** One damage effect from a member at 10 TP (max 20): the TP gained, the tp events and the rng draws. */
+  const hit = (keystones: KeystoneId[], over: Partial<Combatant> = {}, foe: Partial<Combatant> = {}, element: Element = 'phys', hits = 1) => {
+    let draws = 0;
+    const c = ctx({ rng: () => { draws++; return 0.5; } });
+    const a = party({ tp: 10, keystones, ...over });
+    const before = a.tp;
+    applyEffect(a, enemy({ max: { hp: 999 } as never, ...foe }), { kind: 'damage', power: 100, element, scale: 'atk', melee: true, hits }, c);
+    return { gain: a.tp - before, tp: c.log.filter((e) => e.type === 'tp'), draws };
+  };
+
+  it('crit-tp, kill-tp and weak-tp refill TP, held to the maximum', () => {
+    const crit = { x: { crit: 100 } };
+    expect(hit(['crit-tp'], crit)).toMatchObject({ gain: V.critTp, tp: [{ type: 'tp', target: 'p', amount: V.critTp }] });
+    expect(hit(['kill-tp'], {}, { hp: 1 })).toMatchObject({ gain: V.killTp, tp: [{ type: 'tp', target: 'p', amount: V.killTp }] });
+    expect(hit(['weak-tp'], {}, { weak: ['fire'] }, 'fire')).toMatchObject({ gain: V.weakTp, tp: [{ type: 'tp', target: 'p', amount: V.weakTp }] });
+    // TP already full: +0 and no event; one short of full: held to the maximum.
+    expect(hit(['crit-tp', 'kill-tp'], { ...crit, tp: 20 }, { hp: 1 })).toMatchObject({ gain: 0, tp: [] });
+    expect(hit(['crit-tp'], { ...crit, tp: 19 }).gain).toBe(Math.min(V.critTp, 1));
+    // Without the keystone, or without the trigger, nothing.
+    expect(hit([], crit, { hp: 1, weak: ['fire'] }, 'fire')).toMatchObject({ gain: 0, tp: [] });
+    expect(hit(['crit-tp', 'kill-tp', 'weak-tp'], {}, { weak: ['ice'] }, 'fire')).toMatchObject({ gain: 0, tp: [] });
+  });
+
+  it('settles each hit on its own, and all three on one hit', () => {
+    const three = hit(['crit-tp'], { tp: 0, x: { crit: 100 } }, {}, 'phys', 3);
+    expect(three.tp).toHaveLength(3);
+    expect(three.gain).toBe(3 * V.critTp);
+    const all = hit(['crit-tp', 'kill-tp', 'weak-tp'], { tp: 0, x: { crit: 100 } }, { hp: 1, weak: ['fire'] }, 'fire');
+    expect(all.gain).toBe(V.critTp + V.killTp + V.weakTp);
+  });
+
+  it('draws no extra random numbers', () => {
+    const over = { x: { crit: 100 } };
+    expect(hit(['crit-tp', 'kill-tp', 'weak-tp'], over, { hp: 1, weak: ['fire'] }, 'fire').draws)
+      .toBe(hit([], over, { hp: 1, weak: ['fire'] }, 'fire').draws);
   });
 });
