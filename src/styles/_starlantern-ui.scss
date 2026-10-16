@@ -513,28 +513,51 @@ $slx-battle-left: 150px;
 .slx-acut-bust.slx-acut-left { left: -8px; top: 92px; animation: slx-acut-left 0.76s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
 .slx-acut-bust.slx-acut-right { right: -8px; top: 132px; animation: slx-acut-right 0.76s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
 .slx-acut-bust .slx-acut-pic { left: 30px; top: 0; width: 130px; height: 120px; }
-.slx-acut-bust .slx-acut-pic img { width: 130px; height: 300px; object-fit: cover; object-position: 50% 0; }
+.slx-acut-bust .slx-acut-pic img { width: 150px; height: 150px; object-fit: cover; object-position: 50% 0; translate: -10px -8px; }
 .slx-acut-right .slx-acut-pic { left: auto; right: 30px; }
 .slx-acut-label { position: absolute; top: 40px; left: 168px; font-size: 26px; line-height: 30px; color: #fff; white-space: nowrap; rotate: -6deg; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000; }
 .slx-acut-right .slx-acut-label { left: 24px; }
 // Eye strip: a thin band across the face for a plain attack
-.slx-acut-eyes { left: 50%; width: 420px; height: 56px; margin-left: -210px; clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%); }
+.slx-acut-eyes { left: 50%; width: 420px; height: 100px; margin-left: -210px; clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%); }
 .slx-acut-eyes.slx-acut-top { top: 84px; animation: slx-acut-left 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
-.slx-acut-eyes.slx-acut-bottom { top: 200px; animation: slx-acut-right 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.slx-acut-eyes.slx-acut-bottom { top: 186px; animation: slx-acut-right 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
 .slx-acut-eyes .slx-acut-pic { left: 26px; right: 26px; top: 4px; bottom: 4px; }
 .slx-acut-eyes .slx-acut-pic img { width: 100%; height: 368px; object-fit: cover; object-position: 50% 0; translate: 0 -118px; }
-// Each face has its eyes at a different height (measured on the attack portraits).
-.slx-acut-eyes.slx-aura-scarlet .slx-acut-pic img { translate: 0 -112px; }
-.slx-acut-eyes.slx-aura-chizuru .slx-acut-pic img { translate: 0 -108px; }
-.slx-acut-eyes.slx-aura-liz .slx-acut-pic img { translate: 0 -142px; }
-.slx-acut-eyes.slx-aura-noel .slx-acut-pic img { translate: 0 -142px; }
-.slx-acut-eyes.slx-aura-selene .slx-acut-pic img { translate: 0 -116px; }
-.slx-acut-eyes.slx-aura-sylvie .slx-acut-pic img { translate: 0 -116px; }
-.slx-acut-eyes.slx-aura-safira .slx-acut-pic img { translate: 0 -116px; }
-.slx-acut-eyes.slx-aura-bobby .slx-acut-pic img { translate: 0 -101px; }
+// Each face sits at a different height: offsets frame brows to mouth (checked with a crop simulation of this CSS).
+.slx-acut-eyes.slx-aura-scarlet .slx-acut-pic img { translate: 0 -138px; }
+.slx-acut-eyes.slx-aura-chizuru .slx-acut-pic img { translate: 0 -112px; }
+.slx-acut-eyes.slx-aura-liz .slx-acut-pic img { translate: 0 -150px; }
+.slx-acut-eyes.slx-aura-noel .slx-acut-pic img { translate: 0 -146px; }
+.slx-acut-eyes.slx-aura-selene .slx-acut-pic img { translate: 0 -128px; }
+.slx-acut-eyes.slx-aura-sylvie .slx-acut-pic img { translate: 0 -128px; }
+.slx-acut-eyes.slx-aura-safira .slx-acut-pic img { translate: 0 -120px; }
+.slx-acut-eyes.slx-aura-bobby .slx-acut-pic img { translate: 0 -130px; }
 @keyframes slx-acut-left { 0% { translate: -110% 0; } 22% { translate: 6px 0; } 30%, 78% { translate: 0 0; opacity: 1; } 100% { translate: 40% 0; opacity: 0; } }
 @keyframes slx-acut-right { 0% { translate: 110% 0; } 22% { translate: -6px 0; } 30%, 78% { translate: 0 0; opacity: 1; } 100% { translate: -40% 0; opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
   .slx-shake-s, .slx-shake-l, .slx-pm-danger, .slx-pm-fx { animation: none; }
   .slx-acut { display: none; }
 }
+
+// Element flash over the whole screen when a party member takes fire, ice or thunder (battle.ts impact)
+.slx-eflash { position: absolute; inset: 0; z-index: 29; pointer-events: none; mix-blend-mode: screen; animation: slx-eflash 0.3s ease-out forwards; }
+.slx-eflash-fire { background: radial-gradient(ellipse at 50% 100%, rgba(255, 140, 40, 0.75), rgba(255, 60, 0, 0.25) 70%); }
+.slx-eflash-ice { background: radial-gradient(ellipse at 50% 100%, rgba(160, 235, 255, 0.75), rgba(80, 160, 255, 0.25) 70%); }
+.slx-eflash-thunder { background: rgba(255, 255, 230, 0.85); animation: slx-eflash-twice 0.3s steps(1) forwards; }
+@keyframes slx-eflash { from { opacity: 1; } to { opacity: 0; } }
+@keyframes slx-eflash-twice { 0% { opacity: 1; } 25% { opacity: 0.1; } 50% { opacity: 0.8; } 75%, 100% { opacity: 0; } }
+
+// Cut-in extras: a white flash on entry, stripes that run, speed lines behind the bust, a punch on the move's name
+.slx-acut::before { content: ''; position: absolute; inset: 0; z-index: 5; background: #fff; pointer-events: none; animation: slx-acut-flash 0.18s ease-out forwards; }
+@keyframes slx-acut-flash { from { opacity: 0.9; } to { opacity: 0; } }
+.slx-acut-band::after { animation: slx-acut-run 0.5s linear infinite; background-size: 40px 100%; }
+@keyframes slx-acut-run { from { background-position: 0 0; } to { background-position: 40px 0; } }
+.slx-acut-bust .slx-acut-band::before {
+  content: ''; position: absolute; inset: -40% -10%;
+  background: repeating-conic-gradient(from 0deg at 20% 50%, rgba(255, 255, 255, 0.35) 0deg 2deg, transparent 2deg 10deg);
+  mix-blend-mode: overlay;
+}
+.slx-acut-label { animation: slx-acut-punch 0.3s cubic-bezier(0.2, 1.6, 0.4, 1) 0.08s both; }
+@keyframes slx-acut-punch { from { scale: 2.2; opacity: 0; } to { scale: 1; opacity: 1; } }
+.slx-acut-pic { filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.6)); }
+@media (prefers-reduced-motion: reduce) { .slx-eflash { display: none; } }

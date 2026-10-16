@@ -27,11 +27,13 @@ export class BattleView {
   private timers = new Set<ReturnType<typeof setTimeout>>();
   private frames = new Set<number>();
   private shattering: Promise<void>[] = [];
+  private size = { width: 640, height: 360 };
 
   constructor(private fast = false, private bank: TextureBank | null = null) {}
 
   /** `left` and `bottom` reserve space (command window, party bar) so enemies and their names are never hidden behind them. */
   setup(state: BattleState, size: { width: number; height: number }, floor: number, left = 0, bottom = 0): void {
+    this.size = size;
     for (const t of this.timers) clearTimeout(t);
     for (const f of this.frames) cancelAnimationFrame(f);
     this.timers.clear();
@@ -113,6 +115,7 @@ export class BattleView {
       }
       if (cue.kind === 'fx' && cue.fx === 'heal') { sfx.heal(); if (!slot && cue.amount !== undefined) void onParty?.(cue.key, 'heal', undefined, cue.amount); }
       if ((cue.kind === 'hit' || cue.kind === 'fx') && cue.fx && slot) this.effect(slot, cue.fx);
+      if (cue.kind === 'hit' && slot) this.elementFlash(cue.fx);
       if (cue.kind === 'hit') await this.wait(HIT_STOP_MS);   // a beat on impact, once everything for the hit is drawn
       if (cue.kind === 'ko') {
         sfx.ko();
@@ -137,6 +140,20 @@ export class BattleView {
     this.later(50, () => { if (!slot.box.destroyed) slot.box.x = x0 + (hard ? -5 : -3); });
     this.later(100, () => { if (!slot.box.destroyed) slot.box.x = x0; });
     this.later(110, () => { if (!slot.body.destroyed) slot.body.filters = []; f.destroy(); });
+  }
+
+  /** Fire, ice and thunder wash the picture in their colour for a moment; thunder strikes twice. */
+  private elementFlash(fx: FxKey | null): void {
+    const color = fx === 'fire' ? 0xff7a1a : fx === 'ice' ? 0x7fe0ff : fx === 'thunder' ? 0xffffff : null;
+    if (color === null) return;
+    const g = new Graphics().rect(0, 0, this.size.width, this.size.height).fill(color);
+    g.label = 'flash';
+    g.blendMode = 'add';
+    const steps = fx === 'thunder' ? [0.7, 0.1, 0.55, 0.05] : [0.4, 0.25, 0.1];
+    g.alpha = steps[0];
+    this.root.addChild(g);
+    steps.slice(1).forEach((a, i) => this.later(50 * (i + 1), () => { if (!g.destroyed) g.alpha = a; }));
+    this.later(50 * steps.length, () => { if (!g.destroyed) { this.root.removeChild(g); g.destroy(); } });
   }
 
   /** An enemy about to act lunges toward the camera and settles back. */
@@ -168,15 +185,25 @@ export class BattleView {
     steps.forEach((x, i) => this.later(i * 30, () => { this.root.x = x; }));
   }
 
+  /** The attack's effect on the enemy, with a larger additive copy behind it for a spark. */
   private effect(slot: Slot, key: Parameters<typeof art.fx>[0]): void {
     const tex = this.bank?.get(art.fx(key)) ?? null;
     if (!tex) return;
-    const s = new Sprite(tex);
-    s.anchor.set(0.5);
-    s.y = -slot.body.height / 2;
-    s.scale.set(Math.min(2, (slot.body.width * 0.8) / tex.width));
-    slot.box.addChild(s);
-    this.later(220, () => { slot.box.removeChild(s); s.destroy(); });
+    const make = (k: number, rot: number, alpha: number) => {
+      const s = new Sprite(tex);
+      s.anchor.set(0.5);
+      s.y = -slot.body.height / 2;
+      s.scale.set(Math.min(2, (slot.body.width * 0.8) / tex.width) * k);
+      s.rotation = rot;
+      s.alpha = alpha;
+      return s;
+    };
+    const spark = make(1.7, 0.6, 0.55);
+    spark.blendMode = 'add';
+    const main = make(1, 0, 1);
+    slot.box.addChild(spark, main);
+    this.later(120, () => { if (!spark.destroyed) { slot.box.removeChild(spark); spark.destroy(); } });
+    this.later(240, () => { if (!main.destroyed) { slot.box.removeChild(main); main.destroy(); } });
   }
 
   private shatter(slot: Slot): Promise<void> {

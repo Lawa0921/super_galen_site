@@ -72,3 +72,16 @@ describe('BattleView bottom inset', () => {
     expect(view.anchor('e0')!.y).toBeGreaterThan(60);   // below the message line
   });
 });
+
+describe('BattleView element flash', () => {
+  it('washes the picture in the element colour on a fire, ice or thunder hit, not on a plain one', () => {
+    const fire = new BattleView(false, bank);
+    fire.setup(battle([]), { width: 640, height: 360 }, 1);
+    void fire.play(battle([{ type: 'damage', target: 'e0', amount: 5, element: 'fire', mult: 1 }]), sfx);   // no act line, so no read pause first
+    expect(fire.root.children.some((c) => c.label === 'flash')).toBe(true);
+    const plain = new BattleView(false, bank);
+    plain.setup(battle([]), { width: 640, height: 360 }, 1);
+    void plain.play(battle([{ type: 'damage', target: 'e0', amount: 5, element: 'phys', mult: 1 }]), sfx);
+    expect(plain.root.children.some((c) => c.label === 'flash')).toBe(false);
+  });
+});

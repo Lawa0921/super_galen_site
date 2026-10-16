@@ -310,7 +310,12 @@ export class BattleScene implements Scene {
   }
 
   /** The whole screen jolts when the party is hit; a heavy hit also reddens its edges. */
-  private impact(heavy: boolean): void {
+  private impact(heavy: boolean, fx: FxKey | null = null): void {
+    if (fx === 'fire' || fx === 'ice' || fx === 'thunder') {
+      const f = el('div', { class: `slx-eflash slx-eflash-${fx}`, attrs: { 'aria-hidden': 'true' } });
+      this.body.append(f);
+      setTimeout(() => f.remove(), 320);
+    }
     const screen = this.root.closest<HTMLElement>('.slx-screen') ?? this.root;
     screen.classList.remove('slx-shake-s', 'slx-shake-l');
     void screen.offsetWidth;
@@ -333,8 +338,8 @@ export class BattleScene implements Scene {
     const eyes = label === T.cmd.attack;
     const pos = eyes ? (this.cutins % 2 ? 'bottom' : 'top') : (this.cutins % 2 ? 'right' : 'left');
     this.cutins++;
-    const face = this.ctx.art.has(art.portrait(id, 'attack')) ? art.portrait(id, 'attack') : art.portrait(id, 'normal');
-    const pic = !eyes && this.ctx.art.has(art.standee(id)) ? art.standee(id) : face;
+    // The attack face carries the expression; both the strip and the bust use it.
+    const pic = this.ctx.art.has(art.portrait(id, 'attack')) ? art.portrait(id, 'attack') : art.portrait(id, 'normal');
     const c = el('div', { class: `slx-acut slx-acut-${eyes ? 'eyes' : 'bust'} slx-acut-${pos} slx-aura-${id}`, attrs: { 'aria-hidden': 'true' } }, [
       el('div', { class: 'slx-acut-band' }),
       el('div', { class: 'slx-acut-pic' }, this.ctx.art.has(pic) ? [el('img', { attrs: { src: pic, alt: '' } })] : []),
@@ -382,7 +387,7 @@ export class BattleScene implements Scene {
     if (cue === 'hit') {
       const max = this.state.party.find((c) => c.key === key)?.max.hp ?? 1;
       const heavy = !!extra?.weak || (amount ?? 0) >= max / 4;
-      this.impact(heavy);
+      this.impact(heavy, extra?.fx ?? null);
       const fx = extra?.fx ? art.fx(extra.fx) : null;
       opts = { heavy, weak: extra?.weak, fx: fx && this.ctx.art.has(fx) ? fx : undefined };
     }

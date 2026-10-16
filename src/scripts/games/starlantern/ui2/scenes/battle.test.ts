@@ -296,6 +296,7 @@ describe('BattleScene sound and failure safety', () => {
     expect(seen[0]).toMatchObject({ shake: 'slx-shake-s', vignette: false });
     expect(seen[0].fx).toContain('slash');
     expect(seen[1]).toMatchObject({ shake: 'slx-shake-l', vignette: true });
+    expect(root.querySelector('.slx-eflash-fire')).not.toBeNull();   // the fire hit also tints the screen
   });
 
   it('throws a P5R-style cut-in for party actions: an eye strip for attacks, a bust for skills, none for defending or enemies', async () => {
