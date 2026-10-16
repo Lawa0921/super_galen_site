@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { floorOf } from '../../engine/dungeon/run';
 import type { Content } from '../../engine/dungeon/rooms';
 import { altarAt } from '../../engine/events';
+import { chestHasGear, RARE_MATERIALS } from '../../engine/loot/drops';
 import { Game } from '../../engine/game';
 import { DELTA, tileAt, type Dir, type Tile } from '../../engine/map';
 import { statsOf } from '../../engine/party';
@@ -30,9 +31,10 @@ function setup() {
     (o as HTMLElement).click();
   };
   /** Put a room content on a floor cell next to the party; returns the direction to step on it. */
-  const plant = (tile: Tile, extra: Partial<Content> = {}): { dir: Dir; at: { x: number; y: number } } => {
+  const plant = (tile: Tile, extra: Partial<Content> = {}, ok: (at: { x: number; y: number }) => boolean = () => true): { dir: Dir; at: { x: number; y: number } } => {
     const m = game.map();
-    const dir = DIRS.find((d) => tileAt(m, { x: game.pos.x + DELTA[d].x, y: game.pos.y + DELTA[d].y }) === 'floor')!;
+    const near = (d: Dir) => ({ x: game.pos.x + DELTA[d].x, y: game.pos.y + DELTA[d].y });
+    const dir = DIRS.find((d) => tileAt(m, near(d)) === 'floor' && ok(near(d)))!;
     const at = { x: game.pos.x + DELTA[dir].x, y: game.pos.y + DELTA[dir].y };
     m.tiles[at.y][at.x] = tile;
     if (tile !== 'chest' && tile !== 'trap' && tile !== 'key') floorOf(game.run!, game.floor).contents.push({ kind: tile as Content['kind'], at, room: 0, ...extra });
@@ -158,7 +160,7 @@ describe('EventLayer', () => {
     pick('開啟');
     expect(layer()).toBeNull();
     expect(text()).toContain('寶庫');
-    expect(game.run!.loot.items['old-coin']).toBeGreaterThanOrEqual(5);
+    expect(RARE_MATERIALS.some((id) => (game.run!.loot.items[id] ?? 0) >= 1)).toBe(true);
     expect(tileAt(game.map(), at)).toBe('floor');
   });
 
@@ -203,7 +205,7 @@ describe('the full pack window', () => {
   it('opens on a pick-up that does not fit, lists what is carried and discards to make room', () => {
     const { game, s, root, options, pick, plant, text } = setup();
     game.run!.loot.items['old-coin'] = 400;   // far over the limit
-    const { dir, at } = plant('chest');
+    const { dir, at } = plant('chest', {}, (spot) => !chestHasGear(game.run!, game.floor, spot));   // materials only
     s.onAction(dir);
     const box = root.querySelector('.slx-full')!;
     expect(box.textContent).toContain('背包已滿');

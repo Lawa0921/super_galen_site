@@ -151,7 +151,7 @@ describe('BattleScene', () => {
 
   it('lists only the drops taken and names what a full pack left behind', async () => {
     const { game, s, root } = setup();
-    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: { moss: 1 }, levelUps: [], left: { 'bat-wing': 2, 'thorn-fang': 1 } };
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: { moss: 1 }, levelUps: [], left: { 'bat-wing': 2, 'thorn-fang': 1 }, gear: [], gearLeft: [] };
     vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
     for (let i = 0; i < 5; i++) s.onAction('down');
     s.onAction('confirm');
@@ -165,7 +165,7 @@ describe('BattleScene', () => {
 
   it('shows no left-behind line when everything fit', async () => {
     const { game, s, root } = setup();
-    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: { moss: 1 }, levelUps: [], left: {} };
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: { moss: 1 }, levelUps: [], left: {}, gear: [], gearLeft: [] };
     vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
     for (let i = 0; i < 5; i++) s.onAction('down');
     s.onAction('confirm');

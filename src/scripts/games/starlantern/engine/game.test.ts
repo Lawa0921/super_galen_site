@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Game, type MoveResult } from './game';
 import { SAVE_KEY, saveGame } from './save';
 import { newGame } from './state';
@@ -10,6 +10,19 @@ import { floorOf, type Portal } from './dungeon/run';
 import { capacity, carried, weightOf } from '../data/weights';
 import type { Pos } from './types';
 import { ENEMIES } from '../data/enemies';
+import { CHARACTERS } from '../data/characters';
+import { SETS } from '../data/gear';
+import { activeIds } from './party';
+import { BAG_SIZE } from './loot/bag';
+import { chestHasGear, GEAR_CHANCE, RARE_MATERIALS, rollBossGear } from './loot/drops';
+import { itemLevel, itemWeight, rollItem } from './loot/item';
+import type { ItemInstance } from './types';
+
+// Wrapped so a test can see what the game asked the boss roll for; it still rolls for real.
+vi.mock('./loot/drops', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('./loot/drops')>();
+  return { ...mod, rollBossGear: vi.fn(mod.rollBossGear) };
+});
 
 const calm = () => constRng(0.99); // step gain 12 on floor 1, never rolls an early encounter
 const MAIN: Portal = { region: 'mainline', condition: 'plain' };
@@ -44,6 +57,27 @@ const nextToWall = (g: Game, prefer: Dir[] = DIRS): Dir => {
   throw new Error('no wall');
 };
 const contentOf = (g: Game, kind: string) => floorOf(g.run!, g.floor).contents.find((c) => c.kind === kind);
+/** An open floor cell of the current floor that passes `ok`, turned into `tile`. */
+const plantAt = (g: Game, tile: 'chest' | 'elite' | 'vault', ok: (at: Pos) => boolean = () => true): Pos => {
+  const m = g.map();
+  for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
+    if (m.tiles[y][x] !== 'floor' || (x === g.pos.x && y === g.pos.y) || !ok({ x, y })) continue;
+    m.tiles[y][x] = tile;
+    if (tile === 'vault') floorOf(g.run!, g.floor).contents.push({ kind: 'vault', at: { x, y }, room: 0 });
+    return { x, y };
+  }
+  throw new Error(`no cell for ${tile}`);
+};
+/** A chest of this floor whose gear roll is `gear`; when the floor has none, one is put on an open cell that qualifies. */
+const chestWhere = (g: Game, gear: boolean): Pos => {
+  const has = (at: Pos) => chestHasGear(g.run!, g.floor, at) === gear;
+  return floorOf(g.run!, g.floor).contents.find((c) => c.kind === 'chest' && has(c.at))?.at ?? plantAt(g, 'chest', has);
+};
+/** A chest without gear: its materials are all it gives. */
+const plainChest = (g: Game): Pos => chestWhere(g, false);
+const gearItem = (uid: number, over: Partial<ItemInstance> = {}): ItemInstance =>
+  ({ ...rollItem(mulberry32(uid), { uid, ilvl: 1, rarity: 'magic', base: over.base ?? 'iron-sword' }), ...over });
+const killAll = (g: Game) => { for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; } return g.submitRound({})!.end!; };
 
 describe('boot', () => {
   it('starts a new game in town on an empty slot', () => {
@@ -147,7 +181,7 @@ describe('moving', () => {
   });
   it('opens a chest once', () => {
     const g = inMap(1);
-    const chest = contentOf(g, 'chest')!.at;
+    const chest = plainChest(g);
     expect(stepOnto(g, chest)).toEqual({ kind: 'chest', item: 'old-coin', qty: 2 });
     expect(g.run!.loot.items['old-coin']).toBe(2);
     expect(g.run!.opened.has(`1:${posKey(chest)}`)).toBe(true);
@@ -157,7 +191,7 @@ describe('moving', () => {
   it('a chest gives the terrain loot times the run condition drop rate', () => {
     const g = new Game(calm(), null);
     g.depart({ region: 'mainline', condition: 'bounty' }, 1);
-    expect(stepOnto(g, contentOf(g, 'chest')!.at)).toEqual({ kind: 'chest', item: 'old-coin', qty: 3 });   // 2 x 1.5
+    expect(stepOnto(g, plainChest(g))).toEqual({ kind: 'chest', item: 'old-coin', qty: 3 });   // 2 x 1.5
   });
   it('stairs go one deeper and never back', () => {
     const g = new Game(calm(), null);
@@ -297,7 +331,7 @@ describe('battles', () => {
     expect(g.state.gold).toBe(150);
     expect(Object.values(g.state.party.roster).every((m) => m.hp >= 1)).toBe(true);   // the fallen come home with 1 HP
     expect(g.depart(MAIN, 1)).toEqual({ ok: true });
-    expect([g.run!.loot, g.state.gold]).toEqual([{ items: {}, gold: 0 }, 150]);
+    expect([g.run!.loot, g.state.gold]).toEqual([{ items: {}, gold: 0, gear: [] }, 150]);
     expect(g.returnToTown()).toBe(true);
     expect(g.state.gold).toBe(150);
   });
@@ -409,7 +443,7 @@ describe('run pack', () => {
     g.state.dungeon.reached.mainline = 3;
     g.depart(MAIN, 1);
     g.run!.loot.items['star-stone'] = Math.floor((capacity(g.state.party) - carried(g.state, g.run!)) * 2);
-    const chest = contentOf(g, 'chest')!.at;
+    const chest = plainChest(g);
     const first = stepOnto(g, chest);
     expect(first.kind).toBe('full');
     const after = calls;
@@ -468,14 +502,14 @@ describe('run pack', () => {
   });
   it('loot waits in the run pack and is banked on return', () => {
     const g = inMap(1);
-    const chest = contentOf(g, 'chest')!.at;
+    const chest = plainChest(g);
     stepOnto(g, chest);
     g.run!.loot.gold = 30;
     expect([g.run!.loot.items['old-coin'], g.state.inventory['old-coin'], g.state.gold]).toEqual([2, undefined, 150]);
     stepOnto(g, g.map().entrance);
     expect(g.returnToTown()).toBe(true);
     expect([g.state.inventory['old-coin'], g.state.gold, g.notice]).toEqual([2, 180, 'banked']);
-    expect(g.banked).toEqual({ items: { 'old-coin': 2 }, gold: 30, viaLamp: false });
+    expect(g.banked).toEqual({ items: { 'old-coin': 2 }, gold: 30, viaLamp: false, gear: [], overflow: [] });
   });
   it('the return lamp banks the pack too', () => {
     const g = inMap(1);
@@ -488,7 +522,7 @@ describe('run pack', () => {
     const g = new Game(calm(), null);
     g.state.dungeon.reached.mainline = 3;
     g.depart(MAIN, 2);
-    const chest = contentOf(g, 'chest')!.at;
+    const chest = plainChest(g);
     expect(stepOnto(g, chest)).toEqual({ kind: 'chest', item: 'ether', qty: 2 });
     expect([g.state.inventory.ether, g.run!.loot.items.ether]).toEqual([2, undefined]);
   });
@@ -496,7 +530,7 @@ describe('run pack', () => {
     const g = inMap(1);
     const cap = capacity(g.state.party);
     g.run!.loot.items['star-stone'] = Math.floor((cap - carried(g.state, g.run!)) * 2) - 1;   // 0.5 each: room for under 1 more
-    const chest = contentOf(g, 'chest')!.at;
+    const chest = plainChest(g);
     const before = { ...g.run!.loot.items };
 
     const full = stepOnto(g, chest);
@@ -517,14 +551,18 @@ describe('run pack', () => {
     expect(g.discard('potion', 5)).toBe(1);
     expect(g.discard('nothing', 1)).toBe(0);
   });
-  it('carried weight counts the consumables brought along and the run pack', () => {
+  it('carried weight counts the consumables brought along and the run pack, gear at its item weight', () => {
     const g = inMap(1);
     g.state.inventory = { potion: 3, moss: 10 };   // stored materials stay home
-    g.run!.loot.items = { 'old-coin': 2, moss: 4, 'iron-sword': 1, 'cloth-robe': 1 };
+    g.run!.loot.items = { 'old-coin': 2, moss: 4 };
+    const sword = gearItem(901, { base: 'iron-sword' });
+    const robe = gearItem(902, { base: 'cloth-robe' });
+    g.run!.loot.gear = [sword, robe];
+    g.state.party.roster.scarlet.equip.body = gearItem(903, { base: 'cloth-robe' });   // worn gear weighs nothing
+    expect([itemWeight(sword), itemWeight(robe)]).toEqual([6, 8]);
     expect(carried(g.state, g.run!)).toBe(3 + 2 + 2 + 6 + 8);
     expect(weightOf('moss')).toBe(0.5);
-    expect(weightOf('hunter-bow')).toBe(6);
-    expect(weightOf('moss-charm')).toBe(3);
+    expect(weightOf('hunter-bow')).toBe(1);   // a gear base id is never a carried unit
     expect(capacity(g.state.party)).toBeGreaterThan(40);
   });
   it('battle drops with room all go into the pack and are all reported', () => {
@@ -648,5 +686,263 @@ describe('stairs ask before going down', () => {
     g.submitRound({});
     expect(stepOnto(g, at)).toMatchObject({ kind: 'stairs', floor: 6, level: 22 });
     expect(g.floor).toBe(5);
+  });
+});
+
+describe('dungeon gear', () => {
+  const packed = (g: Game) => g.run!.loot.gear.map((it) => it.uid);
+  const rareCount = (r: Record<string, number>) => RARE_MATERIALS.reduce((n, m) => n + (r[m] ?? 0), 0);
+
+  it('an elite always drops magic-or-better gear and one rare material', () => {
+    const g = inMap(1);
+    stepOnto(g, plantAt(g, 'elite'));
+    expect(g.battle!.enemies[0].tint).toBe('elite');
+    const end = killAll(g);
+    expect(end.outcome).toBe('win');
+    expect(end.gear).toHaveLength(1);
+    expect(end.gear[0].rarity).not.toBe('common');
+    expect(end.gear[0].ilvl).toBe(itemLevel(1, 'elite'));
+    expect(end.gearLeft).toEqual([]);
+    expect(packed(g)).toEqual([end.gear[0].uid]);
+    expect(rareCount(end.drops)).toBe(1);
+    expect(rareCount(g.run!.loot.items)).toBe(1);
+  });
+
+  it('a boss drops rare-or-better; the same region and depth again passes bossRepeat', () => {
+    const spy = vi.mocked(rollBossGear);
+    spy.mockClear();
+    const g = new Game(calm(), null);
+    g.state.dungeon.reached.iron = 5;
+    const beat = () => {
+      expect(g.depart({ region: 'iron', condition: 'plain' }, 5)).toEqual({ ok: true });
+      stepOnto(g, g.map().boss!);
+      return killAll(g);
+    };
+    const end = beat();
+    expect(end.gear).toHaveLength(2);
+    expect(['common', 'magic']).not.toContain(end.gear[0].rarity);
+    expect(end.gear.map((it) => it.ilvl)).toEqual([itemLevel(5, 'boss'), itemLevel(5, 'boss')]);
+    expect(packed(g)).toEqual(end.gear.map((it) => it.uid));
+    expect(spy.mock.calls[0][1]).toMatchObject({ bossRepeat: false, depth: 5, region: 'iron' });
+    expect(g.state.dungeon.bossKills['iron:5']).toBe(1);
+    g.state.inventory['return-lamp'] = 1;
+    expect(g.useReturnLamp()).toBe(true);
+    beat();
+    expect(spy.mock.calls[1][1]).toMatchObject({ bossRepeat: true });
+    expect(g.state.dungeon.bossKills['iron:5']).toBe(2);
+  });
+
+  it('the mainline story boss counts as a boss kill and drops boss gear', () => {
+    const g = inMap(3);
+    stepOnto(g, g.map().boss!);
+    const end = killAll(g);
+    expect(g.phase).toBe('clear');
+    expect(end.gear).toHaveLength(2);
+    expect(g.state.dungeon.bossKills['mainline:3']).toBe(1);
+  });
+
+  it('ordinary battles roll gear per monster at the monster chance, from the loot rng', () => {
+    let pieces = 0; let monsters = 0;
+    for (let seed = 1; seed <= 300; seed++) {
+      const g = new Game(mulberry32(seed), null);
+      g.depart(MAIN, 1);
+      g.encounter = 99;
+      g.move('right');
+      const n = g.battle!.enemies.length;
+      const draws = g.run!.lootDraws;
+      const end = killAll(g);
+      expect(g.run!.lootDraws - draws).toBe(n);   // one loot draw per monster
+      for (const it of end.gear) expect(it.ilvl).toBe(itemLevel(1, 'monster'));
+      expect(packed(g)).toEqual(end.gear.map((it) => it.uid));
+      monsters += n;
+      pieces += end.gear.length;
+    }
+    expect(pieces / monsters).toBeGreaterThan(GEAR_CHANCE.monster - 0.04);
+    expect(pieces / monsters).toBeLessThan(GEAR_CHANCE.monster + 0.04);
+  });
+
+  it('a chest with gear gives its materials and the item; weight counts both', () => {
+    const g = inMap(1);
+    const chest = chestWhere(g, true);
+    const room = () => capacity(g.state.party) - carried(g.state, g.run!);
+    g.run!.loot.items['star-stone'] = Math.floor(room() * 2);   // full to within half a unit
+    const full = stepOnto(g, chest) as Extract<MoveResult, { kind: 'full' }>;
+    expect(full).toMatchObject({ kind: 'full', item: 'old-coin', qty: 2 });
+    const gear = full.gear!;
+    expect(gear.ilvl).toBe(itemLevel(1, 'chest'));
+    const want = 2 * weightOf('old-coin') + itemWeight(gear);
+    expect(full.need).toBeCloseTo(want - room());
+    // Room for the coins alone is not enough: the gear weighs too.
+    g.run!.loot.items['star-stone'] -= Math.ceil((2 * weightOf('old-coin') - room()) * 2);
+    expect(room()).toBeGreaterThanOrEqual(2 * weightOf('old-coin'));
+    expect(room()).toBeLessThan(want);
+    expect(stepOnto(g, chest)).toMatchObject({ kind: 'full', gear });   // the same roll, kept
+    g.run!.loot.items['star-stone'] -= Math.ceil((want - room()) * 2);
+    expect(stepOnto(g, chest)).toEqual({ kind: 'chest', item: 'old-coin', qty: 2, gear });
+    expect(g.run!.loot.items['old-coin']).toBe(2);
+    expect(g.run!.loot.gear).toEqual([gear]);
+    expect(g.run!.gearRolls[`chest:1:${posKey(chest)}`]).toEqual(gear);
+  });
+
+  it('a vault triples materials only and adds a rare material and a rare-or-better item', () => {
+    const g = inMap(1);
+    const at = plantAt(g, 'vault');
+    g.run!.keys.add(1);
+    stepOnto(g, at);
+    const r = g.openVault(at) as Extract<MoveResult, { kind: 'vault' }>;
+    expect(r.kind).toBe('vault');
+    expect(r.loot['old-coin']).toBe(2 * 3);   // a depth 1 chest gives 2 old coins
+    expect(rareCount(r.loot)).toBe(1);
+    expect(Object.keys(r.loot)).toHaveLength(2);
+    expect(r.gear).toHaveLength(1);
+    expect(['common', 'magic']).not.toContain(r.gear[0].rarity);
+    expect(r.gear[0].ilvl).toBe(itemLevel(1, 'vault'));
+    expect(packed(g)).toEqual([r.gear[0].uid]);
+    expect(rareCount(g.run!.loot.items)).toBe(1);
+  });
+
+  it('gear waits in the run pack and is banked, specials and sets into the codex', () => {
+    const g = inMap(1);
+    const set = Object.values(SETS)[0];
+    const special = gearItem(901, { special: 'lg-noel', rarity: 'legendary' });
+    const piece = gearItem(902, { special: set.pieces[0], rarity: 'set' });
+    const plain = gearItem(903);
+    g.state.codex = ['lg-noel'];
+    g.run!.loot.gear = [special, piece, plain];
+    expect(g.state.bag).toEqual([]);
+    stepOnto(g, g.map().entrance);
+    expect(g.returnToTown()).toBe(true);
+    expect(g.state.bag).toEqual([special, piece, plain]);
+    expect(g.state.codex).toEqual(['lg-noel', set.pieces[0], set.id]);
+    expect(g.banked).toMatchObject({ gear: [special, piece, plain], overflow: [] });
+    expect(g.notice).toBe('banked');
+  });
+
+  it('a gear-only run still banks', () => {
+    const g = inMap(1);
+    const it = gearItem(901);
+    g.run!.loot.gear = [it];
+    g.state.inventory['return-lamp'] = 1;
+    expect(g.useReturnLamp()).toBe(true);
+    expect([g.notice, g.state.bag]).toEqual(['banked', [it]]);
+    expect(g.banked).toEqual({ items: {}, gold: 0, viaLamp: true, gear: [it], overflow: [] });
+  });
+
+  it('banking past 60 bag slots keeps the first ones and reports the rest', () => {
+    const g = inMap(1);
+    g.state.bag = Array.from({ length: BAG_SIZE - 1 }, (_, i) => gearItem(1000 + i));
+    const a = gearItem(901); const b = gearItem(902);
+    g.run!.loot.gear = [a, b];
+    stepOnto(g, g.map().entrance);
+    g.returnToTown();
+    expect(g.state.bag).toHaveLength(BAG_SIZE);
+    expect(g.state.bag[BAG_SIZE - 1]).toEqual(a);
+    expect(g.banked).toMatchObject({ gear: [a], overflow: [b] });
+  });
+
+  it('a wipe loses run gear and leaves the codex untouched', () => {
+    const g = inMap(1, mulberry32(1));
+    g.state.codex = ['lg-noel'];
+    g.state.bag = [gearItem(800)];
+    g.run!.loot.gear = [gearItem(901, { special: 'lg-liz', rarity: 'legendary' })];
+    g.encounter = 99;
+    expect(g.move('right')).toEqual({ kind: 'battle' });
+    for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+    expect(g.submitRound({})!.end!).toMatchObject({ outcome: 'lose', gear: [], gearLeft: [] });
+    expect([g.run, g.notice, g.banked]).toEqual([null, 'wipe', null]);
+    expect(g.state.bag.map((it) => it.uid)).toEqual([800]);
+    expect(g.state.codex).toEqual(['lg-noel']);
+  });
+
+  it('a full bag (60 with the run pack) keeps the chest shut and reports full with bag: true; discarding makes room', () => {
+    const g = inMap(1);
+    const chest = chestWhere(g, true);
+    g.state.bag = Array.from({ length: BAG_SIZE - 1 }, (_, i) => gearItem(1000 + i));
+    const carriedOne = gearItem(901);
+    g.run!.loot.gear = [carriedOne];
+    const r = stepOnto(g, chest);
+    expect(r).toMatchObject({ kind: 'full', item: 'old-coin', qty: 2, bag: true });
+    expect((r as { gear?: ItemInstance }).gear).toBeDefined();
+    expect(g.run!.opened.has(`1:${posKey(chest)}`)).toBe(false);
+    expect(g.run!.loot.items['old-coin']).toBeUndefined();
+    expect(g.discardGear(12345)).toBe(false);
+    expect(g.discardGear(carriedOne.uid)).toBe(true);
+    expect(g.run!.loot.gear).toEqual([]);
+    const opened = stepOnto(g, chest);
+    expect(opened).toMatchObject({ kind: 'chest', item: 'old-coin', qty: 2 });
+    expect(g.run!.loot.gear).toEqual([(opened as { gear: ItemInstance }).gear]);
+  });
+
+  it('discardGear only works on the map', () => {
+    const g = inMap(1);
+    const it = gearItem(901);
+    g.run!.loot.gear = [it];
+    g.phase = 'battle';
+    expect(g.discardGear(it.uid)).toBe(false);
+    g.phase = 'map';
+    expect(g.discardGear(it.uid)).toBe(true);
+  });
+
+  it('picked-up gear follows the auto-junk setting', () => {
+    const g = inMap(1);
+    g.state.autoJunk = 'magic';
+    stepOnto(g, plantAt(g, 'elite'));
+    const end = killAll(g);
+    const it = g.run!.loot.gear[0];
+    expect(it.uid).toBe(end.gear[0].uid);
+    expect(it.junk).toBe(it.rarity === 'magic' ? true : undefined);
+  });
+
+  it('Game.mintUid hands out the next uid', () => {
+    const g = new Game(calm(), null);
+    const n = g.state.nextUid;
+    expect([g.mintUid(), g.mintUid(), g.state.nextUid]).toEqual([n, n + 1, n + 2]);
+  });
+
+  it('capacity rises by 5 when a member wears str +10', () => {
+    const g = new Game(calm(), null);
+    const id = activeIds(g.state.party).find((x) => CHARACTERS[x].affinity === 'str')!;   // str turns into 1.5x atk here
+    const before = capacity(g.state.party);
+    g.state.party.roster[id].equip.ring1 = { uid: 900, base: 'copper-ring', rarity: 'magic', ilvl: 1, affixes: [{ key: 'str', value: 10 }], enhance: 0 };
+    expect(capacity(g.state.party)).toBeCloseTo(before + 5);
+  });
+
+  it('gear randomness does not touch game.rng', () => {
+    const play = (gear: boolean) => {
+      const g = inMap(1, mulberry32(77));
+      const before = g.rng();
+      const r = stepOnto(g, chestWhere(g, gear));
+      return { before, after: g.rng(), r, draws: g.run!.lootDraws };
+    };
+    const withGear = play(true);
+    const control = play(false);
+    expect(withGear.r).toMatchObject({ kind: 'chest' });
+    expect((withGear.r as { gear?: ItemInstance }).gear).toBeDefined();
+    expect(withGear.draws).toBeGreaterThan(0);
+    expect(control.draws).toBe(0);
+    expect([withGear.before, withGear.after]).toEqual([control.before, control.after]);
+  });
+
+  it('a chest with gear rolls the same item from the same seed', () => {
+    const roll = () => {
+      const g = inMap(1, mulberry32(77));
+      return stepOnto(g, chestWhere(g, true));
+    };
+    expect(roll()).toEqual(roll());
+  });
+
+  it('the merchant checks bag room for gear and weight for everything else', () => {
+    const g = inMap(1);
+    const at = { ...g.pos };
+    floorOf(g.run!, g.floor).contents.push({ kind: 'merchant', at, room: 0, stock: ['iron-sword', 'potion'] });
+    g.state.gold = 9999;
+    g.run!.loot.items['star-stone'] = Math.ceil((capacity(g.state.party) - carried(g.state, g.run!)) * 2) + 2;   // over the limit
+    expect(g.buy(at, 'potion')).toEqual({ ok: false, reason: 'full' });
+    expect(g.buy(at, 'iron-sword').ok).toBe(true);   // gear goes to the bag, which has room
+    expect(g.state.bag.map((it) => it.base)).toEqual(['iron-sword']);
+    g.state.bag = Array.from({ length: BAG_SIZE - 1 }, (_, i) => gearItem(1000 + i));
+    g.run!.loot.gear = [gearItem(901)];
+    g.run!.loot.items = {};
+    expect(g.buy(at, 'iron-sword')).toEqual({ ok: false, reason: 'full' });   // 59 in the bag and 1 in the run pack
   });
 });

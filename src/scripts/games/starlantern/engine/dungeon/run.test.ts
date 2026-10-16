@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { floorOf, isBossDepth, newRun, startDepths, terrainOf } from './run';
+import { chestHasGear, GEAR_CHANCE, lootRng } from '../loot/drops';
 
 describe('newRun', () => {
   it('starts empty: nothing opened, explored, carried or used', () => {
     const r = newRun(42, 'blaze', 'fog', 5);
     expect([r.seed, r.region, r.condition, r.startDepth]).toEqual([42, 'blaze', 'fog', 5]);
     expect([r.floors.size, r.opened.size, r.explored, r.loot, r.usedFountain, r.altarBuffs, r.keys.size])
-      .toEqual([0, 0, {}, { items: {}, gold: 0 }, false, [], 0]);
+      .toEqual([0, 0, {}, { items: {}, gold: 0, gear: [] }, false, [], 0]);
+    expect([r.gearRolls, r.lootDraws]).toEqual([{}, 0]);
   });
 });
 
@@ -63,5 +65,34 @@ describe('startDepths', () => {
   });
   it('offers every reached floor on the mainline', () => {
     expect(startDepths('mainline', 3)).toEqual([1, 2, 3]);
+  });
+});
+
+describe('loot randomness', () => {
+  it('lootRng advances and is reproducible from the seed', () => {
+    const a = newRun(42, 'mainline', 'plain', 1);
+    const b = newRun(42, 'mainline', 'plain', 1);
+    const first = lootRng(a)();
+    expect(a.lootDraws).toBe(1);
+    const second = lootRng(a)();
+    expect(a.lootDraws).toBe(2);
+    expect(second).not.toBe(first);
+    expect([lootRng(b)(), lootRng(b)()]).toEqual([first, second]);
+    expect(lootRng(newRun(43, 'mainline', 'plain', 1))()).not.toBe(first);
+  });
+
+  it('chestHasGear is pure and hits about 35% over 2000 spots', () => {
+    const run = newRun(9, 'frost', 'plain', 1);
+    let hits = 0;
+    for (let i = 0; i < 2000; i++) {
+      const at = { x: i % 40, y: Math.floor(i / 40) };
+      const depth = 1 + (i % 7);
+      const v = chestHasGear(run, depth, at);
+      expect(chestHasGear(run, depth, at)).toBe(v);
+      if (v) hits++;
+    }
+    expect(run.lootDraws).toBe(0);
+    expect(hits / 2000).toBeGreaterThan(GEAR_CHANCE.chest - 0.04);
+    expect(hits / 2000).toBeLessThan(GEAR_CHANCE.chest + 0.04);
   });
 });

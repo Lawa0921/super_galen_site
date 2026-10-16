@@ -2,7 +2,7 @@ import { CONDITIONS, type ConditionId } from '../../data/conditions';
 import { REGIONS, type RegionId } from '../../data/regions';
 import type { FloorMap } from '../map';
 import { mulberry32 } from '../rng';
-import type { BuffStat } from '../types';
+import type { BuffStat, ItemInstance } from '../types';
 import { genFloor } from './gen';
 import { fillRooms, type Content } from './rooms';
 
@@ -20,9 +20,14 @@ export interface Run {
   opened: Set<string>;
   /** Explored cells (`x,y`) by depth. */
   explored: Record<number, string[]>;
-  loot: { items: Record<string, number>; gold: number };
-  /** Chest and vault contents, fixed the first time they are rolled (key `chest:`/`vault:` + depth:x,y). */
+  /** The run pack: materials, gold and gear found this run; banked on a safe return, lost on a wipe. */
+  loot: { items: Record<string, number>; gold: number; gear: ItemInstance[] };
+  /** Chest and vault contents, fixed the first time they are rolled (key `chest:`/`vault:`/`vault-rare:` + depth:x,y). */
   rolls: Record<string, { item: string; qty: number }>;
+  /** Chest and vault gear, fixed the first time it is rolled (key `chest:`/`vault:` + depth:x,y). */
+  gearRolls: Record<string, ItemInstance | null>;
+  /** Loot draws taken so far; `lootRng` seeds each from the run seed and this count. */
+  lootDraws: number;
   usedFountain: boolean;
   altarBuffs: { stat: BuffStat; pct: number }[];
   /** Depths whose vault key the party holds. */
@@ -32,7 +37,7 @@ export interface Run {
 export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number): Run {
   return {
     seed, region, condition, startDepth, floors: new Map(), opened: new Set(), explored: {},
-    loot: { items: {}, gold: 0 }, rolls: {}, usedFountain: false, altarBuffs: [], keys: new Set(),
+    loot: { items: {}, gold: 0, gear: [] }, rolls: {}, gearRolls: {}, lootDraws: 0, usedFountain: false, altarBuffs: [], keys: new Set(),
   };
 }
 

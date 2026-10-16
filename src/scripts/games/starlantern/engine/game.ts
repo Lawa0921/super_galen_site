@@ -6,7 +6,12 @@ import { createBattle, planEnemies, resolveRound, rewards, writeBack, type Actio
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
 import type { Content } from './dungeon/rooms';
 import { advance, danger, type Danger } from './encounter';
-import { ALTAR_STAT_CAP_PCT, altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POISON_TP_LOSS_PCT, trapDamage, VAULT_CHEST_MULT, VAULT_PLACEHOLDER } from './events';
+import { ALTAR_STAT_CAP_PCT, altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POISON_TP_LOSS_PCT, trapDamage, VAULT_CHEST_MULT } from './events';
+import { EQUIPMENT } from '../data/equipment';
+import { SPECIALS } from '../data/gear';
+import { applyAutoJunk, BAG_SIZE } from './loot/bag';
+import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMaterial, type DropCtx } from './loot/drops';
+import { itemWeight, type DropSource } from './loot/item';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
 import { activeIds, awardExp, hasPassive, statsOf } from './party';
 import { pick, type Rng } from './rng';
@@ -14,29 +19,37 @@ import { depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
 import { rollPortals } from './portals';
 import { newGame, type GameState } from './state';
-import { addItem, buy as townBuy, rest as innRest, type TownResult } from './town';
-import type { CharacterId, Member, Pos } from './types';
+import { addItem, buy as townBuy, mintUid, rest as innRest, type TownResult } from './town';
+import type { CharacterId, ItemInstance, Member, Pos } from './types';
 
 export type Phase = 'town' | 'map' | 'battle' | 'clear';
 export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp' | 'banked';
 export type MoveResult =
   | { kind: 'ignored' } | { kind: 'blocked' } | { kind: 'moved' } | { kind: 'battle' } | { kind: 'boss' }
-  | { kind: 'entrance' } | { kind: 'floor'; floor: number } | { kind: 'chest'; item: string; qty: number }
+  | { kind: 'entrance' } | { kind: 'floor'; floor: number }
+  /** A chest's materials, and its gear when it holds any (`chestHasGear`). */
+  | { kind: 'chest'; item: string; qty: number; gear?: ItemInstance }
   /** Stepped onto a fountain, merchant, altar or vault: the screen offers its choice (useFountain, buy, altar, openVault). */
   | { kind: 'event'; content: Content }
   | { kind: 'trap'; effect: 'hurt' | 'poison'; amount: number; tp: number }
   | { kind: 'key' }
   /** Stepped onto stairs down: the screen asks first (descend goes). `level` is the next depth's suggested level; `warn` when the party's best is below it. */
   | { kind: 'stairs'; floor: number; level: number; warn: boolean }
-  /** The pack cannot take the pick-up: it stays on the ground (the chest stays shut) until something is discarded. */
-  | { kind: 'full'; item: string; qty: number; need: number }
-  | { kind: 'vault'; loot: Record<string, number> };
+  /**
+   * The pack cannot take the pick-up: it stays on the ground (the chest stays shut) until something is discarded.
+   * `need` is the weight over the limit (0 when only the bag is short); `gear` is the piece that comes with it;
+   * `bag` is set when the town bag (with the run pack's gear) has no slot left for that gear.
+   */
+  | { kind: 'full'; item: string; qty: number; need: number; gear?: ItemInstance; bag?: boolean }
+  | { kind: 'vault'; loot: Record<string, number>; gear: ItemInstance[] };
 export interface BattleEnd {
   /** `drops` lists only what went into the party's hands. */
   outcome: 'win' | 'lose' | 'fled'; exp: number; gold: number; drops: Record<string, number>;
   levelUps: { id: CharacterId; levels: number; learned: string[] }[];
   /** Drops that did not fit in the pack and were left behind. */
   left: Record<string, number>;
+  /** Gear that went into the run pack, and gear left behind for want of weight or bag room. */
+  gear: ItemInstance[]; gearLeft: ItemInstance[];
 }
 
 /** Turn a floor's boss tile into stairs down. */
@@ -61,8 +74,8 @@ export class Game {
   /** The elite tile whose fight is on; it turns to floor on a win. */
   private eliteAt: Pos | null = null;
   notice: Notice | null = null;
-  /** What the last safe return brought home; the town screen shows it, then clears it. */
-  banked: { items: Record<string, number>; gold: number; viaLamp: boolean } | null = null;
+  /** What the last safe return brought home; the town screen shows it, then clears it. `overflow` is gear the full bag could not take. */
+  banked: { items: Record<string, number>; gold: number; viaLamp: boolean; gear: ItemInstance[]; overflow: ItemInstance[] } | null = null;
 
   constructor(readonly rng: Rng, readonly storage: SaveStorage | null, state?: GameState) {
     this.state = state ?? newGame(rng);
@@ -216,11 +229,11 @@ export class Game {
     return true;
   }
 
-  /** Buy from the merchant the party stands at: only his three items, at the shop price, and only what the pack can carry. */
+  /** Buy from the merchant the party stands at: only his three items, at the shop price; gear needs a bag slot, anything else carry weight. */
   buy(merchantAt: Pos, item: string): TownResult | { ok: false; reason: 'full' } {
     const c = this.contentAt('merchant', merchantAt);
     if (!c || !c.stock?.includes(item)) return { ok: false, reason: 'invalid' };
-    if (this.shortBy({ [item]: 1 }) > 0) return { ok: false, reason: 'full' };
+    if (EQUIPMENT[item] ? !this.bagHasRoom(1) : this.shortBy({ [item]: 1 }) > 0) return { ok: false, reason: 'full' };
     return this.apply(townBuy(this.state, item));
   }
 
@@ -251,24 +264,30 @@ export class Game {
     return true;
   }
 
-  /** Open the vault the party stands at: needs this floor's key. Pays three chests' worth plus a stand-in for plan 5's rare materials. */
+  /** Open the vault the party stands at: needs this floor's key. Pays three chests' worth of materials, one rare material and one piece of vault gear. */
   openVault(at: Pos): MoveResult | null {
     if (!this.contentAt('vault', at) || tileAt(this.map(), at) !== 'vault' || !this.run!.keys.has(this.floor)) return null;
+    const run = this.run!;
+    const id = this.spotId(at);
     const loot: Record<string, number> = {};
     if (FLOORS[this.terrain() - 1].chestLoot.length) {
-      const one = this.rollChest(`vault:${this.spotId(at)}`);
+      const one = this.rollChest(`vault:${id}`);
       loot[one.item] = one.qty * VAULT_CHEST_MULT;
     }
-    // TODO(plan 5): rare materials replace this placeholder.
-    loot[VAULT_PLACEHOLDER.item] = (loot[VAULT_PLACEHOLDER.item] ?? 0) + VAULT_PLACEHOLDER.qty;
-    const need = this.shortBy(loot);
-    if (need > 0) {
+    const rareKey = `vault-rare:${id}`;
+    if (!run.rolls[rareKey]) run.rolls[rareKey] = { item: rollRareMaterial(lootRng(run)), qty: 1 };
+    const rare = run.rolls[rareKey];
+    loot[rare.item] = (loot[rare.item] ?? 0) + rare.qty;
+    const gear = this.fixedGear(`vault:${id}`, 'vault');
+    const short = this.wontFit(loot, [gear]);
+    if (short) {
       const [item, qty] = Object.entries(loot)[0];
-      return { kind: 'full', item, qty, need };
+      return { kind: 'full', item, qty, ...short, gear };
     }
     for (const [item, qty] of Object.entries(loot)) this.grant(item, qty);
+    const taken = this.pack(gear);
     this.map().tiles[at.y][at.x] = 'floor';
-    return { kind: 'vault', loot };
+    return { kind: 'vault', loot, gear: [taken] };
   }
 
   /** Go down the stairs the party stands on; null when not on stairs. */
@@ -313,6 +332,21 @@ export class Game {
     return qty - left;
   }
 
+  /** Throw away a piece of gear from the run pack; false when there is no such piece or the party is not on the map. */
+  discardGear(uid: number): boolean {
+    const gear = this.run?.loot.gear;
+    if (this.phase !== 'map' || !gear) return false;
+    const i = gear.findIndex((it) => it.uid === uid);
+    if (i < 0) return false;
+    gear.splice(i, 1);
+    return true;
+  }
+
+  /** Hands out the next item uid (for the debug hooks). */
+  mintUid(): number {
+    return mintUid(this.state);
+  }
+
   submitRound(actions: Record<string, Action>): { battle: BattleState; end: BattleEnd | null } | null {
     if (this.phase !== 'battle' || !this.battle) return null;
     const b = resolveRound(this.battle, actions, this.rng);
@@ -322,30 +356,68 @@ export class Game {
     this.state.party = writeBack(this.state.party, b);
     if (b.outcome === 'ongoing') return { battle: b, end: null };
     this.battle = null;
-    const empty: BattleEnd = { outcome: b.outcome, exp: 0, gold: 0, drops: {}, levelUps: [], left: {} };
+    const empty: BattleEnd = { outcome: b.outcome, exp: 0, gold: 0, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [] };
     const elite = this.eliteAt;
     this.eliteAt = null;
     if (b.outcome === 'fled') { this.phase = 'map'; return { battle: b, end: empty }; }
     if (b.outcome === 'lose') { this.wipe(); return { battle: b, end: empty }; }
     const rw = rewards(b, this.rng, hasPassive(this.state.party, 'dropBoost'), CONDITIONS[this.run!.condition].dropMul);
     this.run!.loot.gold += rw.gold;
+    const found = this.battleGear(b, elite !== null);
+    const drops = { ...rw.drops };
+    if (found.rare) drops[found.rare] = (drops[found.rare] ?? 0) + 1;
     const taken: Record<string, number> = {};
     const left: Record<string, number> = {};
-    for (const [mat, n] of Object.entries(rw.drops)) {
+    for (const [mat, n] of Object.entries(drops)) {
       const room = Math.max(0, Math.floor((capacity(this.state.party) - carried(this.state, this.run!)) / weightOf(mat)));
       const take = Math.min(n, room);
       if (take > 0) { this.grant(mat, take); taken[mat] = take; }
       if (take < n) left[mat] = n - take;
     }
+    const gear: ItemInstance[] = [];
+    const gearLeft: ItemInstance[] = [];
+    for (const it of found.gear) {
+      if (this.wontFit({}, [it])) gearLeft.push(it);
+      else gear.push(this.pack(it));
+    }
     const survivors = b.party.filter((c) => c.alive).map((c) => c.key as CharacterId);
     const awarded = awardExp(this.state.party, rw.exp, survivors);
     this.state.party = awarded.party;
-    // TODO(plan 5): elites always drop a rare material
     if (elite) this.map().tiles[elite.y][elite.x] = 'floor';   // a beaten elite is gone
     if (b.boss) openStairs(this.map());   // a beaten boss leaves stairs down where it stood, so the run can go deeper
     if (b.boss && this.isStoryDepth(this.floor)) { this.state.dungeon.bossDefeated = true; this.phase = 'clear'; }
     else this.phase = 'map';
-    return { battle: b, end: { outcome: 'win', ...rw, drops: taken, levelUps: awarded.results.filter((x) => x.levels > 0), left } };
+    return { battle: b, end: { outcome: 'win', ...rw, drops: taken, levelUps: awarded.results.filter((x) => x.levels > 0), left, gear, gearLeft } };
+  }
+
+  /**
+   * Gear a won fight drops, all from the loot rng: a boss its two pieces (a repeat kill of the same region and depth rolls
+   * on repeat odds), an elite one piece and a rare material, and an ordinary fight a GEAR_CHANCE.monster roll per monster.
+   */
+  private battleGear(b: BattleState, elite: boolean): { gear: ItemInstance[]; rare?: string } {
+    const run = this.run!;
+    if (b.boss) {
+      const key = `${run.region}:${this.floor}`;
+      const kills = this.state.dungeon.bossKills;
+      const gear = rollBossGear(lootRng(run), { ...this.dropCtx('boss'), bossRepeat: (kills[key] ?? 0) > 0 });
+      kills[key] = (kills[key] ?? 0) + 1;
+      return { gear };
+    }
+    if (elite) {
+      const rng = lootRng(run);
+      return { gear: [rollGear(rng, this.dropCtx('elite'))], rare: rollRareMaterial(rng) };
+    }
+    const gear: ItemInstance[] = [];
+    for (let i = 0; i < b.enemies.length; i++) {
+      const rng = lootRng(run);
+      if (rng() < GEAR_CHANCE.monster) gear.push(rollGear(rng, this.dropCtx('monster')));
+    }
+    return { gear };
+  }
+
+  private dropCtx(source: DropSource): DropCtx {
+    const run = this.run!;
+    return { uid: () => mintUid(this.state), depth: this.floor, region: run.region, condition: run.condition, source };
   }
 
   rest(): TownResult {
@@ -371,14 +443,24 @@ export class Game {
     return this.run?.region === 'mainline' && floor === 3;
   }
 
-  /** A safe return: what the run pack holds now counts, and the town is told what came home. */
+  /**
+   * A safe return: what the run pack holds now counts, and the town is told what came home. Gear goes into the bag while it
+   * has slots (the rest is reported as `overflow`); special items and their sets enter the codex.
+   */
   private toTown(viaLamp = false): void {
     const loot = this.run?.loot;
     this.banked = null;
-    if (loot && (loot.gold > 0 || Object.keys(loot.items).length)) {
+    if (loot && (loot.gold > 0 || Object.keys(loot.items).length || loot.gear.length)) {
       for (const [id, n] of Object.entries(loot.items)) addItem(this.state.inventory, id, n);
       this.state.gold += loot.gold;
-      this.banked = { items: { ...loot.items }, gold: loot.gold, viaLamp };
+      const room = Math.max(0, BAG_SIZE - this.state.bag.length);
+      const gear = loot.gear.slice(0, room);
+      this.state.bag.push(...gear);
+      for (const it of gear) {
+        const sp = it.special ? SPECIALS[it.special] : undefined;
+        for (const id of [sp?.id, sp?.set]) if (id && !this.state.codex.includes(id)) this.state.codex.push(id);
+      }
+      this.banked = { items: { ...loot.items }, gold: loot.gold, viaLamp, gear, overflow: loot.gear.slice(room) };
       this.notice = 'banked';
     }
     this.phase = 'town';
@@ -406,10 +488,40 @@ export class Game {
     addItem(ITEMS[item] ? this.state.inventory : this.run!.loot.items, item, qty);
   }
 
-  /** How much weight `loot`, taken together, is over the limit by (0 or less when it fits). */
-  private shortBy(loot: Record<string, number>): number {
-    const add = Object.entries(loot).reduce((w, [id, n]) => w + n * weightOf(id), 0);
+  /** How much weight `loot` and `gear`, taken together, are over the limit by (0 or less when they fit). */
+  private shortBy(loot: Record<string, number>, gear: ItemInstance[] = []): number {
+    const add = Object.entries(loot).reduce((w, [id, n]) => w + n * weightOf(id), 0) + gear.reduce((w, it) => w + itemWeight(it), 0);
     return carried(this.state, this.run!) + add - capacity(this.state.party);
+  }
+
+  /** Whether the town bag, with the run pack's gear already promised to it, has `n` more slots. */
+  private bagHasRoom(n: number): boolean {
+    return this.state.bag.length + (this.run?.loot.gear.length ?? 0) + n <= BAG_SIZE;
+  }
+
+  /** Why a pick-up does not fit (weight over the limit and/or no bag slot), or null when it does. */
+  private wontFit(loot: Record<string, number>, gear: ItemInstance[]): { need: number; bag?: true } | null {
+    const need = this.shortBy(loot, gear);
+    const bag = !this.bagHasRoom(gear.length);
+    if (need <= 0 && !bag) return null;
+    return bag ? { need: Math.max(0, need), bag: true } : { need };
+  }
+
+  /** Puts picked-up gear into the run pack, marked by the auto-junk setting; returns what went in. */
+  private pack(it: ItemInstance): ItemInstance {
+    const taken = applyAutoJunk(it, this.state.autoJunk);
+    this.run!.loot.gear.push(taken);
+    return taken;
+  }
+
+  /** Chest and vault gear: rolled from the loot rng the first time, then the same piece every time the spot is tried. */
+  private fixedGear(key: string, source: DropSource): ItemInstance {
+    const run = this.run!;
+    const kept = run.gearRolls[key];
+    if (kept) return kept;
+    const it = rollGear(lootRng(run), this.dropCtx(source));
+    run.gearRolls[key] = it;
+    return it;
   }
 
   /** Rolled once per spot and remembered, so a chest that did not fit rolls the same when the party comes back. */
@@ -428,11 +540,13 @@ export class Game {
     if (run.opened.has(id)) return null;
     if (!FLOORS[this.terrain() - 1].chestLoot.length) return null;
     const { item, qty } = this.rollChest(`chest:${id}`);
-    const need = this.shortBy({ [item]: qty });
-    if (need > 0) return { kind: 'full', item, qty, need };
+    const gear = chestHasGear(run, this.floor, this.pos) ? this.fixedGear(`chest:${id}`, 'chest') : undefined;
+    const short = this.wontFit({ [item]: qty }, gear ? [gear] : []);
+    if (short) return { kind: 'full', item, qty, ...short, ...(gear ? { gear } : {}) };
     run.opened.add(id);
     this.grant(item, qty);
-    return { kind: 'chest', item, qty };
+    if (!gear) return { kind: 'chest', item, qty };
+    return { kind: 'chest', item, qty, gear: this.pack(gear) };
   }
 
   private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string): void {

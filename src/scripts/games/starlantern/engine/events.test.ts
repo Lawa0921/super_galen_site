@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ALTARS, ALTAR_STAT_CAP_PCT, POISON_TP_LOSS_PCT, VAULT_CHEST_MULT, VAULT_PLACEHOLDER, altarAt, trapDamage } from './events';
+import { ALTARS, ALTAR_STAT_CAP_PCT, POISON_TP_LOSS_PCT, VAULT_CHEST_MULT, altarAt, trapDamage } from './events';
+import { RARE_MATERIALS } from './loot/drops';
 import { FLOORS } from '../data/floors';
 import { createBattle } from './battle';
 import { Game, type MoveResult } from './game';
@@ -217,12 +218,18 @@ describe('vault', () => {
     expect(g.run!.keys.has(1)).toBe(true);
     expect(tileAt(g.map(), key)).toBe('floor');
     stepOnto(g, vault);
-    const coins = g.run!.loot.items['old-coin'] ?? 0;
     const chest = FLOORS[0].chestLoot[0];   // depth 1 is terrain 1, plain condition
-    const expected = chest.qty * VAULT_CHEST_MULT + (chest.item === VAULT_PLACEHOLDER.item ? VAULT_PLACEHOLDER.qty : 0);
-    const r = g.openVault(vault);
-    expect(r).toEqual({ kind: 'vault', loot: { [chest.item]: expected, ...(chest.item === VAULT_PLACEHOLDER.item ? {} : { [VAULT_PLACEHOLDER.item]: VAULT_PLACEHOLDER.qty }) } });
-    expect(g.run!.loot.items['old-coin']).toBe(coins + (chest.item === VAULT_PLACEHOLDER.item ? expected : VAULT_PLACEHOLDER.qty));
+    const held = g.run!.loot.items[chest.item] ?? 0;
+    const r = g.openVault(vault) as Extract<MoveResult, { kind: 'vault' }>;
+    expect(r.kind).toBe('vault');
+    expect(r.loot[chest.item]).toBe(chest.qty * VAULT_CHEST_MULT);   // materials: three chests' worth
+    const rare = Object.keys(r.loot).filter((id) => RARE_MATERIALS.includes(id));
+    expect(rare.map((id) => r.loot[id])).toEqual([1]);   // exactly one rare material
+    expect(Object.keys(r.loot)).toHaveLength(2);
+    expect(r.gear).toHaveLength(1);
+    expect(['common', 'magic']).not.toContain(r.gear[0].rarity);
+    expect(g.run!.loot.items[chest.item]).toBe(held + chest.qty * VAULT_CHEST_MULT);
+    expect(g.run!.loot.gear).toEqual(r.gear);
     expect(tileAt(g.map(), vault)).toBe('floor');
     expect(g.openVault(vault)).toBeNull();
   });

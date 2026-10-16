@@ -2,8 +2,9 @@ import { CONDITIONS, type ConditionId } from '../../data/conditions';
 import { SETS, SPECIALS, generalLegendaries, regionSpecials, type SpecialDef } from '../../data/gear';
 import type { RegionId } from '../../data/regions';
 import { depthLevel } from '../levels';
-import { pick, type Rng } from '../rng';
-import type { ItemInstance } from '../types';
+import type { Run } from '../dungeon/run';
+import { mulberry32, pick, type Rng } from '../rng';
+import type { ItemInstance, Pos } from '../types';
 import { itemLevel, rollItem, type DropSource } from './item';
 
 export type Tier = 'common' | 'magic' | 'rare' | 'legendaryTier';
@@ -14,6 +15,8 @@ export const RARE_MATERIALS = ['star-tear', 'ancient-gear', 'king-scale'];
 
 export interface DropCtx {
   uid: () => number; depth: number; region: RegionId; condition: ConditionId; source: DropSource; bossRepeat?: boolean;
+  /** Item level to roll at instead of the source's own (a boss's second piece keeps the boss level). */
+  ilvl?: number;
 }
 
 /** Relative weights of the four rarity tiers; `depthLv` is the depth's level (not the depth). */
@@ -68,7 +71,7 @@ function pickSpecial(rng: Rng, region: RegionId, source: DropSource): SpecialDef
 
 export function rollGear(rng: Rng, ctx: DropCtx): ItemInstance {
   const tier = rollTier(rng, rarityWeights(ctx.source, depthLevel(ctx.depth), ctx.condition, ctx.bossRepeat));
-  const ilvl = itemLevel(ctx.depth, ctx.source);
+  const ilvl = ctx.ilvl ?? itemLevel(ctx.depth, ctx.source);
   if (tier === 'legendaryTier') {
     const sp = pickSpecial(rng, ctx.region, ctx.source);
     return rollItem(rng, { uid: ctx.uid(), ilvl, rarity: sp.rarity, special: sp.id });
@@ -76,9 +79,30 @@ export function rollGear(rng: Rng, ctx: DropCtx): ItemInstance {
   return rollItem(rng, { uid: ctx.uid(), ilvl, rarity: tier });
 }
 
-/** A boss drops two pieces: the first on boss odds, the second as an elite would. */
+/** A boss drops two pieces: the first on boss odds, the second on elite odds; both at the boss item level. */
 export function rollBossGear(rng: Rng, ctx: DropCtx): ItemInstance[] {
-  return [rollGear(rng, { ...ctx, source: 'boss' }), rollGear(rng, { ...ctx, source: 'elite', bossRepeat: false })];
+  const ilvl = itemLevel(ctx.depth, 'boss');
+  return [rollGear(rng, { ...ctx, source: 'boss', ilvl }), rollGear(rng, { ...ctx, source: 'elite', bossRepeat: false, ilvl })];
 }
 
 export const rollRareMaterial = (rng: Rng): string => pick(rng, RARE_MATERIALS);
+
+/** A fixed 32-bit mix of two numbers. */
+function mix(a: number, b: number): number {
+  let h = Math.imul(a ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul((b + 0x632be5ab) | 0, 0xc2b2ae35);
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x7feb352d);
+  h ^= h >>> 15;
+  h = Math.imul(h, 0x846ca68b);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+/** A fresh rng for one loot draw of this run; every gear-related roll in the labyrinth comes from here, never from `game.rng`. */
+export function lootRng(run: Run): Rng {
+  return mulberry32(mix(run.seed, run.lootDraws++));
+}
+
+/** Whether the chest at `at` on `depth` holds gear: fixed by the run seed, the depth and the spot; changes nothing. */
+export function chestHasGear(run: Run, depth: number, at: Pos): boolean {
+  return mix(mix(mix(run.seed ^ 0x3c6ef372, depth), at.x), at.y) / 2 ** 32 < GEAR_CHANCE.chest;
+}

@@ -78,7 +78,7 @@ describe('TownScene notices', () => {
   it('greets with what came home, mentions the lamp, and clears the haul', () => {
     const game = new Game(constRng(0.5), null);
     game.notice = 'lamp';
-    game.banked = { items: { potion: 2, 'old-coin': 3 }, gold: 120, viaLamp: true };
+    game.banked = { items: { potion: 2, 'old-coin': 3 }, gold: 120, viaLamp: true, gear: [], overflow: [] };
     const root = document.createElement('div');
     const s = new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
     s.enter(root);
@@ -90,7 +90,7 @@ describe('TownScene notices', () => {
   it('greets a walk home the same way, without the lamp', () => {
     const game = new Game(constRng(0.5), null);
     game.notice = 'banked';
-    game.banked = { items: {}, gold: 40, viaLamp: false };
+    game.banked = { items: {}, gold: 40, viaLamp: false, gear: [], overflow: [] };
     const root = document.createElement('div');
     const s = new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
     s.enter(root);

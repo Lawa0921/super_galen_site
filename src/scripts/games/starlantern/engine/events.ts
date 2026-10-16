@@ -48,6 +48,5 @@ export function eliteGroup(run: Run, depth: number): string[] {
   return [...pick(rng, encounterTable(run.region, depth))];
 }
 
-// TODO(plan 5): rare materials. Until they exist a vault pays this stand-in on top of 3 chests' worth.
+/** A vault pays this many chests' worth of materials, plus one rare material and one piece of vault gear. */
 export const VAULT_CHEST_MULT = 3;
-export const VAULT_PLACEHOLDER = { item: 'old-coin', qty: 5 };

@@ -158,6 +158,7 @@ describe('rollBossGear', () => {
     const out = rollBossGear(mulberry32(5), ctx);
     expect(out).toHaveLength(2);
     expect(out[0].ilvl).toBe(202);
+    expect(out[1].ilvl).toBe(202);   // the second piece keeps the boss item level; only its odds are an elite's
     expect(out[1].rarity).not.toBe('common');
     let lowFirst = 0; let rareSecond = 0;
     const rng = mulberry32(6);
