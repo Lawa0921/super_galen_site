@@ -4792,8 +4792,9 @@
         "block": 20.226,
         "wrap": "xy"
       },
-      "status": "qa_passed",
-      "runtime": "/assets/games/starlantern/tiles/f1-wall-top.png"
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f1-wall-top.png",
+      "approved_by": "user 2026-10-16: 牆壁你可以拼接讓我看看效果"
     },
     "tile-f2-wall-top": {
       "kind": "tile-wrap",
@@ -4841,8 +4842,9 @@
         "block": 20.226,
         "wrap": "xy"
       },
-      "status": "qa_passed",
-      "runtime": "/assets/games/starlantern/tiles/f2-wall-top.png"
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f2-wall-top.png",
+      "approved_by": "user 2026-10-16: 牆壁你可以拼接讓我看看效果"
     },
     "tile-f3-wall-top": {
       "kind": "tile-wrap",
@@ -4895,8 +4897,9 @@
         "block": 20.226,
         "wrap": "xy"
       },
-      "status": "qa_passed",
-      "runtime": "/assets/games/starlantern/tiles/f3-wall-top.png"
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f3-wall-top.png",
+      "approved_by": "user 2026-10-16: 牆壁你可以拼接讓我看看效果"
     },
     "tile-f1-wall-face": {
       "kind": "tile-wrap",
@@ -4938,8 +4941,9 @@
         "block": 20.226,
         "wrap": "x"
       },
-      "status": "qa_passed",
-      "runtime": "/assets/games/starlantern/tiles/f1-wall-face.png"
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f1-wall-face.png",
+      "approved_by": "user 2026-10-16: 牆壁你可以拼接讓我看看效果"
     },
     "tile-f2-wall-face": {
       "kind": "tile-wrap",
@@ -4981,8 +4985,9 @@
         "block": 20.226,
         "wrap": "x"
       },
-      "status": "qa_passed",
-      "runtime": "/assets/games/starlantern/tiles/f2-wall-face.png"
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f2-wall-face.png",
+      "approved_by": "user 2026-10-16: 牆壁你可以拼接讓我看看效果"
     },
     "tile-f3-wall-face": {
       "kind": "tile-wrap",
@@ -5029,8 +5034,9 @@
         "block": 20.226,
         "wrap": "x"
       },
-      "status": "qa_passed",
-      "runtime": "/assets/games/starlantern/tiles/f3-wall-face.png"
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f3-wall-face.png",
+      "approved_by": "user 2026-10-16: 牆壁你可以拼接讓我看看效果"
     }
   }
 }
