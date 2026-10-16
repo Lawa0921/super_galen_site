@@ -4,14 +4,16 @@ import type { SceneCtx } from './scene';
 export interface SpendState { pending: string | null }
 
 /**
- * The two-press spend shared by the skill-tree and talent pages. A key that cannot take a point is refused on the first
- * press (the reason from `can`, the error sound, nothing left pending); one that can is armed by the first press and
- * raised by a second press on the same key. A press on another key arms that key instead.
+ * The two-press spend shared by the skill-tree and talent pages, typed by the caller's reasons `R`. A key that cannot
+ * take a point is refused on the first press (the reason from `can`, the error sound, nothing left pending); one that
+ * can is armed by the first press and raised by a second press on the same key. A press on another key arms that key
+ * instead. `raise` reports whether the engine took the point: only then is it 'raised' with the confirm sound; a raise
+ * turned down after `can` allowed it is 'failed', with the error sound.
  */
-export function pressSpend(
-  state: SpendState, key: string, can: () => string | null, raise: () => void,
+export function pressSpend<R extends string>(
+  state: SpendState, key: string, can: () => R | null, raise: () => boolean,
   sfx: Pick<SceneCtx['sfx'], 'cursor' | 'confirm' | 'error'>,
-): 'armed' | 'raised' | { refused: string } {
+): 'armed' | 'raised' | 'failed' | { refused: R } {
   const reason = can();
   if (reason !== null) {
     state.pending = null;
@@ -19,8 +21,11 @@ export function pressSpend(
     return { refused: reason };
   }
   if (state.pending === key) {
-    raise();
     state.pending = null;
+    if (!raise()) {
+      sfx.error();
+      return 'failed';
+    }
     sfx.confirm();
     return 'raised';
   }

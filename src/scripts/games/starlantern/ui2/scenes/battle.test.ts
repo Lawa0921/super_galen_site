@@ -182,8 +182,8 @@ describe('BattleScene', () => {
     const lines = [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
     expect(lines).toEqual([
       '經驗值 +5', '金錢 +7',
-      '諾艾兒 升到 Lv 6', '諾艾兒 獲得技能點 1、天賦點 1',
-      '莉茲 升到 Lv 5', '莉茲 獲得技能點 1',
+      '諾艾兒 升到 Lv 6', '諾艾兒 獲得技能點 1（狀態→技能樹）、天賦點 1',
+      '莉茲 升到 Lv 5', '莉茲 獲得技能點 1（狀態→技能樹）',
       '千鶴 升到 Lv 8', '千鶴 獲得天賦點 1',
     ]);
   });

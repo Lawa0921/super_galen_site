@@ -88,9 +88,9 @@ export const T = {
     exp: (n: number) => `經驗值 +${n}`, gold: (n: number) => `金錢 +${n}`, drop: (name: string, n: number) => `${name} ×${n}`,
     leftBehind: (name: string, n: number) => `背包已滿，留下了 ${name} ×${n}`,
     levelUp: (name: string, lv: number) => `${name} 升到 Lv ${lv}`,
-    /** Points a level-up brought; the talent part only when there is one. */
+    /** Points a level-up brought, pointing to where skill points are spent; the talent part only when there is one. */
     points: (name: string, skill: number, talent: number) =>
-      skill === 0 && talent > 0 ? `${name} 獲得天賦點 ${talent}` : `${name} 獲得技能點 ${skill}${talent > 0 ? `、天賦點 ${talent}` : ''}`,
+      skill === 0 && talent > 0 ? `${name} 獲得天賦點 ${talent}` : `${name} 獲得技能點 ${skill}（狀態→技能樹）${talent > 0 ? `、天賦點 ${talent}` : ''}`,
     weak: (els: string) => `已知弱點：${els}`,
     /** Words that pop over a struck enemy or member. */
     pop: { miss: 'MISS', crit: '暴擊！', weak: '弱點！', resist: '抗性', tp: (n: number) => `+${n} TP` },
@@ -179,6 +179,8 @@ export const T = {
         gate: '分支點數不足', capstone: '已選其他終極',
       } as Record<RaiseFail, string>,
       pending: '再按一次 Enter 投入 1 點',
+      /** The engine turned a spend down after the page allowed it (e.g. outside town and the labyrinth). */
+      failed: '現在無法投點',
       capstone: (name: string) => `終極技：${name}`,
       noCapstone: '終極技：未選（限選一個）',
       /** What the next rank of an active node scales: power for damage and heals, the percent for a pure buff or debuff. */

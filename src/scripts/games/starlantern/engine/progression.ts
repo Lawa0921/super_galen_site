@@ -22,7 +22,11 @@ export function talentPoints(level: number): number {
   return level < 6 || !Number.isFinite(level) ? 0 : Math.floor((level - 4) / 2);
 }
 
-export type RaiseFail = 'unknown' | 'max' | 'points' | 'req' | 'gate' | 'capstone';
+/**
+ * Why a node cannot take its next rank, in the order they are checked: the structural reasons first, so a member with no
+ * points left still learns what stands in the way; 'points' only for a node that is otherwise open.
+ */
+export type RaiseFail = 'unknown' | 'max' | 'req' | 'gate' | 'capstone' | 'points';
 
 const has = (o: object, k: string) => Object.prototype.hasOwnProperty.call(o, k);
 
@@ -103,7 +107,6 @@ function check(id: CharacterId, level: number, tree: unknown, node: string): Rai
   const info = has(NODES, node) ? NODES[node] : undefined;
   if (!info || info.owner !== id) return 'unknown';
   if (rankIn(tree, node) >= info.node.maxRank) return 'max';
-  if (pointsLeft(id, level, tree) <= 0) return 'points';
   const branch = TREES[id].branches[info.branch].nodes;
   if (info.tier > 0 && rankIn(tree, branch[info.tier - 1].id) === 0) return 'req';
   let below = 0;
@@ -111,6 +114,7 @@ function check(id: CharacterId, level: number, tree: unknown, node: string): Rai
   if (info.branch === 0 && info.tier > 0) below -= Math.min(1, rankIn(tree, branch[0].id));
   if (below < TIER_GATE[info.tier]) return 'gate';
   if (info.tier === 4 && TREES[id].branches.some((b) => b.nodes[4].id !== node && rankIn(tree, b.nodes[4].id) > 0)) return 'capstone';
+  if (pointsLeft(id, level, tree) <= 0) return 'points';
   return null;
 }
 

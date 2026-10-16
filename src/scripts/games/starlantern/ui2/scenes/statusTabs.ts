@@ -7,7 +7,7 @@ import { ULTIMATES } from '../../data/ultimates';
 import { skillCost, skillFor } from '../../engine/battle';
 import { itemLines } from '../../engine/compare';
 import { ROW_MELEE, rowOfCell } from '../../engine/formation';
-import { canRaiseNode, freeNode, learnedSkills, nodeRank, rankMod, skillPointsLeft, type RaiseFail } from '../../engine/progression';
+import { canRaiseNode, freeNode, learnedSkills, nodeRank, rankMod, skillPointsLeft } from '../../engine/progression';
 import { SLOTS, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
 import { STAT_CATEGORIES, type StatCategory } from '../../engine/stats';
 import type { AnyStat, CharacterId, Slot, StatKey, Stats } from '../../engine/types';
@@ -294,8 +294,8 @@ function moveTree(node: string): boolean {
 /** Enter (or a second click) on the cursor's node: the two-press spend, through the Game so the spend is saved. */
 function pressTree(ctx: SceneCtx, id: CharacterId): void {
   const node = treeView.cur;
-  const r = pressSpend(treeView.spend, node, () => canRaiseNode(ctx.game.state.party.roster[id], node), () => { ctx.game.raiseNode(id, node); }, ctx.sfx);
-  treeView.msg = r === 'armed' ? T.ui2.tree.pending : r === 'raised' ? '' : T.ui2.tree.reason[r.refused as RaiseFail] ?? '';
+  const r = pressSpend(treeView.spend, node, () => canRaiseNode(ctx.game.state.party.roster[id], node), () => ctx.game.raiseNode(id, node).ok, ctx.sfx);
+  treeView.msg = r === 'armed' ? T.ui2.tree.pending : r === 'raised' ? '' : r === 'failed' ? T.ui2.tree.failed : T.ui2.tree.reason[r.refused];
 }
 
 /** The notes under the tree for the cursor's node: what it does now and what its next rank changes. */
@@ -339,10 +339,9 @@ const tree: StatusTab = {
   render(ctx, id, redraw) {
     const t = T.ui2.tree;
     const m = ctx.game.state.party.roster[id];
-    if (!treeOrder(id).includes(treeView.cur)) {
-      treeView.cur = treeOrder(id)[0];
-      settle();
-    }
+    // Another member's tree: the cursor starts over. A waiting press was already dropped by `leave` (a stale key is
+    // another tree's id, so it could never match a node here).
+    if (!treeOrder(id).includes(treeView.cur)) treeView.cur = treeOrder(id)[0];
     const branches = TREES[id].branches;
     const capstone = branches.map((b) => b.nodes[4]).find((n) => nodeRank(m, n.id) > 0);
     const cols = branches.map((b, bi) => {

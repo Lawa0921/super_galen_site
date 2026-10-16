@@ -546,15 +546,67 @@ describe('StatusScene', () => {
     });
 
     it('paging to another member cancels a pending raise', () => {
+      const { s, msg, cur, name } = onTree(2);
+      down(s, 5);
+      s.onAction('confirm');
+      expect(msg()).toBe(T.ui2.tree.pending);
+      s.onAction('next');
+      expect(name()).not.toContain('諾艾兒');
+      expect(msg()).toBe('');                                   // nothing of noel's press is left on the next page
+      s.onAction('prev');
+      expect(msg()).toBe('');
+      expect(cur()).toBe('fire-star');                          // another tree in between: the cursor starts over
+    });
+
+    it('a pending press does not survive switching the tab away and back', () => {
       const { s, msg, noel, cur } = onTree(2);
       down(s, 5);
       s.onAction('confirm');
-      s.onAction('next'); s.onAction('prev');
+      expect(msg()).toBe(T.ui2.tree.pending);
+      s.onAction('right'); s.onAction('left');
+      expect(cur()).toBe('ice-star');                           // the cursor is kept
       expect(msg()).toBe('');
-      expect(cur()).toBe('fire-star');                          // another tree: the cursor starts over
+      s.onAction('confirm');                                    // one press: armed afresh, not raised
+      expect(noel().tree['ice-star']).toBeUndefined();
+      expect(msg()).toBe(T.ui2.tree.pending);
+    });
+
+    it('closing the sheet drops a pending press', () => {
+      const { s, game, sfx, go, noel } = onTree(2);
       down(s, 5);
       s.onAction('confirm');
+      s.exit();
+      const root = document.createElement('div');
+      const again = new StatusScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), from: 'guild', arg: 'noel' });
+      again.enter(root);
+      again.onAction('right'); again.onAction('right'); again.onAction('right');
+      expect(root.querySelector('.slx-tree-node.slx-row-cur')!.getAttribute('data-node')).toBe('ice-star');
+      expect(root.querySelector('.slx-tree-msg')).toBeNull();
+      again.onAction('confirm');
       expect(noel().tree['ice-star']).toBeUndefined();
+    });
+
+    it('a spend the Game turns down is not shown as spent', () => {
+      const { s, game, msg, noel, sfx, body } = onTree(2);
+      down(s, 5);
+      s.onAction('confirm');
+      game.phase = 'battle';                                    // the Game refuses spends here
+      sfx.confirm.mockClear();
+      s.onAction('confirm');
+      expect(noel().tree['ice-star']).toBeUndefined();
+      expect(sfx.confirm).not.toHaveBeenCalled();
+      expect(msg()).toBe(T.ui2.tree.failed);
+      expect(body()).toContain('剩餘技能點 1');
+    });
+
+    it('with no points left a locked node shows its structural reason, an open one 點數不足', () => {
+      const { node, s, msg } = onTree(1);
+      expect(node('flame-wave').textContent).toContain(T.ui2.tree.reason.req);
+      expect(node('flame-wave').textContent).not.toContain(T.ui2.tree.reason.points);
+      expect(node('ice-star').textContent).toContain(T.ui2.tree.reason.points);
+      down(s, 2);
+      s.onAction('confirm');
+      expect(msg()).toBe('需先學會上一階');
     });
 
     it('the keyboard reaches every node, branch by branch', () => {
@@ -578,7 +630,7 @@ describe('StatusScene', () => {
       expect(tab()).toBe('技能');
     });
 
-    it('a click moves the cursor and a second click raises', () => {
+    it('a click moves the cursor, a second click arms and a third raises', () => {
       const { node, cur, msg, noel } = onTree(2);
       node('ice-star').click();
       expect(cur()).toBe('ice-star');
@@ -588,6 +640,19 @@ describe('StatusScene', () => {
       expect(msg()).toBe(T.ui2.tree.pending);
       node('ice-star').click();
       expect(noel().tree['ice-star']).toBe(1);
+    });
+
+    it('clicks and Enter share one press: click then Enter on the same node raises it', () => {
+      const { s, node, noel, msg } = onTree(3);
+      node('ice-star').click();                                 // moves the cursor
+      node('ice-star').click();                                 // arms
+      s.onAction('confirm');                                    // raises
+      expect(noel().tree['ice-star']).toBe(1);
+      node('hex').click();
+      s.onAction('confirm');                                    // arms
+      expect(msg()).toBe(T.ui2.tree.pending);
+      node('hex').click();                                      // raises
+      expect(noel().tree.hex).toBe(1);
     });
 
     it('mouse and touch reach every node', () => {

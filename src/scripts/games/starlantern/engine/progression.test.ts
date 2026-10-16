@@ -76,6 +76,24 @@ describe('progression', () => {
     expect(canRaiseNode(at('noel', 10), 'sweep')).toBe('unknown');
   });
 
+  it('with no points left the structural reason comes first; 點數不足 only for a node that is otherwise legal', () => {
+    expect(skillPointsLeft(at('noel', 1))).toBe(0);
+    expect(canRaiseNode(at('noel', 1), 'noel-ice-up')).toBe('req');
+    expect(canRaiseNode(at('noel', 1), 'ice-star')).toBe('points');
+    const gated = up(at('noel', 2), 'noel-fire-up');               // the one point spent: tiers below flame-wave hold 1 of 2
+    expect(skillPointsLeft(gated)).toBe(0);
+    expect(canRaiseNode(gated, 'flame-wave')).toBe('gate');
+    const maxed = up(at('noel', 3), 'fire-star', 2);
+    expect(skillPointsLeft(maxed)).toBe(0);
+    expect(canRaiseNode(maxed, 'fire-star')).toBe('max');
+    let m = at('noel', 50);
+    for (const [node, n] of [['fire-star', 2], ['noel-fire-up', 3], ['flame-wave', 1], ['noel-wave-up', 1], ['inferno', 1],
+      ['hex', 3], ['thunder-star', 3], ['noel-hex-up', 1], ['noel-thunder-up', 1]] as const) m = up(m, node, n);
+    for (const node of ['ice-star', 'noel-ice-up', 'frost-bind', 'noel-bind-up']) while (skillPointsLeft(m) > 0 && canRaiseNode(m, node) === null) m = up(m, node);
+    expect(skillPointsLeft(m)).toBe(0);
+    expect(canRaiseNode(m, 'judgement')).toBe('capstone');
+  });
+
   it('the free rank does not count toward the branch gate', () => {
     let m = up(at('noel', 10), 'noel-fire-up');
     expect(canRaiseNode(m, 'flame-wave')).toBe('gate');
