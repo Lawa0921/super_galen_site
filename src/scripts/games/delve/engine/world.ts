@@ -111,5 +111,9 @@ export class World {
     if (lx === CHUNK - 1 && cx < this.chunksX - 1) this.dirty.add(ci + 1);
     if (ly === 0 && cy > 0) this.dirty.add(ci - this.chunksX);
     if (ly === CHUNK - 1 && cy < this.chunksY - 1) this.dirty.add(ci + this.chunksX);
+    // 內角補點看斜角鄰格：角落格變動也要讓斜對角 chunk 重畫
+    const dxc = lx === 0 && cx > 0 ? -1 : lx === CHUNK - 1 && cx < this.chunksX - 1 ? 1 : 0;
+    const dyc = ly === 0 && cy > 0 ? -1 : ly === CHUNK - 1 && cy < this.chunksY - 1 ? 1 : 0;
+    if (dxc && dyc) this.dirty.add(ci + dxc + dyc * this.chunksX);
   }
 }

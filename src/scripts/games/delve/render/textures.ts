@@ -1,297 +1,637 @@
-// textures.ts — 程式產生的像素材質圖集（一次產生）。每個 tile 3 個變體（world.variant），
-// 另含背景牆、道具圖示（鎬、木材）、挖掘裂痕 4 階段。
+// textures.ts — 程式手繪的像素材質圖集（啟動時烘焙一次）。
+//   · 前景 tile：每個 tile 3 個變體 × 16 種外緣遮罩（圓角外框、左上受光的斜面、草皮頂與側邊）
+//   · 背景牆：自有的暗色材質（土牆 = 土塊、石牆 = 卵石 + 灰縫），同樣依遮罩描外框
+//   · 材質滲透貼片：石→土、沙→土、石→沙 的抖動過渡（每個邊 × 垂直邊外露狀態）
+//   · 草葉（長到上一格的草尖）、挖掘裂痕 4 階段、16×16 道具圖示
 import { T, TILES, WALLS } from '../engine/tiles';
 import type { ItemId } from '../engine/items';
-import { ITEMS } from '../engine/items';
 import { TILE_SIZE } from '../engine/constants';
+import { EDGE, FRAME_COLS, MAT, VARIANTS, frameColumn, type Mat } from './autotile';
+import { Bmp, INK, bayer, css, h01, hex, mix, ramp, shade, toCanvas, type RGB } from './pixel';
 
 const S = TILE_SIZE;
-export const VARIANTS = 3;
-const WALL_ROW0 = TILES.length;            // 牆列起點
-const ICON_ROW = WALL_ROW0 + WALLS.length; // 道具圖示列
-const CRACK_ROW = ICON_ROW + 1;            // 裂痕列
-const ROWS = CRACK_ROW + 1;
-const COLS = 4;
+export { VARIANTS };
 
-type RGB = [number, number, number];
+// ── 色票（由暗到亮；[0] 為該材質的描邊色） ─────────────────
+export const PAL = {
+  dirt: ramp('#2a1610', '#472819', '#623924', '#7c4c2e', '#966139', '#b07a4b', '#c99660'),
+  grass: ramp('#16301e', '#214528', '#2d672e', '#468a34', '#67ab3c', '#93cc50', '#c2e478'),
+  stone: ramp('#1d1c28', '#32323e', '#484856', '#5f606d', '#787a86', '#9395a0', '#b3b5bd'),
+  sand: ramp('#4c3822', '#7d6034', '#a6844a', '#c4a15f', '#d8ba76', '#e8d192', '#f5e6b6'),
+  planks: ramp('#2c180e', '#51301b', '#744725', '#946033', '#b07a44', '#ca995b', '#dfb777'),
+  copper: ramp('#3a1a10', '#6c3018', '#a04e29', '#ca7139', '#e69857', '#f5c384', '#fff1d2'),
+  iron: ramp('#2a2832', '#575160', '#857a82', '#a99c9a', '#c8bcb2', '#e2d8ce', '#fbf6ee'),
+  bark: ramp('#22130b', '#3c2313', '#57351d', '#734929', '#8f6038', '#ab7b4c', '#c69966'),
+  dirtWall: ramp('#0f0906', '#1b110c', '#26180f', '#311f15', '#3c271b', '#4a3123', '#573b2b'),
+  stoneWall: ramp('#0b0b10', '#15151c', '#1e1e27', '#282832', '#33333f', '#3f3f4d', '#4b4b5a'),
+  torch: ramp('#3a1206', '#a83a10', '#e8701c', '#ffa93a', '#ffd86a', '#fff4c0', '#ffffff'),
+  metal: ramp('#24242c', '#4a4c58', '#767a86', '#a4a8b2', '#d0d4da', '#f2f4f6', '#ffffff'),
+};
 
-function hex(c: string): RGB {
-  const n = parseInt(c.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-function shade(c: RGB, k: number): RGB {
-  return [c[0] * k, c[1] * k, c[2] * k].map((v) => Math.max(0, Math.min(255, Math.round(v)))) as RGB;
-}
-function mix(a: RGB, b: RGB, t: number): RGB {
-  return [0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * t)) as RGB;
-}
-/** 座標雜湊 → 0..1 */
-function h01(x: number, y: number, s: number): number {
-  let h = Math.imul(x + 374761393 * s, 668265263) ^ Math.imul(y + 1442695041, 2246822519);
-  h = Math.imul(h ^ (h >>> 15), 3266489917);
-  h ^= h >>> 13;
-  return ((h >>> 0) % 10000) / 10000;
+const TILE_PAL: Record<number, RGB[]> = {
+  [T.DIRT]: PAL.dirt, [T.GRASS]: PAL.dirt, [T.STONE]: PAL.stone, [T.SAND]: PAL.sand,
+  [T.PLANKS]: PAL.planks, [T.COPPER_ORE]: PAL.stone, [T.IRON_ORE]: PAL.stone,
+  [T.WOOD]: PAL.bark, [T.LEAVES]: PAL.grass, [T.TORCH]: PAL.torch, [T.WORKBENCH]: PAL.planks,
+};
+
+// ── 圖集版面 ─────────────────────────────────────────────
+const FG_ROW0 = 0;
+const WALL_ROW0 = FG_ROW0 + TILES.length;
+const BLEND_ROW0 = WALL_ROW0 + WALLS.length;  // 3 列：MAT.DIRT/SAND/STONE
+const MISC_ROW = BLEND_ROW0 + 3;              // 裂痕 0..3、草葉 4..6
+const ICON_ROW = MISC_ROW + 1;
+const ROWS = ICON_ROW + 1;
+
+// ── 小工具 ───────────────────────────────────────────────
+/** 平滑值雜訊（cell 格點雜湊 + 雙線性），0..1 */
+function vnoise(x: number, y: number, cell: number, seed: number): number {
+  const gx = Math.floor(x / cell), gy = Math.floor(y / cell);
+  const fx = x / cell - gx, fy = y / cell - gy;
+  const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+  const a = h01(gx, gy, seed), b = h01(gx + 1, gy, seed), c = h01(gx, gy + 1, seed), d = h01(gx + 1, gy + 1, seed);
+  return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
 }
 
-class Px {
-  readonly img: ImageData;
-  constructor(readonly w = S, readonly h = S) { this.img = new ImageData(w, h); }
-  set(x: number, y: number, c: RGB, a = 255): void {
-    if (x < 0 || y < 0 || x >= this.w || y >= this.h) return;
-    const i = (y * this.w + x) * 4, d = this.img.data;
-    d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = a;
+/** 環繞式 Voronoi：回傳 (最近點索引, d1, d2, 最近點座標) */
+function voronoi(x: number, y: number, pts: [number, number][], n = S): { i: number; d1: number; d2: number; cx: number; cy: number } {
+  let d1 = 1e9, d2 = 1e9, bi = 0, bx = 0, by = 0;
+  for (let k = 0; k < pts.length; k++) {
+    for (let oy = -n; oy <= n; oy += n) {
+      for (let ox = -n; ox <= n; ox += n) {
+        const px = pts[k][0] + ox, py = pts[k][1] + oy;
+        const d = Math.hypot(x + 0.5 - px, y + 0.5 - py);
+        if (d < d1) { d2 = d1; d1 = d; bi = k; bx = px; by = py; } else if (d < d2) d2 = d;
+      }
+    }
   }
-  get(x: number, y: number): RGB {
-    const i = (y * this.w + x) * 4, d = this.img.data;
-    return [d[i], d[i + 1], d[i + 2]];
-  }
-  alpha(x: number, y: number): number { return this.img.data[(y * this.w + x) * 4 + 3]; }
-  rect(x: number, y: number, w: number, h: number, c: RGB, a = 255): void {
-    for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) this.set(i, j, c, a);
-  }
+  return { i: bi, d1, d2, cx: bx, cy: by };
 }
-
-/** 基礎雜訊上色：2×2 塊狀 + 單像素細噪，像素風。 */
-function noiseFill(p: Px, base: RGB, seed: number, amp = 0.12): void {
+// ── 前景材質（未加外框） ─────────────────────────────────
+function texDirt(v: number, pal = PAL.dirt): Bmp {
+  const b = new Bmp(S, S);
+  const seed = 11 + v * 17;
   for (let y = 0; y < S; y++) {
     for (let x = 0; x < S; x++) {
-      const blk = h01(x >> 1, y >> 1, seed) - 0.5;
-      const fine = h01(x, y, seed + 7) - 0.5;
-      p.set(x, y, shade(base, 1 + blk * amp * 1.6 + fine * amp * 0.6));
+      const n = vnoise(x, y, 5, seed);
+      b.set(x, y, n > 0.7 ? pal[4] : n < 0.26 ? pal[2] : pal[3]);
     }
   }
+  // 土塊：上亮下暗的小凸起
+  const clods = 4 + v;
+  for (let k = 0; k < clods; k++) {
+    const cx = 1 + Math.floor(h01(k, 1, seed) * 13), cy = 1 + Math.floor(h01(k, 2, seed) * 13);
+    const w = 2 + Math.floor(h01(k, 3, seed) * 2);
+    for (let i = 0; i < w; i++) { b.set(cx + i, cy, pal[5]); b.set(cx + i, cy + 1, pal[2]); }
+    b.set(cx - 1, cy + 1, pal[2]);
+  }
+  // 小石子
+  const peb = v === 0 ? 1 : v === 2 ? 2 : 0;
+  for (let k = 0; k < peb; k++) {
+    const px = 2 + Math.floor(h01(k, 7, seed) * 11), py = 6 + Math.floor(h01(k, 8, seed) * 7);
+    const st = PAL.stone;
+    b.rect(px, py, 3, 2, st[4]);
+    b.set(px, py, st[5]); b.set(px + 1, py, st[6]);
+    b.set(px + 2, py + 1, st[3]);
+    b.rect(px, py + 2, 3, 1, pal[1]);
+    b.set(px + 3, py + 1, pal[1]);
+  }
+  // 樹根（變體 1）
+  if (v === 1) {
+    let x = 3, y = 2 + Math.floor(h01(2, 9, seed) * 3);
+    for (let i = 0; i < 9; i++) {
+      b.set(x, y, pal[5]); b.set(x, y + 1, pal[1]);
+      x++; if (h01(i, 10, seed) > 0.55) y++;
+      if (y > 13) break;
+    }
+  }
+  // 深色碎點
+  for (let k = 0; k < 3; k++) b.set(Math.floor(h01(k, 11, seed) * S), Math.floor(h01(k, 12, seed) * S), pal[1]);
+  return b;
 }
-function specks(p: Px, seed: number, n: number, c: RGB, size = 1): void {
-  for (let k = 0; k < n; k++) {
-    const x = Math.floor(h01(k, 1, seed) * (S - size)), y = Math.floor(h01(k, 2, seed) * (S - size));
-    p.rect(x, y, size, size, c);
+
+/** 刻痕：暗線 + 右下亮唇（左上受光） */
+function groove(b: Bmp, pal: RGB[], seed: number, k: number, len: number, dark: number, lite: number): void {
+  let x = 1 + Math.floor(h01(k, 1, seed) * 12), y = 1 + Math.floor(h01(k, 2, seed) * 12);
+  const dx = h01(k, 3, seed) > 0.5 ? 1 : -1;
+  for (let i = 0; i < len; i++) {
+    b.set(x, y, pal[dark]);
+    if (!b.in(x + 1, y + 1) || b.get(x + 1, y + 1) !== pal[dark]) b.set(x + 1, y + 1, pal[lite]);
+    const r = h01(i, k + 4, seed);
+    if (r < 0.45) x += dx; else if (r < 0.8) { x += dx; y++; } else y++;
+    if (x < 0 || x > 15 || y > 15) break;
   }
 }
 
-function paintTile(id: number, v: number): Px {
-  const p = new Px();
-  const def = TILES[id];
-  const base = hex(def.color);
-  const seed = id * 31 + v * 7 + 1;
+function texStone(v: number, pal = PAL.stone): Bmp {
+  const b = new Bmp(S, S);
+  const seed = 41 + v * 23;
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const n = vnoise(x + v * 5, y, 6, seed);
+      b.set(x, y, n > 0.64 ? pal[4] : n < 0.24 ? pal[2] : pal[3]);
+    }
+  }
+  // 凸起：上緣亮、下緣暗
+  const bumps = [[3, 4], [10, 9], [6, 12]][v];
+  for (let k = 0; k < 3; k++) {
+    const cx = (bumps[0] * (k + 1) * 3 + Math.floor(h01(k, 9, seed) * 6)) % 13 + 1;
+    const cy = (bumps[1] + k * 5 + Math.floor(h01(k, 10, seed) * 3)) % 13 + 1;
+    const w = 2 + (k % 2);
+    for (let i = 0; i < w; i++) { b.set(cx + i, cy, pal[5]); b.set(cx + i, cy + 1, pal[4]); b.set(cx + i, cy + 2, pal[2]); }
+  }
+  groove(b, pal, seed, 0, 5 + v, 1, 5);
+  if (v !== 1) groove(b, pal, seed, 1, 4, 2, 4);
+  b.set(Math.floor(h01(1, 5, seed) * 15), Math.floor(h01(1, 6, seed) * 15), pal[6]);
+  return b;
+}
+
+function texSand(v: number): Bmp {
+  const pal = PAL.sand, b = new Bmp(S, S), seed = 101 + v * 7;
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const wv = Math.sin((x + v * 5) / 2.6) * 1.2 + Math.sin((x + v * 3) / 5.3) * 0.8;
+      const r = ((y + wv + v * 2) % 5 + 5) % 5;
+      b.set(x, y, r < 1 ? pal[3] : r < 2 ? pal[5] : pal[4]);
+    }
+  }
+  for (let k = 0; k < 5; k++) {
+    const x = Math.floor(h01(k, 1, seed) * S), y = Math.floor(h01(k, 2, seed) * S);
+    b.set(x, y, k % 2 ? pal[2] : pal[6]);
+  }
+  return b;
+}
+
+function texPlanks(v: number): Bmp {
+  const pal = PAL.planks, b = new Bmp(S, S), seed = 131 + v * 5;
+  for (let board = 0; board < 4; board++) {
+    const y0 = board * 4;
+    const joint = (board * 7 + v * 5 + 3) % S;
+    const tone = h01(board, v, seed) > 0.5 ? 4 : 3;
+    for (let x = 0; x < S; x++) {
+      b.set(x, y0, pal[tone + 1]);
+      b.set(x, y0 + 1, pal[tone]);
+      b.set(x, y0 + 2, pal[tone]);
+      b.set(x, y0 + 3, pal[1]);
+    }
+    // 木紋
+    for (let k = 0; k < 2; k++) {
+      const gx = Math.floor(h01(board, k + 3, seed) * 12), gy = y0 + 1 + (k & 1);
+      const len = 3 + Math.floor(h01(board, k + 5, seed) * 4);
+      for (let i = 0; i < len; i++) b.set(gx + i, gy, pal[tone - 1]);
+    }
+    // 接縫 + 釘子
+    for (let y = y0; y < y0 + 3; y++) { b.set(joint, y, pal[1]); b.set(joint + 1, y, pal[tone + 1]); }
+    b.set(joint - 2, y0 + 1, pal[0]); b.set(joint - 2, y0, pal[5]);
+    b.set(joint + 3, y0 + 1, pal[0]); b.set(joint + 3, y0, pal[5]);
+  }
+  return b;
+}
+
+function oreChunk(b: Bmp, x: number, y: number, w: number, h: number, ore: RGB[]): void {
+  const m = new Bmp(w + 2, h + 2);
+  for (let j = 0; j < h; j++) {
+    for (let i = 0; i < w; i++) {
+      const corner = (i === 0 || i === w - 1) && (j === 0 || j === h - 1) && w > 2 && h > 2;
+      if (corner) continue;
+      const tl = i + j < (w + h) / 2 - 1;
+      m.set(i + 1, j + 1, tl ? ore[4] : ore[3]);
+    }
+  }
+  // 面：左上亮面、右下暗面、亮點
+  m.set(2, 1, ore[5]); m.set(1, 2, ore[5]);
+  if (w > 2) m.set(w, h, ore[2]);
+  if (w > 3) m.set(w - 1, h, ore[2]);
+  m.set(2, 2, ore[6]);
+  m.outline(ore[0]);
+  b.blit(m, x - 1, y - 1);
+}
+
+function texOre(id: number, v: number): Bmp {
+  const b = texStone(v);
+  const ore = id === T.COPPER_ORE ? PAL.copper : PAL.iron;
+  const seed = 201 + id * 13 + v * 7;
+  const spots: [number, number, number, number][] = [
+    [[2, 2, 5, 4], [10, 4, 4, 4], [4, 10, 5, 4]],
+    [[2, 4, 4, 4], [9, 1, 5, 4], [9, 10, 5, 4], [2, 11, 3, 3]],
+    [[1, 7, 5, 5], [8, 2, 5, 4], [10, 11, 4, 3]],
+  ][v] as [number, number, number, number][];
+  for (const [x, y, w, h] of spots) oreChunk(b, x + Math.floor(h01(x, y, seed) * 2), y, w, h, ore);
+  return b;
+}
+
+function texWorkbench(): Bmp {
+  const p = PAL.planks, m = PAL.metal, b = new Bmp(S, S);
+  // 桌面
+  b.rect(0, 6, 16, 3, p[4]);
+  b.rect(0, 6, 16, 1, p[6]);
+  b.rect(0, 8, 16, 1, p[2]);
+  b.set(5, 7, p[3]); b.set(11, 7, p[3]);
+  // 桌腳 + 橫撐
+  b.rect(1, 9, 3, 7, p[3]); b.rect(1, 9, 1, 7, p[5]);
+  b.rect(12, 9, 3, 7, p[3]); b.rect(12, 9, 1, 7, p[5]);
+  b.rect(4, 12, 8, 2, p[2]); b.rect(4, 12, 8, 1, p[4]);
+  // 鋸子
+  b.rect(2, 4, 6, 2, m[4]); b.rect(2, 5, 6, 1, m[2]);
+  for (let i = 2; i < 8; i += 2) b.set(i, 5, m[1]);
+  b.rect(8, 3, 2, 3, p[2]); b.set(8, 3, p[4]);
+  // 鐵鎚
+  b.rect(11, 1, 4, 2, m[3]); b.set(11, 1, m[5]);
+  b.rect(12, 3, 1, 3, p[5]); b.set(13, 3, p[2]);
+  b.outline(INK);
+  // 描邊把桌腳間的空隙也描了：清掉桌腳之間不該有的描邊（保留輪廓即可）
+  return b;
+}
+
+function texTile(id: number, v: number): Bmp {
   switch (id) {
-    case T.AIR: break;
-    case T.DIRT:
-      noiseFill(p, base, seed, 0.14);
-      specks(p, seed + 3, 4, shade(base, 0.7), 2);
-      specks(p, seed + 5, 3, shade(base, 1.18), 1);
-      break;
-    case T.GRASS: {
-      noiseFill(p, hex(TILES[T.DIRT].color), seed, 0.14);
-      specks(p, seed + 3, 3, shade(hex(TILES[T.DIRT].color), 0.7), 2);
-      for (let x = 0; x < S; x++) {
-        const depth = 3 + Math.floor(h01(x, v, seed) * 3);
-        for (let y = 0; y < depth; y++) {
-          const k = y === 0 ? 1.22 : y === depth - 1 ? 0.78 : 1 + (h01(x, y, seed + 9) - 0.5) * 0.18;
-          p.set(x, y, shade(base, k));
-        }
-      }
-      break;
-    }
-    case T.STONE: {
-      noiseFill(p, base, seed, 0.1);
-      // 裂縫與高光
-      const cy = 4 + Math.floor(h01(v, 0, seed) * 8);
-      for (let x = 2; x < 12; x++) p.set(x, cy + ((x >> 2) % 2), shade(base, 0.72));
-      specks(p, seed + 4, 4, shade(base, 1.2), 1);
-      specks(p, seed + 6, 2, shade(base, 0.8), 2);
-      break;
-    }
-    case T.SAND:
-      noiseFill(p, base, seed, 0.06);
-      specks(p, seed + 2, 8, shade(base, 0.86), 1);
-      specks(p, seed + 3, 5, shade(base, 1.1), 1);
-      break;
-    case T.WOOD: {
-      // 樹幹：中央 10px，縱向樹皮紋
-      for (let y = 0; y < S; y++) {
-        for (let x = 3; x < 13; x++) {
-          const stripe = (x + (v === 1 ? 1 : 0)) % 3 === 0 ? 0.74 : 1;
-          const edge = x === 3 || x === 12 ? 0.68 : 1;
-          p.set(x, y, shade(base, stripe * edge * (1 + (h01(x, y, seed) - 0.5) * 0.12)));
-        }
-      }
-      if (v === 2) { p.rect(6, 6, 3, 3, shade(base, 0.6)); p.set(7, 7, shade(base, 0.9)); }
-      break;
-    }
-    case T.LEAVES: {
-      // 茂密葉叢：底色雜訊 + 亮暗葉團，邊角少量鏤空
-      noiseFill(p, shade(base, 0.92), seed, 0.18);
-      for (let k = 0; k < 6; k++) {
-        const cx = 1 + Math.floor(h01(k, 3, seed) * 14), cy = 1 + Math.floor(h01(k, 4, seed) * 14);
-        const light = h01(k, 5, seed) > 0.45;
-        const c = light ? shade(base, 1.22) : shade(base, 0.7);
-        p.rect(cx - 1, cy - 1, 3, 2, c);
-        p.set(cx, cy + 1, light ? shade(base, 1.4) : shade(base, 0.6));
-      }
-      for (let k = 0; k < 10; k++) {
-        const e = Math.floor(h01(k, 6, seed) * 4), t = Math.floor(h01(k, 7, seed) * S);
-        const [x, y] = e === 0 ? [t, 0] : e === 1 ? [t, S - 1] : e === 2 ? [0, t] : [S - 1, t];
-        p.set(x, y, [0, 0, 0], 0);
-      }
-      break;
-    }
-    case T.PLANKS: {
-      for (let y = 0; y < S; y++) {
-        const board = y >> 2;
-        const tone = 1 + (h01(board, v, seed) - 0.5) * 0.16;
-        for (let x = 0; x < S; x++) {
-          let k = tone * (1 + (h01(x >> 2, y, seed + 2) - 0.5) * 0.08);
-          if (y % 4 === 3) k = 0.62;
-          const seam = (board % 2 === 0 ? 5 : 11) + v;
-          if (x === seam % S && y % 4 !== 3) k = 0.7;
-          p.set(x, y, shade(base, k));
-        }
-      }
-      break;
-    }
-    case T.COPPER_ORE:
-    case T.IRON_ORE: {
-      const stone = hex(TILES[T.STONE].color);
-      noiseFill(p, stone, seed, 0.1);
-      const n = 4 + v;
-      for (let k = 0; k < n; k++) {
-        const x = 1 + Math.floor(h01(k, 7, seed) * 12), y = 1 + Math.floor(h01(k, 8, seed) * 12);
-        p.rect(x, y, 2, 2, base);
-        p.set(x, y, shade(base, 1.3));
-        p.set(x + 1, y + 1, shade(base, 0.7));
-        if (h01(k, 9, seed) > 0.5) p.set(x + 2, y + 1, shade(base, 0.9));
-      }
-      break;
-    }
-    case T.TORCH: {
-      const stick: RGB = [110, 72, 40];
-      p.rect(7, 8, 2, 8, stick);
-      p.set(7, 8, shade(stick, 1.3));
-      const outer: RGB = [230, 110, 30], mid: RGB = [255, 190, 60], core: RGB = [255, 248, 210];
-      p.rect(6, 4, 4, 4, outer);
-      p.rect(7, 2 + (v === 1 ? 1 : 0), 2, 2, outer);
-      p.rect(7, 4, 2, 3, mid);
-      p.set(7, 5, core); p.set(8, 6, core);
-      break;
-    }
-    case T.WORKBENCH: {
-      p.rect(0, 6, 16, 3, base);
-      p.rect(0, 6, 16, 1, shade(base, 1.25));
-      p.rect(0, 8, 16, 1, shade(base, 0.7));
-      p.rect(1, 9, 2, 7, shade(base, 0.8));
-      p.rect(13, 9, 2, 7, shade(base, 0.8));
-      p.rect(3, 12, 10, 1, shade(base, 0.7));
-      // 檯面上的小鋸子
-      p.rect(9, 4, 5, 2, [170, 170, 178]);
-      p.rect(8, 4, 1, 2, [90, 60, 30]);
-      break;
-    }
-    default:
-      noiseFill(p, base, seed, 0.1);
+    case T.DIRT: case T.GRASS: return texDirt(v);
+    case T.STONE: return texStone(v);
+    case T.SAND: return texSand(v);
+    case T.PLANKS: return texPlanks(v);
+    case T.COPPER_ORE: case T.IRON_ORE: return texOre(id, v);
+    case T.WORKBENCH: return texWorkbench();
+    default: return new Bmp(S, S); // 空氣 / 樹幹 / 樹葉 / 火把：動態繪製
   }
-  return p;
 }
 
-function paintWall(id: number, v: number): Px {
-  const p = new Px();
-  if (id === 0) return p;
-  const base = shade(hex(WALLS[id].color), 0.95);
-  noiseFill(p, base, 900 + id * 13 + v, 0.16);
-  if (id === 2) {
-    // 石牆：粗略磚縫
-    for (let x = 0; x < S; x++) { p.set(x, 7, shade(base, 0.7)); p.set(x, 15, shade(base, 0.7)); }
-    for (let y = 0; y < 7; y++) p.set((5 + v * 3) % S, y, shade(base, 0.7));
-    for (let y = 8; y < 15; y++) p.set((12 + v * 3) % S, y, shade(base, 0.7));
-  } else {
-    specks(p, 950 + v, 5, shade(base, 0.7), 2);
+// ── 外框 ───────────────────────────────────────────────
+interface Dist { d: number; light: boolean; side: 'top' | 'left' | 'right' | 'bottom' | 'corner'; }
+/** 外緣距離：d<0 = 圓角切掉、0 = 外框、1.. 往內；light = 受光面（上 / 左） */
+function edgeDist(x: number, y: number, mask: number, w = S, h = S): Dist {
+  let d = 99, light = false, side: Dist['side'] = 'top';
+  const up = mask & EDGE.UP, rt = mask & EDGE.RIGHT, dn = mask & EDGE.DOWN, lf = mask & EDGE.LEFT;
+  const consider = (v: number, l: boolean, s: Dist['side']): void => { if (v < d) { d = v; light = l; side = s; } };
+  if (up) consider(y, true, 'top');
+  if (lf) consider(x, true, 'left');
+  if (dn) consider(h - 1 - y, false, 'bottom');
+  if (rt) consider(w - 1 - x, false, 'right');
+  const R = 3;
+  const cx = (ax: number, ay: number, l: boolean): void => {
+    if (ax < R && ay < R) { const v = ax + ay - 2; if (v < d) { d = v; light = l; side = 'corner'; } }
+  };
+  if (up && lf) cx(x, y, true);
+  if (up && rt) cx(w - 1 - x, y, y <= w - 1 - x);
+  if (dn && lf) cx(x, h - 1 - y, x <= h - 1 - y);
+  if (dn && rt) cx(w - 1 - x, h - 1 - y, false);
+  return { d, light, side };
+}
+
+/** 草皮每欄厚度 */
+function grassDepth(x: number, v: number): number {
+  const pat = [[4, 5, 5, 4, 3, 4, 5, 4, 4, 5, 4, 3, 4, 4, 5, 4], [4, 4, 5, 5, 4, 3, 4, 5, 5, 4, 4, 5, 4, 3, 4, 5], [5, 4, 4, 3, 4, 5, 5, 4, 3, 4, 5, 5, 4, 4, 5, 4]][v % 3];
+  return pat[x & 15];
+}
+
+function frameTile(src: Bmp, mask: number, pal: RGB[], opts: { grass?: boolean; v?: number; ink0?: RGB } = {}): Bmp {
+  const b = src.clone();
+  const w = b.w, h = b.h, v = opts.v ?? 0;
+  const G = PAL.grass;
+  const grassTop = Boolean(opts.grass) && (mask & EDGE.UP) !== 0;
+  const dropL = 4 + v, dropR = 5 - (v % 2);
+  if (grassTop) {
+    for (let x = 0; x < w; x++) {
+      const gd = grassDepth(x, v);
+      for (let y = 0; y < gd; y++) {
+        let c = y === 0 ? G[5] : y === 1 ? G[4] : y === gd - 1 ? G[2] : G[3];
+        if (y === 1 && h01(x, v, 7) > 0.8) c = G[6];
+        if (y === 2 && h01(x, v, 9) > 0.75) c = G[2];
+        b.set(x, y, c);
+      }
+      b.set(x, gd, pal[1]); // 草皮下緣的陰影
+    }
   }
-  return p;
+  const inGrass = (x: number, y: number): boolean => grassTop && (
+    y < grassDepth(x, v) ||
+    ((mask & EDGE.LEFT) !== 0 && x <= 1 && y < grassDepth(0, v) + dropL - x * 2) ||
+    ((mask & EDGE.RIGHT) !== 0 && x >= w - 2 && y < grassDepth(w - 1, v) + dropR - (w - 1 - x) * 2));
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const e = edgeDist(x, y, mask, w, h);
+      if (e.d >= 3) continue;
+      if (e.d < 0) { b.clear(x, y); continue; }
+      const c = b.get(x, y);
+      if (inGrass(x, y)) {
+        if (e.side === 'top') continue;
+        if (e.d === 0) b.set(x, y, G[1]);
+        else if (e.d === 1) b.set(x, y, e.light ? G[5] : G[2]);
+        continue;
+      }
+      if (e.d === 0) b.set(x, y, e.light ? (opts.ink0 ?? pal[1]) : pal[0]);
+      else if (e.d === 1) b.set(x, y, e.light ? mix(c, pal[6], 0.55) : mix(c, pal[1], 0.55));
+      else if (!e.light) b.set(x, y, mix(c, pal[2], 0.3));
+    }
+  }
+  return b;
 }
 
-function paintPick(head: RGB): Px {
-  const p = new Px();
-  const handle: RGB = [120, 80, 44];
-  for (let i = 0; i < 11; i++) p.set(3 + i, 14 - i, i % 3 === 0 ? shade(handle, 0.8) : handle); // 斜柄
-  for (let i = 0; i < 11; i++) p.set(4 + i, 13 - i, shade(handle, 0.7));
-  // 鎬頭：弧形
-  const pts: [number, number][] = [[4, 2], [5, 2], [6, 2], [7, 2], [8, 3], [9, 3], [10, 4], [11, 5], [12, 6], [12, 7], [13, 8], [13, 9], [13, 10]];
-  for (const [x, y] of pts) { p.set(x, y, head); p.set(x, y + 1, shade(head, 0.75)); }
-  p.set(4, 2, shade(head, 1.3)); p.set(13, 10, shade(head, 1.3));
-  return p;
+// ── 背景牆 ─────────────────────────────────────────────
+function texWall(id: number, v: number): Bmp {
+  const b = new Bmp(S, S);
+  if (id === 1) {
+    // 土牆：柔和的土塊（比前景土暗、對比低）
+    const pal = PAL.dirtWall, seed = 301 + v * 11;
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const n = vnoise(x + v * 7, y, 5, seed);
+      b.set(x, y, n > 0.66 ? pal[4] : n < 0.3 ? pal[2] : pal[3]);
+    }
+    for (let k = 0; k < 4; k++) {
+      const cx = 1 + Math.floor(h01(k, 1, seed) * 12), cy = 1 + Math.floor(h01(k, 2, seed) * 12);
+      b.set(cx, cy, pal[5]); b.set(cx + 1, cy, pal[5]); b.set(cx, cy + 1, pal[1]); b.set(cx + 1, cy + 1, pal[1]);
+    }
+  } else if (id === 2) {
+    // 石牆：大塊碎石 + 深灰縫（每格 3–4 塊、不對齊格線）
+    const pal = PAL.stoneWall, seed = 401 + v * 13;
+    const pts: [number, number][] = [];
+    const n = 3 + (v === 1 ? 1 : 0);
+    for (let k = 0; k < n; k++) pts.push([h01(k, 1, seed) * S, h01(k, 2, seed) * S]);
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const q = voronoi(x, y, pts);
+      const e = q.d2 - q.d1;
+      let c = pal[h01(q.i, 3, seed) > 0.5 ? 4 : 3];
+      if (e < 1.1) c = pal[0];
+      else if (e < 2.2) c = (x + 0.5 - q.cx) + (y + 0.5 - q.cy) < 0 ? pal[5] : pal[2];
+      b.set(x, y, c);
+    }
+  }
+  return b;
 }
 
-function paintLog(): Px {
-  const p = new Px();
-  const bark = hex(TILES[T.WOOD].color), inner: RGB = [214, 168, 110];
-  p.rect(2, 4, 12, 8, bark);
-  for (let x = 2; x < 14; x += 3) p.rect(x, 4, 1, 8, shade(bark, 0.75));
-  p.rect(11, 4, 4, 8, inner);
-  p.rect(12, 6, 2, 4, shade(inner, 0.8));
-  p.rect(2, 4, 12, 1, shade(bark, 1.2));
-  return p;
+function frameWall(src: Bmp, mask: number, pal: RGB[]): Bmp {
+  const b = src.clone();
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const e = edgeDist(x, y, mask);
+      if (e.d >= 2) continue;
+      if (e.d < 0) { b.clear(x, y); continue; }
+      b.set(x, y, e.d === 0 ? pal[0] : mix(b.get(x, y), pal[0], 0.5));
+    }
+  }
+  return b;
 }
 
-function paintCrack(stage: number): Px {
-  const p = new Px();
-  const c: RGB = [20, 14, 10];
+// ── 材質滲透貼片 ───────────────────────────────────────
+const SIDES = [EDGE.UP, EDGE.RIGHT, EDGE.DOWN, EDGE.LEFT] as const;
+/** perp 位元：對 UP/DOWN 而言 bit0 = LEFT、bit1 = RIGHT；對 LEFT/RIGHT 而言 bit0 = UP、bit1 = DOWN */
+export function perpMask(side: number, mask: number): number {
+  if (side === EDGE.UP || side === EDGE.DOWN) return (mask & EDGE.LEFT ? 1 : 0) | (mask & EDGE.RIGHT ? 2 : 0);
+  return (mask & EDGE.UP ? 1 : 0) | (mask & EDGE.DOWN ? 2 : 0);
+}
+function blendStamp(mat: Mat, sideIdx: number, perp: number): Bmp {
+  const src = mat === MAT.STONE ? texStone(0) : mat === MAT.SAND ? texSand(0) : texDirt(0);
+  const side = SIDES[sideIdx];
+  const vertical = side === EDGE.UP || side === EDGE.DOWN;
+  let pmask = 0;
+  if (vertical) pmask = (perp & 1 ? EDGE.LEFT : 0) | (perp & 2 ? EDGE.RIGHT : 0);
+  else pmask = (perp & 1 ? EDGE.UP : 0) | (perp & 2 ? EDGE.DOWN : 0);
+  const b = new Bmp(S, S);
+  const cover = [0.85, 0.6, 0.34, 0.14];
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const along = vertical ? x : y;
+      let t = side === EDGE.UP ? y : side === EDGE.DOWN ? S - 1 - y : side === EDGE.LEFT ? x : S - 1 - x;
+      t -= Math.floor(vnoise(along, 0, 4, 900 + sideIdx) * 2.4) - 1;
+      if (t < 0) t = 0;
+      if (t >= cover.length) continue;
+      if (pmask && edgeDist(x, y, pmask).d < 2) continue;
+      if (bayer(x, y) < cover[t]) b.setRaw(x, y, src.raw(x, y));
+    }
+  }
+  return b;
+}
+
+// ── 草葉（畫在草地上方那格的底部） ──────────────────────
+function grassBlades(v: number): Bmp {
+  const G = PAL.grass, b = new Bmp(S, S);
+  for (let x = 0; x < S; x++) {
+    const r = h01(x, v, 501);
+    const hgt = r > 0.82 ? 3 : r > 0.5 ? 2 : r > 0.25 ? 1 : 0;
+    for (let k = 0; k < hgt; k++) {
+      const y = S - 1 - k;
+      b.set(x, y, k === hgt - 1 ? G[5] : G[4]);
+    }
+  }
+  if (v === 2) { b.set(11, 13, G[3]); b.set(11, 12, G[3]); b.set(11, 11, hex('#f2d04a')); b.set(10, 11, hex('#f6e48a')); }
+  if (v === 1) { b.set(4, 13, G[3]); b.set(4, 12, hex('#e8789e')); b.set(5, 12, hex('#f4a8c0')); }
+  return b;
+}
+
+// ── 裂痕 ───────────────────────────────────────────────
+function crack(stage: number): Bmp {
+  const b = new Bmp(S, S);
   const lines: [number, number, number, number][] = [
-    [8, 8, 3, 3], [8, 8, 13, 5], [8, 8, 5, 13], [8, 8, 12, 12],
-    [3, 3, 1, 7], [13, 5, 15, 2], [5, 13, 2, 15], [12, 12, 15, 14],
+    [8, 8, 4, 4], [8, 8, 12, 6], [8, 8, 6, 12], [8, 8, 13, 12],
+    [4, 4, 1, 6], [12, 6, 15, 3], [6, 12, 3, 15], [13, 12, 15, 15], [4, 4, 5, 1], [12, 6, 11, 1],
   ];
-  const n = 2 + stage * 2;
+  const n = 2 + stage * 2 + (stage === 3 ? 2 : 0);
+  const dark = INK, lite = hex('#fff8e0');
   for (let k = 0; k < n && k < lines.length; k++) {
     const [x0, y0, x1, y1] = lines[k];
     const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
     for (let i = 0; i <= steps; i++) {
-      p.set(Math.round(x0 + ((x1 - x0) * i) / steps), Math.round(y0 + ((y1 - y0) * i) / steps), c, 200);
+      const x = Math.round(x0 + ((x1 - x0) * i) / steps), y = Math.round(y0 + ((y1 - y0) * i) / steps);
+      if (!b.on(x + 1, y + 1)) b.set(x + 1, y + 1, lite, 70);
+      b.set(x, y, dark, 215);
     }
   }
-  return p;
+  return b;
 }
 
+// ── 道具圖示（16×16） ─────────────────────────────────
+const PICK = [
+  '................',
+  '....xxxxx.......',
+  '..xxHHHhhxx.....',
+  '.xHHhxxxhhdx....',
+  '.xHxx..xWxhdx...',
+  '.xx...xWwxxhdx..',
+  '......xWwx.xhdx.',
+  '.....xWwx..xhdx.',
+  '....xWwx...xhdx.',
+  '...xWwx.....xdx.',
+  '..xWwx......xx..',
+  '.xWwx...........',
+  'xWwx............',
+  'xwx.............',
+  '.x..............',
+  '................',
+];
+function iconPick(metal: RGB[]): Bmp {
+  const b = new Bmp(S, S), w = PAL.bark;
+  b.grid(PICK, { x: INK, H: metal[5], h: metal[3], d: metal[1], W: w[5], w: w[3] });
+  b.set(5, 2, metal[6]);
+  return b;
+}
+const TORCH_ICON = [
+  '................',
+  '.......x........',
+  '......xox.......',
+  '......xoox......',
+  '.....xoyox......',
+  '.....xyCyox.....',
+  '.....xoyyox.....',
+  '......xccx......',
+  '......xLwx......',
+  '......xLwx......',
+  '......xLwx......',
+  '......xLwx......',
+  '......xLwx......',
+  '......xLwx......',
+  '.......xx.......',
+  '................',
+];
+function iconTorch(): Bmp {
+  const b = new Bmp(S, S), t = PAL.torch, w = PAL.bark;
+  b.grid(TORCH_ICON, { x: INK, o: t[2], y: t[4], C: t[5], c: hex('#6a4a30'), w: w[3], L: w[5] });
+  return b;
+}
+function iconLog(): Bmp {
+  const b = new Bmp(S, S), w = PAL.bark;
+  const ring = [hex('#e2bf88'), hex('#c89a64'), hex('#a77a4a')];
+  b.rect(1, 5, 11, 7, w[3]);
+  b.rect(1, 5, 11, 1, w[5]);
+  b.rect(1, 6, 11, 1, w[4]);
+  b.rect(1, 10, 11, 1, w[2]);
+  b.rect(1, 11, 11, 1, w[1]);
+  for (const x of [3, 6, 9]) { b.set(x, 7, w[2]); b.set(x + 1, 8, w[2]); b.set(x, 9, w[2]); }
+  b.disc(12.5, 8.5, 3, 3.6, ring[1]);
+  b.disc(12.5, 8.5, 2, 2.4, ring[0]);
+  b.set(12, 8, ring[2]); b.set(13, 9, ring[2]);
+  b.outline(INK);
+  return b;
+}
+function iconPlanks(): Bmp {
+  const b = new Bmp(S, S), p = PAL.planks;
+  const plank = (x: number, y: number, w: number): void => {
+    b.rect(x, y, w, 4, p[4]);
+    b.rect(x, y, w, 1, p[6]);
+    b.rect(x, y + 3, w, 1, p[2]);
+    b.rect(x + 2, y + 2, 4, 1, p[3]);
+    b.set(x + w - 2, y + 1, p[1]);
+  };
+  plank(3, 3, 12); plank(1, 7, 12); plank(2, 11, 12);
+  b.outline(INK);
+  return b;
+}
+function iconOre(ore: RGB[]): Bmp {
+  const b = new Bmp(S, S), st = PAL.stone;
+  b.disc(8, 9, 6.5, 5.2, st[4]);
+  b.disc(7, 8, 5, 3.8, st[5]);
+  b.disc(9, 10.5, 5, 3, st[3]);
+  oreChunk(b, 4, 6, 3, 3, ore);
+  oreChunk(b, 9, 5, 3, 3, ore);
+  oreChunk(b, 7, 10, 4, 3, ore);
+  b.outline(INK);
+  return b;
+}
+function iconBlock(tex: Bmp, pal: RGB[], grass = false): Bmp {
+  const n = 12, src = new Bmp(n, n);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) src.setRaw(x, y, tex.raw(x + 2, y + 2));
+  const f = frameTile(src, 15, pal, { grass });
+  const b = new Bmp(S, S);
+  b.blit(f, 2, 2);
+  b.outline(INK);
+  return b;
+}
+
+/** 道具 → 圖示欄位 */
+const ICON_ORDER: ItemId[] = [
+  'dirt', 'stone', 'sand', 'wood', 'planks', 'copper_ore', 'iron_ore', 'torch', 'workbench',
+  'wood_pickaxe', 'copper_pickaxe', 'iron_pickaxe',
+];
+export const PICK_METAL: Record<string, RGB[]> = {
+  wood_pickaxe: ramp('#2a170c', '#5a3a20', '#7e5530', '#a07040', '#bf8c54', '#d8aa70', '#ecc890'),
+  copper_pickaxe: PAL.copper,
+  iron_pickaxe: PAL.metal,
+};
+function paintIcon(item: ItemId): Bmp {
+  switch (item) {
+    case 'dirt': return iconBlock(texDirt(0), PAL.dirt);
+    case 'stone': return iconBlock(texStone(0), PAL.stone);
+    case 'sand': return iconBlock(texSand(0), PAL.sand);
+    case 'wood': return iconLog();
+    case 'planks': return iconPlanks();
+    case 'copper_ore': return iconOre(PAL.copper);
+    case 'iron_ore': return iconOre(PAL.iron);
+    case 'torch': return iconTorch();
+    case 'workbench': return texWorkbench();
+    default: return iconPick(PICK_METAL[item] ?? PAL.metal);
+  }
+}
+
+// ── 圖集 ───────────────────────────────────────────────
+export interface Src { sx: number; sy: number; }
 export interface Atlas {
   canvas: HTMLCanvasElement;
-  /** 前景 tile (id, variant) 的圖集左上角 */
-  tile(id: number, variant: number): { sx: number; sy: number };
-  wall(id: number, variant: number): { sx: number; sy: number };
-  crack(stage: number): { sx: number; sy: number };
-  /** 道具圖示來源（方塊用 tile 變體 0） */
-  icon(item: ItemId): { sx: number; sy: number };
-  /** 平均色（粒子用） */
+  /** 前景 tile (id, variant, 外緣遮罩) */
+  tile(id: number, variant: number, mask: number): Src;
+  wall(id: number, variant: number, mask: number): Src;
+  /** 材質滲透貼片：mat 滲入、sideIdx 0..3 = 上右下左、perp 見 perpMask */
+  blend(mat: Mat, sideIdx: number, perp: number): Src;
+  blades(variant: number): Src;
+  crack(stage: number): Src;
+  icon(item: ItemId): Src;
+  /** 粒子用代表色 */
   tileColor(id: number): string;
+  /** 內角補點色 */
+  tileInk(id: number): string;
+  /** 圖示點陣（手持物件用） */
+  iconBmp(item: ItemId): Bmp;
 }
 
 export function buildAtlas(): Atlas {
   const canvas = document.createElement('canvas');
-  canvas.width = COLS * S;
+  canvas.width = FRAME_COLS * S;
   canvas.height = ROWS * S;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('2d context unavailable');
-  const put = (p: Px, col: number, row: number): void => ctx.putImageData(p.img, col * S, row * S);
-  for (const t of TILES) for (let v = 0; v < VARIANTS; v++) put(paintTile(t.id, v), v, t.id);
-  for (const w of WALLS) for (let v = 0; v < VARIANTS; v++) put(paintWall(w.id, v), v, WALL_ROW0 + w.id);
-  put(paintPick([176, 140, 92]), 0, ICON_ROW);
-  put(paintPick([214, 124, 64]), 1, ICON_ROW);
-  put(paintPick([196, 200, 210]), 2, ICON_ROW);
-  put(paintLog(), 3, ICON_ROW);
-  for (let s = 0; s < 4; s++) put(paintCrack(s), s, CRACK_ROW);
+  const put = (b: Bmp, col: number, row: number): void => { toCanvas(b, { ctx, x: col * S, y: row * S }); };
 
-  const ICONS: Partial<Record<ItemId, [number, number]>> = {
-    wood_pickaxe: [0, ICON_ROW], copper_pickaxe: [1, ICON_ROW], iron_pickaxe: [2, ICON_ROW], wood: [3, ICON_ROW],
-  };
-  const colors = TILES.map((t) => t.color);
+  for (const t of TILES) {
+    const pal = TILE_PAL[t.id] ?? PAL.stone;
+    for (let v = 0; v < VARIANTS; v++) {
+      const tex = texTile(t.id, v);
+      const frameable = t.solid;
+      for (let m = 0; m < 16; m++) {
+        const b = frameable ? frameTile(tex, m, pal, { grass: t.id === T.GRASS, v }) : tex;
+        put(b, frameColumn(m, v), FG_ROW0 + t.id);
+      }
+    }
+  }
+  for (const w of WALLS) {
+    if (w.id === 0) continue;
+    const pal = w.id === 1 ? PAL.dirtWall : PAL.stoneWall;
+    for (let v = 0; v < VARIANTS; v++) {
+      const tex = texWall(w.id, v);
+      for (let m = 0; m < 16; m++) put(frameWall(tex, m, pal), frameColumn(m, v), WALL_ROW0 + w.id);
+    }
+  }
+  for (let mat = 1; mat <= 3; mat++) {
+    for (let s = 0; s < 4; s++) for (let p = 0; p < 4; p++) put(blendStamp(mat as Mat, s, p), s * 4 + p, BLEND_ROW0 + mat - 1);
+  }
+  for (let s = 0; s < 4; s++) put(crack(s), s, MISC_ROW);
+  for (let v = 0; v < 3; v++) put(grassBlades(v), 4 + v, MISC_ROW);
+  const iconBmps = new Map<ItemId, Bmp>();
+  ICON_ORDER.forEach((item, i) => { const b = paintIcon(item); iconBmps.set(item, b); put(b, i, ICON_ROW); });
+
+  const colors: string[] = TILES.map((t) => {
+    const pal = TILE_PAL[t.id];
+    if (t.id === T.COPPER_ORE) return css(PAL.copper[3]);
+    if (t.id === T.IRON_ORE) return css(PAL.iron[4]);
+    if (t.id === T.LEAVES) return css(PAL.grass[3]);
+    return pal ? css(pal[4]) : '#888888';
+  });
+  const inks: string[] = TILES.map((t) => css((TILE_PAL[t.id] ?? PAL.stone)[0]));
   return {
     canvas,
-    tile: (id, v) => ({ sx: (v % VARIANTS) * S, sy: id * S }),
-    wall: (id, v) => ({ sx: (v % VARIANTS) * S, sy: (WALL_ROW0 + id) * S }),
-    crack: (s) => ({ sx: Math.max(0, Math.min(3, s)) * S, sy: CRACK_ROW * S }),
-    icon: (item) => {
-      const fixed = ICONS[item];
-      if (fixed) return { sx: fixed[0] * S, sy: fixed[1] * S };
-      const place = ITEMS[item].place ?? T.DIRT;
-      return { sx: 0, sy: place * S };
-    },
+    tile: (id, v, mask) => ({ sx: frameColumn(mask, v) * S, sy: (FG_ROW0 + id) * S }),
+    wall: (id, v, mask) => ({ sx: frameColumn(mask, v) * S, sy: (WALL_ROW0 + id) * S }),
+    blend: (mat, s, p) => ({ sx: (s * 4 + p) * S, sy: (BLEND_ROW0 + mat - 1) * S }),
+    blades: (v) => ({ sx: (4 + (v % 3)) * S, sy: MISC_ROW * S }),
+    crack: (s) => ({ sx: Math.max(0, Math.min(3, s)) * S, sy: MISC_ROW * S }),
+    icon: (item) => ({ sx: Math.max(0, ICON_ORDER.indexOf(item)) * S, sy: ICON_ROW * S }),
     tileColor: (id) => colors[id] ?? '#888888',
+    tileInk: (id) => inks[id] ?? '#1c1424',
+    iconBmp: (item) => iconBmps.get(item) ?? new Bmp(S, S),
   };
 }
 
