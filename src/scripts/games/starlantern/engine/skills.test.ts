@@ -303,6 +303,28 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
     ]);
   });
 
+  it('skillFor casts exactly what treeMods describes, then the worn powers (one path)', () => {
+    for (const [skill, ranks, powers] of [
+      ['turret', { turret: 2, 'bobby-turret-up': 3, 'twin-turret': 1 }, ['lg-bobby']],
+      ['shield-bash', { 'shield-bash': 3, 'scarlet-bash-up': 2 }, []],
+      ['fire-star', { 'fire-star': 3, 'noel-fire-up': 1 }, ['lg-noel']],
+    ] as [string, Record<string, number>, string[]][]) {
+      const tree = treeMods(ranks, skill).reduce((d, m) => patchSkill(d, m), SKILLS[skill]);
+      const want = powers.map((p) => POWERS[p].mod).reduce((d, m) => patchSkill(d, m), tree);
+      expect(skillFor(caster(ranks, powers), skill), skill).toEqual(want);
+    }
+  });
+
+  it('a member casts only a skill whose own node holds a whole rank; a junk rank casts nothing', () => {
+    const casts = (ranks: Record<string, unknown>) => resolveRound(
+      makeBattle([party({ ranks: ranks as Record<string, number> })], [enemy({ max: { hp: 999 } as never })]),
+      { p: { kind: 'skill', skill: 'twin-slash', target: 'e0' } }, constRng(0.5),
+    ).log.some((e) => e.type === 'act' && e.actor === 'p');
+    expect(casts({ 'twin-slash': 1 })).toBe(true);
+    expect(casts({ 'twin-slash': 9 })).toBe(true);   // above the max reads as the max
+    for (const junk of [0, -1, 1.5, '1', NaN, null, true]) expect(casts({ 'twin-slash': junk }), String(junk)).toBe(false);
+  });
+
   it('a mod node without its active, a rank of 0 and a junk rank change nothing', () => {
     expect(skillFor(caster({ 'fire-star': 0 }), 'fire-star')).toBe(SKILLS['fire-star']);
     expect(skillFor(caster({ 'fire-star': 1, 'noel-fire-up': 0 }), 'fire-star')).toBe(SKILLS['fire-star']);
@@ -311,9 +333,10 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
     expect(dmg(caster({ 'fire-star': 9 }), 'fire-star')).toBe(pw(140, ACTIVE_RANK_PCT[2]));
   });
 
-  it('treeMods lists the active rank first, then the modifier nodes in tree order', () => {
+  it('treeMods gives the two tree stages: the active rank, then the modifier nodes stacked into one in tree order', () => {
     expect(treeMods({ turret: 2, 'twin-turret': 1, 'bobby-turret-up': 1 }, 'turret'))
-      .toEqual([{ powerPct: ACTIVE_RANK_PCT[1] }, mod('bobby-turret-up', 1), mod('twin-turret', 1)]);
+      .toEqual([{ powerPct: ACTIVE_RANK_PCT[1] }, stackMods([mod('bobby-turret-up', 1), mod('twin-turret', 1)])]);
+    expect(treeMods({ turret: 1, 'twin-turret': 1 }, 'turret')).toEqual([mod('twin-turret', 1)]);
     expect(treeMods({ 'guardian-roar': 2 }, 'guardian-roar')).toEqual([{ buffPct: ACTIVE_RANK_PCT[1] }]);
     expect(treeMods({ turret: 1 }, 'turret')).toEqual([]);
     expect(treeMods({}, 'no-such-skill')).toEqual([]);

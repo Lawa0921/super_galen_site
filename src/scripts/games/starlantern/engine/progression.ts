@@ -5,6 +5,7 @@ import {
   BOARDS, DEFAULT_KEYSTONES, TALENT_NODES, TALENT_PER, TALENT_SCALE, boardPoints, keystoneCount, rankOf, talentBlocker, type KeystoneId, type TalentBlocker,
 } from '../data/talents';
 import type { AnyStat, CharacterId, Member, Sheet } from './types';
+import { stackMods } from './skills';
 
 /**
  * Skill-tree rules: points per level, what a member may raise next, and the default build.
@@ -53,16 +54,28 @@ export const learnedSkills = (m: Member): string[] =>
   TREES[m.id].branches.flatMap((b) => b.nodes.filter((n) => n.kind === 'active' && rankIn(m.tree, n.id) > 0).map((n) => n.skill));
 
 /**
- * The tree's rewrites of `skill` for these ranks: first the active node's own rank as `{ powerPct: ACTIVE_RANK_PCT[rank - 1] }`
- * (left out at 100), then `mods[rank - 1]` of every mod node of that skill held at rank 1 or more, in tree order.
- * A rank above a node's max reads as the max; a junk rank reads as 0. How they stack: engine/skills.ts `patchSkill`.
+ * The tree's rewrites of `skill` for these ranks, as the two stages battle.ts `skillFor` applies one after another (its
+ * only source for the tree): first the active node's own rank (`rankMod`; left out when it changes nothing), then
+ * `mods[rank - 1]` of every mod node of that skill held at rank 1 or more, stacked into one by `stackMods` in tree order
+ * (left out when none is held). A rank above a node's max reads as the max; a junk rank reads as 0.
+ * The order and the stacking rules: engine/skills.ts `patchSkill`.
  */
 export function treeMods(ranks: Record<string, number>, skill: string): SkillMod[] {
   const rank = rankMod(ranks, skill);
-  return [...(rank ? [rank] : []), ...nodeMods(ranks, skill)];
+  const nodes = nodeMods(ranks, skill);
+  return [...(rank ? [rank] : []), ...(nodes.length ? [stackMods(nodes)] : [])];
 }
 
 const activeNode = (skill: string) => (has(NODES, skill) && NODES[skill].node.kind === 'active' ? NODES[skill] : undefined);
+
+/**
+ * The rank a combatant's `ranks` hold in the active node of `skill`, read as `rankIn` reads a tree: an own key holding a
+ * positive integer, capped at the node's max; anything else (and a skill with no active node) is 0.
+ */
+export function skillRank(ranks: unknown, skill: string): number {
+  const info = activeNode(skill);
+  return info ? Math.min(rankIn(ranks, skill), info.node.maxRank) : 0;
+}
 
 /**
  * The active node's own rank as a rewrite of the skill's primary effect, or undefined when it changes nothing (rank 0, or
@@ -70,8 +83,7 @@ const activeNode = (skill: string) => (has(NODES, skill) && NODES[skill].node.ki
  * alone); a pure buff or debuff skill scales its percent (`buffPct`). A skill with neither has nothing to scale.
  */
 export function rankMod(ranks: Record<string, number>, skill: string): SkillMod | undefined {
-  const info = activeNode(skill);
-  const rank = info ? Math.min(rankIn(ranks, skill), info.node.maxRank) : 0;
+  const rank = skillRank(ranks, skill);
   const pct = rank > 0 ? ACTIVE_RANK_PCT[rank - 1] : 100;
   if (pct === 100) return undefined;
   const kinds = SKILLS[skill]?.effects.map((e) => e.kind) ?? [];

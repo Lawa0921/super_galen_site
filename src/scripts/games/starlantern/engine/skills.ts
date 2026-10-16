@@ -20,7 +20,8 @@ const pctOf = (base: number, pct: number | undefined): number => {
  * `turnsDelta`) goes to every effect that lasts; `chance` goes to poison inflicts only; `tpDelta` is added to a TP cost
  * (floored at 1); `extra` is appended as written.
  *
- * Stacking order (engine/battle.ts `skillFor` applies it; this is the one place it is stated):
+ * Stacking order (engine/battle.ts `skillFor` applies it, stages 2 and 3 as progression.treeMods gives them; this is the
+ * one place it is stated):
  * 1. base: SKILLS[id];
  * 2. tree rank: the active node's ACTIVE_RANK_PCT on the skill's primary effect (progression.rankMod): powerPct for a
  *    damage, heal or turret skill, buffPct for a pure buff or debuff skill; a debuff riding on damage never scales;

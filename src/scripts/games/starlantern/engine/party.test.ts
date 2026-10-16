@@ -64,7 +64,8 @@ describe('gear instances', () => {
     expect(statSources(m).map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'talent', 'primary']);
     expect(parts.talent).toEqual({ int: 3 * per('int') });
     expect(sheetOf(m).mag - sheetOf(before).mag).toBeCloseTo(3 * per('int') * 1.5);   // 1.5: the 5a affinity multiplier
-    expect(parts.base.int).toBe(statSources(before)[0].stats.int);                   // natural int unchanged
+    expect(parts.base.int).toBe(CHARACTERS.noel.base.mag + CHARACTERS.noel.growth.mag * 9);   // natural int unchanged: Lv10 mag
+    expect(parts.base.int).toBe(41);
   });
   it('gear primaries convert and show as their own source', () => {
     const sword = { ...plainItem('iron-sword', 1), affixes: [{ key: 'str' as const, value: 10 }] };

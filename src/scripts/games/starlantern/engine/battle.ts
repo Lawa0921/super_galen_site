@@ -12,8 +12,8 @@ import { hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
 import { depthLevel, empower, homeLevel, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
-import { applyEffect, patchSkill, stackMods, type EffectContext } from './skills';
-import { keystonesOf, nodeMods, rankMod } from './progression';
+import { applyEffect, patchSkill, type EffectContext } from './skills';
+import { keystonesOf, skillRank, treeMods } from './progression';
 import { KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, SecondaryKey, SkillDef, Target } from './types';
 
@@ -177,11 +177,9 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
 export function skillFor(c: Pick<Combatant, 'powers' | 'ranks'>, id: string): SkillDef | undefined {
   const base = SKILLS[id];
   if (!base) return base;
-  // The tree's two stages (progression.treeMods lists both): the active's own rank, then its mod nodes stacked into one.
-  const rank = c.ranks ? rankMod(c.ranks, id) : undefined;
-  const nodes = c.ranks ? nodeMods(c.ranks, id) : [];
+  // The tree's two stages (the active's own rank, then its mod nodes stacked into one) come from progression.treeMods only.
   const powers = (c.powers ?? []).map((p) => POWERS[p]).filter((p) => p && p.skill === id).map((p) => p.mod);
-  const mods = [...(rank ? [rank] : []), ...(nodes.length ? [stackMods(nodes)] : []), ...powers];
+  const mods = [...(c.ranks ? treeMods(c.ranks, id) : []), ...powers];
   if (!mods.length) return base;
   let def = base;
   const extra: Effect[] = [];
@@ -239,8 +237,9 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       return;
     }
     case 'skill': {
-      // A member casts only what their tree has learned; a combatant without ranks (tests) casts anything.
-      if (actor.ranks && (actor.ranks[act.skill] ?? 0) === 0) return;
+      // A member casts only what their tree has learned (a whole rank of the skill's own node, read as progression reads
+      // a tree); a combatant without ranks (tests) casts anything.
+      if (actor.ranks && skillRank(actor.ranks, act.skill) === 0) return;
       const def = skillFor(actor, act.skill);
       if (!def || def.passive) return;
       const cost = skillCost(actor, act.skill);
