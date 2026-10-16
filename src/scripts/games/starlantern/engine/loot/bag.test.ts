@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { BAG_SIZE, applyAutoJunk, sortBag } from './bag';
+import { readFileSync } from 'node:fs';
+import { BAG_SIZE, addGear, applyAutoJunk, mintUid, sortBag } from './bag';
+import { newGame } from '../state';
 import type { ItemInstance, Rarity } from '../types';
 
 const item = (uid: number, base: string, rarity: Rarity, ilvl: number): ItemInstance =>
@@ -8,6 +10,19 @@ const item = (uid: number, base: string, rarity: Rarity, ilvl: number): ItemInst
 describe('bag', () => {
   it('holds sixty pieces', () => {
     expect(BAG_SIZE).toBe(60);
+  });
+
+  it('addGear puts a plain common of the base in the bag under a minted uid', () => {
+    const s = newGame();
+    s.nextUid = 7;
+    addGear(s, 'iron-sword');
+    expect(s.bag.at(-1)).toMatchObject({ uid: 7, base: 'iron-sword', rarity: 'common', affixes: [] });
+    expect([mintUid(s), s.nextUid]).toEqual([8, 9]);
+  });
+
+  it('save.ts takes addGear from the bag, not from town.ts', () => {
+    const src = readFileSync('src/scripts/games/starlantern/engine/save.ts', 'utf8');
+    expect(src).not.toMatch(/from '\.\/town'/);
   });
 
   it('sorts by rarity, slot and item level, stable', () => {

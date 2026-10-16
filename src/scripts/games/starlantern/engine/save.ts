@@ -4,11 +4,10 @@ import { AFFIXES, RARITIES, SETS, SPECIALS } from '../data/gear';
 import { REGIONS } from '../data/regions';
 import { validPortals } from './portals';
 import { GRID_SIZE, MAX_ACTIVE } from './formation';
-import { BAG_SIZE } from './loot/bag';
+import { addGear, BAG_SIZE } from './loot/bag';
 import { itemSlot } from './loot/item';
 import { MAX_LEVEL, SLOTS, slotsFor } from './party';
 import { SAVE_VERSION, type GameState } from './state';
-import { addGear } from './town';
 import type { ItemInstance, Slot } from './types';
 
 export const SAVE_KEY = 'starlantern-save';
@@ -27,6 +26,13 @@ const isListMap = (v: unknown, ok: (x: unknown) => boolean) => isObj(v) && Objec
 /** Far above any depth the game reaches (a depth-50 boss drops item level 202); bounds hostile saves. */
 const MAX_ILVL = 999;
 const has = (o: object, k: unknown) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
+/** Far above any depth the game reaches; bounds hostile boss-kill keys. */
+const MAX_DEPTH = 9999;
+/** A boss-kill key: `region:depth`, a known region and a depth from 1 to MAX_DEPTH. */
+const isBossKey = (k: string): boolean => {
+  const m = /^([a-z]+):(\d{1,4})$/.exec(k);
+  return !!m && has(REGIONS, m[1]) && Number(m[2]) >= 1 && Number(m[2]) <= MAX_DEPTH;
+};
 
 /** One piece of gear: a known base, rarity, affix keys and special, with sane numbers. */
 function isItem(v: unknown): v is ItemInstance {
@@ -70,7 +76,7 @@ function isValid(d: Record<string, unknown>): boolean {
   const reached = g.reached;
   const regions = Object.keys(REGIONS);
   if (!validPortals(g.portals)) return false;
-  if (!isCounts(g.bossKills) || !Object.keys(g.bossKills as object).every((k) => /^[a-z]+:\d+$/.test(k) && has(REGIONS, k.split(':')[0]))) return false;
+  if (!isCounts(g.bossKills) || !Object.keys(g.bossKills as object).every(isBossKey)) return false;
   if (Object.keys(reached).length !== regions.length) return false;
   return regions.every((r) => Number.isInteger(reached[r]) && (reached[r] as number) >= 1);
 }
@@ -97,7 +103,10 @@ export function loadGame(storage: SaveStorage): LoadResult {
   if (!isObj(data)) { backup(storage, raw); return { status: 'corrupt' }; }
   if (data.version !== SAVE_VERSION) { backup(storage, raw); return { status: 'version' }; }
   if (!isValid(data)) { backup(storage, raw); return { status: 'corrupt' }; }
-  return { status: 'ok', state: convertGearStock(data as unknown as GameState) };
+  const state = data as unknown as GameState;
+  // The game never writes a codex id twice; a hand-edited save that does is tidied rather than refused.
+  state.codex = [...new Set(state.codex)];
+  return { status: 'ok', state: convertGearStock(state) };
 }
 
 /**

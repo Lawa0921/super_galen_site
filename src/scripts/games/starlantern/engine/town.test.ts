@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { newGame } from './state';
-import { buy, equip, innCost, isUnlocked, mintUid, rest, revive, reviveCost, sell, sellGear, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
+import { buy, equip, innCost, isUnlocked, rest, revive, reviveCost, sell, sellGear, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
 import { statsOf } from './party';
 import { plainItem } from './testing';
-import { BAG_SIZE } from './loot/bag';
+import { BAG_SIZE, mintUid } from './loot/bag';
 import { sellPrice } from './loot/item';
 import { EQUIPMENT } from '../data/equipment';
 import type { ItemInstance } from './types';

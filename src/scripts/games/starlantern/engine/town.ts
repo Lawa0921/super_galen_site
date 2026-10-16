@@ -1,9 +1,8 @@
 import { EQUIPMENT } from '../data/equipment';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
-import { BAG_SIZE, sortBag, type AutoJunk } from './loot/bag';
-import { itemSlot, rollItem, sellPrice } from './loot/item';
-import { mulberry32 } from './rng';
+import { addGear, BAG_SIZE, sortBag, type AutoJunk } from './loot/bag';
+import { itemSlot, sellPrice } from './loot/item';
 import { defaultSlotFor, slotsFor, statsOf } from './party';
 import type { GameState } from './state';
 import type { CharacterId, Member, Party, Slot } from './types';
@@ -52,16 +51,6 @@ export function buy(s: GameState, id: string): TownResult {
   if (EQUIPMENT[id]) addGear(n, id);
   else addItem(n.inventory, id, 1);
   return { ok: true, state: n };
-}
-
-/** Hands out the next item uid: returns `s.nextUid` and moves it on by one (mutates `s`; call it on a copy). */
-export function mintUid(s: GameState): number {
-  return s.nextUid++;
-}
-
-/** Puts a plain common item of gear base `id` at its own level in the bag (mutates `s`; call it on a copy, with room in the bag). */
-export function addGear(s: GameState, id: string): void {
-  s.bag.push(rollItem(mulberry32(0), { uid: mintUid(s), ilvl: EQUIPMENT[id].ilvl, rarity: 'common', base: id }));
 }
 
 /** Sells the bag items `uids` at their sell price. Sold gear never counts toward `sold`, so it unlocks nothing. */

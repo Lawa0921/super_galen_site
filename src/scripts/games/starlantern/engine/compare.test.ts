@@ -22,6 +22,17 @@ describe('compareDelta', () => {
     expect(compareDelta(m, 'ring1', ring)).toEqual({ hp: -8, atk: 4, mag: 4 });
     expect(compareDelta(m, 'ring2', ring)).toEqual({});
   });
+  it('taking off one of two set pieces drops the two-piece bonus from the delta too', () => {
+    const blaze = (slot: string, uid: number) => rollItem(mulberry32(uid), { uid, ilvl: 10, rarity: 'set', special: `set-blaze-${slot}` });
+    const body = blaze('body', 2);
+    const m: Member = { ...newMember('scarlet'), equip: { weapon: blaze('weapon', 1), body } };
+    const pieceFire = body.affixes.find((a) => a.key === 'fireDmg')!.value;
+    // The body's own fireDmg goes, and the set's two-piece fireDmg with it.
+    expect(compareDelta(m, 'body', null).fireDmg).toBe(-(pieceFire + SETS['set-blaze'].two.fireDmg!));
+    // Swapping it for a plain piece loses the bonus the same way.
+    expect(compareDelta(m, 'body', plainItem('cloth-robe', 3)).fireDmg).toBe(-(pieceFire + SETS['set-blaze'].two.fireDmg!));
+  });
+
   it('unequipping shows the loss', () => {
     const m: Member = { ...newMember('scarlet'), equip: { weapon: sword } };
     expect(compareDelta(m, 'weapon', null)).toEqual({ atk: -4 });

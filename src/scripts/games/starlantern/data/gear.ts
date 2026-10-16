@@ -60,10 +60,10 @@ export const AFFIXES = Object.fromEntries([
   ...pool(['expBonus'], 'NR', [2, 4], [6, 10]),
 ]) as Record<AnyStat, AffixDef>;
 
-/** Roll range at an item level: linear between level 1 and 50, carried on past 50 along the same line. */
+/** Roll range at an item level: linear between level 1 and 50, carried on past 50 along the same line; below 1 counts as 1. */
 export function affixRange(key: AnyStat, ilvl: number): [number, number] {
   const a = AFFIXES[key];
-  const t = (ilvl - 1) / 49;
+  const t = (Math.max(1, ilvl) - 1) / 49;
   const at = (i: 0 | 1) => (a.lo[i] + (a.hi[i] - a.lo[i]) * t) * AFFIX_SCALE;
   return [at(0), at(1)];
 }
@@ -79,7 +79,7 @@ const POWER_LIST: PowerDef[] = [
   { id: 'lg-noel', skill: 'fire-star', text: '火之星彈改為打全體，威力 70%', mod: { target: 'enemies', powerPct: 70 } },
   { id: 'lg-chizuru', skill: 'sweep', text: '橫掃打 2 次，威力 65%', mod: { hits: 2, powerPct: 65 } },
   { id: 'lg-liz', skill: 'twin-slash', text: '雙刃改為 3 段', mod: { hits: 3 } },
-  { id: 'lg-sylvie', skill: 'aimed-shot', text: '瞄準射擊額外使目標防禦 -20%，持續 3 回合', mod: { extra: [{ kind: 'buff', stat: 'def', pct: -20, turns: 3 }] } },
+  { id: 'lg-sylvie', skill: 'aimed-shot', text: '瞄準射擊額外使目標防禦 −20%，持續 3 回合', mod: { extra: [{ kind: 'buff', stat: 'def', pct: -20, turns: 3 }] } },
   { id: 'lg-scarlet', skill: 'provoke', text: '挑釁額外使自己防禦 +25%，持續 3 回合', mod: { extra: [{ kind: 'buff', stat: 'def', pct: 25, turns: 3 }] } },
   { id: 'lg-selene', skill: 'moonlight', text: '月光改為治療全體，威力 60%', mod: { target: 'allies', powerPct: 60 } },
   { id: 'lg-safira', skill: 'blade-dance', text: '刃舞改為 4 段', mod: { hits: 4 } },

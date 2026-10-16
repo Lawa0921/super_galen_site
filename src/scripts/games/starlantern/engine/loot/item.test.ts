@@ -41,6 +41,12 @@ describe('rollItem', () => {
     }
   });
 
+  it('a unique or set rarity without a special item is refused', () => {
+    expect(() => rollItem(mulberry32(1), { uid: 1, ilvl: 10, rarity: 'unique' })).toThrow(/special/);
+    expect(() => rollItem(mulberry32(1), { uid: 1, ilvl: 10, rarity: 'set' })).toThrow(/special/);
+    expect(rollItem(mulberry32(1), { uid: 1, ilvl: 10, rarity: 'set', special: 'set-blaze-ring' }).rarity).toBe('set');
+  });
+
   it('uniques and set pieces carry exactly their fixed affixes', () => {
     const fixedOnes = Object.values(SPECIALS).filter((s) => s.fixed);
     expect(fixedOnes.length).toBeGreaterThan(0);

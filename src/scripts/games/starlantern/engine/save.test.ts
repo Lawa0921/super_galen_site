@@ -190,6 +190,16 @@ describe('save v4 codex, boss kills and auto junk', () => {
     expect(bad((g) => { delete (g as Partial<typeof g>).autoJunk; })).toBe('corrupt');
     expect(bad((g) => { g.codex = ['lg-noel']; g.autoJunk = 'common'; g.dungeon.bossKills = { 'frost:15': 0 }; })).toBe('ok');
   });
+  it('bounds the boss-kill depth and drops duplicate codex ids', () => {
+    expect(bad((g) => { g.dungeon.bossKills = { 'mainline:10000': 1 }; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.bossKills = { 'mainline:0': 1 }; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.bossKills = { 'mainline:9999': 1 }; })).toBe('ok');
+    const g = newGame();
+    g.codex = ['lg-noel', 'set-blaze', 'lg-noel', 'set-blaze'];
+    const r = loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) }));
+    expect(r.status === 'ok' && r.state.codex).toEqual(['lg-noel', 'set-blaze']);
+  });
+
   it('turns gear base ids left in the inventory into common bag items on load', () => {
     const g = newGame();
     g.inventory = { potion: 2, 'iron-sword': 2, 'copper-ring': 1 };

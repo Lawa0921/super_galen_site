@@ -9,7 +9,7 @@ import { advance, danger, type Danger } from './encounter';
 import { ALTAR_STAT_CAP_PCT, altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POISON_TP_LOSS_PCT, trapDamage, VAULT_CHEST_MULT } from './events';
 import { EQUIPMENT } from '../data/equipment';
 import { SPECIALS } from '../data/gear';
-import { applyAutoJunk, BAG_SIZE } from './loot/bag';
+import { applyAutoJunk, BAG_SIZE, mintUid } from './loot/bag';
 import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMaterial, type DropCtx } from './loot/drops';
 import { itemWeight, type DropSource } from './loot/item';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
@@ -19,7 +19,7 @@ import { depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
 import { rollPortals } from './portals';
 import { newGame, type GameState } from './state';
-import { addItem, buy as townBuy, mintUid, rest as innRest, type TownResult } from './town';
+import { addItem, buy as townBuy, rest as innRest, type TownResult } from './town';
 import type { CharacterId, ItemInstance, Member, Pos } from './types';
 
 export type Phase = 'town' | 'map' | 'battle' | 'clear';

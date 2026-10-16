@@ -171,6 +171,26 @@ describe('rollBossGear', () => {
     expect(rareSecond).toBeGreaterThan(0);
     expect(new Set(out.map((i) => i.uid)).size).toBe(2);
   });
+
+  it('the second piece rolls at the boss item level on the elite weights', () => {
+    for (const depth of [3, 12]) {
+      const ctx = ctxFor({ source: 'boss', depth });
+      const rng = mulberry32(40 + depth);
+      const n = 6000;
+      const tiers: Record<Tier, number> = { common: 0, magic: 0, rare: 0, legendaryTier: 0 };
+      for (let i = 0; i < n; i++) {
+        const [, b] = rollBossGear(rng, ctx);
+        expect(b.ilvl).toBe(itemLevel(depth, 'boss'));          // not the elite's own item level
+        tiers[tierOf(b.rarity)]++;
+      }
+      const w = rarityWeights('elite', depthLevel(depth), 'plain');
+      const total = w.common + w.magic + w.rare + w.legendaryTier;
+      expect(tiers.common, `depth ${depth}`).toBe(0);
+      // Boss weights never give magic; the elite's do, at their share.
+      expect(tiers.magic / n, `depth ${depth}`).toBeCloseTo(w.magic / total, 1);
+      expect(tiers.rare / n, `depth ${depth}`).toBeCloseTo(w.rare / total, 1);
+    }
+  });
 });
 
 describe('rare materials', () => {

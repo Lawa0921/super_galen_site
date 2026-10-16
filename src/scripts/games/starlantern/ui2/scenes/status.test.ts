@@ -125,6 +125,25 @@ describe('StatusScene', () => {
     expect(root.querySelector('.slx-tab-gear .slx-gear-row:nth-child(2) .slx-gear-name')!.classList.contains('slx-rarity-rare')).toBe(false);
   });
 
+  it('the gear page marks all six rarities with their own class', () => {
+    const { s, game, root } = setup('scarlet');
+    const eq = game.state.party.roster.scarlet.equip;
+    eq.weapon = { ...plainItem('iron-sword', 10), rarity: 'common' };
+    eq.offhand = { ...plainItem('wooden-buckler', 11), rarity: 'magic' };
+    eq.head = { ...plainItem('leather-cap', 12), rarity: 'rare' };
+    eq.neck = { ...plainItem('moss-charm', 13), rarity: 'legendary', special: 'lg-scarlet' };
+    eq.ring1 = { ...plainItem('copper-ring', 14), rarity: 'unique', special: 'blaze-ember-ring' };
+    eq.body = { ...plainItem('cloth-robe', 15), rarity: 'set', special: 'set-blaze-body' };
+    game.state.nextUid = 16;
+    s.onAction('right');
+    const cls = (slot: number) => [...root.querySelectorAll('.slx-tab-gear .slx-gear-row')][slot].querySelector('.slx-gear-name')!.classList;
+    const want: [number, string][] = [[0, 'common'], [1, 'magic'], [2, 'rare'], [6, 'legendary'], [7, 'unique'], [3, 'set']];
+    for (const [i, r] of want) {
+      expect(cls(i).contains(`slx-rarity-${r}`), r).toBe(true);
+      for (const other of want.map(([, o]) => o).filter((o) => o !== r)) expect(cls(i).contains(`slx-rarity-${other}`), `${r} not ${other}`).toBe(false);
+    }
+  });
+
   it('the gear page names each slot and shows the rarity word and the item lines, like the equip page', () => {
     const { s, game, root } = setup('scarlet');
     game.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 9), rarity: 'rare', affixes: [{ key: 'crit', value: 4 }] };

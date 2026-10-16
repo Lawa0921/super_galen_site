@@ -28,7 +28,7 @@ function bestBase(slot: GearSlot): string {
 }
 
 function rollValue(rng: Rng, key: AnyStat, ilvl: number, rarity: Rarity): number {
-  const [lo, hi] = affixRange(key, Math.max(1, ilvl));
+  const [lo, hi] = affixRange(key, ilvl);
   const floor = ROLL_FLOOR[rarity];
   const f = floor + (1 - floor) * rng();
   return Math.max(1, Math.round(lo + (hi - lo) * f));
@@ -38,6 +38,8 @@ function rollValue(rng: Rng, key: AnyStat, ilvl: number, rarity: Rarity): number
 export function rollItem(rng: Rng, o: RollOpts): ItemInstance {
   const sp = o.special ? SPECIALS[o.special] : undefined;
   if (o.special && !sp) throw new Error(`unknown special: ${o.special}`);
+  // A unique or set piece is only ever a special item: its affixes are the special's fixed ones.
+  if (!sp && (o.rarity === 'unique' || o.rarity === 'set')) throw new Error(`a ${o.rarity} item needs a special`);
   const rarity = sp ? sp.rarity : o.rarity;
   const slot: GearSlot = (o.base ? EQUIPMENT[o.base]?.slot : undefined) ?? sp?.slot ?? o.slot ?? pick(rng, GEAR_SLOTS);
   const base = o.base ?? (sp ? bestBase(slot) : baseFor(rng, slot, o.ilvl));

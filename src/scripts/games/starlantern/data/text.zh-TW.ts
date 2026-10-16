@@ -7,8 +7,9 @@ const SLOT: Record<Slot, string> = {
 };
 
 const RARITY: Record<Rarity, string> = { common: '普通', magic: '魔法', rare: '稀有', legendary: '傳說', unique: '獨特', set: '套裝' };
+/** Every stat's name: the seven base names come from STAT, so they are written once. */
 const STAT_NAME: Record<AnyStat, string> = {
-  hp: 'HP', tp: 'TP', atk: '攻擊', def: '防禦', mag: '魔力', res: '魔防', spd: '速度',
+  ...STAT,
   str: '力量', int: '智力', agi: '敏捷', wil: '意志',
   crit: '暴擊率', critDmg: '暴擊傷害', vuln: '弱點傷害', eliteDmg: '對精英傷害', multi: '連擊率',
   armor: '護甲', evasion: '閃避', block: '格擋率', meleeDR: '近戰減傷', rangedDR: '遠程減傷',
