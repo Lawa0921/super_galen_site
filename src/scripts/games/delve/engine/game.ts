@@ -7,13 +7,14 @@
 //   const light = game.computeLight(viewRectInTiles);
 //   for (const e of game.drainEvents()) playSfx(e);
 import { World } from './world';
-import { generateWorld, type BiomeSegment, type Structure, type Landform, type ReservedZone } from './worldgen';
-import { T, tileDef, isSolidTile } from './tiles';
+import { generateWorld, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './worldgen';
+import type { DungeonInfo } from './gen/dungeon';
+import { T, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, floorOk, ceilOk } from './tiles';
 import { ITEMS, type ItemId, type PickStats } from './items';
 import { potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
 import { craft as craftRecipe, findRecipe, type CraftResult } from './crafting';
-import { makeBody, stepPlayer, type Body, type PlayerMotion } from './physics';
+import { makeBody, stepPlayer, onPlatform, type Body, type PlayerMotion } from './physics';
 import { LightEngine, skyBrightness, type LightMap, type LightRect, type PointLight } from './lighting';
 import {
   TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH,
@@ -25,14 +26,18 @@ export interface DelveOptions {
   height?: number;
 }
 
-export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest';
+export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest' | 'locked' | 'golden';
 export type DelveEvent =
   | { type: 'mine'; x: number; y: number; tile: number; item: ItemId | null }
   | { type: 'place'; x: number; y: number; tile: number; item: ItemId }
   | { type: 'craft'; recipe: string; item: ItemId; n: number }
-  | { type: 'blocked'; action: 'mine' | 'place'; reason: BlockReason; x: number; y: number }
+  | { type: 'blocked'; action: 'mine' | 'place' | 'use'; reason: BlockReason; x: number; y: number }
   | { type: 'select'; slot: number }
-  | { type: 'chest'; open: boolean; x: number; y: number };
+  | { type: 'chest'; open: boolean; x: number; y: number }
+  | { type: 'door'; open: boolean; x: number; y: number; unlocked: boolean }
+  | { type: 'unlock'; x: number; y: number; item: ItemId }
+  | { type: 'lore'; id: number; x: number; y: number }
+  | { type: 'hint'; id: 'platform' };
 
 export interface MiningState { x: number; y: number; elapsed: number; need: number; }
 
@@ -73,6 +78,9 @@ export class DelveGame {
   readonly structures: readonly Structure[];
   readonly landforms: readonly Landform[];
   readonly dungeonZone: ReservedZone;
+  readonly layers: GenLayers;
+  /** 地城（房間 / 門 / 鑰匙位置）；小世界沒有 */
+  readonly dungeon: DungeonInfo | null;
   player: Body;
   inventory: Inventory;
   /** 遊戲內經過秒數（日夜循環用） */
@@ -84,6 +92,8 @@ export class DelveGame {
   private jump = false;
   private aim = { x: 0, y: 0 };
   private miningHeld = false;
+  private dropHeld = false;
+  private platformHinted = false;
   private useHeld = false;
   private placeCooldown = 0;
   /** 這次按住 use 已經用來開過箱子（按住不會一直重開 / 放置） */
@@ -105,6 +115,8 @@ export class DelveGame {
     this.structures = gen.structures;
     this.landforms = gen.landforms;
     this.dungeonZone = gen.dungeonZone;
+    this.layers = gen.layers;
+    this.dungeon = gen.dungeon;
     this.player = makeBody(0, 0);
     this.teleport(this.spawn.x, this.spawn.y);
     this.inventory = starterInventory();
@@ -115,6 +127,8 @@ export class DelveGame {
   // ── 輸入 ───────────────────────────────────────────────
   setMoveX(v: number): void { this.moveX = Math.max(-1, Math.min(1, v)); }
   setJump(held: boolean): void { this.jump = held; }
+  /** 按住「下」：穿過單向平台 */
+  setDrop(held: boolean): void { this.dropHeld = held; }
   /** 游標所指 tile 座標 */
   setAim(tx: number, ty: number): void {
     const x = Math.floor(tx), y = Math.floor(ty);
@@ -137,18 +151,22 @@ export class DelveGame {
   step(dt: number = FIXED_DT): void {
     this.tick++;
     this.time += dt;
-    stepPlayer(this.world, this.player, this.motion, { moveX: this.moveX, jump: this.jump }, dt);
+    stepPlayer(this.world, this.player, this.motion, { moveX: this.moveX, jump: this.jump, drop: this.dropHeld }, dt);
+    if (!this.platformHinted && this.player.onGround && !this.dropHeld && onPlatform(this.world, this.player)) {
+      this.platformHinted = true;
+      this.events.push({ type: 'hint', id: 'platform' });
+    }
     if (this.miningHeld) this.updateMining(dt);
     if (this.placeCooldown > 0) this.placeCooldown -= dt;
     if (this.useHeld && this.placeCooldown <= 0) {
       const { x, y } = this.aim;
-      if (this.world.getFg(x, y) === T.CHEST) {
+      if (isInteractive(this.world.getFg(x, y))) {
         if (!this.useConsumed) { this.useConsumed = true; this.interact(x, y); }
       } else if (!this.useConsumed && this.tryPlace(x, y)) this.placeCooldown = PLACE_COOLDOWN;
     }
     if (this.openChest) {
       const { x, y } = this.openChest;
-      if (this.world.getFg(x, y) !== T.CHEST || !this.canReach(x, y, REACH_TILES + 1.5)) this.closeChest();
+      if (!isChestTile(this.world.getFg(x, y)) || !this.canReach(x, y, REACH_TILES + 1.5)) this.closeChest();
     }
   }
 
@@ -159,6 +177,7 @@ export class DelveGame {
     if (!this.canReach(x, y)) { this.block('mine', 'reach', x, y); this.mining = null; return; }
     const def = tileDef(id);
     const pick = this.currentPick();
+    if (id === T.DOOR_LOCKED || id === T.LOCKED_CHEST) { this.block('mine', 'locked', x, y); this.mining = null; return; }
     if (def.minTier > pick.tier) { this.block('mine', 'tier', x, y); this.mining = null; return; }
     const plan = this.planBreak(x, y);
     if (plan.chest) { this.block('mine', 'chest', x, y); this.mining = null; return; }
@@ -181,7 +200,13 @@ export class DelveGame {
 
   /** 挖掉 (x,y) 上的 tile id 會掉什麼（陶罐走戰利品表） */
   private dropsFor(id: number, x: number, y: number): Drop[] {
-    if (id === T.POT) return potLoot(this.seed, x, y, this.depthFrac(x, y));
+    if (id === T.POT) {
+      const extra = this.world.potDrops.get(this.world.idx(x, y));
+      const base = potLoot(this.seed, x, y, this.depthFrac(x, y));
+      return extra ? [...base, ...extra] : base;
+    }
+    // 木門：整扇（3 格）只掉一個木門，算在最上面那格
+    if (id === T.DOOR_CLOSED || id === T.DOOR_OPEN) return isDoorTile(this.world.getFg(x, y - 1)) ? [] : [{ item: 'wooden_door', n: 1 }];
     const d = tileDef(id).drop;
     return d ? [{ item: d, n: 1 }] : [];
   }
@@ -204,7 +229,10 @@ export class DelveGame {
     };
     const id = w.getFg(x, y);
     if (id === T.AIR || !w.inBounds(x, y)) return { tiles, drops, fits: true, chest: false };
-    take(x, y);
+    if (id === T.DOOR_CLOSED || id === T.DOOR_OPEN) {
+      const [top, bot] = this.doorSpan(x, y);
+      for (let ty = top; ty <= bot; ty++) take(x, ty);
+    } else take(x, y);
     if (id === T.WOOD) this.fellTree(x, y, take, gone);
     // 失去支撐的物件（以「移除後」的世界判斷支撐）
     const goneAt = (tx: number, ty: number): boolean => w.inBounds(tx, ty) && gone.has(w.idx(tx, ty));
@@ -214,11 +242,8 @@ export class DelveGame {
       switch (tileDef(nid).support) {
         case 'any': return w.getWall(nx, ny) !== 0 || solidAfter(nx - 1, ny) || solidAfter(nx + 1, ny)
           || solidAfter(nx, ny - 1) || solidAfter(nx, ny + 1);
-        case 'floor': return solidAfter(nx, ny + 1) || (nid === T.CACTUS && tileAfter(nx, ny + 1) === T.CACTUS);
-        case 'ceiling': {
-          const up = tileAfter(nx, ny - 1);
-          return isSolidTile(up) || (nid === T.VINE && (up === T.VINE || up === T.LEAVES));
-        }
+        case 'floor': return floorOk(nid, tileAfter(nx, ny + 1));
+        case 'ceiling': return ceilOk(nid, tileAfter(nx, ny - 1));
         default: return true;
       }
     };
@@ -232,7 +257,7 @@ export class DelveGame {
       }
     }
     // 有東西的箱子不能被挖掉（也不能因為挖掉它下面的地而掉落）——避免吞掉內容
-    const chest = tiles.some(([tx, ty]) => w.getFg(tx, ty) === T.CHEST && !this.chestEmpty(tx, ty));
+    const chest = tiles.some(([tx, ty]) => isChestTile(w.getFg(tx, ty)) && !this.chestEmpty(tx, ty));
     return { tiles, drops, fits: this.inventory.canAddAll(drops), chest };
   }
 
@@ -247,9 +272,9 @@ export class DelveGame {
     if (!plan.tiles.length) return false;
     if (plan.chest) { this.block('mine', 'chest', x, y); return false; }
     if (!plan.fits) { this.block('mine', 'full', x, y); return false; }
-    for (const [tx, ty] of plan.tiles) {
-      const tid = this.world.getFg(tx, ty);
-      const drops = this.dropsFor(tid, tx, ty);
+    // 先算完所有掉落物再移除（門等多格物件的掉落依移除前的鄰格判斷）
+    const all = plan.tiles.map(([tx, ty]) => { const tid = this.world.getFg(tx, ty); return { tx, ty, tid, drops: this.dropsFor(tid, tx, ty) }; });
+    for (const { tx, ty, tid, drops } of all) {
       this.world.setFg(tx, ty, T.AIR);
       for (const d of drops) this.inventory.add(d.item, d.n);
       this.events.push({ type: 'mine', x: tx, y: ty, tile: tid, item: drops.length ? drops[0].item : null });
@@ -279,12 +304,59 @@ export class DelveGame {
       || isSolidTile(w.getFg(x, y - 1)) || isSolidTile(w.getFg(x, y + 1));
   }
 
-  /** 放置時的支撐：地面型物件要正下方實心、垂吊型要正上方實心，其他照舊（鄰接實心或背牆）。 */
+  /** 放置時的支撐：地面型物件要正下方實心、垂吊型要正上方實心，平台可以接著平台往外延伸，其他照舊（鄰接實心或背牆）。 */
   private placeSupported(x: number, y: number, place: number): boolean {
     const sup = tileDef(place).support;
-    if (sup === 'floor') return isSolidTile(this.world.getFg(x, y + 1));
-    if (sup === 'ceiling') return isSolidTile(this.world.getFg(x, y - 1));
+    if (sup === 'floor') return floorOk(place, this.world.getFg(x, y + 1));
+    if (sup === 'ceiling') return ceilOk(place, this.world.getFg(x, y - 1));
+    if (place === T.PLATFORM && (this.world.getFg(x - 1, y) === T.PLATFORM || this.world.getFg(x + 1, y) === T.PLATFORM)) return true;
     return this.hasSupport(x, y);
+  }
+
+  /** 門：同一欄連續的門 tile（含 (x,y)）的上下範圍 */
+  private doorSpan(x: number, y: number): [number, number] {
+    const w = this.world;
+    let top = y, bot = y;
+    while (top > 0 && isDoorTile(w.getFg(x, top - 1)) && y - top < 4) top--;
+    while (bot < w.height - 1 && isDoorTile(w.getFg(x, bot + 1)) && bot - y < 4) bot++;
+    return [top, bot];
+  }
+
+  /** 開 / 關 / 解鎖一扇門。回傳是否有改變。 */
+  private useDoor(x: number, y: number): boolean {
+    const w = this.world, id = w.getFg(x, y);
+    const [top, bot] = this.doorSpan(x, y);
+    if (id === T.DOOR_LOCKED) {
+      if (!this.inventory.has('dungeon_key', 1)) { this.block('use', 'locked', x, y); return false; }
+      this.inventory.remove('dungeon_key', 1);
+      w.keysUsed++;
+      for (let ty = top; ty <= bot; ty++) w.setFg(x, ty, T.DOOR_OPEN);
+      this.events.push({ type: 'unlock', x, y: top, item: 'dungeon_key' });
+      this.events.push({ type: 'door', open: true, x, y: top, unlocked: true });
+      return true;
+    }
+    const open = id === T.DOOR_CLOSED;
+    if (!open) {
+      for (let ty = top; ty <= bot; ty++) if (this.tileOverlapsPlayer(x, ty)) { this.block('use', 'body', x, y); return false; }
+    }
+    for (let ty = top; ty <= bot; ty++) w.setFg(x, ty, open ? T.DOOR_OPEN : T.DOOR_CLOSED);
+    this.events.push({ type: 'door', open, x, y: top, unlocked: false });
+    return true;
+  }
+
+  /** 木門放置：(x,y) 為最下面那格，往上佔 3 格，下方要實心地面 */
+  private placeDoor(x: number, y: number, item: ItemId): boolean {
+    const w = this.world;
+    for (let k = 0; k < 3; k++) {
+      const c = w.getFg(x, y - k);
+      if (!w.inBounds(x, y - k) || (c !== T.AIR && !tileDef(c).replaceable)) { this.block('place', 'occupied', x, y); return false; }
+      if (this.tileOverlapsPlayer(x, y - k)) { this.block('place', 'body', x, y); return false; }
+    }
+    if (!isSolidTile(w.getFg(x, y + 1))) { this.block('place', 'support', x, y); return false; }
+    for (let k = 0; k < 3; k++) w.setFg(x, y - k, T.DOOR_CLOSED);
+    this.inventory.takeFromSlot(this.inventory.selected, 1);
+    this.events.push({ type: 'place', x, y: y - 2, tile: T.DOOR_CLOSED, item });
+    return true;
   }
 
   /** 嘗試以快捷欄選中的方塊放在 (x,y)。 */
@@ -297,6 +369,7 @@ export class DelveGame {
     const replace = cur !== T.AIR && cur !== place && tileDef(cur).replaceable;
     if (cur !== T.AIR && !replace) { this.block('place', 'occupied', x, y); return false; }
     if (!this.canReach(x, y)) { this.block('place', 'reach', x, y); return false; }
+    if (place === T.DOOR_CLOSED) return this.placeDoor(x, y, stack.item);
     if (isSolidTile(place) && this.tileOverlapsPlayer(x, y)) { this.block('place', 'body', x, y); return false; }
     if (!this.placeSupported(x, y, place)) { this.block('place', 'support', x, y); return false; }
     if (replace) {
@@ -314,7 +387,7 @@ export class DelveGame {
     return p.x < (x + 1) * S && p.x + p.w > x * S && p.y < (y + 1) * S && p.y + p.h > y * S;
   }
 
-  private block(action: 'mine' | 'place', reason: BlockReason, x: number, y: number): void {
+  private block(action: 'mine' | 'place' | 'use', reason: BlockReason, x: number, y: number): void {
     const key = `${action}:${reason}:${x}:${y}`;
     // 同一格同原因只提示一次；換瞄準格（setAim 清掉）或超過 BLOCK_REPEAT 秒後可再提示
     if (key === this.lastBlocked && this.time - this.lastBlockedAt < BLOCK_REPEAT) return;
@@ -369,10 +442,25 @@ export class DelveGame {
   }
 
   // ── 箱子 ───────────────────────────────────────────────
-  /** 與 (x,y) 互動：目前只有箱子（開箱）。回傳是否有互動。 */
+  /** 與 (x,y) 互動：箱子（開箱）、金寶箱（金鑰匙解鎖）、門（開 / 關 / 用地城鑰匙解鎖）、古碑（碑文）。回傳是否有互動。 */
   interact(x: number, y: number): boolean {
-    if (this.world.getFg(x, y) !== T.CHEST) return false;
-    if (!this.canReach(x, y)) { this.block('place', 'reach', x, y); return false; }
+    const w = this.world, id = w.getFg(x, y);
+    if (!isInteractive(id)) return false;
+    if (!this.canReach(x, y)) { this.block('use', 'reach', x, y); return false; }
+    if (isDoorTile(id)) return this.useDoor(x, y);
+    if (id === T.LORE_TABLET) {
+      const t = this.dungeon?.tablets.find((q) => q.x === x && q.y === y);
+      this.events.push({ type: 'lore', id: t ? t.id : (x * 7 + y) % 5, x, y });
+      return true;
+    }
+    if (id === T.LOCKED_CHEST && !w.unlocked.has(w.idx(x, y))) {
+      if (!this.inventory.has('golden_key', 1)) { this.block('use', 'golden', x, y); return false; }
+      this.inventory.remove('golden_key', 1);
+      w.unlocked.add(w.idx(x, y));
+      w.keysUsed++;
+      w.markModified(x, y);
+      this.events.push({ type: 'unlock', x, y, item: 'golden_key' });
+    }
     if (this.openChest && this.openChest.x === x && this.openChest.y === y) return true;
     if (this.openChest) this.closeChest();
     this.openChest = { x, y };
@@ -433,6 +521,14 @@ export class DelveGame {
     if (left > 0) st.count = left; else this.inventory.slots[invSlot] = null;
     this.world.markModified(c.x, c.y);
     return true;
+  }
+
+  /** 玩家身上的動態光：空手時一點微光；拿著發光道具（火把、提燈）時照亮身邊 */
+  heldLights(): PointLight[] {
+    const held = this.inventory.selectedStack();
+    const pt = this.playerTile();
+    const v = held ? (held.item === 'torch' ? 0.85 : ITEMS[held.item].heldLight ?? 0) : 0;
+    return [{ x: pt.x, y: pt.y, v: Math.max(0.22, v) }, ...(v >= 1 ? [{ x: pt.x, y: pt.y - 1, v: 1 }] : [])];
   }
 
   /** 計算視窗（tile 座標）+ 外框的光照。 */

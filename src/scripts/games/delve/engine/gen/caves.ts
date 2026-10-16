@@ -196,9 +196,13 @@ export function carveNetwork(world: World, o: NetworkOptions): NetworkResult {
       const gx = Math.max(0, Math.min(cw - 2, Math.floor(fx))), wx = Math.max(0, Math.min(1, fx - gx));
       const i = gy * cw + gx;
       const a = g[i], b = g[i + 1], c = g[i + cw], d = g[i + cw + 1];
-      if (a + b + c + d === 0) continue;
-      const v = a + (b - a) * wx + (c - a) * wy + (a - b - c + d) * wx * wy + (jit.at(tx, ty) - 0.5) * 0.5;
-      if (v <= 0.5) continue;
+      const sum = a + b + c + d;
+      if (sum === 0) continue;
+      // 四角全開 → 必開（抖動最多 ±0.25）；只有邊緣才需要抖動雜訊
+      if (sum < 4) {
+        const v = a + (b - a) * wx + (c - a) * wy + (a - b - c + d) * wx * wy + (jit.at(tx, ty) - 0.5) * 0.5;
+        if (v <= 0.5) continue;
+      }
       const id = fg[row + tx];
       if (SOLID_LUT[id] !== 1 || (keep && keep(id))) continue;
       fg[row + tx] = T.AIR;
@@ -235,6 +239,18 @@ export function carveNetwork(world: World, o: NetworkOptions): NetworkResult {
   return { caverns };
 }
 
+/** 每欄的 [top, bottom) 帶狀範圍 → 陣列 + 全域最小 / 最大列（給 row-major 掃描用） */
+function bandRows(world: World, top: (x: number) => number, bottom: (x: number) => number): { t0: Int32Array; t1: Int32Array; lo: number; hi: number } {
+  const W = world.width, t0 = new Int32Array(W), t1 = new Int32Array(W);
+  let lo = world.height, hi = 0;
+  for (let x = 0; x < W; x++) {
+    t0[x] = Math.max(1, Math.floor(top(x))); t1[x] = Math.min(world.height - 1, Math.floor(bottom(x)));
+    if (t0[x] < lo) lo = t0[x];
+    if (t1[x] > hi) hi = t1[x];
+  }
+  return { t0, t1, lo, hi };
+}
+
 export interface TunnelOptions {
   /** 每欄的帶狀範圍 */
   top: (x: number) => number;
@@ -252,11 +268,14 @@ export function carveNoiseTunnels(world: World, o: TunnelOptions): void {
   const n1 = new FbmField(W, H, 78, 34, o.seed, 2, 0.45);
   const n2 = new FbmField(W, H, 40, 60, o.seed + 5, 2, 0.45);
   const mask = new NoiseField(W, H, 300, 180, o.seed + 9);
-  for (let x = 0; x < W; x++) {
-    if (o.skipX && o.skipX(x)) continue;
-    const t0 = Math.max(1, Math.floor(o.top(x))), t1 = Math.min(H - 2, Math.floor(o.bottom(x)));
-    for (let y = t0; y < t1; y++) {
-      const i = y * W + x, id = fg[i];
+  const band = bandRows(world, o.top, (x) => Math.min(H - 2, o.bottom(x)));
+  for (let y = band.lo; y < band.hi; y++) {
+    const row = y * W;
+    for (let x = 0; x < W; x++) {
+      const t0 = band.t0[x], t1 = band.t1[x];
+      if (y < t0 || y >= t1) continue;
+      if (o.skipX && o.skipX(x)) continue;
+      const i = row + x, id = fg[i];
       if (SOLID_LUT[id] !== 1 || (o.keep && o.keep(id))) continue;
       const m = (mask.at(x, y) - 0.3) * 2.2;
       if (m <= 0) continue;
@@ -316,12 +335,16 @@ export function paintBlob(world: World, cx: number, cy: number, rx: number, ry: 
 export function noisePockets(world: World, field: FbmField | NoiseField, threshold: number,
   top: (x: number) => number, bottom: (x: number) => number, from: (id: number) => boolean, type: number): void {
   const W = world.width, fg = world.fg;
-  for (let x = 0; x < W; x++) {
-    const t0 = Math.max(0, Math.floor(top(x))), t1 = Math.min(world.height, Math.floor(bottom(x)));
-    for (let y = t0; y < t1; y++) {
-      const i = y * W + x;
+  const { t0, t1, lo, hi } = bandRows(world, top, bottom);
+  const fbm = field instanceof FbmField ? field : null;
+  // 逐列（row-major）掃描：fg 與雜訊格點都是連續記憶體
+  for (let y = lo; y < hi; y++) {
+    const row = y * W;
+    for (let x = 0; x < W; x++) {
+      if (y < t0[x] || y >= t1[x]) continue;
+      const i = row + x;
       if (!from(fg[i])) continue;
-      if (field.at(x, y) > threshold) fg[i] = type;
+      if (fbm ? fbm.above(x, y, threshold) : field.at(x, y) > threshold) fg[i] = type;
     }
   }
 }

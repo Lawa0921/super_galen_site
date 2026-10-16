@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, tileRunner, type GenResult } from './worldgen';
 import { World, BIOME } from './world';
 import { Rng } from './rng';
-import { T, W, isSolidTile, tileDef } from './tiles';
+import { T, W, isSolidTile, tileDef, floorOk, ceilOk, isChestTile } from './tiles';
 import { WORLD_W, WORLD_H, PLAYER_H, TILE_SIZE } from './constants';
 
 function hashBytes(...arrs: Uint8Array[]): number {
@@ -41,11 +41,16 @@ describe('generateWorld', () => {
     expect(a.world.width).toBe(WORLD_W);
     expect(a.world.height).toBe(WORLD_H);
   });
-  it('效能：4200×1200 生成 < 1.5 秒（node；取兩次較快者，避開平行測試的 CPU 競爭）', () => {
-    const t0 = performance.now();
+  it('效能：4200×1200 生成 < 1.5 秒（node；量本執行緒的 CPU 時間並取較快者，平行測試搶 CPU 時牆鐘時間會失真）', () => {
+    // 本執行緒的 CPU 時間（被其他 process 搶走 CPU 的時間不算）；舊版 Node 沒有 threadCpuUsage 時退回整個 process
+    type Cpu = { user: number; system: number };
+    const pr = (globalThis as unknown as { process: { cpuUsage(p?: Cpu): Cpu; threadCpuUsage?(p?: Cpu): Cpu } }).process;
+    const usage = (p?: Cpu): Cpu => (pr.threadCpuUsage ? pr.threadCpuUsage(p) : pr.cpuUsage(p));
+    const c0 = usage(), t0 = performance.now();
     generateWorld('alpha-2');
-    const best = Math.min(genMs, performance.now() - t0);
-    console.log(`[delve] worldgen 4200x1200: ${best.toFixed(0)} ms`);
+    const wall = performance.now() - t0, c = usage(c0), cpu = (c.user + c.system) / 1000;
+    const best = Math.min(genMs, wall, cpu);
+    console.log(`[delve] worldgen 4200x1200: wall ${Math.min(genMs, wall).toFixed(0)} ms, cpu ${cpu.toFixed(0)} ms`);
     expect(best).toBeLessThan(1500);
   });
   it('同 seed → 位元相同（含箱子）；不同 seed → 不同', () => {
@@ -127,8 +132,8 @@ describe('generateWorld', () => {
       cnt.set(t, (cnt.get(t) ?? 0) + 1);
       const sup = tileDef(t).support;
       const below = world.fg[i + WW], above = world.fg[i - WW];
-      if (sup === 'floor' && !(isSolidTile(below) || (t === T.CACTUS && below === T.CACTUS))) bad.push(`floor ${t} @${i % WW},${Math.floor(i / WW)}`);
-      if (sup === 'ceiling' && !(isSolidTile(above) || (t === T.VINE && (above === T.VINE || above === T.LEAVES)))) bad.push(`ceil ${t} @${i % WW},${Math.floor(i / WW)}`);
+      if (sup === 'floor' && !floorOk(t, below)) bad.push(`floor ${t} @${i % WW},${Math.floor(i / WW)}`);
+      if (sup === 'ceiling' && !ceilOk(t, above)) bad.push(`ceil ${t} @${i % WW},${Math.floor(i / WW)}`);
     }
     expect(bad.slice(0, 10)).toEqual([]);
     for (const t of decor) expect(cnt.get(t) ?? 0, `decor ${t}`).toBeGreaterThan(t === T.PUMPKIN || t === T.CHEST ? 5 : 30);
@@ -158,7 +163,7 @@ describe('generateWorld', () => {
     const { world } = a;
     let n = 0;
     for (let i = 0; i < world.fg.length; i++) {
-      if (world.fg[i] !== T.CHEST) continue;
+      if (!isChestTile(world.fg[i])) continue;
       n++;
       const c = world.chests.get(i);
       expect(c).toBeDefined();
@@ -272,7 +277,7 @@ describe('地形種類與迷你生態區', () => {
     expect(z.y1).toBeGreaterThan(z.y0 + 100);
     for (const b of a.biomes) expect(b.x1 <= z.x0 || b.x0 >= z.x1).toBe(true);
     for (const s of a.structures) {
-      if (s.kind === 'cavern' || s.kind === 'chasm' || s.kind === 'ravine' || s.kind === 'frozen_lake') continue;
+      if (s.kind === 'cavern' || s.kind === 'chasm' || s.kind === 'ravine' || s.kind === 'frozen_lake' || s.kind === 'dungeon') continue;
       expect(s.x + s.w <= z.x0 || s.x >= z.x1 || s.y + s.h <= z.y0 || s.y >= z.y1, `${s.kind}@${s.x}`).toBe(true);
     }
   });

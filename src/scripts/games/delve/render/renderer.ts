@@ -476,7 +476,7 @@ export class Renderer {
       ctx.drawImage(m, hx - 2, hy - 6);
     }
     ctx.restore();
-    if (heldOther === 'torch') {
+    if (heldOther === 'torch' || heldOther === 'lantern') {
       this.torchesSeen.push({ x: cx + this.facing * (hx + 0), y: bottom + hy - 8 });
     }
   }
@@ -512,9 +512,8 @@ export class Renderer {
     this.lightAge++;
     if (this.lightDirty || this.lightAge >= LIGHT_EVERY || !this.light) {
       const t0 = performance.now();
-      const held = g.inventory.selectedStack();
       const pt = g.playerTile();
-      const extra = held && held.item === 'torch' ? [{ x: pt.x, y: pt.y, v: 0.85 }] : [{ x: pt.x, y: pt.y, v: 0.22 }];
+      const extra = g.heldLights();
       const view = { x: Math.floor(camX / S) - 1, y: Math.floor(camY / S) - 1, w: Math.ceil(vw / S) + 3, h: Math.ceil(vh / S) + 3 };
       const L = g.computeLight(view, extra);
       const lx0 = Math.max(L.x0, view.x - 2), ly0 = Math.max(L.y0, view.y - 2);

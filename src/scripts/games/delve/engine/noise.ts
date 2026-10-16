@@ -54,17 +54,15 @@ export class NoiseField {
     for (let gy = 0; gy < this.gh; gy++) for (let gx = 0; gx < this.gw; gx++) this.v[gy * this.gw + gx] = hash2(gx, gy, seed);
     this.ix = 1 / cellX; this.iy = 1 / cellY;
   }
-  /** 0..1 */
+  /** 0..1（x、y ≥ 0；超出建立範圍時夾到邊界格點） */
   at(x: number, y: number): number {
-    let fx = x * this.ix, fy = y * this.iy;
-    if (fx < 0) fx = 0; if (fy < 0) fy = 0;
-    let gx = Math.floor(fx), gy = Math.floor(fy);
-    if (gx > this.gw - 2) gx = this.gw - 2;
-    if (gy > this.gh - 2) gy = this.gh - 2;
+    const fx = x * this.ix, fy = y * this.iy;
+    let gx = fx | 0, gy = fy | 0;
     let tx = fx - gx, ty = fy - gy;
-    if (tx > 1) tx = 1; if (ty > 1) ty = 1;
+    if (gx > this.gw - 2) { gx = this.gw - 2; tx = 1; } else if (gx < 0) { gx = 0; tx = 0; }
+    if (gy > this.gh - 2) { gy = this.gh - 2; ty = 1; } else if (gy < 0) { gy = 0; ty = 0; }
     tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
-    const i = gy * this.gw + gx, v = this.v, w = this.gw;
+    const w = this.gw, i = gy * w + gx, v = this.v;
     const a = v[i], b = v[i + 1], c = v[i + w], d = v[i + w + 1];
     return a + (b - a) * tx + (c - a) * ty + (a - b - c + d) * tx * ty;
   }
@@ -87,5 +85,16 @@ export class FbmField {
     let s = 0;
     for (let o = 0; o < this.fields.length; o++) s += this.fields[o].at(x, y) * this.weights[o];
     return s;
+  }
+  /** at(x,y) > thr？低八度先算，剩下八度全加滿也到不了門檻就提早放棄（結果與 at() > thr 完全相同） */
+  above(x: number, y: number, thr: number): boolean {
+    let s = 0, rest = 1;
+    for (let o = 0; o < this.fields.length; o++) {
+      rest -= this.weights[o];
+      s += this.fields[o].at(x, y) * this.weights[o];
+      if (s + rest <= thr) return false;
+      if (s > thr) return true;
+    }
+    return s > thr;
   }
 }

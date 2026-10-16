@@ -5,7 +5,7 @@ import { ITEMS } from './items';
 import type { Stack } from './inventory';
 
 export const CHEST_SLOTS = 20;
-export type ChestKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'sky';
+export type ChestKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'sky' | 'dungeon' | 'treasure';
 export interface Drop { item: ItemId; n: number; }
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -40,6 +40,7 @@ export function chestLoot(seed: string, x: number, y: number, kind: ChestKind, d
     if (k >= CHEST_SLOTS || count <= 0) return;
     slots[k++] = { item, count: Math.min(count, ITEMS[item].maxStack) };
   };
+  if (kind === 'dungeon' || kind === 'treasure') return dungeonLoot(r, kind, slots);
   // 主獎：越深越好的礦
   const main: ItemId = kind === 'sky' ? (r.chance(2) ? 'gold_ore' : 'silver_ore') : d > 0.7 && r.chance(2) ? 'gold_ore' : d > 0.45 ? 'silver_ore' : d > 0.2 ? 'iron_ore' : 'copper_ore';
   put(main, r.int(6, 14));
@@ -52,5 +53,29 @@ export function chestLoot(seed: string, x: number, y: number, kind: ChestKind, d
   if (kind === 'cavern' || kind === 'sky' || d > 0.5) put('crystal', r.int(1, 4));
   if (kind === 'sky') put('silver_coin', r.int(3, 9));
   if (r.chance(5)) put('chest', 1);
+  return slots;
+}
+
+/** 地城箱子：硬幣、火把、銀 / 金礦、水晶、偶爾平台或木門；寶藏室：大量金礦與銀幣 */
+function dungeonLoot(r: Rng, kind: 'dungeon' | 'treasure', slots: (Stack | null)[]): (Stack | null)[] {
+  let k = 0;
+  const put = (item: ItemId, count: number): void => {
+    if (k >= CHEST_SLOTS || count <= 0) return;
+    slots[k++] = { item, count: Math.min(count, ITEMS[item].maxStack) };
+  };
+  if (kind === 'treasure') {
+    put('gold_ore', r.int(20, 36));
+    put('silver_coin', r.int(25, 60));
+    put('crystal', r.int(6, 12));
+    put('obsidian', r.int(8, 16));
+    put('torch', r.int(20, 40));
+    return slots;
+  }
+  put(r.chance(2) ? 'gold_ore' : 'silver_ore', r.int(6, 14));
+  put('copper_coin', r.int(40, 90));
+  put('silver_coin', r.int(2, 9));
+  put('torch', r.int(8, 20));
+  if (r.chance(2)) put('crystal', r.int(1, 4));
+  if (r.chance(3)) put(r.chance(2) ? 'platform' : 'wooden_door', r.int(2, 8));
   return slots;
 }

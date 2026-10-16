@@ -123,7 +123,21 @@ const BLOCKED: Record<BlockReason, string | null> = {
   support: '需要相鄰方塊或背牆支撐',
   occupied: null,
   chest: '箱子裡還有東西，先拿空才能挖',
+  locked: '鎖住了，需要地城鑰匙',
+  golden: '金寶箱上了鎖，需要金鑰匙',
 };
+
+/** 古碑碑文（佔位文字） */
+const LORE: readonly string[] = [
+  '碑文：「塔下的路通往深處。鑰匙藏在沒有上鎖的地方。」',
+  '碑文：「守門人走了，只留下牢房、書與鐵鍊。」',
+  '碑文：「金色的鑰匙供奉在神殿，金色的箱子沉在最深處。」',
+  '碑文：「石磚比你的鎬更古老——只有金鎬敲得動它。」',
+  '碑文：「往下走，往下走，直到看見燃燒的岩石。」',
+];
+export function loreText(id: number): string { return LORE[((id % LORE.length) + LORE.length) % LORE.length]; }
+const HINTS: Record<string, string> = { platform: '站在平台上：按 S / ↓ 可以穿過平台往下掉' };
+export function hintText(id: string): string { return HINTS[id] ?? ''; }
 // ── 新世界 / 存檔覆蓋流程（單一存檔槽） ──────────────────
 /** 已有存檔時新世界要先確認；force（使用者已確認 / fresh=1）直接開始。 */
 export function newWorldPlan(existingSeed: string | null, force: boolean): 'start' | 'confirm' {
@@ -166,7 +180,7 @@ export function biomeBlend(biomeAt: (x: number) => number, cx: number, width: nu
 
 const BIOME_NAMES = ['森林', '沙漠', '雪原', '叢林'];
 export function biomeLabel(biome: number): string { return BIOME_NAMES[biome] ?? BIOME_NAMES[0]; }
-const REGION_NAMES: Record<string, string> = { mushroom_biome: '螢光菇林', crystal_cave: '水晶洞', sky_island: '浮空島', cabin: '廢棄小屋', mineshaft: '礦坑', ruin: '遺跡' };
+const REGION_NAMES: Record<string, string> = { mushroom_biome: '螢光菇林', crystal_cave: '水晶洞', sky_island: '浮空島', cabin: '廢棄小屋', mineshaft: '礦坑', ruin: '遺跡', dungeon: '地城' };
 /** 玩家所在區域名：在迷你生態區 / 結構裡就顯示它，否則顯示地表生態區 */
 export function regionLabel(biome: number, regions: readonly { kind: string; x: number; y: number; w: number; h: number }[], x: number, y: number): string {
   for (const r of regions) {

@@ -180,7 +180,7 @@ describe('箱子存檔（format 2）', () => {
     expect(r.game.world.chests.get(r.game.world.idx(40, 20))![2]).toEqual({ item: 'silver_coin', count: 9 });
     expect(r.game.world.chests.get(r.game.world.idx(120, 70))![0]).toEqual({ item: 'crystal', count: 3 });
     expect(snapshotGame(r.game).header.chests).toEqual(snapshotGame(g).header.chests);
-    expect(SAVE_FORMAT).toBe(2);
+    expect(SAVE_FORMAT).toBeGreaterThanOrEqual(2);
   });
   it('生成的箱子被拿空：存檔後仍是空的；被挖掉：還原後也不在', () => {
     const g = new DelveGame({ seed: 'chest-save', ...SMALL });

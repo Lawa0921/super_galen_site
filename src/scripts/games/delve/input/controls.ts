@@ -34,9 +34,10 @@ function isTextTarget(t: EventTarget | null): boolean {
 
 export function attachControls(o: ControlsOptions): Controls {
   const { game, canvas, root } = o;
-  const keys = { left: false, right: false, jump: false };
+  const keys = { left: false, right: false, jump: false, down: false };
   let joyMove: -1 | 0 | 1 | null = null;
   let joyUp = false;
+  let joyDown = false;
   let jumpTouch = false;
   let mouse: { x: number; y: number } | null = null;
   /** 上次套用的滑鼠 buttons 遮罩（和弦：按住左鍵時再按右鍵只會觸發 pointermove） */
@@ -63,6 +64,7 @@ export function attachControls(o: ControlsOptions): Controls {
   const applyMove = (): void => {
     game.setMoveX(joyMove !== null && joyMove !== 0 ? joyMove : moveAxis(keys.left, keys.right));
     game.setJump(keys.jump || jumpTouch || joyUp);
+    game.setDrop(keys.down || joyDown);
   };
   const aimAt = (sx: number, sy: number): void => {
     const w = o.screenToWorld(sx, sy);
@@ -81,7 +83,7 @@ export function attachControls(o: ControlsOptions): Controls {
     if (o.isBlocked()) return;
     if (a === 'inventory') { if (!e.repeat) o.onInventory(); e.preventDefault(); return; }
     if (a === 'zoomIn' || a === 'zoomOut') { if (!e.repeat) o.onZoom?.(a === 'zoomIn' ? 1 : -1); e.preventDefault(); return; }
-    if (a === 'left' || a === 'right' || a === 'jump') {
+    if (a === 'left' || a === 'right' || a === 'jump' || a === 'down') {
       keys[a] = true; e.preventDefault(); applyMove(); return;
     }
     const s = slotForKey(e.code);
@@ -89,11 +91,11 @@ export function attachControls(o: ControlsOptions): Controls {
   });
   on(window, 'keyup', (e: KeyboardEvent) => {
     const a = keyAction(e.code);
-    if (a === 'left' || a === 'right' || a === 'jump') { keys[a] = false; applyMove(); }
+    if (a === 'left' || a === 'right' || a === 'jump' || a === 'down') { keys[a] = false; applyMove(); }
   });
   const releaseAll = (): void => {
-    keys.left = keys.right = keys.jump = false;
-    joyMove = null; joyUp = false; jumpTouch = false;
+    keys.left = keys.right = keys.jump = keys.down = false;
+    joyMove = null; joyUp = false; joyDown = false; jumpTouch = false;
     touchAim = null;
     mouseButtons = 0;
     applyMove();
@@ -173,17 +175,17 @@ export function attachControls(o: ControlsOptions): Controls {
       const r = joy.getBoundingClientRect();
       cx = r.left + r.width / 2; cy = r.top + r.height / 2; radius = r.width / 2 - 8;
       const j = joystick(e.clientX - cx, e.clientY - cy, radius);
-      joyMove = j.moveX; joyUp = j.up; setKnob(j.knobX, j.knobY); applyMove();
+      joyMove = j.moveX; joyUp = j.up; joyDown = j.down; setKnob(j.knobX, j.knobY); applyMove();
       e.preventDefault();
     });
     on(joy, 'pointermove', (e: PointerEvent) => {
       if (e.pointerId !== joyId) return;
       const j = joystick(e.clientX - cx, e.clientY - cy, radius);
-      joyMove = j.moveX; joyUp = j.up; setKnob(j.knobX, j.knobY); applyMove();
+      joyMove = j.moveX; joyUp = j.up; joyDown = j.down; setKnob(j.knobX, j.knobY); applyMove();
     });
     const end = (e: PointerEvent): void => {
       if (e.pointerId !== joyId) return;
-      joyId = null; joyMove = null; joyUp = false; setKnob(0, 0); applyMove();
+      joyId = null; joyMove = null; joyUp = false; joyDown = false; setKnob(0, 0); applyMove();
     };
     on(joy, 'pointerup', end);
     on(joy, 'pointercancel', end);

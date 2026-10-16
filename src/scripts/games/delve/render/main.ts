@@ -3,7 +3,7 @@ import type { DelveGame } from '../engine/game';
 import { FIXED_DT } from '../engine/constants';
 import { Renderer } from './renderer';
 import { Hud } from './hud';
-import { FixedStepper, blockedMessage } from './model';
+import { FixedStepper, blockedMessage, hintText, loreText } from './model';
 import { parseZoomPref } from './lowres';
 
 const ZOOM_KEY = 'delve.zoom';
@@ -114,6 +114,10 @@ export function startDelve(opts: StartOptions): DelveHandle {
           const m = blockedMessage(e.reason);
           if (m) hud.toast(m);
         } else if (e.type === 'chest') hud.setChest(e.open);
+        else if (e.type === 'lore') hud.toast(loreText(e.id));
+        else if (e.type === 'hint') hud.toast(hintText(e.id));
+        else if (e.type === 'unlock') { hud.toast(e.item === 'golden_key' ? '用金鑰匙打開了金寶箱' : '用地城鑰匙打開了門'); invChanged = true; }
+        else if (e.type === 'door') { /* 門的開關：只需要重畫（chunk dirty） */ }
         else invChanged = true;
       }
       if (invChanged) hud.refresh();

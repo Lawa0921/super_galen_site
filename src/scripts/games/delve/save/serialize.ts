@@ -1,7 +1,9 @@
 // serialize.ts — 純函式存檔（不碰 IndexedDB / DOM）。
 // 存「seed + 生成器版本 + 被修改 chunk 的 fg/wall + 那些 chunk 裡的箱子內容 + 玩家 + 背包 + 時間」；
 // 載入時用 seed 重新生成，再覆蓋被修改的 chunk（chunk 內的箱子以存檔為準）。
-// format 1（M1）沒有 chests；format 2 起 header.chests = [{ i: tile index, slots }]。
+// format 1（M1）沒有 chests；format 2 起 header.chests = [{ i: tile index, slots }]（含金寶箱）；
+// format 3 起 header.unlocked = 已用金鑰匙打開的金寶箱 tile index（排序）、header.keysUsed = 累計用掉的鑰匙數。
+// 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
 //
 // 二進位格式（little-endian）：
 //   [0..4)  magic "DLVS"
@@ -13,10 +15,10 @@ import type { World } from '../engine/world';
 import { Inventory, type InventoryJSON, type Stack } from '../engine/inventory';
 import { CHEST_SLOTS } from '../engine/loot';
 import { CHUNK, GEN_VERSION, INV_SIZE } from '../engine/constants';
-import { T, TILES, WALLS } from '../engine/tiles';
+import { TILES, WALLS, T, isChestTile } from '../engine/tiles';
 import { ITEMS, isItemId } from '../engine/items';
 
-export const SAVE_FORMAT = 2;
+export const SAVE_FORMAT = 3;
 export const CHUNK_BYTES = CHUNK * CHUNK * 2;
 const MAGIC = [0x44, 0x4c, 0x56, 0x53]; // "DLVS"
 const MAX_DIM = 8192;
@@ -37,6 +39,10 @@ export interface SaveHeader {
   chunks: number[];
   /** 被修改 chunk 裡的箱子（依 i 排序）；format 1 沒有 */
   chests?: ChestSave[];
+  /** 已解鎖的金寶箱（tile index，排序）；format 3 起 */
+  unlocked?: number[];
+  /** 累計用掉的鑰匙數；format 3 起 */
+  keysUsed?: number;
 }
 export interface ChestSave { i: number; slots: (Stack | null)[]; }
 export interface ChunkPayload { fg: Uint8Array; wall: Uint8Array; }
@@ -132,6 +138,8 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       inventory: game.inventory.toJSON(),
       chunks: list,
       chests,
+      unlocked: [...w.unlocked].sort((a, b) => a - b),
+      keysUsed: w.keysUsed,
     },
     chunks,
   };
@@ -176,6 +184,17 @@ function validStack(st: unknown, where: string): Stack | null {
     throw new SaveFormatError(where);
   }
   return { item: o.item, count: o.count };
+}
+
+function validUnlocked(v: unknown): number[] {
+  if (v === undefined) return [];
+  if (!Array.isArray(v) || !v.every((i) => Number.isInteger(i) && i >= 0)) throw new SaveFormatError('unlocked');
+  return [...(v as number[])].sort((a, b) => a - b);
+}
+function validKeysUsed(v: unknown): number {
+  if (v === undefined) return 0;
+  if (typeof v !== 'number' || !Number.isInteger(v) || v < 0) throw new SaveFormatError('keysUsed');
+  return v;
 }
 
 function validChests(v: unknown): ChestSave[] {
@@ -234,6 +253,8 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     inventory: validInventory(h.inventory),
     chunks: h.chunks as number[],
     chests: validChests(h.chests),
+    unlocked: validUnlocked(h.unlocked),
+    keysUsed: validKeysUsed(h.keysUsed),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -262,12 +283,12 @@ function restoreChests(w: World, chunks: readonly number[], saved: readonly Ches
     for (let y = cy * CHUNK; y < Math.min(w.height, (cy + 1) * CHUNK); y++) {
       for (let x = cx * CHUNK; x < Math.min(w.width, (cx + 1) * CHUNK); x++) {
         const i = y * w.width + x;
-        if (w.fg[i] === T.CHEST) w.chests.set(i, new Array<Stack | null>(CHEST_SLOTS).fill(null));
+        if (isChestTile(w.fg[i])) w.chests.set(i, new Array<Stack | null>(CHEST_SLOTS).fill(null));
       }
     }
   }
   for (const c of saved) {
-    if (c.i >= w.fg.length || w.fg[c.i] !== T.CHEST || !mod.has(chunkOf(c.i))) continue;
+    if (c.i >= w.fg.length || !isChestTile(w.fg[c.i]) || !mod.has(chunkOf(c.i))) continue;
     const slots = new Array<Stack | null>(CHEST_SLOTS).fill(null);
     c.slots.forEach((st, k) => { slots[k] = st ? { ...st } : null; });
     w.chests.set(c.i, slots);
@@ -287,12 +308,14 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       for (const [ci, c] of data.chunks) validateChunk(ci, c);
       validInventory(data.header.inventory);
       validChests(data.header.chests);
+      validUnlocked(data.header.unlocked);
+      validKeysUsed(data.header.keysUsed);
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
   }
   const h = data.header;
-  if (h.format !== 1 && h.format !== SAVE_FORMAT) return { ok: false, error: 'format', message: `format ${h.format}` };
+  if (h.format !== 1 && h.format !== 2 && h.format !== SAVE_FORMAT) return { ok: false, error: 'format', message: `format ${h.format}` };
   if (h.genVersion !== GEN_VERSION && !opts.allowGenMismatch) {
     return {
       ok: false, error: 'gen_version', saveGenVersion: h.genVersion,
@@ -312,6 +335,8 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     if (c) writeChunk(w, ci, c);
   }
   restoreChests(w, h.chunks, h.chests ?? []);
+  for (const i of h.unlocked ?? []) if (i < w.fg.length && w.fg[i] === T.LOCKED_CHEST) w.unlocked.add(i);
+  w.keysUsed = h.keysUsed ?? 0;
   w.markAllDirty();
   game.player.x = h.player.x;
   game.player.y = h.player.y;

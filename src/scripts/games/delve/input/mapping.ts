@@ -1,15 +1,16 @@
 // mapping.ts — 純輸入映射（無 DOM）：鍵盤代碼 → 動作、滾輪換格、虛擬搖桿數學、觸控意圖、螢幕 → tile。
 import { ITEMS } from '../engine/items';
-import { T } from '../engine/tiles';
+import { T, isInteractive } from '../engine/tiles';
 import type { Stack } from '../engine/inventory';
 import { HOTBAR_SIZE, TILE_SIZE } from '../engine/constants';
 
-export type KeyAction = 'left' | 'right' | 'jump' | 'inventory' | 'menu' | 'zoomIn' | 'zoomOut';
+export type KeyAction = 'left' | 'right' | 'jump' | 'down' | 'inventory' | 'menu' | 'zoomIn' | 'zoomOut';
 
 const KEYS: Record<string, KeyAction> = {
   KeyA: 'left', ArrowLeft: 'left',
   KeyD: 'right', ArrowRight: 'right',
   Space: 'jump', KeyW: 'jump', ArrowUp: 'jump',
+  KeyS: 'down', ArrowDown: 'down',
   KeyE: 'inventory',
   Escape: 'menu',
   Equal: 'zoomIn', NumpadAdd: 'zoomIn',
@@ -47,6 +48,8 @@ export interface JoystickResult {
   moveX: -1 | 0 | 1;
   /** 往上推很多（可當作跳） */
   up: boolean;
+  /** 往下推很多（穿過平台） */
+  down: boolean;
 }
 
 /** 由觸點相對搖桿中心的位移計算搖桿狀態。dead 為死區比例。 */
@@ -56,7 +59,7 @@ export function joystick(dx: number, dy: number, radius: number, dead = 0.25): J
   const knobX = dx * k, knobY = dy * k;
   const x = knobX / radius, y = knobY / radius;
   const moveX: -1 | 0 | 1 = Math.abs(x) < dead ? 0 : x > 0 ? 1 : -1;
-  return { x, y, knobX, knobY, moveX, up: y < -0.7 };
+  return { x, y, knobX, knobY, moveX, up: y < -0.7, down: y > 0.7 };
 }
 
 /** 滑鼠 PointerEvent.buttons 位元遮罩 → 挖（左鍵 1）/ 放（右鍵 2）。可同時按（和弦）。 */
@@ -64,9 +67,9 @@ export function mouseIntent(buttons: number): { mine: boolean; use: boolean } {
   return { mine: (buttons & 1) !== 0, use: (buttons & 2) !== 0 };
 }
 
-/** 觸控點格子時：點到箱子 → use（開箱）；手持可放置的方塊 → place，否則 mine。 */
+/** 觸控點格子時：點到箱子 / 門 / 古碑 → use（互動）；手持可放置的方塊 → place，否則 mine。 */
 export function touchIntent(held: Stack | null, aimTile: number = T.AIR): 'place' | 'mine' | 'use' {
-  if (aimTile === T.CHEST) return 'use';
+  if (aimTile === T.CHEST || isInteractive(aimTile)) return 'use';
   if (held && ITEMS[held.item]?.place !== undefined) return 'place';
   return 'mine';
 }
