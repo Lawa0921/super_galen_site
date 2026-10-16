@@ -71,6 +71,8 @@ export function affixRange(key: AnyStat, ilvl: number): [number, number] {
 /** How a power rewrites the skill it names (applied by the battle engine). */
 export interface SkillMod {
   hits?: number; target?: Target; powerPct?: number; element?: Element; hpCost?: number; turns?: number; chance?: number;
+  /** Added to a TP-costing skill's cost (floored at 1); a free skill stays free. */
+  tpDelta?: number;
   extra?: Effect[];
 }
 export interface PowerDef { id: string; skill: string; text: string; mod: SkillMod }

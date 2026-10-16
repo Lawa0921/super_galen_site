@@ -228,7 +228,7 @@ const skills: StatusTab = {
           el('span', { class: 'slx-skill-name', text: s.name }),
           ...(s.passive ? [] : [el('span', { class: 'slx-skill-target', text: t.targets[s.target] })]),
           el('span', { class: 'slx-skill-cost', text: s.passive ? t.passive : t.tp(skillCost(caster, sk)) }),
-          el('span', { class: 'slx-skill-learn', text: learned.has(sk) ? t.learned : t.at(SKILLS[sk].learnLevel) }),
+          el('span', { class: 'slx-skill-learn', text: learned.has(sk) ? t.learned : t.at(SKILLS[sk].learnLevel ?? 1) }),
         ]),
         el('p', { class: 'slx-desc', text: s.desc }),
         ...changed.map((p) => el('p', { class: 'slx-skill-power', text: p.text })),

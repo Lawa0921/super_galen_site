@@ -43,9 +43,14 @@ describe('data integrity', () => {
     }
   });
 
-  it('only Selene heals or revives', () => {
-    const healers = Object.values(SKILLS).filter((s) => s.effects.some((e) => e.kind === 'heal' || e.kind === 'revive'));
-    expect(new Set(healers.map((s) => s.owner))).toEqual(new Set(['selene']));
+  it('only Selene revives', () => {
+    const revivers = Object.values(SKILLS).filter((s) => s.effects.some((e) => e.kind === 'revive'));
+    expect(new Set(revivers.map((s) => s.owner))).toEqual(new Set(['selene']));
+  });
+
+  it('heals belong to the healers', () => {
+    const healers = Object.values(SKILLS).filter((s) => s.effects.some((e) => e.kind === 'heal'));
+    for (const s of healers) expect(['selene', 'chizuru']).toContain(s.owner);
   });
 
   it('never reuses an id across items, materials and equipment', () => {

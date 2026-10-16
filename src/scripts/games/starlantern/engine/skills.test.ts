@@ -189,3 +189,11 @@ describe('heal bonus', () => {
     expect(t.hp).toBe(1 + 90);   // 60 * 1.5
   });
 });
+
+describe('tpDelta', () => {
+  it('never takes a TP skill below 1 and leaves a free skill free', () => {
+    expect(patchSkill(SKILLS['flame-wave'], { tpDelta: -99 }).tp).toBe(1);
+    expect(patchSkill(SKILLS.stealth, { tpDelta: -1 }).tp).toBe(0);
+    expect(patchSkill(SKILLS['flame-wave'], { tpDelta: -2 }).tp).toBe(5);
+  });
+});

@@ -32,6 +32,7 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
   const out: SkillDef = { ...def, effects: [...effects, ...(mod.extra ?? []).map((e) => ({ ...e }))] };
   if (mod.target !== undefined) out.target = mod.target;
   if (mod.hpCost !== undefined) out.hpCost = mod.hpCost;
+  if (mod.tpDelta !== undefined && def.tp > 0) out.tp = Math.max(1, def.tp + mod.tpDelta);
   return out;
 }
 

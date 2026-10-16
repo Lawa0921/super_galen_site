@@ -136,7 +136,7 @@ export function setFormation(
 }
 
 export function learnedSkills(id: CharacterId, level: number): string[] {
-  return CHARACTERS[id].skills.filter((s) => SKILLS[s].learnLevel <= level);
+  return CHARACTERS[id].skills.filter((s) => (SKILLS[s].learnLevel ?? 1) <= level);
 }
 
 export function gainExp(m: Member, amount: number): { member: Member; levels: number; learned: string[] } {
