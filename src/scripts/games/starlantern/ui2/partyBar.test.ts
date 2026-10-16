@@ -70,6 +70,13 @@ describe('PartyBar', () => {
     expect(panel.querySelector('.slx-pm-weak')!.textContent).toBe('弱點！');
   });
 
+  it('plays the animated effect sheet over the face when there is one', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('scarlet')]);
+    bar.pulse('scarlet', 'hit', 10, { fxAnim: 'fire' });
+    expect(bar.el.querySelector('[data-key=scarlet] .slx-pm-fxa.slx-pm-fxa-fire')).not.toBeNull();
+  });
+
   it('keeps a low-HP member\'s panel flashing a warning', () => {
     const bar = new PartyBar(NO_ART);
     bar.update([m('scarlet', 6), m('liz', 30), m('noel', 0)]);

@@ -14,8 +14,9 @@ describe('artPaths', () => {
 
   it('lists one url per asset with no duplicates', () => {
     const urls = allArtUrls();
-    expect(urls).toHaveLength(183);
-    expect(new Set(urls).size).toBe(183);
+    expect(urls).toHaveLength(191);
+    expect(new Set(urls).size).toBe(191);
+    expect(urls).toContain(art.fxAnim('thunder'));
     expect(urls).toContain(art.window);
     expect(urls).toContain(art.npc('gate', 'happy'));
     expect(urls).toContain(`${ART_BASE}/map/fog.png`);

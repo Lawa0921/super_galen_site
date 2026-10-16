@@ -4413,8 +4413,9 @@
           63
         ]
       },
-      "status": "qa_passed",
-      "runtime": "/assets/games/starlantern/fx/slash-anim.png"
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/slash-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
     },
     "fx-pierce-anim": {
       "kind": "fx-anim",
@@ -4452,8 +4453,9 @@
           66
         ]
       },
-      "status": "qa_passed",
-      "runtime": "/assets/games/starlantern/fx/pierce-anim.png"
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/pierce-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
     },
     "fx-strike-anim": {
       "kind": "fx-anim",
@@ -4493,8 +4495,9 @@
           66
         ]
       },
-      "status": "qa_passed",
-      "runtime": "/assets/games/starlantern/fx/strike-anim.png"
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/strike-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
     },
     "fx-fire-anim": {
       "kind": "fx-anim",
@@ -4534,8 +4537,9 @@
           70
         ]
       },
-      "status": "qa_passed",
-      "runtime": "/assets/games/starlantern/fx/fire-anim.png"
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/fire-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
     },
     "fx-ice-anim": {
       "kind": "fx-anim",
@@ -4575,8 +4579,9 @@
           68
         ]
       },
-      "status": "qa_passed",
-      "runtime": "/assets/games/starlantern/fx/ice-anim.png"
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/ice-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
     },
     "fx-thunder-anim": {
       "kind": "fx-anim",
@@ -4616,8 +4621,9 @@
           69
         ]
       },
-      "status": "qa_passed",
-      "runtime": "/assets/games/starlantern/fx/thunder-anim.png"
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/thunder-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
     },
     "fx-heal-anim": {
       "kind": "fx-anim",
@@ -4657,7 +4663,7 @@
           67
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/fx/heal-anim.png",
       "rejected_attempts": [
         {
@@ -4695,7 +4701,8 @@
             ]
           }
         }
-      ]
+      ],
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
     },
     "fx-buff-anim": {
       "kind": "fx-anim",
@@ -4735,8 +4742,9 @@
           66
         ]
       },
-      "status": "qa_passed",
-      "runtime": "/assets/games/starlantern/fx/buff-anim.png"
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/buff-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
     }
   }
 }

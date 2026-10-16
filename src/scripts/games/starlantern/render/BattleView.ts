@@ -185,25 +185,41 @@ export class BattleView {
     steps.forEach((x, i) => this.later(i * 30, () => { this.root.x = x; }));
   }
 
-  /** The attack's effect on the enemy, with a larger additive copy behind it for a spark. */
+  /**
+   * The attack's effect on the enemy: the 4-frame sheet when it is published (a larger additive copy of the burst frame
+   * behind it for a spark), else the single still.
+   */
   private effect(slot: Slot, key: Parameters<typeof art.fx>[0]): void {
-    const tex = this.bank?.get(art.fx(key)) ?? null;
-    if (!tex) return;
-    const make = (k: number, rot: number, alpha: number) => {
+    const sheet = this.bank?.get(art.fxAnim(key)) ?? null;
+    const still = this.bank?.get(art.fx(key)) ?? null;
+    const base = sheet ?? still;
+    if (!base) return;
+    const frames = sheet
+      ? [0, 1, 2, 3].map((i) => new Texture({ source: sheet.source, frame: new Rectangle(sheet.frame.x + (sheet.frame.width / 4) * i, sheet.frame.y, sheet.frame.width / 4, sheet.frame.height) }))
+      : [base];
+    const fw = frames[0].frame.width;
+    const scale = Math.min(2.4, (slot.body.width * 0.9) / fw);
+    const make = (tex: Texture, k: number, rot: number, alpha: number, label: string) => {
       const s = new Sprite(tex);
       s.anchor.set(0.5);
       s.y = -slot.body.height / 2;
-      s.scale.set(Math.min(2, (slot.body.width * 0.8) / tex.width) * k);
+      s.scale.set(scale * k);
       s.rotation = rot;
       s.alpha = alpha;
+      s.label = label;
       return s;
     };
-    const spark = make(1.7, 0.6, 0.55);
+    const spark = make(frames[Math.min(1, frames.length - 1)], 1.7, 0.6, 0.5, 'fx-spark');
     spark.blendMode = 'add';
-    const main = make(1, 0, 1);
+    const main = make(frames[0], 1, 0, 1, sheet ? 'fx-anim' : 'fx');
     slot.box.addChild(spark, main);
+    const FRAME_MS = 70;
+    frames.slice(1).forEach((t, n) => this.later(FRAME_MS * (n + 1), () => { if (!main.destroyed) main.texture = t; }));
     this.later(120, () => { if (!spark.destroyed) { slot.box.removeChild(spark); spark.destroy(); } });
-    this.later(240, () => { if (!main.destroyed) { slot.box.removeChild(main); main.destroy(); } });
+    this.later(FRAME_MS * frames.length, () => {
+      if (!main.destroyed) { slot.box.removeChild(main); main.destroy(); }
+      if (sheet) for (const t of frames) t.destroy();
+    });
   }
 
   private shatter(slot: Slot): Promise<void> {

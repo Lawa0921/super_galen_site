@@ -85,3 +85,15 @@ describe('BattleView element flash', () => {
     expect(plain.root.children.some((c) => c.label === 'flash')).toBe(false);
   });
 });
+
+describe('BattleView animated effects', () => {
+  it('plays the 4-frame effect sheet when it is published, frame by frame', () => {
+    const view = new BattleView(false, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1);
+    void view.play(battle([{ type: 'damage', target: 'e0', amount: 5, element: 'fire', mult: 1 }]), sfx);
+    const box = enemyBox(view);
+    const anim = box.children.find((c) => c.label === 'fx-anim') as Sprite;
+    expect(anim).toBeDefined();
+    expect(anim.texture.frame.width).toBeCloseTo(Texture.WHITE.width / 4, 5);
+  });
+});

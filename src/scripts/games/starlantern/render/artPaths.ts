@@ -26,6 +26,8 @@ export const art = {
   bg: (floor: number) => `${ART_BASE}/bg/f${floor}.png`,
   enemy: (id: string) => `${ART_BASE}/enemy/${id}.png`,
   fx: (key: FxKey) => `${ART_BASE}/fx/${key}.png`,
+  /** Four equal frames left to right: wind-up, burst, spread, fade. */
+  fxAnim: (key: FxKey) => `${ART_BASE}/fx/${key}-anim.png`,
   portrait: (cid: string, mood: Mood) => `${ART_BASE}/char/${cid}-portrait${mood === 'normal' ? '' : `-${mood}`}.png`,
   standee: (cid: string) => `${ART_BASE}/char/${cid}-standee.png`,
   icon: (id: string) => `${ART_BASE}/icon/${id}.png`,
@@ -65,7 +67,7 @@ export function allArtUrls(): string[] {
   urls.push(art.fog);
   for (const f of [1, 2, 3]) { for (const k of TILE_KEYS) urls.push(art.tile(f, k)); urls.push(art.bg(f)); }
   for (const id of Object.keys(ENEMIES)) urls.push(art.enemy(id));
-  for (const k of FX_KEYS) urls.push(art.fx(k));
+  for (const k of FX_KEYS) urls.push(art.fx(k), art.fxAnim(k));
   urls.push(art.frame);
   for (const s of ['title', 'town', 'guild', 'shop', 'inn', 'gate'] as const) urls.push(art.scene(s));
   for (const n of ['guild', 'shop', 'inn', 'gate'] as const) urls.push(art.npc(n, 'normal'), art.npc(n, 'happy'));

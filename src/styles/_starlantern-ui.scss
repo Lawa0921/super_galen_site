@@ -510,8 +510,8 @@ $slx-battle-left: 150px;
 .slx-acut-pic img { image-rendering: pixelated; }
 // Bust: a slanted card with the upper body and the move's name
 .slx-acut-bust { width: 320px; height: 120px; clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); }
-.slx-acut-bust.slx-acut-left { left: -8px; top: 92px; animation: slx-acut-left 0.76s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
-.slx-acut-bust.slx-acut-right { right: -8px; top: 132px; animation: slx-acut-right 0.76s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.slx-acut-bust.slx-acut-left { left: -8px; top: 92px; animation: slx-acut-left 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.slx-acut-bust.slx-acut-right { right: -8px; top: 132px; animation: slx-acut-right 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
 .slx-acut-bust .slx-acut-pic { left: 30px; top: 0; width: 130px; height: 120px; }
 .slx-acut-bust .slx-acut-pic img { width: 150px; height: 150px; object-fit: cover; object-position: 50% 0; translate: -10px -8px; }
 .slx-acut-right .slx-acut-pic { left: auto; right: 30px; }
@@ -519,8 +519,8 @@ $slx-battle-left: 150px;
 .slx-acut-right .slx-acut-label { left: 24px; }
 // Eye strip: a thin band across the face for a plain attack
 .slx-acut-eyes { left: 50%; width: 420px; height: 100px; margin-left: -210px; clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%); }
-.slx-acut-eyes.slx-acut-top { top: 84px; animation: slx-acut-left 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
-.slx-acut-eyes.slx-acut-bottom { top: 186px; animation: slx-acut-right 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.slx-acut-eyes.slx-acut-top { top: 84px; animation: slx-acut-left 0.42s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.slx-acut-eyes.slx-acut-bottom { top: 186px; animation: slx-acut-right 0.42s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
 .slx-acut-eyes .slx-acut-pic { left: 26px; right: 26px; top: 4px; bottom: 4px; }
 .slx-acut-eyes .slx-acut-pic img { width: 100%; height: 368px; object-fit: cover; object-position: 50% 0; translate: 0 -118px; }
 // Each face sits at a different height: offsets frame brows to mouth (checked with a crop simulation of this CSS).
@@ -561,3 +561,22 @@ $slx-battle-left: 150px;
 @keyframes slx-acut-punch { from { scale: 2.2; opacity: 0; } to { scale: 1; opacity: 1; } }
 .slx-acut-pic { filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.6)); }
 @media (prefers-reduced-motion: reduce) { .slx-eflash { display: none; } }
+
+// Animated 4-frame effect over a struck member's face (partyBar pulse fxAnim): the sheet is 400% wide, stepped frame by frame
+.slx-pm-fxa {
+  position: absolute; left: -10px; top: -14px; z-index: 2; width: 68px; height: 68px; pointer-events: none;
+  background: no-repeat 0 0 / 400% 100%; image-rendering: pixelated;
+  animation: slx-fxa-run 0.28s steps(4, jump-none) forwards, slx-fxa-fade 0.36s ease-in forwards;
+}
+.slx-pm-fxa-pierce { left: -24px; top: 4px; width: 132px; height: 56px; }
+@keyframes slx-fxa-run { from { background-position: 0% 0; } to { background-position: 100% 0; } }
+@keyframes slx-fxa-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+.slx-pm-fxa-slash { background-image: url('/assets/games/starlantern/fx/slash-anim.png'); }
+.slx-pm-fxa-pierce { background-image: url('/assets/games/starlantern/fx/pierce-anim.png'); }
+.slx-pm-fxa-strike { background-image: url('/assets/games/starlantern/fx/strike-anim.png'); }
+.slx-pm-fxa-fire { background-image: url('/assets/games/starlantern/fx/fire-anim.png'); }
+.slx-pm-fxa-ice { background-image: url('/assets/games/starlantern/fx/ice-anim.png'); }
+.slx-pm-fxa-thunder { background-image: url('/assets/games/starlantern/fx/thunder-anim.png'); }
+.slx-pm-fxa-heal { background-image: url('/assets/games/starlantern/fx/heal-anim.png'); }
+.slx-pm-fxa-buff { background-image: url('/assets/games/starlantern/fx/buff-anim.png'); }
+@media (prefers-reduced-motion: reduce) { .slx-pm-fxa { animation: slx-fxa-fade 0.36s ease-in forwards; } }

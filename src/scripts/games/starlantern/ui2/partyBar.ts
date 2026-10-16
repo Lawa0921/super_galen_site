@@ -8,8 +8,11 @@ const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' 
 /** `row` shows a small 前／中／後 tag so the formation is visible during play. */
 export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean; row?: Row }
 export type PulseMood = 'attack' | 'hit' | 'heal' | 'ko';
-/** `fx` is an effect image laid over the face; `heavy` enlarges the number; `weak` calls out a weak-point hit. */
-export interface PulseOpts { fx?: string; heavy?: boolean; weak?: boolean }
+/**
+ * `fxAnim` plays a published 4-frame effect sheet over the face (its image is set per key in the stylesheet);
+ * `fx` lays a single effect image instead; `heavy` enlarges the number; `weak` calls out a weak-point hit.
+ */
+export interface PulseOpts { fx?: string; fxAnim?: string; heavy?: boolean; weak?: boolean }
 
 /** A drawn bar (a native <meter> cannot be styled reliably); the fill width is a 5% step class, any value above 0 shows at least one step. */
 function bar(value: number, max: number, cls: string): HTMLElement {
@@ -76,7 +79,8 @@ export class PartyBar {
       this.resetFace(p);
     }, PULSE_MS);
     const extras: HTMLElement[] = [];
-    if (opts.fx) extras.push(el('img', { class: 'slx-pm-fx', attrs: { src: opts.fx, alt: '', 'aria-hidden': 'true' } }));
+    if (opts.fxAnim) extras.push(el('span', { class: `slx-pm-fxa slx-pm-fxa-${opts.fxAnim}`, attrs: { 'aria-hidden': 'true' } }));
+    else if (opts.fx) extras.push(el('img', { class: 'slx-pm-fx', attrs: { src: opts.fx, alt: '', 'aria-hidden': 'true' } }));
     if (amount !== undefined && (mood === 'hit' || mood === 'heal')) {
       const cls = ['slx-pm-pop', mood === 'heal' ? 'slx-pm-pop-heal' : '', opts.heavy ? 'slx-pm-pop-big' : ''].filter(Boolean).join(' ');
       extras.push(el('span', { class: cls, text: `${mood === 'heal' ? '+' : '-'}${amount}`, attrs: { 'aria-hidden': 'true' } }));

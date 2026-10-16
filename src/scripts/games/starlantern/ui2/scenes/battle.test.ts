@@ -281,7 +281,7 @@ describe('BattleScene sound and failure safety', () => {
     const look = () => seen.push({
       shake: [...screen.classList].find((c) => c.startsWith('slx-shake')) ?? '',
       vignette: !!root.querySelector('.slx-vignette'),
-      fx: root.querySelector(`.slx-pm[data-key="${key}"] .slx-pm-fx`)?.getAttribute('src') ?? null,
+      fx: root.querySelector(`.slx-pm[data-key="${key}"] .slx-pm-fxa`)?.className ?? root.querySelector(`.slx-pm[data-key="${key}"] .slx-pm-fx`)?.getAttribute('src') ?? null,
     });
     const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null,
       play: async (_s: unknown, _fx: unknown, on: (k: string, cue: string, name?: string, amount?: number, extra?: unknown) => Promise<void>) => {

@@ -347,7 +347,8 @@ export class BattleScene implements Scene {
     ]);
     this.body.append(c);
     this.ctx.sfx.cutin?.();
-    setTimeout(() => c.remove(), this.ctx.fast ? 0 : 760);
+    // Gone before the hit lands (the action line holds 420 ms), so it never covers the impact.
+    setTimeout(() => c.remove(), this.ctx.fast ? 0 : 460);
   }
 
   /** Message window: the action on top, what it did underneath. */
@@ -388,8 +389,13 @@ export class BattleScene implements Scene {
       const max = this.state.party.find((c) => c.key === key)?.max.hp ?? 1;
       const heavy = !!extra?.weak || (amount ?? 0) >= max / 4;
       this.impact(heavy, extra?.fx ?? null);
-      const fx = extra?.fx ? art.fx(extra.fx) : null;
-      opts = { heavy, weak: extra?.weak, fx: fx && this.ctx.art.has(fx) ? fx : undefined };
+      const fxKey = extra?.fx ?? null;
+      const still = fxKey ? art.fx(fxKey) : null;
+      opts = {
+        heavy, weak: extra?.weak,
+        fxAnim: fxKey && this.ctx.art.has(art.fxAnim(fxKey)) ? fxKey : undefined,
+        fx: still && this.ctx.art.has(still) ? still : undefined,
+      };
     }
     this.bar.pulse(key, cue === 'acting' ? 'attack' : cue, amount, opts);
   }
