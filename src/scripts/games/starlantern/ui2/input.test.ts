@@ -4,7 +4,7 @@ import { bindUiInput, uiActionFor } from './input';
 describe('uiActionFor', () => {
   it('maps the documented keys', () => {
     for (const [k, a] of [['ArrowUp', 'up'], ['w', 'up'], ['S', 'down'], ['a', 'left'], ['ArrowRight', 'right'], ['z', 'confirm'], ['Enter', 'confirm'], [' ', 'confirm'],
-      ['x', 'cancel'], ['Escape', 'cancel'], ['Backspace', 'cancel'], ['c', 'menu'], ['C', 'menu'], ['q', 'prev'], ['E', 'next'], ['PageDown', 'next'], ['p', null]] as const) {
+      ['x', 'cancel'], ['Escape', 'cancel'], ['Backspace', 'cancel'], ['c', 'menu'], ['C', 'menu'], ['q', 'prev'], ['E', 'next'], ['PageDown', 'next'], ['r', 'scrollUp'], ['R', 'scrollUp'], ['f', 'scrollDown'], ['F', 'scrollDown'], ['p', null]] as const) {
       expect(uiActionFor(k), k).toBe(a);
     }
   });

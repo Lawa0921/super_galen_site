@@ -444,8 +444,103 @@ describe('EquipScene detail panel', () => {
       for (let i = 0; i < 20; i++) cue(r, 'up').click();
       expect(b.scrollTop).toBe(0);
       expect(cue(r, 'up').hidden).toBe(true);
-      r.press('right');                                                 // another piece starts at the top again
-      expect(b.isConnected ? b.scrollTop : body(r).scrollTop).toBe(0);
     } finally { sh.mockRestore(); ch.mockRestore(); }
+  });
+
+  it('another piece starts at the top again', () => {
+    const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get');
+    const ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get');
+    try {
+      sh.mockReturnValue(300); ch.mockReturnValue(100);
+      const r = onBag();
+      cue(r, 'down').click();
+      cue(r, 'down').click();
+      expect(body(r).scrollTop).toBeGreaterThan(0);                     // scrolled down first
+      r.press('right');
+      expect(body(r)).toBe(r.detail().querySelector('.slx-item-detail-body'));
+      expect(body(r).scrollTop).toBe(0);
+    } finally { sh.mockRestore(); ch.mockRestore(); }
+  });
+
+  it('the comparison sits right under the name and meta lines, before the lines, set and lore', () => {
+    const r = onBag((g) => { g.state.bag = [gear('cloth-gloves', 2, 'legendary', { special: 'lg-bobby' })]; });
+    const kids = [...r.detail().querySelector('.slx-item-detail-body')!.children].map((e) => e.classList[0]);
+    expect(kids.slice(0, 3)).toEqual(['slx-item-name', 'slx-item-meta', 'slx-cmp']);
+    expect(kids.indexOf('slx-cmp')).toBeLessThan(kids.indexOf('slx-item-lines'));
+  });
+
+  it('R and F scroll the detail panel by keyboard, and the key hint says so', () => {
+    const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get');
+    const ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get');
+    try {
+      sh.mockReturnValue(300); ch.mockReturnValue(100);
+      const r = onBag();
+      const b = body(r);
+      expect(r.root.querySelector('.slx-keyhint')!.textContent).toContain('R／F 捲動說明');
+      r.press('scrollDown');
+      expect(b.scrollTop).toBeGreaterThan(0);
+      expect(r.at()).toBe('bag:0');                                     // the cursor stays where it was
+      for (let i = 0; i < 20; i++) r.press('scrollDown');
+      expect(b.scrollTop).toBe(200);
+      r.press('scrollUp');
+      expect(b.scrollTop).toBeLessThan(200);
+      for (let i = 0; i < 20; i++) r.press('scrollUp');
+      expect(b.scrollTop).toBe(0);
+      expect(cue(r, 'up').hidden).toBe(true);
+    } finally { sh.mockRestore(); ch.mockRestore(); }
+  });
+
+  it('hovering the doll does not take the panel while the bag has focus; it does once the doll has focus', () => {
+    const r = onBag();
+    const name = () => r.detail().querySelector('.slx-item-name')!.textContent;
+    expect([r.at(), name()]).toEqual(['bag:0', '星紋軍刀']);
+    r.slot('weapon').dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));   // passing over the doll on the way to the panel
+    expect([r.at(), name()]).toEqual(['bag:0', '星紋軍刀']);
+    r.cell(1).dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+    expect(r.at()).toBe('bag:1');                                       // hovering inside the focused bag still moves
+    r.press('swap');
+    r.slot('weapon').dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+    expect([r.at(), name()]).toEqual(['doll:weapon', '鐵劍']);
+    r.slot('head').dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+    expect(r.at()).toBe('doll:head');
+  });
+});
+
+describe('EquipScene touch', () => {
+  const tap = (node: HTMLElement, pointerType: string) => {
+    node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType }));
+    node.dispatchEvent(new PointerEvent('click', { bubbles: true, pointerType }));
+  };
+  const twoInBag = (g: Game) => { g.state.party.roster.scarlet.equip.weapon = plainItem('iron-sword', 9); g.state.bag = [plainItem('star-saber', 1), plainItem('hunter-bow', 2)]; };
+
+  it('a first tap on bag gear selects it and shows the comparison; a second tap on the same piece wears it', () => {
+    const { at, cell, detail, worn, game } = setup(twoInBag);
+    tap(cell(1), 'touch');
+    expect(at()).toBe('bag:1');
+    expect(worn().weapon!.uid).toBe(9);                                 // nothing worn yet
+    expect(detail().querySelector('.slx-cmp-head')!.textContent).toBe('比較：鐵劍');
+    tap(cell(0), 'touch');                                              // another piece: selects that one instead
+    expect(at()).toBe('bag:0');
+    expect(worn().weapon!.uid).toBe(9);
+    tap(cell(0), 'touch');
+    expect(worn().weapon!.uid).toBe(1);
+    expect(game.state.bag.map((it) => it.uid)).toContain(9);
+  });
+
+  it('a first tap on the piece the keyboard cursor already rests on still only selects it', () => {
+    const { press, cell, worn } = setup(twoInBag);
+    press('swap');                                                      // bag:0
+    tap(cell(0), 'touch');
+    expect(worn().weapon!.uid).toBe(9);
+    tap(cell(0), 'touch');
+    expect(worn().weapon!.uid).toBe(1);
+  });
+
+  it('a mouse click still wears at once', () => {
+    const { cell, worn } = setup(twoInBag);
+    tap(cell(0), 'mouse');
+    expect(worn().weapon!.uid).toBe(1);
+    cell(0).click();                                                    // a click with no pointer type: the mouse path
+    expect(worn().weapon!.uid).toBe(9);                                 // swapped back
   });
 });

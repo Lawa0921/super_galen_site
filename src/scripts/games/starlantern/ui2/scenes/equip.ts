@@ -26,11 +26,11 @@ const AUTOS: AutoJunk[] = ['off', 'common', 'magic'];
 
 type Area = 'doll' | 'bag';
 
-/** Cells carry text only until gear art exists: the first four characters of the name. */
-/** How far one click on the detail panel's ▲/▼ scrolls it: three lines. */
+/** How far one click on the detail panel's ▲/▼ (or one R/F) scrolls it: three lines. */
 const DETAIL_STEP = 36;
-/** Pixels per wheel unit by deltaMode (pixels, lines, pages), for the detail panel. */
-const WHEEL_UNIT = [1, 12, DETAIL_STEP];
+/** Pixels per wheel unit by deltaMode (pixels, lines, pages) for the detail panel; lists use widgets.ts's own. */
+const DETAIL_WHEEL_UNIT = [1, 12, DETAIL_STEP];
+/** Cells carry text only until gear art exists: the first four characters of the name. */
 const short = (s: string): string => [...s].slice(0, 4).join('');
 const fits = (it: ItemInstance, slot: Slot): boolean => slotsFor(itemSlot(it)).includes(slot);
 
@@ -47,13 +47,18 @@ const fits = (it: ItemInstance, slot: Slot): boolean => slotsFor(itemSlot(it)).i
  *   Enter on an empty cell with a target takes the target's gear off into the bag.
  * - C (`menu`) opens the bag menu: sort, auto junk, mark the gear under the bag cursor.
  * - Q/E change member. Esc closes the menu, then clears the target, then leaves.
- * - A click is the cursor moving there plus Enter; hovering moves the cursor.
+ * - R/F (`scrollUp`/`scrollDown`) scroll the item detail, which can run past its panel.
+ * - A click is the cursor moving there plus Enter; hovering moves the cursor, but hovering the doll only does so while the
+ *   doll has focus, so the pointer can cross it from the bag to the detail panel.
+ * - On touch, a first tap on bag gear only selects it (showing the comparison); a second tap on that piece wears it.
  */
 export class EquipScene implements Scene {
   private id!: CharacterId;
   private focus: Area = 'doll';
   private dollCur = DOLL.indexOf('weapon');
   private bagCur = 0;
+  /** The bag cell a touch tap selected: tapping it again wears it. Any other action clears it. */
+  private armed: number | null = null;
   private target: Slot | null = null;
   /** What just changed hands flashes once: the slot, and the bag cell only when a piece landed there. */
   private flash: { slot: Slot; index: number | null } | null = null;
@@ -114,7 +119,7 @@ export class EquipScene implements Scene {
     this.detailBody.addEventListener('wheel', (e) => {
       if (this.detailBody.closest('[inert]') || !e.deltaY || !this.canScrollDetail(e.deltaY > 0 ? 1 : -1)) return;
       e.preventDefault();
-      this.scrollDetail(e.deltaY * (WHEEL_UNIT[e.deltaMode] ?? 1));
+      this.scrollDetail(e.deltaY * (DETAIL_WHEEL_UNIT[e.deltaMode] ?? 1));
     }, { passive: false });
     this.detailBody.addEventListener('scroll', () => this.detailCues());
     this.detail = win('slx-item-detail', [this.detailUp, this.detailBody, this.detailDown]);
@@ -133,6 +138,7 @@ export class EquipScene implements Scene {
 
   onAction(a: UiAction): void {
     this.notice = '';
+    this.armed = null;
     if (this.menuView) {
       if (a === 'cancel' || a === 'menu') { this.ctx.sfx.cancel(); this.closeMenu(); return; }
       this.menuView.onAction(a);
@@ -142,6 +148,7 @@ export class EquipScene implements Scene {
       case 'prev': case 'next': this.page(a === 'next' ? 1 : -1); return;
       case 'swap': this.focus = this.focus === 'doll' ? 'bag' : 'doll'; this.ctx.sfx.cursor(); this.render(); return;
       case 'menu': this.openMenu(); return;
+      case 'scrollUp': case 'scrollDown': this.scrollDetail(a === 'scrollDown' ? DETAIL_STEP : -DETAIL_STEP); return;
       case 'confirm': this.pick(); return;
       case 'cancel':
         this.ctx.sfx.cancel();
@@ -156,7 +163,10 @@ export class EquipScene implements Scene {
   private get member() { return this.ctx.game.state.party.roster[this.id]; }
   private get bag() { return this.ctx.game.state.bag; }
 
-  /** Pointer wiring for a slot or bag cell: hover moves the cursor there, a click is that plus Enter. */
+  /**
+   * Pointer wiring for a slot or bag cell: hover moves the cursor there (a doll slot only while the doll has focus), a
+   * click is that plus Enter. A touch tap on bag gear selects it first; a second tap on that piece wears it.
+   */
   private cell(area: Area, i: number, node: HTMLElement): HTMLElement {
     const go = () => {
       if (node.closest('[inert]') || (this.focus === area && this.cursorOf(area) === i)) return false;
@@ -164,9 +174,27 @@ export class EquipScene implements Scene {
       if (area === 'doll') this.dollCur = i; else this.bagCur = i;
       return true;
     };
-    node.addEventListener('pointermove', () => { if (go()) this.render(); });
-    // A touch tap has no hover first: go() moves the cursor, and pick() renders on every branch, refusals included.
-    node.addEventListener('click', () => { if (node.closest('[inert]')) return; this.notice = ''; go(); this.pick(); });
+    node.addEventListener('pointermove', () => { if ((area === 'bag' || this.focus === 'doll') && go()) this.render(); });
+    // Safari's click is a MouseEvent with no pointerType: the pointerdown before it says what pressed.
+    let pressedBy = '';
+    node.addEventListener('pointerdown', (e) => { pressedBy = e.pointerType; });
+    node.addEventListener('click', (e) => {
+      if (node.closest('[inert]')) return;
+      const touch = ((e as PointerEvent).pointerType || pressedBy) === 'touch';
+      pressedBy = '';
+      this.notice = '';
+      if (touch && area === 'bag' && this.bag[i] && this.armed !== i) {
+        go();
+        this.armed = i;
+        this.ctx.sfx.cursor();
+        this.render();
+        return;
+      }
+      this.armed = null;
+      // A touch tap has no hover first: go() moves the cursor, and pick() renders on every branch, refusals included.
+      go();
+      this.pick();
+    });
     return node;
   }
 
@@ -385,13 +413,7 @@ export class EquipScene implements Scene {
           el('span', { text: T.slotKind[itemSlot(it)] }), el('span', { text: T.gear.ilvl(it.ilvl) }), el('span', { text: T.gear.weight(itemWeight(it)) }),
         ]),
       );
-      if (it.junk) out.push(el('div', { class: 'slx-item-junk', text: T.gear.junk }));
-      // A power whose skill the viewed member lacks is dimmed and says so.
-      out.push(el('div', { class: 'slx-item-lines' }, itemLines(it, m).map((l) =>
-        l.usable === false
-          // Only the power text dims; the note stays at full contrast so the reason reads clearly.
-          ? el('p', { class: `slx-line slx-line-${l.kind} slx-line-off` }, [el('span', { class: 'slx-line-dim', text: l.text }), el('span', { class: 'slx-line-note', text: T.gear.cannotUse })])
-          : el('p', { class: `slx-line slx-line-${l.kind}${l.active ? ' slx-line-on' : ''}`, text: l.text }))));
+      // For bag gear, what wearing it changes comes first, so long affix, power, set and lore lines never push it out of view.
       if (onBag) {
         const slot = this.slotFor(it);
         const worn = m.equip[slot];
@@ -411,9 +433,15 @@ export class EquipScene implements Scene {
             : el('div', { class: 'slx-cmp-head', text: T.ui2.equip.versusEmpty(T.slot[slot]) }),
           ...(rows.length ? rows : [el('p', { class: 'slx-desc', text: T.ui2.equip.noChange })]),
         ]));
-      } else {
-        out.push(el('p', { class: 'slx-hint', text: T.ui2.equip.pickSlot }));
       }
+      if (it.junk) out.push(el('div', { class: 'slx-item-junk', text: T.gear.junk }));
+      // A power whose skill the viewed member lacks is dimmed and says so.
+      out.push(el('div', { class: 'slx-item-lines' }, itemLines(it, m).map((l) =>
+        l.usable === false
+          // Only the power text dims; the note stays at full contrast so the reason reads clearly.
+          ? el('p', { class: `slx-line slx-line-${l.kind} slx-line-off` }, [el('span', { class: 'slx-line-dim', text: l.text }), el('span', { class: 'slx-line-note', text: T.gear.cannotUse })])
+          : el('p', { class: `slx-line slx-line-${l.kind}${l.active ? ' slx-line-on' : ''}`, text: l.text }))));
+      if (!onBag) out.push(el('p', { class: 'slx-hint', text: T.ui2.equip.pickSlot }));
     }
     this.detailBody.replaceChildren(...out);
     this.detailBody.scrollTop = 0;

@@ -1,5 +1,8 @@
-/** `prev` / `next` page between party members on the status and equipment screens; `swap` (Tab) switches focus between panes. */
-export type UiAction = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'cancel' | 'menu' | 'auto' | 'prev' | 'next' | 'swap';
+/**
+ * `prev` / `next` page between party members on the status and equipment screens; `swap` (Tab) switches focus between panes;
+ * `scrollUp` / `scrollDown` (R / F) scroll the equipment screen's item detail.
+ */
+export type UiAction = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'cancel' | 'menu' | 'auto' | 'prev' | 'next' | 'swap' | 'scrollUp' | 'scrollDown';
 
 const KEYS: Record<string, UiAction> = {
   ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down',
@@ -7,6 +10,7 @@ const KEYS: Record<string, UiAction> = {
   Enter: 'confirm', ' ': 'confirm', z: 'confirm', Z: 'confirm',
   Escape: 'cancel', Backspace: 'cancel', x: 'cancel', X: 'cancel', c: 'menu', C: 'menu',
   q: 'prev', Q: 'prev', PageUp: 'prev', e: 'next', E: 'next', PageDown: 'next', Tab: 'swap',
+  r: 'scrollUp', R: 'scrollUp', f: 'scrollDown', F: 'scrollDown',
 };
 const REPEATABLE = new Set<UiAction>(['up', 'down', 'left', 'right']);
 
