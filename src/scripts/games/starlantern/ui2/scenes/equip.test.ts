@@ -352,4 +352,35 @@ describe('EquipScene', () => {
     press('next');
     expect(root.contains(arrow)).toBe(false);
   });
+
+  it('with a full bag the target hint points to the menu, since there is no empty cell to pick', () => {
+    const { press, root } = setup((g) => {
+      g.state.party.roster.scarlet.equip.weapon = plainItem('wooden-staff', 9);
+      g.state.bag = Array.from({ length: 60 }, (_, i) => plainItem('leather-cap', 200 + i));
+    });
+    const hint = () => root.querySelector('.slx-keyhint')!.textContent;
+    press('confirm');
+    expect(hint()).toBe(T.ui2.equip.hintTargetFull);
+    expect(hint()).not.toContain('選空格');
+    press('menu');                                                     // the route the hint names: 卸下 the target's piece
+    (root.querySelector('.slx-bag-menu [data-id=unequip]') as HTMLElement).click();
+    expect(root.querySelector('.slx-equip-notice')!.textContent).toBe(T.ui2.equip.full);
+    press('cancel');
+    expect(hint()).toBe(T.ui2.equip.hint);
+  });
+
+  it('with room in the bag the target hint still says to pick an empty cell', () => {
+    const { press, root } = setup();
+    press('confirm');
+    expect(root.querySelector('.slx-keyhint')!.textContent).toBe(T.ui2.equip.hintTarget);
+  });
+
+  it('only the power text is dimmed; the 此角色無法發動 note sits outside the dimmed part', () => {
+    const { press, detail } = setup((g) => { g.state.bag = [gear('cloth-gloves', 2, 'legendary', { special: 'lg-bobby' })]; });
+    press('swap');
+    const line = detail().querySelector('.slx-line-off')!;
+    expect(line.querySelector('.slx-line-dim')!.textContent).toBe('砲台持續 5 回合');
+    expect(line.querySelector('.slx-line-dim .slx-line-note')).toBeNull();
+    expect(line.querySelector(':scope > .slx-line-note')!.textContent).toBe(T.gear.cannotUse);
+  });
 });

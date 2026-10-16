@@ -234,10 +234,13 @@ export class EquipScene implements Scene {
     const t = T.ui2.equip.menu;
     const auto = this.ctx.game.state.autoJunk;
     // The menu acts on the piece the detail shows: bag gear can be marked; worn gear can be taken off, not marked.
+    // In the bag with a target set, 卸下 offers the target's piece (the route the full-bag hint names).
     const wornSlot = this.focus === 'doll' ? DOLL[this.dollCur] : null;
-    const worn = wornSlot ? this.member.equip[wornSlot] : undefined;
+    const offSlot = wornSlot ?? this.target;
+    const worn = offSlot ? this.member.equip[offSlot] : undefined;
     const it = wornSlot ? undefined : this.bag[this.bagCur];
-    const junk: MenuItem = worn ? { id: 'junk', label: t.wornNoMark(gearLabel(worn)), disabled: true }
+    const shown = wornSlot ? this.member.equip[wornSlot] : undefined;
+    const junk: MenuItem = shown ? { id: 'junk', label: t.wornNoMark(gearLabel(shown)), disabled: true }
       : { id: 'junk', label: !it ? t.markNone : it.junk ? t.unmark(gearLabel(it)) : t.mark(gearLabel(it)), disabled: !it };
     const items: MenuItem[] = [
       ...SORTS.map((k) => ({ id: `sort-${k}`, label: t.sort[k] })),
@@ -262,7 +265,12 @@ export class EquipScene implements Scene {
   private menuPick(id: string): void {
     const s = this.ctx.game.state;
     const [kind, arg] = id.split('-') as [string, string];
-    if (kind === 'unequip') { this.closeMenu(); this.takeOff(DOLL[this.dollCur]); return; }
+    if (kind === 'unequip') {
+      const slot = this.focus === 'doll' ? DOLL[this.dollCur] : this.target;
+      this.closeMenu();
+      if (slot) this.takeOff(slot);
+      return;
+    }
     const it = this.focus === 'bag' ? this.bag[this.bagCur] : undefined;
     const r = kind === 'sort' ? sortBagIn(s, arg as (typeof SORTS)[number])
       : kind === 'auto' ? setAutoJunk(s, arg as AutoJunk)
@@ -319,7 +327,8 @@ export class EquipScene implements Scene {
       c.setAttribute('aria-selected', String(i === this.dollCur));
     });
 
-    this.keyhint.textContent = this.target ? T.ui2.equip.hintTarget : T.ui2.equip.hint;
+    // A full bag has no empty cell to pick, so the target hint names the menu route instead.
+    this.keyhint.textContent = !this.target ? T.ui2.equip.hint : this.bag.length >= BAG_SIZE ? T.ui2.equip.hintTargetFull : T.ui2.equip.hintTarget;
     this.renderDetail();
   }
 
@@ -356,8 +365,10 @@ export class EquipScene implements Scene {
       if (it.junk) out.push(el('div', { class: 'slx-item-junk', text: T.gear.junk }));
       // A power whose skill the viewed member lacks is dimmed and says so.
       out.push(el('div', { class: 'slx-item-lines' }, itemLines(it, m).map((l) =>
-        el('p', { class: `slx-line slx-line-${l.kind}${l.active ? ' slx-line-on' : ''}${l.usable === false ? ' slx-line-off' : ''}`, text: l.text },
-          l.usable === false ? [el('span', { class: 'slx-line-note', text: T.gear.cannotUse })] : []))));
+        l.usable === false
+          // Only the power text dims; the note stays at full contrast so the reason reads clearly.
+          ? el('p', { class: `slx-line slx-line-${l.kind} slx-line-off` }, [el('span', { class: 'slx-line-dim', text: l.text }), el('span', { class: 'slx-line-note', text: T.gear.cannotUse })])
+          : el('p', { class: `slx-line slx-line-${l.kind}${l.active ? ' slx-line-on' : ''}`, text: l.text }))));
       if (onBag) {
         const slot = this.slotFor(it);
         const worn = m.equip[slot];

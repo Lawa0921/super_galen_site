@@ -165,6 +165,7 @@ export const T = {
       },
       hint: '方向鍵 移動　Tab 切換　Enter 決定　C 選單　Q／E 換人　Esc 返回',
       hintTarget: 'Enter 穿上　選空格 卸下　Esc 取消目標',
+      hintTargetFull: 'Enter 穿上　C 選單 卸下　Esc 取消目標',
     },
     settings: {
       title: '設定', volume: '音效音量', speed: '文字速度', vibrate: '震動', on: '開', off: '關', fullscreen: '全螢幕', keys: '按鍵說明', back: '返回',

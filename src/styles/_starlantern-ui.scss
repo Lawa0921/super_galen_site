@@ -543,8 +543,8 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-line-power { color: #ff9a3c; }
 .slx-line-set { color: $slx-dim; }
 .slx-line-set.slx-line-on { color: #8fe08f; }
-.slx-line-off { opacity: 0.5; }
-.slx-line-note { display: block; font-size: 10px; line-height: 12px; color: $slx-dim; }
+.slx-line-off .slx-line-dim { opacity: 0.45; }
+.slx-line-note { display: block; font-size: 10px; line-height: 12px; color: #ffc4a8; }
 .slx-equip-notice { position: absolute; left: 8px; bottom: 18px; margin: 0; font-size: 10px; line-height: 12px; color: #ff8a7a; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
 .slx-line-lore { margin-top: 2px; font-size: 10px; line-height: 12px; color: $slx-dim; }
 .slx-cmp-head { margin-bottom: 2px; font-size: 10px; line-height: 12px; color: $slx-dim; }
