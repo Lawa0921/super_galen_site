@@ -9,22 +9,35 @@ export interface EffectContext { rng: Rng; itemBoost: boolean; revealed: Record<
 const pctOf = (base: number, pct: number | undefined): number => (pct === undefined ? base : Math.round((base * pct) / 100));
 
 /**
- * A skill as a power rewrites it; the original is never touched. `target` and `hpCost` replace the skill's own (an hpCost
- * of 0 is kept, so the skill costs no HP); `hits` and `element` go to damage; `powerPct` scales damage and heal power,
- * turret power and buff percent; `turns` goes to every effect that lasts; `chance` goes to poison inflicts only; `extra`
- * is appended as written.
+ * A skill as one mod rewrites it; the original is never touched. `target` and `hpCost` replace the skill's own (an hpCost
+ * of 0 is kept, so the skill costs no HP); `hits` and `element` go to damage; `powerPct` (plus `powerDelta` points) scales
+ * damage, heal and turret power, never a buff's percent; `buffPct` scales every buff and debuff percent; `turns` (plus
+ * `turnsDelta`) goes to every effect that lasts; `chance` goes to poison inflicts only; `tpDelta` is added to a TP cost
+ * (floored at 1); `extra` is appended as written.
+ *
+ * Stacking order (engine/battle.ts `skillFor` applies it; this is the one place it is stated):
+ * 1. base: SKILLS[id];
+ * 2. tree rank: the active node's ACTIVE_RANK_PCT on the skill's primary effect (progression.rankMod): powerPct for a
+ *    damage, heal or turret skill, buffPct for a pure buff or debuff skill; a debuff riding on damage never scales;
+ * 3. tree modifiers: every mod node of the skill the member holds, folded into one mod by `stackMods` in tree order:
+ *    absolute values (powerPct, buffPct, turns, chance, hpCost, hits, element, target) replace the earlier node's,
+ *    relative values (tpDelta, powerDelta, turnsDelta; e.g. twin-turret's +60 points and +1 turn) add;
+ * 4. legendary powers last, one after another in the order worn;
+ * 5. every `extra` (from the tree or a power) appended at the very end, so no powerPct or buffPct ever rescales it.
  */
 export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
+  const power = mod.powerDelta === undefined ? mod.powerPct : (mod.powerPct ?? 100) + mod.powerDelta;
+  const lasting = (t: number) => (mod.turns ?? t) + (mod.turnsDelta ?? 0);
   const effects = def.effects.map((e): Effect => {
     switch (e.kind) {
       case 'damage': return {
-        ...e, power: pctOf(e.power, mod.powerPct),
+        ...e, power: pctOf(e.power, power),
         ...(mod.element !== undefined ? { element: mod.element } : {}), ...(mod.hits !== undefined ? { hits: mod.hits } : {}),
       };
-      case 'heal': return { ...e, power: pctOf(e.power, mod.powerPct) };
-      case 'buff': return { ...e, pct: pctOf(e.pct, mod.powerPct), turns: mod.turns ?? e.turns };
-      case 'turret': return { ...e, power: pctOf(e.power, mod.powerPct), turns: mod.turns ?? e.turns };
-      case 'taunt': return { ...e, turns: mod.turns ?? e.turns };
+      case 'heal': return { ...e, power: pctOf(e.power, power) };
+      case 'buff': return { ...e, pct: pctOf(e.pct, mod.buffPct), turns: lasting(e.turns) };
+      case 'turret': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns) };
+      case 'taunt': return { ...e, turns: lasting(e.turns) };
       case 'inflict': return { ...e, chance: e.status === 'poison' ? mod.chance ?? e.chance : e.chance };
       default: return { ...e };
     }
@@ -33,6 +46,20 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
   if (mod.target !== undefined) out.target = mod.target;
   if (mod.hpCost !== undefined) out.hpCost = mod.hpCost;
   if (mod.tpDelta !== undefined && def.tp > 0) out.tp = Math.max(1, def.tp + mod.tpDelta);
+  return out;
+}
+
+/** Mod nodes of one skill folded into one mod: absolute values replace (the later node wins), deltas add, extra appends. */
+export function stackMods(mods: SkillMod[]): SkillMod {
+  const out: SkillMod = {};
+  for (const m of mods) {
+    const { tpDelta, powerDelta, turnsDelta, extra, ...abs } = m;
+    Object.assign(out, Object.fromEntries(Object.entries(abs).filter(([, v]) => v !== undefined)));
+    for (const [k, v] of [['tpDelta', tpDelta], ['powerDelta', powerDelta], ['turnsDelta', turnsDelta]] as const) {
+      if (v !== undefined) out[k] = (out[k] ?? 0) + v;
+    }
+    if (extra?.length) out.extra = [...(out.extra ?? []), ...extra];
+  }
   return out;
 }
 

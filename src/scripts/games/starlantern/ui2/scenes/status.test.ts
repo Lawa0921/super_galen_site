@@ -9,6 +9,8 @@ import { NO_ART, type ArtIndex } from '../../render/textures';
 import { STATUS_TABS, resetStatsView } from './statusTabs';
 import { StatusScene } from './status';
 import { T } from '../../data/text.zh-TW';
+import { SKILLS } from '../../data/skills';
+import { NODES } from '../../data/trees';
 
 /** A shown number back to a number: the minus sign reads as a minus. */
 const num = (t: string | null) => Number((t ?? '').replace('−', '-'));
@@ -403,6 +405,14 @@ describe('StatusScene', () => {
     expect(root.querySelector('[data-skill=fire-star] .slx-skill-rank')!.textContent).toBe('2／3');
     expect(root.querySelector('[data-skill=ice-star] .slx-skill-rank')!.textContent).toBe('1／3');
     expect(root.querySelector('[data-skill=noel-fire-up]')).toBeNull();   // a mod node is not a skill of its own
+  });
+
+  it('the skills tab prices a skill as the tree rewrites it: a modifier node lowers its TP', () => {
+    const { root, s, game } = setup('noel');
+    game.state.party.roster.noel.tree = { 'fire-star': 1, 'flame-wave': 1, 'noel-wave-up': 3 };
+    s.onAction('right'); s.onAction('right');
+    const want = Math.max(1, SKILLS['flame-wave'].tp + NODES['noel-wave-up'].node.mods![2].tpDelta!);
+    expect(root.querySelector('[data-skill=flame-wave] .slx-skill-cost')!.textContent).toBe(T.ui2.status.tp(want));
   });
 
   it('the gear tab marks a power the member has not learned as 尚未習得', () => {

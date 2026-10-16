@@ -1,4 +1,6 @@
-import { DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES, type TreeNode } from '../data/trees';
+import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES, type TreeNode } from '../data/trees';
+import type { SkillMod } from '../data/gear';
+import { SKILLS } from '../data/skills';
 import type { CharacterId, Member } from './types';
 
 /**
@@ -42,6 +44,46 @@ export const treeSkills = (id: CharacterId): string[] =>
 /** The skills a member knows: the active nodes they hold at rank 1 or more, in tree order. */
 export const learnedSkills = (m: Member): string[] =>
   TREES[m.id].branches.flatMap((b) => b.nodes.filter((n) => n.kind === 'active' && rankIn(m.tree, n.id) > 0).map((n) => n.skill));
+
+/**
+ * The tree's rewrites of `skill` for these ranks: first the active node's own rank as `{ powerPct: ACTIVE_RANK_PCT[rank - 1] }`
+ * (left out at 100), then `mods[rank - 1]` of every mod node of that skill held at rank 1 or more, in tree order.
+ * A rank above a node's max reads as the max; a junk rank reads as 0. How they stack: engine/skills.ts `patchSkill`.
+ */
+export function treeMods(ranks: Record<string, number>, skill: string): SkillMod[] {
+  const rank = rankMod(ranks, skill);
+  return [...(rank ? [rank] : []), ...nodeMods(ranks, skill)];
+}
+
+const activeNode = (skill: string) => (has(NODES, skill) && NODES[skill].node.kind === 'active' ? NODES[skill] : undefined);
+
+/**
+ * The active node's own rank as a rewrite of the skill's primary effect, or undefined when it changes nothing (rank 0, or
+ * 100%): a skill that deals damage, heals or sets a turret scales its power (`powerPct`; a debuff riding on it is left
+ * alone); a pure buff or debuff skill scales its percent (`buffPct`). A skill with neither has nothing to scale.
+ */
+export function rankMod(ranks: Record<string, number>, skill: string): SkillMod | undefined {
+  const info = activeNode(skill);
+  const rank = info ? Math.min(rankIn(ranks, skill), info.node.maxRank) : 0;
+  const pct = rank > 0 ? ACTIVE_RANK_PCT[rank - 1] : 100;
+  if (pct === 100) return undefined;
+  const kinds = SKILLS[skill]?.effects.map((e) => e.kind) ?? [];
+  if (kinds.some((k) => k === 'damage' || k === 'heal' || k === 'turret')) return { powerPct: pct };
+  return kinds.includes('buff') ? { buffPct: pct } : undefined;
+}
+
+/** `mods[rank - 1]` of every mod node of `skill` held at rank 1 or more, in tree order. */
+export function nodeMods(ranks: Record<string, number>, skill: string): SkillMod[] {
+  const info = activeNode(skill);
+  if (!info) return [];
+  const out: SkillMod[] = [];
+  for (const b of TREES[info.owner].branches) for (const n of b.nodes) {
+    if (n.kind !== 'mod' || n.skill !== skill) continue;
+    const r = Math.min(rankIn(ranks, n.id), n.maxRank);
+    if (r > 0) out.push(n.mods![r - 1]);
+  }
+  return out;
+}
 
 /** Ranks held in the character's own nodes; ids of other trees or unknown ids are ignored. */
 function ranksHeld(id: CharacterId, tree: unknown): number {

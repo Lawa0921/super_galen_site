@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { applyEffect, patchSkill, type EffectContext } from './skills';
+import { applyEffect, patchSkill, stackMods, type EffectContext } from './skills';
+import { treeMods } from './progression';
+import { ACTIVE_RANK_PCT, NODES } from '../data/trees';
 import { createBattle, resolveRound, skillCost, skillFor } from './battle';
 import { POWERS } from '../data/gear';
 import { SKILLS } from '../data/skills';
@@ -92,13 +94,13 @@ describe('patchSkill', () => {
       ],
     };
     const before = structuredClone(def);
-    const out = patchSkill(def, { hits: 2, target: 'allies', powerPct: 65, element: 'thunder', hpCost: 0, turns: 5, chance: 1, extra: [{ kind: 'cure' }] });
+    const out = patchSkill(def, { hits: 2, target: 'allies', powerPct: 65, buffPct: 150, element: 'thunder', hpCost: 0, turns: 5, chance: 1, extra: [{ kind: 'cure' }] });
     expect(out.target).toBe('allies');
     expect(out).toHaveProperty('hpCost', 0);
     expect(out.effects).toEqual([
       { kind: 'damage', power: 53, element: 'thunder', scale: 'atk', melee: true, hits: 2 },   // round(81 * 65 / 100)
       { kind: 'heal', power: 78 },
-      { kind: 'buff', stat: 'def', pct: 26, turns: 5 },
+      { kind: 'buff', stat: 'def', pct: 60, turns: 5 },   // buffPct, never powerPct: round(40 * 150 / 100)
       { kind: 'inflict', status: 'poison', chance: 1 },
       { kind: 'turret', power: 46, turns: 5 },
       { kind: 'taunt', turns: 5 },
@@ -195,5 +197,111 @@ describe('tpDelta', () => {
     expect(patchSkill(SKILLS['flame-wave'], { tpDelta: -99 }).tp).toBe(1);
     expect(patchSkill(SKILLS.stealth, { tpDelta: -1 }).tp).toBe(0);
     expect(patchSkill(SKILLS['flame-wave'], { tpDelta: -2 }).tp).toBe(5);
+  });
+});
+
+describe('skill ranks and modifier nodes (Task 8)', () => {
+  const mod = (id: string, r: number) => NODES[id].node.mods![r - 1];
+  const pw = (base: number, pct: number) => Math.round((base * pct) / 100);
+  const caster = (ranks: Record<string, number>, powers: string[] = []) => party({ ranks, powers });
+  const fx = (c: ReturnType<typeof caster>, id: string) => skillFor(c, id)!.effects;
+  const dmg = (c: ReturnType<typeof caster>, id: string) => (fx(c, id).find((e) => e.kind === 'damage') as { power: number }).power;
+
+  it("an active's rank scales its power by ACTIVE_RANK_PCT", () => {
+    expect(dmg(caster({ 'fire-star': 3 }), 'fire-star')).toBe(pw(140, ACTIVE_RANK_PCT[2]));
+    expect(skillFor(caster({ 'fire-star': 1 }), 'fire-star')).toBe(SKILLS['fire-star']);
+  });
+
+  it('a modifier node rewrites its skill at its rank', () => {
+    expect(dmg(caster({ 'fire-star': 1, 'noel-fire-up': 2 }), 'fire-star')).toBe(pw(140, mod('noel-fire-up', 2).powerPct!));
+    expect(skillCost(caster({ 'flame-wave': 1, 'noel-wave-up': 3 }), 'flame-wave'))
+      .toBe(Math.max(1, SKILLS['flame-wave'].tp + mod('noel-wave-up', 3).tpDelta!));
+  });
+
+  it('the tree applies before worn powers', () => {
+    const c = caster({ 'fire-star': 2 }, ['lg-noel']);
+    expect(dmg(c, 'fire-star')).toBe(pw(pw(140, ACTIVE_RANK_PCT[1]), POWERS['lg-noel'].mod.powerPct!));
+    expect(skillFor(c, 'fire-star')!.target).toBe('enemies');
+  });
+
+  const twin = mod('twin-turret', 1);
+  const turretTurns = (SKILLS.turret.effects[0] as { turns: number }).turns;
+
+  it('hpCost and the turret capstone come through', () => {
+    expect(skillFor(caster({ 'blaze-ring': 1, 'scarlet-ring-up': 3 }), 'blaze-ring')!.hpCost).toBe(mod('scarlet-ring-up', 3).hpCost);
+    const turret = fx(caster({ turret: 1, 'twin-turret': 1 }), 'turret')[0] as { power: number; turns: number };
+    expect(turret.power).toBe(pw(70, 100 + twin.powerDelta!));
+    expect(turret.turns).toBe(turretTurns + twin.turnsDelta!);
+  });
+
+  it('stacking: rank, then modifiers (absolute replaces, relative adds), then the legendary power last', () => {
+    // twin-turret is relative (+powerPct points, +turns): it stacks on bobby-turret-up's absolute powerPct.
+    const ranks = { turret: 1, 'bobby-turret-up': 3, 'twin-turret': 1 };
+    const up3 = mod('bobby-turret-up', 3);
+    const plain = fx(caster(ranks), 'turret')[0] as { power: number; turns: number };
+    expect(plain.power).toBe(pw(70, up3.powerPct! + twin.powerDelta!));
+    expect(plain.turns).toBe(turretTurns + twin.turnsDelta!);
+    // lg-bobby comes last and its turns are absolute.
+    const t = fx(caster(ranks, ['lg-bobby']), 'turret')[0] as { power: number; turns: number };
+    expect(t.power).toBe(pw(70, up3.powerPct! + twin.powerDelta!));
+    expect(t.turns).toBe(POWERS['lg-bobby'].mod.turns);
+    // The active's own rank is a stage of its own, before the modifiers.
+    const t3 = fx(caster({ ...ranks, turret: 3 }, ['lg-bobby']), 'turret')[0] as { power: number; turns: number };
+    expect(t3.power).toBe(pw(pw(70, ACTIVE_RANK_PCT[2]), up3.powerPct! + twin.powerDelta!));
+    // Relative values add, absolute values replace: the later absolute wins.
+    expect(stackMods([{ powerPct: 110, tpDelta: -1 }, { powerPct: 120, powerDelta: 60, turnsDelta: 1, tpDelta: -2 }, { powerDelta: 5, turnsDelta: 1 }]))
+      .toEqual({ powerPct: 120, powerDelta: 65, turnsDelta: 2, tpDelta: -3 });
+    expect(stackMods([{ extra: [{ kind: 'cure' }] }, { extra: [{ kind: 'cure' }] }]).extra).toHaveLength(2);
+  });
+
+  it('patchSkill adds powerDelta points to powerPct and turnsDelta to every lasting effect', () => {
+    const def: SkillDef = { id: 'x', name: 'x', owner: 'bobby', tp: 5, target: 'self', desc: '',
+      effects: [{ kind: 'turret', power: 70, turns: 3 }, { kind: 'buff', stat: 'def', pct: 20, turns: 3 }, { kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: false }] };
+    expect(patchSkill(def, { powerPct: 135, powerDelta: 60, turnsDelta: 1 }).effects).toEqual([
+      { kind: 'turret', power: pw(70, 195), turns: 4 }, { kind: 'buff', stat: 'def', pct: 20, turns: 4 },
+      { kind: 'damage', power: 195, element: 'phys', scale: 'atk', melee: false },
+    ]);
+    expect((patchSkill(def, { powerDelta: 60 }).effects[0] as { power: number }).power).toBe(pw(70, 160));
+  });
+
+  it("a rank scales the skill's primary effect: power, or a pure buff's percent; never a debuff riding on damage", () => {
+    const roar0 = SKILLS['guardian-roar'];
+    expect(skillFor(caster({ 'guardian-roar': 1 }), 'guardian-roar')).toBe(roar0);
+    for (const r of [1, 2, 3]) {
+      expect(fx(caster({ 'guardian-roar': r }), 'guardian-roar'), `roar ${r}`)
+        .toEqual(roar0.effects.map((e) => (e.kind === 'buff' ? { ...e, pct: pw(e.pct, ACTIVE_RANK_PCT[r - 1]) } : e)));
+    }
+    const bind0 = SKILLS['frost-bind'].effects;
+    for (const r of [1, 2, 3]) {
+      expect(fx(caster({ 'frost-bind': r }), 'frost-bind'), `bind ${r}`)
+        .toEqual(bind0.map((e) => (e.kind === 'damage' ? { ...e, power: pw(e.power, ACTIVE_RANK_PCT[r - 1]) } : e)));
+    }
+    const baseDebuff = bind0.find((e) => e.kind === 'buff');
+    expect(fx(caster({ 'frost-bind': 1, 'noel-bind-up': 3 }), 'frost-bind').find((e) => e.kind === 'buff')).toEqual(baseDebuff);   // 「強化冰縛的威力」
+    const smoke = fx(caster({ 'smoke-bomb': 1, 'liz-smoke-up': 2 }), 'smoke-bomb')[0] as { pct: number };
+    const smoke0 = SKILLS['smoke-bomb'].effects[0] as { pct: number };
+    expect(smoke.pct).toBe(pw(smoke0.pct, mod('liz-smoke-up', 2).buffPct!));                                    // 「加深煙霧彈的攻擊削弱」
+    const bash = fx(caster({ 'shield-bash': 1, 'scarlet-bash-up': 3 }), 'shield-bash');
+    const bash0 = SKILLS['shield-bash'].effects;
+    expect(bash).toEqual([
+      { ...bash0[0], power: pw((bash0[0] as { power: number }).power, mod('scarlet-bash-up', 3).powerPct!) },
+      { ...bash0[1], pct: pw((bash0[1] as { pct: number }).pct, mod('scarlet-bash-up', 3).buffPct!) },   // 「並加深攻擊削弱」
+    ]);
+  });
+
+  it('a mod node without its active, a rank of 0 and a junk rank change nothing', () => {
+    expect(skillFor(caster({ 'fire-star': 0 }), 'fire-star')).toBe(SKILLS['fire-star']);
+    expect(skillFor(caster({ 'fire-star': 1, 'noel-fire-up': 0 }), 'fire-star')).toBe(SKILLS['fire-star']);
+    expect(skillFor(caster({ 'fire-star': 1.5 as never, 'noel-fire-up': '2' as never }), 'fire-star')).toBe(SKILLS['fire-star']);
+    // A rank above the node's max reads as the max.
+    expect(dmg(caster({ 'fire-star': 9 }), 'fire-star')).toBe(pw(140, ACTIVE_RANK_PCT[2]));
+  });
+
+  it('treeMods lists the active rank first, then the modifier nodes in tree order', () => {
+    expect(treeMods({ turret: 2, 'twin-turret': 1, 'bobby-turret-up': 1 }, 'turret'))
+      .toEqual([{ powerPct: ACTIVE_RANK_PCT[1] }, mod('bobby-turret-up', 1), mod('twin-turret', 1)]);
+    expect(treeMods({ 'guardian-roar': 2 }, 'guardian-roar')).toEqual([{ buffPct: ACTIVE_RANK_PCT[1] }]);
+    expect(treeMods({ turret: 1 }, 'turret')).toEqual([]);
+    expect(treeMods({}, 'no-such-skill')).toEqual([]);
   });
 });

@@ -21,6 +21,8 @@ export interface Combatant {
   x: Partial<Record<SecondaryKey, number>>;
   /** A member's level; an enemy's level in this fight. Armor and evasion are rated against the attacker's. */
   level: number;
+  /** A member's skill-tree ranks by node id (a copy of `Member.tree`); enemies and test combatants have none. */
+  ranks?: Record<string, number>;
   /** Legendary powers worn (members only). */
   powers: string[];
 }

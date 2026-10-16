@@ -17,7 +17,10 @@ export interface TreeNode {
 export interface TreeBranch { name: string; nodes: TreeNode[] }
 export interface TreeDef { branches: TreeBranch[] }
 
-/** Power multiplier of an active node at rank 1-3; rank 1 is the skill as written. */
+/**
+ * Damage and heal power (turret power too) of an active node at rank 1-3, in percent; rank 1 is the skill as written.
+ * It never scales a buff's or debuff's percent: only a mod node whose text says so deepens one (`buffPct`).
+ */
 export const ACTIVE_RANK_PCT = [100, 110, 120];
 /** Ranks already put into the branch's lower tiers before a node of tier t can take its first rank. */
 export const TIER_GATE = [0, 0, 2, 4, 7];
@@ -26,6 +29,7 @@ const A = (skill: string, maxRank: 1 | 2 | 3): TreeNode => ({ id: skill, kind: '
 const M = (id: string, name: string, skill: string, desc: string, mods: SkillMod[]): TreeNode =>
   ({ id, kind: 'mod', skill, maxRank: mods.length as 1 | 2 | 3, name, desc, mods });
 const pct = (...v: number[]): SkillMod[] => v.map((powerPct) => ({ powerPct }));
+const buff = (...v: number[]): SkillMod[] => v.map((buffPct) => ({ buffPct }));
 const turns = (...v: number[]): SkillMod[] => v.map((t) => ({ turns: t }));
 const chance = (...v: number[]): SkillMod[] => v.map((c) => ({ chance: c }));
 const hp = (...v: number[]): SkillMod[] => v.map((hpCost) => ({ hpCost }));
@@ -90,7 +94,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('stealth', 1),
       A('treasure-sense', 1),
       A('smoke-bomb', 3),
-      M('liz-smoke-up', '濃煙', 'smoke-bomb', '加深煙霧彈的攻擊削弱', pct(120, 140, 160)),
+      M('liz-smoke-up', '濃煙', 'smoke-bomb', '加深煙霧彈的攻擊削弱', buff(120, 140, 160)),
       A('fortune-strike', 1),
     ] },
     { name: '身法', nodes: [
@@ -129,7 +133,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('provoke', 1),
       M('scarlet-provoke-up', '挑釁延長', 'provoke', '延長挑釁的持續回合', turns(4, 5, 6)),
       A('guardian-roar', 3),
-      M('scarlet-roar-up', '咆哮強化', 'guardian-roar', '提高守護咆哮的防禦提升幅度', pct(120, 140, 160)),
+      M('scarlet-roar-up', '咆哮強化', 'guardian-roar', '提高守護咆哮的防禦提升幅度', buff(120, 140, 160)),
       A('unbreakable', 1),
     ] },
     { name: '烈焰', nodes: [
@@ -143,7 +147,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('iron-wall', 3),
       M('scarlet-wall-up', '鐵壁延長', 'iron-wall', '延長鐵壁的持續回合', turns(4, 5, 6)),
       A('shield-bash', 3),
-      M('scarlet-bash-up', '盾擊強化', 'shield-bash', '強化盾擊的威力，並加深攻擊削弱', pct(115, 130, 150)),
+      M('scarlet-bash-up', '盾擊強化', 'shield-bash', '強化盾擊的威力，並加深攻擊削弱', pct(115, 130, 150).map((m) => ({ ...m, buffPct: m.powerPct }))),
       A('fortress', 1),
     ] },
   ] },
@@ -180,7 +184,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
     ] },
     { name: '戰舞', nodes: [
       A('war-dance', 3),
-      M('safira-war-up', '戰舞強化', 'war-dance', '提高戰舞的攻擊提升幅度', pct(115, 130, 150)),
+      M('safira-war-up', '戰舞強化', 'war-dance', '提高戰舞的攻擊提升幅度', buff(115, 130, 150)),
       A('veil-dance', 3),
       M('safira-veil-up', '紗舞延長', 'veil-dance', '延長紗之舞的持續回合', turns(4, 5, 6)),
       A('desert-festival', 1),
@@ -199,7 +203,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
       M('bobby-turret-up', '砲台強化', 'turret', '強化砲台的威力', pct(110, 120, 135)),
       A('cannon', 3),
       M('bobby-cannon-up', '加農強化', 'cannon', '強化加農砲的威力', pct(115, 130, 150)),
-      M('twin-turret', '雙砲台', 'turret', '砲台威力提高至 160%，持續 4 回合', [{ powerPct: 160, turns: 4 }]),
+      M('twin-turret', '雙砲台', 'turret', '砲台威力再 +60%，持續回合 +1', [{ powerDelta: 60, turnsDelta: 1 }]),
     ] },
     { name: '整備', nodes: [
       A('tinker', 1),

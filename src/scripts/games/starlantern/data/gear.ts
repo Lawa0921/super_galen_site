@@ -70,7 +70,15 @@ export function affixRange(key: AnyStat, ilvl: number): [number, number] {
 
 /** How a power rewrites the skill it names (applied by the battle engine). */
 export interface SkillMod {
-  hits?: number; target?: Target; powerPct?: number; element?: Element; hpCost?: number; turns?: number; chance?: number;
+  hits?: number; target?: Target; element?: Element; hpCost?: number; turns?: number; chance?: number;
+  /** Scales damage, heal and turret power. Never a buff's or debuff's percent: that is `buffPct`. */
+  powerPct?: number;
+  /** Scales the percent of every buff and debuff the skill applies (not ones added by `extra`). */
+  buffPct?: number;
+  /** Relative: percentage points added to powerPct (from 100 when it has none); stacked deltas add up. */
+  powerDelta?: number;
+  /** Relative: turns added to every effect that lasts, after `turns`; stacked deltas add up. */
+  turnsDelta?: number;
   /** Added to a TP-costing skill's cost (floored at 1); a free skill stays free. */
   tpDelta?: number;
   extra?: Effect[];
@@ -91,7 +99,7 @@ const POWER_LIST: PowerDef[] = [
   { id: 'storm-thunder-bow', skill: 'aimed-shot', text: '瞄準射擊改為雷屬性，威力 120%', mod: { element: 'thunder', powerPct: 120 } },
   { id: 'mire-whisper-gloves', skill: 'hex', text: '衰弱咒必定使目標中毒（頭目減半）', mod: { chance: 1 } },
   { id: 'shade-silent-blade', skill: 'triple-slash', text: '三連刃改為 4 段', mod: { hits: 4 } },
-  { id: 'iron-bulwark-plate', skill: 'iron-wall', text: '鐵壁改為作用全體，威力 50%', mod: { target: 'allies', powerPct: 50 } },
+  { id: 'iron-bulwark-plate', skill: 'iron-wall', text: '鐵壁改為作用全體，威力 50%', mod: { target: 'allies', buffPct: 50 } },
 ];
 export const POWERS: Record<string, PowerDef> = Object.fromEntries(POWER_LIST.map((p) => [p.id, p]));
 

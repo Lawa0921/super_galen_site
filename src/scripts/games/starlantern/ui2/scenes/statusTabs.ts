@@ -220,9 +220,10 @@ const skills: StatusTab = {
   render(ctx, id) {
     const t = T.ui2.status;
     const m = ctx.game.state.party.roster[id];
-    // The skill as this member casts it: worn powers rewrite it, tpCost lowers its price (the battle rules, Task 9).
+    // The skill as this member casts it: tree ranks and mod nodes, then worn powers rewrite it; tpCost lowers its price
+    // (the battle rules: engine/battle.ts skillFor and skillCost).
     const powers = powersOf(m);
-    const caster = { powers, x: { tpCost: sheetOf(m).tpCost } };
+    const caster = { powers, ranks: { ...m.tree }, x: { tpCost: sheetOf(m).tpCost } };
     // Only what the member has learned, each with its rank in the tree.
     return el('div', { class: 'slx-tab-skills' }, learnedSkills(m).flatMap((sk) => {
       const s = skillFor(caster, sk);

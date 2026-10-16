@@ -301,3 +301,42 @@ describe('the sim player', () => {
     expect(choose(s6, lv6).liz).toMatchObject({ kind: 'skill', skill: 'twin-slash' });
   });
 });
+
+describe('skills from the tree (Task 8)', () => {
+  it('a member fights with a copy of their tree ranks', () => {
+    const party = newParty();
+    const s = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    const noel = s.party.find((c) => c.key === 'noel')!;
+    expect(noel.ranks).toEqual(party.roster.noel.tree);
+    expect(noel.ranks).not.toBe(party.roster.noel.tree);
+    expect(s.enemies[0].ranks).toBeUndefined();
+  });
+
+  it('a member cannot cast a skill whose node is unlearned', () => {
+    const party = newParty();
+    expect(party.roster.noel.tree).toEqual({ 'fire-star': 1 });
+    const s = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    const tp = s.party.find((c) => c.key === 'noel')!.tp;
+    const r = resolveRound(s, { noel: { kind: 'skill', skill: 'ice-star' } }, rng);
+    expect(r.party.find((c) => c.key === 'noel')!.tp).toBe(tp);
+    expect(r.log.some((e) => e.type === 'act' && e.actor === 'noel')).toBe(false);
+    expect(r.log).not.toContainEqual({ type: 'no-tp', actor: 'noel' });
+  });
+
+  it('a combatant without ranks still casts any skill', () => {
+    const p = P('p', { tp: 20 });
+    const s = makeBattle([p], [E('e0', { max: { hp: 999 } as never })]);
+    const r = resolveRound(s, { p: { kind: 'skill', skill: 'ice-star', target: 'e0' } }, rng);
+    expect(r.log.some((e) => e.type === 'act' && e.actor === 'p')).toBe(true);
+    expect(r.party[0].tp).toBe(20 - skillCost(p, 'ice-star'));
+  });
+
+  it('a modifier node lowers the TP a cast pays', () => {
+    const ranks = { 'flame-wave': 1, 'noel-wave-up': 3 };
+    const p = P('p', { tp: 20, ranks });
+    const s = makeBattle([p], [E('e0', { max: { hp: 999 } as never })]);
+    const r = resolveRound(s, { p: { kind: 'skill', skill: 'flame-wave' } }, rng);
+    expect(r.party[0].tp).toBe(20 - skillCost(p, 'flame-wave'));
+    expect(skillCost(p, 'flame-wave')).toBeLessThan(skillCost(P('q'), 'flame-wave'));
+  });
+});

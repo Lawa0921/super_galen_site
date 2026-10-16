@@ -12,7 +12,8 @@ import { hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
 import { depthLevel, homeLevel, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
-import { applyEffect, patchSkill, type EffectContext } from './skills';
+import { applyEffect, patchSkill, stackMods, type EffectContext } from './skills';
+import { nodeMods, rankMod } from './progression';
 import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, SecondaryKey, SkillDef, Target } from './types';
 
 export type Action =
@@ -55,7 +56,7 @@ function fromMember(m: Member, cell: number): Combatant {
   for (const k of SECONDARY_KEYS) if (sheet[k]) x[k] = sheet[k];
   return { ...fresh(), key: m.id, side: 'party', defId: m.id, name: def.name, max: statsOf(m), hp: m.hp, tp: m.tp,
     row, cell, melee: def.melee, weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0,
-    x, level: m.level, powers: powersOf(m) };
+    x, level: m.level, powers: powersOf(m), ranks: { ...m.tree } };
 }
 
 /** An enemy carries only its non-zero secondaries, like a member; a missing key reads as 0. */
@@ -165,13 +166,19 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
 }
 
 /**
- * A skill as this combatant casts it: every worn power that names it rewrites it, in the order worn. Added effects
- * (`extra`) are gathered and appended last, so another power's powerPct never rescales them. An unknown id is undefined.
+ * A skill as this combatant casts it: the tree's rank, then its mod nodes (stacked into one), then every worn power that
+ * names it in the order worn; added effects (`extra`) last. The order is stated in engine/skills.ts `patchSkill`.
+ * With nothing to rewrite it is `SKILLS[id]` itself. An unknown id is undefined.
  */
-export function skillFor(c: Pick<Combatant, 'powers'>, id: string): SkillDef | undefined {
+export function skillFor(c: Pick<Combatant, 'powers' | 'ranks'>, id: string): SkillDef | undefined {
   const base = SKILLS[id];
-  const mods = (c.powers ?? []).map((p) => POWERS[p]).filter((p) => p && p.skill === id).map((p) => p.mod);
-  if (!base || !mods.length) return base;
+  if (!base) return base;
+  // The tree's two stages (progression.treeMods lists both): the active's own rank, then its mod nodes stacked into one.
+  const rank = c.ranks ? rankMod(c.ranks, id) : undefined;
+  const nodes = c.ranks ? nodeMods(c.ranks, id) : [];
+  const powers = (c.powers ?? []).map((p) => POWERS[p]).filter((p) => p && p.skill === id).map((p) => p.mod);
+  const mods = [...(rank ? [rank] : []), ...(nodes.length ? [stackMods(nodes)] : []), ...powers];
+  if (!mods.length) return base;
   let def = base;
   const extra: Effect[] = [];
   for (const { extra: more, ...mod } of mods) { def = patchSkill(def, mod); extra.push(...(more ?? [])); }
@@ -179,8 +186,8 @@ export function skillFor(c: Pick<Combatant, 'powers'>, id: string): SkillDef | u
 }
 
 /** TP this combatant pays for a skill: ceil(tp x (1 - tpCost / 100)), at least 1 for a skill that costs TP at all. */
-export function skillCost(c: Pick<Combatant, 'x'>, id: string): number {
-  const tp = SKILLS[id]?.tp ?? 0;
+export function skillCost(c: Pick<Combatant, 'x' | 'powers' | 'ranks'>, id: string): number {
+  const tp = skillFor(c, id)?.tp ?? 0;
   if (tp <= 0) return 0;
   // The epsilon keeps a float product such as 9.000000000000002 from costing a point more.
   return Math.max(1, Math.ceil((tp * (100 - (c.x.tpCost ?? 0))) / 100 - 1e-9));
@@ -228,6 +235,8 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       return;
     }
     case 'skill': {
+      // A member casts only what their tree has learned; a combatant without ranks (tests) casts anything.
+      if (actor.ranks && (actor.ranks[act.skill] ?? 0) === 0) return;
       const def = skillFor(actor, act.skill);
       if (!def || def.passive) return;
       const cost = skillCost(actor, act.skill);

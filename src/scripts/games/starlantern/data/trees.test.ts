@@ -80,16 +80,25 @@ describe('skill trees', () => {
     }
   });
 
-  it('mod nodes carry one mod per rank and powerPct rises with rank', () => {
+  it('mod nodes carry one mod per rank and powerPct and buffPct rise with rank', () => {
     for (const n of allNodes().filter((x) => x.kind === 'mod')) {
       expect(n.mods, n.id).toHaveLength(n.maxRank);
-      const pcts = n.mods!.map((m) => m.powerPct).filter((p) => p !== undefined) as number[];
-      if (pcts.length) {
-        expect(pcts, n.id).toHaveLength(n.maxRank);
-        for (let i = 1; i < pcts.length; i++) expect(pcts[i], n.id).toBeGreaterThan(pcts[i - 1]);
+      for (const key of ['powerPct', 'buffPct'] as const) {
+        const pcts = n.mods!.map((m) => m[key]).filter((p) => p !== undefined) as number[];
+        if (!pcts.length) continue;
+        expect(pcts, `${n.id} ${key}`).toHaveLength(n.maxRank);
+        for (let i = 1; i < pcts.length; i++) expect(pcts[i], `${n.id} ${key}`).toBeGreaterThan(pcts[i - 1]);
       }
       const tp = n.mods!.map((m) => m.tpDelta).filter((p) => p !== undefined) as number[];
       for (let i = 1; i < tp.length; i++) expect(tp[i], n.id).toBeLessThan(tp[i - 1]);
+    }
+  });
+
+  it('a mod node deepens a buff or debuff only when its text says so', () => {
+    for (const n of allNodes().filter((x) => x.kind === 'mod')) {
+      const says = /削弱|提升幅度/.test(n.desc!);
+      expect(n.mods!.some((m) => m.buffPct !== undefined), n.id).toBe(says);
+      if (says) expect(SKILLS[n.skill].effects.some((e) => e.kind === 'buff'), n.id).toBe(true);
     }
   });
 
