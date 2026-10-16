@@ -18,7 +18,7 @@ const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 function setup() {
   const game = new Game(constRng(0.99), null);   // 0.99: no encounter roll, and a trap is always poison
   expect(game.depart({ region: 'mainline', condition: 'plain' }, 1)).toEqual({ ok: true });
-  const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), chest: vi.fn(), encounter: vi.fn(), heal: vi.fn(), hit: vi.fn() };
+  const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), chest: vi.fn(), encounter: vi.fn(), heal: vi.fn(), hit: vi.fn(), loot: vi.fn() };
   const go = vi.fn();
   const root = document.createElement('div');
   const s = new DungeonScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: true }, Infinity);
@@ -304,6 +304,35 @@ describe('gear from chests and the vault', () => {
     expect(text()).toContain('打開寶庫');
     expect(text()).toContain('獵弓・獨特');
     expect(root.querySelector('.slx-talk .slx-text .slx-rarity-unique')!.textContent).toBe('獵弓・獨特');
+  });
+
+  it('the best drop raises one pillar and plays loot once', () => {
+    const { game, s, root, pick, plant, sfx } = setup();
+    game.run!.keys.add(game.floor);
+    const { dir, at } = plant('vault');
+    game.run!.gearRolls[`vault:${game.floor}:${at.x},${at.y}`] = gearOf(56, 'hunter-bow', 'set');
+    s.onAction(dir);
+    expect(root.querySelector('.slx-pillar')).toBeNull();   // the window alone is no drop
+    pick('開啟');
+    expect(root.querySelectorAll('.slx-pillar').length).toBe(1);
+    expect(root.querySelector('.slx-pillar')!.classList.contains('slx-rarity-set')).toBe(true);
+    expect(sfx.loot).toHaveBeenCalledTimes(1);
+    expect(sfx.loot).toHaveBeenCalledWith('set');
+  });
+
+  it('a chest picked up after freeing room raises its pillar once', () => {
+    const { game, s, root, pick, sfx } = setup();
+    game.state.bag = Array.from({ length: 59 }, (_, i) => gearOf(1000 + i, 'cloth-robe', 'common'));
+    game.run!.loot.gear.push(gearOf(7, 'leather-vest', 'common'));   // 59 + 1: full
+    const { dir, at } = chestCell(game, true);
+    game.run!.gearRolls[`chest:${game.floor}:${at.x},${at.y}`] = gearOf(10, 'wooden-staff', 'magic');
+    s.onAction(dir);
+    expect(root.querySelector('.slx-pillar')).toBeNull();   // still on the floor
+    pick('皮背心');
+    pick('是');
+    expect(root.querySelectorAll('.slx-pillar.slx-rarity-magic').length).toBe(1);
+    expect(sfx.loot).toHaveBeenCalledTimes(1);
+    expect(sfx.loot).toHaveBeenCalledWith('magic');
   });
 
   it('a bag already full from town says the run pack has no gear to throw away, and offers nothing else', () => {

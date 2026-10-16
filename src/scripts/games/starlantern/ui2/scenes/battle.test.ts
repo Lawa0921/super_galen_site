@@ -521,6 +521,43 @@ describe('BattleScene loot and stat cues', () => {
     expect(root.querySelector('.slx-result-lines .slx-rarity-magic')!.textContent).toBe('獵弓・魔法');
   });
 
+  it('the best drop raises one pillar and plays loot once', async () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
+    const root = document.createElement('div');
+    const loot = vi.fn();
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), loot }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: null, fast: true });
+    s.enter(root);
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {},
+      gear: [gearOf(1, 'iron-sword', 'magic'), gearOf(2, 'cloth-robe', 'rare'), gearOf(3, 'hunter-bow', 'common')], gearLeft: [gearOf(4, 'hunter-bow', 'legendary')] };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    // Gear left behind is not a drop: the rare piece is the best one won.
+    expect(root.querySelectorAll('.slx-pillar').length).toBe(1);
+    expect(root.querySelector('.slx-pillar')!.classList.contains('slx-rarity-rare')).toBe(true);
+    expect(loot).toHaveBeenCalledTimes(1);
+    expect(loot).toHaveBeenCalledWith('rare');
+  });
+
+  it('a win with only common gear, or none, raises no pillar and plays no loot cue', async () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
+    const root = document.createElement('div');
+    const loot = vi.fn();
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), loot }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: null, fast: true });
+    s.enter(root);
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {}, gear: [gearOf(1, 'cloth-robe', 'common')], gearLeft: [] };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    expect(root.querySelector('.slx-result')).not.toBeNull();
+    expect(root.querySelector('.slx-pillar')).toBeNull();
+    expect(loot).not.toHaveBeenCalled();
+  });
+
   it('shows MISS, crit and TP pops on the struck member, and no message line for TP regen', async () => {
     const game = new Game(constRng(0.99), null);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');

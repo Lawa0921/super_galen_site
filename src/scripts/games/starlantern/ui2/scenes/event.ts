@@ -6,7 +6,7 @@ import { altarAt } from '../../engine/events';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { itemWeight } from '../../engine/loot/item';
 import type { MoveResult } from '../../engine/game';
-import type { Pos } from '../../engine/types';
+import type { ItemInstance, Pos } from '../../engine/types';
 import { ART_BASE } from '../../render/artPaths';
 import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
@@ -32,6 +32,8 @@ export interface EventHost {
   refresh(): void;
   /** Step onto the elite and start its fight. */
   fight(): void;
+  /** Gear was picked up: its best piece raises a light pillar and plays its chime (lootFx.dropMoment). */
+  drop(items: readonly ItemInstance[]): void;
 }
 
 /**
@@ -153,9 +155,10 @@ export function showPickUp(host: EventHost, r: MoveResult | null, vault = false)
     host.refresh();
     const parts: RichPart[] = [...Object.entries(r.loot).map(([id, n]) => `${itemName(id)} ×${n}`), ...r.gear.map(gearPart)];
     host.say(fillRich(T.ui2.event.vault.opened, joinParts(parts)));
+    host.drop(r.gear);
     return;
   }
-  if (r?.kind === 'chest') { ctx.sfx.chest?.(); host.refresh(); host.say(chestLine(r)); return; }
+  if (r?.kind === 'chest') { ctx.sfx.chest?.(); host.refresh(); host.say(chestLine(r)); host.drop(r.gear ? [r.gear] : []); return; }
   ctx.sfx.error();
   host.say(vault ? T.ui2.event.vault.failed : T.reasons.invalid);
 }

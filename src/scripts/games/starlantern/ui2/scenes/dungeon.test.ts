@@ -10,13 +10,13 @@ import { capacity, carried, formatWeight as kg, weightOf } from '../../data/weig
 import { MATERIALS } from '../../data/materials';
 import { DungeonScene } from './dungeon';
 
-function setup(portal: Portal = { region: 'mainline', condition: 'plain' }) {
+function setup(portal: Portal = { region: 'mainline', condition: 'plain' }, fast = true) {
   const game = new Game(constRng(0.99), null);   // 0.99: never an early encounter roll
   expect(game.depart(portal, 1)).toEqual({ ok: true });
-  const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), stairs: vi.fn(), chest: vi.fn(), encounter: vi.fn() };
+  const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), stairs: vi.fn(), chest: vi.fn(), encounter: vi.fn(), loot: vi.fn() };
   const go = vi.fn();
   const root = document.createElement('div');
-  const s = new DungeonScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: true }, Infinity);
+  const s = new DungeonScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast }, Infinity);
   s.enter(root);
   const text = () => root.querySelector('.slx-talk .slx-text')?.textContent ?? '';
   const pick = (label: string) => {
@@ -325,6 +325,37 @@ describe('DungeonScene loot', () => {
     expect(text()).toContain('鐵劍・傳說');
     expect(root.querySelector('.slx-talk .slx-text .slx-rarity-legendary')!.textContent).toBe('鐵劍・傳說');
     expect(game.run!.loot.gear.map((g) => g.uid)).toEqual([77]);
+  });
+
+  it('the best drop raises one pillar and plays loot once', () => {
+    const { game, s, root, sfx } = setup();
+    s.onAction(gearChest(game, gearOf(77, 'iron-sword', 'legendary')));
+    expect(root.querySelectorAll('.slx-pillar').length).toBe(1);
+    expect(root.querySelector('.slx-pillar')!.classList.contains('slx-rarity-legendary')).toBe(true);
+    expect(root.querySelector('.slx-pillar')!.classList.contains('slx-pillar-legend')).toBe(true);
+    expect(sfx.loot).toHaveBeenCalledTimes(1);
+    expect(sfx.loot).toHaveBeenCalledWith('legendary');
+  });
+
+  it('a chest of common gear raises no pillar and plays no loot cue', () => {
+    const { game, s, root, sfx, text } = setup();
+    s.onAction(gearChest(game, gearOf(78, 'cloth-robe', 'common')));
+    expect(text()).toContain('打開寶箱');
+    expect(root.querySelector('.slx-pillar')).toBeNull();
+    expect(sfx.loot).not.toHaveBeenCalled();
+  });
+
+  it('any key skips the legendary moment, and only that key', () => {
+    vi.useFakeTimers();
+    try {
+      const { game, s, root, text } = setup(undefined, false);
+      s.onAction(gearChest(game, gearOf(79, 'iron-sword', 'unique')));
+      expect(root.querySelector('.slx-pillar-legend')).not.toBeNull();
+      s.onAction('confirm');
+      expect(root.querySelector('.slx-pillar')).toBeNull();
+      expect(text()).toContain('鐵劍・獨特');   // the key went to the skip, not to the line
+      expect(root.querySelector('.slx-talk')!.hasAttribute('hidden')).toBe(false);
+    } finally { vi.useRealTimers(); }
   });
 
   it('warns at the lamp and at the entrance when the bag cannot take all the run gear', () => {

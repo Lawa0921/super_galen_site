@@ -1,3 +1,5 @@
+import type { Rarity } from '../engine/types';
+
 const BASE = 1.0;
 
 export class SoundManager {
@@ -37,10 +39,10 @@ export class SoundManager {
     if (this.master) this.master.gain.value = BASE * this.sfxVolume * this.playerVolume;
   }
 
-  private blip(freq: number, durMs: number, type: OscillatorType = 'square', gain = 0.12, freqEnd?: number): void {
+  private blip(freq: number, durMs: number, type: OscillatorType = 'square', gain = 0.12, freqEnd?: number, delayMs = 0): void {
     this.ensure();
     if (!this.ctx || !this.master) return;
-    const t = this.ctx.currentTime;
+    const t = this.ctx.currentTime + delayMs / 1000;
     const end = t + durMs / 1000;
     const osc = this.ctx.createOscillator();
     const g = this.ctx.createGain();
@@ -113,4 +115,24 @@ export class SoundManager {
   /** Rising chord for an ultimate cut-in. */
   ultimate(): void { this.blip(392, 160, 'sawtooth', 0.12, 784); this.blip(587, 420, 'square', 0.1, 1175); }
   lose(): void { this.blip(220, 500, 'triangle', 0.12, 55); }
+
+  /**
+   * A gear drop's chime by rarity: magic one note, rare a second one after it, the legend tier (legendary, unique, set) a
+   * C-major triad (523/784/1047 Hz) rolled upward with a high shimmer of noise. Common has none. At an effective volume of
+   * 0 (the game's setting or the site-wide sound slider) nothing is built: no AudioContext, no node.
+   */
+  loot(rarity: Rarity): void {
+    if (this.sfxVolume * this.playerVolume <= 0) return;
+    switch (rarity) {
+      case 'magic': this.blip(660, 160, 'sine', 0.1); break;
+      case 'rare': this.blip(660, 120, 'sine', 0.1); this.blip(990, 220, 'sine', 0.09, undefined, 110); break;
+      case 'legendary': case 'unique': case 'set':
+        this.blip(523, 520, 'triangle', 0.1);
+        this.blip(784, 480, 'triangle', 0.09, undefined, 70);
+        this.blip(1047, 560, 'sine', 0.09, undefined, 140);
+        this.noise(600, 0.05, 'highpass', 6000, 9000, 140);
+        break;
+      default: break;
+    }
+  }
 }

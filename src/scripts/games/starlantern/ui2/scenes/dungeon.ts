@@ -19,7 +19,8 @@ import { PartyBar } from '../partyBar';
 import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich } from '../widgets';
-import { chestLine, eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
+import { dropMoment, skipPillar } from '../lootFx';
+import { eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 const ENCOUNTER_MS = 520;
@@ -80,6 +81,8 @@ export class DungeonScene implements Scene {
 
   onAction(a: UiAction): void {
     if (this.leaving) return;
+    // Any key ends a legendary drop's moment first (fast mode never waits on it).
+    if (!this.ctx.fast && skipPillar(this.body)) return;
     if (this.talk.busy()) { this.talk.onAction(a); return; }
     const top = this.layers[this.layers.length - 1];
     if (top && a === 'menu') { this.ctx.sfx.cancel(); this.popAll(); return; }   // C toggles the menu
@@ -187,6 +190,7 @@ export class DungeonScene implements Scene {
       say: (t) => this.say(t),
       refresh: () => this.refresh(),
       fight: () => { if (dir) this.step(dir); },
+      drop: (items) => { dropMoment(this.ctx, this.body, items); },
     };
   }
 
@@ -215,7 +219,7 @@ export class DungeonScene implements Scene {
       case 'entrance': s.step?.(); this.refresh(); this.askTown(); return;
       case 'floor': s.stairs?.(); this.refresh(); this.say(T.map.floor(r.floor, FLOORS[this.ctx.game.terrain(r.floor) - 1].name)); return;
       case 'stairs': s.step?.(); this.refresh(); this.push(stairsLayer(this.host(), r, () => this.descend())); return;
-      case 'chest': s.chest?.(); this.refresh(); this.say(chestLine(r)); return;
+      case 'chest': showPickUp(this.host(), r); return;
       case 'event': s.step?.(); this.refresh(); this.push(eventLayer(this.host(), r.content)); return;
       case 'trap':
         s.hit?.();

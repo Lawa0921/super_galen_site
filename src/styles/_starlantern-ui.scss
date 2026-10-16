@@ -624,6 +624,54 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-result .slx-loot-left { color: $slx-dim; }
 @keyframes slx-loot-in { from { translate: -8px 0; opacity: 0; } to { translate: 0 0; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .slx-result .slx-loot-gear { animation: none; } }
+// Drop light pillar (lootFx.showPillar): a column of the best piece's rarity colour (currentColor from .slx-rarity-*) rising
+// from the floor line behind the windows. Gradients and animation only, like the element flashes; it shows no object.
+// Width and height are custom properties set by the rarity classes. The look ends with slx-pillar-life (lootFx removes it).
+.slx-pillar {
+  --slx-pillar-w: 44px; --slx-pillar-h: 190px;
+  position: absolute; inset: 0 0 64px; pointer-events: none; overflow: hidden; mix-blend-mode: screen;
+  animation: slx-pillar-life 1.2s linear forwards;
+}
+.slx-pillar.slx-rarity-rare { --slx-pillar-w: 60px; --slx-pillar-h: 250px; }
+// The beam: a white core in a soft column of colour that thins toward the top.
+.slx-pillar::before {
+  content: ''; position: absolute; left: 50%; bottom: 0; width: var(--slx-pillar-w); height: var(--slx-pillar-h); margin-left: calc(var(--slx-pillar-w) / -2);
+  background:
+    linear-gradient(to top, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 85%) 50% 100% / 16% 100% no-repeat,
+    radial-gradient(ellipse 50% 100% at 50% 100%, currentColor, transparent);
+  transform-origin: 50% 100%;
+  animation: slx-pillar-rise 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+// The pool of light where it stands (half of it, cut by the floor line).
+.slx-pillar::after {
+  content: ''; position: absolute; left: 50%; bottom: -16px; width: calc(var(--slx-pillar-w) * 3); height: 32px; margin-left: calc(var(--slx-pillar-w) * -1.5);
+  background: radial-gradient(closest-side, currentColor, transparent);
+  animation: slx-pillar-pool 1.2s ease-out both;
+}
+@keyframes slx-pillar-rise { from { scale: 0.3 0; opacity: 0; } 60% { opacity: 1; } to { scale: 1 1; opacity: 1; } }
+@keyframes slx-pillar-pool { from { scale: 0.4; opacity: 0; } 25% { scale: 1; opacity: 0.9; } to { scale: 1.15; opacity: 0.5; } }
+@keyframes slx-pillar-life { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+// Legendary, unique and set (spec §8 傳說另有特殊演出): a wider beam to the top of the view, a flash and a ring of light
+// bursting from its foot, all over within 1.1 s; any key ends it sooner (lootFx.skipPillar).
+.slx-pillar-legend { --slx-pillar-w: 84px; --slx-pillar-h: 100%; animation-duration: 1.1s; }
+.slx-pillar-legend::before { animation: slx-pillar-rise 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) both, slx-pillar-throb 0.35s ease-in-out 0.4s 2 alternate; }
+.slx-pillar-burst {
+  position: absolute; left: 50%; bottom: 0; width: 360px; height: 360px; margin: 0 0 -180px -180px;
+  background:
+    radial-gradient(closest-side, transparent 62%, currentColor 70%, transparent 78%),
+    radial-gradient(closest-side, rgba(255, 255, 255, 0.85), currentColor 30%, transparent 70%);
+  animation: slx-pillar-burst 0.65s ease-out 0.12s both;
+}
+@keyframes slx-pillar-throb { from { filter: brightness(1); } to { filter: brightness(1.6); } }
+@keyframes slx-pillar-burst { from { scale: 0.15; opacity: 1; } to { scale: 1.5; opacity: 0; } }
+// Reduced motion: no rise, no burst; the beam stands still and fades.
+@media (prefers-reduced-motion: reduce) {
+  .slx-pillar { animation: slx-pillar-fade 0.6s ease-out forwards; }
+  .slx-pillar-legend { animation-duration: 0.9s; }
+  .slx-pillar::before, .slx-pillar::after { animation: none; }
+  .slx-pillar-burst { display: none; }
+}
+@keyframes slx-pillar-fade { 0%, 40% { opacity: 0.85; } 100% { opacity: 0; } }
 // A member at a quarter of their HP or less keeps warning
 .slx-pm-danger { animation: slx-pm-danger 0.9s ease-in-out infinite alternate; }
 // A hit or an action on a low-HP member still shakes or lifts it (same weight, so these come after).
