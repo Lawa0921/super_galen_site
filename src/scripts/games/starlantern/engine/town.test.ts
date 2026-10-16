@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { newGame } from './state';
-import { buy, equip, innCost, isUnlocked, rest, revive, reviveCost, sell, unequip } from './town';
+import { buy, equip, innCost, isUnlocked, rest, revive, reviveCost, sell, unequip, useFieldItem } from './town';
 import { statsOf } from './party';
 
 const withInv = (inv: Record<string, number>, gold = 150) => ({ ...newGame(), inventory: inv, gold });
@@ -86,5 +86,29 @@ describe('inn', () => {
     expect(r.ok && [r.state.gold, r.state.party.roster.liz.hp]).toEqual([150 - reviveCost(1), statsOf(s.party.roster.liz).hp]);
     expect(revive(newGame(), 'liz')).toEqual({ ok: false, reason: 'invalid' });
     expect(revive({ ...s, gold: 0 }, 'liz')).toEqual({ ok: false, reason: 'gold' });
+  });
+});
+
+describe('useFieldItem', () => {
+  it('heals a living member and uses one item', () => {
+    const s = newGame();
+    s.party.roster.liz.hp = 5;
+    const r = useFieldItem(s, 'potion', 'liz');
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.state.party.roster.liz.hp).toBe(Math.min(statsOf(r.state.party.roster.liz).hp, 65));
+    expect(r.state.inventory.potion).toBe(2);
+    expect(s.party.roster.liz.hp).toBe(5);
+  });
+  it('revives only the fallen at half HP and refuses wrong targets or an empty stock', () => {
+    const s = newGame();
+    s.inventory.phoenix = 1;
+    expect(useFieldItem(s, 'phoenix', 'liz')).toEqual({ ok: false, reason: 'invalid' });
+    s.party.roster.liz.hp = 0;
+    const r = useFieldItem(s, 'phoenix', 'liz');
+    expect(r.ok && r.state.party.roster.liz.hp).toBe(Math.floor(statsOf(s.party.roster.liz).hp * 0.5));
+    expect(useFieldItem(s, 'potion', 'liz')).toEqual({ ok: false, reason: 'invalid' });
+    expect(useFieldItem({ ...s, inventory: {} }, 'potion', 'noel')).toEqual({ ok: false, reason: 'stock' });
+    expect(useFieldItem(s, 'return-lamp', 'noel')).toEqual({ ok: false, reason: 'invalid' });
   });
 });

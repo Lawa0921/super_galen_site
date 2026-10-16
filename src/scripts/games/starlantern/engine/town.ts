@@ -106,3 +106,23 @@ export function revive(s: GameState, memberId: CharacterId): TownResult {
   n.party.roster[memberId].tp = st.tp;
   return { ok: true, state: n };
 }
+
+/** Use a recovery item in the labyrinth: ally items on the living, deadAlly items on the fallen. */
+export function useFieldItem(s: GameState, itemId: string, targetId: CharacterId): TownResult {
+  const def = ITEMS[itemId];
+  if (!def || (def.target !== 'ally' && def.target !== 'deadAlly')) return fail('invalid');
+  if ((s.inventory[itemId] ?? 0) <= 0) return fail('stock');
+  const m = s.party.roster[targetId];
+  if (!m || !s.party.recruited.includes(targetId)) return fail('invalid');
+  if ((def.target === 'deadAlly') !== (m.hp <= 0)) return fail('invalid');
+  const n = structuredClone(s);
+  const t = n.party.roster[targetId];
+  const max = statsOf(t);
+  for (const e of def.effects) {
+    if (e.kind === 'restore') { t.hp = Math.min(max.hp, t.hp + (e.hp ?? 0)); t.tp = Math.min(max.tp, t.tp + (e.tp ?? 0)); }
+    if (e.kind === 'heal') t.hp = Math.min(max.hp, t.hp + e.power);
+    if (e.kind === 'revive') t.hp = Math.max(1, Math.floor(max.hp * e.hpPct));
+  }
+  addItem(n.inventory, itemId, -1);
+  return { ok: true, state: n };
+}
