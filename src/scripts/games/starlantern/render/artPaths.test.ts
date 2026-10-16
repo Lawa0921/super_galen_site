@@ -14,8 +14,8 @@ describe('artPaths', () => {
 
   it('lists one url per asset with no duplicates', () => {
     const urls = allArtUrls();
-    expect(urls).toHaveLength(191);
-    expect(new Set(urls).size).toBe(191);
+    expect(urls).toHaveLength(197);
+    expect(new Set(urls).size).toBe(197);
     expect(urls).toContain(art.fxAnim('thunder'));
     expect(urls).toContain(art.window);
     expect(urls).toContain(art.npc('gate', 'happy'));

@@ -20,6 +20,7 @@ describe('PartyBar', () => {
     expect(panels[0].querySelector('.slx-bar-limit .slx-fill-8')).not.toBeNull();   // 40 of 100
     expect(panels[1].querySelector('.slx-bar-hp .slx-fill-0')).not.toBeNull();
     expect(panels[0].textContent).toContain('30/30');
+    expect(panels[0].querySelector('.slx-pm-tp')!.textContent).toBe('TP 10/20');
   });
 
   it('tags each member with their row', () => {

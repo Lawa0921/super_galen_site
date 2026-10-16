@@ -34,7 +34,8 @@ describe('balance', () => {
   });
 
   it('6. the boss is a real fight', () => {
-    const lo = winRate(11, [['lanterneater']], true).rate;
+    // 120 fights: at 40 the seed noise alone (about ±7%) can cross the band.
+    const lo = winRate(11, [['lanterneater']], true, 120).rate;
     expect(lo).toBeGreaterThanOrEqual(0.3);
     expect(lo).toBeLessThanOrEqual(0.85);
     expect(winRate(13, [['lanterneater']], true).rate).toBeGreaterThanOrEqual(0.7);

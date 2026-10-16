@@ -359,6 +359,24 @@ describe('BattleScene sound and failure safety', () => {
     expect(cutin).toHaveBeenCalledTimes(2);
   });
 
+  it('shows the intents of the enemies while the player chooses and clears them while the round plays', async () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(1); game.encounter = 99; game.move('right');
+    const shown: Record<string, string>[] = [];
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null, highlight: vi.fn(),
+      showIntents: (m: Record<string, string>) => shown.push(m), play: async () => {} } };
+    const root = document.createElement('div');
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true });
+    s.enter(root);
+    expect(Object.values(shown[0]).every((t) => t.length > 0)).toBe(true);
+    expect(Object.keys(shown[0])).toEqual(game.battle!.enemies.map((e) => e.key));
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    expect(shown.some((m) => Object.keys(m).length === 0)).toBe(true);    // cleared for playback
+    expect(Object.keys(shown[shown.length - 1]).length).toBeGreaterThan(0); // next round's plan
+  });
+
   it('lights the enemy under the target cursor and lets go when the list closes', () => {
     const game = new Game(constRng(0.99), null);
     game.depart(1); game.encounter = 99; game.move('right');

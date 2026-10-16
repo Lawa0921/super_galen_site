@@ -1,5 +1,5 @@
 import { FLOORS } from '../data/floors';
-import { createBattle, resolveRound, rewards, writeBack, type Action, type BattleState } from './battle';
+import { createBattle, planEnemies, resolveRound, rewards, writeBack, type Action, type BattleState } from './battle';
 import { advance, danger, type Danger } from './encounter';
 import { parseFloor, posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
 import { activeIds, awardExp, hasPassive } from './party';
@@ -187,6 +187,7 @@ export class Game {
 
   private startBattle(enemyIds: string[], boss: boolean): void {
     this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed });
+    planEnemies(this.battle, this.rng);
     this.phase = 'battle';
   }
 

@@ -125,9 +125,11 @@ export class PartyBar {
   private fillBody(p: Panel): void {
     const m = p.member;
     if (!p.body.firstChild) {
-      p.body.append(el('span', { class: 'slx-pm-name' }), el('span', { class: 'slx-pm-num' }), bar(0, 1, 'slx-bar-hp'), bar(0, 1, 'slx-bar-tp'), bar(0, 1, 'slx-bar-limit'));
+      p.body.append(el('span', { class: 'slx-pm-name' }), el('span', { class: 'slx-pm-num' }), bar(0, 1, 'slx-bar-hp'),
+        el('span', { class: 'slx-pm-tp' }), bar(0, 1, 'slx-bar-tp'), bar(0, 1, 'slx-bar-limit'));
     }
-    const [name, num, hp, tp, limit] = [...p.body.children] as HTMLElement[];
+    const [name, num, hp, tpNum, tp, limit] = [...p.body.children] as HTMLElement[];
+    tpNum.textContent = `TP ${m.tp}/${m.maxTp}`;
     name.replaceChildren(m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : []));
     num.textContent = `${m.hp}/${m.maxHp}`;
     setBar(hp, m.hp, m.maxHp, m.hp > 0 && m.hp <= m.maxHp / 4 ? 'slx-bar-hp slx-low' : 'slx-bar-hp');

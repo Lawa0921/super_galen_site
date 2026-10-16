@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveRound } from './battle';
+import { intentLabel, planEnemies, resolveRound } from './battle';
 import { reachable, shapeTargets } from './formation';
 import { constRng, makeBattle, makeCombatant } from './testing';
 import type { Combatant } from './combatant';
@@ -63,5 +63,30 @@ describe('enemy targeting in a round', () => {
       const hits = out.log.filter((e) => e.type === 'damage').map((e) => (e as { target: string }).target);
       expect(hits.every((k) => k === 'front')).toBe(true);
     }
+  });
+});
+
+describe('enemy intents', () => {
+  it('are planned before the player chooses, and the round carries them out', () => {
+    const s = makeBattle([at('a', 0), at('b', 1)], [makeCombatant({ key: 'e0', side: 'enemy', defId: 'bat' })]);
+    planEnemies(s, constRng(0.5));
+    const intent = s.intents!.e0;
+    expect(intent.kind).toBe('attack');
+    const out = resolveRound(s, { a: { kind: 'defend' }, b: { kind: 'defend' } }, constRng(0.01));
+    const hit = out.log.find((e) => e.type === 'damage') as { target: string } | undefined;
+    expect(hit?.target).toBe(intent.target);
+  });
+
+  it('plans the next round as the last one ends', () => {
+    const s = makeBattle([at('a', 0)], [makeCombatant({ key: 'e0', side: 'enemy', defId: 'bat' })]);
+    planEnemies(s, constRng(0.5));
+    const out = resolveRound(s, { a: { kind: 'defend' } }, constRng(0.5));
+    expect(out.intents?.e0).toBeDefined();
+  });
+
+  it('describes an intent for the player', () => {
+    const s = makeBattle([at('a', 0)], [makeCombatant({ key: 'e0', side: 'enemy', defId: 'lizard' })]);
+    planEnemies(s, constRng(0));   // rng 0: the first skill fires
+    expect(intentLabel(s, 'e0')).toContain('甩尾');
   });
 });

@@ -68,7 +68,7 @@ export function allArtUrls(): string[] {
   for (const id of CHARACTER_IDS) urls.push(art.standee(id), ...MOODS.map((m) => art.portrait(id, m)));
   for (const d of DIRS) urls.push(art.party(d));
   urls.push(art.fog);
-  for (const f of [1, 2, 3]) { for (const k of TILE_KEYS) urls.push(art.tile(f, k)); urls.push(art.bg(f)); }
+  for (const f of [1, 2, 3]) { for (const k of TILE_KEYS) urls.push(art.tile(f, k)); urls.push(art.wallTop(f), art.wallFace(f), art.bg(f)); }
   for (const id of Object.keys(ENEMIES)) urls.push(art.enemy(id));
   for (const k of FX_KEYS) urls.push(art.fx(k), art.fxAnim(k));
   urls.push(art.frame);

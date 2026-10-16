@@ -6,7 +6,7 @@ import { ITEMS } from '../../data/items';
 import { SKILLS } from '../../data/skills';
 import { T } from '../../data/text.zh-TW';
 import { ULTIMATES } from '../../data/ultimates';
-import { LIMIT_MAX, type Action, type BattleState } from '../../engine/battle';
+import { LIMIT_MAX, intentLabel, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
 import type { BattleEnd } from '../../engine/game';
 import { learnedSkills } from '../../engine/party';
@@ -112,6 +112,7 @@ export class BattleScene implements Scene {
   private startRound(): void {
     this.index = 0;
     this.actions = {};
+    this.showIntents();
     this.renderCommands();
   }
 
@@ -138,6 +139,12 @@ export class BattleScene implements Scene {
     });
     this.cmd.replaceChildren(el('div', { class: 'slx-who', text: T.cmd.choose(actor.name) }), this.view.el);
     this.syncBack();
+  }
+
+  /** Each living enemy's announced move, over its head. */
+  private showIntents(): void {
+    const s = this.state;
+    this.ctx.stage?.battleView.showIntents?.(Object.fromEntries(s.enemies.filter((e) => e.alive).map((e) => [e.key, intentLabel(s, e.key)])));
   }
 
   /** 返回 shows only when cancel would do something: close a sub-list or go back to the previous member. */
@@ -290,6 +297,7 @@ export class BattleScene implements Scene {
     this.root.setAttribute('inert', '');
     this.cmd.replaceChildren();
     this.cmd.hidden = true;
+    this.ctx.stage?.battleView.showIntents?.({});
     this.view = null;
     this.before = new Map(this.state.party.map((c) => [c.key, { hp: c.hp, tp: c.tp, limit: c.limit, alive: c.alive }]));
     this.revealed.clear();
@@ -309,6 +317,7 @@ export class BattleScene implements Scene {
     }
     this.before = null;
     this.updateBar(null);
+    this.ctx.stage?.battleView.syncHp?.(r.battle);
     this.busy = false;
     this.cmd.hidden = !!r.end;
     this.root.removeAttribute('inert');

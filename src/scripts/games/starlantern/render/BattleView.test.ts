@@ -120,3 +120,24 @@ describe('BattleView camera', () => {
     expect(view.root.x).toBeCloseTo(-((k - 1) * 640) / 2, 5);
   });
 });
+
+describe('BattleView enemy status', () => {
+  it('shows the HP of each enemy and lowers it hit by hit during playback', async () => {
+    const view = new BattleView(true, bank);
+    const b = battle([]);
+    b.enemies[0].hp = 80; b.enemies[0].max.hp = 100;
+    view.setup(b, { width: 640, height: 360 }, 1);
+    expect(view.enemyHp('e0')).toEqual({ hp: 80, max: 100 });
+    await view.play(battle([{ type: 'damage', target: 'e0', amount: 30, element: 'phys', mult: 1 }]), sfx);
+    expect(view.enemyHp('e0')!.hp).toBe(50);
+  });
+
+  it('shows what each enemy will do next, and hides it while a round plays', () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1);
+    view.showIntents({ e0: '攻擊 → 絲嘉蕾' });
+    expect(view.intentText('e0')).toBe('▶ 攻擊 → 絲嘉蕾');
+    view.showIntents({});
+    expect(view.intentText('e0')).toBe('');
+  });
+});

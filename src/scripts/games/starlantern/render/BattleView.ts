@@ -13,7 +13,11 @@ function colorFor(defId: string): number {
   return PALETTE[h % PALETTE.length];
 }
 
-interface Slot { box: Container; body: Container; texture: Texture | null }
+/** One enemy in the picture: its sprite, an HP bar under its name, and its announced next move above its head. */
+interface Slot { box: Container; body: Container; texture: Texture | null; hp: number; max: number; bar: Graphics; intent: Text }
+const BAR_W = 64;
+/** Nothing in the picture may rise above the message window. */
+const TOP_CLEAR = 52;
 
 /** Pause on each impact so a hit lands before the next thing happens. */
 const HIT_STOP_MS = 80;
@@ -68,7 +72,7 @@ export class BattleView {
     const n = state.enemies.length;
     const slotW = (size.width - left) / (n + 1);
     const usable = size.height - bottom;
-    const ground = bottom > 0 ? usable - 20 : size.height * 0.85;   // 20 px under the feet for the name
+    const ground = bottom > 0 ? usable - 28 : size.height * 0.85;   // 28 px under the feet for the name and the HP bar
     state.enemies.forEach((e, i) => {
       const box = new Container();
       const body = new Container();
@@ -85,12 +89,19 @@ export class BattleView {
       }
       const label = new Text({ text: e.name, style: { fill: 0xffffff, fontSize: 14, stroke: { color: 0x000000, width: 3 } } });
       label.anchor.set(0.5, 0);
-      box.addChild(body, label);
+      const bar = new Graphics();
+      bar.y = 19;
+      const intent = new Text({ text: '', style: { fill: 0xffe08a, fontSize: 12, stroke: { color: 0x000000, width: 3 } } });
+      intent.anchor.set(0.5, 1);
+      box.addChild(body, label, bar, intent);
       box.x = left + slotW * (i + 1);
       box.y = ground;
       box.alpha = e.alive ? 1 : 0;
+      intent.y = Math.max(TOP_CLEAR - ground, -body.height - 30);
       this.scene.addChild(box);
-      this.slots.set(e.key, { box, body, texture: tex });
+      const slot: Slot = { box, body, texture: tex, hp: e.hp, max: e.max.hp, bar, intent };
+      this.slots.set(e.key, slot);
+      this.drawBar(slot);
     });
     if (!this.fast && !this.calm) this.alive(size);
   }
@@ -121,6 +132,8 @@ export class BattleView {
         if (cue.weak) sfx.weak(); else sfx.hit();
         if (cue.fx) sfx.element?.(cue.fx);
         if (slot) {
+          slot.hp = Math.max(0, slot.hp - cue.amount);
+          if (!slot.bar.destroyed) this.drawBar(slot);
           this.flash(slot, cue.weak);
           this.popup(slot, String(cue.amount), cue.weak ? 0xffd166 : 0xffffff, cue.weak);
           if (cue.weak) { this.shake(6); this.punch(); }
@@ -210,6 +223,38 @@ export class BattleView {
     set(1.06);
     this.later(70, () => set(1.03));
     this.later(140, () => set(1));
+  }
+
+  /** Current shown HP of an enemy (for tests and the screen reader text). */
+  enemyHp(key: string): { hp: number; max: number } | null {
+    const s = this.slots.get(key);
+    return s ? { hp: s.hp, max: s.max } : null;
+  }
+
+  intentText(key: string): string {
+    return this.slots.get(key)?.intent.text ?? '';
+  }
+
+  /** What each enemy will do next ({} hides them all, e.g. while a round plays). */
+  showIntents(byKey: Record<string, string>): void {
+    for (const [k, s] of this.slots) if (!s.intent.destroyed) s.intent.text = byKey[k] ? `▶ ${byKey[k]}` : '';
+  }
+
+  /** Set shown HP to the battle state's values (after a round). */
+  syncHp(state: BattleState): void {
+    for (const e of state.enemies) {
+      const s = this.slots.get(e.key);
+      if (s && !s.bar.destroyed) { s.hp = e.hp; s.max = e.max.hp; this.drawBar(s); }
+    }
+  }
+
+  private drawBar(s: Slot): void {
+    const k = Math.max(0, Math.min(1, s.hp / Math.max(1, s.max)));
+    const color = k > 0.5 ? 0x6fd36f : k > 0.25 ? 0xe8c46a : 0xff5a4a;
+    s.bar.clear()
+      .rect(-BAR_W / 2 - 1, -1, BAR_W + 2, 6).fill(0x000000)
+      .rect(-BAR_W / 2, 0, BAR_W, 4).fill(0x2a2b38)
+      .rect(-BAR_W / 2, 0, Math.round(BAR_W * k), 4).fill(color);
   }
 
   /** The enemy under the target cursor glows; null clears it. */

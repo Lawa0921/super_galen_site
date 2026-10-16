@@ -23,9 +23,11 @@ export interface BattleState {
   round: number; party: Combatant[]; enemies: Combatant[]; boss: boolean;
   inventory: Record<string, number>; revealed: Record<string, Element[]>; itemBoost: boolean;
   log: BattleEvent[]; outcome: Outcome;
+  /** What each enemy will do this round, decided before the player chooses (planEnemies) so the screen can show it. */
+  intents?: Record<string, EnemyAction>;
 }
 
-type EnemyAction = { kind: 'attack'; target?: string } | { kind: 'enemy-skill'; index: number; target?: string };
+export type EnemyAction = { kind: 'attack'; target?: string } | { kind: 'enemy-skill'; index: number; target?: string };
 
 export const LIMIT_MAX = 100;
 export const LIMIT_PER_ACTION = 12;
@@ -233,7 +235,10 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     s.log.push({ type: 'escape', success });
     if (success) { s.outcome = 'fled'; return s; }
   }
-  const enemyActs = chooseEnemyActions(s, rng);
+  // Enemies do what they announced; one that has no plan (an older state, a fresh arrival) decides now.
+  const planned = s.intents ?? {};
+  const fresh = chooseEnemyActions(s, rng);
+  const enemyActs = new Map([...fresh].map(([k, a]) => [k, planned[k] ?? a]));
   for (const actor of turnOrder([...living(s.party), ...living(s.enemies)], rng)) {
     if (!actor.alive) continue;
     if (actor.sleep > 0) { actor.sleep -= 1; s.log.push({ type: 'asleep', actor: actor.key }); continue; }
@@ -245,8 +250,26 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     if (checkOutcome(s)) return s;
   }
   endOfRound(s, ctx, rng);
-  checkOutcome(s);
+  if (!checkOutcome(s)) planEnemies(s, rng);
   return s;
+}
+
+/** Decide every living enemy's next action now, so it can be shown before the player chooses. */
+export function planEnemies(s: BattleState, rng: Rng): void {
+  s.intents = Object.fromEntries(chooseEnemyActions(s, rng));
+}
+
+/** "攻擊 → 千鶴" or a skill's name with its target, for the battle screen. */
+export function intentLabel(s: BattleState, key: string): string {
+  const a = s.intents?.[key];
+  if (!a) return '';
+  const e = s.enemies.find((x) => x.key === key);
+  const name = a.kind === 'attack' ? '攻擊' : (ENEMIES[e?.defId ?? '']?.skills[a.index]?.name ?? '');
+  const sk = a.kind === 'enemy-skill' ? ENEMIES[e?.defId ?? '']?.skills[a.index] : null;
+  const single = a.kind === 'attack' || sk?.target === 'enemy' || sk?.target === 'row' || sk?.target === 'column' || sk?.target === 'cross';
+  const who = single && a.target ? s.party.find((c) => c.key === a.target)?.name : null;
+  const area = sk?.target === 'enemies' ? '（全體）' : sk?.target === 'row' ? '（整排）' : sk?.target === 'column' ? '（整列）' : sk?.target === 'cross' ? '（十字）' : '';
+  return `${name}${area}${who ? ` → ${who}` : ''}`;
 }
 
 export function rewards(s: BattleState, rng: Rng, dropBoost: boolean): { exp: number; gold: number; drops: Record<string, number> } {
