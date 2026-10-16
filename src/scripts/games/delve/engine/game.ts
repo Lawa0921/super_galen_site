@@ -10,6 +10,7 @@ import { World } from './world';
 import { generateWorld } from './worldgen';
 import { T, tileDef, isSolidTile } from './tiles';
 import { ITEMS, type ItemId, type PickStats } from './items';
+import { potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
 import { craft as craftRecipe, findRecipe, type CraftResult } from './crafting';
 import { makeBody, stepPlayer, type Body, type PlayerMotion } from './physics';
@@ -144,8 +145,21 @@ export class DelveGame {
     }
   }
 
+  /** 0（地表）..1（世界底部）：戰利品依深度變好 */
+  depthFrac(x: number, y: number): number {
+    const w = this.world, s = w.surfaceAt(x);
+    return Math.max(0, Math.min(1, (y - s) / Math.max(1, w.height - s)));
+  }
+
+  /** 挖掉 (x,y) 上的 tile id 會掉什麼（陶罐走戰利品表） */
+  private dropsFor(id: number, x: number, y: number): Drop[] {
+    if (id === T.POT) return potLoot(this.seed, x, y, this.depthFrac(x, y));
+    const d = tileDef(id).drop;
+    return d ? [{ item: d, n: 1 }] : [];
+  }
+
   /**
-   * 預先算出挖 (x,y) 會連帶移除的所有格（本格 + 倒下的樹 + 失去支撐的火把 / 工作台）與總掉落物，
+   * 預先算出挖 (x,y) 會連帶移除的所有格（本格 + 倒下的樹 + 失去支撐的火把 / 植物 / 藤蔓…）與總掉落物，
    * 以及背包是否放得下全部掉落物。不修改世界。
    */
   private planBreak(x: number, y: number): { tiles: [number, number][]; drops: Map<ItemId, number>; fits: boolean } {
@@ -158,24 +172,35 @@ export class DelveGame {
       if (gone.has(k)) return;
       gone.add(k);
       tiles.push([tx, ty]);
-      const drop = tileDef(w.getFg(tx, ty)).drop;
-      if (drop) drops.set(drop, (drops.get(drop) ?? 0) + 1);
+      for (const d of this.dropsFor(w.getFg(tx, ty), tx, ty)) drops.set(d.item, (drops.get(d.item) ?? 0) + d.n);
     };
     const id = w.getFg(x, y);
     if (id === T.AIR || !w.inBounds(x, y)) return { tiles, drops, fits: true };
     take(x, y);
     if (id === T.WOOD) this.fellTree(x, y, take, gone);
-    // 失去支撐的火把 / 工作台（以「移除後」的世界判斷支撐）
-    const solidAfter = (tx: number, ty: number): boolean =>
-      isSolidTile(w.getFg(tx, ty)) && !(w.inBounds(tx, ty) && gone.has(w.idx(tx, ty)));
+    // 失去支撐的物件（以「移除後」的世界判斷支撐）
+    const goneAt = (tx: number, ty: number): boolean => w.inBounds(tx, ty) && gone.has(w.idx(tx, ty));
+    const tileAfter = (tx: number, ty: number): number => (goneAt(tx, ty) ? T.AIR : w.getFg(tx, ty));
+    const solidAfter = (tx: number, ty: number): boolean => isSolidTile(tileAfter(tx, ty));
+    const supported = (nx: number, ny: number, nid: number): boolean => {
+      switch (tileDef(nid).support) {
+        case 'any': return w.getWall(nx, ny) !== 0 || solidAfter(nx - 1, ny) || solidAfter(nx + 1, ny)
+          || solidAfter(nx, ny - 1) || solidAfter(nx, ny + 1);
+        case 'floor': return solidAfter(nx, ny + 1) || (nid === T.CACTUS && tileAfter(nx, ny + 1) === T.CACTUS);
+        case 'ceiling': {
+          const up = tileAfter(nx, ny - 1);
+          return isSolidTile(up) || (nid === T.VINE && (up === T.VINE || up === T.LEAVES));
+        }
+        default: return true;
+      }
+    };
     for (let k = 0; k < tiles.length; k++) {
       const [rx, ry] = tiles[k];
       for (const [nx, ny] of [[rx - 1, ry], [rx + 1, ry], [rx, ry - 1], [rx, ry + 1]] as const) {
         if (!w.inBounds(nx, ny) || gone.has(w.idx(nx, ny))) continue;
-        if (!tileDef(w.getFg(nx, ny)).needsSupport) continue;
-        const supported = w.getWall(nx, ny) !== 0 || solidAfter(nx - 1, ny) || solidAfter(nx + 1, ny)
-          || solidAfter(nx, ny - 1) || solidAfter(nx, ny + 1);
-        if (!supported) take(nx, ny);
+        const nid = w.getFg(nx, ny);
+        if (!tileDef(nid).needsSupport) continue;
+        if (!supported(nx, ny, nid)) take(nx, ny);
       }
     }
     return { tiles, drops, fits: this.inventory.canAddAll(drops) };
@@ -188,10 +213,10 @@ export class DelveGame {
     if (!plan.fits) { this.block('mine', 'full', x, y); return false; }
     for (const [tx, ty] of plan.tiles) {
       const tid = this.world.getFg(tx, ty);
-      const drop = tileDef(tid).drop;
+      const drops = this.dropsFor(tid, tx, ty);
       this.world.setFg(tx, ty, T.AIR);
-      if (drop) this.inventory.add(drop, 1);
-      this.events.push({ type: 'mine', x: tx, y: ty, tile: tid, item: drop });
+      for (const d of drops) this.inventory.add(d.item, d.n);
+      this.events.push({ type: 'mine', x: tx, y: ty, tile: tid, item: drops.length ? drops[0].item : null });
     }
     return true;
   }
@@ -202,7 +227,7 @@ export class DelveGame {
     let guard = 0;
     while (stack.length && guard++ < 400) {
       const [tx, ty] = stack.pop()!;
-      if (ty > y || Math.abs(tx - x) > 4) continue;
+      if (ty > y || Math.abs(tx - x) > 7) continue;
       if (!this.world.inBounds(tx, ty) || gone.has(this.world.idx(tx, ty))) continue;
       const tid = this.world.getFg(tx, ty);
       if (tid !== T.WOOD && tid !== T.LEAVES) continue;
@@ -218,16 +243,30 @@ export class DelveGame {
       || isSolidTile(w.getFg(x, y - 1)) || isSolidTile(w.getFg(x, y + 1));
   }
 
+  /** 放置時的支撐：地面型物件要正下方實心、垂吊型要正上方實心，其他照舊（鄰接實心或背牆）。 */
+  private placeSupported(x: number, y: number, place: number): boolean {
+    const sup = tileDef(place).support;
+    if (sup === 'floor') return isSolidTile(this.world.getFg(x, y + 1));
+    if (sup === 'ceiling') return isSolidTile(this.world.getFg(x, y - 1));
+    return this.hasSupport(x, y);
+  }
+
   /** 嘗試以快捷欄選中的方塊放在 (x,y)。 */
   tryPlace(x: number, y: number): boolean {
     const stack = this.inventory.selectedStack();
     const place = stack ? ITEMS[stack.item].place : undefined;
     if (!stack || place === undefined) return false;
     if (!this.world.inBounds(x, y)) return false;
-    if (this.world.getFg(x, y) !== T.AIR) { this.block('place', 'occupied', x, y); return false; }
+    const cur = this.world.getFg(x, y);
+    const replace = cur !== T.AIR && cur !== place && tileDef(cur).replaceable;
+    if (cur !== T.AIR && !replace) { this.block('place', 'occupied', x, y); return false; }
     if (!this.canReach(x, y)) { this.block('place', 'reach', x, y); return false; }
     if (isSolidTile(place) && this.tileOverlapsPlayer(x, y)) { this.block('place', 'body', x, y); return false; }
-    if (!this.hasSupport(x, y)) { this.block('place', 'support', x, y); return false; }
+    if (!this.placeSupported(x, y, place)) { this.block('place', 'support', x, y); return false; }
+    if (replace) {
+      this.world.setFg(x, y, T.AIR);
+      this.events.push({ type: 'mine', x, y, tile: cur, item: null });
+    }
     this.world.setFg(x, y, place);
     this.inventory.takeFromSlot(this.inventory.selected, 1);
     this.events.push({ type: 'place', x, y, tile: place, item: stack.item });

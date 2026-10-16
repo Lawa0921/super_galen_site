@@ -18,6 +18,12 @@ export const RECIPES: readonly Recipe[] = [
   { id: 'workbench', out: { item: 'workbench', n: 1 }, inputs: [{ item: 'planks', n: 10 }], station: null },
   { id: 'copper_pickaxe', out: { item: 'copper_pickaxe', n: 1 }, inputs: [{ item: 'planks', n: 5 }, { item: 'copper_ore', n: 8 }], station: 'workbench' },
   { id: 'iron_pickaxe', out: { item: 'iron_pickaxe', n: 1 }, inputs: [{ item: 'planks', n: 5 }, { item: 'iron_ore', n: 8 }], station: 'workbench' },
+  { id: 'silver_pickaxe', out: { item: 'silver_pickaxe', n: 1 }, inputs: [{ item: 'planks', n: 5 }, { item: 'silver_ore', n: 10 }], station: 'workbench' },
+  { id: 'gold_pickaxe', out: { item: 'gold_pickaxe', n: 1 }, inputs: [{ item: 'planks', n: 5 }, { item: 'gold_ore', n: 12 }], station: 'workbench' },
+  { id: 'chest', out: { item: 'chest', n: 1 }, inputs: [{ item: 'planks', n: 8 }, { item: 'iron_ore', n: 2 }], station: 'workbench' },
+  { id: 'stone_brick', out: { item: 'stone_brick', n: 2 }, inputs: [{ item: 'stone', n: 2 }], station: 'workbench' },
+  { id: 'torch_crystal', out: { item: 'torch', n: 6 }, inputs: [{ item: 'wood', n: 1 }, { item: 'crystal', n: 1 }], station: null },
+  { id: 'silver_coin', out: { item: 'silver_coin', n: 1 }, inputs: [{ item: 'copper_coin', n: 100 }], station: null },
 ];
 
 export function findRecipe(id: string): Recipe | undefined {

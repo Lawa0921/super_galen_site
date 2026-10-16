@@ -99,9 +99,9 @@ describe('Inventory', () => {
 describe('crafting', () => {
   const free = { nearWorkbench: false };
   const bench = { nearWorkbench: true };
-  it('配方表包含計畫中的 5 道', () => {
-    const ids = RECIPES.map((r) => r.id).sort();
-    expect(ids).toEqual(['copper_pickaxe', 'iron_pickaxe', 'planks', 'torch', 'workbench'].sort());
+  it('配方表包含 M1 的 5 道', () => {
+    const ids = RECIPES.map((r) => r.id);
+    expect(ids).toEqual(expect.arrayContaining(['copper_pickaxe', 'iron_pickaxe', 'planks', 'torch', 'workbench']));
     expect(findRecipe('planks')?.out).toEqual({ item: 'planks', n: 4 });
   });
   it('徒手：1 wood → 4 planks，消耗與產出', () => {
