@@ -313,4 +313,58 @@ describe('ShopScene', () => {
     s.onAction('cancel');
     expect(root.querySelector('.slx-info')).toBeNull();
   });
+
+  it('moss lists its uses in words: two potions, two bases and the charm it unlocks', () => {
+    const { game, pick, root } = setup();
+    game.state.inventory.moss = 2;
+    pick('販賣');
+    pick('素材');
+    expect(root.querySelector('.slx-info')!.textContent).toContain('用於：回復藥、解毒藥、手部打造、項鍊打造、苔光護符解鎖');
+  });
+
+  it('the sell-all row shows what junk it sells instead of an empty detail', () => {
+    const { game, pick, root } = setup();
+    game.state.inventory['old-coin'] = 3;
+    game.state.inventory.moss = 2;
+    pick('販賣');
+    pick('素材');
+    const info = root.querySelector('.slx-info')!;
+    expect(info.textContent).toContain(T.ui2.shop.junkHead);
+    expect(info.textContent).toContain(T.ui2.shop.junkLine('古代銀幣', 3, 120));
+    expect(info.textContent).toContain('古代銀幣 ×3');
+    expect(info.textContent).toContain(T.forge.junkOnly);
+  });
+
+  it('the list and its detail share one row, so a long label pushes the detail aside instead of under it', () => {
+    const { game, pick, root } = setup();
+    game.state.inventory.moss = 2;
+    pick('販賣');
+    pick('素材');
+    const page = topLayer(root)!;
+    expect(page.classList.contains('slx-mat-page')).toBe(true);
+    expect(page.querySelector(':scope > .slx-shop-list')).not.toBeNull();
+    expect(page.querySelector(':scope > .slx-info.slx-mat-info')).not.toBeNull();
+  });
+
+  it('selling all junk announces a newly unlocked base, then the list reloads without the sell-all row', () => {
+    const charm = EQUIPMENT['moss-charm'];
+    const was = charm.unlock;
+    charm.unlock = [{ mat: 'old-coin', qty: 3 }];
+    try {
+      const { game, pick, root, s } = setup();
+      game.state.inventory['old-coin'] = 3;
+      game.state.inventory.moss = 2;
+      pick('販賣');
+      pick('素材');
+      (topLayer(root)!.querySelector('[role=option]') as HTMLElement).click();
+      expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe(T.ui2.shop.unlocked('苔光護符'));
+      const rows = [...topLayer(root)!.querySelectorAll('[role=option]')];
+      expect(rows.map((o) => o.querySelector('.slx-label')!.textContent)).toEqual(['發光苔']);
+      expect(rows[0].classList.contains('slx-sel')).toBe(true);
+      expect(root.querySelector('.slx-info')!.textContent).toContain('發光苔');
+      s.onAction('cancel');
+    } finally {
+      charm.unlock = was;
+    }
+  });
 });

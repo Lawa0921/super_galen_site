@@ -36,16 +36,21 @@ export function sell(s: GameState, matId: string, qty: number): TownResult {
   return { ok: true, state: n };
 }
 
+/** The junk materials held: each id with its units and their price, and the totals (what `sellJunk` sells and pays). */
+export function junkTotals(s: GameState): { n: number; g: number; lines: { id: string; n: number; g: number }[] } {
+  const lines = Object.entries(s.inventory).filter(([id, c]) => MATERIALS[id]?.kind === 'junk' && c > 0).map(([id, c]) => ({ id, n: c, g: MATERIALS[id].price * c }));
+  return { n: lines.reduce((t, l) => t + l.n, 0), g: lines.reduce((t, l) => t + l.g, 0), lines };
+}
+
 /** Sells every junk material at once; it counts toward the sell-to-unlock tally like any material sale. */
 export function sellJunk(s: GameState): TownResult {
-  const ids = Object.keys(s.inventory).filter((id) => MATERIALS[id]?.kind === 'junk' && s.inventory[id] > 0);
-  if (!ids.length) return fail('stock');
+  const { lines } = junkTotals(s);
+  if (!lines.length) return fail('stock');
   const n = structuredClone(s);
-  for (const id of ids) {
-    const qty = n.inventory[id];
-    addItem(n.inventory, id, -qty);
-    n.sold[id] = (n.sold[id] ?? 0) + qty;
-    n.gold += MATERIALS[id].price * qty;
+  for (const l of lines) {
+    addItem(n.inventory, l.id, -l.n);
+    n.sold[l.id] = (n.sold[l.id] ?? 0) + l.n;
+    n.gold += l.g;
   }
   return { ok: true, state: n };
 }

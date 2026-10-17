@@ -487,6 +487,8 @@ export const T = {
       unlocked: (names: string) => `託你的福，現在可以做出 ${names} 了！`, nothing: '沒有可以賣的素材。',
       pages: { mats: '素材', gear: '裝備' }, nothingGear: '沒有可以賣的裝備。', marked: '已標記',
       sellJunk: (n: number, g: number) => `賣出全部雜物（${n} 個，${g} G）`, soldJunk: (n: number, g: number) => `收下 ${n} 個雜物，這是 ${g} G。`, junkTag: '雜物',
+      /** The sell-all row's detail: one line per junk material. */
+      junkHead: '要賣出的雜物', junkLine: (name: string, n: number, g: number) => `${name} ×${n}　${g} G`,
       sellMarked: (n: number) => `賣出全部已標記（${n} 件）`,
       askMarked: (n: number, g: number) => `要賣出已標記的 ${n} 件裝備，共 ${g} G 嗎？`,
       askOne: (name: string, g: number) => `要賣出 ${name}（${g} G）嗎？`,

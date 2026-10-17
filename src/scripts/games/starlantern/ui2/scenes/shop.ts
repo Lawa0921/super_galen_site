@@ -9,7 +9,7 @@ import { BAG_SIZE } from '../../engine/loot/bag';
 import { rollItem, sellPrice } from '../../engine/loot/item';
 import { activeIds, defaultSlotFor, statsOf } from '../../engine/party';
 import { mulberry32 } from '../../engine/rng';
-import { buy, isUnlocked, sell, sellGear, sellJunk } from '../../engine/town';
+import { buy, isUnlocked, junkTotals, sell, sellGear, sellJunk } from '../../engine/town';
 import type { AnyStat } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
@@ -116,15 +116,9 @@ export class ShopScene extends FacilityScene {
     this.push({ el: win('slx-list slx-shop-pages', [pages.el]), onAction: (a) => pages.onAction(a) });
   }
 
-  private junkTotals(): { n: number; g: number } {
-    let n = 0; let g = 0;
-    for (const [id, c] of Object.entries(this.ctx.game.state.inventory)) if (MATERIALS[id]?.kind === 'junk' && c > 0) { n += c; g += MATERIALS[id].price * c; }
-    return { n, g };
-  }
-
   private matRows(): MenuItem[] {
     const inv = this.ctx.game.state.inventory;
-    const junk = this.junkTotals();
+    const junk = junkTotals(this.ctx.game.state);
     const rows = Object.entries(inv).filter(([id, n]) => MATERIALS[id] && n > 0).map(([id, n]): MenuItem => {
       const isJunk = MATERIALS[id].kind === 'junk';
       return {
@@ -143,12 +137,19 @@ export class ShopScene extends FacilityScene {
     return [el('p', { text: T.forge.kind[m.kind] }), el('p', { text: `${m.price} G` }), el('p', { class: 'slx-desc', text: uses })];
   }
 
+  /** The sell-all row's detail: each junk material with its count and price, then the junk rule. */
+  private describeJunk(): HTMLElement[] {
+    const lines = junkTotals(this.ctx.game.state).lines.map((l) => el('li', { text: T.ui2.shop.junkLine(MATERIALS[l.id].name, l.n, l.g) }));
+    return [el('p', { class: 'slx-name-line', text: T.ui2.shop.junkHead }), el('ul', { class: 'slx-skills slx-cmp-list' }, lines), el('p', { class: 'slx-desc', text: T.forge.junkOnly })];
+  }
+
   private sellMats(): void {
     if (!this.matRows().length) { void this.say(T.ui2.shop.nothing); return; }
     const info = win('slx-info slx-mat-info');
     const show = () => {
       const c = v.menu.current();
-      if (c && c.id !== 'sell-junk') info.replaceChildren(el('p', { class: 'slx-name-line', text: MATERIALS[c.id].name }), ...this.describeMat(c.id));
+      if (c?.id === 'sell-junk') info.replaceChildren(...this.describeJunk());
+      else if (c) info.replaceChildren(el('p', { class: 'slx-name-line', text: MATERIALS[c.id].name }), ...this.describeMat(c.id));
       else info.replaceChildren();
     };
     const reload = () => {
@@ -183,14 +184,14 @@ export class ShopScene extends FacilityScene {
       cancel: () => { info.remove(); this.pop(); },
     }, 12);
     show();
-    this.stage.append(info);
-    this.push({ el: win('slx-list slx-shop-list', [v.el]), onAction: (a) => v.onAction(a) });
+    // One flex row holds the list and its detail, so a longer label pushes the detail right instead of under it.
+    this.push({ el: el('div', { class: 'slx-mat-page' }, [win('slx-list slx-shop-list', [v.el]), info]), onAction: (a) => v.onAction(a) });
   }
 
   /** Junk has no other use, so one press sells all of it with no confirm; the sale counts toward unlocks like any material. */
   private sellAllJunk(reload: () => void): void {
     const before = new Set(Object.keys(EQUIPMENT).filter((e) => isUnlocked(this.ctx.game.state, e)));
-    const { n, g } = this.junkTotals();
+    const { n, g } = junkTotals(this.ctx.game.state);
     const r = this.ctx.game.apply(sellJunk(this.ctx.game.state));
     if (!r.ok) { this.fail(r.reason); return; }
     const fresh = Object.keys(EQUIPMENT).filter((e) => isUnlocked(this.ctx.game.state, e) && !before.has(e)).map((e) => EQUIPMENT[e].name);

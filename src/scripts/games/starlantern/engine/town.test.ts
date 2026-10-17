@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { newGame } from './state';
-import { buy, equip, innCost, isUnlocked, respec, respecCost, rest, revive, reviveCost, sell, sellGear, sellJunk, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
+import { buy, equip, innCost, isUnlocked, junkTotals, respec, respecCost, rest, revive, reviveCost, sell, sellGear, sellJunk, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
 import { statsOf } from './party';
 import { defaultTalents, defaultTree, newTree, raiseTalent, skillPointsLeft, talentPointsLeft, validBuild } from './progression';
 import type { Member } from './types';
@@ -307,5 +307,14 @@ describe('sellJunk', () => {
   });
   it('sellJunk without junk is refused', () => {
     expect(sellJunk(withInv({ moss: 3 }))).toEqual({ ok: false, reason: 'stock' });
+  });
+  it('junkTotals counts each junk id, its units and its price, and nothing else', () => {
+    expect(junkTotals(withInv({ moss: 3, 'old-coin': 2, potion: 1 }))).toEqual({ n: 2, g: 80, lines: [{ id: 'old-coin', n: 2, g: 80 }] });
+    expect(junkTotals(withInv({ moss: 3, 'old-coin': 0 }))).toEqual({ n: 0, g: 0, lines: [] });
+  });
+  it('sellJunk pays exactly what junkTotals adds up', () => {
+    const s = withInv({ moss: 3, 'old-coin': 5 });
+    const r = sellJunk(s);
+    expect(r.ok && r.state.gold - s.gold).toBe(junkTotals(s).g);
   });
 });
