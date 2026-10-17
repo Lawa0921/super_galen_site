@@ -158,6 +158,7 @@ export class Game {
     if (!startDepths(portal.region, this.state.dungeon.reached[portal.region]).includes(startDepth)) return { ok: false, reason: 'locked' };
     if (!activeIds(this.state.party).some((id) => this.state.party.roster[id].hp > 0)) return { ok: false, reason: 'party-down' };
     this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth, rescuesFor(portal.region, this.state.party.recruited));
+    this.pending = [];
     this.floor = startDepth;
     this.forceGlimmers(startDepth);
     this.pos = { ...this.map().entrance };
@@ -218,7 +219,7 @@ export class Game {
     const run = this.run!;
     const here = floorOf(run, this.floor);
     const i = here.contents.findIndex((c) => c.kind === 'glimmer' && c.at.x === this.pos.x && c.at.y === this.pos.y);
-    if (i < 0) return null;
+    if (i < 0) { this.map().tiles[this.pos.y][this.pos.x] = 'floor'; return null; }   // no content behind the tile: drop the stale marker
     const c = here.contents[i];
     here.contents.splice(i, 1);
     this.map().tiles[this.pos.y][this.pos.x] = 'floor';
@@ -234,6 +235,7 @@ export class Game {
     const applied = applyPieces(this.state.party, ids);
     this.state.party = applied.party;
     (run.dropped[this.floor] ??= []).push(...ids);
+    for (const id of ids) story.pity[id] = 0;   // a piece resets its chain's count now, so leaving the floor any way keeps it
     return applied.gained.map(({ id, n }) => {
       const scene = memScene(id, n);
       let play = false;
@@ -558,7 +560,7 @@ export class Game {
       const run = this.run!;
       const source = b.boss ? 'boss' : 'elite';
       const ids = pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source }, memoryRng(run));
-      const topUp = b.boss && run.region === 'mainline' && this.floor === 25 && ids.length > 1 && ids.every((id) => id === 'hero');
+      const topUp = b.boss && run.region === 'mainline' && this.floor === 25 && ids.every((id) => id === 'hero');
       fragments = this.takePieces(ids, topUp);
     }
     if (b.boss) openStairs(this.map());   // a beaten boss leaves stairs down where it stood, so the run can go deeper
@@ -745,6 +747,7 @@ export class Game {
       this.notice = 'banked';
     }
     this.phase = 'town';
+    this.pending = [];
     this.encounter = 0;
     this.run = null;
     this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited));
@@ -849,6 +852,7 @@ export class Game {
     for (const m of Object.values(this.state.party.roster)) if (m.hp <= 0) m.hp = 1;   // the fallen are carried home
     this.banked = null;
     this.phase = 'town';
+    this.pending = [];
     this.run = null;
     this.encounter = 0;
     this.notice = 'wipe';

@@ -1881,8 +1881,8 @@ describe('glimmers and memory pieces', () => {
   it('a wipe keeps the memories found', () => {
     const g = run(duo, 1);
     const c = floorOf(g.run!, 1).contents.find((x) => x.kind === 'glimmer' && x.owner === 'rin')!;
+    g.state.story.pity = { hero: 2, rin: 2 };
     stepOnto(g, c.at);
-    g.state.story.pity = { hero: 2 };
     g.pos = { ...g.map().entrance };
     g.encounter = 99;
     g.move('right');
@@ -1891,7 +1891,37 @@ describe('glimmers and memory pieces', () => {
     g.submitRound({});
     expect(g.phase).toBe('town');
     expect(memoriesOf(g.state.party.roster.rin)).toBe(1);
-    expect(g.state.story.pity).toEqual({ hero: 2 });
+    expect(g.state.story.pity).toEqual({ hero: 2, rin: 0 });   // the piece she gave reset her count, the floor was never cleared so hero's did not grow
+  });
+
+  it('a return lamp keeps the reset of the chain that dropped', () => {
+    const g = run(duo, 1);
+    g.state.story.pity = { rin: 2, hero: 1 };
+    stepOnto(g, floorOf(g.run!, 1).contents.find((x) => x.kind === 'glimmer' && x.owner === 'rin')!.at);
+    g.state.inventory['return-lamp'] = 1;
+    expect(g.useReturnLamp()).toBe(true);
+    expect(g.state.story.pity).toEqual({ rin: 0, hero: 1 });
+  });
+
+  it('scenes waiting to play do not outlive the run', () => {
+    const g = run(duo, 1);
+    stepOnto(g, floorOf(g.run!, 1).contents.find((x) => x.kind === 'glimmer' && x.owner === 'rin')!.at);
+    expect(g.pending).toEqual(['mem:rin:1']);
+    g.state.inventory['return-lamp'] = 1;
+    g.useReturnLamp();
+    expect(g.pending).toEqual([]);
+    const h = run(duo, 1);
+    h.pending.push('mem:rin:1');
+    h.pos = { ...h.map().entrance };
+    h.encounter = 99;
+    h.move('right');
+    for (const m of h.battle!.party) { m.hp = 0; m.alive = false; }
+    h.submitRound({});
+    expect(h.pending).toEqual([]);
+    h.pending.push('mem:rin:1');
+    h.state.dungeon.reached.mainline = 3;
+    expect(h.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(h.pending).toEqual([]);
   });
 
   it("the depth-25 boss queues the hero's top-up memories", () => {
@@ -1905,6 +1935,16 @@ describe('glimmers and memory pieces', () => {
     expect(g.pending).toEqual([]);
   });
 
+  it('a single hero piece owed at depth 25 is queued too', () => {
+    const g = run(duo, 25, (x) => { x.state.party.roster.hero.memories = 8; });
+    stepOnto(g, g.map().boss!);
+    const end = killAll(g);
+    expect(end.fragments).toEqual([{ kind: 'piece', id: 'hero', n: 9, play: false }]);
+    expect(g.state.story.queue).toContain('mem:hero:9');
+    expect(g.state.story.seen).not.toContain('mem:hero:9');
+    expect(g.pending).toEqual([]);
+  });
+
   it("the depth-3 story boss pays Rin's second piece", () => {
     const g = run(duo, 3, (x) => { x.state.party.roster.rin.memories = 1; });
     stepOnto(g, g.map().boss!);
@@ -1912,6 +1952,17 @@ describe('glimmers and memory pieces', () => {
     expect(end.fragments).toEqual([{ kind: 'piece', id: 'rin', n: 2, play: true }]);
     expect(memoriesOf(g.state.party.roster.rin)).toBe(2);
     expect(g.phase).toBe('clear');
+  });
+
+  it('two elite fights pay the gear recorded before the memory rng existed', () => {
+    const g = run(duo, 1);
+    const seen: string[][] = [];
+    for (let i = 0; i < 2; i++) {
+      stepOnto(g, plantAt(g, 'elite'));
+      seen.push(killAll(g).gear.map((it) => `${it.base}/${it.rarity}/${it.ilvl}/${it.affixes.map((a) => `${a.key}${a.value}`).join(',')}`));
+    }
+    // Recorded at 6937fcaf, before any memory drop existed: the second fight moves if memory drops ever share the loot stream.
+    expect(seen).toEqual([['wooden-buckler/magic/4/hp8,res1', 'copper-ring/common/2/'], ['bat-earring/magic/4/heal3']]);
   });
 
   it('memory draws leave the loot rolls alone', () => {

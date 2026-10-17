@@ -15,6 +15,7 @@ import { LEGACY_LINEUP } from '../../engine/party';
 import { floorOf } from '../../engine/dungeon/run';
 import { T } from '../../data/text.zh-TW';
 import { CHARACTERS } from '../../data/characters';
+import { memoriesOf } from '../../engine/progression';
 import type { CharacterId } from '../../engine/types';
 
 function setup(portal: Portal = { region: 'mainline', condition: 'plain' }, fast = true) {
@@ -55,7 +56,7 @@ describe('DungeonScene glimmers', () => {
     await Promise.resolve();
     expect(text()).toBe(T.ui2.memory.piece(CHARACTERS.selene.name, 1));
     expect(tileAt(game.map(), at)).toBe('floor');
-    expect(game.state.party.roster.selene.memories).toBe(1);
+    expect(memoriesOf(game.state.party.roster.selene)).toBe(1);
   });
 
   it('a glimmer that holds nothing fades', async () => {

@@ -148,19 +148,19 @@ describe('placeSpecial', () => {
     }
   });
 
-  it('with no room left it falls back to a free floor tile joined to the entrance, row by row', () => {
-    const map = parseFloor(['#######', '#E....#', '#..>..#', '###.###', '#.....#', '#######']);   // the bottom row is cut off from the entrance
+  it('with no room left it takes a free floor tile joined to the entrance, never a cut-off pocket scanned before it', () => {
+    const map = parseFloor(['########', '#..#E..#', '########']);   // the row scan meets the pocket at x=1,2 before the entrance side
     const g: GenFloor = { map, rooms: [], entranceRoom: 0, exitRoom: 0 };
     const f = { map: { ...map, tiles: map.tiles.map((r) => [...r]) }, contents: [] as Content[] };
     placeRescue(f, g, mulberry32(1), 'selene');
     placeSpecial(f, g, mulberry32(2), { kind: 'glimmer', owner: 'selene' });
-    placeSpecial(f, g, mulberry32(3), { kind: 'glimmer', owner: 'rin' });
-    const at = f.contents.map((c) => posKey(c.at));
-    expect(new Set(at).size).toBe(3);
-    expect(f.contents.map((c) => c.kind)).toEqual(['rescue', 'glimmer', 'glimmer']);
-    expect(f.contents.map((c) => c.at)).toEqual([{ x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }]);
+    expect(f.contents.map((c) => [c.kind, c.at])).toEqual([['rescue', { x: 5, y: 1 }], ['glimmer', { x: 6, y: 1 }]]);
     const open = reachable(map, map.entrance);
-    for (const k of at) expect(open.has(k)).toBe(true);
-    expect(f.map.tiles[1][3]).toBe('glimmer');
+    for (const c of f.contents) expect(open.has(posKey(c.at))).toBe(true);
+    expect(f.map.tiles[1][6]).toBe('glimmer');
+    expect(f.map.tiles[1][1]).toBe('floor');
+    expect(f.map.tiles[1][2]).toBe('floor');
+    placeSpecial(f, g, mulberry32(3), { kind: 'glimmer' });   // nothing joined to the entrance is left: it is not forced into the pocket
+    expect(f.contents).toHaveLength(2);
   });
 });
