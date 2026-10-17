@@ -41,7 +41,10 @@ describe('generateWorld', { timeout: 180_000 }, () => {
     expect(a.world.width).toBe(WORLD_W);
     expect(a.world.height).toBe(WORLD_H);
   });
-  it('效能：4200×1200 生成 < 1.5 秒（node；量本執行緒的 CPU 時間並取較快者，平行測試搶 CPU 時牆鐘時間會失真）', () => {
+  // 效能門檻：單獨跑約 0.6–0.9 秒。全套平行跑時（多個 vitest worker + 其他重測試）即使量 thread CPU 時間，
+  // 也會因快取 / 記憶體頻寬爭用與 GC 膨脹到 1.5–2 秒，舊的 1.5 秒門檻因此偶發失敗。放寬到 3 秒：仍能抓到
+  // 「生成變慢 3 倍以上」的大退化，又不會在 CI 類負載下誤報。要看真實數字請單獨跑這個檔案看 console 輸出。
+  it('效能：4200×1200 生成 < 3 秒（node；量本執行緒的 CPU 時間並取較快者；門檻理由見上方註解）', () => {
     // 本執行緒的 CPU 時間（被其他 process 搶走 CPU 的時間不算）；舊版 Node 沒有 threadCpuUsage 時退回整個 process
     type Cpu = { user: number; system: number };
     const pr = (globalThis as unknown as { process: { cpuUsage(p?: Cpu): Cpu; threadCpuUsage?(p?: Cpu): Cpu } }).process;
@@ -51,7 +54,7 @@ describe('generateWorld', { timeout: 180_000 }, () => {
     const wall = performance.now() - t0, c = usage(c0), cpu = (c.user + c.system) / 1000;
     const best = Math.min(genMs, wall, cpu);
     console.log(`[delve] worldgen 4200x1200: wall ${Math.min(genMs, wall).toFixed(0)} ms, cpu ${cpu.toFixed(0)} ms`);
-    expect(best).toBeLessThan(1500);
+    expect(best).toBeLessThan(3000);
   });
   it('同 seed → 位元相同（含箱子）；不同 seed → 不同', () => {
     const o = { width: 1200, height: 400 };
