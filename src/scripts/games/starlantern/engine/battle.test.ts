@@ -324,6 +324,8 @@ describe('skills from the tree (Task 8)', () => {
     expect(r.party.find((c) => c.key === 'noel')!.tp).toBe(tp);
     expect(r.log.some((e) => e.type === 'act' && e.actor === 'noel')).toBe(false);
     expect(r.log).not.toContainEqual({ type: 'no-tp', actor: 'noel' });
+    // The turn is not lost in silence: like a cast short of TP, it says why.
+    expect(r.log).toContainEqual({ type: 'no-skill', actor: 'noel' });
   });
 
   it('a combatant without ranks still casts any skill', () => {

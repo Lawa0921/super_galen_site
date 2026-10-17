@@ -23,6 +23,7 @@ export function battleLines(log: BattleEvent[], nameOf: (key: string) => string)
       case 'turret': return T.log.turret(nameOf(e.target));
       case 'asleep': return T.log.asleep(nameOf(e.actor));
       case 'no-tp': return T.log.noTp(nameOf(e.actor));
+      case 'no-skill': return T.log.noSkill(nameOf(e.actor));
       case 'no-limit': return T.log.noLimit(nameOf(e.actor));
       case 'escape': return T.log.escape(e.success);
       case 'poison-tick': return T.log.poison(nameOf(e.target), e.amount);

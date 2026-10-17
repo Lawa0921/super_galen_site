@@ -238,8 +238,8 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     }
     case 'skill': {
       // A member casts only what their tree has learned (a whole rank of the skill's own node, read as progression reads
-      // a tree); a combatant without ranks (tests) casts anything.
-      if (actor.ranks && skillRank(actor.ranks, act.skill) === 0) return;
+      // a tree); a combatant without ranks (tests) casts anything. The lost turn is logged, as one short of TP is.
+      if (actor.ranks && skillRank(actor.ranks, act.skill) === 0) { s.log.push({ type: 'no-skill', actor: actor.key }); return; }
       const def = skillFor(actor, act.skill);
       if (!def || def.passive) return;
       const cost = skillCost(actor, act.skill);

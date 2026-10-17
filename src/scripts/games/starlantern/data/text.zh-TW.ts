@@ -115,6 +115,7 @@ export const T = {
     turret: (who: string) => `${who} 設置了砲台`,
     asleep: (who: string) => `${who} 正在睡覺`,
     noTp: (who: string) => `${who} 的 TP 不足`,
+    noSkill: (who: string) => `${who} 還沒學會這個技能`,
     noLimit: (who: string) => `${who} 的絕技量表還沒滿`,
     escape: (ok: boolean) => (ok ? '成功逃跑了' : '逃跑失敗'),
     poison: (who: string, n: number) => `${who} 因毒受到 ${n} 傷害`,

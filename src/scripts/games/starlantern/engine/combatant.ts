@@ -48,6 +48,8 @@ export type BattleEvent =
   | { type: 'turret'; target: string }
   | { type: 'asleep'; actor: string }
   | { type: 'no-tp'; actor: string }
+  /** A member's turn spent on a skill their tree has not learned (no menu offers one; a stale or crafted action). */
+  | { type: 'no-skill'; actor: string }
   | { type: 'escape'; success: boolean }
   | { type: 'poison-tick'; target: string; amount: number };
 
