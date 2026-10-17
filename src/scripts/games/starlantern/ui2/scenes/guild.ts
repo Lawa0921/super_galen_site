@@ -13,7 +13,6 @@ import { el } from '../../ui/dom';
 import { artIdOf, standeeImg } from '../../ui/art';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { shouldPlay, storyCtx } from '../story';
 import { MenuView, QtyView, confirmBox, win } from '../widgets';
 import { FacilityScene } from './facility';
 
@@ -250,11 +249,9 @@ export class GuildScene extends FacilityScene {
     const r = game.returnFragment(id);
     if (!r.ok) { this.exchangeFail(r.reason, T.ui2.exchange.giveFail); return; }
     const scene: SceneId = `town:${id}`;
-    // The scene is handled right here, so it is no longer waiting for a screen to play it.
-    game.pending = game.pending.filter((p) => p !== scene);
     this.popAll();
     this.refresh();
-    if (shouldPlay(scene, storyCtx(this.ctx).mode)) await this.play(scene);
+    await this.play(scene);   // recorded as played, skipped or (story off) auto; it leaves `pending` only through sceneDone
     this.exchangeMenu();
     const reward = TOWN_FRAGMENTS.find((f) => f.id === id)!.reward;
     const parts = [

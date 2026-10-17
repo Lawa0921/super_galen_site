@@ -235,14 +235,14 @@ describe('GuildScene fragment exchange', () => {
 
   it('giving back a fragment plays its return and pays the reward', async () => {
     const { game, root, pick, s } = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { 'tf-anna': 1 }));
-    game.pending.push('town:anna');
     pick(T.ui2.exchange.title);
     pick(T.ui2.exchange.give);
     pick('安娜的記憶碎片');
     pick('是');
     expect(game.state.story.returned).toContain('anna');
-    expect(game.pending).toEqual([]);
+    expect(game.pending).toEqual(['town:anna']);   // it leaves `pending` only once the scene is done
     const lines = await drain(root, s);
+    expect(game.pending).toEqual([]);
     const script = linesOf('town:anna', game.state).map((l) => l.text);
     expect(lines.slice(0, script.length)).toEqual(script);
     expect(lines.length).toBeGreaterThan(script.length);   // the reward line follows
@@ -260,6 +260,31 @@ describe('GuildScene fragment exchange', () => {
     expect(lines).toHaveLength(1);
     expect(game.pending).toEqual([]);
     expect(game.state.gold).toBe(1000 + TOWN_FRAGMENTS.find((f) => f.id === 'orik')!.reward.gold!);
+  });
+
+  it('a played return is recorded as seen', async () => {
+    const { game, root, pick, s } = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { 'tf-anna': 1 }));
+    pick(T.ui2.exchange.title);
+    pick(T.ui2.exchange.give);
+    pick('安娜的記憶碎片');
+    pick('是');
+    expect(game.state.story.seen).not.toContain('town:anna');   // still playing
+    await drain(root, s);
+    expect(game.state.story.seen).toContain('town:anna');
+    expect(game.state.story.fresh).toEqual([]);   // played, so it is not new
+    expect(game.pending).toEqual([]);
+  });
+
+  it('a story mode of none records the return as auto: seen and new', async () => {
+    const { game, root, pick, s } = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { 'tf-orik': 1 }), 'none');
+    pick(T.ui2.exchange.title);
+    pick(T.ui2.exchange.give);
+    pick('歐里克的記憶碎片');
+    pick('是');
+    await drain(root, s);
+    expect(game.state.story.seen).toContain('town:orik');
+    expect(game.state.story.fresh).toContain('town:orik');
+    expect(game.pending).toEqual([]);
   });
 
   it('a fragment that was already returned says so', async () => {

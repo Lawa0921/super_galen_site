@@ -6,7 +6,7 @@ import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx, SceneName } from '../scene';
 import { textCps } from '../settings';
-import { playScene, storyCtx } from '../story';
+import { playAndRecord, storyCtx } from '../story';
 import { Dialogue, MenuView, backControl, win, type Rich } from '../widgets';
 
 export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate' | 'forge';
@@ -27,7 +27,7 @@ export abstract class FacilityScene implements Scene {
   private moodTimer: ReturnType<typeof setTimeout> | null = null;
   private talking = false;
   /** The story scene on screen, if any: it takes the actions while it plays. */
-  private playing: ReturnType<typeof playScene> | null = null;
+  private playing: ReturnType<typeof playAndRecord> | null = null;
 
   constructor(protected ctx: SceneCtx, protected id: FacilityId, cps = textCps(ctx)) {
     this.talk = new Dialogue(cps, () => { this.talking = false; this.syncInert(); });
@@ -135,9 +135,9 @@ export abstract class FacilityScene implements Scene {
     this.layers.forEach((l, i) => l.el.classList.toggle('slx-under', i < this.layers.length - 1));
   }
 
-  /** Plays story scene `id` in this facility's dialogue box; resolves when it ends or the player skips it. */
-  protected play(id: SceneId): Promise<'done' | 'skipped'> {
-    const p = playScene(this.talk, id, storyCtx(this.ctx));
+  /** Plays story scene `id` in this facility's dialogue box and records it; resolves when it ends or the player skips it. */
+  protected play(id: SceneId): Promise<void> {
+    const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
     this.playing = p;
     this.talking = true;
     this.cmdWin.classList.add('slx-cmd-hidden');

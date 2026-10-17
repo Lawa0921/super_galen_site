@@ -8,7 +8,7 @@ import { constRng } from '../engine/testing';
 import { allArtUrls, art } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { Dialogue } from './widgets';
-import { linesOf, playScene, shouldPlay, speakerOf, type StoryCtx } from './story';
+import { linesOf, playAndRecord, playScene, shouldPlay, speakerOf, type StoryCtx } from './story';
 
 const ART: ArtIndex = (() => { const set = new Set([...allArtUrls(), art.npc('guild', 'normal')]); return { has: (u: string) => set.has(u) }; })();
 const mk = () => {
@@ -137,5 +137,74 @@ describe('shouldPlay', () => {
     expect(shouldPlay('mem:hero:1', 'major')).toBe(false);
     expect(shouldPlay('chat:liz:1', 'major')).toBe(false);
     expect(shouldPlay('town:anna', 'none')).toBe(false);
+  });
+});
+
+describe('playAndRecord', () => {
+  /** A game with `id` due on this arrival. */
+  const due = (id: SceneId) => {
+    const m = mk();
+    m.game.arrival = [id];
+    m.game.state.story.queue = [id];
+    return m;
+  };
+
+  it('records a scene played to the end as played', async () => {
+    const { game, talk, ctx } = due('chat:liz:1');
+    stage('chat:liz:1', [{ who: 'liz', text: '一' }]);
+    const p = playAndRecord(talk, 'chat:liz:1', ctx);
+    expect(game.state.story.seen).not.toContain('chat:liz:1');   // not before it ends
+    p.onAction('confirm');
+    await p.done;
+    expect(game.state.story).toMatchObject({ queue: [], fresh: [] });
+    expect(game.state.story.seen).toContain('chat:liz:1');
+    expect(game.arrival).toEqual([]);
+  });
+
+  it('records a skipped scene as seen but not new', async () => {
+    const { game, talk, ctx } = due('chat:liz:1');
+    stage('chat:liz:1', [{ who: 'liz', text: '一' }, { who: 'liz', text: '二' }]);
+    const p = playAndRecord(talk, 'chat:liz:1', ctx);
+    p.onAction('cancel');
+    await tick();
+    p.onAction('confirm');
+    await p.done;
+    expect(game.state.story.seen).toContain('chat:liz:1');
+    expect(game.state.story.fresh).toEqual([]);
+    expect(game.arrival).toEqual([]);
+  });
+
+  it('shows nothing and records auto when the story setting skips the scene', async () => {
+    const { game, talk, ctx } = due('chat:liz:1');
+    const p = playAndRecord(talk, 'chat:liz:1', { ...ctx, mode: 'none' });
+    await p.done;
+    expect(talk.busy()).toBe(false);
+    expect(talk.el.querySelector('.slx-text')!.textContent).toBe('');
+    expect(game.state.story.seen).toContain('chat:liz:1');
+    expect(game.state.story.fresh).toContain('chat:liz:1');
+    expect(game.arrival).toEqual([]);
+    p.onAction('confirm');   // harmless with nothing playing
+  });
+
+  it('a major-only setting plays a major scene and skips a chat', async () => {
+    const { game, talk, ctx } = due('chat:liz:1');
+    game.arrival.push('act2');
+    game.state.story.queue.push('act2');
+    await playAndRecord(talk, 'chat:liz:1', { ...ctx, mode: 'major' }).done;
+    expect(game.state.story.fresh).toEqual(['chat:liz:1']);
+    const p = playAndRecord(talk, 'act2', { ...ctx, mode: 'major' });
+    expect(talk.busy()).toBe(true);
+    p.onAction('cancel');
+    await tick();
+    p.onAction('confirm');
+    await p.done;
+    expect(game.state.story.seen).toContain('act2');
+    expect(game.state.story.fresh).toEqual(['chat:liz:1']);
+  });
+
+  it('does not record a scene that is not due', async () => {
+    const { game, talk, ctx } = mk();
+    await playAndRecord(talk, 'chat:liz:1', { ...ctx, mode: 'none' }).done;
+    expect(game.state.story.seen).not.toContain('chat:liz:1');
   });
 });

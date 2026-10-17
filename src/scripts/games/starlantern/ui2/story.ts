@@ -100,3 +100,16 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: P
     },
   };
 }
+
+/**
+ * Plays scene `id` and records it with the game: played or skipped as the player chose, or `auto` (nothing shown) when the
+ * story setting skips it. Every screen that plays a due scene goes through here, so none writes its own copy of this.
+ */
+export function playAndRecord(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: Promise<void>; onAction(a: UiAction): void } {
+  if (!shouldPlay(id, ctx.mode)) {
+    ctx.game.sceneDone(id, 'auto');
+    return { done: Promise.resolve(), onAction() {} };
+  }
+  const p = playScene(talk, id, ctx);
+  return { done: p.done.then((how) => { ctx.game.sceneDone(id, how === 'done' ? 'played' : 'skipped'); }), onAction: p.onAction };
+}

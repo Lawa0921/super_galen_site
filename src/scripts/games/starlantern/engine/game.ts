@@ -27,6 +27,7 @@ import { depthClearExp, depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
+import { arrivalScenes, markRead, onReturn, sceneDone } from './story/events';
 import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeResult, RerollOpts } from './forge/cost';
@@ -108,6 +109,8 @@ export class Game {
   notice: Notice | null = null;
   /** Memory scenes the screen should play now (not saved). */
   pending: SceneId[] = [];
+  /** The scenes the town should play on this arrival, in order (not saved: a reload rebuilds it from the queue). */
+  arrival: SceneId[] = [];
   /** Whether this arrival's portal reroll is spent (not saved): `boot` sets it, so a reload grants none; `toTown` and `wipe` clear it. */
   private rerolled = false;
   /** Which ending the clear screen is for; set on entering `clear`, dropped by restartAfterClear. */
@@ -126,6 +129,7 @@ export class Game {
     const g = new Game(rng, storage, r.status === 'ok' ? r.state : undefined, forgeSalt, START_LINEUP);
     if (r.status === 'corrupt' || r.status === 'version') g.notice = 'save-reset';
     g.rerolled = true;
+    g.arrival = arrivalScenes(g.state, { chat: false });
     return g;
   }
 
@@ -133,6 +137,7 @@ export class Game {
   static fresh(rng: Rng, storage: SaveStorage | null, forgeSalt = 0): Game {
     const g = new Game(rng, storage, undefined, forgeSalt, START_LINEUP);
     if (storage) saveGame(storage, g.state);
+    g.arrival = arrivalScenes(g.state, { chat: false });
     return g;
   }
 
@@ -682,7 +687,7 @@ export class Game {
     if (!r.ok) return r;
     const party = this.state.party;
     this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
-    if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    if (this.phase === 'town' && this.storage && !saveGame(this.storage, this.state)) this.notice = 'save-failed';
     return { ok: true };
   }
 
@@ -695,7 +700,7 @@ export class Game {
     const r = setFormation(this.state.party, grid);
     if (!r.ok) return r;
     this.state = { ...this.state, party: r.party };
-    if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    if (this.phase === 'town' && this.storage && !saveGame(this.storage, this.state)) this.notice = 'save-failed';
     return { ok: true };
   }
 
@@ -777,7 +782,7 @@ export class Game {
     if (!r.ok) return r;
     const party = this.state.party;
     this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
-    if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    if (this.phase === 'town' && this.storage && !saveGame(this.storage, this.state)) this.notice = 'save-failed';
     return { ok: true };
   }
 
@@ -812,6 +817,36 @@ export class Game {
     this.toTown();   // the clear banks the run pack like any safe return
   }
 
+  /**
+   * A scene is over. It must be due: on this arrival, waiting in `pending` (a dungeon memory, a returned fragment) or, for the
+   * finale, one of its own scenes. It leaves that list and the story queue; town saves at once.
+   */
+  sceneDone(id: SceneId, how: 'played' | 'skipped' | 'auto'): boolean {
+    const due = this.arrival.includes(id) || this.pending.includes(id);
+    if (!due) return false;
+    this.arrival = this.arrival.filter((s) => s !== id);
+    this.pending = this.pending.filter((s) => s !== id);
+    this.state = sceneDone(this.state, id, how);
+    this.saveInTown();
+    return true;
+  }
+
+  /** The handbook opened a scene: it is no longer new. Town saves at once. */
+  markRead(id: SceneId): void {
+    this.state = markRead(this.state, id);
+    this.saveInTown();
+  }
+
+  private saveInTown(): void {
+    if (this.phase === 'town' && this.storage && !saveGame(this.storage, this.state)) this.notice = 'save-failed';
+  }
+
+  /** What a return to town queues: acts reached, Rin's reveal; then the arrival, with one chat. */
+  private arrive(): void {
+    this.state.story = onReturn(this.state);
+    this.arrival = arrivalScenes(this.state, { chat: true });
+  }
+
   /** The mainline's depth 3 holds the story boss: beating it ends Act 1. */
   private isStoryDepth(floor: number): boolean {
     return this.run?.region === 'mainline' && floor === 3;
@@ -843,6 +878,7 @@ export class Game {
     this.run = null;
     this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited));
 this.rerolled = false;
+    this.arrive();
   }
 
   private revealHere(): void {
@@ -966,5 +1002,6 @@ this.rerolled = false;
     this.notice = 'wipe';
     this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited));
 this.rerolled = false;
+    this.arrive();
   }
 }

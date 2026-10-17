@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { Game, type MoveResult } from './game';
 import { STORY_FIGHT_ROUNDS } from './battle';
 import { SAVE_KEY, loadGame, saveGame } from './save';
-import { newGame, START_ITEMS } from './state';
+import { SAVE_VERSION, newGame, START_ITEMS } from './state';
 import { constRng, memoryStorage, plainItem } from './testing';
 import { mulberry32 } from './rng';
 import { rollPortals, validPortals } from './portals';
@@ -28,6 +28,8 @@ import { buy } from './town';
 import { memoriesOf } from './progression';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
+import { ACT_DEPTHS } from '../data/story/scenes';
+import { chainLength } from '../data/story/chains';
 
 vi.mock('./portals', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./portals')>();
@@ -2360,5 +2362,210 @@ describe("Scarlet's story fight", () => {
     expect(g.state.party.recruited).not.toContain('scarlet');
     expect(tileAt(g.map(), at)).toBe('rescue');
     expect(floorOf(g.run!, 8).contents.some((c) => c.kind === 'rescue')).toBe(true);
+  });
+});
+
+describe('the arrival queue', () => {
+  const duo: CharacterId[] = ['hero', 'rin'];
+  /** Loses the fight in the first room: the whole party falls and the game returns to town. */
+  const wipeOut = (g: Game) => {
+    g.pos = { ...g.map().entrance };
+    g.encounter = 99;
+    g.move('right');
+    expect(g.phase).toBe('battle');
+    for (const m of g.battle!.party) { m.hp = 0; m.alive = false; }
+    g.submitRound({});
+    expect(g.phase).toBe('town');
+  };
+  const townGame = (start = HERO_LINEUP, storage = memoryStorage()) => {
+    const g = new Game(calm(), storage, undefined, 0, start);
+    g.state.dungeon.reached.mainline = 3;
+    g.state.story.queue = [];
+    g.state.story.seen = ['prologue'];
+    return g;
+  };
+  const inRun = (g: Game) => { expect(g.depart(MAIN, 1)).toEqual({ ok: true }); return g; };
+  const chatsOf = (g: Game) => g.arrival.filter((id) => id.startsWith('chat:'));
+
+  it("the new game's first arrival is the prologue", () => {
+    const storage = memoryStorage();
+    const g = Game.fresh(calm(), storage);
+    expect(g.arrival).toEqual(['prologue']);
+    const reloaded = Game.boot(calm(), storage);
+    expect(chatsOf(reloaded)).toEqual([]);
+    expect(reloaded.arrival).toEqual(['prologue']);
+  });
+
+  it('a reload never adds a chat, however much has been met', () => {
+    const storage = memoryStorage();
+    const g = townGame(HERO_LINEUP, storage);
+    saveGame(storage, g.state);
+    expect(Game.boot(calm(), storage).arrival).toEqual([]);
+  });
+
+  it('a return to town adds one chat', () => {
+    const g = inRun(townGame());
+    expect(g.arrival).toEqual([]);
+    expect(g.returnToTown()).toBe(true);
+    expect(g.arrival).toHaveLength(1);
+    expect(chatsOf(g)).toEqual(['chat:hero:1']);
+    // Leaving by the return lamp is a return to town as well.
+    const h = inRun(townGame());
+    h.useReturnLamp();
+    expect(chatsOf(h)).toEqual(['chat:hero:1']);
+  });
+
+  it('a wipe enqueues like a safe return', () => {
+    const g = inRun(townGame());
+    g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;
+    wipeOut(g);
+    expect(g.arrival).toEqual(['act2', 'chat:hero:1']);
+    expect(g.state.story.queue).toEqual(['act2']);
+    expect(g.state.story.nodes).toEqual(['act2']);
+  });
+
+  it('leaving a clear screen is a return to town', () => {
+    const g = inRun(townGame());
+    g.state.story.act1Cleared = true;
+    g.state.story.queue = ['act1-after'];
+    g.phase = 'clear';
+    g.restartAfterClear();
+    expect(g.arrival).toEqual(['act1-after', 'chat:hero:1']);
+  });
+
+  it('the queue is not played twice: what is done leaves the next arrival', () => {
+    const g = inRun(townGame());
+    g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;
+    g.returnToTown();
+    expect(g.sceneDone('act2', 'played')).toBe(true);
+    expect(g.arrival).toEqual(['chat:hero:1']);
+    inRun(g);
+    g.returnToTown();
+    expect(g.arrival).toEqual(['chat:hero:1']);
+    expect(g.sceneDone('chat:hero:1', 'played')).toBe(true);
+    inRun(g);
+    g.returnToTown();
+    expect(g.arrival).toHaveLength(1);   // one chat, and not the one already heard
+    expect(g.arrival).not.toContain('chat:hero:1');
+  });
+
+  it('the reveal survives a reload and a wipe', () => {
+    const storage = memoryStorage();
+    const g = townGame(duo, storage);
+    g.state.party.roster.rin.memories = chainLength('rin');
+    inRun(g);
+    wipeOut(g);
+    expect(g.arrival).toEqual(['rin-reveal']);
+    saveGame(storage, g.state);
+    const again = Game.boot(calm(), storage);
+    expect(again.arrival).toEqual(['rin-reveal']);   // not played, so it waits
+    expect(again.sceneDone('rin-reveal', 'skipped')).toBe(true);
+    expect(again.state.party.roster.rin.oath).toBe(true);
+    const done = Game.boot(calm(), storage);   // sceneDone saved by itself
+    expect(done.arrival).not.toContain('rin-reveal');
+    expect(done.state.party.roster.rin.oath).toBe(true);
+    expect(done.state.story.seen).toContain('rin-reveal');
+    expect(done.state.story.queue).not.toContain('rin-reveal');
+  });
+
+  it('departure is never blocked by the queue', () => {
+    const g = townGame();
+    g.arrival = ['act2', 'chat:hero:1'];
+    g.state.story.queue = ['act2'];
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.state.story.queue).toEqual(['act2']);   // it waits for the next return
+  });
+
+  it('sceneDone refuses scenes that are not due', () => {
+    const storage = memoryStorage();
+    const g = townGame(HERO_LINEUP, storage);
+    g.state.story.queue = ['act3'];
+    g.arrival = ['act2'];
+    const before = JSON.stringify(g.state);
+    expect(g.sceneDone('act3', 'played')).toBe(false);   // queued, but not on this arrival
+    expect(g.sceneDone('mem:hero:1', 'played')).toBe(false);
+    expect(g.sceneDone('finale', 'played')).toBe(false);
+    expect(JSON.stringify(g.state)).toBe(before);
+    expect(g.arrival).toEqual(['act2']);
+  });
+
+  it('a scene on the arrival is recorded, taken off it and saved at once', () => {
+    const storage = memoryStorage();
+    const g = townGame(HERO_LINEUP, storage);
+    g.state.story.queue = ['act2'];
+    g.arrival = ['act2', 'chat:hero:1'];
+    expect(g.sceneDone('act2', 'auto')).toBe(true);
+    expect(g.arrival).toEqual(['chat:hero:1']);
+    expect(g.sceneDone('act2', 'auto')).toBe(false);   // no longer due
+    const saved = loadGame(storage);
+    expect(saved.status).toBe('ok');
+    if (saved.status === 'ok') expect(saved.state.story).toMatchObject({ queue: [], fresh: ['act2'] });
+    expect(g.sceneDone('chat:hero:1', 'played')).toBe(true);
+    expect(g.state.story.seen).toContain('chat:hero:1');
+    expect(g.state.story.fresh).toEqual(['act2']);
+  });
+
+  it('a dungeon memory is done from pending, and is not saved on the road', () => {
+    const storage = memoryStorage();
+    const g = inRun(townGame(duo, storage));
+    g.pending.push('mem:rin:1');
+    expect(g.sceneDone('mem:rin:1', 'played')).toBe(true);
+    expect(g.pending).toEqual([]);
+    expect(g.state.story.seen).toContain('mem:rin:1');
+    expect(loadGame(storage).status).toBe('empty');   // only a town save follows a scene done
+  });
+
+  it('markRead drops the new mark, and saves in town', () => {
+    const storage = memoryStorage();
+    const g = townGame(HERO_LINEUP, storage);
+    g.state.story.seen.push('act2');
+    g.state.story.fresh.push('act2');
+    g.markRead('act2');
+    expect(g.state.story.fresh).toEqual([]);
+    const saved = loadGame(storage);
+    expect(saved.status === 'ok' && saved.state.story.fresh).toEqual([]);
+  });
+
+  it('a pending memory is dropped on a return, a wipe and a depart, but the queue is kept', () => {
+    const g = inRun(townGame(duo));
+    g.state.story.queue = ['mem:hero:7'];
+    g.pending.push('mem:rin:1');
+    g.returnToTown();
+    expect(g.pending).toEqual([]);
+    expect(g.state.story.queue).toEqual(['mem:hero:7']);
+  });
+});
+
+describe('the state after Act 1', () => {
+  it('saves and loads a valid v8 game with Act 1 cleared and its close queued', () => {
+    const storage = memoryStorage();
+    const g = inMap(3, calm(), storage);
+    stepOnto(g, g.map().boss!);
+    for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
+    g.submitRound({});
+    expect(g.cleared).toBe('act1');
+    g.restartAfterClear();
+    expect(g.state.story.act1Cleared).toBe(true);
+    expect(g.state.story.queue).toContain('act1-after');
+    expect(g.arrival[0]).toBe('act1-after');
+    expect(saveGame(storage, g.state)).toBe(true);
+    const loaded = loadGame(storage);
+    expect(loaded.status).toBe('ok');
+    if (loaded.status !== 'ok') return;
+    expect(loaded.state.version).toBe(SAVE_VERSION);
+    expect(loaded.state.story.act1Cleared).toBe(true);
+    expect(loaded.state.story.queue).toContain('act1-after');
+    expect(loaded.state).toEqual(g.state);
+    expect(Game.boot(calm(), storage).arrival).toContain('act1-after');
+  });
+
+  it('a hand-made post-Act-1 state round-trips as well', () => {
+    const storage = memoryStorage();
+    const s = newGame();
+    s.story.act1Cleared = true;
+    s.story.seen = ['prologue'];
+    s.story.queue = ['act1-after'];
+    expect(saveGame(storage, s)).toBe(true);
+    expect(loadGame(storage)).toEqual({ status: 'ok', state: s });
   });
 });
