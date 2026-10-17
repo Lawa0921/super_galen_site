@@ -38,14 +38,14 @@ describe('save', () => {
     expect(loadGame(st)).toEqual({ status: 'version' });
     expect(st.map.get(BACKUP_KEY)).toBe(raw);
   });
-  it('a repeated recruit is corrupt', () => {
+  it('a save that lists one member twice in recruited is corrupt', () => {
     const g = newGame();
     g.party.recruited = [...g.party.recruited, g.party.recruited[0]];
     const st = memoryStorage();
     saveGame(st, g);
     expect(loadGame(st)).toEqual({ status: 'corrupt' });
   });
-  it('a save without the hero on the field, or not recruited, is corrupt', () => {
+  it('a save without the hero on the field, or with the hero on the field but not recruited, is corrupt', () => {
     const bad = (mut: (g: ReturnType<typeof newGame>) => void) => {
       const g = newGame();
       mut(g);
@@ -56,6 +56,7 @@ describe('save', () => {
     expect(bad(() => {})).toBe('ok');
     expect(bad((g) => { g.party.grid = g.party.grid.map((c) => (c === 'hero' ? null : c)); })).toBe('corrupt');
     expect(bad((g) => { g.party.grid = g.party.grid.map((c) => (c === 'hero' ? 'rin' : c === 'rin' ? null : c)); })).toBe('corrupt');
+    expect(bad((g) => { g.party.recruited = g.party.recruited.filter((id) => id !== 'hero'); })).toBe('corrupt');   // still standing on the grid, not recruited
     expect(bad((g) => { g.party.recruited = g.party.recruited.filter((id) => id !== 'hero'); g.party.grid = g.party.grid.map((c) => (c === 'hero' ? null : c)); g.party.grid[8] = 'rin'; })).toBe('corrupt');
   });
   it('rejects structurally broken saves', () => {

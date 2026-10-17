@@ -5,7 +5,7 @@ import { ULTIMATES } from '../data/ultimates';
 import { ENEMIES } from '../data/enemies';
 import { activeIds, powersOf, sheetOf, LEGACY_LINEUP } from './party';
 import { applyEffect } from './skills';
-import { BOSS_PARTY_SCALE, GROUP_CAP, PARTY_SCALE, bossPartyScale, depthLevel, encounterTable, homeLevel, mul, partyScale } from './scaling';
+import { BOSS_PARTY_SCALE, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, bossPartyScale, depthLevel, encounterTable, homeLevel, mul, partyScale } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { choose, partyAt } from './sim';
 import { dealDamage, type BattleEvent } from './combatant';
@@ -15,7 +15,7 @@ import { keystonesOf } from './progression';
 import { mulberry32 } from './rng';
 import { ABYSS } from '../data/hero';
 
-// Re-captured (CAPTURE=1) in plan 6a Task 19c for its ENEMY_POWER retune (amount 0.3, amount2 0.26, ramp 0.002).
+// Re-captured (CAPTURE=1) in plan 6a Task 19c for its ENEMY_POWER retune (amount 0.3, amount2 0.26, ramp 0.002). Task 20 then moved the ramp to 0.0012; the replays below did not change.
 const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",2,73142791],"0:2":["win",2,1205089542],"0:3":["win",2,158900800],"1:1":["win",2,2337184962],"1:2":["win",2,2966680078],"1:3":["win",3,1798866629],"2:1":["win",1,2064207589],"2:2":["win",1,2684440515],"2:3":["win",1,3423334806],"3:1":["win",2,2262475916],"3:2":["win",2,840362926],"3:3":["win",2,4234222871]};
 const rng = constRng(0.5); // enemies never use skills (all chances < 0.5), variance 1.0
 const P = (key: string, over = {}) => makeCombatant({ key, side: 'party', ...over });
@@ -358,6 +358,19 @@ describe('skills from the tree (Task 8)', () => {
 });
 
 describe('keystones in battle', () => {
+  it("the hero carries his build's keystones into the fight, up to three", () => {
+    const held = (build: 'tank' | 'balanced') => {
+      const party = partyAt(50, { heroBuild: build });
+      const hero = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} }).party.find((c) => c.key === 'hero')!;
+      expect(hero.keystones, build).toEqual(keystonesOf(party.roster.hero));
+      return new Set(hero.keystones);
+    };
+    const tank = held('tank');
+    expect(tank).toEqual(new Set(['regen', 'taunt-guard', 'last-stand']));
+    const balanced = held('balanced');
+    expect(balanced.size).toBe(3);
+    expect(balanced).not.toEqual(tank);
+  });
   it('opening-gauge starts the gauge at least at openingGauge, never stacking on what it carries', () => {
     // Enough talent points for both default keystones; selene's are regen and opening-gauge.
     const party = partyAt(2 * (KEYSTONE_GATE + MAX_KEYSTONES) + 4, { ids: LEGACY_LINEUP });
@@ -424,7 +437,7 @@ describe('keystones in battle', () => {
     // Recorded at 625b4e16, before keystones reached the battle code (plan 5b Task 10, Step 0). Lv20 has 8 talent points,
     // under KEYSTONE_GATE, so nobody holds a keystone. Re-recorded 2026-10-17 in 21867eb3, under the ENEMY_POWER shape that
     // plan 5c Task 4 settled on there (a deep step from Lv12 plus a small ramp; the d5 enemies are Lv18): the same no-keystone code path against stronger
-    // enemies. Re-recorded again in plan 6a Task 19c for its ENEMY_POWER retune (amount 0.3, amount2 0.26, ramp 0.002; scarlet 72 -> 65).
+    // enemies. Re-recorded again in plan 6a Task 19c for its ENEMY_POWER retune (amount 0.3, amount2 0.26, ramp 0.002; scarlet 72 -> 65); Task 20's ramp 0.0012 left it as it was.
     // A keystone reaching this fight changes TP, damage or heals, and so the replay.
     const party = partyAt(20, { ids: LEGACY_LINEUP });
     // The fighters only: the hero (Lv20, 15 talent points) holds one on the bench, and never enters this fight.
@@ -458,6 +471,23 @@ describe('abyss skills', () => {
   });
   it('abyss leaves other skills alone', () => {
     expect(cast('hero-slash', 30)).toBe(cast('hero-slash', 0));
+  });
+  it('every abyss capstone grows with depth: damage, heals and buffs alike', () => {
+    const logOf = (skill: string, abyss: number) => {
+      const foe = E('e0', { sleep: 3, max: { hp: 100000, def: 20 } as never });
+      const ally = P('q', { hp: 10, max: { hp: 100000 } as never });
+      const s = resolveRound(makeBattle([P('p', { max: { tp: 99 } as never, tp: 99 }), ally], [foe], { abyss }), { p: { kind: 'skill', skill, target: 'e0' } }, rng);
+      return s.log;
+    };
+    const sum = (log: BattleEvent[], type: 'damage' | 'heal') => log.reduce((n, e) => (e.type === type ? n + (e as unknown as { amount: number }).amount : n), 0);
+    const buffs = (log: BattleEvent[]) => log.flatMap((e) => (e.type === 'buff' ? [e.pct] : []));
+    expect(sum(logOf('abyss-star', 30), 'damage')).toBeGreaterThan(sum(logOf('abyss-star', 0), 'damage'));
+    expect(sum(logOf('abyss-light', 30), 'heal')).toBeGreaterThan(sum(logOf('abyss-light', 0), 'heal'));
+    // buffPct scales the size of a buff and keeps its sign: a boost climbs, a curse deepens.
+    expect(buffs(logOf('abyss-guard', 0))).toEqual([25, 25, 25, 25]);
+    expect(buffs(logOf('abyss-guard', 30))).toEqual([33, 33, 33, 33]);
+    expect(buffs(logOf('abyss-chain', 0))).toEqual([-20, -20]);
+    expect(buffs(logOf('abyss-chain', 30))).toEqual([-26, -26]);
   });
 });
 
@@ -580,6 +610,36 @@ describe('enemies scale with the party size', () => {
       expect(two.enemyDefs![key].stats).toEqual(mul(full.enemyDefs![key].stats, { hp: k, atk: k, mag: k }));
     }
     expect(two.enemies[0].max.hp).toBe(two.enemyDefs!.e0.stats.hp);
+  });
+
+  it('three and four members read their own rows, and the group is trimmed to their caps', () => {
+    for (const n of [3, 4] as const) {
+      expect(fight(withMembers(n), ['wolf']).partyScale, `${n} members`).toBe(PARTY_SCALE[n]);
+      expect(fight(withMembers(n), [...group4, ...group4]).enemies, `${n} members`).toHaveLength(GROUP_CAP[n]);
+    }
+    expect(PARTY_SCALE[3]).not.toBe(PARTY_SCALE[2]);
+    expect(PARTY_SCALE[4]).not.toBe(PARTY_SCALE[3]);
+  });
+
+  it('a smaller party faces weaker enemies but earns the same exp and gold from them', () => {
+    expect(partyScale(2)).toBeLessThan(1);
+    const full = fight(withMembers(5), ['wolf']);
+    const two = fight(withMembers(2), ['wolf']);
+    expect(two.enemyDefs!.e0.stats.hp).toBeLessThan(full.enemyDefs!.e0.stats.hp);
+    expect(two.enemyDefs!.e0.exp).toBe(full.enemyDefs!.e0.exp);
+    expect(two.enemyDefs!.e0.gold).toBe(full.enemyDefs!.e0.gold);
+  });
+
+  it('FIRST_DEPTH_CAP trims the first depth only, through createBattle', () => {
+    const before = FIRST_DEPTH_CAP[2];
+    FIRST_DEPTH_CAP[2] = 2;
+    try {
+      expect(fight(withMembers(2), group4, { depth: 1 }).enemies).toHaveLength(2);
+      expect(fight(withMembers(2), group4, { depth: 2 }).enemies).toHaveLength(GROUP_CAP[2]);
+      expect(fight(withMembers(3), group4, { depth: 1 }).enemies).toHaveLength(GROUP_CAP[3]);
+    } finally {
+      if (before === undefined) delete FIRST_DEPTH_CAP[2]; else FIRST_DEPTH_CAP[2] = before;
+    }
   });
 
   it('a downed member still counts', () => {

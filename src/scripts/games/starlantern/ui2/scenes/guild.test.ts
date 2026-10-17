@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
-import { constRng, plainItem } from '../../engine/testing';
+import { constRng, memoryStorage, plainItem } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { GuildScene } from './guild';
 import { LEGACY_LINEUP, START_LINEUP, meet } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
-import { memoryStorage } from '../../engine/testing';
 
 const HERO_LINEUP = ['hero', 'chizuru', 'liz', 'noel', 'selene'] as const;
 /** Rin and the hero on the field, Bobby met and waiting. */
@@ -60,6 +59,20 @@ describe('GuildScene', () => {
     expect(root.textContent).toContain(T.ui2.guild.welcomeBack('波比'));
   });
 
+  it('recall places the one picked, not the first on the list', () => {
+    const { game, pick, s } = setup(undefined, START_LINEUP, (g) => {
+      benchBobby(g);
+      g.state.party = meet(g.state.party, 'sylvie', 1);
+      g.state.party = { ...g.state.party, grid: g.state.party.grid.map((c) => (c === 'sylvie' ? null : c)) };
+    });
+    pick(T.ui2.guild.recall);
+    pick('森林遊俠 希爾薇');
+    s.onAction('up');
+    s.onAction('confirm');
+    expect(game.state.party.grid).toContain('sylvie');
+    expect(game.state.party.grid).not.toContain('bobby');
+  });
+
   it('declining the confirmation changes nothing', () => {
     const { game, pick, s } = setup(undefined, START_LINEUP, benchBobby);
     pick(T.ui2.guild.recall);
@@ -79,8 +92,11 @@ describe('GuildScene', () => {
     const labels = [...root.querySelectorAll('.slx-layer:last-child [role=option]')].map((o) => o.querySelector('.slx-label')!.textContent!);
     expect(labels).toHaveLength(4);
     expect(labels.some((l) => l.includes('洛恩'))).toBe(false);   // the hero never steps out
-    pick(labels[0]);
-    expect(game.state.party.grid).toContain('bobby');
+    const cell = game.state.party.grid.indexOf('noel');
+    pick(labels.find((l) => l.includes('諾艾兒'))!);   // not the first on the list
+    expect(game.state.party.grid[cell]).toBe('bobby');   // she takes his cell
+    expect(game.state.party.grid).not.toContain('noel');
+    for (const id of ['hero', 'chizuru', 'liz', 'selene'] as const) expect(game.state.party.grid, id).toContain(id);
     expect(game.state.party.grid.filter((c) => c).length).toBe(5);
   });
 

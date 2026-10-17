@@ -28,7 +28,7 @@ const MEMORIES_BUILD: HeroBuild = 'balanced';
 const DEEP: Lineup = { memories: 10, abyss: ABYSS.cap, heroBuild: MEMORIES_BUILD };
 
 /** With BALANCE_REPORT set, print every measurement and let the assertions carry on, so one run shows every number. */
-const report = process.env.BALANCE_REPORT;
+const report = !!process.env.BALANCE_REPORT && process.env.BALANCE_REPORT !== '0';
 const ex = report ? expect.soft : expect;
 const say = (label: string, m: { rate?: number; hpLoss?: number; rounds?: number; n?: number }) => {
   if (!report) return;
@@ -164,7 +164,7 @@ describe('balance', () => {
 
   it('the memories variants measure something: the build holds an abyss capstone and changes the runs', () => {
     const caps = Object.keys(heroTree(depthLevel(10), MEMORIES_BUILD, 10)).filter((k) => k.startsWith('abyss-'));
-    expect(caps.length).toBeGreaterThan(0);
+    expect(caps).toContain('abyss-sword');   // the capstone the sim player casts; another one would leave the bands unmoved
     // The same build without memories and abyss against with them: the boss of depth 10 and a geared depth 8.
     const plain: Lineup = { heroBuild: MEMORIES_BUILD };
     const boss = (lineup: Lineup) => {

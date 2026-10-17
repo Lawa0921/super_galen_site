@@ -422,7 +422,8 @@ const tree: StatusTab = {
           const state = rank > 0 ? 'slx-node-learned' : why ? 'slx-node-locked' : 'slx-node-open';
           const row = el('div', {
             class: `slx-skill slx-tree-node ${state}${treeView.cur === n.id ? ' slx-row-cur' : ''}`,
-            attrs: { 'data-node': n.id, role: 'button' },
+            // Hover alone shows why a shut node is shut (the tooltip), for a pointer that has not clicked it.
+            attrs: { 'data-node': n.id, role: 'button', ...(rank === 0 && why ? { title: treeReason(why, n.id) } : {}) },
           }, [
             el('div', { class: 'slx-skill-head' }, [
               el('span', { class: 'slx-skill-name', text: nodeName(n) }),

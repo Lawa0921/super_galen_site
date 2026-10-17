@@ -284,9 +284,9 @@ export const TREES: Record<CharacterId, TreeDef> = {
   ] },
 };
 
-/** Which branch's ultimate the default build aims for (read by the auto-allocation of skill points). */
-export const DEFAULT_CAPSTONE: Record<CharacterId, number> = {
-  noel: 0, chizuru: 0, liz: 0, sylvie: 0, scarlet: 1, selene: 0, safira: 0, bobby: 0, rin: 1, hero: 0,
+/** Which branch's ultimate the default build aims for (read by the auto-allocation of skill points). The hero has none: heroTree follows his build instead. */
+export const DEFAULT_CAPSTONE: Record<Exclude<CharacterId, 'hero'>, number> = {
+  noel: 0, chizuru: 0, liz: 0, sylvie: 0, scarlet: 1, selene: 0, safira: 0, bobby: 0, rin: 1,
 };
 
 export const NODES: Record<string, { node: TreeNode; owner: CharacterId; branch: number; tier: number }> = {};

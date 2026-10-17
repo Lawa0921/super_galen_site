@@ -74,12 +74,14 @@ describe('FormationScene', () => {
   });
 
   it("the hero's cell offers no remove", () => {
-    const { root, cell } = setup();
-    cell(0).click();
-    const labels = [...root.querySelectorAll('.slx-formation-pick [role=option] .slx-label')].map((x) => x.textContent);
-    expect(labels).toContain('洛恩');
-    expect(labels).not.toContain('移出隊伍');
-    cell(1).click();   // a cell beside the hero still offers it
+    const labelsAt = (i: number) => {
+      const { root, cell } = setup();
+      cell(i).click();
+      return [...root.querySelectorAll('.slx-formation-pick [role=option] .slx-label')].map((x) => x.textContent);
+    };
+    expect(labelsAt(0)).toContain('洛恩');
+    expect(labelsAt(0)).not.toContain('移出隊伍');
+    expect(labelsAt(1)).toContain('移出隊伍');   // a cell beside the hero still offers it
   });
 
   it('a refused formation shows the reason', () => {

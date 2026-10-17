@@ -252,6 +252,19 @@ describe('MapView event markers', () => {
     expect(urls).toContain(art.eventTile('altar'));
   });
 
+  it('the 救 marker shows only on a seen rescue room, and goes once the room is floor', () => {
+    const game = new Game(constRng(0.99), null);
+    game.state.dungeon.reached.mainline = 3;
+    expect(game.depart(MAIN, 2)).toEqual({ ok: true });
+    const at = floorOf(game.run!, 2).contents.find((c) => c.kind === 'rescue')!.at;
+    const rescues = () => markersOf(game).filter((m) => m.kind === 'rescue');
+    expect(rescues()).toEqual([]);   // not seen yet
+    exploreAll(game);
+    expect(rescues()).toEqual([{ kind: 'rescue', x: at.x, y: at.y }]);
+    game.map().tiles[at.y][at.x] = 'floor';   // what a win does to the room
+    expect(rescues()).toEqual([]);
+  });
+
   it('keeps each marker glyph across draws and drops the ones that are spent', () => {
     const game = new Game(constRng(0.99), null);
     game.depart(MAIN, 1);

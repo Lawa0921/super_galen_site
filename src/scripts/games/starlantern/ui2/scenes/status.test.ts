@@ -544,6 +544,8 @@ describe('StatusScene', () => {
       expect(node('inferno').textContent).toContain(T.ui2.tree.kind.ultimate);
       expect(node('flame-wave').classList.contains('slx-node-locked')).toBe(true);
       expect(node('flame-wave').textContent).toContain(T.ui2.tree.reason.req);
+      expect(node('flame-wave').title).toBe(T.ui2.tree.reason.req);   // hover alone says why
+      expect(node('ice-star').title).toBe('');                        // an open node has nothing to explain
       expect(game.state.party.roster.noel.tree).toEqual({ 'fire-star': 1 });   // drawing spends nothing
     });
 

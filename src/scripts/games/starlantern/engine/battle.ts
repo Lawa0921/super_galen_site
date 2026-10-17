@@ -202,7 +202,7 @@ export function skillFor(c: Pick<Combatant, 'powers' | 'ranks' | 'weaponKind'>, 
   // The tree's two stages (the active's own rank, then its mod nodes stacked into one) come from progression.treeMods only.
   const powers = (c.powers ?? []).map((p) => POWERS[p]).filter((p) => p && p.skill === id).map((p) => p.mod);
   const info = NODES[id];
-  const mastered = c.weaponKind && info?.owner === 'hero' && info.node.kind === 'active' && WEAPON_KINDS[c.weaponKind].mastery.includes(info.branch)
+  const mastered = c.weaponKind && info?.owner === 'hero' && WEAPON_KINDS[c.weaponKind].mastery.includes(info.branch)
     ? pctMod(id, 100 + WEAPON_MASTERY_PCT) : undefined;
   const mods = [...(c.ranks ? treeMods(c.ranks, id) : []), ...(mastered ? [mastered] : []), ...powers];
   if (!mods.length) return base;

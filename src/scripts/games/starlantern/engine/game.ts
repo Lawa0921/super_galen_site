@@ -1,5 +1,5 @@
 import { CONDITIONS } from '../data/conditions';
-import { favouredRegions, rescuesFor } from '../data/meetings';
+import { favouredRegions, rescuesFor, type Meetable } from '../data/meetings';
 import { ITEMS } from '../data/items';
 import { capacity, carried, weightOf } from '../data/weights';
 import { FLOORS } from '../data/floors';
@@ -36,7 +36,7 @@ export type MoveResult =
   | { kind: 'ignored' } | { kind: 'blocked' } | { kind: 'moved' } | { kind: 'battle' } | { kind: 'boss' }
   | { kind: 'entrance' }
   /** Stepped into a rescue room: a fight with one extra enemy is on, and winning meets `who`. */
-  | { kind: 'rescue'; who: CharacterId }
+  | { kind: 'rescue'; who: Meetable }
   /** A new floor; `clear` is the depth-clear exp paid for the floor left by the stairs (descend), with who levelled up. */
   | { kind: 'floor'; floor: number; clear?: { exp: number; levelUps: LevelUp[] } }
   /**
@@ -71,7 +71,7 @@ export interface BattleEnd {
   /** Gear that went into the run pack, and gear left behind for want of weight or bag room. */
   gear: ItemInstance[]; gearLeft: ItemInstance[];
   /** A rescue won: the companion met, her join level, and whether she went to the bench for want of a field slot. */
-  met?: { id: CharacterId; level: number; benched: boolean };
+  met?: { id: Meetable; level: number; benched: boolean };
 }
 
 /** Turn a floor's boss tile into stairs down. */
@@ -96,7 +96,7 @@ export class Game {
   /** The elite tile whose fight is on; it turns to floor on a win. */
   private eliteAt: Pos | null = null;
   /** The rescue room whose fight is on; she is met and the tile turns to floor on a win. */
-  private rescueAt: { at: Pos; who: CharacterId } | null = null;
+  private rescueAt: { at: Pos; who: Meetable } | null = null;
   notice: Notice | null = null;
   /** What the last safe return brought home; the town screen shows it, then clears it. `overflow` is gear the full bag could not take. */
   banked: { items: Record<string, number>; gold: number; viaLamp: boolean; gear: ItemInstance[]; overflow: ItemInstance[] } | null = null;

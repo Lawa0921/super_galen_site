@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { CharacterId } from '../engine/types';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { SKILLS } from './skills';
+import { ULTIMATES } from './ultimates';
 import { TREES } from './trees';
 
 const FRONT: CharacterId[] = ['chizuru', 'liz', 'scarlet', 'safira'];
 const avg = (pick: (id: CharacterId) => number) => FRONT.reduce((n, id) => n + pick(id), 0) / FRONT.length;
 const rinSkills = () => TREES.rin.branches.flatMap((b) => b.nodes).filter((n) => n.kind === 'active').map((n) => SKILLS[n.skill]);
-const rinDamage = () => rinSkills().flatMap((sk) => sk.effects).filter((e) => e.kind === 'damage');
 
 describe('rin', () => {
   it("rin's HP and DEF are about 15% above the front line", () => {
@@ -31,11 +31,30 @@ describe('rin', () => {
     }
   });
 
-  it("rin's kit has her execution and backstab", () => {
-    const dmg = rinDamage();
-    expect(dmg.some((e) => e.crit === 'always')).toBe(true);
-    expect(dmg.some((e) => e.execute !== undefined)).toBe(true);
-    expect(dmg.some((e) => e.wounded !== undefined)).toBe(true);
+  it("rin's kit has her execution and backstab, each on the skills that name them", () => {
+    const dmg = (id: string) => SKILLS[id].effects.flatMap((e) => (e.kind === 'damage' ? [e] : []));
+    for (const id of ['rin-execute', 'rin-deathblow']) {
+      expect(dmg(id).every((e) => e.crit === 'always' && (e.execute ?? 0) > 0), id).toBe(true);
+    }
+    for (const id of ['rin-backstab', 'rin-shadowless']) {
+      expect(dmg(id).every((e) => (e.wounded ?? 0) > 0), id).toBe(true);
+    }
+    // the rest of her kit is plain damage, so a flag cannot drift onto the wrong skill unnoticed
+    const flagged = new Set(['rin-execute', 'rin-deathblow', 'rin-backstab', 'rin-shadowless']);
+    for (const sk of rinSkills().filter((s) => !flagged.has(s.id))) {
+      for (const e of sk.effects) {
+        if (e.kind === 'damage') expect(e.execute !== undefined || e.wounded !== undefined || e.crit === 'always', sk.id).toBe(false);
+      }
+    }
+  });
+
+  it('her ultimate always crits for 300 power', () => {
+    expect(ULTIMATES.rin.effects).toEqual([{ kind: 'damage', power: 300, element: 'phys', scale: 'atk', melee: true, crit: 'always' }]);
+  });
+
+  it("pins rin's base stats and growth", () => {
+    expect(CHARACTERS.rin.base).toEqual({ hp: 46, tp: 16, atk: 13, def: 12, mag: 4, res: 7, spd: 15 });
+    expect(CHARACTERS.rin.growth).toEqual({ hp: 6.7, tp: 2, atk: 2, def: 1.8, mag: 1, res: 1, spd: 2 });
   });
 
   it('rin is ninth, follows the hero at the head of the id list and is a melee front-liner of agility', () => {

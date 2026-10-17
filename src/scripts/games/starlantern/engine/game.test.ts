@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Game, type MoveResult } from './game';
-import { SAVE_KEY, saveGame } from './save';
+import { SAVE_KEY, loadGame, saveGame } from './save';
 import { newGame, START_ITEMS } from './state';
 import { constRng, memoryStorage, plainItem } from './testing';
 import { mulberry32 } from './rng';
@@ -8,24 +8,21 @@ import { rollPortals, validPortals } from './portals';
 import { DELTA, posKey, tileAt, type Dir } from './map';
 import { floorOf, type Portal } from './dungeon/run';
 import { capacity, carried, weightOf } from '../data/weights';
-import type { CharacterId, Pos } from './types';
+import type { CharacterId, ItemInstance, Pos } from './types';
 import { ENEMIES } from '../data/enemies';
 import { CHARACTERS } from '../data/characters';
 import { SETS } from '../data/gear';
-import { activeIds, joinLevel, gainExp, MAX_LEVEL, meet, newMember, LEGACY_LINEUP, START_LINEUP } from './party';
+import { activeIds, expToNext, gainExp, MAX_LEVEL, meet, newMember, rowOfCell, LEGACY_LINEUP, START_LINEUP } from './party';
 import { depthClearExp, empower, encounterGroup, groupCap } from './scaling';
 import { favouredRegions } from '../data/meetings';
 import { MAX_ACTIVE } from './formation';
 import { CONDITIONS } from '../data/conditions';
 import { BAG_SIZE } from './loot/bag';
 import { MAX_ILVL, MAX_REACHED } from './levels';
-import { loadGame } from './save';
 import { chestHasGear, GEAR_CHANCE, RARE_MATERIALS, rollBossGear } from './loot/drops';
 import { itemLevel, itemWeight, rollItem } from './loot/item';
-import type { ItemInstance } from './types';
 import { MATERIALS } from '../data/materials';
 import { buy } from './town';
-import { markersOf } from '../render/markers';
 
 vi.mock('./portals', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./portals')>();
@@ -112,9 +109,14 @@ describe('boot', () => {
   it('flags a reset when the save is unreadable', () => {
     const g = Game.boot(calm(), memoryStorage({ [SAVE_KEY]: '{bad' }));
     expect([g.phase, g.notice]).toEqual(['town', 'save-reset']);
+    expect(g.state.party.recruited).toEqual(START_LINEUP);   // the reset game is the two-person start
+    expect(activeIds(g.state.party)).toEqual(START_LINEUP);
   });
   it('works without storage', () => {
-    expect(Game.boot(calm(), null).phase).toBe('town');
+    const g = Game.boot(calm(), null);
+    expect(g.phase).toBe('town');
+    expect(g.state.party.recruited).toEqual(START_LINEUP);
+    expect(activeIds(g.state.party)).toEqual(START_LINEUP);
   });
   it('a fresh game replaces the save at once, so a wipe before the first rest returns to the fresh start', () => {
     const storage = memoryStorage();
@@ -1192,6 +1194,7 @@ describe('depth-clear exp', () => {
     expect(downstairs(g, g.map().down!)).toEqual({ kind: 'floor', floor: 2 });
     expect(g.state.dungeon.reached.mainline).toBe(5);
   });
+});
 
 describe('respec', () => {
   const spend = (g: Game) => { g.state.party.roster.hero.talents = { 'hero-t01': 1 }; };
@@ -1215,7 +1218,6 @@ describe('respec', () => {
     expect(g.state.party.roster.hero.talents).toEqual({ 'hero-t01': 1 });
   });
 });
-});
 
 describe('recall', () => {
   /** Town, the hero's five on the field, and Bobby and Sylvie met and waiting. */
@@ -1234,6 +1236,8 @@ describe('recall', () => {
     expect(g.recall('bobby', 'hero')).toEqual({ ok: true });   // room on the field: `out` is ignored
     expect(g.state.party.grid.filter((c) => c).length).toBe(3);
     expect(g.state.party.grid[g.state.party.grid.indexOf('bobby')]).toBe('bobby');
+    expect(rowOfCell(g.state.party.grid.indexOf('bobby'))).toBe(CHARACTERS.bobby.row);   // she takes her own row
+    expect(g.notice).toBeNull();
     expect(g.state.party.grid).toContain('hero');
     expect(saved(storage)!.grid).toEqual(g.state.party.grid);
   });
@@ -1243,6 +1247,8 @@ describe('recall', () => {
     expect(g.recall('bobby', 'liz')).toEqual({ ok: true });
     expect(g.state.party.grid[cell]).toBe('bobby');
     expect(g.state.party.grid).not.toContain('liz');
+    expect(g.state.party.recruited).toContain('liz');   // she is on the bench, not gone
+    expect(g.notice).toBeNull();
     expect(saved(storage)!.grid).toEqual(g.state.party.grid);
   });
   it('a full field needs someone to step out, never the hero', () => {
@@ -1304,6 +1310,7 @@ describe('setFormation', () => {
     const off = before.map((c) => (c === 'hero' ? null : c));
     expect(g.setFormation(off)).toEqual({ ok: false, reason: 'no-hero' });
     expect(g.state.party.grid).toEqual(before);
+    expect(g.notice).toBeNull();
     expect(storage.map.has(SAVE_KEY)).toBe(false);
   });
   it('reports a failed save without losing the formation', () => {
@@ -1602,18 +1609,31 @@ describe('rescue fights', () => {
   });
   it('winning the rescue meets her at the join level, on the field while there is room', () => {
     const { g, at } = rescueRun();
+    g.state.party.roster.hero.level = 10;   // average 8 of the field, above the depth's 4 and under the best, so the level is not Lv1 by default
+    g.state.party.roster.rin.level = 6;
     stepOnto(g, at);
     const end = killAll(g);
     expect(end.outcome).toBe('win');
-    const level = joinLevel(g.state.party, 2);
-    // she joins after the exp is shared, at the level worked out from the party that fought
-    expect(end.met).toEqual({ id: 'selene', level: g.state.party.roster.selene.level, benched: false });
-    expect(g.state.party.roster.selene.level).toBe(level);
+    expect(end.levelUps).toEqual([]);   // nobody levelled, so the join level is the plain average
+    expect(end.met).toEqual({ id: 'selene', level: 8, benched: false });
+    expect(g.state.party.roster.selene.level).toBe(8);
     expect(g.state.party.recruited).toContain('selene');
     expect(activeIds(g.state.party)).toContain('selene');
     expect(end.levelUps.some((l) => l.id === 'selene')).toBe(false);
     expect(tileAt(g.map(), at)).toBe('floor');
     expect(g.phase).toBe('map');
+  });
+  it('she joins after the exp is shared, at the level the party has by then', () => {
+    const { g, at } = rescueRun();
+    for (const id of ['hero', 'rin'] as const) {
+      g.state.party.roster[id].level = 5;
+      g.state.party.roster[id].exp = expToNext(5) - 1;   // any exp tips both over to Lv6
+    }
+    stepOnto(g, at);
+    const end = killAll(g);
+    expect(end.levelUps.map((u) => u.id).sort()).toEqual(['hero', 'rin']);
+    expect(g.state.party.roster.hero.level).toBe(6);
+    expect(end.met).toMatchObject({ id: 'selene', level: 6 });   // 5 had she joined before the exp
   });
   it('winning takes the room off the floor, so no rescue marker stays after she joins', () => {
     const { g, at } = rescueRun();
@@ -1621,7 +1641,24 @@ describe('rescue fights', () => {
     g.run!.explored[g.floor] = [`${at.x},${at.y}`];
     killAll(g);
     expect(floorOf(g.run!, 2).contents.some((c) => c.kind === 'rescue')).toBe(false);
-    expect(markersOf(g).some((m) => m.kind === 'rescue')).toBe(false);
+    expect(tileAt(g.map(), at)).toBe('floor');
+  });
+  it('stepping back onto her room after the win starts nothing', () => {
+    const { g, at } = rescueRun();
+    stepOnto(g, at);
+    killAll(g);
+    expect(g.state.party.recruited).toContain('selene');
+    const again = stepOnto(g, at);
+    expect(again.kind).not.toBe('rescue');
+    expect(g.phase).toBe('map');
+  });
+  it('a rescue tile with no room behind it is just a step', () => {
+    const { g, at } = rescueRun();
+    const floor = floorOf(g.run!, 2);
+    floor.contents = floor.contents.filter((c) => c.kind !== 'rescue');
+    expect(tileAt(g.map(), at)).toBe('rescue');
+    expect(stepOnto(g, at).kind).not.toBe('rescue');
+    expect(g.phase).toBe('map');
   });
   it('fleeing keeps the rescue marker on the map', () => {
     const { g, at } = rescueRun();
@@ -1629,7 +1666,7 @@ describe('rescue fights', () => {
     g.run!.explored[g.floor] = [`${at.x},${at.y}`];
     (g as { rng: unknown }).rng = constRng(0);
     expect(g.submitRound({ hero: { kind: 'escape' } })!.end!.outcome).toBe('fled');
-    expect(markersOf(g)).toContainEqual({ kind: 'rescue', x: at.x, y: at.y });
+    expect(tileAt(g.map(), at)).toBe('rescue');
   });
   it('a full party benches her', () => {
     const { g, at } = rescueRun(['hero', 'rin', 'chizuru', 'liz', 'noel']);
@@ -1664,7 +1701,7 @@ describe('rescue fights', () => {
     expect(again?.who).toBe('selene');
     expect(tileAt(g.map(), again!.at)).toBe('rescue');
   });
-  it('a lost fight does not leave the room to a later win', () => {
+  it('a failed escape does not lose the fight: a later win still meets her', () => {
     const { g, at } = rescueRun();
     stepOnto(g, at);
     g.submitRound({ hero: { kind: 'escape' } });   // calm rng: the escape fails, the fight goes on

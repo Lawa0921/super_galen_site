@@ -240,9 +240,10 @@ export function defaultTree(id: CharacterId, level: number, memories = 0): Recor
 }
 
 /**
- * The hero's tree for a build: one point at a time, to the first of the build's `nodes` that can take it, else the build's branches in turn (inside a branch the open node, tier 4
- * included, of lowest (rank, tier)); when none of them has an open node, the other branches in index order. Every point
- * passes `check`, so an abyss capstone is taken only once `memories` allow it.
+ * The hero's tree for a build: one point at a time, to the first of the build's `nodes` that can take it, else the
+ * build's branches in turn (inside a branch the open node, tier 4 included, of lowest (rank, tier)); when none of them
+ * has an open node, the other branches in index order. Every point passes `check`, so an abyss capstone is taken only
+ * once `memories` allow it.
  */
 export function heroTree(level: number, build: HeroBuild = 'balanced', memories = 0): Record<string, number> {
   const tree = newTree('hero');

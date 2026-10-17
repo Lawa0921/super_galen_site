@@ -22,7 +22,7 @@ const LINEUPS: Record<LineupKey, { ids: CharacterId[]; heroRow?: Row; regions: R
 
 interface Cell { lineup: LineupKey; build: HeroBuild; depth: number; region: RegionId; rate: number; hpLoss: number }
 
-const report = process.env.BALANCE_REPORT;
+const report = !!process.env.BALANCE_REPORT && process.env.BALANCE_REPORT !== '0';
 const ex = report ? expect.soft : expect;
 
 const cells: Cell[] = [];
@@ -44,8 +44,9 @@ const label = (c: Cell) => `${c.lineup} ${c.build} depth ${c.depth} ${c.region}`
 
 describe('balance 18: any lineup works with the right hero build', () => {
   it('18a fill. every lopsided lineup with its fill build wins >= .85 and loses 10-45% HP', () => {
-    for (const c of matrix()) {
-      if (c.lineup === 'standard' || c.build !== ODD_LINEUPS[c.lineup].fill) continue;
+    const picked = matrix().filter((c) => c.lineup !== 'standard' && c.build === ODD_LINEUPS[c.lineup].fill);
+    expect(picked, 'the cells it reads').toHaveLength(10);
+    for (const c of picked) {
       ex(c.rate, label(c)).toBeGreaterThanOrEqual(0.85);
       ex(c.hpLoss, label(c)).toBeGreaterThanOrEqual(0.1);
       ex(c.hpLoss, label(c)).toBeLessThanOrEqual(0.45);
@@ -53,20 +54,19 @@ describe('balance 18: any lineup works with the right hero build', () => {
   }, 300_000);
 
   it('18b floor. every lopsided lineup with the balanced build wins >= .75', () => {
-    for (const c of matrix()) {
-      if (c.lineup === 'standard' || c.build !== 'balanced') continue;
-      ex(c.rate, label(c)).toBeGreaterThanOrEqual(0.75);
-    }
+    const picked = matrix().filter((c) => c.lineup !== 'standard' && c.build === 'balanced');
+    expect(picked, 'the cells it reads').toHaveLength(10);
+    for (const c of picked) ex(c.rate, label(c)).toBeGreaterThanOrEqual(0.75);
   }, 300_000);
 
   it('18c freedom. the standard five win >= .85 with every hero build', () => {
-    for (const c of matrix()) {
-      if (c.lineup !== 'standard') continue;
-      ex(c.rate, label(c)).toBeGreaterThanOrEqual(0.85);
-    }
+    const picked = matrix().filter((c) => c.lineup === 'standard');
+    expect(picked, 'the cells it reads').toHaveLength(BUILDS.length * DEPTHS.length);
+    for (const c of picked) ex(c.rate, label(c)).toBeGreaterThanOrEqual(0.85);
   }, 300_000);
 
   it('18d ceiling. no cell of the matrix loses under 10% HP', () => {
+    expect(matrix(), 'the cells it reads').toHaveLength(60);
     for (const c of matrix()) ex(c.hpLoss, label(c)).toBeGreaterThanOrEqual(0.1);
   }, 300_000);
 

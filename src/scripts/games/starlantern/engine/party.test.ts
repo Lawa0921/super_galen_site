@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
   rowOfCell, statSources, expToNext, statsOf, newMember, newParty, setFormation, activeIds,
   gainExp, awardExp, hasPassive, MAX_LEVEL, SLOTS, slotsFor, defaultSlotFor, sheetOf, setCounts, powersOf,
+  LEGACY_GRID, LEGACY_LINEUP, STANDARD_LINEUP, START_LINEUP, partyWith, placeInGrid, joinLevel, meet,
 } from './party';
 import { partyAt } from './sim';
 import { depthLevel } from './scaling';
-import { LEGACY_GRID, LEGACY_LINEUP, STANDARD_LINEUP, START_LINEUP, partyWith, placeInGrid, joinLevel, meet } from './party';
 import { defaultTalents, defaultTree, learnedSkills, newTree, raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, validBuild } from './progression';
 import { fullParty, plainItem } from './testing';
 import { rollItem } from './loot/item';
@@ -49,7 +49,8 @@ describe('gear instances', () => {
         const st = statsOf({ ...newMember(id), level });
         const def = CHARACTERS[id];
         for (const k of ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'] as const) {
-          expect(st[k], `${id} Lv${level} ${k}`).toBe(Math.floor(def.base[k] + def.growth[k] * (level - 1) + 1e-9));
+          const eps = Number.isInteger(def.growth[k]) ? 0 : 1e-9;   // only a fractional growth (Rin's, the hero's) needs the float guard
+          expect(st[k], `${id} Lv${level} ${k}`).toBe(Math.floor(def.base[k] + def.growth[k] * (level - 1) + eps));
         }
       }
     }
@@ -296,7 +297,7 @@ describe('partyWith', () => {
   it('stands the hero in the row asked for', () => {
     const p = partyWith(STANDARD_LINEUP, 'back');
     expect(rowOfCell(p.grid.indexOf('hero'))).toBe('back');
-    expect(activeIds(p)).toEqual(['rin', 'chizuru', 'hero', 'noel', 'selene'].sort((a, b) => p.grid.indexOf(a as never) - p.grid.indexOf(b as never)));
+    expect(activeIds(p)).toEqual(['rin', 'chizuru', 'hero', 'noel', 'selene']);
   });
   it('the legacy five stand where they always stood', () => {
     const p = partyWith(LEGACY_LINEUP);
@@ -329,6 +330,12 @@ describe('placeInGrid', () => {
     for (const id of front) g = placeInGrid(g, id, 'front');
     expect(g.slice(0, 3)).toEqual(['hero', 'rin', 'chizuru']);
     expect(g[3]).toBe('scarlet');
+  });
+  it('leaves a full grid as it was, without a throw or a lost member', () => {
+    const full: (CharacterId | null)[] = ['hero', 'rin', 'chizuru', 'noel', 'selene', 'scarlet', 'liz', 'sylvie', 'bobby'];
+    const out = placeInGrid(full, 'safira', 'front');
+    expect(out).toEqual(full);
+    expect(out).not.toBe(full);
   });
   it('works on a copy', () => {
     const g: (CharacterId | null)[] = Array(9).fill(null);

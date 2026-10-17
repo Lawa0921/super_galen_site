@@ -135,7 +135,7 @@ export function partyWith(ids: CharacterId[], heroRow: Row = 'front', grid?: (Ch
   if (!g && ids.length === LEGACY_LINEUP.length && ids.every((id, i) => id === LEGACY_LINEUP[i])) g = [...LEGACY_GRID];
   if (!g) {
     g = Array<CharacterId | null>(GRID_SIZE).fill(null);
-    for (const id of ids) g = placeInGrid(g, id, (id as string) === 'hero' ? heroRow : CHARACTERS[id].row);
+    for (const id of ids) g = placeInGrid(g, id, id === 'hero' ? heroRow : CHARACTERS[id].row);
   }
   return {
     roster: Object.fromEntries(CHARACTER_IDS.map((id) => [id, newMember(id)])) as Record<CharacterId, Member>,

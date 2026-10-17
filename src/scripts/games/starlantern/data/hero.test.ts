@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { CharacterId, Effect, Member, SkillDef, Stats } from '../engine/types';
+import type { CharacterId, Effect, Member, SkillDef, Stats, WeaponKind } from '../engine/types';
 import { skillFor } from '../engine/battle';
 import { WEAPON_KINDS } from './equipment';
-import type { WeaponKind } from '../engine/types';
 import { HERO_ULTIMATES, ULTIMATES } from './ultimates';
 import { AFFINITY_MUL, ALL_AFFINITY_SHARE, CONVERT, convertPrimary } from '../engine/stats';
 import { defaultTree, newTree, nodeRank, raiseNode, skillPoints } from '../engine/progression';
@@ -19,14 +18,14 @@ const median = (v: number[]) => {
   return (s[(s.length - 1) >> 1] + s[s.length >> 1]) / 2;
 };
 const total = (st: Stats) => KEYS.reduce((n, k) => n + st[k], 0);
-const hero = () => CHARACTERS['hero' as CharacterId];
-const heroNodes = () => TREES['hero' as CharacterId].branches.flatMap((b) => b.nodes);
+const hero = () => CHARACTERS['hero'];
+const heroNodes = () => TREES['hero'].branches.flatMap((b) => b.nodes);
 
 describe('hero', () => {
   it('is the returner 洛恩, a melee front-liner of every affinity and a weapon master, with the hero rules', () => {
     expect(EIGHT).toHaveLength(8);
     expect(hero()).toMatchObject({ id: 'hero', title: '歸來者', name: '洛恩', row: 'front', melee: true, affinity: 'all', weaponMaster: true });
-    expect(rulesOf('hero' as CharacterId)).toEqual({ curve: 'hero', branches: 5, capstones: 2, boardCols: 6, maxKeystones: 3 });
+    expect(rulesOf('hero')).toEqual({ curve: 'hero', branches: 5, capstones: 2, boardCols: 6, maxKeystones: 3 });
     expect(HERO_PEAK_SHARE).toBe(0.85);
   });
 
@@ -61,7 +60,7 @@ describe('hero', () => {
   });
 
   it('hero tree has 5 branches covering the five roles, tier 4 of each is an abyss node', () => {
-    const t = TREES['hero' as CharacterId];
+    const t = TREES['hero'];
     expect(t.branches.map((b) => b.name)).toEqual(['劍技', '守護', '星術', '祈光', '枷鎖']);
     for (const b of t.branches) {
       expect(b.nodes, b.name).toHaveLength(5);
@@ -80,7 +79,7 @@ describe('hero', () => {
   });
 
   it("the hero's default tree spends his whole curve legally, taking only the balanced build's abyss nodes", () => {
-    const id = 'hero' as CharacterId;
+    const id = 'hero';
     for (const level of [1, 2, 10, 30, 50]) {
       const tree = defaultTree(id, level, 10);
       const label = `Lv${level}`;
@@ -129,7 +128,10 @@ describe('hero', () => {
   });
 
   it('no hero skill revives, always crits, executes or backstabs', () => {
-    const effects = heroNodes().filter((n) => n.kind === 'active').flatMap((n) => SKILLS[n.skill].effects);
+    const effects = [
+      ...heroNodes().filter((n) => n.kind === 'active').flatMap((n) => SKILLS[n.skill].effects),
+      ...HERO_ULTIMATES.flatMap((u) => u.effects),   // the five Lantern Key forms count too
+    ];
     expect(effects.length).toBeGreaterThan(0);
     for (const e of effects) {
       expect(e.kind).not.toBe('revive');
@@ -150,10 +152,16 @@ describe('the hero never outdoes a specialist', () => {
   const actives = (id: CharacterId) => TREES[id].branches.flatMap((b) => b.nodes).filter((n) => n.kind === 'active').map((n) => n.skill);
   type Measure = (s: SkillDef) => number[];
   const best = (xs: number[]) => Math.max(0, ...xs);
+  /** `skillFor` for a maxed character, failing with the skill's name instead of a bare undefined. */
+  const cast = (id: CharacterId, weaponKind: Kind, sk: string): SkillDef => {
+    const def = skillFor({ powers: [], ranks: maxed(id), weaponKind }, sk);
+    if (!def) throw new Error(`skillFor found nothing for ${id}:${sk}`);
+    return def;
+  };
   /** The biggest value of `measure` over the character's maxed active skills; the hero over every weapon kind and none. */
   const peak = (id: CharacterId, measure: Measure) =>
     best((id === 'hero' ? KINDS : [undefined]).flatMap((weaponKind) =>
-      actives(id).flatMap((sk) => measure(skillFor({ powers: [], ranks: maxed(id), weaponKind }, sk)!))));
+      actives(id).flatMap((sk) => measure(cast(id, weaponKind, sk)))));
 
   const heal = (target: SkillDef['target']): Measure => (s) => s.target === target ? s.effects.flatMap((e) => (e.kind === 'heal' ? [e.power] : [])) : [];
   const defBuff = (target: SkillDef['target']): Measure => (s) =>
@@ -202,13 +210,16 @@ describe('the hero never outdoes a specialist', () => {
     expect(mine.length).toBeGreaterThan(0);
     for (const x of mine) expect(SKILLS[x.node.skill].owner, x.node.id).toBe('hero');
     const others = new Set(Object.entries(ULTIMATES).filter(([id]) => id !== 'hero').map(([, u]) => u.id));
+    expect(new Set(HERO_ULTIMATES.map((u) => u.id)).size).toBe(HERO_ULTIMATES.length);
     for (const u of HERO_ULTIMATES) {
       expect(others.has(u.id), u.id).toBe(false);
       expect(u.owner, u.id).toBe('hero');
+      expect(u.id, u.id).toMatch(/^ult-hero-/);
     }
   });
 
   it("every Lantern Key form is below its companion's ultimate", () => {
+    expect(HERO_ULTIMATES.map((u) => u.id)).toEqual(['ult-hero-sword', 'ult-hero-guard', 'ult-hero-star', 'ult-hero-light', 'ult-hero-chain']);
     const [sword, guard, star, light, chain] = HERO_ULTIMATES.map((u) => u.effects);
     const dmg = (fx: Effect[]) => best(fx.flatMap((e) => (e.kind === 'damage' ? [e.power * (e.hits ?? 1)] : [])));
     const healOf = (fx: Effect[]) => best(fx.flatMap((e) => (e.kind === 'heal' ? [e.power] : [])));

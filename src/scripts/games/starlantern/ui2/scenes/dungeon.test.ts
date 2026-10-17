@@ -446,28 +446,69 @@ describe('DungeonScene loot', () => {
     expect(sfx.loot).not.toHaveBeenCalled();
   });
 
-  it('stepping into a rescue room says the meeting line, then fights', async () => {
-    const game = new Game(constRng(0.99), null, undefined, 0, ['hero', 'rin']);   // Selene not met yet
-    game.state.dungeon.reached.mainline = 3;
-    expect(game.depart({ region: 'mainline', condition: 'plain' }, 2)).toEqual({ ok: true });
-    const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), stairs: vi.fn(), chest: vi.fn(), encounter: vi.fn(), loot: vi.fn() };
-    const go = vi.fn();
-    const root = document.createElement('div');
-    const s = new DungeonScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: true }, Infinity);
-    s.enter(root);
-    const text = () => root.querySelector('.slx-talk .slx-text')?.textContent ?? '';
-    const at = floorOf(game.run!, 2).contents.find((c) => c.kind === 'rescue')!.at;
-    const dir = (['up', 'down', 'left', 'right'] as const).find((d) => !['wall', 'trap'].includes(tileAt(game.map(), { x: at.x - DELTA[d].x, y: at.y - DELTA[d].y })))!;
-    game.pos = { x: at.x - DELTA[dir].x, y: at.y - DELTA[dir].y };
-    s.onAction(dir);
-    expect(text()).toBe(T.meet.selene.before[0]);
-    expect(text()).toBe(T.ui2.rescue.found(CHARACTERS.selene.name));
-    expect(game.phase).toBe('battle');
-    expect(go).not.toHaveBeenCalled();
-    s.onAction('confirm');
-    await new Promise((r) => setTimeout(r, 0));
-    expect(sfx.encounter).toHaveBeenCalled();
-    expect(go).toHaveBeenCalledWith('battle');
+  describe('a rescue room', () => {
+    /** Two members, Selene waiting on floor 2; the hero stands next to her room. Returns the key that steps in. */
+    const rescueSetup = () => {
+      const game = new Game(constRng(0.99), null, undefined, 0, ['hero', 'rin']);
+      game.state.dungeon.reached.mainline = 3;
+      expect(game.depart({ region: 'mainline', condition: 'plain' }, 2)).toEqual({ ok: true });
+      const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), stairs: vi.fn(), chest: vi.fn(), encounter: vi.fn(), loot: vi.fn() };
+      const go = vi.fn();
+      const root = document.createElement('div');
+      const s = new DungeonScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: true }, Infinity);
+      s.enter(root);
+      const text = () => root.querySelector('.slx-talk .slx-text')?.textContent ?? '';
+      const at = floorOf(game.run!, 2).contents.find((c) => c.kind === 'rescue')!.at;
+      const dir = (['up', 'down', 'left', 'right'] as const).find((d) => !['wall', 'trap'].includes(tileAt(game.map(), { x: at.x - DELTA[d].x, y: at.y - DELTA[d].y })))!;
+      game.pos = { x: at.x - DELTA[dir].x, y: at.y - DELTA[dir].y };
+      return { game, sfx, go, s, text, dir };
+    };
+    const settle = () => new Promise((r) => setTimeout(r, 0));
+
+    it('stepping in says the meeting line, then fights', async () => {
+      const { game, sfx, go, s, text, dir } = rescueSetup();
+      s.onAction(dir);
+      expect(text()).toBe(T.meet.selene.before[0]);
+      expect(text()).toBe(T.ui2.rescue.found(CHARACTERS.selene.name));
+      expect(game.phase).toBe('battle');
+      expect(go).not.toHaveBeenCalled();
+      expect(sfx.encounter).not.toHaveBeenCalled();   // the fight's cue waits for the line to be read
+      s.onAction('confirm');
+      await settle();
+      expect(sfx.encounter).toHaveBeenCalledTimes(1);
+      expect(go).toHaveBeenCalledWith('battle');
+    });
+
+    it('says every line of a longer meeting in turn, and fights after the last', async () => {
+      const lines = T.meet.selene.before;
+      const saved = [...lines];
+      lines.splice(0, lines.length, '第一句', '第二句');
+      try {
+        const { sfx, go, s, text, dir } = rescueSetup();
+        s.onAction(dir);
+        expect(text()).toBe('第一句');
+        s.onAction('confirm');
+        await settle();
+        expect(text()).toBe('第二句');
+        expect(go).not.toHaveBeenCalled();
+        expect(sfx.encounter).not.toHaveBeenCalled();
+        s.onAction('confirm');
+        await settle();
+        expect(go).toHaveBeenCalledWith('battle');
+      } finally {
+        lines.splice(0, lines.length, ...saved);
+      }
+    });
+
+    it('leaving the scene while the line waits starts no fight', async () => {
+      const { sfx, go, s, dir } = rescueSetup();
+      s.onAction(dir);
+      s.exit();
+      s.onAction('confirm');   // a stale key or click still dismisses the line the scene left waiting
+      await settle();
+      expect(sfx.encounter).not.toHaveBeenCalled();
+      expect(go).not.toHaveBeenCalled();
+    });
   });
 
   it('any key skips the legendary moment, and only that key', () => {

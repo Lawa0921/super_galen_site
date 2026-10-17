@@ -1,5 +1,6 @@
 import type { ConditionDef } from '../../data/conditions';
 import { ITEMS } from '../../data/items';
+import type { Meetable } from '../../data/meetings';
 import type { FloorMap, Tile } from '../map';
 import { posKey } from '../map';
 import { pick, type Rng } from '../rng';
@@ -9,7 +10,7 @@ import type { GenFloor } from './gen';
 export type RoomKind = 'empty' | 'chest' | 'fountain' | 'trap' | 'merchant' | 'altar' | 'elite' | 'vault';
 /** `stock` is a merchant's three item ids, drawn once when the floor is filled. */
 /** `who` is the companion a `rescue` room holds. */
-export interface Content { kind: RoomKind | 'key' | 'rescue'; at: Pos; room: number; stock?: string[]; who?: CharacterId }
+export interface Content { kind: RoomKind | 'key' | 'rescue'; at: Pos; room: number; stock?: string[]; who?: Meetable }
 type Placed = Exclude<Content['kind'], 'empty'>;
 
 /** Share of ordinary rooms by kind. Elite and vault are capped at one per floor. */
@@ -102,7 +103,7 @@ export function fillRooms(g: GenFloor, rng: Rng, cond: ConditionDef): { map: Flo
  * first, then any other candidate room; the spot is a plain floor tile picked with `rng`. A map without rooms gets the
  * first floor tile, row by row. Only `f` changes, and `rng` should be the rescue's own so nothing else on the floor moves.
  */
-export function placeRescue(f: { map: FloorMap; contents: Content[] }, g: GenFloor, rng: Rng, who: CharacterId): void {
+export function placeRescue(f: { map: FloorMap; contents: Content[] }, g: GenFloor, rng: Rng, who: Meetable): void {
   const mark = (at: Pos, room: number) => {
     f.map.tiles[at.y][at.x] = 'rescue';
     f.contents.push({ kind: 'rescue', at, room, who });

@@ -2,6 +2,7 @@ import { CHARACTERS } from '../../data/characters';
 import { CONDITIONS } from '../../data/conditions';
 import { FLOORS } from '../../data/floors';
 import { ITEMS } from '../../data/items';
+import type { Meetable } from '../../data/meetings';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import { T } from '../../data/text.zh-TW';
 import { floorOf } from '../../engine/dungeon/run';
@@ -247,8 +248,11 @@ export class DungeonScene implements Scene {
   }
 
   /** A rescue room: the meeting lines one at a time, then the fight as for any encounter. */
-  private async meeting(who: CharacterId): Promise<void> {
-    for (const line of T.meet[who].before) await this.say(line);
+  private async meeting(who: Meetable): Promise<void> {
+    for (const line of T.meet[who].before) {
+      await this.say(line);
+      if (this.exited) return;   // the scene went while a line was waiting: no fight from a scene that is gone
+    }
     this.fightOn(false);
   }
 

@@ -20,12 +20,12 @@ import type { BuffStat, CharacterId, GearSlot, Party, Pos, Rarity, Row, SkillDef
 import type { RegionId } from '../data/regions';
 
 /** The eight members as CHARACTER_IDS ordered them before Rin: kitParty drew their gear in this order, and still does. */
-export const LEGACY_KIT_ORDER: CharacterId[] = LEGACY_CHARACTER_IDS;
+export const LEGACY_KIT_ORDER: CharacterId[] = [...LEGACY_CHARACTER_IDS];
 /** The order kitParty draws gear in: the legacy eight first so their draws never move, newer members after, the hero always last. */
 export const KIT_ORDER: CharacterId[] = [
   ...LEGACY_KIT_ORDER,
-  ...CHARACTER_IDS.filter((id) => !LEGACY_KIT_ORDER.includes(id) && (id as string) !== 'hero'),
-  ...CHARACTER_IDS.filter((id) => (id as string) === 'hero'),
+  ...CHARACTER_IDS.filter((id) => !LEGACY_KIT_ORDER.includes(id) && id !== 'hero'),
+  ...CHARACTER_IDS.filter((id) => id === 'hero'),
 ];
 
 type Altar = { stat: BuffStat; pct: number }[];
@@ -50,7 +50,7 @@ export function partyAt(level: number, lineup: Lineup = {}): Party {
   const build = lineup.heroBuild ?? 'balanced';
   const p = partyWith(lineup.ids ?? STANDARD_LINEUP, lineup.heroRow ?? HERO_BUILDS[build].row);
   for (const id of Object.keys(p.roster) as CharacterId[]) {
-    const hero = (id as string) === 'hero';
+    const hero = id === 'hero';
     const m = {
       ...newMember(id), level,
       tree: hero ? heroTree(level, build, lineup.memories ?? 0) : defaultTree(id, level),
@@ -82,7 +82,7 @@ export function kitParty(level: number, depth: number, seed: number, rarity?: Ra
       const rarityOf = tier === 'legendaryTier' ? 'rare' : tier;
       const first = rollItem(rng, { uid: uid++, ilvl, rarity: rarityOf, slot });
       // The hero always draws a weapon like everyone, then swaps it for his build's; he draws last, so the extra roll moves no one else.
-      m.equip[s] = { ...(s === 'weapon' && (id as string) === 'hero' ? rollItem(rng, { uid: first.uid, ilvl, rarity: rarityOf, slot, base: HERO_BUILDS[lineup.heroBuild ?? 'balanced'].weapon }) : first), enhance };
+      m.equip[s] = { ...(s === 'weapon' && id === 'hero' ? rollItem(rng, { uid: first.uid, ilvl, rarity: rarityOf, slot, base: HERO_BUILDS[lineup.heroBuild ?? 'balanced'].weapon }) : first), enhance };
     }
     const st = statsOf(m);
     p.roster[id] = { ...m, hp: st.hp, tp: st.tp };

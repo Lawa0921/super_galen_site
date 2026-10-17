@@ -4,19 +4,17 @@ import {
   raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, ultimateFor, validBuild,
   heroMainBranch, heroTalents, heroTree,
 } from './progression';
-import { ABYSS_UNLOCK } from '../data/hero';
 import { HERO_ULTIMATES, ULTIMATES } from '../data/ultimates';
 import { gainExp, newMember } from './party';
 import { CHARACTERS, rulesOf } from '../data/characters';
 import { mulberry32 } from './rng';
 import { DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES } from '../data/trees';
 import { BOARDS, DEFAULT_KEYSTONES, TALENT_PER, TALENT_SCALE, talentBlocker } from '../data/talents';
-import { HERO_BUILDS, type HeroBuild } from '../data/hero';
-import type { AnyStat } from './types';
-import type { CharacterId, Member } from './types';
+import { ABYSS_UNLOCK, HERO_BUILDS, type HeroBuild } from '../data/hero';
+import type { AnyStat, CharacterId, Member } from './types';
 
 /** The companions: the curve, point counts and talent boards below are theirs (the hero's tree is tested in data/hero.test.ts). */
-const ids = (Object.keys(TREES) as CharacterId[]).filter((id) => rulesOf(id).curve === 'companion');
+const ids = (Object.keys(TREES) as CharacterId[]).filter((id): id is Exclude<CharacterId, 'hero'> => rulesOf(id).curve === 'companion');
 const at = (id: CharacterId, level: number, tree?: Record<string, number>): Member =>
   ({ ...newMember(id), level, ...(tree ? { tree } : {}) });
 /** Raises a node and returns the new member; fails the test when the raise is refused. */
@@ -60,6 +58,12 @@ describe('progression', () => {
     const light = up({ ...hero, level: 50 }, 'hero-mend', 3);
     expect(heroMainBranch(light.tree)).toBe(3);
     expect(ultimateFor('hero', light.tree).id).toBe('ult-hero-light');
+    // every other branch picks its own form too
+    for (const [node, branch, form] of [['hero-guard', 1, 'guard'], ['hero-flare', 2, 'star'], ['hero-shackle', 4, 'chain']] as const) {
+      const m = up({ ...hero, level: 50 }, node, 3);
+      expect(heroMainBranch(m.tree), form).toBe(branch);
+      expect(ultimateFor('hero', m.tree).id, form).toBe(`ult-hero-${form}`);
+    }
     // sword 2 and 祈光 2: the tie goes to the lower branch, the sword
     const tie = up(up({ ...hero, level: 50 }, 'hero-slash'), 'hero-mend', 2);
     expect(heroMainBranch(tie.tree)).toBe(0);
@@ -492,7 +496,7 @@ describe('validBuild', () => {
 describe("the hero's abyss capstones", () => {
   const ALL = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5,
     'hero-guard': 5, 'hero-guard-up': 5, 'hero-aegis': 5, 'hero-rally': 5 };
-  const hero = (tree: Record<string, number>): Member => ({ ...newMember('hero' as CharacterId), level: 50, tree });
+  const hero = (tree: Record<string, number>): Member => ({ ...newMember('hero'), level: 50, tree });
   const up2 = (m: Member, node: string): Member => {
     const r = raiseNode(m, node, 10);
     if (!r.ok) throw new Error(`${node} refused: ${r.reason}`);
@@ -505,6 +509,16 @@ describe("the hero's abyss capstones", () => {
     expect(canRaiseNode(m, 'abyss-sword')).toBe('abyss');
     expect(raiseNode(m, 'abyss-sword')).toEqual({ ok: false, reason: 'abyss' });
     expect(raiseNode(m, 'abyss-sword', ABYSS_UNLOCK[0]).ok).toBe(true);
+  });
+  it("every branch's capstone opens at its own memory count, and not one short of it", () => {
+    expect(ABYSS_UNLOCK).toEqual([2, 4, 6, 8, 10]);   // the spec's table: sword, guard, star, light, chain
+    TREES.hero.branches.forEach((b, i) => {
+      const cap = b.nodes[4].id;
+      const tree = Object.fromEntries(b.nodes.slice(0, 4).map((n) => [n.id, n.maxRank]));
+      const m = hero(tree);
+      expect(canRaiseNode(m, cap, ABYSS_UNLOCK[i] - 1), `${cap} one short`).toBe('abyss');
+      expect(canRaiseNode(m, cap, ABYSS_UNLOCK[i]), `${cap} at the count`).toBeNull();
+    });
   });
   it('the hero holds two ultimates, not three', () => {
     let m = hero(ALL);
@@ -550,21 +564,25 @@ describe('hero builds', () => {
     expect(over[0]).toBe(skillPoints(L + 1, 'hero') - cap1);
   });
   it('the mage is star first: two points of star for every point of light, nothing else (plan 6a Task 20)', () => {
-    const [a, b, c, d, e] = perBranch(heroTree(14, 'mage'));
-    expect(a + b + e).toBe(0);
-    expect(c).toBeGreaterThanOrEqual(2 * d - 1);
-    expect(d).toBeGreaterThan(0);
+    for (const level of [6, 10, 14, 20]) {
+      const [a, b, c, d, e] = perBranch(heroTree(level, 'mage'));
+      expect(a + b + e, `Lv${level}`).toBe(0);
+      expect(d, `Lv${level}`).toBeGreaterThan(0);
+      expect(c, `Lv${level} star`).toBeGreaterThanOrEqual(2 * d - 1);
+      expect(c, `Lv${level} star`).toBeLessThanOrEqual(2 * d + 1);   // two to one, not just "at least"
+    }
   });
   it('no capstone without memories; a build takes its own with them', () => {
     const caps = (t: Record<string, number>) => Object.keys(t).filter((k) => k.startsWith('abyss-'));
     expect(caps(heroTree(50, 'balanced', 0))).toEqual([]);
+    expect(caps(defaultTree('hero', 50))).toEqual([]);   // the default build waits for memories too
     const held = caps(heroTree(50, 'balanced', 10));
     expect(held).toHaveLength(2);
     for (const k of held) expect(HERO_BUILDS.balanced.branches).toContain(heroBranch(k));
   });
   it('every build is a legal build', () => {
     for (const b of builds) for (const L of [1, 10, 30, 50]) {
-      for (const memories of [0, 10]) {
+      for (const memories of [0, 2, 6, 8, 10]) {
         expect(validBuild('hero', L, heroTree(L, b, memories), heroTalents(L, b), memories), `${b} Lv${L} m${memories}`).toBe(true);
       }
     }
@@ -590,9 +608,19 @@ describe('hero builds', () => {
     expect(lean * 2).toBeGreaterThanOrEqual(all);
   });
   it('a mage leans on INT and MAG', () => {
-    const t = heroTalents(30, 'mage');
-    const sum = BOARDS.hero.filter((n) => !n.keystone && (n.stat === 'int' || n.stat === 'mag')).reduce((s, n) => s + (t[n.id] ?? 0), 0);
-    expect(sum).toBeGreaterThan(0);
+    const share = (build: HeroBuild) => {
+      const t = heroTalents(30, build);
+      let all = 0;
+      let magic = 0;
+      for (const n of BOARDS.hero) {
+        if (n.keystone) continue;
+        all += t[n.id] ?? 0;
+        if (n.stat === 'int' || n.stat === 'mag') magic += t[n.id] ?? 0;
+      }
+      return magic / all;
+    };
+    expect(share('mage')).toBeGreaterThanOrEqual(0.5);
+    expect(share('mage')).toBeGreaterThan(share('balanced'));
   });
   it('a build with nodes fills them first, in order, then follows its branches (plan 6a Task 20)', () => {
     const saved = HERO_BUILDS.mage;

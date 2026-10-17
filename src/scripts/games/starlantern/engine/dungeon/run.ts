@@ -1,4 +1,5 @@
 import { CONDITIONS, type ConditionId } from '../../data/conditions';
+import type { Meetable } from '../../data/meetings';
 import { REGIONS, type RegionId } from '../../data/regions';
 import type { FloorMap } from '../map';
 import { mulberry32 } from '../rng';
@@ -35,10 +36,10 @@ export interface Run {
   /** Depths whose vault key the party holds. */
   keys: Set<number>;
   /** Companions waiting to be rescued in this region, by the depth where they are met. */
-  rescues: Record<number, CharacterId>;
+  rescues: Record<number, Meetable>;
 }
 
-export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number, rescues: Record<number, CharacterId> = {}): Run {
+export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number, rescues: Record<number, Meetable> = {}): Run {
   return {
     seed, region, condition, startDepth, floors: new Map(), opened: new Set(), explored: {},
     loot: { items: {}, gold: 0, gear: [] }, rolls: {}, gearRolls: {}, waiting: {}, lootDraws: 0, usedFountain: false, altarBuffs: [], keys: new Set(), rescues: { ...rescues },

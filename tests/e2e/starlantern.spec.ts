@@ -232,6 +232,12 @@ test.describe('starlantern', () => {
     p.recruited = [...ids, 'hero', 'rin'];
     p.grid = grid;
   }, [LEGACY_LINEUP, LEGACY_GRID.map((c) => (c === 'selene' ? 'hero' : c))] as const);
+  /** Page the status screen with 下一位 until `name` shows, at most once round the recruited members. */
+  const flipTo = async (page: Page, name: string) => {
+    const recruited: number = await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.party.recruited.length);
+    const label = page.locator('.slx-status-name');
+    for (let i = 0; i < recruited && !((await label.textContent()) ?? '').includes(name); i++) await page.locator('.slx-status-next').click();
+  };
   const setup = async (page: Page, seed: number) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -483,7 +489,7 @@ test.describe('starlantern', () => {
       m.level = 50; m.talents = { 'noel-t00': 5, 'noel-t01': 5, 'noel-t02': 2, 'noel-k0': 1, 'noel-k1': 1 };
     });
     await page.locator('.slx-guild [data-id=status]').click();
-    for (let i = 0; i < LEGACY_LINEUP.length + 2 && !((await page.locator('.slx-status-name').textContent()) ?? '').includes('諾艾兒'); i++) await page.locator('.slx-status-next').click();
+    await flipTo(page, '諾艾兒');
     await page.locator('[data-tab=talent]').click();
     const board = page.locator('.slx-talent-board');
     const cur = page.locator('.slx-talent-node.slx-row-cur');
@@ -567,7 +573,7 @@ test.describe('starlantern', () => {
     };
     const status = page.locator('.slx-status-name');
     const toNoel = async () => {
-      for (let i = 0; i < LEGACY_LINEUP.length + 2 && !((await status.textContent()) ?? '').includes('諾艾兒'); i++) await page.locator('.slx-status-next').click();
+      await flipTo(page, '諾艾兒');
       await expect(status).toContainText('諾艾兒');
     };
     const guildTab = async (tab: 'tree' | 'talent') => {

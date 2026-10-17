@@ -22,13 +22,14 @@ describe('skill trees', () => {
     }
   });
 
-  it('DEFAULT_CAPSTONE names a branch for every character; scarlet takes the flame and rin the backstab', () => {
-    for (const id of ids) expect(DEFAULT_CAPSTONE[id], id).toBeLessThan(rulesOf(id).branches);
+  it('DEFAULT_CAPSTONE names a branch for every companion; scarlet takes the flame and rin the backstab', () => {
+    const companions = ids.filter((id): id is Exclude<CharacterId, 'hero'> => id !== 'hero');
+    expect(Object.keys(DEFAULT_CAPSTONE).sort()).toEqual(companions.map((id) => id as string).sort());
+    for (const id of companions) expect(DEFAULT_CAPSTONE[id], id).toBeLessThan(rulesOf(id).branches);
     expect(DEFAULT_CAPSTONE.scarlet).toBe(1);
     expect(TREES.scarlet.branches[1].nodes[4].id).toBe('crimson-end');
     expect(DEFAULT_CAPSTONE.rin).toBe(1);
-    expect(DEFAULT_CAPSTONE.hero).toBe(0); // the hero's default build caps the sword
-    for (const id of ids.filter((x) => x !== 'scarlet' && x !== 'rin' && x !== 'hero')) expect(DEFAULT_CAPSTONE[id], id).toBe(0);
+    for (const id of companions.filter((x) => x !== 'scarlet' && x !== 'rin')) expect(DEFAULT_CAPSTONE[id], id).toBe(0);
   });
 
   it('mod nodes that lower hpCost do so rank by rank', () => {
@@ -155,7 +156,7 @@ describe('skill trees', () => {
   });
 
   it('every tier is reachable', () => {
-    // Climb each branch alone at Lv50, tier by tier to max rank, with the engine's own rules.
+    // Climb each branch alone at Lv50, tier by tier to max rank, with the engine's own rules (Infinity memories, so the hero's abyss tiers are open).
     for (const id of ids) {
       TREES[id]!.branches.forEach((b) => {
         let m: Member = { ...newMember(id), level: 50 };

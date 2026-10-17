@@ -4,12 +4,12 @@ import { expectedEnhance } from '../data/forge';
 import { depthLevel } from './levels';
 import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
-import { SLOTS } from './party';
+import { LEGACY_LINEUP, SLOTS, STANDARD_LINEUP, rowOfCell } from './party';
 import { mulberry32 } from './rng';
-import { KIT_ORDER, attackAll, kitParty, partyAt, simBattle } from './sim';
-import { LEGACY_LINEUP, STANDARD_LINEUP, rowOfCell } from './party';
+import { KIT_ORDER, attackAll, kitParty, partyAt, simBattle, winRate } from './sim';
 import { heroTalents, heroTree } from './progression';
 import { fullParty } from './testing';
+import { CHARACTER_IDS } from '../data/characters';
 import type { CharacterId, GearSlot } from './types';
 
 /** The eight members as they were ordered before Rin: the order kitParty drew their gear in. */
@@ -68,9 +68,32 @@ describe('lineups and hero builds', () => {
     expect(p.roster.hero.tree).toEqual(heroTree(10, 'mage', 0));
     expect(p.roster.hero.talents).toEqual(heroTalents(10, 'mage'));
   });
+  it('heroRow puts the hero in the asked row', () => {
+    for (const row of ['front', 'middle', 'back'] as const) {
+      expect(rowOfCell(partyAt(5, { ids: STANDARD_LINEUP, heroRow: row }).grid.indexOf('hero')), row).toBe(row);
+    }
+  });
+  it("memories open the hero's abyss capstones and nobody else's tree changes", () => {
+    const abyss = (memories: number) => Object.keys(partyAt(50, { memories }).roster.hero.tree).filter((k) => k.startsWith('abyss-'));
+    expect(abyss(0)).toEqual([]);
+    expect(abyss(10).length).toBeGreaterThan(0);
+    expect(partyAt(50, { memories: 10 }).roster.noel.tree).toEqual(partyAt(50).roster.noel.tree);
+  });
+  it('a forced abyss bonus reaches the fight, and none leaves it as it was', () => {
+    const fight = (abyss?: number) => simBattle(partyAt(50, { memories: 10 }), ['lanterneater'], true, 7919, { depth: 12, region: 'mainline' }, undefined, 'skill', abyss);
+    expect(fight(0)).toEqual(fight());
+    expect(fight(100)).not.toEqual(fight(0));
+    const rate = (abyss?: number) => winRate(50, [['lanterneater']], true, 3, { depth: 12, region: 'mainline' }, undefined, undefined, 'skill', 0, { memories: 10, abyss });
+    expect(rate(100)).not.toEqual(rate(0));
+  });
   it('kitParty arms the hero for his build', () => {
     expect(kitParty(10, 3, 5, undefined, 0, { heroBuild: 'mage' }).roster.hero.equip.weapon?.base).toBe('wooden-staff');
     expect(kitParty(10, 3, 5, undefined, 0, { heroBuild: 'tank' }).roster.hero.equip.weapon?.base).toBe('thorn-spear');
+  });
+  it('the hero is drawn last, after every companion, so his gear moves nobody', () => {
+    expect(KIT_ORDER[KIT_ORDER.length - 1]).toBe('hero');
+    expect(KIT_ORDER.slice(0, LEGACY_KIT_ORDER.length)).toEqual(LEGACY_KIT_ORDER);
+    expect([...KIT_ORDER].sort()).toEqual([...CHARACTER_IDS].sort());
   });
   it("the hero's fixed weapon moves nobody else's kit", () => {
     for (let seed = 1; seed <= 4; seed++) {
