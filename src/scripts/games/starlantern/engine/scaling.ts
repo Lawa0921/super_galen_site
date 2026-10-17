@@ -170,9 +170,10 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
  * keeps its tuning (see that task's sweeps in the commits that set them). The normal enemies of floors 1-3 (up to Lv10) keep their tuned numbers; the
  * depth-3 boss is fought at its home level (BOSS_HOME, Lv12), above `from`, so it does get the boost (band 6 is tuned
  * with it). Plan 6a Task 19c retuned it for the hero-led lineup: amount 0.26 -> 0.3 (the boss at Lv12: band 16's benching
- * check), amount2 0.04 -> 0.26 and ramp 0.004 -> 0.002 (bands 9 and 10 against band 8's elites).
+ * check), amount2 0.04 -> 0.26 and ramp 0.004 -> 0.002 (bands 9 and 10 against band 8's elites). Task 20: ramp 0.002 ->
+ * 0.0012 (band 18b, the all-physical lineup with the balanced hero in iron at depth 8, against band 10 memories at depth 8).
  */
-export const ENEMY_POWER = { from: 10, amount: 0.3, from2: 12, amount2: 0.26, ramp: 0.002 };
+export const ENEMY_POWER = { from: 10, amount: 0.3, from2: 12, amount2: 0.26, ramp: 0.0012 };
 export const enemyPower = (level: number): number => {
   if (level <= ENEMY_POWER.from) return 1;
   const deep = level > ENEMY_POWER.from2 ? ENEMY_POWER.amount2 + ENEMY_POWER.ramp * (level - ENEMY_POWER.from2) : 0;

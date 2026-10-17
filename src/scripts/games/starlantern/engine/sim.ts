@@ -17,6 +17,7 @@ import { terrainOf } from './dungeon/run';
 import { advance } from './encounter';
 import { DELTA, posKey, tileAt, type FloorMap } from './map';
 import type { BuffStat, CharacterId, GearSlot, Party, Pos, Rarity, Row, SkillDef } from './types';
+import type { RegionId } from '../data/regions';
 
 /** The eight members as CHARACTER_IDS ordered them before Rin: kitParty drew their gear in this order, and still does. */
 export const LEGACY_KIT_ORDER: CharacterId[] = LEGACY_CHARACTER_IDS;
@@ -28,6 +29,17 @@ export const KIT_ORDER: CharacterId[] = [
 ];
 
 type Altar = { stat: BuffStat; pct: number }[];
+
+/**
+ * The deliberately lopsided lineups of the "any lineup works" band (spec §4.5, §9.4 point 9; plan 6a Task 20): the members,
+ * the hero build that fills the gap, the hero's row when the lineup forces it, and the regions the lineup is tested in.
+ */
+export const ODD_LINEUPS: Record<'noHeal' | 'noTank' | 'allMagic' | 'allPhys', { ids: CharacterId[]; fill: HeroBuild; heroRow?: Row; regions: RegionId[] }> = {
+  noHeal: { ids: ['hero', 'rin', 'scarlet', 'chizuru', 'safira'], fill: 'healer', regions: ['mainline'] },
+  noTank: { ids: ['hero', 'noel', 'selene', 'sylvie', 'bobby'], fill: 'tank', regions: ['mainline'] },
+  allMagic: { ids: ['hero', 'noel', 'selene', 'sylvie', 'bobby'], fill: 'sword', heroRow: 'front', regions: ['mainline'] },
+  allPhys: { ids: ['hero', 'rin', 'scarlet', 'chizuru', 'liz'], fill: 'mage', regions: ['iron', 'mire'] },
+};
 
 /** Who the simulation fields: the members (default the standard five), the hero's build, row and memories, and a forced abyss bonus. */
 export interface Lineup { ids?: CharacterId[]; heroBuild?: HeroBuild; heroRow?: Row; memories?: number; abyss?: number }

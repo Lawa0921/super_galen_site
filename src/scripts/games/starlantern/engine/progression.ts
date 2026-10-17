@@ -240,13 +240,14 @@ export function defaultTree(id: CharacterId, level: number, memories = 0): Recor
 }
 
 /**
- * The hero's tree for a build: one point at a time, the build's branches in turn (inside a branch the open node, tier 4
+ * The hero's tree for a build: one point at a time, to the first of the build's `nodes` that can take it, else the build's branches in turn (inside a branch the open node, tier 4
  * included, of lowest (rank, tier)); when none of them has an open node, the other branches in index order. Every point
  * passes `check`, so an abyss capstone is taken only once `memories` allow it.
  */
 export function heroTree(level: number, build: HeroBuild = 'balanced', memories = 0): Record<string, number> {
   const tree = newTree('hero');
   const mine = HERO_BUILDS[build].branches;
+  const first = HERO_BUILDS[build].nodes ?? [];
   const others = TREES.hero.branches.map((_, i) => i).filter((i) => !mine.includes(i));
   const open = (L: number, branch: number): string | undefined => TREES.hero.branches[branch].nodes
     .map((node, tier) => ({ id: node.id, tier }))
@@ -255,7 +256,7 @@ export function heroTree(level: number, build: HeroBuild = 'balanced', memories 
   let turn = 0;
   for (let L = 2; L <= level; L++) {
     for (let p = skillPoints(L, 'hero') - skillPoints(L - 1, 'hero'); p > 0; p--) {
-      let node: string | undefined;
+      let node = first.find((id) => check('hero', L, tree, id, memories) === null);
       for (let i = 0; i < mine.length && !node; i++) {
         const slot = (turn + i) % mine.length;
         node = open(L, mine[slot]);

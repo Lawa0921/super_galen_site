@@ -538,15 +538,22 @@ describe('hero builds', () => {
     expect(e).toBe(0);
   });
   it('a pure build stays in its branch until it is full', () => {
-    const cap2 = TREES.hero.branches[2].nodes.slice(0, 4).reduce((s, n) => s + n.maxRank, 0);
+    // The tank (guard only) is the pure single-branch build since Task 20 gave the mage a share of light.
+    const cap1 = TREES.hero.branches[1].nodes.slice(0, 4).reduce((s, n) => s + n.maxRank, 0);
     let L = 1;
-    while (skillPoints(L + 1, 'hero') <= cap2) L++;
-    const at1 = perBranch(heroTree(L, 'mage'));
-    expect(at1.filter((_, i) => i !== 2).every((n) => n === 0)).toBe(true);
-    expect(at1[2]).toBe(skillPoints(L, 'hero'));
-    const over = perBranch(heroTree(L + 1, 'mage'));
-    expect(over[2]).toBe(cap2);
-    expect(over[0]).toBe(skillPoints(L + 1, 'hero') - cap2);
+    while (skillPoints(L + 1, 'hero') <= cap1) L++;
+    const at1 = perBranch(heroTree(L, 'tank'));
+    expect(at1.filter((_, i) => i !== 1).every((n) => n === 0)).toBe(true);
+    expect(at1[1]).toBe(skillPoints(L, 'hero'));
+    const over = perBranch(heroTree(L + 1, 'tank'));
+    expect(over[1]).toBe(cap1);
+    expect(over[0]).toBe(skillPoints(L + 1, 'hero') - cap1);
+  });
+  it('the mage is star first: two points of star for every point of light, nothing else (plan 6a Task 20)', () => {
+    const [a, b, c, d, e] = perBranch(heroTree(14, 'mage'));
+    expect(a + b + e).toBe(0);
+    expect(c).toBeGreaterThanOrEqual(2 * d - 1);
+    expect(d).toBeGreaterThan(0);
   });
   it('no capstone without memories; a build takes its own with them', () => {
     const caps = (t: Record<string, number>) => Object.keys(t).filter((k) => k.startsWith('abyss-'));
@@ -586,5 +593,25 @@ describe('hero builds', () => {
     const t = heroTalents(30, 'mage');
     const sum = BOARDS.hero.filter((n) => !n.keystone && (n.stat === 'int' || n.stat === 'mag')).reduce((s, n) => s + (t[n.id] ?? 0), 0);
     expect(sum).toBeGreaterThan(0);
+  });
+  it('a build with nodes fills them first, in order, then follows its branches (plan 6a Task 20)', () => {
+    const saved = HERO_BUILDS.mage;
+    try {
+      HERO_BUILDS.mage = { ...saved, nodes: ['hero-frost', 'hero-flare'] };
+      const t = heroTree(12, 'mage');
+      const plain = { ...saved };
+      delete plain.nodes;
+      HERO_BUILDS.mage = plain;
+      const without = heroTree(12, 'mage');
+      // hero-frost needs hero-flare (tier 0) first: the listed order is tried point by point, the first open node wins.
+      expect(t['hero-frost']).toBe(5);
+      expect(t['hero-flare']).toBeGreaterThanOrEqual(1);
+      expect(without['hero-frost']).toBeLessThan(5);
+      expect(Object.values(t).reduce((s, n) => s + n, 0)).toBe(Object.values(without).reduce((s, n) => s + n, 0));
+      HERO_BUILDS.mage = { ...saved, nodes: ['hero-frost', 'hero-flare'] };
+      for (const L of [1, 10, 30, 50]) expect(validBuild('hero', L, heroTree(L, 'mage'), heroTalents(L, 'mage'), 0), `Lv${L}`).toBe(true);
+    } finally {
+      HERO_BUILDS.mage = saved;
+    }
   });
 });
