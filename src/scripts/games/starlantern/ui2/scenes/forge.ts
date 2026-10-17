@@ -1,14 +1,15 @@
 import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
 import type { ForgeResult } from '../../engine/forge/cost';
+import { dismantleYield } from '../../engine/forge/forge';
 import { SLOTS } from '../../engine/party';
 import type { GameState } from '../../engine/state';
 import type { ItemInstance } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { gearLabel } from '../loot';
-import type { MenuItem } from '../menu';
+import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import type { Rich } from '../widgets';
+import { MenuView, confirmBox, win, type Rich } from '../widgets';
 import { FacilityScene, type Layer } from './facility';
 
 /** The forge's commands are its five tabs, in this order. */
@@ -69,6 +70,7 @@ export class ForgeScene extends FacilityScene {
   }
 
   protected onCommand(id: string): void {
+    if (id === 'dismantle') { dismantlePage(this.host()); return; }
     const label = T.ui2.forge.tabs[id as ForgeTab];
     if (label) void this.say(T.ui2.town.soon(label));
   }
@@ -95,4 +97,53 @@ export class ForgeScene extends FacilityScene {
     if (notice === 'saved' || notice === 'save-failed') this.ctx.game.notice = null;
     if (notice === 'save-failed') void said.then(() => this.say(T.ui2.forge.saveFailed));
   }
+}
+
+/** Gear whose loss cannot be undone: a named rarity, or anything enhanced. */
+const precious = (it: ItemInstance): boolean => it.rarity === 'legendary' || it.rarity === 'unique' || it.rarity === 'set' || it.enhance > 0;
+
+/**
+ * 分解: the bag's gear (worn gear is not listed), each row with the essences it gives. When any piece is marked junk the
+ * first row dismantles every marked piece at once. Both ways ask first, with 否 under the cursor.
+ */
+export function dismantlePage(h: ForgeHost): void {
+  const game = h.ctx.game;
+  const rows = (): MenuItem[] => {
+    const s = game.state;
+    const marked = s.bag.filter((it) => it.junk).length;
+    const list = forgeRows(s, { worn: false, right: (it) => T.ui2.forge.yields(dismantleYield([it])) });
+    return marked ? [{ id: 'marked', label: T.ui2.forge.dismantleMarked(marked) }, ...list] : list;
+  };
+  if (!game.state.bag.length) { void h.say(T.ui2.forge.nothingToDismantle); return; }
+  const v: MenuView = new MenuView(new Menu(rows()), {
+    pick: (it) => {
+      const bag = game.state.bag;
+      const picked = it.id === 'marked' ? bag.filter((x) => x.junk) : bag.filter((x) => `g${x.uid}` === it.id);
+      if (!picked.length) return;
+      const yields = T.ui2.forge.yields(dismantleYield(picked));
+      const ask = it.id === 'marked' ? T.ui2.forge.askMarked(picked.length, yields) : T.ui2.forge.askOne(it.label, yields);
+      const box = confirmBox(picked.some(precious) ? `${ask}
+${T.ui2.forge.warnPrecious}` : ask, (yes) => {
+        h.pop(!yes);
+        if (!yes) return;
+        // Only what the confirm named goes.
+        const uids = picked.map((x) => x.uid);
+        const r = game.dismantle(uids);
+        if (r.ok && !game.state.bag.length) h.popAll();
+        else if (r.ok) {
+          const next = rows();
+          v.menu.items.splice(0, v.menu.items.length, ...next);
+          if (v.menu.cursor < 0 || v.menu.cursor >= next.length) v.menu.setCursor(Math.max(0, next.length - 1));
+          v.render();
+        }
+        h.afterAct(r, (out) => [T.ui2.forge.dismantled(T.ui2.forge.yields(out.essences))]);
+      });
+      box.view.menu.setCursor(1);
+      box.view.render();
+      h.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
+    },
+    moved: () => h.ctx.sfx.cursor(),
+    cancel: () => h.pop(),
+  }, 12);
+  h.push({ el: win('slx-list slx-forge-list', [v.el]), onAction: (a) => v.onAction(a) });
 }

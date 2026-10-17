@@ -4,6 +4,7 @@ import type { SkillMod } from './gear';
 import { KEYSTONE_GATE, MAX_KEYSTONES } from './talents';
 import { EQUIPMENT } from './equipment';
 import { ITEMS } from './items';
+import { MATERIALS } from './materials';
 import { SETS } from './gear';
 import type { RegionId } from './regions';
 import type { MaterialUse } from '../engine/forge/uses';
@@ -331,6 +332,16 @@ export const T = {
       tabs: { dismantle: '分解', enhance: '強化', reroll: '重鑄', fuse: '合成', craft: '製作' },
       wornBy: (name: string) => `（${name}裝備中）`,
       saveFailed: '東西是做好了，可是存檔失敗：瀏覽器不允許儲存。',
+      /** An essence tally as one phrase: 「普通精華 ×2、魔法精華 ×1」. */
+      yields: (y: Record<string, number>) => Object.entries(y).map(([id, n]) => `${MATERIALS[id]?.name ?? id} ×${n}`).join('、'),
+      dismantleMarked: (n: number) => `分解全部已標記（${n} 件）`,
+      nothingToDismantle: '背包裡沒有可以分解的裝備。',
+      askOne: (label: string, yields: string) => `要分解${label}嗎？
+會得到：${yields}`,
+      askMarked: (n: number, yields: string) => `要分解已標記的 ${n} 件裝備嗎？
+會得到：${yields}`,
+      warnPrecious: '裡面有傳說、獨特、套裝或已強化的裝備，分解後無法復原。',
+      dismantled: (yields: string) => `分解完成，得到了${yields}。`,
     },
     dungeon: {
       status: '隊伍狀態', items: '道具', lamp: (n: number) => `歸還之燈 ×${n}`, close: '關閉', askTown: '要回到城鎮嗎？',

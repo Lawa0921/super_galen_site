@@ -66,13 +66,14 @@ describe('ForgeScene', () => {
     // Keyboard: each tab in turn.
     TABS.forEach((tab, i) => {
       if (i) s.onAction('down');
+      if (i === 0) return;                  // 分解 opens its own page (covered below)
       s.onAction('confirm');
       expect(line()).toBe(T.ui2.town.soon(tab));
       s.onAction('confirm');
       expect(talking()).toBe(false);
     });
     // Mouse and touch: a click on each tab.
-    for (const tab of TABS) {
+    for (const tab of TABS.slice(1)) {
       const opt = [...root.querySelectorAll('.slx-cmd [role=option]')].find((o) => o.textContent === tab) as HTMLElement;
       opt.click();
       expect(line()).toBe(T.ui2.town.soon(tab));
@@ -141,5 +142,138 @@ describe('ForgeScene', () => {
     s.onAction('confirm');
     s.onAction('confirm');                  // 分解
     expect(root.querySelectorAll('[style]').length).toBe(0);
+  });
+});
+
+describe('ForgeScene dismantle page', () => {
+  function open(bag: ItemInstance[], storage = memoryStorage()) {
+    const game = new Game(constRng(0.5), storage);
+    game.state.bag = bag;
+    const t = setup(game);
+    t.s.onAction('confirm');                // greeting
+    t.s.onAction('confirm');                // 分解
+    const rows = () => [...t.root.querySelectorAll('.slx-forge-list [role=option]')];
+    const ids = () => rows().map((r) => r.getAttribute('data-id'));
+    const confirmEl = () => t.root.querySelector('.slx-confirm');
+    return { ...t, game, rows, ids, confirmEl };
+  }
+  const ess = (id: string) => (g: Game) => g.state.inventory[id] ?? 0;
+
+  it('dismantling one item asks first, 否 by default, then pays essences and saves', () => {
+    const storage = memoryStorage();
+    const setItem = vi.spyOn(storage, 'setItem');
+    const { game, s, ids, rows, confirmEl, line, root } = open([gear(1, 'iron-sword', 'rare', { enhance: 2 }), gear(2, 'hunter-bow', 'magic')], storage);
+    expect(ids()).toEqual(['g1', 'g2']);
+    expect(rows()[0].textContent).toContain('鐵劍 +2・稀有');
+    expect(rows()[0].textContent).toContain(T.ui2.forge.yields({ 'essence-rare': 1, 'essence-magic': 1 }));
+    s.onAction('confirm');
+    expect(confirmEl()).not.toBeNull();
+    expect(confirmEl()!.textContent).toContain('稀有精華 ×1、魔法精華 ×1');
+    expect(confirmEl()!.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('no');
+    expect(root.querySelectorAll('[style]').length).toBe(0);
+    // Confirming straight away is a 否: nothing happens.
+    s.onAction('confirm');
+    expect(confirmEl()).toBeNull();
+    expect(game.state.bag.length).toBe(2);
+    expect(setItem).not.toHaveBeenCalled();
+    // Now 是.
+    s.onAction('confirm');
+    s.onAction('up');
+    s.onAction('confirm');
+    expect(game.state.bag.map((i) => i.uid)).toEqual([2]);
+    expect(ess('essence-rare')(game)).toBe(1);
+    expect(ess('essence-magic')(game)).toBe(1);
+    expect(setItem).toHaveBeenCalled();
+    expect(line()).toBe(T.ui2.forge.dismantled('稀有精華 ×1、魔法精華 ×1'));
+    s.onAction('confirm');
+    expect(ids()).toEqual(['g2']);          // the list updated and is still open
+  });
+
+  it('分解全部已標記 dismantles exactly the marked items and warns about a legendary', () => {
+    const { game, s, ids, confirmEl, rows } = open([
+      gear(1, 'iron-sword', 'common'), gear(2, 'hunter-bow', 'legendary', { junk: true }), gear(3, 'cloth-robe', 'magic', { junk: true }),
+    ]);
+    expect(ids()[0]).toBe('marked');
+    expect(rows()[0].textContent).toContain(T.ui2.forge.dismantleMarked(2));
+    s.onAction('confirm');
+    const text = confirmEl()!.textContent!;
+    expect(text).toContain('2 件');
+    expect(text).toContain('傳說精華 ×1、稀有精華 ×1、魔法精華 ×1、普通精華 ×1');
+    expect(text).toContain(T.ui2.forge.warnPrecious);
+    expect(confirmEl()!.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('no');
+    s.onAction('up');
+    s.onAction('confirm');
+    expect(game.state.bag.map((i) => i.uid)).toEqual([1]);
+    expect(ess('essence-legendary')(game)).toBe(1);
+    expect(ess('essence-common')(game)).toBe(1);
+  });
+
+  it('warns for enhanced gear, but not for a plain magic piece', () => {
+    const a = open([gear(1, 'iron-sword', 'common', { enhance: 1 })]);
+    a.s.onAction('confirm');
+    expect(a.confirmEl()!.textContent).toContain(T.ui2.forge.warnPrecious);
+    const b = open([gear(1, 'iron-sword', 'magic')]);
+    b.s.onAction('confirm');
+    expect(b.confirmEl()!.textContent).not.toContain(T.ui2.forge.warnPrecious);
+  });
+
+  it('has no 分解全部已標記 row without marked gear, and never lists worn gear', () => {
+    const game = new Game(constRng(0.5), memoryStorage());
+    game.state.bag = [gear(1, 'iron-sword', 'rare')];
+    game.state.party.roster[game.state.party.recruited[0]].equip = { weapon: gear(9, 'iron-sword', 'rare') };
+    const t = setup(game);
+    t.s.onAction('confirm'); t.s.onAction('confirm');
+    expect([...t.root.querySelectorAll('.slx-forge-list [role=option]')].map((r) => r.getAttribute('data-id'))).toEqual(['g1']);
+  });
+
+  it('an empty bag says so instead of opening a list', () => {
+    const { line, root } = open([]);
+    expect(line()).toBe(T.ui2.forge.nothingToDismantle);
+    expect(root.querySelector('.slx-forge-list')).toBeNull();
+  });
+
+  it('closes the list when the last item goes', () => {
+    const { s, root } = open([gear(1, 'iron-sword', 'common')]);
+    s.onAction('confirm'); s.onAction('up'); s.onAction('confirm');
+    expect(root.querySelector('.slx-forge-list')).toBeNull();
+  });
+
+  it('a save failure is reported honestly', async () => {
+    const storage = memoryStorage();
+    vi.spyOn(storage, 'setItem').mockImplementation(() => { throw new Error('quota'); });
+    const { s, line } = open([gear(1, 'iron-sword', 'common'), gear(2, 'iron-sword', 'common')], storage);
+    s.onAction('confirm'); s.onAction('up'); s.onAction('confirm');
+    s.onAction('confirm');
+    await vi.waitFor(() => expect(line()).toBe(T.ui2.forge.saveFailed));
+  });
+
+  it('a bag of 15 shows the ▼ scroll cue, and the cue and the wheel scroll', () => {
+    const { s, root, rows } = open(Array.from({ length: 15 }, (_, i) => gear(i + 1, 'iron-sword', 'common')));
+    expect(rows().length).toBe(12);
+    const down = root.querySelector('.slx-forge-list .slx-more-down') as HTMLElement;
+    expect(down).not.toBeNull();
+    down.click();
+    expect(root.querySelector('.slx-forge-list .slx-more-up')).not.toBeNull();
+    for (let i = 0; i < 13; i++) s.onAction('down');
+    expect(rows().at(-1)!.getAttribute('data-id')).toBe('g15');
+    expect(root.querySelector('.slx-forge-list .slx-more-down')).toBeNull();
+    // The wheel scrolls back up.
+    root.querySelector('.slx-forge-list .slx-menu')!.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, cancelable: true }));
+    expect(rows()[0].getAttribute('data-id')).toBe('g3');
+  });
+
+  it('a click on a row and on 是 dismantles too', () => {
+    const { game, root, rows, confirmEl } = open([gear(1, 'iron-sword', 'common'), gear(2, 'iron-sword', 'common')]);
+    (rows()[0] as HTMLElement).click();
+    expect(confirmEl()).not.toBeNull();
+    (confirmEl()!.querySelector('[data-id=yes]') as HTMLElement).click();
+    expect(game.state.bag.map((i) => i.uid)).toEqual([2]);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe(T.ui2.forge.dismantled('普通精華 ×1'));
+  });
+
+  it('cancel on the list goes back to the tabs', () => {
+    const { s, root } = open([gear(1, 'iron-sword', 'common')]);
+    s.onAction('cancel');
+    expect(root.querySelector('.slx-forge-list')).toBeNull();
   });
 });
