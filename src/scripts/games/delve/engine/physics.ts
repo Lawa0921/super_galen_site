@@ -29,6 +29,8 @@ export interface PlayerMotion {
   climbing?: boolean;
   /** 剛離開繩索的寬限時間（秒）：這段時間內允許 step-up，從繩頂側移就能上岸 */
   ropeGrace?: number;
+  /** 這次騰空已用掉的空中跳躍次數（落地歸零） */
+  airUsed?: number;
 }
 export interface MoveControl {
   moveX: number; jump: boolean;
@@ -37,8 +39,8 @@ export interface MoveControl {
   /** 按住「上」（W / ↑）：在繩索上 = 往上爬，否則等同跳躍 */
   up?: boolean;
 }
-/** 移動能力倍率（飾品）：runMul 跑速、jumpMul 跳躍初速與可按住時間 */
-export interface MoveStats { runMul?: number; jumpMul?: number; }
+/** 移動能力倍率（飾品 / 詞條）：runMul 跑速、jumpMul 跳躍初速與可按住時間、airJumps 空中還能再跳幾次（凌雲） */
+export interface MoveStats { runMul?: number; jumpMul?: number; airJumps?: number; }
 export interface MoveResult { hitX: boolean; hitY: boolean; stepped: boolean; }
 
 const EPS = 1e-6;
@@ -218,7 +220,13 @@ export function stepPlayer(q: SolidQuery, b: Body, m: PlayerMotion, ctl: MoveCon
 
   m.jumpWasHeld = jumpIn;
   const canJump = b.onGround || (pressed && onRope && ctl.jump) || (pressed && Boolean(med?.inLiquid));
+  if (b.onGround || med?.inLiquid) m.airUsed = 0;
   if (pressed && canJump) { m.jumpTimer = JUMP_HOLD * jumpMul; b.vy = -JUMP_SPEED * jumpMul; b.onGround = false; }
+  else if (pressed && (m.airUsed ?? 0) < (stats.airJumps ?? 0)) {
+    // 空中再跳（凌雲）：比一般跳稍弱
+    m.airUsed = (m.airUsed ?? 0) + 1;
+    m.jumpTimer = JUMP_HOLD * jumpMul * 0.8; b.vy = -JUMP_SPEED * jumpMul * 0.92;
+  }
   if (m.jumpTimer > 0) {
     if (jumpIn) { b.vy = -JUMP_SPEED * jumpMul; m.jumpTimer -= dt; } else m.jumpTimer = 0;
   }

@@ -2,7 +2,9 @@
 //   受傷 = max(1, round(原始 − 防禦/2))（玩家與怪物同一套）；暴擊 ×2；擊退 × (1 − 抗性)。
 import { ITEMS, type ArmorSetId } from './items';
 import type { Equipment } from './equipment';
+import type { Stack } from './inventory';
 import type { Rng } from './rng';
+import { addGearTotals, armorDefense, capTotals, emptyTotals, type GearTotals } from './gear';
 
 export const BASE_HP = 100;
 /** 生命晶核：每顆 +20，最多到 MAX_HP_CAP（不含飾品加成） */
@@ -32,12 +34,22 @@ export interface PlayerStats {
   /** 回血速度倍率 */
   regenMul: number;
   setBonus: ArmorSetId | null;
+  /** 裝備詞條加總（已套上限；含手上武器 / 使用中的鎬） */
+  gear: GearTotals;
 }
 
-export function computeStats(eq: Equipment): PlayerStats {
+/**
+ * 裝備 → 玩家數值。extras = 不在裝備欄但也算詞條的格（手上的武器、使用中的鎬）。
+ * 詞條：防禦 / 生命 / 傷害 / 暴擊直接併進對應欄位；其他留在 gear 給遊戲邏輯用。
+ */
+export function computeStats(eq: Equipment, extras: readonly (Stack | null | undefined)[] = []): PlayerStats {
   let defense = 0, damage = 0, crit = 0, maxHp = 0, regen = 0;
   const h = eq.get('head'), b = eq.get('body'), l = eq.get('legs');
-  for (const it of [h, b, l]) if (it) defense += ITEMS[it].armor?.defense ?? 0;
+  for (const s of ['head', 'body', 'legs'] as const) { const it = eq.get(s); if (it) defense += armorDefense(it, eq.gearAt(s)); }
+  const raw = emptyTotals();
+  for (const st of eq.stacks()) addGearTotals(raw, st.item, st.gear);
+  for (const st of extras) if (st) addGearTotals(raw, st.item, st.gear);
+  const gear = capTotals(raw);
   let setBonus: ArmorSetId | null = null;
   const sh = h ? ITEMS[h].armor?.set : undefined;
   if (sh && b && l && ITEMS[b].armor?.set === sh && ITEMS[l].armor?.set === sh) {
@@ -50,7 +62,8 @@ export function computeStats(eq: Equipment): PlayerStats {
     if (!s) continue;
     defense += s.defense ?? 0; damage += s.damage ?? 0; crit += s.crit ?? 0; maxHp += s.maxHp ?? 0; regen += s.regen ?? 0;
   }
-  return { defense, damageMul: 1 + damage, crit, maxHpBonus: maxHp, regenMul: 1 + regen, setBonus };
+  defense += Math.round(gear.def); damage += gear.dmg / 100; crit += gear.crit / 100; maxHp += Math.round(gear.hp);
+  return { defense, damageMul: 1 + damage, crit, maxHpBonus: maxHp, regenMul: 1 + regen, setBonus, gear };
 }
 
 /** 玩家受到的傷害 */

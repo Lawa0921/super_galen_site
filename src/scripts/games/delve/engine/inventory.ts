@@ -1,18 +1,31 @@
-// inventory.ts — 40 格背包，前 10 格為快捷欄。
+// inventory.ts — 40 格背包，前 10 格為快捷欄。裝備（武器 / 防具 / 飾品 / 鎬）每件可帶自己的詞條資料（gear）。
 import { INV_SIZE, HOTBAR_SIZE } from './constants';
 import { ITEMS, isItemId, type ItemId, type PickStats } from './items';
+import { cloneGear, pickSpeed, validGear, type Gear } from './gear';
 
-export interface Stack { item: ItemId; count: number; }
+/** gear = 這件裝備的詞條 / 稀有度 / 強化（沒有 = 普通、無詞條） */
+export interface Stack { item: ItemId; count: number; gear?: Gear; }
+/** 複製一格（gear 深複製） */
+export function cloneStack(s: Stack): Stack {
+  return s.gear ? { item: s.item, count: s.count, gear: cloneGear(s.gear) } : { item: s.item, count: s.count };
+}
 export interface InventoryJSON { slots: (Stack | null)[]; selected: number; }
 
 export class Inventory {
   slots: (Stack | null)[] = new Array<Stack | null>(INV_SIZE).fill(null);
   selected = 0;
 
-  /** 加入道具，回傳放不下的數量。先補既有堆，再用第一個空格。 */
-  add(item: ItemId, n: number): number {
+  /** 加入道具，回傳放不下的數量。先補既有堆，再用第一個空格。gear = 帶詞條的單件裝備（放進第一個空格）。 */
+  add(item: ItemId, n: number, gear?: Gear): number {
     const max = ITEMS[item].maxStack;
     let left = Math.max(0, Math.floor(n));
+    if (gear && left > 0) {
+      const i = this.slots.indexOf(null);
+      if (i < 0) return left;
+      this.slots[i] = { item, count: 1, gear };
+      left--;
+      if (left <= 0) return 0;
+    }
     for (let i = 0; i < this.slots.length && left > 0; i++) {
       const s = this.slots[i];
       if (s && s.item === item && s.count < max) {
@@ -39,6 +52,9 @@ export class Inventory {
     }
     return room >= n;
   }
+
+  /** 放進一整格（保留 gear），回傳放不下的數量 */
+  addStack(st: Stack): number { return this.add(st.item, st.count, st.gear); }
 
   /** 一組道具是否能全部放進背包（模擬依序加入，彼此會搶空格）。 */
   canAddAll(items: ReadonlyMap<ItemId, number>): boolean {
@@ -100,18 +116,27 @@ export class Inventory {
   }
   selectedStack(): Stack | null { return this.slots[this.selected]; }
 
-  /** 背包中最好的鎬（依速度）；沒有則 null。 */
+  /** 背包中最好的鎬（依實際速度：含強化 / 挖掘詞條）；沒有則 null。 */
   bestPick(): PickStats | null {
-    let best: PickStats | null = null;
-    for (const s of this.slots) {
-      const p = s ? ITEMS[s.item].pick : undefined;
-      if (p && (!best || p.speed > best.speed)) best = p;
+    const i = this.bestPickSlot();
+    if (i < 0) return null;
+    const s = this.slots[i]!, p = ITEMS[s.item].pick!;
+    return s.gear ? { speed: pickSpeed(s.item, s.gear), tier: p.tier } : p;
+  }
+  /** 最好的鎬在第幾格（-1 = 沒有） */
+  bestPickSlot(): number {
+    let best = -1, bs = 0;
+    for (let i = 0; i < this.slots.length; i++) {
+      const s = this.slots[i];
+      if (!s || !ITEMS[s.item].pick) continue;
+      const sp = pickSpeed(s.item, s.gear);
+      if (best < 0 || sp > bs) { best = i; bs = sp; }
     }
     return best;
   }
 
   toJSON(): InventoryJSON {
-    return { slots: this.slots.map((s) => (s ? { item: s.item, count: s.count } : null)), selected: this.selected };
+    return { slots: this.slots.map((s) => (s ? cloneStack(s) : null)), selected: this.selected };
   }
 
   static fromJSON(j: unknown): Inventory {
@@ -123,7 +148,10 @@ export class Inventory {
         const s = o.slots[i] as { item?: unknown; count?: unknown } | null;
         if (!s || !isItemId(s.item) || typeof s.count !== 'number' || !Number.isInteger(s.count)) continue;
         if (s.count < 1) continue;
-        inv.slots[i] = { item: s.item, count: Math.min(s.count, ITEMS[s.item].maxStack) };
+        const st: Stack = { item: s.item, count: Math.min(s.count, ITEMS[s.item].maxStack) };
+        const g = validGear(s.item, (s as { gear?: unknown }).gear);
+        if (g) st.gear = g;
+        inv.slots[i] = st;
       }
     }
     if (typeof o.selected === 'number') inv.select(o.selected);
