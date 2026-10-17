@@ -1,6 +1,6 @@
 import { SoundManager } from '../audio/SoundManager';
 import { Game } from '../engine/game';
-import { mulberry32 } from '../engine/rng';
+import { mulberry32, seedFrom } from '../engine/rng';
 import { SAVE_KEY } from '../engine/save';
 import { art } from '../render/artPaths';
 import { TextureBank, loadManifest } from '../render/textures';
@@ -32,7 +32,7 @@ export async function mountNext(): Promise<void> {
   if (!ui) return;
   const storage = safeStorage();
   const q = new URLSearchParams(location.search);
-  const seed = Number(q.get('seed')) || (Date.now() >>> 0);
+  const seed = seedFrom(q.get('seed'), Date.now());
   const fast = q.get('fast') === '1';
   // The forge salt of a new game is this session's seed: fixed once the game starts, then kept in its save.
   let game = Game.boot(mulberry32(seed), storage, seed);
