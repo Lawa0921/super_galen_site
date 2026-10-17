@@ -10,6 +10,11 @@
 //   bosses（已擊敗的首領 kind）, kills（各種怪物擊殺數）, peaceful（和平模式） }。
 //   怪物 / 投射物 / 地上的掉落物不存（讀檔後重新生成）。死亡中存檔 → 讀回來是活著、滿血。
 //   舊格式（1–4）讀進來 = 裝備空、滿血 100、沒擊敗首領、一般模式。
+// format 6 起（液體）：header.liquids = { chunks, data }：chunks = 液體或 tile 被改過的 chunk（world.liquidModified ∪
+//   modifiedChunks，排序），data = 那些 chunk 依序每格（量, 種類）的 RLE（[長度 varint][量 u8][種類 u8]…）再 base64。
+//   沒被動過、生成時已靜置的自然液體不存——讀檔時由 seed 重新生成。讀檔後存檔裡的液體 chunk 會被喚醒（繼續流）。
+//   遷移：format ≤ 5 的存檔（生成器 v4）可以讀——以 v5 生成器（多了液體）重建，再貼上被改過的 chunk；
+//   那些 chunk 裡落在實心方塊上的新液體清掉、其餘液體喚醒（例如玩家挖過的洞會被附近的新湖灌進去）。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
 //
 // 二進位格式（little-endian）：
@@ -29,8 +34,12 @@ import type { DiscoveryJSON } from '../engine/discovery';
 import { Equipment, type EquipmentJSON } from '../engine/equipment';
 import { ENEMIES, type EnemyKind } from '../engine/enemies';
 import { BASE_HP, MAX_HP_CAP } from '../engine/combat';
+import { LIQ, LIQ_MAX } from '../engine/liquidKind';
 
-export const SAVE_FORMAT = 5;
+export const SAVE_FORMAT = 6;
+/** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5 只多了液體 */
+export const COMPAT_GEN: readonly number[] = [4];
+export interface LiquidSave { chunks: number[]; data: string; }
 export interface CombatSave {
   hp: number; maxHp: number; mana: number;
   equipment: EquipmentJSON;
@@ -72,6 +81,8 @@ export interface SaveHeader {
   bed?: { x: number; y: number } | null;
   /** 戰鬥（生命 / 裝備 / 首領 / 和平模式）；format 5 起 */
   combat?: CombatSave;
+  /** 液體（被改過的 chunk 的 RLE）；format 6 起 */
+  liquids?: LiquidSave;
 }
 export interface ChestSave { i: number; slots: (Stack | null)[]; }
 export interface ChunkPayload { fg: Uint8Array; wall: Uint8Array; }
@@ -138,6 +149,71 @@ export function diffChunks(a: World, b: World): number[] {
   return [...out].sort((p, q) => p - q);
 }
 
+// ── 液體 RLE ─────────────────────────────────────────────
+/** (量, 種類) 的 run-length：[長度 varint][量][種類]… */
+export function encodeLiquidRle(amount: Uint8Array, type: Uint8Array): Uint8Array {
+  const out: number[] = [];
+  const n = amount.length;
+  let i = 0;
+  while (i < n) {
+    const a = amount[i], t = a ? type[i] : 0;
+    let j = i + 1;
+    while (j < n && amount[j] === a && (a ? type[j] : 0) === t) j++;
+    let len = j - i;
+    while (len >= 0x80) { out.push((len & 0x7f) | 0x80); len >>>= 7; }
+    out.push(len, a, t);
+    i = j;
+  }
+  return Uint8Array.from(out);
+}
+/** 解 RLE；長度不符 / 種類不合法 / 量與種類不一致 → SaveFormatError */
+export function decodeLiquidRle(bytes: Uint8Array, n: number): { amount: Uint8Array; type: Uint8Array } {
+  const amount = new Uint8Array(n), type = new Uint8Array(n);
+  let p = 0, i = 0;
+  while (p < bytes.length) {
+    let len = 0, shift = 0, b: number;
+    do {
+      if (p >= bytes.length || shift > 28) throw new SaveFormatError('liquids: bad run');
+      b = bytes[p++]; len |= (b & 0x7f) << shift; shift += 7;
+    } while (b & 0x80);
+    if (p + 2 > bytes.length) throw new SaveFormatError('liquids: truncated');
+    const a = bytes[p++], t = bytes[p++];
+    if (t > LIQ.HONEY || (a === 0) !== (t === 0) || a > LIQ_MAX || len < 1 || i + len > n) throw new SaveFormatError('liquids: bad cell');
+    amount.fill(a, i, i + len); type.fill(t, i, i + len);
+    i += len;
+  }
+  if (i !== n) throw new SaveFormatError(`liquids: ${i} cells != ${n}`);
+  return { amount, type };
+}
+/** chunk 清單的液體（依序每 chunk CHUNK*CHUNK 格，越界補 0） */
+function readLiquids(world: World, chunks: readonly number[]): { amount: Uint8Array; type: Uint8Array } {
+  const K = CHUNK * CHUNK, amount = new Uint8Array(chunks.length * K), type = new Uint8Array(chunks.length * K);
+  chunks.forEach((ci, k) => {
+    const { cx, cy } = world.chunkCoords(ci);
+    for (let ly = 0; ly < CHUNK; ly++) {
+      const y = cy * CHUNK + ly;
+      if (y >= world.height) break;
+      for (let lx = 0; lx < CHUNK; lx++) {
+        const x = cx * CHUNK + lx;
+        if (x >= world.width) break;
+        const wi = y * world.width + x, o = k * K + ly * CHUNK + lx;
+        amount[o] = world.liquid[wi]; type[o] = world.liquid[wi] ? world.liquidType[wi] : 0;
+      }
+    }
+  });
+  return { amount, type };
+}
+function validLiquids(v: unknown, totalChunks?: number): LiquidSave | undefined {
+  if (v === undefined) return undefined;
+  const o = v as Partial<LiquidSave> | null;
+  if (!o || typeof o !== 'object' || !Array.isArray(o.chunks) || typeof o.data !== 'string'
+    || !o.chunks.every((c) => Number.isInteger(c) && c >= 0 && (totalChunks === undefined || c < totalChunks))) throw new SaveFormatError('liquids');
+  let bytes: Uint8Array;
+  try { bytes = fromBase64(o.data); } catch { throw new SaveFormatError('liquids: base64'); }
+  decodeLiquidRle(bytes, o.chunks.length * CHUNK * CHUNK);
+  return { chunks: [...o.chunks], data: o.data };
+}
+
 // ── snapshot / encode / decode ────────────────────────────
 export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveData {
   const w = game.world;
@@ -153,6 +229,8 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
     chests.push({ i, slots: slots.map((st) => (st ? { item: st.item, count: st.count } : null)) });
   }
   chests.sort((a, b) => a.i - b.i);
+  const liqChunks = [...new Set([...w.modifiedChunks, ...w.liquidModified])].sort((p, q) => p - q);
+  const lq = readLiquids(w, liqChunks);
   return {
     header: {
       format: SAVE_FORMAT,
@@ -180,6 +258,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
         kills: { ...game.kills },
         peaceful: game.peaceful,
       },
+      liquids: { chunks: liqChunks, data: toBase64(encodeLiquidRle(lq.amount, lq.type)) },
     },
     chunks,
   };
@@ -368,6 +447,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     discovery: validDiscovery(h.discovery),
     bed: validBed(h.bed),
     combat: validCombat(h.combat),
+    liquids: validLiquids(h.liquids),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -428,13 +508,15 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       validBed(data.header.bed);
       validDiscovery(data.header.discovery);
       data.header.combat = validCombat(data.header.combat);
+      validLiquids(data.header.liquids);
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
   }
   const h = data.header;
   if (!Number.isInteger(h.format) || h.format < 1 || h.format > SAVE_FORMAT) return { ok: false, error: 'format', message: `format ${h.format}` };
-  if (h.genVersion !== GEN_VERSION && !opts.allowGenMismatch) {
+  const migrate = h.genVersion !== GEN_VERSION && h.format <= 5 && COMPAT_GEN.includes(h.genVersion);
+  if (h.genVersion !== GEN_VERSION && !migrate && !opts.allowGenMismatch) {
     return {
       ok: false, error: 'gen_version', saveGenVersion: h.genVersion,
       message: `save generated with v${h.genVersion}, current generator v${GEN_VERSION}`,
@@ -453,6 +535,40 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     if (c) writeChunk(w, ci, c);
   }
   restoreChests(w, h.chunks, h.chests ?? []);
+  // 液體（format 6）：存檔裡的 chunk 整塊覆蓋；舊格式：被改過 chunk 裡蓋在方塊上的新液體清掉
+  const wake: number[] = [...h.chunks];
+  if (h.liquids) {
+    const lq = decodeLiquidRle(fromBase64(h.liquids.chunks.length ? h.liquids.data : ''), h.liquids.chunks.length * CHUNK * CHUNK);
+    const K = CHUNK * CHUNK;
+    h.liquids.chunks.forEach((ci, k) => {
+      if (ci >= total) return;
+      const { cx, cy } = w.chunkCoords(ci);
+      for (let ly = 0; ly < CHUNK; ly++) {
+        const y = cy * CHUNK + ly;
+        if (y >= w.height) break;
+        for (let lx = 0; lx < CHUNK; lx++) {
+          const x = cx * CHUNK + lx;
+          if (x >= w.width) break;
+          const wi = y * w.width + x, o = k * K + ly * CHUNK + lx;
+          w.liquid[wi] = lq.amount[o]; w.liquidType[wi] = lq.type[o];
+        }
+      }
+      w.liquidModified.add(ci);
+      wake.push(ci);
+    });
+  } else {
+    for (const ci of h.chunks) {
+      const { cx, cy } = w.chunkCoords(ci);
+      for (let y = cy * CHUNK; y < Math.min(w.height, (cy + 1) * CHUNK); y++) for (let x = cx * CHUNK; x < Math.min(w.width, (cx + 1) * CHUNK); x++) {
+        const wi = y * w.width + x;
+        if (w.liquid[wi] && w.isSolid(x, y)) { w.liquid[wi] = 0; w.liquidType[wi] = 0; }
+      }
+    }
+  }
+  for (const ci of wake) {
+    const { cx, cy } = w.chunkCoords(ci);
+    game.liquids.wakeRect(cx * CHUNK - 1, cy * CHUNK - 1, (cx + 1) * CHUNK + 1, (cy + 1) * CHUNK + 1);
+  }
   for (const i of h.unlocked ?? []) if (i < w.fg.length && w.fg[i] === T.LOCKED_CHEST) w.unlocked.add(i);
   w.keysUsed = h.keysUsed ?? 0;
   w.markAllDirty();

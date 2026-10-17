@@ -19,8 +19,8 @@ function fought(): DelveGame {
 
 describe('存檔格式 5（戰鬥）', () => {
   it('格式版本 5', () => {
-    expect(SAVE_FORMAT).toBe(5);
-    expect(snapshotGame(fought()).header.format).toBe(5);
+    expect(SAVE_FORMAT).toBeGreaterThanOrEqual(5);
+    expect(snapshotGame(fought()).header.format).toBe(SAVE_FORMAT);
   });
   it('生命、上限、魔力、裝備、首領、擊殺數、和平模式都存得回來', () => {
     const g = fought();
