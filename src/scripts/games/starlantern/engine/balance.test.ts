@@ -189,8 +189,7 @@ describe('balance', () => {
     }
   });
 
-  // Red at 19a: mire and shade over 0.45 HP loss; attack-only mire and shade under 0.85. Owner 19b.
-  it.fails('13. a fresh Lv1 two-member party with no gear holds depth 1 of every region', () => {
+  it('13. a fresh Lv1 two-member party with no gear holds depth 1 of every region', () => {
     // A new game arrives at depth 1 at Lv1 with empty equip (newParty): the first visit to any portal is fair.
     for (const region of Object.keys(REGIONS) as RegionId[]) {
       const r = winRate(1, encounterTable(region, 1), false, region === 'mainline' ? 40 : 20, { depth: 1, region }, undefined, undefined, 'skill', 0, { ids: TWO });

@@ -191,7 +191,7 @@ export const sizeOf = (n: number): PartySize => Math.min(5, Math.max(2, Math.rou
  * Enemy hp / atk / mag multiplier by party size (spec 9.4 point 1, `0.4 + 0.12n`). Each row is its own knob; the full
  * party's row is fixed at 1 so a five-member fight plays exactly as it was tuned.
  */
-export const PARTY_SCALE: Record<PartySize, number> = { 2: 0.64, 3: 0.76, 4: 0.88, 5: 1 };
+export const PARTY_SCALE: Record<PartySize, number> = { 2: 0.58, 3: 0.76, 4: 0.88, 5: 1 };
 /** The most enemies in an ordinary group by party size (spec 9.4 point 2, `n + 1`). */
 export const GROUP_CAP: Record<PartySize, number> = { 2: 3, 3: 4, 4: 5, 5: 6 };
 /** Overrides GROUP_CAP at depth 1 only; empty today. */
