@@ -10,7 +10,7 @@
   - 規則是 `engine/forge/` 底下的純函式：輸入 `GameState`，回傳新的 state，不改動輸入，寫法和 `engine/town.ts` 相同。
   - 素材的用途 `materialUses` 是從同一份資料表反推出來的，不另外手寫。所以只要配方存在，用途就一定列得出來；新增素材卻忘了給用途，單元測試就會失敗。
 - **亂數。**
-  - 鍛造的亂數來自 `forgeRng(state)`：用 `mix(state.forgeDraws++ ^ FORGE_SALT, state.nextUid)` 當種子，餵給 `mulberry32`。
+  - 鍛造的亂數來自 `forgeRng(state)`。每**實際抽一次**，才用 `mix(state.forgeDraws++ ^ FORGE_SALT, state.nextUid)` 當種子取一個數；只建立 rng 不會前進 `forgeDraws`。
   - 不使用 `game.rng`，所以現有種子測試抽到的序列不變。
   - 每個鍛造動作都透過 `Game` 的方法執行，而且執行後立刻存檔，所以重新讀檔也重抽不到。
 - **強化只放大底材自帶的加成**（`implicitStats`），不放大詞綴。平衡模擬的隨機裝備會帶上「期望強化等級」，另外新增一項「全身 +10」的頭目測試。
@@ -23,7 +23,7 @@
 **Spec:**
 - `docs/superpowers/specs/2026-10-16-starlantern-progression-design.md`：§7、§7.1、§7.2、§9、§11 的鍛造部分。
 - 前兩份計畫：
-  - `docs/superpowers/plans/2026-10-16-starlantern-plan5a-loot-core.md`：它的已裁定衝突 3 寫的是「自動分解在 5c 之前只做標記」，由本計畫的 Task 14 處理。
+  - `docs/superpowers/plans/2026-10-16-starlantern-plan5a-loot-core.md`：它的已裁定衝突 3 寫的是「自動分解在 5c 之前只做標記」，由本計畫的 Task 14b 處理。
   - `docs/superpowers/plans/2026-10-17-starlantern-plan5b-skills-talents.md`
 
 > 沒有以 `src/` 或 `tests/` 開頭的路徑，都在 `src/scripts/games/starlantern/` 底下。
@@ -41,19 +41,19 @@
   - 禁止行內樣式，包括 JS 的 `element.style`；
   - 不可以用 `::before`／`::after` 做裝飾。
 - **換行**：保留每個檔案原本的換行格式。改檔前先用 `git ls-files --eol <檔案>` 確認。已知的格式如下：
-  - LF：`data/materials.ts`、`engine/loot/item.ts`、`engine/loot/drops.ts`、`engine/compare.ts`、`ui2/loot.ts`
-  - CRLF：`engine/save.ts`、`engine/state.ts`、`engine/sim.ts`、`engine/rng.ts`、`render/artPaths.ts`、`ui2/scenes/town.ts`
-  - 混用：`data/text.zh-TW.ts`、`engine/game.ts`、`engine/town.ts`、`engine/balance.test.ts`、`ui2/main.ts`、`ui2/scene.ts`、`ui2/scenes/facility.ts`、`ui2/scenes/gate.ts`
-  - 新檔一律用 LF。
+  - LF：`data/materials.ts`、`data/gear.test.ts`、`engine/loot/item.ts`、`engine/loot/drops.ts`、`engine/compare.ts`、`engine/scaling.ts`、`ui2/loot.ts`、`ui2/scenes/equip.ts`、`ui2/scenes/equip.test.ts`
+  - CRLF：`engine/types.ts`、`engine/save.ts`、`engine/state.ts`、`engine/sim.ts`、`engine/rng.ts`、`render/artPaths.ts`、`ui2/menu.ts`、`ui2/menu.test.ts`、`ui2/scenes/shop.ts`、`ui2/scenes/town.ts`
+  - 混用：`data/text.zh-TW.ts`、`engine/game.ts`、`engine/town.ts`、`engine/balance.test.ts`、`ui2/main.ts`、`ui2/scene.ts`、`ui2/widgets.ts`、`ui2/widgets.test.ts`、`ui2/scenes/facility.ts`、`ui2/scenes/gate.ts`
+  - 本表以外的檔案（例如 `engine/scaling.test.ts`），改之前一樣要先查。新檔一律用 LF。
 - **commit**
   - 一律寫出完整路徑，不可以用 `git add -A`。
   - 訊息結尾加上 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`。
 - **文案**
   - 介面文字放在 `data/text.zh-TW.ts`。
   - 素材名稱照舊放在 `data/materials.ts`。
-- **亂數**：一律用帶種子的 `Rng`。鍛造只用 `forgeRng`（Task 5），或是測試傳進來的 rng。只有在機率介於 0 和 1 之間時才抽亂數。
+- **亂數**：一律用帶種子的 `Rng`。鍛造只用 `forgeRng`（Task 5），或是測試傳進來的 rng。只有在機率介於 0 和 1 之間時才抽亂數；沒抽就不前進 `forgeDraws`。
 - **平衡**
-  - `engine/balance.test.ts` 第 1–13 項的門檻一律不可以放寬。
+  - `engine/balance.test.ts` 第 1–14 項的門檻一律不可以放寬。
   - 會影響戰力的任務（Task 3、Task 4），驗證時一律跑全套，包括 balance。
   - 紅了只能依 Task 4 列出的順序調整旋鈕，並且在 commit 訊息裡寫出最後的值。
 - **測試寫法**
@@ -96,7 +96,7 @@
    - 不可以丟出例外。
    - 測試在 Task 2。
 5. **重鑄鎖定。**
-   - 重鑄過第 1 條詞綴之後，再重鑄第 0 條要回傳 `locked`，而且什麼都不扣。
+   - 重鑄過第 1 條詞綴之後，再重鑄第 0 條要回傳 `affixLocked`，而且什麼都不扣。
    - 換詞綴之後，鎖定的仍是同一條（索引不變）。
    - 地區素材對這個欄位沒有可換的詞綴時，回傳 `none`，什麼都不扣。
    - 測試在 Task 7。
@@ -121,6 +121,7 @@
   - `ui2/scenes/forge.ts`（新）：場景、分解、強化、重鑄、合成。
   - `ui2/scenes/forgeCraft.ts`（新）：製作頁籤。
   - `ui2/scenes/town.ts`、`ui2/scenes/facility.ts`、`ui2/scene.ts`、`ui2/main.ts`
+  - `ui2/menu.ts`、`ui2/widgets.ts`：選單右欄可以帶 class（`rightClass`）。
   - `ui2/scenes/shop.ts`、`ui2/scenes/gate.ts`
   - `src/styles/_starlantern-ui.scss`
 - e2e：`tests/e2e/starlantern.spec.ts`。
@@ -286,8 +287,10 @@ export function materialUses(id: string): MaterialUse[];
     - `enhance tables have ENHANCE_MAX rows; success is 1 up to +5, below 1 from +6, never rising`
       - 也就是 `ENHANCE_SUCCESS[4] === 1`，`ENHANCE_SUCCESS[5] < 1`，而且整個陣列單調不升。
     - `each enhance tier asks for a different essence mix and +8 and above need a rare material`：
-      - `ENHANCE_COST[7..9]` 都用到 `kind === 'rare'` 的素材；
-      - `ENHANCE_COST[0..6]` 都沒有用到。
+      - 令 `top(t)` 是 `ENHANCE_COST[t − 1].mats` 裡、在 `ESSENCE_IDS` 中索引最大的精華；
+      - `top(1..10)` 單調不降，而且 `new Set(top(1..10))` 的大小是 4，也就是四種精華各自是某幾段的主精華；
+      - 令 `essenceMix(t)` 是 `ENHANCE_COST[t − 1].mats` 裡精華 id 的集合，排序後接成字串；`top` 改變的那幾段（`top(t) !== top(t − 1)` 的 t），`essenceMix(t) !== essenceMix(t − 1)`；
+      - `ENHANCE_COST[7..9]` 都用到 `kind === 'rare'` 的素材，`ENHANCE_COST[0..6]` 都沒有用到。
     - `region affix groups are disjoint affix keys, one per region material`
     - `crafting a consumable is cheaper than buying it`：對每個配方，`gold + Σ MATERIALS[m].price × qty < ITEMS[id].price`。
     - `every gear slot has a base recipe of monster materials`
@@ -379,7 +382,13 @@ export function materialUses(id: string): MaterialUse[];
 
 ### Task 4: 平衡模擬加入期望強化等級
 
-**為什麼要做：** 強化會提高戰力。測試 10 的 mainline 第 4 層，hpLoss 只比下限 0.10 多 0.005（5a 的紀錄），所以不能假設強化不影響平衡。
+**為什麼要做：** 強化會提高戰力，所以平衡模擬必須帶上強化。
+- 現在的基準（預檢，HEAD 6001ed6e）：第 10 項最緊的一格是 mainline 第 10 層，hpLoss 0.1073（下限 0.10）；mainline 第 4 層是 0.1105。
+- 預檢在 `ENHANCE_STEP = 0.08` 下實測：
+  - mainline 第 10 層 +5 是 0.0939，第 10 項會失敗；
+  - 第 4 層 +2 是 0.1016，只剩 0.0016 的餘裕；
+  - 勝率全部是 1.000。
+- 所以這個任務一定要調旋鈕。
 
 **期望強化等級** `expectedEnhance(depth) = ⌊depth / 2⌋`，最多 +10。(implementer's call → fixed here)
 - 依據：
@@ -388,41 +397,58 @@ export function materialUses(id: string): MaterialUse[];
   - +6 以上會失敗，而且要稀有精華與稀有素材。
 - 所以在深度 d 時，全身穿到大約 +d/2 已經是偏高的估計。
 - 最壞的情況另外用第 14 項測：全身 +10。
+- `ENHANCE_STEP` 維持 0.08，讓強化有手感：+10 時底材加成是 1.8 倍。減半會讓強化變得沒有意義。它可以調，但絕不可以低於 0.06。
 
 **Files:**
 - Modify：
-  - `engine/sim.ts`：`kitParty` 新增參數。
-  - `engine/balance.test.ts`：第 10 項加一個斷言，並新增第 14 項；第 1–13 項的門檻不動。
+  - `engine/sim.ts`：
+    - `kitParty` 新增**明確的**參數 `enhance`，預設 0；
+    - `winRate` 新增最後一個參數 `kitEnhance = 0`，有 `kitSeed` 時傳給 `kitParty`。
+    - 現有的呼叫端都不傳，所以仍然是 +0。
+  - `engine/balance.test.ts`：第 10、11 項明確傳入 `expectedEnhance(d)`，並新增第 14 項。第 1–13 項的門檻不動。
   - 平衡旋鈕，依下列順序使用：
-    1. `data/forge.ts` 的 `ENHANCE_STEP`：必須 > 0。
-    2. `data/gear.ts` 的 `IMPLICIT_PER_ILVL`。
-    3. `data/gear.ts` 的 `AFFIX_SCALE`。
-    4. `engine/scaling.ts` 的 `ENEMY_POWER`：它也會影響沒穿裝備的第 4–9、13 項，所以調了之後要重跑全套。
-  - 調過的旋鈕，如果有自己的測試，那些測試必須是用常數算預期值；不是的話，在這個任務裡改成用常數算，並把該測試檔加進本任務的 commit。
+    1. `engine/scaling.ts` 的 `ENEMY_POWER`：5b 用的共用進度旋鈕。可以多一個參數，例如斜坡或第二階（`from2`／`amount2`）。
+       - 它也會影響沒穿裝備的第 4–9、13 項，所以調了之後要重跑全套。
+       - 形狀改了的話，`engine/scaling.test.ts` 第 276–282 行（`enemyPower(50)` 等於 `1 + amount`）會壞。要改成透過 `ENEMY_POWER` 的欄位算出預期值，並列入這個任務的 commit。
+    2. `data/forge.ts` 的 `ENHANCE_STEP`：下限 0.06。
+    3. `data/gear.ts` 的 `IMPLICIT_PER_ILVL`。
+    4. `data/gear.ts` 的 `AFFIX_SCALE`。
+  - `data/gear.test.ts` 第 82–83 行把 `AFFIX_SCALE` 0.8、`IMPLICIT_PER_ILVL` 0.02 寫死了。不論有沒有調，都改成 `toBeGreaterThan(0)`，讓測試不再寫死旋鈕的值。
+- **會移動的現有數字：**
+  - 第 10 項的全部 8 格：第 4、6、8、10 層，各帶 +2、+3、+4、+5，mainline 與 blaze 都有；
+  - 第 11 項：第 5 層 +2、第 10 層 +5。
+  - 第 1–9、12、13 項只有在調 `ENEMY_POWER` 時才會移動（第 6 項的頭目在 Lv12，也在範圍內）。
+- **餘裕**：每一項有約束力的門檻，都要留至少 0.005 的餘裕。例如 hpLoss ≥ 0.105（下限 0.10）、≤ 0.445（上限 0.45），勝率 ≥ 0.855（下限 0.85）。任何組合都做不到時，停下來回報，不可以放寬門檻，也不可以改 `expectedEnhance`。
 
 **Interfaces:**
 - Consumes：Task 1 的 `expectedEnhance`、`ENHANCE_MAX`；Task 3 的 `implicitStats`。
-- Produces：`kitParty(level: number, depth: number, seed: number, rarity?: Rarity, enhance: number = expectedEnhance(depth)): Party`：每件物品的 `enhance` 都設成這個值。
+- Produces：
+  - `kitParty(level: number, depth: number, seed: number, rarity?: Rarity, enhance = 0): Party`：每件物品的 `enhance` 都設成這個值。
+  - `winRate(level, groups, boss, seeds, scale, altar, kitSeed, player, kitEnhance = 0)`
 
 - [ ] **Step 0: 記錄改動前的基準**
-  - 在改任何程式之前，跑第 10 項（8 組）與第 11 項，記下每一組的 rate、hpLoss，以及第 11 項的最少回合數。
+  - 在改任何程式之前，跑第 10 項（8 格）與第 11 項，記下每一格的 rate、hpLoss，以及第 11 項的最少回合數。
   - 寫進這個任務的 commit 訊息。
 - [ ] **Step 1: 寫失敗的測試**
-  - 第 10 項開頭的 kit 檢查，加上：`worn.every((it) => it!.enhance === expectedEnhance(4))`。
-  - 新增：`14. a full +ENHANCE_MAX rare kit does not one-round a boss`
-    - 用 `simBattle(kitParty(depthLevel(d), d, seed, 'rare', ENHANCE_MAX), ['lanterneater'], true, seed, { depth: d, region: 'mainline' })`；
+  - 第 10 項：
+    - 每一格改成 `winRate(..., kitSeed, undefined, expectedEnhance(d))`；
+    - 開頭的 kit 檢查改成 `kitParty(depthLevel(4), 4, 1, undefined, expectedEnhance(4))`，並加上 `worn.every((it) => it!.enhance === expectedEnhance(4))`。
+  - 第 11 項改成 `kitParty(depthLevel(d), d, seed, 'rare', expectedEnhance(d))`，門檻不變。
+  - 新增：`14. a boss never falls in one round, even to a +ENHANCE_MAX rare kit, and the test sees enhancement`
     - d 取 5 與 10，seed 取 1–20；
-    - 每一場的 `rounds` 都 ≥ 3。
+    - 每一場 `simBattle(kitParty(depthLevel(d), d, seed, 'rare', ENHANCE_MAX), ['lanterneater'], true, seed, { depth: d, region: 'mainline' })` 的 `rounds` 都 ≥ 2。這是 spec 的反目標「頭目一回合就倒」。
+    - 在同一層、同一組 seed 下，+10 的平均回合數**嚴格小於** +0（`enhance = 0`）的平均回合數。這證明測試真的看得到強化。
 - [ ] **Step 2: 執行，確認失敗**
   - `npx vitest run src/scripts/games/starlantern/engine/balance.test.ts --testTimeout=20000`
-  - 預期：第 10 項失敗，因為 enhance 還是 0。
+  - 預期：失敗，原因是 `kitParty` 還不收第 5 個參數，kit 檢查的 enhance 是 0。
 - [ ] **Step 3: 實作**
-- [ ] **Step 4: 執行全套，確認第 1–14 項全部通過**
+- [ ] **Step 4: 執行全套，確認第 1–14 項全部通過，而且每一項都有 0.005 的餘裕**
   - `npx vitest run src/scripts/games/starlantern --testTimeout=20000`
-  - 紅了就依上面的順序調整旋鈕。四個旋鈕都調不回來時，停下來回報，不可以改門檻，也不可以改 `expectedEnhance`。
+  - 用一個暫時的腳本印出第 4–11、13 項每一格的值，確認餘裕；腳本不 commit。
+  - 紅了，或餘裕不夠，就依上面的順序調整旋鈕。
 - [ ] **Step 5: commit**
   - 訊息：`test(starlantern): balance with the expected enhancement level and a +10 boss check`
-  - 訊息裡寫出 Step 0 的基準數字，以及調整後的旋鈕值（有調的話）。
+  - 訊息裡寫出 Step 0 的基準、調整後每一格的數字，以及最後的旋鈕值。
 
 ### Task 5: 鍛造共用工具與分解
 
@@ -433,14 +459,18 @@ export function materialUses(id: string): MaterialUse[];
 **Interfaces:**
 - Consumes：Task 1 的 `Cost`、`DISMANTLE`；Task 2 的 `forgeDraws`；`engine/town.ts` 的 `addItem`。
 - Produces（`engine/forge/cost.ts`）：
-  - `type ForgeFail = 'invalid' | 'stock' | 'gold' | 'mats' | 'max' | 'full' | 'locked' | 'none'`
+  - `type ForgeFail = 'invalid' | 'stock' | 'gold' | 'mats' | 'max' | 'full' | 'affixLocked' | 'none' | 'phase'`
+    - `'phase'` 只有 Task 10 的 `Game` 會回傳；引擎函式不會。
+    - 用 `affixLocked` 而不是 `locked`，因為 `T.reasons.locked` 已經是商店與傳送門的「尚未解鎖」。
   - `type ForgeResult<O> = { ok: true; state: GameState; out: O } | { ok: false; reason: ForgeFail }`
   - `canPay(s: GameState, c: Cost): 'gold' | 'mats' | null`：先檢查金幣。
   - `pay(s: GameState, c: Cost): void`：直接改 `s`，所以要在複本上呼叫。只扣 `gold` 與 `inventory`，**不會動 `sold`**。
   - `addCost(a: Cost, b: Cost): Cost`
   - `findItem(s: GameState, uid: number): { it: ItemInstance; member?: CharacterId; slot?: Slot } | null`：先找背包，再找已招募成員身上的裝備。
   - `FORGE_SALT = 0x2f6b1d3a`
-  - `forgeRng(s: GameState): Rng`：回傳 `mulberry32(mix(s.forgeDraws++ ^ FORGE_SALT, s.nextUid))`。會改動 `s`，所以要在複本上呼叫。
+  - `forgeRng(s: GameState): Rng`：回傳一個函式，**每被呼叫一次**才執行 `mulberry32(mix(s.forgeDraws++ ^ FORGE_SALT, s.nextUid))()`。
+    - 只建立、不呼叫時，`forgeDraws` 不變。
+    - 會改動 `s`，所以要用複本建立。
 - Produces（`engine/forge/forge.ts`）：
   - `dismantleYield(its: ItemInstance[]): Record<string, number>`：`DISMANTLE` 的加總。
   - `dismantle(s: GameState, uids: number[]): ForgeResult<{ essences: Record<string, number> }>`
@@ -454,7 +484,7 @@ export function materialUses(id: string): MaterialUse[];
     - `canPay checks gold first, then each material`
     - `pay takes gold and materials and never touches the sold tally`
     - `findItem finds bag items and worn items with their wearer and slot`
-    - `forgeRng advances forgeDraws and is reproducible from the state`
+    - `forgeRng advances forgeDraws once per draw, not on creation, and is reproducible from the state`
   - `forge.test.ts`：
     - `dismantling yields DISMANTLE by rarity and removes the items`：用一件普通、一件稀有、一件套裝，預期值用 `DISMANTLE` 加總。
     - `dismantling only the marked items leaves the rest`
@@ -484,7 +514,10 @@ export function materialUses(id: string): MaterialUse[];
     - 身上穿著的物品，直接在成員的欄位裡更新。
 
 - [ ] **Step 1: 寫失敗的測試**
-  - `+1 through +5 always succeed and draw no random number`：用一個會計數的 rng，從 +0 一路升到 +5，呼叫次數是 0。
+  - `+1 through +5 always succeed and draw no random number`：
+    - 用一個會計數的 rng，從 +0 一路升到 +5，呼叫次數是 0；
+    - 不傳 rng（用 `forgeRng`）時，`forgeDraws` 仍然是 0。
+  - `the step to +6 draws once`：不傳 rng，`forgeDraws` 從 0 變成 1。
   - Review Focus 3：`from +5 the step to +6 can fail; a failure keeps the level and still pays`
     - 傳入 `constRng(0.999)`：結果 `success: false`、`level: 5`，金幣與素材都少了 `ENHANCE_COST[5]`。
   - Review Focus 3：`at +ENHANCE_MAX enhance is refused and costs nothing`
@@ -521,7 +554,7 @@ export function materialUses(id: string): MaterialUse[];
 - **規則**（檢查順序就是下面的順序，每一種拒絕都不改動任何東西）：
   1. 找不到物品：`stock`。
   2. 普通物品，或 `index` 超出範圍：`invalid`。
-  3. `locked` 已經設定，而且不等於 `index`：`locked`。
+  3. `locked` 已經設定，而且不等於 `index`：`affixLocked`。
   4. 獨特或套裝物品要換詞綴：`invalid`。這兩種的詞綴是固定的，只能重抽數值。
   5. 重抽數值時帶了 `mat`，或 `mat` 不是 `REGION_AFFIX_GROUP` 的鍵：`invalid`。
   6. 要換詞綴，但 `swapPool` 是空的：`none`。
@@ -534,12 +567,16 @@ export function materialUses(id: string): MaterialUse[];
 - 傳說特效不會被重鑄。見文末的衝突 2。
 
 - [ ] **Step 1: 寫失敗的測試**
-  - `a value reroll stays in rerollRange and locks that affix`：`constRng(0)` 得到範圍的下限，`constRng(0.9999)` 得到上限。
-  - Review Focus 5：`after rerolling affix 1, affix 0 is refused as locked and nothing is spent`
+  - `a value reroll stays in rerollRange and locks that affix`：
+    - `constRng(0)` 得到 `rerollRange` 的下限；
+    - `constRng(0.9999)` 的預期值用程式的同一個取整算：`Math.max(1, Math.round(lo + (hi − lo) × (floor + (1 − floor) × 0.9999)))`，`[lo, hi] = affixRange(key, ilvl)`，所以不會差 1；
+    - 這個值 ≤ `rerollRange` 的上限。
+  - Review Focus 5：`after rerolling affix 1, affix 0 is refused as affixLocked and nothing is spent`
   - Review Focus 5：`a swap changes the key, keeps the index locked and never repeats a key on the item`
   - `a region material limits the new key to its group`
     - 對每個 `REGION_AFFIX_GROUP` 的鍵，跑 200 個 rng，新的鍵 ∈ 該組；
     - 費用包含那個素材 × `REROLL.regionQty`。
+  - `a value reroll draws once`：不傳 rng，`forgeDraws` 從 0 變成 1。
   - Review Focus 5：`a group with nothing left for the slot is refused as none and nothing is spent`：用一件手部物品，詞綴是 atk 與 str，再加上 `blaze-core`。手部的詞綴池裡，火焰系只有 atk 與 str，所以 `swapPool` 是空集合。
   - `uniques and set pieces reroll values only; a legendary also pays REROLL.legendaryMat`
   - Review Focus 2：`rerolling worn hp down holds HP at the new maximum`
@@ -605,7 +642,7 @@ export function materialUses(id: string): MaterialUse[];
   - `craftBase(s: GameState, slot: GearSlot, rng?: Rng): ForgeResult<{ item: ItemInstance }>`
     - 背包已滿：`full`，這項檢查在付費之前。
     - 稀有度：`CRAFT_MAGIC_CHANCE` 的機率是 magic，否則是 common；接著呼叫 `rollItem(rng, { uid, ilvl: craftLevel(s), rarity, slot })`。
-  - `setCost(pieceId: string): Cost`：該套地區的素材 × `SET_RECIPE.regionQty`，加上 `SET_RECIPE.rare` × `rareQty`，加上 `SET_RECIPE.gold`。
+  - `setCost(pieceId: string): Cost | null`：不是套裝部件時回傳 null，不丟例外。否則是該套地區的素材 × `SET_RECIPE.regionQty`，加上 `SET_RECIPE.rare` × `rareQty`，加上 `SET_RECIPE.gold`。
   - `craftSet(s: GameState, pieceId: string, rng?: Rng): ForgeResult<{ item: ItemInstance }>`
     - `pieceId` 不是套裝部件：`invalid`；背包已滿：`full`；付不起：`gold` 或 `mats`。
     - 結果用 `rollItem` 產生，`rarity: 'set'`、`special: pieceId`、`ilvl: craftLevel(s)`。
@@ -618,6 +655,7 @@ export function materialUses(id: string): MaterialUse[];
     - `sold['thorn-fang']` 仍然是 5，`isUnlocked(s, 'thorn-gauntlets')` 的結果不變。
   - `a crafted base is common or magic, in the chosen slot, at craftLevel; magic about CRAFT_MAGIC_CHANCE of the time`：用 2000 個 forgeDraws，容許 4σ。
   - `a set piece costs setCost and enters the codex with its set`
+  - `setCost of a non-set id is null and craftSet refuses it as invalid`
   - Review Focus 1：`a full bag refuses craftBase and craftSet and spends nothing`
   - `craftLevel follows the deepest depth reached in any region`
 - [ ] **Step 2: 執行，確認失敗**
@@ -630,10 +668,12 @@ export function materialUses(id: string): MaterialUse[];
 ### Task 10: 鍛造動作的 Game 方法（執行後存檔）
 
 **Files:**
-- Modify：`engine/game.ts`、`engine/game.test.ts`（新增測試）
+- Modify：
+  - `engine/game.ts`、`engine/game.test.ts`（新增測試）
+  - `data/text.zh-TW.ts`：`T.ui2.town.toTitle` 的文案，見下方。
 
 **Interfaces:**
-- Consumes：Task 5–9 的全部引擎函式。
+- Consumes：Task 5–9 的全部引擎函式與 `ForgeResult`。
 - Produces（`Game`）：
   - `dismantle(uids: number[])`
   - `enhance(uid: number)`
@@ -642,18 +682,26 @@ export function materialUses(id: string): MaterialUse[];
   - `craftItem(id: string, qty: number)`
   - `craftBase(slot: GearSlot)`
   - `craftSet(pieceId: string)`
-- 每一個方法的回傳型別，都和對應的引擎函式相同。除此之外，失敗原因多一種 `'phase'`。
-- 共用的私有方法 `forgeAct<O>(r: ForgeResult<O>): ForgeResult<O>`：
-  - `phase !== 'town'` 時，回傳 `{ ok: false, reason: 'phase' }`。
+  - 回傳型別都和對應的引擎函式相同，也就是 `ForgeResult<O>`，失敗原因包含 `'phase'`。
+- 共用的私有方法 `forgeAct<O>(run: (s: GameState) => ForgeResult<O>): ForgeResult<O>`：
+  - **phase 只在這裡檢查一次**：`phase !== 'town'` 時回傳 `{ ok: false, reason: 'phase' }`，不呼叫 `run`。
   - 成功時寫回 `this.state`，然後立刻 `saveGame`；存檔失敗時，設定 `notice = 'save-failed'`。
-  - 檢查 phase 之前，不可以先算引擎結果。所以每個公開方法都要先檢查 phase，再呼叫引擎函式。
+  - 七個公開方法都只有一行，例如 `return this.forgeAct((s) => enhance(s, uid))`，不重複檢查 phase。
 - 不需要傳 rng，引擎會用 `forgeRng`。
+- **存檔的副作用（已接受）**：在城鎮存檔，也會存下上次住旅館之後的其他進度，例如剛帶回的戰利品。旅館的重置配點（5b）已經是這樣。
+  - 現在的 `toTitle` 是「要回到標題畫面嗎？上次在旅館存檔之後的進度不會保留。」。有了重置配點與鍛造之後，這句話已經不正確。
+  - 改成「要回到標題畫面嗎？上次存檔之後的進度不會保留。」。(implementer's call → fixed here)
+  - `town.test.ts` 只斷言包含「標題」，所以不用改。開工前先 `grep -rn "旅館存檔" src/scripts/games/starlantern tests/e2e`，有其他斷言就一起改，並列入 commit。
 
 - [ ] **Step 1: 寫失敗的測試**
   - `game.test.ts`：
     - `each forge action saves at once in town`：用會記錄的 storage，對 7 個方法各跑一次成功的呼叫，每次之後 `loadGame(storage).state` 都等於 `g.state`。
-    - `forge actions are refused in the labyrinth with phase and change nothing`
-    - `reloading after an enhance does not undo it or redraw it`：強化、讀檔、再強化一次；`forgeDraws` 連續遞增。
+    - `forge actions are refused in the labyrinth with phase and change nothing`：7 個方法都測，`forgeDraws` 與 storage 都不變。
+    - `an enhance that cannot fail draws nothing; the step to +6 draws once and survives a reload`：
+      - +0 → +1 之後，`forgeDraws` 仍然是 0；
+      - 把物品設成 +5，再強化一次：`forgeDraws` 是 1；
+      - 讀檔之後 `forgeDraws` 仍然是 1，物品的等級和讀檔前相同；
+      - 再強化一次（從 +5 或 +6），`forgeDraws` 是 2。
     - `a failed save leaves the save-failed notice`
 - [ ] **Step 2: 執行，確認失敗**
   - `npx vitest run src/scripts/games/starlantern/engine/game.test.ts`
@@ -668,10 +716,14 @@ export function materialUses(id: string): MaterialUse[];
 - Modify：
   - `ui2/loot.ts`
   - `engine/compare.ts`：`ItemLine` 新增 `locked?: boolean`。
+  - `ui2/scenes/equip.ts`：第 355、374、432 行直接用 `itemName`，所以看不到 +n。
+    - 第 355 行（背包格）與第 374 行（人形格）改成 `T.enhanced(short(itemName(it)), it.enhance)`：先截短名稱，再接「 +n」，讓 +n 不會被截掉；
+    - 第 432 行（說明的穿著列）改成 `T.enhanced(itemName(worn), worn.enhance)`。
   - `data/text.zh-TW.ts`：`T.enhanced(name, n)`、`T.gear.lockedAffix`。
 - Test：
   - `ui2/rarity.test.ts`：新增。
   - `engine/compare.test.ts`：新增。
+  - `ui2/scenes/equip.test.ts`：新增。現有的斷言都是 +0 的物品，不會變。
 
 **Interfaces:**
 - Produces：
@@ -683,15 +735,16 @@ export function materialUses(id: string): MaterialUse[];
   - `itemLines`：
     - 底材加成那一行，本來就用 `implicitStats`，所以會自動包含強化；
     - `it.locked === i` 的詞綴行，帶 `locked: true`，文字後面接 `T.gear.lockedAffix`「（重鑄鎖定）」。
-- `gearLabel` 是共用的，只在 `rarity.test.ts` 測試。所有呼叫端都會自動跟著改。
+- `gearLabel` 是共用的，只在 `rarity.test.ts` 測試。用 `gearLabel` 的呼叫端會自動跟著改；`equip.ts` 那三處沒有用 `gearLabel`，所以在 Files 裡另外改。
 
 - [ ] **Step 1: 寫失敗的測試**
   - `rarity.test.ts`：`an enhanced item reads 名稱 +n before its rarity word; +0 reads as before`
+  - `equip.test.ts`：`a +3 item reads +3 in its bag cell, its doll slot and the detail`
   - `compare.test.ts`：
     - `the locked affix is marked`
     - `the implicit line of a +5 item shows the enhanced value`：預期值用 `implicitStats` 算。
 - [ ] **Step 2: 執行，確認失敗**
-  - `npx vitest run src/scripts/games/starlantern/ui2/rarity.test.ts src/scripts/games/starlantern/engine/compare.test.ts`
+  - `npx vitest run src/scripts/games/starlantern/ui2/rarity.test.ts src/scripts/games/starlantern/engine/compare.test.ts src/scripts/games/starlantern/ui2/scenes/equip.test.ts`
 - [ ] **Step 3: 實作**
 - [ ] **Step 4: 執行全套，確認全部通過**
   - 原因：`gearLabel` 的呼叫端很多。現有的物品都是 +0，所以斷言不會變。
@@ -758,7 +811,7 @@ export function materialUses(id: string): MaterialUse[];
 - [ ] **Step 5: commit**
   - 訊息：`feat(starlantern): portal cards say what the region material is for`
 
-### Task 14: 鍛造屋場景、城鎮入口與分解頁
+### Task 14a: 鍛造屋場景、城鎮入口與頁籤外殼
 
 **Files:**
 - Create：`ui2/scenes/forge.ts`、`ui2/scenes/forge.test.ts`
@@ -768,51 +821,47 @@ export function materialUses(id: string): MaterialUse[];
     - `say(text: string | Rich, mood)`，因為 `Dialogue.say` 本來就接受 `Rich`。
   - `ui2/scene.ts`：`SceneName` 新增 `'forge'`。
   - `ui2/main.ts`：建立 `ForgeScene`。
-  - `ui2/scenes/town.ts`：`FACILITIES` 改成 `['guild', 'shop', 'inn', 'gate', 'forge', 'settings']`。
-    - 鍛造屋放在傳送門廣場之後，這樣 e2e 第 106 行「按兩次下到旅館」不用改。(implementer's call → fixed here)
+  - `ui2/scenes/town.ts`：
+    - `FACILITIES` 改成 `['guild', 'shop', 'inn', 'gate', 'forge', 'settings']`。鍛造屋放在傳送門廣場之後，這樣 e2e 第 106 行「按兩次下到旅館」不用改。(implementer's call → fixed here)
+    - 第 100 行 `pick()` 的 id 白名單加上 `'forge'`。沒有加的話，選鍛造屋只會顯示「製作中」。
   - `render/artPaths.ts`：`art.scene` 與 `art.npc` 的 id 型別加上 `'forge'`。`allArtUrls` 不變。
   - `data/text.zh-TW.ts`：
     - `T.ui2.town.facilities.forge` 是「鍛造屋」；
     - `T.ui2.facility.forge = { place: '鍛造屋', npc: '多蘭', greet: [...] }`，兩句招呼語自己寫；
-    - `T.ui2.forge.tabs`：分解、強化、重鑄、合成、製作；
-    - `T.ui2.forge.*` 的其他文案；
-    - `T.reasons` 新增 `mats: '素材不足'`、`max: '已經強化到最高了'`、`locked: '這件裝備只能重鑄已鎖定的詞綴'`、`none: '沒有可以換的詞綴'`。
+    - `T.ui2.forge.tabs`：分解、強化、重鑄、合成、製作；`T.ui2.forge.saveFailed`；
+    - `T.reasons` 新增 `mats: '素材不足'`、`max: '已經強化到最高了'`、`affixLocked: '這件裝備只能重鑄已鎖定的詞綴'`、`none: '沒有可以換的詞綴'`。
+    - **不可以改 `T.reasons.locked`**，它是商店與傳送門的「尚未解鎖」。
   - `src/styles/_starlantern-ui.scss`：`.slx-forge` 的版面，沿用 `.slx-list`、`.slx-info`；新增 `.slx-lack`（文字色）。
 - Test：
   - `ui2/scenes/town.test.ts`：
     - 第 16 行的清單改成 `['冒險者公會', '道具店', '旅館', '傳送門廣場', '鍛造屋', '設定']`；
-    - 第 28 行的迴圈從 4 次改成 5 次。
+    - 第 28 行的迴圈從 4 次改成 5 次；
+    - 新增：`鍛造屋 opens the forge`：`go` 被呼叫，參數是 `'forge'`。
 
 **Interfaces:**
-- Consumes：Task 10 的 `Game.dismantle`；Task 5 的 `dismantleYield`；Task 11 的 `gearLabel`。
+- Consumes：Task 10 的 `ForgeResult` 與 `Game` 的鍛造方法；Task 11 的 `gearLabel`。
 - Produces（`ui2/scenes/forge.ts`）：
-  - `class ForgeScene extends FacilityScene`：指令是 `dismantle`、`enhance`、`reroll`、`fuse`、`craft`，這五個就是頁籤。本任務只實作分解；其他四個在 Task 15–18 完成之前，點了會顯示 `T.ui2.town.soon`。
+  - `class ForgeScene extends FacilityScene`：指令是 `dismantle`、`enhance`、`reroll`、`fuse`、`craft`，這五個就是頁籤。在對應的任務完成之前，每個頁籤都顯示 `T.ui2.town.soon`。
+  - `interface ForgeHost`：給頁籤用的轉接物件。`FacilityScene` 的 `push`、`pop`、`popAll`、`say`、`stage` 都是 `protected`，所以不能把 `ForgeScene` 本身傳出去。
+    - `{ ctx: SceneCtx; layerRoot: HTMLElement; push(l: Layer): void; pop(silent?: boolean): void; popAll(): void; say(text: string | Rich, mood?: 'normal' | 'happy'): Promise<void>; afterAct<O>(r: ForgeResult<O>, okLine: (out: O) => Rich): void }`
+    - `layerRoot` 就是 `FacilityScene.stage`。改名是為了不和 `SceneCtx.stage`（Pixi）混淆。
+    - `ForgeScene` 用私有方法 `host(): ForgeHost` 產生這個物件，每個函式都是包住 `this` 的箭頭函式。
+  - `afterAct`：
+    - 成功：`sfx.confirm`，用 `say(okLine(r.out), 'happy')`；
+    - 失敗：`this.fail(reason)`；
+    - 之後如果 `game.notice === 'save-failed'`：說 `T.ui2.forge.saveFailed`，並清掉 notice。
   - `forgeRows(s: GameState, o: { worn: boolean; filter?: (it: ItemInstance) => boolean; right: (it: ItemInstance) => string }): MenuItem[]`
     - 先列背包；`worn` 為真時，再依 `recruited` 的順序列出身上的裝備。
     - 每一列：
       - `id` 是 `g${uid}`；
       - `label` 是 `gearLabel`，身上的裝備再接 `T.ui2.forge.wornBy(成員名稱)`；
       - `cls` 是 `slx-rarity-${r}`，已標記的再加上 `slx-junk`。
-  - 動作之後的共用收尾 `afterAct(r, okLine: Rich)`：
-    - 成功：`sfx.confirm`，用 `say(okLine, 'happy')`；
-    - 失敗：`this.fail(reason)`；
-    - 之後如果 `game.notice === 'save-failed'`：說 `T.ui2.forge.saveFailed`，並清掉 notice。
-- **分解頁：**
-  - 清單是 `forgeRows(s, { worn: false, right: (it) => T.ui2.forge.yields(dismantleYield([it])) })`，`MenuView` 的 rows 是 12。
-  - 背包裡有已標記的物品時，最上面一列是 `T.ui2.forge.dismantleMarked(n)`「分解全部已標記（n 件）」。
-    - 這就是 5a「自動分解只做標記」的一鍵分解。(implementer's call → fixed here)
-  - 選了之後跳確認框，預設游標在「否」，文字列出會得到的精華。
-    - 有傳說、獨特、套裝，或強化 > 0 的物品時，另外加一句 `T.ui2.forge.warnPrecious`。
-  - 「是」：呼叫 `game.dismantle(uids)`，再 `afterAct`，成功文字是 `T.ui2.forge.dismantled(精華清單)`。
 
 - [ ] **Step 1: 寫失敗的 DOM 測試**
   - `forge.test.ts`：
     - `forgeRows lists the bag, then worn gear with its wearer, each in its rarity colour`（這個工具只在這裡測）
-    - `the forge offers 分解 強化 重鑄 合成 製作`
-    - `dismantling one item asks first, 否 by default, then pays essences and saves`：用會記錄的 storage，確認有存檔。
-    - `分解全部已標記 dismantles exactly the marked items and warns about a legendary`
-    - `a bag of 15 shows the ▼ scroll cue`
-    - `a click on a row and on 是 dismantles too`：用 `click()` 走完整個流程。
+    - `the forge offers 分解 強化 重鑄 合成 製作 and every tab is reachable by keyboard and by click`
+    - `afterAct speaks the ok line, or the reason, and reports a failed save`：用一個假的 `ForgeResult`。
     - `no element carries a style attribute`
   - `town.test.ts`：照 Files 修改。
 - [ ] **Step 2: 執行，確認失敗**
@@ -821,7 +870,35 @@ export function materialUses(id: string): MaterialUse[];
 - [ ] **Step 4: 執行 ui2 與 render 測試，確認通過**
   - `npx vitest run src/scripts/games/starlantern/ui2 src/scripts/games/starlantern/render`
 - [ ] **Step 5: commit**
-  - 訊息：`feat(starlantern): the forge in town, with one-press dismantling of marked gear`
+  - 訊息：`feat(starlantern): the forge in town with its five tabs`
+
+### Task 14b: 分解頁與「分解全部已標記」
+
+**Files:**
+- Modify：`ui2/scenes/forge.ts`、`ui2/scenes/forge.test.ts`、`data/text.zh-TW.ts`
+
+**Interfaces:**
+- Consumes：Task 14a 的 `forgeRows`、`afterAct`；Task 10 的 `Game.dismantle`；Task 5 的 `dismantleYield`。
+- **分解頁：**
+  - 清單是 `forgeRows(s, { worn: false, right: (it) => T.ui2.forge.yields(dismantleYield([it])) })`，`MenuView` 的 rows 是 12。
+  - 背包裡有已標記的物品時，最上面一列是 `T.ui2.forge.dismantleMarked(n)`「分解全部已標記（n 件）」。
+    - 這就是 5a「自動分解只做標記」的一鍵分解。(implementer's call → fixed here)
+  - 選了之後跳確認框，預設游標在「否」，文字列出會得到的精華。
+    - 有傳說、獨特、套裝，或強化 > 0 的物品時，另外加一句 `T.ui2.forge.warnPrecious`。
+  - 「是」：呼叫 `game.dismantle(uids)`，再 `afterAct`，成功文字是 `T.ui2.forge.dismantled(精華清單)`。
+  - 之後刷新清單；背包空了就關掉這一層。
+
+- [ ] **Step 1: 寫失敗的 DOM 測試**
+  - `dismantling one item asks first, 否 by default, then pays essences and saves`：用會記錄的 storage，確認有存檔。
+  - `分解全部已標記 dismantles exactly the marked items and warns about a legendary`
+  - `a bag of 15 shows the ▼ scroll cue`
+  - `a click on a row and on 是 dismantles too`：用 `click()` 走完整個流程。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/ui2/scenes/forge.test.ts`
+- [ ] **Step 3: 實作**
+- [ ] **Step 4: 執行，確認通過**
+- [ ] **Step 5: commit**
+  - 訊息：`feat(starlantern): forge dismantle tab with one-press dismantling of marked gear`
 
 ### Task 15: 強化頁
 
@@ -829,10 +906,11 @@ export function materialUses(id: string): MaterialUse[];
 - Modify：`ui2/scenes/forge.ts`、`ui2/scenes/forge.test.ts`、`data/text.zh-TW.ts`
 
 **Interfaces:**
-- Consumes：Task 6 的 `enhanceCost`、`enhanceChance`；Task 5 的 `findItem`；Task 10 的 `Game.enhance`；5a 的 `compareDelta` 與 `itemLines`。
+- Consumes：Task 14a 的 `forgeRows`、`afterAct`；Task 6 的 `enhanceCost`、`enhanceChance`；Task 5 的 `findItem`；Task 10 的 `Game.enhance`；5a 的 `compareDelta` 與 `itemLines`。
 - Produces：`costText(s: GameState, c: Cost): RichPart[]`
   - 例如「魔法精華 3／5、140 G」：每一項是「名稱 擁有數／需要數」。
   - 不夠的項目加上 `cls: 'slx-lack'`，文字後面接「（不足）」。所以顏色不是唯一的提示。
+  - 它是說明窗用的 `Rich`；選單右欄的不足標示在 Task 18 用 `rightClass`。
   - 這個工具只在這裡測。
 - **清單**：`forgeRows(s, { worn: true, right: (it) => it.enhance >= ENHANCE_MAX ? T.ui2.forge.maxed : `+${it.enhance}` })`
 - **說明窗**（游標移動時更新，這就是確認前的比較）：
@@ -938,13 +1016,20 @@ export function materialUses(id: string): MaterialUse[];
 
 **Files:**
 - Create：`ui2/scenes/forgeCraft.ts`
-- Modify：`ui2/scenes/forge.ts`（`craft` 指令改呼叫 `openCraft`）、`ui2/scenes/forge.test.ts`、`data/text.zh-TW.ts`
+- Modify：
+  - `ui2/scenes/forge.ts`：`craft` 指令改呼叫 `openCraft(this.host())`。
+  - `ui2/menu.ts`：`MenuItem` 新增 `rightClass?: string`。
+  - `ui2/widgets.ts`：`MenuView` 畫右欄時，`class` 是 `slx-right`，有 `rightClass` 時再接上它（第 103 行附近）。
+  - `data/text.zh-TW.ts`
+- Test：
+  - `ui2/widgets.test.ts`：新增 `a row's rightClass is added to its right column, and a row without one keeps plain slx-right`。
+  - `ui2/scenes/forge.test.ts`：新增，見下方。
 
 **Interfaces:**
-- Consumes：Task 9 的 `itemRecipeCost`、`baseCost`、`setCost`、`craftLevel`；Task 10 的 `Game.craftItem`、`craftBase`、`craftSet`；5a 的 `specialLines`、`codexName`。
+- Consumes：Task 9 的 `itemRecipeCost`、`baseCost`、`setCost`、`craftLevel`；Task 10 的 `Game.craftItem`、`craftBase`、`craftSet`；Task 14a 的 `ForgeHost`；Task 15 的 `costText`；5a 的 `specialLines`、`codexName`。
 - Produces（`ui2/scenes/forgeCraft.ts`）：`openCraft(host: ForgeHost): void`。
-  - `ForgeHost` 是 `ForgeScene` 提供的最小介面：`{ ctx; stage; push; pop; popAll; say; afterAct }`。
-  - 讓 `forge.ts` 不會繼續變大。(implementer's call → fixed here)
+  - 只拿到 Task 14a 的小型轉接物件 `ForgeHost`，不拿 `ForgeScene` 本身。
+  - 放在獨立的檔案，讓 `forge.ts` 不會繼續變大。(implementer's call → fixed here)
 - **流程：**
   - 分類：消耗品、底材、套裝。
   - **消耗品**：
@@ -957,17 +1042,21 @@ export function materialUses(id: string): MaterialUse[];
     - 先選套裝（6 套，名稱用 `codexName`），再選部件，部件名稱帶 `.slx-rarity-set`；
     - 說明窗是 `specialLines(pieceId)` 加上 `costText(setCost(pieceId))`。
   - 底材與套裝都要先確認，預設在「否」；結果用 `gearPart` 說出來，並播放 `sfx.loot?.(rarity)`。
-  - 素材不夠的列不設成 `disabled`，讓玩家仍然看得到說明；`right` 加上 `.slx-lack` 的文字標示，按下去才說原因。(implementer's call → fixed here)
+  - 素材不夠的列不設成 `disabled`，讓玩家仍然看得到說明。這種列的 `right` 文字後面接「（不足）」，`rightClass` 是 `slx-lack`；按下去才說原因。(implementer's call → fixed here)
 
-- [ ] **Step 1: 寫失敗的 DOM 測試**
-  - `three categories; a potion recipe crafts the chosen quantity`
-  - `the quantity box stops at what the materials and gold allow`
-  - `a base recipe shows craftLevel, the magic chance and its cost`
-  - `a set piece crafts after a yes and is named in green`
-  - `a lacking recipe stays readable and refuses with 素材不足`
+- [ ] **Step 1: 寫失敗的測試**
+  - `widgets.test.ts`：照 Files 新增。
+  - `forge.test.ts`：
+    - `three categories; a potion recipe crafts the chosen quantity`
+    - `the quantity box stops at what the materials and gold allow`
+    - `a base recipe shows craftLevel, the magic chance and its cost`
+    - `a set piece crafts after a yes and is named in green`
+    - `a lacking recipe stays readable, its right column says 不足 with slx-lack, and Enter refuses with 素材不足`
 - [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/ui2/widgets.test.ts src/scripts/games/starlantern/ui2/scenes/forge.test.ts`
 - [ ] **Step 3: 實作**
 - [ ] **Step 4: 執行 ui2 全部測試，確認通過**
+  - 原因：`MenuItem` 的形狀有變。
   - `npx vitest run src/scripts/games/starlantern/ui2`
 - [ ] **Step 5: commit**
   - 訊息：`feat(starlantern): forge crafting tab for consumables, bases and set pieces`
@@ -980,18 +1069,26 @@ export function materialUses(id: string): MaterialUse[];
 - [ ] **Step 1：e2e `the forge enhances, dismantles and crafts, and the save keeps it`**
   - 用 `__starlanternDebug.game` 準備資料：
     - `state.gold = 2000`；
-    - `inventory` 放入普通精華 ×20、moss ×4；
-    - 背包放兩件普通物品（uid 用 `g.mintUid()`），其中一件 `junk: true`。
+    - `inventory` 放入普通精華 ×20、魔法精華 ×4、moss ×4；
+    - 背包放兩件普通物品，uid 用 `g.mintUid()`，並記下來：
+      - `keepUid`：沒有標記，`enhance: 5`；
+      - `junkUid`：`junk: true`，`enhance: 0`。
   - 城鎮用鍵盤走到「鍛造屋」：往下 4 次再按 Enter。
-  - 強化：選第一件，按「是」，那一列出現「+1」。
-  - 分解：「分解全部已標記（1 件）」→「是」，對話出現「普通精華」。
+  - 強化：點 `[data-id=g${keepUid}]`，按「是」。這是 +5 → +6，一定會抽亂數。
+    - 對話出現「強化成功」或「強化失敗」其中之一；
+    - 記下那一列現在的文字（「+6」或「+5」）；
+    - `g.state.forgeDraws` 是 1。
+  - 分解：「分解全部已標記（1 件）」→「是」，對話出現「普通精華」；`keepUid` 那件仍然在背包裡。
   - 製作：消耗品 → 回復藥 → 數量 2；回到城鎮後，道具店的購買清單顯示持有數加 2。
-  - 重新整理後選「繼續」：那件物品仍然是 +1，`forgeDraws` 大於 0。
+  - 重新整理後選「繼續」：
+    - `keepUid` 那件的強化等級，和重新整理前記下的相同；
+    - `forgeDraws` 仍然是 1，也就是大於 0，而且沒有因為讀檔而重抽。
   - 全程沒有 console error。
 - [ ] **Step 2：全套測試與截圖**
   - `npx vitest run --testTimeout=20000`，以及 e2e 全套。
   - 截圖：
     - 鍛造屋的五個頁籤；
+    - 分解全部已標記的確認框；
     - 強化的比較與失敗訊息；
     - 重鑄的鎖定提示；
     - 合成的挑選畫面；
@@ -1024,3 +1121,4 @@ export function materialUses(id: string): MaterialUse[];
    - 理由：迷宮裡撿到的物品，全滅時會一起失去；如果在迷宮裡自動分解，精華也得放進冒險背包並計算重量，規則會變複雜。
 9. **「鍛造屋的頁籤」**：沿用設施的指令視窗作為五個頁籤（和道具店的購買／販賣相同），不另外做一列橫向頁籤。滑鼠、觸控、鍵盤都已經支援。
 10. **底材打造的物品等級**：spec 沒有規定。本計畫用「各地區最深到達深度」的怪物物品等級（`craftLevel`），讓打造的底材跟著進度變強，但仍然只有普通或魔法級。
+11. **在鍛造屋存檔，也會存下旅館之後的其他進度。** 旅館的重置配點已經是這樣。本計畫接受這一點，並把回標題的警告改成「上次存檔之後的進度不會保留」（Task 10）。
