@@ -82,7 +82,10 @@ export const BASE_RECIPES: Record<GearSlot, Record<string, number>> = {
   neck: { 'ice-crystal': 2, moss: 1 },
   ring: { 'star-stone': 2 },
 };
-export const baseGold = (ilvl: number): number => 20 + 3 * ilvl;
+/** Rises faster than a magic piece's sell price (4 G per item level), so no crafted base outsells its recipe at any item level. */
+export const baseGold = (ilvl: number): number => 20 + 4 * ilvl;
 export const CRAFT_MAGIC_CHANCE = 0.25;
 
-export const SET_RECIPE = { regionQty: 8, rare: 'star-tear', rareQty: 1, gold: 300 };
+export const SET_RECIPE = { regionQty: 8, rare: 'star-tear', rareQty: 1 };
+/** A set piece's gold at item level `ilvl`: rises with a set piece's sell price (16 G per item level), so no crafted piece outsells its recipe. About 300 G in the first floors. */
+export const setGold = (ilvl: number): number => 200 + 16 * ilvl;

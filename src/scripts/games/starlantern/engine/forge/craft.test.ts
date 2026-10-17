@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { newGame, type GameState } from '../state';
 import { plainItem } from '../testing';
-import { BASE_RECIPES, CONSUMABLE_RECIPES, CRAFT_MAGIC_CHANCE, SET_RECIPE, baseGold } from '../../data/forge';
+import { BASE_RECIPES, CONSUMABLE_RECIPES, CRAFT_MAGIC_CHANCE, SET_RECIPE, baseGold, setGold } from '../../data/forge';
 import { GEAR_SLOTS, SETS, SPECIALS } from '../../data/gear';
 import { ITEMS } from '../../data/items';
 import { MATERIALS } from '../../data/materials';
@@ -180,11 +180,11 @@ describe('craftSet', () => {
     s.inventory = { 'blaze-core': 9, 'star-tear': 2 };
     s.dungeon.reached.mainline = 5;
     s.nextUid = 50;
-    expect(setCost(piece)).toEqual({ gold: SET_RECIPE.gold, mats: { 'blaze-core': SET_RECIPE.regionQty, 'star-tear': SET_RECIPE.rareQty } });
+    expect(setCost(s, piece)).toEqual({ gold: setGold(18), mats: { 'blaze-core': SET_RECIPE.regionQty, 'star-tear': SET_RECIPE.rareQty } });
     const r = craftSet(s, piece);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.state.gold).toBe(1000 - 300);
+    expect(r.state.gold).toBe(1000 - setGold(18));
     expect(r.state.inventory).toEqual({ 'blaze-core': 1, 'star-tear': 1 });
     expect(r.out.item).toMatchObject({ uid: 50, rarity: 'set', special: piece, ilvl: craftLevel(s) });
     expect(r.out.item.ilvl).toBe(18);
@@ -199,24 +199,26 @@ describe('craftSet', () => {
   });
   it('every set piece prices its own region material', () => {
     for (const set of Object.values(SETS)) for (const p of set.pieces) {
-      expect(setCost(p)?.mats[REGIONS[set.region].material!]).toBe(SET_RECIPE.regionQty);
+      expect(setCost(rich(), p)?.mats[REGIONS[set.region].material!]).toBe(SET_RECIPE.regionQty);
     }
   });
   it('setCost of a non-set id is null and craftSet refuses it as invalid', () => {
     const unique = Object.values(SPECIALS).find((x) => x.rarity === 'unique')!;
     for (const id of ['potion', 'set-blaze', 'nope', 'toString', '', unique.id]) {
-      expect(setCost(id), id).toBeNull();
+      expect(setCost(rich(), id), id).toBeNull();
       expect(craftSet(rich(), id), id).toEqual({ ok: false, reason: 'invalid' });
     }
   });
   it('refuses what it cannot pay for, and accepts exactly enough', () => {
     const s = rich();
     const snap = structuredClone(s);
-    expect(craftSet({ ...s, gold: 299 }, piece)).toEqual({ ok: false, reason: 'gold' });
+    const gold = setGold(craftLevel(s));
+    expect(setCost(s, piece)!.gold).toBe(gold);
+    expect(craftSet({ ...s, gold: gold - 1 }, piece)).toEqual({ ok: false, reason: 'gold' });
     expect(craftSet({ ...s, inventory: { 'blaze-core': 8 } }, piece)).toEqual({ ok: false, reason: 'mats' });
     expect(craftSet({ ...s, inventory: { 'blaze-core': 7, 'star-tear': 1 } }, piece)).toEqual({ ok: false, reason: 'mats' });
     expect(s).toEqual(snap);
-    expect(craftSet({ ...s, gold: 300, inventory: { 'blaze-core': 8, 'star-tear': 1 } }, piece).ok).toBe(true);
+    expect(craftSet({ ...s, gold, inventory: { 'blaze-core': 8, 'star-tear': 1 } }, piece).ok).toBe(true);
   });
 });
 

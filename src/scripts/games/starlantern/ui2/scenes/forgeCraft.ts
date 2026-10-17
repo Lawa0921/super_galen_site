@@ -163,15 +163,15 @@ export function openCraft(h: ForgeHost): void {
       ],
       pick: (setRow) => {
         layer(info, {
-          rows: () => SETS[setRow.id].pieces.map((id) => recipeRow(game.state, { id, label: codexName(id), cost: setCost(id)!, cls: 'slx-rarity-set' })),
+          rows: () => SETS[setRow.id].pieces.map((id) => recipeRow(game.state, { id, label: codexName(id), cost: setCost(game.state, id)!, cls: 'slx-rarity-set' })),
           detail: (id) => [
             el('p', { class: 'slx-name-line slx-rarity-set', text: codexName(id) }),
             ...specialLines(id).map((l) => el('p', { class: l.kind === 'lore' ? 'slx-desc' : '', text: l.text })),
             el('p', { class: 'slx-desc', text: F.craftBagRoom(Math.max(0, BAG_SIZE - game.state.bag.length)) }),
-            costLine(game.state, setCost(id)!),
+            costLine(game.state, setCost(game.state, id)!),
           ],
           pick: (it, refresh) => {
-            const cost = setCost(it.id)!;
+            const cost = setCost(game.state, it.id)!;
             if (!ready(cost, true)) return;
             ask([
               ...fillRich(F.askCraftSet, [{ text: codexName(it.id), cls: 'slx-rarity-set' }]),

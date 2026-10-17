@@ -1,4 +1,4 @@
-import { BASE_RECIPES, CONSUMABLE_RECIPES, CRAFT_MAGIC_CHANCE, SET_RECIPE, baseGold, type Cost } from '../../data/forge';
+import { BASE_RECIPES, CONSUMABLE_RECIPES, CRAFT_MAGIC_CHANCE, SET_RECIPE, baseGold, setGold, type Cost } from '../../data/forge';
 import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { mintUid, BAG_SIZE } from '../loot/bag';
@@ -60,17 +60,17 @@ export function craftBase(s: GameState, slot: GearSlot, rng?: Rng): ForgeResult<
 
 const setOf = (pieceId: string) => (has(SPECIALS, pieceId) && SPECIALS[pieceId].rarity === 'set' ? SETS[SPECIALS[pieceId].set ?? ''] ?? null : null);
 
-/** The price of a set piece: its region's material, a star tear and gold; null when `pieceId` is not a set piece. */
-export function setCost(pieceId: string): Cost | null {
+/** The price of a set piece: its region's material, a star tear and setGold at the current craft level; null when `pieceId` is not a set piece. */
+export function setCost(s: GameState, pieceId: string): Cost | null {
   const set = setOf(pieceId);
   const mat = set ? REGIONS[set.region].material : null;
   if (!set || !mat) return null;
-  return addCost({ gold: SET_RECIPE.gold, mats: { [mat]: SET_RECIPE.regionQty } }, { gold: 0, mats: { [SET_RECIPE.rare]: SET_RECIPE.rareQty } });
+  return addCost({ gold: setGold(craftLevel(s)), mats: { [mat]: SET_RECIPE.regionQty } }, { gold: 0, mats: { [SET_RECIPE.rare]: SET_RECIPE.rareQty } });
 }
 
 /** Crafts set piece `pieceId` (the pity path); the piece and its set enter the codex. Without `rng` it draws once. */
 export function craftSet(s: GameState, pieceId: string, rng?: Rng): ForgeResult<{ item: ItemInstance }> {
-  const cost = setCost(pieceId);
+  const cost = setCost(s, pieceId);
   const set = setOf(pieceId);
   if (!cost || !set) return { ok: false, reason: 'invalid' };
   if ((s.bag ?? []).length >= BAG_SIZE) return { ok: false, reason: 'full' };

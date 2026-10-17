@@ -13,7 +13,7 @@ import { enhanceCost, forgeRng, rerollCost, rerollRange, swapPool } from '../../
 import { implicitStats, itemSlot } from '../../engine/loot/item';
 import { gearLabel } from '../loot';
 import { BAG_SIZE } from '../../engine/loot/bag';
-import { baseCost, craftLevel } from '../../engine/forge/craft';
+import { baseCost, craftLevel, setCost } from '../../engine/forge/craft';
 import { specialLines } from '../../engine/compare';
 import { ForgeScene, costText, forgeRows, type ForgeHost } from './forge';
 
@@ -1023,7 +1023,8 @@ describe('ForgeScene craft page', () => {
     for (const l of specialLines('set-blaze-weapon')) expect(text).toContain(l.text);
     expect(text).toContain('火焰核 8／8');
     expect(text).toContain('星燈之淚 1／1');
-    expect(text).toContain('300 G');
+    const setGold = setCost(game.state, 'set-blaze-weapon')!.gold;
+    expect(text).toContain(`${setGold} G`);
     go('confirm');
     expect(confirmEl()!.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('no');
     go('confirm');                                      // 否
@@ -1033,7 +1034,7 @@ describe('ForgeScene craft page', () => {
     expect(game.state.bag[0]).toMatchObject({ rarity: 'set', special: 'set-blaze-weapon' });
     expect(game.state.codex).toContain('set-blaze-weapon');
     expect(game.state.inventory['star-tear']).toBeUndefined();
-    expect(game.state.gold).toBe(700);
+    expect(game.state.gold).toBe(1000 - setGold);
     expect(loot).toHaveBeenCalledWith('set');
     expect(line()).toBe(F.crafted(gearLabel(game.state.bag[0])));
     expect(root.querySelector('.slx-talk .slx-text .slx-rarity-set')).not.toBeNull();
