@@ -46,6 +46,8 @@ export interface Structure {
   /** 大洞窟的風味 */
   flavor?: 'mushroom' | 'crystal' | 'plain';
   chest?: { x: number; y: number };
+  /** 浮空島垂下的繩梯（x、上端 y0、下端 y1） */
+  rope?: { x: number; y0: number; y1: number };
 }
 export interface GenResult {
   world: World;
@@ -855,7 +857,15 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
               if (Math.abs(caveB.at(x, y) - 0.5) < 0.034 * k || caveA.at(x, y) > 0.7 - 0.04 * k) fg[i] = T.AIR;
             }
           } else if (b === BIOME.SNOW) {
-            if (tl === T.DIRT || tl === T.GRASS || tl === T.CLAY || tl === T.SAND) fg[i] = T.SNOW;
+            // v6：地表雪層變薄、有起伏（2–9 格，偶有雪堆），下面是凍土：泥土混冰透鏡、碎石、石塊
+            const snowTo = surface[x] + 2 + Math.floor(vnoise1(x, 23, s0 + 6) * 4 + vnoise1(x, 7, s0 + 7) * 2.5 + Math.max(0, vnoise1(x, 41, s0 + 8) - 0.72) * 14);
+            if (tl === T.DIRT || tl === T.GRASS || tl === T.CLAY || tl === T.SAND) {
+              if (y < snowTo) fg[i] = matN.at(x, y) > 0.8 && y > surface[x] ? T.ICE : T.SNOW;
+              else {
+                const m = matN.at(x, y);
+                fg[i] = m > 0.64 ? T.ICE : m < 0.2 ? T.GRAVEL : m < 0.27 ? T.STONE : y < snowTo + 3 && m > 0.5 ? T.SNOW : T.DIRT;
+              }
+            }
             else if ((tl === T.STONE || tl === T.GRAVEL || tl === T.DEEP_STONE) && matN.at(x, y) > 0.45) fg[i] = T.ICE;
             if (wl) wall[i] = y < rockLine[x] ? W.SNOW_WALL : W.ICE_WALL;
             if (y > rockLine[x] + 8 && SOLID_LUT[fg[i]] === 1 && caveA.at(x, y) > 0.69 - 0.03 * inner) fg[i] = T.AIR;
@@ -1050,7 +1060,7 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
   for (let y = 1; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const i = y * WW + x, t = fg[i];
-      if (t === T.DIRT) { if (y <= world.surfaceY && fg[i - WW] === T.AIR && wall[i - WW] === W.NONE) fg[i] = T.GRASS; }
+      if (t === T.DIRT) { if (y <= world.surfaceY && fg[i - WW] === T.AIR && wall[i - WW] === W.NONE && colBiome[x] !== BIOME.SNOW) fg[i] = T.GRASS; }
       else if (t === T.MUD && fg[i - WW] === T.AIR) fg[i] = T.JUNGLE_GRASS;
     }
   }
@@ -1501,8 +1511,21 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
             if (r < 0.3) put(x, gy - 1, T.TALL_GRASS); else if (r < 0.42) put(x, gy - 1, T.FLOWER);
           }
         }
+        // v6：島底垂下一條繩梯，下端離地 2–3 格（跳一下抓得到）——不必自己蓋塔也上得去
+        let rope: { x: number; y0: number; y1: number } | undefined;
+        for (const rx of [x0 + iw - 5, x0 + 4, x0 + iw - 8, x0 + 7]) {
+          let by = top;
+          while (by < height - 1 && SOLID_LUT[get(rx, by + 1)] === 1) by++;
+          let gy = by + 1;
+          while (gy < height - 1 && get(rx, gy) === T.AIR) gy++;
+          if (SOLID_LUT[get(rx, gy)] !== 1 || gy - by < 8) continue; // 下面是樹葉 / 樹幹 → 換一欄
+          const end = gy - 3;
+          for (let y = by + 1; y <= end; y++) put(rx, y, T.ROPE);
+          rope = { x: rx, y0: by + 1, y1: end };
+          break;
+        }
         islands.push(rect);
-        structures.push({ kind: 'sky_island', x: rect.x, y: rect.y, w: rect.w, h: rect.h, chest });
+        structures.push({ kind: 'sky_island', x: rect.x, y: rect.y, w: rect.w, h: rect.h, chest, ...(rope ? { rope } : {}) });
         break;
       }
     }
