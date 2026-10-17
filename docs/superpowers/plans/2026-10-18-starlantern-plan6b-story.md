@@ -9,11 +9,11 @@
   - 碎片串、鎮民碎片、場景目錄是 `data/story/` 底下的純資料；劇情文字集中在 `data/story.zh-TW.ts`，每一句暫定文案都經過 `ph()` 登記進 `PLACEHOLDERS`，6c 寫完後這個集合必須是空的。
   - 掉落、保底、回城佇列、手冊內容都是 `engine/story/` 底下的純函式，輸入狀態與種子，輸出結果；`Game` 只負責呼叫它們、存檔。
   - 畫面只負責播放：`ui2/story.ts` 的 `playScene` 播一段場景，城鎮、迷宮、通關畫面、手冊都用它。
-- **記憶片數跟著成員走，只有一個來源。** `Member.memories` 是這位角色自己那一串已找回的片數，`memoriesOf(m)` 是唯一的讀法（不合法的值一律當 0、超過片數就取片數）。技能樹的深淵門檻、存檔的 `validBuild`、屬性來源、絕技形態、模擬的 `partyAt` 都讀它，所以不必把 `GameState` 傳進 33 個 `statsOf` 呼叫點（見衝突第 1 點）。
+- **記憶片數跟著成員走，只有一個來源。** `Member.memories` 是這位角色自己那一串已找回的片數，`memoriesOf(m)` 是唯一的讀法（不合法的值一律當 0、超過片數就取片數）。技能樹的深淵門檻、存檔的 `validBuild`、屬性來源、絕技形態、模擬的 `partyAt` 都讀它，所以不必把 `GameState` 傳進 22 行 `statsOf`／`sheetOf`／`statSources` 的呼叫（見衝突第 1 點）。
 - **劇情只看深度。** 幕的節點看 `dungeon.reached.mainline`；碎片晚到時在撿到的當下播自己的回憶，不擋任何節點。唯一跟碎片綁在一起的是凜的揭露，而她的第 7 片本身由本道深度排程。
 - **掉落用自己的亂數流。** 碎片掉落用 `memoryRng(run)`（`Run.memoryDraws` 計數），微光的位置用 `GLIMMER_SALT` 的樓層種子，都不從 `lootRng` 或 `fillRooms` 的亂數取數，所以現有的裝備、寶箱、房間內容逐位元不變。
 - **存檔升到 v8**，沿用 `save-reset` 通知。故事狀態的形狀在 Task 2 一次定好；成員的記憶欄位在 Task 3 加上。
-- **平衡**：記憶在 Task 7 起才有能力值。Task 7、12、13 可能讓「10 片記憶」的平衡帶變紅，照 6a 19a 的做法暫時標成 `it.fails`，由 Task 20b 調回；Task 20a 才加入「記憶期望」與深層帶。
+- **平衡**：記憶在 Task 7 起才有能力值。Task 7、13 可能讓「10 片記憶」的平衡帶變紅（Task 12 不可以讓任何帶變動），照 6a 19a 的做法暫時標成 `it.fails`，由 Task 20b 調回；Task 20a 才加入「記憶期望」與深層帶。
 
 **Tech Stack:** TypeScript、Vitest（happy-dom）、DOM 介面加上 SCSS、Playwright e2e。
 
@@ -38,6 +38,7 @@
 - **換行**：保留每個檔案原本的換行格式，改檔前用 `git ls-files --eol <檔案>` 確認；改完看 `git diff --stat`，整檔重寫代表換行壞了，要修好。CRLF 檔案不可以用 `sed -i`。新檔一律 LF。本計畫會碰到的檔案：
   - LF：`data/forge.ts`、`data/hero.ts`、`data/meetings.ts`、`data/talents.ts`、`data/trees.ts`、`data/ultimates.ts`、`data/weights.ts`、`engine/balance.lineups.test.ts`、`engine/dungeon/rooms.ts`、`engine/dungeon/run.ts`、`engine/events.ts`、`engine/forge/craft.ts`、`engine/loot/drops.ts`、`engine/progression.ts`、`engine/scaling.ts`、`engine/stats.ts`、`render/markers.ts`、`ui2/scenes/dungeon.ts`、`ui2/scenes/equip.ts`、`ui2/scenes/event.ts`、`ui2/scenes/forge.ts`、`ui2/scenes/settings.ts`、`ui2/scenes/statusTabs.ts`、`ui2/settings.ts`、`src/styles/_starlantern-ui.scss`、`tests/e2e/starlantern.spec.ts`
   - CRLF：`data/characters.ts`、`data/enemies.ts`、`data/equipment.ts`、`data/items.ts`、`data/skills.ts`、`engine/balance.test.ts`、`engine/party.ts`、`engine/portals.ts`、`engine/save.ts`、`engine/sim.ts`、`engine/state.ts`、`engine/testing.ts`、`engine/types.ts`、`render/artPaths.ts`、`ui/art.ts`、`ui/dom.ts`、`ui2/menu.ts`、`ui2/scenes/clear.ts`、`ui2/scenes/formation.ts`、`ui2/scenes/guild.ts`、`ui2/scenes/shop.ts`、`ui2/scenes/status.ts`、`ui2/scenes/town.ts`
+  - 另外四個：`engine/map.ts`（CRLF）、`data/data.test.ts`（CRLF）、`ui2/scenes/forgeCraft.ts`（LF）、`ui2/scene.ts`（混用）。
   - 混用（照每一行原本的格式，新行跟著上下文）：`data/text.zh-TW.ts`、`engine/battle.ts`、`engine/combatant.ts`、`engine/game.ts`、`engine/skills.ts`、`engine/town.ts`、`render/BattleView.ts`、`render/MapView.ts`、`ui2/input.ts`、`ui2/main.ts`、`ui2/partyBar.ts`、`ui2/scenes/battle.ts`、`ui2/scenes/facility.ts`、`ui2/scenes/gate.ts`、`ui2/scenes/inn.ts`、`ui2/scenes/title.ts`、`ui2/widgets.ts`
 - **git**
   - 一律寫出完整路徑，不可以用 `git add -A` 或 `git add .`（工作樹裡有別的代理沒提交的美術檔）。
@@ -54,13 +55,14 @@
   - 地圖上的微光用文字標記「憶」；沒有立繪的說話者只顯示名字。
   - 可以用現有的圖：主角與凜的 smile／sad 表情、`rin-oath` 的整套立繪、絲嘉蕾的站姿圖（她在劇情戰裡當敵人時用）、燈喰之獸的圖（終幕頭目）。
   - 回憶場景的暗角與淡色調是 SCSS class（`slx-talk--memory`），不是圖；剪影是現有站姿圖加上 SCSS 的 `filter`（`slx-silhouette`）。
-  - `allArtUrls()` 不列任何不在磁碟上的圖；`render/artPaths.test.ts` 的 url 總數只能因為「不再列出」而變少，不能變多。
-- **亂數**：一律用帶種子的 `Rng`，引擎裡不可以用 `Math.random`。碎片掉落用 `memoryRng(run)`；微光位置用 `mulberry32(floorSeed ^ GLIMMER_SALT)`；吸收用 `absorbRng(state)`。不可以從 `lootRng`、`fillRooms` 的 rng 或 `game.rng` 多取數（畫面挑台詞照舊用 `game.rng`，那是既有做法）。
+  - `allArtUrls()` 必須維持剛好 246 個 url，而且等於 `art-factory/starlantern/registry.json`（`render/artPaths.test.ts`）；`art-factory/` 不可以改，所以這個數字不可以變。新的敵人或圖鍵如果沒有圖，一律用 `look` 之類的方式排除在外。
+- **亂數**：一律用帶種子的 `Rng`，引擎裡不可以用 `Math.random`。碎片掉落用 `memoryRng(run)`；微光位置用 `mulberry32(floorSeed ^ GLIMMER_SALT)`；吸收用 `absorbRng(state)`。不可以從 `lootRng`、`fillRooms` 的 rng 或 `game.rng` 多取數（畫面挑台詞照舊用 `game.rng`，那是既有做法）。唯一的例外：葛倫的「重抽傳送門」由玩家主動選，用 `game.rng`（與 `toTown` 擲傳送門的是同一條流）。
 - **平衡**
   - 平衡只以預設配點為準；完全不投點的隊伍被輾壓是預期內的事（使用者規則）。
   - `engine/balance*.test.ts` 的門檻一律不可以放寬。新增的帶（第 19 項）門檻以本計畫寫的數字為準。
   - 會影響戰力的任務，驗證時一律跑全套，包括 balance。
-  - `it.fails` 只可以出現在 Task 7 到 Task 20d 之間，而且每一個都要在註解寫明負責的任務（`// 6b Task 20b` 之類），並記進 `.superpowers/sdd/2026-10-18-starlantern-plan6b-story/balance-baseline.md`。Task 21 確認沒有任何 `it.fails`。
+  - `it.fails` 只可以出現在 Task 7 到 Task 20d 之間，而且每一個都要在註解寫明負責的任務（`// 6b Task 20b`、`20c` 或 `20d`），記進 `.superpowers/sdd/2026-10-18-starlantern-plan6b-story/balance-baseline.md`，並寫在 commit 訊息裡（`.superpowers/sdd/2026-10-18-starlantern-plan6b-story/constraints.md` 的「6b additions」把這一點列為 6a「帶紅了就回報」的例外）。標了 `it.fails` 的帶一旦通過就會變紅，要立刻改回 `it`。
+  - Task 20b、20c、20d 任何一個在時間上限內收斂不了，下一個任務照樣執行；沒收斂的帶保留 `it.fails` 標記並回報給使用者，但絕不會出現在最後的 commit：Task 21 只要找到任何 `it.fails` 就算失敗，停下來等使用者決定。
   - `ENEMY_POWER.ramp` 凍結（接手清單 M3/M4）：任何任務都不可以動它。`PARTY_SCALE`、`GROUP_CAP`、`FIRST_DEPTH_CAP`、`BOSS_PARTY_SCALE` 也不是本計畫的旋鈕。
   - 6a Task 9 的峰值測試仍是硬性護欄：主角任何技能、絕技（含天燈）都不可以調過上限。
   - 紅了只能依 Task 20b、20c、20d 各自列出的旋鈕與順序調整，並在 commit 訊息寫出最後的值；任何組合都調不過時停下來回報，絕不放寬。
@@ -99,7 +101,7 @@
 - `engine/dungeon/run.ts`、`engine/dungeon/rooms.ts`、`engine/map.ts`：微光。
 - `engine/game.ts`：掉落、保底、回城佇列、交易所、交還、終幕。
 - `engine/town.ts`、`engine/forge/craft.ts`、`data/weights.ts`：回報（折扣、料理、配方）與碎片重量。
-- `engine/sim.ts`、`engine/balance.test.ts`、`engine/balance.lineups.test.ts`、`engine/balance.deep.test.ts`（新）、`engine/scaling.ts`：記憶期望、深層帶、第三段敵人強度。
+- `engine/sim.ts`、`engine/balance.test.ts`、`engine/balance.lineups.test.ts`、`engine/balance.deep.test.ts`（新）、`engine/scaling.ts`：記憶期望、深層帶、深處敵人的等級斜率（`DEEP_ENEMIES`）。
 - `.superpowers/sdd/2026-10-18-starlantern-plan6b-story/balance-baseline.md`（新）：Task 7 起的實測數字與 sweep 紀錄。
 - 畫面：`ui/art.ts`、`ui2/widgets.ts`、`ui2/story.ts`（新）、`ui2/settings.ts`、`ui2/scenes/`（`town`、`facility`、`guild`、`gate`、`shop`、`inn`、`dungeon`、`battle`、`clear`、`settings`、`status`、`statusTabs`、`handbook`（新））、`render/markers.ts`、`render/MapView.ts`、`render/BattleView.ts`、`render/artPaths.ts`、`src/styles/_starlantern-ui.scss`。
 - e2e：`tests/e2e/starlantern.spec.ts`。
@@ -158,9 +160,9 @@
   - `PLACEHOLDERS: Set<string>`；檔內的 `ph(text: string): string` 把 text 加進集合後原樣回傳。
   - `STORY`：
     - `scenes: Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }>`。暫定文案：每段 1 句，例如 mem 是 `{ who: id, text: ph(\`（${名字}想起了第 ${n} 段記憶。）\`) }`，摘要 `ph(\`${名字}找回了一段記憶。\`)`；title 是介面字（例如「凜・第 3 片」「第二幕」），不經過 `ph`。
-    - `townLines: Record<Stage, string[]>`：每階段至少 3 句，初值是目前的 `T.ui2.town.lines`（經過 `ph`）。
+    - `townLines: Record<Stage, string[]>`：每階段至少 3 句，初值是目前 `T.ui2.town.lines` 的三句，**把字串字面抄過來**（經過 `ph`），不可以引用 `T`，因為 Task 16 會刪掉那些鍵。
     - `rinLines: Partial<Record<Stage, string[]>>`：act2 起的伏筆，初值 `[ph('……沒什麼。')]`。
-    - `greet: Record<'guild' | 'shop' | 'inn' | 'gate' | 'forge', Record<Stage, string[]>>`：每階段至少 2 句，初值是目前各設施的 greet。
+    - `greet: Record<'guild' | 'shop' | 'inn' | 'gate' | 'forge', Record<Stage, string[]>>`：每階段至少 2 句，初值是目前 `T.ui2.facility.<設施>.greet` 的句子，同樣抄字串字面、不引用 `T`。
     - `absorb: string[]`：吸收台詞，至少 1 句（6c 補到 30 句以上）。
     - `people: Record<CharacterId, string[]>`：3 段人物簡介。
     - `truths: Record<Stage, string>`：真相頁 6 條。
@@ -292,7 +294,9 @@
   4. 精英怪：主角不在 `candidates` 裡時，`rng() < ELITE_PIECE_CHANCE` 才給，否則 `[]`。頭目、微光一定給。
   5. 挑一位：候選中有故事串（`key`）時只看故事串，保底最大的先，平手時凜先；否則保底最大的夥伴，平手時依 `CHARACTER_IDS` 的順序排好，`pick(rng, 平手的人)`。
   6. 回傳 `[那一位]`。
-- `pityAfterFloor(p: Party, pity: Pity, region: RegionId, depth: number, dropped: CharacterId[]): Pity`：在這一層 `eligible`（`source` 當成 `'glimmer'`）的每一串，沒掉的 +1，掉了的歸 0；其他串不變。回傳新的物件。
+- `MAX_PITY = 999`（等於 Task 2 `isStory` 的上限）。
+- `pityAfterFloor(p: Party, pity: Pity, region: RegionId, depth: number, dropped: CharacterId[]): Pity`：在這一層 `eligible`（`source` 當成 `'glimmer'`）的每一串，沒掉的 +1（最多到 `MAX_PITY`，無限深度下也不會寫出讀不回來的存檔），掉了的歸 0；其他串不變。回傳新的物件。
+- 主角的碎片也可以從微光（自然或保底）得到：spec §7.2 把微光列為共同來源，而每一片仍受 minDepth 限制（見衝突第 23 點）。
 - `forcedGlimmers(p: Party, pity: Pity, region: RegionId, depth: number): CharacterId[]`：
   - 保底 ≥ `MEMORY_PITY` 而且在這一層 `eligible` 的串；
   - 凜還沒有第 1 片、而且 `region === 'mainline'` 時，凜也在內（spec §7.3「第一趟的第一處微光必得」；見衝突第 16 點）；
@@ -307,9 +311,10 @@
     - 只有瑟蕾與千鶴合格、pity 相同：結果是兩人之一，同一個種子結果相同，各試 50 個種子兩人都出現過。
   - `one piece per boss`：一般頭目的結果長度是 1。
   - `the depth-25 and depth-30 bosses top the hero up`：`memories = 5` 時第 25 層頭目給 4 次 hero；`memories = 9` 時第 30 層給 1 次；`memories = 2` 時第 30 層給 8 次；第 26 層的精英怪不給第 9 片。
-  - `an elite always pays the hero and the rest by chance`：主角合格時給 hero；只有瑟蕾合格時，1000 個種子的給出比例在 `ELITE_PIECE_CHANCE ± 0.05`。
+  - `an elite always pays the hero and the rest by chance`：主角合格、凜不合格（例如凜已有 7 片）時給 hero；只有瑟蕾合格時，1000 個種子的給出比例在 `ELITE_PIECE_CHANCE ± 0.05`。
   - `a forced glimmer holds its own chain's piece`：`who: 'noel'` 合格時是 `['noel']`，不合格時是 `[]`。
   - `pity grows on floors cleared without a piece and resets on one`
+  - `pity stops at MAX_PITY`：pity 已是 `MAX_PITY` 的串再清一層仍是 `MAX_PITY`。
   - `pity forces a glimmer for that chain only where it can drop`：瑟蕾 pity 是 `MEMORY_PITY` 時，mainline depth 2 的 `forcedGlimmers` 含 selene，blaze 不含。
   - `Rin's first piece waits in a glimmer on the main road`
   - `the same inputs draw the same pieces`
@@ -324,7 +329,7 @@
 **Files:**
 - Modify：
   - `engine/map.ts`：`Tile` 加入 `'glimmer'`。
-  - `engine/dungeon/rooms.ts`：`Content.kind` 加入 `'glimmer'`；`Content.owner?: CharacterId`（保底微光指定的串）；把 `placeRescue` 的選房與選格抽成 `placeSpecial(f, g, rng, content)`，`placeRescue` 改呼叫它，行為不變。
+  - `engine/dungeon/rooms.ts`：`Content.kind` 加入 `'glimmer'`；`Content.owner?: CharacterId`（保底微光指定的串）；把 `placeRescue` 的選房與選格抽成 `placeSpecial(f, g, rng, content)`，`placeRescue` 改呼叫它，行為不變。沒有空房間可用時（例如求救房加上兩處保底微光），退回地圖上與入口相連、還沒有內容的第一個 `'floor'` 格（逐列、由左到右）。
   - `engine/dungeon/run.ts`：`Run.glimmers: Record<number, CharacterId[]>`、`Run.memoryDraws: number`、`Run.dropped: Record<number, CharacterId[]>`、`Run.played: number[]`；`floorOf` 放微光。
   - `engine/story/memories.ts`：`memoryRng(run)`。
   - `engine/game.ts`：見下方 Interfaces。
@@ -348,11 +353,14 @@
     - 例外：第 25 層補齊的主角碎片全部 `play: false`，場景 id 依序加進 `story.queue`（不進 seen）；第 30 層的補齊由 Task 17 處理，本任務先照一般規則。
   - `descend`：換層之前 `story.pity = pityAfterFloor(party, pity, region, floor, run.dropped[floor] ?? [])`。
   - 全滅：`memories` 與 `pity` 都留著（記憶不是戰利品）。
+  - `play: true` 的片的場景 id 加進 `Game.pending: SceneId[]`（不存檔；Task 15 的 `sceneDone` 只接受 `arrival`、`pending` 與終幕的場景）。
+  - 頭目的掉落一律在 `phase` 切到 `clear` 之前處理，所以第 3 層的劇情頭目照樣給凜的第 2 片。
 - `MoveResult` 新增 `{ kind: 'glimmer'; gained: FragmentGain[] }`。
 
 - [ ] **Step 1: 寫失敗的測試**
   - `run.test.ts`：
     - `a glimmer may lie on a floor, decided by the floor's own seed`：找出一個有、一個沒有的種子；同一個種子結果相同；濾掉微光後其他 content 與沒有微光的版本完全相同。
+    - `a crowded floor still places every glimmer`：同一層有求救房加上兩處保底微光，三者都放得下而且與入口相連。
     - `forced glimmers carry their owner`：`run.glimmers[2] = ['selene']`，第 2 層有一處 owner 是 selene 的微光，與入口相連（BFS 可達）。
   - `rooms.test.ts`：`placeRescue still lands where it did`：抽出 `placeSpecial` 前後，同一個種子的求救房位置相同（先在改動前記下位置）。
   - `game.test.ts`：
@@ -362,6 +370,7 @@
     - `descending raises the pity of the chains that found nothing`
     - `a wipe keeps the memories found`
     - `the depth-25 boss queues the hero's top-up memories`：`memories = 5`，打倒後 `memories` 是 9，`story.queue` 依序含 `mem:hero:6` 到 `mem:hero:9`。
+    - `the depth-3 story boss pays Rin's second piece`（spec §7.3）：凜 1 片，打倒本道第 3 層的燈喰之獸，`BattleEnd.fragments` 含凜第 2 片，`phase` 仍切到 clear。
     - `memory draws leave the loot rolls alone`：同一個種子的同一場精英戰，掉落的裝備與改動前記下的相同。
   - `MapView.test.ts`：`a seen glimmer shows the 憶 marker and asks for no art`（照 6a 的 rescue 測試，含證明 spy 接對路徑的 altar）。
   - `dungeon.test.ts`：`stepping on a glimmer says what was found`
@@ -379,10 +388,10 @@
   - `data/weights.ts`：`weightOf` 對 `isFragmentItem` 回傳 `FRAGMENT_WEIGHT`。
   - `ui/dom.ts`：`itemName` 認得碎片（`fragmentName`）。
   - `engine/game.ts`：頭目、精英的戰利品；寶箱、寶庫；空的微光。
-- Test：`engine/story/fragments.test.ts`、`engine/game.test.ts`、`data/data.test.ts`（或現有的 weights 測試所在處）
+- Test：`engine/story/fragments.test.ts`（含重量的測試）、`engine/game.test.ts`
 
 **Interfaces:**
-- `townFragmentEligible(s: GameState, run: Run | null, id: TownFragmentId, region: RegionId, depth: number): boolean`：地區符合（`'any'` 都符合）、深度 ≥ minDepth、不在 `story.returned`、不在 `inventory`、不在 `run.loot.items`。
+- `townFragmentEligible(s: GameState, run: Run | null, id: TownFragmentId, region: RegionId, depth: number): boolean`：地區符合（`'any'` 都符合）、深度 ≥ minDepth、不在 `story.returned`、不在 `inventory`、不在 `run.loot.items`，也不在這一趟 `run.rolls` 裡已經擲出、還留在寶箱或寶庫的結果中（不會複製出第二片）。
 - `lootFragments(s: GameState, run: Run, ctx: { region; depth; source: 'boss' | 'elite' | 'chest' | 'vault' }, rng: Rng): FragmentGain[]`：
   - 無主碎片：頭目必掉 1 片；其他來源 `rng() < SHARD_DROP[source]` 時 1 片；等級是 `shardGrade(depth, rng())`。
   - 鎮民碎片：合格的鎮民碎片依 `TOWN_FRAGMENTS` 的順序排好，`rng() < TOWN_DROP[source]` 時給第一個合格的；一次最多一片。
@@ -390,7 +399,7 @@
 - `Game`：
   - 頭目、精英：`lootFragments` 的碎片照素材的方式進冒險背包（`grant`），放不下的記在 `BattleEnd.left`；也列在 `BattleEnd.fragments`。
   - 寶箱、寶庫：碎片併入那個點的戰利品，第一次擲出後記在 `run.rolls`（鍵 `` `frag:${spotId}` ``），所以放不下再回來時結果相同；重量照現有的 `shutFor` 規則。`MoveResult` 的 `chest`、`vault` 新增 `fragments?: FragmentGain[]`。
-  - 沒有夥伴碎片的微光：給 1 片無主碎片（`shardGrade(depth, rng())`），重量不夠時微光留在原地，回傳 `{ kind: 'full', item, qty: 1, need }`。
+  - 沒有夥伴碎片的微光：給 1 片無主碎片（`shardGrade(depth, rng())`），擲出的結果記在 `run.rolls`（鍵 `` `frag:glimmer:${x},${y}` ``），重量不夠時微光留在原地，回傳 `{ kind: 'full', item, qty: 1, need }`；回來再踩是同一片。
   - 回城：碎片照素材的方式存進 `inventory`，`bankedLine` 自然列出名字；全滅：跟著冒險背包一起失去。
 
 - [ ] **Step 1: 寫失敗的測試**
@@ -402,7 +411,8 @@
   - `game.test.ts`：
     - `fragments ride in the run pack and are lost on a wipe`
     - `a full pack leaves the shard behind`：把背包塞到剩不到 `FRAGMENT_WEIGHT`，頭目的 shard 記在 `left`。
-    - `an empty glimmer gives a shard, or waits when the pack is full`
+    - `an empty glimmer gives a shard, or waits when the pack is full`：滿了之後丟掉東西再踩，得到的是同一個等級。
+    - `a fragment left in a shut chest is not dropped a second time`
     - `a chest that was too heavy rolls the same fragments when the party comes back`
     - `fragments come home with the run`：回城後 `inventory` 有它們，`banked.items` 列出。
   - 重量：`fragments weigh FRAGMENT_WEIGHT, memory pieces weigh nothing`：`weightOf(SHARD_IDS.dim)`、`weightOf('tf-orik')` 是 `FRAGMENT_WEIGHT`；撿到夥伴碎片前後 `carried` 不變。
@@ -430,7 +440,7 @@
 
 - [ ] **Step 1: 寫失敗的測試**
   - `party.test.ts`：
-    - `memory pieces add their chain's primaries`：凜 3 片時 memory 欄的 agi 是 `3 × CHAINS.rin.gain.agi`；主角 5 片時 str、int、agi、wil 各 5；瑟蕾 2 片時 wil 4。
+    - `memory pieces add their chain's primaries`：凜 3 片時 memory 欄的 agi 是 `3 × CHAINS.rin.gain.agi`；主角 5 片時四個主屬性各是 `5 × CHAINS.hero.gain[k]`；瑟蕾 2 片時 wil 是 `2 × CHAINS.selene.gain.wil`。一律由常數算出，Task 20b 調整 gain 時不會變紅。
     - `memory primaries convert like gear primaries`：有與沒有記憶時 `sheetOf` 的 atk 差，等於 `convertPrimary(gain × n, affinity).atk`（誤差 1e-9）。
     - `absorbed gains add to the memory column`
     - `scale zero switches memory off`：`memoryStats(m, 0)` 是 `{}`。
@@ -478,13 +488,12 @@
 - Modify：
   - `engine/story/fragments.ts`：`returnFragment`、`hasPerk`；`shardPrice` 改用 `hasPerk`。
   - `engine/town.ts`：`priceOf`；`buy` 用它；`rest` 在瑪莎的回報生效時設 `story.fed = true`。
-  - `engine/forge/craft.ts`：`craftSet` 的地區素材數改讀 `setRecipeOf(s)`。
+  - `engine/forge/craft.ts`：`setCost` 的地區素材數改讀 `setRecipeOf(s)`（`craftSet` 與 `ui2/scenes/forgeCraft.ts` 的顯示都經過 `setCost`，自動跟著變；不改 `ui2/scenes/forge.ts`）。
   - `engine/game.ts`：`returnFragment`；`depart` 吃掉料理；`rerollPortals`。
   - `ui2/scenes/shop.ts`：價格改顯示 `priceOf`。
   - `ui2/scenes/gate.ts`：葛倫的回報生效、本次抵達還沒重抽時，多一個指令「重抽傳送門」。
-  - `ui2/scenes/forge.ts`：套裝配方顯示 `setRecipeOf`。
   - `data/text.zh-TW.ts`：`T.ui2.gate.reroll = '重抽傳送門'`。
-- Test：`engine/story/fragments.test.ts`、`engine/town.test.ts`、`engine/forge/craft.test.ts`、`engine/game.test.ts`、`ui2/scenes/shop.test.ts`、`ui2/scenes/gate.test.ts`
+- Test：`engine/story/fragments.test.ts`、`engine/town.test.ts`、`engine/forge/craft.test.ts`、`engine/game.test.ts`、`ui2/scenes/shop.test.ts`、`ui2/scenes/gate.test.ts`；`ui2/scenes/forge.test.ts` 若斷言套裝配方的素材數，改由 `setCost` 算出預期值。
 
 **Interfaces:**
 - `hasPerk(s: GameState, perk: TownPerk): boolean`：擁有這個回報的鎮民碎片在 `story.returned` 裡。
@@ -492,8 +501,8 @@
 - `priceOf(s: GameState, id: string): number | undefined`：`ITEMS` 或 `EQUIPMENT` 的價格；`shop-discount` 生效時 `ceil(price × (100 − PERKS.shopDiscountPct) / 100)`。
 - `setRecipeOf(s: GameState): typeof SET_RECIPE`：`set-recipe` 生效時 `regionQty` 減 `PERKS.setRecipeLess`。
 - 料理：`rest` 在 `inn-meal` 生效時設 `story.fed = true`；`Game.depart` 在 `fed` 時把 `PERKS.meal` 加進 `run.altarBuffs` 並設回 false（計入祭壇的上限，見衝突第 10 點）。
-- `Game.returnFragment(id)`：town 才有效，成功後立刻存檔；場景的播放在 Task 11。
-- `Game.rerollPortals(): boolean`：town、`portal-reroll` 生效、本次抵達還沒重抽時，`rollPortals(this.rng, favouredRegions(...))`，記下已重抽，立刻存檔；`toTown`、`wipe`、`boot` 把記號歸零。
+- `Game.returnFragment(id)`：town 才有效，成功後立刻存檔，並把 `town:${id}` 放進 `Game.pending`（Task 5 建立的欄位）；場景的播放在 Task 11。
+- `Game.rerollPortals(): boolean`：town、`portal-reroll` 生效、本次抵達還沒重抽時，`rollPortals(this.rng, favouredRegions(...))`（Global Constraints 允許的 `game.rng` 例外），記下已重抽，立刻存檔。記號不存檔：`toTown`、`wipe` 把它歸零；`boot` 把它設成「已重抽」，所以重新整理不會多送一次重抽。
 
 - [ ] **Step 1: 寫失敗的測試**
   - `fragments.test.ts`：
@@ -503,10 +512,10 @@
   - `town.test.ts`：
     - `Orik's return takes PERKS.shopDiscountPct off the shop`：同一件商品，`priceOf` 前後與 `buy` 扣的錢都相符。
     - `Marta feeds the party who rest at the inn`
-  - `craft.test.ts`：`Doran's master lowers the set recipe`
+  - `craft.test.ts`：`Doran's master lowers the set recipe`：`setCost` 的地區素材數少 `PERKS.setRecipeLess`，`craftSet` 扣的也一樣。
   - `game.test.ts`：
     - `a fed party sets out with the meal and is hungry again`：`run.altarBuffs` 含 `PERKS.meal`；`story.fed` 回到 false。
-    - `Glen rerolls the portals once per arrival`：第二次回傳 false；回城後又可以。
+    - `Glen rerolls the portals once per arrival`：第二次回傳 false；回城後又可以；存檔後 `boot` 的同一次抵達不能重抽。
     - `returnFragment works only in town and saves at once`
   - `shop.test.ts`：`the shop shows the discounted price`
   - `gate.test.ts`：`the reroll command appears only with Glen's perk`
@@ -533,12 +542,13 @@
 - `Dialogue.setStyle(style: 'plain' | 'memory'): void`：切換 `slx-talk--memory`。
 - `artIdOf(m: Pick<Member, 'id' | 'oath'>): string`：凜有 `oath` 時是 `'rin-oath'`，其他是 id。
 - `ui2/story.ts`：
+  - `interface StoryCtx { game: Game; art: ArtIndex; mode: StoryMode }`；`storyCtx(ctx: SceneCtx): StoryCtx`，`mode` 是 `ctx.settings?.get().story ?? 'all'`。下面的 `playScene` 等都收 `StoryCtx`。
   - `type StoryMode = 'all' | 'major' | 'none'`；`shouldPlay(id: SceneId, mode: StoryMode): boolean`：all 一律 true；major 只有 `MAJOR_SCENES`；none 一律 false。
   - `speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: Mood | ExtraMood = 'normal'): { name: string; face?: string }`：
     - 角色：名字是 `CHARACTERS[id].name`；圖是 `art.portrait(artIdOf(成員), mood)`，沒有那個表情時，smile 退回 normal、sad 退回 down、再退回 normal；連 normal 都沒有就不給圖。
     - 安娜、歐里克、瑪莎、葛倫、多蘭：`art.npc(對應的設施, 'normal')`（有圖才給）；流浪商人、鐘守只有名字；narrator 是空名字、沒有圖。
   - `linesOf(id: SceneId, s: GameState): ScriptLine[]`：`STORY.scenes[id].lines` 去掉 `if` 不成立的行（`met`、`notMet` 看 `recruited`，`returned` 看 `story.returned`）。
-  - `playScene(talk: Dialogue, id: SceneId, ctx: SceneCtx): { done: Promise<'done' | 'skipped'>; onAction(a: UiAction): void }`：
+  - `playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: Promise<'done' | 'skipped'>; onAction(a: UiAction): void }`：
     - memory 種類的場景用 `setStyle('memory')`，結束後回到 plain；
     - 第一位說話者在左，其他說話者在右；
     - 呼叫者在播放期間把每一個 `onAction` 轉給回傳的 `onAction`：`confirm` 交給 `Dialogue`；`cancel`（Esc、X、右鍵）時停止，`say` 一句 `T.ui2.story.skipped(summary)`，確認後 `done` 以 `'skipped'` 結束；全部播完以 `'done'` 結束。
@@ -561,7 +571,7 @@
   - `ui2/scenes/settings.test.ts`：`the story row cycles all, major and none`
 - [ ] **Step 2: 執行，確認失敗**
 - [ ] **Step 3: 實作**
-- [ ] **Step 4: 執行全套與 e2e，確認全部通過**
+- [ ] **Step 4: 執行全套與 e2e，確認全部通過**；設定畫面多了一列，確認 e2e 是依標籤、不是依索引找列。
 - [ ] **Step 5: commit**：`feat(starlantern): faces in dialogue, skippable scenes, story playback setting`
 
 ### Task 11: 公會的碎片交易所介面
@@ -575,7 +585,8 @@
 **Interfaces:**
 - 販售：依等級列出持有的無主碎片，價格是 `shardPrice`；選了之後用現有的 `QtyView`；呼叫 `game.sellShards`。
 - 吸收：選等級 → 選成員（清單是 `recruited`，右邊顯示 `T.ui2.exchange.count(n, ABSORB_CAP)`，滿了的反灰）→ 確認 → `game.absorb`；成功後 `say` 兩句：吸收的那一句陌生人台詞，與得到的提升（「atk +2」這類，用 `T.ui2.status` 既有的屬性名稱）。
-- 交還：列出 `inventory` 裡的鎮民碎片 → 確認 → `game.returnFragment` → 用 `playScene` 播 `town:${id}`（照設定，`none` 時視同自動略過）→ `say` 報酬。播放結果用 `game.sceneDone(...)` 記錄的部分在 Task 15 補上；本任務的交還場景播完不記錄（Task 15 的測試會補）。
+- 交還：列出 `inventory` 裡的鎮民碎片 → 確認 → `game.returnFragment`（它把 `town:${id}` 放進 `Game.pending`）→ `shouldPlay` 時用 `playScene` 播 `town:${id}` → `say` 報酬。記錄看過的部分在 Task 15 改用 `playAndRecord`。
+- 公會多了一個指令，確認 e2e 是依標籤找指令。
 - 三個子選單都空的時候，該項反灰；「碎片交易所」本身永遠可選。
 
 - [ ] **Step 1: 寫失敗的測試**（`guild.test.ts`）
@@ -596,7 +607,7 @@
   - `data/talents.ts`：`KeystoneId` 加入 9 個記憶關鍵天賦；`KEYSTONES` 的名稱與說明；`MEMORY_KEYSTONES`、`MEMORY_KEYSTONE_VALUES`。`CHAR_KEYSTONES` 與 `KEYSTONE_VALUES` 不動（6a 凍結）。
   - `engine/progression.ts`：`keystonesOf` 加上記憶關鍵天賦。
   - `engine/battle.ts`、`engine/combatant.ts`、`engine/skills.ts`：效果。
-  - `ui2/scenes/statusTabs.ts`：天賦分頁在關鍵天賦那一區之後加一行記憶關鍵天賦。
+  - `ui2/scenes/statusTabs.ts`：天賦分頁在關鍵天賦那一區之後加一行記憶關鍵天賦；「已持有 n／上限」的計數改成只算天賦盤上的關鍵天賦（`keystonesOf` 現在含記憶關鍵天賦，直接用會顯示 3／2）。
   - `data/text.zh-TW.ts`：`T.ui2.talent.memoryKeystone = (name: string) => \`記憶關鍵天賦：${name}\``、`T.ui2.talent.memoryLocked = (n: number) => \`找回全部 ${n} 片記憶後覺醒\``、`T.ui2.talent.oathLocked = '在她做出選擇之後覺醒'`。
 - Test：`data/talents.test.ts`、`engine/progression.test.ts`、`engine/battle.test.ts`、`engine/skills.test.ts`、`ui2/scenes/status.test.ts`
 
@@ -617,6 +628,7 @@
   - 凜要 `m.oath` 為真才有（她的記憶關鍵天賦就是誓約）；
   - 主角永遠沒有（spec §4.6：主角學不到記憶關鍵天賦）。
   - 不經過 `talentBlocker`，所以不佔 `maxKeystones`，也不花天賦點。
+- 每一個效果只在持有該關鍵天賦時才計算，而且都不抽亂數，所以沒有記憶關鍵天賦的戰鬥逐位元不變。
 - 凜的鐘：在 `resolveRound` 裡，每一次行動與回合結束的傷害之後，主角從活著變成倒下、凜活著而且持有 `'unrung-bell'` 時觸發；每次倒下觸發一次。
 
 - [ ] **Step 1: 寫失敗的測試**
@@ -629,7 +641,7 @@
   - `battle.test.ts`／`skills.test.ts`：每一個效果各一項，用同一個 rng 比較有無關鍵天賦（倍率透過 `MEMORY_KEYSTONE_VALUES` 算出）：
     - `moon-promise heals more`、`small-shrine guards the party at the start`、`troupe-step buffs last longer`、`carried-out hits a full-HP target harder`、`teachers-gift costs less TP`、`blueprint turrets hit harder`、`fathers-face finds more materials`、`not-a-shield takes less while taunting`
     - `the unrung bell answers the hero's fall`：主角被擊倒的那一次行動之後，log 立刻有凜的攻擊，凜身上有 atk 的增益；主角沒倒下時沒有。
-  - `status.test.ts`：`the talent tab shows the memory keystone, locked or awake`
+  - `status.test.ts`：`the talent tab shows the memory keystone, locked or awake`：瑟蕾持有 2 個天賦盤關鍵天賦加上記憶關鍵天賦時，計數仍是 `2／${rulesOf('selene').maxKeystones}`。
 - [ ] **Step 2: 執行，確認失敗**
 - [ ] **Step 3: 實作**
 - [ ] **Step 4: 執行全套**（平衡帶的夥伴都沒有記憶，預期不變；變了就停下來回報）
@@ -645,7 +657,7 @@
   - `engine/progression.ts`：`ultimateFor` 新增第三個參數。
   - `engine/combatant.ts`：`Combatant.memories?: number`、`Combatant.oath?: true`、`Combatant.artId?: string`；`engine/battle.ts` 的 `fromMember` 填入；`perform` 的 ultimate 處理 `refundOnKill` 與 `follow`。
   - 改用 `ultimateFor(id, ranks, 成員)` 的地方：`engine/battle.ts`（`perform`）、`ui2/scenes/battle.ts` 兩處、`ui2/scenes/statusTabs.ts`（絕技分頁）。
-  - 改用 `artIdOf`／`titleOf` 的地方：`ui2/partyBar.ts`、`ui2/scenes/battle.ts`（切入與頭像）、`ui2/scenes/status.ts`、`ui2/scenes/guild.ts`、`ui2/scenes/formation.ts`、`ui2/scenes/equip.ts`（用 `grep -n "art.portrait(\|art.standee(\|standeeImg(\|portraitImg(\|\.title"` 找）。
+  - 改用 `artIdOf`／`titleOf` 的地方：`ui2/scenes/status.ts`、`ui2/scenes/guild.ts`、`ui2/scenes/formation.ts`、`ui2/scenes/equip.ts`。戰鬥裡的頭像用 combatant 的 `artId`：`ui2/partyBar.ts`（`portraitImg` 目前傳 `p.member.key`）、`ui2/scenes/battle.ts` 的頭像與絕技切入（`portrait(key, 'ultimate')`）、`ui/cutin.ts`、`render/BattleView.ts`。用 `grep -rn "art.portrait(\|art.standee(\|standeeImg(\|portraitImg(\|\.title" src/scripts/games/starlantern/ui src/scripts/games/starlantern/ui2 src/scripts/games/starlantern/render` 找全部。
 - Test：`engine/progression.test.ts`、`data/hero.test.ts`、`engine/battle.test.ts`、`ui2/scenes/status.test.ts`、`ui2/partyBar.test.ts`
 
 **Interfaces:**
@@ -669,6 +681,7 @@
     - `the sky lantern heals the party after its blow`
   - `status.test.ts`：`after her oath Rin wears the rin-oath standee and the title 破鐘刺客`
   - `partyBar.test.ts`：`after her oath Rin's face is rin-oath`
+  - `ui2/scenes/battle.test.ts`：`after her oath Rin's ultimate cut-in uses rin-oath`
 - [ ] **Step 2: 執行，確認失敗**
 - [ ] **Step 3: 實作**
 - [ ] **Step 4: 執行全套**；帶著 `memories: 10` 的帶照 Task 7 的做法處理（新紅的改 `it.fails`，註解 `// 6b Task 20b`，記進 baseline），其他帶紅了停下來回報。
@@ -687,12 +700,13 @@
   - `render/artPaths.ts`：`enemyArt(id)`；`allArtUrls` 不列有 `look` 的敵人。`render/BattleView.ts` 改用 `enemyArt`。
   - `ui2/scenes/battle.ts`：survive 戰的提示行。
   - `data/text.zh-TW.ts`：`T.ui2.battle.survive = (left: number) => \`撐過去！還有 ${left} 回合\``、`T.ui2.battle.survived = '她收起了劍。'`。
-- Test：`engine/battle.test.ts`、`engine/game.test.ts`、`render/artPaths.test.ts`、`engine/scaling.test.ts`、`ui2/scenes/battle.test.ts`
+- Test：`engine/battle.test.ts`、`engine/game.test.ts`、`render/artPaths.test.ts`、`engine/scaling.test.ts`、`ui2/scenes/battle.test.ts`；會壞的 `data/data.test.ts`（CRLF）：「8 種一般敵人」與「每一種一般敵人都在某個遇敵組裡」兩項，敵人清單先濾掉 `e.story`，意圖不變。`allArtUrls()` 維持 246 個（`scarlet-foe` 靠 `look` 排除）。
 
 **Interfaces:**
 - `STORY_FIGHT_ROUNDS = 3`（`engine/battle.ts`）
 - `scarlet-foe`（spec §6；數值 implementer's call → fixed here）：`{ id: 'scarlet-foe', name: '絲嘉蕾', floor: 3, story: true, look: 'scarlet', undying: true, stats: s(300, 40, 26, 10, 18, 9), weak: ['ice'], resist: ['fire'], exp: 0, gold: 0, drops: [], skills: [{ name: '紅蓮斬', chance: 0.4, target: 'enemy', effects: [{ kind: 'damage', power: 130, element: 'fire', scale: 'atk', melee: true }] }] }`
 - `enemyArt(id: string): string`：`look` 有值時是 `art.standee(look)`，否則 `art.enemy(id)`。
+- `startBattle(enemyIds, boss, scaled, elite?, extra = 0, opts: { survive?: number } = {})`：`opts` 原樣傳給 `createBattle`（Task 17 在同一個物件加上 `names`、`bossPower`）。
 - `Game.move` 踩到求救房、`who === 'scarlet'`：`startBattle(['scarlet-foe', ...group], false, true, undefined, 1, { survive: STORY_FIGHT_ROUNDS })`；其他人照舊。
 - `createBattle({ ..., survive })`：寫進 `BattleState.survive`；survive 戰裡我方每一位與 `undying` 的敵人都是 undying（spec「她不會死、也不會讓隊伍全滅」；見衝突第 11 點）。
 - `resolveRound`：回合結束後 `s.survive && s.round ≥ s.survive && s.outcome === 'ongoing'` 時 `outcome = 'win'`，log 加 `{ type: 'survived' }`。可以逃跑；逃跑時她沒有遇見，求救房還在（照 6a）。
@@ -717,8 +731,8 @@
 
 **Files:**
 - Create：`engine/story/events.ts`、`engine/story/events.test.ts`
-- Modify：`engine/game.ts`；`ui2/scenes/guild.ts`（交還場景播完後呼叫 `sceneDone`）
-- Test：`engine/story/events.test.ts`、`engine/game.test.ts`、`ui2/scenes/guild.test.ts`
+- Modify：`engine/game.ts`；`ui2/story.ts`（`playAndRecord`）；`ui2/scenes/guild.ts`（交還場景改用 `playAndRecord`）
+- Test：`engine/story/events.test.ts`、`engine/game.test.ts`、`ui2/story.test.ts`、`ui2/scenes/guild.test.ts`
 
 **Interfaces:**
 - `storyStage(s: GameState): Stage`：`finaleCleared` → after；否則 nodes 含 act4 → act4、act3 → act3、act2 → act2；否則 `act1Cleared` 或 `reached.mainline ≥ 2` → act1；否則 prologue。
@@ -728,31 +742,35 @@
   - 不看任何夥伴碎片的數量（spec §2）。
 - `QUEUE_ORDER`：`queue` 一律排成 `act1-after`、`act2`、`act3`、`act4`、`mem:hero:n`（n 由小到大）、其他（依加入順序）。`rin-reveal` 不參與排序。
 - `nextChat(s: GameState): SceneId | null`：候選是 `chat:${id}:${n}`，條件是 id 已遇見、沒看過、而且 n 是 1 或 `chat:${id}:${n − 1}` 已看過；挑「已看過的對話最少」的那位，平手依 `CHARACTER_IDS`。
-- `arrivalScenes(s: GameState): SceneId[]`：queue 含 `rin-reveal` 時只有 `['rin-reveal']`（spec §5.2：同一次回城的其他場景延到下一次）；否則是排好的 queue，最後加上 `nextChat`（若有；每次最多 1 段）。
+- `arrivalScenes(s: GameState, o: { chat: boolean }): SceneId[]`：queue 含 `rin-reveal` 時只有 `['rin-reveal']`（spec §5.2：同一次回城的其他場景延到下一次）；否則是排好的 queue，`o.chat` 為真時最後加上 `nextChat`（若有；每次最多 1 段）。回城對話（spec §8.2）只在「回到城鎮」時出現：只有 `toTown`、`wipe`、`restartAfterClear` 傳 `chat: true`；新遊戲（`fresh`）與讀檔（`boot`）一律 `chat: false`。
 - `sceneDone(s: GameState, id: SceneId, how: 'played' | 'skipped' | 'auto'): GameState`：從 queue 移除；加進 seen（已在就不重複）；`auto` 時也加進 fresh；`rin-reveal` 時凜得到 `oath`（spec §5.3 的回報從她的選擇之後開始；見衝突第 21 點）。
 - `markRead(s: GameState, id: SceneId): GameState`：從 fresh 移除。
 - `Game`：
-  - `arrival: SceneId[]`（不存檔）：`toTown`、`wipe`、`restartAfterClear` 先 `story = onReturn(state)` 再設 `arrival = arrivalScenes(state)`；`boot`、`fresh` 也設。
-  - `sceneDone(id, how)`：id 必須在 `arrival` 裡、或是 Task 17 的迷宮回憶與終幕場景、或是 Task 11 的交還場景；否則回傳 false。town 時立刻存檔；從 `arrival` 移除。
+  - `arrival: SceneId[]`（不存檔）：`toTown`、`wipe`、`restartAfterClear` 先 `story = onReturn(state)` 再設 `arrival = arrivalScenes(state, { chat: true })`；`boot`、`fresh` 設 `arrivalScenes(state, { chat: false })`，所以新遊戲的第一次抵達剛好是 `['prologue']`。
+  - `sceneDone(id, how): boolean`：id 必須在 `arrival`、`pending`（Task 5 的迷宮回憶、Task 11 的交還場景）或 `finale` 的場景（Task 17：`finale.pieces` 與 `'finale'`）裡，否則回傳 false。從那個清單移除；town 時立刻存檔。
+- `ui2/story.ts`：`playAndRecord(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: Promise<void>; onAction(a: UiAction): void }`：`shouldPlay` 時 `playScene`，結束後 `ctx.game.sceneDone(id, 結果是 done ? 'played' : 'skipped')`；不播時立刻 `sceneDone(id, 'auto')`，畫面上不出任何台詞。公會（本任務）、城鎮（Task 16）、迷宮與戰果與通關畫面（Task 17）一律用它，不各寫一份。
   - `markRead(id)`：town 與 map 都可以；town 時立刻存檔。
   - `depart` 不看 `arrival`：佇列永遠不擋出發。
 
 - [ ] **Step 1: 寫失敗的測試**
   - `events.test.ts`：
     - `act nodes fire by depth alone`：所有人 0 片記憶，`reached.mainline = 4` 時 queue 有 act2；`10` 時再加 act3；同一個節點不會加第二次。
-    - `the queue plays in story order`：加入順序是 `[mem:hero:7, act3, act1-after]`，`arrivalScenes` 是 `[act1-after, act3, mem:hero:7]`。
+    - `the queue plays in story order`：加入順序是 `[mem:hero:7, act3, act1-after]`，`arrivalScenes(s, { chat: false })` 是 `[act1-after, act3, mem:hero:7]`。
     - `Rin's reveal plays alone on the first return after her seventh piece`：queue `[act2, rin-reveal]` 時是 `['rin-reveal']`；`sceneDone` 之後再回城，是 `[act2, ...]`。
     - `the reveal gives Rin her oath, played, skipped or auto`
     - `skipping counts as seen; auto also marks it new`
     - `one chat per return, from whoever has said least, met only`
+    - `no chat without a return`：`arrivalScenes(s, { chat: false })` 永遠不含 `chat:`。
     - `the stage follows the acts`
     - `the story is a pure function of the state`：同一個狀態呼叫兩次，結果相同，輸入不變。
   - `game.test.ts`：
-    - `the new game's first arrival is the prologue`
+    - `the new game's first arrival is the prologue`：`Game.fresh` 後 `arrival` 剛好是 `['prologue']`；存檔後 `boot`，`arrival` 也不含 `chat:`。
+    - `a return to town adds one chat`
     - `a wipe enqueues like a safe return`
     - `the reveal survives a reload and a wipe`：凜 7 片、全滅回城，`arrival` 是 `['rin-reveal']`；不呼叫 `sceneDone`，存檔後 `boot`，`arrival` 仍是 `['rin-reveal']`；`sceneDone('rin-reveal', 'skipped')` 之後存檔讀回不再出現。
     - `departure is never blocked by the queue`：`arrival` 還有場景時 `depart` 成功。
     - `sceneDone refuses scenes that are not due`
+  - `story.test.ts`（ui2）：`playAndRecord records played, skipped and auto`
   - `guild.test.ts`：`a played return is recorded as seen`
 - [ ] **Step 2: 執行，確認失敗**
 - [ ] **Step 3: 實作**
@@ -765,18 +783,19 @@
 - Modify：
   - `ui2/scenes/town.ts`：進場時先播 `game.arrival`，播完才顯示通知或日常台詞；日常台詞改讀 `STORY.townLines[stage]`，凜已遇見而且 `rinLines[stage]` 有值時，也從那裡挑（說話者是凜）。
   - `ui2/scenes/facility.ts`：招呼改讀 `STORY.greet[設施][stage]`。
-  - `data/text.zh-TW.ts`：刪掉被取代的 `T.ui2.town.lines` 與各設施的 `greet`（內容已在 Task 1 搬進 `STORY`）。
+  - `data/text.zh-TW.ts`：刪掉被取代的 `T.ui2.town.lines` 與 `T.ui2.facility.<設施>.greet`（內容已在 Task 1 抄進 `STORY`）。刪之前 `grep -rn "\.greet\b\|town\.lines" src tests/e2e`，所有讀取的地方都改完才刪。
 - Test：`ui2/scenes/town.test.ts`、`ui2/scenes/facility.test.ts`；會壞的測試：
   - 用 `Game.fresh`／`Game.boot` 建立遊戲、然後斷言城鎮第一句話的單元測試，現在會先遇到序章：在建立後設 `game.arrival = []`，或傳入 `settings` 的 `story: 'none'`。
-  - `tests/e2e/starlantern.spec.ts`：在開新遊戲的共用步驟之前，用 `page.addInitScript` 把 `starlantern-settings` 寫成含 `story: 'none'` 的設定（其他欄位用預設值），讓現有的流程不被序章擋住。本任務新增的 e2e 不設。
+  - `tests/e2e/starlantern.spec.ts`：共用的 `setup()` 新增選項 `setup(page, seed, { story: 'none' | 'major' | 'all' } = { story: 'none' })`，在開遊戲之前用 `page.addInitScript` 把 `starlantern-settings` 寫成含那個 `story` 的設定（其他欄位用預設值）。現有的測試不必改呼叫就得到 `'none'`；Task 21 的新測試傳 `'all'`。
 
 **Interfaces:**
 - `TownScene.enter`：
   - 選單與返回鍵先 `inert`；
-  - 依序處理 `game.arrival` 的每一個 id：`shouldPlay(id, mode)` 時 `playScene`，結果是 done → `sceneDone(id, 'played')`，skipped → `sceneDone(id, 'skipped')`；不播時 `sceneDone(id, 'auto')`，畫面上不出任何台詞；
+  - 依序對 `game.arrival` 的每一個 id 呼叫 `playAndRecord`（Task 15）；
   - 全部處理完才照原本的邏輯顯示 `banked`、`notice` 或日常台詞，並解除 `inert`。
   - 播放中的 `onAction` 交給目前場景的 handler。
-- 序章：`Game.fresh` 之後的第一次進城就是 `arrival = ['prologue']`，播完直接是城鎮（spec §9.2）。
+- 序章：`Game.fresh` 之後的第一次進城就是 `arrival = ['prologue']`（沒有回城對話，Task 15），播完直接是城鎮（spec §9.2）。
+- 鎮民交還後的城鎮台詞（spec §17）：`story.returned` 有那位鎮民時，`STORY.town[id].after` 加進她所在設施的招呼池（歐里克 shop、瑪莎 inn、安娜 guild、葛倫 gate、多蘭 forge）。
 - 第一幕：打倒燈喰之獸 → 通關畫面（Task 2）→「繼續」→ 回城時 `act1-after`（「三天後」）在佇列裡（spec §8.5）。
 
 - [ ] **Step 1: 寫失敗的測試**
@@ -787,7 +806,7 @@
     - `major only plays the reveal but not a chat`
     - `town lines follow the stage`：act2 時的那句來自 `STORY.townLines.act2` 或 `rinLines.act2`。
     - `Rin's foreshadowing joins the town lines from act 2`：用固定的 rng，讓挑到的是凜的伏筆，說話者是凜。
-  - `facility.test.ts`：`greetings follow the stage`
+  - `facility.test.ts`：`greetings follow the stage`；`a returned townsperson's after-line joins her greetings`
 - [ ] **Step 2: 執行，確認失敗**
 - [ ] **Step 3: 實作，並依 Files 修正會壞的測試**
 - [ ] **Step 4: 執行全套與 e2e，確認全部通過**
@@ -799,7 +818,8 @@
 - Modify：
   - `engine/game.ts`：終幕頭目；`finale` 欄位。
   - `engine/battle.ts`：`createBattle` 的選項 `names?: Record<string, string>`、`bossPower?: number`。
-  - `data/enemies.ts` 或 `data/story/scenes.ts`：`FINALE_BOSS = { base: 'lanterneater', name: '燈喰之母', power: 1 }`（`power` 是 Task 20c 的旋鈕）。
+  - `data/story/scenes.ts`：`FINALE_BOSS = { base: 'lanterneater', name: '燈喰之母', power: 1 }`，放在 `FINALE_DEPTH` 旁邊（`power` 是 Task 20c 的旋鈕）。
+  - `engine/game.ts` 的 `startBattle`：Task 14 的 `opts` 加上 `names?`、`bossPower?`，原樣傳給 `createBattle`。
   - `ui2/scenes/dungeon.ts`：微光的 `play` 片用 `playScene`；相遇台詞改用帶立繪的說話者（她本人）。
   - `ui2/scenes/battle.ts`：戰果視窗關閉後，播 `fragments` 裡 `play` 為真的那一片。
   - `ui2/scenes/clear.ts`：`cleared === 'finale'` 時先播補齊的回憶與 `finale`，再顯示終幕卡片。
@@ -807,11 +827,12 @@
 - Test：`engine/game.test.ts`、`engine/battle.test.ts`、`ui2/scenes/dungeon.test.ts`、`ui2/scenes/battle.test.ts`、`ui2/scenes/clear.test.ts`
 
 **Interfaces:**
-- 迷宮裡播回憶：`gained`／`fragments` 裡 `play` 為真的片，`shouldPlay(id, mode)` 時 `playScene`，結果記 `sceneDone(id, 'played' | 'skipped')`；不播時 `sceneDone(id, 'auto')`。`play` 為假的片在 Task 5 已經記成看過與「新」。
+- 迷宮裡播回憶：`gained`／`fragments` 裡 `play` 為真的片用 `playAndRecord`（Task 15）。`play` 為假的片在 Task 5 已經記成看過與「新」。
+- 戰鬥畫面的敵人名字一律讀 combatant 的 `name`，不讀 `ENEMIES[id].name`，所以改名會顯示出來。
 - 終幕（spec §8.4）：
   - 本道第 `FINALE_DEPTH` 層的頭目、`finaleCleared` 為假時：`startBattle([FINALE_BOSS.base], true, true)` 並傳 `names: { [FINALE_BOSS.base]: FINALE_BOSS.name }`、`bossPower: FINALE_BOSS.power`；`bossPower` 在補正之後乘上 hp、atk、mag。終幕之後照一般頭目。
-  - 打倒之後：照常給碎片（第 30 層的補齊），但補齊的片 `play` 一律 false、也不記看過；`story.finaleCleared = true`；`phase = 'clear'`、`cleared = 'finale'`；`Game.finale = { pieces: SceneId[] }` 是這次補齊的回憶，依片號排好。
-  - `ClearScene`（finale）：依序處理 `finale.pieces` 與 `'finale'`，每一個都照 `shouldPlay` 播放或 `auto`，並呼叫 `sceneDone`；之後顯示 `T.ending` 的卡片；「繼續」→ `restartAfterClear` → 城鎮。
+  - 打倒之後：照常給碎片（第 30 層的補齊），但補齊的片 `play` 一律 false、也不記看過；`story.finaleCleared = true`；`phase = 'clear'`、`cleared = 'finale'`；`Game.finale = { pieces: SceneId[] }` 是這次補齊的回憶，加上 `story.queue` 裡還在等的 `mem:hero:*`（例如同一趟從第 25 層打到第 30 層，第 25 層補齊的回憶還沒回過城），那些從 queue 移除；全部依片號排好（spec §8.4：終幕播放時主角的記憶一定已經齊了）。
+  - `ClearScene`（finale）：依序對 `finale.pieces` 與 `'finale'` 呼叫 `playAndRecord`；之後顯示 `T.ending` 的卡片；「繼續」→ `restartAfterClear` → 城鎮。
 - 不需要碎片數量也不需要遇見全部夥伴：沒遇見的人、還沒遇見的波比，由 `ScriptLine.if` 決定念哪一句（6c 寫）。
 
 - [ ] **Step 1: 寫失敗的測試**
@@ -820,7 +841,9 @@
     - `beating her clears the finale and brings the hero to ten`：主角 2 片時打倒，`memories` 是 10，`finale.pieces` 是 `mem:hero:3` 到 `mem:hero:10`，`phase` 是 clear、`cleared` 是 finale。
     - `the finale needs no memories and no full party`：只有主角與凜、所有人 0 片也能觸發。
     - `after the finale the depth-30 boss is an ordinary boss`
+    - `memories still queued from depth 25 play before the finale`：同一趟從第 25 層打到第 30 層，`finale.pieces` 從第 25 層補齊的那幾片開始，`story.queue` 不再含任何 `mem:hero:*`。
   - `battle.test.ts`：`names and boss power change only that fight`
+  - `ui2/scenes/battle.test.ts`：`the finale boss shows its own name`
   - `dungeon.test.ts`：`the first memory of a floor plays as a memory scene`（`slx-talk--memory` 出現）；`story none records it without a line`
   - `battle.test.ts`（ui2）：`a played memory follows the result window`
   - `clear.test.ts`：`the finale plays the hero's last memories, then the finale, then the ending card`；`skipping each one still reaches the card`；`with story none the finale shows only the card and records every scene new`
@@ -838,10 +861,12 @@
 ```ts
 export interface PiecePage { n: number; scene: SceneId; found: boolean; fresh: boolean; hint: string }
 export interface MemoryPage { id: CharacterId; met: boolean; pieces: PiecePage[] }
-export interface PersonPage { id: CharacterId; met: boolean; title: string; segments: string[] }
-export interface TownPage { id: TownFragmentId; status: 'unknown' | 'held' | 'returned'; lines: string[] }
+/** A scene the handbook can replay: only scenes already seen are listed. */
+export interface SceneEntry { scene: SceneId; title: string; fresh: boolean }
+export interface PersonPage { id: CharacterId; met: boolean; title: string; segments: string[]; scenes: SceneEntry[] }
+export interface TownPage { id: TownFragmentId; status: 'unknown' | 'held' | 'returned'; lines: string[]; scene: SceneEntry | null }
 export interface CodexPage { specials: string[]; sets: string[]; monsters: { id: string; name: string; weak: Element[] | null }[] }
-export interface TruthPage { stage: Stage; unlocked: boolean; text: string | null }
+export interface TruthPage { stage: Stage; unlocked: boolean; text: string | null; scenes: SceneEntry[] }
 export interface Handbook { memories: MemoryPage[]; people: PersonPage[]; town: TownPage[]; codex: CodexPage; truths: TruthPage[] }
 export function handbook(s: GameState): Handbook
 ```
@@ -850,6 +875,12 @@ export function handbook(s: GameState): Handbook
 - town：`held` 是 inventory 有它；`returned` 是 `story.returned` 有它；`lines` 在 held 時是 `[lost]`，returned 時是 `[lost, after]`，unknown 時是空的。
 - codex：`specials`、`sets` 照 `codex`；`monsters` 是不含 `story` 的 `ENEMIES`，`weak` 在 `revealed` 有記錄時是那些元素，否則 null。
 - truths：prologue 一律解鎖；act1 看 `act1Cleared`；act2–act4 看 `nodes`；after 看 `finaleCleared`。
+- 每一個場景都能在某一頁重看（spec §2、§8.3），清單只列已看過的（`story.seen`），`fresh` 照 `story.fresh`：
+  - 真相頁：prologue 頁是 `prologue`；act1 頁是 `act1-after`；act2–act4 頁是同名的節點場景；after 頁是 `finale`。
+  - 人物頁：那個人說的回城對話 `chat:${id}:${n}`（依 n）；凜的頁另外加上 `rin-reveal`，排在她的對話之前。
+  - 鎮民頁：交還之後的 `town:${id}`；之前是 null。
+  - 記憶頁：照舊是 57 片。
+  - 以上加起來剛好涵蓋 `SCENE_IDS` 的每一個 id。
 
 - [ ] **Step 1: 寫失敗的測試**
   - `the memory pages show what was found and hint at the rest`
@@ -858,7 +889,9 @@ export function handbook(s: GameState): Handbook
   - `townsfolk pages follow the fragment`
   - `the codex lists every ordinary monster and its known weaknesses`
   - `truths unlock with the acts and the finale`
-  - `fresh scenes carry the new mark`
+  - `fresh scenes carry the new mark`：記憶、真相、人物、鎮民四種頁各測一個。
+  - `every scene in the catalogue has a page`：把每一頁的場景（記憶頁的片、`SceneEntry`）收集起來，在全部看過的狀態下剛好等於 `SCENE_IDS`，沒有重複。
+  - `only seen scenes are listed`：序章沒看過時真相頁的 scenes 是空的。
 - [ ] **Step 2: 執行，確認失敗**
 - [ ] **Step 3: 實作**
 - [ ] **Step 4: 執行 `engine/story` 的測試，確認全部通過**
@@ -880,13 +913,16 @@ export function handbook(s: GameState): Handbook
 **Interfaces:**
 - 版面沿用狀態頁的分頁做法（`prev`／`next` 換分頁，清單用 `MenuView`），不另做框架。
 - 記憶分頁：選角色 → 片的清單（找到的顯示 `STORY.scenes[...].title` 與「新」；沒找到的顯示 `unknown` 與 hint）→ 選一片 → `playScene` 重看，結束後 `game.markRead(id)`。重看不呼叫 `sceneDone`，不改任何進度。
-- 人物分頁：遇見的顯示站姿圖（`artIdOf`）、title 與 segments；沒遇見的顯示 `standeeImg` 加上 `slx-silhouette` 與 `unknown`，沒有站姿圖時只顯示 `unknown`。
+- 人物分頁：遇見的顯示站姿圖（`artIdOf`）、title、segments，以及 `scenes`（凜的揭露與回城對話）的清單；沒遇見的顯示 `standeeImg` 加上 `slx-silhouette` 與 `unknown`，沒有站姿圖時只顯示 `unknown`。
+- 真相分頁：解鎖的條目顯示 text 與 `scenes`（序章、三天後、各幕、終幕）；鎮民分頁：交還後顯示 `scene`。
+- 這三個分頁的場景與記憶分頁一樣：標「新」，選了就 `playScene` 重看，結束後 `game.markRead(id)`，不呼叫 `sceneDone`。
 - 從迷宮打開（`arg === 'dungeon'`）時唯讀：只能看與重看；返回回到迷宮。
 
 - [ ] **Step 1: 寫失敗的測試**
   - `handbook.test.ts`：
     - `the five tabs are there in order`
     - `replaying a memory changes no progress but clears the new mark`
+    - `the prologue, Rin's reveal, a chat and a return can be replayed from their tabs`：每一個都出現在對的分頁、帶「新」，重看之後「新」消失，`story.seen` 與 `queue` 不變。
     - `a companion not yet met shows a silhouette and ？？？`
     - `opened from the labyrinth it goes back to the labyrinth`
   - `town.test.ts`：`the town menu opens the handbook`
@@ -903,7 +939,8 @@ export function handbook(s: GameState): Handbook
 - Create：`engine/story/expect.ts`、`engine/story/expect.test.ts`、`engine/balance.deep.test.ts`
 - Modify：
   - `engine/sim.ts`：`Lineup.expect?: boolean`、`Lineup.armHero?: boolean`；`partyAt(level, lineup = {}, depth = 1)`；`kitParty` 與 `winRate` 把 depth 傳給 `partyAt`；`simBattle` 新增最後一個參數 `bossPower?: number`。
-  - `engine/scaling.ts`：`ENEMY_POWER` 新增 `from3: 42, amount3: 0, ramp3: 0`；`enemyPower` 在 `level > from3` 時再加 `amount3 + ramp3 × (level − from3)`。初值讓曲線完全不變。
+  - `engine/scaling.ts`：新增 Task 20c 的旋鈕 `DEEP_ENEMIES`，初值讓每一個深度的敵人完全不變（見下方）。
+  - `engine/battle.ts`：有 `scale` 的戰鬥，敵人的等級改用 `enemyLevelAt(depth)`。
   - `engine/balance.test.ts`、`engine/balance.lineups.test.ts`：見下方。
   - `.superpowers/sdd/2026-10-18-starlantern-plan6b-story/balance-baseline.md`
 - Test：`engine/story/expect.test.ts`、`engine/sim.test.ts`、`engine/scaling.test.ts`
@@ -920,11 +957,16 @@ export function handbook(s: GameState): Handbook
   - 凜 7 片時 `oath` 為真（她的揭露在下一次回城播放）。
 - `partyAt`：
   - `lineup.expect` 時，每一位成員套用 `expectedMemories(depth, ids)` 的結果；`lineup.memories` 有值時仍覆寫主角的片數（第 11、14、18e 項的「10 片記憶」）。
-  - `lineup.armHero` 時，主角的流派武器是 `mag` 系（`WEAPON_KINDS[weaponKindOf].scale === 'mag'`）就裝上那把底材：`{ uid: 0, base, rarity: 'common', ilvl: EQUIPMENT[base].ilvl, affixes: [], enhance: 0 }`；其他流派不裝（接手清單 M9）。
+  - `lineup.armHero` 時，主角的流派武器 `const kind = weaponKindOf({ base: HERO_BUILDS[build].weapon })` 是 `mag` 系（`WEAPON_KINDS[kind].scale === 'mag'`）就裝上那把底材：`{ uid: 0, base, rarity: 'common', ilvl: EQUIPMENT[base].ilvl, affixes: [], enhance: 0 }`；其他流派不裝（接手清單 M9）。
+- `DEEP_ENEMIES = { fromDepth: 11, levelsPerDepth: 4, power: 0 }`（`engine/scaling.ts`；Task 20c 的旋鈕，初值等於現況）：
+  - `enemyLevelAt(depth: number): number`：`depth ≤ fromDepth` 時是 `depthLevel(depth)`；否則 `depthLevel(fromDepth) + levelsPerDepth × (depth − fromDepth)`。
+  - `deepPower(depth: number): number`：`depth ≤ fromDepth` 時 1；否則 `1 + power`。
+  - 有 `scale` 的戰鬥：敵人的等級（`empower` 與 `scaleEnemy` 的成長）用 `enemyLevelAt(depth)`，hp、atk、mag 再乘 `deepPower(depth)`。經驗值、金錢、物品等級、`depthClearExp`、建議等級仍用 `depthLevel`。
+  - 初值下 `enemyLevelAt` 等於 `depthLevel`、`deepPower` 是 1，所以每一場戰鬥逐位元不變。
 - `balance.test.ts`：
-  - 第 7 項（勝負）多跑一次 `{ expect: true }`，標籤 `7 (記憶期望)`。
-  - `10 (memories)` 改成 `10 (記憶期望)`，lineup 是 `{ expect: true }`（spec §9.4 第 7 點；見衝突第 4 點）。門檻不變。
-  - `the memories variants measure something` 改成：記憶期望在 depth 10 時主角至少 `ABYSS_UNLOCK[0]` 片、而且與沒有記憶的版本結果不同；`DEEP` 的那一半照舊。
+  - 「7. same depth level, same odds」（勝負那一項，不是 pace）多跑一次 `{ expect: true }`，標籤 `7 (記憶期望)`。
+  - `10 (memories)` 改成 `10 (記憶期望)`，lineup 是 `{ expect: true, heroBuild: MEMORIES_BUILD }`（保留流派，第 10 項才會有深淵終極，spec §9.4 第 8 點；見衝突第 4 點）。門檻不變。
+  - `the memories variants measure something` 改成：記憶期望在 depth 10 時主角至少 `ABYSS_UNLOCK[0]` 片、`heroTree` 含 `abyss-sword`、而且與沒有記憶的版本結果不同；`DEEP` 的那一半照舊。
   - 第 11、14 項的 DEEP 版本、`18e` 照舊。
 - `balance.deep.test.ts`（新的第 19 項；門檻是本計畫訂的）：
   - `19a the deep road`：depth 15、20、25，mainline，等級 `min(MAX_LEVEL, depthLevel(d))`，`kitParty(level, d, kitSeed 1–5, undefined, expectedEnhance(d), { expect: true })`，該層的 `encounterTable`，每組 8 個種子：勝率 ≥ 0.85，HP 損失 0.10–0.45。
@@ -934,12 +976,14 @@ export function handbook(s: GameState): Handbook
 
 - [ ] **Step 1: 寫測試**
   - `expect.test.ts`：
-    - `the expectation grows with depth and stays within every chain`
-    - `the expectation follows the real drop rules`：depth 10 的主角片數，等於用 `pieceDrops` 手算本道 1–10 層頭目與精英的結果（測試裡重算一次）。
-    - `the elite rate behind EXPECT_ELITE_EVERY is honest`：200 個種子、本道第 1–12 層，`floorOf` 的平均精英數介於 `1 / (EXPECT_ELITE_EVERY + 1)` 與 `1 / (EXPECT_ELITE_EVERY − 1)`。
+    - `the expectation grows with depth and stays within every chain`：depth 1–30 每一位的片數不減、不超過 `chainLength`，吸收數不超過 `ABSORB_CAP`。
+    - `the hero's expected pieces follow the drop schedule`：寫成手算的軌跡，不在測試裡重寫模型。測試裡列出一張字面的表 `[深度, 來源, 得到的人]`（本道 1–10 層：第 1 層凜的保底微光、第 3 層頭目凜第 2 片、第 5 層頭目主角第 1 片……），每一行用註解寫明理由（門檻、保底、優先序），斷言 `expectedMemories(10, STANDARD_LINEUP).hero.memories` 等於表裡主角出現的次數。表與模型不符時，先查哪一邊錯，不可以改表去配合程式。
+    - `the elite rate behind EXPECT_ELITE_EVERY is honest`：200 個種子、本道第 1–12 層，`floorOf` 的平均精英數介於 `1 / (EXPECT_ELITE_EVERY + 1)` 與 `1 / (EXPECT_ELITE_EVERY − 1)`。這一項紅了，改 `EXPECT_ELITE_EVERY` 成誠實的值（不可以改上下界），記進 baseline，而且要在任何調整之前。
     - `the same depth always expects the same`
   - `sim.test.ts`：`partyAt applies the expectation for its depth`；`armHero arms only a caster`
-  - `scaling.test.ts`：`the third step leaves every level up to from3 as it was`（記下改動前 L = 1…42 的 `enemyPower`，改動後相同）；`enemyPower never falls`（L = 1…250 非遞減）。
+  - `scaling.test.ts`：
+    - `the deep knobs at their start values change nothing`：記下改動前 depth 1–60 每一隻一般敵人與燈喰之獸 `scaleEnemy`／`empower` 後的 hp、atk、mag，改動後相同。
+    - `deep enemies grow strictly with depth`：depth 1–250，同一隻敵人的 hp、atk、mag（含 `deepPower`）嚴格遞增。這一項在 Task 20c 的任何旋鈕值下都必須成立。
 - [ ] **Step 2: 執行**：`BALANCE_REPORT=1 rtk proxy npx vitest run src/scripts/games/starlantern/engine/balance.test.ts src/scripts/games/starlantern/engine/balance.lineups.test.ts src/scripts/games/starlantern/engine/balance.deep.test.ts --testTimeout=300000`，每一項的數字寫進 `balance-baseline.md`。
 - [ ] **Step 3: 本任務不調任何旋鈕。** 紅的項目改用 `it.fails`，註解負責的任務：記憶期望與 DEEP 的帶 `// 6b Task 20b`，第 19 項 `// 6b Task 20c`，第 18 項 `// 6b Task 20d`。
 - [ ] **Step 4: 執行全套，確認全部通過**
@@ -949,50 +993,68 @@ export function handbook(s: GameState): Handbook
 
 **Files:**
 - Modify：`engine/balance.test.ts`、`engine/balance.lineups.test.ts`（`// 6b Task 20b` 的 `it.fails` 改回 `it`）；旋鈕所在的檔案：`data/story/chains.ts`、`data/story/fragments.ts`、`data/talents.ts`、`data/ultimates.ts`
-- Test：`data/hero.test.ts`（6a 的峰值與 Task 13 的天燈）必須維持綠。
+- Test：`data/hero.test.ts`（6a 的峰值與 Task 13 的天燈）必須維持綠；其他 balance 項目必須維持綠。
 
-**旋鈕與順序**（紅了才調；每一步都重跑三個 balance 檔）
-1. `CHAINS` 的每片提升（主角每項 1、夥伴 2；可以降到主角 0.5、夥伴 1，或改成只提升一部分主屬性）。
-2. `ABSORB_GAIN`、`ABSORB_CAP`。
-3. `MEMORY_KEYSTONE_VALUES`。
-4. `SKY_LANTERN.heal`、`RIN_DAWN` 的 power、`refundOnKill`、follow 的 pct。
-- 不是旋鈕：`ENEMY_POWER` 的任何欄位、人數補正表、6a 的主角與凜的數值、`expectedMemories` 的模型與常數（它要描述真的掉落，不能為了過帶而改）。
-- 第 10 項的 HP 損失下限（0.10）與第 18b 項是已知的緊繃組合（接手清單 M3/M4）：記憶的帶只能用上面的旋鈕解，不可以動 `ENEMY_POWER.ramp`。
+**旋鈕、順序與方向**（紅了才調）
+- 記憶只會增加戰力，所以記憶的帶紅，只會是「太輕鬆」（HP 損失低於 0.10）或「頭目一回合倒下」（第 11、14、18e 項）。因此**每一個旋鈕都只能往「記憶比較弱」的方向動**，不可以往回調：
+  1. `CHAINS` 的每片提升：只能變小（主角每項最低 0.5、夥伴最低 1），或改成只提升一部分主屬性。
+  2. `ABSORB_GAIN` 只能變小；`ABSORB_CAP` 只能變小（最低 10）。
+  3. `MEMORY_KEYSTONE_VALUES`：每一個值只能往效果變弱的方向動（不低於 0）。
+  4. `SKY_LANTERN.heal`、`RIN_DAWN` 的 power、`refundOnKill`、follow 的 pct：只能變小。
+- 不是旋鈕：`ENEMY_POWER` 的任何欄位、`DEEP_ENEMIES`、人數補正表、6a 的主角與凜的數值、`expectedMemories` 的模型與常數（它要描述真的掉落，不能為了過帶而改）。
+- 第 10 項的 HP 損失下限與第 18b 項是已知的緊繃組合（接手清單 M3/M4）：只能用上面的旋鈕解，不可以動 `ENEMY_POWER.ramp`。
+- 動到 `ABSORB_GAIN` 時，在 baseline 記一句：存檔驗證綁著這張表，6b 之後的計畫若再改它，要升 `SAVE_VERSION`。
 
-**時間上限**：最多 6 輪「調整 → 三個檔全跑」。收斂不了就停下來回報 sweep 的數字，不 commit。
+**一輪**：把一個旋鈕設成一個值，然後跑完三個 balance 檔（`balance.test.ts`、`balance.lineups.test.ts`、`balance.deep.test.ts`）。每一輪記進 `balance-baseline.md`。
 
-- [ ] **Step 1: 依順序 sweep**，每一組值的結果記進 `balance-baseline.md`。
-- [ ] **Step 2: `// 6b Task 20b` 的 `it.fails` 全部改回 `it`，執行全套，確認全部通過**
-- [ ] **Step 3: commit**：`balance(starlantern): tune what memories are worth`，訊息寫出旋鈕最後的值與各帶的實測數字。
+**時間上限與收尾**：最多 6 輪。
+- 收斂：`// 6b Task 20b` 的 `it.fails` 全部改回 `it`，commit。
+- 收斂不了（控制者裁定）：把旋鈕留在最好的一組值，沒過的帶保留 `// 6b Task 20b` 的 `it.fails`、記進 baseline，commit 並回報 sweep 的數字；Task 20c、20d 照樣執行（20c 用當下的 `expectedMemories`）。這些標記絕不會出現在最後的 commit：Task 21 遇到它們就停下來等使用者。
 
-### Task 20c: 調整深層帶（限時）
+- [ ] **Step 1: 依順序 sweep**，每一輪的結果記進 `balance-baseline.md`。
+- [ ] **Step 2: 照上面的收尾規則改標記，執行全套**（全套必須綠；`it.fails` 的帶算綠）
+- [ ] **Step 3: commit**：`balance(starlantern): tune what memories are worth`，訊息寫出旋鈕最後的值、各帶的實測數字，以及仍留著的 `it.fails`（若有）。
+
+### Task 20c: 調整深層帶（限時；控制者的暫定裁定，使用者可以推翻）
 
 **Files:**
-- Modify：`engine/balance.deep.test.ts`（`// 6b Task 20c` 的 `it.fails` 改回 `it`）；旋鈕所在的檔案：`engine/scaling.ts`（`ENEMY_POWER.from3`、`amount3`、`ramp3`）、`FINALE_BOSS.power` 所在的檔案
-- Test：`engine/scaling.test.ts` 的兩項（from3 以下不變、非遞減）必須維持綠；其他 balance 檔必須維持綠。
+- Modify：`engine/balance.deep.test.ts`（`// 6b Task 20c` 的 `it.fails` 改回 `it`）；旋鈕所在的檔案：`engine/scaling.ts`（`DEEP_ENEMIES`）、`data/story/scenes.ts`（`FINALE_BOSS.power`）
+- Test：`engine/scaling.test.ts` 的 `deep enemies grow strictly with depth` 必須維持綠；`balance.test.ts`、`balance.lineups.test.ts` 的每一項（6a 的帶）必須維持原本的結果。
 
-**旋鈕與順序**
-1. `ramp3`，再 `amount3`（只影響 Lv42 以上的敵人，也就是 depth 11 以後；現有每一項帶的敵人都在 Lv38 以下）。`from3` 只可以往上調，不可以低於 42。
-2. `FINALE_BOSS.power`（只影響第 19b 項）。
-- `enemyPower` 必須非遞減；`amount3` 可以是負數，只要曲線仍然非遞減。
+**裁定**
+- 深層太難時，解法是「深處的敵人長得慢一點」：降低第 `fromDepth` 層以後每一層的敵人等級斜率。敵人仍然一層比一層強（嚴格遞增），只是放掉「成長速度不減」這一條。
+- `ENEMY_POWER`（含 ramp）凍結；第 10 層以內的每一項 6a 帶都不受影響（`fromDepth ≥ 11`）。
+- 提高等級上限不在本計畫的範圍。
 
-**時間上限**：最多 6 輪。收斂不了就停下來回報：這代表 Lv50 的隊伍在預期裝備與記憶下走不到第 30 層，是使用者要決定的遊戲方向（見文末「需要使用者決定的事」第 1 點），不可以自行放寬或刪掉這一帶。
+**旋鈕、順序與方向**
+1. `DEEP_ENEMIES.levelsPerDepth`：19a 太難時往下調，每一步 0.5，最低 1（必須 > 0，才嚴格遞增）；不可以超過 4（現況）。
+2. `DEEP_ENEMIES.fromDepth`：只能往上調（≥ 11），讓放慢從更深處才開始；只在 1 已經讓較淺的深度（15）變得太輕鬆時使用。
+3. `DEEP_ENEMIES.power`：19a 太輕鬆時才往上調（≥ 0，每一步 0.05）；它是常數倍率，不破壞嚴格遞增。
+4. `FINALE_BOSS.power`：只影響 19b；往兩個方向都可以，範圍 0.5–2。
 
-- [ ] **Step 1: 依順序 sweep**，結果記進 `balance-baseline.md`。
-- [ ] **Step 2: 改回 `it`，執行全套，確認全部通過**
-- [ ] **Step 3: commit**：`balance(starlantern): the deep road to the finale`，訊息寫出最後的值與實測數字。
+**一輪**：一個旋鈕設成一個值，然後跑完三個 balance 檔。
+
+**時間上限與停止規則**：最多 6 輪。
+- `levelsPerDepth` 已經到 1、19a 仍然太難，或任何一輪讓 6a 的帶或 `deep enemies grow strictly with depth` 變紅（那一組值作廢、算一輪），就停止 sweep。
+- 收斂：改回 `it`，commit。收斂不了：旋鈕留在最好的一組值，第 19 項保留 `// 6b Task 20c` 的 `it.fails`，commit 並回報（見文末「需要使用者決定的事」第 1 點）；Task 20d 照樣執行。絕不放寬或刪掉這一帶。
+
+- [ ] **Step 1: 依順序 sweep**，每一輪記進 `balance-baseline.md`。
+- [ ] **Step 2: 照停止規則收尾，執行全套**
+- [ ] **Step 3: commit**：`balance(starlantern): the deep road to the finale`，訊息寫出最後的值、實測數字，以及仍留著的 `it.fails`（若有）。
 
 ### Task 20d: 第 18 項的法系主角帶武器（限時，或裁定不做）
 
 **Files:**
 - Modify：`engine/balance.lineups.test.ts`（`// 6b Task 20d` 的 `it.fails` 改回 `it`）；旋鈕所在的檔案：`data/hero.ts`（`HERO_BUILDS.mage`、`HERO_BUILDS.healer` 的 `branches`、`talents`、`nodes`）
-- Test：`engine/progression.test.ts` 的流派測試必須維持綠。
+- Test：`engine/progression.test.ts` 的流派測試必須維持綠；`18e`（十片記憶、每一種流派）必須維持 Task 20b 結束時的結果。
 
 **旋鈕**：只有 mage 與 healer 的流派定義。其他一律不動。
 
+**一輪**：一組流派定義，然後跑完三個 balance 檔。讓 `18e` 變紅的候選直接作廢，也算一輪。
+
 **時間上限**：最多 3 輪。
 - 收斂：保留 `armHero: true`，commit：`balance(starlantern): band 18 arms its casters`。
-- 收斂不了：把矩陣的 `armHero` 拿掉、刪掉本任務的 `it.fails` 標記讓第 18 項回到 Task 20a 之前的樣子，在 `balance-baseline.md` 記下矩陣與理由，commit：`balance(starlantern): band 18 keeps unarmed casters (M9 ruled out)`，並回報給使用者。
+- 收斂不了、或每一個候選都會讓 `18e` 變紅：把矩陣的 `armHero` 拿掉、流派定義回到本任務開始時的值、刪掉本任務的 `it.fails` 標記，讓第 18 項回到 Task 20a 之前的樣子；在 `balance-baseline.md` 記下矩陣與理由，commit：`balance(starlantern): band 18 keeps unarmed casters (M9 ruled out)`，並回報給使用者。
 
 - [ ] **Step 1: 依旋鈕 sweep**，結果記進 `balance-baseline.md`。
 - [ ] **Step 2: 照上面兩種結果之一收尾，執行全套，確認全部通過**
@@ -1003,21 +1065,21 @@ export function handbook(s: GameState): Handbook
 **Files:**
 - Modify：`tests/e2e/starlantern.spec.ts`
 
-- [ ] **Step 1：e2e `prologue, Rin's first memory, Selene, recall, handbook`**（spec §16 的流程；本測試不預設 `story: 'none'`）
-  - 新遊戲 → 序章出現，確認鍵逐句播完 → 城鎮選單。
+- [ ] **Step 1：e2e `prologue, Rin's first memory, Selene, recall, handbook`**（spec §16 的流程；本測試呼叫 `setup(page, seed, { story: 'all' })`）
+  - 新遊戲 → 序章出現，確認鍵逐句播完 → 城鎮選單；沒有回城對話。
   - 再開一次新遊戲 → 序章第一句時按 Esc → 出現略過摘要 → 城鎮選單。
   - 出發本道第 1 層，用 debug hook 讀出 owner 是凜的微光位置，站到旁邊再走上去 → 回憶場景（`slx-talk--memory`）→ 地圖。
   - 用 debug hook 讓兩人 Lv4、到第 2 層救下瑟蕾（照 6a 的做法）。
-  - 回城 → 編隊把瑟蕾移到預備 → 公會「召回」→ 她回到陣型。
-  - 城鎮選單「冒險者手冊」→「記憶」→ 凜 → 第 1 片 → 重看 → 返回；手冊不再標「新」。
-  - 全程沒有 console error；旅館存檔、重新整理、選「繼續」，存檔有效，凜的 `memories` 是 1。
+  - 回城（這一次可能有一段回城對話，照常播完）→ 編隊把瑟蕾移到預備 → 公會「召回」→ 她回到陣型。
+  - 城鎮選單「冒險者手冊」→「記憶」→ 凜 → 第 1 片 → 重看 → 返回；「真相」→ 序章可以重看；手冊不再標「新」。
+  - 全程沒有 console error；旅館存檔、重新整理、選「繼續」，存檔有效，凜的 `memories` 是 1，而且重新整理後的抵達沒有回城對話。
 - [ ] **Step 2：全套測試與截圖**
   - `rtk proxy npx vitest run --testTimeout=20000` 與 e2e 全套。
-  - `grep -rn "it.fails" src/scripts/games/starlantern` 沒有結果。
+  - `grep -rn "it.fails" src/scripts/games/starlantern` 必須沒有結果。有任何結果（Task 20b、20c、20d 沒收斂留下的）時，本任務失敗：不 commit，停下來把那些帶與 baseline 的數字回報給使用者。
   - `BALANCE_REPORT=1` 跑三個 balance 檔，數字記進 `balance-baseline.md`。
-  - 截圖（spec §16）：序章、帶立繪的對話框、回憶場景、地圖上的「憶」、公會的碎片交易所（吸收時的上限）、冒險者手冊的五個分頁、凜的揭露場景（用 debug hook 讓凜 7 片後回城）、狀態頁的「記憶」欄、絲嘉蕾的劇情戰。存到 `tmp/starlantern/t21-6b/`。
-- [ ] **Step 3：審查**：派一個沒參與開發的 opus 代理，用 `~/.claude/skills/review-pr/SKILL.md` 審查本計畫的 diff，並處理它提出的問題。
-- [ ] **Step 4：commit**：`test(starlantern): the story end-to-end`
+  - 截圖（spec §16）：序章、帶立繪的對話框、回憶場景、地圖上的「憶」、相遇房與救援、公會的召回、公會的碎片交易所（吸收時的上限）、冒險者手冊的五個分頁、凜的揭露場景（用 debug hook 讓凜 7 片後回城）、狀態頁的「記憶」欄、絲嘉蕾的劇情戰。存到 `tmp/starlantern/t21-6b/`。
+- [ ] **Step 3：commit**：`test(starlantern): the story end-to-end`。實作者到這裡結束。
+- [ ] **Step 4（控制者的步驟，不是實作者的）**：控制者派一個沒參與開發的 opus 代理，用 `~/.claude/skills/review-pr/SKILL.md` 審查本計畫的 diff，並處理它提出的問題。
 
 ---
 
@@ -1030,9 +1092,14 @@ export function handbook(s: GameState): Handbook
 
 ## 交給美術計畫的接口
 - 記憶背景（`art.memoryBg(id)`，每人 1 張）：本計畫沒有新增這個路徑；回憶場景目前只用 `slx-talk--memory` 的色調。
-- 微光的地圖圖示（目前是文字「憶」，加進 `EventTileKey` 後 `MapView` 自動改用圖）、三種無主碎片與鎮民碎片的物品圖示。
+- 微光的地圖圖示（目前是文字「憶」；美術計畫除了加進 `EventTileKey`，還要改 `render/MapView.ts` 那一行寫死「哪些標記不查貼圖」的判斷，`MapView` 才會改用圖）、三種無主碎片與鎮民碎片的物品圖示。
 - 絲嘉蕾作為敵人的圖（目前用她的站姿圖，`EnemyDef.look`）、燈喰之母（目前用燈喰之獸的圖）。
-- NPC 立繪與 `sad` 表情（spec §11.4）、終幕與序章的 CG、城鎮背景的變化版。
+- NPC 立繪與 `sad` 表情（spec §11.4；`art.npc` 的 mood 型別擴充一併留給第 3 項）、終幕與序章的 CG、城鎮背景的變化版。
+
+## 交給第 4 項（季節、日夜、月相）的接口
+- `When` 與 `whenHolds`（Task 1）：上線後才開始過濾。
+- 城鎮台詞與 NPC 招呼依時段切換的欄位（spec §11.1）本計畫不做：`STORY.townLines`、`STORY.greet` 目前只依階段分，第 4 項再加一層時段。
+- 凜的旅館場景定在夜晚：第 4 項提供「劇情指定時段」的接口後，`rin-reveal` 的播放把時鐘設成夜晚。
 - 人物分頁的剪影目前是 CSS 的 `filter`。
 
 ## 接手清單的處理（`.superpowers/sdd/carry/plan6b-carry.md`）
@@ -1041,17 +1108,17 @@ export function handbook(s: GameState): Handbook
 - 模擬傳入該深度的期望記憶：Task 3（`partyAt` 寫進主角）、Task 20a（`expectedMemories`）。
 - 「記憶期望」的平衡帶：Task 20a、20b。
 - 絲嘉蕾的劇情戰、天燈、凜的第二絕技、`memory` 屬性來源：Task 14、13、13、7。
-- M3/M4 緊繃組合：`ENEMY_POWER.ramp` 凍結；記憶的帶用記憶的旋鈕解（Task 20b），深層用第三段（Task 20c）。第 16 項的四人組合與 `BOSS_PARTY_SCALE[4]` 不動，人數補正表不是本計畫的旋鈕。
+- M3/M4 緊繃組合：`ENEMY_POWER.ramp` 凍結；記憶的帶用記憶的旋鈕解（Task 20b），深層用 `DEEP_ENEMIES`，只影響第 11 層以後（Task 20c）。第 16 項的四人組合與 `BOSS_PARTY_SCALE[4]` 不動，人數補正表不是本計畫的旋鈕。
 - 深層曲線、沒有第 10 層以下的帶：Task 20a 的第 19 項、Task 20c。
 - M9（第 18 項的法系主角沒帶武器）：Task 20a 量測、Task 20d 限時調整，收斂不了就明確裁定不做。
 - 6a Task 21 延後的 7 項：第 1 項即上面的 Task 3；`sizeOf` 的 `Math.round`、`party.test.ts` 第 6 行的 CRLF、第 11／14 項 `say` 的順序，三項維持原狀（沒有行為差別，改了只增加雜訊）；第 16 項四人組合與 ramp 的緊繃組合同上；`ENEMY_POWER` 的紀錄更正由 Task 20a 的實測取代。
 
 ## 本計畫裁定的 spec 衝突
-1. **記憶片數放在成員身上，不放在 `GameState.memories`。** spec §10 列了 `memories`、`absorbed` 與「凜是否已選擇」三個 `GameState` 欄位。本計畫把它們放在 `Member.memories`、`Member.absorbed`、`Member.oath`：能力值要經過 33 個 `statsOf` 呼叫點與戰鬥、模擬，放在成員身上才是真正的單一來源（接手清單第 2 條），也不必把整個狀態傳進每一個呼叫點。spec 與 6a 計畫寫的 `state.memories.hero` 就是 `memoriesOf(state.party.roster.hero)`。
+1. **記憶片數放在成員身上，不放在 `GameState.memories`。** spec §10 列了 `memories`、`absorbed` 與「凜是否已選擇」三個 `GameState` 欄位。本計畫把它們放在 `Member.memories`、`Member.absorbed`、`Member.oath`：能力值要經過 22 行 `statsOf`／`sheetOf`／`statSources` 的呼叫與戰鬥、模擬，放在成員身上才是真正的單一來源（接手清單第 2 條），也不必把整個狀態傳進每一個呼叫點。spec 與 6a 計畫寫的 `state.memories.hero` 就是 `memoriesOf(state.party.roster.hero)`。
 2. **存檔版本是 v8。** spec §13 寫 6 → 7；6a 已經用了 v7，6b 再升一次，照樣用 `save-reset` 通知。
 3. **文字。** spec §2、§17 要求本項寫完全部文字；使用者把文字拆給 6c。6b 只放經過 `ph()` 登記的暫定文案，6c 必須清空 `PLACEHOLDERS`。
 4. **第 10 項的記憶版本。** 6a 用「主角 10 片記憶」當最壞情況，暫代 spec §9.4 第 7 點的「記憶期望」。Task 20a 把它換成真正的記憶期望（依深度、依真的掉落規則）；「10 片記憶加深淵上限」保留在第 11、14、18e 項，負責「頭目不會一回合倒下」的上限檢查。門檻不變。
-5. **`ENEMY_POWER.ramp` 不動。** 接手清單 M3/M4 指出第 18b 項與第 10 項記憶版本在 depth 8 拉扯同一個 ramp。本計畫用兩個互不相干的旋鈕取代它：記憶的帶調記憶的價值（Task 20b），深層帶調 Lv42 以上的第三段（Task 20c）。
+5. **`ENEMY_POWER.ramp` 不動。** 接手清單 M3/M4 指出第 18b 項與第 10 項記憶版本在 depth 8 拉扯同一個 ramp。本計畫用兩個互不相干的旋鈕取代它：記憶的帶調記憶的價值（Task 20b，只能往變弱的方向），深層帶調第 11 層以後的敵人等級斜率 `DEEP_ENEMIES`（Task 20c）。
 6. **夥伴的圓滿結局沒有另外的場景。** spec §6 描述的結局，由她的最後一片回憶與鎮上的變化承擔；§17 的文字類別裡也沒有獨立的結局。莉茲與歐里克的重逢放在歐里克的交還場景，用 `if.met`／`returned` 的條件台詞。
 7. **鎮民碎片的交還在公會當場播放。** spec §8.2 把「鎮民交還」列在回城佇列。交還是玩家在公會主動做的事，當場播放不會打斷任何東西，所以不進佇列。
 8. **多蘭的「新配方」。** 新配方需要新物品與圖示，本計畫不新增美術；改成「師父的手法」：套裝配方的地區素材少 `PERKS.setRecipeLess` 個。
@@ -1069,8 +1136,16 @@ export function handbook(s: GameState): Handbook
 20. **手冊的入口**在城鎮選單（§7.6）、公會（§3.5、§11.3）與迷宮選單（§7.6，唯讀）都有。
 21. **凜的回報從她的選擇開始。** 第二形態絕技與誓約關鍵天賦在揭露場景結束時（播完、跳過或自動略過都算）生效，而不是撿到第 7 片的當下；spec §16 寫的是「之後絕技與記憶關鍵天賦正確切換」。
 22. **第 19 項（深層帶）是新的帶**，門檻是本計畫訂的：一般遇敵照標準帶（≥ 0.85、0.10–0.45），終幕頭目照第 6 項的「真正的戰鬥」（0.30–0.85）。
+23. **主角的碎片也可以從微光得到。** spec §7.2 只列頭目與精英是主角的保證來源，同時把微光列為共同來源；每一片仍受 minDepth 限制，所以速度不會超過深度的門檻。
+24. **深層太難時放慢深處的敵人（控制者的暫定裁定，使用者可以推翻）。** 用 `DEEP_ENEMIES.levelsPerDepth` 降低第 11 層以後每層的敵人等級斜率；敵人仍嚴格遞增，只放掉「成長速度不減」。`ENEMY_POWER` 與 6a 的帶不動；提高等級上限不在範圍內。
+25. **20b、20c、20d 沒收斂時不擋後面的任務**（控制者裁定）：沒過的帶留著 `it.fails` 標記並回報，但 Task 21 只要找到任何 `it.fails` 就失敗，所以它們不會出現在最後的 commit。
+26. **葛倫的重抽用 `game.rng`**，是 RNG 規則唯一的例外：與 `toTown` 擲傳送門的是同一條流，而且只在玩家選擇時抽。重抽的記號不存檔，讀檔時視同已重抽。
+27. **`ABSORB_GAIN` 與存檔綁在一起。** 存檔驗證只接受表上的值；6b 內調整沒問題（還沒有存檔發佈出去），之後的計畫改這張表要升 `SAVE_VERSION`。
+28. **6a 的「帶紅了就回報」**在 6b 有例外：Task 7 到 20d 之間可以用標好負責任務的 `it.fails`（Global Constraints；`constraints.md` 的 6b additions）。Task 12 不在例外裡：它的任何帶變動都要停下來回報。
+29. **時段（§11.1）與 NPC 的 `sad` 表情（§11.4）延後**到第 4 項與第 3 項，見上方的接口。
 
 ## 需要使用者決定的事
-1. **深層的難度。** 等級上限是 50，本道第 15 層的敵人已是 Lv58、第 30 層是 Lv118。第 19 項假設「預期裝備、預期記憶、深淵加成」的 Lv50 隊伍能走完本道並打一場真正的終幕。如果 Task 20c 在時間內調不過，就代表這個假設不成立，要由使用者決定：放慢敵人在深處的成長、提高等級上限，或接受終幕需要更多打寶。
-2. **衝突第 1 點**：使用者與 spec 都寫了 `state.memories`；本計畫改放在成員身上。行為相同，只是位置不同；若使用者堅持欄位位置，要另外接受 33 個呼叫點傳入狀態的改動。
+1. **深層的難度。** 等級上限是 50，本道第 15 層的敵人已是 Lv58、第 30 層是 Lv118。控制者暫定的裁定是「放慢深處敵人的成長」（衝突第 24 點、Task 20c），使用者可以推翻，改成提高等級上限或接受終幕需要更多打寶。如果 `levelsPerDepth` 降到 1 還調不過，第 19 項會留著 `it.fails`，Task 21 停下來等使用者決定。
+2. **衝突第 1 點**：使用者與 spec 都寫了 `state.memories`；本計畫改放在成員身上。行為相同，只是位置不同；若使用者堅持欄位位置，要另外接受 22 行呼叫傳入狀態的改動。
 3. **衝突第 8、9 點**（多蘭的配方、公會不賣碎片）屬於遊戲設計的取捨，使用者可能想要原本的寫法。
+4. **手冊的版面**（Task 18、19）：重大場景放在真相頁、凜的揭露與回城對話放在人物頁、交還場景放在鎮民頁，是控制者的安排；使用者若想要獨立的「場景」分頁，可以改。
