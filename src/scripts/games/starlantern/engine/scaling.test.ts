@@ -274,14 +274,16 @@ describe('depthClearExp', () => {
 });
 
 describe('ENEMY_POWER', () => {
-  it('is 1 up to its start level, then 1 + amount + ramp per level above it', () => {
+  it('is 1 up to `from`, then 1 + amount up to `from2`, then adds amount2 + ramp per level above `from2`', () => {
+    const { from, amount, from2, amount2, ramp } = ENEMY_POWER;
     expect(enemyPower(1)).toBe(1);
-    expect(enemyPower(ENEMY_POWER.from)).toBe(1);
-    expect(enemyPower(ENEMY_POWER.from + 1)).toBeCloseTo(1 + ENEMY_POWER.amount + ENEMY_POWER.ramp, 12);
-    expect(enemyPower(50)).toBeCloseTo(1 + ENEMY_POWER.amount + ENEMY_POWER.ramp * (50 - ENEMY_POWER.from), 12);
-    expect(ENEMY_POWER.amount).toBeGreaterThan(0);
-    expect(ENEMY_POWER.ramp).toBeGreaterThan(0);
-    expect(enemyPower(50)).toBeGreaterThan(enemyPower(ENEMY_POWER.from + 1));
+    expect(enemyPower(from)).toBe(1);
+    expect(enemyPower(from + 1)).toBeCloseTo(1 + amount, 12);
+    expect(enemyPower(from2)).toBeCloseTo(1 + amount, 12);
+    expect(enemyPower(from2 + 1)).toBeCloseTo(1 + amount + amount2 + ramp, 12);
+    expect(enemyPower(50)).toBeCloseTo(1 + amount + amount2 + ramp * (50 - from2), 12);
+    expect(from2).toBeGreaterThanOrEqual(from);
+    for (const k of [amount, amount2, ramp]) expect(k).toBeGreaterThan(0);
   });
 
   it("scales every enemy's HP, atk and mag in a fight, bosses included, at the level it is met", () => {

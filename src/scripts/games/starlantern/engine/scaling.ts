@@ -157,17 +157,21 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
  * The enemy side's knob for party progression power that the stat curves miss: skill-tree ranks and mod nodes now
  * (plan 5b Task 8) and talents (Task 9) now, not keystones (Task 10 tuned KEYSTONE_VALUES and left this knob as it was). Every enemy in a fight, bosses
  * included, has its HP, atk and mag multiplied by `enemyPower(level)`, `level` being its level in that fight (the depth
- * level, or its home level without a scale): 1 up to level `from`, then `1 + amount + ramp * (level - from)` above it.
- * Mostly a step: the default tree's bonuses are mostly bought by Lv11-14, and a steep per-level slope swamps the deep
- * bands (see the plan 5b Task 8 and Task 9 sweeps in the commits that set it). The small `ramp` (plan 5c Task 4) answers
- * forge enhancement, which the party is expected to grow a level every two depths (`expectedEnhance`); see that
- * task's sweep in the commit that set it. The normal enemies of floors 1-3 (up to Lv10) keep their tuned numbers; the
+ * level, or its home level without a scale): 1 up to level `from`, then `1 + amount` above it, plus
+ * `amount2 + ramp * (level - from2)` above `from2`. Mostly a step: the default tree's bonuses are mostly bought by
+ * Lv11-14, and a steep per-level slope swamps the deep bands (see the plan 5b Task 8 and Task 9 sweeps in the commits
+ * that set it). The second step and small ramp above `from2` (plan 5c Task 4) answer forge enhancement, which the party
+ * is expected to grow a level every two depths (`expectedEnhance`); they start above the boss's home level, so band 6
+ * keeps its tuning (see that task's sweeps in the commits that set them). The normal enemies of floors 1-3 (up to Lv10) keep their tuned numbers; the
  * depth-3 boss is fought at its home level (BOSS_HOME, Lv12), above `from`, so it does get the boost (band 6 is tuned
  * with it).
  */
-export const ENEMY_POWER = { from: 10, amount: 0.26, ramp: 0.007 };
-export const enemyPower = (level: number): number =>
-  (level > ENEMY_POWER.from ? 1 + ENEMY_POWER.amount + ENEMY_POWER.ramp * (level - ENEMY_POWER.from) : 1);
+export const ENEMY_POWER = { from: 10, amount: 0.26, from2: 12, amount2: 0.04, ramp: 0.004 };
+export const enemyPower = (level: number): number => {
+  if (level <= ENEMY_POWER.from) return 1;
+  const deep = level > ENEMY_POWER.from2 ? ENEMY_POWER.amount2 + ENEMY_POWER.ramp * (level - ENEMY_POWER.from2) : 0;
+  return 1 + ENEMY_POWER.amount + deep;
+};
 
 /** A monster with ENEMY_POWER applied at `level`; a new definition, `def` untouched (the same one at power 1). */
 export function empower(def: EnemyDef, level: number): EnemyDef {
