@@ -1,10 +1,13 @@
 import { ITEMS } from '../../data/items';
+import { fragmentName } from '../../data/story/fragments';
 import { T } from '../../data/text.zh-TW';
 import { weightOf } from '../../data/weights';
 import type { Content } from '../../engine/dungeon/rooms';
 import { altarAt } from '../../engine/events';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { itemWeight } from '../../engine/loot/item';
+import { fragmentItem } from '../../engine/story/fragments';
+import { fragmentLines } from '../battleText';
 import type { FullResult, MoveResult } from '../../engine/game';
 import type { ItemInstance, Pos } from '../../engine/types';
 import { ART_BASE } from '../../render/artPaths';
@@ -69,7 +72,7 @@ export type ChestResult = Extract<MoveResult, { kind: 'chest' }>;
 
 /** 「打開寶箱：發光苔 ×2、鐵劍」 — the gear, when the chest held any, in its rarity colour. */
 export function chestLine(r: ChestResult): Rich {
-  return [T.map.chest(itemName(r.item), r.qty), ...(r.gear ? ['、', gearPart(r.gear)] : [])];
+  return [T.map.chest(itemName(r.item), r.qty), ...(r.gear ? ['、', gearPart(r.gear)] : []), ...(r.fragments ?? []).flatMap((g) => ['、', fragmentName(fragmentItem(g) ?? '') ?? ''])];
 }
 const leaveItem = (): MenuItem => ({ id: 'leave', label: T.ui2.event.leave });
 
@@ -163,6 +166,12 @@ export function showPickUp(host: EventHost, r: MoveResult | null, vault = false)
     host.drop(r.kind === 'vault' ? r.gear : r.gear ? [r.gear] : []);
     return;
   }
+  if (r?.kind === 'glimmer') {
+    ctx.sfx.chest?.();
+    host.refresh();
+    host.say(fragmentLines(r.gained).join(''));
+    return;
+  }
   if (r?.kind === 'pickup') {
     ctx.sfx.chest?.();
     host.refresh();
@@ -201,6 +210,7 @@ export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, op
   const body: HTMLElement[] = opened ? [richLine(opened)] : [];
   if (r.bag && r.gear) body.push(richLine(fillRich(F.bagDesc, [gearPart(r.gear)])));
   if (r.need > 0 && r.item) body.push(line(F.desc(itemName(r.item), r.qty ?? 1, Number(fmtWeight(r.need)))));
+  if (r.fragments?.length) body.push(line(F.fragments(r.fragments.map(itemName).join('、'))));
   else if (r.need > 0 && r.gear) body.push(richLine(fillRich((name) => F.gearHeavy(name, Number(fmtWeight(r.need))), [gearPart(r.gear)])));
   body.push(line(stuck ? F.noGear : r.bag ? F.whichGear : F.which, 'slx-event-ask'));
   const held = r.need > 0 && !stuck ? carriedItems(host) : {};

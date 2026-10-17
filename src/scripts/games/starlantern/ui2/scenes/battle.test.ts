@@ -206,6 +206,21 @@ describe('BattleScene', () => {
     expect(lines[joined + 3]).toBe(T.ui2.memory.town('瑪莎的記憶碎片'));
   });
 
+  it('a fragment that did not fit is told once, as left behind', async () => {
+    const { game, s, root } = setup();
+    const fragments = [{ kind: 'shard' as const, grade: 'dim' as const }, { kind: 'town' as const, id: 'marta' as const }];
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: { 'shard-dim': 1 }, gear: [], gearLeft: [], fragments };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    const lines = [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
+    expect(lines).not.toContain(T.ui2.memory.shard(SHARD_NAMES.dim));
+    expect(lines).toContain(T.battle.leftBehind(SHARD_NAMES.dim, 1));
+    expect(lines).toContain(T.ui2.memory.town('瑪莎的記憶碎片'));   // the one that fit is still told as found
+    expect(lines.filter((l) => l?.includes(SHARD_NAMES.dim))).toHaveLength(1);
+  });
+
   it('the result lists the points a level-up brings', async () => {
     const { game, s, root } = setup();
     game.state.party.roster.noel.level = 6;

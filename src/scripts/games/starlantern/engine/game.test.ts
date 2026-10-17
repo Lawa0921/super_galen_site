@@ -1847,7 +1847,7 @@ describe('glimmers and memory pieces', () => {
     expect(g.run!.dropped[5]).toEqual(['hero']);
   });
 
-  it('a fight that pays no piece leaves fragments off the result', () => {
+  it('a fight that pays no memory piece lists none', () => {
     const g = run(['hero'], 1);
     stepOnto(g, plantAt(g, 'elite'));
     const end = killAll(g);
@@ -1996,13 +1996,20 @@ describe('fragments as run loot', () => {
   };
   /** Fills the run pack with plain stuff until `room` weight is left. */
   const fillTo = (g: Game, room: number) => { g.run!.loot.items.stuff = capacity(g.state.party) - carried(g.state, g.run) - room; };
-  const plantGlimmer = (g: Game): Pos => {
+  /** A glimmer on the first open cell, or on `cell` itself (opened up, with its left neighbour) when given. */
+  const plantGlimmer = (g: Game, owner?: CharacterId, cell?: Pos): Pos => {
     const m = g.map();
-    for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
-      if (m.tiles[y][x] !== 'floor' || (x === g.pos.x && y === g.pos.y)) continue;
+    const put = ({ x, y }: Pos) => {
       m.tiles[y][x] = 'glimmer';
-      floorOf(g.run!, g.floor).contents.push({ kind: 'glimmer', at: { x, y }, room: 0 });
+      floorOf(g.run!, g.floor).contents.push({ kind: 'glimmer', at: { x, y }, room: 0, ...(owner ? { owner } : {}) });
       return { x, y };
+    };
+    if (cell) {
+      for (const p of [cell, { x: cell.x - 1, y: cell.y }]) if (m.tiles[p.y][p.x] === 'wall') m.tiles[p.y][p.x] = 'floor';
+      return put(cell);
+    }
+    for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
+      if (m.tiles[y][x] === 'floor' && !(x === g.pos.x && y === g.pos.y)) return put({ x, y });
     }
     throw new Error('no cell for a glimmer');
   };
@@ -2043,8 +2050,15 @@ describe('fragments as run loot', () => {
     expect(end.fragments!.filter((f) => f.kind === 'shard')).toHaveLength(1);
   });
 
+  /** Depth 7 can roll dim or clear, so a re-roll could change the grade; the hero's chain is spent so nothing else is found. */
+  const emptyGlimmerRun = () => {
+    const g = run(['hero'], 7);
+    g.state.party.roster.hero.memories = 99;
+    return g;
+  };
+
   it('an empty glimmer gives a shard, or waits when the pack is full', () => {
-    const g = run(['hero'], 1);
+    const g = emptyGlimmerRun();
     const at = plantGlimmer(g);
     fillTo(g, FRAGMENT_WEIGHT / 2);
     const full = stepOnto(g, at);
@@ -2053,8 +2067,11 @@ describe('fragments as run loot', () => {
     expect(SHARDS).toContain(full.item);
     expect(full.need).toBeGreaterThan(0);
     expect(tileAt(g.map(), at)).toBe('glimmer');
+    expect(g.run!.rolls[`frag:glimmer:${g.floor}:${posKey(at)}`].frags).toEqual([full.item]);   // the roll is kept
+    const draws = g.run!.memoryDraws;
     expect(g.discard('stuff', 5)).toBe(5);
     const got = stepOnto(g, at);
+    expect(g.run!.memoryDraws).toBe(draws);   // the second visit rolls nothing new
     expect(got.kind).toBe('glimmer');
     if (got.kind !== 'glimmer') throw new Error('expected glimmer');
     expect(got.gained).toHaveLength(1);
@@ -2062,6 +2079,48 @@ describe('fragments as run loot', () => {
     expect(fragmentItem(got.gained[0])).toBe(full.item);
     expect(g.run!.loot.items[full.item!]).toBe(1);
     expect(tileAt(g.map(), at)).toBe('floor');
+  });
+
+  it('a full glimmer is taken by pickUpHere once room is made', () => {
+    const g = emptyGlimmerRun();
+    const at = plantGlimmer(g);
+    fillTo(g, FRAGMENT_WEIGHT / 2);
+    const full = stepOnto(g, at);
+    if (full.kind !== 'full') throw new Error('expected full');
+    expect(g.pickUpHere()).toMatchObject({ kind: 'full', item: full.item });   // still no room
+    expect(g.discard('stuff', 5)).toBe(5);
+    const got = g.pickUpHere();
+    expect(got).toMatchObject({ kind: 'glimmer', gained: [{ kind: 'shard' }] });
+    expect(g.run!.loot.items[full.item!]).toBe(1);
+    expect(tileAt(g.map(), at)).toBe('floor');
+    expect(g.pickUpHere()).toBeNull();
+  });
+
+  it('glimmers at the same cell on two floors keep their own rolls', () => {
+    const g = run(duo, 6);
+    g.state.party.roster.hero.memories = 99;
+    g.state.party.roster.rin.memories = 99;
+    const at = plantGlimmer(g);
+    fillTo(g, FRAGMENT_WEIGHT / 2);
+    const full = stepOnto(g, at);
+    expect(full.kind).toBe('full');
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 7 });
+    g.state.party.roster.rin.memories = 0;
+    plantGlimmer(g, 'rin', at);
+    expect(stepOnto(g, at)).toMatchObject({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'rin' }] });   // not floor 6's waiting shard
+    expect(g.run!.rolls[`frag:glimmer:6:${posKey(at)}`]).toBeDefined();
+  });
+
+  it('a shut chest names the fragments it holds back', () => {
+    withDrops({ shard: 1, town: 0 }, () => {
+      const g = run(duo, 8);
+      fillTo(g, 0.1);
+      const r = stepOnto(g, plainChest(g));
+      expect(r).toMatchObject({ kind: 'full' });
+      if (r.kind !== 'full') throw new Error('expected full');
+      expect(r.fragments).toHaveLength(1);
+      expect(SHARDS).toContain(r.fragments![0]);
+    });
   });
 
   it('a memory piece weighs nothing', () => {

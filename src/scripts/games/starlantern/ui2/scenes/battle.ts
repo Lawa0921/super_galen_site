@@ -13,6 +13,7 @@ import { art } from '../../render/artPaths';
 import { el, itemName } from '../../ui/dom';
 import { playCutIn } from '../../ui/cutin';
 import { battleLines, fragmentLines, levelUpLines } from '../battleText';
+import { fragmentItem } from '../../engine/story/fragments';
 import { fillRich, gearLabel, gearPart } from '../loot';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
@@ -460,7 +461,15 @@ export class BattleScene implements Scene {
       if (fanfare) this.ctx.sfx.win?.();
       // The join line leads: the list scrolls, and this is the line the fight was for.
       if (end.met) lines.push({ text: (end.met.benched ? T.ui2.rescue.benched : T.ui2.rescue.joined)(CHARACTERS[end.met.id].name, end.met.level) });
-      for (const l of fragmentLines(end.fragments ?? [])) lines.push({ text: l });
+      // A fragment that did not fit is told once, by its 留下 line below, not also as found.
+      const unplaced = { ...end.left };
+      const found = (end.fragments ?? []).filter((g) => {
+        const id = fragmentItem(g);
+        if (id === undefined || !(unplaced[id] > 0)) return true;
+        unplaced[id]--;
+        return false;
+      });
+      for (const l of fragmentLines(found)) lines.push({ text: l });
       lines.push({ text: T.battle.exp(end.exp) }, { text: T.battle.gold(end.gold) });
       for (const it of end.gear) lines.push({ text: gearLabel(it), cls: `slx-loot-gear slx-rarity-${it.rarity}` });
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });

@@ -248,9 +248,9 @@ export class DungeonScene implements Scene {
     this.refresh();
   }
 
-  /** What a glimmer held, one line at a time (the memory scene itself comes in Task 17); a spent glimmer says so. */
+  /** What a glimmer held, one line at a time (the memory scene itself comes in Task 17). A glimmer always holds a piece or a shard. */
   private async found(lines: string[]): Promise<void> {
-    for (const line of lines.length ? lines : [T.ui2.memory.nothing]) {
+    for (const line of lines) {
       await this.say(line);
       if (this.exited) return;
     }

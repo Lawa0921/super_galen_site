@@ -8,7 +8,7 @@ import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from '
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
 import { memScene, type SceneId } from '../data/story/scenes';
-import { SHARD_IDS, shardGrade } from '../data/story/fragments';
+import { SHARD_IDS, isFragmentItem, shardGrade } from '../data/story/fragments';
 import { fragmentItem, gainOf, lootFragments } from './story/fragments';
 import { advance, danger, type Danger } from './encounter';
 import { ALTAR_STAT_CAP_PCT, altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POISON_TP_LOSS_PCT, trapDamage, VAULT_CHEST_MULT } from './events';
@@ -67,7 +67,7 @@ export type MoveResult =
  * (0 when only the bag is short); `gear` is the piece in question; `bag` is set when the town bag (with the run pack's
  * gear) has no slot left for that gear. A bag slot never keeps a chest or vault shut: only its gear waits.
  */
-export type FullResult = { kind: 'full'; item?: string; qty?: number; need: number; gear?: ItemInstance; bag?: boolean };
+export type FullResult = { kind: 'full'; item?: string; qty?: number; need: number; gear?: ItemInstance; bag?: boolean; fragments?: string[] };
 export interface BattleEnd {
   /** `drops` lists only what went into the party's hands. */
   outcome: 'win' | 'lose' | 'fled'; exp: number; gold: number; drops: Record<string, number>;
@@ -227,7 +227,7 @@ export class Game {
     const i = here.contents.findIndex((c) => c.kind === 'glimmer' && c.at.x === this.pos.x && c.at.y === this.pos.y);
     if (i < 0) { this.map().tiles[this.pos.y][this.pos.x] = 'floor'; return null; }   // no content behind the tile: drop the stale marker
     const c = here.contents[i];
-    const memoKey = `frag:glimmer:${posKey(this.pos)}`;
+    const memoKey = `frag:glimmer:${this.spotId()}`;
     const kept = run.rolls[memoKey];   // kept only when the pieces were already rolled empty
     const rng = kept ? null : memoryRng(run);
     const ids = rng ? pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source: 'glimmer', who: c.owner }, rng) : [];
@@ -365,6 +365,7 @@ export class Game {
     const t = tileAt(this.map(), this.pos);
     if (t === 'chest') return this.openChest();
     if (t === 'vault') return this.openVault(this.pos);
+    if (t === 'glimmer') return this.glimmerHere();
     return null;
   }
 
@@ -449,7 +450,8 @@ export class Game {
     if (this.shortBy(loot) <= 0) return null;
     const [item, qty] = Object.entries(loot)[0];
     const withGear = gear && this.bagHasRoom(1) ? [gear] : [];
-    return { kind: 'full', item, qty, need: this.shortBy(loot, withGear), ...(gear ? { gear: this.junkMarked(gear) } : {}) };
+    const frags = Object.keys(loot).filter(isFragmentItem);
+    return { kind: 'full', item, qty, need: this.shortBy(loot, withGear), ...(gear ? { gear: this.junkMarked(gear) } : {}), ...(frags.length ? { fragments: frags } : {}) };
   }
 
   /**

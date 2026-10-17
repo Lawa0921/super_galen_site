@@ -247,6 +247,41 @@ describe('the full pack window', () => {
   });
 });
 
+describe('fragments in the labyrinth', () => {
+  it('a chest lists the fragments it held', () => {
+    const { game, s, plant, text } = setup();
+    const { dir, at } = plant('chest', {}, (spot) => !chestHasGear(game.run!, game.floor, spot));
+    game.run!.rolls[`frag:${game.floor}:${at.x},${at.y}`] = { item: '', qty: 0, frags: ['shard-dim'] };
+    s.onAction(dir);
+    expect(text()).toContain('打開寶箱');
+    expect(text()).toContain('微光的碎片');
+  });
+
+  it('the full window names the fragments a shut chest holds back', () => {
+    const { game, s, root, plant } = setup();
+    game.run!.loot.items['old-coin'] = 400;
+    const { dir, at } = plant('chest', {}, (spot) => !chestHasGear(game.run!, game.floor, spot));
+    game.run!.rolls[`frag:${game.floor}:${at.x},${at.y}`] = { item: '', qty: 0, frags: ['shard-dim'] };
+    s.onAction(dir);
+    expect(root.querySelector('.slx-full')!.textContent).toContain('微光的碎片');
+  });
+
+  it('a glimmer that did not fit is taken after discarding, from the same window', () => {
+    const { game, s, root, plant, pick, text } = setup();
+    for (const m of Object.values(game.state.party.roster)) m.memories = 99;   // every chain is spent: the glimmer holds a shard
+    game.run!.loot.items['old-coin'] = 400;
+    const { dir, at } = plant('glimmer');
+    s.onAction(dir);
+    expect(root.querySelector('.slx-full')!.textContent).toContain('微光的碎片');
+    pick('古代銀幣');
+    pick('是');
+    expect(root.querySelector('.slx-full')).toBeNull();
+    expect(text()).toContain('微光的碎片');
+    expect(game.run!.loot.items['shard-dim']).toBe(1);
+    expect(tileAt(game.map(), at)).toBe('floor');
+  });
+});
+
 describe('Review Focus 2', () => {
   it('moves and right-click are ignored while an event layer is open', () => {
     const { game, s, root, plant, layer, pick, talking } = setup();

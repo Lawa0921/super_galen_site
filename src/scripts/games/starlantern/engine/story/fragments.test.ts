@@ -49,8 +49,14 @@ describe('fragment loot', () => {
     }
   });
 
-  it('the same seed loots the same fragments', () => {
-    for (let seed = 0; seed < 50; seed++) expect(boss(seed)).toEqual(boss(seed));
+  it('the same seed loots the same fragments, from the seed alone', () => {
+    const { s, run } = fresh();
+    const frozen = structuredClone({ s, run });
+    const first = lootFragments(s, run, { region: 'mainline', depth: 6, source: 'boss' }, mulberry32(9));
+    expect({ s, run }).toEqual(frozen);   // it reads state and writes none
+    expect(lootFragments(s, run, { region: 'mainline', depth: 6, source: 'boss' }, mulberry32(9))).toEqual(first);
+    const grades = new Set(Array.from({ length: 200 }, (_, seed) => JSON.stringify(boss(seed))));
+    expect(grades.size).toBeGreaterThan(1);   // and other seeds do loot differently
   });
 
   it('at most one town fragment, taken in table order, and only when eligible', () => {
