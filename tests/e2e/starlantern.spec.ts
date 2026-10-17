@@ -969,4 +969,172 @@ test.describe('starlantern', () => {
     await toTown(page, w);
     expect(w.errors).toEqual([]);
   });
+
+  test('two start, meet Selene, recall her', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    /** With SL_SHOTS=<dir> the run also leaves its screenshots there; otherwise this is a no-op. */
+    const shot = async (name: string) => {
+      if (!process.env.SL_SHOTS) return;
+      await page.waitForTimeout(700);   // windows fade in: wait until they are fully drawn
+      await page.screenshot({ path: `${process.env.SL_SHOTS}/${name}.png` });
+    };
+    /** Runs `fn` in the page on the live game (the debug hook), with one serialisable argument. */
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const w = await setup(page, 7);
+    const others = Object.values(CHARACTERS).filter((c) => c.id !== 'hero' && c.id !== 'rin').map((c) => c.name);
+    await shot('01-town-two-start');
+
+    // New game: the hero (洛恩) and Rin (凜) only, in the guild's pages, the formation's pick list and the recall command.
+    await page.locator('.slx-town [data-id=guild]').click();
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await expect(page.locator('.slx-cmd [data-id=recall]')).toHaveAttribute('aria-disabled', 'true');
+    await page.locator('.slx-cmd [data-id=status]').click();
+    const name = page.locator('.slx-status-name');
+    await expect(name).toContainText('洛恩');
+    await page.locator('.slx-status-next').click();
+    await expect(name).toContainText('凜');
+    await page.locator('.slx-status-next').click();
+    await expect(name).toContainText('洛恩');   // two members: the second page turn is back at the first
+    await page.locator('.slx-back').click();
+    await page.locator('.slx-cmd [data-id=formation]').click();
+    await expect(page.locator('.slx-formation-scene')).toBeVisible();
+    await page.locator('[data-cell="4"]').click();   // an empty cell: who goes here?
+    const picks = await page.locator('.slx-formation-pick [role=option] .slx-label').allTextContents();
+    expect(picks).toEqual(expect.arrayContaining(['洛恩', '凜']));
+    for (const other of others) expect(picks.join(' '), other).not.toContain(other);
+    await page.locator('.slx-back').click();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    // Both at Lv4, out through the mainline gate and down to floor 2 (the stairs ask first).
+    await game((g) => { g.state.party.roster.hero.level = 4; g.state.party.roster.rin.level = 4; });
+    await depart(page, w);
+    const toStairs = await pathTo(page, 'down');
+    expect(toStairs?.keys.length).toBeGreaterThan(0);
+    for (const k of toStairs!.keys) {
+      await game((g) => { g.encounter = 0; });
+      await page.keyboard.press(k);
+    }
+    await w.choose('.slx-event-stairs', '前往');
+    await expect.poll(() => game((g) => g.floor)).toBe(2);
+    await w.closeTalk();
+
+    // Selene waits in a room of floor 2. Stand two cells before it in a straight line, so the first step shows it on the map.
+    const plan = await game((g) => {
+      const room = g.run.floors.get(g.floor).contents.find((c: any) => c.kind === 'rescue');
+      const open = (x: number, y: number) => ['floor', 'door'].includes(g.map().tiles[y]?.[x]);
+      for (const [key, dx, dy] of [['ArrowRight', 1, 0], ['ArrowLeft', -1, 0], ['ArrowDown', 0, 1], ['ArrowUp', 0, -1]] as const) {
+        const far = { x: room.at.x - 2 * dx, y: room.at.y - 2 * dy };
+        if (open(far.x, far.y) && open(room.at.x - dx, room.at.y - dy)) { g.pos = far; g.encounter = 0; return { key, who: room.who, at: room.at }; }
+      }
+      return null;
+    });
+    expect(plan, 'a straight way into the rescue room').not.toBeNull();
+    expect(plan!.who).toBe('selene');
+    await page.keyboard.press(plan!.key);
+    await expect.poll(() => game((g, at: string) => g.run.explored[g.floor].includes(at), `${plan!.at.x},${plan!.at.y}`)).toBe(true);
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    await shot('02-map-rescue-marker');
+    await game((g) => { g.encounter = 0; });
+    await page.keyboard.press(plan!.key);
+    await expect(page.locator('.slx-dungeon .slx-talk .slx-text')).toContainText('瑟蕾');
+    await shot('03-meeting-line');
+    await w.key('z');   // the meeting line, then the fight
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    await game((g) => { for (const e of g.battle.enemies) { e.hp = 0; e.alive = false; } });
+    for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) { await w.key('ArrowUp'); await w.key('Enter'); }   // 全員攻擊
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-result')).toContainText('勝利');
+    await expect(page.locator('.slx-result')).toContainText(/瑟蕾（Lv\d+）加入了隊伍！/);
+    await shot('04-rescue-result');
+    await w.key('Enter');
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    expect(await game((g) => g.state.party.recruited)).toEqual(['hero', 'rin', 'selene']);
+    await lampHome(page, w);
+    await w.closeTalk();
+
+    // Home: the formation lets Selene step out to the bench (never the hero), and the guild calls her back.
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-cmd [data-id=formation]').click();
+    await expect(page.locator('.slx-formation-scene')).toBeVisible();
+    const cellOf = (id: string) => game((g, who: string) => g.state.party.grid.indexOf(who), id);
+    await page.locator(`[data-cell="${await cellOf('hero')}"]`).click();
+    const heroPicks = await page.locator('.slx-formation-pick [role=option] .slx-label').allTextContents();
+    expect(heroPicks).toContain('洛恩');
+    expect(heroPicks).not.toContain('移出隊伍');   // the hero's cell has no way off the field
+    await shot('05-formation-hero-cell');
+    await page.locator('.slx-back').click();       // close the pick list
+    await page.locator(`[data-cell="${await cellOf('selene')}"]`).click();
+    await page.locator('.slx-formation-pick [role=option]').filter({ hasText: '移出隊伍' }).click();
+    expect(await cellOf('selene')).toBe(-1);
+    expect(await game((g) => g.state.party.recruited)).toContain('selene');
+    await shot('06-formation-selene-benched');
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await expect(page.locator('.slx-cmd [data-id=recall]')).not.toHaveAttribute('aria-disabled', 'true');
+    await page.locator('.slx-cmd [data-id=recall]').click();
+    await shot('07-guild-recall-list');
+    await page.locator('.slx-layer [data-id=selene]').click();
+    await w.key('ArrowUp'); await w.key('Enter');   // 是
+    await expect(page.locator('.slx-talk .slx-text')).toContainText('歡迎回來');
+    expect(await cellOf('selene')).toBeGreaterThanOrEqual(0);
+    await w.closeTalk();
+
+    // A full field: someone has to step out.
+    await game((g) => {
+      const p = g.state.party;
+      p.grid = p.grid.map((c: string | null) => (c === 'selene' ? null : c));
+      p.recruited.push('chizuru', 'liz', 'noel');
+      for (const id of ['chizuru', 'liz', 'noel']) p.grid[p.grid.indexOf(null)] = id;
+    });
+    expect(await game((g) => g.state.party.grid.filter((c: string | null) => c).length)).toBe(5);
+    const lizCell = await cellOf('liz');
+    await page.locator('.slx-back').click();   // the guild reads the party when it opens: go out and in again
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-cmd [data-id=recall]').click();
+    await page.locator('.slx-layer [data-id=selene]').click();
+    await w.key('ArrowUp'); await w.key('Enter');   // 是
+    await expect(page.locator('.slx-layer').last()).toContainText('要讓誰回公會待命？');
+    await expect(page.locator('.slx-layer [data-id=hero]')).toHaveCount(0);   // the hero never steps out
+    await shot('08-guild-recall-full-field-swap');
+    await page.locator('.slx-layer [data-id=liz]').click();
+    expect(await cellOf('selene')).toBe(lizCell);
+    expect(await cellOf('liz')).toBe(-1);
+    await w.closeTalk();
+
+    // The hero's tree has five branches and his talent board six columns.
+    await page.locator('.slx-cmd [data-id=tree]').click();
+    await expect(page.locator('.slx-status-name')).toContainText('洛恩');
+    await expect(page.locator('.slx-tree-branch')).toHaveCount(5);
+    await shot('09-hero-skill-tree');
+    await page.locator('.slx-back').click();
+    await page.locator('.slx-cmd [data-id=talent]').click();
+    await expect(page.locator('.slx-status-name')).toContainText('洛恩');
+    await expect(page.locator('.slx-talent-wide')).toBeVisible();
+    await shot('10-hero-talent-board');
+    await page.locator('.slx-back').click();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    // Save at the inn, reload and continue: the save is valid and Selene is still recruited.
+    await w.choose('.slx-town', '旅館');
+    await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter'); await w.key('ArrowUp'); await w.key('Enter');
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText('已存檔。', { timeout: 5000 });
+    await page.reload();
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('繼續');
+    await w.key('Enter');
+    await expect(page.locator('.slx-town')).toBeVisible();
+    await expectSaveLoaded(page);
+    expect(await game((g) => g.state.party.recruited)).toContain('selene');
+    expect(w.errors).toEqual([]);
+  });
 });
