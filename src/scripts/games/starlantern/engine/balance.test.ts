@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FLOORS } from '../data/floors';
 import { SLOTS, expToNext } from './party';
-import { avgExp, depthPace, fightsToLevel, groupExp, kitParty, simBattle, winRate } from './sim';
+import { avgExp, depthPace, fightsToLevel, groupExp, kitParty, simBattle, winRate, KIT_ORDER } from './sim';
 import { REGIONS, type RegionId } from '../data/regions';
 import type { BattleScale } from './battle';
 import { ALTAR_STAT_CAP_PCT } from './events';
@@ -90,7 +90,7 @@ describe('balance', () => {
   it('10. random gear in expectation keeps the bands', () => {
     // The kit is really worn: every slot of every member, uids from 1, each piece at the depth's expected enhance level.
     const kit = kitParty(depthLevel(4), 4, 1, undefined, expectedEnhance(4));
-    const worn = Object.values(kit.roster).flatMap((m) => SLOTS.map((s) => m.equip[s]));
+    const worn = KIT_ORDER.flatMap((id) => SLOTS.map((s) => kit.roster[id].equip[s]));
     expect(worn.every((it) => !!it)).toBe(true);
     expect(worn.map((it) => it!.uid)).toEqual(worn.map((_, i) => i + 1));
     expect(worn.every((it) => it!.enhance === expectedEnhance(4))).toBe(true);

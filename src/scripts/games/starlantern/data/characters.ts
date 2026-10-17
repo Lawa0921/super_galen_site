@@ -1,6 +1,9 @@
 import type { CharacterDef, CharacterId, GrowthRules } from '../engine/types';
 
-export const CHARACTER_IDS: CharacterId[] = ['noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby'];
+export const CHARACTER_IDS: CharacterId[] = ['rin', 'noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby'];
+
+/** The eight characters before Rin, in their old order. Balance baselines (enemy scaling) and kitParty's gear draws stay on them. */
+export const LEGACY_CHARACTER_IDS: CharacterId[] = ['noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby'];
 
 const s = (hp: number, tp: number, atk: number, def: number, mag: number, res: number, spd: number) => ({ hp, tp, atk, def, mag, res, spd });
 
@@ -24,6 +27,8 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     base: s(36, 16, 12, 8, 5, 7, 14), growth: s(5, 2, 2, 1, 1, 1, 2), affinity: 'agi' },
   bobby: { id: 'bobby', title: '技師', name: '波比', row: 'back', melee: false,
     base: s(32, 22, 9, 8, 10, 8, 8), growth: s(5, 3, 1, 1, 2, 1, 1), affinity: 'int' },
+  rin: { id: 'rin', title: '失憶的短刃使', name: '凜', row: 'front', melee: true,
+    base: s(46, 16, 13, 12, 4, 7, 15), growth: s(6.7, 2, 2, 1.8, 1, 1, 2), affinity: 'agi' },
 };
 
 /** The growth rules of `id`: DEFAULT_RULES with the character's own overrides on top. */

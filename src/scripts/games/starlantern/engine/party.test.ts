@@ -47,7 +47,7 @@ describe('gear instances', () => {
         const st = statsOf({ ...newMember(id), level });
         const def = CHARACTERS[id];
         for (const k of ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'] as const) {
-          expect(st[k], `${id} Lv${level} ${k}`).toBe(def.base[k] + def.growth[k] * (level - 1));
+          expect(st[k], `${id} Lv${level} ${k}`).toBe(Math.floor(def.base[k] + def.growth[k] * (level - 1) + 1e-9));
         }
       }
     }
@@ -126,7 +126,7 @@ describe('formation', () => {
     const p = newParty();
     expect(p.grid).toEqual(['scarlet', 'chizuru', 'liz', null, null, null, 'noel', null, 'selene']);
     expect(activeIds(p)).toEqual(['scarlet', 'chizuru', 'liz', 'noel', 'selene']);
-    expect(Object.keys(p.roster)).toHaveLength(8);
+    expect(Object.keys(p.roster)).toHaveLength(CHARACTER_IDS.length);
   });
   it('places members anywhere, front row first in reading order', () => {
     const r = setFormation(newParty(), [null, 'scarlet', null, 'noel', null, null, null, null, 'liz']);

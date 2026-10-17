@@ -105,7 +105,7 @@ describe('talent rules', () => {
 
   it('every companion reads the default rules', () => {
     const COMPANIONS = CHARACTER_IDS.filter((id) => (id as string) !== 'hero');
-    expect(COMPANIONS).toHaveLength(8);
+    expect(COMPANIONS).toHaveLength(9);
     for (const id of COMPANIONS) expect(rulesOf(id), id).toEqual(DEFAULT_RULES);
     expect(DEFAULT_RULES).toEqual({ curve: 'companion', branches: 3, capstones: 1, boardCols: 4, maxKeystones: 2 });
   });

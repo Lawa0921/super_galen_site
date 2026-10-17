@@ -222,11 +222,34 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('tesla-coil', 1),
     ] },
   ] },
+  rin: { branches: [
+    { name: '暗器', nodes: [
+      A('rin-needle', 3),
+      M('rin-needle-up', '飛針強化', 'rin-needle', '強化飛針的威力', pct(110, 120, 135)),
+      A('rin-fan', 3),
+      A('rin-venom-needle', 3),
+      A('rin-storm', 1),
+    ] },
+    { name: '背刺', nodes: [
+      A('rin-backstab', 3),
+      M('rin-backstab-up', '背刺強化', 'rin-backstab', '強化背刺的威力', pct(110, 120, 135)),
+      A('rin-veil', 3),
+      M('rin-veil-up', '隱匿延長', 'rin-veil', '延長隱匿的持續回合', turns(4, 5, 6)),
+      A('rin-shadowless', 1),
+    ] },
+    { name: '處決', nodes: [
+      A('rin-mark', 3),
+      M('rin-mark-up', '標記加深', 'rin-mark', '加深標記的防禦削弱', buff(120, 140, 160)),
+      A('rin-execute', 3),
+      M('rin-execute-up', '處決強化', 'rin-execute', '強化處決的威力', pct(115, 130, 150)),
+      A('rin-deathblow', 1),
+    ] },
+  ] },
 };
 
 /** Which branch's ultimate the default build aims for (read by the auto-allocation of skill points). */
 export const DEFAULT_CAPSTONE: Record<CharacterId, number> = {
-  noel: 0, chizuru: 0, liz: 0, sylvie: 0, scarlet: 1, selene: 0, safira: 0, bobby: 0,
+  noel: 0, chizuru: 0, liz: 0, sylvie: 0, scarlet: 1, selene: 0, safira: 0, bobby: 0, rin: 1,
 };
 
 export const NODES: Record<string, { node: TreeNode; owner: CharacterId; branch: number; tier: number }> = {};

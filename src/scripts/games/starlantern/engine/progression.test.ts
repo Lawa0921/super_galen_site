@@ -95,7 +95,7 @@ describe('progression', () => {
 
   it('no tree fills by Lv50', () => {
     expect(Object.fromEntries(ids.map((id) => [id, capacity(id)]))).toEqual({
-      noel: 36, chizuru: 36, liz: 32, sylvie: 36, scarlet: 34, selene: 30, safira: 36, bobby: 34,
+      noel: 36, chizuru: 36, liz: 32, sylvie: 36, scarlet: 34, selene: 30, safira: 36, bobby: 34, rin: 36,
     });
     for (const id of ids) {
       expect(capacity(id), id).toBeGreaterThan(skillPoints(50));

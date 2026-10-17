@@ -1,8 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CHARACTER_IDS } from '../data/characters';
 import { ENEMIES } from '../data/enemies';
-import { ART_BASE, allArtUrls, art, effectFor, moodFor, parseManifest, tileKey } from './artPaths';
+import { ART_BASE, ART_CHARACTER_IDS, allArtUrls, art, effectFor, moodFor, parseManifest, tileKey } from './artPaths';
 
 describe('artPaths', () => {
   it('builds urls under the starlantern base', () => {
@@ -14,8 +13,8 @@ describe('artPaths', () => {
 
   it('lists one url per asset with no duplicates', () => {
     const urls = allArtUrls();
-    expect(urls).toHaveLength(219);
-    expect(new Set(urls).size).toBe(219);
+    expect(urls).toHaveLength(237);
+    expect(new Set(urls).size).toBe(237);
     expect(urls).toContain(art.fxAnim('thunder'));
     for (const id of ['blaze-core', 'frost-heart', 'storm-stone', 'mire-gland', 'shade-crystal', 'iron-shard']) expect(urls).not.toContain(art.icon(id));
     expect(urls).toContain(art.window);
@@ -25,7 +24,9 @@ describe('artPaths', () => {
     expect(urls).toContain(art.eventTile('vault-open'));
     expect(urls).toContain(art.npc('gate', 'happy'));
     expect(urls).toContain(`${ART_BASE}/map/fog.png`);
-    for (const id of CHARACTER_IDS) expect(urls).toContain(art.standee(id));
+    for (const id of ART_CHARACTER_IDS) expect(urls).toContain(art.standee(id));
+    for (const id of ['rin', 'rin-oath']) for (const m of ['normal', 'attack', 'hit', 'dying', 'down', 'ultimate', 'smile', 'sad'] as const) expect(urls).toContain(art.portrait(id, m));
+    expect(urls).toContain(art.standee('rin-oath'));
     for (const id of Object.keys(ENEMIES)) expect(urls).toContain(art.enemy(id));
   });
 

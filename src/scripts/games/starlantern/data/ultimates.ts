@@ -17,6 +17,8 @@ const LIST: UltimateDef[] = [
     effects: [{ kind: 'buff', stat: 'atk', pct: 40, turns: 4 }, { kind: 'buff', stat: 'spd', pct: 40, turns: 4 }] },
   { id: 'ult-bobby', owner: 'bobby', name: '全彈發射', target: 'enemies', desc: '所有砲管齊射，全體 2 段',
     effects: [{ kind: 'damage', power: 110, element: 'phys', scale: 'mag', melee: false, hits: 2 }] },
+  { id: 'ult-rin', owner: 'rin', name: '無聲一刺', target: 'enemy', desc: '無聲的一刺，必定暴擊',
+    effects: [{ kind: 'damage', power: 300, element: 'phys', scale: 'atk', melee: true, crit: 'always' }] },
 ];
 
 export const ULTIMATES = Object.fromEntries(LIST.map((u) => [u.owner, u])) as Record<CharacterId, UltimateDef>;

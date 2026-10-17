@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TREES, nodeDesc, nodeName } from './trees';
-import { CHARACTERS } from './characters';
+import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { SKILLS } from './skills';
 import { POWERS } from './gear';
 import { defaultTree, freeNode, nodeRank, raiseNode } from '../engine/progression';
@@ -13,7 +13,7 @@ const allNodes = () => ids.flatMap((id) => TREES[id]!.branches.flatMap((b) => b.
 describe('skill trees', () => {
   it('every character has a tree', () => {
     expect([...ids].sort()).toEqual(Object.keys(CHARACTERS).sort());
-    expect(ids).toHaveLength(8);
+    expect(ids).toHaveLength(CHARACTER_IDS.length);
   });
 
   it("every skill in SKILLS is an active node of exactly one tree, its owner's", () => {
@@ -23,11 +23,12 @@ describe('skill trees', () => {
     }
   });
 
-  it('DEFAULT_CAPSTONE names a branch for every character; scarlet takes the flame', () => {
+  it('DEFAULT_CAPSTONE names a branch for every character; scarlet takes the flame and rin the backstab', () => {
     for (const id of ids) expect([0, 1, 2], id).toContain(DEFAULT_CAPSTONE[id]);
     expect(DEFAULT_CAPSTONE.scarlet).toBe(1);
     expect(TREES.scarlet.branches[1].nodes[4].id).toBe('crimson-end');
-    for (const id of ids.filter((x) => x !== 'scarlet')) expect(DEFAULT_CAPSTONE[id], id).toBe(0);
+    expect(DEFAULT_CAPSTONE.rin).toBe(1);
+    for (const id of ids.filter((x) => x !== 'scarlet' && x !== 'rin')) expect(DEFAULT_CAPSTONE[id], id).toBe(0);
   });
 
   it('mod nodes that lower hpCost do so rank by rank', () => {

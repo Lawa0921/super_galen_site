@@ -1,4 +1,4 @@
-import { CHARACTERS } from '../data/characters';
+import { CHARACTERS, LEGACY_CHARACTER_IDS } from '../data/characters';
 import { CONDITIONS, type ConditionDef } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { FLOORS } from '../data/floors';
@@ -23,7 +23,8 @@ export { depthLevel } from './levels';
  */
 const STAT_KEYS: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 const AVG = (() => {
-  const cs = Object.values(CHARACTERS);
+  // The party stat baseline is the original eight: newer characters do not move the tuned enemy curve.
+  const cs = LEGACY_CHARACTER_IDS.map((id) => CHARACTERS[id]);
   const avg = (pick: (c: (typeof cs)[number]) => Stats) =>
     Object.fromEntries(STAT_KEYS.map((k) => [k, cs.reduce((n, c) => n + pick(c)[k], 0) / cs.length])) as Stats;
   return { base: avg((c) => c.base), growth: avg((c) => c.growth) };

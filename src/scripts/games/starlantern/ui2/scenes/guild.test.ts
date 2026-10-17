@@ -35,7 +35,7 @@ describe('GuildScene', () => {
     const { game, pick, s, root } = setup();
     pick('招募');
     pick('森林遊俠 希爾薇');
-    expect(root.textContent).toContain('單體高傷');
+    expect(root.textContent).toContain('暗器牽制');   // the info panel shows the list's first entry: Rin comes first now
     s.onAction('up');      // confirm box defaults to 否; up wraps to 是
     s.onAction('confirm');
     expect(game.state.party.recruited).toContain('sylvie');

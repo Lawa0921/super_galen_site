@@ -50,6 +50,7 @@ export const PALETTES: Record<CharacterId, AnyStat[]> = {
   selene: ['wil', 'mag', 'heal', 'tp', 'res', 'tpRegen'],
   safira: ['agi', 'atk', 'multi', 'evasion', 'spd', 'crit'],
   bobby: ['int', 'mag', 'tp', 'def', 'gauge', 'thunderDmg'],
+  rin: ['agi', 'atk', 'crit', 'critDmg', 'spd', 'evasion'],
 };
 
 export const CHAR_KEYSTONES: Record<CharacterId, KeystoneId[]> = {
@@ -61,6 +62,7 @@ export const CHAR_KEYSTONES: Record<CharacterId, KeystoneId[]> = {
   selene: ['regen', 'opening-gauge', 'crit-tp'],
   safira: ['kill-tp', 'crit-tp', 'opening-gauge'],
   bobby: ['opening-gauge', 'weak-tp', 'regen'],
+  rin: ['crit-tp', 'kill-tp', 'last-stand'],
 };
 /** The keystones the default build takes: the first two. */
 export const DEFAULT_KEYSTONES = Object.fromEntries(

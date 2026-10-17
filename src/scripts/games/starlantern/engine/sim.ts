@@ -1,3 +1,4 @@
+import { CHARACTER_IDS, LEGACY_CHARACTER_IDS } from '../data/characters';
 import { ENEMIES } from '../data/enemies';
 import { CONDITIONS } from '../data/conditions';
 import { FLOORS } from '../data/floors';
@@ -15,6 +16,15 @@ import { terrainOf } from './dungeon/run';
 import { advance } from './encounter';
 import { DELTA, posKey, tileAt, type FloorMap } from './map';
 import type { BuffStat, CharacterId, GearSlot, Party, Pos, Rarity, SkillDef } from './types';
+
+/** The eight members as CHARACTER_IDS ordered them before Rin: kitParty drew their gear in this order, and still does. */
+export const LEGACY_KIT_ORDER: CharacterId[] = LEGACY_CHARACTER_IDS;
+/** The order kitParty draws gear in: the legacy eight first so their draws never move, newer members after, the hero always last. */
+export const KIT_ORDER: CharacterId[] = [
+  ...LEGACY_KIT_ORDER,
+  ...CHARACTER_IDS.filter((id) => !LEGACY_KIT_ORDER.includes(id) && (id as string) !== 'hero'),
+  ...CHARACTER_IDS.filter((id) => (id as string) === 'hero'),
+];
 
 type Altar = { stat: BuffStat; pct: number }[];
 
@@ -42,7 +52,7 @@ export function kitParty(level: number, depth: number, seed: number, rarity?: Ra
   const ilvl = itemLevel(depth, 'monster');
   const weights = rarityWeights('monster', depthLevel(depth), 'plain');
   let uid = 1;
-  for (const id of Object.keys(p.roster) as CharacterId[]) {
+  for (const id of KIT_ORDER) {
     const m = { ...p.roster[id], equip: { ...p.roster[id].equip } };
     for (const s of SLOTS) {
       const slot: GearSlot = s === 'ring1' || s === 'ring2' ? 'ring' : s;

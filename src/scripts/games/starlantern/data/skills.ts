@@ -160,6 +160,27 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'damage', power: 70, element: 'thunder', scale: 'mag', melee: false }] },
   { id: 'tesla-coil', name: '特斯拉線圈', owner: 'bobby', tp: 15, target: 'enemies', desc: '雷屬性全體強力魔法攻擊',
     effects: [{ kind: 'damage', power: 110, element: 'thunder', scale: 'mag', melee: false }] },
+
+  { id: 'rin-needle', name: '飛針', owner: 'rin', tp: 3, target: 'enemy', desc: '連射 2 枚飛針',
+    effects: [{ kind: 'damage', power: 70, element: 'phys', scale: 'atk', melee: false, hits: 2 }] },
+  { id: 'rin-fan', name: '扇形針', owner: 'rin', tp: 6, target: 'enemies', desc: '飛針呈扇形射向全體敵人',
+    effects: [{ kind: 'damage', power: 60, element: 'phys', scale: 'atk', melee: false }] },
+  { id: 'rin-venom-needle', name: '毒針', owner: 'rin', tp: 5, target: 'enemy', desc: '飛針攻擊並可能中毒',
+    effects: [{ kind: 'damage', power: 70, element: 'phys', scale: 'atk', melee: false }, { kind: 'inflict', status: 'poison', chance: 0.5 }] },
+  { id: 'rin-storm', name: '千針', owner: 'rin', tp: 13, target: 'enemies', desc: '漫天飛針連射 2 次攻擊全體敵人',
+    effects: [{ kind: 'damage', power: 60, element: 'phys', scale: 'atk', melee: false, hits: 2 }] },
+  { id: 'rin-backstab', name: '背刺', owner: 'rin', tp: 4, target: 'enemy', desc: '近身一刺，對受傷的敵人傷害更高',
+    effects: [{ kind: 'damage', power: 120, element: 'phys', scale: 'atk', melee: true, wounded: 50 }] },
+  { id: 'rin-veil', name: '隱匿', owner: 'rin', tp: 4, target: 'self', desc: '自身速度提升',
+    effects: [{ kind: 'buff', stat: 'spd', pct: 30, turns: 3 }] },
+  { id: 'rin-shadowless', name: '無影', owner: 'rin', tp: 12, target: 'enemy', desc: '無影的一刺，對受傷的敵人傷害大增',
+    effects: [{ kind: 'damage', power: 200, element: 'phys', scale: 'atk', melee: true, wounded: 80 }] },
+  { id: 'rin-mark', name: '標記', owner: 'rin', tp: 4, target: 'enemy', desc: '降低敵人防禦',
+    effects: [{ kind: 'buff', stat: 'def', pct: -25, turns: 3 }] },
+  { id: 'rin-execute', name: '處決', owner: 'rin', tp: 8, target: 'enemy', desc: '必定暴擊；對殘血的敵人傷害大增',
+    effects: [{ kind: 'damage', power: 110, element: 'phys', scale: 'atk', melee: true, execute: 150, crit: 'always' }] },
+  { id: 'rin-deathblow', name: '斷命', owner: 'rin', tp: 14, target: 'enemy', desc: '必定暴擊；對殘血的敵人傷害極大',
+    effects: [{ kind: 'damage', power: 160, element: 'phys', scale: 'atk', melee: true, execute: 200, crit: 'always' }] },
 ];
 
 export const SKILLS: Record<string, SkillDef> = Object.fromEntries(LIST.map((s) => [s.id, s]));

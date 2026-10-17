@@ -7,13 +7,25 @@ import { REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { BattleEvent } from '../engine/combatant';
 import type { Dir, Tile } from '../engine/map';
+import type { CharacterId } from '../engine/types';
 
 export const ART_BASE = '/assets/games/starlantern';
 export const MANIFEST_URL = `${ART_BASE}/manifest.json`;
 export type TileKey = Tile | 'chest-open';
 export type FxKey = 'slash' | 'pierce' | 'strike' | 'fire' | 'ice' | 'thunder' | 'heal' | 'buff';
 export type Mood = 'normal' | 'attack' | 'hit' | 'dying' | 'down' | 'ultimate';
+/** Story-only faces that a few characters have besides the battle moods. */
+export type ExtraMood = 'smile' | 'sad';
+export const EXTRA_MOODS: ExtraMood[] = ['smile', 'sad'];
 export const MOODS: Mood[] = ['normal', 'attack', 'hit', 'dying', 'down', 'ultimate'];
+
+/** Characters whose art is not on disk yet; allArtUrls leaves them out. */
+export const NO_ART_YET = new Set<CharacterId>();
+export const ART_CHARACTER_IDS = CHARACTER_IDS.filter((id) => !NO_ART_YET.has(id));
+/** Art ids that are not characters of their own but a second look of one (Rin after her oath). */
+export const ART_VARIANT_IDS = ['rin-oath'];
+/** Everyone who also has the smile and sad faces. */
+const EXTRA_MOOD_IDS = ['rin', 'rin-oath'];
 
 export const TILE_KEYS: TileKey[] = ['wall', 'floor', 'door', 'up', 'down', 'chest', 'chest-open', 'entrance', 'boss'];
 export const FX_KEYS: FxKey[] = ['slash', 'pierce', 'strike', 'fire', 'ice', 'thunder', 'heal', 'buff'];
@@ -32,7 +44,7 @@ export const art = {
   fx: (key: FxKey) => `${ART_BASE}/fx/${key}.png`,
   /** Four equal frames left to right: wind-up, burst, spread, fade. */
   fxAnim: (key: FxKey) => `${ART_BASE}/fx/${key}-anim.png`,
-  portrait: (cid: string, mood: Mood) => `${ART_BASE}/char/${cid}-portrait${mood === 'normal' ? '' : `-${mood}`}.png`,
+  portrait: (cid: string, mood: Mood | ExtraMood) => `${ART_BASE}/char/${cid}-portrait${mood === 'normal' ? '' : `-${mood}`}.png`,
   standee: (cid: string) => `${ART_BASE}/char/${cid}-standee.png`,
   icon: (id: string) => `${ART_BASE}/icon/${id}.png`,
   frame: `${ART_BASE}/ui/frame.png`,
@@ -82,7 +94,8 @@ export function effectFor(ev: BattleEvent, actorDefId: string | null): FxKey | n
 
 export function allArtUrls(): string[] {
   const urls: string[] = [];
-  for (const id of CHARACTER_IDS) urls.push(art.standee(id), ...MOODS.map((m) => art.portrait(id, m)));
+  for (const id of [...ART_CHARACTER_IDS, ...ART_VARIANT_IDS]) urls.push(art.standee(id), ...MOODS.map((m) => art.portrait(id, m)));
+  for (const id of EXTRA_MOOD_IDS) urls.push(...EXTRA_MOODS.map((m) => art.portrait(id, m)));
   for (const d of DIRS) urls.push(art.party(d));
   urls.push(art.fog);
   for (const f of [1, 2, 3]) { for (const k of TILE_KEYS) urls.push(art.tile(f, k)); urls.push(art.wallTop(f), art.wallFace(f), art.bg(f)); }
@@ -114,6 +127,8 @@ export function allArtUrls(): string[] {
     'moon-rain', 'full-moon', 'blessing', 'sanctuary', 'moon-arrow', 'lunar-eclipse',
     'sand-cyclone', 'thousand-shadows', 'veil-dance', 'desert-festival', 'shadow-step', 'sirocco',
     'cannon', 'repair-kit', 'overclock', 'emergency-repair', 'shock-mine', 'tesla-coil',
+    // plan 6a: Rin's skills have no icon yet
+    'rin-needle', 'rin-fan', 'rin-venom-needle', 'rin-storm', 'rin-backstab', 'rin-veil', 'rin-shadowless', 'rin-mark', 'rin-execute', 'rin-deathblow',
   ]);
   for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.keys(MATERIALS), ...Object.keys(EQUIPMENT)]) {
     if (!NO_ICON_YET.has(id)) urls.push(art.icon(id));
