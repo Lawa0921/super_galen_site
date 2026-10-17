@@ -13,11 +13,17 @@ import { stackMods } from './skills';
  * The data and its rules are described in data/trees.ts; this file is the only place that applies them.
  */
 
+/** A curve other than the two known ones is a bug at the call site (e.g. `.map(skillPoints)` passing an index): fail loudly. */
+function assertCurve(curve: unknown): void {
+  if (curve !== 'companion' && curve !== 'hero') throw new Error(`unknown growth curve: ${String(curve)}`);
+}
+
 /**
  * Skill points earned by `level`. Companion curve: one per level up to Lv4, then one on every odd level (5, 7, ... 49), so
  * Lv50 is 26. Hero curve: one per level plus one every second level, (L - 1) + floor((L - 1) / 2), so Lv50 is 73.
  */
 export function skillPoints(level: number, curve: GrowthRules['curve'] = 'companion'): number {
+  assertCurve(curve);
   if (!(level > 1)) return 0;
   if (curve === 'hero') return (level - 1) + Math.floor((level - 1) / 2);
   return level <= 4 ? level - 1 : 3 + Math.floor((level - 3) / 2);
@@ -28,6 +34,7 @@ export function skillPoints(level: number, curve: GrowthRules['curve'] = 'compan
  * Hero curve: one on every level from Lv6, max(0, L - 5), so Lv50 is 45.
  */
 export function talentPoints(level: number, curve: GrowthRules['curve'] = 'companion'): number {
+  assertCurve(curve);
   if (level < 6 || !Number.isFinite(level)) return 0;
   return curve === 'hero' ? level - 5 : Math.floor((level - 4) / 2);
 }
@@ -152,6 +159,7 @@ export function raiseNode(m: Member, node: string): { ok: true; member: Member }
 /** The level at which the default build learns an old skill: the last level up to its old level that pays a skill point. */
 export function legacyDue(skill: string): number {
   const old = has(LEGACY_LEARN_LEVEL, skill) ? LEGACY_LEARN_LEVEL[skill] : 1;
+  // Deliberately the companion curve: legacy skills belong to the eight companions only.
   for (let L = old; L > 1; L--) if (skillPoints(L) > skillPoints(L - 1)) return L;
   return 1;
 }

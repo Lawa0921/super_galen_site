@@ -3,10 +3,11 @@ import {
   canRaiseNode, canRaiseTalent, defaultTalents, defaultTree, freeNode, keystonesOf, learnedSkills, legacyDue, newTree, nodeRank, raiseNode,
   raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, validBuild,
 } from './progression';
-import { newMember } from './party';
+import { gainExp, newMember } from './party';
+import { CHARACTERS } from '../data/characters';
 import { mulberry32 } from './rng';
 import { DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES } from '../data/trees';
-import { BOARDS, DEFAULT_KEYSTONES, TALENT_PER, TALENT_SCALE } from '../data/talents';
+import { BOARDS, DEFAULT_KEYSTONES, TALENT_PER, TALENT_SCALE, talentBlocker } from '../data/talents';
 import type { AnyStat } from './types';
 import type { CharacterId, Member } from './types';
 
@@ -53,6 +54,43 @@ describe('progression', () => {
     }
     expect(skillPoints(50)).toBe(26);
     expect(talentPoints(50)).toBe(23);
+  });
+
+  it('an unknown curve throws instead of reading as companion', () => {
+    expect(() => skillPoints(10, 3 as never)).toThrow();
+    expect(() => talentPoints(10, 'x' as never)).toThrow();
+    expect(() => [1, 2].map(skillPoints as (n: number) => number)).toThrow();
+  });
+
+  it('every rulesOf reader honours a per-character override', () => {
+    const noel = CHARACTERS.noel;
+    const original = noel.rules;
+    // Everything but the ultimates and the first branch's tiers 0-3 at max, plus ultimate 0 held: a second ultimate is the question.
+    const full: Record<string, number> = {};
+    for (const b of TREES.noel.branches) for (const n of b.nodes.slice(0, 4)) full[n.id] = n.maxRank;
+    const held = { ...full, [TREES.noel.branches[0].nodes[4].id]: 1 };
+    const second = TREES.noel.branches[1].nodes[4].id;
+    const keys = { 'noel-t00': 5, 'noel-t01': 5, 'noel-t02': 5, 'noel-k0': 1, 'noel-k1': 1 };
+    const probe = () => ({
+      skillLeft: skillPointsLeft({ ...newMember('noel'), level: 50 }),
+      talentLeft: talentPointsLeft({ ...newMember('noel'), level: 50 }),
+      second: canRaiseNode({ ...newMember('noel'), level: 50, tree: held }, second),
+      third: talentBlocker('noel', 'noel-k2', keys),
+      gained: gainExp({ ...newMember('noel'), level: 1, exp: 0 }, 1e9).points,
+    });
+    try {
+      noel.rules = undefined;
+      expect(probe()).toEqual({ skillLeft: 26, talentLeft: 23, second: 'capstone', third: 'keystone-cap', gained: { skill: 26, talent: 23 } });
+      noel.rules = { capstones: 2, maxKeystones: 3, curve: 'hero' };
+      const p = probe();
+      expect(p.skillLeft).toBe(73);
+      expect(p.talentLeft).toBe(45);
+      expect(p.second).not.toBe('capstone');
+      expect(p.third).toBeNull();
+      expect(p.gained).toEqual({ skill: 73, talent: 45 });
+    } finally {
+      noel.rules = original;
+    }
   });
 
   it('no tree fills by Lv50', () => {

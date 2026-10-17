@@ -532,13 +532,13 @@ function moveTalent(node: string): boolean {
   return true;
 }
 
-/** Enter on the cursor's node, or a click on `clicked` (which selects it first): the shared spend, as the tree page's. */
 /** The words for a refused talent raise; the keystone cap reads the character's own limit. */
 const talentReason = (why: TalentFail, id: CharacterId): string => {
   const r = T.ui2.talent.reason[why];
   return typeof r === 'function' ? r(rulesOf(id).maxKeystones) : r;
 };
 
+/** Enter on the cursor's node, or a click on `clicked` (which selects it first): the shared spend, as the tree page's. */
 function pressTalent(ctx: SceneCtx, id: CharacterId, clicked?: string): void {
   const t = T.ui2.talent;
   const node = clicked ?? talentView.cur;
