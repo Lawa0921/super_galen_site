@@ -3,7 +3,7 @@ import { RECIPES, canCraft, stationOk, type CraftContext, type Station } from '.
 import type { Inventory, Stack } from '../engine/inventory';
 import type { ItemId } from '../engine/items';
 import type { BlockReason } from '../engine/game';
-import { DAY_LENGTH } from '../engine/constants';
+import { CHUNK, DAY_LENGTH } from '../engine/constants';
 
 export interface Cam { x: number; y: number; }
 
@@ -161,6 +161,34 @@ export class BannerQueue {
 }
 
 export function percentLabel(f: number): string { return `${Math.round(Math.max(0, Math.min(1, f)) * 100)}%`; }
+/** 地圖探索比例（0..1）：世界很大，剛開始只有零點幾 %——不到 1% 顯示兩位小數、極小值顯示 <0.01% */
+export function exploredLabel(f: number): string {
+  const p = Math.max(0, Math.min(1, f)) * 100;
+  if (p === 0) return '0%';
+  if (p >= 100) return '100%';
+  if (p < 0.01) return '<0.01%';
+  return p < 1 ? `${p.toFixed(2)}%` : `${p.toFixed(1)}%`;
+}
+export interface TileRect { x: number; y: number; w: number; h: number; }
+/** tile (x,y) 是否在 rect（tile 座標）往外 margin 格內：畫面外的液體反應不放音效 / 粒子 */
+export function nearRect(x: number, y: number, r: TileRect, margin: number): boolean {
+  return x >= r.x - margin && x < r.x + r.w + margin && y >= r.y - margin && y < r.y + r.h + margin;
+}
+/** 有沒有任何 chunk（index = cy*chunksX+cx）和 rect（tile，往外 margin）相交：只有這樣才需要重算光照 */
+export function chunksTouchRect(cis: Iterable<number>, chunksX: number, r: TileRect, margin: number): boolean {
+  const x0 = r.x - margin, y0 = r.y - margin, x1 = r.x + r.w + margin, y1 = r.y + r.h + margin;
+  for (const ci of cis) {
+    const cx = ci % chunksX, cy = (ci - cx) / chunksX;
+    const tx = cx * CHUNK, ty = cy * CHUNK;
+    if (tx < x1 && tx + CHUNK > x0 && ty < y1 && ty + CHUNK > y0) return true;
+  }
+  return false;
+}
+/** 操作說明看過的記號（localStorage） */
+export const HELP_KEY = 'delve.help.seen';
+export function helpSeen(store: Pick<Storage, 'getItem'> | undefined | null): boolean {
+  try { return store?.getItem(HELP_KEY) === '1'; } catch { return false; }
+}
 export function distanceLabel(tiles: number): string {
   return `${Math.round(tiles).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} 格`;
 }

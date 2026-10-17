@@ -6,7 +6,7 @@ import { BLOCKS_LIGHT_LUT, T, isSolidTile, isDecor } from '../engine/tiles';
 import { ITEMS, type ItemId } from '../engine/items';
 import { TILE_SIZE, CHUNK, DAY_LENGTH } from '../engine/constants';
 import { buildAtlas, perpMask, type Atlas } from './textures';
-import { ChunkLRU, biomeBlend, cameraFocus, followCamera, visibleChunks, type Cam } from './model';
+import { ChunkLRU, biomeBlend, cameraFocus, chunksTouchRect, followCamera, nearRect, visibleChunks, type Cam, type TileRect } from './model';
 import { CORNER, EDGE, blendOverlay, decorStyle, edgeMask, innerCornerMask, type Neighbor } from './autotile';
 import {
   advancePhase, armAngles, flameFrame, idleFrame, poseKind, swingAngle, walkFrame, SWING_RATE,
@@ -32,6 +32,10 @@ const LSUB = 8;
 /** 4×4 Bayer 門檻（同 pixel.bayer） */
 const BAYER_T = Float32Array.from({ length: 16 }, (_, i) => bayer(i & 3, i >> 2));
 const SIDE_D: [number, number][] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+/** 液體反應（蒸氣 / 嘶聲）只在畫面往外這麼多格內才放粒子 / 音效、觸發光照重算 */
+export const REACTION_MARGIN = 12;
+/** 光照視窗外這麼多格內的 tile 變動才需要重算光照（光源半徑） */
+const LIGHT_MARGIN = 12;
 
 /** 游標四角：(是否右側, 是否下側, 水平延伸方向, 垂直延伸方向) */
 const CURSOR_CORNERS: [number, number, number, number][] = [[0, 0, 1, 1], [1, 0, -1, 1], [0, 1, 1, -1], [1, 1, -1, -1]];
@@ -98,6 +102,7 @@ export class Renderer {
   private walkPhase = 0;
   private swingPhase = 0;
   private snapNext = true;
+  private viewed = false;
   private bg: Background;
   private torchesSeen: { x: number; y: number }[] = [];
   private coolSeen: { x: number; y: number }[] = [];
@@ -138,8 +143,8 @@ export class Renderer {
     const dw = Math.max(1, Math.round(this.viewW * this.dpr)), dh = Math.max(1, Math.round(this.viewH * this.dpr));
     this.canvas.width = dw;
     this.canvas.height = dh;
-    this.zoomOffset = clampZoom(this.zoomOffset, dw, dh);
-    this.scale = zoomScale(dw, dh, this.zoomOffset);
+    this.zoomOffset = clampZoom(this.zoomOffset, dw, dh, this.dpr);
+    this.scale = zoomScale(dw, dh, this.zoomOffset, this.dpr);
     const b = bufferSize(dw, dh, this.scale);
     this.bufW = b.w; this.bufH = b.h;
     this.buf.width = b.w; this.buf.height = b.h;
@@ -164,7 +169,7 @@ export class Renderer {
   /** 預設倍率（不含使用者縮放）換成 CSS px 比例：HUD 像素單位用它，縮放時 HUD 不跟著變 */
   baseZoom(): number {
     const dw = Math.round(this.cssW * this.dpr), dh = Math.round(this.cssH * this.dpr);
-    return zoomScale(dw, dh, 0) / this.dpr;
+    return zoomScale(dw, dh, 0, this.dpr) / this.dpr;
   }
   /** 目前視野大小（格） */
   viewTiles(): { w: number; h: number } { return { w: Math.round(this.bufW / S), h: Math.round(this.bufH / S) }; }
@@ -187,11 +192,11 @@ export class Renderer {
   onEvent(e: DelveEvent): void {
     this.combat.onEvent(e);
     if (e.type === 'respawn') this.snapCamera();
-    if (e.type === 'mine' || e.type === 'place') this.lightDirty = true;
+    if ((e.type === 'mine' || e.type === 'place') && this.nearView(e.x, e.y, LIGHT_MARGIN)) this.lightDirty = true;
     if (e.type === 'splash') this.burst(e.x, e.y, e.big ? 16 : 9, SPLASH[e.liquid] ?? SPLASH[LIQ.WATER], e.big ? 260 : 170);
     if (e.type === 'liquidtool') this.burst((e.x + 0.5) * S, (e.y + 0.5) * S, 7, SPLASH[e.liquid] ?? SPLASH[LIQ.WATER], 130);
-    if (e.type === 'liquid') {
-      // 反應：一團往上飄的蒸氣（灰白），黑曜石 / 酥蜜塊另外噴一點碎屑
+    if (e.type === 'liquid' && this.nearView(e.x, e.y)) {
+      // 反應：一團往上飄的蒸氣（灰白），黑曜石 / 酥蜜塊另外噴一點碎屑（畫面外的反應不畫、不重算光照）
       for (let i = 0; i < 10; i++) {
         this.particles.push({ x: (e.x + Math.random()) * S, y: (e.y + 0.3) * S, vx: (Math.random() - 0.5) * 50, vy: -30 - Math.random() * 50,
           life: 0.7 + Math.random() * 0.6, color: i % 3 === 0 ? '#ffffff' : '#b4b9c8', g: -40, size: i % 2 ? 2 : 1 });
@@ -215,6 +220,17 @@ export class Renderer {
     }
   }
 
+  /** 目前畫面（tile 座標）；還沒畫過第一幀時 null */
+  viewRect(): TileRect | null {
+    if (!this.viewed) return null;
+    return { x: Math.floor(this.drawCam.x / S), y: Math.floor(this.drawCam.y / S), w: Math.ceil(this.bufW / S) + 1, h: Math.ceil(this.bufH / S) + 1 };
+  }
+  /** tile (x,y) 是否在畫面附近（音效 / 粒子用）；還沒畫過第一幀時一律 true */
+  nearView(x: number, y: number, margin = REACTION_MARGIN): boolean {
+    const r = this.viewRect();
+    return !r || nearRect(x, y, r, margin);
+  }
+
   render(dt: number): void {
     const g = this.game, w = g.world;
     this.frame++;
@@ -228,6 +244,7 @@ export class Renderer {
     this.drawCam = snapCam(this.cam);
     const sh = this.combat.shakeOffset(dt);
     this.drawCam = { x: this.drawCam.x + sh.x, y: this.drawCam.y + sh.y };
+    this.viewed = true;
     g.viewHalf = { w: Math.ceil(vw / S / 2), h: Math.ceil(vh / S / 2) };
     const camX = this.drawCam.x, camY = this.drawCam.y;
 
@@ -237,7 +254,10 @@ export class Renderer {
     // 液體變動只需要讓地圖重畫（液體圖層每幀畫，不碰 tile chunk 快取）
     const ldirty = w.drainLiquidDirty();
     if (ldirty.length) this.onWorldDirty?.(ldirty);
-    if (this.pending.size) this.lightDirty = true;
+    // 只有「這一幀新變動、而且碰到光照視窗」的 chunk 才逼光照重算；
+    // 留在 pending 裡等進畫面才重畫的畫面外 chunk 不算（以前會讓光照每幀重算）
+    const lw = this.light;
+    if (dirty.length && (!lw || chunksTouchRect(dirty, w.chunksX, { x: lw.x0, y: lw.y0, w: lw.w, h: lw.h }, LIGHT_MARGIN))) this.lightDirty = true;
 
     const ctx = this.bctx;
     ctx.setTransform(1, 0, 0, 1, 0, 0);

@@ -6,7 +6,7 @@ import { CATEGORY_LABEL, type RegionCat } from '../engine/discovery';
 import { LORE, loreEntry } from '../engine/lore';
 import { ITEMS } from '../engine/items';
 import { drawIcon, type Atlas } from './textures';
-import { BannerQueue, distanceLabel, percentLabel } from './model';
+import { BannerQueue, distanceLabel, exploredLabel, percentLabel } from './model';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] => {
   const e = document.createElement(tag);
@@ -106,7 +106,7 @@ export class ExploreUi {
     const w = g.world;
     const explored = g.explored.count / (w.width * w.height);
     const killSig = Object.values(g.kills).reduce((a, n) => a + (n ?? 0), 0);
-    const sig = `${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${Math.round(explored * 1000)}|${killSig}|${g.bossesDefeated.size}`;
+    const sig = `${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${exploredLabel(explored)}|${killSig}|${g.bossesDefeated.size}`;
     if (sig === this.journalSig) return;
     this.journalSig = sig;
     body.replaceChildren();
@@ -114,7 +114,7 @@ export class ExploreUi {
     const top = el('div', 'delve-j-top');
     top.append(el('span', 'delve-j-big', `完成度 ${percentLabel(s.completion)}`), segBar(s.completion));
     body.appendChild(top);
-    const facts = el('p', 'delve-j-facts', `最深 ${s.depthRecord} 格 · 移動 ${distanceLabel(s.distance)} · 地圖探索 ${(explored * 100).toFixed(1)}%`);
+    const facts = el('p', 'delve-j-facts', `最深 ${s.depthRecord} 格 · 移動 ${distanceLabel(s.distance)} · 地圖探索 ${exploredLabel(explored)}`);
     facts.dataset.testid = 'journal-facts';
     body.appendChild(facts);
 

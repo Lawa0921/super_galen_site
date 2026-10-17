@@ -22,19 +22,23 @@ export function pickScale(devW: number, devH: number, target: number = TARGET_AR
 export const MIN_VIEW_ART_PX = 160;
 export const MAX_ZOOM_OFFSET = 6;
 
-function scaleRange(devW: number, devH: number): { base: number; max: number } {
+/**
+ * 預設倍率：短邊約 TARGET_ART_PX 美術 px，但至少 ceil(dpr)——每個美術 px ≥ 1 CSS px，
+ * 一格（16 美術 px）≥ 16 CSS px。高 DPR 手機（390 寬、DPR 3）若只看短邊會選 2 倍 → 每格 10.7 CSS px，太小點不到。
+ */
+function scaleRange(devW: number, devH: number, dpr = 1): { base: number; max: number } {
   const side = Math.max(1, Math.min(devW, devH));
-  const base = pickScale(devW, devH);
+  const base = Math.max(pickScale(devW, devH), Math.ceil(Math.max(1, dpr) - 0.01));
   return { base, max: Math.max(base, Math.floor(side / MIN_VIEW_ART_PX)) };
 }
-/** offset > 0 放大（倍率變大、看到的格子變少），< 0 縮小。結果夾在 1..max。 */
-export function zoomScale(devW: number, devH: number, offset: number): number {
-  const { base, max } = scaleRange(devW, devH);
+/** offset > 0 放大（倍率變大、看到的格子變少），< 0 縮小。結果夾在 1..max。dpr = 裝置像素比（預設 1）。 */
+export function zoomScale(devW: number, devH: number, offset: number, dpr = 1): number {
+  const { base, max } = scaleRange(devW, devH, dpr);
   return Math.max(1, Math.min(max, base + Math.round(offset)));
 }
 /** 把 offset 收斂到這個畫面有效的範圍 */
-export function clampZoom(offset: number, devW: number, devH: number): number {
-  return zoomScale(devW, devH, offset) - scaleRange(devW, devH).base;
+export function clampZoom(offset: number, devW: number, devH: number, dpr = 1): number {
+  return zoomScale(devW, devH, offset, dpr) - scaleRange(devW, devH, dpr).base;
 }
 /** localStorage 字串 → offset（壞值 0） */
 export function parseZoomPref(v: string | null | undefined): number {

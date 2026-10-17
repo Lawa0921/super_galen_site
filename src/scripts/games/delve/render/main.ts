@@ -198,7 +198,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'kill') sound.enemyDeath();
         else if (e.type === 'hurt') { if (e.cause === 'drown') sound.drown(); else if (e.cause === 'burn') sound.burn(); else sound.hurt(); }
         else if (e.type === 'splash') sound.splash(e.big, e.liquid === LIQ.LAVA);
-        else if (e.type === 'liquid') sound.sizzle();
+        else if (e.type === 'liquid') { if (renderer.nearView(e.x, e.y)) sound.sizzle(); }
         else if (e.type === 'bubble') sound.bubble();
         else if (e.type === 'liquidtool') { sound.splash(false, e.liquid === LIQ.LAVA); invChanged = true; }
         else if (e.type === 'death') { sound.death(); hud.setInventory(false); }
