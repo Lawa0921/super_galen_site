@@ -260,7 +260,7 @@ describe('SEO build output', { skip }, () => {
     }
   });
 
-  test('/privacy/ 隱私權政策頁存在、noindex、不在 sitemap，且 sitemap 總數不變', () => {
+  test('/privacy/ 隱私權政策頁存在、noindex、不在 sitemap，且 sitemap 符合現有頁面', () => {
     const file = htmlFor('/privacy/');
     assert.ok(file, 'dist/client/privacy/index.html 不存在');
     const html = readFileSync(file, 'utf8');
@@ -283,11 +283,15 @@ describe('SEO build output', { skip }, () => {
     assert.match(html, /約 15 秒/);
     assert.match(html, /about 15 seconds/);
     assert.ok(!sitemapLocs.some((loc) => loc.startsWith(`${ORIGIN}/privacy`)), '/privacy/ 不應在 sitemap');
-    // 原有 221 筆加上可索引的 Breach Point；privacy 仍不加入 sitemap。
+    // 現有遊戲仍可索引；privacy 與已移除的遊戲不加入 sitemap。
     assert.ok(sitemapLocs.includes(`${ORIGIN}/games/cs/`), 'Breach Point 應在 sitemap');
-    // 再加上可索引的 DELVE 深掘（/games/delve/）。
     assert.ok(sitemapLocs.includes(`${ORIGIN}/games/delve/`), 'DELVE 應在 sitemap');
-    assert.equal(sitemapLocs.length, 224);
+    for (const game of ['witchrun', 'defense']) {
+      assert.equal(htmlFor(`/games/${game}/`), null, `${game} 不應再產出頁面`);
+      assert.ok(!sitemapLocs.includes(`${ORIGIN}/games/${game}/`), `${game} 不應在 sitemap`);
+    }
+    // 從原有 224 筆移除 Witch Run 與 Dungeon Defense。
+    assert.equal(sitemapLocs.length, 222);
   });
 
   test('首頁頁尾連到 /privacy/', () => {

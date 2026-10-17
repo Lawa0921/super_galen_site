@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { SoundManager as Witchrun } from './witchrun/audio/SoundManager';
 import { SoundManager as Bomber } from './bomber/audio/SoundManager';
 import { SoundManager as Tetris } from './tetris/audio/SoundManager';
-import { SoundManager as Defense } from './defense/audio/SoundManager';
 import { SoundManager as Delve } from './delve/audio/SoundManager';
 
 /**
@@ -46,10 +44,8 @@ const masterGain = (sm: any): number => sm.master.gain.value;
 const setStore = (sfxVolume: number) => { (window as any).__arcadeAudio = { sfxVolume }; };
 
 const CASES = [
-  { name: 'witchrun', Cls: Witchrun, base: 1.0 },
   { name: 'bomber', Cls: Bomber, base: 1.0 },
   { name: 'tetris', Cls: Tetris, base: 0.22 },
-  { name: 'defense', Cls: Defense, base: 1.0 },
   { name: 'delve', Cls: Delve, base: 0.6 },
 ] as const;
 
