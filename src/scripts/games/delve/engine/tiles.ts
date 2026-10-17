@@ -24,6 +24,8 @@ export const T = {
   CRACKED_STONE: 64, ROPE: 65, BED_HEAD: 66, BED_FOOT: 67,
   // ── 戰鬥：合成站（熔爐：礦 → 錠；鐵砧：錠 → 高階裝備） ──
   FURNACE: 68, ANVIL: 69,
+  // ── 液體：蜂巢殼（叢林蜂巢）、酥脆蜜塊（蜂蜜碰到熔岩） ──
+  HIVE: 70, CRISPY_HONEY: 71,
 } as const;
 export type TileId = (typeof T)[keyof typeof T];
 
@@ -32,6 +34,7 @@ export const W = {
   PLANK_WALL: 3, SANDSTONE_WALL: 4, SNOW_WALL: 5, ICE_WALL: 6, MUD_WALL: 7,
   DEEP_STONE_WALL: 8, BASALT_WALL: 9,
   DUNGEON_WALL_BLUE: 10, DUNGEON_WALL_GREEN: 11, DUNGEON_WALL_PINK: 12,
+  HIVE_WALL: 13,
 } as const;
 export type WallId = (typeof W)[keyof typeof W];
 
@@ -170,6 +173,9 @@ export const TILES: readonly TileDef[] = [
   // ── 戰鬥：合成站 ──
   decor(T.FURNACE, 'furnace', n('熔爐', 'Furnace'), 'floor', 'furnace', '#5e5e74', { hardness: 0.6, light: 0.55 }),
   decor(T.ANVIL, 'anvil', n('鐵砧', 'Anvil'), 'floor', 'anvil', '#423f54', { hardness: 0.6 }),
+  // ── 液體 ──
+  block(T.HIVE, 'hive', n('蜂巢殼', 'Hive Comb'), 0.6, 'hive', '#e8701c'),
+  block(T.CRISPY_HONEY, 'crispy_honey', n('酥蜜塊', 'Crisp Honey Block'), 0.4, 'crispy_honey', '#ffa93a'),
 ];
 
 export const WALLS: readonly WallDef[] = [
@@ -186,6 +192,7 @@ export const WALLS: readonly WallDef[] = [
   { id: W.DUNGEON_WALL_BLUE, key: 'dungeon_wall_blue', name: n('藍地城牆', 'Blue Dungeon Wall'), color: '#18204a' },
   { id: W.DUNGEON_WALL_GREEN, key: 'dungeon_wall_green', name: n('綠地城牆', 'Green Dungeon Wall'), color: '#16301e' },
   { id: W.DUNGEON_WALL_PINK, key: 'dungeon_wall_pink', name: n('粉地城牆', 'Pink Dungeon Wall'), color: '#2c2450' },
+  { id: W.HIVE_WALL, key: 'hive_wall', name: n('蜂巢牆', 'Hive Wall'), color: '#6c1e14' },
 ];
 
 /** 地城配色：每個世界挑一色（磚 + 背景牆） */

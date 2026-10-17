@@ -1,5 +1,6 @@
 // items.ts — 道具表。方塊類道具用 place 指回 tile id；鎬用 pick。
 import { T, type LocalName } from './tiles';
+import { LIQ } from './liquidKind';
 import { MAX_STACK } from './constants';
 
 export type ItemId =
@@ -37,16 +38,18 @@ export type ItemId =
   | 'molten_helmet' | 'molten_chestplate' | 'molten_greaves'
   // ── 消耗品 / 戰鬥飾品 / 首領 ──
   | 'life_core' | 'healing_potion' | 'wick_offering'
-  | 'chitin_buckler' | 'fang_charm' | 'feather_charm' | 'warden_heart' | 'warden_trophy';
+  | 'chitin_buckler' | 'fang_charm' | 'feather_charm' | 'warden_heart' | 'warden_trophy'
+  // ── 液體：蜂巢 / 酥蜜塊、水桶、吸水海綿、熔殼護符 ──
+  | 'hive' | 'crispy_honey' | 'bucket' | 'water_bucket' | 'lava_bucket' | 'honey_bucket' | 'sponge' | 'magma_ward';
 
 /**
  * 飾品效果。移動 / 戰鬥類（jump、run、night、magnet、nofall、stat）要裝在裝備欄的飾品槽才生效；
  * 資訊類（compass、depth、map）放在背包任一格或裝在飾品槽都生效（見 INFO_ACCESSORIES）。
  *   jump 跳更高（安全落下高度 +8 格）、run 跑更快、night 身邊微光、magnet 撿拾半徑變大 + 伸手距離 +3、
- *   nofall 不受摔落傷害、stat 只有數值加成（stats）、
+ *   nofall 不受摔落傷害、stat 只有數值加成（stats）、lavaward 熔岩不傷身、不會著火、
  *   compass HUD 顯示東西座標、depth HUD 顯示深度格數、map 全地圖顯示所有地標位置。
  */
-export type Accessory = 'jump' | 'run' | 'night' | 'magnet' | 'compass' | 'depth' | 'map' | 'nofall' | 'stat';
+export type Accessory = 'jump' | 'run' | 'night' | 'magnet' | 'compass' | 'depth' | 'map' | 'nofall' | 'stat' | 'lavaward';
 export const INFO_ACCESSORIES: readonly Accessory[] = ['compass', 'depth', 'map'];
 
 /** 武器種類：sword 揮砍弧、broadsword 大弧重擊、spear 直刺、bow 射箭、throw 投擲（消耗本身）、boomerang 迴旋、staff 法術（耗魔） */
@@ -93,9 +96,12 @@ export interface ItemDef {
   accessory?: Accessory;
   /**
    * 主動使用（手持按「使用」）：recall = 引導後傳送回重生點、life = 永久提高最大生命、heal = 回血（有冷卻）、
-   * summon = 召喚首領（夜晚或洞穴層以下）
+   * summon = 召喚首領（夜晚或洞穴層以下）、scoop = 空桶舀起一格液體、pour = 倒出桶裡的液體（liquid 指定種類）、
+   * sponge = 吸掉瞄準格（與左右）的水 / 蜂蜜（按住可連續）
    */
-  use?: 'recall' | 'life' | 'heal' | 'summon';
+  use?: 'recall' | 'life' | 'heal' | 'summon' | 'scoop' | 'pour' | 'sponge';
+  /** 桶裡裝的液體（LIQ.*；pour 用） */
+  liquid?: number;
   weapon?: WeaponDef;
   ammo?: AmmoDef;
   armor?: ArmorDef;
@@ -235,6 +241,15 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   feather_charm: acc('feather_charm', '輕羽墜', 'Featherfall Charm', 'nofall'),
   warden_heart: acc('warden_heart', '守望之心', "Warden's Heart", 'stat', { maxHp: 20, defense: 2, regen: 0.5 }, true),
   warden_trophy: { id: 'warden_trophy', name: { zh: '守望者戰利品', en: 'Warden Trophy' }, maxStack: 1, unique: true },
+  // ── 液體 ──
+  hive: block('hive', '蜂巢殼', 'Hive Comb', T.HIVE),
+  crispy_honey: block('crispy_honey', '酥蜜塊', 'Crisp Honey Block', T.CRISPY_HONEY),
+  bucket: { ...mat('bucket', '空桶', 'Empty Pail'), maxStack: 99, use: 'scoop' },
+  water_bucket: { ...mat('water_bucket', '水桶', 'Pail of Water'), maxStack: 99, use: 'pour', liquid: LIQ.WATER },
+  lava_bucket: { ...mat('lava_bucket', '熔岩桶', 'Pail of Lava'), maxStack: 99, use: 'pour', liquid: LIQ.LAVA },
+  honey_bucket: { ...mat('honey_bucket', '蜂蜜桶', 'Pail of Honey'), maxStack: 99, use: 'pour', liquid: LIQ.HONEY },
+  sponge: { id: 'sponge', name: { zh: '吸水海綿', en: 'Soak Sponge' }, maxStack: 1, use: 'sponge' },
+  magma_ward: acc('magma_ward', '熔殼護符', 'Cinderguard Charm', 'lavaward'),
 };
 
 /** 套裝組成（頭 / 身 / 腿），順序 = 等級 */

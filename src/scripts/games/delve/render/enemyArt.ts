@@ -423,6 +423,55 @@ function warden(phase: 1 | 2): Bmp[] {
 
 // ── 對外 ───────────────────────────────────────────────
 let CACHE: Record<EnemyKind, EnemyFrames> | null = null;
+// ── 水生：鋸鰭魚 / 螢光水母 ───────────────────────────────
+const FIN = ramp('#16301e', '#214528', '#3f7468', '#6a9c88', '#a2c8b0', '#cceaf8', '#ffffff');
+const BELLY = ramp('#2a1810', '#6c1e14', '#a83a10', '#e8701c', '#ffa93a', '#ffd86a', '#fff4c0');
+const JELLY = ramp('#2c2450', '#463c78', '#7a5a8c', '#b8788e', '#f2b888', '#fff4c0', '#ffffff');
+const JGLOW = ramp('#1f6474', '#2c8692', '#4aaeb0', '#a2c8b0', '#cceaf8', '#ffffff', '#ffffff');
+/** 鋸鰭魚：橢圓魚身（暗綠背、橘紅腹）、鋸齒背鰭、擺動的尾巴、一排白牙、紅眼；3 格尾巴擺動 */
+function sawfin(): Bmp[] {
+  return [-2, 0, 2].map((tail) => {
+    const b = new Bmp(22, 14);
+    // 尾鰭（左邊）
+    part(b, poly([[6, 7], [0, 2 + tail], [1.5, 7], [0, 12 + tail], [6, 8]] as Pt[]), FIN);
+    // 背鰭：三個鋸齒
+    part(b, poly([[8, 4], [9, 0.5], [11, 3.5], [12.5, 0.5], [14, 3.5], [15.5, 1], [16.5, 4.5]] as Pt[]), FIN);
+    // 魚身：上半背色、下半腹色
+    part(b, (x, y) => ell(12, 7.5, 8, 4.2)(x, y) && y < 8, FIN);
+    part(b, (x, y) => ell(12, 7.5, 8, 4.2)(x, y) && y >= 8, BELLY);
+    // 胸鰭
+    part(b, poly([[11, 9], [9, 12.5], [13, 10]] as Pt[]), BELLY.map((c) => mix(c, BELLY[1], 0.3)) as RGB[]);
+    // 嘴 + 牙
+    b.set(19, 8, INK); b.set(18, 8, INK); b.set(20, 7, INK);
+    b.set(18, 9, EYE_W); b.set(19, 9, EYE_W); b.set(17, 8, EYE_W);
+    // 眼
+    b.set(16, 6, EYE_R); b.set(16, 5, INK);
+    return fin(b);
+  });
+}
+/** 螢光水母：發光的鐘形傘 + 會擺的觸手；第 1 格收縮（傘變扁變寬）用在推進 */
+function lumenJelly(): Bmp[] {
+  const shapes: [number, number, number][] = [[7, 6.5, 0], [8.4, 5, 1], [7, 6.5, 2]];
+  return shapes.map(([rx, ry, k]) => {
+    const b = new Bmp(20, 24);
+    const cy = 8.5;
+    part(b, (x, y) => ell(10, cy, rx, ry)(x, y) && y <= cy + 1, JELLY);
+    part(b, (x, y) => ell(10, cy - 0.5, rx * 0.55, ry * 0.55)(x, y) && y <= cy, JGLOW);
+    // 傘緣
+    for (let x = Math.round(10 - rx); x <= Math.round(10 + rx); x++) b.set(x, Math.round(cy + 1), (x & 1) ? JELLY[4] : JELLY[3]);
+    // 觸手：4 條波浪線
+    for (let t = 0; t < 4; t++) {
+      const x0 = 10 - rx * 0.7 + t * (rx * 1.4 / 3);
+      for (let y = Math.round(cy + 2); y < 23 - (k === 1 ? 3 : 0); y++) {
+        const wob = Math.round(Math.sin((y + t * 3 + k * 2) * 0.7) * 1.2);
+        b.set(Math.round(x0) + wob, y, y % 3 === 0 ? JGLOW[4] : JELLY[3]);
+      }
+    }
+    b.set(8, Math.round(cy - ry * 0.5), JGLOW[6]); b.set(9, Math.round(cy - ry * 0.6), JGLOW[5]);
+    return fin(b);
+  });
+}
+
 export function enemyFrames(): Record<EnemyKind, EnemyFrames> {
   if (CACHE) return CACHE;
   CACHE = {
@@ -441,6 +490,8 @@ export function enemyFrames(): Record<EnemyKind, EnemyFrames> {
     cursed_skull: { frames: skull(), anchor: 'center' },
     ember_imp: { frames: emberImp(), anchor: 'bottom' },
     magma_bat: { frames: bat(P.imp, true), anchor: 'center' },
+    razor_fin: { frames: sawfin(), anchor: 'center' },
+    glow_jelly: { frames: lumenJelly(), anchor: 'center' },
     lantern_warden: { frames: [...warden(1), ...warden(2)], anchor: 'center' },
     warden_wisp: { frames: wisp(), anchor: 'center' },
   };

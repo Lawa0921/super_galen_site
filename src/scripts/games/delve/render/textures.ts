@@ -14,6 +14,8 @@ import {
   crackStone, iconBed, iconCompass, iconDepthMeter, iconJumpBoots, iconMagnet, iconNightAmulet, iconRecall, iconRope, iconSwiftBoots,
 } from './exploreArt';
 import { combatIcon } from './combatArt';
+import { iconBucket, iconMagmaWard, iconSponge } from './liquidArt';
+import { LIQ } from '../engine/liquidKind';
 
 const S = TILE_SIZE;
 export { VARIANTS };
@@ -568,6 +570,8 @@ const ICON_ORDER: ItemId[] = [
   'iron_helmet', 'iron_chestplate', 'iron_greaves', 'gold_helmet', 'gold_chestplate', 'gold_greaves',
   'bone_helmet', 'bone_chestplate', 'bone_greaves', 'molten_helmet', 'molten_chestplate', 'molten_greaves',
   'life_core', 'healing_potion', 'wick_offering', 'chitin_buckler', 'fang_charm', 'feather_charm', 'warden_heart', 'warden_trophy',
+  // 液體
+  'hive', 'crispy_honey', 'bucket', 'water_bucket', 'lava_bucket', 'honey_bucket', 'sponge', 'magma_ward',
 ];
 export { ICON_ORDER };
 export const PICK_METAL: Record<string, RGB[]> = {
@@ -584,11 +588,18 @@ const BLOCK_ICON: Partial<Record<ItemId, number>> = {
   snow: T.SNOW, ice: T.ICE, mud: T.MUD, stone_brick: T.STONE_BRICK,
   deep_stone: T.DEEP_STONE, basalt: T.BASALT, ash: T.ASH, obsidian: T.OBSIDIAN, magma_rock: T.MAGMA_ROCK,
   dungeon_brick_blue: T.DUNGEON_BRICK_BLUE, dungeon_brick_green: T.DUNGEON_BRICK_GREEN, dungeon_brick_pink: T.DUNGEON_BRICK_PINK,
+  hive: T.HIVE, crispy_honey: T.CRISPY_HONEY,
 };
 export function paintIcon(item: ItemId): Bmp {
   const ci = combatIcon(item);
   if (ci) return ci;
   switch (item) {
+    case 'bucket': return iconBucket(LIQ.NONE);
+    case 'water_bucket': return iconBucket(LIQ.WATER);
+    case 'lava_bucket': return iconBucket(LIQ.LAVA);
+    case 'honey_bucket': return iconBucket(LIQ.HONEY);
+    case 'sponge': return iconSponge();
+    case 'magma_ward': return iconMagmaWard();
     case 'platform': return iconPlatform();
     case 'wooden_door': return iconDoor();
     case 'dungeon_key': return iconKey(false);

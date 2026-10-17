@@ -4,12 +4,17 @@
 import type { World } from './world';
 import { BIOME } from './world';
 import { T, W, isSolidTile } from './tiles';
+import { LIQ } from './liquidKind';
 import { ENEMIES, type EnemyKind } from './enemies';
 import type { Rng } from './rng';
 import { TILE_SIZE as S } from './constants';
 
 export type Zone = 'surface' | 'underground' | 'cavern' | 'molten' | 'dungeon';
-export interface Habitat { zone: Zone; biome: number; mushroom: boolean; night: boolean; }
+export interface Habitat {
+  zone: Zone; biome: number; mushroom: boolean; night: boolean;
+  /** 生成點附近（同欄 ±4 列）有深水：只生水生怪 */
+  water?: boolean;
+}
 export interface SpawnEntry { kind: EnemyKind; weight: number; group?: [number, number]; }
 
 /** 生成檢查間隔（秒）與每次成功機率 */
@@ -48,7 +53,9 @@ export function habitatAt(src: HabitatSource, x: number, y: number): Habitat {
   else if (y >= src.layers.deep[cx]) zone = 'cavern';
   else if (y <= w.surfaceAt(cx) + 6) zone = 'surface';
   else zone = 'underground';
-  return { zone, biome, mushroom, night: src.night };
+  let water = false;
+  for (let yy = y - 4; yy <= y + 4 && !water; yy++) water = w.getLiquidType(x, yy) === LIQ.WATER && w.getLiquid(x, yy) >= 200;
+  return { zone, biome, mushroom, night: src.night, water };
 }
 
 /** 附近（活動範圍內）最多幾隻怪 */
@@ -59,6 +66,15 @@ export function spawnCap(h: Habitat): number {
     case 'molten': return 8;
     default: return 7;
   }
+}
+/** 水裡：叢林（任何深度）與地下湖有鋸鰭魚群；洞穴（岩層以下）的水有螢光水母。地表一般的湖沒有怪 */
+function aquaticTable(h: Habitat): SpawnEntry[] {
+  const out: SpawnEntry[] = [];
+  if (h.zone === 'molten' || h.zone === 'dungeon') return out;
+  if (h.biome === BIOME.JUNGLE) out.push({ kind: 'razor_fin', weight: 10, group: [3, 5] });
+  else if (h.zone !== 'surface') out.push({ kind: 'razor_fin', weight: 4, group: [2, 4] });
+  if (h.zone === 'underground' || h.zone === 'cavern') out.push({ kind: 'glow_jelly', weight: 6, group: [1, 2] });
+  return out;
 }
 /** 每次檢查的生成機率 */
 export function spawnChance(h: Habitat): number {
@@ -75,6 +91,7 @@ export function spawnTable(h: Habitat): SpawnEntry[] {
   const { zone, biome, night } = h;
   const out: SpawnEntry[] = [];
   const add = (kind: EnemyKind, weight: number, group?: [number, number]): void => { out.push({ kind, weight, group }); };
+  if (h.water) return aquaticTable(h);
   if (zone === 'dungeon') { add('bone_knight', 8); add('cursed_skull', 5); return out; }
   if (zone === 'molten') { add('ember_imp', 5); add('magma_bat', 7, [1, 2]); return out; }
   if (h.mushroom && zone !== 'surface') { add('spore_walker', 10); add('cave_bat', 2, [2, 3]); return out; }
@@ -132,6 +149,15 @@ export function findSpot(w: World, kind: EnemyKind, x: number, y: number): { x: 
   };
   const px = (tx: number, ty: number): { x: number; y: number } => ({ x: tx * S + (tw * S) / 2, y: (ty + 1) * S });
   const ai = def.ai;
+  if (def.aquatic) {
+    // 水生：身體範圍（中心欄）每格都是深水
+    const wet = (tx: number, ty: number): boolean => {
+      for (let yy = ty - th + 1; yy <= ty; yy++) if (w.getLiquidType(tx, yy) !== LIQ.WATER || w.getLiquid(tx, yy) < 200 || isSolidTile(w.getFg(tx, yy))) return false;
+      return true;
+    };
+    for (let k = 0; k <= 12; k++) for (const ty of k === 0 ? [y] : [y + k, y - k]) if (w.inBounds(x, ty) && wet(x, ty) && clear(x, ty)) return px(x, ty);
+    return null;
+  }
   for (let k = 0; k <= 12; k++) {
     for (const ty of k === 0 ? [y] : [y + k, y - k]) {
       if (!w.inBounds(x, ty)) continue;

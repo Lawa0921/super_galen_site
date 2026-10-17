@@ -51,6 +51,8 @@ export function enemyFrameIndex(e: Enemy, n: number): number {
     case 'ghost': return clamp(Math.floor(t * 6) % n);
     case 'teleporter': return e.state === 'cast' ? clamp(2) : clamp(Math.floor(t * 2) % 2);
     case 'boss': return clamp(((e.phase ?? 1) === 2 ? 3 : 0) + (Math.floor(t * 6) % 3));
+    case 'swimmer': return clamp(e.state === 'flop' ? 1 : Math.floor(t * (e.state === 'chase' ? 14 : 7)) % 3);
+    case 'jelly': return e.state === 'pulse' ? clamp(1) : clamp(Math.floor(t * 1.5) % 2 === 0 ? 0 : 2);
   }
 }
 

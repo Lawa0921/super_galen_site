@@ -5,6 +5,7 @@ import type { ItemId } from './items';
 import type { LocalName } from './tiles';
 import type { Rng } from './rng';
 import { stepFalling, stepFlying, stepNoClip, type PhysEnv } from './entities';
+import { LIQ } from './liquidKind';
 import type { ProjKind } from './projectiles';
 import { TILE_SIZE as S } from './constants';
 
@@ -12,10 +13,13 @@ export type EnemyKind =
   | 'gel_blob' | 'frost_blob' | 'night_walker' | 'dusk_owl' | 'cave_bat' | 'rock_crab' | 'frost_wolf'
   | 'sand_scorpion' | 'thorn_hornet' | 'snap_vine' | 'spore_walker' | 'bone_knight' | 'cursed_skull'
   | 'ember_imp' | 'magma_bat'
+  // 水生（只在水裡游；離水只能在地上彈跳）
+  | 'razor_fin' | 'glow_jelly'
   // 首領與其召喚物
   | 'lantern_warden' | 'warden_wisp';
 
-export type AiKind = 'hop' | 'walker' | 'crawler' | 'flyer' | 'swooper' | 'shooter' | 'plant' | 'ghost' | 'teleporter' | 'boss';
+export type AiKind = 'hop' | 'walker' | 'crawler' | 'flyer' | 'swooper' | 'shooter' | 'plant' | 'ghost' | 'teleporter' | 'boss'
+  | 'swimmer' | 'jelly';
 export interface DropRule { item: ItemId; min: number; max: number; chance: number; }
 export interface EnemyDef {
   kind: EnemyKind;
@@ -40,6 +44,12 @@ export interface EnemyDef {
   /** 首領 / 召喚物：不自然生成、不因距離消失 */
   boss?: boolean;
   minion?: boolean;
+  /** 火系：不怕熔岩，碰到水會被澆熄（持續重傷） */
+  fire?: boolean;
+  /** 水生：在水裡游、不會溺水 */
+  aquatic?: boolean;
+  /** 發光（點光源強度 0..1） */
+  glow?: number;
 }
 
 const n = (zh: string, en: string): LocalName => ({ zh, en });
@@ -59,9 +69,11 @@ export const ENEMIES: Record<EnemyKind, EnemyDef> = {
   spore_walker: { kind: 'spore_walker', name: n('孢行者', 'Sporeshamble'), w: 18, h: 30, hp: 55, damage: 15, defense: 4, kbRes: 0.3, ai: 'walker', speed: 58, jump: 300, drops: [d('spore', 1, 2, 0.8), d('glow_mushroom', 1, 1, 0.3)], coins: [10, 22], habitat: '螢光菇林' },
   bone_knight: { kind: 'bone_knight', name: n('骸骨戰士', 'Ossuary Knight'), w: 18, h: 40, hp: 90, damage: 22, defense: 12, kbRes: 0.5, ai: 'walker', speed: 82, jump: 340, drops: [d('bone', 1, 3), d('bone_greatsword', 1, 1, 0.03)], coins: [20, 45], habitat: '地下城' },
   cursed_skull: { kind: 'cursed_skull', name: n('咒顱', 'Hex Skull'), w: 18, h: 18, hp: 55, damage: 20, defense: 8, kbRes: 0.4, ai: 'ghost', speed: 85, drops: [d('bone', 1, 1, 0.6)], coins: [15, 30], habitat: '地下城（穿牆飛行）' },
-  ember_imp: { kind: 'ember_imp', name: n('燼角魔', 'Cinderhorn Imp'), w: 18, h: 28, hp: 70, damage: 18, defense: 8, kbRes: 0.4, ai: 'teleporter', speed: 0, shot: 20, drops: [d('ember', 1, 2, 0.8)], coins: [20, 40], habitat: '熔岩深淵（瞬移、丟火球）' },
-  magma_bat: { kind: 'magma_bat', name: n('熔岩蝠', 'Magma Flitter'), w: 16, h: 12, hp: 45, damage: 18, defense: 6, kbRes: 0.2, ai: 'flyer', speed: 165, drops: [d('ember', 1, 1, 0.6)], coins: [12, 26], habitat: '熔岩深淵' },
-  lantern_warden: { kind: 'lantern_warden', name: n('燈脈守望者', 'Lumen Warden'), w: 56, h: 64, hp: 3000, damage: 26, defense: 8, kbRes: 1, ai: 'boss', speed: 160, shot: 16, drops: [], coins: [0, 0], habitat: '首領：夜晚或洞穴層以下使用燈芯祭品召喚', boss: true },
+  ember_imp: { kind: 'ember_imp', name: n('燼角魔', 'Cinderhorn Imp'), w: 18, h: 28, hp: 70, damage: 18, defense: 8, kbRes: 0.4, ai: 'teleporter', speed: 0, shot: 20, drops: [d('ember', 1, 2, 0.8)], coins: [20, 40], habitat: '熔岩深淵（瞬移、丟火球）', fire: true },
+  magma_bat: { kind: 'magma_bat', name: n('熔岩蝠', 'Magma Flitter'), w: 16, h: 12, hp: 45, damage: 18, defense: 6, kbRes: 0.2, ai: 'flyer', speed: 165, drops: [d('ember', 1, 1, 0.6)], coins: [12, 26], habitat: '熔岩深淵', fire: true },
+  razor_fin: { kind: 'razor_fin', name: n('鋸鰭魚', 'Sawfin'), w: 16, h: 10, hp: 24, damage: 14, defense: 2, kbRes: 0.2, ai: 'swimmer', speed: 150, drops: [d('fang', 1, 1, 0.3)], coins: [3, 9], habitat: '叢林水域、地下湖（成群，追咬水裡的人）', aquatic: true },
+  glow_jelly: { kind: 'glow_jelly', name: n('螢光水母', 'Lumen Jelly'), w: 16, h: 18, hp: 32, damage: 16, defense: 2, kbRes: 0.4, ai: 'jelly', speed: 120, drops: [d('gel', 1, 2), d('crystal', 1, 1, 0.15)], coins: [5, 12], habitat: '洞穴裡的水（一伸一縮地游、會發光）', aquatic: true, glow: 0.7 },
+  lantern_warden: { kind: 'lantern_warden', name: n('燈脈守望者', 'Lumen Warden'), w: 56, h: 64, hp: 3000, damage: 26, defense: 8, kbRes: 1, ai: 'boss', speed: 160, shot: 16, drops: [], coins: [0, 0], habitat: '首領：夜晚或洞穴層以下使用燈芯祭品召喚', boss: true, fire: true },
   warden_wisp: { kind: 'warden_wisp', name: n('燈靈', 'Lumen Wisp'), w: 12, h: 12, hp: 22, damage: 14, defense: 0, kbRes: 0.5, ai: 'ghost', speed: 120, drops: [], coins: [0, 0], habitat: '首領召喚物', minion: true },
 };
 export const ENEMY_KINDS = Object.keys(ENEMIES) as EnemyKind[];
@@ -99,13 +111,15 @@ export interface Enemy {
   anchor?: { x: number; y: number };
   /** 首領階段 1 / 2 */
   phase?: number;
+  /** 液體傷害計時（秒；火系碰水 / 一般怪碰熔岩） */
+  wetT: number;
 }
 
 export function makeEnemy(id: number, kind: EnemyKind, cx: number, bottom: number): Enemy {
   const def = ENEMIES[kind];
   return {
     id, kind, hp: def.hp, maxHp: def.hp, dir: 1, state: 'idle', t: 0.4, cd: 1, age: 0, flash: 0, lastSwing: -1,
-    burn: 0, burnTick: 0, stun: 0, stuckT: 0, lastX: cx,
+    burn: 0, burnTick: 0, stun: 0, stuckT: 0, lastX: cx, wetT: 0,
     body: { x: cx - def.w / 2, y: bottom - def.h, w: def.w, h: def.h, vx: 0, vy: 0, onGround: false, gfxOffY: 0 },
   };
 }
@@ -124,6 +138,8 @@ export interface AiCtx {
   summon(kind: EnemyKind, x: number, y: number): void;
   /** 首領事件（phase2 / leave） */
   bossEvent(phase: 'phase2' | 'leave'): void;
+  /** 玩家在水裡（水生怪只追水裡的人）；省略 = false */
+  playerWet?: boolean;
 }
 
 const approach = (v: number, t: number, a: number): number => (v < t ? Math.min(t, v + a) : v > t ? Math.max(t, v - a) : v);
@@ -151,9 +167,85 @@ export function stepEnemy(e: Enemy, ctx: AiCtx, dt: number): boolean {
     case 'plant': plant(e, ctx, dt, dx, dy); break;
     case 'ghost': ghost(e, ctx, dt, dx, dy, chase); break;
     case 'teleporter': teleporter(e, ctx, dt, dx, dy, chase); break;
+    case 'swimmer': swimmer(e, ctx, dt, dx, dy, chase); break;
+    case 'jelly': jelly(e, ctx, dt, dx, dy, chase); break;
     case 'boss': return boss(e, ctx, dt, dx, dy);
   }
   return true;
+}
+
+/** 前方（腳邊那欄、腳那列與下一列）有沒有水：怕水的步行怪會停在岸邊 / 掉頭。本身已在水裡就不管 */
+export function waterAhead(q: PhysEnv, b: Body, dir: number): boolean {
+  if (!q.liquidAt) return false;
+  const fy = Math.floor((b.y + b.h - 1) / S);
+  const here = Math.floor((b.x + b.w / 2) / S);
+  if (q.liquidAt(here, fy).type === LIQ.WATER) return false;
+  const ax = Math.floor((dir > 0 ? b.x + b.w + 3 : b.x - 3) / S);
+  const a = q.liquidAt(ax, fy), c = q.liquidAt(ax, fy + 1);
+  return (a.type === LIQ.WATER && a.amount >= 64) || (c.type === LIQ.WATER && c.amount >= 128);
+}
+
+/** 身體在水裡（浸入 ≥ 一半）、頭在水下 */
+function inWater(q: PhysEnv, b: Body): { wet: boolean; head: boolean } {
+  const c = q.contactAt?.(b);
+  return { wet: Boolean(c && c.type === LIQ.WATER && c.frac >= 0.5), head: Boolean(c && c.type === LIQ.WATER && c.head) };
+}
+/** 水生怪離水：受重力，在地上隔一陣子亂跳一下（像擱淺的魚） */
+function flop(e: Enemy, ctx: AiCtx, dt: number): void {
+  const b = e.body;
+  e.state = 'flop';
+  e.t -= dt;
+  if (b.onGround) {
+    b.vx = approach(b.vx, 0, 600 * dt);
+    if (e.t <= 0) { b.vy = -160 - ctx.rng.next() * 80; b.vx = (ctx.rng.next() - 0.5) * 140; b.onGround = false; e.t = 0.5 + ctx.rng.next() * 0.6; }
+  }
+  stepFalling(ctx.q, b, dt);
+  if (Math.abs(b.vx) > 1) e.dir = sign(b.vx);
+}
+
+/** 鋸鰭魚：在水裡巡游；玩家也在水裡且夠近 → 直衝過去咬；保持在水面下 */
+function swimmer(e: Enemy, ctx: AiCtx, dt: number, dx: number, dy: number, chase: boolean): void {
+  const def = ENEMIES[e.kind], b = e.body;
+  const w = inWater(ctx.q, b);
+  if (!w.wet) { flop(e, ctx, dt); return; }
+  let tx: number, ty: number;
+  if (chase && ctx.playerWet && Math.hypot(dx, dy) < 22 * S) {
+    const r = Math.hypot(dx, dy) || 1;
+    tx = (dx / r) * def.speed; ty = (dy / r) * def.speed + Math.sin(e.age * 9 + e.id) * 30;
+    e.state = 'chase';
+  } else {
+    e.t -= dt;
+    if (e.t <= 0) { e.dir = ctx.rng.next() < 0.5 ? -1 : 1; e.t = 1.5 + ctx.rng.next() * 2; }
+    tx = e.dir * def.speed * 0.35; ty = Math.sin(e.age * 1.7 + e.id) * 25;
+    e.state = 'idle';
+  }
+  if (!w.head) ty = Math.max(ty, 60); // 浮出水面了 → 往下鑽
+  b.vx = approach(b.vx, tx, 520 * dt);
+  b.vy = approach(b.vy, ty, 520 * dt);
+  const r = stepFlying(ctx.q, b, dt, 0.3);
+  if (r.hitX && e.state === 'idle') e.dir = (-e.dir) as 1 | -1;
+  if (Math.abs(b.vx) > 1) e.dir = sign(b.vx);
+}
+
+/** 螢光水母：慢慢下沉 → 收縮一下往上（朝玩家）推進 → 再下沉 */
+function jelly(e: Enemy, ctx: AiCtx, dt: number, dx: number, dy: number, chase: boolean): void {
+  const def = ENEMIES[e.kind], b = e.body;
+  const w = inWater(ctx.q, b);
+  if (!w.wet) { flop(e, ctx, dt); return; }
+  e.t -= dt;
+  if (e.t <= 0) {
+    const r = Math.hypot(dx, dy) || 1, near = chase && ctx.playerWet && r < 16 * S;
+    b.vx = near ? (dx / r) * def.speed * 0.8 : (ctx.rng.next() - 0.5) * 60;
+    b.vy = near ? Math.min(-40, (dy / r) * def.speed) : -def.speed;
+    e.state = 'pulse'; e.t = 1.2 + ctx.rng.next() * 0.6;
+  } else {
+    if (e.t < 0.8) e.state = 'drift';
+    b.vx = approach(b.vx, 0, 60 * dt);
+    b.vy = approach(b.vy, 26, 110 * dt);
+  }
+  if (!w.head) b.vy = Math.max(b.vy, 30);
+  stepFlying(ctx.q, b, dt, 0.2);
+  e.dir = sign(dx);
 }
 
 function hop(e: Enemy, ctx: AiCtx, dt: number, dx: number, chase: boolean): void {
@@ -190,6 +282,7 @@ function walker(e: Enemy, ctx: AiCtx, dt: number, dx: number, dy: number, chase:
   }
   if (e.state === 'leap' && b.onGround) e.state = 'chase';
   if (e.state === 'leap') speed = Math.abs(b.vx);
+  if (b.onGround && waterAhead(ctx.q, b, e.dir)) { if (chase) speed = 0; else { e.dir = (-e.dir) as 1 | -1; e.t = 2; } }
   if (e.stun <= 0) b.vx = approach(b.vx, e.dir * speed, (b.onGround ? 700 : 300) * dt);
   const r = stepFalling(ctx.q, b, dt, undefined, true);
   // 撞牆：跳；跳不過去（卡住 1.5 秒）→ 掉頭亂走一陣
@@ -210,7 +303,8 @@ function crawler(e: Enemy, ctx: AiCtx, dt: number, dx: number, dy: number, chase
     if (chase && e.cd <= 0 && b.onGround && Math.abs(dx) < 6 * S && Math.abs(dy) < 2 * S) { e.state = 'dash'; e.t = 0.5; }
     else e.state = chase ? 'chase' : 'idle';
   }
-  const speed = e.state === 'dash' ? def.speed * 6 : chase ? def.speed : 0;
+  let speed = e.state === 'dash' ? def.speed * 6 : chase ? def.speed : 0;
+  if (b.onGround && waterAhead(ctx.q, b, e.dir)) { speed = 0; if (e.state === 'dash') e.state = 'chase'; }
   if (e.stun <= 0) b.vx = approach(b.vx, e.dir * speed, 900 * dt);
   const r = stepFalling(ctx.q, b, dt, undefined, true);
   if (r.hitX && b.onGround && e.stun <= 0) { b.vy = -260; b.onGround = false; }

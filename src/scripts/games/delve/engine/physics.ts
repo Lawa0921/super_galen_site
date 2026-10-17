@@ -181,10 +181,19 @@ function stepClimb(q: SolidQuery, b: Body, ctl: MoveControl, mx: number, dt: num
   return res;
 }
 
-/** 玩家一個固定步：輸入 → 速度（跑、可變高度跳、重力 / 攀爬）→ moveBody。 */
-export function stepPlayer(q: SolidQuery, b: Body, m: PlayerMotion, ctl: MoveControl, dt: number, stats: MoveStats = {}): MoveResult {
+/** 玩家在液體裡的係數（swim.playerMedium；省略 = 空氣） */
+export interface LiquidMove {
+  gravityMul: number; maxFallMul: number; runMul: number; jumpMul: number;
+  inLiquid: boolean; swim: boolean; swimSpeed: number; swimAccel: number;
+}
+
+/**
+ * 玩家一個固定步：輸入 → 速度（跑、可變高度跳、重力 / 攀爬）→ moveBody。
+ * med（液體）：跑速 / 重力 / 終端速度變小；碰到液體時按跳可以起跳（游出水面），夠深時按住跳往上游。
+ */
+export function stepPlayer(q: SolidQuery, b: Body, m: PlayerMotion, ctl: MoveControl, dt: number, stats: MoveStats = {}, med?: LiquidMove): MoveResult {
   const mx = Math.max(-1, Math.min(1, ctl.moveX));
-  const runMul = stats.runMul ?? 1, jumpMul = stats.jumpMul ?? 1;
+  const runMul = (stats.runMul ?? 1) * (med?.runMul ?? 1), jumpMul = (stats.jumpMul ?? 1) * (med?.jumpMul ?? 1);
   const onRope = overlapsRope(q, b);
   // 「上」在繩索上是爬，否則是跳
   const jumpIn = ctl.jump || (Boolean(ctl.up) && !onRope);
@@ -208,12 +217,15 @@ export function stepPlayer(q: SolidQuery, b: Body, m: PlayerMotion, ctl: MoveCon
   b.vx = approach(b.vx, target, accel * runMul * dt);
 
   m.jumpWasHeld = jumpIn;
-  const canJump = b.onGround || (pressed && onRope && ctl.jump);
+  const canJump = b.onGround || (pressed && onRope && ctl.jump) || (pressed && Boolean(med?.inLiquid));
   if (pressed && canJump) { m.jumpTimer = JUMP_HOLD * jumpMul; b.vy = -JUMP_SPEED * jumpMul; b.onGround = false; }
   if (m.jumpTimer > 0) {
     if (jumpIn) { b.vy = -JUMP_SPEED * jumpMul; m.jumpTimer -= dt; } else m.jumpTimer = 0;
   }
-  if (m.jumpTimer <= 0) b.vy = Math.min(MAX_FALL, b.vy + GRAVITY * dt);
+  if (m.jumpTimer <= 0) {
+    if (med?.swim && jumpIn) b.vy = Math.max(-med.swimSpeed, b.vy - med.swimAccel * dt);
+    else b.vy = Math.min(MAX_FALL * (med?.maxFallMul ?? 1), b.vy + GRAVITY * (med?.gravityMul ?? 1) * dt);
+  }
 
   const res = moveBody(q, b, dt, b.onGround || (m.ropeGrace ?? 0) > 0, ctl.drop ?? false);
   if (res.hitY && b.vy === 0 && !b.onGround) m.jumpTimer = 0; // 撞頭

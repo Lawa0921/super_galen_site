@@ -47,8 +47,8 @@ describe('棲地', () => {
   it('每種一般怪物都出現在某個生成表裡', () => {
     const all = new Set<string>();
     for (const zone of ['surface', 'underground', 'cavern', 'molten', 'dungeon'] as const) {
-      for (const biome of [0, 1, 2, 3]) for (const night of [false, true]) for (const mushroom of [false, true]) {
-        for (const k of kinds({ zone, biome, night, mushroom })) all.add(k);
+      for (const biome of [0, 1, 2, 3]) for (const night of [false, true]) for (const mushroom of [false, true]) for (const water of [false, true]) {
+        for (const k of kinds({ zone, biome, night, mushroom, water })) all.add(k);
       }
     }
     for (const k of NATURAL_KINDS) expect(all.has(k), k).toBe(true);

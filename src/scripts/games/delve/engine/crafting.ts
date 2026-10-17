@@ -90,6 +90,10 @@ export const RECIPES: readonly Recipe[] = [
   r('chitin_buckler', 'chitin_buckler', 1, 'anvil', ['chitin', 10], ['iron_bar', 4]),
   r('fang_charm', 'fang_charm', 1, 'anvil', ['fang', 6], ['silver_bar', 3]),
   r('feather_charm', 'feather_charm', 1, 'workbench', ['feather', 10], ['gel', 5]),
+  // ── 液體：空桶、吸水海綿、熔殼護符（黑曜石要銀鎬以上才挖得動） ──
+  r('bucket', 'bucket', 1, 'workbench', ['iron_bar', 3]),
+  r('sponge', 'sponge', 1, 'workbench', ['gel', 12], ['spore', 2]),
+  r('magma_ward', 'magma_ward', 1, 'anvil', ['obsidian', 15], ['ember', 4]),
 ];
 
 export function findRecipe(id: string): Recipe | undefined {

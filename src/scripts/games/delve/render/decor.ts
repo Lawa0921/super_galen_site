@@ -15,6 +15,7 @@ import {
   bookshelfBmp, bonesBmp, loreTabletBmp,
 } from './dungeonArt';
 
+import { CRISPY_PAL, HIVE_PAL, HIVE_WALL_PAL, texCrispy, texHive, texHiveWall } from './liquidArt';
 const S = 16;
 
 // ── 色票（[0] = 描邊 / 最暗） ─────────────────────────────
@@ -361,6 +362,8 @@ export function texMaterial(id: number, v: number): Bmp | null {
     case T.ICE: return texIce(v);
     case T.MUD: case T.JUNGLE_GRASS: case T.MUSHROOM_GRASS: return texMud(v);
     case T.STONE_BRICK: return texBrick(v);
+    case T.HIVE: return texHive(v);
+    case T.CRISPY_HONEY: return texCrispy(v);
     default: return null;
   }
 }
@@ -370,6 +373,7 @@ export const MATERIAL_PAL: Record<number, RGB[]> = {
   [T.ICE]: PAL2.ice, [T.MUD]: PAL2.mud, [T.JUNGLE_GRASS]: PAL2.mud, [T.MUSHROOM_GRASS]: PAL2.mud, [T.STONE_BRICK]: PAL2.stone,
   [T.DEEP_STONE]: PAL2.deep, [T.BASALT]: PAL2.basalt, [T.ASH]: PAL2.ash, [T.OBSIDIAN]: PAL2.obsidian, [T.MAGMA_ROCK]: PAL2.magma,
   [T.DUNGEON_BRICK_BLUE]: PAL2.brickBlue, [T.DUNGEON_BRICK_GREEN]: PAL2.brickGreen, [T.DUNGEON_BRICK_PINK]: PAL2.brickPink,
+  [T.HIVE]: HIVE_PAL, [T.CRISPY_HONEY]: CRISPY_PAL,
 };
 
 // ── 背景牆 ─────────────────────────────────────────────
@@ -423,6 +427,7 @@ export function texWall2(id: number, v: number): { b: Bmp; pal: RGB[] } | null {
       const p = id === 10 ? PAL2.wallBlue : id === 11 ? PAL2.wallGreen : PAL2.wallPink;
       return { b: texDungeonWall(v, p), pal: p };
     }
+    case 13: return { b: texHiveWall(v), pal: HIVE_WALL_PAL }; // 蜂巢牆
     default: return null;
   }
 }

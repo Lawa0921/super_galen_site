@@ -154,3 +154,30 @@ describe('戰利品', () => {
     expect(value(0.9)).toBeGreaterThan(value(0.05));
   });
 });
+
+describe('液體道具', () => {
+  it('空桶（鐵錠）/ 海綿 / 熔殼護符（黑曜石 + 餘燼）有配方', () => {
+    expect(findRecipe('bucket')!.inputs.some((a) => a.item === 'iron_bar')).toBe(true);
+    expect(findRecipe('sponge')).toBeDefined();
+    const ward = findRecipe('magma_ward')!;
+    expect(ward.station).toBe('anvil');
+    expect(ward.inputs.some((a) => a.item === 'obsidian')).toBe(true);
+    expect(ITEMS.magma_ward.accessory).toBe('lavaward');
+  });
+  it('桶子：空桶舀、液體桶倒（各自記得裝什麼）', () => {
+    expect(ITEMS.bucket.use).toBe('scoop');
+    for (const id of ['water_bucket', 'lava_bucket', 'honey_bucket'] as const) {
+      expect(ITEMS[id].use).toBe('pour');
+      expect(ITEMS[id].liquid).toBeGreaterThan(0);
+    }
+    expect(new Set([ITEMS.water_bucket.liquid, ITEMS.lava_bucket.liquid, ITEMS.honey_bucket.liquid]).size).toBe(3);
+  });
+  it('蜂巢殼 / 酥蜜塊：實心、可挖、掉自己', () => {
+    for (const k of ['HIVE', 'CRISPY_HONEY'] as const) {
+      const d = tileDef(T[k]);
+      expect(isSolidTile(T[k])).toBe(true);
+      expect(d.drop && ITEMS[d.drop].place).toBe(T[k]);
+    }
+    expect(WALLS[W.HIVE_WALL].key).toBe('hive_wall');
+  });
+});

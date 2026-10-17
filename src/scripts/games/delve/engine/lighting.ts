@@ -2,11 +2,14 @@
 // 1) 寫入發光量（天空光：地表線以上、無背牆、不擋光的格；火把等 tile 光；動態光）
 // 2) 兩輪 blur：每輪對每欄做下→上、上→下，對每列做左→右、右→左；
 //    沿途攜帶 v：v<cell 取 cell，否則（v ≥ 門檻）寫回 cell；離開該格時 v *= 該格衰減（空氣 0.91、實心 0.56）。
+// 液體：熔岩發光（量 / 128，最多 LAVA_LIGHT）；深水 / 深蜂蜜（量 > 128）用自己的衰減係數；
+//   地表的水只有最上面那格（上方沒有液體）吃天空光，往下靠衰減變暗。
 // 只算視窗 + margin 外框。輸出 row-major Float32Array（i = (y-y0)*w + (x-x0)）。
 import type { World } from './world';
 import { BLOCKS_LIGHT_LUT, LIGHT_LUT } from './tiles';
+import { LIQ } from './liquidKind';
 import {
-  LIGHT_AIR_DECAY, LIGHT_SOLID_DECAY, LIGHT_CUTOFF, LIGHT_MARGIN, DAY_LENGTH,
+  LIGHT_AIR_DECAY, LIGHT_SOLID_DECAY, LIGHT_CUTOFF, LIGHT_MARGIN, DAY_LENGTH, LIGHT_WATER_DECAY, LIGHT_HONEY_DECAY, LAVA_LIGHT,
 } from './constants';
 
 export interface LightRect { x: number; y: number; w: number; h: number; }
@@ -46,7 +49,7 @@ export class LightEngine {
     if (this.buf.length < n) { this.buf = new Float32Array(n); this.decay = new Float32Array(n); }
     // 每次回傳新陣列給呼叫端持有；內部 buf 只作工作區
     const L = this.buf, D = this.decay;
-    const { fg, wall, width: WW } = world;
+    const { fg, wall, width: WW, liquid: LQ, liquidType: LT } = world;
     const sky = opts.sky, surf = world.surfaceY;
 
     // ── Scan：發光 + 衰減遮罩 ──
@@ -59,9 +62,18 @@ export class LightEngine {
         const id = fg[wi];
         const i = ly * w + lx;
         const solid = BLOCKS_LIGHT_LUT[id] === 1;
-        D[i] = solid ? LIGHT_SOLID_DECAY : LIGHT_AIR_DECAY;
+        let d = solid ? LIGHT_SOLID_DECAY : LIGHT_AIR_DECAY;
         let e = LIGHT_LUT[id];
-        if (canSky && !solid && wall[wi] === 0 && sky > e) e = sky;
+        const lq = LQ[wi];
+        let under = false;
+        if (lq) {
+          const lt = LT[wi];
+          if (lt === LIQ.LAVA) { const le = LAVA_LIGHT * Math.min(1, lq / 128); if (le > e) e = le; }
+          else if (lq > 128 && !solid) d = lt === LIQ.WATER ? LIGHT_WATER_DECAY : LIGHT_HONEY_DECAY;
+          under = wi >= WW && LQ[wi - WW] > 0;
+        }
+        D[i] = d;
+        if (canSky && !solid && !under && wall[wi] === 0 && sky > e) e = sky;
         L[i] = e;
       }
     }

@@ -1,28 +1,39 @@
 // entities.ts — 通用實體（掉落物 / 投射物 / 怪物共用）的物理與容器。純邏輯，不碰 DOM。
 //   · 物理：沿用 physics.moveBody（AABB vs tile 分軸 + 子步），外加重力 / 最大落速 / 彈跳。
-//   · 介質（Medium）：目前只有空氣；之後的液體 pass 在 PhysEnv.mediumAt 回傳水 / 熔岩的
-//     重力、阻力、最大落速倍率即可，所有實體自動套用（不必改各 AI）。
+//   · 介質（Medium）：PhysEnv.mediumAt 回傳身體所在介質（空氣 / 水 / 熔岩 / 蜂蜜，見 swim.ts）的
+//     重力、阻力、最大落速倍率（掉落物另有浮力），所有實體自動套用（不必改各 AI）。
 //   · 掉落物：彈跳落地、靠近玩家時被吸過去（磁石 = 吸取半徑變大），碰到就撿；背包放不下就留在地上。
 import { moveBody, type Body, type MoveResult, type SolidQuery } from './physics';
 import { ITEMS, type ItemId } from './items';
 import { TILE_SIZE as S } from './constants';
 
 // ── 介質 ───────────────────────────────────────────────
-export interface Medium { gravityMul: number; dragMul: number; maxFallMul: number; }
+export interface Medium {
+  gravityMul: number; dragMul: number; maxFallMul: number;
+  /** 往上的浮力（px/s²；已乘浸入比例）——掉落物浮在液面 */
+  buoy?: number;
+}
 export const AIR: Medium = { gravityMul: 1, dragMul: 1, maxFallMul: 1 };
 export interface PhysEnv extends SolidQuery {
-  /** 身體所在的介質（液體 pass 會實作；省略 = 空氣） */
+  /** 身體所在的介質（見 swim.ts；省略 = 空氣） */
   mediumAt?(b: Body): Medium;
+  /** 掉落物用的介質（含浮力）；省略 = 同 mediumAt */
+  itemMediumAt?(b: Body): Medium;
+  /** 身體和液體的接觸（swim.liquidContact）；怪物 AI 用 */
+  contactAt?(b: Body): { type: number; frac: number; head: boolean };
+  /** tile 的液體（量 + 種類）；怕水的步行怪用 */
+  liquidAt?(tx: number, ty: number): { amount: number; type: number };
 }
 export interface FallPhys { gravity: number; maxFall: number; }
 export const ENTITY_GRAVITY = 1200;
 export const ENTITY_MAX_FALL = 620;
 
 /** 受重力的一步：回傳 moveBody 結果 + 撞地前的 vy（彈跳 / 落地判斷用） */
-export function stepFalling(q: PhysEnv, b: Body, dt: number, phys: FallPhys = { gravity: ENTITY_GRAVITY, maxFall: ENTITY_MAX_FALL }, allowStep = false): MoveResult & { impactVy: number } {
-  const m = q.mediumAt?.(b) ?? AIR;
+export function stepFalling(q: PhysEnv, b: Body, dt: number, phys: FallPhys = { gravity: ENTITY_GRAVITY, maxFall: ENTITY_MAX_FALL }, allowStep = false, item = false): MoveResult & { impactVy: number } {
+  const m = (item ? q.itemMediumAt?.(b) : undefined) ?? q.mediumAt?.(b) ?? AIR;
   b.vy = Math.min(phys.maxFall * m.maxFallMul, b.vy + phys.gravity * m.gravityMul * dt);
   if (m.dragMul !== 1) { b.vx /= 1 + (m.dragMul - 1) * dt * 4; }
+  if (m.buoy) { b.vy -= m.buoy * dt; b.vy /= 1 + (m.dragMul - 1) * dt; }
   const pre = b.vy;
   const res = moveBody(q, b, dt, allowStep && b.onGround);
   return { ...res, impactVy: res.hitY && pre > 0 ? pre : 0 };
@@ -141,7 +152,7 @@ export class DropList {
         d.grabbed = false;
         b.vx *= 0.3; b.vy = Math.min(b.vy, 0);
       }
-      const r = stepFalling(q, b, dt);
+      const r = stepFalling(q, b, dt, undefined, false, true);
       if (r.impactVy > 140) b.vy = -r.impactVy * 0.32;
       if (b.onGround) b.vx *= Math.max(0, 1 - dt * 10);
       else b.vx *= Math.max(0, 1 - dt * 0.8);

@@ -14,6 +14,7 @@ const ACC_TEXT: Record<string, string> = {
   depth: '顯示深度（放背包也有效）',
   map: '地圖顯示所有地標（放背包也有效）',
   nofall: '不受摔落傷害',
+  lavaward: '熔岩不傷身、不會著火',
 };
 
 export function speedLabel(useTime: number): string {
@@ -61,6 +62,9 @@ export function itemTooltip(item: ItemId): string[] {
     case 'heal': out.push(`使用：回復 ${POTION_HEAL} 生命（冷卻 ${POTION_COOLDOWN} 秒）`); break;
     case 'summon': out.push('使用：召喚燈脈守望者（夜晚或洞穴層以下）'); break;
     case 'recall': out.push('使用：引導後傳送回重生點'); break;
+    case 'scoop': out.push('使用：舀起瞄準格的水 / 熔岩 / 蜂蜜'); break;
+    case 'pour': out.push('使用：把整桶倒在瞄準格（水碰熔岩會變黑曜石）'); break;
+    case 'sponge': out.push('使用：吸掉瞄準格附近的水 / 蜂蜜（按住連續吸）'); break;
     default: break;
   }
   if (d.place !== undefined && !d.weapon) out.push('可放置');

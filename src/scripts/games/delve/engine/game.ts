@@ -24,7 +24,10 @@ import {
   BASE_HP, BASE_MANA, LIFE_CORE_HP, MAX_HP_CAP, SAFE_FALL_TILES, computeStats, damageTaken, enemyDamage, fallDamage,
   knockbackScale, regenRate, rollCrit, type PlayerStats,
 } from './combat';
-import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity } from './entities';
+import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type PhysEnv } from './entities';
+import { LiquidSim, type ReactionKind } from './liquid';
+import { LIQ, LIQ_MAX } from './liquidKind';
+import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidContact } from './swim';
 import { ProjList, type ProjKind, type Projectile } from './projectiles';
 import { ENEMIES, makeEnemy, stepEnemy, type AiCtx, type Enemy, type EnemyKind } from './enemies';
 import {
@@ -72,8 +75,8 @@ export type DelveEvent =
   | { type: 'attack'; item: ItemId; kind: WeaponKind }
   /** 打中怪物（x,y = 數字位置 px） */
   | { type: 'hit'; id: number; kind: EnemyKind; x: number; y: number; amount: number; crit: boolean }
-  /** 玩家受傷（fall = 摔落） */
-  | { type: 'hurt'; x: number; y: number; amount: number; fall: boolean }
+  /** 玩家受傷（fall = 摔落；cause = 溺水 / 熔岩 / 燃燒） */
+  | { type: 'hurt'; x: number; y: number; amount: number; fall: boolean; cause?: 'drown' | 'lava' | 'burn' }
   | { type: 'kill'; id: number; kind: EnemyKind; x: number; y: number }
   | { type: 'death'; x: number; y: number }
   | { type: 'respawn'; x: number; y: number }
@@ -83,7 +86,16 @@ export type DelveEvent =
   | { type: 'boss'; phase: 'spawn' | 'phase2' | 'defeated' | 'leave'; kind: EnemyKind }
   /** 怪物射出投射物 / 投射物撞牆（音效、火花） */
   | { type: 'shot'; kind: ProjKind; hostile: boolean }
-  | { type: 'impact'; kind: ProjKind; x: number; y: number };
+  | { type: 'impact'; kind: ProjKind; x: number; y: number }
+  // ── 液體 ──
+  /** 液體反應（水 + 熔岩 → 黑曜石、蜂蜜 + 熔岩 → 酥蜜塊、太少只冒煙）；tile 座標 */
+  | { type: 'liquid'; kind: ReactionKind; x: number; y: number }
+  /** 玩家掉進 / 跳出液體（px；big = 速度快）；liquid = LIQ.* */
+  | { type: 'splash'; x: number; y: number; liquid: number; big: boolean }
+  /** 水下少了一顆呼吸泡泡（left = 剩幾顆） */
+  | { type: 'bubble'; left: number }
+  /** 用桶子 / 海綿（舀 / 倒 / 吸），tile 座標 */
+  | { type: 'liquidtool'; action: 'scoop' | 'pour' | 'sponge'; liquid: number; x: number; y: number };
 
 /** 進行中的攻擊（render 動畫 + 近戰判定） */
 export interface AttackState {
@@ -134,6 +146,16 @@ export interface DelveState {
   boss: { kind: EnemyKind; hp: number; maxHp: number; phase: number } | null;
   peaceful: boolean;
   bossesDefeated: string[];
+  // ── 液體 ──
+  /** 呼吸（泡泡數，0..maxBreath；可以是小數） */
+  breath: number;
+  maxBreath: number;
+  /** 著火剩餘秒數 */
+  burning: number;
+  /** 蜂蜜回血效果剩餘秒數 */
+  honey: number;
+  /** 玩家和液體的接觸 */
+  liquid: { type: number; frac: number; head: boolean };
 }
 
 /** 徒手（背包沒有鎬）時的挖掘能力 */
@@ -163,6 +185,25 @@ export const POTION_COOLDOWN = 30;
 export const MANA_REGEN = 7;
 /** 死亡時掉落身上多少比例的錢幣 */
 export const DEATH_COIN_LOSS = 0.5;
+// ── 液體 ──
+/** 呼吸泡泡數；頭在水 / 蜂蜜下每 BREATH_STEP 秒少一顆，出水每秒補 BREATH_REFILL 顆 */
+export const MAX_BREATH = 10;
+export const BREATH_STEP = 1.6;
+export const BREATH_REFILL = 4;
+/** 沒氣了：每 DROWN_EVERY 秒扣 DROWN_DMG（不看防禦、不給無敵時間） */
+export const DROWN_DMG = 3;
+export const DROWN_EVERY = 0.5;
+/** 熔岩：碰到時的傷害（扣防禦、有無敵時間）+ 著火 BURN_TIME 秒（每 0.5 秒 BURN_DMG，不自然回血） */
+export const LAVA_DMG = 30;
+export const BURN_TIME = 7;
+export const BURN_DMG = 2;
+/** 蜂蜜：泡過之後 HONEY_TIME 秒內每秒多回 HONEY_REGEN */
+export const HONEY_TIME = 10;
+export const HONEY_REGEN = 2;
+/** 液體工具（水桶 / 海綿）按住時的重複間隔（秒） */
+export const LIQUID_TOOL_CD = 0.25;
+/** 液體模擬在瀏覽器每刻的時間預算（ms；session 設定，測試不設 → 確定性） */
+export const LIQUID_BUDGET_MS = 2;
 /** 夜晚：一天的前 20% 與後 20% */
 export function isNightTime(t: number): boolean {
   let p = (t % DAY_LENGTH) / DAY_LENGTH;
@@ -280,11 +321,35 @@ export class DelveGame {
   private statsVer = -1;
   private statsEq: Equipment | null = null;
   private statsCache: PlayerStats = computeStats(new Equipment());
+  // ── 液體 ───────────────────────────────────────────────
+  /** 液體模擬（world.liquid / liquidType） */
+  readonly liquids: LiquidSim;
+  /** 實體物理環境：world 的碰撞 + 液體介質 / 接觸（掉落物、怪物用） */
+  readonly env: PhysEnv;
+  /** 玩家這一刻和液體的接觸 */
+  contact: LiquidContact = NO_CONTACT;
+  breath = MAX_BREATH;
+  private drownT = 0;
+  burning = 0;
+  private burnTick = 0;
+  honeyT = 0;
+  private wasWet = 0;
 
   constructor(opts: DelveOptions = {}) {
     this.seed = String(opts.seed ?? 'delve');
     const gen = generateWorld(this.seed, { width: opts.width, height: opts.height });
     this.world = gen.world;
+    this.liquids = new LiquidSim(this.world);
+    const w = this.world;
+    this.env = {
+      isSolid: (x, y) => w.isSolid(x, y),
+      isPlatform: (x, y) => w.isPlatform(x, y),
+      isClimbable: (x, y) => w.isClimbable(x, y),
+      mediumAt: (b) => liquidMedium(liquidContact(w, b)),
+      itemMediumAt: (b) => liquidMedium(liquidContact(w, b), true),
+      contactAt: (b) => liquidContact(w, b),
+      liquidAt: (x, y) => ({ amount: w.getLiquid(x, y), type: w.getLiquidType(x, y) }),
+    };
     this.spawn = gen.spawn;
     this.biomes = gen.biomes;
     this.structures = gen.structures;
@@ -352,14 +417,19 @@ export class DelveGame {
   step(dt: number = FIXED_DT): void {
     this.tick++;
     this.time += dt;
+    this.liquids.step();
+    for (const e of this.liquids.drainEvents()) this.events.push({ type: 'liquid', kind: e.kind, x: e.x, y: e.y });
     if (this.dead) {
       this.updateDeath(dt);
       this.updateEntities(dt);
       return;
     }
     const knocked = this.knockT > 0;
-    stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats());
+    this.contact = liquidContact(this.world, this.player);
+    stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
+    this.contact = liquidContact(this.world, this.player);
     this.updateFall();
+    this.updateLiquid(dt);
     this.updateVitals(dt);
     this.updateRecall(dt);
     this.updateExploration();
@@ -384,6 +454,8 @@ export class DelveGame {
         if (!this.useConsumed) { this.useConsumed = true; this.interact(x, y); }
       } else if (use === 'recall') {
         if (!this.useConsumed) { this.useConsumed = true; this.startRecall(); }
+      } else if (use === 'scoop' || use === 'pour' || use === 'sponge') {
+        if (this.useLiquidTool(use, x, y)) this.placeCooldown = LIQUID_TOOL_CD;
       } else if (use) {
         if (!this.useConsumed) { this.useConsumed = true; this.consume(use); }
       } else if (!this.useConsumed && this.tryPlace(x, y)) this.placeCooldown = PLACE_COOLDOWN;
@@ -1008,6 +1080,9 @@ export class DelveGame {
       boss: (() => { const b = this.bossEnemy(); return b ? { kind: b.kind, hp: Math.max(0, Math.ceil(b.hp)), maxHp: b.maxHp, phase: b.phase ?? 1 } : null; })(),
       peaceful: this.peacefulMode,
       bossesDefeated: [...this.bossesDefeated].sort(),
+      breath: Math.round(this.breath * 100) / 100, maxBreath: MAX_BREATH,
+      burning: Math.max(0, this.burning), honey: Math.max(0, this.honeyT),
+      liquid: { type: this.contact.type, frac: this.contact.frac, head: this.contact.head },
     };
   }
 
@@ -1222,12 +1297,12 @@ export class DelveGame {
     this.knockT = 0.18;
     return true;
   }
-  private applyDamage(amount: number, fall: boolean): void {
+  private applyDamage(amount: number, fall: boolean, cause?: 'lava'): void {
     const p = this.player;
     this.hp -= amount;
     this.iframes = fall ? 0.4 : IFRAMES;
     this.sinceHit = 0;
-    this.events.push({ type: 'hurt', x: p.x + p.w / 2, y: p.y, amount, fall });
+    this.events.push({ type: 'hurt', x: p.x + p.w / 2, y: p.y, amount, fall, ...(cause ? { cause } : {}) });
     if (this.recallT !== null) { const r = this.respawnPoint(); this.recallT = null; this.events.push({ type: 'recall', phase: 'cancel', x: r.x, y: r.y }); }
     if (this.hp <= 0) this.die();
   }
@@ -1235,6 +1310,7 @@ export class DelveGame {
   private die(): void {
     const p = this.player, cx = p.x + p.w / 2, cy = p.y + p.h / 2;
     this.dead = true; this.hp = 0; this.respawnT = RESPAWN_TIME;
+    this.burning = 0; this.honeyT = 0; this.breath = MAX_BREATH; this.drownT = 0;
     this.mining = null; this.attack = null; this.recallT = null; this.miningHeld = false;
     this.closeChest();
     // 身上的錢掉一半在死亡地點
@@ -1263,7 +1339,7 @@ export class DelveGame {
   /** 摔落傷害：記住騰空時的最高點，落地時算掉了幾格 */
   private updateFall(): void {
     const p = this.player;
-    if (this.motion.climbing) { this.fallPeak = null; return; }
+    if (this.motion.climbing || this.contact.frac > 0) { this.fallPeak = null; return; }
     if (!p.onGround) { this.fallPeak = this.fallPeak === null ? p.y : Math.min(this.fallPeak, p.y); return; }
     if (this.fallPeak !== null) {
       const tiles = (p.y - this.fallPeak) / TILE_SIZE;
@@ -1279,14 +1355,152 @@ export class DelveGame {
     if (this.potionCd > 0) this.potionCd -= dt;
     this.sinceHit += dt;
     const max = this.maxHp();
-    if (this.hp < max) this.hp = Math.min(max, this.hp + regenRate(this.sinceHit, this.stats().regenMul) * dt);
+    const regen = (this.burning > 0 ? 0 : regenRate(this.sinceHit, this.stats().regenMul)) + (this.honeyT > 0 ? HONEY_REGEN : 0);
+    if (this.hp < max) this.hp = Math.min(max, this.hp + regen * dt);
     else if (this.hp > max) this.hp = max;
     if (this.manaDelay > 0) this.manaDelay -= dt;
     else if (this.mana < this.maxMana()) this.mana = Math.min(this.maxMana(), this.mana + MANA_REGEN * dt);
   }
 
+  // ── 液體 ───────────────────────────────────────────────
+  /** 液體對玩家的效果：濺水、呼吸 / 溺水、熔岩（受傷 + 彈起 + 著火）、進水熄火、蜂蜜回血 */
+  private updateLiquid(dt: number): void {
+    const c = this.contact, p = this.player;
+    const wetType = c.frac > 0 ? c.type : LIQ.NONE;
+    if (wetType !== this.wasWet) {
+      const entering = wetType !== LIQ.NONE;
+      if (entering ? Math.abs(p.vy) > 60 : p.vy < -100) {
+        const surf = entering ? p.y + p.h - c.frac * p.h : p.y + p.h;
+        this.events.push({ type: 'splash', x: p.x + p.w / 2, y: surf, liquid: entering ? wetType : this.wasWet, big: Math.abs(p.vy) > 250 });
+      }
+      this.wasWet = wetType;
+    }
+    // 呼吸：頭在水 / 蜂蜜下就消耗；沒氣了開始溺水
+    if (c.head && (c.type === LIQ.WATER || c.type === LIQ.HONEY)) {
+      const before = Math.ceil(this.breath);
+      this.breath = Math.max(0, this.breath - dt / BREATH_STEP);
+      const now = Math.ceil(this.breath);
+      if (now < before) this.events.push({ type: 'bubble', left: now });
+      if (this.breath <= 0) {
+        this.drownT -= dt;
+        if (this.drownT <= 0) { this.drownT = DROWN_EVERY; this.tickDamage(DROWN_DMG, 'drown'); if (this.dead) return; }
+      }
+    } else {
+      this.drownT = 0;
+      this.breath = Math.min(MAX_BREATH, this.breath + BREATH_REFILL * dt);
+    }
+    // 熔岩：受傷 + 往上彈 + 著火（熔殼護符全免）
+    const ward = this.hasAccessory('lavaward');
+    if (c.type === LIQ.LAVA && c.frac > 0 && !ward) {
+      this.burning = BURN_TIME;
+      if (this.iframes <= 0) {
+        this.applyDamage(damageTaken(LAVA_DMG, this.stats().defense), false, 'lava');
+        if (this.dead) return;
+        p.vy = Math.min(p.vy, -280); p.onGround = false;
+        this.motion.jumpTimer = 0; this.motion.climbing = false;
+      }
+    }
+    if (ward || (c.type === LIQ.WATER && c.frac > 0.25)) this.burning = 0;
+    if (this.burning > 0) {
+      this.burning -= dt;
+      this.burnTick -= dt;
+      if (this.burnTick <= 0) { this.burnTick = 0.5; this.tickDamage(BURN_DMG, 'burn'); if (this.dead) return; }
+    } else { this.burning = 0; this.burnTick = 0; }
+    // 蜂蜜：泡過之後一段時間多回血
+    if (c.type === LIQ.HONEY && c.frac > 0) this.honeyT = HONEY_TIME;
+    else if (this.honeyT > 0) this.honeyT = Math.max(0, this.honeyT - dt);
+  }
+
+  /** 持續傷害（溺水 / 燃燒）：不看防禦、不給無敵時間、不擊退 */
+  private tickDamage(amount: number, cause: 'drown' | 'burn'): void {
+    const p = this.player;
+    this.hp -= amount;
+    this.sinceHit = 0;
+    this.events.push({ type: 'hurt', x: p.x + p.w / 2, y: p.y, amount, fall: false, cause });
+    if (this.hp <= 0) this.die();
+  }
+
+  /**
+   * 水桶 / 海綿（按住會隔 LIQUID_TOOL_CD 秒重複）。
+   *   scoop：空桶從瞄準格（不夠再從左右同種格）舀滿一桶 → 換成對應的液體桶（不到一整桶也算一桶）。
+   *   pour：把一整桶（255）倒進瞄準格（空格 / 同種）；倒在別種液體上直接反應（水 ↔ 熔岩 → 黑曜石）。
+   *   sponge：吸掉瞄準格與上下左右的水 / 蜂蜜（熔岩吸不了）。
+   */
+  private useLiquidTool(use: 'scoop' | 'pour' | 'sponge', x: number, y: number): boolean {
+    const w = this.world, st = this.inventory.selectedStack(), sel = this.inventory.selected;
+    if (!st || !w.inBounds(x, y)) return false;
+    if (!this.canReach(x, y)) { this.block('use', 'reach', x, y); return false; }
+    const pt = this.playerTile();
+    if (use === 'scoop') {
+      const t = w.getLiquidType(x, y);
+      if (t === LIQ.NONE) return false;
+      let got = 0;
+      for (const dx of [0, -1, 1, -2, 2]) {
+        if (got >= LIQ_MAX) break;
+        if (w.getLiquidType(x + dx, y) !== t) continue;
+        const r = this.liquids.take(x + dx, y, LIQ_MAX - got);
+        if (r) got += r.amount;
+      }
+      this.inventory.takeFromSlot(sel, 1);
+      const full: ItemId = t === LIQ.LAVA ? 'lava_bucket' : t === LIQ.HONEY ? 'honey_bucket' : 'water_bucket';
+      const left = this.inventory.add(full, 1);
+      if (left > 0) this.dropAtTile(full, left, pt.x, pt.y);
+      this.events.push({ type: 'liquidtool', action: 'scoop', liquid: t, x, y });
+      return true;
+    }
+    if (use === 'pour') {
+      const t = ITEMS[st.item].liquid ?? LIQ.WATER;
+      if (!this.liquids.pour(x, y, t, LIQ_MAX)) { this.block('place', 'occupied', x, y); return false; }
+      this.inventory.takeFromSlot(sel, 1);
+      const left = this.inventory.add('bucket', 1);
+      if (left > 0) this.dropAtTile('bucket', left, pt.x, pt.y);
+      this.events.push({ type: 'liquidtool', action: 'pour', liquid: t, x, y });
+      return true;
+    }
+    let got = 0, kind: number = LIQ.NONE;
+    for (const [dx, dy] of [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1]] as const) {
+      const t = w.getLiquidType(x + dx, y + dy);
+      if (t !== LIQ.WATER && t !== LIQ.HONEY) continue;
+      const r = this.liquids.take(x + dx, y + dy, LIQ_MAX);
+      if (r) { got += r.amount; kind = t; }
+    }
+    if (!got) return false;
+    this.events.push({ type: 'liquidtool', action: 'sponge', liquid: kind, x, y });
+    return true;
+  }
+
+  /** 怪物碰到液體：火系碰水被澆熄（重傷）、一般怪碰熔岩受傷 + 燃燒。回傳是否因此死掉 */
+  private enemyLiquid(e: Enemy, dt: number): boolean {
+    const def = ENEMIES[e.kind], b = e.body;
+    if (def.boss) return false;
+    const c = liquidContact(this.world, b);
+    let dmg = 0;
+    if (c.frac > 0 && c.type === LIQ.WATER && def.fire && c.frac >= 0.3) dmg = 25;
+    else if (c.frac > 0 && c.type === LIQ.LAVA && !def.fire) { dmg = 30; e.burn = Math.max(e.burn, 3); }
+    if (!dmg) { e.wetT = 0; return false; }
+    e.wetT -= dt;
+    if (e.wetT > 0) return false;
+    e.wetT = def.fire ? 0.25 : 0.5;
+    e.hp -= dmg; e.flash = 0.1;
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    this.events.push({ type: 'hit', id: e.id, kind: e.kind, x: cx, y: b.y, amount: dmg, crit: false });
+    if (def.fire) this.events.push({ type: 'liquid', kind: 'steam', x: Math.floor(cx / TILE_SIZE), y: Math.floor(cy / TILE_SIZE) });
+    if (e.hp <= 0) { this.killEnemy(e); return true; }
+    return false;
+  }
+
+  /** 會發光的怪物（螢光水母 / 首領）的點光源（tile 座標） */
+  enemyLights(): PointLight[] {
+    const out: PointLight[] = [];
+    for (const e of this.enemies) {
+      const g = ENEMIES[e.kind].glow;
+      if (g) out.push({ x: (e.body.x + e.body.w / 2) / TILE_SIZE, y: (e.body.y + e.body.h / 2) / TILE_SIZE, v: g });
+    }
+    return out;
+  }
+
   /** 手持消耗品按「使用」 */
-  private consume(use: 'life' | 'heal' | 'summon'): void {
+  private consume(use: 'life' | 'heal' | 'summon' | 'scoop' | 'pour' | 'sponge'): void {
     const st = this.inventory.selectedStack();
     if (!st) return;
     const { x, y } = this.aim, p = this.player;
@@ -1348,7 +1562,8 @@ export class DelveGame {
     // 怪物
     const night = this.isNight();
     const ctx: AiCtx = {
-      q: this.world, px: pc.x, py: pc.y, playerDead: this.dead, rng: this.combatRng, night,
+      q: this.env, px: pc.x, py: pc.y, playerDead: this.dead, rng: this.combatRng, night,
+      playerWet: !this.dead && this.contact.type === LIQ.WATER && this.contact.frac > 0.2,
       shoot: (kind, x, y, vx, vy, damage, noclip) => {
         this.projectiles.spawn(kind, true, x, y, vx, vy, { damage, knockback: 160, life: kind === 'stinger' ? 2.2 : 3, solidHit: !noclip });
         this.events.push({ type: 'shot', kind, hostile: true });
@@ -1364,6 +1579,7 @@ export class DelveGame {
       if (!def.boss && !def.minion && (dx > DESPAWN.x || dy > DESPAWN.y || this.dayDespawn(e, dx, dy))) { this.removeEnemy(e); continue; }
       if (!def.boss && (dx > ACTIVE.x || dy > ACTIVE.y)) continue;
       if (!stepEnemy(e, ctx, dt)) { this.removeEnemy(e); continue; }
+      if (this.enemyLiquid(e, dt)) continue;
       if (e.burn > 0) {
         e.burn -= dt; e.burnTick -= dt;
         if (e.burnTick <= 0) {
@@ -1400,7 +1616,7 @@ export class DelveGame {
     }
     // 掉落物
     const inv = this.inventory;
-    const got = this.drops.step(this.world, {
+    const got = this.drops.step(this.env, {
       player: p, magnetPx: this.magnetRadius() * S, activePx: ACTIVE.x * S, canPickup: !this.dead,
       room: (item, n) => (inv.canAdd(item, n) ? n : inv.canAdd(item, 1) ? 1 : 0),
       take: (item, n) => n - inv.add(item, n),

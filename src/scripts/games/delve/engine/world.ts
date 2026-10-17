@@ -3,6 +3,8 @@ import { CHUNK } from './constants';
 import { SOLID_LUT, PLATFORM_LUT, CLIMB_LUT, T } from './tiles';
 import type { Stack } from './inventory';
 import { CHEST_SLOTS, type Drop } from './loot';
+import { LIQ, LIQ_MAX } from './liquidKind';
+export { LIQ, LIQ_MAX } from './liquidKind';
 
 export type ChestSlots = (Stack | null)[];
 /** 生態區（每欄地表所屬；地下的過渡邊界另有起伏） */
@@ -14,6 +16,10 @@ export class World {
   readonly height: number;
   readonly fg: Uint8Array;
   readonly wall: Uint8Array;
+  /** 每格液體量 0..255（0 = 沒有液體） */
+  readonly liquid: Uint8Array;
+  /** 每格液體種類（LIQ.*，低 2 bit；液體量為 0 時一律 0） */
+  readonly liquidType: Uint8Array;
   /** 每格材質變體 0..2（座標雜湊，非存檔內容） */
   readonly variant: Uint8Array;
   readonly chunksX: number;
@@ -42,6 +48,12 @@ export class World {
   private readonly dirty = new Set<number>();
   /** 生成後被改過的 chunk（存檔 diff 用） */
   readonly modifiedChunks = new Set<number>();
+  /** 液體有變動、要重畫液體層 / 小地圖的 chunk（drainLiquidDirty 取走；不影響 tile chunk 快取） */
+  private readonly liquidDirty = new Set<number>();
+  /** 生成後液體被改過的 chunk（存檔用；與 modifiedChunks 分開，流動不會讓 tile 被存） */
+  readonly liquidModified = new Set<number>();
+  /** 前景 tile 改變時的通知（液體模擬用來喚醒鄰格）；setFg 之後呼叫 */
+  onTileChange: ((x: number, y: number) => void) | null = null;
 
   constructor(width: number, height: number) {
     this.width = width;
@@ -49,6 +61,8 @@ export class World {
     const n = width * height;
     this.fg = new Uint8Array(n);
     this.wall = new Uint8Array(n);
+    this.liquid = new Uint8Array(n);
+    this.liquidType = new Uint8Array(n);
     this.variant = new Uint8Array(n);
     this.surface = new Int16Array(width);
     this.biome = new Uint8Array(width);
@@ -110,7 +124,52 @@ export class World {
     if ((old === T.CHEST || old === T.LOCKED_CHEST) && id !== T.CHEST && id !== T.LOCKED_CHEST) this.chests.delete(i);
     if ((id === T.CHEST || id === T.LOCKED_CHEST) && !this.chests.has(i)) this.chests.set(i, new Array<Stack | null>(CHEST_SLOTS).fill(null));
     this.touch(x, y);
+    this.onTileChange?.(x, y);
     return true;
+  }
+
+  // ── 液體 ─────────────────────────────────────────────
+  /** (x,y) 的液體量（越界 0） */
+  getLiquid(x: number, y: number): number {
+    if (!this.inBounds(x, y)) return 0;
+    return this.liquid[y * this.width + x];
+  }
+  /** (x,y) 的液體種類（LIQ.*；越界或沒有液體 = LIQ.NONE） */
+  getLiquidType(x: number, y: number): number {
+    if (!this.inBounds(x, y)) return LIQ.NONE;
+    return this.liquidType[y * this.width + x];
+  }
+  /** 設定液體（量夾到 0..255；量 0 → 種類清成 NONE）。標記液體 dirty / 已修改 chunk。回傳是否有改變。 */
+  setLiquid(x: number, y: number, amount: number, type: number): boolean {
+    if (!this.inBounds(x, y)) return false;
+    const i = y * this.width + x;
+    const a = Math.max(0, Math.min(LIQ_MAX, Math.round(amount)));
+    const t = a === 0 ? LIQ.NONE : type;
+    if (this.liquid[i] === a && this.liquidType[i] === t) return false;
+    this.liquid[i] = a;
+    this.liquidType[i] = t;
+    this.touchLiquid(i);
+    return true;
+  }
+  /** tile index i 的液體已直接改寫（模擬熱路徑用）：標記 dirty / 已修改 */
+  touchLiquid(i: number): void {
+    const x = i % this.width, y = (i - x) / this.width;
+    const ci = this.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK));
+    this.liquidDirty.add(ci);
+    this.liquidModified.add(ci);
+  }
+  /** 取走並清空液體 dirty chunk 清單 */
+  drainLiquidDirty(): number[] {
+    const out = [...this.liquidDirty];
+    this.liquidDirty.clear();
+    return out;
+  }
+  /** 液體總量（測試 / debug） */
+  liquidTotal(type?: number): number {
+    let s = 0;
+    const L = this.liquid, LT = this.liquidType;
+    for (let i = 0; i < L.length; i++) if (L[i] && (type === undefined || LT[i] === type)) s += L[i];
+    return s;
   }
   /** (x,y) 的 chunk 標為已修改（箱子內容變動等不改 tile 的修改；不需重畫） */
   markModified(x: number, y: number): void {
