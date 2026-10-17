@@ -427,7 +427,7 @@ export function rerollPage(h: ForgeHost): void {
         }
         h.afterAct(r, (out) => {
           const [from, to] = [affixText(out.before), affixText(out.after)];
-          return fill2(F.rerolled, [from], [better === 0 ? to : { text: to, cls: better > 0 ? 'slx-up' : 'slx-down' }]);
+          return fill2(F.rerolled, [from], [better === 0 ? to : { text: F.rerollTrend(to, better > 0), cls: better > 0 ? 'slx-up' : 'slx-down' }]);
         }, () => better < 0);
       };
     }

@@ -632,6 +632,20 @@ describe('ForgeScene reroll page', () => {
     expect(run(99).querySelector('.slx-down')).not.toBeNull();
   });
 
+  it('a value reroll says 提升 or 下降 beside the colour, so colour is not the only cue', () => {
+    const run = (value: number) => {
+      const t = open([sword({ affixes: [{ key: 'crit', value }, { key: 'atk', value: 12 }] })]);
+      t.go('confirm', 'confirm', 'confirm', 'up', 'confirm');
+      return t.root.querySelector('.slx-talk .slx-text')!;
+    };
+    const up = run(1);
+    expect(up.querySelector('.slx-up')!.textContent).toContain('提升');
+    expect(up.textContent).not.toContain('下降');
+    const down = run(99);
+    expect(down.querySelector('.slx-down')!.textContent).toContain('下降');
+    expect(down.textContent).not.toContain('提升');
+  });
+
   it('a swap with a region material changes the key from that group and spends the material', () => {
     const { go, game, ids, line } = open([sword()]);
     go('confirm', 'confirm');

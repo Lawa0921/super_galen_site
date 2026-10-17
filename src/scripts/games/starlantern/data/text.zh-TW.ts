@@ -379,6 +379,8 @@ export const T = {
       askReroll: (label: string, affix: string) => `要重鑄${label}的「${affix}」嗎？`,
       /** 「暴擊率 +3% → 暴擊傷害 +18%」: the old affix, then the new one. */
       rerolled: (before: string, after: string) => `重鑄完成！${before} → ${after}`,
+      /** The new affix in a reroll result, with a word for which way it went (its colour says the same). */
+      rerollTrend: (after: string, up: boolean) => `${after}（${up ? '提升' : '下降'}）`,
       /** A fusion tier row: 「普通 ×3 → 魔法」. */
       fuseTier: (from: Rarity, to: Rarity) => `${RARITY[from]} ×3 → ${RARITY[to]}`,
       /** The 合成 row of the picking layer: 「合成（已選 2／3）」. */
