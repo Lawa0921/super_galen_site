@@ -313,6 +313,9 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
       const want = powers.map((p) => POWERS[p].mod).reduce((d, m) => patchSkill(d, m), tree);
       expect(skillFor(caster(ranks, powers), skill), skill).toEqual(want);
     }
+    // Pinned by hand, not through treeMods: 70 at rank 2 is 110% (77); the mod's 135% and the twin turret's +60 points
+    // stack into one 195% (77 x 1.95 = 150), then +1 turn, and lg-bobby fixes the turns at 5.
+    expect(skillFor(caster({ turret: 2, 'bobby-turret-up': 3, 'twin-turret': 1 }, ['lg-bobby']), 'turret')!.effects).toEqual([{ kind: 'turret', power: 150, turns: 5 }]);
   });
 
   it('a member casts only a skill whose own node holds a whole rank; a junk rank casts nothing', () => {
