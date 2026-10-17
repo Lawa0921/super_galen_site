@@ -3,7 +3,7 @@ import { mulberry32 } from '../rng';
 import { SPECIALS } from '../../data/gear';
 import { MATERIALS } from '../../data/materials';
 import { CONDITIONS } from '../../data/conditions';
-import { depthLevel } from '../levels';
+import { MAX_ILVL, MAX_REACHED, depthLevel } from '../levels';
 import type { ItemInstance, Rarity } from '../types';
 import { itemLevel, type DropSource } from './item';
 import { BOSS_LEGENDARY, GEAR_CHANCE, RARE_MATERIALS, rarityWeights, rollBossGear, rollGear, rollRareMaterial, type DropCtx, type Tier } from './drops';
@@ -202,5 +202,19 @@ describe('rare materials', () => {
     for (const id of RARE_MATERIALS) expect(MATERIALS[id]).toBeDefined();
     expect(MATERIALS['star-tear']).toMatchObject({ name: '星燈之淚', price: 80 });
     expect(MATERIALS['king-scale']).toMatchObject({ name: '王者之鱗', price: 100 });
+  });
+});
+
+describe('deep drops stay within the save cap', () => {
+  it('a boss drop at the deepest legal depth is at most MAX_ILVL, and so is every source', () => {
+    const rng = mulberry32(1);
+    let uid = 1;
+    const ctx = { depth: MAX_REACHED, region: 'mainline', source: 'boss', condition: 'plain', uid: () => uid++ } as unknown as DropCtx;
+    for (const it of rollBossGear(rng, ctx)) expect(it.ilvl).toBeLessThanOrEqual(MAX_ILVL);
+    for (const source of ['monster', 'chest', 'elite', 'vault', 'boss'] as DropSource[]) {
+      expect(itemLevel(MAX_REACHED, source), source).toBeLessThanOrEqual(MAX_ILVL);
+      expect(itemLevel(100000, source), source).toBe(MAX_ILVL);
+    }
+    expect(itemLevel(1, 'boss')).toBe(depthLevel(1) + 4);
   });
 });

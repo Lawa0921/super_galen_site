@@ -18,6 +18,7 @@ import { raiseNode, raiseTalent, type RaiseFail, type TalentFail } from './progr
 import { pick, type Rng } from './rng';
 import { depthClearExp, depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
+import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { newGame, type GameState } from './state';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
@@ -359,7 +360,8 @@ export class Game {
    */
   descend(): MoveResult | null {
     if (this.phase !== 'map' || !this.run || tileAt(this.map(), this.pos) !== 'down') return null;
-    const first = this.floor >= this.state.dungeon.reached[this.run.region];
+    // At the recorded cap (MAX_REACHED) the depth can no longer be told apart from a repeat, so deeper floors pay nothing.
+    const first = this.floor < MAX_REACHED && this.floor >= this.state.dungeon.reached[this.run.region];
     const exp = first ? Math.round(depthClearExp(this.floor) * CONDITIONS[this.run.condition].expMul) : 0;
     const before = this.state.party.roster;
     const standing = activeIds(this.state.party).filter((id) => before[id].hp > 0);
@@ -475,7 +477,7 @@ export class Game {
   private battleGear(b: BattleState, elite: boolean): { gear: ItemInstance[]; rare?: string } {
     const run = this.run!;
     if (b.boss) {
-      const key = `${run.region}:${this.floor}`;
+      const key = `${run.region}:${Math.min(this.floor, MAX_REACHED)}`;
       const kills = this.state.dungeon.bossKills;
       const gear = rollBossGear(lootRng(run), { ...this.dropCtx('boss'), bossRepeat: (kills[key] ?? 0) > 0 });
       kills[key] = (kills[key] ?? 0) + 1;
@@ -599,7 +601,7 @@ export class Game {
     const region = this.run!.region;
     this.floor = floor;
     this.pos = { ...this.map().entrance };
-    this.state.dungeon.reached[region] = Math.max(this.state.dungeon.reached[region], floor);
+    this.state.dungeon.reached[region] = Math.min(MAX_REACHED, Math.max(this.state.dungeon.reached[region], floor));
     this.revealHere();
     return { kind: 'floor', floor };
   }

@@ -16,6 +16,8 @@ import { activeIds, gainExp, MAX_LEVEL, newMember, recruit } from './party';
 import { depthClearExp, empower } from './scaling';
 import { CONDITIONS } from '../data/conditions';
 import { BAG_SIZE } from './loot/bag';
+import { MAX_ILVL, MAX_REACHED } from './levels';
+import { loadGame } from './save';
 import { chestHasGear, GEAR_CHANCE, RARE_MATERIALS, rollBossGear } from './loot/drops';
 import { itemLevel, itemWeight, rollItem } from './loot/item';
 import type { ItemInstance } from './types';
@@ -194,6 +196,21 @@ describe('moving', () => {
     const g = new Game(calm(), null);
     g.depart({ region: 'mainline', condition: 'bounty' }, 1);
     expect(stepOnto(g, plainChest(g))).toEqual({ kind: 'chest', item: 'old-coin', qty: 3 });   // 2 x 1.5
+  });
+  it('descending past MAX_REACHED keeps reached capped, pays no exp, and the save still loads', () => {
+    const st = memoryStorage();
+    const g = new Game(calm(), st);
+    g.state.dungeon.reached.mainline = MAX_REACHED;
+    expect(g.depart(MAIN, MAX_REACHED)).toEqual({ ok: true });
+    const exp = JSON.stringify(g.state.party);
+    g.floor = MAX_REACHED + 1;   // the boss floor at the cap has no stairs; floors below the cap are covered above
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: MAX_REACHED + 2 });
+    expect(g.state.dungeon.reached.mainline).toBe(MAX_REACHED);
+    expect(JSON.stringify(g.state.party)).toBe(exp);
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: MAX_REACHED + 3 });
+    expect(g.state.dungeon.reached.mainline).toBe(MAX_REACHED);
+    expect(saveGame(st, g.state)).toBe(true);
+    expect(loadGame(st).status).toBe('ok');
   });
   it('stairs go one deeper and never back', () => {
     const g = new Game(calm(), null);

@@ -1,7 +1,7 @@
 import { AFFIXES, AFFIX_COUNT, GEAR_SLOTS, IMPLICIT_PER_ILVL, ROLL_FLOOR, SLOT_WEIGHT, SPECIALS, affixRange } from '../../data/gear';
 import { EQUIPMENT } from '../../data/equipment';
 import { ENHANCE_STEP } from '../../data/forge';
-import { depthLevel } from '../levels';
+import { MAX_ILVL, depthLevel } from '../levels';
 import { pick, randInt, type Rng } from '../rng';
 import type { AnyStat, GearSlot, ItemInstance, Rarity, Sheet, Stats } from '../types';
 
@@ -11,7 +11,8 @@ const SOURCE_BONUS: Record<DropSource, number> = { monster: 0, chest: 0, elite: 
 /** Gold multiplier by rarity: sell price = round((10 + 2 x ilvl) x m). */
 const SELL_MUL: Record<Rarity, number> = { common: 1, magic: 2, rare: 4, legendary: 10, unique: 10, set: 8 };
 
-export const itemLevel = (depth: number, source: DropSource): number => depthLevel(depth) + SOURCE_BONUS[source];
+/** Capped at MAX_ILVL so a very deep drop can never make a save the loader rejects. */
+export const itemLevel = (depth: number, source: DropSource): number => Math.min(MAX_ILVL, depthLevel(depth) + SOURCE_BONUS[source]);
 
 /** A base for a slot: one of the two best bases at or under `ilvl`, else the slot's lowest. */
 export function baseFor(rng: Rng, slot: GearSlot, ilvl: number): string {
