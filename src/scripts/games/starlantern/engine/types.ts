@@ -21,7 +21,7 @@ export type Passive = 'encounterDown' | 'dropBoost' | 'itemBoost';
 export interface Pos { x: number; y: number }
 
 export type Effect =
-  | { kind: 'damage'; power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean; hits?: number }
+  | { kind: 'damage'; power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean; hits?: number; crit?: 'always'; execute?: number; wounded?: number }
   | { kind: 'heal'; power: number }
   | { kind: 'restore'; hp?: number; tp?: number }
   | { kind: 'revive'; hpPct: number }

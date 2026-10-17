@@ -38,6 +38,39 @@ describe('calcDamage', () => {
   });
 });
 
+describe('calcDamage always-crit, execute and wounded', () => {
+  const counting = () => { let n = 0; const f = () => { n++; return 0.5; }; return { f, count: () => n }; };
+  const t = makeCombatant({ key: 't', side: 'enemy' });
+  const mk = (x: Combatant['x']) => makeCombatant({ key: 'a', side: 'party', x });
+  it('crit always crits and draws no crit roll', () => {
+    const a = mk({ crit: 0, critDmg: 50 });
+    const plain = calcDamage(a, t, phys, rng);
+    const always = calcDamage(a, t, { ...phys, crit: 'always' }, rng);
+    expect(always.crit).toBe(true);
+    expect(always.amount).toBeGreaterThan(plain.amount);
+    expect(Math.abs(always.amount - Math.floor(plain.amount * 1.5))).toBeLessThanOrEqual(1);
+    const c1 = counting(); calcDamage(mk({ crit: 50, critDmg: 50 }), t, phys, c1.f);
+    const c2 = counting(); calcDamage(a, t, { ...phys, crit: 'always' }, c2.f);
+    expect(c1.count() - c2.count()).toBe(1);
+  });
+  it("execute scales with the target's missing HP", () => {
+    const a = mk({});
+    const full = calcDamage(a, t, { ...phys, power: 300, execute: 100 }, rng).amount;
+    const half = calcDamage(a, { ...t, hp: 50 }, { ...phys, power: 300, execute: 100 }, rng).amount;
+    expect(Math.abs(half - Math.floor(full * 1.5))).toBeLessThanOrEqual(1);
+    expect(half).toBeGreaterThan(full);
+  });
+  it('wounded adds only when the target is hurt', () => {
+    const a = mk({});
+    const spec = { ...phys, power: 300, wounded: 50 };
+    const base = calcDamage(a, t, { ...phys, power: 300 }, rng).amount;
+    expect(calcDamage(a, t, spec, rng).amount).toBe(base);
+    const hurt = calcDamage(a, { ...t, hp: t.max.hp - 1 }, spec, rng).amount;
+    expect(Math.abs(hurt - Math.floor(base * 1.5))).toBeLessThanOrEqual(1);
+    expect(hurt).toBeGreaterThan(base);
+  });
+});
+
 describe('calcDamage with derived stats', () => {
   const a = makeCombatant({ key: 'a', side: 'party' });
   const t = makeCombatant({ key: 't', side: 'enemy' });

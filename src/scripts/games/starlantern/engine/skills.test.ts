@@ -386,3 +386,12 @@ describe('keystone TP refills', () => {
       .toBe(hit([], over, { hp: 1, weak: ['fire'] }, 'fire').draws);
   });
 });
+
+describe('patchSkill new damage options', () => {
+  it('patchSkill keeps crit, execute and wounded', () => {
+    const def: SkillDef = { ...SKILLS.hex, effects: [{ kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: true, crit: 'always', execute: 40, wounded: 30 }] };
+    expect(patchSkill(def, { powerPct: 150 }).effects).toEqual([
+      { kind: 'damage', power: 150, element: 'phys', scale: 'atk', melee: true, crit: 'always', execute: 40, wounded: 30 },
+    ]);
+  });
+});

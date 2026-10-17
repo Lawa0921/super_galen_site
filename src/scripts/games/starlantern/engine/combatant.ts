@@ -72,7 +72,15 @@ export function elementMult(t: Combatant, el: Element): number {
   return t.weak.includes(el) ? 1.5 : t.resist.includes(el) ? 0.5 : 1;
 }
 
-export interface DamageSpec { power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean }
+export interface DamageSpec {
+  power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean;
+  /** 'always' crits every time and draws no crit roll. */
+  crit?: 'always';
+  /** Percent: damage times 1 + execute / 100 x the target's missing share of HP. */
+  execute?: number;
+  /** Percent: damage times 1 + wounded / 100 against a target below full HP. */
+  wounded?: number;
+}
 
 /** Enemies crit for a flat 50% more, whatever critDmg they carry. */
 export const ENEMY_CRIT_DMG = 50;
@@ -106,7 +114,9 @@ export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rn
   if (hitEl !== 'phys') mult *= (1 + ax(`${hitEl}Dmg`) / 100) * (1 - Math.min(100, Math.max(-100, tx(`${hitEl}Res`))) / 100);
   if (t.weak.includes(spec.element)) mult *= 1 + ax('vuln') / 100;
   if (t.boss || t.tint === 'elite') mult *= 1 + ax('eliteDmg') / 100;
-  const crit = roll(ax('crit') / 100, rng);
+  if (spec.execute) mult *= 1 + (spec.execute / 100) * (1 - t.hp / t.max.hp);
+  if (spec.wounded && t.hp < t.max.hp) mult *= 1 + spec.wounded / 100;
+  const crit = spec.crit === 'always' || roll(ax('crit') / 100, rng);
   if (crit) mult *= 1 + (a.side === 'enemy' ? ENEMY_CRIT_DMG : ax('critDmg')) / 100;
   if (hitEl === 'phys') {
     mult *= 1 - armorReduction(tx('armor'), a.level);
