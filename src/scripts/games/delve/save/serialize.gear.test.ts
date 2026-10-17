@@ -52,6 +52,15 @@ describe('存檔格式 8：裝備詞條', { timeout: 120_000 }, () => {
     // 再存一次：位元一致
     expect(JSON.stringify(snapshotGame(h, 0).header.inventory)).toBe(JSON.stringify(snapshotGame(g, 0).header.inventory));
   });
+  it('不滅的冷卻跟著存檔', () => {
+    const g = flat();
+    g.giveGear('iron_chestplate', 4, { affixes: [A('undying', 90, 5)] });
+    g.equipFromInventory(slotOf(g, 'iron_chestplate'));
+    g.hurtPlayer(9999, 0);
+    g.undyingCd = 42.5;
+    const r = restoreGame(serializeGame(g));
+    expect(r.ok && r.game.undyingCd).toBeCloseTo(42.5, 1);
+  });
   it('gear 結構壞掉 → 格式錯誤（不是靜靜吃掉）', () => {
     const g = flat();
     g.giveGear('iron_sword', 2);

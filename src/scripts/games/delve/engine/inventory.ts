@@ -54,7 +54,16 @@ export class Inventory {
   }
 
   /** 放進一整格（保留 gear），回傳放不下的數量 */
-  addStack(st: Stack): number { return this.add(st.item, st.count, st.gear); }
+  addStack(st: Stack): number {
+    // 帶詞條的單件：放進同一個物件（介面 / 鍛造台追蹤的是物件）
+    if (st.gear && st.count === 1) {
+      const i = this.slots.indexOf(null);
+      if (i < 0) return 1;
+      this.slots[i] = st;
+      return 0;
+    }
+    return this.add(st.item, st.count, st.gear);
+  }
 
   /** 一組道具是否能全部放進背包（模擬依序加入，彼此會搶空格）。 */
   canAddAll(items: ReadonlyMap<ItemId, number>): boolean {

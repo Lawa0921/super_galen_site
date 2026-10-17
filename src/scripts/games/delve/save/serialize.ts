@@ -84,7 +84,8 @@ function chunkTotal(width: number, height: number): number { return Math.ceil(wi
 const MAX_CHUNKS = chunkTotal(MAX_WORLD_W, MAX_WORLD_H);
 
 export interface PlayerSave { x: number; y: number; vx: number; vy: number; }
-export interface VitalsSave { breath: number; burning: number; honey: number; }
+/** undying = 不滅（傳奇詞條）冷卻剩餘秒數；format 8 起 */
+export interface VitalsSave { breath: number; burning: number; honey: number; undying?: number; }
 export interface DropSave { item: ItemId; count: number; x: number; y: number; gear?: Gear; }
 export interface SaveHeader {
   format: number;
@@ -283,7 +284,9 @@ function validVitals(v: unknown): VitalsSave | undefined {
   if (v === undefined) return undefined;
   const o = v as Partial<VitalsSave> | null;
   if (!o || typeof o !== 'object' || !isNum(o.breath) || !isNum(o.burning) || !isNum(o.honey)) throw new SaveFormatError('vitals');
-  return { breath: o.breath, burning: o.burning, honey: o.honey };
+  const out: VitalsSave = { breath: o.breath, burning: o.burning, honey: o.honey };
+  if (isNum(o.undying) && o.undying > 0) out.undying = o.undying;
+  return out;
 }
 function validDrops(v: unknown): DropSave[] | undefined {
   if (v === undefined) return undefined;
@@ -395,7 +398,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
         peaceful: game.peaceful,
       },
       liquids: { chunks: liqChunks, data: toBase64(encodeLiquidRle(lq.amount, lq.type)) },
-      vitals: { breath: r2(game.breath), burning: r2(Math.max(0, game.burning)), honey: r2(Math.max(0, game.honeyT)) },
+      vitals: { breath: r2(game.breath), burning: r2(Math.max(0, game.burning)), honey: r2(Math.max(0, game.honeyT)), ...(game.undyingCd > 0 ? { undying: r2(game.undyingCd) } : {}) },
       drops: game.drops.list.map((d) => {
         const o: DropSave = { item: d.item, count: d.count, x: r2(d.body.x + d.body.w / 2), y: r2(d.body.y + d.body.h / 2) };
         if (d.gear) o.gear = { ...d.gear, affixes: d.gear.affixes.map((a) => ({ ...a })) };
@@ -758,6 +761,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     game.breath = Math.max(0, Math.min(MAX_BREATH, h.vitals.breath));
     game.burning = Math.max(0, Math.min(BURN_TIME, h.vitals.burning));
     game.honeyT = Math.max(0, Math.min(HONEY_TIME, h.vitals.honey));
+    game.undyingCd = Math.max(0, Math.min(999, h.vitals.undying ?? 0));
   }
   // 地上的掉落物（format 7）：放回原地、靜止
   for (const d of h.drops ?? []) {

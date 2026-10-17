@@ -242,6 +242,49 @@ describe('掉落池', () => {
   });
 });
 
+describe('經濟（驗收修正）', () => {
+  it('合成只會出普通 / 優良 / 稀有，沒有史詩以上', () => {
+    const c = rarityWeights('craft', 1, 100);
+    expect(c[3] + c[4] + c[5]).toBe(0);
+    expect(c[0]).toBeGreaterThanOrEqual(0.75);
+  });
+  it('合成的裝備分解幾乎拿不到東西：普通 0、優良 1、稀有 2 碎晶，沒有星塵、不加物品等級', () => {
+    const y = (r: number, ilvl = 5): ReturnType<typeof salvageYield> => salvageYield({ rarity: r, ilvl, plus: 0, affixes: [], crafted: true });
+    expect(y(0)).toEqual({ shard: 0, dust: 0 });
+    expect(y(1)).toEqual({ shard: 1, dust: 0 });
+    expect(y(2)).toEqual({ shard: 2, dust: 0 });
+    // 掉落的同稀有度比較多
+    expect(salvageYield({ rarity: 2, ilvl: 5, plus: 0, affixes: [] }).shard).toBeGreaterThan(y(2).shard);
+  });
+  it('升階再分解永遠虧本（不能靠升階刷材料）', () => {
+    for (const crafted of [false, true]) for (let r = 0; r < MAX_ASCEND; r++) {
+      const g: Gear = { rarity: r, ilvl: 5, plus: 0, affixes: [], ...(crafted ? { crafted } : {}) };
+      const c = ascendCost(g)!, gain = salvageYield({ ...g, rarity: r + 1 }).shard - salvageYield(g).shard;
+      expect(gain, `r=${r} crafted=${crafted}`).toBeLessThan(c.shard);
+    }
+  });
+  it('強化與升階的總成本跟順序無關', () => {
+    for (let r = 0; r < MAX_ASCEND; r++) for (let p = 0; p < MAX_PLUS; p++) {
+      const g: Gear = { rarity: r, ilvl: 3, plus: p, affixes: [] };
+      const a = upgradeCost(g)!, b = ascendCost({ ...g, plus: p + 1 })!;
+      const c = ascendCost(g)!, d = upgradeCost({ ...g, rarity: r + 1 })!;
+      expect(a.shard + b.shard).toBe(c.shard + d.shard);
+      expect(a.dust + b.dust).toBe(c.dust + d.dust);
+    }
+  });
+  it('改名：強健的（生命）、致命的（暴擊）；史詩是紫色（不是粉紅）', () => {
+    expect(affixDef('hale').word).toBe('強健的');
+    expect(affixDef('savage').word).toBe('致命的');
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(RARITIES[3].color.slice(i, i + 2), 16));
+    expect(b).toBeGreaterThan(r);
+    expect(b).toBeGreaterThan(g + 60);
+  });
+  it('crafted 旗標存檔往返', () => {
+    const g = roll('iron_sword', 1, 'cr');
+    expect(validGear('iron_sword', { ...g, crafted: true })!.crafted).toBe(true);
+  });
+});
+
 describe('驗證（存檔）', () => {
   it('合法 → 回傳副本；壞資料 → null', () => {
     const g = roll('iron_sword', 4, 'v');

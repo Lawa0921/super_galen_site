@@ -28,7 +28,7 @@ export const RARITIES: readonly RarityDef[] = [
   { id: 'common', zh: '普通', en: 'Common', color: '#ffffff', dark: '#858aa0', affixes: 0, unique: false, tiers: [1, 1] },
   { id: 'uncommon', zh: '優良', en: 'Uncommon', color: '#93cc50', dark: '#2d672e', affixes: 1, unique: false, tiers: [1, 2] },
   { id: 'rare', zh: '稀有', en: 'Rare', color: '#5c9ce0', dark: '#2c4486', affixes: 2, unique: false, tiers: [1, 3] },
-  { id: 'epic', zh: '史詩', en: 'Epic', color: '#b8788e', dark: '#463c78', affixes: 3, unique: false, tiers: [2, 4] },
+  { id: 'epic', zh: '史詩', en: 'Epic', color: '#9a6ee0', dark: '#463c78', affixes: 3, unique: false, tiers: [2, 4] },
   { id: 'legendary', zh: '傳說', en: 'Legendary', color: '#ffa93a', dark: '#a83a10', affixes: 3, unique: true, tiers: [3, 5] },
   { id: 'mythic', zh: '神話', en: 'Mythic', color: '#fff4c0', dark: '#e8701c', affixes: 4, unique: true, tiers: [4, 5] },
 ];
@@ -116,14 +116,14 @@ const ELEM: [number, number][] = [[6, 9], [10, 14], [15, 20], [21, 27], [28, 35]
 export const AFFIXES: readonly AffixDef[] = [
   // ── 前綴 ──
   P('keen', '鋒銳的', 'dmg', ['weapon', 'accessory'], 10, [[3, 5], [6, 9], [10, 14], [15, 20], [21, 28]]),
-  P('savage', '狂暴的', 'crit', ['weapon', 'accessory'], 8, [[1, 2], [3, 4], [5, 6], [7, 9], [10, 12]]),
+  P('savage', '致命的', 'crit', ['weapon', 'accessory'], 8, [[1, 2], [3, 4], [5, 6], [7, 9], [10, 12]]),
   P('heavy', '沉重的', 'kb', ['weapon'], 6, [[10, 15], [16, 25], [26, 35], [36, 50], [51, 70]]),
   P('leeching', '嗜血的', 'leech', ['weapon'], 4, [[1, 1], [1, 2], [2, 3], [3, 4], [4, 5]]),
   P('blazing', '熾焰的', 'burn', ['weapon'], 5, ELEM, { group: 'element' }),
   P('rime', '霜寒的', 'frost', ['weapon'], 5, ELEM, { group: 'element' }),
   P('venom', '蝕毒的', 'poison', ['weapon'], 5, ELEM, { group: 'element' }),
   P('stout', '堅韌的', 'def', ['armor', 'accessory'], 10, [[1, 1], [1, 2], [2, 2], [2, 3], [3, 4]]),
-  P('hale', '茁壯的', 'hp', ['armor', 'accessory'], 9, [[4, 6], [7, 10], [11, 15], [16, 21], [22, 30]]),
+  P('hale', '強健的', 'hp', ['armor', 'accessory'], 9, [[4, 6], [7, 10], [11, 15], [16, 21], [22, 30]]),
   P('thorned', '荊棘的', 'thorns', ['armor'], 5, [[2, 3], [4, 6], [7, 9], [10, 13], [14, 18]]),
   P('delving', '勤掘的', 'mine', ['tool'], 12, [[6, 10], [11, 16], [17, 24], [25, 33], [34, 45]]),
   // ── 後綴 ──
@@ -163,6 +163,8 @@ export interface Gear {
   locked?: boolean;
   /** 洗煉次數（成本遞增） */
   rerolls?: number;
+  /** 合成出來的（分解幾乎拿不到材料，避免「砍樹 → 合成 → 分解」刷碎晶） */
+  crafted?: boolean;
 }
 export function cloneGear(g: Gear): Gear {
   return { ...g, affixes: g.affixes.map((a) => ({ ...a })) };
@@ -242,7 +244,8 @@ export function rollGear(item: ItemId, rng: Rng, o: { rarity: number; ilvl: numb
 // ── 稀有度權重 / 來源 ────────────────────────────────────
 export type LootSource = 'craft' | 'enemy' | 'chest' | 'dungeon' | 'fish' | 'boss';
 const BASE_W: Record<LootSource, readonly number[]> = {
-  craft: [72, 23, 4.6, 0.4, 0, 0],
+  // 合成：大多普通、少量優良 / 稀有，不出史詩以上（也不吃深度 / 幸運）
+  craft: [80, 18, 2, 0, 0, 0],
   enemy: [52, 30, 13, 4.4, 1.4, 0.15],
   chest: [34, 34, 21, 8.5, 2.2, 0.3],
   dungeon: [8, 28, 36, 20, 7, 1],
@@ -367,17 +370,26 @@ export function affixText(a: Affix, item: ItemId, g: Gear): string {
 // ── 分解 / 洗煉 / 強化 / 升階 ─────────────────────────────
 export interface Cost { shard: number; dust: number; }
 const SALVAGE_BASE: readonly (readonly [number, number])[] = [[1, 0], [3, 0], [6, 1], [12, 3], [20, 6], [32, 12]];
-/** 分解得到的碎晶 / 星塵（固定公式，沒有隨機） */
+/** 合成裝備的分解表（只有碎晶；不加物品等級） */
+const SALVAGE_CRAFTED: readonly number[] = [0, 1, 2, 3, 5, 8];
+/**
+ * 分解得到的碎晶 / 星塵（固定公式，沒有隨機）。
+ * 掉落的：稀有度底數 + ⌊物品等級 / 2⌋；合成的：只有很少的碎晶（普通 0 / 優良 1 / 稀有 2），沒有星塵。
+ * 強化過的另外退還一部分（每級 3 碎晶，+3 起退星塵）——強化本來就要花材料，退還永遠少於花費。
+ */
 export function salvageYield(g: Gear | undefined): Cost {
   const r = rarityOf(g), ilvl = g?.ilvl ?? 1, plus = g?.plus ?? 0;
+  const refund = { shard: plus * 3, dust: plus >= 3 ? plus - 2 : 0 };
+  if (g?.crafted) return { shard: SALVAGE_CRAFTED[r] + refund.shard, dust: refund.dust };
   const [s, d] = SALVAGE_BASE[r];
-  return { shard: s + Math.floor(ilvl / 2) + plus * 3, dust: d + (plus >= 3 ? plus - 2 : 0) };
+  return { shard: s + Math.floor(ilvl / 2) + refund.shard, dust: d + refund.dust };
 }
 const UP_SHARD = [6, 12, 20, 32, 48], UP_DUST = [0, 0, 1, 2, 4];
+/** 強化成本只看強化等級（不看稀有度）→ 先強化或先升階，總成本一樣 */
 export function upgradeCost(g: Gear | undefined): Cost | null {
-  const p = g?.plus ?? 0, r = rarityOf(g);
+  const p = g?.plus ?? 0;
   if (p >= MAX_PLUS) return null;
-  return { shard: Math.round(UP_SHARD[p] * (1 + 0.25 * r)), dust: UP_DUST[p] + (r >= 4 ? 1 : 0) };
+  return { shard: UP_SHARD[p], dust: UP_DUST[p] };
 }
 const ASC_SHARD = [10, 24, 45, 80], ASC_DUST = [0, 2, 6, 14];
 export function ascendCost(g: Gear | undefined): Cost | null {
@@ -442,5 +454,7 @@ export function validGear(item: ItemId, raw: unknown): Gear | null {
   const g: Gear = { rarity: o.rarity, ilvl: o.ilvl, plus: o.plus, affixes };
   if (o.locked) g.locked = true;
   if (o.rerolls) g.rerolls = o.rerolls;
+  if (o.crafted !== undefined && typeof o.crafted !== 'boolean') return null;
+  if (o.crafted) g.crafted = true;
   return g;
 }

@@ -69,7 +69,7 @@ describe('掉落與撿起', () => {
 });
 
 describe('裝備 / 數值', () => {
-  it('裝上帶「茁壯的」的防具 → 生命上限增加；卸下 → 回來，詞條還在', () => {
+  it('裝上帶「強健的」的防具 → 生命上限增加；卸下 → 回來，詞條還在', () => {
     const g = arena();
     g.giveGear('iron_chestplate', 1, { affixes: [A('hale', 15)] });
     const i = slotOf(g, 'iron_chestplate');
@@ -279,6 +279,80 @@ describe('分解 / 鍛造 / 圖鑑', () => {
     run(g, 0.5);
     expect(g.codex.affixes.get('blazing')).toBe(5);
     expect(g.codex.items.get('iron_sword')).toBe(4);
+  });
+});
+
+describe('驗收修正', () => {
+  it('合成的裝備帶 crafted 旗標；合成的普通裝備分解 = 0 碎晶（砍樹 → 合成 → 分解刷不了材料）', () => {
+    const g = arena();
+    g.world.setFg(58, 59, T.WORKBENCH);
+    g.give('planks', 700);
+    let shards = 0;
+    for (let k = 0; k < 40; k++) {
+      expect(g.craft('wood_sword').ok).toBe(true);
+      const i = g.inventory.slots.findIndex((s) => s?.item === 'wood_sword' && s.gear?.crafted);
+      expect(i).toBeGreaterThanOrEqual(0);
+      expect(g.gearAt(i)!.rarity).toBeLessThanOrEqual(2);
+      shards += g.salvage(i)!.shard;
+    }
+    // 40 把木劍（280 木板 = 70 木材）最多換到個位數碎晶
+    expect(shards).toBeLessThan(15);
+  });
+  it('裝備中的也能鍛造 / 鎖定 / 分解（用裝備槽指定）', () => {
+    const g = arena();
+    g.giveGear('iron_chestplate', 2, { affixes: [A('hale', 15), A('mending', 0.5)] });
+    g.equipFromInventory(slotOf(g, 'iron_chestplate'));
+    g.world.setFg(58, 59, T.ANVIL);
+    g.give('gear_shard', 300); g.give('stardust', 50);
+    const def0 = g.getState().defense;
+    expect(g.upgrade('body')).toEqual({ ok: true });
+    expect(g.equipment.gearAt('body')!.plus).toBe(1);
+    expect(g.getState().defense).toBe(def0 + 1);
+    expect(g.reroll('body', 0)).toEqual({ ok: true });
+    expect(g.toggleLock('body')).toBe(true);
+    expect(g.salvage('body')).toBeNull();
+    g.toggleLock('body');
+    expect(g.salvage('body')).not.toBeNull();
+    expect(g.equipment.get('body')).toBeNull();
+    expect(g.maxHp()).toBe(100);
+  });
+  it('卸下 / 放回背包時是同一個 Stack 物件（介面追蹤的是物件，不是格子號碼）', () => {
+    const g = arena();
+    g.giveGear('iron_helmet', 2);
+    const st = g.inventory.slots[slotOf(g, 'iron_helmet')]!;
+    g.equipFromInventory(slotOf(g, 'iron_helmet'));
+    expect(g.equipment.getStack('head')).toBe(st);
+    g.unequip('head');
+    expect(g.inventory.slots[slotOf(g, 'iron_helmet')]).toBe(st);
+    expect(g.stackAt(slotOf(g, 'iron_helmet'))).toBe(st);
+    expect(g.locate(st)).toBe(slotOf(g, 'iron_helmet'));
+    g.equipFromInventory(slotOf(g, 'iron_helmet'));
+    expect(g.locate(st)).toBe('head');
+  });
+  it('使用中的鎬 = 最快那把（自動）；它的一般詞條要拿在手上才算', () => {
+    const g = arena();
+    g.giveGear('gold_pickaxe', 3, { affixes: [A('fortune', 20), A('gale', 10)] });
+    g.giveGear('iron_pickaxe', 1, { affixes: [A('delving', 10)] });
+    g.selectSlot(2); // 起始的木劍
+    expect(g.stats().gear.luck).toBe(0);
+    expect(g.stats().gear.move).toBe(0);
+    expect(g.activePick()!.item).toBe('gold_pickaxe');
+    const gi = slotOf(g, 'gold_pickaxe');
+    g.inventory.swap(gi, 5); g.selectSlot(5);
+    expect(g.stats().gear.luck).toBe(20);
+    // 拿著比較慢的鐵鎬：挖礦仍用金鎬，但金鎬的幸運 / 疾風不算
+    const ii = slotOf(g, 'iron_pickaxe');
+    g.inventory.swap(ii, 6); g.selectSlot(6);
+    expect(g.activePick()!.item).toBe('gold_pickaxe');
+    expect(g.stats().gear.luck).toBe(0);
+  });
+  it('不滅的冷卻寫進 getState（HUD 用）', () => {
+    const g = arena();
+    g.giveGear('iron_chestplate', 4, { affixes: [A('undying', 90, 5)] });
+    g.equipFromInventory(slotOf(g, 'iron_chestplate'));
+    g.hurtPlayer(9999, 0);
+    expect(g.getState().undyingCd).toBeCloseTo(90, 0);
+    expect(g.getState().gear.undying).toBe(90);
   });
 });
 

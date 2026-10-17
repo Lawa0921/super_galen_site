@@ -29,7 +29,7 @@ import {
 } from './fishing';
 import { ExploredMap, toggleMarker, type MapMarker } from './explore';
 import { Discovery, buildRegions, type Region, type RegionCat } from './discovery';
-import { Equipment, type EquipSlot } from './equipment';
+import { Equipment, EQUIP_SLOTS, type EquipSlot } from './equipment';
 import {
   BASE_HP, BASE_MANA, LIFE_CORE_HP, MAX_HP_CAP, SAFE_FALL_TILES, computeStats, damageTaken, enemyDamage, fallDamage,
   knockbackScale, regenRate, rollCrit, type PlayerStats,
@@ -41,7 +41,7 @@ import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidConta
 import { ProjList, type HitFx, type ProjKind, type Projectile } from './projectiles';
 import {
   ascendCost, ascendGear, baseTier, gearSlot, ilvlForDepth, rerollAffix, rerollCost, rollDropItem, rollGear, rollRarity,
-  salvageYield, upgradeCost, upgradeGear, weaponDamage, affixDef, MAX_PLUS, type AffixId, type Cost, type Gear, type GearTotals, type LootSource,
+  salvageYield, upgradeCost, upgradeGear, weaponDamage, affixDef, pickSpeed, MAX_PLUS, type AffixId, type Cost, type Gear, type GearTotals, type LootSource,
 } from './gear';
 import { Codex } from './codex';
 import { ENEMIES, makeEnemy, stepEnemy, type AiCtx, type Enemy, type EnemyKind } from './enemies';
@@ -115,7 +115,7 @@ export type DelveEvent =
   /** 分解 */
   | { type: 'salvage'; count: number; shard: number; dust: number }
   /** 鍛造（洗煉 / 強化 / 升階） */
-  | { type: 'forge'; action: 'reroll' | 'upgrade' | 'ascend'; slot: number; item: ItemId }
+  | { type: 'forge'; action: 'reroll' | 'upgrade' | 'ascend'; slot: number | EquipSlot; item: ItemId }
   /** 空中再跳（凌雲）；px */
   | { type: 'airjump'; x: number; y: number }
   | { type: 'heal'; amount: number; x: number; y: number }
@@ -351,6 +351,8 @@ export const POISON_TIME = 4;
 /** 生命竊取每下最多回多少 */
 export const LEECH_CAP = 6;
 const ORE_TILES = new Set<number>([T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOLD_ORE]);
+/** 裝備的位置：背包格號碼或裝備槽 */
+export type GearAt = number | EquipSlot;
 export type ForgeResult = { ok: true } | { ok: false; reason: 'none' | 'station' | 'cost' | 'max' | 'unique' | 'locked' };
 
 export class DelveGame {
@@ -808,7 +810,8 @@ export class DelveGame {
       }
       const bug = this.baitDrop(tid);
       // 脈鳴（鎬的傳奇詞條）：礦石有機率加倍
-      const vein = ORE_TILES.has(tid) ? this.stats().gear.vein : 0;
+      const ap = this.activePick();
+      const vein = ORE_TILES.has(tid) ? (ap?.gear?.affixes.find((a) => a.id === 'veinsong')?.value ?? 0) : 0;
       const got = vein > 0 && this.lootRng.next() * 100 < vein ? drops.map((d) => ({ item: d.item, n: d.n * 2 })) : drops;
       for (const d of bug ? [...got, { item: bug, n: 1 }] : got) {
         const left = direct ? this.inventory.add(d.item, d.n) : d.n;
@@ -1013,7 +1016,18 @@ export class DelveGame {
     this.events.push({ type: 'blocked', action, reason, x, y });
   }
 
-  private currentPick(): PickStats { return this.inventory.bestPick() ?? HAND; }
+  /**
+   * 使用中的鎬：永遠自動用背包裡實際最快的那把（含強化 / 勤掘）。
+   * 它的挖掘類詞條（勤掘 → 速度、脈鳴）挖礦時一定生效；其他詞條（幸運 / 疾風 / 螢光…）要把「這把」拿在手上才生效。
+   */
+  activePick(): Stack | null {
+    const i = this.inventory.bestPickSlot();
+    return i >= 0 ? this.inventory.slots[i] : null;
+  }
+  private currentPick(): PickStats {
+    const st = this.activePick();
+    return st ? { speed: pickSpeed(st.item, st.gear), tier: ITEMS[st.item].pick!.tier } : HAND;
+  }
 
   // ── 飾品 / 移動能力 ───────────────────────────────────
   /**
@@ -1055,7 +1069,8 @@ export class DelveGame {
   stats(): PlayerStats {
     const inv = this.inventory, held = inv.selectedStack();
     const weapon = held && ITEMS[held.item].weapon ? held : null;
-    const pi = inv.bestPickSlot(), pick = pi >= 0 && inv.slots[pi] !== weapon ? inv.slots[pi] : null;
+    // 鎬的一般詞條：只有拿在手上的正是使用中的那把才算
+    const pick = held && ITEMS[held.item].pick && inv.slots[inv.bestPickSlot()] === held ? held : null;
     const key = `${this.equipment.uid}:${this.equipment.version}:${this.statsDirty}`;
     const refs = [weapon, weapon?.gear, pick, pick?.gear];
     if (key !== this.statsKey || this.statsEq !== this.equipment || refs.some((r, i) => r !== this.statsRefs[i])) {
@@ -2428,7 +2443,9 @@ export class DelveGame {
   private rollFor(item: ItemId, src: LootSource, depth: number, ilvl: number): Gear {
     const floor = ITEMS[item].unique ? 2 : 0;
     const luck = src === 'craft' ? 0 : this.stats().gear.luck;
-    return rollGear(item, this.lootRng, { rarity: rollRarity(this.lootRng, src, depth, luck, floor), ilvl });
+    const g = rollGear(item, this.lootRng, { rarity: rollRarity(this.lootRng, src, depth, luck, floor), ilvl });
+    if (src === 'craft') g.crafted = true;
+    return g;
   }
   /** 在 (x,y) px 丟出一件裝備（彈出）；史詩以上發 loot 事件（光柱 / 音效） */
   private spawnGearDrop(item: ItemId, gear: Gear, x: number, y: number): void {
@@ -2451,15 +2468,32 @@ export class DelveGame {
     for (const st of this.inventory.slots) if (st && gearSlot(st.item)) seen(st.item, st.gear);
     for (const st of this.equipment.stacks()) seen(st.item, st.gear);
   }
-  /** 背包第 i 格的裝備詞條 */
-  gearAt(i: number): Gear | undefined { return this.inventory.slots[i]?.gear; }
-  /** 鎖定 / 解鎖背包第 i 格的裝備（鎖定的不會被分解）。回傳鎖定後的狀態；不是裝備 → null */
-  toggleLock(i: number): boolean | null {
-    const st = this.inventory.slots[i];
+  /** 裝備的位置：背包格號碼，或裝備欄的槽 */
+  stackAt(at: GearAt): Stack | null {
+    return typeof at === 'number' ? this.inventory.slots[at] ?? null : this.equipment.getStack(at);
+  }
+  /** 某個 Stack 物件現在在哪（背包格 / 裝備槽）；不在身上 → null。介面追蹤物件用 */
+  locate(st: Stack): GearAt | null {
+    const i = this.inventory.slots.indexOf(st);
+    if (i >= 0) return i;
+    return EQUIP_SLOTS.find((s) => this.equipment.getStack(s) === st) ?? null;
+  }
+  /** 裝備的詞條（背包格或裝備槽） */
+  gearAt(at: GearAt): Gear | undefined { return this.stackAt(at)?.gear; }
+  /** 詞條改了：裝備欄的要讓數值快取失效、超出的生命扣回來 */
+  private gearChanged(at: GearAt): void {
+    if (typeof at !== 'number') this.equipment.touch();
+    this.invalidateStats();
+    if (this.hp > this.maxHp()) this.hp = this.maxHp();
+  }
+  /** 鎖定 / 解鎖（鎖定的不會被分解）。回傳鎖定後的狀態；不是裝備 → null */
+  toggleLock(at: GearAt): boolean | null {
+    const st = this.stackAt(at);
     if (!st || !gearSlot(st.item)) return null;
     const g: Gear = st.gear ? { ...st.gear } : { rarity: 0, ilvl: baseTier(st.item), plus: 0, affixes: [] };
     if (g.locked) delete g.locked; else g.locked = true;
     st.gear = g;
+    if (typeof at !== 'number') this.equipment.touch();
     return Boolean(g.locked);
   }
   /** 加材料（放不下掉在腳邊） */
@@ -2476,14 +2510,14 @@ export class DelveGame {
     if (c.shard > 0) this.inventory.remove('gear_shard', c.shard);
     if (c.dust > 0) this.inventory.remove('stardust', c.dust);
   }
-  /** 分解背包第 i 格的裝備 → 碎晶 / 星塵。鎖定 / 不是裝備 → null */
-  salvage(i: number): Cost | null {
-    const st = this.inventory.slots[i];
+  /** 分解（背包格或裝備中的）→ 碎晶 / 星塵。鎖定 / 不是裝備 → null */
+  salvage(at: GearAt): Cost | null {
+    const st = this.stackAt(at);
     if (!st || !gearSlot(st.item) || st.gear?.locked) return null;
     const y = salvageYield(st.gear);
-    this.inventory.slots[i] = null;
+    if (typeof at === 'number') this.inventory.slots[at] = null; else this.equipment.set(at, null);
     this.giveMats(y);
-    this.invalidateStats();
+    this.gearChanged(at);
     this.events.push({ type: 'salvage', count: 1, shard: y.shard, dust: y.dust });
     return y;
   }
@@ -2514,16 +2548,16 @@ export class DelveGame {
   }
   /** 鍛造（洗煉 / 強化 / 升階）要在鐵砧旁 */
   canForge(): boolean { return this.nearTile(T.ANVIL); }
-  /** 背包第 i 格的鍛造成本（null = 已滿級 / 不能） */
-  forgeCosts(i: number): { reroll: Cost | null; upgrade: Cost | null; ascend: Cost | null } {
-    const st = this.inventory.slots[i];
+  /** 鍛造成本（null = 已滿級 / 不能） */
+  forgeCosts(at: GearAt): { reroll: Cost | null; upgrade: Cost | null; ascend: Cost | null } {
+    const st = this.stackAt(at);
     if (!st || !gearSlot(st.item)) return { reroll: null, upgrade: null, ascend: null };
     const g = st.gear;
     const rerollable = Boolean(g?.affixes.some((a) => affixDef(a.id).kind !== 'unique'));
     return { reroll: rerollable ? rerollCost(g) : null, upgrade: upgradeCost(g), ascend: ascendCost(g) };
   }
-  private forge(i: number, action: 'reroll' | 'upgrade' | 'ascend', cost: Cost | null, apply: (g: Gear) => Gear | null): ForgeResult {
-    const st = this.inventory.slots[i];
+  private forge(at: GearAt, action: 'reroll' | 'upgrade' | 'ascend', cost: Cost | null, apply: (g: Gear) => Gear | null): ForgeResult {
+    const st = this.stackAt(at);
     if (!st || !gearSlot(st.item)) return { ok: false, reason: 'none' };
     if (!this.canForge()) return { ok: false, reason: 'station' };
     if (!cost) return { ok: false, reason: 'max' };
@@ -2533,24 +2567,24 @@ export class DelveGame {
     if (!next) return { ok: false, reason: action === 'reroll' ? 'unique' : 'max' };
     this.pay(cost);
     st.gear = next;
-    this.invalidateStats();
-    this.events.push({ type: 'forge', action, slot: i, item: st.item });
+    this.gearChanged(at);
+    this.events.push({ type: 'forge', action, slot: at, item: st.item });
     return { ok: true };
   }
   /** 洗煉：換掉第 affix 條詞條（傳奇詞條不能洗） */
-  reroll(i: number, affix: number): ForgeResult {
-    const st = this.inventory.slots[i];
-    return this.forge(i, 'reroll', st ? rerollCost(st.gear) : null, (g) => (st ? rerollAffix(st.item, g, affix, this.lootRng) : null));
+  reroll(at: GearAt, affix: number): ForgeResult {
+    const st = this.stackAt(at);
+    return this.forge(at, 'reroll', st ? rerollCost(st.gear) : null, (g) => (st ? rerollAffix(st.item, g, affix, this.lootRng) : null));
   }
   /** 強化 +1（最多 +5） */
-  upgrade(i: number): ForgeResult {
-    const st = this.inventory.slots[i];
-    return this.forge(i, 'upgrade', st ? upgradeCost(st.gear) : null, (g) => (g.plus >= MAX_PLUS ? null : upgradeGear(g)));
+  upgrade(at: GearAt): ForgeResult {
+    const st = this.stackAt(at);
+    return this.forge(at, 'upgrade', st ? upgradeCost(st.gear) : null, (g) => (g.plus >= MAX_PLUS ? null : upgradeGear(g)));
   }
   /** 升階：稀有度 +1（到傳說為止），多一條詞條 */
-  ascend(i: number): ForgeResult {
-    const st = this.inventory.slots[i];
-    return this.forge(i, 'ascend', st ? ascendCost(st.gear) : null, (g) => (st ? ascendGear(st.item, g, this.lootRng) : null));
+  ascend(at: GearAt): ForgeResult {
+    const st = this.stackAt(at);
+    return this.forge(at, 'ascend', st ? ascendCost(st.gear) : null, (g) => (st ? ascendGear(st.item, g, this.lootRng) : null));
   }
   /** debug / e2e：給一件指定稀有度的裝備（affixes 指定時直接用） */
   giveGear(item: ItemId, rarity: number, o: { ilvl?: number; affixes?: Gear['affixes']; plus?: number } = {}): Gear | null {
