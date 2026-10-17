@@ -4,6 +4,7 @@ import { START_ITEMS } from '../../engine/state';
 import type { Portal } from '../../engine/dungeon/run';
 import { DELTA, tileAt, type Dir } from '../../engine/map';
 import { chestHasGear } from '../../engine/loot/drops';
+import { SHARD_IDS, fragmentName } from '../../data/story/fragments';
 import type { ItemInstance } from '../../engine/types';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
@@ -59,13 +60,13 @@ describe('DungeonScene glimmers', () => {
     expect(memoriesOf(game.state.party.roster.selene)).toBe(1);
   });
 
-  it('a glimmer that holds nothing fades', async () => {
+  it('a glimmer that holds no memory leaves an ownerless shard', async () => {
     const { game, s, text } = setup();
     for (const m of Object.values(game.state.party.roster)) m.memories = 99;   // every chain is complete: nothing is left to find
     const { dir } = glimmerNext(game);
     s.onAction(dir);
     await Promise.resolve();
-    expect(text()).toBe(T.ui2.memory.nothing);
+    expect(text()).toBe(T.ui2.memory.shard(fragmentName(SHARD_IDS.dim)!));   // depth 1 only finds the dimmest grade
   });
 });
 

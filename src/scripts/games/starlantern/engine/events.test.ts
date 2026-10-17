@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ALTARS, ALTAR_STAT_CAP_PCT, POISON_TP_LOSS_PCT, VAULT_CHEST_MULT, altarAt, trapDamage } from './events';
 import { RARE_MATERIALS } from './loot/drops';
+import { isFragmentItem } from '../data/story/fragments';
 import { FLOORS } from '../data/floors';
 import { createBattle } from './battle';
 import { Game, type MoveResult } from './game';
@@ -225,7 +226,7 @@ describe('vault', () => {
     expect(r.loot[chest.item]).toBe(chest.qty * VAULT_CHEST_MULT);   // materials: three chests' worth
     const rare = Object.keys(r.loot).filter((id) => RARE_MATERIALS.includes(id));
     expect(rare.map((id) => r.loot[id])).toEqual([1]);   // exactly one rare material
-    expect(Object.keys(r.loot)).toHaveLength(2);
+    expect(Object.keys(r.loot).filter((id) => !isFragmentItem(id))).toHaveLength(2);   // fragments ride along on their own chance
     expect(r.gear).toHaveLength(1);
     expect(['common', 'magic']).not.toContain(r.gear[0].rarity);
     expect(g.run!.loot.items[chest.item]).toBe(held + chest.qty * VAULT_CHEST_MULT);

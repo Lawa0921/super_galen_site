@@ -24,8 +24,12 @@ export interface Run {
   explored: Record<number, string[]>;
   /** The run pack: materials, gold and gear found this run; banked on a safe return, lost on a wipe. */
   loot: { items: Record<string, number>; gold: number; gear: ItemInstance[] };
-  /** Chest and vault contents, fixed the first time they are rolled (key `chest:`/`vault:`/`vault-rare:` + depth:x,y). */
-  rolls: Record<string, { item: string; qty: number }>;
+  /**
+   * Chest and vault contents, fixed the first time they are rolled (key `chest:`/`vault:`/`vault-rare:` + depth:x,y).
+   * A `frag:` key (`frag:depth:x,y`, or `frag:glimmer:x,y`) holds fragment item ids in `frags` (its `item` is empty, `qty` 0)
+   * until the spot pays them out.
+   */
+  rolls: Record<string, { item: string; qty: number; frags?: string[] }>;
   /** Chest and vault gear, fixed the first time it is rolled (key `chest:`/`vault:` + depth:x,y). */
   gearRolls: Record<string, ItemInstance | null>;
   /** Gear left in an opened chest or vault because it did not fit (weight or a bag slot), by spot (`depth:x,y`); taken with `pickUpHere`. */

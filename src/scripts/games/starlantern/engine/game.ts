@@ -8,6 +8,8 @@ import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from '
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
 import { memScene, type SceneId } from '../data/story/scenes';
+import { SHARD_IDS, shardGrade } from '../data/story/fragments';
+import { fragmentItem, gainOf, lootFragments } from './story/fragments';
 import { advance, danger, type Danger } from './encounter';
 import { ALTAR_STAT_CAP_PCT, altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POISON_TP_LOSS_PCT, trapDamage, VAULT_CHEST_MULT } from './events';
 import { EQUIPMENT } from '../data/equipment';
@@ -45,7 +47,7 @@ export type MoveResult =
    * A chest's materials, and its gear when it holds any (`chestHasGear`). Gear that does not fit stays in the opened chest:
    * `waiting` says why (as a `full` result), and `pickUpHere` takes it once there is room.
    */
-  | { kind: 'chest'; item: string; qty: number; gear?: ItemInstance; waiting?: FullResult }
+  | { kind: 'chest'; item: string; qty: number; gear?: ItemInstance; waiting?: FullResult; fragments?: FragmentGain[] }
   /** Gear that waited in an opened chest or vault, taken now. */
   | { kind: 'pickup'; gear: ItemInstance }
   /** Stepped onto a fountain, merchant, altar or vault: the screen offers its choice (useFountain, buy, altar, openVault). */
@@ -58,7 +60,7 @@ export type MoveResult =
   | { kind: 'stairs'; floor: number; level: number; warn: boolean; rescue: boolean }
   | FullResult
   /** An opened vault: its materials always; its gear in `gear`, or in `waiting` when it does not fit (see `chest`). */
-  | { kind: 'vault'; loot: Record<string, number>; gear: ItemInstance[]; waiting?: FullResult };
+  | { kind: 'vault'; loot: Record<string, number>; gear: ItemInstance[]; waiting?: FullResult; fragments?: FragmentGain[] };
 /**
  * The pack cannot take the pick-up, which stays where it is until something is discarded. `item`/`qty` are the materials
  * of a chest or vault kept shut for weight (absent when only waiting gear is short); `need` is the weight over the limit
@@ -214,17 +216,35 @@ export class Game {
     }
   }
 
-  /** The glimmer under the party: its pieces are taken, and the spot turns to plain floor. Null when the content is gone. */
+  /**
+   * The glimmer under the party: its pieces are taken, and the spot turns to plain floor. A glimmer with no piece for anyone
+   * leaves one ownerless shard instead, rolled once and kept in `run.rolls`; with no room for it the glimmer stays and the
+   * shard waits. Null when the content is gone.
+   */
   private glimmerHere(): MoveResult | null {
     const run = this.run!;
     const here = floorOf(run, this.floor);
     const i = here.contents.findIndex((c) => c.kind === 'glimmer' && c.at.x === this.pos.x && c.at.y === this.pos.y);
     if (i < 0) { this.map().tiles[this.pos.y][this.pos.x] = 'floor'; return null; }   // no content behind the tile: drop the stale marker
     const c = here.contents[i];
+    const memoKey = `frag:glimmer:${posKey(this.pos)}`;
+    const kept = run.rolls[memoKey];   // kept only when the pieces were already rolled empty
+    const rng = kept ? null : memoryRng(run);
+    const ids = rng ? pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source: 'glimmer', who: c.owner }, rng) : [];
+    if (ids.length > 0) {
+      here.contents.splice(i, 1);
+      this.map().tiles[this.pos.y][this.pos.x] = 'floor';
+      return { kind: 'glimmer', gained: this.takePieces(ids) };
+    }
+    const memo = kept ?? (run.rolls[memoKey] = { item: '', qty: 0, frags: [SHARD_IDS[shardGrade(this.floor, rng!())]] });
+    const item = memo.frags![0];
+    const short = this.shortBy({ [item]: 1 });
+    if (short > 0) return { kind: 'full', item, qty: 1, need: short };
+    delete run.rolls[memoKey];
     here.contents.splice(i, 1);
     this.map().tiles[this.pos.y][this.pos.x] = 'floor';
-    const ids = pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source: 'glimmer', who: c.owner }, memoryRng(run));
-    return { kind: 'glimmer', gained: this.takePieces(ids) };
+    this.grant(item, 1);
+    return { kind: 'glimmer', gained: [gainOf(item)!] };
   }
 
   /** Gives each chain in `ids` its next piece, in order, and works out which memory scenes play now, wait in the handbook, or queue. */
@@ -402,6 +422,8 @@ export class Game {
       const one = this.rollChest(`vault:${id}`);
       loot[one.item] = one.qty * VAULT_CHEST_MULT;
     }
+    const frags = this.spotFragments(id, 'vault');
+    for (const g of frags) loot[fragmentItem(g)!] = 1;
     const rareKey = `vault-rare:${id}`;
     if (!run.rolls[rareKey]) run.rolls[rareKey] = { item: rollRareMaterial(lootRng(run)), qty: 1 };
     const rare = run.rolls[rareKey];
@@ -410,11 +432,13 @@ export class Game {
     const shut = this.shutFor(loot, gear);
     if (shut) return shut;
     run.opened.add(id);
+    delete run.rolls[`frag:${id}`];
     for (const [item, qty] of Object.entries(loot)) this.grant(item, qty);
+    const extra = frags.length ? { fragments: frags } : {};
     const r = this.offerGear(id, gear);
-    if (r.waiting) return { kind: 'vault', loot, gear: [], waiting: r.waiting };
+    if (r.waiting) return { kind: 'vault', loot, gear: [], waiting: r.waiting, ...extra };
     this.map().tiles[at.y][at.x] = 'floor';
-    return { kind: 'vault', loot, gear: [r.gear!] };
+    return { kind: 'vault', loot, gear: [r.gear!], ...extra };
   }
 
   /**
@@ -559,9 +583,17 @@ export class Game {
     if (b.boss || elite) {
       const run = this.run!;
       const source = b.boss ? 'boss' : 'elite';
-      const ids = pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source }, memoryRng(run));
+      const rng = memoryRng(run);
+      const ids = pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source }, rng);
       const topUp = b.boss && run.region === 'mainline' && this.floor === 25 && ids.every((id) => id === 'hero');
       fragments = this.takePieces(ids, topUp);
+      // Ownerless and townsfolk fragments ride in the run pack like materials; one that does not fit is left behind.
+      for (const gain of lootFragments(this.state, run, { region: run.region, depth: this.floor, source }, rng)) {
+        const item = fragmentItem(gain)!;
+        if (this.shortBy({ [item]: 1 }) > 0) left[item] = (left[item] ?? 0) + 1;
+        else this.grant(item, 1);
+        fragments.push(gain);
+      }
     }
     if (b.boss) openStairs(this.map());   // a beaten boss leaves stairs down where it stood, so the run can go deeper
     if (b.boss && this.isStoryDepth(this.floor)) {
@@ -824,6 +856,17 @@ export class Game {
     return rolled;
   }
 
+  /** The fragments a chest or vault at spot `id` holds: rolled once from the memory stream, kept in `run.rolls` until the spot pays them out. */
+  private spotFragments(id: string, source: 'chest' | 'vault'): FragmentGain[] {
+    const run = this.run!;
+    const key = `frag:${id}`;
+    const memo = run.rolls[key] ?? (run.rolls[key] = {
+      item: '', qty: 0,
+      frags: lootFragments(this.state, run, { region: run.region, depth: this.floor, source }, memoryRng(run)).map((g) => fragmentItem(g)!),
+    });
+    return memo.frags!.map((f) => gainOf(f)!);
+  }
+
   private openChest(): MoveResult | null {
     const run = this.run!;
     const id = this.spotId();
@@ -831,12 +874,17 @@ export class Game {
     if (!FLOORS[this.terrain() - 1].chestLoot.length) return null;
     const { item, qty } = this.rollChest(`chest:${id}`);
     const gear = chestHasGear(run, this.floor, this.pos) ? this.fixedGear(`chest:${id}`, 'chest') : undefined;
-    const shut = this.shutFor({ [item]: qty }, gear);
+    const frags = this.spotFragments(id, 'chest');
+    const loot: Record<string, number> = { [item]: qty };
+    for (const g of frags) loot[fragmentItem(g)!] = 1;
+    const shut = this.shutFor(loot, gear);
     if (shut) return shut;
     run.opened.add(id);
-    this.grant(item, qty);
-    if (!gear) return { kind: 'chest', item, qty };
-    return { kind: 'chest', item, qty, ...this.offerGear(id, gear) };
+    delete run.rolls[`frag:${id}`];
+    for (const [it, n] of Object.entries(loot)) this.grant(it, n);
+    const extra = frags.length ? { fragments: frags } : {};
+    if (!gear) return { kind: 'chest', item, qty, ...extra };
+    return { kind: 'chest', item, qty, ...extra, ...this.offerGear(id, gear) };
   }
 
   private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string, extra = 0): void {

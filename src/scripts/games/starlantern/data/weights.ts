@@ -5,9 +5,11 @@ import type { Run } from '../engine/dungeon/run';
 import { itemWeight } from '../engine/loot/item';
 import { ITEMS } from './items';
 import { MATERIALS } from './materials';
+import { FRAGMENT_WEIGHT, isFragmentItem } from './story/fragments';
 
 /** Carry weight of one unit: items 1, materials 0.5 (the old-coin curio 1). Gear is never a unit; it weighs `itemWeight`. */
 export function weightOf(id: string): number {
+  if (isFragmentItem(id)) return FRAGMENT_WEIGHT;
   if (ITEMS[id]) return 1;
   if (MATERIALS[id]) return id === 'old-coin' ? 1 : 0.5;
   return 1;

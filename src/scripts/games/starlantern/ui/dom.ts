@@ -1,6 +1,7 @@
 import { EQUIPMENT } from '../data/equipment';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
+import { fragmentName } from '../data/story/fragments';
 
 interface ElOpts { id?: string; class?: string; text?: string; attrs?: Record<string, string> }
 
@@ -15,5 +16,5 @@ export function el<K extends keyof HTMLElementTagNameMap>(tag: K, opts: ElOpts =
 }
 
 export function itemName(id: string): string {
-  return ITEMS[id]?.name ?? MATERIALS[id]?.name ?? EQUIPMENT[id]?.name ?? id;
+  return ITEMS[id]?.name ?? MATERIALS[id]?.name ?? EQUIPMENT[id]?.name ?? fragmentName(id) ?? id;
 }

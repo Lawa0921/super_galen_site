@@ -25,6 +25,8 @@ import { itemLevel, itemWeight, rollItem } from './loot/item';
 import { MATERIALS } from '../data/materials';
 import { buy } from './town';
 import { memoriesOf } from './progression';
+import { FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP } from '../data/story/fragments';
+import { fragmentItem } from './story/fragments';
 
 vi.mock('./portals', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./portals')>();
@@ -1827,10 +1829,10 @@ describe('glimmers and memory pieces', () => {
     expect(g.run!.memoryDraws).toBe(1);
   });
 
-  it('a glimmer with no piece for anyone just fades', () => {
+  it('a glimmer with no piece for anyone leaves a shard and fades', () => {
     const g = run(['hero'], 1);
     const at = plantGlimmer(g);
-    expect(stepOnto(g, at)).toEqual({ kind: 'glimmer', gained: [] });
+    expect(stepOnto(g, at)).toEqual({ kind: 'glimmer', gained: [{ kind: 'shard', grade: expect.any(String) }] });
     expect(tileAt(g.map(), at)).toBe('floor');
     expect(g.pending).toEqual([]);
     expect(g.run!.dropped[1] ?? []).toEqual([]);
@@ -1840,7 +1842,7 @@ describe('glimmers and memory pieces', () => {
     const g = run(duo, 5, (x) => finished(x, 'rin'));
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
-    expect(end.fragments).toEqual([{ kind: 'piece', id: 'hero', n: 1, play: true }]);
+    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'hero', n: 1, play: true }]);
     expect(memoriesOf(g.state.party.roster.hero)).toBe(1);
     expect(g.run!.dropped[5]).toEqual(['hero']);
   });
@@ -1849,14 +1851,14 @@ describe('glimmers and memory pieces', () => {
     const g = run(['hero'], 1);
     stepOnto(g, plantAt(g, 'elite'));
     const end = killAll(g);
-    expect(end.fragments).toBeUndefined();
+    expect((end.fragments ?? []).filter((f) => f.kind === 'piece')).toEqual([]);
   });
 
   it('the second memory on a floor waits in the handbook', () => {
     const g = run(duo, 5);
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
-    expect(end.fragments).toEqual([{ kind: 'piece', id: 'rin', n: 1, play: true }]);
+    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'rin', n: 1, play: true }]);
     const r = stepOnto(g, plantGlimmer(g, 'rin'));
     expect(r).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'rin', n: 2, play: false }] });
     expect(g.state.story.fresh).toContain('mem:rin:2');
@@ -1939,7 +1941,7 @@ describe('glimmers and memory pieces', () => {
     const g = run(duo, 25, (x) => { x.state.party.roster.hero.memories = 8; });
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
-    expect(end.fragments).toEqual([{ kind: 'piece', id: 'hero', n: 9, play: false }]);
+    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'hero', n: 9, play: false }]);
     expect(g.state.story.queue).toContain('mem:hero:9');
     expect(g.state.story.seen).not.toContain('mem:hero:9');
     expect(g.pending).toEqual([]);
@@ -1949,7 +1951,7 @@ describe('glimmers and memory pieces', () => {
     const g = run(duo, 3, (x) => { x.state.party.roster.rin.memories = 1; });
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
-    expect(end.fragments).toEqual([{ kind: 'piece', id: 'rin', n: 2, play: true }]);
+    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'rin', n: 2, play: true }]);
     expect(memoriesOf(g.state.party.roster.rin)).toBe(2);
     expect(g.phase).toBe('clear');
   });
@@ -1979,5 +1981,154 @@ describe('glimmers and memory pieces', () => {
     expect(open.end.gear).toEqual(shut.end.gear);
     expect(open.end.drops).toEqual(shut.end.drops);
     expect(open.lootDraws).toBe(shut.lootDraws);
+  });
+});
+
+describe('fragments as run loot', () => {
+  const duo: CharacterId[] = ['hero', 'rin'];
+  const SHARDS = Object.values(SHARD_IDS);
+  const shardsIn = (items: Record<string, number>) => SHARDS.reduce((n, id) => n + (items[id] ?? 0), 0);
+  const run = (start: CharacterId[], depth: number) => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, start);
+    g.state.dungeon.reached.mainline = Math.max(3, depth);
+    expect(g.depart(MAIN, depth)).toEqual({ ok: true });
+    return g;
+  };
+  /** Fills the run pack with plain stuff until `room` weight is left. */
+  const fillTo = (g: Game, room: number) => { g.run!.loot.items.stuff = capacity(g.state.party) - carried(g.state, g.run) - room; };
+  const plantGlimmer = (g: Game): Pos => {
+    const m = g.map();
+    for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
+      if (m.tiles[y][x] !== 'floor' || (x === g.pos.x && y === g.pos.y)) continue;
+      m.tiles[y][x] = 'glimmer';
+      floorOf(g.run!, g.floor).contents.push({ kind: 'glimmer', at: { x, y }, room: 0 });
+      return { x, y };
+    }
+    throw new Error('no cell for a glimmer');
+  };
+  const withDrops = (over: { shard?: number; town?: number }, body: () => void) => {
+    const saved = { s: { ...SHARD_DROP }, t: { ...TOWN_DROP } };
+    try {
+      for (const k of ['chest', 'vault', 'elite'] as const) { SHARD_DROP[k] = over.shard ?? SHARD_DROP[k]; TOWN_DROP[k] = over.town ?? TOWN_DROP[k]; }
+      body();
+    } finally { Object.assign(SHARD_DROP, saved.s); Object.assign(TOWN_DROP, saved.t); }
+  };
+
+  it('fragments ride in the run pack and are lost on a wipe', () => {
+    const g = run(duo, 5);
+    const before = carried(g.state, g.run);
+    stepOnto(g, g.map().boss!);
+    const end = killAll(g);
+    expect(end.fragments!.some((f) => f.kind === 'shard')).toBe(true);
+    expect(shardsIn(g.run!.loot.items)).toBeGreaterThanOrEqual(1);
+    expect(carried(g.state, g.run)).toBeGreaterThanOrEqual(before + FRAGMENT_WEIGHT);
+    expect(shardsIn(g.state.inventory)).toBe(0);
+    g.pos = { ...g.map().entrance };
+    g.encounter = 99;
+    g.move('right');
+    for (const m of g.battle!.party) { m.hp = 0; m.alive = false; }
+    g.submitRound({});
+    expect(g.phase).toBe('town');
+    expect(shardsIn(g.state.inventory)).toBe(0);
+  });
+
+  it('a full pack leaves the shard behind', () => {
+    const g = run(duo, 5);
+    for (const m of Object.values(g.state.party.roster)) m.level = MAX_LEVEL;   // no level-up mid-fight to widen the pack
+    fillTo(g, FRAGMENT_WEIGHT / 2);
+    stepOnto(g, g.map().boss!);
+    const end = killAll(g);
+    expect(shardsIn(end.left)).toBe(1);
+    expect(shardsIn(g.run!.loot.items)).toBe(0);
+    expect(end.fragments!.filter((f) => f.kind === 'shard')).toHaveLength(1);
+  });
+
+  it('an empty glimmer gives a shard, or waits when the pack is full', () => {
+    const g = run(['hero'], 1);
+    const at = plantGlimmer(g);
+    fillTo(g, FRAGMENT_WEIGHT / 2);
+    const full = stepOnto(g, at);
+    expect(full).toMatchObject({ kind: 'full', qty: 1 });
+    if (full.kind !== 'full') throw new Error('expected full');
+    expect(SHARDS).toContain(full.item);
+    expect(full.need).toBeGreaterThan(0);
+    expect(tileAt(g.map(), at)).toBe('glimmer');
+    expect(g.discard('stuff', 5)).toBe(5);
+    const got = stepOnto(g, at);
+    expect(got.kind).toBe('glimmer');
+    if (got.kind !== 'glimmer') throw new Error('expected glimmer');
+    expect(got.gained).toHaveLength(1);
+    expect(got.gained[0]).toMatchObject({ kind: 'shard' });
+    expect(fragmentItem(got.gained[0])).toBe(full.item);
+    expect(g.run!.loot.items[full.item!]).toBe(1);
+    expect(tileAt(g.map(), at)).toBe('floor');
+  });
+
+  it('a memory piece weighs nothing', () => {
+    const g = run(duo, 1);
+    const c = floorOf(g.run!, 1).contents.find((x) => x.kind === 'glimmer' && x.owner === 'rin')!;
+    const before = carried(g.state, g.run);
+    expect(stepOnto(g, c.at)).toMatchObject({ kind: 'glimmer', gained: [{ kind: 'piece' }] });
+    expect(carried(g.state, g.run)).toBe(before);
+  });
+
+  it('a fragment left in a shut chest is not dropped a second time', () => {
+    withDrops({ shard: 0, town: 1 }, () => {
+      const g = run(duo, 8);
+      fillTo(g, 0.1);
+      const first = plainChest(g);
+      expect(stepOnto(g, first).kind).toBe('full');
+      const memo = g.run!.rolls[`frag:${g.floor}:${posKey(first)}`];
+      expect(memo.frags).toHaveLength(1);
+      const second = plantAt(g, 'chest', (at) => posKey(at) !== posKey(first) && !chestHasGear(g.run!, g.floor, at));
+      expect(stepOnto(g, second).kind).toBe('full');
+      const other = g.run!.rolls[`frag:${g.floor}:${posKey(second)}`];
+      expect(other.frags).toHaveLength(1);
+      expect(other.frags![0]).not.toBe(memo.frags![0]);
+    });
+  });
+
+  it('a chest that was too heavy rolls the same fragments when the party comes back', () => {
+    withDrops({ shard: 1, town: 1 }, () => {
+      const g = run(duo, 8);
+      fillTo(g, 0.1);
+      const at = plainChest(g);
+      expect(stepOnto(g, at).kind).toBe('full');
+      const memo = [...g.run!.rolls[`frag:${g.floor}:${posKey(at)}`].frags!];
+      expect(memo).toHaveLength(2);
+      expect(g.discard('stuff', 10)).toBe(10);
+      const r = g.pickUpHere()!;
+      expect(r.kind).toBe('chest');
+      if (r.kind !== 'chest') throw new Error('expected chest');
+      expect(r.fragments!.map(fragmentItem)).toEqual(memo);
+      for (const id of memo) expect(g.run!.loot.items[id]).toBe(1);
+    });
+  });
+
+  it('a vault pays its fragments with the rest of its loot', () => {
+    withDrops({ shard: 1, town: 0 }, () => {
+      const g = run(duo, 8);
+      g.run!.keys.add(g.floor);
+      const at = plantAt(g, 'vault');
+      expect(stepOnto(g, at).kind).toBe('event');
+      const open = g.openVault(at)!;
+      expect(open.kind).toBe('vault');
+      if (open.kind !== 'vault') throw new Error('expected vault');
+      expect(open.fragments).toHaveLength(1);
+      expect(shardsIn(g.run!.loot.items)).toBe(1);
+      expect(shardsIn(open.loot)).toBe(1);
+    });
+  });
+
+  it('fragments come home with the run', () => {
+    const g = run(duo, 5);
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    const held = shardsIn(g.run!.loot.items);
+    expect(held).toBeGreaterThanOrEqual(1);
+    g.state.inventory['return-lamp'] = 1;
+    expect(g.useReturnLamp()).toBe(true);
+    expect(shardsIn(g.state.inventory)).toBe(held);
+    expect(shardsIn(g.banked!.items)).toBe(held);
   });
 });
