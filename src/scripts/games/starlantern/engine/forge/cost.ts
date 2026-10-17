@@ -17,8 +17,11 @@ export function canPay(s: GameState, c: Cost): 'gold' | 'mats' | null {
   return null;
 }
 
-/** Takes gold and materials (mutates `s`; call it on a copy after `canPay`). Never touches `sold`. */
+/** Takes gold and materials (mutates `s`; call it on a copy after `canPay`). Never touches `sold`. A cost the state
+ * cannot meet is a caller bug: it throws and leaves `s` as it was, rather than going into debt. */
 export function pay(s: GameState, c: Cost): void {
+  const lacking = canPay(s, c);
+  if (lacking) throw new Error(`pay: not enough ${lacking}`);
   s.gold -= c.gold;
   for (const [id, n] of Object.entries(c.mats)) {
     const left = (s.inventory[id] ?? 0) - n;
