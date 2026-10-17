@@ -539,6 +539,20 @@ export const T = {
       warnInvested: '裡面有已強化或有重鑄鎖定詞綴的裝備：售價不計強化與重鑄，賣出後無法復原。',
       soldGear: (n: number, g: number) => `收下 ${n} 件裝備，這是 ${g} G。`,
     },
+    /** The guild's fragment exchange: sell, absorb, and give townsfolk fragments back. */
+    exchange: {
+      title: '碎片交易所', sell: '販售無主碎片', absorb: '吸收無主碎片', give: '交還鎮民碎片', who: '要讓誰吸收？',
+      count: (n: number, cap: number) => `已吸收 ${n}／${cap}`, full: '已經吸收不了更多了。', none: '沒有可以交還的碎片。',
+      /** The question before a shard goes into a member. */
+      absorbAsk: (shard: string, name: string) => `要讓 ${name} 吸收${shard}嗎？`,
+      /** What the shard gave, after the stranger's line: 「攻擊 +2」. */
+      gain: (stat: string, amount: number) => `${stat} +${amount}`,
+      giveAsk: (name: string) => `要把${name}還給他嗎？`,
+      /** After a return: what the owner paid. */
+      reward: (parts: string) => `作為謝禮，收下了 ${parts}。`,
+      absorbFail: { cap: '已經吸收不了更多了。', stock: '手上沒有這種碎片了。', invalid: '這個人還沒遇見，吸收不了。' } as Record<string, string>,
+      giveFail: { invalid: '已經還給他了。', stock: '手上沒有這個碎片了。' } as Record<string, string>,
+    },
     guild: {
       formation: '編隊', recall: '召回', equip: '裝備', status: '狀態', tree: '技能樹', talent: '天賦',
       recallAsk: (name: string) => `要讓 ${name} 回到隊伍嗎？`, swapWho: '要讓誰回公會待命？', swapOut: (name: string) => `${name} 回公會待命`, welcomeBack: (name: string) => `歡迎回來，${name}。`,

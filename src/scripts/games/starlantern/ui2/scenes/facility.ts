@@ -1,10 +1,12 @@
 import { T } from '../../data/text.zh-TW';
+import type { SceneId } from '../../data/story/scenes';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx, SceneName } from '../scene';
 import { textCps } from '../settings';
+import { playScene, storyCtx } from '../story';
 import { Dialogue, MenuView, backControl, win, type Rich } from '../widgets';
 
 export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate' | 'forge';
@@ -24,6 +26,8 @@ export abstract class FacilityScene implements Scene {
   private talk: Dialogue;
   private moodTimer: ReturnType<typeof setTimeout> | null = null;
   private talking = false;
+  /** The story scene on screen, if any: it takes the actions while it plays. */
+  private playing: ReturnType<typeof playScene> | null = null;
 
   constructor(protected ctx: SceneCtx, protected id: FacilityId, cps = textCps(ctx)) {
     this.talk = new Dialogue(cps, () => { this.talking = false; this.syncInert(); });
@@ -60,6 +64,7 @@ export abstract class FacilityScene implements Scene {
   }
 
   onAction(a: UiAction): void {
+    if (this.playing) { this.playing.onAction(a); return; }
     if (this.talk.busy()) {
       this.talk.onAction(a);
       if (!this.talk.busy()) { this.talking = false; this.syncInert(); }
@@ -128,6 +133,16 @@ export abstract class FacilityScene implements Scene {
     this.layers.forEach((l, i) => lock(l.el, this.talking || i < this.layers.length - 1));
     this.cmdWin.classList.toggle('slx-under', this.layers.length > 0);
     this.layers.forEach((l, i) => l.el.classList.toggle('slx-under', i < this.layers.length - 1));
+  }
+
+  /** Plays story scene `id` in this facility's dialogue box; resolves when it ends or the player skips it. */
+  protected play(id: SceneId): Promise<'done' | 'skipped'> {
+    const p = playScene(this.talk, id, storyCtx(this.ctx));
+    this.playing = p;
+    this.talking = true;
+    this.cmdWin.classList.add('slx-cmd-hidden');
+    this.syncInert();
+    return p.done.finally(() => { this.playing = null; this.talking = false; this.cmdWin.classList.remove('slx-cmd-hidden'); this.syncInert(); });
   }
 
   protected fail(reason: string): void {

@@ -6,6 +6,10 @@ import { GuildScene } from './guild';
 import { LEGACY_LINEUP, START_LINEUP, meet } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
 import { CHARACTERS } from '../../data/characters';
+import { ABSORB_CAP, ABSORB_GAIN, PERKS, SHARD_IDS, SHARD_NAMES, SHARD_PRICE, TOWN_FRAGMENTS } from '../../data/story/fragments';
+import { STORY } from '../../data/story.zh-TW';
+import { linesOf } from '../story';
+import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 
 const HERO_LINEUP = ['hero', 'chizuru', 'liz', 'noel', 'selene'] as const;
 /** Rin and the hero on the field, Bobby met and waiting. */
@@ -14,7 +18,7 @@ const benchBobby = (g: Game) => {
   g.state.party = { ...g.state.party, grid: g.state.party.grid.map((c) => (c === 'bobby' ? null : c)) };
 };
 
-function setup(from?: 'formation' | 'status', lineup: readonly string[] = LEGACY_LINEUP, prep?: (g: Game) => void) {
+function setup(from?: 'formation' | 'status', lineup: readonly string[] = LEGACY_LINEUP, prep?: (g: Game) => void, story?: StoryMode) {
   const game = new Game(constRng(0.5), memoryStorage(), undefined, 0, [...lineup] as never);
   prep?.(game);
   game.state.gold = 1000;
@@ -22,7 +26,7 @@ function setup(from?: 'formation' | 'status', lineup: readonly string[] = LEGACY
   game.state.nextUid = 2;
   const root = document.createElement('div');
   const go = vi.fn();
-  const s = new GuildScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), from }, Infinity);
+  const s = new GuildScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), from, settings: story ? ({ get: () => ({ ...DEFAULT_SETTINGS, story }) } as never) : undefined }, Infinity);
   s.enter(root);
   if (!from) s.onAction('confirm'); // greeting
   const opts = () => [...root.querySelectorAll('.slx-layer:last-child [role=option]')].map((o) => o.querySelector('.slx-label')!.textContent);
@@ -39,7 +43,7 @@ function setup(from?: 'formation' | 'status', lineup: readonly string[] = LEGACY
 describe('GuildScene', () => {
   it('lists the guild commands', () => {
     const { root } = setup();
-    expect([...root.querySelectorAll('.slx-cmd [role=option]')].map((o) => o.textContent)).toEqual(['編隊', T.ui2.guild.recall, '裝備', '狀態', '技能樹', '天賦', '離開']);
+    expect([...root.querySelectorAll('.slx-cmd [role=option]')].map((o) => o.textContent)).toEqual(['編隊', T.ui2.guild.recall, '裝備', '狀態', '技能樹', '天賦', T.ui2.exchange.title, '離開']);
   });
 
   it('recall is disabled when nobody waits', () => {
@@ -142,5 +146,141 @@ describe('GuildScene', () => {
     expect(root.querySelector('.slx-cmd [aria-selected=true]')!.textContent).toBe('編隊');
     const back = setup('status');
     expect(back.root.querySelector('.slx-cmd [aria-selected=true]')!.textContent).toBe('狀態');
+  });
+});
+
+/** Plays the dialogue to its end by confirming every line; returns the lines it showed. */
+async function drain(root: HTMLElement, s: GuildScene): Promise<string[]> {
+  const seen: string[] = [];
+  for (let i = 0; i < 60; i++) {
+    await new Promise((r) => setTimeout(r, 0));
+    if (root.querySelector('.slx-talk')!.hasAttribute('hidden')) break;
+    seen.push(root.querySelector('.slx-talk .slx-text')!.textContent ?? '');
+    s.onAction('confirm');
+  }
+  return seen;
+}
+const stock = (g: Game, items: Record<string, number>) => { Object.assign(g.state.inventory, items); };
+const row = (root: HTMLElement, label: string) => [...root.querySelectorAll('.slx-layer:last-child [role=option]')].find((o) => o.textContent!.includes(label)) as HTMLElement;
+const cmd = (root: HTMLElement, label: string) => [...root.querySelectorAll('.slx-cmd [role=option]')].find((o) => o.textContent === label) as HTMLElement;
+
+describe('GuildScene fragment exchange', () => {
+  it('the exchange sells shards for their price', () => {
+    const { game, pick, s } = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { [SHARD_IDS.clear]: 3 }));
+    pick(T.ui2.exchange.title);
+    pick(T.ui2.exchange.sell);
+    pick(SHARD_NAMES.clear);
+    s.onAction('right');   // two of three
+    s.onAction('confirm');
+    expect(game.state.gold).toBe(1000 + 2 * SHARD_PRICE.clear);
+    expect(game.state.inventory[SHARD_IDS.clear]).toBe(1);
+  });
+
+  it("Anna's returned fragment lifts the price shown and paid", () => {
+    const { game, root, pick, s } = setup(undefined, LEGACY_LINEUP, (g) => { stock(g, { [SHARD_IDS.dim]: 1 }); g.state.story.returned.push('anna'); });
+    pick(T.ui2.exchange.title);
+    pick(T.ui2.exchange.sell);
+    const paid = Math.round(SHARD_PRICE.dim * PERKS.shardPriceMul);
+    expect(row(root, SHARD_NAMES.dim).textContent).toContain(`${paid} G`);
+    pick(SHARD_NAMES.dim);
+    s.onAction('confirm');
+    expect(game.state.gold).toBe(1000 + paid);
+  });
+
+  it('absorbing shows the count and the cap, and refuses a full member', () => {
+    const { game, root, pick } = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { [SHARD_IDS.dim]: 2 }));
+    const [a, b] = game.state.party.recruited;
+    game.state.party.roster[b].absorbed = Array.from({ length: ABSORB_CAP }, () => ({ stat: 'atk' as const, amount: 1 }));
+    game.state.party.roster[a].absorbed = [{ stat: 'atk', amount: 1 }];
+    pick(T.ui2.exchange.title);
+    pick(T.ui2.exchange.absorb);
+    pick(SHARD_NAMES.dim);
+    expect(root.textContent).toContain(T.ui2.exchange.who);
+    expect(row(root, CHARACTERS[a].name).textContent).toContain(T.ui2.exchange.count(1, ABSORB_CAP));
+    const full = row(root, CHARACTERS[b].name);
+    expect(full.textContent).toContain(T.ui2.exchange.count(ABSORB_CAP, ABSORB_CAP));
+    expect(full.getAttribute('aria-disabled')).toBe('true');
+    full.click();
+    expect(root.querySelector('.slx-confirm')).toBeNull();
+    expect(game.state.party.roster[b].absorbed).toHaveLength(ABSORB_CAP);
+    expect(game.state.inventory[SHARD_IDS.dim]).toBe(2);
+  });
+
+  it("absorbing says a stranger's line and the gain", async () => {
+    const { game, root, pick, s } = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { [SHARD_IDS.vivid]: 1 }));
+    const id = game.state.party.recruited[0];
+    pick(T.ui2.exchange.title);
+    pick(T.ui2.exchange.absorb);
+    pick(SHARD_NAMES.vivid);
+    row(root, CHARACTERS[id].name).click();
+    pick('是');
+    const gain = game.state.party.roster[id].absorbed!.at(-1)!;
+    expect(gain.amount).toBe(ABSORB_GAIN.vivid[gain.stat]);
+    const lines = await drain(root, s);
+    expect(lines).toHaveLength(2);
+    expect(STORY.absorb).toContain(lines[0]);
+    expect(lines[1]).toContain(`${T.gear.statName[gain.stat]} +${gain.amount}`);
+    expect(game.state.inventory[SHARD_IDS.vivid]).toBeUndefined();
+  });
+
+  it('absorbing lists only the members the party has met', () => {
+    const { game, root, pick } = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { [SHARD_IDS.dim]: 1 }));
+    pick(T.ui2.exchange.title);
+    pick(T.ui2.exchange.absorb);
+    pick(SHARD_NAMES.dim);
+    const names = [...root.querySelectorAll('.slx-layer:last-child [role=option] .slx-label')].map((o) => o.textContent);
+    expect(names).toHaveLength(game.state.party.recruited.length);
+    expect(names.some((n) => n!.includes(CHARACTERS.bobby.name))).toBe(false);
+  });
+
+  it('giving back a fragment plays its return and pays the reward', async () => {
+    const { game, root, pick, s } = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { 'tf-anna': 1 }));
+    game.pending.push('town:anna');
+    pick(T.ui2.exchange.title);
+    pick(T.ui2.exchange.give);
+    pick('安娜的記憶碎片');
+    pick('是');
+    expect(game.state.story.returned).toContain('anna');
+    expect(game.pending).toEqual([]);
+    const lines = await drain(root, s);
+    const script = linesOf('town:anna', game.state).map((l) => l.text);
+    expect(lines.slice(0, script.length)).toEqual(script);
+    expect(lines.length).toBeGreaterThan(script.length);   // the reward line follows
+    expect(game.state.inventory['star-tear']).toBe(1);
+    expect(game.state.inventory['tf-anna']).toBeUndefined();
+  });
+
+  it('a story mode of none skips the return scene but still pays and consumes it', async () => {
+    const { game, root, pick, s } = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { 'tf-orik': 1 }), 'none');
+    pick(T.ui2.exchange.title);
+    pick(T.ui2.exchange.give);
+    pick('歐里克的記憶碎片');
+    pick('是');
+    const lines = await drain(root, s);
+    expect(lines).toHaveLength(1);
+    expect(game.pending).toEqual([]);
+    expect(game.state.gold).toBe(1000 + TOWN_FRAGMENTS.find((f) => f.id === 'orik')!.reward.gold!);
+  });
+
+  it('a fragment that was already returned says so', async () => {
+    const { game, root, pick, s } = setup(undefined, LEGACY_LINEUP, (g) => { stock(g, { 'tf-anna': 1 }); g.state.story.returned.push('anna'); });
+    pick(T.ui2.exchange.title);
+    pick(T.ui2.exchange.give);
+    pick('安娜的記憶碎片');
+    pick('是');
+    const lines = await drain(root, s);
+    expect(lines).toEqual([T.ui2.exchange.giveFail.invalid]);
+    expect(game.state.inventory['tf-anna']).toBe(1);
+    expect(game.pending).toEqual([]);
+  });
+
+  it('empty lists are disabled, and the exchange itself never is', () => {
+    const { root, pick } = setup();
+    expect(cmd(root, T.ui2.exchange.title).getAttribute('aria-disabled')).toBe('false');
+    pick(T.ui2.exchange.title);
+    for (const label of [T.ui2.exchange.sell, T.ui2.exchange.absorb, T.ui2.exchange.give]) expect(row(root, label).getAttribute('aria-disabled'), label).toBe('true');
+    const stocked = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { [SHARD_IDS.dim]: 1, 'tf-glen': 1 }));
+    stocked.pick(T.ui2.exchange.title);
+    for (const label of [T.ui2.exchange.sell, T.ui2.exchange.absorb, T.ui2.exchange.give]) expect(row(stocked.root, label).getAttribute('aria-disabled'), label).toBe('false');
   });
 });

@@ -1,17 +1,24 @@
 import { CHARACTERS } from '../../data/characters';
+import { ITEMS } from '../../data/items';
+import { MATERIALS } from '../../data/materials';
+import type { SceneId } from '../../data/story/scenes';
+import { ABSORB_CAP, SHARD_IDS, SHARD_NAMES, TOWN_FRAGMENTS, fragmentName, type ShardGrade, type TownFragmentDef, type TownFragmentId } from '../../data/story/fragments';
 import { T } from '../../data/text.zh-TW';
 import { MAX_ACTIVE } from '../../engine/formation';
 import { activeIds } from '../../engine/party';
+import { shardPrice } from '../../engine/story/fragments';
 import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import { standeeImg } from '../../ui/art';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { MenuView, confirmBox, win } from '../widgets';
+import { shouldPlay, storyCtx } from '../story';
+import { MenuView, QtyView, confirmBox, win } from '../widgets';
 import { FacilityScene } from './facility';
 
 const name = (id: CharacterId) => CHARACTERS[id].name;
+const GRADES: ShardGrade[] = ['dim', 'clear', 'vivid'];
 
 /** Guild: recalling companions met in the labyrinth; formation, equipment and the character sheet open their own screens. */
 export class GuildScene extends FacilityScene {
@@ -25,11 +32,12 @@ export class GuildScene extends FacilityScene {
 
   protected commands(): MenuItem[] {
     const g = T.ui2.guild;
-    return [{ id: 'formation', label: g.formation }, { id: 'recall', label: g.recall, disabled: this.waiting().length === 0 }, { id: 'equip', label: g.equip }, { id: 'status', label: g.status }, { id: 'tree', label: g.tree }, { id: 'talent', label: g.talent }];
+    return [{ id: 'formation', label: g.formation }, { id: 'recall', label: g.recall, disabled: this.waiting().length === 0 }, { id: 'equip', label: g.equip }, { id: 'status', label: g.status }, { id: 'tree', label: g.tree }, { id: 'talent', label: g.talent }, { id: 'exchange', label: T.ui2.exchange.title }];
   }
 
   protected onCommand(id: string): void {
     if (id === 'recall') this.recallList();
+    else if (id === 'exchange') this.exchangeMenu();
     else if (id === 'formation' || id === 'equip' || id === 'status') this.ctx.go(id);
     else if (id === 'tree' || id === 'talent') this.ctx.go('status', `tab:${id}`);
   }
@@ -94,5 +102,162 @@ export class GuildScene extends FacilityScene {
     this.info = undefined;
     this.refresh();
     void this.say(T.ui2.guild.welcomeBack(name(id)), 'happy');
+  }
+
+  // ---- The fragment exchange: sell, absorb and give back ----
+
+  private shards(): ShardGrade[] {
+    const inv = this.ctx.game.state.inventory;
+    return GRADES.filter((g) => (inv[SHARD_IDS[g]] ?? 0) > 0);
+  }
+
+  private townFragments(): TownFragmentDef[] {
+    const inv = this.ctx.game.state.inventory;
+    return TOWN_FRAGMENTS.filter((f) => (inv[f.item] ?? 0) > 0);
+  }
+
+  private exchangeMenu(): void {
+    const x = T.ui2.exchange;
+    const v = new MenuView(new Menu([
+      { id: 'sell', label: x.sell, disabled: this.shards().length === 0 },
+      { id: 'absorb', label: x.absorb, disabled: this.shards().length === 0 },
+      { id: 'give', label: x.give, disabled: this.townFragments().length === 0 },
+    ]), {
+      pick: (it) => { this.ctx.sfx.confirm(); if (it.id === 'sell') this.sellShardList(); else if (it.id === 'absorb') this.absorbGradeList(); else this.giveList(); },
+      moved: () => this.ctx.sfx.cursor(),
+      cancel: () => this.pop(),
+    });
+    this.push({ el: win('slx-list slx-exchange', [v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  /** Back to the exchange menu with fresh counts, once something changed. */
+  private reopenExchange(): void {
+    this.popAll();
+    this.refresh();
+    this.exchangeMenu();
+  }
+
+  /** A refusal in the exchange's own words, then the general reason, then the plain one. */
+  private exchangeFail(reason: string, own: Record<string, string>): void {
+    this.ctx.sfx.error();
+    void this.say(own[reason] ?? T.reasons[reason] ?? T.reasons.invalid);
+  }
+
+  private gradeRows(price: boolean): MenuItem[] {
+    const inv = this.ctx.game.state.inventory;
+    return this.shards().map((g) => ({
+      id: g, label: SHARD_NAMES[g],
+      right: price ? `${shardPrice(this.ctx.game.state, g)} G  ${T.ui2.shop.owned(inv[SHARD_IDS[g]])}` : T.ui2.shop.owned(inv[SHARD_IDS[g]]),
+    }));
+  }
+
+  private sellShardList(): void {
+    const v = new MenuView(new Menu(this.gradeRows(true)), {
+      pick: (it) => { this.ctx.sfx.confirm(); this.askSellQty(it.id as ShardGrade); },
+      moved: () => this.ctx.sfx.cursor(),
+      cancel: () => this.pop(),
+    });
+    this.push({ el: win('slx-list slx-exchange-list', [v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  private askSellQty(grade: ShardGrade): void {
+    const have = this.ctx.game.state.inventory[SHARD_IDS[grade]] ?? 0;
+    const price = shardPrice(this.ctx.game.state, grade);
+    const q = new QtyView(have, {
+      change: () => this.ctx.sfx.cursor(),
+      done: (n) => {
+        this.pop();
+        const gold = this.ctx.game.state.gold;
+        const r = this.ctx.game.sellShards(grade, n);
+        if (!r.ok) { this.exchangeFail(r.reason, {}); return; }
+        this.reopenExchange();
+        void this.say(T.ui2.shop.sold(SHARD_NAMES[grade], n, this.ctx.game.state.gold - gold), 'happy');
+      },
+      cancel: () => this.pop(),
+    }, price);
+    this.push({ el: q.el, onAction: (a) => q.onAction(a) });
+  }
+
+  private absorbGradeList(): void {
+    const v = new MenuView(new Menu(this.gradeRows(false)), {
+      pick: (it) => { this.ctx.sfx.confirm(); this.absorbMemberList(it.id as ShardGrade); },
+      moved: () => this.ctx.sfx.cursor(),
+      cancel: () => this.pop(),
+    });
+    this.push({ el: win('slx-list slx-exchange-list', [v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  /** Only members the party has met can take a shard; one with a full 20 is greyed out. */
+  private absorbMemberList(grade: ShardGrade): void {
+    const s = this.ctx.game.state;
+    const items = s.party.recruited.map((id): MenuItem => {
+      const n = s.party.roster[id].absorbed?.length ?? 0;
+      return { id, label: `${CHARACTERS[id].title} ${name(id)}`, icon: this.faceIcon(id), right: T.ui2.exchange.count(n, ABSORB_CAP), disabled: n >= ABSORB_CAP };
+    });
+    if (items.every((it) => it.disabled)) { this.exchangeFail('cap', T.ui2.exchange.absorbFail); return; }
+    const v = new MenuView(new Menu(items), {
+      pick: (it) => { this.ctx.sfx.confirm(); this.askAbsorb(it.id as CharacterId, grade); },
+      moved: () => this.ctx.sfx.cursor(),
+      cancel: () => this.pop(),
+    });
+    this.push({ el: win('slx-list slx-exchange-list', [el('p', { text: T.ui2.exchange.who }), v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  private askAbsorb(id: CharacterId, grade: ShardGrade): void {
+    const box = confirmBox(T.ui2.exchange.absorbAsk(SHARD_NAMES[grade], name(id)), (yes) => {
+      this.pop();
+      if (yes) void this.finishAbsorb(id, grade);
+    });
+    box.view.menu.setCursor(1);
+    box.view.render();
+    this.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
+  }
+
+  private async finishAbsorb(id: CharacterId, grade: ShardGrade): Promise<void> {
+    const r = this.ctx.game.absorb(id, grade);
+    if (!r.ok) { this.exchangeFail(r.reason, T.ui2.exchange.absorbFail); return; }
+    this.reopenExchange();
+    await this.say(r.line, 'happy');
+    await this.say(T.ui2.exchange.gain(T.gear.statName[r.gain.stat], r.gain.amount));
+  }
+
+  private giveList(): void {
+    const inv = this.ctx.game.state.inventory;
+    const v = new MenuView(new Menu(this.townFragments().map((f) => ({ id: f.id, label: fragmentName(f.item) ?? f.item, right: T.ui2.shop.owned(inv[f.item]) }))), {
+      pick: (it) => { this.ctx.sfx.confirm(); this.askGive(it.id as TownFragmentId, it.label); },
+      moved: () => this.ctx.sfx.cursor(),
+      cancel: () => this.pop(),
+    });
+    this.push({ el: win('slx-list slx-exchange-list', [v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  private askGive(id: TownFragmentId, label: string): void {
+    const box = confirmBox(T.ui2.exchange.giveAsk(label), (yes) => {
+      this.pop();
+      if (yes) void this.finishGive(id);
+    });
+    box.view.menu.setCursor(1);
+    box.view.render();
+    this.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
+  }
+
+  /** The return plays at the guild: the owner's scene (unless the player's story setting skips it), then the reward. */
+  private async finishGive(id: TownFragmentId): Promise<void> {
+    const game = this.ctx.game;
+    const r = game.returnFragment(id);
+    if (!r.ok) { this.exchangeFail(r.reason, T.ui2.exchange.giveFail); return; }
+    const scene: SceneId = `town:${id}`;
+    // The scene is handled right here, so it is no longer waiting for a screen to play it.
+    game.pending = game.pending.filter((p) => p !== scene);
+    this.popAll();
+    this.refresh();
+    if (shouldPlay(scene, storyCtx(this.ctx).mode)) await this.play(scene);
+    this.exchangeMenu();
+    const reward = TOWN_FRAGMENTS.find((f) => f.id === id)!.reward;
+    const parts = [
+      ...(reward.gold ? [`${reward.gold} G`] : []),
+      ...Object.entries(reward.items ?? {}).map(([item, n]) => `${ITEMS[item]?.name ?? MATERIALS[item]?.name ?? item} ×${n}`),
+    ];
+    await this.say(T.ui2.exchange.reward(parts.join('、')), 'happy');
   }
 }

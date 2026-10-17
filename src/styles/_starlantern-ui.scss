@@ -112,6 +112,8 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 
 .slx-npc { position: absolute; right: 0; bottom: 0; height: 330px; }
 .slx-cmd { left: 12px; top: 56px; min-width: 120px; }
+/* While a story scene plays in a facility, its face stands where the command window is: hide the window, keep its place. */
+.slx-facility .slx-cmd.slx-cmd-hidden { visibility: hidden; }
 .slx-stage { position: absolute; inset: 0; pointer-events: none; }
 .slx-stage > * { pointer-events: auto; }
 .slx-layer { left: 150px; top: 56px; max-width: 300px; }
