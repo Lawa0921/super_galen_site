@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { GEAR_SLOTS } from './gear';
 import {
   BASE_RECIPES, CONSUMABLE_RECIPES, DISMANTLE, ENHANCE_COST, ENHANCE_MAX, ENHANCE_SUCCESS, ESSENCE_IDS, ESSENCE_OF,
-  expectedEnhance, REGION_AFFIX_GROUP,
+  expectedEnhance, FUSE_SLOT_COST, REGION_AFFIX_GROUP, REROLL, SET_RECIPE,
 } from './forge';
+import { EQUIPMENT } from './equipment';
 import { ITEMS } from './items';
 import { MATERIALS } from './materials';
 import { REGIONS } from './regions';
@@ -67,6 +68,25 @@ describe('forge tables', () => {
       expect(Object.keys(r).length).toBeGreaterThan(0);
       for (const m of Object.keys(r)) expect(MATERIALS[m].kind).toBe('monster');
     }
+  });
+
+  it('every material id a forge table or recipe names exists in MATERIALS', () => {
+    const named: [string, string][] = [
+      ...ESSENCE_IDS.map((m): [string, string] => ['ESSENCE_IDS', m]),
+      ...Object.values(ESSENCE_OF).map((m): [string, string] => ['ESSENCE_OF', m]),
+      ...Object.values(DISMANTLE).flatMap((r) => Object.keys(r)).map((m): [string, string] => ['DISMANTLE', m]),
+      ...ENHANCE_COST.flatMap((c) => Object.keys(c.mats)).map((m): [string, string] => ['ENHANCE_COST', m]),
+      ['REROLL.legendaryMat', REROLL.legendaryMat],
+      ...Object.keys(REGION_AFFIX_GROUP).map((m): [string, string] => ['REGION_AFFIX_GROUP', m]),
+      ...Object.values(FUSE_SLOT_COST).flatMap((r) => Object.keys(r)).map((m): [string, string] => ['FUSE_SLOT_COST', m]),
+      ...Object.values(CONSUMABLE_RECIPES).flatMap((c) => Object.keys(c.mats)).map((m): [string, string] => ['CONSUMABLE_RECIPES', m]),
+      ...Object.values(BASE_RECIPES).flatMap((r) => Object.keys(r)).map((m): [string, string] => ['BASE_RECIPES', m]),
+      ['SET_RECIPE.rare', SET_RECIPE.rare],
+      ...Object.values(REGIONS).map((r) => r.material).filter((m): m is string => m !== null).map((m): [string, string] => ['REGIONS.material', m]),
+      ...Object.values(EQUIPMENT).flatMap((e) => e.unlock ?? []).map((u): [string, string] => ['EQUIPMENT.unlock', u.mat]),
+    ];
+    expect(named.length).toBeGreaterThan(20);
+    for (const [where, m] of named) expect(MATERIALS[m], `${where}: ${m}`).toBeDefined();
   });
 
   it('expectedEnhance grows with depth and stops at ENHANCE_MAX', () => {

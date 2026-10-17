@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { MATERIALS } from '../../data/materials';
+import { ITEMS } from '../../data/items';
+import { EQUIPMENT } from '../../data/equipment';
+import { GEAR_SLOTS, SETS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { T } from '../../data/text.zh-TW';
 import { RARE_MATERIALS } from '../loot/drops';
-import { materialUses } from './uses';
+import { materialUses, type MaterialUse } from './uses';
 
 const ids = (kind: string) => Object.values(MATERIALS).filter((m) => m.kind === kind).map((m) => m.id).sort();
 
@@ -46,7 +49,28 @@ describe('material uses', () => {
     }
   });
 
+  /** A use's words, or null when the use names something that does not exist (the words would fall back to a raw id). */
+  const words = (u: MaterialUse): string | null => {
+    const known = u.kind === 'consumable' ? !!ITEMS[u.item]
+      : u.kind === 'set' ? !!SETS[u.set]
+        : u.kind === 'unlock' ? !!EQUIPMENT[u.base]
+          : u.kind === 'base' ? GEAR_SLOTS.includes(u.slot)
+            : u.kind === 'regionReroll' ? !!REGIONS[u.region] && T.forge.group[u.region] !== undefined
+              : true;
+    const long = T.forge.use(u), short = T.forge.useShort(u);
+    if (!known || !long || !short || /undefined|NaN/.test(long + short)) return null;
+    return long;
+  };
+
+  it('the words check refuses a use that names an unknown id', () => {
+    expect(words({ kind: 'consumable', item: 'no-such-item' })).toBeNull();
+    expect(words({ kind: 'set', set: 'no-such-set' })).toBeNull();
+    expect(words({ kind: 'unlock', base: 'no-such-base' })).toBeNull();
+    expect(words({ kind: 'base', slot: 'tail' as never })).toBeNull();
+    expect(words({ kind: 'consumable', item: 'potion' })).toBe(ITEMS.potion.name);
+  });
+
   it('every use has words', () => {
-    for (const m of Object.keys(MATERIALS)) for (const u of materialUses(m)) expect(T.forge.use(u).length, JSON.stringify(u)).toBeGreaterThan(0);
+    for (const m of Object.keys(MATERIALS)) for (const u of materialUses(m)) expect(words(u), JSON.stringify(u)).not.toBeNull();
   });
 });
