@@ -109,6 +109,8 @@ export class Renderer {
   hidePlayer = false;
   /** 畫瞄準游標（標題背景關掉） */
   showCursor = true;
+  /** 遠景不做生態區交界混色（標題背景的大像素下，混色的抖動圖樣像雜訊） */
+  plainBackdrop = false;
   /** 光照每幾幀重算一次（標題背景鏡頭很慢，可以拉長） */
   lightEvery = LIGHT_EVERY;
   /** 世界 chunk 有變動（小地圖快取跟著重畫） */
@@ -361,7 +363,7 @@ export class Renderer {
     this.bg.draw(ctx, {
       viewW: this.bufW, viewH: this.bufH, camX, camY,
       horizonY: this.localHorizon(camX + vw / 2), time: g.time, dayFrac: day,
-      biome: biomeBlend((x) => w.biome[x], (camX + vw / 2) / S, w.width),
+      biome: this.plainBackdrop ? { a: w.biome[Math.max(0, Math.min(w.width - 1, Math.floor((camX + vw / 2) / S)))], b: 0, t: 0 } : biomeBlend((x) => w.biome[x], (camX + vw / 2) / S, w.width),
       sunrise: sun.sunrise, sunset: sun.sunset, twilight: sun.twilight, moon: g.moon(),
       season: seasonBlend(g.time),
       weather: { kind: wx.kind, intensity: wx.intensity, flash, wind: g.wind() },

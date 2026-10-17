@@ -13,7 +13,7 @@ import { SoundManager } from '../audio/SoundManager';
 import { TitleScene } from './titleScene';
 import { TitleUi, PEACEFUL_KEY, publishVolume } from './titleUi';
 import { Wipe } from './wipe';
-import { genProgress, genStageLabel, readVolume, rollWorldName, summarizeGame } from './titleModel';
+import { genProgress, genStageLabel, GEN_STAGE_LABELS, readVolume, rollWorldName, summarizeGame } from './titleModel';
 
 const SLOT = 'main';
 /** 進度條格數 */
@@ -200,8 +200,21 @@ export function bootDelve(root: HTMLElement): Session {
     }
     say(loadingStage, stage);
   }
+  const TIPS = [
+    '晚上怪物比較多：先蓋個小屋、放張床當重生點',
+    '火把可以插在牆上；洞穴越深越需要光',
+    '銅鎬挖得動鐵礦，鐵鎬挖得動銀礦',
+    '按 M 打開地圖，點一下可以放標記',
+    '日誌（J）記錄你發現的地區、碑文與珍寶',
+    '水碰到熔岩會變成黑曜石',
+  ];
+  // 載入畫面的字是之後才放進去的：先把點陣字（Google Fonts 依字分段下載）的字形載好，免得第一次顯示時是系統字
+  try {
+    void document.fonts?.load("16px 'DotGothic16'", ['生成世界中…載入世界中…完成提示：', ...GEN_STAGE_LABELS, ...TIPS].join('')).catch(() => { /* 離線：用系統字 */ });
+  } catch { /* 舊瀏覽器 */ }
   function showLoading(text: string): void {
     say(loadingText, text);
+    say($('#delve-loading-tip'), `提示：${TIPS[Math.floor(Math.random() * TIPS.length)]}`);
     setProgress(0, '');
     if (loading) loading.hidden = false;
     root.dataset.phase = 'loading';
@@ -299,7 +312,8 @@ export function bootDelve(root: HTMLElement): Session {
     if (r.error === 'gen_version') {
       say(msgEl, `這個存檔是舊版地圖產生器（v${r.saveGenVersion ?? '?'}）做的，新版地圖重做了洞穴、地層、生態區形狀並加入地城，舊世界無法繼續。可以先從選單匯出備份，再按下面的按鈕開一個新世界。`);
       if (upgradeNew && msgEl === titleMsg) upgradeNew.hidden = false;
-    } else say(msgEl, `存檔讀取失敗：${r.message}`);
+    } else if (r.error === 'size') say(msgEl, '這個存檔的世界大小不正確，可能不是有效的 DELVE 存檔或已損毀。');
+    else say(msgEl, '讀取失敗：這不是有效的 DELVE 存檔，或檔案已損毀 / 不完整。');
   }
 
   /**

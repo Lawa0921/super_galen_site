@@ -190,11 +190,14 @@ const lang: Language = defaultLang;
 
     <div class="delve-loading" id="delve-loading" hidden role="status" aria-live="polite">
       <div class="delve-loading-box">
+        <canvas class="delve-loading-logo" id="delve-loading-logo" width="1" height="1" aria-hidden="true"></canvas>
+        <p class="delve-loading-en" aria-hidden="true">GENERATING WORLD</p>
         <p class="delve-loading-text" id="delve-loading-text">生成世界中…</p>
         <div class="delve-progress" id="delve-progress" role="progressbar" aria-label="世界生成進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
           {Array.from({ length: 20 }, () => <span class="delve-progress-cell"></span>)}
         </div>
         <p class="delve-loading-stage" id="delve-loading-stage"></p>
+        <p class="delve-loading-tip" id="delve-loading-tip"></p>
       </div>
     </div>
 
@@ -205,7 +208,7 @@ const lang: Language = defaultLang;
             <canvas class="delve-logo" id="delve-logo" width="1" height="1" aria-hidden="true"></canvas>
             <span class="delve-sr">DELVE 深掘</span>
           </h1>
-          <p class="delve-tt-kanji" aria-hidden="true">深　掘</p>
+          <p class="delve-tt-kanji" aria-hidden="true">深掘</p>
           <p class="delve-tagline">DIG · CRAFT · BUILD</p>
         </header>
 
@@ -223,7 +226,7 @@ const lang: Language = defaultLang;
             <button class="delve-ti" id="delve-export-title" type="button" data-icon="export" hidden><span class="delve-ti-text"><span class="delve-ti-label">匯出存檔</span></span></button>
           </div>
           <div class="delve-ti-row delve-ti-row--two">
-            <button class="delve-ti" id="delve-help-title" type="button" data-icon="help"><span class="delve-ti-text"><span class="delve-ti-label">操作說明</span></span></button>
+            <button class="delve-ti" id="delve-help-open" type="button" data-icon="help"><span class="delve-ti-text"><span class="delve-ti-label">操作說明</span></span></button>
             <button class="delve-ti" id="delve-settings-btn" type="button" data-icon="settings"><span class="delve-ti-text"><span class="delve-ti-label">設定</span></span></button>
           </div>
           <a class="delve-ti delve-ti--ghost" id="delve-back" href="/games" data-icon="back"><span class="delve-ti-text"><span class="delve-ti-label">返回遊戲廳</span></span></a>
@@ -554,7 +557,7 @@ const lang: Language = defaultLang;
     display: grid;
     place-items: center;
   }
-  .delve-loading-text { margin: 0; font-size: 16px; color: var(--gold); text-align: center; text-shadow: var(--text-outline); }
+  .delve-loading-text { margin: 0; font-family: var(--cjk); font-size: 16px; color: var(--gold); text-align: center; text-shadow: var(--text-outline); }
   .delve-recipes { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
   .delve-recipe {
     width: 100%;
@@ -753,11 +756,24 @@ const lang: Language = defaultLang;
     margin: 0;
     font-size: 32px;
     line-height: 1;
-    letter-spacing: 8px;
+    letter-spacing: 6px;
     color: #fff4c0;
     text-shadow: 2px 2px 0 #6c1e14, 4px 4px 0 var(--outline), var(--text-outline);
   }
-  .delve-tagline { margin: 0; font-family: var(--pixel); font-size: 8px; line-height: 16px; color: #c2e478; letter-spacing: 4px; text-shadow: var(--text-outline); }
+  /* 標語：絕不換行；暗色底板，不會被背景的冰柱 / 樹葉蓋住 */
+  .delve-tagline {
+    margin: 0;
+    padding: 2px 8px;
+    font-family: var(--pixel);
+    font-size: 8px;
+    line-height: 16px;
+    white-space: nowrap;
+    color: #c2e478;
+    letter-spacing: 4px;
+    text-shadow: var(--text-outline);
+    background: #0c0a12;
+    box-shadow: 0 0 0 2px #2a1810;
+  }
 
   /* 選單：像素外框按鈕，懸停 / 焦點時亮框 + 左側金色游標（steps 跳動） */
   .delve-tmenu { box-sizing: border-box; width: min(428px, 100%); display: grid; gap: 8px; padding-left: 28px; }
@@ -809,7 +825,7 @@ const lang: Language = defaultLang;
   .delve-ti-label { line-height: 1.25; }
   .delve-ti-sub { display: grid; gap: 0; color: #f2e2b0; }
   .delve-ti-sub:empty { display: none; }
-  .delve-ti-line { font-size: 16px; line-height: 1.35; overflow-wrap: anywhere; }
+  .delve-ti-line { font-size: 16px; line-height: 1.35; overflow-wrap: break-word; }
   .delve-ti-line + .delve-ti-line { color: #f2b888; }
   .delve-ti--continue,
   .delve[data-save='0'] .delve-ti--new { --bv-hi: #ffd86a; --bv-bg: #a83a10; --bv-lo: #6c1e14; color: #ffffff; }
@@ -1007,7 +1023,8 @@ const lang: Language = defaultLang;
   .delve[data-title='menu'] .delve-press { display: none; }
   .delve-tt-head { animation: delve-logo-in 0.9s steps(9) 0.5s both; }
   .delve[data-title='menu'] .delve-tmenu { animation: delve-menu-in 0.32s steps(5) both; }
-  @keyframes delve-logo-in { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(-40px); } }
+  /* 由下往上現身：字先出來，鎬頭 / 火焰 / 餘燼最後 */
+  @keyframes delve-logo-in { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(-40px); } }
   @keyframes delve-menu-in { from { transform: translateY(24px); clip-path: inset(0 0 100% 0); } to { transform: none; clip-path: inset(-12px -60px); } }
   .delve[data-reduced='1'] .delve-tt-head,
   .delve[data-reduced='1'] .delve-tmenu,
@@ -1041,7 +1058,7 @@ const lang: Language = defaultLang;
     .delve-ti-icon { width: 48px; height: 48px; }
     .delve-ti--continue .delve-ti-icon { width: 60px; height: 60px; }
     .delve-ti-line { font-size: 16px; }
-    .delve-tt-kanji { font-size: 48px; letter-spacing: 12px; }
+    .delve-tt-kanji { font-size: 48px; letter-spacing: 8px; }
     .delve-ti-cursor { width: 28px; height: 36px; margin-top: -18px; left: -40px; }
   }
   @media (max-height: 520px) and (orientation: landscape) {
@@ -1049,7 +1066,8 @@ const lang: Language = defaultLang;
     .delve-press { grid-row: 1; grid-column: 2; }
     .delve-press-keys,
     .delve-press-touch { font-size: 16px; }
-    .delve-tagline { font-size: 8px; line-height: 16px; letter-spacing: 4px; }
+    .delve .delve-tagline { font-size: 8px; line-height: 16px; letter-spacing: 4px; }
+    .delve .delve-tt-kanji { font-size: 32px; letter-spacing: 4px; }
   }
 
   /* 轉場：低解析抖動畫布（每格 8 CSS px，整數倍放大） */
@@ -1085,7 +1103,11 @@ const lang: Language = defaultLang;
   }
   .delve-progress-cell { height: 12px; background: #2a1810; }
   .delve-progress-cell.is-on { background: #ffa93a; box-shadow: inset 0 -2px 0 #e8701c, inset 0 2px 0 #ffd86a; }
-  .delve-loading-stage { min-height: 1.4em; margin: 0; font-size: 16px; color: #d8ba76; }
+  .delve-loading-stage { min-height: 1.4em; margin: 0; font-family: var(--cjk); font-size: 16px; color: #d8ba76; text-shadow: var(--text-outline); }
+  .delve-loading-logo { display: block; image-rendering: pixelated; margin-bottom: 4px; }
+  .delve-loading-en { margin: 0; font-family: var(--pixel); font-size: 8px; line-height: 16px; letter-spacing: 4px; color: #ffa93a; text-shadow: var(--text-outline); animation: delve-blink 1.2s steps(1) infinite; }
+  .delve-loading-tip { max-width: 320px; margin: 4px 0 0; font-family: var(--cjk); font-size: 16px; line-height: 1.45; color: #b07a4b; text-align: center; }
+  .delve[data-reduced='1'] .delve-loading-en { animation: none; }
 
   @media (min-width: 700px) {
     .delve-tagline { font-size: 16px; line-height: 24px; letter-spacing: 6px; }

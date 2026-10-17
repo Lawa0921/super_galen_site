@@ -88,6 +88,13 @@ export class TitleUi {
       it.prepend(c);
     }
     this.layoutLogo();
+    // 載入畫面的小字標（3 倍）
+    const ll = this.$<HTMLCanvasElement>('#delve-loading-logo'), lf = this.logoFrames[0], lctx = ll?.getContext('2d');
+    if (ll && lf && lctx) {
+      ll.width = lf.width * 3; ll.height = lf.height * 3;
+      lctx.imageSmoothingEnabled = false;
+      lctx.drawImage(lf, 0, 0, ll.width, ll.height);
+    }
     if (!this.o.reducedMotion) {
       // 12 fps：火焰每 2 拍換一格、餘燼往上飄、每 ~5 秒一道刷光掃過字身
       this.logoTimer = window.setInterval(() => {
@@ -102,7 +109,9 @@ export class TitleUi {
   private layoutLogo(): void {
     const c = this.$<HTMLCanvasElement>('#delve-logo'), f = this.logoFrames[0];
     if (!c || !f) return;
-    const availW = Math.min(window.innerWidth - 32, 820), availH = window.innerHeight * (window.innerHeight < 500 ? 0.3 : 0.24);
+    const w = window.innerWidth, h = window.innerHeight, wideShort = h < 520 && w > h;
+    // 橫放手機：字標在左欄，可以佔左半寬、四成高
+    const availW = wideShort ? w * 0.46 : Math.min(w - 32, 820), availH = h * (wideShort ? 0.42 : 0.24);
     const k = Math.max(2, Math.min(10, Math.floor(availW / f.width), Math.floor(availH / f.height)));
     if (k !== this.logoK) {
       this.logoK = k;
@@ -149,7 +158,7 @@ export class TitleUi {
     click('#delve-new', () => this.openPanel('#delve-newpanel', '#delve-seed'));
     click('#delve-import', () => this.h.onImport());
     click('#delve-export-title', () => this.h.onExport());
-    click('#delve-help-title', () => this.h.onHelp());
+    click('#delve-help-open', () => this.h.onHelp());
     click('#delve-settings-btn', () => this.openPanel('#delve-settings', '#delve-vol'));
     click('#delve-back', () => { /* 連結本身導頁 */ });
     click('#delve-new-cancel', () => this.closePanel(), 'back');
@@ -214,6 +223,14 @@ export class TitleUi {
     if (this.panel) {
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.o.sound.uiBack(); this.closePanel(); }
       else if (e.key === 'Tab') this.trapTab(e);
+      return;
+    }
+    if (e.key === 'Escape') {
+      // 選單上 Esc：回到「按任意鍵開始」
+      e.preventDefault();
+      this.root.dataset.title = 'press';
+      this.o.sound.uiBack();
+      this.$('#delve-press')?.focus({ preventScroll: true });
       return;
     }
     const vis = this.items.map((it) => !it.hidden && !it.closest('[hidden]'));

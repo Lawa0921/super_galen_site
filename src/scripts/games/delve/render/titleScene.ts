@@ -17,7 +17,7 @@ import { bayer } from './pixel';
 export const TITLE_SEED = 'delve-title-7';
 const WORLD = { width: 360, height: 240 };
 /** 開場下降秒數 */
-export const DESCENT_S = 7.5;
+export const DESCENT_S = 4.5;
 /** 每幀預算（ms）：超過就降成隔幀 / 每三幀畫一次 */
 const BUDGET_MS = 3;
 /** 標題背景的短邊美術 px（遊戲是 ~520；這裡放大一些） */
@@ -64,6 +64,7 @@ export class TitleScene {
     r.lightEvery = 6;
     r.camOverride = this.cam;
     r.showCursor = false;
+    r.plainBackdrop = true;
     this.renderer = r;
     if (opts.reducedMotion) this.t = DESCENT_S;
     this.ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => this.resize()) : null;
@@ -148,7 +149,8 @@ export class TitleScene {
     const S = TILE_SIZE, r = this.renderer, vw = r.bufW, vh = r.bufH, sh = this.show;
     const f = focusFor(window.innerWidth, window.innerHeight);
     const fx = (sh.cx + 0.5) * S, fy = (sh.top + CAVE_H / 2) * S;
-    const y1 = Math.round(fy - vh * f.y), y0 = Math.round(sh.surf * S - vh * 1.15);
+    // 起點：地表在畫面 72% 的高度（第一格就看得到地面、樹與遠山），再沉進洞窟
+    const y1 = Math.round(fy - vh * f.y), y0 = Math.round(sh.surf * S - vh * 0.72);
     const drift = this.t > DESCENT_S ? Math.round(Math.sin((this.t - DESCENT_S) * 0.18) * 10) : 0;
     this.cam.x = Math.round(fx - vw * f.x) + drift;
     this.cam.y = descentY(this.t, Math.min(y0, y1), y1, DESCENT_S);

@@ -1065,6 +1065,27 @@ test.describe('delve title', () => {
     expect(errors).toEqual([]);
   });
 
+  test('標題「操作說明」打開說明視窗，Esc 關掉回到選單；選單上 Esc 回到「按任意鍵開始」', async ({ page }) => {
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-help-open');
+    await expect(page.locator('#delve-help')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#delve-help')).toBeHidden();
+    await expect(page.locator('#delve-tmenu')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#delve-press')).toBeVisible();
+    await expect(page.locator('#delve-tmenu')).toBeHidden();
+  });
+
+  test('匯入壞檔：顯示中文說明，不是原始錯誤字串', async ({ page }) => {
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.locator('#delve-import-file').setInputFiles({ name: 'bad.delve', mimeType: 'application/octet-stream', buffer: Buffer.from('nope') });
+    await expect(page.locator('#delve-title-msg')).toContainText('不是有效的 DELVE 存檔');
+    await expect(page.locator('#delve-title-msg')).not.toContainText('too short');
+  });
+
   test('「繼續」顯示存檔摘要（種子、日期、遊玩時間、最深、完成度）', async ({ page }) => {
     await page.goto('/games/delve?seed=summary&autostart=1&fresh=1');
     await waitGame(page);

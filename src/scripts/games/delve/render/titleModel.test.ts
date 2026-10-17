@@ -41,12 +41,13 @@ describe('summarizeGame / continueLines', () => {
   it('有摘要：種子 + 日期、遊玩時間 / 最深 / 完成度', () => {
     const l = continueLines({ seed: 'keepme', savedAt: 0, summary: summarizeGame(g) }, 0);
     expect(l[0]).toBe('「keepme」 第1年 夏 3日');
-    expect(l[1]).toBe('遊玩 1 小時 15 分 · 最深 212 格 · 完成度 7%');
+    // 每一項內部用不換行空白（「完成度 1%」不會被拆到兩行），項與項之間的 · 兩側才可以換行
+    expect(l[1]).toBe('遊玩 1 小時 15 分 · 最深 212 格 · 完成度 7%');
   });
   it('和平模式加註；還沒下過地底不寫最深', () => {
     const s = { ...summarizeGame(g), peaceful: true, depth: 0 };
     const l = continueLines({ seed: 'x', savedAt: 0, summary: s }, 0);
-    expect(l[1]).toBe('遊玩 1 小時 15 分 · 完成度 7% · 和平');
+    expect(l[1].replace(/ /g, ' ')).toBe('遊玩 1 小時 15 分 · 完成度 7% · 和平');
   });
   it('舊存檔沒有摘要：種子 + 上次存檔多久前', () => {
     const now = 1_000_000_000;
@@ -190,7 +191,7 @@ describe('開場鏡頭', () => {
   });
   it('focusFor：寬螢幕主角在右側（選單在左）、直式在中上、其他置中', () => {
     expect(focusFor(1280, 720)).toEqual({ x: 0.68, y: 0.56 });
-    expect(focusFor(390, 844)).toEqual({ x: 0.5, y: 0.4 });
+    expect(focusFor(390, 844)).toEqual({ x: 0.5, y: 0.52 });
     expect(focusFor(844, 390)).toEqual({ x: 0.5, y: 0.58 });
   });
 });

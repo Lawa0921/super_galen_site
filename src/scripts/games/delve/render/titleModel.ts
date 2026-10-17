@@ -48,7 +48,8 @@ export function continueLines(meta: { seed: string; savedAt: number; summary?: S
   if (s.depth > 0) facts.push(`最深 ${Math.floor(s.depth)} 格`);
   facts.push(`完成度 ${Math.round(Math.max(0, Math.min(1, s.completion)) * 100)}%`);
   if (s.peaceful) facts.push('和平');
-  return [`「${meta.seed}」 第${d.year}年 ${SEASON_NAMES[d.season]} ${d.dayOfSeason}日`, facts.join(' · ')];
+  // 每一項內部用不換行空白：窄畫面只會在「 · 」處換行（「完成度 1%」不會被拆開）
+  return [`「${meta.seed}」 第${d.year}年 ${SEASON_NAMES[d.season]} ${d.dayOfSeason}日`, facts.map((f) => f.replace(/ /g, '\u00a0')).join(' · ')];
 }
 
 // ── 世界名骰子：地名風的兩段組合（也是種子）──
@@ -107,6 +108,8 @@ const STAGES: [RegExp, string][] = [
   [/浮空島/, '升起浮空島'],
   [/珍寶|古碑/, '藏好寶物'],
 ];
+/** 所有可能出現的生成階段標籤（預先載入點陣字的字形子集用） */
+export const GEN_STAGE_LABELS: readonly string[] = [...STAGES.map((s) => s[1]), '塑造世界'];
 export function genStageLabel(stage: string): string {
   for (const [re, label] of STAGES) if (re.test(stage)) return label;
   return '塑造世界';
@@ -167,6 +170,6 @@ export function descentY(t: number, y0: number, y1: number, dur: number): number
 export function focusFor(w: number, h: number): { x: number; y: number } {
   if (h < 520 && w > h) return { x: 0.5, y: 0.58 };
   if (w >= 900 && w > h) return { x: 0.68, y: 0.56 };
-  if (h > w) return { x: 0.5, y: 0.4 };
+  if (h > w) return { x: 0.5, y: 0.52 };
   return { x: 0.5, y: 0.5 };
 }
