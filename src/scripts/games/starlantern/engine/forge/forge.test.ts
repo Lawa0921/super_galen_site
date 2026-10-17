@@ -167,7 +167,7 @@ describe('reroll', () => {
 
   it('a value reroll stays in rerollRange and locks that affix', () => {
     const it = gear();
-    const [lo, hi] = rerollRange(it, 1);
+    const [lo, hi] = rerollRange(it, 1)!;
     const lowR = reroll(stocked(it), 1, 1, { swap: false }, constRng(0));
     expect(lowR.ok && lowR.out.after).toEqual({ key: 'hp', value: lo });
     const [alo, ahi] = affixRange('hp', it.ilvl);
@@ -200,6 +200,10 @@ describe('reroll', () => {
       expect(new Set(it.affixes.map((a) => a.key)).size).toBe(3);
       expect(AFFIXES[r.out.after.key].slots).toContain(itemSlot(it));
       expect(it.affixes[1]).toEqual(r.out.after);
+      const [nlo, nhi] = rerollRange(it, 1)!;
+      expect(r.out.after.value).toBeGreaterThanOrEqual(nlo);
+      expect(r.out.after.value).toBeLessThanOrEqual(nhi);
+      expect(r.state.forgeDraws).toBe(i + 2);
     }
   });
   it('a region material limits the new key to its group', () => {
@@ -248,7 +252,11 @@ describe('reroll', () => {
       const before = structuredClone(s);
       expect(reroll(s, 1, 0, { swap: true })).toEqual({ ok: false, reason: 'invalid' });
       expect(s).toEqual(before);
-      expect(reroll(s, 1, 0, { swap: false }).ok).toBe(true);
+      const low = reroll(s, 1, 0, { swap: false }, constRng(0));
+      expect(low.ok && low.out.after.value).toBe(rerollRange(gear({ rarity }), 0)![0]);
+      const [alo, ahi] = affixRange('str', 20);
+      const atFloor = Math.max(1, Math.round(alo + (ahi - alo) * ROLL_FLOOR[rarity]));
+      expect(low.ok && low.out.after.value).toBe(atFloor);
     }
     const s = stocked(gear({ rarity: 'legendary' }));
     const r = reroll(s, 1, 0, { swap: false });
@@ -261,6 +269,8 @@ describe('reroll', () => {
     const s = stocked(gear());
     const before = structuredClone(s);
     expect(reroll(s, 9, 0, { swap: false })).toEqual({ ok: false, reason: 'stock' });
+    expect(rerollRange(gear(), 3)).toBeNull();
+    expect(rerollRange(gear(), -1)).toBeNull();
     expect(reroll(s, 1, 3, { swap: false })).toEqual({ ok: false, reason: 'invalid' });
     expect(reroll(s, 1, -1, { swap: false })).toEqual({ ok: false, reason: 'invalid' });
     expect(reroll(s, 1, 0, { swap: false, mat: 'blaze-core' })).toEqual({ ok: false, reason: 'invalid' });
@@ -284,7 +294,7 @@ describe('reroll', () => {
     const r = reroll(s, 1, 0, { swap: false }, constRng(0));
     if (!r.ok) throw new Error('refused');
     const worn = r.state.party.roster[m];
-    expect(worn.equip.neck?.affixes[0].value).toBe(rerollRange(worn.equip.neck!, 0)[0]);
+    expect(worn.equip.neck?.affixes[0].value).toBe(rerollRange(worn.equip.neck!, 0)![0]);
     expect(worn.hp).toBe(statsOf(worn).hp);
     expect(worn.hp).toBeLessThan(full);
     expect(s.party.roster[m].hp).toBe(full);

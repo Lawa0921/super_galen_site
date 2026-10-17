@@ -77,8 +77,10 @@ export function rerollCost(it: ItemInstance, o: RerollOpts): Cost {
 }
 
 /** The value range a reroll of affix `index` can land in (the same rounding as `rollValue`). */
-export function rerollRange(it: ItemInstance, index: number): [number, number] {
-  const [lo, hi] = affixRange(it.affixes[index].key, it.ilvl);
+export function rerollRange(it: ItemInstance, index: number): [number, number] | null {
+  const affix = it.affixes[index];
+  if (!affix) return null;
+  const [lo, hi] = affixRange(affix.key, it.ilvl);
   const floor = ROLL_FLOOR[it.rarity];
   return [Math.max(1, Math.round(lo + (hi - lo) * floor)), Math.max(1, Math.round(hi))];
 }
