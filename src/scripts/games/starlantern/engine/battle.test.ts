@@ -299,7 +299,7 @@ describe('resource hooks', () => {
 
 describe('the sim player', () => {
   it('reads the TP a member actually pays and the skill as a power rewrites it', () => {
-    const party = partyAt(1);
+    const party = partyAt(1, { ids: LEGACY_LINEUP });
     const s = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
     const noel = s.party.find((c) => c.key === 'noel')!;
     noel.tp = 2;
@@ -307,7 +307,7 @@ describe('the sim player', () => {
     noel.x.tpCost = 50;
     expect(choose(s, party).noel).toEqual({ kind: 'skill', skill: 'fire-star', target: 'e0' });
     // 三叉刃 makes 雙刃 (60 x 3 = 180) outrank 三連刃 (55 x 3 = 165) for 莉茲 at level 6.
-    const lv6 = partyAt(6);
+    const lv6 = partyAt(6, { ids: LEGACY_LINEUP });
     const s6 = createBattle({ party: lv6, enemyIds: ['slime'], inventory: {}, revealed: {} });
     expect(choose(s6, lv6).liz).toMatchObject({ kind: 'skill', skill: 'triple-slash' });
     s6.party.find((c) => c.key === 'liz')!.powers = ['lg-liz'];
@@ -359,7 +359,7 @@ describe('skills from the tree (Task 8)', () => {
 describe('keystones in battle', () => {
   it('opening-gauge starts the gauge at least at openingGauge, never stacking on what it carries', () => {
     // Enough talent points for both default keystones; selene's are regen and opening-gauge.
-    const party = partyAt(2 * (KEYSTONE_GATE + MAX_KEYSTONES) + 4);
+    const party = partyAt(2 * (KEYSTONE_GATE + MAX_KEYSTONES) + 4, { ids: LEGACY_LINEUP });
     expect(keystonesOf(party.roster.selene)).toContain('opening-gauge');
     expect(keystonesOf(party.roster.scarlet)).not.toContain('opening-gauge');
     const start = (limit: number) => {
@@ -424,7 +424,7 @@ describe('keystones in battle', () => {
     // under KEYSTONE_GATE, so nobody holds a keystone. Re-recorded 2026-10-17 in 21867eb3, under the ENEMY_POWER shape that
     // plan 5c Task 4 settled on there (a deep step from Lv12 plus a small ramp; the d5 enemies are Lv18): the same no-keystone code path against stronger
     // enemies. A keystone reaching this fight changes TP, damage or heals, and so the replay.
-    const party = partyAt(20);
+    const party = partyAt(20, { ids: LEGACY_LINEUP });
     // The fighters only: the hero (Lv20, 15 talent points) holds one on the bench, and never enters this fight.
     expect(activeIds(party).every((id) => keystonesOf(party.roster[id]).length === 0)).toBe(true);
     const base = mulberry32(7919);
@@ -540,7 +540,7 @@ describe('weapon kinds in battle', () => {
 describe('a full party fights exactly as before', () => {
   const hash = (s: string): number => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
   const playOut = (enemyIds: string[], seed: number) => {
-    const party = partyAt(depthLevel(4));
+    const party = partyAt(depthLevel(4), { ids: LEGACY_LINEUP });
     const r = mulberry32(seed);
     let s = createBattle({ party, enemyIds, boss: false, inventory: {}, revealed: {}, scale: { depth: 4, region: 'mainline' } });
     let rounds = 0;

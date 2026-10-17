@@ -55,8 +55,9 @@ describe('kitParty draw order', () => {
 });
 
 describe('lineups and hero builds', () => {
-  it('the default simulation party is the legacy five', () => {
-    expect(partyAt(6).recruited).toEqual(LEGACY_LINEUP);
+  it('the default simulation party is the standard five', () => {
+    expect(partyAt(6).recruited).toEqual(STANDARD_LINEUP);
+    expect(partyAt(6, { ids: LEGACY_LINEUP }).recruited).toEqual(LEGACY_LINEUP);
     expect(fullParty().recruited).toEqual(STANDARD_LINEUP);
   });
   it('a lineup and a hero build are honoured', () => {

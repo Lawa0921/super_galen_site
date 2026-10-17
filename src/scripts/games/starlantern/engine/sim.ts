@@ -7,7 +7,7 @@ import { depthLevel } from './levels';
 import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
 import { LIMIT_MAX, createBattle, resolveRound, skillCost, skillFor, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
-import { LEGACY_LINEUP, MAX_LEVEL, SLOTS, expToNext, gainExp, newMember, partyWith, statsOf } from './party';
+import { MAX_LEVEL, SLOTS, expToNext, gainExp, newMember, partyWith, statsOf, STANDARD_LINEUP } from './party';
 import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills } from './progression';
 import { HERO_BUILDS, type HeroBuild } from '../data/hero';
 import { mulberry32 } from './rng';
@@ -29,14 +29,14 @@ export const KIT_ORDER: CharacterId[] = [
 
 type Altar = { stat: BuffStat; pct: number }[];
 
-/** Who the simulation fields: the members (default the legacy five), the hero's build, row and memories, and a forced abyss bonus. */
+/** Who the simulation fields: the members (default the standard five), the hero's build, row and memories, and a forced abyss bonus. */
 export interface Lineup { ids?: CharacterId[]; heroBuild?: HeroBuild; heroRow?: Row; memories?: number; abyss?: number }
 
 /** A fresh party with everyone at `level`, held to the real level cap, each with the default tree and talents of that level; the hero follows his build. */
 export function partyAt(level: number, lineup: Lineup = {}): Party {
   level = Math.min(level, MAX_LEVEL);
   const build = lineup.heroBuild ?? 'balanced';
-  const p = partyWith(lineup.ids ?? LEGACY_LINEUP, lineup.heroRow ?? HERO_BUILDS[build].row);
+  const p = partyWith(lineup.ids ?? STANDARD_LINEUP, lineup.heroRow ?? HERO_BUILDS[build].row);
   for (const id of Object.keys(p.roster) as CharacterId[]) {
     const hero = (id as string) === 'hero';
     const m = {
