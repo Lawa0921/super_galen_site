@@ -34,6 +34,8 @@ export type Effect =
 export interface SkillDef {
   id: string; name: string; owner: CharacterId; tp: number; hpCost?: number;
   target: Target; effects: Effect[]; passive?: Passive; desc: string;
+  /** One of the hero's abyss capstone skills: grows with the depth of the fight (battle.ts). */
+  abyss?: true;
 }
 export interface UltimateDef { id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string }
 /** How a character grows: which point curve, how many skill branches, how many ultimates, board width and keystone cap. */

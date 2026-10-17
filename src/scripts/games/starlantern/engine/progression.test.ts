@@ -4,6 +4,7 @@ import {
   raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, ultimateFor, validBuild,
   heroMainBranch,
 } from './progression';
+import { ABYSS_UNLOCK } from '../data/hero';
 import { HERO_ULTIMATES, ULTIMATES } from '../data/ultimates';
 import { gainExp, newMember } from './party';
 import { CHARACTERS, rulesOf } from '../data/characters';
@@ -484,5 +485,34 @@ describe('validBuild', () => {
     expect(validBuild('liz', 50, defaultTree('liz', 50), { 'liz-t30': 1 })).toBe(false); // not adjacent
     expect(validBuild('liz', 50, newTree('liz'), { 'liz-t00': 1, 'liz-t01': 1, 'liz-t02': 1 })).toBe(true);
     expect(validBuild('liz', 50, newTree('liz'), { 'liz-k0': 1 })).toBe(false); // keystone gate
+  });
+});
+
+describe("the hero's abyss capstones", () => {
+  const ALL = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5,
+    'hero-guard': 5, 'hero-guard-up': 5, 'hero-aegis': 5, 'hero-rally': 5 };
+  const hero = (tree: Record<string, number>): Member => ({ ...newMember('hero' as CharacterId), level: 50, tree });
+  const up2 = (m: Member, node: string): Member => {
+    const r = raiseNode(m, node, 10);
+    if (!r.ok) throw new Error(`${node} refused: ${r.reason}`);
+    return r.member;
+  };
+  it('an abyss node waits for its memories', () => {
+    const m = hero({ 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5 });
+    expect(canRaiseNode(m, 'abyss-sword', ABYSS_UNLOCK[0] - 1)).toBe('abyss');
+    expect(canRaiseNode(m, 'abyss-sword', ABYSS_UNLOCK[0])).toBeNull();
+    expect(canRaiseNode(m, 'abyss-sword')).toBe('abyss');
+    expect(raiseNode(m, 'abyss-sword')).toEqual({ ok: false, reason: 'abyss' });
+    expect(raiseNode(m, 'abyss-sword', ABYSS_UNLOCK[0]).ok).toBe(true);
+  });
+  it('the hero holds two ultimates, not three', () => {
+    let m = hero(ALL);
+    m = up2(m, 'abyss-sword');
+    m = up2(m, 'abyss-guard');
+    m = { ...m, tree: { ...m.tree, 'hero-flare': 5, 'hero-star-up': 5, 'hero-frost': 5, 'hero-spark': 5 } };
+    expect(canRaiseNode(m, 'abyss-star', 10)).toBe('capstone');
+  });
+  it('a companion still holds one', () => {
+    expect(rulesOf('noel').capstones).toBe(1);
   });
 });

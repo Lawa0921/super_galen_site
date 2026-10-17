@@ -5,7 +5,7 @@ import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { mulberry32 } from './rng';
 import { memoryStorage, plainItem } from './testing';
-import { defaultTalents, defaultTree } from './progression';
+import { defaultTalents, defaultTree, validBuild } from './progression';
 import { BOARDS } from '../data/talents';
 import { TREES } from '../data/trees';
 
@@ -386,5 +386,12 @@ describe('save v5 skill trees and talents', () => {
     expect(status((g) => { delete (g.party.roster.liz as Partial<typeof g.party.roster.liz>).talents; })).toBe('corrupt');
     expect(status((g) => { g.party.roster.liz.level = 2.5; })).toBe('corrupt');
     expect(BOARDS.liz.filter((n) => n.keystone).length).toBeGreaterThanOrEqual(2);
+  });
+  it('a hero capstone without memories is corrupt', () => {
+    const tree = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5, 'abyss-sword': 1 };
+    const g = newGame();
+    g.party.roster.hero = { ...g.party.roster.hero, level: 50, tree };
+    expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status).toBe('corrupt');
+    expect(validBuild('hero', 50, tree, {}, 10)).toBe(true);
   });
 });

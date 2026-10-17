@@ -12,6 +12,7 @@ import { constRng, makeBattle, makeCombatant, plainItem } from './testing';
 import { KEYSTONE_GATE, KEYSTONE_VALUES as V, MAX_KEYSTONES, type KeystoneId } from '../data/talents';
 import { keystonesOf } from './progression';
 import { mulberry32 } from './rng';
+import { ABYSS } from '../data/hero';
 
 const rng = constRng(0.5); // enemies never use skills (all chances < 0.5), variance 1.0
 const P = (key: string, over = {}) => makeCombatant({ key, side: 'party', ...over });
@@ -432,5 +433,26 @@ describe('keystones in battle', () => {
     while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, choose(s, party), counted); rounds++; }
     expect({ outcome: s.outcome, rounds, draws, hp: Object.fromEntries(s.party.map((c) => [c.key, c.hp])) })
       .toEqual({ outcome: 'win', rounds: 4, draws: 83, hp: { scarlet: 72, chizuru: 166, liz: 0, noel: 0, selene: 0 } });
+  });
+});
+
+describe('abyss skills', () => {
+  const cast = (skill: string, abyss: number) => {
+    const foe = E('e0', { sleep: 3, max: { hp: 100000, def: 20 } as never });
+    const s = resolveRound(makeBattle([P('p', { max: { tp: 99 } as never, tp: 99 })], [foe], { abyss }), { p: { kind: 'skill', skill, target: 'e0' } }, rng);
+    return 100000 - s.enemies[0].hp;
+  };
+  it('an abyss skill grows with depth and stops at the cap', () => {
+    const base = cast('abyss-sword', 0);
+    expect(base).toBeGreaterThan(0);
+    expect(Math.abs(cast('abyss-sword', 10) - base * 1.1)).toBeLessThanOrEqual(1);
+    const deep = createBattle({ party: newParty(), enemyIds: ['slime'], inventory: {}, revealed: {}, depth: 50 });
+    expect(deep.abyss).toBe(ABYSS.cap);
+    expect(createBattle({ party: newParty(), enemyIds: ['slime'], inventory: {}, revealed: {}, depth: 7 }).abyss).toBe(7);
+    expect(createBattle({ party: newParty(), enemyIds: ['slime'], inventory: {}, revealed: {}, scale: { depth: 12, region: 'mainline' } }).abyss).toBe(12);
+    expect(createBattle({ party: newParty(), enemyIds: ['slime'], inventory: {}, revealed: {}, depth: 3, abyss: 30 }).abyss).toBe(30);
+  });
+  it('abyss leaves other skills alone', () => {
+    expect(cast('hero-slash', 30)).toBe(cast('hero-slash', 0));
   });
 });

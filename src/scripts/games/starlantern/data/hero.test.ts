@@ -87,7 +87,7 @@ describe('hero', () => {
       let m: Member = { id, level, exp: 0, hp: 0, tp: 0, equip: {}, tree: newTree(id), talents: {} };
       for (const b of TREES[id].branches) for (const n of b.nodes) {
         while (nodeRank(m, n.id) < (tree[n.id] ?? 0)) {
-          const r = raiseNode(m, n.id);
+          const r = raiseNode(m, n.id, Infinity);
           if (!r.ok) throw new Error(`${label} ${n.id} refused: ${r.reason}`);
           m = r.member;
         }

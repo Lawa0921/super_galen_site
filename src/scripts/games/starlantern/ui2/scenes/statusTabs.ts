@@ -10,7 +10,8 @@ import { ROW_MELEE, rowOfCell } from '../../engine/formation';
 import {
   canRaiseNode, canRaiseTalent, freeNode, keystonesOf, learnedSkills, nodeRank, rankMod, skillPointsLeft, talentPointsLeft, ultimateFor,
 } from '../../engine/progression';
-import type { TalentFail } from '../../engine/progression';
+import type { RaiseFail, TalentFail } from '../../engine/progression';
+import { ABYSS_UNLOCK } from '../../data/hero';
 import { SLOTS, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
 import { STAT_CATEGORIES, type StatCategory } from '../../engine/stats';
 import type { AnyStat, CharacterId, Slot, StatKey, Stats } from '../../engine/types';
@@ -343,6 +344,11 @@ function moveTree(node: string): boolean {
   return true;
 }
 
+/** Why `node` is shut, in words; an abyss node names the memories its branch needs. */
+function treeReason(why: RaiseFail, node: string): string {
+  return why === 'abyss' ? T.ui2.tree.reason.abyss(ABYSS_UNLOCK[NODES[node].branch]) : T.ui2.tree.reason[why];
+}
+
 /**
  * Enter on the cursor's node, or a click on `clicked` (which selects it first): the shared two-press spend, through the
  * Game so the spend is saved.
@@ -352,7 +358,7 @@ function pressTree(ctx: SceneCtx, id: CharacterId, clicked?: string): void {
   const can = () => canRaiseNode(ctx.game.state.party.roster[id], node);
   const raise = () => ctx.game.raiseNode(id, node).ok;
   const r = clicked ? clickSpend(treeView.spend, node, moveTree, can, raise, ctx.sfx) : pressSpend(treeView.spend, node, can, raise, ctx.sfx);
-  treeView.msg = r === 'armed' ? T.ui2.tree.pending : r === 'raised' ? '' : r === 'failed' ? T.ui2.tree.failed : T.ui2.tree.reason[r.refused];
+  treeView.msg = r === 'armed' ? T.ui2.tree.pending : r === 'raised' ? '' : r === 'failed' ? T.ui2.tree.failed : treeReason(r.refused, node);
 }
 
 /** The notes under the tree for the cursor's node: what it does now and what its next rank changes. */
@@ -420,7 +426,7 @@ const tree: StatusTab = {
             ]),
             el('div', { class: 'slx-tree-node-foot' }, [
               el('span', { class: 'slx-tree-kind', text: t.kind[kindOf(n, tier)] }),
-              el('span', { class: 'slx-tree-state', text: why ? t.reason[why] : t.open }),
+              el('span', { class: 'slx-tree-state', text: why ? treeReason(why, n.id) : t.open }),
             ]),
           ]);
           // The first click selects and arms the node; a second click on it spends.

@@ -1,4 +1,5 @@
 import { CHARACTERS, LEGACY_CHARACTER_IDS } from '../data/characters';
+import { ABYSS } from '../data/hero';
 import { CONDITIONS, type ConditionDef } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { FLOORS } from '../data/floors';
@@ -11,6 +12,9 @@ import { compensation, enemySecondary } from './stats';
 import type { Element, EnemyDef, StatKey, Stats } from './types';
 
 export { depthLevel } from './levels';
+
+/** The abyss capstones' bonus at `depth`, in percent: ABYSS.perDepth per floor, never over ABYSS.cap. */
+export const abyssPct = (depth: number): number => Math.min(ABYSS.cap, ABYSS.perDepth * Math.max(0, depth));
 
 /**
  * Depth growth (spec §3.7): a monster is lifted from its home level (the depth level of the floor it was made for) to

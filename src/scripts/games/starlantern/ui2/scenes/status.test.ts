@@ -583,7 +583,7 @@ describe('StatusScene', () => {
 
     it('every refusal has its own words', () => {
       for (const k of ['unknown', 'max', 'points', 'req', 'gate', 'capstone'] as const) expect(T.ui2.tree.reason[k].length, k).toBeGreaterThan(0);
-      expect(new Set(Object.values(T.ui2.tree.reason)).size).toBe(6);
+      expect(new Set(Object.values(T.ui2.tree.reason).filter((v) => typeof v === 'string')).size).toBe(6);
     });
 
     it('moving the cursor cancels a pending raise', () => {

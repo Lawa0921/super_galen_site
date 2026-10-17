@@ -161,7 +161,7 @@ describe('skill trees', () => {
         let m: Member = { ...newMember(id), level: 50 };
         for (const n of b.nodes) {
           while (nodeRank(m, n.id) < n.maxRank) {
-            const r = raiseNode(m, n.id);
+            const r = raiseNode(m, n.id, Infinity);
             if (!r.ok) throw new Error(`${id}:${b.name} ${n.id} refused: ${r.reason}`);
             m = r.member;
           }

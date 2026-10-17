@@ -257,7 +257,8 @@ export const T = {
       reason: {
         unknown: '無法投點', max: '已達最高等級', points: '點數不足', req: '需先學會上一階',
         gate: '分支點數不足', capstone: '已選其他終極',
-      } as Record<RaiseFail, string>,
+        abyss: (n: number) => `深淵尚未甦醒（需要 ${n} 片記憶）`,
+      } as Record<Exclude<RaiseFail, 'abyss'>, string> & { abyss: (n: number) => string },
       pending: '再按一次投點',
       /** The engine turned a spend down after the page allowed it (e.g. outside town and the labyrinth). */
       failed: '現在無法投點',

@@ -5,6 +5,7 @@ import {
   BOARDS, DEFAULT_KEYSTONES, TALENT_NODES, TALENT_PER, TALENT_SCALE, boardPoints, keystoneCount, rankOf, talentBlocker, type KeystoneId, type TalentBlocker,
 } from '../data/talents';
 import { rulesOf } from '../data/characters';
+import { ABYSS_UNLOCK } from '../data/hero';
 import { HERO_ULTIMATES, ULTIMATES } from '../data/ultimates';
 import type { AnyStat, CharacterId, GrowthRules, Member, Sheet, UltimateDef } from './types';
 import { stackMods } from './skills';
@@ -43,8 +44,9 @@ export function talentPoints(level: number, curve: GrowthRules['curve'] = 'compa
 /**
  * Why a node cannot take its next rank, in the order they are checked: the structural reasons first, so a member with no
  * points left still learns what stands in the way; 'points' only for a node that is otherwise open.
+ * 'abyss': the hero's tier-4 node of that branch needs more memories than he has (ABYSS_UNLOCK).
  */
-export type RaiseFail = 'unknown' | 'max' | 'req' | 'gate' | 'capstone' | 'points';
+export type RaiseFail = 'unknown' | 'max' | 'req' | 'gate' | 'abyss' | 'capstone' | 'points';
 
 const has = (o: object, k: string) => Object.prototype.hasOwnProperty.call(o, k);
 
@@ -103,6 +105,15 @@ export function rankMod(ranks: Record<string, number>, skill: string): SkillMod 
   const rank = skillRank(ranks, skill);
   const pct = rank > 0 ? ACTIVE_RANK_PCT[rank - 1] : 100;
   if (pct === 100) return undefined;
+  return pctMod(skill, pct);
+}
+
+/**
+ * `pct` percent as a rewrite of the skill's primary effect, or undefined when it changes nothing (100%, or a skill with
+ * nothing to scale): damage, heal and turret skills scale their power (`powerPct`); a pure buff or debuff skill its percent.
+ */
+export function pctMod(skill: string, pct: number): SkillMod | undefined {
+  if (pct === 100) return undefined;
   const kinds = SKILLS[skill]?.effects.map((e) => e.kind) ?? [];
   if (kinds.some((k) => k === 'damage' || k === 'heal' || k === 'turret')) return { powerPct: pct };
   return kinds.includes('buff') ? { buffPct: pct } : undefined;
@@ -151,7 +162,7 @@ const pointsLeft = (id: CharacterId, level: number, tree: unknown): number => sk
 
 export const skillPointsLeft = (m: Member): number => pointsLeft(m.id, m.level, m.tree);
 
-function check(id: CharacterId, level: number, tree: unknown, node: string): RaiseFail | null {
+function check(id: CharacterId, level: number, tree: unknown, node: string, memories: number): RaiseFail | null {
   const info = has(NODES, node) ? NODES[node] : undefined;
   if (!info || info.owner !== id) return 'unknown';
   if (rankIn(tree, node) >= info.node.maxRank) return 'max';
@@ -161,17 +172,21 @@ function check(id: CharacterId, level: number, tree: unknown, node: string): Rai
   for (let t = 0; t < info.tier; t++) below += rankIn(tree, branch[t].id);
   if (info.branch === 0 && info.tier > 0) below -= Math.min(1, rankIn(tree, branch[0].id));
   if (below < TIER_GATE[info.tier]) return 'gate';
+  if (id === 'hero' && info.tier === 4 && memories < ABYSS_UNLOCK[info.branch]) return 'abyss';
   if (info.tier === 4 && TREES[id].branches.filter((b) => b.nodes[4].id !== node && rankIn(tree, b.nodes[4].id) > 0).length >= rulesOf(id).capstones) return 'capstone';
   if (pointsLeft(id, level, tree) <= 0) return 'points';
   return null;
 }
 
-/** Why `node` cannot take its next rank, checked in the order of RaiseFail; null when it can. Never throws. */
-export const canRaiseNode = (m: Member, node: string): RaiseFail | null => check(m.id, m.level, m.tree, node);
+/**
+ * Why `node` cannot take its next rank, checked in the order of RaiseFail; null when it can. Never throws.
+ * `memories` is the hero's memory count, which the abyss nodes wait for (ABYSS_UNLOCK); 0 keeps them shut.
+ */
+export const canRaiseNode = (m: Member, node: string, memories = 0): RaiseFail | null => check(m.id, m.level, m.tree, node, memories);
 
 /** One more rank in `node`, on a copy; the member passed in is never changed. */
-export function raiseNode(m: Member, node: string): { ok: true; member: Member } | { ok: false; reason: RaiseFail } {
-  const reason = canRaiseNode(m, node);
+export function raiseNode(m: Member, node: string, memories = 0): { ok: true; member: Member } | { ok: false; reason: RaiseFail } {
+  const reason = canRaiseNode(m, node, memories);
   if (reason) return { ok: false, reason };
   return { ok: true, member: { ...m, tree: { ...m.tree, [node]: nodeRank(m, node) + 1 } } };
 }
@@ -189,6 +204,7 @@ export function legacyDue(skill: string): number {
  * 1. old skills that are due, smallest old level first; 2. ranks and mods of skills already learned;
  * 3. other new nodes, but not old skills before they are due; 4. old skills early, only when nothing else is open.
  * Within a kind, lowest (rank, tier, branch) first. Ultimates other than DEFAULT_CAPSTONE's branch are never taken.
+ * The default build is the simulation's and assumes every abyss node is unlocked; a save is checked with real memories.
  */
 export function defaultTree(id: CharacterId, level: number): Record<string, number> {
   const tree = newTree(id);
@@ -213,7 +229,7 @@ export function defaultTree(id: CharacterId, level: number): Record<string, numb
       const fresh = nodes.filter((x) => !upgrades.includes(x) && !unlearnedOld.includes(x)).sort(order);
       const early = unlearnedOld.filter((x) => !due.includes(x)).sort(byOld);
       const pick = [due, upgrades, fresh, early]
-        .map((kind) => kind.find((x) => check(id, L, tree, x.node.id) === null))
+        .map((kind) => kind.find((x) => check(id, L, tree, x.node.id, Infinity) === null))
         .find((x) => x !== undefined);
       if (!pick) return tree;
       tree[pick.node.id] = rankIn(tree, pick.node.id) + 1;
@@ -311,7 +327,7 @@ function shapeOk(v: unknown, known: (k: string) => boolean, max: (k: string) => 
  * ultimate and keystone caps, which a legal build respects), so the order of the replay does not matter.
  * Never throws, for any input.
  */
-export function validBuild(id: CharacterId, level: number, tree: unknown, talents: unknown): boolean {
+export function validBuild(id: CharacterId, level: number, tree: unknown, talents: unknown, memories = 0): boolean {
   if (!Number.isInteger(level) || level < 1) return false;
   const ownNode = (k: string) => has(NODES, k) && NODES[k].owner === id;
   const ownTalent = (k: string) => has(TALENT_NODES, k) && TALENT_NODES[k].owner === id;
@@ -323,7 +339,7 @@ export function validBuild(id: CharacterId, level: number, tree: unknown, talent
     progress = false;
     for (const node of Object.keys(tree)) {
       if (nodeRank(m, node) >= tree[node]) continue;
-      const r = raiseNode(m, node);
+      const r = raiseNode(m, node, memories);
       if (r.ok) { m = r.member; progress = true; }
     }
   }

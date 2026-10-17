@@ -533,7 +533,8 @@ export class Game {
    */
   raiseNode(id: CharacterId, node: string): { ok: true } | { ok: false; reason: RaiseFail | 'invalid' } {
     if ((this.phase !== 'town' && this.phase !== 'map') || !this.state.party.recruited.includes(id)) return { ok: false, reason: 'invalid' };
-    const r = raiseNode(this.state.party.roster[id], node);
+    // Plan 6a: no memory source yet, so the abyss nodes stay shut (6b changes this to `state.memories.hero`).
+    const r = raiseNode(this.state.party.roster[id], node, 0);
     if (!r.ok) return r;
     const party = this.state.party;
     this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
@@ -703,7 +704,7 @@ export class Game {
 
   private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string): void {
     const scale = scaled && this.run ? { depth: this.floor, region: this.run.region, condition: this.run.condition, elite } : undefined;
-    this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, altar: this.run?.altarBuffs });
+    this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs });
     planEnemies(this.battle, this.rng);
     this.phase = 'battle';
   }

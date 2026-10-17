@@ -9,10 +9,10 @@ import { SKILLS } from '../data/skills';
 import { stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
 import { hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
-import { depthLevel, empower, homeLevel, regionTint, scaleEnemy } from './scaling';
+import { abyssPct, depthLevel, empower, homeLevel, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
-import { keystonesOf, skillRank, treeMods, ultimateFor } from './progression';
+import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, SecondaryKey, SkillDef, Target } from './types';
 
@@ -33,6 +33,8 @@ export interface BattleState {
   intents?: Record<string, EnemyAction>;
   /** Each enemy's definition as met in this fight (depth, region, elite), by combatant key; absent means the plain ENEMIES entry. */
   enemyDefs?: Record<string, EnemyDef>;
+  /** The abyss capstones' bonus in percent for this fight (fixed at createBattle); absent reads as 0. */
+  abyss?: number;
 }
 
 /** Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */
@@ -77,6 +79,10 @@ const enemyDef = (s: BattleState, c: Combatant): EnemyDef | undefined => s.enemy
 export function createBattle(o: {
   party: Party; enemyIds: string[]; boss?: boolean; inventory: Record<string, number>; revealed: Record<string, Element[]>;
   scale?: BattleScale;
+  /** The depth of a fight that has no `scale` (the story boss of a dungeon's third floor); default `scale.depth`, else 1. */
+  depth?: number;
+  /** The abyss bonus in percent, only to force it (simulations); default is `abyssPct(depth)`, computed here and nowhere else. */
+  abyss?: number;
   /** Run-long altar bonuses: percent added to the party's max stats for this whole battle (summed per stat). */
   altar?: { stat: BuffStat; pct: number }[];
 }): BattleState {
@@ -109,6 +115,7 @@ export function createBattle(o: {
     itemBoost: hasPassive(o.party, 'itemBoost'), log: [], outcome: 'ongoing',
   };
   if (sc) s.enemyDefs = defs;
+  s.abyss = o.abyss ?? abyssPct(o.depth ?? sc?.depth ?? 1);
   return s;
 }
 
@@ -239,8 +246,11 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       // A member casts only what their tree has learned (a whole rank of the skill's own node, read as progression reads
       // a tree); a combatant without ranks (tests) casts anything. The lost turn is logged, as one short of TP is.
       if (actor.ranks && skillRank(actor.ranks, act.skill) === 0) { s.log.push({ type: 'no-skill', actor: actor.key }); return; }
-      const def = skillFor(actor, act.skill);
+      let def = skillFor(actor, act.skill);
       if (!def || def.passive) return;
+      // The abyss capstones grow with the fight's depth, after the tree and the worn powers have had their say.
+      const bonus = def.abyss && s.abyss ? pctMod(def.id, 100 + s.abyss) : undefined;
+      if (bonus) def = patchSkill(def, bonus);
       const cost = skillCost(actor, act.skill);
       if (actor.tp < cost) { s.log.push({ type: 'no-tp', actor: actor.key }); return; }
       actor.tp -= cost;
