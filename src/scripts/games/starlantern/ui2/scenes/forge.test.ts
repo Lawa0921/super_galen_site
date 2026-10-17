@@ -5,7 +5,11 @@ import type { ForgeResult } from '../../engine/forge/cost';
 import { constRng, memoryStorage } from '../../engine/testing';
 import type { ItemInstance, Rarity } from '../../engine/types';
 import { NO_ART } from '../../render/textures';
-import { ForgeScene, forgeRows, type ForgeHost } from './forge';
+import { CHARACTERS } from '../../data/characters';
+import { ENHANCE_COST, ENHANCE_SUCCESS } from '../../data/forge';
+import { enhanceCost, forgeRng } from '../../engine/forge/cost';
+import { implicitStats } from '../../engine/loot/item';
+import { ForgeScene, costText, forgeRows, type ForgeHost } from './forge';
 
 const gear = (uid: number, base: string, rarity: Rarity, extra: Partial<ItemInstance> = {}): ItemInstance =>
   ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0, ...extra });
@@ -66,14 +70,14 @@ describe('ForgeScene', () => {
     // Keyboard: each tab in turn.
     TABS.forEach((tab, i) => {
       if (i) s.onAction('down');
-      if (i === 0) return;                  // 分解 opens its own page (covered below)
+      if (i <= 1) return;                   // 分解 and 強化 open their own pages (covered below)
       s.onAction('confirm');
       expect(line()).toBe(T.ui2.town.soon(tab));
       s.onAction('confirm');
       expect(talking()).toBe(false);
     });
     // Mouse and touch: a click on each tab.
-    for (const tab of TABS.slice(1)) {
+    for (const tab of TABS.slice(2)) {
       const opt = [...root.querySelectorAll('.slx-cmd [role=option]')].find((o) => o.textContent === tab) as HTMLElement;
       opt.click();
       expect(line()).toBe(T.ui2.town.soon(tab));
@@ -290,5 +294,157 @@ describe('ForgeScene dismantle page', () => {
     const { s, root } = open([gear(1, 'iron-sword', 'common')]);
     s.onAction('cancel');
     expect(root.querySelector('.slx-forge-list')).toBeNull();
+  });
+});
+
+const CHAR_NAME = (id: keyof typeof CHARACTERS): string => CHARACTERS[id].name;
+
+describe('costText', () => {
+  it('costText marks what is lacking with words and a class', () => {
+    const game = new Game(constRng(0.5), null);
+    game.state.gold = 140;
+    game.state.inventory = { 'essence-magic': 3 };
+    const parts = costText(game.state, { gold: 140, mats: { 'essence-magic': 5 } });
+    const text = parts.map((p) => (typeof p === 'string' ? p : p.text)).join('');
+    expect(text).toBe(`魔法精華 3／5${T.ui2.forge.lacking}、140 G`);
+    expect(parts.filter((p) => typeof p !== 'string' && p.cls === 'slx-lack').map((p) => (p as { text: string }).text)).toEqual([`魔法精華 3／5${T.ui2.forge.lacking}`]);
+    game.state.gold = 90;
+    const poor = costText(game.state, { gold: 140, mats: {} });
+    expect(poor).toEqual([{ text: `90／140 G${T.ui2.forge.lacking}`, cls: 'slx-lack' }]);
+  });
+});
+
+describe('ForgeScene enhance page', () => {
+  function open(bag: ItemInstance[], prep: (g: Game) => void = () => {}) {
+    const game = new Game(constRng(0.5), memoryStorage());
+    game.state.bag = bag;
+    prep(game);
+    const t = setup(game);
+    t.s.onAction('confirm');                // greeting
+    t.s.onAction('down');
+    t.s.onAction('confirm');                // 強化
+    const info = () => t.root.querySelector('.slx-info') as HTMLElement;
+    const rows = () => [...t.root.querySelectorAll('.slx-forge-list [role=option]')];
+    const confirmEl = () => t.root.querySelector('.slx-confirm');
+    return { ...t, game, info, rows, confirmEl };
+  }
+  const at = (o: ItemInstance, enhance: number): ItemInstance => ({ ...o, enhance });
+
+  it('the detail compares the base bonus now and at the next level, with chance and cost', () => {
+    const it = gear(1, 'iron-sword', 'rare', { ilvl: 40, enhance: 5 });
+    const { info, rows } = open([it], (g) => { g.state.gold = 100; g.state.inventory = { 'essence-magic': 1 }; });
+    const now = implicitStats(it).atk!;
+    const next = implicitStats(at(it, 6)).atk!;
+    expect(next).toBeGreaterThan(now);
+    const text = info().textContent!;
+    expect(text).toContain(T.ui2.forge.levelStep(5, 6));
+    expect(text).toContain(T.ui2.forge.baseStat('攻擊', now, next));
+    expect(info().querySelector('.slx-up')).not.toBeNull();
+    expect(text).toContain(T.ui2.forge.chance(80));
+    expect(text).toContain(T.ui2.forge.failNote);
+    expect(text).toContain('魔法精華 1／4');
+    expect(text).toContain('100／200 G');
+    expect(info().querySelectorAll('.slx-lack').length).toBe(2);
+    expect(rows()[0].textContent).toContain('+5');
+  });
+
+  it('does not paint a base bonus green when the next level rounds to the same number', () => {
+    const { info } = open([gear(1, 'iron-sword', 'common', { ilvl: 1 })]);
+    expect(info().textContent).toContain(T.ui2.forge.baseStat('攻擊', 4, 4));
+    expect(info().querySelector('.slx-up')).toBeNull();
+  });
+
+  it('shows no chance below +5, and no failure note at 100%', () => {
+    const { info } = open([gear(1, 'iron-sword', 'common', { enhance: 2 })]);
+    expect(info().textContent).not.toContain('成功率');
+    expect(info().textContent).not.toContain(T.ui2.forge.failNote);
+  });
+
+  it("a worn item shows its wearer's gains and who wears it", () => {
+    const it = gear(7, 'iron-sword', 'rare', { ilvl: 40, enhance: 5 });
+    const { game, rows, info } = open([], (g) => { g.state.party.roster[g.state.party.recruited[0]].equip = { weapon: it }; });
+    const wearer = game.state.party.recruited[0];
+    expect(rows()[0].textContent).toContain(T.ui2.forge.wornBy(CHAR_NAME(wearer)));
+    const row = info().querySelector('.slx-cmp-member')!;
+    expect(row.textContent).toContain(CHAR_NAME(wearer));
+    expect(row.querySelector('.slx-up[data-stat=atk]')).not.toBeNull();
+  });
+
+  it('yes on a +0 item makes it +1 and says so; the row reads +1', () => {
+    const { game, s, line, rows, confirmEl, sfx } = open([gear(1, 'iron-sword', 'common')], (g) => {
+      g.state.gold = 100; g.state.inventory = { 'essence-common': 5 };
+    });
+    s.onAction('confirm');
+    expect(confirmEl()!.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('no');
+    s.onAction('confirm');                  // 否
+    expect(game.state.bag[0].enhance).toBe(0);
+    s.onAction('confirm'); s.onAction('up'); s.onAction('confirm');
+    expect(game.state.bag[0].enhance).toBe(1);
+    expect(line()).toBe(T.ui2.forge.enhanceOk('鐵劍 +1'));
+    expect(sfx.error).not.toHaveBeenCalled();
+    s.onAction('confirm');
+    expect(rows()[0].textContent).toContain('+1');
+    expect(game.state.gold).toBe(100 - ENHANCE_COST[0].gold);
+  });
+
+  it('a failed +6 attempt plays error, keeps +5 and spends the cost', () => {
+    const it = gear(1, 'iron-sword', 'common', { enhance: 5 });
+    const cost = ENHANCE_COST[5];
+    const { game, s, line, sfx, rows, confirmEl } = open([it], (g) => {
+      g.state.gold = 500; g.state.inventory = { 'essence-magic': 9 };
+      for (let d = 0; d < 200; d++) {
+        const c = structuredClone(g.state); c.forgeDraws = d;
+        if (forgeRng(c)() >= ENHANCE_SUCCESS[5]) { g.state.forgeDraws = d; break; }
+      }
+    });
+    s.onAction('confirm'); s.onAction('up'); s.onAction('confirm');
+    expect(confirmEl()).toBeNull();
+    expect(game.state.bag[0].enhance).toBe(5);
+    expect(game.state.gold).toBe(500 - cost.gold);
+    expect(game.state.inventory['essence-magic']).toBe(9 - cost.mats['essence-magic']);
+    expect(sfx.error).toHaveBeenCalledTimes(1);
+    expect(line()).toBe(T.ui2.forge.enhanceFail('鐵劍 +5'));
+    expect(rows()[0].textContent).toContain('+5');
+  });
+
+  it('a +10 item shows 已達上限 and Enter refuses with the reason', () => {
+    const { game, s, rows, info, line, confirmEl, sfx } = open([gear(1, 'iron-sword', 'rare', { enhance: 10 })]);
+    expect(rows()[0].textContent).toContain(T.ui2.forge.maxed);
+    expect(info().textContent).toContain(T.ui2.forge.maxed);
+    s.onAction('confirm');
+    expect(confirmEl()).toBeNull();
+    expect(sfx.error).toHaveBeenCalled();
+    expect(line()).toBe(T.reasons.max);
+    expect(game.state.bag[0].enhance).toBe(10);
+  });
+
+  it('missing materials are named exactly, and nothing is spent', () => {
+    const { game, s, line, confirmEl } = open([gear(1, 'iron-sword', 'common', { enhance: 5 })], (g) => {
+      g.state.gold = 150; g.state.inventory = { 'essence-magic': 1 };
+    });
+    s.onAction('confirm');
+    expect(confirmEl()).toBeNull();
+    expect(line()).toBe(T.ui2.forge.lackNames(['魔法精華 ×3', '金錢 50 G']));
+    expect(game.state.gold).toBe(150);
+    expect(enhanceCost(game.state.bag[0])).not.toBeNull();
+  });
+
+  it('with nothing to enhance it says so; no inline styles', () => {
+    const game = new Game(constRng(0.5), memoryStorage());
+    game.state.bag = [];
+    for (const m of Object.values(game.state.party.roster)) m.equip = {};
+    const t = setup(game);
+    t.s.onAction('confirm'); t.s.onAction('down'); t.s.onAction('confirm');
+    expect(t.line()).toBe(T.ui2.forge.nothingToEnhance);
+    const o = open([gear(1, 'iron-sword', 'rare', { enhance: 5 })]);
+    expect(o.root.querySelectorAll('[style]').length).toBe(0);
+  });
+
+  it('cancel closes the list and its detail', () => {
+    const { s, root, info } = open([gear(1, 'iron-sword', 'common')]);
+    expect(info()).not.toBeNull();
+    s.onAction('cancel');
+    expect(root.querySelector('.slx-forge-list')).toBeNull();
+    expect(root.querySelector('.slx-info')).toBeNull();
   });
 });

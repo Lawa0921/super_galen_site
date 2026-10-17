@@ -1,15 +1,22 @@
 import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
 import type { ForgeResult } from '../../engine/forge/cost';
+import type { Cost } from '../../data/forge';
+import { ENHANCE_MAX } from '../../data/forge';
+import { MATERIALS } from '../../data/materials';
+import { compareDelta } from '../../engine/compare';
+import { enhanceChance, enhanceCost, findItem } from '../../engine/forge/cost';
 import { dismantleYield } from '../../engine/forge/forge';
+import { implicitStats } from '../../engine/loot/item';
 import { SLOTS } from '../../engine/party';
 import type { GameState } from '../../engine/state';
-import type { ItemInstance } from '../../engine/types';
+import type { AnyStat, ItemInstance } from '../../engine/types';
 import { art } from '../../render/artPaths';
-import { gearLabel, gearPart, joinParts } from '../loot';
+import { el } from '../../ui/dom';
+import { fillRich, gearLabel, gearPart, joinParts } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { MenuView, confirmBox, win, type Rich } from '../widgets';
+import { MenuView, confirmBox, richNodes, win, type Rich, type RichPart } from '../widgets';
 import { FacilityScene, type Layer } from './facility';
 
 /** The forge's commands are its five tabs, in this order. */
@@ -27,8 +34,9 @@ export interface ForgeHost {
   pop(silent?: boolean): void;
   popAll(): void;
   say(text: string | Rich, mood?: 'normal' | 'happy'): Promise<void>;
-  /** After a Game forge call: the ok line (happy) or the reason; then a failed save is reported, and the notice cleared. */
-  afterAct<O>(r: ForgeResult<O>, okLine: (out: O) => Rich): void;
+  /** After a Game forge call: the ok line (happy) or the reason; then a failed save is reported, and the notice cleared.
+   * `bad` marks an ok result that is bad news (a failed enhance): the error sound and no happy face. */
+  afterAct<O>(r: ForgeResult<O>, okLine: (out: O) => Rich, bad?: (out: O) => boolean): void;
 }
 
 /**
@@ -71,6 +79,7 @@ export class ForgeScene extends FacilityScene {
 
   protected onCommand(id: string): void {
     if (id === 'dismantle') { dismantlePage(this.host()); return; }
+    if (id === 'enhance') { enhancePage(this.host()); return; }
     const label = T.ui2.forge.tabs[id as ForgeTab];
     if (label) void this.say(T.ui2.town.soon(label));
   }
@@ -83,15 +92,17 @@ export class ForgeScene extends FacilityScene {
       pop: (silent) => this.pop(silent),
       popAll: () => this.popAll(),
       say: (text, mood) => this.say(text, mood),
-      afterAct: (r, okLine) => this.afterAct(r, okLine),
+      afterAct: (r, okLine, bad) => this.afterAct(r, okLine, bad),
     };
   }
 
-  private afterAct<O>(r: ForgeResult<O>, okLine: (out: O) => Rich): void {
+  private afterAct<O>(r: ForgeResult<O>, okLine: (out: O) => Rich, bad?: (out: O) => boolean): void {
     if (!r.ok) { this.fail(r.reason); return; }
     this.refresh();
-    this.ctx.sfx.confirm();
-    const said = this.say(okLine(r.out), 'happy');
+    // A spent-but-failed try is told as bad news: the error sound, no happy face.
+    const failed = bad?.(r.out) ?? false;
+    if (failed) this.ctx.sfx.error(); else this.ctx.sfx.confirm();
+    const said = this.say(okLine(r.out), failed ? 'normal' : 'happy');
     const notice = this.ctx.game.notice;
     // The save is reported here, so the town has nothing to repeat.
     if (notice === 'saved' || notice === 'save-failed') this.ctx.game.notice = null;
@@ -164,5 +175,99 @@ ${T.ui2.forge.warnPrecious}`] : ask, (yes) => {
     moved: () => h.ctx.sfx.cursor(),
     cancel: () => h.pop(),
   }, 12);
+  h.push({ el: win('slx-list slx-forge-list', [v.el]), onAction: (a) => v.onAction(a) });
+}
+
+/** What `c` costs as rich parts: each material as 「名稱 擁有／需要」, then the gold; anything short is in `slx-lack` and ends with （不足）. */
+export function costText(s: GameState, c: Cost): Rich {
+  const F = T.ui2.forge;
+  const part = (text: string, short: boolean): RichPart => (short ? { text: `${text}${F.lacking}`, cls: 'slx-lack' } : text);
+  const parts: RichPart[] = Object.entries(c.mats).map(([id, need]) => {
+    const have = s.inventory[id] ?? 0;
+    return part(F.costMat(MATERIALS[id]?.name ?? id, have, need), have < need);
+  });
+  if (c.gold > 0) parts.push(s.gold < c.gold ? part(F.costGoldHave(s.gold, c.gold), true) : F.costGold(c.gold));
+  return joinParts(parts);
+}
+
+/** What is still short for `c`, named: materials first, then gold. */
+function lackingNames(s: GameState, c: Cost): string[] {
+  const F = T.ui2.forge;
+  const out = Object.entries(c.mats).filter(([id, need]) => (s.inventory[id] ?? 0) < need)
+    .map(([id, need]) => F.lackMat(MATERIALS[id]?.name ?? id, need - (s.inventory[id] ?? 0)));
+  if (s.gold < c.gold) out.push(F.lackGold(c.gold - s.gold));
+  return out;
+}
+
+/** The detail beside the enhance list: the level step, the base bonus now and next, chance, cost, and the wearer's gains. */
+function enhanceDetail(s: GameState, it: ItemInstance): HTMLElement[] {
+  const F = T.ui2.forge;
+  const out: HTMLElement[] = [el('p', { class: `slx-name-line slx-rarity-${it.rarity}`, text: gearLabel(it) })];
+  const cost = enhanceCost(it);
+  if (!cost) return [...out, el('p', { class: 'slx-desc', text: `+${it.enhance}　${F.maxed}` })];
+  const next: ItemInstance = { ...it, enhance: it.enhance + 1 };
+  out.push(el('p', { text: F.levelStep(it.enhance, next.enhance) }));
+  const now = implicitStats(it);
+  const after = implicitStats(next);
+  for (const k of Object.keys(after) as AnyStat[]) {
+    const [from, to] = [now[k as keyof typeof now] ?? 0, after[k as keyof typeof after] ?? 0];
+    // Green only when the number really moves: a small base can round to the same value one level up.
+    out.push(el('p', { class: to > from ? 'slx-cmp-row slx-up' : 'slx-cmp-row', attrs: { 'data-stat': k }, text: F.baseStat(T.gear.statName[k], from, to) }));
+  }
+  const chance = enhanceChance(it);
+  if (it.enhance >= 5) out.push(el('p', { text: F.chance(Math.round(chance * 100)) }));
+  if (chance < 1) out.push(el('p', { class: 'slx-desc', text: F.failNote }));
+  out.push(el('p', {}, richNodes(costText(s, cost))));
+  const found = findItem(s, it.uid);
+  if (found?.member && found.slot) {
+    const delta = compareDelta(s.party.roster[found.member], found.slot, next);
+    const stats = (Object.keys(T.gear.statName) as AnyStat[]).filter((k) => delta[k]).map((k) =>
+      el('span', { class: delta[k]! > 0 ? 'slx-up' : 'slx-down', attrs: { 'data-stat': k }, text: `${T.gear.statName[k]}${T.ui2.equip.delta(k, delta[k]!)}` }));
+    out.push(el('ul', { class: 'slx-skills slx-cmp-list' }, [el('li', { class: 'slx-cmp-member' }, [el('b', { text: CHARACTERS[found.member].name }), ...stats])]));
+  }
+  return out;
+}
+
+/**
+ * 強化: the bag's gear and what the party wears, each row with its level (or 已達上限). The detail beside it follows the
+ * cursor and is the comparison before confirming. Enter asks first (否 under the cursor); a maxed piece or a missing
+ * material is refused with the reason, named. The list stays open and refreshes, for back-to-back tries.
+ */
+export function enhancePage(h: ForgeHost): void {
+  const game = h.ctx.game;
+  const rows = (): MenuItem[] => forgeRows(game.state, { worn: true, right: (it) => (it.enhance >= ENHANCE_MAX ? T.ui2.forge.maxed : `+${it.enhance}`) });
+  if (!rows().length) { void h.say(T.ui2.forge.nothingToEnhance); return; }
+  const info = win('slx-info');
+  const find = (id?: string) => (id ? findItem(game.state, Number(id.slice(1)))?.it ?? null : null);
+  const show = () => { const it = find(v.menu.current()?.id); info.replaceChildren(...(it ? enhanceDetail(game.state, it) : [])); };
+  const run = (uid: number) => {
+    const r = game.enhance(uid);
+    if (r.ok) { v.menu.items.splice(0, v.menu.items.length, ...rows()); v.render(); show(); }
+    h.afterAct(r, (out) => {
+      const it = findItem(game.state, uid)?.it;
+      return it ? fillRich(out.success ? T.ui2.forge.enhanceOk : T.ui2.forge.enhanceFail, [gearPart(it)]) : [];
+    }, (out) => !out.success);
+  };
+  const v: MenuView = new MenuView(new Menu(rows()), {
+    pick: (item) => {
+      const it = find(item.id);
+      if (!it) return;
+      const cost = enhanceCost(it);
+      if (!cost) { h.afterAct({ ok: false, reason: 'max' }, () => []); return; }
+      const lack = lackingNames(game.state, cost);
+      if (lack.length) { h.ctx.sfx.error(); void h.say(T.ui2.forge.lackNames(lack)); return; }
+      const box = confirmBox(fillRich(T.ui2.forge.askEnhance, [gearPart(it)]), (yes) => {
+        h.pop(!yes);
+        if (yes) run(it.uid);
+      });
+      box.view.menu.setCursor(1);
+      box.view.render();
+      h.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
+    },
+    moved: () => { h.ctx.sfx.cursor(); show(); },
+    cancel: () => { info.remove(); h.pop(); },
+  }, 12);
+  show();
+  h.layerRoot.append(info);
   h.push({ el: win('slx-list slx-forge-list', [v.el]), onAction: (a) => v.onAction(a) });
 }

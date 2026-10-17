@@ -978,3 +978,4 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-forge .slx-info { left: 420px; width: 200px; max-height: 260px; overflow-y: auto; }
 .slx-forge .slx-label.slx-junk { text-decoration: line-through; opacity: 0.6; }
 .slx-lack { color: $slx-down; }
+.slx-forge .slx-info .slx-cmp-row.slx-up { color: $slx-up; }

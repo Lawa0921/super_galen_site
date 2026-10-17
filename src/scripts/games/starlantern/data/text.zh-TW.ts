@@ -342,6 +342,25 @@ export const T = {
 會得到：${yields}`,
       warnPrecious: '裡面有傳說、獨特、套裝或已強化的裝備，分解後無法復原。',
       dismantled: (yields: string) => `分解完成，得到了${yields}。`,
+      maxed: '已達上限',
+      nothingToEnhance: '沒有可以強化的裝備。',
+      levelStep: (from: number, to: number) => `強化　+${from} → +${to}`,
+      /** One base-bonus line: 「攻擊 6 → 7」. */
+      baseStat: (name: string, from: number, to: number) => `${name} ${from} → ${to}`,
+      chance: (pct: number) => `成功率 ${pct}%`,
+      failNote: '失敗不會降級，但素材照樣消耗',
+      lacking: '（不足）',
+      /** 「魔法精華 3／5」: what you have over what is needed. */
+      costMat: (name: string, have: number, need: number) => `${name} ${have}／${need}`,
+      costGold: (need: number) => `${need} G`,
+      costGoldHave: (have: number, need: number) => `${have}／${need} G`,
+      /** What is still short, named: 「還缺：魔法精華 ×3、金錢 50 G」. */
+      lackNames: (names: string[]) => `還缺：${names.join('、')}`,
+      lackMat: (name: string, n: number) => `${name} ×${n}`,
+      lackGold: (n: number) => `金錢 ${n} G`,
+      askEnhance: (label: string) => `要強化${label}嗎？`,
+      enhanceOk: (label: string) => `強化成功！${label}`,
+      enhanceFail: (label: string) => `強化失敗了……${label}沒有降級，素材卻用掉了。`,
     },
     dungeon: {
       status: '隊伍狀態', items: '道具', lamp: (n: number) => `歸還之燈 ×${n}`, close: '關閉', askTown: '要回到城鎮嗎？',
