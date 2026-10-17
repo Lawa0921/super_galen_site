@@ -858,6 +858,43 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test('the shop material page keeps its list and detail apart inside the screen, and dims what is under the quantity box', async ({ page }) => {
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      // Every material at a five-digit count: the widest real rows, and a sell-all junk row with a six-digit total.
+      for (const id of ['moss', 'bat-wing', 'thorn-fang', 'crystal-shell', 'ice-crystal', 'lizard-scale', 'star-stone', 'dusk-cloth', 'old-coin',
+        'ancient-gear', 'star-tear', 'king-scale', 'shade-crystal', 'essence-legendary']) g.state.inventory[id] = 99999;
+    });
+    await w.choose('.slx-town', '道具店');
+    await expect(page.locator('.slx-shop')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-shop .slx-cmd [data-id=sell]').click();
+    await page.locator('.slx-shop .slx-layer').last().locator('[data-id=mats]').click();
+    const bounds = () => page.evaluate(() => {
+      const screen = document.querySelector('#sl-screen')!.getBoundingClientRect();
+      const k = screen.width / 640;
+      const box = (sel: string) => { const r = document.querySelector(sel)!.getBoundingClientRect(); return { l: (r.left - screen.left) / k, r: (r.right - screen.left) / k }; };
+      return { list: box('.slx-mat-page > .slx-shop-list'), info: box('.slx-mat-page > .slx-info') };
+    });
+    const rows = await page.locator('.slx-mat-page [role=option]').count();
+    expect(rows).toBeGreaterThan(10);
+    for (let i = 0; i < rows; i++) {
+      const b = await bounds();
+      expect(b.list.l, `row ${i}`).toBeGreaterThanOrEqual(-0.5);
+      expect(b.list.r, `row ${i}: list ${b.list.l}-${b.list.r}, detail ${b.info.l}-${b.info.r}`).toBeLessThanOrEqual(b.info.l + 0.5);
+      expect(b.info.r, `row ${i}`).toBeLessThanOrEqual(640.5);
+      await w.key('ArrowDown');
+    }
+    // A material row opens the quantity box on top: the page under it and the command window dim, like the forge's.
+    await page.locator('.slx-mat-page [data-id=moss]').click();
+    await expect(page.locator('.slx-qty')).toBeVisible();
+    const filters = await page.evaluate(() => [...document.querySelectorAll('.slx-shop .slx-cmd, .slx-mat-page > .slx-win')].map((e) => getComputedStyle(e).filter));
+    expect(filters.length).toBe(3);
+    for (const f of filters) expect(f).toContain('brightness');
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector('.slx-qty')!).filter)).toBe('none');
+    expect(w.errors).toEqual([]);
+  });
+
   test('walks into the forge from town and dismantles one magic item', async ({ page }) => {
     const w = await setup(page, 7);
     const uid = await page.evaluate(() => {

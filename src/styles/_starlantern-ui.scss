@@ -121,14 +121,16 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-info img { display: block; height: 120px; margin: 0 auto 4px; }
 .slx-desc { color: $slx-dim; margin: 2px 0; }
 .slx-junk-mat { color: #8a8a8a; }
-/* The material page (shop.ts sellMats) is one flex row, the list then its detail, so a longer label pushes the detail right
-   instead of under it. The row stops 12px short of the stage edge: the detail narrows first (down to 110px), then labels wrap. */
-.slx-shop .slx-layer.slx-mat-page { position: absolute; display: flex; align-items: flex-start; gap: 8px; max-width: 454px; }
+/* The material page (shop.ts sellMats) is one flex row of fixed columns, the list then its detail: a 454px row (it ends at
+   174 + 454 = 628, 12px short of the stage edge) holding a 290px list and the rest (156px) for the detail. The list cannot
+   grow, so a label too long for its row ends in an ellipsis (the detail names the material in full); the detail wraps. */
+.slx-shop .slx-layer.slx-mat-page { position: absolute; display: flex; align-items: flex-start; gap: 8px; width: 454px; max-width: none; }
 .slx-shop .slx-mat-page.slx-depth-1 { translate: 24px 16px; }
 .slx-shop .slx-mat-page > .slx-win { position: static; }
-.slx-shop .slx-mat-page > .slx-shop-list { flex: 1 0 auto; min-width: 230px; }
-.slx-shop .slx-mat-page .slx-right { white-space: nowrap; }
-.slx-shop .slx-mat-page > .slx-info.slx-mat-info { flex: 0 1 150px; width: auto; min-width: 110px; }
+.slx-shop .slx-mat-page > .slx-shop-list { flex: none; box-sizing: border-box; width: 290px; min-width: 0; }
+.slx-shop .slx-mat-page .slx-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slx-shop .slx-mat-page .slx-right { flex: none; white-space: nowrap; }
+.slx-shop .slx-mat-page > .slx-info.slx-mat-info { flex: 1 1 0; box-sizing: border-box; width: auto; min-width: 0; overflow-wrap: anywhere; }
 .slx-skills { margin: 4px 0; padding-left: 14px; }
 
 .slx-shop-list { min-width: 250px; }
@@ -1002,7 +1004,10 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-forge .slx-label.slx-junk { text-decoration: line-through; opacity: 0.6; }
 // Reroll and fusion stack three or four windows; those under the top one (facility.ts marks them slx-under) darken,
 // so the open list or confirm reads cleanly. A filter, not opacity: the windows stay opaque, so one list's text never shows
-// through another. The detail window is not a layer and stays bright.
-.slx-forge .slx-win.slx-under { filter: brightness(0.45) saturate(0.5); transition: filter 0.12s ease-out; }
+// through another. The forge's detail window is not a layer and stays bright. The shop dims the same way; its material page
+// is a layer holding two windows (list and detail), so the windows inside a marked layer darken too.
+.slx-forge, .slx-shop {
+  .slx-win.slx-under, .slx-under > .slx-win { filter: brightness(0.45) saturate(0.5); transition: filter 0.12s ease-out; }
+}
 .slx-lack { color: $slx-down; }
 .slx-forge .slx-info .slx-cmp-row.slx-up { color: $slx-up; }
