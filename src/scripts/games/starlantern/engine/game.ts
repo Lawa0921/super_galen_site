@@ -21,8 +21,11 @@ import { loadGame, saveGame, type SaveStorage } from './save';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { newGame, type GameState } from './state';
+import { craftBase, craftItem, craftSet } from './forge/craft';
+import type { ForgeResult, RerollOpts } from './forge/cost';
+import { dismantle, enhance, fuse, reroll } from './forge/forge';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
-import type { CharacterId, ItemInstance, Member, Pos } from './types';
+import type { CharacterId, GearSlot, ItemInstance, Member, Pos } from './types';
 
 export type Phase = 'town' | 'map' | 'battle' | 'clear';
 export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp' | 'banked';
@@ -550,6 +553,26 @@ export class Game {
     if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return { ok: true };
   }
+
+  /**
+   * One forge action: town only (checked here, once), applied, then saved at once so a reload can neither undo a paid
+   * action nor re-draw an enhance or reroll (the engine's forgeRng owns forgeDraws; no rng is passed in).
+   */
+  private forgeAct<O>(run: (s: GameState) => ForgeResult<O>): ForgeResult<O> {
+    if (this.phase !== 'town') return { ok: false, reason: 'phase' };
+    const r = run(this.state);
+    if (!r.ok) return r;
+    this.state = r.state;
+    this.notice = this.storage && saveGame(this.storage, this.state) ? 'saved' : 'save-failed';
+    return r;
+  }
+  dismantle(uids: number[]) { return this.forgeAct((s) => dismantle(s, uids)); }
+  enhance(uid: number) { return this.forgeAct((s) => enhance(s, uid)); }
+  reroll(uid: number, index: number, o: RerollOpts) { return this.forgeAct((s) => reroll(s, uid, index, o)); }
+  fuse(uids: number[], slot?: GearSlot) { return this.forgeAct((s) => fuse(s, uids, slot)); }
+  craftItem(id: string, qty: number) { return this.forgeAct((s) => craftItem(s, id, qty)); }
+  craftBase(slot: GearSlot) { return this.forgeAct((s) => craftBase(s, slot)); }
+  craftSet(pieceId: string) { return this.forgeAct((s) => craftSet(s, pieceId)); }
 
   apply(r: TownResult): TownResult {
     if (r.ok) this.state = r.state;

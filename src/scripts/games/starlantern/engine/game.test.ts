@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { Game, type MoveResult } from './game';
 import { SAVE_KEY, saveGame } from './save';
 import { newGame } from './state';
-import { constRng, memoryStorage } from './testing';
+import { constRng, memoryStorage, plainItem } from './testing';
 import { mulberry32 } from './rng';
 import { validPortals } from './portals';
 import { DELTA, posKey, tileAt, type Dir } from './map';
@@ -21,6 +21,7 @@ import { loadGame } from './save';
 import { chestHasGear, GEAR_CHANCE, RARE_MATERIALS, rollBossGear } from './loot/drops';
 import { itemLevel, itemWeight, rollItem } from './loot/item';
 import type { ItemInstance } from './types';
+import { MATERIALS } from '../data/materials';
 
 // Wrapped so a test can see what the game asked the boss roll for; it still rolls for real.
 vi.mock('./loot/drops', async (importOriginal) => {
@@ -1276,5 +1277,81 @@ describe('spending a talent point', () => {
     g.phase = 'battle';
     expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: false, reason: 'invalid' });
     expect(g.state.party.roster.noel.talents).toEqual({});
+  });
+});
+
+describe('forge actions', () => {
+  const item = (uid: number, over: Partial<ItemInstance> = {}): ItemInstance => ({
+    ...plainItem('moss-charm', uid), rarity: 'rare', ilvl: 20,
+    affixes: [{ key: 'str', value: 5 }, { key: 'hp', value: 30 }, { key: 'spd', value: 2 }], ...over,
+  });
+  const stocked = (storage = memoryStorage()) => {
+    const g = new Game(calm(), storage);
+    g.state.gold = 1_000_000;
+    g.state.bag = [item(1), item(2, { rarity: 'common', affixes: [] }), item(3, { rarity: 'common', affixes: [] }), item(4, { rarity: 'common', affixes: [] })];
+    g.state.nextUid = 100;
+    g.state.inventory = Object.fromEntries(Object.keys(MATERIALS).map((m) => [m, 500]));
+    g.state.inventory.potion = 1;
+    return g;
+  };
+  const calls: [string, (g: Game) => unknown][] = [
+    ['dismantle', (g) => g.dismantle([4])],
+    ['enhance', (g) => g.enhance(1)],
+    ['reroll', (g) => g.reroll(1, 1, { swap: false })],
+    ['fuse', (g) => g.fuse([2, 3, 4])],
+    ['craftItem', (g) => g.craftItem('potion', 1)],
+    ['craftBase', (g) => g.craftBase('weapon')],
+    ['craftSet', (g) => g.craftSet('set-blaze-weapon')],
+  ];
+  it.each(calls)('%s saves at once in town', (_n, act) => {
+    const storage = memoryStorage();
+    const g = stocked(storage);
+    const r = act(g) as { ok: boolean };
+    expect(r.ok).toBe(true);
+    expect(g.notice).toBe('saved');
+    const back = loadGame(storage);
+    expect(back.status === 'ok' && back.state).toEqual(g.state);
+  });
+  it.each(calls)('%s is refused in the labyrinth with phase and changes nothing', (_n, act) => {
+    const storage = memoryStorage();
+    const g = stocked(storage);
+    g.state.dungeon.reached.mainline = 3;
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    const before = structuredClone(g.state);
+    const keys = [...storage.map.keys()];
+    expect(act(g)).toEqual({ ok: false, reason: 'phase' });
+    expect(g.state).toEqual(before);
+    expect(g.state.forgeDraws).toBe(before.forgeDraws);
+    expect([...storage.map.keys()]).toEqual(keys);
+  });
+  it('an enhance that cannot fail draws nothing; the step to +6 draws once and survives a reload', () => {
+    const storage = memoryStorage();
+    const g = stocked(storage);
+    g.state.bag[0].enhance = 0;
+    expect(g.enhance(1).ok).toBe(true);
+    expect(g.state.forgeDraws).toBe(0);
+    g.state.bag[0].enhance = 5;
+    const r = g.enhance(1);
+    expect(r.ok).toBe(true);
+    expect(g.state.forgeDraws).toBe(1);
+    const level = g.state.bag[0].enhance;
+    const back = Game.boot(calm(), storage);
+    expect(back.state.forgeDraws).toBe(1);
+    expect(back.state.bag[0].enhance).toBe(level);
+    expect(back.enhance(1).ok).toBe(true);
+    expect(back.state.forgeDraws).toBe(2);
+  });
+  it('a failed save leaves the save-failed notice and keeps the result', () => {
+    const g = stocked();
+    const bad = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, g.state);
+    expect(bad.enhance(1).ok).toBe(true);
+    expect([bad.notice, bad.state.bag[0].enhance]).toEqual(['save-failed', 1]);
+  });
+  it('a refused action (not enough gold) changes and saves nothing', () => {
+    const storage = memoryStorage();
+    const g = stocked(storage);
+    g.state.gold = 0;
+    expect(g.enhance(1)).toEqual({ ok: false, reason: 'gold' });
+    expect([g.notice, storage.map.size]).toEqual([null, 0]);
   });
 });
