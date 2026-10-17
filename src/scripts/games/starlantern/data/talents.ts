@@ -9,13 +9,23 @@ import { CHARACTER_IDS, DEFAULT_RULES, rulesOf } from './characters';
  *  - keystones are NOT subject to adjacency. They need KEYSTONE_GATE ranks on the same board's normal nodes, and fewer than
  *    rulesOf(owner).maxKeystones keystones already held.
  */
-export type KeystoneId = 'crit-tp' | 'kill-tp' | 'weak-tp' | 'last-stand' | 'opening-gauge' | 'regen' | 'taunt-guard';
+export type BoardKeystoneId = 'crit-tp' | 'kill-tp' | 'weak-tp' | 'last-stand' | 'opening-gauge' | 'regen' | 'taunt-guard';
+/** A companion's memory keystone: awake when she has every piece of her chain (Rin: when she has sworn her oath). Never on a board. */
+export type MemoryKeystoneId = 'moon-promise' | 'small-shrine' | 'troupe-step' | 'carried-out' | 'teachers-gift' | 'blueprint' | 'fathers-face' | 'not-a-shield' | 'unrung-bell';
+export type KeystoneId = BoardKeystoneId | MemoryKeystoneId;
 
 /** Knobs; tuned later. Descriptions below are built from these. */
 export const KEYSTONE_VALUES = {
   critTp: 3, killTp: 4, weakTp: 2, lastStandHp: 0.3, lastStandPct: 40, openingGauge: 50, regenPct: 12, tauntGuardPct: 30,
 };
 const V = KEYSTONE_VALUES;
+
+/** Knobs of the memory keystones (6b Task 12); tuned in 20b. KEYSTONE_VALUES above stays as 6a froze it. */
+export const MEMORY_KEYSTONE_VALUES = {
+  moonHealPct: 20, shrineDefPct: 15, shrineTurns: 3, troupeTurns: 1, fullHpPct: 30, tpCostPct: 20, turretPct: 30, matFind: 20,
+  friendGuardPct: 20, bellAtkPct: 50, bellTurns: 2,
+};
+const M = MEMORY_KEYSTONE_VALUES;
 
 export const KEYSTONES: Record<KeystoneId, { name: string; desc: string }> = {
   'crit-tp': { name: '心眼', desc: `暴擊時回復 ${V.critTp} TP` },
@@ -25,6 +35,15 @@ export const KEYSTONES: Record<KeystoneId, { name: string; desc: string }> = {
   'opening-gauge': { name: '先機', desc: `戰鬥開始時絕技量表至少為 ${V.openingGauge}` },
   regen: { name: '再生', desc: `每回合結束時回復最大 HP 的 ${V.regenPct}%` },
   'taunt-guard': { name: '堅守', desc: `挑釁中受到的攻擊傷害 −${V.tauntGuardPct}%` },
+  'moon-promise': { name: '我想看見', desc: `她施放的回復 +${M.moonHealPct}%` },
+  'small-shrine': { name: '小小的祠', desc: `戰鬥開始時，全隊防禦 +${M.shrineDefPct}%，持續 ${M.shrineTurns} 回合` },
+  'troupe-step': { name: '你要繼續跳', desc: `她施放的增益多持續 ${M.troupeTurns} 回合` },
+  'carried-out': { name: '先把人帶出去', desc: `對滿血目標的傷害 +${M.fullHpPct}%` },
+  'teachers-gift': { name: '老師的書', desc: `她的技能 TP 消耗 −${M.tpCostPct}%` },
+  blueprint: { name: '修好的構造圖', desc: `砲台威力 +${M.turretPct}%` },
+  'fathers-face': { name: '父親的臉', desc: `素材尋獲 +${M.matFind}` },
+  'not-a-shield': { name: '不是盾，是朋友', desc: `挑釁中受到的傷害再 −${M.friendGuardPct}%` },
+  'unrung-bell': { name: '不再鳴響的鐘', desc: `主角倒下時，凜立刻對第一個活著的敵人普通攻擊一次，並得到攻擊 +${M.bellAtkPct}%，持續 ${M.bellTurns} 回合` },
 };
 
 /** Multiplier on every TALENT_PER value; tuned later. */
@@ -60,7 +79,7 @@ export const PALETTES: Record<CharacterId, AnyStat[]> = {
   hero: ['str', 'hp', 'atk', 'wil', 'def', 'res', 'int', 'mag', 'agi'],
 };
 
-export const CHAR_KEYSTONES: Record<CharacterId, KeystoneId[]> = {
+export const CHAR_KEYSTONES: Record<CharacterId, BoardKeystoneId[]> = {
   noel: ['weak-tp', 'opening-gauge', 'last-stand'],
   chizuru: ['crit-tp', 'taunt-guard', 'opening-gauge'],
   liz: ['crit-tp', 'kill-tp', 'last-stand'],
@@ -71,6 +90,11 @@ export const CHAR_KEYSTONES: Record<CharacterId, KeystoneId[]> = {
   bobby: ['opening-gauge', 'weak-tp', 'regen'],
   rin: ['crit-tp', 'kill-tp', 'last-stand'],
   hero: ['regen', 'taunt-guard', 'last-stand', 'crit-tp', 'opening-gauge'],
+};
+/** The memory keystone each companion can awaken (not the hero: spec §4.6). It sits on no board and costs no point. */
+export const MEMORY_KEYSTONES: Record<Exclude<CharacterId, 'hero'>, MemoryKeystoneId> = {
+  selene: 'moon-promise', chizuru: 'small-shrine', safira: 'troupe-step', sylvie: 'carried-out', noel: 'teachers-gift',
+  bobby: 'blueprint', liz: 'fathers-face', scarlet: 'not-a-shield', rin: 'unrung-bell',
 };
 /** The keystones the default build takes: the first rulesOf(c).maxKeystones (two for a companion, three for the hero). */
 export const DEFAULT_KEYSTONES = Object.fromEntries(

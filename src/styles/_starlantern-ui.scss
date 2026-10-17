@@ -608,6 +608,10 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-talent-state { min-width: 0; font-size: 10px; line-height: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .slx-talent-keys-head { margin: 2px 0 0; font-size: 12px; line-height: 14px; font-weight: normal; color: $slx-gold; border-bottom: 1px solid #6e5a2e; }
 .slx-talent-keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 6px; }
+.slx-talent-memkey { display: flex; flex-direction: column; margin-top: 2px; font-size: 11px; line-height: 13px; }
+.slx-talent-memkey-name { color: $slx-gold; }
+.slx-talent-memkey-desc { color: $slx-dim; }
+.slx-memkey-awake .slx-talent-memkey-desc { color: $slx-up; }
 .slx-node-learned .slx-talent-state { color: $slx-up; }
 .slx-node-open .slx-talent-state { color: #6fa7ff; }
 .slx-node-maxed .slx-talent-state { color: $slx-gold; }

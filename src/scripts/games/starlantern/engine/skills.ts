@@ -2,7 +2,7 @@ import { addBuff, calcDamage, dealDamage, roll, stat, SLEEP_TURNS, type BattleEv
 import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
-import { KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
+import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 
 export interface EffectContext { rng: Rng; itemBoost: boolean; revealed: Record<string, Element[]>; log: BattleEvent[] }
 
@@ -110,7 +110,8 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     case 'heal': {
       if (!target.alive) return;
       // The healer's heal bonus multiplies the amount; without it the value is unchanged to the bit.
-      const bonus = 1 + (actor.x.heal ?? 0) / 100;
+      let bonus = 1 + (actor.x.heal ?? 0) / 100;
+      if (actor.keystones.includes('moon-promise')) bonus *= 1 + MEMORY_KEYSTONE_VALUES.moonHealPct / 100;
       const amount = gainHp(target, Math.floor((eff.power / 100) * (stat(actor, 'mag') * 2 + 10) * bonus));
       ctx.log.push({ type: 'heal', target: target.key, amount });
       return;
@@ -154,7 +155,9 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'buff': {
       if (!target.alive) return;
-      addBuff(target, { stat: eff.stat, pct: eff.pct, turns: eff.turns });
+      // troupe-step: her buffs on her own side last longer (a debuff on a foe does not).
+      const more = actor.keystones.includes('troupe-step') && target.side === actor.side ? MEMORY_KEYSTONE_VALUES.troupeTurns : 0;
+      addBuff(target, { stat: eff.stat, pct: eff.pct, turns: eff.turns + more });
       ctx.log.push({ type: 'buff', target: target.key, stat: eff.stat, pct: eff.pct });
       return;
     }

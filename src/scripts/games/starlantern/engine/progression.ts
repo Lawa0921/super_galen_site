@@ -2,7 +2,7 @@ import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE
 import type { SkillMod } from '../data/gear';
 import { SKILLS } from '../data/skills';
 import {
-  BOARDS, DEFAULT_KEYSTONES, TALENT_NODES, TALENT_PER, TALENT_SCALE, boardPoints, keystoneCount, rankOf, talentBlocker, type KeystoneId, type TalentBlocker,
+  BOARDS, DEFAULT_KEYSTONES, MEMORY_KEYSTONES, TALENT_NODES, TALENT_PER, TALENT_SCALE, boardPoints, keystoneCount, rankOf, talentBlocker, type KeystoneId, type TalentBlocker,
 } from '../data/talents';
 import { rulesOf } from '../data/characters';
 import { ABYSS_UNLOCK, HERO_BUILDS, type HeroBuild } from '../data/hero';
@@ -333,10 +333,22 @@ export function talentStats(m: Member): Partial<Sheet> {
   return out;
 }
 
-/** The keystones a member holds, in board order. */
-export function keystonesOf(m: Member): KeystoneId[] {
+/** The keystones the member holds on her talent board, in board order (what the cap and the point count see). */
+export function boardKeystonesOf(m: Member): KeystoneId[] {
   const t = talentsOf(m);
   return BOARDS[m.id].filter((n) => n.keystone && rankOf(n, t) > 0).map((n) => n.keystone!);
+}
+
+/** Whether the member's memory keystone is awake: a companion has every piece of her chain, Rin has sworn her oath, the hero never. */
+export function memoryKeystoneAwake(m: Member): boolean {
+  if (m.id === 'hero') return false;
+  return m.id === 'rin' ? !!m.oath : memoriesOf(m) >= chainLength(m.id);
+}
+
+/** The keystones a member holds: her board's, then her memory keystone once awake. The memory one is on no board, so it takes no cap slot and no point. */
+export function keystonesOf(m: Member): KeystoneId[] {
+  const held = boardKeystonesOf(m);
+  return m.id !== 'hero' && memoryKeystoneAwake(m) ? [...held, MEMORY_KEYSTONES[m.id]] : held;
 }
 
 /**

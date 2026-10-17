@@ -1,20 +1,21 @@
 import { CHARACTERS, rulesOf } from '../../data/characters';
 import { POWERS } from '../../data/gear';
 import { SKILLS } from '../../data/skills';
-import { BOARDS, BOARD_ROWS, KEYSTONES, TALENT_PER, TALENT_SCALE, boardPoints, rankOf, type TalentNode } from '../../data/talents';
+import { BOARDS, BOARD_ROWS, KEYSTONES, MEMORY_KEYSTONES, TALENT_PER, TALENT_SCALE, boardPoints, rankOf, type TalentNode } from '../../data/talents';
 import { ACTIVE_RANK_PCT, NODES, TREES, type TreeNode } from '../../data/trees';
 import { T } from '../../data/text.zh-TW';
 import { skillCost, skillFor } from '../../engine/battle';
 import { itemLines } from '../../engine/compare';
 import { ROW_MELEE, rowOfCell } from '../../engine/formation';
 import {
-  canRaiseNode, canRaiseTalent, freeNode, keystonesOf, learnedSkills, nodeRank, rankMod, skillPointsLeft, talentPointsLeft, ultimateFor,
+  boardKeystonesOf, canRaiseNode, canRaiseTalent, freeNode, memoryKeystoneAwake, learnedSkills, nodeRank, rankMod, skillPointsLeft, talentPointsLeft, ultimateFor,
 } from '../../engine/progression';
 import type { RaiseFail, TalentFail } from '../../engine/progression';
 import { ABYSS_UNLOCK } from '../../data/hero';
 import { SLOTS, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
 import { STAT_CATEGORIES, type StatCategory } from '../../engine/stats';
-import type { AnyStat, CharacterId, Slot, StatKey, Stats } from '../../engine/types';
+import { chainLength } from '../../data/story/chains';
+import type { AnyStat, CharacterId, Member, Slot, StatKey, Stats } from '../../engine/types';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { gearLabel } from '../loot';
@@ -587,6 +588,18 @@ function talentNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
   ]);
 }
 
+/** The memory keystone's line under the board: a companion only (the hero has none), awake or waiting on her pieces or her oath. */
+function memoryLine(m: Member): HTMLElement[] {
+  if (m.id === 'hero') return [];
+  const t = T.ui2.talent;
+  const k = KEYSTONES[MEMORY_KEYSTONES[m.id]];
+  const awake = memoryKeystoneAwake(m);
+  return [el('div', { class: `slx-talent-memkey ${awake ? 'slx-memkey-awake' : 'slx-memkey-locked'}` }, [
+    el('span', { class: 'slx-talent-memkey-name', text: t.memoryKeystone(k.name) }),
+    el('span', { class: 'slx-talent-memkey-desc', text: awake ? k.desc : m.id === 'rin' ? t.oathLocked : t.memoryLocked(chainLength(m.id)) }),
+  ])];
+}
+
 const talent: StatusTab = {
   id: 'talent',
   label: T.ui2.status.tabs.talent,
@@ -638,10 +651,11 @@ const talent: StatusTab = {
     return el('div', { class: 'slx-tab-talent' }, [
       el('div', { class: 'slx-talent-top' }, [
         el('span', { class: 'slx-talent-left', text: t.left(talentPointsLeft(m)) }),
-        el('span', { class: 'slx-talent-count', text: t.keystones(keystonesOf(m).length, rulesOf(m.id).maxKeystones) }),
+        el('span', { class: 'slx-talent-count', text: t.keystones(boardKeystonesOf(m).length, rulesOf(m.id).maxKeystones) }),
         el('span', { class: 'slx-talent-gate', text: t.board(boardPoints(id, held)) }),
       ]),
       cueFrame('slx-talent-frame', board, (top) => { talentView.top = top; }),
+      ...memoryLine(m),
       talentNotes(ctx, id),
     ]);
   },

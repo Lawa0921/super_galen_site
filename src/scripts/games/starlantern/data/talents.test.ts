@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   BOARDS, BOARD_COLS, BOARD_ROWS, CHAR_KEYSTONES, DEFAULT_KEYSTONES, KEYSTONES, KEYSTONE_GATE, KEYSTONE_VALUES,
-  MAX_KEYSTONES, PALETTES, TALENT_NODES, TALENT_PER, TEMPLATE, boardPoints, keystoneCount, talentBlocker, templateOf,
+  MAX_KEYSTONES, MEMORY_KEYSTONES, MEMORY_KEYSTONE_VALUES, PALETTES, TALENT_NODES, TALENT_PER, TEMPLATE, boardPoints, keystoneCount, talentBlocker, templateOf,
 } from './talents';
 import { CHARACTER_IDS, DEFAULT_RULES, rulesOf } from './characters';
 import { raiseTalent } from '../engine/progression';
@@ -172,5 +172,23 @@ describe('talent rules', () => {
     expect(keystoneCount('noel', bad)).toBe(0);
     expect(talentBlocker('noel', 'noel-k2', bad)).toBe('gate');
     expect(boardPoints('noel', { 'noel-t00': 5, 'noel-t01': 2 })).toBe(7);
+  });
+});
+
+describe('memory keystones', () => {
+  it('memory keystones never sit on a board', () => {
+    const onBoards = new Set(CHARACTER_IDS.flatMap((c) => BOARDS[c].filter((n) => n.keystone).map((n) => n.keystone)));
+    expect(Object.keys(MEMORY_KEYSTONES).sort()).toEqual(CHARACTER_IDS.filter((c) => c !== 'hero').sort());
+    for (const [c, k] of Object.entries(MEMORY_KEYSTONES)) {
+      expect(onBoards.has(k), c).toBe(false);
+      expect(KEYSTONES[k].name, c).not.toBe('');
+      expect(KEYSTONES[k].desc, c).not.toBe('');
+      expect(CHAR_KEYSTONES[c as 'noel'], c).not.toContain(k);
+    }
+    expect(new Set(Object.values(MEMORY_KEYSTONES)).size).toBe(9);
+    expect(MEMORY_KEYSTONE_VALUES).toEqual({
+      moonHealPct: 20, shrineDefPct: 15, shrineTurns: 3, troupeTurns: 1, fullHpPct: 30, tpCostPct: 20, turretPct: 30, matFind: 20,
+      friendGuardPct: 20, bellAtkPct: 50, bellTurns: 2,
+    });
   });
 });

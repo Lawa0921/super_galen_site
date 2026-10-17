@@ -224,6 +224,10 @@ export const T = {
       board: (n: number) => (n >= KEYSTONE_GATE ? `盤面已投 ${n} 點・可選關鍵天賦` : `盤面已投 ${n} 點・${KEYSTONE_GATE} 點後可選關鍵天賦`),
       keystones: (k: number, max: number) => `關鍵天賦 ${k}／${max}`,
       keysHead: (max: number) => `關鍵天賦（限選 ${max} 個）`,
+      /** The memory keystone's line under the board (it takes no slot): its name once awake, or what wakes it. */
+      memoryKeystone: (name: string) => `記憶關鍵天賦：${name}`,
+      memoryLocked: (n: number) => `找回全部 ${n} 片記憶後覺醒`,
+      oathLocked: '在她做出選擇之後覺醒',
       /** A normal node's bonus per rank, e.g. 「+2／級」; a percent stat carries a % sign. */
       per: (key: AnyStat, v: number) => `${signed(v)}${POINT_STATS.includes(key) ? '' : '%'}／級`,
       /** The notes for a normal node: 「智力 +2／級（目前 +4）」. */

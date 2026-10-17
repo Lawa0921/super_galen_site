@@ -10,11 +10,11 @@ import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView } from './statusTabs';
 import { StatusScene } from './status';
-import { CHAINS } from '../../data/story/chains';
+import { CHAINS, chainLength } from '../../data/story/chains';
 import { T } from '../../data/text.zh-TW';
 import { SKILLS } from '../../data/skills';
 import { NODES, TREES } from '../../data/trees';
-import { BOARDS, KEYSTONES, TALENT_PER, TALENT_SCALE } from '../../data/talents';
+import { BOARDS, KEYSTONES, MEMORY_KEYSTONES, TALENT_PER, TALENT_SCALE } from '../../data/talents';
 
 /** A shown number back to a number: the minus sign reads as a minus. */
 const num = (t: string | null) => Number((t ?? '').replace('−', '-'));
@@ -973,6 +973,32 @@ describe('StatusScene', () => {
       expect(cur()).toBe('noel-k2');
       s.onAction('confirm');
       expect(msg()).toBe(T.ui2.talent.reason.keystones(rulesOf('noel').maxKeystones));
+    });
+
+    it('the talent tab shows the memory keystone, locked or awake', () => {
+      const t = T.ui2.talent;
+      const board = { 'selene-t00': 5, 'selene-t01': 5, 'selene-t02': 2, 'selene-k0': 1, 'selene-k1': 1 };
+      const open = (memories: number, id: 'selene' | 'rin' = 'selene', extra: object = {}) => {
+        const r = setup(id, NO_ART, (g) => { if (!g.state.party.recruited.includes(id)) g.state.party.recruited.push(id);
+        g.state.party.roster[id] = { ...(g.state.party.roster[id]), level: 50, talents: id === 'selene' ? board : {}, memories, ...extra }; });
+        for (let i = 0; i < 4; i++) r.s.onAction('right');
+        expect(r.tab()).toBe('天賦');
+        return { top: r.root.querySelector('.slx-talent-top')!.textContent!, line: r.root.querySelector('.slx-talent-memkey')?.textContent ?? '' };
+      };
+      const name = KEYSTONES[MEMORY_KEYSTONES.selene].name;
+      const total = chainLength('selene');
+      const locked = open(total - 1);
+      expect(locked.top).toContain(`2／${rulesOf('selene').maxKeystones}`);
+      expect(locked.line).toContain(t.memoryLocked(total));
+      const awake = open(total);
+      // The board count stays at the board's own two keystones; the memory keystone has its own line.
+      expect(awake.top).toContain(`2／${rulesOf('selene').maxKeystones}`);
+      expect(awake.line).toContain(t.memoryKeystone(name));
+      expect(awake.line).toContain(KEYSTONES[MEMORY_KEYSTONES.selene].desc);
+      expect(awake.line).not.toContain(t.memoryLocked(total));
+      // Rin waits on her oath, not on her pieces.
+      expect(open(chainLength('rin'), 'rin').line).toContain(t.oathLocked);
+      expect(open(chainLength('rin'), 'rin', { oath: true }).line).toContain(KEYSTONES[MEMORY_KEYSTONES.rin].desc);
     });
 
     it('with no points left a shut node shows its structural reason, an open one 點數不足', () => {

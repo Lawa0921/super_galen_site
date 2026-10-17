@@ -10,7 +10,7 @@ import { gainExp, newMember } from './party';
 import { CHARACTERS, rulesOf } from '../data/characters';
 import { mulberry32 } from './rng';
 import { DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES } from '../data/trees';
-import { BOARDS, DEFAULT_KEYSTONES, TALENT_PER, TALENT_SCALE, talentBlocker } from '../data/talents';
+import { BOARDS, DEFAULT_KEYSTONES, MEMORY_KEYSTONES, TALENT_PER, TALENT_SCALE, talentBlocker } from '../data/talents';
 import { ABYSS_UNLOCK, HERO_BUILDS, type HeroBuild } from '../data/hero';
 import type { AnyStat, CharacterId, Member } from './types';
 
@@ -657,5 +657,54 @@ describe('hero builds', () => {
     } finally {
       HERO_BUILDS.mage = saved;
     }
+  });
+});
+
+describe('memory keystones', () => {
+  /** Noel with 12 board points and both board keystones: the most a companion may hold. */
+  const full = (id: 'noel' | 'selene' = 'noel'): Member => {
+    const base = upT(upT(upT(tal(id, 50), `${id}-t00`, 5), `${id}-t01`, 5), `${id}-t02`, 2);
+    return upT(upT(base, `${id}-k0`), `${id}-k1`);
+  };
+  it('a companion awakens her memory keystone with every piece', () => {
+    const selene = tal('selene', 50);
+    expect(keystonesOf({ ...selene, memories: chainLength('selene') - 1 })).not.toContain(MEMORY_KEYSTONES.selene);
+    expect(keystonesOf({ ...selene, memories: chainLength('selene') })).toEqual([MEMORY_KEYSTONES.selene]);
+    expect(MEMORY_KEYSTONES.selene).toBe('moon-promise');
+    // Each companion wakes her own and no other.
+    for (const id of ids.filter((c) => c !== 'rin')) {
+      expect(keystonesOf({ ...tal(id, 50), memories: chainLength(id) }), id).toContain(MEMORY_KEYSTONES[id]);
+      expect(keystonesOf(tal(id, 50)), id).not.toContain(MEMORY_KEYSTONES[id]);
+    }
+    // A junk count never wakes one.
+    expect(keystonesOf({ ...selene, memories: NaN })).toEqual([]);
+  });
+
+  it('memory keystones never count against the cap', () => {
+    const m = full();
+    const awake = { ...m, memories: chainLength('noel') };
+    expect(keystonesOf(m)).toHaveLength(2);
+    expect(keystonesOf(awake)).toEqual([...keystonesOf(m), MEMORY_KEYSTONES.noel]);
+    expect(keystonesOf(awake)).toHaveLength(3);
+    expect(canRaiseTalent(awake, 'noel-k2')).toBe('keystones');
+    expect(talentPointsLeft(awake)).toBe(talentPointsLeft(m));
+    // The raise path ignores them too: a first board keystone is still allowed with the memory keystone awake.
+    const one = upT(upT(upT(upT(tal('noel', 50), 'noel-t00', 5), 'noel-t01', 5), 'noel-t02', 2), 'noel-k0');
+    expect(canRaiseTalent({ ...one, memories: chainLength('noel') }, 'noel-k1')).toBeNull();
+  });
+
+  it("Rin's keystone waits for her oath, not her seventh piece", () => {
+    const rin = tal('rin', 50);
+    expect(MEMORY_KEYSTONES.rin).toBe('unrung-bell');
+    expect(keystonesOf({ ...rin, memories: chainLength('rin') })).toEqual([]);
+    expect(keystonesOf({ ...rin, memories: chainLength('rin'), oath: true })).toEqual([MEMORY_KEYSTONES.rin]);
+    expect(keystonesOf({ ...rin, memories: chainLength('rin') - 1, oath: true })).toEqual([MEMORY_KEYSTONES.rin]);
+    expect(keystonesOf(rin)).toEqual([]);
+  });
+
+  it('the hero has no memory keystone', () => {
+    const hero = { ...tal('hero', 50), memories: 10, oath: true as const };
+    expect(keystonesOf(hero).filter((k) => (Object.values(MEMORY_KEYSTONES) as string[]).includes(k))).toEqual([]);
+    expect(keystonesOf({ ...hero, memories: chainLength('hero') })).toEqual(keystonesOf(tal('hero', 50)));
   });
 });

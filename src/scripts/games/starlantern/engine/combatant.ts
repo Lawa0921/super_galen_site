@@ -2,7 +2,7 @@ import { ROW_MELEE } from './formation';
 import type { Rng } from './rng';
 import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
-import { KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
+import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 
 export interface Buff { stat: BuffStat; pct: number; turns: number }
 
@@ -131,6 +131,9 @@ export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rn
   // Keystones (data/talents.ts): a factor only when held, and no draws, so a fight without them keeps its sequence.
   if (a.keystones.includes('last-stand') && a.hp < a.max.hp * KEYSTONE_VALUES.lastStandHp) mult *= 1 + KEYSTONE_VALUES.lastStandPct / 100;
   if (t.keystones.includes('taunt-guard') && t.taunt > 0) mult *= 1 - KEYSTONE_VALUES.tauntGuardPct / 100;
+  // Memory keystones: the same rule, a factor only when held and no draws.
+  if (a.keystones.includes('carried-out') && t.hp >= t.max.hp) mult *= 1 + MEMORY_KEYSTONE_VALUES.fullHpPct / 100;
+  if (t.keystones.includes('not-a-shield') && t.taunt > 0) mult *= 1 - MEMORY_KEYSTONE_VALUES.friendGuardPct / 100;
   return { amount: Math.max(1, Math.floor(base * mult * variance)), mult: el, crit, miss: false };
 }
 

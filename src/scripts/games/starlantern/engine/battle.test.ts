@@ -8,9 +8,11 @@ import { applyEffect } from './skills';
 import { BOSS_PARTY_SCALE, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, bossPartyScale, depthLevel, encounterTable, homeLevel, mul, partyScale } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { choose, partyAt } from './sim';
-import { dealDamage, type BattleEvent } from './combatant';
+import { dealDamage, type BattleEvent, type Combatant } from './combatant';
 import { constRng, makeBattle, makeCombatant, plainItem, fullParty } from './testing';
-import { KEYSTONE_GATE, KEYSTONE_VALUES as V, MAX_KEYSTONES, type KeystoneId } from '../data/talents';
+import { KEYSTONE_GATE, KEYSTONE_VALUES as V, MAX_KEYSTONES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
+import { chainLength } from '../data/story/chains';
+import { SKILLS } from '../data/skills';
 import { keystonesOf } from './progression';
 import { mulberry32 } from './rng';
 import { ABYSS } from '../data/hero';
@@ -676,5 +678,99 @@ describe('enemies scale with the party size', () => {
     } finally {
       BOSS_PARTY_SCALE[3] = before;
     }
+  });
+});
+
+describe('memory keystones in battle', () => {
+  const MV = MEMORY_KEYSTONE_VALUES;
+  /** The Lv1 legacy party, with `id` holding every piece of her chain. */
+  const awake = (id: 'noel' | 'liz' | 'chizuru') => {
+    const party = fullParty(LEGACY_LINEUP);
+    party.roster[id] = { ...party.roster[id], memories: chainLength(id) };
+    return party;
+  };
+  const start = (party: ReturnType<typeof fullParty>) => createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+
+  it('small-shrine guards the party at the start', () => {
+    const s = start(awake('chizuru'));
+    for (const c of s.party) expect(c.buffs, c.key).toEqual([{ stat: 'def', pct: MV.shrineDefPct, turns: MV.shrineTurns }]);
+    expect(s.enemies.every((e) => e.buffs.length === 0)).toBe(true);
+    expect(start(fullParty(LEGACY_LINEUP)).party.every((c) => c.buffs.length === 0)).toBe(true);
+    expect(s.party.find((c) => c.key === 'chizuru')!.keystones).toContain('small-shrine');
+  });
+
+  it('teachers-gift costs less TP', () => {
+    const noel = (party: ReturnType<typeof fullParty>) => start(party).party.find((c) => c.key === 'noel')!;
+    const plain = noel(fullParty(LEGACY_LINEUP)), held = noel(awake('noel'));
+    expect(held.x.tpCost ?? 0).toBe((plain.x.tpCost ?? 0) + MV.tpCostPct);
+    const tp = SKILLS['flame-wave'].tp;
+    expect(skillCost(plain, 'flame-wave')).toBe(tp);
+    expect(skillCost(held, 'flame-wave')).toBe(Math.max(1, Math.ceil((tp * (100 - MV.tpCostPct)) / 100)));
+    expect(skillCost(held, 'flame-wave')).toBeLessThan(tp);
+  });
+
+  it('fathers-face finds more materials', () => {
+    const liz = (party: ReturnType<typeof fullParty>) => start(party).party.find((c) => c.key === 'liz')!;
+    expect(liz(awake('liz')).x.matFind ?? 0).toBe((liz(fullParty(LEGACY_LINEUP)).x.matFind ?? 0) + MV.matFind);
+    // A roll just over the plain chance misses without her and hits with her.
+    const chance = ENEMIES.slime.drops[0].chance;
+    const drops = (party: ReturnType<typeof fullParty>) => {
+      const s = start(party);
+      s.enemies.forEach((e) => { e.alive = false; });
+      return Object.values(rewards(s, constRng(chance * (1 + MV.matFind / 200)), false).drops).reduce((a, b) => a + b, 0);
+    };
+    expect(drops(awake('liz'))).toBeGreaterThan(drops(fullParty(LEGACY_LINEUP)));
+  });
+
+  it('blueprint turrets hit harder', () => {
+    const shot = (keystones: KeystoneId[]) => {
+      const p = P('p', { keystones, max: { mag: 400 } as never, turret: { power: 100, turns: 2 } });
+      const s = resolveRound(makeBattle([p], [E('e0', { sleep: 5, max: { hp: 99999 } as never })]), {}, rng);
+      const d = s.log.find((e) => e.type === 'damage');
+      return d && d.type === 'damage' ? d.amount : -1;
+    };
+    const plain = shot([]), held = shot(['blueprint']);
+    expect(Math.abs(held - plain * (1 + MV.turretPct / 100))).toBeLessThanOrEqual(1);
+    expect(held).toBeGreaterThan(plain);
+  });
+
+  describe('the unrung bell', () => {
+    /** The foe strikes the hero first; Rin stands behind him. */
+    const fall = (over: { rin?: Partial<Combatant>; hero?: Partial<Combatant>; foe?: Partial<Combatant> } = {}) => {
+      const hero = P('hero', { hp: 1, ...over.hero });
+      const rin = P('rin', { keystones: ['unrung-bell'], ...over.rin });
+      const foe = E('e0', { max: { atk: 999, spd: 99, hp: 99999 } as never, ...over.foe });
+      const s = makeBattle([hero, rin], [foe], { intents: { e0: { kind: 'attack', target: 'hero' } } });
+      return resolveRound(s, {}, rng);
+    };
+
+    it("answers the hero's fall at once", () => {
+      const s = fall();
+      const ko = s.log.findIndex((e) => e.type === 'ko' && e.target === 'hero');
+      expect(ko).toBeGreaterThanOrEqual(0);
+      const after = s.log.slice(ko + 1);
+      expect(after.find((e) => e.type === 'act')).toMatchObject({ type: 'act', actor: 'rin' });
+      expect(after.find((e) => e.type === 'damage')).toMatchObject({ target: 'e0' });
+      expect(after.some((e) => e.type === 'damage' && e.target === 'e0')).toBe(true);
+      const rin = s.party.find((c) => c.key === 'rin')!;
+      expect(rin.buffs).toContainEqual(expect.objectContaining({ stat: 'atk', pct: MV.bellAtkPct }));
+      expect(s.enemies[0].hp).toBeLessThan(99999);
+    });
+
+    it('does not ring while the hero stands, without the keystone, or with Rin down', () => {
+      const answered = (s: ReturnType<typeof fall>) => s.log.some((e) => e.type === 'act' && e.actor === 'rin');
+      expect(answered(fall({ hero: { hp: 99999, max: { hp: 99999 } as never }, foe: { max: { atk: 1, spd: 99, hp: 99999 } as never } }))).toBe(false);
+      expect(answered(fall({ rin: { keystones: [] } }))).toBe(false);
+      expect(answered(fall({ rin: { hp: 0, alive: false } }))).toBe(false);
+      expect(fall({ rin: { keystones: [] } }).party.find((c) => c.key === 'rin')!.buffs).toEqual([]);
+    });
+
+    it("rings once when poison takes the hero at the round's end", () => {
+      const hero = P('hero', { hp: 1, poison: true });
+      const rin = P('rin', { keystones: ['unrung-bell'] });
+      const s = resolveRound(makeBattle([hero, rin], [E('e0', { sleep: 5, max: { hp: 99999 } as never })]), {}, rng);
+      expect(s.log.filter((e) => e.type === 'act' && e.actor === 'rin')).toHaveLength(1);
+      expect(s.party[1].buffs).toContainEqual(expect.objectContaining({ stat: 'atk', pct: MV.bellAtkPct }));
+    });
   });
 });

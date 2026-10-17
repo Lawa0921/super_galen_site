@@ -7,7 +7,7 @@ import { ITEMS } from '../data/items';
 import { POWERS } from '../data/gear';
 import { WEAPON_KINDS, WEAPON_MASTERY_PCT, weaponKindOf } from '../data/equipment';
 import { SKILLS } from '../data/skills';
-import { stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
+import { addBuff, stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
 import { activeIds, hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
 import { abyssPct, bossPartyScale, depthLevel, empower, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
@@ -15,7 +15,7 @@ import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
 import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
-import { KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
+import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, SecondaryKey, SkillDef, Target } from './types';
 
 export type Action =
@@ -63,10 +63,14 @@ function fromMember(m: Member, cell: number): Combatant {
   // Only a weapon master (the hero) follows his weapon; a companion keeps its character's `melee` and the plain ATK attack.
   const kind = def.weaponMaster ? weaponKindOf(m.equip.weapon) : undefined;
   const wk = kind ? WEAPON_KINDS[kind] : undefined;
-  return { ...fresh(), key: m.id, side: 'party', defId: m.id, name: def.name, max: statsOf(m), hp: m.hp, tp: m.tp,
+  const c: Combatant = { ...fresh(), key: m.id, side: 'party', defId: m.id, name: def.name, max: statsOf(m), hp: m.hp, tp: m.tp,
     row, cell, melee: wk ? wk.melee : def.melee, ...(def.weaponMaster ? { attackScale: wk ? wk.scale : 'atk' as const } : {}),
     ...(kind ? { weaponKind: kind } : {}), weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0,
     x, level: m.level, powers: powersOf(m), ranks: { ...m.tree }, keystones: keystonesOf(m) };
+  // Memory keystones that are plain secondaries (added once, here; absent keystones leave x as it was).
+  if (c.keystones.includes('teachers-gift')) c.x.tpCost = (c.x.tpCost ?? 0) + MEMORY_KEYSTONE_VALUES.tpCostPct;
+  if (c.keystones.includes('fathers-face')) c.x.matFind = (c.x.matFind ?? 0) + MEMORY_KEYSTONE_VALUES.matFind;
+  return c;
 }
 
 /** An enemy carries only its non-zero secondaries, like a member; a missing key reads as 0. */
@@ -103,6 +107,10 @@ export function createBattle(o: {
   for (const c of party) for (const [k, pct] of altar) c.max[k] = Math.floor(c.max[k] * (1 + pct / 100));
   // opening-gauge is a floor, not a gain: the gauge carries over between fights, so adding would stack fight after fight.
   for (const c of party) if (c.keystones.includes('opening-gauge')) c.limit = Math.min(LIMIT_MAX, Math.max(c.limit, KEYSTONE_VALUES.openingGauge));
+  // small-shrine: one holder guards the whole party for the first turns of the fight.
+  if (party.some((c) => c.keystones.includes('small-shrine'))) {
+    for (const c of party) addBuff(c, { stat: 'def', pct: MEMORY_KEYSTONE_VALUES.shrineDefPct, turns: MEMORY_KEYSTONE_VALUES.shrineTurns });
+  }
   const depth = o.depth ?? o.scale?.depth ?? 1;
   const size = activeIds(o.party).length;
   const k = o.boss ? bossPartyScale(size) : partyScale(size);
@@ -309,7 +317,8 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
     const t = pickTarget(s.enemies, undefined, rng);
     if (t) {
       s.log.push({ type: 'act', actor: c.key, label: '砲台' });
-      applyEffect(c, t, { kind: 'damage', power: c.turret.power, element: 'phys', scale: 'mag', melee: false }, ctx);
+      const power = c.keystones.includes('blueprint') ? Math.round((c.turret.power * (100 + MEMORY_KEYSTONE_VALUES.turretPct)) / 100) : c.turret.power;
+      applyEffect(c, t, { kind: 'damage', power, element: 'phys', scale: 'mag', melee: false }, ctx);
     }
     c.turret = c.turret.turns > 1 ? { ...c.turret, turns: c.turret.turns - 1 } : null;
   }
@@ -336,6 +345,23 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
   }
 }
 
+/**
+ * unrung-bell: when the hero has just gone from standing to down and Rin stands holding it, she gets atk for bellTurns and
+ * strikes the first living enemy once (a plain attack). Called after every action and after the round's end, so each fall
+ * answers once. No draws of its own beyond the attack's.
+ */
+function ringBell(s: BattleState, heroWasUp: boolean, ctx: EffectContext): void {
+  if (!heroWasUp || s.party.find((c) => c.key === 'hero')?.alive !== false) return;
+  const rin = s.party.find((c) => c.key === 'rin');
+  if (!rin?.alive || !rin.keystones.includes('unrung-bell')) return;
+  const foe = living(s.enemies)[0];
+  if (!foe) return;
+  addBuff(rin, { stat: 'atk', pct: MEMORY_KEYSTONE_VALUES.bellAtkPct, turns: MEMORY_KEYSTONE_VALUES.bellTurns });
+  s.log.push({ type: 'buff', target: rin.key, stat: 'atk', pct: MEMORY_KEYSTONE_VALUES.bellAtkPct });
+  s.log.push({ type: 'act', actor: rin.key, label: '攻擊' });
+  applyEffect(rin, foe, { kind: 'damage', power: 100, element: 'phys', scale: rin.attackScale ?? 'atk', melee: rin.melee }, ctx);
+}
+
 export function resolveRound(prev: BattleState, actions: Record<string, Action>, rng: Rng): BattleState {
   const s = structuredClone(prev);
   s.log = [];
@@ -356,13 +382,17 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     if (!actor.alive) continue;
     if (actor.sleep > 0) { actor.sleep -= 1; s.log.push({ type: 'asleep', actor: actor.key }); continue; }
     const act = actor.side === 'party' ? actions[actor.key] : enemyActs.get(actor.key);
+    const heroUp = s.party.some((c) => c.key === 'hero' && c.alive);
     if (act) {
       perform(s, actor, act, ctx, rng);
       if (actor.side === 'party' && actor.alive && act.kind !== 'ultimate' && act.kind !== 'escape') actor.limit = Math.min(LIMIT_MAX, actor.limit + gaugeGain(actor, LIMIT_PER_ACTION));
     }
+    ringBell(s, heroUp, ctx);
     if (checkOutcome(s)) return s;
   }
+  const heroUp = s.party.some((c) => c.key === 'hero' && c.alive);
   endOfRound(s, ctx, rng);
+  ringBell(s, heroUp, ctx);
   if (!checkOutcome(s)) planEnemies(s, rng);
   return s;
 }

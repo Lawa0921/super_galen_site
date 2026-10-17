@@ -8,7 +8,7 @@ import { SKILLS } from '../data/skills';
 import { LEGACY_LINEUP } from './party';
 import { constRng, makeBattle, makeCombatant, plainItem, fullParty } from './testing';
 import type { SkillDef } from './types';
-import { KEYSTONE_VALUES as V, type KeystoneId } from '../data/talents';
+import { KEYSTONE_VALUES as V, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import type { Combatant } from './combatant';
 import type { Element } from './types';
 
@@ -393,5 +393,67 @@ describe('patchSkill new damage options', () => {
     expect(patchSkill(def, { powerPct: 150 }).effects).toEqual([
       { kind: 'damage', power: 150, element: 'phys', scale: 'atk', melee: true, crit: 'always', execute: 40, wounded: 30 },
     ]);
+  });
+});
+
+describe('memory keystones', () => {
+  const MV = MEMORY_KEYSTONE_VALUES;
+  const draws = () => { const n = { v: 0 }; return { n, rng: () => { n.v++; return 0.5; } }; };
+
+  it('moon-promise heals more', () => {
+    const heal = (keystones: KeystoneId[]) => {
+      const d = draws();
+      const t = party({ key: 't', hp: 1, max: { hp: 999 } as never });
+      applyEffect(party({ keystones }), t, { kind: 'heal', power: 120 }, ctx({ rng: d.rng }));
+      return { got: t.hp - 1, draws: d.n.v };
+    };
+    const plain = heal([]), held = heal(['moon-promise']);
+    expect(held.got).toBe(Math.floor(plain.got * (1 + MV.moonHealPct / 100)));
+    expect(held.got).toBeGreaterThan(plain.got);
+    expect(held.draws).toBe(plain.draws);
+    // It stacks with the heal bonus, and a different keystone changes nothing.
+    expect(heal(['regen']).got).toBe(plain.got);
+  });
+
+  it('troupe-step buffs last longer', () => {
+    const cast = (keystones: KeystoneId[], onFoe = false) => {
+      const target = onFoe ? enemy() : party({ key: 'ally' });
+      applyEffect(party({ keystones }), target, { kind: 'buff', stat: onFoe ? 'def' : 'atk', pct: onFoe ? -20 : 20, turns: 2 }, ctx());
+      return target.buffs[0].turns;
+    };
+    expect(cast([])).toBe(2);
+    expect(cast(['troupe-step'])).toBe(2 + MV.troupeTurns);
+    // Only her buffs on her side: a debuff on a foe lasts as written.
+    expect(cast(['troupe-step'], true)).toBe(2);
+  });
+
+  it('carried-out hits a full-HP target harder', () => {
+    const hit = (keystones: KeystoneId[], hp: number) => {
+      const d = draws();
+      const c = ctx({ rng: d.rng });
+      applyEffect(party({ keystones, max: { atk: 400 } as never }), enemy({ hp, max: { hp: 99999 } as never }), { kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: true }, c);
+      const e = c.log.find((x) => x.type === 'damage');
+      return { amount: e && e.type === 'damage' ? e.amount : -1, draws: d.n.v };
+    };
+    const plain = hit([], 99999), held = hit(['carried-out'], 99999);
+    expect(Math.abs(held.amount - plain.amount * (1 + MV.fullHpPct / 100))).toBeLessThanOrEqual(1);
+    expect(held.draws).toBe(plain.draws);
+    // One HP short of full: the same as without it.
+    expect(hit(['carried-out'], 99998).amount).toBe(hit([], 99998).amount);
+  });
+
+  it('not-a-shield takes less while taunting', () => {
+    const hit = (keystones: KeystoneId[], taunt: number) => {
+      const c = ctx();
+      applyEffect(enemy({ max: { atk: 400 } as never }), party({ keystones, taunt, max: { hp: 99999 } as never }), { kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: true }, c);
+      const e = c.log.find((x) => x.type === 'damage');
+      return e && e.type === 'damage' ? e.amount : -1;
+    };
+    const base = hit(['taunt-guard'], 2);
+    const held = hit(['taunt-guard', 'not-a-shield'], 2);
+    expect(Math.abs(held - base * (1 - MV.friendGuardPct / 100))).toBeLessThanOrEqual(1);
+    expect(held).toBeLessThan(base);
+    // Not taunting: no difference.
+    expect(hit(['not-a-shield'], 0)).toBe(hit([], 0));
   });
 });
