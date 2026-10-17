@@ -109,6 +109,13 @@ export class Renderer {
   readonly liquidLayer = new LiquidLayer();
   /** debug：不畫光照遮罩（文件截圖用） */
   fullbright = false;
+  /** 標題畫面背景：鏡頭由外部指定（世界 px，左上角），不跟玩家；不畫玩家 */
+  camOverride: Cam | null = null;
+  hidePlayer = false;
+  /** 畫瞄準游標（標題背景關掉） */
+  showCursor = true;
+  /** 光照每幾幀重算一次（標題背景鏡頭很慢，可以拉長） */
+  lightEvery = LIGHT_EVERY;
   /** 世界 chunk 有變動（小地圖快取跟著重畫） */
   onWorldDirty: ((cis: number[]) => void) | null = null;
   /** 環境粒子 */
@@ -136,7 +143,7 @@ export class Renderer {
   private cache: ChunkLRU<HTMLCanvasElement>;
   private pool: HTMLCanvasElement[] = [];
   private pending = new Set<number>();
-  private buf = document.createElement('canvas');
+  private buf: HTMLCanvasElement = document.createElement('canvas');
   private bctx: CanvasRenderingContext2D;
   /** 光照遮罩兩組（multiply 光色 + 'lighter' 暗色補色）：一組顯示、另一組分幀填色，填完互換 */
   private lightSets: [LightSet, LightSet] = [makeLightSet(), makeLightSet()];
@@ -176,9 +183,14 @@ export class Renderer {
   /** 地表高度前綴和（遠景地平線取鏡頭附近平均） */
   private surfSum: Float64Array;
 
-  constructor(readonly canvas: HTMLCanvasElement, readonly game: DelveGame) {
+  /**
+   * opts.direct：直接畫在 canvas 上（canvas 大小 = 低解析緩衝），整數倍放大交給 CSS（image-rendering: pixelated）；
+   * 省掉最後一次全螢幕放大貼圖（標題背景用）。
+   */
+  constructor(readonly canvas: HTMLCanvasElement, readonly game: DelveGame, opts: { direct?: boolean } = {}) {
     const ctx = canvas.getContext('2d', { alpha: false });
-    const bctx = this.buf.getContext('2d', { alpha: false });
+    if (opts.direct) this.buf = canvas;
+    const bctx = opts.direct ? ctx : this.buf.getContext('2d', { alpha: false });
     if (!ctx || !bctx) throw new Error('2d context unavailable');
     this.ctx = ctx;
     this.bctx = bctx;
@@ -305,7 +317,9 @@ export class Renderer {
     const worldW = w.width * S, worldH = w.height * S;
     const vw = this.worldViewW(), vh = this.worldViewH();
     const pc = g.playerCenter();
-    this.cam = followCamera(this.cam, cameraFocus(pc, vw, vh), vw, vh, worldW, worldH, dt, this.snapNext);
+    this.cam = this.camOverride
+      ? { x: Math.max(0, Math.min(worldW - vw, this.camOverride.x)), y: Math.max(0, Math.min(worldH - vh, this.camOverride.y)) }
+      : followCamera(this.cam, cameraFocus(pc, vw, vh), vw, vh, worldW, worldH, dt, this.snapNext);
     this.snapNext = false;
     // 繪製時對齊整數美術 px：精靈 / chunk / 視差層都落在像素格上，不會閃爍
     this.drawCam = snapCam(this.cam);
@@ -445,7 +459,7 @@ export class Renderer {
     const out = this.ctx;
     out.setTransform(1, 0, 0, 1, 0, 0);
     out.imageSmoothingEnabled = false;
-    out.drawImage(this.buf, 0, 0, this.bufW, this.bufH, 0, 0, this.bufW * this.scale, this.bufH * this.scale);
+    if (this.buf !== this.canvas) out.drawImage(this.buf, 0, 0, this.bufW, this.bufH, 0, 0, this.bufW * this.scale, this.bufH * this.scale);
     ph.blit = this.lap();
   }
 
@@ -674,7 +688,7 @@ export class Renderer {
       ctx.drawImage(this.atlas.canvas, c.sx, c.sy, S, S, st.mining.x * S, st.mining.y * S, S, S);
     }
     const { x, y } = st.aim;
-    if (!g.world.inBounds(x, y)) return;
+    if (!this.showCursor || !g.world.inBounds(x, y)) return;
     const ok = g.canReach(x, y);
     // 像素角括號：四個 L 形角（1px 亮線 + 右下 1px 暗影），沒有半透明
     const px = x * S, py = y * S, n = 4;
@@ -702,7 +716,7 @@ export class Renderer {
 
   private drawPlayer(ctx: CanvasRenderingContext2D, dt: number): void {
     const g = this.game, p = g.player, st = g.getState();
-    if (st.dead) return;
+    if (st.dead || this.hidePlayer) return;
     const atk = st.attack;
     if (atk) this.facing = atk.dir;
     else {
@@ -970,7 +984,7 @@ export class Renderer {
     v.x = Math.floor(camX / S); v.y = Math.floor(camY / S); v.w = Math.ceil(vw / S) + 1; v.h = Math.ceil(vh / S) + 1;
     // 重算分散到幾幀（每幀最多 LIGHT_BUDGET_MS）：顯示中的遮罩是世界錨定的，鏡頭移動幾幀仍蓋得住畫面；
     // 蓋不住（第一幀、縮放、傳送、高速墜落）才當幀一次做完。重算中又有變動 → 這次做完立刻再排一次。
-    if (!this.job && (this.lightDirty || this.lightAge >= LIGHT_EVERY || !this.light)) this.startLightJob(camX, camY, vw, vh);
+    if (!this.job && (this.lightDirty || this.lightAge >= this.lightEvery || !this.light)) this.startLightJob(camX, camY, vw, vh);
     if (this.job) {
       const urgent = !rectCovers(this.light, v);
       this.advanceLightJob(urgent ? Infinity : t0 + LIGHT_BUDGET_MS);

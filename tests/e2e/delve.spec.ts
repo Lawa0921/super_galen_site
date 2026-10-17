@@ -7,6 +7,13 @@ import { test, expect, type Page } from '@playwright/test';
 // window.__delveDebug 的型別宣告在 session.ts（DelveDebug，全域唯一一份）
 import type {} from '../../src/scripts/games/delve/render/session';
 
+/** 標題的「按任意鍵開始」→ 選單出現 */
+async function pressStart(page: Page): Promise<void> {
+  await expect(page.locator('#delve-root')).toHaveAttribute('data-ready', '1');
+  await page.locator('#delve-press').click();
+  await expect(page.locator('#delve-tmenu')).toBeVisible();
+}
+
 async function waitGame(page: Page): Promise<void> {
   await page.waitForFunction(() => Boolean(window.__delveDebug?.game), undefined, { timeout: 30000 });
 }
@@ -34,9 +41,14 @@ test.describe('delve', () => {
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/games/delve');
     await expect(page.locator('#delve-title')).toBeVisible();
-    await page.fill('#delve-seed', 'title-test');
+    await expect(page.locator('#delve-press')).toBeVisible();
+    await expect(page.locator('#delve-tmenu')).toBeHidden();
+    await pressStart(page);
     await page.click('#delve-new');
-    await expect(page.locator('#delve-title')).toBeHidden();
+    await expect(page.locator('#delve-newpanel')).toBeVisible();
+    await page.fill('#delve-seed', 'title-test');
+    await page.click('#delve-create');
+    await expect(page.locator('#delve-title')).toBeHidden({ timeout: 15000 });
     await waitGame(page);
     await expect(page.locator('#delve-hotbar .delve-slot')).toHaveCount(10);
     const seed = await page.evaluate(() => window.__delveDebug!.game.seed);
@@ -100,6 +112,7 @@ test.describe('delve', () => {
       return { x, y };
     });
     await page.goto('/games/delve');
+    await pressStart(page);
     await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
     await page.click('#delve-continue');
     await waitGame(page);
@@ -120,14 +133,17 @@ test.describe('delve', () => {
     await expect(page.locator('#delve-confirm')).toBeHidden();
     await expect(page.locator('#delve-title')).toBeVisible();
     expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
-    // 標題「新世界」→ 取消 → 存檔還在
-    await page.fill('#delve-seed', 'brandnew');
+    // 標題「新世界」面板 → 開始 → 詢問 → 取消 → 存檔還在（「繼續」的摘要寫著種子）
+    await pressStart(page);
+    await expect(page.locator('#delve-continue')).toContainText('keepme', { timeout: 10000 });
     await page.click('#delve-new');
+    await page.fill('#delve-seed', 'brandnew');
+    await page.click('#delve-create');
     await expect(page.locator('#delve-confirm')).toBeVisible();
     await page.click('#delve-confirm-cancel');
     await expect(page.locator('#delve-continue')).toContainText('keepme');
     // 再按一次 → 覆蓋
-    await page.click('#delve-new');
+    await page.click('#delve-create');
     await page.click('#delve-confirm-ok');
     await waitGame(page);
     expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('brandnew');
@@ -233,6 +249,7 @@ test.describe('delve', () => {
       });
     });
     await page.reload();
+    await pressStart(page);
     await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
     await page.click('#delve-continue');
     await expect(page.locator('#delve-title-msg')).toContainText('舊版地圖產生器');
@@ -286,6 +303,7 @@ test.describe('delve', () => {
     // 3) 存檔 → 重新整理 → 繼續：兩扇門都還開著
     await page.evaluate(() => window.__delveDebug!.save());
     await page.goto('/games/delve');
+    await pressStart(page);
     await page.click('#delve-continue');
     await waitGame(page);
     expect(await fg(a.x, a.y + 1)).toBe(54);
@@ -418,6 +436,7 @@ test.describe('delve', () => {
     });
     expect(before.markers.length).toBe(1);
     await page.goto('/games/delve');
+    await pressStart(page);
     await page.click('#delve-continue');
     await waitGame(page);
     const after = await page.evaluate(() => { const g = window.__delveDebug!.game; return { count: g.explored.count, markers: g.markers, lore: g.discovery.toJSON().lore, found: g.discovery.toJSON().regions }; });
@@ -513,6 +532,7 @@ test.describe('delve', () => {
     await expect(page.locator('[data-testid="journal-bosses"]')).toContainText('燈脈守望者 ✓');
     await page.evaluate(() => window.__delveDebug!.save());
     await page.goto('/games/delve');
+    await pressStart(page);
     await page.click('#delve-continue');
     await waitGame(page);
     expect(await page.evaluate(() => window.__delveDebug!.game.getState().bossesDefeated)).toEqual(['lantern_warden']);
@@ -537,6 +557,7 @@ test.describe('delve', () => {
     await expect(link).toBeVisible();
     await link.click();
     await expect(page).toHaveURL(/\/games\/delve\/?$/);
+    await pressStart(page);
     await expect(page.locator('#delve-new')).toBeVisible();
   });
 });
@@ -697,6 +718,7 @@ test.describe('delve liquids', () => {
     const before = await rowSum(page, x0 + 5, x0 + 9, fy - 1);
     await page.evaluate(() => window.__delveDebug!.save());
     await page.goto('/games/delve');
+    await pressStart(page);
     await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
     await page.click('#delve-continue');
     await waitGame(page);
@@ -758,6 +780,7 @@ test.describe('delve fixes', () => {
     });
     expect(info.dead).toBe(true);
     await page.goto('/games/delve');
+    await pressStart(page);
     await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
     await page.click('#delve-continue');
     await waitGame(page);
@@ -789,6 +812,7 @@ test.describe('delve fixes', () => {
       await d.save();
     });
     await page.goto('/games/delve');
+    await pressStart(page);
     await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
     await page.click('#delve-continue');
     await waitGame(page);
@@ -992,5 +1016,81 @@ test.describe('delve fishing / waterfalls / furniture', () => {
     await page.waitForTimeout(300);
     const back = await page.evaluate(({ x0, fy }) => { const g = window.__delveDebug!.game; g.mineInstant(x0 + 5, fy - 5); return g.inventory.count('warden_trophy'); }, r);
     expect(back).toBe(1);
+  });
+});
+
+// ── 標題畫面：開場、按任意鍵開始、選單鍵盤移動、新世界面板、設定、存檔摘要 ─────────────
+test.describe('delve title', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+
+  test('即時背景場景在跑、按任意鍵 → 選單；↑↓ 移動焦點；設定寫入音量 / 縮放 / 自動瞄準', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve');
+    await page.waitForFunction(() => (window.__delveTitle?.perf.frames ?? 0) > 10, undefined, { timeout: 15000 });
+    expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#delve-tmenu')).toBeVisible();
+    await expect(page.locator('#delve-new')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('#delve-import')).toBeFocused();
+    await page.keyboard.press('End');
+    await expect(page.locator('#delve-back')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('#delve-new')).toBeFocused();
+    // 設定
+    await page.click('#delve-settings-btn');
+    await expect(page.locator('#delve-settings')).toBeVisible();
+    await page.locator('#delve-vol').fill('30');
+    await page.click('#delve-zp-inc');
+    await page.click('#delve-aim-pref');
+    const st = await page.evaluate(() => ({ v: localStorage.getItem('arcade-sfx-vol'), z: localStorage.getItem('delve.zoom'), a: localStorage.getItem('delve.autoaim'), pub: (window as unknown as { __arcadeAudio?: { sfxVolume: number } }).__arcadeAudio?.sfxVolume }));
+    expect(st).toEqual({ v: '0.3', z: '1', a: '1', pub: 0.3 });
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#delve-settings')).toBeHidden();
+    // 新世界面板：骰子給名字、難度切換記住
+    await page.click('#delve-new');
+    await page.click('#delve-dice');
+    expect((await page.locator('#delve-seed').inputValue()).length).toBeGreaterThan(2);
+    await page.click('#delve-diff-peaceful');
+    await expect(page.locator('#delve-diff-peaceful')).toHaveAttribute('aria-checked', 'true');
+    expect(await page.evaluate(() => localStorage.getItem('delve.peaceful'))).toBe('1');
+    await page.fill('#delve-seed', 'title-flow');
+    await page.click('#delve-create');
+    await waitGame(page);
+    expect(await page.evaluate(() => ({ s: window.__delveDebug!.game.seed, p: window.__delveDebug!.game.peaceful, aim: window.__delveDebug!.game.autoAim, title: Boolean(window.__delveTitle) }))).toEqual({ s: 'title-flow', p: true, aim: true, title: false });
+    expect(errors).toEqual([]);
+  });
+
+  test('「繼續」顯示存檔摘要（種子、日期、遊玩時間、最深、完成度）', async ({ page }) => {
+    await page.goto('/games/delve?seed=summary&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(async () => { const d = window.__delveDebug!, g = d.game; g.setDate({ year: 2, season: 2, day: 5, hour: 9 }); g.tick = 60 * 60 * 61; g.discovery.depthRecord = 88; await d.save(); });
+    await page.goto('/games/delve');
+    await pressStart(page);
+    const sub = page.locator('#delve-continue-sub');
+    await expect(sub).toContainText('summary');
+    await expect(sub).toContainText('第2年 秋 5日');
+    await expect(sub).toContainText('遊玩 1 小時 1 分');
+    await expect(sub).toContainText('最深 88 格');
+    await expect(sub).toContainText('完成度');
+    await expect(page.locator('#delve-export-title')).toBeVisible();
+  });
+
+  test('手機直式：沒有橫向捲動、選單按鈕至少 40px 高', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true });
+    const page = await ctx.newPage();
+    await page.goto('/games/delve');
+    await expect(page.locator('#delve-root')).toHaveAttribute('data-ready', '1');
+    await page.locator('#delve-press').tap();
+    await expect(page.locator('#delve-tmenu')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const hs = await page.locator('#delve-tmenu .delve-ti:visible').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
+    expect(hs.length).toBeGreaterThanOrEqual(4);
+    for (const h of hs) expect(h).toBeGreaterThanOrEqual(40);
+    await ctx.close();
   });
 });

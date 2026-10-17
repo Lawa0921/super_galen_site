@@ -7,7 +7,7 @@
 //   const light = game.computeLight(viewRectInTiles);
 //   for (const e of game.drainEvents()) playSfx(e);
 import { World } from './world';
-import { generateWorld, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './worldgen';
+import { generateWorld, type GenResult, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './worldgen';
 import type { DungeonInfo } from './gen/dungeon';
 type GenRelic = { x: number; y: number; item: ItemId; where: string };
 import { T, W, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
@@ -55,6 +55,8 @@ export interface DelveOptions {
   height?: number;
   /** 和平模式：不自然生成怪物 */
   peaceful?: boolean;
+  /** 預先生成好的世界（generateWorldSteps 分段生成；必須是同一個 seed / 大小） */
+  gen?: GenResult;
 }
 
 export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest' | 'locked' | 'golden'
@@ -452,7 +454,9 @@ export class DelveGame {
 
   constructor(opts: DelveOptions = {}) {
     this.seed = String(opts.seed ?? 'delve');
-    const gen = generateWorld(this.seed, { width: opts.width, height: opts.height });
+    // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）
+    const pre = opts.gen && (opts.width === undefined || opts.gen.world.width === opts.width) && (opts.height === undefined || opts.gen.world.height === opts.height) ? opts.gen : null;
+    const gen = pre ?? generateWorld(this.seed, { width: opts.width, height: opts.height });
     this.world = gen.world;
     this.liquids = new LiquidSim(this.world);
     this.liquids.blocked = (x, y) => !this.dead && this.tileOverlapsPlayer(x, y);

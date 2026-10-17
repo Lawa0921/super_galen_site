@@ -41,6 +41,7 @@ import { TILES, WALLS, T, isChestTile } from '../engine/tiles';
 import { ITEMS, isItemId, type ItemId } from '../engine/items';
 import { MAX_DROPS } from '../engine/entities';
 import { ExploredMap, MAX_MARKERS, decodeRle, type MapMarker } from '../engine/explore';
+import type { GenResult } from '../engine/worldgen';
 import type { DiscoveryJSON } from '../engine/discovery';
 import { Equipment, type EquipmentJSON } from '../engine/equipment';
 import { ENEMIES, type EnemyKind } from '../engine/enemies';
@@ -146,6 +147,8 @@ export type RestoreResult =
 export interface RestoreOptions {
   /** 生成器版本不符時仍以目前生成器還原（被修改 chunk 照貼，可能有接縫） */
   allowGenMismatch?: boolean;
+  /** 預先生成好的世界（同 seed / 大小；標題畫面分段生成、顯示進度用） */
+  gen?: GenResult;
 }
 
 // ── chunk 讀寫 ─────────────────────────────────────────────
@@ -660,7 +663,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   if (!validDims(h.width, h.height)) {
     return { ok: false, error: 'size', message: `bad size ${h.width}x${h.height}` };
   }
-  const game = new DelveGame({ seed: h.seed, width: h.width, height: h.height });
+  const game = new DelveGame({ seed: h.seed, width: h.width, height: h.height, gen: opts.gen });
   const w = game.world;
   const total = w.chunksX * w.chunksY;
   for (const ci of h.chunks) {

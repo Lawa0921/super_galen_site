@@ -232,6 +232,18 @@ export class SoundManager {
     this.tone(2600, 0.42, 0.08, 'sine', 0.03, 3200); this.tone(2800, 0.55, 0.08, 'sine', 0.03, 3400);
   }
 
+  // ── 標題選單（輕、短，不搶畫面） ──
+  /** 選單移動：一聲很短的木頭敲擊 */
+  uiMove(): void { this.tone(660, 0, 0.045, 'square', 0.025); this.tone(990, 0.012, 0.03, 'triangle', 0.02); }
+  /** 確認：兩音上行 */
+  uiConfirm(): void { this.tone(523.25, 0, 0.09, 'square', 0.035); this.tone(783.99, 0.07, 0.16, 'triangle', 0.05); }
+  /** 返回 / 關閉面板：兩音下行 */
+  uiBack(): void { this.tone(587.33, 0, 0.07, 'triangle', 0.04); this.tone(392, 0.06, 0.12, 'triangle', 0.035); }
+  /** 擲骰子：三下快速的喀噠 */
+  uiDice(): void { [0, 0.05, 0.11].forEach((t, i) => this.tone(1200 - i * 180, t, 0.03, 'square', 0.025)); }
+  /** 轉場開始：往下沉的掃頻（鑽進地底） */
+  uiDelve(): void { this.tone(330, 0, 0.5, 'triangle', 0.06, 110); this.tone(880, 0.02, 0.2, 'sine', 0.025, 440); }
+
   destroy(): void {
     if (typeof window !== 'undefined') window.removeEventListener('arcade-audio-change', this.onChange);
     void this.ctx?.close?.();
