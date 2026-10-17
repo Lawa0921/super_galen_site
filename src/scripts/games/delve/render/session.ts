@@ -1,0 +1,284 @@
+// session.ts — 頁面流程：標題畫面（新世界 / 繼續 / 匯入）、選單（存檔 / 匯出 / 匯入）、自動存檔、debug 鉤。
+import { DelveGame } from '../engine/game';
+import { serializeGame, restoreGame } from '../save/serialize';
+import {
+  saveSlot, loadSlot, listSlots, startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB,
+} from '../save/storage';
+import { startDelve, type DelveHandle } from './main';
+import { autostartPlan, newWorldPlan, helpSeen, HELP_KEY } from './model';
+
+const SLOT = 'main';
+
+declare global {
+  interface Window { __delveDebug?: { game: DelveGame; handle: DelveHandle; save: () => Promise<void> } }
+}
+
+function randomSeed(): string {
+  const a = new Uint32Array(2);
+  crypto.getRandomValues(a);
+  return (a[0].toString(36) + a[1].toString(36)).slice(0, 8);
+}
+
+export interface Session { destroy(): void; }
+
+const PEACEFUL_KEY = 'delve.peaceful';
+/** 新世界的預設難度：網址 ?peaceful=1 / 0 優先，否則用上次的選擇（localStorage） */
+function defaultPeaceful(): boolean {
+  const q = new URLSearchParams(location.search).get('peaceful');
+  if (q === '1') return true;
+  if (q === '0') return false;
+  try { return globalThis.localStorage?.getItem(PEACEFUL_KEY) === '1'; } catch { return false; }
+}
+
+export function bootDelve(root: HTMLElement): Session {
+  const $ = <T extends HTMLElement = HTMLElement>(sel: string): T | null => root.querySelector<T>(sel);
+  const canvas = $<HTMLCanvasElement>('#delve-canvas');
+  const title = $('#delve-title');
+  const hudEl = $('#delve-hud');
+  const menu = $('#delve-menu');
+  const titleMsg = $('#delve-title-msg');
+  const menuMsg = $('#delve-menu-msg');
+  const seedInput = $<HTMLInputElement>('#delve-seed');
+  const fileInput = $<HTMLInputElement>('#delve-import-file');
+  const continueBtn = $<HTMLButtonElement>('#delve-continue');
+  const confirmEl = $('#delve-confirm');
+  const confirmMsg = $('#delve-confirm-msg');
+  const confirmOk = $<HTMLButtonElement>('#delve-confirm-ok');
+  const confirmCancel = $<HTMLButtonElement>('#delve-confirm-cancel');
+  const loading = $('#delve-loading');
+  const upgradeNew = $<HTMLButtonElement>('#delve-upgrade-new');
+  if (!canvas || !title || !hudEl || !menu) throw new Error('delve: missing page elements');
+  // 觸控裝置：一載入就切到觸控版介面（虛擬按鍵、觸控版說明），不必等第一次觸碰
+  try { if (globalThis.matchMedia?.('(pointer: coarse)').matches) root.dataset.touch = '1'; } catch { /* 舊瀏覽器 */ }
+  const helpEl = $('#delve-help');
+  const helpClose = $<HTMLButtonElement>('#delve-help-close');
+
+  let handle: DelveHandle | null = null;
+  let stopAutosave: (() => void) | null = null;
+  let persisted = false;
+  const offs: (() => void)[] = [];
+  const on = (el: EventTarget | null, type: string, fn: EventListener): void => {
+    if (!el) return;
+    el.addEventListener(type, fn);
+    offs.push(() => el.removeEventListener(type, fn));
+  };
+
+  const say = (el: HTMLElement | null, msg: string): void => { if (el) el.textContent = msg; };
+
+  async function saveNow(): Promise<void> {
+    if (!handle || !hasIndexedDB()) return;
+    const g = handle.game;
+    await saveSlot(SLOT, g.seed, serializeGame(g));
+    if (!persisted) { persisted = true; void requestPersistence(); }
+  }
+
+  const peacefulBtn = $<HTMLButtonElement>('#delve-peaceful');
+  function syncPeaceful(): void {
+    const on = Boolean(handle?.game.peaceful);
+    if (peacefulBtn) {
+      peacefulBtn.textContent = on ? '難度：和平（不生怪）' : '難度：一般';
+      peacefulBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+  function setMenu(open: boolean): void {
+    if (!menu) return;
+    menu.hidden = !open;
+    handle?.setPaused(open);
+    say(menuMsg, '');
+    syncPeaceful();
+  }
+
+  // ── 操作說明：第一次進遊戲自動打開，看過記在 localStorage；選單「操作說明」可再打開 ──
+  let helpFocus: HTMLElement | null = null;
+  function setHelp(open: boolean): void {
+    if (!helpEl) return;
+    helpEl.hidden = !open;
+    if (open) {
+      root.dataset.help = '1';
+      helpFocus = document.activeElement as HTMLElement | null;
+      handle?.setPaused(true);
+      helpClose?.focus();
+    } else {
+      delete root.dataset.help;
+      try { globalThis.localStorage?.setItem(HELP_KEY, '1'); } catch { /* 私密模式：下次還會再顯示 */ }
+      handle?.setPaused(!menu!.hidden);
+      helpFocus?.focus?.();
+    }
+  }
+  let storage: Storage | undefined;
+  try { storage = globalThis.localStorage; } catch { storage = undefined; }
+
+  function begin(game: DelveGame): void {
+    stopAutosave?.();
+    handle?.destroy();
+    title!.hidden = true;
+    hudEl!.hidden = false;
+    root.dataset.phase = 'playing';
+    setMenu(false);
+    handle = startDelve({ root, canvas: canvas!, game, onMenu: () => setMenu(menu!.hidden) });
+    window.__delveDebug = { game, handle, save: saveNow };
+    if (!helpSeen(storage)) setHelp(true);
+    if (hasIndexedDB()) {
+      stopAutosave = startAutosave({
+        slot: SLOT, seed: game.seed, getBytes: () => serializeGame(game),
+        onSaved: () => { if (!persisted) { persisted = true; void requestPersistence(); } },
+        onError: (e) => console.warn('[delve] autosave failed', e),
+      });
+      void saveNow().catch((e: unknown) => console.warn('[delve] save failed', e));
+    }
+  }
+
+  /** 目前存檔槽的種子；沒有存檔 / 無 IndexedDB 時 null */
+  async function existingSeed(): Promise<string | null> {
+    if (!hasIndexedDB()) return null;
+    try {
+      return (await listSlots()).find((m) => m.slot === SLOT)?.seed ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** 世界生成要 ~0.5–1 秒：先顯示「生成世界中」再在下一幀同步生成 */
+  function withLoading(work: () => void): void {
+    if (loading) loading.hidden = false;
+    root.dataset.phase = 'loading';
+    requestAnimationFrame(() => setTimeout(() => {
+      try { work(); } finally { if (loading) loading.hidden = true; }
+    }, 0));
+  }
+
+  function startFresh(seed?: string): void {
+    const s = (seed ?? seedInput?.value ?? '').trim() || randomSeed();
+    withLoading(() => begin(new DelveGame({ seed: s, peaceful: defaultPeaceful() })));
+  }
+
+  // ── 覆蓋確認對話框（頁內，不用 window.confirm） ──
+  let pendingSeed: string | undefined;
+  let lastFocus: HTMLElement | null = null;
+  function askOverwrite(existing: string, seed: string | undefined): void {
+    if (!confirmEl) return;
+    pendingSeed = seed;
+    say(confirmMsg, `這個瀏覽器已有一個存檔（種子 ${existing}）。開新世界會覆蓋它，舊世界無法復原。要先匯出備份的話請按取消，進入「繼續」後從選單匯出。`);
+    lastFocus = document.activeElement as HTMLElement | null;
+    confirmEl.hidden = false;
+    root.dataset.confirm = '1';
+    confirmCancel?.focus();
+  }
+  function closeConfirm(): void {
+    if (!confirmEl) return;
+    confirmEl.hidden = true;
+    delete root.dataset.confirm;
+    lastFocus?.focus?.();
+  }
+
+  async function newWorld(seed?: string): Promise<void> {
+    const existing = await existingSeed();
+    if (newWorldPlan(existing, false) === 'confirm') askOverwrite(existing as string, seed);
+    else startFresh(seed);
+  }
+
+  function restoreBytes(bytes: Uint8Array, msgEl: HTMLElement | null): boolean {
+    const r = restoreGame(bytes);
+    if (!r.ok) {
+      if (r.error === 'gen_version') {
+        say(msgEl, `這個存檔是舊版地圖產生器（v${r.saveGenVersion ?? '?'}）做的，新版地圖重做了洞穴、地層、生態區形狀並加入地城，舊世界無法繼續。可以先從選單匯出備份，再按下面的按鈕開一個新世界。`);
+        if (upgradeNew && msgEl === titleMsg) upgradeNew.hidden = false;
+      } else say(msgEl, `存檔讀取失敗：${r.message}`);
+      return false;
+    }
+    begin(r.game);
+    return true;
+  }
+
+  async function continueGame(): Promise<void> {
+    try {
+      const bytes = await loadSlot(SLOT);
+      if (!bytes) { say(titleMsg, '找不到存檔'); return; }
+      restoreBytes(bytes, titleMsg);
+    } catch (e) {
+      say(titleMsg, `讀取存檔失敗：${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  async function exportSave(): Promise<void> {
+    if (!handle) return;
+    const g = handle.game;
+    const blob = await exportBlob(serializeGame(g));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `delve-${g.seed}.delve`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    say(menuMsg, '已匯出存檔檔案');
+  }
+
+  let importFrom: HTMLElement | null = titleMsg;
+  on(fileInput, 'change', () => {
+    const f = fileInput?.files?.[0];
+    if (!f) return;
+    importBlob(f)
+      .then((bytes) => { if (restoreBytes(bytes, importFrom)) void saveNow(); })
+      .catch((e: unknown) => say(importFrom, `匯入失敗：${e instanceof Error ? e.message : String(e)}`))
+      .finally(() => { if (fileInput) fileInput.value = ''; });
+  });
+
+  on($('#delve-new'), 'click', () => void newWorld());
+  on(upgradeNew, 'click', () => { if (upgradeNew) upgradeNew.hidden = true; void newWorld(); });
+  on(seedInput, 'keydown', (e) => { if ((e as KeyboardEvent).key === 'Enter') void newWorld(); });
+  on(confirmOk, 'click', () => { closeConfirm(); startFresh(pendingSeed); });
+  on(confirmCancel, 'click', () => closeConfirm());
+  on(confirmEl, 'keydown', (e) => {
+    if ((e as KeyboardEvent).key === 'Escape') { e.stopPropagation(); closeConfirm(); }
+  });
+  on(continueBtn, 'click', () => void continueGame());
+  on($('#delve-import'), 'click', () => { importFrom = titleMsg; fileInput?.click(); });
+  on($('#delve-resume'), 'click', () => setMenu(false));
+  on($('#delve-help-btn'), 'click', () => { setMenu(false); setHelp(true); });
+  on(helpClose, 'click', () => setHelp(false));
+  on(helpEl, 'keydown', (e) => {
+    if ((e as KeyboardEvent).key === 'Escape') { e.stopPropagation(); setHelp(false); }
+  });
+  on($('#delve-menu-btn'), 'click', () => setMenu(true));
+  on($('#delve-save'), 'click', () => {
+    saveNow().then(() => say(menuMsg, '已存檔')).catch((e: unknown) => say(menuMsg, `存檔失敗：${String(e)}`));
+  });
+  on($('#delve-export'), 'click', () => void exportSave());
+  on(peacefulBtn, 'click', () => {
+    if (!handle) return;
+    handle.game.peaceful = !handle.game.peaceful;
+    try { globalThis.localStorage?.setItem(PEACEFUL_KEY, handle.game.peaceful ? '1' : '0'); } catch { /* 私密模式 */ }
+    syncPeaceful();
+    say(menuMsg, handle.game.peaceful ? '和平模式：不會再生成怪物（首領仍可召喚）' : '一般模式：怪物會依地區與晝夜出現');
+  });
+  on($('#delve-import-menu'), 'click', () => { importFrom = menuMsg; fileInput?.click(); });
+
+  // 有存檔才顯示「繼續」
+  if (hasIndexedDB()) {
+    listSlots().then((slots) => {
+      const s = slots.find((m) => m.slot === SLOT);
+      if (s && continueBtn) {
+        continueBtn.hidden = false;
+        continueBtn.textContent = `繼續（種子 ${s.seed}）`;
+      }
+    }).catch(() => { /* 私密模式等：沒有存檔功能 */ });
+  }
+
+  // e2e / 深連結：?seed=xxx&autostart=1[&fresh=1]。已有存檔時，沒有 fresh=1 不會直接覆蓋（改為詢問）。
+  if (new URLSearchParams(location.search).get('autostart') === '1') {
+    void existingSeed().then((existing) => {
+      const plan = autostartPlan(location.search, existing);
+      if (plan.kind === 'start') startFresh(plan.seed);
+      else if (plan.kind === 'confirm') askOverwrite(plan.existing, plan.seed);
+    });
+  }
+
+  return {
+    destroy(): void {
+      stopAutosave?.();
+      handle?.destroy();
+      for (const f of offs) f();
+    },
+  };
+}

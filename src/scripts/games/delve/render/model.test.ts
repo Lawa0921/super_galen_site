@@ -1,0 +1,219 @@
+// model.test.ts — render 層的純邏輯：鏡頭、固定步長、chunk 可見範圍 / LRU、HUD 文字與配方列。
+import { describe, it, expect } from 'vitest';
+import {
+  clampCamera, followCamera, FixedStepper, visibleChunks, ChunkLRU,
+  formatClock, depthLabel, blockedMessage, recipeRows, countLabel, cameraFocus, newWorldPlan, autostartPlan, biomeLabel, regionLabel, biomeBlend } from './model';
+import { Inventory } from '../engine/inventory';
+import { DAY_LENGTH } from '../engine/constants';
+
+describe('clampCamera', () => {
+  it('夾在世界範圍內', () => {
+    expect(clampCamera(-50, -10, 800, 600, 3200, 1600)).toEqual({ x: 0, y: 0 });
+    expect(clampCamera(5000, 5000, 800, 600, 3200, 1600)).toEqual({ x: 2400, y: 1000 });
+    expect(clampCamera(100, 200, 800, 600, 3200, 1600)).toEqual({ x: 100, y: 200 });
+  });
+  it('視窗比世界大時置中', () => {
+    expect(clampCamera(0, 0, 1000, 600, 800, 1600).x).toBe(-100);
+  });
+});
+
+describe('followCamera', () => {
+  it('朝目標平滑移動，不超過目標', () => {
+    const c = followCamera({ x: 0, y: 0 }, { x: 1000, y: 800 }, 800, 600, 32000, 16000, 1 / 60);
+    // 目標鏡頭 = 中心 - 半視窗 = (600, 500)
+    expect(c.x).toBeGreaterThan(0);
+    expect(c.x).toBeLessThan(600);
+    expect(c.y).toBeGreaterThan(0);
+    expect(c.y).toBeLessThan(500);
+  });
+  it('長時間後收斂到目標並受夾限', () => {
+    let c = { x: 0, y: 0 };
+    for (let i = 0; i < 600; i++) c = followCamera(c, { x: 100, y: 100 }, 800, 600, 32000, 16000, 1 / 60);
+    expect(c.x).toBeCloseTo(0);
+    expect(c.y).toBeCloseTo(0);
+    for (let i = 0; i < 600; i++) c = followCamera(c, { x: 5000, y: 4000 }, 800, 600, 32000, 16000, 1 / 60);
+    expect(c.x).toBeCloseTo(4600, 0);
+    expect(c.y).toBeCloseTo(3700, 0);
+  });
+  it('snap=true 直接到位', () => {
+    const c = followCamera({ x: 0, y: 0 }, { x: 1000, y: 800 }, 800, 600, 32000, 16000, 1 / 60, true);
+    expect(c).toEqual({ x: 600, y: 500 });
+  });
+});
+
+describe('FixedStepper', () => {
+  it('累積到一個步長才步進', () => {
+    const s = new FixedStepper(1 / 60);
+    expect(s.advance(0.01)).toBe(0);
+    expect(s.advance(0.01)).toBe(1);
+  });
+  it('單幀上限 250ms（最多 15 步）', () => {
+    const s = new FixedStepper(1 / 60, 0.25);
+    expect(s.advance(5)).toBe(15);
+    expect(s.advance(0)).toBe(0);
+  });
+  it('負值或 NaN 視為 0', () => {
+    const s = new FixedStepper(1 / 60);
+    expect(s.advance(-1)).toBe(0);
+    expect(s.advance(Number.NaN)).toBe(0);
+  });
+});
+
+describe('visibleChunks', () => {
+  it('列出與視窗相交的 chunk，夾在世界內', () => {
+    // chunk 512px；視窗 (0,0)-(800,600) → cx 0..1, cy 0..1
+    const v = visibleChunks(0, 0, 800, 600, 512, 50, 16);
+    expect(v).toEqual({ cx0: 0, cy0: 0, cx1: 1, cy1: 1 });
+    const w = visibleChunks(-100, 7000, 800, 2000, 512, 50, 16);
+    expect(w.cx0).toBe(0);
+    expect(w.cy1).toBe(15);
+  });
+});
+
+describe('ChunkLRU', () => {
+  it('超過容量時淘汰最久沒用的', () => {
+    const lru = new ChunkLRU<string>(2);
+    expect(lru.set(1, 'a')).toBeNull();
+    expect(lru.set(2, 'b')).toBeNull();
+    lru.get(1); // 1 變最新
+    expect(lru.set(3, 'c')).toEqual({ key: 2, value: 'b' });
+    expect(lru.has(2)).toBe(false);
+    expect(lru.get(1)).toBe('a');
+    expect(lru.size).toBe(2);
+  });
+  it('覆寫同 key 不淘汰', () => {
+    const lru = new ChunkLRU<string>(1);
+    lru.set(1, 'a');
+    expect(lru.set(1, 'b')).toBeNull();
+    expect(lru.get(1)).toBe('b');
+  });
+});
+
+describe('HUD 文字', () => {
+  it('formatClock：0 為午夜、半天為正午', () => {
+    expect(formatClock(0)).toBe('00:00');
+    expect(formatClock(DAY_LENGTH / 2)).toBe('12:00');
+    expect(formatClock(DAY_LENGTH * 0.75)).toBe('18:00');
+    expect(formatClock(DAY_LENGTH * 1.25)).toBe('06:00');
+  });
+  it('depthLabel：以玩家所在欄的地表高度計算（腳底格）', () => {
+    // 腳底格 = 地表 - 1 → 站在地表上
+    expect(depthLabel(139, 140, 220)).toBe('地表');
+    // 在地表上方（山坡上、樹上）也算地表
+    expect(depthLabel(100, 140, 220)).toBe('地表');
+    expect(depthLabel(149, 140, 220)).toBe('地下 10 格');
+    // 同樣的 y，在較低的欄位仍是地表（不能用全世界 surfaceY）
+    expect(depthLabel(149, 150, 220)).toBe('地表');
+    // 進入洞穴層
+    expect(depthLabel(229, 140, 220)).toBe('洞穴層 · 地下 90 格');
+    expect(depthLabel(529, 140, 220, 500)).toBe('熔岩深淵 · 地下 390 格');
+    expect(depthLabel(329, 140, 220, 500)).toBe('洞穴層 · 地下 190 格');
+  });
+  it('blockedMessage：occupied 不提示', () => {
+    expect(blockedMessage('reach')).toMatch(/太遠/);
+    expect(blockedMessage('tier')).toMatch(/鎬/);
+    expect(blockedMessage('occupied')).toBeNull();
+  });
+  it('countLabel：1 個不顯示數字', () => {
+    expect(countLabel(null)).toBe('');
+    expect(countLabel({ item: 'wood_pickaxe', count: 1 })).toBe('');
+    expect(countLabel({ item: 'dirt', count: 42 })).toBe('42');
+  });
+});
+
+describe('recipeRows', () => {
+  it('標示可合成、缺料、需工作台', () => {
+    const inv = new Inventory();
+    inv.add('wood', 1);
+    inv.add('planks', 5);
+    inv.add('copper_bar', 5);
+    const far = recipeRows(inv, false);
+    const planks = far.find((r) => r.id === 'planks')!;
+    expect(planks.craftable).toBe(true);
+    expect(planks.inputs[0]).toEqual({ item: 'wood', n: 1, have: 1 });
+    const bench = far.find((r) => r.id === 'workbench')!;
+    expect(bench.craftable).toBe(false);
+    expect(bench.missing).toBe(true);
+    const cp = far.find((r) => r.id === 'copper_pickaxe')!;
+    expect(cp.craftable).toBe(false);
+    expect(cp.needStation).toBe(true);
+    expect(cp.missing).toBe(false);
+    const near = recipeRows(inv, true);
+    expect(near.find((r) => r.id === 'copper_pickaxe')!.craftable).toBe(true);
+  });
+});
+
+describe('cameraFocus（直式螢幕讓玩家在中間偏下、多看地面）', () => {
+  const ratio = (vw: number, vh: number): number => {
+    const pc = { x: 5000, y: 3000 };
+    const f = cameraFocus(pc, vw, vh);
+    return (pc.y - (f.y - vh / 2)) / vh; // 玩家在畫面中的縱向比例
+  };
+  it('橫式：玩家略低於中央', () => {
+    const r = ratio(640, 360);
+    expect(r).toBeGreaterThan(0.5);
+    expect(r).toBeLessThan(0.6);
+  });
+  it('直式：玩家在中間偏下，但不會掉到下 1/3（不再大半是天空）', () => {
+    const r = ratio(195, 422);
+    expect(r).toBeGreaterThan(0.5);
+    expect(r).toBeLessThan(0.6);
+  });
+  it('x 置中', () => {
+    expect(cameraFocus({ x: 77, y: 0 }, 195, 422).x).toBe(77);
+  });
+});
+
+describe('新世界 / autostart 覆蓋判斷', () => {
+  it('沒有存檔直接開始；有存檔要確認；force 直接開始', () => {
+    expect(newWorldPlan(null, false)).toBe('start');
+    expect(newWorldPlan('old', false)).toBe('confirm');
+    expect(newWorldPlan('old', true)).toBe('start');
+  });
+  it('autostart：沒參數不動作；有存檔且無 fresh=1 要確認', () => {
+    expect(autostartPlan('', null)).toEqual({ kind: 'none' });
+    expect(autostartPlan('?seed=abc&autostart=1', null)).toEqual({ kind: 'start', seed: 'abc' });
+    expect(autostartPlan('?autostart=1', null)).toEqual({ kind: 'start', seed: undefined });
+    expect(autostartPlan('?seed=abc&autostart=1', 'old')).toEqual({ kind: 'confirm', seed: 'abc', existing: 'old' });
+    expect(autostartPlan('?seed=abc&autostart=1&fresh=1', 'old')).toEqual({ kind: 'start', seed: 'abc' });
+  });
+});
+
+describe('biomeLabel', () => {
+  it('四個生態區的中文名稱', () => {
+    expect(biomeLabel(0)).toBe('森林');
+    expect(biomeLabel(1)).toBe('沙漠');
+    expect(biomeLabel(2)).toBe('雪原');
+    expect(biomeLabel(3)).toBe('叢林');
+    expect(biomeLabel(99)).toBe('森林');
+  });
+  it('地底的迷你生態區優先', () => {
+    const regions = [{ kind: 'mushroom_biome', x: 10, y: 10, w: 20, h: 10 }, { kind: 'crystal_cave', x: 50, y: 50, w: 10, h: 10 }];
+    expect(regionLabel(0, regions, 15, 15)).toBe('螢光菇林');
+    expect(regionLabel(0, regions, 55, 55)).toBe('水晶洞');
+    expect(regionLabel(2, regions, 0, 0)).toBe('雪原');
+  });
+});
+
+describe('biomeBlend（背景生態區過渡，分階）', () => {
+  // 0..99 森林、100..199 沙漠
+  const at = (x: number): number => (x >= 100 && x < 200 ? 1 : 0);
+  it('離邊界很遠 → 純本區（t=0）', () => {
+    expect(biomeBlend(at, 20, 300)).toEqual({ a: 0, b: 0, t: 0 });
+    expect(biomeBlend(at, 150, 300).t).toBe(0);
+  });
+  it('靠近邊界 → 混入另一區，最多一半，且只有 0 / 0.25 / 0.5 三階', () => {
+    const near = biomeBlend(at, 99, 300);
+    expect(near).toEqual({ a: 0, b: 1, t: 0.5 });
+    const mid = biomeBlend(at, 75, 300);
+    expect(mid.b).toBe(1);
+    expect([0.25, 0.5]).toContain(mid.t);
+    const other = biomeBlend(at, 100, 300);
+    expect(other).toEqual({ a: 1, b: 0, t: 0.5 });
+    for (let x = 0; x < 300; x++) expect([0, 0.25, 0.5]).toContain(biomeBlend(at, x, 300).t);
+  });
+  it('跨邊界時 t 單調變化（不跳）', () => {
+    let prev = -1;
+    for (let x = 30; x < 100; x++) { const t = biomeBlend(at, x, 300).t; expect(t).toBeGreaterThanOrEqual(prev); prev = t; }
+  });
+});

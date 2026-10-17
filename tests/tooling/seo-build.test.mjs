@@ -285,7 +285,9 @@ describe('SEO build output', { skip }, () => {
     assert.ok(!sitemapLocs.some((loc) => loc.startsWith(`${ORIGIN}/privacy`)), '/privacy/ 不應在 sitemap');
     // 原有 221 筆加上可索引的 Breach Point；privacy 仍不加入 sitemap。
     assert.ok(sitemapLocs.includes(`${ORIGIN}/games/cs/`), 'Breach Point 應在 sitemap');
-    assert.equal(sitemapLocs.length, 222);
+    // 再加上可索引的 DELVE 深掘（/games/delve/）。
+    assert.ok(sitemapLocs.includes(`${ORIGIN}/games/delve/`), 'DELVE 應在 sitemap');
+    assert.equal(sitemapLocs.length, 224);
   });
 
   test('首頁頁尾連到 /privacy/', () => {
