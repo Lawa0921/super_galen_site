@@ -25,8 +25,11 @@ import { LIQ } from '../engine/liquidKind';
 import { dayIndexOf, seasonBlend } from '../engine/calendar';
 import { fallColors, grassLook, leafColors, leafFall, treeLook } from './seasonLook';
 import { FloraAtlas, iceBmp } from './seasonArt';
+import { decorStyleAt } from './decorPick'; // [polish]
+import { tileVariant } from './tileFamily'; // [polish]
 import { WeatherFx, type Canopy } from './weatherFx';
 import { toCanvas } from './pixel';
+import { bobberBmp, campfireBmp } from './fishArt';
 
 const S = TILE_SIZE;
 const CPX = CHUNK * S;
@@ -101,6 +104,10 @@ export class Renderer {
   private bolt: { x: number; seed: number } | null = null;
   private boltN = 0;
   private lastFlash = 0;
+  /** 釣魚：浮標、營火火焰（3 格動畫）、竿尖位置（世界 px；畫釣線用） */
+  private bobber = toCanvas(bobberBmp()) as HTMLCanvasElement;
+  private campfires = [0, 1, 2].map((f) => toCanvas(campfireBmp(f)) as HTMLCanvasElement);
+  private rodTip: { x: number; y: number } | null = null;
 
   private cache: ChunkLRU<HTMLCanvasElement>;
   private pool: HTMLCanvasElement[] = [];
@@ -317,7 +324,8 @@ export class Renderer {
     ctx.setTransform(1, 0, 0, 1, -camX, -camY);
     const surf = w.surface;
     this.bg.drawUnderground(ctx, camX, camY, vw, vh,
-      (tx) => (surf[Math.max(0, Math.min(surf.length - 1, tx))] + 6) * S, S, (w.rockY || w.cavernY) * S, w.cavernY * S, w.moltenY ? w.moltenY * S : Infinity);
+      (tx) => (surf[Math.max(0, Math.min(surf.length - 1, tx))] + 6) * S, S, (w.rockY || w.cavernY) * S, w.cavernY * S, w.moltenY ? w.moltenY * S : Infinity,
+      { biome: w.biome, structures: g.structures }); // [polish] biome-specific backdrops
 
     const r = visibleChunks(camX, camY, vw, vh, CPX, w.chunksX, w.chunksY);
     let budget = REDRAW_BUDGET, drawn = 0;
@@ -355,6 +363,7 @@ export class Renderer {
     this.stats.liquidMs = performance.now() - tl;
     this.stats.liquidCells = this.liquidLayer.stats.cells;
     this.drawIce(ctx, camX, camY, vw, vh);
+    this.drawFishing(ctx);
     this.drawMiningAndCursor(ctx);
     this.drawStatus(ctx, dt);
     this.drawParticles(ctx, dt);
@@ -446,9 +455,9 @@ export class Renderer {
         // 樹 / 火把 / 花 / 高草是每幀畫的動態精靈（季節外觀、隨風擺動）
         if (f === T.AIR || f === T.WOOD || f === T.LEAVES || f === T.TORCH || f === T.FLOWER || f === T.TALL_GRASS) continue;
         qx = x; qy = y;
-        const s = isDecor(f) ? A.decor(f, decorStyle(f, x, y, nb))
+        const s = isDecor(f) ? A.decor(f, decorStyleAt(f, x, y, nb, this.seasonDay, w.surface[x])) // [polish] cobweb corners + seasonal decor
           : f === T.GRASS ? A.grass(this.grassSeason(x, y, i), variant[i], masks[(y - y0) * CHUNK + (x - x0)])
-          : A.tile(f, variant[i], masks[(y - y0) * CHUNK + (x - x0)]);
+          : A.tile(f, tileVariant(f, x, y, variant[i]), masks[(y - y0) * CHUNK + (x - x0)]); // [polish] stone/dirt families
         ctx.drawImage(img, s.sx, s.sy, S, S, (x - x0) * S, (y - y0) * S, S, S);
       }
     }
@@ -584,6 +593,8 @@ export class Renderer {
         const f = fg[row + x];
         if (f === T.CRYSTAL || f === T.GLOW_MUSHROOM) { cool.push({ x: x * S + 8, y: y * S + 9 }); continue; }
         if (f === T.CANDLE || f === T.LANTERN) { seen.push({ x: x * S + 8, y: y * S + (f === T.LANTERN ? 8 : 5) }); continue; }
+        if (f === T.LANTERN_POST) { seen.push({ x: x * S + 8, y: y * S + 3 }); continue; }
+        if (f === T.CAMPFIRE) { ctx.drawImage(this.campfires[flameFrame(t, x, y) % 3], x * S, y * S); seen.push({ x: x * S + 8, y: y * S + 8 }); continue; }
         // 熔岩石：只有外露在空氣下的那幾格發光暈（隔格取樣、有上限，避免整片深淵都是光暈）
         if (f === T.MAGMA_ROCK) {
           if (((x + y) & 1) === 0 && y > 0 && fg[row - W + x] === T.AIR && seen.length < 160) seen.push({ x: x * S + 8, y: y * S + 2 });
@@ -677,7 +688,7 @@ export class Renderer {
     if (carry && carry !== 'mini') arms.front = carryArm(kind, arms.front);
     const showPick = st.mining ? this.bestPickItem() : carry === 'pick' ? held : null;
     if (carry === 'blade') blade = held;
-    const heldOther = !st.mining && !atk && held && ((!heldDef?.pick && !heldDef?.weapon) || carry === 'mini') ? held : null;
+    const heldOther = !st.mining && !atk && held && carry !== 'rod' && ((!heldDef?.pick && !heldDef?.weapon) || carry === 'mini') ? held : null;
     if (heldOther && kind !== 'jump' && kind !== 'fall') arms.front = 62 + Math.round(arms.front * 0.15);
 
     const SP = this.sprites;
@@ -741,6 +752,52 @@ export class Renderer {
     }
     if (heldOther === 'torch' || heldOther === 'lantern') {
       this.torchesSeen.push({ x: cx + this.facing * (hx + 0), y: bottom + hy - 8 });
+    }
+    // 釣竿：往前斜舉；竿尖記下來畫釣線
+    this.rodTip = null;
+    if (carry === 'rod' && held) {
+      const fishing = st.fishing;
+      // 浮標在水上時竿子比較平（往浮標那邊）、上鉤時往上抬
+      const up = fishing?.state === 'bite' ? -Math.PI / 2 + 0.25 : fishing ? -Math.PI / 2 + 0.75 : -Math.PI / 2 + 0.5;
+      const ang = this.facing > 0 ? up : Math.PI - up;
+      const c = this.sprites.rotatedIcon(held, ang, -Math.PI / 4);
+      const px = cx + this.facing * hx, py = bottom + hy;
+      const ix = Math.round(px - c.width / 2 + Math.cos(ang) * 5), iy = Math.round(py - c.height / 2 + Math.sin(ang) * 5);
+      ctx.drawImage(c, ix, iy);
+      this.rodTip = { x: Math.round(px + Math.cos(ang) * 13), y: Math.round(py + Math.sin(ang) * 13) };
+    }
+  }
+
+  /** 釣線（竿尖 → 浮標，往下垂的拋物線，1px 像素點）+ 浮標（上鉤時沉下去、頭上冒驚嘆號） */
+  private drawFishing(ctx: CanvasRenderingContext2D): void {
+    const f = this.game.fishing, tip = this.rodTip;
+    if (!f || !tip) return;
+    const bite = f.state === 'bite';
+    // 浮標：漂著時一半在水裡（只露上半）；上鉤時沉到只剩天線、抖動
+    const bob = f.state === 'floating' ? Math.round(Math.sin(this.clock * 3) * 0.6) : 0;
+    const dip = bite ? 3 + (Math.floor(this.clock * 12) & 1) : 0;
+    const bx = Math.round(f.x) - 2, by = Math.round(f.y) - 5 + bob + dip;
+    // 線：二次貝茲（中點往下垂；上鉤時拉直）
+    const ex = bx + 2, ey = by;
+    const sag = bite ? 2 : Math.min(28, Math.hypot(ex - tip.x, ey - tip.y) * 0.18);
+    const mx = (tip.x + ex) / 2, my = Math.max(tip.y, ey) + sag;
+    const n = Math.max(8, Math.ceil(Math.hypot(ex - tip.x, ey - tip.y) / 2));
+    ctx.fillStyle = '#cceaf8';
+    let lx = -9999, ly = -9999;
+    for (let k = 0; k <= n; k++) {
+      const t = k / n, u = 1 - t;
+      const x = Math.round(u * u * tip.x + 2 * u * t * mx + t * t * ex), y = Math.round(u * u * tip.y + 2 * u * t * my + t * t * ey);
+      if (x === lx && y === ly) continue;
+      ctx.fillRect(x, y, 1, 1);
+      lx = x; ly = y;
+    }
+    const show = f.state === 'flying' ? 7 : bite ? 3 : 5;
+    ctx.drawImage(this.bobber, 0, 0, 4, show, bx, by, 4, show);
+    if (bite) {
+      // 驚嘆號（白底黑邊，2×6）
+      const qx = bx + 1, qy = by - 12 - (Math.floor(this.clock * 6) & 1);
+      ctx.fillStyle = '#1c1424'; ctx.fillRect(qx - 1, qy - 1, 4, 10);
+      ctx.fillStyle = '#ffd86a'; ctx.fillRect(qx, qy, 2, 5); ctx.fillRect(qx, qy + 6, 2, 2);
     }
   }
 
@@ -816,11 +873,11 @@ export class Renderer {
       const x = Math.round(p.x), y = Math.round(p.y);
       ctx.fillStyle = p.color;
       switch (p.kind) {
-        case 'snow': ctx.fillRect(x, y, 2, 2); break;           // 2×2 雪片
+        case 'snow': ctx.fillRect(x, y, p.size, p.size); break; // [polish] 2–3 px 雪片
         case 'ember': ctx.fillRect(x, y, 1, 2); break;          // 往上飄的短火星
         case 'firefly': ctx.fillRect(x, y, 2, 2); ctx.fillStyle = '#fff4c0'; ctx.fillRect(x, y, 1, 1); break;
         case 'spore': ctx.fillRect(x, y, 1, 1); ctx.fillRect(x + 1, y + 1, 1, 1); break;
-        default: ctx.fillRect(x, y, 1, 1);
+        default: ctx.fillRect(x, y, p.size, p.size); // [polish] 1–2 px 浮塵
       }
     }
   }

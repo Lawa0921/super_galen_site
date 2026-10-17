@@ -40,3 +40,22 @@ describe('AmbientField', () => {
     void f;
   });
 });
+
+describe('AmbientField 可讀性（1280×720 看得到）', () => {
+  const run = (k: AmbientKind, secs: number): AmbientField => {
+    let r = 7;
+    const rnd = (): number => { r = (r * 16807) % 2147483647; return r / 2147483647; };
+    const f = new AmbientField(rnd);
+    for (let i = 0; i < secs * 60; i++) f.step(1 / 60, k, { x: 0, y: 0, w: 427, h: 240 });
+    return f;
+  };
+  it('洞穴浮塵夠密：穩定後畫面上至少 40 顆', () => {
+    expect(run('dust', 12).particles.length).toBeGreaterThanOrEqual(40);
+  });
+  it('粒子有大小：浮塵 1–2 px（有一部分是 2 px 的大顆）、雪花 ≥ 2 px', () => {
+    const d = run('dust', 12).particles;
+    for (const p of d) expect([1, 2]).toContain(p.size);
+    expect(d.filter((p) => p.size === 2).length).toBeGreaterThan(d.length * 0.2);
+    for (const p of run('snow', 6).particles) expect(p.size).toBeGreaterThanOrEqual(2);
+  });
+});

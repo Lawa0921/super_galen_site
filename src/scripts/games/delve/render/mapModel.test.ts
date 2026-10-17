@@ -127,3 +127,45 @@ describe('地圖圖示 / 標籤', () => {
     expect(labels.every((l) => d.isFound(l.id))).toBe(true);
   });
 });
+
+describe('地城在地圖上讀得出來', () => {
+  const dungeonWorld = (): World => {
+    const w = new World(64, 64);
+    w.surfaceY = 2;
+    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) { w.fg[y * 64 + x] = T.STONE; w.wall[y * 64 + x] = W.STONE_WALL; }
+    // 磚殼 20..40 × 20..40，裡面是地城牆的空房間
+    for (let y = 20; y <= 40; y++) for (let x = 20; x <= 40; x++) {
+      const shell = x === 20 || x === 40 || y === 20 || y === 40;
+      w.fg[y * 64 + x] = shell ? T.DUNGEON_BRICK_BLUE : T.AIR;
+      w.wall[y * 64 + x] = W.DUNGEON_WALL_BLUE;
+    }
+    return w;
+  };
+  const paint = (): { out: Uint32Array; lut: ReturnType<typeof buildMapLut> } => {
+    const w = dungeonWorld(), ex = new ExploredMap(64, 64), lut = buildMapLut();
+    ex.bits.fill(255);
+    const out = new Uint32Array(CHUNK * CHUNK);
+    paintMapChunk(out, w, ex, 0, 0, lut);
+    return { out, lut };
+  };
+  const lum = (v: number): number => { const [r, g, b] = unpack(v); return 0.299 * r + 0.587 * g + 0.114 * b; };
+  it('地城磚的地圖色和石頭明顯不同、比石頭亮', () => {
+    const lut = buildMapLut();
+    expect(lut.fg[T.DUNGEON_BRICK_BLUE]).not.toBe(lut.fg[T.STONE]);
+    expect(lum(lut.fg[T.DUNGEON_BRICK_BLUE])).toBeGreaterThan(lum(lut.fg[T.STONE]));
+  });
+  it('磚殼外側緊貼的一般岩石畫成深色描邊', () => {
+    const { out, lut } = paint();
+    expect(out[30 * CHUNK + 19]).toBe(lut.outline);
+    expect(out[19 * CHUNK + 30]).toBe(lut.outline);
+    expect(out[30 * CHUNK + 15]).not.toBe(lut.outline);
+  });
+  it('地城牆畫成兩色的磚紋（不是一整片單色）、而且比一般洞穴空氣亮', () => {
+    const { out, lut } = paint();
+    const inside = new Set<number>();
+    const e = Math.min(39, CHUNK);
+    for (let y = 22; y < e; y++) for (let x = 22; x < e; x++) inside.add(out[y * CHUNK + x]);
+    expect(inside.size).toBe(2);
+    for (const v of inside) { expect(inPalette(unpack(v))).toBe(true); expect(lum(v)).toBeGreaterThan(lum(lut.cave)); }
+  });
+});

@@ -7,6 +7,7 @@ import { dayness as dayAmount, skyColors, type SkyColors } from './scene';
 import { bgSeasonDark, bgSeasonDay, bgSeasonLite } from './seasonLook';
 import { boltBmp, moonPhaseBmp } from './seasonArt';
 import type { Season } from '../engine/calendar';
+import { UG_KEEPS, ugAreas, ugColumnBands, ugThemeBmp, type UgArea, type UgBand } from './underground';
 
 const STRIP_W = 640;
 
@@ -17,11 +18,21 @@ class IndexedLayer {
   private ctx: CanvasRenderingContext2D | null;
   private img: ImageData | null = null;
   private key = '';
+  private tops: Int16Array | null = null;
   constructor(readonly w: number, readonly h: number) {
     this.idx = new Uint8Array(w * h);
     this.canvas = document.createElement('canvas');
     this.canvas.width = w; this.canvas.height = h;
     this.ctx = this.canvas.getContext('2d');
+  }
+  /** 每欄第一個不透明像素的列（整欄透明 = h）；剪影建好後不變，算一次快取 */
+  topRow(x: number): number {
+    if (!this.tops) {
+      const t = new Int16Array(this.w).fill(this.h);
+      for (let xx = 0; xx < this.w; xx++) for (let y = 0; y < this.h; y++) if (this.idx[y * this.w + xx]) { t[xx] = y; break; }
+      this.tops = t;
+    }
+    return this.tops[((x % this.w) + this.w) % this.w];
   }
   /** pal[0] 不用（透明）；key 相同就不重畫 */
   paint(pal: RGB[], key: string): void {
@@ -413,37 +424,6 @@ function cloudLayer(i: number): IndexedLayer {
   return L;
 }
 
-/** 地下背景暗紋（64×64 可平鋪）：大塊岩面 + 縫。keep < 1 時以 2×2 Bayer 挖空（淡入用，不用半透明） */
-type BackdropKind = boolean | 'deep' | 'molten';
-const BACKDROP_PAL: Record<string, string[]> = {
-  rock: ['#0b0b11', '#121219', '#181821', '#1e1e29'],
-  dirt: ['#0e0907', '#160e0a', '#1d140e', '#241a12'],
-  // 洞穴層：偏藍紫的深色岩面；熔岩深淵：暗紅褐（遠處熔岩的反光）
-  deep: ['#0c0a12', '#0c0a12', '#18204a', '#1c1424'],
-  molten: ['#2a1810', '#472819', '#6c1e14', '#472819'],
-};
-function caveBackdrop(kind: BackdropKind, keep = 1): HTMLCanvasElement {
-  const N = 64, b = new Bmp(N, N);
-  const rock = kind !== false;
-  const pal = BACKDROP_PAL[kind === true ? 'rock' : kind === false ? 'dirt' : kind].map(hex);
-  const pts: [number, number][] = [];
-  for (let gy = 0; gy < 4; gy++) for (let gx = 0; gx < 4; gx++) pts.push([(gx + 0.2 + h01(gx, gy, rock ? 3 : 4) * 0.6) * 16, (gy + 0.2 + h01(gx, gy, rock ? 5 : 6) * 0.6) * 16]);
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    let d1 = 1e9, d2 = 1e9, cx = 0, cy = 0;
-    for (const [px0, py0] of pts) for (let oy = -N; oy <= N; oy += N) for (let ox = -N; ox <= N; ox += N) {
-      const d = Math.hypot(x + 0.5 - px0 - ox, y + 0.5 - py0 - oy);
-      if (d < d1) { d2 = d1; d1 = d; cx = px0 + ox; cy = py0 + oy; } else if (d < d2) d2 = d;
-    }
-    const e = d2 - d1;
-    let k = 2;
-    if (e < 1.2) k = 0;
-    else if (e < 3) k = (x - cx) + (y - cy) < 0 ? 3 : 1;
-    if (keep < 1 && bayer(x >> 1, y >> 1) >= keep) continue;
-    b.set(x, y, pal[k]);
-  }
-  return toCanvas(b) as HTMLCanvasElement;
-}
-
 export interface BgView {
   /** 低解析緩衝大小（美術 px = 世界 px） */
   viewW: number; viewH: number;
@@ -494,13 +474,10 @@ export class Background {
   private skyKey = '';
   /** 圖樣快取：每幀重建 CanvasPattern 很貴（會複製來源畫布） */
   private skyPat: CanvasPattern | null = null;
-  private ugPats: (CanvasPattern | null)[] | null = null;
-  readonly dirtCave = caveBackdrop(false);
-  readonly rockCave = caveBackdrop(true);
-  readonly deepCave = caveBackdrop('deep');
-  readonly moltenCave = caveBackdrop('molten');
-  /** 土層淡入：4 階 Bayer 挖空的同一張紋理 */
-  private dirtFade = [0.2, 0.4, 0.6, 0.8].map((k) => caveBackdrop(false, k));
+  /** 地下背景：主題 × keep 階的圖樣（用到才建） */
+  private ugPats = new Map<number, CanvasPattern | null>();
+  private ugAreaSrc: readonly unknown[] | null = null;
+  private ugAreaList: UgArea[] = [];
   private cloudSeed: number;
 
   constructor(seed: number) {
@@ -539,8 +516,12 @@ export class Background {
     const aa = Math.max(-0.1, Math.min(1.1, a));
     const bx = W * (0.1 + 0.8 * Math.max(0, Math.min(1, aa))), by = Hh * (0.46 - 0.38 * Math.sin(Math.PI * aa));
     const img = sunUp ? this.sun : this.moons[(v.moon ?? 4) & 7] ?? this.moon;
+    // 日 / 月不躲在山後：日出 / 日落（含曙暮光）時若弧線低於這一帶剪影的稜線，抬到稜線上方（日輪 + 光環整個露出）
+    const ridge = this.ridgeY(v, Math.round(bx - 15), Math.round(bx + 15));
+    const lift = Math.min(by, ridge - (sunUp ? 18 : 12));
+    const sy = Math.max(img.height / 2 - 4, lift);
     // 厚雲 / 雨雪：看不到日月
-    if (cover < 0.7) ctx.drawImage(img, snapPx(bx - img.width / 2), snapPx(by - img.height / 2));
+    if (cover < 0.7) ctx.drawImage(img, snapPx(bx - img.width / 2), snapPx(sy - img.height / 2));
     // 閃電：天頂到地平線的鋸齒（在遠景後面）
     if (v.bolt && wx.flash > 0) {
       const bh = Math.max(40, Math.min(Hh, Math.round(Hh * 0.62)));
@@ -639,6 +620,24 @@ export class Background {
     }
   }
 
+  /** 遠 / 中 / 近三層剪影在螢幕欄 x0..x1 之間的最高稜線（螢幕 y，美術 px） */
+  private ridgeY(v: BgView, x0: number, x1: number): number {
+    const bm = v.biome ?? { a: 0, b: 0, t: 0 };
+    const sb = v.season;
+    const winter = sb ? (sb.season === 3 ? sb.t >= 0.5 : sb.prev === 3 && sb.t < 0.5) : false;
+    const midY = v.camY + v.viewH / 2;
+    const layerY = (f: number, lift: number): number => snapPx(v.viewH / 2 + (v.horizonY - midY) * f - lift);
+    const factors: [number, number][] = [[0.12, layerY(0.22, 30)], [0.28, layerY(0.42, 22)], [0.5, layerY(0.62, -14)]];
+    let best = Infinity;
+    for (let k = 0; k < 3; k++) {
+      const L = (bm.a === 0 && winter ? this.winterSet[k] : this.sets[bm.a]?.[k]) ?? this.sets[0][k];
+      const sw = L.w, off = -(((snapPx(v.camX * factors[k][0]) % sw) + sw) % sw);
+      const top = factors[k][1] - L.h;
+      for (let x = x0; x <= x1; x++) best = Math.min(best, top + L.topRow(x - off));
+    }
+    return best;
+  }
+
   private drawSky(ctx: CanvasRenderingContext2D, sky: SkyColors, W: number, Hh: number): void {
     // 12 段色帶，每段吸附到色票；相鄰色不同時段間以 2 列 Bayer 抖動銜接。烘成 4 px 寬的條帶後橫向重複
     const rows = Math.max(1, Hh);
@@ -681,34 +680,58 @@ export class Background {
   }
 
   /**
-   * 世界座標下畫地下背景（呼叫端已設好世界 transform）。逐 tile 欄從「該欄地表 + depth」開始，
-   * 前 64 px 用 4 階 Bayer 挖空淡入（不用半透明），cavernY 起換岩層紋。
+   * 世界座標下畫地下背景（呼叫端已設好世界 transform）。逐 tile 欄依 underground.ugColumnBands 的規劃畫：
+   * 從「該欄地表 + depth」開始 64 px 的 Bayer 淡入、土 / 岩層依該欄生態區換主題（交界抖動）、
+   * 深層 / 熔岩照舊，菇林與地城整段覆蓋。zones 省略 = 全部當森林、沒有覆蓋區。
    */
   drawUnderground(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number,
-    colTop: (tx: number) => number, tile: number, cavernY: number, deepY = Infinity, moltenY = Infinity): void {
+    colTop: (tx: number) => number, tile: number, cavernY: number, deepY = Infinity, moltenY = Infinity,
+    zones?: { biome?: ArrayLike<number>; structures?: readonly { kind: string; x: number; y: number; w: number; h: number }[] }): void {
     const bottom = camY + vh + 1;
-    const fade = 64, step = fade / 4;
-    if (!this.ugPats) this.ugPats = [...this.dirtFade, this.dirtCave, this.rockCave, this.deepCave, this.moltenCave].map((img) => ctx.createPattern(img, 'repeat'));
-    const pats = this.ugPats;
-    // 視差 0.5：圖樣隨鏡頭半速移動（對齊整數美術 px）
-    const m = new DOMMatrix([1, 0, 0, 1, snapPx(camX * 0.5), snapPx(camY * 0.5)]);
-    for (const p of pats) p?.setTransform(m);
-    const band = (pi: number, x: number, from: number, to: number): void => {
-      const a = Math.max(from, camY), b2 = Math.min(to, bottom);
-      const p = pats[pi];
-      if (b2 <= a || !p) return;
-      ctx.fillStyle = p;
-      ctx.fillRect(x, a, tile, b2 - a);
+    // 視差 0.5：圖樣隨鏡頭半速移動（對齊整數美術 px）。用 translate 移圖樣原點（不必每幀對每個圖樣 setTransform）
+    const ox = snapPx(camX * 0.5), oy = snapPx(camY * 0.5);
+    const pat = (theme: number, keep: number): CanvasPattern | null => {
+      const key = theme * UG_KEEPS.length + keep;
+      let p = this.ugPats.get(key);
+      if (p === undefined) {
+        const c = toCanvas(ugThemeBmp(theme, UG_KEEPS[keep])) as HTMLCanvasElement;
+        p = ctx.createPattern(c, 'repeat');
+        this.ugPats.set(key, p);
+      }
+      return p;
     };
+    const bio = zones?.biome, W = bio ? bio.length : 1;
+    const biomeAt = (tx: number): number => (bio ? bio[Math.max(0, Math.min(W - 1, tx))] : 0);
+    if (zones?.structures !== this.ugAreaSrc) { this.ugAreaSrc = zones?.structures ?? null; this.ugAreaList = ugAreas(zones?.structures ?? []); }
     const tx0 = Math.floor(camX / tile), tx1 = Math.ceil((camX + vw) / tile);
+    const vx0 = camX / tile, vy0 = camY / tile, vx1 = (camX + vw) / tile, vy1 = bottom / tile;
+    const areas = this.ugAreaList.filter((a) => a.x - 8 < vx1 && a.x + a.w + 8 > vx0 && a.y - 8 < vy1 && a.y + a.h + 8 > vy0);
+    // 相鄰欄的色帶完全一樣（深處 / 同一區）→ 合併成一個寬矩形再畫
+    let run: UgBand[] | null = null, runX = 0, runW = 0;
+    const flush = (): void => {
+      if (!run) return;
+      for (const b of run) {
+        const p = pat(b.theme, b.keep);
+        if (!p) continue;
+        ctx.fillStyle = p;
+        ctx.fillRect(runX - ox, b.y0 - oy, runW, b.y1 - b.y0);
+      }
+      run = null;
+    };
+    const same = (a: UgBand[], b: UgBand[]): boolean => a.length === b.length && a.every((q, i) => q.theme === b[i].theme && q.keep === b[i].keep && q.y0 === b[i].y0 && q.y1 === b[i].y1);
+    ctx.save();
+    ctx.translate(ox, oy);
     for (let tx = tx0; tx <= tx1; tx++) {
       const y0 = snapPx(colTop(tx)), x = tx * tile;
-      if (y0 >= bottom) continue;
-      for (let i = 0; i < 4; i++) band(i, x, y0 + i * step, Math.min(cavernY, y0 + (i + 1) * step));
-      band(4, x, y0 + fade, cavernY);
-      band(5, x, Math.max(y0, cavernY), deepY);
-      band(6, x, Math.max(y0, deepY), moltenY);
-      band(7, x, Math.max(y0, moltenY), Infinity);
+      if (y0 >= bottom) { flush(); continue; }
+      const bands = ugColumnBands({
+        tx, top: y0, fade: 64, rockY: cavernY, deepY, moltenY, viewTop: camY, viewBottom: bottom, tile, biomeAt, width: W, areas,
+      });
+      if (run && runX + runW === x && same(run, bands)) { runW += tile; continue; }
+      flush();
+      run = bands; runX = x; runW = tile;
     }
+    flush();
+    ctx.restore();
   }
 }

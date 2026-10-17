@@ -508,14 +508,32 @@ function paintTree(variant: number, h: number, r: number, grounded: boolean, loo
     }
     // 常綠樹的冬天：葉團朝上的邊緣積雪（2 px，左側受光較厚）
     if (look === 'winter-snow') {
+      // 每一層葉團（每個橢圓團）的上緣都積厚雪：沿橢圓頂面往下 3–6 px（中段厚、兩側斜坡變薄、太陡不積），
+      // 厚度每 2 欄起伏 → 雪緣是一團團往下垂的雪塊；被前面葉團擋住的部分自然看不到
       const src = can.clone(), sn = hex('#ffffff'), sl = hex('#cceaf8'), sd = hex('#94c8ee');
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-        if (!src.on(x, y) || (y > 0 && src.on(x, y - 1))) continue;
-        // 陡的側邊（左右任一邊是空的、或上方斜鄰也是空的兩側都空）不積雪
-        if (!src.on(x - 1, y) || !src.on(x + 1, y)) continue;
-        if (!src.on(x - 1, y - 1) && !src.on(x + 1, y - 1) && h01(x, y, seed + 3) > 0.5) continue;
-        const thick = (x < cx ? 3 : 2) + (h01(x >> 1, 7, seed) > 0.6 ? 1 : 0);
-        for (let k = 0; k < thick && src.on(x, y + k); k++) can.set(x, y + k, k === 0 ? sn : k === thick - 1 ? sd : sl);
+        const o = owner[y * W + x];
+        if (o < 0 || !src.on(x, y)) continue;
+        let nx: number, top: number;
+        if (o >= 100) { const [tx, ty] = tufts[o - 100]; nx = (x + 0.5 - tx) / 5; top = ty - 3.6 * Math.sqrt(Math.max(0, 1 - nx * nx)); }
+        else {
+          const q = blobs[o], bx = ccx + q[0] * rx, by = ccy + q[1] * ry, br = q[2] * rx, bry = q[2] * ry * 1.05;
+          nx = (x + 0.5 - bx) / br; top = by - bry * Math.sqrt(Math.max(0, 1 - nx * nx));
+        }
+        if (Math.abs(nx) > 0.84) continue;
+        const lump = h01(x >> 1, o, seed + 11);
+        const thick = 1.5 + (1 - nx * nx) * (x < cx ? 6.5 : 5) + (lump > 0.75 ? 3 : lump > 0.45 ? 1.5 : 0);
+        const d = y + 0.5 - top;
+        if (d < -0.5 || d > thick) continue;
+        can.set(x, y, d > thick - 1.2 ? sd : d < 1.5 || (x < cx && d < 2.5) ? sn : sl);
+      }
+      // 垂下的雪塊：雪緣下方再掛 1 px 的圓塊（只長在葉子上，不改剪影）
+      const snowy = can.clone();
+      for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+        const v = snowy.raw(x, y - 1), c = Bmp.unpack(v);
+        if (!(v >>> 24) || !(c[0] === sd[0] && c[1] === sd[1] && c[2] === sd[2])) continue;
+        if (!src.on(x, y) || h01(x >> 1, y, seed + 13) > 0.3) continue;
+        can.set(x, y - 1, sl); can.set(x, y, sd);
       }
     }
     can.outline(leaf[0]);

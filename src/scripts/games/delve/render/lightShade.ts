@@ -2,7 +2,8 @@
 //   shadeTiles：引擎 LightMap（RGB）→ 每格最終光色（開放天空吃天空色、玩家附近「看得到」的格有輪廓微光）
 //   fillLightPixels：每格光色 → 遮罩像素（每格 tile 切 sub×sub 小格，雙線性取樣）。
 //     亮度（最大通道）分 LIGHT_LEVELS 階，只有兩階之間的過渡帶用世界錨定的 4×4 Bayer 抖動；
-//     色相（各通道 / 最大通道）吸附到 HUE_STEPS 階、不抖動 → 光色是一個小的有限集合。
+//     色相（各通道 / 最大通道）每格吸附到 HUE_STEPS 階 → 光色是一個小的有限集合；格與格之間色相不同時，
+//     逐像素把兩格的色階做雙線性內插、同樣用世界錨定的 Bayer 抖動到相鄰的整數階（不會在格邊一刀切換色）。
 //   遮罩以 'multiply' 疊在畫面上（不透明像素，沒有 alpha 混色）：輸出色 = 色票色 × 有限光色表裡的某一色，
 //   再以 'lighter' 加上「暗色 × (1 − 亮度階)」：全暗 = 純黑 + #0c0a12 = 色票最暗色，暗處不會比微亮處還亮。
 import type { World } from '../engine/world';
@@ -104,6 +105,11 @@ function axis(n: number, sub: number): Axis {
 
 /** 每格亮度 / 色相索引的工作區 */
 let TM = new Float32Array(0), TH = new Int32Array(0), COLV = new Float32Array(0);
+/** 每格色相各通道的整數階（0..HUE_STEPS），與每列沿 y 內插後的值 */
+let THR = new Int32Array(0), THG = new Int32Array(0), THB = new Int32Array(0);
+let COLR = new Float32Array(0), COLG = new Float32Array(0), COLB = new Float32Array(0);
+/** 色相抖動用的 Bayer 相位（和亮度錯開，兩者的抖動點不會疊在同一格上） */
+const HUE_BX = 2, HUE_BY = 1;
 /** 3×3 鄰格完全相同、而且落在平台上（不抖動）的格（TF = 1）：整塊 sub×sub 直接填同一色 TU / TUA */
 let TF = new Uint8Array(0), TU = new Uint32Array(0), TUA = new Uint32Array(0);
 
@@ -114,17 +120,18 @@ let TF = new Uint8Array(0), TU = new Uint32Array(0), TUA = new Uint32Array(0);
  */
 export function fillLightPixels(A: Float32Array, lw: number, lh: number, sub: number, ox: number, oy: number, pix: Uint32Array, add: Uint32Array): void {
   const n = lw * lh, cw = lw * sub, ch = lh * sub, top = LIGHT_LEVELS - 1, HN = H1 * H1 * H1;
-  if (TM.length < n) { TM = new Float32Array(n); TH = new Int32Array(n); }
-  if (COLV.length < lw) COLV = new Float32Array(lw);
+  if (TM.length < n) { TM = new Float32Array(n); TH = new Int32Array(n); THR = new Int32Array(n); THG = new Int32Array(n); THB = new Int32Array(n); }
+  if (COLV.length < lw) { COLV = new Float32Array(lw); COLR = new Float32Array(lw); COLG = new Float32Array(lw); COLB = new Float32Array(lw); }
   // 每格：亮度 + 色相索引（色相往最大通道拉近 HUE_SAT：看得出顏色，但不會把畫面壓得太暗 / 太髒）
   for (let t = 0, j = 0; t < n; t++, j += 3) {
     const R = A[j], G = A[j + 1], B = A[j + 2];
     const m = R > G ? (R > B ? R : B) : (G > B ? G : B);
     TM[t] = m > 1 ? 1 : m;
-    if (m <= 1e-6) { TH[t] = (HUE_STEPS * H1 + HUE_STEPS) * H1 + HUE_STEPS; continue; }
+    if (m <= 1e-6) { TH[t] = (HUE_STEPS * H1 + HUE_STEPS) * H1 + HUE_STEPS; THR[t] = THG[t] = THB[t] = HUE_STEPS; continue; }
     const inv = HUE_STEPS / m;
     const hr = ((m - (m - R) * HUE_SAT) * inv + 0.5) | 0, hg = ((m - (m - G) * HUE_SAT) * inv + 0.5) | 0, hb = ((m - (m - B) * HUE_SAT) * inv + 0.5) | 0;
     TH[t] = (hr * H1 + hg) * H1 + hb;
+    THR[t] = hr; THG[t] = hg; THB[t] = hb;
   }
   if (TU.length < n) { TF = new Uint8Array(n); TU = new Uint32Array(n); TUA = new Uint32Array(n); }
   for (let ty = 0; ty < lh; ty++) {
@@ -152,13 +159,19 @@ export function fillLightPixels(A: Float32Array, lw: number, lh: number, sub: nu
     }
   }
   const ax = axis(lw, sub), ay = axis(lh, sub);
-  const X0 = ax.i0, X1 = ax.i1, WX = ax.wt, XN = ax.near;
+  const X0 = ax.i0, X1 = ax.i1, WX = ax.wt;
   const invSpan = 1 / (1 - 2 * PLATEAU), hiP = 1 - PLATEAU;
   for (let y = 0; y < ch; y++) {
     const y0 = ay.i0[y], y1 = ay.i1[y], wy = ay.wt[y];
-    const r0 = y0 * lw, r1 = y1 * lw, rn = wy < 0.5 ? r0 : r1;
-    for (let x = 0; x < lw; x++) COLV[x] = TM[r0 + x] + (TM[r1 + x] - TM[r0 + x]) * wy;
-    const brow = ((oy + y) & 3) * 4, row = y * cw, trow = ((y / sub) | 0) * lw;
+    const r0 = y0 * lw, r1 = y1 * lw;
+    for (let x = 0; x < lw; x++) {
+      const a = r0 + x, b = r1 + x;
+      COLV[x] = TM[a] + (TM[b] - TM[a]) * wy;
+      COLR[x] = THR[a] + (THR[b] - THR[a]) * wy;
+      COLG[x] = THG[a] + (THG[b] - THG[a]) * wy;
+      COLB[x] = THB[a] + (THB[b] - THB[a]) * wy;
+    }
+    const brow = ((oy + y) & 3) * 4, hrow = ((oy + y + HUE_BY) & 3) * 4, row = y * cw, trow = ((y / sub) | 0) * lw;
     for (let tx = 0, x = 0; tx < lw; tx++) {
       const t = trow + tx;
       if (TF[t]) { const o = row + x; pix.fill(TU[t], o, o + sub); add.fill(TUA[t], o, o + sub); x += sub; continue; }
@@ -172,7 +185,15 @@ export function fillLightPixels(A: Float32Array, lw: number, lh: number, sub: nu
         else if (f >= PLATEAU && BAYER_T[brow + ((ox + x) & 3)] < (f - PLATEAU) * invSpan) lv++;
         const o = row + x;
         add[o] = ADD_LUT[lv];
-        pix[o] = lv === 0 ? BLACK_PX : COLOR_LUT[lv * HN + TH[rn + XN[x]]];
+        if (lv === 0) { pix[o] = BLACK_PX; continue; }
+        // 色相：兩格色階內插後抖動到相鄰整數階（同一格內 / 兩格同色時內插值是整數 → 不抖動）
+        const ht = BAYER_T[hrow + ((ox + x + HUE_BX) & 3)], x1 = X1[x];
+        const vr = COLR[x0] + (COLR[x1] - COLR[x0]) * wx, vg = COLG[x0] + (COLG[x1] - COLG[x0]) * wx, vb = COLB[x0] + (COLB[x1] - COLB[x0]) * wx;
+        let qr = vr | 0, qg = vg | 0, qb = vb | 0;
+        if (vr - qr > ht) qr++;
+        if (vg - qg > ht) qg++;
+        if (vb - qb > ht) qb++;
+        pix[o] = COLOR_LUT[lv * HN + (qr * H1 + qg) * H1 + qb];
       }
     }
   }

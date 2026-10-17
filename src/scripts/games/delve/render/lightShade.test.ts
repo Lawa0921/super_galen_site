@@ -92,3 +92,42 @@ describe('fillLightPixels', () => {
     for (const v of add) expect(chans(v).slice(0, 3)).toEqual([0, 0, 0]);
   });
 });
+
+describe('fillLightPixels 色相交界抖動', () => {
+  const lw = 8, lh = 4, sub = 4;
+  const twoTone = (): { pix: Uint32Array } => {
+    const A = new Float32Array(lw * lh * 3);
+    for (let y = 0; y < lh; y++) for (let x = 0; x < lw; x++) A.set(x < lw / 2 ? [1, 0.55, 0.2] : [0.25, 0.6, 1], (y * lw + x) * 3);
+    const pix = new Uint32Array(lw * lh * sub * sub), add = new Uint32Array(lw * lh * sub * sub);
+    fillLightPixels(A, lw, lh, sub, 0, 0, pix, add);
+    return { pix };
+  };
+  const W = lw * sub;
+  it('遠離交界：整片同一色（不抖動）', () => {
+    const { pix } = twoTone();
+    const left = new Set<number>(), right = new Set<number>();
+    for (let y = 0; y < lh * sub; y++) for (let x = 0; x < 6; x++) { left.add(pix[y * W + x]); right.add(pix[y * W + W - 1 - x]); }
+    expect(left.size).toBe(1);
+    expect(right.size).toBe(1);
+  });
+  it('交界附近：色相不是一刀切，而是逐欄抖動過渡（同一欄裡混著兩種以上的色）', () => {
+    const { pix } = twoTone();
+    const L = pix[0], R = pix[W - 1];
+    let mixedCols = 0, inter = 0;
+    for (let x = 0; x < W; x++) {
+      const col = new Set<number>();
+      for (let y = 0; y < lh * sub; y++) { const v = pix[y * W + x]; col.add(v); if (v !== L && v !== R) inter++; }
+      if (col.size > 1) mixedCols++;
+    }
+    expect(mixedCols).toBeGreaterThanOrEqual(2);
+    expect(inter).toBeGreaterThan(0); // 有中間色階
+  });
+  it('世界錨定：遮罩原點平移 4 個小格，抖動圖樣跟著世界走（同一世界像素同色）', () => {
+    const A = new Float32Array(lw * lh * 3);
+    for (let y = 0; y < lh; y++) for (let x = 0; x < lw; x++) A.set(x < lw / 2 ? [1, 0.55, 0.2] : [0.25, 0.6, 1], (y * lw + x) * 3);
+    const p0 = new Uint32Array(W * lh * sub), p1 = new Uint32Array(W * lh * sub), add = new Uint32Array(W * lh * sub);
+    fillLightPixels(A, lw, lh, sub, 0, 0, p0, add);
+    fillLightPixels(A, lw, lh, sub, 4, 0, p1, add);
+    expect([...p1]).toEqual([...p0]); // 4 的倍數 → Bayer 相位一樣
+  });
+});
