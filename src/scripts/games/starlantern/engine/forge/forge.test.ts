@@ -444,4 +444,20 @@ describe('fuse', () => {
     const own = fuse(funded(trio('common', [5, 5, 5])), [1, 2, 3], undefined, () => 0.5);
     expect(own.ok && own.state.forgeDraws).toBe(0);
   });
+  it('fusing three rares with a full bag works on the legendary path too', () => {
+    const filler = Array.from({ length: BAG_SIZE - 3 }, (_, i) => at('common', 1000 + i));
+    const s = funded([...trio('rare', [5, 5, 5]), ...filler]);
+    const r = fuse(s, [1, 2, 3], 'ring');
+    if (!r.ok) throw new Error('refused');
+    expect(r.state.bag).toHaveLength(BAG_SIZE - 2);
+    expect(r.out.item.rarity).toBe('legendary');
+  });
+  it('a prototype-key rarity is refused, not thrown', () => {
+    for (const rarity of ['__proto__', 'toString', 'constructor']) {
+      const s = funded([1, 2, 3].map((u) => ({ ...at('common', u), rarity: rarity as Rarity })));
+      const before = structuredClone(s);
+      expect(fuse(s, [1, 2, 3])).toEqual({ ok: false, reason: 'invalid' });
+      expect(s).toEqual(before);
+    }
+  });
 });
