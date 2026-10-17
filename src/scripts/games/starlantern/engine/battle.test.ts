@@ -5,7 +5,7 @@ import { ULTIMATES } from '../data/ultimates';
 import { ENEMIES } from '../data/enemies';
 import { activeIds, newParty, powersOf, sheetOf } from './party';
 import { applyEffect } from './skills';
-import { depthLevel, homeLevel } from './scaling';
+import { depthLevel, encounterTable, homeLevel } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { choose, partyAt } from './sim';
 import { dealDamage, type BattleEvent } from './combatant';
@@ -15,6 +15,7 @@ import { keystonesOf } from './progression';
 import { mulberry32 } from './rng';
 import { ABYSS } from '../data/hero';
 
+const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",1,3947545226],"0:2":["win",1,2430863389],"0:3":["win",2,3891662608],"1:1":["win",2,2360026799],"1:2":["win",2,1284742253],"1:3":["win",2,226460977],"2:1":["win",1,3087643812],"2:2":["win",1,113512203],"2:3":["win",1,693828139],"3:1":["win",2,1417030887],"3:2":["win",2,3218793396],"3:3":["win",2,1205089542]};
 const rng = constRng(0.5); // enemies never use skills (all chances < 0.5), variance 1.0
 const P = (key: string, over = {}) => makeCombatant({ key, side: 'party', ...over });
 const E = (key: string, over = {}) => makeCombatant({ key, side: 'enemy', ...over });
@@ -533,5 +534,24 @@ describe('weapon kinds in battle', () => {
     expect(power(mend({ ...none, weaponKind: 'sword' as const }))).toBe(power(mend(none)));
     // a companion's skill is never mastered
     expect(skillFor(staff, 'fire-star')).toBe(skillFor(none, 'fire-star'));
+  });
+});
+
+describe('a full party fights exactly as before', () => {
+  const hash = (s: string): number => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const playOut = (enemyIds: string[], seed: number) => {
+    const party = partyAt(depthLevel(4));
+    const r = mulberry32(seed);
+    let s = createBattle({ party, enemyIds, boss: false, inventory: {}, revealed: {}, scale: { depth: 4, region: 'mainline' } });
+    let rounds = 0;
+    while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, choose(s, party), r); rounds++; }
+    return { outcome: s.outcome, rounds, hash: hash(JSON.stringify(s.log)) };
+  };
+  const runs = () => encounterTable('mainline', 4).flatMap((g, gi) => [1, 2, 3].map((seed) => ({ key: `${gi}:${seed}`, ...playOut(g, seed) })));
+
+  it('matches the baseline captured before party scaling', () => {
+    const got = Object.fromEntries(runs().map((r) => [r.key, [r.outcome, r.rounds, r.hash]]));
+    if (process.env.CAPTURE) console.log('BASELINE=' + JSON.stringify(got));
+    expect(got).toEqual(BASELINE);
   });
 });
