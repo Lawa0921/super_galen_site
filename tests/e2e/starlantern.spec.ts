@@ -1,4 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
+import { SPECIALS, AFFIXES } from '../../src/scripts/games/starlantern/data/gear';
+import { CHARACTERS } from '../../src/scripts/games/starlantern/data/characters';
+import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
 
@@ -776,6 +779,82 @@ test.describe('starlantern', () => {
       expect(await outside(), tab).toEqual([]);
       for (let i = 0; i < 4 && (await page.locator('.slx-forge .slx-layer').count()); i++) await w.key('Escape');
     }
+    expect(w.errors).toEqual([]);
+  });
+
+  /**
+   * Every forge window's box, in stage px: lists (layers) and detail windows. A list must never cover a detail window,
+   * and every window must stay inside the 640px stage.
+   */
+  const forgeOverlaps = (page: Page) => page.evaluate(() => {
+    const screen = document.querySelector('#sl-screen')!.getBoundingClientRect();
+    const k = screen.width / 640;
+    const boxOf = (e: Element) => { const r = e.getBoundingClientRect(); return { l: (r.left - screen.left) / k, r: (r.right - screen.left) / k, t: (r.top - screen.top) / k, b: (r.bottom - screen.top) / k }; };
+    const name = (e: Element) => e.className.replace(/\s+/g, '.');
+    const lists = [...document.querySelectorAll('.slx-forge .slx-layer.slx-list')];
+    const infos = [...document.querySelectorAll('.slx-forge .slx-info')];
+    const out: string[] = [];
+    for (const e of [...lists, ...infos]) { const b = boxOf(e); if (b.l < -0.5 || b.r > 640.5) out.push(`outside: ${name(e)} ${b.l.toFixed(1)}-${b.r.toFixed(1)}`); }
+    for (const a of lists) for (const i of infos) {
+      const [p, q] = [boxOf(a), boxOf(i)];
+      if (p.l < q.r - 0.5 && q.l < p.r - 0.5 && p.t < q.b - 0.5 && q.t < p.b - 0.5) out.push(`overlap: ${name(a)} ${p.l.toFixed(1)}-${p.r.toFixed(1)} over ${name(i)} ${q.l.toFixed(1)}-${q.r.toFixed(1)}`);
+    }
+    return out;
+  });
+
+  test('no forge list covers a detail window on any tab, with worn gear and the longest real labels', async ({ page }) => {
+    const w = await setup(page, 7);
+    // The longest real names: a named piece (legendary, unique or set) and a wearer.
+    const named = Object.values(SPECIALS).sort((a, b) => b.name.length - a.name.length)[0];
+    const base = Object.values(EQUIPMENT).find((e) => e.slot === named.slot)!.id;
+    const slot = named.slot === 'ring' ? 'ring1' : named.slot;
+    const longKeys = (Object.keys(AFFIXES) as (keyof typeof AFFIXES)[]).filter((key) => AFFIXES[key].slots.includes(named.slot)).slice(0, 4);
+    const longest = Object.values(CHARACTERS).sort((a, b) => b.name.length - a.name.length)[0].id;
+    await page.evaluate(({ special, rarity, base, slot, keys, longest }) => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const s = g.state;
+      s.gold = 99999;
+      Object.assign(s.inventory, { 'essence-magic': 10, 'essence-rare': 4, 'essence-legendary': 4, 'blaze-core': 9, 'shade-crystal': 9, 'star-tear': 3, 'king-scale': 2 });
+      // Every member is recruited, and each wears the longest named piece at +10 with a locked affix.
+      s.party.recruited = [longest, ...Object.keys(s.party.roster).filter((id) => id !== longest)];
+      const piece = () => ({ uid: g.mintUid(), base, rarity, special, ilvl: 999, enhance: 10, locked: 0, affixes: keys.map((key: string) => ({ key, value: 3949.5 })) });
+      for (const id of s.party.recruited) s.party.roster[id].equip[slot] = piece();
+      s.bag.unshift(piece());
+      for (const v of [3, 4, 5]) s.bag.push({ uid: g.mintUid(), base: 'iron-sword', rarity: 'magic', ilvl: 999, enhance: 0, affixes: [{ key: 'critDmg', value: v }] });
+      s.bag.push({ uid: g.mintUid(), base: 'iron-sword', rarity: 'common', ilvl: 1, enhance: 5, affixes: [] });
+    }, { special: named.id, rarity: named.rarity, base, slot, keys: longKeys, longest });
+    await w.choose('.slx-town', '鍛造屋');
+    await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
+    const top = () => page.locator('.slx-forge .slx-layer').last();
+    const check = async (where: string) => expect(await forgeOverlaps(page), where).toEqual([]);
+    const tab = async (id: string) => { await page.locator(`.slx-forge .slx-cmd [data-id=${id}]`).click(); await check(id); };
+    const back = async () => { for (let i = 0; i < 6 && (await page.locator('.slx-forge .slx-layer').count()); i++) { await w.closeTalk(); await w.key('Escape'); } };
+    /** Walk the cursor down every row of the top list, checking at each one (the detail follows the cursor). */
+    const walk = async (where: string) => {
+      const n = await top().locator('[role=option]').count();
+      for (let i = 0; i < n; i++) { await check(`${where} row ${i}`); await w.key('ArrowDown'); }
+    };
+
+    await tab('dismantle'); await walk('dismantle'); await back();
+    await tab('enhance'); await walk('enhance'); await back();
+    await tab('reroll'); await walk('reroll items');
+    await top().locator('[role=option]').last().click();               // a worn piece with a locked affix
+    await check('reroll affixes'); await walk('reroll affixes');
+    await top().locator('[role=option]:not([aria-disabled=true])').first().click();
+    await check('reroll methods'); await walk('reroll methods');
+    await back();
+    await tab('fuse');
+    await top().locator('[data-id=magic]').click(); await check('fuse picks');
+    for (const n of [1, 2, 3]) await top().locator('[role=option]').nth(n).click();
+    await top().locator('[data-id=go]').click(); await check('fuse slots'); await walk('fuse slots');
+    await back();
+    await tab('craft');
+    for (const [cat, sub] of [['item', null], ['base', null], ['set', 'set-blaze']] as const) {
+      await top().locator(`[data-id=${cat}]`).click(); await check(`craft ${cat}`); await walk(`craft ${cat}`);
+      if (sub) { await top().locator(`[data-id=${sub}]`).click(); await check(`craft ${sub}`); await walk(`craft ${sub}`); await w.key('Escape'); }
+      await w.key('Escape');
+    }
+    await back();
     expect(w.errors).toEqual([]);
   });
 
