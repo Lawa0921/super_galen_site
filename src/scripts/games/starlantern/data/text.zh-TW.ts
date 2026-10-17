@@ -464,6 +464,7 @@ export const T = {
       nobodyDown: '大家都很有精神呢。', revived: (name: string) => `${name} 醒過來了！`,
     },
     gate: {
+      reroll: '重抽傳送門',
       choose: '選擇傳送門', floor: (n: number, name?: string) => (name ? `第 ${n} 層 ${name}` : `第 ${n} 層`),
       suggest: (lv: number) => `建議 Lv ${lv}`,
       heavy: (now: string, cap: string) => `超重！重量 ${now}／${cap}，出發後撿不了任何東西`,

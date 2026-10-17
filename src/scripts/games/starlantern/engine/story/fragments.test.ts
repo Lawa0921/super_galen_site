@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ABSORB_CAP, ABSORB_GAIN, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS, type TownFragmentId } from '../../data/story/fragments';
+import { ABSORB_CAP, ABSORB_GAIN, PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS, type TownFragmentId } from '../../data/story/fragments';
 import { weightOf } from '../../data/weights';
 import { newRun } from '../dungeon/run';
 import { mulberry32 } from '../rng';
@@ -7,7 +7,7 @@ import { newGame } from '../state';
 import { STORY } from '../../data/story.zh-TW';
 import { meet, memoryStats } from '../party';
 import type { ShardGrade } from '../../data/story/fragments';
-import { fragmentItem, lootFragments, townFragmentEligible, shardPrice, sellShards, absorb, absorbRng } from './fragments';
+import { fragmentItem, lootFragments, townFragmentEligible, shardPrice, sellShards, absorb, absorbRng, returnFragment, hasPerk } from './fragments';
 
 const fresh = () => ({ s: newGame(mulberry32(1), 0), run: newRun(7, 'mainline', 'plain', 1) });
 const ids: TownFragmentId[] = TOWN_FRAGMENTS.map((f) => f.id);
@@ -119,11 +119,29 @@ describe('the fragment exchange', () => {
   });
 
   it('anna returned lifts the price, rounded', () => {
-    const s = held('dim', 1);
+    const s = held('dim', 2);
     expect(shardPrice(s, 'dim')).toBe(SHARD_PRICE.dim);
+    const plain = sellShards(s, 'dim', 1);
+    expect(plain.ok && plain.state.gold).toBe(s.gold + SHARD_PRICE.dim);
     s.story.returned.push('anna');
-    expect(Number.isInteger(shardPrice(s, 'clear'))).toBe(true);
-    expect(shardPrice(s, 'clear')).toBeGreaterThanOrEqual(SHARD_PRICE.clear);
+    const lifted = Math.round(SHARD_PRICE.dim * PERKS.shardPriceMul);
+    expect(shardPrice(s, 'dim')).toBe(lifted);
+    expect(lifted).toBeGreaterThan(SHARD_PRICE.dim);
+    const r = sellShards(s, 'dim', 2);
+    expect(r.ok && r.state.gold).toBe(s.gold + lifted * 2);
+  });
+
+  it('absorbing works for the hero and for Rin', () => {
+    for (const who of ['hero', 'rin'] as const) {
+      const s = held('clear', 1);
+      s.party = meet(s.party, who, 1);
+      const a = absorb(s, who, 'clear');
+      expect(a.ok).toBe(true);
+      if (!a.ok) continue;
+      expect(a.gain.amount).toBe(ABSORB_GAIN.clear[a.gain.stat]);
+      expect(a.state.party.roster[who].absorbed).toEqual([a.gain]);
+      expect(a.state.inventory[SHARD_IDS.clear] ?? 0).toBe(0);
+    }
   });
 
   it('selling refuses bad quantities and short stock, and sells nothing twice', () => {
@@ -205,5 +223,57 @@ describe('the fragment exchange', () => {
       expect(total() + soldN).toBe(4);
     }
     expect(s.gold).toBe(gold0 + SHARD_PRICE.dim * soldN);
+  });
+});
+
+describe('returning a townsfolk fragment', () => {
+  const holding = (id: TownFragmentId) => {
+    const s = newGame(mulberry32(1), 0);
+    s.inventory[TOWN_FRAGMENTS.find((f) => f.id === id)!.item] = 1;
+    return s;
+  };
+
+  it('returning a fragment pays its reward and records it', () => {
+    for (const def of TOWN_FRAGMENTS) {
+      const s = holding(def.id);
+      const frozen = structuredClone(s);
+      const r = returnFragment(s, def.id);
+      expect(r.ok).toBe(true);
+      if (!r.ok) continue;
+      expect(r.state.gold).toBe(s.gold + (def.reward.gold ?? 0));
+      for (const [item, n] of Object.entries(def.reward.items ?? {})) expect(r.state.inventory[item] ?? 0).toBe((s.inventory[item] ?? 0) + n);
+      expect(r.state.story.returned).toContain(def.id);
+      expect(r.state.inventory[def.item]).toBeUndefined();
+      expect(hasPerk(r.state, def.perk)).toBe(true);
+      expect(hasPerk(s, def.perk)).toBe(false);
+      expect(s).toEqual(frozen);   // the input is untouched
+    }
+  });
+
+  it('a returned fragment never drops again', () => {
+    const { s, run } = fresh();
+    s.inventory['tf-anna'] = 1;
+    const r = returnFragment(s, 'anna');
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(townFragmentEligible(r.state, run, 'anna', 'iron', 20)).toBe(false);
+    const rng = mulberry32(5);
+    for (let i = 0; i < 300; i++) {
+      expect(lootFragments(r.state, run, { region: 'iron', depth: 20, source: 'boss' }, rng).some((g) => g.kind === 'town' && g.id === 'anna')).toBe(false);
+    }
+  });
+
+  it('a fragment can be returned once, and only when held', () => {
+    const s = holding('orik');
+    expect(returnFragment(newGame(mulberry32(1), 0), 'orik')).toEqual({ ok: false, reason: 'stock' });
+    expect(returnFragment(s, 'nobody' as TownFragmentId)).toEqual({ ok: false, reason: 'invalid' });
+    const a = returnFragment(s, 'orik');
+    expect(a.ok).toBe(true);
+    if (!a.ok) return;
+    expect(returnFragment(a.state, 'orik')).toEqual({ ok: false, reason: 'invalid' });
+    // a hostile state that holds the item although it was returned still pays nothing
+    const dup = structuredClone(a.state);
+    dup.inventory['tf-orik'] = 1;
+    expect(returnFragment(dup, 'orik')).toEqual({ ok: false, reason: 'invalid' });
   });
 });

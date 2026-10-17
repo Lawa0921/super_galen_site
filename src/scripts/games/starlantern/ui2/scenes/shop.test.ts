@@ -10,6 +10,7 @@ import { sellPrice } from '../../engine/loot/item';
 import { activeIds, defaultSlotFor } from '../../engine/party';
 import { constRng, plainItem } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
+import { priceOf } from '../../engine/town';
 import { ShopScene } from './shop';
 
 /** The topmost open window of the facility (layers stack in document order). */
@@ -396,5 +397,20 @@ describe('ShopScene', () => {
     } finally {
       charm.unlock = was;
     }
+  });
+});
+
+describe('ShopScene: townsfolk perks', () => {
+  it('the shop shows the discounted price', () => {
+    const plain = setup(1000);
+    plain.pick('購買');
+    const label = (root: HTMLElement) => [...(topLayer(root) ?? root).querySelectorAll('[role=option]')].find((x) => x.querySelector('.slx-label')!.textContent === '回復藥')!.textContent!;
+    expect(label(plain.root)).toContain(`${priceOf(plain.game.state, 'potion')} G`);
+    const { game, root, pick } = setup(1000);
+    game.state.story.returned.push('orik');
+    const cut = priceOf(game.state, 'potion')!;
+    expect(cut).toBeLessThan(priceOf(plain.game.state, 'potion')!);
+    pick('購買');
+    expect(label(root)).toContain(`${cut} G`);
   });
 });

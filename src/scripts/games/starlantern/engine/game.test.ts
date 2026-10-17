@@ -25,7 +25,7 @@ import { itemLevel, itemWeight, rollItem } from './loot/item';
 import { MATERIALS } from '../data/materials';
 import { buy } from './town';
 import { memoriesOf } from './progression';
-import { SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP } from '../data/story/fragments';
+import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
 
 vi.mock('./portals', async (importOriginal) => {
@@ -2236,5 +2236,79 @@ describe('the fragment exchange in the game', () => {
     g.notice = null;
     expect(g.absorb('bobby', 'dim').ok).toBe(true);
     expect(g.notice).toBe('save-failed');
+  });
+});
+
+describe('townsfolk fragments at home', () => {
+  const savedState = (storage: ReturnType<typeof memoryStorage>) => { const r = loadGame(storage); return r.status === 'ok' ? r.state : null; };
+  const held = (storage: ReturnType<typeof memoryStorage> | null = memoryStorage(), id = 'orik') => {
+    const g = new Game(calm(), storage, undefined, 0, START_LINEUP);
+    g.state.inventory[`tf-${id}`] = 1;
+    return g;
+  };
+
+  it('returnFragment works only in town and saves at once', () => {
+    const storage = memoryStorage();
+    const g = held(storage);
+    const gold = g.state.gold;
+    expect(g.returnFragment('orik').ok).toBe(true);
+    expect(g.state.gold).toBe(gold + 300);
+    expect(g.pending).toContain('town:orik');
+    expect(savedState(storage)!.story.returned).toEqual(['orik']);
+    expect(savedState(storage)!.inventory['tf-orik']).toBeUndefined();
+    const stored = storage.map.get(SAVE_KEY);
+    expect(g.returnFragment('orik')).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.state.gold).toBe(gold + 300);
+    expect(storage.map.get(SAVE_KEY)).toBe(stored);
+    const h = held();
+    h.phase = 'map';
+    const before = JSON.stringify(h.state);
+    expect(h.returnFragment('orik')).toEqual({ ok: false, reason: 'invalid' });
+    expect(JSON.stringify(h.state)).toBe(before);
+    expect(h.pending).toEqual([]);
+  });
+
+  it('a failed save sets the notice, and the reward still cannot be claimed twice', () => {
+    const g = held(null);
+    expect(g.returnFragment('orik').ok).toBe(true);
+    expect(g.notice).toBe('save-failed');
+    const gold = g.state.gold;
+    expect(g.returnFragment('orik')).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.state.gold).toBe(gold);
+  });
+
+  it('a fed party sets out with the meal and is hungry again', () => {
+    const g = new Game(calm(), null, undefined, 0, HERO_LINEUP);
+    g.state.story.returned.push('marta');
+    expect(g.rest().ok).toBe(true);
+    expect(g.state.story.fed).toBe(true);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.run!.altarBuffs).toContainEqual(PERKS.meal);
+    expect(g.state.story.fed).toBe(false);
+    const hungry = new Game(calm(), null, undefined, 0, HERO_LINEUP);
+    hungry.state.story.returned.push('marta');
+    expect(hungry.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(hungry.run!.altarBuffs).toEqual([]);
+  });
+
+  it('Glen rerolls the portals once per arrival', () => {
+    const storage = memoryStorage();
+    const g = new Game(mulberry32(3), storage, undefined, 0, HERO_LINEUP);
+    expect(g.rerollPortals()).toBe(false);
+    g.state.story.returned.push('glen');
+    expect(g.rerollPortals()).toBe(true);
+    expect(validPortals(g.state.dungeon.portals)).toBe(true);
+    expect(savedState(storage)!.dungeon.portals).toEqual(g.state.dungeon.portals);
+    expect(g.rerollPortals()).toBe(false);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.rerollPortals()).toBe(false);
+    expect(g.returnToTown()).toBe(true);
+    expect(g.rerollPortals()).toBe(true);
+    saveGame(storage, g.state);
+    const h = Game.boot(mulberry32(4), storage);
+    expect(h.rerollPortals()).toBe(false);
+    const stored = storage.map.get(SAVE_KEY);
+    expect(h.rerollPortals()).toBe(false);
+    expect(storage.map.get(SAVE_KEY)).toBe(stored);
   });
 });

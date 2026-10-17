@@ -8,6 +8,8 @@ import { mulberry32, type Rng } from '../rng';
 import type { GameState } from '../state';
 import type { GearSlot, ItemInstance } from '../types';
 import { addItem } from '../town';
+import { hasPerk } from '../story/fragments';
+import { PERKS } from '../../data/story/fragments';
 import { addCost, canPay, forgeRng, pay, type ForgeResult } from './cost';
 
 const has = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
@@ -60,12 +62,18 @@ export function craftBase(s: GameState, slot: GearSlot, rng?: Rng): ForgeResult<
 
 const setOf = (pieceId: string) => (has(SPECIALS, pieceId) && SPECIALS[pieceId].rarity === 'set' ? SETS[SPECIALS[pieceId].set ?? ''] ?? null : null);
 
+/** The set recipe in force: Doran's master (his returned fragment) takes PERKS.setRecipeLess off the region material, never below one. */
+export function setRecipeOf(s: GameState): typeof SET_RECIPE {
+  return hasPerk(s, 'set-recipe') ? { ...SET_RECIPE, regionQty: Math.max(1, SET_RECIPE.regionQty - PERKS.setRecipeLess) } : SET_RECIPE;
+}
+
 /** The price of a set piece: its region's material, a star tear and setGold at the current craft level; null when `pieceId` is not a set piece. */
 export function setCost(s: GameState, pieceId: string): Cost | null {
   const set = setOf(pieceId);
   const mat = set ? REGIONS[set.region].material : null;
   if (!set || !mat) return null;
-  return addCost({ gold: setGold(craftLevel(s)), mats: { [mat]: SET_RECIPE.regionQty } }, { gold: 0, mats: { [SET_RECIPE.rare]: SET_RECIPE.rareQty } });
+  const recipe = setRecipeOf(s);
+  return addCost({ gold: setGold(craftLevel(s)), mats: { [mat]: recipe.regionQty } }, { gold: 0, mats: { [recipe.rare]: recipe.rareQty } });
 }
 
 /** Crafts set piece `pieceId` (the pity path); the piece and its set enter the codex. Without `rng` it draws once. */

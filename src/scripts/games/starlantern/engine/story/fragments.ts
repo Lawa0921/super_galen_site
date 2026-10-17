@@ -1,8 +1,8 @@
-import { ABSORB_CAP, ABSORB_GAIN, PERKS, SHARD_DROP, SHARD_IDS, SHARD_PRICE, TOWN_DROP, TOWN_FRAGMENTS, shardGrade, type ShardGrade, type TownFragmentId } from '../../data/story/fragments';
+import { ABSORB_CAP, ABSORB_GAIN, PERKS, SHARD_DROP, SHARD_IDS, SHARD_PRICE, TOWN_DROP, TOWN_FRAGMENTS, shardGrade, type ShardGrade, type TownFragmentId, type TownPerk } from '../../data/story/fragments';
 import { STORY } from '../../data/story.zh-TW';
 import { mix } from '../loot/drops';
 import { pick, mulberry32 } from '../rng';
-import type { TownResult } from '../town';
+import { addItem, type TownResult } from '../town';
 import type { AbsorbGain, CharacterId, StatKey } from '../types';
 import type { RegionId } from '../../data/regions';
 import type { Run } from '../dungeon/run';
@@ -58,10 +58,31 @@ export function lootFragments(s: GameState, run: Run, ctx: FragmentCtx, rng: Rng
 const isGrade = (g: unknown): g is ShardGrade => typeof g === 'string' && Object.prototype.hasOwnProperty.call(SHARD_PRICE, g);
 const STATS: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 
-/** What the guild pays for one shard; Anna's returned fragment lifts it (Task 9 swaps the check for `hasPerk`). */
+/** Whether the fragment that gives `perk` has been returned to its owner. */
+export function hasPerk(s: GameState, perk: TownPerk): boolean {
+  return TOWN_FRAGMENTS.some((f) => f.perk === perk && s.story.returned.includes(f.id));
+}
+
+/**
+ * Gives townsfolk fragment `id` back: it must be in the town bag and not returned before. The fragment is removed, the
+ * id recorded, and the reward paid in gold and items. A fragment is returned once per save.
+ */
+export function returnFragment(s: GameState, id: TownFragmentId): TownResult {
+  const def = TOWN_FRAGMENTS.find((f) => f.id === id);
+  if (!def || s.story.returned.includes(id)) return { ok: false, reason: 'invalid' };
+  if ((s.inventory[def.item] ?? 0) < 1) return { ok: false, reason: 'stock' };
+  const n = structuredClone(s);
+  addItem(n.inventory, def.item, -1);
+  n.story.returned.push(id);
+  n.gold += def.reward.gold ?? 0;
+  for (const [item, qty] of Object.entries(def.reward.items ?? {})) addItem(n.inventory, item, qty);
+  return { ok: true, state: n };
+}
+
+/** What the guild pays for one shard; Anna's returned fragment lifts it. */
 export function shardPrice(s: GameState, grade: ShardGrade): number {
   const base = SHARD_PRICE[grade];
-  return s.story.returned.includes('anna') ? Math.round(base * PERKS.shardPriceMul) : base;
+  return hasPerk(s, 'shard-price') ? Math.round(base * PERKS.shardPriceMul) : base;
 }
 
 /** Sells `qty` shards of one grade. A shard sale never counts toward `sold`, so it unlocks nothing. */

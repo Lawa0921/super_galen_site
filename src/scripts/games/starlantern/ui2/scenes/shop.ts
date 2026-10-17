@@ -9,7 +9,7 @@ import { BAG_SIZE } from '../../engine/loot/bag';
 import { rollItem, sellPrice } from '../../engine/loot/item';
 import { activeIds, defaultSlotFor, statsOf } from '../../engine/party';
 import { mulberry32 } from '../../engine/rng';
-import { buy, isUnlocked, junkTotals, sell, sellGear, sellJunk } from '../../engine/town';
+import { buy, isUnlocked, priceOf, junkTotals, sell, sellGear, sellJunk } from '../../engine/town';
 import type { AnyStat } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
@@ -42,7 +42,7 @@ export class ShopScene extends FacilityScene {
       const needs = locked ? (g.unlock ?? []).map((u) => `${MATERIALS[u.mat].name}×${u.qty}`).join('、') : '';
       // Every base is a plain (common) piece, which the shared label names without a rarity word; the colour class marks it.
       const gear = 'slot' in g ? { label: gearLabel(rollItem(mulberry32(0), { uid: 0, ilvl: g.ilvl, rarity: 'common', base: g.id })), cls: 'slx-rarity-common' } : { label: g.name };
-      return { id: g.id, ...gear, icon: this.icon(g.id), disabled: locked, right: locked ? T.ui2.shop.needs(needs) : `${g.price} G  ${T.ui2.shop.owned('slot' in g ? s.bag.filter((x) => x.base === g.id).length : (s.inventory[g.id] ?? 0))}` };
+      return { id: g.id, ...gear, icon: this.icon(g.id), disabled: locked, right: locked ? T.ui2.shop.needs(needs) : `${priceOf(s, g.id)} G  ${T.ui2.shop.owned('slot' in g ? s.bag.filter((x) => x.base === g.id).length : (s.inventory[g.id] ?? 0))}` };
     });
   }
 
@@ -84,7 +84,7 @@ export class ShopScene extends FacilityScene {
   }
 
   private askQty(id: string, after: () => void): void {
-    const price = ITEMS[id]?.price ?? EQUIPMENT[id]?.price ?? 0;
+    const price = priceOf(this.ctx.game.state, id) ?? 0;
     const name = ITEMS[id]?.name ?? EQUIPMENT[id]?.name ?? id;
     const st = this.ctx.game.state;
     const afford = Math.min(99, Math.floor(st.gold / Math.max(1, price)));

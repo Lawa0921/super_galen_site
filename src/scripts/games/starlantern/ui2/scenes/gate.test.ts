@@ -269,3 +269,28 @@ describe('GateScene: region-only gear on the portal cards', () => {
     expect(withArt.root.querySelectorAll('.slx-codex-silhouette')).toHaveLength(1);
   });
 });
+
+describe("GateScene: Glen's reroll", () => {
+  const commands = (prep?: (g: Game) => void) => {
+    const game = new Game(constRng(0.5), null);
+    prep?.(game);
+    const root = document.createElement('div');
+    const s = new GateScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    s.onAction('confirm');   // greeting
+    return { game, root, s, labels: () => [...root.querySelectorAll('.slx-cmd [role=option] .slx-label')].map((o) => o.textContent) };
+  };
+
+  it("the reroll command appears only with Glen's perk", () => {
+    expect(commands().labels()).toEqual(['選擇傳送門', '離開']);
+    expect(commands((g) => g.state.story.returned.push('glen')).labels()).toEqual(['選擇傳送門', '重抽傳送門', '離開']);
+  });
+
+  it("rerolling uses the arrival's one reroll, and the command goes away", () => {
+    const { game, s, labels } = commands((g) => g.state.story.returned.push('glen'));
+    s.onAction('down');
+    s.onAction('confirm');
+    expect(game.canReroll()).toBe(false);
+    expect(labels()).toEqual(['選擇傳送門', '離開']);
+  });
+});

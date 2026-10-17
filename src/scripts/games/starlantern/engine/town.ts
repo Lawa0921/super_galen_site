@@ -4,6 +4,8 @@ import { MATERIALS } from '../data/materials';
 import { addGear, BAG_SIZE, sortBag, type AutoJunk } from './loot/bag';
 import { itemSlot, sellPrice } from './loot/item';
 import { resetBuild, newTree } from './progression';
+import { hasPerk } from './story/fragments';
+import { PERKS } from '../data/story/fragments';
 import { defaultSlotFor, slotsFor, statsOf } from './party';
 import type { GameState } from './state';
 import type { CharacterId, Member, Party, Slot } from './types';
@@ -60,8 +62,15 @@ export function isUnlocked(s: GameState, equipId: string): boolean {
   return !!e && (e.unlock ?? []).every((u) => (s.sold[u.mat] ?? 0) >= u.qty);
 }
 
-export function buy(s: GameState, id: string): TownResult {
+/** What the shop asks for `id` (a consumable or a base): the listed price, less PERKS.shopDiscountPct once Orik's fragment is home. */
+export function priceOf(s: GameState, id: string): number | undefined {
   const price = ITEMS[id]?.price ?? EQUIPMENT[id]?.price;
+  if (price === undefined) return undefined;
+  return hasPerk(s, 'shop-discount') ? Math.ceil(price * (100 - PERKS.shopDiscountPct) / 100) : price;
+}
+
+export function buy(s: GameState, id: string): TownResult {
+  const price = priceOf(s, id);
   if (price === undefined) return fail('invalid');
   if (EQUIPMENT[id] && !isUnlocked(s, id)) return fail('locked');
   if (s.gold < price) return fail('gold');
@@ -148,6 +157,7 @@ export function rest(s: GameState): TownResult {
   if (s.gold < cost) return fail('gold');
   const n = structuredClone(s);
   n.gold -= cost;
+  if (hasPerk(n, 'inn-meal')) n.story.fed = true;   // Marta's meal waits for the next departure
   for (const id of n.party.recruited) {
     const m = n.party.roster[id];
     if (m.hp <= 0) continue;

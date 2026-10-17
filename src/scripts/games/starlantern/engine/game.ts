@@ -8,8 +8,8 @@ import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from '
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
 import { memScene, type SceneId } from '../data/story/scenes';
-import { SHARD_IDS, isFragmentItem, shardGrade, type ShardGrade } from '../data/story/fragments';
-import { absorb, fragmentItem, gainOf, lootFragments, sellShards, type AbsorbResult } from './story/fragments';
+import { PERKS, SHARD_IDS, isFragmentItem, shardGrade, type ShardGrade, type TownFragmentId } from '../data/story/fragments';
+import { absorb, fragmentItem, gainOf, hasPerk, lootFragments, returnFragment, sellShards, type AbsorbResult } from './story/fragments';
 import { advance, danger, type Danger } from './encounter';
 import { ALTAR_STAT_CAP_PCT, altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POISON_TP_LOSS_PCT, trapDamage, VAULT_CHEST_MULT } from './events';
 import { EQUIPMENT } from '../data/equipment';
@@ -108,6 +108,8 @@ export class Game {
   notice: Notice | null = null;
   /** Memory scenes the screen should play now (not saved). */
   pending: SceneId[] = [];
+  /** Whether this arrival's portal reroll is spent (not saved): `boot` sets it, so a reload grants none; `toTown` and `wipe` clear it. */
+  private rerolled = false;
   /** Which ending the clear screen is for; set on entering `clear`, dropped by restartAfterClear. */
   cleared: 'act1' | 'finale' | null = null;
   /** What the last safe return brought home; the town screen shows it, then clears it. `overflow` is gear the full bag could not take. */
@@ -123,6 +125,7 @@ export class Game {
     const r = loadGame(storage);
     const g = new Game(rng, storage, r.status === 'ok' ? r.state : undefined, forgeSalt, START_LINEUP);
     if (r.status === 'corrupt' || r.status === 'version') g.notice = 'save-reset';
+    g.rerolled = true;
     return g;
   }
 
@@ -161,6 +164,10 @@ export class Game {
     if (!activeIds(this.state.party).some((id) => this.state.party.roster[id].hp > 0)) return { ok: false, reason: 'party-down' };
     this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth, rescuesFor(portal.region, this.state.party.recruited));
     this.pending = [];
+    if (this.state.story.fed) {   // Marta's meal counts against the altar cap like any altar buff, and is eaten
+      this.run.altarBuffs.push({ ...PERKS.meal });
+      this.state.story.fed = false;
+    }
     this.floor = startDepth;
     this.forceGlimmers(startDepth);
     this.pos = { ...this.map().entrance };
@@ -718,6 +725,36 @@ export class Game {
     return r;
   }
 
+  /**
+   * Gives townsfolk fragment `id` back to its owner: town only, saved at once so a reload can neither undo the reward nor
+   * claim it again. The owner's scene is queued for the screen to play.
+   */
+  returnFragment(id: TownFragmentId): TownResult {
+    if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
+    const r = this.apply(returnFragment(this.state, id));
+    if (!r.ok) return r;
+    this.pending.push(`town:${id}`);
+    if (!(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    return r;
+  }
+
+  /** Whether Glen's perk offers a portal reroll now: town, his fragment home, and this arrival's reroll unspent. */
+  canReroll(): boolean {
+    return this.phase === 'town' && !this.rerolled && hasPerk(this.state, 'portal-reroll');
+  }
+
+  /**
+   * Glen's reroll: new portals once per arrival, saved at once. The one player-chosen draw from `game.rng` (the stream
+   * `toTown` rolls portals with). The mark is not saved; `boot` sets it, so reloading never grants another.
+   */
+  rerollPortals(): boolean {
+    if (!this.canReroll()) return false;
+    this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited));
+    this.rerolled = true;
+    if (!(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    return true;
+  }
+
   /** One shard into a member who was met: town only, saved at once so a reload cannot re-roll the gain. */
   absorb(id: CharacterId, grade: ShardGrade): AbsorbResult {
     if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
@@ -803,6 +840,7 @@ export class Game {
     this.encounter = 0;
     this.run = null;
     this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited));
+this.rerolled = false;
   }
 
   private revealHere(): void {
@@ -925,5 +963,6 @@ export class Game {
     this.encounter = 0;
     this.notice = 'wipe';
     this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited));
+this.rerolled = false;
   }
 }

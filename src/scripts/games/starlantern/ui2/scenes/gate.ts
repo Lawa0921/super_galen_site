@@ -173,10 +173,16 @@ export class GateScene extends FacilityScene {
   }
 
   protected commands(): MenuItem[] {
-    return [{ id: 'portals', label: T.ui2.gate.choose }];
+    const reroll = this.ctx.game.canReroll() ? [{ id: 'reroll', label: T.ui2.gate.reroll }] : [];
+    return [{ id: 'portals', label: T.ui2.gate.choose }, ...reroll];
   }
 
-  protected onCommand(): void {
+  protected onCommand(id?: string): void {
+    if (id === 'reroll') {
+      this.ctx.game.rerollPortals();
+      this.refresh();
+      return;
+    }
     const portals = this.ctx.game.state.dungeon.portals;
     const cards = new PortalCards(this.ctx, portals, {
       pick: (i) => { this.ctx.sfx.confirm(); this.chooseDepth(portals[i]); },

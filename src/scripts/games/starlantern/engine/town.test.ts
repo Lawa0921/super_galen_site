@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { newGame, START_ITEMS } from './state';
-import { buy, equip, innCost, isUnlocked, junkTotals, respec, respecCost, rest, revive, reviveCost, sell, sellGear, sellJunk, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
+import { buy, equip, innCost, isUnlocked, priceOf, junkTotals, respec, respecCost, rest, revive, reviveCost, sell, sellGear, sellJunk, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
 import { statsOf, LEGACY_LINEUP } from './party';
 import { defaultTalents, defaultTree, newTree, raiseTalent, skillPointsLeft, talentPointsLeft, validBuild } from './progression';
 import type { Member } from './types';
@@ -8,6 +8,8 @@ import { plainItem } from './testing';
 import { BAG_SIZE, mintUid } from './loot/bag';
 import { sellPrice } from './loot/item';
 import { EQUIPMENT } from '../data/equipment';
+import { ITEMS } from '../data/items';
+import { PERKS } from '../data/story/fragments';
 import type { ItemInstance } from './types';
 
 const withInv = (inv: Record<string, number>, gold = 150) => ({ ...newGame(undefined, 0, LEGACY_LINEUP), inventory: inv, gold });
@@ -316,5 +318,35 @@ describe('sellJunk', () => {
     const s = withInv({ moss: 3, 'old-coin': 5 });
     const r = sellJunk(s);
     expect(r.ok && r.state.gold - s.gold).toBe(junkTotals(s).g);
+  });
+});
+
+describe('townsfolk returns change the town', () => {
+  it("Orik's return takes PERKS.shopDiscountPct off the shop", () => {
+    const s = withInv({}, 1000);
+    const plain = ITEMS.potion.price;
+    expect(priceOf(s, 'potion')).toBe(plain);
+    expect(priceOf(s, 'nope')).toBeUndefined();
+    const o = { ...s, story: { ...s.story, returned: ['orik' as const] } };
+    const cut = Math.ceil(plain * (100 - PERKS.shopDiscountPct) / 100);
+    expect(priceOf(o, 'potion')).toBe(cut);
+    expect(cut).toBeLessThan(plain);
+    expect(priceOf(o, 'moss-charm')).toBe(Math.ceil(EQUIPMENT['moss-charm'].price * (100 - PERKS.shopDiscountPct) / 100));
+    const r = buy(o, 'potion');
+    expect(r.ok && r.state.gold).toBe(1000 - cut);
+    const b = buy(s, 'potion');
+    expect(b.ok && b.state.gold).toBe(1000 - plain);
+    expect(buy({ ...o, gold: cut - 1 }, 'potion')).toEqual({ ok: false, reason: 'gold' });
+  });
+  it('Marta feeds the party who rest at the inn', () => {
+    const s = withInv({}, 1000);
+    expect(s.story.fed).toBe(false);
+    const plain = rest(s);
+    expect(plain.ok && plain.state.story.fed).toBe(false);
+    const m = { ...s, story: { ...s.story, returned: ['marta' as const] } };
+    const fed = rest(m);
+    expect(fed.ok && fed.state.story.fed).toBe(true);
+    expect(m.story.fed).toBe(false);
+    expect(rest({ ...m, gold: 0 })).toEqual({ ok: false, reason: 'gold' });
   });
 });
