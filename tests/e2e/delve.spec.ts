@@ -1142,6 +1142,9 @@ test.describe('delve loot', () => {
     expect(await page.evaluate(() => window.__delveDebug!.game.drops.list.some((d) => d.gear?.rarity === 4))).toBe(true);
     await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.slots.findIndex((s) => s?.item === 'gold_sword' && s.gear?.rarity === 4)), { timeout: 8000 }).toBeGreaterThanOrEqual(0);
     await expect(page.locator('#delve-hotbar .delve-slot[data-item="gold_sword"]')).toHaveAttribute('data-rarity', '4');
+    await expect(page.locator('#delve-toast')).toContainText('獲得傳說裝備');
+    // 圖鑑收錄的提示排在後面，不會蓋掉傳說：1.2 秒後仍是傳說那則
+    await page.waitForTimeout(1200);
     await expect(page.locator('#delve-toast')).toContainText('傳說');
     expect(errors).toEqual([]);
   });
@@ -1160,7 +1163,8 @@ test.describe('delve loot', () => {
     await expect(slot).toHaveAttribute('data-rarity', '3');
     await slot.hover();
     const tip = page.locator('#delve-tip');
-    await expect(tip).toContainText('茁壯的 金胸甲 · 疾風');
+    await expect(tip).toContainText('強健的 金胸甲 · 疾風');
+    await expect(tip.locator('.delve-tip-name')).not.toContainText('Gold');
     await expect(tip).toContainText('史詩');
     await expect(tip).toContainText('生命上限 +20');
     await expect(tip).toContainText('比較');
@@ -1221,6 +1225,23 @@ test.describe('delve loot', () => {
     await page.locator('#delve-forge [data-op="upgrade"]').click();
     await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.slots.find((x) => x?.item === 'iron_sword')!.gear!.plus)).toBe(1);
     await expect(page.locator('#delve-forge-item')).toContainText('+1');
+    // 搬動那把劍（換格）→ 鍛造台追著同一把，不會強化到換過來的東西
+    await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      g.giveGear('gold_sword', 1);
+      const a = g.inventory.slots.findIndex((x) => x?.item === 'iron_sword'), b = g.inventory.slots.findIndex((x) => x?.item === 'gold_sword');
+      g.inventory.swap(a, b);
+    });
+    await page.locator('#delve-forge [data-op="upgrade"]').click();
+    const pl = await page.evaluate(() => { const g = window.__delveDebug!.game; return [g.inventory.slots.find((x) => x?.item === 'iron_sword')!.gear!.plus, g.inventory.slots.find((x) => x?.item === 'gold_sword')!.gear!.plus]; });
+    expect(pl).toEqual([2, 0]);
+    // 點裝備欄裡的胸甲 → 鍛造台換成處理它（不卸下），強化裝備中的
+    await page.evaluate(() => { const g = window.__delveDebug!.game; g.giveGear('iron_chestplate', 2); g.equipFromInventory(g.inventory.slots.findIndex((x) => x?.item === 'iron_chestplate')); });
+    await page.locator('#delve-equip .delve-slot[data-equip="body"]').click();
+    await expect(page.locator('#delve-forge-item')).toContainText('裝備中');
+    await page.locator('#delve-forge [data-op="upgrade"]').click();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.equipment.gearAt('body')?.plus)).toBe(1);
+    expect(await page.evaluate(() => window.__delveDebug!.game.equipment.get('body'))).toBe('iron_chestplate');
   });
 
   test('存檔 → 重新整理 → 繼續：背包與裝備欄的詞條、鎖定、圖鑑都還在', async ({ page }) => {

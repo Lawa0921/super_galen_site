@@ -26,6 +26,7 @@ const lang: Language = defaultLang;
         <canvas class="delve-hearts" id="delve-hearts" width="51" height="10"></canvas>
         <span class="delve-hp-text" id="delve-hp-text"></span>
         <canvas class="delve-mana" id="delve-mana" width="41" height="5" hidden aria-label="魔力"></canvas>
+        <span class="delve-undying" id="delve-undying" hidden data-testid="undying"></span>
       </div>
       <div class="delve-boss" id="delve-boss" hidden>
         <span class="delve-boss-name" id="delve-boss-name"></span>
@@ -129,10 +130,10 @@ const lang: Language = defaultLang;
         </header>
         <p class="delve-hint" id="delve-forge-station"></p>
         <div class="delve-forge-item" id="delve-forge-item"></div>
-        <h3 class="delve-forge-h">洗煉：換掉一條詞條</h3>
-        <ul class="delve-forge-affixes" id="delve-forge-affixes"></ul>
         <h3 class="delve-forge-h">強化 / 升階</h3>
         <div class="delve-forge-ops" id="delve-forge-ops"></div>
+        <h3 class="delve-forge-h">洗煉：換掉一條詞條</h3>
+        <ul class="delve-forge-affixes" id="delve-forge-affixes"></ul>
         <p class="delve-hint" id="delve-forge-mats"></p>
       </section>
 
@@ -1379,7 +1380,7 @@ const lang: Language = defaultLang;
   .delve [data-rarity='0'] { --rar: #858aa0; --rar-lo: #423f54; --rar-t: #ffffff; }
   .delve [data-rarity='1'] { --rar: #93cc50; --rar-lo: #2d672e; --rar-t: #93cc50; }
   .delve [data-rarity='2'] { --rar: #5c9ce0; --rar-lo: #2c4486; --rar-t: #5c9ce0; }
-  .delve [data-rarity='3'] { --rar: #b8788e; --rar-lo: #463c78; --rar-t: #b8788e; }
+  .delve [data-rarity='3'] { --rar: #9a6ee0; --rar-lo: #463c78; --rar-t: #9a6ee0; }
   .delve [data-rarity='4'] { --rar: #ffa93a; --rar-lo: #a83a10; --rar-t: #ffa93a; }
   .delve [data-rarity='5'] { --rar: #fff4c0; --rar-lo: #e8701c; --rar-t: #fff4c0; }
   .delve-slot[data-rarity] { box-shadow: 0 0 0 var(--px) var(--outline), inset 0 0 0 var(--px) var(--rar-lo); }
@@ -1388,13 +1389,13 @@ const lang: Language = defaultLang;
     0% { border-color: #fff4c0 #e8701c #e8701c #fff4c0; }
     25% { border-color: #93cc50 #2c4486 #2c4486 #93cc50; }
     50% { border-color: #5c9ce0 #463c78 #463c78 #5c9ce0; }
-    75% { border-color: #b8788e #a83a10 #a83a10 #b8788e; }
+    75% { border-color: #9a6ee0 #a83a10 #a83a10 #9a6ee0; }
   }
   @keyframes delve-mythic-text {
     0% { color: #fff4c0; }
     25% { color: #ffd86a; }
     50% { color: #93cc50; }
-    75% { color: #b8788e; }
+    75% { color: #9a6ee0; }
   }
   .delve-slot[data-rarity='5']:not(.is-selected):not(.is-picked),
   .delve-tip[data-rarity='5'] { animation: delve-mythic-border 1.2s steps(1) infinite; }
@@ -1447,7 +1448,14 @@ const lang: Language = defaultLang;
   @media (min-width: 1000px) {
     .delve-panel--forge { left: calc(min(480px, 100vw - 20px) + 22px); }
   }
-  .delve-forge-item { display: flex; gap: 10px; align-items: center; padding: 8px; background: #1c1424; box-shadow: inset 0 0 0 var(--px) #472819; }
+  .delve-forge-item { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px; background: #1c1424; box-shadow: inset 0 0 0 var(--px) #472819; }
+  .delve-forge-manage { display: flex; gap: 6px; margin-left: auto; }
+  .delve-undying { font-family: var(--cjk); font-size: 16px; line-height: 18px; color: #b4b9c8; text-shadow: var(--text-outline); }
+  .delve-undying.is-ready { color: #ffd86a; }
+  .delve-j-nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+  .delve-j-nav .delve-btn { padding: 4px 8px; }
+  .delve-j-affix-fx { color: #858aa0; }
+  .delve-j-affix.is-got .delve-j-affix-fx { color: #b4b9c8; }
   .delve-forge-item .delve-slot-icon { width: 32px; height: 32px; }
   .delve-forge-name { margin: 0; font-size: 16px; }
   .delve-forge-meta { margin: 0; font-size: 16px; color: #b07a4b; }
@@ -1469,6 +1477,14 @@ const lang: Language = defaultLang;
   .delve-j-gear .delve-slot-icon { filter: grayscale(1) brightness(0.3); }
   .delve-j-gear[data-rarity] { background: #2a1810; box-shadow: 0 0 0 var(--px) var(--rar); }
   .delve-j-gear[data-rarity] .delve-slot-icon { filter: none; }
+  @media (max-width: 640px) {
+    .delve-panel--forge { padding: 8px; }
+    .delve-panel--forge .delve-hint { margin: 4px 0; }
+    .delve-forge-h { margin: 8px 0 2px; }
+    .delve-forge-op { padding: 6px 8px; }
+    .delve-forge-affix { grid-template-columns: 1fr; gap: 2px; }
+    .delve-forge-affix .delve-btn--sm { justify-self: start; }
+  }
 
   @media (max-width: 640px) {
     .delve-hotbar { gap: 2px; left: 6px; top: 6px; }

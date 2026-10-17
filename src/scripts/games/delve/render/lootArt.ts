@@ -54,7 +54,7 @@ export function rarityRGB(r: number): [RGB, RGB] {
 }
 
 /** 神話流光：依時間在幾個色票色之間階梯切換 */
-const MYTHIC_CYCLE = ['#fff4c0', '#ffd86a', '#ffa93a', '#b8788e', '#5c9ce0', '#93cc50'];
+const MYTHIC_CYCLE = ['#fff4c0', '#ffd86a', '#ffa93a', '#9a6ee0', '#5c9ce0', '#93cc50'];
 export function mythicColor(t: number, offset = 0): string {
   return MYTHIC_CYCLE[(Math.floor(t * 8) + offset) % MYTHIC_CYCLE.length];
 }
@@ -63,24 +63,49 @@ export function rarityColor(r: number, t: number, offset = 0): string {
   return r >= 5 ? mythicColor(t, offset) : RARITIES[Math.max(0, r)].color;
 }
 
+/** 神話光柱：只在飽和色之間流轉（不用米白，免得看起來像一般光） */
+const MYTHIC_BEAM = ['#ffa93a', '#93cc50', '#5c9ce0', '#9a6ee0', '#e8701c'];
+/** 光柱的 4 個色：[亮, 暗, 白芯, 描邊] */
+export function beamColors(r: number, t: number): [string, string, string, string] {
+  if (r >= 5) {
+    const k = Math.floor(t * 8);
+    return [MYTHIC_BEAM[k % MYTHIC_BEAM.length], MYTHIC_BEAM[(k + 2) % MYTHIC_BEAM.length], '#ffffff', '#0c0a12'];
+  }
+  const d = RARITIES[Math.max(0, Math.min(RARITIES.length - 1, r))];
+  return [d.color, d.dark, '#ffffff', '#0c0a12'];
+}
+
 /**
- * 光柱：從掉落物往上的一道 3px 寬像素柱，越高越細碎（以 Bayer 式間隔跳格，不用半透明）。
- * 回傳每個要畫的點（相對掉落物頂端中心，y 往上為負）與顏色索引（0 亮、1 暗）。
+ * 光柱：從掉落物往上的像素柱。下段 = 白芯 + 亮色 + 深色描邊（亮背景也看得到），往上越細、越稀疏（跳格，不用半透明）。
+ * 回傳每個要畫的點（相對掉落物頂端中心，y 往上為負）與顏色索引（見 beamColors：0 亮、1 暗、2 白芯、3 描邊）。
  */
-export function beamPixels(height: number, t: number): { x: number; y: number; c: 0 | 1 }[] {
-  const out: { x: number; y: number; c: 0 | 1 }[] = [];
+export function beamPixels(height: number, t: number): { x: number; y: number; c: 0 | 1 | 2 | 3 }[] {
+  const out: { x: number; y: number; c: 0 | 1 | 2 | 3 }[] = [];
   const phase = Math.floor(t * 20);
   for (let k = 0; k < height; k++) {
     const y = -k - 1;
-    // 下半段實心、往上越來越稀疏（每格依位置雜湊決定跳過）
     const keep = (k * 7 + phase) % 11;
     const density = k < height * 0.35 ? 11 : k < height * 0.7 ? 7 : 4;
     if (keep >= density) continue;
-    out.push({ x: 0, y, c: 0 });
-    if (k < height * 0.45) out.push({ x: -1, y, c: 0 }, { x: 1, y, c: 0 });
-    else if (k < height * 0.75) out.push({ x: -1, y, c: 1 }, { x: 1, y, c: 1 });
-    if (k < height * 0.3 && (k + phase) % 2 === 0) out.push({ x: -2, y, c: 1 }, { x: 2, y, c: 1 });
+    if (k < height * 0.45) {
+      out.push({ x: 0, y, c: 2 }, { x: -1, y, c: 0 }, { x: 1, y, c: 0 }, { x: -2, y, c: 3 }, { x: 2, y, c: 3 });
+    } else if (k < height * 0.75) {
+      out.push({ x: 0, y, c: 0 }, { x: -1, y, c: 3 }, { x: 1, y, c: 3 });
+    } else out.push({ x: 0, y, c: (k + phase) % 3 === 0 ? 2 : 1 });
   }
+  return out;
+}
+
+/** 優良 / 稀有的浮動標記：掉落物上方一顆 5×5 菱形（深色描邊 + 稀有度色 + 白色亮點），每半秒上下 1px */
+export function markerPixels(r: number, t: number): { x: number; y: number; c: string }[] {
+  if (r < 1) return [];
+  const fill = rarityColor(r, t), bob = Math.floor(t * 2) % 2;
+  const rows = ['..o..', '.ofo.', 'ofwfo', '.ofo.', '..o..'];
+  const out: { x: number; y: number; c: string }[] = [];
+  rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    if (ch === '.') return;
+    out.push({ x: x - 2, y: y - 4 - bob, c: ch === 'o' ? '#0c0a12' : ch === 'w' ? '#ffffff' : fill });
+  }));
   return out;
 }
 

@@ -9,7 +9,7 @@ import { toCanvas } from './pixel';
 import { enemyFrames, flashBmp, silhouetteBmp, silhouetteWanted } from './enemyArt';
 import type { Enemy } from '../engine/enemies';
 import { FloatNumbers, digitRows, enemyFrameIndex, type FloatKind } from './combatAnim';
-import { beamPixels, rarityColor, sparkleAt } from './lootArt';
+import { beamColors, beamPixels, markerPixels, rarityColor, sparkleAt } from './lootArt';
 import { RARITIES } from '../engine/gear';
 
 interface EnemySprite { frames: HTMLCanvasElement[]; flash: HTMLCanvasElement[]; dark: HTMLCanvasElement[]; anchor: 'bottom' | 'center'; }
@@ -273,15 +273,18 @@ export class CombatLayer {
       if (r < 1) continue;
       const b = d.body;
       if (b.x + b.w < v.x - 8 || b.x > v.x + v.w + 8 || b.y < v.y - 80 || b.y > v.y + v.h + 8) continue;
-      const cx = Math.round(b.x + b.w / 2), bot = Math.round(b.y + b.h + 1);
+      const cx = Math.round(b.x + b.w / 2), bot = Math.round(b.y + b.h + 1), top = Math.round(b.y + b.h - 16);
       const hi = rarityColor(r, t, d.id), lo = r >= 5 ? rarityColor(r, t, d.id + 3) : RARITIES[r].dark;
-      // 底線：亮色 6px + 兩端暗色
+      // 底線：深色描邊包住的亮色線（草地上也分得出來）
+      ctx.fillStyle = '#0c0a12'; ctx.fillRect(cx - 6, bot - 1, 12, 3);
       ctx.fillStyle = lo; ctx.fillRect(cx - 5, bot, 10, 1);
       ctx.fillStyle = hi; ctx.fillRect(cx - 3, bot, 6, 1);
+      // 優良 / 稀有：頭上浮著一顆菱形標記
+      if (r <= 2) for (const p of markerPixels(r, t + d.id * 0.31)) { ctx.fillStyle = p.c; ctx.fillRect(cx + p.x, top + p.y, 1, 1); }
       if (r >= 3 && b.onGround) {
-        const H = r >= 5 ? 64 : r >= 4 ? 46 : 28, top = Math.round(b.y + b.h - 16);
+        const H = r >= 5 ? 64 : r >= 4 ? 46 : 32, cols = beamColors(r, t + d.id * 0.13);
         for (const p of beamPixels(H, t + d.id * 0.37)) {
-          ctx.fillStyle = p.c === 0 ? hi : lo;
+          ctx.fillStyle = cols[p.c];
           ctx.fillRect(cx + p.x, top + p.y, 1, 1);
         }
       }

@@ -6,7 +6,7 @@ import { CATEGORY_LABEL, type RegionCat } from '../engine/discovery';
 import { LORE, loreEntry } from '../engine/lore';
 import { ITEMS } from '../engine/items';
 import { FISH_SPECIES } from '../engine/fishing';
-import { AFFIXES, BASE_TIER, RARITIES } from '../engine/gear';
+import { AFFIXES, BASE_TIER, RARITIES, STAT_LABEL } from '../engine/gear';
 import type { ItemId } from '../engine/items';
 import { drawIcon, type Atlas } from './textures';
 import { BannerQueue, distanceLabel, exploredLabel, percentLabel } from './model';
@@ -44,6 +44,9 @@ export class ExploreUi {
     const body = root.querySelector('#delve-journal-body');
     if (body) {
       const onBody = (e: Event): void => {
+        // 目錄：跳到那一節
+        const j = (e.target as HTMLElement).closest<HTMLElement>('[data-jump]');
+        if (j?.dataset.jump) { body.querySelector(`[data-sec="${j.dataset.jump}"]`)?.scrollIntoView({ block: 'start' }); return; }
         const b = (e.target as HTMLElement).closest<HTMLElement>('[data-lore]');
         if (b?.dataset.lore) this.showLore(Number(b.dataset.lore), false);
       };
@@ -116,6 +119,15 @@ export class ExploreUi {
     this.journalSig = sig;
     body.replaceChildren();
 
+    // 目錄（日誌很長：直接跳到裝備圖鑑等）
+    const nav = el('nav', 'delve-j-nav');
+    nav.setAttribute('aria-label', '日誌目錄');
+    for (const [k, label] of [['regions', '地區'], ['lore', '古碑'], ['bestiary', '怪物'], ['fish', '釣魚'], ['codex', '裝備圖鑑']] as const) {
+      const b = el('button', 'delve-btn', label);
+      b.type = 'button'; b.dataset.jump = k;
+      nav.appendChild(b);
+    }
+    body.appendChild(nav);
     const top = el('div', 'delve-j-top');
     top.append(el('span', 'delve-j-big', `完成度 ${percentLabel(s.completion)}`), segBar(s.completion));
     body.appendChild(top);
@@ -124,6 +136,7 @@ export class ExploreUi {
     body.appendChild(facts);
 
     const cats = el('ul', 'delve-j-cats');
+    cats.dataset.sec = 'regions';
     for (const c of s.cats) {
       const li = el('li', 'delve-j-cat');
       li.dataset.cat = c.cat;
@@ -139,7 +152,9 @@ export class ExploreUi {
     }
     body.appendChild(cats);
 
-    body.appendChild(el('h3', 'delve-j-h', `古碑 ${s.lore.found} / ${s.lore.total}`));
+    const loreH = el('h3', 'delve-j-h', `古碑 ${s.lore.found} / ${s.lore.total}`);
+    loreH.dataset.sec = 'lore';
+    body.appendChild(loreH);
     const lore = el('ol', 'delve-j-lore');
     LORE.forEach((e, i) => {
       const li = el('li');
@@ -171,7 +186,9 @@ export class ExploreUi {
     // 首領擊敗 + 圖鑑（擊殺過的怪物種類與數量）
     const bosses = ENEMY_KINDS.filter((k) => ENEMIES[k].boss);
     const beaten = bosses.filter((k) => g.bossesDefeated.has(k)).length;
-    body.appendChild(el('h3', 'delve-j-h', `首領擊敗 ${beaten} / ${bosses.length}`));
+    const bossH = el('h3', 'delve-j-h', `首領擊敗 ${beaten} / ${bosses.length}`);
+    bossH.dataset.sec = 'bestiary';
+    body.appendChild(bossH);
     const bl = el('p', 'delve-j-names');
     bl.dataset.testid = 'journal-bosses';
     bl.textContent = bosses.map((k) => (g.bossesDefeated.has(k) ? `${ENEMIES[k].name.zh} ✓` : '？？？（燈芯祭品）')).join('、');
@@ -185,6 +202,7 @@ export class ExploreUi {
     const caught = FISH_SPECIES.filter((f) => (g.fishLog[f] ?? 0) > 0);
     const fh = el('h3', 'delve-j-h', `釣魚紀錄 ${caught.length} / ${FISH_SPECIES.length}`);
     fh.dataset.testid = 'journal-fish';
+    fh.dataset.sec = 'fish';
     body.appendChild(fh);
     const fl = el('div', 'delve-j-treasures');
     for (const id of FISH_SPECIES) {
@@ -208,11 +226,14 @@ export class ExploreUi {
     const cx = this.game.codex, st = cx.stats();
     const h = el('h3', 'delve-j-h', `裝備圖鑑：詞條 ${st.affixes} / ${st.affixTotal} · 傳奇 ${st.uniques} / ${st.uniqueTotal}`);
     h.dataset.testid = 'journal-codex';
+    h.dataset.sec = 'codex';
     body.appendChild(h);
     const ul = el('ul', 'delve-j-affixes');
     for (const a of AFFIXES.filter((x) => x.kind !== 'unique')) {
       const t = cx.affixes.get(a.id);
-      const li = el('li', t ? 'delve-j-affix is-got' : 'delve-j-affix', t ? `${a.kind === 'prefix' ? a.word : `· ${a.word}`} T${t}` : '？？？');
+      // 晶片：名稱 + 效果（沒見過也先告訴你它是什麼效果）
+      const li = el('li', t ? 'delve-j-affix is-got' : 'delve-j-affix', t ? `${a.kind === 'prefix' ? a.word : `· ${a.word}`} T${t} ` : '？？？ ');
+      li.appendChild(el('span', 'delve-j-affix-fx', STAT_LABEL[a.stat]));
       li.dataset.affix = a.id;
       ul.appendChild(li);
     }

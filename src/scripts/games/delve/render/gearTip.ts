@@ -62,7 +62,7 @@ export function gearTooltip(st: Stack, cmp?: Stack | null): TipLine[] {
   const base = itemTooltip(item);
   if (!gearSlot(item)) return base.map((t, i) => ({ text: t, tone: i === 0 ? 'name' : 'base' }));
   const g = st.gear, r = rarityOf(g), R = RARITIES[r];
-  const out: TipLine[] = [{ text: `${gearName(item, g)}  ${d.name.en}`, tone: 'name', rarity: r }];
+  const out: TipLine[] = [{ text: gearName(item, g), tone: 'name', rarity: r }];
   const meta = [R.zh, `物品等級 ${g?.ilvl ?? 1}`];
   if (g?.locked) meta.push('已鎖定');
   out.push({ text: meta.join('・'), tone: 'rarity', rarity: r });

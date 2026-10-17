@@ -10,7 +10,7 @@ describe('裝備說明', () => {
   it('第一行是組合名稱（帶稀有度），第二行稀有度 / 物品等級；每條詞條一行（含階數）', () => {
     const t = gearTooltip(sword({ rarity: 3, ilvl: 4, plus: 0, affixes: [{ id: 'blazing', tier: 3, value: 17 }, { id: 'swift', tier: 2, value: 5 }] }));
     expect(t[0]).toMatchObject({ tone: 'name', rarity: 3 });
-    expect(t[0].text).toContain('熾焰的 鐵劍 · 迅捷');
+    expect(t[0].text).toBe('熾焰的 鐵劍 · 迅捷');
     expect(t[1].text).toContain('史詩');
     expect(t[1].text).toContain('物品等級 4');
     const affix = t.filter((l) => l.tone === 'affix').map((l) => l.text);

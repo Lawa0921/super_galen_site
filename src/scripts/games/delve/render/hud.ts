@@ -14,6 +14,7 @@ import type { Stack } from '../engine/inventory';
 import { RARITIES, affixDef, affixText, gearName, gearSlot, rarityOf, type Cost } from '../engine/gear';
 import type { ForgeResult } from '../engine/game';
 import { gearTooltip, statRows } from './gearTip';
+import { ToastQueue, TOAST_NORMAL } from './toastQueue';
 
 /** 圖示以原生 16×16 烘進小 canvas，由 CSS 以整數倍（image-rendering: pixelated）放大 */
 const ICON_PX = 16;
@@ -46,8 +47,11 @@ export class Hud {
   private bossSig = '';
   private tipTimer = 0;
   private pressTimer = 0;
-  /** 鍛造台面板正在處理的背包格（null = 關著） */
-  private forgeSlot: number | null = null;
+  /** 鍛造台面板正在處理的那件裝備（追蹤物件本身，換格 / 裝上卸下都跟著走；null = 關著） */
+  private forgeTarget: Stack | null = null;
+  private readonly toasts = new ToastQueue();
+  private toastShown = '';
+  private toastLast = 0;
   private forgeSig = '';
   private confirmFn: (() => void) | null = null;
   private readonly offs: (() => void)[] = [];
@@ -193,9 +197,11 @@ export class Hud {
       return;
     }
     if (this.picked === null) {
-      if (!this.game.inventory.slots[i]) return;
+      const st = this.game.inventory.slots[i];
+      if (!st) return;
+      // 鍛造台開著：點裝備 = 換成處理這件（不搬移）
+      if (this.forgeTarget && gearSlot(st.item)) { this.setForge(st); this.refresh(); return; }
       this.picked = i;
-      if (this.forgeSlot !== null && gearSlot(this.game.inventory.slots[i]!.item)) { this.forgeSlot = i; this.forgeSig = ''; }
     } else {
       if (this.picked !== i) this.game.inventory.swap(this.picked, i);
       this.picked = null;
@@ -204,6 +210,9 @@ export class Hud {
   }
   /** 點裝備格：有選中的背包格 → 裝到這格；否則卸下 */
   private clickEquip(slot: EquipSlot): void {
+    // 鍛造台開著：點裝備中的那件 = 換成處理它（不卸下）
+    const eqSt = this.game.equipment.getStack(slot);
+    if (this.forgeTarget && this.picked === null && eqSt) { this.setForge(eqSt); this.refresh(); return; }
     if (this.picked !== null) {
       const it = this.game.inventory.slots[this.picked]?.item;
       if (!this.game.equipFromInventory(this.picked, slot)) this.toast(it ? `${ITEMS[it].name.zh}不能裝在這裡` : '不能裝在這裡');
@@ -382,6 +391,18 @@ export class Hud {
       }
     }
   }
+  /** 不滅（傳奇詞條）的冷卻：裝著才顯示；可用 = 金色「不滅 ✓」，冷卻中 = 秒數 */
+  private drawUndying(): void {
+    const el = this.root.querySelector<HTMLElement>('#delve-undying');
+    if (!el) return;
+    const st = this.game.getState(), has = st.gear.undying > 0;
+    el.hidden = !has;
+    if (!has) return;
+    const cd = Math.ceil(st.undyingCd);
+    const text = cd > 0 ? `不滅 ${cd}s` : '不滅 ✓';
+    if (el.textContent !== text) el.textContent = text;
+    el.classList.toggle('is-ready', cd <= 0);
+  }
   private drawBoss(): void {
     const st = this.game.getState();
     const el = this.root.querySelector<HTMLElement>('#delve-boss');
@@ -469,6 +490,12 @@ export class Hud {
     const r = anchor.getBoundingClientRect(), rr = this.root.getBoundingClientRect();
     const tw = tip.offsetWidth, th = tip.offsetHeight;
     let x = r.left - rr.left, y = r.bottom - rr.top + 6;
+    // 面板裡的格子：說明放到面板（含旁邊的箱子 / 鍛造台）右側，不蓋住裝備欄與能力總覽
+    const panels = ['#delve-inv', '#delve-chest', '#delve-forge'].map((s) => this.root.querySelector<HTMLElement>(s)).filter((el): el is HTMLElement => Boolean(el && !el.hidden));
+    if (panels.some((pn) => pn.contains(anchor))) {
+      const right = Math.max(...panels.map((pn) => pn.getBoundingClientRect().right)) - rr.left + 8;
+      if (right + tw <= rr.width - 6) { x = right; y = Math.min(r.top - rr.top, rr.height - th - 6); }
+    }
     if (x + tw > rr.width - 6) x = rr.width - tw - 6;
     if (y + th > rr.height - 6) y = r.top - rr.top - th - 6;
     tip.style.setProperty('--tx', `${Math.max(6, Math.round(x))}px`);
@@ -485,6 +512,7 @@ export class Hud {
   tick(): void {
     this.frame++;
     this.drawVitals();
+    if (this.frame % 6 === 0) this.drawUndying();
     this.drawBoss();
     this.drawDeath();
     if (this.frame % 10 === 0) {
@@ -501,13 +529,34 @@ export class Hud {
     if (this.frame % 30 === 0) this.refresh();
   }
 
-  toast(msg: string, ms = 1600): void {
-    const el = this.q('#delve-toast');
-    el.textContent = msg;
-    el.classList.add('is-on');
-    clearTimeout(this.toastTimer);
-    this.toastTimer = window.setTimeout(() => el.classList.remove('is-on'), ms);
+  /** 提示：prio 0 = 次要（排在重要提示後面）、1 = 一般、2 = 重要（見 toastQueue） */
+  toast(msg: string, ms = 1600, prio = TOAST_NORMAL): void {
+    if (this.toasts.push({ text: msg, ms, prio }) === 'show') this.showToast();
+    if (!this.toastTimer) this.pumpToast();
   }
+  private showToast(): void {
+    const el = this.q('#delve-toast'), cur = this.toasts.current;
+    if (!cur) { el.classList.remove('is-on'); this.toastShown = ''; return; }
+    if (this.toastShown !== cur.text || !el.classList.contains('is-on')) {
+      el.textContent = cur.text;
+      el.classList.add('is-on');
+      this.toastShown = cur.text;
+    }
+  }
+  /** 以 100ms 為單位推進提示佇列（分頁隱藏時 rAF 不跑，用計時器） */
+  private pumpToast(): void {
+    this.toastLast = performance.now();
+    const step = (): void => {
+      const now = performance.now(), dt = now - this.toastLast;
+      this.toastLast = now;
+      this.toasts.tick(dt);
+      this.showToast();
+      this.toastTimer = this.toasts.current ? window.setTimeout(step, 100) : 0;
+    };
+    this.toastTimer = window.setTimeout(step, 100);
+  }
+  /** 目前顯示中的提示文字（e2e / 除錯） */
+  get toastText(): string { return this.toasts.current?.text ?? ''; }
 
   destroy(): void {
     clearTimeout(this.toastTimer);
@@ -525,7 +574,7 @@ export class Hud {
   private stackFor(el: HTMLElement): Stack | null {
     const g = this.game, slot = Number(el.dataset.slot);
     if (el.dataset.equip) return g.equipment.getStack(el.dataset.equip as EquipSlot);
-    if (el.dataset.forgeItem !== undefined) return this.forgeSlot !== null ? g.inventory.slots[this.forgeSlot] ?? null : null;
+    if (el.dataset.forgeItem !== undefined) return this.forgeTarget;
     if (!Number.isInteger(slot)) return null;
     if (el.closest('#delve-chest-grid')) return g.chestSlots()?.[slot] ?? null;
     if (el.closest('#delve-inv-grid') || el.closest('#delve-hotbar')) return g.inventory.slots[slot] ?? null;
@@ -566,7 +615,7 @@ export class Hud {
         const y = this.game.salvage(i);
         if (y) this.toast(`分解了 ${gearName(st.item, st.gear)}：${costText(y)}`);
         this.picked = null;
-        if (this.forgeSlot === i) this.setForge(null);
+        if (this.forgeTarget === st) this.setForge(null);
         this.refresh();
       };
       // 史詩以上：先確認
@@ -585,18 +634,34 @@ export class Hud {
     });
     on('#delve-forge-btn', () => {
       if (this.picked === null) return;
-      this.setForge(this.picked);
+      const st = this.game.inventory.slots[this.picked];
+      this.picked = null;
+      if (st) this.setForge(st);
+      this.refresh();
     });
     on('#delve-forge-close', () => this.setForge(null));
     on('#delve-forge', (e) => {
       const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-op]');
-      if (!b || b.disabled || this.forgeSlot === null) return;
-      const i = this.forgeSlot, op = b.dataset.op;
-      const r = op === 'reroll' ? this.game.reroll(i, Number(b.dataset.affix)) : op === 'upgrade' ? this.game.upgrade(i) : this.game.ascend(i);
-      if (!r.ok) this.toast(FORGE_FAIL[r.reason]);
-      else {
-        const st = this.game.inventory.slots[i];
-        if (st) this.toast(op === 'reroll' ? `洗煉完成：${gearName(st.item, st.gear)}` : op === 'upgrade' ? `強化成功：+${st.gear?.plus ?? 0}` : `升階成功：${RARITIES[rarityOf(st.gear)].zh}`);
+      const st = this.forgeTarget;
+      if (!b || b.disabled || !st) return;
+      const at = this.game.locate(st), op = b.dataset.op;
+      if (at === null) { this.setForge(null); return; }
+      if (op === 'lock') {
+        const r = this.game.toggleLock(at);
+        if (r !== null) this.toast(r ? '已鎖定：不會被分解' : '已解除鎖定');
+      } else if (op === 'salvage') {
+        const go = (): void => {
+          const y = this.game.salvage(at);
+          if (y) this.toast(`分解了 ${gearName(st.item, st.gear)}：${costText(y)}`);
+          this.setForge(null);
+          this.refresh();
+        };
+        if (st.gear?.locked) this.toast('已鎖定的裝備不能分解');
+        else this.askConfirm(`要分解${typeof at === 'number' ? '' : '裝備中的'} ${RARITIES[rarityOf(st.gear)].zh}「${gearName(st.item, st.gear)}」嗎？分解後無法復原。`, go);
+      } else {
+        const r = op === 'reroll' ? this.game.reroll(at, Number(b.dataset.affix)) : op === 'upgrade' ? this.game.upgrade(at) : this.game.ascend(at);
+        if (!r.ok) this.toast(FORGE_FAIL[r.reason]);
+        else this.toast(op === 'reroll' ? `洗煉完成：${gearName(st.item, st.gear)}` : op === 'upgrade' ? `強化成功：+${st.gear?.plus ?? 0}` : `升階成功：${RARITIES[rarityOf(st.gear)].zh}`);
       }
       this.forgeSig = '';
       this.refresh();
@@ -633,31 +698,32 @@ export class Hud {
     const mats = this.root.querySelector('#delve-mats');
     if (mats) mats.textContent = `碎晶 ${this.game.inventory.count('gear_shard')} · 星塵 ${this.game.inventory.count('stardust')}`;
   }
-  get forgeOpen(): boolean { return this.forgeSlot !== null; }
+  get forgeOpen(): boolean { return this.forgeTarget !== null; }
   /** 提示用的裝備名稱 */
   gearLabel(st: Stack): string { return gearName(st.item, st.gear); }
-  /** 打開（背包格 i）/ 關閉鍛造台面板 */
-  setForge(i: number | null): void {
-    this.forgeSlot = i;
+  /** 打開（處理這件裝備；背包或裝備中的都可以）/ 關閉鍛造台面板 */
+  setForge(target: Stack | null): void {
+    this.forgeTarget = target && gearSlot(target.item) ? target : null;
     this.forgeSig = '';
     const el = this.root.querySelector<HTMLElement>('#delve-forge');
-    if (el) el.hidden = i === null;
-    this.root.dataset.forge = i === null ? '' : '1';
-    if (i !== null) this.renderForge();
+    if (el) el.hidden = this.forgeTarget === null;
+    this.root.dataset.forge = this.forgeTarget === null ? '' : '1';
+    if (this.forgeTarget) this.renderForge();
   }
   private renderForge(): void {
-    const i = this.forgeSlot;
-    if (i === null) return;
-    const g = this.game, st = g.inventory.slots[i];
-    if (!st || !gearSlot(st.item)) { this.setForge(null); return; }
-    const near = g.canForge(), costs = g.forgeCosts(i), shard = g.inventory.count('gear_shard'), dust = g.inventory.count('stardust');
+    const st = this.forgeTarget;
+    if (!st) return;
+    const g = this.game, at = g.locate(st);
+    // 那件已經不在身上（分解 / 放進箱子 / 丟掉）→ 關閉
+    if (at === null) { this.setForge(null); return; }
+    const near = g.canForge(), costs = g.forgeCosts(at), shard = g.inventory.count('gear_shard'), dust = g.inventory.count('stardust');
     const gear = st.gear;
-    const sig = `${i}|${near}|${shard}|${dust}|${st.item}|${JSON.stringify(gear ?? null)}`;
+    const sig = `${at}|${near}|${shard}|${dust}|${st.item}|${JSON.stringify(gear ?? null)}`;
     if (sig === this.forgeSig) return;
     this.forgeSig = sig;
     const can = (c: Cost | null): boolean => Boolean(c) && near && shard >= c!.shard && dust >= c!.dust;
     const station = this.root.querySelector('#delve-forge-station');
-    if (station) station.textContent = near ? '鐵砧就在旁邊 ✓（洗煉 / 強化 / 升階）' : '要站在鐵砧旁（4 格內）才能鍛造；先看看需要多少材料';
+    if (station) station.textContent = `${near ? '鐵砧就在旁邊 ✓' : '鍛造要站在鐵砧旁（4 格內）；鎖定 / 分解哪裡都可以'}。點背包或裝備欄的裝備可以換目標（裝備中的也行）`;
     const head = this.root.querySelector('#delve-forge-item');
     if (head) {
       const icon = document.createElement('canvas');
@@ -672,9 +738,17 @@ export class Hud {
       name.textContent = gearName(st.item, gear);
       const meta = document.createElement('p');
       meta.className = 'delve-forge-meta';
-      meta.textContent = `${RARITIES[rarityOf(gear)].zh}・物品等級 ${gear?.ilvl ?? 1}・強化 +${gear?.plus ?? 0}${gear?.rerolls ? `・洗煉 ${gear.rerolls} 次` : ''}`;
+      meta.textContent = `${RARITIES[rarityOf(gear)].zh}・物品等級 ${gear?.ilvl ?? 1}・強化 +${gear?.plus ?? 0}${gear?.rerolls ? `・洗煉 ${gear.rerolls} 次` : ''}${typeof at === 'number' ? '' : '・裝備中'}${gear?.crafted ? '・合成品' : ''}`;
       box.append(name, meta);
-      head.replaceChildren(icon, box);
+      const manage = document.createElement('div');
+      manage.className = 'delve-forge-manage';
+      const mb = (op: string, text: string, disabled = false): HTMLButtonElement => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'delve-btn delve-btn--sm'; b.dataset.op = op; b.textContent = text; b.disabled = disabled;
+        return b;
+      };
+      manage.append(mb('lock', gear?.locked ? '解除鎖定' : '鎖定'), mb('salvage', '分解', Boolean(gear?.locked)));
+      head.replaceChildren(icon, box, manage);
     }
     const ul = this.root.querySelector('#delve-forge-affixes');
     if (ul) {
