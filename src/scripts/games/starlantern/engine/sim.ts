@@ -76,26 +76,35 @@ export function choose(s: BattleState, party: Party): Record<string, Action> {
   return out;
 }
 
+/** The playtest bot's player (全員攻擊): every living member attacks the first living enemy, nothing else. */
+export function attackAll(s: BattleState): Record<string, Action> {
+  const target = s.enemies.find((e) => e.alive)?.key ?? '';
+  return Object.fromEntries(s.party.filter((c) => c.alive).map((c) => [c.key, { kind: 'attack', target } as Action]));
+}
+
+/** Who picks the party's actions in a simulated fight: `skill` is `choose`, `attack` is `attackAll`. */
+export type SimAi = 'skill' | 'attack';
+
 function power(def: SkillDef): number {
   return def.effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
 }
 
-export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed: number, scale?: BattleScale, altar?: Altar): { outcome: Outcome; rounds: number; hpLoss: number } {
+export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed: number, scale?: BattleScale, altar?: Altar, ai: SimAi = 'skill'): { outcome: Outcome; rounds: number; hpLoss: number } {
   const rng = mulberry32(seed);
   let s = createBattle({ party, enemyIds, boss, inventory: {}, revealed: {}, scale, altar });
   const maxHp = s.party.reduce((n, c) => n + c.max.hp, 0);
   let rounds = 0;
-  while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, choose(s, party), rng); rounds++; }
+  while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, ai === 'attack' ? attackAll(s) : choose(s, party), rng); rounds++; }
   const left = s.party.reduce((n, c) => n + Math.max(0, c.hp), 0);
   return { outcome: s.outcome, rounds, hpLoss: 1 - left / maxHp };
 }
 
-/** With `kitSeed`, the party wears `kitParty(level, depth, kitSeed)` instead of nothing. */
-export function winRate(level: number, groups: string[][], boss: boolean, seeds = 40, scale?: BattleScale, altar?: Altar, kitSeed?: number): { rate: number; hpLoss: number } {
+/** With `kitSeed`, the party wears `kitParty(level, depth, kitSeed)` instead of nothing; `ai` picks the player (default the skill player). */
+export function winRate(level: number, groups: string[][], boss: boolean, seeds = 40, scale?: BattleScale, altar?: Altar, kitSeed?: number, ai: SimAi = 'skill'): { rate: number; hpLoss: number } {
   let wins = 0, loss = 0, n = 0;
   for (const g of groups) for (let k = 1; k <= seeds; k++) {
     const party = kitSeed === undefined ? partyAt(level) : kitParty(level, scale?.depth ?? 1, kitSeed);
-    const r = simBattle(party, g, boss, k * 7919, scale, altar);
+    const r = simBattle(party, g, boss, k * 7919, scale, altar, ai);
     n++; loss += r.hpLoss; if (r.outcome === 'win') wins++;
   }
   return { rate: wins / n, hpLoss: loss / n };

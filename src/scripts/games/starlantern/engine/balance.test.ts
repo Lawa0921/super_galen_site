@@ -136,5 +136,11 @@ describe('balance', () => {
       expect(r.hpLoss, label).toBeGreaterThanOrEqual(0.1);
       expect(r.hpLoss, label).toBeLessThanOrEqual(0.45);
     }
+    // The same runs with the playtest bot's attack-only player (全員攻擊): the skill player above held iron d1 even
+    // while the region's phys resist halved every hit; this one did not (mire 52%, iron 44% before the scale-in).
+    for (const region of Object.keys(REGIONS) as RegionId[]) {
+      const r = winRate(1, encounterTable(region, 1), false, region === 'mainline' ? 40 : 20, { depth: 1, region }, undefined, undefined, 'attack');
+      expect(r.rate, `${region} depth 1 Lv1 attack-only`).toBeGreaterThanOrEqual(0.85);
+    }
   });
 });
