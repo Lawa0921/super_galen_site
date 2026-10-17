@@ -1,4 +1,4 @@
-import type { Cost } from '../../data/forge';
+import { ENHANCE_COST, ENHANCE_MAX, ENHANCE_SUCCESS, type Cost } from '../../data/forge';
 import { mix } from '../loot/drops';
 import { mulberry32, type Rng } from '../rng';
 import type { GameState } from '../state';
@@ -50,4 +50,14 @@ export const FORGE_SALT = 0x2f6b1d3a;
 /** A rng for the forge's random picks. Each call draws once and moves `s.forgeDraws` on (mutates `s`; build it on a copy); creating it draws nothing. */
 export function forgeRng(s: GameState): Rng {
   return () => mulberry32(mix(s.forgeDraws++ ^ FORGE_SALT, s.nextUid))();
+}
+
+/** What reaching the next enhance level costs; null at the maximum. */
+export function enhanceCost(it: ItemInstance): Cost | null {
+  return it.enhance >= 0 && it.enhance < ENHANCE_MAX ? (ENHANCE_COST[it.enhance] ?? null) : null;
+}
+
+/** The chance the next enhance attempt succeeds (0 at the maximum). */
+export function enhanceChance(it: ItemInstance): number {
+  return it.enhance >= 0 && it.enhance < ENHANCE_MAX ? (ENHANCE_SUCCESS[it.enhance] ?? 0) : 0;
 }
