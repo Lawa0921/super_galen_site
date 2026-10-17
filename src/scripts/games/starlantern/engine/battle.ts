@@ -8,9 +8,9 @@ import { POWERS } from '../data/gear';
 import { WEAPON_KINDS, WEAPON_MASTERY_PCT, weaponKindOf } from '../data/equipment';
 import { SKILLS } from '../data/skills';
 import { stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
-import { hasPassive, powersOf, sheetOf, statsOf } from './party';
+import { activeIds, hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
-import { abyssPct, depthLevel, empower, homeLevel, regionTint, scaleEnemy } from './scaling';
+import { abyssPct, depthLevel, empower, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
 import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
@@ -37,6 +37,8 @@ export interface BattleState {
   enemyDefs?: Record<string, EnemyDef>;
   /** The abyss capstones' bonus in percent for this fight (fixed at createBattle); absent reads as 0. */
   abyss?: number;
+  /** The party-size multiplier applied to every enemy's hp, atk and mag; absent when it is 1 (a full party). */
+  partyScale?: number;
 }
 
 /** Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */
@@ -91,6 +93,8 @@ export function createBattle(o: {
   abyss?: number;
   /** Run-long altar bonuses: percent added to the party's max stats for this whole battle (summed per stat). */
   altar?: { stat: BuffStat; pct: number }[];
+  /** Enemies allowed beyond the party-size group cap (a rescue fight passes 1). */
+  extra?: number;
 }): BattleState {
   const party: Combatant[] = [];
   o.party.grid.forEach((id, cell) => { if (id) party.push(fromMember(o.party.roster[id], cell)); });
@@ -99,19 +103,24 @@ export function createBattle(o: {
   for (const c of party) for (const [k, pct] of altar) c.max[k] = Math.floor(c.max[k] * (1 + pct / 100));
   // opening-gauge is a floor, not a gain: the gauge carries over between fights, so adding would stack fight after fight.
   for (const c of party) if (c.keystones.includes('opening-gauge')) c.limit = Math.min(LIMIT_MAX, Math.max(c.limit, KEYSTONE_VALUES.openingGauge));
+  const depth = o.depth ?? o.scale?.depth ?? 1;
+  const size = activeIds(o.party).length;
+  const k = partyScale(size);
+  const enemyIds = o.boss ? o.enemyIds : o.enemyIds.slice(0, groupCap(size, depth) + (o.extra ?? 0));
   const counts: Record<string, number> = {};
-  for (const id of o.enemyIds) counts[id] = (counts[id] ?? 0) + 1;
+  for (const id of enemyIds) counts[id] = (counts[id] ?? 0) + 1;
   const seen: Record<string, number> = {};
   const sc = o.scale;
   const region = sc ? REGIONS[sc.region] : null;
   const defs: Record<string, EnemyDef> = {};
-  const enemies = o.enemyIds.map((id, i) => {
+  const enemies = enemyIds.map((id, i) => {
     const n = (seen[id] = (seen[id] ?? 0) + 1);
     const elite = !!sc && sc.elite === id && n === 1;
     const met = sc && region ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']) : ENEMIES[id];
     // An enemy is met at the fight's depth level, or at its own home level when the fight has no scale.
     const level = sc ? depthLevel(sc.depth) : homeLevel(met);
-    const d = empower(met, level);
+    const empowered = empower(met, level);
+    const d = k === 1 ? empowered : { ...empowered, stats: mul(empowered.stats, { hp: k, atk: k, mag: k }) };
     defs[`e${i}`] = d;
     const name = counts[id] > 1 ? `${d.name} ${String.fromCharCode(64 + n)}` : d.name;
     return fromEnemy(d, `e${i}`, name, elite ? 'elite' : region ? regionTint(region) : undefined, level);
@@ -121,7 +130,8 @@ export function createBattle(o: {
     itemBoost: hasPassive(o.party, 'itemBoost'), log: [], outcome: 'ongoing',
   };
   if (sc) s.enemyDefs = defs;
-  s.abyss = o.abyss ?? abyssPct(o.depth ?? sc?.depth ?? 1);
+  if (k !== 1) s.partyScale = k;
+  s.abyss = o.abyss ?? abyssPct(depth);
   return s;
 }
 

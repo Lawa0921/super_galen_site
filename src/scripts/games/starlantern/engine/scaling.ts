@@ -121,7 +121,7 @@ export function regionTint(region: RegionDef): Element | undefined {
   return region.element ?? 'phys';
 }
 
-function mul(stats: Stats, by: Partial<Record<StatKey, number>>): Stats {
+export function mul(stats: Stats, by: Partial<Record<StatKey, number>>): Stats {
   const out = { ...stats };
   for (const [k, m] of Object.entries(by) as [StatKey, number][]) out[k] = Math.round(out[k] * m);
   return out;
@@ -183,6 +183,21 @@ export function empower(def: EnemyDef, level: number): EnemyDef {
   const k = enemyPower(level);
   return k === 1 ? def : { ...def, stats: mul(def.stats, { hp: k, atk: k, mag: k }) };
 }
+
+/** How many members stand in the formation, as a row of the party-size tables: one hero alone reads the 2-member row. */
+export type PartySize = 2 | 3 | 4 | 5;
+export const sizeOf = (n: number): PartySize => Math.min(5, Math.max(2, Math.round(n))) as PartySize;
+/**
+ * Enemy hp / atk / mag multiplier by party size (spec 9.4 point 1, `0.4 + 0.12n`). Each row is its own knob; the full
+ * party's row is fixed at 1 so a five-member fight plays exactly as it was tuned.
+ */
+export const PARTY_SCALE: Record<PartySize, number> = { 2: 0.64, 3: 0.76, 4: 0.88, 5: 1 };
+/** The most enemies in an ordinary group by party size (spec 9.4 point 2, `n + 1`). */
+export const GROUP_CAP: Record<PartySize, number> = { 2: 3, 3: 4, 4: 5, 5: 6 };
+/** Overrides GROUP_CAP at depth 1 only; empty today. */
+export const FIRST_DEPTH_CAP: Partial<Record<PartySize, number>> = {};
+export const partyScale = (n: number): number => PARTY_SCALE[sizeOf(n)];
+export const groupCap = (n: number, depth: number): number => (depth === 1 ? FIRST_DEPTH_CAP[sizeOf(n)] : undefined) ?? GROUP_CAP[sizeOf(n)];
 
 /** The ordinary monsters: every one but the boss (eight today; spec §3.7's "nine" counts the boss). */
 export const NORMAL_ENEMIES: string[] = Object.values(ENEMIES).filter((e) => !e.boss).map((e) => e.id);

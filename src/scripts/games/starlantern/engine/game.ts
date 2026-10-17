@@ -702,9 +702,9 @@ export class Game {
     return { kind: 'chest', item, qty, ...this.offerGear(id, gear) };
   }
 
-  private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string): void {
+  private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string, extra = 0): void {
     const scale = scaled && this.run ? { depth: this.floor, region: this.run.region, condition: this.run.condition, elite } : undefined;
-    this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs });
+    this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs, extra });
     planEnemies(this.battle, this.rng);
     this.phase = 'battle';
   }

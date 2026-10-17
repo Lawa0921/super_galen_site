@@ -5,7 +5,7 @@ import { ULTIMATES } from '../data/ultimates';
 import { ENEMIES } from '../data/enemies';
 import { activeIds, newParty, powersOf, sheetOf } from './party';
 import { applyEffect } from './skills';
-import { depthLevel, encounterTable, homeLevel } from './scaling';
+import { GROUP_CAP, depthLevel, encounterTable, homeLevel, mul, partyScale } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { choose, partyAt } from './sim';
 import { dealDamage, type BattleEvent } from './combatant';
@@ -553,5 +553,52 @@ describe('a full party fights exactly as before', () => {
     const got = Object.fromEntries(runs().map((r) => [r.key, [r.outcome, r.rounds, r.hash]]));
     if (process.env.CAPTURE) console.log('BASELINE=' + JSON.stringify(got));
     expect(got).toEqual(BASELINE);
+  });
+});
+
+describe('enemies scale with the party size', () => {
+  const withMembers = (n: number, hurt = 0) => {
+    const p = partyAt(depthLevel(4));
+    let kept = 0;
+    p.grid = p.grid.map((id) => (id && kept++ < n ? id : null));
+    activeIds(p).slice(0, hurt).forEach((id) => { p.roster[id].hp = 0; });
+    return p;
+  };
+  const fight = (party: ReturnType<typeof partyAt>, enemyIds: string[], extra: Record<string, unknown> = {}) =>
+    createBattle({ party, enemyIds, boss: false, inventory: {}, revealed: {}, scale: { depth: 4, region: 'mainline' }, ...extra });
+  const group4 = ['wolf', 'wolf', 'wolf', 'wolf'];
+
+  it('two members face weaker enemies', () => {
+    const k = partyScale(2);
+    const full = fight(withMembers(5), ['wolf', 'wolf']);
+    const two = fight(withMembers(2), ['wolf', 'wolf']);
+    expect(two.partyScale).toBe(k);
+    expect(full.partyScale).toBeUndefined();
+    for (const key of Object.keys(full.enemyDefs!)) {
+      expect(two.enemyDefs![key].stats).toEqual(mul(full.enemyDefs![key].stats, { hp: k, atk: k, mag: k }));
+    }
+    expect(two.enemies[0].max.hp).toBe(two.enemyDefs!.e0.stats.hp);
+  });
+
+  it('a downed member still counts', () => {
+    expect(fight(withMembers(2, 1), ['wolf']).partyScale).toBe(partyScale(2));
+  });
+
+  it('a lone hero reads the two-member row', () => {
+    expect(fight(withMembers(1), ['wolf']).partyScale).toBe(partyScale(2));
+  });
+
+  it('the group is trimmed to groupCap', () => {
+    expect(fight(withMembers(2), group4).enemies).toHaveLength(GROUP_CAP[2]);
+    expect(fight(withMembers(2), group4, { extra: 1 }).enemies).toHaveLength(GROUP_CAP[2] + 1);
+    expect(fight(withMembers(5), group4).enemies).toHaveLength(4);
+  });
+
+  it('a boss fight is scaled but never trimmed', () => {
+    const ids = ['lanterneater', 'wolf', 'wolf', 'wolf'];
+    const full = createBattle({ party: withMembers(5), enemyIds: ids, boss: true, inventory: {}, revealed: {}, depth: 3 });
+    const two = createBattle({ party: withMembers(2), enemyIds: ids, boss: true, inventory: {}, revealed: {}, depth: 3 });
+    expect(two.enemies).toHaveLength(4);
+    expect(two.enemies[0].max.hp).toBe(mul(full.enemies[0].max, { hp: partyScale(2) }).hp);
   });
 });

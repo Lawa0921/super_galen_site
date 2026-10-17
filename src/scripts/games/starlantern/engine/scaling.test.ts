@@ -6,7 +6,7 @@ import { REGIONS, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
 import { expToNext, newParty } from './party';
 import { mulberry32 } from './rng';
-import { DEPTH_CLEAR_SHARE, ENEMY_POWER, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, scaleEnemy } from './scaling';
+import { DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy } from './scaling';
 import { constRng } from './testing';
 
 const MAIN = REGIONS.mainline;
@@ -303,5 +303,33 @@ describe('ENEMY_POWER', () => {
     expect([deep.max.hp, deep.max.atk, deep.max.def]).toEqual([Math.round(sc.hp * kd), Math.round(sc.atk * kd), sc.def]);
     // A floor-1 monster at home is untouched.
     expect(at(['slime']).max).toEqual(ENEMIES.slime.stats);
+  });
+});
+
+describe('the party-size tables', () => {
+  it('are sane per size', () => {
+    expect(PARTY_SCALE[5]).toBe(1);
+    const sizes = [2, 3, 4, 5] as const;
+    for (const n of sizes) { expect(PARTY_SCALE[n]).toBeGreaterThan(0); expect(PARTY_SCALE[n]).toBeLessThanOrEqual(1); }
+    for (let i = 1; i < sizes.length; i++) {
+      expect(PARTY_SCALE[sizes[i]]).toBeGreaterThanOrEqual(PARTY_SCALE[sizes[i - 1]]);
+      expect(GROUP_CAP[sizes[i]]).toBeGreaterThanOrEqual(GROUP_CAP[sizes[i - 1]]);
+    }
+    expect(partyScale(1)).toBe(partyScale(2));
+    expect(partyScale(9)).toBe(partyScale(5));
+  });
+});
+
+describe('groupCap reads the first-depth override only at depth 1', () => {
+  it('overrides depth 1 and nothing else', () => {
+    const before = FIRST_DEPTH_CAP[2];
+    FIRST_DEPTH_CAP[2] = 2;
+    try {
+      expect(groupCap(2, 1)).toBe(2);
+      expect(groupCap(2, 2)).toBe(GROUP_CAP[2]);
+      expect(groupCap(3, 1)).toBe(GROUP_CAP[3]);
+    } finally {
+      if (before === undefined) delete FIRST_DEPTH_CAP[2]; else FIRST_DEPTH_CAP[2] = before;
+    }
   });
 });
