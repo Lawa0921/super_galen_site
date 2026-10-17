@@ -9,8 +9,10 @@ import { autostartPlan, newWorldPlan, helpSeen, HELP_KEY } from './model';
 
 const SLOT = 'main';
 
+/** debug / e2e 鉤（唯一的型別宣告；tests/e2e/delve.spec.ts 也用這個） */
+export interface DelveDebug { game: DelveGame; handle: DelveHandle; save: () => Promise<void> }
 declare global {
-  interface Window { __delveDebug?: { game: DelveGame; handle: DelveHandle; save: () => Promise<void> } }
+  interface Window { __delveDebug?: DelveDebug }
 }
 
 function randomSeed(): string {

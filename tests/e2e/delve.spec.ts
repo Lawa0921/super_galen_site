@@ -4,9 +4,8 @@ import { test, expect, type Page } from '@playwright/test';
  * DELVE 深掘 — 2D 沙盒 E2E 煙霧測試（Canvas2D；僅 chromium）。
  * 透過 window.__delveDebug 讀寫引擎狀態。
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-type Dbg = { game: any; handle: any; save: () => Promise<void> };
-declare global { interface Window { __delveDebug?: Dbg } }
+// window.__delveDebug 的型別宣告在 session.ts（DelveDebug，全域唯一一份）
+import type {} from '../../src/scripts/games/delve/render/session';
 
 async function waitGame(page: Page): Promise<void> {
   await page.waitForFunction(() => Boolean(window.__delveDebug?.game), undefined, { timeout: 30000 });
@@ -166,10 +165,10 @@ test.describe('delve', () => {
     await waitGame(page);
     const before = await page.evaluate(() => {
       const g = window.__delveDebug!.game;
-      const cabin = g.structures.find((s: { kind: string }) => s.kind === 'cabin');
-      g.teleport(cabin.chest.x + 1, cabin.chest.y);
-      g.setAim(cabin.chest.x, cabin.chest.y);
-      const slots = g.world.chests.get(g.world.idx(cabin.chest.x, cabin.chest.y));
+      const ch = g.structures.find((s: { kind: string }) => s.kind === 'cabin')!.chest!;
+      g.teleport(ch.x + 1, ch.y);
+      g.setAim(ch.x, ch.y);
+      const slots = g.world.chests.get(g.world.idx(ch.x, ch.y))!;
       return { n: slots.filter((s: unknown) => s).length, first: slots[0] };
     });
     expect(before.n).toBeGreaterThan(0);
@@ -178,10 +177,10 @@ test.describe('delve', () => {
     await page.evaluate(() => window.__delveDebug!.game.setUse(false));
     await expect(page.locator('#delve-inv')).toBeVisible();
     await expect(page.locator('#delve-chest-grid .delve-slot')).toHaveCount(20);
-    const has0 = await page.evaluate((it) => window.__delveDebug!.game.inventory.count(it), before.first.item);
+    const has0 = await page.evaluate((it) => window.__delveDebug!.game.inventory.count(it), before.first!.item);
     await page.click('#delve-chest-takeall');
-    await expect.poll(() => page.evaluate((it) => window.__delveDebug!.game.inventory.count(it), before.first.item)).toBeGreaterThan(has0);
-    expect(await page.evaluate(() => window.__delveDebug!.game.chestSlots().every((s: unknown) => s === null))).toBe(true);
+    await expect.poll(() => page.evaluate((it) => window.__delveDebug!.game.inventory.count(it), before.first!.item)).toBeGreaterThan(has0);
+    expect(await page.evaluate(() => window.__delveDebug!.game.chestSlots()!.every((s: unknown) => s === null))).toBe(true);
     await page.click('#delve-chest-close');
     await expect(page.locator('#delve-chest')).toBeHidden();
   });
@@ -247,9 +246,9 @@ test.describe('delve', () => {
     await waitGame(page);
     /** 傳送到門旁（自由區那側）並回傳門中段 tile 在畫面上的座標 */
     const nearDoor = (locked: boolean): Promise<{ x: number; y: number; sx: number; sy: number }> => page.evaluate(async (locked) => {
-      const d = window.__delveDebug!, g = d.game, w = g.world, dg = g.dungeon;
-      const door = locked ? dg.doors.find((q: { locked: boolean }) => q.locked)
-        : dg.doors.find((q: { x: number; y: number; locked: boolean }) => !q.locked && w.getFg(q.x, q.y) === 53 && w.getFg(q.x - 1, q.y + 2) === 0 && w.getFg(q.x - 2, q.y + 2) === 0 && w.isSolid(q.x - 1, q.y + 3));
+      const d = window.__delveDebug!, g = d.game, w = g.world, dg = g.dungeon!;
+      const door = (locked ? dg.doors.find((q: { locked: boolean }) => q.locked)
+        : dg.doors.find((q: { x: number; y: number; locked: boolean }) => !q.locked && w.getFg(q.x, q.y) === 53 && w.getFg(q.x - 1, q.y + 2) === 0 && w.getFg(q.x - 2, q.y + 2) === 0 && w.isSolid(q.x - 1, q.y + 3)))!;
       // 上鎖的門：站在不屬於上鎖房間的那一側
       let side = -1;
       if (locked) {
@@ -326,8 +325,8 @@ test.describe('delve', () => {
     await page.keyboard.press('KeyJ');
     await page.evaluate(() => {
       const d = window.__delveDebug!, g = d.game;
-      const c = g.structures.find((s: { kind: string; chest?: unknown }) => s.kind === 'cabin' && s.chest);
-      g.teleport(c.chest.x + 1, c.chest.y);
+      const c = g.structures.find((s: { kind: string; chest?: unknown }) => s.kind === 'cabin' && s.chest)!;
+      g.teleport(c.chest!.x + 1, c.chest!.y);
       d.handle.renderer.snapCamera();
     });
     await expect(page.locator('#delve-banner')).toHaveClass(/is-on/, { timeout: 5000 });
@@ -504,10 +503,10 @@ test.describe('delve', () => {
     await page.evaluate(() => { const g = window.__delveDebug!.game; g.time = 600 * 0.9; g.summonBoss(); });
     await expect(page.locator('#delve-boss')).toBeVisible();
     await expect(page.locator('#delve-boss-name')).toContainText('燈脈守望者');
-    await page.evaluate(() => { const g = window.__delveDebug!.game, b = g.bossEnemy(); g.debugDamage(b.id, b.maxHp * 0.6); });
+    await page.evaluate(() => { const g = window.__delveDebug!.game, b = g.bossEnemy()!; g.debugDamage(b.id, b.maxHp * 0.6); });
     await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.getState().boss?.phase)).toBe(2);
     await page.waitForTimeout(1600); // 碎籠無敵結束
-    await page.evaluate(() => { const g = window.__delveDebug!.game, b = g.bossEnemy(); g.debugDamage(b.id, b.maxHp); });
+    await page.evaluate(() => { const g = window.__delveDebug!.game, b = g.bossEnemy()!; g.debugDamage(b.id, b.maxHp); });
     await expect(page.locator('#delve-boss')).toBeHidden();
     expect(await page.evaluate(() => window.__delveDebug!.game.getState().bossesDefeated)).toEqual(['lantern_warden']);
     await page.keyboard.press('KeyJ');
@@ -566,7 +565,7 @@ test.describe('delve liquids', () => {
   }
   const hold = (page: Page, item: string): Promise<void> => page.evaluate((item) => {
     const g = window.__delveDebug!.game;
-    g.give(item, 1);
+    g.give(item as never, 1);
     const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === item);
     g.inventory.swap(i, 0); g.selectSlot(0);
   }, item);
