@@ -411,8 +411,8 @@ describe('keystones in battle', () => {
 
   it('a fight with no keystones replays the pre-change baseline', () => {
     // Recorded at 625b4e16, before keystones reached the battle code (plan 5b Task 10, Step 0). Lv20 has 8 talent points,
-    // under KEYSTONE_GATE, so nobody holds a keystone. Re-recorded 2026-10-17 on top of 7d596da7, after plan 5c Task 4
-    // gave ENEMY_POWER its deep step and ramp (the d5 enemies are Lv18): the same no-keystone code path against stronger
+    // under KEYSTONE_GATE, so nobody holds a keystone. Re-recorded 2026-10-17 in 21867eb3, under the ENEMY_POWER shape that
+    // plan 5c Task 4 settled on there (a deep step from Lv12 plus a small ramp; the d5 enemies are Lv18): the same no-keystone code path against stronger
     // enemies. A keystone reaching this fight changes TP, damage or heals, and so the replay.
     const party = partyAt(20);
     expect(Object.values(party.roster).every((m) => keystonesOf(m).length === 0)).toBe(true);
