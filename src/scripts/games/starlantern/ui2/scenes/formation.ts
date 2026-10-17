@@ -1,7 +1,7 @@
 import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
 import { MAX_ACTIVE, ROWS, rowOfCell } from '../../engine/formation';
-import { activeIds, setFormation } from '../../engine/party';
+import { activeIds } from '../../engine/party';
 import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
@@ -88,7 +88,8 @@ export class FormationScene implements Scene {
     const p = this.ctx.game.state.party;
     const where = (id: CharacterId) => { const j = this.grid.indexOf(id); return j < 0 ? T.ui2.formation.reserve : T.ui2.rows[rowOfCell(j)]; };
     const items: MenuItem[] = p.recruited.map((id) => ({ id, label: CHARACTERS[id].name, right: where(id), icon: this.ctx.art.has(art.portrait(id, 'normal')) ? art.portrait(id, 'normal') : undefined }));
-    if (this.grid[this.cursor]) items.push({ id: '', label: T.ui2.formation.remove });
+    const here = this.grid[this.cursor];
+    if (here && here !== 'hero') items.push({ id: '', label: T.ui2.formation.remove });
     this.ctx.sfx.confirm();
     this.pickView = new MenuView(new Menu(items), {
       pick: (it) => { this.closePick(); this.place((it.id || null) as CharacterId | null); },
@@ -117,13 +118,12 @@ export class FormationScene implements Scene {
       if (j >= 0) g[j] = g[i];
       g[i] = id;
     }
-    const r = setFormation(this.ctx.game.state.party, g);
+    const r = this.ctx.game.setFormation(g);
     if (!r.ok) {
       this.ctx.sfx.error();
       this.msg.textContent = T.reasons[r.reason] ?? T.reasons.invalid;
       return;
     }
-    this.ctx.game.state.party = r.party;
     this.msg.textContent = '';
     this.ctx.sfx.confirm();
     this.render();

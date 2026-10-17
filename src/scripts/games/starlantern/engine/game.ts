@@ -13,7 +13,7 @@ import { applyAutoJunk, BAG_SIZE, mintUid } from './loot/bag';
 import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMaterial, type DropCtx } from './loot/drops';
 import { itemWeight, type DropSource } from './loot/item';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
-import { activeIds, awardExp, hasPassive, START_LINEUP, statsOf, type LevelUp } from './party';
+import { activeIds, awardExp, hasPassive, setFormation, START_LINEUP, statsOf, type LevelUp, type SetFormationFail } from './party';
 import { raiseNode, raiseTalent, type RaiseFail, type TalentFail } from './progression';
 import { pick, type Rng } from './rng';
 import { depthClearExp, depthLevel, encounterGroup } from './scaling';
@@ -538,6 +538,19 @@ export class Game {
     if (!r.ok) return r;
     const party = this.state.party;
     this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
+    if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    return { ok: true };
+  }
+
+  /**
+   * A new formation (the rules: party `setFormation`, which keeps the hero on the field). Saved like `raiseNode`: at once
+   * in town; in the labyrinth it counts at once and is saved at the next town save.
+   */
+  setFormation(grid: (CharacterId | null)[]): { ok: true } | { ok: false; reason: SetFormationFail | 'invalid' } {
+    if (this.phase !== 'town' && this.phase !== 'map') return { ok: false, reason: 'invalid' };
+    const r = setFormation(this.state.party, grid);
+    if (!r.ok) return r;
+    this.state = { ...this.state, party: r.party };
     if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return { ok: true };
   }

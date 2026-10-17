@@ -61,6 +61,8 @@ function isValid(d: Record<string, unknown>): boolean {
   const placed = (p.grid as unknown[]).filter((x) => x !== null);
   if (!placed.length || placed.length > MAX_ACTIVE) return false;
   if (new Set(placed).size !== placed.length || placed.some((x) => !(p.recruited as unknown[]).includes(x))) return false;
+  // The hero always takes the field: recruited, and standing on the grid.
+  if (!(p.recruited as unknown[]).includes('hero') || !placed.includes('hero')) return false;
   if (!Array.isArray(d.bag) || d.bag.length > BAG_SIZE || !d.bag.every(isItem)) return false;
   if (!Number.isSafeInteger(d.nextUid) || (d.nextUid as number) < 1 || (d.nextUid as number) > MAX_UID) return false;
   if (!Number.isSafeInteger(d.forgeDraws) || (d.forgeDraws as number) < 0 || (d.forgeDraws as number) > MAX_UID) return false;

@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
-import { recruit, LEGACY_LINEUP } from '../../engine/party';
+import { recruit, LEGACY_GRID, partyWith } from '../../engine/party';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { FormationScene } from './formation';
 
 function setup(prep?: (g: Game) => void) {
-  const game = new Game(constRng(0.5), null, undefined, 0, LEGACY_LINEUP);
+  const game = new Game(constRng(0.5), null);
+  // The legacy five with the hero (洛恩) in Scarlet's cell: the hero always takes the field.
+  game.state.party = partyWith(['hero', 'chizuru', 'liz', 'noel', 'selene'], 'front', LEGACY_GRID.map((c) => (c === 'scarlet' ? 'hero' : c)));
   prep?.(game);
   const go = vi.fn();
   const root = document.createElement('div');
@@ -25,7 +27,7 @@ describe('FormationScene', () => {
   it('shows the 3x3 grid front row first, with the count and the rules', () => {
     const { root, cell } = setup();
     expect(root.querySelectorAll('[data-cell]')).toHaveLength(9);
-    expect(cell(0).textContent).toContain('絲嘉蕾');
+    expect(cell(0).textContent).toContain('洛恩');
     expect(cell(4).textContent).toContain('空位');
     expect(cell(8).textContent).toContain('瑟蕾');
     expect(root.querySelector('.slx-formation-count')!.textContent).toBe('上陣 5／5');
@@ -56,7 +58,7 @@ describe('FormationScene', () => {
     cell(0).click();
     pick('瑟蕾');
     expect(game.state.party.grid[0]).toBe('selene');
-    expect(game.state.party.grid[8]).toBe('scarlet');
+    expect(game.state.party.grid[8]).toBe('hero');
   });
 
   it('refuses a sixth member and can take someone off the field', () => {
@@ -65,10 +67,27 @@ describe('FormationScene', () => {
     pick('波比');
     expect(game.state.party.grid[4]).toBeNull();
     expect(root.querySelector('.slx-formation-msg')!.textContent).toBe('最多只能 5 人上陣');
-    cell(0).click();
+    cell(2).click();
     pick('移出隊伍');
-    expect(game.state.party.grid[0]).toBeNull();
+    expect(game.state.party.grid[2]).toBeNull();
     expect(root.querySelector('.slx-formation-count')!.textContent).toBe('上陣 4／5');
+  });
+
+  it("the hero's cell offers no remove", () => {
+    const { root, cell } = setup();
+    cell(0).click();
+    const labels = [...root.querySelectorAll('.slx-formation-pick [role=option] .slx-label')].map((x) => x.textContent);
+    expect(labels).toContain('洛恩');
+    expect(labels).not.toContain('移出隊伍');
+    cell(1).click();   // a cell beside the hero still offers it
+  });
+
+  it('a refused formation shows the reason', () => {
+    const { game, root, cell, pick } = setup((g) => { g.state.party = recruit(g.state.party, 'bobby'); });
+    cell(0).click();
+    pick('波比');   // bobby takes the hero's cell: the hero is off the field
+    expect(game.state.party.grid[0]).toBe('hero');
+    expect(root.querySelector('.slx-formation-msg')!.textContent).toBe('洛恩必須出戰');
   });
 
   it('goes back to where it came from', () => {

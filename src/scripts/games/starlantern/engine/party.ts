@@ -154,15 +154,19 @@ export function activeIds(p: Party): CharacterId[] {
 
 export { rowOfCell } from './formation';
 
+export type SetFormationFail = 'size' | 'not-recruited' | 'duplicate' | 'empty' | 'too-many' | 'no-hero';
+
+/** The hero always takes the field: a formation without them is refused (`no-hero`, checked last). */
 export function setFormation(
   p: Party, grid: (CharacterId | null)[],
-): { ok: true; party: Party } | { ok: false; reason: 'size' | 'not-recruited' | 'duplicate' | 'empty' | 'too-many' } {
+): { ok: true; party: Party } | { ok: false; reason: SetFormationFail } {
   if (grid.length !== GRID_SIZE) return { ok: false, reason: 'size' };
   const ids = grid.filter((id): id is CharacterId => id !== null);
   if (ids.some((id) => !p.recruited.includes(id))) return { ok: false, reason: 'not-recruited' };
   if (new Set(ids).size !== ids.length) return { ok: false, reason: 'duplicate' };
   if (ids.length === 0) return { ok: false, reason: 'empty' };
   if (ids.length > MAX_ACTIVE) return { ok: false, reason: 'too-many' };
+  if (!ids.includes('hero')) return { ok: false, reason: 'no-hero' };
   return { ok: true, party: { ...p, grid: [...grid] } };
 }
 

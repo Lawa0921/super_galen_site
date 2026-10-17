@@ -95,7 +95,7 @@ export const T = {
   departTo: (n: number, name: string) => `前往第 ${n} 層：${name}`,
   reasons: {
     gold: '金錢不足', full: '背包已滿', locked: '尚未解鎖', stock: '數量不足', invalid: '無法執行', phase: '現在不能這麼做',
-    'party-down': '出戰成員全部倒下，無法出發', size: '編隊格數錯誤', 'not-recruited': '尚未招募',
+    'party-down': '出戰成員全部倒下，無法出發', size: '編隊格數錯誤', 'not-recruited': '尚未遇見', 'no-hero': '洛恩必須出戰',
     duplicate: '同一人不能重複上陣', empty: '至少要有一人出戰', 'too-many': '最多只能 5 人上陣',
     mats: '素材不足', max: '已經強化到最高了', affixLocked: '這件裝備的重鑄已鎖定在標著（重鑄鎖定）的詞綴，其他詞綴不可重鑄', none: '沒有可以換的詞綴',
   } as Record<string, string>,

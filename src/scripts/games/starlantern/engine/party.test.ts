@@ -130,8 +130,8 @@ describe('formation', () => {
     expect(Object.keys(p.roster)).toHaveLength(CHARACTER_IDS.length);
   });
   it('places members anywhere, front row first in reading order', () => {
-    const r = setFormation(fullParty(LEGACY_LINEUP), [null, 'scarlet', null, 'noel', null, null, null, null, 'liz']);
-    expect(r.ok && activeIds(r.party)).toEqual(['scarlet', 'noel', 'liz']);
+    const r = setFormation(fullParty(), [null, 'hero', null, 'noel', null, null, null, null, 'chizuru']);
+    expect(r.ok && activeIds(r.party)).toEqual(['hero', 'noel', 'chizuru']);
     expect(rowOfCell(0)).toBe('front');
     expect(rowOfCell(4)).toBe('middle');
     expect(rowOfCell(8)).toBe('back');
@@ -144,6 +144,23 @@ describe('formation', () => {
     expect(setFormation(p, g('liz', 'liz'))).toEqual({ ok: false, reason: 'duplicate' });
     expect(setFormation(p, g())).toEqual({ ok: false, reason: 'empty' });
     expect(setFormation(p, g('scarlet', 'chizuru', 'liz', 'noel', 'selene', 'bobby'))).toEqual({ ok: false, reason: 'too-many' });
+  });
+  it('the hero cannot leave the field', () => {
+    const p = recruit(fullParty(), 'bobby');
+    const h = p.grid.indexOf('hero');
+    const off = [...p.grid]; off[h] = null;
+    expect(setFormation(p, off)).toEqual({ ok: false, reason: 'no-hero' });
+    const swapped = [...p.grid]; swapped[h] = 'bobby';
+    expect(setFormation(p, swapped)).toEqual({ ok: false, reason: 'no-hero' });
+    const moved = [...p.grid]; moved[h] = null; moved[4] = 'hero';
+    expect(setFormation(p, moved).ok).toBe(true);
+  });
+  it('empty and too-many still win over no-hero', () => {
+    const p = recruit(fullParty(LEGACY_LINEUP), 'bobby');
+    const g = (...ids: (string | null)[]) => [...ids, ...Array(9 - ids.length).fill(null)] as never;
+    expect(setFormation(p, g())).toEqual({ ok: false, reason: 'empty' });
+    expect(setFormation(p, g('scarlet', 'chizuru', 'liz', 'noel', 'selene', 'bobby'))).toEqual({ ok: false, reason: 'too-many' });
+    expect(setFormation(p, g('scarlet', 'liz'))).toEqual({ ok: false, reason: 'no-hero' });
   });
   it('recruits once', () => {
     const p = recruit(fullParty(LEGACY_LINEUP), 'bobby');

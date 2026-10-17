@@ -45,6 +45,19 @@ describe('save', () => {
     saveGame(st, g);
     expect(loadGame(st)).toEqual({ status: 'corrupt' });
   });
+  it('a save without the hero on the field, or not recruited, is corrupt', () => {
+    const bad = (mut: (g: ReturnType<typeof newGame>) => void) => {
+      const g = newGame();
+      mut(g);
+      const st = memoryStorage();
+      saveGame(st, g);
+      return loadGame(st).status;
+    };
+    expect(bad(() => {})).toBe('ok');
+    expect(bad((g) => { g.party.grid = g.party.grid.map((c) => (c === 'hero' ? null : c)); })).toBe('corrupt');
+    expect(bad((g) => { g.party.grid = g.party.grid.map((c) => (c === 'hero' ? 'rin' : c === 'rin' ? null : c)); })).toBe('corrupt');
+    expect(bad((g) => { g.party.recruited = g.party.recruited.filter((id) => id !== 'hero'); g.party.grid = g.party.grid.map((c) => (c === 'hero' ? null : c)); g.party.grid[8] = 'rin'; })).toBe('corrupt');
+  });
   it('rejects structurally broken saves', () => {
     const g = newGame() as unknown as { party: { roster: Record<string, unknown> } };
     delete g.party.roster.bobby;

@@ -8,7 +8,7 @@ import { validPortals } from './portals';
 import { DELTA, posKey, tileAt, type Dir } from './map';
 import { floorOf, type Portal } from './dungeon/run';
 import { capacity, carried, weightOf } from '../data/weights';
-import type { Pos } from './types';
+import type { CharacterId, Pos } from './types';
 import { ENEMIES } from '../data/enemies';
 import { CHARACTERS } from '../data/characters';
 import { SETS } from '../data/gear';
@@ -30,11 +30,13 @@ vi.mock('./loot/drops', async (importOriginal) => {
   return { ...mod, rollBossGear: vi.fn(mod.rollBossGear) };
 });
 
+/** The legacy five with the hero in Scarlet's place: a save needs the hero on the field. */
+const HERO_LINEUP: CharacterId[] = ['hero', 'chizuru', 'liz', 'noel', 'selene'];
 const calm = () => constRng(0.99); // step gain 12 on floor 1, never rolls an early encounter
 const MAIN: Portal = { region: 'mainline', condition: 'plain' };
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 const inMap = (floor = 1, rng = calm(), storage = memoryStorage()) => {
-  const g = new Game(rng, storage, undefined, 0, LEGACY_LINEUP);
+  const g = new Game(rng, storage, undefined, 0, HERO_LINEUP);
   g.state.dungeon.reached.mainline = 3;
   expect(g.depart(MAIN, floor)).toEqual({ ok: true });
   return g;
@@ -210,7 +212,7 @@ describe('moving', () => {
   });
   it('descending past MAX_REACHED keeps reached capped, pays no exp, and the save still loads', () => {
     const st = memoryStorage();
-    const g = new Game(calm(), st, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(calm(), st, undefined, 0, HERO_LINEUP);
     g.state.dungeon.reached.mainline = MAX_REACHED;
     expect(g.depart(MAIN, MAX_REACHED)).toEqual({ ok: true });
     const exp = JSON.stringify(g.state.party);
@@ -287,7 +289,7 @@ describe('battles', () => {
     expect(g.phase).toBe('map');
     expect(g.battle).toBeNull();
     expect([g.state.gold, g.run!.loot.gold]).toEqual([gold, r.end!.gold]);
-    const sc = g.state.party.roster.scarlet; // a floor-1 fight gives < 60 exp, so at most one level-up (15 exp)
+    const sc = g.state.party.roster.hero; // a floor-1 fight gives < 60 exp, so at most one level-up (15 exp)
     expect(sc.exp + (sc.level - 1) * 15).toBe(r.end!.exp);
   });
   it('keeps fighting while the outcome is open', () => {
@@ -313,7 +315,7 @@ describe('battles', () => {
   });
   it('portals are rerolled on return and kept across a save and reload', () => {
     const storage = memoryStorage();
-    const g = new Game(mulberry32(5), storage, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(mulberry32(5), storage, undefined, 0, HERO_LINEUP);
     expect(validPortals(g.state.dungeon.portals)).toBe(true);
     const seen = new Set([JSON.stringify(g.state.dungeon.portals)]);
     g.state.inventory['return-lamp'] = 20;
@@ -448,19 +450,19 @@ describe('battles', () => {
 describe('inn', () => {
   it('saves after resting', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
     expect(g.rest().ok).toBe(true);
     expect(g.notice).toBe('saved');
     expect(storage.map.has(SAVE_KEY)).toBe(true);
   });
   it('reports a failed save without losing the rest', () => {
-    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, HERO_LINEUP);
     expect(g.rest().ok).toBe(true);
     expect([g.notice, g.state.gold]).toEqual(['save-failed', 130]);
   });
   it('refuses to rest outside town, and saves nothing', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
     expect(g.depart(MAIN, 1)).toEqual({ ok: true });
     const gold = g.state.gold;
     expect(g.rest()).toEqual({ ok: false, reason: 'invalid' });
@@ -468,7 +470,7 @@ describe('inn', () => {
   });
   it('does not save when the rest is refused', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
     g.state.gold = 0;
     expect(g.rest()).toEqual({ ok: false, reason: 'gold' });
     expect(storage.map.has(SAVE_KEY)).toBe(false);
@@ -1184,34 +1186,86 @@ describe('depth-clear exp', () => {
   });
 
 describe('respec', () => {
-  const spend = (g: Game) => { g.state.party.roster.scarlet.talents = { 'scarlet-t01': 1 }; };
+  const spend = (g: Game) => { g.state.party.roster.hero.talents = { 'hero-t01': 1 }; };
   it('saves the respec: a reload keeps the reset build and the gold taken', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
     spend(g);
     const gold = g.state.gold;
-    expect(g.respec('scarlet').ok).toBe(true);
+    expect(g.respec('hero').ok).toBe(true);
     expect(g.notice).toBe('saved');
     const back = Game.boot(calm(), storage);
-    expect(back.state.party.roster.scarlet.talents).toEqual({});
+    expect(back.state.party.roster.hero.talents).toEqual({});
     expect(back.state.gold).toBe(gold - 25);
   });
   it('is refused outside town and then changes nothing', () => {
     const g = inMap();
     spend(g);
     const gold = g.state.gold;
-    expect(g.respec('scarlet')).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.respec('hero')).toEqual({ ok: false, reason: 'invalid' });
     expect(g.state.gold).toBe(gold);
-    expect(g.state.party.roster.scarlet.talents).toEqual({ 'scarlet-t01': 1 });
+    expect(g.state.party.roster.hero.talents).toEqual({ 'hero-t01': 1 });
   });
 });
+});
+
+describe('setFormation', () => {
+  const swapIn = (g: Game) => {
+    g.state.party = recruit(g.state.party, 'bobby');
+    return g.state.party.grid;
+  };
+  it('saves in town: the stored grid is the new one', () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, START_LINEUP);
+    const grid = [...swapIn(g)];
+    const h = grid.indexOf('hero');
+    const to = (h + 4) % 9;
+    grid[to] = grid[h]; grid[h] = null;
+    expect(g.setFormation(grid)).toEqual({ ok: true });
+    expect(g.state.party.grid).toEqual(grid);
+    const r = loadGame(storage);
+    expect(r.status === 'ok' && r.state.party.grid).toEqual(grid);
+  });
+  it('a hero-less formation changes and saves nothing, and says why', () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, START_LINEUP);
+    const before = [...g.state.party.grid];
+    const off = before.map((c) => (c === 'hero' ? null : c));
+    expect(g.setFormation(off)).toEqual({ ok: false, reason: 'no-hero' });
+    expect(g.state.party.grid).toEqual(before);
+    expect(storage.map.has(SAVE_KEY)).toBe(false);
+  });
+  it('reports a failed save without losing the formation', () => {
+    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, START_LINEUP);
+    const grid = [...g.state.party.grid];
+    const h = grid.indexOf('hero');
+    const to = (h + 4) % 9;
+    grid[to] = grid[h]; grid[h] = null;
+    expect(g.setFormation(grid)).toEqual({ ok: true });
+    expect([g.notice, g.state.party.grid]).toEqual(['save-failed', grid]);
+  });
+  it('in the labyrinth it counts at once but is not saved mid-run', () => {
+    const storage = memoryStorage();
+    const g = inMap(1, calm(), storage);
+    const grid = [...g.state.party.grid];
+    const h = grid.indexOf('hero');
+    grid[h] = null; grid[4] = 'hero';
+    expect(g.setFormation(grid)).toEqual({ ok: true });
+    expect(g.state.party.grid).toEqual(grid);
+    expect([g.notice, storage.map.has(SAVE_KEY)]).toEqual([null, false]);
+  });
+  it('is invalid outside town and the labyrinth', () => {
+    const g = new Game(calm(), null, undefined, 0, START_LINEUP);
+    g.phase = 'battle';
+    expect(g.setFormation([...g.state.party.grid])).toEqual({ ok: false, reason: 'invalid' });
+  });
 });
 
 describe('spending a skill point', () => {
   const lv2 = (g: Game) => { g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 2 }; };
   it('saves the spend in town: a reload keeps the new rank', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
     lv2(g);
     expect(g.raiseNode('noel', 'ice-star')).toEqual({ ok: true });
     expect(g.state.party.roster.noel.tree).toEqual({ 'fire-star': 1, 'ice-star': 1 });
@@ -1220,14 +1274,14 @@ describe('spending a skill point', () => {
     expect(back.state.party.roster.noel.tree).toEqual({ 'fire-star': 1, 'ice-star': 1 });
   });
   it('reports a failed save without losing the spend', () => {
-    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, HERO_LINEUP);
     lv2(g);
     expect(g.raiseNode('noel', 'ice-star')).toEqual({ ok: true });
     expect([g.notice, g.state.party.roster.noel.tree['ice-star']]).toEqual(['save-failed', 1]);
   });
   it('a refused spend changes and saves nothing, and says why', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
     expect(g.raiseNode('noel', 'ice-star')).toEqual({ ok: false, reason: 'points' });   // Lv1: no point yet
     lv2(g);
     expect(g.raiseNode('noel', 'flame-wave')).toEqual({ ok: false, reason: 'req' });
@@ -1249,7 +1303,7 @@ describe('spending a talent point', () => {
   const lv6 = (g: Game) => { g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 6 }; };
   it('saves the spend in town: a reload keeps the new rank', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
     lv6(g);
     expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: true });
     expect(g.state.party.roster.noel.talents).toEqual({ 'noel-t00': 1 });
@@ -1258,14 +1312,14 @@ describe('spending a talent point', () => {
     expect(back.state.party.roster.noel.talents).toEqual({ 'noel-t00': 1 });
   });
   it('reports a failed save without losing the spend', () => {
-    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, HERO_LINEUP);
     lv6(g);
     expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: true });
     expect([g.notice, g.state.party.roster.noel.talents['noel-t00']]).toEqual(['save-failed', 1]);
   });
   it('a refused spend changes and saves nothing, and says why', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
     expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: false, reason: 'points' });   // Lv1: no talent point yet
     lv6(g);
     expect(g.raiseTalent('noel', 'noel-t10')).toEqual({ ok: false, reason: 'adjacent' });
@@ -1296,7 +1350,7 @@ describe('forge actions', () => {
     affixes: [{ key: 'str', value: 5 }, { key: 'hp', value: 30 }, { key: 'spd', value: 2 }], ...over,
   });
   const stocked = (storage = memoryStorage()) => {
-    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
     g.state.gold = 1_000_000;
     g.state.bag = [item(1), item(2, { rarity: 'common', affixes: [] }), item(3, { rarity: 'common', affixes: [] }), item(4, { rarity: 'common', affixes: [] })];
     g.state.nextUid = 100;
