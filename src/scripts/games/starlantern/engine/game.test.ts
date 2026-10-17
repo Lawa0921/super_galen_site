@@ -12,7 +12,7 @@ import type { CharacterId, Pos } from './types';
 import { ENEMIES } from '../data/enemies';
 import { CHARACTERS } from '../data/characters';
 import { SETS } from '../data/gear';
-import { activeIds, gainExp, MAX_LEVEL, newMember, recruit, LEGACY_LINEUP, START_LINEUP } from './party';
+import { activeIds, gainExp, MAX_LEVEL, meet, newMember, recruit, LEGACY_LINEUP, START_LINEUP } from './party';
 import { depthClearExp, empower } from './scaling';
 import { CONDITIONS } from '../data/conditions';
 import { BAG_SIZE } from './loot/bag';
@@ -1454,5 +1454,47 @@ describe('forge actions', () => {
     g.state.gold = 0;
     expect(g.enhance(1)).toEqual({ ok: false, reason: 'gold' });
     expect([g.notice, storage.map.size]).toEqual([null, 0]);
+  });
+});
+
+describe('rescues on a run', () => {
+  const twoStart = () => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, ['hero', 'rin']);
+    g.state.dungeon.reached.mainline = 3;
+    return g;
+  };
+  it('a run carries the rescues of the companions not yet met', () => {
+    const g = twoStart();
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.run!.rescues).toEqual({ 2: 'selene', 6: 'bobby' });
+    expect(g.returnToTown()).toBe(true);
+    g.state.party = meet(g.state.party, 'selene', 1);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.run!.rescues).toEqual({ 6: 'bobby' });
+  });
+  it("a met companion's room never comes back", () => {
+    const g = twoStart();
+    g.state.party = meet(g.state.party, 'selene', 1);
+    g.depart(MAIN, 1);
+    expect(floorOf(g.run!, 2).contents.some((c) => c.kind === 'rescue')).toBe(false);
+  });
+  it('a region without a waiting companion has no rescues', () => {
+    const g = twoStart();
+    g.state.dungeon.reached.frost = 1;
+    expect(g.depart({ region: 'frost', condition: 'plain' }, 1)).toEqual({ ok: true });
+    expect(g.run!.rescues).toEqual({ 3: 'chizuru' });
+  });
+  it('stepping on a rescue tile is plain floor for now', () => {
+    const g = twoStart();
+    g.depart(MAIN, 2);
+    const at = floorOf(g.run!, 2).contents.find((c) => c.kind === 'rescue')!.at;
+    expect(stepOnto(g, at).kind).toBe('moved');
+    expect(g.phase).toBe('map');
+  });
+  it('the gates after a trip home favour regions with someone unmet', () => {
+    const g = twoStart();
+    g.depart(MAIN, 1);
+    g.returnToTown();
+    expect(validPortals(g.state.dungeon.portals)).toBe(true);
   });
 });

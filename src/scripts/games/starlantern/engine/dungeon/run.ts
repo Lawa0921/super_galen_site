@@ -2,9 +2,9 @@ import { CONDITIONS, type ConditionId } from '../../data/conditions';
 import { REGIONS, type RegionId } from '../../data/regions';
 import type { FloorMap } from '../map';
 import { mulberry32 } from '../rng';
-import type { BuffStat, ItemInstance } from '../types';
+import type { BuffStat, CharacterId, ItemInstance } from '../types';
 import { genFloor } from './gen';
-import { fillRooms, type Content } from './rooms';
+import { fillRooms, placeRescue, type Content } from './rooms';
 
 /** A gate's destination: where it leads and the run condition there. */
 export interface Portal { region: RegionId; condition: ConditionId }
@@ -34,12 +34,14 @@ export interface Run {
   altarBuffs: { stat: BuffStat; pct: number }[];
   /** Depths whose vault key the party holds. */
   keys: Set<number>;
+  /** Companions waiting to be rescued in this region, by the depth where they are met. */
+  rescues: Record<number, CharacterId>;
 }
 
-export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number): Run {
+export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number, rescues: Record<number, CharacterId> = {}): Run {
   return {
     seed, region, condition, startDepth, floors: new Map(), opened: new Set(), explored: {},
-    loot: { items: {}, gold: 0, gear: [] }, rolls: {}, gearRolls: {}, waiting: {}, lootDraws: 0, usedFountain: false, altarBuffs: [], keys: new Set(),
+    loot: { items: {}, gold: 0, gear: [] }, rolls: {}, gearRolls: {}, waiting: {}, lootDraws: 0, usedFountain: false, altarBuffs: [], keys: new Set(), rescues: { ...rescues },
   };
 }
 
@@ -66,6 +68,9 @@ export function startDepths(region: RegionId, reached: number): number[] {
 /** Seed of one floor: a fixed mix of the run seed and the depth. */
 const floorSeed = (seed: number, depth: number): number => (Math.imul(seed ^ 0x5bd1e995, 0x9e3779b1) + Math.imul(depth, 0x85ebca6b)) >>> 0;
 
+/** Salts the rescue's own rng, so placing a rescue room moves nothing else on the floor. */
+const RESCUE_SALT = 0x6a09e667;
+
 /** The floor at a depth of this run, generated on first visit and cached afterwards. */
 export function floorOf(run: Run, depth: number): RunFloor {
   const cached = run.floors.get(depth);
@@ -73,6 +78,8 @@ export function floorOf(run: Run, depth: number): RunFloor {
   const seed = floorSeed(run.seed, depth);
   const g = genFloor(seed, { depth, boss: isBossDepth(run.region, depth) });
   const f = fillRooms(g, mulberry32(seed ^ 0x27d4eb2f), CONDITIONS[run.condition]);
+  const who = run.rescues[depth];
+  if (who) placeRescue(f, g, mulberry32(seed ^ RESCUE_SALT), who);
   run.floors.set(depth, f);
   return f;
 }

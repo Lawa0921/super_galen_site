@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { floorOf, isBossDepth, newRun, startDepths, terrainOf } from './run';
+import { posKey, reachable } from '../map';
 import { chestHasGear, GEAR_CHANCE, lootRng } from '../loot/drops';
 
 describe('newRun', () => {
@@ -94,5 +95,50 @@ describe('loot randomness', () => {
     expect(run.lootDraws).toBe(0);
     expect(hits / 2000).toBeGreaterThan(GEAR_CHANCE.chest - 0.04);
     expect(hits / 2000).toBeLessThan(GEAR_CHANCE.chest + 0.04);
+  });
+});
+
+describe('rescue rooms', () => {
+  const rescueOf = (f: ReturnType<typeof floorOf>) => f.contents.filter((c) => c.kind === 'rescue');
+
+  it('a rescue room waits on the meeting depth', () => {
+    for (const seed of [3, 7, 11, 42, 99]) {
+      const f = floorOf(newRun(seed, 'mainline', 'plain', 1, { 2: 'selene' }), 2);
+      const rs = rescueOf(f);
+      expect(rs, `seed ${seed}`).toHaveLength(1);
+      expect(rs[0].who).toBe('selene');
+      expect(f.map.tiles[rs[0].at.y][rs[0].at.x]).toBe('rescue');
+      expect(reachable(f.map, f.map.entrance).has(posKey(rs[0].at))).toBe(true);
+    }
+  });
+
+  it('only the depth in the table gets one', () => {
+    const run = newRun(7, 'mainline', 'plain', 1, { 2: 'selene' });
+    expect(rescueOf(floorOf(run, 1))).toHaveLength(0);
+    expect(rescueOf(floorOf(run, 3))).toHaveLength(0);
+  });
+
+  it('same seed, same spot', () => {
+    const a = rescueOf(floorOf(newRun(21, 'mainline', 'plain', 1, { 2: 'selene' }), 2));
+    const b = rescueOf(floorOf(newRun(21, 'mainline', 'plain', 1, { 2: 'selene' }), 2));
+    expect(a).toEqual(b);
+  });
+
+  it('the rest of the floor is untouched', () => {
+    for (const seed of [3, 7, 11, 42, 99]) {
+      const without = floorOf(newRun(seed, 'mainline', 'plain', 1), 2);
+      const withIt = floorOf(newRun(seed, 'mainline', 'plain', 1, { 2: 'selene' }), 2);
+      expect(withIt.contents.filter((c) => c.kind !== 'rescue')).toEqual(without.contents);
+      const at = rescueOf(withIt)[0].at;
+      const tiles = withIt.map.tiles.map((row) => [...row]);
+      tiles[at.y][at.x] = 'floor';
+      expect(tiles).toEqual(without.map.tiles);
+    }
+  });
+
+  it('no rescue for an empty table', () => {
+    const run = newRun(7, 'mainline', 'plain', 1);
+    expect(run.rescues).toEqual({});
+    for (let d = 1; d <= 8; d++) expect(rescueOf(floorOf(run, d))).toHaveLength(0);
   });
 });

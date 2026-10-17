@@ -1,3 +1,4 @@
+import { favouredRegions } from '../data/meetings';
 import type { RegionId } from '../data/regions';
 import type { Portal } from './dungeon/run';
 import type { AutoJunk } from './loot/bag';
@@ -54,7 +55,7 @@ export interface GameState {
 export function newGame(rng: Rng = mulberry32(0), forgeSalt = 0, start: CharacterId[] = START_LINEUP): GameState {
   return {
     version: SAVE_VERSION, gold: 150, inventory: { ...START_ITEMS }, bag: [], nextUid: 1, sold: {}, party: newParty(start),
-    dungeon: { reached: newReached(), bossDefeated: false, bossKills: {}, portals: rollPortals(rng) }, revealed: {}, codex: [], autoJunk: 'off', forgeDraws: 0,
+    dungeon: { reached: newReached(), bossDefeated: false, bossKills: {}, portals: rollPortals(rng, favouredRegions(start)) }, revealed: {}, codex: [], autoJunk: 'off', forgeDraws: 0,
     forgeSalt,
   };
 }

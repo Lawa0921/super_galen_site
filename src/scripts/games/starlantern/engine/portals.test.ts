@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { rollPortals, validPortals } from './portals';
 import { mulberry32 } from './rng';
+import { REGIONS, type RegionId } from '../data/regions';
 
 describe('rollPortals', () => {
   it('the mainline portal is always first and the other two differ', () => {
@@ -32,5 +33,27 @@ describe('rollPortals', () => {
     expect(validPortals([ok[0], ok[1], { region: 'nowhere', condition: 'plain' }])).toBe(false);
     expect(validPortals([ok[0], ok[1], { ...ok[2], condition: 'rain' }])).toBe(false);
     expect(validPortals([ok[0], ok[1], null])).toBe(false);
+  });
+});
+
+describe('rollPortals favouring', () => {
+  const ALL = Object.keys(REGIONS) as RegionId[];
+  it('equal weights draw exactly as before', () => {
+    for (let seed = 0; seed < 100; seed++) {
+      expect(rollPortals(mulberry32(seed), ALL)).toEqual(rollPortals(mulberry32(seed)));
+      expect(rollPortals(mulberry32(seed), [])).toEqual(rollPortals(mulberry32(seed)));
+    }
+  });
+  it('a favoured region turns up about twice as often', () => {
+    const rng = mulberry32(2024);
+    const hits: Record<string, number> = {};
+    for (let i = 0; i < 2000; i++) for (const p of rollPortals(rng, ['iron']).slice(1)) hits[p.region] = (hits[p.region] ?? 0) + 1;
+    const others = ALL.filter((r) => r !== 'mainline' && r !== 'iron');
+    const avg = others.reduce((s, r) => s + (hits[r] ?? 0), 0) / others.length;
+    expect(hits.iron / avg).toBeGreaterThan(1.6);
+    expect(hits.iron / avg).toBeLessThan(2.4);
+  });
+  it('stays valid and finishes on a constant rng', () => {
+    for (const v of [0, 0.5, 0.999999]) expect(validPortals(rollPortals(() => v, ['iron', 'frost']))).toBe(true);
   });
 });

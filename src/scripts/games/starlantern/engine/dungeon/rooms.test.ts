@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../rng';
+import { parseFloor } from '../map';
 import { posKey } from '../map';
-import { genFloor } from './gen';
-import { fillRooms, type Content } from './rooms';
+import { genFloor, type GenFloor } from './gen';
+import { fillRooms, placeRescue, type Content } from './rooms';
 import { CONDITIONS, type ConditionId } from '../../data/conditions';
 import { REGIONS } from '../../data/regions';
 import { MATERIALS } from '../../data/materials';
@@ -105,5 +106,31 @@ describe('region and condition data', () => {
     expect(CONDITIONS.fog).toMatchObject({ sight: 0, encounterMul: 0.8 });
     expect(CONDITIONS.calm).toMatchObject({ encounterMul: 0.6, extraTraps: 1 });
     expect(CONDITIONS.plain).toMatchObject({ encounterMul: 1, enemyAtkMul: 1, extraChests: 0, sight: 1 });
+  });
+});
+
+describe('placeRescue', () => {
+  it('falls back to the first floor tile on a roomless map', () => {
+    const map = parseFloor(['#####', '#E..#', '#.>.#', '#####']);
+    const g: GenFloor = { map, rooms: [], entranceRoom: 0, exitRoom: 0 };
+    const f = { map: { ...map, tiles: map.tiles.map((r) => [...r]) }, contents: [] as Content[] };
+    placeRescue(f, g, mulberry32(1), 'selene');
+    expect(f.contents).toEqual([{ kind: 'rescue', at: { x: 2, y: 1 }, room: 0, who: 'selene' }]);
+    expect(f.map.tiles[1][2]).toBe('rescue');
+  });
+
+  it('prefers a room with nothing in it, and never the entrance or exit room', () => {
+    for (let seed = 1; seed <= 100; seed++) {
+      const g = genFloor(seed, { depth: 2, boss: false });
+      if (!g.rooms.length) continue;
+      const f = fillRooms(g, mulberry32(seed ^ 0x9e37), CONDITIONS.plain);
+      const busy = new Set(f.contents.map((c) => c.room));
+      const anyEmpty = g.rooms.some((r) => r.id !== g.entranceRoom && r.id !== g.exitRoom && !busy.has(r.id));
+      placeRescue(f, g, mulberry32(seed), 'selene');
+      const c = f.contents.find((x) => x.kind === 'rescue')!;
+      expect(c.room).not.toBe(g.entranceRoom);
+      expect(c.room).not.toBe(g.exitRoom);
+      if (anyEmpty) expect(busy.has(c.room), `seed ${seed}`).toBe(false);
+    }
   });
 });

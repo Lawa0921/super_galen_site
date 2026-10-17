@@ -1,4 +1,5 @@
 import { CONDITIONS } from '../data/conditions';
+import { favouredRegions, rescuesFor } from '../data/meetings';
 import { ITEMS } from '../data/items';
 import { capacity, carried, weightOf } from '../data/weights';
 import { FLOORS } from '../data/floors';
@@ -138,7 +139,7 @@ export class Game {
     if (this.phase !== 'town') return { ok: false, reason: 'phase' };
     if (!startDepths(portal.region, this.state.dungeon.reached[portal.region]).includes(startDepth)) return { ok: false, reason: 'locked' };
     if (!activeIds(this.state.party).some((id) => this.state.party.roster[id].hp > 0)) return { ok: false, reason: 'party-down' };
-    this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth);
+    this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth, rescuesFor(portal.region, this.state.party.recruited));
     this.floor = startDepth;
     this.pos = { ...this.map().entrance };
     this.facing = 'down';
@@ -627,7 +628,7 @@ export class Game {
     this.phase = 'town';
     this.encounter = 0;
     this.run = null;
-    this.state.dungeon.portals = rollPortals(this.rng);
+    this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited));
   }
 
   private revealHere(): void {
@@ -731,6 +732,6 @@ export class Game {
     this.run = null;
     this.encounter = 0;
     this.notice = 'wipe';
-    this.state.dungeon.portals = rollPortals(this.rng);
+    this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited));
   }
 }

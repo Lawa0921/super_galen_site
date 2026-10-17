@@ -122,7 +122,7 @@ describe('MapView wall autotiling', () => {
 
 describe('MapView tile colours', () => {
   it('draws the floor under tile kinds that have no art or colour of their own', () => {
-    for (const t of ['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key'] as const) {
+    for (const t of ['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key', 'rescue'] as const) {
       expect(tileColor(t, false), t).toBe(tileColor('floor', false));
     }
     expect(tileColor('chest', true)).toBe(tileColor('floor', false));
