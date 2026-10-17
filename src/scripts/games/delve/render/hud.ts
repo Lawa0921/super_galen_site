@@ -7,7 +7,7 @@ import { STATION_NAME } from '../engine/crafting';
 import { SET_BONUS } from '../engine/combat';
 import { ENEMIES } from '../engine/enemies';
 import { drawIcon, type Atlas } from './textures';
-import { countLabel, formatClock, recipeRows, statusText } from './model';
+import { countLabel, recipeRows, statusText } from './model';
 import { CHEST_SLOTS } from '../engine/loot';
 import { heartFills, itemTooltip } from './tooltip';
 import type { Stack } from '../engine/inventory';
@@ -447,7 +447,7 @@ export class Hud {
       const area = here[0]?.name ?? g.discovery.regionsAt(f.x, f.y).find((r) => g.discovery.isFound(r.id))?.name ?? '未知之地';
       const nav = g.navInfo();
       this.q('#delve-status').textContent = statusText({
-        clock: formatClock(g.time), area, feetY: f.y, surface: w.surfaceAt(f.x), cavernY: w.cavernY, moltenY: w.moltenY || Infinity,
+        clock: '', area, feetY: f.y, surface: w.surfaceAt(f.x), cavernY: w.cavernY, moltenY: w.moltenY || Infinity,
         east: nav.east, depth: nav.depth,
       });
     }

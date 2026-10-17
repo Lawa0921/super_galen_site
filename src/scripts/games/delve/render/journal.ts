@@ -114,7 +114,7 @@ export class ExploreUi {
     const top = el('div', 'delve-j-top');
     top.append(el('span', 'delve-j-big', `完成度 ${percentLabel(s.completion)}`), segBar(s.completion));
     body.appendChild(top);
-    const facts = el('p', 'delve-j-facts', `最深 ${s.depthRecord} 格 · 移動 ${distanceLabel(s.distance)} · 地圖探索 ${exploredLabel(explored)}`);
+    const facts = el('p', 'delve-j-facts', `存活第 ${this.game.date().dayIndex + 1} 天（${this.game.dateText()}）· 最深 ${s.depthRecord} 格 · 移動 ${distanceLabel(s.distance)} · 地圖探索 ${exploredLabel(explored)}`);
     facts.dataset.testid = 'journal-facts';
     body.appendChild(facts);
 

@@ -4,6 +4,7 @@
 //   · 樹：三種樹（橡樹 / 白樺 / 深綠），錐形帶樹皮紋的樹幹、根部外擴、側枝、多團球狀樹冠，依 (種類,高,冠) 快取。
 //   · 火把：4 格火焰 + 階梯式光暈。
 import { Bmp, INK, bayer, h01, hex, mix, ramp, rotPrep, rotate, shade, toCanvas, type RGB } from './pixel';
+import { leafColors, type TreeLook } from './seasonLook';
 import { ARM_STEPS, WALK_FRAMES, IDLE_FRAMES, FLAME_FRAMES, angleIndex } from './anim';
 import { PAL, PICK_METAL } from './textures';
 import { ITEMS, type ArmorSetId, type ItemId } from '../engine/items';
@@ -316,6 +317,8 @@ const TREE_LEAF: RGB[][] = [
   // 叢林：飽和的亮綠
   ramp('#16301e', '#214528', '#2d672e', '#468a34', '#67ab3c', '#93cc50', '#c2e478'),
 ];
+/** 春花樹冠間露出的新綠 */
+const SPRING_GREEN = ramp('#16301e', '#2d672e', '#468a34', '#67ab3c', '#93cc50', '#c2e478', '#fff4c0');
 type Blob = [number, number, number];
 const CANOPY: Blob[][] = [
   [[-0.3, -0.42, 0.42], [0.3, -0.4, 0.44], [-0.58, 0.02, 0.4], [0.56, 0.0, 0.42], [0, -0.05, 0.6], [-0.34, 0.38, 0.42], [0.34, 0.4, 0.42], [0, 0.5, 0.4]],
@@ -328,8 +331,45 @@ const CANOPY: Blob[][] = [
 
 export interface TreeSprite { canvas: HTMLCanvasElement; ax: number; ay: number; }
 
-function paintTree(variant: number, h: number, r: number, grounded: boolean): { b: Bmp; ax: number; ay: number } {
-  const bark = TREE_BARK[variant], leaf = TREE_LEAF[variant];
+/** 冬天光禿的樹冠：從樹幹頂端分出的枝椏（遞迴分岔、越往外越細），上緣積雪 */
+function paintBare(b: Bmp, bark: RGB[], cx: number, top: number, rx: number, ry: number, seed: number, snow: boolean): void {
+  const tw = new Bmp(b.w, b.h);
+  const twig = (x0: number, y0: number, ang: number, len: number, depth: number, k: number): void => {
+    const x1 = x0 + Math.cos(ang) * len, y1 = y0 + Math.sin(ang) * len;
+    tw.line(x0, y0, x1, y1, bark[depth >= 2 ? 3 : 2]);
+    if (depth >= 2) tw.line(x0 + 1, y0, x1 + 1, y1, bark[4]);
+    if (depth <= 0) return;
+    const n = depth >= 2 ? 3 : 2;
+    for (let i = 0; i < n; i++) {
+      const sp = (h01(k, i, seed) - 0.5) * 1.3 + (i - (n - 1) / 2) * 0.55;
+      twig(x1, y1, ang + sp, len * (0.5 + h01(i, k, seed + 7) * 0.2), depth - 1, k * 4 + i + 1);
+    }
+  };
+  const n = 4 + (rx > 40 ? 1 : 0);
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + ((i - (n - 1) / 2) / n) * 2.4 + (h01(i, 3, seed) - 0.5) * 0.3;
+    const len = Math.min(rx, ry) * (0.5 + h01(i, 5, seed) * 0.2);
+    twig(cx, top + 4, a, len, 2, i + 1);
+  }
+  tw.line(cx, top + 4, cx, top - ry * 0.5, bark[3]);
+  tw.line(cx + 1, top + 4, cx + 1, top - ry * 0.5, bark[4]);
+  if (snow) {
+    const sn = hex('#ffffff'), sl = hex('#cceaf8');
+    const src = tw.clone();
+    for (let y = 1; y < tw.h; y++) for (let x = 0; x < tw.w; x++) {
+      if (!src.on(x, y) || src.on(x, y - 1)) continue;
+      const v = h01(x, y, seed + 41);
+      if (v < 0.78) tw.set(x, y - 1, v < 0.5 ? sn : sl);
+    }
+  }
+  b.blit(tw, 0, 0);
+}
+
+function paintTree(variant: number, h: number, r: number, grounded: boolean, look: TreeLook = 'evergreen'): { b: Bmp; ax: number; ay: number } {
+  const bark = TREE_BARK[variant];
+  const custom = leafColors(look, variant);
+  const leaf = custom.length ? ramp(...custom) : TREE_LEAF[variant];
+  const bare = look === 'winter-bare';
   const trunkPx = h * 16;
   const jungle = variant === 4;
   const cw = r > 0 ? (2 * r + 1) * 16 + (variant === 1 ? 10 : variant === 2 ? -8 : jungle ? 24 : 0) : 0;
@@ -409,8 +449,9 @@ function paintTree(variant: number, h: number, r: number, grounded: boolean): { 
   trunk.outline(INK);
   b.blit(trunk, 0, 0);
 
-  // 樹冠
-  if (r > 0) {
+  // 樹冠（冬天光禿的樹：改畫枝椏）
+  if (r > 0 && bare) paintBare(b, bark, Math.round(cx), topY, cw / 2, ch / 2 + 4, seed, true);
+  if (r > 0 && !bare) {
     const can = new Bmp(W, H);
     const owner = new Int16Array(W * H).fill(-1);
     const blobs = CANOPY[variant];
@@ -460,7 +501,21 @@ function paintTree(variant: number, h: number, r: number, grounded: boolean): { 
         let k = v > 0.86 ? 5 : v > 0.64 ? 4 : v > 0.42 ? 3 : v > 0.24 ? 2 : 1;
         if (sep) k = Math.max(1, Math.min(k, 2));
         if (k >= 4 && v > 0.8 && h01(x >> 1, y, seed + 29) > 0.97) k = 6;
+        // 春花：花團間露出一點新綠
+        if (look === 'blossom' && k <= 3 && h01(x >> 1, y >> 1, seed + 53) > 0.72) { can.set(x, y, SPRING_GREEN[k + 1]); continue; }
         can.set(x, y, leaf[k]);
+      }
+    }
+    // 常綠樹的冬天：葉團朝上的邊緣積雪（2 px，左側受光較厚）
+    if (look === 'winter-snow') {
+      const src = can.clone(), sn = hex('#ffffff'), sl = hex('#cceaf8'), sd = hex('#94c8ee');
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        if (!src.on(x, y) || (y > 0 && src.on(x, y - 1))) continue;
+        // 陡的側邊（左右任一邊是空的、或上方斜鄰也是空的兩側都空）不積雪
+        if (!src.on(x - 1, y) || !src.on(x + 1, y)) continue;
+        if (!src.on(x - 1, y - 1) && !src.on(x + 1, y - 1) && h01(x, y, seed + 3) > 0.5) continue;
+        const thick = (x < cx ? 3 : 2) + (h01(x >> 1, 7, seed) > 0.6 ? 1 : 0);
+        for (let k = 0; k < thick && src.on(x, y + k); k++) can.set(x, y + k, k === 0 ? sn : k === thick - 1 ? sd : sl);
       }
     }
     can.outline(leaf[0]);
@@ -649,11 +704,11 @@ export class Sprites {
     return c;
   }
 
-  tree(variant: number, h: number, r: number, grounded: boolean): TreeSprite {
-    const key = `${variant}:${h}:${r}:${grounded ? 1 : 0}`;
+  tree(variant: number, h: number, r: number, grounded: boolean, look: TreeLook = 'evergreen'): TreeSprite {
+    const key = `${variant}:${h}:${r}:${grounded ? 1 : 0}:${look}`;
     let t = this.treeCache.get(key);
     if (!t) {
-      const p = variant === 3 ? paintPine(h, r, grounded) : paintTree(variant, h, r, grounded);
+      const p = variant === 3 ? paintPine(h, r, grounded) : paintTree(variant, h, r, grounded, look);
       t = { canvas: toCanvas(p.b) as HTMLCanvasElement, ax: p.ax, ay: p.ay };
       this.treeCache.set(key, t);
     }

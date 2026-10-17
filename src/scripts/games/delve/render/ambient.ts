@@ -20,14 +20,19 @@ export interface AmbientContext {
   biome: number;
   /** 天空亮度 0..1 */
   sky: number;
+  /** 正在下雨 / 下雪（天氣粒子另外畫，這裡不再放雪花 / 螢火蟲） */
+  precip?: boolean;
+  /** 冬天：沒有螢火蟲 */
+  winter?: boolean;
 }
 /** 玩家所在處要哪種粒子（沒有 = null） */
 export function ambientKind(c: AmbientContext): AmbientKind | null {
   if (c.molten) return 'ember';
   if (c.mushroom) return 'spore';
   if (c.outdoors) {
+    if (c.precip) return null;
     if (c.biome === 2) return 'snow';
-    if ((c.biome === 0 || c.biome === 3) && c.sky < 0.45) return 'firefly';
+    if ((c.biome === 0 || c.biome === 3) && c.sky < 0.45 && !(c.winter && c.biome === 0)) return 'firefly';
     return null;
   }
   if (c.underground) return 'dust';

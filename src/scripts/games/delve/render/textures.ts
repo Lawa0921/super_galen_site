@@ -56,7 +56,16 @@ const MISC_ROW = BLEND_ROW0 + 3;              // 裂痕 0..3、草葉 4..6、叢
 const ICON_ROW = MISC_ROW + 1;
 /** 圖示列數（每列 FRAME_COLS 個；依道具數量） */
 const ICON_ROWS = 3;
-const ROWS = ICON_ROW + ICON_ROWS;
+/** 季節草皮：春 / 夏 / 秋 / 冬（雪蓋）各一列，欄位同前景 tile（遮罩 × 變體） */
+const GRASS_SEASON_ROW0 = ICON_ROW + ICON_ROWS;
+const ROWS = GRASS_SEASON_ROW0 + 4;
+/** 季節草皮色階（[0] 最暗 → [6] 最亮；frameTile 的草皮用 1..6） */
+export const GRASS_SEASON: RGB[][] = [
+  ramp('#16301e', '#2d672e', '#468a34', '#67ab3c', '#93cc50', '#c2e478', '#fff4c0'),   // 春：新綠
+  ramp('#0c0a12', '#16301e', '#214528', '#2d672e', '#468a34', '#67ab3c', '#93cc50'),   // 夏：濃綠
+  ramp('#16301e', '#214528', '#2d672e', '#7c4c2e', '#966139', '#c99660', '#d8ba76'),   // 秋：枯黃
+  ramp('#16301e', '#7f9cc4', '#94c8ee', '#cceaf8', '#cceaf8', '#ffffff', '#ffffff'),   // 冬：積雪
+];
 
 // ── 小工具 ───────────────────────────────────────────────
 /** 平滑值雜訊（cell 格點雜湊 + 雙線性），0..1 */
@@ -652,6 +661,8 @@ export interface Atlas {
   /** 材質滲透貼片：mat 滲入、sideIdx 0..3 = 上右下左、perp 見 perpMask */
   blend(mat: Mat, sideIdx: number, perp: number): Src;
   blades(variant: number, jungle?: boolean): Src;
+  /** 季節草皮（season 0..3）：取代一般草地 tile */
+  grass(season: number, variant: number, mask: number): Src;
   /** 裝飾物件 (id, style) */
   decor(id: number, style: number): Src;
   crack(stage: number): Src;
@@ -705,6 +716,12 @@ export function buildAtlas(): Atlas {
   for (let mat = 1; mat <= 3; mat++) {
     for (let s = 0; s < 4; s++) for (let p = 0; p < 4; p++) put(blendStamp(mat as Mat, s, p), s * 4 + p, BLEND_ROW0 + mat - 1);
   }
+  for (let season = 0; season < 4; season++) {
+    for (let v = 0; v < VARIANTS; v++) {
+      const tex = texTile(T.GRASS, v);
+      for (let m = 0; m < 16; m++) put(frameTile(tex, m, PAL.dirt, { grass: true, v, gpal: GRASS_SEASON[season] }), frameColumn(m, v), GRASS_SEASON_ROW0 + season);
+    }
+  }
   for (let s = 0; s < 4; s++) put(crack(s), s, MISC_ROW);
   for (let v = 0; v < 3; v++) put(grassBlades(v), 4 + v, MISC_ROW);
   for (let v = 0; v < 3; v++) put(grassBlades(v, true), 7 + v, MISC_ROW);
@@ -724,6 +741,7 @@ export function buildAtlas(): Atlas {
     wall: (id, v, mask) => ({ sx: frameColumn(mask, v) * S, sy: (WALL_ROW0 + id) * S }),
     blend: (mat, s, p) => ({ sx: (s * 4 + p) * S, sy: (BLEND_ROW0 + mat - 1) * S }),
     blades: (v, jungle) => ({ sx: ((jungle ? 7 : 4) + (v % 3)) * S, sy: MISC_ROW * S }),
+    grass: (season, v, mask) => ({ sx: frameColumn(mask, v) * S, sy: (GRASS_SEASON_ROW0 + (season & 3)) * S }),
     decor: (id, style) => ({ sx: (style % FRAME_COLS) * S, sy: (FG_ROW0 + id) * S }),
     crack: (s) => ({ sx: Math.max(0, Math.min(3, s)) * S, sy: MISC_ROW * S }),
     icon: (item) => {

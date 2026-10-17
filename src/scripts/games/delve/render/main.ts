@@ -8,6 +8,7 @@ import { Hud } from './hud';
 import { FixedStepper, blockedMessage, hintText } from './model';
 import { MapCache, Minimap, FullMap } from './mapView';
 import { ExploreUi } from './journal';
+import { CalendarUi } from './calendarUi';
 import { SoundManager } from '../audio/SoundManager';
 import { T } from '../engine/tiles';
 import { ITEMS } from '../engine/items';
@@ -43,6 +44,8 @@ export interface DelveHandle {
   hud: Hud;
   map: { cache: MapCache; minimap: Minimap; full: FullMap };
   ui: ExploreUi;
+  /** HUD 日期時鐘 + 日曆 / 天氣預報面板 */
+  calendar: CalendarUi;
   sound: SoundManager;
   stats(): FrameStats;
   /** 暫停模擬（選單開啟時） */
@@ -70,6 +73,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
   const stepper = new FixedStepper(FIXED_DT, 0.25);
   const sound = new SoundManager();
   const ui = new ExploreUi(root, game, renderer.atlas);
+  const calendar = new CalendarUi(root, game);
   const mapCache = new MapCache(game);
   renderer.onWorldDirty = (cis) => mapCache.markWorld(cis);
   const mmRoot = root.querySelector<HTMLElement>('#delve-minimap'), mmCanvas = root.querySelector<HTMLCanvasElement>('#delve-minimap-canvas');
@@ -149,6 +153,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       else if (ui.loreOpen) ui.closeLore();
       else if (game.openChest) game.closeChest();
       else if (ui.journalOpen) ui.setJournal(false);
+      else if (calendar.isOpen) calendar.setOpen(false);
       else if (hud.inventoryOpen) hud.setInventory(false);
       else opts.onMenu();
     },
@@ -203,6 +208,11 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'liquidtool') { sound.splash(false, e.liquid === LIQ.LAVA); invChanged = true; }
         else if (e.type === 'death') { sound.death(); hud.setInventory(false); }
         else if (e.type === 'respawn') hud.toast('你甦醒了');
+        else if (e.type === 'sleep') {
+          if (e.phase === 'start') { sound.sleep(); hud.setInventory(false); }
+          else { sound.wake(); hud.toast(`早安——${game.dateText()}`, 2400); }
+        }
+        else if (e.type === 'lightning') sound.thunder(e.dist);
         else if (e.type === 'pickup') { sound.pickup(); invChanged = true; }
         else if (e.type === 'heal') { sound.heal(); invChanged = true; }
         else if (e.type === 'lifeup') { sound.heal(); hud.toast(`生命上限提升到 ${e.maxHp}`); invChanged = true; }
@@ -225,6 +235,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
     renderer.render(paused ? 0 : dt);
     hud.tick();
     ui.tick(dt);
+    calendar.tick();
     const tm = performance.now();
     mapCache.update(fullmap.isOpen ? 64 : 16);
     if (fullmap.isOpen) fullmap.draw();
@@ -244,7 +255,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
   };
 
   const handle: DelveHandle = {
-    game, renderer, hud, ui, sound,
+    game, renderer, hud, ui, calendar, sound,
     map: { cache: mapCache, minimap, full: fullmap },
     stats: () => {
       const f = avg(gaps);
@@ -280,6 +291,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       window.removeEventListener('keydown', unlock);
       fullmap.destroy();
       ui.destroy();
+      calendar.destroy();
       sound.destroy();
       hud.destroy();
       renderer.destroy();

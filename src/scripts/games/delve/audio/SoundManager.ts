@@ -177,6 +177,44 @@ export class SoundManager {
   /** 燒傷：短的噼啪 */
   burn(): void { this.noise(0, 0.08, 2600, 900, 0.07, 1.4); }
 
+  // ── 天氣 / 睡覺 ───────────────────────────────────────
+  /**
+   * 雷聲：近的先一聲高頻劈啪再接低沉的滾雷，遠的只有延遲後的悶雷（距離 dist 格 → 延遲、音量、濾波越低）。
+   * 噪音緩衝循環播放，經低通濾波由高滑到低。
+   */
+  thunder(dist: number): void {
+    if (this.muted || !this.ctx) return;
+    const ctx = this.ctx;
+    this.noise(0, 0.01, 100, 100, 0.0001); // 確保噪音緩衝已建立
+    if (!this.noiseBuf) return;
+    const near = Math.max(0, 1 - dist / 48);
+    const delay = Math.min(1.4, dist * 0.028);
+    if (near > 0.6) this.noise(delay, 0.18, 5200, 1400, 0.22 * near, 0.7);
+    const t = ctx.currentTime + delay + 0.04;
+    const dur = 1.8 + (1 - near) * 1.2;
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuf; src.loop = true;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.Q.value = 0.9;
+    lp.frequency.setValueAtTime(260 + near * 900, t);
+    lp.frequency.exponentialRampToValueAtTime(55, t + dur);
+    const g = ctx.createGain();
+    const peak = 0.12 + 0.3 * near;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.06);
+    g.gain.exponentialRampToValueAtTime(peak * 0.45, t + dur * 0.35);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(lp).connect(g).connect(this.master ?? ctx.destination);
+    src.start(t, Math.random() * 0.4); src.stop(t + dur + 0.05);
+  }
+  /** 躺下睡覺：三個下行的柔和音 */
+  sleep(): void { [523.25, 440, 349.23].forEach((f, i) => this.tone(f, i * 0.28, 0.7, 'sine', 0.07)); }
+  /** 天亮醒來：輕快上行 + 鳥叫似的高音 */
+  wake(): void {
+    [392, 523.25, 659.25].forEach((f, i) => this.tone(f, i * 0.1, 0.35, 'triangle', 0.08));
+    this.tone(2600, 0.42, 0.08, 'sine', 0.03, 3200); this.tone(2800, 0.55, 0.08, 'sine', 0.03, 3400);
+  }
+
   destroy(): void {
     if (typeof window !== 'undefined') window.removeEventListener('arcade-audio-change', this.onChange);
     void this.ctx?.close?.();

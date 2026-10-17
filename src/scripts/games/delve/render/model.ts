@@ -133,7 +133,7 @@ export function statusText(o: {
 }): string {
   const parts = [o.clock, o.area, o.depth !== null ? depthLabel(o.feetY, o.surface, o.cavernY, o.moltenY) : layerName(o.feetY, o.surface, o.cavernY, o.moltenY)];
   if (o.east !== null) parts.push(o.east > 0 ? `東 ${o.east}` : o.east < 0 ? `西 ${-o.east}` : '出生點');
-  return parts.join(' · ');
+  return parts.filter(Boolean).join(' · ');
 }
 
 export interface BannerMsg { title: string; sub: string; }

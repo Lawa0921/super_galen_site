@@ -21,6 +21,7 @@ const lang: Language = defaultLang;
       <div class="delve-hotbar" id="delve-hotbar" role="toolbar" aria-label="快捷欄"></div>
       <div class="delve-held" id="delve-held" aria-live="polite"></div>
       <div class="delve-status" id="delve-status"></div>
+      <button class="delve-clock" id="delve-clock" type="button" data-testid="hud-clock"><span class="delve-clock-text" id="delve-clock-text"></span></button>
       <div class="delve-vitals" id="delve-vitals" aria-label="生命">
         <canvas class="delve-hearts" id="delve-hearts" width="51" height="10"></canvas>
         <span class="delve-hp-text" id="delve-hp-text"></span>
@@ -65,6 +66,14 @@ const lang: Language = defaultLang;
           <button class="delve-x" id="delve-journal-close" type="button" aria-label="關閉日誌">×</button>
         </header>
         <div class="delve-journal-body" id="delve-journal-body"></div>
+      </section>
+
+      <section class="delve-panel delve-panel--calendar" id="delve-calendar" hidden aria-label="日曆與天氣">
+        <header class="delve-panel-head">
+          <h2>日曆與天氣</h2>
+          <button class="delve-x" id="delve-calendar-close" type="button" aria-label="關閉日曆">×</button>
+        </header>
+        <div class="delve-cal-body" id="delve-calendar-body"></div>
       </section>
 
       <section class="delve-lore" id="delve-lore" hidden role="dialog" aria-labelledby="delve-lore-title">
@@ -133,6 +142,7 @@ const lang: Language = defaultLang;
         <button class="delve-btn" id="delve-resume" type="button">繼續遊戲</button>
         <button class="delve-btn" id="delve-peaceful" type="button" aria-pressed="false">難度：一般</button>
         <button class="delve-btn" id="delve-help-btn" type="button">操作說明</button>
+        <button class="delve-btn" id="delve-calendar-btn" type="button">日曆與天氣</button>
         <button class="delve-btn" id="delve-save" type="button">立即存檔</button>
         <button class="delve-btn" id="delve-export" type="button">匯出存檔 .delve</button>
         <button class="delve-btn" id="delve-import-menu" type="button">匯入存檔</button>
@@ -348,6 +358,24 @@ const lang: Language = defaultLang;
     color: var(--ink);
     text-shadow: var(--text-outline);
   }
+  /* HUD 日期時鐘：狀態列下方，點一下打開日曆（天氣小圖示 12×12 原生、整數倍放大） */
+  .delve-clock {
+    position: absolute;
+    top: calc(var(--px) * 22 + 62px);
+    left: 10px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 0 2px;
+    border: 0;
+    background: none;
+    font-size: 16px;
+    color: #fff4c0;
+    text-shadow: var(--text-outline);
+    cursor: pointer;
+  }
+  .delve-clock-icon { width: calc(var(--px) * 12); height: calc(var(--px) * 12); image-rendering: pixelated; }
+  .delve-clock:focus-visible { outline: var(--px) solid var(--gold); }
   .delve-corner { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; }
   .delve-chip {
     display: flex;
@@ -378,7 +406,7 @@ const lang: Language = defaultLang;
 
   .delve-panel {
     position: absolute;
-    top: calc(var(--px) * 22 + 68px);
+    top: calc(var(--px) * 22 + 92px);
     left: 10px;
     width: min(480px, calc(100vw - 20px));
     max-height: calc(100vh - 120px);
@@ -386,6 +414,41 @@ const lang: Language = defaultLang;
     padding: 12px;
   }
   .delve-panel h2 { margin: 0; font-size: 16px; font-weight: 400; color: var(--gold); text-shadow: var(--text-outline); }
+  /* 日曆面板 */
+  .delve-panel--calendar { width: min(420px, calc(100vw - 20px)); }
+  .delve-cal-body { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .delve-cal-date { margin: 0; font-size: 16px; color: #fff4c0; text-shadow: var(--text-outline); }
+  .delve-cal-fc { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .delve-cal-wx {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 6px;
+    border: var(--px) solid;
+    border-color: #623924 #1c1424 #1c1424 #623924;
+    background: #2a1810;
+  }
+  .delve-cal-wx-label { font-size: 16px; color: var(--ink); }
+  .delve-cal-icon { width: calc(var(--px) * 12); height: calc(var(--px) * 12); image-rendering: pixelated; }
+  .delve-cal-sky { display: flex; flex-direction: column; gap: 6px; }
+  .delve-cal-moon-row { display: flex; gap: 8px; align-items: center; }
+  .delve-cal-moon { width: calc(var(--px) * 16); height: calc(var(--px) * 16); image-rendering: pixelated; background: #18204a; }
+  .delve-cal-line { margin: 0; font-size: 16px; color: #d8ba76; line-height: 1.4; }
+  .delve-cal-note { margin: 0; font-size: 16px; color: #b07a4b; line-height: 1.5; }
+  .delve-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: calc(var(--px) * 2); }
+  .delve-cal-day {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    border: var(--px) solid;
+    border-color: #623924 #1c1424 #1c1424 #623924;
+    background: #472819;
+    font-family: var(--pixel);
+    font-size: 8px;
+    color: #f2e2b0;
+  }
+  .delve-cal-day.is-past { background: #2a1810; color: #7c4c2e; }
+  .delve-cal-day.is-today { border-color: #fff4c0 #e8701c #e8701c #fff4c0; background: #623924; color: #fff4c0; }
   .delve-panel-head { display: flex; justify-content: space-between; align-items: center; }
   .delve-x { width: 32px; height: 32px; padding: 0; font-family: var(--pixel); font-size: 16px; cursor: pointer; }
   .delve-hint { margin: 8px 0; font-size: 16px; line-height: 1.5; color: #d8ba76; }
@@ -855,6 +918,7 @@ const lang: Language = defaultLang;
     .delve-chip--zoom { padding: 4px 6px; }
     .delve-held { top: 84px; }
     .delve-status { top: 106px; max-width: calc(100vw - 150px); line-height: 1.3; }
+    .delve-clock { top: 152px; left: 6px; }
     .delve-minimap { top: 84px; right: 6px; }
     .delve-panel { top: 196px; max-height: calc(100vh - 360px); }
     .delve-panel--journal { left: 6px; right: 6px; width: auto; }

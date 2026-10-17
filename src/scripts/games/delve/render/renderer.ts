@@ -22,6 +22,11 @@ import { shadeTiles, fillLightPixels, AMBIENT_R } from './lightShade';
 import { AmbientField, ambientKind, AMBIENT_GLOWS, type AmbientKind } from './ambient';
 import { LiquidLayer } from './liquidDraw';
 import { LIQ } from '../engine/liquidKind';
+import { dayIndexOf, seasonBlend } from '../engine/calendar';
+import { fallColors, grassLook, leafFall, treeLook } from './seasonLook';
+import { FloraAtlas, iceBmp } from './seasonArt';
+import { WeatherFx, type Canopy } from './weatherFx';
+import { toCanvas } from './pixel';
 
 const S = TILE_SIZE;
 const CPX = CHUNK * S;
@@ -84,6 +89,18 @@ export class Renderer {
   ambientNow: AmbientKind | null = null;
   /** 戰鬥圖層（掉落物 / 怪物 / 投射物 / 飄字 / 震動） */
   readonly combat: CombatLayer;
+  /** 季節植物（草葉 / 花 / 高草 × 四季 × 擺動）與冰面 */
+  readonly flora = new FloraAtlas();
+  private ice: HTMLCanvasElement[] = [0, 1, 2].flatMap((v) => [toCanvas(iceBmp(v, false)) as HTMLCanvasElement, toCanvas(iceBmp(v, true)) as HTMLCanvasElement]);
+  /** 雨 / 雪 / 霧 / 落葉 / 睡覺淡出 */
+  readonly fx = new WeatherFx();
+  /** chunk 快取裡的草皮是哪一天的季節外觀（換日 → 重畫） */
+  private seasonDay = -1;
+  private canopies: Canopy[] = [];
+  /** 正在打的閃電（世界 px 的 x、形狀種子） */
+  private bolt: { x: number; seed: number } | null = null;
+  private boltN = 0;
+  private lastFlash = 0;
 
   private cache: ChunkLRU<HTMLCanvasElement>;
   private pool: HTMLCanvasElement[] = [];
@@ -203,6 +220,8 @@ export class Renderer {
   onEvent(e: DelveEvent): void {
     this.combat.onEvent(e);
     if (e.type === 'respawn') this.snapCamera();
+    if (e.type === 'lightning') { this.bolt = { x: e.x * S + S / 2, seed: ++this.boltN }; this.lightDirty = true; }
+    if (e.type === 'mine' && e.tile === T.ICE) this.fx.invalidate(this.game.world, [this.game.world.chunkIndex(Math.floor(e.x / CHUNK), Math.floor(e.y / CHUNK))]);
     if ((e.type === 'mine' || e.type === 'place') && this.nearView(e.x, e.y, LIGHT_MARGIN)) this.lightDirty = true;
     if (e.type === 'splash') this.burst(e.x, e.y, e.big ? 16 : 9, SPLASH[e.liquid] ?? SPLASH[LIQ.WATER], e.big ? 260 : 170);
     if (e.type === 'liquidtool') this.burst((e.x + 0.5) * S, (e.y + 0.5) * S, 7, SPLASH[e.liquid] ?? SPLASH[LIQ.WATER], 130);
@@ -261,7 +280,15 @@ export class Renderer {
 
     const dirty = w.drainDirty();
     for (const ci of dirty) this.pending.add(ci);
-    if (dirty.length) this.onWorldDirty?.(dirty);
+    if (dirty.length) { this.onWorldDirty?.(dirty); this.fx.invalidate(w, dirty); }
+    // 換日：草皮的季節外觀可能變了 → chunk 快取全部重畫（逐幀分批）；結冰也可能變了 → 天空高度重算
+    const today = dayIndexOf(g.time);
+    if (today !== this.seasonDay) {
+      if (this.seasonDay >= 0) { this.invalidateAll(); this.fx.invalidateAll(); }
+      this.seasonDay = today;
+    }
+    const flash = g.flash();
+    if (flash !== this.lastFlash) { this.lastFlash = flash; this.lightDirty = true; if (!flash) this.bolt = null; }
     // 液體變動只需要讓地圖重畫（液體圖層每幀畫，不碰 tile chunk 快取）
     const ldirty = w.drainLiquidDirty();
     if (ldirty.length) this.onWorldDirty?.(ldirty);
@@ -275,10 +302,16 @@ export class Renderer {
     ctx.imageSmoothingEnabled = false;
     let day = (g.time % DAY_LENGTH) / DAY_LENGTH;
     if (day < 0) day += 1;
+    const sun = g.sun(), wx = g.localWeatherState();
     this.bg.draw(ctx, {
       viewW: this.bufW, viewH: this.bufH, camX, camY,
       horizonY: this.localHorizon(camX + vw / 2), time: g.time, dayFrac: day,
       biome: biomeBlend((x) => w.biome[x], (camX + vw / 2) / S, w.width),
+      sunrise: sun.sunrise, sunset: sun.sunset, twilight: sun.twilight, moon: g.moon(),
+      season: seasonBlend(g.time),
+      weather: { kind: wx.kind, intensity: wx.intensity, flash, wind: g.wind() },
+      // 遠方的閃電：依視差壓縮到畫面中段（±40 格的落雷大多看得到）
+      bolt: this.bolt ? { x: vw / 2 + (this.bolt.x - (camX + vw / 2)) * 0.35, seed: this.bolt.seed } : null,
     });
 
     ctx.setTransform(1, 0, 0, 1, -camX, -camY);
@@ -312,6 +345,7 @@ export class Renderer {
     this.stats.chunksDrawn = drawn;
     this.stats.cached = this.cache.size;
 
+    this.drawFlora(ctx, camX, camY, vw, vh);
     this.drawTrees(ctx, camX, camY, vw, vh);
     this.drawTorches(ctx, camX, camY, vw, vh);
     this.combat.drawWorld(ctx, { x: camX, y: camY, w: vw, h: vh }, { warm: this.torchesSeen, cool: this.coolSeen });
@@ -320,17 +354,31 @@ export class Renderer {
     this.liquidLayer.draw(ctx, w, camX, camY, vw, vh, this.clock, this.torchesSeen);
     this.stats.liquidMs = performance.now() - tl;
     this.stats.liquidCells = this.liquidLayer.stats.cells;
+    this.drawIce(ctx, camX, camY, vw, vh);
     this.drawMiningAndCursor(ctx);
     this.drawStatus(ctx, dt);
     this.drawParticles(ctx, dt);
+    // 落葉 / 花瓣（受光照：畫在遮罩之前）
+    this.fx.updateLeaves(dt, w, this.canopies, g.wind(), { x: camX, y: camY, w: vw, h: vh });
+    this.fx.drawLeaves(ctx);
+    // 雨 / 雪
+    const precip = wx.kind === 'rain' || wx.kind === 'storm' ? 'rain' : wx.kind === 'snow' ? 'snow' : null;
+    this.fx.update(dt, { world: w, camX, camY, vw, vh, kind: precip, storm: wx.kind === 'storm', intensity: wx.intensity, wind: g.wind(), light: g.skyLevel() });
     this.updateAmbient(dt, camX, camY, vw, vh);
     this.drawAmbient(ctx, false);
     this.drawLight(ctx, camX, camY, vw, vh);
     if (!this.fullbright) this.combat.drawDark(ctx, { x: camX, y: camY, w: vw, h: vh }, (tx, ty) => this.lightAt(tx, ty));
+    // 霧 / 雨雪畫在光照之後（夜裡也看得到，顏色依天空亮度分階）
+    const lvl = this.fullbright ? 1 : g.skyLevel();
+    if (wx.kind === 'fog') this.fx.drawFog(ctx, w, camX, camY, vw, vh, wx.intensity, lvl);
+    this.fx.drawPrecip(ctx, lvl, wx.kind === 'storm');
     this.drawAmbient(ctx, true);
     this.drawRecall(ctx);
     this.drawGlows(ctx);
     this.combat.drawOverlay(ctx, dt);
+    // 睡覺：全畫面抖動淡出 / 淡入
+    const sl = g.sleepFade();
+    if (sl > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); this.fx.drawSleep(ctx, sl, this.bufW, this.bufH); }
 
     // 整數倍放大貼到螢幕：每個美術像素 = scale×scale 裝置像素
     const out = this.ctx;
@@ -395,9 +443,12 @@ export class Renderer {
       for (let x = x0; x < x1; x++) {
         const i = y * W + x;
         const f = fg[i];
-        if (f === T.AIR || f === T.WOOD || f === T.LEAVES || f === T.TORCH) continue;
+        // 樹 / 火把 / 花 / 高草是每幀畫的動態精靈（季節外觀、隨風擺動）
+        if (f === T.AIR || f === T.WOOD || f === T.LEAVES || f === T.TORCH || f === T.FLOWER || f === T.TALL_GRASS) continue;
         qx = x; qy = y;
-        const s = isDecor(f) ? A.decor(f, decorStyle(f, x, y, nb)) : A.tile(f, variant[i], masks[(y - y0) * CHUNK + (x - x0)]);
+        const s = isDecor(f) ? A.decor(f, decorStyle(f, x, y, nb))
+          : f === T.GRASS ? A.grass(grassLook(x, this.seasonDay < 0 ? 0 : this.seasonDay), variant[i], masks[(y - y0) * CHUNK + (x - x0)])
+          : A.tile(f, variant[i], masks[(y - y0) * CHUNK + (x - x0)]);
         ctx.drawImage(img, s.sx, s.sy, S, S, (x - x0) * S, (y - y0) * S, S, S);
       }
     }
@@ -434,7 +485,8 @@ export class Renderer {
       for (let x = x0; x < x1; x++) {
         const i = y * W + x;
         const gt = fg[i];
-        if (gt !== T.GRASS && gt !== T.JUNGLE_GRASS) continue;
+        // 一般草地的草葉改成每幀畫（季節 + 風），這裡只畫叢林草葉
+        if (gt !== T.JUNGLE_GRASS) continue;
         if (fg[i - W] !== T.AIR) continue; // 上面有植物 / 物件時不畫草葉
         const s = A.blades(variant[i], gt === T.JUNGLE_GRASS);
         ctx.drawImage(img, s.sx, s.sy, S, S, (x - x0) * S, (y - 1 - y0) * S, S, S);
@@ -449,12 +501,65 @@ export class Renderer {
     const tx0 = Math.floor(camX / S) - 6, tx1 = Math.ceil((camX + vw) / S) + 6;
     const ty0 = Math.floor(camY / S) - 1, ty1 = Math.ceil((camY + vh) / S) + 1;
     const trees = scanTrees((x, y) => w.getFg(x, y), Math.max(0, tx0), Math.max(0, ty0), Math.min(w.width, tx1), Math.min(w.height, ty1));
+    const day = Math.max(0, this.seasonDay);
+    this.canopies.length = 0;
     for (const t of trees) {
       const kind = treeKind(t.ground, t.variant);
-      const sp = this.sprites.tree(kind, t.baseY - t.topY + 1, Math.min(kind === TREE_KIND.JUNGLE ? 7 : 4, t.leafR), t.grounded);
+      const r = Math.min(kind === TREE_KIND.JUNGLE ? 7 : 4, t.leafR);
+      const look = treeLook(kind, t.x, day);
+      const sp = this.sprites.tree(kind, t.baseY - t.topY + 1, r, t.grounded, look);
       const dx = t.x * S + S / 2 - sp.ax, dy = (t.baseY + 1) * S - sp.ay;
       if (dx > camX + vw || dx + sp.canvas.width < camX || dy > camY + vh || dy + sp.canvas.height < camY) continue;
       ctx.drawImage(sp.canvas, Math.round(dx), Math.round(dy));
+      // 秋葉 / 春花：樹冠範圍（上半部）會飄落
+      if (r > 0 && leafFall(look)) this.canopies.push({ x: dx + 6, y: dy, w: sp.canvas.width - 12, h: Math.max(8, sp.canvas.height - (t.baseY - t.topY + 1) * S), colors: fallColors(look) });
+    }
+  }
+
+  /**
+   * 季節植物（每幀）：一般草地上方的草葉、花、高草——依每格的季節外觀挑圖、依風向與陣風挑擺動影格
+   * （風小時大多不動；有風時整片往下風處偏，局部陣風來回擺）。
+   */
+  private drawFlora(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number): void {
+    const g = this.game, w = g.world, W = w.width, fg = w.fg, F = this.flora, img = F.canvas;
+    const tx0 = Math.max(0, Math.floor(camX / S)), tx1 = Math.min(W, Math.ceil((camX + vw) / S) + 1);
+    const ty0 = Math.max(1, Math.floor(camY / S)), ty1 = Math.min(w.height, Math.ceil((camY + vh) / S) + 2);
+    const day = Math.max(0, this.seasonDay), wind = g.wind(), t = this.clock;
+    const gust = 0.3 + Math.abs(wind);
+    const sway = (x: number, k: number): number => {
+      const v = wind * 1.2 * k + Math.sin(t * 2.6 + x * 0.45) * 0.55 * gust * k;
+      return v > 0.5 ? 1 : v < -0.5 ? -1 : 0;
+    };
+    for (let y = ty0; y < ty1; y++) {
+      const row = y * W;
+      for (let x = tx0; x < tx1; x++) {
+        const f = fg[row + x];
+        if (f === T.GRASS) {
+          if (fg[row - W + x] !== T.AIR) continue;
+          const s = F.blades(grassLook(x, day), w.variant[row + x], sway(x, 0.8));
+          ctx.drawImage(img, s.sx, s.sy, S, S, x * S, (y - 1) * S, S, S);
+        } else if (f === T.FLOWER || f === T.TALL_GRASS) {
+          const style = decorStyle(f, x, y, (dx, dy) => w.getFg(x + dx, y + dy));
+          const look = grassLook(x, day);
+          const s = f === T.FLOWER ? F.flower(look, style, sway(x, 0.8)) : F.tallGrass(look, style, sway(x, 1));
+          ctx.drawImage(img, s.sx, s.sy, S, S, x * S, y * S, S, S);
+        }
+      }
+    }
+  }
+
+  /** 結冰的湖面（畫在液體圖層之上，蓋住那格的水） */
+  private drawIce(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number): void {
+    const w = this.game.world, W = w.width, F = w.frozen;
+    const tx0 = Math.max(0, Math.floor(camX / S)), tx1 = Math.min(W, Math.ceil((camX + vw) / S) + 1);
+    const ty0 = Math.max(0, Math.floor(camY / S)), ty1 = Math.min(w.height, Math.ceil((camY + vh) / S) + 1);
+    for (let y = ty0; y < ty1; y++) {
+      const row = y * W;
+      for (let x = tx0; x < tx1; x++) {
+        if (!F[row + x]) continue;
+        const top = y === 0 || !F[row - W + x];
+        ctx.drawImage(this.ice[(w.variant[row + x] % 3) * 2 + (top ? 1 : 0)], x * S, y * S);
+      }
     }
   }
 
@@ -684,6 +789,8 @@ export class Renderer {
         underground: p.y > surf + 4,
         biome: w.biomeAt(x),
         sky: g.skyLevel(),
+        precip: ['rain', 'storm', 'snow'].includes(g.localWeatherState().kind) && g.localWeatherState().intensity > 0.3,
+        winter: g.season() === 3,
       });
     }
     this.ambient.step(dt, this.ambientNow, { x: camX, y: camY, w: vw, h: vh });
