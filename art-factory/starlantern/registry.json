@@ -5051,7 +5051,7 @@
           235
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a3",
       "source_id": "scene-portal-plaza",
       "batch": "portal-dungeon",
@@ -5074,7 +5074,7 @@
           110
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a3",
       "source_id": "portal-card-mainline",
       "batch": "portal-dungeon",
@@ -5097,7 +5097,7 @@
           110
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "portal-card-blaze",
       "batch": "portal-dungeon",
@@ -5119,7 +5119,7 @@
           110
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "portal-card-storm",
       "batch": "portal-dungeon",
@@ -5141,7 +5141,7 @@
           110
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a3",
       "source_id": "portal-card-mire",
       "batch": "portal-dungeon",
@@ -5164,7 +5164,7 @@
           110
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a2",
       "source_id": "portal-card-shade",
       "batch": "portal-dungeon",
@@ -5186,7 +5186,7 @@
           110
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a2",
       "source_id": "portal-card-iron",
       "batch": "portal-dungeon",
@@ -5218,7 +5218,7 @@
           62
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a2",
       "source_id": "sheet-event-tiles",
       "batch": "portal-dungeon",
@@ -5248,7 +5248,7 @@
           62
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a2",
       "source_id": "sheet-event-tiles",
       "batch": "portal-dungeon",
@@ -5278,7 +5278,7 @@
           62
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a2",
       "source_id": "sheet-event-tiles",
       "batch": "portal-dungeon",
@@ -5308,7 +5308,7 @@
           62
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a2",
       "source_id": "sheet-event-tiles",
       "batch": "portal-dungeon",
@@ -5338,7 +5338,7 @@
           62
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a2",
       "source_id": "sheet-event-tiles",
       "batch": "portal-dungeon",
@@ -5368,7 +5368,7 @@
           62
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a2",
       "source_id": "sheet-event-tiles",
       "batch": "portal-dungeon",
@@ -5400,7 +5400,7 @@
           62
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a3",
       "source_id": "sheet-event-tiles",
       "batch": "portal-dungeon",
@@ -5430,7 +5430,7 @@
           62
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a3",
       "source_id": "sheet-event-tiles",
       "batch": "portal-dungeon",
@@ -5491,7 +5491,7 @@
           110
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a3",
       "source_id": "portal-card-frost",
       "batch": "portal-dungeon",
@@ -5521,7 +5521,7 @@
           35
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a4",
       "source_id": "sheet-trait-icons",
       "batch": "portal-dungeon",
@@ -5549,7 +5549,7 @@
           33
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a4",
       "source_id": "sheet-trait-icons",
       "batch": "portal-dungeon",
@@ -5575,7 +5575,7 @@
           34
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a4",
       "source_id": "sheet-trait-icons",
       "batch": "portal-dungeon",
@@ -5601,7 +5601,7 @@
           34
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a4",
       "source_id": "sheet-trait-icons",
       "batch": "portal-dungeon",
@@ -5624,7 +5624,7 @@
           34
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a4",
       "source_id": "sheet-trait-icons",
       "batch": "portal-dungeon",
@@ -5647,7 +5647,7 @@
           35
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a2",
       "source_id": "sheet-trait-icons",
       "batch": "portal-dungeon",
