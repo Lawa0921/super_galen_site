@@ -116,12 +116,18 @@ export abstract class FacilityScene implements Scene {
     return done;
   }
 
-  /** Pointer input reaches only the active window: the command window and lower layers are inert under a layer or a line. */
+  /**
+   * Pointer input reaches only the active window: the command window and lower layers are inert under a layer or a line.
+   * Windows under another layer (not under a line) are also marked slx-under, which a scene's style may dim so a deep stack
+   * reads cleanly (the forge does).
+   */
   private syncInert(): void {
     const lock = (e: HTMLElement, on: boolean) => (on ? e.setAttribute('inert', '') : e.removeAttribute('inert'));
     lock(this.cmdWin, this.talking || this.layers.length > 0);
     lock(this.back, this.talking);
     this.layers.forEach((l, i) => lock(l.el, this.talking || i < this.layers.length - 1));
+    this.cmdWin.classList.toggle('slx-under', this.layers.length > 0);
+    this.layers.forEach((l, i) => l.el.classList.toggle('slx-under', i < this.layers.length - 1));
   }
 
   protected fail(reason: string): void {

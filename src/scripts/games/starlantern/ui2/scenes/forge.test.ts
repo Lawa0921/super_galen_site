@@ -658,6 +658,21 @@ describe('ForgeScene reroll page', () => {
     expect(line()).toContain(' → ');
   });
 
+  it('only the top window reads at full strength: lower lists and the command window are marked slx-under', () => {
+    const { go, lists, confirmEl, root } = open([sword()]);
+    const under = () => lists().map((l) => l.classList.contains('slx-under'));
+    go('confirm', 'confirm');
+    expect(under()).toEqual([true, true, false]);
+    expect(root.querySelector('.slx-cmd')!.classList.contains('slx-under')).toBe(true);
+    go('confirm');                          // the confirm opens on top of all three lists
+    expect(confirmEl()!.classList.contains('slx-under')).toBe(false);
+    expect(under()).toEqual([true, true, true]);
+    go('confirm');                          // 否: back to the method list on top
+    expect(under()).toEqual([true, true, false]);
+    go('cancel', 'cancel', 'cancel');
+    expect(root.querySelector('.slx-cmd')!.classList.contains('slx-under')).toBe(false);
+  });
+
   it('Esc steps back one layer at a time and closes the detail', () => {
     const { go, lists, root } = open([sword()]);
     go('confirm', 'confirm');

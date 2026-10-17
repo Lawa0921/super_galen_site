@@ -994,5 +994,9 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-forge .slx-craft-list .slx-right { white-space: nowrap; }
 .slx-forge .slx-info.slx-craft-info { left: 436px; width: 188px; }
 .slx-forge .slx-label.slx-junk { text-decoration: line-through; opacity: 0.6; }
+// Reroll and fusion stack three or four windows; those under the top one (facility.ts marks them slx-under) darken,
+// so the open list or confirm reads cleanly. A filter, not opacity: the windows stay opaque, so one list's text never shows
+// through another. The detail window is not a layer and stays bright.
+.slx-forge .slx-win.slx-under { filter: brightness(0.45) saturate(0.5); transition: filter 0.12s ease-out; }
 .slx-lack { color: $slx-down; }
 .slx-forge .slx-info .slx-cmp-row.slx-up { color: $slx-up; }
