@@ -226,6 +226,16 @@ describe('StatusScene', () => {
       expect(root.querySelector('[data-stat=critDmg] .slx-total')!.textContent).toBe('50%');
     });
 
+    it('the stats tab shows the affinity', () => {
+      const { root } = setup('noel');
+      const primary = root.querySelector('[data-cat=primary]')!;
+      const line = primary.querySelector('.slx-stat-affinity');
+      expect(line!.textContent).toBe(T.ui2.status.affinity(T.gear.statName.int));
+      expect(line!.previousElementSibling).toBe(head(root, 'primary'));       // right after the heading
+      expect(T.ui2.status.affinity(T.ui2.status.affinityAll)).toBe('取向：全能');
+      expect(root.querySelectorAll('.slx-stat-affinity')).toHaveLength(1);    // the primary section only
+    });
+
     /** The number in each source cell and the 上限 cell (an em dash is 0), and the shown total without its unit. */
     const nums = (tr: Element) => {
       const parts = [...tr.querySelectorAll('td:not(.slx-total)')].map((td) => (td.textContent === '—' ? 0 : num(td.textContent)));

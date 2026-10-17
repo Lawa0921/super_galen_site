@@ -36,7 +36,7 @@ describe('data integrity', () => {
 
   it('heals belong to the healers', () => {
     const healers = Object.values(SKILLS).filter((s) => s.effects.some((e) => e.kind === 'heal'));
-    for (const s of healers) expect(['selene', 'chizuru', 'bobby']).toContain(s.owner);
+    for (const s of healers) expect(['selene', 'chizuru', 'bobby', 'hero']).toContain(s.owner);
   });
 
   it('never reuses an id across items, materials and equipment', () => {

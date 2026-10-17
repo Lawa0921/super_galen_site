@@ -183,6 +183,10 @@ export const T = {
       cats: { primary: '主屬性', attack: '攻擊', defense: '防禦', element: '元素', resource: '資源', other: '其他' } as Record<StatCategory, string>,
       /** A sheet total: points read bare, every other stat as a percent. */
       value: (key: AnyStat, v: number) => `${v}${POINT_STATS.includes(key) ? '' : '%'}`,
+      /** The affinity line under the stats page's primary heading: the affinity primary's name, or affinityAll. */
+      affinity: (label: string) => `取向：${label}`,
+      /** The hero's affinity: every primary converts. */
+      affinityAll: '全能',
       /** Column of the cut a cap takes off a total (an em dash when the stat is under its cap). */
       capCol: '上限',
       targets: {

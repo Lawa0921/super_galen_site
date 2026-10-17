@@ -33,24 +33,26 @@ export function naturalPrimary(def: CharacterDef, level: number): Record<Primary
   return { str: at('atk'), int: at('mag'), agi: at('spd'), wil: Math.round(at('tp') / 2) };
 }
 
-/** What one point of each primary gives; the character's affinity primary gives 1.5x. */
-const CONVERT: Record<PrimaryKey, Partial<Sheet>> = {
+/** What one point of each primary gives; the character's affinity primary gives AFFINITY_MUL times as much. */
+export const CONVERT: Record<PrimaryKey, Partial<Sheet>> = {
   str: { atk: 1, armor: 2 },
   int: { mag: 1, fireRes: 0.5, iceRes: 0.5, thunderRes: 0.5 },
   agi: { crit: 0.2, spd: 0.5 },
   wil: { tp: 1, heal: 1 },
 };
-const AFFINITY_MUL = 1.5;
+export const AFFINITY_MUL = 1.5;
+/** The 'all' affinity (the hero): every primary converts at this share of AFFINITY_MUL, so 1.2x instead of 1.5x on one. */
+export const ALL_AFFINITY_SHARE = 0.8;
 // Rounds to 1e-6 so float products such as 0.2 x 1.5 x 10 = 3.0000000000000004 come out as the plain 3 the sheet shows
 // and tests compare; a gear value never carries more than a few decimals, so nothing real is lost.
 const clean = (n: number): number => Math.round(n * 1e6) / 1e6;
 
-export function convertPrimary(p: Partial<Record<PrimaryKey, number>>, affinity: PrimaryKey): Partial<Sheet> {
+export function convertPrimary(p: Partial<Record<PrimaryKey, number>>, affinity: PrimaryKey | 'all'): Partial<Sheet> {
   const out: Partial<Sheet> = {};
   for (const k of PRIMARY_KEYS) {
     const n = p[k];
     if (!n) continue;
-    const mul = k === affinity ? AFFINITY_MUL : 1;
+    const mul = affinity === 'all' ? AFFINITY_MUL * ALL_AFFINITY_SHARE : k === affinity ? AFFINITY_MUL : 1;
     for (const [stat, per] of Object.entries(CONVERT[k]) as [AnyStat, number][]) out[stat] = clean((out[stat] ?? 0) + per * mul * n);
   }
   return out;

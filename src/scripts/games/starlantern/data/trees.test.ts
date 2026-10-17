@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TREES, nodeDesc, nodeName } from './trees';
-import { CHARACTERS, CHARACTER_IDS } from './characters';
+import { CHARACTERS, rulesOf } from './characters';
 import { SKILLS } from './skills';
 import { POWERS } from './gear';
-import { defaultTree, freeNode, nodeRank, raiseNode } from '../engine/progression';
-import { newMember } from '../engine/party';
+import { defaultTree, freeNode, newTree, nodeRank, raiseNode } from '../engine/progression';
 import type { CharacterId, Member } from '../engine/types';
 
 const ids = Object.keys(TREES) as CharacterId[];
@@ -13,7 +12,6 @@ const allNodes = () => ids.flatMap((id) => TREES[id]!.branches.flatMap((b) => b.
 describe('skill trees', () => {
   it('every character has a tree', () => {
     expect([...ids].sort()).toEqual(Object.keys(CHARACTERS).sort());
-    expect(ids).toHaveLength(CHARACTER_IDS.length);
   });
 
   it("every skill in SKILLS is an active node of exactly one tree, its owner's", () => {
@@ -24,7 +22,7 @@ describe('skill trees', () => {
   });
 
   it('DEFAULT_CAPSTONE names a branch for every character; scarlet takes the flame and rin the backstab', () => {
-    for (const id of ids) expect([0, 1, 2], id).toContain(DEFAULT_CAPSTONE[id]);
+    for (const id of ids) expect(DEFAULT_CAPSTONE[id], id).toBeLessThan(rulesOf(id).branches);
     expect(DEFAULT_CAPSTONE.scarlet).toBe(1);
     expect(TREES.scarlet.branches[1].nodes[4].id).toBe('crimson-end');
     expect(DEFAULT_CAPSTONE.rin).toBe(1);
@@ -45,9 +43,9 @@ describe('skill trees', () => {
     }
   });
 
-  it('each tree has 3 branches of 5 nodes and node ids are unique across trees', () => {
+  it("each tree has its rules' branch count of 5 nodes each and node ids are unique across trees", () => {
     for (const id of ids) {
-      expect(TREES[id]!.branches, id).toHaveLength(3);
+      expect(TREES[id]!.branches, id).toHaveLength(rulesOf(id).branches);
       for (const b of TREES[id]!.branches) expect(b.nodes, `${id}:${b.name}`).toHaveLength(5);
     }
     const all = allNodes().map((n) => n.id);
@@ -158,7 +156,8 @@ describe('skill trees', () => {
     // Climb each branch alone at Lv50, tier by tier to max rank, with the engine's own rules.
     for (const id of ids) {
       TREES[id]!.branches.forEach((b) => {
-        let m: Member = { ...newMember(id), level: 50 };
+        // A bare member: the hero has no talent board (and so no newMember) until he joins the roster.
+        let m: Member = { id, level: 50, exp: 0, hp: 0, tp: 0, equip: {}, tree: newTree(id), talents: {} };
         for (const n of b.nodes) {
           while (nodeRank(m, n.id) < n.maxRank) {
             const r = raiseNode(m, n.id);

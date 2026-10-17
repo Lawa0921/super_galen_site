@@ -486,6 +486,7 @@ $slx-battle-left: 150px;
 .slx-stat-cat-head::before { content: '▸'; position: absolute; left: 5px; color: $slx-dim; }
 .slx-stat-cat-head[aria-expanded='true']::before { content: '▾'; }
 .slx-stat-cat-head:hover { color: #fff; }
+.slx-stat-affinity { margin: 0; padding: 2px 6px 2px 18px; color: $slx-dim; }
 .slx-row-cur { background: linear-gradient(90deg, rgba(232, 196, 106, 0.22), transparent); box-shadow: inset 2px 0 0 $slx-gold; }
 .slx-stat-cat-head.slx-row-cur, .slx-stat-table .slx-row-cur th { color: #fff; }
 .slx-stat-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 4px; }

@@ -4,14 +4,15 @@ import {
   raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, validBuild,
 } from './progression';
 import { gainExp, newMember } from './party';
-import { CHARACTERS } from '../data/characters';
+import { CHARACTERS, rulesOf } from '../data/characters';
 import { mulberry32 } from './rng';
 import { DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES } from '../data/trees';
 import { BOARDS, DEFAULT_KEYSTONES, TALENT_PER, TALENT_SCALE, talentBlocker } from '../data/talents';
 import type { AnyStat } from './types';
 import type { CharacterId, Member } from './types';
 
-const ids = Object.keys(TREES) as CharacterId[];
+/** The companions: the curve, point counts and talent boards below are theirs (the hero's tree is tested in data/hero.test.ts). */
+const ids = (Object.keys(TREES) as CharacterId[]).filter((id) => rulesOf(id).curve === 'companion');
 const at = (id: CharacterId, level: number, tree?: Record<string, number>): Member =>
   ({ ...newMember(id), level, ...(tree ? { tree } : {}) });
 /** Raises a node and returns the new member; fails the test when the raise is refused. */

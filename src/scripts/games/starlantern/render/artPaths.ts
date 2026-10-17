@@ -129,6 +129,8 @@ export function allArtUrls(): string[] {
     'cannon', 'repair-kit', 'overclock', 'emergency-repair', 'shock-mine', 'tesla-coil',
     // plan 6a: Rin's skills have no icon yet
     'rin-needle', 'rin-fan', 'rin-venom-needle', 'rin-storm', 'rin-backstab', 'rin-veil', 'rin-shadowless', 'rin-mark', 'rin-execute', 'rin-deathblow',
+    // plan 6a: the hero's skills have no icon yet
+    ...Object.values(SKILLS).filter((s) => s.owner === 'hero').map((s) => s.id),
   ]);
   for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.keys(MATERIALS), ...Object.keys(EQUIPMENT)]) {
     if (!NO_ICON_YET.has(id)) urls.push(art.icon(id));

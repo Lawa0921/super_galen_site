@@ -13,7 +13,7 @@ export type AnyStat = StatKey | PrimaryKey | SecondaryKey;
 export type Sheet = Record<AnyStat, number>;
 export type Stats = Record<StatKey, number>;
 export type Row = 'front' | 'middle' | 'back';
-export type CharacterId = 'noel' | 'chizuru' | 'liz' | 'sylvie' | 'scarlet' | 'selene' | 'safira' | 'bobby' | 'rin';
+export type CharacterId = 'noel' | 'chizuru' | 'liz' | 'sylvie' | 'scarlet' | 'selene' | 'safira' | 'bobby' | 'rin' | 'hero';
 /** Who an action hits, seen from the actor's side. */
 /** `row`, `column` and `cross` are enemy area attacks shaped on the party grid around one chosen member. */
 export type Target = 'enemy' | 'enemies' | 'ally' | 'allies' | 'self' | 'deadAlly' | 'row' | 'column' | 'cross';
@@ -39,7 +39,11 @@ export interface UltimateDef { id: string; name: string; owner: CharacterId; tar
 /** How a character grows: which point curve, how many skill branches, how many ultimates, board width and keystone cap. */
 export interface GrowthRules { curve: 'companion' | 'hero'; branches: 3 | 5; capstones: number; boardCols: number; maxKeystones: number }
 export interface CharacterDef {
-  id: CharacterId; title: string; name: string; row: Row; melee: boolean; base: Stats; growth: Stats; affinity: PrimaryKey;
+  id: CharacterId; title: string; name: string; row: Row; melee: boolean; base: Stats; growth: Stats;
+  /** The primary that converts at AFFINITY_MUL; 'all' converts every primary at AFFINITY_MUL x ALL_AFFINITY_SHARE (engine/stats.ts). */
+  affinity: PrimaryKey | 'all';
+  /** Wears every weapon type at full mastery (the hero). */
+  weaponMaster?: true;
   /** Growth rules this character changes from DEFAULT_RULES (data/characters.ts). */
   rules?: Partial<GrowthRules>;
 }

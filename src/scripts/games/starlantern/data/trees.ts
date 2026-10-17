@@ -245,11 +245,48 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('rin-deathblow', 1),
     ] },
   ] },
+  hero: { branches: [
+    { name: '劍技', nodes: [
+      A('hero-slash', 5),
+      M('hero-sword-up', '劍技精通', 'hero-slash', '強化斬擊的威力', pct(104, 108, 112, 116, 120)),
+      A('hero-cleave', 5),
+      A('hero-sunder', 5),
+      A('abyss-sword', 1),
+    ] },
+    { name: '守護', nodes: [
+      A('hero-guard', 5),
+      M('hero-guard-up', '堅守精通', 'hero-guard', '提高守勢的防禦提升幅度', buff(104, 108, 112, 116, 120)),
+      A('hero-aegis', 5),
+      A('hero-rally', 5),
+      A('abyss-guard', 1),
+    ] },
+    { name: '星術', nodes: [
+      A('hero-flare', 5),
+      A('hero-frost', 5),
+      M('hero-star-up', '星術精通', 'hero-frost', '強化星霜的威力', pct(104, 108, 112, 116, 120)),
+      A('hero-spark', 5),
+      A('abyss-star', 1),
+    ] },
+    { name: '祈光', nodes: [
+      A('hero-mend', 5),
+      M('hero-light-up', '祈光精通', 'hero-mend', '強化治癒的回復量', pct(103, 106, 109, 112, 115)),
+      A('hero-prayer', 5),
+      A('hero-purify', 1),
+      A('abyss-light', 1),
+    ] },
+    { name: '枷鎖', nodes: [
+      A('hero-shackle', 5),
+      A('hero-slow', 5),
+      A('hero-expose', 5),
+      A('hero-sleep', 1),
+      A('abyss-chain', 1),
+    ] },
+  ] },
 };
 
 /** Which branch's ultimate the default build aims for (read by the auto-allocation of skill points). */
 export const DEFAULT_CAPSTONE: Record<CharacterId, number> = {
-  noel: 0, chizuru: 0, liz: 0, sylvie: 0, scarlet: 1, selene: 0, safira: 0, bobby: 0, rin: 1,
+  noel: 0, chizuru: 0, liz: 0, sylvie: 0, scarlet: 1, selene: 0, safira: 0, bobby: 0, rin: 1, hero: 0,
 };
 
 export const NODES: Record<string, { node: TreeNode; owner: CharacterId; branch: number; tier: number }> = {};

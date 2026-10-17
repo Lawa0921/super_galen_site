@@ -160,7 +160,11 @@ const stats: StatusTab = {
           el('tbody', {}, c.keys.map(statRow)),
         ])]
         : [];
-      return el('section', { class: 'slx-stat-cat', attrs: { 'data-cat': c.id } }, [head, ...table]);
+      // The primary heading carries the member's affinity: the primary that converts best, or 全能 for all of them.
+      const affinity = c.id === 'primary'
+        ? [el('p', { class: 'slx-stat-affinity', text: t.affinity(def.affinity === 'all' ? t.affinityAll : T.gear.statName[def.affinity]) })]
+        : [];
+      return el('section', { class: 'slx-stat-cat', attrs: { 'data-cat': c.id } }, [head, ...affinity, ...table]);
     });
 
     return el('div', { class: 'slx-tab-stats' }, [

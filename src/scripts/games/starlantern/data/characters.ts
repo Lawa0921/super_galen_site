@@ -29,6 +29,10 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     base: s(32, 22, 9, 8, 10, 8, 8), growth: s(5, 3, 1, 1, 2, 1, 1), affinity: 'int' },
   rin: { id: 'rin', title: '失憶的短刃使', name: '凜', row: 'front', melee: true,
     base: s(46, 16, 13, 12, 4, 7, 15), growth: s(6.7, 2, 2, 1.8, 1, 1, 2), affinity: 'agi' },
+  // The hero joins CHARACTER_IDS (and the roster) in plan 6a Task 5.
+  hero: { id: 'hero', title: '歸來者', name: '洛恩', row: 'front', melee: true, affinity: 'all', weaponMaster: true,
+    rules: { curve: 'hero', branches: 5, capstones: 2, boardCols: 6, maxKeystones: 3 },
+    base: s(44, 20, 12, 10, 9, 8, 10), growth: s(6.3, 3, 2, 1.8, 2, 1.5, 1.5) },
 };
 
 /** The growth rules of `id`: DEFAULT_RULES with the character's own overrides on top. */
