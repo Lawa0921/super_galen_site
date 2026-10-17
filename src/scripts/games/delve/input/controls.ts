@@ -1,6 +1,5 @@
 // controls.ts — DOM 輸入：鍵盤、滑鼠、滾輪、觸控（Pointer Events）→ DelveGame。destroy() 清掉所有監聽。
 import type { DelveGame } from '../engine/game';
-import { TILE_SIZE } from '../engine/constants';
 import { keyAction, slotForKey, wheelSlot, moveAxis, joystick, touchIntent, mouseIntent } from './mapping';
 
 export interface ControlsOptions {
@@ -73,7 +72,7 @@ export function attachControls(o: ControlsOptions): Controls {
   };
   const aimAt = (sx: number, sy: number): void => {
     const w = o.screenToWorld(sx, sy);
-    game.setAim(Math.floor(w.x / TILE_SIZE), Math.floor(w.y / TILE_SIZE));
+    game.setAimWorld(w.x, w.y);
   };
   const local = (e: PointerEvent | WheelEvent): { x: number; y: number } => {
     const r = canvas.getBoundingClientRect();

@@ -21,6 +21,15 @@ function randomSeed(): string {
 
 export interface Session { destroy(): void; }
 
+const PEACEFUL_KEY = 'delve.peaceful';
+/** 新世界的預設難度：網址 ?peaceful=1 / 0 優先，否則用上次的選擇（localStorage） */
+function defaultPeaceful(): boolean {
+  const q = new URLSearchParams(location.search).get('peaceful');
+  if (q === '1') return true;
+  if (q === '0') return false;
+  try { return globalThis.localStorage?.getItem(PEACEFUL_KEY) === '1'; } catch { return false; }
+}
+
 export function bootDelve(root: HTMLElement): Session {
   const $ = <T extends HTMLElement = HTMLElement>(sel: string): T | null => root.querySelector<T>(sel);
   const canvas = $<HTMLCanvasElement>('#delve-canvas');
@@ -59,11 +68,20 @@ export function bootDelve(root: HTMLElement): Session {
     if (!persisted) { persisted = true; void requestPersistence(); }
   }
 
+  const peacefulBtn = $<HTMLButtonElement>('#delve-peaceful');
+  function syncPeaceful(): void {
+    const on = Boolean(handle?.game.peaceful);
+    if (peacefulBtn) {
+      peacefulBtn.textContent = on ? '難度：和平（不生怪）' : '難度：一般';
+      peacefulBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
   function setMenu(open: boolean): void {
     if (!menu) return;
     menu.hidden = !open;
     handle?.setPaused(open);
     say(menuMsg, '');
+    syncPeaceful();
   }
 
   function begin(game: DelveGame): void {
@@ -106,7 +124,7 @@ export function bootDelve(root: HTMLElement): Session {
 
   function startFresh(seed?: string): void {
     const s = (seed ?? seedInput?.value ?? '').trim() || randomSeed();
-    withLoading(() => begin(new DelveGame({ seed: s })));
+    withLoading(() => begin(new DelveGame({ seed: s, peaceful: defaultPeaceful() })));
   }
 
   // ── 覆蓋確認對話框（頁內，不用 window.confirm） ──
@@ -197,6 +215,13 @@ export function bootDelve(root: HTMLElement): Session {
     saveNow().then(() => say(menuMsg, '已存檔')).catch((e: unknown) => say(menuMsg, `存檔失敗：${String(e)}`));
   });
   on($('#delve-export'), 'click', () => void exportSave());
+  on(peacefulBtn, 'click', () => {
+    if (!handle) return;
+    handle.game.peaceful = !handle.game.peaceful;
+    try { globalThis.localStorage?.setItem(PEACEFUL_KEY, handle.game.peaceful ? '1' : '0'); } catch { /* 私密模式 */ }
+    syncPeaceful();
+    say(menuMsg, handle.game.peaceful ? '和平模式：不會再生成怪物（首領仍可召喚）' : '一般模式：怪物會依地區與晝夜出現');
+  });
   on($('#delve-import-menu'), 'click', () => { importFrom = menuMsg; fileInput?.click(); });
 
   // 有存檔才顯示「繼續」

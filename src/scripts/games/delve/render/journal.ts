@@ -1,5 +1,6 @@
 // journal.ts — 探索 UI（DOM）：發現橫幅（佇列）、碑文閱讀面板、探險日誌（J）。
 // 內容全部用 textContent / class 組出來；進度條是 20 格像素方塊（不用行內樣式）。
+import { ENEMIES, ENEMY_KINDS, NATURAL_KINDS } from '../engine/enemies';
 import type { DelveGame } from '../engine/game';
 import { CATEGORY_LABEL, type RegionCat } from '../engine/discovery';
 import { LORE, loreEntry } from '../engine/lore';
@@ -104,7 +105,8 @@ export class ExploreUi {
     const g = this.game, d = g.discovery, s = d.stats();
     const w = g.world;
     const explored = g.explored.count / (w.width * w.height);
-    const sig = `${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${Math.round(explored * 1000)}`;
+    const killSig = Object.values(g.kills).reduce((a, n) => a + (n ?? 0), 0);
+    const sig = `${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${Math.round(explored * 1000)}|${killSig}|${g.bossesDefeated.size}`;
     if (sig === this.journalSig) return;
     this.journalSig = sig;
     body.replaceChildren();
@@ -160,6 +162,19 @@ export class ExploreUi {
       tr.appendChild(cell);
     }
     body.appendChild(tr);
+
+    // 首領擊敗 + 圖鑑（擊殺過的怪物種類與數量）
+    const bosses = ENEMY_KINDS.filter((k) => ENEMIES[k].boss);
+    const beaten = bosses.filter((k) => g.bossesDefeated.has(k)).length;
+    body.appendChild(el('h3', 'delve-j-h', `首領擊敗 ${beaten} / ${bosses.length}`));
+    const bl = el('p', 'delve-j-names');
+    bl.dataset.testid = 'journal-bosses';
+    bl.textContent = bosses.map((k) => (g.bossesDefeated.has(k) ? `${ENEMIES[k].name.zh} ✓` : '？？？（燈芯祭品）')).join('、');
+    body.appendChild(bl);
+    const kinds = NATURAL_KINDS;
+    const met = kinds.filter((k) => (g.kills[k] ?? 0) > 0);
+    body.appendChild(el('h3', 'delve-j-h', `怪物圖鑑 ${met.length} / ${kinds.length}`));
+    body.appendChild(el('p', 'delve-j-names', met.length ? met.map((k) => `${ENEMIES[k].name.zh} ×${g.kills[k]}`).join('、') : '還沒有擊敗任何怪物'));
   }
 
   destroy(): void { for (const f of this.offs) f(); }

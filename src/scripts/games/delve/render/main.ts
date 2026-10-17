@@ -94,6 +94,16 @@ export function startDelve(opts: StartOptions): DelveHandle {
   mmOut?.addEventListener('click', onMmOut);
   mapBtn?.addEventListener('click', onMapBtn);
   mmCanvas.addEventListener('click', onMapBtn);
+  // 自動瞄準（觸控用；偏好記在 localStorage）
+  const aimBtn = root.querySelector<HTMLElement>('#delve-aim-btn');
+  const setAutoAim = (on: boolean): void => {
+    game.autoAim = on;
+    aimBtn?.setAttribute('aria-pressed', on ? 'true' : 'false');
+    try { globalThis.localStorage?.setItem('delve.autoaim', on ? '1' : '0'); } catch { /* 私密模式 */ }
+  };
+  try { setAutoAim(globalThis.localStorage?.getItem('delve.autoaim') === '1'); } catch { setAutoAim(false); }
+  const onAim = (): void => { setAutoAim(!game.autoAim); hud.toast(game.autoAim ? '自動瞄準：開（攻擊最近的怪物）' : '自動瞄準：關'); };
+  aimBtn?.addEventListener('click', onAim);
   let raf = 0;
   let last = performance.now();
   let destroyed = false;
@@ -173,6 +183,27 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'hint') hud.toast(hintText(e.id));
         else if (e.type === 'unlock') { hud.toast(e.item === 'golden_key' ? '用金鑰匙打開了金寶箱' : '用地城鑰匙打開了門'); invChanged = true; }
         else if (e.type === 'door') { /* 門的開關：只需要重畫（chunk dirty） */ }
+        else if (e.type === 'attack') {
+          if (e.kind === 'bow') sound.bow(); else if (e.kind === 'staff') sound.magic();
+          else if (e.kind === 'throw' || e.kind === 'boomerang') sound.throwSfx(); else sound.swing(e.kind === 'broadsword');
+          if (e.kind === 'throw' || e.kind === 'bow') invChanged = true;
+        }
+        else if (e.type === 'hit') sound.enemyHit(e.crit);
+        else if (e.type === 'kill') sound.enemyDeath();
+        else if (e.type === 'hurt') sound.hurt();
+        else if (e.type === 'death') { sound.death(); hud.setInventory(false); }
+        else if (e.type === 'respawn') hud.toast('你甦醒了');
+        else if (e.type === 'pickup') { sound.pickup(); invChanged = true; }
+        else if (e.type === 'heal') { sound.heal(); invChanged = true; }
+        else if (e.type === 'lifeup') { sound.heal(); hud.toast(`生命上限提升到 ${e.maxHp}`); invChanged = true; }
+        else if (e.type === 'shot') { if (e.hostile) sound.enemyShot(e.kind === 'fireball' || e.kind === 'ember'); }
+        else if (e.type === 'impact') { /* 火花由 renderer 畫 */ }
+        else if (e.type === 'boss') {
+          if (e.phase === 'spawn') { sound.roar(); hud.toast('燈脈守望者甦醒了！', 2600); invChanged = true; }
+          else if (e.phase === 'phase2') { sound.roar(); hud.toast('鐵籠碎裂——守望者發狂了！', 2400); }
+          else if (e.phase === 'defeated') { sound.victory(); hud.toast('擊敗了燈脈守望者！（日誌：首領擊敗）', 3200); }
+          else hud.toast('燈脈守望者離開了');
+        }
         else {
           if (e.type === 'mine' && e.tile === T.CRACKED_STONE) { sound.crumble(); hud.toast('裂紋石碎了——後面好像是空的'); }
           else if (e.type === 'place' && e.tile === T.ROPE) sound.tick();
@@ -232,6 +263,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       mmOut?.removeEventListener('click', onMmOut);
       mapBtn?.removeEventListener('click', onMapBtn);
       mmCanvas.removeEventListener('click', onMapBtn);
+      aimBtn?.removeEventListener('click', onAim);
       root.removeEventListener('pointerdown', unlock);
       window.removeEventListener('keydown', unlock);
       fullmap.destroy();

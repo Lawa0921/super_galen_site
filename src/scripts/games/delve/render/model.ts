@@ -1,5 +1,5 @@
 // model.ts — render 層的純邏輯（無 DOM，可單元測試）：鏡頭、固定步長、chunk 範圍 / LRU、HUD 文字、配方列。
-import { RECIPES, canCraft } from '../engine/crafting';
+import { RECIPES, canCraft, stationOk, type CraftContext, type Station } from '../engine/crafting';
 import type { Inventory, Stack } from '../engine/inventory';
 import type { ItemId } from '../engine/items';
 import type { BlockReason } from '../engine/game';
@@ -256,21 +256,26 @@ export interface RecipeRow {
   out: { item: ItemId; n: number };
   inputs: { item: ItemId; n: number; have: number }[];
   craftable: boolean;
-  /** 需要工作台但不在附近 */
+  /** 需要合成站但不在附近 */
   needStation: boolean;
+  /** 需要的合成站（null = 不需要） */
+  station: Station | null;
   /** 材料不足 */
   missing: boolean;
 }
 
-export function recipeRows(inv: Inventory, nearWorkbench: boolean): RecipeRow[] {
+export function recipeRows(inv: Inventory, near: boolean | Partial<Record<Station, boolean>>): RecipeRow[] {
+  const ctx: CraftContext = typeof near === 'boolean' ? { nearWorkbench: near }
+    : { nearWorkbench: Boolean(near.workbench), nearFurnace: Boolean(near.furnace), nearAnvil: Boolean(near.anvil) };
   return RECIPES.map((r) => {
     const inputs = r.inputs.map((a) => ({ item: a.item, n: a.n, have: inv.count(a.item) }));
     return {
       id: r.id,
       out: { ...r.out },
       inputs,
-      craftable: canCraft(inv, r, { nearWorkbench }),
-      needStation: r.station === 'workbench' && !nearWorkbench,
+      craftable: canCraft(inv, r, ctx),
+      needStation: r.station !== null && !stationOk(r, ctx),
+      station: r.station,
       missing: inputs.some((a) => a.have < a.n),
     };
   });

@@ -21,12 +21,27 @@ const lang: Language = defaultLang;
       <div class="delve-hotbar" id="delve-hotbar" role="toolbar" aria-label="快捷欄"></div>
       <div class="delve-held" id="delve-held" aria-live="polite"></div>
       <div class="delve-status" id="delve-status"></div>
+      <div class="delve-vitals" id="delve-vitals" aria-label="生命">
+        <canvas class="delve-hearts" id="delve-hearts" width="51" height="10"></canvas>
+        <span class="delve-hp-text" id="delve-hp-text"></span>
+        <canvas class="delve-mana" id="delve-mana" width="41" height="5" hidden aria-label="魔力"></canvas>
+      </div>
+      <div class="delve-boss" id="delve-boss" hidden>
+        <span class="delve-boss-name" id="delve-boss-name"></span>
+        <canvas class="delve-boss-bar" id="delve-boss-bar" width="160" height="8"></canvas>
+      </div>
+      <div class="delve-death" id="delve-death" hidden role="status" aria-live="assertive">
+        <p class="delve-death-title">你倒下了</p>
+        <p class="delve-death-msg" id="delve-death-msg"></p>
+      </div>
+      <div class="delve-tip" id="delve-tip" hidden role="tooltip"></div>
       <div class="delve-corner">
         <button class="delve-chip delve-chip--zoom" id="delve-zoom-out" type="button" aria-label="縮小（看到更多格子）">－<kbd class="delve-kbd">-</kbd></button>
         <button class="delve-chip delve-chip--zoom" id="delve-zoom-in" type="button" aria-label="放大">＋<kbd class="delve-kbd">=</kbd></button>
         <button class="delve-chip" id="delve-inv-btn" type="button">背包<kbd class="delve-kbd">E</kbd></button>
         <button class="delve-chip" id="delve-map-btn" type="button">地圖<kbd class="delve-kbd">M</kbd></button>
         <button class="delve-chip" id="delve-journal-btn" type="button">日誌<kbd class="delve-kbd">J</kbd></button>
+        <button class="delve-chip delve-chip--aim" id="delve-aim-btn" type="button" aria-pressed="false">自動瞄準</button>
         <button class="delve-chip" id="delve-menu-btn" type="button">選單<kbd class="delve-kbd">Esc</kbd></button>
       </div>
 
@@ -66,8 +81,15 @@ const lang: Language = defaultLang;
           <h2>背包</h2>
           <button class="delve-x" id="delve-inv-close" type="button" aria-label="關閉">×</button>
         </header>
-        <p class="delve-hint">點一格再點另一格可以搬移 / 交換</p>
+        <p class="delve-hint">點一格再點另一格可以搬移 / 交換；滑鼠停在道具上（觸控：長按）看說明</p>
         <div class="delve-inv-grid" id="delve-inv-grid"></div>
+        <h2 class="delve-craft-title">裝備</h2>
+        <p class="delve-hint">選背包裡的防具 / 飾品再點裝備格（或按「裝上」、右鍵背包格）；點裝備格卸下</p>
+        <div class="delve-equip-row">
+          <div class="delve-equip" id="delve-equip"></div>
+          <button class="delve-btn delve-equip-btn" id="delve-equip-btn" type="button" hidden>裝上</button>
+        </div>
+        <p class="delve-hint delve-stats" id="delve-stats"></p>
         <h2 class="delve-craft-title">合成</h2>
         <p class="delve-hint" id="delve-station"></p>
         <ul class="delve-recipes" id="delve-recipes"></ul>
@@ -109,6 +131,7 @@ const lang: Language = defaultLang;
       <div class="delve-menu-box">
         <h2>暫停</h2>
         <button class="delve-btn" id="delve-resume" type="button">繼續遊戲</button>
+        <button class="delve-btn" id="delve-peaceful" type="button" aria-pressed="false">難度：一般</button>
         <button class="delve-btn" id="delve-save" type="button">立即存檔</button>
         <button class="delve-btn" id="delve-export" type="button">匯出存檔 .delve</button>
         <button class="delve-btn" id="delve-import-menu" type="button">匯入存檔</button>
@@ -150,8 +173,8 @@ const lang: Language = defaultLang;
         <input id="delve-import-file" type="file" accept=".delve,application/x-delve-save,application/gzip" hidden />
         <p class="delve-msg" id="delve-title-msg" role="status"></p>
         <button class="delve-btn delve-btn--main" id="delve-upgrade-new" type="button" hidden>開始新世界</button>
-        <p class="delve-keys">移動 A/D · 跳 Space · 爬繩 W/S · 挖 左鍵 · 放置 / 開箱 右鍵 · 換格 1–0/滾輪 · 背包 E · 地圖 M · 小地圖 N · 日誌 J · 縮放 - / =</p>
-        <p class="delve-keys delve-keys--touch">左下搖桿移動 · 「跳」按鈕跳躍 · 點格子挖掘或放置 · 點快捷欄換格</p>
+        <p class="delve-keys">移動 A/D · 跳 Space · 爬繩 W/S · 挖 / 攻擊 左鍵 · 放置 / 開箱 / 使用 右鍵 · 換格 1–0/滾輪 · 背包 E · 地圖 M · 小地圖 N · 日誌 J · 縮放 - / =</p>
+        <p class="delve-keys delve-keys--touch">左下搖桿移動 · 「跳」按鈕跳躍 · 點格子挖掘或放置 · 拿武器時點 / 按住畫面朝該處攻擊（可開自動瞄準）· 點快捷欄換格</p>
         <p class="delve-note">存檔留在這個瀏覽器（只有一個存檔位）；已有存檔時開新世界會先詢問是否覆蓋。iOS 等瀏覽器可能清除網站資料，請用選單匯出備份。</p>
       </div>
     </section>
@@ -682,6 +705,78 @@ const lang: Language = defaultLang;
   }
   .delve[data-map='1'] .delve-touch { display: none; }
 
+
+  /* ── 生命 / 魔力（上方置中）、首領血條、死亡畫面、道具說明 ── */
+  .delve-vitals {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    pointer-events: none;
+  }
+  .delve-hearts { height: calc(var(--px) * 11); width: auto; image-rendering: pixelated; }
+  .delve-hearts[data-rows='2'] { height: calc(var(--px) * 20); }
+  .delve-hp-text { font-family: var(--pixel); font-size: 8px; color: #fff4c0; text-shadow: var(--text-outline); }
+  .delve-mana { width: calc(var(--px) * 41); height: calc(var(--px) * 5); image-rendering: pixelated; }
+  .delve-boss {
+    position: absolute;
+    left: 50%;
+    bottom: 70px;
+    transform: translateX(-50%);
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    pointer-events: none;
+  }
+  .delve-boss-name { font-size: 16px; color: #cceaf8; text-shadow: var(--text-outline); }
+  .delve-boss-bar { width: calc(var(--px) * 160); height: calc(var(--px) * 8); image-rendering: pixelated; }
+  .delve-death {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+    background: rgba(44, 8, 6, 0.45);
+    pointer-events: none;
+    z-index: 8;
+  }
+  .delve-death-title { margin: 0; font-size: 32px; color: #e8701c; text-shadow: 3px 3px 0 #6c1e14, var(--text-outline); letter-spacing: 6px; }
+  .delve-death-msg { margin: 0; font-size: 16px; color: #f2e2b0; text-shadow: var(--text-outline); }
+  .delve-tip {
+    --tx: 0px;
+    --ty: 0px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(var(--tx), var(--ty));
+    z-index: 12;
+    max-width: min(320px, calc(100vw - 24px));
+    padding: 6px 10px;
+    border: var(--px) solid;
+    border-color: #b4b9c8 #1c1424 #1c1424 #b4b9c8;
+    background: #18204a;
+    box-shadow: 0 0 0 var(--px) var(--outline);
+    pointer-events: none;
+  }
+  .delve-tip p { margin: 0; font-size: 16px; line-height: 1.35; color: #cceaf8; }
+  .delve-tip .delve-tip-name { color: #ffd86a; text-shadow: var(--text-outline); }
+  .delve-equip-row { display: flex; gap: 8px; align-items: center; }
+  .delve-equip { display: grid; grid-template-columns: repeat(8, calc(var(--px) * 20)); gap: calc(var(--px) * 2); }
+  .delve-equip .delve-slot { width: calc(var(--px) * 20); height: calc(var(--px) * 20); }
+  .delve-slot--armor { --bv-bg: #1c1424; }
+  .delve-slot--acc { --bv-bg: #18204a; }
+  .delve-slot-label { position: absolute; left: 2px; top: 1px; font-size: 16px; line-height: 16px; color: #472819; }
+  .delve-slot--acc .delve-slot-label { color: #2c4486; }
+  .delve-slot.is-filled .delve-slot-label { display: none; }
+  .delve-equip-btn { padding: 6px 10px; }
+  .delve-stats { color: #cceaf8; }
+  .delve-chip--aim[aria-pressed='true'] { --bv-hi: #cceaf8; --bv-bg: #1f6474; --bv-lo: #18204a; }
+  .delve[data-boss='1'] .delve-toast { bottom: 110px; }
+
   @media (max-width: 640px) {
     .delve-hotbar { gap: 2px; left: 6px; top: 6px; }
     .delve-slot { --px: 2px; width: 36px; height: 36px; }
@@ -709,5 +804,12 @@ const lang: Language = defaultLang;
     .delve-lore { bottom: 200px; }
     .delve-map-help { white-space: normal; width: calc(100vw - 24px); text-align: center; bottom: 10px; }
     .delve-map-info { flex-basis: 100%; order: 3; }
+    .delve-vitals { top: auto; bottom: 170px; left: auto; right: 10px; transform: none; justify-items: end; }
+    .delve-boss { bottom: 150px; }
+    .delve-boss-bar { width: calc(100vw - 40px); height: 12px; }
+    .delve-equip { grid-template-columns: repeat(8, 1fr); width: 100%; }
+    .delve-equip .delve-slot { width: 100%; height: auto; aspect-ratio: 1; }
+    .delve-equip-row { flex-wrap: wrap; }
+    .delve-death-title { font-size: 24px; }
   }
 </style>

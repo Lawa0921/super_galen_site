@@ -1,6 +1,6 @@
 // renderer.ts — Canvas2D 場景（全部以原生美術解析度畫進低解析緩衝，最後整數倍放大貼到螢幕）：視差背景 → 地下暗紋 → chunk 快取（牆 + 自動接邊前景 + 材質滲透 + 草葉）
 // → 樹 / 火把（動態）→ 裂痕 / 游標 → 玩家（分件精靈）→ 粒子 → 光照遮罩（8 階 + Bayer 抖動）→ 火光暈。
-import type { DelveGame } from '../engine/game';
+import type { DelveGame, DelveEvent } from '../engine/game';
 import { BLOCKS_LIGHT_LUT, T, isSolidTile, isDecor } from '../engine/tiles';
 import { ITEMS, type ItemId } from '../engine/items';
 import { TILE_SIZE, CHUNK, DAY_LENGTH } from '../engine/constants';
@@ -10,7 +10,9 @@ import { CORNER, EDGE, blendOverlay, decorStyle, edgeMask, innerCornerMask, type
 import {
   advancePhase, armAngles, flameFrame, idleFrame, poseKind, swingAngle, walkFrame, SWING_RATE,
 } from './anim';
-import { FRAME, FW, FH, Sprites } from './sprites';
+import { FRAME, FW, FH, Sprites, type ArmorLook } from './sprites';
+import { CombatLayer } from './combatDraw';
+import { aimArmDeg, attackArmDeg, spearThrust } from './combatAnim';
 import { Background } from './background';
 import { scanTrees, treeKind, TREE_KIND } from './scene';
 import { LIGHT_LEVELS, PLATEAU, bufferSize, clampZoom, quantizeLevel, snapCam, zoomScale } from './lowres';
@@ -62,6 +64,8 @@ export class Renderer {
   /** 環境粒子 */
   readonly ambient = new AmbientField();
   ambientNow: AmbientKind | null = null;
+  /** 戰鬥圖層（掉落物 / 怪物 / 投射物 / 飄字 / 震動） */
+  readonly combat: CombatLayer;
 
   private cache: ChunkLRU<HTMLCanvasElement>;
   private pool: HTMLCanvasElement[] = [];
@@ -101,6 +105,7 @@ export class Renderer {
     this.lightCtx = lctx;
     this.atlas = buildAtlas();
     this.sprites = new Sprites((item) => this.atlas.iconBmp(item));
+    this.combat = new CombatLayer(game, this.atlas, this.sprites);
     this.cache = new ChunkLRU(48);
     let s = 0;
     for (const ch of game.seed) s = (s * 31 + ch.charCodeAt(0)) >>> 0;
@@ -168,9 +173,11 @@ export class Renderer {
   }
 
   /** 遊戲事件 → 粒子 / 光照重算 */
-  onEvent(e: { type: string; x?: number; y?: number; tile?: number }): void {
+  onEvent(e: DelveEvent): void {
+    this.combat.onEvent(e);
+    if (e.type === 'respawn') this.snapCamera();
     if (e.type === 'mine' || e.type === 'place') this.lightDirty = true;
-    if (e.type === 'mine' && e.x !== undefined && e.y !== undefined) {
+    if (e.type === 'mine') {
       const color = this.atlas.tileColor(e.tile ?? T.DIRT);
       const ink = this.atlas.tileInk(e.tile ?? T.DIRT);
       for (let i = 0; i < 8; i++) {
@@ -194,6 +201,9 @@ export class Renderer {
     this.snapNext = false;
     // 繪製時對齊整數美術 px：精靈 / chunk / 視差層都落在像素格上，不會閃爍
     this.drawCam = snapCam(this.cam);
+    const sh = this.combat.shakeOffset(dt);
+    this.drawCam = { x: this.drawCam.x + sh.x, y: this.drawCam.y + sh.y };
+    g.viewHalf = { w: Math.ceil(vw / S / 2), h: Math.ceil(vh / S / 2) };
     const camX = this.drawCam.x, camY = this.drawCam.y;
 
     const dirty = w.drainDirty();
@@ -246,6 +256,7 @@ export class Renderer {
     this.drawTrees(ctx, camX, camY, vw, vh);
     this.drawTorches(ctx, camX, camY, vw, vh);
     this.drawMiningAndCursor(ctx);
+    this.combat.drawWorld(ctx, { x: camX, y: camY, w: vw, h: vh }, { warm: this.torchesSeen, cool: this.coolSeen });
     this.drawPlayer(ctx, dt);
     this.drawParticles(ctx, dt);
     this.updateAmbient(dt, camX, camY, vw, vh);
@@ -254,6 +265,7 @@ export class Renderer {
     this.drawAmbient(ctx, true);
     this.drawRecall(ctx);
     this.drawGlows(ctx);
+    this.combat.drawOverlay(ctx, dt);
 
     // 整數倍放大貼到螢幕：每個美術像素 = scale×scale 裝置像素
     const out = this.ctx;
@@ -444,12 +456,19 @@ export class Renderer {
 
   private drawPlayer(ctx: CanvasRenderingContext2D, dt: number): void {
     const g = this.game, p = g.player, st = g.getState();
-    if (p.vx > 8) this.facing = 1; else if (p.vx < -8) this.facing = -1;
-    if (st.mining) this.facing = (st.mining.x + 0.5) * S >= p.x + p.w / 2 ? 1 : -1;
+    if (st.dead) return;
+    const atk = st.attack;
+    if (atk) this.facing = atk.dir;
+    else {
+      if (p.vx > 8) this.facing = 1; else if (p.vx < -8) this.facing = -1;
+      if (st.mining) this.facing = (st.mining.x + 0.5) * S >= p.x + p.w / 2 ? 1 : -1;
+    }
     // 攀爬：上下移動時用走路的腿部循環，掛著不動時用待機
     const kind = st.player.climbing ? (Math.abs(p.vy) > 1 || Math.abs(p.vx) > 8 ? 'walk' : 'idle') : poseKind(p.onGround, p.vx, p.vy);
     this.walkPhase = kind === 'walk' ? advancePhase(this.walkPhase, st.player.climbing ? Math.abs(p.vy) + Math.abs(p.vx) : p.vx, dt) : 0;
     this.swingPhase = st.mining ? (this.swingPhase + dt * SWING_RATE) % 1 : 0;
+    // 受傷無敵時閃爍
+    if (st.iframes > 0 && Math.floor(st.iframes * 16) % 2 === 1) return;
     let fi: number, local: number;
     if (kind === 'walk') { local = walkFrame(this.walkPhase); fi = FRAME.WALK + local; }
     else if (kind === 'jump') { local = 0; fi = FRAME.JUMP; }
@@ -457,40 +476,74 @@ export class Renderer {
     else { local = idleFrame(this.clock); fi = FRAME.IDLE + local; }
 
     const held = st.held ? st.held.item : null;
-    const heldPick = held && ITEMS[held].pick ? held : null;
-    const swing = st.mining ? swingAngle(this.swingPhase) : null;
+    const heldDef = held ? ITEMS[held] : null;
+    let swing: number | null = st.mining ? swingAngle(this.swingPhase) : null;
+    let blade: ItemId | null = null;
+    let rot: { item: ItemId; base: number; push: number } | null = null;
+    let throwMini: ItemId | null = null;
+    if (atk) {
+      swing = attackArmDeg(atk.kind, atk.progress, aimArmDeg(atk.angle, atk.dir));
+      if (atk.kind === 'sword' || atk.kind === 'broadsword') blade = atk.item;
+      else if (atk.kind === 'bow') rot = { item: atk.item, base: -Math.PI * 0.75, push: 0 };
+      else if (atk.kind === 'staff') rot = { item: atk.item, base: -Math.PI / 4, push: 4 };
+      else if (atk.kind === 'spear') rot = { item: atk.item, base: -Math.PI / 4, push: 4 + spearThrust(atk.progress) * 16 };
+      else if (atk.progress < 0.5) throwMini = atk.item;
+    }
     const arms = armAngles(kind, local, swing);
-    // 鎬只在挖掘時拿出來（走路時不拖著鎬）
+    // 鎬只在挖掘時拿出來；武器只在攻擊時拿出來
     const showPick = st.mining ? this.bestPickItem() : null;
-    void heldPick;
-    const heldOther = !st.mining && held && !heldPick ? held : null;
+    const heldOther = !st.mining && !atk && held && !heldDef?.pick && !heldDef?.weapon ? held : null;
     if (heldOther && kind !== 'jump' && kind !== 'fall') arms.front = 62 + Math.round(arms.front * 0.15);
 
     const SP = this.sprites;
-    const bodyDy = SP.bodyDy[fi] ?? 0;
+    const set = (it: ItemId | null): ArmorLook['head'] => (it ? ITEMS[it].armor?.set ?? null : null);
+    const armor: ArmorLook = { head: set(st.equipment.head), body: set(st.equipment.body), legs: set(st.equipment.legs) };
+    const sheet = SP.bodySheet(armor);
+    const bodyDy = sheet.dy[fi] ?? 0;
     const cx = Math.round(p.x + p.w / 2), bottom = Math.round(p.y + p.h + p.gfxOffY);
     ctx.save();
     ctx.translate(cx, bottom);
     ctx.scale(this.facing, 1);
     const ox = -FW / 2, oy = -FH;
     const sb = SP.shoulder(true), sf = SP.shoulder(false);
-    const back = SP.arm(true, null, arms.back);
+    const back = SP.arm(true, null, arms.back, armor.body);
     ctx.drawImage(back.canvas, ox + sb.x - back.ox, oy + sb.y + bodyDy - back.oy);
-    ctx.drawImage(SP.body, fi * FW, 0, FW, FH, ox, oy, FW, FH);
+    ctx.drawImage(sheet.canvas, fi * FW, 0, FW, FH, ox, oy, FW, FH);
     // 手持非鎬物件（火把 / 方塊）：手在前、物件直立
-    const rad = (arms.front * Math.PI) / 180;
-    const hx = Math.round(ox + sf.x + Math.sin(rad) * SP.handReach), hy = Math.round(oy + sf.y + bodyDy + Math.cos(rad) * SP.handReach);
+    const radA = (arms.front * Math.PI) / 180;
+    const hx = Math.round(ox + sf.x + Math.sin(radA) * SP.handReach), hy = Math.round(oy + sf.y + bodyDy + Math.cos(radA) * SP.handReach);
     if (heldOther === 'torch') {
       const c = SP.torches[flameFrame(this.clock, 7, 3)];
       ctx.drawImage(c, hx - 5, hy - 14);
     }
-    const front = SP.arm(false, showPick, arms.front);
+    // 揮劍殘影：刀身掃過的弧（前 80%）
+    if (atk && blade && atk.progress < 0.8) {
+      const r0 = 20, r1 = atk.kind === 'broadsword' ? 34 : 30;
+      const sx = ox + sf.x, sy = oy + sf.y + bodyDy;
+      for (let d = arms.front + 8; d <= Math.min(arms.front + 70, 205); d += 4) {
+        const fade = (d - arms.front) / 70;
+        ctx.fillStyle = fade < 0.35 ? '#ffffff' : fade < 0.7 ? '#cceaf8' : '#94c8ee';
+        const ux = Math.sin((d * Math.PI) / 180), uy = Math.cos((d * Math.PI) / 180);
+        for (let r = r0 + Math.round(fade * 6); r <= r1; r += 3) ctx.fillRect(Math.round(sx + ux * r), Math.round(sy + uy * r), 1, 1);
+      }
+    }
+    const front = SP.arm(false, showPick, arms.front, armor.body, blade);
     ctx.drawImage(front.canvas, ox + sf.x - front.ox, oy + sf.y + bodyDy - front.oy);
     if (heldOther && heldOther !== 'torch') {
       const m = SP.mini(heldOther);
       ctx.drawImage(m, hx - 2, hy - 6);
     }
+    if (throwMini) ctx.drawImage(SP.mini(throwMini), hx - 4, hy - 4);
     ctx.restore();
+    if (rot && atk) {
+      // 弓 / 法杖 / 矛：世界座標下旋轉到瞄準角，畫在手上
+      const wx = cx + this.facing * (ox + sf.x), wy = bottom + oy + sf.y + bodyDy;
+      const ux = Math.cos(atk.angle), uy = Math.sin(atk.angle);
+      const c = SP.rotatedIcon(rot.item, atk.angle, rot.base);
+      const px = wx + ux * (SP.handReach + rot.push), py = wy + uy * (SP.handReach + rot.push);
+      ctx.drawImage(c, Math.round(px - c.width / 2), Math.round(py - c.height / 2));
+      if (rot.item === 'crystal_staff') this.coolSeen.push({ x: px + ux * 8, y: py + uy * 8 });
+    }
     if (heldOther === 'torch' || heldOther === 'lantern') {
       this.torchesSeen.push({ x: cx + this.facing * (hx + 0), y: bottom + hy - 8 });
     }

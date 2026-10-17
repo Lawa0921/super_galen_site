@@ -6,7 +6,17 @@
 import { Bmp, INK, bayer, h01, hex, mix, ramp, rotPrep, rotate, shade, toCanvas, type RGB } from './pixel';
 import { ARM_STEPS, WALK_FRAMES, IDLE_FRAMES, FLAME_FRAMES, angleIndex } from './anim';
 import { PAL, PICK_METAL } from './textures';
-import type { ItemId } from '../engine/items';
+import { ITEMS, type ArmorSetId, type ItemId } from '../engine/items';
+import { ARMOR_RAMP, R as CR, WEAPON_METAL, shadeMask } from './combatArt';
+
+/** 身上穿的防具（各部位的套裝 id；null = 沒穿） */
+export interface ArmorLook { head: ArmorSetId | null; body: ArmorSetId | null; legs: ArmorSetId | null; }
+export const NO_ARMOR: ArmorLook = { head: null, body: null, legs: null };
+export function armorKey(a: ArmorLook): string { return `${a.head ?? ''}|${a.body ?? ''}|${a.legs ?? ''}`; }
+/** 防具色階（7 階）→ 上衣 6 階 / 褲子 5 階 / 靴子 5 階 */
+const asShirt = (r: RGB[]): RGB[] => [r[0], r[1], r[2], r[3], r[4], r[5]];
+const asPants = (r: RGB[]): RGB[] => [r[0], r[1], r[2], r[3], r[4]];
+const asBoots = (r: RGB[]): RGB[] => [r[0], r[0], r[1], r[2], r[3]];
 
 // ── 可自訂外觀（之後的角色客製化用） ─────────────────────
 export const SKIN_TONES: RGB[][] = [
@@ -22,9 +32,9 @@ export const HAIR_COLORS: RGB[][] = [
 export interface Look { skin: number; hair: number; }
 export const DEFAULT_LOOK: Look = { skin: 0, hair: 0 };
 
-const SHIRT = ramp('#0c0a12', '#1f6474', '#1f6474', '#2c8692', '#4aaeb0', '#a2c8b0');
-const PANTS = ramp('#0c0a12', '#1c1424', '#2c2450', '#463c78', '#7a5a8c');
-const BOOTS = ramp('#0c0a12', '#2a1810', '#472819', '#623924', '#7c4c2e');
+const SHIRT_BASE = ramp('#0c0a12', '#1f6474', '#1f6474', '#2c8692', '#4aaeb0', '#a2c8b0');
+const PANTS_BASE = ramp('#0c0a12', '#1c1424', '#2c2450', '#463c78', '#7a5a8c');
+const BOOTS_BASE = ramp('#0c0a12', '#2a1810', '#472819', '#623924', '#7c4c2e');
 const BELT = ramp('#1c1424', '#2a1810', '#472819');
 const BUCKLE = hex('#ffd86a');
 
@@ -104,9 +114,31 @@ function leg(pose: LegPose, hipX: number, hipY: number, pants: RGB[], boots: RGB
   return { b, ankleY: ay };
 }
 
-function bodyFrame(look: Look, kind: 'idle' | 'walk' | 'jump' | 'fall', f: number): { b: Bmp; dy: number } {
+/** 頭盔：蓋住頭髮（頭頂 + 後腦），前緣到眉毛；各套裝有自己的細節 */
+function helmetOver(head: Bmp, set: ArmorSetId, ox: number, oy: number): void {
+  const r = ARMOR_RAMP[set];
+  const m = (x: number, y: number): boolean => {
+    const lx = x - ox, ly = y - oy;
+    if (ly < -1 || ly > 9 || lx < -1 || lx > 12) return false;
+    if (ly <= 3) return Math.hypot(lx + 0.5 - 6, (ly + 0.5 - 4.5) * 1.15) <= 6.6;
+    if (ly === 4) return lx >= -1 && lx <= 12;
+    return lx >= -1 && lx <= 3 - (ly > 7 ? 1 : 0);
+  };
+  shadeMask(head, m, r, { x0: 0, y0: 0, x1: head.w - 1, y1: head.h - 1 });
+  head.rect(ox, oy + 4, 13, 1, r[2]);
+  if (set === 'gold') { head.set(ox + 5, oy - 2, CR.red[3]); head.set(ox + 6, oy - 2, CR.red[4]); head.set(ox + 6, oy - 3, CR.red[3]); }
+  if (set === 'molten') { head.set(ox + 4, oy + 1, CR.lava[3]); head.set(ox + 8, oy + 2, CR.lava[4]); head.set(ox + 1, oy + 6, CR.lava[3]); }
+  if (set === 'bone') { head.set(ox + 8, oy + 1, r[1]); head.set(ox + 9, oy + 2, r[1]); head.set(ox + 3, oy + 2, r[1]); }
+  if (set === 'iron' || set === 'copper') { head.set(ox + 6, oy, r[6]); head.set(ox + 6, oy + 1, r[5]); }
+  if (set === 'wood') { head.set(ox + 4, oy + 1, r[2]); head.set(ox + 8, oy + 1, r[2]); }
+}
+
+function bodyFrame(look: Look, kind: 'idle' | 'walk' | 'jump' | 'fall', f: number, armor: ArmorLook = NO_ARMOR): { b: Bmp; dy: number } {
   const skin = SKIN_TONES[look.skin] ?? SKIN_TONES[0];
   const hair = HAIR_COLORS[look.hair] ?? HAIR_COLORS[0];
+  const SHIRT = armor.body ? asShirt(ARMOR_RAMP[armor.body]) : SHIRT_BASE;
+  const PANTS = armor.legs ? asPants(ARMOR_RAMP[armor.legs]) : PANTS_BASE;
+  const BOOTS = armor.legs ? asBoots(ARMOR_RAMP[armor.legs]) : BOOTS_BASE;
   let near: LegPose, far: LegPose, snap = true, breath = 0;
   if (kind === 'walk') {
     const ph = (f / WALK_FRAMES) * Math.PI * 2;
@@ -134,6 +166,7 @@ function bodyFrame(look: Look, kind: 'idle' | 'walk' | 'jump' | 'fall', f: numbe
   head.grid(HEAD, {
     a: hair[2], A: hair[1], q: hair[3], s: skin[3], S: skin[2], h: skin[4], w: hex('#f4f2ea'), e: hex('#1c1424'), m: skin[1],
   }, 10, 7 + breath);
+  if (armor.head) helmetOver(head, armor.head, 10, 7 + breath);
   head.outline(INK);
 
   const out = new Bmp(FW, FH);
@@ -147,10 +180,35 @@ function bodyFrame(look: Look, kind: 'idle' | 'walk' | 'jump' | 'fall', f: numbe
 
 // ── 手臂 + 手持鎬 ──────────────────────────────────────
 const ARM_W = 26, ARM_H = 34, PIV = { x: 13, y: 3 };
-function armBmp(look: Look, back: boolean, pick: ItemId | null): Bmp {
-  const skin = (SKIN_TONES[look.skin] ?? SKIN_TONES[0]).map((c) => (back ? shade(c, 0.8) : c));
-  const sh = SHIRT.map((c) => (back ? shade(c, 0.78) : c));
+/** 劍 / 大劍：握把在手心、刀身沿手臂往外伸（跟著手臂旋轉） */
+function bladeBmp(item: ItemId): Bmp {
+  const w = ITEMS[item].weapon;
+  const m = WEAPON_METAL[item] ?? CR.iron;
+  const broad = w?.kind === 'broadsword';
+  const len = broad ? 17 : item === 'lumen_blade' ? 17 : item === 'wood_sword' ? 12 : Math.min(17, Math.round((w?.reach ?? 34) / 2.4));
+  const g = item === 'lumen_blade' || item === 'gold_sword' ? CR.gold : item === 'wood_sword' ? CR.wood : broad ? CR.leather : m;
   const b = new Bmp(ARM_W, ARM_H);
+  // 握把（手心）+ 護手
+  b.rect(12, 11, 2, 3, CR.leather[3]); b.set(12, 11, CR.leather[5]);
+  b.rect(9, 14, 8, 1, g[4]); b.set(9, 14, g[5]); b.set(16, 14, g[2]);
+  // 刀身
+  const x0 = broad ? 11 : 12, wd = broad ? 4 : 2;
+  for (let y = 15; y < 15 + len && y < ARM_H - 1; y++) {
+    for (let k = 0; k < wd; k++) b.set(x0 + k, y, k === 0 ? m[5] : k === wd - 1 ? m[2] : m[4]);
+    if (broad && y % 4 === 1) b.set(x0 + wd - 1, y, m[1]);
+  }
+  const tip = Math.min(ARM_H - 1, 15 + len);
+  b.set(broad ? 12 : 12, tip, m[4]); if (broad) b.set(13, tip, m[3]);
+  if (item === 'lumen_blade') for (let y = 17; y < tip; y += 3) b.set(12, y, CR.cyan[6]);
+  return b.outline(INK);
+}
+
+function armBmp(look: Look, back: boolean, pick: ItemId | null, bodySet: ArmorSetId | null = null, blade: ItemId | null = null): Bmp {
+  const skin = (SKIN_TONES[look.skin] ?? SKIN_TONES[0]).map((c) => (back ? shade(c, 0.8) : c));
+  const SH = bodySet ? asShirt(ARMOR_RAMP[bodySet]) : SHIRT_BASE;
+  const sh = SH.map((c) => (back ? shade(c, 0.78) : c));
+  const b = new Bmp(ARM_W, ARM_H);
+  if (blade) b.blit(bladeBmp(blade), 0, 0);
   if (pick) {
     const w = PAL.bark, m = PICK_METAL[pick] ?? PAL.metal;
     const item = new Bmp(ARM_W, ARM_H);
@@ -480,7 +538,7 @@ export class Sprites {
   /** 身體影格表：FRAMES × (FW×FH) */
   readonly body: HTMLCanvasElement;
   /** 每格身體影格的垂直位移（肩膀跟著動） */
-  readonly bodyDy: number[] = [];
+  readonly bodyDy: number[];
   readonly torches: HTMLCanvasElement[] = [];
   readonly glow: HTMLCanvasElement;
   /** 螢光菇 / 水晶的冷色小光暈 */
@@ -490,40 +548,75 @@ export class Sprites {
   private treeCache = new Map<string, TreeSprite>();
   private miniCache = new Map<string, HTMLCanvasElement>();
 
+  private sheets = new Map<string, { canvas: HTMLCanvasElement; dy: number[] }>();
+  private weaponCache = new Map<string, HTMLCanvasElement>();
+  private weaponPrep = new Map<string, Bmp>();
+
   constructor(private readonly iconBmp: (item: ItemId) => Bmp, readonly look: Look = DEFAULT_LOOK) {
-    const sheet = new Bmp(FW * FRAMES, FH);
-    const add = (i: number, kind: 'idle' | 'walk' | 'jump' | 'fall', f: number): void => {
-      const { b, dy } = bodyFrame(look, kind, f);
-      sheet.blit(b, i * FW, 0);
-      this.bodyDy[i] = dy;
-    };
-    for (let f = 0; f < IDLE_FRAMES; f++) add(FRAME.IDLE + f, 'idle', f);
-    for (let f = 0; f < WALK_FRAMES; f++) add(FRAME.WALK + f, 'walk', f);
-    add(FRAME.JUMP, 'jump', 0);
-    add(FRAME.FALL, 'fall', 0);
-    this.body = toCanvas(sheet) as HTMLCanvasElement;
+    const s = this.bodySheet(NO_ARMOR);
+    this.body = s.canvas;
+    this.bodyDy = s.dy;
     for (let f = 0; f < FLAME_FRAMES; f++) this.torches.push(toCanvas(torchBmp(f)) as HTMLCanvasElement);
     this.glow = toCanvas(glowBmp(), null, true) as HTMLCanvasElement;
     this.coolGlow = toCanvas(glowBmp(12, [10, 30, 44], [4, 14, 24]), null, true) as HTMLCanvasElement;
   }
 
+  /** 身體影格表（依穿的防具烘焙、快取） */
+  bodySheet(armor: ArmorLook): { canvas: HTMLCanvasElement; dy: number[] } {
+    const key = armorKey(armor);
+    let s = this.sheets.get(key);
+    if (s) return s;
+    const sheet = new Bmp(FW * FRAMES, FH);
+    const dy: number[] = [];
+    const add = (i: number, kind: 'idle' | 'walk' | 'jump' | 'fall', f: number): void => {
+      const r = bodyFrame(this.look, kind, f, armor);
+      sheet.blit(r.b, i * FW, 0);
+      dy[i] = r.dy;
+    };
+    for (let f = 0; f < IDLE_FRAMES; f++) add(FRAME.IDLE + f, 'idle', f);
+    for (let f = 0; f < WALK_FRAMES; f++) add(FRAME.WALK + f, 'walk', f);
+    add(FRAME.JUMP, 'jump', 0);
+    add(FRAME.FALL, 'fall', 0);
+    s = { canvas: toCanvas(sheet) as HTMLCanvasElement, dy };
+    this.sheets.set(key, s);
+    return s;
+  }
+
   shoulder(back: boolean): { x: number; y: number } { return back ? SHOULDER_BACK : SHOULDER_FRONT; }
 
-  /** 旋轉後的手臂（含鎬）；回傳 canvas 與「軸心在 canvas 中的位置」 */
-  arm(back: boolean, pick: ItemId | null, deg: number): HeldDraw {
+  /** 旋轉後的手臂（含鎬 / 劍）；bodySet = 胸甲套裝（袖子顏色）。回傳 canvas 與「軸心在 canvas 中的位置」 */
+  arm(back: boolean, pick: ItemId | null, deg: number, bodySet: ArmorSetId | null = null, blade: ItemId | null = null): HeldDraw {
     const idx = angleIndex(deg, ARM_STEPS);
-    const key = `${back ? 1 : 0}:${pick ?? ''}:${idx}`;
-    const size = 60;
+    const pk = `${back ? 1 : 0}:${pick ?? ''}:${bodySet ?? ''}:${blade ?? ''}`;
+    const key = `${pk}:${idx}`;
+    const size = 64;
     let c = this.armCache.get(key);
     if (!c) {
-      const pk = `${back ? 1 : 0}:${pick ?? ''}`;
       let prep = this.armPrep.get(pk);
-      if (!prep) { prep = rotPrep(armBmp(this.look, back, pick)); this.armPrep.set(pk, prep); }
+      if (!prep) { prep = rotPrep(armBmp(this.look, back, pick, bodySet, blade)); this.armPrep.set(pk, prep); }
       const rad = -(idx / ARM_STEPS) * Math.PI * 2;
       c = toCanvas(rotate(prep, PIV.x, PIV.y, rad, size)) as HTMLCanvasElement;
       this.armCache.set(key, c);
     }
     return { canvas: c, ox: size / 2, oy: size / 2 };
+  }
+
+  /**
+   * 手持武器 / 投射物圖示旋轉到世界角度 rad（0 = 右、順時針為正）。base = 圖示本身朝向的角度
+   * （劍 / 矛 / 箭的圖示朝右上 = −π/4，弓朝左上 = −3π/4）。canvas 中心 = 圖示中心。
+   */
+  rotatedIcon(item: ItemId, rad: number, base: number): HTMLCanvasElement {
+    const steps = 32;
+    const idx = ((Math.round(((rad - base) / (Math.PI * 2)) * steps) % steps) + steps) % steps;
+    const key = `${item}:${idx}`;
+    let c = this.weaponCache.get(key);
+    if (!c) {
+      let prep = this.weaponPrep.get(item);
+      if (!prep) { prep = rotPrep(this.iconBmp(item)); this.weaponPrep.set(item, prep); }
+      c = toCanvas(rotate(prep, 8, 8, (idx / steps) * Math.PI * 2, 24)) as HTMLCanvasElement;
+      this.weaponCache.set(key, c);
+    }
+    return c;
   }
 
   /** 手到肩的距離（px），手持物件定位用 */
