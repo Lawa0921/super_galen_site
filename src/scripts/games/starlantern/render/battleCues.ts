@@ -1,5 +1,6 @@
 import type { BattleEvent } from '../engine/combatant';
 import { effectFor, type FxKey } from './artPaths';
+import type { WeaponKind } from '../engine/types';
 
 /** `line` shows log entry `index` in the message window at the moment its picture plays. */
 export type Cue =
@@ -20,12 +21,15 @@ export type Cue =
 const ACT_MS = 420;
 const EVENT_MS = 320;
 
-export function battleCues(log: BattleEvent[], defIdOf: (key: string) => string | null): Cue[] {
+/** `weaponOf` gives the weapon kind of a combatant key (the hero only); his physical hits show that weapon's effect. */
+export function battleCues(log: BattleEvent[], defIdOf: (key: string) => string | null, weaponOf: (key: string) => WeaponKind | undefined = () => undefined): Cue[] {
   const out: Cue[] = [];
   let actor: string | null = null;
+  let actorKey = '';
   log.forEach((ev, index) => {
     if (ev.type === 'act') {
       actor = defIdOf(ev.actor);
+      actorKey = ev.actor;
       if (ev.ultimate) out.push({ kind: 'ultimate', key: ev.actor, name: ev.label });
       out.push({ kind: 'line', index }, { kind: 'act', key: ev.actor }, { kind: 'wait', ms: ACT_MS });
       return;
@@ -35,12 +39,12 @@ export function battleCues(log: BattleEvent[], defIdOf: (key: string) => string 
     if (ev.type === 'damage') {
       out.push({
         kind: 'hit', key: ev.target, amount: ev.amount, weak: ev.mult > 1,
-        ...(ev.crit ? { crit: true as const } : {}), ...(ev.mult < 1 ? { resist: true as const } : {}), fx: effectFor(ev, actor),
+        ...(ev.crit ? { crit: true as const } : {}), ...(ev.mult < 1 ? { resist: true as const } : {}), fx: effectFor(ev, actor, weaponOf(actorKey)),
       });
     } else if (ev.type === 'miss') out.push({ kind: 'miss', key: ev.target });
     else if (ev.type === 'ko') out.push({ kind: 'ko', key: ev.target });
     else if ('target' in ev) {
-      const fx = effectFor(ev, actor);
+      const fx = effectFor(ev, actor, weaponOf(actorKey));
       if (fx) out.push(ev.type === 'heal' ? { kind: 'fx', key: ev.target, fx, amount: ev.amount } : { kind: 'fx', key: ev.target, fx });
     }
     out.push({ kind: 'wait', ms: EVENT_MS });

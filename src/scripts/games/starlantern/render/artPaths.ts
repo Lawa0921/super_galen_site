@@ -1,13 +1,13 @@
 import { CHARACTER_IDS } from '../data/characters';
 import { ENEMIES } from '../data/enemies';
-import { EQUIPMENT } from '../data/equipment';
+import { EQUIPMENT, WEAPON_KINDS } from '../data/equipment';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
 import { REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { BattleEvent } from '../engine/combatant';
 import type { Dir, Tile } from '../engine/map';
-import type { CharacterId } from '../engine/types';
+import type { CharacterId, WeaponKind } from '../engine/types';
 
 export const ART_BASE = '/assets/games/starlantern';
 export const MANIFEST_URL = `${ART_BASE}/manifest.json`;
@@ -81,9 +81,11 @@ export function moodFor(hp: number, max: number): Mood {
   return hp <= max * 0.3 ? 'dying' : 'normal';
 }
 
-export function effectFor(ev: BattleEvent, actorDefId: string | null): FxKey | null {
+/** `weaponKind` is the hero's weapon: it picks the hit effect of his physical damage; everyone else passes none. */
+export function effectFor(ev: BattleEvent, actorDefId: string | null, weaponKind?: WeaponKind): FxKey | null {
   if (ev.type === 'damage') {
     if (ev.element !== 'phys') return ev.element;
+    if (weaponKind) return WEAPON_KINDS[weaponKind].fx;
     if (actorDefId && PIERCERS.has(actorDefId)) return 'pierce';
     return actorDefId && SLASHERS.has(actorDefId) ? 'slash' : 'strike';
   }

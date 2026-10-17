@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../data/enemies';
+import type { BattleEvent } from '../engine/combatant';
 import { ART_BASE, ART_CHARACTER_IDS, allArtUrls, art, effectFor, moodFor, parseManifest, tileKey } from './artPaths';
 
 describe('artPaths', () => {
@@ -63,6 +64,18 @@ describe('artPaths', () => {
     expect(effectFor({ type: 'buff', target: 'liz', stat: 'atk', pct: 25 }, 'safira')).toBe('buff');
     expect(effectFor({ type: 'buff', target: 'e0', stat: 'atk', pct: -25 }, 'noel')).toBeNull();
     expect(effectFor({ type: 'ko', target: 'e0' }, 'liz')).toBeNull();
+  });
+
+  it("the hero's hit effect follows his weapon", () => {
+    const dmg = (element: 'phys' | 'fire'): BattleEvent => ({ type: 'damage', target: 'e0', amount: 5, element, mult: 1, crit: false } as BattleEvent);
+    expect(effectFor(dmg('phys'), 'hero', 'spear')).toBe('pierce');
+    expect(effectFor(dmg('phys'), 'hero', 'staff')).toBe('fire');
+    expect(effectFor(dmg('phys'), 'hero', 'sword')).toBe('slash');
+    expect(effectFor(dmg('phys'), 'hero')).toBe('slash');
+    expect(effectFor(dmg('phys'), 'hero', undefined)).toBe('slash');
+    // magic keeps its element, and a weapon never changes a heal
+    expect(effectFor(dmg('fire'), 'hero', 'spear')).toBe('fire');
+    expect(effectFor({ type: 'heal', target: 'liz', amount: 9 }, 'hero', 'spear')).toBe('heal');
   });
 
   it('accepts only base urls from a well-formed manifest', () => {

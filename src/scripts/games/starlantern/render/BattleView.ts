@@ -5,6 +5,7 @@ import { T } from '../data/text.zh-TW';
 import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
 import type { Combatant } from '../engine/combatant';
+import type { WeaponKind } from '../engine/types';
 import { art, type FxKey } from './artPaths';
 import { battleCues } from './battleCues';
 import type { TextureBank } from './textures';
@@ -95,6 +96,7 @@ export class BattleView {
   readonly root = new Container();
   private slots = new Map<string, Slot>();
   private defIds = new Map<string, string>();
+  private weapons = new Map<string, WeaponKind>();
   /** Pending timers, animation frames and shatters of the current battle; cleared when a new battle is set up. */
   private timers = new Set<ReturnType<typeof setTimeout>>();
   private frames = new Set<number>();
@@ -131,7 +133,8 @@ export class BattleView {
     this.root.scale.set(1); this.root.x = 0; this.root.y = 0; this.scene.x = 0;
     this.slots.clear();
     this.defIds.clear();
-    for (const c of [...state.party, ...state.enemies]) this.defIds.set(c.key, c.defId);
+    this.weapons.clear();
+    for (const c of [...state.party, ...state.enemies]) { this.defIds.set(c.key, c.defId); if (c.weaponKind) this.weapons.set(c.key, c.weaponKind); }
     const bg = this.bank?.get(art.bg(floor)) ?? null;
     if (bg) {
       const s = new Sprite(bg);
@@ -237,7 +240,7 @@ export class BattleView {
     onParty?: (key: string, cue: PartyCue, name?: string, amount?: number, extra?: HitExtra) => void | Promise<void>,
     onLine?: (index: number) => void,
   ): Promise<void> {
-    for (const cue of battleCues(state.log, (k) => this.defIds.get(k) ?? null)) {
+    for (const cue of battleCues(state.log, (k) => this.defIds.get(k) ?? null, (k) => this.weapons.get(k))) {
       if (cue.kind === 'wait') { await this.wait(cue.ms); continue; }
       if (cue.kind === 'line') { onLine?.(cue.index); continue; }
       const slot = this.slots.get(cue.key);

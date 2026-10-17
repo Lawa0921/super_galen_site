@@ -1,7 +1,7 @@
 import { ROW_MELEE } from './formation';
 import type { Rng } from './rng';
 import { armorReduction, evadeChance, EVADE_MAX } from './stats';
-import type { BuffStat, Element, Row, SecondaryKey, Stats } from './types';
+import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
 import { KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 
 export interface Buff { stat: BuffStat; pct: number; turns: number }
@@ -24,6 +24,10 @@ export interface Combatant {
   level: number;
   /** A member's skill-tree ranks by node id (a copy of `Member.tree`); enemies and test combatants have none. */
   ranks?: Record<string, number>;
+  /** How a weapon-master's basic attack scales (the hero, from his weapon); absent reads as 'atk'. */
+  attackScale?: 'atk' | 'mag';
+  /** The hero's weapon kind (companions have none); drives his mastery and hit effect. */
+  weaponKind?: WeaponKind;
   /** Legendary powers worn (members only). */
   powers: string[];
   /** Keystone talents held (members only; engine/progression.keystonesOf). */

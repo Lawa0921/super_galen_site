@@ -7,6 +7,8 @@ import { EQUIPMENT } from './equipment';
 import { slotsFor } from '../engine/party';
 import { GEAR_SLOTS } from './gear';
 import { MATERIALS } from './materials';
+import { WEAPON_KINDS } from './equipment';
+import { NODES } from './trees';
 import { FLOORS } from './floors';
 import { ULTIMATES } from './ultimates';
 
@@ -77,6 +79,24 @@ describe('equipment bases', () => {
   it('every base can be worn somewhere, rings in either ring slot', () => {
     for (const e of Object.values(EQUIPMENT)) expect(slotsFor(e.slot).length, e.id).toBeGreaterThan(0);
     expect(slotsFor('ring')).toEqual(['ring1', 'ring2']);
+  });
+});
+
+describe('weapon kinds', () => {
+  it('every weapon base has a kind and every kind grants the hero mastery somewhere', () => {
+    for (const e of Object.values(EQUIPMENT)) {
+      if (e.slot === 'weapon') expect(WEAPON_KINDS[e.weaponKind!], e.id).toBeDefined();
+      else expect(e.weaponKind, e.id).toBeUndefined();
+    }
+    const branches = new Set(Object.values(NODES).filter((n) => n.owner === 'hero').map((n) => n.branch));
+    for (const [kind, def] of Object.entries(WEAPON_KINDS)) {
+      expect(def.mastery.length, kind).toBeGreaterThan(0);
+      for (const b of def.mastery) expect(branches.has(b), kind).toBe(true);
+    }
+    expect(Object.fromEntries(Object.values(EQUIPMENT).filter((e) => e.slot === 'weapon').map((e) => [e.id, e.weaponKind]))).toEqual({
+      'iron-sword': 'sword', 'crystal-blade': 'dagger', 'star-saber': 'scimitar', 'thorn-spear': 'spear',
+      'hunter-bow': 'bow', 'wooden-staff': 'staff', 'frost-staff': 'staff',
+    });
   });
 });
 

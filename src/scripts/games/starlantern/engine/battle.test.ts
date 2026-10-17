@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, resolveRound, rewards, skillCost, turnOrder, writeBack } from './battle';
+import { LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, resolveRound, rewards, skillCost, skillFor, turnOrder, writeBack } from './battle';
+import { WEAPON_MASTERY_PCT } from '../data/equipment';
 import { ULTIMATES } from '../data/ultimates';
 import { ENEMIES } from '../data/enemies';
 import { activeIds, newParty, powersOf, sheetOf } from './party';
@@ -454,5 +455,74 @@ describe('abyss skills', () => {
   });
   it('abyss leaves other skills alone', () => {
     expect(cast('hero-slash', 30)).toBe(cast('hero-slash', 0));
+  });
+});
+
+describe('weapon kinds in battle', () => {
+  const heroAt = (cell: number, weapon?: string, noel?: string) => {
+    const party = newParty();
+    party.grid = party.grid.map(() => null) as typeof party.grid;
+    party.grid[cell] = 'hero';
+    if (weapon) party.roster.hero.equip = { weapon: plainItem(weapon, 1) };
+    if (noel) { party.grid[8] = 'noel'; party.roster.noel.equip = { weapon: plainItem(noel, 2) }; }
+    return party;
+  };
+  const start = (party: ReturnType<typeof newParty>) => createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+  const hit = (s: ReturnType<typeof start>, key: string, patch: (c: ReturnType<typeof start>['party'][number]) => void = () => {}) => {
+    patch(s.party.find((c) => c.key === key)!);
+    const foe = s.enemies[0];
+    foe.max.def = 0; foe.max.res = 0; foe.max.hp = 100000; foe.hp = 100000; foe.sleep = 3;
+    const r = resolveRound(s, { [key]: { kind: 'attack', target: foe.key } }, rng);
+    return 100000 - r.enemies[0].hp;
+  };
+
+  it('the hero with a staff attacks from range with MAG', () => {
+    const s = start(heroAt(6, 'wooden-staff'));
+    const h = s.party[0];
+    expect([h.melee, h.attackScale, h.weaponKind]).toEqual([false, 'mag', 'staff']);
+    const base = hit(start(heroAt(6, 'wooden-staff')), 'hero');
+    const doubled = hit(start(heroAt(6, 'wooden-staff')), 'hero', (c) => { c.max.mag *= 2; });
+    expect(base).toBeGreaterThan(0);
+    expect(doubled / base).toBeGreaterThan(1.8);
+    expect(doubled / base).toBeLessThan(2.2);
+    // ATK does not move it
+    expect(hit(start(heroAt(6, 'wooden-staff')), 'hero', (c) => { c.max.atk *= 2; })).toBe(base);
+  });
+
+  it('the hero with a sword attacks in melee with ATK', () => {
+    const h = start(heroAt(0, 'iron-sword')).party[0];
+    expect([h.melee, h.attackScale, h.weaponKind]).toEqual([true, 'atk', 'sword']);
+    const base = hit(start(heroAt(0, 'iron-sword')), 'hero');
+    expect(hit(start(heroAt(0, 'iron-sword')), 'hero', (c) => { c.max.mag *= 2; })).toBe(base);
+    expect(hit(start(heroAt(0, 'iron-sword')), 'hero', (c) => { c.max.atk *= 2; })).toBeGreaterThan(base * 1.8);
+  });
+
+  it('the hero with a bow shoots from range with ATK; with no weapon he is a melee ATK fighter without mastery', () => {
+    const bow = start(heroAt(6, 'hunter-bow')).party[0];
+    expect([bow.melee, bow.attackScale, bow.weaponKind]).toEqual([false, 'atk', 'bow']);
+    const bare = start(heroAt(0)).party[0];
+    expect([bare.melee, bare.attackScale, bare.weaponKind]).toEqual([true, 'atk', undefined]);
+  });
+
+  it('companions ignore their weapon', () => {
+    const n = start(heroAt(0, undefined, 'iron-sword')).party.find((c) => c.key === 'noel')!;
+    expect(n.melee).toBe(false);
+    expect(n.attackScale).toBeUndefined();
+    expect(n.weaponKind).toBeUndefined();
+  });
+
+  it('mastery adds WEAPON_MASTERY_PCT to the matching branch only', () => {
+    const mend = (c: Parameters<typeof skillFor>[0]) => skillFor(c, 'hero-mend')!.effects.find((e) => e.kind === 'heal')!;
+    const slash = (c: Parameters<typeof skillFor>[0]) => skillFor(c, 'hero-slash')!.effects.find((e) => e.kind === 'damage')!;
+    const none = { powers: [], ranks: {} };
+    const staff = { powers: [], ranks: {}, weaponKind: 'staff' as const };
+    const power = (e: { power?: number }) => e.power!;
+    expect(power(mend(staff))).toBeCloseTo(power(mend(none)) * (1 + WEAPON_MASTERY_PCT / 100), 5);
+    expect(power(slash(staff))).toBe(power(slash(none)));
+    // a sword masters the sword branch, not the light branch
+    expect(power(slash({ ...none, weaponKind: 'sword' as const }))).toBeCloseTo(power(slash(none)) * (1 + WEAPON_MASTERY_PCT / 100), 5);
+    expect(power(mend({ ...none, weaponKind: 'sword' as const }))).toBe(power(mend(none)));
+    // a companion's skill is never mastered
+    expect(skillFor(staff, 'fire-star')).toBe(skillFor(none, 'fire-star'));
   });
 });

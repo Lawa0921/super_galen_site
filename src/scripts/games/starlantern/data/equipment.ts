@@ -1,13 +1,14 @@
-import type { EquipDef } from '../engine/types';
+import type { EquipDef, WeaponKind } from '../engine/types';
+import type { FxKey } from '../render/artPaths';
 
 const LIST: EquipDef[] = [
-  { id: 'wooden-staff', name: '木杖', slot: 'weapon', ilvl: 1, price: 30, bonus: { mag: 3 } },
-  { id: 'iron-sword', name: '鐵劍', slot: 'weapon', ilvl: 1, price: 40, bonus: { atk: 4 } },
-  { id: 'hunter-bow', name: '獵弓', slot: 'weapon', ilvl: 1, price: 40, bonus: { atk: 4 } },
-  { id: 'thorn-spear', name: '荊棘槍', slot: 'weapon', ilvl: 5, price: 90, bonus: { atk: 7 }, unlock: [{ mat: 'thorn-fang', qty: 4 }] },
-  { id: 'crystal-blade', name: '晶刃', slot: 'weapon', ilvl: 7, price: 160, bonus: { atk: 9 }, unlock: [{ mat: 'crystal-shell', qty: 3 }] },
-  { id: 'frost-staff', name: '霜杖', slot: 'weapon', ilvl: 7, price: 160, bonus: { mag: 9 }, unlock: [{ mat: 'ice-crystal', qty: 3 }] },
-  { id: 'star-saber', name: '星紋軍刀', slot: 'weapon', ilvl: 10, price: 320, bonus: { atk: 15 }, unlock: [{ mat: 'star-stone', qty: 3 }] },
+  { id: 'wooden-staff', name: '木杖', slot: 'weapon', ilvl: 1, price: 30, bonus: { mag: 3 }, weaponKind: 'staff' },
+  { id: 'iron-sword', name: '鐵劍', slot: 'weapon', ilvl: 1, price: 40, bonus: { atk: 4 }, weaponKind: 'sword' },
+  { id: 'hunter-bow', name: '獵弓', slot: 'weapon', ilvl: 1, price: 40, bonus: { atk: 4 }, weaponKind: 'bow' },
+  { id: 'thorn-spear', name: '荊棘槍', slot: 'weapon', ilvl: 5, price: 90, bonus: { atk: 7 }, unlock: [{ mat: 'thorn-fang', qty: 4 }], weaponKind: 'spear' },
+  { id: 'crystal-blade', name: '晶刃', slot: 'weapon', ilvl: 7, price: 160, bonus: { atk: 9 }, unlock: [{ mat: 'crystal-shell', qty: 3 }], weaponKind: 'dagger' },
+  { id: 'frost-staff', name: '霜杖', slot: 'weapon', ilvl: 7, price: 160, bonus: { mag: 9 }, unlock: [{ mat: 'ice-crystal', qty: 3 }], weaponKind: 'staff' },
+  { id: 'star-saber', name: '星紋軍刀', slot: 'weapon', ilvl: 10, price: 320, bonus: { atk: 15 }, unlock: [{ mat: 'star-stone', qty: 3 }], weaponKind: 'scimitar' },
   { id: 'cloth-robe', name: '布袍', slot: 'body', ilvl: 1, price: 30, bonus: { def: 2, res: 3 } },
   { id: 'leather-vest', name: '皮背心', slot: 'body', ilvl: 1, price: 40, bonus: { def: 4 } },
   { id: 'scale-mail', name: '鱗甲', slot: 'body', ilvl: 7, price: 180, bonus: { def: 9 }, unlock: [{ mat: 'lizard-scale', qty: 3 }] },
@@ -29,3 +30,21 @@ const LIST: EquipDef[] = [
 ];
 
 export const EQUIPMENT: Record<string, EquipDef> = Object.fromEntries(LIST.map((e) => [e.id, e]));
+
+/**
+ * What each weapon kind gives the hero (spec 4.3): whether his basic attack is melee, which stat it scales with, the hit
+ * effect it shows, and the hero-tree branches (by index) it masters. Companions ignore all of it.
+ */
+export const WEAPON_KINDS: Record<WeaponKind, { melee: boolean; scale: 'atk' | 'mag'; fx: FxKey; mastery: number[] }> = {
+  sword: { melee: true, scale: 'atk', fx: 'slash', mastery: [0] },
+  scimitar: { melee: true, scale: 'atk', fx: 'slash', mastery: [0] },
+  dagger: { melee: true, scale: 'atk', fx: 'slash', mastery: [0, 4] },
+  spear: { melee: true, scale: 'atk', fx: 'pierce', mastery: [1] },
+  wrench: { melee: true, scale: 'atk', fx: 'strike', mastery: [1] },
+  bow: { melee: false, scale: 'atk', fx: 'pierce', mastery: [4] },
+  staff: { melee: false, scale: 'mag', fx: 'fire', mastery: [2, 3] },
+  tome: { melee: false, scale: 'mag', fx: 'thunder', mastery: [2, 3] },
+};
+
+/** Percent added to the power of a hero skill in a branch his weapon masters. */
+export const WEAPON_MASTERY_PCT = 10;

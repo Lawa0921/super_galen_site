@@ -5,6 +5,7 @@ import { ENEMIES } from '../data/enemies';
 import { REGIONS, type RegionId } from '../data/regions';
 import { ITEMS } from '../data/items';
 import { POWERS } from '../data/gear';
+import { EQUIPMENT, WEAPON_KINDS, WEAPON_MASTERY_PCT } from '../data/equipment';
 import { SKILLS } from '../data/skills';
 import { stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
 import { hasPassive, powersOf, sheetOf, statsOf } from './party';
@@ -13,6 +14,7 @@ import { abyssPct, depthLevel, empower, homeLevel, regionTint, scaleEnemy } from
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
 import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
+import { NODES } from '../data/trees';
 import { KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, SecondaryKey, SkillDef, Target } from './types';
 
@@ -56,8 +58,12 @@ function fromMember(m: Member, cell: number): Combatant {
   // Only the non-zero secondaries are carried; a missing key reads as 0.
   const x: Partial<Record<SecondaryKey, number>> = {};
   for (const k of SECONDARY_KEYS) if (sheet[k]) x[k] = sheet[k];
+  // Only a weapon master (the hero) follows his weapon; a companion keeps its character's `melee` and the plain ATK attack.
+  const kind = def.weaponMaster ? EQUIPMENT[m.equip.weapon?.base ?? '']?.weaponKind : undefined;
+  const wk = kind ? WEAPON_KINDS[kind] : undefined;
   return { ...fresh(), key: m.id, side: 'party', defId: m.id, name: def.name, max: statsOf(m), hp: m.hp, tp: m.tp,
-    row, cell, melee: def.melee, weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0,
+    row, cell, melee: wk ? wk.melee : def.melee, ...(def.weaponMaster ? { attackScale: wk ? wk.scale : 'atk' as const } : {}),
+    ...(kind ? { weaponKind: kind } : {}), weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0,
     x, level: m.level, powers: powersOf(m), ranks: { ...m.tree }, keystones: keystonesOf(m) };
 }
 
@@ -176,16 +182,19 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
 }
 
 /**
- * A skill as this combatant casts it: the tree's rank, then its mod nodes (stacked into one), then every worn power that
- * names it in the order worn; added effects (`extra`) last. The order is stated in engine/skills.ts `patchSkill`.
+ * A skill as this combatant casts it: the tree's rank, then its mod nodes (stacked into one), then the hero's weapon
+ * mastery, then every worn power that names it in the order worn; added effects (`extra`) last. The order is stated in engine/skills.ts `patchSkill`.
  * With nothing to rewrite it is `SKILLS[id]` itself. An unknown id is undefined.
  */
-export function skillFor(c: Pick<Combatant, 'powers' | 'ranks'>, id: string): SkillDef | undefined {
+export function skillFor(c: Pick<Combatant, 'powers' | 'ranks' | 'weaponKind'>, id: string): SkillDef | undefined {
   const base = SKILLS[id];
   if (!base) return base;
   // The tree's two stages (the active's own rank, then its mod nodes stacked into one) come from progression.treeMods only.
   const powers = (c.powers ?? []).map((p) => POWERS[p]).filter((p) => p && p.skill === id).map((p) => p.mod);
-  const mods = [...(c.ranks ? treeMods(c.ranks, id) : []), ...powers];
+  const info = NODES[id];
+  const mastered = c.weaponKind && info?.owner === 'hero' && info.node.kind === 'active' && WEAPON_KINDS[c.weaponKind].mastery.includes(info.branch)
+    ? pctMod(id, 100 + WEAPON_MASTERY_PCT) : undefined;
+  const mods = [...(c.ranks ? treeMods(c.ranks, id) : []), ...(mastered ? [mastered] : []), ...powers];
   if (!mods.length) return base;
   let def = base;
   const extra: Effect[] = [];
@@ -227,7 +236,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     if (taunter) act = { ...act, target: taunter.key } as EnemyAction;
   }
   const physical = (t: Combatant) =>
-    applyEffect(actor, t, { kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: actor.melee }, ctx);
+    applyEffect(actor, t, { kind: 'damage', power: 100, element: 'phys', scale: actor.attackScale ?? 'atk', melee: actor.melee }, ctx);
   switch (act.kind) {
     case 'attack': {
       const t = pickTarget(foePool(s, actor, actor.melee), act.target, rng);
