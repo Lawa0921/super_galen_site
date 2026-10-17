@@ -545,7 +545,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-tree-wide .slx-tree-node .slx-skill-head { gap: 0 2px; font-size: 10px; flex-wrap: wrap; }
 .slx-tree-wide .slx-tree-node .slx-skill-name { flex: 0 1 auto; max-width: 100%; }
 .slx-tree-wide .slx-tree-kind { display: none; }   // the notes under the columns name the kind
-.slx-tree-wide .slx-node-locked .slx-tree-state { display: none; }   // a locked node is dimmed; its reason shows in the notes when the cursor is on it
+.slx-tree-wide .slx-node-locked .slx-tree-state { display: none; }   // a locked node is dimmed; the notes give its reason when the cursor is on it
 .slx-tree-wide .slx-tree-node-foot { gap: 2px; font-size: 9px; }
 .slx-tree-branch { min-width: 0; }
 .slx-tree-branch-name { margin: 0; font-size: 12px; line-height: 14px; font-weight: normal; color: $slx-gold; border-bottom: 1px solid #6e5a2e; white-space: nowrap; }
@@ -568,6 +568,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-tree-use { color: #6fa7ff; }
 .slx-tree-now { color: $slx-ink; }
 .slx-tree-next { color: $slx-up; }
+.slx-tree-reason { color: $slx-dim; }
 .slx-tree-msg { color: #ffb36b; }
 .slx-tab-talent { height: 100%; display: flex; flex-direction: column; }
 .slx-talent-top { flex: none; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 8px; line-height: 14px; white-space: nowrap; }

@@ -578,6 +578,7 @@ describe('EquipScene touch', () => {
     cell(0).click();                                                    // a click with no pointer type: the mouse path
     expect(worn().weapon!.uid).toBe(9);                                 // swapped back
   });
+});
 
 describe('EquipScene, the hero leads', () => {
   it('the hero comes first: with no argument the equip screen opens on him', () => {
@@ -589,5 +590,4 @@ describe('EquipScene, the hero leads', () => {
     s.enter(root);
     expect(root.querySelector('.slx-equip-scene')!.textContent).toContain('洛恩');
   });
-});
 });

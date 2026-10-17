@@ -160,6 +160,7 @@ describe('PartyBar stat pops', () => {
     expect(p.querySelector('.slx-pm-pop.slx-pm-pop-tp')!.textContent).toBe('+3 TP');
     expect(['slx-pm-hit', 'slx-pm-heal', 'slx-pm-acting', 'slx-pm-ko'].some((c) => p.classList.contains(c))).toBe(false);
   });
+});
 
 describe('PartyBar portraits of the hero and Rin', () => {
   const published = (ids: string[]) => ({ has: (u: string) => ids.some((id) => u === art.portrait(id, 'normal')) });
@@ -179,5 +180,4 @@ describe('PartyBar portraits of the hero and Rin', () => {
     expect(hero.textContent).toContain('hero');
     expect(rin.querySelector('img')!.getAttribute('src')).toBe(art.portrait('rin', 'normal'));
   });
-});
 });

@@ -547,6 +547,19 @@ describe('StatusScene', () => {
       expect(game.state.party.roster.noel.tree).toEqual({ 'fire-star': 1 });   // drawing spends nothing
     });
 
+    it('the notes under the tree give the reason for a locked node at once, by keys or by a click', () => {
+      const { root, node, cur, info, s } = onTree(2);
+      const reason = T.ui2.tree.reason.req;
+      expect(info()).not.toContain(reason);                     // the cursor starts on an open node
+      node('flame-wave').click();                               // one click moves the cursor there and shows why
+      expect(cur()).toBe('flame-wave');
+      expect(root.querySelector('.slx-tree-info')!.textContent).toContain(reason);
+      s.onAction('up'); s.onAction('down');                     // a plain cursor move still shows it
+      expect(cur()).toBe('flame-wave');
+      expect(info()).toContain(reason);
+      expect((info().match(new RegExp(reason, 'g')) ?? []).length).toBe(1);
+    });
+
     it('Enter twice spends one point; then Enter on the same node is refused at once', () => {
       const { s, game, cur, msg, noel, sfx, body, node } = onTree(2);
       const spy = vi.spyOn(game, 'raiseNode');

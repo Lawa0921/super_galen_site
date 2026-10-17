@@ -387,10 +387,14 @@ function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
     change.push(el('span', { class: 'slx-tree-now', text: t.now(rank > 0 ? t.mod(n.mods![rank - 1]) : t.none) }));
     if (rank < n.maxRank) change.push(el('span', { class: 'slx-tree-next', text: t.nextMod(t.mod(n.mods![rank])) }));
   }
+  // A shut node says why as soon as the cursor is on it (a pressed refusal in `msg` says the same, so it is not doubled).
+  const why = rank === 0 ? canRaiseNode(m, n.id) : null;
+  const shut = why && treeView.msg !== treeReason(why, n.id) ? treeReason(why, n.id) : '';
   return el('div', { class: 'slx-tree-info' }, [
     el('p', { class: 'slx-tree-info-head' }, head),
     el('p', { class: 'slx-desc', text: desc }),
     ...(change.length ? [el('p', { class: 'slx-tree-change' }, change)] : []),
+    ...(shut ? [el('p', { class: 'slx-tree-reason', text: shut })] : []),
     ...(treeView.msg ? [el('p', { class: 'slx-tree-msg', text: treeView.msg, attrs: { role: 'status' } })] : []),
   ]);
 }
