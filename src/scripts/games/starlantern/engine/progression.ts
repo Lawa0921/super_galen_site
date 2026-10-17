@@ -204,9 +204,9 @@ export function legacyDue(skill: string): number {
  * 1. old skills that are due, smallest old level first; 2. ranks and mods of skills already learned;
  * 3. other new nodes, but not old skills before they are due; 4. old skills early, only when nothing else is open.
  * Within a kind, lowest (rank, tier, branch) first. Ultimates other than DEFAULT_CAPSTONE's branch are never taken.
- * The default build is the simulation's and assumes every abyss node is unlocked; a save is checked with real memories.
+ * `memories` is the hero's memory count (abyss nodes wait for it, ABYSS_UNLOCK); the default 0 keeps them shut.
  */
-export function defaultTree(id: CharacterId, level: number): Record<string, number> {
+export function defaultTree(id: CharacterId, level: number, memories = 0): Record<string, number> {
   const tree = newTree(id);
   const nodes: { node: TreeNode; branch: number; tier: number }[] = [];
   TREES[id].branches.forEach((b, branch) => b.nodes.forEach((node, tier) => {
@@ -229,7 +229,7 @@ export function defaultTree(id: CharacterId, level: number): Record<string, numb
       const fresh = nodes.filter((x) => !upgrades.includes(x) && !unlearnedOld.includes(x)).sort(order);
       const early = unlearnedOld.filter((x) => !due.includes(x)).sort(byOld);
       const pick = [due, upgrades, fresh, early]
-        .map((kind) => kind.find((x) => check(id, L, tree, x.node.id, Infinity) === null))
+        .map((kind) => kind.find((x) => check(id, L, tree, x.node.id, memories) === null))
         .find((x) => x !== undefined);
       if (!pick) return tree;
       tree[pick.node.id] = rankIn(tree, pick.node.id) + 1;

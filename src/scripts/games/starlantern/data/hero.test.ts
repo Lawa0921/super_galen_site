@@ -78,7 +78,7 @@ describe('hero', () => {
   it("the hero's default tree spends his whole curve legally, aiming at the sword's abyss node", () => {
     const id = 'hero' as CharacterId;
     for (const level of [1, 2, 10, 30, 50]) {
-      const tree = defaultTree(id, level);
+      const tree = defaultTree(id, level, 10);
       const label = `Lv${level}`;
       expect(Object.values(tree).reduce((n, r) => n + r, 0) - 1, label).toBe(skillPoints(level, 'hero'));
       const caps = Object.keys(tree).filter((n) => tree[n] > 0 && NODES[n].tier === 4);
