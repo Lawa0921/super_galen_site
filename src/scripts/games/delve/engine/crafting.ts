@@ -3,7 +3,8 @@
 import { Inventory } from './inventory';
 import type { ItemId } from './items';
 
-export type Station = 'workbench' | 'furnace' | 'anvil';
+/** campfire = 料理（營火或熔爐旁都可以） */
+export type Station = 'workbench' | 'furnace' | 'anvil' | 'campfire';
 export interface ItemAmount { item: ItemId; n: number; }
 export interface Recipe {
   id: string;
@@ -11,9 +12,9 @@ export interface Recipe {
   inputs: readonly ItemAmount[];
   station: Station | null;
 }
-export interface CraftContext { nearWorkbench: boolean; nearFurnace?: boolean; nearAnvil?: boolean; }
+export interface CraftContext { nearWorkbench: boolean; nearFurnace?: boolean; nearAnvil?: boolean; nearCampfire?: boolean; }
 export type CraftResult = { ok: true } | { ok: false; reason: 'unknown' | 'missing' | 'station' | 'full' };
-export const STATION_NAME: Record<Station, string> = { workbench: '工作台', furnace: '熔爐', anvil: '鐵砧' };
+export const STATION_NAME: Record<Station, string> = { workbench: '工作台', furnace: '熔爐', anvil: '鐵砧', campfire: '營火' };
 
 const r = (id: string, out: ItemId, n: number, station: Station | null, ...inputs: [ItemId, number][]): Recipe =>
   ({ id, out: { item: out, n }, inputs: inputs.map(([item, k]) => ({ item, n: k })), station });
@@ -94,6 +95,21 @@ export const RECIPES: readonly Recipe[] = [
   r('bucket', 'bucket', 1, 'workbench', ['iron_bar', 3]),
   r('sponge', 'sponge', 1, 'workbench', ['gel', 12], ['spore', 2]),
   r('magma_ward', 'magma_ward', 1, 'anvil', ['obsidian', 15], ['ember', 4]),
+  // ── 釣魚：釣竿、營火、料理（營火 / 熔爐旁） ──
+  r('wood_rod', 'wood_rod', 1, 'workbench', ['wood', 8], ['rope', 3]),
+  r('iron_rod', 'iron_rod', 1, 'anvil', ['iron_bar', 6], ['rope', 4]),
+  r('gold_rod', 'gold_rod', 1, 'anvil', ['gold_bar', 8], ['rope', 4]),
+  r('cinder_rod', 'cinder_rod', 1, 'anvil', ['obsidian', 12], ['iron_bar', 4], ['ember', 3]),
+  r('campfire', 'campfire', 1, null, ['wood', 8], ['torch', 2]),
+  ...(['silver_minnow', 'reed_perch', 'brook_trout', 'mud_whisker', 'sun_bream', 'frost_char', 'oasis_koi', 'mistfin', 'ember_salmon',
+    'pale_blindfish', 'amber_carp', 'cinder_snapper', 'petal_koi', 'stingfin', 'thunder_ray'] as const)
+    .map((f) => r(`grilled_fish_${f}`, 'grilled_fish', 1, 'campfire', [f, 1])),
+  r('smoked_eel', 'smoked_eel', 1, 'campfire', ['moonlit_eel', 1]),
+  r('smoked_eel_obsidian', 'smoked_eel', 2, 'campfire', ['obsidian_eel', 1]),
+  r('fish_stew', 'fish_stew', 1, 'campfire', ['brook_trout', 1], ['reed_perch', 1], ['mushroom', 1]),
+  r('fish_stew_salmon', 'fish_stew', 1, 'campfire', ['ember_salmon', 1], ['mushroom', 1]),
+  r('fish_stew_deep', 'fish_stew', 1, 'campfire', ['gloom_angler', 1]),
+  r('fish_stew_squid', 'fish_stew', 1, 'campfire', ['lantern_squid', 1], ['prism_shrimp', 1]),
 ];
 
 export function findRecipe(id: string): Recipe | undefined {
@@ -109,6 +125,7 @@ export function stationOk(rc: Recipe, ctx: CraftContext): boolean {
     case 'workbench': return ctx.nearWorkbench;
     case 'furnace': return Boolean(ctx.nearFurnace);
     case 'anvil': return Boolean(ctx.nearAnvil);
+    case 'campfire': return Boolean(ctx.nearCampfire || ctx.nearFurnace);
   }
 }
 

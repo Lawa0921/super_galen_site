@@ -75,11 +75,13 @@ export function flameFrame(t: number, x: number, y: number): number {
 }
 
 // ── 手持工具 / 武器：待機、走路時也拿在手上（不只挖掘 / 攻擊時） ──────────
-export type CarryStyle = 'pick' | 'blade' | 'rotated' | 'mini';
+/** rod = 釣竿：往前斜舉、竿尖拉出釣線 */
+export type CarryStyle = 'pick' | 'blade' | 'rotated' | 'mini' | 'rod';
 /** 物品 → 拿在手上的畫法：鎬畫在手臂精靈裡、劍畫刀身、弓 / 法杖 / 矛旋轉圖示、投擲武器畫小圖示 */
-export function carryStyle(def: { pick?: unknown; weapon?: { kind: string } } | null | undefined): CarryStyle | null {
+export function carryStyle(def: { pick?: unknown; weapon?: { kind: string }; rod?: unknown } | null | undefined): CarryStyle | null {
   if (!def) return null;
   if (def.pick) return 'pick';
+  if (def.rod) return 'rod';
   const k = def.weapon?.kind;
   if (!k) return null;
   if (k === 'sword' || k === 'broadsword') return 'blade';

@@ -13,6 +13,10 @@ import { SoundManager } from '../audio/SoundManager';
 import { T } from '../engine/tiles';
 import { ITEMS } from '../engine/items';
 import { parseZoomPref } from './lowres';
+import { FISH } from '../engine/fishing';
+
+/** 稀有 / 傳說的漁獲（釣到時多一聲鈴） */
+const FISH_RARE = new Set(FISH.filter((f) => f.rarity === 'rare' || f.rarity === 'legendary').map((f) => f.item));
 
 const ZOOM_KEY = 'delve.zoom';
 function loadZoom(): number {
@@ -213,6 +217,24 @@ export function startDelve(opts: StartOptions): DelveHandle {
           else { sound.wake(); hud.toast(`早安——${game.dateText()}`, 2400); }
         }
         else if (e.type === 'lightning') sound.thunder(e.dist);
+        else if (e.type === 'fish') {
+          if (e.phase === 'cast') sound.cast();
+          else if (e.phase === 'land') sound.plop(e.liquid === LIQ.LAVA);
+          else if (e.phase === 'bite') sound.bite();
+          else if (e.phase === 'catch' && e.item) {
+            const def = ITEMS[e.item], rare = Boolean(def.unique) || FISH_RARE.has(e.item);
+            sound.catchFish(rare);
+            hud.toast(def.unique ? `傳說之魚！釣到了 ${def.name.zh}` : `釣到了 ${def.name.zh}`, rare ? 2600 : 1600);
+            invChanged = true;
+          }
+          else if (e.phase === 'escape') { sound.reel(true); hud.toast('魚跑掉了…（浮標沉下去時要馬上按）'); }
+          else if (e.phase === 'reel') sound.reel(false);
+          else if (e.phase === 'snag') hud.toast('浮標卡住了');
+          else if (e.phase === 'burn') hud.toast('浮標燒掉了：熔岩要用燼線釣竿');
+          else if (e.phase === 'snap') hud.toast('走太遠，釣線斷了');
+        }
+        else if (e.type === 'crate') { sound.treasure(); hud.toast(`打開了${ITEMS[e.item].name.zh}`); invChanged = true; }
+        else if (e.type === 'eat') { sound.munch(); invChanged = true; }
         else if (e.type === 'pickup') { sound.pickup(); invChanged = true; }
         else if (e.type === 'heal') { sound.heal(); invChanged = true; }
         else if (e.type === 'lifeup') { sound.heal(); hud.toast(`生命上限提升到 ${e.maxHp}`); invChanged = true; }

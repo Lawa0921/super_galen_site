@@ -74,6 +74,7 @@ export const DECOR_STYLES: Record<number, number> = {
   [T.PLATFORM]: 4, [T.DOOR_CLOSED]: 3, [T.DOOR_OPEN]: 3, [T.DOOR_LOCKED]: 3, [T.LOCKED_CHEST]: 1,
   [T.CHAIN]: 2, [T.BANNER]: 4, [T.CANDLE]: 2, [T.LANTERN]: 1, [T.BOOKSHELF]: 3, [T.BONES]: 3, [T.LORE_TABLET]: 1,
   [T.ROPE]: 4, [T.BED_HEAD]: 1, [T.BED_FOOT]: 1, [T.FURNACE]: 1, [T.ANVIL]: 1,
+  [T.CAMPFIRE]: 1,
 };
 /** 門 / 旗幟等直向多格物件：同種在上 → 不是頂；同種在下 → 不是底 */
 function doorPart(id: number, n: Neighbor): number {

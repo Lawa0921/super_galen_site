@@ -209,6 +209,8 @@ const BLOCKED: Record<BlockReason, string | null> = {
   potion: '藥水還在冷卻（或生命已滿）',
   maxlife: '生命上限已經到頂了',
   sleep: '附近有怪物，現在睡不著',
+  bait: '沒有魚餌（挖泥土找蚯蚓、拔草叢抓蟲）',
+  full_hp: '現在不餓（生命是滿的）',
 };
 
 /** 古碑碑文（佔位文字） */
@@ -295,7 +297,7 @@ export interface RecipeRow {
 
 export function recipeRows(inv: Inventory, near: boolean | Partial<Record<Station, boolean>>): RecipeRow[] {
   const ctx: CraftContext = typeof near === 'boolean' ? { nearWorkbench: near }
-    : { nearWorkbench: Boolean(near.workbench), nearFurnace: Boolean(near.furnace), nearAnvil: Boolean(near.anvil) };
+    : { nearWorkbench: Boolean(near.workbench), nearFurnace: Boolean(near.furnace), nearAnvil: Boolean(near.anvil), nearCampfire: Boolean(near.campfire) };
   return RECIPES.map((r) => {
     const inputs = r.inputs.map((a) => ({ item: a.item, n: a.n, have: inv.count(a.item) }));
     return {

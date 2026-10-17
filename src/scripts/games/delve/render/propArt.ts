@@ -2,6 +2,7 @@
 // textures.ts 的 texTile 找不到材質時會先問 extraTileBmp；裝飾物件問 extraDecorBmp。全部色票色、不透明。
 import { Bmp, h01, ramp, type RGB } from './pixel';
 import { T } from '../engine/tiles';
+import { campfireBmp } from './fishArt';
 
 const S = 16;
 const STONE = ramp('#1c1424', '#2c2838', '#423f54', '#5e5e74', '#707490', '#858aa0', '#b4b9c8');
@@ -98,6 +99,8 @@ export const EXTRA_TILE_PAL: Record<number, RGB[]> = {
 
 /** 新的裝飾物件點陣（沒有 → null） */
 export function extraDecorBmp(id: number, style: number): Bmp | null {
-  void id; void style;
-  return null;
+  switch (id) {
+    case T.CAMPFIRE: return campfireBmp(style % 3);
+    default: return null;
+  }
 }

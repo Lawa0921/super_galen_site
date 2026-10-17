@@ -28,6 +28,8 @@ export const T = {
   HIVE: 70, CRISPY_HONEY: 71,
   // ── 瀑布：泉水石（無限水源 / 熔岩源，固定速率出水）、滲水石（溢流排水）——挖不動 ──
   SPRING: 72, LAVA_SPRING: 73, DRAIN: 74,
+  // ── 釣魚：營火（料理站，發光） ──
+  CAMPFIRE: 75,
 } as const;
 export type TileId = (typeof T)[keyof typeof T];
 
@@ -182,6 +184,8 @@ export const TILES: readonly TileDef[] = [
   def({ id: T.SPRING, key: 'spring', name: n('湧泉石', 'Wellspring Stone'), solid: true, hardness: 1, drop: null, color: '#3e74c4', minTier: TIER_UNBREAKABLE }),
   def({ id: T.LAVA_SPRING, key: 'lava_spring', name: n('熔泉石', 'Magma Vent Stone'), solid: true, hardness: 1, drop: null, color: '#e8701c', minTier: TIER_UNBREAKABLE, light: 0.6 }),
   def({ id: T.DRAIN, key: 'drain', name: n('滲水石', 'Seep Stone'), solid: true, hardness: 1, drop: null, color: '#2c4486', minTier: TIER_UNBREAKABLE }),
+  // ── 釣魚 ──
+  decor(T.CAMPFIRE, 'campfire', n('營火', 'Campfire'), 'floor', 'campfire', '#e8701c', { hardness: 0.4, light: 0.8 }),
 ];
 
 export const WALLS: readonly WallDef[] = [
@@ -226,6 +230,7 @@ export const LIGHT_HUE: Partial<Record<number, readonly [number, number, number]
   [T.MUSHROOM_GRASS]: [0.28, 0.52, 1],
   [T.CRYSTAL]: [0.42, 0.9, 1],
   [T.LAVA_SPRING]: [1, 0.46, 0.2],
+  [T.CAMPFIRE]: [1, 0.66, 0.36],
 };
 export const CRYSTAL_ALT_HUE: readonly [number, number, number] = [0.82, 0.5, 1];
 /** 發光 RGB 查表：i*3 + 通道 */

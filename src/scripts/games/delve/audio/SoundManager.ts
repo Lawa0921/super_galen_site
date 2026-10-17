@@ -78,6 +78,23 @@ export class SoundManager {
   /** 放繩索 / 敲碎裂紋石 */
   tick(): void { this.tone(880, 0, 0.05, 'square', 0.03); }
   crumble(): void { this.tone(140, 0, 0.18, 'sawtooth', 0.08, 60); }
+  // ── 釣魚 ──
+  /** 拋竿：甩竿的風聲 + 捲線器嗶嗶聲 */
+  cast(): void { this.noise(0, 0.14, 2200, 700, 0.05, 1.2); for (let k = 0; k < 4; k++) this.tone(1600 + k * 60, 0.05 + k * 0.03, 0.03, 'square', 0.015); }
+  /** 浮標落水：小小的噗通 */
+  plop(lava = false): void { this.tone(lava ? 160 : 420, 0, 0.12, 'sine', 0.07, lava ? 90 : 180); }
+  /** 上鉤：兩聲急促的高音（提醒趕快按） */
+  bite(): void { this.tone(988, 0, 0.07, 'square', 0.05); this.tone(1318.51, 0.09, 0.09, 'square', 0.05); }
+  /** 釣到：水花 + 上行三音；稀有 / 傳說再加鈴聲 */
+  catchFish(rare: boolean): void {
+    this.noise(0, 0.12, 2400, 900, 0.06, 1.6);
+    [659.25, 783.99, 1046.5].forEach((f, i) => this.tone(f, 0.05 + i * 0.07, 0.22, 'triangle', 0.1));
+    if (rare) this.tone(2093, 0.3, 0.6, 'sine', 0.05);
+  }
+  /** 收竿 / 魚跑了：下滑的捲線聲 */
+  reel(miss: boolean): void { this.tone(miss ? 520 : 760, 0, 0.18, 'square', 0.025, miss ? 260 : 520); }
+  /** 吃東西：兩下咀嚼 */
+  munch(): void { this.noise(0, 0.05, 900, 400, 0.06, 2); this.noise(0.12, 0.05, 900, 400, 0.06, 2); }
 
   // ── 戰鬥 ───────────────────────────────────────────────
   private noiseBuf: AudioBuffer | null = null;
