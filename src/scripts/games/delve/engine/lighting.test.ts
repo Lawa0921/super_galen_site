@@ -263,6 +263,17 @@ describe('LightEngine', () => {
     });
   });
 
+  it('裂紋石（密室假牆）比一般岩石更擋光：牆後幾乎看不到', () => {
+    const plug = (t: number): number => {
+      const w = closedCave();
+      for (let y = 45; y < 55; y++) { w.fg[w.idx(50, y)] = t; w.fg[w.idx(51, y)] = t; }
+      w.fg[w.idx(44, 50)] = T.TORCH;
+      return new LightEngine().compute(w, { x: 30, y: 30, w: 40, h: 40 }, { sky: 0 }).get(53, 50);
+    };
+    expect(plug(T.CRACKED_STONE)).toBeLessThan(0.05);
+    expect(plug(T.STONE)).toBeGreaterThan(plug(T.CRACKED_STONE) * 2);
+  });
+
   describe('ambientReach：玩家身邊的輪廓微光只照得到「看得到」的格', () => {
     /** 走廊（玩家在這）| 1 格厚裂紋石牆 | 密室 */
     function secretRoom(): World {

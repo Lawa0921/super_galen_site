@@ -1,6 +1,6 @@
 // enemyArt.ts — 怪物 / 首領 / 投射物的手繪像素精靈（純 Bmp，無 DOM）。每種 2–4 格動畫、面向右、1px 描邊、
 // 最後吸附到統一色票。形狀用基本圖形（橢圓 / 多邊形 / 粗線段肢體）組裝，再以 shadeMask 自動打光（左上受光）。
-import { Bmp, INK, hex, mix, ramp, type RGB } from './pixel';
+import { Bmp, INK, hex, luma, mix, ramp, shade, snap, type RGB } from './pixel';
 import { R, shadeMask } from './combatArt';
 import type { EnemyKind } from '../engine/enemies';
 
@@ -60,6 +60,8 @@ const P = {
   cyan: R.cyan,
 };
 const EYE_Y = hex('#ffd86a'), EYE_W = hex('#fff4c0'), EYE_R = hex('#e8701c'), EYE_C = hex('#cceaf8');
+/** 眼睛用色（暗處剪影保留原色 → 黑暗裡看得到眼睛閃光） */
+export const EYE_COLORS: readonly RGB[] = [EYE_Y, EYE_W, EYE_R, EYE_C];
 
 // ── 凝膠團 / 霜凝膠 ───────────────────────────────────────
 function blob(pal: RGB[], frost: boolean): Bmp[] {
@@ -496,6 +498,31 @@ export function enemyFrames(): Record<EnemyKind, EnemyFrames> {
     warden_wisp: { frames: wisp(), anchor: 'center' },
   };
   return CACHE;
+}
+/** 暗處剪影：身體壓暗到 SILHOUETTE_K（不低於 SILHOUETTE_FLOOR），描邊不變，眼睛保持原色 */
+export const SILHOUETTE_K = 0.42;
+export const SILHOUETTE_FLOOR: RGB = hex('#2c2838');
+/** 剪影只畫在玩家這麼多格內 */
+export const SILHOUETTE_RANGE = 12;
+/** 所在格亮度低於這個才畫剪影（約光照第 2 階） */
+export const SILHOUETTE_LIGHT = 0.3;
+export function silhouetteWanted(distTiles: number, light: number): boolean {
+  return distTiles <= SILHOUETTE_RANGE && light < SILHOUETTE_LIGHT;
+}
+export function silhouetteBmp(b: Bmp): Bmp {
+  const o = new Bmp(b.w, b.h), ink = Bmp.pack(INK) & 0xffffff;
+  const eyes = new Set(EYE_COLORS.map((c) => Bmp.pack(c) & 0xffffff));
+  const floorL = luma(SILHOUETTE_FLOOR);
+  for (let i = 0; i < b.px.length; i++) {
+    const v = b.px[i];
+    if (!(v >>> 24)) continue;
+    const rgb = v & 0xffffff;
+    if (rgb === ink || eyes.has(rgb)) { o.px[i] = (v | 0xff000000) >>> 0; continue; }
+    let c = snap(shade(Bmp.unpack(v), SILHOUETTE_K));
+    if (luma(c) < floorL) c = SILHOUETTE_FLOOR;
+    o.px[i] = Bmp.pack(c);
+  }
+  return o;
 }
 /** 白色剪影（被打中閃白用） */
 export function flashBmp(b: Bmp): Bmp {

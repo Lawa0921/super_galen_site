@@ -83,57 +83,97 @@ for (let lv = 0; lv < LIGHT_LEVELS; lv++) {
 const BAYER_T = Float32Array.from({ length: 16 }, (_, i) => bayer(i & 3, i >> 2));
 
 /** 取樣表快取（只跟寬 / 高有關） */
-interface Axis { i0: Int32Array; i1: Int32Array; wt: Float32Array; }
+interface Axis { i0: Int32Array; i1: Int32Array; wt: Float32Array; /** 最近的格 */ near: Int32Array; }
 const axisCache = new Map<string, Axis>();
 function axis(n: number, sub: number): Axis {
   const key = `${n}:${sub}`;
   let a = axisCache.get(key);
   if (a) return a;
   const m = n * sub;
-  a = { i0: new Int32Array(m), i1: new Int32Array(m), wt: new Float32Array(m) };
+  a = { i0: new Int32Array(m), i1: new Int32Array(m), wt: new Float32Array(m), near: new Int32Array(m) };
   for (let x = 0; x < m; x++) {
     const f = (x + 0.5) / sub - 0.5;
     const x0 = Math.max(0, Math.min(n - 1, Math.floor(f)));
     a.i0[x] = x0; a.i1[x] = Math.min(n - 1, x0 + 1); a.wt[x] = Math.max(0, Math.min(1, f - x0));
+    a.near[x] = a.wt[x] < 0.5 ? a.i0[x] : a.i1[x];
   }
   if (axisCache.size > 64) axisCache.clear();
   axisCache.set(key, a);
   return a;
 }
 
+/** 每格亮度 / 色相索引的工作區 */
+let TM = new Float32Array(0), TH = new Int32Array(0), COLV = new Float32Array(0);
+/** 3×3 鄰格完全相同、而且落在平台上（不抖動）的格（TF = 1）：整塊 sub×sub 直接填同一色 TU / TUA */
+let TF = new Uint8Array(0), TU = new Uint32Array(0), TUA = new Uint32Array(0);
+
 /**
- * 每格光色 A（3 float / 格，lw×lh）→ 遮罩像素 pix（multiply 用）與 add（全暗補色，'lighter' 用），
+ * 每格光色 A（3 float / 格，lw×lh）→ 遮罩像素 pix（multiply 用）與 add（暗色補色，'lighter' 用），
  * 兩者皆 (lw*sub)×(lh*sub) 個不透明像素。ox / oy = 遮罩左上角的世界小格座標（Bayer 錨定世界）。
+ * 亮度（最大通道）雙線性取樣後分階 + 階界抖動；色相每格算一次（吸附成 HUE_STEPS 階），取樣點取最近的格。
  */
 export function fillLightPixels(A: Float32Array, lw: number, lh: number, sub: number, ox: number, oy: number, pix: Uint32Array, add: Uint32Array): void {
-  const cw = lw * sub, ch = lh * sub, top = LIGHT_LEVELS - 1;
-  const ax = axis(lw, sub), ay = axis(lh, sub);
-  const X0 = ax.i0, X1 = ax.i1, WX = ax.wt;
-  const span = 1 - 2 * PLATEAU;
-  for (let y = 0; y < ch; y++) {
-    const y0 = ay.i0[y], y1 = ay.i1[y], wy = ay.wt[y];
-    const r0 = y0 * lw, r1 = y1 * lw;
-    const brow = ((oy + y) & 3) * 4, row = y * cw;
-    for (let x = 0; x < cw; x++) {
-      const a = (r0 + X0[x]) * 3, b = (r0 + X1[x]) * 3, c = (r1 + X0[x]) * 3, d = (r1 + X1[x]) * 3, wx = WX[x];
-      const tr = A[a] + (A[b] - A[a]) * wx, br = A[c] + (A[d] - A[c]) * wx;
-      const tg = A[a + 1] + (A[b + 1] - A[a + 1]) * wx, bg = A[c + 1] + (A[d + 1] - A[c + 1]) * wx;
-      const tb = A[a + 2] + (A[b + 2] - A[a + 2]) * wx, bb = A[c + 2] + (A[d + 2] - A[c + 2]) * wx;
-      const R = tr + (br - tr) * wy, G = tg + (bg - tg) * wy, B = tb + (bb - tb) * wy;
-      const m = R > G ? (R > B ? R : B) : (G > B ? G : B);
-      const v = (m > 1 ? 1 : m) * top;
+  const n = lw * lh, cw = lw * sub, ch = lh * sub, top = LIGHT_LEVELS - 1, HN = H1 * H1 * H1;
+  if (TM.length < n) { TM = new Float32Array(n); TH = new Int32Array(n); }
+  if (COLV.length < lw) COLV = new Float32Array(lw);
+  // 每格：亮度 + 色相索引（色相往最大通道拉近 HUE_SAT：看得出顏色，但不會把畫面壓得太暗 / 太髒）
+  for (let t = 0, j = 0; t < n; t++, j += 3) {
+    const R = A[j], G = A[j + 1], B = A[j + 2];
+    const m = R > G ? (R > B ? R : B) : (G > B ? G : B);
+    TM[t] = m > 1 ? 1 : m;
+    if (m <= 1e-6) { TH[t] = (HUE_STEPS * H1 + HUE_STEPS) * H1 + HUE_STEPS; continue; }
+    const inv = HUE_STEPS / m;
+    const hr = ((m - (m - R) * HUE_SAT) * inv + 0.5) | 0, hg = ((m - (m - G) * HUE_SAT) * inv + 0.5) | 0, hb = ((m - (m - B) * HUE_SAT) * inv + 0.5) | 0;
+    TH[t] = (hr * H1 + hg) * H1 + hb;
+  }
+  if (TU.length < n) { TF = new Uint8Array(n); TU = new Uint32Array(n); TUA = new Uint32Array(n); }
+  for (let ty = 0; ty < lh; ty++) {
+    for (let tx = 0; tx < lw; tx++) {
+      const t = ty * lw + tx, m = TM[t], h = TH[t];
+      let same = true;
+      for (let dy = -1; dy <= 1 && same; dy++) {
+        const yy = ty + dy < 0 ? 0 : ty + dy >= lh ? lh - 1 : ty + dy;
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = tx + dx < 0 ? 0 : tx + dx >= lw ? lw - 1 : tx + dx, q = yy * lw + xx;
+          if (TM[q] !== m || TH[q] !== h) { same = false; break; }
+        }
+      }
+      TF[t] = 0;
+      if (!same) continue;
+      const v = m * top;
       let lv = v | 0;
       const f = v - lv;
       if (lv >= top) lv = top;
       else if (f > 1 - PLATEAU) lv++;
-      else if (f >= PLATEAU && BAYER_T[brow + ((ox + x) & 3)] < (f - PLATEAU) / span) lv++;
-      const o = row + x;
-      add[o] = ADD_LUT[lv];
-      if (lv === 0) { pix[o] = BLACK_PX; continue; }
-      // 色相往最大通道拉近（SAT）：彩色光看得出顏色，但不會把畫面壓得太暗 / 太髒
-      const inv = HUE_STEPS / m;
-      const hr = ((m - (m - R) * HUE_SAT) * inv + 0.5) | 0, hg = ((m - (m - G) * HUE_SAT) * inv + 0.5) | 0, hb = ((m - (m - B) * HUE_SAT) * inv + 0.5) | 0;
-      pix[o] = COLOR_LUT[((lv * H1 + hr) * H1 + hg) * H1 + hb];
+      else if (f >= PLATEAU) continue; // 抖動帶：逐像素
+      TF[t] = 1;
+      TU[t] = lv === 0 ? BLACK_PX : COLOR_LUT[lv * HN + h];
+      TUA[t] = ADD_LUT[lv];
+    }
+  }
+  const ax = axis(lw, sub), ay = axis(lh, sub);
+  const X0 = ax.i0, X1 = ax.i1, WX = ax.wt, XN = ax.near;
+  const invSpan = 1 / (1 - 2 * PLATEAU), hiP = 1 - PLATEAU;
+  for (let y = 0; y < ch; y++) {
+    const y0 = ay.i0[y], y1 = ay.i1[y], wy = ay.wt[y];
+    const r0 = y0 * lw, r1 = y1 * lw, rn = wy < 0.5 ? r0 : r1;
+    for (let x = 0; x < lw; x++) COLV[x] = TM[r0 + x] + (TM[r1 + x] - TM[r0 + x]) * wy;
+    const brow = ((oy + y) & 3) * 4, row = y * cw, trow = ((y / sub) | 0) * lw;
+    for (let tx = 0, x = 0; tx < lw; tx++) {
+      const t = trow + tx;
+      if (TF[t]) { const o = row + x; pix.fill(TU[t], o, o + sub); add.fill(TUA[t], o, o + sub); x += sub; continue; }
+      for (const xe = x + sub; x < xe; x++) {
+        const x0 = X0[x], wx = WX[x], c0 = COLV[x0];
+        const v = (c0 + (COLV[X1[x]] - c0) * wx) * top;
+        let lv = v | 0;
+        const f = v - lv;
+        if (lv >= top) lv = top;
+        else if (f > hiP) lv++;
+        else if (f >= PLATEAU && BAYER_T[brow + ((ox + x) & 3)] < (f - PLATEAU) * invSpan) lv++;
+        const o = row + x;
+        add[o] = ADD_LUT[lv];
+        pix[o] = lv === 0 ? BLACK_PX : COLOR_LUT[lv * HN + TH[rn + XN[x]]];
+      }
     }
   }
 }

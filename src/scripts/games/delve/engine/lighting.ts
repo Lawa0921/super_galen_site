@@ -11,7 +11,7 @@ import { BLOCKS_LIGHT_LUT, LIGHT_RGB_LUT, CRYSTAL_ALT_HUE, T } from './tiles';
 import { LIQ } from './liquidKind';
 import {
   LIGHT_AIR_DECAY, LIGHT_SOLID_DECAY, LIGHT_CUTOFF, LIGHT_MARGIN, DAY_LENGTH, LIGHT_WATER_DECAY, LIGHT_HONEY_DECAY, LAVA_LIGHT,
-  SKY_SHAFT_LEN, SKY_SHAFT_K,
+  SKY_SHAFT_LEN, SKY_SHAFT_K, LIGHT_SECRET_DECAY,
 } from './constants';
 
 export type LightRGB = readonly [number, number, number];
@@ -105,7 +105,7 @@ export class LightEngine {
         const id = fg[wi];
         const i = (ly * w + lx) * 3;
         const solid = BLOCKS_LIGHT_LUT[id] === 1;
-        const d = solid ? LIGHT_SOLID_DECAY : LIGHT_AIR_DECAY;
+        const d = solid ? (id === T.CRACKED_STONE ? LIGHT_SECRET_DECAY : LIGHT_SOLID_DECAY) : LIGHT_AIR_DECAY;
         D[i] = d; D[i + 1] = d; D[i + 2] = d;
         const t3 = id * 3;
         let er = LIGHT_RGB_LUT[t3], eg = LIGHT_RGB_LUT[t3 + 1], eb = LIGHT_RGB_LUT[t3 + 2];

@@ -44,6 +44,8 @@ export const MAX_STACK = 999;
 export const LIGHT_AIR_DECAY = 0.91;
 export const LIGHT_SOLID_DECAY = 0.56;
 export const LIGHT_CUTOFF = 0.0185;
+/** 裂紋石（密室的假牆）每格衰減：比一般實心更擋光，牆後的密室不會被坑道裡的火把照出來 */
+export const LIGHT_SECRET_DECAY = 0.25;
 export const LIGHT_MARGIN = 28;
 /** 深水（量 > 128）每格衰減（R, G, B）：紅掉最快、藍走最遠 → 越深越藍（泰拉 (0.88, 0.96, 1.015)×0.91 再壓暗一點） */
 export const LIGHT_WATER_DECAY: readonly [number, number, number] = [0.78, 0.85, 0.9];

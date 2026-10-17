@@ -6,10 +6,11 @@ import type { ItemId } from '../engine/items';
 import type { Atlas } from './textures';
 import type { Sprites } from './sprites';
 import { toCanvas } from './pixel';
-import { enemyFrames, flashBmp } from './enemyArt';
+import { enemyFrames, flashBmp, silhouetteBmp, silhouetteWanted } from './enemyArt';
+import type { Enemy } from '../engine/enemies';
 import { FloatNumbers, digitRows, enemyFrameIndex, type FloatKind } from './combatAnim';
 
-interface EnemySprite { frames: HTMLCanvasElement[]; flash: HTMLCanvasElement[]; anchor: 'bottom' | 'center'; }
+interface EnemySprite { frames: HTMLCanvasElement[]; flash: HTMLCanvasElement[]; dark: HTMLCanvasElement[]; anchor: 'bottom' | 'center'; }
 interface Spark { x: number; y: number; vx: number; vy: number; life: number; color: string; size: number; grav: number; }
 export interface GlowSink { warm: { x: number; y: number }[]; cool: { x: number; y: number }[]; }
 
@@ -42,6 +43,7 @@ export class CombatLayer {
       out[k] = {
         frames: f.frames.map((b) => toCanvas(b) as HTMLCanvasElement),
         flash: f.frames.map((b) => toCanvas(flashBmp(b), null, true) as HTMLCanvasElement),
+        dark: f.frames.map((b) => toCanvas(silhouetteBmp(b)) as HTMLCanvasElement),
         anchor: f.anchor,
       };
     }
@@ -115,17 +117,10 @@ export class CombatLayer {
       const b = e.body, spr = this.sprites[e.kind];
       if (!inView(b.x - 20, b.y - 20, b.w + 40, b.h + 40)) continue;
       if (e.kind === 'snap_vine' && e.anchor) this.drawStem(ctx, e.anchor.x, e.anchor.y, b.x + b.w / 2, b.y + b.h / 2);
-      const fi = enemyFrameIndex(e, spr.frames.length);
-      const c = (e.flash > 0 ? spr.flash : spr.frames)[fi];
-      const cx = Math.round(b.x + b.w / 2);
-      const top = spr.anchor === 'bottom' ? Math.round(b.y + b.h) - c.height : Math.round(b.y + b.h / 2 - c.height / 2);
       // 首領離場 / 碎籠時閃爍
       if (e.state === 'shatter' && Math.floor(e.age * 20) % 2 === 0) continue;
-      ctx.save();
-      ctx.translate(cx, top);
-      if (e.dir < 0 && e.kind !== 'lantern_warden') ctx.scale(-1, 1);
-      ctx.drawImage(c, -Math.floor(c.width / 2), 0);
-      ctx.restore();
+      const top = this.drawEnemy(ctx, e, e.flash > 0 ? spr.flash : spr.frames);
+      const cx = Math.round(b.x + b.w / 2);
       if (e.burn > 0 && Math.floor(e.age * 12) % 2 === 0) {
         ctx.fillStyle = '#ffa93a';
         ctx.fillRect(cx - 3 + (Math.floor(e.age * 9) % 5), top + 2, 1, 2);
@@ -192,6 +187,36 @@ export class CombatLayer {
         }
         default: break;
       }
+    }
+  }
+
+  /** 畫一隻怪物（frames 選一組影格），回傳精靈頂端 y */
+  private drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, frames: HTMLCanvasElement[]): number {
+    const b = e.body, spr = this.sprites[e.kind];
+    const c = frames[enemyFrameIndex(e, frames.length)];
+    const cx = Math.round(b.x + b.w / 2);
+    const top = spr.anchor === 'bottom' ? Math.round(b.y + b.h) - c.height : Math.round(b.y + b.h / 2 - c.height / 2);
+    ctx.save();
+    ctx.translate(cx, top);
+    if (e.dir < 0 && e.kind !== 'lantern_warden') ctx.scale(-1, 1);
+    ctx.drawImage(c, -Math.floor(c.width / 2), 0);
+    ctx.restore();
+    return top;
+  }
+
+  /**
+   * 光照遮罩之後：玩家附近、站在暗處的怪物補畫一層「剪影」（身體壓暗、眼睛保留亮色），
+   * 黑暗中的戰鬥看得到敵人輪廓。lightAt(tx, ty) = 該格亮度 0..1。
+   */
+  drawDark(ctx: CanvasRenderingContext2D, view: { x: number; y: number; w: number; h: number }, lightAt: (tx: number, ty: number) => number): void {
+    const g = this.game, p = g.player, px = (p.x + p.w / 2) / 16, py = (p.y + p.h / 2) / 16;
+    for (const e of g.enemies) {
+      const b = e.body;
+      if (b.x + b.w < view.x || b.x > view.x + view.w || b.y + b.h < view.y || b.y > view.y + view.h) continue;
+      if (e.state === 'shatter' || e.flash > 0) continue;
+      const tx = (b.x + b.w / 2) / 16, ty = (b.y + b.h / 2) / 16;
+      if (!silhouetteWanted(Math.hypot(tx - px, ty - py), lightAt(Math.floor(tx), Math.floor(ty)))) continue;
+      this.drawEnemy(ctx, e, this.sprites[e.kind].dark);
     }
   }
 
