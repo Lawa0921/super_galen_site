@@ -10,6 +10,7 @@ import { ENHANCE_COST, ENHANCE_SUCCESS, REGION_AFFIX_GROUP } from '../../data/fo
 import { AFFIXES } from '../../data/gear';
 import { enhanceCost, forgeRng, rerollCost, rerollRange, swapPool } from '../../engine/forge/cost';
 import { implicitStats, itemSlot } from '../../engine/loot/item';
+import { gearLabel } from '../loot';
 import { ForgeScene, costText, forgeRows, type ForgeHost } from './forge';
 
 const gear = (uid: number, base: string, rarity: Rarity, extra: Partial<ItemInstance> = {}): ItemInstance =>
@@ -71,14 +72,14 @@ describe('ForgeScene', () => {
     // Keyboard: each tab in turn.
     TABS.forEach((tab, i) => {
       if (i) s.onAction('down');
-      if (i <= 2) return;                   // 分解, 強化 and 重鑄 open their own pages (covered below)
+      if (i <= 3) return;                   // 分解, 強化, 重鑄 and 合成 open their own pages (covered below)
       s.onAction('confirm');
       expect(line()).toBe(T.ui2.town.soon(tab));
       s.onAction('confirm');
       expect(talking()).toBe(false);
     });
     // Mouse and touch: a click on each tab.
-    for (const tab of TABS.slice(3)) {
+    for (const tab of TABS.slice(4)) {
       const opt = [...root.querySelectorAll('.slx-cmd [role=option]')].find((o) => o.textContent === tab) as HTMLElement;
       opt.click();
       expect(line()).toBe(T.ui2.town.soon(tab));
@@ -665,5 +666,175 @@ describe('ForgeScene reroll page', () => {
     expect(equipped.locked).toBe(1);
     expect(line()).toContain(' → ');
     expect(root.querySelectorAll('[style]').length).toBe(0);
+  });
+});
+
+describe('ForgeScene fuse page', () => {
+  const F = T.ui2.forge;
+  type Act = 'up' | 'down' | 'confirm' | 'cancel';
+  function open(bag: ItemInstance[], prep: (g: Game) => void = () => {}, storage = memoryStorage()) {
+    const game = new Game(constRng(0.5), storage);
+    game.state.bag = bag;
+    game.state.gold = 1000;
+    prep(game);
+    const t = setup(game);
+    const loot = vi.fn();
+    (t.sfx as Record<string, unknown>).loot = loot;
+    t.s.onAction('confirm');                // greeting
+    for (let i = 0; i < 3; i++) t.s.onAction('down');
+    t.s.onAction('confirm');                // 合成
+    const go = (...a: Act[]) => a.forEach((x) => t.s.onAction(x));
+    const top = () => [...t.root.querySelectorAll('.slx-forge-list')].at(-1) as HTMLElement;
+    const rows = () => [...top().querySelectorAll('[role=option]')] as HTMLElement[];
+    const ids = () => rows().map((r) => r.getAttribute('data-id'));
+    const row = (id: string) => rows().find((r) => r.getAttribute('data-id') === id)!;
+    const confirmEl = () => t.root.querySelector('.slx-confirm') as HTMLElement | null;
+    /** The first tier, then the first three items, then the 合成 row: the slot list is open after this. */
+    const pickThree = () => go('confirm', 'confirm', 'down', 'confirm', 'down', 'confirm', 'up', 'up', 'up', 'confirm');
+    return { ...t, game, go, rows, ids, row, confirmEl, loot, pickThree };
+  }
+  const three = (rarity: Rarity, ilvl = [3, 3, 3]): ItemInstance[] => ilvl.map((l, i) => gear(i + 1, 'iron-sword', rarity, { ilvl: l }));
+
+  it('a tier with fewer than three items is disabled', () => {
+    const { ids, row } = open([gear(1, 'iron-sword', 'common'), gear(2, 'iron-sword', 'common'), ...[3, 4, 5].map((u) => gear(u, 'hunter-bow', 'magic'))]);
+    expect(ids()).toEqual(['common', 'magic', 'rare']);
+    expect(row('common').textContent).toContain(F.fuseTier('common', 'magic'));
+    expect(row('common').querySelector('.slx-right')!.textContent).toBe('2');
+    expect(row('common').getAttribute('aria-disabled')).toBe('true');
+    expect(row('magic').getAttribute('aria-disabled')).toBe('false');
+    expect(row('magic').querySelector('.slx-right')!.textContent).toBe('3');
+    expect(row('rare').getAttribute('aria-disabled')).toBe('true');
+    expect(row('magic').getAttribute('aria-selected')).toBe('true');   // the cursor starts on the first live row
+  });
+
+  it('picking toggles; a fourth pick is refused; 合成 enables at three', () => {
+    const bag = [1, 2, 3, 4].map((u) => gear(u, 'iron-sword', 'magic'));
+    const { go, ids, row, sfx, game } = open(bag);
+    go('confirm');                          // the magic tier
+    expect(ids()).toEqual(['go', 'g1', 'g2', 'g3', 'g4']);
+    expect(row('go').textContent).toContain(F.fuseGo(0));
+    expect(row('go').getAttribute('aria-disabled')).toBe('true');
+    expect(row('g1').getAttribute('aria-selected')).toBe('true');
+    go('confirm');                          // pick g1
+    expect(row('g1').textContent).toContain(F.picked);
+    expect(row('go').textContent).toContain(F.fuseGo(1));
+    go('confirm');                          // toggle off
+    expect(row('g1').textContent).not.toContain(F.picked);
+    go('confirm', 'down', 'confirm', 'down', 'confirm');   // g1 g2 g3
+    expect(row('go').textContent).toContain(F.fuseGo(3));
+    expect(row('go').getAttribute('aria-disabled')).toBe('false');
+    // A fourth: the error sound, and nothing selected.
+    sfx.error.mockClear();
+    row('g4').click();
+    expect(sfx.error).toHaveBeenCalledTimes(1);
+    expect(row('g4').textContent).not.toContain(F.picked);
+    expect(row('go').textContent).toContain(F.fuseGo(3));
+    // Un-picking by click works too, and 合成 goes back to disabled.
+    row('g3').click();
+    expect(row('go').getAttribute('aria-disabled')).toBe('true');
+    expect(game.state.bag.length).toBe(4);   // nothing was spent
+  });
+
+  it('cancel steps back one layer; a fresh tier pick starts clean', () => {
+    const { go, ids, row } = open(three('common'));
+    go('confirm', 'confirm', 'down', 'confirm', 'cancel');
+    expect(ids()).toEqual(['common', 'magic', 'rare']);
+    go('confirm');
+    expect(row('g1').textContent).not.toContain(F.picked);
+    expect(row('go').textContent).toContain(F.fuseGo(0));
+  });
+
+  it('legendary fusion offers no body slot; a chosen slot shows its extra cost', () => {
+    const { ids, row, root, confirmEl, game, sfx, line } = open(three('rare', [5, 6, 7]), (g) => { g.state.inventory = { 'king-scale': 0 }; });
+    // The rare tier is the third row.
+    (root.querySelector('[data-id=rare]') as HTMLElement).click();
+    expect(ids()).toEqual(['go', 'g1', 'g2', 'g3']);
+    for (const id of ['g1', 'g2', 'g3', 'go']) row(id).click();
+    expect(ids()[0]).toBe('random');
+    expect(row('random').textContent).toContain(F.randomSlot);
+    expect(ids()).not.toContain('body');
+    expect(ids()).toContain('weapon');
+    expect(row('weapon').textContent).toContain('王者之鱗 0／1');
+    expect(row('weapon').querySelector('.slx-right')!.textContent).toContain('200 G');
+    expect(row('random').querySelector('.slx-right')!.textContent).toBe('200 G');
+    expect(root.querySelectorAll('[style]').length).toBe(0);
+    // Short of the scale: refused with the reason named, nothing asked.
+    sfx.error.mockClear();
+    row('weapon').click();
+    expect(confirmEl()).toBeNull();
+    expect(sfx.error).toHaveBeenCalled();
+    expect(line()).toBe(F.lackNames(['王者之鱗 ×1']));
+    expect(game.state.bag.length).toBe(3);
+  });
+
+  it('a magic fusion does offer body, with its essence cost in have／need', () => {
+    const { ids, row, pickThree } = open(three('common'), (g) => { g.state.inventory = { 'essence-common': 5 }; });
+    pickThree();
+    expect(ids()).toContain('body');
+    expect(row('body').textContent).toContain('普通精華 5／2');
+  });
+
+  it('the confirm names the tier in its colour, the floored level, the random item and the region note; 否 first', () => {
+    const { go, confirmEl, game, pickThree } = open(three('common', [3, 4, 4]));
+    pickThree();
+    go('confirm');                          // 隨機欄位
+    const c = confirmEl()!;
+    expect(c.querySelector('.slx-rarity-magic')!.textContent).toBe('魔法');
+    expect(c.textContent).toContain(F.fuseIlvl(3));        // floor((3+4+4)/3)
+    expect(c.textContent).toContain(F.fuseRandom);
+    expect(c.textContent).not.toContain(F.fuseRandomIn('武器'));
+    expect(c.textContent).toContain(F.fuseRegionNote);
+    expect(c.textContent).toContain('30 G');
+    expect(c.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('no');
+    go('confirm');                          // 否
+    expect(confirmEl()).toBeNull();
+    expect(game.state.bag.length).toBe(3);
+  });
+
+  it('a rare-or-better input also defaults to 否', () => {
+    const { go, confirmEl, root } = open(three('rare'));
+    (root.querySelector('[data-id=rare]') as HTMLElement).click();
+    go('confirm', 'down', 'confirm', 'down', 'confirm', 'up', 'up', 'up', 'confirm', 'confirm');
+    expect(confirmEl()!.querySelector('.slx-rarity-legendary')!.textContent).toBe('傳說');
+    expect(confirmEl()!.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('no');
+  });
+
+  it('a chosen slot is named in the confirm', () => {
+    const { confirmEl, row, pickThree } = open(three('common'), (g) => { g.state.inventory = { 'essence-common': 5 }; });
+    pickThree();
+    row('feet').click();
+    expect(confirmEl()!.textContent).toContain(F.fuseRandomIn('腳部'));
+    expect(confirmEl()!.textContent).toContain('普通精華 5／2');
+  });
+
+  it('yes fuses, names the new item in its rarity colour and plays loot', () => {
+    const storage = memoryStorage();
+    const setItem = vi.spyOn(storage, 'setItem');
+    const { go, game, root, line, loot, pickThree, confirmEl } = open(three('common'), (g) => { g.state.gold = 100; }, storage);
+    pickThree();
+    go('confirm');                          // 隨機欄位
+    go('up');                               // 否 -> 是
+    expect(confirmEl()!.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('yes');
+    go('confirm');
+    expect(game.state.bag.length).toBe(1);
+    expect(game.state.bag[0].rarity).toBe('magic');
+    expect(game.state.bag[0].ilvl).toBe(3);
+    expect(game.state.gold).toBe(70);
+    expect(setItem).toHaveBeenCalled();
+    expect(loot).toHaveBeenCalledWith('magic');
+    expect(line()).toBe(F.fused(gearLabel(game.state.bag[0])));
+    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-magic')!.textContent).toContain('魔法');
+    expect(confirmEl()).toBeNull();
+    expect(root.querySelector('.slx-forge-list')).toBeNull();   // the layers are gone
+  });
+
+  it('too little gold is refused with the reason, and nothing is spent', () => {
+    const { go, game, confirmEl, pickThree, line } = open(three('common'), (g) => { g.state.gold = 5; });
+    pickThree();
+    go('confirm');
+    expect(confirmEl()).toBeNull();
+    expect(line()).toBe(F.lackNames(['金錢 25 G']));
+    expect(game.state.bag.length).toBe(3);
+    expect(game.state.gold).toBe(5);
   });
 });

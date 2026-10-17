@@ -2,23 +2,23 @@ import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
 import type { ForgeResult } from '../../engine/forge/cost';
 import type { Cost } from '../../data/forge';
-import { ENHANCE_MAX, REGION_AFFIX_GROUP } from '../../data/forge';
+import { ENHANCE_MAX, FUSE_NEXT, REGION_AFFIX_GROUP } from '../../data/forge';
 import { affixRange } from '../../data/gear';
 import { REGIONS, type RegionId } from '../../data/regions';
 import { MATERIALS } from '../../data/materials';
 import { compareDelta } from '../../engine/compare';
-import { enhanceChance, enhanceCost, findItem, rerollCost, rerollRange, swapPool } from '../../engine/forge/cost';
+import { enhanceChance, enhanceCost, findItem, fuseCost, fuseSlots, rerollCost, rerollRange, swapPool } from '../../engine/forge/cost';
 import { dismantleYield } from '../../engine/forge/forge';
 import { implicitStats } from '../../engine/loot/item';
 import { SLOTS } from '../../engine/party';
 import type { GameState } from '../../engine/state';
-import type { AnyStat, ItemInstance } from '../../engine/types';
+import type { AnyStat, GearSlot, ItemInstance, Rarity } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import { fillRich, gearLabel, gearPart, joinParts } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { MenuView, confirmBox, richNodes, win, type Rich, type RichPart } from '../widgets';
+import { MenuView, confirmBox, richNodes, richText, win, type Rich, type RichPart } from '../widgets';
 import { FacilityScene, type Layer } from './facility';
 
 /** The forge's commands are its five tabs, in this order. */
@@ -83,6 +83,7 @@ export class ForgeScene extends FacilityScene {
     if (id === 'dismantle') { dismantlePage(this.host()); return; }
     if (id === 'enhance') { enhancePage(this.host()); return; }
     if (id === 'reroll') { rerollPage(this.host()); return; }
+    if (id === 'fuse') { fusePage(this.host()); return; }
     const label = T.ui2.forge.tabs[id as ForgeTab];
     if (label) void this.say(T.ui2.town.soon(label));
   }
@@ -433,4 +434,104 @@ export function rerollPage(h: ForgeHost): void {
   show();
   h.layerRoot.append(info);
   h.push({ el: win('slx-list slx-forge-list', [itemsView.el]), onAction: (a) => itemsView.onAction(a) });
+}
+
+/** The tiers a fusion starts from, in order: each becomes the next one up. */
+const FUSE_FROM = ['common', 'magic', 'rare'] as const;
+
+/**
+ * 合成: pick a tier first (each row says 普通 ×3 → 魔法 and counts the bag's pieces of it; fewer than three is greyed
+ * out), then exactly three distinct pieces of that tier (Enter or a click toggles 已選; a fourth is refused), then the
+ * slot (隨機欄位, or one of `fuseSlots`, each with its extra cost as have/need), then a confirm that says what comes out.
+ * The tier is picked before the items so the list is only ever one rarity and the three pieces cannot disagree. The
+ * confirm opens on 否 every time: a fusion eats three pieces for good.
+ */
+export function fusePage(h: ForgeHost): void {
+  const game = h.ctx.game;
+  const F = T.ui2.forge;
+  const bagOf = (r: Rarity): ItemInstance[] => game.state.bag.filter((it) => it.rarity === r);
+  /** Replace a list's rows in place, keeping the cursor where it was (or on a live row). */
+  const sync = (view: MenuView, next: MenuItem[]) => {
+    view.menu.items.splice(0, view.menu.items.length, ...next);
+    const here = view.menu.items[view.menu.cursor];
+    if (!here || here.disabled) { const k = next.findIndex((x) => !x.disabled); if (k >= 0) view.menu.setCursor(k); }
+    view.render();
+  };
+
+  const tierRows = (): MenuItem[] => FUSE_FROM.map((r): MenuItem => {
+    const n = bagOf(r).length;
+    return { id: r, label: F.fuseTier(r, FUSE_NEXT[r]), right: String(n), disabled: n < 3 };
+  });
+  const tiers: MenuView = new MenuView(new Menu(tierRows()), {
+    pick: (row) => openPicks(row.id as typeof FUSE_FROM[number]),
+    moved: () => h.ctx.sfx.cursor(),
+    cancel: () => h.pop(),
+  }, 12);
+  h.push({ el: win('slx-list slx-forge-list', [tiers.el]), onAction: (a) => tiers.onAction(a) });
+
+  function openPicks(from: typeof FUSE_FROM[number]): void {
+    const picked = new Set<number>();
+    const rows = (): MenuItem[] => [
+      { id: 'go', label: F.fuseGo(picked.size), disabled: picked.size !== 3 },
+      ...forgeRows(game.state, { worn: false, filter: (it) => it.rarity === from, right: (it) => (picked.has(it.uid) ? F.picked : '') }),
+    ];
+    const v: MenuView = new MenuView(new Menu(rows()), {
+      pick: (row) => {
+        if (row.id === 'go') { if (picked.size === 3) openSlots(from, [...picked]); return; }
+        const uid = Number(row.id.slice(1));
+        if (picked.has(uid)) picked.delete(uid);
+        else if (picked.size >= 3) { h.ctx.sfx.error(); return; }
+        else picked.add(uid);
+        sync(v, rows());
+      },
+      moved: () => h.ctx.sfx.cursor(),
+      cancel: () => h.pop(),
+    }, 12);
+    h.push({ el: win('slx-list slx-forge-list', [v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  function openSlots(from: typeof FUSE_FROM[number], uids: number[]): void {
+    const target = FUSE_NEXT[from];
+    const inputs = uids.map((u) => game.state.bag.find((it) => it.uid === u)).filter((it): it is ItemInstance => !!it);
+    const ilvl = Math.floor(inputs.reduce((sum, it) => sum + it.ilvl, 0) / Math.max(1, inputs.length));
+    const short = (slot?: GearSlot): string => richText(costText(game.state, fuseCost(target, slot)));
+    const rows: MenuItem[] = [
+      { id: 'random', label: F.randomSlot, right: short() },
+      ...fuseSlots(target).map((slot): MenuItem => ({ id: slot, label: T.slotKind[slot], right: short(slot) })),
+    ];
+    const v: MenuView = new MenuView(new Menu(rows), {
+      pick: (row) => {
+        const slot = row.id === 'random' ? undefined : (row.id as GearSlot);
+        const cost = fuseCost(target, slot);
+        const lack = lackingNames(game.state, cost);
+        if (lack.length) { h.ctx.sfx.error(); void h.say(F.lackNames(lack)); return; }
+        const result: RichPart = { text: T.rarity[target], cls: `slx-rarity-${target}` };
+        const ask: Rich = [
+          ...fillRich(F.askFuse, [result]),
+          `\n${F.fuseIlvl(ilvl)}`,
+          `\n${slot === undefined ? F.fuseRandom : F.fuseRandomIn(T.slotKind[slot])}`,
+          `\n${F.fuseRegionNote}`,
+          `\n${F.fuseNeed}`,
+          ...costText(game.state, cost),
+        ];
+        const box = confirmBox(ask, (yes) => {
+          h.pop(!yes);
+          if (yes) run(slot);
+        });
+        box.view.menu.setCursor(1);
+        box.view.render();
+        h.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
+      },
+      moved: () => h.ctx.sfx.cursor(),
+      cancel: () => h.pop(),
+    }, 12);
+    h.push({ el: win('slx-list slx-forge-list', [v.el]), onAction: (a) => v.onAction(a) });
+
+    const run = (slot?: GearSlot) => {
+      const r = game.fuse(uids, slot);
+      if (r.ok) h.popAll();
+      h.afterAct(r, (out) => fillRich(F.fused, [gearPart(out.item)]));
+      if (r.ok) h.ctx.sfx.loot?.(r.out.item.rarity);
+    };
+  }
 }

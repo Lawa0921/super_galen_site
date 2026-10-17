@@ -379,6 +379,21 @@ export const T = {
       askReroll: (label: string, affix: string) => `要重鑄${label}的「${affix}」嗎？`,
       /** 「暴擊率 +3% → 暴擊傷害 +18%」: the old affix, then the new one. */
       rerolled: (before: string, after: string) => `重鑄完成！${before} → ${after}`,
+      /** A fusion tier row: 「普通 ×3 → 魔法」. */
+      fuseTier: (from: Rarity, to: Rarity) => `${RARITY[from]} ×3 → ${RARITY[to]}`,
+      /** The 合成 row of the picking layer: 「合成（已選 2／3）」. */
+      fuseGo: (n: number) => `合成（已選 ${n}／3）`,
+      picked: '已選',
+      randomSlot: '隨機欄位',
+      /** The confirm: the result's rarity word is filled in (and coloured) by the page. */
+      askFuse: (rarity: string) => `要合成嗎？
+結果：${rarity}裝備`,
+      fuseIlvl: (n: number) => `物品等級 ${n}`,
+      fuseRandom: '隨機物品',
+      fuseRandomIn: (slot: string) => `隨機${slot}`,
+      fuseRegionNote: '不會出現限定地區的裝備',
+      fuseNeed: '費用：',
+      fused: (label: string) => `合成完成！得到了${label}。`,
     },
     dungeon: {
       status: '隊伍狀態', items: '道具', lamp: (n: number) => `歸還之燈 ×${n}`, close: '關閉', askTown: '要回到城鎮嗎？',
