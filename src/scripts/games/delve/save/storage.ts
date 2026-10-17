@@ -27,10 +27,41 @@ export async function compress(bytes: Uint8Array): Promise<Uint8Array> {
   return pipe(bytes, new CompressionStream('gzip'));
 }
 
-export async function decompress(bytes: Uint8Array): Promise<Uint8Array> {
+/** 存檔檔案讀不了（gzip 截斷 / 損毀 / 過大）：message 是給玩家看的中文 */
+export class SaveFileError extends Error {
+  constructor(msg: string) { super(msg); this.name = 'SaveFileError'; }
+}
+export const CORRUPT_MSG = '存檔檔案已損毀或不完整';
+export const TOO_LARGE_MSG = '存檔檔案太大，不是有效的 DELVE 存檔';
+/** 解壓後最多幾個位元組（最大世界的存檔遠小於此）；超過就中止串流，避免 gzip 炸彈吃光記憶體 */
+export const MAX_DECOMPRESSED = 64 * 1024 * 1024;
+
+/** gzip 解壓（逐塊讀、累計超過 limit 就取消串流）；截斷 / 損毀 → SaveFileError(CORRUPT_MSG) */
+export async function decompress(bytes: Uint8Array, limit: number = MAX_DECOMPRESSED): Promise<Uint8Array> {
   if (!isGzip(bytes)) return bytes;
   if (!hasCompression()) throw new Error('This browser cannot read compressed DELVE saves (no DecompressionStream).');
-  return pipe(bytes, new DecompressionStream('gzip'));
+  const reader = new Blob([bytes as Uint8Array<ArrayBuffer>]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+  const parts: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.length;
+      if (total > limit) {
+        void reader.cancel().catch(() => { /* 已中止 */ });
+        throw new SaveFileError(TOO_LARGE_MSG);
+      }
+      parts.push(value);
+    }
+  } catch (e) {
+    if (e instanceof SaveFileError) throw e;
+    throw new SaveFileError(CORRUPT_MSG);
+  }
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const p of parts) { out.set(p, off); off += p.length; }
+  return out;
 }
 
 // ── IndexedDB ────────────────────────────────────────────

@@ -8,7 +8,7 @@
 //   舊格式（1–3）讀進來 = 什麼都沒探索、沒有標記、沒有床。
 // format 5 起（戰鬥）：header.combat = { hp, maxHp（不含飾品的上限 = 100 + 生命晶核）, mana, equipment（頭 / 身 / 腿 / 飾品槽）,
 //   bosses（已擊敗的首領 kind）, kills（各種怪物擊殺數）, peaceful（和平模式） }。
-//   怪物 / 投射物 / 地上的掉落物不存（讀檔後重新生成）。死亡中存檔 → 讀回來是活著、滿血。
+//   怪物 / 投射物不存（讀檔後重新生成）。死亡中存檔 → 讀回來是活著、滿血（format 7 起在重生點）。
 //   舊格式（1–4）讀進來 = 裝備空、滿血 100、沒擊敗首領、一般模式。
 // format 6 起（液體）：header.liquids = { chunks, data }：chunks = 液體或 tile 被改過的 chunk（world.liquidModified ∪
 //   modifiedChunks，排序），data = 那些 chunk 依序每格（量, 種類）的 RLE（[長度 varint][量 u8][種類 u8]…）再 base64。
@@ -18,6 +18,13 @@
 //   v5 相對 v4 的地形差異：多了液體、沙漠綠洲的淺碗、叢林蜂巢、熔岩深淵的低窪池從熔岩石變成熔岩（液體）；
 //   樹 / 地表裝飾的亂數流維持 v4（只是水面上不放），所以沒動過的地表與 v4 相同。蜂巢 / 綠洲 / 熔岩池若緊鄰
 //   玩家改過的 chunk，接縫處可能不連續（已知限制）。
+// format 7 起：header.vitals = { breath, burning, honey }（水下讀檔不會補滿氣、著火 / 蜂蜜計時延續）、
+//   header.drops = 地上的掉落物 [{ item, count, x, y（中心 px） }]（死亡掉的錢讀檔後還在原地）、
+//   header.bossActive = 存檔時正在打的首領 kind（怪物不存 → 讀檔時退還召喚道具）。
+//   死亡中存檔：玩家位置存成重生點（床 / 出生點）、生命 / 魔力存成重生後的滿值——不會在死亡地點（例如熔岩裡）復活。
+//   舊格式（≤ 6）讀進來 = 滿氣、沒著火、地上沒有掉落物、不退還。
+//   尺寸上限：寬 ≤ MAX_WORLD_W、高 ≤ MAX_WORLD_H、面積 ≤ MAX_WORLD_AREA（生成器實際支援的範圍）；
+//   液體 chunk 清單長度先和世界 chunk 總數比對，再配置 RLE 解碼緩衝。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
 //
 // 二進位格式（little-endian）：
@@ -25,13 +32,14 @@
 //   [4..8)  u32 header JSON 長度 N
 //   [8..8+N) header JSON（UTF-8）
 //   之後依 header.chunks 順序，每個 chunk：fg CHUNK*CHUNK bytes + wall CHUNK*CHUNK bytes（越界格補 0）
-import { DelveGame } from '../engine/game';
+import { DelveGame, BOSS_SUMMON_ITEM, MAX_BREATH, BURN_TIME, HONEY_TIME } from '../engine/game';
 import type { World } from '../engine/world';
 import { Inventory, type InventoryJSON, type Stack } from '../engine/inventory';
 import { CHEST_SLOTS } from '../engine/loot';
-import { CHUNK, GEN_VERSION, INV_SIZE } from '../engine/constants';
+import { CHUNK, GEN_VERSION, INV_SIZE, TILE_SIZE } from '../engine/constants';
 import { TILES, WALLS, T, isChestTile } from '../engine/tiles';
-import { ITEMS, isItemId } from '../engine/items';
+import { ITEMS, isItemId, type ItemId } from '../engine/items';
+import { MAX_DROPS } from '../engine/entities';
 import { ExploredMap, MAX_MARKERS, decodeRle, type MapMarker } from '../engine/explore';
 import type { DiscoveryJSON } from '../engine/discovery';
 import { Equipment, type EquipmentJSON } from '../engine/equipment';
@@ -39,7 +47,7 @@ import { ENEMIES, type EnemyKind } from '../engine/enemies';
 import { BASE_HP, MAX_HP_CAP } from '../engine/combat';
 import { LIQ, LIQ_MAX } from '../engine/liquidKind';
 
-export const SAVE_FORMAT = 6;
+export const SAVE_FORMAT = 7;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
 export const COMPAT_GEN: readonly number[] = [4];
 export interface LiquidSave { chunks: number[]; data: string; }
@@ -52,9 +60,23 @@ export interface CombatSave {
 }
 export const CHUNK_BYTES = CHUNK * CHUNK * 2;
 const MAGIC = [0x44, 0x4c, 0x56, 0x53]; // "DLVS"
-const MAX_DIM = 8192;
+/** 存檔世界尺寸上限（生成器實際支援：預設 4200×1200，最大到 2 倍寬 / 高） */
+export const MAX_WORLD_W = 8400;
+export const MAX_WORLD_H = 2400;
+export const MAX_WORLD_AREA = 21_000_000;
+/** 尺寸是否在支援範圍內（整數、≥ 1 chunk、寬 / 高 / 面積上限） */
+export function validDims(width: unknown, height: unknown): boolean {
+  if (!Number.isInteger(width) || !Number.isInteger(height)) return false;
+  const w = width as number, h = height as number;
+  return w >= CHUNK && h >= CHUNK && w <= MAX_WORLD_W && h <= MAX_WORLD_H && w * h <= MAX_WORLD_AREA;
+}
+function chunkTotal(width: number, height: number): number { return Math.ceil(width / CHUNK) * Math.ceil(height / CHUNK); }
+/** 尺寸不合法時的 chunk 清單長度上限（只用來擋超大清單；尺寸本身交給 restoreGame 的 size 檢查） */
+const MAX_CHUNKS = chunkTotal(MAX_WORLD_W, MAX_WORLD_H);
 
 export interface PlayerSave { x: number; y: number; vx: number; vy: number; }
+export interface VitalsSave { breath: number; burning: number; honey: number; }
+export interface DropSave { item: ItemId; count: number; x: number; y: number; }
 export interface SaveHeader {
   format: number;
   genVersion: number;
@@ -86,6 +108,12 @@ export interface SaveHeader {
   combat?: CombatSave;
   /** 液體（被改過的 chunk 的 RLE）；format 6 起 */
   liquids?: LiquidSave;
+  /** 呼吸 / 燃燒 / 蜂蜜計時；format 7 起 */
+  vitals?: VitalsSave;
+  /** 地上的掉落物；format 7 起 */
+  drops?: DropSave[];
+  /** 存檔時正在打的首領（讀檔退還召喚道具）；format 7 起 */
+  bossActive?: EnemyKind | null;
 }
 export interface ChestSave { i: number; slots: (Stack | null)[]; }
 export interface ChunkPayload { fg: Uint8Array; wall: Uint8Array; }
@@ -206,15 +234,54 @@ function readLiquids(world: World, chunks: readonly number[]): { amount: Uint8Ar
   });
   return { amount, type };
 }
-function validLiquids(v: unknown, totalChunks?: number): LiquidSave | undefined {
+/** 液體欄位：先驗 chunk 清單（長度 ≤ 世界 chunk 總數、index 在範圍內、不重複），再配置 RLE 解碼緩衝 */
+function validLiquids(v: unknown, width: number, height: number): LiquidSave | undefined {
   if (v === undefined) return undefined;
   const o = v as Partial<LiquidSave> | null;
-  if (!o || typeof o !== 'object' || !Array.isArray(o.chunks) || typeof o.data !== 'string'
-    || !o.chunks.every((c) => Number.isInteger(c) && c >= 0 && (totalChunks === undefined || c < totalChunks))) throw new SaveFormatError('liquids');
-  let bytes: Uint8Array;
-  try { bytes = fromBase64(o.data); } catch { throw new SaveFormatError('liquids: base64'); }
-  decodeLiquidRle(bytes, o.chunks.length * CHUNK * CHUNK);
+  const dimsOk = validDims(width, height);
+  const total = dimsOk ? chunkTotal(width, height) : MAX_CHUNKS;
+  if (!o || typeof o !== 'object' || !Array.isArray(o.chunks) || typeof o.data !== 'string' || o.chunks.length > total
+    || !o.chunks.every((c) => Number.isInteger(c) && c >= 0 && c < total)) throw new SaveFormatError('liquids');
+  if (new Set(o.chunks).size !== o.chunks.length) throw new SaveFormatError('liquids: duplicate chunk');
+  // 尺寸不合法時不解碼（restoreGame 的 size 檢查會拒絕）
+  if (dimsOk) {
+    let bytes: Uint8Array;
+    try { bytes = fromBase64(o.data); } catch { throw new SaveFormatError('liquids: base64'); }
+    decodeLiquidRle(bytes, o.chunks.length * CHUNK * CHUNK);
+  }
   return { chunks: [...o.chunks], data: o.data };
+}
+function validVitals(v: unknown): VitalsSave | undefined {
+  if (v === undefined) return undefined;
+  const o = v as Partial<VitalsSave> | null;
+  if (!o || typeof o !== 'object' || !isNum(o.breath) || !isNum(o.burning) || !isNum(o.honey)) throw new SaveFormatError('vitals');
+  return { breath: o.breath, burning: o.burning, honey: o.honey };
+}
+function validDrops(v: unknown): DropSave[] | undefined {
+  if (v === undefined) return undefined;
+  if (!Array.isArray(v) || v.length > MAX_DROPS) throw new SaveFormatError('drops');
+  return v.map((d, k) => {
+    const o = d as Partial<DropSave> | null;
+    if (!o || typeof o !== 'object' || !isItemId(o.item) || !Number.isInteger(o.count) || (o.count as number) < 1
+      || (o.count as number) > ITEMS[o.item].maxStack || !isNum(o.x) || !isNum(o.y)) throw new SaveFormatError(`drop ${k}`);
+    return { item: o.item, count: o.count as number, x: o.x, y: o.y };
+  });
+}
+function validBossActive(v: unknown): EnemyKind | null {
+  if (v === undefined || v === null) return null;
+  if (typeof v !== 'string') throw new SaveFormatError('bossActive');
+  // 未知 / 不是首領的 kind：寬鬆忽略
+  return Object.prototype.hasOwnProperty.call(ENEMIES, v) && ENEMIES[v as EnemyKind].boss ? v as EnemyKind : null;
+}
+
+// ── 探索位元圖編碼快取：自動存檔每 30 秒一次；迷霧只會增加，揭露格數沒變 = 內容沒變，重用上次的 base64 ──
+const exploredCache = new WeakMap<ExploredMap, { count: number; b64: string }>();
+function encodeExplored(m: ExploredMap): string {
+  const c = exploredCache.get(m);
+  if (c && c.count === m.count) return c.b64;
+  const b64 = toBase64(m.encode());
+  exploredCache.set(m, { count: m.count, b64 });
+  return b64;
 }
 
 // ── snapshot / encode / decode ────────────────────────────
@@ -234,6 +301,16 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
   chests.sort((a, b) => a.i - b.i);
   const liqChunks = [...new Set([...w.modifiedChunks, ...w.liquidModified])].sort((p, q) => p - q);
   const lq = readLiquids(w, liqChunks);
+  // 死亡中：存成重生後的狀態（重生點、滿血滿魔），避免讀檔後在死亡地點（例如熔岩裡）復活
+  let player: PlayerSave = { x: p.x, y: p.y, vx: p.vx, vy: p.vy };
+  let hp = game.hp, mana = game.mana;
+  if (game.dead) {
+    const r = game.respawnPoint();
+    player = { x: r.x * TILE_SIZE + TILE_SIZE / 2 - p.w / 2, y: (r.y + 1) * TILE_SIZE - p.h, vx: 0, vy: 0 };
+    hp = game.maxHp(); mana = game.maxMana();
+  }
+  const r2 = (v: number): number => Math.round(v * 100) / 100;
+  const boss = game.bossEnemy();
   return {
     header: {
       format: SAVE_FORMAT,
@@ -244,24 +321,27 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       time: game.time,
       tick: game.tick,
       savedAt: now,
-      player: { x: p.x, y: p.y, vx: p.vx, vy: p.vy },
+      player,
       inventory: game.inventory.toJSON(),
       chunks: list,
       chests,
       unlocked: [...w.unlocked].sort((a, b) => a - b),
       keysUsed: w.keysUsed,
-      explored: toBase64(game.explored.encode()),
+      explored: encodeExplored(game.explored),
       markers: game.markers.map((m) => ({ x: m.x, y: m.y })),
       discovery: game.discovery.toJSON(),
       bed: game.bed ? { ...game.bed } : null,
       combat: {
-        hp: Math.round(game.hp * 100) / 100, maxHp: game.baseMaxHp, mana: Math.round(game.mana * 100) / 100,
+        hp: r2(hp), maxHp: game.baseMaxHp, mana: r2(mana),
         equipment: game.equipment.toJSON(),
         bosses: [...game.bossesDefeated].sort(),
         kills: { ...game.kills },
         peaceful: game.peaceful,
       },
       liquids: { chunks: liqChunks, data: toBase64(encodeLiquidRle(lq.amount, lq.type)) },
+      vitals: { breath: r2(game.breath), burning: r2(Math.max(0, game.burning)), honey: r2(Math.max(0, game.honeyT)) },
+      drops: game.drops.list.map((d) => ({ item: d.item, count: d.count, x: r2(d.body.x + d.body.w / 2), y: r2(d.body.y + d.body.h / 2) })),
+      bossActive: boss && boss.state !== 'leave' ? boss.kind : null,
     },
     chunks,
   };
@@ -337,7 +417,7 @@ function validExplored(v: unknown, width: number, height: number): string | unde
   if (v === undefined) return undefined;
   if (typeof v !== 'string') throw new SaveFormatError('explored');
   // 尺寸本身不合法時交給 restoreGame 的 size 檢查
-  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width > MAX_DIM || height > MAX_DIM) return v;
+  if (!validDims(width, height)) return v;
   try {
     decodeRle(fromBase64(v), width * height);
   } catch {
@@ -450,7 +530,10 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     discovery: validDiscovery(h.discovery),
     bed: validBed(h.bed),
     combat: validCombat(h.combat),
-    liquids: validLiquids(h.liquids),
+    liquids: validLiquids(h.liquids, h.width, h.height),
+    vitals: validVitals(h.vitals),
+    drops: validDrops(h.drops),
+    bossActive: validBossActive(h.bossActive),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -511,7 +594,10 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       validBed(data.header.bed);
       validDiscovery(data.header.discovery);
       data.header.combat = validCombat(data.header.combat);
-      validLiquids(data.header.liquids);
+      validLiquids(data.header.liquids, data.header.width, data.header.height);
+      data.header.vitals = validVitals(data.header.vitals);
+      data.header.drops = validDrops(data.header.drops);
+      data.header.bossActive = validBossActive(data.header.bossActive);
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
@@ -525,8 +611,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       message: `save generated with v${h.genVersion}, current generator v${GEN_VERSION}`,
     };
   }
-  if (!Number.isInteger(h.width) || !Number.isInteger(h.height) || h.width < CHUNK || h.height < CHUNK
-    || h.width > MAX_DIM || h.height > MAX_DIM) {
+  if (!validDims(h.width, h.height)) {
     return { ok: false, error: 'size', message: `bad size ${h.width}x${h.height}` };
   }
   const game = new DelveGame({ seed: h.seed, width: h.width, height: h.height });
@@ -599,6 +684,23 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     const max = game.maxHp();
     game.hp = c.hp > 0 ? Math.min(max, c.hp) : max;
     game.mana = Math.max(0, Math.min(game.maxMana(), c.mana));
+  }
+  // 呼吸 / 燃燒 / 蜂蜜（format 7）；舊格式 = 滿氣、沒著火
+  if (h.vitals) {
+    game.breath = Math.max(0, Math.min(MAX_BREATH, h.vitals.breath));
+    game.burning = Math.max(0, Math.min(BURN_TIME, h.vitals.burning));
+    game.honeyT = Math.max(0, Math.min(HONEY_TIME, h.vitals.honey));
+  }
+  // 地上的掉落物（format 7）：放回原地、靜止
+  for (const d of h.drops ?? []) {
+    if (d.x < 0 || d.y < 0 || d.x > w.width * TILE_SIZE || d.y > w.height * TILE_SIZE) continue;
+    game.drops.spawn(d.item, d.count, d.x, d.y, 0, 0);
+  }
+  // 首領戰中存檔（怪物不存）：退還召喚道具，背包滿就掉在腳邊
+  const refund = h.bossActive ? BOSS_SUMMON_ITEM[h.bossActive] : undefined;
+  if (refund && !game.bossEnemy()) {
+    const left = game.inventory.add(refund, 1);
+    if (left > 0) { const pc = game.playerCenter(); game.drops.spawn(refund, left, pc.x, pc.y, 0, 0); }
   }
   return { ok: true, game, header: h };
 }

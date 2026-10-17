@@ -217,6 +217,8 @@ export const BOSS_DROPS: { item: ItemId; n: number }[] = [
   { item: 'lumen_blade', n: 1 }, { item: 'warden_heart', n: 1 }, { item: 'warden_trophy', n: 1 },
   { item: 'healing_potion', n: 5 }, { item: 'silver_coin', n: 12 },
 ];
+/** 首領 → 召喚它用掉的道具（首領戰中存檔讀檔時退還） */
+export const BOSS_SUMMON_ITEM: Partial<Record<EnemyKind, ItemId>> = { lantern_warden: 'wick_offering' };
 
 export class DelveGame {
   static readonly TILE_SIZE = TILE_SIZE;

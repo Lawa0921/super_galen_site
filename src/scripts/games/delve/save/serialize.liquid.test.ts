@@ -25,8 +25,8 @@ const run = (g: DelveGame, n: number): void => { for (let i = 0; i < n; i++) g.s
 
 describe('存檔格式 6（液體）', { timeout: 180_000 }, () => {
   it('格式版本 6', () => {
-    expect(SAVE_FORMAT).toBe(6);
-    expect(snapshotGame(scene()).header.format).toBe(6);
+    expect(SAVE_FORMAT).toBeGreaterThanOrEqual(6);
+    expect(snapshotGame(scene()).header.format).toBe(SAVE_FORMAT);
   });
 
   it('RLE：來回一致、空的 chunk 很小、壞資料丟例外', () => {
