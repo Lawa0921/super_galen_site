@@ -60,6 +60,12 @@ export interface EnemyDef {
   id: string; name: string; floor: 1 | 2 | 3; boss?: boolean; stats: Stats; weak: Element[]; resist: Element[];
   exp: number; gold: number; drops: { mat: string; chance: number }[]; skills: EnemySkill[];
   sec?: Partial<Record<SecondaryKey, number>>;
+  /** A story foe: never met at random (NORMAL_ENEMIES leaves it out). */
+  story?: true;
+  /** Drawn as this character's standee instead of art of its own (render/artPaths enemyArt). */
+  look?: CharacterId;
+  /** Never drops below 1 HP in a fight (Scarlet's story fight). */
+  undying?: true;
 }
 export interface ItemDef {
   id: string; name: string; price: number; target: Target | null; effects: Effect[]; battle: boolean; returnToTown?: boolean; desc: string;

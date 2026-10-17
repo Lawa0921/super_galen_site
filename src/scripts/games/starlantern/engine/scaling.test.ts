@@ -343,3 +343,12 @@ describe('groupCap reads the first-depth override only at depth 1', () => {
     }
   });
 });
+
+describe('story enemies', () => {
+  it('story enemies are not ordinary monsters', () => {
+    const story = Object.values(ENEMIES).filter((e) => e.story).map((e) => e.id);
+    expect(story).toContain('scarlet-foe');
+    for (const id of story) expect(NORMAL_ENEMIES).not.toContain(id);
+    expect(NORMAL_ENEMIES).toHaveLength(8);
+  });
+});

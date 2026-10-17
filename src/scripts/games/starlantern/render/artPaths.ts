@@ -94,6 +94,12 @@ export function effectFor(ev: BattleEvent, actorDefId: string | null, weaponKind
   return null;
 }
 
+/** The picture of an enemy: the standee of the character it looks like, else art of its own. */
+export function enemyArt(id: string): string {
+  const look = ENEMIES[id]?.look;
+  return look ? art.standee(look) : art.enemy(id);
+}
+
 export function allArtUrls(): string[] {
   const urls: string[] = [];
   for (const id of [...ART_CHARACTER_IDS, ...ART_VARIANT_IDS]) urls.push(art.standee(id), ...MOODS.map((m) => art.portrait(id, m)));
@@ -101,7 +107,7 @@ export function allArtUrls(): string[] {
   for (const d of DIRS) urls.push(art.party(d));
   urls.push(art.fog);
   for (const f of [1, 2, 3]) { for (const k of TILE_KEYS) urls.push(art.tile(f, k)); urls.push(art.wallTop(f), art.wallFace(f), art.bg(f)); }
-  for (const id of Object.keys(ENEMIES)) urls.push(art.enemy(id));
+  for (const id of Object.keys(ENEMIES)) if (!ENEMIES[id].look) urls.push(art.enemy(id));
   for (const k of FX_KEYS) urls.push(art.fx(k), art.fxAnim(k));
   urls.push(art.frame);
   for (const s of ['title', 'town', 'guild', 'shop', 'inn', 'gate'] as const) urls.push(art.scene(s));

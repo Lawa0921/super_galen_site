@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../data/enemies';
 import type { BattleEvent } from '../engine/combatant';
-import { ART_BASE, ART_CHARACTER_IDS, allArtUrls, art, effectFor, moodFor, parseManifest, tileKey } from './artPaths';
+import { ART_BASE, ART_CHARACTER_IDS, allArtUrls, art, effectFor, enemyArt, moodFor, parseManifest, tileKey } from './artPaths';
 
 describe('artPaths', () => {
   it('builds urls under the starlantern base', () => {
@@ -29,7 +29,7 @@ describe('artPaths', () => {
     for (const id of ART_CHARACTER_IDS) expect(urls).toContain(art.standee(id));
     for (const id of ['hero', 'rin', 'rin-oath']) for (const m of ['normal', 'attack', 'hit', 'dying', 'down', 'ultimate', 'smile', 'sad'] as const) expect(urls).toContain(art.portrait(id, m));
     expect(urls).toContain(art.standee('rin-oath'));
-    for (const id of Object.keys(ENEMIES)) expect(urls).toContain(art.enemy(id));
+    for (const id of Object.keys(ENEMIES).filter((e) => !ENEMIES[e].look)) expect(urls).toContain(art.enemy(id));
   });
 
   it('matches the art registry runtime paths exactly', () => {
@@ -84,5 +84,17 @@ describe('artPaths', () => {
     expect(parseManifest(null).size).toBe(0);
     expect(parseManifest({ version: 2, urls: [art.enemy('slime')] }).size).toBe(0);
     expect(parseManifest({ version: 1, urls: 'nope' }).size).toBe(0);
+  });
+});
+
+describe('enemy art', () => {
+  it('an enemy with a look uses that standee and is not listed as art of its own', () => {
+    expect(ENEMIES['scarlet-foe'].look).toBe('scarlet');
+    expect(enemyArt('scarlet-foe')).toBe(art.standee('scarlet'));
+    expect(enemyArt('slime')).toBe(art.enemy('slime'));
+    const urls = allArtUrls();
+    expect(urls).not.toContain(art.enemy('scarlet-foe'));
+    expect(urls).toContain(art.standee('scarlet'));
+    for (const id of Object.keys(ENEMIES)) expect(urls).toContain(enemyArt(id));
   });
 });

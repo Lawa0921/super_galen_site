@@ -33,6 +33,10 @@ const LIST: EnemyDef[] = [
       { name: '吞光', chance: 0.35, target: 'enemies', effects: [{ kind: 'damage', power: 110, element: 'fire', scale: 'mag', melee: false }] },
       { name: '碾壓', chance: 0.3, target: 'enemy', effects: [{ kind: 'damage', power: 160, element: 'phys', scale: 'atk', melee: true }] },
     ] },
+  // Scarlet's story fight (plan 6b): she cannot be beaten, the party only has to last. She wears her own standee.
+  { id: 'scarlet-foe', name: '絲嘉蕾', floor: 3, story: true, look: 'scarlet', undying: true, stats: s(300, 40, 26, 10, 18, 9), weak: ['ice'], resist: ['fire'], exp: 0, gold: 0,
+    drops: [],
+    skills: [{ name: '紅蓮斬', chance: 0.4, target: 'enemy', effects: [{ kind: 'damage', power: 130, element: 'fire', scale: 'atk', melee: true }] }] },
 ];
 
 export const ENEMIES: Record<string, EnemyDef> = Object.fromEntries(LIST.map((e) => [e.id, e]));

@@ -6,7 +6,7 @@ import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
 import type { Combatant } from '../engine/combatant';
 import type { WeaponKind } from '../engine/types';
-import { art, type FxKey } from './artPaths';
+import { art, enemyArt, type FxKey } from './artPaths';
 import { battleCues } from './battleCues';
 import type { TextureBank } from './textures';
 
@@ -152,7 +152,7 @@ export class BattleView {
     state.enemies.forEach((e, i) => {
       const box = new Container();
       const body = new Container();
-      const tex = this.bank?.get(art.enemy(e.defId)) ?? null;
+      const tex = this.bank?.get(enemyArt(e.defId)) ?? null;
       const maxH = (bottom > 0 ? usable : size.height) * (e.boss ? (bottom > 0 ? 0.62 : 0.7) : 0.45);
       if (tex) {
         const s = new Sprite(tex);

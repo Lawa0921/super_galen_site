@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, resolveRound, rewards, skillCost, skillFor, turnOrder, writeBack } from './battle';
+import { STORY_FIGHT_ROUNDS, LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, resolveRound, rewards, skillCost, skillFor, turnOrder, writeBack } from './battle';
 import { WEAPON_MASTERY_PCT } from '../data/equipment';
 import { RIN_DAWN, SKY_LANTERN, ULTIMATES, skyForm, HERO_ULTIMATES } from '../data/ultimates';
 import { ENEMIES } from '../data/enemies';
@@ -824,5 +824,49 @@ describe('the Sky Lantern and the dawn blade', () => {
     expect(plain.party.find((c) => c.key === 'noel')!.hp).toBeLessThanOrEqual(10);   // the woken foe may still scratch her
     expect(plain.log.some((e) => e.type === 'heal')).toBe(false);
     expect(HERO_ULTIMATES.map(skyForm)[0].follow).toBeDefined();
+  });
+});
+
+describe('survive fights', () => {
+  const defendAll = (s: ReturnType<typeof createBattle>) => Object.fromEntries(s.party.map((c) => [c.key, { kind: 'defend' as const }]));
+  const survival = () => createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['scarlet-foe', 'slime'], inventory: {}, revealed: {}, depth: 5, extra: 1, survive: STORY_FIGHT_ROUNDS });
+  it('a survive fight ends in a win after its rounds', () => {
+    let s = survival();
+    expect(s.survive).toBe(STORY_FIGHT_ROUNDS);
+    for (let r = 1; r <= STORY_FIGHT_ROUNDS; r++) {
+      expect(s.outcome).toBe('ongoing');
+      s = resolveRound(s, defendAll(s), rng);
+    }
+    expect(s.round).toBe(STORY_FIGHT_ROUNDS);
+    expect(s.outcome).toBe('win');
+    expect(s.log.some((e) => e.type === 'survived')).toBe(true);
+  });
+  it('a plain fight has no survive and does not win by waiting', () => {
+    let s = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['golem'], inventory: {}, revealed: {}, depth: 5 });
+    expect(s.survive).toBeUndefined();
+    for (let r = 1; r <= STORY_FIGHT_ROUNDS; r++) s = resolveRound(s, defendAll(s), rng);
+    expect(s.outcome).not.toBe('win');
+  });
+  it('nobody falls in a survive fight', () => {
+    let s = survival();
+    for (const e of s.enemies) e.max.atk = 99999;
+    for (const c of s.party) c.max.atk = 99999;
+    expect(s.enemies[0].defId).toBe('scarlet-foe');
+    for (let r = 1; r <= STORY_FIGHT_ROUNDS; r++) {
+      s = resolveRound(s, Object.fromEntries(s.party.map((c) => [c.key, { kind: 'attack' as const, target: 'e0' }])), constRng(0.1));
+      for (const c of s.party) { expect(c.alive, c.key).toBe(true); expect(c.hp, c.key).toBeGreaterThanOrEqual(1); }
+      expect(s.enemies[0].alive).toBe(true);
+      expect(s.enemies[0].hp).toBeGreaterThanOrEqual(1);
+    }
+    expect(s.outcome).toBe('win');
+  });
+  it('a survive win pays only for the enemies knocked out', () => {
+    const s = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['scarlet-foe', 'slime', 'bat'], inventory: {}, revealed: {}, depth: 5, extra: 2, survive: STORY_FIGHT_ROUNDS });
+    expect(s.enemies.map((e) => e.defId)).toEqual(['scarlet-foe', 'slime', 'bat']);
+    s.enemies[1].hp = 0; s.enemies[1].alive = false;
+    const r = rewards(s, constRng(0), false);
+    expect(r.exp).toBe(ENEMIES.slime.exp);
+    expect(r.gold).toBe(ENEMIES.slime.gold);
+    expect(Object.keys(r.drops)).toEqual(ENEMIES.slime.drops.map((d) => d.mat));
   });
 });

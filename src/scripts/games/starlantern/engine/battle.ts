@@ -39,6 +39,8 @@ export interface BattleState {
   abyss?: number;
   /** The party-size multiplier applied to every enemy's hp, atk and mag; absent when it is 1 (a full party). */
   partyScale?: number;
+  /** Rounds the party must last for a win (a story fight); absent in a plain fight. */
+  survive?: number;
 }
 
 /** Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */
@@ -46,6 +48,8 @@ export interface BattleScale { depth: number; region: RegionId; elite?: string; 
 
 export type EnemyAction = { kind: 'attack'; target?: string } | { kind: 'enemy-skill'; index: number; target?: string };
 
+/** Rounds Scarlet's story fight lasts. */
+export const STORY_FIGHT_ROUNDS = 3;
 export const LIMIT_MAX = 100;
 export const LIMIT_PER_ACTION = 12;
 /** Damage taken adds floor(damage / max HP * this), at least 1 (see dealDamage). */
@@ -100,6 +104,8 @@ export function createBattle(o: {
   altar?: { stat: BuffStat; pct: number }[];
   /** Enemies allowed beyond the party-size group cap (a rescue fight passes 1). */
   extra?: number;
+  /** A survive fight: it is won after this many rounds, and nobody in it (the party and any undying foe) falls. */
+  survive?: number;
 }): BattleState {
   const party: Combatant[] = [];
   o.party.grid.forEach((id, cell) => { if (id) party.push(fromMember(o.party.roster[id], cell)); });
@@ -139,6 +145,11 @@ export function createBattle(o: {
     itemBoost: hasPassive(o.party, 'itemBoost'), log: [], outcome: 'ongoing',
   };
   if (sc) s.enemyDefs = defs;
+  if (o.survive) {
+    s.survive = o.survive;
+    for (const c of party) c.undying = true;
+  }
+  for (const c of enemies) if (ENEMIES[c.defId]?.undying) c.undying = true;
   if (k !== 1) s.partyScale = k;
   s.abyss = o.abyss ?? abyssPct(depth);
   return s;
@@ -400,7 +411,11 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
   const heroUp = s.party.some((c) => c.key === 'hero' && c.alive);
   endOfRound(s, ctx, rng);
   ringBell(s, heroUp, ctx);
-  if (!checkOutcome(s)) planEnemies(s, rng);
+  if (!checkOutcome(s) && s.survive && s.round >= s.survive) {
+    s.outcome = 'win';
+    s.log.push({ type: 'survived' });
+  }
+  if (s.outcome === 'ongoing') planEnemies(s, rng);
   return s;
 }
 
@@ -435,6 +450,7 @@ export function rewards(s: BattleState, rng: Rng, dropBoost: boolean, dropMul = 
   const find = (k: SecondaryKey) => Math.min(100, living(s.party).reduce((n, c) => n + (c.x[k] ?? 0), 0));
   const matMul = 1 + find('matFind') / 100;
   for (const e of s.enemies) {
+    if (s.survive && e.alive) continue;   // a survive fight pays only for the foes knocked out
     const d = enemyDef(s, e)!;
     exp += d.exp;
     gold += d.gold;

@@ -29,7 +29,7 @@ describe('data integrity', () => {
   it('matches the spec content counts', () => {
     expect(CHARACTER_IDS).toHaveLength(10);
     const enemies = Object.values(ENEMIES);
-    expect(enemies.filter((e) => !e.boss)).toHaveLength(8);
+    expect(enemies.filter((e) => !e.boss && !e.story)).toHaveLength(8);
     expect(enemies.filter((e) => e.boss).map((e) => e.id)).toEqual(['lanterneater']);
     expect(Object.keys(EQUIPMENT)).toHaveLength(25);
     expect(Object.keys(MATERIALS)).toHaveLength(22);
@@ -74,7 +74,7 @@ describe('data integrity', () => {
 
   it('places every normal enemy in some encounter group', () => {
     const used = new Set(FLOORS.flatMap((f) => f.encounters.flat()));
-    for (const e of Object.values(ENEMIES)) if (!e.boss) expect(used.has(e.id), e.id).toBe(true);
+    for (const e of Object.values(ENEMIES)) if (!e.boss && !e.story) expect(used.has(e.id), e.id).toBe(true);
   });
 });
 

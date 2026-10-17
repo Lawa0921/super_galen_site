@@ -159,6 +159,7 @@ export const T = {
     crit: '（暴擊）',
   },
   ui2: {
+    battle: { survive: (left: number) => `撐過去！還有 ${left} 回合`, survived: '她收起了劍。' },
     memory: {
       piece: (name: string, n: number) => `找回了${name}的記憶（第 ${n} 片）。`,
       shard: (name: string) => `撿到了${name}。`,

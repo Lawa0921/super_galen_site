@@ -3,7 +3,7 @@ import { favouredRegions, rescuesFor, type Meetable } from '../data/meetings';
 import { ITEMS } from '../data/items';
 import { capacity, carried, weightOf } from '../data/weights';
 import { FLOORS } from '../data/floors';
-import { createBattle, planEnemies, resolveRound, rewards, writeBack, type Action, type BattleState } from './battle';
+import { STORY_FIGHT_ROUNDS, createBattle, planEnemies, resolveRound, rewards, writeBack, type Action, type BattleState } from './battle';
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
@@ -215,7 +215,8 @@ export class Game {
         const c = floorOf(this.run!, this.floor).contents.find((x) => x.kind === 'rescue' && x.at.x === this.pos.x && x.at.y === this.pos.y);
         if (!c?.who) return this.walk();
         const group = encounterGroup(this.run!.region, this.floor, this.rng);
-        this.startBattle([...group, group[0]], false, true, undefined, 1);
+        if (c.who === 'scarlet') this.startBattle(['scarlet-foe', ...group], false, true, undefined, 1, { survive: STORY_FIGHT_ROUNDS });   // her story fight: last it out
+        else this.startBattle([...group, group[0]], false, true, undefined, 1);
         this.rescueAt = { at: { ...this.pos }, who: c.who };
         return { kind: 'rescue', who: c.who };
       }
@@ -639,6 +640,7 @@ export class Game {
     }
     // In an elite fight the first enemy is the elite; the rest are escorts.
     for (let i = elite ? 1 : 0; i < b.enemies.length; i++) {
+      if (b.survive && b.enemies[i].alive) continue;
       const rng = lootRng(run);
       if (rng() < GEAR_CHANCE.monster) gear.push(rollGear(rng, this.dropCtx('monster')));
     }
@@ -945,9 +947,9 @@ this.rerolled = false;
     return { kind: 'chest', item, qty, ...extra, ...this.offerGear(id, gear) };
   }
 
-  private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string, extra = 0): void {
+  private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string, extra = 0, opts: { survive?: number } = {}): void {
     const scale = scaled && this.run ? { depth: this.floor, region: this.run.region, condition: this.run.condition, elite } : undefined;
-    this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs, extra });
+    this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs, extra, ...opts });
     planEnemies(this.battle, this.rng);
     this.phase = 'battle';
   }

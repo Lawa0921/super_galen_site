@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Game, type MoveResult } from './game';
+import { STORY_FIGHT_ROUNDS } from './battle';
 import { SAVE_KEY, loadGame, saveGame } from './save';
 import { newGame, START_ITEMS } from './state';
 import { constRng, memoryStorage, plainItem } from './testing';
@@ -2310,5 +2311,54 @@ describe('townsfolk fragments at home', () => {
     const stored = storage.map.get(SAVE_KEY);
     expect(h.rerollPortals()).toBe(false);
     expect(storage.map.get(SAVE_KEY)).toBe(stored);
+  });
+});
+
+describe("Scarlet's story fight", () => {
+  const scarletRun = () => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, ['hero', 'rin']);
+    g.state.dungeon.reached.iron = 8;
+    expect(g.depart({ region: 'iron', condition: 'plain' }, 5)).toEqual({ ok: true });
+    g.floor = 8;   // Scarlet's room is iron depth 8: go straight there
+    const c = floorOf(g.run!, 8).contents.find((x) => x.kind === 'rescue')!;
+    expect(c.who).toBe('scarlet');
+    return { g, at: c.at };
+  };
+  const defend = { hero: { kind: 'defend' as const }, rin: { kind: 'defend' as const } };
+  it("Scarlet's rescue is her story fight", () => {
+    const { g, at } = scarletRun();
+    expect(stepOnto(g, at)).toEqual({ kind: 'rescue', who: 'scarlet' });
+    expect(g.battle!.survive).toBe(STORY_FIGHT_ROUNDS);
+    expect(g.battle!.enemies[0].defId).toBe('scarlet-foe');
+    let end = null;
+    for (let i = 0; i < STORY_FIGHT_ROUNDS; i++) {
+      expect(end).toBeNull();
+      end = g.submitRound(defend)!.end;
+    }
+    expect(end!.outcome).toBe('win');
+    expect(end!.met).toMatchObject({ id: 'scarlet' });
+    expect(g.state.party.recruited).toContain('scarlet');
+    expect(g.state.party.roster.hero.hp).toBeGreaterThanOrEqual(1);
+    expect(tileAt(g.map(), at)).toBe('floor');
+  });
+  it('another companion is still met by a plain rescue fight', () => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, ['hero', 'rin']);
+    g.state.dungeon.reached.mainline = 3;
+    g.depart(MAIN, 2);
+    const c = floorOf(g.run!, 2).contents.find((x) => x.kind === 'rescue')!;
+    stepOnto(g, c.at);
+    expect(g.battle!.survive).toBeUndefined();
+    expect(g.battle!.enemies.some((e) => e.defId === 'scarlet-foe')).toBe(false);
+  });
+  it("fleeing Scarlet's fight leaves her waiting", () => {
+    const { g, at } = scarletRun();
+    stepOnto(g, at);
+    (g as { rng: unknown }).rng = constRng(0);
+    const end = g.submitRound({ hero: { kind: 'escape' } })!.end!;
+    expect(end.outcome).toBe('fled');
+    expect(end.met).toBeUndefined();
+    expect(g.state.party.recruited).not.toContain('scarlet');
+    expect(tileAt(g.map(), at)).toBe('rescue');
+    expect(floorOf(g.run!, 8).contents.some((c) => c.kind === 'rescue')).toBe(true);
   });
 });

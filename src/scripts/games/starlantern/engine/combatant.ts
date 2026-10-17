@@ -38,6 +38,8 @@ export interface Combatant {
   oath?: true;
   /** The art id a member shows: Rin wears `rin-oath` after her oath (members only; absent reads as `defId`). */
   artId?: string;
+  /** Never drops below 1 HP (dealDamage): the party and Scarlet in a survive fight. */
+  undying?: true;
 }
 
 export type BattleEvent =
@@ -61,7 +63,9 @@ export type BattleEvent =
   /** A member's turn spent on a skill their tree has not learned (no menu offers one; a stale or crafted action). */
   | { type: 'no-skill'; actor: string }
   | { type: 'escape'; success: boolean }
-  | { type: 'poison-tick'; target: string; amount: number };
+  | { type: 'poison-tick'; target: string; amount: number }
+  /** A survive fight lasted its rounds. */
+  | { type: 'survived' };
 
 export const MAX_BUFFS = 3;
 export const SLEEP_TURNS = 3;
@@ -148,7 +152,7 @@ export const gaugeGain = (c: Combatant, n: number): number => Math.floor(n * (1 
 
 export function dealDamage(t: Combatant, amount: number): void {
   if (t.side === 'party' && t.alive && amount > 0) t.limit = Math.min(100, t.limit + gaugeGain(t, Math.max(1, Math.floor((amount / t.max.hp) * 40))));
-  t.hp = Math.max(0, t.hp - amount);
+  t.hp = Math.max(t.undying ? 1 : 0, t.hp - amount);
   t.sleep = 0;
   if (t.hp === 0) {
     t.alive = false;

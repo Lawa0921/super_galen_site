@@ -76,7 +76,7 @@ export class BattleScene implements Scene {
       this.ctx.stage.show('battle');
       this.ctx.stage.battleView.setup(this.state, this.ctx.stage.size(), this.ctx.game.terrain(), BATTLE_LEFT, BATTLE_BOTTOM, this.ctx.game.run?.region);
     }
-    this.msg.textContent = this.state.enemies.map((e) => e.name).join('、');
+    this.msg.textContent = this.state.enemies.map((e) => e.name).join('、') + this.surviveLine();
     this.banner(this.state.boss ? T.ui2.banner.boss : T.ui2.banner.encounter, this.state.boss ? 'slx-banner-boss' : '');
     this.startRound();
   }
@@ -113,7 +113,14 @@ export class BattleScene implements Scene {
     }), active);
   }
 
+  /** A survive fight's reminder, on a line of its own: how many rounds are left. Empty in a plain fight. */
+  private surviveLine(): string {
+    const s = this.state;
+    return s.survive ? `\n${T.ui2.battle.survive(Math.max(0, s.survive - s.round))}` : '';
+  }
+
   private startRound(): void {
+    if (this.state.survive && this.state.round > 0) this.msg.textContent += this.surviveLine();
     this.index = 0;
     this.actions = {};
     this.showIntents();

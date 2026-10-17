@@ -208,7 +208,7 @@ export const bossPartyScale = (n: number): number => BOSS_PARTY_SCALE[sizeOf(n)]
 export const groupCap = (n: number, depth: number): number => (depth === 1 ? FIRST_DEPTH_CAP[sizeOf(n)] : undefined) ?? GROUP_CAP[sizeOf(n)];
 
 /** The ordinary monsters: every one but the boss (eight today; spec §3.7's "nine" counts the boss). */
-export const NORMAL_ENEMIES: string[] = Object.values(ENEMIES).filter((e) => !e.boss).map((e) => e.id);
+export const NORMAL_ENEMIES: string[] = Object.values(ENEMIES).filter((e) => !e.boss && !e.story).map((e) => e.id);
 
 /**
  * The groups a random encounter is drawn from (`encounterGroup` picks one). The mainline uses the encounter table of the depth's terrain. A random region

@@ -7,6 +7,7 @@ import { NO_ART } from '../../render/textures';
 import { art } from '../../render/artPaths';
 import { chainLength } from '../../data/story/chains';
 import { BattleScene } from './battle';
+import { STORY_FIGHT_ROUNDS } from '../../engine/battle';
 import { LEGACY_LINEUP } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
 import { CHARACTERS } from '../../data/characters';
@@ -30,6 +31,19 @@ function setup(prep?: (game: Game) => void) {
 }
 
 describe('BattleScene', () => {
+  it('a survive fight shows how many rounds are left', async () => {
+    const { s, root, game } = setup((g) => { g.battle!.survive = STORY_FIGHT_ROUNDS; });
+    expect(root.querySelector('.slx-msg')!.textContent).toContain(T.ui2.battle.survive(STORY_FIGHT_ROUNDS));
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }   // 防禦 ×5
+    await flush();
+    expect(game.battle!.round).toBe(1);
+    expect(root.querySelector('.slx-msg')!.textContent).toContain(T.ui2.battle.survive(STORY_FIGHT_ROUNDS - 1));
+    s.exit?.();
+  });
+  it('a plain fight shows no survive line', () => {
+    const { root } = setup();
+    expect(root.querySelector('.slx-msg')!.textContent).not.toContain('撐過去');
+  });
   it('lists the commands for the first member and adds the ultimate when the gauge is full', () => {
     const plain = setup();
     expect(plain.labels()).toEqual(['攻擊', '技能', '防禦', '道具', '逃跑', '全員攻擊']);

@@ -29,6 +29,7 @@ export function battleLines(log: BattleEvent[], nameOf: (key: string) => string)
       case 'no-limit': return T.log.noLimit(nameOf(e.actor));
       case 'escape': return T.log.escape(e.success);
       case 'poison-tick': return T.log.poison(nameOf(e.target), e.amount);
+      case 'survived': return T.ui2.battle.survived;
     }
   });
 }
