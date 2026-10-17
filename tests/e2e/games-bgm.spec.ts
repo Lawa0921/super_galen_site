@@ -196,11 +196,10 @@ test.describe('Dungeon Arcade Audio', () => {
   });
 });
 
-// ── 8. 三款遊戲頁面板存在且 track 正確 ──
+// ── 8. 兩款遊戲頁面板存在且 track 正確 ──
 for (const [name, path] of [
   ['tetris', '/games/tetris'],
   ['bomber', '/games/bomber'],
-  ['witchrun', '/games/witchrun'],
 ] as const) {
   test(`${name} 頁面板存在且 track 含 /${name}.mp3`, async ({ page }) => {
     await page.addInitScript(() => {

@@ -12,17 +12,21 @@ const lang: Language = defaultLang;
 const games = [
   { id: 'tetris', title: 'BATTLE TETRIS', href: '/games/tetris', active: true, art: '/assets/games/tetris/card-tetris.webp' },
   { id: 'bomber', title: 'DUNGEON BOMBER', href: '/games/bomber', active: true, art: '/assets/games/bomber/card-bomber.webp' },
-  { id: 'witchrun', title: 'WITCH RUN', href: '/games/witchrun', active: true, art: '/assets/games/witchrun/card-witchrun.webp' },
-  { id: 'defense', title: 'DUNGEON DEFENSE', href: '/games/defense', active: true, art: '/assets/games/defense/card-defense.webp' },
   { id: 'cs', title: 'BREACH POINT', href: '/games/cs', active: true, art: '/assets/games/cs/card-cs.webp' },
   { id: 'delve', title: 'DELVE 深掘', href: '/games/delve', active: true, art: '/assets/games/delve/card-delve.webp' },
 ];
+
+// DELVE 卡片：主視覺是用遊戲自己的引擎 / 渲染器擺好場景後輸出的像素圖層（天空 / 地形 / 角色揮鎬三格），
+// 中文用 DotGothic16（只下載用到的字）。
+const DELVE_ART = '/assets/games/delve/card';
+const delveFontHref = `https://fonts.googleapis.com/css2?family=DotGothic16&display=swap&text=${encodeURIComponent('深掘挖掘建造探索地底・程序生成城合成')}`;
 ---
 
 <BaseLayout title="Dungeon Arcade" description="SuperGalen's Dungeon 遊戲廳" lang={lang}>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
+  <link rel="stylesheet" href={delveFontHref} />
 
   <main class="arcade">
     <div class="arcade-boot" aria-hidden="true"></div>
@@ -31,7 +35,27 @@ const games = [
 
     <div class="card-wall">
       {games.map((g) =>
-        g.active && g.href ? (
+        g.id === 'delve' && g.active ? (
+          <a class="card card--active card--delve" href={g.href}>
+            <span class="delve-scene">
+              <img class="delve-layer delve-layer--sky" src={`${DELVE_ART}/sky.webp`} alt="" aria-hidden="true" width="464" height="584" loading="eager" decoding="async" />
+              <img class="delve-layer delve-layer--terrain" src={`${DELVE_ART}/terrain.webp`} alt="像素地底剖面：夕陽下的地表往下挖進火把照亮的洞窟，礦工揮著金鎬敲礦脈，洞頂掛著水晶，蝙蝠與史萊姆出沒，最底下是熔岩" width="464" height="584" loading="eager" decoding="async" />
+              <span class="delve-glow delve-glow--shaft" aria-hidden="true"></span>
+              <span class="delve-glow delve-glow--torch" aria-hidden="true"></span>
+              <span class="delve-glow delve-glow--torch2" aria-hidden="true"></span>
+              <img class="delve-layer delve-layer--hero delve-hero-1" src={`${DELVE_ART}/hero-1.webp`} alt="" aria-hidden="true" width="464" height="584" loading="eager" decoding="async" />
+              <img class="delve-layer delve-layer--hero delve-hero-2" src={`${DELVE_ART}/hero-2.webp`} alt="" aria-hidden="true" width="464" height="584" loading="eager" decoding="async" />
+              <img class="delve-layer delve-layer--hero delve-hero-3" src={`${DELVE_ART}/hero-3.webp`} alt="" aria-hidden="true" width="464" height="584" loading="eager" decoding="async" />
+            </span>
+            <span class="delve-new" aria-hidden="true">NEW</span>
+            <span class="delve-brand">
+              <span class="delve-logo"><span class="delve-word">DELVE</span><span class="delve-kanji">深掘</span></span>
+              <span class="delve-tagline">挖掘・建造・探索地底</span>
+              <span class="delve-chips"><span class="delve-chip">程序生成</span><span class="delve-chip">地城</span><span class="delve-chip">合成</span><span class="delve-chip">四季天氣</span></span>
+            </span>
+            <span class="card-play">PLAY</span>
+          </a>
+        ) : g.active && g.href ? (
           <a class="card card--active" href={g.href}>
             <img class="card-art-img" src={g.art} alt="" aria-hidden="true" loading="eager" />
             <span class="card-title">{g.title}</span>
@@ -171,6 +195,160 @@ const games = [
     background: center / contain no-repeat url('/assets/games/tetris/icons/lock.webp');
   }
 
+  /* ---- DELVE 卡片（只作用於 .card--delve，不影響其他卡） ----
+     場景以美術 232×292（2× 輸出）製作，四邊各多 6px 供視差位移；
+     .delve-scene 固定場景比例，用 top:p% + translateY(-p%) 等同 object-position。 */
+  .card--delve {
+    border-color: rgba(255, 169, 58, 0.85);
+    box-shadow: 0 0 16px rgba(255, 169, 58, 0.4), inset 0 0 18px rgba(255, 169, 58, 0.14);
+  }
+  .card--delve:hover,
+  .card--delve:focus-visible {
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: 0 0 28px rgba(255, 169, 58, 0.75), 0 0 46px rgba(232, 112, 28, 0.35), inset 0 0 24px rgba(255, 169, 58, 0.22);
+  }
+  .card--delve:focus-visible {
+    outline: 3px solid #fff4c0;
+    outline-offset: 4px;
+  }
+  .card--delve::after {
+    z-index: 1;
+    background: linear-gradient(180deg, transparent 52%, rgba(28, 20, 36, 0.72) 70%, rgba(12, 10, 18, 0.96) 100%);
+  }
+  .delve-scene {
+    position: absolute;
+    left: -6px;
+    right: -6px;
+    top: 50%;
+    aspect-ratio: 232 / 292;
+    transform: translateY(-50%);
+    z-index: 0;
+  }
+  .delve-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .delve-hero-2,
+  .delve-hero-3 { opacity: 0; }
+  .card--delve:hover .delve-layer--sky,
+  .card--delve:focus-visible .delve-layer--sky { transform: translate(5px, 3px); }
+  .card--delve:hover .delve-layer--terrain,
+  .card--delve:focus-visible .delve-layer--terrain { transform: translate(1px, -1px); }
+  .card--delve:hover .delve-layer--hero,
+  .card--delve:focus-visible .delve-layer--hero { transform: translate(-2px, -2px); }
+  .card--delve:hover .delve-hero-1,
+  .card--delve:focus-visible .delve-hero-1 { animation: delveSwing1 0.6s steps(1, end) infinite; }
+  .card--delve:hover .delve-hero-2,
+  .card--delve:focus-visible .delve-hero-2 { animation: delveSwing2 0.6s steps(1, end) infinite; }
+  .card--delve:hover .delve-hero-3,
+  .card--delve:focus-visible .delve-hero-3 { animation: delveSwing3 0.6s steps(1, end) infinite; }
+  @keyframes delveSwing1 { 0% { opacity: 1; } 33.333% { opacity: 0; } 100% { opacity: 0; } }
+  @keyframes delveSwing2 { 0% { opacity: 0; } 33.333% { opacity: 1; } 66.666% { opacity: 0; } 100% { opacity: 0; } }
+  @keyframes delveSwing3 { 0% { opacity: 0; } 66.666% { opacity: 1; } 100% { opacity: 1; } }
+
+  /* 火光：疊在火把位置的暖色光暈（screen），hover 時閃爍 */
+  .delve-glow {
+    position: absolute;
+    width: 26%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 169, 58, 0.42), rgba(232, 112, 28, 0.16) 45%, transparent 70%);
+    mix-blend-mode: screen;
+    opacity: 0.55;
+    pointer-events: none;
+  }
+  .delve-glow--shaft { left: 36.6%; top: 24%; }
+  .delve-glow--torch { left: 44.8%; top: 45.5%; }
+  .delve-glow--torch2 { left: 93.1%; top: 45.9%; }
+  .card--delve:hover .delve-glow,
+  .card--delve:focus-visible .delve-glow { animation: delveFlicker 1.3s steps(1, end) infinite; }
+  .card--delve:hover .delve-glow--torch,
+  .card--delve:focus-visible .delve-glow--torch { animation-delay: -0.45s; }
+  .card--delve:hover .delve-glow--torch2,
+  .card--delve:focus-visible .delve-glow--torch2 { animation-delay: -0.8s; }
+  @keyframes delveFlicker {
+    0% { opacity: 0.6; }
+    18% { opacity: 0.9; }
+    31% { opacity: 0.7; }
+    47% { opacity: 1; }
+    63% { opacity: 0.65; }
+    80% { opacity: 0.95; }
+  }
+
+  .delve-new {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    padding: 4px 5px 3px;
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: #1c1424;
+    background: #ffa93a;
+    box-shadow: 0 2px 0 #a83a10, 0 0 0 2px #1c1424, 0 4px 0 2px #1c1424;
+  }
+  .delve-brand {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DotGothic16', 'Press Start 2P', monospace;
+  }
+  .card--delve .card-play {
+    z-index: 2;
+    color: #ffd86a;
+  }
+  .delve-logo {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .delve-word {
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 22px;
+    line-height: 1;
+    letter-spacing: 2px;
+    color: #ffd86a;
+    text-shadow:
+      2px 0 #1c1424, -2px 0 #1c1424, 0 2px #1c1424, 0 -2px #1c1424,
+      2px 2px #1c1424, -2px 2px #1c1424, 2px -2px #1c1424, -2px -2px #1c1424,
+      0 4px #a83a10, 2px 4px #6c1e14, -2px 4px #6c1e14, 0 6px #1c1424,
+      0 0 14px rgba(255, 169, 58, 0.55);
+  }
+  .delve-kanji {
+    padding: 2px 4px 1px;
+    font-size: 15px;
+    line-height: 1;
+    color: #fff4c0;
+    background: #a83a10;
+    box-shadow: 0 0 0 2px #1c1424, 0 2px 0 2px #6c1e14;
+  }
+  .delve-tagline {
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: #f2e2b0;
+    text-shadow: 1px 1px 0 #1c1424;
+  }
+  .delve-chips {
+    display: flex;
+    gap: 5px;
+  }
+  .delve-chip {
+    padding: 2px 5px 1px;
+    font-size: 10px;
+    line-height: 1.2;
+    color: #ffd86a;
+    background: rgba(28, 20, 36, 0.85);
+    border: 1px solid rgba(255, 169, 58, 0.7);
+  }
+
   .lb-link {
     font-family: 'Press Start 2P', Consolas, monospace;
     font-size: 11px;
@@ -187,6 +365,13 @@ const games = [
 
   @media (max-width: 560px) {
     .card { width: 70vw; height: 200px; }
+    /* 橫式小卡：品牌移到右下，左側留給揮鎬的礦工 */
+    .card--delve { align-items: flex-end; padding-right: 14px; }
+    .card--delve::after { background: linear-gradient(160deg, transparent 45%, rgba(28, 20, 36, 0.7) 62%, rgba(12, 10, 18, 0.95) 100%); }
+    .delve-scene { top: 10%; transform: translateY(-10%); }
+    .delve-brand { align-items: flex-end; gap: 5px; }
+    .delve-chips { display: none; }
+    .delve-word { font-size: 18px; }
   }
 
   /* ---- 進場動畫（開機式） ---- */
@@ -230,5 +415,16 @@ const games = [
     .arcade-boot { display: none; }
     .arcade-title,
     .card { animation: none; }
+    .delve-layer { transition: none; }
+    .card--delve:hover .delve-layer,
+    .card--delve:focus-visible .delve-layer { transform: none; }
+    .card--delve:hover .delve-hero-1,
+    .card--delve:focus-visible .delve-hero-1,
+    .card--delve:hover .delve-hero-2,
+    .card--delve:focus-visible .delve-hero-2,
+    .card--delve:hover .delve-hero-3,
+    .card--delve:focus-visible .delve-hero-3,
+    .card--delve:hover .delve-glow,
+    .card--delve:focus-visible .delve-glow { animation: none; }
   }
 </style>
