@@ -7,6 +7,19 @@ const box = (page: Page) => page.locator('#sl-screen').boundingBox();
 test.describe('starlantern', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'chromium only');
 
+  /** The town's own greeting lines: what it says on 繼續 when there is no notice (such as 存檔無法讀取) to give. */
+  const TOWN_LINE = /暮霧又濃了些|聽說迷宮深處有星燈的光|補給品記得在出發前備齊/;
+  /** After 繼續: the town greets as usual, and the game in play is exactly the stored save. */
+  const expectSaveLoaded = async (page: Page) => {
+    await expect(page.locator('.slx-town .slx-talk .slx-text')).toHaveText(TOWN_LINE);
+    const r = await page.evaluate(() => ({
+      saved: JSON.parse(localStorage.getItem('starlantern-save') ?? 'null'),
+      game: JSON.parse(JSON.stringify((window as unknown as Dbg).__starlanternDebug.game.state)),
+    }));
+    expect(r.saved).not.toBeNull();
+    expect(r.game).toEqual(r.saved);
+  };
+
   test('forwards the old preview address to the game page', async ({ page }) => {
     await page.goto('/games/starlantern-next?seed=3');
     await expect(page).toHaveURL(/\/games\/starlantern\?seed=3$/);
@@ -393,7 +406,7 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('繼續');
     await w.key('Enter');
     await expect(page.locator('.slx-town')).toBeVisible();
-    await expect(page.locator('.slx-town .slx-talk')).not.toContainText('存檔無法讀取');
+    await expectSaveLoaded(page);
     // The save loaded as valid: the spear is still worn, and every uid sits below nextUid exactly once.
     const check = await page.evaluate((u) => {
       const s = (window as unknown as Dbg).__starlanternDebug.game.state;
@@ -449,7 +462,8 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
     await page.evaluate(() => {
       const m = (window as unknown as Dbg).__starlanternDebug.game.state.party.roster.noel;
-      m.level = 50; m.talents = { 'noel-t00': 5, 'noel-t01': 5, 'noel-t02': 1 };
+      // Two keystones taken, so the third cell reads 關鍵已滿 (the widest cell state) for the cut-off check below.
+      m.level = 50; m.talents = { 'noel-t00': 5, 'noel-t01': 5, 'noel-t02': 2, 'noel-k0': 1, 'noel-k1': 1 };
     });
     await page.locator('.slx-guild [data-id=status]').click();
     for (let i = 0; i < 8 && !((await page.locator('.slx-status-name').textContent()) ?? '').includes('諾艾兒'); i++) await page.locator('.slx-status-next').click();
@@ -470,14 +484,25 @@ test.describe('starlantern', () => {
     await expect(up).toBeHidden();
     await expect(down).toBeVisible();
     await expect(page.locator('.slx-talent-row[data-row="0"] .slx-talent-tier')).toHaveText('第1列');
-    // Two-line cells: at least 3 whole rows fit at 1280x720, and no cell's bonus or state is cut off.
-    const fit = await page.evaluate(() => {
+    // Two-line cells: at least 3 whole rows fit at 1280x720, and no cell's bonus or state is cut off. The bonus
+    // (.slx-talent-per) never shrinks, so it is judged against its line and its cell, not against itself.
+    // `stretch` widens the first bonus past its cell, to prove the check reports it (run last, below).
+    const measure = (stretch: boolean) => {
+      if (stretch) document.querySelector('.slx-talent-per')!.textContent = '+99.9%／級+99.9%／級';
       const b = document.querySelector('.slx-talent-board')!.getBoundingClientRect();
       const row = document.querySelector('.slx-talent-row')!.getBoundingClientRect();
-      const cut = [...document.querySelectorAll<HTMLElement>('.slx-talent-sub > span')].filter((s) => s.scrollWidth > s.clientWidth + 0.5).map((s) => s.textContent);
-      return { rows: b.height / row.height, cut };
-    });
+      const cut = [...document.querySelectorAll<HTMLElement>('.slx-talent-node')].flatMap((cell) => {
+        const box = cell.getBoundingClientRect();
+        const sub = cell.querySelector<HTMLElement>('.slx-talent-sub')!;
+        const spans = [...sub.querySelectorAll<HTMLElement>(':scope > span')];
+        const out = sub.scrollWidth > sub.clientWidth + 0.5 || spans.some((s) => s.scrollWidth > s.clientWidth + 0.5 || s.getBoundingClientRect().right > box.right + 0.5);
+        return out ? [`${cell.dataset.node} ${sub.textContent}`] : [];
+      });
+      return { rows: b.height / row.height, cut, keyCap: document.querySelector('[data-node=noel-k2] .slx-talent-state')!.textContent };
+    };
+    const fit = await page.evaluate(measure, false);
     expect(fit.rows).toBeGreaterThanOrEqual(3);
+    expect(fit.keyCap).toBe('關鍵已滿');
     expect(fit.cut).toEqual([]);
 
     // ↓ goes down the column to the keystone row, Tab along it: the bottom end is the last keystone, rows hidden above.
@@ -503,6 +528,8 @@ test.describe('starlantern', () => {
     await expect(up).toBeHidden();
     expect(await board.evaluate((b) => b.scrollTop)).toBe(0);
     expect(w.errors).toEqual([]);
+    // The cut-off check sees a clipped bonus: the first one stretched past its cell is reported.
+    expect((await page.evaluate(measure, true)).cut).toEqual([expect.stringMatching(/^noel-t00 /)]);
   });
 
   test('spends skill and talent points, then resets them at the inn', async ({ page }) => {
@@ -512,13 +539,13 @@ test.describe('starlantern', () => {
       const m = s.party.roster.noel;
       return { gold: s.gold, level: m.level, tree: m.tree, talents: m.talents };
     });
-    /** Reload, continue, and check the town did not have to throw the save away. */
+    /** Reload, continue, and check the game in play is the stored save (not a fresh one after a thrown-away save). */
     const reloadContinue = async () => {
       await page.reload();
       await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('繼續');
       await w.key('Enter');
       await expect(page.locator('.slx-town')).toBeVisible();
-      await expect(page.locator('.slx-town .slx-talk')).not.toContainText('存檔無法讀取');
+      await expectSaveLoaded(page);
       await w.closeTalk();
     };
     const status = page.locator('.slx-status-name');
