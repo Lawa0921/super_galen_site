@@ -158,7 +158,7 @@ function pixelOf(type: number, x: number, y: number, d: number, frame: number, p
     if (surf && d < 4) return t < 0.4 ? HONEY[4] : HONEY[3];
     return t < 0.12 ? HONEY[4] : t < 0.45 ? HONEY[3] : HONEY[2];
   }
-  // 水：水面亮線 + 第二排淺藍，往下越深越密：上 4 px 50% 棋盤，之後 Bayer 5/8
+  // 水：水面亮線 + 第二排淺藍，其餘 50% 棋盤（Bayer 一半）——後面的 tile / 水裡的人和怪都看得到
   if (surf && d === 0) return ((x + frame) & 3) === 0 ? WATER[6] : WATER[5];
   if (surf && d === 1) return (x + y) & 1 ? WATER[4] : null;
   if (piece === 'fall') {
@@ -167,8 +167,7 @@ function pixelOf(type: number, x: number, y: number, d: number, frame: number, p
     if ((x & 3) === 1 && streak < 3) return WATER[5];
     return (x + y) & 1 ? WATER[3] : t < 0.4 ? WATER[2] : null;
   }
-  const dense = surf ? (d < 5 ? 0.5 : 0.625) : 0.625;
-  if (t >= dense) return null;
+  if (t >= 0.5) return null;
   return t < 0.12 ? WATER[3] : t < 0.4 ? WATER[2] : WATER[1];
 }
 
