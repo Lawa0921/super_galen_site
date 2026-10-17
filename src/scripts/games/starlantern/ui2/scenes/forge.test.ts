@@ -6,7 +6,8 @@ import { constRng, memoryStorage } from '../../engine/testing';
 import type { ItemInstance, Rarity } from '../../engine/types';
 import { NO_ART } from '../../render/textures';
 import { CHARACTERS } from '../../data/characters';
-import { ENHANCE_COST, ENHANCE_SUCCESS, REGION_AFFIX_GROUP } from '../../data/forge';
+import { ENHANCE_COST, ENHANCE_MAX, ENHANCE_STEP, ENHANCE_SUCCESS, REGION_AFFIX_GROUP } from '../../data/forge';
+import { EQUIPMENT } from '../../data/equipment';
 import { AFFIXES } from '../../data/gear';
 import { enhanceCost, forgeRng, rerollCost, rerollRange, swapPool } from '../../engine/forge/cost';
 import { implicitStats, itemSlot } from '../../engine/loot/item';
@@ -353,10 +354,22 @@ describe('ForgeScene enhance page', () => {
     expect(rows()[0].textContent).toContain('+5');
   });
 
-  it('does not paint a base bonus green when the next level rounds to the same number', () => {
+  it('a small base still shows its step: one decimal when fractional, green', () => {
     const { info } = open([gear(1, 'iron-sword', 'common', { ilvl: 1 })]);
-    expect(info().textContent).toContain(T.ui2.forge.baseStat('攻擊', 4, 4));
-    expect(info().querySelector('.slx-up')).toBeNull();
+    expect(info().textContent).toContain(`攻擊 +4.0 → +${(4 * (1 + ENHANCE_STEP)).toFixed(1)}`);
+    expect(info().querySelector('.slx-cmp-row.slx-up')).not.toBeNull();
+  });
+
+  it('every base at every level reads as a change in the preview words', () => {
+    for (const b of Object.values(EQUIPMENT)) for (const ilvl of [b.ilvl, b.ilvl + 7, 60]) for (let e = 0; e < ENHANCE_MAX; e++) {
+      const it = gear(1, b.id, 'common', { ilvl, enhance: e });
+      const [now, next] = [implicitStats(it), implicitStats(at(it, e + 1))];
+      for (const k of Object.keys(next) as (keyof typeof next)[]) {
+        const words = T.ui2.forge.baseStat('x', now[k]!, next[k]!);
+        const [from, to] = words.slice(2).split(' → ');
+        expect(from, `${b.id} ilvl ${ilvl} +${e} ${k}: ${words}`).not.toBe(to);
+      }
+    }
   });
 
   it('shows no chance below +5, and no failure note at 100%', () => {

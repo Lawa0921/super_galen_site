@@ -62,13 +62,17 @@ export function rollItem(rng: Rng, o: RollOpts): ItemInstance {
   return item;
 }
 
-/** The base's own bonus, grown IMPLICIT_PER_ILVL per item level above the base's level, then ENHANCE_STEP per enhance level. */
+/**
+ * The base's own bonus, grown IMPLICIT_PER_ILVL per item level above the base's level, then ENHANCE_STEP per enhance level.
+ * Not rounded: the member sheet adds every piece and floors the total once (statsOf), so a small base's enhancement is
+ * not rounded away piece by piece. Shown with one decimal when fractional (T.gear.affix, T.ui2.forge.baseStat).
+ */
 export function implicitStats(it: ItemInstance): Partial<Stats> {
   const b = EQUIPMENT[it.base];
   const grow = 1 + IMPLICIT_PER_ILVL * Math.max(0, it.ilvl - b.ilvl);
   const up = 1 + ENHANCE_STEP * it.enhance;
   const out: Partial<Stats> = {};
-  for (const [k, v] of Object.entries(b.bonus) as [keyof Stats, number][]) out[k] = Math.round(v * grow * up);
+  for (const [k, v] of Object.entries(b.bonus) as [keyof Stats, number][]) out[k] = v * grow * up;
   return out;
 }
 

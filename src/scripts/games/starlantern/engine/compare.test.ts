@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { compareDelta, itemLines, specialLines } from './compare';
-import { newMember } from './party';
+import { newMember, statsOf } from './party';
 import { plainItem } from './testing';
 import { implicitStats, rollItem } from './loot/item';
 import { mulberry32 } from './rng';
@@ -121,6 +121,21 @@ describe('specialLines', () => {
   it('shows the enhanced value of a base bonus', () => {
     const m: Member = { ...newMember('scarlet'), equip: { weapon: sword } };
     const plus5: ItemInstance = { ...sword, enhance: 5 };
-    expect(compareDelta(m, 'weapon', plus5).atk).toBe(Math.round(4 * (1 + 5 * ENHANCE_STEP)) - 4);
+    expect(compareDelta(m, 'weapon', plus5).atk).toBe(statsOf({ ...m, equip: { weapon: plus5 } }).atk - statsOf(m).atk);
+    expect(compareDelta(m, 'weapon', plus5).atk).toBeGreaterThan(0);
+  });
+
+  it('a whole stat changes by what the member really gets: the floored total, never a fraction', () => {
+    const m: Member = { ...newMember('scarlet'), equip: { weapon: sword } };
+    for (let e = 1; e <= 10; e++) {
+      const d = compareDelta(m, 'weapon', { ...sword, enhance: e }).atk ?? 0;
+      expect(Number.isInteger(d), `+${e}`).toBe(true);
+      expect(d).toBe(statsOf({ ...m, equip: { weapon: { ...sword, enhance: e } } }).atk - statsOf(m).atk);
+    }
+  });
+
+  it('a fractional base bonus reads with one decimal, a whole one without', () => {
+    expect(itemLines({ ...sword, enhance: 5 })[0].text).toBe(T.gear.implicit(`攻擊 +${(4 * (1 + 5 * ENHANCE_STEP)).toFixed(1)}`));
+    expect(itemLines(sword)[0].text).toBe(T.gear.implicit('攻擊 +4'));
   });
 });

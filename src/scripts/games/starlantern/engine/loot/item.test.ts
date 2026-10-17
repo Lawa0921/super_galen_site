@@ -4,6 +4,7 @@ import { AFFIXES, AFFIX_COUNT, GEAR_SLOTS, IMPLICIT_PER_ILVL, ROLL_FLOOR, SPECIA
 import { EQUIPMENT } from '../../data/equipment';
 import { ENHANCE_MAX, ENHANCE_STEP } from '../../data/forge';
 import type { GearSlot, Rarity } from '../types';
+import { newMember, sheetOf, statsOf } from '../party';
 import { baseFor, implicitStats, itemLevel, itemName, itemSlot, itemStats, itemWeight, rollItem, rollValue, sellPrice } from './item';
 import { depthLevel } from '../levels';
 
@@ -126,7 +127,7 @@ describe('item numbers', () => {
   it('implicit grows with item level', () => {
     const it = { uid: 1, base: 'star-saber', rarity: 'common' as Rarity, ilvl: 42, affixes: [], enhance: 0 };
     // star-saber: atk 15 at item level 10.
-    expect(implicitStats(it).atk).toBe(Math.round(15 * (1 + IMPLICIT_PER_ILVL * 32)));
+    expect(implicitStats(it).atk).toBeCloseTo(15 * (1 + IMPLICIT_PER_ILVL * 32), 9);
     expect(implicitStats({ ...it, ilvl: 10 }).atk).toBe(15);
     expect(implicitStats({ ...it, ilvl: 3 }).atk).toBe(15);
   });
@@ -163,13 +164,13 @@ describe('item numbers', () => {
     expect(itemLevel(3, 'boss')).toBe(depthLevel(3) + 4);
   });
 
-  it('itemLevel(50, boss) is 202 and its items are finite integers', () => {
+  it('itemLevel(50, boss) is 202; its affixes are finite integers and its base bonus is finite (fractional by design)', () => {
     expect(itemLevel(50, 'boss')).toBe(202);
     for (const rarity of rarities) {
       for (let seed = 1; seed <= 100; seed++) {
         const it = rollItem(mulberry32(seed), { uid: 1, ilvl: 202, rarity });
         for (const a of it.affixes) { expect(Number.isFinite(a.value)).toBe(true); expect(Number.isInteger(a.value)).toBe(true); }
-        for (const v of Object.values(itemStats(it))) { expect(Number.isFinite(v)).toBe(true); expect(Number.isInteger(v)).toBe(true); }
+        for (const v of Object.values(itemStats(it))) expect(Number.isFinite(v)).toBe(true);
       }
     }
   });
@@ -188,8 +189,8 @@ describe('enhancement', () => {
     const ilvl = 20;
     const grow = 1 + IMPLICIT_PER_ILVL * Math.max(0, ilvl - base.ilvl);
     const raw = base.bonus.atk! * grow;
-    expect(implicitStats(make(0, ilvl)).atk).toBe(Math.round(raw));
-    expect(implicitStats(make(5, ilvl)).atk).toBe(Math.round(raw * (1 + 5 * ENHANCE_STEP)));
+    expect(implicitStats(make(0, ilvl)).atk).toBeCloseTo(raw, 9);
+    expect(implicitStats(make(5, ilvl)).atk).toBeCloseTo(raw * (1 + 5 * ENHANCE_STEP), 9);
     expect(implicitStats(make(5, ilvl)).atk).toBeGreaterThan(implicitStats(make(0, ilvl)).atk!);
     expect(make(5).affixes).toEqual(make(0).affixes);
     expect(itemStats(make(5)).crit).toBe(3);
@@ -199,7 +200,22 @@ describe('enhancement', () => {
   it('an +ENHANCE_MAX item at item level 202 stays finite', () => {
     const stats = itemStats(make(ENHANCE_MAX, 202));
     for (const v of Object.values(stats)) expect(Number.isFinite(v)).toBe(true);
-    expect(implicitStats(make(ENHANCE_MAX, 202)).atk).toBe(Math.round(base.bonus.atk! * (1 + IMPLICIT_PER_ILVL * (202 - base.ilvl)) * (1 + ENHANCE_MAX * ENHANCE_STEP)));
+    expect(implicitStats(make(ENHANCE_MAX, 202)).atk).toBeCloseTo(base.bonus.atk! * (1 + IMPLICIT_PER_ILVL * (202 - base.ilvl)) * (1 + ENHANCE_MAX * ENHANCE_STEP), 9);
+  });
+
+  it('keeps the fraction, so every enhance level adds to a small base instead of rounding away', () => {
+    const at = (e: number) => implicitStats(make(e, base.ilvl)).atk!;
+    for (let e = 1; e <= ENHANCE_MAX; e++) expect(at(e)).toBeCloseTo(at(e - 1) + base.bonus.atk! * ENHANCE_STEP, 9);
+    expect(at(2)).not.toBe(at(3));            // 鐵劍 +2 and +3 both read 6 attack when each item rounded
+  });
+
+  it('the member sheet floors the summed fractions once, so enhancement on two pieces adds up', () => {
+    const m = newMember('scarlet');
+    const sword = (e: number) => make(e, base.ilvl);
+    const total = (e: number) => statsOf({ ...m, equip: { weapon: sword(e) } }).atk;
+    const bare = sheetOf({ ...m, equip: {} }).atk;
+    for (let e = 0; e <= ENHANCE_MAX; e++) expect(total(e)).toBe(Math.floor(bare + base.bonus.atk! * (1 + e * ENHANCE_STEP) + 1e-9));
+    expect(total(ENHANCE_MAX)).toBeGreaterThan(total(0));
   });
 
   it('rollValue is exported and stays within the affix range', () => {

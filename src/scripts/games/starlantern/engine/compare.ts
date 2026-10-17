@@ -1,7 +1,7 @@
 import { POWERS, SETS, SPECIALS } from '../data/gear';
 import { T } from '../data/text.zh-TW';
 import { implicitStats } from './loot/item';
-import { setCounts, sheetOf } from './party';
+import { setCounts, sheetOf, statsOf } from './party';
 import { learnedSkills, treeSkills } from './progression';
 import type { AnyStat, ItemInstance, Member, Sheet, Slot } from './types';
 
@@ -13,13 +13,17 @@ export interface ItemLine { kind: 'implicit' | 'affix' | 'power' | 'set' | 'lore
 
 const EPS = 1e-6;
 
-/** What wearing `item` in `slot` (or nothing, with null) would change on the member's sheet; zero changes are left out. */
+/**
+ * What wearing `item` in `slot` (or nothing, with null) would change on the member's sheet; zero changes are left out.
+ * The whole stats (hp, tp, atk, ...) compare the floored totals the member really gets (statsOf), not the fractional sheet.
+ */
 export function compareDelta(m: Member, slot: Slot, item: ItemInstance | null): Partial<Record<AnyStat, number>> {
   const equip = { ...m.equip };
   if (item) equip[slot] = item;
   else delete equip[slot];
-  const before = sheetOf(m);
-  const after = sheetOf({ ...m, equip });
+  const worn = { ...m, equip };
+  const before: Record<string, number> = { ...sheetOf(m), ...statsOf(m) };
+  const after: Record<string, number> = { ...sheetOf(worn), ...statsOf(worn) };
   const out: Partial<Record<AnyStat, number>> = {};
   for (const k of Object.keys(after) as AnyStat[]) {
     const d = Math.round((after[k] - before[k]) * 1e6) / 1e6;

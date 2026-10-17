@@ -32,7 +32,15 @@ const STAT_NAME: Record<AnyStat, string> = {
 const POINT_STATS: AnyStat[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd', 'str', 'int', 'agi', 'wil', 'armor', 'evasion', 'tpRegen'];
 
 /** A stat change as shown to the player: `+5`, `−3` (the minus sign U+2212, never a hyphen), `0`. */
-const signed = (v: number): string => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0');
+/** A number as shown: whole when it is (within a float's error), else one decimal (a fractional base bonus: 「7.4」). */
+const num = (v: number): string => (Math.abs(v - Math.round(v)) < 1e-6 ? String(Math.round(v)) : v.toFixed(1));
+const signed = (v: number): string => (v > 0 ? `+${num(v)}` : v < 0 ? `−${num(-v)}` : '0');
+/** Two numbers with one shared precision: whole when both are, else one decimal, or two when one would read the same. */
+const pair = (a: number, b: number): [string, string] => {
+  if (num(a) === String(Math.round(a)) && num(b) === String(Math.round(b))) return [num(a), num(b)];
+  const d = a.toFixed(1) === b.toFixed(1) && Math.abs(a - b) > 1e-9 ? 2 : 1;
+  return [a.toFixed(d), b.toFixed(d)];
+};
 
 /** The homecoming sentence, alone or ahead of what came home. */
 const home = (viaLamp: boolean) => (viaLamp ? '歸還之燈的光芒把隊伍帶回了城鎮。' : '平安回城。');
@@ -345,8 +353,8 @@ export const T = {
       maxed: '已達上限',
       nothingToEnhance: '沒有可以強化的裝備。',
       levelStep: (from: number, to: number) => `強化　+${from} → +${to}`,
-      /** One base-bonus line: 「攻擊 6 → 7」. */
-      baseStat: (name: string, from: number, to: number) => `${name} ${from} → ${to}`,
+      /** One base-bonus line: 「攻擊 +7.4 → +8.0」, both sides at one precision (`pair`), so a step always reads as a change. */
+      baseStat: (name: string, from: number, to: number) => { const [a, b] = pair(from, to); return `${name} +${a} → +${b}`; },
       chance: (pct: number) => `成功率 ${pct}%`,
       failNote: '失敗不會降級，但素材照樣消耗',
       lacking: '（不足）',
