@@ -17,8 +17,8 @@ import { aimArmDeg, attackArmDeg, spearThrust } from './combatAnim';
 import { Background } from './background';
 import { scanTrees, torchMount, treeKind, TREE_KIND } from './scene';
 import { bufferSize, clampZoom, floatTextScale, snapCam, zoomScale } from './lowres';
-import { ambientReach, type LightMap } from '../engine/lighting';
-import { shadeTiles, fillLightPixels, AMBIENT_R } from './lightShade';
+import { ambientReach, type LightMap, type PointLight } from '../engine/lighting';
+import { shadeTiles, LightFiller, rectCovers, AMBIENT_R, type ShadeRect } from './lightShade';
 import { AmbientField, ambientKind, AMBIENT_GLOWS, type AmbientKind } from './ambient';
 import { LiquidLayer } from './liquidDraw';
 import { LIQ } from '../engine/liquidKind';
@@ -36,6 +36,8 @@ const CPX = CHUNK * S;
 /** 每幀最多重畫幾個「已在快取裡」的 dirty chunk（看得到但沒快取的一律立即畫） */
 const REDRAW_BUDGET = 4;
 const LIGHT_EVERY = 4;
+/** 光照重算每幀最多花這麼多毫秒（超過就留到下一幀繼續填；畫面沒被遮罩蓋滿時例外：當幀填完） */
+const LIGHT_BUDGET_MS = 1.6;
 /** 光照遮罩每格 tile 切幾格（16 / 8 = 每格 2 美術 px） */
 const LSUB = 8;
 const SIDE_D: [number, number][] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
@@ -46,6 +48,20 @@ const LIGHT_MARGIN = 12;
 
 /** 游標四角：(是否右側, 是否下側, 水平延伸方向, 垂直延伸方向) */
 const CURSOR_CORNERS: [number, number, number, number][] = [[0, 0, 1, 1], [1, 0, -1, 1], [0, 1, 1, -1], [1, 1, -1, -1]];
+
+/** 一組光照遮罩畫布：multiply 的光色 + 'lighter' 的暗色補色（ImageData 與其 Uint32 視圖跟著尺寸重建） */
+interface LightSet {
+  canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; img: ImageData | null; pix: Uint32Array;
+  dark: HTMLCanvasElement; dctx: CanvasRenderingContext2D; dimg: ImageData | null; dpix: Uint32Array;
+}
+function makeLightSet(): LightSet {
+  const canvas = document.createElement('canvas'), dark = document.createElement('canvas');
+  const ctx = canvas.getContext('2d'), dctx = dark.getContext('2d');
+  if (!ctx || !dctx) throw new Error('2d context unavailable');
+  return { canvas, ctx, img: null, pix: new Uint32Array(0), dark, dctx, dimg: null, dpix: new Uint32Array(0) };
+}
+/** 分幀中的光照重算：寫進哪一組、引擎光照、遮罩矩形、已花的時間 */
+interface LightJob { set: LightSet; L: LightMap; rect: ShadeRect; ms: number; frames: number; fillMs: number; }
 
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: string; /** 重力（預設 700；蒸氣 / 泡泡為負） */ g?: number; size?: number; }
 /** 濺起的水花色（色票） */
@@ -59,6 +75,8 @@ export interface RenderStats {
   chunksDrawn: number; cached: number; liquidCells: number; liquidMs: number;
   /** 光照：整次重算 / 其中引擎 / 填像素 / putImageData（毫秒） */
   lightMs: number; lightEngineMs: number; lightFillMs: number; lightPutMs: number;
+  /** 上一次光照重算分散到幾幀 */
+  lightFrames: number;
 }
 /** 上一幀各階段耗時（ms；效能剖析用，原地更新不配置） */
 export interface RenderPhases { bg: number; chunks: number; sprites: number; liquid: number; fx: number; light: number; over: number; blit: number; }
@@ -82,7 +100,7 @@ export class Renderer {
   /** 使用者縮放（預設倍率 + offset，整數倍） */
   zoomOffset = 0;
   private cssW = 1; private cssH = 1;
-  stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0, lightEngineMs: 0, lightFillMs: 0, lightPutMs: 0, liquidCells: 0, liquidMs: 0 };
+  stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0, lightEngineMs: 0, lightFillMs: 0, lightPutMs: 0, lightFrames: 0, liquidCells: 0, liquidMs: 0 };
   readonly phases: RenderPhases = { bg: 0, chunks: 0, sprites: 0, liquid: 0, fx: 0, light: 0, over: 0, blit: 0 };
   private tp = 0;
   /** 距上次 lap 的毫秒數 */
@@ -120,19 +138,26 @@ export class Renderer {
   private pending = new Set<number>();
   private buf = document.createElement('canvas');
   private bctx: CanvasRenderingContext2D;
-  private lightCanvas = document.createElement('canvas');
-  /** 全暗格的補色（'lighter'） */
-  private darkCanvas = document.createElement('canvas');
-  private darkCtx: CanvasRenderingContext2D;
-  private darkImg: ImageData | null = null;
+  /** 光照遮罩兩組（multiply 光色 + 'lighter' 暗色補色）：一組顯示、另一組分幀填色，填完互換 */
+  private lightSets: [LightSet, LightSet] = [makeLightSet(), makeLightSet()];
+  private front = 0;
+  /** 分幀進行中的光照重算（null = 沒有） */
+  private job: LightJob | null = null;
+  private filler = new LightFiller();
+  private readonly now = (): number => performance.now();
   /** 每格最終光色（3 float / 格） */
   private lightA = new Float32Array(0);
   /** 輪廓微光可照的格 */
   private reach = new Uint8Array(0);
+  /** 目前顯示的遮罩對應的引擎光照（暗處剪影用） */
   private lastLight: LightMap | null = null;
-  private lightCtx: CanvasRenderingContext2D;
-  private lightImg: ImageData | null = null;
-  private light: { x0: number; y0: number; w: number; h: number } | null = null;
+  /** 目前顯示的遮罩（tile 矩形） */
+  private light: ShadeRect | null = null;
+  private extraLights: PointLight[] = [];
+  /** 每幀重用的畫面矩形 / 光源清單 / 亮度查詢（不在每幀配置新物件） */
+  private viewBox = { x: 0, y: 0, w: 0, h: 0 };
+  private readonly lightAtFn = (tx: number, ty: number): number => this.lightAt(tx, ty);
+  private lightView = { x: 0, y: 0, w: 0, h: 0 };
   private lightAge = 999;
   private lightDirty = true;
   private frame = 0;
@@ -145,6 +170,7 @@ export class Renderer {
   private bg: Background;
   private torchesSeen: { x: number; y: number }[] = [];
   private coolSeen: { x: number; y: number }[] = [];
+  private glowSeen = { warm: this.torchesSeen, cool: this.coolSeen };
   /** 平均地表高度（世界 px），地下背景起點用 */
   private horizonPx: number;
   /** 地表高度前綴和（遠景地平線取鏡頭附近平均） */
@@ -152,14 +178,10 @@ export class Renderer {
 
   constructor(readonly canvas: HTMLCanvasElement, readonly game: DelveGame) {
     const ctx = canvas.getContext('2d', { alpha: false });
-    const lctx = this.lightCanvas.getContext('2d');
-    const dctx = this.darkCanvas.getContext('2d');
     const bctx = this.buf.getContext('2d', { alpha: false });
-    if (!ctx || !lctx || !bctx || !dctx) throw new Error('2d context unavailable');
-    this.darkCtx = dctx;
+    if (!ctx || !bctx) throw new Error('2d context unavailable');
     this.ctx = ctx;
     this.bctx = bctx;
-    this.lightCtx = lctx;
     this.atlas = buildAtlas();
     this.sprites = new Sprites((item) => this.atlas.iconBmp(item));
     this.combat = new CombatLayer(game, this.atlas, this.sprites);
@@ -379,7 +401,9 @@ export class Renderer {
     this.drawFlora(ctx, camX, camY, vw, vh);
     this.drawTrees(ctx, camX, camY, vw, vh);
     this.drawTorches(ctx, camX, camY, vw, vh);
-    this.combat.drawWorld(ctx, { x: camX, y: camY, w: vw, h: vh }, { warm: this.torchesSeen, cool: this.coolSeen });
+    const vb = this.viewBox;
+    vb.x = camX; vb.y = camY; vb.w = vw; vb.h = vh;
+    this.combat.drawWorld(ctx, vb, this.glowSeen);
     this.drawPlayer(ctx, dt);
     ph.sprites = this.lap();
     const tl = performance.now();
@@ -393,7 +417,7 @@ export class Renderer {
     this.drawStatus(ctx, dt);
     this.drawParticles(ctx, dt);
     // 落葉 / 花瓣（受光照：畫在遮罩之前）
-    this.fx.updateLeaves(dt, w, this.canopies, g.wind(), { x: camX, y: camY, w: vw, h: vh });
+    this.fx.updateLeaves(dt, w, this.canopies, g.wind(), vb);
     this.fx.drawLeaves(ctx);
     // 雨 / 雪
     const precip = wx.kind === 'rain' || wx.kind === 'storm' ? 'rain' : wx.kind === 'snow' ? 'snow' : null;
@@ -403,7 +427,7 @@ export class Renderer {
     ph.fx = this.lap();
     this.drawLight(ctx, camX, camY, vw, vh);
     ph.light = this.lap();
-    if (!this.fullbright) this.combat.drawDark(ctx, { x: camX, y: camY, w: vw, h: vh }, (tx, ty) => this.lightAt(tx, ty));
+    if (!this.fullbright) this.combat.drawDark(ctx, vb, this.lightAtFn);
     // 霧 / 雨雪畫在光照之後（夜裡也看得到，顏色依天空亮度分階）
     const lvl = this.fullbright ? 1 : g.skyLevel();
     if (wx.kind === 'fog') this.fx.drawFog(ctx, w, camX, camY, vw, vh, wx.intensity, lvl);
@@ -940,54 +964,93 @@ export class Renderer {
   // 以 'multiply' 疊上（不透明光色 × 色票色），全暗的格再以 'lighter' 補上色票最暗色。
   private drawLight(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number): void {
     if (this.fullbright) return;
-    const g = this.game, w = g.world;
     this.lightAge++;
-    if (this.lightDirty || this.lightAge >= LIGHT_EVERY || !this.light) {
-      const t0 = performance.now();
-      const pt = g.playerTile();
-      const extra = [...g.heldLights(), ...g.enemyLights(), ...g.projectileLights()];
-      const view = { x: Math.floor(camX / S) - 1, y: Math.floor(camY / S) - 1, w: Math.ceil(vw / S) + 3, h: Math.ceil(vh / S) + 3 };
-      const L = g.computeLight(view, extra);
-      this.stats.lightEngineMs = performance.now() - t0;
-      this.lastLight = L;
-      // 戰爭迷霧：畫面上看得到（夠亮）的格算探索過
-      g.revealLit(L, { x: Math.floor(camX / S), y: Math.floor(camY / S), w: Math.ceil(vw / S) + 1, h: Math.ceil(vh / S) + 1 });
-      const lx0 = Math.max(L.x0, view.x - 2), ly0 = Math.max(L.y0, view.y - 2);
-      const lx1 = Math.min(L.x0 + L.w, view.x + view.w + 2), ly1 = Math.min(L.y0 + L.h, view.y + view.h + 2);
-      const lw = Math.max(1, lx1 - lx0), lh = Math.max(1, ly1 - ly0);
-      const cw = lw * LSUB, chh = lh * LSUB;
-      if (this.lightCanvas.width !== cw || this.lightCanvas.height !== chh || !this.lightImg || !this.darkImg) {
-        this.lightCanvas.width = cw; this.lightCanvas.height = chh;
-        this.darkCanvas.width = cw; this.darkCanvas.height = chh;
-        this.lightImg = this.lightCtx.createImageData(cw, chh);
-        this.darkImg = this.darkCtx.createImageData(cw, chh);
-      }
-      if (this.lightA.length < lw * lh * 3) { this.lightA = new Float32Array(lw * lh * 3); this.reach = new Uint8Array(lw * lh); }
-      const reach = this.reach.subarray(0, lw * lh);
-      ambientReach(w, pt.x, pt.y, AMBIENT_R, { x: lx0, y: ly0, w: lw, h: lh }, reach);
-      const A = this.lightA.subarray(0, lw * lh * 3);
-      shadeTiles(L, w, { x0: lx0, y0: ly0, w: lw, h: lh }, pt, g.skyRGB(), reach, A);
-      const t1 = performance.now();
-      fillLightPixels(A, lw, lh, LSUB, lx0 * LSUB, ly0 * LSUB,
-        new Uint32Array(this.lightImg.data.buffer), new Uint32Array(this.darkImg.data.buffer));
-      const t2 = performance.now();
-      this.lightCtx.putImageData(this.lightImg, 0, 0);
-      this.darkCtx.putImageData(this.darkImg, 0, 0);
-      this.stats.lightFillMs = t2 - t1;
-      this.stats.lightPutMs = performance.now() - t2;
-      this.light = { x0: lx0, y0: ly0, w: lw, h: lh };
-      this.lightAge = 0;
-      this.lightDirty = false;
-      this.stats.lightMs = performance.now() - t0;
+    const t0 = performance.now();
+    const v = this.lightView;
+    v.x = Math.floor(camX / S); v.y = Math.floor(camY / S); v.w = Math.ceil(vw / S) + 1; v.h = Math.ceil(vh / S) + 1;
+    // 重算分散到幾幀（每幀最多 LIGHT_BUDGET_MS）：顯示中的遮罩是世界錨定的，鏡頭移動幾幀仍蓋得住畫面；
+    // 蓋不住（第一幀、縮放、傳送、高速墜落）才當幀一次做完。重算中又有變動 → 這次做完立刻再排一次。
+    if (!this.job && (this.lightDirty || this.lightAge >= LIGHT_EVERY || !this.light)) this.startLightJob(camX, camY, vw, vh);
+    if (this.job) {
+      const urgent = !rectCovers(this.light, v);
+      this.advanceLightJob(urgent ? Infinity : t0 + LIGHT_BUDGET_MS);
+      if (urgent && !rectCovers(this.light, v)) { this.startLightJob(camX, camY, vw, vh); this.advanceLightJob(Infinity); }
     }
     const lm = this.light;
     if (!lm) return;
+    const set = this.lightSets[this.front];
     ctx.imageSmoothingEnabled = false;
     ctx.globalCompositeOperation = 'multiply';
-    ctx.drawImage(this.lightCanvas, lm.x0 * S, lm.y0 * S, lm.w * S, lm.h * S);
+    ctx.drawImage(set.canvas, lm.x0 * S, lm.y0 * S, lm.w * S, lm.h * S);
     ctx.globalCompositeOperation = 'lighter';
-    ctx.drawImage(this.darkCanvas, lm.x0 * S, lm.y0 * S, lm.w * S, lm.h * S);
+    ctx.drawImage(set.dark, lm.x0 * S, lm.y0 * S, lm.w * S, lm.h * S);
     ctx.globalCompositeOperation = 'source-over';
+  }
+
+  /** 開始一次光照重算：引擎光照 + 每格光色 + 填色準備（便宜的部分當幀做完），像素留給 advanceLightJob 分幀填 */
+  private startLightJob(camX: number, camY: number, vw: number, vh: number): void {
+    const t0 = performance.now();
+    const g = this.game, w = g.world;
+    const pt = g.playerTile();
+    const extra = this.extraLights;
+    extra.length = 0;
+    for (const l of g.heldLights()) extra.push(l);
+    for (const l of g.enemyLights()) extra.push(l);
+    for (const l of g.projectileLights()) extra.push(l);
+    const view = { x: Math.floor(camX / S) - 1, y: Math.floor(camY / S) - 1, w: Math.ceil(vw / S) + 3, h: Math.ceil(vh / S) + 3 };
+    const L = g.computeLight(view, extra);
+    this.stats.lightEngineMs = performance.now() - t0;
+    // 戰爭迷霧：畫面上看得到（夠亮）的格算探索過
+    g.revealLit(L, { x: Math.floor(camX / S), y: Math.floor(camY / S), w: Math.ceil(vw / S) + 1, h: Math.ceil(vh / S) + 1 });
+    const lx0 = Math.max(L.x0, view.x - 2), ly0 = Math.max(L.y0, view.y - 2);
+    const lx1 = Math.min(L.x0 + L.w, view.x + view.w + 2), ly1 = Math.min(L.y0 + L.h, view.y + view.h + 2);
+    const lw = Math.max(1, lx1 - lx0), lh = Math.max(1, ly1 - ly0);
+    // 寫進沒在顯示的那一組
+    const set = this.lightSets[this.front ^ 1];
+    const cw = lw * LSUB, chh = lh * LSUB;
+    if (set.canvas.width !== cw || set.canvas.height !== chh || !set.img || !set.dimg) {
+      set.canvas.width = cw; set.canvas.height = chh;
+      set.dark.width = cw; set.dark.height = chh;
+      set.img = set.ctx.createImageData(cw, chh);
+      set.dimg = set.dctx.createImageData(cw, chh);
+      set.pix = new Uint32Array(set.img.data.buffer);
+      set.dpix = new Uint32Array(set.dimg.data.buffer);
+    }
+    if (this.lightA.length < lw * lh * 3) { this.lightA = new Float32Array(lw * lh * 3); this.reach = new Uint8Array(lw * lh); }
+    const reach = this.reach.subarray(0, lw * lh);
+    const rect = { x0: lx0, y0: ly0, w: lw, h: lh };
+    ambientReach(w, pt.x, pt.y, AMBIENT_R, { x: lx0, y: ly0, w: lw, h: lh }, reach);
+    const A = this.lightA.subarray(0, lw * lh * 3);
+    shadeTiles(L, w, rect, pt, g.skyRGB(), reach, A);
+    this.filler.begin(A, lw, lh, LSUB, lx0 * LSUB, ly0 * LSUB, set.pix, set.dpix);
+    this.job = { set, L, rect, ms: performance.now() - t0, frames: 0, fillMs: 0 };
+    this.lightAge = 0;
+    this.lightDirty = false;
+  }
+
+  /** 光照重算往前推進到 deadline（至少一個 tile 列）；填完就上傳、換成顯示中的那一組 */
+  private advanceLightJob(deadline: number): void {
+    const j = this.job;
+    if (!j) return;
+    const t1 = performance.now();
+    j.frames++;
+    const done = this.filler.fillUntil(deadline, this.now);
+    const t2 = performance.now();
+    j.fillMs += t2 - t1;
+    j.ms += t2 - t1;
+    if (!done) return;
+    j.set.ctx.putImageData(j.set.img!, 0, 0);
+    j.set.dctx.putImageData(j.set.dimg!, 0, 0);
+    const t3 = performance.now();
+    j.ms += t3 - t2;
+    this.front ^= 1;
+    this.light = j.rect;
+    this.lastLight = j.L;
+    this.job = null;
+    this.stats.lightFillMs = j.fillMs;
+    this.stats.lightPutMs = t3 - t2;
+    this.stats.lightMs = j.ms;
+    this.stats.lightFrames = j.frames;
   }
 
   /** 上次光照計算時某格（tile）的亮度（三通道最大值 ×1.08；沒算過 = 1） */
