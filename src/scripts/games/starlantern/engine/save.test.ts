@@ -32,6 +32,12 @@ describe('save', () => {
     expect(loadGame(st)).toEqual({ status: 'version' });
     expect(st.map.get(BACKUP_KEY)).toBe(raw);
   });
+  it('a v7 save reports version', () => {
+    const raw = JSON.stringify({ ...newGame(), version: 7 });
+    const st = memoryStorage({ [SAVE_KEY]: raw });
+    expect(loadGame(st)).toEqual({ status: 'version' });
+    expect(st.map.get(BACKUP_KEY)).toBe(raw);
+  });
   it('a v6 save reports version', () => {
     const raw = JSON.stringify({ ...newGame(), version: 6 });
     const st = memoryStorage({ [SAVE_KEY]: raw });
@@ -421,5 +427,54 @@ describe('save v5 skill trees and talents', () => {
     g.party.roster.hero = { ...g.party.roster.hero, level: 50, tree };
     expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status).toBe('corrupt');
     expect(validBuild('hero', 50, tree, {}, 10)).toBe(true);
+  });
+});
+
+describe('save v8 story', () => {
+  const bad = (mut: (s: Record<string, unknown>) => void) => {
+    const g = newGame();
+    const story = structuredClone(g.story) as unknown as Record<string, unknown>;
+    mut(story);
+    return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify({ ...g, story }) })).status;
+  };
+  it("a fresh game's story round-trips", () => {
+    const st = memoryStorage();
+    const g = newGame();
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r.status).toBe('ok');
+    expect(r.status === 'ok' && r.state.story).toEqual(g.story);
+  });
+  it('a well-formed played story is ok', () => {
+    expect(bad((s) => { Object.assign(s, { act1Cleared: true, finaleCleared: true, seen: ['act2', 'prologue'], fresh: ['act2'], queue: ['act3'], nodes: ['act2'], pity: { rin: 999, hero: 0 }, returned: ['orik'], fed: true }); })).toBe('ok');
+  });
+  it('a broken story is corrupt', () => {
+    const cases: [string, (s: Record<string, unknown>) => void][] = [
+      ['act1Cleared is a string', (s) => { s.act1Cleared = 'yes'; }],
+      ['finale without act 1', (s) => { s.finaleCleared = true; s.act1Cleared = false; }],
+      ['unknown scene in seen', (s) => { s.seen = ['nope']; }],
+      ['duplicate seen', (s) => { s.seen = ['act2', 'act2']; }],
+      ['fresh not seen', (s) => { s.fresh = ['act2']; s.seen = []; }],
+      ['queue overlaps seen', (s) => { s.queue = ['act2']; s.seen = ['act2']; }],
+      ['duplicate queue', (s) => { s.queue = ['act2', 'act2']; }],
+      ['unknown node', (s) => { s.nodes = ['act9']; }],
+      ['duplicate node', (s) => { s.nodes = ['act2', 'act2']; }],
+      ['pity of an unknown key', (s) => { s.pity = { hero: -1 }; }],
+      ['pity of a ghost', (s) => { s.pity = { ghost: 1 }; }],
+      ['fractional pity', (s) => { s.pity = { rin: 1.5 }; }],
+      ['pity above 999', (s) => { s.pity = { rin: 1000 }; }],
+      ['duplicate returned', (s) => { s.returned = ['orik', 'orik']; }],
+      ['unknown returned', (s) => { s.returned = ['nobody']; }],
+      ['fed is a number', (s) => { s.fed = 1; }],
+    ];
+    for (const [name, mut] of cases) expect(bad(mut), name).toBe('corrupt');
+  });
+  it('a save with no story at all is corrupt, not a crash', () => {
+    const g = newGame();
+    const raw = JSON.parse(JSON.stringify(g));
+    delete raw.story;
+    expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) })).status).toBe('corrupt');
+    raw.story = null;
+    expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) })).status).toBe('corrupt');
   });
 });

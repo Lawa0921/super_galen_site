@@ -574,5 +574,5 @@ export const T = {
   },
   /** What is said before a rescue fight and after it is won; one entry per companion, so each can be rewritten on its own. */
   meet: Object.fromEntries(MEETINGS.map((m) => [m.id, { before: [rescueFound(CHARACTERS[m.id].name)], after: [] as string[] }])) as Record<Meetable, { before: string[]; after: string[] }>,
-  clear: { title: '星燈重新亮起', body: '燈喰之獸倒下了。暮霧散去，露米亞迎來久違的晨光。', back: '回到城鎮' },
+  clear: { title: '第一幕　星燈重新亮起', body: '燈喰之獸倒下了。暮霧散去，露米亞迎來久違的晨光。', back: '繼續' },
 };

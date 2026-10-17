@@ -98,6 +98,8 @@ export class Game {
   /** The rescue room whose fight is on; she is met and the tile turns to floor on a win. */
   private rescueAt: { at: Pos; who: Meetable } | null = null;
   notice: Notice | null = null;
+  /** Which ending the clear screen is for; set on entering `clear`, dropped by restartAfterClear. */
+  cleared: 'act1' | 'finale' | null = null;
   /** What the last safe return brought home; the town screen shows it, then clears it. `overflow` is gear the full bag could not take. */
   banked: { items: Record<string, number>; gold: number; viaLamp: boolean; gear: ItemInstance[]; overflow: ItemInstance[] } | null = null;
 
@@ -124,8 +126,8 @@ export class Game {
   map(floor = this.floor): FloorMap {
     if (!this.run) throw new Error('no run in progress');
     const m = floorOf(this.run, floor).map;
-    // Once the story boss is beaten, its room on later mainline runs holds stairs down (a rematch comes later).
-    if (m.boss && this.state.dungeon.bossDefeated && this.isStoryDepth(floor)) openStairs(m);
+    // Once Act 1 is cleared, its room on later mainline runs holds stairs down (a rematch comes later).
+    if (m.boss && this.state.story.act1Cleared && this.isStoryDepth(floor)) openStairs(m);
     return m;
   }
 
@@ -498,7 +500,13 @@ export class Game {
       met = { id: rescue.who, level, benched: !activeIds(this.state.party).includes(rescue.who) };
     }
     if (b.boss) openStairs(this.map());   // a beaten boss leaves stairs down where it stood, so the run can go deeper
-    if (b.boss && this.isStoryDepth(this.floor)) { this.state.dungeon.bossDefeated = true; this.phase = 'clear'; }
+    if (b.boss && this.isStoryDepth(this.floor)) {
+      const story = this.state.story;
+      story.act1Cleared = true;
+      if (!story.queue.includes('act1-after') && !story.seen.includes('act1-after')) story.queue.push('act1-after');
+      this.cleared = 'act1';
+      this.phase = 'clear';
+    }
     else this.phase = 'map';
     return { battle: b, end: { outcome: 'win', ...rw, drops: taken, levelUps: awarded.results.filter((x) => x.levels > 0), left, gear, gearLeft, ...(met ? { met } : {}) } };
   }
@@ -646,10 +654,11 @@ export class Game {
 
   restartAfterClear(): void {
     if (this.phase !== 'clear') return;
+    this.cleared = null;
     this.toTown();   // the clear banks the run pack like any safe return
   }
 
-  /** The mainline's depth 3 holds the story boss: beating it clears the game. */
+  /** The mainline's depth 3 holds the story boss: beating it ends Act 1. */
   private isStoryDepth(floor: number): boolean {
     return this.run?.region === 'mainline' && floor === 3;
   }

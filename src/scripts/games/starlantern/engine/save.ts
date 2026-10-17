@@ -11,6 +11,8 @@ import { MAX_ILVL, MAX_REACHED } from './levels';
 import { MAX_LEVEL, SLOTS, slotsFor } from './party';
 import { validBuild } from './progression';
 import { SAVE_VERSION, type GameState } from './state';
+import { isSceneId } from '../data/story/scenes';
+import { TOWN_FRAGMENTS } from '../data/story/fragments';
 import type { ItemInstance, Slot } from './types';
 
 export const SAVE_KEY = 'starlantern-save';
@@ -51,6 +53,20 @@ function isItem(v: unknown): v is ItemInstance {
   return v.affixes.every((a) => isObj(a) && has(AFFIXES, a.key) && Number.isFinite(a.value) && Math.abs(a.value as number) <= MAX_AFFIX);
 }
 
+const ACT_NODES = ['act2', 'act3', 'act4'];
+const isUniqueList = (v: unknown, ok: (x: unknown) => boolean): v is unknown[] => Array.isArray(v) && v.every(ok) && new Set(v).size === v.length;
+
+/** The story block: flags, scene lists without repeats (fresh within seen, queue apart from seen), node and fragment lists, pity counts. */
+function isStory(v: unknown): boolean {
+  if (!isObj(v) || typeof v.act1Cleared !== 'boolean' || typeof v.finaleCleared !== 'boolean' || typeof v.fed !== 'boolean') return false;
+  if (v.finaleCleared && !v.act1Cleared) return false;
+  if (!isUniqueList(v.seen, isSceneId) || !isUniqueList(v.fresh, isSceneId) || !isUniqueList(v.queue, isSceneId)) return false;
+  if (v.fresh.some((id) => !(v.seen as unknown[]).includes(id)) || v.queue.some((id) => (v.seen as unknown[]).includes(id))) return false;
+  if (!isUniqueList(v.nodes, (x) => ACT_NODES.includes(x as string))) return false;
+  if (!isUniqueList(v.returned, (x) => TOWN_FRAGMENTS.some((f) => f.id === x))) return false;
+  return isObj(v.pity) && Object.entries(v.pity).every(([k, n]) => CHARACTER_IDS.includes(k as never) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 999);
+}
+
 function isValid(d: Record<string, unknown>): boolean {
   if (!isCount(d.gold) || !isCounts(d.inventory) || !isCounts(d.sold)) return false;
   if (!isListMap(d.revealed, (x) => ELEMENTS.includes(x as string))) return false;
@@ -86,8 +102,9 @@ function isValid(d: Record<string, unknown>): boolean {
   if (new Set(uids).size !== uids.length || uids.some((u) => u >= (d.nextUid as number))) return false;
   if (!Array.isArray(d.codex) || !d.codex.every((id) => has(SPECIALS, id) || has(SETS, id))) return false;
   if (!['off', 'common', 'magic'].includes(d.autoJunk as string)) return false;
+  if (!isStory(d.story)) return false;
   const g = d.dungeon;
-  if (!isObj(g) || !isObj(g.reached) || typeof g.bossDefeated !== 'boolean') return false;
+  if (!isObj(g) || !isObj(g.reached)) return false;
   const reached = g.reached;
   const regions = Object.keys(REGIONS);
   if (!validPortals(g.portals)) return false;

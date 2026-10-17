@@ -385,7 +385,7 @@ describe('battles', () => {
     expect(g.returnToTown()).toBe(true);
     expect(g.state.gold).toBe(150);
   });
-  it('the mainline boss is on depth 3 and its defeat clears the game', () => {
+  it('the mainline boss is on depth 3 and its defeat ends Act 1', () => {
     const g = inMap(3);
     expect(g.map().boss).not.toBeNull();
     const at = g.map().boss!;
@@ -393,7 +393,7 @@ describe('battles', () => {
     expect(g.battle!.boss).toBe(true);
     for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
     expect(g.submitRound({})!.end!.outcome).toBe('win');
-    expect([g.phase, g.state.dungeon.bossDefeated]).toEqual(['clear', true]);
+    expect([g.phase, g.state.story.act1Cleared, g.cleared]).toEqual(['clear', true, 'act1']);
     expect(g.map().down).toEqual(at);   // the beaten boss leaves stairs down
     expect(tileAt(g.map(), at)).toBe('down');
     g.restartAfterClear();
@@ -403,7 +403,7 @@ describe('battles', () => {
   it('once the story boss is beaten, the mainline goes on past depth 3', () => {
     const g = inMap(3);
     g.returnToTown();
-    g.state.dungeon.bossDefeated = true;
+    g.state.story.act1Cleared = true;
     g.depart(MAIN, 3);
     const m = g.map();
     expect([m.boss, m.tiles.flat().includes('boss')]).toEqual([null, false]);
@@ -411,6 +411,31 @@ describe('battles', () => {
     expect(downstairs(g, m.down!)).toMatchObject({ kind: 'floor', floor: 4 });
     expect([g.floor, g.state.dungeon.reached.mainline, g.phase]).toEqual([4, 4, 'map']);
     expect(g.map().down).not.toBeNull();
+  });
+  it('beating the depth-3 boss ends Act 1', () => {
+    const g = inMap(3);
+    stepOnto(g, g.map().boss!);
+    for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
+    g.submitRound({});
+    expect(g.state.story.act1Cleared).toBe(true);
+    expect(g.phase).toBe('clear');
+    expect(g.cleared).toBe('act1');
+    expect('bossDefeated' in g.state.dungeon).toBe(false);
+    expect(g.state.story.queue).toContain('act1-after');
+    g.restartAfterClear();
+    expect(g.cleared).toBeNull();
+  });
+  it('after Act 1 the third floor holds stairs', () => {
+    const g = inMap(3);
+    g.returnToTown();
+    g.state.story.act1Cleared = true;
+    g.depart(MAIN, 3);
+    expect(g.map().boss).toBeNull();
+    expect(g.map().down).not.toBeNull();
+  });
+  it('a new game queues the prologue', () => {
+    expect(new Game(calm(), null).state.story.queue).toEqual(['prologue']);
+    expect(newGame().story).toEqual({ act1Cleared: false, finaleCleared: false, seen: [], fresh: [], queue: ['prologue'], nodes: [], pity: {}, returned: [], fed: false });
   });
   it('a region boss opens the stairs down instead of clearing the game', () => {
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
@@ -420,7 +445,7 @@ describe('battles', () => {
     expect(stepOnto(g, at)).toEqual({ kind: 'boss' });
     for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
     expect(g.submitRound({})!.end!.outcome).toBe('win');
-    expect([g.phase, g.state.dungeon.bossDefeated]).toEqual(['map', false]);
+    expect([g.phase, g.state.story.act1Cleared]).toEqual(['map', false]);
     expect(g.map().down).toEqual(at);
     expect(downstairs(g, at)).toMatchObject({ kind: 'floor', floor: 6 });
   });
