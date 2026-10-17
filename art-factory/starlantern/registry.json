@@ -5673,7 +5673,7 @@
           284
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "char-hero-standee",
       "batch": "hero-rin",
@@ -5703,7 +5703,7 @@
           278
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "char-rin-standee",
       "batch": "hero-rin",
@@ -5734,7 +5734,7 @@
           113
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "char-hero-portrait",
       "batch": "hero-rin",
@@ -5767,7 +5767,7 @@
           112
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "char-rin-portrait",
       "batch": "hero-rin",
@@ -5799,7 +5799,7 @@
           278
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "char-rin-oath-standee",
       "batch": "hero-rin",
@@ -5832,7 +5832,7 @@
           112
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "char-rin-oath-portrait",
       "batch": "hero-rin",
@@ -5869,7 +5869,7 @@
           112
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "char-rin-portrait-attack",
       "batch": "hero-rin",
@@ -5903,7 +5903,7 @@
           112
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "char-rin-portrait-hit",
       "batch": "hero-rin",
@@ -5937,7 +5937,7 @@
           112
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "char-rin-portrait-dying",
       "batch": "hero-rin",
@@ -5973,7 +5973,7 @@
           121
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "char-rin-portrait-down",
       "batch": "hero-rin",
@@ -6009,7 +6009,7 @@
           114
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "char-rin-portrait-ultimate",
       "batch": "hero-rin",
@@ -6043,7 +6043,7 @@
           112
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "char-rin-portrait-smile",
       "batch": "hero-rin",
@@ -6077,7 +6077,7 @@
           112
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "char-rin-portrait-sad",
       "batch": "hero-rin",
@@ -6116,7 +6116,7 @@
           113
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "char-hero-portrait-attack",
       "batch": "hero-rin",
@@ -6154,7 +6154,7 @@
           113
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "char-hero-portrait-down",
       "batch": "hero-rin",
@@ -6188,7 +6188,7 @@
           113
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "char-hero-portrait-dying",
       "batch": "hero-rin",
@@ -6224,7 +6224,7 @@
           113
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "char-hero-portrait-hit",
       "batch": "hero-rin",
@@ -6258,7 +6258,7 @@
           113
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "char-hero-portrait-sad",
       "batch": "hero-rin",
@@ -6292,7 +6292,7 @@
           113
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "char-hero-portrait-smile",
       "batch": "hero-rin",
@@ -6331,7 +6331,7 @@
           114
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a3",
       "source_id": "char-hero-portrait-ultimate",
       "batch": "hero-rin",
@@ -6371,7 +6371,7 @@
           112
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "char-rin-oath-portrait-attack",
       "batch": "hero-rin",
@@ -6406,7 +6406,7 @@
           112
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "char-rin-oath-portrait-hit",
       "batch": "hero-rin",
@@ -6439,7 +6439,7 @@
           112
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "char-rin-oath-portrait-dying",
       "batch": "hero-rin",
@@ -6474,7 +6474,7 @@
           121
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "char-rin-oath-portrait-down",
       "batch": "hero-rin",
@@ -6509,7 +6509,7 @@
           114
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "char-rin-oath-portrait-ultimate",
       "batch": "hero-rin",
@@ -6544,7 +6544,7 @@
           112
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "char-rin-oath-portrait-smile",
       "batch": "hero-rin",
@@ -6577,7 +6577,7 @@
           112
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "char-rin-oath-portrait-sad",
       "batch": "hero-rin",
