@@ -37,7 +37,7 @@ describe('裝飾物件', () => {
     runFor(g, 0.2);
     expect(g.world.getFg(62, 59)).toBe(T.AIR);
     const total = g.inventory.slots.reduce((n, s) => n + (s ? s.count : 0), 0);
-    expect(total).toBe(11); // 木鎬 + 10 火把
+    expect(total).toBe(12); // 木鎬 + 10 火把 + 木劍
   });
   it('蘑菇 / 小石頭 / 南瓜 掉落', () => {
     const g = arena();
