@@ -541,3 +541,157 @@ test.describe('delve', () => {
     await expect(page.locator('#delve-new')).toBeVisible();
   });
 });
+
+// ── 液體（水 / 熔岩 / 蜂蜜） ─────────────────────────────────────────
+// 測試場蓋在出生點正上方的天空（沒有自然生成的液體）：一塊石地板 + 需要的牆 / 池子。
+test.describe('delve liquids', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); } catch { /* ignore */ } });
+  });
+
+  /** 在天空蓋測試場：回傳地板列 fy 與左端 x0；玩家站在 (x0+px, fy-1) */
+  async function skyArena(page: Page, seed: string, px = 4): Promise<{ x0: number; fy: number }> {
+    await page.goto(`/games/delve?seed=${seed}&autostart=1&fresh=1`);
+    await waitGame(page);
+    return page.evaluate((px) => {
+      const g = window.__delveDebug!.game, w = g.world;
+      const x0 = g.spawn.x - 20, fy = Math.max(12, g.world.surfaceAt(g.spawn.x) - 24);
+      for (let y = fy - 16; y < fy; y++) for (let x = x0 - 2; x < x0 + 44; x++) { w.setFg(x, y, 0); w.setLiquid(x, y, 0, 0); }
+      for (let x = x0 - 2; x < x0 + 44; x++) w.setFg(x, fy, 3);
+      g.teleport(x0 + px, fy - 1);
+      window.__delveDebug!.handle.renderer.snapCamera();
+      return { x0, fy };
+    }, px);
+  }
+  const hold = (page: Page, item: string): Promise<void> => page.evaluate((item) => {
+    const g = window.__delveDebug!.game;
+    g.give(item, 1);
+    const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === item);
+    g.inventory.swap(i, 0); g.selectSlot(0);
+  }, item);
+  const rowSum = (page: Page, x0: number, x1: number, y: number): Promise<number> => page.evaluate(([x0, x1, y]) => {
+    const w = window.__delveDebug!.game.world;
+    let s = 0;
+    for (let x = x0; x <= x1; x++) s += w.getLiquid(x, y);
+    return s;
+  }, [x0, x1, y]);
+  /** 用手上的桶子對 (x,y) 按一下「使用」 */
+  const useAt = async (page: Page, x: number, y: number): Promise<void> => {
+    await page.evaluate(([x, y]) => { const g = window.__delveDebug!.game; g.setAim(x, y); g.setUse(true); }, [x, y]);
+    await page.waitForTimeout(150);
+    await page.evaluate(() => window.__delveDebug!.game.setUse(false));
+  };
+
+  test('倒水桶 → 水流進石盆並靜止；桶子變回空桶', async ({ page }) => {
+    const { x0, fy } = await skyArena(page, 'liq-pour', 2);
+    // 石盆：x0+5..x0+12，兩側牆高 4
+    await page.evaluate(([x0, fy]) => { const w = window.__delveDebug!.game.world; for (let y = fy - 4; y < fy; y++) { w.setFg(x0 + 4, y, 3); w.setFg(x0 + 13, y, 3); } }, [x0, fy]);
+    await hold(page, 'water_bucket');
+    await useAt(page, x0 + 7, fy - 3);
+    expect(await page.evaluate(() => window.__delveDebug!.game.inventory.count('bucket'))).toBe(1);
+    // 流下來、攤平、靜止
+    await page.waitForFunction(([x0, fy]) => {
+      const g = window.__delveDebug!.game, w = g.world;
+      let s = 0;
+      for (let x = x0 + 5; x <= x0 + 12; x++) s += w.getLiquid(x, fy - 1);
+      return s >= 200 && g.liquids.activeCount === 0;
+    }, [x0, fy], { timeout: 15000 });
+    const vals = await page.evaluate(([x0, fy]) => { const w = window.__delveDebug!.game.world; const v: number[] = []; for (let x = x0 + 5; x <= x0 + 12; x++) v.push(w.getLiquid(x, fy - 1)); return v; }, [x0, fy]);
+    expect(Math.max(...vals) - Math.min(...vals)).toBeLessThanOrEqual(3);
+  });
+
+  test('挖掉水壩 → 湖水流進另一邊', async ({ page }) => {
+    const { x0, fy } = await skyArena(page, 'liq-dam', 23);
+    await page.evaluate(([x0, fy]) => {
+      const g = window.__delveDebug!.game, w = g.world;
+      for (let y = fy - 9; y < fy; y++) { w.setFg(x0 - 1, y, 3); w.setFg(x0 + 20, y, 3); w.setFg(x0 + 40, y, 3); }
+      for (let y = fy - 7; y < fy; y++) for (let x = x0; x < x0 + 20; x++) w.setLiquid(x, y, 255, 1);
+      g.liquids.settle(100);
+    }, [x0, fy]);
+    expect(await rowSum(page, x0 + 21, x0 + 39, fy - 1)).toBe(0);
+    await hold(page, 'gold_pickaxe');
+    for (const y of [fy - 1, fy - 2, fy - 3]) {
+      await page.evaluate(([x, y]) => { const g = window.__delveDebug!.game; g.setAim(x, y); g.setMining(true); }, [x0 + 20, y]);
+      await page.waitForFunction(([x, y]) => window.__delveDebug!.game.world.getFg(x, y) === 0, [x0 + 20, y], { timeout: 10000 });
+      await page.evaluate(() => window.__delveDebug!.game.setMining(false));
+    }
+    await page.waitForFunction(([x0, fy]) => {
+      const w = window.__delveDebug!.game.world;
+      let s = 0;
+      for (let x = x0 + 21; x < x0 + 40; x++) s += w.getLiquid(x, fy - 1);
+      return s > 255 * 10;
+    }, [x0, fy], { timeout: 15000 });
+  });
+
+  test('游泳：水下呼吸泡泡減少，按住跳往上游', async ({ page }) => {
+    const { x0, fy } = await skyArena(page, 'liq-swim', 8);
+    await page.evaluate(([x0, fy]) => {
+      const g = window.__delveDebug!.game, w = g.world;
+      for (let y = fy - 16; y < fy; y++) { w.setFg(x0 + 3, y, 3); w.setFg(x0 + 14, y, 3); }
+      for (let y = fy - 14; y < fy; y++) for (let x = x0 + 4; x < x0 + 14; x++) w.setLiquid(x, y, 255, 1);
+      g.liquids.settle(50);
+      g.teleport(x0 + 8, fy - 1);
+    }, [x0, fy]);
+    await page.waitForTimeout(2600);
+    const st = await page.evaluate(() => window.__delveDebug!.game.getState());
+    expect(st.liquid.head).toBe(true);
+    expect(st.breath).toBeLessThan(st.maxBreath);
+    const y0 = await page.evaluate(() => window.__delveDebug!.game.player.y);
+    await page.keyboard.down('Space');
+    await page.waitForTimeout(900);
+    await page.keyboard.up('Space');
+    expect(await page.evaluate(() => window.__delveDebug!.game.player.y)).toBeLessThan(y0 - 4 * 16);
+  });
+
+  test('熔岩：受傷而且著火', async ({ page }) => {
+    const { x0, fy } = await skyArena(page, 'liq-lava', 2);
+    await page.evaluate(([x0, fy]) => {
+      const g = window.__delveDebug!.game, w = g.world;
+      for (let y = fy - 4; y < fy; y++) { w.setFg(x0 + 9, y, 3); w.setFg(x0 + 16, y, 3); }
+      for (let y = fy - 2; y < fy; y++) for (let x = x0 + 10; x < x0 + 16; x++) w.setLiquid(x, y, 255, 2);
+      g.teleport(x0 + 12, fy - 1);
+    }, [x0, fy]);
+    await page.waitForTimeout(500);
+    const st = await page.evaluate(() => window.__delveDebug!.game.getState());
+    expect(st.hp).toBeLessThan(st.maxHp);
+    expect(st.burning).toBeGreaterThan(0);
+  });
+
+  test('把水倒在熔岩上 → 變成黑曜石', async ({ page }) => {
+    const { x0, fy } = await skyArena(page, 'liq-obsidian', 2);
+    await page.evaluate(([x0, fy]) => {
+      const w = window.__delveDebug!.game.world;
+      for (let y = fy - 4; y < fy; y++) { w.setFg(x0 + 4, y, 3); w.setFg(x0 + 9, y, 3); }
+      for (let x = x0 + 5; x < x0 + 9; x++) w.setLiquid(x, fy - 1, 255, 2);
+    }, [x0, fy]);
+    await hold(page, 'water_bucket');
+    await useAt(page, x0 + 6, fy - 4);
+    await page.waitForFunction(([x0, fy]) => {
+      const w = window.__delveDebug!.game.world;
+      for (let x = x0 + 5; x < x0 + 9; x++) if (w.getFg(x, fy - 1) === 47) return true; // T.OBSIDIAN
+      return false;
+    }, [x0, fy], { timeout: 10000 });
+  });
+
+  test('存檔 / 讀檔保留倒出來的水', async ({ page }) => {
+    const { x0, fy } = await skyArena(page, 'liq-save', 2);
+    await page.evaluate(([x0, fy]) => { const w = window.__delveDebug!.game.world; for (let y = fy - 4; y < fy; y++) { w.setFg(x0 + 4, y, 3); w.setFg(x0 + 10, y, 3); } }, [x0, fy]);
+    await hold(page, 'water_bucket');
+    await useAt(page, x0 + 7, fy - 3);
+    await page.waitForFunction(([x0, fy]) => {
+      const g = window.__delveDebug!.game, w = g.world;
+      let s = 0;
+      for (let x = x0 + 5; x <= x0 + 9; x++) s += w.getLiquid(x, fy - 1);
+      return s >= 200 && g.liquids.activeCount === 0;
+    }, [x0, fy], { timeout: 15000 });
+    const before = await rowSum(page, x0 + 5, x0 + 9, fy - 1);
+    await page.evaluate(() => window.__delveDebug!.save());
+    await page.goto('/games/delve');
+    await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
+    await page.click('#delve-continue');
+    await waitGame(page);
+    expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('liq-save');
+    expect(await rowSum(page, x0 + 5, x0 + 9, fy - 1)).toBe(before);
+  });
+});
