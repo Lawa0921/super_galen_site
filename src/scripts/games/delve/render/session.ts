@@ -5,7 +5,7 @@ import {
   saveSlot, loadSlot, listSlots, startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB,
 } from '../save/storage';
 import { startDelve, type DelveHandle } from './main';
-import { autostartPlan, newWorldPlan } from './model';
+import { autostartPlan, newWorldPlan, helpSeen, HELP_KEY } from './model';
 
 const SLOT = 'main';
 
@@ -48,6 +48,10 @@ export function bootDelve(root: HTMLElement): Session {
   const loading = $('#delve-loading');
   const upgradeNew = $<HTMLButtonElement>('#delve-upgrade-new');
   if (!canvas || !title || !hudEl || !menu) throw new Error('delve: missing page elements');
+  // 觸控裝置：一載入就切到觸控版介面（虛擬按鍵、觸控版說明），不必等第一次觸碰
+  try { if (globalThis.matchMedia?.('(pointer: coarse)').matches) root.dataset.touch = '1'; } catch { /* 舊瀏覽器 */ }
+  const helpEl = $('#delve-help');
+  const helpClose = $<HTMLButtonElement>('#delve-help-close');
 
   let handle: DelveHandle | null = null;
   let stopAutosave: (() => void) | null = null;
@@ -84,6 +88,26 @@ export function bootDelve(root: HTMLElement): Session {
     syncPeaceful();
   }
 
+  // ── 操作說明：第一次進遊戲自動打開，看過記在 localStorage；選單「操作說明」可再打開 ──
+  let helpFocus: HTMLElement | null = null;
+  function setHelp(open: boolean): void {
+    if (!helpEl) return;
+    helpEl.hidden = !open;
+    if (open) {
+      root.dataset.help = '1';
+      helpFocus = document.activeElement as HTMLElement | null;
+      handle?.setPaused(true);
+      helpClose?.focus();
+    } else {
+      delete root.dataset.help;
+      try { globalThis.localStorage?.setItem(HELP_KEY, '1'); } catch { /* 私密模式：下次還會再顯示 */ }
+      handle?.setPaused(!menu!.hidden);
+      helpFocus?.focus?.();
+    }
+  }
+  let storage: Storage | undefined;
+  try { storage = globalThis.localStorage; } catch { storage = undefined; }
+
   function begin(game: DelveGame): void {
     stopAutosave?.();
     handle?.destroy();
@@ -93,6 +117,7 @@ export function bootDelve(root: HTMLElement): Session {
     setMenu(false);
     handle = startDelve({ root, canvas: canvas!, game, onMenu: () => setMenu(menu!.hidden) });
     window.__delveDebug = { game, handle, save: saveNow };
+    if (!helpSeen(storage)) setHelp(true);
     if (hasIndexedDB()) {
       stopAutosave = startAutosave({
         slot: SLOT, seed: game.seed, getBytes: () => serializeGame(game),
@@ -210,6 +235,11 @@ export function bootDelve(root: HTMLElement): Session {
   on(continueBtn, 'click', () => void continueGame());
   on($('#delve-import'), 'click', () => { importFrom = titleMsg; fileInput?.click(); });
   on($('#delve-resume'), 'click', () => setMenu(false));
+  on($('#delve-help-btn'), 'click', () => { setMenu(false); setHelp(true); });
+  on(helpClose, 'click', () => setHelp(false));
+  on(helpEl, 'keydown', (e) => {
+    if ((e as KeyboardEvent).key === 'Escape') { e.stopPropagation(); setHelp(false); }
+  });
   on($('#delve-menu-btn'), 'click', () => setMenu(true));
   on($('#delve-save'), 'click', () => {
     saveNow().then(() => say(menuMsg, '已存檔')).catch((e: unknown) => say(menuMsg, `存檔失敗：${String(e)}`));

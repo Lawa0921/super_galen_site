@@ -26,7 +26,7 @@ test.describe('delve', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
   // 預設和平模式（不自然生怪），避免怪物干擾挖掘 / 建造測試；戰鬥測試自己用 debug 生怪
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); } catch { /* ignore */ } });
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
   });
 
   test('標題 → 新世界 開局，沒有 console 錯誤', async ({ page }) => {
@@ -547,7 +547,7 @@ test.describe('delve', () => {
 test.describe('delve liquids', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); } catch { /* ignore */ } });
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
   });
 
   /** 在天空蓋測試場：回傳地板列 fy 與左端 x0；玩家站在 (x0+px, fy-1) */
@@ -693,5 +693,115 @@ test.describe('delve liquids', () => {
     await waitGame(page);
     expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('liq-save');
     expect(await rowSum(page, x0 + 5, x0 + 9, fy - 1)).toBe(before);
+  });
+});
+
+// ── 驗收修正：操作說明、死亡中存檔、首領戰中存檔、手機預設 ─────────────────
+test.describe('delve fixes', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); } catch { /* ignore */ } });
+  });
+
+  test('操作說明：第一次進遊戲出現並暫停、按「知道了」關掉並記住；選單可再打開', async ({ page }) => {
+    await page.goto('/games/delve?seed=helpme&autostart=1&fresh=1');
+    await waitGame(page);
+    await expect(page.locator('#delve-help')).toBeVisible();
+    await expect(page.locator('.delve-help-list--keys')).toBeVisible();
+    expect(await page.evaluate(() => window.__delveDebug!.handle.paused)).toBe(true);
+    await page.click('#delve-help-close');
+    await expect(page.locator('#delve-help')).toBeHidden();
+    expect(await page.evaluate(() => window.__delveDebug!.handle.paused)).toBe(false);
+    expect(await page.evaluate(() => localStorage.getItem('delve.help.seen'))).toBe('1');
+    // 再進遊戲不會出現
+    await page.goto('/games/delve?seed=helpme2&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForTimeout(300);
+    await expect(page.locator('#delve-help')).toBeHidden();
+    // 選單 → 操作說明；Esc 關掉後遊戲繼續
+    await page.click('#delve-menu-btn');
+    await page.click('#delve-help-btn');
+    await expect(page.locator('#delve-help')).toBeVisible();
+    await expect(page.locator('#delve-menu')).toBeHidden();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#delve-help')).toBeHidden();
+    expect(await page.evaluate(() => window.__delveDebug!.handle.paused)).toBe(false);
+  });
+
+  test('死亡中存檔 → 重新整理繼續 → 在床邊活著、死亡掉的錢還在原地', async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+    await page.goto('/games/delve?seed=deathsave&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    const info = await page.evaluate(async () => {
+      const d = window.__delveDebug!, g = d.game, w = g.world, t = g.feetTile();
+      const bx = t.x + 6, by = t.y;
+      for (let k = 0; k < 2; k++) { w.setFg(bx + k, by, 0); w.setFg(bx + k, by - 1, 0); w.setFg(bx + k, by + 1, 3); }
+      w.setFg(bx, by, 66); w.setFg(bx + 1, by, 67); // T.BED_HEAD / BED_FOOT
+      g.bed = { x: bx, y: by };
+      // 走遠一點再死
+      const dx = g.spawn.x - 30; g.teleport(dx, w.surfaceAt(dx) - 1);
+      g.give('copper_coin', 60);
+      g.hurtPlayer(99999, 0);
+      const dead = g.dead;
+      await d.save();
+      return { bed: { x: bx, y: by }, dead, deathX: dx };
+    });
+    expect(info.dead).toBe(true);
+    await page.goto('/games/delve');
+    await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
+    await page.click('#delve-continue');
+    await waitGame(page);
+    const st = await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      const coins = g.drops.list.filter((q: { item: string }) => q.item === 'copper_coin');
+      return {
+        dead: g.dead, f: g.feetTile(), hp: g.getState().hp, max: g.getState().maxHp,
+        coins: coins.reduce((a: number, q: { count: number }) => a + q.count, 0),
+        coinX: coins.length ? Math.floor((coins[0].body.x + coins[0].body.w / 2) / 16) : null,
+        inv: g.inventory.count('copper_coin'),
+      };
+    });
+    expect(st.dead).toBe(false);
+    expect(st.f).toEqual(info.bed);
+    expect(st.hp).toBe(st.max);
+    expect(st.coins).toBe(30);
+    expect(st.inv).toBe(30);
+    expect(Math.abs((st.coinX ?? 0) - info.deathX)).toBeLessThan(6);
+  });
+
+  test('首領戰中存檔 → 讀檔後首領不在、燈芯祭品退還', async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+    await page.goto('/games/delve?seed=bossrefund&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(async () => {
+      const d = window.__delveDebug!, g = d.game;
+      g.time = 600 * 0.9; g.summonBoss();
+      await d.save();
+    });
+    await page.goto('/games/delve');
+    await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
+    await page.click('#delve-continue');
+    await waitGame(page);
+    const st = await page.evaluate(() => { const g = window.__delveDebug!.game; return { boss: Boolean(g.bossEnemy()), wick: g.inventory.count('wick_offering') }; });
+    expect(st.boss).toBe(false);
+    expect(st.wick).toBe(1);
+    await expect(page.locator('#delve-boss')).toBeHidden();
+  });
+
+  test('手機：一載入就是觸控版（data-touch）、觸控版說明、預設每格 ≥ 16 CSS px', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); } catch { /* ignore */ } });
+    await page.goto('/games/delve');
+    await expect(page.locator('#delve-root')).toHaveAttribute('data-touch', '1');
+    await page.goto('/games/delve?seed=phone&autostart=1&fresh=1');
+    await waitGame(page);
+    await expect(page.locator('.delve-help-list--touch')).toBeVisible();
+    await expect(page.locator('.delve-help-list--keys')).toBeHidden();
+    await page.click('#delve-help-close');
+    const tileCss = await page.evaluate(() => 16 * window.__delveDebug!.handle.renderer.zoom);
+    expect(tileCss).toBeGreaterThanOrEqual(16);
+    await ctx.close();
   });
 });

@@ -132,12 +132,38 @@ const lang: Language = defaultLang;
         <h2>暫停</h2>
         <button class="delve-btn" id="delve-resume" type="button">繼續遊戲</button>
         <button class="delve-btn" id="delve-peaceful" type="button" aria-pressed="false">難度：一般</button>
+        <button class="delve-btn" id="delve-help-btn" type="button">操作說明</button>
         <button class="delve-btn" id="delve-save" type="button">立即存檔</button>
         <button class="delve-btn" id="delve-export" type="button">匯出存檔 .delve</button>
         <button class="delve-btn" id="delve-import-menu" type="button">匯入存檔</button>
         <a class="delve-btn delve-btn--ghost" href="/games">回遊戲廳</a>
         <p class="delve-msg" id="delve-menu-msg" role="status"></p>
         <p class="delve-note">每 30 秒與離開頁面時自動存在這個瀏覽器。瀏覽器（尤其 iOS Safari）可能清除網站資料，重要的世界請匯出備份。</p>
+      </div>
+    </section>
+
+    <section class="delve-help" id="delve-help" hidden role="dialog" aria-modal="true" aria-labelledby="delve-help-title">
+      <div class="delve-menu-box delve-help-box">
+        <h2 id="delve-help-title">操作說明</h2>
+        <ul class="delve-help-list delve-help-list--keys">
+          <li><kbd class="delve-help-key">A</kbd><kbd class="delve-help-key">D</kbd><span>左右移動</span></li>
+          <li><kbd class="delve-help-key">Space</kbd><span>跳躍（W / S 爬繩、S 穿過平台）</span></li>
+          <li><kbd class="delve-help-key">左鍵</kbd><span>挖掘；拿武器時攻擊</span></li>
+          <li><kbd class="delve-help-key">右鍵</kbd><span>放置方塊 / 開箱 / 使用道具</span></li>
+          <li><kbd class="delve-help-key">1–0</kbd><span>換快捷欄（或滾輪）；開局第 3 格是木劍</span></li>
+          <li><kbd class="delve-help-key">E</kbd><span>背包與合成</span></li>
+          <li><kbd class="delve-help-key">M</kbd><span>地圖（N 小地圖、J 日誌）</span></li>
+        </ul>
+        <ul class="delve-help-list delve-help-list--touch">
+          <li><span class="delve-help-key">搖桿</span><span>左下拖曳移動</span></li>
+          <li><span class="delve-help-key">跳</span><span>右下按鈕跳躍</span></li>
+          <li><span class="delve-help-key">點格子</span><span>挖掘或放置；拿武器時點畫面攻擊</span></li>
+          <li><span class="delve-help-key">快捷欄</span><span>點一下換格；開局第 3 格是木劍</span></li>
+          <li><span class="delve-help-key">背包</span><span>右上「背包」看道具與合成</span></li>
+          <li><span class="delve-help-key">地圖</span><span>右上「地圖」或點小地圖</span></li>
+        </ul>
+        <p class="delve-note">晚上怪物比較多：先蓋個小屋、放張床當重生點。之後可從選單的「操作說明」再打開。</p>
+        <button class="delve-btn delve-btn--main" id="delve-help-close" type="button">知道了</button>
       </div>
     </section>
 
@@ -496,6 +522,39 @@ const lang: Language = defaultLang;
   .delve-btn--ghost { --bv-bg: #1c1424; }
   .delve-msg { min-height: 1.2em; margin: 4px 0 0; font-size: 16px; color: #93cc50; line-height: 1.4; }
   .delve-note { margin: 4px 0 0; font-size: 16px; line-height: 1.5; color: #b07a4b; }
+
+  /* ── 操作說明（第一次進遊戲 / 選單「操作說明」） ── */
+  .delve-help {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: rgba(5, 3, 2, 0.6);
+  }
+  .delve-help-box { width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; }
+  .delve-help-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+  .delve-help-list li { display: flex; align-items: center; gap: 8px; font-size: 16px; line-height: 1.4; color: var(--ink); }
+  .delve-help-list li > span:last-child { flex: 1; }
+  .delve-help-key {
+    flex: none;
+    min-width: 28px;
+    padding: 3px 6px;
+    font-family: var(--pixel);
+    font-size: 10px;
+    text-align: center;
+    color: var(--gold);
+    background: #1c1424;
+    border: 2px solid #7c4c2e;
+  }
+  .delve-help-list--touch { display: none; }
+  @media (pointer: coarse) {
+    .delve-help-list--keys { display: none; }
+    .delve-help-list--touch { display: grid; }
+  }
+  .delve[data-touch='1'] .delve-help-list--keys { display: none; }
+  .delve[data-touch='1'] .delve-help-list--touch { display: grid; }
 
   /* ── 覆蓋確認 ── */
   .delve-confirm {
