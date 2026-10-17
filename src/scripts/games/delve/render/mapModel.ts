@@ -8,6 +8,7 @@ import { CHUNK } from '../engine/constants';
 import type { ExploredMap } from '../engine/explore';
 import type { Discovery, Region } from '../engine/discovery';
 import { Bmp, INK, hex, nudge, snap, type RGB } from './pixel';
+import { LIQUID_MAP_COLOR } from './liquidArt';
 
 export interface MapLut {
   /** 實心 / 顯示在地圖上的物件色（0 = 用背景） */
@@ -15,6 +16,8 @@ export interface MapLut {
   /** 同上，暗一階（材質變體 → 地圖上有一點顆粒感） */
   fgDark: Uint32Array;
   wall: Uint32Array;
+  /** 液體色（LIQ.* → 色；0 = 沒有） */
+  liquid: Uint32Array;
   sky: number; cave: number; fog: number; fogEdge: number;
 }
 
@@ -34,13 +37,17 @@ export function buildMapLut(): MapLut {
     fgDark[t.id] = t.solid ? pack(nudge(c, -1)) : pack(c);
   }
   for (const w of WALLS) if (w.id) wall[w.id] = pack(snap(hex(w.color)));
-  LUT = { fg, fgDark, wall, sky: pack(hex('#5c9ce0')), cave: pack(hex('#1c1424')), fog: pack(hex('#0c0a12')), fogEdge: pack(hex('#2c2838')) };
+  const liquid = new Uint32Array(4);
+  for (const [t, c] of Object.entries(LIQUID_MAP_COLOR)) liquid[Number(t)] = pack(hex(c));
+  LUT = { fg, fgDark, wall, liquid, sky: pack(hex('#5c9ce0')), cave: pack(hex('#1c1424')), fog: pack(hex('#0c0a12')), fogEdge: pack(hex('#2c2838')) };
   return LUT;
 }
 
 export interface MapWorld {
   width: number; height: number; surfaceY: number;
   fg: Uint8Array; wall: Uint8Array; variant: Uint8Array;
+  /** 液體（省略 = 沒有液體） */
+  liquid?: Uint8Array; liquidType?: Uint8Array;
 }
 
 /** 畫 chunk (cx, cy) 到 out（CHUNK*CHUNK，row-major）；世界外 = 0（透明） */
@@ -63,6 +70,8 @@ export function paintMapChunk(out: Uint32Array, w: MapWorld, ex: ExploredMap, cx
       }
       const i = y * W + x, f = w.fg[i];
       const c = w.variant[i] === 2 ? lut.fgDark[f] : lut.fg[f];
+      if (c && SOLID_LUT[f] === 1) { out[o] = c; continue; }
+      if (w.liquid && w.liquid[i] && w.liquidType) { out[o] = lut.liquid[w.liquidType[i]]; continue; }
       if (c) { out[o] = c; continue; }
       const wl = w.wall[i];
       out[o] = wl ? lut.wall[wl] : y <= w.surfaceY && SOLID_LUT[f] !== 1 ? lut.sky : lut.cave;

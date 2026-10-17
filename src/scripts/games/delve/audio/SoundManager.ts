@@ -145,6 +145,38 @@ export class SoundManager {
   /** 怪物射擊（刺 / 火球） */
   enemyShot(fire: boolean): void { if (fire) this.noise(0, 0.25, 700, 200, 0.08, 0.8); else this.tone(1200, 0, 0.06, 'square', 0.03, 600); }
 
+  // ── 液體 ───────────────────────────────────────────────
+  private lastLiquid = 0;
+  /** 節流：同一類液體音效最短間隔（秒），洪水時不會吵成一片 */
+  private gate(min: number): boolean {
+    const now = this.ctx?.currentTime ?? 0;
+    if (now - this.lastLiquid < min) return false;
+    this.lastLiquid = now;
+    return true;
+  }
+  /** 濺水：低通噪音的「噗通」+ 往下滑的水滴音；big = 跳進去 */
+  splash(big: boolean, lava = false): void {
+    if (!this.gate(0.08)) return;
+    this.noise(0, big ? 0.35 : 0.2, lava ? 500 : 1300, lava ? 120 : 260, big ? 0.2 : 0.12, 0.8);
+    if (!lava) { this.tone(big ? 520 : 760, 0.02, 0.12, 'sine', 0.05, big ? 180 : 300); this.tone(980, 0.09, 0.06, 'sine', 0.03, 620); }
+  }
+  /** 熔岩碰水：嘶嘶的高頻噪音（蒸氣）+ 低沉的凝固聲 */
+  sizzle(): void {
+    if (!this.gate(0.12)) return;
+    this.noise(0, 0.45, 5200, 2600, 0.1, 0.6);
+    this.tone(110, 0.05, 0.25, 'triangle', 0.07, 70);
+  }
+  /** 水下少一顆泡泡：短促上揚的「啵」 */
+  bubble(): void { this.tone(420, 0, 0.07, 'sine', 0.05, 900); }
+  /** 溺水受傷：悶住的低音 + 咕嚕 */
+  drown(): void {
+    this.tone(130, 0, 0.22, 'sine', 0.13, 70);
+    this.tone(300, 0.06, 0.08, 'sine', 0.05, 520);
+    this.tone(260, 0.15, 0.08, 'sine', 0.04, 480);
+  }
+  /** 燒傷：短的噼啪 */
+  burn(): void { this.noise(0, 0.08, 2600, 900, 0.07, 1.4); }
+
   destroy(): void {
     if (typeof window !== 'undefined') window.removeEventListener('arcade-audio-change', this.onChange);
     void this.ctx?.close?.();

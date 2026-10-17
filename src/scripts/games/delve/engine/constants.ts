@@ -48,7 +48,7 @@ export const LIGHT_MARGIN = 28;
 /** 深水（量 > 128）每格衰減：比空氣暗、比實心亮（單通道；水下另由 render 染成深藍） */
 export const LIGHT_WATER_DECAY = 0.86;
 /** 深蜂蜜每格衰減 */
-export const LIGHT_HONEY_DECAY = 0.7;
+export const LIGHT_HONEY_DECAY = 0.8;
 /** 滿格熔岩的發光強度（量越少越暗） */
 export const LAVA_LIGHT = 0.95;
 /** 一天長度（秒）。 */

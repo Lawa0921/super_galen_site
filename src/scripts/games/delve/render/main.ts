@@ -1,6 +1,8 @@
 // main.ts — 把 DelveGame 接上 canvas：固定 60Hz 步長 + rAF 渲染、HUD、輸入、resize。回傳 handle（含 destroy）。
 import type { DelveGame } from '../engine/game';
 import { FIXED_DT } from '../engine/constants';
+import { LIQUID_BUDGET_MS } from '../engine/game';
+import { LIQ } from '../engine/liquidKind';
 import { Renderer } from './renderer';
 import { Hud } from './hud';
 import { FixedStepper, blockedMessage, hintText } from './model';
@@ -31,6 +33,8 @@ export interface FrameStats {
   cachedChunks: number;
   /** 地圖快取 + 小地圖 / 全地圖每幀平均耗時（ms） */
   mapMs: number;
+  /** 液體：上一刻模擬耗時 / 處理格數 / 活躍格數、液體圖層繪製耗時 */
+  liquidSimMs: number; liquidProcessed: number; liquidActive: number; liquidDrawMs: number;
 }
 
 export interface DelveHandle {
@@ -59,6 +63,8 @@ const WINDOW = 120;
 export function startDelve(opts: StartOptions): DelveHandle {
   const { root, canvas, game } = opts;
   const renderer = new Renderer(canvas, game);
+  // 液體模擬每刻最多花 LIQUID_BUDGET_MS（大洪水分到之後的刻，不會卡住一幀）
+  game.liquids.timeBudgetMs = LIQUID_BUDGET_MS;
   renderer.zoomOffset = loadZoom();
   const hud = new Hud(root, game, renderer.atlas);
   const stepper = new FixedStepper(FIXED_DT, 0.25);
@@ -190,7 +196,11 @@ export function startDelve(opts: StartOptions): DelveHandle {
         }
         else if (e.type === 'hit') sound.enemyHit(e.crit);
         else if (e.type === 'kill') sound.enemyDeath();
-        else if (e.type === 'hurt') sound.hurt();
+        else if (e.type === 'hurt') { if (e.cause === 'drown') sound.drown(); else if (e.cause === 'burn') sound.burn(); else sound.hurt(); }
+        else if (e.type === 'splash') sound.splash(e.big, e.liquid === LIQ.LAVA);
+        else if (e.type === 'liquid') sound.sizzle();
+        else if (e.type === 'bubble') sound.bubble();
+        else if (e.type === 'liquidtool') { sound.splash(false, e.liquid === LIQ.LAVA); invChanged = true; }
         else if (e.type === 'death') { sound.death(); hud.setInventory(false); }
         else if (e.type === 'respawn') hud.toast('你甦醒了');
         else if (e.type === 'pickup') { sound.pickup(); invChanged = true; }
@@ -241,6 +251,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
       return {
         avgWorkMs: avg(work), avgFrameMs: f, fps: f > 0 ? 1000 / f : 0, frames,
         lightMs: renderer.stats.lightMs, cachedChunks: renderer.stats.cached, mapMs: avg(mapWork),
+        liquidSimMs: game.liquids.stats.ms, liquidProcessed: game.liquids.stats.processed, liquidActive: game.liquids.activeCount,
+        liquidDrawMs: renderer.stats.liquidMs,
       };
     },
     setPaused: (p) => {

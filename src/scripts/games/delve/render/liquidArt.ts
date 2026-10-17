@@ -10,7 +10,7 @@ import { LIQ } from '../engine/liquidKind';
 const S = 16;
 export const HIVE_PAL = ramp('#2a1810', '#6c1e14', '#a83a10', '#e8701c', '#ffa93a', '#ffd86a', '#fff4c0');
 export const CRISPY_PAL = ramp('#2a1810', '#623924', '#966139', '#c99660', '#d8ba76', '#f2e2b0', '#fff4c0');
-export const HIVE_WALL_PAL = ramp('#0c0a12', '#1c1424', '#2a1810', '#472819', '#472819', '#6c1e14', '#6c1e14');
+export const HIVE_WALL_PAL = ramp('#0c0a12', '#0c0a12', '#1c1424', '#2a1810', '#2a1810', '#472819', '#472819');
 const IRON = ramp('#1c1424', '#2c2838', '#423f54', '#5e5e74', '#858aa0', '#b4b9c8', '#ffffff');
 const WATER = ramp('#18204a', '#2c4486', '#3e74c4', '#5c9ce0', '#94c8ee', '#cceaf8', '#ffffff');
 const LAVA = ramp('#2a1810', '#6c1e14', '#a83a10', '#e8701c', '#ffa93a', '#ffd86a', '#fff4c0');
@@ -153,21 +153,33 @@ function pixelOf(type: number, x: number, y: number, d: number, frame: number, p
     if (surf && d === 0) return HONEY[5];
     if (surf && d === 1) return HONEY[4];
     if (t > 0.75) return null;
-    if (piece === 'fall' && ((y + frame * 2) & 7) === 0) return HONEY[4];
-    return t < 0.2 ? HONEY[3] : t < 0.5 ? HONEY[2] : HONEY[1];
+    if (piece === 'fall' && ((y + frame * 2) & 7) === 0) return HONEY[5];
+    // 琥珀：亮黃斑點（蜂蜜的光澤）+ 橘，最暗只到深橘
+    if (surf && d < 4) return t < 0.4 ? HONEY[4] : HONEY[3];
+    return t < 0.12 ? HONEY[4] : t < 0.45 ? HONEY[3] : HONEY[2];
   }
   // 水：水面亮線 + 第二排淺藍，往下越深越密：上 4 px 50% 棋盤，之後 Bayer 5/8
   if (surf && d === 0) return ((x + frame) & 3) === 0 ? WATER[6] : WATER[5];
   if (surf && d === 1) return (x + y) & 1 ? WATER[4] : null;
   if (piece === 'fall') {
     // 落下的水柱：直條紋往下流
-    const streak = (y - frame * 4) & 7;
+    const streak = (y - frame * 2) & 7;
     if ((x & 3) === 1 && streak < 3) return WATER[5];
     return (x + y) & 1 ? WATER[3] : t < 0.4 ? WATER[2] : null;
   }
   const dense = surf ? (d < 5 ? 0.5 : 0.625) : 0.625;
   if (t >= dense) return null;
   return t < 0.12 ? WATER[3] : t < 0.4 ? WATER[2] : WATER[1];
+}
+
+/**
+ * 某格液體用哪種貼片：下面還能流（落下中）→ 落下的水柱；上方沒有液體 → 水面
+ * （高度 = 量 / 255 × 16，至少 1 px）；其他 → 滿格內部。
+ */
+export function liquidPiece(amount: number, above: boolean, belowOpen: boolean): { piece: LiquidPiece; h: number } {
+  if (belowOpen) return { piece: 'fall', h: S }; // 落下中：畫成連續的水柱（不畫一格一格的水面）
+  if (!above) return { piece: 'surface', h: Math.max(1, Math.min(S, Math.round((amount / 255) * S))) };
+  return { piece: 'body', h: S };
 }
 
 /** 液體在小地圖 / 世界總覽上的顏色 */

@@ -133,7 +133,7 @@ export class CombatLayer {
         ctx.fillRect(cx + 2 - (Math.floor(e.age * 7) % 4), top + 4, 1, 1);
       }
       if (e.kind === 'lantern_warden') glow.cool.push({ x: cx, y: b.y + b.h / 2 + 4 }, { x: cx, y: b.y + b.h / 2 - 8 });
-      else if (e.kind === 'warden_wisp' || e.kind === 'cursed_skull') glow.cool.push({ x: cx, y: b.y + b.h / 2 });
+      else if (e.kind === 'warden_wisp' || e.kind === 'cursed_skull' || e.kind === 'glow_jelly') glow.cool.push({ x: cx, y: b.y + b.h / 2 });
       else if (e.kind === 'ember_imp' || e.kind === 'magma_bat') glow.warm.push({ x: cx, y: b.y + b.h / 2 });
     }
     // 投射物

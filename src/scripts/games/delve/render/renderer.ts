@@ -1,5 +1,6 @@
 // renderer.ts — Canvas2D 場景（全部以原生美術解析度畫進低解析緩衝，最後整數倍放大貼到螢幕）：視差背景 → 地下暗紋 → chunk 快取（牆 + 自動接邊前景 + 材質滲透 + 草葉）
-// → 樹 / 火把（動態）→ 裂痕 / 游標 → 玩家（分件精靈）→ 粒子 → 光照遮罩（8 階 + Bayer 抖動）→ 火光暈。
+// → 樹 / 火把（動態）→ 掉落物 / 怪物 → 玩家（分件精靈）→ 液體圖層（每幀、抖動半透、熔岩光暈）→ 裂痕 / 游標 → 呼吸泡泡
+// → 粒子（含濺水 / 蒸氣 / 火焰）→ 光照遮罩（8 階 + Bayer 抖動；水下染深藍）→ 火光暈。
 import type { DelveGame, DelveEvent } from '../engine/game';
 import { BLOCKS_LIGHT_LUT, T, isSolidTile, isDecor } from '../engine/tiles';
 import { ITEMS, type ItemId } from '../engine/items';
@@ -18,6 +19,8 @@ import { scanTrees, treeKind, TREE_KIND } from './scene';
 import { LIGHT_LEVELS, PLATEAU, bufferSize, clampZoom, quantizeLevel, snapCam, zoomScale } from './lowres';
 import { bayer } from './pixel';
 import { AmbientField, ambientKind, AMBIENT_GLOWS, type AmbientKind } from './ambient';
+import { LiquidLayer } from './liquidDraw';
+import { LIQ } from '../engine/liquidKind';
 
 const S = TILE_SIZE;
 const CPX = CHUNK * S;
@@ -33,9 +36,15 @@ const SIDE_D: [number, number][] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 /** 游標四角：(是否右側, 是否下側, 水平延伸方向, 垂直延伸方向) */
 const CURSOR_CORNERS: [number, number, number, number][] = [[0, 0, 1, 1], [1, 0, -1, 1], [0, 1, 1, -1], [1, 1, -1, -1]];
 
-interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: string; }
+interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: string; /** 重力（預設 700；蒸氣 / 泡泡為負） */ g?: number; size?: number; }
+/** 濺起的水花色（色票） */
+const SPLASH: Record<number, string[]> = {
+  [LIQ.WATER]: ['#cceaf8', '#94c8ee', '#5c9ce0', '#ffffff'],
+  [LIQ.LAVA]: ['#ffd86a', '#ffa93a', '#e8701c', '#fff4c0'],
+  [LIQ.HONEY]: ['#ffd86a', '#ffa93a', '#e8701c', '#fff4c0'],
+};
 
-export interface RenderStats { chunksDrawn: number; cached: number; lightMs: number; }
+export interface RenderStats { chunksDrawn: number; cached: number; lightMs: number; liquidCells: number; liquidMs: number; }
 
 export class Renderer {
   readonly atlas: Atlas;
@@ -56,7 +65,9 @@ export class Renderer {
   /** 使用者縮放（預設倍率 + offset，整數倍） */
   zoomOffset = 0;
   private cssW = 1; private cssH = 1;
-  stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0 };
+  stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0, liquidCells: 0, liquidMs: 0 };
+  /** 液體圖層（不進 chunk 快取） */
+  readonly liquidLayer = new LiquidLayer();
   /** debug：不畫光照遮罩（文件截圖用） */
   fullbright = false;
   /** 世界 chunk 有變動（小地圖快取跟著重畫） */
@@ -177,6 +188,20 @@ export class Renderer {
     this.combat.onEvent(e);
     if (e.type === 'respawn') this.snapCamera();
     if (e.type === 'mine' || e.type === 'place') this.lightDirty = true;
+    if (e.type === 'splash') this.burst(e.x, e.y, e.big ? 16 : 9, SPLASH[e.liquid] ?? SPLASH[LIQ.WATER], e.big ? 260 : 170);
+    if (e.type === 'liquidtool') this.burst((e.x + 0.5) * S, (e.y + 0.5) * S, 7, SPLASH[e.liquid] ?? SPLASH[LIQ.WATER], 130);
+    if (e.type === 'liquid') {
+      // 反應：一團往上飄的蒸氣（灰白），黑曜石 / 酥蜜塊另外噴一點碎屑
+      for (let i = 0; i < 10; i++) {
+        this.particles.push({ x: (e.x + Math.random()) * S, y: (e.y + 0.3) * S, vx: (Math.random() - 0.5) * 50, vy: -30 - Math.random() * 50,
+          life: 0.7 + Math.random() * 0.6, color: i % 3 === 0 ? '#ffffff' : '#b4b9c8', g: -40, size: i % 2 ? 2 : 1 });
+      }
+      this.lightDirty = true;
+    }
+    if (e.type === 'bubble') {
+      const p = this.game.player;
+      for (let i = 0; i < 2; i++) this.particles.push({ x: p.x + p.w / 2 + (this.game.facing * 6) + i * 2, y: p.y + 8, vx: (Math.random() - 0.5) * 20, vy: -40, life: 1.1, color: '#cceaf8', g: -60, size: 1 });
+    }
     if (e.type === 'mine') {
       const color = this.atlas.tileColor(e.tile ?? T.DIRT);
       const ink = this.atlas.tileInk(e.tile ?? T.DIRT);
@@ -209,6 +234,9 @@ export class Renderer {
     const dirty = w.drainDirty();
     for (const ci of dirty) this.pending.add(ci);
     if (dirty.length) this.onWorldDirty?.(dirty);
+    // 液體變動只需要讓地圖重畫（液體圖層每幀畫，不碰 tile chunk 快取）
+    const ldirty = w.drainLiquidDirty();
+    if (ldirty.length) this.onWorldDirty?.(ldirty);
     if (this.pending.size) this.lightDirty = true;
 
     const ctx = this.bctx;
@@ -255,9 +283,14 @@ export class Renderer {
 
     this.drawTrees(ctx, camX, camY, vw, vh);
     this.drawTorches(ctx, camX, camY, vw, vh);
-    this.drawMiningAndCursor(ctx);
     this.combat.drawWorld(ctx, { x: camX, y: camY, w: vw, h: vh }, { warm: this.torchesSeen, cool: this.coolSeen });
     this.drawPlayer(ctx, dt);
+    const tl = performance.now();
+    this.liquidLayer.draw(ctx, w, camX, camY, vw, vh, this.clock, this.torchesSeen);
+    this.stats.liquidMs = performance.now() - tl;
+    this.stats.liquidCells = this.liquidLayer.stats.cells;
+    this.drawMiningAndCursor(ctx);
+    this.drawStatus(ctx, dt);
     this.drawParticles(ctx, dt);
     this.updateAmbient(dt, camX, camY, vw, vh);
     this.drawAmbient(ctx, false);
@@ -555,10 +588,37 @@ export class Renderer {
       const q = ps[i];
       q.life -= dt;
       if (q.life <= 0) { ps.splice(i, 1); continue; }
-      q.vy += 700 * dt;
+      q.vy += (q.g ?? 700) * dt;
       q.x += q.vx * dt; q.y += q.vy * dt;
       ctx.fillStyle = q.color;
-      ctx.fillRect(Math.round(q.x), Math.round(q.y), 2, 2);
+      const sz = q.size ?? 2;
+      ctx.fillRect(Math.round(q.x), Math.round(q.y), sz, sz);
+    }
+    if (ps.length > 600) ps.splice(0, ps.length - 600);
+  }
+
+  /** 濺起一圈水花（世界 px） */
+  private burst(x: number, y: number, n: number, colors: string[], speed: number): void {
+    for (let i = 0; i < n; i++) {
+      const a = Math.PI * (1.1 + Math.random() * 0.8);
+      const sp = speed * (0.4 + Math.random() * 0.6);
+      this.particles.push({ x: x + (Math.random() - 0.5) * 10, y: y - 1, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+        life: 0.35 + Math.random() * 0.35, color: colors[i % colors.length], size: i % 3 === 0 ? 1 : 2 });
+    }
+  }
+
+  /** 玩家狀態：水下呼吸泡泡、著火時身上冒火、泡過蜂蜜時偶爾冒金色光點 */
+  private drawStatus(ctx: CanvasRenderingContext2D, dt: number): void {
+    const g = this.game, p = g.player;
+    if (g.dead) return;
+    if (g.breath < 10 - 1e-6) this.liquidLayer.drawBreath(ctx, p.x + p.w / 2, p.y + p.gfxOffY, g.breath, 10);
+    if (g.burning > 0 && Math.random() < dt * 30) {
+      this.particles.push({ x: p.x + Math.random() * p.w, y: p.y + p.h * (0.3 + Math.random() * 0.6), vx: (Math.random() - 0.5) * 20, vy: -50 - Math.random() * 40,
+        life: 0.3 + Math.random() * 0.3, color: Math.random() < 0.5 ? '#ffa93a' : '#e8701c', g: -80, size: 2 });
+      this.torchesSeen.push({ x: p.x + p.w / 2, y: p.y + p.h / 2 });
+    }
+    if (g.honeyT > 0 && Math.random() < dt * 4) {
+      this.particles.push({ x: p.x + Math.random() * p.w, y: p.y + Math.random() * p.h, vx: 0, vy: -20, life: 0.6, color: '#ffd86a', g: -10, size: 1 });
     }
   }
 
@@ -634,7 +694,7 @@ export class Renderer {
     if (this.lightDirty || this.lightAge >= LIGHT_EVERY || !this.light) {
       const t0 = performance.now();
       const pt = g.playerTile();
-      const extra = g.heldLights();
+      const extra = [...g.heldLights(), ...g.enemyLights()];
       const view = { x: Math.floor(camX / S) - 1, y: Math.floor(camY / S) - 1, w: Math.ceil(vw / S) + 3, h: Math.ceil(vh / S) + 3 };
       const L = g.computeLight(view, extra);
       // 戰爭迷霧：畫面上看得到（夠亮）的格算探索過
@@ -648,7 +708,7 @@ export class Renderer {
         this.lightImg = this.lightCtx.createImageData(cw, chh);
       }
       if (this.lightA.length < lw * lh) { this.lightA = new Float32Array(lw * lh); this.lightOut = new Uint8Array(lw * lh); }
-      const A = this.lightA, OUT = this.lightOut, surf = w.surfaceY, W = w.width;
+      const A = this.lightA, OUT = this.lightOut, surf = w.surfaceY, W = w.width, LQ = w.liquid, LTY = w.liquidType;
       // 戶外（天空可見）的格：依晝夜整體壓暗，直接吸附到某一階（不會整片抖動）
       const skyA = quantizeLevel((1 - g.skyLevel()) * 0.5);
       for (let y = 0; y < lh; y++) {
@@ -658,7 +718,9 @@ export class Renderer {
           const tx = lx0 + x;
           let a: number;
           const wi = ty * W + tx;
-          if (ty <= surf && !BLOCKS_LIGHT_LUT[w.fg[wi]] && w.wall[wi] === 0) a = -1; // 開放天空
+          // 水下（上方也有液體）不算開放天空：靠光照衰減變暗，並染成深藍（OUT）
+          const under = LQ[wi] > 0 && wi >= W && LQ[wi - W] > 0;
+          if (ty <= surf && !BLOCKS_LIGHT_LUT[w.fg[wi]] && w.wall[wi] === 0 && !under) a = -1; // 開放天空
           else {
             const l = L.data[(ty - L.y0) * L.w + (tx - L.x0)];
             // 最低環境光：玩家附近保留微弱輪廓，越遠越接近全暗
@@ -668,7 +730,7 @@ export class Renderer {
             a = Math.max(0, Math.min(cap, 1 - l * 1.08));
           }
           A[y * lw + x] = a < 0 ? skyA : Math.max(skyA, a);
-          OUT[y * lw + x] = a < 0 ? 1 : 0;
+          OUT[y * lw + x] = a < 0 || (LQ[wi] > 128 && LTY[wi] === LIQ.WATER && wi >= W && LQ[wi - W] > 128) ? 1 : 0;
         }
       }
       // 取樣表（只跟 x 或 y 有關）：小格中心 → tile 中心座標系的雙線性權重
