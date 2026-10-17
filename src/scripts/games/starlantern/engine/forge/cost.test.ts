@@ -5,7 +5,7 @@ import { ENHANCE_COST } from '../../data/forge';
 import { addCost, canPay, findItem, forgeRng, pay, FORGE_SALT } from './cost';
 import { mix } from '../loot/drops';
 import { mulberry32 } from '../rng';
-import { STARTING_RECRUITS } from '../party';
+import { LEGACY_LINEUP } from '../party';
 
 const cost = ENHANCE_COST[0];
 const matId = Object.keys(cost.mats)[0];
@@ -61,7 +61,7 @@ describe('addCost', () => {
 describe('findItem', () => {
   it('finds bag items and worn items with their wearer and slot', () => {
     const s = newGame();
-    const who = STARTING_RECRUITS[0];
+    const who = LEGACY_LINEUP[0];
     const bagIt = plainItem('moss-charm', 1);
     const worn = plainItem('moss-charm', 2);
     s.bag = [bagIt];

@@ -56,6 +56,7 @@ function isValid(d: Record<string, unknown>): boolean {
   if (!isListMap(d.revealed, (x) => ELEMENTS.includes(x as string))) return false;
   const p = d.party;
   if (!isObj(p) || !isObj(p.roster) || !isIdList(p.recruited)) return false;
+  if (new Set(p.recruited as unknown[]).size !== (p.recruited as unknown[]).length) return false;
   if (!isIdList(p.grid, true) || (p.grid as unknown[]).length !== GRID_SIZE) return false;
   const placed = (p.grid as unknown[]).filter((x) => x !== null);
   if (!placed.length || placed.length > MAX_ACTIVE) return false;
@@ -76,7 +77,8 @@ function isValid(d: Record<string, unknown>): boolean {
     }
     if (!Number.isInteger(m.level) || (m.level as number) < 1 || (m.level as number) > MAX_LEVEL) return false;
     if (!isCount(m.exp) || !isCount(m.hp) || !isCount(m.tp)) return false;
-    if (!validBuild(id, m.level as number, m.tree, m.talents)) return false;
+    if (!// Memories are 0 until plan 6b, which reads the hero's memory-piece count from the save.
+    validBuild(id, m.level as number, m.tree, m.talents, 0)) return false;
   }
   // Every uid once, bag and worn together, and all of them below nextUid.
   if (new Set(uids).size !== uids.length || uids.some((u) => u >= (d.nextUid as number))) return false;

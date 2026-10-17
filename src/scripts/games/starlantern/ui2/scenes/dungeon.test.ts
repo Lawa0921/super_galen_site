@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
+import { START_ITEMS } from '../../engine/state';
 import type { Portal } from '../../engine/dungeon/run';
 import { DELTA, tileAt, type Dir } from '../../engine/map';
 import { chestHasGear } from '../../engine/loot/drops';
@@ -255,7 +256,7 @@ describe('DungeonScene', () => {
     pick('回復藥');
     pick('莉茲');
     expect(game.state.party.roster.liz.hp).toBeGreaterThan(3);
-    expect(game.state.inventory.potion).toBe(2);
+    expect(game.state.inventory.potion).toBe(START_ITEMS.potion - 1);
   });
 
   it('shows the run condition as a banner on arrival from the plaza, and not when coming back from a battle', () => {

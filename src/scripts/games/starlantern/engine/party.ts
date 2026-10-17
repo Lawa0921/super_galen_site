@@ -9,7 +9,8 @@ import type { AnyStat, CharacterId, GearSlot, ItemInstance, Member, Party, Passi
 
 /** Level cap; deep floors (depthLevel 2 + 4 per depth) need room past 20. Progression design §6. */
 export const MAX_LEVEL = 50;
-export const STARTING_RECRUITS: CharacterId[] = ['scarlet', 'chizuru', 'liz', 'noel', 'selene'];
+/** Who a new game starts with: the hero at the front and Rin. */
+export const START_LINEUP: CharacterId[] = ['hero', 'rin'];
 /** The party the game now starts with and the simulation's full party (spec 9.4): the hero, Rin, Chizuru, Noel, Selene. */
 export const STANDARD_LINEUP: CharacterId[] = ['hero', 'rin', 'chizuru', 'noel', 'selene'];
 /** The five the simulation fielded before the hero existed; the default of partyAt and kitParty so the balance stays bit-identical. */
@@ -112,12 +113,8 @@ export function newMember(id: CharacterId): Member {
   return { ...m, hp: s.hp, tp: s.tp };
 }
 
-export function newParty(): Party {
-  return {
-    roster: Object.fromEntries(CHARACTER_IDS.map((id) => [id, newMember(id)])) as Record<CharacterId, Member>,
-    recruited: [...STARTING_RECRUITS],
-    grid: [...LEGACY_GRID],
-  };
+export function newParty(start: CharacterId[] = LEGACY_LINEUP): Party {
+  return partyWith(start);
 }
 
 /** A copy of `grid` with `id` in the first empty cell of `row`; a full row spills to the middle row, then the other. The caller keeps the party under five. */

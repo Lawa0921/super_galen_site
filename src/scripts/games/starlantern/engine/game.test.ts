@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Game, type MoveResult } from './game';
 import { SAVE_KEY, saveGame } from './save';
-import { newGame } from './state';
+import { newGame, START_ITEMS } from './state';
 import { constRng, memoryStorage, plainItem } from './testing';
 import { mulberry32 } from './rng';
 import { validPortals } from './portals';
@@ -12,7 +12,7 @@ import type { Pos } from './types';
 import { ENEMIES } from '../data/enemies';
 import { CHARACTERS } from '../data/characters';
 import { SETS } from '../data/gear';
-import { activeIds, gainExp, MAX_LEVEL, newMember, recruit } from './party';
+import { activeIds, gainExp, MAX_LEVEL, newMember, recruit, START_LINEUP } from './party';
 import { depthClearExp, empower } from './scaling';
 import { CONDITIONS } from '../data/conditions';
 import { BAG_SIZE } from './loot/bag';
@@ -86,6 +86,15 @@ const gearItem = (uid: number, over: Partial<ItemInstance> = {}): ItemInstance =
 const killAll = (g: Game) => { for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; } return g.submitRound({})!.end!; };
 
 describe('boot', () => {
+  it('a fresh game starts with two and carries START_ITEMS', () => {
+    const g = Game.fresh(calm(), memoryStorage());
+    expect(g.state.party.recruited).toEqual(START_LINEUP);
+    expect(g.state.inventory).toEqual(START_ITEMS);
+    expect(START_ITEMS.potion).toBe(5);
+    expect(Game.boot(calm(), memoryStorage()).state.party.recruited).toEqual(START_LINEUP);
+    expect(new Game(calm(), null).state.party.recruited).toHaveLength(5);
+    expect(new Game(calm(), null, undefined, 0, START_LINEUP).state.party.recruited).toEqual(START_LINEUP);
+  });
   it('starts a new game in town on an empty slot', () => {
     const g = Game.boot(calm(), memoryStorage());
     expect([g.phase, g.notice, g.state.gold]).toEqual(['town', null, 150]);

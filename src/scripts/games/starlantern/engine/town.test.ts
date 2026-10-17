@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { newGame } from './state';
+import { newGame, START_ITEMS } from './state';
 import { buy, equip, innCost, isUnlocked, junkTotals, respec, respecCost, rest, revive, reviveCost, sell, sellGear, sellJunk, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
 import { statsOf } from './party';
 import { defaultTalents, defaultTree, newTree, raiseTalent, skillPointsLeft, talentPointsLeft, validBuild } from './progression';
@@ -143,7 +143,7 @@ describe('useFieldItem', () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.state.party.roster.liz.hp).toBe(Math.min(statsOf(r.state.party.roster.liz).hp, 65));
-    expect(r.state.inventory.potion).toBe(2);
+    expect(r.state.inventory.potion).toBe(START_ITEMS.potion - 1);
     expect(s.party.roster.liz.hp).toBe(5);
   });
   it('revives only the fallen at half HP and refuses wrong targets or an empty stock', () => {

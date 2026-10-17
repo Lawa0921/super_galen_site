@@ -4,7 +4,7 @@ import {
   gainExp, awardExp, hasPassive, MAX_LEVEL, SLOTS, slotsFor, defaultSlotFor, sheetOf, setCounts, powersOf,
 } from './party';
 import { partyAt } from './sim';
-import { LEGACY_GRID, LEGACY_LINEUP, STANDARD_LINEUP, partyWith, placeInGrid } from './party';
+import { LEGACY_GRID, LEGACY_LINEUP, STANDARD_LINEUP, START_LINEUP, partyWith, placeInGrid } from './party';
 import { defaultTalents, defaultTree, learnedSkills, newTree, raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft } from './progression';
 import { plainItem } from './testing';
 import { rollItem } from './loot/item';
@@ -287,6 +287,20 @@ describe('partyWith', () => {
     expect(p.recruited).toEqual(old.recruited);
     expect(p.roster).toEqual(old.roster);
     expect(partyWith(LEGACY_LINEUP, 'front', p.grid.map((c) => c)).grid).toEqual(LEGACY_GRID);
+  });
+});
+
+describe('the starting lineup', () => {
+  it('the starting lineup is the hero and Rin at the front', () => {
+    expect(START_LINEUP).toEqual(['hero', 'rin']);
+    const p = newParty(START_LINEUP);
+    expect(p.recruited).toEqual(['hero', 'rin']);
+    expect(activeIds(p)).toEqual(['hero', 'rin']);
+    for (const id of CHARACTER_IDS) expect(p.roster[id].id).toBe(id);
+    expect(Object.keys(p.roster).sort()).toEqual([...CHARACTER_IDS].sort());
+  });
+  it('newParty with no argument is still the legacy five', () => {
+    expect(newParty().recruited).toEqual(LEGACY_LINEUP);
   });
 });
 

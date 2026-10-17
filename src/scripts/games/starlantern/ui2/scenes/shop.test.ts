@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { EQUIPMENT } from '../../data/equipment';
 import { compareDelta } from '../../engine/compare';
 import { Game } from '../../engine/game';
+import { START_ITEMS } from '../../engine/state';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { materialUses } from '../../engine/forge/uses';
 import { T } from '../../data/text.zh-TW';
@@ -39,7 +40,7 @@ describe('ShopScene', () => {
     s.onAction('up');                     // +10, clamped to 5
     expect(document.body).toBeTruthy();
     s.onAction('confirm');
-    expect(game.state.inventory.potion).toBe(3 + 5);
+    expect(game.state.inventory.potion).toBe(START_ITEMS.potion + 5);
     expect(game.state.gold).toBe(0);
   });
 

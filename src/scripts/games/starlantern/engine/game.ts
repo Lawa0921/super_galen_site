@@ -13,7 +13,7 @@ import { applyAutoJunk, BAG_SIZE, mintUid } from './loot/bag';
 import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMaterial, type DropCtx } from './loot/drops';
 import { itemWeight, type DropSource } from './loot/item';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
-import { activeIds, awardExp, hasPassive, statsOf, type LevelUp } from './party';
+import { activeIds, awardExp, hasPassive, START_LINEUP, statsOf, type LevelUp } from './party';
 import { raiseNode, raiseTalent, type RaiseFail, type TalentFail } from './progression';
 import { pick, type Rng } from './rng';
 import { depthClearExp, depthLevel, encounterGroup } from './scaling';
@@ -93,21 +93,21 @@ export class Game {
   banked: { items: Record<string, number>; gold: number; viaLamp: boolean; gear: ItemInstance[]; overflow: ItemInstance[] } | null = null;
 
   /** `forgeSalt` is used only when there is no `state` (a new game); a loaded game keeps the salt in its save. */
-  constructor(readonly rng: Rng, readonly storage: SaveStorage | null, state?: GameState, forgeSalt = 0) {
-    this.state = state ?? newGame(rng, forgeSalt);
+  constructor(readonly rng: Rng, readonly storage: SaveStorage | null, state?: GameState, forgeSalt = 0, start?: CharacterId[]) {
+    this.state = state ?? newGame(rng, forgeSalt, start);
   }
 
   static boot(rng: Rng, storage: SaveStorage | null, forgeSalt = 0): Game {
-    if (!storage) return new Game(rng, null, undefined, forgeSalt);
+    if (!storage) return new Game(rng, null, undefined, forgeSalt, START_LINEUP);
     const r = loadGame(storage);
-    const g = new Game(rng, storage, r.status === 'ok' ? r.state : undefined, forgeSalt);
+    const g = new Game(rng, storage, r.status === 'ok' ? r.state : undefined, forgeSalt, START_LINEUP);
     if (r.status === 'corrupt' || r.status === 'version') g.notice = 'save-reset';
     return g;
   }
 
   /** A new game that replaces the save at once: the player agreed to overwrite it, and a wipe must not bring the old run back. */
   static fresh(rng: Rng, storage: SaveStorage | null, forgeSalt = 0): Game {
-    const g = new Game(rng, storage, undefined, forgeSalt);
+    const g = new Game(rng, storage, undefined, forgeSalt, START_LINEUP);
     if (storage) saveGame(storage, g.state);
     return g;
   }

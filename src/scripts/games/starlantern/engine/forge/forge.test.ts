@@ -10,7 +10,7 @@ import { BAG_SIZE } from '../loot/bag';
 import { itemSlot } from '../loot/item';
 import { statsOf } from '../party';
 import type { GameState } from '../state';
-import { STARTING_RECRUITS } from '../party';
+import { LEGACY_LINEUP } from '../party';
 import type { ItemInstance, Rarity } from '../types';
 
 const at = (rarity: Rarity, uid: number): ItemInstance => ({ ...plainItem('moss-charm', uid), rarity });
@@ -41,7 +41,7 @@ describe('dismantle', () => {
   });
   it('a worn uid or a duplicate is refused and nothing changes', () => {
     const s = withBag([at('magic', 1)]);
-    s.party.roster[STARTING_RECRUITS[0]].equip.ring1 = at('rare', 2);
+    s.party.roster[LEGACY_LINEUP[0]].equip.ring1 = at('rare', 2);
     const before = structuredClone(s);
     expect(dismantle(s, [2])).toEqual({ ok: false, reason: 'stock' });
     expect(dismantle(s, [1, 2])).toEqual({ ok: false, reason: 'stock' });
@@ -130,7 +130,7 @@ describe('enhance', () => {
   it('a worn item is enhanced in place on its wearer', () => {
     const s = rich(lv(2, 7));
     s.bag = [];
-    const m = STARTING_RECRUITS[0];
+    const m = LEGACY_LINEUP[0];
     s.party.roster[m].equip.ring1 = lv(2, 7);
     const r = enhance(s, 7);
     expect(r.ok && r.state.party.roster[m].equip.ring1?.enhance).toBe(3);
@@ -286,7 +286,7 @@ describe('reroll', () => {
     expect(s.forgeDraws).toBe(before.forgeDraws);
   });
   it('rerolling worn hp down holds HP at the new maximum', () => {
-    const m = STARTING_RECRUITS[0];
+    const m = LEGACY_LINEUP[0];
     const s = stocked(gear());
     s.bag = [];
     s.party.roster[m].equip.neck = gear({ affixes: [{ key: 'hp', value: 500 }, { key: 'str', value: 1 }, { key: 'spd', value: 1 }] });
@@ -392,7 +392,7 @@ describe('fuse', () => {
   });
   it('mixed rarities, two items, a worn uid or a set piece are refused and nothing changes', () => {
     const s = funded([...trio('common', [3, 3, 3]), { ...at('magic', 4) }, { ...at('legendary', 5) }, { ...at('set', 6) }, { ...at('unique', 7) }, { ...at('common', 8) }]);
-    s.party.roster[STARTING_RECRUITS[0]].equip.ring1 = at('common', 50);
+    s.party.roster[LEGACY_LINEUP[0]].equip.ring1 = at('common', 50);
     const before = structuredClone(s);
     expect(fuse(s, [1, 2, 4])).toEqual({ ok: false, reason: 'invalid' });
     expect(fuse(s, [1, 2])).toEqual({ ok: false, reason: 'invalid' });

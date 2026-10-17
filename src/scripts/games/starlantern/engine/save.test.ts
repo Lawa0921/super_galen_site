@@ -32,6 +32,19 @@ describe('save', () => {
     expect(loadGame(st)).toEqual({ status: 'version' });
     expect(st.map.get(BACKUP_KEY)).toBe(raw);
   });
+  it('a v6 save reports version', () => {
+    const raw = JSON.stringify({ ...newGame(), version: 6 });
+    const st = memoryStorage({ [SAVE_KEY]: raw });
+    expect(loadGame(st)).toEqual({ status: 'version' });
+    expect(st.map.get(BACKUP_KEY)).toBe(raw);
+  });
+  it('a repeated recruit is corrupt', () => {
+    const g = newGame();
+    g.party.recruited = [...g.party.recruited, g.party.recruited[0]];
+    const st = memoryStorage();
+    saveGame(st, g);
+    expect(loadGame(st)).toEqual({ status: 'corrupt' });
+  });
   it('rejects structurally broken saves', () => {
     const g = newGame() as unknown as { party: { roster: Record<string, unknown> } };
     delete g.party.roster.bobby;
