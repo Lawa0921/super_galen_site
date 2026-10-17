@@ -468,7 +468,7 @@ describe('weapon kinds in battle', () => {
     if (noel) { party.grid[8] = 'noel'; party.roster.noel.equip = { weapon: plainItem(noel, 2) }; }
     return party;
   };
-  const start = (party: ReturnType<typeof newParty>) => createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+  const start = (party: ReturnType<typeof fullParty>) => createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
   const hit = (s: ReturnType<typeof start>, key: string, patch: (c: ReturnType<typeof start>['party'][number]) => void = () => {}) => {
     patch(s.party.find((c) => c.key === key)!);
     const foe = s.enemies[0];
