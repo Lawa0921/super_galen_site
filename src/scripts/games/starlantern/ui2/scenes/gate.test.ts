@@ -184,6 +184,23 @@ describe('GateScene: the portal plaza', () => {
     expect(cards()[0].querySelector('img')).toBeNull();
   });
 
+  it('every card names its region in a class (for its banner crop) and keeps the monsters label on the monsters line', () => {
+    const pairs = [['blaze', 'frost'], ['storm', 'mire'], ['shade', 'iron']] as const;
+    for (const pair of pairs) {
+      const { cards } = setup((g) => { g.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }, ...pair.map((region) => ({ region, condition: 'fog' as const }))]; }, { has: () => true });
+      for (const [i, region] of ['mainline', ...pair].entries()) {
+        const c = cards()[i];
+        expect(c.classList.contains(`slx-portal-${region}`)).toBe(true);
+        expect(c.querySelector('img.slx-portal-art')!.getAttribute('src')).toBe(portalArt.card(region as Parameters<typeof portalArt.card>[0]));
+        // The label sits inside the line it names: no row of its own above the names.
+        const line = c.querySelector('.slx-portal-monsters')!;
+        expect(line.querySelector('.slx-portal-label')!.textContent).toBe('怪物');
+        expect(line.textContent).toMatch(/^怪物.*苔蘚史萊姆/);
+        expect([...c.children].filter((e) => e.classList.contains('slx-portal-label'))).toEqual([]);
+      }
+    }
+  });
+
   it('explains when nobody can fight', () => {
     const { game, go, s, root } = setup((g) => { for (const id of g.state.party.recruited) g.state.party.roster[id].hp = 0; });
     s.onAction('confirm'); s.onAction('confirm'); s.onAction('up'); s.onAction('confirm');

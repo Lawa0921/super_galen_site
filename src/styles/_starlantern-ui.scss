@@ -917,27 +917,36 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 // (gate.ts portalArt); until then the cards are words only.
 .slx-layer.slx-portals { position: absolute; left: 12px; right: 12px; top: 48px; bottom: 6px; max-width: none; display: flex; flex-direction: column; gap: 4px; }
 .slx-portal-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.slx-portals .slx-portal { position: relative; display: flex; flex-direction: column; gap: 1px; overflow: hidden; cursor: pointer; transition: translate 0.12s ease-out; }
+.slx-portals .slx-portal { position: relative; display: flex; flex-direction: column; gap: 0; overflow: hidden; cursor: pointer; transition: translate 0.12s ease-out; }
 .slx-portals .slx-portal-on { border-color: $slx-gold; box-shadow: inset 0 0 0 1px $slx-gold, 0 0 10px rgba(232, 196, 106, 0.55); translate: 0 -3px; }
-.slx-portal-art { display: block; width: 100%; height: 64px; object-fit: cover; image-rendering: pixelated; margin-bottom: 2px; }
-.slx-portal-name { font-size: 16px; line-height: 20px; color: $slx-ink; }
+// The banner is a strip of the 180x110 card art at its own pixel size (object-fit: none, no resampling), so the art stays crisp
+// at every integer screen scale. Each region moves the strip onto its focal point (portal, castle, peak); x = (card - 180) / 2.
+.slx-portal-art { display: block; flex: none; width: 100%; height: 32px; object-fit: none; object-position: 50% -36px; image-rendering: pixelated; margin-bottom: 2px; }
+.slx-portal-mainline .slx-portal-art { object-position: 50% -40px; }
+.slx-portal-blaze .slx-portal-art { object-position: 50% -14px; }
+.slx-portal-frost .slx-portal-art { object-position: 50% -22px; }
+.slx-portal-storm .slx-portal-art { object-position: 50% -30px; }
+.slx-portal-mire .slx-portal-art { object-position: 50% -40px; }
+.slx-portal-shade .slx-portal-art { object-position: 50% -36px; }
+.slx-portal-iron .slx-portal-art { object-position: 50% -34px; }
+.slx-portal-name { font-size: 16px; line-height: 18px; color: $slx-ink; }
 .slx-portal-on .slx-portal-name { color: $slx-gold; }
 .slx-portal-trait { display: flex; align-items: center; gap: 4px; }
 .slx-portal-icon { width: 16px; height: 16px; image-rendering: pixelated; }
 .slx-portal-affinity, .slx-portal-desc { color: $slx-dim; }
 .slx-portal-desc { font-size: 10px; line-height: 12px; letter-spacing: -0.2px; }
 // Names break at the 、 between them, not inside a name.
-.slx-portal-monsters { word-break: keep-all; overflow-wrap: anywhere; }
-.slx-portal-label { margin-top: 3px; color: $slx-dim; }
-.slx-portal-cond .slx-portal-label { margin: 0 6px 0 0; }
-.slx-portal-cond { margin-top: 3px; }
+.slx-portal-monsters { margin-top: 2px; word-break: keep-all; overflow-wrap: anywhere; }
+.slx-portal-label { margin-top: 2px; color: $slx-dim; }
+.slx-portal-cond .slx-portal-label, .slx-portal-monsters .slx-portal-label { margin: 0 6px 0 0; word-break: normal; }
+.slx-portal-cond { margin-top: 2px; }
 .slx-portal-cond b { font-weight: normal; color: $slx-gold; }
-.slx-portal-drop { margin-top: 3px; }
+.slx-portal-drop { margin-top: 2px; }
 // What the material is for: dim note (10px like the other notes), one line in its short form; if longer it wraps, never clipped.
 .slx-portal-drop-use { color: $slx-dim; font-size: 10px; line-height: 12px; letter-spacing: -0.2px; overflow-wrap: anywhere; }
 // The list takes the room the card has left. When every item is obtained it can outgrow that: it then scrolls (wheel, or ↑↓ on the chosen card)
 // with a thin visible bar, instead of being cut off.
-.slx-portal-gear { margin-top: 3px; flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: $slx-gold transparent; }
+.slx-portal-gear { margin-top: 2px; flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: $slx-gold transparent; }
 // Obtained names take their rarity colour (.slx-rarity-*); unobtained ones are dimmed. A first line wraps rather than being cut.
 .slx-codex-item { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; overflow-wrap: anywhere; }
 // Unobtained names are dimmed.
@@ -945,8 +954,9 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-codex-more { margin: 0; text-align: right; font-size: 10px; line-height: 12px; color: $slx-gold; }
 .slx-codex-silhouette, .slx-codex-icon { width: 14px; height: 14px; align-self: center; image-rendering: pixelated; }
 .slx-codex-silhouette { filter: brightness(0); }
-.slx-portal-general { margin-top: 3px; color: #c9b8ff; }
-.slx-portal-depth { margin-top: auto; color: $slx-dim; text-align: right; }
+.slx-portal-general { margin-top: 2px; color: #c9b8ff; }
+// A dim note like the others (10px), so the card keeps a few px of room under its gear list.
+.slx-portal-depth { margin-top: auto; padding-top: 1px; color: $slx-dim; font-size: 10px; line-height: 12px; text-align: right; }
 .slx-portal-hint { margin: 0; text-align: center; font-size: 10px; line-height: 12px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; }
 .slx-layer.slx-depths { left: 50%; top: 84px; translate: -50% 0; min-width: 200px; max-width: none; }
 .slx-depths .slx-ico { width: 48px; height: 27px; object-fit: cover; }

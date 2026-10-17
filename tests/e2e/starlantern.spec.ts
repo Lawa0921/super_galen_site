@@ -650,7 +650,7 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
-  test('every region portal card fits its gear list without scrolling, under every condition', async ({ page }) => {
+  test('every portal card shows its banner art and fits all its content without scrolling or clipping, under every condition', async ({ page }) => {
     const w = await setup(page, 7);
     await w.choose('.slx-town', '傳送門廣場');
     await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
@@ -661,11 +661,30 @@ test.describe('starlantern', () => {
         }, [pair, condition] as const);
         await w.key('Enter');                               // 選擇傳送門
         await expect(page.locator('.slx-portal')).toHaveCount(3);
-        const r = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-portal')].slice(1).map((c) => {
-          const g = c.querySelector<HTMLElement>('.slx-portal-gear')!;
-          return { region: c.dataset.region, over: g.scrollHeight - g.clientHeight, items: g.querySelectorAll('.slx-codex-item').length, more: !c.querySelector<HTMLElement>('.slx-codex-more')!.hidden };
+        // Every card, the mainline too: its banner art is shown, nothing in it is clipped, and the region gear list does not scroll.
+        await page.waitForFunction(() => [...document.querySelectorAll<HTMLImageElement>('.slx-portal-art')].every((i) => i.complete));
+        const r = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-portal')].map((c) => {
+          const g = c.querySelector<HTMLElement>('.slx-portal-gear');
+          const art = c.querySelector<HTMLImageElement>('.slx-portal-art');
+          const box = c.getBoundingClientRect(), cs = getComputedStyle(c), k = box.height / c.offsetHeight;   // the screen is scaled
+          const inner = box.bottom - (parseFloat(cs.borderBottomWidth) + parseFloat(cs.paddingBottom)) * k;
+          return {
+            region: c.dataset.region, clipped: c.scrollHeight - c.clientHeight,
+            depthBelow: (c.querySelector<HTMLElement>('.slx-portal-depth')!.getBoundingClientRect().bottom - inner) / k,
+            art: art ? { h: art.offsetHeight, w: art.offsetWidth, loaded: art.naturalWidth > 0 } : null,
+            gear: g ? { over: g.scrollHeight - g.clientHeight, items: g.querySelectorAll('.slx-codex-item').length, more: !c.querySelector<HTMLElement>('.slx-codex-more')!.hidden } : null,
+          };
         }));
-        for (const c of r) { expect(c.items, `${c.region} ${condition}`).toBe(3); expect(c.over, `${c.region} ${condition} overflow`).toBeLessThanOrEqual(1); expect(c.more).toBe(false); }
+        expect(r.map((c) => c.region)).toEqual(['mainline', ...pair]);
+        for (const c of r) {
+          const at = `${c.region} ${condition}`;
+          expect(c.clipped, `${at} card clipped`).toBeLessThanOrEqual(1);
+          expect(c.depthBelow, `${at} depth line clipped`).toBeLessThanOrEqual(0.5);
+          expect(c.art?.loaded, `${at} banner art`).toBe(true);
+          expect(c.art!.h, `${at} banner height`).toBeGreaterThanOrEqual(28);
+          if (c.region === 'mainline') continue;
+          expect(c.gear!.items, at).toBe(3); expect(c.gear!.over, `${at} overflow`).toBeLessThanOrEqual(1); expect(c.gear!.more).toBe(false);
+        }
         await w.key('Escape');
       }
     }
