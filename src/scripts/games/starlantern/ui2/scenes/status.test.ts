@@ -655,25 +655,42 @@ describe('StatusScene', () => {
       expect(tab()).toBe('技能');
     });
 
-    it('a click moves the cursor, a second click arms and a third raises', () => {
+    it('the first click selects and arms a node, a second click on it raises', () => {
       const { node, cur, msg, noel } = onTree(2);
       node('ice-star').click();
       expect(cur()).toBe('ice-star');
-      expect(noel().tree['ice-star']).toBeUndefined();
-      expect(msg()).toBe('');
-      node('ice-star').click();
       expect(msg()).toBe(T.ui2.tree.pending);
+      expect(noel().tree['ice-star']).toBeUndefined();
+      node('ice-star').click();
+      expect(noel().tree['ice-star']).toBe(1);
+      expect(msg()).toBe('');
+    });
+
+    it('a click on another node moves the selection and arms that node instead', () => {
+      const { node, cur, msg, noel } = onTree(3);
+      node('ice-star').click();                                 // ice-star armed
+      node('hex').click();                                      // hex selected and armed; nothing spent
+      expect(cur()).toBe('hex');
+      expect(msg()).toBe(T.ui2.tree.pending);
+      expect(noel().tree).toEqual({ 'fire-star': 1 });
+      node('ice-star').click();                                 // back: armed again, not raised
+      expect(noel().tree['ice-star']).toBeUndefined();
       node('ice-star').click();
       expect(noel().tree['ice-star']).toBe(1);
     });
 
-    it('clicks and Enter share one press: click then Enter on the same node raises it', () => {
-      const { s, node, noel, msg } = onTree(3);
-      node('ice-star').click();                                 // moves the cursor
-      node('ice-star').click();                                 // arms
+    it('the pending line reads 再按一次投點, for a click or for Enter', () => {
+      expect(T.ui2.tree.pending).toBe('再按一次投點');
+      expect(T.ui2.talent.pending).toBe('再按一次投點');
+    });
+
+    it('clicks and Enter share one press: a click then Enter on the same node raises it', () => {
+      const { s, node, noel, msg, cur } = onTree(3);
+      node('ice-star').click();                                 // selects and arms
       s.onAction('confirm');                                    // raises
       expect(noel().tree['ice-star']).toBe(1);
-      node('hex').click();
+      const d = order.indexOf('hex') > order.indexOf('ice-star') ? 'down' : 'up';
+      for (let i = 0; i < 15 && cur() !== 'hex'; i++) s.onAction(d);   // the keyboard moves to hex
       s.onAction('confirm');                                    // arms
       expect(msg()).toBe(T.ui2.tree.pending);
       node('hex').click();                                      // raises
@@ -727,7 +744,7 @@ describe('StatusScene', () => {
       s.onAction('confirm');
       expect(msg()).toBe(T.ui2.tree.reason.capstone);
       expect(noel().tree.blizzard).toBeUndefined();
-      node('inferno').click(); node('inferno').click();
+      node('inferno').click();                                  // a maxed node is refused on the first click
       expect(msg()).toBe(T.ui2.tree.reason.max);
     });
 
@@ -839,11 +856,10 @@ describe('StatusScene', () => {
       expect(top()).toContain('12 點後可選關鍵天賦');
       expect(node('noel-k0').classList.contains('slx-node-locked')).toBe(true);
       expect(node('noel-k0').textContent).toContain(T.ui2.talent.cell.gate);
-      node('noel-k0').click();                                  // moves the cursor
-      node('noel-k0').click();                                  // a press: refused at once
+      node('noel-k0').click();                                  // selects it, and the press is refused at once
       expect(msg()).toBe(T.ui2.talent.reason.gate);
       expect(noel().talents).toEqual(eleven);
-      node('noel-t02').click(); node('noel-t02').click(); node('noel-t02').click();
+      node('noel-t02').click(); node('noel-t02').click();       // arms, raises
       expect(noel().talents['noel-t02']).toBe(2);
       expect(top()).toContain(T.ui2.talent.board(12));
       expect(node('noel-k0').classList.contains('slx-node-open')).toBe(true);
@@ -887,14 +903,25 @@ describe('StatusScene', () => {
       expect(cur()).toBe('noel-t00');
     });
 
-    it('mouse and touch reach every node; a click moves, a second arms and a third raises', () => {
+    it('mouse and touch reach every node; the first click selects and arms, a second on it raises', () => {
       const { node, cur, msg, noel } = onTalent(6);
       for (const id of order) {
         node(id).click();
         expect(cur()).toBe(id);
       }
+      expect(noel().talents).toEqual({});                       // one click on each node spends nothing
       node('noel-t01').click();
-      expect(msg()).toBe('');
+      expect(msg()).toBe(T.ui2.talent.pending);
+      node('noel-t02').click();                                 // another node: selected and armed instead
+      expect([cur(), msg()]).toEqual(['noel-t02', T.ui2.talent.pending]);
+      expect(noel().talents).toEqual({});
+      node('noel-t02').click();
+      expect(noel().talents).toEqual({ 'noel-t02': 1 });
+    });
+
+    it('a click on the node the keyboard put the cursor on arms it, and a second click raises', () => {
+      const { s, node, msg, noel } = onTalent(6);
+      s.onAction('down');                                       // noel-t01
       node('noel-t01').click();
       expect(msg()).toBe(T.ui2.talent.pending);
       node('noel-t01').click();

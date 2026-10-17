@@ -199,7 +199,7 @@ export const T = {
       cell: {
         open: '可投點', unknown: '不可投', max: '已滿級', points: '缺點數', adjacent: '需相鄰', gate: `需${KEYSTONE_GATE}點`, keystones: '已選滿',
       } as Record<TalentFail | 'open', string>,
-      pending: '再按一次 Enter 投入 1 點',
+      pending: '再按一次投點',
       /** The engine turned a spend down after the page allowed it (e.g. outside town and the labyrinth). */
       failed: '現在無法投點',
     },
@@ -216,7 +216,7 @@ export const T = {
         unknown: '無法投點', max: '已達最高等級', points: '點數不足', req: '需先學會上一階',
         gate: '分支點數不足', capstone: '已選其他終極',
       } as Record<RaiseFail, string>,
-      pending: '再按一次 Enter 投入 1 點',
+      pending: '再按一次投點',
       /** The engine turned a spend down after the page allowed it (e.g. outside town and the labyrinth). */
       failed: '現在無法投點',
       capstone: (name: string) => `終極技：${name}`,

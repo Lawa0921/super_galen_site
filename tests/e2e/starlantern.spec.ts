@@ -547,18 +547,24 @@ test.describe('starlantern', () => {
     await toNoel();
     const ice = page.locator('.slx-tree-node[data-node=ice-star]');
     await expect(ice).toContainText('0／3');
-    await ice.click();                                      // moves the cursor here
+    await ice.click();                                      // the first click selects and arms
     await expect(ice).toHaveClass(/slx-row-cur/);
-    await ice.click();                                      // the two-press spend: arms
+    await expect(page.locator('.slx-tree-msg')).toHaveText('再按一次投點');
     await expect(ice).toContainText('0／3');
-    await ice.click();                                      // and raises
+    await ice.click();                                      // a second click on it spends
     await expect(ice).toContainText('1／3');
 
-    // 天賦: the cursor starts on noel-t00, so two clicks arm and raise.
+    // 天賦: a click on another node moves the selection and arms that one; a second click spends.
     await page.locator('[data-tab=talent]').click();
     const t00 = page.locator('.slx-talent-node[data-node=noel-t00]');
+    const t01 = page.locator('.slx-talent-node[data-node=noel-t01]');
     await expect(t00).toContainText('0／5');
-    await t00.click(); await t00.click();
+    await t01.click();
+    await expect(page.locator('.slx-talent-msg')).toHaveText('再按一次投點');
+    await t00.click();
+    await expect(t00).toHaveClass(/slx-row-cur/);
+    await expect(t01).toContainText('0／5');
+    await t00.click();
     await expect(t00).toContainText('1／5');
     await page.locator('[data-tab=stats]').click();
     await expect(page.locator('tr[data-stat=int] td.slx-talent')).toHaveText('+2');

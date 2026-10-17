@@ -34,6 +34,20 @@ export function pressSpend<R extends string>(
   return 'armed';
 }
 
+/**
+ * A click (or tap) on `key`, shared by the skill-tree and talent pages: `select` takes the page's cursor there (moving
+ * it drops a press waiting on another key), then the click is a press. So the first click on a node selects and arms
+ * it, a second click on the same node spends, and a click on another node moves the selection and arms that one. The
+ * keys keep their own steps: the arrows move the cursor, then Enter twice.
+ */
+export function clickSpend<R extends string>(
+  state: SpendState, key: string, select: (key: string) => unknown, can: () => R | null, raise: () => boolean,
+  sfx: Pick<SceneCtx['sfx'], 'cursor' | 'confirm' | 'error'>,
+): 'armed' | 'raised' | 'failed' | { refused: R } {
+  select(key);
+  return pressSpend(state, key, can, raise, sfx);
+}
+
 /** Drops a waiting press: the cursor moved, the member changed or the page went away. */
 export function cancelSpend(state: SpendState): void {
   state.pending = null;

@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
-import { cancelSpend, pressSpend, type SpendState } from './spendPress';
+import { cancelSpend, clickSpend, pressSpend, type SpendState } from './spendPress';
 
 const sfx = () => ({ cursor: vi.fn(), confirm: vi.fn(), error: vi.fn() });
 /** A raise the engine accepts. */
@@ -62,6 +62,59 @@ describe('pressSpend', () => {
     type Why = 'req' | 'points';
     const r = pressSpend<Why>({ pending: null }, 'a', () => 'req' as Why | null, () => true, sfx());
     expectTypeOf(r).toEqualTypeOf<'armed' | 'raised' | 'failed' | { refused: Why }>();
+  });
+
+  describe('clickSpend', () => {
+    /** A page's cursor as the tree and talent tabs keep it: moving it drops a waiting press. */
+    const page = (st: SpendState) => {
+      const p = { cur: 'a', select: vi.fn((key: string) => { if (p.cur !== key) { p.cur = key; cancelSpend(st); } }) };
+      return p;
+    };
+
+    it('the first click on a node selects and arms it; a second click on it raises once', () => {
+      const st: SpendState = { pending: null };
+      const s = sfx();
+      const raise = ok();
+      const p = page(st);
+      expect(clickSpend(st, 'b', p.select, () => null, raise, s)).toBe('armed');
+      expect(p.cur).toBe('b');
+      expect(st.pending).toBe('b');
+      expect(raise).not.toHaveBeenCalled();
+      expect(clickSpend(st, 'b', p.select, () => null, raise, s)).toBe('raised');
+      expect(raise).toHaveBeenCalledTimes(1);
+      expect(clickSpend(st, 'b', p.select, () => null, raise, s)).toBe('armed');   // the next click arms again
+      expect(raise).toHaveBeenCalledTimes(1);
+    });
+
+    it('a click on the cursor\'s node that is not armed arms it (the cursor came by keyboard)', () => {
+      const st: SpendState = { pending: null };
+      const raise = ok();
+      expect(clickSpend(st, 'a', page(st).select, () => null, raise, sfx())).toBe('armed');
+      expect(raise).not.toHaveBeenCalled();
+    });
+
+    it('a click on another node moves the cursor and arms that node instead of raising', () => {
+      const st: SpendState = { pending: null };
+      const raise = ok();
+      const p = page(st);
+      clickSpend(st, 'a', p.select, () => null, raise, sfx());
+      expect(clickSpend(st, 'b', p.select, () => null, raise, sfx())).toBe('armed');
+      expect([p.cur, st.pending]).toEqual(['b', 'b']);
+      expect(clickSpend(st, 'a', p.select, () => null, raise, sfx())).toBe('armed');
+      expect(raise).not.toHaveBeenCalled();
+      expect(clickSpend(st, 'a', p.select, () => null, raise, sfx())).toBe('raised');
+    });
+
+    it('a click on a shut node moves the cursor there and reports the reason at once', () => {
+      const st: SpendState = { pending: 'a' };
+      const s = sfx();
+      const raise = ok();
+      const p = page(st);
+      expect(clickSpend(st, 'b', p.select, () => 'gate', raise, s)).toEqual({ refused: 'gate' });
+      expect([p.cur, st.pending]).toEqual(['b', null]);
+      expect(s.error).toHaveBeenCalledTimes(1);
+      expect(raise).not.toHaveBeenCalled();
+    });
   });
 
   it('cancelSpend clears pending', () => {

@@ -18,7 +18,7 @@ import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { gearLabel } from '../loot';
 import type { SceneCtx } from '../scene';
-import { cancelSpend, pressSpend, type SpendState } from '../spendPress';
+import { cancelSpend, clickSpend, pressSpend, type SpendState } from '../spendPress';
 
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 export const SLOT_ORDER: Slot[] = SLOTS;
@@ -296,10 +296,15 @@ function moveTree(node: string): boolean {
   return true;
 }
 
-/** Enter (or a second click) on the cursor's node: the two-press spend, through the Game so the spend is saved. */
-function pressTree(ctx: SceneCtx, id: CharacterId): void {
-  const node = treeView.cur;
-  const r = pressSpend(treeView.spend, node, () => canRaiseNode(ctx.game.state.party.roster[id], node), () => ctx.game.raiseNode(id, node).ok, ctx.sfx);
+/**
+ * Enter on the cursor's node, or a click on `clicked` (which selects it first): the shared two-press spend, through the
+ * Game so the spend is saved.
+ */
+function pressTree(ctx: SceneCtx, id: CharacterId, clicked?: string): void {
+  const node = clicked ?? treeView.cur;
+  const can = () => canRaiseNode(ctx.game.state.party.roster[id], node);
+  const raise = () => ctx.game.raiseNode(id, node).ok;
+  const r = clicked ? clickSpend(treeView.spend, node, moveTree, can, raise, ctx.sfx) : pressSpend(treeView.spend, node, can, raise, ctx.sfx);
   treeView.msg = r === 'armed' ? T.ui2.tree.pending : r === 'raised' ? '' : r === 'failed' ? T.ui2.tree.failed : T.ui2.tree.reason[r.refused];
 }
 
@@ -371,13 +376,10 @@ const tree: StatusTab = {
               el('span', { class: 'slx-tree-state', text: why ? t.reason[why] : t.open }),
             ]),
           ]);
-          // The first click moves the cursor here; a click on the cursor's node is Enter.
+          // The first click selects and arms the node; a second click on it spends.
           row.addEventListener('click', () => {
             if (locked(row)) return;
-            redraw(() => {
-              if (moveTree(n.id)) ctx.sfx.cursor();
-              else pressTree(ctx, id);
-            });
+            redraw(() => pressTree(ctx, id, n.id));
           });
           return row;
         }),
@@ -477,11 +479,13 @@ function moveTalent(node: string): boolean {
   return true;
 }
 
-/** Enter (or a second click) on the cursor's node: the shared two-press spend, through the Game so the spend is saved. */
-function pressTalent(ctx: SceneCtx, id: CharacterId): void {
+/** Enter on the cursor's node, or a click on `clicked` (which selects it first): the shared spend, as the tree page's. */
+function pressTalent(ctx: SceneCtx, id: CharacterId, clicked?: string): void {
   const t = T.ui2.talent;
-  const node = talentView.cur;
-  const r = pressSpend(talentView.spend, node, () => canRaiseTalent(ctx.game.state.party.roster[id], node), () => ctx.game.raiseTalent(id, node).ok, ctx.sfx);
+  const node = clicked ?? talentView.cur;
+  const can = () => canRaiseTalent(ctx.game.state.party.roster[id], node);
+  const raise = () => ctx.game.raiseTalent(id, node).ok;
+  const r = clicked ? clickSpend(talentView.spend, node, moveTalent, can, raise, ctx.sfx) : pressSpend(talentView.spend, node, can, raise, ctx.sfx);
   talentView.msg = r === 'armed' ? t.pending : r === 'raised' ? '' : r === 'failed' ? t.failed : t.reason[r.refused];
 }
 
@@ -539,13 +543,10 @@ const talent: StatusTab = {
           el('span', { class: 'slx-talent-state', text: t.cell[why ?? 'open'] }),
         ]),
       ]);
-      // The first click moves the cursor here; a click on the cursor's node is Enter.
+      // The first click selects and arms the node; a second click on it spends.
       node.addEventListener('click', () => {
         if (locked(node)) return;
-        redraw(() => {
-          if (moveTalent(n.id)) ctx.sfx.cursor();
-          else pressTalent(ctx, id);
-        });
+        redraw(() => pressTalent(ctx, id, n.id));
       });
       return node;
     };
