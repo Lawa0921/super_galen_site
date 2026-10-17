@@ -208,6 +208,7 @@ const BLOCKED: Record<BlockReason, string | null> = {
   summon: '燈芯祭品只能在夜晚或洞穴層以下使用（場上不能已有首領）',
   potion: '藥水還在冷卻（或生命已滿）',
   maxlife: '生命上限已經到頂了',
+  sleep: '附近有怪物，現在睡不著',
 };
 
 /** 古碑碑文（佔位文字） */

@@ -8,13 +8,24 @@ import { LIQ } from './liquidKind';
 import { ENEMIES, type EnemyKind } from './enemies';
 import type { Rng } from './rng';
 import { TILE_SIZE as S, DAY_LENGTH } from './constants';
+import type { WeatherKind } from './weather';
 
 export type Zone = 'surface' | 'underground' | 'cavern' | 'molten' | 'dungeon';
 export interface Habitat {
   zone: Zone; biome: number; mushroom: boolean; night: boolean;
   /** 生成點附近（同欄 ±4 列）有深水：只生水生怪 */
   water?: boolean;
+  /** 季節（calendar.SEASON；省略 = 不套用季節修正） */
+  season?: number;
+  /** 玩家所在處的天氣（weather.localWeather） */
+  weather?: WeatherKind;
 }
+/** 地表的雨夜（雨 / 雷雨）：亡者變多 */
+function rainyNight(h: Habitat, p?: SpawnPressure): boolean {
+  return h.zone === 'surface' && h.night && !p?.firstNight && (h.weather === 'rain' || h.weather === 'storm');
+}
+/** 季節編號（避免 spawn ↔ calendar 循環相依） */
+const SPRING = 0, WINTER = 3;
 export interface SpawnEntry { kind: EnemyKind; weight: number; group?: [number, number]; }
 
 /** 生成檢查間隔（秒，漸進後的最短值）與每次成功機率 */
@@ -75,7 +86,7 @@ export function habitatAt(src: HabitatSource, x: number, y: number): Habitat {
 /** 附近（活動範圍內）最多幾隻怪。地表夜晚：第一夜 3、出生點附近 5、其他 8；第一夜的淺層地下也只有 3 */
 export function spawnCap(h: Habitat, p?: SpawnPressure): number {
   switch (h.zone) {
-    case 'surface': return h.night ? (p?.firstNight ? 3 : p?.nearSpawn ? 5 : 8) : 4;
+    case 'surface': return h.night ? (p?.firstNight ? 3 : p?.nearSpawn ? 5 : 8) + (rainyNight(h, p) ? 2 : 0) : 4;
     case 'dungeon': return 9;
     case 'molten': return 8;
     case 'underground': return p?.firstNight && h.night ? 3 : 7;
@@ -94,7 +105,10 @@ function aquaticTable(h: Habitat): SpawnEntry[] {
 /** 每次檢查的生成機率 */
 export function spawnChance(h: Habitat, p?: SpawnPressure): number {
   switch (h.zone) {
-    case 'surface': return h.night ? (p?.firstNight ? 0.22 : p?.nearSpawn ? 0.34 : 0.45) : 0.16;
+    case 'surface': {
+      const base = h.night ? (p?.firstNight ? 0.22 : p?.nearSpawn ? 0.34 : 0.45) : 0.16 + (h.season === SPRING ? 0.05 : 0);
+      return rainyNight(h, p) ? Math.min(0.6, base * 1.25) : base;
+    }
     case 'dungeon': return 0.5;
     case 'molten': return 0.4;
     default: return 0.32;
@@ -111,6 +125,25 @@ export function spawnTable(h: Habitat): SpawnEntry[] {
   if (zone === 'molten') { add('ember_imp', 5); add('magma_bat', 7, [1, 2]); return out; }
   if (h.mushroom && zone !== 'surface') { add('spore_walker', 10); add('cave_bat', 2, [2, 3]); return out; }
   if (zone === 'surface') {
+    surfaceTable(h, add);
+    // 季節 / 天氣修正：雨夜亡者 ×1.8、春天史萊姆 ×2、冬天森林出現霜系怪
+    for (const e of out) {
+      if (e.kind === 'night_walker' && rainyNight(h)) e.weight *= 1.8;
+      if (e.kind === 'gel_blob' && h.season === SPRING) e.weight *= 2;
+    }
+    if (h.season === WINTER && biome === BIOME.FOREST) {
+      add('frost_blob', night ? 3 : 6);
+      if (night) add('frost_wolf', 4);
+    }
+    return out;
+  }
+  return undergroundTable(h, add, out);
+}
+
+type AddFn = (kind: EnemyKind, weight: number, group?: [number, number]) => void;
+function surfaceTable(h: Habitat, add: AddFn): void {
+  const { biome, night } = h;
+  {
     if (biome === BIOME.SNOW) {
       add('frost_blob', night ? 4 : 10);
       if (night) { add('frost_wolf', 7); add('dusk_owl', 3); }
@@ -126,8 +159,10 @@ export function spawnTable(h: Habitat): SpawnEntry[] {
       if (night) { add('night_walker', 10); add('dusk_owl', 5); add('gel_blob', 2); }
       else add('gel_blob', 10);
     }
-    return out;
   }
+}
+function undergroundTable(h: Habitat, add: AddFn, out: SpawnEntry[]): SpawnEntry[] {
+  const { zone, biome } = h;
   // 地下（岩層 / 洞穴層）
   if (biome === BIOME.SNOW) { add('frost_blob', 6); add('frost_wolf', 3); add('cave_bat', 3, [2, 3]); }
   else if (biome === BIOME.DESERT) { add('sand_scorpion', 7); add('cave_bat', 3, [2, 3]); }

@@ -47,7 +47,14 @@ export function skyLightColor(elevation: number, rising: boolean): [number, numb
 }
 
 /** 遊戲時間 t（秒）→ 天空光 RGB；sunrise / sunset 由呼叫端（日後的季節系統）提供 */
-export function skyColor(t: number, sunrise = DEFAULT_SUNRISE, sunset = DEFAULT_SUNSET): [number, number, number] {
-  const p = sunPhase(t / DAY_LENGTH, sunrise, sunset);
+export function skyColor(t: number, sunrise = DEFAULT_SUNRISE, sunset = DEFAULT_SUNSET, twilight = TWILIGHT): [number, number, number] {
+  const p = sunPhase(t / DAY_LENGTH, sunrise, sunset, twilight);
   return skyLightColor(p.elevation, p.rising);
+}
+
+/** 夜晚：比日出早、或比日落晚超過一個曙暮光（預設 = 一天的前 / 後 20%） */
+export function isNight(dayFrac: number, sunrise = DEFAULT_SUNRISE, sunset = DEFAULT_SUNSET, twilight = TWILIGHT): boolean {
+  let f = dayFrac - Math.floor(dayFrac);
+  if (f < 0) f += 1;
+  return f < sunrise - twilight - 1e-9 || f >= sunset + twilight - 1e-9;
 }

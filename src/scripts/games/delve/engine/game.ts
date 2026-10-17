@@ -17,7 +17,13 @@ import { Inventory, starterInventory, type Stack } from './inventory';
 import { craft as craftRecipe, findRecipe, type CraftResult, type Station } from './crafting';
 import { makeBody, stepPlayer, onPlatform, type Body, type MoveStats, type PlayerMotion } from './physics';
 import { LightEngine, skyBrightness, type LightMap, type LightRect, type PointLight, type LightRGB } from './lighting';
-import { skyColor } from './sky';
+import { skyColor, isNight as skyIsNight } from './sky';
+import {
+  START_TIME, dateOf, dayIndexOf, formatDate, moonPhase, nextSunrise, seasonOf, sunTimes, DAYS_PER_SEASON, DAYS_PER_YEAR,
+  type GameDate, type Season, type SunTimes,
+} from './calendar';
+import { localWeather, weatherAt, weatherDim, type WeatherKind, type WeatherState } from './weather';
+import { updateFreeze } from './frost';
 import { ExploredMap, toggleMarker, type MapMarker } from './explore';
 import { Discovery, buildRegions, type Region, type RegionCat } from './discovery';
 import { Equipment, type EquipSlot } from './equipment';
@@ -50,7 +56,9 @@ export interface DelveOptions {
 
 export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest' | 'locked' | 'golden'
   /** 戰鬥：沒有箭 / 魔力不足 / 現在不能召喚首領 / 藥水冷卻中 / 生命已達上限 */
-  | 'ammo' | 'mana' | 'summon' | 'potion' | 'maxlife';
+  | 'ammo' | 'mana' | 'summon' | 'potion' | 'maxlife'
+  /** 床：附近有怪，不能睡 */
+  | 'sleep';
 export type DelveEvent =
   | { type: 'mine'; x: number; y: number; tile: number; item: ItemId | null }
   | { type: 'place'; x: number; y: number; tile: number; item: ItemId }
@@ -96,7 +104,12 @@ export type DelveEvent =
   /** 水下少了一顆呼吸泡泡（left = 剩幾顆） */
   | { type: 'bubble'; left: number }
   /** 用桶子 / 海綿（舀 / 倒 / 吸），tile 座標 */
-  | { type: 'liquidtool'; action: 'scoop' | 'pour' | 'sponge'; liquid: number; x: number; y: number };
+  | { type: 'liquidtool'; action: 'scoop' | 'pour' | 'sponge'; liquid: number; x: number; y: number }
+  // ── 曆法 / 天氣 ──
+  /** 睡覺：start = 開始淡出、wake = 天亮醒來（時間已跳到日出） */
+  | { type: 'sleep'; phase: 'start' | 'wake' }
+  /** 閃電（x, y = 打在地表的 tile；dist = 離玩家幾格，雷聲延遲用） */
+  | { type: 'lightning'; x: number; y: number; dist: number };
 
 /** 進行中的攻擊（render 動畫 + 近戰判定） */
 export interface AttackState {
@@ -157,12 +170,17 @@ export interface DelveState {
   honey: number;
   /** 玩家和液體的接觸 */
   liquid: { type: number; frac: number; head: boolean };
+  // ── 曆法 / 天氣 ──
+  /** 第幾天（0 起算）、季節（0 春 … 3 冬）、玩家所在處的天氣 */
+  day: number;
+  season: number;
+  weather: WeatherKind;
+  /** 睡覺淡出 / 淡入 0..1（0 = 沒在睡） */
+  sleep: number;
 }
 
 /** 徒手（背包沒有鎬）時的挖掘能力 */
 const HAND: PickStats = { speed: 0.35, tier: 1 };
-/** 起始時間：清晨天亮後 */
-const START_TIME = DAY_LENGTH * 0.3;
 /** 同一個 blocked 提示重複出現的最短間隔（秒） */
 const BLOCK_REPEAT = 1.8;
 /** 傳送石引導時間（秒） */
@@ -215,12 +233,26 @@ export const LIQUID_TOOL_CD = 0.25;
 export const SCOOP_MIN = 128;
 /** 液體模擬在瀏覽器每刻的時間預算（ms；session 設定，測試不設 → 確定性） */
 export const LIQUID_BUDGET_MS = 2;
-/** 夜晚：一天的前 20% 與後 20% */
+/** 夜晚：比當天日出早、或比日落晚超過一個曙暮光（日出 / 日落隨季節變化，見 calendar.sunTimes） */
 export function isNightTime(t: number): boolean {
-  let p = (t % DAY_LENGTH) / DAY_LENGTH;
-  if (p < 0) p += 1;
-  return p < 0.2 || p >= 0.8;
+  const s = sunTimes(dayIndexOf(t));
+  return skyIsNight(t / DAY_LENGTH, s.sunrise, s.sunset, s.twilight);
 }
+// ── 曆法 / 天氣 ──
+/** 睡覺：淡出 SLEEP_FADE 秒 → 跳到日出 → 淡入 SLEEP_FADE 秒 */
+export const SLEEP_FADE = 1.2;
+/** 這個範圍（格）內有怪就不能睡 */
+export const SLEEP_SAFE = { x: 30, y: 20 };
+/** 閃電間隔（秒）與閃光時間 */
+export const BOLT_MIN = 2.5;
+export const BOLT_MAX = 10;
+export const FLASH_TIME = 0.32;
+/** 雨水：每 RAIN_EVERY 秒挑一欄，露天水面那格補 RAIN_ADD（最多補到 RAIN_TOP，不會長出新的一層 → 有上限） */
+export const RAIN_EVERY = 0.3;
+export const RAIN_ADD = 6;
+export const RAIN_TOP = 250;
+/** 強制天氣（debug / e2e）時的風 */
+const FORCED_WIND: Record<WeatherKind, number> = { clear: 0.15, cloudy: 0.3, rain: 0.45, storm: 0.85, snow: 0.3, fog: 0.05 };
 /** 首領：燈脈守望者的掉落 */
 export const BOSS_DROPS: { item: ItemId; n: number }[] = [
   { item: 'lumen_blade', n: 1 }, { item: 'warden_heart', n: 1 }, { item: 'warden_trophy', n: 1 },
@@ -349,6 +381,19 @@ export class DelveGame {
   private burnTick = 0;
   honeyT = 0;
   private wasWet = 0;
+  // ── 曆法 / 天氣 ───────────────────────────────────────
+  /** 強制天氣（debug / e2e；存檔內容）：until = 到這個遊戲時間為止 */
+  weatherOverride: { kind: WeatherKind; until: number } | null = null;
+  /** 上一刻的天數（換日偵測：結冰 / 融化） */
+  private lastDay = -1;
+  /** 睡覺經過秒數；null = 沒在睡 */
+  private sleepT: number | null = null;
+  private sleepSkipped = false;
+  private boltT = 4;
+  private flashT = 0;
+  private rainT = 0;
+  private readonly weatherRng: Rng;
+  private wxCache: { tick: number; time: number; g: WeatherState; local: WeatherState } | null = null;
 
   constructor(opts: DelveOptions = {}) {
     this.seed = String(opts.seed ?? 'delve');
@@ -389,11 +434,14 @@ export class DelveGame {
     this.aimPx = { x: (this.spawn.x + 0.5) * TILE_SIZE, y: (this.spawn.y + 1.5) * TILE_SIZE };
     this.spawnRng = new Rng(`${this.seed}:spawn`);
     this.combatRng = new Rng(`${this.seed}:combat`);
+    this.weatherRng = new Rng(`${this.seed}:weather`);
     this.peacefulMode = Boolean(opts.peaceful);
     this.world.markAllDirty();
     // 出生點：周圍已揭露、所在地區算已發現（不跳橫幅）
     this.explored.revealDisc(this.spawn.x, this.spawn.y, REVEAL_RADIUS + 6);
     this.discovery.visit(this.spawn.x, this.spawn.y);
+    // 曆法：雪原的湖在春天開局時仍是冰
+    this.refreshSeason();
   }
 
   /** 換掉探索狀態（存檔還原用） */
@@ -433,6 +481,9 @@ export class DelveGame {
   step(dt: number = FIXED_DT): void {
     this.tick++;
     this.time += dt;
+    const day = dayIndexOf(this.time);
+    if (day !== this.lastDay) this.onNewDay(day);
+    if (this.flashT > 0) this.flashT -= dt;
     this.liquids.step();
     for (const e of this.liquids.drainEvents()) this.events.push({ type: 'liquid', kind: e.kind, x: e.x, y: e.y });
     if (this.dead) {
@@ -440,6 +491,7 @@ export class DelveGame {
       this.updateEntities(dt);
       return;
     }
+    if (this.sleepT !== null) { this.updateSleep(dt); return; }
     const knocked = this.knockT > 0;
     this.contact = liquidContact(this.world, this.player);
     stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
@@ -447,6 +499,7 @@ export class DelveGame {
     this.updateFall();
     this.updateLiquid(dt);
     this.updateVitals(dt);
+    this.updateWeatherFx(dt);
     this.updateRecall(dt);
     this.updateExploration();
     if (!this.platformHinted && this.player.onGround && !this.dropHeld && onPlatform(this.world, this.player)) {
@@ -486,6 +539,7 @@ export class DelveGame {
   private updateMining(dt: number): void {
     const { x, y } = this.aim;
     const id = this.world.getFg(x, y);
+    if (id === T.AIR && this.world.inBounds(x, y) && this.world.frozen[this.world.idx(x, y)]) { this.mineIce(x, y, dt); return; }
     if (!this.world.inBounds(x, y) || id === T.AIR) { this.mining = null; return; }
     if (!this.canReach(x, y)) { this.block('mine', 'reach', x, y); this.mining = null; return; }
     const def = tileDef(id);
@@ -502,6 +556,21 @@ export class DelveGame {
       this.mining = null;
       this.breakTile(x, y);
     }
+  }
+
+  /** 敲冰：結冰格當成冰塊挖（不掉東西），挖完那格恢復成水 */
+  private mineIce(x: number, y: number, dt: number): void {
+    if (!this.canReach(x, y)) { this.block('mine', 'reach', x, y); this.mining = null; return; }
+    const need = tileDef(T.ICE).hardness / this.currentPick().speed;
+    if (!this.mining || this.mining.x !== x || this.mining.y !== y) this.mining = { x, y, elapsed: 0, need };
+    this.mining.elapsed += dt;
+    if (this.mining.elapsed + 1e-9 < need) return;
+    this.mining = null;
+    const w = this.world, i = w.idx(x, y);
+    w.frozen[i] = 0;
+    w.touchLiquid(i);
+    this.liquids.wake(x, y);
+    this.events.push({ type: 'mine', x, y, tile: T.ICE, item: null });
   }
 
   /** 0（地表）..1（世界底部）：戰利品依深度變好 */
@@ -884,8 +953,53 @@ export class DelveGame {
     if (this.world.getFg(hx, y) !== T.BED_HEAD) return false;
     this.bed = { x: hx, y };
     this.events.push({ type: 'spawn', set: true, x: hx, y });
+    if (this.isNight()) this.trySleep(hx, y);
     return true;
   }
+  /** 晚上躺上床：附近沒有怪 → 開始睡（淡出 → 跳到日出 → 淡入）；有怪 → 提示 */
+  private trySleep(x: number, y: number): void {
+    if (this.sleepT !== null) return;
+    const pc = this.playerCenter();
+    const threat = this.enemies.some((e) => {
+      const def = ENEMIES[e.kind];
+      if (def.boss) return true;
+      const b = e.body;
+      return !def.minion && Math.abs(b.x + b.w / 2 - pc.x) / TILE_SIZE < SLEEP_SAFE.x && Math.abs(b.y + b.h / 2 - pc.y) / TILE_SIZE < SLEEP_SAFE.y;
+    });
+    if (threat) { this.block('use', 'sleep', x, y); return; }
+    this.sleepT = 0; this.sleepSkipped = false;
+    this.mining = null; this.miningHeld = false; this.attack = null;
+    this.recallT = null;
+    this.closeChest();
+    this.player.vx = 0;
+    this.events.push({ type: 'sleep', phase: 'start' });
+  }
+  private updateSleep(dt: number): void {
+    if (this.sleepT === null) return;
+    this.sleepT += dt;
+    if (!this.sleepSkipped && this.sleepT >= SLEEP_FADE) {
+      this.sleepSkipped = true;
+      this.time = nextSunrise(this.time) + DAY_LENGTH * 0.004;
+      this.wxCache = null;
+      const day = dayIndexOf(this.time);
+      if (day !== this.lastDay) this.onNewDay(day);
+      // 睡飽：回滿血、怪物生成重新從慢開始
+      this.hp = this.maxHp();
+      this.spawnCalm = 0;
+      this.spawnT = Math.max(this.spawnT, 4);
+    }
+    if (this.sleepT >= SLEEP_FADE * 2) {
+      this.sleepT = null;
+      this.events.push({ type: 'sleep', phase: 'wake' });
+    }
+  }
+  /** 睡覺淡出 / 淡入 0..1 */
+  sleepFade(): number {
+    const t = this.sleepT;
+    if (t === null) return 0;
+    return Math.max(0, Math.min(1, t < SLEEP_FADE ? t / SLEEP_FADE : (SLEEP_FADE * 2 - t) / SLEEP_FADE));
+  }
+  get sleeping(): boolean { return this.sleepT !== null; }
   private startRecall(): void {
     if (this.recallT !== null) return;
     this.recallT = 0;
@@ -946,8 +1060,109 @@ export class DelveGame {
     }
     return false;
   }
-  skyLevel(): number { return skyBrightness(this.time); }
+  skyLevel(): number {
+    const s = this.sun(), wx = this.localWeatherState();
+    const v = skyBrightness(this.time, s.sunrise, s.sunset, s.twilight) * weatherDim(wx.kind, wx.intensity);
+    return Math.max(v, this.flash());
+  }
   isNight(): boolean { return isNightTime(this.time); }
+
+  // ── 曆法 / 天氣（查詢；季節 / 天氣 getter 也給日後的釣魚用） ──
+  date(): GameDate { return dateOf(this.time); }
+  dateText(): string { return formatDate(this.time); }
+  season(): Season { return seasonOf(dayIndexOf(this.time)); }
+  /** 今天的日出 / 日落 / 曙暮光 */
+  sun(): SunTimes { return sunTimes(dayIndexOf(this.time)); }
+  moon(): number { return moonPhase(this.time); }
+  /** 全域天氣（含強制天氣） */
+  weather(): WeatherState { return this.wx().g; }
+  /** 玩家所在處的天氣（依生態區在地化：雪原下雪、沙漠不下雪） */
+  localWeatherState(): WeatherState { return this.wx().local; }
+  /** 風 −1..1（粒子 / 草的擺動） */
+  wind(): number { const w = this.wx().local; return w.wind * (0.6 + 0.4 * w.intensity); }
+  /** 閃電閃光 0 / 0.5 / 1（階梯） */
+  flash(): number { return this.flashT <= 0 ? 0 : this.flashT > FLASH_TIME * 0.55 ? 1 : 0.5; }
+  private wx(): { g: WeatherState; local: WeatherState } {
+    const c = this.wxCache;
+    if (c && c.tick === this.tick && c.time === this.time) return c;
+    const o = this.weatherOverride;
+    let g: WeatherState;
+    if (o && this.time < o.until) g = { kind: o.kind, intensity: 1, wind: FORCED_WIND[o.kind] };
+    else {
+      if (o) this.weatherOverride = null;
+      g = weatherAt(this.seed, this.time);
+    }
+    const f = this.feetTile();
+    const local = { ...g, kind: localWeather(g.kind, this.world.biomeAt(f.x)) };
+    this.wxCache = { tick: this.tick, time: this.time, g, local };
+    return this.wxCache;
+  }
+  /** debug / e2e：強制天氣 hours 小時（null = 取消，回到依 seed 的天氣） */
+  forceWeather(kind: WeatherKind | null, hours = 6): void {
+    this.weatherOverride = kind ? { kind, until: this.time + (hours / 24) * DAY_LENGTH } : null;
+    this.wxCache = null;
+    if (kind !== 'storm') this.flashT = 0;
+    this.boltT = Math.min(this.boltT, 1.5);
+  }
+  /** debug / e2e：跳到某年某季某日某時（省略的欄位用現在的值）；會立即更新結冰。回傳日期文字 */
+  setDate(o: { year?: number; season?: number; day?: number; hour?: number }): string {
+    const d = this.date();
+    const year = o.year ?? d.year, season = o.season ?? d.season, day = o.day ?? d.dayOfSeason;
+    const hour = o.hour ?? d.frac * 24;
+    const idx = (Math.max(1, year) - 1) * DAYS_PER_YEAR + Math.max(0, Math.min(3, season)) * DAYS_PER_SEASON + Math.max(0, Math.min(DAYS_PER_SEASON - 1, day - 1));
+    this.time = (idx + Math.max(0, Math.min(23.999, hour)) / 24) * DAY_LENGTH;
+    this.wxCache = null;
+    this.onNewDay(idx);
+    return this.dateText();
+  }
+  /** 依目前日期重算結冰（讀檔 / debug 後） */
+  refreshSeason(): void { this.onNewDay(dayIndexOf(this.time)); }
+  /** 讀檔還原：存檔已帶結冰狀態時只同步天數、不重算 */
+  syncDay(): void { this.lastDay = dayIndexOf(this.time); this.wxCache = null; }
+  private onNewDay(day: number): void {
+    this.lastDay = day;
+    updateFreeze(this.world, this.liquids, day, (x, y) => !this.dead && this.tileOverlapsPlayer(x, y));
+  }
+  /** 天氣效果：雷雨打閃電、雨水補露天水池 */
+  private updateWeatherFx(dt: number): void {
+    const wx = this.localWeatherState();
+    const f = this.feetTile(), w = this.world;
+    const nearSurface = f.y <= w.surfaceAt(f.x) + 12;
+    if (wx.kind === 'storm' && wx.intensity > 0.4) {
+      this.boltT -= dt;
+      if (this.boltT <= 0) {
+        const r = this.weatherRng;
+        this.boltT = BOLT_MIN + r.next() * (BOLT_MAX - BOLT_MIN);
+        const bx = Math.max(0, Math.min(w.width - 1, f.x + Math.round((r.next() * 2 - 1) * 40)));
+        if (nearSurface) {
+          this.flashT = FLASH_TIME;
+          this.wxCache = null;
+          this.events.push({ type: 'lightning', x: bx, y: w.surfaceAt(bx), dist: Math.abs(bx - f.x) });
+        }
+      }
+    }
+    if ((wx.kind === 'rain' || wx.kind === 'storm') && wx.intensity > 0.3) {
+      this.rainT -= dt;
+      if (this.rainT <= 0) { this.rainT = RAIN_EVERY; this.rainFill(f.x); }
+    }
+  }
+  /** 在玩家附近隨機挑一欄：露天的水面那格補一點水（補到 RAIN_TOP 為止，不會長出新的一層） */
+  private rainFill(px: number): void {
+    const w = this.world, r = this.weatherRng;
+    const x = px + Math.round((r.next() * 2 - 1) * 40);
+    if (x < 0 || x >= w.width) return;
+    const surf = w.surfaceAt(x);
+    for (let y = Math.max(0, surf - 64); y <= Math.min(w.height - 1, surf + 12); y++) {
+      const i = w.idx(x, y);
+      if (isSolidTile(w.fg[i]) || w.frozen[i]) return;
+      const a = w.liquid[i];
+      if (!a) continue;
+      if (w.liquidType[i] !== LIQ.WATER || w.wall[i] !== 0 || a >= RAIN_TOP) return;
+      w.setLiquid(x, y, Math.min(RAIN_TOP, a + RAIN_ADD), LIQ.WATER);
+      this.liquids.wake(x, y);
+      return;
+    }
+  }
 
   craft(recipeId: string): CraftResult {
     const st = this.stations();
@@ -1059,7 +1274,12 @@ export class DelveGame {
   }
 
   /** 天空光 RGB（夜深藍、黎明粉、白天白、黃昏橘；見 sky.ts） */
-  skyRGB(): [number, number, number] { return skyColor(this.time); }
+  skyRGB(): [number, number, number] {
+    const s = this.sun(), wx = this.localWeatherState();
+    const k = weatherDim(wx.kind, wx.intensity), fl = this.flash();
+    const c = skyColor(this.time, s.sunrise, s.sunset, s.twilight);
+    return [0, 1, 2].map((i) => c[i] * k + (1 - c[i] * k) * fl * 0.9) as [number, number, number];
+  }
 
   /** 計算視窗（tile 座標）+ 外框的光照。 */
   computeLight(view: LightRect, extra?: readonly PointLight[]): LightMap {
@@ -1108,6 +1328,7 @@ export class DelveGame {
       breath: Math.round(this.breath * 100) / 100, maxBreath: MAX_BREATH,
       burning: Math.max(0, this.burning), honey: Math.max(0, this.honeyT),
       liquid: { type: this.contact.type, frac: this.contact.frac, head: this.contact.head },
+      day: dayIndexOf(this.time), season: this.season(), weather: this.localWeatherState().kind, sleep: this.sleepFade(),
     };
   }
 
@@ -1688,6 +1909,8 @@ export class DelveGame {
     const tx = pt.x + dx, ty = pt.y + dy;
     if (!w.inBounds(tx, ty)) return;
     const hab = habitatAt({ world: w, layers: this.layers, night: this.isNight() }, tx, ty);
+    hab.season = this.season();
+    hab.weather = this.localWeatherState().kind;
     let near = 0;
     for (const e of this.enemies) {
       const b = e.body;

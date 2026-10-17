@@ -20,6 +20,8 @@ export class World {
   readonly liquid: Uint8Array;
   /** 每格液體種類（LIQ.*，低 2 bit；液體量為 0 時一律 0） */
   readonly liquidType: Uint8Array;
+  /** 每格是否結冰（地表水在冬天：碰撞算實心、液體模擬不動它；見 frost.ts） */
+  readonly frozen: Uint8Array;
   /** 每格材質變體 0..2（座標雜湊，非存檔內容） */
   readonly variant: Uint8Array;
   readonly chunksX: number;
@@ -63,6 +65,7 @@ export class World {
     this.wall = new Uint8Array(n);
     this.liquid = new Uint8Array(n);
     this.liquidType = new Uint8Array(n);
+    this.frozen = new Uint8Array(n);
     this.variant = new Uint8Array(n);
     this.surface = new Int16Array(width);
     this.biome = new Uint8Array(width);
@@ -100,7 +103,8 @@ export class World {
   isSolid(x: number, y: number): boolean {
     if (x < 0 || x >= this.width || y >= this.height) return true;
     if (y < 0) return false;
-    return SOLID_LUT[this.fg[y * this.width + x]] === 1;
+    const i = y * this.width + x;
+    return SOLID_LUT[this.fg[i]] === 1 || this.frozen[i] === 1;
   }
 
   /** 單向平台（物理用） */
@@ -121,6 +125,7 @@ export class World {
     const old = this.fg[i];
     if (old === id) return false;
     this.fg[i] = id;
+    if (this.frozen[i] && SOLID_LUT[id] === 1) this.frozen[i] = 0;
     if ((old === T.CHEST || old === T.LOCKED_CHEST) && id !== T.CHEST && id !== T.LOCKED_CHEST) this.chests.delete(i);
     if ((id === T.CHEST || id === T.LOCKED_CHEST) && !this.chests.has(i)) this.chests.set(i, new Array<Stack | null>(CHEST_SLOTS).fill(null));
     this.touch(x, y);

@@ -46,6 +46,7 @@ import { Equipment, type EquipmentJSON } from '../engine/equipment';
 import { ENEMIES, type EnemyKind } from '../engine/enemies';
 import { BASE_HP, MAX_HP_CAP } from '../engine/combat';
 import { LIQ, LIQ_MAX } from '../engine/liquidKind';
+import { WEATHER_KINDS, type WeatherKind } from '../engine/weather';
 
 export const SAVE_FORMAT = 7;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
@@ -114,6 +115,13 @@ export interface SaveHeader {
   drops?: DropSave[];
   /** 存檔時正在打的首領（讀檔退還召喚道具）；format 7 起 */
   bossActive?: EnemyKind | null;
+  /** 曆法 / 天氣：強制天氣、結冰格（tile index 的差分）；沒有 = 讀檔時依日期重算結冰 */
+  env?: EnvSave;
+}
+export interface EnvSave {
+  weather: { kind: WeatherKind; until: number } | null;
+  /** 結冰格 tile index（排序後的差分：第一個是絕對值，之後是與前一個的差） */
+  frozen: number[];
 }
 export interface ChestSave { i: number; slots: (Stack | null)[]; }
 export interface ChunkPayload { fg: Uint8Array; wall: Uint8Array; }
@@ -267,6 +275,20 @@ function validDrops(v: unknown): DropSave[] | undefined {
     return { item: o.item, count: o.count as number, x: o.x, y: o.y };
   });
 }
+function validEnv(v: unknown): EnvSave | undefined {
+  if (v === undefined) return undefined;
+  const o = v as Partial<EnvSave> | null;
+  if (!o || typeof o !== 'object' || !Array.isArray(o.frozen) || !o.frozen.every((d) => Number.isInteger(d) && d >= 0)) throw new SaveFormatError('env');
+  const wx = o.weather as EnvSave['weather'] | undefined;
+  const weather = wx && typeof wx === 'object' && WEATHER_KINDS.includes(wx.kind) && isNum(wx.until) ? { kind: wx.kind, until: wx.until } : null;
+  return { weather, frozen: [...o.frozen] };
+}
+function encodeFrozen(F: Uint8Array): number[] {
+  const out: number[] = [];
+  let last = 0;
+  for (let i = 0; i < F.length; i++) if (F[i]) { out.push(i - last); last = i; }
+  return out;
+}
 function validBossActive(v: unknown): EnemyKind | null {
   if (v === undefined || v === null) return null;
   if (typeof v !== 'string') throw new SaveFormatError('bossActive');
@@ -342,6 +364,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       vitals: { breath: r2(game.breath), burning: r2(Math.max(0, game.burning)), honey: r2(Math.max(0, game.honeyT)) },
       drops: game.drops.list.map((d) => ({ item: d.item, count: d.count, x: r2(d.body.x + d.body.w / 2), y: r2(d.body.y + d.body.h / 2) })),
       bossActive: boss && boss.state !== 'leave' ? boss.kind : null,
+      env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeFrozen(w.frozen) },
     },
     chunks,
   };
@@ -534,6 +557,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     vitals: validVitals(h.vitals),
     drops: validDrops(h.drops),
     bossActive: validBossActive(h.bossActive),
+    env: validEnv(h.env),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -598,6 +622,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       data.header.vitals = validVitals(data.header.vitals);
       data.header.drops = validDrops(data.header.drops);
       data.header.bossActive = validBossActive(data.header.bossActive);
+      data.header.env = validEnv(data.header.env);
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
@@ -696,6 +721,17 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     if (d.x < 0 || d.y < 0 || d.x > w.width * TILE_SIZE || d.y > w.height * TILE_SIZE) continue;
     game.drops.spawn(d.item, d.count, d.x, d.y, 0, 0);
   }
+  // 曆法 / 天氣：結冰格（只留在還有水的格）、強制天氣；舊存檔沒有 → 依日期重算結冰
+  if (h.env) {
+    w.frozen.fill(0);
+    let i = 0;
+    for (let k = 0; k < h.env.frozen.length; k++) {
+      i += h.env.frozen[k];
+      if (i < w.frozen.length && w.liquidType[i] === LIQ.WATER && w.liquid[i] > 0 && !w.isSolid(i % w.width, Math.floor(i / w.width))) w.frozen[i] = 1;
+    }
+    game.weatherOverride = h.env.weather ? { ...h.env.weather } : null;
+    game.syncDay();
+  } else game.refreshSeason();
   // 首領戰中存檔（怪物不存）：退還召喚道具，背包滿就掉在腳邊
   const refund = h.bossActive ? BOSS_SUMMON_ITEM[h.bossActive] : undefined;
   if (refund && !game.bossEnemy()) {

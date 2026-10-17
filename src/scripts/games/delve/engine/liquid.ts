@@ -193,9 +193,11 @@ export class LiquidSim {
 
   /** 單格更新（見檔頭） */
   private update(i: number): void {
-    const w = this.world, L = w.liquid, LT = w.liquidType, fg = w.fg, W = w.width;
+    const w = this.world, L = w.liquid, LT = w.liquidType, fg = w.fg, W = w.width, F = w.frozen;
     let a = L[i];
     const t = LT[i];
+    // 結冰格不流動（融化時 frost.ts 會喚醒）
+    if (F[i]) { this.kill[i] = 0; return; }
     if (a === 0 || t === LIQ.NONE) { L[i] = 0; LT[i] = LIQ.NONE; this.kill[i] = 0; return; }
     if (SOLID_LUT[fg[i]] === 1) { L[i] = 0; LT[i] = LIQ.NONE; this.kill[i] = 0; w.touchLiquid(i); return; }
     const x = i % W, y = (i - x) / W;
@@ -204,7 +206,7 @@ export class LiquidSim {
     // ① 往下落
     if (y + 1 < w.height) {
       const j = i + W;
-      if (SOLID_LUT[fg[j]] !== 1) {
+      if (SOLID_LUT[fg[j]] !== 1 && !F[j]) {
         const tb = LT[j];
         if (tb === LIQ.NONE || tb === t || L[j] === 0) {
           const room = LIQ_MAX - L[j];
@@ -219,7 +221,7 @@ export class LiquidSim {
     }
     // ② 左右攤平：與左右各最多 2 格連續可流入的格平均（見 spread）
     if (a > 0) {
-      const open = (j: number): number => (SOLID_LUT[fg[j]] === 1 ? 0 : LT[j] === LIQ.NONE || LT[j] === t || L[j] === 0 ? 1 : 2);
+      const open = (j: number): number => (SOLID_LUT[fg[j]] === 1 || F[j] ? 0 : LT[j] === LIQ.NONE || LT[j] === t || L[j] === 0 ? 1 : 2);
       const ol = x > 0 ? open(i - 1) : 0, or = x < W - 1 ? open(i + 1) : 0;
       if (ol === 2 && this.react(i, i - 1)) { this.afterChange(i); return; }
       if (or === 2 && this.react(i, i + 1)) { this.afterChange(i); return; }
@@ -284,7 +286,7 @@ export class LiquidSim {
   /** 下方擋住（實心 / 滿 / 別種液體）→ 液體停在這格 */
   private resting(i: number): boolean {
     const w = this.world, j = i + w.width;
-    if (j >= w.liquid.length || SOLID_LUT[w.fg[j]] === 1) return true;
+    if (j >= w.liquid.length || SOLID_LUT[w.fg[j]] === 1 || w.frozen[j]) return true;
     return w.liquid[j] >= LIQ_MAX || (w.liquidType[j] !== LIQ.NONE && w.liquidType[j] !== w.liquidType[i]);
   }
 
@@ -363,7 +365,7 @@ export class LiquidSim {
   take(x: number, y: number, max: number): { type: number; amount: number } | null {
     const w = this.world;
     const a = w.getLiquid(x, y), t = w.getLiquidType(x, y);
-    if (a === 0 || t === LIQ.NONE) return null;
+    if (a === 0 || t === LIQ.NONE || w.frozen[w.idx(x, y)]) return null;
     const k = Math.min(a, max);
     w.setLiquid(x, y, a - k, t);
     this.wake(x, y);
