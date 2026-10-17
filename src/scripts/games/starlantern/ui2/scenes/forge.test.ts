@@ -208,11 +208,26 @@ describe('ForgeScene dismantle page', () => {
     expect(ess('essence-common')(game)).toBe(1);
   });
 
-  it('warns for enhanced gear, but not for a plain magic piece', () => {
+  it('a single rare item asks first in its rarity colour; a magic one goes at once', () => {
+    const { game, s, confirmEl, line } = open([gear(1, 'iron-sword', 'rare'), gear(2, 'hunter-bow', 'magic')]);
+    s.onAction('confirm');
+    expect(confirmEl()).not.toBeNull();
+    expect(confirmEl()!.querySelector('.slx-rarity-rare')!.textContent).toBe('鐵劍・稀有');
+    expect(confirmEl()!.querySelector('.slx-rarity-magic')!.textContent).toContain('魔法精華');
+    s.onAction('confirm');                  // 否
+    expect(game.state.bag.length).toBe(2);
+    s.onAction('down');
+    s.onAction('confirm');                  // the magic one: no question
+    expect(confirmEl()).toBeNull();
+    expect(game.state.bag.map((i) => i.uid)).toEqual([1]);
+    expect(line()).toBe(T.ui2.forge.dismantled('魔法精華 ×1、普通精華 ×1'));
+  });
+
+  it('warns for enhanced gear, but not for a plain rare piece', () => {
     const a = open([gear(1, 'iron-sword', 'common', { enhance: 1 })]);
     a.s.onAction('confirm');
     expect(a.confirmEl()!.textContent).toContain(T.ui2.forge.warnPrecious);
-    const b = open([gear(1, 'iron-sword', 'magic')]);
+    const b = open([gear(1, 'iron-sword', 'rare')]);
     b.s.onAction('confirm');
     expect(b.confirmEl()!.textContent).not.toContain(T.ui2.forge.warnPrecious);
   });
@@ -234,7 +249,7 @@ describe('ForgeScene dismantle page', () => {
 
   it('closes the list when the last item goes', () => {
     const { s, root } = open([gear(1, 'iron-sword', 'common')]);
-    s.onAction('confirm'); s.onAction('up'); s.onAction('confirm');
+    s.onAction('confirm');
     expect(root.querySelector('.slx-forge-list')).toBeNull();
   });
 
@@ -242,7 +257,7 @@ describe('ForgeScene dismantle page', () => {
     const storage = memoryStorage();
     vi.spyOn(storage, 'setItem').mockImplementation(() => { throw new Error('quota'); });
     const { s, line } = open([gear(1, 'iron-sword', 'common'), gear(2, 'iron-sword', 'common')], storage);
-    s.onAction('confirm'); s.onAction('up'); s.onAction('confirm');
+    s.onAction('confirm');
     s.onAction('confirm');
     await vi.waitFor(() => expect(line()).toBe(T.ui2.forge.saveFailed));
   });
@@ -263,12 +278,12 @@ describe('ForgeScene dismantle page', () => {
   });
 
   it('a click on a row and on 是 dismantles too', () => {
-    const { game, root, rows, confirmEl } = open([gear(1, 'iron-sword', 'common'), gear(2, 'iron-sword', 'common')]);
+    const { game, root, rows, confirmEl } = open([gear(1, 'iron-sword', 'rare'), gear(2, 'iron-sword', 'common')]);
     (rows()[0] as HTMLElement).click();
     expect(confirmEl()).not.toBeNull();
     (confirmEl()!.querySelector('[data-id=yes]') as HTMLElement).click();
     expect(game.state.bag.map((i) => i.uid)).toEqual([2]);
-    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe(T.ui2.forge.dismantled('普通精華 ×1'));
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe(T.ui2.forge.dismantled('稀有精華 ×1、魔法精華 ×1'));
   });
 
   it('cancel on the list goes back to the tabs', () => {

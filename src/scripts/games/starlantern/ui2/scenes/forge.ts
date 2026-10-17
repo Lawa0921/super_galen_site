@@ -6,7 +6,7 @@ import { SLOTS } from '../../engine/party';
 import type { GameState } from '../../engine/state';
 import type { ItemInstance } from '../../engine/types';
 import { art } from '../../render/artPaths';
-import { gearLabel } from '../loot';
+import { gearLabel, gearPart, joinParts } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { MenuView, confirmBox, win, type Rich } from '../widgets';
@@ -101,10 +101,25 @@ export class ForgeScene extends FacilityScene {
 
 /** Gear whose loss cannot be undone: a named rarity, or anything enhanced. */
 const precious = (it: ItemInstance): boolean => it.rarity === 'legendary' || it.rarity === 'unique' || it.rarity === 'set' || it.enhance > 0;
+/** A single piece asks first from rare up (or when enhanced); common and magic go at once. */
+const asksFirst = (it: ItemInstance): boolean => it.rarity !== 'common' && it.rarity !== 'magic' || it.enhance > 0;
+
+/** An essence tally as rich parts, each essence in the colour of its rarity. */
+const yieldParts = (y: Record<string, number>): Rich =>
+  joinParts(Object.entries(y).map(([id, n]) => ({ text: T.ui2.forge.yields({ [id]: n }), cls: `slx-rarity-${id.replace('essence-', '')}` })));
+
+/** Fill a two-slot copy template with rich parts, so the words stay in the text file. */
+function fill2(template: (a: string, b: string) => string, a: Rich, b: Rich): Rich {
+  const [m1, m2] = ['', ''];
+  const [before, rest = ''] = template(m1, m2).split(m1);
+  const [mid, after = ''] = rest.split(m2);
+  return [before, ...a, mid, ...b, after].filter((p) => p !== '');
+}
 
 /**
  * 分解: the bag's gear (worn gear is not listed), each row with the essences it gives. When any piece is marked junk the
- * first row dismantles every marked piece at once. Both ways ask first, with 否 under the cursor.
+ * first row dismantles every marked piece at once. The marked row and any single piece from rare up ask first, with 否
+ * under the cursor; a common or magic piece goes at once.
  */
 export function dismantlePage(h: ForgeHost): void {
   const game = h.ctx.game;
@@ -120,15 +135,9 @@ export function dismantlePage(h: ForgeHost): void {
       const bag = game.state.bag;
       const picked = it.id === 'marked' ? bag.filter((x) => x.junk) : bag.filter((x) => `g${x.uid}` === it.id);
       if (!picked.length) return;
-      const yields = T.ui2.forge.yields(dismantleYield(picked));
-      const ask = it.id === 'marked' ? T.ui2.forge.askMarked(picked.length, yields) : T.ui2.forge.askOne(it.label, yields);
-      const box = confirmBox(picked.some(precious) ? `${ask}
-${T.ui2.forge.warnPrecious}` : ask, (yes) => {
-        h.pop(!yes);
-        if (!yes) return;
-        // Only what the confirm named goes.
-        const uids = picked.map((x) => x.uid);
-        const r = game.dismantle(uids);
+      // Only what was picked (and named in the confirm) goes.
+      const run = () => {
+        const r = game.dismantle(picked.map((x) => x.uid));
         if (r.ok && !game.state.bag.length) h.popAll();
         else if (r.ok) {
           const next = rows();
@@ -137,6 +146,16 @@ ${T.ui2.forge.warnPrecious}` : ask, (yes) => {
           v.render();
         }
         h.afterAct(r, (out) => [T.ui2.forge.dismantled(T.ui2.forge.yields(out.essences))]);
+      };
+      if (it.id !== 'marked' && !asksFirst(picked[0])) { run(); return; }
+      const y = yieldParts(dismantleYield(picked));
+      const ask = it.id === 'marked'
+        ? fill2((_, b) => T.ui2.forge.askMarked(picked.length, b), [], y)
+        : fill2(T.ui2.forge.askOne, [gearPart(picked[0])], y);
+      const box = confirmBox(picked.some(precious) ? [...ask, `
+${T.ui2.forge.warnPrecious}`] : ask, (yes) => {
+        h.pop(!yes);
+        if (yes) run();
       });
       box.view.menu.setCursor(1);
       box.view.render();
