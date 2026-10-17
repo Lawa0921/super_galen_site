@@ -24,6 +24,13 @@ describe('rin', () => {
     for (const id of CHARACTER_IDS.filter((x) => x !== 'rin')) expect(CHARACTERS.rin.base.spd, id).toBeGreaterThan(CHARACTERS[id].base.spd);
   });
 
+  it('rin is strictly the fastest at every level from 1 to 50 (spec 9.3)', () => {
+    const spd = (id: CharacterId, level: number) => CHARACTERS[id].base.spd + CHARACTERS[id].growth.spd * (level - 1);
+    for (let level = 1; level <= 50; level++) {
+      for (const id of CHARACTER_IDS.filter((x) => x !== 'rin')) expect(spd('rin', level), `${id} Lv${level}`).toBeGreaterThan(spd(id, level));
+    }
+  });
+
   it("rin's kit has her execution and backstab", () => {
     const dmg = rinDamage();
     expect(dmg.some((e) => e.crit === 'always')).toBe(true);

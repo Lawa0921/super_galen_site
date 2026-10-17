@@ -162,7 +162,7 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'damage', power: 110, element: 'thunder', scale: 'mag', melee: false }] },
 
   { id: 'rin-needle', name: '飛針', owner: 'rin', tp: 3, target: 'enemy', desc: '連射 2 枚飛針',
-    effects: [{ kind: 'damage', power: 70, element: 'phys', scale: 'atk', melee: false, hits: 2 }] },
+    effects: [{ kind: 'damage', power: 65, element: 'phys', scale: 'atk', melee: false, hits: 2 }] },
   { id: 'rin-fan', name: '扇形針', owner: 'rin', tp: 6, target: 'enemies', desc: '飛針呈扇形射向全體敵人',
     effects: [{ kind: 'damage', power: 60, element: 'phys', scale: 'atk', melee: false }] },
   { id: 'rin-venom-needle', name: '毒針', owner: 'rin', tp: 5, target: 'enemy', desc: '飛針攻擊並可能中毒',
@@ -183,7 +183,7 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'damage', power: 160, element: 'phys', scale: 'atk', melee: true, execute: 200, crit: 'always' }] },
 
   { id: 'hero-slash', name: '斬擊', owner: 'hero', tp: 3, target: 'enemy', desc: '單體近戰斬擊',
-    effects: [{ kind: 'damage', power: 130, element: 'phys', scale: 'atk', melee: true }] },
+    effects: [{ kind: 'damage', power: 120, element: 'phys', scale: 'atk', melee: true }] },
   { id: 'hero-cleave', name: '迴旋斬', owner: 'hero', tp: 6, target: 'enemies', desc: '迴旋斬擊全體敵人',
     effects: [{ kind: 'damage', power: 70, element: 'phys', scale: 'atk', melee: true }] },
   { id: 'hero-sunder', name: '破甲斬', owner: 'hero', tp: 7, target: 'enemy', desc: '斬擊並降低防禦',

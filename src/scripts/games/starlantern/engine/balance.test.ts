@@ -9,6 +9,8 @@ import { depthLevel, encounterTable } from './scaling';
 import { ENHANCE_MAX, expectedEnhance } from '../data/forge';
 import { ABYSS } from '../data/hero';
 import type { CharacterId } from './types';
+import type { HeroBuild } from '../data/hero';
+import { heroTree } from './progression';
 
 const groups = (f: number) => FLOORS[f - 1].encounters;
 
@@ -16,8 +18,14 @@ const groups = (f: number) => FLOORS[f - 1].encounters;
 const TWO: CharacterId[] = ['hero', 'rin'];
 const THREE: CharacterId[] = [...TWO, 'selene'];
 const FOUR: CharacterId[] = [...THREE, 'chizuru'];
+/**
+ * The hero build of the memories variants: one whose abyss capstone the sim player casts (abyss-sword, the strongest
+ * damage skill), so ten memories really change the fight. The balanced build reaches it (guard, sword, star); the test
+ * 'the memories variants measure something' fails if a build change ever takes it away again.
+ */
+const MEMORIES_BUILD: HeroBuild = 'balanced';
 /** Ten memories on the hero and the abyss at its cap. */
-const DEEP: Lineup = { memories: 10, abyss: ABYSS.cap };
+const DEEP: Lineup = { memories: 10, abyss: ABYSS.cap, heroBuild: MEMORIES_BUILD };
 
 /** With BALANCE_REPORT set, print every measurement and let the assertions carry on, so one run shows every number. */
 const report = process.env.BALANCE_REPORT;
@@ -152,7 +160,25 @@ describe('balance', () => {
 
   it('10. random gear in expectation keeps the bands', () => gearBands('', {}), 120_000);
 
-  it('10 (memories). random gear in expectation keeps the bands with ten memories, the abyss by depth', () => gearBands(' memories', { memories: 10 }), 120_000);
+  it('10 (memories). random gear in expectation keeps the bands with ten memories, the abyss by depth', () => gearBands(' memories', { memories: 10, heroBuild: MEMORIES_BUILD }), 120_000);
+
+  it('the memories variants measure something: the build holds an abyss capstone and changes the runs', () => {
+    const caps = Object.keys(heroTree(depthLevel(10), MEMORIES_BUILD, 10)).filter((k) => k.startsWith('abyss-'));
+    expect(caps.length).toBeGreaterThan(0);
+    // The same build without memories and abyss against with them: the boss of depth 10 and a geared depth 8.
+    const plain: Lineup = { heroBuild: MEMORIES_BUILD };
+    const boss = (lineup: Lineup) => {
+      let rounds = 0, hp = 0;
+      for (let seed = 1; seed <= 20; seed++) {
+        const r = simBattle(kitParty(depthLevel(10), 10, seed, 'rare', expectedEnhance(10), lineup), ['lanterneater'], true, seed, { depth: 10, region: 'mainline' }, undefined, 'skill', lineup.abyss);
+        rounds += r.rounds; hp += r.hpLoss;
+      }
+      return [rounds, hp];
+    };
+    expect(boss(DEEP)).not.toEqual(boss(plain));
+    const gear = (lineup: Lineup) => winRate(depthLevel(8), encounterTable('mainline', 8), false, 8, { depth: 8, region: 'mainline' }, undefined, 1, undefined, expectedEnhance(8), lineup);
+    expect(gear({ memories: 10, heroBuild: MEMORIES_BUILD })).not.toEqual(gear(plain));
+  }, 120_000);
 
   const bossRounds = (tag: string, lineup: Lineup) => {
     for (const d of [5, 10]) {
@@ -242,6 +268,14 @@ describe('balance', () => {
     const hi = winRate(13, [['lanterneater']], true, 40, undefined, undefined, undefined, 'skill', 0, { ids: THREE });
     say('16 three lanterneater Lv13', hi);
     ex(hi.rate).toBeGreaterThanOrEqual(0.65);
+    // Benching never helps against a boss: two, three or four members win at most the full party's rate + 0.05 (same seeds).
+    const full = winRate(11, [['lanterneater']], true, 120);
+    say('16 full lanterneater Lv11', full);
+    for (const [label, ids] of [['two', TWO], ['three', THREE], ['four', FOUR]] as const) {
+      const r = ids === THREE ? lo : winRate(11, [['lanterneater']], true, 120, undefined, undefined, undefined, 'skill', 0, { ids });
+      say(`16 ${label} lanterneater Lv11 (vs full)`, r);
+      ex(r.rate, `${label} vs full`).toBeLessThanOrEqual(full.rate + 0.05);
+    }
   });
 
   it('17. four members hold depth 4 of the main road', () => {

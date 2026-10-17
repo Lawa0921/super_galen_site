@@ -570,7 +570,7 @@ describe('hero builds', () => {
     expect(new Set(held('tank'))).toEqual(new Set(DEFAULT_KEYSTONES.hero));
     for (const b of ['sword', 'mage', 'healer'] as const) expect(new Set(held(b)), b).toEqual(new Set(DEFAULT_KEYSTONES.hero));
   });
-  it('balanced talents lean on STR and WIL', () => {
+  it('balanced talents lean on HP and STR (plan 6a Task 19c)', () => {
     const t = heroTalents(30, 'balanced');
     let all = 0;
     let lean = 0;
@@ -578,7 +578,7 @@ describe('hero builds', () => {
       if (n.keystone) continue;
       const r = t[n.id] ?? 0;
       all += r;
-      if (n.stat === 'str' || n.stat === 'wil') lean += r;
+      if (n.stat === 'hp' || n.stat === 'str') lean += r;
     }
     expect(lean * 2).toBeGreaterThanOrEqual(all);
   });

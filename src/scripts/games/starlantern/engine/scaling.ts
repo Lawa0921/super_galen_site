@@ -169,10 +169,10 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
  * is expected to grow a level every two depths (`expectedEnhance`); they start above the boss's home level, so band 6
  * keeps its tuning (see that task's sweeps in the commits that set them). The normal enemies of floors 1-3 (up to Lv10) keep their tuned numbers; the
  * depth-3 boss is fought at its home level (BOSS_HOME, Lv12), above `from`, so it does get the boost (band 6 is tuned
- * with it). Plan 6a Task 19c raised amount2 from 0.04 to 0.16 for the hero-led lineup (bands 9 and 10; band 8's
- * lizard+beetle elite at depth 8 is the limit).
+ * with it). Plan 6a Task 19c retuned it for the hero-led lineup: amount 0.26 -> 0.3 (the boss at Lv12: band 16's benching
+ * check), amount2 0.04 -> 0.26 and ramp 0.004 -> 0.002 (bands 9 and 10 against band 8's elites).
  */
-export const ENEMY_POWER = { from: 10, amount: 0.26, from2: 12, amount2: 0.16, ramp: 0.004 };
+export const ENEMY_POWER = { from: 10, amount: 0.3, from2: 12, amount2: 0.26, ramp: 0.002 };
 export const enemyPower = (level: number): number => {
   if (level <= ENEMY_POWER.from) return 1;
   const deep = level > ENEMY_POWER.from2 ? ENEMY_POWER.amount2 + ENEMY_POWER.ramp * (level - ENEMY_POWER.from2) : 0;
@@ -202,7 +202,7 @@ export const partyScale = (n: number): number => PARTY_SCALE[sizeOf(n)];
  * The same multiplier for a boss fight. A boss group is never trimmed by GROUP_CAP, so a small party meets all of it:
  * its own table, tuned apart from PARTY_SCALE (band 16). [5] is fixed at 1, and the table is non-decreasing in size.
  */
-export const BOSS_PARTY_SCALE: Record<PartySize, number> = { 2: 0.58, 3: 0.96, 4: 0.98, 5: 1 };
+export const BOSS_PARTY_SCALE: Record<PartySize, number> = { 2: 0.62, 3: 0.96, 4: 1, 5: 1 };
 export const bossPartyScale = (n: number): number => BOSS_PARTY_SCALE[sizeOf(n)];
 export const groupCap = (n: number, depth: number): number => (depth === 1 ? FIRST_DEPTH_CAP[sizeOf(n)] : undefined) ?? GROUP_CAP[sizeOf(n)];
 
