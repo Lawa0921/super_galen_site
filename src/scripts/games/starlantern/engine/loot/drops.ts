@@ -88,7 +88,7 @@ export function rollBossGear(rng: Rng, ctx: DropCtx): ItemInstance[] {
 export const rollRareMaterial = (rng: Rng): string => pick(rng, RARE_MATERIALS);
 
 /** A fixed 32-bit mix of two numbers. */
-function mix(a: number, b: number): number {
+export function mix(a: number, b: number): number {
   let h = Math.imul(a ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul((b + 0x632be5ab) | 0, 0xc2b2ae35);
   h ^= h >>> 16;
   h = Math.imul(h, 0x7feb352d);
