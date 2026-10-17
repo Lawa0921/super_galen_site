@@ -34,6 +34,8 @@ export class CombatLayer {
   private shakeAmp = 0;
   private clock = 0;
   private numCache = new Map<string, HTMLCanvasElement>();
+  /** 飄字放大倍數（手機上放大；renderer.resize 設定，見 lowres.floatTextScale） */
+  numScale = 1;
 
   constructor(private readonly game: DelveGame, private readonly atlas: Atlas, private readonly sp: Sprites) {
     const raw = enemyFrames();
@@ -253,10 +255,10 @@ export class CombatLayer {
 
   /** 3×5 數字 → canvas（暴擊 2 倍大），1px 深色描邊 */
   private numCanvas(text: string, kind: FloatKind): HTMLCanvasElement {
-    const key = `${kind}:${text}`;
+    const key = `${kind}:${text}:${this.numScale}`;
     let c = this.numCache.get(key);
     if (c) return c;
-    const k = kind === 'crit' ? 2 : 1;
+    const k = (kind === 'crit' ? 2 : 1) * this.numScale;
     const w = (text.length * 4 - 1) * k + 2, h = 5 * k + 2;
     c = document.createElement('canvas');
     c.width = w; c.height = h;

@@ -16,7 +16,7 @@ import { CombatLayer } from './combatDraw';
 import { aimArmDeg, attackArmDeg, spearThrust } from './combatAnim';
 import { Background } from './background';
 import { scanTrees, torchMount, treeKind, TREE_KIND } from './scene';
-import { bufferSize, clampZoom, snapCam, zoomScale } from './lowres';
+import { bufferSize, clampZoom, floatTextScale, snapCam, zoomScale } from './lowres';
 import { ambientReach, type LightMap } from '../engine/lighting';
 import { shadeTiles, fillLightPixels, AMBIENT_R } from './lightShade';
 import { AmbientField, ambientKind, AMBIENT_GLOWS, type AmbientKind } from './ambient';
@@ -184,6 +184,7 @@ export class Renderer {
     this.bufW = b.w; this.bufH = b.h;
     this.buf.width = b.w; this.buf.height = b.h;
     this.zoom = this.scale / this.dpr;
+    this.combat.numScale = floatTextScale(this.viewW, this.zoom);
     const vis = (Math.ceil(this.worldViewW() / CPX) + 1) * (Math.ceil(this.worldViewH() / CPX) + 1);
     if (vis + 8 > this.cache.capacity) {
       const old = this.cache;

@@ -936,4 +936,41 @@ const lang: Language = defaultLang;
     .delve-equip-row { flex-wrap: wrap; }
     .delve-death-title { font-size: 24px; }
   }
+
+  /* ── 觸控：所有可點的東西至少 40×40 CSS px；提示文字跟著像素大小放大、放在虛擬按鍵上方 ── */
+  .delve[data-touch='1'] .delve-chip { min-width: 40px; min-height: 40px; }
+  .delve[data-touch='1'] .delve-hotbar .delve-slot { width: 40px; height: 40px; }
+  .delve[data-touch='1'] .delve-hotbar .delve-slot-icon { width: 32px; height: 32px; }
+  .delve[data-touch='1'] .delve-mm-btn,
+  .delve[data-touch='1'] #delve-mm-in,
+  .delve[data-touch='1'] #delve-mm-out { min-width: 40px; min-height: 40px; }
+  .delve[data-touch='1'] .delve-clock { min-height: 40px; }
+  .delve[data-touch='1'] .delve-x { width: 40px; height: 40px; }
+  .delve[data-touch='1'] .delve-toast { font-size: max(18px, calc(var(--px) * 9)); padding: 10px 14px; width: max-content; max-width: calc(100vw - 32px); }
+  /* 橫放手機：快捷欄 10 格 × 40px，右上角按鈕收緊，兩者不重疊 */
+  @media (max-width: 999px) {
+    .delve[data-touch='1'] .delve-hotbar { gap: 2px; left: 6px; top: 6px; }
+    .delve[data-touch='1'] .delve-corner { gap: 2px; right: 6px; }
+    .delve[data-touch='1'] .delve-chip { padding: 2px 5px; }
+  }
+  @media (min-width: 641px) and (max-width: 999px) {
+    .delve[data-touch='1'] .delve-vitals { top: 52px; }
+  }
+  @media (max-width: 640px) {
+    .delve[data-touch='1'] .delve-inv-grid { grid-template-columns: repeat(8, 1fr); }
+  }
+  /* 直立手機：快捷欄 2 排 × 5 格（每格 44px），下面的 HUD 往下讓一排 */
+  @media (max-width: 460px) {
+    .delve[data-touch='1'] .delve-hotbar { display: grid; grid-template-columns: repeat(5, 44px); gap: 3px; }
+    .delve[data-touch='1'] .delve-hotbar .delve-slot { width: 44px; height: 44px; }
+    .delve[data-touch='1'] .delve-corner { top: 100px; }
+    .delve[data-touch='1'] .delve-held { top: 146px; }
+    .delve[data-touch='1'] .delve-status { top: 168px; }
+    .delve[data-touch='1'] .delve-clock { top: 214px; }
+    .delve[data-touch='1'] .delve-minimap { top: 146px; }
+    .delve[data-touch='1'] .delve-panel { top: 262px; max-height: calc(100vh - 470px); }
+    /* 直立：提示放在虛擬搖桿 / 跳躍鍵上方 */
+    .delve[data-touch='1'] .delve-toast { bottom: 196px; }
+    .delve[data-touch='1'][data-boss='1'] .delve-toast { bottom: 236px; }
+  }
 </style>

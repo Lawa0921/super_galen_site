@@ -82,3 +82,12 @@ export function lightLevel(a: number, x: number, y: number, levels: number = LIG
 export function quantizeLevel(a: number, levels: number = LIGHT_LEVELS): number {
   return Math.round(Math.max(0, Math.min(1, a)) * (levels - 1)) / (levels - 1);
 }
+
+/**
+ * 傷害數字 / 飄字的放大倍數（整數）：窄畫面（手機，CSS 寬 < 900）上數字（5 美術 px 高）至少要約 12 CSS px 高；
+ * 桌機寬畫面維持 1（原本的像素大小）。zoom = 每個美術 px 佔幾 CSS px。
+ */
+export function floatTextScale(viewCssW: number, zoom: number): number {
+  if (viewCssW >= 900 || zoom <= 0) return 1;
+  return Math.max(1, Math.min(3, Math.ceil(12 / (5 * zoom))));
+}
