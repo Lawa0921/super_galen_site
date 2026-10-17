@@ -1,4 +1,5 @@
 import { CHARACTERS } from '../../data/characters';
+import { artIdOf } from '../../ui/art';
 import { T } from '../../data/text.zh-TW';
 import { MAX_ACTIVE, ROWS, rowOfCell } from '../../engine/formation';
 import { activeIds } from '../../engine/party';
@@ -58,7 +59,8 @@ export class FormationScene implements Scene {
   private get grid(): (CharacterId | null)[] { return this.ctx.game.state.party.grid; }
 
   private face(id: CharacterId): HTMLElement[] {
-    return this.ctx.art.has(art.portrait(id, 'normal')) ? [el('img', { class: 'slx-cell-face', attrs: { src: art.portrait(id, 'normal'), alt: '' } })] : [];
+    const look = artIdOf(this.ctx.game.state.party.roster[id]);
+    return this.ctx.art.has(art.portrait(look, 'normal')) ? [el('img', { class: 'slx-cell-face', attrs: { src: art.portrait(look, 'normal'), alt: '' } })] : [];
   }
 
   private render(): void {
@@ -87,7 +89,7 @@ export class FormationScene implements Scene {
   private openPick(): void {
     const p = this.ctx.game.state.party;
     const where = (id: CharacterId) => { const j = this.grid.indexOf(id); return j < 0 ? T.ui2.formation.reserve : T.ui2.rows[rowOfCell(j)]; };
-    const items: MenuItem[] = p.recruited.map((id) => ({ id, label: CHARACTERS[id].name, right: where(id), icon: this.ctx.art.has(art.portrait(id, 'normal')) ? art.portrait(id, 'normal') : undefined }));
+    const items: MenuItem[] = p.recruited.map((id) => ({ id, label: CHARACTERS[id].name, right: where(id), icon: this.ctx.art.has(art.portrait(artIdOf(p.roster[id]), 'normal')) ? art.portrait(artIdOf(p.roster[id]), 'normal') : undefined }));
     const here = this.grid[this.cursor];
     if (here && here !== 'hero') items.push({ id: '', label: T.ui2.formation.remove });
     this.ctx.sfx.confirm();

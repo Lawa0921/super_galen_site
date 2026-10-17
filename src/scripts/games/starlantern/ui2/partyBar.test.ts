@@ -181,3 +181,16 @@ describe('PartyBar portraits of the hero and Rin', () => {
     expect(rin.querySelector('img')!.getAttribute('src')).toBe(art.portrait('rin', 'normal'));
   });
 });
+
+describe('PartyBar after the oath', () => {
+  it("after her oath Rin's face is rin-oath", () => {
+    const published = { has: (u: string) => [art.portrait('rin', 'normal'), art.portrait('rin-oath', 'normal')].includes(u) };
+    const bar = new PartyBar(published);
+    bar.update([m('hero'), m('rin', 30, { artId: 'rin-oath' })]);
+    const [hero, rin] = [...bar.el.querySelectorAll('.slx-pm')];
+    expect(hero.querySelector('img')).toBeNull();
+    expect(rin.querySelector('img')!.getAttribute('src')).toBe(art.portrait('rin-oath', 'normal'));
+    bar.update([m('hero'), m('rin', 30)]);
+    expect(bar.el.querySelector('[data-key=rin] img')!.getAttribute('src')).toBe(art.portrait('rin', 'normal'));
+  });
+});

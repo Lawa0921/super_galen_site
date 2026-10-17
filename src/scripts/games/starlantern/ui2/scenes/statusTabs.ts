@@ -691,7 +691,7 @@ const ultimate: StatusTab = {
   label: T.ui2.status.tabs.ultimate,
   render(ctx, id) {
     const m = ctx.game.state.party.roster[id];
-    const u = ultimateFor(m.id, m.tree);
+    const u = ultimateFor(m.id, m.tree, m);
     return el('div', { class: 'slx-tab-ultimate' }, [
       el('h4', { text: u.name }),
       el('p', { class: 'slx-desc', text: u.desc }),

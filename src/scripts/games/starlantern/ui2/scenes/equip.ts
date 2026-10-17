@@ -1,4 +1,5 @@
-import { CHARACTERS } from '../../data/characters';
+import { CHARACTERS, titleOf } from '../../data/characters';
+import { artIdOf } from '../../ui/art';
 import { T } from '../../data/text.zh-TW';
 import { compareDelta, itemLines } from '../../engine/compare';
 import { BAG_SIZE, type AutoJunk } from '../../engine/loot/bag';
@@ -389,10 +390,11 @@ export class EquipScene implements Scene {
     this.headId = this.id;
     const def = CHARACTERS[this.id];
     const m = this.member;
-    const face = this.ctx.art.has(art.portrait(this.id, 'normal')) ? [el('img', { class: 'slx-equip-face', attrs: { src: art.portrait(this.id, 'normal'), alt: '' } })] : [];
+    const look = artIdOf(m);
+    const face = this.ctx.art.has(art.portrait(look, 'normal')) ? [el('img', { class: 'slx-equip-face', attrs: { src: art.portrait(look, 'normal'), alt: '' } })] : [];
     const arrow = (text: string, a: UiAction) => { const b = el('span', { class: 'slx-status-arrow', text, attrs: { role: 'button' } }); b.addEventListener('click', () => this.onAction(a)); return b; };
     this.head.replaceChildren(arrow('◀', 'prev'), ...face,
-      el('div', { class: 'slx-equip-name' }, [el('span', { class: 'slx-status-title', text: def.title }), el('b', { text: def.name }), el('span', { text: `Lv ${m.level}` })]),
+      el('div', { class: 'slx-equip-name' }, [el('span', { class: 'slx-status-title', text: titleOf(m) }), el('b', { text: def.name }), el('span', { text: `Lv ${m.level}` })]),
       arrow('▶', 'next'), el('span', { class: 'slx-equip-title', text: T.ui2.equip.title }));
   }
 

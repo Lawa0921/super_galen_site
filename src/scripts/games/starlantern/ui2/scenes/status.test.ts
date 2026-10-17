@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
-import { rulesOf } from '../../data/characters';
-import { statsOf, LEGACY_LINEUP } from '../../engine/party';
+import { CHARACTERS, OATH_TITLE, rulesOf } from '../../data/characters';
+import { newMember, statsOf, LEGACY_LINEUP } from '../../engine/party';
 import type { AnyStat } from '../../engine/types';
 import { STAT_CATEGORIES } from '../../engine/stats';
 import { raiseTalent } from '../../engine/progression';
@@ -1322,5 +1322,22 @@ describe('StatusScene', () => {
       s.onAction('left'); s.onAction('right');
       expect(root.querySelector('.slx-tab-ultimate h4')!.textContent).toBe('燈鑰・光');
     });
+  });
+});
+
+describe('Rin after her oath', () => {
+  it('after her oath Rin wears the rin-oath standee and the title 破鐘刺客', () => {
+    const sworn = (oath: boolean) => setup('rin', { has: () => true }, (g) => {
+      g.state.party.recruited.push('rin');
+      g.state.party.roster.rin = { ...newMember('rin'), memories: chainLength('rin'), ...(oath ? { oath: true as const } : {}) };
+    });
+    const before = sworn(false);
+    expect(before.root.querySelector('.slx-status-standee')!.getAttribute('src')).toBe(art.standee('rin'));
+    expect(before.name()).toContain(CHARACTERS.rin.title);
+    const after = sworn(true);
+    expect(after.root.querySelector('.slx-status-standee')!.getAttribute('src')).toBe(art.standee('rin-oath'));
+    expect(after.name()).toContain('破鐘刺客');
+    expect(after.name()).not.toContain(CHARACTERS.rin.title);
+    expect(OATH_TITLE).toBe('破鐘刺客');
   });
 });

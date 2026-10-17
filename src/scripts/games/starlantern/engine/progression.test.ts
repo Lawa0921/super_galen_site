@@ -5,7 +5,7 @@ import {
   heroMainBranch, heroTalents, heroTree, memoriesOf,
 } from './progression';
 import { chainLength } from '../data/story/chains';
-import { HERO_ULTIMATES, ULTIMATES } from '../data/ultimates';
+import { HERO_ULTIMATES, RIN_DAWN, SKY_LANTERN, ULTIMATES } from '../data/ultimates';
 import { gainExp, newMember } from './party';
 import { CHARACTERS, rulesOf } from '../data/characters';
 import { mulberry32 } from './rng';
@@ -706,5 +706,36 @@ describe('memory keystones', () => {
     const hero = { ...tal('hero', 50), memories: 10, oath: true as const };
     expect(keystonesOf(hero).filter((k) => (Object.values(MEMORY_KEYSTONES) as string[]).includes(k))).toEqual([]);
     expect(keystonesOf({ ...hero, memories: chainLength('hero') })).toEqual(keystonesOf(tal('hero', 50)));
+  });
+});
+
+describe('the Lantern Key and the dawn blade', () => {
+  const hero = newMember('hero');
+  const branches: [string, string][] = [['hero-slash', 'sword'], ['hero-guard', 'guard'], ['hero-flare', 'star'], ['hero-mend', 'light'], ['hero-shackle', 'chain']];
+
+  it('the Lantern Key lights up with every memory', () => {
+    expect(SKY_LANTERN).toEqual({ heal: 25, memories: 10 });
+    for (const [node, form] of branches) {
+      const tree = up({ ...hero, level: 50 }, node, 3).tree;
+      const plain = HERO_ULTIMATES.find((u) => u.id === `ult-hero-${form}`)!;
+      expect(ultimateFor('hero', tree, { memories: SKY_LANTERN.memories - 1 }), form).toBe(plain);
+      expect(ultimateFor('hero', tree), form).toBe(plain);
+      const sky = ultimateFor('hero', tree, { memories: SKY_LANTERN.memories });
+      expect(sky.id, form).toBe(`${plain.id}-sky`);
+      expect(sky.name, form).toBe('燈鑰・天燈');
+      expect(sky.effects, form).toEqual(plain.effects);
+      expect(sky.target, form).toBe(plain.target);
+      expect(sky.follow, form).toEqual({ who: 'allies', effects: [{ kind: 'heal', power: SKY_LANTERN.heal }] });
+    }
+  });
+
+  it("Rin's dawn blade waits for her oath", () => {
+    expect(ultimateFor('rin')).toBe(ULTIMATES.rin);
+    expect(ultimateFor('rin', {}, {})).toBe(ULTIMATES.rin);
+    expect(ultimateFor('rin', {}, { memories: chainLength('rin') })).toBe(ULTIMATES.rin);
+    expect(ultimateFor('rin', {}, { oath: true })).toBe(RIN_DAWN);
+    expect(RIN_DAWN).toMatchObject({ id: 'ult-rin-dawn', owner: 'rin', name: '破鐘・黎明之刃', refundOnKill: 50 });
+    // a companion ignores both
+    expect(ultimateFor('noel', {}, { memories: 10, oath: true })).toBe(ULTIMATES.noel);
   });
 });

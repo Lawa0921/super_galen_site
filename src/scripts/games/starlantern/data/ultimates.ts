@@ -21,6 +21,15 @@ const LIST: UltimateDef[] = [
     effects: [{ kind: 'damage', power: 300, element: 'phys', scale: 'atk', melee: true, crit: 'always' }] },
 ];
 
+/** Rin's second-form ultimate, thrown once she has sworn her oath: the same blow, harder, and it steadies the hero for the fight. */
+export const RIN_DAWN: UltimateDef = {
+  id: 'ult-rin-dawn', owner: 'rin', name: '破鐘・黎明之刃', target: 'enemy',
+  desc: '必定暴擊的一刺；擊倒目標時返還一半量表，這場戰鬥中洛恩受到的傷害降低',
+  effects: [{ kind: 'damage', power: 320, element: 'phys', scale: 'atk', melee: true, crit: 'always' }],
+  refundOnKill: 50,
+  follow: { who: 'hero', effects: [{ kind: 'buff', stat: 'def', pct: 30, turns: 99 }] },
+};
+
 /**
  * The hero's Lantern Key: one form per branch, in branch order (劍技, 守護, 星術, 祈光, 枷鎖); engine/progression `ultimateFor`
  * picks the form of his deepest branch. Each form stays below the matching companion's ultimate.
@@ -37,6 +46,15 @@ export const HERO_ULTIMATES: UltimateDef[] = [
   { id: 'ult-hero-chain', owner: 'hero', name: '燈鑰・鎖', target: 'enemies', desc: '燈鑰鎖住全體敵人，攻擊與防禦下降',
     effects: [{ kind: 'buff', stat: 'atk', pct: -25, turns: 4 }, { kind: 'buff', stat: 'def', pct: -25, turns: 4 }] },
 ];
+
+/** The Lantern Key at full memory: `memories` pieces turn it into the Sky Lantern, which also heals the party by `heal`. */
+export const SKY_LANTERN = { heal: 25, memories: 10 };
+
+/** A Lantern Key form lit by every memory: its own effects, then a small heal for the whole party. */
+export const skyForm = (u: UltimateDef): UltimateDef => ({
+  ...u, id: `${u.id}-sky`, name: '燈鑰・天燈', desc: `${u.desc}，並為全隊點亮少量回復`,
+  follow: { who: 'allies', effects: [{ kind: 'heal', power: SKY_LANTERN.heal }] },
+});
 
 export const ULTIMATES = {
   ...Object.fromEntries(LIST.map((u) => [u.owner, u])),

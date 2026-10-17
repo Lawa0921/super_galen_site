@@ -66,7 +66,8 @@ function fromMember(m: Member, cell: number): Combatant {
   const c: Combatant = { ...fresh(), key: m.id, side: 'party', defId: m.id, name: def.name, max: statsOf(m), hp: m.hp, tp: m.tp,
     row, cell, melee: wk ? wk.melee : def.melee, ...(def.weaponMaster ? { attackScale: wk ? wk.scale : 'atk' as const } : {}),
     ...(kind ? { weaponKind: kind } : {}), weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0,
-    x, level: m.level, powers: powersOf(m), ranks: { ...m.tree }, keystones: keystonesOf(m) };
+    x, level: m.level, powers: powersOf(m), ranks: { ...m.tree }, keystones: keystonesOf(m),
+    ...(m.memories !== undefined ? { memories: m.memories } : {}), ...(m.oath ? { oath: true as const } : {}), ...(m.id === 'rin' && m.oath ? { artId: 'rin-oath' } : {}) };
   // Memory keystones that are plain secondaries (added once, here; absent keystones leave x as it was).
   if (c.keystones.includes('teachers-gift')) c.x.tpCost = (c.x.tpCost ?? 0) + MEMORY_KEYSTONE_VALUES.tpCostPct;
   if (c.keystones.includes('fathers-face')) c.x.matFind = (c.x.matFind ?? 0) + MEMORY_KEYSTONE_VALUES.matFind;
@@ -300,12 +301,18 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     case 'escape':
       return;
     case 'ultimate': {
-      const u = ultimateFor(actor.defId as CharacterId, actor.ranks);
+      const u = ultimateFor(actor.defId as CharacterId, actor.ranks, actor);
       if (!u) return;
       if (actor.limit < LIMIT_MAX) { s.log.push({ type: 'no-limit', actor: actor.key }); return; }
       actor.limit = 0;
       s.log.push({ type: 'act', actor: actor.key, label: u.name, ultimate: u.id });
-      for (const t of resolveTargets(s, actor, u.target, act.target, rng)) for (const eff of u.effects) applyEffect(actor, t, eff, ctx);
+      const targets = resolveTargets(s, actor, u.target, act.target, rng);
+      for (const t of targets) for (const eff of u.effects) applyEffect(actor, t, eff, ctx);
+      if (u.refundOnKill !== undefined && targets.length === 1 && !targets[0].alive) actor.limit = (LIMIT_MAX * u.refundOnKill) / 100;
+      if (u.follow) {
+        const who = u.follow.who === 'hero' ? living(s.party).filter((c) => c.key === 'hero') : living(s.party);
+        for (const t of who) for (const eff of u.follow.effects) applyEffect(actor, t, eff, ctx);
+      }
       return;
     }
   }

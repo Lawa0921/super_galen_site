@@ -32,6 +32,12 @@ export interface Combatant {
   powers: string[];
   /** Keystone talents held (members only; engine/progression.keystonesOf). */
   keystones: KeystoneId[];
+  /** Memory pieces held (members only; read through `memoriesOf`); the hero's Lantern Key lights up with them. */
+  memories?: number;
+  /** Rin has sworn her oath (members only). */
+  oath?: true;
+  /** The art id a member shows: Rin wears `rin-oath` after her oath (members only; absent reads as `defId`). */
+  artId?: string;
 }
 
 export type BattleEvent =

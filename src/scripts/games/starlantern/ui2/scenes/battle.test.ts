@@ -4,6 +4,8 @@ import type { Combatant } from '../../engine/combatant';
 import type { ItemInstance } from '../../engine/types';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
+import { art } from '../../render/artPaths';
+import { chainLength } from '../../data/story/chains';
 import { BattleScene } from './battle';
 import { LEGACY_LINEUP } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
@@ -710,5 +712,27 @@ describe('BattleScene loot and stat cues', () => {
     for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }
     await flush();
     expect(root.querySelector('.slx-msg')!.textContent).toBe(`${game.battle!.party[0].name}：防禦`);   // no blank second line
+  });
+});
+
+describe('BattleScene after the oath', () => {
+  it("after her oath Rin's ultimate cut-in uses rin-oath", async () => {
+    const game = new Game(constRng(0.99), null, undefined, 0, ['rin', 'hero', 'scarlet'] as never);
+    game.state.party.roster.rin = { ...game.state.party.roster.rin, memories: chainLength('rin'), oath: true };
+    game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
+    const root = document.createElement('div');
+    const faces: (string | null)[] = [];
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null,
+      play: async (_s: unknown, _fx: unknown, on: (k: string, cue: string, name?: string) => Promise<void>) => {
+        const done = on('rin', 'ultimate', '破鐘・黎明之刃');
+        faces.push(root.querySelector('.sl-cutin__face')?.getAttribute('src') ?? null);
+        await done;
+      } } };
+    const s = new BattleScene({ game, art: { has: () => true }, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never });
+    s.enter(root);
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }
+    await vi.waitFor(() => expect(faces.length).toBeGreaterThan(0), { timeout: 4000 });
+    expect(faces[0]).toBe(art.portrait('rin-oath', 'ultimate'));
+    s.exit?.();
   });
 });

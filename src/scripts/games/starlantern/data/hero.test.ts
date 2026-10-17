@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CharacterId, Effect, Member, SkillDef, Stats, WeaponKind } from '../engine/types';
 import { skillFor } from '../engine/battle';
 import { WEAPON_KINDS } from './equipment';
-import { HERO_ULTIMATES, ULTIMATES } from './ultimates';
+import { HERO_ULTIMATES, ULTIMATES, skyForm, SKY_LANTERN } from './ultimates';
 import { AFFINITY_MUL, ALL_AFFINITY_SHARE, CONVERT, convertPrimary } from '../engine/stats';
 import { defaultTree, newTree, nodeRank, raiseNode, skillPoints } from '../engine/progression';
 import { CHARACTERS, CHARACTER_IDS, LEGACY_CHARACTER_IDS, rulesOf } from './characters';
@@ -232,5 +232,28 @@ describe('the hero never outdoes a specialist', () => {
     expect(buffMax(guard, 1)).toBeLessThan(safiraBuff);
     expect(buffMax(chain, -1)).toBeGreaterThan(0);
     expect(buffMax(chain, -1)).toBeLessThan(safiraBuff);
+  });
+
+  it("every sky form stays below its companion's ultimate", () => {
+    const sky = HERO_ULTIMATES.map(skyForm);
+    const [sword, guard, star, light, chain] = sky;
+    // The follow-up counts with the original effect: the sky lantern's heal is added to the form's own.
+    const all = (u: (typeof sky)[number]) => [...u.effects, ...(u.follow?.effects ?? [])];
+    const dmg = (fx: Effect[]) => best(fx.flatMap((e) => (e.kind === 'damage' ? [e.power * (e.hits ?? 1)] : [])));
+    const healSum = (fx: Effect[]) => fx.reduce((n, e) => n + (e.kind === 'heal' ? e.power : 0), 0);
+    const buffMax = (fx: Effect[], sign: 1 | -1) => best(fx.flatMap((e) => (e.kind === 'buff' ? [sign * e.pct] : [])));
+    const safiraBuff = buffMax(ULTIMATES.safira.effects, 1);
+    expect(dmg(all(sword))).toBeLessThan(dmg(ULTIMATES.sylvie.effects));
+    expect(dmg(all(star))).toBeLessThan(dmg(ULTIMATES.noel.effects));
+    expect(healSum(all(light))).toBeLessThan(healSum(ULTIMATES.selene.effects));
+    expect(healSum(all(light))).toBe(180 + SKY_LANTERN.heal);
+    expect(buffMax(all(guard), 1)).toBeLessThan(safiraBuff);
+    expect(buffMax(all(chain), -1)).toBeLessThan(safiraBuff);
+    // the heal reaches the allies only, and every form keeps its original effects
+    for (const [i, u] of sky.entries()) {
+      expect(u.follow?.who, u.id).toBe('allies');
+      expect(u.effects, u.id).toEqual(HERO_ULTIMATES[i].effects);
+      expect(u.owner, u.id).toBe('hero');
+    }
   });
 });

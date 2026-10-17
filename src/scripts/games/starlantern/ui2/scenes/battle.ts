@@ -109,7 +109,7 @@ export class BattleScene implements Scene {
   private updateBar(active: string | null): void {
     this.bar.update(this.state.party.map((c) => {
       const v = (!this.revealed.has(c.key) && this.before?.get(c.key)) || c;
-      return { key: c.key, name: c.name, hp: v.hp, maxHp: c.max.hp, tp: v.tp, maxTp: c.max.tp, limit: v.limit, alive: v.alive, row: c.row };
+      return { key: c.key, name: c.name, hp: v.hp, maxHp: c.max.hp, tp: v.tp, maxTp: c.max.tp, limit: v.limit, alive: v.alive, row: c.row, ...(c.artId ? { artId: c.artId } : {}) };
     }), active);
   }
 
@@ -124,7 +124,7 @@ export class BattleScene implements Scene {
     const actor = this.actors()[this.index];
     if (!actor) { void this.submit(); return; }
     this.updateBar(actor.key);
-    const ult = ultimateFor(actor.defId as CharacterId, actor.ranks);
+    const ult = ultimateFor(actor.defId as CharacterId, actor.ranks, actor);
     const skills = this.skillItems(actor);
     const items = this.itemItems();
     const list: MenuItem[] = [
@@ -174,7 +174,7 @@ export class BattleScene implements Scene {
       void this.submit();
       return;
     }
-    if (id === 'ultimate') { this.withTarget(ultimateFor(actor.defId as CharacterId, actor.ranks).target, { kind: 'ultimate' }); return; }
+    if (id === 'ultimate') { this.withTarget(ultimateFor(actor.defId as CharacterId, actor.ranks, actor).target, { kind: 'ultimate' }); return; }
     if (id === 'skill') {
       // Only known skills are listed (skillItems), so the lookup always finds one; the fallback is never reached.
       this.subList(this.skillItems(actor), (it) => this.withTarget(skillFor(actor, it.id)?.target ?? 'enemy', { kind: 'skill', skill: it.id }));
@@ -371,7 +371,8 @@ export class BattleScene implements Scene {
     const pos = eyes ? (this.cutins % 2 ? 'bottom' : 'top') : (this.cutins % 2 ? 'right' : 'left');
     this.cutins++;
     // The attack face carries the expression; both the strip and the bust use it.
-    const pic = this.ctx.art.has(art.portrait(id, 'attack')) ? art.portrait(id, 'attack') : art.portrait(id, 'normal');
+    const face = actor.artId ?? id;
+    const pic = this.ctx.art.has(art.portrait(face, 'attack')) ? art.portrait(face, 'attack') : art.portrait(face, 'normal');
     const c = el('div', { class: `slx-acut slx-acut-${eyes ? 'eyes' : 'bust'} slx-acut-${pos} slx-aura-${id}`, attrs: { 'aria-hidden': 'true' } }, [
       el('div', { class: 'slx-acut-band' }),
       el('div', { class: 'slx-acut-pic' }, this.ctx.art.has(pic) ? [el('img', { attrs: { src: pic, alt: '' } })] : []),
@@ -402,8 +403,9 @@ export class BattleScene implements Scene {
   private async onParty(key: string, cue: PartyCue, name?: string, amount?: number, extra?: HitExtra): Promise<void> {
     if (cue === 'ultimate') {
       this.ctx.sfx.ultimate?.();
-      const ult = art.portrait(key, 'ultimate');
-      const portrait = this.ctx.art.has(ult) ? ult : this.ctx.art.has(art.portrait(key, 'normal')) ? art.portrait(key, 'normal') : null;
+      const face = this.state.party.find((c) => c.key === key)?.artId ?? key;
+      const ult = art.portrait(face, 'ultimate');
+      const portrait = this.ctx.art.has(ult) ? ult : this.ctx.art.has(art.portrait(face, 'normal')) ? art.portrait(face, 'normal') : null;
       await playCutIn(this.cutin, { name: name ?? '', portrait, fast: !!this.ctx.fast });
       return;
     }

@@ -1,4 +1,4 @@
-import type { CharacterDef, CharacterId, GrowthRules } from '../engine/types';
+import type { CharacterDef, CharacterId, GrowthRules, Member } from '../engine/types';
 
 export const CHARACTER_IDS: CharacterId[] = ['hero', 'rin', 'noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby'];
 
@@ -36,3 +36,9 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
 
 /** The growth rules of `id`: DEFAULT_RULES with the character's own overrides on top. */
 export const rulesOf = (id: CharacterId): GrowthRules => ({ ...DEFAULT_RULES, ...CHARACTERS[id].rules });
+
+/** Rin's title once she has sworn her oath. */
+export const OATH_TITLE = '破鐘刺客';
+
+/** The title a member goes by: Rin's changes with her oath. */
+export const titleOf = (m: Pick<Member, 'id' | 'oath'>): string => (m.id === 'rin' && m.oath ? OATH_TITLE : CHARACTERS[m.id].title);

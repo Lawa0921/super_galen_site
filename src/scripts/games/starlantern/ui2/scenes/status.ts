@@ -1,4 +1,5 @@
-import { CHARACTERS } from '../../data/characters';
+import { CHARACTERS, titleOf } from '../../data/characters';
+import { artIdOf } from '../../ui/art';
 import { T } from '../../data/text.zh-TW';
 import { activeIds } from '../../engine/party';
 import type { CharacterId } from '../../engine/types';
@@ -77,7 +78,8 @@ export class StatusScene implements Scene {
   /** Light rays and an aura in the member's colour behind the standee, rising motes in front; CSS animates them. */
   private drawStandee(): void {
     this.shownId = this.id;
-    const src = this.ctx.art.has(art.standee(this.id)) ? art.standee(this.id) : this.ctx.art.has(art.portrait(this.id, 'normal')) ? art.portrait(this.id, 'normal') : null;
+    const face = artIdOf(this.ctx.game.state.party.roster[this.id]);
+    const src = this.ctx.art.has(art.standee(face)) ? art.standee(face) : this.ctx.art.has(art.portrait(face, 'normal')) ? art.portrait(face, 'normal') : null;
     this.standee.className = `slx-status-art slx-aura-${this.id}`;
     this.standee.replaceChildren(
       el('div', { class: 'slx-status-rays' }),
@@ -92,7 +94,7 @@ export class StatusScene implements Scene {
     const def = CHARACTERS[this.id];
     const m = this.ctx.game.state.party.roster[this.id];
     if (this.shownId !== this.id) this.drawStandee();
-    this.nameEl.replaceChildren(el('span', { class: 'slx-status-title', text: def.title }), el('b', { text: def.name }), el('span', { text: `Lv ${m.level}` }));
+    this.nameEl.replaceChildren(el('span', { class: 'slx-status-title', text: titleOf(m) }), el('b', { text: def.name }), el('span', { text: `Lv ${m.level}` }));
     this.tabsEl.replaceChildren(...STATUS_TABS.map((t, i) => {
       const b = el('span', { class: i === this.tab ? 'slx-tab slx-tab-sel' : 'slx-tab', text: t.label, attrs: { role: 'tab', 'data-tab': t.id, 'aria-selected': String(i === this.tab) } });
       b.addEventListener('click', () => { this.tab = i; this.ctx.sfx.cursor(); this.render(); });

@@ -1,4 +1,5 @@
 import { CHARACTERS } from '../../data/characters';
+import { artIdOf } from '../../ui/art';
 import { CONDITIONS } from '../../data/conditions';
 import { FLOORS } from '../../data/floors';
 import { ITEMS } from '../../data/items';
@@ -117,7 +118,7 @@ export class DungeonScene implements Scene {
     this.bar.update(activeIds(p).map((id) => {
       const m = p.roster[id];
       const st = statsOf(m);
-      return { key: id, name: CHARACTERS[id].name, hp: m.hp, maxHp: st.hp, tp: m.tp, maxTp: st.tp, limit: m.limit ?? 0, alive: m.hp > 0, row: rowOfCell(p.grid.indexOf(id)) };
+      return { key: id, name: CHARACTERS[id].name, hp: m.hp, maxHp: st.hp, tp: m.tp, maxTp: st.tp, limit: m.limit ?? 0, alive: m.hp > 0, row: rowOfCell(p.grid.indexOf(id)), artId: artIdOf(m) };
     }));
     this.ctx.stage?.mapView.draw(g, { width: 640, height: 296 });
     this.minimap.draw(g);

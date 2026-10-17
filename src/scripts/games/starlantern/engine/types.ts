@@ -37,7 +37,13 @@ export interface SkillDef {
   /** One of the hero's abyss capstone skills: grows with the depth of the fight (battle.ts). */
   abyss?: true;
 }
-export interface UltimateDef { id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string }
+export interface UltimateDef {
+  id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string;
+  /** After the blow lands: more effects on the living party (`allies`) or on the living hero (`hero`). */
+  follow?: { who: 'allies' | 'hero'; effects: Effect[] };
+  /** A single target felled by the blow gives back this share (percent) of the gauge. */
+  refundOnKill?: number;
+}
 /** How a character grows: which point curve, how many skill branches, how many ultimates, board width and keystone cap. */
 export interface GrowthRules { curve: 'companion' | 'hero'; branches: 3 | 5; capstones: number; boardCols: number; maxKeystones: number }
 export interface CharacterDef {

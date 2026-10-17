@@ -7,7 +7,9 @@ import type { ArtIndex } from '../render/textures';
 const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' };
 
 /** `row` shows a small 前／中／後 tag so the formation is visible during play. */
-export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean; row?: Row }
+export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean; row?: Row;
+  /** The art id of the face when it is not `key` (Rin after her oath). */
+  artId?: string }
 /** `miss` and `tp` only pop a word or number: no face, shake or glow. */
 export type PulseMood = 'attack' | 'hit' | 'heal' | 'ko' | 'miss' | 'tp';
 /**
@@ -176,7 +178,7 @@ export class PartyBar {
 
   /** The face for the member's current HP (normal, dying or down). */
   private resetFace(p: Panel): void {
-    const face = portraitImg(this.art, p.member.key, p.member.hp, p.member.maxHp);
+    const face = portraitImg(this.art, p.member.artId ?? p.member.key, p.member.hp, p.member.maxHp);
     if (!face) { p.face?.remove(); p.face = null; return; }
     if (p.face && p.face.getAttribute('src') === face.getAttribute('src') && p.face.className === face.className) return;
     if (p.face) p.face.replaceWith(face); else p.el.prepend(face);

@@ -1,4 +1,4 @@
-import { CHARACTERS } from '../../data/characters';
+import { CHARACTERS, titleOf } from '../../data/characters';
 import { ITEMS } from '../../data/items';
 import { MATERIALS } from '../../data/materials';
 import type { SceneId } from '../../data/story/scenes';
@@ -10,7 +10,7 @@ import { shardPrice } from '../../engine/story/fragments';
 import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
-import { standeeImg } from '../../ui/art';
+import { artIdOf, standeeImg } from '../../ui/art';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { shouldPlay, storyCtx } from '../story';
@@ -42,8 +42,11 @@ export class GuildScene extends FacilityScene {
     else if (id === 'tree' || id === 'talent') this.ctx.go('status', `tab:${id}`);
   }
 
+  private titled(id: CharacterId): string { return titleOf(this.ctx.game.state.party.roster[id]); }
+
   private faceIcon(id: CharacterId): string | undefined {
-    return this.ctx.art.has(art.portrait(id, 'normal')) ? art.portrait(id, 'normal') : undefined;
+    const look = artIdOf(this.ctx.game.state.party.roster[id]);
+    return this.ctx.art.has(art.portrait(look, 'normal')) ? art.portrait(look, 'normal') : undefined;
   }
 
   private recallList(): void {
@@ -51,7 +54,7 @@ export class GuildScene extends FacilityScene {
     const info = win('slx-info');
     this.info = info;
     const show = (id: CharacterId | undefined) => this.showInfo(id);
-    const v = new MenuView(new Menu(ids.map((id) => ({ id, label: `${CHARACTERS[id].title} ${name(id)}`, icon: this.faceIcon(id) }))), {
+    const v = new MenuView(new Menu(ids.map((id) => ({ id, label: `${this.titled(id)} ${name(id)}`, icon: this.faceIcon(id) }))), {
       pick: (it) => { this.ctx.sfx.confirm(); this.askRecall(it.id as CharacterId); },
       moved: () => { this.ctx.sfx.cursor(); show(v.menu.current()?.id as CharacterId); },
       cancel: () => { info.remove(); this.info = undefined; this.pop(); },
@@ -67,8 +70,8 @@ export class GuildScene extends FacilityScene {
   private showInfo(id: CharacterId | undefined, out = false): void {
     if (!id || !this.info) return;
     this.info.classList.toggle('slx-info-swap', out);
-    this.info.replaceChildren(...[standeeImg(this.ctx.art, id)].filter((n): n is HTMLImageElement => !!n),
-      el('p', { text: out ? T.ui2.guild.swapOut(name(id)) : `${CHARACTERS[id].title} ${name(id)}` }), el('p', { class: 'slx-desc', text: T.ui2.guild.roles[id] }));
+    this.info.replaceChildren(...[standeeImg(this.ctx.art, artIdOf(this.ctx.game.state.party.roster[id]))].filter((n): n is HTMLImageElement => !!n),
+      el('p', { text: out ? T.ui2.guild.swapOut(name(id)) : `${this.titled(id)} ${name(id)}` }), el('p', { class: 'slx-desc', text: T.ui2.guild.roles[id] }));
   }
 
   private askRecall(id: CharacterId): void {
@@ -86,7 +89,7 @@ export class GuildScene extends FacilityScene {
   /** The field is full: who goes back to waiting (never the hero). */
   private swapList(id: CharacterId): void {
     const ids = activeIds(this.ctx.game.state.party).filter((x) => x !== 'hero');
-    const v = new MenuView(new Menu(ids.map((x) => ({ id: x, label: `${CHARACTERS[x].title} ${name(x)}`, icon: this.faceIcon(x) }))), {
+    const v = new MenuView(new Menu(ids.map((x) => ({ id: x, label: `${this.titled(x)} ${name(x)}`, icon: this.faceIcon(x) }))), {
       pick: (it) => { this.ctx.sfx.confirm(); this.finishRecall(id, it.id as CharacterId); },
       moved: () => { this.ctx.sfx.cursor(); this.showInfo(v.menu.current()?.id as CharacterId, true); },
       cancel: () => { this.showInfo(id); this.pop(); },
@@ -192,7 +195,7 @@ export class GuildScene extends FacilityScene {
     const s = this.ctx.game.state;
     const items = s.party.recruited.map((id): MenuItem => {
       const n = s.party.roster[id].absorbed?.length ?? 0;
-      return { id, label: `${CHARACTERS[id].title} ${name(id)}`, icon: this.faceIcon(id), right: T.ui2.exchange.count(n, ABSORB_CAP), disabled: n >= ABSORB_CAP };
+      return { id, label: `${this.titled(id)} ${name(id)}`, icon: this.faceIcon(id), right: T.ui2.exchange.count(n, ABSORB_CAP), disabled: n >= ABSORB_CAP };
     });
     if (items.every((it) => it.disabled)) { this.exchangeFail('cap', T.ui2.exchange.absorbFail); return; }
     const v = new MenuView(new Menu(items), {

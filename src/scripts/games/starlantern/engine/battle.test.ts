@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, resolveRound, rewards, skillCost, skillFor, turnOrder, writeBack } from './battle';
 import { WEAPON_MASTERY_PCT } from '../data/equipment';
-import { ULTIMATES } from '../data/ultimates';
+import { RIN_DAWN, SKY_LANTERN, ULTIMATES, skyForm, HERO_ULTIMATES } from '../data/ultimates';
 import { ENEMIES } from '../data/enemies';
 import { activeIds, powersOf, sheetOf, LEGACY_LINEUP } from './party';
 import { applyEffect } from './skills';
@@ -772,5 +772,57 @@ describe('memory keystones in battle', () => {
       expect(s.log.filter((e) => e.type === 'act' && e.actor === 'rin')).toHaveLength(1);
       expect(s.party[1].buffs).toContainEqual(expect.objectContaining({ stat: 'atk', pct: MV.bellAtkPct }));
     });
+  });
+});
+
+describe('the Sky Lantern and the dawn blade', () => {
+  const sleeper = (key: string, hp = 99999) => E(key, { max: { hp, atk: 1, spd: 1 } as never, sleep: 5 });
+  const dawn = (over: Partial<Combatant> = {}) => P('rin', { defId: 'rin', limit: 100, oath: true, ...over });
+
+  it('the dawn blade always crits and gives back half the gauge on a kill', () => {
+    const killed = resolveRound(makeBattle([dawn()], [sleeper('e0', 1)]), { rin: { kind: 'ultimate', target: 'e0' } }, rng);
+    expect(killed.log).toContainEqual({ type: 'act', actor: 'rin', label: RIN_DAWN.name, ultimate: RIN_DAWN.id });
+    expect(killed.log.find((e) => e.type === 'damage' && e.target === 'e0')).toMatchObject({ crit: true });
+    expect(killed.enemies[0].alive).toBe(false);
+    expect(killed.party[0].limit).toBe((LIMIT_MAX * RIN_DAWN.refundOnKill!) / 100);
+    // no kill, no refund: the gauge empties (plus this round's ordinary gain, which an ultimate does not take)
+    const spared = resolveRound(makeBattle([dawn()], [sleeper('e0')]), { rin: { kind: 'ultimate', target: 'e0' } }, rng);
+    expect(spared.enemies[0].alive).toBe(true);
+    expect(spared.party[0].limit).toBeLessThan(LIMIT_PER_ACTION);
+    // without the oath she still throws the plain ultimate
+    const plain = resolveRound(makeBattle([P('rin', { defId: 'rin', limit: 100 })], [sleeper('e0', 1)]), { rin: { kind: 'ultimate', target: 'e0' } }, rng);
+    expect(plain.log).toContainEqual({ type: 'act', actor: 'rin', label: ULTIMATES.rin.name, ultimate: ULTIMATES.rin.id });
+    expect(plain.party[0].limit).toBeLessThan(LIMIT_PER_ACTION);
+  });
+
+  it('the dawn blade guards the hero for the fight', () => {
+    const run = (hero: Partial<Combatant>) =>
+      resolveRound(makeBattle([P('hero', { defId: 'hero', ...hero }), dawn()], [sleeper('e0')]), { rin: { kind: 'ultimate', target: 'e0' } }, rng);
+    const s = run({});
+    const guard = s.party.find((c) => c.key === 'hero')!.buffs.find((b) => b.stat === 'def');
+    expect(guard).toMatchObject({ pct: 30 });
+    expect(guard!.turns).toBeGreaterThanOrEqual(99 - 1);
+    expect(s.party.find((c) => c.key === 'rin')!.buffs.some((b) => b.stat === 'def')).toBe(false);
+    // a fallen hero gets nothing
+    const down = run({ hp: 0, alive: false });
+    expect(down.party.find((c) => c.key === 'hero')!.buffs).toEqual([]);
+    expect(down.log.some((e) => e.type === 'buff')).toBe(false);
+  });
+
+  it('the sky lantern heals the party after its blow', () => {
+    const lit = (memories: number) => P('hero', { defId: 'hero', limit: 100, memories, ranks: {} });
+    const hurt = (key: string, hp: number) => P(key, { defId: key, hp, alive: hp > 0, max: { hp: 100 } as never });
+    const go = (memories: number) => resolveRound(makeBattle([lit(memories), hurt('noel', 10), hurt('liz', 0)], [sleeper('e0')]), { hero: { kind: 'ultimate', target: 'e0' } }, rng);
+    const sky = go(SKY_LANTERN.memories);
+    const noel = sky.party.find((c) => c.key === 'noel')!;
+    expect(noel.hp).toBeGreaterThan(10);
+    expect(sky.enemies[0].hp).toBeLessThan(99999);
+    expect(sky.party.find((c) => c.key === 'liz')!.hp).toBe(0);   // the fallen are not woken
+    expect(sky.log.filter((e) => e.type === 'heal' && e.target === 'noel')).toHaveLength(1);
+    // one memory short, the same blow heals no one
+    const plain = go(SKY_LANTERN.memories - 1);
+    expect(plain.party.find((c) => c.key === 'noel')!.hp).toBeLessThanOrEqual(10);   // the woken foe may still scratch her
+    expect(plain.log.some((e) => e.type === 'heal')).toBe(false);
+    expect(HERO_ULTIMATES.map(skyForm)[0].follow).toBeDefined();
   });
 });

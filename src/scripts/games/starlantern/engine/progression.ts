@@ -6,7 +6,7 @@ import {
 } from '../data/talents';
 import { rulesOf } from '../data/characters';
 import { ABYSS_UNLOCK, HERO_BUILDS, type HeroBuild } from '../data/hero';
-import { HERO_ULTIMATES, ULTIMATES } from '../data/ultimates';
+import { HERO_ULTIMATES, RIN_DAWN, SKY_LANTERN, ULTIMATES, skyForm } from '../data/ultimates';
 import type { AnyStat, CharacterId, GrowthRules, Member, Sheet, UltimateDef } from './types';
 import { stackMods } from './skills';
 import { chainLength } from '../data/story/chains';
@@ -147,9 +147,17 @@ export function heroMainBranch(ranks: Record<string, number>): number {
   return best;
 }
 
-/** The ultimate `id` fights with: the hero's Lantern Key takes the form of his main branch; a companion has one ultimate. */
-export function ultimateFor(id: CharacterId, ranks?: Record<string, number>): UltimateDef {
-  return id === 'hero' ? HERO_ULTIMATES[heroMainBranch(ranks ?? {})] : ULTIMATES[id];
+/**
+ * The ultimate `id` fights with: the hero's Lantern Key takes the form of his main branch, and lights up (the Sky Lantern)
+ * with every memory; Rin throws the dawn blade once she has sworn her oath; a companion has one ultimate.
+ * `m` is the fighter's memories and oath (a Combatant or a Member).
+ */
+export function ultimateFor(id: CharacterId, ranks?: Record<string, number>, m?: { memories?: number; oath?: true }): UltimateDef {
+  if (id === 'hero') {
+    const form = HERO_ULTIMATES[heroMainBranch(ranks ?? {})];
+    return memoriesOf({ id, memories: m?.memories }) >= SKY_LANTERN.memories ? skyForm(form) : form;
+  }
+  return id === 'rin' && m?.oath ? RIN_DAWN : ULTIMATES[id];
 }
 
 /** Ranks held in the character's own nodes; ids of other trees or unknown ids are ignored. */
