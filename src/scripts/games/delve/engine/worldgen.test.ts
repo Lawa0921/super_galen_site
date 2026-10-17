@@ -340,4 +340,34 @@ describe('地形種類與迷你生態區', { timeout: 180_000 }, () => {
       expect(grass).toBeGreaterThan(10);
     }
   });
+  it('浮空島垂下繩梯：一路是繩索、上端掛在島底、下端離地 2–3 格（跳得到）', () => {
+    const isl = a.structures.filter((s) => s.kind === 'sky_island');
+    const withRope = isl.filter((s) => s.rope);
+    expect(withRope.length).toBeGreaterThanOrEqual(Math.max(1, isl.length - 1));
+    for (const s of withRope) {
+      const r = s.rope!;
+      expect(a.world.isSolid(r.x, r.y0 - 1)).toBe(true);
+      for (let y = r.y0; y <= r.y1; y++) expect(a.world.getFg(r.x, y)).toBe(T.ROPE);
+      let gy = r.y1 + 1;
+      while (a.world.getFg(r.x, gy) === T.AIR) gy++;
+      expect(a.world.isSolid(r.x, gy)).toBe(true);
+      expect(gy - r.y1 - 1).toBeLessThanOrEqual(3);
+    }
+  });
+  it('雪原地表：雪層薄而有起伏（不是一整條厚白帶），下面有凍土 / 冰 / 碎石', () => {
+    const seg = a.biomes.find((b) => b.biome === BIOME.SNOW)!;
+    const depths: number[] = [];
+    let ice = 0, dirt = 0;
+    for (let x = seg.x0 + 30; x < seg.x1 - 30; x += 3) {
+      let y = a.world.surface[x], d = 0;
+      while (a.world.getFg(x, y + d) === T.SNOW || a.world.getFg(x, y + d) === T.ICE) d++;
+      depths.push(d);
+      for (let k = 0; k < 20; k++) { const t = a.world.getFg(x, y + d + k); if (t === T.ICE) ice++; if (t === T.DIRT) dirt++; }
+    }
+    const avg = depths.reduce((s, v) => s + v, 0) / depths.length;
+    expect(avg).toBeLessThan(10);
+    expect(Math.max(...depths) - Math.min(...depths)).toBeGreaterThanOrEqual(4);
+    expect(ice).toBeGreaterThan(0);
+    expect(dirt).toBeGreaterThan(0);
+  });
 });

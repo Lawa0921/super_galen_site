@@ -78,6 +78,23 @@ export class SoundManager {
   /** 放繩索 / 敲碎裂紋石 */
   tick(): void { this.tone(880, 0, 0.05, 'square', 0.03); }
   crumble(): void { this.tone(140, 0, 0.18, 'sawtooth', 0.08, 60); }
+  // ── 釣魚 ──
+  /** 拋竿：甩竿的風聲 + 捲線器嗶嗶聲 */
+  cast(): void { this.noise(0, 0.14, 2200, 700, 0.05, 1.2); for (let k = 0; k < 4; k++) this.tone(1600 + k * 60, 0.05 + k * 0.03, 0.03, 'square', 0.015); }
+  /** 浮標落水：小小的噗通 */
+  plop(lava = false): void { this.tone(lava ? 160 : 420, 0, 0.12, 'sine', 0.07, lava ? 90 : 180); }
+  /** 上鉤：兩聲急促的高音（提醒趕快按） */
+  bite(): void { this.tone(988, 0, 0.07, 'square', 0.05); this.tone(1318.51, 0.09, 0.09, 'square', 0.05); }
+  /** 釣到：水花 + 上行三音；稀有 / 傳說再加鈴聲 */
+  catchFish(rare: boolean): void {
+    this.noise(0, 0.12, 2400, 900, 0.06, 1.6);
+    [659.25, 783.99, 1046.5].forEach((f, i) => this.tone(f, 0.05 + i * 0.07, 0.22, 'triangle', 0.1));
+    if (rare) this.tone(2093, 0.3, 0.6, 'sine', 0.05);
+  }
+  /** 收竿 / 魚跑了：下滑的捲線聲 */
+  reel(miss: boolean): void { this.tone(miss ? 520 : 760, 0, 0.18, 'square', 0.025, miss ? 260 : 520); }
+  /** 吃東西：兩下咀嚼 */
+  munch(): void { this.noise(0, 0.05, 900, 400, 0.06, 2); this.noise(0.12, 0.05, 900, 400, 0.06, 2); }
 
   // ── 戰鬥 ───────────────────────────────────────────────
   private noiseBuf: AudioBuffer | null = null;
@@ -176,6 +193,56 @@ export class SoundManager {
   }
   /** 燒傷：短的噼啪 */
   burn(): void { this.noise(0, 0.08, 2600, 900, 0.07, 1.4); }
+
+  // ── 天氣 / 睡覺 ───────────────────────────────────────
+  /**
+   * 雷聲：近的先一聲高頻劈啪再接低沉的滾雷，遠的只有延遲後的悶雷（距離 dist 格 → 延遲、音量、濾波越低）。
+   * 噪音緩衝循環播放，經低通濾波由高滑到低。
+   */
+  thunder(dist: number): void {
+    if (this.muted || !this.ctx) return;
+    const ctx = this.ctx;
+    this.noise(0, 0.01, 100, 100, 0.0001); // 確保噪音緩衝已建立
+    if (!this.noiseBuf) return;
+    const near = Math.max(0, 1 - dist / 48);
+    const delay = Math.min(1.4, dist * 0.028);
+    if (near > 0.6) this.noise(delay, 0.18, 5200, 1400, 0.22 * near, 0.7);
+    const t = ctx.currentTime + delay + 0.04;
+    const dur = 1.8 + (1 - near) * 1.2;
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuf; src.loop = true;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.Q.value = 0.9;
+    lp.frequency.setValueAtTime(260 + near * 900, t);
+    lp.frequency.exponentialRampToValueAtTime(55, t + dur);
+    const g = ctx.createGain();
+    const peak = 0.12 + 0.3 * near;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.06);
+    g.gain.exponentialRampToValueAtTime(peak * 0.45, t + dur * 0.35);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(lp).connect(g).connect(this.master ?? ctx.destination);
+    src.start(t, Math.random() * 0.4); src.stop(t + dur + 0.05);
+  }
+  /** 躺下睡覺：三個下行的柔和音 */
+  sleep(): void { [523.25, 440, 349.23].forEach((f, i) => this.tone(f, i * 0.28, 0.7, 'sine', 0.07)); }
+  /** 天亮醒來：輕快上行 + 鳥叫似的高音 */
+  wake(): void {
+    [392, 523.25, 659.25].forEach((f, i) => this.tone(f, i * 0.1, 0.35, 'triangle', 0.08));
+    this.tone(2600, 0.42, 0.08, 'sine', 0.03, 3200); this.tone(2800, 0.55, 0.08, 'sine', 0.03, 3400);
+  }
+
+  // ── 標題選單（輕、短，不搶畫面） ──
+  /** 選單移動：一聲很短的木頭敲擊 */
+  uiMove(): void { this.tone(660, 0, 0.045, 'square', 0.025); this.tone(990, 0.012, 0.03, 'triangle', 0.02); }
+  /** 確認：兩音上行 */
+  uiConfirm(): void { this.tone(523.25, 0, 0.09, 'square', 0.035); this.tone(783.99, 0.07, 0.16, 'triangle', 0.05); }
+  /** 返回 / 關閉面板：兩音下行 */
+  uiBack(): void { this.tone(587.33, 0, 0.07, 'triangle', 0.04); this.tone(392, 0.06, 0.12, 'triangle', 0.035); }
+  /** 擲骰子：三下快速的喀噠 */
+  uiDice(): void { [0, 0.05, 0.11].forEach((t, i) => this.tone(1200 - i * 180, t, 0.03, 'square', 0.025)); }
+  /** 轉場開始：往下沉的掃頻（鑽進地底） */
+  uiDelve(): void { this.tone(330, 0, 0.5, 'triangle', 0.06, 110); this.tone(880, 0.02, 0.2, 'sine', 0.025, 440); }
 
   destroy(): void {
     if (typeof window !== 'undefined') window.removeEventListener('arcade-audio-change', this.onChange);

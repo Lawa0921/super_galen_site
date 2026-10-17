@@ -1,5 +1,5 @@
 // items.ts — 道具表。方塊類道具用 place 指回 tile id；鎬用 pick。
-import { T, type LocalName } from './tiles';
+import { T, W, type LocalName } from './tiles';
 import { LIQ } from './liquidKind';
 import { MAX_STACK } from './constants';
 
@@ -40,7 +40,17 @@ export type ItemId =
   | 'life_core' | 'healing_potion' | 'wick_offering'
   | 'chitin_buckler' | 'fang_charm' | 'feather_charm' | 'warden_heart' | 'warden_trophy'
   // ── 液體：蜂巢 / 酥蜜塊、水桶、吸水海綿、熔殼護符 ──
-  | 'hive' | 'crispy_honey' | 'bucket' | 'water_bucket' | 'lava_bucket' | 'honey_bucket' | 'sponge' | 'magma_ward';
+  | 'hive' | 'crispy_honey' | 'bucket' | 'water_bucket' | 'lava_bucket' | 'honey_bucket' | 'sponge' | 'magma_ward'
+  // ── 釣魚：釣竿 / 魚餌 / 魚 / 垃圾 / 木箱 / 料理 / 營火 ──
+  | 'wood_rod' | 'iron_rod' | 'gold_rod' | 'cinder_rod'
+  | 'worm' | 'grub' | 'grasshopper' | 'firefly' | 'sunbeetle'
+  | 'silver_minnow' | 'reed_perch' | 'brook_trout' | 'mud_whisker' | 'sun_bream' | 'frost_char' | 'oasis_koi'
+  | 'moonlit_eel' | 'thunder_ray' | 'mistfin' | 'ember_salmon' | 'petal_koi' | 'pale_blindfish' | 'prism_shrimp'
+  | 'lantern_squid' | 'gloom_angler' | 'amber_carp' | 'stingfin' | 'cinder_snapper' | 'obsidian_eel' | 'old_whiskers'
+  | 'soggy_boot' | 'wooden_crate' | 'iron_crate' | 'golden_crate'
+  | 'grilled_fish' | 'smoked_eel' | 'fish_stew' | 'campfire'
+  // ── 家具 ──
+  | 'table' | 'chair' | 'lantern_post' | 'painting' | 'bookshelf' | 'banner' | 'candle' | 'plank_wall';
 
 /**
  * 飾品效果。移動 / 戰鬥類（jump、run、night、magnet、nofall、stat）要裝在裝備欄的飾品槽才生效；
@@ -87,6 +97,8 @@ export interface ItemDef {
   name: LocalName;
   maxStack: number;
   place?: number;
+  /** 放背景牆（W.*） */
+  placeWall?: number;
   pick?: PickStats;
   /** 拿在手上時在玩家身邊發光的強度（0..1） */
   heldLight?: number;
@@ -99,7 +111,17 @@ export interface ItemDef {
    * summon = 召喚首領（夜晚或洞穴層以下）、scoop = 空桶舀起一格液體、pour = 倒出桶裡的液體（liquid 指定種類）、
    * sponge = 吸掉瞄準格（與左右）的水 / 蜂蜜（按住可連續）
    */
-  use?: 'recall' | 'life' | 'heal' | 'summon' | 'scoop' | 'pour' | 'sponge';
+  use?: 'recall' | 'life' | 'heal' | 'summon' | 'scoop' | 'pour' | 'sponge'
+    /** 釣竿：拋竿 / 收竿；料理：吃（回血）；木箱：打開 */
+    | 'fish' | 'eat' | 'crate';
+  /** 釣竿：釣力、能不能在熔岩裡釣 */
+  rod?: { power: number; lava?: boolean };
+  /** 魚餌的釣力 */
+  bait?: number;
+  /** 料理：吃了回多少血 */
+  food?: number;
+  /** 釣得到的魚（日誌：釣魚紀錄） */
+  fish?: boolean;
   /** 桶裡裝的液體（LIQ.*；pour 用） */
   liquid?: number;
   weapon?: WeaponDef;
@@ -119,6 +141,12 @@ const arm = (id: ItemId, zh: string, en: string, slot: ArmorSlot, defense: numbe
   ({ id, name: { zh, en }, maxStack: 1, armor: { slot, defense, set } });
 const acc = (id: ItemId, zh: string, en: string, accessory: Accessory, stats?: StatMods, unique = false): ItemDef =>
   ({ id, name: { zh, en }, maxStack: 1, accessory, ...(stats ? { stats } : {}), ...(unique ? { unique } : {}) });
+
+const rod = (id: ItemId, zh: string, en: string, power: number, lava = false): ItemDef =>
+  ({ id, name: { zh, en }, maxStack: 1, use: 'fish', rod: lava ? { power, lava } : { power } });
+const bait = (id: ItemId, zh: string, en: string, power: number): ItemDef => ({ id, name: { zh, en }, maxStack: MAX_STACK, bait: power });
+const fish = (id: ItemId, zh: string, en: string): ItemDef => ({ id, name: { zh, en }, maxStack: MAX_STACK, fish: true });
+const food = (id: ItemId, zh: string, en: string, heal: number): ItemDef => ({ id, name: { zh, en }, maxStack: 99, use: 'eat', food: heal });
 
 export const ITEMS: Record<ItemId, ItemDef> = {
   dirt: block('dirt', '泥土', 'Dirt', T.DIRT),
@@ -240,7 +268,8 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   fang_charm: acc('fang_charm', '狼牙墜', 'Fang Pendant', 'stat', { crit: 0.06, damage: 0.04 }),
   feather_charm: acc('feather_charm', '輕羽墜', 'Featherfall Charm', 'nofall'),
   warden_heart: acc('warden_heart', '守望之心', "Warden's Heart", 'stat', { maxHp: 20, defense: 2, regen: 0.5 }, true),
-  warden_trophy: { id: 'warden_trophy', name: { zh: '守望者戰利品', en: 'Warden Trophy' }, maxStack: 1, unique: true },
+  // 首領戰利品：可以放在地上 / 桌上，或掛在背景牆上
+  warden_trophy: { id: 'warden_trophy', name: { zh: '守望者戰利品', en: 'Warden Trophy' }, maxStack: 1, unique: true, place: T.TROPHY },
   // ── 液體 ──
   hive: block('hive', '蜂巢殼', 'Hive Comb', T.HIVE),
   crispy_honey: block('crispy_honey', '酥蜜塊', 'Crisp Honey Block', T.CRISPY_HONEY),
@@ -250,6 +279,54 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   honey_bucket: { ...mat('honey_bucket', '蜂蜜桶', 'Pail of Honey'), maxStack: 99, use: 'pour', liquid: LIQ.HONEY },
   sponge: { id: 'sponge', name: { zh: '吸水海綿', en: 'Soak Sponge' }, maxStack: 1, use: 'sponge' },
   magma_ward: acc('magma_ward', '熔殼護符', 'Cinderguard Charm', 'lavaward'),
+  // ── 釣魚 ──
+  wood_rod: rod('wood_rod', '柳木釣竿', 'Willow Rod', 10),
+  iron_rod: rod('iron_rod', '鐵線釣竿', 'Ironline Rod', 22),
+  gold_rod: rod('gold_rod', '鎏金釣竿', 'Gilded Rod', 36),
+  cinder_rod: rod('cinder_rod', '燼線釣竿', 'Cinderline Rod', 30, true),
+  worm: bait('worm', '蚯蚓', 'Earthworm', 10),
+  grub: bait('grub', '肥蛆', 'Fat Grub', 18),
+  grasshopper: bait('grasshopper', '蚱蜢', 'Grasshopper', 15),
+  firefly: bait('firefly', '螢火蟲', 'Firefly', 24),
+  sunbeetle: bait('sunbeetle', '金曦甲蟲', 'Sunbeetle', 45),
+  silver_minnow: fish('silver_minnow', '銀米諾', 'Silver Minnow'),
+  reed_perch: fish('reed_perch', '蘆葦鱸', 'Reed Perch'),
+  brook_trout: fish('brook_trout', '溪鱒', 'Brook Trout'),
+  mud_whisker: fish('mud_whisker', '泥鬚鯰', 'Mud Whisker'),
+  sun_bream: fish('sun_bream', '曬日鯛', 'Sun Bream'),
+  frost_char: fish('frost_char', '霜鱒', 'Frost Char'),
+  oasis_koi: fish('oasis_koi', '綠洲錦鯉', 'Oasis Koi'),
+  moonlit_eel: fish('moonlit_eel', '月光鰻', 'Moonlit Eel'),
+  thunder_ray: fish('thunder_ray', '雷紋魟', 'Thunder Ray'),
+  mistfin: fish('mistfin', '霧鰭', 'Mistfin'),
+  ember_salmon: fish('ember_salmon', '餘燼鮭', 'Ember Salmon'),
+  petal_koi: fish('petal_koi', '花瓣錦鯉', 'Petal Koi'),
+  pale_blindfish: fish('pale_blindfish', '蒼白盲魚', 'Pale Blindfish'),
+  prism_shrimp: fish('prism_shrimp', '稜光蝦', 'Prism Shrimp'),
+  lantern_squid: fish('lantern_squid', '提燈魷', 'Lantern Squid'),
+  gloom_angler: fish('gloom_angler', '幽暗鮟鱇', 'Gloom Angler'),
+  amber_carp: fish('amber_carp', '琥珀鯉', 'Amber Carp'),
+  stingfin: fish('stingfin', '刺鰭蜂魚', 'Stingfin'),
+  cinder_snapper: fish('cinder_snapper', '燼鱗鯛', 'Cinder Snapper'),
+  obsidian_eel: fish('obsidian_eel', '黑曜鰻', 'Obsidian Eel'),
+  old_whiskers: { ...fish('old_whiskers', '老鬚王', 'Old Whiskers'), unique: true },
+  soggy_boot: mat('soggy_boot', '泡爛的靴子', 'Soggy Boot'),
+  wooden_crate: { ...mat('wooden_crate', '漂流木箱', 'Driftwood Crate'), maxStack: 99, use: 'crate' },
+  iron_crate: { ...mat('iron_crate', '鐵皮箱', 'Ironbound Crate'), maxStack: 99, use: 'crate' },
+  golden_crate: { ...mat('golden_crate', '金邊寶箱', 'Gilded Crate'), maxStack: 99, use: 'crate' },
+  grilled_fish: food('grilled_fish', '烤魚', 'Grilled Fish', 30),
+  smoked_eel: food('smoked_eel', '燻鰻', 'Smoked Eel', 45),
+  fish_stew: food('fish_stew', '魚湯', "Fisherman's Stew", 80),
+  campfire: { ...block('campfire', '營火', 'Campfire', T.CAMPFIRE), maxStack: 99 },
+  // ── 家具 ──
+  table: { ...block('table', '木桌', 'Wooden Table', T.TABLE), maxStack: 99 },
+  chair: { ...block('chair', '木椅', 'Wooden Chair', T.CHAIR), maxStack: 99 },
+  lantern_post: { ...block('lantern_post', '燈柱', 'Lamp Post', T.LANTERN_POST), maxStack: 99 },
+  painting: { ...block('painting', '古畫', 'Old Painting', T.PAINTING), maxStack: 99 },
+  bookshelf: { ...block('bookshelf', '書架', 'Bookshelf', T.BOOKSHELF), maxStack: 99 },
+  banner: { ...block('banner', '旗幟', 'Banner', T.BANNER), maxStack: 99 },
+  candle: { ...block('candle', '蠟燭', 'Candle', T.CANDLE), maxStack: 99 },
+  plank_wall: { id: 'plank_wall', name: { zh: '木板牆', en: 'Plank Wall' }, maxStack: MAX_STACK, placeWall: W.PLANK_WALL },
 };
 
 /** 套裝組成（頭 / 身 / 腿），順序 = 等級 */

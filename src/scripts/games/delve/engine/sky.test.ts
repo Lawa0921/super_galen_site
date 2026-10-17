@@ -1,6 +1,6 @@
 // sky.test.ts — 太陽相位 → 天空光顏色（季節 pass 會餵入每天不同的日出 / 日落）
 import { describe, it, expect } from 'vitest';
-import { sunPhase, skyLightColor, skyColor, DEFAULT_SUNRISE, DEFAULT_SUNSET } from './sky';
+import { sunPhase, skyLightColor, skyColor, isNight, DEFAULT_SUNRISE, DEFAULT_SUNSET } from './sky';
 import { skyBrightness } from './lighting';
 import { DAY_LENGTH } from './constants';
 
@@ -39,5 +39,23 @@ describe('skyLightColor / skyColor', () => {
       for (let k = 0; k < 3; k++) expect(Math.abs(a[k] - b[k])).toBeLessThan(0.05);
       expect(Math.abs(Math.max(...a) - skyBrightness(t))).toBeLessThan(0.12);
     }
+  });
+});
+
+describe('季節化的天空亮度 / 夜晚判定', () => {
+  it('skyBrightness 接受日出 / 日落 / 曙暮光參數（預設值行為不變）', () => {
+    expect(skyBrightness(DAY_LENGTH * 0.27)).toBeCloseTo(skyBrightness(DAY_LENGTH * 0.27, 0.25, 0.75, 0.05), 9);
+    // 冬天：0.31 日出 → 07:12 還很暗；夏天 0.19 日出 → 07:12 全亮
+    expect(skyBrightness(DAY_LENGTH * 0.3, 0.31, 0.69, 0.045)).toBeLessThan(0.6);
+    expect(skyBrightness(DAY_LENGTH * 0.3, 0.19, 0.81, 0.055)).toBe(1);
+    expect(skyBrightness(DAY_LENGTH * 0.8, 0.19, 0.81, 0.055)).toBeGreaterThan(0.12);
+  });
+  it('isNight(frac, sunrise, sunset, tw)：預設 = 一天前 / 後 20%', () => {
+    expect(isNight(0.19)).toBe(true);
+    expect(isNight(0.2)).toBe(false);
+    expect(isNight(0.79)).toBe(false);
+    expect(isNight(0.8)).toBe(true);
+    expect(isNight(0.26, 0.31, 0.69, 0.045)).toBe(true);
+    expect(isNight(0.84, 0.19, 0.81, 0.055)).toBe(false);
   });
 });

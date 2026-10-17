@@ -7,7 +7,7 @@ export const WORLD_H = 1200;
  * 世界生成器版本：改 worldgen 輸出時 +1，舊存檔會被判定不相容。
  * v5 = 液體（湖 / 綠洲 / 地下湖 / 熔岩 / 蜂巢；樹與地表裝飾的亂數流不變）。v4 的存檔可以遷移（見 save/serialize.ts：COMPAT_GEN）。
  */
-export const GEN_VERSION = 5;
+export const GEN_VERSION = 6;
 export const FIXED_DT = 1 / 60;
 
 // 玩家物理（px/s、px/s²）。值參考泰拉每 tick 數值 ×60 換算後自行調整。

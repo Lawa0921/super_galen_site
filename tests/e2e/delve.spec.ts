@@ -4,9 +4,15 @@ import { test, expect, type Page } from '@playwright/test';
  * DELVE 深掘 — 2D 沙盒 E2E 煙霧測試（Canvas2D；僅 chromium）。
  * 透過 window.__delveDebug 讀寫引擎狀態。
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-type Dbg = { game: any; handle: any; save: () => Promise<void> };
-declare global { interface Window { __delveDebug?: Dbg } }
+// window.__delveDebug 的型別宣告在 session.ts（DelveDebug，全域唯一一份）
+import type {} from '../../src/scripts/games/delve/render/session';
+
+/** 標題的「按任意鍵開始」→ 選單出現 */
+async function pressStart(page: Page): Promise<void> {
+  await expect(page.locator('#delve-root')).toHaveAttribute('data-ready', '1');
+  await page.locator('#delve-press').click();
+  await expect(page.locator('#delve-tmenu')).toBeVisible();
+}
 
 async function waitGame(page: Page): Promise<void> {
   await page.waitForFunction(() => Boolean(window.__delveDebug?.game), undefined, { timeout: 30000 });
@@ -35,9 +41,14 @@ test.describe('delve', () => {
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/games/delve');
     await expect(page.locator('#delve-title')).toBeVisible();
-    await page.fill('#delve-seed', 'title-test');
+    await expect(page.locator('#delve-press')).toBeVisible();
+    await expect(page.locator('#delve-tmenu')).toBeHidden();
+    await pressStart(page);
     await page.click('#delve-new');
-    await expect(page.locator('#delve-title')).toBeHidden();
+    await expect(page.locator('#delve-newpanel')).toBeVisible();
+    await page.fill('#delve-seed', 'title-test');
+    await page.click('#delve-create');
+    await expect(page.locator('#delve-title')).toBeHidden({ timeout: 15000 });
     await waitGame(page);
     await expect(page.locator('#delve-hotbar .delve-slot')).toHaveCount(10);
     const seed = await page.evaluate(() => window.__delveDebug!.game.seed);
@@ -101,6 +112,7 @@ test.describe('delve', () => {
       return { x, y };
     });
     await page.goto('/games/delve');
+    await pressStart(page);
     await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
     await page.click('#delve-continue');
     await waitGame(page);
@@ -121,14 +133,17 @@ test.describe('delve', () => {
     await expect(page.locator('#delve-confirm')).toBeHidden();
     await expect(page.locator('#delve-title')).toBeVisible();
     expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
-    // 標題「新世界」→ 取消 → 存檔還在
-    await page.fill('#delve-seed', 'brandnew');
+    // 標題「新世界」面板 → 開始 → 詢問 → 取消 → 存檔還在（「繼續」的摘要寫著種子）
+    await pressStart(page);
+    await expect(page.locator('#delve-continue')).toContainText('keepme', { timeout: 10000 });
     await page.click('#delve-new');
+    await page.fill('#delve-seed', 'brandnew');
+    await page.click('#delve-create');
     await expect(page.locator('#delve-confirm')).toBeVisible();
     await page.click('#delve-confirm-cancel');
     await expect(page.locator('#delve-continue')).toContainText('keepme');
     // 再按一次 → 覆蓋
-    await page.click('#delve-new');
+    await page.click('#delve-create');
     await page.click('#delve-confirm-ok');
     await waitGame(page);
     expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('brandnew');
@@ -166,10 +181,10 @@ test.describe('delve', () => {
     await waitGame(page);
     const before = await page.evaluate(() => {
       const g = window.__delveDebug!.game;
-      const cabin = g.structures.find((s: { kind: string }) => s.kind === 'cabin');
-      g.teleport(cabin.chest.x + 1, cabin.chest.y);
-      g.setAim(cabin.chest.x, cabin.chest.y);
-      const slots = g.world.chests.get(g.world.idx(cabin.chest.x, cabin.chest.y));
+      const ch = g.structures.find((s: { kind: string }) => s.kind === 'cabin')!.chest!;
+      g.teleport(ch.x + 1, ch.y);
+      g.setAim(ch.x, ch.y);
+      const slots = g.world.chests.get(g.world.idx(ch.x, ch.y))!;
       return { n: slots.filter((s: unknown) => s).length, first: slots[0] };
     });
     expect(before.n).toBeGreaterThan(0);
@@ -178,10 +193,10 @@ test.describe('delve', () => {
     await page.evaluate(() => window.__delveDebug!.game.setUse(false));
     await expect(page.locator('#delve-inv')).toBeVisible();
     await expect(page.locator('#delve-chest-grid .delve-slot')).toHaveCount(20);
-    const has0 = await page.evaluate((it) => window.__delveDebug!.game.inventory.count(it), before.first.item);
+    const has0 = await page.evaluate((it) => window.__delveDebug!.game.inventory.count(it), before.first!.item);
     await page.click('#delve-chest-takeall');
-    await expect.poll(() => page.evaluate((it) => window.__delveDebug!.game.inventory.count(it), before.first.item)).toBeGreaterThan(has0);
-    expect(await page.evaluate(() => window.__delveDebug!.game.chestSlots().every((s: unknown) => s === null))).toBe(true);
+    await expect.poll(() => page.evaluate((it) => window.__delveDebug!.game.inventory.count(it), before.first!.item)).toBeGreaterThan(has0);
+    expect(await page.evaluate(() => window.__delveDebug!.game.chestSlots()!.every((s: unknown) => s === null))).toBe(true);
     await page.click('#delve-chest-close');
     await expect(page.locator('#delve-chest')).toBeHidden();
   });
@@ -234,6 +249,7 @@ test.describe('delve', () => {
       });
     });
     await page.reload();
+    await pressStart(page);
     await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
     await page.click('#delve-continue');
     await expect(page.locator('#delve-title-msg')).toContainText('舊版地圖產生器');
@@ -247,9 +263,9 @@ test.describe('delve', () => {
     await waitGame(page);
     /** 傳送到門旁（自由區那側）並回傳門中段 tile 在畫面上的座標 */
     const nearDoor = (locked: boolean): Promise<{ x: number; y: number; sx: number; sy: number }> => page.evaluate(async (locked) => {
-      const d = window.__delveDebug!, g = d.game, w = g.world, dg = g.dungeon;
-      const door = locked ? dg.doors.find((q: { locked: boolean }) => q.locked)
-        : dg.doors.find((q: { x: number; y: number; locked: boolean }) => !q.locked && w.getFg(q.x, q.y) === 53 && w.getFg(q.x - 1, q.y + 2) === 0 && w.getFg(q.x - 2, q.y + 2) === 0 && w.isSolid(q.x - 1, q.y + 3));
+      const d = window.__delveDebug!, g = d.game, w = g.world, dg = g.dungeon!;
+      const door = (locked ? dg.doors.find((q: { locked: boolean }) => q.locked)
+        : dg.doors.find((q: { x: number; y: number; locked: boolean }) => !q.locked && w.getFg(q.x, q.y) === 53 && w.getFg(q.x - 1, q.y + 2) === 0 && w.getFg(q.x - 2, q.y + 2) === 0 && w.isSolid(q.x - 1, q.y + 3)))!;
       // 上鎖的門：站在不屬於上鎖房間的那一側
       let side = -1;
       if (locked) {
@@ -287,6 +303,7 @@ test.describe('delve', () => {
     // 3) 存檔 → 重新整理 → 繼續：兩扇門都還開著
     await page.evaluate(() => window.__delveDebug!.save());
     await page.goto('/games/delve');
+    await pressStart(page);
     await page.click('#delve-continue');
     await waitGame(page);
     expect(await fg(a.x, a.y + 1)).toBe(54);
@@ -326,8 +343,8 @@ test.describe('delve', () => {
     await page.keyboard.press('KeyJ');
     await page.evaluate(() => {
       const d = window.__delveDebug!, g = d.game;
-      const c = g.structures.find((s: { kind: string; chest?: unknown }) => s.kind === 'cabin' && s.chest);
-      g.teleport(c.chest.x + 1, c.chest.y);
+      const c = g.structures.find((s: { kind: string; chest?: unknown }) => s.kind === 'cabin' && s.chest)!;
+      g.teleport(c.chest!.x + 1, c.chest!.y);
       d.handle.renderer.snapCamera();
     });
     await expect(page.locator('#delve-banner')).toHaveClass(/is-on/, { timeout: 5000 });
@@ -419,6 +436,7 @@ test.describe('delve', () => {
     });
     expect(before.markers.length).toBe(1);
     await page.goto('/games/delve');
+    await pressStart(page);
     await page.click('#delve-continue');
     await waitGame(page);
     const after = await page.evaluate(() => { const g = window.__delveDebug!.game; return { count: g.explored.count, markers: g.markers, lore: g.discovery.toJSON().lore, found: g.discovery.toJSON().regions }; });
@@ -504,16 +522,17 @@ test.describe('delve', () => {
     await page.evaluate(() => { const g = window.__delveDebug!.game; g.time = 600 * 0.9; g.summonBoss(); });
     await expect(page.locator('#delve-boss')).toBeVisible();
     await expect(page.locator('#delve-boss-name')).toContainText('燈脈守望者');
-    await page.evaluate(() => { const g = window.__delveDebug!.game, b = g.bossEnemy(); g.debugDamage(b.id, b.maxHp * 0.6); });
+    await page.evaluate(() => { const g = window.__delveDebug!.game, b = g.bossEnemy()!; g.debugDamage(b.id, b.maxHp * 0.6); });
     await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.getState().boss?.phase)).toBe(2);
     await page.waitForTimeout(1600); // 碎籠無敵結束
-    await page.evaluate(() => { const g = window.__delveDebug!.game, b = g.bossEnemy(); g.debugDamage(b.id, b.maxHp); });
+    await page.evaluate(() => { const g = window.__delveDebug!.game, b = g.bossEnemy()!; g.debugDamage(b.id, b.maxHp); });
     await expect(page.locator('#delve-boss')).toBeHidden();
     expect(await page.evaluate(() => window.__delveDebug!.game.getState().bossesDefeated)).toEqual(['lantern_warden']);
     await page.keyboard.press('KeyJ');
     await expect(page.locator('[data-testid="journal-bosses"]')).toContainText('燈脈守望者 ✓');
     await page.evaluate(() => window.__delveDebug!.save());
     await page.goto('/games/delve');
+    await pressStart(page);
     await page.click('#delve-continue');
     await waitGame(page);
     expect(await page.evaluate(() => window.__delveDebug!.game.getState().bossesDefeated)).toEqual(['lantern_warden']);
@@ -538,6 +557,7 @@ test.describe('delve', () => {
     await expect(link).toBeVisible();
     await link.click();
     await expect(page).toHaveURL(/\/games\/delve\/?$/);
+    await pressStart(page);
     await expect(page.locator('#delve-new')).toBeVisible();
   });
 });
@@ -566,7 +586,7 @@ test.describe('delve liquids', () => {
   }
   const hold = (page: Page, item: string): Promise<void> => page.evaluate((item) => {
     const g = window.__delveDebug!.game;
-    g.give(item, 1);
+    g.give(item as never, 1);
     const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === item);
     g.inventory.swap(i, 0); g.selectSlot(0);
   }, item);
@@ -594,9 +614,14 @@ test.describe('delve liquids', () => {
     await page.waitForFunction(([x0, fy]) => {
       const g = window.__delveDebug!.game, w = g.world;
       let s = 0;
-      for (let x = x0 + 5; x <= x0 + 12; x++) s += w.getLiquid(x, fy - 1);
-      return s >= 200 && g.liquids.activeCount === 0;
-    }, [x0, fy], { timeout: 15000 });
+      const row: number[] = [];
+      for (let x = x0 + 5; x <= x0 + 12; x++) { s += w.getLiquid(x, fy - 1); row.push(w.getLiquid(x, fy - 1)); }
+      // 這一段靜止了（世界裡的泉水瀑布會一直流，所以不能等全世界 activeCount === 0）
+      const key = row.join(','), win = window as unknown as { __lastRow?: string };
+      const same = win.__lastRow === key && g.liquids.activeCount < 5000;
+      win.__lastRow = key;
+      return s >= 200 && same;
+    }, [x0, fy], { timeout: 15000, polling: 400 });
     const vals = await page.evaluate(([x0, fy]) => { const w = window.__delveDebug!.game.world; const v: number[] = []; for (let x = x0 + 5; x <= x0 + 12; x++) v.push(w.getLiquid(x, fy - 1)); return v; }, [x0, fy]);
     expect(Math.max(...vals) - Math.min(...vals)).toBeLessThanOrEqual(3);
   });
@@ -682,12 +707,18 @@ test.describe('delve liquids', () => {
     await page.waitForFunction(([x0, fy]) => {
       const g = window.__delveDebug!.game, w = g.world;
       let s = 0;
-      for (let x = x0 + 5; x <= x0 + 9; x++) s += w.getLiquid(x, fy - 1);
-      return s >= 200 && g.liquids.activeCount === 0;
-    }, [x0, fy], { timeout: 15000 });
+      const row: number[] = [];
+      for (let x = x0 + 5; x <= x0 + 9; x++) { s += w.getLiquid(x, fy - 1); row.push(w.getLiquid(x, fy - 1)); }
+      // 這一段靜止了（世界裡的泉水瀑布會一直流，所以不能等全世界 activeCount === 0）
+      const key = row.join(','), win = window as unknown as { __lastRow?: string };
+      const same = win.__lastRow === key && g.liquids.activeCount < 5000;
+      win.__lastRow = key;
+      return s >= 200 && same;
+    }, [x0, fy], { timeout: 15000, polling: 400 });
     const before = await rowSum(page, x0 + 5, x0 + 9, fy - 1);
     await page.evaluate(() => window.__delveDebug!.save());
     await page.goto('/games/delve');
+    await pressStart(page);
     await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
     await page.click('#delve-continue');
     await waitGame(page);
@@ -749,6 +780,7 @@ test.describe('delve fixes', () => {
     });
     expect(info.dead).toBe(true);
     await page.goto('/games/delve');
+    await pressStart(page);
     await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
     await page.click('#delve-continue');
     await waitGame(page);
@@ -780,6 +812,7 @@ test.describe('delve fixes', () => {
       await d.save();
     });
     await page.goto('/games/delve');
+    await pressStart(page);
     await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
     await page.click('#delve-continue');
     await waitGame(page);
@@ -802,6 +835,283 @@ test.describe('delve fixes', () => {
     await page.click('#delve-help-close');
     const tileCss = await page.evaluate(() => 16 * window.__delveDebug!.handle.renderer.zoom);
     expect(tileCss).toBeGreaterThanOrEqual(16);
+    await ctx.close();
+  });
+});
+
+test.describe('delve 曆法 / 天氣', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+
+  test('debug 改日期 / 季節 → HUD 時鐘顯示「第1年 秋 3日 06:4x」；日曆面板有今天 / 明天天氣', async ({ page }) => {
+    await page.goto('/games/delve?seed=cal-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await expect(page.locator('#delve-clock-text')).toHaveText(/^第1年 春 1日 0\d:\d\d$/, { timeout: 5000 });
+    await page.evaluate(() => window.__delveDebug!.game.setDate({ year: 1, season: 2, day: 3, hour: 6 + 40 / 60 + 0.001 }));
+    await expect(page.locator('#delve-clock-text')).toHaveText(/^第1年 秋 3日 06:4\d$/, { timeout: 5000 });
+    await page.click('#delve-clock');
+    await expect(page.locator('#delve-calendar')).toBeVisible();
+    await expect(page.locator('[data-testid="calendar-date"]')).toHaveText('第1年 秋季 第3日');
+    await expect(page.locator('[data-testid="calendar-today"]')).toHaveAttribute('data-weather', /^(clear|cloudy|rain|storm|snow|fog)$/);
+    await expect(page.locator('[data-testid="calendar-tomorrow"]')).toHaveAttribute('data-weather', /^(clear|cloudy|rain|storm|snow|fog)$/);
+    await expect(page.locator('[data-testid="calendar-days"]')).toContainText('17 天');
+    await page.click('#delve-calendar-close');
+    await expect(page.locator('#delve-calendar')).toBeHidden();
+  });
+
+  test('晚上躺上床 → 淡出、睡到隔天日出', async ({ page }) => {
+    await page.goto('/games/delve?seed=bed-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    const bed = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, f = g.feetTile();
+      const bx = f.x + 1, by = f.y;
+      for (const x of [bx, bx + 1]) { g.world.setFg(x, by, 0); g.world.setFg(x, by - 1, 0); g.world.setFg(x, by + 1, 3); }
+      g.world.setFg(bx, by, 66); g.world.setFg(bx + 1, by, 67);
+      g.setDate({ season: 0, day: 2, hour: 22 });
+      return { bx, by, day: g.date().dayIndex };
+    });
+    await page.evaluate(({ bx, by }) => window.__delveDebug!.game.interact(bx, by), bed);
+    await page.waitForFunction(() => window.__delveDebug!.game.getState().sleep > 0, undefined, { timeout: 3000 });
+    await page.waitForFunction((d) => { const g = window.__delveDebug!.game; return g.date().dayIndex === d + 1 && !g.sleeping; }, bed.day, { timeout: 8000 });
+    const st = await page.evaluate(() => { const g = window.__delveDebug!.game; return { night: g.isNight(), hour: g.date().hour, sky: g.skyLevel() }; });
+    expect(st.night).toBe(false);
+    expect(st.hour).toBeGreaterThanOrEqual(5);
+    expect(st.hour).toBeLessThanOrEqual(8);
+    await expect(page.locator('#delve-clock-text')).toHaveText(/^第1年 春 3日 0[5-8]:\d\d$/, { timeout: 3000 });
+  });
+
+  test('強制下雨 → 畫面上有雨滴粒子、天空光變暗', async ({ page }) => {
+    await page.goto('/games/delve?seed=rain-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const clear = await page.evaluate(() => { const g = window.__delveDebug!.game; g.setDate({ season: 0, day: 3, hour: 12 }); g.forceWeather('clear'); return { sky: g.skyLevel(), rgb: Math.max(...g.skyRGB()) }; });
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => window.__delveDebug!.handle.renderer.fx.dropCount)).toBe(0);
+    await page.evaluate(() => window.__delveDebug!.game.forceWeather('rain'));
+    await page.waitForFunction(() => window.__delveDebug!.handle.renderer.fx.dropCount > 30, undefined, { timeout: 5000 });
+    const rain = await page.evaluate(() => { const g = window.__delveDebug!.game; return { sky: g.skyLevel(), rgb: Math.max(...g.skyRGB()), w: g.getState().weather }; });
+    expect(rain.w).toBe('rain');
+    expect(rain.sky).toBeLessThan(clear.sky - 0.15);
+    expect(rain.rgb).toBeLessThan(clear.rgb - 0.15);
+    await expect(page.locator('#delve-clock')).toHaveAttribute('data-weather', 'rain', { timeout: 3000 });
+  });
+
+  test('冬天：森林的湖面結冰，可以走在上面', async ({ page }) => {
+    await page.goto('/games/delve?seed=ice-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    // 在玩家右邊挖一個 10 寬 3 深的池子灌滿水（森林）
+    const lake = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, w = g.world, f = g.feetTile();
+      const x0 = f.x + 3, top = f.y + 1;
+      for (let x = x0 - 2; x < x0 + 12; x++) { w.biome[x] = 0; for (let y = top - 6; y < top; y++) w.setFg(x, y, 0); w.setFg(x, top, 3); }
+      for (let x = x0; x < x0 + 10; x++) for (let y = top; y < top + 3; y++) { w.setFg(x, y, 0); w.setWall(x, y, 0); w.setLiquid(x, y, 255, 1); }
+      for (let y = top; y < top + 4; y++) { w.setFg(x0 - 1, y, 3); w.setFg(x0 + 10, y, 3); }
+      for (let x = x0; x < x0 + 10; x++) w.setFg(x, top + 3, 3);
+      g.setDate({ season: 3, day: 6, hour: 12 });
+      return { x0, top, frozen: w.frozen[w.idx(x0 + 5, top)], solid: w.isSolid(x0 + 5, top) };
+    });
+    expect(lake.frozen).toBe(1);
+    expect(lake.solid).toBe(true);
+    await page.evaluate(({ x0, top }) => { const g = window.__delveDebug!.game; g.teleport(x0 + 5, top - 1); }, lake);
+    await page.waitForTimeout(800);
+    const st = await page.evaluate(({ top }) => { const g = window.__delveDebug!.game; return { onGround: g.player.onGround, feet: g.feetTile().y, wet: g.getState().liquid.frac, top }; }, lake);
+    expect(st.onGround).toBe(true);
+    expect(st.feet).toBe(st.top - 1);
+    expect(st.wet).toBe(0);
+  });
+});
+
+// ── 內容 / 打磨：釣魚、瀑布（液體總量有上限）、首領戰利品 ─────────────────────────
+test.describe('delve fishing / waterfalls / furniture', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+
+  test('釣魚：拋竿 → 浮標落水 → debug 強制上鉤 → 按「使用」釣起來（背包 + 日誌釣魚紀錄）', async ({ page }) => {
+    await page.goto('/games/delve?seed=fish-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    // 天空蓋一個小水池，玩家站在池邊
+    const pool = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, w = g.world;
+      const x0 = g.spawn.x - 20, fy = Math.max(14, w.surfaceAt(g.spawn.x) - 24);
+      for (let y = fy - 14; y < fy + 6; y++) for (let x = x0 - 3; x < x0 + 30; x++) { w.setFg(x, y, y >= fy ? 3 : 0); w.setLiquid(x, y, 0, 0); }
+      for (let y = fy; y < fy + 4; y++) for (let x = x0 + 6; x < x0 + 24; x++) { w.setFg(x, y, 0); w.setLiquid(x, y, 255, 1); }
+      g.teleport(x0 + 3, fy - 1);
+      g.give('worm', 5);
+      g.give('wood_rod', 1);
+      const i = g.inventory.slots.findIndex((s) => s?.item === 'wood_rod');
+      g.inventory.swap(i, 0); g.selectSlot(0);
+      window.__delveDebug!.handle.renderer.snapCamera();
+      g.setAim(x0 + 12, fy - 2);
+      g.setUse(true);
+      return { x0, fy };
+    });
+    await page.waitForTimeout(150);
+    await page.evaluate(() => window.__delveDebug!.game.setUse(false));
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.fishing?.state ?? null), { timeout: 5000 }).toBe('floating');
+    expect(await page.evaluate(() => window.__delveDebug!.game.debugForceBite('brook_trout'))).toBe(true);
+    await page.evaluate(() => window.__delveDebug!.game.setUse(true));
+    await page.waitForTimeout(150);
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.count('brook_trout'))).toBe(1);
+    await page.evaluate(() => window.__delveDebug!.game.setUse(false));
+    expect(await page.evaluate(() => window.__delveDebug!.game.inventory.count('worm'))).toBe(4);
+    await page.keyboard.press('KeyJ');
+    await expect(page.locator('[data-testid="journal-fish"]')).toContainText('釣魚紀錄 1 /');
+    void pool;
+  });
+
+  test('瀑布：世界裡有泉水瀑布在流；跑一段時間液體總量不會一直長', async ({ page }) => {
+    await page.goto('/games/delve?seed=falls-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const info = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, w = g.world;
+      const s = g.springs.find((q) => q.type === 1)!;
+      g.teleport(s.drains[0].x, s.drains[0].y - 1);
+      window.__delveDebug!.handle.renderer.snapCamera();
+      return { n: g.springs.length, spring: w.getFg(s.x, s.y), total: w.liquidTotal() };
+    });
+    expect(info.n).toBeGreaterThan(3);
+    expect(info.spring).toBe(72);
+    // 跑大約 12 秒遊戲時間：泉水有出水、有排水；全世界總量的成長有上限
+    const samples: number[] = [];
+    for (let k = 0; k < 6; k++) {
+      await page.waitForTimeout(2000);
+      samples.push(await page.evaluate(() => window.__delveDebug!.game.world.liquidTotal()));
+    }
+    const st = await page.evaluate(() => window.__delveDebug!.game.liquids.springStats());
+    expect(st.emitted).toBeGreaterThan(0);
+    expect(st.drained).toBeGreaterThan(0);
+    expect(samples[5] - samples[2]).toBeLessThan(255 * 60);
+    expect(samples[5] - info.total).toBeLessThan(255 * 400);
+    // 畫面上有瀑布水柱
+    expect(await page.evaluate(() => window.__delveDebug!.handle.renderer.liquidLayer.stats.falls)).toBeGreaterThan(0);
+  });
+
+  test('首領戰利品可以放在地上，也可以掛在牆上；拆下來拿回來', async ({ page }) => {
+    await page.goto('/games/delve?seed=trophy-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const r = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, w = g.world;
+      const x0 = g.spawn.x - 20, fy = Math.max(14, w.surfaceAt(g.spawn.x) - 24);
+      for (let y = fy - 10; y < fy; y++) for (let x = x0 - 2; x < x0 + 12; x++) { w.setFg(x, y, 0); w.setWall(x, y, 0); w.setLiquid(x, y, 0, 0); }
+      for (let x = x0 - 2; x < x0 + 12; x++) w.setFg(x, fy, 3);
+      g.teleport(x0 + 2, fy - 1);
+      const hold = (): void => { g.give('warden_trophy', 1); const i = g.inventory.slots.findIndex((s) => s?.item === 'warden_trophy'); g.inventory.swap(i, 0); g.selectSlot(0); };
+      hold();
+      const floor = g.tryPlace(x0 + 5, fy - 1);
+      w.setWall(x0 + 5, fy - 5, 3);
+      hold();
+      const wall = g.tryPlace(x0 + 5, fy - 5);
+      window.__delveDebug!.handle.renderer.snapCamera();
+      return { floor, wall, a: w.getFg(x0 + 5, fy - 1), b: w.getFg(x0 + 5, fy - 5), x0, fy };
+    });
+    expect(r.floor).toBe(true);
+    expect(r.wall).toBe(true);
+    expect(r.a).toBe(80);
+    expect(r.b).toBe(80);
+    await page.waitForTimeout(300);
+    const back = await page.evaluate(({ x0, fy }) => { const g = window.__delveDebug!.game; g.mineInstant(x0 + 5, fy - 5); return g.inventory.count('warden_trophy'); }, r);
+    expect(back).toBe(1);
+  });
+});
+
+// ── 標題畫面：開場、按任意鍵開始、選單鍵盤移動、新世界面板、設定、存檔摘要 ─────────────
+test.describe('delve title', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+
+  test('即時背景場景在跑、按任意鍵 → 選單；↑↓ 移動焦點；設定寫入音量 / 縮放 / 自動瞄準', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve');
+    await page.waitForFunction(() => (window.__delveTitle?.perf.frames ?? 0) > 10, undefined, { timeout: 15000 });
+    expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#delve-tmenu')).toBeVisible();
+    await expect(page.locator('#delve-new')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('#delve-import')).toBeFocused();
+    await page.keyboard.press('End');
+    await expect(page.locator('#delve-back')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('#delve-new')).toBeFocused();
+    // 設定
+    await page.click('#delve-settings-btn');
+    await expect(page.locator('#delve-settings')).toBeVisible();
+    await page.locator('#delve-vol').fill('30');
+    await page.click('#delve-zp-inc');
+    await page.click('#delve-aim-pref');
+    const st = await page.evaluate(() => ({ v: localStorage.getItem('arcade-sfx-vol'), z: localStorage.getItem('delve.zoom'), a: localStorage.getItem('delve.autoaim'), pub: (window as unknown as { __arcadeAudio?: { sfxVolume: number } }).__arcadeAudio?.sfxVolume }));
+    expect(st).toEqual({ v: '0.3', z: '1', a: '1', pub: 0.3 });
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#delve-settings')).toBeHidden();
+    // 新世界面板：骰子給名字、難度切換記住
+    await page.click('#delve-new');
+    await page.click('#delve-dice');
+    expect((await page.locator('#delve-seed').inputValue()).length).toBeGreaterThan(2);
+    await page.click('#delve-diff-peaceful');
+    await expect(page.locator('#delve-diff-peaceful')).toHaveAttribute('aria-checked', 'true');
+    expect(await page.evaluate(() => localStorage.getItem('delve.peaceful'))).toBe('1');
+    await page.fill('#delve-seed', 'title-flow');
+    await page.click('#delve-create');
+    await waitGame(page);
+    expect(await page.evaluate(() => ({ s: window.__delveDebug!.game.seed, p: window.__delveDebug!.game.peaceful, aim: window.__delveDebug!.game.autoAim, title: Boolean(window.__delveTitle) }))).toEqual({ s: 'title-flow', p: true, aim: true, title: false });
+    expect(errors).toEqual([]);
+  });
+
+  test('標題「操作說明」打開說明視窗，Esc 關掉回到選單；選單上 Esc 回到「按任意鍵開始」', async ({ page }) => {
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-help-open');
+    await expect(page.locator('#delve-help')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#delve-help')).toBeHidden();
+    await expect(page.locator('#delve-tmenu')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#delve-press')).toBeVisible();
+    await expect(page.locator('#delve-tmenu')).toBeHidden();
+  });
+
+  test('匯入壞檔：顯示中文說明，不是原始錯誤字串', async ({ page }) => {
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.locator('#delve-import-file').setInputFiles({ name: 'bad.delve', mimeType: 'application/octet-stream', buffer: Buffer.from('nope') });
+    await expect(page.locator('#delve-title-msg')).toContainText('不是有效的 DELVE 存檔');
+    await expect(page.locator('#delve-title-msg')).not.toContainText('too short');
+  });
+
+  test('「繼續」顯示存檔摘要（種子、日期、遊玩時間、最深、完成度）', async ({ page }) => {
+    await page.goto('/games/delve?seed=summary&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(async () => { const d = window.__delveDebug!, g = d.game; g.setDate({ year: 2, season: 2, day: 5, hour: 9 }); g.tick = 60 * 60 * 61; g.discovery.depthRecord = 88; await d.save(); });
+    await page.goto('/games/delve');
+    await pressStart(page);
+    const sub = page.locator('#delve-continue-sub');
+    await expect(sub).toContainText('summary');
+    await expect(sub).toContainText('第2年 秋 5日');
+    await expect(sub).toContainText('遊玩 1 小時 1 分');
+    await expect(sub).toContainText('最深 88 格');
+    await expect(sub).toContainText('完成度');
+    await expect(page.locator('#delve-export-title')).toBeVisible();
+  });
+
+  test('手機直式：沒有橫向捲動、選單按鈕至少 40px 高', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true });
+    const page = await ctx.newPage();
+    await page.goto('/games/delve');
+    await expect(page.locator('#delve-root')).toHaveAttribute('data-ready', '1');
+    await page.locator('#delve-press').tap();
+    await expect(page.locator('#delve-tmenu')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const hs = await page.locator('#delve-tmenu .delve-ti:visible').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
+    expect(hs.length).toBeGreaterThanOrEqual(4);
+    for (const h of hs) expect(h).toBeGreaterThanOrEqual(40);
     await ctx.close();
   });
 });

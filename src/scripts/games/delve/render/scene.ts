@@ -71,10 +71,14 @@ const NIGHT: Omit<Key, 'd'> = { top: '#18204a', bottom: '#2c4486', layers: ['#46
 const DAWN: Omit<Key, 'd'> = { top: '#2c4486', bottom: '#f2b888', layers: ['#7a5a8c', '#463c78', '#2c2450'], stars: 0.2, cloud: '#f2b888' };
 const DAY: Omit<Key, 'd'> = { top: '#3e74c4', bottom: '#cceaf8', layers: ['#7f9cc4', '#6a9c88', '#3f7468'], stars: 0, cloud: '#ffffff' };
 const DUSK: Omit<Key, 'd'> = { top: '#463c78', bottom: '#d98f66', layers: ['#b8788e', '#7a5a8c', '#2c2450'], stars: 0.1, cloud: '#ffa93a' };
-const KEYS: Key[] = [
-  { d: 0, ...NIGHT }, { d: 0.19, ...NIGHT }, { d: 0.235, ...DAWN }, { d: 0.3, ...DAY },
-  { d: 0.7, ...DAY }, { d: 0.765, ...DUSK }, { d: 0.81, ...NIGHT }, { d: 1, ...NIGHT },
-];
+/** 關鍵時刻相對日出 / 日落的位置（以曙暮光寬 tw 為單位；預設 tw = 0.05 → 0.19 / 0.235 / 0.3 / 0.7 / 0.765 / 0.81） */
+function keys(sunrise: number, sunset: number, tw: number): Key[] {
+  return [
+    { d: 0, ...NIGHT }, { d: sunrise - tw * 1.2, ...NIGHT }, { d: sunrise - tw * 0.3, ...DAWN }, { d: sunrise + tw, ...DAY },
+    { d: sunset - tw, ...DAY }, { d: sunset + tw * 0.3, ...DUSK }, { d: sunset + tw * 1.2, ...NIGHT }, { d: 1, ...NIGHT },
+  ];
+}
+const KEY_CACHE = new Map<string, Key[]>();
 
 function hex(c: string): RGB {
   const n = parseInt(c.slice(1), 16);
@@ -85,20 +89,62 @@ function lerp(a: string, b: string, t: number): RGB {
   return [0, 1, 2].map((i) => Math.round(x[i] + (y[i] - x[i]) * t)) as RGB;
 }
 
-/** d = 一天進度 0..1（0 = 午夜、0.5 = 正午） */
-export function skyColors(d: number): SkyColors {
+/** 天氣對天色的影響：kind / intensity（weather.ts）+ 閃電閃光 0..1 */
+export interface SkyWeather { kind: string; intensity: number; flash: number; }
+/** 滿強度時的「灰化」比例與壓暗倍率 */
+const OVERCAST: Record<string, [number, number]> = {
+  clear: [0, 1], cloudy: [0.5, 0.92], rain: [0.72, 0.8], storm: [0.88, 0.62], snow: [0.6, 0.94], fog: [0.66, 0.96],
+};
+/** 往同亮度、略帶藍的灰靠（cloud 灰的色相取自色票冷灰），再壓暗 */
+function overcast(c: RGB, o: number, dark: number): RGB {
+  if (o <= 0 && dark >= 1) return c;
+  const l = c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11;
+  const g: RGB = [l * 0.94, l * 0.97, l * 1.08];
+  return [0, 1, 2].map((i) => Math.max(0, Math.min(255, Math.round((c[i] + (g[i] - c[i]) * o) * dark)))) as RGB;
+}
+function brighten(c: RGB, f: number): RGB {
+  return [0, 1, 2].map((i) => Math.round(c[i] + (([236, 242, 255] as RGB)[i] - c[i]) * f)) as RGB;
+}
+
+/**
+ * d = 一天進度 0..1（0 = 午夜、0.5 = 正午）；日出 / 日落 / 曙暮光由曆法每天餵入（預設 = 舊的固定時段）。
+ * wx：天氣讓天色變灰變暗、雲遮住星星；閃電把整片天空往白推（之後吸附回色票 → 一階一階）。
+ */
+export function skyColors(d: number, sunrise = 0.25, sunset = 0.75, tw = 0.05, wx?: SkyWeather): SkyColors {
   const p = d - Math.floor(d);
+  const kk = `${sunrise}|${sunset}|${tw}`;
+  let K = KEY_CACHE.get(kk);
+  if (!K) { K = keys(sunrise, sunset, tw); if (KEY_CACHE.size > 64) KEY_CACHE.clear(); KEY_CACHE.set(kk, K); }
   let k = 0;
-  while (k < KEYS.length - 2 && KEYS[k + 1].d <= p) k++;
-  const a = KEYS[k], b = KEYS[k + 1];
+  while (k < K.length - 2 && K[k + 1].d <= p) k++;
+  const a = K[k], b = K[k + 1];
   const t = b.d > a.d ? Math.min(1, Math.max(0, (p - a.d) / (b.d - a.d))) : 0;
-  return {
+  let out: SkyColors = {
     top: lerp(a.top, b.top, t),
     bottom: lerp(a.bottom, b.bottom, t),
     layers: [lerp(a.layers[0], b.layers[0], t), lerp(a.layers[1], b.layers[1], t), lerp(a.layers[2], b.layers[2], t)],
     stars: a.stars + (b.stars - a.stars) * t,
     cloud: lerp(a.cloud, b.cloud, t),
   };
+  if (wx && (wx.intensity > 0 || wx.flash > 0)) {
+    const [o0, d0] = OVERCAST[wx.kind] ?? OVERCAST.clear;
+    const o = o0 * wx.intensity, dk = 1 - (1 - d0) * wx.intensity;
+    const f = (c: RGB): RGB => { const v = overcast(c, o, dk); return wx.flash > 0 ? brighten(v, wx.flash * 0.8) : v; };
+    out = {
+      top: f(out.top), bottom: f(out.bottom), layers: [f(out.layers[0]), f(out.layers[1]), f(out.layers[2])],
+      stars: wx.flash > 0 ? 0 : out.stars * (1 - Math.min(1, o * 1.6)),
+      cloud: f(out.cloud),
+    };
+  }
+  return out;
+}
+
+/** 白天程度 0..1：日出前後一個曙暮光之間線性（背景的生態區色調用） */
+export function dayness(d: number, sunrise = 0.25, sunset = 0.75, tw = 0.05): number {
+  const p = d - Math.floor(d);
+  if (p <= sunrise - tw || p >= sunset + tw) return 0;
+  if (p >= sunrise + tw && p <= sunset - tw) return 1;
+  return p < 0.5 ? (p - (sunrise - tw)) / (2 * tw) : (sunset + tw - p) / (2 * tw);
 }
 
 export type TorchMount = 'floor' | 'left' | 'right' | 'back';

@@ -7,7 +7,20 @@ const STORE = 'saves';
 export const AUTOSAVE_INTERVAL_MS = 30_000;
 export const EXPORT_MIME = 'application/x-delve-save';
 
-export interface SlotMeta { slot: string; seed: string; savedAt: number; bytes: number; }
+/** 存檔摘要（存檔時算好，標題畫面的「繼續」顯示用；不必解開整個世界） */
+export interface SaveSummary {
+  seed: string;
+  /** 遊戲內時間（秒） */
+  time: number;
+  /** 實際遊玩秒數 */
+  playSec: number;
+  /** 最深紀錄（地表下幾格） */
+  depth: number;
+  /** 日誌完成度 0..1 */
+  completion: number;
+  peaceful: boolean;
+}
+export interface SlotMeta { slot: string; seed: string; savedAt: number; bytes: number; summary?: SaveSummary; }
 interface SlotRecord extends SlotMeta { data: Uint8Array; }
 
 export function hasCompression(): boolean {
@@ -94,11 +107,11 @@ function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T
 }
 
 /** 存入一個槽（bytes 為 serializeGame 的輸出；此處會壓縮）。 */
-export async function saveSlot(slot: string, seed: string, raw: Uint8Array, savedAt = Date.now()): Promise<SlotMeta> {
+export async function saveSlot(slot: string, seed: string, raw: Uint8Array, savedAt = Date.now(), summary?: SaveSummary): Promise<SlotMeta> {
   const data = await compress(raw);
-  const rec: SlotRecord = { slot, seed, savedAt, bytes: data.length, data };
+  const rec: SlotRecord = { slot, seed, savedAt, bytes: data.length, data, ...(summary ? { summary } : {}) };
   await tx('readwrite', (s) => s.put(rec));
-  return { slot, seed, savedAt, bytes: data.length };
+  return { slot, seed, savedAt, bytes: data.length, summary };
 }
 
 /** 讀取槽，回傳解壓後的 serialize 位元組；沒有則 null。 */
@@ -114,7 +127,7 @@ export async function deleteSlot(slot: string): Promise<void> {
 
 export async function listSlots(): Promise<SlotMeta[]> {
   const all = await tx<SlotRecord[]>('readonly', (s) => s.getAll() as IDBRequest<SlotRecord[]>);
-  return all.map(({ slot, seed, savedAt, bytes }) => ({ slot, seed, savedAt, bytes }))
+  return all.map(({ slot, seed, savedAt, bytes, summary }) => ({ slot, seed, savedAt, bytes, summary }))
     .sort((a, b) => b.savedAt - a.savedAt);
 }
 
@@ -148,6 +161,8 @@ export interface AutosaveOptions {
   seed: string;
   /** 回傳當下存檔位元組（通常是 () => serializeGame(game)） */
   getBytes: () => Uint8Array;
+  /** 存檔摘要（標題畫面「繼續」用） */
+  getSummary?: () => SaveSummary;
   intervalMs?: number;
   onSaved?: (meta: SlotMeta) => void;
   onError?: (err: unknown) => void;
@@ -159,9 +174,9 @@ export function startAutosave(opts: AutosaveOptions): () => void {
   const run = (): void => {
     if (busy) return;
     busy = true;
-    let bytes: Uint8Array;
-    try { bytes = opts.getBytes(); } catch (e) { busy = false; opts.onError?.(e); return; }
-    saveSlot(opts.slot, opts.seed, bytes)
+    let bytes: Uint8Array, summary: SaveSummary | undefined;
+    try { bytes = opts.getBytes(); summary = opts.getSummary?.(); } catch (e) { busy = false; opts.onError?.(e); return; }
+    saveSlot(opts.slot, opts.seed, bytes, Date.now(), summary)
       .then((m) => opts.onSaved?.(m))
       .catch((e: unknown) => opts.onError?.(e))
       .finally(() => { busy = false; });

@@ -41,11 +41,13 @@ import { TILES, WALLS, T, isChestTile } from '../engine/tiles';
 import { ITEMS, isItemId, type ItemId } from '../engine/items';
 import { MAX_DROPS } from '../engine/entities';
 import { ExploredMap, MAX_MARKERS, decodeRle, type MapMarker } from '../engine/explore';
+import type { GenResult } from '../engine/worldgen';
 import type { DiscoveryJSON } from '../engine/discovery';
 import { Equipment, type EquipmentJSON } from '../engine/equipment';
 import { ENEMIES, type EnemyKind } from '../engine/enemies';
 import { BASE_HP, MAX_HP_CAP } from '../engine/combat';
 import { LIQ, LIQ_MAX } from '../engine/liquidKind';
+import { WEATHER_KINDS, type WeatherKind } from '../engine/weather';
 
 export const SAVE_FORMAT = 7;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
@@ -114,6 +116,21 @@ export interface SaveHeader {
   drops?: DropSave[];
   /** 存檔時正在打的首領（讀檔退還召喚道具）；format 7 起 */
   bossActive?: EnemyKind | null;
+  /** 曆法 / 天氣：強制天氣、結冰格（tile index 的差分）；沒有 = 讀檔時依日期重算結冰 */
+  env?: EnvSave;
+  /** 內容 / 打磨（釣魚紀錄等）；沒有 = 空 */
+  extra?: ExtraSave;
+}
+export interface ExtraSave {
+  /** 釣魚紀錄：魚種 → 條數 */
+  fishLog: Partial<Record<ItemId, number>>;
+  /** 玩家敲開的冰洞（tile index） */
+  minedIce?: number[];
+}
+export interface EnvSave {
+  weather: { kind: WeatherKind; until: number } | null;
+  /** 結冰格 tile index（排序後的差分：第一個是絕對值，之後是與前一個的差） */
+  frozen: number[];
 }
 export interface ChestSave { i: number; slots: (Stack | null)[]; }
 export interface ChunkPayload { fg: Uint8Array; wall: Uint8Array; }
@@ -130,6 +147,8 @@ export type RestoreResult =
 export interface RestoreOptions {
   /** 生成器版本不符時仍以目前生成器還原（被修改 chunk 照貼，可能有接縫） */
   allowGenMismatch?: boolean;
+  /** 預先生成好的世界（同 seed / 大小；標題畫面分段生成、顯示進度用） */
+  gen?: GenResult;
 }
 
 // ── chunk 讀寫 ─────────────────────────────────────────────
@@ -267,6 +286,30 @@ function validDrops(v: unknown): DropSave[] | undefined {
     return { item: o.item, count: o.count as number, x: o.x, y: o.y };
   });
 }
+function validEnv(v: unknown): EnvSave | undefined {
+  if (v === undefined) return undefined;
+  const o = v as Partial<EnvSave> | null;
+  if (!o || typeof o !== 'object' || !Array.isArray(o.frozen) || !o.frozen.every((d) => Number.isInteger(d) && d >= 0)) throw new SaveFormatError('env');
+  const wx = o.weather as EnvSave['weather'] | undefined;
+  const weather = wx && typeof wx === 'object' && WEATHER_KINDS.includes(wx.kind) && isNum(wx.until) ? { kind: wx.kind, until: wx.until } : null;
+  return { weather, frozen: [...o.frozen] };
+}
+function encodeFrozen(F: Uint8Array): number[] {
+  const out: number[] = [];
+  let last = 0;
+  for (let i = 0; i < F.length; i++) if (F[i]) { out.push(i - last); last = i; }
+  return out;
+}
+function validExtra(v: unknown): ExtraSave | undefined {
+  if (v === undefined || v === null || typeof v !== 'object') return undefined;
+  const o = v as Partial<ExtraSave>;
+  const fishLog: Partial<Record<ItemId, number>> = {};
+  if (o.fishLog && typeof o.fishLog === 'object') {
+    for (const [k, n] of Object.entries(o.fishLog)) if (isItemId(k) && Number.isInteger(n) && (n as number) > 0) fishLog[k] = n as number;
+  }
+  const minedIce = Array.isArray(o.minedIce) ? o.minedIce.filter((i) => Number.isInteger(i) && i >= 0).slice(0, 100000) : [];
+  return { fishLog, minedIce };
+}
 function validBossActive(v: unknown): EnemyKind | null {
   if (v === undefined || v === null) return null;
   if (typeof v !== 'string') throw new SaveFormatError('bossActive');
@@ -342,6 +385,8 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       vitals: { breath: r2(game.breath), burning: r2(Math.max(0, game.burning)), honey: r2(Math.max(0, game.honeyT)) },
       drops: game.drops.list.map((d) => ({ item: d.item, count: d.count, x: r2(d.body.x + d.body.w / 2), y: r2(d.body.y + d.body.h / 2) })),
       bossActive: boss && boss.state !== 'leave' ? boss.kind : null,
+      env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeFrozen(w.frozen) },
+      extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce] },
     },
     chunks,
   };
@@ -534,6 +579,8 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     vitals: validVitals(h.vitals),
     drops: validDrops(h.drops),
     bossActive: validBossActive(h.bossActive),
+    env: validEnv(h.env),
+    extra: validExtra(h.extra),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -598,6 +645,8 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       data.header.vitals = validVitals(data.header.vitals);
       data.header.drops = validDrops(data.header.drops);
       data.header.bossActive = validBossActive(data.header.bossActive);
+      data.header.env = validEnv(data.header.env);
+      data.header.extra = validExtra(data.header.extra);
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
@@ -614,7 +663,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   if (!validDims(h.width, h.height)) {
     return { ok: false, error: 'size', message: `bad size ${h.width}x${h.height}` };
   }
-  const game = new DelveGame({ seed: h.seed, width: h.width, height: h.height });
+  const game = new DelveGame({ seed: h.seed, width: h.width, height: h.height, gen: opts.gen });
   const w = game.world;
   const total = w.chunksX * w.chunksY;
   for (const ci of h.chunks) {
@@ -695,6 +744,21 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   for (const d of h.drops ?? []) {
     if (d.x < 0 || d.y < 0 || d.x > w.width * TILE_SIZE || d.y > w.height * TILE_SIZE) continue;
     game.drops.spawn(d.item, d.count, d.x, d.y, 0, 0);
+  }
+  // 曆法 / 天氣：結冰格（只留在還有水的格）、強制天氣；舊存檔沒有 → 依日期重算結冰
+  if (h.env) {
+    w.frozen.fill(0);
+    let i = 0;
+    for (let k = 0; k < h.env.frozen.length; k++) {
+      i += h.env.frozen[k];
+      if (i < w.frozen.length && w.liquidType[i] === LIQ.WATER && w.liquid[i] > 0 && !w.isSolid(i % w.width, Math.floor(i / w.width))) w.frozen[i] = 1;
+    }
+    game.weatherOverride = h.env.weather ? { ...h.env.weather } : null;
+    game.syncDay();
+  } else game.refreshSeason();
+  if (h.extra) {
+    game.fishLog = { ...h.extra.fishLog };
+    for (const i of h.extra.minedIce ?? []) if (i < w.liquid.length) game.minedIce.add(i);
   }
   // 首領戰中存檔（怪物不存）：退還召喚道具，背包滿就掉在腳邊
   const refund = h.bossActive ? BOSS_SUMMON_ITEM[h.bossActive] : undefined;

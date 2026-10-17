@@ -16,18 +16,28 @@ import { CombatLayer } from './combatDraw';
 import { aimArmDeg, attackArmDeg, spearThrust } from './combatAnim';
 import { Background } from './background';
 import { scanTrees, torchMount, treeKind, TREE_KIND } from './scene';
-import { bufferSize, clampZoom, snapCam, zoomScale } from './lowres';
-import { ambientReach, type LightMap } from '../engine/lighting';
-import { shadeTiles, fillLightPixels, AMBIENT_R } from './lightShade';
+import { bufferSize, clampZoom, floatTextScale, snapCam, zoomScale } from './lowres';
+import { ambientReach, type LightMap, type PointLight } from '../engine/lighting';
+import { shadeTiles, LightFiller, rectCovers, AMBIENT_R, type ShadeRect } from './lightShade';
 import { AmbientField, ambientKind, AMBIENT_GLOWS, type AmbientKind } from './ambient';
 import { LiquidLayer } from './liquidDraw';
 import { LIQ } from '../engine/liquidKind';
+import { dayIndexOf, seasonBlend } from '../engine/calendar';
+import { fallColors, grassLook, grassLookChanges, leafColors, leafFall, treeLook } from './seasonLook';
+import { FloraAtlas, iceBmp } from './seasonArt';
+import { decorStyleAt } from './decorPick'; // [polish]
+import { tileVariant } from './tileFamily'; // [polish]
+import { WeatherFx, type Canopy } from './weatherFx';
+import { toCanvas } from './pixel';
+import { bobberBmp, campfireBmp } from './fishArt';
 
 const S = TILE_SIZE;
 const CPX = CHUNK * S;
 /** 每幀最多重畫幾個「已在快取裡」的 dirty chunk（看得到但沒快取的一律立即畫） */
 const REDRAW_BUDGET = 4;
 const LIGHT_EVERY = 4;
+/** 光照重算每幀最多花這麼多毫秒（超過就留到下一幀繼續填；畫面沒被遮罩蓋滿時例外：當幀填完） */
+const LIGHT_BUDGET_MS = 1.6;
 /** 光照遮罩每格 tile 切幾格（16 / 8 = 每格 2 美術 px） */
 const LSUB = 8;
 const SIDE_D: [number, number][] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
@@ -38,6 +48,15 @@ const LIGHT_MARGIN = 12;
 
 /** 游標四角：(是否右側, 是否下側, 水平延伸方向, 垂直延伸方向) */
 const CURSOR_CORNERS: [number, number, number, number][] = [[0, 0, 1, 1], [1, 0, -1, 1], [0, 1, 1, -1], [1, 1, -1, -1]];
+
+/**
+ * 光照遮罩的一組像素緩衝（multiply 光色 + 'lighter' 暗色補色的 ImageData 與 Uint32 視圖）。
+ * 兩組緩衝輪流分幀填色，畫布只有一組：填完才 putImageData 上去（畫布不會在填色中途被清掉 / 改尺寸）。
+ */
+interface LightSet { img: ImageData | null; pix: Uint32Array; dimg: ImageData | null; dpix: Uint32Array; }
+function makeLightSet(): LightSet { return { img: null, pix: new Uint32Array(0), dimg: null, dpix: new Uint32Array(0) }; }
+/** 分幀中的光照重算：寫進哪一組、引擎光照、遮罩矩形、已花的時間 */
+interface LightJob { set: LightSet; L: LightMap; rect: ShadeRect; ms: number; frames: number; fillMs: number; }
 
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: string; /** 重力（預設 700；蒸氣 / 泡泡為負） */ g?: number; size?: number; }
 /** 濺起的水花色（色票） */
@@ -51,7 +70,11 @@ export interface RenderStats {
   chunksDrawn: number; cached: number; liquidCells: number; liquidMs: number;
   /** 光照：整次重算 / 其中引擎 / 填像素 / putImageData（毫秒） */
   lightMs: number; lightEngineMs: number; lightFillMs: number; lightPutMs: number;
+  /** 上一次光照重算分散到幾幀 */
+  lightFrames: number;
 }
+/** 上一幀各階段耗時（ms；效能剖析用，原地更新不配置） */
+export interface RenderPhases { bg: number; chunks: number; sprites: number; liquid: number; fx: number; light: number; over: number; blit: number; }
 
 export class Renderer {
   readonly atlas: Atlas;
@@ -72,11 +95,24 @@ export class Renderer {
   /** 使用者縮放（預設倍率 + offset，整數倍） */
   zoomOffset = 0;
   private cssW = 1; private cssH = 1;
-  stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0, lightEngineMs: 0, lightFillMs: 0, lightPutMs: 0, liquidCells: 0, liquidMs: 0 };
+  stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0, lightEngineMs: 0, lightFillMs: 0, lightPutMs: 0, lightFrames: 0, liquidCells: 0, liquidMs: 0 };
+  readonly phases: RenderPhases = { bg: 0, chunks: 0, sprites: 0, liquid: 0, fx: 0, light: 0, over: 0, blit: 0 };
+  private tp = 0;
+  /** 距上次 lap 的毫秒數 */
+  private lap(): number { const n = performance.now(), d = n - this.tp; this.tp = n; return d; }
   /** 液體圖層（不進 chunk 快取） */
   readonly liquidLayer = new LiquidLayer();
   /** debug：不畫光照遮罩（文件截圖用） */
   fullbright = false;
+  /** 標題畫面背景：鏡頭由外部指定（世界 px，左上角），不跟玩家；不畫玩家 */
+  camOverride: Cam | null = null;
+  hidePlayer = false;
+  /** 畫瞄準游標（標題背景關掉） */
+  showCursor = true;
+  /** 遠景不做生態區交界混色（標題背景的大像素下，混色的抖動圖樣像雜訊） */
+  plainBackdrop = false;
+  /** 光照每幾幀重算一次（標題背景鏡頭很慢，可以拉長） */
+  lightEvery = LIGHT_EVERY;
   /** 世界 chunk 有變動（小地圖快取跟著重畫） */
   onWorldDirty: ((cis: number[]) => void) | null = null;
   /** 環境粒子 */
@@ -84,25 +120,52 @@ export class Renderer {
   ambientNow: AmbientKind | null = null;
   /** 戰鬥圖層（掉落物 / 怪物 / 投射物 / 飄字 / 震動） */
   readonly combat: CombatLayer;
+  /** 季節植物（草葉 / 花 / 高草 × 四季 × 擺動）與冰面 */
+  readonly flora = new FloraAtlas();
+  private ice: HTMLCanvasElement[] = [0, 1, 2].flatMap((v) => [toCanvas(iceBmp(v, false)) as HTMLCanvasElement, toCanvas(iceBmp(v, true)) as HTMLCanvasElement]);
+  /** 雨 / 雪 / 霧 / 落葉 / 睡覺淡出 */
+  readonly fx = new WeatherFx();
+  /** chunk 快取裡的草皮是哪一天的季節外觀（換日 → 重畫） */
+  private seasonDay = -1;
+  private canopies: Canopy[] = [];
+  /** 正在打的閃電（世界 px 的 x、形狀種子） */
+  private bolt: { x: number; seed: number } | null = null;
+  private boltN = 0;
+  private lastFlash = 0;
+  /** 釣魚：浮標、營火火焰（3 格動畫）、竿尖位置（世界 px；畫釣線用） */
+  private bobber = toCanvas(bobberBmp()) as HTMLCanvasElement;
+  private campfires = [0, 1, 2].map((f) => toCanvas(campfireBmp(f)) as HTMLCanvasElement);
+  private rodTip: { x: number; y: number } | null = null;
 
   private cache: ChunkLRU<HTMLCanvasElement>;
   private pool: HTMLCanvasElement[] = [];
   private pending = new Set<number>();
-  private buf = document.createElement('canvas');
+  private buf: HTMLCanvasElement = document.createElement('canvas');
   private bctx: CanvasRenderingContext2D;
+  /** 光照遮罩兩組（multiply 光色 + 'lighter' 暗色補色）：一組顯示、另一組分幀填色，填完互換 */
+  private lightSets: [LightSet, LightSet] = [makeLightSet(), makeLightSet()];
   private lightCanvas = document.createElement('canvas');
-  /** 全暗格的補色（'lighter'） */
   private darkCanvas = document.createElement('canvas');
-  private darkCtx: CanvasRenderingContext2D;
-  private darkImg: ImageData | null = null;
+  private lightCtx = this.lightCanvas.getContext('2d');
+  private darkCtx = this.darkCanvas.getContext('2d');
+  private front = 0;
+  /** 分幀進行中的光照重算（null = 沒有） */
+  private job: LightJob | null = null;
+  private filler = new LightFiller();
+  private readonly now = (): number => performance.now();
   /** 每格最終光色（3 float / 格） */
   private lightA = new Float32Array(0);
   /** 輪廓微光可照的格 */
   private reach = new Uint8Array(0);
+  /** 目前顯示的遮罩對應的引擎光照（暗處剪影用） */
   private lastLight: LightMap | null = null;
-  private lightCtx: CanvasRenderingContext2D;
-  private lightImg: ImageData | null = null;
-  private light: { x0: number; y0: number; w: number; h: number } | null = null;
+  /** 目前顯示的遮罩（tile 矩形） */
+  private light: ShadeRect | null = null;
+  private extraLights: PointLight[] = [];
+  /** 每幀重用的畫面矩形 / 光源清單 / 亮度查詢（不在每幀配置新物件） */
+  private viewBox = { x: 0, y: 0, w: 0, h: 0 };
+  private readonly lightAtFn = (tx: number, ty: number): number => this.lightAt(tx, ty);
+  private lightView = { x: 0, y: 0, w: 0, h: 0 };
   private lightAge = 999;
   private lightDirty = true;
   private frame = 0;
@@ -115,21 +178,23 @@ export class Renderer {
   private bg: Background;
   private torchesSeen: { x: number; y: number }[] = [];
   private coolSeen: { x: number; y: number }[] = [];
+  private glowSeen = { warm: this.torchesSeen, cool: this.coolSeen };
   /** 平均地表高度（世界 px），地下背景起點用 */
   private horizonPx: number;
   /** 地表高度前綴和（遠景地平線取鏡頭附近平均） */
   private surfSum: Float64Array;
 
-  constructor(readonly canvas: HTMLCanvasElement, readonly game: DelveGame) {
+  /**
+   * opts.direct：直接畫在 canvas 上（canvas 大小 = 低解析緩衝），整數倍放大交給 CSS（image-rendering: pixelated）；
+   * 省掉最後一次全螢幕放大貼圖（標題背景用）。
+   */
+  constructor(readonly canvas: HTMLCanvasElement, readonly game: DelveGame, opts: { direct?: boolean } = {}) {
     const ctx = canvas.getContext('2d', { alpha: false });
-    const lctx = this.lightCanvas.getContext('2d');
-    const dctx = this.darkCanvas.getContext('2d');
-    const bctx = this.buf.getContext('2d', { alpha: false });
-    if (!ctx || !lctx || !bctx || !dctx) throw new Error('2d context unavailable');
-    this.darkCtx = dctx;
+    if (opts.direct) this.buf = canvas;
+    const bctx = opts.direct ? ctx : this.buf.getContext('2d', { alpha: false });
+    if (!ctx || !bctx) throw new Error('2d context unavailable');
     this.ctx = ctx;
     this.bctx = bctx;
-    this.lightCtx = lctx;
     this.atlas = buildAtlas();
     this.sprites = new Sprites((item) => this.atlas.iconBmp(item));
     this.combat = new CombatLayer(game, this.atlas, this.sprites);
@@ -160,6 +225,7 @@ export class Renderer {
     this.bufW = b.w; this.bufH = b.h;
     this.buf.width = b.w; this.buf.height = b.h;
     this.zoom = this.scale / this.dpr;
+    this.combat.numScale = floatTextScale(this.viewW, this.zoom);
     const vis = (Math.ceil(this.worldViewW() / CPX) + 1) * (Math.ceil(this.worldViewH() / CPX) + 1);
     if (vis + 8 > this.cache.capacity) {
       const old = this.cache;
@@ -203,6 +269,8 @@ export class Renderer {
   onEvent(e: DelveEvent): void {
     this.combat.onEvent(e);
     if (e.type === 'respawn') this.snapCamera();
+    if (e.type === 'lightning') { this.bolt = { x: e.x * S + S / 2, seed: ++this.boltN }; this.lightDirty = true; }
+    if (e.type === 'mine' && e.tile === T.ICE) this.fx.invalidate(this.game.world, [this.game.world.chunkIndex(Math.floor(e.x / CHUNK), Math.floor(e.y / CHUNK))]);
     if ((e.type === 'mine' || e.type === 'place') && this.nearView(e.x, e.y, LIGHT_MARGIN)) this.lightDirty = true;
     if (e.type === 'splash') this.burst(e.x, e.y, e.big ? 16 : 9, SPLASH[e.liquid] ?? SPLASH[LIQ.WATER], e.big ? 260 : 170);
     if (e.type === 'liquidtool') this.burst((e.x + 0.5) * S, (e.y + 0.5) * S, 7, SPLASH[e.liquid] ?? SPLASH[LIQ.WATER], 130);
@@ -243,13 +311,16 @@ export class Renderer {
   }
 
   render(dt: number): void {
-    const g = this.game, w = g.world;
+    const g = this.game, w = g.world, ph = this.phases;
+    this.tp = performance.now();
     this.frame++;
     this.clock += dt;
     const worldW = w.width * S, worldH = w.height * S;
     const vw = this.worldViewW(), vh = this.worldViewH();
     const pc = g.playerCenter();
-    this.cam = followCamera(this.cam, cameraFocus(pc, vw, vh), vw, vh, worldW, worldH, dt, this.snapNext);
+    this.cam = this.camOverride
+      ? { x: Math.max(0, Math.min(worldW - vw, this.camOverride.x)), y: Math.max(0, Math.min(worldH - vh, this.camOverride.y)) }
+      : followCamera(this.cam, cameraFocus(pc, vw, vh), vw, vh, worldW, worldH, dt, this.snapNext);
     this.snapNext = false;
     // 繪製時對齊整數美術 px：精靈 / chunk / 視差層都落在像素格上，不會閃爍
     this.drawCam = snapCam(this.cam);
@@ -261,7 +332,20 @@ export class Renderer {
 
     const dirty = w.drainDirty();
     for (const ci of dirty) this.pending.add(ci);
-    if (dirty.length) this.onWorldDirty?.(dirty);
+    if (dirty.length) { this.onWorldDirty?.(dirty); this.fx.invalidate(w, dirty); }
+    // 換日：結冰可能變了 → 天空高度重算；草 / 植物的季節外觀真的會變（換季的過渡期）才重畫 chunk：
+    // 看得到的 chunk 這一幀全部重畫（不分批 → 不會新舊季節混在畫面上），看不到的直接丟出快取（進畫面時才畫新的）
+    const today = dayIndexOf(g.time);
+    let seasonFlush = false;
+    if (today !== this.seasonDay) {
+      if (this.seasonDay >= 0) {
+        this.fx.invalidateAll();
+        seasonFlush = grassLookChanges(this.seasonDay, today);
+      }
+      this.seasonDay = today;
+    }
+    const flash = g.flash();
+    if (flash !== this.lastFlash) { this.lastFlash = flash; this.lightDirty = true; if (!flash) this.bolt = null; }
     // 液體變動只需要讓地圖重畫（液體圖層每幀畫，不碰 tile chunk 快取）
     const ldirty = w.drainLiquidDirty();
     if (ldirty.length) this.onWorldDirty?.(ldirty);
@@ -275,19 +359,35 @@ export class Renderer {
     ctx.imageSmoothingEnabled = false;
     let day = (g.time % DAY_LENGTH) / DAY_LENGTH;
     if (day < 0) day += 1;
+    const sun = g.sun(), wx = g.localWeatherState();
     this.bg.draw(ctx, {
       viewW: this.bufW, viewH: this.bufH, camX, camY,
       horizonY: this.localHorizon(camX + vw / 2), time: g.time, dayFrac: day,
-      biome: biomeBlend((x) => w.biome[x], (camX + vw / 2) / S, w.width),
+      biome: this.plainBackdrop ? { a: w.biome[Math.max(0, Math.min(w.width - 1, Math.floor((camX + vw / 2) / S)))], b: 0, t: 0 } : biomeBlend((x) => w.biome[x], (camX + vw / 2) / S, w.width),
+      sunrise: sun.sunrise, sunset: sun.sunset, twilight: sun.twilight, moon: g.moon(),
+      season: seasonBlend(g.time),
+      weather: { kind: wx.kind, intensity: wx.intensity, flash, wind: g.wind() },
+      // 遠方的閃電：依視差壓縮到畫面中段（±40 格的落雷大多看得到）
+      bolt: this.bolt ? { x: vw / 2 + (this.bolt.x - (camX + vw / 2)) * 0.35, seed: this.bolt.seed } : null,
     });
 
     ctx.setTransform(1, 0, 0, 1, -camX, -camY);
     const surf = w.surface;
     this.bg.drawUnderground(ctx, camX, camY, vw, vh,
-      (tx) => (surf[Math.max(0, Math.min(surf.length - 1, tx))] + 6) * S, S, (w.rockY || w.cavernY) * S, w.cavernY * S, w.moltenY ? w.moltenY * S : Infinity);
+      (tx) => (surf[Math.max(0, Math.min(surf.length - 1, tx))] + 6) * S, S, (w.rockY || w.cavernY) * S, w.cavernY * S, w.moltenY ? w.moltenY * S : Infinity,
+      { biome: w.biome, structures: g.structures }); // [polish] biome-specific backdrops
+    ph.bg = this.lap();
 
     const r = visibleChunks(camX, camY, vw, vh, CPX, w.chunksX, w.chunksY);
-    let budget = REDRAW_BUDGET, drawn = 0;
+    if (seasonFlush) {
+      for (const k of this.cache.keys()) {
+        const { cx, cy } = w.chunkCoords(k);
+        if (cx >= r.cx0 && cx <= r.cx1 && cy >= r.cy0 && cy <= r.cy1) this.pending.add(k);
+        else { const c = this.cache.get(k); if (c) this.pool.push(c); this.cache.delete(k); this.pending.delete(k); }
+      }
+      this.lightDirty = true;
+    }
+    let budget = seasonFlush ? Infinity : REDRAW_BUDGET, drawn = 0;
     for (let cy = r.cy0; cy <= r.cy1; cy++) {
       for (let cx = r.cx0; cx <= r.cx1; cx++) {
         const ci = w.chunkIndex(cx, cy);
@@ -311,32 +411,57 @@ export class Renderer {
     }
     this.stats.chunksDrawn = drawn;
     this.stats.cached = this.cache.size;
+    ph.chunks = this.lap();
 
+    this.drawFlora(ctx, camX, camY, vw, vh);
     this.drawTrees(ctx, camX, camY, vw, vh);
     this.drawTorches(ctx, camX, camY, vw, vh);
-    this.combat.drawWorld(ctx, { x: camX, y: camY, w: vw, h: vh }, { warm: this.torchesSeen, cool: this.coolSeen });
+    const vb = this.viewBox;
+    vb.x = camX; vb.y = camY; vb.w = vw; vb.h = vh;
+    this.combat.drawWorld(ctx, vb, this.glowSeen);
     this.drawPlayer(ctx, dt);
+    ph.sprites = this.lap();
     const tl = performance.now();
     this.liquidLayer.draw(ctx, w, camX, camY, vw, vh, this.clock, this.torchesSeen);
     this.stats.liquidMs = performance.now() - tl;
     this.stats.liquidCells = this.liquidLayer.stats.cells;
+    ph.liquid = this.lap();
+    this.drawIce(ctx, camX, camY, vw, vh);
+    this.drawFishing(ctx);
     this.drawMiningAndCursor(ctx);
     this.drawStatus(ctx, dt);
     this.drawParticles(ctx, dt);
+    // 落葉 / 花瓣（受光照：畫在遮罩之前）
+    this.fx.updateLeaves(dt, w, this.canopies, g.wind(), vb);
+    this.fx.drawLeaves(ctx);
+    // 雨 / 雪
+    const precip = wx.kind === 'rain' || wx.kind === 'storm' ? 'rain' : wx.kind === 'snow' ? 'snow' : null;
+    this.fx.update(dt, { world: w, camX, camY, vw, vh, kind: precip, storm: wx.kind === 'storm', intensity: wx.intensity, wind: g.wind(), light: g.skyLevel() });
     this.updateAmbient(dt, camX, camY, vw, vh);
     this.drawAmbient(ctx, false);
+    ph.fx = this.lap();
     this.drawLight(ctx, camX, camY, vw, vh);
-    if (!this.fullbright) this.combat.drawDark(ctx, { x: camX, y: camY, w: vw, h: vh }, (tx, ty) => this.lightAt(tx, ty));
+    ph.light = this.lap();
+    if (!this.fullbright) this.combat.drawDark(ctx, vb, this.lightAtFn);
+    // 霧 / 雨雪畫在光照之後（夜裡也看得到，顏色依天空亮度分階）
+    const lvl = this.fullbright ? 1 : g.skyLevel();
+    if (wx.kind === 'fog') this.fx.drawFog(ctx, w, camX, camY, vw, vh, wx.intensity, lvl);
+    this.fx.drawPrecip(ctx, lvl, wx.kind === 'storm');
     this.drawAmbient(ctx, true);
     this.drawRecall(ctx);
     this.drawGlows(ctx);
     this.combat.drawOverlay(ctx, dt);
+    // 睡覺：全畫面抖動淡出 / 淡入
+    const sl = g.sleepFade();
+    if (sl > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); this.fx.drawSleep(ctx, sl, this.bufW, this.bufH); }
 
+    ph.over = this.lap();
     // 整數倍放大貼到螢幕：每個美術像素 = scale×scale 裝置像素
     const out = this.ctx;
     out.setTransform(1, 0, 0, 1, 0, 0);
     out.imageSmoothingEnabled = false;
-    out.drawImage(this.buf, 0, 0, this.bufW, this.bufH, 0, 0, this.bufW * this.scale, this.bufH * this.scale);
+    if (this.buf !== this.canvas) out.drawImage(this.buf, 0, 0, this.bufW, this.bufH, 0, 0, this.bufW * this.scale, this.bufH * this.scale);
+    ph.blit = this.lap();
   }
 
   /** 鏡頭附近 ±80 欄的平均地表（世界 px） */
@@ -395,9 +520,12 @@ export class Renderer {
       for (let x = x0; x < x1; x++) {
         const i = y * W + x;
         const f = fg[i];
-        if (f === T.AIR || f === T.WOOD || f === T.LEAVES || f === T.TORCH) continue;
+        // 樹 / 火把 / 花 / 高草是每幀畫的動態精靈（季節外觀、隨風擺動）
+        if (f === T.AIR || f === T.WOOD || f === T.LEAVES || f === T.TORCH || f === T.FLOWER || f === T.TALL_GRASS) continue;
         qx = x; qy = y;
-        const s = isDecor(f) ? A.decor(f, decorStyle(f, x, y, nb)) : A.tile(f, variant[i], masks[(y - y0) * CHUNK + (x - x0)]);
+        const s = isDecor(f) ? A.decor(f, decorStyleAt(f, x, y, nb, this.seasonDay, w.surface[x])) // [polish] cobweb corners + seasonal decor
+          : f === T.GRASS ? A.grass(this.grassSeason(x, y, i), variant[i], masks[(y - y0) * CHUNK + (x - x0)])
+          : A.tile(f, tileVariant(f, x, y, variant[i]), masks[(y - y0) * CHUNK + (x - x0)]); // [polish] stone/dirt families
         ctx.drawImage(img, s.sx, s.sy, S, S, (x - x0) * S, (y - y0) * S, S, S);
       }
     }
@@ -434,7 +562,8 @@ export class Renderer {
       for (let x = x0; x < x1; x++) {
         const i = y * W + x;
         const gt = fg[i];
-        if (gt !== T.GRASS && gt !== T.JUNGLE_GRASS) continue;
+        // 一般草地的草葉改成每幀畫（季節 + 風），這裡只畫叢林草葉
+        if (gt !== T.JUNGLE_GRASS) continue;
         if (fg[i - W] !== T.AIR) continue; // 上面有植物 / 物件時不畫草葉
         const s = A.blades(variant[i], gt === T.JUNGLE_GRASS);
         ctx.drawImage(img, s.sx, s.sy, S, S, (x - x0) * S, (y - 1 - y0) * S, S, S);
@@ -449,12 +578,73 @@ export class Renderer {
     const tx0 = Math.floor(camX / S) - 6, tx1 = Math.ceil((camX + vw) / S) + 6;
     const ty0 = Math.floor(camY / S) - 1, ty1 = Math.ceil((camY + vh) / S) + 1;
     const trees = scanTrees((x, y) => w.getFg(x, y), Math.max(0, tx0), Math.max(0, ty0), Math.min(w.width, tx1), Math.min(w.height, ty1));
+    const day = Math.max(0, this.seasonDay);
+    this.canopies.length = 0;
     for (const t of trees) {
       const kind = treeKind(t.ground, t.variant);
-      const sp = this.sprites.tree(kind, t.baseY - t.topY + 1, Math.min(kind === TREE_KIND.JUNGLE ? 7 : 4, t.leafR), t.grounded);
+      const r = Math.min(kind === TREE_KIND.JUNGLE ? 7 : 4, t.leafR);
+      const look = treeLook(kind, t.x, day);
+      const sp = this.sprites.tree(kind, t.baseY - t.topY + 1, r, t.grounded, look);
       const dx = t.x * S + S / 2 - sp.ax, dy = (t.baseY + 1) * S - sp.ay;
       if (dx > camX + vw || dx + sp.canvas.width < camX || dy > camY + vh || dy + sp.canvas.height < camY) continue;
       ctx.drawImage(sp.canvas, Math.round(dx), Math.round(dy));
+      // 秋葉 / 春花：樹冠範圍（上半部）會飄落
+      if (r > 0 && leafFall(look)) this.canopies.push({ x: dx + 6, y: dy, w: sp.canvas.width - 12, h: Math.max(8, 2 * (sp.canvas.height - (t.baseY - t.topY + 1) * S) + 2), colors: fallColors(look), dark: leafColors(look, kind)[1] ?? '#2a1810' });
+    }
+  }
+
+  /**
+   * 季節植物（每幀）：一般草地上方的草葉、花、高草——依每格的季節外觀挑圖、依風向與陣風挑擺動影格
+   * （風小時大多不動；有風時整片往下風處偏，局部陣風來回擺）。
+   */
+  private drawFlora(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number): void {
+    const g = this.game, w = g.world, W = w.width, fg = w.fg, F = this.flora, img = F.canvas;
+    const tx0 = Math.max(0, Math.floor(camX / S)), tx1 = Math.min(W, Math.ceil((camX + vw) / S) + 1);
+    const ty0 = Math.max(1, Math.floor(camY / S)), ty1 = Math.min(w.height, Math.ceil((camY + vh) / S) + 2);
+    const day = Math.max(0, this.seasonDay), wind = g.wind(), t = this.clock;
+    const gust = 0.3 + Math.abs(wind);
+    const sway = (x: number, k: number): number => {
+      const v = wind * 1.2 * k + Math.sin(t * 2.6 + x * 0.45) * 0.55 * gust * k;
+      return v > 0.5 ? 1 : v < -0.5 ? -1 : 0;
+    };
+    for (let y = ty0; y < ty1; y++) {
+      const row = y * W;
+      for (let x = tx0; x < tx1; x++) {
+        const f = fg[row + x];
+        if (f === T.GRASS) {
+          if (fg[row - W + x] !== T.AIR) continue;
+          const s = F.blades(grassLook(x, day), w.variant[row + x], sway(x, 0.8));
+          ctx.drawImage(img, s.sx, s.sy, S, S, x * S, (y - 1) * S, S, S);
+        } else if (f === T.FLOWER || f === T.TALL_GRASS) {
+          const style = decorStyle(f, x, y, (dx, dy) => w.getFg(x + dx, y + dy));
+          const look = grassLook(x, day);
+          const s = f === T.FLOWER ? F.flower(look, style, sway(x, 0.8)) : F.tallGrass(look, style, sway(x, 1));
+          ctx.drawImage(img, s.sx, s.sy, S, S, x * S, y * S, S, S);
+        }
+      }
+    }
+  }
+
+  /** 草皮的季節外觀：冬天只有露天的草才積雪（湖底 / 水下的草改用秋天的枯黃） */
+  private grassSeason(x: number, y: number, i: number): number {
+    const w = this.game.world;
+    const look = grassLook(x, this.seasonDay < 0 ? 0 : this.seasonDay);
+    if (look === 3 && y > 0 && w.liquid[i - w.width] > 0) return 2;
+    return look;
+  }
+
+  /** 結冰的湖面（畫在液體圖層之上，蓋住那格的水） */
+  private drawIce(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number): void {
+    const w = this.game.world, W = w.width, F = w.frozen;
+    const tx0 = Math.max(0, Math.floor(camX / S)), tx1 = Math.min(W, Math.ceil((camX + vw) / S) + 1);
+    const ty0 = Math.max(0, Math.floor(camY / S)), ty1 = Math.min(w.height, Math.ceil((camY + vh) / S) + 1);
+    for (let y = ty0; y < ty1; y++) {
+      const row = y * W;
+      for (let x = tx0; x < tx1; x++) {
+        if (!F[row + x]) continue;
+        const top = y === 0 || !F[row - W + x];
+        ctx.drawImage(this.ice[(w.variant[row + x] % 3) * 2 + (top ? 1 : 0)], x * S, y * S);
+      }
     }
   }
 
@@ -471,6 +661,8 @@ export class Renderer {
         const f = fg[row + x];
         if (f === T.CRYSTAL || f === T.GLOW_MUSHROOM) { cool.push({ x: x * S + 8, y: y * S + 9 }); continue; }
         if (f === T.CANDLE || f === T.LANTERN) { seen.push({ x: x * S + 8, y: y * S + (f === T.LANTERN ? 8 : 5) }); continue; }
+        if (f === T.LANTERN_POST) { seen.push({ x: x * S + 8, y: y * S + 3 }); continue; }
+        if (f === T.CAMPFIRE) { ctx.drawImage(this.campfires[flameFrame(t, x, y) % 3], x * S, y * S); seen.push({ x: x * S + 8, y: y * S + 8 }); continue; }
         // 熔岩石：只有外露在空氣下的那幾格發光暈（隔格取樣、有上限，避免整片深淵都是光暈）
         if (f === T.MAGMA_ROCK) {
           if (((x + y) & 1) === 0 && y > 0 && fg[row - W + x] === T.AIR && seen.length < 160) seen.push({ x: x * S + 8, y: y * S + 2 });
@@ -497,7 +689,7 @@ export class Renderer {
       ctx.drawImage(this.atlas.canvas, c.sx, c.sy, S, S, st.mining.x * S, st.mining.y * S, S, S);
     }
     const { x, y } = st.aim;
-    if (!g.world.inBounds(x, y)) return;
+    if (!this.showCursor || !g.world.inBounds(x, y)) return;
     const ok = g.canReach(x, y);
     // 像素角括號：四個 L 形角（1px 亮線 + 右下 1px 暗影），沒有半透明
     const px = x * S, py = y * S, n = 4;
@@ -525,7 +717,7 @@ export class Renderer {
 
   private drawPlayer(ctx: CanvasRenderingContext2D, dt: number): void {
     const g = this.game, p = g.player, st = g.getState();
-    if (st.dead) return;
+    if (st.dead || this.hidePlayer) return;
     const atk = st.attack;
     if (atk) this.facing = atk.dir;
     else {
@@ -564,7 +756,7 @@ export class Renderer {
     if (carry && carry !== 'mini') arms.front = carryArm(kind, arms.front);
     const showPick = st.mining ? this.bestPickItem() : carry === 'pick' ? held : null;
     if (carry === 'blade') blade = held;
-    const heldOther = !st.mining && !atk && held && ((!heldDef?.pick && !heldDef?.weapon) || carry === 'mini') ? held : null;
+    const heldOther = !st.mining && !atk && held && carry !== 'rod' && ((!heldDef?.pick && !heldDef?.weapon) || carry === 'mini') ? held : null;
     if (heldOther && kind !== 'jump' && kind !== 'fall') arms.front = 62 + Math.round(arms.front * 0.15);
 
     const SP = this.sprites;
@@ -629,6 +821,52 @@ export class Renderer {
     if (heldOther === 'torch' || heldOther === 'lantern') {
       this.torchesSeen.push({ x: cx + this.facing * (hx + 0), y: bottom + hy - 8 });
     }
+    // 釣竿：往前斜舉；竿尖記下來畫釣線
+    this.rodTip = null;
+    if (carry === 'rod' && held) {
+      const fishing = st.fishing;
+      // 浮標在水上時竿子比較平（往浮標那邊）、上鉤時往上抬
+      const up = fishing?.state === 'bite' ? -Math.PI / 2 + 0.25 : fishing ? -Math.PI / 2 + 0.75 : -Math.PI / 2 + 0.5;
+      const ang = this.facing > 0 ? up : Math.PI - up;
+      const c = this.sprites.rotatedIcon(held, ang, -Math.PI / 4);
+      const px = cx + this.facing * hx, py = bottom + hy;
+      const ix = Math.round(px - c.width / 2 + Math.cos(ang) * 5), iy = Math.round(py - c.height / 2 + Math.sin(ang) * 5);
+      ctx.drawImage(c, ix, iy);
+      this.rodTip = { x: Math.round(px + Math.cos(ang) * 13), y: Math.round(py + Math.sin(ang) * 13) };
+    }
+  }
+
+  /** 釣線（竿尖 → 浮標，往下垂的拋物線，1px 像素點）+ 浮標（上鉤時沉下去、頭上冒驚嘆號） */
+  private drawFishing(ctx: CanvasRenderingContext2D): void {
+    const f = this.game.fishing, tip = this.rodTip;
+    if (!f || !tip) return;
+    const bite = f.state === 'bite';
+    // 浮標：漂著時一半在水裡（只露上半）；上鉤時沉到只剩天線、抖動
+    const bob = f.state === 'floating' ? Math.round(Math.sin(this.clock * 3) * 0.6) : 0;
+    const dip = bite ? 3 + (Math.floor(this.clock * 12) & 1) : 0;
+    const bx = Math.round(f.x) - 2, by = Math.round(f.y) - 5 + bob + dip;
+    // 線：二次貝茲（中點往下垂；上鉤時拉直）
+    const ex = bx + 2, ey = by;
+    const sag = bite ? 2 : Math.min(28, Math.hypot(ex - tip.x, ey - tip.y) * 0.18);
+    const mx = (tip.x + ex) / 2, my = Math.max(tip.y, ey) + sag;
+    const n = Math.max(8, Math.ceil(Math.hypot(ex - tip.x, ey - tip.y) / 2));
+    ctx.fillStyle = '#cceaf8';
+    let lx = -9999, ly = -9999;
+    for (let k = 0; k <= n; k++) {
+      const t = k / n, u = 1 - t;
+      const x = Math.round(u * u * tip.x + 2 * u * t * mx + t * t * ex), y = Math.round(u * u * tip.y + 2 * u * t * my + t * t * ey);
+      if (x === lx && y === ly) continue;
+      ctx.fillRect(x, y, 1, 1);
+      lx = x; ly = y;
+    }
+    const show = f.state === 'flying' ? 7 : bite ? 3 : 5;
+    ctx.drawImage(this.bobber, 0, 0, 4, show, bx, by, 4, show);
+    if (bite) {
+      // 驚嘆號（白底黑邊，2×6）
+      const qx = bx + 1, qy = by - 12 - (Math.floor(this.clock * 6) & 1);
+      ctx.fillStyle = '#1c1424'; ctx.fillRect(qx - 1, qy - 1, 4, 10);
+      ctx.fillStyle = '#ffd86a'; ctx.fillRect(qx, qy, 2, 5); ctx.fillRect(qx, qy + 6, 2, 2);
+    }
   }
 
   private drawParticles(ctx: CanvasRenderingContext2D, dt: number): void {
@@ -684,6 +922,8 @@ export class Renderer {
         underground: p.y > surf + 4,
         biome: w.biomeAt(x),
         sky: g.skyLevel(),
+        precip: ['rain', 'storm', 'snow'].includes(g.localWeatherState().kind) && g.localWeatherState().intensity > 0.3,
+        winter: g.season() === 3,
       });
     }
     this.ambient.step(dt, this.ambientNow, { x: camX, y: camY, w: vw, h: vh });
@@ -701,11 +941,11 @@ export class Renderer {
       const x = Math.round(p.x), y = Math.round(p.y);
       ctx.fillStyle = p.color;
       switch (p.kind) {
-        case 'snow': ctx.fillRect(x, y, 2, 2); break;           // 2×2 雪片
+        case 'snow': ctx.fillRect(x, y, p.size, p.size); break; // [polish] 2–3 px 雪片
         case 'ember': ctx.fillRect(x, y, 1, 2); break;          // 往上飄的短火星
         case 'firefly': ctx.fillRect(x, y, 2, 2); ctx.fillStyle = '#fff4c0'; ctx.fillRect(x, y, 1, 1); break;
         case 'spore': ctx.fillRect(x, y, 1, 1); ctx.fillRect(x + 1, y + 1, 1, 1); break;
-        default: ctx.fillRect(x, y, 1, 1);
+        default: ctx.fillRect(x, y, p.size, p.size); // [polish] 1–2 px 浮塵
       }
     }
   }
@@ -739,45 +979,17 @@ export class Renderer {
   // 以 'multiply' 疊上（不透明光色 × 色票色），全暗的格再以 'lighter' 補上色票最暗色。
   private drawLight(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number): void {
     if (this.fullbright) return;
-    const g = this.game, w = g.world;
     this.lightAge++;
-    if (this.lightDirty || this.lightAge >= LIGHT_EVERY || !this.light) {
-      const t0 = performance.now();
-      const pt = g.playerTile();
-      const extra = [...g.heldLights(), ...g.enemyLights(), ...g.projectileLights()];
-      const view = { x: Math.floor(camX / S) - 1, y: Math.floor(camY / S) - 1, w: Math.ceil(vw / S) + 3, h: Math.ceil(vh / S) + 3 };
-      const L = g.computeLight(view, extra);
-      this.stats.lightEngineMs = performance.now() - t0;
-      this.lastLight = L;
-      // 戰爭迷霧：畫面上看得到（夠亮）的格算探索過
-      g.revealLit(L, { x: Math.floor(camX / S), y: Math.floor(camY / S), w: Math.ceil(vw / S) + 1, h: Math.ceil(vh / S) + 1 });
-      const lx0 = Math.max(L.x0, view.x - 2), ly0 = Math.max(L.y0, view.y - 2);
-      const lx1 = Math.min(L.x0 + L.w, view.x + view.w + 2), ly1 = Math.min(L.y0 + L.h, view.y + view.h + 2);
-      const lw = Math.max(1, lx1 - lx0), lh = Math.max(1, ly1 - ly0);
-      const cw = lw * LSUB, chh = lh * LSUB;
-      if (this.lightCanvas.width !== cw || this.lightCanvas.height !== chh || !this.lightImg || !this.darkImg) {
-        this.lightCanvas.width = cw; this.lightCanvas.height = chh;
-        this.darkCanvas.width = cw; this.darkCanvas.height = chh;
-        this.lightImg = this.lightCtx.createImageData(cw, chh);
-        this.darkImg = this.darkCtx.createImageData(cw, chh);
-      }
-      if (this.lightA.length < lw * lh * 3) { this.lightA = new Float32Array(lw * lh * 3); this.reach = new Uint8Array(lw * lh); }
-      const reach = this.reach.subarray(0, lw * lh);
-      ambientReach(w, pt.x, pt.y, AMBIENT_R, { x: lx0, y: ly0, w: lw, h: lh }, reach);
-      const A = this.lightA.subarray(0, lw * lh * 3);
-      shadeTiles(L, w, { x0: lx0, y0: ly0, w: lw, h: lh }, pt, g.skyRGB(), reach, A);
-      const t1 = performance.now();
-      fillLightPixels(A, lw, lh, LSUB, lx0 * LSUB, ly0 * LSUB,
-        new Uint32Array(this.lightImg.data.buffer), new Uint32Array(this.darkImg.data.buffer));
-      const t2 = performance.now();
-      this.lightCtx.putImageData(this.lightImg, 0, 0);
-      this.darkCtx.putImageData(this.darkImg, 0, 0);
-      this.stats.lightFillMs = t2 - t1;
-      this.stats.lightPutMs = performance.now() - t2;
-      this.light = { x0: lx0, y0: ly0, w: lw, h: lh };
-      this.lightAge = 0;
-      this.lightDirty = false;
-      this.stats.lightMs = performance.now() - t0;
+    const t0 = performance.now();
+    const v = this.lightView;
+    v.x = Math.floor(camX / S); v.y = Math.floor(camY / S); v.w = Math.ceil(vw / S) + 1; v.h = Math.ceil(vh / S) + 1;
+    // 重算分散到幾幀（每幀最多 LIGHT_BUDGET_MS）：顯示中的遮罩是世界錨定的，鏡頭移動幾幀仍蓋得住畫面；
+    // 蓋不住（第一幀、縮放、傳送、高速墜落）才當幀一次做完。重算中又有變動 → 這次做完立刻再排一次。
+    if (!this.job && (this.lightDirty || this.lightAge >= this.lightEvery || !this.light)) this.startLightJob(camX, camY, vw, vh);
+    if (this.job) {
+      const urgent = !rectCovers(this.light, v);
+      this.advanceLightJob(urgent ? Infinity : t0 + LIGHT_BUDGET_MS);
+      if (urgent && !rectCovers(this.light, v)) { this.startLightJob(camX, camY, vw, vh); this.advanceLightJob(Infinity); }
     }
     const lm = this.light;
     if (!lm) return;
@@ -787,6 +999,75 @@ export class Renderer {
     ctx.globalCompositeOperation = 'lighter';
     ctx.drawImage(this.darkCanvas, lm.x0 * S, lm.y0 * S, lm.w * S, lm.h * S);
     ctx.globalCompositeOperation = 'source-over';
+  }
+
+  /** 開始一次光照重算：引擎光照 + 每格光色 + 填色準備（便宜的部分當幀做完），像素留給 advanceLightJob 分幀填 */
+  private startLightJob(camX: number, camY: number, vw: number, vh: number): void {
+    const t0 = performance.now();
+    const g = this.game, w = g.world;
+    const pt = g.playerTile();
+    const extra = this.extraLights;
+    extra.length = 0;
+    for (const l of g.heldLights()) extra.push(l);
+    for (const l of g.enemyLights()) extra.push(l);
+    for (const l of g.projectileLights()) extra.push(l);
+    const view = { x: Math.floor(camX / S) - 1, y: Math.floor(camY / S) - 1, w: Math.ceil(vw / S) + 3, h: Math.ceil(vh / S) + 3 };
+    const L = g.computeLight(view, extra);
+    this.stats.lightEngineMs = performance.now() - t0;
+    // 戰爭迷霧：畫面上看得到（夠亮）的格算探索過
+    g.revealLit(L, { x: Math.floor(camX / S), y: Math.floor(camY / S), w: Math.ceil(vw / S) + 1, h: Math.ceil(vh / S) + 1 });
+    const lx0 = Math.max(L.x0, view.x - 2), ly0 = Math.max(L.y0, view.y - 2);
+    const lx1 = Math.min(L.x0 + L.w, view.x + view.w + 2), ly1 = Math.min(L.y0 + L.h, view.y + view.h + 2);
+    const lw = Math.max(1, lx1 - lx0), lh = Math.max(1, ly1 - ly0);
+    // 寫進沒在顯示的那一組
+    const set = this.lightSets[this.front ^ 1];
+    const cw = lw * LSUB, chh = lh * LSUB;
+    if (!set.img || !set.dimg || set.img.width !== cw || set.img.height !== chh) {
+      set.img = new ImageData(cw, chh);
+      set.dimg = new ImageData(cw, chh);
+      set.pix = new Uint32Array(set.img.data.buffer);
+      set.dpix = new Uint32Array(set.dimg.data.buffer);
+    }
+    if (this.lightA.length < lw * lh * 3) { this.lightA = new Float32Array(lw * lh * 3); this.reach = new Uint8Array(lw * lh); }
+    const reach = this.reach.subarray(0, lw * lh);
+    const rect = { x0: lx0, y0: ly0, w: lw, h: lh };
+    ambientReach(w, pt.x, pt.y, AMBIENT_R, { x: lx0, y: ly0, w: lw, h: lh }, reach);
+    const A = this.lightA.subarray(0, lw * lh * 3);
+    shadeTiles(L, w, rect, pt, g.skyRGB(), reach, A);
+    this.filler.begin(A, lw, lh, LSUB, lx0 * LSUB, ly0 * LSUB, set.pix, set.dpix);
+    this.job = { set, L, rect, ms: performance.now() - t0, frames: 0, fillMs: 0 };
+    this.lightAge = 0;
+    this.lightDirty = false;
+  }
+
+  /** 光照重算往前推進到 deadline（至少一個 tile 列）；填完就上傳、換成顯示中的那一組 */
+  private advanceLightJob(deadline: number): void {
+    const j = this.job;
+    if (!j) return;
+    const t1 = performance.now();
+    j.frames++;
+    const done = this.filler.fillUntil(deadline, this.now);
+    const t2 = performance.now();
+    j.fillMs += t2 - t1;
+    j.ms += t2 - t1;
+    if (!done) return;
+    const img = j.set.img!, dimg = j.set.dimg!;
+    if (this.lightCanvas.width !== img.width || this.lightCanvas.height !== img.height) {
+      this.lightCanvas.width = img.width; this.lightCanvas.height = img.height;
+      this.darkCanvas.width = img.width; this.darkCanvas.height = img.height;
+    }
+    this.lightCtx?.putImageData(img, 0, 0);
+    this.darkCtx?.putImageData(dimg, 0, 0);
+    const t3 = performance.now();
+    j.ms += t3 - t2;
+    this.front ^= 1;
+    this.light = j.rect;
+    this.lastLight = j.L;
+    this.job = null;
+    this.stats.lightFillMs = j.fillMs;
+    this.stats.lightPutMs = t3 - t2;
+    this.stats.lightMs = j.ms;
+    this.stats.lightFrames = j.frames;
   }
 
   /** 上次光照計算時某格（tile）的亮度（三通道最大值 ×1.08；沒算過 = 1） */

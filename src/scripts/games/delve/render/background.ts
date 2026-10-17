@@ -3,7 +3,11 @@
 //   以及地下背景（土層 / 岩層兩種暗紋，依深度淡入）。
 import { Bmp, bayer, h01, hex, mix, nudge, snap, toCanvas, type RGB } from './pixel';
 import { snapPx } from './lowres';
-import { skyColors, type SkyColors } from './scene';
+import { dayness as dayAmount, skyColors, type SkyColors } from './scene';
+import { bgSeasonDark, bgSeasonDay, bgSeasonLite } from './seasonLook';
+import { boltBmp, moonPhaseBmp } from './seasonArt';
+import type { Season } from '../engine/calendar';
+import { UG_KEEPS, ugAreas, ugColumnBands, ugThemeBmp, type UgArea, type UgBand } from './underground';
 
 const STRIP_W = 640;
 
@@ -14,11 +18,21 @@ class IndexedLayer {
   private ctx: CanvasRenderingContext2D | null;
   private img: ImageData | null = null;
   private key = '';
+  private tops: Int16Array | null = null;
   constructor(readonly w: number, readonly h: number) {
     this.idx = new Uint8Array(w * h);
     this.canvas = document.createElement('canvas');
     this.canvas.width = w; this.canvas.height = h;
     this.ctx = this.canvas.getContext('2d');
+  }
+  /** 每欄第一個不透明像素的列（整欄透明 = h）；剪影建好後不變，算一次快取 */
+  topRow(x: number): number {
+    if (!this.tops) {
+      const t = new Int16Array(this.w).fill(this.h);
+      for (let xx = 0; xx < this.w; xx++) for (let y = 0; y < this.h; y++) if (this.idx[y * this.w + xx]) { t[xx] = y; break; }
+      this.tops = t;
+    }
+    return this.tops[((x % this.w) + this.w) % this.w];
   }
   /** pal[0] 不用（透明）；key 相同就不重畫 */
   paint(pal: RGB[], key: string): void {
@@ -410,37 +424,6 @@ function cloudLayer(i: number): IndexedLayer {
   return L;
 }
 
-/** 地下背景暗紋（64×64 可平鋪）：大塊岩面 + 縫。keep < 1 時以 2×2 Bayer 挖空（淡入用，不用半透明） */
-type BackdropKind = boolean | 'deep' | 'molten';
-const BACKDROP_PAL: Record<string, string[]> = {
-  rock: ['#0b0b11', '#121219', '#181821', '#1e1e29'],
-  dirt: ['#0e0907', '#160e0a', '#1d140e', '#241a12'],
-  // 洞穴層：偏藍紫的深色岩面；熔岩深淵：暗紅褐（遠處熔岩的反光）
-  deep: ['#0c0a12', '#0c0a12', '#18204a', '#1c1424'],
-  molten: ['#2a1810', '#472819', '#6c1e14', '#472819'],
-};
-function caveBackdrop(kind: BackdropKind, keep = 1): HTMLCanvasElement {
-  const N = 64, b = new Bmp(N, N);
-  const rock = kind !== false;
-  const pal = BACKDROP_PAL[kind === true ? 'rock' : kind === false ? 'dirt' : kind].map(hex);
-  const pts: [number, number][] = [];
-  for (let gy = 0; gy < 4; gy++) for (let gx = 0; gx < 4; gx++) pts.push([(gx + 0.2 + h01(gx, gy, rock ? 3 : 4) * 0.6) * 16, (gy + 0.2 + h01(gx, gy, rock ? 5 : 6) * 0.6) * 16]);
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    let d1 = 1e9, d2 = 1e9, cx = 0, cy = 0;
-    for (const [px0, py0] of pts) for (let oy = -N; oy <= N; oy += N) for (let ox = -N; ox <= N; ox += N) {
-      const d = Math.hypot(x + 0.5 - px0 - ox, y + 0.5 - py0 - oy);
-      if (d < d1) { d2 = d1; d1 = d; cx = px0 + ox; cy = py0 + oy; } else if (d < d2) d2 = d;
-    }
-    const e = d2 - d1;
-    let k = 2;
-    if (e < 1.2) k = 0;
-    else if (e < 3) k = (x - cx) + (y - cy) < 0 ? 3 : 1;
-    if (keep < 1 && bayer(x >> 1, y >> 1) >= keep) continue;
-    b.set(x, y, pal[k]);
-  }
-  return toCanvas(b) as HTMLCanvasElement;
-}
-
 export interface BgView {
   /** 低解析緩衝大小（美術 px = 世界 px） */
   viewW: number; viewH: number;
@@ -452,7 +435,21 @@ export interface BgView {
   horizonY: number;
   time: number;
   dayFrac: number;
+  /** 今天的日出 / 日落 / 曙暮光（曆法；省略 = 0.25 / 0.75 / 0.05） */
+  sunrise?: number; sunset?: number; twilight?: number;
+  /** 月相 0..7 */
+  moon?: number;
+  /** 季節混合（calendar.seasonBlend）：森林剪影的季節色 */
+  season?: { season: Season; prev: Season; t: number };
+  /** 天氣（玩家所在處）：雲量 / 灰化 / 閃電閃光 / 風 */
+  weather?: { kind: string; intensity: number; flash: number; wind: number };
+  /** 正在打的閃電（螢幕 x，美術 px） */
+  bolt?: { x: number; seed: number } | null;
 }
+/** 天氣的雲量（0..1，滿強度）：決定多畫幾朵雲、遮住日月、遠景起霧 */
+const CLOUD_COVER: Record<string, number> = { clear: 0, cloudy: 0.65, rain: 0.9, storm: 1, snow: 0.8, fog: 0.5 };
+/** 起霧（遠景往天色靠）：霧最濃、雨雪次之 */
+const HAZE: Record<string, number> = { clear: 0, cloudy: 0.1, rain: 0.35, storm: 0.4, snow: 0.35, fog: 0.75 };
 
 const BLACK: RGB = [0, 0, 0];
 
@@ -463,19 +460,24 @@ export class Background {
   private clouds: IndexedLayer[] = [];
   private sun = toCanvas(sunBmp()) as HTMLCanvasElement;
   private moon = toCanvas(moonBmp()) as HTMLCanvasElement;
+  /** 8 個月相 */
+  private moons = [0, 1, 2, 3, 4, 5, 6, 7].map((k) => toCanvas(moonPhaseBmp(k)) as HTMLCanvasElement);
+  /** 冬天的森林遠景：積雪的遠山 + 雪丘（近林照舊、靠色調上雪） */
+  private winterSet: IndexedLayer[] = [];
+  private bolts = new Map<string, { c: HTMLCanvasElement; ox: number }>();
+  /** 雲的累積位移（依風向；跟時間脫鉤，換風向不會跳） */
+  private cloudOff = 0;
+  private lastTime = -1;
   /** stars[level-1]：level 1..4 顆數遞增 */
   private stars: HTMLCanvasElement[] = [];
   private skyStrip = document.createElement('canvas');
   private skyKey = '';
   /** 圖樣快取：每幀重建 CanvasPattern 很貴（會複製來源畫布） */
   private skyPat: CanvasPattern | null = null;
-  private ugPats: (CanvasPattern | null)[] | null = null;
-  readonly dirtCave = caveBackdrop(false);
-  readonly rockCave = caveBackdrop(true);
-  readonly deepCave = caveBackdrop('deep');
-  readonly moltenCave = caveBackdrop('molten');
-  /** 土層淡入：4 階 Bayer 挖空的同一張紋理 */
-  private dirtFade = [0.2, 0.4, 0.6, 0.8].map((k) => caveBackdrop(false, k));
+  /** 地下背景：主題 × keep 階的圖樣（用到才建） */
+  private ugPats = new Map<number, CanvasPattern | null>();
+  private ugAreaSrc: readonly unknown[] | null = null;
+  private ugAreaList: UgArea[] = [];
   private cloudSeed: number;
 
   constructor(seed: number) {
@@ -483,6 +485,7 @@ export class Background {
     this.sets[1] = [buildMesas(seed + 2), buildDunes(seed + 3, 110, 14, 40), buildDesertNear(seed + 4)];
     this.sets[2] = [buildMountains(seed + 5, 48), buildHills(seed + 6, true), buildPines(seed + 7)];
     this.sets[3] = [buildKarst(seed + 8), buildCanopy(seed + 9), buildJungleNear(seed + 10)];
+    this.winterSet = [buildMountains(seed, 60), buildHills(seed + 1, true), this.sets[0][2]];
     for (let i = 0; i < 5; i++) this.clouds.push(cloudLayer(i));
     for (let l = 1; l <= 4; l++) this.stars.push(toCanvas(starsBmp(seed, l)) as HTMLCanvasElement);
     this.cloudSeed = seed;
@@ -490,7 +493,10 @@ export class Background {
 
   /** 在低解析緩衝（identity transform，1 單位 = 1 美術 px）畫天空與遠景 */
   draw(ctx: CanvasRenderingContext2D, v: BgView): void {
-    const sky = skyColors(v.dayFrac);
+    const sr = v.sunrise ?? 0.25, ss = v.sunset ?? 0.75, tw = v.twilight ?? 0.05;
+    const wx = v.weather ?? { kind: 'clear', intensity: 0, flash: 0, wind: 0 };
+    const sky = skyColors(v.dayFrac, sr, ss, tw, wx);
+    const cover = (CLOUD_COVER[wx.kind] ?? 0) * wx.intensity, haze = (HAZE[wx.kind] ?? 0) * wx.intensity;
     const W = v.viewW, Hh = v.viewH;
     ctx.imageSmoothingEnabled = false;
     this.drawSky(ctx, sky, W, Hh);
@@ -502,26 +508,49 @@ export class Background {
       const ox = -(((snapPx(v.camX * 0.02) % sw) + sw) % sw);
       for (let y = 0; y < Hh * 0.75; y += sh) for (let x = ox; x < W; x += sw) ctx.drawImage(st, x, y);
     }
-    // 日 / 月
+    // 日 / 月：太陽沿弧線從日出走到日落（日出前 / 日落後一個曙暮光內還在地平線附近），月亮從日落走到隔天日出
     const d = v.dayFrac;
-    const sunUp = d > 0.2 && d < 0.8;
-    const arc = sunUp ? (d - 0.2) / 0.6 : ((d + 0.2) % 1) / 0.4;
-    const a = Math.min(1, Math.max(0, arc));
-    const bx = W * (0.1 + 0.8 * a), by = Hh * (0.46 - 0.34 * Math.sin(Math.PI * a));
-    const img = sunUp ? this.sun : this.moon;
-    ctx.drawImage(img, snapPx(bx - img.width / 2), snapPx(by - img.height / 2));
-    // 雲：色票上的三階（暗底 / 中 / 亮頂），完全不透明
+    const sunUp = d > sr - tw && d < ss + tw;
+    const nightLen = 1 - (ss - sr);
+    const a = sunUp ? (d - sr) / (ss - sr) : (((d - ss) % 1) + 1) % 1 / nightLen;
+    const aa = Math.max(-0.1, Math.min(1.1, a));
+    const bx = W * (0.1 + 0.8 * Math.max(0, Math.min(1, aa))), by = Hh * (0.46 - 0.38 * Math.sin(Math.PI * aa));
+    const img = sunUp ? this.sun : this.moons[(v.moon ?? 4) & 7] ?? this.moon;
+    // 日 / 月不躲在山後：日出 / 日落（含曙暮光）時若弧線低於這一帶剪影的稜線，抬到稜線上方（日輪 + 光環整個露出）
+    const ridge = this.ridgeY(v, Math.round(bx - 15), Math.round(bx + 15));
+    const lift = Math.min(by, ridge - (sunUp ? 18 : 12));
+    const sy = Math.max(img.height / 2 - 4, lift);
+    // 厚雲 / 雨雪：看不到日月
+    if (cover < 0.7) ctx.drawImage(img, snapPx(bx - img.width / 2), snapPx(sy - img.height / 2));
+    // 閃電：天頂到地平線的鋸齒（在遠景後面）
+    if (v.bolt && wx.flash > 0) {
+      const bh = Math.max(40, Math.min(Hh, Math.round(Hh * 0.62)));
+      const key = `${v.bolt.seed}:${bh}`;
+      let bc = this.bolts.get(key);
+      if (!bc) {
+        const bb = boltBmp(v.bolt.seed, bh);
+        bc = { c: toCanvas(bb.b) as HTMLCanvasElement, ox: bb.ox };
+        if (this.bolts.size > 8) this.bolts.clear();
+        this.bolts.set(key, bc);
+      }
+      ctx.drawImage(bc.c, snapPx(v.bolt.x - bc.ox), 0);
+    }
+    // 雲：色票上的三階（暗底 / 中 / 亮頂），完全不透明；陰雨天多畫幾朵、隨風飄
+    const dtc = this.lastTime < 0 ? 0 : Math.max(0, Math.min(0.25, v.time - this.lastTime));
+    this.lastTime = v.time;
+    this.cloudOff += dtc * (1 + Math.abs(wx.wind) * 6) * (wx.wind < -0.05 ? -1 : 1);
     const base = snap(sky.cloud);
     const cpal: RGB[] = [BLACK, nudge(base, -1), base, nudge(base, 1)];
     const ckey = cpal.map((c) => c.join()).join('|');
     const span = W + 240;
-    for (let i = 0; i < this.clouds.length; i++) {
-      const c = this.clouds[i];
+    const n = this.clouds.length + Math.round(cover * 11);
+    for (let i = 0; i < n; i++) {
+      const c = this.clouds[i % this.clouds.length];
       c.paint(cpal, ckey);
-      const speed = 3 + i * 1.3;
+      const speed = 3 + (i % 7) * 1.3;
       const b0 = h01(i, 1, this.cloudSeed) * span;
-      const cx = (((b0 + v.time * speed - v.camX * 0.04) % span) + span) % span - 120;
-      const cy = 18 + h01(i, 2, this.cloudSeed) * Hh * 0.28 + i * 7;
+      const cx = (((b0 + this.cloudOff * speed - v.camX * 0.04) % span) + span) % span - 120;
+      const cy = (i < this.clouds.length ? 18 + h01(i, 2, this.cloudSeed) * Hh * 0.28 + i * 7 : 4 + h01(i, 3, this.cloudSeed) * Hh * 0.22);
       ctx.drawImage(c.canvas, snapPx(cx), snapPx(cy));
     }
     // 三層視差剪影（每層色票：基色 + 色票上相鄰的亮 / 暗階）
@@ -534,31 +563,51 @@ export class Background {
     void k3;
     // 生態區：白天往該區基色靠（夜裡仍是時段色），兩區之間依 t 分階混色
     const bm = v.biome ?? { a: 0, b: 0, t: 0 };
-    let dayness = 0;
-    { const p = v.dayFrac; dayness = p >= 0.3 && p <= 0.7 ? 1 : p > 0.2 && p < 0.3 ? (p - 0.2) / 0.1 : p > 0.7 && p < 0.8 ? (0.8 - p) / 0.1 : 0; }
-    const w = 0.12 + 0.78 * dayness;
+    const dayness = dayAmount(v.dayFrac, sr, ss, tw);
+    // 陰天時生態區 / 季節的色調變淡（往灰色天光靠）
+    const w = (0.12 + 0.78 * dayness) * (1 - 0.45 * cover);
+    // 森林（生態區 0）的季節色：上一季 → 這一季分階混合
+    const sb = v.season;
+    const seasonCol = (pick: (s: Season) => readonly string[], k: number): string | RGB => {
+      if (!sb) return pick(1 as Season)[k];
+      const c0 = hex(pick(sb.prev)[k]), c1 = hex(pick(sb.season)[k]);
+      return sb.t >= 1 ? c1 : snap(mix(c0, c1, sb.t));
+    };
+    const col = (tbl: Record<number, [string, string, string]>, seasonal: (s: Season) => readonly string[], biome: number, k: number): RGB | null => {
+      if (biome === 0) { const c = seasonCol(seasonal, k); return typeof c === 'string' ? hex(c) : c; }
+      const t = tbl[biome];
+      return t ? hex(t[k]) : null;
+    };
     const tint = (biome: number, k: number): RGB => {
-      const day = BIOME_DAY[biome];
-      return day ? snap(mix(L[k], hex(day[k]), w)) : L[k];
+      const day = col(BIOME_DAY, bgSeasonDay, biome, k);
+      return day ? snap(mix(L[k], day, w)) : L[k];
     };
     const light = (biome: number, k: number, base: RGB): RGB => {
-      const c = BIOME_LITE[biome];
-      return c ? snap(mix(lite(base, bottom), hex(c[k]), w)) : lite(base, bottom);
+      const c = col(BIOME_LITE, bgSeasonLite, biome, k);
+      return c ? snap(mix(lite(base, bottom), c, w)) : lite(base, bottom);
     };
     const shade = (biome: number, k: number): RGB => {
-      const dark = BIOME_DARK[biome];
-      return dark ? snap(mix(nudge(L[k], -1), hex(dark[k]), w)) : nudge(L[k], -1);
+      const dark = col(BIOME_DARK, bgSeasonDark, biome, k);
+      return dark ? snap(mix(nudge(L[k], -1), dark, w)) : nudge(L[k], -1);
     };
+    // 霧 / 雨：遠的層整層換成霧灰（分階，不做中間色 → 不會吸附到怪色）；遠山門檻低、中丘高、近林不變
+    const FOG: [string, string, string][] = [['#b4b9c8', '#cceaf8', '#858aa0'], ['#858aa0', '#b4b9c8', '#707490']];
+    const fogAt = [0.3, 0.55];
+    const fogged = (c: RGB, k: number, role = 0): RGB => {
+      if (k > 1 || haze < fogAt[k]) return c;
+      return snap(mix(L[k], hex(FOG[k][role]), 0.2 + 0.8 * dayness));
+    };
+    const winter = sb ? (sb.season === 3 ? sb.t >= 0.5 : sb.prev === 3 && sb.t < 0.5) : false;
     const factors: [number, number][] = [[0.12, layerY(0.22, 30)], [0.28, layerY(0.42, 22)], [0.5, layerY(0.62, -14)]];
     for (let k = 0; k < 3; k++) {
-      const base = bm.t > 0 ? snap(mix(tint(bm.a, k), tint(bm.b, k), bm.t)) : tint(bm.a, k);
-      const dk = bm.t > 0 ? snap(mix(shade(bm.a, k), shade(bm.b, k), bm.t)) : shade(bm.a, k);
+      const base = fogged(bm.t > 0 ? snap(mix(tint(bm.a, k), tint(bm.b, k), bm.t)) : tint(bm.a, k), k);
+      const dk = fogged(bm.t > 0 ? snap(mix(shade(bm.a, k), shade(bm.b, k), bm.t)) : shade(bm.a, k), k, 2);
       const white: RGB = [255, 255, 255];
       const snowA = snap(mix(base, white, 0.25 + 0.45 * dayness)), snowB = snap(mix(base, white, 0.35 + 0.65 * dayness));
-      const lt = bm.t > 0 ? snap(mix(light(bm.a, k, base), light(bm.b, k, base), bm.t)) : light(bm.a, k, base);
+      const lt = fogged(bm.t > 0 ? snap(mix(light(bm.a, k, base), light(bm.b, k, base), bm.t)) : light(bm.a, k, base), k, 1);
       const pal: RGB[] = [BLACK, base, lt === base ? nudge(base, 1) : lt, dk === base ? nudge(base, -1) : dk, snowA === base ? nudge(base, 1) : snowA, snowB];
       const key = pal.map((c) => c.join()).join('|');
-      const A = this.sets[bm.a]?.[k] ?? this.sets[0][k];
+      const A = (bm.a === 0 && winter ? this.winterSet[k] : this.sets[bm.a]?.[k]) ?? this.sets[0][k];
       A.paint(pal, key);
       this.layer(ctx, A, factors[k][0], factors[k][1], base, W, Hh, v);
       if (bm.t > 0 && bm.b !== bm.a) {
@@ -569,6 +618,24 @@ export class Background {
         this.layer(ctx, B, factors[k][0], factors[k][1], base, W, Hh, v, false);
       }
     }
+  }
+
+  /** 遠 / 中 / 近三層剪影在螢幕欄 x0..x1 之間的最高稜線（螢幕 y，美術 px） */
+  private ridgeY(v: BgView, x0: number, x1: number): number {
+    const bm = v.biome ?? { a: 0, b: 0, t: 0 };
+    const sb = v.season;
+    const winter = sb ? (sb.season === 3 ? sb.t >= 0.5 : sb.prev === 3 && sb.t < 0.5) : false;
+    const midY = v.camY + v.viewH / 2;
+    const layerY = (f: number, lift: number): number => snapPx(v.viewH / 2 + (v.horizonY - midY) * f - lift);
+    const factors: [number, number][] = [[0.12, layerY(0.22, 30)], [0.28, layerY(0.42, 22)], [0.5, layerY(0.62, -14)]];
+    let best = Infinity;
+    for (let k = 0; k < 3; k++) {
+      const L = (bm.a === 0 && winter ? this.winterSet[k] : this.sets[bm.a]?.[k]) ?? this.sets[0][k];
+      const sw = L.w, off = -(((snapPx(v.camX * factors[k][0]) % sw) + sw) % sw);
+      const top = factors[k][1] - L.h;
+      for (let x = x0; x <= x1; x++) best = Math.min(best, top + L.topRow(x - off));
+    }
+    return best;
   }
 
   private drawSky(ctx: CanvasRenderingContext2D, sky: SkyColors, W: number, Hh: number): void {
@@ -613,34 +680,58 @@ export class Background {
   }
 
   /**
-   * 世界座標下畫地下背景（呼叫端已設好世界 transform）。逐 tile 欄從「該欄地表 + depth」開始，
-   * 前 64 px 用 4 階 Bayer 挖空淡入（不用半透明），cavernY 起換岩層紋。
+   * 世界座標下畫地下背景（呼叫端已設好世界 transform）。逐 tile 欄依 underground.ugColumnBands 的規劃畫：
+   * 從「該欄地表 + depth」開始 64 px 的 Bayer 淡入、土 / 岩層依該欄生態區換主題（交界抖動）、
+   * 深層 / 熔岩照舊，菇林與地城整段覆蓋。zones 省略 = 全部當森林、沒有覆蓋區。
    */
   drawUnderground(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number,
-    colTop: (tx: number) => number, tile: number, cavernY: number, deepY = Infinity, moltenY = Infinity): void {
+    colTop: (tx: number) => number, tile: number, cavernY: number, deepY = Infinity, moltenY = Infinity,
+    zones?: { biome?: ArrayLike<number>; structures?: readonly { kind: string; x: number; y: number; w: number; h: number }[] }): void {
     const bottom = camY + vh + 1;
-    const fade = 64, step = fade / 4;
-    if (!this.ugPats) this.ugPats = [...this.dirtFade, this.dirtCave, this.rockCave, this.deepCave, this.moltenCave].map((img) => ctx.createPattern(img, 'repeat'));
-    const pats = this.ugPats;
-    // 視差 0.5：圖樣隨鏡頭半速移動（對齊整數美術 px）
-    const m = new DOMMatrix([1, 0, 0, 1, snapPx(camX * 0.5), snapPx(camY * 0.5)]);
-    for (const p of pats) p?.setTransform(m);
-    const band = (pi: number, x: number, from: number, to: number): void => {
-      const a = Math.max(from, camY), b2 = Math.min(to, bottom);
-      const p = pats[pi];
-      if (b2 <= a || !p) return;
-      ctx.fillStyle = p;
-      ctx.fillRect(x, a, tile, b2 - a);
+    // 視差 0.5：圖樣隨鏡頭半速移動（對齊整數美術 px）。用 translate 移圖樣原點（不必每幀對每個圖樣 setTransform）
+    const ox = snapPx(camX * 0.5), oy = snapPx(camY * 0.5);
+    const pat = (theme: number, keep: number): CanvasPattern | null => {
+      const key = theme * UG_KEEPS.length + keep;
+      let p = this.ugPats.get(key);
+      if (p === undefined) {
+        const c = toCanvas(ugThemeBmp(theme, UG_KEEPS[keep])) as HTMLCanvasElement;
+        p = ctx.createPattern(c, 'repeat');
+        this.ugPats.set(key, p);
+      }
+      return p;
     };
+    const bio = zones?.biome, W = bio ? bio.length : 1;
+    const biomeAt = (tx: number): number => (bio ? bio[Math.max(0, Math.min(W - 1, tx))] : 0);
+    if (zones?.structures !== this.ugAreaSrc) { this.ugAreaSrc = zones?.structures ?? null; this.ugAreaList = ugAreas(zones?.structures ?? []); }
     const tx0 = Math.floor(camX / tile), tx1 = Math.ceil((camX + vw) / tile);
+    const vx0 = camX / tile, vy0 = camY / tile, vx1 = (camX + vw) / tile, vy1 = bottom / tile;
+    const areas = this.ugAreaList.filter((a) => a.x - 8 < vx1 && a.x + a.w + 8 > vx0 && a.y - 8 < vy1 && a.y + a.h + 8 > vy0);
+    // 相鄰欄的色帶完全一樣（深處 / 同一區）→ 合併成一個寬矩形再畫
+    let run: UgBand[] | null = null, runX = 0, runW = 0;
+    const flush = (): void => {
+      if (!run) return;
+      for (const b of run) {
+        const p = pat(b.theme, b.keep);
+        if (!p) continue;
+        ctx.fillStyle = p;
+        ctx.fillRect(runX - ox, b.y0 - oy, runW, b.y1 - b.y0);
+      }
+      run = null;
+    };
+    const same = (a: UgBand[], b: UgBand[]): boolean => a.length === b.length && a.every((q, i) => q.theme === b[i].theme && q.keep === b[i].keep && q.y0 === b[i].y0 && q.y1 === b[i].y1);
+    ctx.save();
+    ctx.translate(ox, oy);
     for (let tx = tx0; tx <= tx1; tx++) {
       const y0 = snapPx(colTop(tx)), x = tx * tile;
-      if (y0 >= bottom) continue;
-      for (let i = 0; i < 4; i++) band(i, x, y0 + i * step, Math.min(cavernY, y0 + (i + 1) * step));
-      band(4, x, y0 + fade, cavernY);
-      band(5, x, Math.max(y0, cavernY), deepY);
-      band(6, x, Math.max(y0, deepY), moltenY);
-      band(7, x, Math.max(y0, moltenY), Infinity);
+      if (y0 >= bottom) { flush(); continue; }
+      const bands = ugColumnBands({
+        tx, top: y0, fade: 64, rockY: cavernY, deepY, moltenY, viewTop: camY, viewBottom: bottom, tile, biomeAt, width: W, areas,
+      });
+      if (run && runX + runW === x && same(run, bands)) { runW += tile; continue; }
+      flush();
+      run = bands; runX = x; runW = tile;
     }
+    flush();
+    ctx.restore();
   }
 }

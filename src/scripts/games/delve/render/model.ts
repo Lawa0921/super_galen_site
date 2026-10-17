@@ -90,6 +90,7 @@ export class ChunkLRU<V> {
     return null;
   }
   keys(): number[] { return [...this.map.keys()]; }
+  delete(k: number): boolean { return this.map.delete(k); }
   clear(): void { this.map.clear(); }
 }
 
@@ -133,7 +134,7 @@ export function statusText(o: {
 }): string {
   const parts = [o.clock, o.area, o.depth !== null ? depthLabel(o.feetY, o.surface, o.cavernY, o.moltenY) : layerName(o.feetY, o.surface, o.cavernY, o.moltenY)];
   if (o.east !== null) parts.push(o.east > 0 ? `東 ${o.east}` : o.east < 0 ? `西 ${-o.east}` : '出生點');
-  return parts.join(' · ');
+  return parts.filter(Boolean).join(' · ');
 }
 
 export interface BannerMsg { title: string; sub: string; }
@@ -208,6 +209,9 @@ const BLOCKED: Record<BlockReason, string | null> = {
   summon: '燈芯祭品只能在夜晚或洞穴層以下使用（場上不能已有首領）',
   potion: '藥水還在冷卻（或生命已滿）',
   maxlife: '生命上限已經到頂了',
+  sleep: '附近有怪物，現在睡不著',
+  bait: '沒有魚餌（挖泥土找蚯蚓、拔草叢抓蟲）',
+  full_hp: '現在不餓（生命是滿的）',
 };
 
 /** 古碑碑文（佔位文字） */
@@ -294,7 +298,7 @@ export interface RecipeRow {
 
 export function recipeRows(inv: Inventory, near: boolean | Partial<Record<Station, boolean>>): RecipeRow[] {
   const ctx: CraftContext = typeof near === 'boolean' ? { nearWorkbench: near }
-    : { nearWorkbench: Boolean(near.workbench), nearFurnace: Boolean(near.furnace), nearAnvil: Boolean(near.anvil) };
+    : { nearWorkbench: Boolean(near.workbench), nearFurnace: Boolean(near.furnace), nearAnvil: Boolean(near.anvil), nearCampfire: Boolean(near.campfire) };
   return RECIPES.map((r) => {
     const inputs = r.inputs.map((a) => ({ item: a.item, n: a.n, have: inv.count(a.item) }));
     return {

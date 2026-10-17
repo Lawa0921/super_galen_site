@@ -231,15 +231,16 @@ const NB_X = [1, -1, 0, 0], NB_Y = [0, 0, 1, -1];
 
 /**
  * 天空亮度：t 為遊戲內經過秒數，一天 DAY_LENGTH 秒；t=0 為午夜、0.5 天為正午。
- * 分段線性（不用三角函數）：夜 0.12，清晨 0.2~0.3 天漸亮，黃昏 0.7~0.8 天漸暗。
- * （天空光的「顏色」見 sky.ts skyColor）
+ * 分段線性（不用三角函數）：夜 0.12，日出前後各 twilight 漸亮，日落前後各 twilight 漸暗（預設 0.2~0.3 / 0.7~0.8 天）。
+ * 日出 / 日落 / 曙暮光由曆法（calendar.sunTimes）每天餵入。（天空光的「顏色」見 sky.ts skyColor）
  */
-export function skyBrightness(t: number): number {
+export function skyBrightness(t: number, sunrise = 0.25, sunset = 0.75, twilight = 0.05): number {
   const NIGHT = 0.12;
   let p = (t % DAY_LENGTH) / DAY_LENGTH;
   if (p < 0) p += 1;
-  if (p < 0.2 || p >= 0.8) return NIGHT;
-  if (p < 0.3) return NIGHT + (1 - NIGHT) * ((p - 0.2) / 0.1);
-  if (p < 0.7) return 1;
-  return 1 - (1 - NIGHT) * ((p - 0.7) / 0.1);
+  const a = sunrise - twilight, b = sunrise + twilight, c = sunset - twilight, d = sunset + twilight;
+  if (p < a || p >= d) return NIGHT;
+  if (p < b) return NIGHT + (1 - NIGHT) * ((p - a) / (b - a));
+  if (p < c) return 1;
+  return 1 - (1 - NIGHT) * ((p - c) / (d - c));
 }

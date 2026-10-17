@@ -40,15 +40,15 @@ export const PAL2 = {
   sandWall: ramp('#0c0a12', '#1c1424', '#2a1810', '#472819', '#472819', '#623924', '#623924'),
   snowWall: ramp('#0c0a12', '#18204a', '#2c2838', '#423f54', '#423f54', '#5e5e74', '#5e5e74'),
   iceWall: ramp('#0c0a12', '#18204a', '#18204a', '#2c4486', '#2c4486', '#3e74c4', '#3e74c4'),
-  mudWall: ramp('#0c0a12', '#0c0a12', '#16301e', '#1c1424', '#214528', '#2a1810', '#2a1810'),
+  mudWall: ramp('#0c0a12', '#0c0a12', '#1c1424', '#2a1810', '#214528', '#472819', '#472819'),
   // 深度層
   deep: ramp('#0c0a12', '#1c1424', '#2c2838', '#2c2450', '#423f54', '#463c78', '#707490'),
   basalt: ramp('#0c0a12', '#0c0a12', '#1c1424', '#2c2838', '#423f54', '#5e5e74', '#707490'),
   ash: ramp('#1c1424', '#2c2838', '#423f54', '#5e5e74', '#707490', '#858aa0', '#b4b9c8'),
   obsidian: ramp('#0c0a12', '#0c0a12', '#18204a', '#2c2450', '#463c78', '#7a5a8c', '#b8788e'),
   magma: ramp('#2a1810', '#6c1e14', '#a83a10', '#e8701c', '#ffa93a', '#ffd86a', '#fff4c0'),
-  deepWall: ramp('#0c0a12', '#0c0a12', '#18204a', '#1c1424', '#1c1424', '#2c2450', '#2c2450'),
-  basaltWall: ramp('#0c0a12', '#0c0a12', '#1c1424', '#2a1810', '#2a1810', '#472819', '#472819'),
+  deepWall: ramp('#0c0a12', '#1c1424', '#18204a', '#2c2838', '#2c2450', '#423f54', '#463c78'),
+  basaltWall: ramp('#0c0a12', '#1c1424', '#1c1424', '#2c2838', '#2a1810', '#472819', '#472819'),
   // 地城三色（磚 / 牆）
   brickBlue: ramp('#0c0a12', '#18204a', '#2c4486', '#3e74c4', '#5c9ce0', '#94c8ee', '#cceaf8'),
   brickGreen: ramp('#0c0a12', '#16301e', '#214528', '#3f7468', '#6a9c88', '#a2c8b0', '#cceaf8'),
@@ -691,19 +691,53 @@ function stalactite(style: number): Bmp {
   return b.outline(c[0]);
 }
 function stalagmite(style: number): Bmp { return transform(stalactite(style), (x, y) => [x, 15 - y]); }
+/**
+ * 蜘蛛網：style = 角落（0 上左、1 上右、2 下左、3 下右）+ 4 × 變體（0..2）。
+ * 從實心角放射出 5–6 條主絲，主絲之間以「往中心下垂」的弧線串起 3–4 圈同心絲（1px、色票灰），
+ * 每個變體的主絲角度、圈距、斷絲、垂下的單絲都不同；外圈稍暗、少數交點有亮點（露珠）。
+ */
 function cobweb(style: number): Bmp {
+  const corner = style & 3, v = (style >> 2) % 3, seed = 1201 + v * 17;
   const b = new Bmp(S, S);
-  const w = hex('#b4b9c8'), hi = hex('#ffffff');
-  // 角落（左上）放射線 + 同心弧，再依 style 翻成右上
-  for (const [ex, ey] of [[15, 2], [13, 9], [8, 13], [2, 15]] as [number, number][]) b.line(0, 0, ex, ey, w);
-  for (const r of [5, 9, 13]) {
-    for (let a = 0; a <= 16; a++) {
-      const t = a / 16;
-      const x = Math.round(r * (1 - t) * (1 - t * 0.2)), y = Math.round(r * t * (1 - (1 - t) * 0.2));
-      if (h01(a, r, 12) > 0.25) b.set(x, y, a % 5 === 0 ? hi : w);
+  const silk = hex('#b4b9c8'), far = hex('#858aa0'), dew = hex('#ffffff');
+  // 主絲角度（0 = 沿天花板、π/2 = 沿牆）：兩端貼牆、中間依變體偏移
+  // 端點 0 / n−1 = 貼著天花板 / 牆的錨線（不畫主絲，只讓同心絲黏到牆上）；中間 n−2 條是主絲
+  const SP = [[26, 61], [38, 70], [20, 47, 74]][v];
+  const ang = [0, ...SP, 90].map((d) => (d * Math.PI) / 180);
+  const n = ang.length;
+  const len = ang.map((_, i) => 12.5 + h01(i, 2, seed) * 3);
+  const ax = 0, ay = 0;
+  const pt = (i: number, r: number): [number, number] => [ax + Math.cos(ang[i]) * r, ay + Math.sin(ang[i]) * r];
+  // 主絲
+  for (let i = 1; i < n - 1; i++) { const [ex, ey] = pt(i, len[i]); b.line(0, 0, ex, ey, silk); }
+  // 同心絲：3 圈，相鄰主絲間各一段
+  const rings = v === 2 ? [7.5, 12.5] : v === 1 ? [5.5, 10, 14.5] : [6.5, 11.5, 15.5];
+  const broken = Math.floor(h01(9, 9, seed) * (n - 1));
+  rings.forEach((r0, ri) => {
+    for (let i = 0; i < n - 1; i++) {
+      if (ri === rings.length - 1 && i === broken) continue; // 外圈斷一段
+      // 兩條主絲間的極座標弧：半徑在中段往中心凹（扇貝狀下垂）
+      const r = r0 + (h01(ri, 3, seed) - 0.5) * 0.8; // 每圈一個半徑（各段接得起來）
+      const dip = 0.5 + h01(i, ri + 7, seed) * 0.8;
+      const col = ri === rings.length - 1 ? far : silk;
+      let px = -1, py = -1;
+      for (let k = 0; k <= 10; k++) {
+        const t = k / 10, th = ang[i] + (ang[i + 1] - ang[i]) * t, rr = r - dip * Math.sin(Math.PI * t);
+        const qx = Math.round(Math.cos(th) * rr - 0.25), qy = Math.round(Math.sin(th) * rr - 0.25);
+        if (px >= 0) b.line(px, py, qx, qy, col); else b.set(qx, qy, col);
+        px = qx; py = qy;
+      }
     }
-  }
-  return style === 1 ? transform(b, (x, y) => [15 - x, y]) : b;
+  });
+  // 從外圈垂下的一條單絲（下角的網則往上飄：翻轉後自然成立）
+  const di = 1 + Math.floor(h01(4, 4, seed) * (n - 2));
+  const [dx0, dy0] = pt(di, rings[0]);
+  const dl = 2 + Math.floor(h01(5, 5, seed) * 3);
+  for (let k = 1; k <= dl; k++) b.set(Math.round(dx0), Math.round(dy0) + k, far);
+  // 露珠：內圈與主絲交點上的少數亮點
+  for (let i = 0; i < n; i++) if (h01(i, 6, seed) > 0.6) { const [x, y] = pt(i, rings[rings.length - 2]); b.set(Math.round(x), Math.round(y), dew); }
+  const fx = corner === 1 || corner === 3, fy = corner >= 2;
+  return fx || fy ? transform(b, (x, y) => [fx ? 15 - x : x, fy ? 15 - y : y]) : b;
 }
 function pot(style: number): Bmp {
   const b = new Bmp(S, S);

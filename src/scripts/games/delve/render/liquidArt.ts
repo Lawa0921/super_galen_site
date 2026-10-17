@@ -172,6 +172,43 @@ function pixelOf(type: number, x: number, y: number, d: number, frame: number, p
 }
 
 /**
+ * 瀑布泡沫（疊在水柱 / 落點上）：kind = 'stream'（水柱兩側往下流的白沫）或 'splash'（落點水面翻騰的泡沫，
+ * 畫在落點那格與上方一格：上半往上濺、下半是水面白沫）。抖動像素、完全不透明，frame 0..FOAM_FRAMES−1 往下 / 翻動。
+ */
+export const FOAM_FRAMES = 6;
+export function fallFoam(type: number, frame: number, kind: 'stream' | 'splash'): Bmp {
+  const b = new Bmp(S, S * 2);
+  const lava = type === LIQ.LAVA;
+  const hi = lava ? LAVA[6] : WATER[6], mid = lava ? LAVA[5] : WATER[5], lo = lava ? LAVA[4] : WATER[4];
+  if (kind === 'stream') {
+    // 兩側邊緣 + 中間偶爾的亮條，往下流（每格往下 3 px）
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const yy = y - frame * 3;
+      const edge = x <= 2 || x >= 13;
+      const n = h01(x, ((yy % 48) + 48) % 48, lava ? 77 : 71);
+      if (edge && n > 0.45) b.set(x, y, n > 0.78 ? hi : mid);
+      else if (!edge && (x & 3) === 2 && n > 0.88) b.set(x, y, lo);
+    }
+    return b;
+  }
+  // splash：下半（落點那格的水面附近）白沫、上半往上濺的水珠（越高越稀）
+  for (let y = 0; y < S * 2; y++) for (let x = -0; x < S; x++) {
+    const up = S * 2 - 1 - y; // 距落點那格底 px
+    const n = h01(x + frame * 5, y + frame * 3, lava ? 91 : 89);
+    if (up < S) {
+      // 落點格：上 4 px 是翻騰的泡沫帶
+      const d = S - 1 - up;
+      if (d < 5 && n > 0.12 + d * 0.13) b.set(x, y, n > 0.7 ? hi : d < 2 ? mid : lo);
+    } else {
+      // 上方：濺起的水珠，中間多、兩側少
+      const h = up - S, cx = Math.abs(x - 7.5) / 8;
+      if (n > 0.74 + h * 0.012 + cx * 0.1) b.set(x, y, h < 6 ? mid : hi);
+    }
+  }
+  return b;
+}
+
+/**
  * 某格液體用哪種貼片：下面還能流（落下中）→ 落下的水柱；上方沒有液體 → 水面
  * （高度 = 量 / 255 × 16，至少 1 px）；其他 → 滿格內部。
  */

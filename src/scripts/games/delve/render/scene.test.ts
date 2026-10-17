@@ -1,6 +1,6 @@
 // scene.test.ts — 樹木掃描（樹幹 / 樹冠半徑 / 變體）與天空時段調色。
 import { describe, it, expect } from 'vitest';
-import { scanTrees, treeVariant, skyColors, treeKind, TREE_KIND, torchMount } from './scene';
+import { scanTrees, treeVariant, skyColors, dayness, treeKind, TREE_KIND, torchMount } from './scene';
 import { T } from '../engine/tiles';
 
 function fakeWorld(rows: string[]): (x: number, y: number) => number {
@@ -70,6 +70,31 @@ describe('skyColors', () => {
       const a = skyColors(d).top, b = skyColors(d + 0.01).top;
       expect(Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2])).toBeLessThan(60);
     }
+  });
+  it('季節：日出 / 日落是參數（夏天 06:00 已是白天、冬天 07:12 仍有星星）', () => {
+    const sum = skyColors(0.25, 0.19, 0.81, 0.055), def = skyColors(0.25);
+    expect(lum(sum.top)).toBeGreaterThan(lum(def.top));
+    expect(sum.stars).toBe(0);
+    expect(skyColors(0.3, 0.31, 0.69, 0.045).stars).toBeGreaterThan(0);
+    expect(skyColors(0.3).stars).toBe(0);
+  });
+  it('天氣：陰雨讓天色變灰變暗、雲遮住星星；閃電讓天空變亮', () => {
+    const sat = (c: number[]): number => Math.max(...c) - Math.min(...c);
+    const clear = skyColors(0.5), rain = skyColors(0.5, 0.25, 0.75, 0.05, { kind: 'rain', intensity: 1, flash: 0 });
+    expect(sat(rain.top)).toBeLessThan(sat(clear.top));
+    expect(lum(rain.top)).toBeLessThan(lum(clear.top));
+    const storm = skyColors(0.5, 0.25, 0.75, 0.05, { kind: 'storm', intensity: 1, flash: 0 });
+    expect(lum(storm.top)).toBeLessThan(lum(rain.top));
+    expect(skyColors(0, 0.25, 0.75, 0.05, { kind: 'cloudy', intensity: 1, flash: 0 }).stars).toBeLessThan(skyColors(0).stars);
+    const flash = skyColors(0, 0.25, 0.75, 0.05, { kind: 'storm', intensity: 1, flash: 1 });
+    expect(lum(flash.top)).toBeGreaterThan(lum(skyColors(0).top) + 80);
+    expect(skyColors(0.5, 0.25, 0.75, 0.05, { kind: 'clear', intensity: 1, flash: 0 })).toEqual(clear);
+  });
+  it('dayness：白天 1、夜晚 0、曙暮光之間線性', () => {
+    expect(dayness(0.5)).toBe(1);
+    expect(dayness(0)).toBe(0);
+    expect(dayness(0.25)).toBeCloseTo(0.5, 6);
+    expect(dayness(0.25, 0.19, 0.81, 0.055)).toBe(1);
   });
   it('三層山景色調都有回傳', () => {
     const c = skyColors(0.3);

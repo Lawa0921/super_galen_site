@@ -1,16 +1,17 @@
 // ambient.ts — 環境粒子（純邏輯，畫在 renderer）：洞穴的浮塵、雪原的雪花、森林夜晚的螢火蟲、熔岩深淵的火星、
 // 螢光菇林的孢子。每顆都是 1 個美術像素（色票色），總數有上限、只生在畫面附近，很便宜。
 export type AmbientKind = 'dust' | 'snow' | 'firefly' | 'ember' | 'spore';
-export const AMBIENT_CAP = 56;
+export const AMBIENT_CAP = 96;
 export const AMBIENT_COLORS: Record<AmbientKind, readonly string[]> = {
-  dust: ['#b4b9c8', '#cceaf8', '#f2e2b0'],
+  // 浮塵畫在光照遮罩之後（暗處也看得到），所以用中灰～淡灰：像微光裡飄的塵，不會像星星
+  dust: ['#423f54', '#5e5e74', '#5e5e74', '#707490'],
   snow: ['#ffffff', '#cceaf8', '#ffffff'],
   firefly: ['#c2e478', '#ffd86a', '#fff4c0'],
   ember: ['#ffa93a', '#e8701c', '#ffd86a'],
   spore: ['#4aaeb0', '#a2c8b0', '#cceaf8'],
 };
 /** 會發光的種類（畫在光照遮罩之後，暗處也看得到） */
-export const AMBIENT_GLOWS: Record<AmbientKind, boolean> = { dust: false, snow: false, firefly: true, ember: true, spore: true };
+export const AMBIENT_GLOWS: Record<AmbientKind, boolean> = { dust: true, snow: false, firefly: true, ember: true, spore: true };
 
 export interface AmbientContext {
   molten: boolean; mushroom: boolean;
@@ -20,14 +21,19 @@ export interface AmbientContext {
   biome: number;
   /** 天空亮度 0..1 */
   sky: number;
+  /** 正在下雨 / 下雪（天氣粒子另外畫，這裡不再放雪花 / 螢火蟲） */
+  precip?: boolean;
+  /** 冬天：沒有螢火蟲 */
+  winter?: boolean;
 }
 /** 玩家所在處要哪種粒子（沒有 = null） */
 export function ambientKind(c: AmbientContext): AmbientKind | null {
   if (c.molten) return 'ember';
   if (c.mushroom) return 'spore';
   if (c.outdoors) {
+    if (c.precip) return null;
     if (c.biome === 2) return 'snow';
-    if ((c.biome === 0 || c.biome === 3) && c.sky < 0.45) return 'firefly';
+    if ((c.biome === 0 || c.biome === 3) && c.sky < 0.45 && !(c.winter && c.biome === 0)) return 'firefly';
     return null;
   }
   if (c.underground) return 'dust';
@@ -39,10 +45,12 @@ export interface AmbientParticle {
   x: number; y: number; vx: number; vy: number;
   life: number; max: number; phase: number;
   color: string;
+  /** 邊長（美術 px）：浮塵 1–2、雪花 2–3、其他 1 */
+  size: number;
 }
 interface Rect { x: number; y: number; w: number; h: number; }
 /** 每秒生成數 */
-const RATE: Record<AmbientKind, number> = { dust: 10, snow: 30, firefly: 7, ember: 16, spore: 14 };
+const RATE: Record<AmbientKind, number> = { dust: 20, snow: 40, firefly: 7, ember: 18, spore: 18 };
 
 export class AmbientField {
   readonly particles: AmbientParticle[] = [];
@@ -72,14 +80,14 @@ export class AmbientField {
       const cols = AMBIENT_COLORS[kind];
       const p: AmbientParticle = {
         kind, x: view.x + R() * view.w, y: view.y + R() * view.h, vx: 0, vy: 0,
-        life: 0, max: 0, phase: R() * 6, color: cols[Math.floor(R() * cols.length) % cols.length],
+        life: 0, max: 0, phase: R() * 6, color: cols[Math.floor(R() * cols.length) % cols.length], size: 1,
       };
       switch (kind) {
-        case 'snow': p.y = view.y - 4 + R() * 12; p.vy = 22 + R() * 18; p.max = 14; break;
+        case 'snow': p.y = view.y - 4 + R() * 12; p.vy = 22 + R() * 18; p.max = 14; p.size = R() < 0.3 ? 3 : 2; break;
         case 'ember': p.y = view.y + view.h * (0.4 + R() * 0.6); p.vy = -(18 + R() * 26); p.max = 3 + R() * 3; break;
         case 'spore': p.vy = -(3 + R() * 6); p.max = 5 + R() * 4; break;
         case 'firefly': p.vx = (R() - 0.5) * 16; p.vy = (R() - 0.5) * 10; p.max = 4 + R() * 4; break;
-        default: p.vx = (R() - 0.5) * 6; p.vy = (R() - 0.3) * 4; p.max = 5 + R() * 5;
+        default: p.vx = (R() - 0.5) * 6; p.vy = (R() - 0.3) * 4; p.max = 5 + R() * 4.8; p.size = R() < 0.35 ? 2 : 1;
       }
       p.life = p.max;
       ps.push(p);

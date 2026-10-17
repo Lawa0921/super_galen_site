@@ -5,6 +5,7 @@ import type { DelveGame } from '../engine/game';
 import { CATEGORY_LABEL, type RegionCat } from '../engine/discovery';
 import { LORE, loreEntry } from '../engine/lore';
 import { ITEMS } from '../engine/items';
+import { FISH_SPECIES } from '../engine/fishing';
 import { drawIcon, type Atlas } from './textures';
 import { BannerQueue, distanceLabel, exploredLabel, percentLabel } from './model';
 
@@ -106,7 +107,8 @@ export class ExploreUi {
     const w = g.world;
     const explored = g.explored.count / (w.width * w.height);
     const killSig = Object.values(g.kills).reduce((a, n) => a + (n ?? 0), 0);
-    const sig = `${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${exploredLabel(explored)}|${killSig}|${g.bossesDefeated.size}`;
+    const fishSig = Object.values(g.fishLog).reduce((a, n) => a + (n ?? 0), 0);
+    const sig = `${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${exploredLabel(explored)}|${killSig}|${g.bossesDefeated.size}|${fishSig}`;
     if (sig === this.journalSig) return;
     this.journalSig = sig;
     body.replaceChildren();
@@ -114,7 +116,7 @@ export class ExploreUi {
     const top = el('div', 'delve-j-top');
     top.append(el('span', 'delve-j-big', `完成度 ${percentLabel(s.completion)}`), segBar(s.completion));
     body.appendChild(top);
-    const facts = el('p', 'delve-j-facts', `最深 ${s.depthRecord} 格 · 移動 ${distanceLabel(s.distance)} · 地圖探索 ${exploredLabel(explored)}`);
+    const facts = el('p', 'delve-j-facts', `存活第 ${this.game.date().dayIndex + 1} 天（${this.game.dateText()}）· 最深 ${s.depthRecord} 格 · 移動 ${distanceLabel(s.distance)} · 地圖探索 ${exploredLabel(explored)}`);
     facts.dataset.testid = 'journal-facts';
     body.appendChild(facts);
 
@@ -175,6 +177,26 @@ export class ExploreUi {
     const met = kinds.filter((k) => (g.kills[k] ?? 0) > 0);
     body.appendChild(el('h3', 'delve-j-h', `怪物圖鑑 ${met.length} / ${kinds.length}`));
     body.appendChild(el('p', 'delve-j-names', met.length ? met.map((k) => `${ENEMIES[k].name.zh} ×${g.kills[k]}`).join('、') : '還沒有擊敗任何怪物'));
+
+    // 釣魚紀錄：每種魚一格圖示（沒釣過 = 暗格 + ？？？），滑過顯示名稱與條數
+    const caught = FISH_SPECIES.filter((f) => (g.fishLog[f] ?? 0) > 0);
+    const fh = el('h3', 'delve-j-h', `釣魚紀錄 ${caught.length} / ${FISH_SPECIES.length}`);
+    fh.dataset.testid = 'journal-fish';
+    body.appendChild(fh);
+    const fl = el('div', 'delve-j-treasures');
+    for (const id of FISH_SPECIES) {
+      const n = g.fishLog[id] ?? 0;
+      const cell = el('span', n ? 'delve-j-treasure is-got' : 'delve-j-treasure');
+      const c = el('canvas', 'delve-slot-icon');
+      c.width = 16; c.height = 16;
+      const ctx = c.getContext('2d');
+      if (ctx) drawIcon(this.atlas, ctx, id, 16);
+      cell.title = n ? `${ITEMS[id].name.zh} ×${n}` : '？？？';
+      cell.dataset.fish = id;
+      cell.appendChild(c);
+      fl.appendChild(cell);
+    }
+    body.appendChild(fl);
   }
 
   destroy(): void { for (const f of this.offs) f(); }

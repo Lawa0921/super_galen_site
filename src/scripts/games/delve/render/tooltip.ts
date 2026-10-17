@@ -65,8 +65,14 @@ export function itemTooltip(item: ItemId): string[] {
     case 'scoop': out.push('使用：舀起瞄準格的水 / 熔岩 / 蜂蜜'); break;
     case 'pour': out.push('使用：把整桶倒在瞄準格（水碰熔岩會變黑曜石）'); break;
     case 'sponge': out.push('使用：吸掉瞄準格附近的水 / 蜂蜜（按住連續吸）'); break;
+    case 'fish': out.push('使用：拋竿 / 收竿；浮標沉下去時再按一次把魚拉起來'); break;
+    case 'eat': out.push(`使用：吃掉，回復 ${d.food ?? 0} 生命`); break;
+    case 'crate': out.push('使用：打開木箱'); break;
     default: break;
   }
+  if (d.rod) out.push(`釣竿・釣力 ${d.rod.power}${d.rod.lava ? '・可以在熔岩裡釣' : ''}（要帶魚餌）`);
+  if (d.bait) out.push(`魚餌・釣力 +${d.bait}`);
+  if (d.fish) out.push('魚（營火 / 熔爐旁可以料理）');
   if (d.place !== undefined && !d.weapon) out.push('可放置');
   if (d.unique) out.push('珍寶');
   return out;

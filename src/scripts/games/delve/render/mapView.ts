@@ -10,6 +10,7 @@ import {
   screenToTileOnMap, tileToScreenOnMap, MAP_ICONS, type MapIcon, type MapView,
 } from './mapModel';
 import { Bmp, INK, hex, toCanvas } from './pixel';
+import { FontGate } from './fontGate';
 
 export class MapCache {
   readonly canvas = document.createElement('canvas');
@@ -89,10 +90,15 @@ function iconCanvas(kind: MapIcon, dim = false): HTMLCanvasElement {
 
 /** 文字 → 點陣字 canvas：先以 16px 點陣字型畫在小 canvas，alpha 二值化成單色 + 1px 描邊（地圖上的字也是像素） */
 const LABELS = new Map<string, HTMLCanvasElement>();
-function labelCanvas(text: string, color = '#f2e2b0'): HTMLCanvasElement {
+/** 字型載入（或放棄等待）後 +1：全地圖看到變了就重畫 */
+let fontEpoch = 0;
+const FONT_GATE = new FontGate(typeof document !== 'undefined' ? document.fonts : undefined, 'DotGothic16', () => { LABELS.clear(); fontEpoch++; });
+/** null = 點陣字型還沒載入（先不畫字，避免先用後備字型再跳） */
+function labelCanvas(text: string, color = '#f2e2b0'): HTMLCanvasElement | null {
   const key = text + color;
   let c = LABELS.get(key);
   if (c) return c;
+  if (!FONT_GATE.ready(text)) return null;
   const fs = 16;
   const tmp = document.createElement('canvas');
   const tctx = tmp.getContext('2d')!;
@@ -111,8 +117,8 @@ function labelCanvas(text: string, color = '#f2e2b0'): HTMLCanvasElement {
   LABELS.set(key, c);
   return c;
 }
-/** 字型載入後清掉文字快取（避免一開始用到後備字型） */
-if (typeof document !== 'undefined' && document.fonts) void document.fonts.ready.then(() => LABELS.clear());
+/** 字型全部就緒後也清一次快取（保險：別處觸發的載入） */
+if (typeof document !== 'undefined' && document.fonts) void document.fonts.ready.then(() => { LABELS.clear(); fontEpoch++; });
 
 function drawMarker(ctx: CanvasRenderingContext2D, x: number, y: number, k: number): void {
   const c = iconCanvas('marker');
@@ -205,6 +211,7 @@ export class FullMap {
   private readonly offs: (() => void)[] = [];
   private dpr = 1;
   private scaleSet = false;
+  private fontEpoch = -1;
 
   constructor(private root: HTMLElement, private canvas: HTMLCanvasElement, private cache: MapCache, private game: DelveGame,
     private opts: FullMapOptions) {
@@ -316,8 +323,9 @@ export class FullMap {
   draw(): void {
     if (!this.isOpen || !this.ctx) return;
     const blinkFrame = (performance.now() / 260) | 0;
-    if (!this.dirty && this.cache.version === this.lastVersion && (blinkFrame & 1) === 0) return;
+    if (!this.dirty && this.cache.version === this.lastVersion && this.fontEpoch === fontEpoch && (blinkFrame & 1) === 0) return;
     this.dirty = false;
+    this.fontEpoch = fontEpoch;
     this.lastVersion = this.cache.version;
     const ctx = this.ctx, W = this.canvas.width, H = this.canvas.height, v = this.view, g = this.game, w = g.world;
     ctx.imageSmoothingEnabled = false;
@@ -340,6 +348,7 @@ export class FullMap {
       ctx.drawImage(iconCanvas(pin.icon, !pin.found), Math.round(s.x - 4.5 * k), Math.round(s.y - 4.5 * k), 9 * k, 9 * k);
       if (pin.found && v.scale >= 3) {
         const lc = labelCanvas(pin.name, '#ffd86a');
+        if (!lc) continue;
         const lk = Math.max(1, Math.round(k / 2));
         ctx.drawImage(lc, Math.round(s.x - (lc.width * lk) / 2), Math.round(s.y + 5 * k), lc.width * lk, lc.height * lk);
       }
@@ -350,6 +359,7 @@ export class FullMap {
       const lx = lb.x < 0 ? v.cx : Math.max(r.x + 12, Math.min(r.x + r.w - 12, v.cx));
       const s = tileToScreenOnMap(v, W, H, lx, lb.y);
       const lc = labelCanvas(lb.name);
+      if (!lc) continue;
       const lk = Math.max(1, Math.round(k * 0.75));
       if (s.y < -40 || s.y > H + 40) continue;
       ctx.drawImage(lc, Math.round(s.x - (lc.width * lk) / 2), Math.round(s.y - (lc.height * lk) / 2), lc.width * lk, lc.height * lk);

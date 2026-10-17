@@ -114,3 +114,30 @@ describe('生成平衡（第一夜 / 出生點附近 / 生成間隔漸進）', (
     for (let t = 0; t < 300; t += 7) expect(spawnInterval(t + 7)).toBeLessThanOrEqual(spawnInterval(t));
   });
 });
+
+describe('季節 / 天氣對生成的影響', () => {
+  const base: Habitat = { zone: 'surface', biome: BIOME.FOREST, mushroom: false, night: true };
+  const weight = (h: Habitat, kind: string): number => {
+    const t = spawnTable(h), tot = t.reduce((a, e) => a + e.weight, 0);
+    return (t.find((e) => e.kind === kind)?.weight ?? 0) / tot;
+  };
+  it('雨夜（雨 / 雷雨）地表：亡者比例更高、上限與機率更高', () => {
+    const rain: Habitat = { ...base, weather: 'rain' };
+    expect(weight(rain, 'night_walker')).toBeGreaterThan(weight(base, 'night_walker'));
+    expect(spawnCap(rain)).toBeGreaterThan(spawnCap(base));
+    expect(spawnChance(rain)).toBeGreaterThan(spawnChance(base));
+    expect(spawnCap({ ...base, weather: 'storm' })).toBeGreaterThan(spawnCap(base));
+    // 地下不受天氣影響
+    const ug: Habitat = { ...base, zone: 'underground', weather: 'rain' };
+    expect(spawnCap(ug)).toBe(spawnCap({ ...ug, weather: undefined }));
+  });
+  it('冬天森林地表會出現霜系怪；春天白天史萊姆比較多', () => {
+    expect(kinds({ ...base, night: false, season: 3 })).toContain('frost_blob');
+    expect(kinds({ ...base, season: 3 })).toContain('frost_wolf');
+    expect(kinds({ ...base, night: false, season: 1 })).not.toContain('frost_blob');
+    const day: Habitat = { ...base, night: false };
+    expect(spawnChance({ ...day, season: 0 })).toBeGreaterThan(spawnChance({ ...day, season: 1 }));
+    const desert: Habitat = { ...day, biome: BIOME.DESERT };
+    expect(weight({ ...desert, season: 0 }, 'gel_blob')).toBeGreaterThan(weight({ ...desert, season: 1 }, 'gel_blob'));
+  });
+});

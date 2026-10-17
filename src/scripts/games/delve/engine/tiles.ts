@@ -26,6 +26,12 @@ export const T = {
   FURNACE: 68, ANVIL: 69,
   // ── 液體：蜂巢殼（叢林蜂巢）、酥脆蜜塊（蜂蜜碰到熔岩） ──
   HIVE: 70, CRISPY_HONEY: 71,
+  // ── 瀑布：泉水石（無限水源 / 熔岩源，固定速率出水）、滲水石（溢流排水）——挖不動 ──
+  SPRING: 72, LAVA_SPRING: 73, DRAIN: 74,
+  // ── 釣魚：營火（料理站，發光） ──
+  CAMPFIRE: 75,
+  // ── 家具：桌、椅、燈柱、畫（掛背景牆）、首領戰利品（立座 / 牆上） ──
+  TABLE: 76, CHAIR: 77, LANTERN_POST: 78, PAINTING: 79, TROPHY: 80,
 } as const;
 export type TileId = (typeof T)[keyof typeof T];
 
@@ -44,8 +50,9 @@ export interface LocalName { zh: string; en: string; }
  * 支撐種類：none = 不需要；any = 相鄰任一實心或背牆（火把）；
  * floor = 正下方實心（或同種 tile 疊起來，例如仙人掌）；ceiling = 正上方實心（或同種 tile 垂吊，例如藤蔓）；
  * rope = 繩索：正上方是實心 / 繩索 / 平台，或左右任一側貼著實心（豎井壁）。
+ * wall = 要掛在背景牆上（畫）；mount = 地面型或掛牆都可以（首領戰利品：下面實心 / 桌子，或後面有背景牆）。
  */
-export type Support = 'none' | 'any' | 'floor' | 'ceiling' | 'rope';
+export type Support = 'none' | 'any' | 'floor' | 'ceiling' | 'rope' | 'wall' | 'mount';
 
 export interface TileDef {
   id: number;
@@ -159,10 +166,10 @@ export const TILES: readonly TileDef[] = [
   def({ id: T.DOOR_LOCKED, key: 'door_locked', name: n('上鎖的門', 'Locked Door'), solid: true, hardness: 1, drop: null, color: '#b4b9c8', sprite: true, minTier: TIER_UNBREAKABLE }),
   decor(T.LOCKED_CHEST, 'locked_chest', n('金寶箱', 'Golden Chest'), 'floor', null, '#ffd86a', { hardness: 0.5, minTier: TIER_UNBREAKABLE }),
   decor(T.CHAIN, 'chain', n('鐵鍊', 'Chain'), 'ceiling', null, '#707490', { hardness: 0.1 }),
-  decor(T.BANNER, 'banner', n('旗幟', 'Banner'), 'ceiling', null, '#a83a10', { hardness: 0.1 }),
-  decor(T.CANDLE, 'candle', n('蠟燭', 'Candle'), 'floor', null, '#fff4c0', { hardness: 0.05, light: 0.7 }),
+  decor(T.BANNER, 'banner', n('旗幟', 'Banner'), 'ceiling', 'banner', '#a83a10', { hardness: 0.1 }),
+  decor(T.CANDLE, 'candle', n('蠟燭', 'Candle'), 'floor', 'candle', '#fff4c0', { hardness: 0.05, light: 0.7 }),
   decor(T.LANTERN, 'lantern', n('吊燈', 'Hanging Lamp'), 'ceiling', null, '#ffd86a', { hardness: 0.1, light: 0.92 }),
-  decor(T.BOOKSHELF, 'bookshelf', n('書架', 'Bookshelf'), 'floor', 'planks', '#623924', { hardness: 0.4 }),
+  decor(T.BOOKSHELF, 'bookshelf', n('書架', 'Bookshelf'), 'floor', 'bookshelf', '#623924', { hardness: 0.4 }),
   decor(T.BONES, 'bones', n('骨堆', 'Bone Pile'), 'floor', null, '#f2e2b0', { hardness: 0.1 }),
   decor(T.LORE_TABLET, 'lore_tablet', n('古碑', 'Ancient Tablet'), 'floor', null, '#858aa0', { hardness: 1, minTier: TIER_UNBREAKABLE }),
   // ── 探索 ──
@@ -176,6 +183,18 @@ export const TILES: readonly TileDef[] = [
   // ── 液體 ──
   block(T.HIVE, 'hive', n('蜂巢殼', 'Hive Comb'), 0.6, 'hive', '#e8701c'),
   block(T.CRISPY_HONEY, 'crispy_honey', n('酥蜜塊', 'Crisp Honey Block'), 0.4, 'crispy_honey', '#ffa93a'),
+  // ── 瀑布 ──
+  def({ id: T.SPRING, key: 'spring', name: n('湧泉石', 'Wellspring Stone'), solid: true, hardness: 1, drop: null, color: '#3e74c4', minTier: TIER_UNBREAKABLE }),
+  def({ id: T.LAVA_SPRING, key: 'lava_spring', name: n('熔泉石', 'Magma Vent Stone'), solid: true, hardness: 1, drop: null, color: '#e8701c', minTier: TIER_UNBREAKABLE, light: 0.6 }),
+  def({ id: T.DRAIN, key: 'drain', name: n('滲水石', 'Seep Stone'), solid: true, hardness: 1, drop: null, color: '#2c4486', minTier: TIER_UNBREAKABLE }),
+  // ── 釣魚 ──
+  decor(T.CAMPFIRE, 'campfire', n('營火', 'Campfire'), 'floor', 'campfire', '#e8701c', { hardness: 0.4, light: 0.8 }),
+  // ── 家具 ──
+  decor(T.TABLE, 'table', n('木桌', 'Wooden Table'), 'floor', 'table', '#966139', { hardness: 0.4 }),
+  decor(T.CHAIR, 'chair', n('木椅', 'Wooden Chair'), 'floor', 'chair', '#966139', { hardness: 0.3 }),
+  decor(T.LANTERN_POST, 'lantern_post', n('燈柱', 'Lamp Post'), 'floor', 'lantern_post', '#ffd86a', { hardness: 0.4, light: 0.9 }),
+  decor(T.PAINTING, 'painting', n('畫', 'Painting'), 'wall', 'painting', '#b8788e', { hardness: 0.2 }),
+  decor(T.TROPHY, 'trophy', n('守望者戰利品', 'Warden Trophy'), 'mount', 'warden_trophy', '#ffd86a', { hardness: 0.3 }),
 ];
 
 export const WALLS: readonly WallDef[] = [
@@ -219,6 +238,9 @@ export const LIGHT_HUE: Partial<Record<number, readonly [number, number, number]
   [T.GLOW_MUSHROOM]: [0.3, 0.58, 1],
   [T.MUSHROOM_GRASS]: [0.28, 0.52, 1],
   [T.CRYSTAL]: [0.42, 0.9, 1],
+  [T.LAVA_SPRING]: [1, 0.46, 0.2],
+  [T.CAMPFIRE]: [1, 0.66, 0.36],
+  [T.LANTERN_POST]: [1, 0.88, 0.6],
 };
 export const CRYSTAL_ALT_HUE: readonly [number, number, number] = [0.82, 0.5, 1];
 /** 發光 RGB 查表：i*3 + 通道 */
@@ -267,7 +289,7 @@ export function floorOk(id: number, below: number): boolean {
   if (SOLID_LUT[below] === 1) return true;
   if (id === T.CACTUS) return below === T.CACTUS;
   if (id === T.BOOKSHELF) return below === T.BOOKSHELF || below === T.PLATFORM;
-  if (id === T.CANDLE) return below === T.BOOKSHELF || below === T.PLATFORM;
+  if (id === T.CANDLE) return below === T.BOOKSHELF || below === T.PLATFORM || below === T.TABLE;
   if (id === T.BONES || id === T.POT || id === T.CHEST) return below === T.PLATFORM;
   return false;
 }

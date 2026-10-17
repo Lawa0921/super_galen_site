@@ -3,7 +3,7 @@
 //   · paintMapChunk：把一個 CHUNK×CHUNK 區塊畫成 1 tile = 1 px（未探索 = 迷霧；迷霧邊緣棋盤抖動）
 //   · 全地圖視圖：中心 tile + 每格幾個裝置像素（只在 MAP_SCALES 間跳，保持整數 / 1/n 倍的像素感）、縮放平移
 //   · 小地圖取樣框、地標圖示（7×7 手繪）、名字標籤
-import { TILES, WALLS, T, SOLID_LUT } from '../engine/tiles';
+import { TILES, WALLS, T, W, SOLID_LUT } from '../engine/tiles';
 import { CHUNK } from '../engine/constants';
 import type { ExploredMap } from '../engine/explore';
 import type { Discovery, Region } from '../engine/discovery';
@@ -16,6 +16,10 @@ export interface MapLut {
   /** 同上，暗一階（材質變體 → 地圖上有一點顆粒感） */
   fgDark: Uint32Array;
   wall: Uint32Array;
+  /** 背景牆的第二色（地城牆的磚縫；0 = 沒有磚紋） */
+  wallAlt: Uint32Array;
+  /** 地城磚殼外側的描邊色 */
+  outline: number;
   /** 液體色（LIQ.* → 色；0 = 沒有） */
   liquid: Uint32Array;
   sky: number; cave: number; fog: number; fogEdge: number;
@@ -26,6 +30,14 @@ const pack = (c: RGB): number => ((255 << 24) | (c[2] << 16) | (c[1] << 8) | c[0
 const SHOWN = new Set<number>([T.WOOD, T.LEAVES, T.TORCH, T.PLATFORM, T.ROPE, T.CHEST, T.LOCKED_CHEST, T.DOOR_OPEN, T.LORE_TABLET,
   T.BED_HEAD, T.BED_FOOT, T.CRYSTAL, T.GLOW_MUSHROOM, T.WORKBENCH]);
 
+/** 地城三色：[磚 tile, 牆, 磚色, 牆色, 磚縫色] */
+const DUNGEON_MAP: [number, number, string, string, string][] = [
+  [T.DUNGEON_BRICK_BLUE, W.DUNGEON_WALL_BLUE, '#5c9ce0', '#2c4486', '#18204a'],
+  [T.DUNGEON_BRICK_GREEN, W.DUNGEON_WALL_GREEN, '#6a9c88', '#3f7468', '#214528'],
+  [T.DUNGEON_BRICK_PINK, W.DUNGEON_WALL_PINK, '#b8788e', '#7a5a8c', '#463c78'],
+];
+const IS_BRICK = new Uint8Array(256);
+for (const d of DUNGEON_MAP) IS_BRICK[d[0]] = 1;
 let LUT: MapLut | null = null;
 export function buildMapLut(): MapLut {
   if (LUT) return LUT;
@@ -37,9 +49,15 @@ export function buildMapLut(): MapLut {
     fgDark[t.id] = t.solid ? pack(nudge(c, -1)) : pack(c);
   }
   for (const w of WALLS) if (w.id) wall[w.id] = pack(snap(hex(w.color)));
+  // 地城：磚殼用亮的同色系、牆畫兩色磚紋 → 在地圖上一眼看得出整座地城（不會被深色牆吃掉）
+  const wallAlt = new Uint32Array(256);
+  for (const [brick, wl, bc, wc, mc] of DUNGEON_MAP) {
+    fg[brick] = pack(hex(bc)); fgDark[brick] = pack(hex(bc));
+    wall[wl] = pack(hex(wc)); wallAlt[wl] = pack(hex(mc));
+  }
   const liquid = new Uint32Array(4);
   for (const [t, c] of Object.entries(LIQUID_MAP_COLOR)) liquid[Number(t)] = pack(hex(c));
-  LUT = { fg, fgDark, wall, liquid, sky: pack(hex('#5c9ce0')), cave: pack(hex('#1c1424')), fog: pack(hex('#0c0a12')), fogEdge: pack(hex('#2c2838')) };
+  LUT = { fg, fgDark, wall, wallAlt, outline: pack(INK), liquid, sky: pack(hex('#5c9ce0')), cave: pack(hex('#1c1424')), fog: pack(hex('#0c0a12')), fogEdge: pack(hex('#2c2838')) };
   return LUT;
 }
 
@@ -70,10 +88,17 @@ export function paintMapChunk(out: Uint32Array, w: MapWorld, ex: ExploredMap, cx
       }
       const i = y * W + x, f = w.fg[i];
       const c = w.variant[i] === 2 ? lut.fgDark[f] : lut.fg[f];
-      if (c && SOLID_LUT[f] === 1) { out[o] = c; continue; }
+      if (c && SOLID_LUT[f] === 1) {
+        // 緊貼地城磚殼外側的一般實心格 → 描邊
+        if (!IS_BRICK[f] && ((x > 0 && IS_BRICK[w.fg[i - 1]]) || (x + 1 < W && IS_BRICK[w.fg[i + 1]]) || (y > 0 && IS_BRICK[w.fg[i - W]]) || (y + 1 < w.height && IS_BRICK[w.fg[i + W]]))) out[o] = lut.outline;
+        else out[o] = c;
+        continue;
+      }
       if (w.liquid && w.liquid[i] && w.liquidType) { out[o] = lut.liquid[w.liquidType[i]]; continue; }
       if (c) { out[o] = c; continue; }
       const wl = w.wall[i];
+      // 有第二色的牆（地城）：3 格高、4 格寬、隔列錯開的磚紋
+      if (wl && lut.wallAlt[wl] && (y % 3 === 2 || (x + (Math.floor(y / 3) & 1) * 2) % 4 === 3)) { out[o] = lut.wallAlt[wl]; continue; }
       out[o] = wl ? lut.wall[wl] : y <= w.surfaceY && SOLID_LUT[f] !== 1 ? lut.sky : lut.cave;
     }
   }

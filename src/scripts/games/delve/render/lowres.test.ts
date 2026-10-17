@@ -1,6 +1,7 @@
 // lowres.test.ts — 像素完美管線的純邏輯：整數倍率、低解析緩衝尺寸、鏡頭對齊美術像素、光照分階 + 抖動。
 import { describe, it, expect } from 'vitest';
 import { LIGHT_LEVELS, bufferSize, lightLevel, pickScale, quantizeLevel, snapCam, snapPx, zoomScale, clampZoom, parseZoomPref, MAX_ZOOM_OFFSET } from './lowres';
+import { floatTextScale } from './lowres';
 
 describe('pickScale（裝置 px → 整數倍率，短邊約 520 美術 px）', () => {
   it('常見桌面解析度：1080p 看到 60 格寬、720p 40 格寬', () => {
@@ -115,5 +116,16 @@ describe('縮放等級（整數倍率）', () => {
     expect(parseZoomPref('abc')).toBe(0);
     expect(parseZoomPref('1.5')).toBe(0);
     expect(parseZoomPref('99')).toBe(MAX_ZOOM_OFFSET);
+  });
+});
+
+describe('floatTextScale：手機上傷害數字 / 飄字放大', () => {
+  it('窄畫面且美術像素很小 → 放大到數字至少約 12 CSS px 高；桌機寬畫面維持 1', () => {
+    expect(floatTextScale(1280, 2)).toBe(1);
+    expect(floatTextScale(1920, 3)).toBe(1);
+    expect(floatTextScale(390, 1.33)).toBe(2);
+    expect(floatTextScale(390, 0.8)).toBe(3);
+    expect(floatTextScale(844, 2.6)).toBe(1);
+    expect(floatTextScale(390, 1.33) * 5 * 1.33).toBeGreaterThanOrEqual(12);
   });
 });

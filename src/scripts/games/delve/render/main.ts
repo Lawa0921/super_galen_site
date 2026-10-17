@@ -8,10 +8,15 @@ import { Hud } from './hud';
 import { FixedStepper, blockedMessage, hintText } from './model';
 import { MapCache, Minimap, FullMap } from './mapView';
 import { ExploreUi } from './journal';
+import { CalendarUi } from './calendarUi';
 import { SoundManager } from '../audio/SoundManager';
 import { T } from '../engine/tiles';
 import { ITEMS } from '../engine/items';
 import { parseZoomPref } from './lowres';
+import { FISH } from '../engine/fishing';
+
+/** 稀有 / 傳說的漁獲（釣到時多一聲鈴） */
+const FISH_RARE = new Set(FISH.filter((f) => f.rarity === 'rare' || f.rarity === 'legendary').map((f) => f.item));
 
 const ZOOM_KEY = 'delve.zoom';
 function loadZoom(): number {
@@ -35,6 +40,8 @@ export interface FrameStats {
   mapMs: number;
   /** 液體：上一刻模擬耗時 / 處理格數 / 活躍格數、液體圖層繪製耗時 */
   liquidSimMs: number; liquidProcessed: number; liquidActive: number; liquidDrawMs: number;
+  /** 最近 WINDOW 幀 JS 工作時間的 p95 / 最大值（ms）：看尖峰幀 */
+  p95WorkMs: number; maxWorkMs: number;
 }
 
 export interface DelveHandle {
@@ -43,6 +50,8 @@ export interface DelveHandle {
   hud: Hud;
   map: { cache: MapCache; minimap: Minimap; full: FullMap };
   ui: ExploreUi;
+  /** HUD 日期時鐘 + 日曆 / 天氣預報面板 */
+  calendar: CalendarUi;
   sound: SoundManager;
   stats(): FrameStats;
   /** 暫停模擬（選單開啟時） */
@@ -70,6 +79,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
   const stepper = new FixedStepper(FIXED_DT, 0.25);
   const sound = new SoundManager();
   const ui = new ExploreUi(root, game, renderer.atlas);
+  const calendar = new CalendarUi(root, game);
   const mapCache = new MapCache(game);
   renderer.onWorldDirty = (cis) => mapCache.markWorld(cis);
   const mmRoot = root.querySelector<HTMLElement>('#delve-minimap'), mmCanvas = root.querySelector<HTMLCanvasElement>('#delve-minimap-canvas');
@@ -149,6 +159,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       else if (ui.loreOpen) ui.closeLore();
       else if (game.openChest) game.closeChest();
       else if (ui.journalOpen) ui.setJournal(false);
+      else if (calendar.isOpen) calendar.setOpen(false);
       else if (hud.inventoryOpen) hud.setInventory(false);
       else opts.onMenu();
     },
@@ -203,6 +214,29 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'liquidtool') { sound.splash(false, e.liquid === LIQ.LAVA); invChanged = true; }
         else if (e.type === 'death') { sound.death(); hud.setInventory(false); }
         else if (e.type === 'respawn') hud.toast('你甦醒了');
+        else if (e.type === 'sleep') {
+          if (e.phase === 'start') { sound.sleep(); hud.setInventory(false); }
+          else { sound.wake(); hud.toast(`早安——${game.dateText()}`, 2400); }
+        }
+        else if (e.type === 'lightning') sound.thunder(e.dist);
+        else if (e.type === 'fish') {
+          if (e.phase === 'cast') sound.cast();
+          else if (e.phase === 'land') sound.plop(e.liquid === LIQ.LAVA);
+          else if (e.phase === 'bite') sound.bite();
+          else if (e.phase === 'catch' && e.item) {
+            const def = ITEMS[e.item], rare = Boolean(def.unique) || FISH_RARE.has(e.item);
+            sound.catchFish(rare);
+            hud.toast(def.unique ? `傳說之魚！釣到了 ${def.name.zh}` : `釣到了 ${def.name.zh}`, rare ? 2600 : 1600);
+            invChanged = true;
+          }
+          else if (e.phase === 'escape') { sound.reel(true); hud.toast('魚跑掉了…（浮標沉下去時要馬上按）'); }
+          else if (e.phase === 'reel') sound.reel(false);
+          else if (e.phase === 'snag') hud.toast('浮標卡住了');
+          else if (e.phase === 'burn') hud.toast('浮標燒掉了：熔岩要用燼線釣竿');
+          else if (e.phase === 'snap') hud.toast('走太遠，釣線斷了');
+        }
+        else if (e.type === 'crate') { sound.treasure(); hud.toast(`打開了${ITEMS[e.item].name.zh}`); invChanged = true; }
+        else if (e.type === 'eat') { sound.munch(); invChanged = true; }
         else if (e.type === 'pickup') { sound.pickup(); invChanged = true; }
         else if (e.type === 'heal') { sound.heal(); invChanged = true; }
         else if (e.type === 'lifeup') { sound.heal(); hud.toast(`生命上限提升到 ${e.maxHp}`); invChanged = true; }
@@ -225,6 +259,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
     renderer.render(paused ? 0 : dt);
     hud.tick();
     ui.tick(dt);
+    calendar.tick();
     const tm = performance.now();
     mapCache.update(fullmap.isOpen ? 64 : 16);
     if (fullmap.isOpen) fullmap.draw();
@@ -235,6 +270,16 @@ export function startDelve(opts: StartOptions): DelveHandle {
   };
   raf = requestAnimationFrame(frame);
 
+  const sorted = new Float32Array(WINDOW);
+  /** 最近 WINDOW 幀的第 q 分位數 */
+  const quantile = (a: Float32Array, q: number): number => {
+    const n = Math.min(frames, WINDOW);
+    if (!n) return 0;
+    const s = sorted.subarray(0, n);
+    s.set(a.subarray(0, n));
+    s.sort();
+    return s[Math.min(n - 1, Math.floor(q * n))];
+  };
   const avg = (a: Float32Array): number => {
     const n = Math.min(frames, WINDOW);
     if (!n) return 0;
@@ -244,7 +289,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
   };
 
   const handle: DelveHandle = {
-    game, renderer, hud, ui, sound,
+    game, renderer, hud, ui, calendar, sound,
     map: { cache: mapCache, minimap, full: fullmap },
     stats: () => {
       const f = avg(gaps);
@@ -253,6 +298,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
         lightMs: renderer.stats.lightMs, cachedChunks: renderer.stats.cached, mapMs: avg(mapWork),
         liquidSimMs: game.liquids.stats.ms, liquidProcessed: game.liquids.stats.processed, liquidActive: game.liquids.activeCount,
         liquidDrawMs: renderer.stats.liquidMs,
+        p95WorkMs: quantile(work, 0.95), maxWorkMs: quantile(work, 1),
       };
     },
     setPaused: (p) => {
@@ -280,6 +326,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       window.removeEventListener('keydown', unlock);
       fullmap.destroy();
       ui.destroy();
+      calendar.destroy();
       sound.destroy();
       hud.destroy();
       renderer.destroy();

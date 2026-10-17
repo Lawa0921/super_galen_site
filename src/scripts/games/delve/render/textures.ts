@@ -16,6 +16,11 @@ import {
 import { combatIcon } from './combatArt';
 import { iconBucket, iconMagmaWard, iconSponge } from './liquidArt';
 import { LIQ } from '../engine/liquidKind';
+import { decorColumns } from './decorPick';
+import { FAMILIES, FAMILY_TILES } from './tileFamily';
+import { decorBmpAt } from './decorSeason';
+import { EXTRA_TILE_PAL, FURNITURE_ICONS, extraDecorBmp, extraTileBmp, furnitureIcon } from './propArt';
+import { FISHING_ICONS, fishingIcon } from './fishArt';
 
 const S = TILE_SIZE;
 export { VARIANTS };
@@ -31,8 +36,9 @@ export const PAL = {
   copper: ramp('#2a1810', '#6c1e14', '#a83a10', '#e8701c', '#ffa93a', '#f2b888', '#fff4c0'),
   iron: ramp('#1c1424', '#623924', '#b07a4b', '#d98f66', '#f2b888', '#f2e2b0', '#ffffff'),
   bark: ramp('#1c1424', '#2a1810', '#472819', '#623924', '#7c4c2e', '#966139', '#b07a4b'),
-  dirtWall: ramp('#0c0a12', '#1c1424', '#1c1424', '#2a1810', '#2a1810', '#472819', '#472819'),
-  stoneWall: ramp('#0c0a12', '#1c1424', '#1c1424', '#2c2838', '#2c2838', '#423f54', '#423f54'),
+  // 背景牆：比前景暗一到兩階，但面色不再貼近全黑（火把照到時看得出材質）
+  dirtWall: ramp('#0c0a12', '#1c1424', '#2a1810', '#472819', '#472819', '#623924', '#623924'),
+  stoneWall: ramp('#0c0a12', '#1c1424', '#2c2838', '#2c2838', '#423f54', '#5e5e74', '#5e5e74'),
   torch: ramp('#6c1e14', '#a83a10', '#e8701c', '#ffa93a', '#ffd86a', '#fff4c0', '#ffffff'),
   metal: ramp('#1c1424', '#423f54', '#5e5e74', '#858aa0', '#b4b9c8', '#ffffff', '#ffffff'),
 };
@@ -43,6 +49,7 @@ const TILE_PAL: Record<number, RGB[]> = {
   [T.WOOD]: PAL.bark, [T.LEAVES]: PAL.grass, [T.TORCH]: PAL.torch, [T.WORKBENCH]: PAL.planks,
   [T.CRACKED_STONE]: PAL.stone,
   ...MATERIAL_PAL,
+  ...EXTRA_TILE_PAL,
 };
 const ORE_PAL: Record<number, RGB[]> = {
   [T.COPPER_ORE]: PAL.copper, [T.IRON_ORE]: PAL.iron, [T.SILVER_ORE]: PAL2.silver, [T.GOLD_ORE]: PAL2.gold,
@@ -55,8 +62,20 @@ const BLEND_ROW0 = WALL_ROW0 + WALLS.length;  // 3 列：MAT.DIRT/SAND/STONE
 const MISC_ROW = BLEND_ROW0 + 3;              // 裂痕 0..3、草葉 4..6、叢林草葉 7..9
 const ICON_ROW = MISC_ROW + 1;
 /** 圖示列數（每列 FRAME_COLS 個；依道具數量） */
-const ICON_ROWS = 3;
-const ROWS = ICON_ROW + ICON_ROWS;
+const ICON_ROWS = 4;
+/** 季節草皮：春 / 夏 / 秋 / 冬（雪蓋）各一列，欄位同前景 tile（遮罩 × 變體） */
+const GRASS_SEASON_ROW0 = ICON_ROW + ICON_ROWS;
+/** 材質家族：FAMILY_TILES 每種 × (FAMILIES − 1) 列（家族 0 用原本的 tile 列） */
+const FAMILY_ROW0 = GRASS_SEASON_ROW0 + 4;
+const FAMILY_ROW = new Map<number, number>(FAMILY_TILES.map((id, k) => [id, FAMILY_ROW0 + k * (FAMILIES - 1)]));
+const ROWS = FAMILY_ROW0 + FAMILY_TILES.length * (FAMILIES - 1);
+/** 季節草皮色階（[0] 最暗 → [6] 最亮；frameTile 的草皮用 1..6） */
+export const GRASS_SEASON: RGB[][] = [
+  ramp('#16301e', '#2d672e', '#468a34', '#67ab3c', '#93cc50', '#c2e478', '#fff4c0'),   // 春：新綠
+  ramp('#0c0a12', '#16301e', '#214528', '#2d672e', '#468a34', '#67ab3c', '#93cc50'),   // 夏：濃綠
+  ramp('#16301e', '#214528', '#2d672e', '#7c4c2e', '#966139', '#c99660', '#d8ba76'),   // 秋：枯黃
+  ramp('#16301e', '#7f9cc4', '#94c8ee', '#cceaf8', '#cceaf8', '#ffffff', '#ffffff'),   // 冬：積雪
+];
 
 // ── 小工具 ───────────────────────────────────────────────
 /** 平滑值雜訊（cell 格點雜湊 + 雙線性），0..1 */
@@ -157,6 +176,90 @@ function texStone(v: number, pal = PAL.stone): Bmp {
   if (v !== 1) groove(b, pal, seed, 1, 4, 2, 4);
   b.set(Math.floor(h01(1, 5, seed) * 15), Math.floor(h01(1, 6, seed) * 15), pal[6]);
   return b;
+}
+
+// ── 材質家族（tileFamily：低頻雜訊挑家族，打散大片石 / 土的格狀重複） ─────────
+/** 石・層理：橫向的岩層縫（暗線 + 下方亮唇）在格與格之間大致連續，面比較平 */
+function texStoneBedded(v: number, pal = PAL.stone): Bmp {
+  const b = new Bmp(S, S), seed = 1401 + v * 19;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const n = vnoise(x + v * 7, y * 2, 7, seed);
+    b.set(x, y, n > 0.7 ? pal[4] : n < 0.22 ? pal[2] : pal[3]);
+  }
+  // 兩條層縫：y 位置在格邊對齊（左右鄰格接得起來），中間緩緩起伏
+  const rows = [4 + v, 10 + (v === 2 ? -1 : v)];
+  rows.forEach((ry, k) => {
+    for (let x = 0; x < S; x++) {
+      const y = ry + Math.round(Math.sin((x + k * 5 + v * 3) * 0.45) * 0.8);
+      if (h01(x >> 2, k, seed) > 0.82) continue; // 斷續
+      b.set(x, y, pal[1]);
+      b.set(x, y + 1, pal[5]);
+      if (b.get(x, y - 1) === pal[4]) b.set(x, y - 1, pal[3]);
+    }
+  });
+  // 層面上的小凹點
+  for (let k = 0; k < 2; k++) {
+    const x = 2 + Math.floor(h01(k, 3, seed) * 11), y = 1 + Math.floor(h01(k, 4, seed) * 13);
+    b.set(x, y, pal[2]); b.set(x + 1, y, pal[2]); b.set(x, y + 1, pal[4]);
+  }
+  return b;
+}
+/** 石・卵石堆：4–6 塊圓鈍的石塊，左上受光、縫用中暗色（不會看起來像磚） */
+function texStoneCobble(v: number, pal = PAL.stone): Bmp {
+  const b = new Bmp(S, S), seed = 1431 + v * 23;
+  const pts: [number, number][] = [];
+  const n = 4 + (v === 1 ? 2 : v === 2 ? 1 : 0);
+  for (let k = 0; k < n; k++) pts.push([h01(k, 1, seed) * S, h01(k, 2, seed) * S]);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const q = voronoi(x, y, pts);
+    const e = q.d2 - q.d1, lx = x + 0.5 - q.cx, ly = y + 0.5 - q.cy;
+    const tone = h01(q.i, 3, seed) > 0.7 ? 4 : 3;
+    let c = pal[tone];
+    if (e < 1) c = pal[2];
+    else if (e < 2.2) c = lx + ly < 0 ? pal[tone + 1] : pal[tone - 1];
+    b.set(x, y, c);
+  }
+  b.set(Math.floor(h01(5, 5, seed) * 14), Math.floor(h01(5, 6, seed) * 14), pal[6]);
+  return b;
+}
+/** 土・腐植：偏暗的土，細根絲橫穿、零星小石 */
+function texDirtLoam(v: number, pal = PAL.dirt): Bmp {
+  const b = new Bmp(S, S), seed = 1461 + v * 13;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const n = vnoise(x, y + v * 4, 4, seed);
+    b.set(x, y, n > 0.74 ? pal[4] : n < 0.36 ? pal[2] : pal[3]);
+  }
+  // 根絲：從左緣走到右緣（亮的根 + 下方暗影），每格 1–2 條
+  for (let r = 0; r < 1 + (v & 1); r++) {
+    let y = 3 + Math.floor(h01(r, 7, seed) * 9);
+    for (let x = 0; x < S; x++) {
+      b.set(x, y, pal[5]); b.set(x, y + 1, pal[1]);
+      const t = h01(x, r + 8, seed);
+      if (t > 0.78 && y < 13) y++; else if (t < 0.16 && y > 2) y--;
+    }
+  }
+  const st = PAL.stone;
+  const px = 2 + Math.floor(h01(3, 9, seed) * 11), py = 2 + Math.floor(h01(4, 9, seed) * 11);
+  b.set(px, py, st[5]); b.set(px + 1, py, st[4]); b.set(px, py + 1, st[3]); b.set(px + 1, py + 1, pal[1]);
+  return b;
+}
+/** 土・沉積：橫向抹開的淺色土層帶 + 小土塊 */
+function texDirtSilt(v: number, pal = PAL.dirt): Bmp {
+  const b = new Bmp(S, S), seed = 1491 + v * 11;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const n = vnoise(x * 0.45 + v * 3, y * 1.6, 4, seed);
+    b.set(x, y, n > 0.68 ? pal[5] : n < 0.3 ? pal[3] : pal[4]);
+  }
+  for (let k = 0; k < 3; k++) {
+    const cx = 1 + Math.floor(h01(k, 1, seed) * 12), cy = 1 + Math.floor(h01(k, 2, seed) * 13);
+    for (let i = 0; i < 2 + (k & 1); i++) { b.set(cx + i, cy, pal[6]); b.set(cx + i, cy + 1, pal[2]); }
+  }
+  return b;
+}
+/** 家族 fam（1..FAMILIES-1）的材質；家族 0 = 原本的 texTile */
+function texFamily(id: number, fam: number, v: number): Bmp {
+  if (id === T.STONE) return fam === 1 ? texStoneBedded(v) : texStoneCobble(v);
+  return fam === 1 ? texDirtLoam(v) : texDirtSilt(v);
 }
 
 function texSand(v: number): Bmp {
@@ -266,7 +369,7 @@ function texTile(id: number, v: number): Bmp {
     case T.PLANKS: return texPlanks(v);
     case T.COPPER_ORE: case T.IRON_ORE: case T.SILVER_ORE: case T.GOLD_ORE: return texOre(id, v);
     case T.WORKBENCH: return texWorkbench();
-    default: return texMaterial(id, v) ?? new Bmp(S, S); // 空氣 / 樹幹 / 樹葉 / 火把：動態繪製
+    default: return texMaterial(id, v) ?? extraTileBmp(id, v) ?? new Bmp(S, S); // 空氣 / 樹幹 / 樹葉 / 火把：動態繪製
   }
 }
 
@@ -572,6 +675,10 @@ const ICON_ORDER: ItemId[] = [
   'life_core', 'healing_potion', 'wick_offering', 'chitin_buckler', 'fang_charm', 'feather_charm', 'warden_heart', 'warden_trophy',
   // 液體
   'hive', 'crispy_honey', 'bucket', 'water_bucket', 'lava_bucket', 'honey_bucket', 'sponge', 'magma_ward',
+  // 釣魚
+  ...FISHING_ICONS,
+  // 家具
+  ...FURNITURE_ICONS,
 ];
 export { ICON_ORDER };
 export const PICK_METAL: Record<string, RGB[]> = {
@@ -591,7 +698,7 @@ const BLOCK_ICON: Partial<Record<ItemId, number>> = {
   hive: T.HIVE, crispy_honey: T.CRISPY_HONEY,
 };
 export function paintIcon(item: ItemId): Bmp {
-  const ci = combatIcon(item);
+  const ci = combatIcon(item) ?? fishingIcon(item) ?? furnitureIcon(item, decorBmp);
   if (ci) return ci;
   switch (item) {
     case 'bucket': return iconBucket(LIQ.NONE);
@@ -652,6 +759,8 @@ export interface Atlas {
   /** 材質滲透貼片：mat 滲入、sideIdx 0..3 = 上右下左、perp 見 perpMask */
   blend(mat: Mat, sideIdx: number, perp: number): Src;
   blades(variant: number, jungle?: boolean): Src;
+  /** 季節草皮（season 0..3）：取代一般草地 tile */
+  grass(season: number, variant: number, mask: number): Src;
   /** 裝飾物件 (id, style) */
   decor(id: number, style: number): Src;
   crack(stage: number): Src;
@@ -676,10 +785,11 @@ export function buildAtlas(): Atlas {
     const pal = TILE_PAL[t.id] ?? PAL.stone;
     const styles = t.id === T.WORKBENCH ? 0 : DECOR_STYLES[t.id];
     if (styles) {
-      // 裝飾物件：一列 = 各 style（欄 c 放 style c % styles）
+      // 裝飾物件：一列 = 各欄（蜘蛛網角落 × 變體、季節植物 style × 季節；見 decorPick），不足 FRAME_COLS 就循環
       const bm: Bmp[] = [];
-      for (let s = 0; s < styles; s++) bm.push(decorBmp(t.id, s));
-      for (let c = 0; c < FRAME_COLS; c++) put(bm[c % styles], c, FG_ROW0 + t.id);
+      const cols = t.id === T.WORKBENCH ? styles : Math.min(FRAME_COLS, decorColumns(t.id));
+      for (let s = 0; s < cols; s++) bm.push(extraDecorBmp(t.id, s) ?? decorBmpAt(t.id, s));
+      for (let c = 0; c < FRAME_COLS; c++) put(bm[c % bm.length], c, FG_ROW0 + t.id);
       continue;
     }
     for (let v = 0; v < VARIANTS; v++) {
@@ -705,6 +815,19 @@ export function buildAtlas(): Atlas {
   for (let mat = 1; mat <= 3; mat++) {
     for (let s = 0; s < 4; s++) for (let p = 0; p < 4; p++) put(blendStamp(mat as Mat, s, p), s * 4 + p, BLEND_ROW0 + mat - 1);
   }
+  for (let season = 0; season < 4; season++) {
+    for (let v = 0; v < VARIANTS; v++) {
+      const tex = texTile(T.GRASS, v);
+      for (let m = 0; m < 16; m++) put(frameTile(tex, m, PAL.dirt, { grass: true, v, gpal: GRASS_SEASON[season] }), frameColumn(m, v), GRASS_SEASON_ROW0 + season);
+    }
+  }
+  for (const [id, row0] of FAMILY_ROW) {
+    const pal = TILE_PAL[id] ?? PAL.stone;
+    for (let fam = 1; fam < FAMILIES; fam++) for (let v = 0; v < VARIANTS; v++) {
+      const tex = texFamily(id, fam, v);
+      for (let m = 0; m < 16; m++) put(frameTile(tex, m, pal, { v }), frameColumn(m, v), row0 + fam - 1);
+    }
+  }
   for (let s = 0; s < 4; s++) put(crack(s), s, MISC_ROW);
   for (let v = 0; v < 3; v++) put(grassBlades(v), 4 + v, MISC_ROW);
   for (let v = 0; v < 3; v++) put(grassBlades(v, true), 7 + v, MISC_ROW);
@@ -720,10 +843,15 @@ export function buildAtlas(): Atlas {
   const inks: string[] = TILES.map((t) => css((TILE_PAL[t.id] ?? PAL.stone)[0]));
   return {
     canvas,
-    tile: (id, v, mask) => ({ sx: frameColumn(mask, v) * S, sy: (FG_ROW0 + id) * S }),
+    tile: (id, v, mask) => {
+      // v ≥ VARIANTS：材質家族（tileFamily.tileVariant）
+      const fam = Math.floor(v / VARIANTS), row = fam > 0 ? FAMILY_ROW.get(id) : undefined;
+      return { sx: frameColumn(mask, v) * S, sy: (row !== undefined && fam < FAMILIES ? row + fam - 1 : FG_ROW0 + id) * S };
+    },
     wall: (id, v, mask) => ({ sx: frameColumn(mask, v) * S, sy: (WALL_ROW0 + id) * S }),
     blend: (mat, s, p) => ({ sx: (s * 4 + p) * S, sy: (BLEND_ROW0 + mat - 1) * S }),
     blades: (v, jungle) => ({ sx: ((jungle ? 7 : 4) + (v % 3)) * S, sy: MISC_ROW * S }),
+    grass: (season, v, mask) => ({ sx: frameColumn(mask, v) * S, sy: (GRASS_SEASON_ROW0 + (season & 3)) * S }),
     decor: (id, style) => ({ sx: (style % FRAME_COLS) * S, sy: (FG_ROW0 + id) * S }),
     crack: (s) => ({ sx: Math.max(0, Math.min(3, s)) * S, sy: MISC_ROW * S }),
     icon: (item) => {

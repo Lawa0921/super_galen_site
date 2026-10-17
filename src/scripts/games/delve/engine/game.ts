@@ -7,17 +7,26 @@
 //   const light = game.computeLight(viewRectInTiles);
 //   for (const e of game.drainEvents()) playSfx(e);
 import { World } from './world';
-import { generateWorld, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './worldgen';
+import { generateWorld, type GenResult, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './worldgen';
 import type { DungeonInfo } from './gen/dungeon';
 type GenRelic = { x: number; y: number; item: ItemId; where: string };
-import { T, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
-import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemId, type PickStats, type WeaponDef, type WeaponKind } from './items';
+import { T, W, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
+import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemDef, type ItemId, type PickStats, type WeaponDef, type WeaponKind } from './items';
 import { potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
 import { craft as craftRecipe, findRecipe, type CraftResult, type Station } from './crafting';
 import { makeBody, stepPlayer, onPlatform, type Body, type MoveStats, type PlayerMotion } from './physics';
 import { LightEngine, skyBrightness, type LightMap, type LightRect, type PointLight, type LightRGB } from './lighting';
-import { skyColor } from './sky';
+import { skyColor, isNight as skyIsNight } from './sky';
+import {
+  START_TIME, dateOf, dayIndexOf, formatDate, moonPhase, nextSunrise, seasonOf, sunTimes, DAYS_PER_SEASON, DAYS_PER_YEAR,
+  type GameDate, type Season, type SunTimes,
+} from './calendar';
+import { localWeather, weatherAt, weatherDim, type WeatherKind, type WeatherState } from './weather';
+import { updateFreeze } from './frost';
+import {
+  POOL_COUNT_MAX, biteDelay, biteWindow, canFishIn, crateLoot, fishingPower, rollCatch, timeSlot, type DepthZone, type TimeSlot,
+} from './fishing';
 import { ExploredMap, toggleMarker, type MapMarker } from './explore';
 import { Discovery, buildRegions, type Region, type RegionCat } from './discovery';
 import { Equipment, type EquipSlot } from './equipment';
@@ -26,13 +35,13 @@ import {
   knockbackScale, regenRate, rollCrit, type PlayerStats,
 } from './combat';
 import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type PhysEnv } from './entities';
-import { LiquidSim, type ReactionKind } from './liquid';
+import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidContact } from './swim';
 import { ProjList, type ProjKind, type Projectile } from './projectiles';
 import { ENEMIES, makeEnemy, stepEnemy, type AiCtx, type Enemy, type EnemyKind } from './enemies';
 import {
-  ACTIVE, BED_SAFE, DEFAULT_VIEW_HALF, DESPAWN, MAX_ENEMIES, NEAR_SPAWN_TILES, SPAWN_MAX, findSpot, habitatAt, inHouse,
+  ACTIVE, BED_SAFE, DEFAULT_VIEW_HALF, DESPAWN, MAX_ENEMIES, NEAR_SPAWN_TILES, SPAWN_MAX, findSpot, habitatAt, homeNear, inHouse,
   isFirstNight, pickEntry, spawnCap, spawnChance, spawnInterval, spawnTable, type SpawnPressure,
 } from './spawn';
 import { Rng } from './rng';
@@ -46,11 +55,17 @@ export interface DelveOptions {
   height?: number;
   /** 和平模式：不自然生成怪物 */
   peaceful?: boolean;
+  /** 預先生成好的世界（generateWorldSteps 分段生成；必須是同一個 seed / 大小） */
+  gen?: GenResult;
 }
 
 export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest' | 'locked' | 'golden'
   /** 戰鬥：沒有箭 / 魔力不足 / 現在不能召喚首領 / 藥水冷卻中 / 生命已達上限 */
-  | 'ammo' | 'mana' | 'summon' | 'potion' | 'maxlife';
+  | 'ammo' | 'mana' | 'summon' | 'potion' | 'maxlife'
+  /** 床：附近有怪，不能睡 */
+  | 'sleep'
+  /** 釣魚：沒有魚餌；吃東西：血是滿的 */
+  | 'bait' | 'full_hp';
 export type DelveEvent =
   | { type: 'mine'; x: number; y: number; tile: number; item: ItemId | null }
   | { type: 'place'; x: number; y: number; tile: number; item: ItemId }
@@ -96,7 +111,35 @@ export type DelveEvent =
   /** 水下少了一顆呼吸泡泡（left = 剩幾顆） */
   | { type: 'bubble'; left: number }
   /** 用桶子 / 海綿（舀 / 倒 / 吸），tile 座標 */
-  | { type: 'liquidtool'; action: 'scoop' | 'pour' | 'sponge'; liquid: number; x: number; y: number };
+  | { type: 'liquidtool'; action: 'scoop' | 'pour' | 'sponge'; liquid: number; x: number; y: number }
+  // ── 曆法 / 天氣 ──
+  /** 睡覺：start = 開始淡出、wake = 天亮醒來（時間已跳到日出） */
+  | { type: 'sleep'; phase: 'start' | 'wake' }
+  /** 閃電（x, y = 打在地表的 tile；dist = 離玩家幾格，雷聲延遲用） */
+  | { type: 'lightning'; x: number; y: number; dist: number }
+  // ── 釣魚 ──
+  /**
+   * cast 拋竿、land 浮標落水、bite 上鉤（浮標下沉，要在判定窗內按）、catch 釣到（item）、escape 魚跑了、
+   * reel 收竿（沒釣到）、snag 浮標卡到牆、burn 浮標掉進熔岩燒掉、snap 走太遠線斷了；x, y = 浮標（px）
+   */
+  | { type: 'fish'; phase: 'cast' | 'land' | 'bite' | 'catch' | 'escape' | 'reel' | 'snag' | 'burn' | 'snap'; x: number; y: number; item?: ItemId; liquid?: number }
+  /** 打開木箱 */
+  | { type: 'crate'; item: ItemId; drops: { item: ItemId; n: number }[] }
+  /** 吃東西 */
+  | { type: 'eat'; item: ItemId; amount: number };
+
+/** 釣魚狀態：flying 浮標在空中、floating 漂在液面等上鉤、bite 上鉤（判定窗內） */
+export interface FishingState {
+  state: 'flying' | 'floating' | 'bite';
+  /** 浮標位置 / 速度（px） */
+  x: number; y: number; vx: number; vy: number;
+  /** 這個狀態經過的秒數；wait = 上鉤等待、window = 判定窗 */
+  t: number; wait: number; window: number;
+  liquid: number;
+  rod: ItemId; bait: ItemId; power: number;
+  /** debug：下一次釣起來固定是這個 */
+  forced: ItemId | null;
+}
 
 /** 進行中的攻擊（render 動畫 + 近戰判定） */
 export interface AttackState {
@@ -157,12 +200,19 @@ export interface DelveState {
   honey: number;
   /** 玩家和液體的接觸 */
   liquid: { type: number; frac: number; head: boolean };
+  // ── 曆法 / 天氣 ──
+  /** 第幾天（0 起算）、季節（0 春 … 3 冬）、玩家所在處的天氣 */
+  day: number;
+  season: number;
+  weather: WeatherKind;
+  /** 睡覺淡出 / 淡入 0..1（0 = 沒在睡） */
+  sleep: number;
+  /** 釣魚（浮標位置 px / 狀態）；null = 沒在釣 */
+  fishing: { state: FishingState['state']; x: number; y: number; liquid: number } | null;
 }
 
 /** 徒手（背包沒有鎬）時的挖掘能力 */
 const HAND: PickStats = { speed: 0.35, tier: 1 };
-/** 起始時間：清晨天亮後 */
-const START_TIME = DAY_LENGTH * 0.3;
 /** 同一個 blocked 提示重複出現的最短間隔（秒） */
 const BLOCK_REPEAT = 1.8;
 /** 傳送石引導時間（秒） */
@@ -215,12 +265,39 @@ export const LIQUID_TOOL_CD = 0.25;
 export const SCOOP_MIN = 128;
 /** 液體模擬在瀏覽器每刻的時間預算（ms；session 設定，測試不設 → 確定性） */
 export const LIQUID_BUDGET_MS = 2;
-/** 夜晚：一天的前 20% 與後 20% */
+/** 夜晚：比當天日出早、或比日落晚超過一個曙暮光（日出 / 日落隨季節變化，見 calendar.sunTimes） */
 export function isNightTime(t: number): boolean {
-  let p = (t % DAY_LENGTH) / DAY_LENGTH;
-  if (p < 0) p += 1;
-  return p < 0.2 || p >= 0.8;
+  const s = sunTimes(dayIndexOf(t));
+  return skyIsNight(t / DAY_LENGTH, s.sunrise, s.sunset, s.twilight);
 }
+// ── 曆法 / 天氣 ──
+/** 睡覺：淡出 SLEEP_FADE 秒 → 跳到日出 → 淡入 SLEEP_FADE 秒 */
+export const SLEEP_FADE = 1.2;
+/** 這個範圍（格）內有怪就不能睡 */
+export const SLEEP_SAFE = { x: 30, y: 20 };
+/** 閃電間隔（秒）與閃光時間 */
+export const BOLT_MIN = 2.5;
+export const BOLT_MAX = 10;
+export const FLASH_TIME = 0.32;
+/** 雨水：每 RAIN_EVERY 秒挑一欄，露天水面那格補 RAIN_ADD（最多補到 RAIN_TOP，不會長出新的一層 → 有上限） */
+export const RAIN_EVERY = 0.3;
+export const RAIN_ADD = 6;
+export const RAIN_TOP = 250;
+/** 強制天氣（debug / e2e）時的風 */
+const FORCED_WIND: Record<WeatherKind, number> = { clear: 0.15, cloudy: 0.3, rain: 0.45, storm: 0.85, snow: 0.3, fog: 0.05 };
+// ── 釣魚 ──
+/** 浮標的重力 / 最快拋出速度（px/s²、px/s） */
+export const BOBBER_GRAVITY = 760;
+export const CAST_SPEED_MAX = 430;
+/** 浮標離玩家超過這麼多格 → 線斷了 */
+export const LINE_MAX_TILES = 26;
+/** 吃東西的冷卻（秒） */
+export const FOOD_COOLDOWN = 1;
+/** 挖掘掉魚餌的機率 */
+export const WORM_CHANCE = 1 / 12;
+export const GRUB_CHANCE = 1 / 10;
+export const BUG_CHANCE = 1 / 6;
+export const SUNBEETLE_CHANCE = 1 / 150;
 /** 首領：燈脈守望者的掉落 */
 export const BOSS_DROPS: { item: ItemId; n: number }[] = [
   { item: 'lumen_blade', n: 1 }, { item: 'warden_heart', n: 1 }, { item: 'warden_trophy', n: 1 },
@@ -249,6 +326,8 @@ export class DelveGame {
   readonly tablets: readonly { x: number; y: number; id: number }[];
   /** 珍寶箱位置（debug / e2e） */
   readonly relics: GenRelic[];
+  /** 泉水（瀑布源；debug / e2e） */
+  readonly springs: readonly SpringSpec[];
   /** 地區 / 地標（依種子命名） */
   readonly regions: readonly Region[];
   /** 戰爭迷霧（存檔內容） */
@@ -349,13 +428,41 @@ export class DelveGame {
   private burnTick = 0;
   honeyT = 0;
   private wasWet = 0;
+  // ── 曆法 / 天氣 ───────────────────────────────────────
+  /** 強制天氣（debug / e2e；存檔內容）：until = 到這個遊戲時間為止 */
+  weatherOverride: { kind: WeatherKind; until: number } | null = null;
+  /** 上一刻的天數（換日偵測：結冰 / 融化） */
+  private lastDay = -1;
+  /** 睡覺經過秒數；null = 沒在睡 */
+  private sleepT: number | null = null;
+  private sleepSkipped = false;
+  private boltT = 4;
+  private flashT = 0;
+  private rainT = 0;
+  private readonly weatherRng: Rng;
+  private wxCache: { tick: number; time: number; g: WeatherState; local: WeatherState } | null = null;
+  // ── 釣魚 ───────────────────────────────────────────────
+  /** 進行中的釣魚（浮標）；null = 沒在釣 */
+  fishing: FishingState | null = null;
+  /** 釣魚紀錄：每種魚釣到幾條（存檔內容） */
+  fishLog: Partial<Record<ItemId, number>> = {};
+  private readonly fishRng: Rng;
+  private foodCd = 0;
+  private miningWas = false;
+  /** 玩家敲開的冰洞（tile index；存檔內容）：到那一欄融化的季節前不會再結冰 */
+  readonly minedIce = new Set<number>();
 
   constructor(opts: DelveOptions = {}) {
     this.seed = String(opts.seed ?? 'delve');
-    const gen = generateWorld(this.seed, { width: opts.width, height: opts.height });
+    // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）
+    const pre = opts.gen && (opts.width === undefined || opts.gen.world.width === opts.width) && (opts.height === undefined || opts.gen.world.height === opts.height) ? opts.gen : null;
+    const gen = pre ?? generateWorld(this.seed, { width: opts.width, height: opts.height });
     this.world = gen.world;
     this.liquids = new LiquidSim(this.world);
     this.liquids.blocked = (x, y) => !this.dead && this.tileOverlapsPlayer(x, y);
+    // 泉水瀑布（無限源 + 滲水石排水）
+    this.springs = gen.springs;
+    this.liquids.setSprings(gen.springs);
     const w = this.world;
     this.env = {
       isSolid: (x, y) => w.isSolid(x, y),
@@ -389,11 +496,15 @@ export class DelveGame {
     this.aimPx = { x: (this.spawn.x + 0.5) * TILE_SIZE, y: (this.spawn.y + 1.5) * TILE_SIZE };
     this.spawnRng = new Rng(`${this.seed}:spawn`);
     this.combatRng = new Rng(`${this.seed}:combat`);
+    this.weatherRng = new Rng(`${this.seed}:weather`);
+    this.fishRng = new Rng(`${this.seed}:fish`);
     this.peacefulMode = Boolean(opts.peaceful);
     this.world.markAllDirty();
     // 出生點：周圍已揭露、所在地區算已發現（不跳橫幅）
     this.explored.revealDisc(this.spawn.x, this.spawn.y, REVEAL_RADIUS + 6);
     this.discovery.visit(this.spawn.x, this.spawn.y);
+    // 曆法：雪原的湖在春天開局時仍是冰
+    this.refreshSeason();
   }
 
   /** 換掉探索狀態（存檔還原用） */
@@ -433,6 +544,9 @@ export class DelveGame {
   step(dt: number = FIXED_DT): void {
     this.tick++;
     this.time += dt;
+    const day = dayIndexOf(this.time);
+    if (day !== this.lastDay) this.onNewDay(day);
+    if (this.flashT > 0) this.flashT -= dt;
     this.liquids.step();
     for (const e of this.liquids.drainEvents()) this.events.push({ type: 'liquid', kind: e.kind, x: e.x, y: e.y });
     if (this.dead) {
@@ -440,6 +554,7 @@ export class DelveGame {
       this.updateEntities(dt);
       return;
     }
+    if (this.sleepT !== null) { this.updateSleep(dt); return; }
     const knocked = this.knockT > 0;
     this.contact = liquidContact(this.world, this.player);
     stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
@@ -447,6 +562,7 @@ export class DelveGame {
     this.updateFall();
     this.updateLiquid(dt);
     this.updateVitals(dt);
+    this.updateWeatherFx(dt);
     this.updateRecall(dt);
     this.updateExploration();
     if (!this.platformHinted && this.player.onGround && !this.dropHeld && onPlatform(this.world, this.player)) {
@@ -455,10 +571,16 @@ export class DelveGame {
     }
     if (this.attackCd > 0) this.attackCd -= dt;
     const weapon = this.heldWeapon();
-    if (this.miningHeld) {
+    const rodHeld = this.heldRod() !== null;
+    // 拿著釣竿：主按鍵（觸控的點擊）也是拋竿 / 收竿（按下那一刻）
+    if (this.miningHeld && rodHeld) { if (!this.miningWas) this.fishAction(); }
+    else if (this.miningHeld) {
       if (weapon) this.tryAttack(weapon.item, weapon.def);
       else this.updateMining(dt);
     }
+    this.miningWas = this.miningHeld;
+    this.updateFishing(dt);
+    if (this.foodCd > 0) this.foodCd -= dt;
     this.updateAttack(dt);
     if (!this.attack && Math.abs(this.player.vx) > 8) this.facing = this.player.vx > 0 ? 1 : -1;
     if (this.placeCooldown > 0) this.placeCooldown -= dt;
@@ -470,6 +592,8 @@ export class DelveGame {
         if (!this.useConsumed) { this.useConsumed = true; this.interact(x, y); }
       } else if (use === 'recall') {
         if (!this.useConsumed) { this.useConsumed = true; this.startRecall(); }
+      } else if (use === 'fish') {
+        if (!this.useConsumed) { this.useConsumed = true; this.fishAction(); }
       } else if (use === 'scoop' || use === 'pour' || use === 'sponge') {
         if (this.useLiquidTool(use, x, y)) this.placeCooldown = LIQUID_TOOL_CD;
       } else if (use) {
@@ -486,6 +610,8 @@ export class DelveGame {
   private updateMining(dt: number): void {
     const { x, y } = this.aim;
     const id = this.world.getFg(x, y);
+    if (id === T.AIR && this.world.inBounds(x, y) && this.world.frozen[this.world.idx(x, y)]) { this.mineIce(x, y, dt); return; }
+    if (id === T.AIR && this.world.getWall(x, y) === W.PLANK_WALL) { this.mineWall(x, y, dt); return; }
     if (!this.world.inBounds(x, y) || id === T.AIR) { this.mining = null; return; }
     if (!this.canReach(x, y)) { this.block('mine', 'reach', x, y); this.mining = null; return; }
     const def = tileDef(id);
@@ -502,6 +628,22 @@ export class DelveGame {
       this.mining = null;
       this.breakTile(x, y);
     }
+  }
+
+  /** 敲冰：結冰格當成冰塊挖（不掉東西），挖完那格恢復成水 */
+  private mineIce(x: number, y: number, dt: number): void {
+    if (!this.canReach(x, y)) { this.block('mine', 'reach', x, y); this.mining = null; return; }
+    const need = tileDef(T.ICE).hardness / this.currentPick().speed;
+    if (!this.mining || this.mining.x !== x || this.mining.y !== y) this.mining = { x, y, elapsed: 0, need };
+    this.mining.elapsed += dt;
+    if (this.mining.elapsed + 1e-9 < need) return;
+    this.mining = null;
+    const w = this.world, i = w.idx(x, y);
+    w.frozen[i] = 0;
+    this.minedIce.add(i);
+    w.touchLiquid(i);
+    this.liquids.wake(x, y);
+    this.events.push({ type: 'mine', x, y, tile: T.ICE, item: null });
   }
 
   /** 0（地表）..1（世界底部）：戰利品依深度變好 */
@@ -563,6 +705,8 @@ export class DelveGame {
         case 'floor': return floorOk(nid, tileAfter(nx, ny + 1));
         case 'ceiling': return ceilOk(nid, tileAfter(nx, ny - 1));
         case 'rope': return ropeOk(tileAfter(nx, ny - 1), tileAfter(nx - 1, ny), tileAfter(nx + 1, ny));
+        case 'wall': return w.getWall(nx, ny) !== 0;
+        case 'mount': return w.getWall(nx, ny) !== 0 || solidAfter(nx, ny + 1) || tileAfter(nx, ny + 1) === T.TABLE;
         default: return true;
       }
     };
@@ -601,7 +745,8 @@ export class DelveGame {
         this.bed = null;
         this.events.push({ type: 'spawn', set: false, x: this.spawn.x, y: this.spawn.y });
       }
-      for (const d of drops) {
+      const bug = this.baitDrop(tid);
+      for (const d of bug ? [...drops, { item: bug, n: 1 }] : drops) {
         const left = direct ? this.inventory.add(d.item, d.n) : d.n;
         if (left > 0) this.dropAtTile(d.item, left, tx, ty);
       }
@@ -645,6 +790,8 @@ export class DelveGame {
     if (sup === 'floor') return floorOk(place, this.world.getFg(x, y + 1));
     if (sup === 'ceiling') return ceilOk(place, this.world.getFg(x, y - 1));
     if (sup === 'rope') return ropeOk(this.world.getFg(x, y - 1), this.world.getFg(x - 1, y), this.world.getFg(x + 1, y));
+    if (sup === 'wall') return this.world.getWall(x, y) !== 0;
+    if (sup === 'mount') { const b = this.world.getFg(x, y + 1); return this.world.getWall(x, y) !== 0 || isSolidTile(b) || b === T.TABLE; }
     if (place === T.PLATFORM && (this.world.getFg(x - 1, y) === T.PLATFORM || this.world.getFg(x + 1, y) === T.PLATFORM)) return true;
     return this.hasSupport(x, y);
   }
@@ -730,9 +877,39 @@ export class DelveGame {
     return true;
   }
 
+  /** 放背景牆：那格還沒有牆，而且貼著實心方塊或別的牆（或那格本身是實心） */
+  private placeWall(x: number, y: number, item: ItemId): boolean {
+    const w = this.world, id = ITEMS[item].placeWall ?? 0;
+    if (!w.inBounds(x, y)) return false;
+    if (w.getWall(x, y) !== 0) return false; // 已有牆（按住時不洗提示）
+    if (!this.canReach(x, y)) { this.block('place', 'reach', x, y); return false; }
+    const near = isSolidTile(w.getFg(x, y)) || [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => w.getWall(x + dx, y + dy) !== 0 || isSolidTile(w.getFg(x + dx, y + dy)));
+    if (!near) { this.block('place', 'support', x, y); return false; }
+    w.setWall(x, y, id);
+    this.inventory.takeFromSlot(this.inventory.selected, 1);
+    this.events.push({ type: 'place', x, y, tile: T.AIR, item });
+    return true;
+  }
+  /** 拆木板牆（瞄準空格挖）：掉木板牆；牆上掛的東西失去支撐就掉下來 */
+  private mineWall(x: number, y: number, dt: number): void {
+    if (!this.canReach(x, y)) { this.block('mine', 'reach', x, y); this.mining = null; return; }
+    const need = 0.3 / this.currentPick().speed;
+    if (!this.mining || this.mining.x !== x || this.mining.y !== y) this.mining = { x, y, elapsed: 0, need };
+    this.mining.elapsed += dt;
+    if (this.mining.elapsed + 1e-9 < need) return;
+    this.mining = null;
+    const w = this.world;
+    w.setWall(x, y, 0);
+    this.dropAtTile('plank_wall', 1, x, y);
+    this.events.push({ type: 'mine', x, y, tile: T.PLANKS, item: 'plank_wall' });
+    const f = w.getFg(x, y), sup = tileDef(f).support;
+    if ((sup === 'wall' || sup === 'any' || sup === 'mount') && !this.placeSupported(x, y, f)) this.breakTile(x, y);
+  }
+
   /** 嘗試以快捷欄選中的方塊放在 (x,y)。 */
   tryPlace(x: number, y: number): boolean {
     const stack = this.inventory.selectedStack();
+    if (stack && ITEMS[stack.item].placeWall !== undefined) return this.placeWall(x, y, stack.item);
     const place = stack ? ITEMS[stack.item].place : undefined;
     if (!stack || place === undefined) return false;
     if (!this.world.inBounds(x, y)) return false;
@@ -884,8 +1061,53 @@ export class DelveGame {
     if (this.world.getFg(hx, y) !== T.BED_HEAD) return false;
     this.bed = { x: hx, y };
     this.events.push({ type: 'spawn', set: true, x: hx, y });
+    if (this.isNight()) this.trySleep(hx, y);
     return true;
   }
+  /** 晚上躺上床：附近沒有怪 → 開始睡（淡出 → 跳到日出 → 淡入）；有怪 → 提示 */
+  private trySleep(x: number, y: number): void {
+    if (this.sleepT !== null) return;
+    const pc = this.playerCenter();
+    const threat = this.enemies.some((e) => {
+      const def = ENEMIES[e.kind];
+      if (def.boss) return true;
+      const b = e.body;
+      return !def.minion && Math.abs(b.x + b.w / 2 - pc.x) / TILE_SIZE < SLEEP_SAFE.x && Math.abs(b.y + b.h / 2 - pc.y) / TILE_SIZE < SLEEP_SAFE.y;
+    });
+    if (threat) { this.block('use', 'sleep', x, y); return; }
+    this.sleepT = 0; this.sleepSkipped = false;
+    this.mining = null; this.miningHeld = false; this.attack = null;
+    this.recallT = null;
+    this.closeChest();
+    this.player.vx = 0;
+    this.events.push({ type: 'sleep', phase: 'start' });
+  }
+  private updateSleep(dt: number): void {
+    if (this.sleepT === null) return;
+    this.sleepT += dt;
+    if (!this.sleepSkipped && this.sleepT >= SLEEP_FADE) {
+      this.sleepSkipped = true;
+      this.time = nextSunrise(this.time) + DAY_LENGTH * 0.004;
+      this.wxCache = null;
+      const day = dayIndexOf(this.time);
+      if (day !== this.lastDay) this.onNewDay(day);
+      // 睡飽：回滿血、怪物生成重新從慢開始
+      this.hp = this.maxHp();
+      this.spawnCalm = 0;
+      this.spawnT = Math.max(this.spawnT, 4);
+    }
+    if (this.sleepT >= SLEEP_FADE * 2) {
+      this.sleepT = null;
+      this.events.push({ type: 'sleep', phase: 'wake' });
+    }
+  }
+  /** 睡覺淡出 / 淡入 0..1 */
+  sleepFade(): number {
+    const t = this.sleepT;
+    if (t === null) return 0;
+    return Math.max(0, Math.min(1, t < SLEEP_FADE ? t / SLEEP_FADE : (SLEEP_FADE * 2 - t) / SLEEP_FADE));
+  }
+  get sleeping(): boolean { return this.sleepT !== null; }
   private startRecall(): void {
     if (this.recallT !== null) return;
     this.recallT = 0;
@@ -935,7 +1157,7 @@ export class DelveGame {
   nearWorkbench(): boolean { return this.nearTile(T.WORKBENCH); }
   /** 附近有哪些合成站 */
   stations(): Record<Station, boolean> {
-    return { workbench: this.nearTile(T.WORKBENCH), furnace: this.nearTile(T.FURNACE), anvil: this.nearTile(T.ANVIL) };
+    return { workbench: this.nearTile(T.WORKBENCH), furnace: this.nearTile(T.FURNACE), anvil: this.nearTile(T.ANVIL), campfire: this.nearTile(T.CAMPFIRE) };
   }
   private nearTile(id: number): boolean {
     const p = this.playerTile();
@@ -946,12 +1168,113 @@ export class DelveGame {
     }
     return false;
   }
-  skyLevel(): number { return skyBrightness(this.time); }
+  skyLevel(): number {
+    const s = this.sun(), wx = this.localWeatherState();
+    const v = skyBrightness(this.time, s.sunrise, s.sunset, s.twilight) * weatherDim(wx.kind, wx.intensity);
+    return Math.max(v, this.flash());
+  }
   isNight(): boolean { return isNightTime(this.time); }
+
+  // ── 曆法 / 天氣（查詢；季節 / 天氣 getter 也給日後的釣魚用） ──
+  date(): GameDate { return dateOf(this.time); }
+  dateText(): string { return formatDate(this.time); }
+  season(): Season { return seasonOf(dayIndexOf(this.time)); }
+  /** 今天的日出 / 日落 / 曙暮光 */
+  sun(): SunTimes { return sunTimes(dayIndexOf(this.time)); }
+  moon(): number { return moonPhase(this.time); }
+  /** 全域天氣（含強制天氣） */
+  weather(): WeatherState { return this.wx().g; }
+  /** 玩家所在處的天氣（依生態區在地化：雪原下雪、沙漠不下雪） */
+  localWeatherState(): WeatherState { return this.wx().local; }
+  /** 風 −1..1（粒子 / 草的擺動） */
+  wind(): number { const w = this.wx().local; return w.wind * (0.6 + 0.4 * w.intensity); }
+  /** 閃電閃光 0 / 0.5 / 1（階梯） */
+  flash(): number { return this.flashT <= 0 ? 0 : this.flashT > FLASH_TIME * 0.55 ? 1 : 0.5; }
+  private wx(): { g: WeatherState; local: WeatherState } {
+    const c = this.wxCache;
+    if (c && c.tick === this.tick && c.time === this.time) return c;
+    const o = this.weatherOverride;
+    let g: WeatherState;
+    if (o && this.time < o.until) g = { kind: o.kind, intensity: 1, wind: FORCED_WIND[o.kind] };
+    else {
+      if (o) this.weatherOverride = null;
+      g = weatherAt(this.seed, this.time);
+    }
+    const f = this.feetTile();
+    const local = { ...g, kind: localWeather(g.kind, this.world.biomeAt(f.x)) };
+    this.wxCache = { tick: this.tick, time: this.time, g, local };
+    return this.wxCache;
+  }
+  /** debug / e2e：強制天氣 hours 小時（null = 取消，回到依 seed 的天氣） */
+  forceWeather(kind: WeatherKind | null, hours = 6): void {
+    this.weatherOverride = kind ? { kind, until: this.time + (hours / 24) * DAY_LENGTH } : null;
+    this.wxCache = null;
+    if (kind !== 'storm') this.flashT = 0;
+    this.boltT = Math.min(this.boltT, 1.5);
+  }
+  /** debug / e2e：跳到某年某季某日某時（省略的欄位用現在的值）；會立即更新結冰。回傳日期文字 */
+  setDate(o: { year?: number; season?: number; day?: number; hour?: number }): string {
+    const d = this.date();
+    const year = o.year ?? d.year, season = o.season ?? d.season, day = o.day ?? d.dayOfSeason;
+    const hour = o.hour ?? d.frac * 24;
+    const idx = (Math.max(1, year) - 1) * DAYS_PER_YEAR + Math.max(0, Math.min(3, season)) * DAYS_PER_SEASON + Math.max(0, Math.min(DAYS_PER_SEASON - 1, day - 1));
+    this.time = (idx + Math.max(0, Math.min(23.999, hour)) / 24) * DAY_LENGTH;
+    this.wxCache = null;
+    this.onNewDay(idx);
+    return this.dateText();
+  }
+  /** 依目前日期重算結冰（讀檔 / debug 後） */
+  refreshSeason(): void { this.onNewDay(dayIndexOf(this.time)); }
+  /** 讀檔還原：存檔已帶結冰狀態時只同步天數、不重算 */
+  syncDay(): void { this.lastDay = dayIndexOf(this.time); this.wxCache = null; }
+  private onNewDay(day: number): void {
+    this.lastDay = day;
+    updateFreeze(this.world, this.liquids, day, (x, y) => !this.dead && this.tileOverlapsPlayer(x, y), this.minedIce);
+  }
+  /** 天氣效果：雷雨打閃電、雨水補露天水池 */
+  private updateWeatherFx(dt: number): void {
+    const wx = this.localWeatherState();
+    const f = this.feetTile(), w = this.world;
+    const nearSurface = f.y <= w.surfaceAt(f.x) + 12;
+    if (wx.kind === 'storm' && wx.intensity > 0.4) {
+      this.boltT -= dt;
+      if (this.boltT <= 0) {
+        const r = this.weatherRng;
+        this.boltT = BOLT_MIN + r.next() * (BOLT_MAX - BOLT_MIN);
+        const bx = Math.max(0, Math.min(w.width - 1, f.x + Math.round((r.next() * 2 - 1) * 40)));
+        if (nearSurface) {
+          this.flashT = FLASH_TIME;
+          this.wxCache = null;
+          this.events.push({ type: 'lightning', x: bx, y: w.surfaceAt(bx), dist: Math.abs(bx - f.x) });
+        }
+      }
+    }
+    if ((wx.kind === 'rain' || wx.kind === 'storm') && wx.intensity > 0.3) {
+      this.rainT -= dt;
+      if (this.rainT <= 0) { this.rainT = RAIN_EVERY; this.rainFill(f.x); }
+    }
+  }
+  /** 在玩家附近隨機挑一欄：露天的水面那格補一點水（補到 RAIN_TOP 為止，不會長出新的一層） */
+  private rainFill(px: number): void {
+    const w = this.world, r = this.weatherRng;
+    const x = px + Math.round((r.next() * 2 - 1) * 40);
+    if (x < 0 || x >= w.width) return;
+    const surf = w.surfaceAt(x);
+    for (let y = Math.max(0, surf - 64); y <= Math.min(w.height - 1, surf + 12); y++) {
+      const i = w.idx(x, y);
+      if (isSolidTile(w.fg[i]) || w.frozen[i]) return;
+      const a = w.liquid[i];
+      if (!a) continue;
+      if (w.liquidType[i] !== LIQ.WATER || w.wall[i] !== 0 || a >= RAIN_TOP) return;
+      w.setLiquid(x, y, Math.min(RAIN_TOP, a + RAIN_ADD), LIQ.WATER);
+      this.liquids.wake(x, y);
+      return;
+    }
+  }
 
   craft(recipeId: string): CraftResult {
     const st = this.stations();
-    const r = craftRecipe(this.inventory, recipeId, { nearWorkbench: st.workbench, nearFurnace: st.furnace, nearAnvil: st.anvil });
+    const r = craftRecipe(this.inventory, recipeId, { nearWorkbench: st.workbench, nearFurnace: st.furnace, nearAnvil: st.anvil, nearCampfire: st.campfire });
     if (r.ok) {
       const out = findRecipe(recipeId)?.out;
       if (out) this.events.push({ type: 'craft', recipe: recipeId, item: out.item, n: out.n });
@@ -1059,7 +1382,12 @@ export class DelveGame {
   }
 
   /** 天空光 RGB（夜深藍、黎明粉、白天白、黃昏橘；見 sky.ts） */
-  skyRGB(): [number, number, number] { return skyColor(this.time); }
+  skyRGB(): [number, number, number] {
+    const s = this.sun(), wx = this.localWeatherState();
+    const k = weatherDim(wx.kind, wx.intensity), fl = this.flash();
+    const c = skyColor(this.time, s.sunrise, s.sunset, s.twilight);
+    return [0, 1, 2].map((i) => c[i] * k + (1 - c[i] * k) * fl * 0.9) as [number, number, number];
+  }
 
   /** 計算視窗（tile 座標）+ 外框的光照。 */
   computeLight(view: LightRect, extra?: readonly PointLight[]): LightMap {
@@ -1108,6 +1436,8 @@ export class DelveGame {
       breath: Math.round(this.breath * 100) / 100, maxBreath: MAX_BREATH,
       burning: Math.max(0, this.burning), honey: Math.max(0, this.honeyT),
       liquid: { type: this.contact.type, frac: this.contact.frac, head: this.contact.head },
+      day: dayIndexOf(this.time), season: this.season(), weather: this.localWeatherState().kind, sleep: this.sleepFade(),
+      fishing: this.fishing ? { state: this.fishing.state, x: this.fishing.x, y: this.fishing.y, liquid: this.fishing.liquid } : null,
     };
   }
 
@@ -1541,10 +1871,12 @@ export class DelveGame {
   }
 
   /** 手持消耗品按「使用」 */
-  private consume(use: 'life' | 'heal' | 'summon' | 'scoop' | 'pour' | 'sponge'): void {
+  private consume(use: NonNullable<ItemDef['use']>): void {
     const st = this.inventory.selectedStack();
     if (!st) return;
     const { x, y } = this.aim, p = this.player;
+    if (use === 'eat') { this.eat(st.item); return; }
+    if (use === 'crate') { this.openCrate(st.item); return; }
     if (use === 'life') {
       if (this.baseMaxHp >= MAX_HP_CAP) { this.block('use', 'maxlife', x, y); return; }
       this.inventory.takeFromSlot(this.inventory.selected, 1);
@@ -1558,7 +1890,7 @@ export class DelveGame {
       this.hp = Math.min(this.maxHp(), this.hp + POTION_HEAL);
       this.potionCd = POTION_COOLDOWN;
       this.events.push({ type: 'heal', amount: Math.round(this.hp - before), x: p.x + p.w / 2, y: p.y });
-    } else {
+    } else if (use === 'summon') {
       if (!this.canSummon()) { this.block('use', 'summon', x, y); return; }
       this.inventory.takeFromSlot(this.inventory.selected, 1);
       this.summonBoss();
@@ -1688,6 +2020,8 @@ export class DelveGame {
     const tx = pt.x + dx, ty = pt.y + dy;
     if (!w.inBounds(tx, ty)) return;
     const hab = habitatAt({ world: w, layers: this.layers, night: this.isNight() }, tx, ty);
+    hab.season = this.season();
+    hab.weather = this.localWeatherState().kind;
     let near = 0;
     for (const e of this.enemies) {
       const b = e.body;
@@ -1696,7 +2030,7 @@ export class DelveGame {
     const pressure: SpawnPressure = { firstNight: isFirstNight(this.time), nearSpawn: Math.abs(tx - this.spawn.x) < NEAR_SPAWN_TILES };
     if (near >= spawnCap(hab, pressure) || r.next() >= spawnChance(hab, pressure)) return;
     if (this.bed && Math.hypot(tx - this.bed.x, ty - this.bed.y) < BED_SAFE) return;
-    if (inHouse(w, tx, ty)) return;
+    if (inHouse(w, tx, ty) || homeNear(w, tx, ty)) return;
     const entry = pickEntry(spawnTable(hab), r);
     if (!entry) return;
     const spot = findSpot(w, entry.kind, tx, ty);
@@ -1716,6 +2050,183 @@ export class DelveGame {
       if (s) return s;
     }
     return null;
+  }
+
+  // ── 釣魚 ─────────────────────────────────────────────
+  /** 手上的釣竿 */
+  heldRod(): ItemId | null {
+    const st = this.inventory.selectedStack();
+    return st && ITEMS[st.item].rod ? st.item : null;
+  }
+  /** 背包裡第一種魚餌（依格子順序） */
+  private findBait(): ItemId | null {
+    for (const s of this.inventory.slots) if (s && ITEMS[s.item].bait) return s.item;
+    return null;
+  }
+  /** 現在的時段（黎明 / 白天 / 黃昏 / 夜晚） */
+  timeSlot(): TimeSlot { return timeSlot(this.date().frac, this.sun()); }
+  /** 拋竿 / 收竿 / 上鉤時拉起來 */
+  private fishAction(): void {
+    const f = this.fishing;
+    if (f) {
+      if (f.state === 'bite') this.catchFish();
+      else { this.fishing = null; this.events.push({ type: 'fish', phase: 'reel', x: f.x, y: f.y }); }
+      return;
+    }
+    const rod = this.heldRod();
+    if (!rod) return;
+    const bait = this.findBait();
+    if (!bait) { this.block('use', 'bait', this.aim.x, this.aim.y); return; }
+    const c = this.playerCenter(), aim = this.aimPx;
+    this.facing = aim.x >= c.x ? 1 : -1;
+    const ox = c.x + this.facing * 14, oy = this.player.y + 6;
+    const dx = aim.x - ox, dy = aim.y - oy, d = Math.max(1, Math.hypot(dx, dy));
+    const sp = Math.min(CAST_SPEED_MAX, 140 + d * 1.6);
+    const wx = this.localWeatherState().kind;
+    this.fishing = {
+      state: 'flying', x: ox, y: oy, vx: (dx / d) * sp, vy: (dy / d) * sp - 150, t: 0, wait: 0, window: 0, liquid: LIQ.NONE,
+      rod, bait, power: fishingPower(rod, bait, wx, this.timeSlot()), forced: null,
+    };
+    this.events.push({ type: 'fish', phase: 'cast', x: ox, y: oy });
+  }
+  /** 浮標每刻：飛行（拋物線、撞牆卡住、落水）→ 漂浮（等上鉤）→ 上鉤（判定窗） */
+  private updateFishing(dt: number): void {
+    const f = this.fishing;
+    if (!f) return;
+    const w = this.world, S = TILE_SIZE;
+    const end = (phase: 'reel' | 'snag' | 'burn' | 'snap'): void => { this.fishing = null; this.events.push({ type: 'fish', phase, x: f.x, y: f.y }); };
+    if (this.heldRod() !== f.rod || this.dead || this.sleepT !== null) { end('reel'); return; }
+    const c = this.playerCenter();
+    if (Math.hypot(f.x - c.x, f.y - c.y) > LINE_MAX_TILES * S) { end('snap'); return; }
+    if (f.state === 'flying') {
+      f.t += dt;
+      f.vy = Math.min(600, f.vy + BOBBER_GRAVITY * dt);
+      const steps = Math.max(1, Math.ceil(((Math.abs(f.vx) + Math.abs(f.vy)) * dt) / 4));
+      for (let k = 0; k < steps; k++) {
+        f.x += (f.vx * dt) / steps; f.y += (f.vy * dt) / steps;
+        const tx = Math.floor(f.x / S), ty = Math.floor(f.y / S);
+        if (ty >= w.height || tx < 0 || tx >= w.width) { end('snag'); return; }
+        if (ty < 0) continue;
+        if (w.isSolid(tx, ty)) { end('snag'); return; }
+        const a = w.getLiquid(tx, ty);
+        if (a > 24) {
+          const t = w.getLiquidType(tx, ty);
+          if (!canFishIn(t, Boolean(ITEMS[f.rod].rod?.lava))) { end('burn'); return; }
+          f.state = 'floating'; f.liquid = t; f.vx = 0; f.vy = 0; f.t = 0;
+          f.wait = biteDelay(f.power, this.fishRng.next());
+          this.floatBobber(f);
+          this.events.push({ type: 'fish', phase: 'land', x: f.x, y: f.y, liquid: t });
+          return;
+        }
+      }
+      if (f.t > 5) end('snag');
+      return;
+    }
+    // 漂浮 / 上鉤：液面沒了 → 又開始往下掉
+    if (!this.floatBobber(f)) { f.state = 'flying'; f.t = 0; return; }
+    f.t += dt;
+    if (f.state === 'floating') {
+      if (f.t >= f.wait) {
+        f.state = 'bite'; f.t = 0; f.window = biteWindow(f.power);
+        this.events.push({ type: 'fish', phase: 'bite', x: f.x, y: f.y, liquid: f.liquid });
+      }
+    } else if (f.t > f.window) {
+      f.state = 'floating'; f.t = 0; f.forced = null;
+      f.wait = biteDelay(f.power, this.fishRng.next());
+      this.events.push({ type: 'fish', phase: 'escape', x: f.x, y: f.y });
+    }
+  }
+  /** 浮標貼在所在那欄的液面上（往上找到液面那格）；那欄已經沒液體 → false */
+  private floatBobber(f: FishingState): boolean {
+    const w = this.world, S = TILE_SIZE;
+    const tx = Math.floor(f.x / S);
+    let ty = Math.floor(f.y / S);
+    if (w.getLiquid(tx, ty) === 0 && w.getLiquid(tx, ty + 1) > 0) ty++;
+    if (w.getLiquid(tx, ty) === 0 || w.getLiquidType(tx, ty) !== f.liquid) return false;
+    while (ty > 0 && w.getLiquid(tx, ty - 1) > 0 && w.getLiquidType(tx, ty - 1) === f.liquid) ty--;
+    const a = w.getLiquid(tx, ty);
+    f.y = (ty + 1) * S - (a / 255) * S + 1;
+    return true;
+  }
+  /** 浮標所在水域的格數（同種液體的 4 連通，數到 POOL_COUNT_MAX） */
+  private poolSize(tx: number, ty: number, type: number): number {
+    const w = this.world, W = w.width;
+    const seen = new Set<number>([ty * W + tx]);
+    const q = [ty * W + tx];
+    for (let k = 0; k < q.length && seen.size < POOL_COUNT_MAX; k++) {
+      const i = q[k];
+      for (const j of [i - 1, i + 1, i - W, i + W]) {
+        if (j < 0 || j >= w.liquid.length || seen.has(j) || !w.liquid[j] || w.liquidType[j] !== type) continue;
+        seen.add(j); q.push(j);
+      }
+    }
+    return seen.size;
+  }
+  /** 浮標所在的深度帶 */
+  private depthZone(tx: number, ty: number): DepthZone {
+    const x = Math.max(0, Math.min(this.world.width - 1, tx)), L = this.layers;
+    return ty < L.rock[x] ? 'surface' : ty < L.deep[x] ? 'underground' : ty < L.molten[x] ? 'cavern' : 'molten';
+  }
+  private catchFish(): void {
+    const f = this.fishing;
+    if (!f) return;
+    const S = TILE_SIZE, tx = Math.floor(f.x / S), ty = Math.floor(f.y / S);
+    const item = f.forced ?? rollCatch({
+      liquid: f.liquid, biome: this.world.biomeAt(tx), zone: this.depthZone(tx, ty), season: this.season(),
+      weather: this.localWeatherState().kind, time: this.timeSlot(), power: f.power, pool: this.poolSize(tx, ty, f.liquid),
+      lavaRod: Boolean(ITEMS[f.rod].rod?.lava),
+    }, this.fishRng.next()) ?? 'soggy_boot';
+    this.fishing = null;
+    this.inventory.remove(f.bait, 1);
+    const left = this.inventory.add(item, 1);
+    if (left > 0) { const pt = this.playerTile(); this.dropAtTile(item, left, pt.x, pt.y); }
+    if (ITEMS[item].fish) this.fishLog[item] = (this.fishLog[item] ?? 0) + 1;
+    this.events.push({ type: 'fish', phase: 'catch', x: f.x, y: f.y, item, liquid: f.liquid });
+  }
+  /** debug / e2e：浮標漂著時立刻上鉤（item = 指定釣起來的東西） */
+  debugForceBite(item: ItemId | null = null): boolean {
+    const f = this.fishing;
+    if (!f || f.state === 'flying') return false;
+    f.state = 'bite'; f.t = 0; f.window = biteWindow(f.power); f.forced = item;
+    this.events.push({ type: 'fish', phase: 'bite', x: f.x, y: f.y, liquid: f.liquid });
+    return true;
+  }
+  /** 挖掘 / 拔草時偶爾掉魚餌：泥土 / 草地 → 蚯蚓、叢林泥巴 → 肥蛆、草叢 → 白天蚱蜢 / 晚上螢火蟲、極少金曦甲蟲 */
+  private baitDrop(tid: number): ItemId | null {
+    const r = this.fishRng;
+    if (tid === T.DIRT || tid === T.GRASS) return r.next() < WORM_CHANCE ? 'worm' : null;
+    if (tid === T.JUNGLE_GRASS || tid === T.MUD) return r.next() < GRUB_CHANCE ? 'grub' : null;
+    if (tid === T.TALL_GRASS || tid === T.BUSH || tid === T.FERN || tid === T.FLOWER) {
+      const v = r.next();
+      if (!this.isNight() && v < SUNBEETLE_CHANCE) return 'sunbeetle';
+      return v < BUG_CHANCE ? (this.isNight() ? 'firefly' : 'grasshopper') : null;
+    }
+    return null;
+  }
+  /** 吃料理：回血（滿血不能吃、有短冷卻） */
+  private eat(item: ItemId): void {
+    const heal = ITEMS[item].food ?? 0, { x, y } = this.aim;
+    if (this.foodCd > 0) return;
+    if (this.hp >= this.maxHp()) { this.block('use', 'full_hp', x, y); return; }
+    this.inventory.takeFromSlot(this.inventory.selected, 1);
+    const before = this.hp;
+    this.hp = Math.min(this.maxHp(), this.hp + heal);
+    this.foodCd = FOOD_COOLDOWN;
+    const p = this.player, amount = Math.round(this.hp - before);
+    this.events.push({ type: 'eat', item, amount });
+    this.events.push({ type: 'heal', amount, x: p.x + p.w / 2, y: p.y });
+  }
+  /** 打開木箱：戰利品進背包（放不下的掉在腳邊） */
+  private openCrate(item: ItemId): void {
+    if (item !== 'wooden_crate' && item !== 'iron_crate' && item !== 'golden_crate') return;
+    this.inventory.takeFromSlot(this.inventory.selected, 1);
+    const drops = crateLoot(item, this.fishRng), pt = this.playerTile();
+    for (const d of drops) {
+      const left = this.inventory.add(d.item, d.n);
+      if (left > 0) this.dropAtTile(d.item, left, pt.x, pt.y);
+      this.events.push({ type: 'pickup', item: d.item, n: d.n });
+    }
+    this.events.push({ type: 'crate', item, drops });
   }
 
   // ── debug / e2e / 存檔還原 ─────────────────────────────
