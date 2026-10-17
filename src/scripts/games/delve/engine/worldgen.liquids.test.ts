@@ -17,8 +17,61 @@ describe('世界生成：液體', { timeout: 240_000 }, () => {
   let r: GenResult;
   beforeAll(() => { r = generateWorld('liquids'); }, 240_000);
 
-  it('生成器版本 5（v5 = 加入液體）', () => {
-    expect(GEN_VERSION).toBe(5);
+  it('生成器版本 6（v6 = 熔岩湖 / 地下湖挖盆地、泉水瀑布）', () => {
+    expect(GEN_VERSION).toBe(6);
+  });
+
+  it('熔岩深淵：熔岩湖是挖出來的盆地（深 4–12 格），很少寬的一格厚薄片', () => {
+    const w = r.world, W = w.width;
+    // 每欄：熔岩深淵裡所有熔岩表面都 ≤ 2 格深 → 「淺欄」；連續 ≥ 6 欄的淺欄 = 薄片
+    let cols = 0, deepCols = 0;
+    const sh = new Uint8Array(W);
+    for (let x = 0; x < W; x++) {
+      let any = false, shallow = true;
+      for (let y = r.layers.molten[x]; y < w.height; y++) {
+        const i = y * W + x;
+        if (w.liquidType[i] !== LIQ.LAVA || w.liquidType[i - W] === LIQ.LAVA) continue;
+        let d = 0;
+        while (y + d < w.height && w.liquidType[(y + d) * W + x] === LIQ.LAVA) d++;
+        any = true;
+        if (d > 2) shallow = false;
+        if (d >= 4) deepCols++;
+      }
+      if (any) cols++;
+      sh[x] = any && shallow ? 1 : 0;
+    }
+    let sheet = 0;
+    for (let x = 0; x < W;) {
+      if (!sh[x]) { x++; continue; }
+      let b = x;
+      while (b < W && sh[b]) b++;
+      if (b - x >= 6) sheet += b - x;
+      x = b;
+    }
+    expect(cols).toBeGreaterThan(1500);
+    expect(sheet / cols).toBeLessThan(0.015);
+    expect(deepCols / cols).toBeGreaterThan(0.8);
+  });
+
+  it('地下湖：洞穴裡挖了大盆地，有幾座 2000–6500 格的大湖', () => {
+    const w = r.world, W = w.width, N = w.liquid.length;
+    const seen = new Uint8Array(N);
+    const sizes: number[] = [];
+    for (let i = 0; i < N; i++) {
+      if (seen[i] || w.liquidType[i] !== LIQ.WATER) continue;
+      const x0 = i % W, y0 = (i - x0) / W;
+      if (y0 < r.layers.rock[x0]) continue;
+      let n = 0;
+      const st = [i]; seen[i] = 1;
+      while (st.length) {
+        const j = st.pop()!; n++;
+        for (const k of [j - 1, j + 1, j - W, j + W]) if (k >= 0 && k < N && !seen[k] && w.liquidType[k] === LIQ.WATER) { seen[k] = 1; st.push(k); }
+      }
+      sizes.push(n);
+    }
+    const big = sizes.filter((n) => n >= 2000);
+    expect(big.length).toBeGreaterThanOrEqual(3);
+    expect(Math.max(...sizes)).toBeLessThan(14000);
   });
 
   it('三種液體都有，量級合理；液體不會在實心格裡', () => {

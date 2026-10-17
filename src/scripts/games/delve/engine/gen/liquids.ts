@@ -23,6 +23,8 @@ export interface LiquidGenStats {
   leftActive: number;
   cells: { water: number; lava: number; honey: number };
   lakes: number; ponds: number; caveLakes: number; lavaLakes: number; hives: number; oases: number;
+  /** v6：挖盆地的大地下湖 */
+  grandLakes: number;
 }
 export interface LiquidStructure { kind: 'pond' | 'oasis' | 'hive' | 'underground_lake'; x: number; y: number; w: number; h: number; }
 export interface LiquidGenCtx {
@@ -68,7 +70,7 @@ export function createLiquidGen(ctx: LiquidGenCtx): { surface(): void; deep(): {
   const structures: LiquidStructure[] = [];
   const stats: LiquidGenStats = {
     ms: 0, settleMs: 0, settleTicks: 0, leftActive: 0, cells: { water: 0, lava: 0, honey: 0 },
-    lakes: 0, ponds: 0, caveLakes: 0, lavaLakes: 0, hives: 0, oases: 0,
+    lakes: 0, ponds: 0, caveLakes: 0, lavaLakes: 0, hives: 0, oases: 0, grandLakes: 0,
   };
   const placed: number[] = [];
 
@@ -115,6 +117,52 @@ export function createLiquidGen(ctx: LiquidGenCtx): { surface(): void; deep(): {
       if (c) return c.length >= minCells ? c : null;
     }
     return null;
+  };
+  /**
+   * v6：在地板 (cx, floorY = 第一個實心格) 往下挖一個碗形盆地（半寬 halfW、中央深 depth，邊緣有雜訊），
+   * 只挖天然岩土（okTile），每欄底下至少留 3 格實心（不挖穿到下面的洞）。回傳還原用的 [index, 原 tile] 清單與中央深度。
+   */
+  const NATURAL = new Uint8Array(256);
+  for (const id of [T.DIRT, T.STONE, T.SAND, T.CLAY, T.GRAVEL, T.GRANITE, T.MARBLE, T.SANDSTONE, T.SNOW, T.ICE, T.MUD,
+    T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOLD_ORE, T.DEEP_STONE, T.BASALT, T.ASH, T.OBSIDIAN, T.MAGMA_ROCK, T.MUSHROOM_GRASS, T.JUNGLE_GRASS, T.GRASS]) NATURAL[id] = 1;
+  const carveBowl = (cx: number, floorY: number, halfW: number, depth: number, ns: number): { undo: [number, number][]; center: number } => {
+    const undo: [number, number][] = [];
+    let center = 0;
+    for (let x = cx - halfW; x <= cx + halfW; x++) {
+      if (x < 3 || x >= width - 3) continue;
+      const t = (x - cx) / (halfW + 0.5);
+      let d = Math.round(depth * (1 - t * t) + (vnoise1(x, 5, ns) - 0.5) * 2);
+      while (d > 0) {
+        let ok = floorY + d + 3 < height - 7;
+        for (let y = floorY; y < floorY + d + 3 && ok; y++) {
+          const i = y * WW + x;
+          if (!NATURAL[fg[i]] && fg[i] !== T.AIR) ok = false;
+          else if (y >= floorY + d && !SOLID_LUT[fg[i]]) ok = false;
+          // 挖開的格不能貼著別的液體（會把旁邊的湖接通、靜置不下來）
+          else if (y < floorY + d && (liquid[i - 1] || liquid[i + 1] || liquid[i + WW] || liquid[i - WW] || liquid[i])) ok = false;
+        }
+        if (ok) break;
+        d--;
+      }
+      for (let y = floorY; y < floorY + d; y++) {
+        const i = y * WW + x;
+        if (fg[i] === T.AIR) continue;
+        undo.push([i, fg[i]]);
+        fg[i] = T.AIR;
+      }
+      // 地板挖掉了：上面站著的物件（陶罐 / 石筍 / 蘑菇…）一起拿掉
+      const above = (floorY - 1) * WW + x;
+      if (d > 0 && fg[above] !== T.AIR && !SOLID_LUT[fg[above]] && tileDef(fg[above]).support === 'floor') { undo.push([above, fg[above]]); fg[above] = T.AIR; }
+      if (x === cx) center = Math.max(0, d);
+    }
+    return { undo, center };
+  };
+  const undoBowl = (undo: [number, number][]): void => { for (const [i, f] of undo) fg[i] = f; };
+  /** 從 (x, y) 往下找地板（第一個實心格）；max 格內找不到 → -1 */
+  const floorBelow = (x: number, y: number, max: number): number => {
+    let k = 0;
+    while (y < height - 2 && !SOLID_LUT[fg[(y + 1) * WW + x]] && k++ < max) y++;
+    return k >= max ? -1 : y + 1;
   };
   const near = (x: number, y: number, w: number, h: number, m: number): boolean =>
     ctx.occupied().some((o) => x - m < o.x + o.w && x + w + m > o.x && y - m < o.y + o.h && y + h + m > o.y)
@@ -228,6 +276,41 @@ export function createLiquidGen(ctx: LiquidGenCtx): { surface(): void; deep(): {
 
   const deepPhase = (): { stats: LiquidGenStats; structures: LiquidStructure[] } => {
   const t0 = performance.now();
+  // ── 3a) v6 大地下湖：在洞穴裡夠寬的地板上挖一個碗形盆地（深 6–14 格），水位再高出地板 4–12 格 → 2000–6500 格 ──
+  {
+    const rng = subSeed(seed, 'liquid-grand-lakes');
+    const ns = seedInt(seed, 'grand-lake-edge');
+    const want = Math.max(1, Math.round(width / 600));
+    let made = 0;
+    for (let tries = 0; tries < want * 70 && made < want; tries++) {
+      const x = rng.int(60, width - 60);
+      if (ctx.avoid(x)) continue;
+      const top = layers.rock[x] + 10, bot = layers.molten[x] - 30;
+      if (bot <= top) continue;
+      const y = rng.int(top, bot);
+      if (SOLID_LUT[fg[y * WW + x]] || liquid[y * WW + x]) continue;
+      const fy = floorBelow(x, y, 50);
+      if (fy < 0) continue;
+      // 地板要夠寬：左右各欄的地板高度和這裡差 ≤ 3 格（起伏的洞穴地板也算）
+      const floorNear = (xx: number): number => {
+        for (let yy = fy - 4; yy <= fy + 3; yy++) if (SOLID_LUT[fg[yy * WW + xx]] && !SOLID_LUT[fg[(yy - 1) * WW + xx]]) return yy;
+        return -1;
+      };
+      let l = x, r = x;
+      while (l > x - 60 && floorNear(l - 1) >= 0) l--;
+      while (r < x + 60 && floorNear(r + 1) >= 0) r++;
+      if (r - l < 26) continue;
+      const cx = (l + r) >> 1, halfW = Math.min(44, (r - l) >> 1);
+      if (near(cx - halfW, fy - 16, halfW * 2, 32, 6) || ctx.avoid(cx - halfW) || ctx.avoid(cx + halfW)) continue;
+      const { undo, center } = carveBowl(cx, fy, halfW, rng.int(8, 17), ns + tries);
+      if (center < 4) { undoBowl(undo); continue; }
+      const c = fitPocket(cx, fy + center, center + rng.int(5, 14), 6500, 1800);
+      if (!c) { undoBowl(undo); continue; }
+      fill(c, LIQ.WATER);
+      made++; stats.caveLakes++; stats.grandLakes++;
+      structures.push({ kind: 'underground_lake', ...bbox(c) });
+    }
+  }
   // ── 3) 地下湖 / 洞穴層熔岩囊 ───────────────────────────────
   {
     const rng = subSeed(seed, 'liquid-caves');
@@ -269,21 +352,31 @@ export function createLiquidGen(ctx: LiquidGenCtx): { surface(): void; deep(): {
     const c = fitPocket(x, y + 1, y + 1 - top, 9000, 4);
     if (c) { fill(c, LIQ.LAVA); stats.lavaLakes++; }
   }
+  // v6：地板上的熔岩湖 / 熔岩河先挖碗形盆地（深 4–12 格、寬 14–70 格）再注滿，不再是一格厚的寬薄片
   {
     const rng = subSeed(seed, 'liquid-molten');
-    const want = Math.round(width / 60);
+    const ns = seedInt(seed, 'lava-basin-edge');
+    const want = Math.round(width / 90);
     let made = 0;
-    for (let tries = 0; tries < want * 8 && made < want; tries++) {
-      const x = rng.int(6, width - 6);
+    for (let tries = 0; tries < want * 10 && made < want; tries++) {
+      const x = rng.int(40, width - 40);
       if (ctx.avoid(x)) continue;
-      let y = rng.int(layers.molten[x], height - 8);
-      if (SOLID_LUT[fg[y * WW + x]]) continue;
-      let k = 0;
-      while (y < height - 2 && !SOLID_LUT[fg[(y + 1) * WW + x]] && k++ < 60) y++;
-      if (k >= 60 || liquid[y * WW + x]) continue;
-      const c = fitPocket(x, y + 1, rng.int(2, 6), 7000, 20);
-      if (!c) continue;
+      const y = rng.int(layers.molten[x], height - 8);
+      if (SOLID_LUT[fg[y * WW + x]] || liquid[y * WW + x]) continue;
+      const fy = floorBelow(x, y, 60);
+      if (fy < 0 || liquid[(fy - 1) * WW + x]) continue;
+      const river = rng.next() < 0.3;
+      const halfW = river ? rng.int(20, 36) : rng.int(7, 18);
+      const { undo, center } = carveBowl(x, fy, halfW, rng.int(4, 13), ns + tries);
+      if (center < 4) { undoBowl(undo); continue; }
+      const c = fitPocket(x, fy + center, center, 7000, 40);
+      if (!c) { undoBowl(undo); continue; }
       fill(c, LIQ.LAVA);
+      for (const [i] of undo) {
+        // 盆地底：發光熔岩石
+        const b = i + WW;
+        if (b < N && (fg[b] === T.ASH || fg[b] === T.BASALT) && !liquid[b]) fg[b] = T.MAGMA_ROCK;
+      }
       made++; stats.lavaLakes++;
     }
   }

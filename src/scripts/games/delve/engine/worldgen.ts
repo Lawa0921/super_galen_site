@@ -981,19 +981,41 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       const d = 2 + Math.floor(vnoise1(x, 9, caveSeed + 400) * 3);
       for (let y = fy; y < fy + d && y < height; y++) if (fg[y * WW + x] === T.BASALT) fg[y * WW + x] = T.ASH;
     }
-    // 熔岩石池：比左右 ±10 欄平均更低的窪地，填到平均高度（實心、發光）
+    // 熔岩池：比左右 ±10 欄平均更低的窪地，填到平均高度。
+    // v6：每段連續的窪地再往下挖一個碗形盆地（中央深 4–12 格，依寬度），不再是一格厚的寬薄片；
+    // 池子裡是熔岩（液體，最後的液體 pass 注入），池底兩格是發光的熔岩石
+    const poolLvl = new Int16Array(width).fill(-1);
     for (let x = 10; x < width - 10; x++) {
       const fy = floorY[x];
       if (fy < 0) continue;
       let s = 0, n = 0;
       for (let k = -10; k <= 10; k++) if (floorY[x + k] >= 0) { s += floorY[x + k]; n++; }
       const lvl = Math.round(s / n) - 1;
-      // v5：池子裡是熔岩（液體，最後的液體 pass 注入），池底兩格仍是發光的熔岩石
-      for (let y = lvl; y < fy; y++) {
-        const i = y * WW + x;
-        if (fg[i] === T.AIR) lavaPool.push(i);
+      if (lvl < fy) poolLvl[x] = lvl;
+    }
+    const carvable = (id: number): boolean => id === T.BASALT || id === T.ASH || id === T.MAGMA_ROCK || id === T.OBSIDIAN || id === T.DEEP_STONE || id === T.STONE;
+    for (let a = 10; a < width - 10;) {
+      if (poolLvl[a] < 0) { a++; continue; }
+      let b = a;
+      while (b < width - 10 && poolLvl[b] >= 0) b++;
+      const wr = b - a;
+      const D = Math.max(4, Math.min(12, Math.round(3 + wr / 4 + vnoise1(a, 7, caveSeed + 420) * 3)));
+      for (let x = a; x < b; x++) {
+        const fy = floorY[x], t = ((x - a) + 0.5) / wr * 2 - 1;
+        // 碗形：中央最深；底下至少留 3 格實心（不挖穿到下面的洞）
+        let d = Math.round(D * (1 - t * t));
+        while (d > 0) {
+          let ok = fy + d + 3 < height - 7;
+          for (let y = fy; y < fy + d + 3 && ok; y++) if (!carvable(fg[y * WW + x])) ok = false;
+          if (ok) break;
+          d--;
+        }
+        for (let y = fy; y < fy + d; y++) fg[y * WW + x] = T.AIR;
+        const bot = fy + d;
+        for (let y = poolLvl[x]; y < bot; y++) if (fg[y * WW + x] === T.AIR) lavaPool.push(y * WW + x);
+        for (let y = bot; y < bot + 2; y++) if (fg[y * WW + x] === T.ASH || fg[y * WW + x] === T.BASALT) fg[y * WW + x] = T.MAGMA_ROCK;
       }
-      if (lvl < fy) for (let y = fy; y < fy + 2; y++) if (fg[y * WW + x] === T.ASH) fg[y * WW + x] = T.MAGMA_ROCK;
+      a = b;
     }
     // 黑曜石殼：緊貼熔岩石的玄武岩一半變黑曜石
     for (let y = Math.max(1, moltenTop - 20); y < height - 1; y++) {
