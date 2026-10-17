@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { CharacterId, Effect, Member, SkillDef, Stats } from '../engine/types';
 import { skillFor } from '../engine/battle';
-import { WEAPON_KINDS, type WeaponKind } from './equipment';
+import { WEAPON_KINDS } from './equipment';
+import type { WeaponKind } from '../engine/types';
 import { HERO_ULTIMATES, ULTIMATES } from './ultimates';
 import { AFFINITY_MUL, ALL_AFFINITY_SHARE, CONVERT, convertPrimary } from '../engine/stats';
 import { defaultTree, newTree, nodeRank, raiseNode, skillPoints } from '../engine/progression';
