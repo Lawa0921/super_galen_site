@@ -42,7 +42,7 @@ export function eligible(p: Party, id: CharacterId, ctx: PieceCtx): boolean {
   if (n === null) return false;
   const piece = CHAINS[id].pieces[n - 1];
   if (!piece.regions.includes(ctx.region)) return false;
-  if (ctx.depth < piece.minDepth) return false;
+  if (!Number.isFinite(ctx.depth) || ctx.depth < piece.minDepth) return false;
   if (!whenHolds(piece.when)) return false;
   if (piece.bossOnly && ctx.source !== 'boss') return false;
   return true;
@@ -52,7 +52,7 @@ export function eligible(p: Party, id: CharacterId, ctx: PieceCtx): boolean {
 export function pieceDrops(p: Party, pity: Pity, ctx: PieceCtx, rng: Rng): CharacterId[] {
   if (ctx.who) return eligible(p, ctx.who, ctx) ? [ctx.who] : [];
 
-  if (ctx.source === 'boss' && ctx.region === 'mainline' && eligible(p, 'hero', ctx)) {
+  if (ctx.source === 'boss' && eligible(p, 'hero', ctx)) {
     const reached = HERO_TOPUP.filter((t) => ctx.depth >= t.depth);
     if (reached.length > 0) {
       const to = Math.max(...reached.map((t) => t.to));
@@ -95,12 +95,14 @@ export function forcedGlimmers(p: Party, pity: Pity, region: RegionId, depth: nu
   }).slice(0, MAX_FORCED);
 }
 
-/** Adds one piece per entry, in order; `gained` numbers each piece. The given party is not changed. */
+/** Adds one piece per entry, in order; an id with no member, or a complete chain, is skipped; `gained` numbers each piece. The given party is not changed. */
 export function applyPieces(p: Party, ids: CharacterId[]): { party: Party; gained: { id: CharacterId; n: number }[] } {
   const roster = { ...p.roster };
   const gained: { id: CharacterId; n: number }[] = [];
   for (const id of ids) {
+    if (!roster[id]) continue;
     const n = memoriesOf(roster[id]) + 1;
+    if (n > CHAINS[id].pieces.length) continue;
     roster[id] = { ...roster[id], memories: n };
     gained.push({ id, n });
   }

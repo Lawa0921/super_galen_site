@@ -153,4 +153,55 @@ describe('memory piece rules', () => {
     expect(memoriesOf(p.roster.rin)).toBe(0);
     expect(CHAINS.rin.pieces.length).toBe(7);
   });
+
+  it('the longer-waiting companion wins', () => {
+    const p = partyOf({ hero: 10, rin: 7, selene: 0, chizuru: 0 });
+    for (let seed = 1; seed <= 30; seed++) {
+      expect(pieceDrops(p, { selene: 3, chizuru: 1 }, bossCtx(10), mulberry32(seed))).toEqual(['selene']);
+      expect(pieceDrops(p, { selene: 1, chizuru: 3 }, bossCtx(10), mulberry32(seed))).toEqual(['chizuru']);
+    }
+  });
+
+  it('a bad depth is never eligible, an odd one follows the gates', () => {
+    const p = partyOf({ hero: 0, sylvie: 0 });
+    expect(eligible(p, 'sylvie', bossCtx(NaN, 'mire'))).toBe(false);
+    expect(eligible(p, 'hero', bossCtx(NaN))).toBe(false);
+    expect(eligible(p, 'sylvie', bossCtx(0, 'mire'))).toBe(false);
+    expect(eligible(p, 'sylvie', bossCtx(250, 'mire'))).toBe(true);
+    expect(eligible(partyOf({ hero: 7 }), 'hero', bossCtx(25.5))).toBe(true);
+    expect(eligible(partyOf({ hero: 8 }), 'hero', bossCtx(24.5))).toBe(false);
+  });
+
+  it('applyPieces stops at the chain length and skips unknown members', () => {
+    const p = partyOf({ rin: 6 });
+    const { party, gained } = applyPieces(p, ['rin', 'rin', 'rin']);
+    expect(gained).toEqual([{ id: 'rin', n: 7 }]);
+    expect(memoriesOf(party.roster.rin)).toBe(7);
+    const bare = partyOf({});
+    const { noel: _gone, ...rest } = bare.roster;
+    const none = applyPieces({ ...bare, roster: rest as Party['roster'] }, ['noel']);
+    expect(none.gained).toEqual([]);
+    expect(none.party.roster.noel).toBeUndefined();
+  });
+
+  it('the top-up is for bosses; later bosses still top up', () => {
+    expect(pieceDrops(partyOf({ hero: 5 }), {}, eliteCtx(25), () => 0)).toHaveLength(1);
+    expect(pieceDrops(partyOf({ hero: 5 }), {}, bossCtx(27), mulberry32(1))).toHaveLength(4);
+    expect(pieceDrops(partyOf({ hero: 5 }), {}, bossCtx(29), mulberry32(1))).toHaveLength(4);
+  });
+
+  it('every chain complete drops nothing', () => {
+    const all = Object.fromEntries(CHARACTER_IDS.map((id) => [id, CHAINS[id].pieces.length])) as Record<CharacterId, number>;
+    const p = partyOf(all);
+    expect(pieceDrops(p, {}, bossCtx(30), mulberry32(1))).toEqual([]);
+    expect(pieceDrops(p, {}, eliteCtx(30), mulberry32(1))).toEqual([]);
+  });
+
+  it('a companion win is one piece, and unmet companions get no pity or glimmer', () => {
+    const p = partyOf({ hero: 10, rin: 7, selene: 0, chizuru: 0 });
+    for (let seed = 1; seed <= 20; seed++) expect(pieceDrops(p, { selene: 2 }, bossCtx(10), mulberry32(seed))).toHaveLength(1);
+    const unmet = partyOf({});
+    expect(pityAfterFloor(unmet, {}, 'mainline', 3, []).selene).toBeUndefined();
+    expect(forcedGlimmers(unmet, { selene: 99 }, 'mainline', 3)).toEqual([]);
+  });
 });
