@@ -1,6 +1,8 @@
 import { CHARACTERS } from '../data/characters';
 import { T } from '../data/text.zh-TW';
 import type { BattleEvent } from '../engine/combatant';
+import { SHARD_NAMES, TOWN_FRAGMENTS, fragmentName } from '../data/story/fragments';
+import type { FragmentGain } from '../engine/story/memories';
 import type { LevelUp } from '../engine/party';
 import type { Party } from '../engine/types';
 
@@ -40,4 +42,14 @@ export function levelUpLines(ups: LevelUp[], party: Party): { text: string; cls:
     if (u.points.skill > 0 || u.points.talent > 0) lines.push({ text: T.battle.points(who, u.points.skill, u.points.talent), cls: 'slx-levelup' });
   }
   return lines;
+}
+
+/** One line per memory piece, shard or town fragment a glimmer, boss or elite handed out. */
+export function fragmentLines(gained: FragmentGain[]): string[] {
+  return gained.map((g) => {
+    if (g.kind === 'piece') return T.ui2.memory.piece(CHARACTERS[g.id].name, g.n);
+    if (g.kind === 'shard') return T.ui2.memory.shard(SHARD_NAMES[g.grade]);
+    const item = TOWN_FRAGMENTS.find((f) => f.id === g.id)?.item ?? g.id;
+    return T.ui2.memory.town(fragmentName(item) ?? g.id);
+  });
 }

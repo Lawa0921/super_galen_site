@@ -159,6 +159,12 @@ export const T = {
     crit: '（暴擊）',
   },
   ui2: {
+    memory: {
+      piece: (name: string, n: number) => `找回了${name}的記憶（第 ${n} 片）。`,
+      shard: (name: string) => `撿到了${name}。`,
+      town: (name: string) => `撿到了${name}。`,
+      nothing: '微光消散了。',
+    },
     rescue: { waiting: '這層還有人在求救。', found: rescueFound, joined: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍！`, benched: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍，在公會待命。` },
     banner: { encounter: '遭遇！', boss: '頭目出現！', win: '勝利！' },
     hints: {

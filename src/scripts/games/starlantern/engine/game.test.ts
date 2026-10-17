@@ -24,6 +24,7 @@ import { chestHasGear, GEAR_CHANCE, RARE_MATERIALS, rollBossGear } from './loot/
 import { itemLevel, itemWeight, rollItem } from './loot/item';
 import { MATERIALS } from '../data/materials';
 import { buy } from './town';
+import { memoriesOf } from './progression';
 
 vi.mock('./portals', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./portals')>();
@@ -1784,5 +1785,148 @@ describe('rescue fights', () => {
     g.submitRound({ hero: { kind: 'escape' } });   // calm rng: the escape fails, the fight goes on
     expect(g.phase).toBe('battle');
     expect(killAll(g).met).toMatchObject({ id: 'selene' });
+  });
+});
+
+describe('glimmers and memory pieces', () => {
+  const duo: CharacterId[] = ['hero', 'rin'];
+  const run = (start: CharacterId[], depth: number, tweak: (g: Game) => void = () => {}) => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, start);
+    g.state.dungeon.reached.mainline = Math.max(3, depth);
+    tweak(g);
+    expect(g.depart(MAIN, depth)).toEqual({ ok: true });
+    return g;
+  };
+  const finished = (g: Game, ...ids: CharacterId[]) => { for (const id of ids) g.state.party.roster[id].memories = 99; };
+  /** A glimmer on an open cell, as the floor would have made it. */
+  const plantGlimmer = (g: Game, owner?: CharacterId): Pos => {
+    const m = g.map();
+    for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
+      if (m.tiles[y][x] !== 'floor' || (x === g.pos.x && y === g.pos.y)) continue;
+      m.tiles[y][x] = 'glimmer';
+      floorOf(g.run!, g.floor).contents.push({ kind: 'glimmer', at: { x, y }, room: 0, ...(owner ? { owner } : {}) });
+      return { x, y };
+    }
+    throw new Error('no cell for a glimmer');
+  };
+
+  it("the first trip down the main road finds Rin's first memory", () => {
+    const g = Game.fresh(calm(), memoryStorage());
+    g.state.dungeon.reached.mainline = 3;
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    const c = floorOf(g.run!, 1).contents.find((x) => x.kind === 'glimmer' && x.owner === 'rin')!;
+    expect(c).toBeDefined();
+    const r = stepOnto(g, c.at);
+    expect(r).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'rin', n: 1, play: true }] });
+    expect(memoriesOf(g.state.party.roster.rin)).toBe(1);
+    expect(tileAt(g.map(), c.at)).toBe('floor');
+    expect(floorOf(g.run!, 1).contents.some((x) => x.kind === 'glimmer' && x.owner === 'rin')).toBe(false);
+    expect(g.run!.dropped[1]).toEqual(['rin']);
+    expect(g.run!.played).toEqual([1]);
+    expect(g.pending).toEqual(['mem:rin:1']);
+    expect(g.run!.memoryDraws).toBe(1);
+  });
+
+  it('a glimmer with no piece for anyone just fades', () => {
+    const g = run(['hero'], 1);
+    const at = plantGlimmer(g);
+    expect(stepOnto(g, at)).toEqual({ kind: 'glimmer', gained: [] });
+    expect(tileAt(g.map(), at)).toBe('floor');
+    expect(g.pending).toEqual([]);
+    expect(g.run!.dropped[1] ?? []).toEqual([]);
+  });
+
+  it('a main-road boss pays the next piece of a story chain', () => {
+    const g = run(duo, 5, (x) => finished(x, 'rin'));
+    stepOnto(g, g.map().boss!);
+    const end = killAll(g);
+    expect(end.fragments).toEqual([{ kind: 'piece', id: 'hero', n: 1, play: true }]);
+    expect(memoriesOf(g.state.party.roster.hero)).toBe(1);
+    expect(g.run!.dropped[5]).toEqual(['hero']);
+  });
+
+  it('a fight that pays no piece leaves fragments off the result', () => {
+    const g = run(['hero'], 1);
+    stepOnto(g, plantAt(g, 'elite'));
+    const end = killAll(g);
+    expect(end.fragments).toBeUndefined();
+  });
+
+  it('the second memory on a floor waits in the handbook', () => {
+    const g = run(duo, 5);
+    stepOnto(g, g.map().boss!);
+    const end = killAll(g);
+    expect(end.fragments).toEqual([{ kind: 'piece', id: 'rin', n: 1, play: true }]);
+    const r = stepOnto(g, plantGlimmer(g, 'rin'));
+    expect(r).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'rin', n: 2, play: false }] });
+    expect(g.state.story.fresh).toContain('mem:rin:2');
+    expect(g.state.story.seen).toContain('mem:rin:2');
+    expect(g.pending).toEqual(['mem:rin:1']);
+  });
+
+  it('descending raises the pity of the chains that found nothing', () => {
+    const g = run(duo, 4);
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 5 });
+    expect(g.state.story.pity).toEqual({ hero: 1, rin: 1 });
+  });
+
+  it('descending resets the chain that dropped and keeps no pity above the save bound', () => {
+    const g = run(duo, 4);
+    g.state.story.pity = { rin: 2, hero: 999 };
+    stepOnto(g, plantGlimmer(g, 'rin'));
+    downstairs(g, g.map().down!);
+    expect(g.state.story.pity).toEqual({ rin: 0, hero: 999 });
+  });
+
+  it('a wipe keeps the memories found', () => {
+    const g = run(duo, 1);
+    const c = floorOf(g.run!, 1).contents.find((x) => x.kind === 'glimmer' && x.owner === 'rin')!;
+    stepOnto(g, c.at);
+    g.state.story.pity = { hero: 2 };
+    g.pos = { ...g.map().entrance };
+    g.encounter = 99;
+    g.move('right');
+    expect(g.phase).toBe('battle');
+    for (const m of g.battle!.party) { m.hp = 0; m.alive = false; }
+    g.submitRound({});
+    expect(g.phase).toBe('town');
+    expect(memoriesOf(g.state.party.roster.rin)).toBe(1);
+    expect(g.state.story.pity).toEqual({ hero: 2 });
+  });
+
+  it("the depth-25 boss queues the hero's top-up memories", () => {
+    const g = run(duo, 25, (x) => { x.state.party.roster.hero.memories = 5; });
+    stepOnto(g, g.map().boss!);
+    const end = killAll(g);
+    expect(memoriesOf(g.state.party.roster.hero)).toBe(9);
+    expect(end.fragments!.filter((f) => f.kind === 'piece' && f.id === 'hero').map((f) => f.kind === 'piece' && [f.n, f.play])).toEqual([[6, false], [7, false], [8, false], [9, false]]);
+    expect(g.state.story.queue.filter((id) => id.startsWith('mem:'))).toEqual(['mem:hero:6', 'mem:hero:7', 'mem:hero:8', 'mem:hero:9']);
+    expect(g.state.story.seen.some((id) => id.startsWith('mem:hero'))).toBe(false);
+    expect(g.pending).toEqual([]);
+  });
+
+  it("the depth-3 story boss pays Rin's second piece", () => {
+    const g = run(duo, 3, (x) => { x.state.party.roster.rin.memories = 1; });
+    stepOnto(g, g.map().boss!);
+    const end = killAll(g);
+    expect(end.fragments).toEqual([{ kind: 'piece', id: 'rin', n: 2, play: true }]);
+    expect(memoriesOf(g.state.party.roster.rin)).toBe(2);
+    expect(g.phase).toBe('clear');
+  });
+
+  it('memory draws leave the loot rolls alone', () => {
+    const fight = (tweak: (x: Game) => void) => {
+      const g = run(duo, 1, tweak);
+      stepOnto(g, plantAt(g, 'elite'));
+      const draws = g.run!.lootDraws;
+      const end = killAll(g);
+      return { g, end, lootDraws: g.run!.lootDraws - draws };
+    };
+    const open = fight(() => {});
+    const shut = fight((x) => finished(x, 'rin'));
+    expect(open.g.run!.memoryDraws).toBe(1);
+    expect(open.end.gear).toEqual(shut.end.gear);
+    expect(open.end.drops).toEqual(shut.end.drops);
+    expect(open.lootDraws).toBe(shut.lootDraws);
   });
 });

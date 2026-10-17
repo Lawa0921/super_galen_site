@@ -3,10 +3,11 @@ import { mulberry32 } from '../rng';
 import { parseFloor } from '../map';
 import { posKey } from '../map';
 import { genFloor, type GenFloor } from './gen';
-import { fillRooms, placeRescue, type Content } from './rooms';
+import { fillRooms, placeRescue, placeSpecial, type Content } from './rooms';
 import { CONDITIONS, type ConditionId } from '../../data/conditions';
 import { REGIONS } from '../../data/regions';
 import { MATERIALS } from '../../data/materials';
+import { reachable } from '../map';
 
 const run = (seed: number, cond: ConditionId = 'plain', boss = false) => {
   const g = genFloor(seed, { depth: 1 + (seed % 5), boss });
@@ -132,5 +133,34 @@ describe('placeRescue', () => {
       expect(c.room).not.toBe(g.exitRoom);
       if (anyEmpty) expect(busy.has(c.room), `seed ${seed}`).toBe(false);
     }
+  });
+});
+
+describe('placeSpecial', () => {
+  it('placeRescue still lands where it did', () => {
+    const seen = [[1, 10, 1, 7], [2, 12, 10, 0], [3, 9, 2, 5], [5, 13, 10, 2], [8, 15, 8, 0], [13, 14, 4, 2], [21, 4, 6, 2], [34, 7, 8, 6]];
+    for (const [seed, x, y, room] of seen) {
+      const g = genFloor(seed, { depth: 2, boss: false });
+      const f = fillRooms(g, mulberry32(seed ^ 0x9e37), CONDITIONS.plain);
+      placeRescue(f, g, mulberry32(seed), 'selene');
+      const c = f.contents.find((k) => k.kind === 'rescue')!;
+      expect([c.at.x, c.at.y, c.room], `seed ${seed}`).toEqual([x, y, room]);
+    }
+  });
+
+  it('with no room left it falls back to a free floor tile joined to the entrance, row by row', () => {
+    const map = parseFloor(['#######', '#E....#', '#..>..#', '###.###', '#.....#', '#######']);   // the bottom row is cut off from the entrance
+    const g: GenFloor = { map, rooms: [], entranceRoom: 0, exitRoom: 0 };
+    const f = { map: { ...map, tiles: map.tiles.map((r) => [...r]) }, contents: [] as Content[] };
+    placeRescue(f, g, mulberry32(1), 'selene');
+    placeSpecial(f, g, mulberry32(2), { kind: 'glimmer', owner: 'selene' });
+    placeSpecial(f, g, mulberry32(3), { kind: 'glimmer', owner: 'rin' });
+    const at = f.contents.map((c) => posKey(c.at));
+    expect(new Set(at).size).toBe(3);
+    expect(f.contents.map((c) => c.kind)).toEqual(['rescue', 'glimmer', 'glimmer']);
+    expect(f.contents.map((c) => c.at)).toEqual([{ x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }]);
+    const open = reachable(map, map.entrance);
+    for (const k of at) expect(open.has(k)).toBe(true);
+    expect(f.map.tiles[1][3]).toBe('glimmer');
   });
 });

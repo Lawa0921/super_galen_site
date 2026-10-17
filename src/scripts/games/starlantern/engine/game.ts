@@ -6,6 +6,8 @@ import { FLOORS } from '../data/floors';
 import { createBattle, planEnemies, resolveRound, rewards, writeBack, type Action, type BattleState } from './battle';
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
 import type { Content } from './dungeon/rooms';
+import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
+import { memScene, type SceneId } from '../data/story/scenes';
 import { advance, danger, type Danger } from './encounter';
 import { ALTAR_STAT_CAP_PCT, altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POISON_TP_LOSS_PCT, trapDamage, VAULT_CHEST_MULT } from './events';
 import { EQUIPMENT } from '../data/equipment';
@@ -50,6 +52,8 @@ export type MoveResult =
   | { kind: 'event'; content: Content }
   | { kind: 'trap'; effect: 'hurt' | 'poison'; amount: number; tp: number }
   | { kind: 'key' }
+  /** Stepped onto a glimmer (憶): the memory pieces it held, in order; empty when it held none. */
+  | { kind: 'glimmer'; gained: FragmentGain[] }
   /** Stepped onto stairs down: the screen asks first (descend goes). `level` is the next depth's suggested level; `warn` when the party's best is below it; `rescue` while a companion on this floor still waits to be saved. */
   | { kind: 'stairs'; floor: number; level: number; warn: boolean; rescue: boolean }
   | FullResult
@@ -72,6 +76,8 @@ export interface BattleEnd {
   gear: ItemInstance[]; gearLeft: ItemInstance[];
   /** A rescue won: the companion met, her join level, and whether she went to the bench for want of a field slot. */
   met?: { id: Meetable; level: number; benched: boolean };
+  /** Memory pieces a boss or elite paid, in order; absent when it paid none. */
+  fragments?: FragmentGain[];
 }
 
 /** Turn a floor's boss tile into stairs down. */
@@ -98,6 +104,8 @@ export class Game {
   /** The rescue room whose fight is on; she is met and the tile turns to floor on a win. */
   private rescueAt: { at: Pos; who: Meetable } | null = null;
   notice: Notice | null = null;
+  /** Memory scenes the screen should play now (not saved). */
+  pending: SceneId[] = [];
   /** Which ending the clear screen is for; set on entering `clear`, dropped by restartAfterClear. */
   cleared: 'act1' | 'finale' | null = null;
   /** What the last safe return brought home; the town screen shows it, then clears it. `overflow` is gear the full bag could not take. */
@@ -151,6 +159,7 @@ export class Game {
     if (!activeIds(this.state.party).some((id) => this.state.party.roster[id].hp > 0)) return { ok: false, reason: 'party-down' };
     this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth, rescuesFor(portal.region, this.state.party.recruited));
     this.floor = startDepth;
+    this.forceGlimmers(startDepth);
     this.pos = { ...this.map().entrance };
     this.facing = 'down';
     this.encounter = 0;
@@ -180,6 +189,7 @@ export class Game {
       // An opened vault still on the map holds gear that did not fit: stepping on it again offers that gear.
       case 'vault': return this.run!.opened.has(this.spotId()) ? this.takeWaiting() ?? this.walk() : this.eventHere();
       case 'trap': return this.springTrap();
+      case 'glimmer': return this.glimmerHere() ?? this.walk();
       case 'key': {
         this.run!.keys.add(this.floor);
         this.map().tiles[this.pos.y][this.pos.x] = 'floor';
@@ -201,6 +211,47 @@ export class Game {
       }
       default: return this.walk();
     }
+  }
+
+  /** The glimmer under the party: its pieces are taken, and the spot turns to plain floor. Null when the content is gone. */
+  private glimmerHere(): MoveResult | null {
+    const run = this.run!;
+    const here = floorOf(run, this.floor);
+    const i = here.contents.findIndex((c) => c.kind === 'glimmer' && c.at.x === this.pos.x && c.at.y === this.pos.y);
+    if (i < 0) return null;
+    const c = here.contents[i];
+    here.contents.splice(i, 1);
+    this.map().tiles[this.pos.y][this.pos.x] = 'floor';
+    const ids = pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source: 'glimmer', who: c.owner }, memoryRng(run));
+    return { kind: 'glimmer', gained: this.takePieces(ids) };
+  }
+
+  /** Gives each chain in `ids` its next piece, in order, and works out which memory scenes play now, wait in the handbook, or queue. */
+  private takePieces(ids: CharacterId[], topUp = false): FragmentGain[] {
+    if (ids.length === 0) return [];
+    const run = this.run!;
+    const story = this.state.story;
+    const applied = applyPieces(this.state.party, ids);
+    this.state.party = applied.party;
+    (run.dropped[this.floor] ??= []).push(...ids);
+    return applied.gained.map(({ id, n }) => {
+      const scene = memScene(id, n);
+      let play = false;
+      if (topUp) story.queue.push(scene);
+      else if (!run.played.includes(this.floor)) { play = true; run.played.push(this.floor); this.pending.push(scene); }
+      else {
+        if (!story.seen.includes(scene)) story.seen.push(scene);
+        if (!story.fresh.includes(scene)) story.fresh.push(scene);
+      }
+      return { kind: 'piece' as const, id, n, play };
+    });
+  }
+
+  /** Before a depth is first made, fix the chains whose glimmer on it must hold their piece. */
+  private forceGlimmers(floor: number): void {
+    const run = this.run!;
+    if (run.floors.has(floor)) return;
+    run.glimmers[floor] = forcedGlimmers(this.state.party, this.state.story.pity, run.region, floor);
   }
 
   /** An ordinary step: fills the encounter gauge and may start a battle. Event tiles never come through here, so one step triggers one thing. */
@@ -394,6 +445,8 @@ export class Game {
       return m.level !== before[id].level || m.exp !== before[id].exp;
     });
     if (awarded) this.state.party = awarded.party;
+    const story = this.state.story;
+    story.pity = pityAfterFloor(this.state.party, story.pity, this.run.region, this.floor, this.run.dropped[this.floor] ?? []);
     const floor = this.changeFloor(this.floor + 1);
     return gained ? { ...floor, clear: { exp, levelUps: awarded!.results.filter((x) => x.levels > 0) } } : floor;
   }
@@ -499,6 +552,15 @@ export class Game {
       here.contents = here.contents.filter((c) => !(c.kind === 'rescue' && c.at.x === rescue.at.x && c.at.y === rescue.at.y));   // she is met: no marker stays
       met = { id: rescue.who, level, benched: !activeIds(this.state.party).includes(rescue.who) };
     }
+    // Memory pieces come after exp and the meeting, and before the phase can switch to clear (the story boss pays too).
+    let fragments: FragmentGain[] = [];
+    if (b.boss || elite) {
+      const run = this.run!;
+      const source = b.boss ? 'boss' : 'elite';
+      const ids = pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source }, memoryRng(run));
+      const topUp = b.boss && run.region === 'mainline' && this.floor === 25 && ids.length > 1 && ids.every((id) => id === 'hero');
+      fragments = this.takePieces(ids, topUp);
+    }
     if (b.boss) openStairs(this.map());   // a beaten boss leaves stairs down where it stood, so the run can go deeper
     if (b.boss && this.isStoryDepth(this.floor)) {
       const story = this.state.story;
@@ -508,7 +570,7 @@ export class Game {
       this.phase = 'clear';
     }
     else this.phase = 'map';
-    return { battle: b, end: { outcome: 'win', ...rw, drops: taken, levelUps: awarded.results.filter((x) => x.levels > 0), left, gear, gearLeft, ...(met ? { met } : {}) } };
+    return { battle: b, end: { outcome: 'win', ...rw, drops: taken, levelUps: awarded.results.filter((x) => x.levels > 0), left, gear, gearLeft, ...(met ? { met } : {}), ...(fragments.length ? { fragments } : {}) } };
   }
 
   /**
@@ -696,6 +758,7 @@ export class Game {
   private changeFloor(floor: number): { kind: 'floor'; floor: number } {
     const region = this.run!.region;
     this.floor = floor;
+    this.forceGlimmers(floor);
     this.pos = { ...this.map().entrance };
     this.state.dungeon.reached[region] = Math.min(MAX_REACHED, Math.max(this.state.dungeon.reached[region], floor));
     this.revealHere();

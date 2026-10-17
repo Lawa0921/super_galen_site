@@ -2,7 +2,7 @@ import type { Pos } from './types';
 
 export type Tile =
   | 'wall' | 'floor' | 'door' | 'up' | 'down' | 'chest' | 'entrance' | 'boss'
-  | 'fountain' | 'trap' | 'merchant' | 'altar' | 'elite' | 'vault' | 'key' | 'rescue';
+  | 'fountain' | 'trap' | 'merchant' | 'altar' | 'elite' | 'vault' | 'key' | 'rescue' | 'glimmer';
 export type Dir = 'up' | 'down' | 'left' | 'right';
 
 export interface FloorMap {

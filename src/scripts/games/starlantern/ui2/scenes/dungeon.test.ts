@@ -15,6 +15,7 @@ import { LEGACY_LINEUP } from '../../engine/party';
 import { floorOf } from '../../engine/dungeon/run';
 import { T } from '../../data/text.zh-TW';
 import { CHARACTERS } from '../../data/characters';
+import type { CharacterId } from '../../engine/types';
 
 function setup(portal: Portal = { region: 'mainline', condition: 'plain' }, fast = true) {
   const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);   // 0.99: never an early encounter roll
@@ -32,6 +33,40 @@ function setup(portal: Portal = { region: 'mainline', condition: 'plain' }, fast
   };
   return { game, sfx, go, root, s, text, pick };
 }
+
+describe('DungeonScene glimmers', () => {
+  /** Plant a glimmer on an open cell next to the party and return the key that steps onto it. */
+  const glimmerNext = (game: Game, owner?: CharacterId) => {
+    const m = game.map();
+    for (const dir of ['right', 'left', 'down', 'up'] as const) {
+      const at = { x: game.pos.x + DELTA[dir].x, y: game.pos.y + DELTA[dir].y };
+      if (m.tiles[at.y][at.x] !== 'floor') continue;
+      m.tiles[at.y][at.x] = 'glimmer';
+      floorOf(game.run!, game.floor).contents.push({ kind: 'glimmer', at, room: 0, ...(owner ? { owner } : {}) });
+      return { dir, at };
+    }
+    throw new Error('no open cell beside the party');
+  };
+
+  it('stepping on a glimmer says what was found', async () => {
+    const { game, s, text } = setup();
+    const { dir, at } = glimmerNext(game, 'selene');
+    s.onAction(dir);
+    await Promise.resolve();
+    expect(text()).toBe(T.ui2.memory.piece(CHARACTERS.selene.name, 1));
+    expect(tileAt(game.map(), at)).toBe('floor');
+    expect(game.state.party.roster.selene.memories).toBe(1);
+  });
+
+  it('a glimmer that holds nothing fades', async () => {
+    const { game, s, text } = setup();
+    for (const m of Object.values(game.state.party.roster)) m.memories = 99;   // every chain is complete: nothing is left to find
+    const { dir } = glimmerNext(game);
+    s.onAction(dir);
+    await Promise.resolve();
+    expect(text()).toBe(T.ui2.memory.nothing);
+  });
+});
 
 describe('DungeonScene', () => {
   it('shows the floor name, a green lamp and the party bar', () => {

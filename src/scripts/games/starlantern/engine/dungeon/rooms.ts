@@ -2,14 +2,14 @@ import type { ConditionDef } from '../../data/conditions';
 import { ITEMS } from '../../data/items';
 import type { Meetable } from '../../data/meetings';
 import type { FloorMap, Tile } from '../map';
-import { posKey } from '../map';
+import { posKey, reachable } from '../map';
 import { pick, type Rng } from '../rng';
-import type { Pos } from '../types';
+import type { CharacterId, Pos } from '../types';
 import type { GenFloor } from './gen';
 
 export type RoomKind = 'empty' | 'chest' | 'fountain' | 'trap' | 'merchant' | 'altar' | 'elite' | 'vault';
-/** `stock` is a merchant's three item ids, drawn once when the floor is filled; `who` is the companion a `rescue` room holds. */
-export interface Content { kind: RoomKind | 'key' | 'rescue'; at: Pos; room: number; stock?: string[]; who?: Meetable }
+/** `stock` is a merchant's three item ids, drawn once when the floor is filled; `who` is the companion a `rescue` room holds; `owner` is the chain a forced `glimmer` holds a piece of. */
+export interface Content { kind: RoomKind | 'key' | 'rescue' | 'glimmer'; at: Pos; room: number; stock?: string[]; who?: Meetable; owner?: CharacterId }
 type Placed = Exclude<Content['kind'], 'empty'>;
 
 /** Share of ordinary rooms by kind. Elite and vault are capped at one per floor. */
@@ -18,7 +18,7 @@ const WEIGHTS: [RoomKind, number][] = [
 ];
 
 const TILE: Record<Placed, Tile> = {
-  chest: 'chest', fountain: 'fountain', trap: 'trap', merchant: 'merchant', altar: 'altar', elite: 'elite', vault: 'vault', key: 'key', rescue: 'rescue',
+  chest: 'chest', fountain: 'fountain', trap: 'trap', merchant: 'merchant', altar: 'altar', elite: 'elite', vault: 'vault', key: 'key', rescue: 'rescue', glimmer: 'glimmer',
 };
 
 /** Three distinct buyable items. */
@@ -98,14 +98,15 @@ export function fillRooms(g: GenFloor, rng: Rng, cond: ConditionDef): { map: Flo
 }
 
 /**
- * Put a rescue room for `who` on a finished floor. Rooms with nothing in them (never the entrance or exit room) come
- * first, then any other candidate room; the spot is a plain floor tile picked with `rng`. A map without rooms gets the
- * first floor tile, row by row. Only `f` changes, and `rng` should be the rescue's own so nothing else on the floor moves.
+ * Put one special spot (`content` without its position) on a finished floor. Rooms with nothing in them (never the entrance
+ * or exit room) come first, then any other candidate room; the spot is a plain floor tile picked with `rng`. When no room
+ * has a free tile it takes the first free floor tile joined to the entrance, row by row, from left to right. Only `f`
+ * changes, and `rng` should be the caller's own so nothing else on the floor moves.
  */
-export function placeRescue(f: { map: FloorMap; contents: Content[] }, g: GenFloor, rng: Rng, who: Meetable): void {
+export function placeSpecial(f: { map: FloorMap; contents: Content[] }, g: GenFloor, rng: Rng, content: Omit<Content, 'at' | 'room'> & { kind: Placed }): void {
   const mark = (at: Pos, room: number) => {
-    f.map.tiles[at.y][at.x] = 'rescue';
-    f.contents.push({ kind: 'rescue', at, room, who });
+    f.map.tiles[at.y][at.x] = TILE[content.kind];
+    f.contents.push({ ...content, at, room });
   };
   const candidates = g.rooms.filter((r) => r.id !== g.entranceRoom && r.id !== g.exitRoom);
   const used = new Set(f.contents.map((c) => c.room));
@@ -118,7 +119,13 @@ export function placeRescue(f: { map: FloorMap; contents: Content[] }, g: GenFlo
       if (cells.length) { mark(pick(rng, cells), r.id); return; }
     }
   }
+  const open = reachable(f.map, f.map.entrance);
   for (let y = 0; y < f.map.height; y++) for (let x = 0; x < f.map.width; x++) {
-    if (f.map.tiles[y][x] === 'floor') { mark({ x, y }, 0); return; }
+    if (f.map.tiles[y][x] === 'floor' && open.has(posKey({ x, y }))) { mark({ x, y }, 0); return; }
   }
+}
+
+/** Put a rescue room for `who` on a finished floor (see `placeSpecial`; `rng` should be the rescue's own). */
+export function placeRescue(f: { map: FloorMap; contents: Content[] }, g: GenFloor, rng: Rng, who: Meetable): void {
+  placeSpecial(f, g, rng, { kind: 'rescue', who });
 }

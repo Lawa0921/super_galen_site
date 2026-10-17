@@ -123,7 +123,7 @@ describe('MapView wall autotiling', () => {
 
 describe('MapView tile colours', () => {
   it('draws the floor under tile kinds that have no art or colour of their own', () => {
-    for (const t of ['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key', 'rescue'] as const) {
+    for (const t of ['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key', 'rescue', 'glimmer'] as const) {
       expect(tileColor(t, false), t).toBe(tileColor('floor', false));
     }
     expect(tileColor('chest', true)).toBe(tileColor('floor', false));
@@ -224,11 +224,11 @@ describe('MapView event markers', () => {
     exploreAll(game);
     const view = new MapView(spy);
     view.draw(game, SIZE);
-    expect(view.markerGlyphs()).toEqual([]);
+    expect(view.markerGlyphs().filter((g) => g !== MARKER_GLYPH.glimmer)).toEqual([]);   // a glimmer has no art, only its glyph
     const labels = view.markerLabels();
     for (const c of floorOf(game.run!, 1).contents) {
       if (c.kind === 'trap') expect(labels).not.toContain('event-trap');
-      else if (c.kind !== 'chest') expect(labels).toContain(`event-${c.kind}`);
+      else if (c.kind !== 'chest' && c.kind !== 'glimmer') expect(labels).toContain(`event-${c.kind}`);
     }
     const tileUrls = urls.filter((u) => /\/tiles\/f\d-/.test(u));
     expect(tileUrls.some((u) => /-(fountain|trap|merchant|altar|elite|vault|key)\.png$/.test(u))).toBe(false);
@@ -250,6 +250,30 @@ describe('MapView event markers', () => {
     expect(view.markerGlyphs()).toContain(MARKER_GLYPH.rescue);
     expect(urls).not.toContain(art.eventTile('rescue' as never));
     expect(urls).toContain(art.eventTile('altar'));
+  });
+
+  it('a seen glimmer shows the 憶 marker and asks for no art', () => {
+    const urls: string[] = [];
+    const spy = { get: (u: string) => { urls.push(u); return u.includes('/tiles/event-') ? null : Texture.WHITE; }, has: () => true } as unknown as TextureBank;
+    const game = new Game(constRng(0.99), null);
+    expect(game.depart(MAIN, 1)).toEqual({ ok: true });
+    const f = floorOf(game.run!, 1);
+    f.map.tiles[1][1] = 'altar';   // a real event tile beside it, to prove the spy sits on the path that asks for art
+    f.contents.push({ kind: 'altar', at: { x: 1, y: 1 }, room: 0 });
+    const glimmer = f.contents.find((c) => c.kind === 'glimmer')!;
+    expect(glimmer).toBeDefined();
+    const mark = () => markersOf(game).filter((m) => m.kind === 'glimmer');
+    expect(mark()).toEqual([]);   // not seen yet
+    exploreAll(game);
+    const view = new MapView(spy);
+    view.draw(game, SIZE);
+    expect(mark()).toEqual([{ kind: 'glimmer', x: glimmer.at.x, y: glimmer.at.y }]);
+    expect(view.markerGlyphs()).toContain(MARKER_GLYPH.glimmer);
+    expect(MARKER_GLYPH.glimmer).toBe('憶');
+    expect(urls).not.toContain(art.eventTile('glimmer' as never));
+    expect(urls).toContain(art.eventTile('altar'));
+    game.map().tiles[glimmer.at.y][glimmer.at.x] = 'floor';   // what stepping on it does
+    expect(mark()).toEqual([]);
   });
 
   it('the 救 marker shows only on a seen rescue room, and goes once the room is floor', () => {

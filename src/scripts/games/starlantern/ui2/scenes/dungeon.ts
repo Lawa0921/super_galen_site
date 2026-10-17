@@ -20,7 +20,7 @@ import { PartyBar } from '../partyBar';
 import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich } from '../widgets';
-import { levelUpLines } from '../battleText';
+import { fragmentLines, levelUpLines } from '../battleText';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import { eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
 
@@ -240,11 +240,20 @@ export class DungeonScene implements Scene {
         this.say(r.effect === 'hurt' ? T.ui2.event.trap.hurt(r.amount) : T.ui2.event.trap.poison(r.amount, r.tp));
         return;
       case 'key': s.chest?.(); this.refresh(); this.say(T.ui2.event.key); return;
+      case 'glimmer': s.chest?.(); this.refresh(); void this.found(fragmentLines(r.gained)); return;
       case 'full': this.refresh(); showPickUp(this.host(), r); return;
       case 'rescue': { void this.meeting(r.who); return; }
       case 'battle': case 'boss': this.fightOn(r.kind === 'boss'); return;
     }
     this.refresh();
+  }
+
+  /** What a glimmer held, one line at a time (the memory scene itself comes in Task 17); a spent glimmer says so. */
+  private async found(lines: string[]): Promise<void> {
+    for (const line of lines.length ? lines : [T.ui2.memory.nothing]) {
+      await this.say(line);
+      if (this.exited) return;
+    }
   }
 
   /** A rescue room: the meeting lines one at a time, then the fight as for any encounter. */

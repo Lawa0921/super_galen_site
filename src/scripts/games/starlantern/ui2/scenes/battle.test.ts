@@ -8,6 +8,7 @@ import { BattleScene } from './battle';
 import { LEGACY_LINEUP } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
 import { CHARACTERS } from '../../data/characters';
+import { SHARD_NAMES } from '../../data/story/fragments';
 
 const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); await new Promise((r) => setTimeout(r, 0)); };
 
@@ -183,6 +184,26 @@ describe('BattleScene', () => {
     const benched = await run(true);
     expect(benched[0]).toBe(T.ui2.rescue.benched(CHARACTERS.selene.name, 4));
     expect(benched).not.toContain(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));
+  });
+
+  it('a won fight lists the memories found', async () => {
+    const { game, s, root } = setup();
+    const fragments = [
+      { kind: 'piece' as const, id: 'rin' as const, n: 2, play: false },
+      { kind: 'shard' as const, grade: 'clear' as const },
+      { kind: 'town' as const, id: 'marta' as const },
+    ];
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [], met: { id: 'selene' as const, level: 4, benched: false }, fragments };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    const lines = [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
+    const joined = lines.indexOf(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));
+    expect(joined).toBe(0);
+    expect(lines[joined + 1]).toBe(T.ui2.memory.piece(CHARACTERS.rin.name, 2));
+    expect(lines[joined + 2]).toBe(T.ui2.memory.shard(SHARD_NAMES.clear));
+    expect(lines[joined + 3]).toBe(T.ui2.memory.town('瑪莎的記憶碎片'));
   });
 
   it('the result lists the points a level-up brings', async () => {

@@ -4,7 +4,9 @@ import { CHAINS, ELITE_PIECE_CHANCE, HERO_TOPUP, MEMORY_PITY, whenHolds, type Fr
 import type { ShardGrade, TownFragmentId } from '../../data/story/fragments';
 import type { CharacterId, Party } from '../types';
 import { memoriesOf } from '../progression';
-import { pick, type Rng } from '../rng';
+import { mulberry32, pick, type Rng } from '../rng';
+import { mix } from '../loot/drops';
+import type { Run } from '../dungeon/run';
 
 /** Floors cleared without a piece, per chain. */
 export type Pity = Partial<Record<CharacterId, number>>;
@@ -16,6 +18,11 @@ export type FragmentGain =
   | { kind: 'town'; id: TownFragmentId };
 
 export interface PieceCtx { region: RegionId; depth: number; source: FragmentSource; who?: CharacterId }
+
+/** Salts the memory drops' own rng, so a drop never takes a draw from the loot rolls. */
+export const MEMORY_SALT = 0x510e527f;
+/** The next memory-drop rng of a run: seeded from the run seed and the count of drops so far, which it advances. */
+export const memoryRng = (run: Run): Rng => mulberry32(mix(run.seed ^ MEMORY_SALT, run.memoryDraws++));
 
 /** Equal to the bound `isStory` puts on `story.pity`, so a long game never writes a save that will not load. */
 export const MAX_PITY = 999;
