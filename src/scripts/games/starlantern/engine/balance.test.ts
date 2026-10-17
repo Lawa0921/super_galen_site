@@ -126,4 +126,15 @@ describe('balance', () => {
       expect(direct, `depth ${d} direct`).toBeLessThanOrEqual(next + 1);
     }
   });
+
+  it('13. a fresh Lv1 party with no gear holds depth 1 of every region', () => {
+    // A new game arrives at depth 1 at Lv1 with empty equip (newParty): the first visit to any portal is fair.
+    for (const region of Object.keys(REGIONS) as RegionId[]) {
+      const r = winRate(1, encounterTable(region, 1), false, region === 'mainline' ? 40 : 20, { depth: 1, region });
+      const label = `${region} depth 1 Lv1`;
+      expect(r.rate, label).toBeGreaterThanOrEqual(0.85);
+      expect(r.hpLoss, label).toBeGreaterThanOrEqual(0.1);
+      expect(r.hpLoss, label).toBeLessThanOrEqual(0.45);
+    }
+  });
 });
