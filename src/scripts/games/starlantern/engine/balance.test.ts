@@ -48,8 +48,7 @@ describe('balance', () => {
     }
   });
 
-  // Red at 19a: floor 3 hpLoss under 0.10. Owner 19c.
-  it.fails('4. a party at the recommended level wins reliably without trivialising', () => {
+  it('4. a party at the recommended level wins reliably without trivialising', () => {
     for (const [f, lv] of [[1, 2], [2, 6], [3, 9]] as const) {
       const r = winRate(lv, groups(f), false);
       say(`4 floor ${f} Lv${lv}`, r);
@@ -89,8 +88,7 @@ describe('balance', () => {
     }
   });
 
-  // Red at 19a (Task 19a baseline): the full party is under the 0.10 HP-loss floor. Owner 19c.
-  it.fails('7. same depth level, same odds', () => {
+  it('7. same depth level, same odds', () => {
     const band = (r: { rate: number; hpLoss: number }, label: string) => {
       say(`7 ${label}`, r);
       ex(r.rate, label).toBeGreaterThanOrEqual(0.85);
@@ -115,8 +113,7 @@ describe('balance', () => {
     }
   });
 
-  // Red at 19a: hpLoss under 0.10. Owner 19c.
-  it.fails('9. a party with the altar cap reached on every stat is not trivialised below the band', () => {
+  it('9. a party with the altar cap reached on every stat is not trivialised below the band', () => {
     const stacked = (['atk', 'def', 'mag', 'res', 'spd'] as const).map((stat) => ({ stat, pct: ALTAR_STAT_CAP_PCT }));
     for (const d of [4, 8]) {
       const scale = { depth: d, region: 'mainline' as const };
@@ -153,11 +150,9 @@ describe('balance', () => {
     }
   };
 
-  // Red at 19a: hpLoss under 0.10 at most depths. Owner 19c.
-  it.fails('10. random gear in expectation keeps the bands', () => gearBands('', {}), 120_000);
+  it('10. random gear in expectation keeps the bands', () => gearBands('', {}), 120_000);
 
-  // Red at 19a: hpLoss under 0.10 at most depths. Owner 19c.
-  it.fails('10 (memories). random gear in expectation keeps the bands with ten memories, the abyss by depth', () => gearBands(' memories', { memories: 10 }), 120_000);
+  it('10 (memories). random gear in expectation keeps the bands with ten memories, the abyss by depth', () => gearBands(' memories', { memories: 10 }), 120_000);
 
   const bossRounds = (tag: string, lineup: Lineup) => {
     for (const d of [5, 10]) {
@@ -239,8 +234,7 @@ describe('balance', () => {
     }
   });
 
-  // Red at 19a: Lv11 wins 100%, over the 0.85 ceiling. Owner 19b.
-  it.fails('16. the boss is a real fight for three members', () => {
+  it('16. the boss is a real fight for three members', () => {
     const lo = winRate(11, [['lanterneater']], true, 120, undefined, undefined, undefined, 'skill', 0, { ids: THREE });
     say('16 three lanterneater Lv11', lo);
     ex(lo.rate).toBeGreaterThanOrEqual(0.25);

@@ -6,7 +6,7 @@ import { REGIONS, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
 import { expToNext, LEGACY_LINEUP } from './party';
 import { mulberry32 } from './rng';
-import { DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy } from './scaling';
+import { BOSS_PARTY_SCALE, DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy, bossPartyScale } from './scaling';
 import { constRng, fullParty } from './testing';
 
 const MAIN = REGIONS.mainline;
@@ -317,6 +317,16 @@ describe('the party-size tables', () => {
     }
     expect(partyScale(1)).toBe(partyScale(2));
     expect(partyScale(9)).toBe(partyScale(5));
+  });
+
+  it('the boss table is its own: [5] is 1, every value in (0, 1.5], non-decreasing in party size', () => {
+    expect(BOSS_PARTY_SCALE[5]).toBe(1);
+    const sizes = [2, 3, 4, 5] as const;
+    for (const n of sizes) { expect(BOSS_PARTY_SCALE[n]).toBeGreaterThan(0); expect(BOSS_PARTY_SCALE[n]).toBeLessThanOrEqual(1.5); }
+    for (let i = 1; i < sizes.length; i++) expect(BOSS_PARTY_SCALE[sizes[i]]).toBeGreaterThanOrEqual(BOSS_PARTY_SCALE[sizes[i - 1]]);
+    expect(bossPartyScale(1)).toBe(BOSS_PARTY_SCALE[2]);
+    expect(bossPartyScale(3)).toBe(BOSS_PARTY_SCALE[3]);
+    expect(bossPartyScale(9)).toBe(1);
   });
 });
 

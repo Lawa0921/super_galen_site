@@ -531,8 +531,8 @@ describe('hero builds', () => {
     expect(defaultTree('hero', 30)).toEqual(heroTree(30, 'balanced', 0));
     expect(defaultTalents('hero', 30)).toEqual(heroTalents(30, 'balanced'));
   });
-  it('balanced spreads over sword, guard and light', () => {
-    const [a, b, d, c, e] = perBranch(heroTree(20));
+  it('balanced spreads over guard, star and sword, not light or chain (plan 6a Task 19c)', () => {
+    const [a, b, c, d, e] = perBranch(heroTree(20));
     expect(Math.max(a, b, c) - Math.min(a, b, c)).toBeLessThanOrEqual(1);
     expect(d).toBe(0);
     expect(e).toBe(0);
@@ -553,7 +553,7 @@ describe('hero builds', () => {
     expect(caps(heroTree(50, 'balanced', 0))).toEqual([]);
     const held = caps(heroTree(50, 'balanced', 10));
     expect(held).toHaveLength(2);
-    for (const k of held) expect([0, 1, 3]).toContain(heroBranch(k));
+    for (const k of held) expect(HERO_BUILDS.balanced.branches).toContain(heroBranch(k));
   });
   it('every build is a legal build', () => {
     for (const b of builds) for (const L of [1, 10, 30, 50]) {
@@ -561,6 +561,14 @@ describe('hero builds', () => {
         expect(validBuild('hero', L, heroTree(L, b, memories), heroTalents(L, b), memories), `${b} Lv${L} m${memories}`).toBe(true);
       }
     }
+  });
+  it('the balanced build is not a regen tank; the tank build keeps the tank set', () => {
+    const held = (b: HeroBuild) => BOARDS.hero.filter((n) => n.keystone && heroTalents(50, b)[n.id]).map((n) => n.keystone!);
+    expect(new Set(held('balanced'))).toEqual(new Set(HERO_BUILDS.balanced.keystones));
+    expect(held('balanced')).not.toContain('regen');
+    expect(held('balanced')).not.toContain('taunt-guard');
+    expect(new Set(held('tank'))).toEqual(new Set(DEFAULT_KEYSTONES.hero));
+    for (const b of ['sword', 'mage', 'healer'] as const) expect(new Set(held(b)), b).toEqual(new Set(DEFAULT_KEYSTONES.hero));
   });
   it('balanced talents lean on STR and WIL', () => {
     const t = heroTalents(30, 'balanced');

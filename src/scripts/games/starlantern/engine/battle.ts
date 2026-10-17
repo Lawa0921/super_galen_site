@@ -10,7 +10,7 @@ import { SKILLS } from '../data/skills';
 import { stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
 import { activeIds, hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
-import { abyssPct, depthLevel, empower, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
+import { abyssPct, bossPartyScale, depthLevel, empower, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
 import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
@@ -105,7 +105,7 @@ export function createBattle(o: {
   for (const c of party) if (c.keystones.includes('opening-gauge')) c.limit = Math.min(LIMIT_MAX, Math.max(c.limit, KEYSTONE_VALUES.openingGauge));
   const depth = o.depth ?? o.scale?.depth ?? 1;
   const size = activeIds(o.party).length;
-  const k = partyScale(size);
+  const k = o.boss ? bossPartyScale(size) : partyScale(size);
   const enemyIds = o.boss ? o.enemyIds : o.enemyIds.slice(0, groupCap(size, depth) + (o.extra ?? 0));
   const counts: Record<string, number> = {};
   for (const id of enemyIds) counts[id] = (counts[id] ?? 0) + 1;

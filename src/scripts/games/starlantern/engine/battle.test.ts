@@ -5,7 +5,7 @@ import { ULTIMATES } from '../data/ultimates';
 import { ENEMIES } from '../data/enemies';
 import { activeIds, powersOf, sheetOf, LEGACY_LINEUP } from './party';
 import { applyEffect } from './skills';
-import { GROUP_CAP, depthLevel, encounterTable, homeLevel, mul, partyScale } from './scaling';
+import { BOSS_PARTY_SCALE, GROUP_CAP, PARTY_SCALE, bossPartyScale, depthLevel, encounterTable, homeLevel, mul, partyScale } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { choose, partyAt } from './sim';
 import { dealDamage, type BattleEvent } from './combatant';
@@ -15,7 +15,8 @@ import { keystonesOf } from './progression';
 import { mulberry32 } from './rng';
 import { ABYSS } from '../data/hero';
 
-const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",1,3947545226],"0:2":["win",1,2430863389],"0:3":["win",2,3891662608],"1:1":["win",2,2360026799],"1:2":["win",2,1284742253],"1:3":["win",2,226460977],"2:1":["win",1,3087643812],"2:2":["win",1,113512203],"2:3":["win",1,693828139],"3:1":["win",2,1417030887],"3:2":["win",2,3218793396],"3:3":["win",2,1205089542]};
+// Re-captured (CAPTURE=1) in plan 6a Task 19c, when ENEMY_POWER.amount2 went from 0.04 to 0.16.
+const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",2,73142791],"0:2":["win",1,2430863389],"0:3":["win",2,3891662608],"1:1":["win",2,1213642846],"1:2":["win",2,3624010870],"1:3":["win",2,1160655467],"2:1":["win",1,1018538055],"2:2":["win",1,1893221673],"2:3":["win",1,1450088645],"3:1":["win",2,1417030887],"3:2":["win",2,2446649109],"3:3":["win",2,3368217377]};
 const rng = constRng(0.5); // enemies never use skills (all chances < 0.5), variance 1.0
 const P = (key: string, over = {}) => makeCombatant({ key, side: 'party', ...over });
 const E = (key: string, over = {}) => makeCombatant({ key, side: 'enemy', ...over });
@@ -423,7 +424,8 @@ describe('keystones in battle', () => {
     // Recorded at 625b4e16, before keystones reached the battle code (plan 5b Task 10, Step 0). Lv20 has 8 talent points,
     // under KEYSTONE_GATE, so nobody holds a keystone. Re-recorded 2026-10-17 in 21867eb3, under the ENEMY_POWER shape that
     // plan 5c Task 4 settled on there (a deep step from Lv12 plus a small ramp; the d5 enemies are Lv18): the same no-keystone code path against stronger
-    // enemies. A keystone reaching this fight changes TP, damage or heals, and so the replay.
+    // enemies. Re-recorded again in plan 6a Task 19c, when ENEMY_POWER.amount2 went from 0.04 to 0.16 (scarlet 72 -> 69).
+    // A keystone reaching this fight changes TP, damage or heals, and so the replay.
     const party = partyAt(20, { ids: LEGACY_LINEUP });
     // The fighters only: the hero (Lv20, 15 talent points) holds one on the bench, and never enters this fight.
     expect(activeIds(party).every((id) => keystonesOf(party.roster[id]).length === 0)).toBe(true);
@@ -434,7 +436,7 @@ describe('keystones in battle', () => {
     let rounds = 0;
     while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, choose(s, party), counted); rounds++; }
     expect({ outcome: s.outcome, rounds, draws, hp: Object.fromEntries(s.party.map((c) => [c.key, c.hp])) })
-      .toEqual({ outcome: 'win', rounds: 4, draws: 83, hp: { scarlet: 72, chizuru: 166, liz: 0, noel: 0, selene: 0 } });
+      .toEqual({ outcome: 'win', rounds: 4, draws: 83, hp: { scarlet: 69, chizuru: 166, liz: 0, noel: 0, selene: 0 } });
   });
 });
 
@@ -599,6 +601,20 @@ describe('enemies scale with the party size', () => {
     const full = createBattle({ party: withMembers(5), enemyIds: ids, boss: true, inventory: {}, revealed: {}, depth: 3 });
     const two = createBattle({ party: withMembers(2), enemyIds: ids, boss: true, inventory: {}, revealed: {}, depth: 3 });
     expect(two.enemies).toHaveLength(4);
-    expect(two.enemies[0].max.hp).toBe(mul(full.enemies[0].max, { hp: partyScale(2) }).hp);
+    expect(two.enemies[0].max.hp).toBe(mul(full.enemies[0].max, { hp: bossPartyScale(2) }).hp);
+  });
+
+  it('a boss fight reads BOSS_PARTY_SCALE and a normal fight reads PARTY_SCALE', () => {
+    const before = BOSS_PARTY_SCALE[3];
+    BOSS_PARTY_SCALE[3] = 0.5;
+    try {
+      const boss = (n: number) => createBattle({ party: withMembers(n), enemyIds: ['lanterneater'], boss: true, inventory: {}, revealed: {}, depth: 3 });
+      const full = boss(5);
+      expect(boss(3).partyScale).toBe(0.5);
+      expect(boss(3).enemies[0].max.hp).toBe(mul(full.enemies[0].max, { hp: 0.5 }).hp);
+      expect(fight(withMembers(3), ['wolf']).partyScale).toBe(PARTY_SCALE[3]);
+    } finally {
+      BOSS_PARTY_SCALE[3] = before;
+    }
   });
 });

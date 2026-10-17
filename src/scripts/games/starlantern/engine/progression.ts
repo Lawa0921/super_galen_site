@@ -391,12 +391,12 @@ export function validBuild(id: CharacterId, level: number, tree: unknown, talent
 export const resetBuild = (m: Member): Member => ({ ...m, tree: newTree(m.id), talents: {} });
 
 /**
- * The hero's talents for a build: talentPoints(level) points, one at a time; a keystone of DEFAULT_KEYSTONES.hero when one
- * can be taken, else the open normal node of lowest (rank, row, col) whose stat the build leans on, else any open normal node.
+ * The hero's talents for a build: talentPoints(level) points, one at a time; a keystone of the build's keystones
+ * (HERO_BUILDS, default DEFAULT_KEYSTONES.hero) when one can be taken, else the open normal node of lowest (rank, row, col) whose stat the build leans on, else any open normal node.
  */
 export function heroTalents(level: number, build: HeroBuild = 'balanced'): Record<string, number> {
   const t: Record<string, number> = {};
-  const keystones = DEFAULT_KEYSTONES.hero.map((k) => BOARDS.hero.find((n) => n.keystone === k)!);
+  const keystones = (HERO_BUILDS[build].keystones ?? DEFAULT_KEYSTONES.hero).map((k) => BOARDS.hero.find((n) => n.keystone === k)!);
   const normal = BOARDS.hero.filter((n) => !n.keystone);
   const lean = HERO_BUILDS[build].talents;
   const lowest = (nodes: typeof normal) => nodes.filter((n) => talentBlocker('hero', n.id, t) === null)
