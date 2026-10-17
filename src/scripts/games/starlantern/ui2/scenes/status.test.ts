@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { rulesOf } from '../../data/characters';
-import { statsOf } from '../../engine/party';
+import { statsOf, LEGACY_LINEUP } from '../../engine/party';
 import type { AnyStat } from '../../engine/types';
 import { STAT_CATEGORIES } from '../../engine/stats';
 import { raiseTalent } from '../../engine/progression';
@@ -19,7 +19,7 @@ import { BOARDS, KEYSTONES, TALENT_PER, TALENT_SCALE } from '../../data/talents'
 const num = (t: string | null) => Number((t ?? '').replace('−', '-'));
 
 function setup(arg?: string, artIndex: ArtIndex = NO_ART, prep?: (game: Game) => void) {
-  const game = new Game(constRng(0.5), null);
+  const game = new Game(constRng(0.5), null, undefined, 0, LEGACY_LINEUP);
   game.state.bag = [plainItem('iron-sword', 1)];
   game.state.party.roster.scarlet.equip.weapon = plainItem('iron-sword', 2);
   game.state.nextUid = 3;

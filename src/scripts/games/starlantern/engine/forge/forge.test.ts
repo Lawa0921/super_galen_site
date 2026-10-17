@@ -19,7 +19,7 @@ const sum = (rs: Rarity[]) => {
   for (const r of rs) for (const [k, v] of Object.entries(DISMANTLE[r])) out[k] = (out[k] ?? 0) + v;
   return out;
 };
-const withBag = (bag: ItemInstance[]) => ({ ...newGame(), bag, nextUid: 100 });
+const withBag = (bag: ItemInstance[]) => ({ ...newGame(undefined, 0, LEGACY_LINEUP), bag, nextUid: 100 });
 
 describe('dismantle', () => {
   it('dismantling yields DISMANTLE by rarity and removes the items', () => {

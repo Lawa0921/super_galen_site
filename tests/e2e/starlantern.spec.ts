@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { SPECIALS, AFFIXES } from '../../src/scripts/games/starlantern/data/gear';
 import { CHARACTERS } from '../../src/scripts/games/starlantern/data/characters';
 import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
+import { LEGACY_GRID, LEGACY_LINEUP } from '../../src/scripts/games/starlantern/engine/party';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
 
@@ -126,6 +127,7 @@ test.describe('starlantern', () => {
     await page.locator('.slx-title [data-id=new]').click();
     await expect(page.locator('.slx-town')).toBeVisible();
     await talkThrough();
+    await legacyRoster(page);
     await page.locator('.slx-town [data-id=guild]').click();
     await expect(page.locator('.slx-guild')).toBeVisible();
     await talkThrough();
@@ -175,6 +177,7 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('新遊戲');
     await key('Enter');
     await expect(page.locator('.slx-town')).toBeVisible(); await closeTalk();
+    await legacyRoster(page);
     await choose('.slx-town', '傳送門廣場');
     await expect(page.locator('.slx-gate')).toBeVisible(); await closeTalk();
     await key('Enter');                                    // 選擇傳送門
@@ -219,6 +222,12 @@ test.describe('starlantern', () => {
 
   /** Shared walkers for the portal-run tests. */
   type Dbg = { __starlanternDebug: { game: any } };
+  /** The legacy five, then the hero and Rin, recruited in that order and standing on the old grid with the hero in Selene's cell: the new start no longer has the old five to page to. */
+  const legacyRoster = (page: Page) => page.evaluate(([ids, grid]) => {
+    const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+    p.recruited = [...ids, 'hero', 'rin'];
+    p.grid = grid;
+  }, [LEGACY_LINEUP, LEGACY_GRID.map((c) => (c === 'selene' ? 'hero' : c))] as const);
   const setup = async (page: Page, seed: number) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -463,13 +472,14 @@ test.describe('starlantern', () => {
     const w = await setup(page, 7);
     await page.locator('.slx-town [data-id=guild]').click();
     await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await legacyRoster(page);
     await page.evaluate(() => {
       const m = (window as unknown as Dbg).__starlanternDebug.game.state.party.roster.noel;
       // Two keystones taken, so the third cell reads 關鍵已滿 (the widest cell state) for the cut-off check below.
       m.level = 50; m.talents = { 'noel-t00': 5, 'noel-t01': 5, 'noel-t02': 2, 'noel-k0': 1, 'noel-k1': 1 };
     });
     await page.locator('.slx-guild [data-id=status]').click();
-    for (let i = 0; i < 8 && !((await page.locator('.slx-status-name').textContent()) ?? '').includes('諾艾兒'); i++) await page.locator('.slx-status-next').click();
+    for (let i = 0; i < LEGACY_LINEUP.length + 2 && !((await page.locator('.slx-status-name').textContent()) ?? '').includes('諾艾兒'); i++) await page.locator('.slx-status-next').click();
     await page.locator('[data-tab=talent]').click();
     const board = page.locator('.slx-talent-board');
     const cur = page.locator('.slx-talent-node.slx-row-cur');
@@ -553,7 +563,7 @@ test.describe('starlantern', () => {
     };
     const status = page.locator('.slx-status-name');
     const toNoel = async () => {
-      for (let i = 0; i < 8 && !((await status.textContent()) ?? '').includes('諾艾兒'); i++) await page.locator('.slx-status-next').click();
+      for (let i = 0; i < LEGACY_LINEUP.length + 2 && !((await status.textContent()) ?? '').includes('諾艾兒'); i++) await page.locator('.slx-status-next').click();
       await expect(status).toContainText('諾艾兒');
     };
     const guildTab = async (tab: 'tree' | 'talent') => {
@@ -570,6 +580,7 @@ test.describe('starlantern', () => {
       await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
     };
     // Lv7: skillPoints 5, talentPoints 1.
+    await legacyRoster(page);
     await page.evaluate(() => {
       const g = (window as unknown as Dbg).__starlanternDebug.game;
       g.state.party.roster.noel.level = 7;

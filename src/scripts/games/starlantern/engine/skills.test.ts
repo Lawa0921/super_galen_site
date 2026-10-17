@@ -5,8 +5,8 @@ import { ACTIVE_RANK_PCT, NODES } from '../data/trees';
 import { createBattle, resolveRound, skillCost, skillFor } from './battle';
 import { POWERS } from '../data/gear';
 import { SKILLS } from '../data/skills';
-import { newParty } from './party';
-import { constRng, makeBattle, makeCombatant, plainItem } from './testing';
+import { LEGACY_LINEUP } from './party';
+import { constRng, makeBattle, makeCombatant, plainItem, fullParty } from './testing';
 import type { SkillDef } from './types';
 import { KEYSTONE_VALUES as V, type KeystoneId } from '../data/talents';
 import type { Combatant } from './combatant';
@@ -131,13 +131,13 @@ describe('patchSkill', () => {
   });
 
   it('a member wearing 雙月槍 sweeps twice at power 52', () => {
-    const party = newParty();
+    const party = fullParty(LEGACY_LINEUP);
     const spear = { ...plainItem('iron-sword', 1), rarity: 'legendary' as const, special: 'lg-chizuru' };
     party.roster.chizuru = { ...party.roster.chizuru, equip: { weapon: spear } };
     const c = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} }).party.find((x) => x.key === 'chizuru')!;
     expect(skillFor(c, 'sweep')!.effects).toEqual([{ kind: 'damage', power: 52, element: 'phys', scale: 'atk', melee: true, hits: 2 }]);
     expect(skillFor(c, 'pierce')).toBe(SKILLS.pierce);
-    const plain = createBattle({ party: newParty(), enemyIds: ['slime'], inventory: {}, revealed: {} }).party.find((x) => x.key === 'chizuru')!;
+    const plain = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime'], inventory: {}, revealed: {} }).party.find((x) => x.key === 'chizuru')!;
     expect(skillFor(plain, 'sweep')).toBe(SKILLS.sweep);
     const foes = [enemy({ key: 'e0', sleep: 3, max: { hp: 999 } as never }), enemy({ key: 'e1', sleep: 3, max: { hp: 999 } as never })];
     const r = resolveRound(makeBattle([c], foes), { chizuru: { kind: 'skill', skill: 'sweep' } }, constRng(0.5));

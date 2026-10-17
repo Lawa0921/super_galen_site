@@ -12,7 +12,7 @@ import type { Pos } from './types';
 import { ENEMIES } from '../data/enemies';
 import { CHARACTERS } from '../data/characters';
 import { SETS } from '../data/gear';
-import { activeIds, gainExp, MAX_LEVEL, newMember, recruit, START_LINEUP } from './party';
+import { activeIds, gainExp, MAX_LEVEL, newMember, recruit, LEGACY_LINEUP, START_LINEUP } from './party';
 import { depthClearExp, empower } from './scaling';
 import { CONDITIONS } from '../data/conditions';
 import { BAG_SIZE } from './loot/bag';
@@ -34,7 +34,7 @@ const calm = () => constRng(0.99); // step gain 12 on floor 1, never rolls an ea
 const MAIN: Portal = { region: 'mainline', condition: 'plain' };
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 const inMap = (floor = 1, rng = calm(), storage = memoryStorage()) => {
-  const g = new Game(rng, storage);
+  const g = new Game(rng, storage, undefined, 0, LEGACY_LINEUP);
   g.state.dungeon.reached.mainline = 3;
   expect(g.depart(MAIN, floor)).toEqual({ ok: true });
   return g;
@@ -92,7 +92,7 @@ describe('boot', () => {
     expect(g.state.inventory).toEqual(START_ITEMS);
     expect(START_ITEMS.potion).toBe(5);
     expect(Game.boot(calm(), memoryStorage()).state.party.recruited).toEqual(START_LINEUP);
-    expect(new Game(calm(), null).state.party.recruited).toHaveLength(5);
+    expect(new Game(calm(), null).state.party.recruited).toEqual(START_LINEUP);
     expect(new Game(calm(), null, undefined, 0, START_LINEUP).state.party.recruited).toEqual(START_LINEUP);
   });
   it('starts a new game in town on an empty slot', () => {
@@ -119,7 +119,7 @@ describe('boot', () => {
 
 describe('departing', () => {
   it('turns to face the move direction even when blocked, and faces down on departure', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     expect(g.depart(MAIN, 1)).toEqual({ ok: true });
     expect(g.facing).toBe('down');
     nextToWall(g, ['up']);
@@ -136,7 +136,7 @@ describe('departing', () => {
     expect(g.onEntrance()).toBe(true);
   });
   it('refuses unreached floors and a downed party', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     expect(g.depart(MAIN, 2)).toEqual({ ok: false, reason: 'locked' });
     for (const id of ['scarlet', 'chizuru', 'liz', 'noel', 'selene'] as const) g.state.party.roster[id].hp = 0;
     expect(g.depart(MAIN, 1)).toEqual({ ok: false, reason: 'party-down' });
@@ -144,7 +144,7 @@ describe('departing', () => {
     expect(g.run).toBeNull();
   });
   it('departing twice gives different floors', () => {
-    const g = new Game(mulberry32(3), null);
+    const g = new Game(mulberry32(3), null, undefined, 0, LEGACY_LINEUP);
     expect(g.depart(MAIN, 1)).toEqual({ ok: true });
     const first = g.run!;
     const tiles = g.map().tiles;
@@ -156,7 +156,7 @@ describe('departing', () => {
     expect(Object.keys(g.run!.explored)).toEqual(['1']);   // a new run remembers nothing of the last one
   });
   it('start depth cannot exceed the region\'s deepest reached, and must be 1 or a multiple of 5', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     const blaze: Portal = { region: 'blaze', condition: 'plain' };
     g.state.dungeon.reached.blaze = 12;
     const tryAt = (p: Portal, d: number) => {
@@ -176,7 +176,7 @@ describe('departing', () => {
 
 describe('moving', () => {
   it('ignores movement outside the map phase', () => {
-    expect(new Game(calm(), null).move('right')).toEqual({ kind: 'ignored' });
+    expect(new Game(calm(), null, undefined, 0, LEGACY_LINEUP).move('right')).toEqual({ kind: 'ignored' });
   });
   it('is blocked by walls without filling the gauge', () => {
     const g = inMap(1);
@@ -204,13 +204,13 @@ describe('moving', () => {
     expect(g.run!.loot.items['old-coin']).toBe(2);
   });
   it('a chest gives the terrain loot times the run condition drop rate', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart({ region: 'mainline', condition: 'bounty' }, 1);
     expect(stepOnto(g, plainChest(g))).toEqual({ kind: 'chest', item: 'old-coin', qty: 3 });   // 2 x 1.5
   });
   it('descending past MAX_REACHED keeps reached capped, pays no exp, and the save still loads', () => {
     const st = memoryStorage();
-    const g = new Game(calm(), st);
+    const g = new Game(calm(), st, undefined, 0, LEGACY_LINEUP);
     g.state.dungeon.reached.mainline = MAX_REACHED;
     expect(g.depart(MAIN, MAX_REACHED)).toEqual({ ok: true });
     const exp = JSON.stringify(g.state.party);
@@ -224,7 +224,7 @@ describe('moving', () => {
     expect(loadGame(st).status).toBe('ok');
   });
   it('stairs go one deeper and never back', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 2 });
     expect([g.floor, g.pos, g.state.dungeon.reached.mainline]).toEqual([2, g.map().entrance, 2]);
@@ -235,7 +235,7 @@ describe('moving', () => {
     expect(g.floor).toBe(2);
   });
   it('a random region keeps going past depth 3', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart({ region: 'storm', condition: 'plain' }, 1);
     for (const d of [2, 3, 4, 5]) expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: d });
     expect(g.state.dungeon.reached.storm).toBe(5);
@@ -313,7 +313,7 @@ describe('battles', () => {
   });
   it('portals are rerolled on return and kept across a save and reload', () => {
     const storage = memoryStorage();
-    const g = new Game(mulberry32(5), storage);
+    const g = new Game(mulberry32(5), storage, undefined, 0, LEGACY_LINEUP);
     expect(validPortals(g.state.dungeon.portals)).toBe(true);
     const seen = new Set([JSON.stringify(g.state.dungeon.portals)]);
     g.state.inventory['return-lamp'] = 20;
@@ -393,7 +393,7 @@ describe('battles', () => {
     expect(g.map().down).not.toBeNull();
   });
   it('a region boss opens the stairs down instead of clearing the game', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.state.dungeon.reached.iron = 5;
     g.depart({ region: 'iron', condition: 'plain' }, 5);
     const at = g.map().boss!;
@@ -412,7 +412,7 @@ describe('battles', () => {
     expect([b.name, b.max, b.tint]).toEqual(['燈喰之獸', empower(ENEMIES.lanterneater, b.level).stats, undefined]);
   });
   it('a region boss is the 燈喰之獸 grown by depth and region', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.state.dungeon.reached.blaze = 5;
     g.depart({ region: 'blaze', condition: 'plain' }, 5);
     stepOnto(g, g.map().boss!);
@@ -421,7 +421,7 @@ describe('battles', () => {
     expect(b.max.hp).toBeGreaterThan(ENEMIES.lanterneater.stats.hp);
   });
   it('the run condition reaches the fight: 兇暴 enemies hit harder', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart({ region: 'mainline', condition: 'fierce' }, 1);
     g.encounter = 999;
     const open = DIRS.find((d) => tileAt(g.map(), { x: g.pos.x + DELTA[d].x, y: g.pos.y + DELTA[d].y }) === 'floor')!;
@@ -430,7 +430,7 @@ describe('battles', () => {
   });
   it('encounters in a region are its variants, and deep mainline foes are 深層', () => {
     const fight = (region: Portal['region'], depth: number) => {
-      const g = new Game(calm(), null);
+      const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
       g.state.dungeon.reached[region] = depth;
       g.depart({ region, condition: 'plain' }, depth);
       g.encounter = 999;
@@ -448,19 +448,19 @@ describe('battles', () => {
 describe('inn', () => {
   it('saves after resting', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage);
+    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
     expect(g.rest().ok).toBe(true);
     expect(g.notice).toBe('saved');
     expect(storage.map.has(SAVE_KEY)).toBe(true);
   });
   it('reports a failed save without losing the rest', () => {
-    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } });
+    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, LEGACY_LINEUP);
     expect(g.rest().ok).toBe(true);
     expect([g.notice, g.state.gold]).toEqual(['save-failed', 130]);
   });
   it('refuses to rest outside town, and saves nothing', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage);
+    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
     expect(g.depart(MAIN, 1)).toEqual({ ok: true });
     const gold = g.state.gold;
     expect(g.rest()).toEqual({ ok: false, reason: 'invalid' });
@@ -468,7 +468,7 @@ describe('inn', () => {
   });
   it('does not save when the rest is refused', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage);
+    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
     g.state.gold = 0;
     expect(g.rest()).toEqual({ ok: false, reason: 'gold' });
     expect(storage.map.has(SAVE_KEY)).toBe(false);
@@ -478,7 +478,7 @@ describe('inn', () => {
 describe('run pack', () => {
   it('a full chest keeps its roll and does not touch the rng when stepped on again', () => {
     let calls = 0;
-    const g = new Game(() => { calls++; return 0.99; }, null);
+    const g = new Game(() => { calls++; return 0.99; }, null, undefined, 0, LEGACY_LINEUP);
     g.state.dungeon.reached.mainline = 3;
     g.depart(MAIN, 1);
     g.run!.loot.items['star-stone'] = Math.floor((capacity(g.state.party) - carried(g.state, g.run!)) * 2);
@@ -523,7 +523,7 @@ describe('run pack', () => {
   it('battle drops that partly fit are split between the pack and BattleEnd.left', () => {
     let checked = 0;
     for (let seed = 1; seed <= 60 && !checked; seed++) {
-      const g = new Game(mulberry32(seed), null);
+      const g = new Game(mulberry32(seed), null, undefined, 0, LEGACY_LINEUP);
       g.depart(MAIN, 1);
       g.encounter = 99;
       g.move('right');
@@ -558,7 +558,7 @@ describe('run pack', () => {
     expect([g.state.inventory.moss, g.notice]).toEqual([2, 'banked']);
   });
   it('consumables from a chest go straight to the inventory', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.state.dungeon.reached.mainline = 3;
     g.depart(MAIN, 2);
     const chest = plainChest(g);
@@ -605,7 +605,7 @@ describe('run pack', () => {
     expect(capacity(g.state.party)).toBeGreaterThan(40);
   });
   it('battle drops with room all go into the pack and are all reported', () => {
-    const g = new Game(mulberry32(1), null);
+    const g = new Game(mulberry32(1), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     g.encounter = 99;
     g.move('right');
@@ -616,7 +616,7 @@ describe('run pack', () => {
     expect(g.run!.loot.items).toEqual(end.drops);
   });
   it('battle drops past the limit are left behind and reported', () => {
-    const g = new Game(mulberry32(1), null);
+    const g = new Game(mulberry32(1), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     g.encounter = 99;
     g.move('right');
@@ -632,7 +632,7 @@ describe('run pack', () => {
 
 describe('fog', () => {
   it('a fog run sees only the cell the party stands on', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart({ region: 'mainline', condition: 'fog' }, 1);
     const start = { ...g.pos };
     expect(g.run!.explored[1]).toEqual([posKey(start)]);
@@ -648,7 +648,7 @@ describe('fog', () => {
 describe('battle drops by region and condition', () => {
   /** Win one ordinary fight at depth 1 through `portal` and return every material it dropped (taken or left). */
   const fightOnce = (seed: number, portal: Portal): Record<string, number> => {
-    const g = new Game(mulberry32(seed), null);
+    const g = new Game(mulberry32(seed), null, undefined, 0, LEGACY_LINEUP);
     g.depart(portal, 1);
     g.encounter = 99;
     const dir = DIRS.find((d) => tileAt(g.map(), { x: g.pos.x + DELTA[d].x, y: g.pos.y + DELTA[d].y }) === 'floor')!;
@@ -683,20 +683,20 @@ describe('battle drops by region and condition', () => {
 
 describe('stairs ask before going down', () => {
   it('stepping on the stairs asks with the next depth and its suggested level, and does not go down yet', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     const at = g.map().down!;
     expect(stepOnto(g, at)).toEqual({ kind: 'stairs', floor: 2, level: 6, warn: true });   // a fresh Lv 1 party
     expect([g.floor, g.pos, g.state.dungeon.reached.mainline]).toEqual([1, at, 1]);
   });
   it('no warning once the top party level reaches the suggestion', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     g.state.party.roster[g.state.party.recruited[0]].level = 6;
     expect(stepOnto(g, g.map().down!)).toEqual({ kind: 'stairs', floor: 2, level: 6, warn: false });
   });
   it('descend goes down only from the stairs', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     expect(g.descend()).toBeNull();   // standing on the entrance
     stepOnto(g, g.map().down!);
@@ -704,7 +704,7 @@ describe('stairs ask before going down', () => {
     expect([g.floor, g.pos]).toEqual([2, g.map().entrance]);
   });
   it('declining keeps the party on the stairs; stepping off and back asks again', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     const at = g.map().down!;
     stepOnto(g, at);
@@ -716,7 +716,7 @@ describe('stairs ask before going down', () => {
     expect(g.pos).toEqual(at);
   });
   it('a beaten region boss leaves stairs that ask the same way', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.state.dungeon.reached.iron = 5;
     g.depart({ region: 'iron', condition: 'plain' }, 5);
     const at = g.map().boss!;
@@ -771,7 +771,7 @@ describe('dungeon gear', () => {
   it('a boss drops rare-or-better; the same region and depth again passes bossRepeat', () => {
     const spy = vi.mocked(rollBossGear);
     spy.mockClear();
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.state.dungeon.reached.iron = 5;
     const beat = () => {
       expect(g.depart({ region: 'iron', condition: 'plain' }, 5)).toEqual({ ok: true });
@@ -804,7 +804,7 @@ describe('dungeon gear', () => {
   it('ordinary battles roll gear per monster at the monster chance, from the loot rng', () => {
     let pieces = 0; let monsters = 0;
     for (let seed = 1; seed <= 300; seed++) {
-      const g = new Game(mulberry32(seed), null);
+      const g = new Game(mulberry32(seed), null, undefined, 0, LEGACY_LINEUP);
       g.depart(MAIN, 1);
       g.encounter = 99;
       g.move('right');
@@ -1022,13 +1022,13 @@ describe('dungeon gear', () => {
   });
 
   it('Game.mintUid hands out the next uid', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     const n = g.state.nextUid;
     expect([g.mintUid(), g.mintUid(), g.state.nextUid]).toEqual([n, n + 1, n + 2]);
   });
 
   it('capacity rises by 5 when a member wears str +10', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     const id = activeIds(g.state.party).find((x) => CHARACTERS[x].affinity === 'str')!;   // str turns into 1.5x atk here
     const before = capacity(g.state.party);
     g.state.party.roster[id].equip.ring1 = { uid: 900, base: 'copper-ring', rarity: 'magic', ilvl: 1, affixes: [{ key: 'str', value: 10 }], enhance: 0 };
@@ -1108,7 +1108,7 @@ describe('dungeon gear', () => {
 
 describe('depth-clear exp', () => {
   it('descending pays the depth-clear exp: full to the standing, half to the bench, none to the downed', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.state.party = recruit(g.state.party, 'sylvie');
     g.depart(MAIN, 1);
     const p = g.state.party;
@@ -1128,7 +1128,7 @@ describe('depth-clear exp', () => {
   });
 
   it('the fierce condition multiplies the clear exp', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart({ region: 'mainline', condition: 'fierce' }, 1);
     const r = downstairs(g, g.map().down!);
     if (r?.kind !== 'floor' || !r.clear) throw new Error('no clear');
@@ -1136,7 +1136,7 @@ describe('depth-clear exp', () => {
   });
 
   it('descending at Lv50 grants nothing, reports no clear and does not throw', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     for (const id of g.state.party.recruited) g.state.party.roster[id].level = MAX_LEVEL;
     const r = downstairs(g, g.map().down!);
@@ -1145,7 +1145,7 @@ describe('depth-clear exp', () => {
   });
 
   it('reports no clear when every active member is down and nobody waits on the bench', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     expect(stepOnto(g, g.map().down!).kind).toBe('stairs');
     for (const id of g.state.party.recruited) g.state.party.roster[id].hp = 0;
@@ -1154,7 +1154,7 @@ describe('depth-clear exp', () => {
   });
 
   it('a second run through a depth already cleared gets no grant', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     const first = downstairs(g, g.map().down!);
     expect(first?.kind === 'floor' && first.clear?.exp).toBe(depthClearExp(1));
@@ -1166,7 +1166,7 @@ describe('depth-clear exp', () => {
   });
 
   it("another region's first clear of the same depth does get the grant", () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     downstairs(g, g.map().down!);
     expect(g.returnToTown()).toBe(true);
@@ -1176,7 +1176,7 @@ describe('depth-clear exp', () => {
   });
 
   it('the grant follows the saved reached depth: a depth above it pays nothing, and the depth stays reached', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.state.dungeon.reached.mainline = 5;
     g.depart(MAIN, 1);
     expect(downstairs(g, g.map().down!)).toEqual({ kind: 'floor', floor: 2 });
@@ -1187,7 +1187,7 @@ describe('respec', () => {
   const spend = (g: Game) => { g.state.party.roster.scarlet.talents = { 'scarlet-t01': 1 }; };
   it('saves the respec: a reload keeps the reset build and the gold taken', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage);
+    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
     spend(g);
     const gold = g.state.gold;
     expect(g.respec('scarlet').ok).toBe(true);
@@ -1211,7 +1211,7 @@ describe('spending a skill point', () => {
   const lv2 = (g: Game) => { g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 2 }; };
   it('saves the spend in town: a reload keeps the new rank', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage);
+    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
     lv2(g);
     expect(g.raiseNode('noel', 'ice-star')).toEqual({ ok: true });
     expect(g.state.party.roster.noel.tree).toEqual({ 'fire-star': 1, 'ice-star': 1 });
@@ -1220,14 +1220,14 @@ describe('spending a skill point', () => {
     expect(back.state.party.roster.noel.tree).toEqual({ 'fire-star': 1, 'ice-star': 1 });
   });
   it('reports a failed save without losing the spend', () => {
-    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } });
+    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, LEGACY_LINEUP);
     lv2(g);
     expect(g.raiseNode('noel', 'ice-star')).toEqual({ ok: true });
     expect([g.notice, g.state.party.roster.noel.tree['ice-star']]).toEqual(['save-failed', 1]);
   });
   it('a refused spend changes and saves nothing, and says why', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage);
+    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
     expect(g.raiseNode('noel', 'ice-star')).toEqual({ ok: false, reason: 'points' });   // Lv1: no point yet
     lv2(g);
     expect(g.raiseNode('noel', 'flame-wave')).toEqual({ ok: false, reason: 'req' });
@@ -1249,7 +1249,7 @@ describe('spending a talent point', () => {
   const lv6 = (g: Game) => { g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 6 }; };
   it('saves the spend in town: a reload keeps the new rank', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage);
+    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
     lv6(g);
     expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: true });
     expect(g.state.party.roster.noel.talents).toEqual({ 'noel-t00': 1 });
@@ -1258,14 +1258,14 @@ describe('spending a talent point', () => {
     expect(back.state.party.roster.noel.talents).toEqual({ 'noel-t00': 1 });
   });
   it('reports a failed save without losing the spend', () => {
-    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } });
+    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, LEGACY_LINEUP);
     lv6(g);
     expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: true });
     expect([g.notice, g.state.party.roster.noel.talents['noel-t00']]).toEqual(['save-failed', 1]);
   });
   it('a refused spend changes and saves nothing, and says why', () => {
     const storage = memoryStorage();
-    const g = new Game(calm(), storage);
+    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
     expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: false, reason: 'points' });   // Lv1: no talent point yet
     lv6(g);
     expect(g.raiseTalent('noel', 'noel-t10')).toEqual({ ok: false, reason: 'adjacent' });
@@ -1282,7 +1282,7 @@ describe('spending a talent point', () => {
     expect([g.notice, storage.map.has(SAVE_KEY)]).toEqual([null, false]);
   });
   it('is refused in battle', () => {
-    const g = new Game(calm(), null);
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     lv6(g);
     g.phase = 'battle';
     expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: false, reason: 'invalid' });
@@ -1296,7 +1296,7 @@ describe('forge actions', () => {
     affixes: [{ key: 'str', value: 5 }, { key: 'hp', value: 30 }, { key: 'spd', value: 2 }], ...over,
   });
   const stocked = (storage = memoryStorage()) => {
-    const g = new Game(calm(), storage);
+    const g = new Game(calm(), storage, undefined, 0, LEGACY_LINEUP);
     g.state.gold = 1_000_000;
     g.state.bag = [item(1), item(2, { rarity: 'common', affixes: [] }), item(3, { rarity: 'common', affixes: [] }), item(4, { rarity: 'common', affixes: [] })];
     g.state.nextUid = 100;

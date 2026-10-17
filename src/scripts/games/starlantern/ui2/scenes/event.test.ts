@@ -5,7 +5,7 @@ import { altarAt } from '../../engine/events';
 import { chestHasGear, RARE_MATERIALS } from '../../engine/loot/drops';
 import { Game } from '../../engine/game';
 import { DELTA, tileAt, type Dir, type Tile } from '../../engine/map';
-import { statsOf } from '../../engine/party';
+import { statsOf, LEGACY_LINEUP } from '../../engine/party';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { ITEMS } from '../../data/items';
@@ -16,7 +16,7 @@ import { DungeonScene } from './dungeon';
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 
 function setup() {
-  const game = new Game(constRng(0.99), null);   // 0.99: no encounter roll, and a trap is always poison
+  const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);   // 0.99: no encounter roll, and a trap is always poison
   expect(game.depart({ region: 'mainline', condition: 'plain' }, 1)).toEqual({ ok: true });
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), chest: vi.fn(), encounter: vi.fn(), heal: vi.fn(), hit: vi.fn(), loot: vi.fn() };
   const go = vi.fn();

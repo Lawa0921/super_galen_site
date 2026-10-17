@@ -11,9 +11,10 @@ import { capacity, carried, formatWeight as kg, weightOf } from '../../data/weig
 import { MATERIALS } from '../../data/materials';
 import { showPillar } from '../lootFx';
 import { DungeonScene } from './dungeon';
+import { LEGACY_LINEUP } from '../../engine/party';
 
 function setup(portal: Portal = { region: 'mainline', condition: 'plain' }, fast = true) {
-  const game = new Game(constRng(0.99), null);   // 0.99: never an early encounter roll
+  const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);   // 0.99: never an early encounter roll
   expect(game.depart(portal, 1)).toEqual({ ok: true });
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), stairs: vi.fn(), chest: vi.fn(), encounter: vi.fn(), loot: vi.fn() };
   const go = vi.fn();
@@ -169,7 +170,7 @@ describe('DungeonScene', () => {
   it('plays an encounter transition before the battle starts, red for the boss', async () => {
     vi.useFakeTimers();
     try {
-      const game = new Game(constRng(0.99), null);
+      const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
       game.depart({ region: 'mainline', condition: 'plain' }, 1);
       game.encounter = 99;
       const go = vi.fn();
@@ -260,7 +261,7 @@ describe('DungeonScene', () => {
   });
 
   it('shows the run condition as a banner on arrival from the plaza, and not when coming back from a battle', () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'blaze', condition: 'fog' }, 1);
     const mk = (from: 'gate' | 'battle') => {
       const root = document.createElement('div');
@@ -277,7 +278,7 @@ describe('DungeonScene', () => {
   it('leaves no banner or flash timer running after exit', () => {
     vi.useFakeTimers();
     try {
-      const game = new Game(constRng(0.99), null);
+      const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
       game.depart({ region: 'blaze', condition: 'fog' }, 1);
       const s = new DungeonScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: null, fast: false, from: 'gate' }, Infinity);
       s.enter(document.createElement('div'));

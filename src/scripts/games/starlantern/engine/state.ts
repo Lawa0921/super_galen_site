@@ -1,7 +1,7 @@
 import type { RegionId } from '../data/regions';
 import type { Portal } from './dungeon/run';
 import type { AutoJunk } from './loot/bag';
-import { LEGACY_LINEUP, newParty } from './party';
+import { newParty, START_LINEUP } from './party';
 import { rollPortals } from './portals';
 import { mulberry32, type Rng } from './rng';
 import type { CharacterId, Element, ItemInstance, Party } from './types';
@@ -51,7 +51,7 @@ export interface GameState {
  * A new game; its first gates come from `rng` (a fixed seed when none is given, so the result is deterministic).
  * `forgeSalt` is taken as given rather than drawn, so the rng sequence stays as it was.
  */
-export function newGame(rng: Rng = mulberry32(0), forgeSalt = 0, start: CharacterId[] = LEGACY_LINEUP): GameState {
+export function newGame(rng: Rng = mulberry32(0), forgeSalt = 0, start: CharacterId[] = START_LINEUP): GameState {
   return {
     version: SAVE_VERSION, gold: 150, inventory: { ...START_ITEMS }, bag: [], nextUid: 1, sold: {}, party: newParty(start),
     dungeon: { reached: newReached(), bossDefeated: false, bossKills: {}, portals: rollPortals(rng) }, revealed: {}, codex: [], autoJunk: 'off', forgeDraws: 0,

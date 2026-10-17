@@ -3,13 +3,13 @@ import { LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeC
 import { WEAPON_MASTERY_PCT } from '../data/equipment';
 import { ULTIMATES } from '../data/ultimates';
 import { ENEMIES } from '../data/enemies';
-import { activeIds, newParty, powersOf, sheetOf } from './party';
+import { activeIds, powersOf, sheetOf, LEGACY_LINEUP } from './party';
 import { applyEffect } from './skills';
 import { GROUP_CAP, depthLevel, encounterTable, homeLevel, mul, partyScale } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { choose, partyAt } from './sim';
 import { dealDamage, type BattleEvent } from './combatant';
-import { constRng, makeBattle, makeCombatant, plainItem } from './testing';
+import { constRng, makeBattle, makeCombatant, plainItem, fullParty } from './testing';
 import { KEYSTONE_GATE, KEYSTONE_VALUES as V, MAX_KEYSTONES, type KeystoneId } from '../data/talents';
 import { keystonesOf } from './progression';
 import { mulberry32 } from './rng';
@@ -22,7 +22,7 @@ const E = (key: string, over = {}) => makeCombatant({ key, side: 'enemy', ...ove
 
 describe('createBattle', () => {
   it('builds rows from the formation and letters duplicate enemies', () => {
-    const party = newParty();
+    const party = fullParty(LEGACY_LINEUP);
     party.roster.liz.hp = 0;
     const s = createBattle({ party, enemyIds: ['slime', 'slime', 'bat'], inventory: { potion: 2 }, revealed: {} });
     expect(s.party.map((c) => [c.key, c.row, c.cell])).toEqual([
@@ -36,7 +36,7 @@ describe('createBattle', () => {
 
 describe('derived stats in battle', () => {
   it("members fight with their sheet's secondaries and level; enemies with the fight's depth level", () => {
-    const party = newParty();
+    const party = fullParty(LEGACY_LINEUP);
     const ring = { ...plainItem('copper-ring', 1), affixes: [{ key: 'crit' as const, value: 12 }, { key: 'armor' as const, value: 30 }] };
     const neck = { ...plainItem('moss-charm', 2), rarity: 'legendary' as const, special: 'lg-scarlet' };
     party.roster.scarlet = { ...party.roster.scarlet, level: 7, equip: { ring1: ring, neck } };
@@ -184,7 +184,7 @@ describe('after battle', () => {
     expect(rewards(s, constRng(0), false, 2).drops).toEqual({ moss: 2, 'bat-wing': 2 });
   });
   it('writes HP and TP back to the roster', () => {
-    const party = newParty();
+    const party = fullParty(LEGACY_LINEUP);
     const s = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
     s.party[0].hp = 7; s.party[0].tp = 1;
     const p = writeBack(party, s);
@@ -225,7 +225,7 @@ describe('ultimate gauge', () => {
     expect(r.enemies[0].hp).toBeLessThan(999);
   });
   it('carries the gauge between battles through the party', () => {
-    const party = newParty();
+    const party = fullParty(LEGACY_LINEUP);
     party.roster.liz.limit = 70;
     const s = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
     expect(s.party.find((c) => c.key === 'liz')!.limit).toBe(70);
@@ -317,7 +317,7 @@ describe('the sim player', () => {
 
 describe('skills from the tree (Task 8)', () => {
   it('a member fights with a copy of their tree ranks', () => {
-    const party = newParty();
+    const party = fullParty(LEGACY_LINEUP);
     const s = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
     const noel = s.party.find((c) => c.key === 'noel')!;
     expect(noel.ranks).toEqual(party.roster.noel.tree);
@@ -326,7 +326,7 @@ describe('skills from the tree (Task 8)', () => {
   });
 
   it('a member cannot cast a skill whose node is unlearned', () => {
-    const party = newParty();
+    const party = fullParty(LEGACY_LINEUP);
     expect(party.roster.noel.tree).toEqual({ 'fire-star': 1 });
     const s = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
     const tp = s.party.find((c) => c.key === 'noel')!.tp;
@@ -448,11 +448,11 @@ describe('abyss skills', () => {
     const base = cast('abyss-sword', 0);
     expect(base).toBeGreaterThan(0);
     expect(Math.abs(cast('abyss-sword', 10) - base * 1.1)).toBeLessThanOrEqual(1);
-    const deep = createBattle({ party: newParty(), enemyIds: ['slime'], inventory: {}, revealed: {}, depth: 50 });
+    const deep = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime'], inventory: {}, revealed: {}, depth: 50 });
     expect(deep.abyss).toBe(ABYSS.cap);
-    expect(createBattle({ party: newParty(), enemyIds: ['slime'], inventory: {}, revealed: {}, depth: 7 }).abyss).toBe(7);
-    expect(createBattle({ party: newParty(), enemyIds: ['slime'], inventory: {}, revealed: {}, scale: { depth: 12, region: 'mainline' } }).abyss).toBe(12);
-    expect(createBattle({ party: newParty(), enemyIds: ['slime'], inventory: {}, revealed: {}, depth: 3, abyss: 30 }).abyss).toBe(30);
+    expect(createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime'], inventory: {}, revealed: {}, depth: 7 }).abyss).toBe(7);
+    expect(createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime'], inventory: {}, revealed: {}, scale: { depth: 12, region: 'mainline' } }).abyss).toBe(12);
+    expect(createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime'], inventory: {}, revealed: {}, depth: 3, abyss: 30 }).abyss).toBe(30);
   });
   it('abyss leaves other skills alone', () => {
     expect(cast('hero-slash', 30)).toBe(cast('hero-slash', 0));
@@ -461,7 +461,7 @@ describe('abyss skills', () => {
 
 describe('weapon kinds in battle', () => {
   const heroAt = (cell: number, weapon?: string, noel?: string) => {
-    const party = newParty();
+    const party = fullParty(LEGACY_LINEUP);
     party.grid = party.grid.map(() => null) as typeof party.grid;
     party.grid[cell] = 'hero';
     if (weapon) party.roster.hero.equip = { weapon: plainItem(weapon, 1) };

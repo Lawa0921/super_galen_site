@@ -13,7 +13,7 @@ const need = cost.mats[matId];
 
 describe('canPay', () => {
   it('checks gold first, then each material', () => {
-    const s = { ...newGame(), gold: cost.gold - 1, inventory: {} };
+    const s = { ...newGame(undefined, 0, LEGACY_LINEUP), gold: cost.gold - 1, inventory: {} };
     expect(canPay(s, cost)).toBe('gold');
     s.gold = cost.gold;
     expect(canPay(s, cost)).toBe('mats');
@@ -26,7 +26,7 @@ describe('canPay', () => {
 
 describe('pay', () => {
   it('takes gold and materials and never touches the sold tally', () => {
-    const s = { ...newGame(), gold: cost.gold + 5, inventory: { [matId]: need }, sold: { [matId]: 7 } };
+    const s = { ...newGame(undefined, 0, LEGACY_LINEUP), gold: cost.gold + 5, inventory: { [matId]: need }, sold: { [matId]: 7 } };
     pay(s, cost);
     expect(s.gold).toBe(5);
     expect(s.inventory[matId]).toBeUndefined();
@@ -36,11 +36,11 @@ describe('pay', () => {
 
 describe('pay without canPay', () => {
   it('refuses a cost the state cannot meet and leaves the state as it was', () => {
-    const poor = { ...newGame(), gold: cost.gold - 1, inventory: { [matId]: need } };
+    const poor = { ...newGame(undefined, 0, LEGACY_LINEUP), gold: cost.gold - 1, inventory: { [matId]: need } };
     expect(() => pay(poor, cost)).toThrow();
     expect(poor.gold).toBe(cost.gold - 1);
     expect(poor.inventory).toEqual({ [matId]: need });
-    const short = { ...newGame(), gold: cost.gold, inventory: { [matId]: need - 1 } };
+    const short = { ...newGame(undefined, 0, LEGACY_LINEUP), gold: cost.gold, inventory: { [matId]: need - 1 } };
     expect(() => pay(short, cost)).toThrow();
     expect(short.gold).toBe(cost.gold);
     expect(short.inventory).toEqual({ [matId]: need - 1 });
@@ -60,7 +60,7 @@ describe('addCost', () => {
 
 describe('findItem', () => {
   it('finds bag items and worn items with their wearer and slot', () => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     const who = LEGACY_LINEUP[0];
     const bagIt = plainItem('moss-charm', 1);
     const worn = plainItem('moss-charm', 2);
@@ -74,7 +74,7 @@ describe('findItem', () => {
 
 describe('forgeRng', () => {
   it('advances forgeDraws once per draw, not on creation, and is reproducible from the state', () => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     s.forgeDraws = 4;
     s.forgeSalt = 9;
     const r = forgeRng(s);
@@ -85,21 +85,21 @@ describe('forgeRng', () => {
     const b = r();
     expect(s.forgeDraws).toBe(6);
     expect(b).toBe(mulberry32(mix(5 ^ FORGE_SALT, 9))());
-    const t = newGame();
+    const t = newGame(undefined, 0, LEGACY_LINEUP);
     t.forgeDraws = 4;
     t.forgeSalt = 9;
     expect(forgeRng(t)()).toBe(a);
   });
 
   it('draws differ when only the per-game salt differs, so two games at the same forgeDraws do not share a roll', () => {
-    const at = (salt: number) => { const s = newGame(); s.forgeDraws = 4; s.forgeSalt = salt; return forgeRng(s)(); };
+    const at = (salt: number) => { const s = newGame(undefined, 0, LEGACY_LINEUP); s.forgeDraws = 4; s.forgeSalt = salt; return forgeRng(s)(); };
     expect(at(10)).toBe(mulberry32(mix(4 ^ FORGE_SALT, 10))());
     expect(at(10)).not.toBe(at(9));
     expect(new Set([9, 10, 11, 12, 13].map(at)).size).toBe(5);
   });
 
   it('ignores nextUid and the rest of the state the player can change cheaply (shop buys mint uids)', () => {
-    const at = (nextUid: number, gold: number) => { const s = newGame(); s.forgeDraws = 4; s.forgeSalt = 9; s.nextUid = nextUid; s.gold = gold; return forgeRng(s)(); };
+    const at = (nextUid: number, gold: number) => { const s = newGame(undefined, 0, LEGACY_LINEUP); s.forgeDraws = 4; s.forgeSalt = 9; s.nextUid = nextUid; s.gold = gold; return forgeRng(s)(); };
     expect(new Set([at(1, 0), at(2, 0), at(500, 10), at(1e6, 99999)]).size).toBe(1);
   });
 });

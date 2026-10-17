@@ -3,9 +3,10 @@ import { Game } from '../../engine/game';
 import { constRng, memoryStorage } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { InnScene } from './inn';
+import { LEGACY_LINEUP } from '../../engine/party';
 
 function setup(storage = memoryStorage()) {
-  const game = new Game(constRng(0.5), storage);
+  const game = new Game(constRng(0.5), storage, undefined, 0, LEGACY_LINEUP);
   const root = document.createElement('div');
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
   const s = new InnScene({ game, art: NO_ART, sfx, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity, 0);
@@ -33,7 +34,7 @@ describe('InnScene', () => {
 
   it('ignores every key while the night passes, and stops the night timer on exit', async () => {
     vi.useFakeTimers();
-    const game = new Game(constRng(0.5), memoryStorage());
+    const game = new Game(constRng(0.5), memoryStorage(), undefined, 0, LEGACY_LINEUP);
     const go = vi.fn();
     const root = document.createElement('div');
     const s = new InnScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() }, Infinity, 1000);

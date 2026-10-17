@@ -4,10 +4,10 @@ import { ENEMIES } from '../data/enemies';
 import { FLOORS } from '../data/floors';
 import { REGIONS, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
-import { expToNext, newParty } from './party';
+import { expToNext, LEGACY_LINEUP } from './party';
 import { mulberry32 } from './rng';
 import { DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy } from './scaling';
-import { constRng } from './testing';
+import { constRng, fullParty } from './testing';
 
 const MAIN = REGIONS.mainline;
 const wolf = ENEMIES.wolf;
@@ -25,8 +25,8 @@ describe('scaleEnemy', () => {
       expect(rest, def.id).toEqual(def);
       expect(Object.values(sec ?? { missing: 1 }).every((v) => v === 0), `${def.id} sec`).toBe(true);
     }
-    const plain = createBattle({ party: newParty(), enemyIds: ['slime', 'slime', 'wolf'], inventory: {}, revealed: {} });
-    const scaled = createBattle({ party: newParty(), enemyIds: ['slime', 'slime', 'wolf'], inventory: {}, revealed: {}, scale: { depth: 1, region: 'mainline' } });
+    const plain = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime', 'slime', 'wolf'], inventory: {}, revealed: {} });
+    const scaled = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime', 'slime', 'wolf'], inventory: {}, revealed: {}, scale: { depth: 1, region: 'mainline' } });
     expect(scaled.enemies).toEqual(plain.enemies);
   });
 
@@ -189,7 +189,7 @@ describe('scaleEnemy', () => {
 
 describe('createBattle with scale', () => {
   const battle = (enemyIds: string[], scale: Parameters<typeof createBattle>[0]['scale']) =>
-    createBattle({ party: newParty(), enemyIds, inventory: {}, revealed: {}, scale });
+    createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds, inventory: {}, revealed: {}, scale });
 
   it('regional variants carry the scaled numbers, the region element as tint, and letters on duplicates', () => {
     const s = battle(['wolf', 'wolf'], { depth: 6, region: 'blaze' });
@@ -288,7 +288,7 @@ describe('ENEMY_POWER', () => {
 
   it("scales every enemy's HP, atk and mag in a fight, bosses included, at the level it is met", () => {
     const at = (enemyIds: string[], scale?: { depth: number; region: RegionId }) =>
-      createBattle({ party: newParty(), enemyIds, inventory: {}, revealed: {}, ...(scale ? { scale } : {}) }).enemies[0];
+      createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds, inventory: {}, revealed: {}, ...(scale ? { scale } : {}) }).enemies[0];
     // The boss is met at its home level without a scale.
     const boss = at(['lanterneater']);
     const k = enemyPower(boss.level);

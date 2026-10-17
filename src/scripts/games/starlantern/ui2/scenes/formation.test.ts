@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
-import { recruit } from '../../engine/party';
+import { recruit, LEGACY_LINEUP } from '../../engine/party';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { FormationScene } from './formation';
 
 function setup(prep?: (g: Game) => void) {
-  const game = new Game(constRng(0.5), null);
+  const game = new Game(constRng(0.5), null, undefined, 0, LEGACY_LINEUP);
   prep?.(game);
   const go = vi.fn();
   const root = document.createElement('div');

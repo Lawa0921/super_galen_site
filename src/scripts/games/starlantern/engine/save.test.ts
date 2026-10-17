@@ -4,7 +4,7 @@ import { newGame } from './state';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { mulberry32 } from './rng';
-import { memoryStorage, plainItem } from './testing';
+import { memoryStorage, plainItem, fullParty } from './testing';
 import { defaultTalents, defaultTree, validBuild } from './progression';
 import { BOARDS } from '../data/talents';
 import { TREES } from '../data/trees';
@@ -56,6 +56,7 @@ describe('save', () => {
   it('rejects malformed nested values that later code would iterate', () => {
     const bad = (mut: (g: ReturnType<typeof newGame>) => void) => {
       const g = newGame();
+      g.party = fullParty();
       mut(g);
       return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
     };

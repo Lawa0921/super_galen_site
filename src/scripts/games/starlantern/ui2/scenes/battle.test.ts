@@ -5,11 +5,12 @@ import type { ItemInstance } from '../../engine/types';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { BattleScene } from './battle';
+import { LEGACY_LINEUP } from '../../engine/party';
 
 const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); await new Promise((r) => setTimeout(r, 0)); };
 
 function setup(prep?: (game: Game) => void) {
-  const game = new Game(constRng(0.99), null);
+  const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
   expect(game.depart({ region: 'mainline', condition: 'plain' }, 1)).toEqual({ ok: true });
   game.encounter = 99;
   expect(game.move('right').kind).toBe('battle');
@@ -212,7 +213,7 @@ describe('BattleScene', () => {
   it('opens with an encounter banner and closes a win with a victory banner before the results', async () => {
     vi.useFakeTimers();
     try {
-      const game = new Game(constRng(0.99), null);
+      const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
       game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
       for (const e of game.battle!.enemies) e.hp = 1;
       const root = document.createElement('div');
@@ -260,7 +261,7 @@ describe('BattleScene sound and failure safety', () => {
   it('calls sound methods on their own object (a real SoundManager uses this)', async () => {
     class Sfx { hits = 0; cursor() {} confirm() {} cancel() {} error() {} hit() { this.hits++; } }
     const sfx = new Sfx();
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     for (const e of game.battle!.enemies) e.hp = 1;
     const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), play: async (_s: unknown, fx: { hit(): void }) => { fx.hit(); } } };
@@ -275,7 +276,7 @@ describe('BattleScene sound and failure safety', () => {
   });
 
   it('updates the HP of a member the moment they are hit, and hides the command window while the round plays', async () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     for (const e of game.battle!.enemies) { e.max.atk = 999; e.max.spd = 99; }
     const root = document.createElement('div');
@@ -304,7 +305,7 @@ describe('BattleScene sound and failure safety', () => {
 
   it('ignores input for a moment after the results appear, so a held key cannot skip them', async () => {
     vi.useFakeTimers();
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     for (const e of game.battle!.enemies) e.hp = 1;
     const go = vi.fn();
@@ -325,7 +326,7 @@ describe('BattleScene sound and failure safety', () => {
   });
 
   it('scrolls long results with the up and down keys', async () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     for (const e of game.battle!.enemies) e.hp = 1;
     const root = document.createElement('div');
@@ -342,7 +343,7 @@ describe('BattleScene sound and failure safety', () => {
   });
 
   it('takes each hit off the shown HP in turn when the amount is known', async () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     const root = document.createElement('div');
     const key = game.battle!.party[0].key;
@@ -362,7 +363,7 @@ describe('BattleScene sound and failure safety', () => {
   });
 
   it('shows each message line at the moment its event plays, keeping the action above its result', async () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     const root = document.createElement('div');
     const seen: string[] = [];
@@ -383,7 +384,7 @@ describe('BattleScene sound and failure safety', () => {
   });
 
   it('shakes the whole screen and reddens its edges on a heavy hit to the party, lightly on a small one', async () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     const screen = document.createElement('div');
     screen.className = 'slx-screen';
@@ -414,7 +415,7 @@ describe('BattleScene sound and failure safety', () => {
   });
 
   it('throws a P5R-style cut-in for party actions: an eye strip for attacks, a bust for skills, none for defending or enemies', async () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     const root = document.createElement('div');
     const cutin = vi.fn();
@@ -441,7 +442,7 @@ describe('BattleScene sound and failure safety', () => {
   });
 
   it('shows the intents of the enemies while the player chooses and clears them while the round plays', async () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     const shown: Record<string, string>[] = [];
     const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null, highlight: vi.fn(),
@@ -459,7 +460,7 @@ describe('BattleScene sound and failure safety', () => {
   });
 
   it('lights the enemy under the target cursor and lets go when the list closes', () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     const highlight = vi.fn();
     const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), play: vi.fn(), anchor: () => null, highlight } };
@@ -475,7 +476,7 @@ describe('BattleScene sound and failure safety', () => {
   });
 
   it('buzzes the device on a heavy hit to the party', async () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     const key = game.battle!.party[0].key;
     const max = game.battle!.party[0].max.hp;
@@ -494,7 +495,7 @@ describe('BattleScene sound and failure safety', () => {
   });
 
   it('puts the target arrow just above the enemy under the cursor', () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), play: vi.fn(), anchor: (k: string) => ({ x: 300, y: k === 'e0' ? 200 : 140 }) } };
     const root = document.createElement('div');
@@ -508,7 +509,7 @@ describe('BattleScene sound and failure safety', () => {
   });
 
   it('unlocks the screen and offers commands again if playback throws', async () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), play: async () => { throw new Error('boom'); } } };
     const err = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -546,7 +547,7 @@ describe('BattleScene loot and stat cues', () => {
   });
 
   it('the best drop raises one pillar and plays loot once', async () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     const root = document.createElement('div');
     const loot = vi.fn();
@@ -568,7 +569,7 @@ describe('BattleScene loot and stat cues', () => {
   it('confirm or cancel skips a legendary moment over the results; other keys pass; the next confirm goes on', async () => {
     vi.useFakeTimers();
     try {
-      const game = new Game(constRng(0.99), null);
+      const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
       game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
       const root = document.createElement('div');
       const go = vi.fn();
@@ -591,7 +592,7 @@ describe('BattleScene loot and stat cues', () => {
   });
 
   it('fast mode never spends a key on the legendary moment', async () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     const root = document.createElement('div');
     const go = vi.fn();
@@ -608,7 +609,7 @@ describe('BattleScene loot and stat cues', () => {
   });
 
   it('a win with only common gear, or none, raises no pillar and plays no loot cue', async () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     const root = document.createElement('div');
     const loot = vi.fn();
@@ -625,7 +626,7 @@ describe('BattleScene loot and stat cues', () => {
   });
 
   it('shows MISS, crit and TP pops on the struck member, and no message line for TP regen', async () => {
-    const game = new Game(constRng(0.99), null);
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
     const root = document.createElement('div');
     const key = game.battle!.party[0].key;

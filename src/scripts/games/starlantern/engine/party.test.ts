@@ -6,7 +6,7 @@ import {
 import { partyAt } from './sim';
 import { LEGACY_GRID, LEGACY_LINEUP, STANDARD_LINEUP, START_LINEUP, partyWith, placeInGrid } from './party';
 import { defaultTalents, defaultTree, learnedSkills, newTree, raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft } from './progression';
-import { plainItem } from './testing';
+import { fullParty, plainItem } from './testing';
 import { rollItem } from './loot/item';
 import { mulberry32 } from './rng';
 import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
@@ -124,20 +124,20 @@ describe('gear instances', () => {
 
 describe('formation', () => {
   it('starts with three in front and two at the back of a 3x3 grid', () => {
-    const p = newParty();
+    const p = fullParty(LEGACY_LINEUP);
     expect(p.grid).toEqual(['scarlet', 'chizuru', 'liz', null, null, null, 'noel', null, 'selene']);
     expect(activeIds(p)).toEqual(['scarlet', 'chizuru', 'liz', 'noel', 'selene']);
     expect(Object.keys(p.roster)).toHaveLength(CHARACTER_IDS.length);
   });
   it('places members anywhere, front row first in reading order', () => {
-    const r = setFormation(newParty(), [null, 'scarlet', null, 'noel', null, null, null, null, 'liz']);
+    const r = setFormation(fullParty(LEGACY_LINEUP), [null, 'scarlet', null, 'noel', null, null, null, null, 'liz']);
     expect(r.ok && activeIds(r.party)).toEqual(['scarlet', 'noel', 'liz']);
     expect(rowOfCell(0)).toBe('front');
     expect(rowOfCell(4)).toBe('middle');
     expect(rowOfCell(8)).toBe('back');
   });
   it('rejects bad formations, including more than five members', () => {
-    const p = recruit(newParty(), 'bobby');
+    const p = recruit(fullParty(LEGACY_LINEUP), 'bobby');
     const g = (...ids: (string | null)[]) => [...ids, ...Array(9 - ids.length).fill(null)] as never;
     expect(setFormation(p, ['scarlet', 'liz'] as never)).toEqual({ ok: false, reason: 'size' });
     expect(setFormation(p, g('sylvie'))).toEqual({ ok: false, reason: 'not-recruited' });
@@ -146,7 +146,7 @@ describe('formation', () => {
     expect(setFormation(p, g('scarlet', 'chizuru', 'liz', 'noel', 'selene', 'bobby'))).toEqual({ ok: false, reason: 'too-many' });
   });
   it('recruits once', () => {
-    const p = recruit(newParty(), 'bobby');
+    const p = recruit(fullParty(LEGACY_LINEUP), 'bobby');
     expect(p.recruited).toContain('bobby');
     expect(recruit(p, 'bobby').recruited.filter((id) => id === 'bobby')).toHaveLength(1);
   });
@@ -182,7 +182,7 @@ describe('experience', () => {
     expect(partyAt(38).roster.liz.level).toBe(38);
   });
   it('gives survivors full, the bench half, and downed actives nothing', () => {
-    const p = recruit(newParty(), 'sylvie');
+    const p = recruit(fullParty(LEGACY_LINEUP), 'sylvie');
     const { party } = awardExp(p, 10, ['scarlet', 'chizuru', 'noel', 'selene']);
     expect(party.roster.scarlet.exp).toBe(10);
     expect(party.roster.sylvie.exp).toBe(5);
@@ -193,7 +193,7 @@ describe('experience', () => {
 
 describe('skills and passives', () => {
   it('hasPassive needs the learned node, not the level', () => {
-    const p = newParty();
+    const p = fullParty(LEGACY_LINEUP);
     p.roster.liz.level = 10;
     expect(hasPassive(p, 'encounterDown')).toBe(false);
     p.roster.liz.tree = { 'twin-slash': 1, stealth: 1 };
@@ -202,7 +202,7 @@ describe('skills and passives', () => {
     expect(hasPassive(p, 'encounterDown')).toBe(false);
   });
   it('hasPassive only counts members on the field', () => {
-    const p = newParty();
+    const p = fullParty(LEGACY_LINEUP);
     p.roster.liz.tree = { 'twin-slash': 1, stealth: 1 };
     p.grid = p.grid.map((id) => (id === 'liz' ? null : id));
     expect(hasPassive(p, 'encounterDown')).toBe(false);
@@ -226,7 +226,7 @@ describe('skills and passives', () => {
   it('a Lv6 noel in the real game keeps her skill points for the player to spend', () => {
     let need = 0;
     for (let l = 1; l < 6; l++) need += expToNext(l);
-    const p = awardExp(newParty(), need, ['scarlet', 'chizuru', 'liz', 'noel', 'selene']).party;
+    const p = awardExp(fullParty(LEGACY_LINEUP), need, ['scarlet', 'chizuru', 'liz', 'noel', 'selene']).party;
     const noel = p.roster.noel;
     expect(noel.level).toBe(6);
     expect(noel.tree).toEqual(newTree('noel'));
@@ -237,7 +237,7 @@ describe('skills and passives', () => {
   it('a Lv8 member in the real game keeps her talent points for the player to spend', () => {
     let need = 0;
     for (let l = 1; l < 8; l++) need += expToNext(l);
-    const p = awardExp(newParty(), need, ['scarlet', 'chizuru', 'liz', 'noel', 'selene']).party;
+    const p = awardExp(fullParty(LEGACY_LINEUP), need, ['scarlet', 'chizuru', 'liz', 'noel', 'selene']).party;
     for (const id of ['scarlet', 'noel'] as const) {
       const m = p.roster[id];
       expect(m.level, id).toBe(8);
@@ -282,7 +282,7 @@ describe('partyWith', () => {
   });
   it('the legacy five stand where they always stood', () => {
     const p = partyWith(LEGACY_LINEUP);
-    const old = newParty();
+    const old = newParty(LEGACY_LINEUP);
     expect(p.grid).toEqual(LEGACY_GRID);
     expect(p.recruited).toEqual(old.recruited);
     expect(p.roster).toEqual(old.roster);
@@ -299,8 +299,8 @@ describe('the starting lineup', () => {
     for (const id of CHARACTER_IDS) expect(p.roster[id].id).toBe(id);
     expect(Object.keys(p.roster).sort()).toEqual([...CHARACTER_IDS].sort());
   });
-  it('newParty with no argument is still the legacy five', () => {
-    expect(newParty().recruited).toEqual(LEGACY_LINEUP);
+  it('newParty with no argument is the starting two', () => {
+    expect(newParty().recruited).toEqual(START_LINEUP);
   });
 });
 

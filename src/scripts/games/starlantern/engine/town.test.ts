@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { newGame, START_ITEMS } from './state';
 import { buy, equip, innCost, isUnlocked, junkTotals, respec, respecCost, rest, revive, reviveCost, sell, sellGear, sellJunk, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
-import { statsOf } from './party';
+import { statsOf, LEGACY_LINEUP } from './party';
 import { defaultTalents, defaultTree, newTree, raiseTalent, skillPointsLeft, talentPointsLeft, validBuild } from './progression';
 import type { Member } from './types';
 import { plainItem } from './testing';
@@ -10,8 +10,8 @@ import { sellPrice } from './loot/item';
 import { EQUIPMENT } from '../data/equipment';
 import type { ItemInstance } from './types';
 
-const withInv = (inv: Record<string, number>, gold = 150) => ({ ...newGame(), inventory: inv, gold });
-const withBag = (bag: ItemInstance[]) => ({ ...newGame(), bag, nextUid: Math.max(0, ...bag.map((it) => it.uid)) + 1 });
+const withInv = (inv: Record<string, number>, gold = 150) => ({ ...newGame(undefined, 0, LEGACY_LINEUP), inventory: inv, gold });
+const withBag = (bag: ItemInstance[]) => ({ ...newGame(undefined, 0, LEGACY_LINEUP), bag, nextUid: Math.max(0, ...bag.map((it) => it.uid)) + 1 });
 
 describe('shop', () => {
   it('sells materials for gold and records the sale', () => {
@@ -110,7 +110,7 @@ describe('equipment', () => {
 
 describe('inn', () => {
   it('charges by level and restores the living to full', () => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     s.party.roster.scarlet.hp = 3;
     s.party.roster.noel.tp = 0;
     s.party.roster.liz.hp = 0;
@@ -123,21 +123,21 @@ describe('inn', () => {
     expect(r.state.party.roster.liz.hp).toBe(0);
   });
   it('refuses to rest without gold', () => {
-    expect(rest({ ...newGame(), gold: 5 })).toEqual({ ok: false, reason: 'gold' });
+    expect(rest({ ...newGame(undefined, 0, LEGACY_LINEUP), gold: 5 })).toEqual({ ok: false, reason: 'gold' });
   });
   it('revives a fallen member at full HP for a fee', () => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     s.party.roster.liz.hp = 0;
     const r = revive(s, 'liz');
     expect(r.ok && [r.state.gold, r.state.party.roster.liz.hp]).toEqual([150 - reviveCost(1), statsOf(s.party.roster.liz).hp]);
-    expect(revive(newGame(), 'liz')).toEqual({ ok: false, reason: 'invalid' });
+    expect(revive(newGame(undefined, 0, LEGACY_LINEUP), 'liz')).toEqual({ ok: false, reason: 'invalid' });
     expect(revive({ ...s, gold: 0 }, 'liz')).toEqual({ ok: false, reason: 'gold' });
   });
 });
 
 describe('useFieldItem', () => {
   it('heals a living member and uses one item', () => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     s.party.roster.liz.hp = 5;
     const r = useFieldItem(s, 'potion', 'liz');
     expect(r.ok).toBe(true);
@@ -147,7 +147,7 @@ describe('useFieldItem', () => {
     expect(s.party.roster.liz.hp).toBe(5);
   });
   it('revives only the fallen at half HP and refuses wrong targets or an empty stock', () => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     s.inventory.phoenix = 1;
     expect(useFieldItem(s, 'phoenix', 'liz')).toEqual({ ok: false, reason: 'invalid' });
     s.party.roster.liz.hp = 0;
@@ -161,7 +161,7 @@ describe('useFieldItem', () => {
 
 describe('buying and selling gear', () => {
   it('buying a base puts a common item of that base and level in the bag', () => {
-    const s = { ...newGame(), nextUid: 7 };
+    const s = { ...newGame(undefined, 0, LEGACY_LINEUP), nextUid: 7 };
     const r = buy(s, 'iron-sword');
     if (!r.ok) throw new Error('buy failed');
     expect(r.state.bag).toEqual([{ uid: 7, base: 'iron-sword', rarity: 'common', ilvl: EQUIPMENT['iron-sword'].ilvl, affixes: [], enhance: 0 }]);
@@ -208,7 +208,7 @@ describe('buying and selling gear', () => {
 });
 
 describe('respec', () => {
-  const lv10 = (): Member => ({ ...newGame().party.roster.scarlet, level: 10, tree: newTree('scarlet'), talents: {} });
+  const lv10 = (): Member => ({ ...newGame(undefined, 0, LEGACY_LINEUP).party.roster.scarlet, level: 10, tree: newTree('scarlet'), talents: {} });
   /** A Lv10 Scarlet who has spent every skill and talent point, on the default build. */
   const spent = (): Member => ({ ...lv10(), tree: defaultTree('scarlet', 10), talents: defaultTalents('scarlet', 10) });
   /** A Lv10 Scarlet whose only spent point is one rank of an hp talent. */
@@ -219,7 +219,7 @@ describe('respec', () => {
   };
   const hpOnlyFull = (): Member => { const m = hpOnly(); m.hp = statsOf(m).hp; return m; };
   const gameWith = (m: Member, gold: number) => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     s.party.roster.scarlet = m;
     s.gold = gold;
     return s;
@@ -241,7 +241,7 @@ describe('respec', () => {
     expect(talentPointsLeft(after)).toBe(talentPointsLeft(lv10()));
   });
   it('respec clamps HP and TP to the lower maximum', () => {
-    const base: Member = { ...newGame().party.roster.noel, level: 10, tree: newTree('noel'), talents: {} };
+    const base: Member = { ...newGame(undefined, 0, LEGACY_LINEUP).party.roster.noel, level: 10, tree: newTree('noel'), talents: {} };
     let m = base;
     for (const node of ['noel-t01', 'noel-t11']) {   // t11 is a tp talent, reached through t01
       const r = raiseTalent(m, node);
@@ -250,7 +250,7 @@ describe('respec', () => {
     }
     expect(statsOf(m).tp).toBeGreaterThan(statsOf(base).tp);
     m.hp = statsOf(m).hp; m.tp = statsOf(m).tp;
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     s.party.roster.noel = m;
     s.gold = 300;
     if (!s.party.recruited.includes('noel')) s.party.recruited.push('noel');
@@ -270,7 +270,7 @@ describe('respec', () => {
     expect(respec(poor, 'scarlet')).toEqual({ ok: false, reason: 'gold' });
     expect(poor.gold).toBe(249);
     expect(poor.party.roster.scarlet.talents).toEqual(m.talents);
-    const fresh = newGame();
+    const fresh = newGame(undefined, 0, LEGACY_LINEUP);
     expect(respec(fresh, 'scarlet')).toEqual({ ok: false, reason: 'invalid' });
     expect(fresh.gold).toBe(150);
     expect(respec(gameWith(m, 999), 'nobody' as never)).toEqual({ ok: false, reason: 'invalid' });
@@ -282,7 +282,7 @@ describe('respec', () => {
     expect(respec(gameWith(hpOnly(), 300), 'scarlet').ok).toBe(true);   // talents alone count too
   });
   it('refuses a roster member who is not recruited', () => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     const out = (Object.keys(s.party.roster) as (keyof typeof s.party.roster)[]).find((id) => !s.party.recruited.includes(id))!;
     s.party.roster[out].talents = { [`${out}-t01`]: 1 };
     expect(respec(s, out)).toEqual({ ok: false, reason: 'invalid' });

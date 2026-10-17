@@ -3,9 +3,10 @@ import { Game } from '../../engine/game';
 import { constRng, plainItem } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { GuildScene } from './guild';
+import { LEGACY_LINEUP } from '../../engine/party';
 
 function setup(from?: 'formation' | 'status') {
-  const game = new Game(constRng(0.5), null);
+  const game = new Game(constRng(0.5), null, undefined, 0, LEGACY_LINEUP);
   game.state.gold = 1000;
   game.state.bag = [plainItem('iron-sword', 1)];
   game.state.nextUid = 2;

@@ -7,13 +7,14 @@ import { constRng, plainItem } from '../../engine/testing';
 import type { ItemInstance, Rarity } from '../../engine/types';
 import { NO_ART } from '../../render/textures';
 import { EquipScene } from './equip';
+import { LEGACY_LINEUP } from '../../engine/party';
 
 const gear = (base: string, uid: number, rarity: Rarity = 'common', extra: Partial<ItemInstance> = {}): ItemInstance =>
   ({ ...plainItem(base, uid), rarity, ...extra });
 
 /** `prep` runs on the fresh game before the scene opens (bag, worn gear). */
 function setup(prep?: (g: Game) => void, arg = 'scarlet') {
-  const game = new Game(constRng(0.5), null);
+  const game = new Game(constRng(0.5), null, undefined, 0, LEGACY_LINEUP);
   game.state.bag = [plainItem('iron-sword', 1)];
   game.state.nextUid = 100;
   prep?.(game);

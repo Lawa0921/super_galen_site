@@ -113,7 +113,7 @@ export function newMember(id: CharacterId): Member {
   return { ...m, hp: s.hp, tp: s.tp };
 }
 
-export function newParty(start: CharacterId[] = LEGACY_LINEUP): Party {
+export function newParty(start: CharacterId[] = START_LINEUP): Party {
   return partyWith(start);
 }
 
