@@ -77,8 +77,8 @@ function isValid(d: Record<string, unknown>): boolean {
     }
     if (!Number.isInteger(m.level) || (m.level as number) < 1 || (m.level as number) > MAX_LEVEL) return false;
     if (!isCount(m.exp) || !isCount(m.hp) || !isCount(m.tp)) return false;
-    if (!// Memories are 0 until plan 6b, which reads the hero's memory-piece count from the save.
-    validBuild(id, m.level as number, m.tree, m.talents, 0)) return false;
+    // Memories are 0 until plan 6b, which reads the hero's memory-piece count from the save.
+    if (!validBuild(id, m.level as number, m.tree, m.talents, 0)) return false;
   }
   // Every uid once, bag and worn together, and all of them below nextUid.
   if (new Set(uids).size !== uids.length || uids.some((u) => u >= (d.nextUid as number))) return false;
