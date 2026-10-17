@@ -24,6 +24,10 @@ function worldHash(page: Page): Promise<string> {
 
 test.describe('delve', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  // 預設和平模式（不自然生怪），避免怪物干擾挖掘 / 建造測試；戰鬥測試自己用 debug 生怪
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); } catch { /* ignore */ } });
+  });
 
   test('標題 → 新世界 開局，沒有 console 錯誤', async ({ page }) => {
     const errors: string[] = [];
@@ -422,6 +426,110 @@ test.describe('delve', () => {
     expect(after.markers).toEqual(before.markers);
     expect(after.lore).toEqual(before.disc.lore);
     for (const id of before.disc.regions) expect(after.found).toContain(id);
+  });
+
+  test('戰鬥：debug 生一隻凝膠團 → 拿劍按住左鍵打死 → 撿到凝膠', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=fight&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    expect(await page.evaluate(() => window.__delveDebug!.game.getState().peaceful)).toBe(true);
+    const t = await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game, w = g.world, f = g.feetTile();
+      for (let x = f.x - 2; x <= f.x + 8; x++) { for (let y = f.y - 6; y <= f.y; y++) w.setFg(x, y, 0); w.setFg(x, f.y + 1, 3); }
+      g.give('iron_sword', 1);
+      const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === 'iron_sword');
+      g.inventory.swap(i, 4); g.selectSlot(4);
+      const e = g.spawnEnemy('gel_blob', f.x + 2, f.y);
+      return { x: f.x + 2, y: f.y, id: e.id };
+    });
+    const p = await tileOnScreen(page, t.x, t.y);
+    await page.mouse.move(p.sx, p.sy);
+    await page.mouse.down();
+    await expect.poll(() => page.evaluate((id) => window.__delveDebug!.game.enemies.some((e: { id: number }) => e.id === id), t.id), { timeout: 8000 }).toBe(false);
+    await page.mouse.up();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.count('gel')), { timeout: 8000 }).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.__delveDebug!.game.kills.gel_blob)).toBe(1);
+    expect(errors).toEqual([]);
+  });
+
+  test('裝備：在背包點防具再點裝備格 → getState 防禦增加；點裝備格卸下', async ({ page }) => {
+    await page.goto('/games/delve?seed=armor&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => { const g = window.__delveDebug!.game; g.give('gold_chestplate', 1); g.give('gold_helmet', 1); });
+    expect(await page.evaluate(() => window.__delveDebug!.game.getState().defense)).toBe(0);
+    await page.keyboard.press('KeyE');
+    await expect(page.locator('#delve-inv')).toBeVisible();
+    await page.locator('#delve-inv-grid .delve-slot[data-item="gold_chestplate"]').click();
+    await page.locator('#delve-equip .delve-slot[data-equip="body"]').click();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.getState().defense)).toBe(5);
+    await page.locator('#delve-inv-grid .delve-slot[data-item="gold_helmet"]').click();
+    await page.locator('#delve-equip-btn').click();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.getState().defense)).toBe(8);
+    await expect(page.locator('#delve-stats')).toContainText('防禦 8');
+    // 滑鼠停在裝備格上 → 道具說明
+    await page.locator('#delve-equip .delve-slot[data-equip="body"]').hover();
+    await expect(page.locator('#delve-tip')).toContainText('金胸甲');
+    await page.locator('#delve-equip .delve-slot[data-equip="head"]').click();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.getState().defense)).toBe(5);
+    expect(await page.evaluate(() => window.__delveDebug!.game.inventory.count('gold_helmet'))).toBe(1);
+  });
+
+  test('死亡與重生：床設重生點 → 受到致命傷 → 死亡畫面 → 在床邊甦醒、滿血', async ({ page }) => {
+    await page.goto('/games/delve?seed=dying&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    const bed = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, w = g.world, t = g.feetTile();
+      const x = t.x - 6, y = w.surfaceAt(x) - 1;
+      for (let k = 0; k < 2; k++) { w.setFg(x + k, y, 0); w.setFg(x + k, y + 1, 3); }
+      w.setFg(x, y, 66); w.setFg(x + 1, y, 67); g.bed = { x, y };
+      g.teleport(t.x + 30, w.surfaceAt(t.x + 30) - 1);
+      g.hurtPlayer(9999, g.player.x);
+      return { x, y };
+    });
+    await expect(page.locator('#delve-death')).toBeVisible();
+    await expect(page.locator('#delve-death-msg')).toContainText('床邊');
+    await expect(page.locator('#delve-death')).toBeHidden({ timeout: 8000 });
+    const st = await page.evaluate(() => { const g = window.__delveDebug!.game; return { s: g.getState(), f: g.feetTile() }; });
+    expect(st.s.dead).toBe(false);
+    expect(st.s.hp).toBe(st.s.maxHp);
+    expect(st.f).toEqual(bed);
+  });
+
+  test('首領：debug 召喚燈脈守望者 → 血條出現 → debug 傷害擊敗 → 旗標存檔後讀回仍在', async ({ page }) => {
+    await page.goto('/games/delve?seed=bossy&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => { const g = window.__delveDebug!.game; g.time = 600 * 0.9; g.summonBoss(); });
+    await expect(page.locator('#delve-boss')).toBeVisible();
+    await expect(page.locator('#delve-boss-name')).toContainText('燈脈守望者');
+    await page.evaluate(() => { const g = window.__delveDebug!.game, b = g.bossEnemy(); g.debugDamage(b.id, b.maxHp * 0.6); });
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.getState().boss?.phase)).toBe(2);
+    await page.waitForTimeout(1600); // 碎籠無敵結束
+    await page.evaluate(() => { const g = window.__delveDebug!.game, b = g.bossEnemy(); g.debugDamage(b.id, b.maxHp); });
+    await expect(page.locator('#delve-boss')).toBeHidden();
+    expect(await page.evaluate(() => window.__delveDebug!.game.getState().bossesDefeated)).toEqual(['lantern_warden']);
+    await page.keyboard.press('KeyJ');
+    await expect(page.locator('[data-testid="journal-bosses"]')).toContainText('燈脈守望者 ✓');
+    await page.evaluate(() => window.__delveDebug!.save());
+    await page.goto('/games/delve');
+    await page.click('#delve-continue');
+    await waitGame(page);
+    expect(await page.evaluate(() => window.__delveDebug!.game.getState().bossesDefeated)).toEqual(['lantern_warden']);
+  });
+
+  test('選單難度切換：和平 ↔ 一般，切回和平時清掉怪物', async ({ page }) => {
+    await page.goto('/games/delve?seed=modes&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => { const g = window.__delveDebug!.game, t = g.feetTile(); g.spawnEnemy('gel_blob', t.x + 20, t.y - 3); });
+    await page.click('#delve-menu-btn');
+    await expect(page.locator('#delve-peaceful')).toContainText('和平');
+    await page.click('#delve-peaceful');
+    await expect(page.locator('#delve-peaceful')).toContainText('一般');
+    expect(await page.evaluate(() => window.__delveDebug!.game.peaceful)).toBe(false);
+    await page.click('#delve-peaceful');
+    expect(await page.evaluate(() => ({ p: window.__delveDebug!.game.peaceful, n: window.__delveDebug!.game.enemies.length }))).toEqual({ p: true, n: 0 });
   });
 
   test('遊戲廳卡片連到 /games/delve', async ({ page }) => {
