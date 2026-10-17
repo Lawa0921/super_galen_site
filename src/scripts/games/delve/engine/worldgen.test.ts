@@ -266,6 +266,18 @@ describe('地形種類與迷你生態區', { timeout: 180_000 }, () => {
     expect(ch.length).toBeGreaterThanOrEqual(2);
     for (const c of ch) expect(c.h).toBeGreaterThan(60);
   });
+  it('裂谷深處有零星的發光水晶 / 螢光菇（沒火把也看得到路）', () => {
+    for (const c of a.structures.filter((s) => s.kind === 'chasm')) {
+      let glow = 0, dry = 0;
+      for (let y = c.y + 40; y < c.y + c.h; y++) for (let x = c.x; x < c.x + c.w; x++) {
+        const t = a.world.getFg(x, y);
+        if (tileDef(t).light > 0) glow++;
+        if (t === T.AIR && a.world.liquid[y * a.world.width + x] === 0) dry++;
+      }
+      if (dry < 300) continue; // 被水淹掉的裂谷（水裡不放裝飾）
+      expect(glow).toBeGreaterThanOrEqual(4);
+    }
+  });
   it('地表峽谷、地表洞口', () => {
     expect(a.structures.filter((s) => s.kind === 'ravine').length + a.structures.filter((s) => s.kind === 'chasm').length).toBeGreaterThanOrEqual(3);
   });

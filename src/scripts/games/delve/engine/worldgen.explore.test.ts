@@ -2,7 +2,7 @@
 // 更大更寬的地城（厚磚殼、房間之間沒有天然洞穴）
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, type GenResult } from './worldgen';
-import { T, W, SOLID_LUT, isDungeonBrick } from './tiles';
+import { T, W, SOLID_LUT, LIGHT_LUT, isDungeonBrick } from './tiles';
 import { LORE } from './lore';
 import type { ItemId } from './items';
 
@@ -74,6 +74,8 @@ describe('探索內容（worldgen）', { timeout: 180_000 }, () => {
         }
         expect(escaped).toBe(false);
         expect(cracked).toBeGreaterThan(0);
+        // 密室裡沒有會發光的東西（否則光會穿過兩格裂紋石，從坑道就看得到房間）
+        for (let y = s.y - 1; y <= s.y + s.h; y++) for (let x = s.x - 1; x <= s.x + s.w; x++) expect(LIGHT_LUT[w.getFg(x, y)]).toBe(0);
       }
     }
   });

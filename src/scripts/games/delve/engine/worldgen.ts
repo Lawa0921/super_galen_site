@@ -1111,7 +1111,7 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
     }
   })();
   mark('密室：礦坑盡頭的裂紋石假牆');
-  // ── 密室：部分礦坑的盡頭是兩格厚的裂紋石（一敲就碎），後面是一間小密室（珍寶箱 + 陶罐 + 微光水晶） ──
+  // ── 密室：部分礦坑的盡頭是兩格厚的裂紋石（一敲就碎），後面是一間小密室（珍寶箱 + 陶罐 + 鐘乳石；不放發光物） ──
   const secretRooms: Structure[] = [];
   (() => {
     const rng = subSeed(seed, 'secret-rooms');
@@ -1137,7 +1137,8 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
         addChest(cx, floorY, 'secret');
         for (let k = 0; k < 2; k++) { const px = rx0 + 1 + rng.int(0, rw - 2); if (get(px, floorY) === T.AIR && Math.abs(px - cx) > 1) put(px, floorY, T.POT); }
         put(right ? rx0 : rx0 + rw - 1, ry0, T.COBWEB);
-        put(rx0 + Math.floor(rw / 2), ry0, T.CRYSTAL);
+        // 天花板垂一根鐘乳石（不放會發光的水晶：光會穿過裂紋石，從坑道就看得到密室）
+        put(rx0 + Math.floor(rw / 2), ry0, T.STALACTITE);
         const r: Structure = { kind: 'secret_room', x: rx0, y: ry0, w: rw, h: rh, chest: { x: cx, y: floorY } };
         occupied.push(outer, shell);
         structures.push(r);
@@ -1365,12 +1366,27 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
     const stony = (t: number): boolean => t === T.STONE || t === T.GRANITE || t === T.MARBLE || t === T.ICE || t === T.SANDSTONE || t === T.GRAVEL
       || t === T.DEEP_STONE || t === T.BASALT || t === T.OBSIDIAN;
     const jungly = (t: number): boolean => t === T.MUD || t === T.JUNGLE_GRASS;
+    // 裂谷：每欄記下「發光裝飾帶」的上下界（裂谷頂往下 40 格起）——深處沒火把也有零星水晶 / 螢光菇指路
+    const chasmY0 = new Int32Array(width).fill(-1), chasmY1 = new Int32Array(width);
+    for (const c of structures) {
+      if (c.kind !== 'chasm') continue;
+      for (let x = Math.max(0, c.x); x < Math.min(width, c.x + c.w); x++) { chasmY0[x] = c.y + 40; chasmY1[x] = c.y + c.h; }
+    }
+    const inChasm = (x: number, y: number): boolean => chasmY0[x] >= 0 && y >= chasmY0[x] && y < chasmY1[x];
     for (let y = 2; y < height - 2; y++) {
       for (let x = 1; x < width - 1; x++) {
         const i = y * WW + x;
         if (fg[i] !== T.AIR || y <= surface[x] + 1 || wall[i] >= W.DUNGEON_WALL_BLUE) continue;
         const below = fg[i + WW], above = fg[i - WW];
         const floor = isSolid(below), ceil = isSolid(above);
+        if (inChasm(x, y) && world.liquid[i] === 0) {
+          // 座標雜湊（不吃 rng：不改變其他裝飾的亂數序列）
+          let hh = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ 0x5bd1e995;
+          hh = Math.imul(hh ^ (hh >>> 15), 2246822519);
+          const r = ((hh ^ (hh >>> 13)) >>> 0) / 4294967296;
+          if (floor && r < 0.16) { fg[i] = T.GLOW_MUSHROOM; continue; }
+          if (!floor && (isSolid(fg[i - 1]) || isSolid(fg[i + 1]) || ceil) && r < 0.03) { fg[i] = T.CRYSTAL; continue; }
+        }
         if (!floor && !ceil) continue;
         const fl = y > cavernY - 40 ? flavorAt(x, y) : null;
         const r = rng.next();
