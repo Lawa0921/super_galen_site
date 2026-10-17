@@ -107,7 +107,7 @@ export class CombatLayer {
         if (e.rarity >= 3) { const R = RARITIES[e.rarity]; this.burst(e.x, e.y, [R.color, R.dark, '#ffffff'], e.rarity >= 4 ? 22 : 12, 150, 200); }
         if (e.rarity >= 4) this.shake(1, 0.15);
         break;
-      case 'chain': this.chains.push({ pts: e.pts.map((p) => ({ ...p })), life: 0.22 }); break;
+      case 'chain': this.chains.push({ pts: e.pts.map((p) => ({ ...p })), life: 0.36 }); break;
       case 'undying': this.burst(e.x, e.y + 20, ['#ffd86a', '#fff4c0', '#ffa93a'], 30, 180, 120); this.shake(3, 0.3); break;
       case 'airjump': this.burst(e.x, e.y, ['#ffffff', '#cceaf8', '#b4b9c8'], 8, 60, 0); break;
       default: break;
@@ -302,7 +302,7 @@ export class CombatLayer {
       const c = this.chains[i];
       c.life -= dt;
       if (c.life <= 0) { this.chains.splice(i, 1); continue; }
-      if (Math.floor(c.life * 40) % 3 === 0) continue;
+      if (c.life < 0.15 && Math.floor(c.life * 40) % 3 === 0) continue;
       for (let k = 1; k < c.pts.length; k++) {
         const a = c.pts[k - 1], b = c.pts[k], len = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(2, Math.floor(len / 6));
         const nx = -(b.y - a.y) / (len || 1), ny = (b.x - a.x) / (len || 1);
