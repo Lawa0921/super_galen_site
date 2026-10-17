@@ -2,10 +2,12 @@ import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
 import type { ForgeResult } from '../../engine/forge/cost';
 import type { Cost } from '../../data/forge';
-import { ENHANCE_MAX } from '../../data/forge';
+import { ENHANCE_MAX, REGION_AFFIX_GROUP } from '../../data/forge';
+import { affixRange } from '../../data/gear';
+import { REGIONS, type RegionId } from '../../data/regions';
 import { MATERIALS } from '../../data/materials';
 import { compareDelta } from '../../engine/compare';
-import { enhanceChance, enhanceCost, findItem } from '../../engine/forge/cost';
+import { enhanceChance, enhanceCost, findItem, rerollCost, rerollRange, swapPool } from '../../engine/forge/cost';
 import { dismantleYield } from '../../engine/forge/forge';
 import { implicitStats } from '../../engine/loot/item';
 import { SLOTS } from '../../engine/party';
@@ -80,6 +82,7 @@ export class ForgeScene extends FacilityScene {
   protected onCommand(id: string): void {
     if (id === 'dismantle') { dismantlePage(this.host()); return; }
     if (id === 'enhance') { enhancePage(this.host()); return; }
+    if (id === 'reroll') { rerollPage(this.host()); return; }
     const label = T.ui2.forge.tabs[id as ForgeTab];
     if (label) void this.say(T.ui2.town.soon(label));
   }
@@ -270,4 +273,164 @@ export function enhancePage(h: ForgeHost): void {
   show();
   h.layerRoot.append(info);
   h.push({ el: win('slx-list slx-forge-list', [v.el]), onAction: (a) => v.onAction(a) });
+}
+
+/** How far into its roll range an affix sits (can fall outside it for a hand-made value); used to say whether a reroll improved it. */
+function rollPosition(key: AnyStat, value: number, ilvl: number): number {
+  const [lo, hi] = affixRange(key, ilvl);
+  return hi > lo ? (value - lo) / (hi - lo) : 0;
+}
+
+/** The region whose material is `mat`, for naming its category. */
+const regionOfMaterial = (mat: string): RegionId | undefined => Object.values(REGIONS).find((r) => r.material === mat)?.id;
+
+/**
+ * 重鑄: pick a piece (the bag or worn), then one of its affixes, then how: reroll its value, or swap it for another
+ * (any, or from the category a region material pins). Each layer is a list and Esc steps back one. The first reroll locks
+ * the affix for good, which is warned about before it happens; once locked, the other affixes are greyed out with the
+ * reason. A unique or set piece only rerolls values. The detail beside the lists follows the cursor.
+ */
+export function rerollPage(h: ForgeHost): void {
+  const game = h.ctx.game;
+  const F = T.ui2.forge;
+  const find = (uid: number) => findItem(game.state, uid)?.it ?? null;
+  const affixText = (a: { key: AnyStat; value: number }) => T.gear.affix(a.key, a.value);
+  const itemRows = (): MenuItem[] => forgeRows(game.state, {
+    worn: true,
+    filter: (it) => it.affixes.length > 0,
+    right: (it) => (it.locked !== undefined && it.affixes[it.locked] ? affixText(it.affixes[it.locked]) : F.unlocked),
+  });
+  if (!itemRows().length) { void h.say(F.nothingToReroll); return; }
+
+  /** Replace a list's rows in place, keeping the cursor on a live row. */
+  const sync = (view: MenuView, next: MenuItem[]) => {
+    view.menu.items.splice(0, view.menu.items.length, ...next);
+    const here = view.menu.items[view.menu.cursor];
+    if (!here || here.disabled) { const k = next.findIndex((x) => !x.disabled); if (k >= 0) view.menu.setCursor(k); }
+    view.render();
+  };
+  /** The row's short cost: the gold. The have/need of every material is in the detail beside the list. */
+  const costLine = (it: ItemInstance, swap: boolean, mat?: string): string => T.ui2.forge.costGold(rerollCost(it, { swap, mat }).gold);
+
+  // The detail window; whichever layer is on top says what it shows.
+  const info = win('slx-info slx-reroll-info');
+  const shows: Array<() => void> = [];
+  const show = () => shows[shows.length - 1]?.();
+  const nameLine = (it: ItemInstance) => el('p', { class: `slx-name-line slx-rarity-${it.rarity}`, text: gearLabel(it) });
+  const affixLines = (it: ItemInstance) => it.affixes.map((a, i) =>
+    el('p', { text: i === it.locked ? `${affixText(a)}${T.gear.lockedAffix}` : affixText(a) }));
+
+  const itemsView: MenuView = new MenuView(new Menu(itemRows()), {
+    pick: (row) => { const it = find(Number(row.id.slice(1))); if (it) openAffixes(it.uid); },
+    moved: () => { h.ctx.sfx.cursor(); show(); },
+    cancel: () => { info.remove(); h.pop(); },
+  }, 12);
+  shows.push(() => {
+    const it = find(Number(itemsView.menu.current()?.id.slice(1)));
+    info.replaceChildren(...(it ? [nameLine(it), ...affixLines(it)] : []));
+  });
+
+  function openAffixes(uid: number): void {
+    const rows = (): MenuItem[] => {
+      const it = find(uid);
+      return (it?.affixes ?? []).map((a, i): MenuItem => {
+        const other = it!.locked !== undefined && it!.locked !== i;
+        return other
+          ? { id: `a${i}`, label: affixText(a), disabled: true, right: F.lockedShort, note: F.lockedOther }
+          : { id: `a${i}`, label: affixText(a), right: i === it!.locked ? T.gear.lockedAffix : undefined };
+      });
+    };
+    const view: MenuView = new MenuView(new Menu(rows()), {
+      pick: (row) => openMethods(uid, Number(row.id.slice(1))),
+      moved: () => { h.ctx.sfx.cursor(); show(); },
+      cancel: () => { shows.pop(); h.pop(); show(); },
+    }, 12);
+    const refresh = () => { sync(itemsView, itemRows()); sync(view, rows()); };
+    shows.push(() => {
+      const it = find(uid);
+      info.replaceChildren(...(it ? [nameLine(it), ...affixLines(it), ...(it.locked !== undefined ? [el('p', { class: 'slx-desc', text: F.lockedOther })] : [])] : []));
+    });
+    show();
+    h.push({ el: win('slx-list slx-forge-list slx-reroll-list', [view.el]), onAction: (a) => view.onAction(a) });
+
+    function openMethods(itemUid: number, index: number): void {
+      const it0 = find(itemUid);
+      if (!it0) return;
+      const how = (id: string) => ({ swap: id !== 'value', mat: id.startsWith('mat:') ? id.slice(4) : undefined });
+      const methods = (): MenuItem[] => {
+        const it = find(itemUid);
+        if (!it) return [];
+        const row = (id: string, label: string): MenuItem => {
+          const o = how(id);
+          const empty = o.swap && swapPool(it, index, o.mat).length === 0;
+          return empty
+            ? { id, label, disabled: true, right: T.reasons.none, note: T.reasons.none }
+            : { id, label, right: costLine(it, o.swap, o.mat) };
+        };
+        const swappable = it.rarity !== 'unique' && it.rarity !== 'set';
+        return [
+          row('value', F.rerollValue),
+          ...(swappable ? [row('swap', F.rerollSwap), ...Object.keys(REGION_AFFIX_GROUP).map((m) => {
+            const region = regionOfMaterial(m);
+            return row(`mat:${m}`, F.rerollWith(MATERIALS[m]?.name ?? m, region ? T.forge.group[region] : ''));
+          })] : []),
+        ];
+      };
+      const mview: MenuView = new MenuView(new Menu(methods()), {
+        pick: (row) => {
+          const it = find(itemUid);
+          if (!it) return;
+          const o = how(row.id);
+          const lack = lackingNames(game.state, rerollCost(it, o));
+          if (lack.length) { h.ctx.sfx.error(); void h.say(F.lackNames(lack)); return; }
+          const ask = fill2(F.askReroll, [gearPart(it)], [affixText(it.affixes[index])]);
+          const box = confirmBox(it.locked === undefined ? [...ask, `\n${F.lockWarn}`] : ask, (yes) => {
+            h.pop(!yes);
+            if (yes) run(o);
+          });
+          box.view.menu.setCursor(1);
+          box.view.render();
+          h.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
+        },
+        moved: () => { h.ctx.sfx.cursor(); show(); },
+        cancel: () => { shows.pop(); h.pop(); show(); },
+      }, 12);
+      shows.push(() => {
+        const it = find(itemUid);
+        const cur = mview.menu.current();
+        if (!it || !it.affixes[index]) { info.replaceChildren(); return; }
+        const o = how(cur?.id ?? 'value');
+        const lines = [nameLine(it), el('p', { text: F.rerollNow(affixText(it.affixes[index])) })];
+        if (o.swap) lines.push(el('p', { text: F.rerollPool(swapPool(it, index, o.mat).map((k) => T.gear.statName[k]).join('、')) }));
+        else { const r = rerollRange(it, index); if (r) lines.push(el('p', { text: F.rerollRange(it.affixes[index].key, r[0], r[1]) })); }
+        lines.push(el('p', {}, richNodes(costText(game.state, rerollCost(it, o)))));
+        if (it.locked === undefined) lines.push(el('p', { class: 'slx-desc', text: F.lockWarn }));
+        info.replaceChildren(...lines);
+      });
+      show();
+      h.push({ el: win('slx-list slx-forge-list slx-reroll-list', [mview.el]), onAction: (a) => mview.onAction(a) });
+
+      const run = (o: { swap: boolean; mat?: string }) => {
+        const r = game.reroll(itemUid, index, o);
+        let better = 0;
+        if (r.ok) {
+          // Back at the affix layer, refreshed with the new value and the lock.
+          shows.pop();
+          h.pop(true);
+          refresh();
+          show();
+          const ilvl = find(itemUid)?.ilvl ?? it0.ilvl;
+          better = Math.sign(rollPosition(r.out.after.key, r.out.after.value, ilvl) - rollPosition(r.out.before.key, r.out.before.value, ilvl));
+        }
+        h.afterAct(r, (out) => {
+          const [from, to] = [affixText(out.before), affixText(out.after)];
+          return fill2(F.rerolled, [from], [better === 0 ? to : { text: to, cls: better > 0 ? 'slx-up' : 'slx-down' }]);
+        }, () => better < 0);
+      };
+    }
+  }
+
+  show();
+  h.layerRoot.append(info);
+  h.push({ el: win('slx-list slx-forge-list', [itemsView.el]), onAction: (a) => itemsView.onAction(a) });
 }

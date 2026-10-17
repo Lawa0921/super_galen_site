@@ -6,9 +6,10 @@ import { constRng, memoryStorage } from '../../engine/testing';
 import type { ItemInstance, Rarity } from '../../engine/types';
 import { NO_ART } from '../../render/textures';
 import { CHARACTERS } from '../../data/characters';
-import { ENHANCE_COST, ENHANCE_SUCCESS } from '../../data/forge';
-import { enhanceCost, forgeRng } from '../../engine/forge/cost';
-import { implicitStats } from '../../engine/loot/item';
+import { ENHANCE_COST, ENHANCE_SUCCESS, REGION_AFFIX_GROUP } from '../../data/forge';
+import { AFFIXES } from '../../data/gear';
+import { enhanceCost, forgeRng, rerollCost, rerollRange, swapPool } from '../../engine/forge/cost';
+import { implicitStats, itemSlot } from '../../engine/loot/item';
 import { ForgeScene, costText, forgeRows, type ForgeHost } from './forge';
 
 const gear = (uid: number, base: string, rarity: Rarity, extra: Partial<ItemInstance> = {}): ItemInstance =>
@@ -70,14 +71,14 @@ describe('ForgeScene', () => {
     // Keyboard: each tab in turn.
     TABS.forEach((tab, i) => {
       if (i) s.onAction('down');
-      if (i <= 1) return;                   // 分解 and 強化 open their own pages (covered below)
+      if (i <= 2) return;                   // 分解, 強化 and 重鑄 open their own pages (covered below)
       s.onAction('confirm');
       expect(line()).toBe(T.ui2.town.soon(tab));
       s.onAction('confirm');
       expect(talking()).toBe(false);
     });
     // Mouse and touch: a click on each tab.
-    for (const tab of TABS.slice(2)) {
+    for (const tab of TABS.slice(3)) {
       const opt = [...root.querySelectorAll('.slx-cmd [role=option]')].find((o) => o.textContent === tab) as HTMLElement;
       opt.click();
       expect(line()).toBe(T.ui2.town.soon(tab));
@@ -446,5 +447,223 @@ describe('ForgeScene enhance page', () => {
     s.onAction('cancel');
     expect(root.querySelector('.slx-forge-list')).toBeNull();
     expect(root.querySelector('.slx-info')).toBeNull();
+  });
+});
+
+describe('ForgeScene reroll page', () => {
+  const sword = (extra: Partial<ItemInstance> = {}) => gear(1, 'iron-sword', 'rare', {
+    ilvl: 30, affixes: [{ key: 'crit', value: 3 }, { key: 'atk', value: 12 }], ...extra,
+  });
+  const RICH = { 'essence-rare': 5, 'essence-legendary': 5, 'star-tear': 3, 'blaze-core': 2, 'frost-heart': 2, 'shade-crystal': 1 };
+
+  function open(bag: ItemInstance[], prep: (g: Game) => void = () => {}, storage = memoryStorage()) {
+    const game = new Game(constRng(0.5), storage);
+    game.state.bag = bag;
+    game.state.gold = 1000;
+    game.state.inventory = { ...RICH };
+    prep(game);
+    const t = setup(game);
+    t.s.onAction('confirm');                // greeting
+    t.s.onAction('down'); t.s.onAction('down');
+    t.s.onAction('confirm');                // 重鑄
+    const lists = () => [...t.root.querySelectorAll('.slx-forge-list')];
+    const top = () => lists()[lists().length - 1];
+    const rows = () => [...top().querySelectorAll('[role=option]')] as HTMLElement[];
+    const ids = () => rows().map((r) => r.getAttribute('data-id')!);
+    const info = () => t.root.querySelector('.slx-info') as HTMLElement;
+    const confirmEl = () => t.root.querySelector('.slx-confirm') as HTMLElement | null;
+    const go = (...a: Array<'up' | 'down' | 'confirm' | 'cancel'>) => a.forEach((x) => t.s.onAction(x));
+    return { ...t, game, lists, rows, ids, info, confirmEl, go };
+  }
+  const F = T.ui2.forge;
+  const affixName = (k: 'crit' | 'atk', v: number) => T.gear.affix(k, v);
+
+  it('lists items with affixes, each with its locked affix or 未鎖定; plain gear is left out', () => {
+    const { rows, ids } = open([sword(), gear(2, 'iron-sword', 'common'), sword({ uid: 3, locked: 1 })]);
+    expect(ids()).toEqual(['g1', 'g3']);
+    expect(rows()[0].querySelector('.slx-right')!.textContent).toBe(F.unlocked);
+    expect(rows()[1].querySelector('.slx-right')!.textContent).toBe(affixName('atk', 12));
+  });
+
+  it('with nothing to reroll it says so', () => {
+    const game = new Game(constRng(0.5), memoryStorage());
+    game.state.bag = [gear(1, 'iron-sword', 'common')];
+    for (const m of Object.values(game.state.party.roster)) m.equip = {};
+    const t = setup(game);
+    t.s.onAction('confirm'); t.s.onAction('down'); t.s.onAction('down'); t.s.onAction('confirm');
+    expect(t.line()).toBe(F.nothingToReroll);
+  });
+
+  it('the first reroll warns about the lock; afterwards only that affix is selectable', () => {
+    const a = open([sword()]);
+    a.go('confirm');                        // item -> affixes
+    expect(a.ids()).toEqual(['a0', 'a1']);
+    expect(a.rows().every((r) => r.getAttribute('aria-disabled') === 'false')).toBe(true);
+    a.go('confirm');                        // affix -> how
+    expect(a.info().textContent).toContain(F.lockWarn);
+    a.go('confirm');                        // 重抽數值 -> confirm
+    expect(a.confirmEl()!.textContent).toContain(F.lockWarn);
+
+    const b = open([sword({ locked: 1 })]);
+    b.go('confirm');
+    expect(b.rows().map((r) => r.getAttribute('aria-disabled'))).toEqual(['true', 'false']);
+    expect(b.rows()[0].textContent).toContain(F.lockedShort);
+    expect(b.info().textContent).toContain(F.lockedOther);
+    expect(F.lockedOther).toBe(T.reasons.affixLocked);
+    b.go('confirm');                        // the cursor starts on the only live row, a1
+    expect(b.ids()[0]).toBe('value');
+    expect(b.info().textContent).not.toContain(F.lockWarn);
+    b.rows()[0].click();
+    expect(b.confirmEl()!.textContent).not.toContain(F.lockWarn);
+    // A disabled row cannot be clicked into.
+    b.go('cancel');                         // the confirm
+    b.go('cancel');                         // the method list
+    expect(b.ids()).toEqual(['a0', 'a1']);
+    b.rows()[0].click();
+    expect(b.ids()).toEqual(['a0', 'a1']);
+  });
+
+  it('the value preview shows rerollRange; the swap preview lists swapPool names', () => {
+    const it = sword();
+    const { go, info, rows, ids } = open([it]);
+    go('confirm', 'confirm');
+    expect(ids().slice(0, 2)).toEqual(['value', 'swap']);
+    const [lo, hi] = rerollRange(it, 0)!;
+    expect(info().textContent).toContain(affixName('crit', 3));
+    expect(info().textContent).toContain(F.rerollRange('crit', lo, hi));
+    expect(info().textContent).toContain('稀有精華 5／1');
+    go('down');
+    const names = swapPool(it, 0).map((k) => T.gear.statName[k]);
+    expect(names.length).toBeGreaterThan(2);
+    expect(info().textContent).toContain(F.rerollPool(names.join('、')));
+    expect(info().textContent).toContain('稀有精華 5／2');
+    // The right-hand column is the cost summary of each row.
+    expect(rows()[1].querySelector('.slx-right')!.textContent).toBe(`${rerollCost(it, { swap: true }).gold} G`);
+  });
+
+  it('region-material rows list each region, and an empty pool is disabled with the reason', () => {
+    const slot = itemSlot(sword());
+    const crowded = (Object.keys(AFFIXES) as Array<keyof typeof AFFIXES>)
+      .filter((k) => REGION_AFFIX_GROUP['shade-crystal'].includes(k) && AFFIXES[k].slots.includes(slot));
+    const it = sword({ affixes: crowded.map((key) => ({ key, value: 5 })) });
+    expect(swapPool(it, 0, 'shade-crystal')).toEqual([]);
+    expect(swapPool(it, 0, 'blaze-core').length).toBeGreaterThan(0);
+    const { go, ids, rows } = open([it]);
+    go('confirm', 'confirm');
+    expect(ids().filter((i) => i.startsWith('mat:'))).toEqual(Object.keys(REGION_AFFIX_GROUP).map((m) => `mat:${m}`));
+    const byId = (id: string) => rows().find((r) => r.getAttribute('data-id') === id)!;
+    expect(byId('mat:shade-crystal').getAttribute('aria-disabled')).toBe('true');
+    expect(byId('mat:shade-crystal').textContent).toContain(T.reasons.none);
+    expect(byId('mat:blaze-core').getAttribute('aria-disabled')).toBe('false');
+    expect(byId('mat:blaze-core').textContent).toContain(F.rerollWith('火焰核', T.forge.group.blaze));
+  });
+
+  it('a region material pins the category: the preview lists only that group, and the cost adds the material', () => {
+    const it = sword();
+    const { go, info, rows, ids } = open([it]);
+    go('confirm', 'confirm');
+    go(...(Array(ids().indexOf('mat:blaze-core')).fill('down') as 'down'[]));
+    const names = swapPool(it, 0, 'blaze-core').map((k) => T.gear.statName[k]);
+    expect(info().textContent).toContain(F.rerollPool(names.join('、')));
+    expect(info().textContent).toContain('火焰核 2／1');
+    const cost = rerollCost(it, { swap: true, mat: 'blaze-core' });
+    expect(rows().find((r) => r.getAttribute('data-id') === 'mat:blaze-core')!.querySelector('.slx-right')!.textContent).toContain(`${cost.gold} G`);
+  });
+
+  it('a unique offers only 重抽數值, and a set the same', () => {
+    for (const rarity of ['unique', 'set'] as const) {
+      const { go, ids } = open([sword({ rarity })]);
+      go('confirm', 'confirm');
+      expect(ids()).toEqual(['value']);
+    }
+  });
+
+  it('a legendary shows the extra 星燈之淚 cost', () => {
+    const { go, info } = open([sword({ rarity: 'legendary' })]);
+    go('confirm', 'confirm');
+    expect(info().textContent).toContain('星燈之淚 3／1');
+  });
+
+  it('missing materials are named and nothing is spent', () => {
+    const { go, game, line, confirmEl } = open([sword()], (g) => { g.state.inventory = {}; g.state.gold = 5; });
+    go('confirm', 'confirm', 'confirm');
+    expect(confirmEl()).toBeNull();
+    expect(line()).toBe(F.lackNames(['稀有精華 ×1', `金錢 ${rerollCost(sword(), { swap: false }).gold - 5} G`]));
+    expect(game.state.bag[0].locked).toBeUndefined();
+    expect(game.state.gold).toBe(5);
+  });
+
+  it('yes rerolls, says before and after, locks the affix and saves; 否 changes nothing', () => {
+    const storage = memoryStorage();
+    const setItem = vi.spyOn(storage, 'setItem');
+    const { go, game, line, confirmEl, ids, rows, root } = open([sword()], () => {}, storage);
+    go('confirm', 'confirm', 'confirm');
+    expect(confirmEl()!.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('no');
+    go('confirm');                          // 否
+    expect(confirmEl()).toBeNull();
+    expect(game.state.bag[0].locked).toBeUndefined();
+    expect(setItem).not.toHaveBeenCalled();
+    go('confirm', 'up', 'confirm');         // 是
+    const after = game.state.bag[0].affixes[0];
+    expect(game.state.bag[0].locked).toBe(0);
+    expect(game.state.bag[0].affixes[1]).toEqual({ key: 'atk', value: 12 });
+    expect(game.state.inventory['essence-rare']).toBe(4);
+    expect(setItem).toHaveBeenCalled();
+    expect(line()).toBe(F.rerolled(affixName('crit', 3), T.gear.affix(after.key, after.value)));
+    expect(root.querySelectorAll('[style]').length).toBe(0);
+    go('confirm');                          // dismiss -> back at the affix layer, refreshed
+    expect(ids()).toEqual(['a0', 'a1']);
+    expect(rows()[0].textContent).toContain(T.gear.affix(after.key, after.value));
+    expect(rows()[1].getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('a better roll is green and a worse one is red', () => {
+    const run = (value: number) => {
+      const t = open([sword({ affixes: [{ key: 'crit', value }, { key: 'atk', value: 12 }] })]);
+      t.go('confirm', 'confirm', 'confirm', 'up', 'confirm');
+      return t.root.querySelector('.slx-talk .slx-text')!;
+    };
+    expect(rerollRange(sword(), 0)![0]).toBeGreaterThan(1);
+    expect(run(1).querySelector('.slx-up')).not.toBeNull();
+    expect(run(99).querySelector('.slx-down')).not.toBeNull();
+  });
+
+  it('a swap with a region material changes the key from that group and spends the material', () => {
+    const { go, game, ids, line } = open([sword()]);
+    go('confirm', 'confirm');
+    go(...(Array(ids().indexOf('mat:blaze-core')).fill('down') as 'down'[]));
+    go('confirm', 'up', 'confirm');
+    const after = game.state.bag[0].affixes[0];
+    expect(REGION_AFFIX_GROUP['blaze-core']).toContain(after.key);
+    expect(game.state.inventory['blaze-core']).toBe(1);
+    expect(game.state.bag[0].locked).toBe(0);
+    expect(line()).toContain(' → ');
+  });
+
+  it('Esc steps back one layer at a time and closes the detail', () => {
+    const { go, lists, root } = open([sword()]);
+    go('confirm', 'confirm');
+    expect(lists().length).toBe(3);
+    go('cancel');
+    expect(lists().length).toBe(2);
+    go('cancel');
+    expect(lists().length).toBe(1);
+    go('cancel');
+    expect(lists().length).toBe(0);
+    expect(root.querySelector('.slx-info')).toBeNull();
+  });
+
+  it('the whole flow works by click, worn gear included', () => {
+    const { game, rows, root, line, confirmEl } = open([], (g) => { g.state.party.roster[g.state.party.recruited[0]].equip = { weapon: sword({ uid: 9 }) }; });
+    expect(rows()[0].textContent).toContain(T.ui2.forge.wornBy(CHAR_NAME(game.state.party.recruited[0])));
+    rows()[0].click();                      // item
+    rows()[1].click();                      // atk
+    rows()[0].click();                      // 重抽數值
+    expect(confirmEl()).not.toBeNull();
+    (confirmEl()!.querySelector('[data-id=yes]') as HTMLElement).click();
+    const equipped = game.state.party.roster[game.state.party.recruited[0]].equip.weapon!;
+    expect(equipped.locked).toBe(1);
+    expect(line()).toContain(' → ');
+    expect(root.querySelectorAll('[style]').length).toBe(0);
   });
 });

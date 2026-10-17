@@ -361,6 +361,24 @@ export const T = {
       askEnhance: (label: string) => `要強化${label}嗎？`,
       enhanceOk: (label: string) => `強化成功！${label}`,
       enhanceFail: (label: string) => `強化失敗了……${label}沒有降級，素材卻用掉了。`,
+      nothingToReroll: '沒有可以重鑄的裝備。',
+      /** The item list's right column when no affix is locked yet. */
+      unlocked: '未鎖定',
+      /** Why the other affixes are greyed out once one is locked (the same words as the engine's refusal). */
+      lockedOther: '這件裝備只能重鑄已鎖定的詞綴',
+      /** The same reason, short enough for a greyed row. */
+      lockedShort: '已鎖定其他詞綴',
+      rerollValue: '重抽數值',
+      rerollSwap: '換成其他詞綴',
+      /** A swap pinned to a region material: 「火焰核（火焰系）」. */
+      rerollWith: (mat: string, group: string) => `換：${mat}（${group}）`,
+      rerollNow: (affix: string) => `目前　${affix}`,
+      rerollRange: (key: AnyStat, lo: number, hi: number) => `可能的範圍 ${lo}–${hi}${POINT_STATS.includes(key) ? '' : '%'}`,
+      rerollPool: (names: string) => `可能換成：${names}`,
+      lockWarn: '重鑄後，這件裝備以後只能重鑄這條詞綴',
+      askReroll: (label: string, affix: string) => `要重鑄${label}的「${affix}」嗎？`,
+      /** 「暴擊率 +3% → 暴擊傷害 +18%」: the old affix, then the new one. */
+      rerolled: (before: string, after: string) => `重鑄完成！${before} → ${after}`,
     },
     dungeon: {
       status: '隊伍狀態', items: '道具', lamp: (n: number) => `歸還之燈 ×${n}`, close: '關閉', askTown: '要回到城鎮嗎？',

@@ -151,6 +151,9 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-cmp-member span { margin-right: 5px; white-space: nowrap; }
 .slx-cmp-member .slx-up { color: $slx-up; }
 .slx-cmp-member .slx-down { color: $slx-down; }
+// A reroll's result in the talk box: the new affix is green when it improved and red when it got worse.
+.slx-talk .slx-up { color: $slx-up; }
+.slx-talk .slx-down { color: $slx-down; }
 
 // Mouse and touch controls
 .slx-back { right: 92px; top: 10px; padding: 2px 10px; cursor: pointer; color: $slx-ink; }
@@ -976,6 +979,10 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 // widened for gear labels with a wearer. Gear marked junk is struck through in its rarity colour; a cost the party cannot pay is .slx-lack.
 .slx-forge .slx-list { min-width: 250px; max-height: 260px; }
 .slx-forge .slx-info { left: 420px; width: 200px; max-height: 260px; overflow-y: auto; }
+// The reroll's affix and method lists are stacked right of the first, so they stay narrow enough to leave the detail uncovered.
+.slx-forge .slx-reroll-list { min-width: 0; max-width: 232px; }
+.slx-forge .slx-info.slx-reroll-info { left: 456px; width: 152px; }
+.slx-forge .slx-reroll-list .slx-right { white-space: nowrap; }
 .slx-forge .slx-label.slx-junk { text-decoration: line-through; opacity: 0.6; }
 .slx-lack { color: $slx-down; }
 .slx-forge .slx-info .slx-cmp-row.slx-up { color: $slx-up; }
