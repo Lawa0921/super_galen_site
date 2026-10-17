@@ -70,6 +70,10 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 /* A multi-line message (the depth-clear reward and its level-ups) keeps its line breaks. */
 .slx-talk .slx-text { white-space: pre-line; }
 .slx-name { position: absolute; top: -9px; left: 10px; padding: 0 6px; background: $slx-win; border: 1px solid #c9a35a; color: $slx-gold; font-weight: normal; }
+// A speaker's published portrait stands on the box's top edge, left for the first speaker and right for the rest.
+.slx-talk-face { position: absolute; bottom: calc(100% + 12px); width: 96px; height: 96px; object-fit: contain; pointer-events: none; }
+.slx-talk-face--left { left: 10px; }
+.slx-talk-face--right { right: 10px; }
 .slx-confirm { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 200px; text-align: center; }
 .slx-confirm p { margin: 0 0 6px; white-space: pre-line; }
 @media (prefers-reduced-motion: reduce) { .slx-win, .slx-sel::before { animation: none; } }
@@ -101,6 +105,10 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
     background: url('/assets/games/starlantern/ui/cursor.png') center / contain no-repeat;
   }
 }
+
+// A remembered scene: a dark vignette, a pale tint and washed-out faces. After the skin so its shadow wins.
+.slx-talk--memory, .slx-skinned .slx-talk--memory { background: color-mix(in srgb, $slx-win 78%, $slx-dim); color: $slx-dim; box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.8), 0 2px 8px rgba(0, 0, 0, 0.5); }
+.slx-talk--memory .slx-talk-face { filter: sepia(0.55) saturate(0.7) brightness(0.85); }
 
 .slx-npc { position: absolute; right: 0; bottom: 0; height: 330px; }
 .slx-cmd { left: 12px; top: 56px; min-width: 120px; }

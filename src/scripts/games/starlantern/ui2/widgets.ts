@@ -142,6 +142,7 @@ export class Dialogue {
   /** Blinking mark shown once the whole line is on screen. */
   private next = el('span', { class: 'slx-next', text: '▼', attrs: { 'aria-hidden': 'true', hidden: '' } });
   private full: Rich = [];
+  private face: HTMLImageElement | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private resolve: (() => void) | null = null;
 
@@ -156,8 +157,20 @@ export class Dialogue {
 
   busy(): boolean { return this.resolve !== null; }
 
-  say(name: string, text: string | Rich): Promise<void> {
+  /** `memory` dims the box for a remembered scene; `plain` is the everyday look. */
+  setStyle(style: 'plain' | 'memory'): void {
+    this.el.classList.toggle('slx-talk--memory', style === 'memory');
+  }
+
+  /** `face` puts a portrait on the box's left or right edge for this line; a line without one shows no image. */
+  say(name: string, text: string | Rich, face?: { src: string; side: 'left' | 'right' }): Promise<void> {
     this.stop();
+    this.face?.remove();
+    this.face = null;
+    if (face) {
+      this.face = el('img', { class: `slx-talk-face slx-talk-face--${face.side}`, attrs: { src: face.src, alt: '', draggable: 'false' } });
+      this.el.prepend(this.face);
+    }
     // A newer line replaces the old one: settle the old promise so nothing awaits it forever.
     const old = this.resolve;
     this.resolve = null;
@@ -187,6 +200,8 @@ export class Dialogue {
     const r = this.resolve;
     this.resolve = null;
     this.el.hidden = true;
+    this.face?.remove();
+    this.face = null;
     this.onClose?.();
     r();
     return true;

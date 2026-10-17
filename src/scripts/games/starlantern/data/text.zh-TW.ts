@@ -326,8 +326,9 @@ export const T = {
       hintTargetFull: 'Enter 穿上　C 選單 卸下　Esc 取消目標',
     },
     settings: {
-      title: '設定', volume: '音效音量', speed: '文字速度', vibrate: '震動', on: '開', off: '關', fullscreen: '全螢幕', keys: '按鍵說明', back: '返回',
+      title: '設定', volume: '音效音量', speed: '文字速度', vibrate: '震動', story: '劇情播放', on: '開', off: '關', fullscreen: '全螢幕', keys: '按鍵說明', back: '返回',
       speeds: { slow: '慢', mid: '中', fast: '快', instant: '立即' } as Record<'slow' | 'mid' | 'fast' | 'instant', string>,
+      storyModes: { all: '全部播放', major: '只播重大場景', none: '不自動播放' } as Record<'all' | 'major' | 'none', string>,
       hint: '←→ 調整　點擊 切換　Esc／右鍵 返回',
       close: '點擊或按 Enter／Esc 關閉',
       keyList: [
@@ -340,6 +341,9 @@ export const T = {
         ['F11', '全螢幕'],
         ['滑鼠', '點選項目即決定；畫面上的「返回」等同取消'],
       ] as [string, string][],
+    },
+    story: {
+      skipped: (summary: string) => `（略過）${summary}`,
     },
     town: {
       place: '邊境小鎮 露米亞',

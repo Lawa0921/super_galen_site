@@ -327,3 +327,34 @@ describe('confirmBox rich question', () => {
     expect(box.el.querySelector('.slx-rarity-magic')!.textContent).toBe('鐵劍・魔法');
   });
 });
+
+describe('Dialogue faces', () => {
+  it('a line can carry a face on either side', () => {
+    const d = new Dialogue(Infinity);
+    void d.say('洛恩', '走吧。', { src: '/a.png', side: 'left' });
+    const left = d.el.querySelector('img')!;
+    expect(left.classList.contains('slx-talk-face')).toBe(true);
+    expect(left.classList.contains('slx-talk-face--left')).toBe(true);
+    expect(left.getAttribute('src')).toBe('/a.png');
+    void d.say('凜', '嗯。', { src: '/b.png', side: 'right' });
+    const faces = d.el.querySelectorAll('img');
+    expect(faces).toHaveLength(1);
+    expect(faces[0].classList.contains('slx-talk-face--right')).toBe(true);
+    expect(faces[0].classList.contains('slx-talk-face--left')).toBe(false);
+  });
+
+  it('a line without a face shows no image', () => {
+    const d = new Dialogue(Infinity);
+    void d.say('洛恩', '走吧。', { src: '/a.png', side: 'left' });
+    void d.say('', '風很冷。');
+    expect(d.el.querySelector('img')).toBeNull();
+  });
+
+  it('memory style marks the box', () => {
+    const d = new Dialogue(Infinity);
+    d.setStyle('memory');
+    expect(d.el.classList.contains('slx-talk--memory')).toBe(true);
+    d.setStyle('plain');
+    expect(d.el.classList.contains('slx-talk--memory')).toBe(false);
+  });
+});
