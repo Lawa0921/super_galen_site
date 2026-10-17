@@ -52,9 +52,12 @@ export function findItem(s: GameState, uid: number): { it: ItemInstance; member?
 
 export const FORGE_SALT = 0x2f6b1d3a;
 
-/** A rng for the forge's random picks. Each call draws once and moves `s.forgeDraws` on (mutates `s`; build it on a copy); creating it draws nothing. */
+/**
+ * A rng for the forge's random picks. Each call draws once and moves `s.forgeDraws` on (mutates `s`; build it on a copy); creating it draws nothing.
+ * The seed is forgeDraws and the per-game forgeSalt only: nothing a player can change cheaply between a failed save and a reload.
+ */
 export function forgeRng(s: GameState): Rng {
-  return () => mulberry32(mix(s.forgeDraws++ ^ FORGE_SALT, s.nextUid))();
+  return () => mulberry32(mix(s.forgeDraws++ ^ FORGE_SALT, s.forgeSalt))();
 }
 
 /** What reaching the next enhance level costs; null at the maximum. */

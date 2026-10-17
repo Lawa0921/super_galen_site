@@ -63,6 +63,7 @@ function isValid(d: Record<string, unknown>): boolean {
   if (!Array.isArray(d.bag) || d.bag.length > BAG_SIZE || !d.bag.every(isItem)) return false;
   if (!Number.isSafeInteger(d.nextUid) || (d.nextUid as number) < 1 || (d.nextUid as number) > MAX_UID) return false;
   if (!Number.isSafeInteger(d.forgeDraws) || (d.forgeDraws as number) < 0 || (d.forgeDraws as number) > MAX_UID) return false;
+  if (!Number.isSafeInteger(d.forgeSalt)) return false;
   const uids: number[] = (d.bag as ItemInstance[]).map((it) => it.uid);
   for (const id of CHARACTER_IDS) {
     const m = (p.roster as Record<string, unknown>)[id];

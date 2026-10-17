@@ -34,7 +34,8 @@ export async function mountNext(): Promise<void> {
   const q = new URLSearchParams(location.search);
   const seed = Number(q.get('seed')) || (Date.now() >>> 0);
   const fast = q.get('fast') === '1';
-  let game = Game.boot(mulberry32(seed), storage);
+  // The forge salt of a new game is this session's seed: fixed once the game starts, then kept in its save.
+  let game = Game.boot(mulberry32(seed), storage, seed);
   const sfx = new SoundManager();
   let settings: Settings = loadSettings(storage);
   sfx.setVolume(settings.volume / 100);
@@ -66,8 +67,8 @@ export async function mountNext(): Promise<void> {
     get game() { return game; },
     art: bank, sfx,
     hasSave: () => { try { return !!storage?.getItem(SAVE_KEY); } catch { return false; } },
-    newGame: () => { game = Game.fresh(mulberry32(seed), storage); },
-    continueGame: () => { game = Game.boot(mulberry32(seed), storage); },
+    newGame: () => { game = Game.fresh(mulberry32(seed), storage, seed); },
+    continueGame: () => { game = Game.boot(mulberry32(seed), storage, seed); },
     stage, fast,
     settings: settingsStore,
     vibrate: (ms: number) => { if (settings.vibrate) { try { navigator.vibrate?.(ms); } catch { /* not supported */ } } },

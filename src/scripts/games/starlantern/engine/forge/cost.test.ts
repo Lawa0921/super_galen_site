@@ -76,7 +76,7 @@ describe('forgeRng', () => {
   it('advances forgeDraws once per draw, not on creation, and is reproducible from the state', () => {
     const s = newGame();
     s.forgeDraws = 4;
-    s.nextUid = 9;
+    s.forgeSalt = 9;
     const r = forgeRng(s);
     expect(s.forgeDraws).toBe(4);
     const a = r();
@@ -87,14 +87,19 @@ describe('forgeRng', () => {
     expect(b).toBe(mulberry32(mix(5 ^ FORGE_SALT, 9))());
     const t = newGame();
     t.forgeDraws = 4;
-    t.nextUid = 9;
+    t.forgeSalt = 9;
     expect(forgeRng(t)()).toBe(a);
   });
 
-  it('draws differ when only nextUid differs, so two saves at the same forgeDraws do not share a roll', () => {
-    const at = (nextUid: number) => { const s = newGame(); s.forgeDraws = 4; s.nextUid = nextUid; return forgeRng(s)(); };
+  it('draws differ when only the per-game salt differs, so two games at the same forgeDraws do not share a roll', () => {
+    const at = (salt: number) => { const s = newGame(); s.forgeDraws = 4; s.forgeSalt = salt; return forgeRng(s)(); };
     expect(at(10)).toBe(mulberry32(mix(4 ^ FORGE_SALT, 10))());
     expect(at(10)).not.toBe(at(9));
     expect(new Set([9, 10, 11, 12, 13].map(at)).size).toBe(5);
+  });
+
+  it('ignores nextUid and the rest of the state the player can change cheaply (shop buys mint uids)', () => {
+    const at = (nextUid: number, gold: number) => { const s = newGame(); s.forgeDraws = 4; s.forgeSalt = 9; s.nextUid = nextUid; s.gold = gold; return forgeRng(s)(); };
+    expect(new Set([at(1, 0), at(2, 0), at(500, 10), at(1e6, 99999)]).size).toBe(1);
   });
 });

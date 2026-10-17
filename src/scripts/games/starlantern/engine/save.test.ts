@@ -146,6 +146,33 @@ describe('save', () => {
   it('a new game starts with zero forge draws and leaves the rng sequence alone', () => {
     expect(newGame().forgeDraws).toBe(0);
   });
+  it('a new game takes its forge salt once, without drawing from the rng, and the salt round-trips', () => {
+    const a = mulberry32(5), b = mulberry32(5);
+    const g = newGame(a, 123456789);
+    expect(g.forgeSalt).toBe(123456789);
+    newGame(b);
+    expect(a()).toBe(b());
+    expect(newGame().forgeSalt).toBe(0);
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    const back = loadGame(st);
+    expect(back.status === 'ok' && back.state.forgeSalt).toBe(123456789);
+  });
+  it('rejects a forge salt that is not a safe integer, or missing', () => {
+    const bad = (salt: unknown, drop = false) => {
+      const g: Record<string, unknown> = { ...newGame(), forgeSalt: salt };
+      if (drop) delete g.forgeSalt;
+      return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+    };
+    expect(bad(0)).toBe('ok');
+    expect(bad(4294967295)).toBe('ok');
+    expect(bad(-7)).toBe('ok');
+    expect(bad(1.5)).toBe('corrupt');
+    expect(bad('3')).toBe('corrupt');
+    expect(bad(2 ** 53)).toBe('corrupt');
+    expect(bad(null)).toBe('corrupt');
+    expect(bad(0, true)).toBe('corrupt');
+  });
   it('rejects enhance 11, -1 and 1.5, a locked index out of range or fractional, and a bad forgeDraws', () => {
     const bad = (mut: (g: ReturnType<typeof newGame>) => void) => {
       const g = newGame();

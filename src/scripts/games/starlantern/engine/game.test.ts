@@ -22,6 +22,7 @@ import { chestHasGear, GEAR_CHANCE, RARE_MATERIALS, rollBossGear } from './loot/
 import { itemLevel, itemWeight, rollItem } from './loot/item';
 import type { ItemInstance } from './types';
 import { MATERIALS } from '../data/materials';
+import { buy } from './town';
 
 // Wrapped so a test can see what the game asked the boss roll for; it still rolls for real.
 vi.mock('./loot/drops', async (importOriginal) => {
@@ -1340,6 +1341,43 @@ describe('forge actions', () => {
     expect(back.state.bag[0].enhance).toBe(level);
     expect(back.enhance(1).ok).toBe(true);
     expect(back.state.forgeDraws).toBe(2);
+  });
+  it('after a failed save, a reload plus a shop buy draws the same enhance outcome (the seed ignores nextUid)', () => {
+    const outcomes = (buyFirst: boolean) => {
+      const out: boolean[] = [];
+      for (let d = 0; d < 24; d++) {
+        const storage = memoryStorage();
+        const g = stocked(storage);
+        g.state.bag[0].enhance = 8;
+        g.state.forgeDraws = d;
+        expect(saveGame(storage, g.state)).toBe(true);
+        const failing = { getItem: (k: string) => storage.getItem(k), setItem: () => { throw new Error('full'); } };
+        const first = new Game(calm(), failing, structuredClone(g.state));
+        const r1 = first.enhance(1);
+        expect(first.notice).toBe('save-failed');
+        const back = Game.boot(calm(), storage);
+        expect(back.state.forgeDraws).toBe(d);
+        if (buyFirst) {
+          const uid = back.state.nextUid;
+          expect(back.apply(buy(back.state, 'cloth-robe')).ok).toBe(true);
+          expect(back.state.nextUid).toBe(uid + 1);
+        }
+        const r2 = back.enhance(1);
+        expect(r1.ok && r2.ok).toBe(true);
+        if (r1.ok && r2.ok) expect(r2.out, `forgeDraws ${d}`).toEqual(r1.out);
+        if (r1.ok) out.push(r1.out.success);
+      }
+      return out;
+    };
+    expect(outcomes(false)).toEqual(outcomes(true));
+    expect(new Set(outcomes(true)).size).toBe(2);
+  });
+  it('a new game takes the forge salt it is given (boot without a save, and fresh); a loaded game keeps its own', () => {
+    expect(new Game(calm(), null, undefined, 77).state.forgeSalt).toBe(77);
+    const storage = memoryStorage();
+    expect(Game.boot(calm(), storage, 78).state.forgeSalt).toBe(78);
+    expect(Game.fresh(calm(), storage, 79).state.forgeSalt).toBe(79);
+    expect(Game.boot(calm(), storage, 80).state.forgeSalt).toBe(79);
   });
   it('a failed save leaves the save-failed notice and keeps the result', () => {
     const g = stocked();

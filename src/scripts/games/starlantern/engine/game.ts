@@ -92,21 +92,22 @@ export class Game {
   /** What the last safe return brought home; the town screen shows it, then clears it. `overflow` is gear the full bag could not take. */
   banked: { items: Record<string, number>; gold: number; viaLamp: boolean; gear: ItemInstance[]; overflow: ItemInstance[] } | null = null;
 
-  constructor(readonly rng: Rng, readonly storage: SaveStorage | null, state?: GameState) {
-    this.state = state ?? newGame(rng);
+  /** `forgeSalt` is used only when there is no `state` (a new game); a loaded game keeps the salt in its save. */
+  constructor(readonly rng: Rng, readonly storage: SaveStorage | null, state?: GameState, forgeSalt = 0) {
+    this.state = state ?? newGame(rng, forgeSalt);
   }
 
-  static boot(rng: Rng, storage: SaveStorage | null): Game {
-    if (!storage) return new Game(rng, null);
+  static boot(rng: Rng, storage: SaveStorage | null, forgeSalt = 0): Game {
+    if (!storage) return new Game(rng, null, undefined, forgeSalt);
     const r = loadGame(storage);
-    const g = new Game(rng, storage, r.status === 'ok' ? r.state : undefined);
+    const g = new Game(rng, storage, r.status === 'ok' ? r.state : undefined, forgeSalt);
     if (r.status === 'corrupt' || r.status === 'version') g.notice = 'save-reset';
     return g;
   }
 
   /** A new game that replaces the save at once: the player agreed to overwrite it, and a wipe must not bring the old run back. */
-  static fresh(rng: Rng, storage: SaveStorage | null): Game {
-    const g = new Game(rng, storage);
+  static fresh(rng: Rng, storage: SaveStorage | null, forgeSalt = 0): Game {
+    const g = new Game(rng, storage, undefined, forgeSalt);
     if (storage) saveGame(storage, g.state);
     return g;
   }

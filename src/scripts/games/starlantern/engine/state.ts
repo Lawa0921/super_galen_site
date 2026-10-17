@@ -37,12 +37,21 @@ export interface GameState {
   autoJunk: AutoJunk;
   /** Forge random draws used so far; seeds each craft, so reloading cannot reroll it. */
   forgeDraws: number;
+  /**
+   * Set once when the game starts and never changed: with forgeDraws it is the whole forge seed. Nothing else the player
+   * can change (nextUid, gold, the bag) feeds the seed, so a reload after a failed save cannot steer a roll.
+   */
+  forgeSalt: number;
 }
 
-/** A new game; its first gates come from `rng` (a fixed seed when none is given, so the result is deterministic). */
-export function newGame(rng: Rng = mulberry32(0)): GameState {
+/**
+ * A new game; its first gates come from `rng` (a fixed seed when none is given, so the result is deterministic).
+ * `forgeSalt` is taken as given rather than drawn, so the rng sequence stays as it was.
+ */
+export function newGame(rng: Rng = mulberry32(0), forgeSalt = 0): GameState {
   return {
     version: SAVE_VERSION, gold: 150, inventory: { potion: 3, 'return-lamp': 1 }, bag: [], nextUid: 1, sold: {}, party: newParty(),
     dungeon: { reached: newReached(), bossDefeated: false, bossKills: {}, portals: rollPortals(rng) }, revealed: {}, codex: [], autoJunk: 'off', forgeDraws: 0,
+    forgeSalt,
   };
 }
