@@ -439,7 +439,7 @@ const tree: StatusTab = {
       ]);
     });
     // The columns scroll on their own above the fixed notes, with ▲/▼ cues; a redraw keeps where they were (see `shown`).
-    const colsEl = el('div', { class: 'slx-tree-cols' }, cols);
+    const colsEl = el('div', { class: branches.length > 3 ? 'slx-tree-cols slx-tree-wide' : 'slx-tree-cols' }, cols);
     return el('div', { class: 'slx-tab-tree' }, [
       el('div', { class: 'slx-tree-top' }, [
         el('span', { class: 'slx-tree-left', text: t.left(skillPointsLeft(m)) }),
@@ -625,7 +625,7 @@ const talent: StatusTab = {
       ...BOARDS[id].filter((n) => !n.keystone && n.row === r).map(cell),
     ]));
     // The board scrolls on its own above the fixed notes, with ▲/▼ cues; a redraw keeps where it was (see `shown`).
-    const board = el('div', { class: 'slx-talent-board' }, [
+    const board = el('div', { class: rulesOf(m.id).boardCols > 4 ? 'slx-talent-board slx-talent-wide' : 'slx-talent-board' }, [
       ...rows,
       el('h5', { class: 'slx-talent-keys-head', text: t.keysHead(rulesOf(m.id).maxKeystones) }),
       el('div', { class: 'slx-talent-keys' }, BOARDS[id].filter((n) => n.keystone).map(cell)),

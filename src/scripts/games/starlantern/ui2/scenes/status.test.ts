@@ -1171,4 +1171,76 @@ describe('StatusScene', () => {
       }
     });
   });
+
+  describe('the hero leads', () => {
+    beforeEach(() => { resetStatsView(); resetTreeView(); resetTalentView(); });
+
+    const heroSetup = (arg?: string, lineup: string[] = ['hero', 'rin', 'scarlet']) => {
+      const game = new Game(constRng(0.5), null, undefined, 0, lineup as never);
+      const go = vi.fn();
+      const root = document.createElement('div');
+      const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
+      const s = new StatusScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), from: 'guild', arg });
+      s.enter(root);
+      const name = () => root.querySelector('.slx-status-name')!.textContent!;
+      const tabTo = (n: number) => { for (let i = 0; i < n; i++) s.onAction('right'); };
+      return { game, root, s, name, tabTo };
+    };
+
+    it('the hero comes first: no argument opens him, and paging follows the recruited order', () => {
+      const { s, name } = heroSetup();
+      expect(name()).toContain('洛恩');
+      s.onAction('next');
+      expect(name()).toContain('凜');
+      s.onAction('next');
+      expect(name()).toContain('絲嘉蕾');
+      s.onAction('next');
+      expect(name()).toContain('洛恩');
+    });
+
+    it('the hero leads even when another member stands first on the field', () => {
+      const { game, name } = heroSetup(undefined, ['rin', 'hero']);
+      expect(game.state.party.grid.find((id) => id)).toBe('rin');
+      expect(name()).toContain('洛恩');
+    });
+
+    it("the hero's tree shows five branches and ranks out of 5", () => {
+      const { root, tabTo } = heroSetup();
+      tabTo(3);
+      expect(root.querySelector('.slx-tree-cols')!.classList.contains('slx-tree-wide')).toBe(true);
+      expect(root.querySelectorAll('.slx-tree-branch')).toHaveLength(5);
+      expect(root.querySelector('.slx-tree-node[data-node="hero-mend"]')!.textContent).toContain('0／5');
+    });
+
+    it('a three-branch tree is not wide', () => {
+      const { root, tabTo } = heroSetup('rin');
+      tabTo(3);
+      expect(root.querySelector('.slx-tree-cols')!.classList.contains('slx-tree-wide')).toBe(false);
+    });
+
+    it("the hero's board shows six columns and three keystones", () => {
+      const { root, tabTo } = heroSetup();
+      tabTo(4);
+      expect(root.querySelector('.slx-talent-board')!.classList.contains('slx-talent-wide')).toBe(true);
+      expect(root.querySelectorAll('.slx-talent-row[data-row="0"] .slx-talent-node')).toHaveLength(6);
+      expect(root.querySelector('.slx-talent-keys-head')!.textContent).toContain('限選 3');
+      expect(root.querySelector('.slx-talent-count')!.textContent).toBe('關鍵天賦 0／3');
+    });
+
+    it("a companion's board stays four columns", () => {
+      const { root, tabTo } = heroSetup('rin');
+      tabTo(4);
+      expect(root.querySelector('.slx-talent-board')!.classList.contains('slx-talent-wide')).toBe(false);
+      expect(root.querySelectorAll('.slx-talent-row[data-row="0"] .slx-talent-node')).toHaveLength(4);
+    });
+
+    it("the hero's ultimate line names his current form", () => {
+      const { root, game, s, tabTo } = heroSetup();
+      tabTo(5);
+      expect(root.querySelector('.slx-tab-ultimate h4')!.textContent).toBe('燈鑰・斬');
+      game.state.party.roster.hero = { ...game.state.party.roster.hero, tree: { ...game.state.party.roster.hero.tree, 'hero-mend': 3 } };
+      s.onAction('left'); s.onAction('right');
+      expect(root.querySelector('.slx-tab-ultimate h4')!.textContent).toBe('燈鑰・光');
+    });
+  });
 });

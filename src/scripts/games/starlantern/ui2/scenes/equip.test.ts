@@ -578,4 +578,16 @@ describe('EquipScene touch', () => {
     cell(0).click();                                                    // a click with no pointer type: the mouse path
     expect(worn().weapon!.uid).toBe(9);                                 // swapped back
   });
+
+describe('EquipScene, the hero leads', () => {
+  it('the hero comes first: with no argument the equip screen opens on him', () => {
+    const game = new Game(constRng(0.5), null, undefined, 0, ['rin', 'hero']);
+    expect(game.state.party.grid.find((id) => id)).toBe('rin');   // Rin stands first on the field, yet the hero still leads
+    const root = document.createElement('div');
+    const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
+    const s = new EquipScene({ game, art: NO_ART, sfx, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), from: 'guild' });
+    s.enter(root);
+    expect(root.querySelector('.slx-equip-scene')!.textContent).toContain('洛恩');
+  });
+});
 });

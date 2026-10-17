@@ -539,6 +539,14 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-talent-frame .slx-more-up { top: -12px; }
 .slx-tree-frame .slx-more-up { top: 0; }
 .slx-tree-cols { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 0 8px; }
+.slx-tree-cols.slx-tree-wide { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0 4px; }
+.slx-tree-wide .slx-tree-branch-name { font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
+.slx-tree-wide .slx-tree-node { padding: 1px 2px; }
+.slx-tree-wide .slx-tree-node .slx-skill-head { gap: 0 2px; font-size: 10px; flex-wrap: wrap; }
+.slx-tree-wide .slx-tree-node .slx-skill-name { flex: 0 1 auto; max-width: 100%; }
+.slx-tree-wide .slx-tree-kind { display: none; }   // the notes under the columns name the kind
+.slx-tree-wide .slx-node-locked .slx-tree-state { display: none; }   // a locked node is dimmed; its reason shows in the notes when the cursor is on it
+.slx-tree-wide .slx-tree-node-foot { gap: 2px; font-size: 9px; }
 .slx-tree-branch { min-width: 0; }
 .slx-tree-branch-name { margin: 0; font-size: 12px; line-height: 14px; font-weight: normal; color: $slx-gold; border-bottom: 1px solid #6e5a2e; white-space: nowrap; }
 .slx-tree-node { padding: 1px 3px; cursor: pointer; }
@@ -569,6 +577,10 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-talent-board { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6e5a2e transparent; }
 .slx-talent-row { display: grid; grid-template-columns: 12px repeat(4, minmax(0, 1fr)); border-bottom: 1px solid #2a2840; }
 /* The tier label reads top to bottom beside the row's three text lines. */
+.slx-talent-wide .slx-talent-row { grid-template-columns: 12px repeat(6, minmax(0, 1fr)); }
+.slx-talent-wide .slx-talent-head { font-size: 10px; }
+.slx-talent-wide .slx-talent-sub { font-size: 9px; }
+.slx-talent-wide .slx-talent-per { display: none; }   // the notes under the board carry the per-rank bonus
 .slx-talent-tier { writing-mode: vertical-rl; text-orientation: upright; font-size: 10px; line-height: 12px; color: $slx-dim; text-align: center; align-self: center; }
 .slx-talent-node { min-width: 0; padding: 1px 2px; cursor: pointer; }
 .slx-talent-row .slx-talent-node { border-left: 1px solid #2a2840; }

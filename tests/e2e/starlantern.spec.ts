@@ -140,6 +140,10 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-guild')).toBeVisible();
     await page.locator('.slx-cmd [data-id=status]').click();
     await expect(page.locator('.slx-status-scene')).toBeVisible();
+    await expect(page.locator('.slx-status-name')).toContainText('洛恩');       // the hero leads
+    await page.locator('.slx-status-next').click();
+    await page.locator('.slx-status-next').click();
+    await expect(page.locator('.slx-status-name')).toContainText('絲嘉蕾');
     await page.locator('[data-tab=skills]').click();
     await expect(page.locator('.slx-status-body')).toContainText('挑釁');
     await page.locator('.slx-status-next').click();
@@ -587,9 +591,9 @@ test.describe('starlantern', () => {
       g.state.gold = 1000;
     });
 
-    // The guild's 技能樹 entry opens the tree tab on the first member; page to Noel.
+    // The guild's 技能樹 entry opens the tree tab on the hero; page to Noel.
     await guildTab('tree');
-    await expect(status).toContainText('絲嘉蕾');
+    await expect(status).toContainText('洛恩');
     await toNoel();
     const ice = page.locator('.slx-tree-node[data-node=ice-star]');
     await expect(ice).toContainText('0／3');

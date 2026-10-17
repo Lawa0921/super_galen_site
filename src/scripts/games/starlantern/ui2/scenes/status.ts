@@ -30,7 +30,7 @@ export class StatusScene implements Scene {
   enter(root: HTMLElement): void {
     const p = this.ctx.game.state.party;
     const arg = this.ctx.arg ?? '';
-    this.id = p.recruited.includes(arg as CharacterId) ? (arg as CharacterId) : (activeIds(p)[0] ?? p.recruited[0]);
+    this.id = p.recruited.includes(arg as CharacterId) ? (arg as CharacterId) : (p.recruited.includes('hero') ? 'hero' : (activeIds(p)[0] ?? p.recruited[0]));
     // `tab:<id>` (the guild's skill-tree and talent entries): open that page, with its kept cursor brought into view.
     const want = arg.startsWith('tab:') ? STATUS_TABS.findIndex((t) => t.id === arg.slice(4)) : -1;
     if (want >= 0) { this.tab = want; STATUS_TABS[want].reveal?.(); }

@@ -93,7 +93,7 @@ export class EquipScene implements Scene {
 
   enter(root: HTMLElement): void {
     const p = this.ctx.game.state.party;
-    this.id = p.recruited.includes(this.ctx.arg as CharacterId) ? (this.ctx.arg as CharacterId) : (activeIds(p)[0] ?? p.recruited[0]);
+    this.id = p.recruited.includes(this.ctx.arg as CharacterId) ? (this.ctx.arg as CharacterId) : (p.recruited.includes('hero') ? 'hero' : (activeIds(p)[0] ?? p.recruited[0]));
     this.head = win('slx-equip-head');
 
     this.bagCells = Array.from({ length: BAG_SIZE }, (_, i) => this.cell('bag', i, el('div', { class: 'slx-bag-cell', attrs: { role: 'gridcell', 'data-index': String(i) } })));
