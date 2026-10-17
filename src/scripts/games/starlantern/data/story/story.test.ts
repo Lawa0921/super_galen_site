@@ -5,7 +5,7 @@ import { MATERIALS } from '../materials';
 import { REGIONS } from '../regions';
 import { STORY, PLACEHOLDERS, NPC_NAMES } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
-import { TOWN_FRAGMENTS, shardGrade, isFragmentItem, fragmentName } from './fragments';
+import { TOWN_FRAGMENTS, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
 import { ACT_DEPTHS, CHAT_COUNT, SCENE_IDS, STAGES, MAJOR_SCENES, isSceneId, lineCap, memScene, sceneKind } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
@@ -47,6 +47,39 @@ describe('story data', () => {
         for (const r of p.regions) expect(REGIONS[r]).toBeDefined();
       }
     }
+  });
+
+  it('companion chains drop every piece from all of their regions, and gain the spec stat', () => {
+    const spec: Record<string, { regions: string[]; gain: Record<string, number> }> = {
+      selene: { regions: ['mainline', 'frost'], gain: { wil: 2 } }, chizuru: { regions: ['frost', 'mainline'], gain: { str: 2 } },
+      safira: { regions: ['blaze'], gain: { agi: 2 } }, sylvie: { regions: ['mire'], gain: { agi: 2 } },
+      noel: { regions: ['storm'], gain: { int: 2 } }, bobby: { regions: ['mainline', 'iron'], gain: { int: 2 } },
+      liz: { regions: ['shade'], gain: { agi: 2 } }, scarlet: { regions: ['iron'], gain: { str: 2 } },
+    };
+    for (const [id, want] of Object.entries(spec)) {
+      const chain = CHAINS[id as keyof typeof CHAINS];
+      for (const p of chain.pieces) expect(p.regions).toEqual(want.regions);
+      expect(chain.gain).toEqual(want.gain);
+    }
+    expect(CHAINS.hero.gain).toEqual({ str: 1, int: 1, agi: 1, wil: 1 });
+    expect(CHAINS.rin.gain).toEqual({ agi: 2 });
+  });
+
+  it('the fragment tables match the brief', () => {
+    expect(SHARD_PRICE).toEqual({ dim: 30, clear: 80, vivid: 200 });
+    expect(SHARD_DROP).toEqual({ boss: 1, elite: 0.5, chest: 0.08, vault: 0.5 });
+    expect(TOWN_DROP).toEqual({ boss: 0.25, elite: 0.15, chest: 0.03, vault: 0.2 });
+    expect(PERKS).toEqual({ shopDiscountPct: 10, meal: { stat: 'def', pct: 5 }, shardPriceMul: 1.25, setRecipeLess: 2 });
+    expect(ABSORB_GAIN.dim).toEqual({ hp: 6, tp: 2, atk: 1, def: 1, mag: 1, res: 1, spd: 1 });
+    expect(ABSORB_GAIN.clear).toEqual({ hp: 12, tp: 4, atk: 2, def: 2, mag: 2, res: 2, spd: 2 });
+    expect(ABSORB_GAIN.vivid).toEqual({ hp: 18, tp: 6, atk: 3, def: 3, mag: 3, res: 3, spd: 3 });
+    const row = (id: string) => TOWN_FRAGMENTS.find((f) => f.id === id)!;
+    expect(TOWN_FRAGMENTS.map((f) => f.id)).toEqual(['orik', 'marta', 'anna', 'glen', 'doran']);
+    expect([row('orik').regions, row('orik').minDepth, row('orik').reward, row('orik').perk, row('orik').questHook]).toEqual([['shade'], 4, { gold: 300 }, 'shop-discount', 'orik-hat']);
+    expect([row('marta').regions, row('marta').minDepth, row('marta').reward, row('marta').perk, row('marta').questHook]).toEqual([['mainline'], 5, { items: { phoenix: 2 } }, 'inn-meal', 'marta-diary']);
+    expect([row('anna').regions, row('anna').minDepth, row('anna').reward, row('anna').perk, row('anna').questHook]).toEqual(['any', 8, { items: { 'star-tear': 1 } }, 'shard-price', 'anna-name']);
+    expect([row('glen').regions, row('glen').minDepth, row('glen').reward, row('glen').perk, row('glen').questHook]).toEqual([['mainline'], 15, { gold: 500 }, 'portal-reroll', 'glen-first']);
+    expect([row('doran').regions, row('doran').minDepth, row('doran').reward, row('doran').perk, row('doran').questHook]).toEqual([['iron'], 4, { items: { 'king-scale': 1 } }, 'set-recipe', 'doran-master']);
   });
 
   it('when always holds before the calendar exists', () => {

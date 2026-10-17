@@ -4,7 +4,7 @@ import type { ExtraMood, Mood } from '../render/artPaths';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { CHAINS } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
-import { CHAT_COUNT, MAJOR_SCENES, STAGES, memScene, type SceneId, type Stage } from './story/scenes';
+import { CHAT_COUNT, MAJOR_SCENES, STAGES, type MajorScene, memScene, type SceneId, type Stage } from './story/scenes';
 
 export type NpcId = 'anna' | 'orik' | 'marta' | 'glen' | 'doran' | 'merchant' | 'bellkeeper';
 export const NPC_NAMES: Record<NpcId, string> = {
@@ -23,10 +23,10 @@ const ph = (text: string): string => { PLACEHOLDERS.add(text); return text; };
 
 const nameOf = (id: CharacterId): string => CHARACTERS[id].name;
 
-const MAJOR_TITLES: Record<string, string> = {
+const MAJOR_TITLES: Record<MajorScene, string> = {
   prologue: '序章', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
 };
-const MAJOR_TEXT: Record<string, string> = {
+const MAJOR_TEXT: Record<MajorScene, string> = {
   prologue: '序章', 'act1-after': '第一幕之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
 };
 

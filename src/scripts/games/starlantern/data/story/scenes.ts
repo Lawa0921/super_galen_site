@@ -20,7 +20,8 @@ export const CHAT_COUNT: Record<CharacterId, number> = {
   hero: 4, rin: 4, noel: 2, chizuru: 2, liz: 2, sylvie: 2, scarlet: 2, selene: 2, safira: 2, bobby: 2,
 };
 
-export const MAJOR_SCENES: SceneId[] = ['prologue', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'finale'];
+export type MajorScene = 'prologue' | 'act1-after' | ActNode | 'rin-reveal' | 'finale';
+export const MAJOR_SCENES: MajorScene[] = ['prologue', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'finale'];
 
 /** Every scene id, in a fixed order: major scenes, then memories, chats and returns. */
 export const SCENE_IDS: SceneId[] = [

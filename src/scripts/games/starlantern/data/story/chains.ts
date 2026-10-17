@@ -27,10 +27,10 @@ const mainRoad = (depths: number[], bossFrom = Infinity): PieceDef[] =>
   depths.map((minDepth, i) => (i >= bossFrom ? { regions: ['mainline'], minDepth, bossOnly: true } : { regions: ['mainline'], minDepth }));
 
 const COMPANION_DEPTHS = [1, 1, 1, 6, 6];
-/** A companion chain: piece i comes from regions[i % regions.length]. `whens` maps a piece index to its calendar gate. */
+/** A companion chain: every piece drops from all of `regions` (spec §7.3). `whens` maps a piece index to its calendar gate. */
 const companion = (regions: RegionId[], key: PrimaryKey, whens: Record<number, When> = {}): ChainDef => ({
   pieces: COMPANION_DEPTHS.map((minDepth, i) => {
-    const p: PieceDef = { regions: [regions[i % regions.length]], minDepth };
+    const p: PieceDef = { regions: [...regions], minDepth };
     if (whens[i]) p.when = whens[i];
     return p;
   }),
