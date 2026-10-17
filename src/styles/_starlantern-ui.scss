@@ -984,7 +984,8 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 // Forge (ui2/scenes/forge.ts): the five tabs are the command window; a tab's gear list and its detail reuse .slx-list and .slx-info,
 // widened for gear labels with a wearer. Gear marked junk is struck through in its rarity colour; a cost the party cannot pay is .slx-lack.
 .slx-forge .slx-list { min-width: 250px; max-height: 260px; }
-.slx-forge .slx-info { left: 420px; width: 200px; max-height: 260px; overflow-y: auto; }
+// A window's border is 8px a side (16px across) on top of 8px padding a side: a 188px detail at 420px ends at the 640px edge.
+.slx-forge .slx-info { left: 420px; width: 188px; max-height: 260px; overflow-y: auto; }
 // The reroll's affix and method lists are stacked right of the first, so they stay narrow enough to leave the detail uncovered.
 .slx-forge .slx-reroll-list { min-width: 0; max-width: 232px; }
 .slx-forge .slx-info.slx-reroll-info { left: 456px; width: 152px; }
@@ -992,7 +993,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 // The crafting lists are one gold line per row, so they stay narrow enough to leave the detail uncovered.
 .slx-forge .slx-craft-list { left: 100px; min-width: 0; max-width: 256px; }
 .slx-forge .slx-craft-list .slx-right { white-space: nowrap; }
-.slx-forge .slx-info.slx-craft-info { left: 436px; width: 188px; }
+.slx-forge .slx-info.slx-craft-info { left: 436px; width: 172px; }
 .slx-forge .slx-label.slx-junk { text-decoration: line-through; opacity: 0.6; }
 // Reroll and fusion stack three or four windows; those under the top one (facility.ts marks them slx-under) darken,
 // so the open list or confirm reads cleanly. A filter, not opacity: the windows stay opaque, so one list's text never shows

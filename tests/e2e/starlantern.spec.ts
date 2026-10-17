@@ -668,4 +668,32 @@ test.describe('starlantern', () => {
     }
     expect(w.errors).toEqual([]);
   });
+
+  test('every forge window stays inside the screen, so nothing scrolls the stage', async ({ page }) => {
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.gold = 5000;
+      Object.assign(g.state.inventory, { 'essence-magic': 10, 'essence-rare': 4, 'blaze-core': 9, 'star-tear': 1 });
+      for (const it of [{ rarity: 'common', enhance: 5, affixes: [] }, ...[3, 4, 5].map((v) => ({ rarity: 'magic', enhance: 0, affixes: [{ key: 'crit', value: v }] }))]) {
+        g.state.bag.push({ uid: g.mintUid(), base: 'iron-sword', ilvl: 8, ...it });
+      }
+    });
+    await w.choose('.slx-town', '鍛造屋');
+    await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
+    const outside = () => page.evaluate(() => {
+      const screen = document.querySelector('#sl-screen')!.getBoundingClientRect();
+      const wins = [...document.querySelectorAll<HTMLElement>('.slx-forge .slx-win')].map((e) => ({ cls: e.className, r: e.getBoundingClientRect() }));
+      const scrolled = [...document.querySelectorAll<HTMLElement>('#sl-screen, #sl-screen *')].filter((e) => e.scrollLeft > 0).map((e) => e.className);
+      return [...wins.filter(({ r }) => r.left < screen.left - 0.5 || r.right > screen.right + 0.5).map(({ cls, r }) => `${cls} ${r.left}-${r.right} / ${screen.left}-${screen.right}`), ...scrolled.map((c) => `scrolled: ${c}`)];
+    });
+    const pages: [string, string[]][] = [['dismantle', []], ['enhance', []], ['reroll', ['[role=option]']], ['fuse', ['[data-id=magic]']], ['craft', ['[data-id=set]', '[data-id=set-blaze]']]];
+    for (const [tab, steps] of pages) {
+      await page.locator(`.slx-forge .slx-cmd [data-id=${tab}]`).click();
+      for (const step of steps) await page.locator('.slx-forge .slx-layer').last().locator(step).first().click();
+      expect(await outside(), tab).toEqual([]);
+      for (let i = 0; i < 4 && (await page.locator('.slx-forge .slx-layer').count()); i++) await w.key('Escape');
+    }
+    expect(w.errors).toEqual([]);
+  });
 });
