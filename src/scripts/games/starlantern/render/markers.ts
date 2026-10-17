@@ -2,17 +2,17 @@ import type { Game } from '../engine/game';
 import { floorOf } from '../engine/dungeon/run';
 
 /** Things worth a marker on the map: unspent event tiles, and traps once they have gone off. */
-export type MarkerKind = 'chest' | 'fountain' | 'merchant' | 'altar' | 'elite' | 'vault' | 'key' | 'trap';
+export type MarkerKind = 'chest' | 'fountain' | 'merchant' | 'altar' | 'elite' | 'vault' | 'key' | 'trap' | 'rescue';
 
 /** Text markers used until the event tile art is approved. */
 export const MARKER_GLYPH: Record<MarkerKind, string> = {
-  chest: '箱', fountain: '泉', merchant: '商', altar: '壇', elite: '★', vault: '庫', key: '鑰', trap: '陷',
+  chest: '箱', fountain: '泉', merchant: '商', altar: '壇', elite: '★', vault: '庫', key: '鑰', trap: '陷', rescue: '救',
 };
 
 /** `waiting`: an opened chest whose gear did not fit and still lies in it (`run.waiting`). */
 export interface Marker { kind: MarkerKind; x: number; y: number; waiting?: true }
 
-const LIVE = new Set<string>(['chest', 'fountain', 'merchant', 'altar', 'elite', 'vault', 'key']);
+const LIVE = new Set<string>(['chest', 'fountain', 'merchant', 'altar', 'elite', 'vault', 'key', 'rescue']);
 
 /**
  * Markers on the cells the party has seen on this floor. Spent things are not marked (the engine turns used fountains,

@@ -171,7 +171,7 @@ export class MapView {
       if (m.kind === 'chest' && chestArt && !m.waiting) continue;
       const memory = fogState(seen, game.pos, m.x, m.y, sight) === 'memory';
       const cx = m.x * cell + cell / 2, cy = m.y * cell + cell / 2;
-      const tex = m.kind === 'chest' ? null : this.bank?.get(art.eventTile(m.kind)) ?? null;
+      const tex = m.kind === 'chest' || m.kind === 'rescue' ? null : this.bank?.get(art.eventTile(m.kind)) ?? null;   // no art for these: text marker
       if (tex) {
         const s = new Sprite(tex);
         s.anchor.set(0.5);

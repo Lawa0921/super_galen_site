@@ -7,6 +7,8 @@ import { ITEMS } from './items';
 import { MATERIALS } from './materials';
 import { SETS } from './gear';
 import type { RegionId } from './regions';
+import { CHARACTERS } from './characters';
+import { MEETINGS } from './meetings';
 import type { MaterialUse } from '../engine/forge/uses';
 import type { MaterialKind } from '../engine/types';
 import type { AnyStat, BuffStat, Rarity, Slot, StatKey, Target } from '../engine/types';
@@ -54,6 +56,8 @@ const FORGE_GROUP: Record<RegionId, string> = {
   mainline: '', blaze: '火焰系', frost: '冰霜系', storm: '雷鳴系', mire: '毒抗與恢復系', shade: '暴擊系', iron: '防禦系',
 };
 const SLOT_KIND = { ...SLOT, ring: '戒指' } as Record<Slot | 'ring', string>;
+
+const rescueFound = (name: string) => `有人被怪物圍住了──是${name}！`;
 
 export const T = {
   signed,
@@ -155,6 +159,7 @@ export const T = {
     crit: '（暴擊）',
   },
   ui2: {
+    rescue: { found: rescueFound, joined: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍！`, benched: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍，在公會待命。` },
     banner: { encounter: '遭遇！', boss: '頭目出現！', win: '勝利！' },
     hints: {
       title: '↑↓ 選擇　Enter 決定　滑鼠也可以操作',
@@ -567,5 +572,7 @@ export const T = {
     },
     junkOnly: '雜物：只能賣錢',
   },
+  /** What is said before a rescue fight and after it is won; one entry per companion, so each can be rewritten on its own. */
+  meet: Object.fromEntries(MEETINGS.map((m) => [m.id, { before: [rescueFound(CHARACTERS[m.id].name)], after: [] as string[] }])) as Record<string, { before: string[]; after: string[] }>,
   clear: { title: '星燈重新亮起', body: '燈喰之獸倒下了。暮霧散去，露米亞迎來久違的晨光。', back: '回到城鎮' },
 };

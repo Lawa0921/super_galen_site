@@ -3,6 +3,7 @@ import type { HitExtra, PartyCue } from '../../render/BattleView';
 import type { FxKey } from '../../render/artPaths';
 import { ITEMS } from '../../data/items';
 import { T } from '../../data/text.zh-TW';
+import { CHARACTERS } from '../../data/characters';
 import { LIMIT_MAX, intentLabel, skillCost, skillFor, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
 import type { BattleEnd } from '../../engine/game';
@@ -463,6 +464,11 @@ export class BattleScene implements Scene {
       for (const [id, n] of Object.entries(end.left)) lines.push({ text: T.battle.leftBehind(itemName(id), n) });
       for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it)]), cls: 'slx-loot-left' });
       lines.push(...levelUpLines(end.levelUps, this.ctx.game.state.party));
+      if (end.met) {
+        const who = CHARACTERS[end.met.id].name;
+        for (const l of T.meet[end.met.id].after) lines.push({ text: l });
+        lines.push({ text: (end.met.benched ? T.ui2.rescue.benched : T.ui2.rescue.joined)(who, end.met.level) });
+      }
     } else if (end.outcome === 'lose') this.ctx.sfx.lose?.();
     const title = end.outcome === 'win' ? T.battle.win : end.outcome === 'lose' ? T.battle.lose : T.battle.fled;
     this.result = new MenuView(new Menu([{ id: 'ok', label: T.battle.cont }]), {

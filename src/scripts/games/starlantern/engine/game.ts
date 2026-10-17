@@ -490,6 +490,8 @@ export class Game {
       const level = joinLevel(this.state.party, this.floor);
       this.state.party = meet(this.state.party, rescue.who, level);
       this.map().tiles[rescue.at.y][rescue.at.x] = 'floor';
+      const here = floorOf(this.run!, this.floor);
+      here.contents = here.contents.filter((c) => !(c.kind === 'rescue' && c.at.x === rescue.at.x && c.at.y === rescue.at.y));   // she is met: no marker stays
       met = { id: rescue.who, level, benched: !activeIds(this.state.party).includes(rescue.who) };
     }
     if (b.boss) openStairs(this.map());   // a beaten boss leaves stairs down where it stood, so the run can go deeper

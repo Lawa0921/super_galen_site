@@ -6,6 +6,8 @@ import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { BattleScene } from './battle';
 import { LEGACY_LINEUP } from '../../engine/party';
+import { T } from '../../data/text.zh-TW';
+import { CHARACTERS } from '../../data/characters';
 
 const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); await new Promise((r) => setTimeout(r, 0)); };
 
@@ -163,6 +165,23 @@ describe('BattleScene', () => {
     expect(lines).toContain('背包已滿，留下了 蝙蝠翼膜 ×2');
     expect(lines).toContain('背包已滿，留下了 荊棘牙 ×1');
     expect(lines).not.toContain('蝙蝠翼膜 ×2');
+  });
+
+  it('a won rescue lists who joined', async () => {
+    const run = async (benched: boolean) => {
+      const { game, s, root } = setup();
+      const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [], met: { id: 'selene' as const, level: 4, benched } };
+      vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+      for (let i = 0; i < 5; i++) s.onAction('down');
+      s.onAction('confirm');
+      await flush();
+      return [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
+    };
+    const joined = await run(false);
+    expect(joined[joined.length - 1]).toBe(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));
+    const benched = await run(true);
+    expect(benched[benched.length - 1]).toBe(T.ui2.rescue.benched(CHARACTERS.selene.name, 4));
+    expect(benched).not.toContain(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));
   });
 
   it('the result lists the points a level-up brings', async () => {

@@ -12,6 +12,9 @@ import { MATERIALS } from '../../data/materials';
 import { showPillar } from '../lootFx';
 import { DungeonScene } from './dungeon';
 import { LEGACY_LINEUP } from '../../engine/party';
+import { floorOf } from '../../engine/dungeon/run';
+import { T } from '../../data/text.zh-TW';
+import { CHARACTERS } from '../../data/characters';
 
 function setup(portal: Portal = { region: 'mainline', condition: 'plain' }, fast = true) {
   const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);   // 0.99: never an early encounter roll
@@ -441,6 +444,30 @@ describe('DungeonScene loot', () => {
     expect(text()).toContain('打開寶箱');
     expect(root.querySelector('.slx-pillar')).toBeNull();
     expect(sfx.loot).not.toHaveBeenCalled();
+  });
+
+  it('stepping into a rescue room says the meeting line, then fights', async () => {
+    const game = new Game(constRng(0.99), null, undefined, 0, ['hero', 'rin']);   // Selene not met yet
+    game.state.dungeon.reached.mainline = 3;
+    expect(game.depart({ region: 'mainline', condition: 'plain' }, 2)).toEqual({ ok: true });
+    const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), stairs: vi.fn(), chest: vi.fn(), encounter: vi.fn(), loot: vi.fn() };
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const s = new DungeonScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: true }, Infinity);
+    s.enter(root);
+    const text = () => root.querySelector('.slx-talk .slx-text')?.textContent ?? '';
+    const at = floorOf(game.run!, 2).contents.find((c) => c.kind === 'rescue')!.at;
+    const dir = (['up', 'down', 'left', 'right'] as const).find((d) => !['wall', 'trap'].includes(tileAt(game.map(), { x: at.x - DELTA[d].x, y: at.y - DELTA[d].y })))!;
+    game.pos = { x: at.x - DELTA[dir].x, y: at.y - DELTA[dir].y };
+    s.onAction(dir);
+    expect(text()).toBe(T.meet.selene.before[0]);
+    expect(text()).toBe(T.ui2.rescue.found(CHARACTERS.selene.name));
+    expect(game.phase).toBe('battle');
+    expect(go).not.toHaveBeenCalled();
+    s.onAction('confirm');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(sfx.encounter).toHaveBeenCalled();
+    expect(go).toHaveBeenCalledWith('battle');
   });
 
   it('any key skips the legendary moment, and only that key', () => {

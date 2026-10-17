@@ -10,6 +10,7 @@ import { MAP_CELL, MapView, tileColor } from './MapView';
 import { MARKER_GLYPH, markersOf } from './markers';
 import { chestHasGear } from '../engine/loot/drops';
 import type { TextureBank } from './textures';
+import { art } from './artPaths';
 
 const bank = { get: () => Texture.WHITE, has: () => true } as unknown as TextureBank;
 const MAIN = { region: 'mainline', condition: 'plain' } as const;
@@ -231,6 +232,24 @@ describe('MapView event markers', () => {
     }
     const tileUrls = urls.filter((u) => /\/tiles\/f\d-/.test(u));
     expect(tileUrls.some((u) => /-(fountain|trap|merchant|altar|elite|vault|key)\.png$/.test(u))).toBe(false);
+  });
+
+  it('a seen rescue room shows the 救 marker and asks for no art', () => {
+    const urls: string[] = [];
+    const spy = { get: (u: string) => { urls.push(u); return u.includes('/tiles/event-') ? null : Texture.WHITE; }, has: () => true } as unknown as TextureBank;
+    const game = new Game(constRng(0.99), null);
+    game.state.dungeon.reached.mainline = 3;
+    expect(game.depart(MAIN, 2)).toEqual({ ok: true });
+    const f = floorOf(game.run!, 2);
+    f.map.tiles[1][1] = 'altar';   // a real event tile beside it, to prove the spy sits on the path that asks for art
+    f.contents.push({ kind: 'altar', at: { x: 1, y: 1 }, room: 0 });
+    exploreAll(game);
+    const view = new MapView(spy);
+    view.draw(game, SIZE);
+    expect(markersOf(game).map((m) => m.kind)).toContain('rescue');
+    expect(view.markerGlyphs()).toContain(MARKER_GLYPH.rescue);
+    expect(urls).not.toContain(art.eventTile('rescue' as never));
+    expect(urls).toContain(art.eventTile('altar'));
   });
 
   it('keeps each marker glyph across draws and drops the ones that are spent', () => {

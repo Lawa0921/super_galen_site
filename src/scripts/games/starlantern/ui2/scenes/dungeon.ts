@@ -240,20 +240,28 @@ export class DungeonScene implements Scene {
         return;
       case 'key': s.chest?.(); this.refresh(); this.say(T.ui2.event.key); return;
       case 'full': this.refresh(); showPickUp(this.host(), r); return;
-      case 'battle': case 'boss': {
-        s.encounter?.();
-        this.leaving = true;
-        this.root.setAttribute('inert', '');
-        // A flash and closing bars before the battle (red for the boss); skipped in fast mode.
-        const wipe = el('div', { class: r.kind === 'boss' ? 'slx-encounter slx-encounter-boss' : 'slx-encounter', attrs: { 'aria-hidden': 'true' } },
-          [0, 1, 2, 3, 4, 5].map((i) => el('span', { class: `slx-enc-bar slx-enc-bar-${i}` })));
-        this.body.append(wipe);
-        if (this.ctx.fast) this.ctx.go('battle');
-        else setTimeout(() => this.ctx.go('battle'), ENCOUNTER_MS);
-        return;
-      }
+      case 'rescue': { void this.meeting(r.who); return; }
+      case 'battle': case 'boss': this.fightOn(r.kind === 'boss'); return;
     }
     this.refresh();
+  }
+
+  /** A rescue room: the meeting lines one at a time, then the fight as for any encounter. */
+  private async meeting(who: CharacterId): Promise<void> {
+    for (const line of T.meet[who].before) await this.say(line);
+    this.fightOn(false);
+  }
+
+  /** A flash and closing bars before the battle (red for the boss); skipped in fast mode. */
+  private fightOn(boss: boolean): void {
+    this.ctx.sfx.encounter?.();
+    this.leaving = true;
+    this.root.setAttribute('inert', '');
+    const wipe = el('div', { class: boss ? 'slx-encounter slx-encounter-boss' : 'slx-encounter', attrs: { 'aria-hidden': 'true' } },
+      [0, 1, 2, 3, 4, 5].map((i) => el('span', { class: `slx-enc-bar slx-enc-bar-${i}` })));
+    this.body.append(wipe);
+    if (this.ctx.fast) this.ctx.go('battle');
+    else setTimeout(() => this.ctx.go('battle'), ENCOUNTER_MS);
   }
 
   /** 前往 on the stairs window: go down and name the new floor, then pay the depth-clear exp in a second line. */

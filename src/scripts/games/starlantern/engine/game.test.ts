@@ -25,6 +25,7 @@ import { itemLevel, itemWeight, rollItem } from './loot/item';
 import type { ItemInstance } from './types';
 import { MATERIALS } from '../data/materials';
 import { buy } from './town';
+import { markersOf } from '../render/markers';
 
 vi.mock('./portals', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./portals')>();
@@ -1550,6 +1551,22 @@ describe('rescue fights', () => {
     expect(end.levelUps.some((l) => l.id === 'selene')).toBe(false);
     expect(tileAt(g.map(), at)).toBe('floor');
     expect(g.phase).toBe('map');
+  });
+  it('winning takes the room off the floor, so no rescue marker stays after she joins', () => {
+    const { g, at } = rescueRun();
+    stepOnto(g, at);
+    g.run!.explored[g.floor] = [`${at.x},${at.y}`];
+    killAll(g);
+    expect(floorOf(g.run!, 2).contents.some((c) => c.kind === 'rescue')).toBe(false);
+    expect(markersOf(g).some((m) => m.kind === 'rescue')).toBe(false);
+  });
+  it('fleeing keeps the rescue marker on the map', () => {
+    const { g, at } = rescueRun();
+    stepOnto(g, at);
+    g.run!.explored[g.floor] = [`${at.x},${at.y}`];
+    (g as { rng: unknown }).rng = constRng(0);
+    expect(g.submitRound({ hero: { kind: 'escape' } })!.end!.outcome).toBe('fled');
+    expect(markersOf(g)).toContainEqual({ kind: 'rescue', x: at.x, y: at.y });
   });
   it('a full party benches her', () => {
     const { g, at } = rescueRun(['hero', 'rin', 'chizuru', 'liz', 'noel']);

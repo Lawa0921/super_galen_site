@@ -10,6 +10,20 @@ import { MATERIALS } from './materials';
 import { NODES } from './trees';
 import { FLOORS } from './floors';
 import { ULTIMATES } from './ultimates';
+import { MEETINGS } from './meetings';
+import { T } from './text.zh-TW';
+
+describe('meeting copy', () => {
+  it('every companion has meeting copy', () => {
+    for (const m of MEETINGS) {
+      const t = T.meet[m.id];
+      expect(t, m.id).toBeDefined();
+      expect(t.before.length).toBeGreaterThanOrEqual(1);
+      for (const l of [...t.before, ...t.after]) expect(l.trim()).not.toBe('');
+    }
+    expect(Object.keys(T.meet).sort()).toEqual(MEETINGS.map((m) => m.id).sort());
+  });
+});
 
 describe('data integrity', () => {
   it('matches the spec content counts', () => {
