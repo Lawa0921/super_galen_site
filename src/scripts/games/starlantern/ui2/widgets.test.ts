@@ -44,6 +44,13 @@ describe('MenuView', () => {
     expect(pick).toHaveBeenCalledTimes(1);
   });
 
+  it("a row's rightClass is added to its right column, and a row without one keeps plain slx-right", () => {
+    const v = new MenuView(new Menu([{ id: 'a', label: 'A', right: '1 G', rightClass: 'slx-lack' }, { id: 'b', label: 'B', right: '2 G' }]), { pick: vi.fn() });
+    const [a, b] = [...v.el.querySelectorAll('.slx-right')];
+    expect(a.className).toBe('slx-right slx-lack');
+    expect(b.className).toBe('slx-right');
+  });
+
   it('passes cancel to its owner', () => {
     const cancel = vi.fn();
     const v = new MenuView(mk(), { pick: vi.fn(), cancel });

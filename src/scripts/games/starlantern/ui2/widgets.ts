@@ -100,7 +100,7 @@ export class MenuView {
       } }, [
         ...(item.icon ? [el('img', { class: 'slx-ico', attrs: { src: item.icon, alt: '' } })] : []),
         el('span', { class: item.cls ? `slx-label ${item.cls}` : 'slx-label', text: item.label }),
-        ...(item.right !== undefined ? [el('span', { class: 'slx-right', text: item.right })] : []),
+        ...(item.right !== undefined ? [el('span', { class: item.rightClass ? `slx-right ${item.rightClass}` : 'slx-right', text: item.right })] : []),
       ]);
       // pointermove, not pointerenter: a window that opens under a resting mouse must not steal the keyboard cursor.
       li.addEventListener('pointermove', () => {

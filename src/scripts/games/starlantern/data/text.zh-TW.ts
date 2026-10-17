@@ -394,6 +394,20 @@ export const T = {
       fuseRegionNote: '不會出現限定地區的裝備',
       fuseNeed: '費用：',
       fused: (label: string) => `合成完成！得到了${label}。`,
+      craftCats: { item: '消耗品', base: '底材', set: '套裝' },
+      /** A consumable row's right column: the shop's price, then the gold crafting one takes. */
+      craftRow: (shop: number, cost: string) => `店價 ${shop} G 製作 ${cost}`,
+      craftShop: (shop: number) => `店價 ${shop} G`,
+      craftLevel: (n: number) => `物品等級 ${n}`,
+      magicChance: (pct: number) => `${pct}% 機率為魔法級`,
+      craftBagRoom: (n: number) => `背包剩 ${n} 格`,
+      craftNeed: '製作費用：',
+      askCraftBase: (slot: string) => `要製作${slot}底材嗎？`,
+      askCraftSet: (piece: string) => `要製作${piece}嗎？`,
+      /** The refusal for a recipe the stores cannot cover: the reason, then what is short. */
+      craftLack: (reason: string, names: string[]) => `${reason}。還缺：${names.join('、')}`,
+      craftedItem: (name: string, qty: number) => `製作完成！得到了${name} ×${qty}。`,
+      crafted: (label: string) => `製作完成！得到了${label}。`,
     },
     dungeon: {
       status: '隊伍狀態', items: '道具', lamp: (n: number) => `歸還之燈 ×${n}`, close: '關閉', askTown: '要回到城鎮嗎？',

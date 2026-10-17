@@ -11,6 +11,9 @@ import { AFFIXES } from '../../data/gear';
 import { enhanceCost, forgeRng, rerollCost, rerollRange, swapPool } from '../../engine/forge/cost';
 import { implicitStats, itemSlot } from '../../engine/loot/item';
 import { gearLabel } from '../loot';
+import { BAG_SIZE } from '../../engine/loot/bag';
+import { baseCost, craftLevel } from '../../engine/forge/craft';
+import { specialLines } from '../../engine/compare';
 import { ForgeScene, costText, forgeRows, type ForgeHost } from './forge';
 
 const gear = (uid: number, base: string, rarity: Rarity, extra: Partial<ItemInstance> = {}): ItemInstance =>
@@ -72,19 +75,19 @@ describe('ForgeScene', () => {
     // Keyboard: each tab in turn.
     TABS.forEach((tab, i) => {
       if (i) s.onAction('down');
-      if (i <= 3) return;                   // 分解, 強化, 重鑄 and 合成 open their own pages (covered below)
-      s.onAction('confirm');
-      expect(line()).toBe(T.ui2.town.soon(tab));
-      s.onAction('confirm');
+      // Every tab opens its own page (covered below); 製作 is the last of them.
+      if (tab !== '製作') return;
       expect(talking()).toBe(false);
-    });
-    // Mouse and touch: a click on each tab.
-    for (const tab of TABS.slice(4)) {
-      const opt = [...root.querySelectorAll('.slx-cmd [role=option]')].find((o) => o.textContent === tab) as HTMLElement;
-      opt.click();
-      expect(line()).toBe(T.ui2.town.soon(tab));
       s.onAction('confirm');
-    }
+      expect(root.querySelector('.slx-forge-list [data-id=item]')).not.toBeNull();
+      s.onAction('cancel');
+      expect(root.querySelector('.slx-forge-list')).toBeNull();
+    });
+    // Mouse and touch: a click on the tab.
+    const opt = [...root.querySelectorAll('.slx-cmd [role=option]')].find((o) => o.textContent === '製作') as HTMLElement;
+    opt.click();
+    expect(root.querySelector('.slx-forge-list [data-id=item]')).not.toBeNull();
+    s.onAction('cancel');
     // Leaving returns to town, by key and by the 返回 control.
     s.onAction('cancel');
     expect(go).toHaveBeenCalledWith('town');
@@ -838,3 +841,192 @@ describe('ForgeScene fuse page', () => {
     expect(game.state.gold).toBe(5);
   });
 });
+
+describe('ForgeScene craft page', () => {
+  const F = T.ui2.forge;
+  type Act = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'cancel';
+  function open(prep: (g: Game) => void = () => {}, storage = memoryStorage()) {
+    const game = new Game(constRng(0.5), storage);
+    game.state.gold = 1000;
+    game.state.inventory = {};
+    prep(game);
+    const t = setup(game);
+    const loot = vi.fn();
+    (t.sfx as Record<string, unknown>).loot = loot;
+    t.s.onAction('confirm');                // greeting
+    for (let i = 0; i < 4; i++) t.s.onAction('down');
+    t.s.onAction('confirm');                // 製作
+    const go = (...a: Act[]) => a.forEach((x) => t.s.onAction(x));
+    const top = () => [...t.root.querySelectorAll('.slx-forge-list')].at(-1) as HTMLElement;
+    const rows = () => [...top().querySelectorAll('[role=option]')] as HTMLElement[];
+    const ids = () => rows().map((r) => r.getAttribute('data-id'));
+    const row = (id: string) => rows().find((r) => r.getAttribute('data-id') === id)!;
+    const right = (id: string) => row(id).querySelector('.slx-right') as HTMLElement;
+    const confirmEl = () => t.root.querySelector('.slx-confirm') as HTMLElement | null;
+    const qty = () => t.root.querySelector('.slx-qty .slx-qty-n')?.textContent ?? null;
+    const info = () => t.root.querySelector('.slx-info') as HTMLElement;
+    return { ...t, game, go, rows, ids, row, right, confirmEl, qty, info, loot };
+  }
+  const full = (n: number): ItemInstance[] => Array.from({ length: n }, (_, i) => gear(i + 1, 'iron-sword', 'common'));
+
+  it('three categories; a potion recipe crafts the chosen quantity', () => {
+    const { ids, row, right, go, qty, game, line, sfx, info } = open((g) => { g.state.inventory = { moss: 10 }; g.state.gold = 100; });
+    expect(ids()).toEqual(['item', 'base', 'set']);
+    expect(row('item').textContent).toContain(F.craftCats.item);
+    row('item').click();
+    expect(ids()).toEqual(['potion', 'antidote', 'ether', 'return-lamp', 'phoenix']);
+    // The shop price sits next to the craft cost, so the saving is visible.
+    expect(right('potion').textContent).toBe(F.craftRow(20, '6 G'));
+    expect(info().textContent).toContain('發光苔 10／2');
+    expect(right('potion').classList.contains('slx-lack')).toBe(false);
+    go('confirm');
+    expect(qty()).toBe('× 1');
+    go('right', 'right', 'confirm');
+    expect(game.state.inventory.potion).toBe(3);
+    expect(game.state.inventory.moss).toBe(4);
+    expect(game.state.gold).toBe(82);
+    expect(sfx.confirm).toHaveBeenCalled();
+    expect(line()).toBe(F.craftedItem('回復藥', 3));
+    expect(qty()).toBeNull();
+    expect(info().textContent).toContain('發光苔 4／2');   // the detail refreshed
+  });
+
+  it('the quantity box stops at what the materials and gold allow', () => {
+    const a = open((g) => { g.state.inventory = { moss: 5 }; });
+    a.row('item').click(); a.go('confirm', 'up');
+    expect(a.qty()).toBe('× 2');                       // 5 moss at 2 each
+    const b = open((g) => { g.state.inventory = { moss: 100 }; g.state.gold = 13; });
+    b.row('item').click(); b.go('confirm', 'up');
+    expect(b.qty()).toBe('× 2');                       // 13 G at 6 each
+    const c = open((g) => { g.state.inventory = { moss: 1000 }; g.state.gold = 100000; });
+    c.row('item').click(); c.go('confirm');
+    for (let i = 0; i < 12; i++) c.go('up');
+    expect(c.qty()).toBe('× 99');                      // the stack cap, as in the shop
+    c.go('cancel');
+    expect(c.qty()).toBeNull();
+    expect(c.game.state.inventory.potion).toBeUndefined();
+  });
+
+  it('a recipe nothing can pay for opens no quantity box and says what is short', () => {
+    const { row, go, qty, line, sfx } = open((g) => { g.state.inventory = { moss: 1 }; });
+    row('item').click();
+    sfx.error.mockClear();
+    go('confirm');
+    expect(qty()).toBeNull();
+    expect(sfx.error).toHaveBeenCalled();
+    expect(line()).toBe(F.craftLack(T.reasons.mats, ['發光苔 ×1']));
+  });
+
+  it('a base recipe shows craftLevel, the magic chance and its cost', () => {
+    const { row, ids, go, info, game } = open((g) => { g.state.inventory = { 'thorn-fang': 3, 'star-stone': 1 }; });
+    row('base').click();
+    expect(ids()).toEqual(['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring']);
+    expect(row('weapon').textContent).toContain('武器');
+    expect(info().textContent).toContain(F.craftLevel(craftLevel(game.state)));
+    expect(info().textContent).toContain(F.magicChance(25));
+    expect(info().textContent).toContain('25%');
+    expect(info().textContent).toContain('荊棘牙 3／3');
+    expect(info().textContent).toContain(`${baseCost(game.state, 'weapon').gold} G`);
+    go('down');
+    expect(info().textContent).toContain('晶殼碎片 0／3');
+    expect(info().querySelector('.slx-lack')).not.toBeNull();
+  });
+
+  it('a base asks first (否 under the cursor), then crafts, names it with its rarity and plays loot', () => {
+    const storage = memoryStorage();
+    const setItem = vi.spyOn(storage, 'setItem');
+    const { row, go, confirmEl, game, line, loot, root } = open((g) => { g.state.inventory = { 'thorn-fang': 3, 'star-stone': 1 }; }, storage);
+    row('base').click();
+    go('confirm');
+    const c = confirmEl()!;
+    expect(c.textContent).toContain(F.craftLevel(craftLevel(game.state)));
+    expect(c.textContent).toContain(F.magicChance(25));
+    expect(c.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('no');
+    go('confirm');                                      // 否
+    expect(game.state.bag.length).toBe(0);
+    expect(game.state.inventory['thorn-fang']).toBe(3);
+    go('confirm', 'up', 'confirm');                     // 是
+    expect(game.state.bag.length).toBe(1);
+    const made = game.state.bag[0];
+    expect(made.ilvl).toBe(craftLevel(game.state));
+    expect(game.state.inventory['thorn-fang']).toBeUndefined();
+    expect(setItem).toHaveBeenCalled();
+    expect(loot).toHaveBeenCalledWith(made.rarity);
+    expect(line()).toBe(F.crafted(gearLabel(made)));
+    expect(root.querySelector(`.slx-talk .slx-text .slx-rarity-${made.rarity}`)).not.toBeNull();
+    expect(row('weapon').querySelector('.slx-right')!.classList.contains('slx-lack')).toBe(true);   // the list refreshed
+  });
+
+  it('a base refuses when the bag is full, spending nothing', () => {
+    const { row, go, confirmEl, game, line, sfx } = open((g) => { g.state.inventory = { 'thorn-fang': 3, 'star-stone': 1 }; g.state.bag = full(BAG_SIZE); });
+    row('base').click();
+    sfx.error.mockClear();
+    go('confirm');
+    expect(confirmEl()).toBeNull();
+    expect(sfx.error).toHaveBeenCalled();
+    expect(line()).toBe(T.reasons.full);
+    expect(game.state.inventory['thorn-fang']).toBe(3);
+  });
+
+  it('a set piece crafts after a yes and is named in green', () => {
+    const { row, ids, go, confirmEl, game, line, loot, root, info } = open((g) => { g.state.inventory = { 'blaze-core': 8, 'star-tear': 1 }; });
+    row('set').click();
+    expect(ids()).toEqual(['set-blaze', 'set-frost', 'set-storm', 'set-mire', 'set-shade', 'set-iron']);
+    expect(row('set-blaze').textContent).toContain('焰紋套裝');
+    go('confirm');
+    expect(ids()).toEqual(['set-blaze-weapon', 'set-blaze-body', 'set-blaze-hands', 'set-blaze-ring']);
+    expect(row('set-blaze-weapon').querySelector('.slx-label')!.classList.contains('slx-rarity-set')).toBe(true);
+    expect(row('set-blaze-weapon').textContent).toContain('焰紋之刃');
+    const text = info().textContent!;
+    for (const l of specialLines('set-blaze-weapon')) expect(text).toContain(l.text);
+    expect(text).toContain('火焰核 8／8');
+    expect(text).toContain('星燈之淚 1／1');
+    expect(text).toContain('300 G');
+    go('confirm');
+    expect(confirmEl()!.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('no');
+    go('confirm');                                      // 否
+    expect(game.state.bag.length).toBe(0);
+    go('confirm', 'up', 'confirm');                     // 是
+    expect(game.state.bag.length).toBe(1);
+    expect(game.state.bag[0]).toMatchObject({ rarity: 'set', special: 'set-blaze-weapon' });
+    expect(game.state.codex).toContain('set-blaze-weapon');
+    expect(game.state.inventory['star-tear']).toBeUndefined();
+    expect(game.state.gold).toBe(700);
+    expect(loot).toHaveBeenCalledWith('set');
+    expect(line()).toBe(F.crafted(gearLabel(game.state.bag[0])));
+    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-set')).not.toBeNull();
+    go('confirm', 'cancel');                            // the line, then back to the sets
+    expect(ids()).toContain('set-blaze');
+  });
+
+  it('a lacking recipe stays readable, its right column says 不足 with slx-lack, and Enter refuses with 素材不足', () => {
+    const { row, right, go, confirmEl, line, sfx, info, game } = open((g) => { g.state.inventory = { 'blaze-core': 3 }; });
+    row('set').click(); go('confirm');
+    expect(row('set-blaze-weapon').getAttribute('aria-disabled')).toBe('false');
+    expect(right('set-blaze-weapon').textContent).toContain('不足');
+    expect(right('set-blaze-weapon').classList.contains('slx-lack')).toBe(true);
+    expect(info().textContent).toContain('火焰核 3／8');
+    sfx.error.mockClear();
+    go('confirm');
+    expect(confirmEl()).toBeNull();
+    expect(sfx.error).toHaveBeenCalled();
+    expect(line()).toContain(T.reasons.mats);
+    expect(line()).toContain('火焰核 ×5');
+    expect(game.state.gold).toBe(1000);
+  });
+
+  it('Esc steps back layer by layer and leaves no stray window, with no inline styles', () => {
+    const { row, go, root, ids } = open();
+    row('item').click();
+    go('cancel');
+    expect(ids()).toEqual(['item', 'base', 'set']);
+    expect(root.querySelector('.slx-info')).toBeNull();
+    row('set').click(); go('confirm', 'cancel', 'cancel');
+    expect(ids()).toEqual(['item', 'base', 'set']);
+    expect(root.querySelector('.slx-info')).toBeNull();
+    go('cancel');
+    expect(root.querySelectorAll('.slx-forge-list').length).toBe(0);
+    expect(root.querySelectorAll('[style]').length).toBe(0);
+  });
+});
+

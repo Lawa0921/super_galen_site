@@ -20,6 +20,7 @@ import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { MenuView, confirmBox, richNodes, richText, win, type Rich, type RichPart } from '../widgets';
 import { FacilityScene, type Layer } from './facility';
+import { openCraft } from './forgeCraft';
 
 /** The forge's commands are its five tabs, in this order. */
 export const FORGE_TABS = ['dismantle', 'enhance', 'reroll', 'fuse', 'craft'] as const;
@@ -84,6 +85,7 @@ export class ForgeScene extends FacilityScene {
     if (id === 'enhance') { enhancePage(this.host()); return; }
     if (id === 'reroll') { rerollPage(this.host()); return; }
     if (id === 'fuse') { fusePage(this.host()); return; }
+    if (id === 'craft') { openCraft(this.host()); return; }
     const label = T.ui2.forge.tabs[id as ForgeTab];
     if (label) void this.say(T.ui2.town.soon(label));
   }
@@ -195,7 +197,7 @@ export function costText(s: GameState, c: Cost): Rich {
 }
 
 /** What is still short for `c`, named: materials first, then gold. */
-function lackingNames(s: GameState, c: Cost): string[] {
+export function lackingNames(s: GameState, c: Cost): string[] {
   const F = T.ui2.forge;
   const out = Object.entries(c.mats).filter(([id, need]) => (s.inventory[id] ?? 0) < need)
     .map(([id, need]) => F.lackMat(MATERIALS[id]?.name ?? id, need - (s.inventory[id] ?? 0)));

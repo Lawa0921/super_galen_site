@@ -983,6 +983,10 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-forge .slx-reroll-list { min-width: 0; max-width: 232px; }
 .slx-forge .slx-info.slx-reroll-info { left: 456px; width: 152px; }
 .slx-forge .slx-reroll-list .slx-right { white-space: nowrap; }
+// The crafting lists are one gold line per row, so they stay narrow enough to leave the detail uncovered.
+.slx-forge .slx-craft-list { left: 100px; min-width: 0; max-width: 256px; }
+.slx-forge .slx-craft-list .slx-right { white-space: nowrap; }
+.slx-forge .slx-info.slx-craft-info { left: 436px; width: 188px; }
 .slx-forge .slx-label.slx-junk { text-decoration: line-through; opacity: 0.6; }
 .slx-lack { color: $slx-down; }
 .slx-forge .slx-info .slx-cmp-row.slx-up { color: $slx-up; }
