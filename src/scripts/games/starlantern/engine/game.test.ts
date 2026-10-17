@@ -4,7 +4,7 @@ import { SAVE_KEY, saveGame } from './save';
 import { newGame, START_ITEMS } from './state';
 import { constRng, memoryStorage, plainItem } from './testing';
 import { mulberry32 } from './rng';
-import { validPortals } from './portals';
+import { rollPortals, validPortals } from './portals';
 import { DELTA, posKey, tileAt, type Dir } from './map';
 import { floorOf, type Portal } from './dungeon/run';
 import { capacity, carried, weightOf } from '../data/weights';
@@ -12,8 +12,10 @@ import type { CharacterId, Pos } from './types';
 import { ENEMIES } from '../data/enemies';
 import { CHARACTERS } from '../data/characters';
 import { SETS } from '../data/gear';
-import { activeIds, gainExp, MAX_LEVEL, meet, newMember, recruit, LEGACY_LINEUP, START_LINEUP } from './party';
-import { depthClearExp, empower } from './scaling';
+import { activeIds, joinLevel, gainExp, MAX_LEVEL, meet, newMember, recruit, LEGACY_LINEUP, START_LINEUP } from './party';
+import { depthClearExp, empower, encounterGroup, groupCap } from './scaling';
+import { favouredRegions } from '../data/meetings';
+import { MAX_ACTIVE } from './formation';
 import { CONDITIONS } from '../data/conditions';
 import { BAG_SIZE } from './loot/bag';
 import { MAX_ILVL, MAX_REACHED } from './levels';
@@ -23,6 +25,11 @@ import { itemLevel, itemWeight, rollItem } from './loot/item';
 import type { ItemInstance } from './types';
 import { MATERIALS } from '../data/materials';
 import { buy } from './town';
+
+vi.mock('./portals', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('./portals')>();
+  return { ...mod, rollPortals: vi.fn(mod.rollPortals) };
+});
 
 // Wrapped so a test can see what the game asked the boss roll for; it still rolls for real.
 vi.mock('./loot/drops', async (importOriginal) => {
@@ -1484,17 +1491,104 @@ describe('rescues on a run', () => {
     expect(g.depart({ region: 'frost', condition: 'plain' }, 1)).toEqual({ ok: true });
     expect(g.run!.rescues).toEqual({ 3: 'chizuru' });
   });
-  it('stepping on a rescue tile is plain floor for now', () => {
+  it('the gates after a trip home are rolled with the unmet regions favoured', () => {
     const g = twoStart();
-    g.depart(MAIN, 2);
-    const at = floorOf(g.run!, 2).contents.find((c) => c.kind === 'rescue')!.at;
-    expect(stepOnto(g, at).kind).toBe('moved');
+    const rolled = vi.mocked(rollPortals);
+    const favouredOf = (call: number) => rolled.mock.calls[call][1];
+    expect(favouredRegions(g.state.party.recruited).length).toBeGreaterThan(0);
+    // newGame
+    expect(favouredOf(rolled.mock.calls.length - 1)).toEqual(favouredRegions(['hero', 'rin']));
+    // toTown
+    g.depart(MAIN, 1);
+    rolled.mockClear();
+    g.returnToTown();
+    expect(rolled).toHaveBeenCalledTimes(1);
+    expect(favouredOf(0)).toEqual(favouredRegions(g.state.party.recruited));
+    // wipe
+    g.depart(MAIN, 1);
+    g.encounter = 99;
+    g.move('right');
+    rolled.mockClear();
+    for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+    g.submitRound({});
+    expect(g.phase).toBe('town');
+    expect(rolled).toHaveBeenCalledTimes(1);
+    expect(favouredOf(0)).toEqual(favouredRegions(g.state.party.recruited));
+    expect(validPortals(g.state.dungeon.portals)).toBe(true);
+  });
+});
+
+describe('rescue fights', () => {
+  const lineup: CharacterId[] = ['hero', 'rin'];
+  const rescueRun = (start: CharacterId[] = lineup) => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, start);
+    g.state.dungeon.reached.mainline = 3;
+    expect(g.depart(MAIN, 2)).toEqual({ ok: true });
+    const c = floorOf(g.run!, 2).contents.find((x) => x.kind === 'rescue')!;
+    return { g, at: c.at };
+  };
+  it('stepping into a rescue room starts a fight with one extra enemy', () => {
+    const { g, at } = rescueRun();
+    expect(stepOnto(g, at)).toEqual({ kind: 'rescue', who: 'selene' });
+    expect(g.phase).toBe('battle');
+    const group = encounterGroup('mainline', 2, calm());
+    const n = activeIds(g.state.party).length;
+    expect(g.battle!.enemies).toHaveLength(Math.min(group.length, groupCap(n, 2)) + 1);
+    expect(g.battle!.boss).toBe(false);
+  });
+  it('winning the rescue meets her at the join level, on the field while there is room', () => {
+    const { g, at } = rescueRun();
+    stepOnto(g, at);
+    const end = killAll(g);
+    expect(end.outcome).toBe('win');
+    const level = joinLevel(g.state.party, 2);
+    // she joins after the exp is shared, at the level worked out from the party that fought
+    expect(end.met).toEqual({ id: 'selene', level: g.state.party.roster.selene.level, benched: false });
+    expect(g.state.party.roster.selene.level).toBe(level);
+    expect(g.state.party.recruited).toContain('selene');
+    expect(activeIds(g.state.party)).toContain('selene');
+    expect(end.levelUps.some((l) => l.id === 'selene')).toBe(false);
+    expect(tileAt(g.map(), at)).toBe('floor');
     expect(g.phase).toBe('map');
   });
-  it('the gates after a trip home favour regions with someone unmet', () => {
-    const g = twoStart();
-    g.depart(MAIN, 1);
-    g.returnToTown();
-    expect(validPortals(g.state.dungeon.portals)).toBe(true);
+  it('a full party benches her', () => {
+    const { g, at } = rescueRun(['hero', 'rin', 'chizuru', 'liz', 'noel']);
+    expect(activeIds(g.state.party)).toHaveLength(MAX_ACTIVE);
+    stepOnto(g, at);
+    const end = killAll(g);
+    expect(end.met).toMatchObject({ id: 'selene', benched: true });
+    expect(g.state.party.recruited).toContain('selene');
+    expect(activeIds(g.state.party)).not.toContain('selene');
+  });
+  it('fleeing leaves her unmet and the room in place', () => {
+    const { g, at } = rescueRun();
+    stepOnto(g, at);
+    (g as { rng: unknown }).rng = constRng(0);   // the escape roll always succeeds
+    const end = g.submitRound({ hero: { kind: 'escape' } })!.end!;
+    expect(end.outcome).toBe('fled');
+    expect(end.met).toBeUndefined();
+    expect(g.state.party.recruited).not.toContain('selene');
+    expect(tileAt(g.map(), at)).toBe('rescue');
+    expect(g.phase).toBe('map');
+  });
+  it('wiping leaves her unmet and the room in place on the next trip', () => {
+    const { g, at } = rescueRun();
+    stepOnto(g, at);
+    for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+    const end = g.submitRound({})!.end!;
+    expect(end.outcome).toBe('lose');
+    expect(end.met).toBeUndefined();
+    expect(g.state.party.recruited).not.toContain('selene');
+    expect(g.depart(MAIN, 2)).toEqual({ ok: true });
+    const again = floorOf(g.run!, 2).contents.find((x) => x.kind === 'rescue');
+    expect(again?.who).toBe('selene');
+    expect(tileAt(g.map(), again!.at)).toBe('rescue');
+  });
+  it('a lost fight does not leave the room to a later win', () => {
+    const { g, at } = rescueRun();
+    stepOnto(g, at);
+    g.submitRound({ hero: { kind: 'escape' } });   // calm rng: the escape fails, the fight goes on
+    expect(g.phase).toBe('battle');
+    expect(killAll(g).met).toMatchObject({ id: 'selene' });
   });
 });

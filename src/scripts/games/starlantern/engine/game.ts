@@ -14,7 +14,7 @@ import { applyAutoJunk, BAG_SIZE, mintUid } from './loot/bag';
 import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMaterial, type DropCtx } from './loot/drops';
 import { itemWeight, type DropSource } from './loot/item';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
-import { activeIds, awardExp, hasPassive, setFormation, START_LINEUP, statsOf, type LevelUp, type SetFormationFail } from './party';
+import { activeIds, awardExp, hasPassive, joinLevel, meet, setFormation, START_LINEUP, statsOf, type LevelUp, type SetFormationFail } from './party';
 import { raiseNode, raiseTalent, type RaiseFail, type TalentFail } from './progression';
 import { pick, type Rng } from './rng';
 import { depthClearExp, depthLevel, encounterGroup } from './scaling';
@@ -33,6 +33,8 @@ export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp' | 
 export type MoveResult =
   | { kind: 'ignored' } | { kind: 'blocked' } | { kind: 'moved' } | { kind: 'battle' } | { kind: 'boss' }
   | { kind: 'entrance' }
+  /** Stepped into a rescue room: a fight with one extra enemy is on, and winning meets `who`. */
+  | { kind: 'rescue'; who: CharacterId }
   /** A new floor; `clear` is the depth-clear exp paid for the floor left by the stairs (descend), with who levelled up. */
   | { kind: 'floor'; floor: number; clear?: { exp: number; levelUps: LevelUp[] } }
   /**
@@ -66,6 +68,8 @@ export interface BattleEnd {
   left: Record<string, number>;
   /** Gear that went into the run pack, and gear left behind for want of weight or bag room. */
   gear: ItemInstance[]; gearLeft: ItemInstance[];
+  /** A rescue won: the companion met, her join level, and whether she went to the bench for want of a field slot. */
+  met?: { id: CharacterId; level: number; benched: boolean };
 }
 
 /** Turn a floor's boss tile into stairs down. */
@@ -89,6 +93,8 @@ export class Game {
   battle: BattleState | null = null;
   /** The elite tile whose fight is on; it turns to floor on a win. */
   private eliteAt: Pos | null = null;
+  /** The rescue room whose fight is on; she is met and the tile turns to floor on a win. */
+  private rescueAt: { at: Pos; who: CharacterId } | null = null;
   notice: Notice | null = null;
   /** What the last safe return brought home; the town screen shows it, then clears it. `overflow` is gear the full bag could not take. */
   banked: { items: Record<string, number>; gold: number; viaLamp: boolean; gear: ItemInstance[]; overflow: ItemInstance[] } | null = null;
@@ -180,6 +186,14 @@ export class Game {
         this.startBattle(group, false, true, group[0]);
         this.eliteAt = { ...this.pos };
         return { kind: 'battle' };
+      }
+      case 'rescue': {
+        const c = floorOf(this.run!, this.floor).contents.find((x) => x.kind === 'rescue' && x.at.x === this.pos.x && x.at.y === this.pos.y);
+        if (!c?.who) return this.walk();
+        const group = encounterGroup(this.run!.region, this.floor, this.rng);
+        this.startBattle([...group, group[0]], false, true, undefined, 1);
+        this.rescueAt = { at: { ...this.pos }, who: c.who };
+        return { kind: 'rescue', who: c.who };
       }
       default: return this.walk();
     }
@@ -443,6 +457,8 @@ export class Game {
     const empty: BattleEnd = { outcome: b.outcome, exp: 0, gold: 0, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [] };
     const elite = this.eliteAt;
     this.eliteAt = null;
+    const rescue = this.rescueAt;
+    this.rescueAt = null;
     if (b.outcome === 'fled') { this.phase = 'map'; return { battle: b, end: empty }; }
     if (b.outcome === 'lose') { this.wipe(); return { battle: b, end: empty }; }
     const rw = rewards(b, this.rng, hasPassive(this.state.party, 'dropBoost'), CONDITIONS[this.run!.condition].dropMul);
@@ -468,10 +484,18 @@ export class Game {
     const awarded = awardExp(this.state.party, rw.exp, survivors);
     this.state.party = awarded.party;
     if (elite) this.map().tiles[elite.y][elite.x] = 'floor';   // a beaten elite is gone
+    let met: BattleEnd['met'];
+    if (rescue) {
+      // She joins after the exp is shared, so the fight's exp is not hers, at the level the party that won has earned.
+      const level = joinLevel(this.state.party, this.floor);
+      this.state.party = meet(this.state.party, rescue.who, level);
+      this.map().tiles[rescue.at.y][rescue.at.x] = 'floor';
+      met = { id: rescue.who, level, benched: !activeIds(this.state.party).includes(rescue.who) };
+    }
     if (b.boss) openStairs(this.map());   // a beaten boss leaves stairs down where it stood, so the run can go deeper
     if (b.boss && this.isStoryDepth(this.floor)) { this.state.dungeon.bossDefeated = true; this.phase = 'clear'; }
     else this.phase = 'map';
-    return { battle: b, end: { outcome: 'win', ...rw, drops: taken, levelUps: awarded.results.filter((x) => x.levels > 0), left, gear, gearLeft } };
+    return { battle: b, end: { outcome: 'win', ...rw, drops: taken, levelUps: awarded.results.filter((x) => x.levels > 0), left, gear, gearLeft, ...(met ? { met } : {}) } };
   }
 
   /**
