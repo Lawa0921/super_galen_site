@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { CharacterId, Member, Stats } from '../engine/types';
+import type { CharacterId, Effect, Member, SkillDef, Stats } from '../engine/types';
+import { skillFor } from '../engine/battle';
+import { WEAPON_KINDS, type WeaponKind } from './equipment';
+import { HERO_ULTIMATES, ULTIMATES } from './ultimates';
 import { AFFINITY_MUL, ALL_AFFINITY_SHARE, CONVERT, convertPrimary } from '../engine/stats';
 import { defaultTree, newTree, nodeRank, raiseNode, skillPoints } from '../engine/progression';
 import { CHARACTERS, CHARACTER_IDS, LEGACY_CHARACTER_IDS, rulesOf } from './characters';
@@ -134,5 +137,88 @@ describe('hero', () => {
       expect(e.execute).toBeUndefined();
       expect(e.wounded).toBeUndefined();
     }
+  });
+});
+
+/** Plan 6a Task 9: the hero's peaks against the specialists'. A red here means lowering a hero number, never a companion's or the share. */
+describe('the hero never outdoes a specialist', () => {
+  type Kind = WeaponKind | undefined;
+  const KINDS: Kind[] = [undefined, ...(Object.keys(WEAPON_KINDS) as WeaponKind[])];
+  const maxed = (id: CharacterId) =>
+    Object.fromEntries(TREES[id].branches.flatMap((b) => b.nodes).map((n) => [n.id, n.maxRank])) as Record<string, number>;
+  const actives = (id: CharacterId) => TREES[id].branches.flatMap((b) => b.nodes).filter((n) => n.kind === 'active').map((n) => n.skill);
+  type Measure = (s: SkillDef) => number[];
+  const best = (xs: number[]) => Math.max(0, ...xs);
+  /** The biggest value of `measure` over the character's maxed active skills; the hero over every weapon kind and none. */
+  const peak = (id: CharacterId, measure: Measure) =>
+    best((id === 'hero' ? KINDS : [undefined]).flatMap((weaponKind) =>
+      actives(id).flatMap((sk) => measure(skillFor({ powers: [], ranks: maxed(id), weaponKind }, sk)!))));
+
+  const heal = (target: SkillDef['target']): Measure => (s) => s.target === target ? s.effects.flatMap((e) => (e.kind === 'heal' ? [e.power] : [])) : [];
+  const defBuff = (target: SkillDef['target']): Measure => (s) =>
+    s.target === target ? s.effects.flatMap((e) => (e.kind === 'buff' && e.stat === 'def' && e.pct > 0 ? [e.pct] : [])) : [];
+  const spell = (target: SkillDef['target']): Measure => (s) =>
+    s.target === target ? s.effects.flatMap((e) => (e.kind === 'damage' && e.scale === 'mag' ? [e.power * (e.hits ?? 1)] : [])) : [];
+  const debuff: Measure = (s) =>
+    s.target === 'enemy' || s.target === 'enemies' ? s.effects.flatMap((e) => (e.kind === 'buff' && e.pct < 0 ? [-e.pct] : [])) : [];
+  const physical: Measure = (s) =>
+    s.target === 'enemy' ? s.effects.flatMap((e) => (e.kind === 'damage' && e.scale === 'atk' ? [e.power * (e.hits ?? 1)] : [])) : [];
+
+  const guarded = (hero: number, spec: number, label: string) => {
+    expect(spec, `${label}: the specialist's peak`).toBeGreaterThan(0);
+    expect(hero, label).toBeGreaterThan(0);
+    expect(hero, label).toBeLessThanOrEqual(HERO_PEAK_SHARE * spec);
+  };
+
+  it("the hero's best heal is at most HERO_PEAK_SHARE of Selene's, single and all, and he never revives", () => {
+    guarded(peak('hero', heal('ally')), peak('selene', heal('ally')), 'single heal');
+    guarded(peak('hero', heal('allies')), peak('selene', heal('allies')), 'all heal');
+    const revives: Measure = (s) => s.effects.flatMap((e) => (e.kind === 'revive' ? [e.hpPct] : []));
+    expect(peak('selene', revives), 'Selene revives').toBeGreaterThan(0);
+    expect(peak('hero', revives)).toBe(0);
+  });
+
+  it("the hero's guard is at most HERO_PEAK_SHARE of Scarlet's, self and allies", () => {
+    guarded(peak('hero', defBuff('self')), peak('scarlet', defBuff('self')), 'self guard');
+    guarded(peak('hero', defBuff('allies')), peak('scarlet', defBuff('allies')), 'team guard');
+  });
+
+  it("the hero's spells are at most HERO_PEAK_SHARE of Noel's, single and all", () => {
+    guarded(peak('hero', spell('enemy')), peak('noel', spell('enemy')), 'single spell');
+    guarded(peak('hero', spell('enemies')), peak('noel', spell('enemies')), 'all spell');
+  });
+
+  it("the hero's debuffs are at most HERO_PEAK_SHARE of Noel's", () => {
+    guarded(peak('hero', debuff), peak('noel', debuff), 'debuff');
+  });
+
+  it("the hero's single physical hit is at most HERO_PEAK_SHARE of the best of Sylvie's and Chizuru's", () => {
+    guarded(peak('hero', physical), Math.max(peak('sylvie', physical), peak('chizuru', physical)), 'single physical hit');
+  });
+
+  it("the hero learns no companion's skill", () => {
+    const mine = Object.values(NODES).filter((x) => x.owner === 'hero');
+    expect(mine.length).toBeGreaterThan(0);
+    for (const x of mine) expect(SKILLS[x.node.skill].owner, x.node.id).toBe('hero');
+    const others = new Set(Object.entries(ULTIMATES).filter(([id]) => id !== 'hero').map(([, u]) => u.id));
+    for (const u of HERO_ULTIMATES) {
+      expect(others.has(u.id), u.id).toBe(false);
+      expect(u.owner, u.id).toBe('hero');
+    }
+  });
+
+  it("every Lantern Key form is below its companion's ultimate", () => {
+    const [sword, guard, star, light, chain] = HERO_ULTIMATES.map((u) => u.effects);
+    const dmg = (fx: Effect[]) => best(fx.flatMap((e) => (e.kind === 'damage' ? [e.power * (e.hits ?? 1)] : [])));
+    const healOf = (fx: Effect[]) => best(fx.flatMap((e) => (e.kind === 'heal' ? [e.power] : [])));
+    const buffMax = (fx: Effect[], sign: 1 | -1) => best(fx.flatMap((e) => (e.kind === 'buff' ? [sign * e.pct] : [])));
+    const safiraBuff = buffMax(ULTIMATES.safira.effects, 1);
+    expect(dmg(sword)).toBeLessThan(dmg(ULTIMATES.sylvie.effects));
+    expect(dmg(star)).toBeLessThan(dmg(ULTIMATES.noel.effects));
+    expect(healOf(light)).toBeLessThan(healOf(ULTIMATES.selene.effects));
+    expect(safiraBuff).toBeGreaterThan(0);
+    expect(buffMax(guard, 1)).toBeLessThan(safiraBuff);
+    expect(buffMax(chain, -1)).toBeGreaterThan(0);
+    expect(buffMax(chain, -1)).toBeLessThan(safiraBuff);
   });
 });
