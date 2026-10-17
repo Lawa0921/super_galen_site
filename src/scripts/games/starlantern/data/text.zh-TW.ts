@@ -440,7 +440,7 @@ export const T = {
       switch (u.kind) {
         case 'enhance': return '強化';
         case 'reroll': case 'legendaryReroll': return '重鑄裝備';
-        case 'regionReroll': return `重鑄${FORGE_GROUP[u.region].replace(/系$/, '')}詞綴`;
+        case 'regionReroll': return `重鑄${FORGE_GROUP[u.region].replace(/系$/, '').split('與')[0]}詞綴`;
         case 'fuseSlot': return '合成指定欄位';
         case 'consumable': return ITEMS[u.item]?.name ?? u.item;
         case 'base': return `${SLOT_KIND[u.slot]}打造`;

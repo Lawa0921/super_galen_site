@@ -646,4 +646,26 @@ test.describe('starlantern', () => {
     expect(await noel()).toEqual({ ...saved, tree: { 'fire-star': 1 }, talents: {} });
     expect(w.errors).toEqual([]);
   });
+
+  test('every region portal card fits its gear list without scrolling, under every condition', async ({ page }) => {
+    const w = await setup(page, 7);
+    await w.choose('.slx-town', '傳送門廣場');
+    await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
+    for (const pair of [['blaze', 'frost'], ['storm', 'mire'], ['shade', 'iron']]) {
+      for (const condition of ['fog', 'bounty', 'fierce', 'calm', 'starfall', 'plain']) {
+        await page.evaluate(([regions, cond]) => {
+          (window as unknown as Dbg).__starlanternDebug.game.state.dungeon.portals = [{ region: 'mainline', condition: cond }, ...(regions as string[]).map((region) => ({ region, condition: cond }))];
+        }, [pair, condition] as const);
+        await w.key('Enter');                               // 選擇傳送門
+        await expect(page.locator('.slx-portal')).toHaveCount(3);
+        const r = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-portal')].slice(1).map((c) => {
+          const g = c.querySelector<HTMLElement>('.slx-portal-gear')!;
+          return { region: c.dataset.region, over: g.scrollHeight - g.clientHeight, items: g.querySelectorAll('.slx-codex-item').length, more: !c.querySelector<HTMLElement>('.slx-codex-more')!.hidden };
+        }));
+        for (const c of r) { expect(c.items, `${c.region} ${condition}`).toBe(3); expect(c.over, `${c.region} ${condition} overflow`).toBeLessThanOrEqual(1); expect(c.more).toBe(false); }
+        await w.key('Escape');
+      }
+    }
+    expect(w.errors).toEqual([]);
+  });
 });
