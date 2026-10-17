@@ -73,3 +73,23 @@ export function flameFrame(t: number, x: number, y: number): number {
   const off = ((Math.imul(x, 73856093) ^ Math.imul(y, 19349663)) >>> 0) % 97;
   return Math.floor(t * 9 + off * 0.37) % FLAME_FRAMES;
 }
+
+// ── 手持工具 / 武器：待機、走路時也拿在手上（不只挖掘 / 攻擊時） ──────────
+export type CarryStyle = 'pick' | 'blade' | 'rotated' | 'mini';
+/** 物品 → 拿在手上的畫法：鎬畫在手臂精靈裡、劍畫刀身、弓 / 法杖 / 矛旋轉圖示、投擲武器畫小圖示 */
+export function carryStyle(def: { pick?: unknown; weapon?: { kind: string } } | null | undefined): CarryStyle | null {
+  if (!def) return null;
+  if (def.pick) return 'pick';
+  const k = def.weapon?.kind;
+  if (!k) return null;
+  if (k === 'sword' || k === 'broadsword') return 'blade';
+  if (k === 'bow' || k === 'staff' || k === 'spear') return 'rotated';
+  return 'mini';
+}
+/** 拿著工具時前手的角度：往前斜舉（工具頭在身前），走路時跟著小幅擺動 */
+export const CARRY_ARM = 40;
+export function carryArm(kind: PoseKind, front: number): number {
+  if (kind === 'idle') return CARRY_ARM;
+  if (kind === 'walk') return CARRY_ARM + Math.round(front * 0.3);
+  return front;
+}

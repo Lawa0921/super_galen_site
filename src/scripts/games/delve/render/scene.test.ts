@@ -1,6 +1,6 @@
 // scene.test.ts — 樹木掃描（樹幹 / 樹冠半徑 / 變體）與天空時段調色。
 import { describe, it, expect } from 'vitest';
-import { scanTrees, treeVariant, skyColors, treeKind, TREE_KIND } from './scene';
+import { scanTrees, treeVariant, skyColors, treeKind, TREE_KIND, torchMount } from './scene';
 import { T } from '../engine/tiles';
 
 function fakeWorld(rows: string[]): (x: number, y: number) => number {
@@ -90,5 +90,16 @@ describe('treeKind（依樹下地面挑樹種）', () => {
     const cols: Record<string, number> = { '1,5': T.WOOD, '1,4': T.WOOD, '1,3': T.LEAVES, '1,6': T.SNOW };
     const t = scanTrees((x, y) => cols[`${x},${y}`] ?? T.AIR, 0, 0, 3, 7)[0];
     expect(t.ground).toBe(T.SNOW);
+  });
+});
+
+describe('torchMount：火把依支撐挑精靈', () => {
+  it('下方實心 → 地板（直立）；否則貼左牆 / 右牆（傾斜）；都沒有 → 背牆（直立）', () => {
+    expect(torchMount(T.STONE, T.STONE, T.AIR)).toBe('floor');
+    expect(torchMount(T.AIR, T.STONE, T.AIR)).toBe('left');
+    expect(torchMount(T.AIR, T.AIR, T.DIRT)).toBe('right');
+    expect(torchMount(T.AIR, T.STONE, T.STONE)).toBe('left');
+    expect(torchMount(T.AIR, T.AIR, T.AIR)).toBe('back');
+    expect(torchMount(T.PLATFORM, T.AIR, T.AIR)).toBe('floor');
   });
 });

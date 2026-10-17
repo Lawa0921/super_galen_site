@@ -2,8 +2,29 @@
 import { describe, it, expect } from 'vitest';
 import {
   poseKind, advancePhase, walkFrame, WALK_FRAMES, STRIDE_PX, idleFrame, IDLE_FRAMES, IDLE_PERIOD,
-  swingAngle, SWING_FROM, SWING_TO, angleIndex, flameFrame, FLAME_FRAMES, armAngles,
+  swingAngle, SWING_FROM, SWING_TO, angleIndex, flameFrame, FLAME_FRAMES, armAngles, carryStyle, carryArm, CARRY_ARM,
 } from './anim';
+
+describe('手持工具 / 武器（待機、走路時也拿在手上）', () => {
+  it('carryStyle：鎬 → pick、劍 → blade、弓 / 法杖 / 矛 → rotated、投擲武器 → mini、其他 → null', () => {
+    expect(carryStyle({ pick: { speed: 1, tier: 1 } })).toBe('pick');
+    expect(carryStyle({ weapon: { kind: 'sword' } })).toBe('blade');
+    expect(carryStyle({ weapon: { kind: 'broadsword' } })).toBe('blade');
+    for (const k of ['bow', 'staff', 'spear'] as const) expect(carryStyle({ weapon: { kind: k } })).toBe('rotated');
+    for (const k of ['throw', 'boomerang'] as const) expect(carryStyle({ weapon: { kind: k } })).toBe('mini');
+    expect(carryStyle({})).toBe(null);
+    expect(carryStyle(null)).toBe(null);
+  });
+  it('carryArm：待機 / 走路時手臂往前斜舉（走路稍微擺動），跳躍 / 下落維持原姿勢', () => {
+    expect(carryArm('idle', 2)).toBe(CARRY_ARM);
+    const a = carryArm('walk', 34), b = carryArm('walk', -34);
+    expect(a).toBeGreaterThan(CARRY_ARM);
+    expect(b).toBeLessThan(CARRY_ARM);
+    expect(Math.abs(a - CARRY_ARM)).toBeLessThan(15);
+    expect(carryArm('jump', 150)).toBe(150);
+    expect(carryArm('fall', 115)).toBe(115);
+  });
+});
 
 describe('poseKind', () => {
   it('地面靜止 = idle、地面移動 = walk', () => {

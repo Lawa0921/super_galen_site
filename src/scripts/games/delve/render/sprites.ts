@@ -253,12 +253,23 @@ const FLAMES = [
   ['..r...', '..or..', '.oyor.', 'oyWyo.', 'oyWWyo', '.oyyo.'],
   ['......', '.r.r..', '.oroo.', 'royWyo', 'oyWWyo', '.oyyo.'],
 ];
-function torchBmp(frame: number): Bmp {
+/** 火把：mount = 'floor'（直立插地 / 背牆）或 'wall'（左牆壁掛：棍子底部貼牆、往右上斜，火焰仍朝上；右牆用鏡像） */
+function torchBmp(frame: number, mount: 'floor' | 'wall' = 'floor'): Bmp {
   const t = PAL.torch, w = PAL.bark;
   const b = new Bmp(10, 16);
-  // 棍子
-  b.rect(4, 8, 2, 7, w[3]); b.rect(4, 8, 1, 7, w[5]);
-  b.rect(4, 7, 2, 1, hex('#5a3c26'));
+  if (mount === 'floor') {
+    // 棍子
+    b.rect(4, 8, 2, 7, w[3]); b.rect(4, 8, 1, 7, w[5]);
+    b.rect(4, 7, 2, 1, hex('#5a3c26'));
+  } else {
+    // 斜棍：底端 (1,14) → 頂端 (4,8)，兩像素寬；牆上一個鐵托架
+    for (let k = 0; k <= 6; k++) {
+      const x = 1 + Math.round(k * 0.5), y = 14 - k;
+      b.set(x, y, w[5]); b.set(x + 1, y, w[3]);
+    }
+    b.rect(4, 7, 2, 1, hex('#5a3c26'));
+    b.set(0, 13, hex('#423f54')); b.set(0, 14, hex('#5e5e74')); b.set(1, 15, hex('#423f54'));
+  }
   const stick = b.clone();
   stick.outline(INK);
   const fl = new Bmp(10, 16);
@@ -540,6 +551,9 @@ export class Sprites {
   /** 每格身體影格的垂直位移（肩膀跟著動） */
   readonly bodyDy: number[];
   readonly torches: HTMLCanvasElement[] = [];
+  /** 壁掛火把：貼左牆 / 貼右牆（右牆 = 左牆鏡像） */
+  readonly torchesLeft: HTMLCanvasElement[] = [];
+  readonly torchesRight: HTMLCanvasElement[] = [];
   readonly glow: HTMLCanvasElement;
   /** 螢光菇 / 水晶的冷色小光暈 */
   readonly coolGlow: HTMLCanvasElement;
@@ -556,7 +570,14 @@ export class Sprites {
     const s = this.bodySheet(NO_ARMOR);
     this.body = s.canvas;
     this.bodyDy = s.dy;
-    for (let f = 0; f < FLAME_FRAMES; f++) this.torches.push(toCanvas(torchBmp(f)) as HTMLCanvasElement);
+    for (let f = 0; f < FLAME_FRAMES; f++) {
+      this.torches.push(toCanvas(torchBmp(f)) as HTMLCanvasElement);
+      const wb = torchBmp(f, 'wall');
+      this.torchesLeft.push(toCanvas(wb) as HTMLCanvasElement);
+      const mb = new Bmp(wb.w, wb.h);
+      mb.blit(wb, 0, 0, true);
+      this.torchesRight.push(toCanvas(mb) as HTMLCanvasElement);
+    }
     this.glow = toCanvas(glowBmp(), null, true) as HTMLCanvasElement;
     this.coolGlow = toCanvas(glowBmp(12, [10, 30, 44], [4, 14, 24]), null, true) as HTMLCanvasElement;
   }

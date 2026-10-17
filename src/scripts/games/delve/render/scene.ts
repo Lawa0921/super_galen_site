@@ -1,5 +1,5 @@
 // scene.ts — 場景的純邏輯（無 DOM）：從 tile 資料找出樹（樹基 / 樹頂 / 樹冠半徑）、樹種、天空時段調色。
-import { SOLID_LUT, T } from '../engine/tiles';
+import { SOLID_LUT, T, isSolidTile, isPlatformTile } from '../engine/tiles';
 
 export interface TreeInfo {
   x: number;
@@ -99,4 +99,13 @@ export function skyColors(d: number): SkyColors {
     stars: a.stars + (b.stars - a.stars) * t,
     cloud: lerp(a.cloud, b.cloud, t),
   };
+}
+
+export type TorchMount = 'floor' | 'left' | 'right' | 'back';
+/** 火把精靈依支撐：下方實心（或平台）→ 地板直立；否則貼左 / 右牆 → 往牆外斜的壁掛；都沒有 → 插在背牆上（直立） */
+export function torchMount(below: number, left: number, right: number): TorchMount {
+  if (isSolidTile(below) || isPlatformTile(below)) return 'floor';
+  if (isSolidTile(left)) return 'left';
+  if (isSolidTile(right)) return 'right';
+  return 'back';
 }

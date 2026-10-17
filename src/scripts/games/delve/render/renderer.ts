@@ -9,13 +9,13 @@ import { buildAtlas, perpMask, type Atlas } from './textures';
 import { ChunkLRU, biomeBlend, cameraFocus, chunksTouchRect, followCamera, nearRect, visibleChunks, type Cam, type TileRect } from './model';
 import { CORNER, EDGE, blendOverlay, decorStyle, edgeMask, innerCornerMask, type Neighbor } from './autotile';
 import {
-  advancePhase, armAngles, flameFrame, idleFrame, poseKind, swingAngle, walkFrame, SWING_RATE,
+  advancePhase, armAngles, carryArm, carryStyle, flameFrame, idleFrame, poseKind, swingAngle, walkFrame, SWING_RATE,
 } from './anim';
 import { FRAME, FW, FH, Sprites, type ArmorLook } from './sprites';
 import { CombatLayer } from './combatDraw';
 import { aimArmDeg, attackArmDeg, spearThrust } from './combatAnim';
 import { Background } from './background';
-import { scanTrees, treeKind, TREE_KIND } from './scene';
+import { scanTrees, torchMount, treeKind, TREE_KIND } from './scene';
 import { bufferSize, clampZoom, snapCam, zoomScale } from './lowres';
 import { ambientReach, type LightMap } from '../engine/lighting';
 import { shadeTiles, fillLightPixels, AMBIENT_R } from './lightShade';
@@ -47,7 +47,11 @@ const SPLASH: Record<number, string[]> = {
   [LIQ.HONEY]: ['#ffd86a', '#ffa93a', '#e8701c', '#fff4c0'],
 };
 
-export interface RenderStats { chunksDrawn: number; cached: number; lightMs: number; lightEngineMs: number; liquidCells: number; liquidMs: number; }
+export interface RenderStats {
+  chunksDrawn: number; cached: number; liquidCells: number; liquidMs: number;
+  /** 光照：整次重算 / 其中引擎 / 填像素 / putImageData（毫秒） */
+  lightMs: number; lightEngineMs: number; lightFillMs: number; lightPutMs: number;
+}
 
 export class Renderer {
   readonly atlas: Atlas;
@@ -68,7 +72,7 @@ export class Renderer {
   /** 使用者縮放（預設倍率 + offset，整數倍） */
   zoomOffset = 0;
   private cssW = 1; private cssH = 1;
-  stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0, lightEngineMs: 0, liquidCells: 0, liquidMs: 0 };
+  stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0, lightEngineMs: 0, lightFillMs: 0, lightPutMs: 0, liquidCells: 0, liquidMs: 0 };
   /** 液體圖層（不進 chunk 快取） */
   readonly liquidLayer = new LiquidLayer();
   /** debug：不畫光照遮罩（文件截圖用） */
@@ -322,6 +326,7 @@ export class Renderer {
     this.updateAmbient(dt, camX, camY, vw, vh);
     this.drawAmbient(ctx, false);
     this.drawLight(ctx, camX, camY, vw, vh);
+    if (!this.fullbright) this.combat.drawDark(ctx, { x: camX, y: camY, w: vw, h: vh }, (tx, ty) => this.lightAt(tx, ty));
     this.drawAmbient(ctx, true);
     this.drawRecall(ctx);
     this.drawGlows(ctx);
@@ -472,9 +477,13 @@ export class Renderer {
           continue;
         }
         if (f !== T.TORCH) continue;
-        const c = this.sprites.torches[flameFrame(t, x, y)];
-        ctx.drawImage(c, x * S + 3, y * S);
-        seen.push({ x: x * S + 8, y: y * S + 6 });
+        // 依支撐挑精靈：地板 / 背牆直立，貼左右牆的斜掛（底端貼牆）
+        const mount = torchMount(y + 1 < w.height ? fg[row + W + x] : T.STONE, x > 0 ? fg[row + x - 1] : T.STONE, x + 1 < W ? fg[row + x + 1] : T.STONE);
+        const fr = flameFrame(t, x, y), SP = this.sprites;
+        const ox = mount === 'left' ? 0 : mount === 'right' ? 6 : 3;
+        const c = mount === 'left' ? SP.torchesLeft[fr] : mount === 'right' ? SP.torchesRight[fr] : SP.torches[fr];
+        ctx.drawImage(c, x * S + ox, y * S);
+        seen.push({ x: x * S + ox + 5, y: y * S + 6 });
       }
     }
   }
@@ -550,9 +559,12 @@ export class Renderer {
       else if (atk.progress < 0.5) throwMini = atk.item;
     }
     const arms = armAngles(kind, local, swing);
-    // 鎬只在挖掘時拿出來；武器只在攻擊時拿出來
-    const showPick = st.mining ? this.bestPickItem() : null;
-    const heldOther = !st.mining && !atk && held && !heldDef?.pick && !heldDef?.weapon ? held : null;
+    // 待機 / 走路 / 跳躍時，手上的鎬 / 武器也拿著（往前斜舉）；挖掘時換成背包裡最好的鎬、攻擊時用攻擊動畫
+    const carry = !st.mining && !atk ? carryStyle(heldDef) : null;
+    if (carry && carry !== 'mini') arms.front = carryArm(kind, arms.front);
+    const showPick = st.mining ? this.bestPickItem() : carry === 'pick' ? held : null;
+    if (carry === 'blade') blade = held;
+    const heldOther = !st.mining && !atk && held && ((!heldDef?.pick && !heldDef?.weapon) || carry === 'mini') ? held : null;
     if (heldOther && kind !== 'jump' && kind !== 'fall') arms.front = 62 + Math.round(arms.front * 0.15);
 
     const SP = this.sprites;
@@ -603,6 +615,16 @@ export class Renderer {
       const px = wx + ux * (SP.handReach + rot.push), py = wy + uy * (SP.handReach + rot.push);
       ctx.drawImage(c, Math.round(px - c.width / 2), Math.round(py - c.height / 2));
       if (rot.item === 'crystal_staff') this.coolSeen.push({ x: px + ux * 8, y: py + uy * 8 });
+    }
+    if (carry === 'rotated' && held) {
+      // 弓 / 法杖 / 矛拿在手上：法杖 / 矛朝上斜立、弓朝前
+      const wk = heldDef?.weapon?.kind;
+      const up = wk === 'bow' ? 0.3 : -Math.PI / 2 + 0.35;
+      const ang = this.facing > 0 ? up : Math.PI - up;
+      const base = wk === 'bow' ? -Math.PI * 0.75 : -Math.PI / 4;
+      const c = SP.rotatedIcon(held, ang, base);
+      const px = cx + this.facing * hx, py = bottom + hy;
+      ctx.drawImage(c, Math.round(px - c.width / 2 + Math.cos(ang) * 4), Math.round(py - c.height / 2 + Math.sin(ang) * 4));
     }
     if (heldOther === 'torch' || heldOther === 'lantern') {
       this.torchesSeen.push({ x: cx + this.facing * (hx + 0), y: bottom + hy - 8 });
@@ -744,10 +766,14 @@ export class Renderer {
       ambientReach(w, pt.x, pt.y, AMBIENT_R, { x: lx0, y: ly0, w: lw, h: lh }, reach);
       const A = this.lightA.subarray(0, lw * lh * 3);
       shadeTiles(L, w, { x0: lx0, y0: ly0, w: lw, h: lh }, pt, g.skyRGB(), reach, A);
+      const t1 = performance.now();
       fillLightPixels(A, lw, lh, LSUB, lx0 * LSUB, ly0 * LSUB,
         new Uint32Array(this.lightImg.data.buffer), new Uint32Array(this.darkImg.data.buffer));
+      const t2 = performance.now();
       this.lightCtx.putImageData(this.lightImg, 0, 0);
       this.darkCtx.putImageData(this.darkImg, 0, 0);
+      this.stats.lightFillMs = t2 - t1;
+      this.stats.lightPutMs = performance.now() - t2;
       this.light = { x0: lx0, y0: ly0, w: lw, h: lh };
       this.lightAge = 0;
       this.lightDirty = false;
