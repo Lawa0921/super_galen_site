@@ -5,7 +5,7 @@ import {
   BOARDS, DEFAULT_KEYSTONES, TALENT_NODES, TALENT_PER, TALENT_SCALE, boardPoints, keystoneCount, rankOf, talentBlocker, type KeystoneId, type TalentBlocker,
 } from '../data/talents';
 import { rulesOf } from '../data/characters';
-import { ABYSS_UNLOCK } from '../data/hero';
+import { ABYSS_UNLOCK, HERO_BUILDS, type HeroBuild } from '../data/hero';
 import { HERO_ULTIMATES, ULTIMATES } from '../data/ultimates';
 import type { AnyStat, CharacterId, GrowthRules, Member, Sheet, UltimateDef } from './types';
 import { stackMods } from './skills';
@@ -207,6 +207,7 @@ export function legacyDue(skill: string): number {
  * `memories` is the hero's memory count (abyss nodes wait for it, ABYSS_UNLOCK); the default 0 keeps them shut.
  */
 export function defaultTree(id: CharacterId, level: number, memories = 0): Record<string, number> {
+  if (id === 'hero') return heroTree(level, 'balanced', memories);
   const tree = newTree(id);
   const nodes: { node: TreeNode; branch: number; tier: number }[] = [];
   TREES[id].branches.forEach((b, branch) => b.nodes.forEach((node, tier) => {
@@ -233,6 +234,36 @@ export function defaultTree(id: CharacterId, level: number, memories = 0): Recor
         .find((x) => x !== undefined);
       if (!pick) return tree;
       tree[pick.node.id] = rankIn(tree, pick.node.id) + 1;
+    }
+  }
+  return tree;
+}
+
+/**
+ * The hero's tree for a build: one point at a time, the build's branches in turn (inside a branch the open node, tier 4
+ * included, of lowest (rank, tier)); when none of them has an open node, the other branches in index order. Every point
+ * passes `check`, so an abyss capstone is taken only once `memories` allow it.
+ */
+export function heroTree(level: number, build: HeroBuild = 'balanced', memories = 0): Record<string, number> {
+  const tree = newTree('hero');
+  const mine = HERO_BUILDS[build].branches;
+  const others = TREES.hero.branches.map((_, i) => i).filter((i) => !mine.includes(i));
+  const open = (L: number, branch: number): string | undefined => TREES.hero.branches[branch].nodes
+    .map((node, tier) => ({ id: node.id, tier }))
+    .filter((x) => check('hero', L, tree, x.id, memories) === null)
+    .sort((a, b) => rankIn(tree, a.id) - rankIn(tree, b.id) || a.tier - b.tier)[0]?.id;
+  let turn = 0;
+  for (let L = 2; L <= level; L++) {
+    for (let p = skillPoints(L, 'hero') - skillPoints(L - 1, 'hero'); p > 0; p--) {
+      let node: string | undefined;
+      for (let i = 0; i < mine.length && !node; i++) {
+        const slot = (turn + i) % mine.length;
+        node = open(L, mine[slot]);
+        if (node) turn = slot + 1;
+      }
+      for (let i = 0; i < others.length && !node; i++) node = open(L, others[i]);
+      if (!node) return tree;
+      tree[node] = rankIn(tree, node) + 1;
     }
   }
   return tree;
@@ -300,6 +331,7 @@ export function keystonesOf(m: Member): KeystoneId[] {
  * DEFAULT_KEYSTONES when one can be taken, else the open normal node of lowest (rank, row, col).
  */
 export function defaultTalents(id: CharacterId, level: number): Record<string, number> {
+  if (id === 'hero') return heroTalents(level, 'balanced');
   const t: Record<string, number> = {};
   const keystones = DEFAULT_KEYSTONES[id].map((k) => BOARDS[id].find((n) => n.keystone === k)!);
   const normal = BOARDS[id].filter((n) => !n.keystone);
@@ -357,3 +389,23 @@ export function validBuild(id: CharacterId, level: number, tree: unknown, talent
 
 /** The build back to its start: the free first rank held, nothing else spent, so every point is available again. */
 export const resetBuild = (m: Member): Member => ({ ...m, tree: newTree(m.id), talents: {} });
+
+/**
+ * The hero's talents for a build: talentPoints(level) points, one at a time; a keystone of DEFAULT_KEYSTONES.hero when one
+ * can be taken, else the open normal node of lowest (rank, row, col) whose stat the build leans on, else any open normal node.
+ */
+export function heroTalents(level: number, build: HeroBuild = 'balanced'): Record<string, number> {
+  const t: Record<string, number> = {};
+  const keystones = DEFAULT_KEYSTONES.hero.map((k) => BOARDS.hero.find((n) => n.keystone === k)!);
+  const normal = BOARDS.hero.filter((n) => !n.keystone);
+  const lean = HERO_BUILDS[build].talents;
+  const lowest = (nodes: typeof normal) => nodes.filter((n) => talentBlocker('hero', n.id, t) === null)
+    .sort((a, b) => rankOf(a, t) - rankOf(b, t) || a.row - b.row || a.col - b.col)[0];
+  for (let p = talentPoints(level, 'hero'); p > 0; p--) {
+    const pick = keystones.find((n) => talentBlocker('hero', n.id, t) === null)
+      ?? lowest(normal.filter((n) => n.stat && lean.includes(n.stat))) ?? lowest(normal);
+    if (!pick) break;
+    t[pick.id] = rankOf(pick, t) + 1;
+  }
+  return t;
+}

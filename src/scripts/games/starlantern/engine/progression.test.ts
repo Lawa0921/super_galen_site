@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   canRaiseNode, canRaiseTalent, defaultTalents, defaultTree, freeNode, keystonesOf, learnedSkills, legacyDue, newTree, nodeRank, raiseNode,
   raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, ultimateFor, validBuild,
-  heroMainBranch,
+  heroMainBranch, heroTalents, heroTree,
 } from './progression';
 import { ABYSS_UNLOCK } from '../data/hero';
 import { HERO_ULTIMATES, ULTIMATES } from '../data/ultimates';
@@ -11,6 +11,7 @@ import { CHARACTERS, rulesOf } from '../data/characters';
 import { mulberry32 } from './rng';
 import { DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES } from '../data/trees';
 import { BOARDS, DEFAULT_KEYSTONES, TALENT_PER, TALENT_SCALE, talentBlocker } from '../data/talents';
+import { HERO_BUILDS, type HeroBuild } from '../data/hero';
 import type { AnyStat } from './types';
 import type { CharacterId, Member } from './types';
 
@@ -514,5 +515,68 @@ describe("the hero's abyss capstones", () => {
   });
   it('a companion still holds one', () => {
     expect(rulesOf('noel').capstones).toBe(1);
+  });
+});
+
+describe('hero builds', () => {
+  const heroBranch = (node: string) => NODES[node].branch;
+  /** Points per branch, not counting the free first rank. */
+  const perBranch = (tree: Record<string, number>) => {
+    const out = [0, 0, 0, 0, 0];
+    for (const [k, r] of Object.entries(tree)) out[heroBranch(k)] += r - (k === freeNode('hero') ? 1 : 0);
+    return out;
+  };
+  const builds = Object.keys(HERO_BUILDS) as HeroBuild[];
+  it('defaults are the balanced build', () => {
+    expect(defaultTree('hero', 30)).toEqual(heroTree(30, 'balanced', 0));
+    expect(defaultTalents('hero', 30)).toEqual(heroTalents(30, 'balanced'));
+  });
+  it('balanced spreads over sword, guard and light', () => {
+    const [a, b, d, c, e] = perBranch(heroTree(20));
+    expect(Math.max(a, b, c) - Math.min(a, b, c)).toBeLessThanOrEqual(1);
+    expect(d).toBe(0);
+    expect(e).toBe(0);
+  });
+  it('a pure build stays in its branch until it is full', () => {
+    const cap2 = TREES.hero.branches[2].nodes.slice(0, 4).reduce((s, n) => s + n.maxRank, 0);
+    let L = 1;
+    while (skillPoints(L + 1, 'hero') <= cap2) L++;
+    const at1 = perBranch(heroTree(L, 'mage'));
+    expect(at1.filter((_, i) => i !== 2).every((n) => n === 0)).toBe(true);
+    expect(at1[2]).toBe(skillPoints(L, 'hero'));
+    const over = perBranch(heroTree(L + 1, 'mage'));
+    expect(over[2]).toBe(cap2);
+    expect(over[0]).toBe(skillPoints(L + 1, 'hero') - cap2);
+  });
+  it('no capstone without memories; a build takes its own with them', () => {
+    const caps = (t: Record<string, number>) => Object.keys(t).filter((k) => k.startsWith('abyss-'));
+    expect(caps(heroTree(50, 'balanced', 0))).toEqual([]);
+    const held = caps(heroTree(50, 'balanced', 10));
+    expect(held).toHaveLength(2);
+    for (const k of held) expect([0, 1, 3]).toContain(heroBranch(k));
+  });
+  it('every build is a legal build', () => {
+    for (const b of builds) for (const L of [1, 10, 30, 50]) {
+      for (const memories of [0, 10]) {
+        expect(validBuild('hero', L, heroTree(L, b, memories), heroTalents(L, b), memories), `${b} Lv${L} m${memories}`).toBe(true);
+      }
+    }
+  });
+  it('balanced talents lean on STR and WIL', () => {
+    const t = heroTalents(30, 'balanced');
+    let all = 0;
+    let lean = 0;
+    for (const n of BOARDS.hero) {
+      if (n.keystone) continue;
+      const r = t[n.id] ?? 0;
+      all += r;
+      if (n.stat === 'str' || n.stat === 'wil') lean += r;
+    }
+    expect(lean * 2).toBeGreaterThanOrEqual(all);
+  });
+  it('a mage leans on INT and MAG', () => {
+    const t = heroTalents(30, 'mage');
+    const sum = BOARDS.hero.filter((n) => !n.keystone && (n.stat === 'int' || n.stat === 'mag')).reduce((s, n) => s + (t[n.id] ?? 0), 0);
+    expect(sum).toBeGreaterThan(0);
   });
 });

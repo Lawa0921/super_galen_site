@@ -3,9 +3,9 @@ import type { CharacterId, Member, Stats } from '../engine/types';
 import { AFFINITY_MUL, ALL_AFFINITY_SHARE, CONVERT, convertPrimary } from '../engine/stats';
 import { defaultTree, newTree, nodeRank, raiseNode, skillPoints } from '../engine/progression';
 import { CHARACTERS, CHARACTER_IDS, LEGACY_CHARACTER_IDS, rulesOf } from './characters';
-import { HERO_PEAK_SHARE } from './hero';
+import { HERO_BUILDS, HERO_PEAK_SHARE } from './hero';
 import { SKILLS } from './skills';
-import { DEFAULT_CAPSTONE, NODES, TREES } from './trees';
+import { NODES, TREES } from './trees';
 
 /** The eight original companions. */
 const EIGHT: CharacterId[] = LEGACY_CHARACTER_IDS;
@@ -75,14 +75,14 @@ describe('hero', () => {
     expect(share).toBeLessThan(0.8);
   });
 
-  it("the hero's default tree spends his whole curve legally, aiming at the sword's abyss node", () => {
+  it("the hero's default tree spends his whole curve legally, taking only the balanced build's abyss nodes", () => {
     const id = 'hero' as CharacterId;
     for (const level of [1, 2, 10, 30, 50]) {
       const tree = defaultTree(id, level, 10);
       const label = `Lv${level}`;
       expect(Object.values(tree).reduce((n, r) => n + r, 0) - 1, label).toBe(skillPoints(level, 'hero'));
       const caps = Object.keys(tree).filter((n) => tree[n] > 0 && NODES[n].tier === 4);
-      for (const c of caps) expect(NODES[c].branch, label).toBe(DEFAULT_CAPSTONE[id]);
+      for (const c of caps) expect(HERO_BUILDS.balanced.branches, label).toContain(NODES[c].branch);
       // Replay from a bare tree, branch by branch and tier by tier, with the engine's own rules.
       let m: Member = { id, level, exp: 0, hp: 0, tp: 0, equip: {}, tree: newTree(id), talents: {} };
       for (const b of TREES[id].branches) for (const n of b.nodes) {
