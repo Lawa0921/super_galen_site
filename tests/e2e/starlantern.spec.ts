@@ -669,6 +669,88 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  /** The parts of the game state the forge tests read, through the debug handle. */
+  const forgeState = (page: Page) => page.evaluate(() => {
+    const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+    return { forgeDraws: s.forgeDraws as number, bag: s.bag as { uid: number; enhance: number; junk?: boolean }[], inventory: s.inventory as Record<string, number> };
+  });
+  /** Esc until the town is back, closing any line on the way. */
+  const toTown = async (page: Page, w: Awaited<ReturnType<typeof setup>>) => {
+    for (let i = 0; i < 8 && !(await page.locator('.slx-town').isVisible()); i++) { await w.closeTalk(); await w.key('Escape'); }
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+  };
+
+  test('the forge enhances, dismantles and crafts, and the save keeps it', async ({ page }) => {
+    const w = await setup(page, 7);
+    const { keepUid, junkUid, potions } = await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.gold = 2000;
+      Object.assign(g.state.inventory, { 'essence-common': 20, 'essence-magic': 4, moss: 4 });
+      const keepUid: number = g.mintUid();
+      const junkUid: number = g.mintUid();
+      g.state.bag.push({ uid: keepUid, base: 'iron-sword', rarity: 'common', ilvl: 1, affixes: [], enhance: 5 });
+      g.state.bag.push({ uid: junkUid, base: 'iron-sword', rarity: 'common', ilvl: 1, affixes: [], enhance: 0, junk: true });
+      return { keepUid, junkUid, potions: (g.state.inventory.potion ?? 0) as number };
+    });
+    expect(keepUid).not.toBe(junkUid);
+    expect((await forgeState(page)).forgeDraws).toBe(0);
+    // 鍛造屋 is the fifth facility: down four times, then Enter.
+    for (let i = 0; i < 4; i++) await w.key('ArrowDown');
+    await expect(page.locator('.slx-town [aria-selected=true] .slx-label')).toHaveText('鍛造屋');
+    await w.key('Enter');
+    await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
+
+    // 強化 +5 → +6: the first step that can fail, so it always draws.
+    await page.locator('.slx-forge .slx-cmd [data-id=enhance]').click();
+    await page.locator(`.slx-forge [data-id=g${keepUid}]`).click();
+    await page.locator('.slx-confirm [data-id=yes]').click();
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText(/強化成功|強化失敗/);
+    await w.closeTalk();
+    const level = ((await page.locator(`.slx-forge [data-id=g${keepUid}] .slx-right`).textContent()) ?? '').trim();
+    expect(['+6', '+5']).toContain(level);
+    expect((await forgeState(page)).forgeDraws).toBe(1);
+    await w.key('Escape');
+
+    // 分解全部已標記: only the marked piece goes.
+    await page.locator('.slx-forge .slx-cmd [data-id=dismantle]').click();
+    await expect(page.locator('.slx-forge [data-id=marked] .slx-label')).toHaveText('分解全部已標記（1 件）');
+    await page.locator('.slx-forge [data-id=marked]').click();
+    await page.locator('.slx-confirm [data-id=yes]').click();
+    await expect(page.locator('.slx-talk .slx-text')).toContainText('普通精華');
+    await w.closeTalk();
+    const afterDismantle = await forgeState(page);
+    expect(afterDismantle.bag.map((it) => it.uid)).toContain(keepUid);
+    expect(afterDismantle.bag.map((it) => it.uid)).not.toContain(junkUid);
+    await w.key('Escape');
+
+    // 製作 → 消耗品 → 回復藥 ×2.
+    await page.locator('.slx-forge .slx-cmd [data-id=craft]').click();
+    await page.locator('.slx-forge [data-id=item]').click();
+    await page.locator('.slx-forge [data-id=potion]').click();
+    await w.key('ArrowUp');                                 // +10, held to the 2 the moss pays for
+    await expect(page.locator('.slx-qty-n')).toHaveText('× 2');
+    await w.key('Enter');
+    await expect(page.locator('.slx-talk .slx-text')).toContainText('回復藥');
+    await toTown(page, w);
+
+    // The shop's buy list counts the two new potions.
+    await w.choose('.slx-town', '道具店');
+    await expect(page.locator('.slx-shop')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-shop .slx-cmd [data-id=buy]').click();
+    await expect(page.locator('.slx-shop [data-id=potion] .slx-right')).toContainText(`持有 ${potions + 2}`);
+    await toTown(page, w);
+
+    // Reload and continue: the level and the draw count are what the forge left, and loading drew nothing.
+    await page.reload();
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('繼續');
+    await w.key('Enter');
+    await expect(page.locator('.slx-town')).toBeVisible();
+    const loaded = await forgeState(page);
+    expect(`+${loaded.bag.find((it) => it.uid === keepUid)!.enhance}`).toBe(level);
+    expect(loaded.forgeDraws).toBe(1);
+    expect(w.errors).toEqual([]);
+  });
+
   test('every forge window stays inside the screen, so nothing scrolls the stage', async ({ page }) => {
     const w = await setup(page, 7);
     await page.evaluate(() => {
@@ -694,6 +776,32 @@ test.describe('starlantern', () => {
       expect(await outside(), tab).toEqual([]);
       for (let i = 0; i < 4 && (await page.locator('.slx-forge .slx-layer').count()); i++) await w.key('Escape');
     }
+    expect(w.errors).toEqual([]);
+  });
+
+  test('walks into the forge from town and dismantles one magic item', async ({ page }) => {
+    const w = await setup(page, 7);
+    const uid = await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.bag = [];
+      const u: number = g.mintUid();
+      g.state.bag.push({ uid: u, base: 'iron-sword', rarity: 'magic', ilvl: 1, affixes: [{ key: 'crit', value: 3 }], enhance: 0 });
+      return u;
+    });
+    const before = (await forgeState(page)).inventory;
+    await w.choose('.slx-town', '鍛造屋');
+    await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
+    await expect(page.locator('.slx-forge .slx-cmd [aria-selected=true] .slx-label')).toHaveText('分解');
+    await w.key('Enter');                                   // 分解
+    await expect(page.locator(`.slx-forge [data-id=g${uid}]`)).toHaveAttribute('aria-selected', 'true');
+    await w.key('Enter');                                   // a magic piece goes at once, no confirm
+    await expect(page.locator('.slx-talk .slx-text')).toContainText('魔法精華');
+    const after = await forgeState(page);
+    expect(after.bag).toEqual([]);
+    expect(after.inventory['essence-magic'] ?? 0).toBe((before['essence-magic'] ?? 0) + 1);
+    expect(after.inventory['essence-common'] ?? 0).toBe((before['essence-common'] ?? 0) + 1);
+    expect(after.forgeDraws).toBe(0);
+    await toTown(page, w);
     expect(w.errors).toEqual([]);
   });
 });
