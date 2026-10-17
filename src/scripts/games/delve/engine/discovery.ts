@@ -59,7 +59,10 @@ const NAMES: Record<string, readonly string[]> = {
   ravine: ['風切谷', '碎石溝', '狼嚎峽谷', '乾河峽谷', '鷹嘴峽谷', '影子溝'],
   sinkhole: ['塌陷天坑', '墜星坑', '井中之井', '雨落天坑', '漏斗洞'],
   frozen_lake: ['鏡面冰湖', '靜默冰湖', '月光冰湖'],
-  lake_bed: ['乾涸湖床', '龜裂湖床', '鹽白湖床', '蛙骨湖床'],
+  lake_bed: ['靜水湖', '蘆花湖', '鷺鷥湖', '碧鏡湖'],
+  oasis: ['棕櫚綠洲', '駝鈴綠洲', '月泉綠洲', '旅人之泉'],
+  hive: ['琥珀蜂巢', '嗡鳴蜂窟', '蜜糖巢穴', '六角蜂城'],
+  underground_lake: ['地底暗湖', '沉默水窟', '黑鏡湖', '滴水洞湖', '盲魚湖', '深淵水潭', '迴聲水窟', '冷泉洞'],
   cavern_mushroom: ['幽光菇廳', '孢子大廳', '藍燈穹窟'],
   cavern_crystal: ['晶簇大廳', '星屑穹窟', '千面晶廳'],
   cavern_plain: ['迴音大廳', '巨人之腹', '穹頂洞窟', '沉睡洞廳', '黑石大廳', '寂靜穹窟'],
@@ -99,7 +102,8 @@ const ellipseHit = (x0: number, y0: number, w: number, h: number) => {
 };
 
 const STRUCT_CAT: Partial<Record<string, RegionCat>> = {
-  cabin: 'site', mineshaft: 'site', ruin: 'site', sky_island: 'site', frozen_lake: 'site', lake_bed: 'site',
+  cabin: 'site', mineshaft: 'site', ruin: 'site', sky_island: 'site', frozen_lake: 'site', lake_bed: 'site', oasis: 'site',
+  hive: 'cave', underground_lake: 'cave',
   cavern: 'cave', chasm: 'cave', ravine: 'cave', sinkhole: 'cave', mushroom_biome: 'cave', crystal_cave: 'cave',
   secret_room: 'secret',
 };

@@ -119,6 +119,7 @@ export const MAP_ICONS = ['cabin', 'mineshaft', 'ruin', 'sky_island', 'lake', 'c
 export type MapIcon = (typeof MAP_ICONS)[number];
 const ICON_OF: Record<string, MapIcon> = {
   cabin: 'cabin', mineshaft: 'mineshaft', ruin: 'ruin', sky_island: 'sky_island', frozen_lake: 'lake', lake_bed: 'lake',
+  oasis: 'lake', underground_lake: 'lake', hive: 'cavern',
   cavern: 'cavern', chasm: 'chasm', ravine: 'chasm', sinkhole: 'chasm', mushroom_biome: 'mushroom_biome', crystal_cave: 'crystal_cave',
   secret_room: 'secret_room', dungeon: 'dungeon', dungeon_treasure: 'treasure',
 };

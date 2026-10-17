@@ -6,7 +6,8 @@
 // 洞穴層深層岩、熔岩深淵）→ 土石互滲、黏土、碎石 → 洞穴系統（義大利麵隧道、柏林蟲、長水平廊道、洞穴層大洞窟網路
 // + 連通、巨大洞室、熔岩深淵開闊帶、少量小洞、地表坑道 / 裂谷 / 天坑）→ 花崗岩 / 大理石 → 生態區轉換（有機形狀：
 // 沙漠淚滴、雪原往下收窄成冰洞、叢林鼓起再收）→ 迷你生態區 → 礦脈群 → 熔岩深淵細節 → 草 → 出生點 → 結構
-// （礦坑、小屋、遺跡、地城）→ 樹 → 地表裝飾 → 地下裝飾 → 浮空島。
+// （礦坑、小屋、遺跡、地城）→ 樹 → 地表裝飾 → 地下裝飾 → 浮空島 → 珍寶 / 古碑 → 液體（生成器 v5，見 gen/liquids.ts：
+// 湖 / 池塘 / 綠洲 / 地下湖 / 熔岩囊與熔岩湖 / 叢林蜂巢，最後靜置）。
 import { World, BIOME, type BiomeId } from './world';
 import { Rng, subSeed } from './rng';
 import { T, W, SOLID_LUT, DUNGEON_COLORS } from './tiles';
@@ -15,6 +16,7 @@ import { chestLoot, type ChestKind } from './loot';
 import { FbmField, NoiseField, fbm2, seedInt, vnoise1 } from './noise';
 import { carveChamber, carveNetwork, carveNoiseTunnels, perlinWorm, carveDisc, paintBlob, noisePockets, fillTinyPockets } from './gen/caves';
 import { generateDungeon, type DungeonInfo } from './gen/dungeon';
+import { createLiquidGen, type LiquidGenStats } from './gen/liquids';
 import { LORE_SITES, type LoreSite } from './lore';
 import type { ItemId } from './items';
 import type { Stack } from './inventory';
@@ -25,7 +27,9 @@ export interface GenBands {
 }
 export interface BiomeSegment { biome: BiomeId; x0: number; x1: number; }
 export type StructureKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'chasm' | 'ravine' | 'frozen_lake'
-  | 'mushroom_biome' | 'crystal_cave' | 'sky_island' | 'lake_bed' | 'sinkhole' | 'dungeon' | 'secret_room';
+  | 'mushroom_biome' | 'crystal_cave' | 'sky_island' | 'lake_bed' | 'sinkhole' | 'dungeon' | 'secret_room'
+  // 液體（v5）
+  | 'pond' | 'oasis' | 'hive' | 'underground_lake';
 /** 每欄的深度層分界（第一個屬於該層的 y） */
 export interface GenLayers { rock: Int16Array; deep: Int16Array; molten: Int16Array; }
 /** 地表地形種類（依生態區挑）；reserved = 預留給地城的平地 */
@@ -62,6 +66,8 @@ export interface GenResult {
   tablets: { x: number; y: number; id: number }[];
   /** 放在難到達處的珍寶（獨特道具）箱子 */
   relics: { x: number; y: number; item: ItemId; where: string }[];
+  /** 液體 pass 的統計（耗時 / 靜置刻數 / 各液體格數） */
+  liquidStats: LiquidGenStats;
 }
 
 export interface RunnerOptions {
@@ -945,6 +951,8 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
     cluster(170, (x) => [deepLine[x] - 40, deepLine[x] + Math.floor((moltenLine[x] - deepLine[x]) * 0.7)], T.SILVER_ORE, 3, 6);
     cluster(160, (x) => [deepLine[x] + Math.floor((moltenLine[x] - deepLine[x]) * 0.35), moltenLine[x] + 25], T.GOLD_ORE, 3, 6);
   })();
+  /** 熔岩深淵低窪池的格（液體 pass 注入熔岩） */
+  const lavaPool: number[] = [];
   mark('熔岩深淵細節：灰燼地板、');
   // ── 熔岩深淵細節：灰燼地板、低窪處的發光熔岩石池、熔岩石脈、黑曜石殼 ─────────
   (() => {
@@ -980,9 +988,10 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       let s = 0, n = 0;
       for (let k = -10; k <= 10; k++) if (floorY[x + k] >= 0) { s += floorY[x + k]; n++; }
       const lvl = Math.round(s / n) - 1;
+      // v5：池子裡是熔岩（液體，最後的液體 pass 注入），池底兩格仍是發光的熔岩石
       for (let y = lvl; y < fy; y++) {
         const i = y * WW + x;
-        if (fg[i] === T.AIR) fg[i] = T.MAGMA_ROCK;
+        if (fg[i] === T.AIR) lavaPool.push(i);
       }
       if (lvl < fy) for (let y = fy; y < fy + 2; y++) if (fg[y * WW + x] === T.ASH) fg[y * WW + x] = T.MAGMA_ROCK;
     }
@@ -1248,6 +1257,15 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
   remeasure();
 
   mark('Trees：森林闊葉樹、');
+  // ── 液體（生成器 v5）前半：湖床注滿 / 山谷池塘 / 沙漠綠洲（樹與地表裝飾之後會避開水面） ──
+  const liquidGen = createLiquidGen({
+    world, seed, surface, layers, colBiome, biomes, lakeBeds, lavaPool, spawnX: spawn.x,
+    avoid: (x) => inDz(x, 20) || x < beachW + 8 || x > width - beachW - 8,
+    occupied: () => [...occupied, ...structures.filter((st) => st.kind !== 'cavern' && st.kind !== 'chasm' && st.kind !== 'ravine'
+      && st.kind !== 'sinkhole' && st.kind !== 'lake_bed' && st.kind !== 'frozen_lake' && st.kind !== 'mushroom_biome' && st.kind !== 'crystal_cave')],
+  });
+  liquidGen.surface();
+  mark('Trees');
   // ── Trees：森林闊葉樹、雪原松樹、叢林大樹（樹幹 + 菱形樹葉格，外觀由 render 依地面挑） ──
   (() => {
     const rng = subSeed(seed, 'trees');
@@ -1258,6 +1276,7 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       const ground = fg[gy * WW + x];
       const jungle = ground === T.JUNGLE_GRASS, snow = ground === T.SNOW;
       if (ground !== T.GRASS && !jungle && !snow) continue;
+      if (world.liquid[(gy - 1) * WW + x]) continue; // 水底不長樹
       const gap = jungle ? 7 : 4;
       if (x - lastTree < gap || Math.abs(x - sx) < 5) continue;
       if (!rng.chance(jungle ? 3 : snow ? 4 : 5)) continue;
@@ -1266,7 +1285,7 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       if (gy - h - r - 2 < 1) continue;
       let clear = true;
       for (let dy = 1; dy <= h + 3 && clear; dy++) {
-        for (let dx = -2; dx <= 2; dx++) if (fg[(gy - dy) * WW + x + dx] !== T.AIR) { clear = false; break; }
+        for (let dx = -2; dx <= 2; dx++) if (fg[(gy - dy) * WW + x + dx] !== T.AIR || world.liquid[(gy - dy) * WW + x + dx]) { clear = false; break; }
       }
       if (!clear) continue;
       for (let dy = 1; dy <= h; dy++) fg[(gy - dy) * WW + x] = T.WOOD;
@@ -1275,7 +1294,7 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
         for (let dx = -r; dx <= r; dx++) {
           if (Math.abs(dx) + Math.abs(dy) > r) continue;
           const xx = x + dx, yy = top + dy;
-          if (inB(xx, yy) && fg[yy * WW + xx] === T.AIR) fg[yy * WW + xx] = T.LEAVES;
+          if (inB(xx, yy) && fg[yy * WW + xx] === T.AIR && !world.liquid[yy * WW + xx]) fg[yy * WW + xx] = T.LEAVES;
         }
       }
       lastTree = x;
@@ -1290,7 +1309,7 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       const gy = surface[x];
       if (gy < 2 || gy >= height) continue;
       const ground = fg[gy * WW + x], ai = (gy - 1) * WW + x;
-      if (fg[ai] !== T.AIR) continue;
+      if (fg[ai] !== T.AIR || world.liquid[ai]) continue;
       const r = rng.next();
       let d = -1;
       if (ground === T.GRASS) {
@@ -1565,9 +1584,15 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
     LORE_SITES.forEach((_, id) => { for (const c of caverns) if (!used.has(id)) place(id, findFloor(c)); });
   })();
 
+  mark('液體');
+  // ── 液體（生成器 v5）後半：地下湖 / 熔岩 / 蜂巢 + 靜置 ─────────────
+  const liq = liquidGen.deep();
+  for (const ls of liq.structures) structures.push(ls);
+  for (const ls of liq.structures) if (ls.kind === 'oasis') for (let x = ls.x; x < ls.x + ls.w; x++) world.surface[x] = Math.max(world.surface[x], surface[x]);
+
   mark('每欄地表的生態區 ───');
   // ── 每欄地表的生態區 ──────────────────────────────────────
   world.biome.set(colBiome);
   mark('end');
-  return { world, spawn, surface, bands, biomes, structures, landforms, dungeonZone, layers, dungeon, tablets, relics };
+  return { world, spawn, surface, bands, biomes, structures, landforms, dungeonZone, layers, dungeon, tablets, relics, liquidStats: liq.stats };
 }

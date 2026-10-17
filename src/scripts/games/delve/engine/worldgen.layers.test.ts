@@ -155,7 +155,10 @@ describe('深度層與洞穴系統', { timeout: 180_000 }, () => {
     }
     expect(air / n).toBeGreaterThan(0.15);
     expect(noWall / air).toBeGreaterThan(0.8);
-    expect(cnt.get(T.MAGMA_ROCK) ?? 0).toBeGreaterThan(1500);
+    // v5：低窪池改成熔岩（液體）；熔岩石 + 熔岩格合計仍要夠多
+    let lavaCells = 0;
+    for (let y = world.moltenY + 20; y < world.height - 6; y++) for (let x = 0; x < world.width; x += 2) if (world.liquidType[y * world.width + x] === 2) lavaCells++;
+    expect((cnt.get(T.MAGMA_ROCK) ?? 0) + lavaCells).toBeGreaterThan(1500);
     expect(cnt.get(T.ASH) ?? 0).toBeGreaterThan(500);
     expect(cnt.get(T.OBSIDIAN) ?? 0).toBeGreaterThan(300);
     expect(tileDef(T.MAGMA_ROCK).light).toBeGreaterThan(0.5);
