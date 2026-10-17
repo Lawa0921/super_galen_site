@@ -90,6 +90,7 @@ export class ChunkLRU<V> {
     return null;
   }
   keys(): number[] { return [...this.map.keys()]; }
+  delete(k: number): boolean { return this.map.delete(k); }
   clear(): void { this.map.clear(); }
 }
 

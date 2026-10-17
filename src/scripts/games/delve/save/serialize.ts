@@ -123,6 +123,8 @@ export interface SaveHeader {
 export interface ExtraSave {
   /** 釣魚紀錄：魚種 → 條數 */
   fishLog: Partial<Record<ItemId, number>>;
+  /** 玩家敲開的冰洞（tile index） */
+  minedIce?: number[];
 }
 export interface EnvSave {
   weather: { kind: WeatherKind; until: number } | null;
@@ -302,7 +304,8 @@ function validExtra(v: unknown): ExtraSave | undefined {
   if (o.fishLog && typeof o.fishLog === 'object') {
     for (const [k, n] of Object.entries(o.fishLog)) if (isItemId(k) && Number.isInteger(n) && (n as number) > 0) fishLog[k] = n as number;
   }
-  return { fishLog };
+  const minedIce = Array.isArray(o.minedIce) ? o.minedIce.filter((i) => Number.isInteger(i) && i >= 0).slice(0, 100000) : [];
+  return { fishLog, minedIce };
 }
 function validBossActive(v: unknown): EnemyKind | null {
   if (v === undefined || v === null) return null;
@@ -380,7 +383,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       drops: game.drops.list.map((d) => ({ item: d.item, count: d.count, x: r2(d.body.x + d.body.w / 2), y: r2(d.body.y + d.body.h / 2) })),
       bossActive: boss && boss.state !== 'leave' ? boss.kind : null,
       env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeFrozen(w.frozen) },
-      extra: { fishLog: { ...game.fishLog } },
+      extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce] },
     },
     chunks,
   };
@@ -750,7 +753,10 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     game.weatherOverride = h.env.weather ? { ...h.env.weather } : null;
     game.syncDay();
   } else game.refreshSeason();
-  if (h.extra) game.fishLog = { ...h.extra.fishLog };
+  if (h.extra) {
+    game.fishLog = { ...h.extra.fishLog };
+    for (const i of h.extra.minedIce ?? []) if (i < w.liquid.length) game.minedIce.add(i);
+  }
   // 首領戰中存檔（怪物不存）：退還召喚道具，背包滿就掉在腳邊
   const refund = h.bossActive ? BOSS_SUMMON_ITEM[h.bossActive] : undefined;
   if (refund && !game.bossEnemy()) {

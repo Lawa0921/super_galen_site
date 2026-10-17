@@ -27,7 +27,9 @@ export function freezeHash(x: number): number {
  * 依第 dayIndex 天更新整個世界的地表冰。blocked(x, y) = 那格有人（不要把人凍在冰裡）。
  * 回傳 { frozen, thawed } 格數。
  */
-export function updateFreeze(w: World, sim: LiquidSim | null, dayIndex: number, blocked?: (x: number, y: number) => boolean): { frozen: number; thawed: number } {
+export function updateFreeze(w: World, sim: LiquidSim | null, dayIndex: number, blocked?: (x: number, y: number) => boolean,
+  /** 玩家敲開的冰洞（tile index）：這一季不再結冰；那一欄融化的季節到了就從清單拿掉 */
+  keepOpen?: Set<number>): { frozen: number; thawed: number } {
   const F = w.frozen, L = w.liquid, LT = w.liquidType, fg = w.fg, W = w.width;
   let frozen = 0, thawed = 0;
   for (let x = 0; x < W; x++) {
@@ -36,7 +38,7 @@ export function updateFreeze(w: World, sim: LiquidSim | null, dayIndex: number, 
     const want = freezeSeason(dayIndex, w.biome[x], freezeHash(x));
     const set = (y: number): void => {
       const i = y * W + x;
-      if (F[i] || LT[i] !== LIQ.WATER || !L[i] || w.wall[i] !== 0 || blocked?.(x, y)) return;
+      if (F[i] || LT[i] !== LIQ.WATER || !L[i] || w.wall[i] !== 0 || blocked?.(x, y) || keepOpen?.has(i)) return;
       F[i] = 1; frozen++;
       w.touchLiquid(i);
     };
@@ -61,6 +63,9 @@ export function updateFreeze(w: World, sim: LiquidSim | null, dayIndex: number, 
     if (LT[i] !== LIQ.WATER) continue;
     set(top);
     if (F[i] && L[i] < FREEZE_THIN && top + 1 < w.height && LT[i + W] === LIQ.WATER) set(top + 1);
+  }
+  if (keepOpen?.size) {
+    for (const i of keepOpen) if (!freezeSeason(dayIndex, w.biome[i % W], freezeHash(i % W))) keepOpen.delete(i);
   }
   return { frozen, thawed };
 }

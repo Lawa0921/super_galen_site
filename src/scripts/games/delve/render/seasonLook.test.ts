@@ -1,6 +1,6 @@
 // seasonLook.test.ts — 季節外觀（純邏輯）：每棵樹 / 每格草的季節樣貌、逐日過渡、背景色調
 import { describe, it, expect } from 'vitest';
-import { treeLook, grassLook, leafColors, bgSeasonDay, TREE_LOOKS, type TreeLook } from './seasonLook';
+import { treeLook, grassLook, grassLookChanges, leafColors, bgSeasonDay, TREE_LOOKS, type TreeLook } from './seasonLook';
 import { DAYS_PER_SEASON, SEASON, SEASON_TRANSITION_DAYS } from '../engine/calendar';
 import { TREE_KIND } from './scene';
 import { inPalette, hex } from './pixel';
@@ -54,5 +54,22 @@ describe('grassLook / 葉色 / 背景色調', () => {
   it('所有季節葉色 / 背景色都在統一色票上', () => {
     for (const l of TREE_LOOKS) for (const c of leafColors(l)) expect(inPalette(hex(c))).toBe(true);
     for (const s of [0, 1, 2, 3] as const) for (const c of bgSeasonDay(s)) expect(inPalette(hex(c))).toBe(true);
+  });
+});
+
+describe('grassLookChanges：換日時草 / 植物外觀有沒有可能變（決定 chunk 要不要重畫）', () => {
+  it('季中的普通換日不變；換季後過渡期的換日會變；跳很多天一定比對', () => {
+    const mid = SEASON.SUMMER * DAYS_PER_SEASON + SEASON_TRANSITION_DAYS + 1;
+    expect(grassLookChanges(mid, mid + 1)).toBe(false);
+    const start = SEASON.AUTUMN * DAYS_PER_SEASON;
+    expect(grassLookChanges(start - 1, start)).toBe(true);
+    expect(grassLookChanges(start + 1, start + 2)).toBe(true);
+    expect(grassLookChanges(mid, mid + DAYS_PER_SEASON)).toBe(true);
+    // 和逐欄比對一致
+    for (let d = 1; d < DAYS_PER_SEASON * 8; d++) {
+      let real = false;
+      for (let x = 0; x < 2000 && !real; x++) real = grassLook(x, d) !== grassLook(x, d - 1);
+      if (real) expect(grassLookChanges(d - 1, d)).toBe(true);
+    }
   });
 });

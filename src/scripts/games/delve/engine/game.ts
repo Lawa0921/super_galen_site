@@ -447,6 +447,8 @@ export class DelveGame {
   private readonly fishRng: Rng;
   private foodCd = 0;
   private miningWas = false;
+  /** 玩家敲開的冰洞（tile index；存檔內容）：到那一欄融化的季節前不會再結冰 */
+  readonly minedIce = new Set<number>();
 
   constructor(opts: DelveOptions = {}) {
     this.seed = String(opts.seed ?? 'delve');
@@ -634,6 +636,7 @@ export class DelveGame {
     this.mining = null;
     const w = this.world, i = w.idx(x, y);
     w.frozen[i] = 0;
+    this.minedIce.add(i);
     w.touchLiquid(i);
     this.liquids.wake(x, y);
     this.events.push({ type: 'mine', x, y, tile: T.ICE, item: null });
@@ -1222,7 +1225,7 @@ export class DelveGame {
   syncDay(): void { this.lastDay = dayIndexOf(this.time); this.wxCache = null; }
   private onNewDay(day: number): void {
     this.lastDay = day;
-    updateFreeze(this.world, this.liquids, day, (x, y) => !this.dead && this.tileOverlapsPlayer(x, y));
+    updateFreeze(this.world, this.liquids, day, (x, y) => !this.dead && this.tileOverlapsPlayer(x, y), this.minedIce);
   }
   /** 天氣效果：雷雨打閃電、雨水補露天水池 */
   private updateWeatherFx(dt: number): void {

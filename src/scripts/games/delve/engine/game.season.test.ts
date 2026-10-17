@@ -174,6 +174,27 @@ describe('冬天：湖面結冰可以走', () => {
     expect(g.world.frozen[g.world.idx(71, 60)]).toBe(0);
     expect(ev.some((e) => e.type === 'mine' && e.tile === T.ICE)).toBe(true);
   });
+  it('敲開的冰洞到下一個冬天之前不會在午夜又結冰（夏天融化後才忘掉）', () => {
+    const g = arena({ lake: true });
+    g.setDate({ season: SEASON.WINTER, day: SEASON_TRANSITION_DAYS + 1, hour: 12 });
+    g.teleport(69, 59);
+    g.setAim(71, 60);
+    g.setMining(true);
+    run(g, 3);
+    g.setMining(false);
+    expect(g.world.frozen[g.world.idx(71, 60)]).toBe(0);
+    // 隔天午夜：別的格照樣是冰，挖開的洞還開著
+    g.time = DAY_LENGTH * (winterDay + 1) - 0.5;
+    run(g, 1);
+    expect(g.world.frozen[g.world.idx(80, 60)]).toBe(1);
+    expect(g.world.frozen[g.world.idx(71, 60)]).toBe(0);
+    expect(g.minedIce.size).toBeGreaterThan(0);
+    // 春天融化 → 忘掉；下一個冬天照常結冰
+    g.setDate({ year: 2, season: SEASON.SPRING, day: SEASON_TRANSITION_DAYS + 2, hour: 12 });
+    expect(g.minedIce.size).toBe(0);
+    g.setDate({ year: 2, season: SEASON.WINTER, day: SEASON_TRANSITION_DAYS + 2, hour: 12 });
+    expect(g.world.frozen[g.world.idx(71, 60)]).toBe(1);
+  });
   it('換日時自動結冰（不用手動 refresh）', () => {
     const g = arena({ lake: true });
     g.setDate({ season: SEASON.AUTUMN, day: DAYS_PER_SEASON, hour: 12 });

@@ -14,4 +14,12 @@ describe('存檔：內容 / 打磨欄位', () => {
     if (!r.ok) return;
     expect(r.game.fishLog).toEqual({ brook_trout: 3, old_whiskers: 1 });
   });
+  it('玩家敲開的冰洞清單存檔後讀回來還在', () => {
+    const g = new DelveGame({ seed: 'save-polish', ...SMALL, peaceful: true });
+    g.minedIce.add(1234); g.minedIce.add(5678);
+    const r = restoreGame(serializeGame(g));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect([...r.game.minedIce].sort((a, b) => a - b)).toEqual([1234, 5678]);
+  });
 });

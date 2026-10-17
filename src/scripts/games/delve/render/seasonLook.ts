@@ -1,6 +1,6 @@
 // seasonLook.ts — 季節外觀（純邏輯，無 DOM）：每棵樹的季節樣貌（春花 / 新綠 / 濃綠 / 秋葉三色 / 冬天光禿或積雪）、
 // 每格草 / 花的季節（逐日過渡：各自依座標雜湊在換季後 0..N−1 天內切換）、森林背景剪影的季節色。全部取自統一色票。
-import { SEASON, seasonLook, type Season } from '../engine/calendar';
+import { SEASON, SEASON_TRANSITION_DAYS, seasonLook, seasonOf, type Season } from '../engine/calendar';
 import { TREE_KIND } from './scene';
 
 export type TreeLook =
@@ -92,3 +92,15 @@ const BG_DARK: Record<Season, [string, string, string]> = {
 export function bgSeasonDay(s: Season): readonly string[] { return BG_DAY[s]; }
 export function bgSeasonLite(s: Season): readonly string[] { return BG_LITE[s]; }
 export function bgSeasonDark(s: Season): readonly string[] { return BG_DARK[s]; }
+
+/**
+ * 從第 prev 天換到第 day 天，草 / 花 / 植物的季節外觀（grassLook）有沒有可能改變：
+ * 外觀 = seasonOf(day − lag)，lag ∈ [0, SEASON_TRANSITION_DAYS)，所以只有某個 lag 的季節不同才會變。
+ * 季中的普通換日 → false（chunk 快取不用重畫）。
+ */
+export function grassLookChanges(prev: number, day: number): boolean {
+  for (let lag = 0; lag < SEASON_TRANSITION_DAYS; lag++) {
+    if (seasonOf(Math.max(0, prev - lag)) !== seasonOf(Math.max(0, day - lag))) return true;
+  }
+  return false;
+}

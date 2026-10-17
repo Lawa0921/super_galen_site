@@ -23,7 +23,7 @@ import { AmbientField, ambientKind, AMBIENT_GLOWS, type AmbientKind } from './am
 import { LiquidLayer } from './liquidDraw';
 import { LIQ } from '../engine/liquidKind';
 import { dayIndexOf, seasonBlend } from '../engine/calendar';
-import { fallColors, grassLook, leafColors, leafFall, treeLook } from './seasonLook';
+import { fallColors, grassLook, grassLookChanges, leafColors, leafFall, treeLook } from './seasonLook';
 import { FloraAtlas, iceBmp } from './seasonArt';
 import { decorStyleAt } from './decorPick'; // [polish]
 import { tileVariant } from './tileFamily'; // [polish]
@@ -288,10 +288,15 @@ export class Renderer {
     const dirty = w.drainDirty();
     for (const ci of dirty) this.pending.add(ci);
     if (dirty.length) { this.onWorldDirty?.(dirty); this.fx.invalidate(w, dirty); }
-    // 換日：草皮的季節外觀可能變了 → chunk 快取全部重畫（逐幀分批）；結冰也可能變了 → 天空高度重算
+    // 換日：結冰可能變了 → 天空高度重算；草 / 植物的季節外觀真的會變（換季的過渡期）才重畫 chunk：
+    // 看得到的 chunk 這一幀全部重畫（不分批 → 不會新舊季節混在畫面上），看不到的直接丟出快取（進畫面時才畫新的）
     const today = dayIndexOf(g.time);
+    let seasonFlush = false;
     if (today !== this.seasonDay) {
-      if (this.seasonDay >= 0) { this.invalidateAll(); this.fx.invalidateAll(); }
+      if (this.seasonDay >= 0) {
+        this.fx.invalidateAll();
+        seasonFlush = grassLookChanges(this.seasonDay, today);
+      }
       this.seasonDay = today;
     }
     const flash = g.flash();
@@ -328,7 +333,15 @@ export class Renderer {
       { biome: w.biome, structures: g.structures }); // [polish] biome-specific backdrops
 
     const r = visibleChunks(camX, camY, vw, vh, CPX, w.chunksX, w.chunksY);
-    let budget = REDRAW_BUDGET, drawn = 0;
+    if (seasonFlush) {
+      for (const k of this.cache.keys()) {
+        const { cx, cy } = w.chunkCoords(k);
+        if (cx >= r.cx0 && cx <= r.cx1 && cy >= r.cy0 && cy <= r.cy1) this.pending.add(k);
+        else { const c = this.cache.get(k); if (c) this.pool.push(c); this.cache.delete(k); this.pending.delete(k); }
+      }
+      this.lightDirty = true;
+    }
+    let budget = seasonFlush ? Infinity : REDRAW_BUDGET, drawn = 0;
     for (let cy = r.cy0; cy <= r.cy1; cy++) {
       for (let cx = r.cx0; cx <= r.cx1; cx++) {
         const ci = w.chunkIndex(cx, cy);
