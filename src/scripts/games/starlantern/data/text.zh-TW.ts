@@ -195,11 +195,14 @@ export const T = {
       /** Why a node cannot take its next rank (progression canRaiseTalent). */
       reason: {
         unknown: '無法投點', max: '已滿級', points: '點數不足', adjacent: '需相鄰上一列',
-        gate: `盤面需 ${KEYSTONE_GATE} 點`, keystones: `已選滿 ${MAX_KEYSTONES} 個`,
+        gate: `盤面需 ${KEYSTONE_GATE} 點`, keystones: `關鍵天賦已選滿 ${MAX_KEYSTONES} 個`,
       } as Record<TalentFail, string>,
-      /** A board cell's state beside its bonus, at most 3 wide characters; the notes under the board give `reason` in full. */
+      /**
+       * A board cell's state beside its bonus, at most 3 wide characters (a keystone cell has no bonus, so its own states take
+       * up to 4); the notes under the board give `reason` in full. 已滿級 is a maxed node, 關鍵已滿 the keystone cap.
+       */
       cell: {
-        open: '可投點', unknown: '不可投', max: '已滿級', points: '缺點數', adjacent: '需相鄰', gate: `需${KEYSTONE_GATE}點`, keystones: '已選滿',
+        open: '可投點', unknown: '不可投', max: '已滿級', points: '缺點數', adjacent: '需相鄰', gate: `需${KEYSTONE_GATE}點`, keystones: '關鍵已滿',
       } as Record<TalentFail | 'open', string>,
       pending: '再按一次投點',
       /** The engine turned a spend down after the page allowed it (e.g. outside town and the labyrinth). */

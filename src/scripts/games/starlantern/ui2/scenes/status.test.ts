@@ -814,8 +814,10 @@ describe('StatusScene', () => {
       expect([sub('noel-t00', 'slx-talent-per'), sub('noel-t00', 'slx-talent-state')]).toEqual(['+2／級', T.ui2.talent.cell.open]);
       expect([sub('noel-t10', 'slx-talent-per'), sub('noel-t10', 'slx-talent-state')]).toEqual(['+3%／級', T.ui2.talent.cell.adjacent]);   // 雷電傷害
       expect(sub('noel-k0', 'slx-talent-state')).toBe(T.ui2.talent.cell.gate);
-      // A cell has room for 3 wide characters beside the bonus (the gate's number aside); the notes give the full reason.
-      for (const [k, v] of Object.entries(T.ui2.talent.cell)) expect(v.replace(/\d/g, '').length, k).toBeLessThanOrEqual(3);
+      // A cell has room for 3 wide characters beside the bonus (the gate's number aside); a keystone cell has no bonus,
+      // so its own reasons may take 4. The notes give the full reason.
+      const keyOnly = ['gate', 'keystones'];
+      for (const [k, v] of Object.entries(T.ui2.talent.cell)) expect(v.replace(/\d/g, '').length, k).toBeLessThanOrEqual(keyOnly.includes(k) ? 4 : 3);
       expect(Object.keys(T.ui2.talent.cell).sort()).toEqual(['open', ...Object.keys(T.ui2.talent.reason)].sort());
       node('noel-t10').click();
       expect(info()).toContain(T.ui2.talent.reason.adjacent);
@@ -892,6 +894,16 @@ describe('StatusScene', () => {
       expect(node('noel-k0').textContent).toContain(T.ui2.talent.cell.gate);
       expect(node('noel-t01').textContent).toContain(T.ui2.talent.cell.points);
       expect(node('noel-t11').textContent).toContain(T.ui2.talent.cell.points);   // diagonal below a raised node
+    });
+
+    it('a maxed node and the keystone cap read differently, in the cell and in the notes', () => {
+      expect(T.ui2.talent.cell.max).toBe('已滿級');
+      expect(T.ui2.talent.cell.keystones).toBe('關鍵已滿');
+      expect(new Set(Object.values(T.ui2.talent.cell)).size).toBe(Object.keys(T.ui2.talent.cell).length);
+      expect(T.ui2.talent.reason.keystones).toContain('關鍵天賦');
+      const { node } = onTalent(50, { ...eleven, 'noel-t02': 2, 'noel-k0': 1, 'noel-k1': 1 });
+      expect(node('noel-k2').textContent).toContain('關鍵已滿');
+      expect(node('noel-k0').textContent).not.toContain('關鍵已滿');
     });
 
     it('every refusal has its own words', () => {
