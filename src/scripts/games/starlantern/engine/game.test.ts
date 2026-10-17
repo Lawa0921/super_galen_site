@@ -16,6 +16,7 @@ import { activeIds, expToNext, gainExp, MAX_LEVEL, meet, newMember, rowOfCell, L
 import { depthClearExp, empower, encounterGroup, groupCap } from './scaling';
 import { favouredRegions } from '../data/meetings';
 import { MAX_ACTIVE } from './formation';
+import { ABYSS } from '../data/hero';
 import { CONDITIONS } from '../data/conditions';
 import { BAG_SIZE } from './loot/bag';
 import { MAX_ILVL, MAX_REACHED } from './levels';
@@ -301,6 +302,13 @@ describe('battles', () => {
     expect([g.state.gold, g.run!.loot.gold]).toEqual([gold, r.end!.gold]);
     const sc = g.state.party.roster.hero; // a floor-1 fight gives < 60 exp, so at most one level-up (15 exp)
     expect(sc.exp + (sc.level - 1) * 15).toBe(r.end!.exp);
+  });
+  it("a fight carries its floor's abyss bonus, which grows with the depth", () => {
+    expect(startBattle().battle!.abyss).toBe(ABYSS.perDepth * 1);
+    const deep = inMap(2, mulberry32(1));
+    deep.encounter = 99;
+    expect(deep.move('right')).toEqual({ kind: 'battle' });
+    expect(deep.battle!.abyss).toBe(ABYSS.perDepth * 2);
   });
   it('keeps fighting while the outcome is open', () => {
     const g = startBattle();
