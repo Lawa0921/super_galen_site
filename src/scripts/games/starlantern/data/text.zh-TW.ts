@@ -2,6 +2,12 @@ import type { RaiseFail, TalentFail } from '../engine/progression';
 import type { StatCategory } from '../engine/stats';
 import type { SkillMod } from './gear';
 import { KEYSTONE_GATE, MAX_KEYSTONES } from './talents';
+import { EQUIPMENT } from './equipment';
+import { ITEMS } from './items';
+import { SETS } from './gear';
+import type { RegionId } from './regions';
+import type { MaterialUse } from '../engine/forge/uses';
+import type { MaterialKind } from '../engine/types';
 import type { AnyStat, BuffStat, Rarity, Slot, StatKey, Target } from '../engine/types';
 
 const STAT: Record<StatKey, string> = { hp: 'HP', tp: 'TP', atk: '攻擊', def: '防禦', mag: '魔力', res: '魔防', spd: '速度' };
@@ -29,6 +35,11 @@ const signed = (v: number): string => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0
 
 /** The homecoming sentence, alone or ahead of what came home. */
 const home = (viaLamp: boolean) => (viaLamp ? '歸還之燈的光芒把隊伍帶回了城鎮。' : '平安回城。');
+
+const FORGE_GROUP: Record<RegionId, string> = {
+  mainline: '', blaze: '火焰系', frost: '冰霜系', storm: '雷鳴系', mire: '毒抗與恢復系', shade: '暴擊系', iron: '防禦系',
+};
+const SLOT_KIND = { ...SLOT, ring: '戒指' } as Record<Slot | 'ring', string>;
 
 export const T = {
   signed,
@@ -399,6 +410,25 @@ export const T = {
         selene: '後排。治療、復活、解毒；催眠。', safira: '前排。多段攻擊、提高閃避；全隊增益。', bobby: '後排。放置砲台每回合攻擊；道具效果加倍、護盾。',
       } as Record<string, string>,
     },
+  },
+  forge: {
+    kind: { essence: '精華', monster: '怪物素材', region: '地區素材', rare: '稀有素材', junk: '雜物' } as Record<MaterialKind, string>,
+    group: FORGE_GROUP,
+    use: (u: MaterialUse): string => {
+      switch (u.kind) {
+        case 'enhance': return `強化 +${u.level}`;
+        case 'reroll': return `重鑄${RARITY[u.tier]}裝備`;
+        case 'legendaryReroll': return '重鑄傳說裝備';
+        case 'regionReroll': return `重鑄時鎖定${FORGE_GROUP[u.region]}詞綴`;
+        case 'fuseSlot': return `合成${RARITY[u.target]}時指定欄位`;
+        case 'consumable': return ITEMS[u.item]?.name ?? u.item;
+        case 'base': return `${SLOT_KIND[u.slot]}打造`;
+        case 'set': return `${SETS[u.set]?.name ?? u.set}打造`;
+        case 'unlock': return `${EQUIPMENT[u.base]?.name ?? u.base}解鎖`;
+      }
+    },
+    usedFor: (list: string) => `用於：${list}`,
+    junkOnly: '雜物：只能賣錢',
   },
   clear: { title: '星燈重新亮起', body: '燈喰之獸倒下了。暮霧散去，露米亞迎來久違的晨光。', back: '回到城鎮' },
 };

@@ -58,7 +58,8 @@ export interface ItemInstance {
   uid: number; base: string; rarity: Rarity; ilvl: number; affixes: { key: AnyStat; value: number }[];
   special?: string; enhance: number; junk?: boolean;
 }
-export interface MaterialDef { id: string; name: string; price: number }
+export type MaterialKind = 'essence' | 'monster' | 'region' | 'rare' | 'junk';
+export interface MaterialDef { id: string; name: string; price: number; kind: MaterialKind }
 export interface FloorDef {
   id: 1 | 2 | 3; name: string; rows: string[]; encounters: string[][]; rate: [number, number]; chestLoot: { item: string; qty: number }[];
 }
