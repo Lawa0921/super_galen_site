@@ -1,0 +1,16 @@
+{
+  "pass": true,
+  "reasons": [],
+  "warnings": [
+    "enclosed holes"
+  ],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 1,
+  "block": 11,
+  "size": [
+    111,
+    113
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "assets": {
+    "char-hero-portrait": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-hero-portrait/cand/a2/char-hero-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait\\char-hero-portrait-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 11,
+        "size": [
+          114,
+          114
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

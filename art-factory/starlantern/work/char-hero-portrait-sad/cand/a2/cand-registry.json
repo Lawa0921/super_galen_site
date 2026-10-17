@@ -1,0 +1,26 @@
+{
+  "assets": {
+    "char-hero-portrait-sad": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-hero-portrait-sad/cand/a2/char-hero-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait-sad\\char-hero-portrait-sad-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          111,
+          113
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

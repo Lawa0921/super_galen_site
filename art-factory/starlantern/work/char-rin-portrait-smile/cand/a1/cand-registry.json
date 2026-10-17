@@ -1,0 +1,26 @@
+{
+  "assets": {
+    "char-rin-portrait-smile": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-portrait-smile/cand/a1/char-rin-portrait-smile.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait-smile\\char-rin-portrait-smile-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

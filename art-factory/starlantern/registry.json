@@ -5652,6 +5652,942 @@
       "source_id": "sheet-trait-icons",
       "batch": "portal-dungeon",
       "runtime": "/assets/games/starlantern/icon/trait-poison.png"
+    },
+    "char-hero-standee": {
+      "kind": "sprite",
+      "final": "art-factory/starlantern/work/char-hero-standee/char-hero-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-standee\\char-hero-standee-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 5,
+        "size": [
+          183,
+          284
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-hero-standee",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/hero-standee.png",
+      "depends_on": [],
+      "rejected_attempts": {
+        "a1": "正面站姿較平、符文劍紋路較淡；a2 三分之二側身與其他 8 人一致，劍身符文較清楚，封閉小洞較少（6 對 14）"
+      }
+    },
+    "char-rin-standee": {
+      "kind": "sprite",
+      "final": "art-factory/starlantern/work/char-rin-standee/char-rin-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-standee\\char-rin-standee-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 11,
+        "block": 5,
+        "size": [
+          142,
+          278
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-rin-standee",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-standee.png",
+      "depends_on": [],
+      "rejected_attempts": {
+        "a1": "斗篷偏紫而非規格的深炭灰、裝飾少，和其他 8 人的細節密度不搭；a2 炭灰連帽短斗篷、領口銅鈴清楚、大腿細針與雙短刀都有"
+      }
+    },
+    "char-hero-portrait": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-hero-portrait/char-hero-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait\\char-hero-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          111,
+          113
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "char-hero-portrait",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/hero-portrait.png",
+      "depends_on": [
+        "char-hero-standee"
+      ],
+      "rejected_attempts": {
+        "a2": "與 a1 幾乎相同，但肩部裁得較緊、有 2 個封閉小洞；a1 構圖較完整、無洞"
+      }
+    },
+    "char-rin-portrait": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-portrait/char-rin-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait\\char-rin-portrait-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-rin-portrait",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-portrait.png",
+      "depends_on": [
+        "char-rin-standee"
+      ],
+      "rejected_attempts": {
+        "a1": "頭偏得較多、銅鈴下少了立繪上的紅色流蘇，與已選立繪對不上；有 6 個封閉小洞。附註：a2 原本被 codex_still 的 fallback 誤拷成主角的圖（平行生成時），已由 party.py recover 換回 codex 自己存的檔（gen.json output_recovered_from）"
+      }
+    },
+    "char-rin-oath-standee": {
+      "kind": "sprite",
+      "final": "art-factory/starlantern/work/char-rin-oath-standee/char-rin-oath-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-standee\\char-rin-oath-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "block": 5,
+        "size": [
+          142,
+          278
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "char-rin-oath-standee",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-oath-standee.png",
+      "depends_on": [
+        "char-rin-standee"
+      ],
+      "rejected_attempts": {
+        "a2": "領口小鐘改成有光澤的圓球，看起來仍像一顆鈴，不像被敲平的圓片；a1 是扁平、無裂痕的霧面銅片，符合 §5.3"
+      }
+    },
+    "char-rin-oath-portrait": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait/char-rin-oath-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait\\char-rin-oath-portrait-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-rin-oath-portrait",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-oath-portrait.png",
+      "depends_on": [
+        "char-rin-portrait"
+      ],
+      "rejected_attempts": {
+        "a1": "銅片上還留一道淡淡的橫線，縮小後容易讀成原本的裂痕；a2 是有敲痕凹點、無裂痕的圓片，最清楚"
+      }
+    },
+    "char-rin-portrait-attack": {
+      "allow_edge": [
+        "bottom",
+        "left"
+      ],
+      "notes": "leaning-forward bust: the cloak at her right shoulder meets the left edge near the bottom corner; head, bell and dagger hand intact; checked visually",
+      "kind": "sprite",
+      "final": "art-factory/starlantern/work/char-rin-portrait-attack/char-rin-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait-attack\\char-rin-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 11,
+        "size": [
+          113,
+          112
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "char-rin-portrait-attack",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-portrait-attack.png",
+      "depends_on": [
+        "char-rin-portrait",
+        "char-rin-standee"
+      ],
+      "rejected_attempts": {
+        "a2": "前傾後斗篷左右兩側都被畫布切到；a1 只有左肩斗篷碰邊（已記 allow_edge left）"
+      }
+    },
+    "char-rin-portrait-hit": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-portrait-hit/char-rin-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait-hit\\char-rin-portrait-hit-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-rin-portrait-hit",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-portrait-hit.png",
+      "depends_on": [
+        "char-rin-portrait",
+        "char-rin-standee"
+      ],
+      "rejected_attempts": {
+        "a1": "表情較平淡，受擊感弱；a2 咬牙單眼緊閉、臉頰擦傷較清楚"
+      }
+    },
+    "char-rin-portrait-dying": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-portrait-dying/char-rin-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait-dying\\char-rin-portrait-dying-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          102,
+          112
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-rin-portrait-dying",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-portrait-dying.png",
+      "depends_on": [
+        "char-rin-portrait",
+        "char-rin-standee"
+      ],
+      "rejected_attempts": {
+        "a1": "傷痕較少，與一般頭貼差異小，且有 4 個封閉小洞；a2 衣領破損與髒污明顯、無洞"
+      }
+    },
+    "char-rin-portrait-down": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-portrait-down/char-rin-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait-down\\char-rin-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 10,
+        "size": [
+          118,
+          121
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "char-rin-portrait-down",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-portrait-down.png",
+      "depends_on": [
+        "char-rin-portrait",
+        "char-rin-standee"
+      ],
+      "rejected_attempts": {
+        "a2": "臉上瘀青太重、頭部傾斜不明顯；a1 閉眼低頭、倒下感清楚，封閉小洞較少"
+      }
+    },
+    "char-rin-portrait-ultimate": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-portrait-ultimate/char-rin-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait-ultimate\\char-rin-portrait-ultimate-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 69,
+        "block": 11,
+        "size": [
+          115,
+          114
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-rin-portrait-ultimate",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-portrait-ultimate.png",
+      "depends_on": [
+        "char-rin-portrait",
+        "char-rin-standee"
+      ],
+      "rejected_attempts": {
+        "a1": "短刀與光爆把整體撐高，縮到 115 高之後臉比其他表情小一圈；a2 臉的大小與一般頭貼一致"
+      }
+    },
+    "char-rin-portrait-smile": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-portrait-smile/char-rin-portrait-smile.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait-smile\\char-rin-portrait-smile-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-rin-portrait-smile",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-portrait-smile.png",
+      "depends_on": [
+        "char-rin-portrait",
+        "char-rin-standee"
+      ],
+      "rejected_attempts": {
+        "a1": "嘴角幾乎沒動，縮小後讀不出是微笑；a2 閉口淺笑較清楚，仍保留她冷淡的個性"
+      }
+    },
+    "char-rin-portrait-sad": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-portrait-sad/char-rin-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait-sad\\char-rin-portrait-sad-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-rin-portrait-sad",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-portrait-sad.png",
+      "depends_on": [
+        "char-rin-portrait",
+        "char-rin-standee"
+      ],
+      "rejected_attempts": {
+        "a1": "眉眼偏銳利，讀起來像不悅而不是難過；a2 垂眼、眉尾下垂，較像難過"
+      }
+    },
+    "char-hero-portrait-attack": {
+      "allow_edge": [
+        "bottom",
+        "left",
+        "right"
+      ],
+      "notes": "leaning-forward bust: his coat shoulders meet both side edges only in the lowest 15-28% of the raw (rows 901+/1070+ of 1254); head and collar intact; checked visually",
+      "kind": "sprite",
+      "final": "art-factory/starlantern/work/char-hero-portrait-attack/char-hero-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait-attack\\char-hero-portrait-attack-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 11,
+        "size": [
+          116,
+          113
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-hero-portrait-attack",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/hero-portrait-attack.png",
+      "depends_on": [
+        "char-hero-portrait",
+        "char-hero-standee"
+      ],
+      "rejected_attempts": {
+        "a1": "嘴張得大但眼神較散；a2 眉眼更銳利，戰吼感較強（兩版都只有肩下角碰邊）"
+      }
+    },
+    "char-hero-portrait-down": {
+      "allow_edge": [
+        "bottom",
+        "right"
+      ],
+      "notes": "slumped bust: the cape at his left shoulder meets the right edge only in the lowest 13% of the raw; head intact; checked visually",
+      "kind": "sprite",
+      "final": "art-factory/starlantern/work/char-hero-portrait-down/char-hero-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait-down\\char-hero-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 11,
+        "size": [
+          114,
+          113
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "char-hero-portrait-down",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/hero-portrait-down.png",
+      "depends_on": [
+        "char-hero-portrait",
+        "char-hero-standee"
+      ],
+      "rejected_attempts": {
+        "a2": "構圖放大（125×123），頭比其他表情大一圈，不一致；a1 尺寸與一般頭貼相同、閉眼低頭清楚"
+      }
+    },
+    "char-hero-portrait-dying": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-hero-portrait-dying/char-hero-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait-dying\\char-hero-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          111,
+          113
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "char-hero-portrait-dying",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/hero-portrait-dying.png",
+      "depends_on": [
+        "char-hero-portrait",
+        "char-hero-standee"
+      ],
+      "rejected_attempts": {
+        "a2": "嘴角血跡偏重、有 1 個封閉小洞；a1 傷勢清楚但較收斂、無洞"
+      }
+    },
+    "char-hero-portrait-hit": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-hero-portrait-hit/char-hero-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait-hit\\char-hero-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 11,
+        "size": [
+          111,
+          113
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "char-hero-portrait-hit",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/hero-portrait-hit.png",
+      "depends_on": [
+        "char-hero-portrait",
+        "char-hero-standee"
+      ],
+      "rejected_attempts": {
+        "a2": "與 a1 幾乎相同，但有 4 個封閉小洞（a1 為 2）"
+      }
+    },
+    "char-hero-portrait-sad": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-hero-portrait-sad/char-hero-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait-sad\\char-hero-portrait-sad-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          111,
+          113
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-hero-portrait-sad",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/hero-portrait-sad.png",
+      "depends_on": [
+        "char-hero-portrait",
+        "char-hero-standee"
+      ],
+      "rejected_attempts": {
+        "a1": "眼神仍偏平靜，難過感弱；a2 垂眼、眉尾下垂，較像難過，且無洞"
+      }
+    },
+    "char-hero-portrait-smile": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-hero-portrait-smile/char-hero-portrait-smile.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait-smile\\char-hero-portrait-smile-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          111,
+          113
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "char-hero-portrait-smile",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/hero-portrait-smile.png",
+      "depends_on": [
+        "char-hero-portrait",
+        "char-hero-standee"
+      ],
+      "rejected_attempts": {
+        "a2": "與 a1 差異很小，有 1 個封閉小洞；a1 笑容較自然、無洞"
+      }
+    },
+    "char-hero-portrait-ultimate": {
+      "allow_edge": [
+        "bottom",
+        "left",
+        "right"
+      ],
+      "notes": "coat shoulders meet the side edges only in the lowest 5-11% of the raw; the rune sword and light burst are fully inside (revision note applied from a3); 43 small enclosed pockets are gaps between light rays, checked visually",
+      "kind": "sprite",
+      "final": "art-factory/starlantern/work/char-hero-portrait-ultimate/char-hero-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait-ultimate\\char-hero-portrait-ultimate-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 43,
+        "block": 11,
+        "size": [
+          116,
+          114
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a3",
+      "source_id": "char-hero-portrait-ultimate",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/hero-portrait-ultimate.png",
+      "depends_on": [
+        "char-hero-portrait",
+        "char-hero-standee"
+      ],
+      "rejected_attempts": {
+        "a1": "舉起的符文劍與光爆沿左邊大半高度（3%-61%）被畫布切掉",
+        "a2": "劍身與光爆沿左邊 12%-100% 被畫布切掉",
+        "a4": "眼睛變成金色（身分不一致），劍尖仍在左邊 36% 以下碰邊、上緣也碰到；a3 劍完整在畫布內、維持鋼藍色眼睛"
+      }
+    },
+    "char-rin-oath-portrait-attack": {
+      "allow_edge": [
+        "bottom",
+        "left"
+      ],
+      "notes": "edited from char-rin-portrait-attack (same pose): the cloak at her right shoulder meets the left edge near the bottom corner; checked visually",
+      "kind": "sprite",
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-attack/char-rin-oath-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-attack\\char-rin-oath-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 11,
+        "size": [
+          113,
+          112
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "char-rin-oath-portrait-attack",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-oath-portrait-attack.png",
+      "depends_on": [
+        "char-rin-portrait-attack"
+      ],
+      "rejected_attempts": {
+        "a2": "銅片上還留著一道橫向細線，像原本的裂痕；a1 無裂痕、有敲痕"
+      }
+    },
+    "char-rin-oath-portrait-hit": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-hit/char-rin-oath-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-hit\\char-rin-oath-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "char-rin-oath-portrait-hit",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-oath-portrait-hit.png",
+      "depends_on": [
+        "char-rin-portrait-hit"
+      ],
+      "rejected_attempts": {
+        "a2": "銅片仍有光滑球面高光，讀起來像鈴；a1 平面加敲痕凹點，最像被敲平"
+      }
+    },
+    "char-rin-oath-portrait-dying": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-dying/char-rin-oath-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-dying\\char-rin-oath-portrait-dying-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          102,
+          112
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-rin-oath-portrait-dying",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-oath-portrait-dying.png",
+      "depends_on": [
+        "char-rin-portrait-dying"
+      ],
+      "rejected_attempts": {
+        "a1": "銅片過於平滑、看不出敲過；a2 有敲痕凹點，與選擇後一般頭貼一致"
+      }
+    },
+    "char-rin-oath-portrait-down": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-down/char-rin-oath-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-down\\char-rin-oath-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 10,
+        "size": [
+          118,
+          121
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "char-rin-oath-portrait-down",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-oath-portrait-down.png",
+      "depends_on": [
+        "char-rin-portrait-down"
+      ],
+      "rejected_attempts": {
+        "a2": "仍是有高光的圓球；a1 是扁平圓片加邊緣與凹點"
+      }
+    },
+    "char-rin-oath-portrait-ultimate": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-ultimate/char-rin-oath-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-ultimate\\char-rin-oath-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 87,
+        "block": 11,
+        "size": [
+          115,
+          114
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "char-rin-oath-portrait-ultimate",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-oath-portrait-ultimate.png",
+      "depends_on": [
+        "char-rin-portrait-ultimate"
+      ],
+      "rejected_attempts": {
+        "a2": "仍是有高光的圓球，且 QA 有 magenta 殘色（magenta residue）；a1 扁平有敲痕、QA 通過"
+      }
+    },
+    "char-rin-oath-portrait-smile": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-smile/char-rin-oath-portrait-smile.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-smile\\char-rin-oath-portrait-smile-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "char-rin-oath-portrait-smile",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-oath-portrait-smile.png",
+      "depends_on": [
+        "char-rin-portrait-smile"
+      ],
+      "rejected_attempts": {
+        "a2": "仍是有高光的圓球；a1 是霧面扁平圓片"
+      }
+    },
+    "char-rin-oath-portrait-sad": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-sad/char-rin-oath-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-sad\\char-rin-oath-portrait-sad-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-rin-oath-portrait-sad",
+      "batch": "hero-rin",
+      "runtime": "/assets/games/starlantern/char/rin-oath-portrait-sad.png",
+      "depends_on": [
+        "char-rin-portrait-sad"
+      ],
+      "rejected_attempts": {
+        "a1": "銅片平滑無敲痕，與其他選擇後版本不一致；a2 有敲痕凹點"
+      }
     }
   }
 }

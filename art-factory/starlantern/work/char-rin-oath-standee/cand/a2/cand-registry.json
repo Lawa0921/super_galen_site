@@ -1,0 +1,25 @@
+{
+  "assets": {
+    "char-rin-oath-standee": {
+      "final": "art-factory/starlantern/work/char-rin-oath-standee/cand/a2/char-rin-oath-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-standee\\char-rin-oath-standee-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 9,
+        "block": 5,
+        "size": [
+          142,
+          278
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

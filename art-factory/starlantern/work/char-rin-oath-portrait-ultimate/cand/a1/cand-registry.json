@@ -1,0 +1,28 @@
+{
+  "assets": {
+    "char-rin-oath-portrait-ultimate": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-ultimate/cand/a1/char-rin-oath-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-ultimate\\char-rin-oath-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 87,
+        "block": 11,
+        "size": [
+          115,
+          114
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

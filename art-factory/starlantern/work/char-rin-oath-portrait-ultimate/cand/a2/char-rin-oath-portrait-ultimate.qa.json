@@ -1,0 +1,18 @@
+{
+  "pass": false,
+  "reasons": [
+    "magenta residue"
+  ],
+  "warnings": [
+    "enclosed holes"
+  ],
+  "residue": 1,
+  "semi": 0,
+  "edge": 0,
+  "holes": 79,
+  "block": 11,
+  "size": [
+    115,
+    114
+  ]
+}

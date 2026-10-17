@@ -1,0 +1,25 @@
+{
+  "assets": {
+    "char-hero-standee": {
+      "final": "art-factory/starlantern/work/char-hero-standee/cand/a1/char-hero-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-standee\\char-hero-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 14,
+        "block": 5,
+        "size": [
+          186,
+          285
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

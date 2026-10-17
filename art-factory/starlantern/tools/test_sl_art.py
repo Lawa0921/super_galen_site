@@ -594,3 +594,62 @@ def test_neutralize_key_tint_keeps_crimson_and_red_gems():
     rgba = np.zeros((5, 5, 4), np.uint8); rgba[1:4, 1:4] = (200, 20, 40, 255); rgba[2, 2] = (200, 30, 60, 255)
     out = np.asarray(A.neutralize_key_tint(Image.fromarray(rgba, 'RGBA')))
     assert (out == rgba).all()
+
+
+# --- hero / rin batch (party.py): full id set, identity dependency chain, runtime paths, bust edge allowance ---
+def test_party_jobs_cover_spec_set_and_chain():
+    import party
+    jobs = {j['id']: j for j in party.jobs()}
+    moods = ['hit', 'attack', 'dying', 'down', 'ultimate', 'smile', 'sad']
+    for cid in ('hero', 'rin', 'rin-oath'):
+        ids = [f'char-{cid}-standee', f'char-{cid}-portrait'] + [f'char-{cid}-portrait-{m}' for m in moods]
+        assert all(i in jobs for i in ids)
+    assert len(jobs) == 27
+    assert jobs['char-hero-portrait']['deps'] == ['char-hero-standee']
+    assert jobs['char-rin-portrait-sad']['deps'] == ['char-rin-portrait', 'char-rin-standee']
+    assert jobs['char-rin-oath-portrait-down']['deps'] == ['char-rin-portrait-down']
+    assert jobs['char-hero-standee']['deps'] == []
+    assert party.runtime('char-rin-oath-portrait-smile') == '/assets/games/starlantern/char/rin-oath-portrait-smile.png'
+    for j in jobs.values():
+        assert '#FF00FF' in j['prompt'] and 'text' in j['prompt']
+
+
+def test_party_portrait_allows_bottom_edge_only(tmp_path):
+    import party
+    raw = tmp_path / 'raw.png'
+    img = Image.new('RGB', (400, 400), (255, 0, 255))
+    img.paste((40, 60, 120), (100, 80, 300, 400))  # bust cut by the bottom edge
+    img.save(raw)
+    job = next(j for j in party.jobs() if j['id'] == 'char-hero-portrait')
+    q = party.process_attempt(A.Registry(tmp_path / 'r.json'), job, raw, tmp_path / 'w')['char-hero-portrait']
+    assert q['pass'], q
+    job = next(j for j in party.jobs() if j['id'] == 'char-hero-standee')
+    q = party.process_attempt(A.Registry(tmp_path / 'r2.json'), job, raw, tmp_path / 'w2')['char-hero-standee']
+    assert 'subject cut by the canvas edge' in q['reasons']
+
+
+def test_party_recover_replaces_wrong_fallback_with_codex_own_copy(tmp_path):
+    import party, time, codex_still as C
+    start = time.time()
+    wrong = Image.new('RGB', (64, 64), (255, 0, 255)); wrong.paste((10, 200, 10), (20, 20, 40, 40)); wrong.save(tmp_path / 'x-a2.png')
+    real = Image.new('RGB', (64, 64), (255, 0, 255)); real.paste((200, 10, 10), (20, 20, 40, 40)); real.save(tmp_path / 'x-20261017-single.png')
+    (tmp_path / 'x-a1.png').write_bytes((tmp_path / 'x-a2.png').read_bytes())  # older attempts never count as strays
+    (tmp_path / 'x-a2.gen.json').write_text('{"output_sha256": "old"}', encoding='utf-8')
+    assert party.recover(tmp_path, 'x-a2.png', start) == 'x-20261017-single.png'
+    assert C._sha(tmp_path / 'x-a2.png') == C._sha(tmp_path / 'x-20261017-single.png')
+    rec = json.loads((tmp_path / 'x-a2.gen.json').read_text(encoding='utf-8'))
+    assert rec['output_recovered_from'] == 'x-20261017-single.png' and rec['output_sha256'] != 'old'
+    assert party.recover(tmp_path, 'x-a2.png', start) is None  # already identical: nothing to do
+
+
+def test_party_recover_ignores_strays_outside_the_attempt_window(tmp_path):
+    import party, time, os
+    a1 = Image.new('RGB', (64, 64), (255, 0, 255)); a1.paste((10, 200, 10), (20, 20, 40, 40)); a1.save(tmp_path / 'x-a1.png')
+    (tmp_path / 'x-a1.gen.json').write_text('{}', encoding='utf-8')
+    later = Image.new('RGB', (64, 64), (255, 0, 255)); later.paste((200, 10, 10), (20, 20, 40, 40)); later.save(tmp_path / 'x-single.png')
+    now = time.time(); os.utime(tmp_path / 'x-single.png', (now, now))
+    # a1 ran and finished well before the stray appeared (the stray belongs to a later attempt)
+    assert party.recover(tmp_path, 'x-a1.png', now - 600, now - 300) is None
+    # a stray already copied into another attempt is never reused
+    (tmp_path / 'x-a2.png').write_bytes((tmp_path / 'x-single.png').read_bytes())
+    assert party.recover(tmp_path, 'x-a1.png', now - 600, now + 10) is None

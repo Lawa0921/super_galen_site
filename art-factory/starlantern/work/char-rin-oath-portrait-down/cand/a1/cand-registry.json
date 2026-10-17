@@ -1,0 +1,28 @@
+{
+  "assets": {
+    "char-rin-oath-portrait-down": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-down/cand/a1/char-rin-oath-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-down\\char-rin-oath-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 10,
+        "size": [
+          118,
+          121
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

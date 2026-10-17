@@ -1,0 +1,28 @@
+{
+  "assets": {
+    "char-rin-oath-portrait-hit": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-hit/cand/a2/char-rin-oath-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-hit\\char-rin-oath-portrait-hit-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

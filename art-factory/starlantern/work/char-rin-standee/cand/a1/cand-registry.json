@@ -1,0 +1,25 @@
+{
+  "assets": {
+    "char-rin-standee": {
+      "final": "art-factory/starlantern/work/char-rin-standee/cand/a1/char-rin-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-standee\\char-rin-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "block": 5,
+        "size": [
+          137,
+          285
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

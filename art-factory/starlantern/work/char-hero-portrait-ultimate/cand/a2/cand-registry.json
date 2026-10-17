@@ -1,0 +1,30 @@
+{
+  "assets": {
+    "char-hero-portrait-ultimate": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-hero-portrait-ultimate/cand/a2/char-hero-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait-ultimate\\char-hero-portrait-ultimate-a2.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "subject cut by the canvas edge"
+        ],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 60,
+        "block": 11,
+        "size": [
+          116,
+          114
+        ]
+      },
+      "status": "qa_failed"
+    }
+  }
+}
