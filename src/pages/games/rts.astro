@@ -1,0 +1,99 @@
+---
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import '@styles/_rts.scss';
+import {BUILDINGS,UNITS,RESEARCH,TIER_UPGRADES,type Requirements,type BuildingKind} from '@scripts/games/rts/catalog';
+const tiers=[1,2,3] as const;
+const tierNames={1:'I · 領主府',2:'II · 城堡',3:'III · 王城'};
+const need=(r:Requirements,previous?:string)=>{
+  const parts:string[]=[];
+  if(r.tier>1)parts.push(r.tier===2?'城堡':'王城');
+  if(r.buildings?.length)parts.push(...r.buildings.map(k=>BUILDINGS[k].name));
+  if(r.anyBuildings?.length)parts.push(r.anyBuildings.map(k=>BUILDINGS[k].name).join('或'));
+  if(previous)parts.push(previous);
+  return parts.length?`需要${parts.join('與')}`:'無額外前置';
+};
+const tech=tiers.map(tier=>({tier,title:tierNames[tier],upgrade:tier<3?TIER_UPGRADES[(tier+1) as 2|3]:null,
+  buildings:Object.entries(BUILDINGS).filter(([kind,d])=>kind!=='townhall'&&d.requires.tier===tier),
+  units:Object.entries(UNITS).filter(([kind,d])=>kind!=='neutral-raider'&&d.requires.tier===tier),
+  research:Object.entries(RESEARCH).filter(([,d])=>d.requires.tier===tier),
+}));
+---
+<BaseLayout title="曦境戰紀 — 原創王國即時戰略" description="採集資源、建立王國、率領英雄與軍隊。兩座戰場，一場屬於你的遠征。" noindex>
+  <main id="rts" class="rts">
+    <section class="rts-mobile"><span>DAWNREALM</span><h1>曦境戰紀</h1><p>請使用桌上型電腦與滑鼠鍵盤</p><p>這場戰役需要較大的戰場視野與精確操作。</p><a href="/games">返回遊戲廳</a></section>
+    <div class="rts-desktop">
+      <section id="rts-lobby" class="rts-lobby">
+        <a href="/games" class="rts-return">← 遊戲廳</a>
+        <div class="rts-intro"><p class="rts-eyebrow">DAWNREALM · REAL-TIME STRATEGY</p><h1>曦境戰紀</h1><p class="rts-tagline">王旗所至，曙光將臨。</p><p class="rts-summary">從一座領主府開始，建立你的王國。<br/>開採、建造、研發，讓英雄率領軍隊贏下戰役。</p>
+          <fieldset class="rts-map-choice"><legend>選擇戰場</legend>
+            <label><input type="radio" name="rts-map" value="river" checked/><img class="rts-map-thumb" src="/assets/games/rts/ui/map-river.webp" alt="" width="600" height="360"/><span><b>雙河谷地</b><small>雙橋一淺灘 · 河岸攻防</small></span><em>01</em></label>
+            <label><input type="radio" name="rts-map" value="pass"/><img class="rts-map-thumb" src="/assets/games/rts/ui/map-pass.webp" alt="" width="600" height="360"/><span><b>灰脊隘口</b><small>五條通路 · 岩脊隘口</small></span><em>02</em></label>
+          </fieldset>
+          <fieldset class="rts-difficulty"><legend>電腦難度</legend>
+            <label><input type="radio" name="rts-difficulty" value="easy"/><span><b>簡單</b><small>反應較慢 · 不擴張</small></span></label>
+            <label><input type="radio" name="rts-difficulty" value="normal" checked/><span><b>普通</b><small>標準節奏 · 會擴張與撤退</small></span></label>
+            <label><input type="radio" name="rts-difficulty" value="hard"/><span><b>困難</b><small>快速反應 · 強化經濟</small></span></label>
+          </fieldset>
+          <div class="rts-start-row"><button id="rts-start" class="rts-primary" type="button">開始戰役</button><span>曦境王國 vs. 電腦<br/>單人遭遇戰</span></div>
+          <p class="rts-match-limit">30 分鐘上限 · 到時和局；暫停時間不計入。</p>
+          <p id="rts-load-status" class="rts-load-status" role="status"></p>
+          <details class="rts-controls"><summary>操作指引</summary><p>左鍵選取／拖曳框選 · Shift 加選 · 右鍵下令<br/>A 攻擊移動 · S 停止 · H 守備 · B 建造 · Esc 取消<br/>指令卡快捷鍵標示於按鈕右上（Q E R T F G …）<br/>F1 英雄 · F2 全軍 · F3 閒置工人（連按兩下移鏡）<br/>方向鍵移鏡（未選部隊時亦可 WASD）<br/>滾輪縮放 · 中鍵拖移<br/>Ctrl + 1–5 編組 · 1–5 選組（連按兩下移鏡）· Home 回主城</p></details>
+          <details id="rts-tech-tree" class="rts-tech-tree rts-frame"><summary>科技樹 · 三階建築、兵種與研究</summary><div class="rts-tech-grid">
+            {tech.map(group=><section class="rts-tech-tier"><h2>{group.title}</h2>
+              {group.upgrade&&<p class="rts-tech-upgrade">主城升級：{group.upgrade.name} · {need(group.upgrade.requires)}</p>}
+              <h3>建築</h3><ul>{group.buildings.map(([kind,d])=><li><strong>{d.name}</strong><span>{need(d.requires)} · 金 {d.cost.gold}／木 {d.cost.wood}</span></li>)}</ul>
+              <h3>兵種</h3><ul>{group.units.map(([kind,d])=><li><strong>{d.name}</strong><span>{BUILDINGS[d.trainedAt as BuildingKind]?.name}訓練 · {need(d.requires)} · 人口 {d.supply}</span></li>)}</ul>
+              <h3>研究</h3><ul>{group.research.map(([key,d])=><li><strong>{d.name}</strong><span>{BUILDINGS[d.at].name}研究 · {need(d.requires,d.previous?RESEARCH[d.previous].name:undefined)}</span></li>)}</ul>
+            </section>)}
+          </div></details>
+          <p class="rts-control-hint">左鍵選取、拖曳框選，右鍵下令。</p>
+        </div>
+        <footer class="rts-lobby-footer"><span>原創人類王國</span><span>採集 / 建造 / 英雄 / 征服</span></footer>
+      </section>
+      <section id="rts-battle" class="rts-battle" hidden aria-label="即時戰略戰場">
+        <canvas id="rts-canvas" aria-label="三維戰場；左鍵選取，右鍵下令" tabindex="0"></canvas>
+        <canvas id="rts-overlay" aria-hidden="true"></canvas>
+        <header class="rts-topbar rts-frame"><span class="rts-wordmark">曦境戰紀</span><span id="rts-map-name" class="rts-map-name"></span><dl class="rts-resources"><div><dt>金幣</dt><dd id="rts-gold">500</dd></div><div><dt>木材</dt><dd id="rts-wood">200</dd></div><div><dt>人口</dt><dd id="rts-supply">5 / 10</dd></div></dl><time id="rts-time">00:00</time><button id="rts-pause" type="button">暫停</button></header>
+        <div id="rts-notice" class="rts-notice" role="status" aria-live="polite"></div>
+        <aside id="rts-tutorial" class="rts-tutorial rts-frame" aria-label="新手指引" aria-live="polite" hidden><p class="rts-tutorial-head"><span>新手指引</span><span data-tutorial-step></span></p><strong data-tutorial-title></strong><p data-tutorial-text></p><button data-tutorial-skip type="button">略過教學</button></aside>
+        <footer class="rts-dock">
+          <section class="rts-map-panel rts-frame"><div class="rts-panel-heading"><span>戰略地圖</span><span class="rts-panel-actions"><button id="rts-idle" title="選取下一名閒置工人（F3）" type="button" disabled>閒置 <span id="rts-idle-count">0</span></button><button id="rts-home" title="回到主城（Home）" type="button">主城</button></span></div><canvas id="rts-minimap" width="192" height="192" aria-label="小地圖，點擊移動鏡頭" tabindex="0"></canvas></section>
+          <section class="rts-unit-panel" aria-label="已選取部隊">
+            <div id="rts-portrait" class="rts-portrait rts-frame" hidden><div id="rts-portrait-view" role="img"></div></div>
+            <div id="rts-selection" class="rts-selection rts-frame"><h2>指揮官，請下令。</h2><p>選取工人開始採集，或選取領主府訓練工人。</p></div>
+          </section>
+          <div class="rts-command-area">
+            <div id="rts-mode" class="rts-mode" hidden></div>
+            <section class="rts-command-panel rts-frame"><div class="rts-panel-heading"><span id="rts-command-title">命令</span><small>右鍵下令 · Esc 取消</small></div><div id="rts-commands" class="rts-commands"></div><div id="rts-queue" class="rts-queue" aria-label="生產排程"></div></section>
+          </div>
+        </footer>
+        <dialog id="rts-menu" class="rts-dialog rts-frame"><h2 id="rts-menu-title">戰役已暫停</h2><p id="rts-menu-copy">王國等待你的指令。</p><table id="rts-menu-stats" class="rts-result-stats" hidden></table><div id="rts-menu-tech"></div>
+          <fieldset class="rts-settings"><legend>設定</legend>
+            <label class="rts-volume-label" for="rts-volume">音量 <output id="rts-volume-value" for="rts-volume">70%</output></label><input id="rts-volume" type="range" min="0" max="100" value="70"/>
+            <label class="rts-volume-label" for="rts-camera-speed">鏡頭速度 <output id="rts-camera-speed-value" for="rts-camera-speed">1.0×</output></label><input id="rts-camera-speed" type="range" min="50" max="200" step="10" value="100"/>
+            <div class="rts-settings-row"><label for="rts-quality">畫質</label><select id="rts-quality"><option value="high">高 · 即時陰影</option><option value="low">低 · 關閉陰影、優先簡化模型</option></select></div>
+            <label class="rts-settings-check"><input id="rts-edge-scroll" type="checkbox" checked/>滑鼠移到畫面邊緣時捲動鏡頭</label>
+          </fieldset>
+          <details class="rts-controls rts-menu-help"><summary>操作說明</summary><dl>
+            <div><dt>左鍵</dt><dd>選取單位；拖曳框選，Shift 加選</dd></div>
+            <div><dt>右鍵</dt><dd>移動、攻擊、採集、修理或設定集結點</dd></div>
+            <div><dt>A／S／H</dt><dd>攻擊移動／停止／守備</dd></div>
+            <div><dt>B</dt><dd>工人開啟建造選單</dd></div>
+            <div><dt>Q E R T F G Z X C V</dt><dd>指令卡快捷鍵（標示於各按鈕）</dd></div>
+            <div><dt>Esc</dt><dd>取消放置或施法、返回上一層指令卡、開啟選單</dd></div>
+            <div><dt>Ctrl + 1–5／1–5</dt><dd>編組／選取編組，連按兩下移動鏡頭</dd></div>
+            <div><dt>F1／F2／F3</dt><dd>選取英雄／全軍／下一名閒置工人</dd></div>
+            <div><dt>方向鍵／WASD</dt><dd>移動鏡頭（選取部隊時 A、S 為指令）</dd></div>
+            <div><dt>滾輪／中鍵拖曳</dt><dd>縮放／平移鏡頭</dd></div>
+            <div><dt>Home</dt><dd>鏡頭回到主城</dd></div>
+          </dl></details><div class="rts-dialog-actions"><button id="rts-resume" class="rts-primary" type="button">繼續戰役</button><button id="rts-restart" type="button">重新開局</button><button id="rts-surrender" type="button">投降</button><button id="rts-back" type="button">選擇戰場</button></div></dialog>
+        <dialog id="rts-confirm" class="rts-dialog rts-confirm rts-frame" aria-labelledby="rts-confirm-title" aria-describedby="rts-confirm-copy"><h2 id="rts-confirm-title">確認</h2><p id="rts-confirm-copy"></p><div class="rts-dialog-actions"><button id="rts-confirm-no" class="rts-primary" type="button">返回</button><button id="rts-confirm-yes" class="rts-danger" type="button">確認</button></div></dialog>
+      </section>
+    </div>
+  </main>
+</BaseLayout>
+<script>
+  import {mountRts} from '@scripts/games/rts/main';
+  const root=document.getElementById('rts');
+  if(root)mountRts(root);
+</script>

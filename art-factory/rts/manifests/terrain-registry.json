@@ -1,0 +1,192 @@
+{
+  "assets": [
+    {
+      "id": "meadow-surface",
+      "status": "published",
+      "mechanical": "passed",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "opposite_edge_mae_rgb": [
+        2.7317707538604736,
+        2.7789714336395264
+      ],
+      "seam_threshold": 8,
+      "bytes": 535016,
+      "sha256": "e0c9d344904eaee14652f94349a8bc77d266539e0d0af905a18b25324b7ee15f",
+      "raw_sha256": "c18d37c221e5265afcb55fcb7d39b3384404922ba02b526aa72ab39d1f12175c",
+      "alpha": "opaque",
+      "assembly_review": "root inspected formal Chromium battlefield, technology and natural two-map campaign screenshots; user overall art acceptance pending",
+      "source": "builtin-imagegen",
+      "original_source": "art-factory/rts/runs/meadow-surface/v1/raw/meadow.png",
+      "runtime": "/assets/games/rts/terrain/meadow.webp",
+      "postprocess": "art-factory/rts/tools/prepare_terrain.py",
+      "assembly_evidence": "art-factory/rts/runs/final-assembly/2026-10-05/root-review.json",
+      "original_source_location": "C:\\Users\\bag57\\.codex\\generated_images\\01a105df-d576-7703-84fa-155fdc78b299\\exec-9e384754-d846-43a3-a976-249206b71ce0.png",
+      "original_source_sha256": "c18d37c221e5265afcb55fcb7d39b3384404922ba02b526aa72ab39d1f12175c",
+      "raw": "art-factory/rts/runs/meadow-surface/v1/raw/meadow.png"
+    },
+    {
+      "id": "dirt-road",
+      "status": "published",
+      "url": "/assets/games/rts/terrain/dirt-road.webp",
+      "bytes": 327266,
+      "sha256": "666402c235f84509f6bac73c49c983d6d4a5240ce398a32df153124b1879fedf",
+      "raw": "art-factory/rts/runs/terrain-detail/2026-10-05-v1/raw/dirt-road-generated.png",
+      "raw_sha256": "54097c75da3f518f778aeba66a43c24ef093962f7b21ff13ba79425a98a08035",
+      "candidate": "art-factory/rts/runs/terrain-detail/2026-10-05-v1/candidate/dirt-road-side-alpha.webp",
+      "source": "art-factory/rts/tools/terrain_detail_process.py",
+      "qa": "art-factory/rts/runs/terrain-detail/2026-10-05-v1/qa/root-review.json",
+      "visual_review": "Root inspected tile/contact and both actual Battlefield routes, bridges and pass openings",
+      "runtime_publish_allowed": true,
+      "source_sha256": "1ae078ab3e1c4d87516af2ba1a2b5d6fcf7f25b3247089ab8ae4ce2c52fe1be9",
+      "qa_sha256": "1b44e164c97d466815cb05410b0ada514521b87306257e0b4936cab2919abd51"
+    },
+    {
+      "id": "river-water",
+      "status": "published",
+      "url": "/assets/games/rts/terrain/river-water.webp",
+      "bytes": 154012,
+      "sha256": "77f022d7997e4bc39109d5b8da1e4883e39d4a0f0fb65400daba802dfeac7c08",
+      "raw": "art-factory/rts/runs/terrain-detail/2026-10-05-v1/raw/river-water-generated.png",
+      "raw_sha256": "660a35a68b14aafd761f90255110a7e6fedf64af636a536a093320d53fde9c9f",
+      "candidate": "art-factory/rts/runs/terrain-detail/2026-10-05-v1/candidate/river-water.webp",
+      "source": "art-factory/rts/tools/terrain_detail_process.py",
+      "qa": "art-factory/rts/runs/terrain-detail/2026-10-05-v1/qa/root-review.json",
+      "visual_review": "Root inspected tile/contact and both actual Battlefield routes, bridges and pass openings",
+      "runtime_publish_allowed": true,
+      "source_sha256": "1ae078ab3e1c4d87516af2ba1a2b5d6fcf7f25b3247089ab8ae4ce2c52fe1be9",
+      "qa_sha256": "1b44e164c97d466815cb05410b0ada514521b87306257e0b4936cab2919abd51"
+    },
+    {
+      "id": "lush-grass",
+      "status": "published",
+      "url": "/assets/games/rts/terrain/lush-grass.webp",
+      "bytes": 140272,
+      "sha256": "931946cff573241d424070c4202c3f752105d5f36a0a234eaddc82feb2885e17",
+      "raw": "art-factory/rts/runs/landscape-enrichment/2026-10-05/raw/terrain-atlas.png",
+      "raw_sha256": "c557f5194a35f190321bfab30a1758e9170238cffaf297df454041fabadda46b",
+      "source": "builtin-imagegen",
+      "prompt": "art-factory/rts/runs/landscape-enrichment/2026-10-05/prompts/terrain-atlas.txt",
+      "candidate": "art-factory/rts/runs/landscape-enrichment/2026-10-05/candidate/lush-grass.webp",
+      "postprocess": "art-factory/rts/tools/landscape_materials.py",
+      "qa": "art-factory/rts/runs/landscape-enrichment/2026-10-05/qa/root-review.json",
+      "runtime_publish_allowed": true,
+      "qa_sha256": "1fa7e10ae158edd542dbe9eae810034786973aa78dcaa791b0496595879e993f",
+      "prompt_sha256": "a884059b9a2e1c56e9982d16b4c1581549c7c5a0008d96143dacfe4f749011d0"
+    },
+    {
+      "id": "forest-floor",
+      "status": "published",
+      "url": "/assets/games/rts/terrain/forest-floor.webp",
+      "bytes": 137380,
+      "sha256": "0400950bc7067496fa60525d9fca50757ac6efaa7a2ecf12d08ded9b873da7ab",
+      "raw": "art-factory/rts/runs/landscape-enrichment/2026-10-05/raw/terrain-atlas.png",
+      "raw_sha256": "c557f5194a35f190321bfab30a1758e9170238cffaf297df454041fabadda46b",
+      "source": "builtin-imagegen",
+      "prompt": "art-factory/rts/runs/landscape-enrichment/2026-10-05/prompts/terrain-atlas.txt",
+      "candidate": "art-factory/rts/runs/landscape-enrichment/2026-10-05/candidate/forest-floor.webp",
+      "postprocess": "art-factory/rts/tools/landscape_materials.py",
+      "qa": "art-factory/rts/runs/landscape-enrichment/2026-10-05/qa/root-review.json",
+      "runtime_publish_allowed": true,
+      "qa_sha256": "1fa7e10ae158edd542dbe9eae810034786973aa78dcaa791b0496595879e993f",
+      "prompt_sha256": "a884059b9a2e1c56e9982d16b4c1581549c7c5a0008d96143dacfe4f749011d0"
+    },
+    {
+      "id": "river-shingle",
+      "status": "published",
+      "url": "/assets/games/rts/terrain/river-shingle.webp",
+      "bytes": 135428,
+      "sha256": "f14cad201179cd916451c78e95e6013e837b8f3f7ae04033dca5f3e5a233dd4d",
+      "raw": "art-factory/rts/runs/landscape-enrichment/2026-10-05/raw/terrain-atlas.png",
+      "raw_sha256": "c557f5194a35f190321bfab30a1758e9170238cffaf297df454041fabadda46b",
+      "source": "builtin-imagegen",
+      "prompt": "art-factory/rts/runs/landscape-enrichment/2026-10-05/prompts/terrain-atlas.txt",
+      "candidate": "art-factory/rts/runs/landscape-enrichment/2026-10-05/candidate/river-shingle.webp",
+      "postprocess": "art-factory/rts/tools/landscape_materials.py",
+      "qa": "art-factory/rts/runs/landscape-enrichment/2026-10-05/qa/root-review.json",
+      "runtime_publish_allowed": true,
+      "qa_sha256": "1fa7e10ae158edd542dbe9eae810034786973aa78dcaa791b0496595879e993f",
+      "prompt_sha256": "a884059b9a2e1c56e9982d16b4c1581549c7c5a0008d96143dacfe4f749011d0"
+    },
+    {
+      "id": "highland-scree",
+      "status": "published",
+      "url": "/assets/games/rts/terrain/highland-scree.webp",
+      "bytes": 136002,
+      "sha256": "7a52544ba945408eb0b1c3a0f43f35c0c4d0ada837df352fb473f880cca7000c",
+      "raw": "art-factory/rts/runs/landscape-enrichment/2026-10-05/raw/terrain-atlas.png",
+      "raw_sha256": "c557f5194a35f190321bfab30a1758e9170238cffaf297df454041fabadda46b",
+      "source": "builtin-imagegen",
+      "prompt": "art-factory/rts/runs/landscape-enrichment/2026-10-05/prompts/terrain-atlas.txt",
+      "candidate": "art-factory/rts/runs/landscape-enrichment/2026-10-05/candidate/highland-scree.webp",
+      "postprocess": "art-factory/rts/tools/landscape_materials.py",
+      "qa": "art-factory/rts/runs/landscape-enrichment/2026-10-05/qa/root-review.json",
+      "runtime_publish_allowed": true,
+      "qa_sha256": "1fa7e10ae158edd542dbe9eae810034786973aa78dcaa791b0496595879e993f",
+      "prompt_sha256": "a884059b9a2e1c56e9982d16b4c1581549c7c5a0008d96143dacfe4f749011d0"
+    },
+    {
+      "id": "valley-undergrowth",
+      "status": "published",
+      "runtime_publish_allowed": true,
+      "url": "/assets/games/rts/terrain/valley-undergrowth.webp",
+      "bytes": 838752,
+      "sha256": "7d3c66b1c24c1c1bb8304eac0282fde70b1f50713fbfa92447fc04f85d147f27",
+      "source": "builtin-imagegen",
+      "raw": "art-factory/rts/runs/landscape-districts/2026-10-07-v1/raw/undergrowth.png",
+      "raw_sha256": "240a2e16e5fc8d8a7cd53560afc6a363fa6d5d3468851a93e090a32b2f446c68",
+      "prompt": "art-factory/rts/runs/landscape-districts/2026-10-07-v1/prompts/undergrowth.txt",
+      "candidate": "art-factory/rts/runs/landscape-districts/2026-10-07-v1/candidate/valley-undergrowth.webp",
+      "postprocess": "art-factory/rts/tools/undergrowth_process.py",
+      "qa": "art-factory/rts/runs/landscape-districts/2026-10-07-v1/qa/root-review.json",
+      "qa_sha256": "4510d01e83e8fe9d99a3872b22c477cecf202d8b58afb5c6b9dc3298a2afcfc2",
+      "prompt_sha256": "d5f967c3aa641373d4353e7f8786bbd2754db9fecb11e8751a179bff9da0c38e"
+    },
+    {
+      "id": "courtyard-earth",
+      "status": "published",
+      "runtime_publish_allowed": true,
+      "runtime": "/assets/games/rts/materials/polish-v2/courtyard-earth-color.jpg",
+      "source": "public/assets/games/rts/terrain/dirt-road.webp",
+      "source_sha256": "666402c235f84509f6bac73c49c983d6d4a5240ce398a32df153124b1879fedf",
+      "candidate": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/dirt-road.png",
+      "sha256": "e832d8472546fa729fe642087ccf6d6244dc2d5940fd993ba353f77d90ac4808",
+      "bytes": 489936,
+      "postprocess": "Exact decoded RGB conversion from the approved original WebP to PNG; no new artwork",
+      "qa": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/qa/root-review.json",
+      "qa_sha256": "f9d78a7547493690a77e3bf933b8241be7da99685487bdf7bf17efade6244bbb",
+      "previous_versions": [
+        {
+          "runtime": "/assets/games/rts/terrain/dirt-road.png",
+          "sha256": "62d9a86ea67fe49dc9700fe13a2751b1cabe4fed7d944794f3937e3e16037330",
+          "bytes": 2112042
+        }
+      ],
+      "runtime_encoding": {
+        "qa": "art-factory/rts/runs/model-polish/2026-10-17-v1/qa/textures.json",
+        "note": "JPEG q90 re-encode of the lossless PNG decode"
+      }
+    }
+  ],
+  "retired_assets": [
+    {
+      "id": "kingdom-ruins",
+      "status": "retired",
+      "runtime_publish_allowed": false,
+      "url": "/assets/games/rts/terrain/kingdom-ruins.webp",
+      "bytes": 789532,
+      "sha256": "45f731c828b1905a0c538a51d6e5e3c86b66fddd764ef1f35b926cccb7f004a3",
+      "source": "builtin-imagegen",
+      "raw": "art-factory/rts/runs/landscape-landmarks/2026-10-07-v1/raw/ruins.png",
+      "raw_sha256": "2c81d2d0018cbb675853930d210d9d8c4a0cf1b9c0a15b508c54ff2e703be0f6",
+      "prompt": "art-factory/rts/runs/landscape-landmarks/2026-10-07-v1/prompts/ruins.txt",
+      "candidate": "art-factory/rts/runs/landscape-landmarks/2026-10-07-v1/candidate/kingdom-ruins.webp",
+      "postprocess": "art-factory/rts/tools/undergrowth_process.py",
+      "qa": "art-factory/rts/runs/landscape-landmarks/2026-10-07-v1/qa/root-review.json",
+      "retired_copy": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/retired/kingdom-ruins.webp",
+      "retirement_reason": "Superseded by four independently approved original3D landmark prefabs. Original raw/prompt/candidate preserved."
+    }
+  ]
+}

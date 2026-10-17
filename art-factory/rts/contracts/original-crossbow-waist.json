@@ -1,0 +1,37 @@
+{
+  "asset_id": "original-crossbow-waist",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source": "art-factory/rts/runs/original-crossbow-grip/continuation-20261006-2/candidate/original-crossbow-grip.blend",
+  "source_sha256": "ac7c8b91f31ac44222e1f1924939828630cbaadec9b380f5280123bc499cae55",
+  "source_mode": "original_authored_skin_weight_revision_only",
+  "run": "art-factory/rts/runs/original-crossbow-waist/2026-10-06-v1",
+  "problem": "Adjacent waist vertices have discontinuous spine/thigh weights; Hurt folds belt and Walk stretches existing belt edges by up to 270 percent.",
+  "scope": "Both original body LODs: contiguous belt and buckle band follows SpineLower; blend abdomen above and hip/skirt below. Keep all mesh coordinates, faces, UVs, materials, textures, rest bones, five actions, accepted arms, gloves and weapon unchanged.",
+  "weight_roi": {
+    "rest_z_m": [
+      0.66,
+      1.21
+    ],
+    "rest_abs_x_max_m": 0.325,
+    "exclude_arm_weighted_vertices": true
+  },
+  "qa": [
+    "Baseline actual Blender belt deformation regression must fail before editing.",
+    "Both LODs: over 100 existing belt edges, all five actions at half frames; rigid belt interior edge strain below one percent.",
+    "Geometry, UVs, material indices, packed images, twenty bind bones and all five animation curves exact; weights outside ROI and all non-body objects exact.",
+    "Inspect original source and actual GLB Idle, Walk, Attack, Hurt and Death from front and side; full body and game scale.",
+    "Both GLBs retain triangle budgets and identical animation tracks; original cuff regression and strict export parity retain existing thresholds.",
+    "Independent review before local publication; record remaining full-character art limitations."
+  ],
+  "publish_targets": [
+    "public/assets/games/rts/models/crossbow.glb",
+    "public/assets/games/rts/models/crossbow-lod1.glb"
+  ],
+  "root_review": "art-factory/rts/runs/original-crossbow-waist/2026-10-06-v1/qa/root-review.json",
+  "publication": "art-factory/rts/runs/original-crossbow-waist/2026-10-06-v1/qa/publication.json",
+  "user_overall_art_acceptance": "pending-user-preview"
+}

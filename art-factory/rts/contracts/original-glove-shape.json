@@ -1,0 +1,21 @@
+{
+  "asset_id": "original-glove-shape",
+  "status": "qa_failed",
+  "run": "art-factory/rts/runs/original-glove-shape/2026-10-06-v1",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "Original project imagegen left-glove concept, followed by locally installed Hunyuan3D shape generation. No stock hand, rig or motion.",
+  "reference": "art-factory/rts/runs/original-glove-sculpt-guide/2026-10-06-v1/raw/palm-sculpt-reference-v1.png",
+  "reference_sha256": "4e3c942c68e42a3698a730b4e028d2c76c112dc34d1a5faa2c95279561716b1d",
+  "input_sha256": "3df345d2bcd03d37b3d0bbd5dac94e09911ce27b0eed7160ad7d956fc2317774",
+  "shape_sha256": "8c4962dd9f9789252c959f2e113a0459862cb8771cc85639a20608b9330895f9",
+  "sculpt_basis_review": "Useful original high-poly source, not approved runtime art. Five digits are separated; dorsal MCP ridge, thumb CMC/web and sleeve integration ring require original sculpt correction. 32 near-zero-area faces require cleanup before baking.",
+  "scope": "One bounded isolated-hand high-detail shape experiment. Test whether the original reference yields five separated digits and useful palm/cuff volume. Preserve the existing authored rig and all earlier candidates. This shape has no automatic approval for skinning or runtime.",
+  "screen_id": "rts-original-hand-articulation-review",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "source_alpha_policy": "Imagegen native transparent cutout, preserve the original left palm design and pose; no floor or drop shadow. Alpha is for image-to-shape conditioning only, never a runtime sprite.",
+  "mode_inference_decision": {"profile": "portrait_cutout", "confidence": "high", "reason": "Isolated original 3D-source reference. Native alpha is a contract exception to magenta because the local shape loader directly consumes RGBA."},
+  "qa": ["Input SHA and pinned local model checksum", "Native alpha with five separated digits, clear gaps and no crop", "Mesh connected components, manifoldness and gross anatomy", "Actual Blender front/back/side turntable images", "Compare sculpt value against the procedural cage, no texture or rig claims"],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": false
+}

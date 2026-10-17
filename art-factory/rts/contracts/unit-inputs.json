@@ -1,0 +1,48 @@
+{
+  "asset_id": "unit-inputs",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-army",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "category": "character-reference",
+  "source_mode": "builtin-imagegen",
+  "postprocess_profile": "portrait_cutout",
+  "mode_inference_decision": {
+    "selected_profile": "portrait_cutout",
+    "candidate_profiles": ["portrait_cutout", "hard_alpha_sprite"],
+    "confidence": "high",
+    "rationale": "Full-body transparent reference renders are source inputs for later 3D reconstruction, not runtime sprites.",
+    "clarifying_question": null
+  },
+  "status": "raw_generated",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "purpose": "Five original human RTS unit front/rear visual inputs for a separate 3D modeling stage; no runtime publication or model claim.",
+  "image_spec": {
+    "target_px": [1024, 1536],
+    "format": "PNG RGBA",
+    "background": "transparent alpha",
+    "views": ["exact frontal orthographic", "exact rear orthographic"],
+    "pose": "adult seven-head proportions; heels aligned; feet slightly apart; relaxed empty hands with separated fingers; arms about 30 degrees from torso",
+    "composition": "one centered full-body figure, 7-10 percent clear margin, no crop, floor, cast shadow, words or props"
+  },
+  "style_reference_paths": [
+    "art-factory/rts/runs/guard-neural-input/v1/raw/guard.png",
+    "art-factory/rts/runs/guard-back-reference/v1/raw/guard-back.png"
+  ],
+  "qa_gates": [
+    "actual PNG RGBA and 1024x1536",
+    "nonempty alpha and no opaque background edge",
+    "full figure visually checked with both hands and both feet",
+    "front and back identities and costumes match",
+    "each class has a different silhouette and no duplicate image",
+    "no text, logo, floor, weapon, shield, or runtime path"
+  ],
+  "units": [
+    {"id":"worker","role":"kingdom artisan","silhouette":"light tunic, short vest and apron; no armor","run":"art-factory/rts/runs/unit-inputs/worker/v1"},
+    {"id":"crossbow","role":"kingdom crossbowman","silhouette":"agile fitted medium armor with half helmet","run":"art-factory/rts/runs/unit-inputs/crossbow/v1"},
+    {"id":"priest","role":"kingdom priest","silhouette":"narrow split ivory robe, silver hair","run":"art-factory/rts/runs/unit-inputs/priest/v1"},
+    {"id":"commander","role":"kingdom oath-guard commander","silhouette":"broad ornate shoulders, heavy armor, split blue waist cloth","run":"art-factory/rts/runs/unit-inputs/commander/v1"},
+    {"id":"neutral-raider","role":"neutral rough raider","silhouette":"short gray hood and worn leather, no kingdom blue/gold insignia","run":"art-factory/rts/runs/unit-inputs/neutral-raider/v1"}
+  ]
+}

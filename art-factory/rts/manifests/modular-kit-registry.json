@@ -1,0 +1,134 @@
+{
+  "contract": "art-factory/rts/contracts/modular-kingdom.json",
+  "kit": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/kit.json",
+  "library": {
+    "source": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/raw/kingdom-kit.blend",
+    "sha256": "c34fe80c090d70464783bf82c37c4b0dd277a0ee44054cc0c0322fb5cfa9ce7f",
+    "status": "approved-for-authoring",
+    "runtime_publish_allowed": false
+  },
+  "parts": 87,
+  "cross_prefab_shared_parts": 7,
+  "candidate_prefabs": [
+    {
+      "id": "townhall",
+      "sha256": "efed6fd9c6a428fe3c56449ec47f5022d9ba606e1e64f85d815a02848adf76a4",
+      "recipe": "art-factory\\rts\\runs\\modular-kingdom\\2026-10-08-v1\\recipes\\townhall.json",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "candidate": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/townhall.glb"
+    },
+    {
+      "id": "townhall-tier2",
+      "sha256": "f90782a6e18384e5402ea474e63e777355f4d9027eca4979e0bda28ce5d1ef90",
+      "recipe": "art-factory\\rts\\runs\\modular-kingdom\\2026-10-08-v1\\recipes\\townhall-tier2.json",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "candidate": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/townhall-tier2.glb"
+    },
+    {
+      "id": "townhall-tier3",
+      "sha256": "0f973b500cbb06e53de671bdd28a74cb5de2041b31e79d97e1b8020a281f5c8f",
+      "recipe": "art-factory\\rts\\runs\\modular-kingdom\\2026-10-08-v1\\recipes\\townhall-tier3.json",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "candidate": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/townhall-tier3.glb"
+    },
+    {
+      "id": "barracks",
+      "sha256": "456a608dcdbfdef2b53a1f890b7062f6790d57ab2c87001b3c19cb12855062c7",
+      "recipe": "art-factory\\rts\\runs\\modular-kingdom\\2026-10-08-v1\\recipes\\barracks.json",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "candidate": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/barracks.glb"
+    },
+    {
+      "id": "stable",
+      "sha256": "84249783cbcb974b4968d6d636290bf896f1d9628809e8983e6a4e9b03898159",
+      "recipe": "art-factory\\rts\\runs\\modular-kingdom\\2026-10-08-v1\\recipes\\stable.json",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "candidate": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/stable.glb"
+    },
+    {
+      "id": "workshop",
+      "sha256": "cb9b5e5cd022f09f39daa51ed049ebda95260e5d79e846c782366a3150219349",
+      "recipe": "art-factory\\rts\\runs\\modular-kingdom\\2026-10-08-v1\\recipes\\workshop.json",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "candidate": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/workshop.glb"
+    },
+    {
+      "id": "house",
+      "sha256": "17134aa0aa8c1c2871171e69fba2756be2382a7fa645e57f52958ee21011eb3a",
+      "recipe": "art-factory\\rts\\runs\\modular-kingdom\\2026-10-08-v1\\recipes\\house.json",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "candidate": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/house.glb"
+    },
+    {
+      "id": "lumbermill",
+      "sha256": "7e5e364e6d50a4a649e612007a58f5d250dc5f28f855ac595557bbdf2af1d04a",
+      "recipe": "art-factory\\rts\\runs\\modular-kingdom\\2026-10-08-v1\\recipes\\lumbermill.json",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "candidate": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/lumbermill.glb"
+    },
+    {
+      "id": "forge",
+      "sha256": "c5b656d71b703dd7dafd53d4394443e5a8c86d03dfed2d32a4d555f0539e147d",
+      "recipe": "art-factory\\rts\\runs\\modular-kingdom\\2026-10-08-v1\\recipes\\forge.json",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "candidate": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/forge.glb"
+    },
+    {
+      "id": "altar",
+      "sha256": "e74edf59ce8905b00b1e215902a78d92652eace37848eb1b595fea9dec4de228",
+      "recipe": "art-factory\\rts\\runs\\modular-kingdom\\2026-10-08-v1\\recipes\\altar.json",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "candidate": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/altar.glb"
+    },
+    {
+      "id": "tower",
+      "sha256": "76237b710acc31caa445621ff05e63b33cc3bb7c787af371d287cf17c9ef74d8",
+      "recipe": "art-factory\\rts\\runs\\modular-kingdom\\2026-10-08-v1\\recipes\\tower.json",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "candidate": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/tower.glb"
+    },
+    {
+      "id": "chapel",
+      "sha256": "2b129ca184f9e93c70c2bdc8d6f56e09bdd036527e7d33676319f4b5e4f109de",
+      "recipe": "art-factory\\rts\\runs\\modular-kingdom\\2026-10-08-v1\\recipes\\chapel.json",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "candidate": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/chapel.glb"
+    },
+    {
+      "id": "stone-bridge",
+      "sha256": "aa16288b1ebb323fed0decb35df3d4b2eec503d0f9ba7994ea0719e76c8daa60",
+      "recipe": "art-factory\\rts\\runs\\modular-kingdom\\2026-10-08-v1\\recipes\\stone-bridge.json",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "candidate": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/stone-bridge.glb"
+    }
+  ],
+  "published_prefabs": [],
+  "blocking_gate": "runtime stress performance",
+  "refinements": [
+    {
+      "id": "assembly-refinement-v2",
+      "kit": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/kit.json",
+      "status": "published",
+      "runtime_publish_allowed": true,
+      "published_prefabs": [
+        "barracks",
+        "stable",
+        "workshop"
+      ],
+      "contract": "art-factory/rts/contracts/assembly-refinement.json"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "asset_id": "original-guard-arm-hinge-mechanism-diagnostic",
+  "category": "original_3d_local_rig_mechanism_candidate",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "run": "art-factory/rts/runs/original-guard-arm-hinge/2026-10-05",
+  "status": "qa_failed_no_surface_channel",
+  "runtime_publish_allowed": false,
+  "source_geometry": "art-factory/rts/runs/original-guard-solid-arm/2026-10-05/candidate/original-guard-solid-arm-geometry.json",
+  "source_model_commit": "888528b2098e5617e985523a36dbd3d23edb574f",
+  "source_model_sha256": {
+    "blend": "c106e3d1dc33cdba749e495e8f11c8dfd070652f7cffee957e94b9a849393b51",
+    "glb": "2f2f7ee68a9af21882f327545d7ed370a756f189e1e2ae964266dcea14f06d8f"
+  },
+  "mode_inference_decision": {
+    "selected_profile": "original_3d_rigid_hinge_diagnostic_only",
+    "candidate_profiles": ["original_3d_rigid_hinge_diagnostic_only"],
+    "confidence": "high",
+    "rationale": "This is a bounded CPU study of anatomically plausible elbow pivots, source-derived lateral axes and partial elbow-plate following. It leaves the frozen original geometry unchanged."
+  },
+  "sweep_contract": {
+    "maximum_configuration_count": 40,
+    "actual_configuration_plan": 36,
+    "pivot_source_station_t": [0.48, 0.52, 0.56, 0.60],
+    "hinge_axes": ["global_anatomical", "local_elbow", "local_upper"],
+    "elbow_follow": [0, 0.25, 0.5],
+    "bend_degrees": [0, 15, 30, 45, 60, 75, 90],
+    "roll_degrees": [0, 45],
+    "upper_arm_control": "fixed",
+    "motion": "Forearm rigid rotation about one source-derived hinge pivot and axis, then rigid distal-axis roll; elbow plate rigidly follows at its selected fraction. No free translation or vertex deformation.",
+    "collision_gate": "Strict noncoplanar interior triangle crossing counts separate surface/surface from cap/surface and cap/cap. A possible surface channel requires zero surface/surface intersections at every sampled pose, no new upper/elbow exterior crossing and armor edge-length error below 1e-6 m. Cap collisions remain a publication blocker."
+  },
+  "candidate_policy": "Keep at most one selected editable Blend/GLB and pose set only if a complete surface channel exists. GPU rendering waits until grip_fit releases the GPU. A negative result freezes this bounded sweep without a larger search or geometry cuts.",
+  "outcome": {
+    "configurations_tested": 36,
+    "poses_per_configuration": 14,
+    "surface_channel_pass_count": 0,
+    "best_configuration_index": 1,
+    "best_surface_surface_triangle_pair_total": 4,
+    "best_cap_involved_triangle_pair_total": 478,
+    "best_max_rigid_edge_error_m": 3.4e-16,
+    "visual_occlusion_of_minimum_collision": "unknown_pending_separate_visibility_review",
+    "evidence": ["qa/sweep-report.json", "qa/minimum-collision.json", "qa/decision.json"]
+  }
+}

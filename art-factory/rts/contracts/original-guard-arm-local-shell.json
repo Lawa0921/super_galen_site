@@ -1,0 +1,33 @@
+{
+  "asset_id": "original-guard-arm-local-shell",
+  "category": "experimental_original_3d_component_repair",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "run": "art-factory/rts/runs/original-guard-arm-local-shell/2026-10-05",
+  "source": "art-factory/rts/runs/original-guard-arm-articulation/2026-10-05/candidate/original-guard-arm-articulation.json",
+  "source_status": "Rejected thin-shell geometry, preserved outer surface used only as a local repair baseline",
+  "method": "One finite constrained local miter experiment at independently identified collision neighborhoods; outer vertices and topology remain byte-equivalent numerical arrays",
+  "thickness_target_m": 0.002,
+  "incident_normal_thickness_bounds_m": [
+    0.0015,
+    0.0025
+  ],
+  "maximum_inner_displacement_m": 0.006,
+  "failure_policy": "No feasible bounded solution means stop this method and retain the failure evidence; no near-zero thickness or threshold relaxation",
+  "qa_gates": [
+    "Exact preservation of outer vertices",
+    "Feasible bounded nonzero inner thickness",
+    "Strict full-shell self and cross intersections across endpoints and intermediate poses",
+    "Closed consistent topology",
+    "Source silhouette and joint coverage independently accepted"
+  ],
+  "non_claims": [
+    "Incident-plane constraints alone cannot prove collision freedom",
+    "A repaired inner shell cannot repair the previously rejected outer silhouette or sleeve gap",
+    "No runtime model or new material is produced by this experiment"
+  ],
+  "qa": "art-factory/rts/runs/original-guard-arm-local-shell/2026-10-05/qa/local-offset.json"
+}

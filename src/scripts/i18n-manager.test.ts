@@ -22,7 +22,7 @@ function loadI18nManager(hostname: string) {
   };
   const storage = { getItem: () => null, setItem: () => {} };
   const nav = { language: 'en-US' };
-  const fetchMock = vi.fn(async () => ({
+  const fetchMock = vi.fn(async (_url: string) => ({
     ok: true,
     json: async () => ({ site: { title: 'test' } }),
   }));

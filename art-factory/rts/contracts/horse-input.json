@@ -1,0 +1,33 @@
+{
+  "asset_id": "horse-input",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-army",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "category": "character-reference",
+  "source_mode": "builtin-imagegen",
+  "postprocess_profile": "portrait_cutout",
+  "mode_inference_decision": {
+    "selected_profile": "portrait_cutout",
+    "candidate_profiles": ["portrait_cutout", "hard_alpha_sprite"],
+    "confidence": "high",
+    "rationale": "The two isolated high-resolution horse views are transparent visual inputs for neural 3D reconstruction, not runtime sprites.",
+    "clarifying_question": null
+  },
+  "status": "candidate",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "purpose": "Two identity-matched original warhorse source references for the knight model stage; horse only, no rider or 3D delivery.",
+  "target_px": [1536, 1024],
+  "format": "PNG RGBA",
+  "alpha_policy": "genuine transparent alpha; exception to magenta chroma-key because direct RGBA is safer for neural mesh reconstruction",
+  "views": ["near-side near-profile orthographic, 15 degrees toward chest, head left", "opposite-side near-profile orthographic, 15 degrees toward chest, head right"],
+  "composition": "one entire adult horse, four separate legs, both ears, four hooves and tail visible; at least 6 percent clear margin; no cast shadow or floor",
+  "style": "original detailed stylized PBR medieval human-kingdom game art; chestnut brown coat, black mane and tail, functional leather tack, small kingdom-blue saddlecloth and aged brass dawn-sun emblem",
+  "forbidden": ["rider", "full-body armor", "cloth over legs", "weapon", "ground", "shadow", "text", "watermark", "extra or missing limbs"],
+  "prompt_path": "art-factory/rts/runs/horse-input/v1/prompts/generation.json",
+  "raw_paths": ["art-factory/rts/runs/horse-input/v1/raw/near-side.png", "art-factory/rts/runs/horse-input/v1/raw/opposite-side.png"],
+  "candidate_paths": ["art-factory/rts/runs/horse-input/v1/candidate/near-side.png", "art-factory/rts/runs/horse-input/v1/candidate/opposite-side.png"],
+  "postprocess": "Original raw PNG copies are unchanged. Each candidate is the full 1536x1024 RGBA source uniformly resized to 1352x901 with Pillow Lanczos and alpha-composited at integer offset (92,61) onto a transparent 1536x1024 canvas. This changes framing only.",
+  "qa_gates": ["both PNG RGBA 1536x1024", "alpha bbox with at least 6 percent margin on each side", "four separate legs and four hooves", "identity, coat, mane, tack, saddlecloth and emblem match across views", "no duplicate source or runtime publication"]
+}

@@ -1,0 +1,28 @@
+{
+  "asset_id": "unit-shared-textures",
+  "status": "planned",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "scope": "Lossless packaging of existing 16 unit GLBs; no geometry, animation, appearance or provenance approval",
+  "source_mode": "Existing published encoded image bytes, extracted without decoding or re-encoding",
+  "runtime_publish_allowed": false,
+  "commercial_quality_approved": false,
+  "rights_status": "Unchanged from original sources; guard and worker restricted source components remain blocked",
+  "run": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1",
+  "runtime_image_path": "public/assets/games/rts/materials/unit-shared/<sha256>.<original-extension>",
+  "plan": [
+    "TDD: exact image deduplication and bufferView relocation/remapping with animation/skin/material parity; fail closed on unsupported or shared image views",
+    "Snapshot all current GLBs and registry hashes; write candidates and content-addressed shared image files in a new run",
+    "Verify every retained bufferView byte, all semantic glTF JSON and every extracted image byte against source",
+    "Actual GLB validator and Three.js loading of all 16 candidate models; no missing external image URI",
+    "Matched source/candidate browser frames including both LODs, both teams, representative action phases and animated portraits",
+    "Actual production-map encoded download measurement with candidate path overrides",
+    "Independent code and evidence review before any local runtime packaging update"
+  ],
+  "limits": [
+    "No image resize, recompression, palette changes or geometry transforms",
+    "No source rights or commercial quality approval inferred from byte parity",
+    "Source files and all prior frozen runs remain untouched",
+    "All public changes require complete exact-SHA backup and registry consistency",
+    "No external deployment, push or commit"
+  ]
+}

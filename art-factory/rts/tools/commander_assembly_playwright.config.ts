@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'.',testMatch:'commander_assembly_game.spec.ts',workers:1,retries:0,reporter:'line',outputDir:'../runs/commander-assembly/2026-10-14-v1/qa/playwright',use:{baseURL:'http://127.0.0.1:4321',browserName:'chromium',channel:'chromium',headless:true,launchOptions:{args:['--mute-audio','--enable-gpu','--force_high_performance_gpu']}}});

@@ -1,0 +1,65 @@
+{
+  "id": "landscape-enrichment",
+  "screen_id": "browser-rts-battlefield",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "root material review and independent landscape v3 assembly review passed",
+  "run": "art-factory/rts/runs/landscape-enrichment/2026-10-05",
+  "mode_inference_decision": {
+    "selected_profile": "tileset_tilemap",
+    "confidence": "high",
+    "rationale": "Four opaque top-down material swatches, cropped from a generated atlas and blended over the flat playable terrain."
+  },
+  "alpha_policy": "Opaque ground textures; no magenta key because material swatches tile without transparency. Runtime control masks contain blend weights only, never decorative RGB artwork.",
+  "assets": [
+    {
+      "id": "lush-grass",
+      "quadrant": "top-left",
+      "runtime": "/assets/games/rts/terrain/lush-grass.webp"
+    },
+    {
+      "id": "forest-floor",
+      "quadrant": "top-right",
+      "runtime": "/assets/games/rts/terrain/forest-floor.webp"
+    },
+    {
+      "id": "river-shingle",
+      "quadrant": "bottom-left",
+      "runtime": "/assets/games/rts/terrain/river-shingle.webp"
+    },
+    {
+      "id": "highland-scree",
+      "quadrant": "bottom-right",
+      "runtime": "/assets/games/rts/terrain/highland-scree.webp"
+    }
+  ],
+  "source": "builtin-imagegen",
+  "prompt": "prompts/terrain-atlas.txt",
+  "raw": "raw/terrain-atlas.png",
+  "postprocess": "crop four equal quadrants; resize to 512 square; crossfade opposite edge strips using source pixels; encode WebP; no painting",
+  "qa_gates": [
+    "source hash and prompt retained",
+    "512x512 RGB; no alpha",
+    "opposite-edge mean absolute RGB difference <= 8",
+    "each tile <= 180000 bytes",
+    "2x2 tile review",
+    "both actual maps at game scale",
+    "no text/watermark/perspective",
+    "routes, resources and buildable clearings readable"
+  ],
+  "scenery": "Reuse published oak and rock GLBs, source geometry/materials retained. Authored clusters with deterministic variation; collision footprints and protected routes; instanced rendering obeying explored fog.",
+  "acceptance": [
+    "two visually distinct maps",
+    "meaningful variation visible from the initial base",
+    "no scenery on protected routes or resource access",
+    "all map reachability tests pass",
+    "no unexplored scenery leak",
+    "full unit suite and relevant browser checks",
+    "1080p active portrait 80 units/20 buildings performance and download budget"
+  ],
+  "status_scope": "four generated terrain texture assets",
+  "landscape_assembly_status": "approved-for-local-preview",
+  "user_overall_art_acceptance": "pending-user-preview"
+}

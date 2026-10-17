@@ -1,0 +1,31 @@
+{
+  "asset_id": "hero-ability-icons",
+  "source_truth": "src/scripts/games/rts/catalog.ts SKILLS (sage, ranger-captain)",
+  "status": "candidate-pending-user-style-approval",
+  "category": "ui_icon",
+  "source_mode": "generated_raw",
+  "imagegen_used": true,
+  "generator": "codex built-in image_gen via art-factory/rts/tools/model_polish_codex_texture.py (same route as the model-polish rounds); provenance per raw in <id>-aN.gen.json / .prompt.txt / .codex.log",
+  "ids": ["sunburst", "radiance", "daybreak", "volley", "sprint", "mark"],
+  "existing_covered": {"commander": ["cleave", "mend", "banner"], "note": "誓衛統領 skills already have published 2026-10-09 icons (technology-skill-icons); not regenerated"},
+  "mockup": "art-factory/rts/runs/hero-ability-icons/2026-10-17-v1/mockup.md",
+  "prompts": "art-factory/rts/runs/hero-ability-icons/2026-10-17-v1/prompts/",
+  "size": {"raw_min": [1024, 1024], "candidate": [128, 128], "fit_square": 104, "safe_margin_min": 12, "qa_sizes": [24, 32, 48, 64, 128]},
+  "alpha_policy": {
+    "classification": "magenta_chroma_key",
+    "key": [255, 0, 255],
+    "semi_alpha": "2px contour antialias only",
+    "intentional_holes": "only where the generated object silhouette is open (e.g. horn curve, arrow gaps); interior holes are listed in QA and reviewed",
+    "spill": "contour pixels are unmixed from the key color (no painted correction)"
+  },
+  "postprocess": "art-factory/rts/runs/hero-ability-icons/2026-10-17-v1/postprocess.py",
+  "allowed_operations": ["border-sampled key verification", "key-distance alpha with fixed thresholds", "key unmixing on contour pixels", "remove components touching the raw edge", "remove specks < 0.05% of object area", "alpha<=8 clear, >=240 normalize", "alpha bbox crop", "Lanczos fit 104 centered on 128", "spill clamp on semi-alpha pixels after resize", "clear transparent RGB", "remove semi-alpha beyond 2px of opaque", "PNG output"],
+  "forbidden": ["drawn or painted pixels", "baked text/frame/backdrop", "manual retouch", "rejected outputs in runtime paths"],
+  "qa_gates": ["128x128", "margins >= 12", "edge contact 0", "semi-alpha beyond 2px 0", "transparent RGB residue 0", "key-color residue 0 (magenta hue on visible pixels)", "raw border is key color (no object cut by raw edge)", "interior holes reported", "24/32/48/64 readability sheets", "side-by-side with cleave/mend/banner at 48px"],
+  "runtime": {
+    "paths": ["/assets/games/rts/ui/commands/sunburst.png", "/assets/games/rts/ui/commands/radiance.png", "/assets/games/rts/ui/commands/daybreak.png", "/assets/games/rts/ui/commands/volley.png", "/assets/games/rts/ui/commands/sprint.png", "/assets/games/rts/ui/commands/mark.png"],
+    "consumers": ["src/scripts/games/rts/hud.ts commandIcon(): cast + learn buttons (heroes are rosterPreview-gated)"]
+  },
+  "review": "art-factory/rts/review/roster-icons-20261017.html",
+  "user_style_approval": "pending"
+}

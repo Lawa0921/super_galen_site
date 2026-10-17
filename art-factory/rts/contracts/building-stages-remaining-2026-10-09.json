@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "status": "published_local_worktree",
+  "source_authoring_run": "building-stages-remaining/2026-10-09-v2",
+  "assets": [
+    "townhall",
+    "townhall-tier2",
+    "townhall-tier3",
+    "house",
+    "forge",
+    "altar",
+    "tower",
+    "chapel"
+  ],
+  "operation": "Unused accessor/bufferView/BIN range pruning with reference-index and four-byte aligned offset remapping",
+  "allowed_changes": [
+    "accessor reference IDs",
+    "bufferView reference IDs",
+    "bufferView.byteOffset",
+    "bufferView.byteLength",
+    "accessor.byteOffset",
+    "buffer.byteLength",
+    "GLB chunk lengths/padding",
+    "removal of unreferenced accessors and views and binary ranges"
+  ],
+  "preserved": [
+    "live typed accessor element bytes including POSITION/NORMAL/UV0/UV1/TANGENT/index",
+    "all accessor formats/counts/normalized/min/max/metadata",
+    "directed triangle ordinals and winding",
+    "primitive material and properties",
+    "all nodes/scenes/materials/extras",
+    "image URLs and embedded image full bytes",
+    "shared accessor/view identity",
+    "byteStride",
+    "source authoring raw/recipe/formal map/full BIN provenance"
+  ],
+  "rejected": [
+    "skins",
+    "animations",
+    "morph targets and weights",
+    "all extensions containers including extensionsRequired/Used",
+    "sparse accessors",
+    "matrix accessors",
+    "implicit accessor buffer",
+    "external buffers",
+    "unknown structural properties",
+    "unsupported attribute semantics",
+    "nontriangle or nonindexed primitives",
+    "invalid bounds/alignment/stride/references"
+  ],
+  "stage_thresholds": [
+    0,
+    0.18,
+    0.55,
+    0.82
+  ],
+  "tolerance": "None: all live typed bytes compare bitwise, no geometry tolerance",
+  "metadata_comparison": "canonical JSON sorted object keys, ordered lists, exact JSON types, all numbers finite",
+  "texture_info_references": "All five textureInfo kinds require exact integer index >= 0 and < textures.length; optional texCoord requires exact integer >= 0",
+  "rejected_verifier_snapshot": "raw/rejected-type-check-evidence; original manifest 7a18b9bfcd5ede631495401f9b0d675cdfa26d9f06067fbb13c925fa5193c91e",
+  "budget_bytes": 35000000,
+  "budget_status": "exact8 candidates served through production HTTP host and actual downloaded bytes verified",
+  "runtime_publish_allowed": true,
+  "source_contract": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/contract.json",
+  "publication_review": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/qa/root-publication-review.json",
+  "external_deployment": false
+}

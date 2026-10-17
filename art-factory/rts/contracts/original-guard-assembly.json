@@ -1,0 +1,149 @@
+{
+  "id": "original-guard-assembly",
+  "screen_id": "rts-kingdom-guard-3d",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "purpose": "Assemble the original full-body kingdom guard, original procedural five-clip motion, original sword and shield, and authored surface materials into a reviewable Blender and browser-ready candidate.",
+  "authorship": {
+    "model": "Derived only from the project-authored Hunyuan3D-2.1 guard shape and approved source-derived retopology, with authored component rebuilds for armor shells, joints, and clothing where required.",
+    "skeleton_and_motion": "The original GuardRig20 core and authored curves from original_guard_motion_build.py are preserved and rebound. Assembly-authored elbow support and TabardDrape helper curves are baked through all five clips. No third-party skeleton, mesh, motion capture, animation, or texture is permitted.",
+    "weapons": "KingdomSteelSword and KingdomSunShield are project-original authored assets from the original guard motion source."
+  },
+  "inputs": {
+    "shape_blend": "art-factory/rts/runs/original-guard-shape/2026-10-05/candidate/original-guard-shape.blend",
+    "motion_blend": "art-factory/rts/runs/original-guard-motion/2026-10-05/revision-v3-attack/candidate/guard-original-motion.blend",
+    "helmet_blend": "art-factory/rts/runs/original-guard-helmet-rebuild/2026-10-05/candidate/original-guard-helmet-rebuild.blend",
+    "tabard_blend": "art-factory/rts/runs/original-guard-tabard/2026-10-05/candidate/original-guard-tabard.blend",
+    "arm_candidate": {
+      "path": "art-factory/rts/runs/original-guard-clean-arm/2026-10-05/candidate/original-guard-clean-arm.blend",
+      "sha256": "7400d38f0bfa8633d4676f511449f933857a0fea20bc9d93e0e757e79b365dcd",
+      "source_glb_sha256": "1879eecf9de41fb45b38013e9868aa34785aea1c3271e6bb2b75f4012b491544"
+    },
+    "surface_tiles": {
+      "steel": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/steel-512.png",
+      "brass": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/brass-512.png",
+      "cloth": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/cloth-512.png",
+      "leather": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/leather-512.png"
+    }
+  },
+  "deliverables": [
+    "candidate/original-guard-assembly.blend",
+    "candidate/original-guard-assembly-lod0.glb",
+    "candidate/original-guard-assembly-lod1.glb",
+    "qa/front.png",
+    "qa/side.png",
+    "qa/back.png",
+    "qa/attack.png",
+    "qa/walk.png",
+    "qa/metadata.json"
+  ],
+  "clips": {
+    "Idle": {
+      "durationSeconds": 2.4,
+      "fps": 30
+    },
+    "Walk": {
+      "durationSeconds": 0.6666666666666666,
+      "fps": 30,
+      "strideMeters": 2.0,
+      "speedMetersPerSecond": 3.0
+    },
+    "Attack": {
+      "durationSeconds": 1.2,
+      "fps": 30,
+      "contactSeconds": 0.5333333333333333
+    },
+    "Hurt": {
+      "durationSeconds": 0.5,
+      "fps": 30
+    },
+    "Death": {
+      "durationSeconds": 1.6,
+      "fps": 30
+    }
+  },
+  "runtime_extras": {
+    "version": 1,
+    "locomotion": {
+      "clip": "Walk",
+      "strideMeters": 2.0,
+      "cycleSeconds": 0.6666666666666666
+    },
+    "attack": {
+      "clip": "Attack",
+      "durationSeconds": 1.2,
+      "contactSeconds": 0.5333333333333333
+    }
+  },
+  "review_gates": {
+    "full_height_m": [
+      1.55,
+      2.25
+    ],
+    "torso_width_m": [
+      0.34,
+      0.78
+    ],
+    "leg_coverage_m": [
+      0.52,
+      0.86
+    ],
+    "blade_reach_at_attack_contact": "Measure actual blade reach and world position relative to target; target must be reached and both feet planted.",
+    "deformation": "Inspect all five actions for hard armor distortion, arm joints, helmet clearance, source-fitted closed cloth leg lofts across knees, tabard gravity drape, tasset clearance, ground contact, and full-body silhouette.",
+    "uv": "Record assigned material tiles and reject visible square projection seams or excessive generated scratches.",
+    "exports": "Both LOD GLBs retain GuardRig20, all five expected action durations, both weapon objects, and identical rtsMotion scene extras."
+  },
+  "source_rules": {
+    "allowed": "Project-authored shape/retopology/material/helmet/tabard/arm candidates and project-authored original weapon assets only.",
+    "forbidden": [
+      "third-party mesh",
+      "third-party animation or motion capture",
+      "placeholder geometry stacks"
+    ]
+  },
+  "runtime_assets": [
+    {
+      "id": "guard",
+      "status": "published",
+      "url": "/assets/games/rts/models/guard.glb",
+      "bytes": 2944096,
+      "sha256": "b86270df5781e3df6ae2f4c7a12f5244edea31a7ad8530615d53cb259c2a8de5",
+      "candidate": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/final-bounds/candidate/original-guard-assembly-lod0.glb",
+      "source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/final-bounds/candidate/original-guard-assembly.blend",
+      "source_sha256": "312cddb12c8fbe02b195f8a8eeda7712bdae8d697e1f7d862bdbb9045d87521e",
+      "qa": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/final-bounds/qa/root-review.json",
+      "visual_review": "Root reviewed the complete original guard, five actions, both LODs and team colors in the actual renderer.",
+      "animation_review": "Authored original clips and rig; both GLB scene rtsMotion records match the simulator timing contract.",
+      "known_visual_limits": [
+        "LOD1 elbow/armor silhouette is coarser in closeups.",
+        "Tabard crease and fine metal-seam aliasing remain visible at close range.",
+        "Review sampled allfive actions and short playback, not exhaustive alltime allmesh collision proof.",
+        "Contact test covers guard-vs-guard single and4v1 in bothLODs, not every possible target model."
+      ],
+      "runtime_publish_allowed": true
+    },
+    {
+      "id": "guard-lod1",
+      "status": "published",
+      "url": "/assets/games/rts/models/guard-lod1.glb",
+      "bytes": 2432164,
+      "sha256": "e4dbcddb433ace40b7e7fcc9a8665191d9056c591b60453c463781ef6019a2b6",
+      "candidate": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/final-bounds/candidate/original-guard-assembly-lod1.glb",
+      "source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/final-bounds/candidate/original-guard-assembly.blend",
+      "source_sha256": "312cddb12c8fbe02b195f8a8eeda7712bdae8d697e1f7d862bdbb9045d87521e",
+      "qa": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/final-bounds/qa/root-review.json",
+      "visual_review": "Root reviewed the complete original guard, five actions, both LODs and team colors in the actual renderer.",
+      "animation_review": "Authored original clips and rig; both GLB scene rtsMotion records match the simulator timing contract.",
+      "known_visual_limits": [
+        "LOD1 elbow/armor silhouette is coarser in closeups.",
+        "Tabard crease and fine metal-seam aliasing remain visible at close range.",
+        "Review sampled allfive actions and short playback, not exhaustive alltime allmesh collision proof.",
+        "Contact test covers guard-vs-guard single and4v1 in bothLODs, not every possible target model."
+      ],
+      "runtime_publish_allowed": true
+    }
+  ],
+  "root_review": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/final-bounds/qa/root-review.json",
+  "user_overall_art_acceptance": "pending-user-preview",
+  "build_tool_scope": "Candidate generation only; no src/public changes. Local publication is performed by publish_original_guard.py after independent review."
+}

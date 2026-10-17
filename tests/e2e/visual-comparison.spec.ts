@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 // 輔助函數：安全點擊頁籤
-async function safeClick(page, selector: string) {
+async function safeClick(page: Page, selector: string) {
   // 移除 Vite 錯誤遮罩
   await page.evaluate(() => {
     const overlay = document.querySelector('vite-error-overlay');
@@ -170,6 +170,12 @@ test.describe('視覺與樣式比較', () => {
     if (page.viewportSize()!.width <= 1024) {
       await page.locator('#mobile-menu-toggle').click();
       await expect(page.locator('#mobile-menu')).toBeVisible();
+    }
+
+    const mobileToggle = page.locator('#mobile-menu-toggle');
+    if (await mobileToggle.isVisible()) {
+      await mobileToggle.click();
+      await expect(page.locator('#mobile-menu')).toHaveClass(/active/);
     }
 
     // 確認語言切換器按鈕存在並可點擊

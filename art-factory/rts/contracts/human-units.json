@@ -1,0 +1,122 @@
+{
+  "asset_id": "original-human-units-production-v1",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_body_commit": "32074183",
+  "source_uv_byte_preservation_commit": "95a61273",
+  "reference_method_commit": "9f9fbb8c",
+  "run": "art-factory/rts/runs/human-units/2026-10-05-v1",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "assembly_human_review": "root source and actual Three.js assembly reviewed; user preview at delivery",
+  "known_limits": [
+    "Crossbow attack brings the wooden crossbow to chest height but the open hand and stock alignment still need animator/art review before approval as a firing pose.",
+    "Generated reference hands are open, so worker and raider axe grips are aligned to the palm but fingers do not close around their hafts.",
+    "Priest and commander two-LOD GLB totals exceed the aspirational 3 MB target while retaining two 1024 JPEG quality-90 atlases per GLB.",
+    "Coordinate-welded edge closure does not prove source body watertightness; priest, commander and raider detached small islands were removed only from candidate production copies."
+  ],
+  "source_mode": "original generated body mesh and image projection; unit-specific Blender modeling, rigging and deterministic texture preparation",
+  "units": {
+    "worker": {
+      "source": "art-factory/rts/runs/unit-bodies/worker/v1",
+      "equipment": "working hand axe",
+      "target_height_m": 1.75
+    },
+    "crossbow": {
+      "source": "art-factory/rts/runs/unit-bodies/crossbow/v1",
+      "equipment": "wood and steel crossbow",
+      "target_height_m": 1.8
+    },
+    "priest": {
+      "source": "art-factory/rts/runs/unit-bodies/priest/v1",
+      "equipment": "original priest staff",
+      "target_height_m": 1.83,
+      "skirt_policy": "continuous pelvis and bilateral-leg blended weights"
+    },
+    "commander": {
+      "source": "art-factory/rts/runs/unit-bodies/commander/v1",
+      "equipment": "leader longsword and broad shield with neutral TeamCloth shield face",
+      "target_height_m": 1.94
+    },
+    "neutral-raider": {
+      "source": "art-factory/rts/runs/unit-bodies/neutral-raider/v1",
+      "equipment": "worn short axe",
+      "target_height_m": 1.79,
+      "teamcloth": false
+    }
+  },
+  "bone_count": 20,
+  "clips_exact": [
+    "Idle",
+    "Walk",
+    "Attack",
+    "Hurt",
+    "Death"
+  ],
+  "up_axis": "glTF Y-up",
+  "forward_axis": "glTF -Z",
+  "ground_origin": true,
+  "lod0_total_triangles_max_exclusive": 20000,
+  "lod1_total_triangles_range": [
+    7000,
+    10000
+  ],
+  "combined_glb_budget_bytes_target": 3000000,
+  "runtime_texture": "1024x1024 JPEG quality 90; 2048 original projection copied unchanged into factory raw",
+  "team_material": "TeamCloth_* case-insensitive match, neutral gray/white base; keep steel, leather and brass independent",
+  "cleanup": "Inspect coordinate-welded connected components; remove only tiny detached fragments from a production copy, record source and removed triangles, inspect mesh edges; never alter unit-bodies source.",
+  "qa": [
+    "source SHA and original mesh retained",
+    "landmarks and weapon socket per unit",
+    "20 bones and normalized <=4 influences",
+    "five exact named action clips on both GLBs",
+    "body and equipment ground-contact checks",
+    "LOD triangle budget",
+    "glTF GLB re-import and animation motion",
+    "front/side/back 640px and blue/red 64px",
+    "Walk/Attack/Death frame grids",
+    "TeamCloth tint isolation",
+    "Before runtime publication, pass mechanical QA and root actual-WebGL assembly review"
+  ],
+  "runtime_units": [
+    "worker",
+    "crossbow",
+    "neutral-raider"
+  ],
+  "superseded_units": {
+    "priest": "contracts/human-units-masked-v2.json",
+    "commander": "contracts/human-units-masked-v2.json"
+  },
+  "unit_publications": {
+    "worker": {
+      "status": "published",
+      "source_sha256": "a516300c3091fa269353d147732749b0b4148270ee4cda9f2c4cd45c78642896",
+      "assets": [
+        {
+          "id": "worker",
+          "sha256": "97f8f52ecff8b3125bf4c7cf2662ab24408f8fa43b405e10f28fc1569097d0df"
+        },
+        {
+          "id": "worker-lod1",
+          "sha256": "56df9200cce78674d4ba7dd6ebcc2293a04b3da31a783ce396298c80b63691ce"
+        }
+      ],
+      "root_review": "art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/revision-20261006/qa/root-review.json"
+    },
+    "crossbow": {
+      "status": "published",
+      "source_sha256": "6936e824a34253f6c60dbdb9fc3b707ed9d7eb9fd51081b562ba4fd490315fdc",
+      "assets": [
+        {
+          "id": "crossbow",
+          "sha256": "0970c9c51ebc03e8b01528db721291cc801faddf0f60a8e3ebf161ef8bea4c58"
+        },
+        {
+          "id": "crossbow-lod1",
+          "sha256": "6decb6135b3b42a35a6cf67f5dc04df2b1699e1224cdba89752a66e807385ccf"
+        }
+      ],
+      "root_review": "art-factory/rts/runs/original-crossbow-waist/2026-10-06-v1/qa/root-review.json"
+    }
+  },
+  "publication_history_note": "This contract records the original human-unit publication and subsequent snapshots. Current runtime GLBs, later source replacements, Work/Cast revisions and their approvals are defined by art-factory/rts/manifests/unit-registry.json; historical unit_publications hashes are not current runtime hashes."
+}

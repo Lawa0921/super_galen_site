@@ -1,0 +1,15 @@
+{
+  "asset_id": "guard-neural-input",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "status": "raw_generated",
+  "category": "character-reference",
+  "source_mode": "builtin-imagegen",
+  "postprocess": "none",
+  "alpha_policy": "transparent",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "runtime_publish_allowed": false,
+  "purpose": "Single original character image for a TripoSR image-to-mesh pilot; no direct runtime publication.",
+  "raw_path": "art-factory/rts/runs/guard-neural-input/v1/raw/guard.png",
+  "prompt_path": "art-factory/rts/runs/guard-neural-input/v1/prompts/generation.txt"
+}

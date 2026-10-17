@@ -1,0 +1,44 @@
+{
+  "id": "original-assembly-refinement-v2",
+  "screen_id": "browser-rts-battlefield",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "run": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "source_policy": "Existing registered original Blender architecture, original dirt-road surface and original guard meshes only; retain source hashes and editable parts",
+  "mode_inference_decision": {
+    "selected_profile": "tileset_tilemap",
+    "adapter": "Original 3D collection assembly, source-preserving skinned material baking",
+    "confidence": "high"
+  },
+  "assets": [
+    "barracks",
+    "stable",
+    "workshop",
+    "guard",
+    "guard-lod1"
+  ],
+  "scope": {
+    "architecture": "Replace dominant pale slabs with shared support edging and original earth courtyard surface; correct original roof winding, close textured gables and cut four workshop posts to meet the roof pitch; retain bearing support and entrance datum",
+    "guard": "Bake the core while retaining GuardBody, sword and shield nodes: 30 to 11 material primitives, unchanged indexed triangle attributes, skin and animation samples",
+    "runtime": "Share one pose across compatible LOD meshes only after exact rig/animation checks; preserve per-mesh bind transforms and conservative bounds, with separate poses for separate soldiers"
+  },
+  "qa_gates": [
+    "source and recipe locks",
+    "unchanged guard per-material triangle attributes, bone bindings and animation values",
+    "all original editable character parts retained",
+    "shared visible building component used in three prefabs",
+    "courtyard ground coverage, entrance height and footprint checks",
+    "actual same-camera model comparison and two-map assembly review",
+    "0 glTF validator errors",
+    "55 median FPS and p95 below 33ms; no lower image quality settings",
+    "35 MB compressed first-map budget"
+  ],
+  "limits": [
+    "Not a complete character redesign",
+    "Not arbitrary new grid-wall construction",
+    "User overall art acceptance remains pending"
+  ],
+  "publication_scope": "local worktree only"
+}

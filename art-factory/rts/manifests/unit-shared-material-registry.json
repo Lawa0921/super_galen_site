@@ -1,0 +1,426 @@
+{
+  "contract": "art-factory/rts/contracts/unit-shared-textures.json",
+  "assets": [
+    {
+      "id": "unit-shared-0480f538aba09fadd6c9a9e927db9e3d69df3535e1e6e1cfb92648dbe10d068a.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/0480f538aba09fadd6c9a9e927db9e3d69df3535e1e6e1cfb92648dbe10d068a.jpg",
+      "bytes": 323849,
+      "sha256": "0480f538aba09fadd6c9a9e927db9e3d69df3535e1e6e1cfb92648dbe10d068a",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/0480f538aba09fadd6c9a9e927db9e3d69df3535e1e6e1cfb92648dbe10d068a.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/knight.glb",
+      "source_sha256": "72074efb74985224f0304f64040706ba6075d4ddf94c529fd54a4e07bbc5f91c",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "knight",
+        "knight-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-12f1bfda090863f9f38c8368f2f516ccc907dda8c569d989b32176c500d5827d.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/12f1bfda090863f9f38c8368f2f516ccc907dda8c569d989b32176c500d5827d.jpg",
+      "bytes": 218172,
+      "sha256": "12f1bfda090863f9f38c8368f2f516ccc907dda8c569d989b32176c500d5827d",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/12f1bfda090863f9f38c8368f2f516ccc907dda8c569d989b32176c500d5827d.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/siege.glb",
+      "source_sha256": "6747b42a563fe2311b2ce4a8103916aface877dce3eacb5392a39e3bec77c5b3",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "siege",
+        "siege-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-1d00d98cddc10f1d5632c85d0f2dd35e4b2c07758950288c826844982137cabf.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/1d00d98cddc10f1d5632c85d0f2dd35e4b2c07758950288c826844982137cabf.jpg",
+      "bytes": 548183,
+      "sha256": "1d00d98cddc10f1d5632c85d0f2dd35e4b2c07758950288c826844982137cabf",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/1d00d98cddc10f1d5632c85d0f2dd35e4b2c07758950288c826844982137cabf.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/commander.glb",
+      "source_sha256": "131291c52229a3dffc22f4eaf990fbee2c31c326dcfeec559670268cccaf26b9",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "commander",
+        "commander-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-1ff60b74c57614e08bf07acdbf3331a842e37f9a3be7429a5ae4fc49b7b8dc3e.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/1ff60b74c57614e08bf07acdbf3331a842e37f9a3be7429a5ae4fc49b7b8dc3e.jpg",
+      "bytes": 45737,
+      "sha256": "1ff60b74c57614e08bf07acdbf3331a842e37f9a3be7429a5ae4fc49b7b8dc3e",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/1ff60b74c57614e08bf07acdbf3331a842e37f9a3be7429a5ae4fc49b7b8dc3e.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/guard.glb",
+      "source_sha256": "f369591f8b96c3a418a460c6ce26dbe58220111c5b322edf4c5059551295d360",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "guard",
+        "guard-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-3be13d5aa998f1191315fe3884dff2212e9c3ddcfad2da58273c13590d8f50f8.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/3be13d5aa998f1191315fe3884dff2212e9c3ddcfad2da58273c13590d8f50f8.jpg",
+      "bytes": 59119,
+      "sha256": "3be13d5aa998f1191315fe3884dff2212e9c3ddcfad2da58273c13590d8f50f8",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/3be13d5aa998f1191315fe3884dff2212e9c3ddcfad2da58273c13590d8f50f8.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/guard.glb",
+      "source_sha256": "f369591f8b96c3a418a460c6ce26dbe58220111c5b322edf4c5059551295d360",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "guard",
+        "guard-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-48291e623d524719184c69dccfe8af61a9ae542b01cfefef6c87bd704bbdde08.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/48291e623d524719184c69dccfe8af61a9ae542b01cfefef6c87bd704bbdde08.jpg",
+      "bytes": 371778,
+      "sha256": "48291e623d524719184c69dccfe8af61a9ae542b01cfefef6c87bd704bbdde08",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/48291e623d524719184c69dccfe8af61a9ae542b01cfefef6c87bd704bbdde08.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/neutral-raider.glb",
+      "source_sha256": "4ede7a9b951c77ff6c63a755181fe6d5e27d158215b352659e7493571526a997",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "neutral-raider",
+        "neutral-raider-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-5e1b1738063fa92965ad824d18739ccfc7d502c8c20438175facf07d89d17042.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/5e1b1738063fa92965ad824d18739ccfc7d502c8c20438175facf07d89d17042.jpg",
+      "bytes": 52904,
+      "sha256": "5e1b1738063fa92965ad824d18739ccfc7d502c8c20438175facf07d89d17042",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/5e1b1738063fa92965ad824d18739ccfc7d502c8c20438175facf07d89d17042.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/guard.glb",
+      "source_sha256": "f369591f8b96c3a418a460c6ce26dbe58220111c5b322edf4c5059551295d360",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "guard",
+        "guard-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-5ea4347b4f41816eb5a0d7d2def486187caf2e307b7f59a7079271244a6945f2.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/5ea4347b4f41816eb5a0d7d2def486187caf2e307b7f59a7079271244a6945f2.jpg",
+      "bytes": 262086,
+      "sha256": "5ea4347b4f41816eb5a0d7d2def486187caf2e307b7f59a7079271244a6945f2",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/5ea4347b4f41816eb5a0d7d2def486187caf2e307b7f59a7079271244a6945f2.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/knight.glb",
+      "source_sha256": "72074efb74985224f0304f64040706ba6075d4ddf94c529fd54a4e07bbc5f91c",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "knight",
+        "knight-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-842a896f9bf5a1fb8be055ae411fafbc0098bbaa5d29ce5b406a8679dfe5e5d9.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/842a896f9bf5a1fb8be055ae411fafbc0098bbaa5d29ce5b406a8679dfe5e5d9.jpg",
+      "bytes": 223973,
+      "sha256": "842a896f9bf5a1fb8be055ae411fafbc0098bbaa5d29ce5b406a8679dfe5e5d9",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/842a896f9bf5a1fb8be055ae411fafbc0098bbaa5d29ce5b406a8679dfe5e5d9.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/knight.glb",
+      "source_sha256": "72074efb74985224f0304f64040706ba6075d4ddf94c529fd54a4e07bbc5f91c",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "knight",
+        "knight-lod1",
+        "siege",
+        "siege-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-85020c8dd228d5317775246134a1de6ceadaaa73db090277797be72455cfcc4e.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/85020c8dd228d5317775246134a1de6ceadaaa73db090277797be72455cfcc4e.jpg",
+      "bytes": 334815,
+      "sha256": "85020c8dd228d5317775246134a1de6ceadaaa73db090277797be72455cfcc4e",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/85020c8dd228d5317775246134a1de6ceadaaa73db090277797be72455cfcc4e.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/worker.glb",
+      "source_sha256": "97f8f52ecff8b3125bf4c7cf2662ab24408f8fa43b405e10f28fc1569097d0df",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "worker",
+        "worker-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-87b9802db78aa2ced4c733fdb7c0643cc695e8e8fc99492e37a98e4154d1d65c.png",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/87b9802db78aa2ced4c733fdb7c0643cc695e8e8fc99492e37a98e4154d1d65c.png",
+      "bytes": 82724,
+      "sha256": "87b9802db78aa2ced4c733fdb7c0643cc695e8e8fc99492e37a98e4154d1d65c",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/87b9802db78aa2ced4c733fdb7c0643cc695e8e8fc99492e37a98e4154d1d65c.png",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/siege.glb",
+      "source_sha256": "6747b42a563fe2311b2ce4a8103916aface877dce3eacb5392a39e3bec77c5b3",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "siege",
+        "siege-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-8e96f82bfd0354145fd829c2bc0702d1817212f0047ebc07fe7d621d16edd14c.png",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/8e96f82bfd0354145fd829c2bc0702d1817212f0047ebc07fe7d621d16edd14c.png",
+      "bytes": 124881,
+      "sha256": "8e96f82bfd0354145fd829c2bc0702d1817212f0047ebc07fe7d621d16edd14c",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/8e96f82bfd0354145fd829c2bc0702d1817212f0047ebc07fe7d621d16edd14c.png",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/siege.glb",
+      "source_sha256": "6747b42a563fe2311b2ce4a8103916aface877dce3eacb5392a39e3bec77c5b3",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "siege",
+        "siege-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-a92600f82c60c345f784c7c615e5fbde540aa5618ce4940242d63ad39e4a7f75.png",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/a92600f82c60c345f784c7c615e5fbde540aa5618ce4940242d63ad39e4a7f75.png",
+      "bytes": 148427,
+      "sha256": "a92600f82c60c345f784c7c615e5fbde540aa5618ce4940242d63ad39e4a7f75",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/a92600f82c60c345f784c7c615e5fbde540aa5618ce4940242d63ad39e4a7f75.png",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/siege.glb",
+      "source_sha256": "6747b42a563fe2311b2ce4a8103916aface877dce3eacb5392a39e3bec77c5b3",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "siege",
+        "siege-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-b8959c92365b07dd13927b35ee34d0fc0ba064c7a8292e1dc26ff6c2357e038a.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/b8959c92365b07dd13927b35ee34d0fc0ba064c7a8292e1dc26ff6c2357e038a.jpg",
+      "bytes": 240691,
+      "sha256": "b8959c92365b07dd13927b35ee34d0fc0ba064c7a8292e1dc26ff6c2357e038a",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/b8959c92365b07dd13927b35ee34d0fc0ba064c7a8292e1dc26ff6c2357e038a.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/siege.glb",
+      "source_sha256": "6747b42a563fe2311b2ce4a8103916aface877dce3eacb5392a39e3bec77c5b3",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "siege",
+        "siege-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-be27e26c863a80d2e7822195ec8ddccce2d4266ae141f20e56335c713e3248db.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/be27e26c863a80d2e7822195ec8ddccce2d4266ae141f20e56335c713e3248db.jpg",
+      "bytes": 331241,
+      "sha256": "be27e26c863a80d2e7822195ec8ddccce2d4266ae141f20e56335c713e3248db",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/be27e26c863a80d2e7822195ec8ddccce2d4266ae141f20e56335c713e3248db.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/worker.glb",
+      "source_sha256": "97f8f52ecff8b3125bf4c7cf2662ab24408f8fa43b405e10f28fc1569097d0df",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "worker",
+        "worker-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-e39daadac566fd64eb04783429a56d0e8e9ba27e75a7eac67824a84ae766699a.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/e39daadac566fd64eb04783429a56d0e8e9ba27e75a7eac67824a84ae766699a.jpg",
+      "bytes": 256240,
+      "sha256": "e39daadac566fd64eb04783429a56d0e8e9ba27e75a7eac67824a84ae766699a",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/e39daadac566fd64eb04783429a56d0e8e9ba27e75a7eac67824a84ae766699a.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/knight.glb",
+      "source_sha256": "72074efb74985224f0304f64040706ba6075d4ddf94c529fd54a4e07bbc5f91c",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "knight",
+        "knight-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-f5c6e536e041d823f9669bde9990d551a3ae6074442fa0b6d8feace8353f028b.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/f5c6e536e041d823f9669bde9990d551a3ae6074442fa0b6d8feace8353f028b.jpg",
+      "bytes": 46959,
+      "sha256": "f5c6e536e041d823f9669bde9990d551a3ae6074442fa0b6d8feace8353f028b",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/f5c6e536e041d823f9669bde9990d551a3ae6074442fa0b6d8feace8353f028b.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/guard.glb",
+      "source_sha256": "f369591f8b96c3a418a460c6ce26dbe58220111c5b322edf4c5059551295d360",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "guard",
+        "guard-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-fa2555e40c2dee70b3c3f7872f48df9ffb7d8bcb2ca20e11b8539464541ca556.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/fa2555e40c2dee70b3c3f7872f48df9ffb7d8bcb2ca20e11b8539464541ca556.jpg",
+      "bytes": 416275,
+      "sha256": "fa2555e40c2dee70b3c3f7872f48df9ffb7d8bcb2ca20e11b8539464541ca556",
+      "candidate": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/fa2555e40c2dee70b3c3f7872f48df9ffb7d8bcb2ca20e11b8539464541ca556.jpg",
+      "source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/priest.glb",
+      "source_sha256": "07030934e976fc60b3a29d8de0b526ce9978cfa7a7efdc40cefe7d7d9009a465",
+      "qa": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "qa_sha256": "1477764a8739f3ca58641ef290ebc03544bf8dbf17dc0cb266eca555f53ef1cd",
+      "provider_models": [
+        "priest",
+        "priest-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false
+    },
+    {
+      "id": "unit-shared-6876bc79b21aa2712acf207b7ace4aa4c9a915921a7aa63524845df76606166e.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/6876bc79b21aa2712acf207b7ace4aa4c9a915921a7aa63524845df76606166e.jpg",
+      "bytes": 343195,
+      "sha256": "6876bc79b21aa2712acf207b7ace4aa4c9a915921a7aa63524845df76606166e",
+      "candidate": "art-factory/rts/runs/procedural-gauntlet/candidate-materials/unit-shared/6876bc79b21aa2712acf207b7ace4aa4c9a915921a7aa63524845df76606166e.jpg",
+      "source": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-crossbow-a2/candidate/crossbow-lod0.raw.glb",
+      "source_sha256": "6a547a428c4d5c2c79affbbde6aadfbaf7e15623ea0e66fe96c17290f8351a90",
+      "qa": "art-factory/rts/runs/procedural-gauntlet/packaging.json",
+      "qa_sha256": "7d08308155c038fe0c488a6087b028eb2544284f2c2d8a584f6bb398952a2afc",
+      "provider_models": [
+        "crossbow",
+        "crossbow-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false,
+      "note": "Exact encoded bytes embedded as body-1024-q90 (734ccac4) / teamcloth-neutral-1024-q90 (6876bc79) in the procedural-gauntlet crossbow-a2 raw GLBs (lod0 and lod1) that were packaged into the published crossbow/crossbow-lod1; externalized losslessly (procedural-gauntlet/packaging.json: byte-identical shipped file)."
+    },
+    {
+      "id": "unit-shared-734ccac4c569241b97bd401d6e3d2ddbe7a48523c1039bd8782ee11783d9e166.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/734ccac4c569241b97bd401d6e3d2ddbe7a48523c1039bd8782ee11783d9e166.jpg",
+      "bytes": 339845,
+      "sha256": "734ccac4c569241b97bd401d6e3d2ddbe7a48523c1039bd8782ee11783d9e166",
+      "candidate": "art-factory/rts/runs/procedural-gauntlet/candidate-materials/unit-shared/734ccac4c569241b97bd401d6e3d2ddbe7a48523c1039bd8782ee11783d9e166.jpg",
+      "source": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-crossbow-a2/candidate/crossbow-lod0.raw.glb",
+      "source_sha256": "6a547a428c4d5c2c79affbbde6aadfbaf7e15623ea0e66fe96c17290f8351a90",
+      "qa": "art-factory/rts/runs/procedural-gauntlet/packaging.json",
+      "qa_sha256": "7d08308155c038fe0c488a6087b028eb2544284f2c2d8a584f6bb398952a2afc",
+      "provider_models": [
+        "crossbow",
+        "crossbow-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false,
+      "note": "Exact encoded bytes embedded as body-1024-q90 (734ccac4) / teamcloth-neutral-1024-q90 (6876bc79) in the procedural-gauntlet crossbow-a2 raw GLBs (lod0 and lod1) that were packaged into the published crossbow/crossbow-lod1; externalized losslessly (procedural-gauntlet/packaging.json: byte-identical shipped file)."
+    },
+    {
+      "id": "unit-shared-964dae3cfa165325b1c1c6164627888405d51f4bcb38823e2661edea7f8c9be4.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/964dae3cfa165325b1c1c6164627888405d51f4bcb38823e2661edea7f8c9be4.jpg",
+      "bytes": 387644,
+      "sha256": "964dae3cfa165325b1c1c6164627888405d51f4bcb38823e2661edea7f8c9be4",
+      "candidate": "art-factory/rts/runs/roster-expansion/2026-10-16-pikeman/materials/unit-shared/964dae3cfa165325b1c1c6164627888405d51f4bcb38823e2661edea7f8c9be4.jpg",
+      "source": "art-factory/rts/runs/roster-expansion/2026-10-16-pikeman/prep/candidate/body-1024-q90.jpg",
+      "source_sha256": "964dae3cfa165325b1c1c6164627888405d51f4bcb38823e2661edea7f8c9be4",
+      "qa": "art-factory/rts/runs/roster-expansion/2026-10-16-pikeman/prep/qa/team-mask-prep.json",
+      "qa_sha256": "eacb2f4ad45641527ebc12c757f6470e60b052703a957d1316919187d51cd7de",
+      "provider_models": [
+        "pikeman",
+        "pikeman-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false,
+      "user_style_approval": "pending"
+    },
+    {
+      "id": "unit-shared-01c620763f01d45b3cf76ca414f4e5c133a73ca56e9eff39fad0f5a17a360752.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/01c620763f01d45b3cf76ca414f4e5c133a73ca56e9eff39fad0f5a17a360752.jpg",
+      "bytes": 324037,
+      "sha256": "01c620763f01d45b3cf76ca414f4e5c133a73ca56e9eff39fad0f5a17a360752",
+      "candidate": "art-factory/rts/runs/roster-expansion/2026-10-16-ranger/materials/unit-shared/01c620763f01d45b3cf76ca414f4e5c133a73ca56e9eff39fad0f5a17a360752.jpg",
+      "source": "art-factory/rts/runs/roster-expansion/2026-10-16-ranger/prep/candidate/body-1024-q90.jpg",
+      "source_sha256": "01c620763f01d45b3cf76ca414f4e5c133a73ca56e9eff39fad0f5a17a360752",
+      "qa": "art-factory/rts/runs/roster-expansion/2026-10-16-ranger/prep/qa/team-mask-prep.json",
+      "qa_sha256": "6335927d681c720454271e8681e399b4a4a7ea3eeb9398370c1d2db3fa778d9f",
+      "provider_models": [
+        "ranger",
+        "ranger-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false,
+      "user_style_approval": "pending"
+    },
+    {
+      "id": "unit-shared-5ccc795754f3f935b1d0976b345fee028415bc3b17f55026f8ff97a5285f5123.jpg",
+      "status": "published",
+      "url": "/assets/games/rts/materials/unit-shared/5ccc795754f3f935b1d0976b345fee028415bc3b17f55026f8ff97a5285f5123.jpg",
+      "bytes": 583017,
+      "sha256": "5ccc795754f3f935b1d0976b345fee028415bc3b17f55026f8ff97a5285f5123",
+      "candidate": "art-factory/rts/runs/roster-expansion/2026-10-16-mage/materials/unit-shared/5ccc795754f3f935b1d0976b345fee028415bc3b17f55026f8ff97a5285f5123.jpg",
+      "source": "art-factory/rts/runs/roster-expansion/2026-10-16-mage/prep/candidate/body-1024-q90.jpg",
+      "source_sha256": "5ccc795754f3f935b1d0976b345fee028415bc3b17f55026f8ff97a5285f5123",
+      "qa": "art-factory/rts/runs/roster-expansion/2026-10-16-mage/prep/qa/team-mask-prep.json",
+      "qa_sha256": "0f45bff01f8802028c35bd6c838fc0f52d81651cab98468646d31644cd47c87e",
+      "provider_models": [
+        "mage",
+        "mage-lod1"
+      ],
+      "runtime_publish_allowed": true,
+      "commercial_quality_approved": false,
+      "user_style_approval": "pending"
+    }
+  ]
+}

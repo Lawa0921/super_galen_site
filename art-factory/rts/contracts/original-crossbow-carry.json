@@ -1,0 +1,24 @@
+{
+  "asset_id": "original-crossbow-carry",
+  "status": "partial_qa_failed",
+  "runtime_publish_allowed": false,
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source": "art-factory/rts/runs/original-crossbow-weapon/2026-10-06-v1/geometry-candidate/original-crossbow-grip.blend",
+  "source_sha256": "eda11af6d0be24b6169e6e853640a09e2adb9d048dc3e82e634ad86528fd9d85",
+  "run": "art-factory/rts/runs/original-crossbow-carry/2026-10-06-v1",
+  "scope": "Original eight-bone carry in five clips, Root-only backward Death and ground correction, local textured sleeve refit, and coincident shoulder-seam weight continuity. Full cuff topology still fails and blocks runtime publication.",
+  "preserve": ["Original 20 bind bones", "Original fingers and glove surfaces", "Original new weapon", "Waist repair", "All body topology, UVs and material assignment", "Body positions outside local sleeve; body weights outside shoulder seam groups", "Non-arm curves except Death Root"],
+  "baseline": "qa/interface-probe.json: 75 actual body/weapon triangle crossings across both LODs; all 225 sampled intersections outside closed glove. No hidden-overlap waiver.",
+  "acceptance": [
+    "Both LODs: zero noncoplanar weapon/body and weapon/glove crossings in the actual posed source",
+    "Fixed wrist targets reached without bone stretching; both grip channels retained",
+    "Terminal sleeve cap contained in actual glove; connected original sleeve has no visible hole, spike or wrist break",
+    "Stable evaluated pose in measurement and render; front/back/side/quarter inspection",
+    "Five clips and dense subframes, source/GLB parity, browser playback and independent review before runtime publication"
+  ],
+  "authorship": "Original source meshes and original authored motion only; no third-party model, rig, animation or mocap.",
+  "preview": "http://127.0.0.1:4334/crossbow-carry/",
+  "candidate_sha256": "ee845a8004fd2267070e1459fa97da17d4b9797458185c012f1527303d9718bd",
+  "remaining": ["Repair full original wrist boundary topology and contain the complete edge/face interface", "Dense source/exported glove interface verification", "Shoulder surface quality beyond coincident seams", "Aim direction, reload/readability and full motion quality", "Glove material and overall character art acceptance"],
+  "user_overall_art_acceptance": "pending-user-preview"
+}

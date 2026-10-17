@@ -1,0 +1,40 @@
+{
+  "asset_id": "original-guard-grip-fit",
+  "category": "original_3d_character_equipment_fit_candidate",
+  "status": "candidate",
+  "runtime_publish_allowed": false,
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "run": "art-factory/rts/runs/original-guard-grip-fit/2026-10-05",
+  "source_glove": "art-factory/rts/runs/original-guard-grip-channel/2026-10-05/candidate/original-guard-grip-channel.blend",
+  "source_glove_sha256": "314e914e04a8a6a095338afe1c6d558a7976639796ebc6c81a7dad71001f9628",
+  "source_glove_independent_review": "art-factory/rts/runs/original-guard-grip-channel/2026-10-05/qa/independent-review.json",
+  "source_sword": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/guard-production-v1.blend#KingdomSteelSword_LOD0",
+  "source_sword_sha256": "61f426ec6df5865798d34cd79ea6bd34472a60c04661e0a2fb971da8003bebf2",
+  "source_sword_scope": "Project-original dimensional reference only; sword art itself is not approved for runtime.",
+  "ownership_basis": "Original project-generated glove and original project-authored sword geometry only; no third-party model, rig, or motion.",
+  "method": "Rigid uniform 0.9 scale and 90 degree axial spin about the measured original glove channel, aligned to the actual sword handle centre; no glove or sword mesh vertices were edited.",
+  "contact_gap_m": [0.0003, 0.0008],
+  "finger_side_definition": "Measured channel axis with source-local +X projected onto its perpendicular plane; only strictly positive signed half-space counts. Four axial windows remain geometric proxies, not semantic finger-pad segmentation.",
+  "qa_gates": [
+    "Source file hashes and local mesh fingerprints preserved",
+    "Full sword and glove triangle crossing count zero with containment check",
+    "Each of four finger-side longitudinal contact zones has two or more wrap samples within 0.3–0.8 mm",
+    "Crossguard, ricasso and pommel have positive measured sample clearance",
+    "Five or more visual views including axial end and full sword proportion",
+    "Both original mesh objects included in saved Blend and exported GLB"
+  ],
+  "qa": "art-factory/rts/runs/original-guard-grip-fit/2026-10-05/qa/diagnose-s0.900-spin90.json",
+  "finger_side_contact_qa": "art-factory/rts/runs/original-guard-grip-fit/2026-10-05/qa/finger-side-contact.json",
+  "candidate_blend": "art-factory/rts/runs/original-guard-grip-fit/2026-10-05/candidate/original-guard-grip-fit.blend",
+  "candidate_glb": "art-factory/rts/runs/original-guard-grip-fit/2026-10-05/candidate/original-guard-grip-fit.glb",
+  "review": "art-factory/rts/runs/original-guard-grip-fit/2026-10-05/review.html",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "non_claims": [
+    "Local rigid grip fit is not approval of the glove's rounded fingertips, thumb web, closed wrist, material, retopology, rigging or animation.",
+    "This does not approve the project-original dimensional reference sword as final art.",
+    "No forearm attachment, character assembly or runtime publication in this run."
+  ]
+}

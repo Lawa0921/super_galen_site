@@ -1,0 +1,370 @@
+{
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screens": [
+    {
+      "id": "rts-modular-kingdom-review",
+      "assets": [
+        "townhall",
+        "townhall-tier2",
+        "townhall-tier3",
+        "barracks",
+        "stable",
+        "workshop",
+        "house",
+        "lumbermill",
+        "forge",
+        "altar",
+        "tower",
+        "chapel",
+        "stone-bridge"
+      ],
+      "contract": "art-factory/rts/contracts/modular-kingdom.json",
+      "runtime": "review only; original runtime restored",
+      "review_surface": "http://127.0.0.1:4334/modular-kingdom/",
+      "processing": "Original linked collection kit and recipe assembly; material-batched GLB",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "assembly_status": "assembly-reviewed; performance-gate-failed"
+    },
+    {
+      "id": "rts-original-crossbow-cuff-review",
+      "assets": [
+        "original-crossbow-cuff-motion"
+      ],
+      "contract": "art-factory/rts/contracts/original-crossbow-cuff-motion.json",
+      "runtime": null,
+      "review_surface": "http://127.0.0.1:4334/crossbow-cuff/",
+      "processing": "Original contour correspondence and co-rotating cuff sections; rejected corrective poses isolated.",
+      "qa": [
+        "Source preservation",
+        "Dense animated cuff strain",
+        "GLB and browser review",
+        "Independent visual review"
+      ],
+      "assembly_status": "inner-cuff-collapse-and-art-failed",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false
+    },
+    {
+      "id": "rts-original-crossbow-articulated-review",
+      "assets": [
+        "original-crossbow-articulated-hand"
+      ],
+      "contract": "art-factory/rts/contracts/original-crossbow-articulated-hand.json",
+      "runtime": null,
+      "review_surface": "http://127.0.0.1:4334/crossbow-articulated/",
+      "processing": "Merge original articulated left hand into original full crossbowman; author hand/arm/weapon coordination.",
+      "qa": [
+        "Actual rig merge and skin equivalence",
+        "Full-character cuff and weapon contact",
+        "All-clips GLB/browser parity",
+        "Independent whole-character art review"
+      ],
+      "assembly_status": "dynamic-cuff-deformation-failed",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false
+    },
+    {
+      "id": "rts-original-hand-power-grip-review",
+      "assets": [
+        "original-glove-power-grip"
+      ],
+      "contract": "art-factory/rts/contracts/original-glove-power-grip.json",
+      "runtime": null,
+      "review_surface": "http://127.0.0.1:4334/glove-natural/",
+      "processing": "Original thumb ownership repair and simultaneous five-finger motion. Weapon placement remains an unsuccessful experiment.",
+      "qa": [
+        "Natural encircling silhouette",
+        "Original mesh/binding preservation",
+        "Actual pad contact normals",
+        "Hand self and full weapon triangles",
+        "GLB motion parity and browser"
+      ],
+      "assembly_status": "local-five-finger-motion-verified-grasp-art-and-character-fit-pending",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false
+    },
+    {
+      "id": "rts-original-hand-weapon-contact-review",
+      "assets": [
+        "original-glove-weapon-fit"
+      ],
+      "contract": "art-factory/rts/contracts/original-glove-weapon-fit.json",
+      "runtime": null,
+      "review_surface": "http://127.0.0.1:4334/glove-weapon-fit/",
+      "processing": "Original articulated hand fitted to the actual original complete crossbow; clay hand inspection only.",
+      "qa": [
+        "Pinned original geometry and binding",
+        "Full weapon and hand triangle intersections",
+        "Actual contact distances and pad normals",
+        "Open/hold/release interpolation",
+        "Actual GLB and browser"
+      ],
+      "assembly_status": "local-contact-motion-verified-grasp-art-and-character-fit-pending",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "evidence": "art-factory/rts/runs/original-glove-weapon-fit/2026-10-07-v1"
+    },
+    {
+      "id": "rts-original-hand-joint-review",
+      "assets": [
+        "original-glove-joints"
+      ],
+      "contract": "art-factory/rts/contracts/original-glove-joints.json",
+      "runtime": null,
+      "review_surface": "http://127.0.0.1:4334/glove-roots/",
+      "processing": "Original source hand, continuous harmonic root weights and source-derived Middle MCP flexion. Full grasp still fails.",
+      "qa": [
+        "Exact rest geometry/bones and distal weights",
+        "660 local source poses",
+        "660 actual GLB local poses",
+        "385 OpenClose skin/vertex export samples",
+        "Chromium playback and failed-grasp labeling"
+      ],
+      "assembly_status": "local-root-and-distal-poses-verified-full-grasp-failed",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "evidence": "art-factory/rts/runs/original-glove-joints/2026-10-07-v2/qa/release-results.json"
+    },
+    {
+      "id": "rts-original-hand-retopo-review",
+      "assets": [
+        "original-glove-retopo"
+      ],
+      "contract": "art-factory/rts/contracts/original-glove-retopo.json",
+      "runtime": null,
+      "review_surface": "http://127.0.0.1:4334/glove-retopo/",
+      "processing": "Original sculpt to source-constrained quad base; inspection clay only. Current candidate has no skeleton or animation.",
+      "qa": [
+        "pinned source and preview hashes",
+        "static surface topology and crossings",
+        "bidirectional vertex distance measurements",
+        "seven Blender views",
+        "four Chromium views and interactions",
+        "future joint loops, original rig, motion and character fit"
+      ],
+      "assembly_status": "static-basis-conditionally-accepted-joint-retopology-pending",
+      "status": "qa_failed",
+      "runtime_publish_allowed": false,
+      "evidence": "art-factory/rts/runs/original-glove-retopo/2026-10-07-v1/qa/release-results.json"
+    },
+    {
+      "id": "rts-original-hand-articulation-review",
+      "assets": [
+        "original-articulated-glove"
+      ],
+      "contract": "art-factory/rts/contracts/original-articulated-glove.json",
+      "runtime": null,
+      "review_surface": "http://127.0.0.1:4334/articulated-glove/",
+      "processing": "Original connected five-digit surface, authored finger skeleton and OpenClose; source Blender to embedded GLB. Project-generated leather tile, opaque surface.",
+      "qa": [
+        "closed genus-zero mesh",
+        "full-motion surface deformation",
+        "fixed wrist and bone lengths",
+        "GLB skin/surface parity",
+        "both hands and LODs in Chromium",
+        "anatomy and glove construction",
+        "future character and weapon fit"
+      ],
+      "assembly_status": "standalone-mechanics-reviewed-art-unfinished",
+      "runtime_publish_allowed": false,
+      "evidence": "art-factory/rts/runs/original-articulated-glove/2026-10-06-v1"
+    },
+    {
+      "id": "rts-selection-portrait",
+      "assets": [
+        "worker",
+        "guard",
+        "crossbow",
+        "priest",
+        "knight",
+        "siege",
+        "commander",
+        "neutral-raider",
+        "command-panel"
+      ],
+      "contract": "art-factory/rts/contracts/selection-portraits.json",
+      "runtime": "/games/rts #rts-portrait-view",
+      "processing": "Live LOD0 Idle closeup, existing 96px nine-slice without center fill; no new bitmap assets",
+      "qa": [
+        "eight kinds animate",
+        "head/rider/machinery framing",
+        "team tint",
+        "pause/reduced motion",
+        "fog/death clearing",
+        "DPR/resize",
+        "one WebGL context",
+        "80/20 load"
+      ],
+      "assembly_status": "root-and-independent-consultant-reviewed",
+      "user_overall_art_acceptance": "pending-user-preview",
+      "evidence": "art-factory/rts/runs/selection-portraits/2026-10-05"
+    },
+    {
+      "id": "rts-lobby",
+      "assets": [
+        "menu-keyart"
+      ],
+      "runtime": "/games/rts",
+      "qa": [
+        "desktop map selection",
+        "mobile notice",
+        "DOM text remains localizable"
+      ],
+      "evidence": "art-factory/rts/runs/final-assembly/2026-10-05/lobby.png",
+      "assembly_status": "root-reviewed-formal-assets",
+      "user_overall_art_acceptance": "pending-user-preview"
+    },
+    {
+      "id": "rts-command-dock",
+      "assets": [
+        "command-panel"
+      ],
+      "processing": "nine-piece: 96px cuts from 1024px source",
+      "qa": [
+        "234x240",
+        "600x240",
+        "900x60",
+        "click targets unobstructed"
+      ],
+      "evidence": "art-factory/rts/runs/final-assembly/2026-10-05/battle-formal-integration.png",
+      "assembly_status": "root-reviewed-formal-assets",
+      "user_overall_art_acceptance": "pending-user-preview"
+    },
+    {
+      "id": "rts-battlefield",
+      "assets": [
+        "meadow-surface",
+        "townhall",
+        "townhall-tier2",
+        "townhall-tier3",
+        "house",
+        "barracks",
+        "lumbermill",
+        "forge",
+        "altar",
+        "tower",
+        "chapel",
+        "stable",
+        "workshop",
+        "stone-bridge",
+        "oak",
+        "pine",
+        "rock",
+        "gold-mine",
+        "timber-pile",
+        "dirt-road",
+        "river-water"
+      ],
+      "qa": [
+        "GLB roundtrip",
+        "scale and ground origin",
+        "tile seams",
+        "fog",
+        "two-map assembly"
+      ],
+      "assembly_status": "root-reviewed-formal-assets",
+      "user_overall_art_acceptance": "pending-user-preview",
+      "evidence": "art-factory/rts/runs/final-assembly/2026-10-05/battle-formal-integration.png",
+      "pine_evidence": "art-factory/rts/runs/highland-pine/2026-10-06-v1/qa/assembly-review.json"
+    },
+    {
+      "id": "rts-army",
+      "assets": [
+        "worker",
+        "guard",
+        "crossbow",
+        "priest",
+        "knight",
+        "siege",
+        "commander",
+        "neutral-raider"
+      ],
+      "qa": [
+        "rig and animation clips",
+        "team colors",
+        "64px silhouettes",
+        "LOD",
+        "runtime WebGL"
+      ],
+      "assembly_status": "root-reviewed-formal-assets",
+      "user_overall_art_acceptance": "pending-user-preview",
+      "evidence": "art-factory/rts/runs/final-assembly/2026-10-05/tech-production-chromium.png"
+    },
+    {
+      "id": "rts-landscape-enrichment",
+      "assets": [
+        "forest-floor",
+        "highland-scree",
+        "lush-grass",
+        "river-shingle"
+      ],
+      "contract": "art-factory/rts/contracts/landscape-enrichment.json",
+      "runtime": "/games/rts battlefield",
+      "evidence": "art-factory/rts/runs/landscape-enrichment/2026-10-05",
+      "user_overall_art_acceptance": "pending-user-preview"
+    },
+    {
+      "id": "rts-riverbank-review",
+      "assets": [
+        "river-shingle",
+        "forest-floor",
+        "lush-grass",
+        "stone-bridge-level"
+      ],
+      "contract": "art-factory/rts/contracts/riverbank.json",
+      "runtime": "candidate review only",
+      "evidence": "art-factory/rts/runs/riverbank/2026-10-07-v1/qa/channel-browser.json",
+      "assembly_status": "candidate",
+      "user_overall_art_acceptance": "pending-user-preview",
+      "runtime_publish_allowed": false
+    },
+    {
+      "id": "rts-landscape-districts",
+      "assets": [
+        "valley-undergrowth",
+        "river-gatehouse",
+        "river-shrine",
+        "highland-watchtower",
+        "quarry-ruins"
+      ],
+      "contract": "art-factory/rts/contracts/landscape-districts-2026-10-07.json",
+      "landmark_contract": "art-factory/rts/contracts/landmark-kit-2026-10-08.json",
+      "status": "published",
+      "runtime_publish_allowed": true,
+      "assembly_status": "independently reviewed and integrated locally; whole-game commercial acceptance pending",
+      "evidence": "tmp/rts/commercial-landmark-lod-browser-v2/assembly.json"
+    },
+    {
+      "id": "rts-assembly-refinement",
+      "assets": [
+        "barracks",
+        "stable",
+        "workshop",
+        "guard",
+        "guard-lod1",
+        "courtyard-earth"
+      ],
+      "contract": "art-factory/rts/contracts/assembly-refinement.json",
+      "status": "published",
+      "runtime_publish_allowed": true,
+      "review_surface": "http://127.0.0.1:4334/assembly-refinement/",
+      "evidence": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/qa/final-verification.json",
+      "assembly_status": "local-assembly-reviewed-user-overall-art-acceptance-pending"
+    },
+    {
+      "id": "rts-work-cast-review",
+      "assets": [
+        "worker",
+        "priest",
+        "commander"
+      ],
+      "contract": "art-factory/rts/contracts/work-cast.json",
+      "runtime": null,
+      "processing": "Append seven original named actions to source-locked current rigs and GLBs; no geometry/material replacement",
+      "status": "planned",
+      "runtime_publish_allowed": false,
+      "assembly_status": "pending"
+    }
+  ]
+}

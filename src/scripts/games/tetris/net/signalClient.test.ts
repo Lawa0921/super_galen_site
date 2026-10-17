@@ -86,7 +86,7 @@ describe('isValidSlot 用在 getSlot：非法槽位直接拋錯（不發 fetch�
   it('bogus 槽位 → getSlot 拋錯，不打網路', async () => {
     const spy = vi.fn();
     vi.stubGlobal('fetch', spy);
-    // @ts-expect-error 故意傳非法槽位測試 runtime 守衛
+    // 故意傳非法槽位測試 runtime 守衛（Slot 型別為 string，僅 runtime 驗證）
     await expect(getSlot('AB12C', 'bogus')).rejects.toThrow(/invalid slot/i);
     expect(spy).not.toHaveBeenCalled();
   });
@@ -94,7 +94,7 @@ describe('isValidSlot 用在 getSlot：非法槽位直接拋錯（不發 fetch�
   it('guest-9-answer 超範圍 → getSlot 拋錯，不打網路', async () => {
     const spy = vi.fn();
     vi.stubGlobal('fetch', spy);
-    // @ts-expect-error 超範圍
+    // 超範圍（僅 runtime 驗證）
     await expect(getSlot('AB12C', 'guest-9-answer')).rejects.toThrow(/invalid slot/i);
     expect(spy).not.toHaveBeenCalled();
   });

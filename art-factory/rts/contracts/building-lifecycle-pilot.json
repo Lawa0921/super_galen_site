@@ -1,0 +1,132 @@
+{
+  "status": "direction_approved_static_terminal_art_first",
+  "revision": 3,
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-building-lifecycle",
+  "scope": [
+    "house-stage3-terminal-art-only"
+  ],
+  "source_mode": "Original approved house editable kit and existing material URIs. Living/completed/staged geometry stays exact. Dedicated dead-only authored ruin may reuse chosen original pieces and add closed fracture faces; exhaustive live-triangle preservation is not a terminal-art requirement.",
+  "source_run": "art-factory/rts/runs/building-stages-remaining/2026-10-09-v2",
+  "runtime_publish_allowed": false,
+  "commercial_quality_approved": false,
+  "authoring": {
+    "retain_editable_source": true,
+    "completed_state_exact": true,
+    "clustering": "Author coherent roof panels, wall sections, posts, stonework, banners and fittings from actual original parts. Do not rotate whole stage/material slabs or sink an intact building. Keep foundation fixed; upper structure falls inward and rests as recognisable low rubble. Roofless variants require their actual crown. Tiny fittings follow their parent structural module, not 108 independently animated border pieces.",
+    "fracture_scope": {
+      "house": [
+        "Load-bearing limestone walls"
+      ],
+      "townhall-tier3": [
+        "High royal keep ashlar load-bearing mass",
+        "Full-height round ashlar tower and its three numbered peers"
+      ]
+    },
+    "fracture_reason": "Read-only source geometry audit: house bearing mass44tri and keep140tri are closed solids filling99.41%/99.26% of their boxes; four92tri tower bodies are complete solid columns. One rigid transform cannot turn those whole masses into rubble. Existing curtain wall panels, roofs and trim remain shared geometry.",
+    "fracture_rules": "Author a small number of closed coherent masonry fragments by cutting the identified original source masses. At death age0, exterior silhouette/depth/material match intact source; new interior cut faces remain internal until separation. Preserve original outer surface UVs/normals by source-face interpolation when cuts add vertices. Reuse existing shared stone material for interiors. New surfaces retain source-face/part provenance and become visible only after destruction. Ground and fragment support/collision are measured, not assumed from finite transforms.",
+    "pilot_gate": "Static stage3 house art approval first, then truthful stage0-3 and transition/swap without FX concealment, then one large-building pilot.",
+    "textures": "Reuse all existing shared material URIs, no duplicate texture payload.",
+    "download_reference_pass_bytes": 34801199,
+    "download_cap_bytes": 35000000,
+    "note": "198801-byte measured asset headroom before unpublished44966-byte FX atlas; all12 lifecycle budget remains pending.",
+    "geometry_revision": "Dedicated terminal ruin geometry is allowed; living exactness preserved. Do not require terminal mesh to keep all original exterior triangles."
+  },
+  "runtime_contract": {
+    "damage_cue": "Per-building sequence/time and actual source location on actual HP loss; no first-visible false hit.",
+    "repair_cue": "Per-building sequence/time only for actual HP gain through worker repair; construction is not repair.",
+    "integrity": "clamp(hp / (maxHp * (0.1 + 0.9 * construction)),0,1)",
+    "removal_reason": [
+      "combat",
+      "cancelled"
+    ],
+    "cancelled": "Immediate disappearance, no combat collapse or destroyed cue.",
+    "fog": "Known building snapshots freeze construction and integrity; no live hit/repair/death effect outside current team visibility.",
+    "selection": "Dead buildings have no entity picking identity.",
+    "pause": "All presentation uses simulation time and remains frozen while paused.",
+    "sharing": "Geometry is shared; per-instance cluster transforms/visibility/material state are independent. Healthy completed rendering keeps existing material-batched path."
+  },
+  "qa": [
+    "Original source and editable ruin with full helper/hash evidence",
+    "Living/completed/staged geometry remains exactly current-public directed triangles/attributes/material",
+    "Static terminal art gated independently before metadata/timeline work",
+    "Dedicated terminal source mappings identify selected reuse and new dead-only surfaces honestly",
+    "Per-owner/per-component support, true world-space render parity and visible geometry validation",
+    "If static approved: construction-stage variants and swap-before/after frames with FX on and off",
+    "Actual gzip overhead and all12-assets future budget, never inferred from one pilot"
+  ],
+  "prior_v1_metadata_contract": {
+    "scene_extra": "rtsBuildingLifecycle",
+    "version": 1,
+    "destructionSeconds": 3,
+    "damageThresholds": [
+      0.65,
+      0.3
+    ],
+    "clusters": "Unique id; pivot [x,y,z]; unit axis [x,y,z]; angle radians; translation [x,y,z]; delay seconds >=0; duration seconds >0 with delay+duration<=2.6. All coordinates GLB Y-up in unscaled scene space. Formula is pivot + axis-angle(smoothstep(age-delay)/duration)*(original-pivot) + translation*smoothstep. No scaling or vertex deformation.",
+    "anchors": "Nonempty impact and repair arrays of authored GLB Y-up positions on actual exposed structure, not arbitrary screen positions. The lowest-y point in each array must lie on an exposed stage0 foundation source face; author QA records source part/face/stage. Unfinished impacts/repairs use only that foundation point, while sustained smoke/fire is reserved for complete living buildings.",
+    "mesh_owner_extras": "Every shared structural primitive and deathReplacement owner has existing rtsConstructionStage and string rtsDestructionCluster pointing to one scene cluster. Preserve rtsPartIds/rtsSourcePartIds/rtsSourceObjects provenance. A cluster may span materials but has one stage. Replaced completedSource owners do not need a death cluster. No hidden future construction pieces.",
+    "replacement_roles": "Absent rtsLifecycleRole means shared source geometry. Replaced intact owners use rtsLifecycleRole=completedSource; fracture owners use rtsLifecycleRole=deathReplacement. Both have globally unique rtsLifecycleNodeId and rtsReplacementSet. Role owners must not nest. CompletedSource is visible only while alive, deathReplacement only during combat destruction. Neither role is visible before its construction stage.",
+    "replacementSets": "Array of {id,stage,completedOwners:string[],deathFragments:string[],swapAtDestructionAge:0}. Both lists reference rtsLifecycleNodeId, are nonempty/unique and exhaustive for that set. All referenced owners share the declared stage. Only the allowed large source masses may be replaced; shared source parts are never duplicated.",
+    "animations": "No new glTF AnimationClip; runtime evaluates the authored analytic cluster recipe from simulation time only, preserving ordinary completed batching."
+  },
+  "runtime_schema_status": "Current runtime only supports v1; v2 below is a proposed contract, not implemented or publishable.",
+  "proposed_v2_metadata": {
+    "roles": [
+      "completedSource",
+      "deathTransition",
+      "terminalRuin"
+    ],
+    "replacement_set": [
+      "id",
+      "stage",
+      "completedOwners",
+      "transitionOwners",
+      "terminalOwners",
+      "transitionStartAge=0",
+      "terminalSwapAge"
+    ],
+    "timeline": "Existing simulation time. Only already-built stages appear. Short authored transition before swap; static terminal ruin after swap until existing3s expiry.",
+    "draft_swap_seconds": [
+      0.6,
+      0.9
+    ],
+    "terminal_transform": "No analytic cluster on terminalRuin; it is authored grounded geometry.",
+    "integration_gates": [
+      "parser/version/owner exhaustiveness",
+      "exclude both death roles from living batching",
+      "LOD role/stage/swap/recipe correspondence",
+      "construction snapshot",
+      "cancel/fog/pause/restore/instance independence"
+    ]
+  },
+  "static_art_pilot": {
+    "run": "art-factory/rts/runs/building-lifecycle/2026-10-09-house-terminal-art",
+    "candidate_limit": 1,
+    "stage": 3,
+    "runtime_metadata": false,
+    "design": "4-5 low coherent rubble islands with identifiable blue slate,stone wall,broken timber and optional short chimney/portal remnant. Majority mass below original eaves.",
+    "source_mapping": "reusedSourcePartIds plus authoredDeadOnlyFaces/materials; do not claim exhaustive source triangles.",
+    "forbidden": [
+      "triangle-centroid quadrant splitting",
+      "whole-quarter bbox rigid transforms presented as authored fracture",
+      "floating retained ornaments",
+      "simple placeholder cubes",
+      "texture duplication"
+    ],
+    "views": [
+      "near PBR",
+      "far PBR",
+      "near clay",
+      "far clay",
+      "matched RTS isometric scale, clearly labelled authoring render"
+    ],
+    "gates": [
+      "closed substantial rubble geometry",
+      "each visible connected component has real support",
+      "no ground penetration/containment",
+      "same-house material language and readable low ruin silhouette"
+    ],
+    "stop": "If static art is rejected, stop; do not expand to timeline/stage variants/townhall or more candidate attempts without a concrete changed method."
+  }
+}

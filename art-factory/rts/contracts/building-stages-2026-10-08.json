@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "status": "published_local_worktree",
+  "assets": [
+    "barracks",
+    "stable",
+    "workshop"
+  ],
+  "runtime_publish_allowed": true,
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "original-published-assembly-preserving-component-partition",
+  "processing_mode": "source-authored-3d-stage-partition",
+  "screen_id": "rts-battle-construction",
+  "screen_breakdown": {
+    "assets": [
+      "barracks",
+      "stable",
+      "workshop"
+    ],
+    "progress": [
+      0,
+      0.2,
+      0.5,
+      0.75,
+      1
+    ]
+  },
+  "scene_extras": {
+    "rtsConstruction": {
+      "version": 1,
+      "thresholds": [
+        0,
+        0.18,
+        0.55,
+        0.82
+      ],
+      "stages": [
+        {
+          "id": 0,
+          "name": "foundation-courtyard"
+        },
+        {
+          "id": 1,
+          "name": "bearing-structure"
+        },
+        {
+          "id": 2,
+          "name": "roof-gables"
+        },
+        {
+          "id": 3,
+          "name": "openings-fittings"
+        }
+      ]
+    }
+  },
+  "node_extras": {
+    "rtsConstructionStage": "integer 0..3",
+    "rtsPartIds": "recipe instance ID array",
+    "rtsSourcePartIds": "kit part ID array",
+    "rtsSourceObjects": "source editable mesh name array"
+  },
+  "visibility": "construction >= thresholds[rtsConstructionStage]; construction=1 shows every node",
+  "coordinate": "source Blender Z-up front -Y; GLB Y-up front +Z; meters; identity batch pivot and scale",
+  "source_preservation": "Materialized evaluated original components with editable individual meshes, original UV/material and saved packed textures; original inputs retained unchanged",
+  "stage_order": [
+    "foundation/courtyard including courtyard entry steps",
+    "bearing walls/posts/beams/stairs and structural iron joinery",
+    "complete source roof assemblies including gables and eaves",
+    "doors/windows/banners/nonbearing equipment"
+  ],
+  "forbidden": [
+    "third-party art",
+    "new primitive placeholder geometry",
+    "whole-building sinking",
+    "vertex deformation",
+    "texture changes",
+    "external deployment without explicit authorization"
+  ],
+  "qa_gates": [
+    "classification red-green tests incl bridge/ridge",
+    "assembly/recipe/kit SHA and part signatures",
+    "source vs joined triangle/position/UV/material equivalence",
+    "published vs candidate actual GLB Blender reimport equivalence",
+    "0/.2/.5/.75/1 fixed-camera renders",
+    "Khronos validator zero errors",
+    "bytes/gzip and material-stage drawcalls"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "Independent asset and code consultants plus root browser evidence review passed for these three stage assets",
+  "source_lock": "art-factory/rts/runs/building-stages/2026-10-08-v1/raw/inputs/source-lock.json",
+  "normal_roundtrip_exception": {
+    "method": "Preserve original source-authored normals; measure complete directed triangle/corner pairs; reject guessed normal restoration",
+    "tolerance_vector_delta": 0.005,
+    "maximum_measured_vector_delta": 0.004093272342177844,
+    "independent_completed_AB_review": "pending root"
+  },
+  "qa_status": "mechanical checks passed; independent root stage/support and A/B review pending",
+  "publication_scope": "Root integration after exact-source, asset, code and actual-browser reviews; no external deployment",
+  "root_publication_review": "art-factory/rts/runs/building-stages/2026-10-08-v1/qa/root-publication-review.json"
+}

@@ -1,0 +1,30 @@
+{
+  "asset_id": "original-guard-arm-surface-patch-diagnostic",
+  "category": "original_3d_local_surface_retopology_method_proof",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "run": "art-factory/rts/runs/original-guard-arm-surface-patch/2026-10-05",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "source": "art-factory/rts/runs/original-guard-shape/2026-10-05/candidate/candidate-body.glb",
+  "source_sha256": "b2a94ddd3c7f66ea8e1edf993fce13ce4c24a795b9106076648e773ebffecdfd",
+  "baseline": "art-factory/rts/runs/original-guard-arm-articulation/2026-10-05/candidate/original-guard-arm-articulation.json",
+  "mode_inference_decision": {
+    "selected_profile": "original_3d_source_fit_candidate_only",
+    "confidence": "high",
+    "rationale": "Only bounded local outer grid patches are faired against original source vertices. Existing original rig and motion are reused for diagnostics. No third-party character, rig or mocap is used."
+  },
+  "method": "One original-source-nearest guided outer-grid patch, fixed unselected perimeter, at most 6 mm movement; one correction changes the local inner treatment from discontinuous per-vertex miters to continuous co-movement.",
+  "qa": [
+    "art-factory/rts/runs/original-guard-arm-surface-patch/2026-10-05/qa/source-patch.json",
+    "art-factory/rts/runs/original-guard-arm-surface-patch/2026-10-05/qa/geometry-audit.json",
+    "art-factory/rts/runs/original-guard-arm-surface-patch/2026-10-05/qa/pose-report.json"
+  ],
+  "failed_gates": [
+    "Neutral and all measured poses retain 16 upper-arm and 22 forearm nonadjacent triangle self intersections.",
+    "Incident normal thickness falls below the 1.5 mm lower bound on upper armor, forearm armor and sleeve; some are nearly zero despite 2 mm paired-vertex distance.",
+    "Upper vertex 74 and forearm vertex 40 still fail local miter feasibility.",
+    "Upper and forearm nearest-source residuals worsen after fairing; neutral section gaps remain visible."
+  ]
+}

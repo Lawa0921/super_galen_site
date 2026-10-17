@@ -1,0 +1,22 @@
+{
+  "asset_id": "original-glove-sculpt",
+  "status": "qa_failed",
+  "sculpt_basis_review": "accepted_for_original_deformable_retopology",
+  "candidate_revision": "v4-connected-surface-fairing",
+  "candidate_sha256": "1c6e1129c1fa00c9839ace8fd3ef1fea233740b77814a22c9b4c266744ea60b0",
+  "run": "art-factory/rts/runs/original-glove-sculpt/2026-10-06-v1",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source": "art-factory/rts/runs/original-glove-shape/2026-10-06-v1/candidate/candidate.glb",
+  "source_sha256": "8c4962dd9f9789252c959f2e113a0459862cb8771cc85639a20608b9330895f9",
+  "source_mode": "Original local sculpt correction of the project-generated high-poly glove. Preserve the original source and authored rig; no stock geometry, rig or motion.",
+  "scope": "Repair inferred dorsal MCP folds, thumb web transition and cuff topology before deformable retopology. Preserve palm and finger-pad details outside explicitly recorded sculpt masks. A wrist opening is intentional, not a hole to automatically fill.",
+  "screen_id": "rts-original-hand-articulation-review",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "alpha_policy": "Opaque original 3D geometry; no alpha processing or substitute 2D asset.",
+  "qa": ["Pinned source and local edit provenance", "Explicit masks and protected-region displacement", "No near-zero faces or unexpected open/nonmanifold edges", "One intentional closed wrist boundary loop", "Same-view clay comparison of front, back and side", "Independent visual review before retopology", "Real browser view/rotate/error checks of exported GLB"],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": false,
+  "unfinished": ["Deformable retopology with four MCP volumes and joint loops", "Wrist thickness and actual sleeve/weapon fit", "Original rig/motion adaptation and open/half/grip inspection", "UV/material bake", "Character/portrait assembly", "Performance"],
+  "qa_report": "art-factory/rts/runs/original-glove-sculpt/2026-10-06-v1/qa/release-results.json"
+}

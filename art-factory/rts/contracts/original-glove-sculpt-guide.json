@@ -1,0 +1,19 @@
+{
+  "asset_id": "original-glove-sculpt-guide",
+  "status": "qa_failed",
+  "run": "art-factory/rts/runs/original-glove-sculpt-guide/2026-10-06-v1",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "Builtin imagegen original glove concept/reference; no third-party model, photograph, brand or character reference",
+  "processing_mode": "opaque_background",
+  "intended_use": "Original sculpt/tailoring reference and possible local original 3D shape generation input; not a runtime sprite, portrait substitute, completed mesh or competing style guide",
+  "background_policy": "Plain light neutral opaque studio background for shape reference; magenta is inappropriate for this non-runtime 3D input/reference",
+  "screen_id": "rts-original-hand-articulation-review",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": false,
+  "generated_source": "art-factory/rts/runs/original-glove-sculpt-guide/2026-10-06-v1/raw/palm-sculpt-reference-v1.png",
+  "source_sha256": "4e3c942c68e42a3698a730b4e028d2c76c112dc34d1a5faa2c95279561716b1d",
+  "disposition": "Useful original LEFT-palm tailoring reference; requested RIGHT orientation was not satisfied and remains recorded. Reference-only use does not approve a 3D asset or runtime publication.",
+  "qa": ["Exactly one original right glove, five clearly separated correct digits", "Visible natural palm/thumb pads and curved web gussets", "Plausible stitched leather construction and original subdued medieval style", "No text/logo/watermark/extra object", "Image only: no claim of completed 3D quality or animation"]
+}

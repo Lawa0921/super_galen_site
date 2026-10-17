@@ -1,0 +1,30 @@
+{
+  "asset_id": "command-panel",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "status": "published",
+  "category": "ui_frame",
+  "source_mode": "builtin-imagegen",
+  "postprocess": "magenta-key-nine-slice",
+  "alpha_policy": "opaque-surface-transparent-exterior",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "root-reviewed; user overall art acceptance pending",
+  "runtime_publish_allowed": true,
+  "slices": {
+    "top": 96,
+    "right": 96,
+    "bottom": 96,
+    "left": 96
+  },
+  "raw_path": "art-factory/rts/runs/command-panel/v1/raw/panel.png",
+  "target": "public/assets/games/rts/ui/command-panel.png",
+  "qa_gates": [
+    "straight parallel repeatable sides",
+    "no baked text or icons",
+    "transparent exterior",
+    "no magenta residue",
+    "ornament confined to corner patches",
+    "nine slice render at 3 aspect ratios"
+  ],
+  "assembly_review": "root inspected formal Chromium battlefield, technology and natural two-map campaign screenshots; user overall art acceptance pending",
+  "assembly_evidence": "art-factory/rts/runs/final-assembly/2026-10-05/root-review.json"
+}

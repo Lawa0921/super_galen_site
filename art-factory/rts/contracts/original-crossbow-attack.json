@@ -1,0 +1,36 @@
+{
+  "asset_id": "original-crossbow-attack",
+  "status": "qa_failed",
+  "source": "art-factory/rts/runs/original-crossbow-drape/2026-10-06-v1/candidate/original-crossbow-grip.blend",
+  "source_sha256": "b71117a218a8eba1a45b52309fcb816a6749a5d88abd5d1d5d966bde958b9181",
+  "run": "art-factory/rts/runs/original-crossbow-attack/2026-10-06-v1",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "Original locally authored motion on this project's original rig, body, gloves and crossbow. No stock model, rig, mocap or animation.",
+  "scope": "Replace generic Attack micro-recoil with readable raise/aim, release/recoil, lower, reload gesture and recovery. Diagnose physical muzzle alignment to character forward and arm reach before authoring. Preserve the original skirt UV repair and unrelated clips; mesh/rig edits, if necessary for a real reload mechanism, require explicit provenance within this run.",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending; independent local subset review recorded, complete character not approved",
+  "runtime_publish_allowed": false,
+  "qa": [
+    "Original baseline fails a specific visible motion requirement",
+    "Source hashes, original mesh/UV/material/skin/bind provenance and unchanged unrelated actions",
+    "At release the actual modeled bolt rail faces character forward rather than sideways",
+    "Separate aim, recoil, reload and recover poses; compatible endpoints",
+    "Both arm chains stay reachable without bone stretching or pose discontinuities",
+    "Complete source and exported GLB sampled for weapon/body, wrist and grip continuity",
+    "Both LODs, both teams, actual browser playback, frame seeking and closeup/RTS review",
+    "Independent visual review; do not equate motion metrics with commercial art approval"
+  ],
+  "remaining_outside_scope": "Glove sculpt and material quality, face/body sculpt cleanup, walk cycle, all other units, cliff/bank/ruin map art, final real-game/portrait/performance and overall user art acceptance remain requirements. A reload hand gesture alone is not a working animated crossbow mechanism.",
+  "latest_candidate_files_sha256": {
+    "original-crossbow-grip-lod0.glb": "964212a28675df22310e600b6759e34c13dbc292d229dc42b603da25302c76ba",
+    "original-crossbow-grip-lod1.glb": "49e604afcf3a4ab1dfc0c402e7238d2691ba5ad0fbb5be1ddb4f46acf23693af",
+    "original-crossbow-grip.blend": "5ab95a9b070d33a83ccc871ce092414ad513804152fc38e73f70b02556117c37"
+  },
+  "review_evidence": "art-factory/rts/runs/original-crossbow-attack/2026-10-06-v1/qa/root-review.json",
+  "blocking_failures": [
+    "Left closed glove / sleeve penetrates stock, rail, string and fittings during post-shot hand gesture",
+    "No finger opening/closing, no working string/bolt mechanism",
+    "Face, glove sculpt/material, recoil expression and whole-character commercial quality still unfinished",
+    "Real-game projectile release timing, portrait and performance not validated for this candidate"
+  ]
+}

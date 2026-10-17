@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>雙河谷地｜原創河岸</title><link rel="stylesheet" href="./handoff-20261006.css"></head>
+<body><header><div><p class="eyebrow">RTS · ORIGINAL WORLD ART</p><h1>雙河谷地 · 河谷修整</h1><p>彎曲河道、立體岸坡與接地石橋，保留兩條進攻路線。</p></div><a class="game-link" href="/games/rts/">開啟遊戲 ↗</a></header>
+<main><section class="viewer" id="stage"><canvas id="world"></canvas><canvas id="overlay" hidden></canvas><div class="stage-caption"><strong id="name">雙河谷地</strong><span id="status">載入實際場景中…</span></div><p id="error" hidden></p></section>
+<aside><label for="map">地圖<select id="map"><option value="river">雙河谷地</option><option value="pass">灰脊隘口</option></select></label><fieldset><legend>河岸</legend><div class="actions"><button id="candidate" aria-pressed="true">目前地景</button><button id="original" aria-pressed="false">原來畫面</button></div></fieldset>
+<label for="view">鏡頭<select id="view"><option value="north">北橋與河岸</option><option value="south">南橋與河岸</option><option value="bank">岸邊近景</option><option value="overview">地圖總覽</option></select></label>
+<fieldset><legend>探索</legend><div class="actions"><button id="reveal" aria-pressed="true">顯示全圖</button><button id="scouted" aria-pressed="false">已探索</button><button id="fog" aria-pressed="false">開局視野</button></div></fieldset>
+<div class="actions"><button id="walk">查看工人過橋</button></div>
+<p class="notes">使用遊戲的實際場景、尋路與原創模型。新版河谷已接入本機遊戲；人物與其他地圖美術仍待完成。</p><dl><dt>地表三角面</dt><dd id="pieces">—</dd><dt>地表繪製批次</dt><dd id="batches">—</dd></dl>
+<p class="footnote">全圖與過橋功能供美術檢查；過橋示範暫時停用戰鬥。可切換原來畫面比較。</p></aside></main><script type="module" src="../tools/riverbank_review_scene.ts"></script></body></html>

@@ -16,7 +16,7 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
-    include: ['src/**/*.{test,spec}.{js,ts}'],
+    include: ['src/**/*.{test,spec}.{js,ts}', 'tests/helpers/**/*.test.ts'],
     exclude: ['node_modules', 'dist', '.git'],
     coverage: {
       reporter: ['text', 'html'],

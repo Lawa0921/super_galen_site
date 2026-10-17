@@ -1,0 +1,12 @@
+import {createRequire} from 'node:module';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
+const require=createRequire(import.meta.url);
+const validator=require('C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tmp/rts/handoff-20261006/validator/node_modules/gltf-validator');
+const run=path.resolve('art-factory/rts/runs/guard-hand-glove/2026-10-09-v2');
+const bytes=await fs.readFile(path.join(run,'candidate/guard-right-hand-soft-glove-clay-lod0.glb'));
+const result=await validator.validateBytes(new Uint8Array(bytes),{uri:'guard-right-hand-soft-glove-clay-lod0.glb'});
+await fs.writeFile(path.join(run,'qa/gltf-validator.json'),JSON.stringify({candidate_sha256:crypto.createHash('sha256').update(bytes).digest('hex'),issues:result.issues,runtime_publish_allowed:false},null,2)+'\n');
+console.log(JSON.stringify({errors:result.issues.numErrors,warnings:result.issues.numWarnings,infos:result.issues.numInfos}));
+if(result.issues.numErrors)process.exitCode=1;

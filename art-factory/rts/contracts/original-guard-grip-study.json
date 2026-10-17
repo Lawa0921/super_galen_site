@@ -1,0 +1,21 @@
+{
+  "asset_id": "original-guard-right-grip-study",
+  "category": "original_character_equipment_reference",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "status": "raw_generated",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "mode_inference_decision": {"selected_profile":"ui_mockup_only","confidence":"high","rationale":"Original three-view modeling reference only; no reference-sheet pixels enter runtime. Solid magenta permits deterministic subject isolation if a view is accepted."},
+  "source_reference": "art-factory/rts/runs/guard-neural-pilot/v3/raw/front-input.png",
+  "source_reference_sha256": "42f9d67e25d0fc1530554c6a25d461c51a47aa2ccf44cd7a5ec4df67aeaf6d0b",
+  "generator": "builtin_imagegen",
+  "run": "art-factory/rts/runs/original-guard-grip-study/2026-10-05",
+  "invariants": ["Original kingdom guard identity", "Weathered steel plate gauntlet with warm brass edge and brown leather palm", "Right hand, four fingers and one thumb", "Credible fully closed sword power grip", "Consistent same-hand pose and scale in all views"],
+  "qa_gates": ["Thumb opposes fingers rather than duplicating a finger", "Four separate finger rhythms around handle", "No extra digits or disembodied fragments", "Plate overlaps permit knuckle bending and retain brown palm flexibility", "No impossible steel fold or visible hand/handle penetration", "All views agree on thumb side and wrist angle"],
+  "source_review": "PARTIAL: middle view supports manual grip/contact reference; left supports dorsal armor design; right supports thumb-side silhouette. Different wrist elevations prevent registered multi-view use.",
+  "limitations": ["Illustrated handle diameter is a design hint, not a measurement or fit proof", "A later original mesh must be verified against the actual sword grip geometry", "This is not an animated portrait or a finished hand mesh", "Do not combine these images as consistent multi-view reconstruction input"],
+  "alpha_policy": "opaque_solid_magenta_reference_background_no_cutout_claim"
+}

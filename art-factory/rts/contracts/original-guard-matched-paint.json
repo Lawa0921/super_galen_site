@@ -1,0 +1,34 @@
+{
+  "asset_id": "original-guard-matched-paint",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "category": "original_3d_material_camera_matched_reference",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "method": "Generate original paintover constrained by the actual frozen mesh render, then deterministically register and inspect it before any texture bake. This replaces projection of mismatched separately posed concept images; it is not another anchor correction.",
+  "mode_inference_decision": {
+    "selected_profile": "opaque_camera_matched_paint_reference",
+    "confidence": "high",
+    "rationale": "Production texture source must match the fixed 3D silhouette and plate creases; test one front image before expanding views."
+  },
+  "generator": "builtin-imagegen",
+  "edit_target": "art-factory/rts/runs/original-guard-portrait-study/2026-10-05/qa/renders/candidate-front.png",
+  "style_reference": "art-factory/rts/runs/guard-neural-pilot/v3/raw/front-input.png",
+  "alpha_policy": "Opaque exact dark studio background is an intentional exception for camera-matched projection reference. It will not be published directly. Texture sampling will use the actual rendered mesh mask; no key-color convention is needed.",
+  "invariants": [
+    "Original helmet and shoulder silhouette, mesh proportions, visor and plate-groove locations, frontal camera, crop and pose",
+    "Silver steel, narrow brass trim, navy cloth and existing original sun crest only",
+    "No third-party mesh, rig or motion"
+  ],
+  "qa_gates": [
+    "Pin input/output hashes and full prompt",
+    "Inspect silhouette registration and visor/plate-edge alignment against the actual mesh",
+    "No baked heavy cast shadows, new armor silhouettes, text, watermark or extra equipment",
+    "Do not produce further views or bake unless front paintover is viable; retain failed evidence"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "candidate": "art-factory/rts/runs/original-guard-matched-paint/2026-10-05",
+  "source_review": "partial-reference: material language only, not direct whole-image projection",
+  "independent_review": "art-factory/rts/runs/original-guard-matched-paint/2026-10-05/qa/independent-review.md"
+}

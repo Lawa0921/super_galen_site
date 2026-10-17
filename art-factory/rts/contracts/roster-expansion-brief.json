@@ -1,0 +1,61 @@
+{
+  "id": "roster-expansion-brief",
+  "date": "2026-10-16",
+  "status": "brief",
+  "purpose": "Phase 2 modeling brief for the 曦境王國 roster expansion. Simulation rules ship behind catalog `preview: true` flags (src/scripts/games/rts/catalog.ts); remove a unit's flag only after its production model is published in the model registry (REQUIRED_MODELS). Existing models must never stand in as placeholders.",
+  "faction_style": "Same 曦境王國 language as the published guard/crossbow/knight/commander: warm ivory and dawn-gold trims over blue-steel, team colour on tabards and cloth, readable silhouette at RTS camera distance, original designs only.",
+  "clip_names": "Match the published contract: Idle, Walk, Attack, Hurt, Death; casters add Cast (heroes add one Cast<Skill> clip per skill). Attack contact / projectile release frames must be recorded so catalog PROJECTILE_RELEASE_SECONDS can be locked to them.",
+  "new_buildings": [],
+  "new_buildings_note": "No new building: 長槍兵/遊俠 train at the barracks, 曦光法師 at the chapel, 獅鷲騎士 at the stable, both new heroes at the altar.",
+  "units": [
+    {
+      "kind": "pikeman", "name": "長槍兵", "role": "Cheap tier-I line infantry; spear attack deals 1.75x to cavalry (騎士).",
+      "silhouette": "Upright footman taller than the guard because of a 2.6 m pike held vertically at idle; narrow shoulders, no shield.",
+      "equipment": "Long ash pike with a leaf blade and gold collar, open sallet helmet, padded gambeson under a short breastplate, team-colour tabard.",
+      "animations": ["Idle", "Walk", "Attack (two-handed thrust, contact frame recorded)", "Hurt", "Death"],
+      "rig": "Share the guard humanoid rig and LOD scheme; new weapon socket for a two-handed pike grip (guard right-hand cage contract as reference).",
+      "sim_reference": {"radius": 0.46, "range": 1.1, "speed": 3.0}
+    },
+    {
+      "kind": "ranger", "name": "遊俠", "role": "Fast tier-II ranged scout with long sight (20); hits ground and air.",
+      "silhouette": "Light, lean archer with a hooded half-cape and a longbow taller than the crossbowman's weapon; forward-leaning run.",
+      "equipment": "Recurve longbow, back quiver, leather brigandine, soft boots, team-colour hood lining.",
+      "animations": ["Idle", "Walk (faster cadence, stride matched to speed 3.7)", "Attack (draw and loose; projectile release frame recorded, sim currently 0.4 s)", "Hurt", "Death"],
+      "rig": "Share the crossbow humanoid rig; new bow weapon and arrow projectile model (reuse the bolt projectile only as a technical reference, not as art).",
+      "sim_reference": {"radius": 0.42, "range": 7, "speed": 3.7, "projectile": "arrow, speed 20"}
+    },
+    {
+      "kind": "mage", "name": "曦光法師", "role": "Tier-II caster at the chapel: magic bolt (hits air) plus autocast 曦光術 area blast that slows.",
+      "silhouette": "Robed figure with a tall sun-disc staff; wide sleeves and a long hem distinguish it from the priest's narrower vestments.",
+      "equipment": "Staff topped with an open gold sun ring, layered ivory robes with blue-steel mantle, team-colour stole.",
+      "animations": ["Idle", "Walk", "Attack (staff thrust bolt)", "Cast (area blast, two-handed raise)", "Hurt", "Death"],
+      "rig": "Share the priest humanoid rig; new staff prop. Needs a small ground-burst effect for 曦光術 (radius 2.5 m) in a later effects pass.",
+      "sim_reference": {"radius": 0.42, "range": 7, "speed": 2.8, "spell_radius": 2.5}
+    },
+    {
+      "kind": "gryphon", "name": "獅鷲騎士", "role": "Tier-III AIR unit from the stable; flies over terrain, hits ground and air; countered by piercing (1.5x).",
+      "silhouette": "Winged gryphon (eagle fore-body, lion hind-quarters) with a hammer-armed rider; wingspan clearly wider than a knight, hovering 3-4 m above ground.",
+      "equipment": "Rider in a winged helm and light plate with a stormhammer; gryphon barding with team-colour saddle cloth and gold bridle.",
+      "animations": ["Idle (hover loop)", "Fly (forward glide/flap, replaces Walk)", "Attack (diving hammer strike)", "Hurt", "Death (fall to ground)"],
+      "rig": "New creature rig (quadruped + wings) with a rider socket; rider can reuse the knight rider's upper-body rig. Scene must lift the model by a height offset when UNITS[kind].flying is set.",
+      "sim_reference": {"radius": 0.7, "range": 2.2, "speed": 4.8, "flying": true}
+    },
+    {
+      "kind": "sage", "name": "曦光賢者", "role": "Caster hero: 曦光爆裂 (area damage), 晨輝療癒 (area heal), 破曉 (level-3 area damage + slow).",
+      "silhouette": "Elder hero in a high-collared mantle with a floating sun halo behind the head; staff longer than the mage's.",
+      "equipment": "Ornate gold-and-ivory staff, layered mantle with dawn-gradient trim, book or reliquary at the belt, team-colour sash.",
+      "animations": ["Idle", "Walk", "Attack (ranged light bolt)", "CastSunburst", "CastRadiance", "CastDaybreak", "Hurt", "Death"],
+      "rig": "Share the commander hero humanoid rig (hero scale and LOD budget); new staff and halo props.",
+      "sim_reference": {"radius": 0.5, "range": 6, "speed": 3.2}
+    },
+    {
+      "kind": "ranger-captain", "name": "遊俠隊長", "role": "Mobile ranged hero: 箭雨 (area volley), 疾行號令 (area haste), 獵殺標記 (level-3 mark: +25% damage taken).",
+      "silhouette": "Tall cloaked archer hero with a long flowing hooded cloak, falcon feather crest and a large ornate longbow.",
+      "equipment": "Gold-inlaid longbow, twin quivers, leather-and-scale armour, short sword at the hip, team-colour cloak.",
+      "animations": ["Idle", "Walk (fast)", "Attack (loose; release frame recorded, sim currently 0.4 s)", "CastVolley", "CastSprint", "CastMark", "Hurt", "Death"],
+      "rig": "Share the commander hero humanoid rig; bow handling poses can follow the ranger's bow clips.",
+      "sim_reference": {"radius": 0.5, "range": 7, "speed": 4.2}
+    }
+  ],
+  "ui_follow_up": "Each unit needs a train icon unit-<kind>.webp and each new hero skill an icon <skill>.png (sunburst, radiance, daybreak, volley, sprint, mark); hud.ts shows text-only buttons for preview units until then. Portrait framing (portrait.ts PORTRAIT_FRAMING) is added with each published model."
+}

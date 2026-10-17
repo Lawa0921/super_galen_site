@@ -43,6 +43,13 @@ describe('isExcludedFromSitemap', () => {
     expect(isExcludedFromSitemap('/privacy', translated)).toBe(true);
   });
 
+  it('尚未公開的 RTS 與模型檢視頁（noindex）不進 sitemap', () => {
+    expect(isExcludedFromSitemap('https://www.supergalen.com/games/rts/models/', translated)).toBe(true);
+    expect(isExcludedFromSitemap('/games/rts/models', translated)).toBe(true);
+    expect(isExcludedFromSitemap('/games/rts/', translated)).toBe(true);
+    expect(isExcludedFromSitemap('/games/rts', translated)).toBe(true);
+  });
+
   it('沿用未翻譯語系頁的排除規則，其餘頁面保留', () => {
     expect(isExcludedFromSitemap('/en/journal/x/', translated)).toBe(true);
     for (const p of ['/', '/journal/x/', '/ja/guild/tyou/', '/privacy-notes/', '/games/']) {

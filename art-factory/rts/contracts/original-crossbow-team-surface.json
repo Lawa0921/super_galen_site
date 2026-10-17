@@ -1,0 +1,27 @@
+{
+  "asset_id": "original-crossbow-team-surface",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source": "art-factory/rts/runs/original-crossbow-wrist-topology/2026-10-06-v1/candidate",
+  "source_blend_sha256": "1c4ccb86a79301376a18a04247df1eca1df8edbfd70a4a1956d100c7b47fabb7",
+  "scope": "Replace fragmented per-face team-color assignment with the existing per-texel team-mask material path; preserve all original albedo pixels, geometry, UVs, bones, weights and animations.",
+  "source_mode": "Deterministic blue-fabric mask derived from the original generated body atlas embedded in the source GLB; no new or third-party art.",
+  "postprocess_profile": "normal_map_2d_lighting",
+  "profile_exception": "Grayscale non-visible material-control mask, not a normal map; controls existing original fabric hue only.",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "qa": [
+    "Existing per-face material baseline fails required embedded mask",
+    "GLB binary geometry/animation/images chunk byte-identical",
+    "Only body primitive material bindings and a new masked material JSON record change",
+    "Original body albedo remains byte-identical",
+    "Metal/skin/leather mask leakage below 5 percent mean",
+    "Actual browser blue/red close views and all five original clips",
+    "No claim of geometric hole repair; inherited full-junction gate remains failed"
+  ],
+  "material_gate": "passed",
+  "complete_model_gate": "failed_inherited_geometry",
+  "qa_report": "art-factory/rts/runs/original-crossbow-team-surface/2026-10-06-v1/qa/root-review.json",
+  "alpha_policy": "Opaque grayscale material-control mask; no chroma key or visible UI pixels"
+}

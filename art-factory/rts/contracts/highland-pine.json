@@ -1,0 +1,37 @@
+{
+  "asset_id": "highland-pine",
+  "status": "published",
+  "run": "art-factory/rts/runs/highland-pine/2026-10-06-v1",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-battlefield",
+  "purpose": "Original conifer forest for Grayridge Pass, with a recognizably tapered crown distinct from river oaks.",
+  "source_mode": "Built-in imagegen original needle-bough atlas plus original authored Blender trunk/branches/canopy; reuse this project's original generated bark source with provenance.",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "root and independent consultant reviewed; user overall art acceptance pending",
+  "runtime_publish_allowed": true,
+  "alpha_policy": "Actual generated transparent alpha is retained for needle silhouettes. This 3D foliage texture is an explicit direct-alpha exception: chroma-key would risk erasing thin green needles or leaving colored fringes. Deterministic cutout threshold and color dilation are permitted; no new painted needles.",
+  "shape": {
+    "height_m": 9.6,
+    "maximum_crown_diameter_m": 6.4,
+    "trunk_at_origin": true,
+    "foliage": "Individual bough cards on radial, irregular branching layers; no whole-tree crossed billboard or cone substitute."
+  },
+  "budgets": {
+    "triangles_max": 6000,
+    "materials_max": 2,
+    "basecolor_max_px": 1024,
+    "glb_bytes_max": 1800000
+  },
+  "integration": "Replace the pass map's oak species at existing identical placements and wood-resource sites. River retains oak. Resource quantities, blocked/noBuild grids and road connectivity must remain unchanged.",
+  "qa": [
+    "Original image/raw prompt/model source hashes",
+    "Needles, cutout alpha and padding checked for fringe, crop and visible card edges",
+    "Model reimport, UV/normals, bounds, materials, GLB validator and triangle/file budgets",
+    "Full all-direction model visual review and actual RTS-scale capture",
+    "Forest instancing/fog and wood-resource harvesting preserve gameplay",
+    "Both maps and full Vitest regression plus browser interaction and performance evidence"
+  ],
+  "excluded": "No third-party model, stock foliage, rig or animation; no map route redesign in this asset change. Cliffs/river banks/ruins remain separate required map art work.",
+  "runtime_key": "pine",
+  "publication_scope": "local working copy only; accepted mid-ground assembly, external deployment not authorized"
+}

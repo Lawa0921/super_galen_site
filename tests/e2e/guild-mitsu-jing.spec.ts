@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 /**
  * Guild Member: Mitsu Jing (小靜) 頁面 E2E 測試

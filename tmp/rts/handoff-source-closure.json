@@ -1,0 +1,5106 @@
+{
+  "schema": "rts-handoff-source-closure-v1",
+  "root": ".",
+  "generated_at": "2026-10-11T11:55:49.764824+00:00",
+  "declared_source_closure": {
+    "path_strings_before_external_rejection": 368,
+    "external_originals_rejected": 3,
+    "repo_files_after_rejection": 365,
+    "repo_bytes_after_rejection": 311604704
+  },
+  "direct_test_dependencies": {
+    "declared_paths": 57,
+    "unique_repo_files_in_final_list": 57,
+    "note": "Deduplicated against declared source closure; runtime GLB images are parsed only from the 16 explicit unit GLBs."
+  },
+  "totals": {
+    "all_repo_files": {
+      "files": 429,
+      "bytes": 335649819
+    },
+    "tracked": {
+      "files": 89,
+      "bytes": 76747102
+    },
+    "visible_untracked": {
+      "files": 339,
+      "bytes": 258865045
+    },
+    "ignored": {
+      "files": 1,
+      "bytes": 37672
+    }
+  },
+  "missing": [],
+  "ignored_paths": [
+    "tmp/rts/commercial-landmark-lod-browser-v2/assembly.json"
+  ],
+  "external_originals_rejected": [
+    {
+      "kind": "declared-source-closure",
+      "ref": "art-factory/rts/manifests/ui-registry.json:/assets[0]/original_source_location",
+      "reason": "external-original-excluded"
+    },
+    {
+      "kind": "declared-source-closure",
+      "ref": "art-factory/rts/manifests/ui-registry.json:/assets[1]/original_source_location",
+      "reason": "external-original-excluded"
+    },
+    {
+      "kind": "declared-source-closure",
+      "ref": "art-factory/rts/manifests/terrain-registry.json:/assets[0]/original_source_location",
+      "reason": "external-original-excluded"
+    }
+  ],
+  "forbidden_paths_rejected": [],
+  "files": [
+    {
+      "path": "art-factory/rts/manifests/building-registry.json",
+      "bytes": 36404,
+      "kinds": [
+        "registry-definition"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/manifests/detail-material-registry.json",
+      "bytes": 10776,
+      "kinds": [
+        "registry-definition"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/manifests/map-preview-registry.json",
+      "bytes": 2754,
+      "kinds": [
+        "registry-definition"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/map-preview-registry.json"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/manifests/modular-kit-registry.json",
+      "bytes": 6069,
+      "kinds": [
+        "registry-definition"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/manifests/projectile-registry.json",
+      "bytes": 1663,
+      "kinds": [
+        "registry-definition"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/projectile-registry.json"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/manifests/prop-registry.json",
+      "bytes": 20048,
+      "kinds": [
+        "registry-definition"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/manifests/restricted-geometry-denylist.json",
+      "bytes": 54205,
+      "kinds": [
+        "direct-test-manifest"
+      ],
+      "refs": [
+        "direct-dependency:direct-test-manifest"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/manifests/runtime-qa.json",
+      "bytes": 33849,
+      "kinds": [
+        "registry-definition"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/runtime-qa.json"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/manifests/terrain-registry.json",
+      "bytes": 10443,
+      "kinds": [
+        "registry-definition"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/manifests/ui-registry.json",
+      "bytes": 36798,
+      "kinds": [
+        "registry-definition"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/manifests/unit-registry.json",
+      "bytes": 59541,
+      "kinds": [
+        "registry-definition"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/manifests/unit-shared-material-registry.json",
+      "bytes": 22883,
+      "kinds": [
+        "registry-definition"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/profile.json",
+      "bytes": 1580,
+      "kinds": [
+        "registry-definition"
+      ],
+      "refs": [
+        "art-factory/rts/profile.json"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/candidate/barracks.glb",
+      "bytes": 455096,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[3]/previous_versions[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/candidate/stable.glb",
+      "bytes": 459064,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[4]/previous_versions[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/candidate/workshop.glb",
+      "bytes": 317956,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[5]/previous_versions[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/qa/gltf-validator.json",
+      "bytes": 31265,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[3]/previous_versions[0]/qa",
+        "art-factory/rts/manifests/building-registry.json:/assets[4]/previous_versions[0]/qa",
+        "art-factory/rts/manifests/building-registry.json:/assets[5]/previous_versions[0]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/qa/preview-browser.json",
+      "bytes": 1374,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[3]/previous_versions[0]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[4]/previous_versions[0]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[5]/previous_versions[0]/assembly_evidence"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/qa/root-review.json",
+      "bytes": 2037,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[3]/previous_versions[0]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[4]/previous_versions[0]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[5]/previous_versions[0]/root_review",
+        "art-factory/rts/manifests/terrain-registry.json:/assets[8]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/assemblies/barracks.blend",
+      "bytes": 89909,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[3]/previous_versions[0]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/assemblies/stable.blend",
+      "bytes": 89736,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[4]/previous_versions[0]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/assemblies/workshop.blend",
+      "bytes": 89469,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[5]/previous_versions[0]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/dirt-road.png",
+      "bytes": 2112042,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[8]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-effects/2026-10-09-v1/candidate/building-effects-atlas.png",
+      "bytes": 44966,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[23]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-effects/2026-10-09-v1/delivery-manifest.json",
+      "bytes": 35000,
+      "kinds": [
+        "direct-effects-manifest"
+      ],
+      "refs": [
+        "direct-dependency:direct-effects-manifest"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-effects/2026-10-09-v1/qa/mechanical.json",
+      "bytes": 39513,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[23]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-effects/2026-10-09-v1/raw/provenance.json",
+      "bytes": 11998,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[23]/provenance"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-effects/2026-10-09-v1/tools/postprocess.py",
+      "bytes": 9515,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[23]/postprocess"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/candidate/altar.webp",
+      "bytes": 9326,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[16]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/candidate/barracks.webp",
+      "bytes": 12580,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[13]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/candidate/chapel.webp",
+      "bytes": 16082,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[18]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/candidate/forge.webp",
+      "bytes": 14736,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[15]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/candidate/house.webp",
+      "bytes": 15142,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[12]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/candidate/lumbermill.webp",
+      "bytes": 11892,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[14]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/candidate/stable.webp",
+      "bytes": 11936,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[19]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/candidate/tower.webp",
+      "bytes": 8702,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[17]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/candidate/townhall-tier2.webp",
+      "bytes": 10908,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[21]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/candidate/townhall-tier3.webp",
+      "bytes": 12254,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[22]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/candidate/townhall.webp",
+      "bytes": 10440,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[11]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/candidate/workshop.webp",
+      "bytes": 11160,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[20]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/input-manifest.json",
+      "bytes": 23594,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[11]/source_manifest",
+        "art-factory/rts/manifests/ui-registry.json:/assets[12]/source_manifest",
+        "art-factory/rts/manifests/ui-registry.json:/assets[13]/source_manifest",
+        "art-factory/rts/manifests/ui-registry.json:/assets[14]/source_manifest",
+        "art-factory/rts/manifests/ui-registry.json:/assets[15]/source_manifest",
+        "art-factory/rts/manifests/ui-registry.json:/assets[16]/source_manifest",
+        "art-factory/rts/manifests/ui-registry.json:/assets[17]/source_manifest",
+        "art-factory/rts/manifests/ui-registry.json:/assets[18]/source_manifest",
+        "art-factory/rts/manifests/ui-registry.json:/assets[19]/source_manifest",
+        "art-factory/rts/manifests/ui-registry.json:/assets[20]/source_manifest",
+        "art-factory/rts/manifests/ui-registry.json:/assets[21]/source_manifest",
+        "art-factory/rts/manifests/ui-registry.json:/assets[22]/source_manifest"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/pipeline.py",
+      "bytes": 16725,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[11]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[12]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[13]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[14]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[15]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[16]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[17]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[18]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[19]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[20]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[21]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[22]/postprocess"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/qa/mechanical-report.json",
+      "bytes": 14577,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[11]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[12]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[13]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[14]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[15]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[16]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[17]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[18]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[19]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[20]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[21]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[22]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/blend/altar.blend",
+      "bytes": 1278738,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[16]/editable_source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/blend/barracks.blend",
+      "bytes": 4185829,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[13]/editable_source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/blend/chapel.blend",
+      "bytes": 2158411,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[18]/editable_source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/blend/forge.blend",
+      "bytes": 2045139,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[15]/editable_source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/blend/house.blend",
+      "bytes": 2028892,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[12]/editable_source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/blend/lumbermill.blend",
+      "bytes": 1979787,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[14]/editable_source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/blend/stable.blend",
+      "bytes": 4189227,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[19]/editable_source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/blend/tower.blend",
+      "bytes": 1343496,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[17]/editable_source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/blend/townhall-tier2.blend",
+      "bytes": 2139559,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[21]/editable_source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/blend/townhall-tier3.blend",
+      "bytes": 2242673,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[22]/editable_source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/blend/townhall.blend",
+      "bytes": 2109415,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[11]/editable_source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/blend/workshop.blend",
+      "bytes": 4132130,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[20]/editable_source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/renders/altar.png",
+      "bytes": 528341,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[16]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/renders/barracks.png",
+      "bytes": 697630,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[13]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/renders/chapel.png",
+      "bytes": 617343,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[18]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/renders/forge.png",
+      "bytes": 671998,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[15]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/renders/house.png",
+      "bytes": 708568,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[12]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/renders/lumbermill.png",
+      "bytes": 647904,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[14]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/renders/stable.png",
+      "bytes": 662319,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[19]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/renders/tower.png",
+      "bytes": 487400,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[17]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/renders/townhall-tier2.png",
+      "bytes": 605981,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[21]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/renders/townhall-tier3.png",
+      "bytes": 658313,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[22]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/renders/townhall.png",
+      "bytes": 580391,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[11]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-production-icons/2026-10-09-v1/raw/renders/workshop.png",
+      "bytes": 617082,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[20]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-rubble/2026-10-09-v1/candidate/rubble-a.glb",
+      "bytes": 120612,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[13]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-rubble/2026-10-09-v1/candidate/rubble-b.glb",
+      "bytes": 103284,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[14]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-rubble/2026-10-09-v1/qa/report.json",
+      "bytes": 6202,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[13]/qa",
+        "art-factory/rts/manifests/prop-registry.json:/assets[14]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-rubble/2026-10-09-v1/raw/rubble-a.blend",
+      "bytes": 135941,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[13]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-rubble/2026-10-09-v1/raw/rubble-b.blend",
+      "bytes": 131251,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[14]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-lumbermill/2026-10-09-v1/raw/lumbermill-stage.blend",
+      "bytes": 2330614,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[7]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-lumbermill/2026-10-09-v3/candidate/lumbermill.glb",
+      "bytes": 351368,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[7]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-lumbermill/2026-10-09-v3/qa/gltf-validator-candidate.json",
+      "bytes": 13392,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[7]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-lumbermill/2026-10-09-v3/qa/root-publication-review.json",
+      "bytes": 3233,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[7]/root_review"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-lumbermill/2026-10-09-v3/qa/runtime-browser/browser-report.json",
+      "bytes": 103923,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[7]/assembly_evidence"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/candidate-runtime/altar.glb",
+      "bytes": 291484,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[9]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/candidate-runtime/chapel.glb",
+      "bytes": 1626432,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[11]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/candidate-runtime/forge.glb",
+      "bytes": 903500,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[8]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/candidate-runtime/house.glb",
+      "bytes": 808936,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[6]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/candidate-runtime/tower.glb",
+      "bytes": 549444,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[10]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/candidate-runtime/townhall-tier2.glb",
+      "bytes": 1317004,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[1]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/candidate-runtime/townhall-tier3.glb",
+      "bytes": 1884324,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[2]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/candidate-runtime/townhall.glb",
+      "bytes": 1183548,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/qa/altar/gltf-validator.json",
+      "bytes": 148,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[9]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/qa/chapel/gltf-validator.json",
+      "bytes": 149,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[11]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/qa/forge/gltf-validator.json",
+      "bytes": 148,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[8]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/qa/house/gltf-validator.json",
+      "bytes": 148,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[6]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/qa/root-publication-review.json",
+      "bytes": 3293,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[0]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[10]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[11]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[1]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[2]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[6]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[8]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[9]/root_review"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/qa/runtime-browser/browser-report.json",
+      "bytes": 213950,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[0]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[10]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[11]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[1]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[2]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[6]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[8]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[9]/assembly_evidence"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/qa/tower/gltf-validator.json",
+      "bytes": 148,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[10]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/qa/townhall-tier2/gltf-validator.json",
+      "bytes": 157,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[1]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/qa/townhall-tier3/gltf-validator.json",
+      "bytes": 157,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[2]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/qa/townhall/gltf-validator.json",
+      "bytes": 151,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[0]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-v2/assets/altar/raw/altar-stage.blend",
+      "bytes": 1886544,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[9]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-v2/assets/chapel/raw/chapel-stage.blend",
+      "bytes": 2485029,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[11]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-v2/assets/forge/raw/forge-stage.blend",
+      "bytes": 2397046,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[8]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-v2/assets/house/raw/house-stage.blend",
+      "bytes": 2378755,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[6]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-v2/assets/tower/raw/tower-stage.blend",
+      "bytes": 1896969,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[10]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-v2/assets/townhall-tier2/raw/townhall-tier2-stage.blend",
+      "bytes": 2459466,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[1]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-v2/assets/townhall-tier3/raw/townhall-tier3-stage.blend",
+      "bytes": 2523112,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[2]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages-remaining/2026-10-09-v2/assets/townhall/raw/townhall-stage.blend",
+      "bytes": 2424998,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[0]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages/2026-10-08-v1/candidate-runtime/barracks.glb",
+      "bytes": 766560,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[3]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages/2026-10-08-v1/candidate-runtime/stable.glb",
+      "bytes": 755840,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[4]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages/2026-10-08-v1/candidate-runtime/workshop.glb",
+      "bytes": 507988,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[5]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages/2026-10-08-v1/qa/browser-qa/browser-report.json",
+      "bytes": 127502,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[3]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[4]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[5]/assembly_evidence"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages/2026-10-08-v1/qa/delivery.json",
+      "bytes": 7677,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[3]/qa",
+        "art-factory/rts/manifests/building-registry.json:/assets[4]/qa",
+        "art-factory/rts/manifests/building-registry.json:/assets[5]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages/2026-10-08-v1/qa/root-publication-review.json",
+      "bytes": 5095,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[3]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[4]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[5]/root_review"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages/2026-10-08-v1/raw/assemblies/barracks.blend",
+      "bytes": 4512805,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[3]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages/2026-10-08-v1/raw/assemblies/stable.blend",
+      "bytes": 4492946,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[4]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/building-stages/2026-10-08-v1/raw/assemblies/workshop.blend",
+      "bytes": 4474592,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[5]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/command-icons/2026-10-09-v1/candidate/attack-move.png",
+      "bytes": 11804,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[2]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/command-icons/2026-10-09-v1/candidate/hold.png",
+      "bytes": 19134,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[4]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/command-icons/2026-10-09-v1/candidate/stop.png",
+      "bytes": 15940,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[3]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/command-icons/2026-10-09-v1/postprocess.py",
+      "bytes": 8824,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[2]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[3]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[4]/postprocess"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/command-icons/2026-10-09-v1/qa/independent-integration-review.json",
+      "bytes": 1808,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[2]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[3]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[4]/assembly_evidence"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/command-icons/2026-10-09-v1/qa/mechanical-report.json",
+      "bytes": 8006,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[2]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[3]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[4]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/command-icons/2026-10-09-v1/raw/attack-move.png",
+      "bytes": 1138273,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[2]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/command-icons/2026-10-09-v1/raw/hold.png",
+      "bytes": 2174020,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[4]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/command-icons/2026-10-09-v1/raw/stop.png",
+      "bytes": 1563379,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[3]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/command-panel/v1/candidate/command-panel.png",
+      "bytes": 2096231,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[0]/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/command-panel/v1/qa/report.json",
+      "bytes": 506,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[0]/qa"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/command-panel/v1/raw/panel.png",
+      "bytes": 2616058,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[0]/original_source",
+        "art-factory/rts/manifests/ui-registry.json:/assets[0]/raw"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/building-production-icons-independent-integration-review.json",
+      "bytes": 2522,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[11]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[12]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[13]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[14]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[15]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[16]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[17]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[18]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[19]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[20]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[21]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[22]/assembly_evidence"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/published-unit-source-audit.json",
+      "bytes": 25412,
+      "kinds": [
+        "direct-source-audit"
+      ],
+      "refs": [
+        "direct-dependency:direct-source-audit"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/altar.glb",
+      "bytes": 159884,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[9]/previous_versions[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/chapel.glb",
+      "bytes": 730268,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[11]/previous_versions[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/crossbow-lod1.glb",
+      "bytes": 1921124,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[15]/superseded_restricted_record/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/crossbow.glb",
+      "bytes": 2257912,
+      "kinds": [
+        "declared-source-closure",
+        "direct-positive-control"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[14]/superseded_restricted_record/candidate",
+        "direct-dependency:direct-positive-control"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/forge.glb",
+      "bytes": 409316,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[8]/previous_versions[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/house.glb",
+      "bytes": 360752,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[6]/previous_versions[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/lumbermill.glb",
+      "bytes": 206764,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[7]/previous_versions[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/ashlar-color.jpg",
+      "bytes": 412706,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/ashlar-mr.png",
+      "bytes": 33255,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[1]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/ashlar-normal.png",
+      "bytes": 132983,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[2]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/brass-color.jpg",
+      "bytes": 17520,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[3]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/brass-mr.png",
+      "bytes": 28369,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[4]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/brass-normal.png",
+      "bytes": 121084,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[5]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/cloth-mr.png",
+      "bytes": 30595,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[6]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/cloth-normal.png",
+      "bytes": 153656,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[7]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/cutstone-color.jpg",
+      "bytes": 21276,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[8]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/cutstone-mr.png",
+      "bytes": 31062,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[9]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/cutstone-normal.png",
+      "bytes": 127605,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[10]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/granite-color.jpg",
+      "bytes": 575741,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[11]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/granite-mr.png",
+      "bytes": 47754,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[12]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/granite-normal.png",
+      "bytes": 166648,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[13]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/leather-color.jpg",
+      "bytes": 18162,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[14]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/leather-mr.png",
+      "bytes": 30852,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[15]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/leather-normal.png",
+      "bytes": 128698,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[16]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/oak-color.jpg",
+      "bytes": 111849,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[17]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/oak-mr.png",
+      "bytes": 30387,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[18]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/oak-normal.png",
+      "bytes": 125983,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[19]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/slate-color.jpg",
+      "bytes": 80116,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[20]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/slate-mr.png",
+      "bytes": 29560,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[21]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/slate-normal.png",
+      "bytes": 125228,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[22]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/steel-color.jpg",
+      "bytes": 16544,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[23]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/steel-mr.png",
+      "bytes": 29337,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[24]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/steel-normal.png",
+      "bytes": 124330,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/assets[25]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/rock.glb",
+      "bytes": 122512,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[1]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/stone-bridge.glb",
+      "bytes": 190736,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[12]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/tower.glb",
+      "bytes": 322992,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[10]/previous_versions[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/townhall-tier2.glb",
+      "bytes": 669796,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[1]/previous_versions[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/townhall-tier3.glb",
+      "bytes": 944976,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[2]/previous_versions[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/townhall.glb",
+      "bytes": 581300,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[0]/previous_versions[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/qa/materials.json",
+      "bytes": 8116,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/detail-material-registry.json:/source_qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/qa/published/assembly.json",
+      "bytes": 10158,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[0]/previous_versions[0]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[10]/previous_versions[0]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[11]/previous_versions[0]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[12]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[1]/previous_versions[0]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[2]/previous_versions[0]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[6]/previous_versions[0]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[7]/previous_versions[0]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[8]/previous_versions[0]/assembly_evidence",
+        "art-factory/rts/manifests/building-registry.json:/assets[9]/previous_versions[0]/assembly_evidence",
+        "art-factory/rts/manifests/prop-registry.json:/assets[1]/assembly_evidence"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/qa/root-review.json",
+      "bytes": 3779,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[0]/previous_versions[0]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[10]/previous_versions[0]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[11]/previous_versions[0]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[12]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[1]/previous_versions[0]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[2]/previous_versions[0]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[6]/previous_versions[0]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[7]/previous_versions[0]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[8]/previous_versions[0]/root_review",
+        "art-factory/rts/manifests/building-registry.json:/assets[9]/previous_versions[0]/root_review",
+        "art-factory/rts/manifests/prop-registry.json:/assets[1]/root_review"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/qa/structural.json",
+      "bytes": 14540,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[0]/previous_versions[0]/qa",
+        "art-factory/rts/manifests/building-registry.json:/assets[10]/previous_versions[0]/qa",
+        "art-factory/rts/manifests/building-registry.json:/assets[11]/previous_versions[0]/qa",
+        "art-factory/rts/manifests/building-registry.json:/assets[12]/qa",
+        "art-factory/rts/manifests/building-registry.json:/assets[1]/previous_versions[0]/qa",
+        "art-factory/rts/manifests/building-registry.json:/assets[2]/previous_versions[0]/qa",
+        "art-factory/rts/manifests/building-registry.json:/assets[6]/previous_versions[0]/qa",
+        "art-factory/rts/manifests/building-registry.json:/assets[7]/previous_versions[0]/qa",
+        "art-factory/rts/manifests/building-registry.json:/assets[8]/previous_versions[0]/qa",
+        "art-factory/rts/manifests/building-registry.json:/assets[9]/previous_versions[0]/qa",
+        "art-factory/rts/manifests/prop-registry.json:/assets[1]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/altar.blend",
+      "bytes": 1878292,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[9]/previous_versions[0]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/chapel.blend",
+      "bytes": 2450969,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[11]/previous_versions[0]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/crossbow.blend",
+      "bytes": 2850736,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[14]/source_provenance/clean_source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[14]/superseded_restricted_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[15]/source_provenance/clean_source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[15]/superseded_restricted_record/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/forge.blend",
+      "bytes": 2377237,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[8]/previous_versions[0]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/guard.blend",
+      "bytes": 4051111,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[12]/source_provenance/clips_source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[12]/superseded_restricted_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[13]/source_provenance/clips_source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[13]/superseded_restricted_record/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/house.blend",
+      "bytes": 2359982,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[6]/previous_versions[0]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/lumbermill.blend",
+      "bytes": 2321295,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[7]/previous_versions[0]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/rock.blend",
+      "bytes": 1175136,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[1]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/stone-bridge.blend",
+      "bytes": 1880757,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[12]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/tower.blend",
+      "bytes": 1887341,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[10]/previous_versions[0]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/townhall-tier2.blend",
+      "bytes": 2429631,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[1]/previous_versions[0]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/townhall-tier3.blend",
+      "bytes": 2479123,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[2]/previous_versions[0]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/townhall.blend",
+      "bytes": 2404450,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[0]/previous_versions[0]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/final-assembly/2026-10-05/root-review.json",
+      "bytes": 881,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[0]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[0]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[1]/assembly_evidence"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/guard-production-v1.blend",
+      "bytes": 1344350,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[12]/source_provenance/clean_source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[13]/source_provenance/clean_source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/highland-pine/2026-10-06-v1/candidate/pine.glb",
+      "bytes": 1569104,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[4]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/highland-pine/2026-10-06-v1/qa/structural.json",
+      "bytes": 710,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[4]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/highland-pine/2026-10-06-v1/raw/pine.blend",
+      "bytes": 1648275,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[4]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/revision-20261006/candidate/worker-grip-refine.blend",
+      "bytes": 1404419,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/superseded_restricted_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/work_cast_previous/superseded_restricted_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/superseded_restricted_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/work_cast_previous/superseded_restricted_record/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v1/crossbow/candidate/crossbow-production-v1.blend",
+      "bytes": 1306326,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[14]/source_provenance/clean_body_source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[15]/source_provenance/clean_body_source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v1/neutral-raider/candidate/neutral-raider-production-lod0.glb",
+      "bytes": 1222732,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[0]/lossless_packaging/original_asset_record/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v1/neutral-raider/candidate/neutral-raider-production-lod1.glb",
+      "bytes": 969440,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[1]/lossless_packaging/original_asset_record/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v1/neutral-raider/candidate/neutral-raider-production-v1.blend",
+      "bytes": 1421099,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[0]/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[0]/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[1]/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[1]/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v1/neutral-raider/qa/three.json",
+      "bytes": 796,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[0]/lossless_packaging/original_asset_record/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[1]/lossless_packaging/original_asset_record/qa"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v1/worker/candidate/worker-production-v1.blend",
+      "bytes": 1269409,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/source_provenance/clean_source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/work_cast_previous/source_provenance/clean_source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/source_provenance/clean_source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/work_cast_previous/source_provenance/clean_source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v2/commander/candidate/commander-production-lod0.glb",
+      "bytes": 1632368,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/lossless_packaging/original_asset_record/candidate",
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/work_cast_previous/lossless_packaging/original_asset_record/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v2/commander/candidate/commander-production-lod1.glb",
+      "bytes": 1333124,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/lossless_packaging/original_asset_record/candidate",
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/work_cast_previous/lossless_packaging/original_asset_record/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v2/commander/candidate/commander-production-v2.blend",
+      "bytes": 1590978,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/work_cast_previous/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/work_cast_previous/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/work_cast_previous/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/work_cast_previous/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v2/commander/qa/three.json",
+      "bytes": 892,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/lossless_packaging/original_asset_record/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/work_cast_previous/lossless_packaging/original_asset_record/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/lossless_packaging/original_asset_record/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/work_cast_previous/lossless_packaging/original_asset_record/qa"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v2/priest/candidate/priest-production-lod0.glb",
+      "bytes": 1348956,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/lossless_packaging/original_asset_record/candidate",
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/work_cast_previous/lossless_packaging/original_asset_record/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v2/priest/candidate/priest-production-lod1.glb",
+      "bytes": 1086112,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/lossless_packaging/original_asset_record/candidate",
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/work_cast_previous/lossless_packaging/original_asset_record/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v2/priest/candidate/priest-production-v2.blend",
+      "bytes": 1454630,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/work_cast_previous/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/work_cast_previous/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/work_cast_previous/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/work_cast_previous/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/human-units/2026-10-05-v2/priest/qa/three.json",
+      "bytes": 892,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/lossless_packaging/original_asset_record/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/work_cast_previous/lossless_packaging/original_asset_record/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/lossless_packaging/original_asset_record/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/work_cast_previous/lossless_packaging/original_asset_record/qa"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-buildings/2026-10-04-v2/raw/stone-bridge.blend",
+      "bytes": 502628,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/building-registry.json:/assets[12]/original_source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-knight/2026-10-05-v3/candidate/knight-lod0.glb",
+      "bytes": 2301940,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[6]/lossless_packaging/original_asset_record/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-knight/2026-10-05-v3/candidate/knight-lod1.glb",
+      "bytes": 1889908,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[7]/lossless_packaging/original_asset_record/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-knight/2026-10-05-v3/qa/three.json",
+      "bytes": 892,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[6]/lossless_packaging/original_asset_record/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[7]/lossless_packaging/original_asset_record/qa"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-knight/2026-10-05-v3/raw/knight-lod0.blend",
+      "bytes": 2103112,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[6]/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[6]/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-knight/2026-10-05-v3/raw/knight-lod1.blend",
+      "bytes": 1756925,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[7]/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[7]/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-props/2026-10-04-oak-v2/candidate/oak.glb",
+      "bytes": 679732,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[0]/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-props/2026-10-04-oak-v2/qa/structural.json",
+      "bytes": 1847,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[0]/qa"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-props/2026-10-04-oak-v2/raw/oak.blend",
+      "bytes": 861840,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[0]/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-props/2026-10-04-original/candidate/gold-mine.glb",
+      "bytes": 780256,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[2]/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-props/2026-10-04-original/candidate/timber-pile.glb",
+      "bytes": 481792,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[3]/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-props/2026-10-04-original/qa/structural.json",
+      "bytes": 5152,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[2]/qa",
+        "art-factory/rts/manifests/prop-registry.json:/assets[3]/qa"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-props/2026-10-04-original/raw/gold-mine.blend",
+      "bytes": 1250910,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[2]/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-props/2026-10-04-original/raw/timber-pile.blend",
+      "bytes": 1237938,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[3]/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-siege/2026-10-05-rigid-skin-v3/candidate/siege-lod0.glb",
+      "bytes": 2759472,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[8]/lossless_packaging/original_asset_record/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-siege/2026-10-05-rigid-skin-v3/candidate/siege-lod1.glb",
+      "bytes": 1792536,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[9]/lossless_packaging/original_asset_record/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-siege/2026-10-05-rigid-skin-v3/qa/structural.json",
+      "bytes": 2894,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[8]/lossless_packaging/original_asset_record/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[9]/lossless_packaging/original_asset_record/qa"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-siege/2026-10-05-rigid-skin-v3/raw/siege-lod0.blend",
+      "bytes": 1474539,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[8]/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[8]/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/kingdom-siege/2026-10-05-rigid-skin-v3/raw/siege-lod1.blend",
+      "bytes": 1294431,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[9]/lossless_packaging/original_asset_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[9]/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/candidate/highland-watchtower-lod0.glb",
+      "bytes": 1063060,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[7]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/candidate/highland-watchtower-lod1.glb",
+      "bytes": 515860,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[11]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/candidate/quarry-ruins-lod0.glb",
+      "bytes": 861724,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[8]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/candidate/quarry-ruins-lod1.glb",
+      "bytes": 562224,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[12]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/candidate/river-gatehouse-lod0.glb",
+      "bytes": 1101436,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[5]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/candidate/river-gatehouse-lod1.glb",
+      "bytes": 571168,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[9]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/candidate/river-shrine-lod0.glb",
+      "bytes": 1079840,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[6]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/candidate/river-shrine-lod1.glb",
+      "bytes": 517276,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[10]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/qa/delivery-audit.json",
+      "bytes": 26200,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[10]/qa",
+        "art-factory/rts/manifests/prop-registry.json:/assets[11]/qa",
+        "art-factory/rts/manifests/prop-registry.json:/assets[12]/qa",
+        "art-factory/rts/manifests/prop-registry.json:/assets[5]/qa",
+        "art-factory/rts/manifests/prop-registry.json:/assets[6]/qa",
+        "art-factory/rts/manifests/prop-registry.json:/assets[7]/qa",
+        "art-factory/rts/manifests/prop-registry.json:/assets[8]/qa",
+        "art-factory/rts/manifests/prop-registry.json:/assets[9]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/raw/highland-watchtower.blend",
+      "bytes": 570107,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[11]/source",
+        "art-factory/rts/manifests/prop-registry.json:/assets[7]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/raw/quarry-ruins.blend",
+      "bytes": 576865,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[12]/source",
+        "art-factory/rts/manifests/prop-registry.json:/assets[8]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/raw/river-gatehouse.blend",
+      "bytes": 588898,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[5]/source",
+        "art-factory/rts/manifests/prop-registry.json:/assets[9]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/raw/river-shrine.blend",
+      "bytes": 637069,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[10]/source",
+        "art-factory/rts/manifests/prop-registry.json:/assets[6]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landscape-districts/2026-10-07-v1/candidate/valley-undergrowth.webp",
+      "bytes": 838752,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[7]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landscape-districts/2026-10-07-v1/qa/root-review.json",
+      "bytes": 683,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[7]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landscape-districts/2026-10-07-v1/raw/undergrowth.png",
+      "bytes": 2411995,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[7]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landscape-enrichment/2026-10-05/candidate/forest-floor.webp",
+      "bytes": 137380,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[4]/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landscape-enrichment/2026-10-05/candidate/highland-scree.webp",
+      "bytes": 136002,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[6]/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landscape-enrichment/2026-10-05/candidate/lush-grass.webp",
+      "bytes": 140272,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[3]/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landscape-enrichment/2026-10-05/candidate/river-shingle.webp",
+      "bytes": 135428,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[5]/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landscape-enrichment/2026-10-05/qa/root-review.json",
+      "bytes": 856,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[3]/qa",
+        "art-factory/rts/manifests/terrain-registry.json:/assets[4]/qa",
+        "art-factory/rts/manifests/terrain-registry.json:/assets[5]/qa",
+        "art-factory/rts/manifests/terrain-registry.json:/assets[6]/qa"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landscape-enrichment/2026-10-05/raw/terrain-atlas.png",
+      "bytes": 3964873,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[3]/raw",
+        "art-factory/rts/manifests/terrain-registry.json:/assets[4]/raw",
+        "art-factory/rts/manifests/terrain-registry.json:/assets[5]/raw",
+        "art-factory/rts/manifests/terrain-registry.json:/assets[6]/raw"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landscape-landmarks/2026-10-07-v1/candidate/kingdom-ruins.webp",
+      "bytes": 789532,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/retired_assets[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landscape-landmarks/2026-10-07-v1/qa/root-review.json",
+      "bytes": 683,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/retired_assets[0]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/landscape-landmarks/2026-10-07-v1/raw/ruins.png",
+      "bytes": 2481662,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/retired_assets[0]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/map-thumbnails/2026-10-09-v2/candidate/map-pass.webp",
+      "bytes": 51622,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/map-preview-registry.json:/assets[1]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/map-thumbnails/2026-10-09-v2/candidate/map-river.webp",
+      "bytes": 48286,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/map-preview-registry.json:/assets[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/map-thumbnails/2026-10-09-v2/qa/pass-capture.json",
+      "bytes": 370,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/map-preview-registry.json:/assets[1]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/map-thumbnails/2026-10-09-v2/qa/river-capture.json",
+      "bytes": 371,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/map-preview-registry.json:/assets[0]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/map-thumbnails/2026-10-09-v2/raw/pass.png",
+      "bytes": 3205655,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/map-preview-registry.json:/assets[1]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/map-thumbnails/2026-10-09-v2/raw/river.png",
+      "bytes": 3128392,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/map-preview-registry.json:/assets[0]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/meadow-surface/v1/raw/meadow.png",
+      "bytes": 3841260,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[0]/original_source",
+        "art-factory/rts/manifests/terrain-registry.json:/assets[0]/raw"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/menu-keyart/v1/candidate/menu-keyart.webp",
+      "bytes": 414170,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[1]/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/menu-keyart/v1/qa/report.json",
+      "bytes": 289,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[1]/qa"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/menu-keyart/v1/raw/keyart.png",
+      "bytes": 2945433,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[1]/original_source",
+        "art-factory/rts/manifests/ui-registry.json:/assets[1]/raw"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/altar.glb",
+      "bytes": 163316,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/candidate_prefabs[9]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/barracks.glb",
+      "bytes": 385236,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/candidate_prefabs[3]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/chapel.glb",
+      "bytes": 757476,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/candidate_prefabs[11]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/forge.glb",
+      "bytes": 424384,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/candidate_prefabs[8]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/house.glb",
+      "bytes": 374808,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/candidate_prefabs[6]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/lumbermill.glb",
+      "bytes": 207436,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/candidate_prefabs[7]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/stable.glb",
+      "bytes": 384776,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/candidate_prefabs[4]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/stone-bridge.glb",
+      "bytes": 181272,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/candidate_prefabs[12]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/tower.glb",
+      "bytes": 326684,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/candidate_prefabs[10]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/townhall-tier2.glb",
+      "bytes": 679504,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/candidate_prefabs[1]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/townhall-tier3.glb",
+      "bytes": 958164,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/candidate_prefabs[2]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/townhall.glb",
+      "bytes": 597100,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/candidate_prefabs[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/candidate/workshop.glb",
+      "bytes": 246792,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/candidate_prefabs[5]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/raw/kingdom-kit.blend",
+      "bytes": 5821089,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/modular-kit-registry.json:/library/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-crossbow-a2/candidate/crossbow-lod0.raw.glb",
+      "bytes": 2376532,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[18]/source",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[19]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-crossbow-a2/candidate/crossbow-lod1.glb",
+      "bytes": 751736,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[15]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-crossbow-a2/candidate/crossbow.glb",
+      "bytes": 1076888,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[14]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-crossbow-a2/qa/build.json",
+      "bytes": 8579,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[14]/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[15]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-crossbow-a2/raw/crossbow-procedural-gauntlet.blend",
+      "bytes": 2831843,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[14]/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[15]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-crossbow/candidate/crossbow-lod1.glb",
+      "bytes": 754864,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[15]/previous_procedural_record/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-crossbow/candidate/crossbow.glb",
+      "bytes": 1054180,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[14]/previous_procedural_record/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-crossbow/raw/crossbow-procedural-gauntlet.blend",
+      "bytes": 2809332,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[14]/previous_procedural_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[15]/previous_procedural_record/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-evidence-a2/evidence.json",
+      "bytes": 14237,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/evidence",
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/work_cast_previous/evidence",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/evidence",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/work_cast_previous/evidence",
+        "art-factory/rts/manifests/unit-registry.json:/assets[12]/evidence",
+        "art-factory/rts/manifests/unit-registry.json:/assets[13]/evidence",
+        "art-factory/rts/manifests/unit-registry.json:/assets[14]/evidence",
+        "art-factory/rts/manifests/unit-registry.json:/assets[15]/evidence"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-guard-a2/candidate/guard-lod1.glb",
+      "bytes": 919528,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[13]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-guard-a2/candidate/guard.glb",
+      "bytes": 1286196,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[12]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-guard-a2/qa/build.json",
+      "bytes": 7563,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[12]/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[13]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-guard-a2/raw/guard-procedural-gauntlet.blend",
+      "bytes": 1892845,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[12]/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[13]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-guard/candidate/guard-lod1.glb",
+      "bytes": 771316,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[13]/previous_procedural_record/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-guard/candidate/guard.glb",
+      "bytes": 1062036,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[12]/previous_procedural_record/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-guard/raw/guard-procedural-gauntlet.blend",
+      "bytes": 3745880,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[12]/previous_procedural_record/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[13]/previous_procedural_record/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-worker/candidate/worker-lod1.glb",
+      "bytes": 702732,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/work_cast_previous/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-worker/candidate/worker.glb",
+      "bytes": 966128,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/work_cast_previous/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-worker/qa/build.json",
+      "bytes": 4681,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/work_cast_previous/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/work_cast_previous/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/2026-10-09-worker/raw/worker-procedural-gauntlet.blend",
+      "bytes": 1274648,
+      "kinds": [
+        "declared-source-closure",
+        "direct-worker-source"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/work_cast_previous/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/work_cast_previous/source",
+        "direct-dependency:direct-worker-source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/candidate-materials/unit-shared/6876bc79b21aa2712acf207b7ace4aa4c9a915921a7aa63524845df76606166e.jpg",
+      "bytes": 343195,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[18]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/candidate-materials/unit-shared/734ccac4c569241b97bd401d6e3d2ddbe7a48523c1039bd8782ee11783d9e166.jpg",
+      "bytes": 339845,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[19]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/gltf-validator.json",
+      "bytes": 4830,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/validator",
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/work_cast_previous/validator",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/validator",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/work_cast_previous/validator",
+        "art-factory/rts/manifests/unit-registry.json:/assets[12]/validator",
+        "art-factory/rts/manifests/unit-registry.json:/assets[13]/validator",
+        "art-factory/rts/manifests/unit-registry.json:/assets[14]/validator",
+        "art-factory/rts/manifests/unit-registry.json:/assets[15]/validator"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/procedural-gauntlet/packaging.json",
+      "bytes": 8945,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/packaging",
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/work_cast_previous/packaging",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/packaging",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/work_cast_previous/packaging",
+        "art-factory/rts/manifests/unit-registry.json:/assets[12]/packaging",
+        "art-factory/rts/manifests/unit-registry.json:/assets[13]/packaging",
+        "art-factory/rts/manifests/unit-registry.json:/assets[14]/packaging",
+        "art-factory/rts/manifests/unit-registry.json:/assets[15]/packaging",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[18]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[19]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/projectiles/2026-10-05-v1/candidate/bolt.blend",
+      "bytes": 261260,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/projectile-registry.json:/assets[0]/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/projectiles/2026-10-05-v1/candidate/bolt.glb",
+      "bytes": 157952,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/projectile-registry.json:/assets[0]/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/projectiles/2026-10-05-v1/candidate/heavy-bolt.blend",
+      "bytes": 261286,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/projectile-registry.json:/assets[1]/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/projectiles/2026-10-05-v1/candidate/heavy-bolt.glb",
+      "bytes": 157964,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/projectile-registry.json:/assets[1]/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/projectiles/2026-10-05-v1/qa/three.json",
+      "bytes": 1513,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/projectile-registry.json:/assets[0]/qa",
+        "art-factory/rts/manifests/projectile-registry.json:/assets[1]/qa"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/candidate/armor.png",
+      "bytes": 20434,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[7]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/candidate/banner.png",
+      "bytes": 12808,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[10]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/candidate/cleave.png",
+      "bytes": 13001,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[8]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/candidate/mend.png",
+      "bytes": 18531,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[9]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/candidate/timber.png",
+      "bytes": 18173,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[5]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/candidate/weapons.png",
+      "bytes": 8521,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[6]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/postprocess.py",
+      "bytes": 6120,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[10]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[5]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[6]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[7]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[8]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[9]/postprocess"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/qa/independent-integration-review.json",
+      "bytes": 881,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[10]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[5]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[6]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[7]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[8]/assembly_evidence",
+        "art-factory/rts/manifests/ui-registry.json:/assets[9]/assembly_evidence"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/qa/mechanical-report.json",
+      "bytes": 15286,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[10]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[5]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[6]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[7]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[8]/qa",
+        "art-factory/rts/manifests/ui-registry.json:/assets[9]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/raw/armor.png",
+      "bytes": 2019120,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[7]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/raw/banner.png",
+      "bytes": 1336944,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[10]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/raw/cleave.png",
+      "bytes": 1179983,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[8]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/raw/mend.png",
+      "bytes": 1925179,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[9]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/raw/timber.png",
+      "bytes": 1780138,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[5]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/raw/weapons.png",
+      "bytes": 865958,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[6]/raw"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/terrain-detail/2026-10-05-v1/candidate/dirt-road-side-alpha.webp",
+      "bytes": 327266,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[1]/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/terrain-detail/2026-10-05-v1/candidate/river-water.webp",
+      "bytes": 154012,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[2]/candidate"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/terrain-detail/2026-10-05-v1/qa/root-review.json",
+      "bytes": 567,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[1]/qa",
+        "art-factory/rts/manifests/terrain-registry.json:/assets[2]/qa"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/terrain-detail/2026-10-05-v1/raw/dirt-road-generated.png",
+      "bytes": 3576588,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[1]/raw"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/terrain-detail/2026-10-05-v1/raw/river-water-generated.png",
+      "bytes": 2204668,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[2]/raw"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+      "bytes": 2321,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[0]/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[0]/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[1]/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[1]/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/work_cast_previous/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/work_cast_previous/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/work_cast_previous/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/work_cast_previous/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/work_cast_previous/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/work_cast_previous/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/work_cast_previous/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/work_cast_previous/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[6]/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[6]/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[7]/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[7]/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[8]/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[8]/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[9]/lossless_packaging/review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[9]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[0]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[10]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[11]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[12]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[13]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[14]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[15]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[16]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[17]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[1]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[2]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[3]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[4]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[5]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[6]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[7]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[8]/qa",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[9]/qa"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/0480f538aba09fadd6c9a9e927db9e3d69df3535e1e6e1cfb92648dbe10d068a.jpg",
+      "bytes": 323849,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/12f1bfda090863f9f38c8368f2f516ccc907dda8c569d989b32176c500d5827d.jpg",
+      "bytes": 218172,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[1]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/1d00d98cddc10f1d5632c85d0f2dd35e4b2c07758950288c826844982137cabf.jpg",
+      "bytes": 548183,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[2]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/1ff60b74c57614e08bf07acdbf3331a842e37f9a3be7429a5ae4fc49b7b8dc3e.jpg",
+      "bytes": 45737,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[3]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/3be13d5aa998f1191315fe3884dff2212e9c3ddcfad2da58273c13590d8f50f8.jpg",
+      "bytes": 59119,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[4]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/48291e623d524719184c69dccfe8af61a9ae542b01cfefef6c87bd704bbdde08.jpg",
+      "bytes": 371778,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[5]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/5e1b1738063fa92965ad824d18739ccfc7d502c8c20438175facf07d89d17042.jpg",
+      "bytes": 52904,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[6]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/5ea4347b4f41816eb5a0d7d2def486187caf2e307b7f59a7079271244a6945f2.jpg",
+      "bytes": 262086,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[7]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/842a896f9bf5a1fb8be055ae411fafbc0098bbaa5d29ce5b406a8679dfe5e5d9.jpg",
+      "bytes": 223973,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[8]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/85020c8dd228d5317775246134a1de6ceadaaa73db090277797be72455cfcc4e.jpg",
+      "bytes": 334815,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[9]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/87b9802db78aa2ced4c733fdb7c0643cc695e8e8fc99492e37a98e4154d1d65c.png",
+      "bytes": 82724,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[10]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/8e96f82bfd0354145fd829c2bc0702d1817212f0047ebc07fe7d621d16edd14c.png",
+      "bytes": 124881,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[11]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/a92600f82c60c345f784c7c615e5fbde540aa5618ce4940242d63ad39e4a7f75.png",
+      "bytes": 148427,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[12]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/b8959c92365b07dd13927b35ee34d0fc0ba064c7a8292e1dc26ff6c2357e038a.jpg",
+      "bytes": 240691,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[13]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/be27e26c863a80d2e7822195ec8ddccce2d4266ae141f20e56335c713e3248db.jpg",
+      "bytes": 331241,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[14]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/e39daadac566fd64eb04783429a56d0e8e9ba27e75a7eac67824a84ae766699a.jpg",
+      "bytes": 256240,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[15]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/f5c6e536e041d823f9669bde9990d551a3ae6074442fa0b6d8feace8353f028b.jpg",
+      "bytes": 46959,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[16]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/materials/unit-shared/fa2555e40c2dee70b3c3f7872f48df9ffb7d8bcb2ca20e11b8539464541ca556.jpg",
+      "bytes": 416275,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[17]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/commander-lod1.glb",
+      "bytes": 784812,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/work_cast_previous/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/commander.glb",
+      "bytes": 1084056,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/work_cast_previous/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/guard-lod1.glb",
+      "bytes": 2215764,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[13]/superseded_restricted_record/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/guard.glb",
+      "bytes": 2727628,
+      "kinds": [
+        "declared-source-closure",
+        "direct-positive-control"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[12]/superseded_restricted_record/candidate",
+        "direct-dependency:direct-positive-control"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/knight-lod1.glb",
+      "bytes": 823680,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[7]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/knight.glb",
+      "bytes": 1235892,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[6]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/neutral-raider-lod1.glb",
+      "bytes": 597692,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[1]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/neutral-raider.glb",
+      "bytes": 850804,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[0]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/priest-lod1.glb",
+      "bytes": 669868,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/work_cast_previous/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/priest.glb",
+      "bytes": 932556,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/work_cast_previous/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/siege-lod1.glb",
+      "bytes": 753660,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[9]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/siege.glb",
+      "bytes": 1720688,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[8]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/worker-lod1.glb",
+      "bytes": 624984,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/superseded_restricted_record/candidate",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/work_cast_previous/superseded_restricted_record/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/worker.glb",
+      "bytes": 994276,
+      "kinds": [
+        "declared-source-closure",
+        "direct-positive-control"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/superseded_restricted_record/candidate",
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/work_cast_previous/superseded_restricted_record/candidate",
+        "direct-dependency:direct-positive-control"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/commander.glb",
+      "bytes": 1632368,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[2]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/guard.glb",
+      "bytes": 2932308,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[16]/source",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[3]/source",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[4]/source",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[6]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/knight.glb",
+      "bytes": 2301940,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[0]/source",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[15]/source",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[7]/source",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[8]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/neutral-raider.glb",
+      "bytes": 1222732,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[5]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/priest.glb",
+      "bytes": 1348956,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[17]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/siege.glb",
+      "bytes": 2759472,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[10]/source",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[11]/source",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[12]/source",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[13]/source",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[1]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/raw/models/worker.glb",
+      "bytes": 1660436,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[14]/source",
+        "art-factory/rts/manifests/unit-shared-material-registry.json:/assets[9]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/candidate/commander-lod0.glb",
+      "bytes": 1155096,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/candidate/commander-lod1.glb",
+      "bytes": 855856,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/candidate/priest-lod0.glb",
+      "bytes": 956944,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/candidate/priest-lod1.glb",
+      "bytes": 694248,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/candidate/worker-lod0.glb",
+      "bytes": 1039348,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/candidate/worker-lod1.glb",
+      "bytes": 775952,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/candidate"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/root-review.json",
+      "bytes": 10492,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/root_review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/root_review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/root_review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/root_review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/root_review",
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/qa",
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/root_review"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/commander-work-cast.blend",
+      "bytes": 1611288,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/worker-lod0.glb",
+      "bytes": 966128,
+      "kinds": [
+        "direct-worker-glb-snapshot"
+      ],
+      "refs": [
+        "direct-dependency:direct-worker-glb-snapshot"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/worker-lod1.glb",
+      "bytes": 702732,
+      "kinds": [
+        "direct-worker-glb-snapshot"
+      ],
+      "refs": [
+        "direct-dependency:direct-worker-glb-snapshot"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/worker.blend",
+      "bytes": 1274648,
+      "kinds": [
+        "direct-worker-source-snapshot"
+      ],
+      "refs": [
+        "direct-dependency:direct-worker-source-snapshot"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/priest-work-cast.blend",
+      "bytes": 1462724,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/worker-work-cast.blend",
+      "bytes": 1295223,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/source",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/source-lock.json",
+      "bytes": 3989,
+      "kinds": [
+        "declared-source-closure",
+        "direct-source-lock"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/animation_revision/source_lock",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/animation_revision/source_lock",
+        "art-factory/rts/manifests/unit-registry.json:/assets[2]/animation_revision/source_lock",
+        "art-factory/rts/manifests/unit-registry.json:/assets[3]/animation_revision/source_lock",
+        "art-factory/rts/manifests/unit-registry.json:/assets[4]/animation_revision/source_lock",
+        "art-factory/rts/manifests/unit-registry.json:/assets[5]/animation_revision/source_lock",
+        "direct-dependency:direct-source-lock"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/tools/building_rubble_build.py",
+      "bytes": 19196,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[13]/provenance",
+        "art-factory/rts/manifests/prop-registry.json:/assets[14]/provenance"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/tools/geometry_fingerprint.ts",
+      "bytes": 2977,
+      "kinds": [
+        "direct-test-tool"
+      ],
+      "refs": [
+        "direct-dependency:direct-test-tool"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/tools/landscape_materials.py",
+      "bytes": 2682,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[3]/postprocess",
+        "art-factory/rts/manifests/terrain-registry.json:/assets[4]/postprocess",
+        "art-factory/rts/manifests/terrain-registry.json:/assets[5]/postprocess",
+        "art-factory/rts/manifests/terrain-registry.json:/assets[6]/postprocess"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/tools/map_thumbnail_capture.mjs",
+      "bytes": 2429,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/map-preview-registry.json:/assets[0]/source",
+        "art-factory/rts/manifests/map-preview-registry.json:/assets[1]/source"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/tools/prepare_terrain.py",
+      "bytes": 3102,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[0]/postprocess"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/tools/prepare_ui.py",
+      "bytes": 4247,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/ui-registry.json:/assets[0]/postprocess",
+        "art-factory/rts/manifests/ui-registry.json:/assets[1]/postprocess"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/tools/procedural_gauntlet_build.py",
+      "bytes": 70585,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/source_provenance/tool",
+        "art-factory/rts/manifests/unit-registry.json:/assets[10]/work_cast_previous/source_provenance/tool",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/source_provenance/tool",
+        "art-factory/rts/manifests/unit-registry.json:/assets[11]/work_cast_previous/source_provenance/tool",
+        "art-factory/rts/manifests/unit-registry.json:/assets[12]/source_provenance/tool",
+        "art-factory/rts/manifests/unit-registry.json:/assets[13]/source_provenance/tool",
+        "art-factory/rts/manifests/unit-registry.json:/assets[14]/source_provenance/tool",
+        "art-factory/rts/manifests/unit-registry.json:/assets[15]/source_provenance/tool"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "art-factory/rts/tools/terrain_detail_process.py",
+      "bytes": 11701,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[1]/source",
+        "art-factory/rts/manifests/terrain-registry.json:/assets[2]/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "art-factory/rts/tools/undergrowth_process.py",
+      "bytes": 3823,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[7]/postprocess",
+        "art-factory/rts/manifests/terrain-registry.json:/retired_assets[0]/postprocess"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/effects/building-effects-atlas.png",
+      "bytes": 44966,
+      "kinds": [
+        "direct-effects-runtime"
+      ],
+      "refs": [
+        "direct-dependency:direct-effects-runtime"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/detail-v1/leather-color.jpg",
+      "bytes": 18162,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/detail-v1/leather-mr.png",
+      "bytes": 30852,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/detail-v1/leather-normal.png",
+      "bytes": 128698,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/detail-v1/oak-color.jpg",
+      "bytes": 111849,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/detail-v1/oak-mr.png",
+      "bytes": 30387,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/detail-v1/oak-normal.png",
+      "bytes": 125983,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/detail-v1/steel-color.jpg",
+      "bytes": 16544,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/detail-v1/steel-mr.png",
+      "bytes": 29337,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/detail-v1/steel-normal.png",
+      "bytes": 124330,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/0480f538aba09fadd6c9a9e927db9e3d69df3535e1e6e1cfb92648dbe10d068a.jpg",
+      "bytes": 323849,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/12f1bfda090863f9f38c8368f2f516ccc907dda8c569d989b32176c500d5827d.jpg",
+      "bytes": 218172,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/1d00d98cddc10f1d5632c85d0f2dd35e4b2c07758950288c826844982137cabf.jpg",
+      "bytes": 548183,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/48291e623d524719184c69dccfe8af61a9ae542b01cfefef6c87bd704bbdde08.jpg",
+      "bytes": 371778,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/5ea4347b4f41816eb5a0d7d2def486187caf2e307b7f59a7079271244a6945f2.jpg",
+      "bytes": 262086,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/6876bc79b21aa2712acf207b7ace4aa4c9a915921a7aa63524845df76606166e.jpg",
+      "bytes": 343195,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/734ccac4c569241b97bd401d6e3d2ddbe7a48523c1039bd8782ee11783d9e166.jpg",
+      "bytes": 339845,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/842a896f9bf5a1fb8be055ae411fafbc0098bbaa5d29ce5b406a8679dfe5e5d9.jpg",
+      "bytes": 223973,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/85020c8dd228d5317775246134a1de6ceadaaa73db090277797be72455cfcc4e.jpg",
+      "bytes": 334815,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/87b9802db78aa2ced4c733fdb7c0643cc695e8e8fc99492e37a98e4154d1d65c.png",
+      "bytes": 82724,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/8e96f82bfd0354145fd829c2bc0702d1817212f0047ebc07fe7d621d16edd14c.png",
+      "bytes": 124881,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/a92600f82c60c345f784c7c615e5fbde540aa5618ce4940242d63ad39e4a7f75.png",
+      "bytes": 148427,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/b8959c92365b07dd13927b35ee34d0fc0ba064c7a8292e1dc26ff6c2357e038a.jpg",
+      "bytes": 240691,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/be27e26c863a80d2e7822195ec8ddccce2d4266ae141f20e56335c713e3248db.jpg",
+      "bytes": 331241,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/e39daadac566fd64eb04783429a56d0e8e9ba27e75a7eac67824a84ae766699a.jpg",
+      "bytes": 256240,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/materials/unit-shared/fa2555e40c2dee70b3c3f7872f48df9ffb7d8bcb2ca20e11b8539464541ca556.jpg",
+      "bytes": 416275,
+      "kinds": [
+        "direct-runtime-glb-image"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-glb-image"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "public/assets/games/rts/model-registry.json",
+      "bytes": 7253,
+      "kinds": [
+        "direct-effects-registry"
+      ],
+      "refs": [
+        "direct-dependency:direct-effects-registry"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/commander-lod1.glb",
+      "bytes": 855856,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/commander.glb",
+      "bytes": 1155096,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/crossbow-lod1.glb",
+      "bytes": 751736,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/crossbow.glb",
+      "bytes": 1076888,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/guard-lod1.glb",
+      "bytes": 919528,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/guard.glb",
+      "bytes": 1286196,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/knight-lod1.glb",
+      "bytes": 823680,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/knight.glb",
+      "bytes": 1235892,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/neutral-raider-lod1.glb",
+      "bytes": 597692,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/neutral-raider.glb",
+      "bytes": 850804,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/priest-lod1.glb",
+      "bytes": 694248,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/priest.glb",
+      "bytes": 956944,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/siege-lod1.glb",
+      "bytes": 753660,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/siege.glb",
+      "bytes": 1720688,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/worker-lod1.glb",
+      "bytes": 775952,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/models/worker.glb",
+      "bytes": 1039348,
+      "kinds": [
+        "direct-runtime-unit-glb"
+      ],
+      "refs": [
+        "direct-dependency:direct-runtime-unit-glb"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "public/assets/games/rts/terrain/dirt-road.webp",
+      "bytes": 327266,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/terrain-registry.json:/assets[8]/source"
+      ],
+      "git_state": "tracked"
+    },
+    {
+      "path": "src/scripts/games/rts/published-effects.test.ts",
+      "bytes": 1771,
+      "kinds": [
+        "direct-test"
+      ],
+      "refs": [
+        "direct-dependency:direct-test"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "src/scripts/games/rts/unit-source-rights.test.ts",
+      "bytes": 10490,
+      "kinds": [
+        "direct-test"
+      ],
+      "refs": [
+        "direct-dependency:direct-test"
+      ],
+      "git_state": "untracked"
+    },
+    {
+      "path": "tmp/rts/commercial-landmark-lod-browser-v2/assembly.json",
+      "bytes": 37672,
+      "kinds": [
+        "declared-source-closure"
+      ],
+      "refs": [
+        "art-factory/rts/manifests/prop-registry.json:/assets[10]/assembly_evidence",
+        "art-factory/rts/manifests/prop-registry.json:/assets[11]/assembly_evidence",
+        "art-factory/rts/manifests/prop-registry.json:/assets[12]/assembly_evidence",
+        "art-factory/rts/manifests/prop-registry.json:/assets[5]/assembly_evidence",
+        "art-factory/rts/manifests/prop-registry.json:/assets[6]/assembly_evidence",
+        "art-factory/rts/manifests/prop-registry.json:/assets[7]/assembly_evidence",
+        "art-factory/rts/manifests/prop-registry.json:/assets[8]/assembly_evidence",
+        "art-factory/rts/manifests/prop-registry.json:/assets[9]/assembly_evidence"
+      ],
+      "git_state": "ignored"
+    }
+  ]
+}

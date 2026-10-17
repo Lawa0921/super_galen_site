@@ -1,0 +1,53 @@
+{
+  "id": "detail-refinement-20261007",
+  "screen_id": "browser-rts-battlefield-and-portrait",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "Root reviewed actual WebGL candidate and two maps; user overall art acceptance pending",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "run": "art-factory/rts/runs/detail-refinement/2026-10-07-v1",
+  "source_policy": "Original authored Blender sources selected by existing published registries; existing original generated surface textures only. No external models or animation.",
+  "mode_inference_decision": {
+    "selected_profile": "tileset_tilemap",
+    "confidence": "high",
+    "rationale": "Original generated surface maps on authored 3D meshes; opaque color, normal and roughness derivatives. No cutout or UI images."
+  },
+  "alpha_policy": "Opaque PBR maps. Preserve existing unit cloth/team transparency and all embedded body textures unchanged.",
+  "assets": [
+    "kingdom-buildings",
+    "rock",
+    "guard-equipment-lod0-lod1",
+    "crossbow-equipment-lod0-lod1",
+    "terrain-surface-detail"
+  ],
+  "allowed_processing": [
+    "source mesh architectural detail",
+    "bevels and original sculpted rock strata",
+    "deterministic resize and color-preserving tile derivative",
+    "luminance-derived normal and roughness",
+    "UV mapping",
+    "GLB packaging"
+  ],
+  "invariants": [
+    "unit mesh positions and skin weights",
+    "animation binary channels",
+    "grip geometry",
+    "building footprint",
+    "map navigation and resources",
+    "team material names and masks"
+  ],
+  "qa_gates": [
+    "source hashes",
+    "normal orientation and tile seams",
+    "GLB validator",
+    "geometry bounds and triangle budgets",
+    "unit accessor preservation",
+    "actual browser before-after and five animations",
+    "two-map interaction",
+    "35 MB compressed download",
+    "55 FPS median performance"
+  ],
+  "publication_scope": "local worktree only; no deployment",
+  "qa": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/qa/root-review.json"
+}

@@ -1,0 +1,14 @@
+{
+  "asset_id": "original-closed-grip-lod",
+  "screen_id": "battlefield-and-unit-portrait",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "Existing original closed-glove sculpture",
+  "source": "art-factory/rts/runs/original-guard-grip-channel/2026-10-05/candidate/original-guard-grip-channel.blend",
+  "source_sha256": "314e914e04a8a6a095338afe1c6d558a7976639796ebc6c81a7dad71001f9628",
+  "method": "Direct source-preserving edge-collapse reduction for rigid equipped-hand modules. No QuadriFlow cage or nearest-surface projection; no failed retopology output is reused.",
+  "intended_use": "Closed weapon grip attached to the hand bone, with original sculpted fingers and grip channel. This is not an articulated open/close hand.",
+  "candidate_triangle_budgets": {"lod0": 5000, "lod1": 2200},
+  "qa_gates": ["closed manifold mesh", "no zero-area faces", "no strict triangle self-intersections", "source deviation", "silhouette and bore clearance", "UV and original material completion", "whole-character wrist, equipment and continuous animation contact"],
+  "runtime_publish_allowed": false
+}

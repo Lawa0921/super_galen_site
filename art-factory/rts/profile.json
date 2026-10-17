@@ -1,0 +1,45 @@
+{
+  "project": "super_galen_site/browser-rts",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "factory_root": "art-factory/rts",
+  "runtime_root": "public/assets/games/rts",
+  "runtime_url_root": "/assets/games/rts/",
+  "source_formats": [
+    "png",
+    "blend"
+  ],
+  "runtime_formats": [
+    "glb",
+    "jpg",
+    "png",
+    "webp"
+  ],
+  "registries": [
+    "manifests/ui-registry.json",
+    "manifests/terrain-registry.json",
+    "manifests/building-registry.json",
+    "manifests/prop-registry.json",
+    "manifests/unit-registry.json",
+    "manifests/projectile-registry.json",
+    "manifests/map-preview-registry.json",
+    "manifests/modular-kit-registry.json",
+    "manifests/detail-material-registry.json",
+    "manifests/unit-shared-material-registry.json"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "screen_breakdown": "art-factory/rts/manifests/screen-breakdown.json",
+  "coordinate_contract": "GLB +Y up, ground-center origin; units face -Z by default, buildings face +Z",
+  "modular_production": {
+    "guide": "art-factory/rts/README.md",
+    "contract": "art-factory/rts/contracts/modular-kingdom.json",
+    "entrypoint": "art-factory/rts/tools/modular_assemble.py",
+    "scope": "12 building variants and level stone bridge; character body kit not migrated"
+  },
+  "rules": [
+    "Retain original generation prompt and source hashes",
+    "Never reference rejected or candidate assets in runtime",
+    "UI frame uses nine-slice assembly",
+    "Do not bake localizable text into art"
+  ]
+}

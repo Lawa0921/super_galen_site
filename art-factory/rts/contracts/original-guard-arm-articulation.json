@@ -1,0 +1,30 @@
+{
+  "asset_id": "original-guard-arm-articulation-method-proof",
+  "category": "original_3d_local_retopology_and_rig_method_proof",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "run": "art-factory/rts/runs/original-guard-arm-articulation/2026-10-05",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "source": "art-factory/rts/runs/original-guard-shape/2026-10-05/candidate/candidate-body.glb",
+  "source_sha256": "b2a94ddd3c7f66ea8e1edf993fce13ce4c24a795b9106076648e773ebffecdfd",
+  "mode_inference_decision": {
+    "selected_profile": "original_3d_source_fit_candidate_only",
+    "confidence": "high",
+    "rationale": "Only the existing original high-poly arm and its measured contours inform the local diagnostic geometry; no third-party model, rig, animation or mocap is used."
+  },
+  "candidate": "art-factory/rts/runs/original-guard-arm-articulation/2026-10-05/candidate/original-guard-arm-articulation.glb",
+  "editable": "art-factory/rts/runs/original-guard-arm-articulation/2026-10-05/candidate/original-guard-arm-articulation.blend",
+  "qa": "art-factory/rts/runs/original-guard-arm-articulation/2026-10-05/qa/pose-report.json",
+  "diagnostic_exceptions": [
+    "Gray metal and charcoal cloth, open-looking section views, wire overlay and local end caps are diagnostic only, not production art.",
+    "The source residual report uses bidirectional sampled-vertex distances inside documented axis-aligned regions, not exact surface Hausdorff distance."
+  ],
+  "failed_gates": [
+    "Nonadjacent triangle self intersections remain in upper-arm armor, forearm armor and flexible sleeve in neutral and posed states.",
+    "Reverse source-to-candidate sampled residual includes unrelated local source surface within the broad region and reaches roughly 70 mm; source fit remains unapproved.",
+    "Independent visual and browser playback review have not yet accepted this diagnostic candidate."
+  ]
+}

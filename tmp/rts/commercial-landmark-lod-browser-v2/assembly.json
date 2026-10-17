@@ -1,0 +1,1600 @@
+{
+  "purpose": "assembly review; overview/crossing/forest reveal only render view; depletion reduces one resource to four wood then uses live mouse gather",
+  "candidateDetail": false,
+  "candidateUndergrowth": false,
+  "candidatePine": false,
+  "results": [
+    {
+      "map": "river",
+      "errors": [],
+      "fog": {
+        "explored": 1144,
+        "visibleProps": 0,
+        "hiddenProps": 2,
+        "batches": [
+          {
+            "kind": "oak",
+            "actual": 4,
+            "expected": 4,
+            "total": 91
+          },
+          {
+            "kind": "oak",
+            "actual": 4,
+            "expected": 4,
+            "total": 91
+          },
+          {
+            "kind": "rock",
+            "actual": 0,
+            "expected": 0,
+            "total": 18
+          },
+          {
+            "kind": "oak",
+            "resourceId": "river-wood-west",
+            "actual": 12,
+            "expected": 12,
+            "total": 12
+          },
+          {
+            "kind": "oak",
+            "resourceId": "river-wood-west",
+            "actual": 12,
+            "expected": 12,
+            "total": 12
+          },
+          {
+            "kind": "oak",
+            "resourceId": "river-wood-east",
+            "actual": 0,
+            "expected": 0,
+            "total": 12
+          },
+          {
+            "kind": "oak",
+            "resourceId": "river-wood-east",
+            "actual": 0,
+            "expected": 0,
+            "total": 12
+          }
+        ]
+      },
+      "landmarkFog": {
+        "actual": 1,
+        "expected": 1
+      },
+      "landmarks": [
+        {
+          "assetId": "river-gatehouse",
+          "position": [
+            5,
+            0,
+            54
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "lods": 2,
+          "placement": {
+            "x": 5,
+            "z": 54,
+            "district": "outpost",
+            "assetId": "river-gatehouse",
+            "kind": 0,
+            "width": 3.8,
+            "depth": 3.8,
+            "height": 3.8,
+            "rotation": 0
+          }
+        },
+        {
+          "assetId": "river-gatehouse",
+          "position": [
+            91,
+            0,
+            54
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "lods": 2,
+          "placement": {
+            "x": 91,
+            "z": 54,
+            "district": "outpost",
+            "assetId": "river-gatehouse",
+            "kind": 0,
+            "width": 3.8,
+            "depth": 3.8,
+            "height": 3.8,
+            "rotation": 0
+          }
+        },
+        {
+          "assetId": "river-shrine",
+          "position": [
+            36.5,
+            0,
+            23.5
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "lods": 2,
+          "placement": {
+            "x": 36.5,
+            "z": 23.5,
+            "district": "camp",
+            "assetId": "river-shrine",
+            "kind": 1,
+            "width": 3.8,
+            "depth": 3.8,
+            "height": 3.8,
+            "rotation": 0
+          }
+        },
+        {
+          "assetId": "river-shrine",
+          "position": [
+            59.5,
+            0,
+            73.5
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "lods": 2,
+          "placement": {
+            "x": 59.5,
+            "z": 73.5,
+            "district": "camp",
+            "assetId": "river-shrine",
+            "kind": 1,
+            "width": 3.8,
+            "depth": 3.8,
+            "height": 3.8,
+            "rotation": 0
+          }
+        }
+      ],
+      "lodReview": [
+        {
+          "assetId": "river-gatehouse",
+          "pixels": 47.99999999999994,
+          "position": [
+            5,
+            0,
+            54
+          ],
+          "height": 3.3660190664231777,
+          "clip": {
+            "x": 730,
+            "y": 406,
+            "width": 140,
+            "height": 140
+          },
+          "frames": [
+            {
+              "lod": 0,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/river-gatehouse-48px-lod0.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                5,
+                0,
+                54,
+                1
+              ],
+              "visible": [
+                true,
+                false
+              ],
+              "time": 3.8,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                29,
+                52,
+                89,
+                1
+              ],
+              "projection": [
+                0.02819195671779497,
+                0,
+                0,
+                0,
+                0,
+                0.04510713074847195,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            },
+            {
+              "lod": 1,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/river-gatehouse-48px-lod1.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                5,
+                0,
+                54,
+                1
+              ],
+              "visible": [
+                false,
+                true
+              ],
+              "time": 3.8,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                29,
+                52,
+                89,
+                1
+              ],
+              "projection": [
+                0.02819195671779497,
+                0,
+                0,
+                0,
+                0,
+                0.04510713074847195,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "assetId": "river-gatehouse",
+          "pixels": 200,
+          "position": [
+            5,
+            0,
+            54
+          ],
+          "height": 3.3660190664231777,
+          "clip": {
+            "x": 610,
+            "y": 210,
+            "width": 380,
+            "height": 380
+          },
+          "frames": [
+            {
+              "lod": 0,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/river-gatehouse-200px-lod0.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                5,
+                0,
+                54,
+                1
+              ],
+              "visible": [
+                true,
+                false
+              ],
+              "time": 3.8,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                29,
+                52,
+                89,
+                1
+              ],
+              "projection": [
+                0.1174664863241457,
+                0,
+                0,
+                0,
+                0,
+                0.18794637811863313,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            },
+            {
+              "lod": 1,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/river-gatehouse-200px-lod1.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                5,
+                0,
+                54,
+                1
+              ],
+              "visible": [
+                false,
+                true
+              ],
+              "time": 3.8,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                29,
+                52,
+                89,
+                1
+              ],
+              "projection": [
+                0.1174664863241457,
+                0,
+                0,
+                0,
+                0,
+                0.18794637811863313,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "assetId": "river-shrine",
+          "pixels": 48,
+          "position": [
+            36.5,
+            0,
+            23.5
+          ],
+          "height": 2.421867836266756,
+          "clip": {
+            "x": 730,
+            "y": 406,
+            "width": 140,
+            "height": 140
+          },
+          "frames": [
+            {
+              "lod": 0,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/river-shrine-48px-lod0.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                36.5,
+                0,
+                23.5,
+                1
+              ],
+              "visible": [
+                true,
+                false
+              ],
+              "time": 3.8,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                60.5,
+                52,
+                58.5,
+                1
+              ],
+              "projection": [
+                0.03918242870682515,
+                0,
+                0,
+                0,
+                0,
+                0.06269188593092025,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            },
+            {
+              "lod": 1,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/river-shrine-48px-lod1.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                36.5,
+                0,
+                23.5,
+                1
+              ],
+              "visible": [
+                false,
+                true
+              ],
+              "time": 3.8,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                60.5,
+                52,
+                58.5,
+                1
+              ],
+              "projection": [
+                0.03918242870682515,
+                0,
+                0,
+                0,
+                0,
+                0.06269188593092025,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "assetId": "river-shrine",
+          "pixels": 200.00000000000006,
+          "position": [
+            36.5,
+            0,
+            23.5
+          ],
+          "height": 2.421867836266756,
+          "clip": {
+            "x": 610,
+            "y": 210,
+            "width": 380,
+            "height": 380
+          },
+          "frames": [
+            {
+              "lod": 0,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/river-shrine-200px-lod0.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                36.5,
+                0,
+                23.5,
+                1
+              ],
+              "visible": [
+                true,
+                false
+              ],
+              "time": 3.8,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                60.5,
+                52,
+                58.5,
+                1
+              ],
+              "projection": [
+                0.16326011961177148,
+                0,
+                0,
+                0,
+                0,
+                0.2612161913788344,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            },
+            {
+              "lod": 1,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/river-shrine-200px-lod1.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                36.5,
+                0,
+                23.5,
+                1
+              ],
+              "visible": [
+                false,
+                true
+              ],
+              "time": 3.8,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                60.5,
+                52,
+                58.5,
+                1
+              ],
+              "projection": [
+                0.16326011961177148,
+                0,
+                0,
+                0,
+                0,
+                0.2612161913788344,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "details": {
+        "batches": 11,
+        "instances": 1067,
+        "memory": {
+          "geometries": 62,
+          "textures": 81
+        },
+        "scenery": 109,
+        "revealed": [
+          {
+            "kind": "oak",
+            "actual": 91,
+            "expected": 91
+          },
+          {
+            "kind": "oak",
+            "actual": 91,
+            "expected": 91
+          },
+          {
+            "kind": "rock",
+            "actual": 18,
+            "expected": 18
+          }
+        ]
+      },
+      "forest": {
+        "resourceTrees": 24,
+        "materialNames": [
+          "Bark",
+          "LeafCutout"
+        ],
+        "foliage": [
+          {
+            "instances": 12,
+            "alphaTest": 0.47999998927116394,
+            "alphaToCoverage": false,
+            "transparent": false
+          },
+          {
+            "instances": 12,
+            "alphaTest": 0.47999998927116394,
+            "alphaToCoverage": false,
+            "transparent": false
+          }
+        ],
+        "antialias": true,
+        "samples": 4
+      },
+      "depletion": {
+        "resourceId": "river-wood-west",
+        "remaining": 0,
+        "hiddenTrees": 12,
+        "timberVisible": false
+      }
+    },
+    {
+      "map": "pass",
+      "errors": [],
+      "fog": {
+        "explored": 1144,
+        "visibleProps": 0,
+        "hiddenProps": 0,
+        "batches": [
+          {
+            "kind": "pine",
+            "actual": 4,
+            "expected": 4,
+            "total": 92
+          },
+          {
+            "kind": "pine",
+            "actual": 4,
+            "expected": 4,
+            "total": 92
+          },
+          {
+            "kind": "rock",
+            "actual": 0,
+            "expected": 0,
+            "total": 41
+          },
+          {
+            "kind": "pine",
+            "resourceId": "pass-wood-west",
+            "actual": 12,
+            "expected": 12,
+            "total": 12
+          },
+          {
+            "kind": "pine",
+            "resourceId": "pass-wood-west",
+            "actual": 12,
+            "expected": 12,
+            "total": 12
+          },
+          {
+            "kind": "pine",
+            "resourceId": "pass-wood-east",
+            "actual": 0,
+            "expected": 0,
+            "total": 12
+          },
+          {
+            "kind": "pine",
+            "resourceId": "pass-wood-east",
+            "actual": 0,
+            "expected": 0,
+            "total": 12
+          }
+        ]
+      },
+      "landmarkFog": {
+        "actual": 1,
+        "expected": 1
+      },
+      "landmarks": [
+        {
+          "assetId": "highland-watchtower",
+          "position": [
+            5,
+            0,
+            54
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "lods": 2,
+          "placement": {
+            "x": 5,
+            "z": 54,
+            "district": "outpost",
+            "assetId": "highland-watchtower",
+            "kind": 2,
+            "width": 3.8,
+            "depth": 3.8,
+            "height": 3.8,
+            "rotation": 0
+          }
+        },
+        {
+          "assetId": "highland-watchtower",
+          "position": [
+            91,
+            0,
+            54
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "lods": 2,
+          "placement": {
+            "x": 91,
+            "z": 54,
+            "district": "outpost",
+            "assetId": "highland-watchtower",
+            "kind": 2,
+            "width": 3.8,
+            "depth": 3.8,
+            "height": 3.8,
+            "rotation": 0
+          }
+        },
+        {
+          "assetId": "quarry-ruins",
+          "position": [
+            36.5,
+            0,
+            20.2
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "lods": 2,
+          "placement": {
+            "x": 36.5,
+            "z": 20.2,
+            "district": "camp",
+            "assetId": "quarry-ruins",
+            "kind": 3,
+            "width": 3.8,
+            "depth": 3.8,
+            "height": 3.8,
+            "rotation": 0
+          }
+        },
+        {
+          "assetId": "quarry-ruins",
+          "position": [
+            59.5,
+            0,
+            80.2
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "lods": 2,
+          "placement": {
+            "x": 59.5,
+            "z": 80.2,
+            "district": "camp",
+            "assetId": "quarry-ruins",
+            "kind": 3,
+            "width": 3.8,
+            "depth": 3.8,
+            "height": 3.8,
+            "rotation": 0
+          }
+        }
+      ],
+      "lodReview": [
+        {
+          "assetId": "highland-watchtower",
+          "pixels": 48,
+          "position": [
+            5,
+            0,
+            54
+          ],
+          "height": 5.0650001130998135,
+          "clip": {
+            "x": 730,
+            "y": 406,
+            "width": 140,
+            "height": 140
+          },
+          "frames": [
+            {
+              "lod": 0,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/highland-watchtower-48px-lod0.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                5,
+                0,
+                54,
+                1
+              ],
+              "visible": [
+                true,
+                false
+              ],
+              "time": 3.75,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                29,
+                52,
+                89,
+                1
+              ],
+              "projection": [
+                0.018735372500080533,
+                0,
+                0,
+                0,
+                0,
+                0.029976596000128856,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            },
+            {
+              "lod": 1,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/highland-watchtower-48px-lod1.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                5,
+                0,
+                54,
+                1
+              ],
+              "visible": [
+                false,
+                true
+              ],
+              "time": 3.75,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                29,
+                52,
+                89,
+                1
+              ],
+              "projection": [
+                0.018735372500080533,
+                0,
+                0,
+                0,
+                0,
+                0.029976596000128856,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "assetId": "highland-watchtower",
+          "pixels": 199.99999999999994,
+          "position": [
+            5,
+            0,
+            54
+          ],
+          "height": 5.0650001130998135,
+          "clip": {
+            "x": 610,
+            "y": 210,
+            "width": 380,
+            "height": 380
+          },
+          "frames": [
+            {
+              "lod": 0,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/highland-watchtower-200px-lod0.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                5,
+                0,
+                54,
+                1
+              ],
+              "visible": [
+                true,
+                false
+              ],
+              "time": 3.75,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                29,
+                52,
+                89,
+                1
+              ],
+              "projection": [
+                0.0780640520836689,
+                0,
+                0,
+                0,
+                0,
+                0.12490248333387023,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            },
+            {
+              "lod": 1,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/highland-watchtower-200px-lod1.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                5,
+                0,
+                54,
+                1
+              ],
+              "visible": [
+                false,
+                true
+              ],
+              "time": 3.75,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                29,
+                52,
+                89,
+                1
+              ],
+              "projection": [
+                0.0780640520836689,
+                0,
+                0,
+                0,
+                0,
+                0.12490248333387023,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "assetId": "quarry-ruins",
+          "pixels": 48,
+          "position": [
+            36.5,
+            0,
+            20.2
+          ],
+          "height": 3.4443598352372646,
+          "clip": {
+            "x": 730,
+            "y": 406,
+            "width": 140,
+            "height": 140
+          },
+          "frames": [
+            {
+              "lod": 0,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/quarry-ruins-48px-lod0.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                36.5,
+                0,
+                20.2,
+                1
+              ],
+              "visible": [
+                true,
+                false
+              ],
+              "time": 3.75,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                60.5,
+                52,
+                55.2,
+                1
+              ],
+              "projection": [
+                0.027550740448504314,
+                0,
+                0,
+                0,
+                0,
+                0.04408118471760691,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            },
+            {
+              "lod": 1,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/quarry-ruins-48px-lod1.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                36.5,
+                0,
+                20.2,
+                1
+              ],
+              "visible": [
+                false,
+                true
+              ],
+              "time": 3.75,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                60.5,
+                52,
+                55.2,
+                1
+              ],
+              "projection": [
+                0.027550740448504314,
+                0,
+                0,
+                0,
+                0,
+                0.04408118471760691,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "assetId": "quarry-ruins",
+          "pixels": 199.99999999999994,
+          "position": [
+            36.5,
+            0,
+            20.2
+          ],
+          "height": 3.4443598352372646,
+          "clip": {
+            "x": 610,
+            "y": 210,
+            "width": 380,
+            "height": 380
+          },
+          "frames": [
+            {
+              "lod": 0,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/quarry-ruins-200px-lod0.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                36.5,
+                0,
+                20.2,
+                1
+              ],
+              "visible": [
+                true,
+                false
+              ],
+              "time": 3.75,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                60.5,
+                52,
+                55.2,
+                1
+              ],
+              "projection": [
+                0.11479475186876797,
+                0,
+                0,
+                0,
+                0,
+                0.18367160299002877,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            },
+            {
+              "lod": 1,
+              "screenshot": "tmp/rts/commercial-landmark-lod-browser-v2/quarry-ruins-200px-lod1.png",
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                36.5,
+                0,
+                20.2,
+                1
+              ],
+              "visible": [
+                false,
+                true
+              ],
+              "time": 3.75,
+              "camera": [
+                0.8247288518459779,
+                2.7755575615628914e-17,
+                -0.5655283555515278,
+                0,
+                -0.4381374045955607,
+                0.6322800205742027,
+                -0.6389503817018594,
+                0,
+                0.357572280283415,
+                0.7747399406140656,
+                0.5214595754133134,
+                0,
+                60.5,
+                52,
+                55.2,
+                1
+              ],
+              "projection": [
+                0.11479475186876797,
+                0,
+                0,
+                0,
+                0,
+                0.18367160299002877,
+                0,
+                0,
+                0,
+                0,
+                -0.008003201280512205,
+                0,
+                0,
+                0,
+                -1.000800320128051,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "details": {
+        "batches": 10,
+        "instances": 906,
+        "memory": {
+          "geometries": 58,
+          "textures": 88
+        },
+        "scenery": 133,
+        "revealed": [
+          {
+            "kind": "pine",
+            "actual": 92,
+            "expected": 92
+          },
+          {
+            "kind": "pine",
+            "actual": 92,
+            "expected": 92
+          },
+          {
+            "kind": "rock",
+            "actual": 41,
+            "expected": 41
+          }
+        ]
+      },
+      "forest": {
+        "resourceTrees": 24,
+        "materialNames": [
+          "PineBark",
+          "PineNeedles"
+        ],
+        "foliage": [
+          {
+            "instances": 12,
+            "alphaTest": 0.47999998927116394,
+            "alphaToCoverage": true,
+            "transparent": false
+          },
+          {
+            "instances": 12,
+            "alphaTest": 0.47999998927116394,
+            "alphaToCoverage": true,
+            "transparent": false
+          }
+        ],
+        "antialias": true,
+        "samples": 4
+      },
+      "depletion": {
+        "resourceId": "pass-wood-west",
+        "remaining": 0,
+        "hiddenTrees": 12,
+        "timberVisible": false
+      }
+    }
+  ]
+}

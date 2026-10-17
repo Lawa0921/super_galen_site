@@ -1,0 +1,20 @@
+{
+  "asset_id": "meadow-surface",
+  "status": "published",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "category": "terrain-texture",
+  "source_mode": "builtin-imagegen",
+  "postprocess": "seamless-boundary-blend-resize-webp",
+  "alpha_policy": "opaque",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "runtime_publish_allowed": true,
+  "target": "public/assets/games/rts/terrain/meadow.webp",
+  "qa_gates": [
+    "diffuse only",
+    "no recognizable repeating object",
+    "opposite edge seams below threshold",
+    "four by four tile preview"
+  ],
+  "qa": "art-factory/rts/runs/meadow-surface/v1/qa/report.json"
+}

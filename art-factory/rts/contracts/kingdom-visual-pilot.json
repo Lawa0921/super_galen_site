@@ -1,0 +1,27 @@
+{
+  "asset_id": "kingdom-visual-pilot",
+  "screen_id": "rts-battlefield",
+  "status": "raw_generated",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "category": "ui_mockup",
+  "postprocess_profile": "ui_mockup_only",
+  "mode_inference_decision": {
+    "selected_profile": "ui_mockup_only",
+    "confidence": "high",
+    "rationale": "Visual direction board for original RTS; never a runtime substitute for 3D meshes."
+  },
+  "source_mode": "builtin-imagegen",
+  "alpha_policy": "opaque",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "runtime_publish_allowed": false,
+  "raw_path": "art-factory/rts/runs/kingdom-visual-pilot/v1/raw/concept.png",
+  "qa_gates": [
+    "original_design",
+    "guard_silhouette",
+    "buildable_architecture",
+    "battlefield_scale_readability",
+    "no_watermark"
+  ],
+  "prompt": "Create a premium original 3D fantasy RTS art direction board, landscape 1536x1024. Main upper two-thirds: orthographic isometric playable battlefield screenshot, a small sophisticated medieval human kingdom base in a sunlit river valley, ivory limestone keep with blue slate gabled roofs and copper finials, timber barracks, farmland and lumber mill, small formations of distinctive fully modeled royal infantry and crossbowmen. Mossy cliffs, rich grass, gravel roads, two stone bridges over a clear river, warm afternoon sun, ambient occlusion, art-directed high quality game materials, readable tactical scale, no photographic miniature tiltshift. Lower left inset: full body front three-quarter detailed royal infantry character on neutral slate ground, realistic stylized 6.5-head proportions, articulated burnished steel cuirass, brass borders with modest original sunburst engraving, blue cloth tabard, quilted gambeson, leather belt and pouches, enclosed sallet helmet with a narrow visor, anatomically articulated fingers, sword and kite shield, boots and knee plates. Lower right inset: same keep shown closer with genuinely constructible windows, doorways, stone courses, roof tiles, wooden support details. Bottom UI mockup is narrow carved dark slate and aged bronze command panels with empty portrait and ability slots, no text baked into the art, tasteful and practical rather than elaborate decoration. Consistent original human faction visual language, production game art quality, not low-detail primitive blocks, not a voxel toy, no existing franchise designs or recognizable logos, no text, no watermark. This is a concept reference only, not a claim of an actual implemented game."
+}

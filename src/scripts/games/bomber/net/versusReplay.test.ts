@@ -62,7 +62,7 @@ function buildNodes(
         transport: hub.transportFor(localId),
       }),
   );
-  return { nodes, hub };
+  return { nodes, hub, characters };
 }
 
 /**

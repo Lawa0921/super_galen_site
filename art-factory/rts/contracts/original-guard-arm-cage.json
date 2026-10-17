@@ -1,0 +1,33 @@
+{
+  "asset_id": "original-guard-arm-cage-method-proof",
+  "category": "original_3d_retopology_and_rig_method_proof",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "run": "art-factory/rts/runs/original-guard-arm-cage/2026-10-05",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "source": "art-factory/rts/runs/original-guard-shape/2026-10-05/candidate/candidate-body.glb",
+  "source_sha256": "b2a94ddd3c7f66ea8e1edf993fce13ce4c24a795b9106076648e773ebffecdfd",
+  "mode_inference_decision": {
+    "selected_profile": "original_3d_source_fit_candidate_only",
+    "confidence": "high",
+    "rationale": "Existing original high-poly contour is resampled into a diagnostic cage; this is a 3D project extension, not one of the bitmap production profiles. No third-party character, rig or animation asset is used."
+  },
+  "allowed_operations": ["source plane intersection", "contour resampling and phase alignment", "explicit quad strip construction", "original diagnostic skeleton and authored poses", "Blender/GLB/Three linear skin comparison"],
+  "diagnostic_exceptions": ["Flat neutral material, wire overlay and local end caps are QA-only. They are not formal art.", "Exact source crop can have open section boundaries and is reference-only, never exported to runtime."],
+  "acceptance_gates": [
+    "Reject merged torso and open source contours before sampling",
+    "Preserve hard armor silhouette; establish both directions of source deviation before production approval",
+    "No zero-area triangles; expected closed oriented topology",
+    "90-degree bend retains at least 80 percent section area, with no visible folded surfaces or verified triangle intersections",
+    "45-degree twist keeps cross-section principal radii within 10 percent and spreads flexible-layer twist",
+    "Hard armor is segmented and rigid; it cannot share flexible sleeve deformation",
+    "Exported GLB endpoint positions match measured Blender poses within 0.01mm",
+    "Independent visual review of source, neutral, bend, twist and combined pose"
+  ],
+  "failed_gates": ["Current joined cage loses armor edges at t=.25-.40 and .725-.80", "Supported bend still has visible inside folds", "Hard armor remains part of the deforming tube", "Source residual is only directed and reaches 15.48mm"],
+  "next_work": "Retain source contour extraction, discard current armor-crossing faces. Build local flexible elbow sleeve plus separate rigid upper-arm, elbow and forearm armor from the original source."
+}

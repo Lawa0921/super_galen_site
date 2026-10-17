@@ -1,0 +1,37 @@
+{
+  "asset_id": "original-crossbow-cuff-motion",
+  "status": "qa_failed",
+  "run": "art-factory/rts/runs/original-crossbow-cuff-motion/2026-10-07-v1",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-original-crossbow-cuff-review",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "source_mode": "Existing project-original full character, hand, weapon, rig and motion only.",
+  "source": "art-factory/rts/runs/original-crossbow-articulated-hand/2026-10-07-v1/candidate/articulated-connector.blend",
+  "source_sha256": "18f063e7111f65b45464f9202d87423a2c52540318532b15e6374c4da78f3939",
+  "scope": "Repair animated deformation of the newly authored distal left cuff; preserve previous source and runtime.",
+  "postprocess_profile": "original_3d_rig_revision",
+  "alpha_policy": "Opaque original mesh; diagnostic hand clay is not final material.",
+  "qa": [
+    "Source preservation",
+    "Five-clip dense cuff deformation and orientation",
+    "Actual hand/cuff/weapon contact",
+    "GLB surface parity and validator",
+    "Full-character browser visual review"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": false,
+  "commercial_character_art": false,
+  "candidate_sha256": "22d240db03bca444d83d0cc7e8244e4686f68063eefa651febd420377ff2adf4",
+  "preview_url": "http://127.0.0.1:4334/crossbow-cuff/",
+  "qa_report": "art-factory/rts/runs/original-crossbow-cuff-motion/2026-10-07-v1/qa/root-review.json",
+  "added_bones": 6,
+  "total_bones": 42,
+  "remaining": [
+    "Inner cuff collapse below 0.25 area-ratio threshold",
+    "Full signed orientation and actual GLB triangle-strain coverage",
+    "Dense cuff/hand contact classification and cap containment",
+    "Original glove material and continuous wrist silhouette",
+    "Mechanical reload, LOD budget, battlefield and portrait integration"
+  ]
+}

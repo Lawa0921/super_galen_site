@@ -1,0 +1,12 @@
+{
+  "id": "original-human-unit-bodies",
+  "status": "in_production",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "inputs": "art-factory/rts/contracts/unit-inputs.json",
+  "units": ["worker", "crossbow", "priest", "commander", "neutral-raider"],
+  "method": "Pinned TripoSR mesh and true neural texel bake; original front/back image projection on existing mesh/UV; no proxy guard geometry reused.",
+  "reference_visual_review": "Root reviewed all ten images together. Distinct silhouettes, consistent kingdom materials, full limbs and safe framing accepted as modelling references.",
+  "known_reference_limits": ["Worker apron slit differs front/back", "Priest rear robe covers upper legs; do not infer split-leg topology from rear projection", "Raider rear straps require modelling consistency"],
+  "remaining_gates": ["Mesh silhouette and projection review", "Unit-specific equipment and rig", "Five clips and LOD", "glTF and roundtrip QA", "In-game team colours and scale", "Runtime publication"],
+  "runtime_published": false
+}

@@ -1,0 +1,29 @@
+{
+  "asset_id": "original-guard-portrait-material",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "category": "original_3d_portrait_material_candidate",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_registration_contract": "art-factory/rts/runs/original-guard-materials/2026-10-05/qa/projection-source-contract.json",
+  "source_blend": "art-factory/rts/runs/original-guard-portrait-study/2026-10-05/candidate/original-guard-portrait-study.blend",
+  "source_blend_sha256": "8e2fa9a5fc61a693a97b69e4dd7eddda55e9a2a4f6fd272f9f8c55da72666a20",
+  "mode_inference_decision": {
+    "selected_profile": "original_3d_reference_projection_candidate",
+    "confidence": "high",
+    "rationale": "Deterministic multi-view projection of the existing original generated guard art onto the accepted local animated bust; no new third-party art or motion."
+  },
+  "method": "Independent head/torso/shoulder projection anchors, normal-facing and source-mesh visibility gates, premultiplied-alpha bilinear sampling, original silver patch fallback for uncovered surfaces, UV atlas with edge dilation. Existing generated lighting is retained; this is not a relightable scanned PBR claim.",
+  "alpha_policy": "Source alpha below 8/255 cannot contribute. Final surface atlas is opaque, with 8 pixel island dilation.",
+  "candidate_size": [1024, 1024],
+  "qa_gates": [
+    "Frozen original geometry and authored animation unchanged; candidate Blend and GLB preserve the source pose positions",
+    "Hash-pin all source art; separate head/torso landmarks and record fallback coverage; invisible RGB cannot bleed into the atlas",
+    "Inspect front, both sides, back and turn poses for duplicated visor lines, misplaced trim, seams and baked lighting artifacts",
+    "Actual browser motion and desktop/mobile images, no missing textures or page errors; runtime remains false until assembly review"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "independent_review": "art-factory/rts/runs/original-guard-portrait-material/2026-10-05/qa/independent-review.json",
+  "limits": ["Source chest relief and fused shoulder geometry remain unfinished", "No full-body assembly or commercial quality approval", "Rejected after one landmark correction: shoulder cross-plate streaks, back helmet black band and crown view seams remain"]
+}

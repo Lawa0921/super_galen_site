@@ -1,0 +1,179 @@
+{
+  "id": "model-polish-2026-10-16",
+  "screen_id": "browser-rts-model-viewer-closeup",
+  "request": "User inspected /games/rts/models/ close-ups: weapons/shields far cruder than bodies, buildings low-poly and blurry. Polish pass.",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "run": "art-factory/rts/runs/model-polish/2026-10-16-v1",
+  "source_mode": "codex builtin image_gen original material sources + existing original generated building sources; parametric code-primitive geometry (art-factory/rts/tools/model_polish_weapons.py, model_polish_buildings.py); no third-party meshes, textures or motion",
+  "category": "3d-material-surface + 3d-rigid-equipment + 3d-architectural-relief",
+  "mode_inference_decision": {
+    "selected_profile": "opaque_background",
+    "confidence": "high",
+    "rationale": "Opaque tiling PBR material scans on authored meshes; chroma-key and alpha cleanup are inapplicable."
+  },
+  "assets": {
+    "materials": [
+      "blade-steel",
+      "dark-steel",
+      "aged-brass",
+      "grip-leather",
+      "shield-oak",
+      "cut-stone-face",
+      "ivory-ashlar",
+      "navy-slate"
+    ],
+    "equipment": {
+      "guard": [
+        "KingdomSteelSword",
+        "KingdomSunShield"
+      ],
+      "commander": [
+        "CommanderLongsword",
+        "CommanderDawnShield"
+      ],
+      "knight": [
+        "KnightLance",
+        "KnightSunShield"
+      ],
+      "worker": [
+        "WorkerCraftAxe"
+      ],
+      "neutral-raider": [
+        "RaiderShortAxe"
+      ],
+      "crossbow": [
+        "ProceduralCrossbow (material remap only)"
+      ],
+      "priest": [
+        "PriestDawnStaff (material remap only)"
+      ]
+    },
+    "buildings": [
+      "barracks",
+      "townhall",
+      "townhall-tier2",
+      "townhall-tier3"
+    ]
+  },
+  "postprocess": {
+    "materials": "mirror: centred half crop -> LANCZOS 512 -> mirror 2x2 = 1024 colour JPEG q90; crossfade: LANCZOS 1024 + 20 px opposite-edge crossfade; 512 OpenGL normal and metal/roughness maps derived from luminance (detail_materials.normal_map). No painting, inpainting, added noise or text.",
+    "equipment": "New rigid piece measured from the published one (axis, grip centre, per-material spans) so grip location, hand bone and both LODs stay aligned; vertices weighted 1.0 to the same joint; conservative bounds enlarged if reach grows.",
+    "buildings": "Relief (plinth, buttresses, string courses, corbel table, surrounds) merged into the existing stage-1 LightCutStone primitive: no new nodes, materials or draw calls; materials repointed to polish-v1 maps."
+  },
+  "invariants": [
+    "skeleton, skins, inverse bind matrices and all animation channels byte-identical",
+    "body meshes and team masks unchanged",
+    "construction stages and part ids unchanged",
+    "building footprints and nav unchanged",
+    "team material names"
+  ],
+  "limits": {
+    "unit_lod0_triangles": "<= 20,000 * 1.3 = 26,000 (user-approved +30% polish allowance; spec default 20,000)",
+    "hero_lod0_triangles": 35000,
+    "unit_lod1_triangles": "<= 10,000 (LOD1 weapons rebuilt at reduced density)",
+    "building_triangles": "<= 20,000 LOD0 (kingdom-buildings contract)",
+    "material_colour_min_px": 1024,
+    "draw_calls": "no increase on buildings; units +0..1 per weapon"
+  },
+  "qa_gates": [
+    "weapon geometry winding / NaN / budget tests (model_polish_weapons_test.py)",
+    "texture provenance + seam check (qa/textures.json)",
+    "GLB reload in the real viewer and game",
+    "before/after close-ups front, side, game view",
+    "vitest RTS + full suite",
+    "strict tsc",
+    "Chromium RTS E2E"
+  ],
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "publication_scope": "local branch feat/browser-rts-model-polish only; not merged, not deployed",
+  "user_overall_art_acceptance": "pending",
+  "review_page": "art-factory/rts/review/model-polish-20261016.html",
+  "hands": {
+    "request": "User inspected close-ups: many hands are bad (很多的手部都不行). Audit every humanoid hand in every clip and rebuild.",
+    "run": "art-factory/rts/runs/model-polish/2026-10-16-hands-v1",
+    "units": [
+      "worker",
+      "guard",
+      "crossbow",
+      "knight",
+      "priest",
+      "neutral-raider",
+      "commander"
+    ],
+    "source_mode": "parametric code-primitive geometry only (art-factory/rts/tools/model_hands_geometry.py, model_hands_build.py) measured from the published meshes in the Idle pose; canonical hand previewed with Blender 5.2 (model_hands_preview_blender.py, -t 2); no imported, sampled or third-party mesh; no new texture (shared polish-v1 equipment atlas)",
+    "rig": "skeletons have no finger bones: fingers modelled in a fixed per-hand pose (closed grip on the measured handle, relaxed / open / fist for empty hands), rigid on the Hand bone; glove cuffs blend <= 0.35 to the Forearm, steel cuffs rigid",
+    "edits": [
+      "hand / gauntlet meshes replaced in place (same node names, one PolishEquipment primitive)",
+      "bare TripoSR hand triangles past the wrist removed from the body",
+      "shields: new leather grip on two brackets at the closed hand, shield translated onto it, old floating strap loops removed",
+      "over-thick axe hafts slimmed only inside the hand (smooth waist)"
+    ],
+    "invariants": [
+      "skeleton nodes, skins, inverse bind matrices and every animation channel byte-identical (qa/invariants.json)",
+      "draw calls (primitives) not higher",
+      "LOD0 <= 26,000 triangles per unit"
+    ],
+    "qa_gates": [
+      "model_hands_geometry_test.py",
+      "src/scripts/games/rts/model-hands.test.ts (fails on the pre-hands snapshot)",
+      "glTF validator 0 errors",
+      "qa/clearance.json body clearance + wrist stretch vs baseline, all clips but Death",
+      "before/after close-ups per model and key frame"
+    ],
+    "status": "published",
+    "runtime_publish_allowed": true,
+    "publication_scope": "local branch feat/browser-rts-model-polish only; not merged, not deployed",
+    "user_overall_art_acceptance": "pending",
+    "review_page": "art-factory/rts/review/model-polish-20261016.html#hands"
+  },
+  "round3": {
+    "request": "Round 3: landmark/prop textures 128-384 px -> >=1024 with provenance; shield rivets invisible + top-corner crease; crossbow stock / wooden handles too bright/yellow; barracks facade relief too small; worker right hand skin slivers at the cuff; Death-clip shield clipping check; sparse distant tree canopies; first-map download measurement and reduction.",
+    "run": "art-factory/rts/runs/model-polish/2026-10-17-v1",
+    "source_mode": "codex builtin image_gen original material (weathered-limestone-face-a1, prompt + .gen.json sha256) + deterministic re-derivation of tracked original generated 1254 px sources (hewn oak, oak bark, oak end grain, gold ore) + existing detail-v1 / polish-v1 maps; parametric code geometry (model_polish_weapons.shield r3, model_polish_r3_buildings relief, Loop subdivision, canopy card layer); no third-party meshes, textures or motion",
+    "mode_inference_decision": {
+      "selected_profile": "opaque_background",
+      "confidence": "high",
+      "rationale": "Opaque tiling PBR material scans; leaf atlases unchanged (their alpha cutouts are not re-processed)."
+    },
+    "tools": [
+      "art-factory/rts/tools/model_polish_r3_textures.py",
+      "art-factory/rts/tools/model_polish_r3_props.py",
+      "art-factory/rts/tools/model_polish_r3_units.py",
+      "art-factory/rts/tools/model_polish_r3_buildings.py",
+      "art-factory/rts/tools/model_polish_r3_ui.py",
+      "art-factory/rts/tools/model_polish_r3_stage.py",
+      "art-factory/rts/tools/model_polish_r3_death.py",
+      "art-factory/rts/tools/model_polish_r3_review.py",
+      "art-factory/rts/tools/model_polish_r3_closeup.mjs"
+    ],
+    "postprocess": {
+      "materials": "full source -> LANCZOS 1024 -> 20 px opposite-edge crossfade -> JPEG q85; 512 OpenGL normal + 256 MR from luminance; weathered limestone one per-channel gain to the previous cut-stone mean; equipment atlas oak cell desaturated 40% and x0.82; courtyard earth PNG -> JPEG q90; command panel PNG -> WebP q92 with bit-identical alpha"
+    },
+    "invariants": [
+      "skeleton, skins, inverse bind matrices and animation channels byte-identical (units)",
+      "materials, draw calls, construction stages unchanged",
+      "landmark / prop UV mapping unchanged (same source framing)"
+    ],
+    "limits": {
+      "unit_lod0_triangles": 26000,
+      "first_map_download_bytes": 35000000
+    },
+    "qa_gates": [
+      "model_polish_weapons_test.py (shield corner / rivets)",
+      "src/scripts/games/rts/model-polish-r3.test.ts (fails on the pre-r3 snapshot)",
+      "models.test.ts shared-loader routing for every external image",
+      "unit-source-rights.test.ts (pinned lineage)",
+      "glTF validator 0 errors",
+      "qa/death-clearance.json",
+      "production download measurement qa/download-{river,pass}.json",
+      "before/after close-ups and game zoom"
+    ],
+    "rejected": [],
+    "status": "published",
+    "runtime_publish_allowed": true,
+    "publication_scope": "local branch feat/browser-rts-model-polish only; not merged, not deployed",
+    "user_overall_art_acceptance": "pending",
+    "review_page": "art-factory/rts/review/model-polish-20261016.html#round3"
+  }
+}

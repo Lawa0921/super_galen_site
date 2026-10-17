@@ -1,0 +1,48 @@
+{
+  "asset_ids": [
+    "rts-crossbow-bolt",
+    "rts-siege-heavy-bolt"
+  ],
+  "screen_id": "browser-rts-battlefield",
+  "category": "static-3d-projectile",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "root-webgl-reviewed",
+  "source_mode": "reuse the original editable siege quarrel geometry, authored UVs, and generated material textures",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_commit": "32459d4f",
+  "source_blend": "art-factory/rts/runs/kingdom-siege/2026-10-04-original/raw/siege-lod0.blend",
+  "source_blend_sha256": "9ee59fa2b0a00df13c9792a23d499d396ebdc954b3349b325875a66ddc732d55",
+  "source_geometry_path": "LoadedQuarrelPivot/{Hewn heavy quarrel shaft,Sharpened forged quarrel point,Waxed linen quarrel fletching x2}",
+  "source_prompt_contract": "art-factory/rts/contracts/siege.json",
+  "source_prompt_contract_sha256": "6d360ed3b2998a376195777055513a2e3fb3240f2b62acd3ed7718ed6454e57f",
+  "generated_raw_texture_sources": {
+    "hewn-oak-source.png": "f9926fab9b2c38e9a54c0d10a83a2cafa281edb44982be1a5d0bbfd8f4a14348",
+    "forged-iron-source.png": "e1856896b6433ec06e8b227b6edee89f4ff50d92fd480ad4c357f5f24b7f6cdc",
+    "navy-cloth-source.png": "8ff344460b648b1557f86b439d8652bbf5f3b22fafea7a42eab542eeba921142"
+  },
+  "source_texture_run": "art-factory/rts/runs/kingdom-siege/2026-10-04-original",
+  "neutral_linen_source": "art-factory/rts/runs/kingdom-siege/2026-10-04-runtime-v1/candidate/textures/navy-cloth-basecolor.jpg",
+  "neutral_linen_note": "Existing grayscale weave derivative of the original generated navy-cloth source; no TeamCloth material or team-color feather in projectiles",
+  "run": "art-factory/rts/runs/projectiles/2026-10-05-v1",
+  "coordinate_contract": "Blender +Z up and +Y forward; GLB +Y up and -Z forward; mesh origins at projectile center",
+  "geometry_contract": {
+    "bolt_length_m": 0.65,
+    "heavy_bolt_length_m": 1.1,
+    "maximum_triangles_each": 400,
+    "bones": 0,
+    "animations": 0,
+    "lod": false
+  },
+  "material_contract": "Three UV0 PBR materials: generated hewn oak base-color/roughness, forged iron base-color/metallic/roughness, neutral linen base-color/roughness. Shared 512px JPEG sources; no normal map embedded to keep each GLB under 250KB.",
+  "candidate": {
+    "bolt": "candidate/bolt.glb",
+    "heavy_bolt": "candidate/heavy-bolt.glb",
+    "editable_bolt": "candidate/bolt.blend",
+    "editable_heavy_bolt": "candidate/heavy-bolt.blend"
+  },
+  "qa": "qa/verify.json",
+  "visual_review": "qa/projectiles-contact.png",
+  "remaining_review": "None for this local asset publication; full-game art pack and performance acceptance remain separate."
+}

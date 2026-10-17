@@ -1,0 +1,10 @@
+{
+  "reason": "Unregistered unused runtime texture left behind by an earlier material candidate; no published GLB refers to this URI.",
+  "date": "2026-10-08",
+  "former_runtime": "/assets/games/rts/materials/detail-v1/cloth-color.jpg",
+  "sha256": "d17dcd97f34b4664946ea81d552892b7c1ea1cda16472a08349b6b7b2f336b96",
+  "preserved_file": "cloth-color.jpg",
+  "original_candidate_preserved": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/materials/cloth-color.jpg",
+  "runtime_glb_references": [],
+  "runtime_publish_allowed": false
+}

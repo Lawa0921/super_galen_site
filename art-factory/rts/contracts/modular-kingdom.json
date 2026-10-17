@@ -1,0 +1,55 @@
+{
+  "id": "original-kingdom-modular-v1",
+  "screen_id": "browser-rts-battlefield",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "production_spec": "docs/superpowers/specs/2026-10-08-rts-modular-production.md",
+  "run": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1",
+  "category": "original-3d-modular-environment-kit",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "Root and independent assembly review; overall user art acceptance remains pending",
+  "source_policy": "Locked original editable Blender models and their existing original generated PBR textures; no external art",
+  "mode_inference_decision": {
+    "selected_profile": "tileset_tilemap",
+    "adapter": "3D Blender collection modules and prefab recipes, GLB publication",
+    "confidence": "high",
+    "rationale": "Ingest and assemble existing original mesh parts; no newly generated raster pixels"
+  },
+  "alpha_policy": "Preserve existing material alpha and team-color masks; no texture changes",
+  "allowed_processing": [
+    "semantic source mesh grouping",
+    "pivot normalization",
+    "shared collection instancing",
+    "source-locked host sockets",
+    "material-preserving export batching",
+    "lancet moulding local UV rebase at unchanged 0.5 repeat/m"
+  ],
+  "invariants": [
+    "geometry and normals within floating-point tolerance",
+    "building navigation footprint",
+    "level bridge walk surface and corridor",
+    "unit geometry/rig/animation",
+    "runtime material identities and texture sources"
+  ],
+  "qa_gates": [
+    "source and recipe SHA locks",
+    "host socket placement and orientation",
+    "all source meshes assigned once",
+    "linked assembly and evaluated export parity",
+    "cross-prefab edit propagation",
+    "13 glTF validators",
+    "actual exploded and isolated-part browser review",
+    "two-map interaction",
+    "35 MB download budget",
+    "55 median FPS stress budget"
+  ],
+  "limits": [
+    "87 parts include dimension-specific and unique variants",
+    "7 parts are shared across prefabs; roof variants currently unique",
+    "bridge internally reuses deck/parapet parts",
+    "character body/rig kit and complete new grid-wall system are not migrated"
+  ],
+  "qa": "art-factory/rts/runs/modular-kingdom/2026-10-08-v1/qa/root-review.json",
+  "blocking_gate": "55 median FPS stress budget; latest static production run 35.7143 FPS, p95 35.5ms"
+}

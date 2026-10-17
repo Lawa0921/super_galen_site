@@ -4,6 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const publicScripts = resolve(process.cwd(), 'public/scripts');
 
+/** public/scripts 的傳統腳本掛在 window 上的全域；測試以本地型別存取。 */
+type MainClickTestWindow = Window & {
+  GameState?: unknown;
+  DebugUtils?: unknown;
+  unifiedWalletManager?: unknown;
+};
+const testWindow = window as unknown as MainClickTestWindow;
+
 function loadMainScript(): void {
   const source = readFileSync(resolve(publicScripts, 'main.js'), 'utf8');
   new Function(source).call(window);
@@ -15,9 +23,9 @@ describe('main.js 無 GameState 時的 click fallback', () => {
       <div class="hp-bar resource-bar"><div class="bar-fill"></div><span class="bar-text"></span></div>
       <button class="btn" id="fallback-click">點擊</button>
     `;
-    delete window.GameState;
-    window.DebugUtils = { isDevelopment: () => false } as never;
-    window.unifiedWalletManager = {} as never;
+    delete testWindow.GameState;
+    testWindow.DebugUtils = { isDevelopment: () => false } as never;
+    testWindow.unifiedWalletManager = {} as never;
     globalThis.IntersectionObserver = class {
       observe(): void {}
     } as never;

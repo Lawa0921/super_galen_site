@@ -1,0 +1,32 @@
+{
+  "asset_id": "original-articulated-glove",
+  "status": "qa_failed",
+  "run": "art-factory/rts/runs/original-articulated-glove/2026-10-06-v1",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "Original locally authored connected palm/five-digit topology, original finger joints and hand-keyed motion. Reuse only this project's originally generated leather surface; no external model, rig, mocap or animation.",
+  "reference_source": "art-factory/rts/runs/original-crossbow-attack/2026-10-06-v1/candidate/original-crossbow-grip.blend",
+  "reference_sha256": "5ab95a9b070d33a83ccc871ce092414ad513804152fc38e73f70b02556117c37",
+  "surface_source": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/leather-512.png",
+  "scope": "Replace fused closed-fist topology with a genuinely articulatable original glove. Author one connected palm, separate thumb and four fingers, closed hidden wrist cap and semantic finger skin weights. Standalone source/GLB is a preparation for fitting the original human units, not a completed character or reload.",
+  "rig_decision": "Prototype uses Hand plus 15 original finger joints per side, including separate thumb metacarpal, MCP and IP bones. Existing 20 character bind bones remain frozen; future character integration would add 30 original finger bones, with matching 50-bone hierarchy/binds on both LODs. Character integration and any added-bone registry contract remain unfinished.",
+  "screens": ["unit closeup", "animated 3D portrait", "crossbow weapon handling"],
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "source_approval": "User explicitly requires original models, rigs and motion; locally authored original 3D source is the approved production direction. This candidate is not yet approved as finished art.",
+  "surface_provenance": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/qa/provenance.json",
+  "uv_policy": "Intentional repeating UV for the original leather material; tile overlap/wrapping allowed. Opaque closed mesh, no alpha/key-color image processing applies.",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": false,
+  "local_mechanical_milestone": "2026-10-06 v6: four genus-zero skinned surfaces; 388 half-frame deformation samples, 1540 GLB parity poses and 48 Chromium views pass. Independent review accepts only the standalone articulation foundation.",
+  "review_evidence": "art-factory/rts/runs/original-articulated-glove/2026-10-06-v1/qa/release-results.json",
+  "remaining_art_work": ["Reshape tubular digits, sharp V webs, knuckle pads, palm and dorsal anatomy", "Author glove seams, cuff construction and material finish", "Fit the actual characters and weapons, author full reload, and verify 50-bone runtime/portrait behavior"],
+  "qa": [
+    "Baseline real closed-fist mesh fails genus-zero and articulated-finger requirements",
+    "New palm and five digits form one closed orientable genus-zero component with no finger bridges, degenerate faces or nonmanifold edges",
+    "Complete original finger names, normalized weights, fixed wrist/cap and no bone stretching",
+    "Open, intermediate and grip shapes retain separated, readable digits with no self-intersection",
+    "Real GLB skin and animation parity, validator, browser playback, closeup and LOD review",
+    "Before character publication: fit each real grip, full weapon/body contact, original clips and runtime portrait/performance verification"
+  ],
+  "not_complete_until": "Independent visual review accepts anatomy, glove construction, material and deformation; character fit and reload string/bolt mechanism remain separate unfinished requirements. A mesh passing topology alone is not commercial art approval."
+}

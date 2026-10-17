@@ -1,0 +1,32 @@
+{
+  "asset_id": "dawnrealm-guard-pilot",
+  "screen_id": "rts-battlefield-units",
+  "category": "skeletal_3d_character",
+  "status": "needs-review",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_review": "required before runtime publication",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "reference_image": "C:/Users/bag57/.codex/generated_images/01a105df-d576-7703-84fa-155fdc78b299/exec-637642ac-aa13-4ee8-845a-d60bb591f6a6.png",
+  "source_mode": "manual original Blender 5.2 modeling by procedural mesh authoring",
+  "source_license": "original work created for this project; no third-party mesh or texture",
+  "style": "original human kingdom, detailed stylized medieval steel, deep royal blue cloth, warm brass sun emblems, worn leather",
+  "deliverables": {
+    "editable_source": "art-factory/rts/runs/guard-pilot/2026-10-04-revision-v2/raw/dawnrealm-guard-pilot.blend",
+    "candidate_glb": "art-factory/rts/runs/guard-pilot/2026-10-04-revision-v2/candidate/dawnrealm-guard-pilot.glb",
+    "lod1_glb": "art-factory/rts/runs/guard-pilot/2026-10-04-revision-v2/candidate/dawnrealm-guard-pilot-lod1.glb",
+    "qa": "art-factory/rts/runs/guard-pilot/2026-10-04-revision-v2/qa",
+    "rejected_v1_evidence": "art-factory/rts/runs/guard-pilot/2026-10-04-original"
+  },
+  "proposed_runtime_target": "public/assets/games/rts/dawnrealm-guard.glb",
+  "facing": "Blender +Y; glTF export converts facing to -Z",
+  "height_m": 1.86,
+  "triangle_budget": [8000, 20000],
+  "materials": ["TeamCloth", "Steel", "Brass", "Leather"],
+  "animations": ["Idle", "Walk", "Attack", "Hurt", "Death"],
+  "mechanical_gates": ["GLB opens", "skin and weights present", "five separate clips", "PBR material in GLB", "UV and normals", "within triangle budget", "bounds and facing recorded"],
+  "visual_gates": ["readable RTS silhouette", "shield attached to forearm", "no armor gaps", "material fidelity", "death contacts ground"],
+  "known_gaps": ["Concept-level sculptural fidelity is not yet achieved", "Rigid one-bone armor binding", "Multi-unit playback needs runtime evaluation", "External Khronos glTF Validator has not run"],
+  "forbidden_content": ["unlicensed third-party model", "baked UI text", "runtime placeholder geometry"],
+  "approval_note": "Revision v2 is needs-review, not production-ready. Do not copy into runtime without visual review and remaining QA."
+}

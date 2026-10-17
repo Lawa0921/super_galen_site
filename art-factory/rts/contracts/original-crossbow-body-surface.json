@@ -1,0 +1,34 @@
+{
+  "asset_id": "original-crossbow-body-surface",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source": "art-factory/rts/runs/original-crossbow-team-surface/2026-10-06-v1/candidate/original-crossbow-grip.blend",
+  "source_sha256": "35e6c95a646fd8647b3c24fc54ab11106ea53796503ef81d34c76e877e81a4f1",
+  "scope": "Restore continuous original character body surfaces at neck, shoulders, axillae and original mesh seams; retain original generated design and albedo, authored 20-bone rig and all five clips, original closed hands and crossbow.",
+  "source_mode": "Original source geometry repair or retopology; no third-party mesh, rig, animation, mocap, material, or primitive cover replacing visible character art.",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "qa": [
+    "White-material rest/animated renders distinguish real mesh openings from texture and tint",
+    "Use complete geometric boundaries and surface components; do not rely on partial seed lists",
+    "No visible neck/axilla/shoulder or wrist gaps in source and actual exported GLB",
+    "Preserve original character silhouette and texture landmarks",
+    "20 original bind bones and five actions unchanged",
+    "Weapon and hands unchanged, no weapon/body penetration across all clips",
+    "Triangle budgets 20000/10000; actual browser both teams, LODs, animation, portrait and runtime performance before publishing",
+    "Independent review; failed candidates never replace runtime"
+  ],
+  "body_surface_mechanical_gate": "passed",
+  "full_model_approved": false,
+  "qa_report": "art-factory/rts/runs/original-crossbow-body-surface/2026-10-06-v1/qa/root-review.json",
+  "mother_source": "art-factory/rts/runs/unit-bodies/crossbow/v1/projected/candidate/guard-neural-v3.blend",
+  "remaining": [
+    "Visible faceting and sharp axilla grooves",
+    "Belt/skirt angular deformation and jagged dark patches",
+    "Face, glove material and overall original animation quality",
+    "Full-body self-intersection and detailed UV approval",
+    "Game/portrait integration and performance",
+    "Other units and two richer maps"
+  ]
+}

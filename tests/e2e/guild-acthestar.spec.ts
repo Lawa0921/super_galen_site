@@ -133,6 +133,6 @@ test('the theatre story, scene navigation and backstage interaction remain usabl
   await page.locator('.scene-dot[data-scene="0"]').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('#theater h1')).toBeInViewport();
-  expect(await page.locator('img').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0))).toBe(true);
+  expect(await page.locator('img').evaluateAll((images: HTMLImageElement[]) => images.every(image => image.complete && image.naturalWidth > 0))).toBe(true);
   expect(errors).toEqual([]);
 });

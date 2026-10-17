@@ -1,0 +1,55 @@
+{
+  "asset_id": "original-guard-elbow-lip-local-exterior-revision",
+  "category": "original_3d_local_armor_patch_candidate",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "run": "art-factory/rts/runs/original-guard-elbow-lip/2026-10-05",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "source_geometry": "art-factory/rts/runs/original-guard-elbow-rim/2026-10-05/candidate/original-guard-elbow-rim-geometry.json",
+  "fixed_mechanism": {
+    "pivot_t": 0.48,
+    "axis_mode": "global_anatomical",
+    "elbow_follow_fraction": 0,
+    "parameter_sweep_count": 0
+  },
+  "local_design": {
+    "original_rim_edges": [[208, 211], [211, 213]],
+    "adjacent_original_exterior_faces": [114, 113],
+    "axial_extension_m": 0.008,
+    "middle_support_row_m": 0.004,
+    "new_exterior_band_faces": 4,
+    "rejoined_original_recessed_cap_faces": [225, 226, 228, 229],
+    "source_vertices_moved": 0,
+    "outside_roi_source_faces_changed": 0,
+    "external_primitive_added": false,
+    "shape_variants_implemented": 1,
+    "evidence_correction_variants": 0
+  },
+  "qa_outcome": {
+    "topology_closed_and_wound": true,
+    "nonadjacent_self_crossings_in_14_poses": 0,
+    "original_four_surface_crossings_at_combined": 4,
+    "new_surface_crossings_at_bend60": 2,
+    "new_surface_crossings_at_bend75": 1,
+    "new_crossings_side_or_action_ray_unoccluded": true,
+    "original_contact_first_visible_surface": "ForearmArmor cap join from source face 228, not the exterior band",
+    "cap_ahead_of_band_on_side_rays_m": [0.002383, 0.002511],
+    "cap_pair_sum_before_14_poses": 473,
+    "cap_pair_sum_after_14_poses": 483,
+    "continuous_black_slot_closed": false,
+    "protruding_tab_visible": true,
+    "candidate_decision": "reject"
+  },
+  "candidate_files": [
+    "candidate/original-guard-elbow-lip-geometry.json",
+    "candidate/original-guard-elbow-lip.blend",
+    "candidate/original-guard-elbow-lip-combined.glb"
+  ],
+  "evidence": [
+    "qa/source-face-audit.json",
+    "qa/strict-pose-report.json",
+    "qa/visual-diff.json",
+    "qa/decision.json"
+  ]
+}
