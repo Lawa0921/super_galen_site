@@ -23,7 +23,7 @@ import { AmbientField, ambientKind, AMBIENT_GLOWS, type AmbientKind } from './am
 import { LiquidLayer } from './liquidDraw';
 import { LIQ } from '../engine/liquidKind';
 import { dayIndexOf, seasonBlend } from '../engine/calendar';
-import { fallColors, grassLook, leafFall, treeLook } from './seasonLook';
+import { fallColors, grassLook, leafColors, leafFall, treeLook } from './seasonLook';
 import { FloraAtlas, iceBmp } from './seasonArt';
 import { WeatherFx, type Canopy } from './weatherFx';
 import { toCanvas } from './pixel';
@@ -447,7 +447,7 @@ export class Renderer {
         if (f === T.AIR || f === T.WOOD || f === T.LEAVES || f === T.TORCH || f === T.FLOWER || f === T.TALL_GRASS) continue;
         qx = x; qy = y;
         const s = isDecor(f) ? A.decor(f, decorStyle(f, x, y, nb))
-          : f === T.GRASS ? A.grass(grassLook(x, this.seasonDay < 0 ? 0 : this.seasonDay), variant[i], masks[(y - y0) * CHUNK + (x - x0)])
+          : f === T.GRASS ? A.grass(this.grassSeason(x, y, i), variant[i], masks[(y - y0) * CHUNK + (x - x0)])
           : A.tile(f, variant[i], masks[(y - y0) * CHUNK + (x - x0)]);
         ctx.drawImage(img, s.sx, s.sy, S, S, (x - x0) * S, (y - y0) * S, S, S);
       }
@@ -512,7 +512,7 @@ export class Renderer {
       if (dx > camX + vw || dx + sp.canvas.width < camX || dy > camY + vh || dy + sp.canvas.height < camY) continue;
       ctx.drawImage(sp.canvas, Math.round(dx), Math.round(dy));
       // 秋葉 / 春花：樹冠範圍（上半部）會飄落
-      if (r > 0 && leafFall(look)) this.canopies.push({ x: dx + 6, y: dy, w: sp.canvas.width - 12, h: Math.max(8, sp.canvas.height - (t.baseY - t.topY + 1) * S), colors: fallColors(look) });
+      if (r > 0 && leafFall(look)) this.canopies.push({ x: dx + 6, y: dy, w: sp.canvas.width - 12, h: Math.max(8, 2 * (sp.canvas.height - (t.baseY - t.topY + 1) * S) + 2), colors: fallColors(look), dark: leafColors(look, kind)[1] ?? '#2a1810' });
     }
   }
 
@@ -546,6 +546,14 @@ export class Renderer {
         }
       }
     }
+  }
+
+  /** 草皮的季節外觀：冬天只有露天的草才積雪（湖底 / 水下的草改用秋天的枯黃） */
+  private grassSeason(x: number, y: number, i: number): number {
+    const w = this.game.world;
+    const look = grassLook(x, this.seasonDay < 0 ? 0 : this.seasonDay);
+    if (look === 3 && y > 0 && w.liquid[i - w.width] > 0) return 2;
+    return look;
   }
 
   /** 結冰的湖面（畫在液體圖層之上，蓋住那格的水） */

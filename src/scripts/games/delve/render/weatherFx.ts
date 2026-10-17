@@ -23,15 +23,15 @@ const S = TILE_SIZE;
 /** 參考畫面（640×360 美術 px）的最多粒子數 */
 export const RAIN_CAP = 300;
 export const SNOW_CAP = 380;
-export const LEAF_CAP = 48;
+export const LEAF_CAP = 72;
 /** 粒子數上限的絕對值（大螢幕也不超過） */
 const HARD_CAP = 520;
 
 /** 交換刪除（從尾端往前走訪時安全） */
 function kill<T>(a: T[], i: number): void { a[i] = a[a.length - 1]; a.pop(); }
 interface Drop { x: number; y: number; vx: number; vy: number; life: number; kind: 0 | 1 | 2; }
-interface Leaf { x: number; y: number; vx: number; vy: number; phase: number; life: number; color: string; rest: number; }
-export interface Canopy { x: number; y: number; w: number; h: number; colors: readonly string[]; }
+interface Leaf { x: number; y: number; vx: number; vy: number; phase: number; life: number; color: string; dark: string; rest: number; }
+export interface Canopy { x: number; y: number; w: number; h: number; colors: readonly string[]; /** 葉片暗面（對比用） */ dark: string; }
 export interface PrecipView {
   world: World; camX: number; camY: number; vw: number; vh: number;
   /** 'rain' | 'snow' | null（storm 傳 rain + storm=true） */
@@ -175,11 +175,12 @@ export class WeatherFx {
   // ── 落葉 / 花瓣 ──
   updateLeaves(dt: number, world: World, canopies: readonly Canopy[], wind: number, view: { x: number; y: number; w: number; h: number }): void {
     const R = this.rnd, L = this.leaves;
-    const rate = 0.5 + Math.abs(wind) * 1.6;
+    const rate = 1.1 + Math.abs(wind) * 2;
     for (const c of canopies) {
       if (L.length >= LEAF_CAP) break;
       if (R() > dt * rate) continue;
-      L.push({ x: c.x + R() * c.w, y: c.y + c.h * (0.4 + R() * 0.6), vx: 0, vy: 12 + R() * 10, phase: R() * 6, life: 0, color: c.colors[Math.floor(R() * c.colors.length) % c.colors.length], rest: 0 });
+      // 從樹冠下半部飄出（落在樹冠外才看得清楚）
+      L.push({ x: c.x + R() * c.w, y: c.y + c.h * (0.82 + R() * 0.18), vx: 0, vy: 14 + R() * 10, phase: R() * 6, life: 0, color: c.colors[Math.floor(R() * c.colors.length) % c.colors.length], dark: c.dark, rest: 0 });
     }
     for (let i = L.length - 1; i >= 0; i--) {
       const p = L[i];
@@ -196,10 +197,13 @@ export class WeatherFx {
   }
   drawLeaves(ctx: CanvasRenderingContext2D): void {
     for (const p of this.leaves) {
-      ctx.fillStyle = p.color;
       const x = Math.round(p.x), y = Math.round(p.y);
-      // 2×1 的葉片，翻面時變 1×1（簡單的翻轉感）
-      if (Math.sin(p.phase) > 0 || p.rest > 0) ctx.fillRect(x, y, 2, 1); else ctx.fillRect(x, y, 1, 1);
+      // 3 px 的葉片（亮面 2 px + 暗面 1 px），翻面時換成直立的樣子（簡單的翻轉感）
+      const flat = Math.sin(p.phase) > 0 || p.rest > 0;
+      ctx.fillStyle = p.color;
+      if (flat) ctx.fillRect(x, y, 2, 2); else ctx.fillRect(x, y, 1, 2);
+      ctx.fillStyle = p.dark;
+      if (flat) ctx.fillRect(x + 2, y + 1, 1, 1); else ctx.fillRect(x + 1, y + 1, 1, 2);
     }
   }
 
