@@ -268,6 +268,35 @@ describe('ShopScene', () => {
       expect(head.querySelector('.slx-label')!.textContent).toBe('賣出全部已標記（0 件）');
     });
 
+    it('warns before selling a piece with +n or a locked affix, alone or among the marked; plain gear gets no warning', () => {
+      const W = T.ui2.shop.warnInvested;
+      for (const extra of [{ enhance: 4 }, { locked: 0, affixes: [{ key: 'crit' as const, value: 3 }] }]) {
+        const one = setup(0);
+        one.game.state.bag = [{ ...plainItem('iron-sword', 100), rarity: 'magic', ...extra }];
+        one.pick('販賣');
+        one.pick('裝備');
+        (rows(one.root)[1] as HTMLElement).click();
+        const c = one.root.querySelector('.slx-confirm')!;
+        expect(c.textContent, JSON.stringify(extra)).toContain(W);
+        expect(c.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('no');
+        one.s.onAction('confirm');          // 否 keeps it
+        expect(one.game.state.bag).toHaveLength(1);
+
+        const marked = setup(0);
+        marked.game.state.bag = [{ ...plainItem('iron-sword', 100), junk: true }, { ...plainItem('iron-sword', 101), junk: true, ...extra }];
+        marked.pick('販賣');
+        marked.pick('裝備');
+        (rows(marked.root)[0] as HTMLElement).click();
+        expect(marked.root.querySelector('.slx-confirm')!.textContent).toContain(W);
+      }
+      const plain = setup(0);
+      gearBag(plain.game);
+      plain.pick('販賣');
+      plain.pick('裝備');
+      (rows(plain.root)[0] as HTMLElement).click();
+      expect(plain.root.querySelector('.slx-confirm')!.textContent).not.toContain(W);
+    });
+
     it('says so when the bag holds no gear', () => {
       const { pick, root } = setup();
       pick('販賣');

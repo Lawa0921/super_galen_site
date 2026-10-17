@@ -13,7 +13,7 @@ import { buy, isUnlocked, junkTotals, sell, sellGear, sellJunk } from '../../eng
 import type { AnyStat } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
-import { gearLabel } from '../loot';
+import { gearLabel, invested } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { MenuView, QtyView, confirmBox, win } from '../widgets';
@@ -221,7 +221,10 @@ export class ShopScene extends FacilityScene {
         const uids = it.id === 'sell-marked' ? st.bag.filter((x) => x.junk).map((x) => x.uid) : st.bag.filter((x) => `g${x.uid}` === it.id).map((x) => x.uid);
         const total = st.bag.filter((x) => uids.includes(x.uid)).reduce((n, x) => n + sellPrice(x), 0);
         if (!uids.length) return;
-        const box = confirmBox(it.id === 'sell-marked' ? T.ui2.shop.askMarked(uids.length, total) : T.ui2.shop.askOne(it.label, total), (yes) => {
+        const ask = it.id === 'sell-marked' ? T.ui2.shop.askMarked(uids.length, total) : T.ui2.shop.askOne(it.label, total);
+        // An enhanced or reforged piece sells at its plain price: say so before the sale, not after.
+        const warn = st.bag.some((x) => uids.includes(x.uid) && invested(x));
+        const box = confirmBox(warn ? `${ask}\n${T.ui2.shop.warnInvested}` : ask, (yes) => {
           this.pop(!yes);
           if (!yes) return;
           const r = this.ctx.game.apply(sellGear(this.ctx.game.state, uids));

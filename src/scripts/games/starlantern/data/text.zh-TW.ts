@@ -31,11 +31,16 @@ const STAT_NAME: Record<AnyStat, string> = {
 /** Stats that read as points; every other stat reads as a percent. */
 const POINT_STATS: AnyStat[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd', 'str', 'int', 'agi', 'wil', 'armor', 'evasion', 'tpRegen'];
 
-/** A stat change as shown to the player: `+5`, `−3` (the minus sign U+2212, never a hyphen), `0`. */
 /** A number as shown: whole when it is (within a float's error), else one decimal (a fractional base bonus: 「7.4」). */
 const num = (v: number): string => (Math.abs(v - Math.round(v)) < 1e-6 ? String(Math.round(v)) : v.toFixed(1));
+/** A stat change as shown to the player: `+5`, `−3` (the minus sign U+2212, never a hyphen), `0`. */
 const signed = (v: number): string => (v > 0 ? `+${num(v)}` : v < 0 ? `−${num(-v)}` : '0');
-/** Two numbers with one shared precision: whole when both are, else one decimal, or two when one would read the same. */
+/**
+ * Two numbers with one shared precision: whole when both are, else one decimal, or two when one would read the same.
+ * The one place an item display may show two decimals (the precision ruling says one): the enhance preview's before → after.
+ * A 1-point base (def 1) grows ENHANCE_STEP = 0.08 a level, so one decimal can print the same number on both sides
+ * (1.0 → 1.0) and hide a real step; the second decimal (1.00 → 1.08) is shown only then.
+ */
 const pair = (a: number, b: number): [string, string] => {
   if (num(a) === String(Math.round(a)) && num(b) === String(Math.round(b))) return [num(a), num(b)];
   const d = a.toFixed(1) === b.toFixed(1) && Math.abs(a - b) > 1e-9 ? 2 : 1;
@@ -92,7 +97,7 @@ export const T = {
     gold: '金錢不足', full: '背包已滿', locked: '尚未解鎖', stock: '數量不足', invalid: '無法執行', phase: '現在不能這麼做',
     'party-down': '出戰成員全部倒下，無法出發', size: '編隊格數錯誤', 'not-recruited': '尚未招募',
     duplicate: '同一人不能重複上陣', empty: '至少要有一人出戰', 'too-many': '最多只能 5 人上陣',
-    mats: '素材不足', max: '已經強化到最高了', affixLocked: '這件裝備只能重鑄已鎖定的詞綴', none: '沒有可以換的詞綴',
+    mats: '素材不足', max: '已經強化到最高了', affixLocked: '這件裝備的重鑄已鎖定在標著（重鑄鎖定）的詞綴，其他詞綴不可重鑄', none: '沒有可以換的詞綴',
   } as Record<string, string>,
   notices: {
     'save-reset': '存檔無法讀取，已開始新遊戲', wipe: '全滅……冒險背包遺失在迷宮裡，身上的金幣也少了四分之一。',
@@ -348,7 +353,7 @@ export const T = {
 會得到：${yields}`,
       askMarked: (n: number, yields: string) => `要分解已標記的 ${n} 件裝備嗎？
 會得到：${yields}`,
-      warnPrecious: '裡面有傳說、獨特、套裝或已強化的裝備，分解後無法復原。',
+      warnPrecious: '裡面有傳說、獨特、套裝、已強化或有重鑄鎖定詞綴的裝備，分解後無法復原。',
       dismantled: (yields: string) => `分解完成，得到了${yields}。`,
       maxed: '已達上限',
       nothingToEnhance: '沒有可以強化的裝備。',
@@ -357,6 +362,8 @@ export const T = {
       baseStat: (name: string, from: number, to: number) => { const [a, b] = pair(from, to); return `${name} +${a} → +${b}`; },
       chance: (pct: number) => `成功率 ${pct}%`,
       failNote: '失敗不會降級，但素材照樣消耗',
+      /** Beside a stat the step raises by less than a whole point: the wearer's whole number moves once the fractions add up. */
+      accruing: '（累積中）',
       lacking: '（不足）',
       /** 「魔法精華 3／5」: what you have over what is needed. */
       costMat: (name: string, have: number, need: number) => `${name} ${have}／${need}`,
@@ -372,10 +379,13 @@ export const T = {
       nothingToReroll: '沒有可以重鑄的裝備。',
       /** The item list's right column when no affix is locked yet. */
       unlocked: '未鎖定',
-      /** Why the other affixes are greyed out once one is locked (the same words as the engine's refusal). */
-      lockedOther: '這件裝備只能重鑄已鎖定的詞綴',
-      /** The same reason, short enough for a greyed row. */
-      lockedShort: '已鎖定其他詞綴',
+      /**
+       * Why the other affixes are greyed out once one is locked (the same words as the engine's refusal). In the reroll flow
+       * 鎖定 only ever names the affix a reroll is locked to (its mark is T.gear.lockedAffix); the others read 不可重鑄.
+       */
+      lockedOther: '這件裝備的重鑄已鎖定在標著（重鑄鎖定）的詞綴，其他詞綴不可重鑄',
+      /** The state of every other affix, short enough for a greyed row. */
+      lockedShort: '不可重鑄',
       rerollValue: '重抽數值',
       rerollSwap: '換成其他詞綴',
       /** A swap pinned to a region material: 「火焰核（火焰系）」. */
@@ -383,7 +393,7 @@ export const T = {
       rerollNow: (affix: string) => `目前　${affix}`,
       rerollRange: (key: AnyStat, lo: number, hi: number) => `可能的範圍 ${lo}–${hi}${POINT_STATS.includes(key) ? '' : '%'}`,
       rerollPool: (names: string) => `可能換成：${names}`,
-      lockWarn: '重鑄後，這件裝備以後只能重鑄這條詞綴',
+      lockWarn: '重鑄後，這件裝備的重鑄會鎖定在這條詞綴（重鑄鎖定），其他詞綴不可重鑄',
       askReroll: (label: string, affix: string) => `要重鑄${label}的「${affix}」嗎？`,
       /** 「暴擊率 +3% → 暴擊傷害 +18%」: the old affix, then the new one. */
       rerolled: (before: string, after: string) => `重鑄完成！${before} → ${after}`,
@@ -398,6 +408,8 @@ export const T = {
       /** The confirm: the result's rarity word is filled in (and coloured) by the page. */
       askFuse: (rarity: string) => `要合成嗎？
 結果：${rarity}裝備`,
+      /** Added to the fuse confirm when an input carries an investment the fusion throws away. */
+      warnFuse: '材料裡有已強化或有重鑄鎖定詞綴的裝備，合成後強化與重鑄都會消失。',
       fuseIlvl: (n: number) => `物品等級 ${n}`,
       fuseRandom: '隨機物品',
       fuseRandomIn: (slot: string) => `隨機${slot}`,
@@ -502,6 +514,8 @@ export const T = {
       sellMarked: (n: number) => `賣出全部已標記（${n} 件）`,
       askMarked: (n: number, g: number) => `要賣出已標記的 ${n} 件裝備，共 ${g} G 嗎？`,
       askOne: (name: string, g: number) => `要賣出 ${name}（${g} G）嗎？`,
+      /** Added to a sell confirm when a piece is enhanced or reforged: the price counts neither. */
+      warnInvested: '裡面有已強化或有重鑄鎖定詞綴的裝備：售價不計強化與重鑄，賣出後無法復原。',
       soldGear: (n: number, g: number) => `收下 ${n} 件裝備，這是 ${g} G。`,
     },
     guild: {
@@ -522,7 +536,7 @@ export const T = {
         case 'enhance': return `強化 +${u.level}`;
         case 'reroll': return `重鑄${RARITY[u.tier]}裝備`;
         case 'legendaryReroll': return '重鑄傳說裝備';
-        case 'regionReroll': return `重鑄時鎖定${FORGE_GROUP[u.region]}詞綴`;
+        case 'regionReroll': return `重鑄時指定${FORGE_GROUP[u.region]}詞綴`;
         case 'fuseSlot': return `合成${RARITY[u.target]}時指定欄位`;
         case 'consumable': return ITEMS[u.item]?.name ?? u.item;
         case 'base': return `${SLOT_KIND[u.slot]}打造`;

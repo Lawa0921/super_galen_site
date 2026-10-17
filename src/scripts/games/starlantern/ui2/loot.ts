@@ -9,6 +9,9 @@ export const gearLabel = (it: ItemInstance): string => {
   return it.rarity === 'common' ? name : T.gearLabel(name, T.rarity[it.rarity]);
 };
 
+/** Gear the player has put work into that a sale, fusion or dismantle throws away: enhanced, or with a reroll-locked affix. */
+export const invested = (it: ItemInstance): boolean => it.enhance > 0 || it.locked !== undefined;
+
 /** A piece of gear as part of a line: its label in its rarity colour. */
 export const gearPart = (it: ItemInstance): RichPart => ({ text: gearLabel(it), cls: `slx-gear-drop slx-rarity-${it.rarity}` });
 

@@ -15,7 +15,7 @@ import type { GameState } from '../../engine/state';
 import type { AnyStat, GearSlot, ItemInstance, Rarity } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
-import { fillRich, gearLabel, gearPart, joinParts } from '../loot';
+import { fillRich, gearLabel, gearPart, invested, joinParts } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { MenuView, confirmBox, richNodes, richText, win, type Rich, type RichPart } from '../widgets';
@@ -116,10 +116,16 @@ export class ForgeScene extends FacilityScene {
   }
 }
 
-/** Gear whose loss cannot be undone: a named rarity, or anything enhanced. */
-const precious = (it: ItemInstance): boolean => it.rarity === 'legendary' || it.rarity === 'unique' || it.rarity === 'set' || it.enhance > 0;
-/** A single piece asks first from rare up (or when enhanced); common and magic go at once. */
-const asksFirst = (it: ItemInstance): boolean => it.rarity !== 'common' && it.rarity !== 'magic' || it.enhance > 0;
+/** Gear whose loss cannot be undone: a named rarity, or anything invested in (enhanced, or with a reroll-locked affix). */
+const precious = (it: ItemInstance): boolean => it.rarity === 'legendary' || it.rarity === 'unique' || it.rarity === 'set' || invested(it);
+/** A single piece asks first from rare up (or when invested in); a plain common or magic piece goes at once. */
+const asksFirst = (it: ItemInstance): boolean => it.rarity !== 'common' && it.rarity !== 'magic' || invested(it);
+
+/** A detail window's name line: the label, and the wearer when worn (a long row label is cut short, so the detail says it in full). */
+function nameLine(s: GameState, it: ItemInstance): HTMLElement {
+  const member = findItem(s, it.uid)?.member;
+  return el('p', { class: `slx-name-line slx-rarity-${it.rarity}`, text: member ? `${gearLabel(it)}${T.ui2.forge.wornBy(CHARACTERS[member].name)}` : gearLabel(it) });
+}
 
 /** An essence tally as rich parts, each essence in the colour of its rarity. */
 const yieldParts = (y: Record<string, number>): Rich =>
@@ -208,7 +214,7 @@ export function lackingNames(s: GameState, c: Cost): string[] {
 /** The detail beside the enhance list: the level step, the base bonus now and next, chance, cost, and the wearer's gains. */
 function enhanceDetail(s: GameState, it: ItemInstance): HTMLElement[] {
   const F = T.ui2.forge;
-  const out: HTMLElement[] = [el('p', { class: `slx-name-line slx-rarity-${it.rarity}`, text: gearLabel(it) })];
+  const out: HTMLElement[] = [nameLine(s, it)];
   const cost = enhanceCost(it);
   if (!cost) return [...out, el('p', { class: 'slx-desc', text: `+${it.enhance}　${F.maxed}` })];
   const next: ItemInstance = { ...it, enhance: it.enhance + 1 };
@@ -229,7 +235,13 @@ function enhanceDetail(s: GameState, it: ItemInstance): HTMLElement[] {
     const delta = compareDelta(s.party.roster[found.member], found.slot, next);
     const stats = (Object.keys(T.gear.statName) as AnyStat[]).filter((k) => delta[k]).map((k) =>
       el('span', { class: delta[k]! > 0 ? 'slx-up' : 'slx-down', attrs: { 'data-stat': k }, text: `${T.gear.statName[k]}${T.ui2.equip.delta(k, delta[k]!)}` }));
-    out.push(el('ul', { class: 'slx-skills slx-cmp-list' }, [el('li', { class: 'slx-cmp-member' }, [el('b', { text: CHARACTERS[found.member].name }), ...stats])]));
+    // A base stat the step raises by less than the wearer's next whole point: the sheet floors the total, so say it is accruing.
+    const accruing = (Object.keys(after) as AnyStat[]).filter((k) => !delta[k] && (after[k as keyof typeof after] ?? 0) > (now[k as keyof typeof now] ?? 0)).map((k) =>
+      el('span', { class: 'slx-desc', attrs: { 'data-stat': k }, text: `${T.gear.statName[k]}${F.accruing}` }));
+    const parts = [...stats, ...accruing];
+    out.push(el('ul', { class: 'slx-skills slx-cmp-list' }, [el('li', { class: 'slx-cmp-member' }, [
+      el('b', { text: CHARACTERS[found.member].name }), ...(parts.length ? parts : [el('span', { class: 'slx-desc', text: T.ui2.equip.noChange })]),
+    ])]));
   }
   return out;
 }
@@ -319,7 +331,7 @@ export function rerollPage(h: ForgeHost): void {
   const info = win('slx-info slx-reroll-info');
   const shows: Array<() => void> = [];
   const show = () => shows[shows.length - 1]?.();
-  const nameLine = (it: ItemInstance) => el('p', { class: `slx-name-line slx-rarity-${it.rarity}`, text: gearLabel(it) });
+  const itemLine = (it: ItemInstance) => nameLine(game.state, it);
   const affixLines = (it: ItemInstance) => it.affixes.map((a, i) =>
     el('p', { text: i === it.locked ? `${affixText(a)}${T.gear.lockedAffix}` : affixText(a) }));
 
@@ -330,7 +342,7 @@ export function rerollPage(h: ForgeHost): void {
   }, 12);
   shows.push(() => {
     const it = find(Number(itemsView.menu.current()?.id.slice(1)));
-    info.replaceChildren(...(it ? [nameLine(it), ...affixLines(it)] : []));
+    info.replaceChildren(...(it ? [itemLine(it), ...affixLines(it)] : []));
   });
 
   function openAffixes(uid: number): void {
@@ -351,7 +363,7 @@ export function rerollPage(h: ForgeHost): void {
     const refresh = () => { sync(itemsView, itemRows()); sync(view, rows()); };
     shows.push(() => {
       const it = find(uid);
-      info.replaceChildren(...(it ? [nameLine(it), ...affixLines(it), ...(it.locked !== undefined ? [el('p', { class: 'slx-desc', text: F.lockedOther })] : [])] : []));
+      info.replaceChildren(...(it ? [itemLine(it), ...affixLines(it), ...(it.locked !== undefined ? [el('p', { class: 'slx-desc', text: F.lockedOther })] : [])] : []));
     });
     show();
     h.push({ el: win('slx-list slx-forge-list slx-reroll-list', [view.el]), onAction: (a) => view.onAction(a) });
@@ -403,7 +415,7 @@ export function rerollPage(h: ForgeHost): void {
         const cur = mview.menu.current();
         if (!it || !it.affixes[index]) { info.replaceChildren(); return; }
         const o = how(cur?.id ?? 'value');
-        const lines = [nameLine(it), el('p', { text: F.rerollNow(affixText(it.affixes[index])) })];
+        const lines = [itemLine(it), el('p', { text: F.rerollNow(affixText(it.affixes[index])) })];
         if (o.swap) lines.push(el('p', { text: F.rerollPool(swapPool(it, index, o.mat).map((k) => T.gear.statName[k]).join('、')) }));
         else { const r = rerollRange(it, index); if (r) lines.push(el('p', { text: F.rerollRange(it.affixes[index].key, r[0], r[1]) })); }
         lines.push(el('p', {}, richNodes(costText(game.state, rerollCost(it, o)))));
@@ -515,6 +527,7 @@ export function fusePage(h: ForgeHost): void {
           `\n${F.fuseRegionNote}`,
           `\n${F.fuseNeed}`,
           ...costText(game.state, cost),
+          ...(inputs.some(invested) ? [`\n${F.warnFuse}`] : []),
         ];
         const box = confirmBox(ask, (yes) => {
           h.pop(!yes);

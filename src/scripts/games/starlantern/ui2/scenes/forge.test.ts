@@ -144,7 +144,7 @@ describe('ForgeScene', () => {
 
   it('keeps the reasons the shop and the gate use apart from the forge ones', () => {
     expect(T.reasons.locked).toBe('尚未解鎖');
-    expect(T.reasons).toMatchObject({ mats: '素材不足', max: '已經強化到最高了', affixLocked: '這件裝備只能重鑄已鎖定的詞綴', none: '沒有可以換的詞綴' });
+    expect(T.reasons).toMatchObject({ mats: '素材不足', max: '已經強化到最高了', affixLocked: '這件裝備的重鑄已鎖定在標著（重鑄鎖定）的詞綴，其他詞綴不可重鑄', none: '沒有可以換的詞綴' });
   });
 
   it('no element carries a style attribute', () => {
@@ -240,6 +240,14 @@ describe('ForgeScene dismantle page', () => {
     const b = open([gear(1, 'iron-sword', 'rare')]);
     b.s.onAction('confirm');
     expect(b.confirmEl()!.textContent).not.toContain(T.ui2.forge.warnPrecious);
+  });
+
+  it('a magic piece with a locked affix asks first and warns, like an enhanced one', () => {
+    const a = open([gear(1, 'iron-sword', 'magic', { locked: 0, affixes: [{ key: 'crit', value: 3 }] })]);
+    a.s.onAction('confirm');
+    expect(a.confirmEl()).not.toBeNull();
+    expect(a.confirmEl()!.textContent).toContain(T.ui2.forge.warnPrecious);
+    expect(a.game.state.bag).toHaveLength(1);
   });
 
   it('has no 分解全部已標記 row without marked gear, and never lists worn gear', () => {
@@ -370,6 +378,30 @@ describe('ForgeScene enhance page', () => {
         expect(from, `${b.id} ilvl ${ilvl} +${e} ${k}: ${words}`).not.toBe(to);
       }
     }
+  });
+
+  it('a worn piece whose step adds less than a whole point says 累積中 for that stat instead of an empty line', () => {
+    const it = gear(7, 'iron-sword', 'common', { ilvl: 1 });
+    const { info } = open([], (g) => { g.state.party.roster[g.state.party.recruited[0]].equip = { weapon: it }; });
+    const li = info().querySelector('.slx-cmp-member')!;
+    expect(li.querySelector('.slx-up[data-stat=atk]')).toBeNull();
+    expect(li.querySelector('[data-stat=atk]')!.textContent).toBe(`攻擊${T.ui2.forge.accruing}`);
+  });
+
+  it('the wearer line is never just a name: every base, level and item level shows a gain, 累積中 or 能力不變', () => {
+    for (const b of Object.values(EQUIPMENT)) for (const ilvl of [b.ilvl, 60]) for (const e of [0, 4, 9]) {
+      const it = gear(7, b.id, 'common', { ilvl, enhance: e });
+      const slot = b.slot === 'ring' ? 'ring1' : b.slot;
+      const { info } = open([], (g) => { g.state.party.roster[g.state.party.recruited[0]].equip = { [slot]: it }; });
+      const li = info().querySelector('.slx-cmp-member')!;
+      expect(li.querySelectorAll('span').length, `${b.id} ilvl ${ilvl} +${e}`).toBeGreaterThan(0);
+    }
+  });
+
+  it("a worn piece's detail names its wearer, since a long row label is cut short", () => {
+    const it = gear(7, 'iron-sword', 'rare', { ilvl: 40, enhance: 5 });
+    const { game, info } = open([], (g) => { g.state.party.roster[g.state.party.recruited[0]].equip = { weapon: it }; });
+    expect(info().querySelector('.slx-name-line')!.textContent).toBe(`${gearLabel(it)}${T.ui2.forge.wornBy(CHAR_NAME(game.state.party.recruited[0]))}`);
   });
 
   it('shows no chance below +5, and no failure note at 100%', () => {
@@ -686,6 +718,43 @@ describe('ForgeScene reroll page', () => {
     expect(root.querySelector('.slx-cmd')!.classList.contains('slx-under')).toBe(false);
   });
 
+  it('while a confirm is open every lower window is inert, and a click on a dimmed list does nothing', () => {
+    const { go, lists, confirmEl, root, game } = open([sword(), sword({ uid: 2 })]);
+    go('confirm', 'confirm', 'confirm');    // item, affix, 重抽數值: the confirm is on top of three lists
+    expect(confirmEl()).not.toBeNull();
+    expect(lists()).toHaveLength(3);
+    expect(lists().every((l) => l.hasAttribute('inert'))).toBe(true);
+    expect(root.querySelector('.slx-cmd')!.hasAttribute('inert')).toBe(true);
+    expect(confirmEl()!.hasAttribute('inert')).toBe(false);
+    const before = structuredClone(game.state);
+    (lists()[0].querySelectorAll('[role=option]')[1] as HTMLElement).click();   // the other item, in the dimmed first list
+    (lists()[1].querySelector('[role=option]') as HTMLElement).click();
+    (root.querySelector('.slx-cmd [data-id=fuse]') as HTMLElement).click();
+    expect(lists()).toHaveLength(3);
+    expect(confirmEl()).not.toBeNull();
+    expect(game.state).toEqual(before);
+  });
+
+  it('鎖定 means one thing in the reroll flow, the affix a reroll is locked to; the other affixes read 不可重鑄', () => {
+    expect(T.gear.lockedAffix).toContain('重鑄鎖定');
+    expect(F.lockWarn).toContain('鎖定');
+    expect(F.lockedShort).toBe('不可重鑄');
+    expect(F.lockedOther).toContain('不可重鑄');
+    expect(F.lockedOther).toContain(T.gear.lockedAffix);
+    expect(T.reasons.affixLocked).toBe(F.lockedOther);
+    // A region material only narrows a swap: it is 指定, never 鎖定.
+    for (const region of ['blaze', 'frost', 'storm', 'mire', 'shade', 'iron'] as const) {
+      const words = T.forge.use({ kind: 'regionReroll', region });
+      expect(words).toContain('指定');
+      expect(words).not.toContain('鎖定');
+    }
+  });
+
+  it("the reroll detail names a worn piece's wearer", () => {
+    const { game, info } = open([], (g) => { g.state.party.roster[g.state.party.recruited[0]].equip = { weapon: sword({ uid: 9 }) }; });
+    expect(info().querySelector('.slx-name-line')!.textContent).toContain(T.ui2.forge.wornBy(CHAR_NAME(game.state.party.recruited[0])));
+  });
+
   it('Esc steps back one layer at a time and closes the detail', () => {
     const { go, lists, root } = open([sword()]);
     go('confirm', 'confirm');
@@ -834,6 +903,21 @@ describe('ForgeScene fuse page', () => {
     go('confirm');                          // 否
     expect(confirmEl()).toBeNull();
     expect(game.state.bag.length).toBe(3);
+  });
+
+  it('the confirm warns when an input is enhanced or has a locked affix, and not for plain inputs', () => {
+    for (const extra of [{ enhance: 3 }, { locked: 0, affixes: [{ key: 'crit' as const, value: 3 }] }]) {
+      const bag = three('magic').map((it, i) => (i === 1 ? { ...it, ...extra } : it));
+      const { go, confirmEl, pickThree } = open(bag);
+      pickThree();
+      go('confirm');                        // 隨機欄位
+      expect(confirmEl()!.textContent, JSON.stringify(extra)).toContain(F.warnFuse);
+      expect(confirmEl()!.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('no');
+    }
+    const { go, confirmEl, pickThree } = open(three('magic'));
+    pickThree();
+    go('confirm');
+    expect(confirmEl()!.textContent).not.toContain(F.warnFuse);
   });
 
   it('a rare-or-better input also defaults to 否', () => {

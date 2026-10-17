@@ -51,7 +51,7 @@ describe('GateScene: the portal plaza', () => {
     const use = cards()[1].querySelector('.slx-portal-drop-use')!.textContent!;
     expect(use).toBe('用途：重鑄火焰詞綴、焰紋套裝');
     const full = cards()[1].querySelector('.slx-portal-drop-use')!.getAttribute('title')!;
-    expect(full).toContain('重鑄時鎖定火焰系詞綴');
+    expect(full).toContain('重鑄時指定火焰系詞綴');
     expect(full).toContain('焰紋套裝打造');
     expect(cards()[2].querySelector('.slx-portal-drop-use')!.textContent).toBe('用途：重鑄防禦詞綴、鐵壁套裝');
     expect(cards()[0].querySelector('.slx-portal-drop-use')).toBeNull();
