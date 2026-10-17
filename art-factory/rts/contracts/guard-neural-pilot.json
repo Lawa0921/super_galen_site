@@ -1,0 +1,104 @@
+{
+  "asset_id": "dawnrealm-guard-neural-pilot",
+  "screen_id": "rts-battlefield-units",
+  "category": "skeletal_3d_character_experiment",
+  "status": "superseded-by-original-guard-assembly",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": true,
+  "assembly_human_review": "root-webgl-reviewed; user overall art acceptance pending",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "original generated 2D concept to local TripoSR single-image reconstruction",
+  "style": "original human kingdom; detailed stylized medieval steel, deep royal blue cloth, warm brass sun emblem, worn leather",
+  "input": "art-factory/rts/runs/guard-neural-pilot/v1/raw/input.png",
+  "input_prompt": "art-factory/rts/runs/guard-neural-pilot/v1/prompts/generation.txt",
+  "prepared_input": "art-factory/rts/runs/guard-neural-pilot/v1/raw/prepared-gray.png",
+  "preprocess": "RGBA alpha-bounds crop, Lanczos fit to 85% of a 512 square, alpha composite against RGB(127,127,127); no rembg",
+  "model": {
+    "code_url": "https://github.com/VAST-AI-Research/TripoSR",
+    "code_commit": "107cefdc244c39106fa830359024f6a2f1c78871",
+    "code_license": "MIT",
+    "weights_url": "https://huggingface.co/stabilityai/TripoSR",
+    "weights_revision": "5b521936b01fbe1890f6f9baed0254ab6351c04a",
+    "weights_license": "MIT",
+    "checkpoint_sha256": "429e2c6b22a0923967459de24d67f05962b235f79cde6b032aa7ed2ffcd970ee",
+    "dino_architecture_config_url": "https://huggingface.co/facebook/dino-vitb16",
+    "dino_architecture_config_revision": "f205d5d8e640a89a2b8ef0369670dfc37cc07fc2",
+    "dino_architecture_config_license": "Apache-2.0",
+    "dino_architecture_config_sha256": "b87c0270b97db085fd82cf114a761fd0f62ae7914fbd407c752a2260646b689c",
+    "dino_weights_downloaded": false
+  },
+  "isolation": "Windows uv CPython 3.11 venv and source/weights cache under C:/Users/bag57/.cache/codex-rts3d",
+  "pipeline_difference": "PyMCubes 0.1.6 (BSD-3-Clause) CPU marching cubes replaces uncompiled torchmcubes CUDA/CPU extension; its compiled extension is loaded directly to avoid scipy-only smoothing helpers; network inference and density/color queries remain on PyTorch CUDA",
+  "candidate": "art-factory/rts/runs/guard-neural-pilot/production-v2/candidate/guard-production-lod0.glb",
+  "editable_source": "art-factory/rts/runs/guard-neural-pilot/production-v2/raw/guard-production-v2.blend",
+  "qa": "art-factory/rts/runs/guard-neural-pilot/production-v2/qa",
+  "v2_trial": {
+    "status": "qa_failed",
+    "run": "art-factory/rts/runs/guard-neural-pilot/v2",
+    "method": "same input and TripoSR model; one mild mesh smoothing step, all smooth normals, xatlas UV and 2048 per-texel GPU neural-color query with sRGB baseColor texture",
+    "visual_review": "Smoothing and color pipeline improved, but source ornament remains blurry, rear is hallucinated, and 64px guard identity is insufficient",
+    "runtime_publish_allowed": false
+  },
+  "v3_body_trial": {
+    "status": "body_candidate_accepted_for_rig_equipment",
+    "run": "art-factory/rts/runs/guard-neural-pilot/v3",
+    "method": "front and rear original 1024x1536 RGBA image projection onto unchanged v2 UV mesh, alpha/normal/depth gated and linear-RGB blended with v2 neural side color",
+    "visual_review": "Front and rear armor detail is readable; side remains soft and rear skirt partly distorts; empty-handed 64px render cannot establish equipped guard identity",
+    "runtime_publish_allowed": false
+  },
+  "production_v1": {
+    "status": "superseded-by-production-v2",
+    "run": "art-factory/rts/runs/guard-neural-pilot/production-v1",
+    "editable_source": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/guard-production-v1.blend",
+    "lod0": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/guard-production-lod0.glb",
+    "lod1": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/guard-production-lod1.glb",
+    "qa": "art-factory/rts/runs/guard-neural-pilot/production-v1/qa/review-production-v1.md",
+    "forward": "glTF -Z",
+    "rest_height_m": 1.86,
+    "bone_count": 20,
+    "clips": [
+      "Idle",
+      "Walk",
+      "Attack",
+      "Hurt",
+      "Death"
+    ],
+    "runtime_publish_allowed": false,
+    "runtime_bytes": 2973972
+  },
+  "proposed_runtime_target": "public/assets/games/rts/models/guard.glb",
+  "mechanical_gates": [
+    "real CUDA inference",
+    "mesh opens in Blender",
+    "2048 texture when feasible",
+    "front side back and 64px renders",
+    "hashes and timings recorded"
+  ],
+  "visual_gates": [
+    "front and back anatomy",
+    "separated limbs",
+    "RTS-scale silhouette",
+    "armor and cloth legibility",
+    "no sculptural hallucinations"
+  ],
+  "not_in_scope": [
+    "other characters"
+  ],
+  "approval_note": "Production-v2 safely merges same-skin/material equipment and passes root actual WebGL team/LOD/five-action review. Previous production-v1 is archived; failed initial v1/v2 neural pilots remain outside runtime.",
+  "initial_pilot": {
+    "status": "qa_failed",
+    "candidate": "art-factory/rts/runs/guard-neural-pilot/v1/candidate/guard-textured.glb",
+    "editable_source": "art-factory/rts/runs/guard-neural-pilot/v1/candidate/guard-textured.blend",
+    "qa": "art-factory/rts/runs/guard-neural-pilot/v1/qa",
+    "approval_note": "Technical image-to-3D generation succeeded, but visual QA failed the detailed medieval guard target. No candidate is approved or published by this contract."
+  },
+  "active_run": "production-v2",
+  "production_v2": {
+    "status": "superseded",
+    "runtime_publish_allowed": false,
+    "runtime_bytes": 2967992,
+    "visual_tolerance": "At most six 8-bit channel samples per frame differ by one level; ten checked frames",
+    "qa": "art-factory/rts/runs/guard-neural-pilot/production-v2/qa"
+  },
+  "superseded_by": "art-factory/rts/contracts/original-guard-assembly.json"
+}

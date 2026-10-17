@@ -1,0 +1,117 @@
+{
+  "id": "kingdom-buildings",
+  "screen_id": "browser-rts-battlefield",
+  "category": "3d-building",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "root-reviewed; user overall art acceptance pending",
+  "source_mode": "original-Blender-scripted-mesh-with-generated-textures",
+  "source_truth": [
+    "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+    "C:/Users/bag57/.codex/generated_images/01a105df-d576-7703-84fa-155fdc78b299/exec-637642ac-aa13-4ee8-845a-d60bb591f6a6.png"
+  ],
+  "source_brief": "Original human kingdom RTS architecture: ivory limestone, navy slate tiled gables, dark timber frames, aged brass sun emblems, changeable TeamCloth banners. No baked text.",
+  "postprocess_profile": "3d-glb-candidate",
+  "coordinates": "GLB +Y up; +Z front; origin ground-plane center",
+  "qa_gates": {
+    "max_lod0_triangles": 20000,
+    "max_glb_bytes": 1572864,
+    "require_uv": true,
+    "require_teamcloth": true,
+    "require_blend_source": true,
+    "require_isometric_64px_review": true,
+    "require_closeup_review": true
+  },
+  "assets": [
+    {
+      "id": "townhall",
+      "footprint_m": [
+        8,
+        8
+      ]
+    },
+    {
+      "id": "townhall-tier2",
+      "footprint_m": [
+        8,
+        8
+      ]
+    },
+    {
+      "id": "townhall-tier3",
+      "footprint_m": [
+        8,
+        8
+      ]
+    },
+    {
+      "id": "house",
+      "footprint_m": [
+        4,
+        4
+      ]
+    },
+    {
+      "id": "barracks",
+      "footprint_m": [
+        6,
+        6
+      ]
+    },
+    {
+      "id": "lumbermill",
+      "footprint_m": [
+        5,
+        5
+      ]
+    },
+    {
+      "id": "forge",
+      "footprint_m": [
+        5,
+        5
+      ]
+    },
+    {
+      "id": "altar",
+      "footprint_m": [
+        5,
+        5
+      ]
+    },
+    {
+      "id": "tower",
+      "footprint_m": [
+        3,
+        3
+      ]
+    },
+    {
+      "id": "chapel",
+      "footprint_m": [
+        6,
+        6
+      ]
+    },
+    {
+      "id": "stable",
+      "footprint_m": [
+        7,
+        6
+      ]
+    },
+    {
+      "id": "workshop",
+      "footprint_m": [
+        7,
+        6
+      ]
+    }
+  ],
+  "active_run": "2026-10-04-v2",
+  "rejected_runs": [
+    "2026-10-04-original-blender"
+  ],
+  "assembly_evidence": "art-factory/rts/runs/final-assembly/2026-10-05/root-review.json"
+}

@@ -1,0 +1,75 @@
+import {describe,it,expect,vi} from 'vitest';
+import * as THREE from 'three';
+import type {GLTF} from 'three/addons/loaders/GLTFLoader.js';
+import {ModelInstance,type ModelLibrary} from './models';
+import {SceneryLayer} from './scenery';
+import type {SceneryPlacement} from './maps';
+import {pickTarget} from './picking';
+
+describe('fog-safe static scenery batching',()=>{
+  it('uploads static matrices only when explored membership changes, including in-place fog edits',()=>{
+    const geometry=new THREE.BoxGeometry(),material=new THREE.MeshStandardMaterial(),source=new THREE.Group();source.add(new THREE.Mesh(geometry,material));
+    const library={instantiate:()=>new ModelInstance({scene:source,animations:[]} as unknown as GLTF,{url:'/assets/games/rts/models/oak.glb',status:'published'})} as unknown as ModelLibrary;
+    const placements:SceneryPlacement[]=[10,20].map(x=>({kind:'oak',x,z:20,radius:1,scale:1,rotation:0,onOriginalObstacle:false}));
+    const layer=new SceneryLayer(placements,library,96),mesh=layer.root.children[0] as THREE.InstancedMesh,fog=new Uint8Array(9216);fog[20*96+10]=1;
+    layer.update(fog);const version=mesh.instanceMatrix.version;expect(mesh.count).toBe(1);
+    layer.update(fog.slice());expect(mesh.instanceMatrix.version).toBe(version);
+    fog[0]=1;layer.update(fog);expect(mesh.instanceMatrix.version).toBe(version);
+    fog[20*96+10]=0;fog[20*96+20]=1;layer.update(fog);expect(mesh.count).toBe(1);expect(mesh.instanceMatrix.version).toBe(version+1);
+    const matrix=new THREE.Matrix4();mesh.getMatrixAt(0,matrix);expect(new THREE.Vector3().setFromMatrixPosition(matrix).x).toBe(20);
+    layer.dispose();geometry.dispose();material.dispose();
+  });
+  it('keeps instanced resource trees pickable after visibility compaction without exposing unexplored trees',()=>{
+    const geometry=new THREE.BoxGeometry(2,2,2),material=new THREE.MeshStandardMaterial(),source=new THREE.Group();source.add(new THREE.Mesh(geometry,material));
+    const library={instantiate:()=>new ModelInstance({scene:source,animations:[]} as unknown as GLTF,{url:'/assets/games/rts/models/oak.glb',status:'published'})} as unknown as ModelLibrary;
+    const placements:SceneryPlacement[]=[10,20].map(x=>({kind:'oak',x,z:20,radius:1,scale:1,rotation:0,onOriginalObstacle:false}));
+    const layer=new SceneryLayer(placements,library,96,'wood-west'),fog=new Uint8Array(9216);
+    const hit=(x:number)=>pickTarget(new THREE.Raycaster(new THREE.Vector3(x,5,20),new THREE.Vector3(0,-1,0)).intersectObject(layer.root,true));
+    fog[20*96+10]=1;layer.update(fog);layer.root.updateMatrixWorld(true);
+    expect(hit(10)).toEqual({resourceId:'wood-west'});expect(hit(20)).toBeNull();
+    fog[20*96+10]=0;fog[20*96+20]=1;layer.update(fog);
+    expect(hit(10)).toBeNull();expect(hit(20)).toEqual({resourceId:'wood-west'});
+    layer.root.visible=false;expect(hit(20)).toBeNull();
+    layer.dispose();geometry.dispose();material.dispose();
+  });
+  it('fits offset source geometry to the exact narrow obstacle bounds at either authored yaw',()=>{
+    const geometry=new THREE.BoxGeometry(4,3,2),material=new THREE.MeshStandardMaterial(),source=new THREE.Group();
+    const rock=new THREE.Mesh(geometry,material);rock.position.set(3,4,5);source.add(rock);
+    const gltf={scene:source,animations:[]} as unknown as GLTF;
+    const library={instantiate:()=>new ModelInstance(gltf,{url:'/assets/games/rts/models/rock.glb',status:'published'})} as unknown as ModelLibrary;
+    const placements:SceneryPlacement[]=[0,Math.PI].map((rotation,i)=>({kind:'rock',x:10+i*5,z:20,radius:.48,scale:1,rotation,onOriginalObstacle:true,size:{width:2.8,height:1.6,depth:.96}}));
+    const layer=new SceneryLayer(placements,library,96);layer.update(new Uint8Array(96*96).fill(1));
+    const mesh=layer.root.children[0] as THREE.InstancedMesh;
+    expect(mesh.userData.sceneryKind).toBe('rock');
+    placements.forEach((p,i)=>{const matrix=new THREE.Matrix4();mesh.getMatrixAt(i,matrix);geometry.computeBoundingBox();const bounds=geometry.boundingBox!.clone().applyMatrix4(matrix),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
+      expect(size.x).toBeCloseTo(2.8);expect(size.y).toBeCloseTo(1.6);expect(size.z).toBeCloseTo(.96);expect(center.x).toBeCloseTo(p.x);expect(center.z).toBeCloseTo(p.z);expect(bounds.min.y).toBeCloseTo(0);
+    });
+    layer.dispose();geometry.dispose();material.dispose();
+  });
+  it.each(['oak','pine'] as const)('preserves %s source primitive transforms and compacts only explored instances',kind=>{
+    const geometry=new THREE.BoxGeometry(),material=new THREE.MeshStandardMaterial();
+    const source=new THREE.Group(),offset=new THREE.Group();offset.position.set(1,2,3);source.add(offset);
+    const body=new THREE.Mesh(geometry,material),crown=new THREE.Mesh(geometry,material);crown.position.y=4;offset.add(body,crown);
+    const gltf={scene:source,animations:[]} as unknown as GLTF;
+    const instantiate=vi.fn(()=>new ModelInstance(gltf,{url:`/assets/games/rts/models/${kind}.glb`,status:'published'}));
+    const library={instantiate} as unknown as ModelLibrary;
+    const placements:SceneryPlacement[]=[{kind,x:10,z:20,radius:1,scale:.5,rotation:0,onOriginalObstacle:false},{kind,x:30,z:40,radius:1,scale:.6,rotation:1,onOriginalObstacle:false}];
+    const layer=new SceneryLayer(placements,library,96);
+    expect(instantiate).toHaveBeenCalledWith(kind);
+    const meshes=layer.root.children as THREE.InstancedMesh[];
+    expect(meshes).toHaveLength(2);
+    expect(meshes.every(mesh=>mesh.geometry===geometry&&mesh.material===material)).toBe(true);
+    expect(meshes.every(mesh=>mesh.count===0&&mesh.frustumCulled===false)).toBe(true);
+    const explored=new Uint8Array(96*96);explored[40*96+30]=1;layer.update(explored);
+    expect(meshes.map(mesh=>mesh.count)).toEqual([1,1]);
+    const world=new THREE.Matrix4(),point=new THREE.Vector3();meshes[0].getMatrixAt(0,world);
+    point.setFromMatrixPosition(world);
+    expect(point.x).toBeCloseTo(30+.6*(Math.cos(1)+3*Math.sin(1)));
+    expect(point.y).toBeCloseTo(1.2);
+    expect(point.z).toBeCloseTo(40+.6*(3*Math.cos(1)-Math.sin(1)));
+    explored[20*96+10]=1;layer.update(explored);expect(meshes.map(mesh=>mesh.count)).toEqual([2,2]);
+    const sharedDispose=vi.spyOn(geometry,'dispose'),materialDispose=vi.spyOn(material,'dispose');
+    layer.dispose();expect(sharedDispose).not.toHaveBeenCalled();expect(materialDispose).not.toHaveBeenCalled();expect(layer.root.children).toHaveLength(0);
+    geometry.dispose();material.dispose();
+  });
+});

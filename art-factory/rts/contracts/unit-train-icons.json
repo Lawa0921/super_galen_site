@@ -1,0 +1,34 @@
+{
+  "asset_id": "unit-train-icons",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "status": "published-pending-user-style-approval",
+  "category": "ui_icon",
+  "source_mode": "original_3d_render",
+  "imagegen_used": false,
+  "generator": "three.js WebGL via runtime ModelLibrary in headless Chromium (SwiftShader); art-factory/rts/tools/unit_train_icon_capture.mjs + unit_train_icon_viewer.ts",
+  "generator_routing_note": "Project CLAUDE.md routes images to nanobanana-image-gen, but that skill is not installed on this machine; codex is only on explicit user request. Followed the existing building-production-icons precedent (original_3d_render of published original GLBs), which needs no image generator.",
+  "source_registry": "public/assets/games/rts/model-registry.json",
+  "source_ids": ["worker", "guard", "crossbow", "priest", "knight", "siege", "commander"],
+  "framing": "art-factory/rts/runs/unit-train-icons/2026-10-16-v1/framing.json (multipliers on PORTRAIT_FRAMING in src/scripts/games/rts/portrait.ts)",
+  "mockup": "art-factory/rts/runs/unit-train-icons/2026-10-16-v1/mockup.md",
+  "size": {"raw": [1024, 1024], "candidate": [128, 128], "fit_square": 110, "safe_margin_min": 8, "qa_sizes": [24, 32, 48, 64, 128]},
+  "alpha_policy": {
+    "classification": "native_transparent_3d_render",
+    "exception": "Native transparent WebGL clear (alpha 0) instead of magenta chroma key: no backdrop exists to key out, and metal/blue team cloth keeps exact color without key-spill risk. Same exception as building-production-icons.",
+    "semi_alpha": "2px contour antialias only",
+    "intentional_holes": "Original model silhouette gaps only (arm/body, siege frame and wheels); no erase operation",
+    "bust_cut": "Deliberate straight crop at the render frame edge (bust framing); lies inside the 128px canvas margin"
+  },
+  "postprocess": "art-factory/rts/runs/unit-train-icons/2026-10-16-v1/postprocess.py",
+  "allowed_operations": ["alpha<=8 clear, >=240 normalize", "alpha bbox crop", "Lanczos fit 110 centered on 128", "clear transparent RGB", "remove semi-alpha beyond 2px of opaque", "lossless WebP (RGBA exact)"],
+  "forbidden": ["drawn or painted pixels", "baked text/frame", "new geometry", "rejected or candidate paths in runtime"],
+  "qa_gates": ["128x128", "margins >= 8", "edge contact 0", "semi-alpha beyond 2px 0", "transparent RGB residue 0", "key-color residue 0", "WebP RGBA exact", "24/32/48/64 readability sheets", "side-by-side with existing command icons at 48px"],
+  "runtime": {
+    "paths": ["/assets/games/rts/ui/commands/unit-worker.webp", "/assets/games/rts/ui/commands/unit-guard.webp", "/assets/games/rts/ui/commands/unit-crossbow.webp", "/assets/games/rts/ui/commands/unit-priest.webp", "/assets/games/rts/ui/commands/unit-knight.webp", "/assets/games/rts/ui/commands/unit-siege.webp", "/assets/games/rts/ui/commands/unit-commander.webp"],
+    "consumers": ["src/scripts/games/rts/hud.ts unitIcon(): train + revive buttons, multi-select list thumbnails"],
+    "revive": "Hero revive button reuses unit-commander.webp"
+  },
+  "review": "art-factory/rts/review/unit-train-icons-20261016.html",
+  "user_style_approval": "pending",
+  "runtime_publish_allowed": true
+}

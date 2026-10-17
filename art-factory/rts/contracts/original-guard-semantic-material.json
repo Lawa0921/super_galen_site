@@ -1,0 +1,65 @@
+{
+  "asset_id": "original-guard-semantic-material",
+  "category": "original_3d_material_partition_and_surface_bake",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_blend": "art-factory/rts/runs/original-guard-portrait-material/2026-10-05/candidate/atlas-prepared.blend",
+  "source_mesh": "art-factory/rts/runs/original-guard-portrait-material/2026-10-05/candidate/projection-mesh.npz",
+  "source_surface_run": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05",
+  "method": "Re-chart the frozen mesh by original body region, material and facing direction, using angle-based unwrap and explicit isolation of measured conflicting UV triangles. Bake generated material surface pixels by object-space triplanar sampling. No concept-view ornament, visor, seam, roundel or emblem projection.",
+  "region_policy": "Complete source faces carry one material label. Bake samples inherit face_labels[face_ids]. Textile is limited to whole faces within a narrow recessed collar; fused arms stay steel. This finite method failed visual QA due to jagged source face boundaries.",
+  "invariants": [
+    "Frozen 7999 source vertices, 15998 triangles, original skin weights and four-second animation",
+    "Original-only texture, mesh, rig and motion sources",
+    "No invented texture pixels; deterministic sampling and padding only"
+  ],
+  "limits": [
+    "Surface color remains generated art rather than measured albedo",
+    "Roughness and metallic values are authored approximations",
+    "This does not repair fused plates, chest relief or full-body topology"
+  ],
+  "qa_gates": [
+    "Pin generated sources and frozen geometry hashes",
+    "Meaningful sampling and region regression tests",
+    "Same-camera front/side/back and turning views show no duplicate motifs, cross-plate black bands or UV seams",
+    "Blender evaluated motion unchanged and actual Three.js skinning matches sampled poses",
+    "Desktop/mobile preview and visible animation pixel checks"
+  ],
+  "revision_limit": {
+    "initial_candidate": 1,
+    "whole_region_correction": 1
+  },
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "source_blend_sha256": "b4d72cf2b174ec622b9e83d23b548cffa812260d3dbf483e65be31700a824daf",
+  "source_mesh_sha256": "e8b8105a153be335a6a8e555ce0138cc93347eb1fa6bc5eada2033ca87260a33",
+  "surface_tiles": {
+    "steel": {
+      "path": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/steel-512.png",
+      "sha256": "1dde8e9b391fa659e225c4633facb1c3e8507a245db04dcecf33af13b2472aac"
+    },
+    "brass": {
+      "path": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/brass-512.png",
+      "sha256": "3ada02f7b2d8551d799cf73ef0ed0ba5dc36734625e1d5663753577307188af1"
+    },
+    "navy-cloth": {
+      "path": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/cloth-512.png",
+      "sha256": "e2252ac906cc8f0ac373da6c7cde838688f6190d8fd031f8cc21f49dc8b871c3"
+    },
+    "leather": {
+      "path": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/leather-512.png",
+      "sha256": "604cc9ac0f25a708a9c022c83dc595f50336d9c95701a6597cc3f824cf28f9a5"
+    }
+  },
+  "decision": {
+    "initial_candidate": "rejected: misplaced textile on helmet/arms and rectangular collar",
+    "whole_region_correction": "rejected: fragmented collar faces and triangle-stepped brass trim",
+    "next": "Stop mask threshold revisions. Rebuild original segmented armor and collar surfaces with deliberate material boundaries before applying the reusable original surface tiles.",
+    "whole_character_accepted": false
+  },
+  "uv_chart_labels": {
+    "path": "art-factory/rts/runs/original-guard-semantic-material/2026-10-05/qa/uv-chart-face-labels.json",
+    "sha256": "da6a5ba29b99e61f2d137da7c22d4d201624319e6c800b5f77f40169d0926be7"
+  }
+}

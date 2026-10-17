@@ -1,0 +1,452 @@
+{
+  "asset_id": "guard-right-hand-cage",
+  "status": "full_original_glove_local_cleanup_before_full_character_validation",
+  "screen_id": "battlefield-and-unit-portrait",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "Original editable hand module authored with controlled semantic topology",
+  "sources": [
+    {
+      "role": "immutable shape/detail reference, anatomy still needs correction",
+      "path": "art-factory/rts/runs/original-guard-grip-channel/2026-10-05/candidate/original-guard-grip-channel.blend",
+      "sha256": "314e914e04a8a6a095338afe1c6d558a7976639796ebc6c81a7dad71001f9628"
+    },
+    {
+      "role": "current character rig, forearm, weapon and material reference",
+      "path": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/raw/guard.blend",
+      "sha256": "f18bd5b18ec7d32ed24771a6f50e2835613bf41ca04d65b143cb7401994a77cf"
+    }
+  ],
+  "measurement_evidence": "art-factory/rts/runs/commercial-readiness/2026-10-08/qa/current-guard-hand-inventory.json",
+  "source_chart": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v1/raw/surface-chart.json",
+  "all_hit_chart": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v1/raw/control-chart.json",
+  "preflight_experiment": {
+    "scope": "One explicitly bounded spatial finger-band open patch; anatomical naming unconfirmed",
+    "report": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v1/qa/finger-patch.json",
+    "atlas": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v1/raw/finger-atlas.json",
+    "all_hit_result": "84 control-chart samples contain multiple radial intervals; maximum intervening air gap 39.53 mm",
+    "surface_policy": "Only adjacent oriented entry/exit pairs with a known component, explicit region, verified local connectivity and sampled cell interiors; unknown boundaries stay open",
+    "limitation": "Dense measurement seed only. Its 3428 triangles cover a small part of one finger; it is not the budgeted LOD0 hand or anatomical correction",
+    "independent_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v1/qa/independent-open-patch-review.json",
+    "pending": [
+      "visually confirmed source-face ownership and every interior probe tied to that ownership",
+      "local branch-boundary convergence",
+      "authored finger-flow loops and corrected silhouette",
+      "whole hand and explicit closure interfaces",
+      "all original full-character gates"
+    ]
+  },
+  "first_experiment": "One complete guard right-hand LOD0 with wrist interface and actual sword grip; no runtime publication or expansion to other units before full-character validation",
+  "current_local_control_experiment": {
+    "run": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v2",
+    "ownership_sha256": "fbe8e9fcd616f253051958378c8b0fb2053ca5c370d80ebccf46a93791b057fc",
+    "ownership_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v2/qa/independent-source-ownership-review.json",
+    "geometry_report": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v2/qa/owned-control-cage.json",
+    "independent_control_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v2/qa/independent-owned-control-review.json",
+    "scope": "180-triangle open control patch on a slightly narrower, explicitly curved local domain; not an equal-coverage LOD reduction of the dense v1 atlas",
+    "pending": [
+      "production silhouette and anatomical correction",
+      "adjacent finger and full negative-space verification",
+      "whole-hand anatomy, attachment, material and actions"
+    ]
+  },
+  "adjacent_control_experiment": {
+    "run": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v3-adjacent",
+    "ownership_sha256": "b1b1dff2616dd9ee0ae993d10eec55794e5c6f34ecb2824e02f08146d0ab64b3",
+    "candidate_sha256": "793cda35f9b37740792cdd990dc735a73b65cb2eb2c41c89271dd99bc67f7d55",
+    "scope": "Second original 180-triangle open patch, immediately above band 02; all frozen source-face ownership sets are disjoint",
+    "root_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v3-adjacent/qa/root-owned-control-review.json"
+  },
+  "pair_measurement_experiment": {
+    "run": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v4-pair",
+    "report": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v4-pair/qa/pair-summary.json",
+    "scope": "Static combination of retained open patches and a bounded two-level sampled radial chart",
+    "accepted_sampled_cells": 64,
+    "unresolved_cells": 244,
+    "complete_anatomical_gap_verified": false,
+    "clearance_limit": "Retained patches are 11.001 mm apart; full owned source sets reach 0.610 mm on a different domain. Neither difference nor zero contacts proves preservation of the complete finger gap.",
+    "pending": [
+      "complete finger shape and explicit side/end surfaces",
+      "matched-domain negative-space verification",
+      "all complete-hand and character gates"
+    ]
+  },
+  "pair_interior_coverage_correction": {
+    "original_domain_status": "qa_incomplete_branch_coverage: band03 had zero accepted cells",
+    "report": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v5-pair-interiors/qa/pair-summary.json",
+    "independent_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v5-pair-interiors/qa/independent-pair-review.json",
+    "change": "Extend chart axial domain to 0.178 m to include band03 interior; same source, candidates, tolerance and two-level refinement",
+    "accepted_by_branch": {
+      "finger-band-02": 20,
+      "finger-band-03": 92
+    },
+    "sampled_air_cells": 28,
+    "unresolved_cells": 296,
+    "complete_anatomical_gap_verified": false
+  },
+  "next_complete_component": {
+    "id": "R_F02",
+    "shape_master": "GuardRightDigit02_ShapeMaster",
+    "current_candidate": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v7-digit02-oriented/candidate/guard-right-digit02-shape.blend",
+    "candidate_sha256": "f50cf4e7cc98873378122e493e90e2408dc30759518251c0c329bec3c61db883",
+    "current_status": "approved only as fixed input to actual grip fit; component not completed",
+    "grip_diagnosis": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v8-grip-diagnosis/qa/diagnosis.json",
+    "grip_diagnosis_limit": "Historical scale 0.9/spin 90 is diagnostic only, not an approved current socket transform. Core gap is 2.475 mm exact and 2.488-3.300 mm sampled; no contact established. Any transition from source-following inner core to an authored actual-grip surface must be explicit, not a silent relaxation of the 0.5 mm source-deviation gate.",
+    "independent_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v7-digit02-oriented/qa/independent-shape-review.json",
+    "scope": "One complete original gripping finger with a single explicit palm interface; move beyond local radial patches",
+    "triangle_budget": 650,
+    "steps": [
+      "Confirm anatomical identity and proximal/distal/radial/ulnar orientation against the whole source; do not infer anatomical names from band order alone",
+      "Retain the accepted v2 core and v3 as immutable context. Declare the hand-to-actual-grip coordinate transform before fitting; measure deviations in their declared frame",
+      "Author proper side surfaces, a flattened rounded fingertip and its outer-to-inner return, finger root and knuckle thickness. Never cap the patch perimeter into a small box",
+      "Keep only R_F02_PALM_IFACE open; name the actual grip contact zone and both inter-finger sides",
+      "Validate the complete part against the actual 12-sided 22 mm sword grip and neighboring source surfaces, then inspect palm/back/side/channel silhouettes"
+    ],
+    "completion": [
+      "One connected manifold surface with exactly one named palm-interface boundary loop; all other boundaries closed by authored anatomy",
+      "0 degenerate/flipped faces, strict crossings and unintended inclusive nonincident contacts; no weapon penetration",
+      "Accepted source-following core remains within its existing 0.5 mm limit; redesigned fingertip/root are judged as authored anatomy, not projected back to the defective high source",
+      "Complete finger volume and readable noncylindrical silhouette, within 650 triangles"
+    ],
+    "subsequent_whole_hand": "Apply the topology rules with individually authored proportions to the remaining fingers; join named palm interfaces with proper webs, author palm/thumb/wrist, then bind Hand_R and complete material/LOD/actions. Do not repeat open-patch QA as a substitute for this shape work.",
+    "runtime_publish_allowed": false
+  },
+  "required_authoring": [
+    "Retain named editable loops for wrist, metacarpal back, palm, four finger knuckles/pads, thumb saddle and grip channel",
+    "Correct source round fingertip cylinders and establish a real cuff/wrist opening in a separate shape master",
+    "Define wrist plane and socket in character metres; preserve immutable rig reference and document any necessary body replacement region",
+    "Build the channel from the measured 12-sided 22 mm sword grip; measure all four finger contact zones",
+    "Keep separate finger and thumb surface patches where the measured source chart has gaps; never connect unrelated radial intervals into a single loft",
+    "Do not infer semantic branch identity from axial run order; all-hit pairs, tangent/thin rejection and source connectivity precede faces",
+    "Leave unclassified boundaries open; wrist, fingertip, channel and seam closures require explicit authored loops",
+    "Rigid Hand_R binding for this equipped closed grip; do not claim articulated fingers",
+    "Bake original high-frequency leather details to an authored UV surface after the cage passes geometry checks"
+  ],
+  "current_character_coordinate_work": {
+    "status": "historical_bind_and_export_verified_current_v35_new_export_pending",
+    "runtime_guard_source_unchanged": true,
+    "socket_measurement": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v9-character-frame/raw/current-sleeve-socket.json",
+    "source_socket_validation_failure": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v9-character-frame/qa/socket-validation-failure.json",
+    "socket_policy": "Use the real FlexibleSleeve distal cap, not the nonperiodic metal cuff. Share/weld its 12 existing vertices, preserve Forearm_R=1 at the seam, and require opposing face directions with edge incidence 2. Canonical candidate corrects source right-sleeve cap winding.",
+    "canonical_bind_candidate": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v12-canonical-bind-adaptive/candidate/guard-canonical-hand-bind.blend",
+    "canonical_bind_sha256": "987ed5120bd0dfc7e2fd193e546cef289b6ff77a7cd138676aba97324b65a82c",
+    "canonical_bind_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v12-canonical-bind-adaptive/qa/independent-bind-review.json",
+    "representation_change": "Legacy IK used Fskin*W=Hskin*Q with Q!=W. Rebase rigid rest geometry p'=p+W-Q and skin S'=S*T(Q-W); do not apply legacy Q again. This preserves posed world geometry and does not fit the finger or adjust contact.",
+    "posed_world_maximum_deviation_m": 1.4973468450429195e-05,
+    "source_motion_defect": "Source Attack right and Death both sides had independently interpolated IK gaps. v15 repairs Attack right and Hurt/Death both sides while retaining Hand absolute world pose; Idle/Walk remain protected.",
+    "motion_preflight": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v13-wrist-motion/qa/preflight.json",
+    "motion_candidate": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v15-wrist-motion-exact-curves/candidate/guard-wrist-motion.blend",
+    "motion_candidate_sha256": "6d2d2dcd1ecd9795ff2246a9ce079150aa19b53ebc97d7238ca7d762614361c4",
+    "motion_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v15-wrist-motion-exact-curves/qa/independent-code-review.json",
+    "motion_reload_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v15-wrist-motion-exact-curves/qa/independent-reload-review.json",
+    "motion_collision_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v15-wrist-motion-exact-curves/qa/independent-collision-review.json",
+    "export_parity": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v20-wrist-slerp-export/qa/three-parity-slerp.json",
+    "export_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v20-wrist-slerp-export/qa/independent-export-review.json",
+    "motion_pending": [
+      "Whole-body/equipment quality",
+      "Final geometry/material export,download and performance",
+      "Full-character action visual approval"
+    ],
+    "source_to_character_transform_frozen": false,
+    "inner_reference_superseded": false,
+    "runtime_publish_allowed": false,
+    "current_saved_character": "art-factory/rts/runs/guard-right-hand-cage/2026-10-09-v35-shared-left-cloth-lod/candidate/guard-controlled-armor.blend"
+  },
+  "forbidden_shortcuts": [
+    "Reuse rejected low meshes as new production surfaces",
+    "A third whole-sculpt DECIMATE/QuadriFlow parameter attempt",
+    "Unconstrained nearest-point projection across the whole glove",
+    "Use simple primitive hands, painted contact shadows or socket offsets as substitutes for finished anatomy/contact",
+    "Relax intersection criteria or infer approval from an earlier published asset"
+  ],
+  "next_armor_clearance_experiment": {
+    "status": "local_quarter_roi_rejected_deferred_for_bounded_attack_authoring",
+    "source": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v17-tabard-continuity/candidate/guard-tabard-continuity.blend",
+    "source_sha256": "cb1f0bf304b82b27792b7fe57abcdc4ff2ed48f302d9dcd97531652096f5a751",
+    "visual_evidence": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v21-armor-collision-inspection/qa/root-visual-review.json",
+    "allowed_parts": [
+      "UpperArmArmor distal rim",
+      "ForearmArmor proximal rim"
+    ],
+    "frozen": [
+      "All rest bones and action curves",
+      "Hand and weapon world trajectories",
+      "ElbowArmor and FlexibleSleeve geometry",
+      "Wrist/body seam",
+      "Material assignment and original UV semantics"
+    ],
+    "shape_method": "Measure crossing witnesses across all actions and map them into the original parameter surfaces. Author a smooth U-shaped inner-elbow relief along the component axes, with angular and axial C1 transition; retain extensor silhouette and major radius. No radial flattening, socket offset or blind coefficient escalation.",
+    "initial_roi_limit": "Upper component distal 25% and Forearm component proximal 25%, witness cells plus at most two neighboring cell rings. Stop and reassess if the required relief exceeds that domain.",
+    "existing_recipe_units": {
+      "axis_length_m": 0.5555595656948735,
+      "upper_t_retreat": 0.018,
+      "upper_centerline_retreat_m": 0.010000072182507723,
+      "fore_t_retreat": 0.014,
+      "fore_centerline_retreat_m": 0.00777783391972823,
+      "note": "The 0.018/0.014 coefficients are dimensionless normalized t, not 18/14 mm."
+    },
+    "nominal_plate_thickness_m": 0.0025,
+    "hard_gate": "Zero strict UpperArmArmor/ForearmArmor crossings throughout all five actions, both sides and both post-assembly LODs; no new crossings outside named permitted lap regions.",
+    "new_design_target": "Evaluate 3 mm positive clearance within the new inner-elbow relief ROI while preserving sleeve/couter coverage and silhouette. This is a new local design target, not a preexisting global clearance rule.",
+    "legacy_three_mm_rule": "The prior hinge visibility rule measures retreat behind an occluding armor edge. It cannot establish Upper/Fore surface clearance.",
+    "validation": [
+      "At least 1/64-frame action sweep with adaptive refinement where crossing signatures change",
+      "Fixed witnesses Attack 13.09375 and Death 15.5/35.5",
+      "Post-assembly topology, thickness, winding, self-crossing and brass-rim continuity",
+      "Same v21 cameras plus full-character silhouette",
+      "Retain validated GLB source-ID skin and animation parity after new geometry"
+    ],
+    "runtime_publish_allowed": false,
+    "full_action_envelope": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v22-armor-relief-envelope/qa/envelope-step64.json",
+    "reassessment": "Idle/Walk cross throughout; Death left witnesses extend to Upper u=0.542 and Fore u=0.448, beyond the initial quarter-domain. Do not deepen this local U cut blindly. Rebuild the editable Upper/Fore/couter articulation as a coherent original module after the bounded Attack motion correction is reviewed. A 125-degree motion envelope is a new design target, not an inherited clearance rule.",
+    "helper_frame_rejected_as_standalone_fix": "Dynamic flexor alignment alone increases several existing crossing counts and would follow an Attack roll spike near 10,000 degrees/second. No helper-bone candidate was saved or published.",
+    "source_provenance_correction": "Clean-arm right six parts total 3804 triangles; mirrored assembly 7608, global .90 produces 6846, then surface-v2 budget reduction produces current LOD0 2900. LOD1 1506 is reduced to1100. Original UVs survive but current vertices are not source grid identities; preserve untouched connected components when rebuilding."
+  },
+  "bounded_attack_authoring": {
+    "status": "limited_motion_approved_geometry_and_export_pending",
+    "source": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v17-tabard-continuity/candidate/guard-tabard-continuity.blend",
+    "candidate": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v25-authored-attack/candidate/guard-authored-attack.blend",
+    "candidate_sha256": "a57e17a559d60a3912b77d6e5cb6708e888a5e73181e2c5d5e517cb1af103c35",
+    "allowed": "Attack right UpperArm/Forearm/Hand rotations and derived ElbowSupport pose in frame9..18 only; original rest skeleton, all geometry/materials, weapon binding, other clips, left side/body and outside-window world poses remain protected",
+    "gameplay_contract": {
+      "clip": "Attack",
+      "fps": 30,
+      "duration_seconds": 1.2,
+      "contact_frame": 16,
+      "contact_seconds": 0.5333333333333333
+    },
+    "old_path_policy": "The v12/v15 Hand-world invariance checks were representation-repair safeguards, not a user requirement to retain a defective swing. v25 is explicit new original motion authoring inside9..18; the old Hand path is superseded there only. Frame16 hand and sword contact pose is retained and measured on actual modifier vertices.",
+    "qa": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v25-authored-attack/qa/authoring.json",
+    "motion_comparison": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v25-authored-attack/qa/motion/browser-playback.json",
+    "independent_motion_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v25-authored-attack/qa/independent-motion-review.json",
+    "pending": [
+      "Final dense collision/contact/containment scope",
+      "New candidate source-ID GLB skin and animation parity",
+      "Original modular armor redesign and whole-character art approval"
+    ],
+    "runtime_publish_allowed": false
+  },
+  "lod0_triangle_budget": 5000,
+  "articulated_armor_authoring": {
+    "status": "v35_sampled_self_and_interpart_limited_approved_whole_hand_pending",
+    "run": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v30-armor-interface-fit",
+    "source_sha256": "d010152889219efed40023ef689b14b9440562c6bb3f3e2d00acc5da62381d54",
+    "recipe": "art-factory/rts/tools/original_guard_articulated_armor.py",
+    "shape": "Original explicit2.5mm watertight shells, indexed control rows/columns/inner-outer surfaces, deep flexor relief, raised narrow rim, convex extensor couter and authored LOD loop schedules",
+    "geometry_preflight": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v30-armor-interface-fit/qa/geometry-preflight-v3.json",
+    "root_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v26-articulated-armor/qa/root-shape-review.json",
+    "independent_interface_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v26-articulated-armor/qa/independent-interface-review.json",
+    "result": "Corrected sampledself12229poses48916sleevechecks20rigidrest0fail; interpart733740pairs0fail;limited reconstruction and clothvisual approved.",
+    "motion_architecture": "Six saved ArmorUpper/Fore/Elbow helpers, original25bones/curves protected; controlledDeath_R10..22 twist, unparented helpers, Shoulder/Cuff originalbindings.",
+    "interface_scope_revision": "Original Shoulder/Sleeve/Cuff already intersect in Idle/Attack/Death. The initial freeze of these shapes is superseded for coherent arm-interface authoring. Preserve the actual canonical12-vertex wrist seam, source-to-hand bind, non-arm meshes and original motion. Measure the complete swept surfaces rather than treating intersection-line radii as accepted outer plate radii.",
+    "pending": [
+      "Complete hand and current canonical grip fit",
+      "Whole-body/equipment quality",
+      "New source export/Three parity and full-character/runtime visuals"
+    ],
+    "runtime_publish_allowed": false,
+    "previous_v26_rejection": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v26-articulated-armor/qa/root-shape-review.json",
+    "saved_candidate": "art-factory/rts/runs/guard-right-hand-cage/2026-10-09-v35-shared-left-cloth-lod/candidate/guard-controlled-armor.blend",
+    "candidate_sha256": "a5043a39f1a1b8ee38e4df72d5c8046f87bdab9adb2907171bf62b9ff7a27a29",
+    "dense_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-09-v35-shared-left-cloth-lod/qa/independent-dense-review-v1.json",
+    "motion_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v33-armor-sleeve-winding/qa/independent-helper-motion-review.json",
+    "visual_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-09-v35-shared-left-cloth-lod/qa/independent-interface-review-v2.json",
+    "self_tool_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-09-v35-shared-left-cloth-lod/qa/independent-self-tool-review-v2.json",
+    "self_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-09-v35-shared-left-cloth-lod/qa/independent-self-review-v2.json"
+  },
+  "attack_start_authoring": {
+    "status": "limited_motion_approved_v29_frame4_tangent_p2_resolved",
+    "source": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v25-authored-attack/candidate/guard-authored-attack.blend",
+    "candidate": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v29-attack-start-exterior-tangent/candidate/guard-authored-attack.blend",
+    "candidate_sha256": "d010152889219efed40023ef689b14b9440562c6bb3f3e2d00acc5da62381d54",
+    "scope": "Attack_R0..4 only; retain0/4 endpoint poses, original9..18 revision,16 strike, other clips/body/left/rest/meshes. New Hand path and pole are explicitly authored inside the window.",
+    "diagnosis": "Original early Attack has actual elbow263.7mm displacement in frame1..2 and a visible velocity jolt; no near-straight hinge singularity. Do not hide this by smoothing armor roll alone.",
+    "method": "Body-space Hermite wrist and quaternion tracks; signed angular pole arc in a rotation-minimizing reach frame with measured endpoint angular derivatives and nonzero radial guide",
+    "qa": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v29-attack-start-exterior-tangent/qa/authoring.json",
+    "saved_file": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v29-attack-start-exterior-tangent/qa/splice-and-strike.json",
+    "motion_comparison": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v29-attack-start-exterior-tangent/qa/motion/browser-playback.json",
+    "rejected_preflight": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v27-authored-attack-start/qa/root-preflight-review.json",
+    "runtime_publish_allowed": false,
+    "independent_motion_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v29-attack-start-exterior-tangent/qa/independent-motion-review.json",
+    "endpoint_policy": "Use unchanged exterior one-sided derivatives for wrist, pole angle and quaternion tracks. Saved-Blender finite-difference regression passes; no exact C1 claim."
+  },
+  "lod1_policy": "Author by explicit removal of noncritical loops only after accepted LOD0; retain wrist, bore and finger contact loops",
+  "qa_gates": [
+    "0 boundary, nonmanifold and zero-area faces in the final closed shell",
+    "0 strict self-intersections; report near-contact separately without excluding real crossings",
+    "Measured channel clearance and four finger contacts against the actual sword",
+    "No unintended hand/weapon/forearm intersections or exposed wrist seam",
+    "Original silhouette and anatomy review in palm, back, oblique and both channel views",
+    "UV, original material and high-detail bake QA",
+    "Dense complete Idle, Walk, Attack, Hurt and Death sampling on the current guard rig",
+    "Actual battlefield, dynamic portrait and LOD transition validation"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_review_policy": "Internal independent review first; user asked for integrated commercial readiness rather than partial reviews",
+  "runtime_publish_allowed": false,
+  "canonical_grip_measurement": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v33-armor-sleeve-winding/qa/canonical-grip-frame-measurement.json",
+  "whole_character_budget_note": "Unique design spec targets8k-20kLOD0 for ordinary units; measured v35 guard23562tri is above that target and requires coherent final optimization/performance validation. The5000tri field is only the entire right hand.",
+  "right_hand_foundation_work": {
+    "status": "in_progress_isolated_original_authoring",
+    "run": "art-factory/rts/runs/guard-hand-foundation/2026-10-09-v1",
+    "scope": "Semantic source wrist/frame,editable palm/wrist/thumb saddle and named MCP outlets; not whole-hand approval",
+    "canonical_grip_center_m": [
+      0.48789501190185547,
+      -0.008239989168941975,
+      0.8149818778038025
+    ],
+    "canonical_grip_axis": [
+      0,
+      0,
+      1
+    ],
+    "canonical_grip_radius_m": 0.022,
+    "canonical_wrist_m": [
+      0.4293556809425354,
+      0,
+      0.8472006916999817
+    ],
+    "source_wrist_anchor_status": "Must be authored against immutable original source; no existing open loop or semantic vertex groups",
+    "runtime_publish_allowed": false
+  },
+  "active_authoring_method": {
+    "decision": "Independent anatomy/glove review authorizes original full sculpt plus local retopology; old cage experiments remain immutable evidence.",
+    "superseded_for_new_glove": [
+      "616 control faces",
+      "4884 hand triangles",
+      "fixed inner contact grid and old vertex/face IDs",
+      "exact40-edge wrist identity independent of true sleeve",
+      "PAD25% as artistic hard gate"
+    ],
+    "retained": [
+      "Wc/Cc and original source provenance",
+      "22mm radius195mm leather grip; oversized24mm decorative brass rings are a rejected source conflict, with localized low-profile inlay revision permitted in v5c",
+      "original scale/pivot and fixedHand_R grip",
+      "Original source-derived sleeve/hand provenance; distal right interface can be redesigned within the v5 reviewed scope",
+      "0handle penetration and self-contact; coherent full hand silhouette",
+      "full character8k–20kLOD0 target, actual RTS/portrait and5actions"
+    ],
+    "current_scope": "Local v5f candidate rejected and frozen; no more narrow ROI attempts. Coherent whole wrist module redesign required, plus source-rights replacement scope.",
+    "limits": "v3/v4 each stopped after two failed candidates. v5 first bracer design retained, leather failed; v5b source gate stopped before second candidate because original24mm rings intersect protected palm341pairs. v5c source correction does not reset the remaining one bellows candidate. No DQS/external assets/rig-actions/left-body changes. Require actual full sword surface contacts and PBR view; no z-fighting, hidden or transparent collision workaround. Finite source approval before dense/LOD/export. v5d proof-only consumed no candidate. v5e source correction does not reset the one remaining bellows candidate; old leather/self failures remain pending.",
+    "clay_review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/glove-v2-independent-clay-review.json",
+    "interface_review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/glove-v4-independent-bracer-review.json",
+    "grip_source_review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/glove-v5c-independent-source-review.json",
+    "runtime_temporal_required": "Actual GLB and formal camera near/far in portrait and RTS: continuous Attack15-18 plus maximum view-angle windows for each action. Inspect metal/leather boundary pixel alternation, dark spots and surface-layer swapping. The113.507micrometer facet separation is not a GPU depth precision proof.",
+    "interface_design_review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/glove-v5d-interface-design-review.json",
+    "first_source_gate": [
+      "newtail vs entire editedhand/sleeve/bellows/bracer/body three categories0",
+      "fullSword vs entireeditedbellows andapprovedpalm three categories0",
+      "bellows self three categories0 includingAttack24",
+      "fixedsection0 vsfullSword three categories0 andminimum2mm",
+      "unauthorized surfaces/poses/trajectories unchanged"
+    ],
+    "protected_grip_seat_policy": "Preserve original leather cap/UV; exact coincident open metal seat permitted as separate assembly. Report per-object boundaries and virtual external shell separately, no visible light leak or coplanar surface competition.",
+    "joint_design_review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/glove-v5e-joint-interface-design-review.json",
+    "joint_source_proof": {
+      "run": "art-factory/rts/runs/guard-hand-glove/2026-10-09-v5e-short-pommel",
+      "freeze_sha256": "62c126bbb7c9beb71a56462fb86ee571bf88a5b8003b9708d188705fd38eea32",
+      "semantic_roi_sha256": "274f06856c5371d767f60331bc96e3d8620579d3e8a84a531880205c54692aa7",
+      "full335_tail_union_sha256": "133867ae6f0a283f1ec66e51bd7599e7738f29a28d623353e991b6d333d8414d",
+      "candidate_status": "FAIL contacts and protectedPBR",
+      "editable_vertices": 57,
+      "fixed_seam_support_vertices": 16
+    },
+    "intentional_sword_uv_correction": {
+      "decision": "Explicit Sword authoring UV selection correction is permitted; do not preserve a disabled activeUV artifact at cost of correct topology",
+      "evidence": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/published-sword-uv-bindings.json",
+      "evidence_sha256": "9f899d4c1d439e52bb186fd3e1b6ffdac307ede9a5acee073edf0b200bb797ae",
+      "published_guard_sha256": "f369591f8b96c3a418a460c6ce26dbe58220111c5b322edf4c5059551295d360",
+      "candidate_change": "Set the sole original Sword UVMap active_index0 and active_rendertrue; original texspace,per-cornerUV/materialgraph/imagebindings and protectedgeometry retained",
+      "baseline": "QA-only fixedsource copy may make the same declared UVselection repair for comparison; preserve legacy-before and frozen source unchanged",
+      "pending": "Actual non-tail per-corner UV/material/image binding correspondence against source and GLB, originalPBR look and RTS/portrait; flags alone not appearance approval"
+    },
+    "v5f_rejection": {
+      "status": "REJECTED_FINAL_LOCAL_CANDIDATE",
+      "run": "art-factory/rts/runs/guard-hand-glove/2026-10-09-v5f-joint-interface",
+      "manifest_sha256": "74a5849f3938abec7c1b0e5555644c8d15629c3da4730c52321fb8cd31bf8a02",
+      "verified_frozen_files": 114,
+      "geometry_candidate_sha256": "9f7506be63c33ffc4d2f53182b794fca04727cb3a8a047889748830fcebf5845",
+      "metadata_corrected_sha256": "76ebbedb7141a61f5e2df6553384e72511fdf67aba49aa087a7d11425ac639ef",
+      "actual_checked_poses": [
+        "REST",
+        "Attack15"
+      ],
+      "attack15_self_contact": [
+        46,
+        42,
+        4
+      ],
+      "source_same_kernel_self_contact": [
+        0,
+        0,
+        0
+      ],
+      "protected_cloth_corner_normal_max_vector_delta": 0.001180656464905063,
+      "scope_correction": "Frozen task-report remaining333 typo:335 planned nonREST, only Attack15 done;334 nonREST remain.",
+      "decision": "Stop local geometry/weight patches; redesign coherent wrist assembly and replace restricted-output body modules.",
+      "runtime_publish_allowed": false,
+      "commercial_quality_approved": false
+    }
+  },
+  "source_rights_replacement": {
+    "status": "BLOCKED_RESTRICTED_PUBLISHED_GUARD_OUTPUT",
+    "reviewer": "/root/commercial_render_review",
+    "published_guard_sha256": "f369591f8b96c3a418a460c6ce26dbe58220111c5b322edf4c5059551295d360",
+    "terms": "https://raw.githubusercontent.com/Tencent-Hunyuan/Hunyuan3D-2.1/82920d643c0dc2f7bfd7255f45f62d386edfe60c/LICENSE",
+    "basis": "Section5c explicitly includes Output outside Territory; Territory excludes EU,UK,SouthKorea. Technical source tracing, not legal certification.",
+    "confirmed_output_geometry": [
+      "GuardBoot_L/R_LOD0/1",
+      "Published old GuardHandGrip_L/R_LOD0/1"
+    ],
+    "sampled_surface_dependency": [
+      "GuardPaddedLegLayer_LOD0/1",
+      "GuardLegArmor_*"
+    ],
+    "source_chain": [
+      "original_guard_assembly_build.py:38-50,96-249,1262-1279",
+      "original_guard_hands_build.py:14-22,47-75,132-179",
+      "detail_build.py:235-252"
+    ],
+    "new_right_palm": {
+      "geometry_origin": "project-authored procedural sculpt/QF",
+      "restricted_output_geometry_dependency": false,
+      "restricted_output_design_reference": true,
+      "source_rights": "unknown",
+      "decision": "Preserve evidence and original editable geometry while resolving design-reference boundary; do not relabel history.",
+      "verified_sources": [
+        "guard-hand-glove/2026-10-09-v1/qa/frozen-second-clay/geometry.py:64-113",
+        "guard-hand-glove/2026-10-09-v1/qa/frozen-second-clay/build.py:70-103"
+      ]
+    },
+    "can_retain_if_final_independence_verified": [
+      "original HelmetAssembly",
+      "Tabard",
+      "GuardArms",
+      "Sword",
+      "Shield",
+      "Fauld/Tasset/HipLiner"
+    ],
+    "replacement_scope": "New original boots,old left glove,and sampled leg-layer/armor with no restricted mesh sampling. Current original loft torso retained; design-reference evidence remains pending.",
+    "external_release_allowed": false,
+    "guard_body_correction": {
+      "reviewer": "/root/commercial_render_review",
+      "status": "ORIGINAL_PARAMETRIC_GEOMETRY_RETAIN",
+      "previous_direct_output_classification": "incorrect; superseded by the final-source chain",
+      "source": "art-factory/rts/tools/original_guard_surface_v2_build.py:34-64,94-96",
+      "geometry_origin": "six explicitly authored elliptical profiles; hollow closed loft from empty vertices/faces",
+      "lod0_vertices_triangles": [
+        384,
+        768
+      ],
+      "lod1_vertices_triangles": [
+        192,
+        384
+      ],
+      "direct_restricted_geometry_dependency": false,
+      "design_reference_provenance": "pending_unknown",
+      "independent_verification": "Current public body prefix attributes POSITION/NORMAL/UV/JOINTS/WEIGHTS/indices byte-exact to detail source; original source body was deleted before loft creation.",
+      "root_spotcheck": "Source code explicitly deletes and rebuilds GuardBody; triangle counts agree with loft topology.",
+      "rights_approved": false
+    }
+  }
+}

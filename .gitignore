@@ -58,3 +58,6 @@ localhost-*.json
 /*.png
 .research/
 **/_verify/
+
+# RTS art-factory run evidence stays local (raw sources, blends, captures)
+art-factory/rts/runs/

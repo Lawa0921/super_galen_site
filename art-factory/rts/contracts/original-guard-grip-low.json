@@ -1,0 +1,64 @@
+{
+  "asset_id": "original-guard-grip-low",
+  "category": "original_3d_character_equipment_lowpoly_candidate",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_fit_blend": "art-factory/rts/runs/original-guard-grip-fit/2026-10-05/candidate/original-guard-grip-fit.blend",
+  "source_fit_blend_sha256": "123ad986465e79a26a685eefa9c5da9043f27ce984036ce178b783c103213281",
+  "source_fit_glb_sha256": "a1922f3ecbf43194dad4f69fdf99ab0f2db2effac22c159429da9e0f444e38c6",
+  "source_glove_object": "OriginalGripRigidFitReviewOnly",
+  "sword_reference_object": "KingdomSteelSword_LOD0",
+  "method": "One Blender 5.2.1 quadric collapse of the original fitted glove, with exact bore-wall vertex preservation. One evidence-driven repeat also protected a 2 mm source-vertex neighborhood around 33 near-source normal-opposition and 29 exact sword-crossing first-pass triangle centres; the sword and rigid fit transform remain unchanged.",
+  "target_triangles_max": 12000,
+  "source_channel_radius_m": 0.02728495049705316,
+  "protected_radial_tolerance_m": 0.00025,
+  "protected_source_z_m": [
+    0.065,
+    0.28
+  ],
+  "candidate_blend_sha256": "f73f309fc7a1c2af29006336c20f20c975471c595f214a3942e2d94d70a63ef0",
+  "candidate_glb_sha256": "e294a42c266d96dfa171b325afdf837c5fe5b8097ae51853809601b092785c70",
+  "qa_summary": {
+    "triangles": 11846,
+    "exact_glove_sword_triangle_crossings": 0,
+    "sword_vertices_contained": 0,
+    "joined_sword_parity_positive_glove_vertices": 1,
+    "joined_parity_positives_disproved_by_local_closed_components_and_incident_edges": 1,
+    "full_closed_sword_component_containment_check": "5897 glove vertices; 14 closed consistent shells; inside/boundary0; one open component excluded from volume claim",
+    "four_finger_side_contacts": [
+      6,
+      6,
+      6,
+      5
+    ],
+    "sampled_high_to_low_p95_m": 0.0005787776288343593,
+    "sampled_low_to_high_p95_m": 0.0005714212980819862,
+    "near_source_normal_oppositions": 31,
+    "own_inconsistent_winding_edges": 0,
+    "bmesh_float_zero_area_faces": 1,
+    "float64_exact_zero_area_triangles": 0,
+    "uv_raw_nonzero_fraction": 0.983623163937194,
+    "uv_resolvable_nonzero_fraction": 1.0,
+    "low_mesh_self_intersection": "18 Blend nonincident pairs; 16 reproduced from exported GLB; four robust local clusters and two numerical-degenerate pairs"
+  },
+  "qa_failure_interpretation": "Independent inspection does not treat the 31 nearest-face normal oppositions as sufficient failure evidence. Frozen low-mesh QA establishes four robust local collapse self-crossing clusters plus numerical slivers. Per-closed-component containment is now measured and passes its finite scope; one sword component is open. Candidate remains rejected.",
+  "next_minimal_roi": "Four robust clusters around faces6235/6244 and pairs202/945,1205/1208,3248/3340 plus one face-neighbor ring; preserve boundary,4302 channel vertices and source outline. No global decimation.",
+  "qa_gates": [
+    "At most 12000 triangles, connected closed manifold with zero exact degenerate triangles and inconsistent winding edges",
+    "Near-source normal differences are diagnostic; independent local topology/source comparison must distinguish actual folds from nearest-sheet or numerical ambiguity",
+    "Zero exact glove-sword triangle crossings, zero sword vertices contained in glove, and full closed-sword-component containment verification; joined multi-shell parity alone cannot establish containment",
+    "Four source-axis finger-side contact zones each retain at least two actual sword wrap samples at 0.3 to 0.8 mm",
+    "High-to-low and low-to-high sampled surface distance p95 at most 2 mm; sampled quantiles are not global bounds",
+    "Same-camera high/low six views plus low-poly shader wire"
+  ],
+  "review": "art-factory/rts/runs/original-guard-grip-low/2026-10-05/review.html",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "non_claims": [
+    "Original rounded fingertip, thumb web and closed wrist source constraints remain.",
+    "Low-poly candidate does not approve baking, rigging, animation or the reference sword art.",
+    "Candidate is not published to runtime."
+  ],
+  "independent_review": "art-factory/rts/runs/original-guard-grip-low/2026-10-05/qa/independent-review.json"
+}

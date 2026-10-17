@@ -1,0 +1,1651 @@
+{
+ "schema": "rts-restricted-geometry-denylist/v1",
+ "tool": "art-factory/rts/tools/build_restricted_geometry_denylist.ts",
+ "fingerprint": {
+  "module": "art-factory/rts/tools/geometry_fingerprint.ts",
+  "attribute": "POSITION (float32 VEC3)",
+  "quantum_m": 0.0001,
+  "hash": "sha1 of sorted quantized vertex rows",
+  "min_vertices": 32
+ },
+ "restricted_sources": {
+  "direct_hunyuan_output": "^art-factory\\/rts\\/runs\\/(original-guard-shape|original-guard-right-grip-shape|original-glove-shape)\\/",
+  "superseded_publications": "^art-factory\\/rts\\/runs\\/(unit-shared-textures\\/2026-10-09-v1\\/(candidate|raw)\\/models\\/(worker|crossbow|guard)(-lod1)?|detail-refinement\\/2026-10-07-v1\\/(candidate|raw)\\/(crossbow|guard)(-lod1)?|human-units-grip-refine\\/.*)\\.glb$",
+  "restricted_chain": "^art-factory\\/rts\\/runs\\/(human-units-grip-refine|original-guard-[^/]*|original-crossbow-[^/]*|original-glove[^/]*|original-articulated-glove|original-closed-grip-lod|closed-gauntlet-retopology|guard-right-hand-cage|guard-wrist-module|guard-hand[^/]*)\\/|^art-factory\\/rts\\/runs\\/unit-shared-textures\\/2026-10-09-v1\\/(candidate|raw)\\/models\\/(worker|crossbow|guard)(-lod1)?\\.glb$|^art-factory\\/rts\\/runs\\/detail-refinement\\/2026-10-07-v1\\/(candidate|raw)\\/(crossbow|guard)(-lod1)?\\.glb$",
+  "restricted_part_names": "WorkerOriginalGrip|OriginalCrossbowClosedGrip|GuardBoot|GuardHandGrip|GuardPaddedLegLayer|GuardLegArmor|GripLowBake|OriginalGripLow|PreserveMeasuredBoreWall"
+ },
+ "clean_exclusion": {
+  "rule": "restricted fingerprints that also occur as a non-restricted-named primitive in a clean run GLB (outside the direct outputs, restricted chain and derived publications) are dropped, e.g. shared sword/shield/body",
+  "not_clean": "^art-factory\\/rts\\/runs\\/(procedural-gauntlet|unit-shared-textures|detail-refinement|assembly-refinement|final-assembly|commercial-readiness)\\/",
+  "excluded_count": 14,
+  "excluded": [
+   {
+    "sha1": "02df1ddcfa491c1a6cba5cd7a323745398f65e93",
+    "clean_source": "art-factory/rts/runs/human-units/2026-10-05-v1/worker/candidate/worker-production-lod0.glb",
+    "parts": [
+     "superseded:workerOriginalBody_LOD0"
+    ]
+   },
+   {
+    "sha1": "0dc34a590c7a6111c9f8b929c7930016aa78058d",
+    "clean_source": "art-factory/rts/runs/human-units/2026-10-05-v1/worker/candidate/worker-production-lod0.glb",
+    "parts": [
+     "superseded:WorkerCraftAxe_LOD1"
+    ]
+   },
+   {
+    "sha1": "1ecc74ee246e43d313192ac060e65f31fb8e2f07",
+    "clean_source": "art-factory/rts/runs/human-units/2026-10-05-v1/worker/candidate/worker-production-lod1.glb",
+    "parts": [
+     "superseded:workerOriginalBody_LOD1"
+    ]
+   },
+   {
+    "sha1": "27b13e54fd4dd897f8e8e39a27c09a49a2b42545",
+    "clean_source": "art-factory/rts/runs/human-units/2026-10-05-v1/worker/candidate/worker-production-lod0.glb",
+    "parts": [
+     "superseded:WorkerCraftAxe_LOD1"
+    ]
+   },
+   {
+    "sha1": "518fedafae2e3c088ac2f4f9fdcdb97c3899e50a",
+    "clean_source": "art-factory/rts/runs/human-units/2026-10-05-v1/worker/candidate/worker-production-lod0.glb",
+    "parts": [
+     "superseded:WorkerCraftAxe_LOD1"
+    ]
+   },
+   {
+    "sha1": "6f3ed3f7e5ca6ea217ee20a9d6cc6bfb3726edad",
+    "clean_source": "art-factory/rts/runs/human-units/2026-10-05-v1/worker/candidate/worker-production-lod0.glb",
+    "parts": [
+     "superseded:WorkerCraftAxe_LOD1"
+    ]
+   },
+   {
+    "sha1": "839209d71710dbb8afaa511ba08233c26565f33d",
+    "clean_source": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/guard-production-lod0.glb",
+    "parts": [
+     "superseded:KingdomSteelSword_LOD0"
+    ]
+   },
+   {
+    "sha1": "84055881ff6b777a3fe260855cbc9e77447aef32",
+    "clean_source": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/guard-production-lod0.glb",
+    "parts": [
+     "superseded:KingdomSteelSword_LOD0"
+    ]
+   },
+   {
+    "sha1": "865d2f4410c97d6d9ff18e6ec32dc736ed2eb5c2",
+    "clean_source": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/guard-production-lod0.glb",
+    "parts": [
+     "superseded:KingdomSunShield_LOD0"
+    ]
+   },
+   {
+    "sha1": "8eb22cbbe5c4b072da5cb13952a7fe562b84c67f",
+    "clean_source": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/guard-production-lod0.glb",
+    "parts": [
+     "superseded:KingdomSunShield_LOD0"
+    ]
+   },
+   {
+    "sha1": "9315832ef035edb822258432001e9fac9d1e55ce",
+    "clean_source": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/guard-production-lod0.glb",
+    "parts": [
+     "superseded:KingdomSunShield_LOD0",
+     "superseded:KingdomSunShield_LOD1"
+    ]
+   },
+   {
+    "sha1": "9cdc31d8b83ee049ae3d88bb9fdd03610146532b",
+    "clean_source": "art-factory/rts/runs/human-units/2026-10-05-v1/worker/candidate/worker-production-lod1.glb",
+    "parts": [
+     "superseded:workerOriginalBody_LOD1"
+    ]
+   },
+   {
+    "sha1": "a33e2783ef24de84c22631298b7e0f5745d9a993",
+    "clean_source": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/guard-production-lod0.glb",
+    "parts": [
+     "superseded:KingdomSunShield_LOD0",
+     "superseded:KingdomSunShield_LOD1"
+    ]
+   },
+   {
+    "sha1": "d81877b30e70a0d3bf1a80be8a0b044e8471eed7",
+    "clean_source": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/guard-production-lod0.glb",
+    "parts": [
+     "superseded:KingdomSteelSword_LOD0"
+    ]
+   }
+  ]
+ },
+ "scanned_glbs": 548,
+ "unreadable_glbs": 0,
+ "rights_note": "Technical source tracing only; not a legal certification.",
+ "entries": [
+  {
+   "sha1": "0280b92bacbdbd75e2e59884e90c0d60a71daeb4",
+   "vertices": 33220,
+   "parts": [
+    "OriginalGripLowCandidate"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-grip-low/2026-10-05/candidate/original-guard-grip-low.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "05d0bcce7cc3185a787ce941e68a47ce2b922612",
+   "vertices": 87,
+   "parts": [
+    "superseded:KingdomSteelSword_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 3
+  },
+  {
+   "sha1": "0b35f7f04adb3e32c05faf4c963020bd8742a292",
+   "vertices": 152,
+   "parts": [
+    "GuardLegArmor_knee_cap_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard.glb",
+   "source_count": 13
+  },
+  {
+   "sha1": "0b9904abe206f9eebbffb07745c9c026a3103ec0",
+   "vertices": 3320,
+   "parts": [
+    "GuardHandGrip_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v16-wrist-export/candidate/guard-wrist-direct-lod0.glb",
+   "source_count": 7
+  },
+  {
+   "sha1": "0c31e98c9bb11881e0655b09d4fd631484346a27",
+   "vertices": 470,
+   "parts": [
+    "GuardLegArmor_knee_cap_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "0e85ade5eb00be3cf5448de65b532e55d31aee36",
+   "vertices": 384,
+   "parts": [
+    "superseded:GuardBody_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "10a7bc5a2981715a37199c2473d6be42d508360d",
+   "vertices": 470,
+   "parts": [
+    "GuardLegArmor_knee_cap_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-cage-smoothed/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "14c4cb30b6cfad28065f9a400f99b92f040df21a",
+   "vertices": 72,
+   "parts": [
+    "superseded:GuardHipLiner_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "14de0f094bcab80c293100e9dbb9288ae2bea237",
+   "vertices": 185,
+   "parts": [
+    "superseded:HelmetAssembly_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "151fbf6333fab30abb4c0dd8f1d25309fc61e436",
+   "vertices": 9657,
+   "parts": [
+    "superseded:workerOriginalBody_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/revision-20261006/candidate/worker-grip-refine-lod0.glb",
+   "source_count": 3
+  },
+  {
+   "sha1": "158e20286275016782cab960a29fd096a86436b4",
+   "vertices": 1127,
+   "parts": [
+    "GuardPaddedLegLayer_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 12
+  },
+  {
+   "sha1": "165272dc90c58a788166d0c717255e9c354ff997",
+   "vertices": 9654,
+   "parts": [
+    "superseded:crossbowOriginalBody_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/crossbow.glb",
+   "source_count": 3
+  },
+  {
+   "sha1": "165dd78598eaaa6d58ddf039078e20d1d2e5c546",
+   "vertices": 269,
+   "parts": [
+    "GuardBoot_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard-lod1.glb",
+   "source_count": 12
+  },
+  {
+   "sha1": "166a03799779c81ecf35e97d5c5ca41e8e9b9cca",
+   "vertices": 1187,
+   "parts": [
+    "WorkerOriginalGrip_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/revision-20261006/candidate/worker-grip-refine-lod1.glb",
+   "source_count": 6
+  },
+  {
+   "sha1": "182053b2d1737f10cb5ce4039a561567c7e9d336",
+   "vertices": 1615,
+   "parts": [
+    "superseded:GuardBody_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/guard.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "1a474fd45ecb98c02e4252b05f783b5ab4837697",
+   "vertices": 33265,
+   "parts": [
+    "OriginalGripLowCandidate"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-grip-low/2026-10-05/rejected/attempt-1/original-guard-grip-low.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "1c23a530295f1306c4dbdd45117c1ddf294901ce",
+   "vertices": 357,
+   "parts": [
+    "GuardLegArmor_knee_cap_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "1d5660559fd3e33371f1e2f399ee57bce65a59e4",
+   "vertices": 28358,
+   "parts": [
+    "GuardLegArmor_shin_armor_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "2143efbef1c517b0d15ef4c150e17465d9548534",
+   "vertices": 216,
+   "parts": [
+    "superseded:CrossbowWeapon_LOD0",
+    "superseded:CrossbowWeapon_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/crossbow-lod1.glb",
+   "source_count": 6
+  },
+  {
+   "sha1": "21611ecf5301d92ebd64c87d96a2990b58c98201",
+   "vertices": 1948,
+   "parts": [
+    "OriginalCrossbowClosedGrip_R"
+   ],
+   "example_source": "art-factory/rts/runs/original-crossbow-grip/continuation-20261006-2/qa/iteration-1/candidate/original-crossbow-grip-lod0.glb",
+   "source_count": 5
+  },
+  {
+   "sha1": "2243e594824b1af67a66823a6c1fc554890ee29a",
+   "vertices": 499,
+   "parts": [
+    "GuardPaddedLegLayer_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard.glb",
+   "source_count": 13
+  },
+  {
+   "sha1": "231f38ee2fb6edaf168b67b5a39e4fce06e49f5b",
+   "vertices": 480,
+   "parts": [
+    "GuardLegArmor_thigh_armor_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "245652188a0bcfca042d9558f56daf57770502e7",
+   "vertices": 3320,
+   "parts": [
+    "OriginalCrossbowClosedGrip_L"
+   ],
+   "example_source": "art-factory/rts/runs/original-crossbow-grip/2026-10-05/candidate/revision-5/candidate/original-crossbow-grip-lod0.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "247b71ac789d8ea26ce3a6f21435f4e185564e31",
+   "vertices": 480,
+   "parts": [
+    "GuardLegArmor_thigh_armor_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-cage-smoothed/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "24df025ef08bbb6b008dc349984963678cc94d17",
+   "vertices": 480,
+   "parts": [
+    "GuardLegArmor_shin_armor_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "269d1454cd4f58e8c4d4157a8df58dd4d413b008",
+   "vertices": 2392,
+   "parts": [
+    "GuardLegArmor_thigh_armor_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-control-surface/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "2779de3f98582773654d592f04f8f9b7f08944ff",
+   "vertices": 168,
+   "parts": [
+    "superseded:WorkerCraftAxe_LOD0",
+    "superseded:WorkerCraftAxe_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/candidate/worker-grip-refine-lod0.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "2d32d07d7bab38469e6ab8f84f339bdd3c7f075c",
+   "vertices": 72932,
+   "parts": [
+    "GuardLegArmor_thigh_armor_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "2f4b7877ed7bfd0c9f756d26aec8bf48470bd027",
+   "vertices": 3729,
+   "parts": [
+    "superseded:GuardBody_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/guard.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "2f82f790e5ce7fc201c998196e6036d578a76c1a",
+   "vertices": 60,
+   "parts": [
+    "superseded:KingdomSteelSword_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 3
+  },
+  {
+   "sha1": "2fdbe6f1803387149149d4eaf970e4742a7fc4f5",
+   "vertices": 1776,
+   "parts": [
+    "GuardLegArmor_shin_armor_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-control-surface/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "33ad514338a85ec8b0a15ff550cced27486a4af7",
+   "vertices": 1195,
+   "parts": [
+    "GuardHandGrip_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard-lod1.glb",
+   "source_count": 5
+  },
+  {
+   "sha1": "3471b4b19fe23195833d8288f201774d5ce154d0",
+   "vertices": 303,
+   "parts": [
+    "superseded:GuardArms_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "35031c2f53fddc7f16152940b92e91a6d0325b44",
+   "vertices": 73622,
+   "parts": [
+    "GuardLegArmor_thigh_armor_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "357d69544f0a4aca1ae7968619b32e1f5e5f5451",
+   "vertices": 82,
+   "parts": [
+    "GuardLegArmor_knee_cap_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/surface/dense-motion/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "366ce7a912d4a840a7db53da0c3fc32007012d3d",
+   "vertices": 276,
+   "parts": [
+    "GuardBoot_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/surface/dense-motion/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "3900d704762512f1c660fc970163820e55de7aba",
+   "vertices": 1440,
+   "parts": [
+    "GuardLegArmor_knee_cap_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-control-surface/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "39eea207e31a13ddaa52b10b8853f670d5a576a6",
+   "vertices": 6161,
+   "parts": [
+    "superseded:workerOriginalBody_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/candidate/worker-grip-refine-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "3c005628cf71f104a18c135904bd898c535c7b92",
+   "vertices": 864,
+   "parts": [
+    "superseded:GuardArms_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "3db85a85cd4e6921dabf798164b09991802d2c55",
+   "vertices": 287,
+   "parts": [
+    "GuardBoot_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/surface/dense-motion/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "3ee1722b7a8ad178a49b8afa702718cf4b6ff140",
+   "vertices": 33616,
+   "parts": [
+    "OriginalGripLowCandidate"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-grip-local/2026-10-05/rejected/attempt-1/original-guard-grip-local.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "3f589d9bafb45848d3324877306f0851773fff90",
+   "vertices": 192,
+   "parts": [
+    "superseded:GuardBody_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "4188b305b85a6b705675df9f8089121144fd4500",
+   "vertices": 1949,
+   "parts": [
+    "OriginalCrossbowClosedGrip_R"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/crossbow-lod1.glb",
+   "source_count": 58
+  },
+  {
+   "sha1": "4209eda5edb2a45419024e1faa31bc90d94cb89e",
+   "vertices": 432,
+   "parts": [
+    "superseded:CrossbowWeapon_LOD0",
+    "superseded:CrossbowWeapon_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/crossbow-lod1.glb",
+   "source_count": 6
+  },
+  {
+   "sha1": "42cf293166421bf6fe12df20651b495d8849e6a9",
+   "vertices": 360,
+   "parts": [
+    "superseded:WorkerCraftAxe_LOD0",
+    "superseded:WorkerCraftAxe_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/candidate/worker-grip-refine-lod0.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "43629113da6df74e8c1995ae79daaaea45ab1bc9",
+   "vertices": 650,
+   "parts": [
+    "superseded:Tabard_OriginalGuardFrontTabard_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "438c5e5185a54d76ac18937dddc36757cef961ab",
+   "vertices": 632,
+   "parts": [
+    "GuardLegArmor_shin_armor_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-cage-smoothed/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "43d4af009b445688de0f1fa3dcfd17dfda911af1",
+   "vertices": 93400,
+   "parts": [
+    "GuardLegArmor_thigh_armor_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "441c82dec8f41e1a88126c70ef83f81359767a5a",
+   "vertices": 632,
+   "parts": [
+    "GuardLegArmor_thigh_armor_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "462b0c39977888a3b555bd3e9dee0c72a9acbc8d",
+   "vertices": 455,
+   "parts": [
+    "GuardBoot_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard.glb",
+   "source_count": 12
+  },
+  {
+   "sha1": "46cd1d847541527b9413c99a51c735caaec258b3",
+   "vertices": 152,
+   "parts": [
+    "GuardLegArmor_knee_cap_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard.glb",
+   "source_count": 13
+  },
+  {
+   "sha1": "474e97734b2c2521de738906d91ad04b1ae126c5",
+   "vertices": 82,
+   "parts": [
+    "GuardLegArmor_thigh_armor_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/surface/dense-motion/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "4c686e8e80f0177daa0d1ea6c43e9d8bfc53d81e",
+   "vertices": 62,
+   "parts": [
+    "GuardLegArmor_thigh_armor_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard-lod1.glb",
+   "source_count": 12
+  },
+  {
+   "sha1": "4e78e16241cbf2ff92ad1ce80927f8e25adf5aa2",
+   "vertices": 152,
+   "parts": [
+    "GuardLegArmor_shin_armor_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard.glb",
+   "source_count": 13
+  },
+  {
+   "sha1": "4e926ae2ab52dddbe37ec521f8794536145970c5",
+   "vertices": 14783,
+   "parts": [
+    "GuardBoot_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 8
+  },
+  {
+   "sha1": "4f8ff4310e940ea219195b451fb19501dd3af74e",
+   "vertices": 1531,
+   "parts": [
+    "GuardHandGrip_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/surface/dense-motion/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "521b8b86aea8dd17646fc5c8a45e8821185dad89",
+   "vertices": 490,
+   "parts": [
+    "GuardBoot_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/surface/dense-motion/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "52d1b93345500699bc308d2caa83952354d9eab7",
+   "vertices": 3320,
+   "parts": [
+    "WorkerOriginalGrip_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/candidate/worker-grip-refine-lod0.glb",
+   "source_count": 8
+  },
+  {
+   "sha1": "538cb4e1219228c0b97aedd6420e634a23385ab6",
+   "vertices": 2022,
+   "parts": [
+    "GuardLegArmor_shin_armor_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-control-surface/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "5418c54ba92069e1211a316be1107eec23e0e891",
+   "vertices": 1923,
+   "parts": [
+    "OriginalCrossbowClosedGrip_R"
+   ],
+   "example_source": "art-factory/rts/runs/original-crossbow-complete/2026-10-07-v1/candidate/original-crossbow-grip-lod0.glb",
+   "source_count": 3
+  },
+  {
+   "sha1": "5603d13b7eb26334dcd3a02f618824138553ecb3",
+   "vertices": 96,
+   "parts": [
+    "superseded:CrossbowWeapon_LOD0",
+    "superseded:CrossbowWeapon_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/crossbow-lod1.glb",
+   "source_count": 6
+  },
+  {
+   "sha1": "5725950cceceee719ee7b3cfbc1f6869a1c52e56",
+   "vertices": 3320,
+   "parts": [
+    "OriginalCrossbowClosedGrip_R"
+   ],
+   "example_source": "art-factory/rts/runs/original-crossbow-grip/2026-10-05/candidate/revision-5/candidate/original-crossbow-grip-lod0.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "5930b8259ae9e8a66c6caf7c7752028417433af5",
+   "vertices": 94262,
+   "parts": [
+    "GuardLegArmor_thigh_armor_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "5a811f3eea37b76f9b1c92345d45ad16edee4650",
+   "vertices": 6161,
+   "parts": [
+    "superseded:workerOriginalBody_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/revision-20261006/candidate/worker-grip-refine-lod1.glb",
+   "source_count": 3
+  },
+  {
+   "sha1": "5c7a9a759ac434d3807ad71631ea741aa44e0a63",
+   "vertices": 289,
+   "parts": [
+    "GuardPaddedLegLayer_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard-lod1.glb",
+   "source_count": 13
+  },
+  {
+   "sha1": "5d713aa584fc3d8b70988b8ce39f1295eeedbe15",
+   "vertices": 152,
+   "parts": [
+    "GuardLegArmor_thigh_armor_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard.glb",
+   "source_count": 13
+  },
+  {
+   "sha1": "6110c962411077eda6a756ffd2574ada0b5782ef",
+   "vertices": 213,
+   "parts": [
+    "superseded:HelmetAssembly_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "617dc98fb6a12575f2c784beb12c6ba500a6adaf",
+   "vertices": 62,
+   "parts": [
+    "GuardLegArmor_shin_armor_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard-lod1.glb",
+   "source_count": 12
+  },
+  {
+   "sha1": "61b8306eab68ebcf9b35f1f71926220664386b9a",
+   "vertices": 192,
+   "parts": [
+    "superseded:WorkerCraftAxe_LOD0",
+    "superseded:WorkerCraftAxe_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/candidate/worker-grip-refine-lod0.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "6224c12f7600df023f93cd28fe921f1b01f9bc47",
+   "vertices": 357,
+   "parts": [
+    "GuardLegArmor_knee_cap_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-cage-smoothed/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "630589c142a01e4d75f113e01348af29710dabd1",
+   "vertices": 874,
+   "parts": [
+    "GuardPaddedLegLayer_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 12
+  },
+  {
+   "sha1": "64cfca4ae5828271c20a7cc6c04a5b710f981296",
+   "vertices": 1638,
+   "parts": [
+    "GuardLegArmor_knee_cap_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-control-surface/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "66082509e7f906ac8b55f58b23e9896f13eb2a8f",
+   "vertices": 62,
+   "parts": [
+    "GuardLegArmor_knee_cap_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard-lod1.glb",
+   "source_count": 12
+  },
+  {
+   "sha1": "6b2eda06c99c2ee3b0ce45a894be471b5000cbb3",
+   "vertices": 2720,
+   "parts": [
+    "GuardLegArmor_thigh_armor_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-control-surface/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "6bafeeedf82af0517f8e241b39f649ae21bb17c3",
+   "vertices": 480,
+   "parts": [
+    "GuardLegArmor_shin_armor_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-cage-smoothed/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "6f78a0329d131e286230e565198789cffb1d0e1d",
+   "vertices": 632,
+   "parts": [
+    "GuardLegArmor_shin_armor_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "717857377b1fd8453363b2a1cc36b1a0cf5400cb",
+   "vertices": 1440,
+   "parts": [
+    "GuardLegArmor_knee_cap_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-control-surface/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "726b8606962c59171f3710c44f916f2e6eac4bfc",
+   "vertices": 1127,
+   "parts": [
+    "GuardPaddedLegLayer_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "73427e5a5b69b090dc255fb185e740d6fd0000d2",
+   "vertices": 2296,
+   "parts": [
+    "superseded:GuardBody_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/guard-lod1.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "73615d6d66123b5ad5087d2b0720316031564d00",
+   "vertices": 23044,
+   "parts": [
+    "GuardLegArmor_knee_cap_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "784162ea9595ba5bbeced2ef64de17aa61144d05",
+   "vertices": 1776,
+   "parts": [
+    "GuardLegArmor_shin_armor_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-control-surface/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "786c49db1e72d48f3fcb262097907b6bfc7cf818",
+   "vertices": 156,
+   "parts": [
+    "superseded:KingdomSunShield_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 3
+  },
+  {
+   "sha1": "793cf9a991a2121eb32f826698bd2b020318e845",
+   "vertices": 152,
+   "parts": [
+    "GuardLegArmor_thigh_armor_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard.glb",
+   "source_count": 13
+  },
+  {
+   "sha1": "79ddd82cd399fc8acd8d41a5fd10105acfe2c336",
+   "vertices": 480,
+   "parts": [
+    "GuardLegArmor_thigh_armor_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-cage-smoothed/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "7b0e85f057ae741c82b607631ce486881c7d55f7",
+   "vertices": 232,
+   "parts": [
+    "superseded:CrossbowWeapon_LOD0",
+    "superseded:CrossbowWeapon_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/crossbow-lod1.glb",
+   "source_count": 6
+  },
+  {
+   "sha1": "7c2324ea6d1118251b80828aad954e72ae121122",
+   "vertices": 480,
+   "parts": [
+    "GuardLegArmor_thigh_armor_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "7cb93ee1e326b7e2fd5da1922321dc4ae3c9177d",
+   "vertices": 632,
+   "parts": [
+    "GuardLegArmor_thigh_armor_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-cage-smoothed/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "7e124e0c6f64f18a9bfe84b3ef484c883e90830a",
+   "vertices": 18981,
+   "parts": [
+    "GuardBoot_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 8
+  },
+  {
+   "sha1": "7edb5445895b62c6171d72055b241b568a22fa00",
+   "vertices": 21958,
+   "parts": [
+    "GuardLegArmor_shin_armor_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "7fe253b07e8118ff50b44257f9066fed9a7195f1",
+   "vertices": 1132,
+   "parts": [
+    "OriginalCrossbowClosedGrip_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-crossbow-complete/2026-10-07-v1/candidate/original-crossbow-grip-lod1.glb",
+   "source_count": 3
+  },
+  {
+   "sha1": "82f253638bce4bd0ad20f9d19eef4ccaba24fed8",
+   "vertices": 82,
+   "parts": [
+    "GuardLegArmor_knee_cap_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/surface/dense-motion/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "844a057bf1c134b088fd910a3d078c9ab608ec60",
+   "vertices": 751,
+   "parts": [
+    "superseded:GuardArms_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "84a11a0142e39a30f36d523d8a811f1f6a90a76c",
+   "vertices": 632,
+   "parts": [
+    "GuardLegArmor_thigh_armor_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-cage-smoothed/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "8524e62be07c0a6fe5d42885bb1d1665310de203",
+   "vertices": 22258,
+   "parts": [
+    "GuardLegArmor_shin_armor_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "85fd1f0d51545558e6b553927dab7a98eb7eab31",
+   "vertices": 62,
+   "parts": [
+    "GuardLegArmor_shin_armor_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard-lod1.glb",
+   "source_count": 12
+  },
+  {
+   "sha1": "8758f6e218f09ce279a7205c1b64efffc8bca194",
+   "vertices": 18982,
+   "parts": [
+    "GuardBoot_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 8
+  },
+  {
+   "sha1": "88b9b3f5308222fe9bd6dbe69ff1ebef37a5010a",
+   "vertices": 120,
+   "parts": [
+    "superseded:GuardArms_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "8b15abc18ab23959d3b6ad1e9dc69d303b0c0867",
+   "vertices": 975,
+   "parts": [
+    "superseded:GuardBody_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/guard-lod1.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "8b25bd042550564ef8d7959edd3a4e147addcc61",
+   "vertices": 9657,
+   "parts": [
+    "superseded:workerOriginalBody_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/candidate/worker-grip-refine-lod0.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "8b46d7fd0855b3cd43ec200fb990e54a8b7e8c8a",
+   "vertices": 1314656,
+   "parts": [
+    "hunyuan-output:geometry_0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-shape/2026-10-05/candidate/candidate-body.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "8d6b071bb3bcca10d045677b95c36b8ecf9be912",
+   "vertices": 62,
+   "parts": [
+    "GuardLegArmor_thigh_armor_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard-lod1.glb",
+   "source_count": 12
+  },
+  {
+   "sha1": "917007f0c2d9497fc5fd25097692732e9ce222d6",
+   "vertices": 2284,
+   "parts": [
+    "GuardLegArmor_thigh_armor_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-control-surface/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "94c84b0912d739c41453047071b3efeec84e787e",
+   "vertices": 1271,
+   "parts": [
+    "OriginalCrossbowClosedGrip_R"
+   ],
+   "example_source": "art-factory/rts/runs/original-crossbow-grip/continuation-20261006-2/qa/iteration-1/candidate/original-crossbow-grip-lod1.glb",
+   "source_count": 5
+  },
+  {
+   "sha1": "95642010b78d4e5deef332952da9a43c741cf3f3",
+   "vertices": 17840,
+   "parts": [
+    "GuardLegArmor_knee_cap_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "9581e158b1a179c658b15a8dace4355fcdeaeebd",
+   "vertices": 2226,
+   "parts": [
+    "WorkerOriginalGrip_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/candidate/worker-grip-refine-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "95b18b890dc9476caafa4131de01971640ded583",
+   "vertices": 3126,
+   "parts": [
+    "superseded:GuardBody_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/guard-lod1.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "9a12742ddc32120e4d0c3cb3fdfbb72638c90cf0",
+   "vertices": 3320,
+   "parts": [
+    "GuardHandGrip_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard.glb",
+   "source_count": 13
+  },
+  {
+   "sha1": "9a78400566ecf6d4acacc69af65d14630d5f80fc",
+   "vertices": 357,
+   "parts": [
+    "GuardLegArmor_knee_cap_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-cage-smoothed/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "9c3fb35a31b426bf25b6092c57eae9eeaaba40cc",
+   "vertices": 28686,
+   "parts": [
+    "GuardLegArmor_shin_armor_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "a1576ef29897be12f13e77d52ac22a01df654577",
+   "vertices": 144,
+   "parts": [
+    "superseded:GuardHipLiner_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "a357e15a74467ab9f8d666388aedbe6cc49987f1",
+   "vertices": 108,
+   "parts": [
+    "superseded:GuardTasset_L_LOD0",
+    "superseded:GuardTasset_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "a466f5f3276a6ffcfb0efc411393bd9664e48f60",
+   "vertices": 82,
+   "parts": [
+    "GuardLegArmor_shin_armor_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/surface/dense-motion/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "a899e6b7092d5dff4a2247f68ee7d030291d55bd",
+   "vertices": 487224,
+   "parts": [
+    "hunyuan-output:geometry_0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-shape/2026-10-05/candidate/candidate.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "ac4e2f22c96b152213db4ccff8bc0933a8ea5914",
+   "vertices": 507,
+   "parts": [
+    "GuardBoot_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/surface/dense-motion/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "adc5dfaa5c4ff5290767830c5cb81f596c8c197d",
+   "vertices": 376,
+   "parts": [
+    "superseded:GuardArms_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "ae3378c34667e4c54fc986f6365f8687e74469d6",
+   "vertices": 370396,
+   "parts": [
+    "hunyuan-output:geometry_0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-right-grip-shape/2026-10-05/candidate/candidate.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "b1aaaca673cfe4a4488912d7129fc0ee0ea08f48",
+   "vertices": 494,
+   "parts": [
+    "superseded:Tabard_OriginalGuardFrontTabard_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "b53aa37c90d152f13a8e7a809441b56ad83e4d57",
+   "vertices": 14794,
+   "parts": [
+    "GuardBoot_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 8
+  },
+  {
+   "sha1": "b69256dbc0b7486a3d169bace85037f51bdbd014",
+   "vertices": 1097,
+   "parts": [
+    "superseded:HelmetAssembly_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "b801f8b311f897828f316a9279b5a8c2f393f9cb",
+   "vertices": 17832,
+   "parts": [
+    "GuardLegArmor_knee_cap_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "b959c28b0f5dc447c1acd89ad4eb1c97e94cfdba",
+   "vertices": 1198,
+   "parts": [
+    "GuardHandGrip_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v16-wrist-export/candidate/guard-wrist-direct-lod1.glb",
+   "source_count": 7
+  },
+  {
+   "sha1": "ba942d61f11a1e51a6823733eac23fdb1d19fbb9",
+   "vertices": 480,
+   "parts": [
+    "GuardLegArmor_shin_armor_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "bc5eea1614622fb55bac02e30e701116bb9f0342",
+   "vertices": 108,
+   "parts": [
+    "superseded:GuardTasset_R_LOD0",
+    "superseded:GuardTasset_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "be5e01d5e81d7be3cbe5e9854cb0301de1c24b85",
+   "vertices": 62,
+   "parts": [
+    "GuardLegArmor_knee_cap_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard-lod1.glb",
+   "source_count": 12
+  },
+  {
+   "sha1": "bf6f180389008d76ef82dafafe16162c65519ad7",
+   "vertices": 1190,
+   "parts": [
+    "superseded:crossbowOriginalBody_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/crossbow-lod1.glb",
+   "source_count": 3
+  },
+  {
+   "sha1": "c18e6fd3140923c584bbb50fb8c8fe1858a26683",
+   "vertices": 1794,
+   "parts": [
+    "GuardHandGrip_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/timing-probe/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 7
+  },
+  {
+   "sha1": "c2288c4e7233345391f9791255ae7e017d26cc5a",
+   "vertices": 1960,
+   "parts": [
+    "OriginalCrossbowClosedGrip_L"
+   ],
+   "example_source": "art-factory/rts/runs/original-crossbow-grip/continuation-20261006-2/qa/iteration-1/candidate/original-crossbow-grip-lod0.glb",
+   "source_count": 5
+  },
+  {
+   "sha1": "c23d99dff61bc11db0d6ac51f89fa28b9f07a7ab",
+   "vertices": 904,
+   "parts": [
+    "superseded:KingdomSteelSword_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 3
+  },
+  {
+   "sha1": "c351bf1ae51a9e59c1814ea14ceb572f981506a3",
+   "vertices": 3322,
+   "parts": [
+    "GuardHandGrip_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v16-wrist-export/candidate/guard-wrist-direct-lod0.glb",
+   "source_count": 7
+  },
+  {
+   "sha1": "c5dc1ad9dea3ac3707f97f1672653886b75fc0b1",
+   "vertices": 1956,
+   "parts": [
+    "OriginalCrossbowClosedGrip_L"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/crossbow-lod1.glb",
+   "source_count": 52
+  },
+  {
+   "sha1": "c6b13b79177e6363de8ceea317518eeecda40ecb",
+   "vertices": 446,
+   "parts": [
+    "superseded:GuardBody_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/guard-lod1.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "cb30e8a1821461bf11cdc4d7cdfd2caebedf29da",
+   "vertices": 5101,
+   "parts": [
+    "superseded:crossbowOriginalBody_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/crossbow-lod1.glb",
+   "source_count": 3
+  },
+  {
+   "sha1": "ce881b463f68ae8f7e3fd8d089d1f944fb471222",
+   "vertices": 1808,
+   "parts": [
+    "GuardHandGrip_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/timing-probe/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 7
+  },
+  {
+   "sha1": "cf77cc026c2dea331d0089c9d0079b317e6c5382",
+   "vertices": 322,
+   "parts": [
+    "superseded:GuardArms_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "d055caee75bf26ba4bc48d418271cc798f988af5",
+   "vertices": 128,
+   "parts": [
+    "superseded:GuardFauld_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "d35227eda684a4f12d6134d8c23c110392266fa4",
+   "vertices": 1195,
+   "parts": [
+    "GuardHandGrip_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v16-wrist-export/candidate/guard-wrist-direct-lod1.glb",
+   "source_count": 7
+  },
+  {
+   "sha1": "d4860bf7f68073273ef78627da07e91f10940324",
+   "vertices": 936,
+   "parts": [
+    "superseded:GuardBody_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/guard.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "d4ce8a369d707e90389f4b2fcc889537ea0fe703",
+   "vertices": 470,
+   "parts": [
+    "GuardLegArmor_knee_cap_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-cage-smoothed/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "d52881096a56f7859015b33a629a81ea1ca17167",
+   "vertices": 152,
+   "parts": [
+    "GuardLegArmor_shin_armor_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard.glb",
+   "source_count": 13
+  },
+  {
+   "sha1": "d5ea68de4fc92a68a7d699d67c28a04d37e3de27",
+   "vertices": 2086,
+   "parts": [
+    "superseded:crossbowOriginalBody_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/crossbow.glb",
+   "source_count": 3
+  },
+  {
+   "sha1": "d6f74a911f5b466eb2d05a0efbbc838c86990553",
+   "vertices": 632,
+   "parts": [
+    "GuardLegArmor_shin_armor_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-cage-smoothed/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "d843d5849d91587d38180edc8f45a857afdcd888",
+   "vertices": 256,
+   "parts": [
+    "superseded:GuardFauld_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "d9491149abae7ed855ad0264fc716cd0a3e0c74b",
+   "vertices": 1522,
+   "parts": [
+    "GuardHandGrip_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/surface/dense-motion/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "d98e0ae17fad38194184920fd74863110a25fb69",
+   "vertices": 480,
+   "parts": [
+    "GuardLegArmor_shin_armor_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-cage-smoothed/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "dcf9610664621a3991a060f5cbde2d04505e786e",
+   "vertices": 451,
+   "parts": [
+    "GuardBoot_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard.glb",
+   "source_count": 12
+  },
+  {
+   "sha1": "e156e2318fe0620943fdae12db6e4cc7a5c92263",
+   "vertices": 632,
+   "parts": [
+    "GuardLegArmor_shin_armor_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "e3c7566cb150d0b5ef30ceedaee5d4fefb1f9e7a",
+   "vertices": 82,
+   "parts": [
+    "GuardLegArmor_shin_armor_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/surface/dense-motion/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "e5885141ee3bc190f950b65755c786704bd29c11",
+   "vertices": 470,
+   "parts": [
+    "GuardLegArmor_knee_cap_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "e609a94add3a08fb53a514051420b4ccc6a2f14a",
+   "vertices": 1636,
+   "parts": [
+    "GuardLegArmor_knee_cap_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-control-surface/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "e850e272d60ff6ee3dd55d1907c990e4d48592d0",
+   "vertices": 2598,
+   "parts": [
+    "GuardLegArmor_thigh_armor_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-control-surface/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "e8eacd7ecefdc800a758d5e50de1f1db4e1796cd",
+   "vertices": 1686,
+   "parts": [
+    "superseded:KingdomSunShield_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 3
+  },
+  {
+   "sha1": "eb2344452ba0537868b3ae7ee9443f7cf57c8799",
+   "vertices": 33221,
+   "parts": [
+    "OriginalGripLowCandidate"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-grip-local/2026-10-05/candidate/original-guard-grip-local-flip.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "ec8ef24963a16fa82a92a3bb2e162258ac20d412",
+   "vertices": 143,
+   "parts": [
+    "superseded:HelmetAssembly_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "ecbabc9655eb2374ea357130b195f91b11d22f1c",
+   "vertices": 1198,
+   "parts": [
+    "GuardHandGrip_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard-lod1.glb",
+   "source_count": 5
+  },
+  {
+   "sha1": "eccb199ec5252526fd963999c7e016045f604828",
+   "vertices": 2020,
+   "parts": [
+    "GuardLegArmor_shin_armor_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-control-surface/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "ee9a228e76d787b3d103c5c43da22964ff4c8b03",
+   "vertices": 82,
+   "parts": [
+    "GuardLegArmor_thigh_armor_L_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/surface/dense-motion/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "f04acb1d116a92ee82b4920bbb0f1775636fab20",
+   "vertices": 1275,
+   "parts": [
+    "OriginalCrossbowClosedGrip_L"
+   ],
+   "example_source": "art-factory/rts/runs/original-crossbow-grip/continuation-20261006-2/qa/iteration-1/candidate/original-crossbow-grip-lod1.glb",
+   "source_count": 5
+  },
+  {
+   "sha1": "f0b18a99d1ec0a02c27acc96d2d8892bebb5a768",
+   "vertices": 357,
+   "parts": [
+    "GuardLegArmor_knee_cap_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "f2e3c3905fda8f48158d85858b481be9c5118075",
+   "vertices": 314812,
+   "parts": [
+    "hunyuan-output:geometry_0"
+   ],
+   "example_source": "art-factory/rts/runs/original-glove-shape/2026-10-06-v1/candidate/candidate.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "f30edd71798812212c4b889a49fa7674e786a8b3",
+   "vertices": 632,
+   "parts": [
+    "GuardLegArmor_thigh_armor_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-boots-shoulder/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "f321faf8919b91b5887679117d17939c4585b708",
+   "vertices": 251,
+   "parts": [
+    "GuardBoot_R_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard-lod1.glb",
+   "source_count": 12
+  },
+  {
+   "sha1": "f76fc30dc3dea706d791afc4eb5d8d9f5aa87fcd",
+   "vertices": 252,
+   "parts": [
+    "superseded:WorkerCraftAxe_LOD0",
+    "superseded:WorkerCraftAxe_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/candidate/worker-grip-refine-lod0.glb",
+   "source_count": 9
+  },
+  {
+   "sha1": "fa5fead5a1780b28b07048a1043e5be54be186aa",
+   "vertices": 3322,
+   "parts": [
+    "GuardHandGrip_L_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/assembly-refinement/2026-10-08-v2/raw/before/guard.glb",
+   "source_count": 13
+  },
+  {
+   "sha1": "fb0f643fda09c62ee843926daac45479c8693f7d",
+   "vertices": 23002,
+   "parts": [
+    "GuardLegArmor_knee_cap_R_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod0.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "fbc2e954c0fd10a91bed2ce1e242b3807a10c393",
+   "vertices": 1012,
+   "parts": [
+    "superseded:HelmetAssembly_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard-lod1.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "fbc8ff9bbc695c04d87ae5698e245a6840c73bed",
+   "vertices": 7783,
+   "parts": [
+    "superseded:GuardBody_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/unit-shared-textures/2026-10-09-v1/candidate/models/guard.glb",
+   "source_count": 2
+  },
+  {
+   "sha1": "fcd486c847ba85139392edf1672eb9b56c188fe4",
+   "vertices": 235,
+   "parts": [
+    "superseded:HelmetAssembly_LOD0"
+   ],
+   "example_source": "art-factory/rts/runs/detail-refinement/2026-10-07-v1/candidate/guard.glb",
+   "source_count": 1
+  },
+  {
+   "sha1": "fd63743ff38d0a06507dc50f390fc5f460c910ca",
+   "vertices": 873,
+   "parts": [
+    "GuardPaddedLegLayer_LOD1"
+   ],
+   "example_source": "art-factory/rts/runs/original-guard-assembly/2026-10-05/revision-joint-segment/candidate/original-guard-assembly-lod1.glb",
+   "source_count": 1
+  }
+ ]
+}

@@ -1,0 +1,35 @@
+{
+  "asset_id": "commander-assembly-refinement",
+  "status": "published",
+  "run": "art-factory/rts/runs/commander-assembly/2026-10-14-v1",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "Original Blender modeling over the published character; existing generated and published detail-v1 PBR tiles. No third-party assets.",
+  "scope": "Finish both closed hands with individual curled fingers, thumb, knuckle protection and fitted leather cuffs; fit shield rear grip to left hand; retain formed shield silhouette; refine existing original sword and equipment surfaces; correct Death equipment clearance.",
+  "preserve": [
+    "body outside hand trimming",
+    "20-bone bind rig",
+    "8 animation clip names and durations",
+    "7 non-Death animations",
+    "latest formed heater shield silhouette and dawn emblem",
+    "body texture and team recoloring"
+  ],
+  "qa_gates": [
+    "Both hands have recognizable digits and textured surfaces at close range",
+    "Both grips remain inside closed hands throughout 8 clips and both LODs",
+    "No visible wrist gaps or old open fingers",
+    "Sword/shield floor >= -0.002m throughout animation sweeps",
+    "Death shield does not cross torso or limbs",
+    "Zero glTF errors; normalized weights and source preservation",
+    "Final-sha game, portraits, both team colors and LODs",
+    "Independent full-assembly approval; no partial grip-only acceptance"
+  ],
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "publication_scope": "local worktree only",
+  "root_review": "art-factory/rts/runs/commander-assembly/2026-10-14-v1/qa/root-review.json",
+  "known_limits": [
+    "At extreme macro zoom the Death right leather cuff has a pointed fold; independently reviewed as overlapping cuff/armor, not a wrist gap.",
+    "glTF retains five non-root skinned-node warnings per LOD; actual runtime, LODs and portraits verified."
+  ]
+}

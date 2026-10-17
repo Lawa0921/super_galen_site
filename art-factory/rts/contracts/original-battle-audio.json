@@ -1,0 +1,48 @@
+{
+  "asset_id": "original-battle-audio",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "Original authored WebAudio score; no downloaded recordings or third-party music",
+  "source_files": [
+    "src/scripts/games/rts/audio-score.ts",
+    "src/scripts/games/rts/audio.ts"
+  ],
+  "runtime_mode": "Procedural audio graph instantiated by game code",
+  "cues": [
+    "order",
+    "gather",
+    "build",
+    "repair",
+    "attack",
+    "bolt",
+    "shell",
+    "impact",
+    "spell",
+    "heal",
+    "banner",
+    "complete",
+    "death",
+    "warning",
+    "victory",
+    "draw",
+    "defeat"
+  ],
+  "mix_contract": {
+    "maximum_voices": 12,
+    "maximum_sources": 64,
+    "result_priority": "Clear battle voices before outcome fanfare",
+    "muted_or_suspended": "Allocate no playback nodes"
+  },
+  "qa": "art-factory/rts/runs/commercial-readiness/2026-10-08/qa/audio/offline-waveforms.json",
+  "mechanical_qa": "17 individual cues and battle mix: finite samples, nonzero signal, no clipping, silent tail; event timing and voice lifecycle unit tests",
+  "pending": [
+    "listening review for timbre and fatigue",
+    "commercial artistic acceptance"
+  ],
+  "commercial_quality_approved": false,
+  "full_gameplay_mix_qa": {
+    "path": "art-factory/rts/runs/commercial-readiness/2026-10-11/qa/final-natural-campaign.json",
+    "sha256": "972ab4d957818502b39632ffca270836a4b49840ad4e537584c1afce392d724d",
+    "status": "both_maps_signal_mechanics_passed",
+    "artistic_listening_approved": false
+  }
+}

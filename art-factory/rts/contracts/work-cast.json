@@ -1,0 +1,72 @@
+{
+  "asset_id": "rts-work-cast-v2",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "plan": "docs/superpowers/plans/2026-10-11-rts-work-cast.md",
+  "run": "art-factory/rts/runs/work-cast/2026-10-11-v2",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "user_overall_art_acceptance": "pending",
+  "source_lock": "art-factory/rts/runs/work-cast/2026-10-11-v2/source-lock.json",
+  "source_mode": "Continue current published generated bodies and authored rigs under the existing whole-game completion authorization; add animation curves only. No new geometry, material or texture source.",
+  "mode_inference_decision": {
+    "selected_profile": "project-3d-animation-append",
+    "confidence": "high",
+    "rationale": "The output is skeletal GLB animation on current rigs, not a 2D raster asset. Preserve the project 3D factory workflow.",
+    "clarifying_question": null
+  },
+  "screen_id": "rts-work-cast-review",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "surfaces": [
+    "battlefield default 48 and maximum gameplay zoom 24",
+    "actual portrait framing, unchanged Idle",
+    "diagnostic 72/32 pixel LOD views"
+  ],
+  "clips": {
+    "worker": [
+      "Mine",
+      "Chop",
+      "Build"
+    ],
+    "priest": [
+      "Cast"
+    ],
+    "commander": [
+      "CastCleave",
+      "CastMend",
+      "CastBanner"
+    ]
+  },
+  "timing": {
+    "work": "seamless repeated cycle, three distinct tool paths",
+    "cast_seconds": 0.6,
+    "cast_loop": false
+  },
+  "preservation": [
+    "all original BIN bytes",
+    "existing nodes, meshes, materials, skin/bind data, images and texture URIs",
+    "original five animation channels and accessors",
+    "editable source mesh/material/rig and original actions"
+  ],
+  "preservation_exception": "Conservative bounds may be added/expanded from bind/all-clip keys and 60 Hz samples plus 0.05 m margin, enclosing old bounds. Existing commander sword is rigidly rotated 180 degrees about X around the leather-grip bounds centre to correct its inherited backward blade: append new POSITION/NORMAL only, retain original BIN prefix, topology, UV, weights, skin, materials, all other mesh data and old clips. Apply identical rotation to both source-blend LODs; record pivots and accessor remaps. No new geometry is authored.",
+  "previous_candidate": {
+    "run": "art-factory/rts/runs/work-cast/2026-10-11-v1",
+    "status": "qa_failed",
+    "reason": "Staff tail points at target; inherited commander sword points into forearm; worker arm primarily swings sideways. Original candidates, screenshots and tool sources retained; none published."
+  },
+  "qa": [
+    "source hash locks",
+    "pure append Red/Green",
+    "exact preservation comparison",
+    "new motion differs from Attack and sibling clips",
+    "same new motion across both LODs",
+    "ground/weapon attachment checks",
+    "zero glTF validator errors",
+    "actual Three.js two teams/two LODs/gameplay motion review",
+    "successful real gameplay action selects correct clip",
+    "runtime source fingerprint and download/performance gates"
+  ],
+  "publication_scope": "local worktree only",
+  "root_review": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/root-review.json"
+}

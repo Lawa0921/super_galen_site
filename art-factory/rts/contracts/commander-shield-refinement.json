@@ -1,0 +1,34 @@
+{
+  "asset_id": "commander-shield-refinement",
+  "status": "published",
+  "run": "art-factory/rts/runs/commander-shield/2026-10-14-v1",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "Original Blender authoring over the published commander; reusable shield construction from commander-equipment-v3, with new fitted dimensions. No third-party art.",
+  "source_lock": "art-factory/rts/runs/commander-shield/2026-10-14-v1/source-lock.json",
+  "scope": "Shield only: bowed heater profile, formed steel rim, brass inlay, dawn boss and rays, rear braces and leather grip; both LODs.",
+  "preserve": [
+    "body and sword geometry, UVs and skin weights",
+    "20-bone rig",
+    "all eight animation clips",
+    "existing materials and textures",
+    "runtime scale and selection footprint"
+  ],
+  "qa_gates": [
+    "closed manifold parts and no zero-area faces",
+    "shield within previous envelope to 1mm",
+    "non-shield GLB binary, nodes, skins and clips preserved",
+    "Khronos validation with external textures",
+    "front, rear, side, team colors and both LODs",
+    "61 samples per clip per LOD; floor regression below 1mm",
+    "actual battlefield camera and independent art review"
+  ],
+  "known_limits": [
+    "Existing open sword and shield hand grips remain",
+    "Existing Death shield/body overlap and about 6.7cm ground penetration remain",
+    "This approval does not accept the entire character or game"
+  ],
+  "runtime_publish_allowed": true,
+  "publication_scope": "local worktree only",
+  "user_overall_art_acceptance": "pending",
+  "root_review": "art-factory/rts/runs/commander-shield/2026-10-14-v1/qa/root-review.json"
+}

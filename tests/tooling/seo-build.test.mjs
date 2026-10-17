@@ -292,6 +292,11 @@ describe('SEO build output', { skip }, () => {
     }
     // 從原有 224 筆移除 Witch Run 與 Dungeon Defense。
     assert.equal(sitemapLocs.length, 222);
+    // 曦境戰紀尚未公開：/games/rts/ 與模型檢視頁皆 noindex、不進 sitemap，直接網址仍可開。
+    for (const path of ['/games/rts/', '/games/rts/models/']) {
+      assert.ok(!sitemapLocs.includes(`${ORIGIN}${path}`), `${path} 不應在 sitemap`);
+      assert.match(readFileSync(htmlFor(path), 'utf8'), /<meta name="robots" content="noindex/, `${path} 應 noindex`);
+    }
   });
 
   test('首頁頁尾連到 /privacy/', () => {

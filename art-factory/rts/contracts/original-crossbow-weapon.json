@@ -1,0 +1,44 @@
+{
+  "asset_id": "original-crossbow-weapon",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source": "art-factory/rts/runs/original-crossbow-waist/2026-10-06-v1/candidate/original-crossbow-grip.blend",
+  "source_sha256": "6936e824a34253f6c60dbdb9fc3b707ed9d7eb9fd51081b562ba4fd490315fdc",
+  "run": "art-factory/rts/runs/original-crossbow-weapon/2026-10-06-v1",
+  "source_mode": "original_authored_mesh_and_uv_with_existing_original_generated_surface_tiles",
+  "scope": "Original complete weapon rebuild. Motion trials preserve body/hands geometry, weights, bind bones and non-arm curves. Six-bone carry and Death trials rejected; eight-bone feasibility is diagnostic only.",
+  "scope_revision_evidence": "qa/contact-geometry-baseline.json, qa/floor-baseline.json, qa/contact.json and qa/shoulder-feasibility.json: existing chest/floor collision; six-bone fixed-wrist targets unreachable; eight-bone feasible poses still intersect cuff/handle.",
+  "authorship": "No third-party mesh, rig, motion, mocap or texture input. Material metallic/roughness values are authored, not measured PBR scans.",
+  "triangle_limits": {
+    "weapon_lod0": 1600,
+    "weapon_lod1": 580,
+    "unit_lod0": 20000,
+    "unit_lod1": 10000
+  },
+  "materials": [
+    "art-factory/rts/runs/kingdom-siege/2026-10-04-original/candidate/textures/hewn-oak-basecolor.jpg",
+    "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/steel-512.png",
+    "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/leather-512.png"
+  ],
+  "qa": [
+    "Actual old source fails closed-prod, centered-prod and textured-weapon checks before implementation.",
+    "All new weapon components closed, finite nondegenerate geometry, UVs and textured materials; symmetric prod centered on stock.",
+    "Both LODs rigidly weighted to Hand_R with one armature modifier; fixed body/hands geometry and weights, bind bones, four clips, non-arm Death curves and original packed images unchanged.",
+    "Actual evaluated source and exported GLB Death at subframes: weapon above ground, both grips retained, forearm cuffs remain fitted, no arm branch flip; inspect full fall in browser.",
+    "Check actual grip channels and full weapon against both gloves throughout all five animations; distinguish sampled contact, containment and actual triangle intersections.",
+    "Inspect weapon detail, full-body motion, game view and animated portrait in actual browser; inspect both LODs.",
+    "Independent review and exact-byte export validation before any local runtime publication."
+  ],
+  "publish_targets": [
+    "public/assets/games/rts/models/crossbow.glb",
+    "public/assets/games/rts/models/crossbow-lod1.glb"
+  ],
+  "user_overall_art_acceptance": "pending-user-preview",
+  "geometry_reusable": true,
+  "motion_accepted": false,
+  "root_review": "art-factory/rts/runs/original-crossbow-weapon/2026-10-06-v1/qa/root-review.json",
+  "preview": "http://127.0.0.1:4334/crossbow-weapon.html",
+  "geometry_source": "art-factory/rts/runs/original-crossbow-weapon/2026-10-06-v1/geometry-candidate/original-crossbow-grip.blend",
+  "next_scope": "Locate exact handle/cuff intersections before any further pose search; then assess original eight-bone carry and clip transitions. No runtime until full QA and independent approval."
+}

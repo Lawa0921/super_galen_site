@@ -1,0 +1,96 @@
+{
+  "id": "landmark-kit-2026-10-08",
+  "screen_id": "rts-river-and-highland-landmarks",
+  "screen_breakdown": {
+    "river": [
+      "river-gatehouse",
+      "river-shrine"
+    ],
+    "highland": [
+      "highland-watchtower",
+      "quarry-ruins"
+    ],
+    "placements": "four instances per map, each archetype mirrored pair; runtime integration deferred"
+  },
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "original Blender recipe and reused original imagegen PBR derivatives",
+  "category": "3d-modular-environment",
+  "mode_inference_decision": {
+    "selected_profile": "opaque_background",
+    "confidence": "high",
+    "extension": "3D closed manifold mesh; RGB opaque UV/PBR maps; deterministic export/LOD and reimport QA",
+    "rationale": "Opaque 3D stone/timber landmarks; alpha chroma-key is inapplicable"
+  },
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "Independent consultant and root actual two-map renderer/48px LOD review approved; whole-game commercial acceptance remains pending",
+  "footprint": {
+    "horizontal": [
+      -1.9,
+      1.9
+    ],
+    "ground_pivot": [
+      0,
+      0,
+      0
+    ],
+    "source_up": "Z",
+    "glb_up": "Y",
+    "scale": 1,
+    "min_ground": -0.08,
+    "max_height": 5.2
+  },
+  "limits": {
+    "lod0_triangle_target": [
+      6000,
+      16000
+    ],
+    "lod1_triangle_target": [
+      2000,
+      5000
+    ],
+    "max_materials": 4,
+    "per_map_pair_compressed_download_target_bytes": 2000000
+  },
+  "assets": [
+    "river-gatehouse",
+    "river-shrine",
+    "highland-watchtower",
+    "quarry-ruins"
+  ],
+  "materials": [
+    "OriginalIvoryAshlar",
+    "OriginalCutLimestone",
+    "OriginalHewnOak",
+    "OriginalWarmBrass"
+  ],
+  "forbidden": [
+    "third-party models or motions",
+    "readable text",
+    "flags",
+    "resource icons",
+    "simple untreated primitive stacks",
+    "zero-thickness walls",
+    "floating modules",
+    "runtime publication"
+  ],
+  "qa_gates": [
+    "red-green geometry tests",
+    "true GLB reimport for all eight LODs",
+    "bounds/pivot/axis/unit scales",
+    "closed thick components, intentional openings described",
+    "nondegenerate triangles and finite UVs/normals",
+    "packed and embedded images",
+    "Khronos validator zero errors",
+    "front/back/two oblique views per model and RTS assembly reimport renders",
+    "source and recipe SHA256"
+  ],
+  "intentional_openings": {
+    "river-gatehouse": "Arch-shaped recess above a full timber barricade and rubble-filled entry; decorative blocked footprint, never a traversable gate",
+    "river-shrine": "Exposed terrace and broken columns; every component capped with thickness",
+    "highland-watchtower": "Two real windows through a 0.28 m thick wall, plus roofless interior and irregular ruined crown; wall shell has sill/reveal surfaces, no open mesh boundary",
+    "quarry-ruins": "Open timber lifting frame and worked-rock fracture grooves; rope tube capped, every stone solid"
+  },
+  "publication_scope": "local worktree only"
+}

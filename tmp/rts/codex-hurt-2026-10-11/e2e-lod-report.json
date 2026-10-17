@@ -1,0 +1,222 @@
+{
+  "config": {
+    "configFile": "C:\\Users\\bag57\\projects\\super_galen_site\\.claude\\worktrees\\rts\\playwright.rts.config.ts",
+    "rootDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tmp/rts/e2e-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "games-rts*.spec.ts"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tmp/rts/e2e-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "games-rts*.spec.ts"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tmp/rts/e2e-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "games-rts*.spec.ts"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "tmp/rts/e2e-report.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.0",
+    "workers": 1,
+    "webServer": {
+      "command": "node node_modules/astro/bin/astro.mjs dev --host 127.0.0.1 --port 4321",
+      "env": {
+        "ASTRO_DEV_BACKGROUND": "1"
+      },
+      "url": "http://127.0.0.1:4321",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "games-rts-hurt.spec.ts",
+      "file": "games-rts-hurt.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "eight published units react to damage, freeze in pause and yield to attack",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 18013,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T09:10:15.558Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0a224ef86ceff8531fe0-37e59d0bf497d941e0ea",
+          "file": "games-rts-hurt.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "eight published units react to damage, freeze in pause and yield to attack",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 19746,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T09:10:35.158Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0a224ef86ceff8531fe0-f9ca5ee14ea66d857e39",
+          "file": "games-rts-hurt.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "eight published units react to damage, freeze in pause and yield to attack",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 49880,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T09:10:57.395Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0a224ef86ceff8531fe0-80dd056eeb3f66cea007",
+          "file": "games-rts-hurt.spec.ts",
+          "line": 5,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-11T09:10:14.063Z",
+    "duration": 93642.55900000001,
+    "expected": 3,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

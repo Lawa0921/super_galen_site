@@ -1,0 +1,14 @@
+{
+  "asset_id": "original-guard-portrait-study",
+  "status": "candidate",
+  "runtime_publish_allowed": false,
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source": "art-factory/rts/runs/original-guard-quadri/2026-10-05/candidate/source-primary-exact.npz",
+  "source_sha256": "7851c7d91364e773b4e32e358740f37f43660e2d0cfbc9159f13245470a86edd",
+  "ownership": "Existing original generated guard only; authored chest/head controls and original motion, no external rig or animation",
+  "scope": "Source-preserving reduced upper bust and helmet; original head turn and chest breathing in an animated 3D portrait candidate",
+  "run": "art-factory/rts/runs/original-guard-portrait-study/2026-10-05",
+  "independent_review": "art-factory/rts/runs/original-guard-portrait-study/2026-10-05/qa/independent-review.json",
+  "limits": ["Sealed helmet has no exposed face, eyelids or mouth", "Inspection material and candidate shape only", "Separate upper-bust study, not assembled full-body motion or commercial-art approval"],
+  "gates": ["At most 18000 triangles", "Closed orientable geometry with no zero-area faces", "Rigid helmet region preserves edge lengths throughout sampled motion", "Four-second cyclic animation has matching start/end pose", "Exported browser skin matches Blender samples", "Actual portrait pixels visibly change while the camera remains fixed", "Original high/low front, side and back comparisons"]
+}

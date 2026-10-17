@@ -115,18 +115,12 @@ export function generateFloor(seed: number, floor: number): FloorLayout {
         hiddenPowerUps[`${x},${y}`] = r < 0.1 ? 'heart' : POWERUPS[Math.floor((r - 0.1) / 0.9 * POWERUPS.length)];
       }
 
-  // 收集「可達」的 floor 格（排除出生安全區）供敵人 / 出口佈點
-  const floors: { x: number; y: number }[] = [];
+  // 收集「可達」的非牆格（排除出生安全區），必要時可清箱補敵人出生空間。
+  const spaces: { x: number; y: number }[] = [];
   for (let y = 1; y < GRID_ROWS - 1; y++)
     for (let x = 1; x < GRID_COLS - 1; x++)
-      if (grid[y][x] === 'floor' && !safe.has(`${x},${y}`) && reach.has(`${x},${y}`))
-        floors.push({ x, y });
-
-  // 出口：離出生點最遠的 floor 格（穩定、可重現）
-  const exit = floors.reduce((best, c) =>
-    (Math.abs(c.x - SPAWN.x) + Math.abs(c.y - SPAWN.y)) >
-    (Math.abs(best.x - SPAWN.x) + Math.abs(best.y - SPAWN.y)) ? c : best,
-    floors[0] ?? { x: GRID_COLS - 2, y: GRID_ROWS - 2 });
+      if (grid[y][x] !== 'wall' && !safe.has(`${x},${y}`) && reach.has(`${x},${y}`))
+        spaces.push({ x, y });
 
   // 敵人：第 floor 層 = BASE + (floor-1)，從遠離出生點的 floor 格隨機挑。
   // 排除被牆/箱完全封死的格（至少要有一個 floor 鄰格），否則怪物會原地卡死。
@@ -134,11 +128,38 @@ export function generateFloor(seed: number, floor: number): FloorLayout {
     [grid[c.y - 1]?.[c.x], grid[c.y + 1]?.[c.x], grid[c.y]?.[c.x - 1], grid[c.y]?.[c.x + 1]]
       .some((t) => t === 'floor');
   const count = BASE_ENEMY_COUNT + (floor - 1);
-  const candidates = shuffle(
-    floors.filter((c) =>
-      Math.abs(c.x - SPAWN.x) + Math.abs(c.y - SPAWN.y) >= 4 && hasOpenNeighbor(c)),
-    rng,
-  );
+  const farSpaces = spaces.filter(c => Math.abs(c.x - SPAWN.x) + Math.abs(c.y - SPAWN.y) >= 4);
+  const collectCandidates = () => farSpaces.filter(c => grid[c.y][c.x] === 'floor' && hasOpenNeighbor(c));
+  let openCandidates = collectCandidates();
+  // 密集箱子可能讓合法候選為零；只補基本三名，深層仍受既有空間限制。
+  // 原候選足量時不耗用額外亂數，也不改動地圖或藏道具。
+  const repairTarget = Math.min(count, BASE_ENEMY_COUNT);
+  if (openCandidates.length < repairTarget) {
+    const open = (c: { x: number; y: number }) => {
+      grid[c.y][c.x] = 'floor';
+      delete hiddenPowerUps[`${c.x},${c.y}`];
+    };
+    for (const c of shuffle(farSpaces, rng)) {
+      if (openCandidates.length >= repairTarget) break;
+      if (grid[c.y][c.x] === 'floor' && hasOpenNeighbor(c)) continue;
+      const neighbor = [
+        { x: c.x, y: c.y - 1 }, { x: c.x, y: c.y + 1 },
+        { x: c.x - 1, y: c.y }, { x: c.x + 1, y: c.y },
+      ].find(n => reach.has(`${n.x},${n.y}`));
+      if (!neighbor) continue;
+      open(c);
+      if (!hasOpenNeighbor(c)) open(neighbor);
+      openCandidates = collectCandidates();
+    }
+  }
+  const candidates = shuffle(openCandidates, rng);
+
+  // 出口：從補格後的可達 floor 中取最遠格（穩定、可重現）。
+  const floors = spaces.filter(c => grid[c.y][c.x] === 'floor');
+  const exit = floors.reduce((best, c) =>
+    (Math.abs(c.x - SPAWN.x) + Math.abs(c.y - SPAWN.y)) >
+    (Math.abs(best.x - SPAWN.x) + Math.abs(best.y - SPAWN.y)) ? c : best,
+    floors[0] ?? { x: GRID_COLS - 2, y: GRID_ROWS - 2 });
   // 怪物池隨樓層擴張：1 基本；2+幽靈；3+衝刺獸；4+寶箱怪；5+魔像；6+工兵；7+史萊姆王
   // （mini 不自然生成，只由 splitter 分裂產生）
   const kindPool: EnemyKind[] = ['wander', 'chaser'];

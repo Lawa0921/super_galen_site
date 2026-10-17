@@ -1,0 +1,47 @@
+{
+  "assets": [
+    {
+      "id": "bolt",
+      "status": "published",
+      "url": "/assets/games/rts/models/bolt.glb",
+      "bytes": 157952,
+      "sha256": "dc66614b7d068ab224849cc74572b3491bf0c3dff7c551e2f37fed53e5b7ce53",
+      "source": "art-factory/rts/runs/projectiles/2026-10-05-v1/candidate/bolt.blend",
+      "candidate": "art-factory/rts/runs/projectiles/2026-10-05-v1/candidate/bolt.glb",
+      "qa": "art-factory/rts/runs/projectiles/2026-10-05-v1/qa/three.json",
+      "visual_review": "Root accepted original shape and actual Three.js ProjectileLayer forward tips, motion and expiry",
+      "runtime_publish_allowed": true,
+      "source_sha256": "77965bdb2cece4395bbde23d547615188c21ba4678a781ca2fa16d5eb3fdb5b5",
+      "qa_sha256": "e05529adfb0c4e1f5fe9adea84bfd51e0c25b07633e164e18b18d47a7a222a56"
+    },
+    {
+      "id": "heavy-bolt",
+      "status": "published",
+      "url": "/assets/games/rts/models/heavy-bolt.glb",
+      "bytes": 157964,
+      "sha256": "b961a6e0bc83c23ca567382b21ab2adb848365a9587ccf53eacccc116bd04404",
+      "source": "art-factory/rts/runs/projectiles/2026-10-05-v1/candidate/heavy-bolt.blend",
+      "candidate": "art-factory/rts/runs/projectiles/2026-10-05-v1/candidate/heavy-bolt.glb",
+      "qa": "art-factory/rts/runs/projectiles/2026-10-05-v1/qa/three.json",
+      "visual_review": "Root accepted original shape and actual Three.js ProjectileLayer forward tips, motion and expiry",
+      "runtime_publish_allowed": true,
+      "source_sha256": "3dce0f0d95eae8d950850d02c200b5d5212d0ddb60bbed5c4db138cb8d74b9be",
+      "qa_sha256": "e05529adfb0c4e1f5fe9adea84bfd51e0c25b07633e164e18b18d47a7a222a56"
+    },
+    {
+      "id": "arrow",
+      "status": "published",
+      "url": "/assets/games/rts/models/arrow.glb",
+      "bytes": 19480,
+      "sha256": "682f6d558505dd671f6dc35628d5e65229ff40ba545c36512a2c6c5f66246487",
+      "source": "art-factory/rts/runs/roster-expansion/2026-10-16-ranger/raw/arrow.blend",
+      "source_sha256": "56c107b9df3e89657398855689441842605654ae08480663d432f363f3ff2580",
+      "candidate": "art-factory/rts/runs/roster-expansion/2026-10-16-ranger/candidate/arrow.glb",
+      "qa": "art-factory/rts/runs/roster-expansion/2026-10-16-ranger/qa/arrow-gltf-validator.json",
+      "qa_sha256": "4c1fe5ae3c7681dfa73d40920185d38d5b06d7bfa328d79878a6ee60d62357d5",
+      "visual_review": "Machine QA passed (validator 0 errors); style approval pending",
+      "runtime_publish_allowed": true,
+      "user_style_approval": "pending"
+    }
+  ]
+}

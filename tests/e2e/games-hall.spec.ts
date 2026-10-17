@@ -15,6 +15,14 @@ test.describe('Dungeon Arcade — hall & mode select', () => {
     await expect(page.locator('a[href="/games/witchrun"], a[href="/games/defense"]')).toHaveCount(0);
   });
 
+  test('hall does not list the unreleased RTS, which stays reachable by URL', async ({ page }) => {
+    await page.goto('/games');
+    await expect(page.locator('a[href="/games/tetris"]')).toBeVisible();
+    await expect(page.locator('a[href^="/games/rts"]')).toHaveCount(0);
+    await expect(page.locator('.card-wall')).not.toContainText('曦境戰紀');
+    const response = await page.goto('/games/rts');
+    expect(response?.status()).toBe(200);
+  });
   for (const game of ['witchrun', 'defense']) {
     test(`removed game ${game} returns 404 for direct links`, async ({ request }) => {
       for (const path of [`/games/${game}`, `/games/${game}/`]) {

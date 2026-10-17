@@ -1,0 +1,156 @@
+.rts {
+  --rts-ink: #111a22; --rts-paper: #e9e1c8; --rts-gold: #c0a367; --rts-muted: #9ea69c;
+  position: fixed; inset: 0; z-index: 10; color: var(--rts-paper); background: #111918; font-family: inherit;
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none; }
+  button, input { font: inherit; }
+  button { cursor: pointer; color: inherit; border: 1px solid #696348; background: #202b2c; border-radius: 2px; padding: .6rem .9rem; transition: background .15s, border-color .15s; }
+  button:hover { background: #354142; border-color: var(--rts-gold); }
+  button:disabled { cursor: default; opacity: .82; color:#d8d5c8; border-color:#736d56; }
+  button:focus-visible, a:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px solid #eee0b0; outline-offset: 3px; }
+  a { color: var(--rts-paper); text-decoration: none; }
+  h1,h2,p,dl,dd { margin: 0; }
+  .rts-primary { background: #b79a58; color: #172320; border: 1px solid #e4ca8a; font-weight: 700; letter-spacing: .18em; padding: 1rem 2.8rem; }
+  .rts-primary:hover { background: #d4b87d; }
+  // Destructive confirmations stay secondary in weight; the red edge marks them as irreversible.
+  .rts-danger { color: #f1c1b2; background: #2b1d1b; border-color: #8f4b3d; }
+  .rts-danger:hover { background: #4a2620; border-color: #d0735c; }
+}
+.rts-desktop,.rts-battle { width:100%; height:100%; }
+.rts-lobby { position:relative; height:100%; overflow:auto; display:flex; flex-direction:column; background:linear-gradient(90deg,rgba(7,17,19,.77),rgba(7,17,19,.2) 57%,transparent),url('/assets/games/rts/ui/menu-keyart.webp') center/cover; }
+.rts-return { position:absolute; top:2rem; left:3.5rem; font-size:.8rem; letter-spacing:.1em; opacity:.8; }
+.rts-intro { position:relative; flex:none; width:min(660px,51vw); margin-left:8vw; padding:clamp(90px,13vh,165px) 0 2.5rem; }
+.rts-eyebrow { color:var(--rts-gold); font-size:.68rem; font-weight:600; letter-spacing:.3em; margin-bottom:1.5rem; }
+.rts-intro h1 { font-size:clamp(3.5rem,5vw,5.6rem); line-height:1.2; font-weight:700; letter-spacing:.18em; color:#f2e8cc; text-shadow:0 4px 30px #0008; }
+.rts-tagline { color:#d1c5a6; font-size:1.2rem; letter-spacing:.3em; margin-top:1.2rem; }
+.rts-summary { color:#bec5b5; font-size:.88rem; line-height:1.9; margin-top:2rem; }
+.rts-map-choice { padding:0; margin:2.3rem 0 1.8rem; border:0; display:grid; grid-template-columns:1fr 1fr; gap:.75rem; max-width:540px;
+  legend { padding:0 0 .8rem; font-size:.72rem; letter-spacing:.18em; color:var(--rts-gold); }
+  label { cursor:pointer; display:grid; grid-template-columns:15px minmax(0,1fr) auto; align-items:center; gap:.45rem .65rem; padding:.45rem; background:#102125d9; border:1px solid #61705e80; transition:border-color .2s,background .2s; }
+  label:has(input:checked) { background:#283a36ed; border-color:var(--rts-gold); }
+  input { grid-column:1; grid-row:2; accent-color:var(--rts-gold); width:15px; height:15px; margin:0; }
+  .rts-map-thumb { grid-column:1/-1; grid-row:1; display:block; width:100%; height:auto; aspect-ratio:5/3; object-fit:cover; border:1px solid #867c5b; }
+  span { grid-column:2; grid-row:2; }
+  b { display:block; font-weight:500; font-size:.98rem; }
+  small { display:block; color:#a5b0a3; font-size:.66rem; margin-top:.5rem; }
+  em { grid-column:3; grid-row:2; margin-left:auto; font-size:.62rem; font-style:normal; color:#a89b73; }
+}
+.rts-difficulty { padding:0; margin:0 0 1.8rem; border:0; display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; max-width:540px;
+  legend { padding:0 0 .8rem; font-size:.72rem; letter-spacing:.18em; color:var(--rts-gold); }
+  label { cursor:pointer; display:flex; align-items:center; gap:.6rem; padding:.55rem .65rem; background:#102125d9; border:1px solid #61705e80; transition:border-color .2s,background .2s; }
+  label:has(input:checked) { background:#283a36ed; border-color:var(--rts-gold); }
+  input { accent-color:var(--rts-gold); width:15px; height:15px; margin:0; flex:none; }
+  b { display:block; font-weight:500; font-size:.92rem; }
+  small { display:block; color:#a5b0a3; font-size:.62rem; margin-top:.35rem; }
+}
+.rts-start-row { display:flex; align-items:center; gap:1.5rem; span { font-size:.65rem; line-height:1.8; color:#abb29f; } }
+.rts-load-status { min-height:1.5rem; margin-top:.75rem; font-size:.75rem; color:#e5c38b; max-width:450px; }
+.rts-match-limit { color:#dfcfab; font-size:.75rem; margin-top:.85rem; letter-spacing:.04em; }
+.rts-controls { margin-top:.8rem; font-size:.72rem; color:#b4bcae; summary { cursor:pointer; color:#c1b993; } p { margin-top:.65rem; line-height:1.85; } }
+.rts-tech-tree { width:min(1080px,84vw); max-width:calc(100vw - 10vw); margin-top:1.2rem; padding:.25rem .5rem; border-width:14px; border-image-width:14px; background:#111c1dcf;
+  summary { cursor:pointer; color:#ead39b; font-size:.82rem; letter-spacing:.08em; padding:.4rem; }
+}
+.rts-tech-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; margin:.7rem 0 .3rem; }
+.rts-tech-tier { min-width:0; padding:.7rem; border:1px solid #81785899; background:#0e1b1dbf;
+  h2 { color:#efdbab; font-size:1rem; font-weight:600; margin-bottom:.5rem; }
+  h3 { color:#c9b984; font-size:.75rem; font-weight:600; margin:1rem 0 .35rem; }
+  ul { list-style:none; padding:0; margin:0; display:grid; gap:.35rem; }
+  li { display:grid; gap:.1rem; padding:.35rem 0; border-bottom:1px solid #82918b36; font-size:.71rem; line-height:1.45; }
+  strong { color:#f0e7cc; font-weight:600; }
+  li span,.rts-tech-upgrade { color:#bac5b8; font-size:.67rem; line-height:1.5; }
+  .rts-tech-upgrade { color:#e2c993; }
+}
+.rts-control-hint { font-size:.7rem; color:#9fa997; margin-top:1rem; }
+// In flow at the end of the scrolling lobby so a tall lobby (e.g. 1024x768) is never covered by it.
+.rts-lobby-footer { margin:auto 3.5rem 0; padding-bottom:1.5rem; display:flex; justify-content:space-between; font-size:.65rem; letter-spacing:.15em; color:#c0c2a8; }
+.rts-mobile { display:none; }
+#rts-canvas,#rts-overlay { position:absolute; inset:0; width:100%; height:100%; }
+#rts-canvas { touch-action:none; }
+#rts-overlay { pointer-events:none; }
+.rts-frame { border:22px solid transparent; border-image:url('/assets/games/rts/ui/command-panel.webp') 96 fill / 22px / 0 stretch; }
+.rts-topbar { position:absolute; top:10px; left:14px; right:14px; display:flex; align-items:center; gap:1.4rem; min-height:58px; padding:0 .45rem; border-width:14px; border-image-width:14px;
+  button { padding:.3rem .8rem; font-size:.75rem; }
+  time { margin-left:auto; color:#bfc4b6; font-variant-numeric:tabular-nums; font-size:.8rem; }
+}
+.rts-topbar time.rts-time-remaining { color:#f5d687; font-weight:700; }
+.rts-wordmark { letter-spacing:.15em; color:#d5bd82; font-weight:600; font-size:1rem; }
+.rts-map-name { font-size:.67rem; color:#aab3a1; }
+.rts-resources { display:flex; gap:2rem; margin-left:2rem; div { display:flex; align-items:baseline; gap:.6rem; } dt { color:#a7b0a0; font-size:.65rem; } dd { font-size:1rem; font-weight:600; color:#e1cca0; font-variant-numeric:tabular-nums; } }
+.rts-dock { position:absolute; bottom:10px; left:14px; right:14px; height:240px; display:grid; grid-template-columns:234px 360px minmax(350px,1fr); grid-template-rows:minmax(0,1fr); gap:9px; pointer-events:none; >section { pointer-events:auto; min-width:0; } }
+.rts-unit-panel { display:grid; min-height:0; grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr); }
+.rts-has-portrait { grid-template-columns:144px minmax(0,1fr); gap:6px; .rts-selection { border-width:12px; border-image-width:12px; h2 { font-size:1rem; } } }
+.rts-portrait { min-width:0; min-height:0; border-width:12px; border-image-width:12px; border-image-slice:96; }
+#rts-portrait-view { width:100%; height:100%; }
+.rts-panel-heading { display:flex; align-items:center; justify-content:space-between; height:22px; margin-bottom:.6rem; font-size:.67rem; color:#c7b685; letter-spacing:.08em; small { color:#89998e; font-size:.6rem; } button { padding:.15rem .45rem; font-size:.58rem; } }
+.rts-map-panel { padding:0; border-width:14px; border-image-width:14px; }
+#rts-minimap { display:block; width:100%; height:calc(100% - 28px); object-fit:contain; cursor:crosshair; }
+.rts-selection { padding:.3rem .4rem; overflow:auto; h2 { font-size:1.15rem; font-weight:500; letter-spacing:.08em; margin:.3rem 0 .7rem; } p { color:#a5b1a4; font-size:.75rem; line-height:1.8; } progress { width:100%; height:7px; accent-color:#82a779; margin:.2rem 0 .7rem; } .rts-hp { color:#bbcfab; font-size:.72rem; font-variant-numeric:tabular-nums; } }
+.rts-unit-meta { display:flex; flex-wrap:wrap; gap:.55rem 1rem; color:#a9b4a5; font-size:.68rem; margin-top:.7rem; }
+.rts-group-list { display:flex; flex-wrap:wrap; gap:5px; margin-top:.7rem; button { display:inline-flex; align-items:center; gap:3px; font-size:.6rem; padding:.2rem .45rem .2rem .2rem; } img { width:24px; height:24px; flex:none; pointer-events:none; } }
+.rts-command-area { position:relative; min-width:0; height:100%; align-self:end; }
+.rts-command-panel { display:flex; flex-direction:column; height:100%; padding:.2rem .3rem; overflow:auto; pointer-events:auto; .rts-panel-heading { flex:none; } }
+// WC3-style fixed card: 3 rows that always share the dock height; submenus (e.g. worker build) keep every card ≤ 12 slots.
+.rts-commands { flex:1 1 0; min-height:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(3,minmax(0,1fr)); grid-auto-rows:minmax(0,1fr); gap:6px;
+  .rts-command-slot { display:block; min-width:0; min-height:0; }
+  button { position:relative; width:100%; height:100%; min-height:0; overflow:hidden; padding:.2rem .35rem; text-align:left; background:#263237bd; font-size:.73rem; line-height:1.3; }
+  .rts-command-key { position:absolute; top:2px; right:2px; z-index:1; min-width:1.1rem; padding:0 .2rem; border:1px solid #a9976599; border-radius:2px; background:#0d1719e6; color:#f0dc9f; font:600 .56rem/1.45 inherit; text-align:center; letter-spacing:0; pointer-events:none; }
+  button:disabled .rts-command-key { color:#9c9a86; }
+  .rts-command-copy { display:block; flex:1 1 auto; min-width:0; }
+  .rts-command-label,small { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .rts-command-label { display:block; }
+  // Art cards drop their vertical padding so the portrait can use the full card height.
+  .rts-command-art { display:flex; align-items:center; justify-content:space-between; gap:4px; padding-block:0;
+    img { order:1; height:100%; max-height:48px; width:auto; aspect-ratio:1; flex:none; object-fit:contain; pointer-events:none; }
+  }
+  small { display:block; margin-top:.2rem; font-size:.57rem; color:#c1ba92; }
+  button[data-state="dead"] { border-color:#9a5a4c; .rts-command-label { color:#e69b78; } small { color:#d9a18f; } }
+  // Locked cards must show their full requirement: wrap to two compact lines instead of an ellipsis.
+  button:disabled small { color:#f0cc91; font-size:.55rem; line-height:1.25; white-space:normal; overflow-wrap:anywhere; text-overflow:clip; }
+}
+@media(min-width:1400px) { .rts-commands { grid-template-columns:repeat(6,minmax(0,1fr)); } }
+.rts-queue { flex:none; display:flex; flex-wrap:wrap; gap:5px; margin-top:.55rem; button { font-size:.6rem; padding:.3rem .5rem; } }
+.rts-notice { position:absolute; left:50%; top:100px; transform:translateX(-50%); display:grid; justify-items:center; gap:.2rem; color:#efdbab; font-size:.9rem; text-shadow:0 1px 2px #000; pointer-events:none;
+  // A translucent plate keeps the feed legible over bright grass, roads and white stone.
+  p { margin:0; padding:.12rem .75rem; background:#0a1315b3; border-radius:2px; } p[data-tone="alert"] { color:#f2a184; font-weight:700; } }
+.rts-mode { position:absolute; left:50%; bottom:calc(100% + 15px); width:max-content; max-width:100%; transform:translateX(-50%); background:#122a2cdd; border:1px solid #a99765; padding:.65rem 1.4rem; font-size:.8rem; pointer-events:none; }
+.rts-dialog { position:fixed; inset:0; margin:auto; width:min(1000px,92vw); max-height:88vh; overflow:auto; padding:1.5rem; color:#e9e1c8; background:#10191c; h2 { font-size:1.8rem; font-weight:500; margin:0 0 .8rem; } p { color:#b3bcae; font-size:.9rem; line-height:1.8; } &::backdrop { background:#071218b8; backdrop-filter:blur(5px); }
+  .rts-tech-tree { width:100%; max-width:none; }
+  .rts-tech-grid { max-height:34vh; overflow:auto; }
+}
+.rts-panel-actions { display:flex; gap:4px; }
+/* Tips float over the battlefield: clicks, drags and wheel pass through to it; only the skip button takes input. */
+.rts-tutorial { position:absolute; top:96px; left:14px; width:min(330px,calc(100% - 28px)); padding:.25rem .4rem; border-width:14px; border-image-width:14px; pointer-events:none;
+  .rts-tutorial-head { display:flex; justify-content:space-between; margin:0 0 .3rem; color:#c7b685; font-size:.65rem; letter-spacing:.12em; }
+  strong { display:block; color:#f4dfa4; font-size:.95rem; font-weight:600; letter-spacing:.06em; }
+  p { margin:.35rem 0 .6rem; color:#d6d2bd; font-size:.78rem; line-height:1.7; }
+  button { padding:.25rem .7rem; font-size:.66rem; pointer-events:auto; }
+}
+.rts-settings { margin:1rem 0 0; padding:.2rem 1rem 1rem; border:1px solid #a9976559; legend { padding:0 .4rem; color:#c7b685; font-size:.75rem; letter-spacing:.12em; } }
+.rts-settings-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin:1rem 0 .2rem; color:#ead39b; font-size:.8rem;
+  select { min-width:0; padding:.35rem .5rem; color:#e9e1c8; background:#202b2c; border:1px solid #696348; border-radius:2px; font:inherit; }
+}
+.rts-settings-check { display:flex; align-items:center; gap:.55rem; margin-top:.9rem; color:#d6d2bd; font-size:.8rem; cursor:pointer; input { accent-color:#c0a367; } }
+.rts-menu-help { margin-top:1rem; font-size:.8rem;
+  dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.35rem 1.4rem; margin:.7rem 0 0; }
+  div { display:grid; grid-template-columns:minmax(7.5rem,auto) 1fr; gap:.6rem; }
+  dt { color:#f0dc9f; font-variant-numeric:tabular-nums; }
+  dd { margin:0; color:#b3bcae; }
+}
+.rts-volume-label { display:flex; justify-content:space-between; margin:1rem 0 .35rem; color:#ead39b; font-size:.8rem; }
+#rts-volume,#rts-camera-speed { display:block; width:100%; accent-color:#c0a367; }
+.rts-confirm { width:min(440px,92vw); h2 { font-size:1.4rem; } }
+.rts-result-stats { width:100%; margin:.2rem 0 .6rem; border-collapse:collapse; font-size:.85rem; font-variant-numeric:tabular-nums;
+  caption { caption-side:top; text-align:left; padding-bottom:.4rem; color:#ead39b; letter-spacing:.08em; }
+  th,td { padding:.35rem .7rem; border-bottom:1px solid #a9976540; text-align:right; }
+  th:first-child { text-align:left; color:#b3bcae; font-weight:400; }
+  thead th { color:#ead39b; font-weight:500; }
+  tr[data-lead="player"] td:nth-child(2),tr[data-lead="enemy"] td:nth-child(3) { color:#f4dfa4; font-weight:700; }
+}
+.rts-dialog-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; margin-top:1rem; button { padding:.8rem; } }
+@media(max-width:1050px) { .rts-tech-grid { grid-template-columns:1fr 1fr; } }
+@media(max-width:1150px) { .rts-dock { grid-template-columns:185px 235px minmax(340px,1fr); height:264px; } .rts-resources { gap:1rem; margin-left:0; } .rts-map-name { display:none; } .rts-intro { margin-left:6vw; width:58vw; } }
+@media(max-width:1150px) { .rts-has-portrait { grid-template-columns:96px minmax(0,1fr); .rts-selection { border-width:8px; border-image-width:8px; h2 { font-size:.8rem; letter-spacing:0; } } } .rts-portrait { border-width:8px; border-image-width:8px; }
+  // Narrow command cards: a 40px icon (not the 48px desktop cap) leaves the longest one-line cost (e.g. 金 50 · 木 0 · 人 1) fully readable.
+  .rts-commands .rts-command-art { gap:2px; padding-right:.15rem; img { max-height:40px; } } }
+@media(max-width:899px),(max-height:560px) { .rts-desktop { display:none; } .rts-mobile { display:flex; height:100%; padding:3rem 2rem; align-items:center; justify-content:center; text-align:center; flex-direction:column; gap:1.5rem; background:linear-gradient(#14282be8,#11191ae8),url('/assets/games/rts/ui/menu-keyart.webp') center/cover; span { font-size:.7rem; letter-spacing:.25em; color:#baa268; } h1 { font-size:2.8rem; letter-spacing:.15em; } p { font-size:.9rem; line-height:1.8; } a { border-bottom:1px solid #b8a26b; padding-bottom:.5rem; } } }
+@media(prefers-reduced-motion:reduce) { .rts button,.rts-map-choice label,.rts-difficulty label { transition:none; } }

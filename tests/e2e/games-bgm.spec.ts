@@ -27,7 +27,9 @@ test.describe('Dungeon Arcade Audio', () => {
 
   // ── 2. 點鈕開面板、有兩條 slider ──
   test('點鈕開面板、有兩條 slider', async ({ page }) => {
-    await page.locator('.arcade-bgm-toggle').click();
+    const toggle = page.locator('.arcade-bgm-toggle');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
     const panel = page.locator('.arcade-bgm-panel');
     // hidden 屬性應被移除
@@ -37,6 +39,30 @@ test.describe('Dungeon Arcade Audio', () => {
     const sfxSlider = page.locator('input[data-audio="sfx"]');
     await expect(musicSlider).toBeVisible();
     await expect(sfxSlider).toBeVisible();
+
+    await toggle.click();
+    await expect(panel).toBeHidden();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await toggle.press('Enter');
+    await expect(panel).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await page.screenshot({ path: test.info().outputPath('audio-panel.png') });
+  });
+
+  test('音樂靜音後恢復會更新圖示並保留開啟面板', async ({ page }) => {
+    await page.locator('.arcade-bgm-toggle').click();
+    const panel = page.locator('.arcade-bgm-panel');
+    await expect(panel).toBeVisible();
+    const slider = page.locator('input[data-audio="music"]');
+    for (const [volume, icon] of [[0, '🔇'], [80, '🔊']] as const) {
+      await slider.evaluate((element, value) => {
+        (element as HTMLInputElement).value = String(value);
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+      }, volume);
+      await expect(page.locator('.arcade-bgm-icon')).toHaveText(icon);
+      await expect(panel).toBeVisible();
+      await expect.poll(() => page.locator('.arcade-bgm-audio').evaluate((audio: HTMLAudioElement) => audio.volume)).toBeCloseTo(volume / 100);
+    }
   });
 
   test('first native speaker click opens the panel and subsequent clicks toggle it', async ({ page }) => {

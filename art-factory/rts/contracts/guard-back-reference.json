@@ -1,0 +1,14 @@
+{
+  "asset_id": "guard-back-reference",
+  "status": "raw_generated",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "category": "character-reference",
+  "source_mode": "builtin-imagegen",
+  "postprocess_profile": "portrait_cutout",
+  "alpha_policy": "transparent",
+  "reference": "art-factory/rts/runs/guard-neural-input/v1/raw/guard.png",
+  "purpose": "Rear-view identity-matched source for a finite 3D projection texture pilot",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "runtime_publish_allowed": false
+}

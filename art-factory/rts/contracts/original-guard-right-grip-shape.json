@@ -1,0 +1,35 @@
+{
+  "asset_id": "original-guard-right-grip-shape",
+  "category": "experimental_original_3d_component_source",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "run": "art-factory/rts/runs/original-guard-right-grip-shape/2026-10-05",
+  "source_reference": "art-factory/rts/runs/original-guard-grip-study/2026-10-05/raw/right-grip-three-views.png",
+  "source_reference_sha256": "8e0132433b5599c8361ba23cd6632376743f62e94b33ff3b23896f821ac066cc",
+  "source": "art-factory/rts/runs/original-guard-right-grip-shape/2026-10-05/source/middle-grip-input.png",
+  "source_sha256": "a779f5c1f72bb8114fba263bc20234d7445cd631eefd44fd0c0800fa52b56e31",
+  "source_preprocess_report": "art-factory/rts/runs/original-guard-right-grip-shape/2026-10-05/qa/input.json",
+  "source_scope": "Middle view only. The independent review accepted its grip/thumb anatomy as concept reference, not measured geometry. The other inconsistent views are excluded.",
+  "generation_scope": "One bounded single-view local Hunyuan3D-2.1 shape experiment, same pinned tool/checkpoint as original guard. Result is an unverified sculpting source, never a finished hand or fitted rig.",
+  "preprocess": "Exact middle-view crop, magenta classification, one-pixel boundary erosion, opaque foreground alpha, zero hidden RGB; original raw preserved.",
+  "preprocess_exception": "Binary alpha and disclosed one-pixel contraction are allowed only for neural shape input; not a runtime sprite/texture cutout.",
+  "license_provenance": "art-factory/rts/runs/original-guard-shape/2026-10-05/qa/provenance.json",
+  "qa_gates": [
+    "Four fingers and one opposable thumb",
+    "Credible palm/thumb web and knuckle rhythm",
+    "No hand/handle fusion accepted as final geometry",
+    "Preserve original separate metal plates and leather regions",
+    "Both visible and inferred sides independently reviewed",
+    "Actual final grip fit measured against final weapon"
+  ],
+  "non_claims": [
+    "Input views are not metrically registered",
+    "Single-view inference cannot prove hidden anatomy or commercial readiness",
+    "No skeleton, animation, UV or runtime publication in this experiment"
+  ],
+  "qa": "art-factory/rts/runs/original-guard-right-grip-shape/2026-10-05/qa/provenance.json",
+  "source_reference_use": "partial_sculpting_reference_only"
+}

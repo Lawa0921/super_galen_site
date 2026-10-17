@@ -1,0 +1,2638 @@
+{
+  "config": {
+    "configFile": "C:\\Users\\bag57\\projects\\super_galen_site\\.claude\\worktrees\\rts\\playwright.rts.config.ts",
+    "rootDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tmp/rts/e2e-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "games-rts*.spec.ts"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tmp/rts/e2e-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "games-rts*.spec.ts"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tmp/rts/e2e-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "C:/Users/bag57/projects/super_galen_site/.claude/worktrees/rts/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "games-rts*.spec.ts"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "tmp/rts/e2e-report.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.0",
+    "workers": 1,
+    "webServer": {
+      "command": "node node_modules/astro/bin/astro.mjs dev --host 127.0.0.1 --port 4321",
+      "env": {
+        "ASTRO_DEV_BACKGROUND": "1"
+      },
+      "url": "http://127.0.0.1:4321",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "games-rts-audio.spec.ts",
+      "file": "games-rts-audio.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "battle starts and restarts when the browser has no AudioContext",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5973,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "FAILED_REQUEST http://127.0.0.1:4321/@id/astro/runtime/client/dev-toolbar/entrypoint.js net::ERR_ABORTED\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:16:03.208Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f2388a5b2d11ab4cb19b-4190f4efb0f5e8589077",
+          "file": "games-rts-audio.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "battle starts and restarts when the browser has no AudioContext",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12605,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "FAILED_REQUEST http://127.0.0.1:4321/@id/astro/runtime/client/dev-toolbar/entrypoint.js NS_ERROR_CORRUPTED_CONTENT\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:19:02.815Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f2388a5b2d11ab4cb19b-787857f470d977ed16df",
+          "file": "games-rts-audio.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "battle starts and restarts when the browser has no AudioContext",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 15374,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "FAILED_REQUEST http://127.0.0.1:4321/@id/astro/runtime/client/dev-toolbar/entrypoint.js Load request cancelled\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:23:02.789Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f2388a5b2d11ab4cb19b-8a8ab1522a0b3a03996d",
+          "file": "games-rts-audio.spec.ts",
+          "line": 5,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "games-rts-destruction.spec.ts",
+      "file": "games-rts-destruction.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "generic building destruction",
+          "file": "games-rts-destruction.spec.ts",
+          "line": 19,
+          "column": 6,
+          "specs": [
+            {
+              "title": "collapse frame sequence at the game camera with the published FX atlas",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6074,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-11T08:16:09.501Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e963f14afe546edc41f1-7c5ebba8de64b2e52c21",
+              "file": "games-rts-destruction.spec.ts",
+              "line": 21,
+              "column": 3
+            },
+            {
+              "title": "all twelve building models collapse into footprint-scaled rubble that respects pause and restart",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7837,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-11T08:16:15.586Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e963f14afe546edc41f1-196bab9150051b9bff18",
+              "file": "games-rts-destruction.spec.ts",
+              "line": 42,
+              "column": 3
+            },
+            {
+              "title": "collapse frame sequence at the game camera with the published FX atlas",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9061,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-11T08:19:16.025Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e963f14afe546edc41f1-5aa1572ea2f1eb3ffc04",
+              "file": "games-rts-destruction.spec.ts",
+              "line": 21,
+              "column": 3
+            },
+            {
+              "title": "all twelve building models collapse into footprint-scaled rubble that respects pause and restart",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10532,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-11T08:19:25.095Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e963f14afe546edc41f1-edcf89c13156439d44b0",
+              "file": "games-rts-destruction.spec.ts",
+              "line": 42,
+              "column": 3
+            },
+            {
+              "title": "collapse frame sequence at the game camera with the published FX atlas",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 24008,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-11T08:23:18.280Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e963f14afe546edc41f1-0236601845411f287959",
+              "file": "games-rts-destruction.spec.ts",
+              "line": 21,
+              "column": 3
+            },
+            {
+              "title": "all twelve building models collapse into footprint-scaled rubble that respects pause and restart",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 27932,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-11T08:23:42.302Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e963f14afe546edc41f1-a506e7cf7a8c4255281c",
+              "file": "games-rts-destruction.spec.ts",
+              "line": 42,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "games-rts-fog-boundary.spec.ts",
+      "file": "games-rts-fog-boundary.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "fog boundary: real pointer attack agrees with the visible battlefield",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3343,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:16:23.447Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4699aa3de232282fa5f-29dda463760333f98a03",
+          "file": "games-rts-fog-boundary.spec.ts",
+          "line": 4,
+          "column": 49
+        },
+        {
+          "title": "fog boundary: real pointer build agrees with the visible battlefield",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5945,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:16:26.799Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4699aa3de232282fa5f-3170ab8c5c9ac5113d50",
+          "file": "games-rts-fog-boundary.spec.ts",
+          "line": 4,
+          "column": 49
+        },
+        {
+          "title": "fog boundary: real pointer attack agrees with the visible battlefield",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5153,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:19:35.649Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4699aa3de232282fa5f-84d04642a45329b8e899",
+          "file": "games-rts-fog-boundary.spec.ts",
+          "line": 4,
+          "column": 49
+        },
+        {
+          "title": "fog boundary: real pointer build agrees with the visible battlefield",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5472,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:19:40.817Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4699aa3de232282fa5f-b817f434234334abbd73",
+          "file": "games-rts-fog-boundary.spec.ts",
+          "line": 4,
+          "column": 49
+        },
+        {
+          "title": "fog boundary: real pointer attack agrees with the visible battlefield",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10424,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:24:10.260Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4699aa3de232282fa5f-86a385bfc1da7ff98097",
+          "file": "games-rts-fog-boundary.spec.ts",
+          "line": 4,
+          "column": 49
+        },
+        {
+          "title": "fog boundary: real pointer build agrees with the visible battlefield",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12526,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:24:20.696Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4699aa3de232282fa5f-1644cf3dadf183668263",
+          "file": "games-rts-fog-boundary.spec.ts",
+          "line": 4,
+          "column": 49
+        }
+      ]
+    },
+    {
+      "title": "games-rts-gameplay.spec.ts",
+      "file": "games-rts-gameplay.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "gameplay controls: natural river resource rally and minimap orders",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10981,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:16:32.789Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "09edabcf3016d96100f2-529f3e0f2bae228a525d",
+          "file": "games-rts-gameplay.spec.ts",
+          "line": 7,
+          "column": 44
+        },
+        {
+          "title": "gameplay controls: natural pass resource rally and minimap orders",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7292,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:16:43.783Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "09edabcf3016d96100f2-f9e1c12b25b8ba09cd30",
+          "file": "games-rts-gameplay.spec.ts",
+          "line": 7,
+          "column": 44
+        },
+        {
+          "title": "gameplay controls: natural river resource rally and minimap orders",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 13428,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:19:46.314Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "09edabcf3016d96100f2-32745aa585920ea32b58",
+          "file": "games-rts-gameplay.spec.ts",
+          "line": 7,
+          "column": 44
+        },
+        {
+          "title": "gameplay controls: natural pass resource rally and minimap orders",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11357,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:19:59.759Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "09edabcf3016d96100f2-e4f6558d5bd5a939efb7",
+          "file": "games-rts-gameplay.spec.ts",
+          "line": 7,
+          "column": 44
+        },
+        {
+          "title": "gameplay controls: natural river resource rally and minimap orders",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 47317,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:24:33.247Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "09edabcf3016d96100f2-6f740724e163d4e03f89",
+          "file": "games-rts-gameplay.spec.ts",
+          "line": 7,
+          "column": 44
+        },
+        {
+          "title": "gameplay controls: natural pass resource rally and minimap orders",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 50559,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:25:20.580Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "09edabcf3016d96100f2-d7c89fffc457c58939e2",
+          "file": "games-rts-gameplay.spec.ts",
+          "line": 7,
+          "column": 44
+        }
+      ]
+    },
+    {
+      "title": "games-rts-portrait.spec.ts",
+      "file": "games-rts-portrait.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "eight published portraits animate, clear safely, pause and survive restart",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 21205,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:16:51.109Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e01bc68e214213bcbb7c-e28038dfb268e1d34088",
+          "file": "games-rts-portrait.spec.ts",
+          "line": 54,
+          "column": 1
+        },
+        {
+          "title": "fractional DPR, reduced motion, neutral tint and building/empty selection",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6153,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:17:12.329Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e01bc68e214213bcbb7c-b18d4421ca8a9acc82f3",
+          "file": "games-rts-portrait.spec.ts",
+          "line": 102,
+          "column": 1
+        },
+        {
+          "title": "eight published portraits animate, clear safely, pause and survive restart",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 28372,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:20:11.152Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e01bc68e214213bcbb7c-c5bb296b0cc242682e1c",
+          "file": "games-rts-portrait.spec.ts",
+          "line": 54,
+          "column": 1
+        },
+        {
+          "title": "fractional DPR, reduced motion, neutral tint and building/empty selection",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7410,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:20:39.540Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e01bc68e214213bcbb7c-f1b3114bf966fa806de5",
+          "file": "games-rts-portrait.spec.ts",
+          "line": 102,
+          "column": 1
+        },
+        {
+          "title": "eight published portraits animate, clear safely, pause and survive restart",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 85065,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:26:11.169Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e01bc68e214213bcbb7c-dfbbe6ca5d09e3af4d0d",
+          "file": "games-rts-portrait.spec.ts",
+          "line": 54,
+          "column": 1
+        },
+        {
+          "title": "fractional DPR, reduced motion, neutral tint and building/empty selection",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11328,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:27:36.243Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e01bc68e214213bcbb7c-33f2afdd3f685e2435f3",
+          "file": "games-rts-portrait.spec.ts",
+          "line": 102,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "games-rts-tech.spec.ts",
+      "file": "games-rts-tech.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "formal art: paid tier upgrades unlock all production and successive research",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4904,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "TECH_SELECT \u001b[33m35\u001b[39m \u001b[33m44\u001b[39m 禮拜堂\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m14\u001b[39m \u001b[33m48\u001b[39m 領主府\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m14\u001b[39m \u001b[33m48\u001b[39m 領主府\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m14\u001b[39m \u001b[33m32\u001b[39m 兵營\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m14\u001b[39m \u001b[33m32\u001b[39m 兵營\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m35\u001b[39m \u001b[33m44\u001b[39m 禮拜堂\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m35\u001b[39m \u001b[33m58\u001b[39m 馬廄\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m21\u001b[39m \u001b[33m70\u001b[39m 工坊\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m5\u001b[39m \u001b[33m62\u001b[39m 誓約祭壇\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m25\u001b[39m \u001b[33m34\u001b[39m 鍛造所\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:17:18.590Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "69873bfc4882c2805338-1915d4d9cad036460843",
+          "file": "games-rts-tech.spec.ts",
+          "line": 6,
+          "column": 1
+        },
+        {
+          "title": "formal art: paid tier upgrades unlock all production and successive research",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11156,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "TECH_SELECT \u001b[33m35\u001b[39m \u001b[33m44\u001b[39m 禮拜堂\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m14\u001b[39m \u001b[33m48\u001b[39m 領主府\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m14\u001b[39m \u001b[33m48\u001b[39m 領主府\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m14\u001b[39m \u001b[33m32\u001b[39m 兵營\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m14\u001b[39m \u001b[33m32\u001b[39m 兵營\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m35\u001b[39m \u001b[33m44\u001b[39m 禮拜堂\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m35\u001b[39m \u001b[33m58\u001b[39m 馬廄\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m21\u001b[39m \u001b[33m70\u001b[39m 工坊\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m5\u001b[39m \u001b[33m62\u001b[39m 誓約祭壇\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m25\u001b[39m \u001b[33m34\u001b[39m 鍛造所\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:20:47.069Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "69873bfc4882c2805338-b01862ad27a760f32dd6",
+          "file": "games-rts-tech.spec.ts",
+          "line": 6,
+          "column": 1
+        },
+        {
+          "title": "formal art: paid tier upgrades unlock all production and successive research",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 32092,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "TECH_SELECT \u001b[33m35\u001b[39m \u001b[33m44\u001b[39m 禮拜堂\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m14\u001b[39m \u001b[33m48\u001b[39m 領主府\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m14\u001b[39m \u001b[33m48\u001b[39m 領主府\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m14\u001b[39m \u001b[33m32\u001b[39m 兵營\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m14\u001b[39m \u001b[33m32\u001b[39m 兵營\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m35\u001b[39m \u001b[33m44\u001b[39m 禮拜堂\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m35\u001b[39m \u001b[33m58\u001b[39m 馬廄\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m21\u001b[39m \u001b[33m70\u001b[39m 工坊\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m5\u001b[39m \u001b[33m62\u001b[39m 誓約祭壇\n"
+                    },
+                    {
+                      "text": "TECH_SELECT \u001b[33m25\u001b[39m \u001b[33m34\u001b[39m 鍛造所\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:27:47.685Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "69873bfc4882c2805338-151387fd2fdee78c67b6",
+          "file": "games-rts-tech.spec.ts",
+          "line": 6,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "games-rts.spec.ts",
+      "file": "games-rts.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "arcade opens the original kingdom RTS",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1547,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:17:23.525Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-6bc79db67f42e3f13ab3",
+          "file": "games-rts.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "lobby offers two battlefields and keyboard guidance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1988,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:17:25.085Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-a360f05be262b11c2c34",
+          "file": "games-rts.spec.ts",
+          "line": 8,
+          "column": 1
+        },
+        {
+          "title": "lobby and pause menu expose the complete catalog tech tree and match limit",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5840,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:17:27.081Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-8953f31cf5f93bc9de8b",
+          "file": "games-rts.spec.ts",
+          "line": 17,
+          "column": 1
+        },
+        {
+          "title": "small screens explain desktop controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 756,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:17:32.933Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-dea39551d8b5570c2a1a",
+          "file": "games-rts.spec.ts",
+          "line": 43,
+          "column": 1
+        },
+        {
+          "title": "shared original materials load once and a missing surface can be retried",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5547,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:17:33.703Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-a4d40dac685ef827a95b",
+          "file": "games-rts.spec.ts",
+          "line": 49,
+          "column": 1
+        },
+        {
+          "title": "failed battlefield downloads return to the lobby and can be retried",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1533,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:17:39.261Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-9c83bb28346a2ece31c3",
+          "file": "games-rts.spec.ts",
+          "line": 63,
+          "column": 1
+        },
+        {
+          "title": "unavailable WebGL reports a retryable error and recovers",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3279,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:17:40.804Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-4d11fcf12d9e185e0b5d",
+          "file": "games-rts.spec.ts",
+          "line": 75,
+          "column": 1
+        },
+        {
+          "title": "formal art integration: renders, trains, pauses, surrenders and returns to maps",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12900,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:17:44.093Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-c3c07ef2e07e54fc8e4b",
+          "file": "games-rts.spec.ts",
+          "line": 93,
+          "column": 1
+        },
+        {
+          "title": "a first worker click is retained when the first gameplay animation frame is delayed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2114,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:17:57.000Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-dabd801651bca43899ab",
+          "file": "games-rts.spec.ts",
+          "line": 120,
+          "column": 1
+        },
+        {
+          "title": "a failed initial paint replaces the lost WebGL canvas and retries with working input",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4886,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:17:59.123Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-21af689ff407fa697765",
+          "file": "games-rts.spec.ts",
+          "line": 136,
+          "column": 1
+        },
+        {
+          "title": "formal art integration: right-click harvesting pays for a completed house on pass",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 42933,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:18:04.023Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-113cf39bb923da5d8fa4",
+          "file": "games-rts.spec.ts",
+          "line": 154,
+          "column": 1
+        },
+        {
+          "title": "focused hero fixture: previews and validates all skills, then restarts cleanly",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6461,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:18:54.771Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-273756c51f6d35475fd5",
+          "file": "games-rts.spec.ts",
+          "line": 215,
+          "column": 1
+        },
+        {
+          "title": "arcade opens the original kingdom RTS",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1176,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:20:58.249Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-011983471234315cf340",
+          "file": "games-rts.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "lobby offers two battlefields and keyboard guidance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3468,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:20:59.433Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-7e7bc0d7890038d7b8fb",
+          "file": "games-rts.spec.ts",
+          "line": 8,
+          "column": 1
+        },
+        {
+          "title": "lobby and pause menu expose the complete catalog tech tree and match limit",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11503,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:21:02.910Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-9e84c0ab9a0403153d41",
+          "file": "games-rts.spec.ts",
+          "line": 17,
+          "column": 1
+        },
+        {
+          "title": "small screens explain desktop controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 877,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:21:14.425Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-f5286fe1e66844edf96d",
+          "file": "games-rts.spec.ts",
+          "line": 43,
+          "column": 1
+        },
+        {
+          "title": "shared original materials load once and a missing surface can be retried",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9045,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:21:15.312Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-ccda1c0d9b3a3c04905a",
+          "file": "games-rts.spec.ts",
+          "line": 49,
+          "column": 1
+        },
+        {
+          "title": "failed battlefield downloads return to the lobby and can be retried",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1272,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:21:24.368Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-47de6570d72e09198fc8",
+          "file": "games-rts.spec.ts",
+          "line": 63,
+          "column": 1
+        },
+        {
+          "title": "unavailable WebGL reports a retryable error and recovers",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4884,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:21:25.652Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-bbb0ccb4381320ba9d63",
+          "file": "games-rts.spec.ts",
+          "line": 75,
+          "column": 1
+        },
+        {
+          "title": "formal art integration: renders, trains, pauses, surrenders and returns to maps",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 17024,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:21:30.544Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-7fdda905daa273991acf",
+          "file": "games-rts.spec.ts",
+          "line": 93,
+          "column": 1
+        },
+        {
+          "title": "a first worker click is retained when the first gameplay animation frame is delayed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4462,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:21:47.577Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-d91c2fdc81ebeea5a66d",
+          "file": "games-rts.spec.ts",
+          "line": 120,
+          "column": 1
+        },
+        {
+          "title": "a failed initial paint replaces the lost WebGL canvas and retries with working input",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5316,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:21:52.051Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-cf58fda90c57ec8822de",
+          "file": "games-rts.spec.ts",
+          "line": 136,
+          "column": 1
+        },
+        {
+          "title": "formal art integration: right-click harvesting pays for a completed house on pass",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 44616,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:21:57.382Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-25ebccbfe5bff5605186",
+          "file": "games-rts.spec.ts",
+          "line": 154,
+          "column": 1
+        },
+        {
+          "title": "focused hero fixture: previews and validates all skills, then restarts cleanly",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9283,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:22:51.392Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-b866e9306861f77d8bdd",
+          "file": "games-rts.spec.ts",
+          "line": 215,
+          "column": 1
+        },
+        {
+          "title": "arcade opens the original kingdom RTS",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6541,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:28:19.804Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-ece2ec842856635c45e8",
+          "file": "games-rts.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "lobby offers two battlefields and keyboard guidance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5543,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:28:26.354Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-0b298c46b809c9b8a01e",
+          "file": "games-rts.spec.ts",
+          "line": 8,
+          "column": 1
+        },
+        {
+          "title": "lobby and pause menu expose the complete catalog tech tree and match limit",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 21655,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:28:31.907Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-b256c5223ed1c93f3637",
+          "file": "games-rts.spec.ts",
+          "line": 17,
+          "column": 1
+        },
+        {
+          "title": "small screens explain desktop controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 978,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:28:53.572Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-540bb71fbe357e368cf0",
+          "file": "games-rts.spec.ts",
+          "line": 43,
+          "column": 1
+        },
+        {
+          "title": "shared original materials load once and a missing surface can be retried",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 15239,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:28:54.560Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-eeeaccc3a31da698293b",
+          "file": "games-rts.spec.ts",
+          "line": 49,
+          "column": 1
+        },
+        {
+          "title": "failed battlefield downloads return to the lobby and can be retried",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6394,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:29:09.808Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-fbabb6812c5fdc1df165",
+          "file": "games-rts.spec.ts",
+          "line": 63,
+          "column": 1
+        },
+        {
+          "title": "unavailable WebGL reports a retryable error and recovers",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10562,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:29:16.211Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-31eca0513fc1c2f3672e",
+          "file": "games-rts.spec.ts",
+          "line": 75,
+          "column": 1
+        },
+        {
+          "title": "formal art integration: renders, trains, pauses, surrenders and returns to maps",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 34785,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:29:26.784Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-266914fd8b305bf78579",
+          "file": "games-rts.spec.ts",
+          "line": 93,
+          "column": 1
+        },
+        {
+          "title": "a first worker click is retained when the first gameplay animation frame is delayed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5010,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:30:01.577Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-73ccfb719a58a42acabd",
+          "file": "games-rts.spec.ts",
+          "line": 120,
+          "column": 1
+        },
+        {
+          "title": "a failed initial paint replaces the lost WebGL canvas and retries with working input",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8864,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:30:06.595Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-0cc1dedd73afea4319b1",
+          "file": "games-rts.spec.ts",
+          "line": 136,
+          "column": 1
+        },
+        {
+          "title": "formal art integration: right-click harvesting pays for a completed house on pass",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 69982,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:30:15.468Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-852d47f98d8b64032bc5",
+          "file": "games-rts.spec.ts",
+          "line": 154,
+          "column": 1
+        },
+        {
+          "title": "focused hero fixture: previews and validates all skills, then restarts cleanly",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 31035,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T08:31:54.781Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "975620eb639ee91a71d6-f826251a5e3e14541d87",
+          "file": "games-rts.spec.ts",
+          "line": 215,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "worker command card build submenu",
+          "file": "games-rts.spec.ts",
+          "line": 179,
+          "column": 6,
+          "specs": [
+            {
+              "title": "keeps the worker card inside the dock at 1024x768, 1366x768 and 1920x1080 and builds through the submenu",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7790,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-11T08:18:46.971Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "975620eb639ee91a71d6-17c1856da2e124a7f111",
+              "file": "games-rts.spec.ts",
+              "line": 187,
+              "column": 3
+            },
+            {
+              "title": "keeps the worker card inside the dock at 1024x768, 1366x768 and 1920x1080 and builds through the submenu",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9360,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-11T08:22:42.018Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "975620eb639ee91a71d6-9dbb1df6e2501334cc15",
+              "file": "games-rts.spec.ts",
+              "line": 187,
+              "column": 3
+            },
+            {
+              "title": "keeps the worker card inside the dock at 1024x768, 1366x768 and 1920x1080 and builds through the submenu",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 29309,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-11T08:31:25.461Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "975620eb639ee91a71d6-2889832d971b5dced970",
+              "file": "games-rts.spec.ts",
+              "line": 187,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-11T08:16:01.371Z",
+    "duration": 985480.867,
+    "expected": 69,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

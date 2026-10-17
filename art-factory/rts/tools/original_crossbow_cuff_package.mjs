@@ -1,0 +1,17 @@
+import {spawnSync} from 'node:child_process';
+import {readFile,writeFile} from 'node:fs/promises';
+import path from 'node:path';
+const run=path.resolve('art-factory/rts/runs/original-crossbow-cuff-motion/2026-10-07-v1');
+const result=spawnSync(process.execPath,['art-factory/rts/tools/original_crossbow_carry_package.mjs',run,'crossbow-cuff'],{stdio:'inherit',windowsHide:true});
+if(result.status!==0)throw Error('Review packaging failed');
+const out=path.resolve('tmp/rts/handoff-20261006/review-site/crossbow-cuff');
+const metadata=JSON.parse(await readFile(path.join(out,'crossbow-preview.json'),'utf8'));
+metadata.crossbow.name='原創弩兵 · 袖口動作修整';
+metadata.crossbow.status='原創模型與動作候選 · 尚未通過美術驗收';
+metadata.crossbow.notes='袖口改為分段跟隨手腕，減少射擊時的拉長；內側仍有擠壓未通過。可切換五種動作、視角與精細度檢查。灰色手套仍為檢查材質，弩弦裝填尚未完成，未替換遊戲內模型。';
+await writeFile(path.join(out,'crossbow-preview.json'),JSON.stringify(metadata,null,2)+'\n');
+let html=await readFile(path.join(out,'index.html'),'utf8');
+html=html.replaceAll('2026 / 10 / 06','2026 / 10 / 07').replaceAll('原創弩兵 · 持弩動作修整','原創弩兵 · 袖口動作修整');
+await writeFile(path.join(out,'index.html'),html);
+await writeFile(path.join(run,'qa/crossbow-preview.html'),html);
+await writeFile(path.join(run,'qa/preview-metadata.json'),JSON.stringify(metadata,null,2)+'\n');

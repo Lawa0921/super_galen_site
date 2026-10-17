@@ -1,0 +1,59 @@
+{
+  "id": "original-guard-surface-materials",
+  "screen_id": "rts-kingdom-guard-3d",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "visual_reference": "art-factory/rts/runs/guard-neural-pilot/v3/raw/front-input.png",
+  "purpose": "Original continuous surface colors for semantically assigned UV islands on the kingdom guard; no plate shapes or character features are projected from the concept image.",
+  "status": "candidate",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending on the assembled 3D guard",
+  "source": "builtin-imagegen; original generated image; no third-party meshes, rigs, motion, or textures",
+  "category": "3d-material-surface",
+  "mode_inference_decision": {
+    "selected_profile": "opaque_background",
+    "candidate_profiles": ["runtime_atlas_pack"],
+    "confidence": "high",
+    "rationale": "The source is fully opaque generated material color. Its deterministic crop and mirror tile operation is a 3D material-specific extension; runtime_atlas_pack would incorrectly imply already approved input assets."
+  },
+  "source_format": {
+    "layout": "2x2 equal quadrants without lines, labels, frames, or margins",
+    "requested_size": [1024, 1024],
+    "actual_selected_size": [1254, 1254],
+    "accepted_size": "square, at least 1024 pixels per edge; actual dimensions recorded in QA",
+    "quadrants": {
+      "top_left": "even silver steel with subtle brushed wear",
+      "top_right": "muted warm brass",
+      "bottom_left": "deep navy blue woven cloth",
+      "bottom_right": "dark brown leather"
+    }
+  },
+  "postprocess": {
+    "method": "For each source quadrant, crop its exact centered quarter-width square, except navy cloth uses [157,873,470,1186] on the selected 1254-square source to avoid a repeat band. Resize to 256x256. Compose source pixels as [patch, horizontal mirror; vertical mirror, horizontal+vertical mirror] into an opaque 512x512 RGB PNG. No color painting, new noise, graphics, inpainting, or baked labels.",
+    "output_tile_size": [512, 512],
+    "coordinate_policy": "Computed from actual source dimensions; exact coordinates logged in QA."
+  },
+  "alpha_policy": "Opaque RGB material for continuous 3D UV surfaces. Magenta chroma-key is intentionally inapplicable.",
+  "selected_raw": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/raw/surface-atlas.png",
+  "selected_raw_sha256": "acfa4449c44c2dd67fdd74755433c6a108af3fd250581fed17143160824fe586",
+  "prompt": [
+    "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/prompts/surface-atlas.txt",
+    "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/prompts/surface-atlas-correction.txt"
+  ],
+  "tile_mapping": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/qa/tiles.json",
+  "qa_gates": [
+    "Source SHA256 and exact crop coordinates recorded",
+    "Output tiles are 512x512 opaque RGB",
+    "Per-material color-domain checks and adequate microtexture variation",
+    "Exact tile-edge equality from source-pixel mirror construction",
+    "2x2 repeats for each tile inspected visually for visible motifs and directional light",
+    "No text, armor plates, insignia, rivets, visor slit, silhouette, perspective, or background",
+    "No claim that these RGB tiles are measured PBR maps; metalness and roughness require author settings and assembly review"
+  ],
+  "review": {
+    "candidate_only": true,
+    "runtime_publish_allowed": false,
+    "assembly_surface": "Original kingdom guard 3D model with semantic material assignments"
+  }
+}

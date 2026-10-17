@@ -1,0 +1,38 @@
+{
+  "assets": [
+    {
+      "id": "map-river",
+      "status": "published",
+      "url": "/assets/games/rts/ui/map-river.webp",
+      "raw": "art-factory/rts/runs/map-thumbnails/2026-10-16-map288/raw/river.png",
+      "raw_sha256": "819f3d335e6f604865a82d443f2f8690f29b96e4badbfaa80c0971085d7d3745",
+      "source": "art-factory/rts/tools/map_thumbnail_capture.mjs",
+      "qa": "art-factory/rts/runs/map-thumbnails/2026-10-16-map288/qa/river-capture.json",
+      "candidate": "art-factory/rts/runs/map-thumbnails/2026-10-16-map288/candidate/map-river.webp",
+      "provenance_description": "Actual /games/rts Battlefield render of the 288x288 180-degree-symmetric map (both initial town halls); seed 20261009, paused at game start, dev-only __rtsDebug.reveal(0)+camera(144,144,span 234; overview camera backed off along its view axis), HUD/overlay hidden; 1800x1080 raw downscaled to 600x360 WebP q88",
+      "visual_review": "root inspected raw and candidate: whole 288 m map, both bases, natural/third/forward/centre expansions, ten camps and landmarks; winding river, two bridges and centre ford; no fog, HUD, text or debug props; overall user art acceptance pending",
+      "runtime_publish_allowed": true,
+      "bytes": 40974,
+      "sha256": "7664315bc3aa2960738e8c0402040be64eb90ce76055e81204ba54ad0f7de851",
+      "qa_sha256": "8d952dcb0d9328aa8e7131e3c5a6f385ec913c46f02ba2d2b2c85bfa08705ea2",
+      "source_sha256": "72a8159e440e8b280f2a36adc7ccef934e30607c496b8310b4cae165626ea100"
+    },
+    {
+      "id": "map-pass",
+      "status": "published",
+      "url": "/assets/games/rts/ui/map-pass.webp",
+      "raw": "art-factory/rts/runs/map-thumbnails/2026-10-16-map288/raw/pass.png",
+      "raw_sha256": "0da04182cfe56f9aad00a72449bb5ec6eeda3d8deb414d26004cd3432efee2b2",
+      "source": "art-factory/rts/tools/map_thumbnail_capture.mjs",
+      "qa": "art-factory/rts/runs/map-thumbnails/2026-10-16-map288/qa/pass-capture.json",
+      "candidate": "art-factory/rts/runs/map-thumbnails/2026-10-16-map288/candidate/map-pass.webp",
+      "provenance_description": "Actual /games/rts Battlefield render of the 288x288 180-degree-symmetric map (both initial town halls); seed 20261009, paused at game start, dev-only __rtsDebug.reveal(0)+camera(144,144,span 234; overview camera backed off along its view axis), HUD/overlay hidden; 1800x1080 raw downscaled to 600x360 WebP q88",
+      "visual_review": "root inspected raw and candidate: whole 288 m map, both bases, natural/third/forward/centre expansions, ten camps and landmarks; continuous ridge wall, five openings, centre-chamber spurs and outcrops; no fog, HUD, text or debug props; overall user art acceptance pending",
+      "runtime_publish_allowed": true,
+      "bytes": 46352,
+      "sha256": "ccb4b6c2f1914e6ff03ffe825b552185e6b2d7dc7868587c127e6c39175102f8",
+      "qa_sha256": "fe4823bf9e33b8db950d7796a7469d6c59d7eeec1fd86dd1f44295e12a18783c",
+      "source_sha256": "72a8159e440e8b280f2a36adc7ccef934e30607c496b8310b4cae165626ea100"
+    }
+  ]
+}

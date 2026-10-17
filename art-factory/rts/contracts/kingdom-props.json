@@ -1,0 +1,146 @@
+{
+  "id": "kingdom-props",
+  "screen_id": "browser-rts-battlefield",
+  "category": "3d-scene-prop",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "root-browser-reviewed",
+  "source_mode": "original Blender authored meshes plus generated material source images",
+  "source_truth": [
+    "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+    "C:/Users/bag57/.codex/generated_images/01a105df-d576-7703-84fa-155fdc78b299/exec-637642ac-aa13-4ee8-845a-d60bb591f6a6.png"
+  ],
+  "coordinate_contract": "glTF/GLB +Y up, +Z front; Blender ground z=0 at central origin",
+  "assets": [
+    {
+      "id": "oak",
+      "height_m": [
+        8,
+        12
+      ],
+      "footprint_m": [
+        7,
+        6
+      ],
+      "max_triangles": 8000,
+      "max_materials": 3,
+      "features": [
+        "tapered irregular trunk",
+        "forked branching scaffold",
+        "transparent generated leaf clusters",
+        "double-sided alpha shadow"
+      ]
+    },
+    {
+      "id": "rock",
+      "footprint_m": [
+        2.6,
+        2.4
+      ],
+      "max_triangles": 2000,
+      "max_materials": 1,
+      "features": [
+        "irregular sculpted silhouette",
+        "textured facets",
+        "nonuniform ridge and crack"
+      ]
+    },
+    {
+      "id": "gold-mine",
+      "footprint_m": [
+        5,
+        5
+      ],
+      "max_triangles": 8000,
+      "max_materials": 5,
+      "features": [
+        "real recessed mine opening",
+        "timber portal",
+        "rocky hill",
+        "visible gold veins",
+        "clickable-resource silhouette"
+      ]
+    },
+    {
+      "id": "timber-pile",
+      "footprint_m": [
+        2,
+        2
+      ],
+      "max_triangles": 3000,
+      "max_materials": 3,
+      "features": [
+        "stacked wood logs",
+        "visible annual-ring cross sections",
+        "bark",
+        "binding"
+      ]
+    }
+  ],
+  "revisions": [
+    {
+      "asset_id": "oak",
+      "run_id": "2026-10-04-oak-v2",
+      "replaces_candidate_run": "2026-10-04-original",
+      "status": "published",
+      "runtime_publish_allowed": true,
+      "footprint_m": [
+        8,
+        8
+      ],
+      "height_m": [
+        8,
+        12
+      ],
+      "max_triangles": 8000,
+      "max_materials": 3,
+      "source_mode": "original Blender mesh revision reusing v1 generated bark and leaf atlas",
+      "visual_target": "broad 6-8m irregular oak canopy; lower third of trunk visible; 3-4x v1 leaf coverage; 64px leaf-crown silhouette"
+    }
+  ],
+  "texture_jobs": [
+    {
+      "id": "oak-bark",
+      "prompt": "A seamless tileable PBR base-color texture sample of mature oak bark for a game tree trunk, deep brown and charcoal longitudinal fissures, fibrous cracked ridges, real natural organic detail, neutral even light, orthographic flat material swatch, no tree silhouette, no ground, no labels, no border, edges repeat seamlessly."
+    },
+    {
+      "id": "oak-leaves",
+      "prompt": "A transparent-background isolated alpha atlas of five separate small irregular clusters of realistic deciduous oak leaves, healthy muted forest-green and olive leaves with individually articulated lobes, twiglets and little gaps between leaves, top-down studio capture with even light, no shadows cast on background, no branch trunk, no text, no border. Space clusters apart on the canvas for cutting into billboard cards."
+    },
+    {
+      "id": "gray-rock",
+      "prompt": "Seamless tileable PBR base-color texture of rugged weathered gray granite with fractured angular strata, subtle blue-gray, charcoal crevices and lichen trace, realistic mineral grains, orthographic evenly lit flat surface, no distinct boulder silhouette, no perspective, no text, no border; left-right and top-bottom seamless."
+    },
+    {
+      "id": "gold-ore",
+      "prompt": "Seamless tileable PBR base-color texture of dark rugged gray quartzite rock with clearly visible irregular native gold mineral veins and pockets of muted warm metallic yellow, believable mineral geology rather than painted lines, orthographic evenly lit flat material swatch, no coins, no objects, no text, no border, repeatable edges."
+    },
+    {
+      "id": "oak-endgrain",
+      "prompt": "Square flat orthographic PBR base-color material sample of the sawn end face of an oak log, centered irregular concentric annual growth rings with warm honey and tan heartwood, darker outer sapwood and fine radial checking cracks, realistic wood fibers, no bark rim, no background scene, no text, no border."
+    }
+  ],
+  "qa_gates": [
+    "UV0",
+    "normals",
+    "ground origin",
+    "material and triangle limits",
+    "GLB roundtrip render",
+    "64px isometric contact",
+    "PNG leaf alpha",
+    "raw source and SHA-256 provenance",
+    "Before runtime publication, pass mechanical QA and root actual-WebGL assembly review"
+  ],
+  "active_runs": {
+    "oak": "2026-10-04-oak-v2",
+    "rock": "2026-10-04-original",
+    "gold-mine": "2026-10-04-original",
+    "timber-pile": "2026-10-04-original"
+  },
+  "runtime_oak_scale": [
+    0.48,
+    0.645
+  ],
+  "runtime_scale_reason": "Reduced canopy height keeps workers and adjacent resources readable from the RTS camera"
+}

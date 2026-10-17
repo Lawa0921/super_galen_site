@@ -1,0 +1,25 @@
+{
+  "asset_id": "original-guard-helmet-rebuild",
+  "status": "approved_for_fullbody_assembly",
+  "runtime_publish_allowed": false,
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "reference": "art-factory/rts/runs/guard-neural-pilot/v3/raw/front-input.png",
+  "method": "Original authored control surfaces for crown and visor; closed 5944-triangle LOD0 with a real open eye slit, 24 through-holes, closed separate brass trim and padded liner. Hidden high-detail cages retain non-destructive modifiers in Blender. Existing rejected neural helmet is only a proportion reference, never the production surface.",
+  "materials": "Original generated steel, brass and navy-cloth tiles only. Continuous angular UVs have one rear integer-tile seam. Steel samples source steel-512.png at exact crop [96,96,160,160], mirror-composes the source pixels, then area-resamples 2x to a 64x64 tile; physical repeat .035 m and roughness .53. This removes the source broad lighting band without painted colors, synthetic grain or a new external texture.",
+  "rig": "Reuse the project's original PortraitChest/PortraitHead motion; new rigid helmet parts follow Head, lower collar follows Chest. No third-party mesh, rig or motion.",
+  "scope": "One original helmet and collar candidate, with old torso shown as unfinished context. Full character, hands, full-body motion and runtime integration remain separate unfinished requirements.",
+  "gates": [
+    "Readable original crown, narrow actual eye slit, clean continuous visor/rim and real breathing holes in front/side/back views",
+    "No source-face mask fragments, melted visor or triangular trim edge",
+    "Editable authored cage retained in Blender and real exported GLB inspected",
+    "Original portrait animation preserved and actual browser poses match Blender at five marker frames",
+    "No visible collar collision during the original head turn"
+  ],
+  "revision_budget": {"complete_build": 1, "whole_shape_correction": 1},
+  "uv_lod0_revision_budget": {"allowed_render_rounds": 2, "used_render_rounds": 2, "complete": true},
+  "candidate": {"blend": "art-factory/rts/runs/original-guard-helmet-rebuild/2026-10-05/candidate/original-guard-helmet-rebuild.blend", "blend_sha256": "fcd6e322143ef12f5406294aee02aac3651f8416cbcb35e93e7517b8fea2a010", "glb": "art-factory/rts/runs/original-guard-helmet-rebuild/2026-10-05/candidate/original-guard-helmet-rebuild.glb", "glb_sha256": "6089fc6d296e5cdb90afca6501535d35be845297b7b3f655b4427b1e16c860fc"},
+  "validated": {"original_triangles": 99994, "lod0_triangles": 5944, "all_parts_boundary_edges": 0, "all_parts_nonmanifold_edges": 0, "all_parts_zero_area_faces": 0, "breathing_holes_clear": 24, "test_count": 12, "tests_exit_code": 0, "actual_glb_indices_and_welded_closure_verified": true},
+  "review": {"root_independent_review": "accepted as a full-body assembly component", "root_inspected_renders": ["qa/renders/front.png", "qa/renders/three-quarter.png", "qa/renders/pose-90.png"], "findings": "UV patch seams eliminated; silhouette, eye slit and breathing apertures readable; no visible gorget penetration in reviewed pose.", "before_renders": "qa/renders/before", "first_correction_renders": "qa/renders/revision-1", "limits": "Component approval only. Full character runtime approval and actual assembled WebGL motion remain separate."},
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true
+}

@@ -1,0 +1,22 @@
+{
+  "asset_id": "original-guard-quadri-scaled-diagnostic",
+  "category": "original_3d_whole_character_retopology_method_proof",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "run": "art-factory/rts/runs/original-guard-quadri-scaled/2026-10-05",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "original_source": "art-factory/rts/runs/original-guard-shape/2026-10-05/candidate/candidate-body.glb",
+  "original_source_sha256": "b2a94ddd3c7f66ea8e1edf993fce13ce4c24a795b9106076648e773ebffecdfd",
+  "exact_primary_source": "art-factory/rts/runs/original-guard-quadri/2026-10-05/candidate/source-primary-exact.npz",
+  "exact_primary_sha256": "7851c7d91364e773b4e32e358740f37f43660e2d0cfbc9159f13245470a86edd",
+  "operator": "Blender 5.2.1 QuadriFlow, 12000 approximate target quads, preserve sharp/boundary, symmetry false, seed 0",
+  "computational_unit_transform": "Multiply float32 mesh vertex coordinates by 2048 before the operator; immediately divide solved coordinates by 2048 and convert source native axes to 1.86 m canonical coordinates",
+  "provenance_note": "The initial solver finished but the unsaved mesh was lost to a render-world setup error. revision-v2-checkpointed is one authorized identical-parameter rebuild that saves raw/Blend/GLB checkpoints before QA.",
+  "failed_gates": [
+    "The independently measured checkpointed rebuild still contains 16 boundary edges and 11 zero-area quads; closed-topology gate failed.",
+    "Fused fingers, skirt armor, and armor parts remain unresolved by whole-body QuadriFlow.",
+    "No rig, animation, UV, production material, or runtime browser parity exists."
+  ]
+}

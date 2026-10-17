@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { createHash } from 'node:crypto';
 import { generateFloor } from './generate';
 import { GRID_COLS, GRID_ROWS, SPAWN, BASE_ENEMY_COUNT } from './constants';
 import { tileAt } from './board';
@@ -23,12 +24,55 @@ describe('generateFloor', () => {
   it('同 seed/floor 完全可重現', () => {
     expect(JSON.stringify(generateFloor(123, 2))).toEqual(JSON.stringify(generateFloor(123, 2)));
   });
+  it.each([
+    [1, 1, '45e4392af1e1b0f900f62d15ce218e369f256ce344c2560c79220a7e820002d8'],
+    [107, 500, '1cfe4d71d543496899770c1fce67bb5bc77caf6b965fab2bc0785e35f89a29cc'],
+  ] as const)('既有足量候選 seed %i / floor %i 保持完整地圖與亂數序列', (seed, floor, digest) => {
+    // 修補前的完整 layout：grid、enemies、hiddenPowerUps、exit 與 archetype。
+    expect(createHash('sha256').update(JSON.stringify(generateFloor(seed, floor))).digest('hex')).toBe(digest);
+  });
   it('第 1 層敵人數 = BASE_ENEMY_COUNT，且都站在 floor 上、不在出生格', () => {
     const { grid, enemies } = generateFloor(1, 1);
     expect(enemies).toHaveLength(BASE_ENEMY_COUNT);
     for (const e of enemies) {
       expect(grid[e.y][e.x]).toBe('floor');
       expect(e.x === SPAWN.x && e.y === SPAWN.y).toBe(false);
+    }
+  });
+  it.each([18, 21, 107, 125, 186])('密集木箱 seed %i 仍保有完整且可移動的第一層敵人', (seed) => {
+    const layout = generateFloor(seed, 1);
+    const { grid, enemies, hiddenPowerUps } = layout;
+    expect(enemies).toHaveLength(BASE_ENEMY_COUNT);
+    expect(new Set(enemies.map(e => `${e.x},${e.y}`)).size).toBe(BASE_ENEMY_COUNT);
+    for (const e of enemies) {
+      expect(grid[e.y][e.x]).toBe('floor');
+      expect(Math.abs(e.x - SPAWN.x) + Math.abs(e.y - SPAWN.y)).toBeGreaterThanOrEqual(4);
+      expect([grid[e.y-1]?.[e.x], grid[e.y+1]?.[e.x], grid[e.y]?.[e.x-1], grid[e.y]?.[e.x+1]]).toContain('floor');
+    }
+    for (const key of Object.keys(hiddenPowerUps)) {
+      const [x, y] = key.split(',').map(Number);
+      expect(grid[y][x]).toBe('crate');
+    }
+    expect(generateFloor(seed, 1)).toEqual(layout);
+  });
+
+  it.each([3, 107])('極深樓層 seed %i 只補基本出生空間，保留木箱且不重疊或侵入安全區', (seed) => {
+    const { grid, enemies, hiddenPowerUps } = generateFloor(seed, 500);
+    expect(enemies.length).toBeGreaterThanOrEqual(BASE_ENEMY_COUNT);
+    // 修補前分別有 58 / 57 個木箱；補三名敵人最多清六格，不追逐 floor 500 的 502 人上限。
+    const originalCrates = seed === 3 ? 58 : 57;
+    expect(grid.flat().filter(tile => tile === 'crate').length).toBeGreaterThanOrEqual(originalCrates - BASE_ENEMY_COUNT * 2);
+    expect(enemies.length).toBeLessThanOrEqual(BASE_ENEMY_COUNT + 499);
+    expect(enemies.length).toBeLessThanOrEqual(grid.flat().filter(tile => tile === 'floor').length - 3);
+    expect(new Set(enemies.map(e => `${e.x},${e.y}`)).size).toBe(enemies.length);
+    for (const e of enemies) {
+      expect(grid[e.y][e.x]).toBe('floor');
+      expect(Math.abs(e.x - SPAWN.x) + Math.abs(e.y - SPAWN.y)).toBeGreaterThanOrEqual(4);
+      expect([grid[e.y-1]?.[e.x], grid[e.y+1]?.[e.x], grid[e.y]?.[e.x-1], grid[e.y]?.[e.x+1]]).toContain('floor');
+    }
+    for (const key of Object.keys(hiddenPowerUps)) {
+      const [x, y] = key.split(',').map(Number);
+      expect(grid[y][x]).toBe('crate');
     }
   });
   it('深層敵人更多（floor 5 > floor 1）', () => {
@@ -65,7 +109,7 @@ describe('generateFloor', () => {
   it('出口與所有敵人永遠在「非牆連通區」內（spawn 出發 flood-fill 可達）', () => {
     const reachable = (grid: ReturnType<typeof generateFloor>['grid']): Set<string> => {
       const seen = new Set<string>([`${SPAWN.x},${SPAWN.y}`]);
-      const q = [[SPAWN.x, SPAWN.y]];
+      const q: [number, number][] = [[SPAWN.x, SPAWN.y]];
       while (q.length) {
         const [x, y] = q.pop()!;
         for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
@@ -75,7 +119,7 @@ describe('generateFloor', () => {
       }
       return seen;
     };
-    for (let seed = 1; seed <= 50; seed++) {
+    for (const seed of [...Array.from({length:50}, (_, i) => i + 1), 107, 125, 186]) {
       for (const floor of [1, 2, 5, 9]) {
         const { grid, exit, enemies } = generateFloor(seed, floor);
         const R = reachable(grid);

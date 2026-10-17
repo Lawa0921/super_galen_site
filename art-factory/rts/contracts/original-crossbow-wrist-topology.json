@@ -1,0 +1,36 @@
+{
+  "asset_id": "original-crossbow-wrist-topology",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source": "art-factory/rts/runs/original-crossbow-carry/2026-10-06-v1/candidate/original-crossbow-grip.blend",
+  "source_sha256": "ee845a8004fd2267070e1459fa97da17d4b9797458185c012f1527303d9718bd",
+  "run": "art-factory/rts/runs/original-crossbow-wrist-topology/2026-10-06-v1",
+  "source_mode": "Original local retopology of existing original generated sleeve surfaces, retaining original texture atlas and all authored rig and motion",
+  "scope": "Replace malformed distal sleeve patches from a verified single proximal cross-section, connect original surface shape to a completely contained wrist rim/cap. Preserve the already complete LOD0 left wrist.",
+  "preserve": [
+    "20 bind bones and all five original actions",
+    "Weapon and glove meshes, weights, materials",
+    "Waist and shoulder seam repair",
+    "Proximal body geometry, UVs, materials and weights outside local sleeve cuts"
+  ],
+  "qa": [
+    "True source baseline fails complete wrist topology and containment",
+    "Retained proximal cut has exactly one unbranched closed geometric ring",
+    "New sleeve transitions have no open exterior boundaries, zero-area or inverted faces",
+    "Entire terminal ring/cap vertices, edge samples and triangle interiors lie inside closed glove",
+    "Five clips and both LODs preserve contact without body/weapon penetration, wrist break or bone stretch",
+    "Actual source and exported GLB surface checks, close render and interactive browser review",
+    "Independent review before any runtime publication"
+  ],
+  "authorship": "No third-party mesh, rig, animation, mocap or texture; no placeholder sleeve cover. Retopology retains source contour and samples its existing original atlas.",
+  "triangle_limits": {
+    "unit_lod0": 20000,
+    "unit_lod1": 10000
+  },
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "current_candidate_sha256": "1c4ccb86a79301376a18a04247df1eca1df8edbfd70a4a1956d100c7b47fabb7",
+  "qa_report": "art-factory/rts/runs/original-crossbow-wrist-topology/2026-10-06-v1/qa/root-review.json",
+  "skin_method": "Retain all original source weights; only newly cut rings use their mean same-side arm weights, then smooth transition to rigid Hand at the hidden cap."
+}

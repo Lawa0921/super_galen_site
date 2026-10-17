@@ -1,0 +1,74 @@
+{
+  "asset_id": "original-guard-articulated-elbow-complete-roi-rebuild",
+  "category": "original_3d_local_arm_articulation_candidate",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "run": "art-factory/rts/runs/original-guard-articulated-elbow/2026-10-05",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "source": "art-factory/rts/runs/original-guard-quadri-scaled/2026-10-05/revision-v2-checkpointed/candidate/raw-solver-scaled.npz",
+  "source_sha256": "7afee7965c9167299c5fa13df914acec97b83af2db4aa3d228d1b75622614542",
+  "outside_roi_source_fingerprint": "a41b63a4a497c234acec6235d76c972707680d408fc2de4875231735b1786af3",
+  "roi_t": [
+    0.37,
+    0.72
+  ],
+  "fixed_mechanism": {
+    "pivot_t": 0.48,
+    "bend_axis": "global_anatomical",
+    "couter_bend_fraction": 0.5,
+    "couter_roll_fraction": 0.0,
+    "forearm_order": "bend_then_long_axis_roll"
+  },
+  "revision_budget": {
+    "complete_constructions": 1,
+    "image_directed_whole_silhouette_corrections": 1,
+    "budget_exhausted": true,
+    "further_local_patch_attempts_allowed": false
+  },
+  "design": {
+    "upper_arm": "Intended retention of source armor outside ROI; historical source-to-source fingerprint does not verify output completeness.",
+    "couter": "Independent convex source-profile shield, closed with an inner return; nine source-derived sections.",
+    "forearm": "Original source perimeter at t=.72 joins three asymmetric proximal mouth rows; inner elbow recedes, outside extends, and return wall closes underneath.",
+    "cloth": "Nine source sections with 32 samples each and gradual UpperArm/ElbowSupport/Forearm weights; dual-quaternion volume preservation applies only to cloth in Blender.",
+    "visible_source_policy": "Original-only source policy; output-to-source preservation proven only for forearm t>.72. Upper-arm preservation remains unverified.",
+    "materials": "Diagnostic source-relative steel and cloth materials, not final texture work."
+  },
+  "candidate": {
+    "geometry": "candidate/original-guard-articulated-elbow-geometry.json",
+    "editable": "candidate/original-guard-articulated-elbow.blend",
+    "animated_local_glb": "candidate/original-guard-articulated-elbow-localanimated.glb"
+  },
+  "review": {
+    "qa": "qa/finite-pose-report.json",
+    "decision": "qa/decision.json",
+    "first_rejected_revision": "qa/revision-1",
+    "visual_samples": [
+      "qa/renders/idle-side-smooth.png",
+      "qa/renders/bend60-side-smooth.png",
+      "qa/renders/bend75-side-smooth.png",
+      "qa/renders/bend90-side-smooth.png",
+      "qa/renders/combined-side-smooth.png",
+      "qa/renders/combined-close-smooth.png",
+      "qa/renders/combined-world24m-144px.png",
+      "qa/renders/combined-portrait088m-96px.png"
+    ],
+    "independent_review": "qa/independent-review.md"
+  },
+  "failed_gates": [
+    "Jagged couter side boundary and exposed white end return are visible in the final local pose renders.",
+    "The upper background slot remains visible in the combined pose and near the transition poses; the usable silhouette gate is not satisfied.",
+    "Cloth-metal contacts require a source-aware emergence classification; triangle contacts alone cannot certify no visible cloth exit.",
+    "Actual Blender/GLB sleeve skinning was not measured; CPU surrogate self=0 cannot certify it.",
+    "Upper-arm outside-ROI output preservation was not verified.",
+    "Square diagnostic renders do not prove formal runtime world/portrait pixel gates."
+  ],
+  "excluded": [
+    "runtime publication",
+    "whole-body five-clip rig and combat assembly",
+    "third-party mesh, rig, or mocap",
+    "final texture and facial/hand retopology"
+  ]
+}

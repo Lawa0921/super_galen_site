@@ -1,0 +1,79 @@
+{
+  "id": "terrain-detail",
+  "screen_id": "browser-rts-battlefield",
+  "category": "tileable-terrain-basecolor",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "root actual maps reviewed; user preview available at delivery",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "reference_meadow": "public/assets/games/rts/terrain/meadow.webp (read-only in main integration worktree)",
+  "run": "art-factory/rts/runs/terrain-detail/2026-10-05-v1",
+  "qa_report": "art-factory/rts/runs/terrain-detail/2026-10-05-v1/qa/report.json",
+  "contact_sheet": "art-factory/rts/runs/terrain-detail/2026-10-05-v1/qa/terrain-detail-contact.png",
+  "source_dimensions_note": "Built-in image generator returned 1254x1254 source PNG despite 1024x1024 prompt; deterministic Lanczos derivative is exactly 1024x1024.",
+  "mode_inference_decision": {
+    "selected_profile": "tileset_tilemap",
+    "candidate_profiles": [
+      "tileset_tilemap",
+      "opaque_background"
+    ],
+    "confidence": "high",
+    "rationale": "Top-view base-color samples must repeat in both UV axes; road also has a separate side-alpha strip derivative for road-plane blending."
+  },
+  "generation_method": "built-in image_gen original generated raster source; deterministic postprocess only",
+  "alpha_policy": "Both generated base-color textures are fully opaque. Magenta chroma key is inapplicable to repeating material swatches. Only the derived road edge-blend PNG has intentional side alpha; its source RGB remains generated art.",
+  "assets": [
+    {
+      "id": "dirt-road",
+      "source": "raw/dirt-road-generated.png",
+      "prompt": "prompts/dirt-road.txt",
+      "candidate": "candidate/dirt-road.webp",
+      "edge_derivative": "candidate/dirt-road-side-alpha.png",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "bytes_max": 250000,
+      "tile_axes": "U and V",
+      "runtime_uv": "U across road 0..1 with alpha-faded left/right 10%; V along road repeats",
+      "pbr": {
+        "map": "baseColor",
+        "color_space": "sRGB",
+        "roughness_hint": 0.88,
+        "metallic_hint": 0
+      }
+    },
+    {
+      "id": "river-water",
+      "source": "raw/river-water-generated.png",
+      "prompt": "prompts/river-water.txt",
+      "candidate": "candidate/river-water.webp",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "bytes_max": 250000,
+      "tile_axes": "U and V",
+      "pbr": {
+        "map": "baseColor",
+        "color_space": "sRGB",
+        "roughness_hint": 0.32,
+        "metallic_hint": 0
+      }
+    }
+  ],
+  "qa_gates": [
+    "raw prompt and SHA-256 provenance",
+    "1024x1024 opaque image modes",
+    "candidate WebP <250KB each",
+    "U/V tile edge discontinuity and 2x2 contact",
+    "64px preview",
+    "road side alpha monotonic with 10% falloff",
+    "top/bottom repeat of road side-alpha",
+    "no baked icons, text, perspective or large landmarks",
+    "Before runtime publication, pass mechanical QA and root actual-WebGL assembly review"
+  ],
+  "runtime_road": "public/assets/games/rts/terrain/dirt-road.webp",
+  "runtime_water": "public/assets/games/rts/terrain/river-water.webp"
+}

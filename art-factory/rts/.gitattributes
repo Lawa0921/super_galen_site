@@ -1,0 +1,2 @@
+# Generated meshes are reviewed through renders/QA and retained byte-for-byte.
+*.obj binary

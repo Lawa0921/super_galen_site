@@ -1,0 +1,13 @@
+{
+  "asset_id": "closed-gauntlet-retopology",
+  "screen_id": "battlefield-and-unit-portrait",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "Whole-mesh retopology of an existing original high-resolution closed grip",
+  "source": "art-factory/rts/runs/original-guard-grip-channel/2026-10-05/candidate/original-guard-grip-channel.blend",
+  "source_sha256": "314e914e04a8a6a095338afe1c6d558a7976639796ebc6c81a7dad71001f9628",
+  "brief": "Produce a reusable closed gauntlet master for original kingdom equipment. Preserve the complete source silhouette and grip bore. Authoring candidate only; no inherited full-character acceptance.",
+  "method": "Whole-source QuadriFlow retopology, source projection, explicit triangulation and complete topology/intersection checks. No old local ROI collapse or rejected articulated rig is continued.",
+  "qa_gates": ["closed manifold mesh", "no strict triangle self-intersections", "source projection error", "grip channel clearance", "whole-hand anatomy and silhouette", "later wrist fit, actual grip contact and complete character cycles"],
+  "runtime_publish_allowed": false
+}

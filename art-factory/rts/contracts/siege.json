@@ -1,0 +1,101 @@
+{
+  "id": "siege-engine",
+  "screen_id": "browser-rts-battlefield",
+  "category": "animated-3d-unit",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "root-webgl-reviewed; user overall art acceptance pending",
+  "source_mode": "original editable Blender-authored machine meshes plus task-generated original material images",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "dimensions_m": {
+    "width_target": 1.5,
+    "length_target": 2.4,
+    "height_range": [
+      1.6,
+      2.2
+    ],
+    "collision_radius_metadata": 0.78
+  },
+  "coordinate_contract": "Blender +Z up and +Y forward; exported GLB +Y up, -Z forward; ground origin at zero",
+  "material_contract": {
+    "team_color_material_exact_name": "TeamCloth",
+    "style": "ivory limestone kingdom accents, weathered oak, iron hoops, aged brass, navy woven cloth"
+  },
+  "runtime_candidate": {
+    "run": "runs/kingdom-siege/2026-10-05-rigid-skin-v3",
+    "source_run": "runs/kingdom-siege/2026-10-04-original",
+    "method": "Preserved animation nodes become thirteen single-weight skin joints; six material batches plus two original rigid bowstrings",
+    "bounds": "ModelInstance uses the asset conservative sphere covering all five clips",
+    "qa": "art-factory/rts/runs/kingdom-siege/2026-10-05-rigid-skin-v3/qa",
+    "runtime_publish_allowed": true
+  },
+  "geometry_contract": [
+    "four actual spoked wheels with rims and axle bands",
+    "joined wooden chassis and reinforced rail",
+    "arched mechanical bow arms and taut two-segment string",
+    "loaded bolt with head and fletching",
+    "functional-looking windlass, gears, trigger and iron fittings",
+    "no visible collision placeholder"
+  ],
+  "animation_contract": {
+    "exact_clips": [
+      "Idle",
+      "Walk",
+      "Attack",
+      "Hurt",
+      "Death"
+    ],
+    "requirements": {
+      "Idle": "subtle cloth and machinery motion, no whole-body bob placeholder",
+      "Walk": "four rotating wheels with grounded travel cycle",
+      "Attack": "taut bowstring release, bolt discharge, mechanical recoil and reset",
+      "Hurt": "localized jolt and recovery",
+      "Death": "bow collapse, chassis lean and wheel displacement"
+    }
+  },
+  "lod_contract": {
+    "lod0_max_triangles": 20000,
+    "lod1_target_ratio": [
+      0.4,
+      0.65
+    ]
+  },
+  "texture_jobs": [
+    {
+      "id": "hewn-oak",
+      "prompt": "Seamless tileable PBR base-color material swatch of weathered hand-hewn dark oak timber for a medieval fantasy siege machine, warm brown heartwood, long realistic grain, shallow tool marks and aged edges, detailed but not noisy, orthographic flat evenly lit texture, no object, no scene, no labels, no border, repeatable edges."
+    },
+    {
+      "id": "forged-iron",
+      "prompt": "Seamless tileable PBR base-color material swatch of hand-forged dark iron siege hardware, uneven charcoal gunmetal surface, fine hammer texture, rubbed lighter edges and tiny warm rust traces, orthographic flat even light, no object, no bolts, no scene, no labels, no border, repeatable edges."
+    },
+    {
+      "id": "navy-cloth",
+      "prompt": "Seamless tileable PBR base-color material swatch of deep desaturated navy woven medieval linen for a kingdom war pennant, visible fine cross-weave and worn folds in color only, neutral flat even lighting, no flag silhouette, no pattern or heraldic logo, no scene, no labels, no border, repeatable edges."
+    }
+  ],
+  "qa_gates": [
+    "source and prompt SHA-256",
+    "actual PBR and UV0",
+    "ground origin and glTF axes",
+    "LOD triangle ratio",
+    "five independent animation clips with changed channels",
+    "GLB roundtrip import and render",
+    "640px front-quarter and 64px preview",
+    "Before runtime publication, pass mechanical QA and root actual-WebGL assembly review"
+  ],
+  "active_run": "2026-10-05-rigid-skin-v3",
+  "runtime_bytes": 4552008,
+  "runtime_v1": {
+    "run": "runs/kingdom-siege/2026-10-04-runtime-v1",
+    "source_run": "runs/kingdom-siege/2026-10-04-original",
+    "method": "replace only embedded textures and make TeamCloth baseColorFactor neutral; byte-identical geometry buffers and animation JSON",
+    "basecolor": "1024x1024 JPEG q90, chroma 4:2:0; deterministic resize from reviewed original 512px candidates",
+    "normal": "512x512 lossless indexed PNG, 256 color normal-vector palette without dithering",
+    "team_cloth": "neutral gray weave map; engine may multiply #28577d or #87382d",
+    "target_glb_bytes_each": 1700000,
+    "runtime_publish_allowed": false,
+    "status": "superseded-by-rigid-skin-v3"
+  }
+}

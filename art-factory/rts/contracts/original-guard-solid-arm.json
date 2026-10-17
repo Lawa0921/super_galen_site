@@ -1,0 +1,42 @@
+{
+  "asset_id": "original-guard-solid-arm-local-prototype",
+  "category": "original_3d_local_arm_articulation_candidate",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "plan": "docs/superpowers/plans/2026-10-05-rts-original-character-quality.md",
+  "run": "art-factory/rts/runs/original-guard-solid-arm/2026-10-05",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "source": "art-factory/rts/runs/original-guard-quadri-scaled/2026-10-05/revision-v2-checkpointed/candidate/raw-solver-scaled.npz",
+  "source_sha256": "7afee7965c9167299c5fa13df914acec97b83af2db4aa3d228d1b75622614542",
+  "editable": "art-factory/rts/runs/original-guard-solid-arm/2026-10-05/candidate/original-guard-solid-arm.blend",
+  "candidate": "art-factory/rts/runs/original-guard-solid-arm/2026-10-05/candidate/original-guard-solid-arm.glb",
+  "geometry_record": "art-factory/rts/runs/original-guard-solid-arm/2026-10-05/candidate/original-guard-solid-arm-geometry.json",
+  "qa": "art-factory/rts/runs/original-guard-solid-arm/2026-10-05/qa/pose-report.json",
+  "strict_qa": "art-factory/rts/runs/original-guard-solid-arm/2026-10-05/qa/strict-collision-report.json",
+  "scope": "+X arm only: original Quadri exterior faces divided into three rigid solid-section armor parts, an original-source-derived flexible sleeve, four pose keys and transition diagnostics",
+  "excluded": ["whole-body rig", "formal textures", "weapon", "individual fingers", "runtime publication"],
+  "mode_inference_decision": {
+    "selected_profile": "original_3d_local_rig_candidate_only",
+    "candidate_profiles": ["original_3d_source_fit_candidate_only", "original_3d_local_rig_candidate_only"],
+    "confidence": "high",
+    "rationale": "The approved original checkpoint Quadri polygon indices define the visible armor surface. Only crossing faces and recessed caps are newly modeled; sleeve contours come from the same original mesh."
+  },
+  "art_contract": {
+    "world": "original human kingdom guard",
+    "coordinate_system": "canonical X-left-right, Z-up, +Y-front, 1.86 m whole-character scale",
+    "solid_section": "Each concave cut is closed by planar constrained ear triangles, with no parallel inner shell or centroid fan; shoulder and wrist caps are provisional attachment boundaries",
+    "rigidity": "Each armor mesh has one 100% weighted bone; sleeve stations have separate controls",
+    "joint_poses": ["neutral", "bend90", "roll45", "combined"],
+    "overlap_exception": "Sleeve is intentionally recessed beneath armor lips. Any visible cap, metal intersection, z-fight, or continuous background seam fails visual QA.",
+    "source_detail_policy": "The three armor exteriors retain 56/71/153 complete original Quadri polygons and 66/64/60 polygons clipped at joint planes; high-poly normal bake is a separate later task. Diagnostic materials are not final textures."
+  },
+  "failed_gates": [
+    "Elbow armor and forearm have 49 strict triangle crossings at bend90 and 37 at combined; sampled intermediate frames reach 93.",
+    "Joint rim/cap crossings remain and several intermediate frames include true exterior-surface crossings.",
+    "The elbow sleeve bulges in bend renders; joint caps and cloth/metal visibility need further local modeling and camera review."
+  ],
+  "approval_gate": "Mechanical and visual QA plus independent review; not an approved or published character"
+}

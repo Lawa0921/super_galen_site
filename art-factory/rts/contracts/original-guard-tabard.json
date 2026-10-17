@@ -1,0 +1,35 @@
+{
+  "asset_id": "original-guard-front-tabard",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source": "art-factory/rts/runs/original-guard-shape/2026-10-05/candidate/candidate-body.glb",
+  "source_sha256": "b2a94ddd3c7f66ea8e1edf993fce13ce4c24a795b9106076648e773ebffecdfd",
+  "prepared_source": "art-factory/rts/runs/original-guard-quadri/2026-10-05/candidate/source-primary-exact.npz",
+  "prepared_source_sha256": "7851c7d91364e773b4e32e358740f37f43660e2d0cfbc9159f13245470a86edd",
+  "run": "art-factory/rts/runs/original-guard-tabard/2026-10-05",
+  "status": "candidate",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "independent_review": "pass_limited_geometry_and_original_motion_candidate",
+  "independent_review_evidence": "art-factory/rts/runs/original-guard-tabard/2026-10-05/qa/independent-review.json",
+  "mode_inference_decision": {
+    "selected_profile": "original_3d_source_surface_retopology_candidate_only",
+    "confidence": "high",
+    "rationale": "Separate the existing original generated front cloth from fused skirt/legs; project an authored deformation grid onto the original visible surface."
+  },
+  "scope": "Only front tabard cloth. Preserve the original pointed silhouette and folds; derive all front-surface coordinates from source ray hits. Add a 3 mm closed back and rim for cloth thickness. Keep the top attachment fixed, with an original three-control sway study.",
+  "source_boundary_trace": "Outline traced in canonical front depth diagnostic; edge samples sit inside the source rim. This is source-derived retopology, not a new costume design.",
+  "qa_gates": {
+    "triangles_max": 1600,
+    "true_zero_area_faces": 0,
+    "nonmanifold_edges": 0,
+    "winding_errors": 0,
+    "self_intersection_pairs": 0,
+    "front_surface_sample_p95_m_max": 0.003,
+    "top_attachment_motion_m_max": 0.000001,
+    "images": "source/candidate front, side, three-quarter; posed cloth and full-body placement",
+    "unverified_until_assembly": "Leg/tasset collision during final original walk/attack; hidden original fused cloth must be removed before assembly."
+  },
+  "forbidden": ["third-party mesh or animation", "whole-body remesh", "runtime publication", "claiming standalone cloth sway proves whole-character animation"]
+}

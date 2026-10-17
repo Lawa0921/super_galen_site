@@ -1,0 +1,51 @@
+{
+  "asset_id": "original-human-units-texel-team-mask-v2",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "supersedes_only": [
+    "priest",
+    "commander"
+  ],
+  "source_candidate": "art-factory/rts/runs/human-units/2026-10-05-v1",
+  "run": "art-factory/rts/runs/human-units/2026-10-05-v2",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "material_contract": {
+    "body_material_name": "TeamClothMasked_{unit}",
+    "body_base_color": "one original RGB 1024x1024 JPEG quality 90, unmodified by team colour",
+    "body_base_color_factor": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "team_mask_metadata_path": "material.extras.teamTintMask",
+    "team_mask_metadata_value": "data:image/png;base64,<1024x1024 grayscale PNG>",
+    "team_mask_uv": "same UV0 as baseColorTexture",
+    "shader_match": "prepareTeamMasks and configureTeamMaterial from src/scripts/games/rts/team-material.ts",
+    "blue_fabric_policy": "original royal-blue hue/chroma selected per texel, 1-pixel edge feather; skin, steel and warm gold excluded",
+    "commander_shield": "TeamCloth_Shield remains a separate white neutral tintable material"
+  },
+  "preservation": {
+    "v1_raw_and_candidates": "unchanged",
+    "source_2048_png": "byte-preserved raw copy with SHA-256",
+    "skeleton_and_equipment": "v1 geometry and rig reused; five clips and two LODs unchanged",
+    "runtime_or_public_files": "Candidate generation wrote none; root subsequently published reviewed v2 via publish_remaining_units.py"
+  },
+  "qa": [
+    "royal-blue texture mask mean >= 0.95",
+    "silver, gold and skin/leather sample mean mask <= 0.05",
+    "broader blue residual pixels < 3 percent of identified royal-blue pixels",
+    "both GLBs contain one masked body material with exact embedded mask SHA and one original RGB JPEG",
+    "exact Idle/Walk/Attack/Hurt/Death and 20-joint skin on both GLBs",
+    "geometry, weight, clip frames and ground-contact reports identical to v1",
+    "Blender GLB re-import and Walk/Death motion",
+    "640px v1 blue/v2 blue/v2 red side-by-side render and 64px blue/red render",
+    "combined two-LOD GLBs under 3 MB",
+    "Actual runtime WebGL blue/red and both-LOD review passed before publication; see each unit qa/three.json and root-review.json"
+  ],
+  "assembly_human_review": "root source and actual Three.js assembly reviewed; user preview at delivery",
+  "runtime_units": [
+    "priest",
+    "commander"
+  ]
+}

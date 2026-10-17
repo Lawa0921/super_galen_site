@@ -1,0 +1,39 @@
+{
+  "asset_id": "commander-grip-refinement",
+  "status": "published",
+  "run": "art-factory/rts/runs/commander-grip/2026-10-14-v1",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "Original Blender authoring over the current published commander and refined shield; closed gauntlet from the project's original authoring kernel. Existing materials and textures only.",
+  "scope": "Trim the open right hand, fit a closed right gauntlet and the existing sword; revise Death Hand_R rotation so the blade lies outward above the ground. Both LODs.",
+  "preserve": [
+    "latest refined shield",
+    "body outside right-hand trim",
+    "20-bone bind rig",
+    "seven other clips and every other Death bone channel",
+    "materials and textures",
+    "selection footprint"
+  ],
+  "qa_gates": [
+    "grip contact and finger wrap throughout all eight clips, both LODs",
+    "no old right-hand fingers",
+    "no added sword ground penetration at 61 samples per clip per LOD",
+    "glTF validation with external textures",
+    "actual battlefield camera, selection portrait and both LODs",
+    "independent visual review"
+  ],
+  "geometry_exceptions": [
+    "Gauntlet proximal cuff is intentionally open and overlaps the forearm armor",
+    "Gauntlet component parts overlap internally; contact test excludes internal cap centers",
+    "Existing body has UV split boundaries"
+  ],
+  "known_limits": [
+    "Left shield hand remains open",
+    "Existing Death shield/body overlap and about 6.7cm shield ground penetration remain",
+    "New gauntlet needs finer knuckle definition and armor wear for final close-up art approval",
+    "Whole character and game art acceptance remains pending"
+  ],
+  "runtime_publish_allowed": true,
+  "publication_scope": "local worktree only",
+  "user_overall_art_acceptance": "pending",
+  "root_review": "art-factory/rts/runs/commander-grip/2026-10-14-v1/qa/root-review.json"
+}

@@ -1,0 +1,21 @@
+{
+  "asset_id": "original-glove-tailoring",
+  "status": "qa_failed",
+  "run": "art-factory/rts/runs/original-glove-tailoring/2026-10-06-v1",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "Original locally authored continuous 3D surface refinement; no external hand, rig, motion or texture. Preserve the original 16-bone bind and OpenClose from the articulated-glove v6 milestone.",
+  "baseline_run": "art-factory/rts/runs/original-articulated-glove/2026-10-06-v1",
+  "baseline_sha256": {"original-glove-r.blend":"f2ad32a446daf92d4ea2c99f98d07548e6edcd6bd5d96f26fd67b18922f89455","original-glove-l.blend":"bee4beaa8554bd70a524b52e29fa7023b8ab48ab8548feeb47bcb4ac72181cf1"},
+  "surface_source": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/leather-512.png",
+  "surface_provenance": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/qa/provenance.json",
+  "additional_original_reference": "art-factory/rts/contracts/original-glove-sculpt-guide.json (left-palm image only, not an approved 3D asset)",
+  "screen_id": "rts-original-hand-articulation-review",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "scope": "Reshape palm pads, directional finger/knuckle profiles, rounded fingertips, broad U webs and integrated cuff hem. No independent filler pads or decorative primitive stacks. Record closeup improvement separately from mechanical checks and full-character acceptance.",
+  "uv_policy": "Original opaque leather tile, deliberate repeat allowed; no alpha/key-color processing. Continuous surface UV is required for finished glove material; current improvement remains candidate until visual verification.",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": false,
+  "qa": ["TDD: former shared V-web root fails width/separate-boundary test", "Single closed genus-zero mesh plus single-cycle vertex links", "16 original rest binds and OpenClose curves equal the frozen v6 sources", "Full-motion self-intersection, bone length, wrist, loop and volume checks", "Actual GLB skin/surface parity and validator", "Clay and textured open/half/curl images, both hands and LODs in Chromium"],
+  "unfinished_until_reviewed": ["Readable hand anatomy and glove construction", "Cuff/sleeve and actual weapon fit", "Seams and final material finish", "Character assembly, reload and portrait/runtime performance"]
+}

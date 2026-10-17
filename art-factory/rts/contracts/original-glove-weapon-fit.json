@@ -1,0 +1,20 @@
+{
+  "asset_id": "original-glove-weapon-fit",
+  "status": "qa_failed",
+  "run": "art-factory/rts/runs/original-glove-weapon-fit/2026-10-07-v1",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-original-hand-weapon-contact-review",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "source_mode": "Original project hand and crossbow surfaces; newly authored weapon-specific finger and thumb motion. No stock rig, model or animation.",
+  "scope": "Fit the original left articulated glove to the actual original support grip, then author open/hold/release with hand-self and full-weapon collision checks. Keep existing local root and distal binding.",
+  "hand_source": "art-factory/rts/runs/original-glove-joints/2026-10-07-v2/candidate/joint-rig.blend",
+  "hand_source_sha256": "5871ce5ed506c7e29ae1aa06e7a3d6edf855f11af595ee691d47799f1c30c2e1",
+  "alpha_policy": "Opaque original meshes. Clay hand is inspection only; no material approval implied.",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "commercial_character_art": false,
+  "local_contact_mechanics": "verified-source-and-glb-385-poses-each",
+  "art_review": "Local candidate accepted as progress. PIP-dominant hook and weak thumb opposition remain; not approved for portrait or commercial character use.",
+  "runtime_publish_allowed": false,
+  "qa": ["Pinned original source meshes", "Actual named grip geometry and coordinates", "Unchanged accepted local binding", "Source hand and full-weapon surface collisions", "Meaningful finger/palm contact", "Animation interpolation", "Actual GLB parity and browser", "Future whole-character fit and materials"]
+}

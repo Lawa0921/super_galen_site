@@ -1,0 +1,77 @@
+{
+  "asset_id": "original-guard-clean-arm",
+  "category": "original_3d_local_arm_candidate",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "plan": "docs/superpowers/plans/2026-10-05-rts-original-character-quality.md",
+  "status": "approved_for_fullbody_assembly",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": true,
+  "assembly_human_review": true,
+  "revision_budget": {
+    "complete_constructions": 1,
+    "whole_seam_corrections": 1,
+    "budget_exhausted": true,
+    "third_geometry_version_allowed": false,
+    "note": "Historical contract values are preserved. The active integration lead explicitly requested the continuation documented below; this is not runtime approval."
+  },
+  "continuation_request": {
+    "requested_on": "2026-10-05",
+    "by": "root integration lead",
+    "reason": "Align the arm to GuardRig20 exact shoulder/elbow/wrist interfaces, rebuild a continuous closed padded sleeve and original extensor couter, and deliver an assembly-ready candidate after the prior visual failure.",
+    "scope_note": "This records the active task continuation; it does not imply prior candidate approval or runtime approval."
+  },
+  "source_truth": {
+    "concept_front": "art-factory/rts/runs/guard-neural-pilot/v3/raw/front-input.png",
+    "concept_sha256": "42f9d67e25d0fc1530554c6a25d461c51a47aa2ccf44cd7a5ec4df67aeaf6d0b",
+    "concept_use": "Proportion and silver steel, muted brass, deep blue cloth vocabulary only.",
+    "geometry": "Original analytic authored control cages and low-detail output meshes. No old Quadri face or vertex is copied.",
+    "arm_axis": "GuardRig20 right arm interfaces: shoulder=[0.2537,0,1.3741], elbow=[0.3513,0,1.1009], wrist=[0.4294,0,0.8472]. Front=+Y. Each segment uses a perpendicular local frame with v=normalize(segmentAxis cross projectedFront).",
+    "legacy_arm_axis": "Initial local exploration only: AXIS_START=[0.29,0.02,1.42], AXIS_END=[0.42,0.025,1.025]; retained as provenance, not bind coordinates.",
+    "rig_mapping": {
+      "UpperArm_R": "shoulder to elbow; rigid shoulder spaulder and upper-arm lame",
+      "ElbowSupport_R": "helper rest head at elbow; central sleeve weights and extensor couter",
+      "Forearm_R": "elbow to wrist; forearm lames and wrist cuff"
+    },
+    "helper_pose": "Standalone poses rotate ElbowSupport_R halfway about the averaged local lateral axis through the exact elbow pivot. Full-body assembly should derive the helper world transform from the existing UpperArm_R and Forearm_R clip transforms without changing their established curves.",
+    "hand_interface": "WristCuff overlaps the Hand_R wrist head by approximately 8 mm. The right hand remains the previously grip-approved separate asset.",
+    "material_tiles": {
+      "steel": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/steel-512.png",
+      "brass": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/brass-512.png",
+      "cloth": "art-factory/rts/runs/original-guard-surface-materials/2026-10-05/candidate/cloth-512.png"
+    },
+    "third_party_mesh_rig_mocap": false
+  },
+  "prompt": "art-factory/rts/runs/original-guard-clean-arm/2026-10-05/prompts/arm-shape-brief.txt",
+  "mode_inference_decision": {
+    "selected_profile": "editable_3d_candidate_only",
+    "confidence": "high",
+    "rationale": "Local character arm shape and skinning review; no runtime publication before full character visual acceptance."
+  },
+  "outputs": {
+    "blend": "art-factory/rts/runs/original-guard-clean-arm/2026-10-05/candidate/original-guard-clean-arm.blend",
+    "glb": "art-factory/rts/runs/original-guard-clean-arm/2026-10-05/candidate/original-guard-clean-arm.glb",
+    "browser_preview": "art-factory/rts/runs/original-guard-clean-arm/2026-10-05/review.html",
+    "qa": "art-factory/rts/runs/original-guard-clean-arm/2026-10-05/qa",
+    "first_revision": "art-factory/rts/runs/original-guard-clean-arm/2026-10-05/rejected/revision-1",
+    "pre_rebuild_candidates": "art-factory/rts/runs/original-guard-clean-arm/2026-10-05/rejected/pre-rebuild-2026-10-05"
+  },
+  "acceptance": {
+    "quad_cage_and_pose_unit_tests": "5 passed; high-detail cage, LOD0 triangle budget, exact joints, cuff overlap, and closed sleeve checks included.",
+    "blender_fps": 30,
+    "blender_fps_base": 1,
+    "browser_clip_duration_s": 1.3333333730697632,
+    "browser_to_blender_max_vertex_deviation_m": 0.000010648071658784614,
+    "browser_parity_status": "Pass across neutral, bend75, bend90, bend120, roll45, and return-neutral; tolerance 0.00002 m.",
+    "browser_page_errors": 0,
+    "visual_arm_quality": "Root integration lead approved standalone 90-degree and 120-degree front/side/back Blender views for assembly. Actual GLB views were also inspected; the sleeve remains closed and continuous, with the full-body view pending.",
+    "component_triangles": 3804,
+    "component_objects": ["ShoulderSpaulder", "UpperArmArmor", "ElbowArmor", "ForearmArmor", "WristCuff", "FlexibleSleeve"],
+    "rig_bones": ["UpperArm_R", "ElbowSupport_R", "Forearm_R"],
+    "actual_gltf_primitives": 11,
+    "blend_sha256": "7400d38f0bfa8633d4676f511449f933857a0fea20bc9d93e0e757e79b365dcd",
+    "glb_sha256": "1879eecf9de41fb45b38013e9868aa34785aea1c3271e6bb2b75f4012b491544",
+    "full_body_five_clips_complete": false
+  },
+  "excluded": ["runtime publication", "complete right hand", "full-body integration", "five action clips", "portrait-based elbow approval", "commercial visual approval"]
+}

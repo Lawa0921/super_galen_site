@@ -205,6 +205,16 @@
     /* ==================== CONTENT ==================== */
     .content { position: relative; z-index: 2; opacity: 0; }
 
+    /* Keep the profile readable when an animation CDN is unavailable. */
+    body.static-page .content,
+    body.static-page #heroPortrait,
+    body.static-page [data-anim] { opacity: 1; transform: none; }
+    body.static-page #videoSection { height: 0; overflow: hidden; }
+    body.static-page .video-sticky,
+    body.static-page #videoProgressTrack,
+    body.static-page #videoHint { display: none; }
+    body.static-page .film-strip-wrap { overflow-x: auto; }
+
     /* HERO — full bleed portrait */
     .hero {
       min-height: 100vh; display: flex; align-items: flex-end;
@@ -1497,6 +1507,16 @@
   </div>
 
   <script>
+    const hasThree = typeof THREE !== 'undefined';
+    const hasGsap = typeof gsap !== 'undefined';
+    const hasMotion = hasGsap && typeof ScrollTrigger !== 'undefined';
+
+    function showStaticPage() {
+      document.getElementById('loaderScreen').style.display = 'none';
+      document.body.classList.remove('loading');
+      document.body.classList.add('static-page');
+    }
+
     /* ==================== CUSTOM CURSOR ==================== */
     (function() {
       if (window.innerWidth <= 768) return;
@@ -1518,6 +1538,7 @@
 
     /* ==================== THREE.JS + VIDEO PLANES ==================== */
     (function() {
+      if (!hasThree) return;
       const canvas = document.getElementById('three-bg');
       const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -1620,6 +1641,7 @@
 
     /* ==================== RESOURCE LOADER ==================== */
     (function() {
+      if (!hasMotion) { showStaticPage(); return; }
       const loaderScreen = document.getElementById('loaderScreen');
       const loaderSeal = document.getElementById('loaderSeal');
       const loaderTitle = document.getElementById('loaderTitle');
@@ -1839,6 +1861,7 @@
 
     /* ==================== SCROLL-DRIVEN VIDEO SECTION ==================== */
     function initScrollVideo() {
+      if (!hasMotion) { showStaticPage(); return; }
       const video = document.getElementById('scrollVideo');
       const section = document.getElementById('videoSection');
       const progressBar = document.getElementById('videoProgressBar');
@@ -1912,6 +1935,7 @@
 
     /* ==================== FLOATING BG VIDEO CARDS ==================== */
     (function() {
+      if (!hasMotion) return;
       const cards = document.querySelectorAll('.bg-video-card');
       const overlay = document.getElementById('videoFullscreen');
       const fullVid = document.getElementById('fullscreenVideo');
@@ -2067,6 +2091,12 @@
 
     function showVoice(idx) {
       if (idx === currentVoice || voiceAnimating) return;
+      if (!hasMotion) {
+        voiceSlides.forEach((slide, i) => slide.classList.toggle('active', i === idx));
+        voiceDots.forEach((dot, i) => dot.classList.toggle('active', i === idx));
+        currentVoice = idx;
+        return;
+      }
       voiceAnimating = true;
       const outSlide = voiceSlides[currentVoice];
       const inSlide = voiceSlides[idx];
@@ -2094,12 +2124,15 @@
       d.addEventListener('click', () => showVoice(+d.dataset.idx));
     });
 
-    setInterval(() => {
-      showVoice((currentVoice + 1) % voiceSlides.length);
-    }, 5000);
+    if (hasMotion) {
+      setInterval(() => {
+        showVoice((currentVoice + 1) % voiceSlides.length);
+      }, 5000);
+    }
 
     /* ==================== CONTENT ANIMATIONS ==================== */
     function animateContent() {
+      if (!hasMotion) { showStaticPage(); return; }
       gsap.registerPlugin(ScrollTrigger);
 
       // Hero — portrait parallax + text stagger
@@ -2285,6 +2318,7 @@
     let videoSkipped = false;
 
     function skipVideoSection() {
+      if (!hasMotion) { showStaticPage(); return; }
       if (videoSkipped) return;
       videoSkipped = true;
       if (typeof ScrollTrigger !== 'undefined') {

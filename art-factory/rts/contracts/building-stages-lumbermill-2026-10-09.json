@@ -1,0 +1,38 @@
+{
+  "version": 3,
+  "asset": "lumbermill",
+  "publish_allowed": true,
+  "method": "official MikkTSpace full original material primitive tangents; deindex only materials 2 and 3 whose shared original indices fail the bounded tangent gate",
+  "preserve": [
+    "original BIN prefix",
+    "each ordinal directed triangle POSITION/NORMAL/TEXCOORD_0 corner bytes",
+    "triangle count and winding",
+    "material and image definitions",
+    "source identity and construction stages"
+  ],
+  "allowed_changes": [
+    "vertex duplication by copying complete original POSITION/NORMAL/UV tuples",
+    "new accessors and sequential indices for duplicated material primitives",
+    "new TANGENT attribute computed by official MikkTSpace"
+  ],
+  "forbidden": [
+    "attribute value editing",
+    "normal or UV recomputation",
+    "tangent averaging or mixing",
+    "triangle removal or winding changes",
+    "external deployment without explicit authorization"
+  ],
+  "stage_tangent_rule": "each complete material primitive has exactly one TANGENT accessor shared across all its stage subsets",
+  "thresholds": [
+    0,
+    0.18,
+    0.55,
+    0.82
+  ],
+  "geometry_claim": "original attribute/index usage topology changes for two material primitives; each original directed triangle corner value is bitwise preserved",
+  "status": "published_local_worktree",
+  "runtime_publish_allowed": true,
+  "source_contract": "art-factory/rts/runs/building-stages-lumbermill/2026-10-09-v3/contract.json",
+  "publication_review": "art-factory/rts/runs/building-stages-lumbermill/2026-10-09-v3/qa/root-publication-review.json",
+  "external_deployment": false
+}

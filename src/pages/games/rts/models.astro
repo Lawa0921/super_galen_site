@@ -1,0 +1,61 @@
+---
+// Dev review tool: close-up inspection of every published RTS runtime model.
+// Not linked from navigation, noindex, and excluded from the sitemap (NOINDEX_PAGES in src/i18n/seo.ts).
+import '@styles/_rts-model-viewer.scss';
+---
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="robots" content="noindex,nofollow"/>
+  <title>曦境戰紀 · 模型檢視室</title>
+</head>
+<body class="rmv-body">
+  <div id="rmv" class="rmv">
+    <aside class="rmv-list" aria-label="模型清單">
+      <h1>模型檢視室</h1>
+      <p class="rmv-note">遊戲實際使用的模型、材質與光照。拖曳旋轉、滾輪縮放、右鍵平移。</p>
+      <nav id="rmv-models"></nav>
+    </aside>
+    <main class="rmv-stage">
+      <header class="rmv-toolbar">
+        <strong id="rmv-title">—</strong>
+        <div class="rmv-buttons" role="group" aria-label="視角">
+          <button type="button" data-view="front">正面</button>
+          <button type="button" data-view="side">側面</button>
+          <button type="button" data-view="top">俯視</button>
+          <button type="button" data-view="game">遊戲視角</button>
+          <button type="button" id="rmv-reset">重設視角</button>
+        </div>
+        <label class="rmv-check"><input id="rmv-spin" type="checkbox"/>自動旋轉</label>
+      </header>
+      <canvas id="rmv-canvas" aria-label="模型三維檢視"></canvas>
+      <p id="rmv-status" class="rmv-status" role="status"></p>
+    </main>
+    <aside class="rmv-panel" aria-label="檢視設定與模型資訊">
+      <section>
+        <h2>動畫</h2>
+        <select id="rmv-clip" aria-label="動畫片段"></select>
+        <div class="rmv-row"><button type="button" id="rmv-play">暫停</button><input id="rmv-phase" type="range" min="0" max="1000" value="0" aria-label="動畫進度"/></div>
+      </section>
+      <section>
+        <h2>顯示</h2>
+        <div class="rmv-buttons" role="group" aria-label="隊伍顏色"><button type="button" data-team="0">藍隊</button><button type="button" data-team="1">紅隊</button></div>
+        <div class="rmv-buttons" role="group" aria-label="細節層級"><button type="button" data-lod="0">LOD0</button><button type="button" data-lod="1">LOD1</button></div>
+        <label class="rmv-check"><input id="rmv-wire" type="checkbox"/>線框</label>
+        <label class="rmv-field">光照<select id="rmv-light"><option value="game">遊戲光照</option><option value="studio">中性攝影棚</option></select></label>
+      </section>
+      <section>
+        <h2>模型資訊</h2>
+        <div id="rmv-info" class="rmv-info"></div>
+      </section>
+    </aside>
+  </div>
+  <script>
+    import {mountModelViewer} from '@scripts/games/rts/model-viewer';
+    const root=document.getElementById('rmv');
+    if(root)void mountModelViewer(root).catch(error=>{const status=document.getElementById('rmv-status');if(status)status.textContent='載入失敗：'+String(error);console.error(error);});
+  </script>
+</body>
+</html>

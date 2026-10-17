@@ -1,0 +1,52 @@
+{
+  "asset_id": "original-guard-elbow-rim-local-revision",
+  "category": "original_3d_local_armor_patch_candidate",
+  "screen_id": "rts-unit-and-animated-portrait",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "run": "art-factory/rts/runs/original-guard-elbow-rim/2026-10-05",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "source_geometry": "art-factory/rts/runs/original-guard-solid-arm/2026-10-05/candidate/original-guard-solid-arm-geometry.json",
+  "source_model_commit": "888528b2098e5617e985523a36dbd3d23edb574f",
+  "fixed_mechanism": {
+    "pivot_t": 0.48,
+    "hinge_axis": "global_anatomical",
+    "elbow_follow_fraction": 0,
+    "source_best_configuration_index": 1
+  },
+  "revision_budget": {
+    "selected_method": "Local cap retreat beneath the original proximal forearm rim",
+    "reason": "A 3-vertex/4-cap-face patch preserves every original exterior point and face while testing whether the cap alone causes the visible notch. Extending the existing exterior rim would require changing at least exterior faces 113-114 and the adjacent cap join, a larger visible-source edit.",
+    "changed_component": "ForearmArmor",
+    "changed_source_face_indices": [222, 223, 224, 225],
+    "new_interior_vertex_count": 3,
+    "changed_exterior_vertex_or_face_count": 0,
+    "source_rim_vertices_kept": [208, 211, 213],
+    "local_retreat_m": 0.005,
+    "local_radial_inset_m": 0.005,
+    "second_method_or_parameter_sweep": false
+  },
+  "qa_outcome": {
+    "minimum_original_elbow_contact_retreat_m": 0.004626785291975631,
+    "boundary_edges": 0,
+    "inconsistent_winding_edges": 0,
+    "zero_area_triangles": 0,
+    "nonadjacent_self_crossings_in_14_poses": 0,
+    "original_four_exterior_crossings_increased": false,
+    "cap_involved_triangle_pair_sum_before": 478,
+    "cap_involved_triangle_pair_sum_after": 473,
+    "visible_notch_cleared": false,
+    "candidate_decision": "reject"
+  },
+  "evidence": [
+    "qa/source-face-audit.json",
+    "qa/strict-pose-report.json",
+    "qa/visual-diff.json",
+    "qa/decision.json"
+  ],
+  "candidate_files": [
+    "candidate/original-guard-elbow-rim-geometry.json",
+    "candidate/original-guard-elbow-rim.blend",
+    "candidate/original-guard-elbow-rim-combined.glb"
+  ]
+}

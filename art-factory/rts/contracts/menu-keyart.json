@@ -1,0 +1,22 @@
+{
+  "asset_id": "menu-keyart",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "status": "published",
+  "category": "background",
+  "source_mode": "builtin-imagegen",
+  "postprocess": "resize-webp",
+  "alpha_policy": "opaque",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "root-reviewed; user overall art acceptance pending",
+  "runtime_publish_allowed": true,
+  "raw_path": "art-factory/rts/runs/menu-keyart/v1/raw/keyart.png",
+  "target": "public/assets/games/rts/ui/menu-keyart.webp",
+  "qa_gates": [
+    "original faction and composition",
+    "legible title space left",
+    "no text",
+    "no watermark"
+  ],
+  "assembly_review": "root inspected formal Chromium battlefield, technology and natural two-map campaign screenshots; user overall art acceptance pending",
+  "assembly_evidence": "art-factory/rts/runs/final-assembly/2026-10-05/root-review.json"
+}

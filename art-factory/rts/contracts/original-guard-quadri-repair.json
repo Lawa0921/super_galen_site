@@ -1,0 +1,25 @@
+{
+  "asset_id": "original-guard-quadri-exact-local-repair-diagnostic",
+  "category": "original_3d_whole_character_local_topology_repair",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "run": "art-factory/rts/runs/original-guard-quadri-repair/2026-10-05",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "original_source": "art-factory/rts/runs/original-guard-shape/2026-10-05/candidate/candidate-body.glb",
+  "original_source_sha256": "b2a94ddd3c7f66ea8e1edf993fce13ce4c24a795b9106076648e773ebffecdfd",
+  "solver_checkpoint_source": "art-factory/rts/runs/original-guard-quadri-scaled/2026-10-05/revision-v2-checkpointed/candidate/raw-solver-scaled.npz",
+  "solver_checkpoint_sha256": "7afee7965c9167299c5fa13df914acec97b83af2db4aa3d228d1b75622614542",
+  "repair_method": "named exact-coordinate welds, eleven numeric zero-area quad removals, three three-edge and one seven-edge temporary triangulated caps",
+  "passed_gates": [
+    "Blender topology: zero boundary, zero nonmanifold, zero zero-area, zero winding errors, one connected component",
+    "All retained vertex coordinates preserve the frozen solver output; no new global solve",
+    "Three triangular hole caps have no nonincident patch/rest BVH overlaps"
+  ],
+  "failed_gates": [
+    "Seven-edge temporary cap has six confirmed strict interior patch/rest triangle penetrations",
+    "The single 21-edge outer-ring source-guided revision has 15 confirmed patch/rest penetrations and 10 strict patch self-intersection pairs",
+    "Original high-poly hand, skirt, and armor forms remain fused or visually softened",
+    "No rig, pose deformation, or browser parity has been verified"
+  ],
+  "temporary_patch_policy": "Not rig-ready. The accepted original contains fused hand/skirt and armor junctions; further blind cap expansion is stopped. Future work must design separated anatomical or armor parts before production use."
+}

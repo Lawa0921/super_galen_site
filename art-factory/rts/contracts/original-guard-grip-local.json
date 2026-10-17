@@ -1,0 +1,44 @@
+{
+  "asset_id": "original-guard-grip-local",
+  "category": "original_3d_character_equipment_lowpoly_candidate",
+  "status": "candidate",
+  "runtime_publish_allowed": false,
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_fit_blend_sha256": "123ad986465e79a26a685eefa9c5da9043f27ce984036ce178b783c103213281",
+  "source_high_mesh_fingerprint": "979b8641307fbb7c10f5f6bae39109ce11ba486ecb3069906064c7682eeeb458",
+  "source_low_blend_sha256": "f73f309fc7a1c2af29006336c20f20c975471c595f214a3942e2d94d70a63ef0",
+  "source_low_glb_sha256": "e294a42c266d96dfa171b325afdf837c5fe5b8097ae51853809601b092785c70",
+  "candidate_blend": "art-factory/rts/runs/original-guard-grip-local/2026-10-05/candidate/original-guard-grip-local-flip.blend",
+  "candidate_glb": "art-factory/rts/runs/original-guard-grip-local/2026-10-05/candidate/original-guard-grip-local-flip.glb",
+  "candidate_blend_sha256": "3c6350ca9e969eb173ca1b8e015a9826b82222e6ea778d208f658cd6b61a3d94",
+  "candidate_glb_sha256": "85054c1418339febcc2e4be4671281007b3a5c705d69bd31de5d7778599bbfce",
+  "method": "Seven oriented edge flips inside six frozen one-ring ROIs, preserving every original vertex, patch perimeter, UV/material on untouched triangles and all transforms. First projected-centre attempt rejected.",
+  "roi_proof": "art-factory/rts/runs/original-guard-grip-local/2026-10-05/qa/roi-before.json",
+  "local_diff": "art-factory/rts/runs/original-guard-grip-local/2026-10-05/qa/flip-search.json",
+  "qa": "art-factory/rts/runs/original-guard-grip-local/2026-10-05/qa/acceptance.json",
+  "review": "art-factory/rts/runs/original-guard-grip-local/2026-10-05/review.html",
+  "triangles_before": 11846,
+  "triangles_after": 11846,
+  "protected_input_vertices": 4302,
+  "channel_wall_vertex_subset": 3772,
+  "contacts": [
+    6,
+    6,
+    6,
+    5
+  ],
+  "sampled_high_to_low_p95_m": 0.0005802767816931008,
+  "sampled_low_to_high_p95_m": 0.0005683574185241012,
+  "source_shape_constraints_unapproved": [
+    "rounded fingertips",
+    "thumb web",
+    "closed wrist opening"
+  ],
+  "qa_failure_reasons": [
+    "candidate_export_glb_strict_self_zero",
+    "sampled_high_to_low_p95_no_worse"
+  ],
+  "local_repair_acceptance": "bounded_local_repair_accepted_with_numeric_exceptions",
+  "independent_decision": "art-factory/rts/runs/original-guard-grip-local/2026-10-05/qa/independent-decision.json",
+  "qa_failure_reasons_interpretation": "Historical strict failures retained; independent decision allows only the documented numeric exceptions for bounded repair. Full source shape remains unapproved."
+}

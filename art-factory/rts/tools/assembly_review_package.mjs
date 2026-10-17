@@ -1,0 +1,15 @@
+import {build} from 'esbuild';
+import {readFile,writeFile,mkdir,copyFile,readdir} from 'node:fs/promises';
+const run='art-factory/rts/runs/assembly-refinement/2026-10-08-v2',out='tmp/rts/handoff-20261006/review-site/assembly-refinement';
+const ids=['barracks','stable','workshop','guard','guard-lod1'];
+for(const version of ['before','after']){
+ for(const dir of ['models','materials/detail-v1','terrain'])await mkdir(`${out}/${version}/${dir}`,{recursive:true});
+ for(const id of ids){const source=version==='before'?`${run}/raw/before/${id}.glb`:`${run}/candidate/${id}.glb`;await copyFile(source,`${out}/${version}/models/${id}.glb`);}
+ for(const name of await readdir('public/assets/games/rts/materials/detail-v1'))await copyFile(`public/assets/games/rts/materials/detail-v1/${name}`,`${out}/${version}/materials/detail-v1/${name}`);
+ await copyFile(`${run}/raw/dirt-road.png`,`${out}/${version}/terrain/dirt-road.png`);
+}
+await copyFile(`${run}/raw/kingdom-kit.blend`,`${out}/kingdom-kit.blend`);
+await copyFile(`${run}/kit.json`,`${out}/kit.json`);
+await build({entryPoints:['art-factory/rts/tools/assembly_review.ts'],outfile:out+'/app.js',bundle:true,format:'esm',platform:'browser',target:'es2022',minify:true});
+await writeFile(out+'/index.html',`<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:,"><title>曦境戰紀 · 庭院與組裝細修</title><style>*{box-sizing:border-box}body{margin:0;background:#172523;color:#ece3cf;font:16px system-ui,sans-serif}header{padding:20px 28px;border-bottom:1px solid #65715b}h1{font-size:24px;margin:0 0 10px}p{color:#b6c3ad;margin:8px 0}nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap}select,button{font:inherit;color:inherit;background:#293d34;border:1px solid #758367;padding:9px 12px}label{display:flex;gap:8px;align-items:center}canvas{display:block;width:100%;height:calc(100vh - 228px);min-height:420px}footer{padding:14px 28px;display:flex;gap:22px;flex-wrap:wrap}a{color:#e9c888}</style><header><h1>曦境戰紀 · 庭院與組裝細修</h1><p>土質庭院、石砌收邊、連續入口台階。切換前後版本時保留相同視角；拖曳可旋轉、滾輪可拉近。</p><nav><label>模型<select id="asset"><option value="barracks">兵營</option><option value="stable">馬廄</option><option value="workshop">工坊</option><option value="guard">衛兵 · 近距離</option><option value="guard-lod1">衛兵 · 遠距離</option></select></label><label>版本<select id="variant"><option value="after">細修後版本</option><option value="before">細修前版本</option></select></label><label>動作<select id="clip"><option>Idle</option><option>Walk</option><option>Attack</option><option>Hurt</option><option>Death</option></select></label><button id="reset">重設視角</button></nav><p id="stats"></p><p id="status">新版已接入本機遊戲。這裡保留細修前後對照與原創零件庫。</p></header><canvas aria-label="可旋轉的原創模型前後比較"></canvas><footer><a href="kingdom-kit.blend" download>下載可編輯零件庫</a><a href="http://127.0.0.1:4324/games/rts/">開啟遊戲</a></footer><script type="module" src="app.js"></script></html>`);
+console.log('http://127.0.0.1:4334/assembly-refinement/');

@@ -1,0 +1,328 @@
+{
+  "assets": {
+    "townhall": {
+      "url": "/assets/games/rts/models/townhall.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "058cc276fed09e8984f6a1a43401b3001ffc66bc81a77efe4c47a439c49c2ea7"
+    },
+    "townhall-tier2": {
+      "url": "/assets/games/rts/models/townhall-tier2.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "65ca754245238f43af869f243766eb37e40a61c0817594960de1526de1b1e374",
+      "source": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/townhall-tier2-finials.blend"
+    },
+    "townhall-tier3": {
+      "url": "/assets/games/rts/models/townhall-tier3.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "fef153df89e0209bb9f118e232133f803b6e1adb4531323f8f4148c55e0d1c3a",
+      "source": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/townhall-tier3-finials.blend"
+    },
+    "barracks": {
+      "url": "/assets/games/rts/models/barracks.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "941eeec872b90fd5d67643a325c14d36ea106c4242e7c8f5ac3c0e6343976d30"
+    },
+    "stable": {
+      "url": "/assets/games/rts/models/stable.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "a2741424b568f30921114ee8c9be710d606f73b2b65a790ea71d58a4d48b85a5"
+    },
+    "workshop": {
+      "url": "/assets/games/rts/models/workshop.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "c361286b9f74fce5b3532f7103e2bb30a874060c14e7e56991beb03f787db667"
+    },
+    "house": {
+      "url": "/assets/games/rts/models/house.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "8e9a1ce39a4872bb4c41f86734c41711afe3988f5c9ba87128cc74992fed79b3"
+    },
+    "lumbermill": {
+      "url": "/assets/games/rts/models/lumbermill.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "c441765ceff99adf75f4d6d247d8c783feeec7c74b728711c57899b079132c55"
+    },
+    "forge": {
+      "url": "/assets/games/rts/models/forge.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "5cd24a7db89d576d44dcac61bdf99cc266dd75c32131e2b5a05500c5b05675e7"
+    },
+    "altar": {
+      "url": "/assets/games/rts/models/altar.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "05bfc1482e3d1dd57f84830e181e81e5799cb411c945e8558f74a4857b7f6795"
+    },
+    "tower": {
+      "url": "/assets/games/rts/models/tower.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "a2da440cb965d80948011752fd85f96cf218ba70c8cfe40cc6799f43bae35a28"
+    },
+    "chapel": {
+      "url": "/assets/games/rts/models/chapel.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "b5bc8042eec5c8f5c8beef786d10545e3b67863634aa12b791ccf57120452c6f"
+    },
+    "stone-bridge": {
+      "url": "/assets/games/rts/models/stone-bridge.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "6abd62ea8adf5185ab8e44db72ac9d552707e341ef98751bb140f10a5b4c22df"
+    },
+    "oak": {
+      "url": "/assets/games/rts/models/oak.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "2920577c2a05f600d83a498698a195f9ab439301c3b04d3b19d27f9adc67f972"
+    },
+    "rock": {
+      "url": "/assets/games/rts/models/rock.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "d3a94236efb70bc4763a4b7aab11835e679ca76c1aa52484aa3263313b9f014c",
+      "source": "art-factory/rts/runs/all-models/2026-10-14-props/raw/repaired/rock.blend"
+    },
+    "gold-mine": {
+      "url": "/assets/games/rts/models/gold-mine.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "85fb6a7583e3d51f9948d04848771c8689bf611726a04866b4093860c7c8e994"
+    },
+    "timber-pile": {
+      "url": "/assets/games/rts/models/timber-pile.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "e4e29b7586b141bced9785ac957cc5225d4c40425303d791f110da65673b7797"
+    },
+    "siege": {
+      "url": "/assets/games/rts/models/siege.glb",
+      "lod1": "/assets/games/rts/models/siege-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "06a987bd07254dd5a6c5ecb21d5da6b27f0499b2cd5063ffaf8c758ac83b2951",
+      "lod1Sha256": "013eeed05d92bea0fa189edeeba25db3960d1784fb609ace159d39ce62ddc11d",
+      "source": "art-factory/rts/runs/all-models/2026-10-14-props/final/raw/siege-lod0.blend"
+    },
+    "guard": {
+      "url": "/assets/games/rts/models/guard.glb",
+      "lod1": "/assets/games/rts/models/guard-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "1ec3c1401e60fa9d67ae70019899b562486eff83879556292d766a80ea473b52",
+      "lod1Sha256": "3bac44e590f94e0139741ae480c7a09c4ea73df6520ce68da78c7aa548ab02c4",
+      "source": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/guard-assembly.blend",
+      "provenance": "TripoSR (MIT) body from original guard concept + procedural-original gauntlets, original sword/shield; no Hunyuan geometry"
+    },
+    "bolt": {
+      "url": "/assets/games/rts/models/bolt.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "dc66614b7d068ab224849cc74572b3491bf0c3dff7c551e2f37fed53e5b7ce53"
+    },
+    "heavy-bolt": {
+      "url": "/assets/games/rts/models/heavy-bolt.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "b961a6e0bc83c23ca567382b21ab2adb848365a9587ccf53eacccc116bd04404"
+    },
+    "worker": {
+      "url": "/assets/games/rts/models/worker.glb",
+      "lod1": "/assets/games/rts/models/worker-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "25d1ba86b5c285c54c37d67d98f5d77e88b2ca42258f442851f21eccc8123a22",
+      "lod1Sha256": "32ee9fba56cfb62a8d4f4607a2315b61400c72b732f54040f6eecf369525bd32",
+      "source": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/worker-assembly.blend",
+      "provenance": "procedural-original closed-grip gauntlet + TripoSR (MIT) body; no Hunyuan geometry"
+    },
+    "crossbow": {
+      "url": "/assets/games/rts/models/crossbow.glb",
+      "lod1": "/assets/games/rts/models/crossbow-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "b56d6f7618dd620714bc7c10b85223198daa2c2d21926aca373272db8b603300",
+      "lod1Sha256": "4da767dff90ff1d84610eaf278d9c342876067cfdc3d7629bc468ad9eaf6455f",
+      "source": "art-factory/rts/runs/all-models/2026-10-14-crossbow/final/raw/crossbow-assembly.blend",
+      "provenance": "procedural-original closed-grip gauntlets and crossbow + TripoSR (MIT) body; no Hunyuan geometry"
+    },
+    "neutral-raider": {
+      "url": "/assets/games/rts/models/neutral-raider.glb",
+      "lod1": "/assets/games/rts/models/neutral-raider-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "b36001e8dae95249eb5fd99778ffd4addcbcc17bf0aeeba9baba8bb70956de8d",
+      "lod1Sha256": "af91015a631f195b404195be925081719d979a96d6156acff05369e4b6167c5a",
+      "source": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/neutral-raider-assembly.blend"
+    },
+    "knight": {
+      "url": "/assets/games/rts/models/knight.glb",
+      "lod1": "/assets/games/rts/models/knight-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "54ec5ad70e3664a64af432deb82e81ad8e5f455273dfaf86c059ca687c8cf42b",
+      "lod1Sha256": "4df66c17ad225652269c8190ba0c27f3fed765764e4142d8be207012acf756d0",
+      "source": "art-factory/rts/runs/all-models/2026-10-15-knight-mouth/raw/knight-lod0.blend"
+    },
+    "priest": {
+      "url": "/assets/games/rts/models/priest.glb",
+      "lod1": "/assets/games/rts/models/priest-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "source": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/priest-assembly.blend",
+      "sha256": "cb947693bf4e4545001ff248c6fcc494dfd4a4ff93e1cca5165fbbfc8ce72ef7",
+      "lod1Sha256": "ec1a7236d42cb3ea31a476e4532654c65452a73d5e6a9a0ce51e139ceb90623d"
+    },
+    "commander": {
+      "url": "/assets/games/rts/models/commander.glb",
+      "lod1": "/assets/games/rts/models/commander-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "source": "art-factory/rts/runs/commander-assembly/2026-10-14-v1/raw/commander-assembly.blend",
+      "sha256": "e3ef6c90f18ec4622e4e706a4c8f1e755716fbfbb04a77f172f66829d6a84f0f",
+      "lod1Sha256": "75164fec2a81dd913d1de7bbab2781993d61dbf72f59d94a9d490d9d9decd193"
+    },
+    "pine": {
+      "url": "/assets/games/rts/models/pine.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "c98f27b0ffb086ae8751d924e8c53af69658a389d5585a40d8b52d4432a34ac8"
+    },
+    "river-gatehouse": {
+      "url": "/assets/games/rts/models/river-gatehouse.glb",
+      "lod1": "/assets/games/rts/models/river-gatehouse-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "1f71fdd9483428a922781a84b32c511f8cef035f30f0228e3f60df2569978321",
+      "lod1Sha256": "16333994768369fdc09238097363ab234a14898094db8ab870dbcf6307c1dfb0"
+    },
+    "river-shrine": {
+      "url": "/assets/games/rts/models/river-shrine.glb",
+      "lod1": "/assets/games/rts/models/river-shrine-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "63fedf5f1004ac9450de9d31f00b2921881b8e4f1296b964b24b8a7d6de9b638",
+      "lod1Sha256": "3ab9b33b391d7933a211a03709c3a93d14a6b2ff8697061af3559f42399f43fb"
+    },
+    "highland-watchtower": {
+      "url": "/assets/games/rts/models/highland-watchtower.glb",
+      "lod1": "/assets/games/rts/models/highland-watchtower-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "e54edc5ca38e3ea5dd99dd80fe026c8e0ef5664b203c0d51d9cc249fc3519fe3",
+      "lod1Sha256": "b5576d369ae956bb6ccc415cc05276d80ae84044f6102d4d9f7306275c522cbd"
+    },
+    "quarry-ruins": {
+      "url": "/assets/games/rts/models/quarry-ruins.glb",
+      "lod1": "/assets/games/rts/models/quarry-ruins-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "c5a157712d7e72f8ac67f98a278042b5d557100b2a2270529818f674a0bd2c0e",
+      "lod1Sha256": "4d8165c237a26df5b2ce30b8689d9a2886230196a241915011feb65e0456d71f"
+    },
+    "pikeman": {
+      "url": "/assets/games/rts/models/pikeman.glb",
+      "lod1": "/assets/games/rts/models/pikeman-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "75dde2bfbf3555d05e3ad2fcfd4eaffbff4b1b28052f1eeedf72c94601b30922",
+      "lod1Sha256": "433d4fe20151eb359ac59c751f6b9b0065fe295ad7054ed0ea8f633db9340b5c",
+      "source": "art-factory/rts/runs/roster-expansion/2026-10-16-pikeman/raw/pikeman-assembly.blend",
+      "provenance": "Original: codex built-in imagegen front/back references (art-factory/rts/runs/roster-expansion/2026-10-16-pikeman/inputs) -> TripoSR (MIT) body + front/rear projection; procedural-original three-phalanx closed leather hands (roster_hands.py), pike and furled team pennon (roster_pikeman_build.py); guard 20-bone rig; no existing unit geometry reused",
+      "user_style_approval": "pending",
+      "note": "Published for style review only; UNITS[kind].preview stays true and the kind is not in REQUIRED_MODELS until the user approves."
+    },
+    "ranger": {
+      "url": "/assets/games/rts/models/ranger.glb",
+      "lod1": "/assets/games/rts/models/ranger-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "6227c7f66f46592be6435bae9e1d5e67b56c408b0aa5d90674813e3ca3ee69bd",
+      "lod1Sha256": "b2ceb2b67136a0b3fdc5d848c9381dc51acf3db8f8094abe5a31dc97789f14e3",
+      "source": "art-factory/rts/runs/roster-expansion/2026-10-16-ranger/raw/ranger-assembly.blend",
+      "provenance": "Original: codex built-in imagegen front/back references (art-factory/rts/runs/roster-expansion/2026-10-16-ranger/inputs, attempt a2) -> TripoSR (MIT) body + front/rear projection; procedural-original three-phalanx closed leather hands (roster_hands.py), recurve longbow with live string, arrow, team quiver (roster_ranger_build.py); crossbow-family 20-bone rig; no existing unit geometry reused",
+      "user_style_approval": "pending",
+      "note": "Published for style review only; UNITS[kind].preview stays true and the kind is not in REQUIRED_MODELS until the user approves."
+    },
+    "arrow": {
+      "url": "/assets/games/rts/models/arrow.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "682f6d558505dd671f6dc35628d5e65229ff40ba545c36512a2c6c5f66246487",
+      "source": "art-factory/rts/runs/roster-expansion/2026-10-16-ranger/raw/arrow.blend",
+      "provenance": "Procedural-original ranger arrow projectile (roster_arrow_build.py); tip toward -Z like bolt.glb",
+      "user_style_approval": "pending",
+      "note": "Ranger projectile for style review; combat still renders the bolt until the ranger ships."
+    },
+    "mage": {
+      "url": "/assets/games/rts/models/mage.glb",
+      "lod1": "/assets/games/rts/models/mage-lod1.glb",
+      "status": "published",
+      "scale": 1,
+      "yaw": 0,
+      "sha256": "02cedd84d9e5fef8c30b487fffe519085d44dbc13d91d10dc2bc787deda5ef4d",
+      "lod1Sha256": "bf105790bff272f37b86ba67e706792500975d9e3f0a4738af4cf29b3db5ea3f",
+      "source": "art-factory/rts/runs/roster-expansion/2026-10-16-mage/raw/mage-assembly.blend",
+      "provenance": "Original: codex built-in imagegen front/back references (art-factory/rts/runs/roster-expansion/2026-10-16-mage/inputs) -> TripoSR (MIT) body + wide-gate front/rear projection (roster_projection_relaxed.py); procedural-original bare closed hand and sun staff (roster_mage_build.py); priest-family 20-bone rig; no existing unit geometry reused",
+      "user_style_approval": "pending",
+      "note": "Published for style review only; UNITS[kind].preview stays true and the kind is not in REQUIRED_MODELS until the user approves."
+    }
+  },
+  "landscape": {
+    "undergrowth": {
+      "url": "/assets/games/rts/terrain/valley-undergrowth.webp",
+      "status": "published"
+    }
+  },
+  "effects": {
+    "building": {
+      "url": "/assets/games/rts/effects/building-effects-atlas.png",
+      "status": "published"
+    }
+  }
+}

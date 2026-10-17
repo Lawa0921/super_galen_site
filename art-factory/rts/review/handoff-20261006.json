@@ -1,0 +1,35 @@
+{
+  "worker": {
+    "name": "工兵 · 斧頭握持",
+    "status": "局部握持修正已接入本機遊戲",
+    "notes": "已補齊兩級手腕封口並修除皮膚尖角，面數 18,973／9,913；獨立複審通過局部替換。原身體與動作仍不是最終美術核准。",
+    "base": "/art-factory/rts/runs/human-units-grip-refine/2026-10-05/worker/revision-20261006/candidate",
+    "stem": "worker-grip-refine",
+    "hashes": [
+      "97f8f52ecff8b3125bf4c7cf2662ab24408f8fa43b405e10f28fc1569097d0df",
+      "56df9200cce78674d4ba7dd6ebcc2293a04b3da31a783ce396298c80b63691ce"
+    ]
+  },
+  "guard": {
+    "name": "衛兵 · 劍盾與步態",
+    "status": "新版已接入本機遊戲",
+    "notes": "胸背甲與短裙甲已重建；19,910／9,901 面。兩級模型單挑與四人圍攻均驗證實際接觸，未調大射程；遠景肘甲與裙布仍有細節限制。",
+    "base": "/art-factory/rts/runs/original-guard-assembly/continuation-20261006-2/final-bounds/candidate",
+    "stem": "original-guard-assembly",
+    "hashes": [
+      "b86270df5781e3df6ae2f4c7a12f5244edea31a7ad8530615d53cb259c2a8de5",
+      "e4dbcddb433ace40b7e7fcc9a8665191d9056c591b60453c463781ef6019a2b6"
+    ]
+  },
+  "crossbow": {
+    "name": "弩兵 · 握持與腰裙修正",
+    "status": "局部修正版已接入本機遊戲",
+    "notes": "腰帶塌折與裙身權重已修正，肩袖與腕口維持；18,801／9,895 面。五動作、兩級模型及嚴格匯出比對通過。材質邊界、武器與整體人物細節仍待改善。",
+    "base": "/art-factory/rts/runs/original-crossbow-waist/2026-10-06-v1/candidate",
+    "stem": "original-crossbow-grip",
+    "hashes": [
+      "0970c9c51ebc03e8b01528db721291cc801faddf0f60a8e3ebf161ef8bea4c58",
+      "6decb6135b3b42a35a6cf67f5dc04df2b1699e1224cdba89752a66e807385ccf"
+    ]
+  }
+}

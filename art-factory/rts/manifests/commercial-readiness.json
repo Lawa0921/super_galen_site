@@ -1,0 +1,1231 @@
+{
+  "status": "in_progress",
+  "scope": "Original human kingdom, single-player RTS, two maps, Traditional Chinese desktop release",
+  "spec": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "plan": "docs/superpowers/plans/2026-10-09-rts-finish-plan.md",
+  "asset_hashes": {
+    "assets/games/rts/model-registry.json": "3496e8745f4d6d3aadd9fa7fd25054903fb3e22f40c1e57cb98de88c26899fa2",
+    "assets/games/rts/effects/building-effects-atlas.png": "b40154d5083a20264a8301cf56417cc4060beea0d6e728df82aa02dd8ec5e21e",
+    "assets/games/rts/models/altar.glb": "05bfc1482e3d1dd57f84830e181e81e5799cb411c945e8558f74a4857b7f6795",
+    "assets/games/rts/models/barracks.glb": "41bfa9733004a5df9a8fa3ab1245208f0879d038c437a37ec5c6ff40ff968f5c",
+    "assets/games/rts/models/bolt.glb": "dc66614b7d068ab224849cc74572b3491bf0c3dff7c551e2f37fed53e5b7ce53",
+    "assets/games/rts/models/chapel.glb": "b5bc8042eec5c8f5c8beef786d10545e3b67863634aa12b791ccf57120452c6f",
+    "assets/games/rts/models/commander-lod1.glb": "75164fec2a81dd913d1de7bbab2781993d61dbf72f59d94a9d490d9d9decd193",
+    "assets/games/rts/models/commander.glb": "e3ef6c90f18ec4622e4e706a4c8f1e755716fbfbb04a77f172f66829d6a84f0f",
+    "assets/games/rts/models/crossbow-lod1.glb": "4da767dff90ff1d84610eaf278d9c342876067cfdc3d7629bc468ad9eaf6455f",
+    "assets/games/rts/models/crossbow.glb": "b56d6f7618dd620714bc7c10b85223198daa2c2d21926aca373272db8b603300",
+    "assets/games/rts/models/forge.glb": "5cd24a7db89d576d44dcac61bdf99cc266dd75c32131e2b5a05500c5b05675e7",
+    "assets/games/rts/models/gold-mine.glb": "85fb6a7583e3d51f9948d04848771c8689bf611726a04866b4093860c7c8e994",
+    "assets/games/rts/models/guard-lod1.glb": "3bac44e590f94e0139741ae480c7a09c4ea73df6520ce68da78c7aa548ab02c4",
+    "assets/games/rts/models/guard.glb": "1ec3c1401e60fa9d67ae70019899b562486eff83879556292d766a80ea473b52",
+    "assets/games/rts/models/heavy-bolt.glb": "b961a6e0bc83c23ca567382b21ab2adb848365a9587ccf53eacccc116bd04404",
+    "assets/games/rts/models/highland-watchtower-lod1.glb": "b5576d369ae956bb6ccc415cc05276d80ae84044f6102d4d9f7306275c522cbd",
+    "assets/games/rts/models/highland-watchtower.glb": "e54edc5ca38e3ea5dd99dd80fe026c8e0ef5664b203c0d51d9cc249fc3519fe3",
+    "assets/games/rts/models/house.glb": "8e9a1ce39a4872bb4c41f86734c41711afe3988f5c9ba87128cc74992fed79b3",
+    "assets/games/rts/models/knight-lod1.glb": "4df66c17ad225652269c8190ba0c27f3fed765764e4142d8be207012acf756d0",
+    "assets/games/rts/models/knight.glb": "54ec5ad70e3664a64af432deb82e81ad8e5f455273dfaf86c059ca687c8cf42b",
+    "assets/games/rts/models/lumbermill.glb": "c441765ceff99adf75f4d6d247d8c783feeec7c74b728711c57899b079132c55",
+    "assets/games/rts/models/neutral-raider-lod1.glb": "af91015a631f195b404195be925081719d979a96d6156acff05369e4b6167c5a",
+    "assets/games/rts/models/neutral-raider.glb": "b36001e8dae95249eb5fd99778ffd4addcbcc17bf0aeeba9baba8bb70956de8d",
+    "assets/games/rts/models/oak.glb": "2920577c2a05f600d83a498698a195f9ab439301c3b04d3b19d27f9adc67f972",
+    "assets/games/rts/models/pine.glb": "c98f27b0ffb086ae8751d924e8c53af69658a389d5585a40d8b52d4432a34ac8",
+    "assets/games/rts/models/priest-lod1.glb": "ec1a7236d42cb3ea31a476e4532654c65452a73d5e6a9a0ce51e139ceb90623d",
+    "assets/games/rts/models/priest.glb": "cb947693bf4e4545001ff248c6fcc494dfd4a4ff93e1cca5165fbbfc8ce72ef7",
+    "assets/games/rts/models/quarry-ruins-lod1.glb": "4d8165c237a26df5b2ce30b8689d9a2886230196a241915011feb65e0456d71f",
+    "assets/games/rts/models/quarry-ruins.glb": "c5a157712d7e72f8ac67f98a278042b5d557100b2a2270529818f674a0bd2c0e",
+    "assets/games/rts/models/river-gatehouse-lod1.glb": "16333994768369fdc09238097363ab234a14898094db8ab870dbcf6307c1dfb0",
+    "assets/games/rts/models/river-gatehouse.glb": "1f71fdd9483428a922781a84b32c511f8cef035f30f0228e3f60df2569978321",
+    "assets/games/rts/models/river-shrine-lod1.glb": "3ab9b33b391d7933a211a03709c3a93d14a6b2ff8697061af3559f42399f43fb",
+    "assets/games/rts/models/river-shrine.glb": "63fedf5f1004ac9450de9d31f00b2921881b8e4f1296b964b24b8a7d6de9b638",
+    "assets/games/rts/models/rock.glb": "d3a94236efb70bc4763a4b7aab11835e679ca76c1aa52484aa3263313b9f014c",
+    "assets/games/rts/models/siege-lod1.glb": "013eeed05d92bea0fa189edeeba25db3960d1784fb609ace159d39ce62ddc11d",
+    "assets/games/rts/models/siege.glb": "06a987bd07254dd5a6c5ecb21d5da6b27f0499b2cd5063ffaf8c758ac83b2951",
+    "assets/games/rts/models/stable.glb": "71eb5df31afe7a48610a34f4a0fdcda6cfd1271329f0e865bd3c430ba255077a",
+    "assets/games/rts/models/stone-bridge.glb": "6abd62ea8adf5185ab8e44db72ac9d552707e341ef98751bb140f10a5b4c22df",
+    "assets/games/rts/models/timber-pile.glb": "e4e29b7586b141bced9785ac957cc5225d4c40425303d791f110da65673b7797",
+    "assets/games/rts/models/tower.glb": "a2da440cb965d80948011752fd85f96cf218ba70c8cfe40cc6799f43bae35a28",
+    "assets/games/rts/models/townhall-tier2.glb": "65ca754245238f43af869f243766eb37e40a61c0817594960de1526de1b1e374",
+    "assets/games/rts/models/townhall-tier3.glb": "fef153df89e0209bb9f118e232133f803b6e1adb4531323f8f4148c55e0d1c3a",
+    "assets/games/rts/models/townhall.glb": "058cc276fed09e8984f6a1a43401b3001ffc66bc81a77efe4c47a439c49c2ea7",
+    "assets/games/rts/models/worker-lod1.glb": "32ee9fba56cfb62a8d4f4607a2315b61400c72b732f54040f6eecf369525bd32",
+    "assets/games/rts/models/worker.glb": "25d1ba86b5c285c54c37d67d98f5d77e88b2ca42258f442851f21eccc8123a22",
+    "assets/games/rts/models/workshop.glb": "c410e913ae91aca90fb90bf3b97cac35fd661bd3f40de6029ac39d4adad730a1",
+    "assets/games/rts/terrain/dirt-road.webp": "666402c235f84509f6bac73c49c983d6d4a5240ce398a32df153124b1879fedf",
+    "assets/games/rts/terrain/forest-floor.webp": "0400950bc7067496fa60525d9fca50757ac6efaa7a2ecf12d08ded9b873da7ab",
+    "assets/games/rts/terrain/highland-scree.webp": "7a52544ba945408eb0b1c3a0f43f35c0c4d0ada837df352fb473f880cca7000c",
+    "assets/games/rts/terrain/lush-grass.webp": "931946cff573241d424070c4202c3f752105d5f36a0a234eaddc82feb2885e17",
+    "assets/games/rts/terrain/meadow.webp": "e0c9d344904eaee14652f94349a8bc77d266539e0d0af905a18b25324b7ee15f",
+    "assets/games/rts/terrain/river-shingle.webp": "f14cad201179cd916451c78e95e6013e837b8f3f7ae04033dca5f3e5a233dd4d",
+    "assets/games/rts/terrain/river-water.webp": "77f022d7997e4bc39109d5b8da1e4883e39d4a0f0fb65400daba802dfeac7c08",
+    "assets/games/rts/terrain/valley-undergrowth.webp": "7d3c66b1c24c1c1bb8304eac0282fde70b1f50713fbfa92447fc04f85d147f27",
+    "assets/games/rts/ui/map-pass.webp": "74b738a3fd02636802fc6d86b948c6527ce0f464e765bbc9e104683316b88076",
+    "assets/games/rts/ui/map-river.webp": "21ddca183195522186a03ac07493466526a0ffce7248535a67d2b63bc230065e",
+    "assets/games/rts/ui/menu-keyart.webp": "a16c660d1dc129663fb04a39ac0c2df1b3ea40ace1ccb3d8c81bf19bd447a737",
+    "assets/games/rts/ui/commands/armor.png": "f211a242036a7546b5605aee24743808f51312d4148f01b0a49561e35faf7129",
+    "assets/games/rts/ui/commands/attack-move.png": "2b55108665ee54f80d691935452bf20974074a9d311274590d1f1948d4b913a9",
+    "assets/games/rts/ui/commands/banner.png": "f283223079f42c23120a44d809e6e65d4728cf4171975ed9c9309eed4b2fcc6d",
+    "assets/games/rts/ui/commands/building-altar.webp": "0eebb8619d9c436e4dac9aef6ffb32d7dfcce13a820da037d175db85f43e412c",
+    "assets/games/rts/ui/commands/building-barracks.webp": "aec393a4ce4b62ac119dffdce703ca085a3a2c54f851b8f74dafdd376396a8fe",
+    "assets/games/rts/ui/commands/building-chapel.webp": "4785f33dd3371592a05e2b1f68c35de101dccd3e06112996830ad9a3c82192b1",
+    "assets/games/rts/ui/commands/building-forge.webp": "1a52c53a204110abbdeda1be337f477013ce3f83259d7984b30f10b0e57b4949",
+    "assets/games/rts/ui/commands/building-house.webp": "af550b75ad903a1893f2054378912487c4bd3b168f8b0101c69bf64416b334a6",
+    "assets/games/rts/ui/commands/building-lumbermill.webp": "225f37a806c87c55e803cdc452e0d92e44651340a888270f398a485f7338a702",
+    "assets/games/rts/ui/commands/building-stable.webp": "d671ac13c5fc22c217af66e8bb5100647ead8a44ab52f5066e2c22ca14578fa6",
+    "assets/games/rts/ui/commands/building-tower.webp": "58545a323e6c7d7d6a8b81d8733ac9576c2eb0a425a7b8e871c252d4e59e603b",
+    "assets/games/rts/ui/commands/building-townhall-tier2.webp": "5924a6f1cdb621f67d24521a2021451c8dfac781cc53425e1081240a4f5d3cda",
+    "assets/games/rts/ui/commands/building-townhall-tier3.webp": "b3c06ad99911657d6fdf2632a627cac8fab07e5f524a3682f57ea482abd8154f",
+    "assets/games/rts/ui/commands/building-townhall.webp": "f0363bd19441d3a3ec4d15a920e5efdd18e6488f88a59cf2c4a0236e624174de",
+    "assets/games/rts/ui/commands/building-workshop.webp": "87ea3ecf83f4b9d6d13c3f5762fbd1caf923bbd8068d1347fcfe03154ed2d295",
+    "assets/games/rts/ui/commands/cleave.png": "e43d50a3db4719df954e62ffde721e1c257497c88549b3f1556bbcf733e7f7ec",
+    "assets/games/rts/ui/commands/hold.png": "19eb2be878f439a015b31280830184be3f6fa573c07a96e51e895a1093bed0b8",
+    "assets/games/rts/ui/commands/mend.png": "a1ba77ebbc386a1f25eb3460ea1da574acd1eed4ff94c824dd194ac34296a00e",
+    "assets/games/rts/ui/commands/stop.png": "915a14ac7aa92db7c4a49666ddf1b16f7e74c5ecd7785b7ae5961f38a1c9bdf8",
+    "assets/games/rts/ui/commands/timber.png": "ad2d6e7d34427914e93ccefeb6fd1dd9ac522105fcba0bb3ba76ac591db76369",
+    "assets/games/rts/ui/commands/weapons.png": "dcab59b4312ca43e0b9fcfdd2fa1da84c20f114e904836b6f41054a60cbea4c3",
+    "assets/games/rts/models/props/rubble-a.glb": "2da56cd0e578584016f9326d45a52608aa5a059dbf77a0b2ca8eb936bbe412f2",
+    "assets/games/rts/models/props/rubble-b.glb": "8bfa1f04ac03827ab88fba3d065f359da06d0a5f09c5bc0f99aabd2be302e99b",
+    "assets/games/rts/materials/detail-v1/ashlar-color.jpg": "b28809a95d1e0e2158a33277880b2b2ffc2148ddf13ab3ca6437ce6ddd30811f",
+    "assets/games/rts/materials/detail-v1/ashlar-mr.png": "03bdb2f2f3ece6354374169f1614594f0211a1d0d5888d345a0d913d875a964b",
+    "assets/games/rts/materials/detail-v1/ashlar-normal.png": "ef954b3b08669267c957a2f30de6067823d69a36d32ca2e504900790b8fa60b1",
+    "assets/games/rts/materials/detail-v1/brass-color.jpg": "d572adf9d2c09ab8bb2afc6050328d49425e52ecc52f45b4b5621f3e731ef16f",
+    "assets/games/rts/materials/detail-v1/brass-mr.png": "ef8e3c0a47a0303d43690675ad78bc81cf3cd4ffca7d8c7c2081f3e7b4ad43b7",
+    "assets/games/rts/materials/detail-v1/brass-normal.png": "2f2ffce2fc55e83d0f5180fb4693da12a69b09e2cb9b06bbdb6e4feb9d7003a6",
+    "assets/games/rts/materials/detail-v1/cloth-mr.png": "1d77aed3418f224959c51f0bd2b4ab8dbd7e2b44fb2db5e9cf635c4f054a9d17",
+    "assets/games/rts/materials/detail-v1/cloth-normal.png": "c1934bd1c7f993ab04f46bab7d830fa425fcf3b88401491418c2f409f0bcfa73",
+    "assets/games/rts/materials/detail-v1/cutstone-color.jpg": "9b64c24070f1befb90733384b94da2bc2a72b90695fc773d298e25d83984a93f",
+    "assets/games/rts/materials/detail-v1/cutstone-mr.png": "a4d4162922d99e8d685c7dac01d4d6d0fe3c80f5b903d1c03c5ca3d68b0ae70b",
+    "assets/games/rts/materials/detail-v1/cutstone-normal.png": "015ed3abd1446ef7963a71a6392c4d15cd745d8a1d3b0a787761940b7dd6b7f9",
+    "assets/games/rts/materials/detail-v1/granite-color.jpg": "cba1d66bfa9e9313e9dcd8a04fca3d5fd9e4dec247e6add523eb6858850f7053",
+    "assets/games/rts/materials/detail-v1/granite-mr.png": "f5c3a0c6777c8f79d285dd3868500fb8c25d96e979ef083c92125c6d716367b8",
+    "assets/games/rts/materials/detail-v1/granite-normal.png": "0e36158a78503664ae86545bd4647b440d9fa079faadcf209b85f6aa0a46c65f",
+    "assets/games/rts/materials/detail-v1/leather-color.jpg": "6c4efafe7416f71c25a326285c95055a9768456fa5d40d6294ec6961006d32c8",
+    "assets/games/rts/materials/detail-v1/leather-mr.png": "a6f359f025088d0a761b343ec388951a380756260cbc90a7daf2b9b3d40b0c43",
+    "assets/games/rts/materials/detail-v1/leather-normal.png": "7e25a930d1028f67e6762753634aa1529f4176f6187e11eb331ba380bbd21485",
+    "assets/games/rts/materials/detail-v1/oak-color.jpg": "df926e6bb0b048a754e7ce62bddca8fe093d1b590098c9b1fa84ae20b46632a7",
+    "assets/games/rts/materials/detail-v1/oak-mr.png": "7b4ac7c01a262669e457c91d0f1b908ee88ebd5726825e349920df79975984e8",
+    "assets/games/rts/materials/detail-v1/oak-normal.png": "a479c323a1aac4c3e5f9af51059a0846c603622483544ba8cbe07b31b36e6bde",
+    "assets/games/rts/materials/detail-v1/slate-color.jpg": "b615e35faa67c282c4fe8c5fb013caf7fd83db2ab3699f5bca7337851f947693",
+    "assets/games/rts/materials/detail-v1/slate-mr.png": "e3f09eb0b1d1f90ae971c87283df848e018669cf2c61a24707f55f751dbac56a",
+    "assets/games/rts/materials/detail-v1/slate-normal.png": "5e38c99a071d3fae93b95d3744fd6562f94dd279399c2db07fcb4a04cf8d1cf6",
+    "assets/games/rts/materials/detail-v1/steel-color.jpg": "32ac6cf578ade5d72b1f3d40242779976e1a0ccf69cee181d9c9e6707a8f307e",
+    "assets/games/rts/materials/detail-v1/steel-mr.png": "80772c09a90975fa0c689f270b4f3195be6fd937ad1b9a3d7dd8e51b45b5dc8c",
+    "assets/games/rts/materials/detail-v1/steel-normal.png": "c173c2ad3b12cefd1226015e5dfdab7e6637770e6dd3d1355d90e60a9a7f8809",
+    "assets/games/rts/materials/unit-shared/0480f538aba09fadd6c9a9e927db9e3d69df3535e1e6e1cfb92648dbe10d068a.jpg": "0480f538aba09fadd6c9a9e927db9e3d69df3535e1e6e1cfb92648dbe10d068a",
+    "assets/games/rts/materials/unit-shared/12f1bfda090863f9f38c8368f2f516ccc907dda8c569d989b32176c500d5827d.jpg": "12f1bfda090863f9f38c8368f2f516ccc907dda8c569d989b32176c500d5827d",
+    "assets/games/rts/materials/unit-shared/1d00d98cddc10f1d5632c85d0f2dd35e4b2c07758950288c826844982137cabf.jpg": "1d00d98cddc10f1d5632c85d0f2dd35e4b2c07758950288c826844982137cabf",
+    "assets/games/rts/materials/unit-shared/1ff60b74c57614e08bf07acdbf3331a842e37f9a3be7429a5ae4fc49b7b8dc3e.jpg": "1ff60b74c57614e08bf07acdbf3331a842e37f9a3be7429a5ae4fc49b7b8dc3e",
+    "assets/games/rts/materials/unit-shared/3be13d5aa998f1191315fe3884dff2212e9c3ddcfad2da58273c13590d8f50f8.jpg": "3be13d5aa998f1191315fe3884dff2212e9c3ddcfad2da58273c13590d8f50f8",
+    "assets/games/rts/materials/unit-shared/48291e623d524719184c69dccfe8af61a9ae542b01cfefef6c87bd704bbdde08.jpg": "48291e623d524719184c69dccfe8af61a9ae542b01cfefef6c87bd704bbdde08",
+    "assets/games/rts/materials/unit-shared/5e1b1738063fa92965ad824d18739ccfc7d502c8c20438175facf07d89d17042.jpg": "5e1b1738063fa92965ad824d18739ccfc7d502c8c20438175facf07d89d17042",
+    "assets/games/rts/materials/unit-shared/5ea4347b4f41816eb5a0d7d2def486187caf2e307b7f59a7079271244a6945f2.jpg": "5ea4347b4f41816eb5a0d7d2def486187caf2e307b7f59a7079271244a6945f2",
+    "assets/games/rts/materials/unit-shared/6876bc79b21aa2712acf207b7ace4aa4c9a915921a7aa63524845df76606166e.jpg": "6876bc79b21aa2712acf207b7ace4aa4c9a915921a7aa63524845df76606166e",
+    "assets/games/rts/materials/unit-shared/734ccac4c569241b97bd401d6e3d2ddbe7a48523c1039bd8782ee11783d9e166.jpg": "734ccac4c569241b97bd401d6e3d2ddbe7a48523c1039bd8782ee11783d9e166",
+    "assets/games/rts/materials/unit-shared/842a896f9bf5a1fb8be055ae411fafbc0098bbaa5d29ce5b406a8679dfe5e5d9.jpg": "842a896f9bf5a1fb8be055ae411fafbc0098bbaa5d29ce5b406a8679dfe5e5d9",
+    "assets/games/rts/materials/unit-shared/85020c8dd228d5317775246134a1de6ceadaaa73db090277797be72455cfcc4e.jpg": "85020c8dd228d5317775246134a1de6ceadaaa73db090277797be72455cfcc4e",
+    "assets/games/rts/materials/unit-shared/87b9802db78aa2ced4c733fdb7c0643cc695e8e8fc99492e37a98e4154d1d65c.png": "87b9802db78aa2ced4c733fdb7c0643cc695e8e8fc99492e37a98e4154d1d65c",
+    "assets/games/rts/materials/unit-shared/8e96f82bfd0354145fd829c2bc0702d1817212f0047ebc07fe7d621d16edd14c.png": "8e96f82bfd0354145fd829c2bc0702d1817212f0047ebc07fe7d621d16edd14c",
+    "assets/games/rts/materials/unit-shared/a92600f82c60c345f784c7c615e5fbde540aa5618ce4940242d63ad39e4a7f75.png": "a92600f82c60c345f784c7c615e5fbde540aa5618ce4940242d63ad39e4a7f75",
+    "assets/games/rts/materials/unit-shared/b8959c92365b07dd13927b35ee34d0fc0ba064c7a8292e1dc26ff6c2357e038a.jpg": "b8959c92365b07dd13927b35ee34d0fc0ba064c7a8292e1dc26ff6c2357e038a",
+    "assets/games/rts/materials/unit-shared/be27e26c863a80d2e7822195ec8ddccce2d4266ae141f20e56335c713e3248db.jpg": "be27e26c863a80d2e7822195ec8ddccce2d4266ae141f20e56335c713e3248db",
+    "assets/games/rts/materials/unit-shared/e39daadac566fd64eb04783429a56d0e8e9ba27e75a7eac67824a84ae766699a.jpg": "e39daadac566fd64eb04783429a56d0e8e9ba27e75a7eac67824a84ae766699a",
+    "assets/games/rts/materials/unit-shared/f5c6e536e041d823f9669bde9990d551a3ae6074442fa0b6d8feace8353f028b.jpg": "f5c6e536e041d823f9669bde9990d551a3ae6074442fa0b6d8feace8353f028b",
+    "assets/games/rts/materials/unit-shared/fa2555e40c2dee70b3c3f7872f48df9ffb7d8bcb2ca20e11b8539464541ca556.jpg": "fa2555e40c2dee70b3c3f7872f48df9ffb7d8bcb2ca20e11b8539464541ca556",
+    "assets/games/rts/ui/command-panel.webp": "1bacf18a0fa985f0662a31cb7bfb464e99279b35bf111bd87c0bb8ead43dca33",
+    "assets/games/rts/materials/polish-v2/courtyard-earth-color.jpg": "e832d8472546fa729fe642087ccf6d6244dc2d5940fd993ba353f77d90ac4808"
+  },
+  "gates": {
+    "character_art": "visual_revision_required_after_user_rejection",
+    "unit_actions": "technical_checks_passed_visual_acceptance_reopened",
+    "building_lifecycle": "passed_internal_review",
+    "map_art": "passed",
+    "interface_art": "passed_internal_review",
+    "audio": "signal_mechanics_passed_listening_unverified",
+    "source_rights": "passed_project_source_policy",
+    "gameplay": "passed_current_model_batch_natural_player_and_idle_player_ai_both_maps",
+    "release_validation": "original_full_run_pending_focused_rts_evidence_only"
+  },
+  "blocking_issues": [
+    "A complete current-source original npm run test:all and subsequent fresh build/types, actual-result review and local commit remain pending. Linux full stopped with 435 E2E passes, 5 timeouts, 1 interrupted and 1822 not run. Focused Windows RTS checks do not replace the complete gate.",
+    "Audio artistic listening unavailable to tool; signal mechanics passed for both full player campaigns.",
+    "User integrated whole-game acceptance pending."
+  ],
+  "user_review_policy": "Do not request partial acceptance. Present the integrated game only after internal commercial-readiness gates pass.",
+  "commercial_quality_approved": false,
+  "landmark_work": {
+    "status": "four_prefabs_published_locally_after_independent_review",
+    "contract": "art-factory/rts/contracts/landmark-kit-2026-10-08.json",
+    "publication": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/qa/local-publication.json",
+    "runtime_replaced": true,
+    "whole_map_art_review": "passed",
+    "external_deployment": false,
+    "map_art_review": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/qa/independent-map-art-review.json"
+  },
+  "building_stage_work": {
+    "status": "three_reviewed_staged_buildings_published_locally_current_build_regression_passed",
+    "contract": "art-factory/rts/contracts/building-stages-2026-10-08.json",
+    "asset_review": "art-factory/rts/runs/building-stages/2026-10-08-v1/qa/independent-asset-review.json",
+    "package_review": "art-factory/rts/runs/building-stages/2026-10-08-v1/qa/independent-packaging-review.json",
+    "runtime_replaced": true,
+    "external_deployment": false,
+    "browser_report": "art-factory/rts/runs/building-stages/2026-10-08-v1/qa/browser-qa/browser-report.json",
+    "local_publication": "art-factory/rts/runs/building-stages/2026-10-08-v1/qa/local-publication.json",
+    "production_artifact_check": "art-factory/rts/runs/building-stages/2026-10-08-v1/qa/production-artifact-check.json",
+    "post_publication_validation": "art-factory/rts/runs/building-stages/2026-10-08-v1/qa/post-publication-validation.json"
+  },
+  "remaining_building_stage_inventory": {
+    "status": "all12_building_models_have_local_published_construction_stages",
+    "lumbermill_publication": "art-factory/rts/runs/building-stages-lumbermill/2026-10-09-v3/qa/local-publication.json",
+    "lumbermill_natural": "art-factory/rts/runs/building-stages-lumbermill/2026-10-09-v3/qa/natural-construction/report.json",
+    "remaining8_publication": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/qa/local-publication.json",
+    "remaining8_runtime": "art-factory/rts/runs/building-stages-remaining/2026-10-09-runtime/qa/runtime-browser/browser-report.json",
+    "runtime_published": true,
+    "external_deployment": false,
+    "next": "Construction-stage work is complete. Later lifecycle evidence is recorded in 2026-10-11/qa/internal-feature-review.json and current gates; final integrated human acceptance remains pending.",
+    "historical_next": "All12 construction variants and post-publication48-case browser matrix passed; repair/hit/destruction remain pending.",
+    "historical_next_scope": "Status at construction-stage publication only; superseded by later lifecycle work. Not a current pending list."
+  },
+  "command_icon_work": {
+    "status": "three_original_icons_published_locally_and_independently_verified",
+    "asset_ids": [
+      "attack-move",
+      "stop",
+      "hold"
+    ],
+    "scope": "Attack move, stop and hold icons. Technology/skill and building/production icons were subsequently published; see technology_skill_icon_work and building_production_icon_work.",
+    "runtime_publish_allowed": true,
+    "validation": "art-factory/rts/runs/command-icons/2026-10-09-v1/qa/post-integration-validation.json",
+    "external_deployment": false,
+    "historical_scope": "Attack move,stop,hold; remaining technology/skill/production icon system pending",
+    "historical_scope_note": "Publication-stage scope only; the old pending icon system is superseded by the adjacent completed work records."
+  },
+  "technology_skill_icon_work": {
+    "status": "six_icons_locally_published_and_HUD_review_passed",
+    "run": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1",
+    "review": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/qa/independent-integration-review.json",
+    "bytes": 91468,
+    "browser_views": 27,
+    "webgl_world_limit": "WebKit resize screenshot issue under isolated diagnosis; no production workaround applied.",
+    "webkit_world_snapshot_status": {
+      "status": "passed_QA_full_frame_readback_adapter",
+      "report": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/qa/browser-webkit-frame-snapshot/report-webkit.json",
+      "native_frame_evidence": 10,
+      "page_and_command_screenshots": 19,
+      "diagnosis": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/webkit-resize-diagnosis/REPORT.md",
+      "root_actual_images_viewed": [
+        "webkit-hero-900.png",
+        "webkit-mend-click.png"
+      ],
+      "production_renderer_readback": false,
+      "unverified": [
+        "headfulWebKit",
+        "macOS/iOSSafari"
+      ],
+      "note": "Windows headless resize snapshot issue reproduced in standalone WebGL2. Original blank/stale evidence preserved; this adapter is not a production Safari fix."
+    }
+  },
+  "building_production_icon_work": {
+    "status": "passed_independent_art_HUD_and_local_publication",
+    "run": "art-factory/rts/runs/building-production-icons/2026-10-09-v1",
+    "manifest_sha256": "287aa5e08b5b914d25b31a20d7aa4f5ea4188b5ba971b8c8cdd8ad0a7901f780",
+    "review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/building-production-icons-independent-art-review.json",
+    "webp_individual_bytes": 145158,
+    "atlas_webp_bytes": 133010,
+    "runtime_replaced": true,
+    "integration_review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/building-production-icons-independent-integration-review.json",
+    "browser": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/building-production-icons-browser-v3/report.json",
+    "remaining": [
+      "User integrated interface commercial-quality acceptance; the internal interface gate and final combined download budget are already supported by later evidence."
+    ],
+    "published_browser": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/building-production-icons-published-v4/report.json",
+    "historical_remaining": [
+      "combined finalassets budget",
+      "other interface commercial quality"
+    ]
+  },
+  "latest_source_rights_audit": {
+    "status": "passed_project_source_policy",
+    "report": "art-factory/rts/runs/commercial-readiness/2026-10-15/qa/current-gameplay/current-source-readiness.json",
+    "report_sha256": "40601b570597ffb24dd7e2a6b4f266e8cd02bee690040f441f2bbe229f17d08f",
+    "unit_count": 8,
+    "unit_runtime_asset_count": 16,
+    "runtime_asset_count": 127,
+    "changed_model_files": 19,
+    "scope": "Current local project source policy and declared bindings; no legal-certification claim",
+    "independent_review": {
+      "path": "art-factory/rts/runs/commercial-readiness/2026-10-15/qa/current-gameplay/current-evidence-review.json",
+      "sha256": "3a3c12af662c607338402669127b26df394a7314204fdff28d861c5002333768"
+    }
+  },
+  "latest_source_integrity_review": {
+    "path": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/source-integrity-independent-review.json",
+    "status": "APPROVE_LIMITED"
+  },
+  "latest_shared_unit_texture_packaging": {
+    "status": "LOCAL_PACKAGING_AND_CURRENT_RUNTIME_VERIFIED",
+    "review": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/root-packaging-review.json",
+    "post_publication": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/post-publication-diagnostics.json",
+    "runtime_published": true,
+    "models": 14,
+    "images": 18,
+    "excluded": [
+      "crossbow",
+      "crossbow-lod1"
+    ],
+    "performance_passed": true,
+    "rights_and_art_approval": false,
+    "post_validation": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/post-validation.json"
+  },
+  "latest_declared_source_binding": {
+    "report": "art-factory/rts/runs/commercial-readiness/2026-10-15/qa/current-gameplay/current-source-readiness.json",
+    "report_sha256": "40601b570597ffb24dd7e2a6b4f266e8cd02bee690040f441f2bbe229f17d08f",
+    "asset_count": 127,
+    "source_binding_complete": true
+  },
+  "historical_source_evidence": {
+    "latest_source_rights_audit": {
+      "status": "RESTRICTED_GEOMETRY_IN_GUARD_AND_WORKER",
+      "report": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/published-unit-source-audit.json",
+      "packaging_binding": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/source-rights-binding.json"
+    },
+    "latest_declared_source_binding": {
+      "report": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/declared-source-binding/report.json",
+      "assets_with_added_hashes": 73,
+      "added_hashes": 134,
+      "all_existing_declared_paths_bound": true,
+      "provenance_complete": false,
+      "source_rights_approved": false,
+      "independent_review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/declared-source-binding/independent-review.json"
+    },
+    "note": "Immutable earlier stage references; their current-status claims are superseded by the 2026-10-11 binding.",
+    "2026-10-11-current-source": {
+      "latest_source_rights_audit": {
+        "status": "passed_project_source_policy",
+        "report": "art-factory/rts/runs/commercial-readiness/2026-10-11/qa/current-source-readiness.json",
+        "report_sha256": "aaf67bd18bc8b54fc9b9b5a88c16071c9e1080dd41e0f03f05c249a74a5db759",
+        "unit_count": 8,
+        "runtime_asset_count": 16,
+        "scope": "existing local project source policy; no legal-certification claim"
+      },
+      "latest_declared_source_binding": {
+        "report": "art-factory/rts/runs/commercial-readiness/2026-10-11/qa/current-source-readiness.json",
+        "report_sha256": "aaf67bd18bc8b54fc9b9b5a88c16071c9e1080dd41e0f03f05c249a74a5db759",
+        "asset_count": 127,
+        "source_binding_complete": true
+      }
+    }
+  },
+  "current_internal_feature_review": {
+    "path": "art-factory/rts/runs/commercial-readiness/2026-10-11/qa/internal-feature-review.json",
+    "sha256": "96abc5c2c716178cae20ee385c2646b86485751ea326f736d13b4b134ad713aa"
+  },
+  "historical_feature_evidence": {
+    "latest_character_authoring": {
+      "status": "v35_cloth_internal_and_interpart_sampled_qa_approved_whole_hand_pending",
+      "contract": "art-factory/rts/contracts/guard-right-hand-cage.json",
+      "review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v7-digit02-oriented/qa/independent-shape-review.json",
+      "pair_report": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v5-pair-interiors/qa/pair-summary.json",
+      "grip_diagnosis": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v8-grip-diagnosis/qa/diagnosis.json",
+      "canonical_bind_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v12-canonical-bind-adaptive/qa/independent-bind-review.json",
+      "wrist_motion_preflight": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v13-wrist-motion/qa/preflight.json",
+      "wrist_motion_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v15-wrist-motion-exact-curves/qa/independent-code-review.json",
+      "wrist_motion_reload_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v15-wrist-motion-exact-curves/qa/independent-reload-review.json",
+      "wrist_collision_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v15-wrist-motion-exact-curves/qa/independent-collision-review.json",
+      "export_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v16-wrist-export/qa/independent-export-review.json",
+      "tabard_continuity_candidate": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v17-tabard-continuity/qa/repair.json",
+      "latest_export_parity": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v20-wrist-slerp-export/qa/three-parity-slerp.json",
+      "latest_export_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v20-wrist-slerp-export/qa/independent-export-review.json",
+      "armor_visual_rejection": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v21-armor-collision-inspection/qa/root-visual-review.json",
+      "armor_full_action_envelope": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v22-armor-relief-envelope/qa/envelope-step64.json",
+      "source_motion_velocity": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v23-arm-velocity-diagnosis/qa/source-velocity.json",
+      "authored_attack": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v25-authored-attack/qa/authoring.json",
+      "authored_attack_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v25-authored-attack/qa/independent-motion-review.json",
+      "articulated_armor_preflight": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v30-armor-interface-fit/qa/geometry-preflight-v3.json",
+      "attack_start_candidate": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v29-attack-start-exterior-tangent/qa/authoring.json",
+      "runtime_replaced": false,
+      "pending": "glove clay topology/winding/contact/cuff gates; then full-character5actions/RTS/portrait and UV/PBR/LOD/export",
+      "attack_start_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v29-attack-start-exterior-tangent/qa/independent-motion-review.json",
+      "armor_coarse_full_clip_sweep": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v30-armor-interface-fit/qa/geometry-sweep-step8-v3.json",
+      "armor_dense_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v33-armor-sleeve-winding/qa/independent-dense-fidelity-review.json",
+      "armor_motion_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-08-v33-armor-sleeve-winding/qa/independent-helper-motion-review.json",
+      "latest_rejected_shape": "art-factory/rts/runs/guard-right-hand-cage/2026-10-09-v34-left-sleeve-relief/qa/root-preflight-rejection.json",
+      "current_candidate": "art-factory/rts/runs/guard-right-hand-cage/2026-10-09-v35-shared-left-cloth-lod/candidate/guard-controlled-armor.blend",
+      "candidate_sha256": "a5043a39f1a1b8ee38e4df72d5c8046f87bdab9adb2907171bf62b9ff7a27a29",
+      "armor_self_report": "art-factory/rts/runs/guard-right-hand-cage/2026-10-09-v35-shared-left-cloth-lod/qa/self-step64.json",
+      "armor_interpart_report": "art-factory/rts/runs/guard-right-hand-cage/2026-10-09-v35-shared-left-cloth-lod/qa/reload-v2-all-step64-0.0-None.json",
+      "armor_self_report_status": "Approved corrected sampled internal surface scope",
+      "armor_self_five_witnesses_v2": "art-factory/rts/runs/guard-right-hand-cage/2026-10-09-v35-shared-left-cloth-lod/qa/self-five-witnesses.json",
+      "armor_self_tool_review_v2": "art-factory/rts/runs/guard-right-hand-cage/2026-10-09-v35-shared-left-cloth-lod/qa/independent-self-tool-review-v2.json",
+      "armor_self_review": "art-factory/rts/runs/guard-right-hand-cage/2026-10-09-v35-shared-left-cloth-lod/qa/independent-self-review-v2.json",
+      "foundation_review": "art-factory/rts/runs/guard-hand-foundation/2026-10-09-v1/qa/independent-foundation-review.json",
+      "foundation_status": "foundation/power-grip/anatomy-v1/v2 rejected; new full soft-glove sculpt has usable art basis but invalid collar/topology, local cleanup underway",
+      "active_method": "Retain new original sculpt/clean QuadriFlow base; local palm/web/fingertip/collar cleanup only; no new global voxel or arbitrary fixed cage.",
+      "current_hand_runtime_replaced": false,
+      "glove_v2_clay_review": {
+        "status": "APPROVE_LIMITED_CLAY_TO_WHOLEBODY_FITTING",
+        "reviewer": "/root/commercial_render_review",
+        "source": "Independent read-only review, source SHA and all 186 frozen paths directly verified; root viewed final six-view clay sheet.",
+        "candidate_blend_sha256": "caa5cd36bdf55f69e364b570507dfd8c5e1ecf224e688267d52c85a1ac9151ed",
+        "candidate_glb_sha256": "3d7f0604babdabc24694c30b1d995b828f4b33ce436d0439b677c79243d2feda",
+        "freeze_manifest": "art-factory/rts/runs/guard-hand-glove/2026-10-09-v2/qa/final-freeze.json",
+        "freeze_sha256": "a6f3145f2376e5b0527f8197727a4bbac394874181f21845c0bdfc72f992fc1d",
+        "closed": [
+          "Whole-palm cylinder boolean groove",
+          "Collar winding/nonmanifold/self crossings",
+          "Static actual-v35 cuff crossings"
+        ],
+        "evidence": {
+          "triangles": 2468,
+          "wrist_boundary_edges": 28,
+          "nonmanifold": 0,
+          "winding": 0,
+          "degenerate": 0,
+          "self_contact_three_categories": [
+            0,
+            0,
+            0
+          ],
+          "handle_penetrations": 0,
+          "minimum_handle_gap_mm": 0.235037,
+          "static_cuff_crossings": 0,
+          "reimport_matched_triangles": 2468
+        },
+        "remaining": [
+          "Local fingertip wedge and MCP/web detail assessed in actual RTS/portrait camera",
+          "Actual v35 cap removal and Forearm_R/Hand_R skin interface",
+          "All five actions and dynamic contacts",
+          "UV/PBR/LOD/full-character triangle budget and runtime"
+        ],
+        "runtime_publish_allowed": false,
+        "commercial_quality_approved": false
+      },
+      "glove_v3_interface_review": {
+        "status": "REVISE_P1_WRIST_INTERFACE_DYNAMIC_ENVELOPE",
+        "reviewer": "/root/commercial_render_review",
+        "candidate_sha256": "e11a5355cf72a864e56ae321d7d8d4de382e53a3767569f3111857169c3544c6",
+        "freeze_sha256": "6d63efac19fb67eea7f792ac99435bb6cfe7f31890cc02acf0388ba87618ebeb",
+        "root_spotcheck": "Actual Attack16 wrist render shows cuff enclosing palm/handle; source tool and preserved diagnosis inspected.",
+        "pivot_error_mm_range": [
+          3.5e-05,
+          6.9e-05
+        ],
+        "second_round_cuff_crossings": [
+          110,
+          111,
+          145,
+          118,
+          234
+        ],
+        "source_seam_handle_minimum_mm": -6.191969,
+        "root_cause": "25mm Forearm-side seam/cuff retained from old source is incompatible with moving Hand_R glove and handle. Pure Hand_R vertices cannot be fixed by DQS; standard glTF also cannot reproduce that modifier.",
+        "next_authorized_scope": [
+          "Right distal sleeve loop selected using five-clip Forearm-local swept envelope",
+          "Shorter palm-relieved Forearm cuff",
+          "Hand collar and continuous monotone-weight standard-LBS wrist gusset"
+        ],
+        "preserve": [
+          "Approved palm/fingers/grip",
+          "Hand_R/pivot/sword",
+          "All five action curves and weapon trajectory",
+          "Unrelated body/armor/material/UV"
+        ],
+        "limits": [
+          "v3 LOD1 missing replacement right hand",
+          "LOD0 23218 triangles above target",
+          "No PBR/LOD/dynamic/GLB/runtime approval"
+        ],
+        "runtime_publish_allowed": false,
+        "commercial_quality_approved": false
+      },
+      "next": "Stop local geometry/weight patches; redesign coherent wrist assembly and replace restricted-output body modules.",
+      "glove_v4_rejected_package": {
+        "status": "REJECTED_TWO_CANDIDATES_INDEPENDENT_ROOT_CAUSE_REVIEW_PENDING",
+        "run": "art-factory/rts/runs/guard-hand-glove/2026-10-09-v4-wrist-envelope",
+        "freeze_manifest_sha256": "3bd7370b26d3cd26577ec3d80e306ceea15ab08c49cfe94039356a51a8ca9b33",
+        "verified_frozen_files": 338,
+        "candidate_sha256": "4d316ad423a4d76fa03ab62d47ba555b8248d968fdc294fcdae4be7539b43a4a",
+        "root_actual_image": "qa/diagnostic-only/Attack-16-right-wrist.png",
+        "root_visual_observation": "Original rigid forearm armor visibly intersects handle and encloses glove root; hiding new cuff alone does not solve it.",
+        "reported_finite_poses": 19,
+        "new_cuff_gusset_failed_poses": 6,
+        "new_gusset_original_armor_failed_poses": 19,
+        "original_sleeve_armor_failed_poses": 0,
+        "original_handle_armor_failed_poses": 8,
+        "lod0_triangles": 23230,
+        "new_lod1_or_glb_export": false,
+        "runtime_publish_allowed": false
+      },
+      "glove_v4_independent_review": {
+        "status": "REVISE_P1_DISTAL_BRACER_AND_ASYMMETRIC_WRIST_INTERFACE",
+        "reviewer": "/root/commercial_render_review",
+        "read_only": true,
+        "candidate_sha256": "4d316ad423a4d76fa03ab62d47ba555b8248d968fdc294fcdae4be7539b43a4a",
+        "freeze_sha256": "3bd7370b26d3cd26577ec3d80e306ceea15ab08c49cfe94039356a51a8ca9b33",
+        "verified": {
+          "gusset_original_armor_failed_poses": 19,
+          "strict_pair_range": [
+            102,
+            136
+          ],
+          "original_sleeve_armor_failed_poses": 0,
+          "original_handle_armor_failed_poses": 8,
+          "attack16_actual_handle_strict_pairs": 76
+        },
+        "visibility": "Handle/armor penetration is directly visible in Attack15.5/16 and remains with new cuff hidden. Many gusset/armor intersections are occluded in same-color clay; do not claim each is visibly exposed.",
+        "root_cause": "Early whole-ring Hand weights pull the long gusset through the unchanged closed bracer; the original closed distal bracer also intersects the unchanged sword trajectory.",
+        "next_authorized_design": [
+          "Preserve approved 1191 palm/finger rest points, rig, five actions, Hand_R and entire sword trajectory.",
+          "Reauthor only actual right distal ArmorFore hit ROI plus neighboring face row, approximately source recipe u>=0.64; preserve proximal source silhouette.",
+          "Rigid dorsal/ulnar bracer with authored palmar/grip-side U or oblique opening based on five-clip real sword swept envelope, integrated rolled rim.",
+          "Remove separate new cuff and abandon v4 long whole-ring uniform LBS gusset.",
+          "Continuous asymmetric leather bellows: dorsal region remains Forearm longer under metal; open palmar region transitions to Hand earlier, with measured clearance."
+        ],
+        "acceptance": [
+          "Actual source material/RTS/fullbody and wrist views; Attack15/15.5/16/17,Hurt0/6.75/8,Death48,Idle,Walk plus bracer-hidden diagnostic.",
+          "Actual full sword mesh, glove self, glove/handle, bellows/bracer, bracer/sleeve/adjacent plates all three contact categories.",
+          "Continuous manifold sleeve/hand, no holes or wrist bulge; both LODs and full five-clip verification after finite design gate.",
+          "Original 23230-triangle full-character budget remains failed until independently addressed."
+        ],
+        "not_verified": [
+          "new bracer art not yet authored",
+          "dense five-clip QA not rerun",
+          "LOD1/GLB/runtime not approved"
+        ],
+        "runtime_publish_allowed": false,
+        "commercial_quality_approved": false
+      },
+      "v5_open_bracer": {
+        "status": "bracer_design_limited_approved_leather_failed",
+        "run": "art-factory/rts/runs/guard-hand-glove/2026-10-09-v5-open-bracer",
+        "freeze_sha256": "e882fde8ab5616ecb158a61acd57a57976066ca75e4948587aee7930c4e7ca8b",
+        "candidate_sha256": "3d9f3b15d05b57e69997016f48656c8df544f5f43fa32d4da64350beb24f902c",
+        "failed": [
+          "Attack15/15.5/16 bellows/handle",
+          "Attack24 dorsal bellows self-contact"
+        ],
+        "lod0_triangles": 23022,
+        "runtime_replaced": false
+      },
+      "v5b_source_gate": {
+        "status": "failed_before_second_candidate",
+        "run": "art-factory/rts/runs/guard-hand-glove/2026-10-09-v5b-bellows-patches",
+        "freeze_sha256": "662b60c942a8af01cf94f5b7f8882ffe8c8b22daec3c5db582d8c7af5ed3712b",
+        "protected_palm_full_sword_strict_pairs": 341,
+        "materials": [
+          "WarmBrass"
+        ],
+        "source_ring_radius_mm": 24,
+        "canonical_grip_radius_mm": 22,
+        "candidate_authored": false,
+        "root_image_viewed": "qa/renders-full-sword-source/Attack16-protected-palm-conflict-highlight.png",
+        "runtime_replaced": false
+      },
+      "v5c_grip_inlay": {
+        "status": "independent_source_limited_approved",
+        "run": "art-factory/rts/runs/guard-hand-glove/2026-10-09-v5c-grip-inlay",
+        "freeze_sha256": "869b60b98eba8264cfb7e01e89db4eb030118bae4be9b6f78c56ada6e21d1a12",
+        "candidate_sha256": "9bab8592aa274886c406d6b7b3e8f0bbc17cfc3f37d4760aa66c496b78a53e43",
+        "modified_vertices": 168,
+        "unchanged_other_weapon_vertices": 340,
+        "rest_plus_poses": 20,
+        "all_palm_full_sword_contact_categories": 0,
+        "root_actual_images": [
+          "qa/renders-source-PBR/after-Attack16-grip-same-v5-camera.png",
+          "qa/renders-source-PBR/after-full-sword.png"
+        ],
+        "runtime_replaced": false,
+        "remaining": [
+          "bellows local patches",
+          "whole sword original blade boundary4/winding4 separate assessment",
+          "full five clips and LOD",
+          "23022tri above target",
+          "PBR/export/runtime"
+        ],
+        "review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/glove-v5c-independent-source-review.json"
+      },
+      "v5d_fixed_seam_proof": {
+        "run": "art-factory/rts/runs/guard-hand-glove/2026-10-09-v5d-bellows-patches",
+        "freeze_sha256": "f6885ef234583c23576d2b5a0355f61abc9f0ea47f0e334bfdd91b566693d0f6",
+        "status": "original_ROI_infeasible_proved_no_candidate",
+        "review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/glove-v5d-interface-design-review.json"
+      },
+      "v5e_short_pommel": {
+        "run": "art-factory/rts/runs/guard-hand-glove/2026-10-09-v5e-short-pommel",
+        "freeze_sha256": "62c126bbb7c9beb71a56462fb86ee571bf88a5b8003b9708d188705fd38eea32",
+        "semantic_roi_sha256": "274f06856c5371d767f60331bc96e3d8620579d3e8a84a531880205c54692aa7",
+        "full335_tail_union_sha256": "133867ae6f0a283f1ec66e51bd7599e7738f29a28d623353e991b6d333d8414d",
+        "candidate_status": "FAIL contacts and protectedPBR",
+        "editable_vertices": 57,
+        "fixed_seam_support_vertices": 16
+      },
+      "glove_v5f_review": {
+        "status": "REJECTED_FINAL_LOCAL_CANDIDATE",
+        "run": "art-factory/rts/runs/guard-hand-glove/2026-10-09-v5f-joint-interface",
+        "manifest_sha256": "74a5849f3938abec7c1b0e5555644c8d15629c3da4730c52321fb8cd31bf8a02",
+        "verified_frozen_files": 114,
+        "geometry_candidate_sha256": "9f7506be63c33ffc4d2f53182b794fca04727cb3a8a047889748830fcebf5845",
+        "metadata_corrected_sha256": "76ebbedb7141a61f5e2df6553384e72511fdf67aba49aa087a7d11425ac639ef",
+        "actual_checked_poses": [
+          "REST",
+          "Attack15"
+        ],
+        "attack15_self_contact": [
+          46,
+          42,
+          4
+        ],
+        "source_same_kernel_self_contact": [
+          0,
+          0,
+          0
+        ],
+        "protected_cloth_corner_normal_max_vector_delta": 0.001180656464905063,
+        "scope_correction": "Frozen task-report remaining333 typo:335 planned nonREST, only Attack15 done;334 nonREST remain.",
+        "decision": "Stop local geometry/weight patches; redesign coherent wrist assembly and replace restricted-output body modules.",
+        "runtime_publish_allowed": false,
+        "commercial_quality_approved": false
+      }
+    },
+    "building_fx_work": {
+      "status": "art_code_and_three_browser_functional_limited_pass_anchors_visual_pending",
+      "run": "art-factory/rts/runs/building-effects/2026-10-09-v1",
+      "manifest_sha256": "1b0f9db936f6e4a74a43196cbe099ef5c4a9aeb8fb4fe50d2f801e3364ba2366",
+      "atlas_sha256": "b40154d5083a20264a8301cf56417cc4060beea0d6e728df82aa02dd8ec5e21e",
+      "atlas_bytes": 44966,
+      "runtime_replaced": false,
+      "root_actual_views": [
+        "qa/small-size-review.png",
+        "qa/context-v3/repair-sparks-house-before-after-native.png",
+        "qa/context-v3/damage-smoke-townhall-tier3-before-after-native.png",
+        "qa/context-v3/impact-dust-house-before-after-native.png"
+      ],
+      "independent_art_review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/building-effects-independent-art-review.json",
+      "runtime_code_review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/building-effects-independent-code-review.json",
+      "browser_integration": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/building-effects-browser-v3/report.json",
+      "browser_report_sha256": "4589d9caa7844d0ce19ecc2b005e874bbfc591233f1fbe97efb9fe7b1a844752",
+      "pressure": "Three actual WebGL cycles per browser,64sprites/64draws, dispose returns142geometries89textures36programs; GL0/context intact",
+      "pending": [
+        "collapse geometry/art",
+        "repair and damage anchor semantics/visibility",
+        "all-assets final budget and formal performance"
+      ]
+    },
+    "building_fracture_pilot_browser": {
+      "candidate_sha256": "4e3fa37d94cf0345274b04d6540c25ec73f436539f840b1f7e8c966d38ea0af7",
+      "status": "v3mechanical_pass_art_REVISE_v4terminalpilot_in_progress",
+      "report": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/house-fracture-v3-4e3f-browser/report.json",
+      "root_concern": "Full55visibleowners notjust12wallfragments must form groundedrubble;20missingPBRtextures invalidateBlenderPBRapproval.",
+      "runtime_replaced": false,
+      "review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/house-fracture-v3-independent-review.json"
+    },
+    "latest_building_terminal_review": {
+      "status": "STATIC_ART_REJECTED",
+      "report": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/house-terminal-static-root-rejection.json",
+      "design_reference": "art-factory/rts/runs/building-lifecycle/2026-10-09-house-ruin-design/qa/design-review.json",
+      "following_module_attempt": {
+        "candidate_sha256": "9d9cab5e9fb864717fa199f099b0beda8db93b1ee1c704c8e6ed380955b2af13",
+        "status": "ART_REJECTED",
+        "observed": [
+          "Tall upright timber",
+          "Intersecting intact roof slabs",
+          "Repeated unbroken stone forms",
+          "Large blank foundation area"
+        ],
+        "mechanical_qa_not_run_after_art_stop": true
+      },
+      "runtime_changed": false
+    },
+    "latest_command_layout_review": {
+      "path": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/natural-command-layout-independent-review.json",
+      "status": "APPROVE_LIMITED"
+    },
+    "latest_wrist_module_review": {
+      "status": "REJECTED_FINITE_GEOMETRY_FAILURE",
+      "report": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/wrist-module-v1-root-rejection.json",
+      "next": "Complete A/B semantic landmark diagnosis before choosing motion/geometry changes"
+    },
+    "latest_attack_motion_pilot": {
+      "status": "HELPER_METHODS_REJECTED_FOLLOW_THROUGH_ARMOR_FIT_REQUIRED",
+      "review": "art-factory/rts/runs/guard-arm-motion/2026-10-09-upperbody-attack-continuous-v1/qa/root-contact-rejection.json",
+      "runtime_published": false,
+      "follow_up_diagnosis": "art-factory/rts/runs/guard-arm-motion/2026-10-09-anatomical-armor-v1/qa/root-diagnostic-review.json"
+    },
+    "latest_action_selection_runtime": {
+      "status": "RUNTIME_VERIFIED_INDEPENDENT_REVIEW_APPROVED_LIMITED",
+      "report": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/action-selection/report.json",
+      "runtime_code_changed": true,
+      "new_art_published": false
+    },
+    "verified_current_build": {
+      "authoring_helper_tests": {
+        "tests": 92,
+        "status": "passed",
+        "log": "tmp/rts/commercial-armor-interface-all-python-tests-v3.log",
+        "scope": "Source/cage/bind/skin, anatomical frames, bounded Hermite and angular pole tracks, explicit closed-shell topology/thickness and125-degree flexor separation; not production art approval"
+      },
+      "export_helper_tests": {
+        "tests": 16,
+        "status": "passed",
+        "log": "tmp/rts/commercial-export-helper-node-tests.log",
+        "scope": "Quaternion hemisphere/value-tangent continuity, exact skin/source triangle correspondence, explicit source IDs and spherical TRS key reduction"
+      },
+      "blender_curve_write_regression": {
+        "tests": 3,
+        "status": "passed",
+        "log": "tmp/rts/commercial-hand-curve-write-exact.log",
+        "red_log": "tmp/rts/commercial-hand-curve-write-red.log",
+        "scope": "Actual Blender preservation and interpolation of nearby subframe keys; not full animation or runtime approval"
+      },
+      "unit_tests": {
+        "status": "passed",
+        "files": 158,
+        "tests": 1605,
+        "seconds": 37.23,
+        "log": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/action-selection/full-vitest.log",
+        "scope": "Whole project, four workers, unchanged timeouts"
+      },
+      "strict_typescript": {
+        "status": "passed",
+        "log": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/action-selection/typescript.log",
+        "scope": "Changed models runtime and new action-selection tests, es2022,dom,dom.iterable"
+      },
+      "production_build": {
+        "status": "passed",
+        "log": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/action-selection/build.log",
+        "scope": "Current published assets and final action-selection runtime code"
+      },
+      "browser_regressions": {
+        "status": "all_cases_covered_after_navigation_recheck",
+        "unique_cases_with_passing_results": 54,
+        "initial_navigation_failures": 1,
+        "separate_runs": [
+          {
+            "passed": 9,
+            "failed": 0
+          },
+          {
+            "passed": 44,
+            "failed": 1
+          },
+          {
+            "passed": 2,
+            "failed": 0
+          }
+        ],
+        "browsers": [
+          "chromium",
+          "firefox",
+          "webkit"
+        ],
+        "reports": [
+          "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/static-rendering/e2e-focused.json",
+          "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/static-rendering/e2e-remaining.json",
+          "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/static-rendering/e2e-firefox-recheck.json"
+        ],
+        "scope": "All 54 distinct RTS cases have passing results across these runs; not a single clean 54/54 invocation. Navigation timeout root cause not established; failure retained. Historical static-rendering code snapshot; latest action-selection delta separately passed six affected cases in all three browsers."
+      },
+      "natural_matches": {
+        "status": "both_natural_UI_player_wins_current_roster",
+        "river": "09:09",
+        "pass": "09:46",
+        "report": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/post-engagement-natural-campaigns.json",
+        "pending": "final character roster and post-building publication matrix"
+      },
+      "first_map_download": {
+        "status": "passed_actual_published_packaging",
+        "river_asset_bytes": 29721854,
+        "pass_asset_bytes": 30276308,
+        "report": "art-factory/rts/runs/unit-shared-textures/2026-10-09-local-14/qa/post-publication-diagnostics.json",
+        "scope": "Natural local gzip HTTP; 14 models,18 shared images, original crossbow pair; excludes verification GETs, not deployment CDN"
+      },
+      "firefox": {
+        "status": "16_tests_passed_after_environment_change",
+        "previous_failure": "In the earlier restricted environment, an empty page failed to launch its tab subprocess and emitted Page.crashed",
+        "report": "tmp/rts/commercial-firefox-full.json",
+        "note": "Playwright report: expected 16, unexpected 0, errors empty; shell wrapper reported 1 after native warning redirection. The later render optimization rerun passed all 15 affected cases across three browsers with exit 0.",
+        "previous_failure_log": "tmp/rts/commercial-firefox-protocol.log"
+      },
+      "render_performance": {
+        "median_fps": 80,
+        "p95_ms": 20.799999999999272,
+        "max_ms": 37.5,
+        "frames": 4573,
+        "threshold_fps": 55,
+        "seconds": 60,
+        "units": 80,
+        "buildings": 20,
+        "portrait": "knight",
+        "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 Laptop GPU (0x00002C58) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1920,
+          1080
+        ],
+        "hardware_scope": "This Windows laptop and Chromium build only; not a deployed CDN or other hardware claim",
+        "status": "passed_prior_static_rendering_snapshot",
+        "report": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/static-rendering/performance.json",
+        "subsequent_code_delta": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/action-selection/report.json"
+      },
+      "resource_groves": {
+        "status": "passed_two_maps_browser_assembly_and_live_mouse_depletion",
+        "trees_per_map": 24,
+        "report": "art-factory/rts/runs/commercial-readiness/2026-10-08/qa/instanced-groves/assembly.json"
+      },
+      "saved_blender_splice_regression": {
+        "tests": 2,
+        "status": "passed",
+        "log": "tmp/rts/commercial-attack-start-splice-green.log",
+        "scope": "v29 actual saved-Blender frame4 exterior tangent and protected frame16 geometry"
+      },
+      "landmark_tools": {
+        "geometry_tests": 4,
+        "publication_review_tests": 3,
+        "status": "passed",
+        "independent_publication_review": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/qa/independent-publication-review.json"
+      },
+      "landmark_browser": {
+        "chromium_tests_passed": 4,
+        "log": "tmp/rts/commercial-landmark-kit-e2e-chromium.log",
+        "assembly": "art-factory/rts/runs/landmark-kit/2026-10-08-v1/qa/commercial-landmark-lod-browser-v2/assembly.json",
+        "note": "Includes same-transform48px/200px LOD comparisons;LOD1 only below48px; final new unit art not included",
+        "firefox_webkit_tests_passed": 6,
+        "firefox_webkit_log": "tmp/rts/commercial-landmark-kit-e2e-firefox-webkit.log"
+      },
+      "runtime_asset_registry": {
+        "status": "passed",
+        "assets": 92,
+        "bytes": 60200281,
+        "log": "tmp/rts/commercial-staged-buildings-registry.log",
+        "commercial_quality_approved": false
+      },
+      "incident_contact_helper_tests": {
+        "status": "passed",
+        "tests": 26,
+        "skipped": 0,
+        "log": "tmp/rts/commercial-self-qa-v2-blender-tests.log",
+        "scope": "Actual Blender integration plus incident shared-simplex and batch/scalar regressions"
+      },
+      "audio_capture_tools": {
+        "status": "v2_independently_approved_native_frame_witness_short_long_smoke",
+        "tests": 35,
+        "root_tests_log": "tmp/rts/commercial-pcm-v2-root-tests.log",
+        "strict_typescript_log": "tmp/rts/commercial-pcm-capture-root-ts.log",
+        "review": "art-factory/rts/runs/audio-capture-pcm/2026-10-09-v2/independent-review.json",
+        "full_campaign_status": "running_separate_river_and_pass",
+        "full_campaign_log": "tmp/rts/commercial-live-pcm-v2-river.log",
+        "artistic_listening_approved": false,
+        "prior_full_campaign": {
+          "status": "failed_stale_global_currentFrame_metadata",
+          "capture": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/live-pcm-audio/river/capture.json",
+          "log": "tmp/rts/commercial-live-pcm-audio-campaign.log",
+          "accepted_for_full_audio": false
+        },
+        "pass_campaign_log": "tmp/rts/commercial-live-pcm-v2-pass.log",
+        "full_campaign_capture_root": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/live-pcm-audio-v2"
+      },
+      "command_ui": {
+        "status": "passed",
+        "review": "art-factory/rts/runs/command-icons/2026-10-09-v1/qa/independent-integration-review.json",
+        "validation": "art-factory/rts/runs/command-icons/2026-10-09-v1/qa/post-integration-validation.json",
+        "tests": 28,
+        "browser_layout_cases": 9,
+        "focus_escape_stop_hold": "passed"
+      },
+      "command_build_three_browser": {
+        "tests": 48,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "log": "tmp/rts/command-icons-e2e-all.log",
+        "report": "tmp/rts/command-icons-e2e-report.json",
+        "duration_ms": 837501.081,
+        "status": "passed_current_assets_not_final_characters"
+      },
+      "command_build_downloads": {
+        "river": {
+          "asset_encoded_bytes": 33702371,
+          "all_local_encoded_bytes": 33949900,
+          "report": "tmp/rts/command-icons-download-river/download-budget.json",
+          "status": "passed_under35MB"
+        },
+        "pass": {
+          "asset_encoded_bytes": 34256825,
+          "all_local_encoded_bytes": 34504354,
+          "report": "tmp/rts/command-icons-download-pass/download-budget.json",
+          "status": "passed_under35MB"
+        }
+      },
+      "post_engagement_audio": {
+        "status": "signal_mechanics_passed_on_two_natural_wins",
+        "report": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/post-engagement-natural-campaigns.json",
+        "artistic_listening_approved": false
+      },
+      "post_building_browser_matrix": {
+        "status": "passed_current_assets_not_final_characters",
+        "tests": 48,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "duration_ms": 852294.8670000001,
+        "report": "tmp/rts/commercial-staged-buildings-e2e-report.json",
+        "report_sha256": "a3a603f6aef6d9a447c437e299c556993252c6ebab906761ecffa9b592acd2e9",
+        "log": "tmp/rts/commercial-staged-buildings-e2e-v2.log",
+        "port": 4344
+      },
+      "render_performance_before_building_lifecycle": {
+        "status": "passed_current_assets_on_measured_hardware",
+        "previous_median_fps": 48.0769230769,
+        "median_fps": 58.47953216374766,
+        "p95_ms": 23.5,
+        "max_ms": 40.799999999995634,
+        "workload": "80 active on-screen units,20 on-screen buildings,knight animated portrait,1920x1080 DPR1,60s",
+        "hardware": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 Laptop GPU (0x00002C58) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "quality_changes": "Three independently reviewed staged building models; completed material batches retained. No rendering quality settings reduced.",
+        "report": "tmp/rts/commercial-building-stage-performance/performance-release-formal-production-dedicated-portrait.json",
+        "final_art_performance_verified": false,
+        "sha256": "74e22c7694cf73bab8bd0a60c2f8070b7587bb68ef254a3245a804f094a76afb"
+      },
+      "webkit_snapshot": {
+        "status": "passed_QA_full_frame_readback_adapter",
+        "report": "art-factory/rts/runs/technology-skill-icons/2026-10-09-v1/qa/browser-webkit-frame-snapshot/report-webkit.json",
+        "native_frame_evidence": 10,
+        "page_and_command_screenshots": 19,
+        "diagnosis": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/webkit-resize-diagnosis/REPORT.md",
+        "root_actual_images_viewed": [
+          "webkit-hero-900.png",
+          "webkit-mend-click.png"
+        ],
+        "production_renderer_readback": false,
+        "unverified": [
+          "headfulWebKit",
+          "macOS/iOSSafari"
+        ],
+        "note": "Windows headless resize snapshot issue reproduced in standalone WebGL2. Original blank/stale evidence preserved; this adapter is not a production Safari fix."
+      },
+      "building_lifecycle_cues": {
+        "status": "three_browser_real_commands_passed_after_presentation",
+        "report": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/building-lifecycle-cues-after-presentation-v2/report.json",
+        "scope": [
+          "cancel/refund removes visual immediately without combat death",
+          "paid worker repair cue",
+          "guard actual impact direction",
+          "dead building no picking identity",
+          "pause freezes simulation and resume expires corpse"
+        ],
+        "destruction_art_approved": false,
+        "unit_tests": "154 files / 1567 tests passed",
+        "full_suite_log": "tmp/rts/building-lifecycle-full-vitest.log",
+        "strict_typescript": "passed",
+        "typescript_log": "tmp/rts/building-lifecycle-strict-types.log",
+        "production_build": "passed in 17.14 seconds before analytic lifecycle presentation integration",
+        "build_log": "tmp/rts/building-lifecycle-cues-build.log",
+        "fixture_race": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/building-lifecycle-fixture-race.json"
+      },
+      "analytic_building_lifecycle": {
+        "status": "targeted_tests_passed_actual_fracture_asset_pending",
+        "targeted_tests": 103,
+        "targeted_files": 4,
+        "log": "tmp/rts/building-lifecycle-lod-parity-green.log",
+        "scope": [
+          "death-only replacement exclusion from living completed batching",
+          "validated exhaustive role/stage/cluster bindings",
+          "scene-space analytic pivot through transformed parents",
+          "per-instance pose and restoration",
+          "built stages only",
+          "pause driven by simulation age"
+        ],
+        "independent_code_review": "APPROVE LIMITED; LOD parity P2 closed",
+        "new_runtime_art_published": false,
+        "full_suite": "154 files / 1567 tests passed",
+        "review": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/building-lifecycle-independent-code-review.json"
+      },
+      "static_rendering_and_initial_input": {
+        "status": "passed_current_assets",
+        "report": "art-factory/rts/runs/commercial-readiness/2026-10-09/qa/static-rendering/report.json",
+        "report_sha256": "4882e5b58393e36eb6c0ede42ef901c48543d4001ed8531f8c1e07500cfc32cf"
+      }
+    }
+  },
+  "latest_natural_campaign": {
+    "path": "art-factory/rts/runs/commercial-readiness/2026-10-15/qa/current-gameplay/final-natural-campaign.json",
+    "sha256": "2afd56ee79664901b37b8ac848f306f20d83b9d501d8e64df46a8437ceb5e514",
+    "independent_review": {
+      "path": "art-factory/rts/runs/commercial-readiness/2026-10-15/qa/current-gameplay/natural-campaign-review.json",
+      "sha256": "d1a20df4820a47715a409efc4f7183e93d19c3ea3ccaaa1c3b4c88675764931e"
+    }
+  },
+  "latest_performance_contract_review": {
+    "path": "art-factory/rts/runs/all-models/2026-10-14-v1/qa/runtime-code-review.json",
+    "sha256": "3bfbaa7fef15e2a370bd4f47ca8d3fe568c648b024621e73ed2bba56d9ce38ea",
+    "performance_evidence": {
+      "path": "art-factory/rts/runs/all-models/2026-10-14-v1/qa/performance-production/performance-release-formal-production-dedicated-portrait.json",
+      "sha256": "bdf46459e77ed800520cb4c7143dcd812d357f6a65170aba7362eec569684fe2"
+    },
+    "scope": "Current model batch, production-mode fixture, not bit-identical Astro game chunk"
+  },
+  "performance_history_note": "Old max-RAF checker results and diagnostic timer starvation are preserved. The original specification limits continuous main-thread freeze; new formal timer/Long Tasks measurement passed, without a production optimization claim.",
+  "latest_release_validation": null,
+  "asset_hash_scope": "128 published files including model-registry.json; runtime audit counts127 asset files.",
+  "local_integration_commit": "d6c9c37cdc4c677a7883c27d4a3baa73ede50465",
+  "evidence_storage": {
+    "path": "art-factory/rts/runs/commercial-readiness/2026-10-11/qa/local-artifact-index.json",
+    "sha256": "1efb256d12f31a79f6c15398c3d64590564c2ce0d941e49b482e164753173ea2",
+    "retention_correction": {
+      "path": "art-factory/rts/runs/commercial-readiness/2026-10-11/qa/project-regression-v1/overwritten-crossing-output/retention-correction.json",
+      "sha256": "0b6854d6b9687ef03bb68ebd19b01f47a295a8f0e4493394eb9ef79a5d660428",
+      "scope": "Four redundant unversioned crossing start screenshots were overwritten by the first full regression. Original indexed bytes are unavailable; final crossing frames and reports remain unchanged. Three versioned commander screenshots were restored byte-for-byte after preserving new output."
+    }
+  },
+  "local_commit_scope": "Core integration d6c9c37 and earlier evidence 2aecd09b are local commits. Current closeout source, tests, documentation and evidence await the complete final validation and a new local commit. No push or deployment.",
+  "completion_audit": {
+    "required_gate": "npm run test:all",
+    "spec_reference": "docs/superpowers/specs/2026-10-04-browser-rts-design.md:150",
+    "initial_run": "art-factory/rts/runs/commercial-readiness/2026-10-11/qa/project-regression-v1/exit.json",
+    "status": "linux_webkit_gpu_environment_blocked",
+    "current_failure_triage": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-job-v20-spine/disposition.json",
+    "corrected_collection": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/final-collection-v14/summary.json",
+    "scope": "Current WebKit WPE/GTK build cannot initialize D3D12 surfaceless EGL in this WSL environment. Software rendering timed out in the original RTS crossing. No further same-environment retries queued.",
+    "runtime_production_changed": true,
+    "rts_runtime_production_changed": true,
+    "non_rts_production_changes": [
+      "src/components/ArcadeBgm.astro",
+      "src/pages/games/tetris.astro",
+      "src/content/guild/passer_999.html",
+      "src/content/guild/naomiao77.html",
+      "src/scripts/games/bomber/engine/generate.ts"
+    ],
+    "latest_partial_full_run": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/project-regression-v17/launcher-exit.json",
+    "latest_regression_diagnosis": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/v16-concurrent-test-correlation.json",
+    "new_full_collection_pending": false,
+    "completed_full_run": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/project-regression-v13/exit.json",
+    "completed_full_native_exit_code": 1,
+    "completed_full_counts": {
+      "passed": 2141,
+      "skipped": 121,
+      "failed": 1
+    },
+    "replacement_run": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/test-contract-validation-v1/start.json",
+    "single_final_full_run_passed": false,
+    "replacement_run_exit": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/test-contract-validation-v1/exit.json",
+    "replacement_run_counts": {
+      "passed": 834,
+      "failed": 5,
+      "skipped": 106
+    },
+    "ffa_revalidation": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/ffa-serial-validation-v1/exit.json",
+    "interrupted_ui_revalidation": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/ui-complete-validation-v1/exit.json",
+    "system_interruption_evidence": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/ui-system-interruption-v1.json",
+    "final_full_run": null,
+    "final_full_run_contract": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/final-full-run-contract-v18.json",
+    "acceptance_method": "A single complete final npm run test:all native exit 0 is required. Complete-spec replacement/aggregation is intermediate evidence and does not close this gate.",
+    "interrupted_full_v4": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/project-regression-v4/exit.json",
+    "portrait_comparison_diagnosis": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/portrait-comparison-fix-v1.json",
+    "portrait_validation": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/portrait-validation-v1/exit.json",
+    "helper_unit_tests": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/portrait-comparison-green-v2/exit.json",
+    "strict_types": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/bomber-generation-types-v2/exit.json",
+    "previous_completed_full_run": {
+      "exit": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/project-regression-v3/exit.json",
+      "counts": {
+        "passed": 2101,
+        "failed": 49,
+        "skipped": 102
+      }
+    },
+    "final_full_run_exit": null,
+    "diagnostic_run": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-lifecycle-v1/run/exit.json",
+    "active_full_run": null,
+    "tetris_confirmed_frame_validation": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/tetris-frame-validation-v2/exit.json",
+    "tetris_confirmed_frame_helpers": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/confirmed-frame-observer-green-v1/exit.json",
+    "interrupted_full_v7": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/full-regression-disposition-v7.json",
+    "readiness_contract_fix": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/rts-readiness-fix-v1.json",
+    "bomber_generation_fix": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/bomber-generation-fix-v1.json",
+    "active_diagnostic": null,
+    "diagnostic_preflight": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-lifecycle-v1/preflight.json",
+    "full_run_preflight_review": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/full-run-preflight-review-v18.json",
+    "historical_completed_full_before_v13": {
+      "exit": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/project-regression-v5/exit.json",
+      "nativeExitCode": 1,
+      "counts": {
+        "passed": 2135,
+        "skipped": 121,
+        "failed": 1
+      }
+    },
+    "quiet_guard_review": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-full-v3/review.json",
+    "quiet_guard_start": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/project-regression-v18/quiet-audio/start.json",
+    "source_input_count": 2881,
+    "final_full_run_outer_exit": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/project-regression-v17/quiet-audio/exit.json",
+    "final_full_run_launcher_exit": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/project-regression-v17/launcher-exit.json",
+    "final_full_run_inner_terminal_missing": true,
+    "final_full_run_partial_counts": {
+      "expectedTotal": 2263,
+      "completed": 160,
+      "passed": 160,
+      "failed": 0,
+      "skipped": 0,
+      "remainingWithoutResult": 2103,
+      "lastStartedCase": 161
+    },
+    "final_full_run_input_audit": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/project-regression-v17/post-run-input-audit.json",
+    "quiet_ownership_diagnostic_status": "exact87_prefix_plus3_zero_probes_passed_without_reproduction_independently_approved",
+    "quiet_ownership_diagnostic_limits": "Original87 sameworker/order/metadata passed plus3 zero probes;1850unit passed,quiet/inner/outer0,1024inputs unchanged. Does not identify V14 cause or close full2263 gate. Additional source/media cannot retroactively prove unrecorded V14 contents.",
+    "quiet_ownership_diagnostic_review": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-ownership-prefix-v1/review.json",
+    "full_runtime_file_count": 2411,
+    "next_step": "Resolve user-rejected model/rig/equipment visual fidelity before final integrated review. Historical technical checks do not establish art acceptance; original full release gate remains required.",
+    "latest_result_review": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/full-regression-result-review-v16.json",
+    "quiet_persistence_implementation": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-persistence-v1/implementation-status.json",
+    "quiet_persistence_result": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-persistence-v1/disposition.json",
+    "quiet_persistence_result_review": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-persistence-v1/result-review.json",
+    "quiet_persistence_status": "single_bounded_pair_completed_independently_reviewed_no_reproduction",
+    "quiet_lifecycle_preflight": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-lifecycle-v1/preflight.json",
+    "quiet_lifecycle_result": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-lifecycle-v1/disposition.json",
+    "quiet_lifecycle_result_review": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-lifecycle-v1/result-review.json",
+    "quiet_lifecycle_status": "single_bounded_integration_passed_independently_approved",
+    "v16_preparation": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/final-tools-v16-preparation",
+    "v16_preparation_status": "approved_launch_completed_with_protective_stop",
+    "v16_contract": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/final-full-run-contract-v16.json",
+    "v16_contract_sha256": "b28d2027411caaa4550b96d16fa4a8a54f8d04bddc12ed993f12f34564d59e97",
+    "v16_run": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/project-regression-v16",
+    "v16_launch_review": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/full-run-preflight-review-v16.json",
+    "v16_input_count": 2669,
+    "v16_runtime_count": 2411,
+    "v16_warmups_completed": 8,
+    "v16_seed_lifecycle_tickets": [
+      1,
+      2
+    ],
+    "exclusive_window_direction_review": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/v16-exclusive-window-direction-review.json",
+    "exclusive_window_scheduling": "superseded_by_nonexclusive_fail_closed_preflight_no_user_answer_required",
+    "v17_preparation": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/final-tools-v17-preparation",
+    "v17_preparation_status": "reviewed_single_run_terminated_by_guard_no_retry",
+    "v17_source_review": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/final-tools-v17-preparation/source-review.json",
+    "v17_offline_tests": 81,
+    "nonexclusive_direction_review": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/v17-nonexclusive-direction-review.json",
+    "v17_full_run_window": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/full-run-window-v17.json",
+    "v17_contract": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/final-full-run-contract-v17.json",
+    "v17_contract_sha256": "5fb4224cd4037317fe93861383bda72d18bc5a3d1f3b324a75b4b884ba66edd5",
+    "v17_input_count": 2756,
+    "v17_max_failures": 0,
+    "v16_final_partial_counts": {
+      "expectedTotal": 2263,
+      "completed": 106,
+      "passed": 106,
+      "failed": 0,
+      "skipped": 0,
+      "remainingWithoutResult": 2157,
+      "lastStartedCase": 107,
+      "endEventPresent": false,
+      "formalCommandStarted": true
+    },
+    "job_integration_contract": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-job-v1/integration-contract.json",
+    "job_integration_started": true,
+    "latest_full_result_review": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/full-regression-result-review-v17.json",
+    "job_integration_disposition": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-job-v1/integration-disposition.json",
+    "job_integration_counts": {
+      "passed": 8,
+      "skipped": 0,
+      "failed": 0,
+      "flaky": 0,
+      "durationSeconds": 44.83586,
+      "nativeExitCode": 0,
+      "warmups": 12,
+      "mutedSessions": 14,
+      "jobActiveProcessesAtEnd": 0
+    },
+    "job_integration_result_review": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-job-v1/integration-result-review.json",
+    "full_run_tool_session": 26099,
+    "current_failure_review": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/quiet-job-v20-spine/result-review.json",
+    "current_linux_preparation": "tmp/rts/completion-next-steps-v12.json",
+    "latest_actual_results": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/game-quality-resume-20261014/current-game-results.json",
+    "latest_full_disposition": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/windows-full-webkit-first-20261014/disposition.json",
+    "active_tool_session": null,
+    "latest_gpu_focused_evidence": "/home/lawa0921/rts-silent-v1/evidence/gpu-middle-pass-20261014",
+    "latest_gpu_collection_evidence": "/home/lawa0921/rts-silent-v1/evidence/gpu-collection-20261014",
+    "current_full_evidence": "/home/lawa0921/rts-silent-v1/evidence/gpu-full-20261014",
+    "latest_gpu_full_disposition": "/home/lawa0921/rts-silent-v1/evidence/gpu-full-20261014/disposition.json",
+    "latest_gpu_disposition": "art-factory/rts/runs/commercial-readiness/2026-10-12/qa/linux-gpu-closeout-20261014/disposition.json",
+    "rts_changes_since_last_full_run": [
+      "src/scripts/games/rts/skin-batches.ts",
+      "src/scripts/games/rts/models.ts",
+      "src/scripts/games/rts/shadow-cadence.ts",
+      "src/scripts/games/rts/scene.ts"
+    ],
+    "current_model_batch_validation": {
+      "path": "art-factory/rts/runs/all-models/2026-10-14-v1/qa/test-results.json",
+      "sha256": "ed3a77b1995cfee93829becbff25f06ef09bd2de0e96a6fb5c672e6e83a2f346"
+    },
+    "current_model_batch_scope": "34 models/46 GLBs; Chromium targeted gameplay and model checks only. Original current-source full test:all remains required.",
+    "latest_current_scope_audit": {
+      "path": "art-factory/rts/runs/commercial-readiness/2026-10-15/qa/current-firefox/completion-audit.json",
+      "sha256": "02b2223a4242e43727f6f089decec551280644e40337f7caa4ad58885f7ec906"
+    }
+  },
+  "historical_release_validation": {
+    "path": "art-factory/rts/runs/commercial-readiness/2026-10-11/qa/release-acceptance.json",
+    "sha256": "d79f6d8f4d9d0ed4ea513da3fca46675e87babdab2a3786f4c7f7a543b30694b",
+    "scope": "Historical unit/build/types and RTS checkpoint only. It does not prove the required complete test:all final gate."
+  },
+  "latest_model_refinement": {
+    "run": "art-factory/rts/runs/visual-revision/2026-10-16-complete-packed-v4",
+    "scope": "All 34 models / 46 GLBs / 99 material files; eight units with their complete authored clips and LODs",
+    "status": "candidate-model-qa-passed-performance-gate-failed",
+    "review": "art-factory/rts/runs/visual-revision/2026-10-16-complete-packed-v4/qa/final-acceptance.json",
+    "user_overall_art_acceptance": "pending new whole-batch review; prior rejection remains recorded",
+    "runtime_publish_allowed": false,
+    "remaining_character_issues": [],
+    "remaining_acceptance_issues": [
+      "Formal performance p95 33.4ms fails required <33ms",
+      "User overall art acceptance remains pending",
+      "Pre-existing 78 type diagnostics and incomplete full-site multi-browser release gate"
+    ],
+    "full_release_gate": "Not complete; 78 pre-existing type diagnostics and incomplete full-site multi-browser gate remain recorded",
+    "preview": "http://127.0.0.1:4340/games/rts/"
+  },
+  "historical_model_refinements": [
+    {
+      "run": "art-factory/rts/runs/commander-shield/2026-10-14-v1",
+      "scope": "commander shield geometry, both LODs",
+      "status": "published-local-worktree",
+      "review": "art-factory/rts/runs/commander-shield/2026-10-14-v1/qa/root-review.json",
+      "published_verification": "art-factory/rts/runs/commander-shield/2026-10-14-v1/qa/final-verification.json",
+      "user_overall_art_acceptance": "pending",
+      "remaining_character_issues": [
+        "Open sword/shield grip",
+        "Death shield/body overlap and approximately 6.7cm ground penetration"
+      ],
+      "full_release_gate": "unchanged; prior incomplete full regression is not accepted by this art-only verification"
+    },
+    {
+      "run": "art-factory/rts/runs/all-models/2026-10-14-v1",
+      "scope": "All 34 models, 46 GLBs, 8 articulated units and 94 clip/LOD sweeps",
+      "status": "published-local-worktree",
+      "review": "art-factory/rts/runs/all-models/2026-10-14-v1/qa/root-review.json",
+      "user_overall_art_acceptance": "rejected; superseded by current visual revision candidate",
+      "remaining_character_issues": [],
+      "full_release_gate": "Model batch verified locally; unrelated whole-game release and rights approvals remain unchanged."
+    }
+  ],
+  "historical_performance_contract_review": {
+    "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/performance-contract-review.json",
+    "sha256": "a0496073c12444e7efbbf2b94f9ea29840426d96361e1819cbedb25931e835f8"
+  },
+  "latest_download_verification": {
+    "path": "art-factory/rts/runs/commercial-readiness/2026-10-15/qa/current-gameplay/download-verification.json",
+    "sha256": "dac271dd863d1421feb9a9df6d5ed98ec42f63f3eeb96fbb8e610a71a65a4764"
+  },
+  "historical_natural_campaign": {
+    "path": "art-factory/rts/runs/commercial-readiness/2026-10-11/qa/final-natural-campaign.json",
+    "sha256": "972ab4d957818502b39632ffca270836a4b49840ad4e537584c1afce392d724d"
+  },
+  "latest_focused_rts_firefox": {
+    "path": "art-factory/rts/runs/commercial-readiness/2026-10-15/qa/current-firefox/result.json",
+    "sha256": "678efb00041dd6a0e2fe20234c8a28735ca46a9524f6cb6f8533d90bb8217e11",
+    "review": {
+      "path": "art-factory/rts/runs/commercial-readiness/2026-10-15/qa/current-firefox/independent-review.json",
+      "sha256": "d14fb5a4cb4d09f3dbc1d3a19bb383374dcbff426fe069d82faf4149bcdf3e10"
+    }
+  },
+  "assembly_review_status": "rejected_by_user_requires_visual_revision",
+  "latest_user_visual_review": {
+    "path": "art-factory/rts/runs/visual-revision/2026-10-15-v1/qa/user-rejection.json",
+    "sha256": "18dd847a2fb203f60b4a806384dd5f51f252404ae6ba6153c94dfdecde5aa683"
+  }
+}

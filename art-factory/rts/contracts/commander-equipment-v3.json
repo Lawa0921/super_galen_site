@@ -1,0 +1,19 @@
+{
+  "asset_id": "commander-equipment-v3",
+  "screen_id": "battlefield-and-unit-portrait",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "category": "character_equipment_parts",
+  "source_mode": "original Blender mesh authoring over the existing original commander source",
+  "source": "art-factory/rts/runs/human-units/2026-10-05-v2/commander/candidate/commander-production-v2.blend",
+  "source_sha256": "87f7ed4681487e38a3d3b4f26b4689ed16d96b179be7380ca62d42673482c515",
+  "brief": "Replace the flat rectangular shield and primitive sword with a bowed heater shield, formed rim, eight-ray dawn boss, rear grip and arm strap, and a forged fullered sword with swept quillons and wrapped grip. Match the original commander's aged silver, muted brass and team cloth.",
+  "parts": ["fullered_blade", "swept_crossguard", "leather_grip", "pear_pommel", "bowed_shield", "formed_rim", "dawn_boss", "rear_grip", "arm_strap"],
+  "sockets_blender_meters": {"sword_grip": [0.428, 0.156, 0.983], "shield_grip": [-0.419, 0.137, 0.985]},
+  "preserve": ["Original body silhouette, face, armour, emblem and texture", "Existing body mesh and animation sources remain available unchanged"],
+  "candidate_outputs": ["commander-equipment-v3.blend", "commander-lod0.glb", "commander-lod1.glb"],
+  "qa_gates": ["full-character front, side, back and game scale", "all five complete motion cycles, not only rest pose", "actual glove-to-grip surface contact", "body and equipment penetration", "death ground contact", "watertight individual authored parts", "LOD silhouette and material batches", "GLB round trip, original sources and hashes"],
+  "forbidden": ["Third-party characters or animation libraries", "Primitive placeholder equipment", "Publishing geometry-only acceptance as full character acceptance"],
+  "alpha_policy": "Opaque original PBR surfaces; no chroma-key or alpha cutout applies to these solid meshes",
+  "runtime_publish_allowed": false
+}

@@ -1,0 +1,21 @@
+{
+  "asset_id": "original-guard-quadri-method-diagnostic",
+  "category": "original_3d_whole_character_retopology_method_proof",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "run": "art-factory/rts/runs/original-guard-quadri/2026-10-05",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "source": "art-factory/rts/runs/original-guard-shape/2026-10-05/candidate/candidate-body.glb",
+  "source_sha256": "b2a94ddd3c7f66ea8e1edf993fce13ce4c24a795b9106076648e773ebffecdfd",
+  "method": "Blender 5.2 QuadriFlow on the largest closed original-source component after exact duplicate-position welding and four documented tiny-island exclusions; one zero-area Blender cap-sliver dissolve was the only targeted correction.",
+  "target_quads": 12000,
+  "outcome": "Both operator calls returned CANCELLED before solving. No QuadriFlow retopology mesh exists in this run.",
+  "diagnostic_basis_only": true,
+  "forbidden_claims": [
+    "The original fused hand, skirt, or armor parts are separated or repaired",
+    "The source-only diagnostic basis is a QuadriFlow result",
+    "The character is rigged, animated, textured, or commercial-ready"
+  ]
+}

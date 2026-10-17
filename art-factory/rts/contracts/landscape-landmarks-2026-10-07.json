@@ -1,0 +1,30 @@
+{
+  "asset_id": "kingdom-ruins",
+  "screen_id": "rts-battlefield-landscape",
+  "source_truth": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "source_mode": "builtin-imagegen original art",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "mode_inference_decision": {
+    "selected_profile": "hard_alpha_sprite",
+    "confidence": "high",
+    "rationale": "Fixed-camera isometric cutouts of original abandoned structures; actual solid navigation footprints."
+  },
+  "raw_background": "solid #FF00FF",
+  "layout": "2x2 cells: mossy broken stone arch, ruined round watchtower, standing stone circle, abandoned wooden cart",
+  "target": "/assets/games/rts/terrain/kingdom-ruins.webp",
+  "qa": [
+    "transparent cell borders",
+    "zero visible magenta",
+    "isometric camera match",
+    "distinct from functional buildings",
+    "solid footprint",
+    "fog",
+    "actual browser assembly"
+  ],
+  "limitations": "Fixed-camera illustrated scenery, not rotatable 3D models. No text, flags or working buildings.",
+  "postprocess": "art-factory/rts/tools/undergrowth_process.py",
+  "qa_evidence": "art-factory/rts/runs/landscape-landmarks/2026-10-07-v1/qa/root-review.json"
+}

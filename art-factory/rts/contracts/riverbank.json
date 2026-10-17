@@ -1,0 +1,36 @@
+{
+  "asset_id": "riverbank",
+  "status": "published-local-runtime",
+  "run": "art-factory/rts/runs/riverbank/2026-10-07-v1",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-riverbank-review",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "source_mode": "Original project-generated terrain and original editable stone-bridge Blender source; no external model, rig or motion.",
+  "source_assets": [
+    "river-shingle",
+    "forest-floor",
+    "lush-grass",
+    "stone-bridge"
+  ],
+  "processing": "Continuous meandering channel; original terrain UV convention. Reposition eight existing paving slabs, widen original bridge and align walk plane; retain vertices, topology, UV and material content.",
+  "postprocess_profile": "original_3d_environment",
+  "alpha_policy": "Opaque bank with ground-level border; no alpha billboard.",
+  "placement_contract": "Runtime uses the reviewed meandering obstacle cells and two bridge routes. Expansion gold at (40.5,22.5)/(55.5,74.5) is placed before tree generation; resource IDs and amounts retained. Actual mouse gathering/deposit/depletion and mixed-unit crossings verified.",
+  "qa": [
+    "Pinned source and retained mesh/UV/material evidence",
+    "GLB validator",
+    "Connected terrain and original UVs",
+    "Road and largest-unit navigation",
+    "Natural AI economy and victory",
+    "Browser bridge walks",
+    "Opening/explored fog and map switching",
+    "Full Vitest and strict RTS typecheck"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "user-overall-art-acceptance-pending",
+  "runtime_publish_allowed": true,
+  "coordinate_exception": "Bridge origin is gameplay walk plane; piers extend below ground. Bedding y=.005 and paving y=.025 avoid z-fighting within 3cm visual contact tolerance.",
+  "rejected_trial": "rejected/raised-sections: repetitive pipe-like banks excluded from final preview",
+  "preview": "http://127.0.0.1:4334/riverbank/",
+  "assembly_review": "art-factory/rts/runs/riverbank/2026-10-07-v1/qa/runtime/root-review.json"
+}

@@ -35,8 +35,8 @@ export function isUntranslatedLocalePath(urlOrPath: string, guildTranslations: S
   return false;
 }
 
-/** 公開但 noindex 的獨立頁（例：隱私權政策），不進 sitemap */
-const NOINDEX_PAGES = ['/privacy/'];
+/** 公開但 noindex 的獨立頁（例：隱私權政策、尚未公開的 RTS 與其模型檢視工具），不進 sitemap */
+const NOINDEX_PAGES = ['/privacy/', '/games/rts/', '/games/rts/models/'];
 
 /** sitemap filter：未翻譯語系頁與 NOINDEX_PAGES 皆排除 */
 export function isExcludedFromSitemap(urlOrPath: string, guildTranslations: Set<string>): boolean {

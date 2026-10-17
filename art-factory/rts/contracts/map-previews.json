@@ -1,0 +1,22 @@
+{
+  "status": "published",
+  "runtime_publish_allowed": true,
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "actual-game-render",
+  "dimensions": [
+    600,
+    360
+  ],
+  "alpha": "opaque screenshot, no chroma-key needed",
+  "postprocess": "Lanczos 600x360, WebP q88 method6",
+  "assembly_human_review": "Per-asset visual-review records; overall user art acceptance pending",
+  "run": "art-factory/rts/runs/map-thumbnails/2026-10-16-map288",
+  "asset_runs": {
+    "map-river": "art-factory/rts/runs/map-thumbnails/2026-10-16-map288",
+    "map-pass": "art-factory/rts/runs/map-thumbnails/2026-10-16-map288"
+  },
+  "superseded_runs": [
+    "art-factory/rts/runs/map-thumbnails/2026-10-09-v2",
+    "art-factory/rts/runs/map-thumbnails/2026-10-16-bigmap"
+  ]
+}

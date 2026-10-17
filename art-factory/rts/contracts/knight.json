@@ -1,0 +1,99 @@
+{
+  "id": "knight",
+  "screen_id": "rts-army",
+  "category": "animated-3d-cavalry-unit",
+  "status": "published",
+  "review_status": "root-approved-user-preview-pending",
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "root source and actual Three.js assembly reviewed; user preview at delivery",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "run": "art-factory/rts/runs/kingdom-knight/2026-10-05-v3",
+  "previous_run": "art-factory/rts/runs/kingdom-knight/2026-10-05-v2",
+  "revision_scope": "Join same-skin/material primitives: 18 to 13 draws per LOD, exact 24-frame RGBA match to v2; geometry, UVs, weights and animation samples unchanged",
+  "source_mode": "task-original imagegen horse references reconstructed with pinned TripoSR, plus original guard v3 body/texture and editable Blender rigging/tack/arms",
+  "source_refs": [
+    {
+      "id": "horse-near-side",
+      "path": "art-factory/rts/runs/horse-input/v1/candidate/near-side.png",
+      "sha256": "bd1c3ba51c728748003709a19780fa5e4d8d4d56d9ba3eeee09f54dd9b10fdf2"
+    },
+    {
+      "id": "horse-opposite-side",
+      "path": "art-factory/rts/runs/horse-input/v1/candidate/opposite-side.png",
+      "sha256": "caa1e6853a0fa1b77f714c8918c3dd5eca10589c844863bd232b2edccbc8e045"
+    },
+    {
+      "id": "guard-v3-blend",
+      "path": "art-factory/rts/runs/guard-neural-pilot/v3/candidate/guard-neural-v3.blend",
+      "sha256": "926a619d7210aac2e36c4d1c78cf0b313d05cd4c0ebe6381ed9a9ad14e9109ba"
+    },
+    {
+      "id": "guard-v3-texture",
+      "path": "art-factory/rts/runs/guard-neural-pilot/v3/candidate/guard-projected-albedo-2048.png",
+      "sha256": "3026db29b60246487164a9aa98a2744d2c3d8b781b337f1ab7ea9b2d335ff37c"
+    },
+    {
+      "id": "guard-production-blend",
+      "path": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/guard-production-v1.blend",
+      "sha256": "6e4fd8b45936a72e54e3147e23d9b8e8874ee2620edf37fe569f5e3d18903361"
+    },
+    {
+      "id": "guard-production-body-texture",
+      "path": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/body-1024-q90.jpg",
+      "sha256": "0480f538aba09fadd6c9a9e927db9e3d69df3535e1e6e1cfb92648dbe10d068a"
+    },
+    {
+      "id": "guard-production-teamcloth-texture",
+      "path": "art-factory/rts/runs/guard-neural-pilot/production-v1/candidate/teamcloth-neutral-1024-q90.jpg",
+      "sha256": "5ea4347b4f41816eb5a0d7d2def486187caf2e307b7f59a7079271244a6945f2"
+    },
+    {
+      "id": "neutral-saddle-weave",
+      "path": "art-factory/rts/runs/kingdom-siege/2026-10-04-runtime-v1/candidate/textures/navy-cloth-basecolor.jpg",
+      "sha256": "842a896f9bf5a1fb8be055ae411fafbc0098bbaa5d29ce5b406a8679dfe5e5d9"
+    }
+  ],
+  "coordinate_contract": "Blender +Z up; GLB +Y up, forward -Z, ground-origin centered beneath mount",
+  "visual_contract": [
+    "true reconstructed horse silhouette, four distinct moving limbs and hooves",
+    "armored original kingdom guard riding with seated leg pose",
+    "functional saddle, straps, stirrups and reins",
+    "lance attack and shield",
+    "neutral gray TeamCloth-matched material names on tabard, saddlecloth and shield face for engine blue/red tint"
+  ],
+  "animation_contract": [
+    "Idle",
+    "Walk",
+    "Attack",
+    "Hurt",
+    "Death"
+  ],
+  "lod_contract": {
+    "lod0_max_triangles": 20000,
+    "lod1_target_triangles": [
+      8000,
+      10000
+    ],
+    "combined_glb_bytes_goal": 4000000
+  },
+  "texture_contract": {
+    "raw_px": 2048,
+    "runtime_basecolor_px": 1024,
+    "runtime_basecolor_encoding": "JPEG q90",
+    "uv_required": true,
+    "pbr_required": true
+  },
+  "qa_gates": [
+    "horse four-view silhouette and orientation gate before rider build",
+    "four hooves and animated legs do not slide as a whole",
+    "five real glTF clips/channels",
+    "LOD/texture/TeamCloth/bounds/ground/axes",
+    "Blender GLB roundtrip and 640px/64px multi-pose renders",
+    "source and candidate SHA-256",
+    "candidate only, no runtime publish"
+  ],
+  "runtime_units": [
+    "knight"
+  ]
+}

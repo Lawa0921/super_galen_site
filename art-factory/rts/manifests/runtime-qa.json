@@ -1,0 +1,1404 @@
+{
+  "published_path_qa": "passed",
+  "asset_count": 127,
+  "bytes": 54975727,
+  "missing_required_models": [],
+  "declared_source_hash_qa": "passed",
+  "source_checks": [
+    {
+      "asset": "command-panel",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "original_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "menu-keyart",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "original_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-attack-move",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-stop",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-hold",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-timber",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-weapons",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-armor",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-cleave",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-mend",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-banner",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-building-townhall",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "source_manifest",
+        "editable_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-building-house",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "source_manifest",
+        "editable_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-building-barracks",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "source_manifest",
+        "editable_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-building-lumbermill",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "source_manifest",
+        "editable_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-building-forge",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "source_manifest",
+        "editable_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-building-altar",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "source_manifest",
+        "editable_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-building-tower",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "source_manifest",
+        "editable_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-building-chapel",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "source_manifest",
+        "editable_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-building-stable",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "source_manifest",
+        "editable_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-building-workshop",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "source_manifest",
+        "editable_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-building-townhall-tier2",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "source_manifest",
+        "editable_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "command-building-townhall-tier3",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "source_manifest",
+        "editable_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "building-effects-atlas",
+      "registry": "manifests/ui-registry.json",
+      "verified_fields": [
+        "candidate",
+        "qa",
+        "provenance",
+        "terms_record"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "meadow-surface",
+      "registry": "manifests/terrain-registry.json",
+      "verified_fields": [
+        "raw",
+        "original_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "dirt-road",
+      "registry": "manifests/terrain-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "river-water",
+      "registry": "manifests/terrain-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "lush-grass",
+      "registry": "manifests/terrain-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "prompt"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "forest-floor",
+      "registry": "manifests/terrain-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "prompt"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "river-shingle",
+      "registry": "manifests/terrain-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "prompt"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "highland-scree",
+      "registry": "manifests/terrain-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "prompt"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "valley-undergrowth",
+      "registry": "manifests/terrain-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "qa",
+        "prompt"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "courtyard-earth",
+      "registry": "manifests/terrain-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "townhall",
+      "registry": "manifests/building-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "townhall-tier2",
+      "registry": "manifests/building-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "townhall-tier3",
+      "registry": "manifests/building-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "barracks",
+      "registry": "manifests/building-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "stable",
+      "registry": "manifests/building-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "workshop",
+      "registry": "manifests/building-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "house",
+      "registry": "manifests/building-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "lumbermill",
+      "registry": "manifests/building-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "forge",
+      "registry": "manifests/building-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "altar",
+      "registry": "manifests/building-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "tower",
+      "registry": "manifests/building-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "chapel",
+      "registry": "manifests/building-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "stone-bridge",
+      "registry": "manifests/building-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa",
+        "original_source"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "oak",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "rock",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "gold-mine",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "timber-pile",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "pine",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "river-gatehouse",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa",
+        "terms_record"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "river-shrine",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa",
+        "terms_record"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "highland-watchtower",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa",
+        "terms_record"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "quarry-ruins",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa",
+        "terms_record"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "river-gatehouse-lod1",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa",
+        "terms_record"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "river-shrine-lod1",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa",
+        "terms_record"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "highland-watchtower-lod1",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa",
+        "terms_record"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "quarry-ruins-lod1",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa",
+        "terms_record"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "rubble-a",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa",
+        "provenance"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "rubble-b",
+      "registry": "manifests/prop-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa",
+        "provenance"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "neutral-raider",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "neutral-raider-lod1",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "priest",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "priest-lod1",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "commander",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "commander-lod1",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "knight",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "knight-lod1",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "siege",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "siege-lod1",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "worker",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "worker-lod1",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "guard",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "guard-lod1",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "crossbow",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "crossbow-lod1",
+      "registry": "manifests/unit-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "bolt",
+      "registry": "manifests/projectile-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "heavy-bolt",
+      "registry": "manifests/projectile-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "map-river",
+      "registry": "manifests/map-preview-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "map-pass",
+      "registry": "manifests/map-preview-registry.json",
+      "verified_fields": [
+        "raw",
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "ashlar-color.jpg",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "ashlar-mr.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "ashlar-normal.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "brass-color.jpg",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "brass-mr.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "brass-normal.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "cloth-mr.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "cloth-normal.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "cutstone-color.jpg",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "cutstone-mr.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "cutstone-normal.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "granite-color.jpg",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "granite-mr.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "granite-normal.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "leather-color.jpg",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "leather-mr.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "leather-normal.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "oak-color.jpg",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "oak-mr.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "oak-normal.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "slate-color.jpg",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "slate-mr.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "slate-normal.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "steel-color.jpg",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "steel-mr.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "steel-normal.png",
+      "registry": "manifests/detail-material-registry.json",
+      "verified_fields": [
+        "candidate"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-0480f538aba09fadd6c9a9e927db9e3d69df3535e1e6e1cfb92648dbe10d068a.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-12f1bfda090863f9f38c8368f2f516ccc907dda8c569d989b32176c500d5827d.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-1d00d98cddc10f1d5632c85d0f2dd35e4b2c07758950288c826844982137cabf.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-1ff60b74c57614e08bf07acdbf3331a842e37f9a3be7429a5ae4fc49b7b8dc3e.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-3be13d5aa998f1191315fe3884dff2212e9c3ddcfad2da58273c13590d8f50f8.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-48291e623d524719184c69dccfe8af61a9ae542b01cfefef6c87bd704bbdde08.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-5e1b1738063fa92965ad824d18739ccfc7d502c8c20438175facf07d89d17042.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-5ea4347b4f41816eb5a0d7d2def486187caf2e307b7f59a7079271244a6945f2.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-842a896f9bf5a1fb8be055ae411fafbc0098bbaa5d29ce5b406a8679dfe5e5d9.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-85020c8dd228d5317775246134a1de6ceadaaa73db090277797be72455cfcc4e.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-87b9802db78aa2ced4c733fdb7c0643cc695e8e8fc99492e37a98e4154d1d65c.png",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-8e96f82bfd0354145fd829c2bc0702d1817212f0047ebc07fe7d621d16edd14c.png",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-a92600f82c60c345f784c7c615e5fbde540aa5618ce4940242d63ad39e4a7f75.png",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-b8959c92365b07dd13927b35ee34d0fc0ba064c7a8292e1dc26ff6c2357e038a.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-be27e26c863a80d2e7822195ec8ddccce2d4266ae141f20e56335c713e3248db.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-e39daadac566fd64eb04783429a56d0e8e9ba27e75a7eac67824a84ae766699a.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-f5c6e536e041d823f9669bde9990d551a3ae6074442fa0b6d8feace8353f028b.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-fa2555e40c2dee70b3c3f7872f48df9ffb7d8bcb2ca20e11b8539464541ca556.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-6876bc79b21aa2712acf207b7ace4aa4c9a915921a7aa63524845df76606166e.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    },
+    {
+      "asset": "unit-shared-734ccac4c569241b97bd401d6e3d2ddbe7a48523c1039bd8782ee11783d9e166.jpg",
+      "registry": "manifests/unit-shared-material-registry.json",
+      "verified_fields": [
+        "candidate",
+        "source",
+        "qa"
+      ],
+      "unbound_fields": [],
+      "unresolved_hash_fields": []
+    }
+  ],
+  "source_binding_complete": true,
+  "required_model_files_present": true,
+  "complete_game_art_pack": false,
+  "commercial_quality_approved": false
+}

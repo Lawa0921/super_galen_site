@@ -1,0 +1,23 @@
+{
+  "asset_id": "original-guard-grip-channel",
+  "status": "candidate",
+  "runtime_publish_allowed": false,
+  "source_run": "original-guard-right-grip-shape/2026-10-05",
+  "source_sha256": "e323c874e0ccff8ba55f97312c04697133c716ae92a732b6155cc034325c8057",
+  "ownership_basis": "Original generated project grip study; no external character, rig, motion or mocap.",
+  "scope": "Only remove the fused reference handle by a fitted Boolean channel. Preserve the gauntlet exterior; largest source component only. No claimed wrist fit, finger rig, texture or runtime readiness.",
+  "method": "Exact coordinate weld for ingestion; fit circular handle cross sections at four exposed heights; finite cylinder Boolean difference. The cylinder is a subtractive engineering tool, never a visible character asset.",
+  "canonical_display_height_m": 0.34,
+  "qa": [
+    "source main component closed with consistent winding",
+    "cutter derived from exposed source stem only",
+    "persist Blend and GLB before rendering",
+    "channel empty along fitted axis",
+    "largest output topology and unchanged exterior check",
+    "front/back/oblique and axial channel views"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": true,
+  "independent_review": "pass_local_channel_step_only",
+  "local_channel_checks": "pass"
+}

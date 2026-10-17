@@ -1,0 +1,21 @@
+{
+  "asset_id": "original-glove-power-grip",
+  "status": "qa_failed",
+  "local_milestone": "Original five-finger NaturalCurl source and GLB motion verified; weapon grasp and commercial art remain unaccepted.",
+  "current_motion_candidate": "art-factory/rts/runs/original-glove-power-grip/2026-10-07-v1/candidate/natural-hand.glb",
+  "local_preview": "http://127.0.0.1:4334/glove-natural/",
+  "run": "art-factory/rts/runs/original-glove-power-grip/2026-10-07-v1",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "screen_id": "rts-original-hand-power-grip-review",
+  "screen_breakdown_path": "art-factory/rts/manifests/screen-breakdown.json",
+  "source_mode": "Original project hand and crossbow only. Original grip-specific poses and motion; no stock models, rigs or animations.",
+  "scope": "Improve proximal finger flexion and thumb opposition while preserving original hand geometry and bones. Repair source-derived thumb ownership only; preserve neighbouring non-thumb web blends. Fit complete original crossbow using bounded rigid transforms. Verify visual grasp, exact surface contact, self/full-weapon collisions and GLB motion.",
+  "previous_evidence": "art-factory/rts/runs/original-glove-weapon-fit/2026-10-07-v1/qa/evidence-index.json",
+  "hand_source_sha256": "5871ce5ed506c7e29ae1aa06e7a3d6edf855f11af595ee691d47799f1c30c2e1",
+  "weapon_source_sha256": "0d1889f4a98583fe773dab449b85740874900af3547a111836b5c6fb9453541b",
+  "alpha_policy": "Opaque original meshes. Clay hand inspection is not final material art.",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": false,
+  "commercial_character_art": false
+}

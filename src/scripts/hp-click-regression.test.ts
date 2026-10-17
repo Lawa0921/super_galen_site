@@ -4,6 +4,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const publicScripts = resolve(process.cwd(), 'public/scripts');
 
+interface HpTestGameState {
+  setHP(value: number): void;
+  setSP(value: number): void;
+  setGold(value: number): void;
+  getState(): { gold: number };
+  createResourceDamagePopup(...args: unknown[]): void;
+  createCriticalDamagePopup(...args: unknown[]): void;
+}
+
+/** public/scripts 的傳統腳本掛在 window 上的全域；測試以本地型別存取。 */
+type HpTestWindow = Window & {
+  i18n: unknown;
+  LazyLoader: unknown;
+  initSummonSystem: unknown;
+  DebugUtils: unknown;
+  unifiedWalletManager: unknown;
+  GameState: HpTestGameState;
+  initGoldSystem: () => void;
+};
+const testWindow = window as unknown as HpTestWindow;
+
 function loadPublicScript(name: string): void {
   const source = readFileSync(resolve(publicScripts, name), 'utf8');
   new Function(source).call(window);
@@ -28,19 +49,19 @@ describe('首頁 HP click 消耗', () => {
     document.getElementById('language-current')!.addEventListener('click', (event) => {
       event.stopPropagation();
     });
-    window.i18n = { currentTranslations: { inventory: { items: {} } } } as never;
-    window.LazyLoader = { loadTabModule: vi.fn(() => Promise.resolve()) } as never;
-    window.initSummonSystem = vi.fn();
-    window.DebugUtils = { isDevelopment: () => false } as never;
-    window.unifiedWalletManager = {} as never;
+    testWindow.i18n = { currentTranslations: { inventory: { items: {} } } } as never;
+    testWindow.LazyLoader = { loadTabModule: vi.fn(() => Promise.resolve()) } as never;
+    testWindow.initSummonSystem = vi.fn();
+    testWindow.DebugUtils = { isDevelopment: () => false } as never;
+    testWindow.unifiedWalletManager = {} as never;
     globalThis.IntersectionObserver = class {
       observe(): void {}
     } as never;
 
     loadPublicScript('gamestate.js');
-    window.GameState.setHP(1000);
-    window.GameState.setSP(0);
-    window.GameState.setGold(100000);
+    testWindow.GameState.setHP(1000);
+    testWindow.GameState.setSP(0);
+    testWindow.GameState.setGold(100000);
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
   });
 
@@ -50,8 +71,8 @@ describe('首頁 HP click 消耗', () => {
   });
 
   it('重複初始化後，兩次快速不同 click 各只消耗一次 HP', async () => {
-    const resourcePopup = vi.spyOn(window.GameState, 'createResourceDamagePopup').mockImplementation(() => {});
-    const criticalPopup = vi.spyOn(window.GameState, 'createCriticalDamagePopup').mockImplementation(() => {});
+    const resourcePopup = vi.spyOn(testWindow.GameState, 'createResourceDamagePopup').mockImplementation(() => {});
+    const criticalPopup = vi.spyOn(testWindow.GameState, 'createCriticalDamagePopup').mockImplementation(() => {});
 
     loadPublicScript('inventory.js');
     loadPublicScript('main.js');
@@ -59,13 +80,13 @@ describe('首頁 HP click 消耗', () => {
     await vi.runAllTicks();
 
     // 模擬初始化流程重入；同一頁仍只能保留一個全域 click handler。
-    window.initGoldSystem();
+    testWindow.initGoldSystem();
 
     document.querySelector<HTMLButtonElement>('[data-tab="status"]')!.click();
     document.querySelector<HTMLButtonElement>('[data-tab="skills"]')!.click();
     document.getElementById('language-current')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(resourcePopup.mock.calls.length + criticalPopup.mock.calls.length).toBe(3);
-    expect(window.GameState.getState().gold).toBeGreaterThan(100000);
+    expect(testWindow.GameState.getState().gold).toBeGreaterThan(100000);
   });
 });

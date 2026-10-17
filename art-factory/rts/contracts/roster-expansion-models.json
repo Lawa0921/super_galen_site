@@ -1,0 +1,93 @@
+{
+  "id": "roster-expansion-models",
+  "date": "2026-10-16",
+  "brief": "art-factory/rts/contracts/roster-expansion-brief.json",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "status": "pikeman, ranger and mage published pending user style approval",
+  "method": [
+    "inputs: codex built-in image_gen front/back orthographic references (tools/roster_imagegen.py), guard + crossbow images as style references only; mechanical QA tools/unit_input_qa.py inspect_png",
+    "body: TripoSR (pinned cache, tools/neural_pilot_v2.py) + front/rear projection (tools/neural_pilot_v3.py) + Blender import QA (tools/neural_blender_qa_v3.py)",
+    "prep: tools/roster_unit_prepare.py (human-units v2 texel team mask; 'steel-safe' profile keeps blue-steel armour out of the mask)",
+    "build: tools/roster_<unit>_build.py in Blender 5.2: published 20-bone unit rig with joints fitted to the body, auto weights + arm-chain reweight + spatial shoulder smoothing + continuous tabard skirt weights, wrist cut, closed hands from tools/roster_hands.py (solid palm hugging the haft, four touching three-phalanx fingers with back-of-fist knuckles wrapping into the palm heel, crossing thumb, rigid Hand-bone palm with the wrist bend confined to a capped cuff; ranger draw hand is a split-finger hook on a served string; mage left hand is the generated hand rigidly re-weighted to Hand_L; straight-wrist two-bone IK keeps the forearm on the palm line via haft roll (pike, staff) or bow-space calibration (bow), with unwrapped forearm twist and swing-plane continuity; review pages carry idle/attack hand close-ups), procedural weapon, every clip baked per frame with analytic two-bone IK so both hands stay on the weapon, LOD1 with protected wrist/hand/foot vertices",
+    "pack: tools/roster_pack.py (detail-v1 shared surfaces, content-addressed unit-shared body atlas, lossless compaction)",
+    "publish: tools/roster_publish.py (refuses unless every gate passed for the exact candidate SHA)"
+  ],
+  "gates": {
+    "gltf_validator_errors": 0,
+    "integrity": "tools/roster_integrity.py: exact clips, one 20-joint skin identical across LODs, weights normalized <1e-5 and <=4 influences, increasing keys, equal durations, LOD0 8k-20k / LOD1 4k-10k triangles, rtsMotion equal in both LODs, conservative bounds on every skinned node, team mask <= 3 MB, bytes <= guard pair, floor >= -5 mm and Idle <= 3 cm",
+    "hand_contact": "tools/roster_hand_qa.py: gap -6..+8 mm, >= 12/16 wrap sectors (>= 8/16 for a draw hand hooked on the string), 0 cuff/weapon crossings, 31 samples per clip per LOD; released support hand recorded",
+    "runtime_collision": "tools/all_models_runtime_collision.py on all_models_runtime_pose.mjs samples: 0 body/weapon crossings",
+    "bounds": "tools/roster_bounds_check.py: every skinned vertex inside rtsConservativeBounds at <= 1/60 s sampling",
+    "source": "build report: zero source crossings, IK residual <= 1 mm on every clip"
+  },
+  "review": "art-factory/rts/review/roster-<unit>-20261016.html via tools/roster_review_capture.mjs (runtime ModelInstance, own Astro dev port) and tools/roster_review_page.py",
+  "train_icon": "tools/unit_train_icon_capture.mjs <run> tools/roster_train_icon_viewer.ts + run postprocess.py (contract unit-train-icons.json)",
+  "preview_gate": "UNITS[kind].preview stays true and kind stays out of REQUIRED_MODELS while model-registry user_style_approval is 'pending' (roster.test.ts)",
+  "units": {
+    "pikeman": {
+      "run": "art-factory/rts/runs/roster-expansion/2026-10-16-pikeman",
+      "rig": "guard 20-bone hierarchy (Root..Foot_R), joints fitted to the generated body",
+      "clips": [
+        "Idle",
+        "Walk",
+        "Attack",
+        "Hurt",
+        "Death"
+      ],
+      "fps": 30,
+      "attack_contact": {
+        "frame": 16,
+        "seconds": 0.5333333333333333
+      },
+      "rtsMotion": {
+        "locomotion": {
+          "clip": "Walk",
+          "strideMeters": 2,
+          "cycleSeconds": 0.6666666666666666
+        },
+        "attack": {
+          "clip": "Attack",
+          "durationSeconds": 1.2,
+          "contactSeconds": 0.5333333333333333
+        }
+      },
+      "weapon": "RosterPike: 2.6 m ash shaft, two leather grip wraps, steel butt ferrule, gold collar, langets, faceted leaf blade",
+      "user_style_approval": "pending"
+    },
+    "ranger": {
+      "run": "art-factory/rts/runs/roster-expansion/2026-10-16-ranger",
+      "rig": "crossbow-family 20-bone hierarchy, joints fitted to the body",
+      "clips": [
+        "Idle",
+        "Walk",
+        "Attack",
+        "Hurt",
+        "Death"
+      ],
+      "fps": 30,
+      "release": {
+        "frame": 12,
+        "seconds": 0.4
+      },
+      "rtsMotion": {
+        "locomotion": {
+          "clip": "Walk",
+          "strideMeters": 2.22,
+          "cycleSeconds": 0.6
+        },
+        "attack": {
+          "clip": "Attack",
+          "durationSeconds": 1.0,
+          "contactSeconds": 0.4
+        }
+      },
+      "weapon": "RangerLongbow (1.56 m recurve, Hand_L) + RangerBowString (tip rings Hand_L, nock ring Hand_R) + RangerArrow (Hand_R) + RangerQuiver (SpineUpper, seated on the back)",
+      "projectile": "models/arrow.glb (static, tip -Z) registered pending; combat still renders the bolt",
+      "rejected": "inputs a1 / body a1: TripoSR head distortion (runs/.../rejected/)",
+      "user_style_approval": "pending"
+    },
+    "mage": {
+      "status": "not started"
+    }
+  }
+}

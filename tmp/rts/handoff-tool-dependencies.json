@@ -1,0 +1,1159 @@
+{
+  "schema": "rts-handoff-tool-dependencies-v1",
+  "root": ".",
+  "generated_at": "2026-10-11T11:58:32.174842+00:00",
+  "scope": {
+    "starting_tools": "prior closure /tools plus art-factory/rts/tools/work_cast*, explicit audit_runtime.py, asset_source_integrity.py, build_restricted_geometry_denylist.ts",
+    "imports": "existing repo-local Python imports and TS/MJS relative imports only",
+    "source_lock": "source-lock.json raw/input snapshots only",
+    "root_review": "root-review.json direct path fields only; referenced reports not opened"
+  },
+  "counts": {
+    "files": 97,
+    "bytes": 24964804,
+    "tracked": 20,
+    "untracked": 74,
+    "ignored": 3
+  },
+  "files": [
+    {
+      "path": "art-factory/rts/runs/building-effects/2026-10-09-v1/tools/postprocess.py",
+      "bytes": 9515,
+      "git_state": "untracked",
+      "kinds": [
+        "prior-closure-tool",
+        "python-import"
+      ],
+      "refs": [
+        "art-factory/rts/runs/building-effects/2026-10-09-v1/tools/postprocess_test.py",
+        "handoff-source-closure.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/building-effects/2026-10-09-v1/tools/postprocess_test.py",
+      "bytes": 1806,
+      "git_state": "untracked",
+      "kinds": [
+        "related-python-test"
+      ],
+      "refs": [
+        "art-factory/rts/runs/building-effects/2026-10-09-v1/tools/postprocess.py"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/candidate/commander-lod0.glb",
+      "bytes": 1155096,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/candidate/commander-lod1.glb",
+      "bytes": 855856,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/candidate/priest-lod0.glb",
+      "bytes": 956944,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/candidate/priest-lod1.glb",
+      "bytes": 694248,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/candidate/worker-lod0.glb",
+      "bytes": 1039348,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/candidate/worker-lod1.glb",
+      "bytes": 775952,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/bounds-append.json",
+      "bytes": 1862,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/build.json",
+      "bytes": 10857,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/diagnosis/ground.json",
+      "bytes": 26669,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/diagnosis/report.json",
+      "bytes": 1539708,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/e2e-moving-three-browsers.json",
+      "bytes": 6346,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/gltf-validator.json",
+      "bytes": 23290,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/moving/report.json",
+      "bytes": 638850,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/python-final.log",
+      "bytes": 471,
+      "git_state": "ignored",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/root-review.json",
+      "bytes": 10492,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/typescript-moving.log",
+      "bytes": 0,
+      "git_state": "ignored",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/vitest-moving-full.log",
+      "bytes": 38296,
+      "git_state": "ignored",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/qa/webgl.json",
+      "bytes": 2896059,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/commander-work-cast.blend",
+      "bytes": 1611288,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/commander-lod0.glb",
+      "bytes": 1084056,
+      "git_state": "untracked",
+      "kinds": [
+        "source-lock-raw-input-snapshot"
+      ],
+      "refs": [
+        "source-lock.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/commander-lod1.glb",
+      "bytes": 784812,
+      "git_state": "untracked",
+      "kinds": [
+        "source-lock-raw-input-snapshot"
+      ],
+      "refs": [
+        "source-lock.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/commander.blend",
+      "bytes": 1590978,
+      "git_state": "untracked",
+      "kinds": [
+        "source-lock-raw-input-snapshot"
+      ],
+      "refs": [
+        "source-lock.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/model-registry.json",
+      "bytes": 6711,
+      "git_state": "untracked",
+      "kinds": [
+        "source-lock-raw-input-snapshot"
+      ],
+      "refs": [
+        "source-lock.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/priest-lod0.glb",
+      "bytes": 932556,
+      "git_state": "untracked",
+      "kinds": [
+        "source-lock-raw-input-snapshot"
+      ],
+      "refs": [
+        "source-lock.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/priest-lod1.glb",
+      "bytes": 669868,
+      "git_state": "untracked",
+      "kinds": [
+        "source-lock-raw-input-snapshot"
+      ],
+      "refs": [
+        "source-lock.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/priest.blend",
+      "bytes": 1454630,
+      "git_state": "untracked",
+      "kinds": [
+        "source-lock-raw-input-snapshot"
+      ],
+      "refs": [
+        "source-lock.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/unit-registry.json",
+      "bytes": 42047,
+      "git_state": "untracked",
+      "kinds": [
+        "source-lock-raw-input-snapshot"
+      ],
+      "refs": [
+        "source-lock.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/worker-lod0.glb",
+      "bytes": 966128,
+      "git_state": "untracked",
+      "kinds": [
+        "source-lock-raw-input-snapshot"
+      ],
+      "refs": [
+        "source-lock.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/worker-lod1.glb",
+      "bytes": 702732,
+      "git_state": "untracked",
+      "kinds": [
+        "source-lock-raw-input-snapshot"
+      ],
+      "refs": [
+        "source-lock.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/input/worker.blend",
+      "bytes": 1274648,
+      "git_state": "untracked",
+      "kinds": [
+        "source-lock-raw-input-snapshot"
+      ],
+      "refs": [
+        "source-lock.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/priest-work-cast.blend",
+      "bytes": 1462724,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/raw/worker-work-cast.blend",
+      "bytes": 1295223,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/runs/work-cast/2026-10-11-v2/source-lock.json",
+      "bytes": 3989,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path",
+        "source-lock"
+      ],
+      "refs": [
+        "root-review.json",
+        "source-lock.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/asset_source_integrity.py",
+      "bytes": 1980,
+      "git_state": "untracked",
+      "kinds": [
+        "explicit-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/asset_source_integrity.py"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/asset_source_integrity_test.py",
+      "bytes": 4085,
+      "git_state": "untracked",
+      "kinds": [
+        "related-python-test"
+      ],
+      "refs": [
+        "art-factory/rts/tools/asset_source_integrity.py"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/audit_runtime.py",
+      "bytes": 3447,
+      "git_state": "tracked",
+      "kinds": [
+        "explicit-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/audit_runtime.py"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/audit_runtime_test.py",
+      "bytes": 2214,
+      "git_state": "untracked",
+      "kinds": [
+        "related-python-test"
+      ],
+      "refs": [
+        "art-factory/rts/tools/audit_runtime.py"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/build_restricted_geometry_denylist.ts",
+      "bytes": 5794,
+      "git_state": "untracked",
+      "kinds": [
+        "explicit-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/build_restricted_geometry_denylist.ts"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/building_rubble_build.py",
+      "bytes": 19196,
+      "git_state": "untracked",
+      "kinds": [
+        "prior-closure-tool"
+      ],
+      "refs": [
+        "handoff-source-closure.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/geometry_fingerprint.ts",
+      "bytes": 2977,
+      "git_state": "untracked",
+      "kinds": [
+        "prior-closure-tool",
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "art-factory/rts/tools/build_restricted_geometry_denylist.ts",
+        "handoff-source-closure.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/landscape_materials.py",
+      "bytes": 2682,
+      "git_state": "tracked",
+      "kinds": [
+        "prior-closure-tool"
+      ],
+      "refs": [
+        "handoff-source-closure.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/map_thumbnail_capture.mjs",
+      "bytes": 2429,
+      "git_state": "untracked",
+      "kinds": [
+        "prior-closure-tool"
+      ],
+      "refs": [
+        "handoff-source-closure.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/original_guard_bounds_qa.mjs",
+      "bytes": 15845,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast_diagnose.ts"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/prepare_terrain.py",
+      "bytes": 3102,
+      "git_state": "tracked",
+      "kinds": [
+        "prior-closure-tool"
+      ],
+      "refs": [
+        "handoff-source-closure.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/prepare_ui.py",
+      "bytes": 4247,
+      "git_state": "tracked",
+      "kinds": [
+        "prior-closure-tool"
+      ],
+      "refs": [
+        "handoff-source-closure.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/procedural_gauntlet_build.py",
+      "bytes": 70585,
+      "git_state": "untracked",
+      "kinds": [
+        "prior-closure-tool"
+      ],
+      "refs": [
+        "handoff-source-closure.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/terrain_detail_process.py",
+      "bytes": 11701,
+      "git_state": "tracked",
+      "kinds": [
+        "prior-closure-tool",
+        "python-import"
+      ],
+      "refs": [
+        "art-factory/rts/tools/landscape_materials.py",
+        "handoff-source-closure.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/undergrowth_process.py",
+      "bytes": 3823,
+      "git_state": "untracked",
+      "kinds": [
+        "prior-closure-tool"
+      ],
+      "refs": [
+        "handoff-source-closure.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/work_cast_bounds.py",
+      "bytes": 2575,
+      "git_state": "untracked",
+      "kinds": [
+        "work-cast-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast*"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/work_cast_build.py",
+      "bytes": 10878,
+      "git_state": "untracked",
+      "kinds": [
+        "work-cast-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast*"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/work_cast_candidate_test.py",
+      "bytes": 6819,
+      "git_state": "untracked",
+      "kinds": [
+        "work-cast-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast*"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/work_cast_diagnose.ts",
+      "bytes": 3324,
+      "git_state": "untracked",
+      "kinds": [
+        "work-cast-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast*"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/work_cast_moving_qa.ts",
+      "bytes": 2733,
+      "git_state": "untracked",
+      "kinds": [
+        "work-cast-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast*"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/work_cast_publish.py",
+      "bytes": 6871,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path",
+        "work-cast-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast*",
+        "root-review.json"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/work_cast_publish_test.py",
+      "bytes": 8503,
+      "git_state": "untracked",
+      "kinds": [
+        "related-python-test",
+        "work-cast-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast*",
+        "art-factory/rts/tools/work_cast_publish.py"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/work_cast_review.ts",
+      "bytes": 2911,
+      "git_state": "untracked",
+      "kinds": [
+        "work-cast-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast*"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/work_cast_scene.ts",
+      "bytes": 7571,
+      "git_state": "untracked",
+      "kinds": [
+        "work-cast-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast*"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/work_cast_spec.py",
+      "bytes": 6569,
+      "git_state": "untracked",
+      "kinds": [
+        "work-cast-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast*"
+      ]
+    },
+    {
+      "path": "art-factory/rts/tools/work_cast_validate.mjs",
+      "bytes": 1227,
+      "git_state": "untracked",
+      "kinds": [
+        "work-cast-tool"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast*"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/building-collapse.ts",
+      "bytes": 6118,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/models.ts",
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/building-effects.ts",
+      "bytes": 7246,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/building-collapse.ts",
+        "src/scripts/games/rts/models.ts",
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/building-lifecycle-presentation.ts",
+      "bytes": 10049,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/construction-presentation.ts",
+        "src/scripts/games/rts/models.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/building-lifecycle.ts",
+      "bytes": 1928,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/building-effects.ts",
+        "src/scripts/games/rts/visibility.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/cast-locomotion.ts",
+      "bytes": 2971,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path",
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "root-review.json",
+        "src/scripts/games/rts/models.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/catalog.ts",
+      "bytes": 6397,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/building-collapse.ts",
+        "src/scripts/games/rts/models.ts",
+        "src/scripts/games/rts/navigation.ts",
+        "src/scripts/games/rts/portrait.ts",
+        "src/scripts/games/rts/scene.ts",
+        "src/scripts/games/rts/targeting.ts",
+        "src/scripts/games/rts/team-material.ts",
+        "src/scripts/games/rts/types.ts",
+        "src/scripts/games/rts/visibility.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/construction-presentation.ts",
+      "bytes": 7346,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/models.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/districts.ts",
+      "bytes": 3657,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/landmarks.ts",
+        "src/scripts/games/rts/maps.ts",
+        "src/scripts/games/rts/scene.ts",
+        "src/scripts/games/rts/undergrowth.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/fog-texture.ts",
+      "bytes": 424,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/landmark-models.ts",
+      "bytes": 423,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/districts.ts",
+        "src/scripts/games/rts/models.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/landmarks.ts",
+      "bytes": 1652,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/maps.ts",
+      "bytes": 11469,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/building-collapse.ts",
+        "src/scripts/games/rts/building-lifecycle.ts",
+        "src/scripts/games/rts/districts.ts",
+        "src/scripts/games/rts/landmarks.ts",
+        "src/scripts/games/rts/navigation.ts",
+        "src/scripts/games/rts/river-channel.ts",
+        "src/scripts/games/rts/river-layout.ts",
+        "src/scripts/games/rts/scene.ts",
+        "src/scripts/games/rts/scenery.ts",
+        "src/scripts/games/rts/targeting.ts",
+        "src/scripts/games/rts/terrain.ts",
+        "src/scripts/games/rts/types.ts",
+        "src/scripts/games/rts/undergrowth.ts",
+        "src/scripts/games/rts/unit-presentation.ts",
+        "src/scripts/games/rts/visibility.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/models.ts",
+      "bytes": 26497,
+      "git_state": "tracked",
+      "kinds": [
+        "root-review-direct-path",
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast_scene.ts",
+        "root-review.json",
+        "src/scripts/games/rts/landmarks.ts",
+        "src/scripts/games/rts/portrait.ts",
+        "src/scripts/games/rts/projectile-layer.ts",
+        "src/scripts/games/rts/scene.ts",
+        "src/scripts/games/rts/scenery.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/navigation.ts",
+      "bytes": 15447,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/districts.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/picking.ts",
+      "bytes": 807,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/portrait.ts",
+      "bytes": 4835,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/projectile-layer.ts",
+      "bytes": 1630,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/resource-memory.ts",
+      "bytes": 414,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/river-channel.ts",
+      "bytes": 2841,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/river-layout.ts",
+      "bytes": 3311,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/districts.ts",
+        "src/scripts/games/rts/maps.ts",
+        "src/scripts/games/rts/river-channel.ts",
+        "src/scripts/games/rts/scene.ts",
+        "src/scripts/games/rts/terrain.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/scene.ts",
+      "bytes": 21082,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/portrait.ts",
+        "src/scripts/games/rts/unit-actions.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/scenery.ts",
+      "bytes": 3247,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/shared-lod-rig.ts",
+      "bytes": 4115,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/models.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/shared-material-loader.ts",
+      "bytes": 2320,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/models.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/sight-raster.ts",
+      "bytes": 965,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/visibility.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/static-transform.ts",
+      "bytes": 1560,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/models.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/targeting.ts",
+      "bytes": 1567,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/team-material.ts",
+      "bytes": 2505,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "art-factory/rts/tools/work_cast_scene.ts",
+        "src/scripts/games/rts/models.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/terrain.ts",
+      "bytes": 7230,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/types.ts",
+      "bytes": 5546,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/building-effects.ts",
+        "src/scripts/games/rts/building-lifecycle.ts",
+        "src/scripts/games/rts/projectile-layer.ts",
+        "src/scripts/games/rts/resource-memory.ts",
+        "src/scripts/games/rts/scene.ts",
+        "src/scripts/games/rts/unit-actions.ts",
+        "src/scripts/games/rts/visibility.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/undergrowth.ts",
+      "bytes": 3267,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/unit-actions.ts",
+      "bytes": 1168,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path",
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "root-review.json",
+        "src/scripts/games/rts/cast-locomotion.ts",
+        "src/scripts/games/rts/models.ts",
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/unit-presentation.ts",
+      "bytes": 1655,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/scene.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/unit-reaction.ts",
+      "bytes": 566,
+      "git_state": "untracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/models.ts",
+        "src/scripts/games/rts/unit-actions.ts"
+      ]
+    },
+    {
+      "path": "src/scripts/games/rts/visibility.ts",
+      "bytes": 3636,
+      "git_state": "tracked",
+      "kinds": [
+        "ts-mjs-relative-import"
+      ],
+      "refs": [
+        "src/scripts/games/rts/scene.ts",
+        "src/scripts/games/rts/targeting.ts"
+      ]
+    },
+    {
+      "path": "tests/e2e/games-rts-work-cast.spec.ts",
+      "bytes": 10770,
+      "git_state": "untracked",
+      "kinds": [
+        "root-review-direct-path"
+      ],
+      "refs": [
+        "root-review.json"
+      ]
+    }
+  ],
+  "missing": [],
+  "excluded": []
+}

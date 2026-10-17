@@ -1,0 +1,1373 @@
+{
+  "unit": "ranger",
+  "run": "art-factory/rts/runs/roster-expansion/2026-10-16-ranger",
+  "port": 4398,
+  "errors": [],
+  "unitInfo": [
+    {
+      "id": "ranger",
+      "clips": [
+        {
+          "name": "Attack",
+          "duration": 1
+        },
+        {
+          "name": "Death",
+          "duration": 1.600000023841858
+        },
+        {
+          "name": "Hurt",
+          "duration": 0.5
+        },
+        {
+          "name": "Idle",
+          "duration": 2.4000000953674316
+        },
+        {
+          "name": "Walk",
+          "duration": 0.6000000238418579
+        }
+      ],
+      "height": 1.7969372795929066,
+      "min": [
+        -0.6039478805837304,
+        0.0016865353633996175,
+        -0.8015721164956903
+      ],
+      "max": [
+        0.9557205712923211,
+        1.7986238149563063,
+        0.7069287438693441
+      ],
+      "contextLost": false
+    }
+  ],
+  "compare": [
+    {
+      "id": "crossbow",
+      "clips": [
+        {
+          "name": "Attack",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Death",
+          "duration": 2.0833332538604736
+        },
+        {
+          "name": "Hurt",
+          "duration": 1.1666666269302368
+        },
+        {
+          "name": "Idle",
+          "duration": 1.6666666269302368
+        },
+        {
+          "name": "Walk",
+          "duration": 1.6666666269302368
+        }
+      ],
+      "height": 1.8000950599134855,
+      "min": [
+        -0.49239963124103786,
+        -0.0008953744591168069,
+        -0.650258518847801
+      ],
+      "max": [
+        0.7934999485082829,
+        1.7991996854543686,
+        0.1850537961110189
+      ],
+      "contextLost": false
+    },
+    {
+      "id": "ranger",
+      "clips": [
+        {
+          "name": "Attack",
+          "duration": 1
+        },
+        {
+          "name": "Death",
+          "duration": 1.600000023841858
+        },
+        {
+          "name": "Hurt",
+          "duration": 0.5
+        },
+        {
+          "name": "Idle",
+          "duration": 2.4000000953674316
+        },
+        {
+          "name": "Walk",
+          "duration": 0.6000000238418579
+        }
+      ],
+      "height": 1.7969372795929066,
+      "min": [
+        -0.6039478805837304,
+        0.0016865353633996175,
+        -0.8015721164956903
+      ],
+      "max": [
+        0.9557205712923211,
+        1.7986238149563063,
+        0.7069287438693441
+      ],
+      "contextLost": false
+    },
+    {
+      "id": "guard",
+      "clips": [
+        {
+          "name": "Attack",
+          "duration": 1.2000000476837158
+        },
+        {
+          "name": "Death",
+          "duration": 1.600000023841858
+        },
+        {
+          "name": "Hurt",
+          "duration": 0.5
+        },
+        {
+          "name": "Idle",
+          "duration": 2.4000000953674316
+        },
+        {
+          "name": "Walk",
+          "duration": 0.6666666865348816
+        }
+      ],
+      "height": 1.947265992798612,
+      "min": [
+        -0.5791082387693667,
+        -0.08726586618904168,
+        -0.18429483067422042
+      ],
+      "max": [
+        0.6411559713066781,
+        1.8600001266095703,
+        0.26508347693059414
+      ],
+      "contextLost": false
+    }
+  ],
+  "shots": [
+    {
+      "file": "turntable-lod0-000.png",
+      "kind": "turntable",
+      "lod": 0,
+      "yaw": 0
+    },
+    {
+      "file": "turntable-lod0-045.png",
+      "kind": "turntable",
+      "lod": 0,
+      "yaw": 45
+    },
+    {
+      "file": "turntable-lod0-090.png",
+      "kind": "turntable",
+      "lod": 0,
+      "yaw": 90
+    },
+    {
+      "file": "turntable-lod0-135.png",
+      "kind": "turntable",
+      "lod": 0,
+      "yaw": 135
+    },
+    {
+      "file": "turntable-lod0-180.png",
+      "kind": "turntable",
+      "lod": 0,
+      "yaw": 180
+    },
+    {
+      "file": "turntable-lod0-225.png",
+      "kind": "turntable",
+      "lod": 0,
+      "yaw": 225
+    },
+    {
+      "file": "turntable-lod0-270.png",
+      "kind": "turntable",
+      "lod": 0,
+      "yaw": 270
+    },
+    {
+      "file": "turntable-lod0-315.png",
+      "kind": "turntable",
+      "lod": 0,
+      "yaw": 315
+    },
+    {
+      "file": "turntable-lod1-000.png",
+      "kind": "turntable",
+      "lod": 1,
+      "yaw": 0
+    },
+    {
+      "file": "turntable-lod1-045.png",
+      "kind": "turntable",
+      "lod": 1,
+      "yaw": 45
+    },
+    {
+      "file": "turntable-lod1-090.png",
+      "kind": "turntable",
+      "lod": 1,
+      "yaw": 90
+    },
+    {
+      "file": "turntable-lod1-135.png",
+      "kind": "turntable",
+      "lod": 1,
+      "yaw": 135
+    },
+    {
+      "file": "turntable-lod1-180.png",
+      "kind": "turntable",
+      "lod": 1,
+      "yaw": 180
+    },
+    {
+      "file": "turntable-lod1-225.png",
+      "kind": "turntable",
+      "lod": 1,
+      "yaw": 225
+    },
+    {
+      "file": "turntable-lod1-270.png",
+      "kind": "turntable",
+      "lod": 1,
+      "yaw": 270
+    },
+    {
+      "file": "turntable-lod1-315.png",
+      "kind": "turntable",
+      "lod": 1,
+      "yaw": 315
+    },
+    {
+      "file": "team-blue-lod0.png",
+      "kind": "team",
+      "team": 0,
+      "lod": 0
+    },
+    {
+      "file": "team-blue-lod1.png",
+      "kind": "team",
+      "team": 0,
+      "lod": 1
+    },
+    {
+      "file": "team-red-lod0.png",
+      "kind": "team",
+      "team": 1,
+      "lod": 0
+    },
+    {
+      "file": "team-red-lod1.png",
+      "kind": "team",
+      "team": 1,
+      "lod": 1
+    },
+    {
+      "file": "clip-attack-three-quarter-0.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "three-quarter",
+      "fraction": 0,
+      "time": 0
+    },
+    {
+      "file": "clip-attack-three-quarter-1.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "three-quarter",
+      "fraction": 0.14285714285714285,
+      "time": 0.1429
+    },
+    {
+      "file": "clip-attack-three-quarter-2.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "three-quarter",
+      "fraction": 0.2857142857142857,
+      "time": 0.2857
+    },
+    {
+      "file": "clip-attack-three-quarter-3.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "three-quarter",
+      "fraction": 0.42857142857142855,
+      "time": 0.4286
+    },
+    {
+      "file": "clip-attack-three-quarter-4.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "three-quarter",
+      "fraction": 0.5714285714285714,
+      "time": 0.5714
+    },
+    {
+      "file": "clip-attack-three-quarter-5.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "three-quarter",
+      "fraction": 0.7142857142857143,
+      "time": 0.7143
+    },
+    {
+      "file": "clip-attack-three-quarter-6.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "three-quarter",
+      "fraction": 0.8571428571428571,
+      "time": 0.8571
+    },
+    {
+      "file": "clip-attack-three-quarter-7.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "three-quarter",
+      "fraction": 1,
+      "time": 1
+    },
+    {
+      "file": "clip-attack-side-0.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "side",
+      "fraction": 0,
+      "time": 0
+    },
+    {
+      "file": "clip-attack-side-1.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "side",
+      "fraction": 0.14285714285714285,
+      "time": 0.1429
+    },
+    {
+      "file": "clip-attack-side-2.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "side",
+      "fraction": 0.2857142857142857,
+      "time": 0.2857
+    },
+    {
+      "file": "clip-attack-side-3.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "side",
+      "fraction": 0.42857142857142855,
+      "time": 0.4286
+    },
+    {
+      "file": "clip-attack-side-4.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "side",
+      "fraction": 0.5714285714285714,
+      "time": 0.5714
+    },
+    {
+      "file": "clip-attack-side-5.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "side",
+      "fraction": 0.7142857142857143,
+      "time": 0.7143
+    },
+    {
+      "file": "clip-attack-side-6.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "side",
+      "fraction": 0.8571428571428571,
+      "time": 0.8571
+    },
+    {
+      "file": "clip-attack-side-7.png",
+      "kind": "clip",
+      "clip": "Attack",
+      "view": "side",
+      "fraction": 1,
+      "time": 1
+    },
+    {
+      "file": "clip-attack-lod1-0.png",
+      "kind": "clip-lod1",
+      "clip": "Attack",
+      "fraction": 0
+    },
+    {
+      "file": "clip-attack-lod1-1.png",
+      "kind": "clip-lod1",
+      "clip": "Attack",
+      "fraction": 0.14285714285714285
+    },
+    {
+      "file": "clip-attack-lod1-2.png",
+      "kind": "clip-lod1",
+      "clip": "Attack",
+      "fraction": 0.2857142857142857
+    },
+    {
+      "file": "clip-attack-lod1-3.png",
+      "kind": "clip-lod1",
+      "clip": "Attack",
+      "fraction": 0.42857142857142855
+    },
+    {
+      "file": "clip-attack-lod1-4.png",
+      "kind": "clip-lod1",
+      "clip": "Attack",
+      "fraction": 0.5714285714285714
+    },
+    {
+      "file": "clip-attack-lod1-5.png",
+      "kind": "clip-lod1",
+      "clip": "Attack",
+      "fraction": 0.7142857142857143
+    },
+    {
+      "file": "clip-attack-lod1-6.png",
+      "kind": "clip-lod1",
+      "clip": "Attack",
+      "fraction": 0.8571428571428571
+    },
+    {
+      "file": "clip-attack-lod1-7.png",
+      "kind": "clip-lod1",
+      "clip": "Attack",
+      "fraction": 1
+    },
+    {
+      "file": "clip-death-three-quarter-0.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "three-quarter",
+      "fraction": 0,
+      "time": 0
+    },
+    {
+      "file": "clip-death-three-quarter-1.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "three-quarter",
+      "fraction": 0.14285714285714285,
+      "time": 0.2286
+    },
+    {
+      "file": "clip-death-three-quarter-2.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "three-quarter",
+      "fraction": 0.2857142857142857,
+      "time": 0.4571
+    },
+    {
+      "file": "clip-death-three-quarter-3.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "three-quarter",
+      "fraction": 0.42857142857142855,
+      "time": 0.6857
+    },
+    {
+      "file": "clip-death-three-quarter-4.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "three-quarter",
+      "fraction": 0.5714285714285714,
+      "time": 0.9143
+    },
+    {
+      "file": "clip-death-three-quarter-5.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "three-quarter",
+      "fraction": 0.7142857142857143,
+      "time": 1.1429
+    },
+    {
+      "file": "clip-death-three-quarter-6.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "three-quarter",
+      "fraction": 0.8571428571428571,
+      "time": 1.3714
+    },
+    {
+      "file": "clip-death-three-quarter-7.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "three-quarter",
+      "fraction": 1,
+      "time": 1.6
+    },
+    {
+      "file": "clip-death-side-0.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "side",
+      "fraction": 0,
+      "time": 0
+    },
+    {
+      "file": "clip-death-side-1.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "side",
+      "fraction": 0.14285714285714285,
+      "time": 0.2286
+    },
+    {
+      "file": "clip-death-side-2.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "side",
+      "fraction": 0.2857142857142857,
+      "time": 0.4571
+    },
+    {
+      "file": "clip-death-side-3.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "side",
+      "fraction": 0.42857142857142855,
+      "time": 0.6857
+    },
+    {
+      "file": "clip-death-side-4.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "side",
+      "fraction": 0.5714285714285714,
+      "time": 0.9143
+    },
+    {
+      "file": "clip-death-side-5.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "side",
+      "fraction": 0.7142857142857143,
+      "time": 1.1429
+    },
+    {
+      "file": "clip-death-side-6.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "side",
+      "fraction": 0.8571428571428571,
+      "time": 1.3714
+    },
+    {
+      "file": "clip-death-side-7.png",
+      "kind": "clip",
+      "clip": "Death",
+      "view": "side",
+      "fraction": 1,
+      "time": 1.6
+    },
+    {
+      "file": "clip-death-lod1-0.png",
+      "kind": "clip-lod1",
+      "clip": "Death",
+      "fraction": 0
+    },
+    {
+      "file": "clip-death-lod1-1.png",
+      "kind": "clip-lod1",
+      "clip": "Death",
+      "fraction": 0.14285714285714285
+    },
+    {
+      "file": "clip-death-lod1-2.png",
+      "kind": "clip-lod1",
+      "clip": "Death",
+      "fraction": 0.2857142857142857
+    },
+    {
+      "file": "clip-death-lod1-3.png",
+      "kind": "clip-lod1",
+      "clip": "Death",
+      "fraction": 0.42857142857142855
+    },
+    {
+      "file": "clip-death-lod1-4.png",
+      "kind": "clip-lod1",
+      "clip": "Death",
+      "fraction": 0.5714285714285714
+    },
+    {
+      "file": "clip-death-lod1-5.png",
+      "kind": "clip-lod1",
+      "clip": "Death",
+      "fraction": 0.7142857142857143
+    },
+    {
+      "file": "clip-death-lod1-6.png",
+      "kind": "clip-lod1",
+      "clip": "Death",
+      "fraction": 0.8571428571428571
+    },
+    {
+      "file": "clip-death-lod1-7.png",
+      "kind": "clip-lod1",
+      "clip": "Death",
+      "fraction": 1
+    },
+    {
+      "file": "clip-hurt-three-quarter-0.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "three-quarter",
+      "fraction": 0,
+      "time": 0
+    },
+    {
+      "file": "clip-hurt-three-quarter-1.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "three-quarter",
+      "fraction": 0.14285714285714285,
+      "time": 0.0714
+    },
+    {
+      "file": "clip-hurt-three-quarter-2.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "three-quarter",
+      "fraction": 0.2857142857142857,
+      "time": 0.1429
+    },
+    {
+      "file": "clip-hurt-three-quarter-3.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "three-quarter",
+      "fraction": 0.42857142857142855,
+      "time": 0.2143
+    },
+    {
+      "file": "clip-hurt-three-quarter-4.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "three-quarter",
+      "fraction": 0.5714285714285714,
+      "time": 0.2857
+    },
+    {
+      "file": "clip-hurt-three-quarter-5.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "three-quarter",
+      "fraction": 0.7142857142857143,
+      "time": 0.3571
+    },
+    {
+      "file": "clip-hurt-three-quarter-6.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "three-quarter",
+      "fraction": 0.8571428571428571,
+      "time": 0.4286
+    },
+    {
+      "file": "clip-hurt-three-quarter-7.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "three-quarter",
+      "fraction": 1,
+      "time": 0.5
+    },
+    {
+      "file": "clip-hurt-side-0.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "side",
+      "fraction": 0,
+      "time": 0
+    },
+    {
+      "file": "clip-hurt-side-1.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "side",
+      "fraction": 0.14285714285714285,
+      "time": 0.0714
+    },
+    {
+      "file": "clip-hurt-side-2.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "side",
+      "fraction": 0.2857142857142857,
+      "time": 0.1429
+    },
+    {
+      "file": "clip-hurt-side-3.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "side",
+      "fraction": 0.42857142857142855,
+      "time": 0.2143
+    },
+    {
+      "file": "clip-hurt-side-4.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "side",
+      "fraction": 0.5714285714285714,
+      "time": 0.2857
+    },
+    {
+      "file": "clip-hurt-side-5.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "side",
+      "fraction": 0.7142857142857143,
+      "time": 0.3571
+    },
+    {
+      "file": "clip-hurt-side-6.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "side",
+      "fraction": 0.8571428571428571,
+      "time": 0.4286
+    },
+    {
+      "file": "clip-hurt-side-7.png",
+      "kind": "clip",
+      "clip": "Hurt",
+      "view": "side",
+      "fraction": 1,
+      "time": 0.5
+    },
+    {
+      "file": "clip-hurt-lod1-0.png",
+      "kind": "clip-lod1",
+      "clip": "Hurt",
+      "fraction": 0
+    },
+    {
+      "file": "clip-hurt-lod1-1.png",
+      "kind": "clip-lod1",
+      "clip": "Hurt",
+      "fraction": 0.14285714285714285
+    },
+    {
+      "file": "clip-hurt-lod1-2.png",
+      "kind": "clip-lod1",
+      "clip": "Hurt",
+      "fraction": 0.2857142857142857
+    },
+    {
+      "file": "clip-hurt-lod1-3.png",
+      "kind": "clip-lod1",
+      "clip": "Hurt",
+      "fraction": 0.42857142857142855
+    },
+    {
+      "file": "clip-hurt-lod1-4.png",
+      "kind": "clip-lod1",
+      "clip": "Hurt",
+      "fraction": 0.5714285714285714
+    },
+    {
+      "file": "clip-hurt-lod1-5.png",
+      "kind": "clip-lod1",
+      "clip": "Hurt",
+      "fraction": 0.7142857142857143
+    },
+    {
+      "file": "clip-hurt-lod1-6.png",
+      "kind": "clip-lod1",
+      "clip": "Hurt",
+      "fraction": 0.8571428571428571
+    },
+    {
+      "file": "clip-hurt-lod1-7.png",
+      "kind": "clip-lod1",
+      "clip": "Hurt",
+      "fraction": 1
+    },
+    {
+      "file": "clip-idle-three-quarter-0.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "three-quarter",
+      "fraction": 0,
+      "time": 0
+    },
+    {
+      "file": "clip-idle-three-quarter-1.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "three-quarter",
+      "fraction": 0.14285714285714285,
+      "time": 0.3429
+    },
+    {
+      "file": "clip-idle-three-quarter-2.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "three-quarter",
+      "fraction": 0.2857142857142857,
+      "time": 0.6857
+    },
+    {
+      "file": "clip-idle-three-quarter-3.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "three-quarter",
+      "fraction": 0.42857142857142855,
+      "time": 1.0286
+    },
+    {
+      "file": "clip-idle-three-quarter-4.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "three-quarter",
+      "fraction": 0.5714285714285714,
+      "time": 1.3714
+    },
+    {
+      "file": "clip-idle-three-quarter-5.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "three-quarter",
+      "fraction": 0.7142857142857143,
+      "time": 1.7143
+    },
+    {
+      "file": "clip-idle-three-quarter-6.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "three-quarter",
+      "fraction": 0.8571428571428571,
+      "time": 2.0571
+    },
+    {
+      "file": "clip-idle-three-quarter-7.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "three-quarter",
+      "fraction": 1,
+      "time": 2.4
+    },
+    {
+      "file": "clip-idle-side-0.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "side",
+      "fraction": 0,
+      "time": 0
+    },
+    {
+      "file": "clip-idle-side-1.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "side",
+      "fraction": 0.14285714285714285,
+      "time": 0.3429
+    },
+    {
+      "file": "clip-idle-side-2.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "side",
+      "fraction": 0.2857142857142857,
+      "time": 0.6857
+    },
+    {
+      "file": "clip-idle-side-3.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "side",
+      "fraction": 0.42857142857142855,
+      "time": 1.0286
+    },
+    {
+      "file": "clip-idle-side-4.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "side",
+      "fraction": 0.5714285714285714,
+      "time": 1.3714
+    },
+    {
+      "file": "clip-idle-side-5.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "side",
+      "fraction": 0.7142857142857143,
+      "time": 1.7143
+    },
+    {
+      "file": "clip-idle-side-6.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "side",
+      "fraction": 0.8571428571428571,
+      "time": 2.0571
+    },
+    {
+      "file": "clip-idle-side-7.png",
+      "kind": "clip",
+      "clip": "Idle",
+      "view": "side",
+      "fraction": 1,
+      "time": 2.4
+    },
+    {
+      "file": "clip-idle-lod1-0.png",
+      "kind": "clip-lod1",
+      "clip": "Idle",
+      "fraction": 0
+    },
+    {
+      "file": "clip-idle-lod1-1.png",
+      "kind": "clip-lod1",
+      "clip": "Idle",
+      "fraction": 0.14285714285714285
+    },
+    {
+      "file": "clip-idle-lod1-2.png",
+      "kind": "clip-lod1",
+      "clip": "Idle",
+      "fraction": 0.2857142857142857
+    },
+    {
+      "file": "clip-idle-lod1-3.png",
+      "kind": "clip-lod1",
+      "clip": "Idle",
+      "fraction": 0.42857142857142855
+    },
+    {
+      "file": "clip-idle-lod1-4.png",
+      "kind": "clip-lod1",
+      "clip": "Idle",
+      "fraction": 0.5714285714285714
+    },
+    {
+      "file": "clip-idle-lod1-5.png",
+      "kind": "clip-lod1",
+      "clip": "Idle",
+      "fraction": 0.7142857142857143
+    },
+    {
+      "file": "clip-idle-lod1-6.png",
+      "kind": "clip-lod1",
+      "clip": "Idle",
+      "fraction": 0.8571428571428571
+    },
+    {
+      "file": "clip-idle-lod1-7.png",
+      "kind": "clip-lod1",
+      "clip": "Idle",
+      "fraction": 1
+    },
+    {
+      "file": "clip-walk-three-quarter-0.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "three-quarter",
+      "fraction": 0,
+      "time": 0
+    },
+    {
+      "file": "clip-walk-three-quarter-1.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "three-quarter",
+      "fraction": 0.14285714285714285,
+      "time": 0.0857
+    },
+    {
+      "file": "clip-walk-three-quarter-2.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "three-quarter",
+      "fraction": 0.2857142857142857,
+      "time": 0.1714
+    },
+    {
+      "file": "clip-walk-three-quarter-3.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "three-quarter",
+      "fraction": 0.42857142857142855,
+      "time": 0.2571
+    },
+    {
+      "file": "clip-walk-three-quarter-4.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "three-quarter",
+      "fraction": 0.5714285714285714,
+      "time": 0.3429
+    },
+    {
+      "file": "clip-walk-three-quarter-5.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "three-quarter",
+      "fraction": 0.7142857142857143,
+      "time": 0.4286
+    },
+    {
+      "file": "clip-walk-three-quarter-6.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "three-quarter",
+      "fraction": 0.8571428571428571,
+      "time": 0.5143
+    },
+    {
+      "file": "clip-walk-three-quarter-7.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "three-quarter",
+      "fraction": 1,
+      "time": 0.6
+    },
+    {
+      "file": "clip-walk-side-0.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "side",
+      "fraction": 0,
+      "time": 0
+    },
+    {
+      "file": "clip-walk-side-1.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "side",
+      "fraction": 0.14285714285714285,
+      "time": 0.0857
+    },
+    {
+      "file": "clip-walk-side-2.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "side",
+      "fraction": 0.2857142857142857,
+      "time": 0.1714
+    },
+    {
+      "file": "clip-walk-side-3.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "side",
+      "fraction": 0.42857142857142855,
+      "time": 0.2571
+    },
+    {
+      "file": "clip-walk-side-4.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "side",
+      "fraction": 0.5714285714285714,
+      "time": 0.3429
+    },
+    {
+      "file": "clip-walk-side-5.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "side",
+      "fraction": 0.7142857142857143,
+      "time": 0.4286
+    },
+    {
+      "file": "clip-walk-side-6.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "side",
+      "fraction": 0.8571428571428571,
+      "time": 0.5143
+    },
+    {
+      "file": "clip-walk-side-7.png",
+      "kind": "clip",
+      "clip": "Walk",
+      "view": "side",
+      "fraction": 1,
+      "time": 0.6
+    },
+    {
+      "file": "clip-walk-lod1-0.png",
+      "kind": "clip-lod1",
+      "clip": "Walk",
+      "fraction": 0
+    },
+    {
+      "file": "clip-walk-lod1-1.png",
+      "kind": "clip-lod1",
+      "clip": "Walk",
+      "fraction": 0.14285714285714285
+    },
+    {
+      "file": "clip-walk-lod1-2.png",
+      "kind": "clip-lod1",
+      "clip": "Walk",
+      "fraction": 0.2857142857142857
+    },
+    {
+      "file": "clip-walk-lod1-3.png",
+      "kind": "clip-lod1",
+      "clip": "Walk",
+      "fraction": 0.42857142857142855
+    },
+    {
+      "file": "clip-walk-lod1-4.png",
+      "kind": "clip-lod1",
+      "clip": "Walk",
+      "fraction": 0.5714285714285714
+    },
+    {
+      "file": "clip-walk-lod1-5.png",
+      "kind": "clip-lod1",
+      "clip": "Walk",
+      "fraction": 0.7142857142857143
+    },
+    {
+      "file": "clip-walk-lod1-6.png",
+      "kind": "clip-lod1",
+      "clip": "Walk",
+      "fraction": 0.8571428571428571
+    },
+    {
+      "file": "clip-walk-lod1-7.png",
+      "kind": "clip-lod1",
+      "clip": "Walk",
+      "fraction": 1
+    },
+    {
+      "file": "compare-front.png",
+      "kind": "compare",
+      "view": "front",
+      "ids": [
+        "crossbow",
+        "ranger",
+        "guard"
+      ]
+    },
+    {
+      "file": "compare-three-quarter.png",
+      "kind": "compare",
+      "view": "three-quarter",
+      "ids": [
+        "crossbow",
+        "ranger",
+        "guard"
+      ]
+    },
+    {
+      "file": "compare-game.png",
+      "kind": "compare",
+      "view": "game",
+      "ids": [
+        "crossbow",
+        "ranger",
+        "guard"
+      ]
+    },
+    {
+      "file": "hand-attack-45-R-three-quarter.png",
+      "kind": "hand",
+      "clip": "Attack",
+      "fraction": 0.45,
+      "side": "R",
+      "view": "three-quarter"
+    },
+    {
+      "file": "hand-attack-45-R-front.png",
+      "kind": "hand",
+      "clip": "Attack",
+      "fraction": 0.45,
+      "side": "R",
+      "view": "front"
+    },
+    {
+      "file": "hand-attack-45-L-three-quarter.png",
+      "kind": "hand",
+      "clip": "Attack",
+      "fraction": 0.45,
+      "side": "L",
+      "view": "three-quarter"
+    },
+    {
+      "file": "hand-attack-45-L-front.png",
+      "kind": "hand",
+      "clip": "Attack",
+      "fraction": 0.45,
+      "side": "L",
+      "view": "front"
+    },
+    {
+      "file": "hand-attack-53-R-three-quarter.png",
+      "kind": "hand",
+      "clip": "Attack",
+      "fraction": 0.53,
+      "side": "R",
+      "view": "three-quarter"
+    },
+    {
+      "file": "hand-attack-53-R-front.png",
+      "kind": "hand",
+      "clip": "Attack",
+      "fraction": 0.53,
+      "side": "R",
+      "view": "front"
+    },
+    {
+      "file": "hand-attack-53-L-three-quarter.png",
+      "kind": "hand",
+      "clip": "Attack",
+      "fraction": 0.53,
+      "side": "L",
+      "view": "three-quarter"
+    },
+    {
+      "file": "hand-attack-53-L-front.png",
+      "kind": "hand",
+      "clip": "Attack",
+      "fraction": 0.53,
+      "side": "L",
+      "view": "front"
+    },
+    {
+      "file": "hand-idle-0-R-three-quarter.png",
+      "kind": "hand",
+      "clip": "Idle",
+      "fraction": 0,
+      "side": "R",
+      "view": "three-quarter"
+    },
+    {
+      "file": "hand-idle-0-R-front.png",
+      "kind": "hand",
+      "clip": "Idle",
+      "fraction": 0,
+      "side": "R",
+      "view": "front"
+    },
+    {
+      "file": "hand-idle-0-L-three-quarter.png",
+      "kind": "hand",
+      "clip": "Idle",
+      "fraction": 0,
+      "side": "L",
+      "view": "three-quarter"
+    },
+    {
+      "file": "hand-idle-0-L-front.png",
+      "kind": "hand",
+      "clip": "Idle",
+      "fraction": 0,
+      "side": "L",
+      "view": "front"
+    },
+    {
+      "file": "game-96-blue.png",
+      "kind": "game-scale",
+      "team": 0
+    },
+    {
+      "file": "game-96-red.png",
+      "kind": "game-scale",
+      "team": 1
+    }
+  ],
+  "served": [
+    {
+      "path": "candidate/ranger.glb",
+      "sha256": "6227c7f66f46592be6435bae9e1d5e67b56c408b0aa5d90674813e3ca3ee69bd",
+      "bytes": 1221304
+    },
+    {
+      "path": "materials/detail-v1/leather-color.jpg",
+      "sha256": "6c4efafe7416f71c25a326285c95055a9768456fa5d40d6294ec6961006d32c8",
+      "bytes": 18162
+    },
+    {
+      "path": "materials/detail-v1/leather-mr.png",
+      "sha256": "a6f359f025088d0a761b343ec388951a380756260cbc90a7daf2b9b3d40b0c43",
+      "bytes": 30852
+    },
+    {
+      "path": "materials/detail-v1/leather-normal.png",
+      "sha256": "7e25a930d1028f67e6762753634aa1529f4176f6187e11eb331ba380bbd21485",
+      "bytes": 128698
+    },
+    {
+      "path": "materials/detail-v1/oak-mr.png",
+      "sha256": "7b4ac7c01a262669e457c91d0f1b908ee88ebd5726825e349920df79975984e8",
+      "bytes": 30387
+    },
+    {
+      "path": "materials/detail-v1/brass-mr.png",
+      "sha256": "ef8e3c0a47a0303d43690675ad78bc81cf3cd4ffca7d8c7c2081f3e7b4ad43b7",
+      "bytes": 28369
+    },
+    {
+      "path": "materials/detail-v1/brass-color.jpg",
+      "sha256": "d572adf9d2c09ab8bb2afc6050328d49425e52ecc52f45b4b5621f3e731ef16f",
+      "bytes": 17520
+    },
+    {
+      "path": "materials/detail-v1/oak-color.jpg",
+      "sha256": "df926e6bb0b048a754e7ce62bddca8fe093d1b590098c9b1fa84ae20b46632a7",
+      "bytes": 111849
+    },
+    {
+      "path": "materials/detail-v1/oak-normal.png",
+      "sha256": "a479c323a1aac4c3e5f9af51059a0846c603622483544ba8cbe07b31b36e6bde",
+      "bytes": 125983
+    },
+    {
+      "path": "materials/detail-v1/steel-color.jpg",
+      "sha256": "32ac6cf578ade5d72b1f3d40242779976e1a0ccf69cee181d9c9e6707a8f307e",
+      "bytes": 16544
+    },
+    {
+      "path": "materials/detail-v1/steel-mr.png",
+      "sha256": "80772c09a90975fa0c689f270b4f3195be6fd937ad1b9a3d7dd8e51b45b5dc8c",
+      "bytes": 29337
+    },
+    {
+      "path": "materials/detail-v1/brass-normal.png",
+      "sha256": "2f2ffce2fc55e83d0f5180fb4693da12a69b09e2cb9b06bbdb6e4feb9d7003a6",
+      "bytes": 121084
+    },
+    {
+      "path": "materials/detail-v1/steel-normal.png",
+      "sha256": "c173c2ad3b12cefd1226015e5dfdab7e6637770e6dd3d1355d90e60a9a7f8809",
+      "bytes": 124330
+    },
+    {
+      "path": "materials/unit-shared/01c620763f01d45b3cf76ca414f4e5c133a73ca56e9eff39fad0f5a17a360752.jpg",
+      "sha256": "01c620763f01d45b3cf76ca414f4e5c133a73ca56e9eff39fad0f5a17a360752",
+      "bytes": 324037
+    },
+    {
+      "path": "candidate/ranger-lod1.glb",
+      "sha256": "b2ceb2b67136a0b3fdc5d848c9381dc51acf3db8f8094abe5a31dc97789f14e3",
+      "bytes": 829608
+    }
+  ]
+}

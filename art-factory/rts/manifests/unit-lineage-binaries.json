@@ -1,0 +1,211 @@
+{
+  "schema": "rts-unit-lineage-binaries/v1",
+  "policy": "Large lineage binaries (pre-publication backup GLBs and assembly .blend sources) stay local and are not committed. Their sha256, size and GLB geometry fingerprint digest are pinned here; unit-source-rights.test.ts verifies the chain through these pins on a clean clone and verifies the bytes against them wherever the files exist.",
+  "generated_by": "art-factory/rts/tools/lineage_binaries_pin.mjs",
+  "files": [
+    {
+      "path": "art-factory/rts/runs/all-models/2026-10-14-crossbow/final/raw/crossbow-assembly.blend",
+      "sha256": "04f0b9065bef789ee2b4c97b00f5bcfb6790bc4bdc8d0364c134d66a93abb031",
+      "bytes": 2777997,
+      "role": "source"
+    },
+    {
+      "path": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/before/crossbow-lod1.glb",
+      "sha256": "cc5efa4b0a02d0ebba2ee57f90ded023ed6472a44b772c1c2abc1149bad53ca9",
+      "bytes": 751736,
+      "role": "backup",
+      "glb_fingerprints_sha256": "84a9abaf827fcfb5e02869722eb0ae818e89906f792a7db4b2ca4e9e709adc67"
+    },
+    {
+      "path": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/before/crossbow.glb",
+      "sha256": "6831f332b27f9e0a8531e2464cefe47cd0e5d72d02b7dfd025f713704dc66a4f",
+      "bytes": 1076888,
+      "role": "backup",
+      "glb_fingerprints_sha256": "87b40cc6302758e044cb9abe86bb74ebdbedc0d4a648fcc9f2e07a220faf10d1"
+    },
+    {
+      "path": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/before/guard-lod1.glb",
+      "sha256": "fee4ea6057d35e5ac19d5d538ef3cf65a079271a25138a9923f42dbec9ed87f2",
+      "bytes": 919528,
+      "role": "backup",
+      "glb_fingerprints_sha256": "8b80686d008fc4ae51f792c7c38c55dace956d9d0f4a126aae31928f3e199be2"
+    },
+    {
+      "path": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/before/guard.glb",
+      "sha256": "c980ac4237fcf945faf9457e62b4f146cc7d63dd8481db92636f558b524c4677",
+      "bytes": 1286196,
+      "role": "backup",
+      "glb_fingerprints_sha256": "1b40aeaa5ee44842fb6ec4e4268afc6dc9e63deebb22716b51a04e062aae6a32"
+    },
+    {
+      "path": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/before/worker-lod1.glb",
+      "sha256": "f416bf382669437d931d1bc0f18960e6c487856a0be07fed1a4781d1e3b70c36",
+      "bytes": 775952,
+      "role": "backup",
+      "glb_fingerprints_sha256": "2ab1883e09c4972171f55d01302ece3d1bf1988f19722bf38de4769132bda8f6"
+    },
+    {
+      "path": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/before/worker.glb",
+      "sha256": "c40849dfdb06f0720fb2eb57312d01d5e04de49a8968b3f03d7938b84e1d4b82",
+      "bytes": 1039348,
+      "role": "backup",
+      "glb_fingerprints_sha256": "30db5ce4f390a9e3bc820c09c14a16fe557736ef7117d8fc5d6fa30ff95532f2"
+    },
+    {
+      "path": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/guard-assembly.blend",
+      "sha256": "279285bcfb924bd64ddef479df608b7105913c4e55a3b545aeffddd81b5d1b72",
+      "bytes": 2640291,
+      "role": "source"
+    },
+    {
+      "path": "art-factory/rts/runs/all-models/2026-10-14-v1/raw/worker-assembly.blend",
+      "sha256": "4ed4e65baeb7e0eac8035515c333fbe803f2f3b5ecdb88fabc54696292fad97d",
+      "bytes": 2102297,
+      "role": "source"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-16-hands-v1/raw/publication-before/models/crossbow-lod1.glb",
+      "sha256": "64119606f1128207ca823fb2d8dc1b6afa5597a37d2581baa64895c8285c3f56",
+      "bytes": 971956,
+      "role": "backup",
+      "glb_fingerprints_sha256": "b69fad469f5a0565f8582b737b876bab615ab29f8123952d4d8a4d5421499fd9"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-16-hands-v1/raw/publication-before/models/crossbow.glb",
+      "sha256": "722e1d7e0345dc1eb3b51e75b1837145114d222d04952db72f58a84093fee165",
+      "bytes": 1381460,
+      "role": "backup",
+      "glb_fingerprints_sha256": "eff0589077e3fa08d07779a26e8101fc75982a4d64e8ff95ab8956667b08cf8a"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-16-hands-v1/raw/publication-before/models/guard-lod1.glb",
+      "sha256": "ea0985f68cdcbabe3ab032d3658d71b1329b4d8713548084e6fe9b112aa44852",
+      "bytes": 764336,
+      "role": "backup",
+      "glb_fingerprints_sha256": "1612148277992e4450c6a38054f926def9d8e9f516be8efb144660c6fbe6738a"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-16-hands-v1/raw/publication-before/models/guard.glb",
+      "sha256": "21fc07009fbe2db18763b1834a2f987ed9588cfdc59dc695bad6194657bb55bc",
+      "bytes": 1302072,
+      "role": "backup",
+      "glb_fingerprints_sha256": "e8ea79a4518091f57884ae30ecf0e3651c553dff5ba88192335bcd0b444b46ef"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-16-hands-v1/raw/publication-before/models/worker-lod1.glb",
+      "sha256": "01bc98289f0704f1c9175d881dac6b498c8cfcc14b522b5af87f991650b2c687",
+      "bytes": 762360,
+      "role": "backup",
+      "glb_fingerprints_sha256": "ccce4ac5da7ee9a93273a5c400febc1f88ff689cea6de29822bc61f29a57e36c"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-16-hands-v1/raw/publication-before/models/worker.glb",
+      "sha256": "777deeedb15679215bc105231a977747780c5a98b3492ff5990b7b40ffd2d662",
+      "bytes": 1050740,
+      "role": "backup",
+      "glb_fingerprints_sha256": "f675289d24726c07d0a06192c6d6e61fbfc4fac00e1681b132ff5a31fdd8c153"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-16-v1/raw/publication-before/models/crossbow-lod1.glb",
+      "sha256": "9a97971806ef1377c86766ee3516061bfefb4b2501e08c437d870276d5e07f4c",
+      "bytes": 1060020,
+      "role": "backup",
+      "glb_fingerprints_sha256": "b69fad469f5a0565f8582b737b876bab615ab29f8123952d4d8a4d5421499fd9"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-16-v1/raw/publication-before/models/crossbow.glb",
+      "sha256": "4c31cdde677a8d2e535a9a3a299246e71b12ea6e27f8abf327a1b6bf4757f984",
+      "bytes": 1469528,
+      "role": "backup",
+      "glb_fingerprints_sha256": "eff0589077e3fa08d07779a26e8101fc75982a4d64e8ff95ab8956667b08cf8a"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-16-v1/raw/publication-before/models/guard-lod1.glb",
+      "sha256": "7442b4fd3ded5abe96b43def96a49ceb7477e49e801a5087b246ec1b7d2e766e",
+      "bytes": 1082528,
+      "role": "backup",
+      "glb_fingerprints_sha256": "0b119f46ef6a334f596185b07680790402c4dc2dc9d4e43efe6d5b961bc92a0d"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-16-v1/raw/publication-before/models/guard.glb",
+      "sha256": "1a61c6a003d8c614f72e918b28621cd2c6e6ac1a26bdf6670c097c9609eaa02f",
+      "bytes": 1468912,
+      "role": "backup",
+      "glb_fingerprints_sha256": "4a1143c0349894d0cb81603e7ea1e18caa2ae9942d6c9487383e44314095a063"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-16-v1/raw/publication-before/models/worker-lod1.glb",
+      "sha256": "32095d63b29f01dbcd6bf65c26e9e0b8df1ade8f2f673d94e489513ded354149",
+      "bytes": 830620,
+      "role": "backup",
+      "glb_fingerprints_sha256": "5ec980910a5383a43cf5db36d19ee08096c13f751d9e393af0efdeb3c93371cf"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-16-v1/raw/publication-before/models/worker.glb",
+      "sha256": "1c74591ef71311dce158c2ece564c381a8b75af881aa8cffa633b17821324d87",
+      "bytes": 1075280,
+      "role": "backup",
+      "glb_fingerprints_sha256": "a2769b374969b56acedf625ff9707eab02dbbd7a3aa9ad36581f1fb8f402f971"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-17-v1/qa/crossbow-r3.json",
+      "sha256": "ed4b0fe1aa3726270fc58d87267eb0c43468ec53a7cfc22f855775a501dafdc8",
+      "bytes": 2159,
+      "role": "source"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-17-v1/qa/guard-r3.json",
+      "sha256": "0bdf53a4cbb573af2762df7889b74e2fa9d465f8f12f714e51c724f5c16fd436",
+      "bytes": 2373,
+      "role": "source"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-17-v1/qa/worker-r3.json",
+      "sha256": "284b1356408c2777c41d94120e2732f1d5fb71c5f3cb2610ed0fe3df2635fb9e",
+      "bytes": 1565,
+      "role": "source"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-17-v1/raw/publication-before/models/crossbow-lod1.glb",
+      "sha256": "9f77181a673df2d10ba264ca27a92ab4e6219c24e6711e8bf06130c3c0bcf667",
+      "bytes": 845404,
+      "role": "backup",
+      "glb_fingerprints_sha256": "3a8ed81f961463114767e4175cf21334926c9f10705a957d06fe5cb3879db54d"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-17-v1/raw/publication-before/models/crossbow.glb",
+      "sha256": "dfeeda2c2f06da546f82d4d378ce1d6a7881ce67612be3a4c82b355be5e450eb",
+      "bytes": 1408308,
+      "role": "backup",
+      "glb_fingerprints_sha256": "92871d43c50cd8aed14c8ad6f52ca1fa5d3784416bdfa0e7ac645d3b4ea81a08"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-17-v1/raw/publication-before/models/guard-lod1.glb",
+      "sha256": "4a8900d90b29943b6e43ce77c8a38d0cbc74f90bbee442f2e35b6a959c806580",
+      "bytes": 695524,
+      "role": "backup",
+      "glb_fingerprints_sha256": "7bed02a8216e7a4f4191741c93960d527d6c3a411d0a2844b7b1285e57aa280a"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-17-v1/raw/publication-before/models/guard.glb",
+      "sha256": "f19fef3559da2cd53dd64944ef8d2a4d8eea00fc1c1f431a330076d6eb3f8a8c",
+      "bytes": 1452088,
+      "role": "backup",
+      "glb_fingerprints_sha256": "6c2b1457f5f3b76fc7156021359d0d8aee92c517b2ec1e4a5664651b73c8c84a"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-17-v1/raw/publication-before/models/worker-lod1.glb",
+      "sha256": "0413ee4a9f4d2f1d6e920204de4491d7dfba39381aead46355ec4a8b7a3ee7b2",
+      "bytes": 758136,
+      "role": "backup",
+      "glb_fingerprints_sha256": "72e7585a23d9592619e53df0dda6b60607d9c65ffca2e70e9bb9646d5ad178e7"
+    },
+    {
+      "path": "art-factory/rts/runs/model-polish/2026-10-17-v1/raw/publication-before/models/worker.glb",
+      "sha256": "1209b6e7762bfe50d3edfe62c671af723f7b90da8df37d5b7fb04e47464e1b00",
+      "bytes": 1166524,
+      "role": "backup",
+      "glb_fingerprints_sha256": "e9f53ac3012c6d59dad49d5a5102b7c008318d2b8bdf6544d135360774c9332b"
+    }
+  ]
+}

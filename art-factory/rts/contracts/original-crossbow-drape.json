@@ -1,0 +1,32 @@
+{
+  "asset_id": "original-crossbow-drape",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source": "art-factory/rts/runs/original-crossbow-body-surface/2026-10-06-v1/candidate/original-crossbow-grip.blend",
+  "source_sha256": "91d1048ab31dad70e4e66b2a99cea3d666de6e8fb201f9a084f16c00b5922ffe",
+  "run": "art-factory/rts/runs/original-crossbow-drape/2026-10-06-v1",
+  "source_mode": "Original body drape cleanup; preserve original character and albedo, no third-party model, rig, animation or primitive cover.",
+  "scope": "Repair whole belt/skirt UVs and bake original canonical albedo/mask. Geometry/topology/skin/bind/actions/props unchanged.",
+  "qa": [
+    "Separate rest geometry, skin deformation, UV/albedo and lit shading using matching clay/unlit/lit renders",
+    "A measured regression fails for the diagnosed defect before repair",
+    "Complete closed oriented body and matching skin weights on exported UV duplicates",
+    "No new wrist, grip, weapon or floor regressions across the five clips",
+    "Both teams, LODs and action closeups in the actual browser",
+    "Original material/source provenance and runtime triangle budgets",
+    "Independent visual and structural review; full commercial art approval remains distinct"
+  ],
+  "skirt_uv_mechanical_gate": "passed",
+  "full_model_approved": false,
+  "qa_report": "art-factory/rts/runs/original-crossbow-drape/2026-10-06-v1/qa/root-review.json",
+  "remaining": [
+    "Original sculpt faceting, lower central trim notches and overall silhouette",
+    "Face and glove quality, authored movement and reload naturalness",
+    "Existing browser shadow edge artifacts; not attributed to new UVs",
+    "Real game/portrait integration and performance with one extra body material",
+    "Other unit models and two richer map environments"
+  ]
+}

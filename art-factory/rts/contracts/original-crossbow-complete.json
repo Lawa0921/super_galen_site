@@ -1,0 +1,44 @@
+{
+  "asset_id": "original-crossbow-complete",
+  "status": "qa_failed",
+  "run": "art-factory/rts/runs/original-crossbow-complete/2026-10-07-v3",
+  "style_source": "docs/superpowers/specs/2026-10-04-browser-rts-design.md",
+  "source_mode": "Existing project-original body, hand, weapon, rig, generated leather and newly authored motion only; no external model or animation library.",
+  "source": "art-factory/rts/runs/original-crossbow-complete/2026-10-07-v1/candidate/complete-crossbow.blend",
+  "source_sha256": "c512ee46ee9cc1ad3f0d9b56bd9c6083ae36ef0bea5c133e6970eac8eb2e5fb2",
+  "scope": "Original complete character; v3 actual finger skin / bare-shaft hold repair, with full-arm, gauntlet and docking QA still failing.",
+  "alpha_policy": "Opaque PBR surfaces; existing generated leather tile supplies visible glove pixels. Concealed garment overlap is intentional and must remain covered through motion.",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": false,
+  "commercial_character_art": false,
+  "qa": [
+    "Source hashes and preservation outside garment repair",
+    "String and bolt phase timing",
+    "Reachable unstretched arms and finger contact",
+    "Five clips with no exposed wrist gap",
+    "GLB validator and surface parity",
+    "Both LODs and team masks",
+    "Full character, real portrait and battlefield preview"
+  ],
+  "candidate_source_sha256": "39aa11440fa2ba9c89ae7180066d391d67a0ac0bcbf9b0d3d04c9a712ef5f49b",
+  "qa_report": "art-factory/rts/runs/original-crossbow-complete/2026-10-07-v3/qa/root-review.json",
+  "preview_url": "http://127.0.0.1:4334/crossbow-pinch-v3/",
+  "run_history": [
+    {
+      "run": "art-factory/rts/runs/original-crossbow-complete/2026-10-07-v1",
+      "status": "qa_failed",
+      "candidate_source_sha256": "c512ee46ee9cc1ad3f0d9b56bd9c6083ae36ef0bea5c133e6970eac8eb2e5fb2",
+      "qa_report": "art-factory/rts/runs/original-crossbow-complete/2026-10-07-v1/qa/root-review.json",
+      "preview_url": "http://127.0.0.1:4334/crossbow-complete/"
+    },
+    {
+      "run": "art-factory/rts/runs/original-crossbow-complete/2026-10-07-v2",
+      "status": "qa_failed",
+      "candidate_source_sha256": "ccd6bc5f5a8052f912b793e57977dc1adc2eb1b0281b21f6d2c35a6836de558a",
+      "qa_report": "art-factory/rts/runs/original-crossbow-complete/2026-10-07-v2/qa/root-review.json",
+      "preview_url": "http://127.0.0.1:4334/crossbow-fullbody-v2/"
+    }
+  ],
+  "surface_reference_sha256": "ccd6bc5f5a8052f912b793e57977dc1adc2eb1b0281b21f6d2c35a6836de558a"
+}
