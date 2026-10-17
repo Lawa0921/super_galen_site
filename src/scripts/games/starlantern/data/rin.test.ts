@@ -31,8 +31,8 @@ describe('rin', () => {
     expect(dmg.some((e) => e.wounded !== undefined)).toBe(true);
   });
 
-  it('rin is ninth, leads the id list and is a melee front-liner of agility', () => {
-    expect(CHARACTER_IDS).toEqual(['rin', 'noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby']);
+  it('rin is ninth, follows the hero at the head of the id list and is a melee front-liner of agility', () => {
+    expect(CHARACTER_IDS).toEqual(['hero', 'rin', 'noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby']);
     expect(CHARACTERS.rin).toMatchObject({ name: '凜', title: '失憶的短刃使', row: 'front', melee: true, affinity: 'agi' });
   });
 

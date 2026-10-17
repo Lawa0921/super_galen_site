@@ -26,8 +26,8 @@ describe('hero', () => {
     expect(HERO_PEAK_SHARE).toBe(0.85);
   });
 
-  it('is not in the roster until Task 5', () => {
-    expect(CHARACTER_IDS).not.toContain('hero');
+  it('leads the roster (plan 6a Task 5)', () => {
+    expect(CHARACTER_IDS[0]).toBe('hero');
   });
 
   it("hero base and growth are at least the companions' median on every stat", () => {
@@ -43,7 +43,7 @@ describe('hero', () => {
   });
 
   it('hero growth total is the highest of every character', () => {
-    for (const id of CHARACTER_IDS) expect(total(hero().growth), id).toBeGreaterThan(total(CHARACTERS[id].growth));
+    for (const id of CHARACTER_IDS.filter((x) => x !== 'hero')) expect(total(hero().growth), id).toBeGreaterThan(total(CHARACTERS[id].growth));
   });
 
   it("'all' converts every primary at AFFINITY_MUL × ALL_AFFINITY_SHARE", () => {

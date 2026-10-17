@@ -6,14 +6,13 @@ import { REGIONS, type RegionId } from '../data/regions';
 import { ITEMS } from '../data/items';
 import { POWERS } from '../data/gear';
 import { SKILLS } from '../data/skills';
-import { ULTIMATES } from '../data/ultimates';
 import { stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
 import { hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
 import { depthLevel, empower, homeLevel, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
-import { keystonesOf, skillRank, treeMods } from './progression';
+import { keystonesOf, skillRank, treeMods, ultimateFor } from './progression';
 import { KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, SecondaryKey, SkillDef, Target } from './types';
 
@@ -264,7 +263,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     case 'escape':
       return;
     case 'ultimate': {
-      const u = ULTIMATES[actor.defId as CharacterId];
+      const u = ultimateFor(actor.defId as CharacterId, actor.ranks);
       if (!u) return;
       if (actor.limit < LIMIT_MAX) { s.log.push({ type: 'no-limit', actor: actor.key }); return; }
       actor.limit = 0;

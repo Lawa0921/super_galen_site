@@ -4,6 +4,7 @@ import { CHARACTERS, rulesOf } from './characters';
 import { SKILLS } from './skills';
 import { POWERS } from './gear';
 import { defaultTree, freeNode, newTree, nodeRank, raiseNode } from '../engine/progression';
+import { newMember } from '../engine/party';
 import type { CharacterId, Member } from '../engine/types';
 
 const ids = Object.keys(TREES) as CharacterId[];
@@ -26,7 +27,8 @@ describe('skill trees', () => {
     expect(DEFAULT_CAPSTONE.scarlet).toBe(1);
     expect(TREES.scarlet.branches[1].nodes[4].id).toBe('crimson-end');
     expect(DEFAULT_CAPSTONE.rin).toBe(1);
-    for (const id of ids.filter((x) => x !== 'scarlet' && x !== 'rin')) expect(DEFAULT_CAPSTONE[id], id).toBe(0);
+    expect(DEFAULT_CAPSTONE.hero).toBe(0); // the hero's default build caps the sword
+    for (const id of ids.filter((x) => x !== 'scarlet' && x !== 'rin' && x !== 'hero')) expect(DEFAULT_CAPSTONE[id], id).toBe(0);
   });
 
   it('mod nodes that lower hpCost do so rank by rank', () => {
@@ -156,8 +158,7 @@ describe('skill trees', () => {
     // Climb each branch alone at Lv50, tier by tier to max rank, with the engine's own rules.
     for (const id of ids) {
       TREES[id]!.branches.forEach((b) => {
-        // A bare member: the hero has no talent board (and so no newMember) until he joins the roster.
-        let m: Member = { id, level: 50, exp: 0, hp: 0, tp: 0, equip: {}, tree: newTree(id), talents: {} };
+        let m: Member = { ...newMember(id), level: 50 };
         for (const n of b.nodes) {
           while (nodeRank(m, n.id) < n.maxRank) {
             const r = raiseNode(m, n.id);

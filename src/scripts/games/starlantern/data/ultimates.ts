@@ -21,4 +21,24 @@ const LIST: UltimateDef[] = [
     effects: [{ kind: 'damage', power: 300, element: 'phys', scale: 'atk', melee: true, crit: 'always' }] },
 ];
 
-export const ULTIMATES = Object.fromEntries(LIST.map((u) => [u.owner, u])) as Record<CharacterId, UltimateDef>;
+/**
+ * The hero's Lantern Key: one form per branch, in branch order (劍技, 守護, 星術, 祈光, 枷鎖); engine/progression `ultimateFor`
+ * picks the form of his deepest branch. Each form stays below the matching companion's ultimate.
+ */
+export const HERO_ULTIMATES: UltimateDef[] = [
+  { id: 'ult-hero-sword', owner: 'hero', name: '燈鑰・斬', target: 'enemy', desc: '以燈鑰斬向一名敵人，物理單體大傷害',
+    effects: [{ kind: 'damage', power: 340, element: 'phys', scale: 'atk', melee: true }] },
+  { id: 'ult-hero-guard', owner: 'hero', name: '燈鑰・守', target: 'allies', desc: '燈鑰的光護住全隊，防禦與魔防提升',
+    effects: [{ kind: 'buff', stat: 'def', pct: 30, turns: 4 }, { kind: 'buff', stat: 'res', pct: 30, turns: 4 }] },
+  { id: 'ult-hero-star', owner: 'hero', name: '燈鑰・星', target: 'enemies', desc: '燈鑰引下星雷，雷屬性全體傷害',
+    effects: [{ kind: 'damage', power: 190, element: 'thunder', scale: 'mag', melee: false }] },
+  { id: 'ult-hero-light', owner: 'hero', name: '燈鑰・光', target: 'allies', desc: '燈鑰照亮全隊，回復並解毒',
+    effects: [{ kind: 'heal', power: 180 }, { kind: 'cure' }] },
+  { id: 'ult-hero-chain', owner: 'hero', name: '燈鑰・鎖', target: 'enemies', desc: '燈鑰鎖住全體敵人，攻擊與防禦下降',
+    effects: [{ kind: 'buff', stat: 'atk', pct: -25, turns: 4 }, { kind: 'buff', stat: 'def', pct: -25, turns: 4 }] },
+];
+
+export const ULTIMATES = {
+  ...Object.fromEntries(LIST.map((u) => [u.owner, u])),
+  hero: HERO_ULTIMATES[0],
+} as Record<CharacterId, UltimateDef>;

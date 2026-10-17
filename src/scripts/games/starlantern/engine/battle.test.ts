@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, resolveRound, rewards, skillCost, turnOrder, writeBack } from './battle';
 import { ULTIMATES } from '../data/ultimates';
 import { ENEMIES } from '../data/enemies';
-import { newParty, powersOf, sheetOf } from './party';
+import { activeIds, newParty, powersOf, sheetOf } from './party';
 import { applyEffect } from './skills';
 import { depthLevel, homeLevel } from './scaling';
 import { SECONDARY_KEYS } from './stats';
@@ -214,6 +214,13 @@ describe('ultimate gauge', () => {
     // reset to 0 with no action bonus; the woken enemies may hit back for a point or two
     expect(r.party[0].limit).toBeLessThan(LIMIT_PER_ACTION);
   });
+  it("the hero's ultimate is the form of his ranks", () => {
+    const ranks = { 'hero-slash': 1, 'hero-flare': 3 };
+    const s = makeBattle([P('hero', { defId: 'hero', limit: 100, ranks })], [weakFoe()]);
+    const r = resolveRound(s, { hero: { kind: 'ultimate' } }, rng);
+    expect(r.log).toContainEqual({ type: 'act', actor: 'hero', label: '燈鑰・星', ultimate: 'ult-hero-star' });
+    expect(r.enemies[0].hp).toBeLessThan(999);
+  });
   it('carries the gauge between battles through the party', () => {
     const party = newParty();
     party.roster.liz.limit = 70;
@@ -415,7 +422,8 @@ describe('keystones in battle', () => {
     // plan 5c Task 4 settled on there (a deep step from Lv12 plus a small ramp; the d5 enemies are Lv18): the same no-keystone code path against stronger
     // enemies. A keystone reaching this fight changes TP, damage or heals, and so the replay.
     const party = partyAt(20);
-    expect(Object.values(party.roster).every((m) => keystonesOf(m).length === 0)).toBe(true);
+    // The fighters only: the hero (Lv20, 15 talent points) holds one on the bench, and never enters this fight.
+    expect(activeIds(party).every((id) => keystonesOf(party.roster[id]).length === 0)).toBe(true);
     const base = mulberry32(7919);
     let draws = 0;
     const counted = () => { draws++; return base(); };

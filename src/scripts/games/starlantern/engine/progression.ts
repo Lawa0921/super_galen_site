@@ -5,7 +5,8 @@ import {
   BOARDS, DEFAULT_KEYSTONES, TALENT_NODES, TALENT_PER, TALENT_SCALE, boardPoints, keystoneCount, rankOf, talentBlocker, type KeystoneId, type TalentBlocker,
 } from '../data/talents';
 import { rulesOf } from '../data/characters';
-import type { AnyStat, CharacterId, GrowthRules, Member, Sheet } from './types';
+import { HERO_ULTIMATES, ULTIMATES } from '../data/ultimates';
+import type { AnyStat, CharacterId, GrowthRules, Member, Sheet, UltimateDef } from './types';
 import { stackMods } from './skills';
 
 /**
@@ -118,6 +119,25 @@ export function nodeMods(ranks: Record<string, number>, skill: string): SkillMod
     if (r > 0) out.push(n.mods![r - 1]);
   }
   return out;
+}
+
+/**
+ * The hero's main branch: the one whose nodes hold the most ranks (the free first rank counts), read as `rankIn` reads a
+ * tree; a tie goes to the lower branch index.
+ */
+export function heroMainBranch(ranks: Record<string, number>): number {
+  let best = 0;
+  let most = -1;
+  TREES.hero.branches.forEach((b, i) => {
+    const held = b.nodes.reduce((n, node) => n + rankIn(ranks, node.id), 0);
+    if (held > most) { best = i; most = held; }
+  });
+  return best;
+}
+
+/** The ultimate `id` fights with: the hero's Lantern Key takes the form of his main branch; a companion has one ultimate. */
+export function ultimateFor(id: CharacterId, ranks?: Record<string, number>): UltimateDef {
+  return id === 'hero' ? HERO_ULTIMATES[heroMainBranch(ranks ?? {})] : ULTIMATES[id];
 }
 
 /** Ranks held in the character's own nodes; ids of other trees or unknown ids are ignored. */

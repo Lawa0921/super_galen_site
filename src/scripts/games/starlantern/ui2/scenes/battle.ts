@@ -3,11 +3,10 @@ import type { HitExtra, PartyCue } from '../../render/BattleView';
 import type { FxKey } from '../../render/artPaths';
 import { ITEMS } from '../../data/items';
 import { T } from '../../data/text.zh-TW';
-import { ULTIMATES } from '../../data/ultimates';
 import { LIMIT_MAX, intentLabel, skillCost, skillFor, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
 import type { BattleEnd } from '../../engine/game';
-import { learnedSkills } from '../../engine/progression';
+import { learnedSkills, ultimateFor } from '../../engine/progression';
 import type { CharacterId, Target } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el, itemName } from '../../ui/dom';
@@ -123,7 +122,7 @@ export class BattleScene implements Scene {
     const actor = this.actors()[this.index];
     if (!actor) { void this.submit(); return; }
     this.updateBar(actor.key);
-    const ult = ULTIMATES[actor.defId as CharacterId];
+    const ult = ultimateFor(actor.defId as CharacterId, actor.ranks);
     const skills = this.skillItems(actor);
     const items = this.itemItems();
     const list: MenuItem[] = [
@@ -173,7 +172,7 @@ export class BattleScene implements Scene {
       void this.submit();
       return;
     }
-    if (id === 'ultimate') { this.withTarget(ULTIMATES[actor.defId as CharacterId].target, { kind: 'ultimate' }); return; }
+    if (id === 'ultimate') { this.withTarget(ultimateFor(actor.defId as CharacterId, actor.ranks).target, { kind: 'ultimate' }); return; }
     if (id === 'skill') {
       // Only known skills are listed (skillItems), so the lookup always finds one; the fallback is never reached.
       this.subList(this.skillItems(actor), (it) => this.withTarget(skillFor(actor, it.id)?.target ?? 'enemy', { kind: 'skill', skill: it.id }));

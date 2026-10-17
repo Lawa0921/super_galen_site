@@ -13,8 +13,9 @@ describe('artPaths', () => {
 
   it('lists one url per asset with no duplicates', () => {
     const urls = allArtUrls();
-    expect(urls).toHaveLength(237);
-    expect(new Set(urls).size).toBe(237);
+    // 237 + the hero's standee and 8 faces (plan 6a Task 5: he joins the roster with his art published) = 246
+    expect(urls).toHaveLength(246);
+    expect(new Set(urls).size).toBe(246);
     expect(urls).toContain(art.fxAnim('thunder'));
     for (const id of ['blaze-core', 'frost-heart', 'storm-stone', 'mire-gland', 'shade-crystal', 'iron-shard']) expect(urls).not.toContain(art.icon(id));
     expect(urls).toContain(art.window);
@@ -25,7 +26,7 @@ describe('artPaths', () => {
     expect(urls).toContain(art.npc('gate', 'happy'));
     expect(urls).toContain(`${ART_BASE}/map/fog.png`);
     for (const id of ART_CHARACTER_IDS) expect(urls).toContain(art.standee(id));
-    for (const id of ['rin', 'rin-oath']) for (const m of ['normal', 'attack', 'hit', 'dying', 'down', 'ultimate', 'smile', 'sad'] as const) expect(urls).toContain(art.portrait(id, m));
+    for (const id of ['hero', 'rin', 'rin-oath']) for (const m of ['normal', 'attack', 'hit', 'dying', 'down', 'ultimate', 'smile', 'sad'] as const) expect(urls).toContain(art.portrait(id, m));
     expect(urls).toContain(art.standee('rin-oath'));
     for (const id of Object.keys(ENEMIES)) expect(urls).toContain(art.enemy(id));
   });

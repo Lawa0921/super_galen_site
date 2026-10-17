@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   BOARDS, BOARD_COLS, BOARD_ROWS, CHAR_KEYSTONES, DEFAULT_KEYSTONES, KEYSTONES, KEYSTONE_GATE, KEYSTONE_VALUES,
-  MAX_KEYSTONES, PALETTES, TALENT_NODES, TALENT_PER, TEMPLATE, boardPoints, keystoneCount, talentBlocker,
+  MAX_KEYSTONES, PALETTES, TALENT_NODES, TALENT_PER, TEMPLATE, boardPoints, keystoneCount, talentBlocker, templateOf,
 } from './talents';
 import { CHARACTER_IDS, DEFAULT_RULES, rulesOf } from './characters';
+import { raiseTalent } from '../engine/progression';
+import type { CharacterId, Member } from '../engine/types';
 
 const V = KEYSTONE_VALUES;
 /** Normal nodes of noel's board, row-major, that satisfy adjacency when taken in this order. */
@@ -18,22 +20,24 @@ const fill = (c: string, pts: number): Record<string, number> => {
 };
 
 describe('talent boards', () => {
-  it('each board has 24 normal nodes at rank 5 and 3 keystones at rank 1, ids unique across boards', () => {
+  it('each board has BOARD_ROWS x boardCols normal nodes at rank 5 and its keystones at rank 1, ids unique across boards', () => {
     const all = new Set<string>();
+    let total = 0;
     for (const c of CHARACTER_IDS) {
       const b = BOARDS[c];
-      expect(normals(c)).toHaveLength(24);
-      expect(ks(c)).toHaveLength(3);
+      expect(normals(c)).toHaveLength(BOARD_ROWS * rulesOf(c).boardCols);
+      expect(ks(c)).toHaveLength(CHAR_KEYSTONES[c].length);
+      total += BOARD_ROWS * rulesOf(c).boardCols + CHAR_KEYSTONES[c].length;
       for (const n of normals(c)) expect(n.maxRank).toBe(5);
       for (const n of ks(c)) expect(n.maxRank).toBe(1);
       for (const n of b) { expect(all.has(n.id)).toBe(false); all.add(n.id); expect(TALENT_NODES[n.id].owner).toBe(c); }
     }
-    expect(all.size).toBe(CHARACTER_IDS.length * 27);
+    expect(all.size).toBe(total);
   });
 
   it('every palette stat has a positive TALENT_PER value and appears 4 times on its board', () => {
     for (const c of CHARACTER_IDS) {
-      expect(PALETTES[c]).toHaveLength(6);
+      expect(PALETTES[c]).toHaveLength(c === 'hero' ? 9 : 6);
       for (const s of PALETTES[c]) {
         expect(TALENT_PER[s]).toBeGreaterThan(0);
         expect(normals(c).filter((n) => n.stat === s)).toHaveLength(4);
@@ -41,12 +45,13 @@ describe('talent boards', () => {
     }
   });
 
-  it('keystones come from the catalogue, 3 distinct per character, and the descriptions show KEYSTONE_VALUES', () => {
+  it('keystones come from the catalogue, distinct per character, and the descriptions show KEYSTONE_VALUES', () => {
     for (const c of CHARACTER_IDS) {
-      expect(new Set(CHAR_KEYSTONES[c]).size).toBe(3);
+      expect(CHAR_KEYSTONES[c]).toHaveLength(c === 'hero' ? 5 : 3);
+      expect(new Set(CHAR_KEYSTONES[c]).size).toBe(CHAR_KEYSTONES[c].length);
       expect(ks(c).map((n) => n.keystone)).toEqual(CHAR_KEYSTONES[c]);
       for (const k of CHAR_KEYSTONES[c]) expect(KEYSTONES[k]).toBeDefined();
-      expect(DEFAULT_KEYSTONES[c]).toEqual(CHAR_KEYSTONES[c].slice(0, 2));
+      expect(DEFAULT_KEYSTONES[c]).toEqual(CHAR_KEYSTONES[c].slice(0, rulesOf(c).maxKeystones));
     }
     expect(KEYSTONES['crit-tp'].desc).toBe(`暴擊時回復 ${V.critTp} TP`);
     expect(KEYSTONES['kill-tp'].desc).toBe(`擊倒敵人時回復 ${V.killTp} TP`);
@@ -57,21 +62,50 @@ describe('talent boards', () => {
     expect(KEYSTONES['taunt-guard'].desc).toBe(`挑釁中受到的攻擊傷害 −${V.tauntGuardPct}%`);
   });
 
-  it('normal nodes sit on the 6x4 grid and keystones on row 6', () => {
+  it('normal nodes sit on the BOARD_ROWS x boardCols grid of templateOf and keystones on row BOARD_ROWS', () => {
     expect(TEMPLATE).toHaveLength(BOARD_ROWS);
     for (const line of TEMPLATE) expect(line).toHaveLength(BOARD_COLS);
     for (const c of CHARACTER_IDS) {
+      const cols = rulesOf(c).boardCols;
+      const tpl = templateOf(c);
+      expect(tpl).toHaveLength(BOARD_ROWS);
+      for (const line of tpl) expect(line).toHaveLength(cols);
+      if (c !== 'hero') expect(tpl).toBe(TEMPLATE);
       const seen = new Set<string>();
       for (const n of normals(c)) {
         expect(n.row).toBeGreaterThanOrEqual(0); expect(n.row).toBeLessThan(BOARD_ROWS);
-        expect(n.col).toBeGreaterThanOrEqual(0); expect(n.col).toBeLessThan(BOARD_COLS);
+        expect(n.col).toBeGreaterThanOrEqual(0); expect(n.col).toBeLessThan(cols);
         expect(n.id).toBe(`${c}-t${n.row}${n.col}`);
-        expect(n.stat).toBe(PALETTES[c][TEMPLATE[n.row][n.col]]);
+        expect(n.stat).toBe(PALETTES[c][tpl[n.row][n.col]]);
         seen.add(`${n.row},${n.col}`);
       }
-      expect(seen.size).toBe(24);
-      ks(c).forEach((n, i) => { expect(n.row).toBe(6); expect(n.col).toBe(i); expect(n.id).toBe(`${c}-k${i}`); });
+      expect(seen.size).toBe(BOARD_ROWS * cols);
+      ks(c).forEach((n, i) => { expect(n.row).toBe(BOARD_ROWS); expect(n.col).toBe(i); expect(n.id).toBe(`${c}-k${i}`); });
     }
+  });
+
+  it("the hero's board is 6x6 with 5 keystones and holds 3", () => {
+    expect(PALETTES.hero).toEqual(['str', 'hp', 'atk', 'wil', 'def', 'res', 'int', 'mag', 'agi']);
+    expect(CHAR_KEYSTONES.hero).toEqual(['regen', 'taunt-guard', 'last-stand', 'crit-tp', 'opening-gauge']);
+    expect(templateOf('hero')).toEqual([0, 1, 2, 3, 4, 5].map((r) => [0, 1, 2, 3, 4, 5].map((c) => (6 * r + c) % 9)));
+    expect(normals('hero')).toHaveLength(36);
+    expect(ks('hero')).toHaveLength(5);
+    expect(DEFAULT_KEYSTONES.hero).toEqual(['regen', 'taunt-guard', 'last-stand']);
+    expect(DEFAULT_KEYSTONES.rin).toEqual(['crit-tp', 'kill-tp']);
+
+    /** Level 50 with KEYSTONE_GATE points on the first row, then keystones one at a time in board order. */
+    const climb = (id: CharacterId) => {
+      let m: Member = { id, level: 50, exp: 0, hp: 0, tp: 0, equip: {}, tree: {}, talents: fill(id, KEYSTONE_GATE) };
+      const out: (string | null)[] = [];
+      for (const k of ks(id)) {
+        const r = raiseTalent(m, k.id);
+        out.push(r.ok ? null : r.reason);
+        if (r.ok) m = r.member;
+      }
+      return { out, held: keystoneCount(id, m.talents) };
+    };
+    expect(climb('hero')).toEqual({ out: [null, null, null, 'keystones', 'keystones'], held: 3 });
+    expect(climb('noel')).toEqual({ out: [null, null, 'keystones'], held: 2 });
   });
 });
 

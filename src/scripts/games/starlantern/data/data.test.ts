@@ -12,7 +12,7 @@ import { ULTIMATES } from './ultimates';
 
 describe('data integrity', () => {
   it('matches the spec content counts', () => {
-    expect(CHARACTER_IDS).toHaveLength(9);
+    expect(CHARACTER_IDS).toHaveLength(10);
     const enemies = Object.values(ENEMIES);
     expect(enemies.filter((e) => !e.boss)).toHaveLength(8);
     expect(enemies.filter((e) => e.boss).map((e) => e.id)).toEqual(['lanterneater']);
@@ -94,8 +94,8 @@ describe('ultimates', () => {
 
 describe('affinity', () => {
   it('every character has an affinity', () => {
-    const keys = ['str', 'int', 'agi', 'wil'];
-    const want = { noel: 'int', chizuru: 'str', liz: 'agi', sylvie: 'agi', scarlet: 'str', selene: 'wil', safira: 'agi', bobby: 'int', rin: 'agi' };
+    const keys = ['str', 'int', 'agi', 'wil', 'all'];
+    const want = { noel: 'int', chizuru: 'str', liz: 'agi', sylvie: 'agi', scarlet: 'str', selene: 'wil', safira: 'agi', bobby: 'int', rin: 'agi', hero: 'all' };
     for (const id of CHARACTER_IDS) {
       expect(keys).toContain(CHARACTERS[id].affinity);
       expect(CHARACTERS[id].affinity).toBe(want[id as keyof typeof want]);

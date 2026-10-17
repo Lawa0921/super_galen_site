@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   canRaiseNode, canRaiseTalent, defaultTalents, defaultTree, freeNode, keystonesOf, learnedSkills, legacyDue, newTree, nodeRank, raiseNode,
-  raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, validBuild,
+  raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, ultimateFor, validBuild,
+  heroMainBranch,
 } from './progression';
+import { HERO_ULTIMATES, ULTIMATES } from '../data/ultimates';
 import { gainExp, newMember } from './party';
 import { CHARACTERS, rulesOf } from '../data/characters';
 import { mulberry32 } from './rng';
@@ -40,6 +42,29 @@ describe('progression', () => {
     expect(skillPoints(50, 'hero')).toBe(73);
     expect(skillPoints(1, 'hero')).toBe(0);
     expect(skillPoints(3, 'hero')).toBe(3);
+  });
+
+  it("the hero's ultimate follows his deepest branch", () => {
+    expect(HERO_ULTIMATES.map((u) => u.id)).toEqual(['ult-hero-sword', 'ult-hero-guard', 'ult-hero-star', 'ult-hero-light', 'ult-hero-chain']);
+    expect(ULTIMATES.hero).toBe(HERO_ULTIMATES[0]);
+    const hero = newMember('hero');
+    expect(skillPointsLeft({ ...hero, level: 50 })).toBe(skillPoints(50, rulesOf('hero').curve));
+    expect(skillPoints(50, rulesOf('hero').curve)).toBe(73);
+    // a new hero holds only the free slash: the sword form
+    expect(heroMainBranch(hero.tree)).toBe(0);
+    expect(ultimateFor('hero', hero.tree).id).toBe('ult-hero-sword');
+    expect(ultimateFor('hero').id).toBe('ult-hero-sword');
+    // three points in 祈光 (branch 3) outweigh the free slash
+    const light = up({ ...hero, level: 50 }, 'hero-mend', 3);
+    expect(heroMainBranch(light.tree)).toBe(3);
+    expect(ultimateFor('hero', light.tree).id).toBe('ult-hero-light');
+    // sword 2 and 祈光 2: the tie goes to the lower branch, the sword
+    const tie = up(up({ ...hero, level: 50 }, 'hero-slash'), 'hero-mend', 2);
+    expect(heroMainBranch(tie.tree)).toBe(0);
+    expect(ultimateFor('hero', tie.tree).id).toBe('ult-hero-sword');
+    // the companions keep their own, whatever the ranks
+    expect(ultimateFor('noel', light.tree)).toBe(ULTIMATES.noel);
+    expect(ultimateFor('rin')).toBe(ULTIMATES.rin);
   });
 
   it('hero curve: talent points from Lv6', () => {

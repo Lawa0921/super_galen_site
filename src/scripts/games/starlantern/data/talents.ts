@@ -2,11 +2,12 @@ import type { AnyStat, CharacterId } from '../engine/types';
 import { CHARACTER_IDS, DEFAULT_RULES, rulesOf } from './characters';
 
 /**
- * Talent boards: a 6x4 grid of normal nodes (rank 0-5) plus 3 keystones per character (rank 0-1).
+ * Talent boards: a BOARD_ROWS x rulesOf(c).boardCols grid of normal nodes (rank 0-5) plus the character's keystones (rank 0-1):
+ * a companion has 6x4 and 3 keystones, the hero 6x6 and 5.
  * Rules (written here once; Task 5/9's canRaiseTalent calls `talentBlocker`):
  *  - a normal node on row 0 is always open; on row r, column c it needs at least 1 rank on row r - 1 in column c - 1, c or c + 1;
  *  - keystones are NOT subject to adjacency. They need KEYSTONE_GATE ranks on the same board's normal nodes, and fewer than
- *    MAX_KEYSTONES keystones already held.
+ *    rulesOf(owner).maxKeystones keystones already held.
  */
 export type KeystoneId = 'crit-tp' | 'kill-tp' | 'weak-tp' | 'last-stand' | 'opening-gauge' | 'regen' | 'taunt-guard';
 
@@ -40,6 +41,11 @@ export const BOARD_ROWS = 6;
 export const BOARD_COLS = 4;
 /** Each cell is an index into the character's palette; every palette stat appears 4 times. */
 export const TEMPLATE: number[][] = [[0, 1, 2, 3], [4, 5, 0, 1], [2, 3, 4, 5], [0, 1, 2, 3], [4, 5, 0, 1], [2, 3, 4, 5]];
+/** The hero's 6x6 grid over his 9-stat palette: row r, column c holds (6r + c) % 9, so every stat appears 4 times. */
+const HERO_COLS = rulesOf('hero').boardCols;
+const HERO_TEMPLATE: number[][] = Array.from({ length: BOARD_ROWS }, (_, r) => Array.from({ length: HERO_COLS }, (_, c) => (HERO_COLS * r + c) % 9));
+/** The character's board layout: the hero's 6x6 grid, or the companions' TEMPLATE. */
+export const templateOf = (c: CharacterId): number[][] => (c === 'hero' ? HERO_TEMPLATE : TEMPLATE);
 
 export const PALETTES: Record<CharacterId, AnyStat[]> = {
   noel: ['int', 'mag', 'fireDmg', 'iceDmg', 'thunderDmg', 'tp'],
@@ -51,6 +57,7 @@ export const PALETTES: Record<CharacterId, AnyStat[]> = {
   safira: ['agi', 'atk', 'multi', 'evasion', 'spd', 'crit'],
   bobby: ['int', 'mag', 'tp', 'def', 'gauge', 'thunderDmg'],
   rin: ['agi', 'atk', 'crit', 'critDmg', 'spd', 'evasion'],
+  hero: ['str', 'hp', 'atk', 'wil', 'def', 'res', 'int', 'mag', 'agi'],
 };
 
 export const CHAR_KEYSTONES: Record<CharacterId, KeystoneId[]> = {
@@ -63,10 +70,11 @@ export const CHAR_KEYSTONES: Record<CharacterId, KeystoneId[]> = {
   safira: ['kill-tp', 'crit-tp', 'opening-gauge'],
   bobby: ['opening-gauge', 'weak-tp', 'regen'],
   rin: ['crit-tp', 'kill-tp', 'last-stand'],
+  hero: ['regen', 'taunt-guard', 'last-stand', 'crit-tp', 'opening-gauge'],
 };
-/** The keystones the default build takes: the first two. */
+/** The keystones the default build takes: the first rulesOf(c).maxKeystones (two for a companion, three for the hero). */
 export const DEFAULT_KEYSTONES = Object.fromEntries(
-  CHARACTER_IDS.map((c) => [c, CHAR_KEYSTONES[c].slice(0, 2)]),
+  CHARACTER_IDS.map((c) => [c, CHAR_KEYSTONES[c].slice(0, rulesOf(c).maxKeystones)]),
 ) as Record<CharacterId, KeystoneId[]>;
 
 export interface TalentNode { id: string; row: number; col: number; maxRank: 1 | 5; stat?: AnyStat; keystone?: KeystoneId }
@@ -77,7 +85,7 @@ export const MAX_KEYSTONES = DEFAULT_RULES.maxKeystones;
 
 export const BOARDS = Object.fromEntries(CHARACTER_IDS.map((c) => {
   const nodes: TalentNode[] = [];
-  TEMPLATE.forEach((line, row) => line.forEach((p, col) => {
+  templateOf(c).forEach((line, row) => line.forEach((p, col) => {
     nodes.push({ id: `${c}-t${row}${col}`, row, col, maxRank: 5, stat: PALETTES[c][p] });
   }));
   CHAR_KEYSTONES[c].forEach((keystone, i) => nodes.push({ id: `${c}-k${i}`, row: BOARD_ROWS, col: i, maxRank: 1, keystone }));

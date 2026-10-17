@@ -4,12 +4,11 @@ import { SKILLS } from '../../data/skills';
 import { BOARDS, BOARD_ROWS, KEYSTONES, TALENT_PER, TALENT_SCALE, boardPoints, rankOf, type TalentNode } from '../../data/talents';
 import { ACTIVE_RANK_PCT, NODES, TREES, type TreeNode } from '../../data/trees';
 import { T } from '../../data/text.zh-TW';
-import { ULTIMATES } from '../../data/ultimates';
 import { skillCost, skillFor } from '../../engine/battle';
 import { itemLines } from '../../engine/compare';
 import { ROW_MELEE, rowOfCell } from '../../engine/formation';
 import {
-  canRaiseNode, canRaiseTalent, freeNode, keystonesOf, learnedSkills, nodeRank, rankMod, skillPointsLeft, talentPointsLeft,
+  canRaiseNode, canRaiseTalent, freeNode, keystonesOf, learnedSkills, nodeRank, rankMod, skillPointsLeft, talentPointsLeft, ultimateFor,
 } from '../../engine/progression';
 import type { TalentFail } from '../../engine/progression';
 import { SLOTS, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
@@ -666,8 +665,8 @@ const ultimate: StatusTab = {
   id: 'ultimate',
   label: T.ui2.status.tabs.ultimate,
   render(ctx, id) {
-    const u = ULTIMATES[id];
     const m = ctx.game.state.party.roster[id];
+    const u = ultimateFor(m.id, m.tree);
     return el('div', { class: 'slx-tab-ultimate' }, [
       el('h4', { text: u.name }),
       el('p', { class: 'slx-desc', text: u.desc }),

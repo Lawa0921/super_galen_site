@@ -25,7 +25,7 @@ export const ART_CHARACTER_IDS = CHARACTER_IDS.filter((id) => !NO_ART_YET.has(id
 /** Art ids that are not characters of their own but a second look of one (Rin after her oath). */
 export const ART_VARIANT_IDS = ['rin-oath'];
 /** Everyone who also has the smile and sad faces. */
-const EXTRA_MOOD_IDS = ['rin', 'rin-oath'];
+const EXTRA_MOOD_IDS = ['hero', 'rin', 'rin-oath'];
 
 export const TILE_KEYS: TileKey[] = ['wall', 'floor', 'door', 'up', 'down', 'chest', 'chest-open', 'entrance', 'boss'];
 export const FX_KEYS: FxKey[] = ['slash', 'pierce', 'strike', 'fire', 'ice', 'thunder', 'heal', 'buff'];

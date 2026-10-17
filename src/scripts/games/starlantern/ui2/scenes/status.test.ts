@@ -18,11 +18,12 @@ import { BOARDS, KEYSTONES, TALENT_PER, TALENT_SCALE } from '../../data/talents'
 /** A shown number back to a number: the minus sign reads as a minus. */
 const num = (t: string | null) => Number((t ?? '').replace('−', '-'));
 
-function setup(arg?: string, artIndex: ArtIndex = NO_ART) {
+function setup(arg?: string, artIndex: ArtIndex = NO_ART, prep?: (game: Game) => void) {
   const game = new Game(constRng(0.5), null);
   game.state.bag = [plainItem('iron-sword', 1)];
   game.state.party.roster.scarlet.equip.weapon = plainItem('iron-sword', 2);
   game.state.nextUid = 3;
+  prep?.(game);
   const go = vi.fn();
   const root = document.createElement('div');
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
@@ -234,6 +235,17 @@ describe('StatusScene', () => {
       expect(line!.previousElementSibling).toBe(head(root, 'primary'));       // right after the heading
       expect(T.ui2.status.affinity(T.ui2.status.affinityAll)).toBe('取向：全能');
       expect(root.querySelectorAll('.slx-stat-affinity')).toHaveLength(1);    // the primary section only
+    });
+
+    it("the hero's affinity reads 全能", () => {
+      const { root, tab } = setup('hero', NO_ART, (game) => {
+        const p = game.state.party;
+        p.recruited.push('hero');
+        p.grid[0] = 'hero';                                                    // swapped in for scarlet
+      });
+      expect(tab()).toBe('能力');
+      const line = root.querySelector('[data-cat=primary] .slx-stat-affinity');
+      expect(line!.textContent).toBe(T.ui2.status.affinity(T.ui2.status.affinityAll));
     });
 
     /** The number in each source cell and the 上限 cell (an em dash is 0), and the shown total without its unit. */
