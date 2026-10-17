@@ -122,8 +122,9 @@ def test_seeded_registry_covers_every_runtime_asset():
     reg = seed_registry.build()
     assets = reg['assets']
     runtime = [a['runtime'] for a in assets.values() if 'runtime' in a]
-    # 189 (plan 4) + plan 5b tree-skill icons and plan 5c material icons, seeded as todo for plan 5d = 252
-    assert len(runtime) == 252 and len(set(runtime)) == 252
+    # 189 (plan 4) + plan 5b tree-skill icons and plan 5c material icons, seeded as todo for plan 5d = 252,
+    # + plan 6a skill icons (10 Rin, 21 hero) seeded from skills.ts = 283
+    assert len(runtime) == 283 and len(set(runtime)) == 283
     assert assets['npc-guild-happy']['runtime'] == '/assets/games/starlantern/npc/guild-happy.png'
     assert assets['scene-title']['runtime'] == '/assets/games/starlantern/scene/title.png'
     for m in ('attack', 'hit', 'dying', 'down', 'ultimate'):
