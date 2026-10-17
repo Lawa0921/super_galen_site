@@ -10,7 +10,7 @@ import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich, type RichPart } from '../widgets';
 
-const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'settings'] as const;
+const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'forge', 'settings'] as const;
 
 /**
  * 「平安回城。帶回了：回復藥 ×2、鐵劍、120 G。」 — the lamp's own words replace 平安回城 when it brought the party home.
@@ -97,7 +97,7 @@ export class TownScene implements Scene {
 
   private pick(id: string, label: string): void {
     this.ctx.sfx.confirm();
-    if (id === 'guild' || id === 'shop' || id === 'inn' || id === 'gate' || id === 'settings') { this.ctx.go(id); return; }
+    if (id === 'guild' || id === 'shop' || id === 'inn' || id === 'gate' || id === 'forge' || id === 'settings') { this.ctx.go(id); return; }
     void this.speak('', T.ui2.town.soon(label));
   }
 }

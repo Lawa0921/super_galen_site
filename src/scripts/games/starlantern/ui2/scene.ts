@@ -5,7 +5,7 @@ import type { UiAction } from './input';
 import type { SettingsStore } from './settings';
 import type { Stage } from './stage';
 
-export type SceneName = 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate' | 'dungeon' | 'battle' | 'clear' | 'settings'
+export type SceneName = 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate' | 'forge' | 'dungeon' | 'battle' | 'clear' | 'settings'
   | 'formation' | 'status' | 'equip';
 export interface Scene { enter(root: HTMLElement): void; exit(): void; onAction(a: UiAction): void }
 export interface SceneCtx {

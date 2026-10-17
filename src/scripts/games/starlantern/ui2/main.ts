@@ -14,6 +14,7 @@ import { GuildScene } from './scenes/guild';
 import { ShopScene } from './scenes/shop';
 import { InnScene } from './scenes/inn';
 import { GateScene } from './scenes/gate';
+import { ForgeScene } from './scenes/forge';
 import { DungeonScene } from './scenes/dungeon';
 import { BattleScene } from './scenes/battle';
 import { ClearScene } from './scenes/clear';
@@ -51,6 +52,7 @@ export async function mountNext(): Promise<void> {
       case 'shop': return new ShopScene(ctx);
       case 'inn': return new InnScene(ctx);
       case 'gate': return new GateScene(ctx);
+      case 'forge': return new ForgeScene(ctx);
       case 'dungeon': return new DungeonScene(ctx);
       case 'battle': return new BattleScene(ctx);
       case 'clear': return new ClearScene(ctx);

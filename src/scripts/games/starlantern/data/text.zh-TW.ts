@@ -83,6 +83,7 @@ export const T = {
     gold: '金錢不足', full: '背包已滿', locked: '尚未解鎖', stock: '數量不足', invalid: '無法執行', phase: '現在不能這麼做',
     'party-down': '出戰成員全部倒下，無法出發', size: '編隊格數錯誤', 'not-recruited': '尚未招募',
     duplicate: '同一人不能重複上陣', empty: '至少要有一人出戰', 'too-many': '最多只能 5 人上陣',
+    mats: '素材不足', max: '已經強化到最高了', affixLocked: '這件裝備只能重鑄已鎖定的詞綴', none: '沒有可以換的詞綴',
   } as Record<string, string>,
   notices: {
     'save-reset': '存檔無法讀取，已開始新遊戲', wipe: '全滅……冒險背包遺失在迷宮裡，身上的金幣也少了四分之一。',
@@ -313,7 +314,7 @@ export const T = {
     },
     town: {
       place: '邊境小鎮 露米亞',
-      facilities: { guild: '冒險者公會', shop: '道具店', inn: '旅館', gate: '傳送門廣場', settings: '設定' },
+      facilities: { guild: '冒險者公會', shop: '道具店', inn: '旅館', gate: '傳送門廣場', forge: '鍛造屋', settings: '設定' },
       lines: ['暮霧又濃了些。冒險者們，今天要往哪裡去？', '聽說迷宮深處有星燈的光。', '補給品記得在出發前備齊。'],
       soon: (name: string) => `${name}的新介面正在製作中，下一階段開放。`,
       toTitle: '要回到標題畫面嗎？上次存檔之後的進度不會保留。',
@@ -323,7 +324,13 @@ export const T = {
       shop: { place: '道具店', npc: '歐里克', greet: ['歡迎光臨！看看有什麼需要的。', '剛進了新貨喔。'] },
       inn: { place: '月影旅館', npc: '瑪莎', greet: ['辛苦了，要休息一下嗎？', '熱湯已經準備好了。'] },
       gate: { place: '傳送門廣場', npc: '葛倫', greet: ['三座傳送門都開著。要去哪裡？別逞強。', '傳送門今天也在發光。'] },
+      forge: { place: '鍛造屋', npc: '多蘭', greet: ['爐火正旺。要拆、要打，還是要重新鍛一回？', '帶素材來了嗎？好鐵配好手藝。'] },
       leave: '離開',
+    },
+    forge: {
+      tabs: { dismantle: '分解', enhance: '強化', reroll: '重鑄', fuse: '合成', craft: '製作' },
+      wornBy: (name: string) => `（${name}裝備中）`,
+      saveFailed: '東西是做好了，可是存檔失敗：瀏覽器不允許儲存。',
     },
     dungeon: {
       status: '隊伍狀態', items: '道具', lamp: (n: number) => `歸還之燈 ×${n}`, close: '關閉', askTown: '要回到城鎮嗎？',

@@ -971,3 +971,10 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-banner-condition .slx-banner-text { font-size: 26px; line-height: 32px; letter-spacing: 4px; animation-duration: 2s; }
 .slx-banner-sub { position: relative; font-size: 12px; line-height: 16px; color: $slx-ink; skew: -10deg 0; text-shadow: 0 1px 0 #000, 0 0 3px #000; animation: slx-banner-text 2s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
 @media (prefers-reduced-motion: reduce) { .slx-flash-hurt { animation: none; opacity: 0.3; } .slx-banner-condition::before, .slx-banner-sub { animation: none; } }
+
+// Forge (ui2/scenes/forge.ts): the five tabs are the command window; a tab's gear list and its detail reuse .slx-list and .slx-info,
+// widened for gear labels with a wearer. Gear marked junk is struck through in its rarity colour; a cost the party cannot pay is .slx-lack.
+.slx-forge .slx-list { min-width: 250px; max-height: 260px; }
+.slx-forge .slx-info { left: 420px; width: 200px; max-height: 260px; overflow-y: auto; }
+.slx-forge .slx-label.slx-junk { text-decoration: line-through; opacity: 0.6; }
+.slx-lack { color: $slx-down; }

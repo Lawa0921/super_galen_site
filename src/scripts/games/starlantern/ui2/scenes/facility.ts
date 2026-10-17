@@ -5,9 +5,9 @@ import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx, SceneName } from '../scene';
 import { textCps } from '../settings';
-import { Dialogue, MenuView, backControl, win } from '../widgets';
+import { Dialogue, MenuView, backControl, win, type Rich } from '../widgets';
 
-export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate';
+export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate' | 'forge';
 const RETURNING: SceneName[] = ['formation', 'status', 'equip', 'settings'];
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 
@@ -107,7 +107,7 @@ export abstract class FacilityScene implements Scene {
     this.syncInert();
   }
 
-  protected say(text: string, mood: 'normal' | 'happy' = 'normal'): Promise<void> {
+  protected say(text: string | Rich, mood: 'normal' | 'happy' = 'normal'): Promise<void> {
     if (mood === 'happy') this.setMood('happy');
     this.talking = true;
     this.syncInert();

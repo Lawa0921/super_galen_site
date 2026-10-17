@@ -13,7 +13,7 @@ describe('TownScene', () => {
     s.enter(root);
     expect(root.querySelector('.slx-place')!.textContent).toBe('邊境小鎮 露米亞');
     expect(root.querySelector('.slx-gold')!.textContent).toBe('150 G');
-    expect([...root.querySelectorAll('[role=option]')].map((o) => o.textContent)).toEqual(['冒險者公會', '道具店', '旅館', '傳送門廣場', '設定']);
+    expect([...root.querySelectorAll('[role=option]')].map((o) => o.textContent)).toEqual(['冒險者公會', '道具店', '旅館', '傳送門廣場', '鍛造屋', '設定']);
     expect(root.querySelector('.slx-talk .slx-text')!.textContent!.length).toBeGreaterThan(0);
   });
 
@@ -25,7 +25,7 @@ describe('TownScene', () => {
     s.onAction('confirm');               // greeting closes
     s.onAction('confirm');               // 冒險者公會
     expect(go).toHaveBeenCalledWith('guild');
-    for (let i = 0; i < 4; i++) s.onAction('down');
+    for (let i = 0; i < 5; i++) s.onAction('down');
     s.onAction('confirm');               // 設定
     expect(go).toHaveBeenCalledWith('settings');
     s.onAction('cancel');
@@ -62,6 +62,17 @@ describe('TownScene mouse', () => {
     (root.querySelector('.slx-back') as HTMLElement).click();
     (root.querySelector('.slx-confirm [data-id=yes]') as HTMLElement).click();
     expect(go).toHaveBeenCalledWith('title');
+  });
+
+  it('鍛造屋 opens the forge', () => {
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const s = new TownScene({ game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    s.onAction('confirm');               // greeting closes
+    for (let i = 0; i < 4; i++) s.onAction('down');
+    s.onAction('confirm');               // 鍛造屋
+    expect(go).toHaveBeenCalledWith('forge');
   });
 });
 
