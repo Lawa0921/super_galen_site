@@ -60,6 +60,8 @@ export interface RenderStats {
   /** 光照：整次重算 / 其中引擎 / 填像素 / putImageData（毫秒） */
   lightMs: number; lightEngineMs: number; lightFillMs: number; lightPutMs: number;
 }
+/** 上一幀各階段耗時（ms；效能剖析用，原地更新不配置） */
+export interface RenderPhases { bg: number; chunks: number; sprites: number; liquid: number; fx: number; light: number; over: number; blit: number; }
 
 export class Renderer {
   readonly atlas: Atlas;
@@ -81,6 +83,10 @@ export class Renderer {
   zoomOffset = 0;
   private cssW = 1; private cssH = 1;
   stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0, lightEngineMs: 0, lightFillMs: 0, lightPutMs: 0, liquidCells: 0, liquidMs: 0 };
+  readonly phases: RenderPhases = { bg: 0, chunks: 0, sprites: 0, liquid: 0, fx: 0, light: 0, over: 0, blit: 0 };
+  private tp = 0;
+  /** 距上次 lap 的毫秒數 */
+  private lap(): number { const n = performance.now(), d = n - this.tp; this.tp = n; return d; }
   /** 液體圖層（不進 chunk 快取） */
   readonly liquidLayer = new LiquidLayer();
   /** debug：不畫光照遮罩（文件截圖用） */
@@ -270,7 +276,8 @@ export class Renderer {
   }
 
   render(dt: number): void {
-    const g = this.game, w = g.world;
+    const g = this.game, w = g.world, ph = this.phases;
+    this.tp = performance.now();
     this.frame++;
     this.clock += dt;
     const worldW = w.width * S, worldH = w.height * S;
@@ -332,6 +339,7 @@ export class Renderer {
     this.bg.drawUnderground(ctx, camX, camY, vw, vh,
       (tx) => (surf[Math.max(0, Math.min(surf.length - 1, tx))] + 6) * S, S, (w.rockY || w.cavernY) * S, w.cavernY * S, w.moltenY ? w.moltenY * S : Infinity,
       { biome: w.biome, structures: g.structures }); // [polish] biome-specific backdrops
+    ph.bg = this.lap();
 
     const r = visibleChunks(camX, camY, vw, vh, CPX, w.chunksX, w.chunksY);
     if (seasonFlush) {
@@ -366,16 +374,19 @@ export class Renderer {
     }
     this.stats.chunksDrawn = drawn;
     this.stats.cached = this.cache.size;
+    ph.chunks = this.lap();
 
     this.drawFlora(ctx, camX, camY, vw, vh);
     this.drawTrees(ctx, camX, camY, vw, vh);
     this.drawTorches(ctx, camX, camY, vw, vh);
     this.combat.drawWorld(ctx, { x: camX, y: camY, w: vw, h: vh }, { warm: this.torchesSeen, cool: this.coolSeen });
     this.drawPlayer(ctx, dt);
+    ph.sprites = this.lap();
     const tl = performance.now();
     this.liquidLayer.draw(ctx, w, camX, camY, vw, vh, this.clock, this.torchesSeen);
     this.stats.liquidMs = performance.now() - tl;
     this.stats.liquidCells = this.liquidLayer.stats.cells;
+    ph.liquid = this.lap();
     this.drawIce(ctx, camX, camY, vw, vh);
     this.drawFishing(ctx);
     this.drawMiningAndCursor(ctx);
@@ -389,7 +400,9 @@ export class Renderer {
     this.fx.update(dt, { world: w, camX, camY, vw, vh, kind: precip, storm: wx.kind === 'storm', intensity: wx.intensity, wind: g.wind(), light: g.skyLevel() });
     this.updateAmbient(dt, camX, camY, vw, vh);
     this.drawAmbient(ctx, false);
+    ph.fx = this.lap();
     this.drawLight(ctx, camX, camY, vw, vh);
+    ph.light = this.lap();
     if (!this.fullbright) this.combat.drawDark(ctx, { x: camX, y: camY, w: vw, h: vh }, (tx, ty) => this.lightAt(tx, ty));
     // 霧 / 雨雪畫在光照之後（夜裡也看得到，顏色依天空亮度分階）
     const lvl = this.fullbright ? 1 : g.skyLevel();
@@ -403,11 +416,13 @@ export class Renderer {
     const sl = g.sleepFade();
     if (sl > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); this.fx.drawSleep(ctx, sl, this.bufW, this.bufH); }
 
+    ph.over = this.lap();
     // 整數倍放大貼到螢幕：每個美術像素 = scale×scale 裝置像素
     const out = this.ctx;
     out.setTransform(1, 0, 0, 1, 0, 0);
     out.imageSmoothingEnabled = false;
     out.drawImage(this.buf, 0, 0, this.bufW, this.bufH, 0, 0, this.bufW * this.scale, this.bufH * this.scale);
+    ph.blit = this.lap();
   }
 
   /** 鏡頭附近 ±80 欄的平均地表（世界 px） */

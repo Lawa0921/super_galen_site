@@ -40,6 +40,8 @@ export interface FrameStats {
   mapMs: number;
   /** 液體：上一刻模擬耗時 / 處理格數 / 活躍格數、液體圖層繪製耗時 */
   liquidSimMs: number; liquidProcessed: number; liquidActive: number; liquidDrawMs: number;
+  /** 最近 WINDOW 幀 JS 工作時間的 p95 / 最大值（ms）：看尖峰幀 */
+  p95WorkMs: number; maxWorkMs: number;
 }
 
 export interface DelveHandle {
@@ -268,6 +270,16 @@ export function startDelve(opts: StartOptions): DelveHandle {
   };
   raf = requestAnimationFrame(frame);
 
+  const sorted = new Float32Array(WINDOW);
+  /** 最近 WINDOW 幀的第 q 分位數 */
+  const quantile = (a: Float32Array, q: number): number => {
+    const n = Math.min(frames, WINDOW);
+    if (!n) return 0;
+    const s = sorted.subarray(0, n);
+    s.set(a.subarray(0, n));
+    s.sort();
+    return s[Math.min(n - 1, Math.floor(q * n))];
+  };
   const avg = (a: Float32Array): number => {
     const n = Math.min(frames, WINDOW);
     if (!n) return 0;
@@ -286,6 +298,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
         lightMs: renderer.stats.lightMs, cachedChunks: renderer.stats.cached, mapMs: avg(mapWork),
         liquidSimMs: game.liquids.stats.ms, liquidProcessed: game.liquids.stats.processed, liquidActive: game.liquids.activeCount,
         liquidDrawMs: renderer.stats.liquidMs,
+        p95WorkMs: quantile(work, 0.95), maxWorkMs: quantile(work, 1),
       };
     },
     setPaused: (p) => {
