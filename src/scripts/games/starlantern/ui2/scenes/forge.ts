@@ -187,7 +187,7 @@ ${T.ui2.forge.warnPrecious}`] : ask, (yes) => {
     moved: () => h.ctx.sfx.cursor(),
     cancel: () => h.pop(),
   }, 12);
-  h.push({ el: win('slx-list slx-forge-list', [v.el]), onAction: (a) => v.onAction(a) });
+  h.push({ el: win('slx-list slx-forge-list slx-forge-pick', [v.el]), onAction: (a) => v.onAction(a) });
 }
 
 /** What `c` costs as rich parts: each material as 「名稱 擁有／需要」, then the gold; anything short is in `slx-lack` and ends with （不足）. */
@@ -481,7 +481,7 @@ export function fusePage(h: ForgeHost): void {
     moved: () => h.ctx.sfx.cursor(),
     cancel: () => h.pop(),
   }, 12);
-  h.push({ el: win('slx-list slx-forge-list', [tiers.el]), onAction: (a) => tiers.onAction(a) });
+  h.push({ el: win('slx-list slx-forge-list slx-forge-pick', [tiers.el]), onAction: (a) => tiers.onAction(a) });
 
   function openPicks(from: typeof FUSE_FROM[number]): void {
     const picked = new Set<number>();
@@ -501,7 +501,7 @@ export function fusePage(h: ForgeHost): void {
       moved: () => h.ctx.sfx.cursor(),
       cancel: () => h.pop(),
     }, 12);
-    h.push({ el: win('slx-list slx-forge-list', [v.el]), onAction: (a) => v.onAction(a) });
+    h.push({ el: win('slx-list slx-forge-list slx-forge-pick', [v.el]), onAction: (a) => v.onAction(a) });
   }
 
   function openSlots(from: typeof FUSE_FROM[number], uids: number[]): void {
@@ -540,7 +540,7 @@ export function fusePage(h: ForgeHost): void {
       moved: () => h.ctx.sfx.cursor(),
       cancel: () => h.pop(),
     }, 12);
-    h.push({ el: win('slx-list slx-forge-list', [v.el]), onAction: (a) => v.onAction(a) });
+    h.push({ el: win('slx-list slx-forge-list slx-forge-pick', [v.el]), onAction: (a) => v.onAction(a) });
 
     const run = (slot?: GearSlot) => {
       const r = game.fuse(uids, slot);

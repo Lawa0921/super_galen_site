@@ -991,10 +991,15 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 // - enhance: 150 + 262 = 412, before the detail at 420;
 // - reroll: the item list 150 + 262 = 412, then the affix and method lists 174 / 198 + 250 = 424 / 448, all before the detail at 456;
 // - craft: the categories 150 + 262 = 412, then the recipe lists 124 / 148 + 256 = 380 / 404, all before the detail at 436;
-// - dismantle and fuse have no detail; their deepest list (fuse, depth 2) ends at 198 + 262 = 460.
+// Dismantle and fuse (.slx-forge-pick) are where a piece is chosen to be destroyed and have no detail pane, so their labels are
+// never cut: the list grows to fit (at least 262px, at most 430px, so the deepest fuse list at 198 ends by 628) and the label
+// keeps its full width (name, +n and rarity word); the right column (yields, costs) gives way and wraps instead.
 .slx-forge .slx-list { box-sizing: border-box; width: 262px; min-width: 0; max-width: none; max-height: 260px; }
 .slx-forge .slx-list .slx-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .slx-forge .slx-list .slx-right { flex: none; white-space: nowrap; }
+.slx-forge .slx-list.slx-forge-pick { width: max-content; min-width: 262px; max-width: 430px; }
+.slx-forge .slx-forge-pick .slx-label { flex: none; overflow: visible; }
+.slx-forge .slx-forge-pick .slx-right { flex: 1 1 auto; min-width: 0; white-space: normal; text-align: right; }
 // A window's border is 8px a side (16px across) on top of 8px padding a side: a 188px detail at 420px ends at the 640px edge.
 .slx-forge .slx-info { left: 420px; width: 188px; max-height: 260px; overflow-y: auto; }
 .slx-forge .slx-reroll-list { width: 250px; }

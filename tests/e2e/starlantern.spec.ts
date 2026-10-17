@@ -810,7 +810,9 @@ test.describe('starlantern', () => {
     const slot = named.slot === 'ring' ? 'ring1' : named.slot;
     const longKeys = (Object.keys(AFFIXES) as (keyof typeof AFFIXES)[]).filter((key) => AFFIXES[key].slots.includes(named.slot)).slice(0, 4);
     const longest = Object.values(CHARACTERS).sort((a, b) => b.name.length - a.name.length)[0].id;
-    await page.evaluate(({ special, rarity, base, slot, keys, longest }) => {
+    // The longest base name, for the fuse pick list (no named piece can be fused): three rares at +10.
+    const longBase = Object.values(EQUIPMENT).sort((a, b) => b.name.length - a.name.length)[0].id;
+    await page.evaluate(({ special, rarity, base, slot, keys, longest, longBase }) => {
       const g = (window as unknown as Dbg).__starlanternDebug.game;
       const s = g.state;
       s.gold = 99999;
@@ -821,8 +823,9 @@ test.describe('starlantern', () => {
       for (const id of s.party.recruited) s.party.roster[id].equip[slot] = piece();
       s.bag.unshift(piece());
       for (const v of [3, 4, 5]) s.bag.push({ uid: g.mintUid(), base: 'iron-sword', rarity: 'magic', ilvl: 999, enhance: 0, affixes: [{ key: 'critDmg', value: v }] });
+      for (const v of [3, 4, 5]) s.bag.push({ uid: g.mintUid(), base: longBase, rarity: 'rare', ilvl: 999, enhance: 10, locked: 0, affixes: [{ key: 'critDmg', value: v }] });
       s.bag.push({ uid: g.mintUid(), base: 'iron-sword', rarity: 'common', ilvl: 1, enhance: 5, affixes: [] });
-    }, { special: named.id, rarity: named.rarity, base, slot, keys: longKeys, longest });
+    }, { special: named.id, rarity: named.rarity, base, slot, keys: longKeys, longest, longBase });
     await w.choose('.slx-town', '鍛造屋');
     await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
     const top = () => page.locator('.slx-forge .slx-layer').last();
@@ -835,7 +838,11 @@ test.describe('starlantern', () => {
       for (let i = 0; i < n; i++) { await check(`${where} row ${i}`); await w.key('ArrowDown'); }
     };
 
-    await tab('dismantle'); await walk('dismantle'); await back();
+    /** The dismantle and fuse lists have no detail pane: every label there must show in full (name, +n and rarity word). */
+    const clipped = () => page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-forge .slx-layer.slx-list .slx-label')]
+      .filter((l) => l.scrollWidth > l.clientWidth + 0.5).map((l) => `${l.textContent} ${l.scrollWidth}>${l.clientWidth}`));
+    const whole = async (where: string) => { expect(await clipped(), where).toEqual([]); await check(where); };
+    await tab('dismantle'); await whole('dismantle'); await walk('dismantle'); await back();
     await tab('enhance'); await walk('enhance'); await back();
     await tab('reroll'); await walk('reroll items');
     await top().locator('[role=option]').last().click();               // a worn piece with a locked affix
@@ -844,9 +851,11 @@ test.describe('starlantern', () => {
     await check('reroll methods'); await walk('reroll methods');
     await back();
     await tab('fuse');
-    await top().locator('[data-id=magic]').click(); await check('fuse picks');
+    await whole('fuse tiers');
+    await top().locator('[data-id=rare]').click(); await whole('fuse picks');
     for (const n of [1, 2, 3]) await top().locator('[role=option]').nth(n).click();
-    await top().locator('[data-id=go]').click(); await check('fuse slots'); await walk('fuse slots');
+    await whole('fuse picked');
+    await top().locator('[data-id=go]').click(); await whole('fuse slots'); await walk('fuse slots');
     await back();
     await tab('craft');
     for (const [cat, sub] of [['item', null], ['base', null], ['set', 'set-blaze']] as const) {
