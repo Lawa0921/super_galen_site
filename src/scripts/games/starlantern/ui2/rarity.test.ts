@@ -45,4 +45,13 @@ describe('rarity colours and words', () => {
     expect(gearLabel(it0)).toBe('皮背心・魔法');
     expect(gearLabel({ ...it0, rarity: 'common' })).toBe('皮背心');
   });
+
+  it('an enhanced item reads 名稱 +n before its rarity word; +0 reads as before', () => {
+    const it0 = { uid: 1, base: 'leather-vest', rarity: 'magic' as const, ilvl: 1, affixes: [], enhance: 0 };
+    expect(gearLabel({ ...it0, enhance: 1, rarity: 'common' })).toBe('皮背心 +1');
+    expect(gearLabel({ ...it0, enhance: 3 })).toBe('皮背心 +3・魔法');
+    expect(gearLabel(it0)).toBe('皮背心・魔法');                     // +0 shows no "+0"
+    expect(T.enhanced('鐵劍', 0)).toBe('鐵劍');
+    expect(T.enhanced('鐵劍', 3)).toBe('鐵劍 +3');
+  });
 });

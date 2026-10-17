@@ -2,12 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { compareDelta, itemLines, specialLines } from './compare';
 import { newMember } from './party';
 import { plainItem } from './testing';
-import { rollItem } from './loot/item';
+import { implicitStats, rollItem } from './loot/item';
 import { mulberry32 } from './rng';
 import { T } from '../data/text.zh-TW';
 import { ENHANCE_STEP } from '../data/forge';
 import { POWERS, SETS, SPECIALS } from '../data/gear';
-import type { ItemInstance, Member } from './types';
+import type { AnyStat, ItemInstance, Member } from './types';
 
 const sword = plainItem('iron-sword', 1);
 const better = plainItem('star-saber', 2);
@@ -100,6 +100,22 @@ describe('specialLines', () => {
     expect(specialLines('set-iron').map((l) => l.kind)).toEqual(['set', 'set']);
     expect(specialLines('set-iron-body').map((l) => l.kind)).toEqual(['set', 'set', 'lore']);
     expect(specialLines('nope')).toEqual([]);
+  });
+
+  it('the locked affix is marked', () => {
+    const it0: ItemInstance = { ...sword, rarity: 'rare', affixes: [{ key: 'atk', value: 3 }, { key: 'crit', value: 2 }], locked: 1 };
+    const lines = itemLines(it0).filter((l) => l.kind === 'affix');
+    expect(lines.map((l) => l.locked)).toEqual([undefined, true]);
+    expect(lines[1].text).toBe(`${T.gear.affix('crit', 2)}${T.gear.lockedAffix}`);
+    expect(lines[0].text).toBe(T.gear.affix('atk', 3));
+    expect(itemLines({ ...it0, locked: undefined }).some((l) => l.locked)).toBe(false);
+  });
+
+  it('the implicit line of a +5 item shows the enhanced value', () => {
+    const plus5: ItemInstance = { ...sword, enhance: 5 };
+    const want = Object.entries(implicitStats(plus5)).map(([k, v]) => T.gear.affix(k as AnyStat, v as number)).join('、');
+    expect(itemLines(plus5).find((l) => l.kind === 'implicit')!.text).toBe(T.gear.implicit(want));
+    expect(want).not.toBe(Object.entries(implicitStats(sword)).map(([k, v]) => T.gear.affix(k as AnyStat, v as number)).join('、'));
   });
 
   it('shows the enhanced value of a base bonus', () => {

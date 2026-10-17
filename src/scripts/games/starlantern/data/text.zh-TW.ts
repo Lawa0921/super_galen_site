@@ -51,6 +51,10 @@ export const T = {
   /** Rarity words (spec §4). Loot lines show the word after a gear name; common gear leaves it out. */
   rarity: RARITY,
   gearLabel: (name: string, rarity: string) => `${name}・${rarity}`,
+  /** A gear name with its enhance level: 「鐵劍 +3」; +0 shows nothing extra. */
+  enhanced: (name: string, n: number) => (n > 0 ? `${name} +${n}` : name),
+  /** The bare 「+3」 for cells too tight for the name and the level together; empty at +0. */
+  enhanceTag: (n: number) => (n > 0 ? `+${n}` : ''),
   gear: {
     rarity: RARITY,
     statName: STAT_NAME,
@@ -58,6 +62,8 @@ export const T = {
     ilvl: (n: number) => `物品等級 ${n}`,
     /** The base bonus line, set apart from rolled affixes on the same stat. */
     implicit: (text: string) => `基礎 ${text}`,
+    /** Follows the affix kept by a reforge, in item detail. */
+    lockedAffix: '（重鑄鎖定）',
     cannotUse: '此角色無法發動',
     /** A power whose skill is in the wearer's tree but not learned yet. */
     notLearned: '（尚未習得）',

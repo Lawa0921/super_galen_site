@@ -3,8 +3,11 @@ import { itemName } from '../engine/loot/item';
 import type { ItemInstance } from '../engine/types';
 import type { Rich, RichPart } from './widgets';
 
-/** 「皮背心・魔法」: the name and its rarity word (common gear has none), so colour is never the only cue. */
-export const gearLabel = (it: ItemInstance): string => (it.rarity === 'common' ? itemName(it) : T.gearLabel(itemName(it), T.rarity[it.rarity]));
+/** 「皮背心 +1・魔法」: the name, its enhance level (none at +0) and its rarity word (common gear has none), so colour is never the only cue. */
+export const gearLabel = (it: ItemInstance): string => {
+  const name = T.enhanced(itemName(it), it.enhance);
+  return it.rarity === 'common' ? name : T.gearLabel(name, T.rarity[it.rarity]);
+};
 
 /** A piece of gear as part of a line: its label in its rarity colour. */
 export const gearPart = (it: ItemInstance): RichPart => ({ text: gearLabel(it), cls: `slx-gear-drop slx-rarity-${it.rarity}` });

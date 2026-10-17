@@ -32,6 +32,8 @@ const DETAIL_STEP = 36;
 const DETAIL_WHEEL_UNIT = [1, 12, DETAIL_STEP];
 /** Cells carry text only until gear art exists: the first four characters of the name. */
 const short = (s: string): string => [...s].slice(0, 4).join('');
+/** The enhance level as a small corner mark of its own: a 28px cell has no room for it after the name. Empty at +0. */
+const enhTag = (it: ItemInstance): HTMLElement[] => (it.enhance > 0 ? [el('span', { class: 'slx-enh', text: T.enhanceTag(it.enhance) })] : []);
 const fits = (it: ItemInstance, slot: Slot): boolean => slotsFor(itemSlot(it)).includes(slot);
 
 /**
@@ -352,7 +354,7 @@ export class EquipScene implements Scene {
       if (i === this.bagCur) cls.push('slx-cur');
       if (this.flash?.index === i) cls.push('slx-flash');
       c.className = cls.join(' ');
-      c.textContent = it ? short(itemName(it)) : '';
+      c.replaceChildren(...(it ? [short(itemName(it)), ...enhTag(it)] : []));
       c.setAttribute('aria-label', it ? gearLabel(it) : T.ui2.equip.emptyCell);
       c.setAttribute('aria-selected', String(i === this.bagCur));
     });
@@ -368,10 +370,10 @@ export class EquipScene implements Scene {
       if (this.flash?.slot === slot) cls.push('slx-flash');
       c.className = cls.join(' ');
       // A filled slot keeps a small slot label over the name: position alone does not say which slot is which.
-      const key = it ? `${slot}|${itemName(it)}` : slot;
+      const key = it ? `${slot}|${itemName(it)}|${it.enhance}` : slot;
       if (this.dollKeys[i] !== key) {
         this.dollKeys[i] = key;
-        if (it) c.replaceChildren(el('span', { class: 'slx-slot-tag', text: T.slot[slot] }), el('span', { class: 'slx-slot-name', text: short(itemName(it)) }));
+        if (it) c.replaceChildren(el('span', { class: 'slx-slot-tag', text: T.slot[slot] }), el('span', { class: 'slx-slot-name', text: short(itemName(it)) }), ...enhTag(it));
         else c.textContent = T.slot[slot];
       }
       c.setAttribute('aria-label', it ? T.ui2.equip.worn(T.slot[slot], gearLabel(it)) : T.slot[slot]);
@@ -429,7 +431,7 @@ export class EquipScene implements Scene {
         out.push(el('div', { class: 'slx-cmp' }, [
           // The worn piece by name in its rarity colour (the word itself would push the heading onto a second line).
           worn
-            ? el('div', { class: 'slx-cmp-head' }, [T.ui2.equip.versusLabel, el('span', { class: `slx-rarity-${worn.rarity}`, text: itemName(worn) })])
+            ? el('div', { class: 'slx-cmp-head' }, [T.ui2.equip.versusLabel, el('span', { class: `slx-rarity-${worn.rarity}`, text: T.enhanced(itemName(worn), worn.enhance) })])
             : el('div', { class: 'slx-cmp-head', text: T.ui2.equip.versusEmpty(T.slot[slot]) }),
           ...(rows.length ? rows : [el('p', { class: 'slx-desc', text: T.ui2.equip.noChange })]),
         ]));
@@ -438,7 +440,9 @@ export class EquipScene implements Scene {
       // A power whose skill is outside the viewed member's tree is dimmed and says so; one in the tree but not learned
       // yet only says so.
       out.push(el('div', { class: 'slx-item-lines' }, itemLines(it, m).map((l) =>
-        l.usable === false
+        l.locked
+          ? el('p', { class: `slx-line slx-line-${l.kind} slx-line-locked`, text: l.text })
+          : l.usable === false
           // Only the power text dims; the note stays at full contrast so the reason reads clearly.
           ? el('p', { class: `slx-line slx-line-${l.kind} slx-line-off` }, [el('span', { class: 'slx-line-dim', text: l.text }), el('span', { class: 'slx-line-note', text: T.gear.cannotUse })])
           : l.usable && l.learned === false

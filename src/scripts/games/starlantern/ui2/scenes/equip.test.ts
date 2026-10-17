@@ -408,6 +408,29 @@ describe('EquipScene detail panel', () => {
   const cue = (r: ReturnType<typeof setup>, d: 'up' | 'down') => r.detail().querySelector<HTMLElement>(`.slx-more-${d}`)!;
   const body = (r: ReturnType<typeof setup>) => r.detail().querySelector<HTMLElement>('.slx-item-detail-body')!;
 
+  it('a +3 item reads +3 in its bag cell, its doll slot and the detail', () => {
+    const r = setup((g) => {
+      g.state.bag = [gear('iron-sword', 1, 'rare', { enhance: 3, affixes: [{ key: 'atk', value: 3 }, { key: 'crit', value: 2 }], locked: 1 }), gear('iron-sword', 2, 'common')];
+      g.state.party.roster.scarlet.equip = { weapon: gear('iron-sword', 9, 'common', { enhance: 2 }) };
+    });
+    const cellEl = r.root.querySelector<HTMLElement>('.slx-bag-cell[data-index="0"]')!;
+    expect(cellEl.textContent).toBe('鐵劍+3');
+    expect(cellEl.querySelector('.slx-enh')!.textContent).toBe('+3');
+    expect(cellEl.getAttribute('aria-label')).toBe('鐵劍 +3・稀有');
+    expect(r.root.querySelector('.slx-bag-cell[data-index="1"]')!.textContent).toBe('鐵劍');   // +0: no "+0"
+    expect(r.root.querySelector('.slx-bag-cell[data-index="1"] .slx-enh')).toBeNull();
+    const w = r.root.querySelector<HTMLElement>('.slx-doll-slot[data-slot=weapon]')!;
+    expect(w.querySelector('.slx-enh')!.textContent).toBe('+2');
+    expect(w.getAttribute('aria-label')).toContain('鐵劍 +2');
+    r.press('swap');                                                    // onto the bag: the +3 sword is under the cursor
+    const d = r.detail();
+    expect(d.querySelector('.slx-item-name')!.textContent).toBe('鐵劍 +3・稀有');
+    expect(d.querySelector('.slx-cmp-head')!.textContent).toBe(T.ui2.equip.versus('鐵劍 +2'));
+    const locked = d.querySelectorAll('.slx-line-locked');
+    expect(locked).toHaveLength(1);
+    expect(locked[0].textContent).toBe(`${T.gear.affix('crit', 2)}${T.gear.lockedAffix}`);
+  });
+
   it('the compare heading is short: the worn piece by name, or the slot marked empty', () => {
     const r = onBag();
     expect(r.detail().querySelector('.slx-cmp-head')!.textContent).toBe('比較：鐵劍');

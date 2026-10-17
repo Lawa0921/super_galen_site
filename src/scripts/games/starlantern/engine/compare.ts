@@ -9,7 +9,7 @@ import type { AnyStat, ItemInstance, Member, Sheet, Slot } from './types';
  * `active`: a set bonus the wearer has reached. Only with a wearer, on a power: `usable` when the power's skill is in the
  * wearer's tree (learned or still to learn), `learned` when the wearer knows it now.
  */
-export interface ItemLine { kind: 'implicit' | 'affix' | 'power' | 'set' | 'lore'; text: string; active?: boolean; usable?: boolean; learned?: boolean }
+export interface ItemLine { kind: 'implicit' | 'affix' | 'power' | 'set' | 'lore'; text: string; locked?: boolean; active?: boolean; usable?: boolean; learned?: boolean }
 
 const EPS = 1e-6;
 
@@ -45,7 +45,10 @@ export function itemLines(it: ItemInstance, wearer?: Member): ItemLine[] {
   const out: ItemLine[] = [];
   const implicit = statText(implicitStats(it) as Partial<Sheet>);
   if (implicit) out.push({ kind: 'implicit', text: T.gear.implicit(implicit) });
-  for (const a of it.affixes) out.push({ kind: 'affix', text: T.gear.affix(a.key, a.value) });
+  it.affixes.forEach((a, i) => {
+    const text = T.gear.affix(a.key, a.value);
+    out.push(it.locked === i ? { kind: 'affix', text: `${text}${T.gear.lockedAffix}`, locked: true } : { kind: 'affix', text });
+  });
   const sp = it.special ? SPECIALS[it.special] : undefined;
   if (sp) out.push(...specialLines(sp.id, wearer));
   return out;
