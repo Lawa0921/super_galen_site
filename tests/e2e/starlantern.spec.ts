@@ -579,6 +579,10 @@ test.describe('starlantern', () => {
     await toNoel();
     const ice = page.locator('.slx-tree-node[data-node=ice-star]');
     await expect(ice).toContainText('0／3');
+    // Every node fits at 1280x720, so the columns' scroll cues stay hidden.
+    await expect(page.locator('.slx-tab-tree .slx-more-up')).toBeHidden();
+    await expect(page.locator('.slx-tab-tree .slx-more-down')).toBeHidden();
+    expect(await page.locator('.slx-tree-cols').evaluate((c) => c.scrollHeight <= c.clientHeight + 1)).toBe(true);
     await ice.click();                                      // the first click selects and arms
     await expect(ice).toHaveClass(/slx-row-cur/);
     await expect(page.locator('.slx-tree-msg')).toHaveText('再按一次投點');

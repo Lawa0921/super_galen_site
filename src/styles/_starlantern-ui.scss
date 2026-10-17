@@ -513,6 +513,16 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-tree-top { flex: none; display: flex; justify-content: space-between; gap: 12px; line-height: 14px; }
 .slx-tree-left { color: $slx-gold; }
 .slx-tree-capstone { color: $slx-dim; }
+/* The tree columns and the talent board scroll inside a frame that carries their ▲/▼ cues on its right edge. */
+.slx-cue-frame { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.slx-cue-frame .slx-more { position: absolute; right: 0; z-index: 1; padding: 0 3px; background: $slx-win; }
+.slx-cue-frame .slx-more[hidden] { display: none; }
+/* ▼ sits just below the bottom-right corner (beside the notes), so it never covers a node. */
+.slx-cue-frame .slx-more-down { bottom: -12px; }
+/* The talent board's ▲ sits just above it, beside the gate line; the tree's sits inside over the branch headings' right
+   end (the line above it is the right-aligned capstone line), shown only once those headings have scrolled away. */
+.slx-talent-frame .slx-more-up { top: -12px; }
+.slx-tree-frame .slx-more-up { top: 0; }
 .slx-tree-cols { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 0 8px; }
 .slx-tree-branch { min-width: 0; }
 .slx-tree-branch-name { margin: 0; font-size: 12px; line-height: 14px; font-weight: normal; color: $slx-gold; border-bottom: 1px solid #6e5a2e; white-space: nowrap; }
@@ -541,13 +551,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-talent-left { color: $slx-gold; }
 .slx-talent-count { color: $slx-ink; }
 .slx-talent-gate { flex-basis: 100%; color: $slx-dim; }
-.slx-talent-frame { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .slx-talent-board { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6e5a2e transparent; }
-/* The board's scroll cues sit just outside its right corners (beside the gate line and the notes), so they never cover a node. */
-.slx-talent-frame .slx-more { position: absolute; right: 0; z-index: 1; padding: 0 3px; background: $slx-win; }
-.slx-talent-frame .slx-more-up { top: -12px; }
-.slx-talent-frame .slx-more-down { bottom: -12px; }
-.slx-talent-frame .slx-more[hidden] { display: none; }
 .slx-talent-row { display: grid; grid-template-columns: 12px repeat(4, minmax(0, 1fr)); border-bottom: 1px solid #2a2840; }
 /* The tier label reads top to bottom beside the row's three text lines. */
 .slx-talent-tier { writing-mode: vertical-rl; text-orientation: upright; font-size: 10px; line-height: 12px; color: $slx-dim; text-align: center; align-self: center; }

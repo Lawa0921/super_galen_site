@@ -759,6 +759,47 @@ describe('StatusScene', () => {
       const { body } = onTree(2);
       expect(body()).toContain(T.ui2.tree.noCapstone);
     });
+
+    describe("the columns' scroll cues (as the talent board's)", () => {
+      const cue = (root: HTMLElement, d: 'up' | 'down') => root.querySelector<HTMLElement>(`.slx-tab-tree .slx-more-${d}`)!;
+      const cols = (root: HTMLElement) => root.querySelector<HTMLElement>('.slx-tree-cols')!;
+      let sh: ReturnType<typeof vi.spyOn>;
+      let ch: ReturnType<typeof vi.spyOn>;
+      beforeEach(() => {
+        sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get');
+        ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get');
+      });
+      afterEach(() => { sh.mockRestore(); ch.mockRestore(); });
+
+      it('columns that fit show no cue', () => {
+        sh.mockReturnValue(80); ch.mockReturnValue(100);
+        const { root } = onTree(2);
+        expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([true, true]);
+      });
+
+      it('columns that overflow show ▼ at the top and ▲ at the bottom; a click on a cue scrolls them', () => {
+        sh.mockReturnValue(300); ch.mockReturnValue(100);
+        const { root } = onTree(2);
+        expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([true, false]);
+        expect([cue(root, 'up').textContent, cue(root, 'down').textContent]).toEqual(['▲', '▼']);
+        for (let i = 0; i < 20; i++) cue(root, 'down').click();
+        expect(cols(root).scrollTop).toBe(200);
+        expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([false, true]);
+        cue(root, 'up').click();
+        expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([false, false]);
+      });
+
+      it('a scroll by wheel or touch updates the cues, and a redraw keeps the place', () => {
+        sh.mockReturnValue(300); ch.mockReturnValue(100);
+        const { root, s } = onTree(2);
+        cols(root).scrollTop = 200;
+        cols(root).dispatchEvent(new Event('scroll'));
+        expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([false, true]);
+        s.onAction('confirm');                                  // a redraw
+        expect(cols(root).scrollTop).toBe(200);
+        expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([false, true]);
+      });
+    });
   });
 
   describe('the talent tab', () => {

@@ -252,6 +252,49 @@ const skills: StatusTab = {
   },
 };
 
+/** How far one click on a ▲/▼ cue scrolls the tree columns or the talent board: about one row of nodes. */
+const CUE_STEP = 40;
+
+/** ▲ while more of `pane` is above, ▼ while more is below; neither when it fits (as the equip detail panel's). */
+function scrollCues(pane: HTMLElement, up: HTMLElement, down: HTMLElement): void {
+  const room = Math.max(0, pane.scrollHeight - pane.clientHeight);
+  up.hidden = !(room > 1 && pane.scrollTop > 0);
+  down.hidden = !(room > 1 && pane.scrollTop < room - 1);
+}
+
+/**
+ * `pane` (the tree columns or the talent board, which scroll on their own above the fixed notes) in a frame with the
+ * ▲/▼ cues: they show while more is hidden that way, and a click (or tap) on one scrolls it. `keep` hears every new
+ * scroll position, so a redraw can put the pane back where it was (the tab's `shown` then calls `scrollCues`).
+ */
+function cueFrame(cls: string, pane: HTMLElement, keep: (top: number) => void): HTMLElement {
+  const cue = (c: string, text: string, d: 1 | -1) => {
+    const b = el('span', { class: `slx-more ${c}`, text, attrs: { 'aria-hidden': 'true', hidden: '' } });
+    b.addEventListener('click', () => {
+      if (locked(b)) return;
+      pane.scrollTop = Math.max(0, Math.min(pane.scrollHeight - pane.clientHeight, pane.scrollTop + d * CUE_STEP));
+      keep(pane.scrollTop);
+      scrollCues(pane, up, down);
+    });
+    return b;
+  };
+  const up = cue('slx-more-up', '▲', -1);
+  const down = cue('slx-more-down', '▼', 1);
+  pane.addEventListener('scroll', () => {
+    keep(pane.scrollTop);
+    scrollCues(pane, up, down);
+  });
+  return el('div', { class: `slx-cue-frame ${cls}` }, [up, pane, down]);
+}
+
+/** The cues of the cue frame around `pane`, brought up to date after a redraw has set its scroll position. */
+function updateCues(pane: HTMLElement): void {
+  const frame = pane.parentElement;
+  const up = frame?.querySelector<HTMLElement>(':scope > .slx-more-up');
+  const down = frame?.querySelector<HTMLElement>(':scope > .slx-more-down');
+  if (up && down) scrollCues(pane, up, down);
+}
+
 /**
  * Node cursor, the press waiting for its confirmation and the last refusal of the tree page. The cursor is kept for the
  * session like the stats page's; a waiting press and a refusal are dropped whenever the cursor moves, the member
@@ -385,15 +428,14 @@ const tree: StatusTab = {
         }),
       ]);
     });
-    // The columns scroll on their own above the fixed notes; a redraw keeps where they were (see `shown`).
+    // The columns scroll on their own above the fixed notes, with ▲/▼ cues; a redraw keeps where they were (see `shown`).
     const colsEl = el('div', { class: 'slx-tree-cols' }, cols);
-    colsEl.addEventListener('scroll', () => { treeView.top = colsEl.scrollTop; });
     return el('div', { class: 'slx-tab-tree' }, [
       el('div', { class: 'slx-tree-top' }, [
         el('span', { class: 'slx-tree-left', text: t.left(skillPointsLeft(m)) }),
         el('span', { class: 'slx-tree-capstone', text: capstone ? t.capstone(nodeName(capstone)) : t.noCapstone }),
       ]),
-      colsEl,
+      cueFrame('slx-tree-frame', colsEl, (top) => { treeView.top = top; }),
       treeNotes(ctx, id),
     ]);
   },
@@ -415,10 +457,14 @@ const tree: StatusTab = {
   reveal() { treeView.reveal = true; },
   shown(body) {
     const cols = body.querySelector<HTMLElement>('.slx-tree-cols');
-    if (cols) cols.scrollTop = treeView.top;
-    if (!treeView.reveal) return;
-    treeView.reveal = false;
-    body.querySelector('.slx-tree-node.slx-row-cur')?.scrollIntoView?.({ block: 'nearest' });
+    if (!cols) return;
+    cols.scrollTop = treeView.top;
+    if (treeView.reveal) {
+      treeView.reveal = false;
+      body.querySelector('.slx-tree-node.slx-row-cur')?.scrollIntoView?.({ block: 'nearest' });
+      treeView.top = cols.scrollTop;
+    }
+    updateCues(cols);
   },
 };
 
@@ -449,16 +495,6 @@ function leaveTalent(): void {
   settleTalent();
   talentView.top = 0;
   talentView.reveal = true;
-}
-
-/** How far one click on the board's ▲/▼ scrolls it: about one row of nodes. */
-const TALENT_STEP = 40;
-
-/** ▲ while more of the board is above, ▼ while more is below; neither when it fits (as the equip detail panel's). */
-function talentCues(board: HTMLElement, up: HTMLElement, down: HTMLElement): void {
-  const room = Math.max(0, board.scrollHeight - board.clientHeight);
-  up.hidden = !(room > 1 && board.scrollTop > 0);
-  down.hidden = !(room > 1 && board.scrollTop < room - 1);
 }
 
 /** The member's talent nodes: row 0 columns 0-3, row 1, ... row 5, then the keystones (BOARDS order). */
@@ -572,36 +608,19 @@ const talent: StatusTab = {
       el('span', { class: 'slx-talent-tier', text: t.tier(r + 1) }),
       ...BOARDS[id].filter((n) => !n.keystone && n.row === r).map(cell),
     ]));
-    // The board scrolls on its own above the fixed notes; a redraw keeps where it was (see `shown`). The ▲/▼ cues on
-    // its frame show while more is hidden that way, and a click (or tap) on one scrolls it.
+    // The board scrolls on its own above the fixed notes, with ▲/▼ cues; a redraw keeps where it was (see `shown`).
     const board = el('div', { class: 'slx-talent-board' }, [
       ...rows,
       el('h5', { class: 'slx-talent-keys-head', text: t.keysHead }),
       el('div', { class: 'slx-talent-keys' }, BOARDS[id].filter((n) => n.keystone).map(cell)),
     ]);
-    const cue = (cls: string, text: string, d: 1 | -1) => {
-      const c = el('span', { class: `slx-more ${cls}`, text, attrs: { 'aria-hidden': 'true', hidden: '' } });
-      c.addEventListener('click', () => {
-        if (locked(c)) return;
-        board.scrollTop = Math.max(0, Math.min(board.scrollHeight - board.clientHeight, board.scrollTop + d * TALENT_STEP));
-        talentView.top = board.scrollTop;
-        talentCues(board, up, down);
-      });
-      return c;
-    };
-    const up = cue('slx-more-up', '▲', -1);
-    const down = cue('slx-more-down', '▼', 1);
-    board.addEventListener('scroll', () => {
-      talentView.top = board.scrollTop;
-      talentCues(board, up, down);
-    });
     return el('div', { class: 'slx-tab-talent' }, [
       el('div', { class: 'slx-talent-top' }, [
         el('span', { class: 'slx-talent-left', text: t.left(talentPointsLeft(m)) }),
         el('span', { class: 'slx-talent-count', text: t.keystones(keystonesOf(m).length) }),
         el('span', { class: 'slx-talent-gate', text: t.board(boardPoints(id, held)) }),
       ]),
-      el('div', { class: 'slx-talent-frame' }, [up, board, down]),
+      cueFrame('slx-talent-frame', board, (top) => { talentView.top = top; }),
       talentNotes(ctx, id),
     ]);
   },
@@ -628,7 +647,7 @@ const talent: StatusTab = {
       board.querySelector('.slx-talent-node.slx-row-cur')?.scrollIntoView?.({ block: 'nearest' });
       talentView.top = board.scrollTop;
     }
-    talentCues(board, body.querySelector<HTMLElement>('.slx-tab-talent .slx-more-up')!, body.querySelector<HTMLElement>('.slx-tab-talent .slx-more-down')!);
+    updateCues(board);
   },
 };
 
