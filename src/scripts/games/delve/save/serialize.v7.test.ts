@@ -25,9 +25,9 @@ const run = (g: DelveGame, sec: number): void => { for (let i = 0; i < Math.roun
 const feet = (g: DelveGame): { x: number; y: number } => g.feetTile();
 
 describe('存檔格式 7', { timeout: 120_000 }, () => {
-  it('格式版本 7', () => {
-    expect(SAVE_FORMAT).toBe(7);
-    expect(snapshotGame(flat()).header.format).toBe(7);
+  it('格式版本（7 起有 vitals / drops；8 起有裝備詞條）', () => {
+    expect(SAVE_FORMAT).toBe(8);
+    expect(snapshotGame(flat()).header.format).toBe(SAVE_FORMAT);
   });
 
   it('死亡中存檔 → 讀回來在重生點（床）、滿血；死亡地點掉的錢還在地上', () => {
@@ -154,7 +154,7 @@ describe('存檔格式 7', { timeout: 120_000 }, () => {
     expect(r.game.burning).toBe(0);
     expect(r.game.drops.list.length).toBe(0);
     const again = snapshotGame(r.game);
-    expect(again.header.format).toBe(7);
+    expect(again.header.format).toBe(SAVE_FORMAT);
     const r3 = restoreGame(encodeSave(again));
     expect(r3.ok).toBe(true);
   });

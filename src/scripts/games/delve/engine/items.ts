@@ -50,7 +50,9 @@ export type ItemId =
   | 'soggy_boot' | 'wooden_crate' | 'iron_crate' | 'golden_crate'
   | 'grilled_fish' | 'smoked_eel' | 'fish_stew' | 'campfire'
   // ── 家具 ──
-  | 'table' | 'chair' | 'lantern_post' | 'painting' | 'bookshelf' | 'banner' | 'candle' | 'plank_wall';
+  | 'table' | 'chair' | 'lantern_post' | 'painting' | 'bookshelf' | 'banner' | 'candle' | 'plank_wall'
+  // ── 裝備分解材料：碎晶（洗煉 / 強化）、星塵（史詩以上分解；高階強化 / 升階） ──
+  | 'gear_shard' | 'stardust';
 
 /**
  * 飾品效果。移動 / 戰鬥類（jump、run、night、magnet、nofall、stat）要裝在裝備欄的飾品槽才生效；
@@ -327,6 +329,9 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   banner: { ...block('banner', '旗幟', 'Banner', T.BANNER), maxStack: 99 },
   candle: { ...block('candle', '蠟燭', 'Candle', T.CANDLE), maxStack: 99 },
   plank_wall: { id: 'plank_wall', name: { zh: '木板牆', en: 'Plank Wall' }, maxStack: MAX_STACK, placeWall: W.PLANK_WALL },
+  // ── 裝備材料 ──
+  gear_shard: mat('gear_shard', '碎晶', 'Gear Shard'),
+  stardust: mat('stardust', '星塵', 'Stardust'),
 };
 
 /** 套裝組成（頭 / 身 / 腿），順序 = 等級 */

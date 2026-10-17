@@ -23,6 +23,9 @@
 //   header.bossActive = 存檔時正在打的首領 kind（怪物不存 → 讀檔時退還召喚道具）。
 //   死亡中存檔：玩家位置存成重生點（床 / 出生點）、生命 / 魔力存成重生後的滿值——不會在死亡地點（例如熔岩裡）復活。
 //   舊格式（≤ 6）讀進來 = 滿氣、沒著火、地上沒有掉落物、不退還。
+// format 8 起（裝備詞條）：背包 / 箱子 / 掉落物的每格可帶 gear（稀有度 / 物品等級 / 強化 / 詞條 / 鎖定）；
+//   header.combat.equipGear = 裝備欄各格的 gear（與 equipment 同形）；header.extra.codex = 裝備圖鑑。
+//   gear 結構不合法 → 存檔損毀（同其他欄位）；舊格式讀進來 = 全部普通、圖鑑空。
 //   尺寸上限：寬 ≤ MAX_WORLD_W、高 ≤ MAX_WORLD_H、面積 ≤ MAX_WORLD_AREA（生成器實際支援的範圍）；
 //   液體 chunk 清單長度先和世界 chunk 總數比對，再配置 RLE 解碼緩衝。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
@@ -34,7 +37,9 @@
 //   之後依 header.chunks 順序，每個 chunk：fg CHUNK*CHUNK bytes + wall CHUNK*CHUNK bytes（越界格補 0）
 import { DelveGame, BOSS_SUMMON_ITEM, MAX_BREATH, BURN_TIME, HONEY_TIME } from '../engine/game';
 import type { World } from '../engine/world';
-import { Inventory, type InventoryJSON, type Stack } from '../engine/inventory';
+import { Inventory, cloneStack, type InventoryJSON, type Stack } from '../engine/inventory';
+import { gearSlot, validGear, type Gear } from '../engine/gear';
+import type { CodexJSON } from '../engine/codex';
 import { CHEST_SLOTS } from '../engine/loot';
 import { CHUNK, GEN_VERSION, INV_SIZE, TILE_SIZE } from '../engine/constants';
 import { TILES, WALLS, T, isChestTile } from '../engine/tiles';
@@ -43,19 +48,21 @@ import { MAX_DROPS } from '../engine/entities';
 import { ExploredMap, MAX_MARKERS, decodeRle, type MapMarker } from '../engine/explore';
 import type { GenResult } from '../engine/worldgen';
 import type { DiscoveryJSON } from '../engine/discovery';
-import { Equipment, type EquipmentJSON } from '../engine/equipment';
+import { Equipment, type EquipmentGearJSON, type EquipmentJSON } from '../engine/equipment';
 import { ENEMIES, type EnemyKind } from '../engine/enemies';
 import { BASE_HP, MAX_HP_CAP } from '../engine/combat';
 import { LIQ, LIQ_MAX } from '../engine/liquidKind';
 import { WEATHER_KINDS, type WeatherKind } from '../engine/weather';
 
-export const SAVE_FORMAT = 7;
+export const SAVE_FORMAT = 8;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
 export const COMPAT_GEN: readonly number[] = [4];
 export interface LiquidSave { chunks: number[]; data: string; }
 export interface CombatSave {
   hp: number; maxHp: number; mana: number;
   equipment: EquipmentJSON;
+  /** 裝備欄各格的詞條；format 8 起 */
+  equipGear?: EquipmentGearJSON;
   bosses: string[];
   kills: Partial<Record<EnemyKind, number>>;
   peaceful: boolean;
@@ -77,8 +84,9 @@ function chunkTotal(width: number, height: number): number { return Math.ceil(wi
 const MAX_CHUNKS = chunkTotal(MAX_WORLD_W, MAX_WORLD_H);
 
 export interface PlayerSave { x: number; y: number; vx: number; vy: number; }
-export interface VitalsSave { breath: number; burning: number; honey: number; }
-export interface DropSave { item: ItemId; count: number; x: number; y: number; }
+/** undying = 不滅（傳奇詞條）冷卻剩餘秒數；format 8 起 */
+export interface VitalsSave { breath: number; burning: number; honey: number; undying?: number; }
+export interface DropSave { item: ItemId; count: number; x: number; y: number; gear?: Gear; }
 export interface SaveHeader {
   format: number;
   genVersion: number;
@@ -126,6 +134,8 @@ export interface ExtraSave {
   fishLog: Partial<Record<ItemId, number>>;
   /** 玩家敲開的冰洞（tile index） */
   minedIce?: number[];
+  /** 裝備圖鑑；format 8 起 */
+  codex?: CodexJSON;
 }
 export interface EnvSave {
   weather: { kind: WeatherKind; until: number } | null;
@@ -274,7 +284,9 @@ function validVitals(v: unknown): VitalsSave | undefined {
   if (v === undefined) return undefined;
   const o = v as Partial<VitalsSave> | null;
   if (!o || typeof o !== 'object' || !isNum(o.breath) || !isNum(o.burning) || !isNum(o.honey)) throw new SaveFormatError('vitals');
-  return { breath: o.breath, burning: o.burning, honey: o.honey };
+  const out: VitalsSave = { breath: o.breath, burning: o.burning, honey: o.honey };
+  if (isNum(o.undying) && o.undying > 0) out.undying = o.undying;
+  return out;
 }
 function validDrops(v: unknown): DropSave[] | undefined {
   if (v === undefined) return undefined;
@@ -283,7 +295,8 @@ function validDrops(v: unknown): DropSave[] | undefined {
     const o = d as Partial<DropSave> | null;
     if (!o || typeof o !== 'object' || !isItemId(o.item) || !Number.isInteger(o.count) || (o.count as number) < 1
       || (o.count as number) > ITEMS[o.item].maxStack || !isNum(o.x) || !isNum(o.y)) throw new SaveFormatError(`drop ${k}`);
-    return { item: o.item, count: o.count as number, x: o.x, y: o.y };
+    const gear = strictGear(o.item, o.gear, `drop ${k}`);
+    return gear ? { item: o.item, count: o.count as number, x: o.x, y: o.y, gear } : { item: o.item, count: o.count as number, x: o.x, y: o.y };
   });
 }
 function validEnv(v: unknown): EnvSave | undefined {
@@ -308,7 +321,9 @@ function validExtra(v: unknown): ExtraSave | undefined {
     for (const [k, n] of Object.entries(o.fishLog)) if (isItemId(k) && Number.isInteger(n) && (n as number) > 0) fishLog[k] = n as number;
   }
   const minedIce = Array.isArray(o.minedIce) ? o.minedIce.filter((i) => Number.isInteger(i) && i >= 0).slice(0, 100000) : [];
-  return { fishLog, minedIce };
+  const out: ExtraSave = { fishLog, minedIce };
+  if (o.codex && typeof o.codex === 'object') out.codex = o.codex;
+  return out;
 }
 function validBossActive(v: unknown): EnemyKind | null {
   if (v === undefined || v === null) return null;
@@ -339,7 +354,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
   for (const [i, slots] of w.chests) {
     const x = i % w.width, y = (i - x) / w.width;
     if (!mod.has(w.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK)))) continue;
-    chests.push({ i, slots: slots.map((st) => (st ? { item: st.item, count: st.count } : null)) });
+    chests.push({ i, slots: slots.map((st) => (st ? cloneStack(st) : null)) });
   }
   chests.sort((a, b) => a.i - b.i);
   const liqChunks = [...new Set([...w.modifiedChunks, ...w.liquidModified])].sort((p, q) => p - q);
@@ -377,16 +392,21 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       combat: {
         hp: r2(hp), maxHp: game.baseMaxHp, mana: r2(mana),
         equipment: game.equipment.toJSON(),
+        equipGear: game.equipment.gearJSON(),
         bosses: [...game.bossesDefeated].sort(),
         kills: { ...game.kills },
         peaceful: game.peaceful,
       },
       liquids: { chunks: liqChunks, data: toBase64(encodeLiquidRle(lq.amount, lq.type)) },
-      vitals: { breath: r2(game.breath), burning: r2(Math.max(0, game.burning)), honey: r2(Math.max(0, game.honeyT)) },
-      drops: game.drops.list.map((d) => ({ item: d.item, count: d.count, x: r2(d.body.x + d.body.w / 2), y: r2(d.body.y + d.body.h / 2) })),
+      vitals: { breath: r2(game.breath), burning: r2(Math.max(0, game.burning)), honey: r2(Math.max(0, game.honeyT)), ...(game.undyingCd > 0 ? { undying: r2(game.undyingCd) } : {}) },
+      drops: game.drops.list.map((d) => {
+        const o: DropSave = { item: d.item, count: d.count, x: r2(d.body.x + d.body.w / 2), y: r2(d.body.y + d.body.h / 2) };
+        if (d.gear) o.gear = { ...d.gear, affixes: d.gear.affixes.map((a) => ({ ...a })) };
+        return o;
+      }),
       bossActive: boss && boss.state !== 'leave' ? boss.kind : null,
       env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeFrozen(w.frozen) },
-      extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce] },
+      extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce], codex: game.codex.toJSON() },
     },
     chunks,
   };
@@ -436,14 +456,22 @@ function validateChunk(ci: number, c: ChunkPayload): void {
   }
 }
 
+/** 格子上的 gear：沒有 → undefined；有但不合法（或不是裝備）→ 存檔損毀 */
+function strictGear(item: ItemId, raw: unknown, where: string): Gear | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  const g = gearSlot(item) ? validGear(item, raw) : null;
+  if (!g) throw new SaveFormatError(`${where}: gear`);
+  return g;
+}
 function validStack(st: unknown, where: string): Stack | null {
   if (st === null) return null;
-  const o = st as { item?: unknown; count?: unknown };
+  const o = st as { item?: unknown; count?: unknown; gear?: unknown };
   if (!o || typeof o !== 'object' || !isItemId(o.item) || typeof o.count !== 'number'
     || !Number.isInteger(o.count) || o.count < 1 || o.count > ITEMS[o.item].maxStack) {
     throw new SaveFormatError(where);
   }
-  return { item: o.item, count: o.count };
+  const gear = strictGear(o.item, o.gear, where);
+  return gear ? { item: o.item, count: o.count, gear } : { item: o.item, count: o.count };
 }
 
 function validUnlocked(v: unknown): number[] {
@@ -499,9 +527,11 @@ function validCombat(v: unknown): CombatSave | undefined {
   for (const [k, n] of Object.entries(o.kills ?? {})) {
     if (Object.prototype.hasOwnProperty.call(ENEMIES, k) && Number.isInteger(n) && (n as number) >= 0) kills[k as EnemyKind] = n as number;
   }
+  const eq = Equipment.fromJSON(o.equipment, o.equipGear);
   return {
     hp: o.hp, maxHp: o.maxHp, mana: o.mana,
-    equipment: Equipment.fromJSON(o.equipment).toJSON(),
+    equipment: eq.toJSON(),
+    equipGear: eq.gearJSON(),
     bosses: (o.bosses ?? []).filter((b) => Object.prototype.hasOwnProperty.call(ENEMIES, b) && ENEMIES[b as EnemyKind].boss),
     kills, peaceful: Boolean(o.peaceful),
   };
@@ -530,15 +560,7 @@ function validInventory(v: unknown): InventoryJSON {
   if (!o || typeof o !== 'object' || !Array.isArray(o.slots) || o.slots.length > INV_SIZE) {
     throw new SaveFormatError('inventory');
   }
-  const slots = o.slots.map((s, i) => {
-    if (s === null) return null;
-    const st = s as { item?: unknown; count?: unknown };
-    if (!st || typeof st !== 'object' || !isItemId(st.item) || typeof st.count !== 'number'
-      || !Number.isInteger(st.count) || st.count < 1 || st.count > ITEMS[st.item].maxStack) {
-      throw new SaveFormatError(`inventory slot ${i}`);
-    }
-    return { item: st.item, count: st.count };
-  });
+  const slots = o.slots.map((s, i) => validStack(s, `inventory slot ${i}`));
   const selected = typeof o.selected === 'number' && Number.isInteger(o.selected) ? o.selected : 0;
   return { slots, selected };
 }
@@ -616,7 +638,7 @@ function restoreChests(w: World, chunks: readonly number[], saved: readonly Ches
   for (const c of saved) {
     if (c.i >= w.fg.length || !isChestTile(w.fg[c.i]) || !mod.has(chunkOf(c.i))) continue;
     const slots = new Array<Stack | null>(CHEST_SLOTS).fill(null);
-    c.slots.forEach((st, k) => { slots[k] = st ? { ...st } : null; });
+    c.slots.forEach((st, k) => { slots[k] = st ? cloneStack(st) : null; });
     w.chests.set(c.i, slots);
   }
 }
@@ -726,7 +748,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   const c = h.combat;
   if (c) {
     game.baseMaxHp = Math.max(BASE_HP, Math.min(MAX_HP_CAP, Math.round(c.maxHp / 20) * 20));
-    game.equipment = Equipment.fromJSON(c.equipment);
+    game.equipment = Equipment.fromJSON(c.equipment, c.equipGear);
     for (const b of c.bosses) game.bossesDefeated.add(b);
     game.kills = { ...c.kills };
     game.peaceful = c.peaceful;
@@ -739,11 +761,12 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     game.breath = Math.max(0, Math.min(MAX_BREATH, h.vitals.breath));
     game.burning = Math.max(0, Math.min(BURN_TIME, h.vitals.burning));
     game.honeyT = Math.max(0, Math.min(HONEY_TIME, h.vitals.honey));
+    game.undyingCd = Math.max(0, Math.min(999, h.vitals.undying ?? 0));
   }
   // 地上的掉落物（format 7）：放回原地、靜止
   for (const d of h.drops ?? []) {
     if (d.x < 0 || d.y < 0 || d.x > w.width * TILE_SIZE || d.y > w.height * TILE_SIZE) continue;
-    game.drops.spawn(d.item, d.count, d.x, d.y, 0, 0);
+    game.drops.spawn(d.item, d.count, d.x, d.y, 0, 0, 0, d.gear ? { ...d.gear, affixes: d.gear.affixes.map((a) => ({ ...a })) } : undefined);
   }
   // 曆法 / 天氣：結冰格（只留在還有水的格）、強制天氣；舊存檔沒有 → 依日期重算結冰
   if (h.env) {
@@ -759,6 +782,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   if (h.extra) {
     game.fishLog = { ...h.extra.fishLog };
     for (const i of h.extra.minedIce ?? []) if (i < w.liquid.length) game.minedIce.add(i);
+    game.codex.load(h.extra.codex);
   }
   // 首領戰中存檔（怪物不存）：退還召喚道具，背包滿就掉在腳邊
   const refund = h.bossActive ? BOSS_SUMMON_ITEM[h.bossActive] : undefined;

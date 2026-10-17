@@ -5,6 +5,7 @@
 //   · 掉落物：彈跳落地、靠近玩家時被吸過去（磁石 = 吸取半徑變大），碰到就撿；背包放不下就留在地上。
 import { moveBody, type Body, type MoveResult, type SolidQuery } from './physics';
 import { ITEMS, type ItemId } from './items';
+import type { Gear } from './gear';
 import { TILE_SIZE as S } from './constants';
 
 // ── 介質 ───────────────────────────────────────────────
@@ -60,7 +61,7 @@ export function centerOf(b: { x: number; y: number; w: number; h: number }): { x
 }
 
 // ── 掉落物 ─────────────────────────────────────────────
-export interface DroppedItem { id: number; item: ItemId; count: number; body: Body; age: number; pickDelay: number; grabbed: boolean; }
+export interface DroppedItem { id: number; item: ItemId; count: number; body: Body; age: number; pickDelay: number; grabbed: boolean; gear?: Gear; }
 export const ITEM_SIZE = 10;
 /** 玩家 AABB 往外擴張多少 px 算「碰到」 */
 export const PICKUP_GRAB_PX = 14;
@@ -76,8 +77,8 @@ export interface PickupHost {
   player: Body;
   /** 能收下的數量（0 = 背包滿） */
   room(item: ItemId, n: number): number;
-  /** 收進背包，回傳實際收下的數量 */
-  take(item: ItemId, n: number): number;
+  /** 收進背包，回傳實際收下的數量（gear = 帶詞條的裝備） */
+  take(item: ItemId, n: number, gear?: Gear): number;
   /** 吸取半徑（px） */
   magnetPx: number;
   /** 活動範圍（px）：離玩家更遠的掉落物不更新（凍結） */
@@ -90,12 +91,21 @@ export class DropList {
   readonly list: DroppedItem[] = [];
   private nextId = 1;
 
-  /** 在 (x,y)（px，中心）丟出一堆道具；同種靜止的堆就近合併 */
-  spawn(item: ItemId, count: number, x: number, y: number, vx = 0, vy = -120, pickDelay = 0): DroppedItem | null {
+  /** 在 (x,y)（px，中心）丟出一堆道具；同種靜止的堆就近合併（帶詞條的裝備不合併、一件一個） */
+  spawn(item: ItemId, count: number, x: number, y: number, vx = 0, vy = -120, pickDelay = 0, gear?: Gear): DroppedItem | null {
     if (count <= 0) return null;
     const max = ITEMS[item].maxStack;
+    if (gear) {
+      const d: DroppedItem = {
+        id: this.nextId++, item, count: 1, age: 0, pickDelay, grabbed: false, gear,
+        body: { x: x - ITEM_SIZE / 2, y: y - ITEM_SIZE / 2, w: ITEM_SIZE, h: ITEM_SIZE, vx, vy, onGround: false, gfxOffY: 0 },
+      };
+      this.list.push(d);
+      while (this.list.length > MAX_DROPS) this.list.shift();
+      return d;
+    }
     for (const d of this.list) {
-      if (d.item !== item || d.count >= max || d.grabbed) continue;
+      if (d.item !== item || d.count >= max || d.grabbed || d.gear) continue;
       const c = centerOf(d.body);
       if (Math.abs(c.x - x) < MERGE_PX && Math.abs(c.y - y) < MERGE_PX) {
         const k = Math.min(count, max - d.count);
@@ -117,9 +127,9 @@ export class DropList {
     return last;
   }
 
-  /** 每步：物理（彈跳）→ 吸取 → 撿起。回傳這步撿到的 [item, n]。 */
-  step(q: PhysEnv, host: PickupHost, dt: number): [ItemId, number][] {
-    const got: [ItemId, number][] = [];
+  /** 每步：物理（彈跳）→ 吸取 → 撿起。回傳這步撿到的 [item, n, gear]。 */
+  step(q: PhysEnv, host: PickupHost, dt: number): [ItemId, number, Gear | undefined][] {
+    const got: [ItemId, number, Gear | undefined][] = [];
     const p = host.player, pcx = p.x + p.w / 2, pcy = p.y + p.h / 2;
     const grab = { x: p.x - PICKUP_GRAB_PX, y: p.y - PICKUP_GRAB_PX, w: p.w + PICKUP_GRAB_PX * 2, h: p.h + PICKUP_GRAB_PX * 2 };
     const ap2 = host.activePx * host.activePx, m2 = host.magnetPx * host.magnetPx;
@@ -131,9 +141,9 @@ export class DropList {
       if (d.pickDelay > 0) d.pickDelay -= dt;
       const ready = host.canPickup && d.pickDelay <= 0 && host.room(d.item, 1) > 0;
       if (ready && overlaps(b, grab)) {
-        const n = host.take(d.item, d.count);
+        const n = host.take(d.item, d.count, d.gear);
         if (n > 0) {
-          got.push([d.item, n]);
+          got.push([d.item, n, d.gear]);
           d.count -= n;
           if (d.count <= 0) { this.list.splice(i, 1); continue; }
         }
