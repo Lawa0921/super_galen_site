@@ -47,7 +47,7 @@ export const T = {
   stat: STAT,
   slot: SLOT,
   /** Gear kinds, for a base's own slot: a ring is one "戒指" here, "戒指 1" / "戒指 2" only where a member's slots are listed. */
-  slotKind: { ...SLOT, ring: '戒指' } as Record<Slot | 'ring', string>,
+  slotKind: SLOT_KIND,
   gold: (n: number) => `${n} G`,
   /** Rarity words (spec §4). Loot lines show the word after a gear name; common gear leaves it out. */
   rarity: RARITY,
