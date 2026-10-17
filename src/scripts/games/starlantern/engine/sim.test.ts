@@ -6,7 +6,10 @@ import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
 import { SLOTS } from './party';
 import { mulberry32 } from './rng';
-import { attackAll, kitParty, partyAt, simBattle } from './sim';
+import { KIT_ORDER, attackAll, kitParty, partyAt, simBattle } from './sim';
+import { LEGACY_LINEUP, STANDARD_LINEUP, rowOfCell } from './party';
+import { heroTalents, heroTree } from './progression';
+import { fullParty } from './testing';
 import type { CharacterId, GearSlot } from './types';
 
 /** The eight members as they were ordered before Rin: the order kitParty drew their gear in. */
@@ -47,6 +50,32 @@ describe('kitParty draw order', () => {
       }
       const kit = kitParty(depthLevel(4), 4, seed, undefined, expectedEnhance(4));
       for (const id of LEGACY_KIT_ORDER) expect(kit.roster[id].equip, `${id} seed ${seed}`).toEqual(expected[id]);
+    }
+  });
+});
+
+describe('lineups and hero builds', () => {
+  it('the default simulation party is the legacy five', () => {
+    expect(partyAt(6).recruited).toEqual(LEGACY_LINEUP);
+    expect(fullParty().recruited).toEqual(STANDARD_LINEUP);
+  });
+  it('a lineup and a hero build are honoured', () => {
+    const p = partyAt(10, { ids: STANDARD_LINEUP, heroBuild: 'mage' });
+    expect(p.recruited).toEqual(STANDARD_LINEUP);
+    expect(rowOfCell(p.grid.indexOf('hero'))).toBe('back');
+    expect(p.roster.hero.level).toBe(10);
+    expect(p.roster.hero.tree).toEqual(heroTree(10, 'mage', 0));
+    expect(p.roster.hero.talents).toEqual(heroTalents(10, 'mage'));
+  });
+  it('kitParty arms the hero for his build', () => {
+    expect(kitParty(10, 3, 5, undefined, 0, { heroBuild: 'mage' }).roster.hero.equip.weapon?.base).toBe('wooden-staff');
+    expect(kitParty(10, 3, 5, undefined, 0, { heroBuild: 'tank' }).roster.hero.equip.weapon?.base).toBe('thorn-spear');
+  });
+  it("the hero's fixed weapon moves nobody else's kit", () => {
+    for (let seed = 1; seed <= 4; seed++) {
+      const a = kitParty(10, 3, seed, undefined, 0, { heroBuild: 'mage' });
+      const b = kitParty(10, 3, seed);
+      for (const id of KIT_ORDER) if (id !== 'hero') expect(a.roster[id].equip, `${id} seed ${seed}`).toEqual(b.roster[id].equip);
     }
   });
 });

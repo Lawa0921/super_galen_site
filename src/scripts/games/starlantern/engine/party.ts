@@ -1,15 +1,21 @@
-import { GRID_SIZE, MAX_ACTIVE } from './formation';
+import { GRID_SIZE, MAX_ACTIVE, ROWS } from './formation';
 import { CHARACTERS, CHARACTER_IDS, rulesOf } from '../data/characters';
 import { SKILLS } from '../data/skills';
 import { SETS, SPECIALS } from '../data/gear';
 import { itemSlot, itemStats } from './loot/item';
 import { learnedSkills, newTree, skillPoints, talentPoints, talentStats } from './progression';
 import { PARTY_BASE, PRIMARY_KEYS, capSheet, convertPrimary, emptySheet, naturalPrimary } from './stats';
-import type { AnyStat, CharacterId, GearSlot, ItemInstance, Member, Party, Passive, PrimaryKey, Sheet, Slot, StatKey, Stats } from './types';
+import type { AnyStat, CharacterId, GearSlot, ItemInstance, Member, Party, Passive, PrimaryKey, Row, Sheet, Slot, StatKey, Stats } from './types';
 
 /** Level cap; deep floors (depthLevel 2 + 4 per depth) need room past 20. Progression design §6. */
 export const MAX_LEVEL = 50;
 export const STARTING_RECRUITS: CharacterId[] = ['scarlet', 'chizuru', 'liz', 'noel', 'selene'];
+/** The party the game now starts with and the simulation's full party (spec 9.4): the hero, Rin, Chizuru, Noel, Selene. */
+export const STANDARD_LINEUP: CharacterId[] = ['hero', 'rin', 'chizuru', 'noel', 'selene'];
+/** The five the simulation fielded before the hero existed; the default of partyAt and kitParty so the balance stays bit-identical. */
+export const LEGACY_LINEUP: CharacterId[] = ['scarlet', 'chizuru', 'liz', 'noel', 'selene'];
+/** Where the legacy five stood (the old newParty grid), so column and cross attacks hit the same people as before. */
+export const LEGACY_GRID: (CharacterId | null)[] = ['scarlet', 'chizuru', 'liz', null, null, null, 'noel', null, 'selene'];
 const STAT_KEYS: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 export const SLOTS: Slot[] = ['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring1', 'ring2'];
 
@@ -110,7 +116,33 @@ export function newParty(): Party {
   return {
     roster: Object.fromEntries(CHARACTER_IDS.map((id) => [id, newMember(id)])) as Record<CharacterId, Member>,
     recruited: [...STARTING_RECRUITS],
-    grid: ['scarlet', 'chizuru', 'liz', null, null, null, 'noel', null, 'selene'],
+    grid: [...LEGACY_GRID],
+  };
+}
+
+/** A copy of `grid` with `id` in the first empty cell of `row`; a full row spills to the middle row, then the other. The caller keeps the party under five. */
+export function placeInGrid(grid: (CharacterId | null)[], id: CharacterId, row: Row): (CharacterId | null)[] {
+  const out = [...grid];
+  for (const r of [row, 'middle' as Row, ...ROWS.filter((x) => x !== row && x !== 'middle')]) {
+    const base = ROWS.indexOf(r) * 3;
+    const cell = [0, 1, 2].map((i) => base + i).find((c) => out[c] === null);
+    if (cell !== undefined) { out[cell] = id; return out; }
+  }
+  return out;
+}
+
+/** Everyone in the roster, `ids` recruited and standing on the grid: as given, else each on their own row (the hero on `heroRow`). The legacy five keep the old grid. */
+export function partyWith(ids: CharacterId[], heroRow: Row = 'front', grid?: (CharacterId | null)[]): Party {
+  let g = grid ? [...grid] : undefined;
+  if (!g && ids.length === LEGACY_LINEUP.length && ids.every((id, i) => id === LEGACY_LINEUP[i])) g = [...LEGACY_GRID];
+  if (!g) {
+    g = Array<CharacterId | null>(GRID_SIZE).fill(null);
+    for (const id of ids) g = placeInGrid(g, id, (id as string) === 'hero' ? heroRow : CHARACTERS[id].row);
+  }
+  return {
+    roster: Object.fromEntries(CHARACTER_IDS.map((id) => [id, newMember(id)])) as Record<CharacterId, Member>,
+    recruited: [...ids],
+    grid: g,
   };
 }
 

@@ -1,7 +1,8 @@
 import type { BattleState } from './battle';
 import type { Combatant } from './combatant';
 import { EQUIPMENT } from '../data/equipment';
-import type { ItemInstance } from './types';
+import { STANDARD_LINEUP, partyWith } from './party';
+import type { CharacterId, ItemInstance, Party } from './types';
 
 /** A plain common instance of a base (no affixes) at the base's own level, for fixtures. */
 export function plainItem(base: string, uid: number): ItemInstance {
@@ -32,4 +33,9 @@ export function memoryStorage(seed: Record<string, string> = {}) {
 
 export function makeBattle(party: Combatant[], enemies: Combatant[], extra: Partial<BattleState> = {}): BattleState {
   return { round: 0, party, enemies, boss: false, inventory: {}, revealed: {}, itemBoost: false, log: [], outcome: 'ongoing', ...extra };
+}
+
+/** A party of `ids` (default the standard five), everyone at level 1, for tests that need real members on a real grid. */
+export function fullParty(ids: CharacterId[] = STANDARD_LINEUP): Party {
+  return partyWith(ids);
 }

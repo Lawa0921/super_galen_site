@@ -4,6 +4,7 @@ import {
   gainExp, awardExp, hasPassive, MAX_LEVEL, SLOTS, slotsFor, defaultSlotFor, sheetOf, setCounts, powersOf,
 } from './party';
 import { partyAt } from './sim';
+import { LEGACY_GRID, LEGACY_LINEUP, STANDARD_LINEUP, partyWith, placeInGrid } from './party';
 import { defaultTalents, defaultTree, learnedSkills, newTree, raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft } from './progression';
 import { plainItem } from './testing';
 import { rollItem } from './loot/item';
@@ -11,7 +12,7 @@ import { mulberry32 } from './rng';
 import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { SETS } from '../data/gear';
 import { TALENT_PER, TALENT_SCALE } from '../data/talents';
-import type { AnyStat, Member } from './types';
+import type { AnyStat, CharacterId, Member } from './types';
 
 const per = (stat: AnyStat) => TALENT_PER[stat]! * TALENT_SCALE;
 
@@ -263,5 +264,43 @@ describe('skills and passives', () => {
     expect(partyAt(10).roster.noel.tree).toEqual(defaultTree('noel', 10));
     for (const id of CHARACTER_IDS) expect(partyAt(6).roster[id].tree, id).toEqual(defaultTree(id, 6));
     for (const id of CHARACTER_IDS) expect(partyAt(20).roster[id].talents, id).toEqual(defaultTalents(id, 20));
+  });
+});
+
+describe('partyWith', () => {
+  it('puts each member on their own row', () => {
+    const p = partyWith(STANDARD_LINEUP);
+    expect(p.recruited).toEqual(STANDARD_LINEUP);
+    for (const id of ['hero', 'rin', 'chizuru'] as const) expect(rowOfCell(p.grid.indexOf(id))).toBe('front');
+    for (const id of ['noel', 'selene'] as const) expect(rowOfCell(p.grid.indexOf(id))).toBe('back');
+    expect(activeIds(p)).toEqual(['hero', 'rin', 'chizuru', 'noel', 'selene']);
+  });
+  it('stands the hero in the row asked for', () => {
+    const p = partyWith(STANDARD_LINEUP, 'back');
+    expect(rowOfCell(p.grid.indexOf('hero'))).toBe('back');
+    expect(activeIds(p)).toEqual(['rin', 'chizuru', 'hero', 'noel', 'selene'].sort((a, b) => p.grid.indexOf(a as never) - p.grid.indexOf(b as never)));
+  });
+  it('the legacy five stand where they always stood', () => {
+    const p = partyWith(LEGACY_LINEUP);
+    const old = newParty();
+    expect(p.grid).toEqual(LEGACY_GRID);
+    expect(p.recruited).toEqual(old.recruited);
+    expect(p.roster).toEqual(old.roster);
+    expect(partyWith(LEGACY_LINEUP, 'front', p.grid.map((c) => c)).grid).toEqual(LEGACY_GRID);
+  });
+});
+
+describe('placeInGrid', () => {
+  it('spills to the middle row when the row is full', () => {
+    let g: (CharacterId | null)[] = Array(9).fill(null);
+    const front = ['hero', 'rin', 'chizuru', 'scarlet'] as const;
+    for (const id of front) g = placeInGrid(g, id, 'front');
+    expect(g.slice(0, 3)).toEqual(['hero', 'rin', 'chizuru']);
+    expect(g[3]).toBe('scarlet');
+  });
+  it('works on a copy', () => {
+    const g: (CharacterId | null)[] = Array(9).fill(null);
+    placeInGrid(g, 'hero', 'front');
+    expect(g.every((c) => c === null)).toBe(true);
   });
 });

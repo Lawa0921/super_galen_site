@@ -7,15 +7,16 @@ import { depthLevel } from './levels';
 import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
 import { LIMIT_MAX, createBattle, resolveRound, skillCost, skillFor, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
-import { MAX_LEVEL, SLOTS, expToNext, gainExp, newMember, newParty, statsOf } from './party';
-import { defaultTalents, defaultTree, learnedSkills } from './progression';
+import { LEGACY_LINEUP, MAX_LEVEL, SLOTS, expToNext, gainExp, newMember, partyWith, statsOf } from './party';
+import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills } from './progression';
+import { HERO_BUILDS, type HeroBuild } from '../data/hero';
 import { mulberry32 } from './rng';
 import { depthClearExp, encounterTable, scaleEnemy } from './scaling';
 import { genFloor } from './dungeon/gen';
 import { terrainOf } from './dungeon/run';
 import { advance } from './encounter';
 import { DELTA, posKey, tileAt, type FloorMap } from './map';
-import type { BuffStat, CharacterId, GearSlot, Party, Pos, Rarity, SkillDef } from './types';
+import type { BuffStat, CharacterId, GearSlot, Party, Pos, Rarity, Row, SkillDef } from './types';
 
 /** The eight members as CHARACTER_IDS ordered them before Rin: kitParty drew their gear in this order, and still does. */
 export const LEGACY_KIT_ORDER: CharacterId[] = LEGACY_CHARACTER_IDS;
@@ -28,12 +29,21 @@ export const KIT_ORDER: CharacterId[] = [
 
 type Altar = { stat: BuffStat; pct: number }[];
 
-/** A fresh party with everyone at `level`, held to the real level cap, each with the default tree and talents of that level. */
-export function partyAt(level: number): Party {
+/** Who the simulation fields: the members (default the legacy five), the hero's build, row and memories, and a forced abyss bonus. */
+export interface Lineup { ids?: CharacterId[]; heroBuild?: HeroBuild; heroRow?: Row; memories?: number; abyss?: number }
+
+/** A fresh party with everyone at `level`, held to the real level cap, each with the default tree and talents of that level; the hero follows his build. */
+export function partyAt(level: number, lineup: Lineup = {}): Party {
   level = Math.min(level, MAX_LEVEL);
-  const p = newParty();
+  const build = lineup.heroBuild ?? 'balanced';
+  const p = partyWith(lineup.ids ?? LEGACY_LINEUP, lineup.heroRow ?? HERO_BUILDS[build].row);
   for (const id of Object.keys(p.roster) as CharacterId[]) {
-    const m = { ...newMember(id), level, tree: defaultTree(id, level), talents: defaultTalents(id, level) };
+    const hero = (id as string) === 'hero';
+    const m = {
+      ...newMember(id), level,
+      tree: hero ? heroTree(level, build, lineup.memories ?? 0) : defaultTree(id, level),
+      talents: hero ? heroTalents(level, build) : defaultTalents(id, level),
+    };
     const s = statsOf(m);
     p.roster[id] = { ...m, hp: s.hp, tp: s.tp };
   }
@@ -46,9 +56,9 @@ export function partyAt(level: number): Party {
  * counts as rare, since a special's power is not a stat and stays out of the expectation.
  * Every piece is at enhance level `enhance` (default +0); the balance tests pass `expectedEnhance(depth)` explicitly.
  */
-export function kitParty(level: number, depth: number, seed: number, rarity?: Rarity, enhance = 0): Party {
+export function kitParty(level: number, depth: number, seed: number, rarity?: Rarity, enhance = 0, lineup: Lineup = {}): Party {
   const rng = mulberry32(seed);
-  const p = partyAt(level);
+  const p = partyAt(level, lineup);
   const ilvl = itemLevel(depth, 'monster');
   const weights = rarityWeights('monster', depthLevel(depth), 'plain');
   let uid = 1;
@@ -57,7 +67,10 @@ export function kitParty(level: number, depth: number, seed: number, rarity?: Ra
     for (const s of SLOTS) {
       const slot: GearSlot = s === 'ring1' || s === 'ring2' ? 'ring' : s;
       const tier = rarity ?? rollTier(rng, weights);
-      m.equip[s] = { ...rollItem(rng, { uid: uid++, ilvl, rarity: tier === 'legendaryTier' ? 'rare' : tier, slot }), enhance };
+      const rarityOf = tier === 'legendaryTier' ? 'rare' : tier;
+      const first = rollItem(rng, { uid: uid++, ilvl, rarity: rarityOf, slot });
+      // The hero always draws a weapon like everyone, then swaps it for his build's; he draws last, so the extra roll moves no one else.
+      m.equip[s] = { ...(s === 'weapon' && (id as string) === 'hero' ? rollItem(rng, { uid: first.uid, ilvl, rarity: rarityOf, slot, base: HERO_BUILDS[lineup.heroBuild ?? 'balanced'].weapon }) : first), enhance };
     }
     const st = statsOf(m);
     p.roster[id] = { ...m, hp: st.hp, tp: st.tp };
@@ -100,9 +113,9 @@ function power(def: SkillDef): number {
   return def.effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
 }
 
-export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed: number, scale?: BattleScale, altar?: Altar, ai: SimAi = 'skill'): { outcome: Outcome; rounds: number; hpLoss: number } {
+export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed: number, scale?: BattleScale, altar?: Altar, ai: SimAi = 'skill', abyss?: number): { outcome: Outcome; rounds: number; hpLoss: number } {
   const rng = mulberry32(seed);
-  let s = createBattle({ party, enemyIds, boss, inventory: {}, revealed: {}, scale, altar });
+  let s = createBattle({ party, enemyIds, boss, inventory: {}, revealed: {}, scale, altar, abyss });
   const maxHp = s.party.reduce((n, c) => n + c.max.hp, 0);
   let rounds = 0;
   while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, ai === 'attack' ? attackAll(s) : choose(s, party), rng); rounds++; }
@@ -114,11 +127,11 @@ export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed:
  * With `kitSeed`, the party wears `kitParty(level, depth, kitSeed, undefined, kitEnhance)` instead of nothing (`kitEnhance`
  * default +0); `ai` picks the player (default the skill player).
  */
-export function winRate(level: number, groups: string[][], boss: boolean, seeds = 40, scale?: BattleScale, altar?: Altar, kitSeed?: number, ai: SimAi = 'skill', kitEnhance = 0): { rate: number; hpLoss: number } {
+export function winRate(level: number, groups: string[][], boss: boolean, seeds = 40, scale?: BattleScale, altar?: Altar, kitSeed?: number, ai: SimAi = 'skill', kitEnhance = 0, lineup: Lineup = {}): { rate: number; hpLoss: number } {
   let wins = 0, loss = 0, n = 0;
   for (const g of groups) for (let k = 1; k <= seeds; k++) {
-    const party = kitSeed === undefined ? partyAt(level) : kitParty(level, scale?.depth ?? 1, kitSeed, undefined, kitEnhance);
-    const r = simBattle(party, g, boss, k * 7919, scale, altar, ai);
+    const party = kitSeed === undefined ? partyAt(level, lineup) : kitParty(level, scale?.depth ?? 1, kitSeed, undefined, kitEnhance, lineup);
+    const r = simBattle(party, g, boss, k * 7919, scale, altar, ai, lineup.abyss);
     n++; loss += r.hpLoss; if (r.outcome === 'win') wins++;
   }
   return { rate: wins / n, hpLoss: loss / n };
