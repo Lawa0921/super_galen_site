@@ -3,7 +3,7 @@ import type { Meetable } from '../../data/meetings';
 import { REGIONS, type RegionId } from '../../data/regions';
 import type { FloorMap } from '../map';
 import { mulberry32 } from '../rng';
-import type { BuffStat, CharacterId, ItemInstance } from '../types';
+import type { BuffStat, ItemInstance } from '../types';
 import { genFloor } from './gen';
 import { fillRooms, placeRescue, type Content } from './rooms';
 

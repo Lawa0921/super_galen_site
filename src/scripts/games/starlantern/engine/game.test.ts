@@ -706,14 +706,14 @@ describe('stairs ask before going down', () => {
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     const at = g.map().down!;
-    expect(stepOnto(g, at)).toEqual({ kind: 'stairs', floor: 2, level: 6, warn: true });   // a fresh Lv 1 party
+    expect(stepOnto(g, at)).toEqual({ kind: 'stairs', floor: 2, level: 6, warn: true, rescue: false });   // a fresh Lv 1 party
     expect([g.floor, g.pos, g.state.dungeon.reached.mainline]).toEqual([1, at, 1]);
   });
   it('no warning once the top party level reaches the suggestion', () => {
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     g.state.party.roster[g.state.party.recruited[0]].level = 6;
-    expect(stepOnto(g, g.map().down!)).toEqual({ kind: 'stairs', floor: 2, level: 6, warn: false });
+    expect(stepOnto(g, g.map().down!)).toEqual({ kind: 'stairs', floor: 2, level: 6, warn: false, rescue: false });
   });
   it('descend goes down only from the stairs', () => {
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
@@ -1651,6 +1651,20 @@ describe('rescue fights', () => {
     expect(floorOf(g.run!, 2).contents.some((c) => c.kind === 'rescue')).toBe(false);
     expect(tileAt(g.map(), at)).toBe('floor');
   });
+  it('the stairs warn while the rescue on the floor still waits, and stop once she is met or the room is gone', () => {
+    const { g, at } = rescueRun();
+    const down = g.map().down!;
+    const r = stepOnto(g, down);
+    expect(r).toMatchObject({ kind: 'stairs', floor: 3, rescue: true });
+    expect(g.descend()).toMatchObject({ kind: 'floor', floor: 3 });   // a warning only: she can be left behind
+    const again = rescueRun();
+    again.g.state.party = meet(again.g.state.party, 'selene', 3);
+    expect(stepOnto(again.g, again.g.map().down!)).toMatchObject({ kind: 'stairs', rescue: false });
+    const gone = rescueRun();
+    const floor = floorOf(gone.g.run!, 2);
+    floor.contents = floor.contents.filter((c) => c.kind !== 'rescue');
+    expect(stepOnto(gone.g, gone.g.map().down!)).toMatchObject({ kind: 'stairs', rescue: false });
+  });
   it('stepping back onto her room after the win starts nothing', () => {
     const { g, at } = rescueRun();
     stepOnto(g, at);
@@ -1708,6 +1722,23 @@ describe('rescue fights', () => {
     const again = floorOf(g.run!, 2).contents.find((x) => x.kind === 'rescue');
     expect(again?.who).toBe('selene');
     expect(tileAt(g.map(), again!.at)).toBe('rescue');
+  });
+  it('a wipe later in the same run keeps her met, and the town save loads valid', () => {
+    const { g, at } = rescueRun();
+    const st = memoryStorage();
+    stepOnto(g, at);
+    expect(killAll(g).met).toMatchObject({ id: 'selene' });
+    (g as unknown as { startBattle: (e: string[], b: boolean) => void }).startBattle(encounterGroup('mainline', 2, calm()), false);
+    expect(g.phase).toBe('battle');
+    for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+    expect(g.submitRound({})!.end!.outcome).toBe('lose');
+    expect(g.phase).toBe('town');
+    expect(g.state.party.recruited).toContain('selene');
+    expect(activeIds(g.state.party)).toContain('selene');
+    expect(saveGame(st, g.state)).toBe(true);
+    const back = loadGame(st);
+    expect(back.status).toBe('ok');
+    if (back.status === 'ok') expect(back.state.party.recruited).toContain('selene');
   });
   it('a failed escape does not lose the fight: a later win still meets her', () => {
     const { g, at } = rescueRun();

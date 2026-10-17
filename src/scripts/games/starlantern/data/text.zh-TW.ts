@@ -159,7 +159,7 @@ export const T = {
     crit: '（暴擊）',
   },
   ui2: {
-    rescue: { found: rescueFound, joined: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍！`, benched: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍，在公會待命。` },
+    rescue: { waiting: '這層還有人在求救。', found: rescueFound, joined: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍！`, benched: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍，在公會待命。` },
     banner: { encounter: '遭遇！', boss: '頭目出現！', win: '勝利！' },
     hints: {
       title: '↑↓ 選擇　Enter 決定　滑鼠也可以操作',
@@ -268,7 +268,7 @@ export const T = {
       /** The engine turned a spend down after the page allowed it (e.g. outside town and the labyrinth). */
       failed: '現在無法投點',
       capstone: (name: string) => `終極技：${name}`,
-      noCapstone: '終極技：未選（限選一個）',
+      noCapstone: (max: number) => `終極技：未選（限選 ${max} 個）`,
       /** What the next rank of an active node scales: power for damage and heals, the percent for a pure buff or debuff. */
       next: (what: 'power' | 'buff', a: number, b: number) => `下一級：${what === 'power' ? '威力' : '效果'} ${a}% → ${b}%`,
       now: (text: string) => `目前：${text}`,
@@ -530,7 +530,7 @@ export const T = {
     },
     guild: {
       formation: '編隊', recall: '召回', equip: '裝備', status: '狀態', tree: '技能樹', talent: '天賦',
-      recallAsk: (name: string) => `要讓 ${name} 回到隊伍嗎？`, swapWho: '要讓誰回公會待命？', welcomeBack: (name: string) => `歡迎回來，${name}。`,
+      recallAsk: (name: string) => `要讓 ${name} 回到隊伍嗎？`, swapWho: '要讓誰回公會待命？', swapOut: (name: string) => `${name} 回公會待命`, welcomeBack: (name: string) => `歡迎回來，${name}。`,
       roles: {
         noel: '後排。火、冰、雷攻擊；降低敵人能力、毒。', chizuru: '前排。全體攻擊；我方減傷。', liz: '前或後。多段攻擊；降低遇敵、素材掉落加成。',
         sylvie: '後排。單體高傷；先制攻擊、提高逃跑率。', scarlet: '前排。吸引攻擊、替隊友擋傷；消耗 HP 打火屬性大傷害。',

@@ -795,7 +795,8 @@ describe('StatusScene', () => {
 
     it('with no capstone taken, the line says so', () => {
       const { body } = onTree(2);
-      expect(body()).toContain(T.ui2.tree.noCapstone);
+      expect(body()).toContain(T.ui2.tree.noCapstone(1));
+      expect(body()).toContain('限選 1');
     });
 
     describe("the columns' scroll cues (as the talent board's)", () => {
@@ -1247,6 +1248,24 @@ describe('StatusScene', () => {
       tabTo(4);
       expect(root.querySelector('.slx-talent-board')!.classList.contains('slx-talent-wide')).toBe(false);
       expect(root.querySelectorAll('.slx-talent-row[data-row="0"] .slx-talent-node')).toHaveLength(4);
+    });
+
+    it('the hero header says he may hold two ultimates, a companion one', () => {
+      const h = heroSetup();
+      h.tabTo(3);
+      expect(h.root.querySelector('.slx-tree-capstone')!.textContent).toContain('限選 2');
+      const r = heroSetup('rin');
+      r.tabTo(3);
+      expect(r.root.querySelector('.slx-tree-capstone')!.textContent).toContain('限選 1');
+    });
+
+    it('every ultimate the hero holds is named in the header', () => {
+      const { root, game, tabTo } = heroSetup();
+      const caps = TREES.hero.branches.slice(0, 2).map((b) => b.nodes[4]);
+      game.state.party.roster.hero = { ...game.state.party.roster.hero, tree: { ...game.state.party.roster.hero.tree, [caps[0].id]: 1, [caps[1].id]: 1 } };
+      tabTo(3);
+      const text = root.querySelector('.slx-tree-capstone')!.textContent!;
+      for (const c of caps) expect(text).toContain(c.kind === 'active' ? SKILLS[c.skill].name : c.name!);
     });
 
     it("the hero's ultimate line names his current form", () => {

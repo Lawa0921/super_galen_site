@@ -81,8 +81,8 @@ export type StairsResult = Extract<MoveResult, { kind: 'stairs' }>;
  */
 export function stairsLayer(host: EventHost, r: StairsResult, go: () => void): Layer {
   const S = T.ui2.event.stairs;
-  const body = [line(S.level(r.level)), ...(r.warn ? [line(S.warn, 'slx-event-text slx-event-warn')] : [])];
-  return eventWindow(host, 'stairs', S.title(r.floor), body, [{ id: 'go', label: S.go }, { id: 'leave', label: S.stay }], () => { host.popAll(); go(); }, undefined, r.warn ? 1 : 0);
+  const body = [line(S.level(r.level)), ...(r.warn ? [line(S.warn, 'slx-event-text slx-event-warn')] : []), ...(r.rescue ? [line(T.ui2.rescue.waiting, 'slx-event-text slx-event-warn')] : [])];
+  return eventWindow(host, 'stairs', S.title(r.floor), body, [{ id: 'go', label: S.go }, { id: 'leave', label: S.stay }], () => { host.popAll(); go(); }, undefined, r.warn || r.rescue ? 1 : 0);
 }
 
 /** The window for a room event the party stepped on (fountain, merchant, altar, vault) or is about to step on (elite). */

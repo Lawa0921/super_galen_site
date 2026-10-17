@@ -458,6 +458,8 @@ export class BattleScene implements Scene {
     const lines: { text: string | Rich; cls?: string }[] = [];
     if (end.outcome === 'win') {
       if (fanfare) this.ctx.sfx.win?.();
+      // The join line leads: the list scrolls, and this is the line the fight was for.
+      if (end.met) lines.push({ text: (end.met.benched ? T.ui2.rescue.benched : T.ui2.rescue.joined)(CHARACTERS[end.met.id].name, end.met.level) });
       lines.push({ text: T.battle.exp(end.exp) }, { text: T.battle.gold(end.gold) });
       for (const it of end.gear) lines.push({ text: gearLabel(it), cls: `slx-loot-gear slx-rarity-${it.rarity}` });
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
@@ -465,9 +467,7 @@ export class BattleScene implements Scene {
       for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it)]), cls: 'slx-loot-left' });
       lines.push(...levelUpLines(end.levelUps, this.ctx.game.state.party));
       if (end.met) {
-        const who = CHARACTERS[end.met.id].name;
         for (const l of T.meet[end.met.id].after) lines.push({ text: l });
-        lines.push({ text: (end.met.benched ? T.ui2.rescue.benched : T.ui2.rescue.joined)(who, end.met.level) });
       }
     } else if (end.outcome === 'lose') this.ctx.sfx.lose?.();
     const title = end.outcome === 'win' ? T.battle.win : end.outcome === 'lose' ? T.battle.lose : T.battle.fled;

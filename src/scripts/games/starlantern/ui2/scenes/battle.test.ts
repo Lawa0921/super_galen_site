@@ -178,9 +178,10 @@ describe('BattleScene', () => {
       return [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
     };
     const joined = await run(false);
-    expect(joined[joined.length - 1]).toBe(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));
+    expect(joined[0]).toBe(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));   // first, so the list's scroll never hides it
+    expect(joined.length).toBeGreaterThan(2);
     const benched = await run(true);
-    expect(benched[benched.length - 1]).toBe(T.ui2.rescue.benched(CHARACTERS.selene.name, 4));
+    expect(benched[0]).toBe(T.ui2.rescue.benched(CHARACTERS.selene.name, 4));
     expect(benched).not.toContain(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));
   });
 

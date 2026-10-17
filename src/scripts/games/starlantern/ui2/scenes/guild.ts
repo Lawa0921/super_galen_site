@@ -41,19 +41,26 @@ export class GuildScene extends FacilityScene {
   private recallList(): void {
     const ids = this.waiting();
     const info = win('slx-info');
-    const show = (id: CharacterId | undefined) => {
-      if (!id) return;
-      info.replaceChildren(...[standeeImg(this.ctx.art, id)].filter((n): n is HTMLImageElement => !!n),
-        el('p', { text: `${CHARACTERS[id].title} ${name(id)}` }), el('p', { class: 'slx-desc', text: T.ui2.guild.roles[id] }));
-    };
+    this.info = info;
+    const show = (id: CharacterId | undefined) => this.showInfo(id);
     const v = new MenuView(new Menu(ids.map((id) => ({ id, label: `${CHARACTERS[id].title} ${name(id)}`, icon: this.faceIcon(id) }))), {
       pick: (it) => { this.ctx.sfx.confirm(); this.askRecall(it.id as CharacterId); },
       moved: () => { this.ctx.sfx.cursor(); show(v.menu.current()?.id as CharacterId); },
-      cancel: () => { info.remove(); this.pop(); },
+      cancel: () => { info.remove(); this.info = undefined; this.pop(); },
     });
     show(ids[0]);
     this.stage.append(info);
     this.push({ el: win('slx-list', [v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  private info: HTMLElement | undefined;
+
+  /** The info pane for `id`; `out` retitles it when the question is who steps out, not who comes back. */
+  private showInfo(id: CharacterId | undefined, out = false): void {
+    if (!id || !this.info) return;
+    this.info.classList.toggle('slx-info-swap', out);
+    this.info.replaceChildren(...[standeeImg(this.ctx.art, id)].filter((n): n is HTMLImageElement => !!n),
+      el('p', { text: out ? T.ui2.guild.swapOut(name(id)) : `${CHARACTERS[id].title} ${name(id)}` }), el('p', { class: 'slx-desc', text: T.ui2.guild.roles[id] }));
   }
 
   private askRecall(id: CharacterId): void {
@@ -73,9 +80,10 @@ export class GuildScene extends FacilityScene {
     const ids = activeIds(this.ctx.game.state.party).filter((x) => x !== 'hero');
     const v = new MenuView(new Menu(ids.map((x) => ({ id: x, label: `${CHARACTERS[x].title} ${name(x)}`, icon: this.faceIcon(x) }))), {
       pick: (it) => { this.ctx.sfx.confirm(); this.finishRecall(id, it.id as CharacterId); },
-      moved: () => this.ctx.sfx.cursor(),
-      cancel: () => this.pop(),
+      moved: () => { this.ctx.sfx.cursor(); this.showInfo(v.menu.current()?.id as CharacterId, true); },
+      cancel: () => { this.showInfo(id); this.pop(); },
     });
+    this.showInfo(ids[0], true);
     this.push({ el: win('slx-list', [el('p', { text: T.ui2.guild.swapWho }), v.el]), onAction: (a) => v.onAction(a) });
   }
 
@@ -83,6 +91,7 @@ export class GuildScene extends FacilityScene {
     if (!this.ctx.game.recall(id, out).ok) { this.ctx.sfx.error(); return; }
     this.popAll();
     this.stage.querySelector('.slx-info')?.remove();
+    this.info = undefined;
     this.refresh();
     void this.say(T.ui2.guild.welcomeBack(name(id)), 'happy');
   }

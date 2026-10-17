@@ -5,6 +5,7 @@ import { NO_ART } from '../../render/textures';
 import { GuildScene } from './guild';
 import { LEGACY_LINEUP, START_LINEUP, meet } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
+import { CHARACTERS } from '../../data/characters';
 
 const HERO_LINEUP = ['hero', 'chizuru', 'liz', 'noel', 'selene'] as const;
 /** Rin and the hero on the field, Bobby met and waiting. */
@@ -98,6 +99,23 @@ describe('GuildScene', () => {
     expect(game.state.party.grid).not.toContain('noel');
     for (const id of ['hero', 'chizuru', 'liz', 'selene'] as const) expect(game.state.party.grid, id).toContain(id);
     expect(game.state.party.grid.filter((c) => c).length).toBe(5);
+  });
+
+  it('while asking who steps out, the info pane shows the highlighted candidate, clear of the list', () => {
+    const { pick, s, root } = setup(undefined, HERO_LINEUP, (g) => { g.state.party = meet(g.state.party, 'bobby', 1); });
+    pick(T.ui2.guild.recall);
+    pick('技師 波比');
+    s.onAction('up');
+    s.onAction('confirm');
+    const info = () => root.querySelector('.slx-info')!;
+    expect(info().classList.contains('slx-info-swap')).toBe(true);   // moved right of the nested list
+    expect(info().textContent).toContain(T.ui2.guild.swapOut(CHARACTERS.chizuru.name));
+    expect(info().textContent).not.toContain('技師');
+    s.onAction('down');
+    expect(info().textContent).toContain(T.ui2.guild.swapOut(CHARACTERS.liz.name));
+    s.onAction('cancel');
+    expect(info().classList.contains('slx-info-swap')).toBe(false);
+    expect(info().textContent).toContain('技師 波比');
   });
 
   it('opens the formation, equipment and status screens', () => {

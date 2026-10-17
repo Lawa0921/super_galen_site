@@ -410,7 +410,7 @@ const tree: StatusTab = {
     // another tree's id, so it could never match a node here).
     if (!treeOrder(id).includes(treeView.cur)) treeView.cur = treeOrder(id)[0];
     const branches = TREES[id].branches;
-    const capstone = branches.map((b) => b.nodes[4]).find((n) => nodeRank(m, n.id) > 0);
+    const capstone = branches.map((b) => b.nodes[4]).filter((n) => nodeRank(m, n.id) > 0);
     const cols = branches.map((b, bi) => {
       // Points put into the branch: its ranks, less branch 0's free first rank.
       const spent = b.nodes.reduce((s, n) => s + nodeRank(m, n.id), 0) - (bi === 0 ? Math.min(1, nodeRank(m, freeNode(id))) : 0);
@@ -448,7 +448,7 @@ const tree: StatusTab = {
     return el('div', { class: 'slx-tab-tree' }, [
       el('div', { class: 'slx-tree-top' }, [
         el('span', { class: 'slx-tree-left', text: t.left(skillPointsLeft(m)) }),
-        el('span', { class: 'slx-tree-capstone', text: capstone ? t.capstone(nodeName(capstone)) : t.noCapstone }),
+        el('span', { class: 'slx-tree-capstone', text: capstone.length ? t.capstone(capstone.map(nodeName).join('、')) : t.noCapstone(rulesOf(id).capstones) }),
       ]),
       cueFrame('slx-tree-frame', colsEl, (top) => { treeView.top = top; }),
       treeNotes(ctx, id),

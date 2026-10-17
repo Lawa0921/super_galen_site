@@ -78,6 +78,18 @@ describe('DungeonScene', () => {
       expect([t.game.floor, win(t.root)]).toEqual([1, null]);
     });
 
+    it('a floor whose rescue still waits adds the plea, defaults to staying, and can still be descended', () => {
+      const t = setup();
+      t.game.state.party.roster.scarlet.level = 6;
+      t.game.state.party.recruited = t.game.state.party.recruited.filter((id) => id !== 'selene');
+      floorOf(t.game.run!, 1).contents.push({ kind: 'rescue', at: { x: 0, y: 0 }, room: 0, who: 'selene' });
+      toStairs(t);
+      expect(lines(t.root)).toEqual(['建議等級 Lv 6', T.ui2.rescue.waiting]);
+      expect(selected(t.root)).toBe('留在這層');
+      t.pick('前往');
+      expect(t.game.floor).toBe(2);
+    });
+
     it('without a warning it defaults to going down', () => {
       const t = setup();
       t.game.state.party.roster.scarlet.level = 6;

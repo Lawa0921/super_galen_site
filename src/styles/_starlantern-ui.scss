@@ -146,6 +146,8 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-more:hover { color: $slx-gold; }
 .slx-layer.slx-confirm { left: 50%; top: 45%; }
 .slx-list.slx-depth-1 { translate: 24px 16px; }
+// The guild's swap question opens a wider nested list (174px on); its info pane steps right of it, as the shop's does.
+.slx-info.slx-info-swap { left: 452px; width: 150px; }
 .slx-list.slx-depth-2 { translate: 48px 32px; }
 .slx-list.slx-depth-3 { translate: 72px 48px; }
 .slx-shop-list { max-height: none; }

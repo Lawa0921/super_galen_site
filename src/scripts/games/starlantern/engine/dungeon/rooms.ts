@@ -4,12 +4,11 @@ import type { Meetable } from '../../data/meetings';
 import type { FloorMap, Tile } from '../map';
 import { posKey } from '../map';
 import { pick, type Rng } from '../rng';
-import type { CharacterId, Pos } from '../types';
+import type { Pos } from '../types';
 import type { GenFloor } from './gen';
 
 export type RoomKind = 'empty' | 'chest' | 'fountain' | 'trap' | 'merchant' | 'altar' | 'elite' | 'vault';
-/** `stock` is a merchant's three item ids, drawn once when the floor is filled. */
-/** `who` is the companion a `rescue` room holds. */
+/** `stock` is a merchant's three item ids, drawn once when the floor is filled; `who` is the companion a `rescue` room holds. */
 export interface Content { kind: RoomKind | 'key' | 'rescue'; at: Pos; room: number; stock?: string[]; who?: Meetable }
 type Placed = Exclude<Content['kind'], 'empty'>;
 

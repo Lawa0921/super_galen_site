@@ -50,8 +50,8 @@ export type MoveResult =
   | { kind: 'event'; content: Content }
   | { kind: 'trap'; effect: 'hurt' | 'poison'; amount: number; tp: number }
   | { kind: 'key' }
-  /** Stepped onto stairs down: the screen asks first (descend goes). `level` is the next depth's suggested level; `warn` when the party's best is below it. */
-  | { kind: 'stairs'; floor: number; level: number; warn: boolean }
+  /** Stepped onto stairs down: the screen asks first (descend goes). `level` is the next depth's suggested level; `warn` when the party's best is below it; `rescue` while a companion on this floor still waits to be saved. */
+  | { kind: 'stairs'; floor: number; level: number; warn: boolean; rescue: boolean }
   | FullResult
   /** An opened vault: its materials always; its gear in `gear`, or in `waiting` when it does not fit (see `chest`). */
   | { kind: 'vault'; loot: Record<string, number>; gear: ItemInstance[]; waiting?: FullResult };
@@ -400,7 +400,8 @@ export class Game {
     const floor = this.floor + 1;
     const level = depthLevel(floor);
     const best = Math.max(...activeIds(this.state.party).map((id) => this.state.party.roster[id].level));
-    return { kind: 'stairs', floor, level, warn: best < level };
+    const waiting = floorOf(this.run!, this.floor).contents.some((c) => c.kind === 'rescue' && c.who && !this.state.party.recruited.includes(c.who));
+    return { kind: 'stairs', floor, level, warn: best < level, rescue: waiting };
   }
 
   returnToTown(): boolean {
