@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   rowOfCell, statSources, expToNext, statsOf, newMember, newParty, setFormation, activeIds,
   gainExp, awardExp, hasPassive, MAX_LEVEL, SLOTS, slotsFor, defaultSlotFor, sheetOf, setCounts, powersOf,
-  LEGACY_GRID, LEGACY_LINEUP, STANDARD_LINEUP, START_LINEUP, partyWith, placeInGrid, joinLevel, meet,
+  memoryStats, LEGACY_GRID, LEGACY_LINEUP, STANDARD_LINEUP, START_LINEUP, partyWith, placeInGrid, joinLevel, meet,
 } from './party';
 import { partyAt } from './sim';
 import { depthLevel } from './scaling';
@@ -12,6 +12,8 @@ import { rollItem } from './loot/item';
 import { mulberry32 } from './rng';
 import { CHARACTERS, CHARACTER_IDS, rulesOf } from '../data/characters';
 import { SETS } from '../data/gear';
+import { CHAINS } from '../data/story/chains';
+import { convertPrimary } from './stats';
 import { TALENT_PER, TALENT_SCALE } from '../data/talents';
 import type { AnyStat, CharacterId, Member } from './types';
 
@@ -34,10 +36,44 @@ describe('stat sources', () => {
   it('splits a member\u2019s numbers by where they come from and adds up to statsOf', () => {
     const m = { ...newMember('scarlet'), level: 3, equip: { weapon: plainItem('iron-sword', 1) } };
     const parts = statSources(m);
-    expect(parts.map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'talent', 'primary']);
+    expect(parts.map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'talent', 'memory', 'primary']);
     const total = statsOf(m);
     for (const k of ['hp', 'atk', 'def'] as const) expect(parts.reduce((n, p) => n + (p.stats[k] ?? 0), 0)).toBe(total[k]);
     expect(parts[2].stats.atk).toBeGreaterThan(0);
+  });
+});
+
+describe('memory stat source', () => {
+  const col = (m: Member) => statSources(m).find((p) => p.source === 'memory')!.stats;
+  const withN = (id: CharacterId, n: number): Member => ({ ...newMember(id), memories: n });
+  type P = 'str' | 'int' | 'agi' | 'wil';
+  it('memory pieces add their chain’s primaries', () => {
+    expect(col(withN('rin', 3)).agi).toBeCloseTo(3 * CHAINS.rin.gain.agi!, 9);
+    const hero = col(withN('hero', 5));
+    for (const k of ['str', 'int', 'agi', 'wil'] as const) expect(hero[k]).toBeCloseTo(5 * CHAINS.hero.gain[k]!, 9);
+    expect(col(withN('selene', 2)).wil).toBeCloseTo(2 * CHAINS.selene.gain.wil!, 9);
+  });
+  it('memory primaries convert like gear primaries', () => {
+    for (const id of ['rin', 'hero', 'selene'] as CharacterId[]) {
+      const gain: Partial<Record<P, number>> = {};
+      for (const [k, v] of Object.entries(CHAINS[id].gain) as [P, number][]) gain[k] = v * 2;
+      const want = convertPrimary(gain, CHARACTERS[id].affinity);
+      for (const k of ['atk', 'mag', 'def', 'res'] as const) expect(sheetOf(withN(id, 2))[k] - sheetOf(newMember(id))[k]).toBeCloseTo(want[k] ?? 0, 9);
+    }
+  });
+  it('absorbed gains add to the memory column', () => {
+    const m: Member = { ...newMember('scarlet'), absorbed: [{ stat: 'hp', amount: 3 }, { stat: 'hp', amount: 2 }, { stat: 'atk', amount: 1 }] };
+    expect(col(m).hp).toBe(5);
+    expect(col(m).atk).toBe(1);
+    expect(statsOf(m).hp).toBe(statsOf(newMember('scarlet')).hp + 5);
+  });
+  it('scale zero switches memory off', () => {
+    const m: Member = { ...withN('rin', 3), absorbed: [{ stat: 'hp', amount: 3 }] };
+    expect(memoryStats(m, 0)).toEqual({});
+    expect(Object.keys(memoryStats(m)).length).toBeGreaterThan(0);
+  });
+  it('a member without memories has an empty memory column', () => {
+    expect(col(newMember('rin'))).toEqual({});
   });
 });
 
@@ -64,7 +100,7 @@ describe('gear instances', () => {
       m = r.member;
     }
     const parts = Object.fromEntries(statSources(m).map((p) => [p.source, p.stats]));
-    expect(statSources(m).map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'talent', 'primary']);
+    expect(statSources(m).map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'talent', 'memory', 'primary']);
     expect(parts.talent).toEqual({ int: 3 * per('int') });
     expect(sheetOf(m).mag - sheetOf(before).mag).toBeCloseTo(3 * per('int') * 1.5);   // 1.5: the 5a affinity multiplier
     expect(parts.base.int).toBe(CHARACTERS.noel.base.mag + CHARACTERS.noel.growth.mag * 9);   // natural int unchanged: Lv10 mag

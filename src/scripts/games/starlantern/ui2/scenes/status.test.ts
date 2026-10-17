@@ -10,6 +10,7 @@ import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView } from './statusTabs';
 import { StatusScene } from './status';
+import { CHAINS } from '../../data/story/chains';
 import { T } from '../../data/text.zh-TW';
 import { SKILLS } from '../../data/skills';
 import { NODES, TREES } from '../../data/trees';
@@ -199,6 +200,13 @@ describe('StatusScene', () => {
     const head = (root: HTMLElement, cat: string) => root.querySelector(`[data-cat=${cat}] .slx-stat-cat-head`) as HTMLElement;
     const bodyEl = (root: HTMLElement) => root.querySelector('.slx-status-body') as HTMLElement;
 
+    it('the stats tab shows a 記憶 column', () => {
+      const { root } = setup('scarlet', NO_ART, (g) => { g.state.party.roster.scarlet.memories = 3; });
+      const heads = [...root.querySelectorAll('[data-cat=primary] thead th')].map((th) => th.textContent);
+      expect(heads.indexOf(T.ui2.status.sources.memory)).toBe(heads.indexOf(T.ui2.status.sources.talent) + 1);
+      expect(root.querySelector('[data-stat=str] .slx-memory')!.textContent).toBe('+' + 3 * CHAINS.scarlet.gain.str!);
+    });
+
     it('six collapsible categories; rows show base, growth, gear, set, talent and primary sources', () => {
       const { root, game, s } = setup('scarlet');
       game.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'str', value: 3 }] };
@@ -212,7 +220,7 @@ describe('StatusScene', () => {
       expect(cats.map((c) => c.querySelector('.slx-stat-cat-head')!.getAttribute('aria-expanded'))).toEqual(['true', 'true', 'false', 'false', 'false', 'false']);
       expect(root.querySelector('[data-cat=defense] tbody')).toBeNull();     // folded: no rows to land on
       const cols = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
-      expect(cols).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '主屬性', '上限', '合計']);
+      expect(cols).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '主屬性', '上限', '合計']);
       expect(root.querySelector('[data-stat=str] .slx-talent')!.textContent).toBe(T.signed(TALENT_PER.str! * TALENT_SCALE));
       // str is scarlet's affinity: 3 str gives 4.5 atk, shown whole so the parts add up to the floored total.
       const atk = root.querySelector('[data-stat=atk]')!;

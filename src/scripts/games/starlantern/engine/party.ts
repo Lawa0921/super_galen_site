@@ -2,6 +2,8 @@ import { GRID_SIZE, MAX_ACTIVE, ROWS } from './formation';
 import { CHARACTERS, CHARACTER_IDS, rulesOf } from '../data/characters';
 import { SKILLS } from '../data/skills';
 import { depthLevel } from './levels';
+import { CHAINS, MEMORY_SCALE } from '../data/story/chains';
+import { memoriesOf } from './progression';
 import { SETS, SPECIALS } from '../data/gear';
 import { itemSlot, itemStats } from './loot/item';
 import { learnedSkills, newTree, skillPoints, talentPoints, talentStats } from './progression';
@@ -35,7 +37,7 @@ export function defaultSlotFor(m: Member, it: ItemInstance): Slot {
 export const expToNext = (level: number): number => Math.floor(14 * level ** 1.3);
 
 /** Where a member's numbers come from; later systems (enchanting, talents) add a source here and the character sheet grows a column. */
-export type StatSource = 'base' | 'growth' | 'gear' | 'set' | 'talent' | 'primary';
+export type StatSource = 'base' | 'growth' | 'gear' | 'set' | 'talent' | 'memory' | 'primary';
 
 const worn = (m: Member): ItemInstance[] => SLOTS.map((s) => m.equip[s]).filter((it): it is ItemInstance => !!it);
 
@@ -66,6 +68,16 @@ export function powersOf(m: Member): string[] {
   return out;
 }
 
+/** What a member's memory pieces and absorbed shards add (spec 7.3, 12); `scale` 0 switches the source off. */
+export function memoryStats(m: Member, scale = MEMORY_SCALE): Partial<Sheet> {
+  const out: Partial<Sheet> = {};
+  if (scale === 0) return out;
+  const n = memoriesOf(m);
+  if (n) for (const [k, v] of Object.entries(CHAINS[m.id].gain) as [PrimaryKey, number][]) addInto(out, { [k]: v * n * scale });
+  for (const a of m.absorbed ?? []) addInto(out, { [a.stat]: a.amount * scale });
+  return out;
+}
+
 export function statSources(m: Member): { source: StatSource; stats: Partial<Sheet> }[] {
   const def = CHARACTERS[m.id];
   // Natural primaries are shown here but never converted; only gear, set and talent primaries convert.
@@ -82,14 +94,15 @@ export function statSources(m: Member): { source: StatSource; stats: Partial<She
     if (n >= 4) addInto(set, s.four);
   }
   const talent = talentStats(m);
+  const memory = memoryStats(m);
   const prim: Partial<Record<PrimaryKey, number>> = {};
   for (const k of PRIMARY_KEYS) {
-    const n = (gear[k] ?? 0) + (set[k] ?? 0) + (talent[k] ?? 0);
+    const n = (gear[k] ?? 0) + (set[k] ?? 0) + (talent[k] ?? 0) + (memory[k] ?? 0);
     if (n) prim[k] = n;
   }
   return [
     { source: 'base', stats: base }, { source: 'growth', stats: growth }, { source: 'gear', stats: gear },
-    { source: 'set', stats: set }, { source: 'talent', stats: talent }, { source: 'primary', stats: convertPrimary(prim, def.affinity) },
+    { source: 'set', stats: set }, { source: 'talent', stats: talent }, { source: 'memory', stats: memory }, { source: 'primary', stats: convertPrimary(prim, def.affinity) },
   ];
 }
 
