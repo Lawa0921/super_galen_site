@@ -1,5 +1,5 @@
 import { reachable, rowOfCell, shapeTargets } from './formation';
-import { CHARACTERS } from '../data/characters';
+import { CHARACTERS, artIdOf } from '../data/characters';
 import { CONDITIONS, type ConditionId } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { REGIONS, type RegionId } from '../data/regions';
@@ -71,7 +71,7 @@ function fromMember(m: Member, cell: number): Combatant {
     row, cell, melee: wk ? wk.melee : def.melee, ...(def.weaponMaster ? { attackScale: wk ? wk.scale : 'atk' as const } : {}),
     ...(kind ? { weaponKind: kind } : {}), weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0,
     x, level: m.level, powers: powersOf(m), ranks: { ...m.tree }, keystones: keystonesOf(m),
-    ...(m.memories !== undefined ? { memories: m.memories } : {}), ...(m.oath ? { oath: true as const } : {}), ...(m.id === 'rin' && m.oath ? { artId: 'rin-oath' } : {}) };
+    ...(m.memories !== undefined ? { memories: m.memories } : {}), ...(m.oath ? { oath: true as const } : {}), ...(m.oath ? { artId: artIdOf(m) } : {}) };
   // Memory keystones that are plain secondaries (added once, here; absent keystones leave x as it was).
   if (c.keystones.includes('teachers-gift')) c.x.tpCost = (c.x.tpCost ?? 0) + MEMORY_KEYSTONE_VALUES.tpCostPct;
   if (c.keystones.includes('fathers-face')) c.x.matFind = (c.x.matFind ?? 0) + MEMORY_KEYSTONE_VALUES.matFind;

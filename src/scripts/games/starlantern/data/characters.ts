@@ -41,4 +41,10 @@ export const rulesOf = (id: CharacterId): GrowthRules => ({ ...DEFAULT_RULES, ..
 export const OATH_TITLE = '破鐘刺客';
 
 /** The title a member goes by: Rin's changes with her oath. */
+/** The art id Rin wears once she has sworn her oath. */
+export const OATH_ART = 'rin-oath';
+
+/** The art id of a party member: Rin wears her oath look once she has sworn it. */
+export const artIdOf = (m: Pick<Member, 'id' | 'oath'>): string => (m.id === 'rin' && m.oath ? OATH_ART : m.id);
+
 export const titleOf = (m: Pick<Member, 'id' | 'oath'>): string => (m.id === 'rin' && m.oath ? OATH_TITLE : CHARACTERS[m.id].title);

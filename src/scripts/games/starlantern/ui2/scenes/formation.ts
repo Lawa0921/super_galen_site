@@ -58,9 +58,15 @@ export class FormationScene implements Scene {
 
   private get grid(): (CharacterId | null)[] { return this.ctx.game.state.party.grid; }
 
+  /** The published normal face of a member (Rin's oath look after her oath), or nothing. */
+  private faceUrl(id: CharacterId): string | undefined {
+    const url = art.portrait(artIdOf(this.ctx.game.state.party.roster[id]), 'normal');
+    return this.ctx.art.has(url) ? url : undefined;
+  }
+
   private face(id: CharacterId): HTMLElement[] {
-    const look = artIdOf(this.ctx.game.state.party.roster[id]);
-    return this.ctx.art.has(art.portrait(look, 'normal')) ? [el('img', { class: 'slx-cell-face', attrs: { src: art.portrait(look, 'normal'), alt: '' } })] : [];
+    const src = this.faceUrl(id);
+    return src ? [el('img', { class: 'slx-cell-face', attrs: { src, alt: '' } })] : [];
   }
 
   private render(): void {
@@ -89,7 +95,7 @@ export class FormationScene implements Scene {
   private openPick(): void {
     const p = this.ctx.game.state.party;
     const where = (id: CharacterId) => { const j = this.grid.indexOf(id); return j < 0 ? T.ui2.formation.reserve : T.ui2.rows[rowOfCell(j)]; };
-    const items: MenuItem[] = p.recruited.map((id) => ({ id, label: CHARACTERS[id].name, right: where(id), icon: this.ctx.art.has(art.portrait(artIdOf(p.roster[id]), 'normal')) ? art.portrait(artIdOf(p.roster[id]), 'normal') : undefined }));
+    const items: MenuItem[] = p.recruited.map((id) => ({ id, label: CHARACTERS[id].name, right: where(id), icon: this.faceUrl(id) }));
     const here = this.grid[this.cursor];
     if (here && here !== 'hero') items.push({ id: '', label: T.ui2.formation.remove });
     this.ctx.sfx.confirm();

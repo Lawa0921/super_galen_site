@@ -36,5 +36,5 @@ export function standeeImg(index: ArtIndex, cid: string): HTMLImageElement | nul
   return index.has(src) ? img(src, 'sl-standee') : null;
 }
 
-/** The art id of a party member: Rin wears her oath look once she has sworn it. */
-export const artIdOf = (m: Pick<Member, 'id' | 'oath'>): string => (m.id === 'rin' && m.oath ? 'rin-oath' : m.id);
+/** The art id of a party member (Rin wears her oath look once she has sworn it): one definition, in data/characters. */
+export { artIdOf } from '../data/characters';

@@ -729,6 +729,10 @@ describe('the Lantern Key and the dawn blade', () => {
     }
   });
 
+  it('the Sky Lantern lights exactly when the hero holds his whole chain', () => {
+    expect(SKY_LANTERN.memories).toBe(chainLength('hero'));
+  });
+
   it("Rin's dawn blade waits for her oath", () => {
     expect(ultimateFor('rin')).toBe(ULTIMATES.rin);
     expect(ultimateFor('rin', {}, {})).toBe(ULTIMATES.rin);
