@@ -34,8 +34,9 @@ export function partyAt(level: number): Party {
  * `partyAt(level)` with every slot of every member filled by a monster drop of that depth.
  * Without `rarity` each piece rolls its tier as a plain-condition monster drop would; a legendary-tier roll
  * counts as rare, since a special's power is not a stat and stays out of the expectation.
+ * Every piece is at enhance level `enhance` (default +0); the balance tests pass `expectedEnhance(depth)` explicitly.
  */
-export function kitParty(level: number, depth: number, seed: number, rarity?: Rarity): Party {
+export function kitParty(level: number, depth: number, seed: number, rarity?: Rarity, enhance = 0): Party {
   const rng = mulberry32(seed);
   const p = partyAt(level);
   const ilvl = itemLevel(depth, 'monster');
@@ -46,7 +47,7 @@ export function kitParty(level: number, depth: number, seed: number, rarity?: Ra
     for (const s of SLOTS) {
       const slot: GearSlot = s === 'ring1' || s === 'ring2' ? 'ring' : s;
       const tier = rarity ?? rollTier(rng, weights);
-      m.equip[s] = rollItem(rng, { uid: uid++, ilvl, rarity: tier === 'legendaryTier' ? 'rare' : tier, slot });
+      m.equip[s] = { ...rollItem(rng, { uid: uid++, ilvl, rarity: tier === 'legendaryTier' ? 'rare' : tier, slot }), enhance };
     }
     const st = statsOf(m);
     p.roster[id] = { ...m, hp: st.hp, tp: st.tp };
@@ -99,11 +100,14 @@ export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed:
   return { outcome: s.outcome, rounds, hpLoss: 1 - left / maxHp };
 }
 
-/** With `kitSeed`, the party wears `kitParty(level, depth, kitSeed)` instead of nothing; `ai` picks the player (default the skill player). */
-export function winRate(level: number, groups: string[][], boss: boolean, seeds = 40, scale?: BattleScale, altar?: Altar, kitSeed?: number, ai: SimAi = 'skill'): { rate: number; hpLoss: number } {
+/**
+ * With `kitSeed`, the party wears `kitParty(level, depth, kitSeed, undefined, kitEnhance)` instead of nothing (`kitEnhance`
+ * default +0); `ai` picks the player (default the skill player).
+ */
+export function winRate(level: number, groups: string[][], boss: boolean, seeds = 40, scale?: BattleScale, altar?: Altar, kitSeed?: number, ai: SimAi = 'skill', kitEnhance = 0): { rate: number; hpLoss: number } {
   let wins = 0, loss = 0, n = 0;
   for (const g of groups) for (let k = 1; k <= seeds; k++) {
-    const party = kitSeed === undefined ? partyAt(level) : kitParty(level, scale?.depth ?? 1, kitSeed);
+    const party = kitSeed === undefined ? partyAt(level) : kitParty(level, scale?.depth ?? 1, kitSeed, undefined, kitEnhance);
     const r = simBattle(party, g, boss, k * 7919, scale, altar, ai);
     n++; loss += r.hpLoss; if (r.outcome === 'win') wins++;
   }

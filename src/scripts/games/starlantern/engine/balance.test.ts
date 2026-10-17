@@ -6,6 +6,7 @@ import { REGIONS, type RegionId } from '../data/regions';
 import type { BattleScale } from './battle';
 import { ALTAR_STAT_CAP_PCT } from './events';
 import { depthLevel, encounterTable } from './scaling';
+import { ENHANCE_MAX, expectedEnhance } from '../data/forge';
 
 const groups = (f: number) => FLOORS[f - 1].encounters;
 
@@ -87,17 +88,18 @@ describe('balance', () => {
   });
 
   it('10. random gear in expectation keeps the bands', () => {
-    // The kit is really worn: every slot of every member, uids from 1.
-    const kit = kitParty(depthLevel(4), 4, 1);
+    // The kit is really worn: every slot of every member, uids from 1, each piece at the depth's expected enhance level.
+    const kit = kitParty(depthLevel(4), 4, 1, undefined, expectedEnhance(4));
     const worn = Object.values(kit.roster).flatMap((m) => SLOTS.map((s) => m.equip[s]));
     expect(worn.every((it) => !!it)).toBe(true);
     expect(worn.map((it) => it!.uid)).toEqual(worn.map((_, i) => i + 1));
+    expect(worn.every((it) => it!.enhance === expectedEnhance(4))).toBe(true);
     for (const d of [4, 6, 8, 10]) for (const region of ['mainline', 'blaze'] as const) {
       const scale = { depth: d, region };
       const gs = encounterTable(region, d);
       let rate = 0, hpLoss = 0;
       for (let kitSeed = 1; kitSeed <= 5; kitSeed++) {
-        const r = winRate(depthLevel(d), gs, false, 8, scale, undefined, kitSeed);
+        const r = winRate(depthLevel(d), gs, false, 8, scale, undefined, kitSeed, undefined, expectedEnhance(d));
         rate += r.rate / 5;
         hpLoss += r.hpLoss / 5;
       }
@@ -110,7 +112,7 @@ describe('balance', () => {
 
   it('11. a full rare kit does not one-round a boss', () => {
     for (const d of [5, 10]) for (let seed = 1; seed <= 20; seed++) {
-      const r = simBattle(kitParty(depthLevel(d), d, seed, 'rare'), ['lanterneater'], true, seed, { depth: d, region: 'mainline' });
+      const r = simBattle(kitParty(depthLevel(d), d, seed, 'rare', expectedEnhance(d)), ['lanterneater'], true, seed, { depth: d, region: 'mainline' });
       expect(r.rounds, `depth ${d} seed ${seed}`).toBeGreaterThanOrEqual(3);
     }
   });
@@ -141,6 +143,21 @@ describe('balance', () => {
     for (const region of Object.keys(REGIONS) as RegionId[]) {
       const r = winRate(1, encounterTable(region, 1), false, region === 'mainline' ? 40 : 20, { depth: 1, region }, undefined, undefined, 'attack');
       expect(r.rate, `${region} depth 1 Lv1 attack-only`).toBeGreaterThanOrEqual(0.85);
+    }
+  });
+
+  it('14. a boss never falls in one round, even to a +ENHANCE_MAX rare kit, and the test sees enhancement', () => {
+    const fight = (d: number, seed: number, enhance: number) =>
+      simBattle(kitParty(depthLevel(d), d, seed, 'rare', enhance), ['lanterneater'], true, seed, { depth: d, region: 'mainline' });
+    for (const d of [5, 10]) {
+      let maxed = 0, plain = 0;   // total rounds over the same 20 seeds, so the means compare as the totals do
+      for (let seed = 1; seed <= 20; seed++) {
+        const r = fight(d, seed, ENHANCE_MAX);
+        expect(r.rounds, `depth ${d} seed ${seed} +${ENHANCE_MAX}`).toBeGreaterThanOrEqual(2);
+        maxed += r.rounds;
+        plain += fight(d, seed, 0).rounds;
+      }
+      expect(maxed, `depth ${d} mean rounds +${ENHANCE_MAX} vs +0`).toBeLessThan(plain);
     }
   });
 });
