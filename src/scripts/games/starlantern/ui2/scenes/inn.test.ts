@@ -92,6 +92,55 @@ describe('InnScene', () => {
     expect(opts().length).toBe(4);
   });
 
+  /** Opens 重置配點 and says yes for 絲嘉蕾, who has one talent point spent. */
+  const respecScarlet = (r: ReturnType<typeof setup>) => {
+    r.game.state.party.roster.scarlet.talents = { 'scarlet-t01': 1 };
+    r.s.onAction('down'); r.s.onAction('down'); r.s.onAction('confirm');   // 重置配點
+    const rows = [...r.root.querySelectorAll('.slx-list [role=option]')];
+    const at = rows.findIndex((x) => x.textContent!.includes('絲嘉蕾'));
+    const from = rows.findIndex((x) => x.getAttribute('aria-selected') === 'true');
+    for (let i = from; i < at; i++) r.s.onAction('down');
+    r.s.onAction('confirm');                                         // 絲嘉蕾
+    r.s.onAction('up'); r.s.onAction('confirm');                     // 是
+  };
+
+  it('a respec whose save fails says so, and leaves no notice for the town', async () => {
+    const storage = { ...memoryStorage(), setItem: () => { throw new Error('denied'); } };
+    const r = setup(storage);
+    const gold = r.game.state.gold;
+    respecScarlet(r);
+    expect(r.game.state.party.roster.scarlet.talents).toEqual({});   // the reset happened in play
+    expect(r.game.state.gold).toBe(gold - 25);
+    await vi.waitFor(() => expect(r.root.querySelector('.slx-talk .slx-text')!.textContent).toBe('絲嘉蕾的配點已重置，但存檔失敗了……瀏覽器不允許儲存。'));
+    expect(r.game.notice).toBeNull();
+  });
+
+  it('a respec that saves leaves no stale 已存檔 notice for the town to speak later', async () => {
+    const r = setup();
+    respecScarlet(r);
+    await vi.waitFor(() => expect(r.root.querySelector('.slx-talk .slx-text')!.textContent).toBe('絲嘉蕾的配點已重置，點數可以重新分配了。'));
+    expect(r.game.notice).toBeNull();
+  });
+
+  it('the respec list greys out members with nothing spent', () => {
+    const { game, s, root } = setup();
+    game.state.party.roster.scarlet.talents = { 'scarlet-t01': 1 };
+    s.onAction('down'); s.onAction('down'); s.onAction('confirm');
+    const rows = [...root.querySelectorAll<HTMLElement>('.slx-list [role=option]')];
+    const scarlet = rows.find((x) => x.textContent!.includes('絲嘉蕾'))!;
+    expect(scarlet.getAttribute('aria-disabled')).not.toBe('true');
+    expect(rows.filter((x) => x !== scarlet).every((x) => x.getAttribute('aria-disabled') === 'true')).toBe(true);
+    expect(scarlet.getAttribute('aria-selected')).toBe('true');                 // the cursor starts on one that can be reset
+  });
+
+  it('with nobody to reset, 重置配點 says so without opening the list', () => {
+    const { s, root, game } = setup();
+    s.onAction('down'); s.onAction('down'); s.onAction('confirm');
+    expect(root.querySelector('.slx-list')).toBeNull();
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('還沒有配過點，不需要重置。');
+    expect(game.state.gold).toBe(150);
+  });
+
   it('no leaves everything as it was', () => {
     const { game, s, root } = setup();
     game.state.party.roster.scarlet.talents = { 'scarlet-t01': 1 };
@@ -104,14 +153,5 @@ describe('InnScene', () => {
     s.onAction('confirm');                                           // cursor starts on 否
     expect(game.state.party.roster.scarlet.talents).toEqual({ 'scarlet-t01': 1 });
     expect(game.state.gold).toBe(gold);
-  });
-
-  it('explains when a member has nothing to reset', async () => {
-    const { game, s, root } = setup();
-    s.onAction('down'); s.onAction('down'); s.onAction('confirm');
-    s.onAction('confirm');                                           // first member, nothing spent
-    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('還沒有配過點，不需要重置。');
-    expect(root.querySelector('.slx-confirm')).toBeNull();
-    expect(game.state.gold).toBe(150);
   });
 });

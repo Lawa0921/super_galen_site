@@ -36,9 +36,11 @@ export class InnScene extends FacilityScene {
     else this.reviveList();
   }
 
+  /** Members with nothing spent are greyed out (as the revive list leaves out who is up); with none to reset, it says so. */
   private respecList(): void {
     const p = this.ctx.game.state.party;
-    const v = new MenuView(new Menu(p.recruited.map((id) => ({ id, label: CHARACTERS[id].name, right: `${respecCost(p.roster[id].level)} G` }))), {
+    if (!p.recruited.some((id) => hasSpent(p.roster[id]))) { void this.say(T.ui2.inn.nothingToReset); return; }
+    const v = new MenuView(new Menu(p.recruited.map((id) => ({ id, label: CHARACTERS[id].name, right: `${respecCost(p.roster[id].level)} G`, disabled: !hasSpent(p.roster[id]) }))), {
       pick: (it) => {
         const m = this.ctx.game.state.party.roster[it.id as CharacterId];
         if (!hasSpent(m)) { this.popAll(); void this.say(T.ui2.inn.nothingToReset); return; }
@@ -58,7 +60,10 @@ export class InnScene extends FacilityScene {
       this.popAll();
       if (!r.ok) { this.fail(r.reason); return; }
       this.refresh();
-      void this.say(T.ui2.inn.respecDone(name), 'happy');
+      // The respec saved (or failed to) like a night's rest: say which here, and leave no notice for the town to repeat.
+      const saved = this.ctx.game.notice === 'saved';
+      this.ctx.game.notice = null;
+      void this.say(saved ? T.ui2.inn.respecDone(name) : T.ui2.inn.respecSaveFailed(name), saved ? 'happy' : 'normal');
     });
     box.view.menu.setCursor(1); box.view.render();
     this.push({ el: box.el, onAction: (a) => box.view.onAction(a) });

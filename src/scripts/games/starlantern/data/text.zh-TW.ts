@@ -319,6 +319,8 @@ export const T = {
       respec: '重置配點', askRespec: (name: string, cost: number) => `要重置${name}的技能樹與天賦嗎？
 需要 ${cost} G，點數會全部退回。`,
       respecDone: (name: string) => `${name}的配點已重置，點數可以重新分配了。`, nothingToReset: '還沒有配過點，不需要重置。',
+      /** The respec happened but its save did not: a reload would undo it (and give the gold back). */
+      respecSaveFailed: (name: string) => `${name}的配點已重置，但存檔失敗了……瀏覽器不允許儲存。`,
       morning: '──隔天早上', saved: '已存檔。', saveFailed: '存檔失敗了……瀏覽器不允許儲存。',
       nobodyDown: '大家都很有精神呢。', revived: (name: string) => `${name} 醒過來了！`,
     },
