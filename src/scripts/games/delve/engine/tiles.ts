@@ -136,13 +136,13 @@ export const TILES: readonly TileDef[] = [
   decor(T.SNOW_SHRUB, 'snow_shrub', n('雪灌木', 'Snowy Shrub'), 'floor', null, '#cceaf8', { hardness: 0.08, replaceable: true }),
   decor(T.FERN, 'fern', n('蕨類', 'Fern'), 'floor', null, '#67ab3c', { hardness: 0.05, replaceable: true }),
   decor(T.VINE, 'vine', n('藤蔓', 'Vine'), 'ceiling', null, '#468a34', { hardness: 0.05, replaceable: true }),
-  decor(T.GLOW_MUSHROOM, 'glow_mushroom', n('螢光菇', 'Glowing Mushroom'), 'floor', 'glow_mushroom', '#4aaeb0', { hardness: 0.05, light: 0.6 }),
-  decor(T.CRYSTAL, 'crystal', n('水晶簇', 'Crystal Cluster'), 'any', 'crystal', '#b8788e', { hardness: 0.35, light: 0.72 }),
+  decor(T.GLOW_MUSHROOM, 'glow_mushroom', n('螢光菇', 'Glowing Mushroom'), 'floor', 'glow_mushroom', '#4aaeb0', { hardness: 0.05, light: 0.65 }),
+  decor(T.CRYSTAL, 'crystal', n('水晶簇', 'Crystal Cluster'), 'any', 'crystal', '#b8788e', { hardness: 0.35, light: 0.8 }),
   decor(T.STALACTITE, 'stalactite', n('鐘乳石', 'Stalactite'), 'ceiling', null, '#707490', { hardness: 0.1 }),
   decor(T.STALAGMITE, 'stalagmite', n('石筍', 'Stalagmite'), 'floor', null, '#707490', { hardness: 0.1 }),
   decor(T.COBWEB, 'cobweb', n('蜘蛛網', 'Cobweb'), 'none', null, '#b4b9c8', { hardness: 0.05, replaceable: true }),
   decor(T.BEAM, 'beam', n('木樑', 'Wooden Beam'), 'none', 'wood', '#7c4c2e', { hardness: 0.5 }),
-  block(T.MUSHROOM_GRASS, 'mushroom_grass', n('蘑菇草', 'Mushroom Grass'), 0.4, 'mud', '#4aaeb0'),
+  def({ id: T.MUSHROOM_GRASS, key: 'mushroom_grass', name: n('蘑菇草', 'Mushroom Grass'), solid: true, hardness: 0.4, drop: 'mud', color: '#4aaeb0', light: 0.7 }),
   // ── 深度層 ──
   block(T.DEEP_STONE, 'deep_stone', n('深層岩', 'Deep Rock'), 1.1, 'deep_stone', '#423f54'),
   block(T.BASALT, 'basalt', n('玄武岩', 'Basalt'), 1.3, 'basalt', '#2c2838', 2),
@@ -206,6 +206,23 @@ export const DUNGEON_COLORS = [
 export const SOLID_LUT = new Uint8Array(256);
 export const BLOCKS_LIGHT_LUT = new Uint8Array(256);
 export const LIGHT_LUT = new Float32Array(256);
+/**
+ * 發光色相（最大通道 = 1；乘上 light 就是發光 RGB）。沒列的發光 tile 是白光。
+ * 水晶依格子變體交替青 / 紫（CRYSTAL_ALT_HUE）。
+ */
+export const LIGHT_HUE: Partial<Record<number, readonly [number, number, number]>> = {
+  [T.TORCH]: [1, 0.74, 0.46],
+  [T.CANDLE]: [1, 0.84, 0.58],
+  [T.LANTERN]: [1, 0.9, 0.6],
+  [T.FURNACE]: [1, 0.6, 0.3],
+  [T.MAGMA_ROCK]: [1, 0.46, 0.2],
+  [T.GLOW_MUSHROOM]: [0.3, 0.58, 1],
+  [T.MUSHROOM_GRASS]: [0.28, 0.52, 1],
+  [T.CRYSTAL]: [0.42, 0.9, 1],
+};
+export const CRYSTAL_ALT_HUE: readonly [number, number, number] = [0.82, 0.5, 1];
+/** 發光 RGB 查表：i*3 + 通道 */
+export const LIGHT_RGB_LUT = new Float32Array(256 * 3);
 /** 靜態畫進 chunk 的物件精靈（非實心裝飾 + 門） */
 export const DECOR_LUT = new Uint8Array(256);
 /** 單向平台：只有從上方落下時才擋 */
@@ -214,6 +231,8 @@ for (const t of TILES) {
   SOLID_LUT[t.id] = t.solid ? 1 : 0;
   BLOCKS_LIGHT_LUT[t.id] = t.blocksLight ? 1 : 0;
   LIGHT_LUT[t.id] = t.light;
+  const hue = LIGHT_HUE[t.id] ?? [1, 1, 1];
+  for (let k = 0; k < 3; k++) LIGHT_RGB_LUT[t.id * 3 + k] = t.light * hue[k];
   DECOR_LUT[t.id] = t.sprite || (!t.solid && (t.id >= T.CHEST || t.id === T.WORKBENCH)) ? 1 : 0;
 }
 PLATFORM_LUT[T.PLATFORM] = 1;

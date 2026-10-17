@@ -16,7 +16,8 @@ import { potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
 import { craft as craftRecipe, findRecipe, type CraftResult, type Station } from './crafting';
 import { makeBody, stepPlayer, onPlatform, type Body, type MoveStats, type PlayerMotion } from './physics';
-import { LightEngine, skyBrightness, type LightMap, type LightRect, type PointLight } from './lighting';
+import { LightEngine, skyBrightness, type LightMap, type LightRect, type PointLight, type LightRGB } from './lighting';
+import { skyColor } from './sky';
 import { ExploredMap, toggleMarker, type MapMarker } from './explore';
 import { Discovery, buildRegions, type Region, type RegionCat } from './discovery';
 import { Equipment, type EquipSlot } from './equipment';
@@ -172,6 +173,14 @@ export const MAGNET_REACH = 3;
 export const REVEAL_RADIUS = 9;
 /** 畫面上光照 ≥ 此值的格算「看見了」 */
 export const REVEAL_LIGHT = 0.3;
+/** 手持發光物的色相（最大通道 1） */
+const HELD_HUE: Partial<Record<ItemId, LightRGB>> = {
+  torch: [1, 0.74, 0.46], lantern: [1, 0.9, 0.6], lumen_blade: [0.5, 0.95, 1], crystal_staff: [0.82, 0.5, 1],
+};
+const NIGHT_HUE: LightRGB = [0.75, 1, 0.85];
+const FIRE_HUE: LightRGB = [1, 0.5, 0.18];
+const BOLT_HUE: LightRGB = [1, 0.6, 0.85];
+const WAVE_HUE: LightRGB = [0.5, 0.95, 1];
 /** 受傷後無敵秒數 */
 export const IFRAMES = 0.8;
 /** 死亡到重生的秒數 */
@@ -1038,14 +1047,23 @@ export class DelveGame {
     const held = this.inventory.selectedStack();
     const pt = this.playerTile();
     const v = held ? (held.item === 'torch' ? 0.85 : ITEMS[held.item].heldLight ?? 0) : 0;
+    const c = held ? HELD_HUE[held.item] : undefined;
     // 夜視護符：身邊一圈柔和的微光（比火把暗、不需要拿在手上）
     const night = this.hasAccessory('night') ? 0.78 : 0;
-    return [{ x: pt.x, y: pt.y, v: Math.max(0.22, v, night) }, ...(v >= 1 ? [{ x: pt.x, y: pt.y - 1, v: 1 }] : [])];
+    // 空手時不再有實體光（會穿牆照出密室）；玩家身邊的輪廓微光改由 render 的 ambientReach 處理
+    const out: PointLight[] = [];
+    if (v > 0) out.push({ x: pt.x, y: pt.y, v, c });
+    if (night > 0) out.push({ x: pt.x, y: pt.y + 1, v: night, c: NIGHT_HUE });
+    if (v >= 1) out.push({ x: pt.x, y: pt.y - 1, v: 1, c });
+    return out;
   }
+
+  /** 天空光 RGB（夜深藍、黎明粉、白天白、黃昏橘；見 sky.ts） */
+  skyRGB(): [number, number, number] { return skyColor(this.time); }
 
   /** 計算視窗（tile 座標）+ 外框的光照。 */
   computeLight(view: LightRect, extra?: readonly PointLight[]): LightMap {
-    return this.lightEngine.compute(this.world, view, { sky: this.skyLevel(), lights: extra });
+    return this.lightEngine.compute(this.world, view, { sky: this.skyLevel(), skyColor: this.skyRGB(), lights: extra });
   }
 
   drainEvents(): DelveEvent[] {
@@ -1505,8 +1523,19 @@ export class DelveGame {
   enemyLights(): PointLight[] {
     const out: PointLight[] = [];
     for (const e of this.enemies) {
-      const g = ENEMIES[e.kind].glow;
-      if (g) out.push({ x: (e.body.x + e.body.w / 2) / TILE_SIZE, y: (e.body.y + e.body.h / 2) / TILE_SIZE, v: g });
+      const def = ENEMIES[e.kind], g = def.glow;
+      if (g) out.push({ x: (e.body.x + e.body.w / 2) / TILE_SIZE, y: (e.body.y + e.body.h / 2) / TILE_SIZE, v: g, c: def.glowHue });
+    }
+    return out;
+  }
+
+  /** 發光投射物（火球 / 餘燼 / 火焰箭 / 法術 / 光刃）的點光源（tile 座標） */
+  projectileLights(): PointLight[] {
+    const out: PointLight[] = [];
+    for (const p of this.projectiles.list) {
+      const hue = p.kind === 'fireball' || p.kind === 'ember' || p.flame ? FIRE_HUE : p.kind === 'bolt' ? BOLT_HUE : p.kind === 'wave' ? WAVE_HUE : null;
+      if (!hue) continue;
+      out.push({ x: (p.body.x + p.body.w / 2) / TILE_SIZE, y: (p.body.y + p.body.h / 2) / TILE_SIZE, v: p.kind === 'fireball' ? 0.7 : 0.5, c: hue });
     }
     return out;
   }

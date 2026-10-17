@@ -1,6 +1,6 @@
 // renderer.ts — Canvas2D 場景（全部以原生美術解析度畫進低解析緩衝，最後整數倍放大貼到螢幕）：視差背景 → 地下暗紋 → chunk 快取（牆 + 自動接邊前景 + 材質滲透 + 草葉）
 // → 樹 / 火把（動態）→ 掉落物 / 怪物 → 玩家（分件精靈）→ 液體圖層（每幀、抖動半透、熔岩光暈）→ 裂痕 / 游標 → 呼吸泡泡
-// → 粒子（含濺水 / 蒸氣 / 火焰）→ 光照遮罩（8 階 + Bayer 抖動；水下染深藍）→ 火光暈。
+// → 粒子（含濺水 / 蒸氣 / 火焰）→ 彩色光照遮罩（multiply；亮度 8 階 + 階界 Bayer 抖動、色相吸附）→ 暗處怪物剪影 → 火光暈。
 import type { DelveGame, DelveEvent } from '../engine/game';
 import { BLOCKS_LIGHT_LUT, T, isSolidTile, isDecor } from '../engine/tiles';
 import { ITEMS, type ItemId } from '../engine/items';
@@ -16,8 +16,9 @@ import { CombatLayer } from './combatDraw';
 import { aimArmDeg, attackArmDeg, spearThrust } from './combatAnim';
 import { Background } from './background';
 import { scanTrees, treeKind, TREE_KIND } from './scene';
-import { LIGHT_LEVELS, PLATEAU, bufferSize, clampZoom, quantizeLevel, snapCam, zoomScale } from './lowres';
-import { bayer } from './pixel';
+import { bufferSize, clampZoom, snapCam, zoomScale } from './lowres';
+import { ambientReach, type LightMap } from '../engine/lighting';
+import { shadeTiles, fillLightPixels, AMBIENT_R } from './lightShade';
 import { AmbientField, ambientKind, AMBIENT_GLOWS, type AmbientKind } from './ambient';
 import { LiquidLayer } from './liquidDraw';
 import { LIQ } from '../engine/liquidKind';
@@ -29,8 +30,6 @@ const REDRAW_BUDGET = 4;
 const LIGHT_EVERY = 4;
 /** 光照遮罩每格 tile 切幾格（16 / 8 = 每格 2 美術 px） */
 const LSUB = 8;
-/** 4×4 Bayer 門檻（同 pixel.bayer） */
-const BAYER_T = Float32Array.from({ length: 16 }, (_, i) => bayer(i & 3, i >> 2));
 const SIDE_D: [number, number][] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 /** 液體反應（蒸氣 / 嘶聲）只在畫面往外這麼多格內才放粒子 / 音效、觸發光照重算 */
 export const REACTION_MARGIN = 12;
@@ -48,7 +47,7 @@ const SPLASH: Record<number, string[]> = {
   [LIQ.HONEY]: ['#ffd86a', '#ffa93a', '#e8701c', '#fff4c0'],
 };
 
-export interface RenderStats { chunksDrawn: number; cached: number; lightMs: number; liquidCells: number; liquidMs: number; }
+export interface RenderStats { chunksDrawn: number; cached: number; lightMs: number; lightEngineMs: number; liquidCells: number; liquidMs: number; }
 
 export class Renderer {
   readonly atlas: Atlas;
@@ -69,7 +68,7 @@ export class Renderer {
   /** 使用者縮放（預設倍率 + offset，整數倍） */
   zoomOffset = 0;
   private cssW = 1; private cssH = 1;
-  stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0, liquidCells: 0, liquidMs: 0 };
+  stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0, lightEngineMs: 0, liquidCells: 0, liquidMs: 0 };
   /** 液體圖層（不進 chunk 快取） */
   readonly liquidLayer = new LiquidLayer();
   /** debug：不畫光照遮罩（文件截圖用） */
@@ -88,9 +87,15 @@ export class Renderer {
   private buf = document.createElement('canvas');
   private bctx: CanvasRenderingContext2D;
   private lightCanvas = document.createElement('canvas');
+  /** 全暗格的補色（'lighter'） */
+  private darkCanvas = document.createElement('canvas');
+  private darkCtx: CanvasRenderingContext2D;
+  private darkImg: ImageData | null = null;
+  /** 每格最終光色（3 float / 格） */
   private lightA = new Float32Array(0);
-  /** 每格是否「戶外」：戶外的暗用夜空藍（色票 #18204a），地下用近黑（#0c0a12） */
-  private lightOut = new Uint8Array(0);
+  /** 輪廓微光可照的格 */
+  private reach = new Uint8Array(0);
+  private lastLight: LightMap | null = null;
   private lightCtx: CanvasRenderingContext2D;
   private lightImg: ImageData | null = null;
   private light: { x0: number; y0: number; w: number; h: number } | null = null;
@@ -114,8 +119,10 @@ export class Renderer {
   constructor(readonly canvas: HTMLCanvasElement, readonly game: DelveGame) {
     const ctx = canvas.getContext('2d', { alpha: false });
     const lctx = this.lightCanvas.getContext('2d');
+    const dctx = this.darkCanvas.getContext('2d');
     const bctx = this.buf.getContext('2d', { alpha: false });
-    if (!ctx || !lctx || !bctx) throw new Error('2d context unavailable');
+    if (!ctx || !lctx || !bctx || !dctx) throw new Error('2d context unavailable');
+    this.darkCtx = dctx;
     this.ctx = ctx;
     this.bctx = bctx;
     this.lightCtx = lctx;
@@ -705,8 +712,9 @@ export class Renderer {
   }
 
   // ── 光照 ─────────────────────────────────────────────
-  // 每格 tile 先算暗度（0 = 亮、1 = 全暗），再雙線性取樣到 2 美術 px 的小格，
-  // 量化成 LIGHT_LEVELS 階：靠近某階是平台，兩階之間用世界錨定的 4×4 Bayer 抖動 → 復古的階梯式光照。
+  // 引擎算出每格 RGB 光 → shadeTiles（天空色、玩家附近「看得到」的格才有輪廓微光）→ fillLightPixels：
+  // 每格切 LSUB 小格雙線性取樣，亮度分 LIGHT_LEVELS 階（只有階與階之間用世界錨定 Bayer 抖動）、色相吸附成有限幾階；
+  // 以 'multiply' 疊上（不透明光色 × 色票色），全暗的格再以 'lighter' 補上色票最暗色。
   private drawLight(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number): void {
     if (this.fullbright) return;
     const g = this.game, w = g.world;
@@ -714,83 +722,32 @@ export class Renderer {
     if (this.lightDirty || this.lightAge >= LIGHT_EVERY || !this.light) {
       const t0 = performance.now();
       const pt = g.playerTile();
-      const extra = [...g.heldLights(), ...g.enemyLights()];
+      const extra = [...g.heldLights(), ...g.enemyLights(), ...g.projectileLights()];
       const view = { x: Math.floor(camX / S) - 1, y: Math.floor(camY / S) - 1, w: Math.ceil(vw / S) + 3, h: Math.ceil(vh / S) + 3 };
       const L = g.computeLight(view, extra);
+      this.stats.lightEngineMs = performance.now() - t0;
+      this.lastLight = L;
       // 戰爭迷霧：畫面上看得到（夠亮）的格算探索過
       g.revealLit(L, { x: Math.floor(camX / S), y: Math.floor(camY / S), w: Math.ceil(vw / S) + 1, h: Math.ceil(vh / S) + 1 });
       const lx0 = Math.max(L.x0, view.x - 2), ly0 = Math.max(L.y0, view.y - 2);
       const lx1 = Math.min(L.x0 + L.w, view.x + view.w + 2), ly1 = Math.min(L.y0 + L.h, view.y + view.h + 2);
       const lw = Math.max(1, lx1 - lx0), lh = Math.max(1, ly1 - ly0);
       const cw = lw * LSUB, chh = lh * LSUB;
-      if (this.lightCanvas.width !== cw || this.lightCanvas.height !== chh || !this.lightImg) {
+      if (this.lightCanvas.width !== cw || this.lightCanvas.height !== chh || !this.lightImg || !this.darkImg) {
         this.lightCanvas.width = cw; this.lightCanvas.height = chh;
+        this.darkCanvas.width = cw; this.darkCanvas.height = chh;
         this.lightImg = this.lightCtx.createImageData(cw, chh);
+        this.darkImg = this.darkCtx.createImageData(cw, chh);
       }
-      if (this.lightA.length < lw * lh) { this.lightA = new Float32Array(lw * lh); this.lightOut = new Uint8Array(lw * lh); }
-      const A = this.lightA, OUT = this.lightOut, surf = w.surfaceY, W = w.width, LQ = w.liquid, LTY = w.liquidType;
-      // 戶外（天空可見）的格：依晝夜整體壓暗，直接吸附到某一階（不會整片抖動）
-      const skyA = quantizeLevel((1 - g.skyLevel()) * 0.5);
-      for (let y = 0; y < lh; y++) {
-        const ty = ly0 + y;
-        const dyp = ty - pt.y;
-        for (let x = 0; x < lw; x++) {
-          const tx = lx0 + x;
-          let a: number;
-          const wi = ty * W + tx;
-          // 水下（上方也有液體）不算開放天空：靠光照衰減變暗，並染成深藍（OUT）
-          const under = LQ[wi] > 0 && wi >= W && LQ[wi - W] > 0;
-          if (ty <= surf && !BLOCKS_LIGHT_LUT[w.fg[wi]] && w.wall[wi] === 0 && !under) a = -1; // 開放天空
-          else {
-            const l = L.data[(ty - L.y0) * L.w + (tx - L.x0)];
-            // 最低環境光：玩家附近保留微弱輪廓，越遠越接近全暗
-            const dxp = tx - pt.x;
-            const dist = Math.sqrt(dxp * dxp + dyp * dyp);
-            const cap = 0.82 + 0.15 * Math.min(1, Math.max(0, (dist - 3) / 10));
-            a = Math.max(0, Math.min(cap, 1 - l * 1.08));
-          }
-          A[y * lw + x] = a < 0 ? skyA : Math.max(skyA, a);
-          OUT[y * lw + x] = a < 0 || (LQ[wi] > 128 && LTY[wi] === LIQ.WATER && wi >= W && LQ[wi - W] > 128) ? 1 : 0;
-        }
-      }
-      // 取樣表（只跟 x 或 y 有關）：小格中心 → tile 中心座標系的雙線性權重
-      const top = LIGHT_LEVELS - 1;
-      const ox = lx0 * LSUB, oy = ly0 * LSUB;
-      const X0 = new Int32Array(cw), X1 = new Int32Array(cw), WX = new Float32Array(cw);
-      for (let x = 0; x < cw; x++) {
-        const fx = (x + 0.5) / LSUB - 0.5;
-        const x0 = Math.max(0, Math.min(lw - 1, Math.floor(fx)));
-        X0[x] = x0; X1[x] = Math.min(lw - 1, x0 + 1); WX[x] = Math.max(0, Math.min(1, fx - x0));
-      }
-      // 每階的 RGBA（地下近黑、戶外夜空藍），以 uint32 一次寫入
-      const pix = new Uint32Array(this.lightImg.data.buffer);
-      const caveC = new Uint32Array(LIGHT_LEVELS), skyC = new Uint32Array(LIGHT_LEVELS);
-      for (let k = 0; k < LIGHT_LEVELS; k++) {
-        const al = Math.round((k / top) * 255);
-        caveC[k] = ((al << 24) | (18 << 16) | (10 << 8) | 12) >>> 0;
-        skyC[k] = ((al << 24) | (74 << 16) | (32 << 8) | 24) >>> 0;
-      }
-      for (let y = 0; y < chh; y++) {
-        const fy = (y + 0.5) / LSUB - 0.5;
-        const y0 = Math.max(0, Math.min(lh - 1, Math.floor(fy))), y1 = Math.min(lh - 1, y0 + 1);
-        const wy = Math.max(0, Math.min(1, fy - y0));
-        const r0 = y0 * lw, r1 = y1 * lw, rn = wy < 0.5 ? r0 : r1;
-        const brow = ((oy + y) & 3) * 4, row = y * cw;
-        for (let x = 0; x < cw; x++) {
-          const x0 = X0[x], x1 = X1[x], wx = WX[x];
-          const a0 = A[r0 + x0] + (A[r0 + x1] - A[r0 + x0]) * wx;
-          const a1 = A[r1 + x0] + (A[r1 + x1] - A[r1 + x0]) * wx;
-          const v = (a0 + (a1 - a0) * wy) * top;
-          // 與 lowres.lightLevel 相同的分階（內聯以免每格呼叫函式）
-          let lv = v | 0;
-          const f = v - lv;
-          if (lv >= top) lv = top;
-          else if (f > 1 - PLATEAU) lv++;
-          else if (f >= PLATEAU && BAYER_T[brow + ((ox + x) & 3)] < (f - PLATEAU) / (1 - 2 * PLATEAU)) lv++;
-          pix[row + x] = OUT[rn + (wx < 0.5 ? x0 : x1)] ? skyC[lv] : caveC[lv];
-        }
-      }
+      if (this.lightA.length < lw * lh * 3) { this.lightA = new Float32Array(lw * lh * 3); this.reach = new Uint8Array(lw * lh); }
+      const reach = this.reach.subarray(0, lw * lh);
+      ambientReach(w, pt.x, pt.y, AMBIENT_R, { x: lx0, y: ly0, w: lw, h: lh }, reach);
+      const A = this.lightA.subarray(0, lw * lh * 3);
+      shadeTiles(L, w, { x0: lx0, y0: ly0, w: lw, h: lh }, pt, g.skyRGB(), reach, A);
+      fillLightPixels(A, lw, lh, LSUB, lx0 * LSUB, ly0 * LSUB,
+        new Uint32Array(this.lightImg.data.buffer), new Uint32Array(this.darkImg.data.buffer));
       this.lightCtx.putImageData(this.lightImg, 0, 0);
+      this.darkCtx.putImageData(this.darkImg, 0, 0);
       this.light = { x0: lx0, y0: ly0, w: lw, h: lh };
       this.lightAge = 0;
       this.lightDirty = false;
@@ -799,7 +756,18 @@ export class Renderer {
     const lm = this.light;
     if (!lm) return;
     ctx.imageSmoothingEnabled = false;
+    ctx.globalCompositeOperation = 'multiply';
     ctx.drawImage(this.lightCanvas, lm.x0 * S, lm.y0 * S, lm.w * S, lm.h * S);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(this.darkCanvas, lm.x0 * S, lm.y0 * S, lm.w * S, lm.h * S);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  /** 上次光照計算時某格（tile）的亮度（三通道最大值 ×1.08；沒算過 = 1） */
+  lightAt(tx: number, ty: number): number {
+    const L = this.lastLight;
+    if (!L || this.fullbright) return 1;
+    return Math.min(1, L.get(tx, ty) * 1.08);
   }
 
   destroy(): void {

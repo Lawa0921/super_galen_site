@@ -45,10 +45,14 @@ export const LIGHT_AIR_DECAY = 0.91;
 export const LIGHT_SOLID_DECAY = 0.56;
 export const LIGHT_CUTOFF = 0.0185;
 export const LIGHT_MARGIN = 28;
-/** 深水（量 > 128）每格衰減：比空氣暗、比實心亮（單通道；水下另由 render 染成深藍） */
-export const LIGHT_WATER_DECAY = 0.86;
-/** 深蜂蜜每格衰減 */
-export const LIGHT_HONEY_DECAY = 0.8;
+/** 深水（量 > 128）每格衰減（R, G, B）：紅掉最快、藍走最遠 → 越深越藍（泰拉 (0.88, 0.96, 1.015)×0.91 再壓暗一點） */
+export const LIGHT_WATER_DECAY: readonly [number, number, number] = [0.78, 0.85, 0.9];
+/** 深蜂蜜每格衰減（R, G, B）：藍掉最快 → 琥珀色 */
+export const LIGHT_HONEY_DECAY: readonly [number, number, number] = [0.8, 0.68, 0.42];
+/** 天光井：地表直通下去的豎井 / 裂谷，地表下這麼多格內還吃得到（越深越淡的）天光 */
+export const SKY_SHAFT_LEN = 60;
+/** 天光井在地表那格的強度（× 天空光），往下線性變淡到 0 */
+export const SKY_SHAFT_K = 0.75;
 /** 滿格熔岩的發光強度（量越少越暗） */
 export const LAVA_LIGHT = 0.95;
 /** 一天長度（秒）。 */

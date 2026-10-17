@@ -50,6 +50,8 @@ export interface EnemyDef {
   aquatic?: boolean;
   /** 發光（點光源強度 0..1） */
   glow?: number;
+  /** 發光色相（最大通道 1；省略 = 白光） */
+  glowHue?: readonly [number, number, number];
 }
 
 const n = (zh: string, en: string): LocalName => ({ zh, en });
@@ -66,15 +68,15 @@ export const ENEMIES: Record<EnemyKind, EnemyDef> = {
   sand_scorpion: { kind: 'sand_scorpion', name: n('赤砂蠍', 'Redsand Scorpion'), w: 26, h: 14, hp: 55, damage: 16, defense: 7, kbRes: 0.3, ai: 'walker', speed: 78, jump: 260, drops: [d('chitin', 1, 2, 0.6), d('stinger', 1, 1, 0.25)], coins: [10, 22], habitat: '沙漠（地表與地下）' },
   thorn_hornet: { kind: 'thorn_hornet', name: n('刺翅蜂', 'Thornwing Hornet'), w: 18, h: 16, hp: 40, damage: 14, defense: 3, kbRes: 0.2, ai: 'shooter', speed: 120, shot: 12, drops: [d('stinger', 1, 2, 0.7)], coins: [8, 18], habitat: '叢林（地表與地下）' },
   snap_vine: { kind: 'snap_vine', name: n('噬花藤', 'Snapjaw Vine'), w: 20, h: 20, hp: 75, damage: 19, defense: 6, kbRes: 1, ai: 'plant', speed: 220, drops: [d('stinger', 1, 2, 0.4), d('mud', 2, 4, 0.5)], coins: [12, 28], habitat: '地下叢林（攀附在方塊上）' },
-  spore_walker: { kind: 'spore_walker', name: n('孢行者', 'Sporeshamble'), w: 18, h: 30, hp: 55, damage: 15, defense: 4, kbRes: 0.3, ai: 'walker', speed: 58, jump: 300, drops: [d('spore', 1, 2, 0.8), d('glow_mushroom', 1, 1, 0.3)], coins: [10, 22], habitat: '螢光菇林' },
+  spore_walker: { kind: 'spore_walker', name: n('孢行者', 'Sporeshamble'), w: 18, h: 30, hp: 55, damage: 15, defense: 4, kbRes: 0.3, ai: 'walker', speed: 58, jump: 300, drops: [d('spore', 1, 2, 0.8), d('glow_mushroom', 1, 1, 0.3)], coins: [10, 22], habitat: '螢光菇林', glow: 0.3, glowHue: [0.3, 0.6, 1] },
   bone_knight: { kind: 'bone_knight', name: n('骸骨戰士', 'Ossuary Knight'), w: 18, h: 40, hp: 90, damage: 22, defense: 12, kbRes: 0.5, ai: 'walker', speed: 82, jump: 340, drops: [d('bone', 1, 3), d('bone_greatsword', 1, 1, 0.03)], coins: [20, 45], habitat: '地下城' },
-  cursed_skull: { kind: 'cursed_skull', name: n('咒顱', 'Hex Skull'), w: 18, h: 18, hp: 55, damage: 20, defense: 8, kbRes: 0.4, ai: 'ghost', speed: 85, drops: [d('bone', 1, 1, 0.6)], coins: [15, 30], habitat: '地下城（穿牆飛行）' },
-  ember_imp: { kind: 'ember_imp', name: n('燼角魔', 'Cinderhorn Imp'), w: 18, h: 28, hp: 70, damage: 18, defense: 8, kbRes: 0.4, ai: 'teleporter', speed: 0, shot: 20, drops: [d('ember', 1, 2, 0.8)], coins: [20, 40], habitat: '熔岩深淵（瞬移、丟火球）', fire: true },
-  magma_bat: { kind: 'magma_bat', name: n('熔岩蝠', 'Magma Flitter'), w: 16, h: 12, hp: 45, damage: 18, defense: 6, kbRes: 0.2, ai: 'flyer', speed: 165, drops: [d('ember', 1, 1, 0.6)], coins: [12, 26], habitat: '熔岩深淵', fire: true },
+  cursed_skull: { kind: 'cursed_skull', name: n('咒顱', 'Hex Skull'), w: 18, h: 18, hp: 55, damage: 20, defense: 8, kbRes: 0.4, ai: 'ghost', speed: 85, drops: [d('bone', 1, 1, 0.6)], coins: [15, 30], habitat: '地下城（穿牆飛行）', glow: 0.4, glowHue: [0.75, 0.45, 1] },
+  ember_imp: { kind: 'ember_imp', name: n('燼角魔', 'Cinderhorn Imp'), w: 18, h: 28, hp: 70, damage: 18, defense: 8, kbRes: 0.4, ai: 'teleporter', speed: 0, shot: 20, drops: [d('ember', 1, 2, 0.8)], coins: [20, 40], habitat: '熔岩深淵（瞬移、丟火球）', fire: true, glow: 0.6, glowHue: [1, 0.45, 0.15] },
+  magma_bat: { kind: 'magma_bat', name: n('熔岩蝠', 'Magma Flitter'), w: 16, h: 12, hp: 45, damage: 18, defense: 6, kbRes: 0.2, ai: 'flyer', speed: 165, drops: [d('ember', 1, 1, 0.6)], coins: [12, 26], habitat: '熔岩深淵', fire: true, glow: 0.5, glowHue: [1, 0.45, 0.15] },
   razor_fin: { kind: 'razor_fin', name: n('鋸鰭魚', 'Sawfin'), w: 16, h: 10, hp: 24, damage: 14, defense: 2, kbRes: 0.2, ai: 'swimmer', speed: 150, drops: [d('fang', 1, 1, 0.3)], coins: [3, 9], habitat: '叢林水域、地下湖（成群，追咬水裡的人）', aquatic: true },
-  glow_jelly: { kind: 'glow_jelly', name: n('螢光水母', 'Lumen Jelly'), w: 16, h: 18, hp: 32, damage: 16, defense: 2, kbRes: 0.4, ai: 'jelly', speed: 120, drops: [d('gel', 1, 2), d('crystal', 1, 1, 0.15)], coins: [5, 12], habitat: '洞穴裡的水（一伸一縮地游、會發光）', aquatic: true, glow: 0.7 },
-  lantern_warden: { kind: 'lantern_warden', name: n('燈脈守望者', 'Lumen Warden'), w: 56, h: 64, hp: 3000, damage: 26, defense: 8, kbRes: 1, ai: 'boss', speed: 160, shot: 16, drops: [], coins: [0, 0], habitat: '首領：夜晚或洞穴層以下使用燈芯祭品召喚', boss: true, fire: true },
-  warden_wisp: { kind: 'warden_wisp', name: n('燈靈', 'Lumen Wisp'), w: 12, h: 12, hp: 22, damage: 14, defense: 0, kbRes: 0.5, ai: 'ghost', speed: 120, drops: [], coins: [0, 0], habitat: '首領召喚物', minion: true },
+  glow_jelly: { kind: 'glow_jelly', name: n('螢光水母', 'Lumen Jelly'), w: 16, h: 18, hp: 32, damage: 16, defense: 2, kbRes: 0.4, ai: 'jelly', speed: 120, drops: [d('gel', 1, 2), d('crystal', 1, 1, 0.15)], coins: [5, 12], habitat: '洞穴裡的水（一伸一縮地游、會發光）', aquatic: true, glow: 0.7, glowHue: [0.3, 1, 0.85] },
+  lantern_warden: { kind: 'lantern_warden', name: n('燈脈守望者', 'Lumen Warden'), w: 56, h: 64, hp: 3000, damage: 26, defense: 8, kbRes: 1, ai: 'boss', speed: 160, shot: 16, drops: [], coins: [0, 0], habitat: '首領：夜晚或洞穴層以下使用燈芯祭品召喚', boss: true, fire: true, glow: 0.95, glowHue: [0.5, 0.95, 1] },
+  warden_wisp: { kind: 'warden_wisp', name: n('燈靈', 'Lumen Wisp'), w: 12, h: 12, hp: 22, damage: 14, defense: 0, kbRes: 0.5, ai: 'ghost', speed: 120, drops: [], coins: [0, 0], habitat: '首領召喚物', minion: true, glow: 0.55, glowHue: [0.5, 0.95, 1] },
 };
 export const ENEMY_KINDS = Object.keys(ENEMIES) as EnemyKind[];
 /** 會自然生成的一般怪物 */
