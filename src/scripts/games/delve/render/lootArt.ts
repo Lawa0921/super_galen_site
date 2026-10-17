@@ -77,7 +77,9 @@ export function beamPixels(height: number, t: number): { x: number; y: number; c
     const density = k < height * 0.35 ? 11 : k < height * 0.7 ? 7 : 4;
     if (keep >= density) continue;
     out.push({ x: 0, y, c: 0 });
-    if (k < height * 0.6) { out.push({ x: -1, y, c: 1 }, { x: 1, y, c: 1 }); }
+    if (k < height * 0.45) out.push({ x: -1, y, c: 0 }, { x: 1, y, c: 0 });
+    else if (k < height * 0.75) out.push({ x: -1, y, c: 1 }, { x: 1, y, c: 1 });
+    if (k < height * 0.3 && (k + phase) % 2 === 0) out.push({ x: -2, y, c: 1 }, { x: 2, y, c: 1 });
   }
   return out;
 }

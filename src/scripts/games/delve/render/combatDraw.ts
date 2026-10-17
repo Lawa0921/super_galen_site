@@ -9,6 +9,8 @@ import { toCanvas } from './pixel';
 import { enemyFrames, flashBmp, silhouetteBmp, silhouetteWanted } from './enemyArt';
 import type { Enemy } from '../engine/enemies';
 import { FloatNumbers, digitRows, enemyFrameIndex, type FloatKind } from './combatAnim';
+import { beamPixels, rarityColor, sparkleAt } from './lootArt';
+import { RARITIES } from '../engine/gear';
 
 interface EnemySprite { frames: HTMLCanvasElement[]; flash: HTMLCanvasElement[]; dark: HTMLCanvasElement[]; anchor: 'bottom' | 'center'; }
 interface Spark { x: number; y: number; vx: number; vy: number; life: number; color: string; size: number; grav: number; }
@@ -36,6 +38,10 @@ export class CombatLayer {
   private numCache = new Map<string, HTMLCanvasElement>();
   /** 飄字放大倍數（手機上放大；renderer.resize 設定，見 lowres.floatTextScale） */
   numScale = 1;
+  /** 連鎖閃電（折線，短暫顯示） */
+  private chains: { pts: { x: number; y: number }[]; life: number }[] = [];
+  /** 上一次 drawWorld 的視窗（光照後的掉落物光柱用） */
+  private view = { x: 0, y: 0, w: 0, h: 0 };
 
   constructor(private readonly game: DelveGame, private readonly atlas: Atlas, private readonly sp: Sprites) {
     const raw = enemyFrames();
@@ -97,6 +103,13 @@ export class CombatLayer {
         this.burst(e.x, e.y, e.kind === 'fireball' || e.kind === 'ember' ? ['#ffa93a', '#e8701c'] : e.kind === 'bolt' ? ['#f2b888', '#b8788e', '#ffffff'] : ['#d8ba76', '#966139'], 4, 70);
         break;
       case 'death': this.burst(e.x, e.y, ['#a83a10', '#6c1e14', '#e8701c'], 24, 160); this.shake(3, 0.4); break;
+      case 'loot':
+        if (e.rarity >= 3) { const R = RARITIES[e.rarity]; this.burst(e.x, e.y, [R.color, R.dark, '#ffffff'], e.rarity >= 4 ? 22 : 12, 150, 200); }
+        if (e.rarity >= 4) this.shake(1, 0.15);
+        break;
+      case 'chain': this.chains.push({ pts: e.pts.map((p) => ({ ...p })), life: 0.22 }); break;
+      case 'undying': this.burst(e.x, e.y + 20, ['#ffd86a', '#fff4c0', '#ffa93a'], 30, 180, 120); this.shake(3, 0.3); break;
+      case 'airjump': this.burst(e.x, e.y, ['#ffffff', '#cceaf8', '#b4b9c8'], 8, 60, 0); break;
       default: break;
     }
   }
@@ -104,6 +117,7 @@ export class CombatLayer {
   /** 光照遮罩之前：掉落物、怪物、投射物（會被黑暗遮住；發光物另外加光暈） */
   drawWorld(ctx: CanvasRenderingContext2D, view: { x: number; y: number; w: number; h: number }, glow: GlowSink): void {
     const g = this.game, M = 24;
+    this.view = view;
     const inView = (x: number, y: number, w: number, h: number): boolean => x + w > view.x - M && x < view.x + view.w + M && y + h > view.y - M && y < view.y + view.h + M;
     // 掉落物（原尺寸圖示，落地時微微上下浮動）
     for (const d of g.drops.list) {
@@ -128,6 +142,20 @@ export class CombatLayer {
         ctx.fillRect(cx - 3 + (Math.floor(e.age * 9) % 5), top + 2, 1, 2);
         ctx.fillStyle = '#ffd86a';
         ctx.fillRect(cx + 2 - (Math.floor(e.age * 7) % 4), top + 4, 1, 1);
+      }
+      // 冰凍：身上幾點冰晶；中毒：往上冒的綠泡
+      if (e.frost > 0) {
+        ctx.fillStyle = '#cceaf8';
+        ctx.fillRect(cx - 4, top + 3, 1, 1); ctx.fillRect(cx + 3, top + 6, 1, 1); ctx.fillRect(cx, top + 1, 1, 1);
+        ctx.fillStyle = '#5c9ce0';
+        ctx.fillRect(cx - 4, top + 4, 1, 1); ctx.fillRect(cx + 3, top + 7, 1, 1);
+      }
+      if (e.poison > 0) {
+        const k = Math.floor(e.age * 6) % 6;
+        ctx.fillStyle = '#93cc50';
+        ctx.fillRect(cx - 2 + (k % 3), top - k, 1, 1);
+        ctx.fillStyle = '#468a34';
+        ctx.fillRect(cx + 2 - (k % 2), top + 2 - ((k + 3) % 6), 1, 1);
       }
       if (e.kind === 'lantern_warden') glow.cool.push({ x: cx, y: b.y + b.h / 2 + 4 }, { x: cx, y: b.y + b.h / 2 - 8 });
       else if (e.kind === 'warden_wisp' || e.kind === 'cursed_skull' || e.kind === 'glow_jelly') glow.cool.push({ x: cx, y: b.y + b.h / 2 });
@@ -234,8 +262,69 @@ export class CombatLayer {
     }
   }
 
+  /**
+   * 光照遮罩之後：地上裝備的稀有度標記（底線）、史詩以上的光柱、傳說 / 神話的閃光；連鎖閃電。
+   * 全部是整數像素的實心色塊（不用半透明），黑暗中也看得到。
+   */
+  private drawLoot(ctx: CanvasRenderingContext2D, dt: number): void {
+    const v = this.view, t = this.clock;
+    for (const d of this.game.drops.list) {
+      const r = d.gear?.rarity ?? -1;
+      if (r < 1) continue;
+      const b = d.body;
+      if (b.x + b.w < v.x - 8 || b.x > v.x + v.w + 8 || b.y < v.y - 80 || b.y > v.y + v.h + 8) continue;
+      const cx = Math.round(b.x + b.w / 2), bot = Math.round(b.y + b.h + 1);
+      const hi = rarityColor(r, t, d.id), lo = r >= 5 ? rarityColor(r, t, d.id + 3) : RARITIES[r].dark;
+      // 底線：亮色 6px + 兩端暗色
+      ctx.fillStyle = lo; ctx.fillRect(cx - 5, bot, 10, 1);
+      ctx.fillStyle = hi; ctx.fillRect(cx - 3, bot, 6, 1);
+      if (r >= 3 && b.onGround) {
+        const H = r >= 5 ? 64 : r >= 4 ? 46 : 28, top = Math.round(b.y + b.h - 16);
+        for (const p of beamPixels(H, t + d.id * 0.37)) {
+          ctx.fillStyle = p.c === 0 ? hi : lo;
+          ctx.fillRect(cx + p.x, top + p.y, 1, 1);
+        }
+      }
+      if (r >= 4) {
+        for (let k = 0; k < (r >= 5 ? 2 : 1); k++) {
+          const s = sparkleAt(t, d.id * 7 + k * 13);
+          if (!s) continue;
+          const [sx, sy, size] = s, x = cx + sx, y = Math.round(b.y) + sy;
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, 1, 1);
+          ctx.fillStyle = hi;
+          ctx.fillRect(x - size, y, size, 1); ctx.fillRect(x + 1, y, size, 1);
+          ctx.fillRect(x, y - size, 1, size); ctx.fillRect(x, y + 1, 1, size);
+        }
+      }
+    }
+    // 連鎖閃電：每段折線抖動，白色主幹 + 藍色兩側
+    for (let i = this.chains.length - 1; i >= 0; i--) {
+      const c = this.chains[i];
+      c.life -= dt;
+      if (c.life <= 0) { this.chains.splice(i, 1); continue; }
+      if (Math.floor(c.life * 40) % 3 === 0) continue;
+      for (let k = 1; k < c.pts.length; k++) {
+        const a = c.pts[k - 1], b = c.pts[k], len = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(2, Math.floor(len / 6));
+        const nx = -(b.y - a.y) / (len || 1), ny = (b.x - a.x) / (len || 1);
+        let px = a.x, py = a.y;
+        for (let s = 1; s <= n; s++) {
+          const f = s / n, j = s === n ? 0 : (Math.random() * 2 - 1) * 4;
+          const qx = a.x + (b.x - a.x) * f + nx * j, qy = a.y + (b.y - a.y) * f + ny * j;
+          const steps = Math.max(1, Math.ceil(Math.hypot(qx - px, qy - py)));
+          for (let u = 0; u <= steps; u++) {
+            const x = Math.round(px + ((qx - px) * u) / steps), y = Math.round(py + ((qy - py) * u) / steps);
+            ctx.fillStyle = '#5c9ce0'; ctx.fillRect(x - 1, y, 3, 1);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, 1, 1);
+          }
+          px = qx; py = qy;
+        }
+      }
+    }
+  }
+
   /** 光照遮罩之後：火花、飄字（不被黑暗吃掉） */
   drawOverlay(ctx: CanvasRenderingContext2D, dt: number): void {
+    this.drawLoot(ctx, dt);
     const ps = this.sparks;
     for (let i = ps.length - 1; i >= 0; i--) {
       const q = ps[i];

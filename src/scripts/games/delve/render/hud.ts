@@ -9,8 +9,11 @@ import { ENEMIES } from '../engine/enemies';
 import { drawIcon, type Atlas } from './textures';
 import { countLabel, recipeRows, statusText } from './model';
 import { CHEST_SLOTS } from '../engine/loot';
-import { heartFills, itemTooltip } from './tooltip';
+import { heartFills } from './tooltip';
 import type { Stack } from '../engine/inventory';
+import { RARITIES, affixDef, affixText, gearName, gearSlot, rarityOf, type Cost } from '../engine/gear';
+import type { ForgeResult } from '../engine/game';
+import { gearTooltip, statRows } from './gearTip';
 
 /** 圖示以原生 16×16 烘進小 canvas，由 CSS 以整數倍（image-rendering: pixelated）放大 */
 const ICON_PX = 16;
@@ -21,6 +24,10 @@ const CRAFT_FAIL: Record<string, string> = {
   missing: '材料不足', station: '需要靠近合成站', full: '背包放不下', unknown: '未知配方',
 };
 const SLOT_LABEL: Record<EquipSlot, string> = { head: '頭', body: '身', legs: '腿', acc0: '飾', acc1: '飾', acc2: '飾', acc3: '飾', acc4: '飾' };
+const FORGE_FAIL: Record<Exclude<ForgeResult, { ok: true }>['reason'], string> = {
+  none: '先在背包選一件裝備', station: '要在鐵砧旁（4 格內）才能鍛造', cost: '材料不足（碎晶 / 星塵）', max: '已經到上限了', unique: '傳奇詞條不能洗煉', locked: '已鎖定',
+};
+const costText = (c: Cost): string => `碎晶 ${c.shard}${c.dust ? ` · 星塵 ${c.dust}` : ''}`;
 
 // 9×8 像素愛心（'#' 本體、'h' 亮點）
 const HEART = ['.##...##.', '#h##.####', '#h#######', '#########', '.#######.', '..#####..', '...###...', '....#....'];
@@ -39,6 +46,10 @@ export class Hud {
   private bossSig = '';
   private tipTimer = 0;
   private pressTimer = 0;
+  /** 鍛造台面板正在處理的背包格（null = 關著） */
+  private forgeSlot: number | null = null;
+  private forgeSig = '';
+  private confirmFn: (() => void) | null = null;
   private readonly offs: (() => void)[] = [];
 
   constructor(
@@ -121,6 +132,7 @@ export class Hud {
     };
     rec.addEventListener('click', onRecipe);
     this.offs.push(() => rec.removeEventListener('click', onRecipe));
+    this.bindGear();
     this.bindTooltips();
     this.refresh();
   }
@@ -158,14 +170,19 @@ export class Hud {
     s.btn.classList.toggle('is-selected', selected);
   }
   private paintStack(s: SlotEl, st: Stack | null, i: number): void {
-    const sig = st ? `${st.item}:${st.count}` : '';
+    const g = st?.gear;
+    const sig = st ? `${st.item}:${st.count}:${g ? `${g.rarity}.${g.plus}.${g.locked ? 1 : 0}.${g.affixes.map((a) => a.id + a.value).join(',')}` : ''}` : '';
     if (sig === s.sig) return;
     s.sig = sig;
     if (s.ctx) drawIcon(this.atlas, s.ctx, st ? st.item : null, ICON_PX);
-    s.count.textContent = countLabel(st);
+    s.count.textContent = g?.plus ? `+${g.plus}` : countLabel(st);
     if (st) s.btn.dataset.item = st.item; else delete s.btn.dataset.item;
+    // 稀有度外框（只有裝備才有；沒有詞條資料 = 普通）
+    if (st && gearSlot(st.item)) s.btn.dataset.rarity = String(rarityOf(g)); else delete s.btn.dataset.rarity;
+    s.btn.classList.toggle('is-locked', Boolean(g?.locked));
     s.btn.classList.toggle('is-filled', Boolean(st));
-    s.btn.setAttribute('aria-label', st ? `${ITEMS[st.item].name.zh} ×${st.count}` : `空格 ${i + 1}`);
+    const name = st ? (gearSlot(st.item) ? `${RARITIES[rarityOf(g)].zh} ${gearName(st.item, g)}` : ITEMS[st.item].name.zh) : '';
+    s.btn.setAttribute('aria-label', st ? `${name} ×${st.count}${g?.locked ? '（已鎖定）' : ''}` : `空格 ${i + 1}`);
   }
 
   private clickInventory(i: number): void {
@@ -178,6 +195,7 @@ export class Hud {
     if (this.picked === null) {
       if (!this.game.inventory.slots[i]) return;
       this.picked = i;
+      if (this.forgeSlot !== null && gearSlot(this.game.inventory.slots[i]!.item)) { this.forgeSlot = i; this.forgeSig = ''; }
     } else {
       if (this.picked !== i) this.game.inventory.swap(this.picked, i);
       this.picked = null;
@@ -207,6 +225,7 @@ export class Hud {
   get inventoryOpen(): boolean { return !this.q('#delve-inv').hidden; }
   setInventory(open: boolean): void {
     this.q('#delve-inv').hidden = !open;
+    if (!open) this.setForge(null);
     this.picked = null;
     this.recipeSig = '';
     this.hideTip();
@@ -230,8 +249,13 @@ export class Hud {
     const chest = this.game.chestSlots();
     if (chest) for (let i = 0; i < this.chestGrid.length; i++) this.paintSlot(this.chestGrid[i], i, false, chest);
     const held = this.game.inventory.selectedStack();
-    this.q('#delve-held').textContent = held ? ITEMS[held.item].name.zh : '';
+    const heldEl = this.q('#delve-held');
+    heldEl.textContent = held ? gearName(held.item, held.gear) : '';
+    heldEl.classList.add('delve-rar');
+    if (held && gearSlot(held.item)) heldEl.dataset.rarity = String(rarityOf(held.gear)); else delete heldEl.dataset.rarity;
     if (!this.inventoryOpen) return;
+    this.refreshGearActions();
+    this.renderForge();
     for (let i = 0; i < this.grid.length; i++) {
       this.paintSlot(this.grid[i], i, i === sel);
       this.grid[i].btn.classList.toggle('is-picked', this.picked === i);
@@ -285,8 +309,23 @@ export class Hud {
     const statsEl = this.root.querySelector('#delve-stats');
     if (statsEl) {
       const s = this.game.stats();
-      statsEl.textContent = `防禦 ${st.defense}・生命 ${st.hp}/${st.maxHp}・傷害 ×${s.damageMul.toFixed(2)}・暴擊 +${Math.round(s.crit * 100)}%`
-        + (st.setBonus ? `・套裝：${SET_BONUS[st.setBonus as keyof typeof SET_BONUS].text}` : '');
+      const rows = statRows({
+        defense: st.defense, hp: st.hp, maxHp: st.maxHp, damageMul: s.damageMul, crit: s.crit, gear: s.gear,
+        setBonus: st.setBonus ? SET_BONUS[st.setBonus as keyof typeof SET_BONUS].text : null,
+      });
+      const sig = rows.map((r) => r.join(':')).join('|');
+      if (statsEl.getAttribute('data-sig') !== sig) {
+        statsEl.setAttribute('data-sig', sig);
+        statsEl.replaceChildren(...rows.map(([k, v], i) => {
+          const row = document.createElement('div');
+          row.className = `delve-stat${i >= 4 && k !== '套裝' ? ' is-gear' : ''}${k === '套裝' || v.length > 8 ? ' delve-stat--wide' : ''}`;
+          const a = document.createElement('span'), b = document.createElement('span');
+          a.className = 'delve-stat-k'; a.textContent = k;
+          b.className = 'delve-stat-v'; b.textContent = v;
+          row.append(a, document.createTextNode(' '), b);
+          return row;
+        }));
+      }
     }
     const btn = this.root.querySelector<HTMLElement>('#delve-equip-btn');
     if (btn) {
@@ -387,7 +426,7 @@ export class Hud {
     if (!tip) return;
     const itemAt = (t: EventTarget | null): { el: HTMLElement; item: ItemId } | null => {
       const el = (t as HTMLElement | null)?.closest?.<HTMLElement>('[data-item]');
-      return el && el.dataset.item && el.dataset.item in ITEMS ? { el, item: el.dataset.item as ItemId } : null;
+      return el && el.dataset.item && el.dataset.item in ITEMS && this.root.contains(el) ? { el, item: el.dataset.item as ItemId } : null;
     };
     const onOver = (e: PointerEvent): void => {
       if (e.pointerType !== 'mouse') return;
@@ -416,8 +455,16 @@ export class Hud {
   showTip(item: ItemId, anchor: HTMLElement, ms = 0): void {
     const tip = this.root.querySelector<HTMLElement>('#delve-tip');
     if (!tip) return;
-    const lines = itemTooltip(item);
-    tip.replaceChildren(...lines.map((l, i) => { const p = document.createElement('p'); p.className = i === 0 ? 'delve-tip-name' : 'delve-tip-line'; p.textContent = l; return p; }));
+    const st = this.stackFor(anchor) ?? { item, count: 1 };
+    const lines = gearTooltip(st, this.compareFor(st, anchor));
+    tip.replaceChildren(...lines.map((l, i) => {
+      const p = document.createElement('p');
+      p.className = i === 0 ? 'delve-tip-name' : `delve-tip-line is-${l.tone}`;
+      if (l.rarity !== undefined && (l.tone === 'name' || l.tone === 'rarity')) { p.classList.add('delve-rar'); p.dataset.rarity = String(l.rarity); }
+      p.textContent = l.text;
+      return p;
+    }));
+    if (gearSlot(st.item)) tip.dataset.rarity = String(rarityOf(st.gear)); else delete tip.dataset.rarity;
     tip.hidden = false;
     const r = anchor.getBoundingClientRect(), rr = this.root.getBoundingClientRect();
     const tw = tip.offsetWidth, th = tip.offsetHeight;
@@ -471,5 +518,203 @@ export class Hud {
     this.q('#delve-inv-grid').replaceChildren();
     this.root.querySelector('#delve-chest-grid')?.replaceChildren();
     this.root.querySelector('#delve-equip')?.replaceChildren();
+  }
+
+  // ── 裝備詞條：說明對應的格子、比較對象 ─────────────────
+  /** 說明框要顯示哪一格（背包 / 快捷欄 / 箱子 / 裝備欄 / 鍛造台） */
+  private stackFor(el: HTMLElement): Stack | null {
+    const g = this.game, slot = Number(el.dataset.slot);
+    if (el.dataset.equip) return g.equipment.getStack(el.dataset.equip as EquipSlot);
+    if (el.dataset.forgeItem !== undefined) return this.forgeSlot !== null ? g.inventory.slots[this.forgeSlot] ?? null : null;
+    if (!Number.isInteger(slot)) return null;
+    if (el.closest('#delve-chest-grid')) return g.chestSlots()?.[slot] ?? null;
+    if (el.closest('#delve-inv-grid') || el.closest('#delve-hotbar')) return g.inventory.slots[slot] ?? null;
+    return null;
+  }
+  /** 比較對象：防具 → 同部位裝著的；武器 → 手上的武器；鎬 → 使用中的鎬；飾品 → 裝著的同一種 */
+  private compareFor(st: Stack, el: HTMLElement): Stack | null {
+    if (el.dataset.equip || !gearSlot(st.item)) return null;
+    const g = this.game, d = ITEMS[st.item];
+    if (d.armor) return g.equipment.getStack(d.armor.slot);
+    if (d.weapon) { const h = g.inventory.selectedStack(); return h && h !== st && ITEMS[h.item].weapon ? h : null; }
+    if (d.pick) { const i = g.inventory.bestPickSlot(), p = i >= 0 ? g.inventory.slots[i] : null; return p && p !== st ? p : null; }
+    if (d.accessory) return g.equipment.stacks().find((x) => x.item === st.item && x !== st) ?? null;
+    return null;
+  }
+
+  // ── 裝備詞條：鎖定 / 分解 / 鍛造 ───────────────────────
+  private bindGear(): void {
+    const on = (sel: string, fn: (e: Event) => void): void => {
+      const el = this.root.querySelector(sel);
+      if (!el) return;
+      el.addEventListener('click', fn);
+      this.offs.push(() => el.removeEventListener('click', fn));
+    };
+    on('#delve-lock-btn', () => {
+      if (this.picked === null) return;
+      const r = this.game.toggleLock(this.picked);
+      if (r !== null) this.toast(r ? '已鎖定：不會被分解' : '已解除鎖定');
+      this.refresh();
+    });
+    on('#delve-salvage-btn', () => {
+      const i = this.picked;
+      if (i === null) return;
+      const st = this.game.inventory.slots[i];
+      if (!st || !gearSlot(st.item)) return;
+      if (st.gear?.locked) { this.toast('已鎖定的裝備不能分解'); return; }
+      const go = (): void => {
+        const y = this.game.salvage(i);
+        if (y) this.toast(`分解了 ${gearName(st.item, st.gear)}：${costText(y)}`);
+        this.picked = null;
+        if (this.forgeSlot === i) this.setForge(null);
+        this.refresh();
+      };
+      // 史詩以上：先確認
+      if (rarityOf(st.gear) >= 3) this.askConfirm(`要分解 ${RARITIES[rarityOf(st.gear)].zh}「${gearName(st.item, st.gear)}」嗎？分解後無法復原。`, go);
+      else go();
+    });
+    on('#delve-salvage-all', () => {
+      const list = this.game.salvageTargets(0);
+      if (!list.length) { this.toast('沒有可分解的普通裝備（快捷欄與鎖定的不算）'); return; }
+      this.askConfirm(`要分解背包裡（快捷欄以外、沒鎖定）的 ${list.length} 件普通裝備嗎？`, () => {
+        const r = this.game.salvageAll(0);
+        this.toast(`分解了 ${r.count} 件：${costText(r)}`);
+        this.picked = null;
+        this.refresh();
+      });
+    });
+    on('#delve-forge-btn', () => {
+      if (this.picked === null) return;
+      this.setForge(this.picked);
+    });
+    on('#delve-forge-close', () => this.setForge(null));
+    on('#delve-forge', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-op]');
+      if (!b || b.disabled || this.forgeSlot === null) return;
+      const i = this.forgeSlot, op = b.dataset.op;
+      const r = op === 'reroll' ? this.game.reroll(i, Number(b.dataset.affix)) : op === 'upgrade' ? this.game.upgrade(i) : this.game.ascend(i);
+      if (!r.ok) this.toast(FORGE_FAIL[r.reason]);
+      else {
+        const st = this.game.inventory.slots[i];
+        if (st) this.toast(op === 'reroll' ? `洗煉完成：${gearName(st.item, st.gear)}` : op === 'upgrade' ? `強化成功：+${st.gear?.plus ?? 0}` : `升階成功：${RARITIES[rarityOf(st.gear)].zh}`);
+      }
+      this.forgeSig = '';
+      this.refresh();
+    });
+    on('#delve-sc-cancel', () => this.closeConfirm());
+    on('#delve-sc-ok', () => { const f = this.confirmFn; this.closeConfirm(); f?.(); });
+  }
+  private askConfirm(msg: string, fn: () => void): void {
+    const box = this.root.querySelector<HTMLElement>('#delve-salvage-confirm');
+    if (!box) { fn(); return; }
+    const m = box.querySelector('#delve-sc-msg');
+    if (m) m.textContent = msg;
+    this.confirmFn = fn;
+    box.hidden = false;
+    box.querySelector<HTMLButtonElement>('#delve-sc-cancel')?.focus();
+  }
+  private closeConfirm(): void {
+    const box = this.root.querySelector<HTMLElement>('#delve-salvage-confirm');
+    if (box) box.hidden = true;
+    this.confirmFn = null;
+  }
+  get confirmOpen(): boolean { return !(this.root.querySelector<HTMLElement>('#delve-salvage-confirm')?.hidden ?? true); }
+  /** 關掉分解確認（Esc） */
+  cancelConfirm(): void { this.closeConfirm(); }
+  private refreshGearActions(): void {
+    const st = this.picked !== null ? this.game.inventory.slots[this.picked] : null;
+    const gear = Boolean(st && gearSlot(st.item));
+    const lock = this.root.querySelector<HTMLElement>('#delve-lock-btn');
+    if (lock) { lock.hidden = !gear; lock.textContent = st?.gear?.locked ? '解除鎖定' : '鎖定'; }
+    const sv = this.root.querySelector<HTMLButtonElement>('#delve-salvage-btn');
+    if (sv) { sv.hidden = !gear; sv.disabled = Boolean(st?.gear?.locked); }
+    const fb = this.root.querySelector<HTMLElement>('#delve-forge-btn');
+    if (fb) fb.hidden = !gear;
+    const mats = this.root.querySelector('#delve-mats');
+    if (mats) mats.textContent = `碎晶 ${this.game.inventory.count('gear_shard')} · 星塵 ${this.game.inventory.count('stardust')}`;
+  }
+  get forgeOpen(): boolean { return this.forgeSlot !== null; }
+  /** 提示用的裝備名稱 */
+  gearLabel(st: Stack): string { return gearName(st.item, st.gear); }
+  /** 打開（背包格 i）/ 關閉鍛造台面板 */
+  setForge(i: number | null): void {
+    this.forgeSlot = i;
+    this.forgeSig = '';
+    const el = this.root.querySelector<HTMLElement>('#delve-forge');
+    if (el) el.hidden = i === null;
+    this.root.dataset.forge = i === null ? '' : '1';
+    if (i !== null) this.renderForge();
+  }
+  private renderForge(): void {
+    const i = this.forgeSlot;
+    if (i === null) return;
+    const g = this.game, st = g.inventory.slots[i];
+    if (!st || !gearSlot(st.item)) { this.setForge(null); return; }
+    const near = g.canForge(), costs = g.forgeCosts(i), shard = g.inventory.count('gear_shard'), dust = g.inventory.count('stardust');
+    const gear = st.gear;
+    const sig = `${i}|${near}|${shard}|${dust}|${st.item}|${JSON.stringify(gear ?? null)}`;
+    if (sig === this.forgeSig) return;
+    this.forgeSig = sig;
+    const can = (c: Cost | null): boolean => Boolean(c) && near && shard >= c!.shard && dust >= c!.dust;
+    const station = this.root.querySelector('#delve-forge-station');
+    if (station) station.textContent = near ? '鐵砧就在旁邊 ✓（洗煉 / 強化 / 升階）' : '要站在鐵砧旁（4 格內）才能鍛造；先看看需要多少材料';
+    const head = this.root.querySelector('#delve-forge-item');
+    if (head) {
+      const icon = document.createElement('canvas');
+      icon.width = ICON_PX; icon.height = ICON_PX; icon.className = 'delve-slot-icon';
+      const ctx = icon.getContext('2d');
+      if (ctx) drawIcon(this.atlas, ctx, st.item, ICON_PX);
+      const box = document.createElement('div');
+      box.dataset.item = st.item; box.dataset.forgeItem = '1';
+      const name = document.createElement('p');
+      name.className = 'delve-forge-name delve-rar';
+      name.dataset.rarity = String(rarityOf(gear));
+      name.textContent = gearName(st.item, gear);
+      const meta = document.createElement('p');
+      meta.className = 'delve-forge-meta';
+      meta.textContent = `${RARITIES[rarityOf(gear)].zh}・物品等級 ${gear?.ilvl ?? 1}・強化 +${gear?.plus ?? 0}${gear?.rerolls ? `・洗煉 ${gear.rerolls} 次` : ''}`;
+      box.append(name, meta);
+      head.replaceChildren(icon, box);
+    }
+    const ul = this.root.querySelector('#delve-forge-affixes');
+    if (ul) {
+      const items = (gear?.affixes ?? []).map((a, k) => {
+        const li = document.createElement('li');
+        const uq = affixDef(a.id).kind === 'unique';
+        li.className = `delve-forge-affix${uq ? ' is-unique' : ''}`;
+        const t = document.createElement('span');
+        t.textContent = uq ? `★ ${affixDef(a.id).word.slice(0, -1)}：${affixDef(a.id).desc ?? ''}` : `◆ ${affixText(a, st.item, gear!)}（T${a.tier}）`;
+        li.appendChild(t);
+        if (!uq && costs.reroll) {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'delve-btn delve-btn--sm'; b.dataset.op = 'reroll'; b.dataset.affix = String(k);
+          b.textContent = `洗煉（${costText(costs.reroll)}）`;
+          b.disabled = !can(costs.reroll);
+          li.appendChild(b);
+        }
+        return li;
+      });
+      if (!items.length) { const li = document.createElement('li'); li.className = 'delve-forge-affix'; li.textContent = '沒有詞條（普通）：先升階加上詞條'; items.push(li); }
+      ul.replaceChildren(...items);
+    }
+    const ops = this.root.querySelector('#delve-forge-ops');
+    if (ops) {
+      const mk = (op: string, label: string, c: Cost | null, full: string): HTMLButtonElement => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'delve-btn delve-forge-op'; b.dataset.op = op;
+        const a = document.createElement('span'); a.textContent = c ? label : full;
+        const s = document.createElement('span'); s.className = 'delve-cost'; s.textContent = c ? costText(c) : '—';
+        b.append(a, s);
+        b.disabled = !can(c);
+        return b;
+      };
+      const p = gear?.plus ?? 0, r = rarityOf(gear);
+      ops.replaceChildren(
+        mk('upgrade', `強化 +${p} → +${p + 1}`, costs.upgrade, '強化已滿（+5）'),
+        mk('ascend', `升階 ${RARITIES[r].zh} → ${RARITIES[Math.min(5, r + 1)].zh}`, costs.ascend, r >= 5 ? '神話無法再升階' : '升階已到傳說（神話只能靠掉落）'),
+      );
+    }
+    const m = this.root.querySelector('#delve-forge-mats');
+    if (m) m.textContent = `持有：碎晶 ${shard} · 星塵 ${dust}（分解裝備取得；史詩以上才有星塵）`;
   }
 }

@@ -14,6 +14,7 @@ import { T } from '../engine/tiles';
 import { ITEMS } from '../engine/items';
 import { parseZoomPref } from './lowres';
 import { FISH } from '../engine/fishing';
+import { RARITIES, affixDef, gearSlot } from '../engine/gear';
 
 /** 稀有 / 傳說的漁獲（釣到時多一聲鈴） */
 const FISH_RARE = new Set(FISH.filter((f) => f.rarity === 'rare' || f.rarity === 'legendary').map((f) => f.item));
@@ -157,7 +158,9 @@ export function startDelve(opts: StartOptions): DelveHandle {
     onMenu: () => {
       if (fullmap.isOpen) setMap(false);
       else if (ui.loreOpen) ui.closeLore();
+      else if (hud.confirmOpen) hud.cancelConfirm();
       else if (game.openChest) game.closeChest();
+      else if (hud.forgeOpen) hud.setForge(null);
       else if (ui.journalOpen) ui.setJournal(false);
       else if (calendar.isOpen) calendar.setOpen(false);
       else if (hud.inventoryOpen) hud.setInventory(false);
@@ -236,8 +239,33 @@ export function startDelve(opts: StartOptions): DelveHandle {
           else if (e.phase === 'snap') hud.toast('走太遠，釣線斷了');
         }
         else if (e.type === 'crate') { sound.treasure(); hud.toast(`打開了${ITEMS[e.item].name.zh}`); invChanged = true; }
+        else if (e.type === 'craft' && gearSlot(e.item)) {
+          // 合成出優良以上：提示一下稀有度
+          const st = [...game.inventory.slots].reverse().find((s) => s?.item === e.item && s.gear);
+          if (st?.gear && st.gear.rarity >= 1) { hud.toast(`合成出${RARITIES[st.gear.rarity].zh}：${hud.gearLabel(st)}`, 2000); sound.lootPickup(st.gear.rarity); }
+          invChanged = true;
+        }
         else if (e.type === 'eat') { sound.munch(); invChanged = true; }
-        else if (e.type === 'pickup') { sound.pickup(); invChanged = true; }
+        else if (e.type === 'pickup') {
+          if (e.rarity !== undefined) {
+            sound.lootPickup(e.rarity);
+            if (e.rarity >= 2) {
+              const st = game.inventory.slots.find((s) => s?.item === e.item && s.gear?.rarity === e.rarity);
+              hud.toast(`獲得${RARITIES[e.rarity].zh}裝備：${st ? hud.gearLabel(st) : ITEMS[e.item].name.zh}`, e.rarity >= 4 ? 3000 : 1800);
+            }
+          } else sound.pickup();
+          invChanged = true;
+        }
+        else if (e.type === 'loot') {
+          sound.lootDrop(e.rarity);
+          if (e.rarity >= 4) hud.toast(`${RARITIES[e.rarity].zh}裝備掉落了！`, 2400);
+        }
+        else if (e.type === 'chain') sound.zap();
+        else if (e.type === 'undying') { sound.undying(); hud.toast('不滅：撐住了致命一擊！', 2200); }
+        else if (e.type === 'airjump') sound.airJump();
+        else if (e.type === 'codex') { sound.codex(); hud.toast(`圖鑑收錄新詞條：${affixDef(e.affix).word}`, 1800); }
+        else if (e.type === 'salvage') { sound.salvage(); invChanged = true; }
+        else if (e.type === 'forge') { sound.forge(e.action); invChanged = true; }
         else if (e.type === 'heal') { sound.heal(); invChanged = true; }
         else if (e.type === 'lifeup') { sound.heal(); hud.toast(`生命上限提升到 ${e.maxHp}`); invChanged = true; }
         else if (e.type === 'shot') { if (e.hostile) sound.enemyShot(e.kind === 'fireball' || e.kind === 'ember'); }

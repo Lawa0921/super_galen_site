@@ -92,13 +92,21 @@ const lang: Language = defaultLang;
         </header>
         <p class="delve-hint">點一格再點另一格可以搬移 / 交換；滑鼠停在道具上（觸控：長按）看說明</p>
         <div class="delve-inv-grid" id="delve-inv-grid"></div>
+        <div class="delve-gear-actions" id="delve-gear-actions">
+          <button class="delve-btn delve-btn--sm" id="delve-lock-btn" type="button" hidden>鎖定</button>
+          <button class="delve-btn delve-btn--sm" id="delve-salvage-btn" type="button" hidden>分解</button>
+          <button class="delve-btn delve-btn--sm" id="delve-forge-btn" type="button" hidden>鍛造</button>
+          <button class="delve-btn delve-btn--sm delve-btn--danger" id="delve-salvage-all" type="button">分解所有普通</button>
+          <span class="delve-mats" id="delve-mats" data-testid="mats"></span>
+        </div>
         <h2 class="delve-craft-title">裝備</h2>
         <p class="delve-hint">選背包裡的防具 / 飾品再點裝備格（或按「裝上」、右鍵背包格）；點裝備格卸下</p>
         <div class="delve-equip-row">
           <div class="delve-equip" id="delve-equip"></div>
           <button class="delve-btn delve-equip-btn" id="delve-equip-btn" type="button" hidden>裝上</button>
         </div>
-        <p class="delve-hint delve-stats" id="delve-stats"></p>
+        <h2 class="delve-craft-title">能力總覽</h2>
+        <div class="delve-stats" id="delve-stats" data-testid="stats-panel"></div>
         <h2 class="delve-craft-title">合成</h2>
         <p class="delve-hint" id="delve-station"></p>
         <ul class="delve-recipes" id="delve-recipes"></ul>
@@ -112,6 +120,31 @@ const lang: Language = defaultLang;
         <p class="delve-hint">點箱子裡的格子拿走；點背包的格子把整堆放進箱子</p>
         <div class="delve-inv-grid" id="delve-chest-grid"></div>
         <button class="delve-btn delve-chest-takeall" id="delve-chest-takeall" type="button">全部拿取</button>
+      </section>
+
+      <section class="delve-panel delve-panel--forge" id="delve-forge" hidden aria-label="鍛造台">
+        <header class="delve-panel-head">
+          <h2>鍛造台</h2>
+          <button class="delve-x" id="delve-forge-close" type="button" aria-label="關閉鍛造台">×</button>
+        </header>
+        <p class="delve-hint" id="delve-forge-station"></p>
+        <div class="delve-forge-item" id="delve-forge-item"></div>
+        <h3 class="delve-forge-h">洗煉：換掉一條詞條</h3>
+        <ul class="delve-forge-affixes" id="delve-forge-affixes"></ul>
+        <h3 class="delve-forge-h">強化 / 升階</h3>
+        <div class="delve-forge-ops" id="delve-forge-ops"></div>
+        <p class="delve-hint" id="delve-forge-mats"></p>
+      </section>
+
+      <section class="delve-confirm" id="delve-salvage-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="delve-sc-title" aria-describedby="delve-sc-msg">
+        <div class="delve-menu-box">
+          <h2 id="delve-sc-title">分解裝備？</h2>
+          <p class="delve-confirm-msg" id="delve-sc-msg"></p>
+          <div class="delve-confirm-btns">
+            <button class="delve-btn" id="delve-sc-cancel" type="button">取消</button>
+            <button class="delve-btn delve-btn--danger" id="delve-sc-ok" type="button">分解</button>
+          </div>
+        </div>
       </section>
 
       <div class="delve-touch" aria-hidden="true">
@@ -1341,6 +1374,101 @@ const lang: Language = defaultLang;
   .delve-stats { color: #cceaf8; }
   .delve-chip--aim[aria-pressed='true'] { --bv-hi: #cceaf8; --bv-bg: #1f6474; --bv-lo: #18204a; }
   .delve[data-boss='1'] .delve-toast { bottom: 110px; }
+
+  /* ── 裝備稀有度：普通白 / 優良綠 / 稀有藍 / 史詩紫 / 傳說橙 / 神話流光（全部取自統一色票） ── */
+  .delve [data-rarity='0'] { --rar: #858aa0; --rar-lo: #423f54; --rar-t: #ffffff; }
+  .delve [data-rarity='1'] { --rar: #93cc50; --rar-lo: #2d672e; --rar-t: #93cc50; }
+  .delve [data-rarity='2'] { --rar: #5c9ce0; --rar-lo: #2c4486; --rar-t: #5c9ce0; }
+  .delve [data-rarity='3'] { --rar: #b8788e; --rar-lo: #463c78; --rar-t: #b8788e; }
+  .delve [data-rarity='4'] { --rar: #ffa93a; --rar-lo: #a83a10; --rar-t: #ffa93a; }
+  .delve [data-rarity='5'] { --rar: #fff4c0; --rar-lo: #e8701c; --rar-t: #fff4c0; }
+  .delve-slot[data-rarity] { box-shadow: 0 0 0 var(--px) var(--outline), inset 0 0 0 var(--px) var(--rar-lo); }
+  .delve-slot[data-rarity]:not([data-rarity='0']):not(.is-selected):not(.is-picked) { --bv-hi: var(--rar); --bv-lo: var(--rar-lo); }
+  @keyframes delve-mythic-border {
+    0% { border-color: #fff4c0 #e8701c #e8701c #fff4c0; }
+    25% { border-color: #93cc50 #2c4486 #2c4486 #93cc50; }
+    50% { border-color: #5c9ce0 #463c78 #463c78 #5c9ce0; }
+    75% { border-color: #b8788e #a83a10 #a83a10 #b8788e; }
+  }
+  @keyframes delve-mythic-text {
+    0% { color: #fff4c0; }
+    25% { color: #ffd86a; }
+    50% { color: #93cc50; }
+    75% { color: #b8788e; }
+  }
+  .delve-slot[data-rarity='5']:not(.is-selected):not(.is-picked),
+  .delve-tip[data-rarity='5'] { animation: delve-mythic-border 1.2s steps(1) infinite; }
+  .delve .delve-rar[data-rarity='5'] { animation: delve-mythic-text 1.2s steps(1) infinite; }
+  .delve[data-reduced='1'] [data-rarity='5'] { animation: none; }
+  .delve .delve-rar[data-rarity] { color: var(--rar-t); text-shadow: var(--text-outline); }
+  /* 鎖定：右上角一個像素小鎖（鎖身 + 鎖環） */
+  .delve-slot.is-locked::after {
+    content: '';
+    position: absolute;
+    top: calc(var(--px) * 3);
+    right: calc(var(--px) * 2);
+    width: calc(var(--px) * 4);
+    height: calc(var(--px) * 3);
+    background: #ffd86a;
+    box-shadow: 0 0 0 var(--px) #0c0a12;
+  }
+  .delve-slot.is-locked::before {
+    content: '';
+    position: absolute;
+    top: var(--px);
+    right: calc(var(--px) * 3);
+    width: calc(var(--px) * 2);
+    height: calc(var(--px) * 2);
+    border: var(--px) solid #ffd86a;
+    border-bottom: 0;
+  }
+  .delve-tip[data-rarity] { border-color: var(--rar) var(--rar-lo) var(--rar-lo) var(--rar); }
+  .delve-tip .delve-tip-name.delve-rar { color: var(--rar-t); }
+  .delve-tip .is-rarity { color: var(--rar-t); }
+  .delve-tip .is-base { color: #b4b9c8; }
+  .delve-tip .is-affix { color: #cceaf8; }
+  .delve-tip .is-unique { color: #ffa93a; text-shadow: var(--text-outline); }
+  .delve-tip .is-head { margin-top: 4px; color: #d8ba76; }
+  .delve-tip .is-up { color: #93cc50; }
+  .delve-tip .is-down { color: #e8701c; }
+  .delve-tip .is-note { color: #858aa0; }
+  .delve-gear-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+  .delve-btn--sm { display: inline-block; padding: 4px 8px; }
+  .delve-btn--sm:disabled { color: #623924; cursor: not-allowed; }
+  .delve-mats { margin-left: auto; font-size: 16px; color: #cceaf8; text-shadow: var(--text-outline); }
+  .delve-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 14px; margin: 6px 0 0; }
+  .delve-stat { display: flex; justify-content: space-between; gap: 8px; font-size: 16px; line-height: 1.4; }
+  .delve-stat-k { color: #d8ba76; }
+  .delve-stat-v { color: #cceaf8; }
+  .delve-stat.is-gear .delve-stat-v { color: #93cc50; }
+  .delve-stat--wide { grid-column: 1 / -1; }
+  /* 鍛造台面板：寬螢幕放在背包右邊，窄螢幕疊在背包上 */
+  .delve-panel--forge { width: min(440px, calc(100vw - 20px)); z-index: 6; }
+  @media (min-width: 1000px) {
+    .delve-panel--forge { left: calc(min(480px, 100vw - 20px) + 22px); }
+  }
+  .delve-forge-item { display: flex; gap: 10px; align-items: center; padding: 8px; background: #1c1424; box-shadow: inset 0 0 0 var(--px) #472819; }
+  .delve-forge-item .delve-slot-icon { width: 32px; height: 32px; }
+  .delve-forge-name { margin: 0; font-size: 16px; }
+  .delve-forge-meta { margin: 0; font-size: 16px; color: #b07a4b; }
+  .delve-forge-h { margin: 12px 0 4px; font-size: 16px; font-weight: 400; color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-forge-affixes { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .delve-forge-affix { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; font-size: 16px; color: #cceaf8; }
+  .delve-forge-affix.is-unique { color: #ffa93a; }
+  .delve-forge-ops { display: grid; gap: 6px; }
+  .delve-forge-op { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; text-align: left; }
+  .delve-cost { font-size: 16px; color: #d8ba76; }
+  .delve-forge-op:disabled { color: #7c4c2e; cursor: not-allowed; }
+  .delve-forge-op:disabled .delve-cost { color: #623924; }
+  /* 日誌：裝備圖鑑 */
+  .delve-j-affixes { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 0; padding: 0; list-style: none; }
+  .delve-j-affix { padding: 0 6px; font-size: 16px; line-height: 1.5; color: #623924; background: #1c1424; box-shadow: inset 0 0 0 var(--px) #2a1810; }
+  .delve-j-affix.is-got { color: #cceaf8; box-shadow: inset 0 0 0 var(--px) #2c4486; }
+  .delve-j-affix.is-unique.is-got { color: #ffa93a; box-shadow: inset 0 0 0 var(--px) #a83a10; }
+  .delve-j-gear { display: grid; place-items: center; width: calc(var(--px) * 20); height: calc(var(--px) * 20); background: #1c1424; box-shadow: 0 0 0 var(--px) #2a1810; }
+  .delve-j-gear .delve-slot-icon { filter: grayscale(1) brightness(0.3); }
+  .delve-j-gear[data-rarity] { background: #2a1810; box-shadow: 0 0 0 var(--px) var(--rar); }
+  .delve-j-gear[data-rarity] .delve-slot-icon { filter: none; }
 
   @media (max-width: 640px) {
     .delve-hotbar { gap: 2px; left: 6px; top: 6px; }

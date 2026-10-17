@@ -6,6 +6,8 @@ import { CATEGORY_LABEL, type RegionCat } from '../engine/discovery';
 import { LORE, loreEntry } from '../engine/lore';
 import { ITEMS } from '../engine/items';
 import { FISH_SPECIES } from '../engine/fishing';
+import { AFFIXES, BASE_TIER, RARITIES } from '../engine/gear';
+import type { ItemId } from '../engine/items';
 import { drawIcon, type Atlas } from './textures';
 import { BannerQueue, distanceLabel, exploredLabel, percentLabel } from './model';
 
@@ -108,7 +110,8 @@ export class ExploreUi {
     const explored = g.explored.count / (w.width * w.height);
     const killSig = Object.values(g.kills).reduce((a, n) => a + (n ?? 0), 0);
     const fishSig = Object.values(g.fishLog).reduce((a, n) => a + (n ?? 0), 0);
-    const sig = `${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${exploredLabel(explored)}|${killSig}|${g.bossesDefeated.size}|${fishSig}`;
+    const codexSig = [...g.codex.affixes.values()].reduce((a, n) => a + n, 0) * 100 + [...g.codex.items.values()].reduce((a, n) => a + n + 1, 0);
+    const sig = `${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${exploredLabel(explored)}|${killSig}|${g.bossesDefeated.size}|${fishSig}|${codexSig}`;
     if (sig === this.journalSig) return;
     this.journalSig = sig;
     body.replaceChildren();
@@ -197,6 +200,48 @@ export class ExploreUi {
       fl.appendChild(cell);
     }
     body.appendChild(fl);
+    this.renderCodex(body);
+  }
+
+  /** 裝備圖鑑：詞條（見過的最高階）、傳奇詞條（效果）、每種基底拿過的最高稀有度 */
+  private renderCodex(body: HTMLElement): void {
+    const cx = this.game.codex, st = cx.stats();
+    const h = el('h3', 'delve-j-h', `裝備圖鑑：詞條 ${st.affixes} / ${st.affixTotal} · 傳奇 ${st.uniques} / ${st.uniqueTotal}`);
+    h.dataset.testid = 'journal-codex';
+    body.appendChild(h);
+    const ul = el('ul', 'delve-j-affixes');
+    for (const a of AFFIXES.filter((x) => x.kind !== 'unique')) {
+      const t = cx.affixes.get(a.id);
+      const li = el('li', t ? 'delve-j-affix is-got' : 'delve-j-affix', t ? `${a.kind === 'prefix' ? a.word : `· ${a.word}`} T${t}` : '？？？');
+      li.dataset.affix = a.id;
+      ul.appendChild(li);
+    }
+    body.appendChild(ul);
+    const uq = el('ul', 'delve-j-affixes');
+    for (const a of AFFIXES.filter((x) => x.kind === 'unique')) {
+      const got = cx.affixes.has(a.id);
+      const li = el('li', got ? 'delve-j-affix is-unique is-got' : 'delve-j-affix is-unique', got ? `★ ${a.word.slice(0, -1)}：${a.desc}` : '★ ？？？（傳說以上的裝備才會出現）');
+      li.dataset.affix = a.id;
+      uq.appendChild(li);
+    }
+    body.appendChild(uq);
+    const bases = (Object.keys(BASE_TIER) as ItemId[]).filter((id) => !ITEMS[id].unique);
+    const got = bases.filter((id) => cx.items.has(id)).length;
+    body.appendChild(el('p', 'delve-j-names', `收藏：${got} / ${bases.length} 種裝備（外框 = 拿過的最高稀有度）`));
+    const grid = el('div', 'delve-j-treasures');
+    for (const id of bases) {
+      const r = cx.items.get(id);
+      const cell = el('span', 'delve-j-gear');
+      if (r !== undefined) cell.dataset.rarity = String(r);
+      const c = el('canvas', 'delve-slot-icon');
+      c.width = 16; c.height = 16;
+      const ctx = c.getContext('2d');
+      if (ctx) drawIcon(this.atlas, ctx, id, 16);
+      cell.title = r !== undefined ? `${ITEMS[id].name.zh}（最高：${RARITIES[r].zh}）` : '？？？';
+      cell.appendChild(c);
+      grid.appendChild(cell);
+    }
+    body.appendChild(grid);
   }
 
   destroy(): void { for (const f of this.offs) f(); }
