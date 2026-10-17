@@ -10,7 +10,7 @@ import { World } from './world';
 import { generateWorld, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './worldgen';
 import type { DungeonInfo } from './gen/dungeon';
 type GenRelic = { x: number; y: number; item: ItemId; where: string };
-import { T, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
+import { T, W, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
 import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemDef, type ItemId, type PickStats, type WeaponDef, type WeaponKind } from './items';
 import { potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
@@ -41,7 +41,7 @@ import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidConta
 import { ProjList, type ProjKind, type Projectile } from './projectiles';
 import { ENEMIES, makeEnemy, stepEnemy, type AiCtx, type Enemy, type EnemyKind } from './enemies';
 import {
-  ACTIVE, BED_SAFE, DEFAULT_VIEW_HALF, DESPAWN, MAX_ENEMIES, NEAR_SPAWN_TILES, SPAWN_MAX, findSpot, habitatAt, inHouse,
+  ACTIVE, BED_SAFE, DEFAULT_VIEW_HALF, DESPAWN, MAX_ENEMIES, NEAR_SPAWN_TILES, SPAWN_MAX, findSpot, habitatAt, homeNear, inHouse,
   isFirstNight, pickEntry, spawnCap, spawnChance, spawnInterval, spawnTable, type SpawnPressure,
 } from './spawn';
 import { Rng } from './rng';
@@ -605,6 +605,7 @@ export class DelveGame {
     const { x, y } = this.aim;
     const id = this.world.getFg(x, y);
     if (id === T.AIR && this.world.inBounds(x, y) && this.world.frozen[this.world.idx(x, y)]) { this.mineIce(x, y, dt); return; }
+    if (id === T.AIR && this.world.getWall(x, y) === W.PLANK_WALL) { this.mineWall(x, y, dt); return; }
     if (!this.world.inBounds(x, y) || id === T.AIR) { this.mining = null; return; }
     if (!this.canReach(x, y)) { this.block('mine', 'reach', x, y); this.mining = null; return; }
     const def = tileDef(id);
@@ -697,6 +698,8 @@ export class DelveGame {
         case 'floor': return floorOk(nid, tileAfter(nx, ny + 1));
         case 'ceiling': return ceilOk(nid, tileAfter(nx, ny - 1));
         case 'rope': return ropeOk(tileAfter(nx, ny - 1), tileAfter(nx - 1, ny), tileAfter(nx + 1, ny));
+        case 'wall': return w.getWall(nx, ny) !== 0;
+        case 'mount': return w.getWall(nx, ny) !== 0 || solidAfter(nx, ny + 1) || tileAfter(nx, ny + 1) === T.TABLE;
         default: return true;
       }
     };
@@ -780,6 +783,8 @@ export class DelveGame {
     if (sup === 'floor') return floorOk(place, this.world.getFg(x, y + 1));
     if (sup === 'ceiling') return ceilOk(place, this.world.getFg(x, y - 1));
     if (sup === 'rope') return ropeOk(this.world.getFg(x, y - 1), this.world.getFg(x - 1, y), this.world.getFg(x + 1, y));
+    if (sup === 'wall') return this.world.getWall(x, y) !== 0;
+    if (sup === 'mount') { const b = this.world.getFg(x, y + 1); return this.world.getWall(x, y) !== 0 || isSolidTile(b) || b === T.TABLE; }
     if (place === T.PLATFORM && (this.world.getFg(x - 1, y) === T.PLATFORM || this.world.getFg(x + 1, y) === T.PLATFORM)) return true;
     return this.hasSupport(x, y);
   }
@@ -865,9 +870,39 @@ export class DelveGame {
     return true;
   }
 
+  /** 放背景牆：那格還沒有牆，而且貼著實心方塊或別的牆（或那格本身是實心） */
+  private placeWall(x: number, y: number, item: ItemId): boolean {
+    const w = this.world, id = ITEMS[item].placeWall ?? 0;
+    if (!w.inBounds(x, y)) return false;
+    if (w.getWall(x, y) !== 0) return false; // 已有牆（按住時不洗提示）
+    if (!this.canReach(x, y)) { this.block('place', 'reach', x, y); return false; }
+    const near = isSolidTile(w.getFg(x, y)) || [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => w.getWall(x + dx, y + dy) !== 0 || isSolidTile(w.getFg(x + dx, y + dy)));
+    if (!near) { this.block('place', 'support', x, y); return false; }
+    w.setWall(x, y, id);
+    this.inventory.takeFromSlot(this.inventory.selected, 1);
+    this.events.push({ type: 'place', x, y, tile: T.AIR, item });
+    return true;
+  }
+  /** 拆木板牆（瞄準空格挖）：掉木板牆；牆上掛的東西失去支撐就掉下來 */
+  private mineWall(x: number, y: number, dt: number): void {
+    if (!this.canReach(x, y)) { this.block('mine', 'reach', x, y); this.mining = null; return; }
+    const need = 0.3 / this.currentPick().speed;
+    if (!this.mining || this.mining.x !== x || this.mining.y !== y) this.mining = { x, y, elapsed: 0, need };
+    this.mining.elapsed += dt;
+    if (this.mining.elapsed + 1e-9 < need) return;
+    this.mining = null;
+    const w = this.world;
+    w.setWall(x, y, 0);
+    this.dropAtTile('plank_wall', 1, x, y);
+    this.events.push({ type: 'mine', x, y, tile: T.PLANKS, item: 'plank_wall' });
+    const f = w.getFg(x, y), sup = tileDef(f).support;
+    if ((sup === 'wall' || sup === 'any' || sup === 'mount') && !this.placeSupported(x, y, f)) this.breakTile(x, y);
+  }
+
   /** 嘗試以快捷欄選中的方塊放在 (x,y)。 */
   tryPlace(x: number, y: number): boolean {
     const stack = this.inventory.selectedStack();
+    if (stack && ITEMS[stack.item].placeWall !== undefined) return this.placeWall(x, y, stack.item);
     const place = stack ? ITEMS[stack.item].place : undefined;
     if (!stack || place === undefined) return false;
     if (!this.world.inBounds(x, y)) return false;
@@ -1988,7 +2023,7 @@ export class DelveGame {
     const pressure: SpawnPressure = { firstNight: isFirstNight(this.time), nearSpawn: Math.abs(tx - this.spawn.x) < NEAR_SPAWN_TILES };
     if (near >= spawnCap(hab, pressure) || r.next() >= spawnChance(hab, pressure)) return;
     if (this.bed && Math.hypot(tx - this.bed.x, ty - this.bed.y) < BED_SAFE) return;
-    if (inHouse(w, tx, ty)) return;
+    if (inHouse(w, tx, ty) || homeNear(w, tx, ty)) return;
     const entry = pickEntry(spawnTable(hab), r);
     if (!entry) return;
     const spot = findSpot(w, entry.kind, tx, ty);

@@ -1,5 +1,5 @@
 // items.ts — 道具表。方塊類道具用 place 指回 tile id；鎬用 pick。
-import { T, type LocalName } from './tiles';
+import { T, W, type LocalName } from './tiles';
 import { LIQ } from './liquidKind';
 import { MAX_STACK } from './constants';
 
@@ -48,7 +48,9 @@ export type ItemId =
   | 'moonlit_eel' | 'thunder_ray' | 'mistfin' | 'ember_salmon' | 'petal_koi' | 'pale_blindfish' | 'prism_shrimp'
   | 'lantern_squid' | 'gloom_angler' | 'amber_carp' | 'stingfin' | 'cinder_snapper' | 'obsidian_eel' | 'old_whiskers'
   | 'soggy_boot' | 'wooden_crate' | 'iron_crate' | 'golden_crate'
-  | 'grilled_fish' | 'smoked_eel' | 'fish_stew' | 'campfire';
+  | 'grilled_fish' | 'smoked_eel' | 'fish_stew' | 'campfire'
+  // ── 家具 ──
+  | 'table' | 'chair' | 'lantern_post' | 'painting' | 'bookshelf' | 'banner' | 'candle' | 'plank_wall';
 
 /**
  * 飾品效果。移動 / 戰鬥類（jump、run、night、magnet、nofall、stat）要裝在裝備欄的飾品槽才生效；
@@ -95,6 +97,8 @@ export interface ItemDef {
   name: LocalName;
   maxStack: number;
   place?: number;
+  /** 放背景牆（W.*） */
+  placeWall?: number;
   pick?: PickStats;
   /** 拿在手上時在玩家身邊發光的強度（0..1） */
   heldLight?: number;
@@ -264,7 +268,8 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   fang_charm: acc('fang_charm', '狼牙墜', 'Fang Pendant', 'stat', { crit: 0.06, damage: 0.04 }),
   feather_charm: acc('feather_charm', '輕羽墜', 'Featherfall Charm', 'nofall'),
   warden_heart: acc('warden_heart', '守望之心', "Warden's Heart", 'stat', { maxHp: 20, defense: 2, regen: 0.5 }, true),
-  warden_trophy: { id: 'warden_trophy', name: { zh: '守望者戰利品', en: 'Warden Trophy' }, maxStack: 1, unique: true },
+  // 首領戰利品：可以放在地上 / 桌上，或掛在背景牆上
+  warden_trophy: { id: 'warden_trophy', name: { zh: '守望者戰利品', en: 'Warden Trophy' }, maxStack: 1, unique: true, place: T.TROPHY },
   // ── 液體 ──
   hive: block('hive', '蜂巢殼', 'Hive Comb', T.HIVE),
   crispy_honey: block('crispy_honey', '酥蜜塊', 'Crisp Honey Block', T.CRISPY_HONEY),
@@ -313,6 +318,15 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   smoked_eel: food('smoked_eel', '燻鰻', 'Smoked Eel', 45),
   fish_stew: food('fish_stew', '魚湯', "Fisherman's Stew", 80),
   campfire: { ...block('campfire', '營火', 'Campfire', T.CAMPFIRE), maxStack: 99 },
+  // ── 家具 ──
+  table: { ...block('table', '木桌', 'Wooden Table', T.TABLE), maxStack: 99 },
+  chair: { ...block('chair', '木椅', 'Wooden Chair', T.CHAIR), maxStack: 99 },
+  lantern_post: { ...block('lantern_post', '燈柱', 'Lamp Post', T.LANTERN_POST), maxStack: 99 },
+  painting: { ...block('painting', '古畫', 'Old Painting', T.PAINTING), maxStack: 99 },
+  bookshelf: { ...block('bookshelf', '書架', 'Bookshelf', T.BOOKSHELF), maxStack: 99 },
+  banner: { ...block('banner', '旗幟', 'Banner', T.BANNER), maxStack: 99 },
+  candle: { ...block('candle', '蠟燭', 'Candle', T.CANDLE), maxStack: 99 },
+  plank_wall: { id: 'plank_wall', name: { zh: '木板牆', en: 'Plank Wall' }, maxStack: MAX_STACK, placeWall: W.PLANK_WALL },
 };
 
 /** 套裝組成（頭 / 身 / 腿），順序 = 等級 */

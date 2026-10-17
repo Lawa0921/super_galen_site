@@ -88,5 +88,8 @@ function dungeonLoot(r: Rng, kind: 'dungeon' | 'treasure', slots: (Stack | null)
   put('torch', r.int(8, 20));
   if (r.chance(2)) put('crystal', r.int(1, 4));
   if (r.chance(3)) put(r.chance(2) ? 'platform' : 'wooden_door', r.int(2, 8));
+  // 家具戰利品：古畫、燈柱
+  if (r.chance(4)) put('painting', 1);
+  if (r.chance(8)) put('lantern_post', 1);
   return slots;
 }

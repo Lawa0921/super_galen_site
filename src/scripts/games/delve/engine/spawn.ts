@@ -233,3 +233,26 @@ export function findSpot(w: World, kind: EnemyKind, x: number, y: number): { x: 
 export function inHouse(w: World, x: number, y: number): boolean {
   return w.getWall(x, y) === W.PLANK_WALL;
 }
+
+/** 有家具的家：桌子在木板牆前，附近（±HOME_FURNISH 格）有椅子或床、還有一盞燈 → 半徑 HOME_SAFE 內不生怪 */
+export const HOME_SAFE = { x: 24, y: 14 };
+const HOME_FURNISH = { x: 7, y: 4 };
+const HOME_LIGHTS = new Set<number>([T.TORCH, T.CANDLE, T.LANTERN, T.LANTERN_POST, T.CAMPFIRE]);
+export function homeNear(w: World, x: number, y: number): boolean {
+  const x0 = Math.max(0, x - HOME_SAFE.x), x1 = Math.min(w.width - 1, x + HOME_SAFE.x);
+  const y0 = Math.max(0, y - HOME_SAFE.y), y1 = Math.min(w.height - 1, y + HOME_SAFE.y);
+  const W0 = w.width, fg = w.fg;
+  for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
+    if (fg[ty * W0 + tx] !== T.TABLE || w.wall[ty * W0 + tx] !== W.PLANK_WALL) continue;
+    let seat = false, lamp = false;
+    for (let yy = ty - HOME_FURNISH.y; yy <= ty + HOME_FURNISH.y && !(seat && lamp); yy++) {
+      for (let xx = tx - HOME_FURNISH.x; xx <= tx + HOME_FURNISH.x; xx++) {
+        const f = w.getFg(xx, yy);
+        if (f === T.CHAIR || f === T.BED_HEAD || f === T.BED_FOOT) seat = true;
+        if (HOME_LIGHTS.has(f)) lamp = true;
+      }
+    }
+    if (seat && lamp) return true;
+  }
+  return false;
+}

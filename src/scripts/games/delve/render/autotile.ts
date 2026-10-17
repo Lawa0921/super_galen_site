@@ -75,6 +75,7 @@ export const DECOR_STYLES: Record<number, number> = {
   [T.CHAIN]: 2, [T.BANNER]: 4, [T.CANDLE]: 2, [T.LANTERN]: 1, [T.BOOKSHELF]: 3, [T.BONES]: 3, [T.LORE_TABLET]: 1,
   [T.ROPE]: 4, [T.BED_HEAD]: 1, [T.BED_FOOT]: 1, [T.FURNACE]: 1, [T.ANVIL]: 1,
   [T.CAMPFIRE]: 1,
+  [T.TABLE]: 1, [T.CHAIR]: 2, [T.LANTERN_POST]: 1, [T.PAINTING]: 4, [T.TROPHY]: 2,
 };
 /** 門 / 旗幟等直向多格物件：同種在上 → 不是頂；同種在下 → 不是底 */
 function doorPart(id: number, n: Neighbor): number {
@@ -123,6 +124,9 @@ export function decorStyle(id: number, x: number, y: number, n: Neighbor): numbe
       return blue + (n(0, -1) === T.BANNER ? 1 : 0);
     }
     case T.CHAIN: return y & 1;
+    // 椅子面向旁邊的桌子；戰利品：下面實心 / 桌子 → 立座，否則掛牆
+    case T.CHAIR: return n(1, 0) === T.TABLE ? 0 : n(-1, 0) === T.TABLE ? 1 : h & 1;
+    case T.TROPHY: return solid(0, 1) || n(0, 1) === T.TABLE ? 0 : 1;
     case T.ROPE: {
       // 0 中段、1 底端、2 頂端（繩結）、3 單格
       const up = n(0, -1) === T.ROPE, dn = n(0, 1) === T.ROPE;

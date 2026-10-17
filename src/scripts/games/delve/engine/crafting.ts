@@ -110,6 +110,14 @@ export const RECIPES: readonly Recipe[] = [
   r('fish_stew_salmon', 'fish_stew', 1, 'campfire', ['ember_salmon', 1], ['mushroom', 1]),
   r('fish_stew_deep', 'fish_stew', 1, 'campfire', ['gloom_angler', 1]),
   r('fish_stew_squid', 'fish_stew', 1, 'campfire', ['lantern_squid', 1], ['prism_shrimp', 1]),
+  // ── 家具 ──
+  r('table', 'table', 1, 'workbench', ['planks', 8]),
+  r('chair', 'chair', 1, 'workbench', ['planks', 4]),
+  r('bookshelf', 'bookshelf', 1, 'workbench', ['planks', 12]),
+  r('banner', 'banner', 1, 'workbench', ['planks', 1], ['gel', 3]),
+  r('candle', 'candle', 3, 'workbench', ['gel', 2]),
+  r('lantern_post', 'lantern_post', 1, 'anvil', ['iron_bar', 2], ['torch', 2]),
+  r('plank_wall', 'plank_wall', 4, null, ['planks', 1]),
 ];
 
 export function findRecipe(id: string): Recipe | undefined {
