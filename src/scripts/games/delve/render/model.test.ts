@@ -126,7 +126,7 @@ describe('recipeRows', () => {
     const inv = new Inventory();
     inv.add('wood', 1);
     inv.add('planks', 5);
-    inv.add('copper_ore', 8);
+    inv.add('copper_bar', 5);
     const far = recipeRows(inv, false);
     const planks = far.find((r) => r.id === 'planks')!;
     expect(planks.craftable).toBe(true);

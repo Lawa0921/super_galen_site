@@ -5,6 +5,7 @@
 //     陶罐、箱子、木樑），每種多個 style
 //   · 新道具圖示（硬幣、水晶碎片、仙人掌、蘑菇…）
 // 全部只用 pixel.ts 統一色票上的顏色；光從左上來；成簇不撒點；描邊 1px（植物用自身最暗色描邊）。
+import { anvilBmp, furnaceBmp } from './combatArt';
 import { T } from '../engine/tiles';
 import { CACTUS_STYLE } from './autotile';
 import { Bmp, INK, h01, hex, ramp, type RGB } from './pixel';
@@ -785,6 +786,8 @@ export function decorBmp(id: number, style: number): Bmp {
     case T.ROPE: return ropeBmp(style);
     case T.BED_HEAD: return bedHeadBmp();
     case T.BED_FOOT: return bedFootBmp();
+    case T.FURNACE: return furnaceBmp(0);
+    case T.ANVIL: return anvilBmp();
     default: return new Bmp(S, S);
   }
 }

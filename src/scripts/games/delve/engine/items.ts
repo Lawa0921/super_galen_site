@@ -19,13 +19,64 @@ export type ItemId =
   | 'lantern' | 'rune_pickaxe' | 'explorer_map'
   // ── 探索工具 / 飾品 ──
   | 'rope' | 'bed' | 'recall_stone' | 'compass' | 'depth_meter'
-  | 'jump_boots' | 'swift_boots' | 'night_amulet' | 'magnet';
+  | 'jump_boots' | 'swift_boots' | 'night_amulet' | 'magnet'
+  // ── 戰鬥：怪物素材 / 錠 / 合成站 ──
+  | 'gel' | 'bone' | 'feather' | 'fang' | 'chitin' | 'stinger' | 'spore' | 'ember'
+  | 'copper_bar' | 'iron_bar' | 'silver_bar' | 'gold_bar' | 'molten_bar'
+  | 'furnace' | 'anvil'
+  // ── 武器 / 彈藥 ──
+  | 'wood_sword' | 'copper_sword' | 'iron_sword' | 'gold_sword' | 'iron_spear' | 'bone_greatsword' | 'lumen_blade'
+  | 'wood_bow' | 'silver_bow' | 'throwing_knife' | 'wood_boomerang' | 'crystal_staff'
+  | 'wooden_arrow' | 'flaming_arrow'
+  // ── 防具（頭 / 身 / 腿） ──
+  | 'wood_helmet' | 'wood_chestplate' | 'wood_greaves'
+  | 'copper_helmet' | 'copper_chestplate' | 'copper_greaves'
+  | 'iron_helmet' | 'iron_chestplate' | 'iron_greaves'
+  | 'gold_helmet' | 'gold_chestplate' | 'gold_greaves'
+  | 'bone_helmet' | 'bone_chestplate' | 'bone_greaves'
+  | 'molten_helmet' | 'molten_chestplate' | 'molten_greaves'
+  // ── 消耗品 / 戰鬥飾品 / 首領 ──
+  | 'life_core' | 'healing_potion' | 'wick_offering'
+  | 'chitin_buckler' | 'fang_charm' | 'feather_charm' | 'warden_heart' | 'warden_trophy';
 
 /**
- * 飾品效果（放在背包任一格即生效）：jump 跳更高、run 跑更快、night 身邊微光、magnet 伸手距離更遠、
- * compass HUD 顯示東西座標、depth HUD 顯示深度格數、map 全地圖顯示所有地標位置。
+ * 飾品效果。移動 / 戰鬥類（jump、run、night、magnet、nofall、stat）要裝在裝備欄的飾品槽才生效；
+ * 資訊類（compass、depth、map）放在背包任一格或裝在飾品槽都生效（見 INFO_ACCESSORIES）。
+ *   jump 跳更高（安全落下高度 +8 格）、run 跑更快、night 身邊微光、magnet 撿拾半徑變大 + 伸手距離 +3、
+ *   nofall 不受摔落傷害、stat 只有數值加成（stats）、
+ *   compass HUD 顯示東西座標、depth HUD 顯示深度格數、map 全地圖顯示所有地標位置。
  */
-export type Accessory = 'jump' | 'run' | 'night' | 'magnet' | 'compass' | 'depth' | 'map';
+export type Accessory = 'jump' | 'run' | 'night' | 'magnet' | 'compass' | 'depth' | 'map' | 'nofall' | 'stat';
+export const INFO_ACCESSORIES: readonly Accessory[] = ['compass', 'depth', 'map'];
+
+/** 武器種類：sword 揮砍弧、broadsword 大弧重擊、spear 直刺、bow 射箭、throw 投擲（消耗本身）、boomerang 迴旋、staff 法術（耗魔） */
+export type WeaponKind = 'sword' | 'broadsword' | 'spear' | 'bow' | 'throw' | 'boomerang' | 'staff';
+export interface WeaponDef {
+  kind: WeaponKind;
+  damage: number;
+  /** 每次攻擊秒數 */
+  useTime: number;
+  /** 擊退速度（px/s） */
+  knockback: number;
+  /** 基礎暴擊率 0..1 */
+  crit: number;
+  /** 近戰觸及（px，從身體中心算） */
+  reach?: number;
+  /** 投射物初速（px/s） */
+  speed?: number;
+  /** 每發耗魔 */
+  mana?: number;
+  /** 需要的彈藥 */
+  ammo?: 'arrow';
+  /** 揮劍時放出光刃（燈脈之刃） */
+  wave?: boolean;
+}
+export interface AmmoDef { kind: 'arrow'; damage: number; flame?: boolean; }
+export type ArmorSlot = 'head' | 'body' | 'legs';
+export type ArmorSetId = 'wood' | 'copper' | 'iron' | 'gold' | 'bone' | 'molten';
+export interface ArmorDef { slot: ArmorSlot; defense: number; set: ArmorSetId; }
+/** 被動數值（飾品）：damage = 傷害加成比例、crit = 暴擊率加成、regen = 回血速度加成比例 */
+export interface StatMods { defense?: number; maxHp?: number; damage?: number; crit?: number; regen?: number; }
 
 export interface PickStats { speed: number; tier: number; }
 export interface ItemDef {
@@ -40,8 +91,15 @@ export interface ItemDef {
   unique?: boolean;
   /** 飾品效果（在背包裡就生效） */
   accessory?: Accessory;
-  /** 主動使用（手持按「使用」）：recall = 引導後傳送回重生點 */
-  use?: 'recall';
+  /**
+   * 主動使用（手持按「使用」）：recall = 引導後傳送回重生點、life = 永久提高最大生命、heal = 回血（有冷卻）、
+   * summon = 召喚首領（夜晚或洞穴層以下）
+   */
+  use?: 'recall' | 'life' | 'heal' | 'summon';
+  weapon?: WeaponDef;
+  ammo?: AmmoDef;
+  armor?: ArmorDef;
+  stats?: StatMods;
 }
 
 const block = (id: ItemId, zh: string, en: string, place: number): ItemDef =>
@@ -49,6 +107,12 @@ const block = (id: ItemId, zh: string, en: string, place: number): ItemDef =>
 const pick = (id: ItemId, zh: string, en: string, speed: number, tier: number): ItemDef =>
   ({ id, name: { zh, en }, maxStack: 1, pick: { speed, tier } });
 const mat = (id: ItemId, zh: string, en: string): ItemDef => ({ id, name: { zh, en }, maxStack: MAX_STACK });
+const wpn = (id: ItemId, zh: string, en: string, weapon: WeaponDef, extra: Partial<ItemDef> = {}): ItemDef =>
+  ({ id, name: { zh, en }, maxStack: 1, weapon, ...extra });
+const arm = (id: ItemId, zh: string, en: string, slot: ArmorSlot, defense: number, set: ArmorSetId): ItemDef =>
+  ({ id, name: { zh, en }, maxStack: 1, armor: { slot, defense, set } });
+const acc = (id: ItemId, zh: string, en: string, accessory: Accessory, stats?: StatMods, unique = false): ItemDef =>
+  ({ id, name: { zh, en }, maxStack: 1, accessory, ...(stats ? { stats } : {}), ...(unique ? { unique } : {}) });
 
 export const ITEMS: Record<ItemId, ItemDef> = {
   dirt: block('dirt', '泥土', 'Dirt', T.DIRT),
@@ -110,6 +174,77 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   swift_boots: { id: 'swift_boots', name: { zh: '疾行靴', en: 'Windrunner Boots' }, maxStack: 1, unique: true, accessory: 'run' },
   night_amulet: { id: 'night_amulet', name: { zh: '夜視護符', en: 'Owl-Eye Amulet' }, maxStack: 1, unique: true, accessory: 'night' },
   magnet: { id: 'magnet', name: { zh: '磁石', en: 'Lodestone' }, maxStack: 1, unique: true, accessory: 'magnet' },
+  // ── 怪物素材 ──
+  gel: mat('gel', '凝膠', 'Gel'),
+  bone: mat('bone', '骨頭', 'Bone'),
+  feather: mat('feather', '羽毛', 'Feather'),
+  fang: mat('fang', '獠牙', 'Fang'),
+  chitin: mat('chitin', '甲殼', 'Chitin'),
+  stinger: mat('stinger', '蜂刺', 'Stinger'),
+  spore: mat('spore', '菇孢', 'Spore Pod'),
+  ember: mat('ember', '餘燼', 'Ember'),
+  // ── 錠 / 合成站 ──
+  copper_bar: mat('copper_bar', '銅錠', 'Copper Bar'),
+  iron_bar: mat('iron_bar', '鐵錠', 'Iron Bar'),
+  silver_bar: mat('silver_bar', '銀錠', 'Silver Bar'),
+  gold_bar: mat('gold_bar', '金錠', 'Gold Bar'),
+  molten_bar: mat('molten_bar', '熔心錠', 'Moltenheart Bar'),
+  furnace: { ...block('furnace', '熔爐', 'Furnace', T.FURNACE), maxStack: 99 },
+  anvil: { ...block('anvil', '鐵砧', 'Anvil', T.ANVIL), maxStack: 99 },
+  // ── 武器 ──
+  wood_sword: wpn('wood_sword', '木劍', 'Wooden Sword', { kind: 'sword', damage: 7, useTime: 0.42, knockback: 170, crit: 0.04, reach: 32 }),
+  copper_sword: wpn('copper_sword', '銅劍', 'Copper Sword', { kind: 'sword', damage: 10, useTime: 0.38, knockback: 190, crit: 0.04, reach: 34 }),
+  iron_sword: wpn('iron_sword', '鐵劍', 'Iron Sword', { kind: 'sword', damage: 13, useTime: 0.36, knockback: 210, crit: 0.05, reach: 36 }),
+  gold_sword: wpn('gold_sword', '金劍', 'Gold Sword', { kind: 'sword', damage: 18, useTime: 0.33, knockback: 240, crit: 0.06, reach: 38 }),
+  iron_spear: wpn('iron_spear', '鐵矛', 'Iron Spear', { kind: 'spear', damage: 15, useTime: 0.5, knockback: 230, crit: 0.05, reach: 60 }),
+  bone_greatsword: wpn('bone_greatsword', '碎骨大劍', 'Bonecleaver', { kind: 'broadsword', damage: 26, useTime: 0.5, knockback: 380, crit: 0.06, reach: 46 }, { unique: true }),
+  lumen_blade: wpn('lumen_blade', '燈脈之刃', 'Lumen Vein Blade', { kind: 'sword', damage: 30, useTime: 0.3, knockback: 260, crit: 0.08, reach: 42, wave: true, speed: 420 }, { unique: true, heldLight: 0.7 }),
+  wood_bow: wpn('wood_bow', '木弓', 'Wooden Bow', { kind: 'bow', damage: 5, useTime: 0.55, knockback: 90, crit: 0.04, speed: 520, ammo: 'arrow' }),
+  silver_bow: wpn('silver_bow', '銀弓', 'Silver Bow', { kind: 'bow', damage: 10, useTime: 0.45, knockback: 110, crit: 0.06, speed: 640, ammo: 'arrow' }),
+  throwing_knife: { ...wpn('throwing_knife', '飛刀', 'Throwing Knife', { kind: 'throw', damage: 11, useTime: 0.3, knockback: 60, crit: 0.08, speed: 560 }), maxStack: MAX_STACK },
+  wood_boomerang: wpn('wood_boomerang', '迴旋木刃', 'Whirlwood', { kind: 'boomerang', damage: 12, useTime: 0.4, knockback: 160, crit: 0.04, speed: 440 }),
+  crystal_staff: wpn('crystal_staff', '晶光法杖', 'Prism Staff', { kind: 'staff', damage: 17, useTime: 0.36, knockback: 120, crit: 0.05, speed: 480, mana: 6 }, { heldLight: 0.5 }),
+  wooden_arrow: { ...mat('wooden_arrow', '木箭', 'Wooden Arrow'), ammo: { kind: 'arrow', damage: 5 } },
+  flaming_arrow: { ...mat('flaming_arrow', '火焰箭', 'Flaming Arrow'), ammo: { kind: 'arrow', damage: 8, flame: true } },
+  // ── 防具 ──
+  wood_helmet: arm('wood_helmet', '木頭盔', 'Wooden Helmet', 'head', 1, 'wood'),
+  wood_chestplate: arm('wood_chestplate', '木胸甲', 'Wooden Breastplate', 'body', 1, 'wood'),
+  wood_greaves: arm('wood_greaves', '木護脛', 'Wooden Greaves', 'legs', 0, 'wood'),
+  copper_helmet: arm('copper_helmet', '銅頭盔', 'Copper Helmet', 'head', 1, 'copper'),
+  copper_chestplate: arm('copper_chestplate', '銅胸甲', 'Copper Breastplate', 'body', 2, 'copper'),
+  copper_greaves: arm('copper_greaves', '銅護脛', 'Copper Greaves', 'legs', 1, 'copper'),
+  iron_helmet: arm('iron_helmet', '鐵頭盔', 'Iron Helmet', 'head', 2, 'iron'),
+  iron_chestplate: arm('iron_chestplate', '鐵胸甲', 'Iron Breastplate', 'body', 3, 'iron'),
+  iron_greaves: arm('iron_greaves', '鐵護脛', 'Iron Greaves', 'legs', 2, 'iron'),
+  gold_helmet: arm('gold_helmet', '金頭盔', 'Gold Helmet', 'head', 3, 'gold'),
+  gold_chestplate: arm('gold_chestplate', '金胸甲', 'Gold Breastplate', 'body', 5, 'gold'),
+  gold_greaves: arm('gold_greaves', '金護脛', 'Gold Greaves', 'legs', 3, 'gold'),
+  bone_helmet: arm('bone_helmet', '骸衛頭盔', 'Ossuary Helm', 'head', 4, 'bone'),
+  bone_chestplate: arm('bone_chestplate', '骸衛胸甲', 'Ossuary Mail', 'body', 5, 'bone'),
+  bone_greaves: arm('bone_greaves', '骸衛護脛', 'Ossuary Greaves', 'legs', 4, 'bone'),
+  molten_helmet: arm('molten_helmet', '熔心頭盔', 'Moltenheart Helm', 'head', 5, 'molten'),
+  molten_chestplate: arm('molten_chestplate', '熔心胸甲', 'Moltenheart Plate', 'body', 7, 'molten'),
+  molten_greaves: arm('molten_greaves', '熔心護脛', 'Moltenheart Greaves', 'legs', 5, 'molten'),
+  // ── 消耗品 ──
+  life_core: { ...mat('life_core', '生命晶核', 'Vital Core'), maxStack: 99, use: 'life' },
+  healing_potion: { ...mat('healing_potion', '治療藥水', 'Healing Draught'), maxStack: 99, use: 'heal' },
+  wick_offering: { ...mat('wick_offering', '燈芯祭品', 'Wick Offering'), maxStack: 20, use: 'summon' },
+  // ── 戰鬥飾品 ──
+  chitin_buckler: acc('chitin_buckler', '甲殼小盾', 'Chitin Buckler', 'stat', { defense: 3 }),
+  fang_charm: acc('fang_charm', '狼牙墜', 'Fang Pendant', 'stat', { crit: 0.06, damage: 0.04 }),
+  feather_charm: acc('feather_charm', '輕羽墜', 'Featherfall Charm', 'nofall'),
+  warden_heart: acc('warden_heart', '守望之心', "Warden's Heart", 'stat', { maxHp: 20, defense: 2, regen: 0.5 }, true),
+  warden_trophy: { id: 'warden_trophy', name: { zh: '守望者戰利品', en: 'Warden Trophy' }, maxStack: 1, unique: true },
+};
+
+/** 套裝組成（頭 / 身 / 腿），順序 = 等級 */
+export const ARMOR_SETS: Record<ArmorSetId, readonly [ItemId, ItemId, ItemId]> = {
+  wood: ['wood_helmet', 'wood_chestplate', 'wood_greaves'],
+  copper: ['copper_helmet', 'copper_chestplate', 'copper_greaves'],
+  iron: ['iron_helmet', 'iron_chestplate', 'iron_greaves'],
+  gold: ['gold_helmet', 'gold_chestplate', 'gold_greaves'],
+  bone: ['bone_helmet', 'bone_chestplate', 'bone_greaves'],
+  molten: ['molten_helmet', 'molten_chestplate', 'molten_greaves'],
 };
 
 export function isItemId(v: unknown): v is ItemId {

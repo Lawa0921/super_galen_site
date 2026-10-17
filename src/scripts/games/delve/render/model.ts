@@ -175,6 +175,11 @@ const BLOCKED: Record<BlockReason, string | null> = {
   chest: '箱子裡還有東西，先拿空才能挖',
   locked: '鎖住了，需要地城鑰匙',
   golden: '金寶箱上了鎖，需要金鑰匙',
+  ammo: '沒有箭了（木箭：木材 + 石頭，在工作台做）',
+  mana: '魔力不足',
+  summon: '燈芯祭品只能在夜晚或洞穴層以下使用（場上不能已有首領）',
+  potion: '藥水還在冷卻（或生命已滿）',
+  maxlife: '生命上限已經到頂了',
 };
 
 /** 古碑碑文（佔位文字） */

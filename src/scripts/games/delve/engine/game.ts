@@ -11,14 +11,27 @@ import { generateWorld, type BiomeSegment, type Structure, type Landform, type R
 import type { DungeonInfo } from './gen/dungeon';
 type GenRelic = { x: number; y: number; item: ItemId; where: string };
 import { T, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
-import { ITEMS, type Accessory, type ItemId, type PickStats } from './items';
+import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemId, type PickStats, type WeaponDef, type WeaponKind } from './items';
 import { potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
-import { craft as craftRecipe, findRecipe, type CraftResult } from './crafting';
+import { craft as craftRecipe, findRecipe, type CraftResult, type Station } from './crafting';
 import { makeBody, stepPlayer, onPlatform, type Body, type MoveStats, type PlayerMotion } from './physics';
 import { LightEngine, skyBrightness, type LightMap, type LightRect, type PointLight } from './lighting';
 import { ExploredMap, toggleMarker, type MapMarker } from './explore';
 import { Discovery, buildRegions, type Region, type RegionCat } from './discovery';
+import { Equipment, type EquipSlot } from './equipment';
+import {
+  BASE_HP, BASE_MANA, LIFE_CORE_HP, MAX_HP_CAP, SAFE_FALL_TILES, computeStats, damageTaken, enemyDamage, fallDamage,
+  knockbackScale, regenRate, rollCrit, type PlayerStats,
+} from './combat';
+import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity } from './entities';
+import { ProjList, type ProjKind, type Projectile } from './projectiles';
+import { ENEMIES, makeEnemy, stepEnemy, type AiCtx, type Enemy, type EnemyKind } from './enemies';
+import {
+  ACTIVE, BED_SAFE, DEFAULT_VIEW_HALF, DESPAWN, MAX_ENEMIES, SPAWN_INTERVAL, SPAWN_MAX, findSpot, habitatAt, inHouse,
+  pickEntry, spawnCap, spawnChance, spawnTable,
+} from './spawn';
+import { Rng } from './rng';
 import {
   TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH,
 } from './constants';
@@ -27,9 +40,13 @@ export interface DelveOptions {
   seed?: string | number;
   width?: number;
   height?: number;
+  /** 和平模式：不自然生成怪物 */
+  peaceful?: boolean;
 }
 
-export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest' | 'locked' | 'golden';
+export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest' | 'locked' | 'golden'
+  /** 戰鬥：沒有箭 / 魔力不足 / 現在不能召喚首領 / 藥水冷卻中 / 生命已達上限 */
+  | 'ammo' | 'mana' | 'summon' | 'potion' | 'maxlife';
 export type DelveEvent =
   | { type: 'mine'; x: number; y: number; tile: number; item: ItemId | null }
   | { type: 'place'; x: number; y: number; tile: number; item: ItemId }
@@ -49,7 +66,35 @@ export type DelveEvent =
   /** 床：set = 設定重生點；false = 床被拆掉、重生點回到出生點 */
   | { type: 'spawn'; set: boolean; x: number; y: number }
   /** 傳送石：開始引導 / 取消 / 完成傳送（x,y = 目的地腳底 tile） */
-  | { type: 'recall'; phase: 'start' | 'cancel' | 'done'; x: number; y: number };
+  | { type: 'recall'; phase: 'start' | 'cancel' | 'done'; x: number; y: number }
+  // ── 戰鬥 ──
+  /** 開始一次攻擊（音效 / 動畫） */
+  | { type: 'attack'; item: ItemId; kind: WeaponKind }
+  /** 打中怪物（x,y = 數字位置 px） */
+  | { type: 'hit'; id: number; kind: EnemyKind; x: number; y: number; amount: number; crit: boolean }
+  /** 玩家受傷（fall = 摔落） */
+  | { type: 'hurt'; x: number; y: number; amount: number; fall: boolean }
+  | { type: 'kill'; id: number; kind: EnemyKind; x: number; y: number }
+  | { type: 'death'; x: number; y: number }
+  | { type: 'respawn'; x: number; y: number }
+  | { type: 'pickup'; item: ItemId; n: number }
+  | { type: 'heal'; amount: number; x: number; y: number }
+  | { type: 'lifeup'; maxHp: number }
+  | { type: 'boss'; phase: 'spawn' | 'phase2' | 'defeated' | 'leave'; kind: EnemyKind }
+  /** 怪物射出投射物 / 投射物撞牆（音效、火花） */
+  | { type: 'shot'; kind: ProjKind; hostile: boolean }
+  | { type: 'impact'; kind: ProjKind; x: number; y: number };
+
+/** 進行中的攻擊（render 動畫 + 近戰判定） */
+export interface AttackState {
+  item: ItemId; kind: WeaponKind;
+  /** 已經過秒數 / 總秒數 */
+  t: number; dur: number;
+  /** 瞄準角（弧度，世界座標，0 = 右） */
+  angle: number;
+  dir: 1 | -1;
+  id: number;
+}
 
 export interface MiningState { x: number; y: number; elapsed: number; need: number; }
 
@@ -72,6 +117,23 @@ export interface DelveState {
   recall: number;
   /** 床（重生點）；null = 出生點 */
   bed: { x: number; y: number } | null;
+  // ── 戰鬥 ──
+  hp: number; maxHp: number; mana: number; maxMana: number;
+  dead: boolean;
+  /** 重生倒數（秒） */
+  respawnIn: number;
+  defense: number;
+  facing: 1 | -1;
+  attack: { item: ItemId; kind: WeaponKind; progress: number; angle: number; dir: 1 | -1 } | null;
+  /** 受傷無敵剩餘秒數 */
+  iframes: number;
+  equipment: { head: ItemId | null; body: ItemId | null; legs: ItemId | null; acc: (ItemId | null)[] };
+  setBonus: string | null;
+  enemies: number;
+  drops: number;
+  boss: { kind: EnemyKind; hp: number; maxHp: number; phase: number } | null;
+  peaceful: boolean;
+  bossesDefeated: string[];
 }
 
 /** 徒手（背包沒有鎬）時的挖掘能力 */
@@ -88,6 +150,30 @@ export const MAGNET_REACH = 3;
 export const REVEAL_RADIUS = 9;
 /** 畫面上光照 ≥ 此值的格算「看見了」 */
 export const REVEAL_LIGHT = 0.3;
+/** 受傷後無敵秒數 */
+export const IFRAMES = 0.8;
+/** 死亡到重生的秒數 */
+export const RESPAWN_TIME = 4;
+/** 載入 / 重生後幾秒內不自然生成怪物（喘口氣） */
+export const SPAWN_GRACE = 10;
+/** 治療藥水：回復量與冷卻 */
+export const POTION_HEAL = 60;
+export const POTION_COOLDOWN = 30;
+/** 魔力回復（每秒）與施法後延遲 */
+export const MANA_REGEN = 7;
+/** 死亡時掉落身上多少比例的錢幣 */
+export const DEATH_COIN_LOSS = 0.5;
+/** 夜晚：一天的前 20% 與後 20% */
+export function isNightTime(t: number): boolean {
+  let p = (t % DAY_LENGTH) / DAY_LENGTH;
+  if (p < 0) p += 1;
+  return p < 0.2 || p >= 0.8;
+}
+/** 首領：燈脈守望者的掉落 */
+export const BOSS_DROPS: { item: ItemId; n: number }[] = [
+  { item: 'lumen_blade', n: 1 }, { item: 'warden_heart', n: 1 }, { item: 'warden_trophy', n: 1 },
+  { item: 'healing_potion', n: 5 }, { item: 'silver_coin', n: 12 },
+];
 
 export class DelveGame {
   static readonly TILE_SIZE = TILE_SIZE;
@@ -152,6 +238,48 @@ export class DelveGame {
   private lastBlockedAt = -Infinity;
   private readonly lightEngine = new LightEngine();
 
+  // ── 戰鬥狀態 ───────────────────────────────────────────
+  /** 裝備欄（存檔內容） */
+  equipment = new Equipment();
+  /** 目前生命（浮點；顯示取整） */
+  hp = BASE_HP;
+  /** 生命上限（不含飾品）：100 + 生命晶核 × 20（存檔內容） */
+  baseMaxHp = BASE_HP;
+  mana = BASE_MANA;
+  dead = false;
+  /** 重生倒數（秒） */
+  respawnT = 0;
+  /** 和平模式：不自然生成怪物（存檔內容；切到和平時清掉現有怪物） */
+  private peacefulMode = false;
+  /** 自動瞄準最近的怪物（觸控用） */
+  autoAim = false;
+  /** 已擊敗的首領（存檔內容） */
+  readonly bossesDefeated = new Set<string>();
+  /** 各種怪物擊殺數（存檔內容） */
+  kills: Partial<Record<EnemyKind, number>> = {};
+  readonly drops = new DropList();
+  readonly projectiles = new ProjList();
+  enemies: Enemy[] = [];
+  /** 渲染端告知的視野半寬 / 半高（格）：生成點要在畫面外 */
+  viewHalf = { ...DEFAULT_VIEW_HALF };
+  facing: 1 | -1 = 1;
+  attack: AttackState | null = null;
+  private nextEnemyId = 1;
+  private swingId = 0;
+  private attackCd = 0;
+  private iframes = 0;
+  private sinceHit = 99;
+  private knockT = 0;
+  private fallPeak: number | null = null;
+  private potionCd = 0;
+  private manaDelay = 0;
+  private spawnT = SPAWN_GRACE;
+  private readonly spawnRng: Rng;
+  private readonly combatRng: Rng;
+  private aimPx = { x: 0, y: 0 };
+  private statsVer = -1;
+  private statsCache: PlayerStats = computeStats(new Equipment());
+
   constructor(opts: DelveOptions = {}) {
     this.seed = String(opts.seed ?? 'delve');
     const gen = generateWorld(this.seed, { width: opts.width, height: opts.height });
@@ -176,6 +304,10 @@ export class DelveGame {
     this.teleport(this.spawn.x, this.spawn.y);
     this.inventory = starterInventory();
     this.aim = { x: this.spawn.x, y: this.spawn.y + 1 };
+    this.aimPx = { x: (this.spawn.x + 0.5) * TILE_SIZE, y: (this.spawn.y + 1.5) * TILE_SIZE };
+    this.spawnRng = new Rng(`${this.seed}:spawn`);
+    this.combatRng = new Rng(`${this.seed}:combat`);
+    this.peacefulMode = Boolean(opts.peaceful);
     this.world.markAllDirty();
     // 出生點：周圍已揭露、所在地區算已發現（不跳橫幅）
     this.explored.revealDisc(this.spawn.x, this.spawn.y, REVEAL_RADIUS + 6);
@@ -198,6 +330,8 @@ export class DelveGame {
   /** 游標所指 tile 座標 */
   setAim(tx: number, ty: number): void {
     const x = Math.floor(tx), y = Math.floor(ty);
+    // 精確瞄準點（px）：整數 tile 座標視為格子中心
+    this.aimPx = { x: (Number.isInteger(tx) ? tx + 0.5 : tx) * TILE_SIZE, y: (Number.isInteger(ty) ? ty + 0.5 : ty) * TILE_SIZE };
     if (x !== this.aim.x || y !== this.aim.y) { this.aim = { x, y }; this.mining = null; this.lastBlocked = ''; }
   }
   /** 游標所指世界 px 座標（renderer 換算好鏡頭偏移後傳入） */
@@ -217,24 +351,43 @@ export class DelveGame {
   step(dt: number = FIXED_DT): void {
     this.tick++;
     this.time += dt;
-    stepPlayer(this.world, this.player, this.motion, { moveX: this.moveX, jump: this.jump, drop: this.dropHeld, up: this.upHeld }, dt, this.moveStats());
+    if (this.dead) {
+      this.updateDeath(dt);
+      this.updateEntities(dt);
+      return;
+    }
+    const knocked = this.knockT > 0;
+    stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats());
+    this.updateFall();
+    this.updateVitals(dt);
     this.updateRecall(dt);
     this.updateExploration();
     if (!this.platformHinted && this.player.onGround && !this.dropHeld && onPlatform(this.world, this.player)) {
       this.platformHinted = true;
       this.events.push({ type: 'hint', id: 'platform' });
     }
-    if (this.miningHeld) this.updateMining(dt);
+    if (this.attackCd > 0) this.attackCd -= dt;
+    const weapon = this.heldWeapon();
+    if (this.miningHeld) {
+      if (weapon) this.tryAttack(weapon.item, weapon.def);
+      else this.updateMining(dt);
+    }
+    this.updateAttack(dt);
+    if (!this.attack && Math.abs(this.player.vx) > 8) this.facing = this.player.vx > 0 ? 1 : -1;
     if (this.placeCooldown > 0) this.placeCooldown -= dt;
     if (this.useHeld && this.placeCooldown <= 0) {
       const { x, y } = this.aim;
       const held = this.inventory.selectedStack();
+      const use = held ? ITEMS[held.item].use : undefined;
       if (isInteractive(this.world.getFg(x, y))) {
         if (!this.useConsumed) { this.useConsumed = true; this.interact(x, y); }
-      } else if (held && ITEMS[held.item].use === 'recall') {
+      } else if (use === 'recall') {
         if (!this.useConsumed) { this.useConsumed = true; this.startRecall(); }
+      } else if (use) {
+        if (!this.useConsumed) { this.useConsumed = true; this.consume(use); }
       } else if (!this.useConsumed && this.tryPlace(x, y)) this.placeCooldown = PLACE_COOLDOWN;
     }
+    this.updateEntities(dt);
     if (this.openChest) {
       const { x, y } = this.openChest;
       if (!isChestTile(this.world.getFg(x, y)) || !this.canReach(x, y, this.reach() + 1.5)) this.closeChest();
@@ -252,7 +405,6 @@ export class DelveGame {
     if (def.minTier > pick.tier) { this.block('mine', 'tier', x, y); this.mining = null; return; }
     const plan = this.planBreak(x, y);
     if (plan.chest) { this.block('mine', 'chest', x, y); this.mining = null; return; }
-    if (!plan.fits) { this.block('mine', 'full', x, y); this.mining = null; return; }
     const need = def.hardness / pick.speed;
     if (!this.mining || this.mining.x !== x || this.mining.y !== y) this.mining = { x, y, elapsed: 0, need };
     this.mining.need = need; // 換鎬即時生效
@@ -344,12 +496,14 @@ export class DelveGame {
     return !c || c.every((s) => s === null);
   }
 
-  /** 移除 tile 並把掉落物放進背包；處理砍樹與支撐。掉落物放不下時整個動作拒絕（full）。回傳是否有挖掉。 */
-  private breakTile(x: number, y: number): boolean {
+  /**
+   * 移除 tile；處理砍樹與支撐。掉落物變成地上的道具（彈出來、靠近就撿，背包滿就留在地上）；
+   * direct = true（debug 的 mineInstant）時直接進背包，放不下的才掉在地上。回傳是否有挖掉。
+   */
+  private breakTile(x: number, y: number, direct = false): boolean {
     const plan = this.planBreak(x, y);
     if (!plan.tiles.length) return false;
     if (plan.chest) { this.block('mine', 'chest', x, y); return false; }
-    if (!plan.fits) { this.block('mine', 'full', x, y); return false; }
     // 先算完所有掉落物再移除（門等多格物件的掉落依移除前的鄰格判斷）
     const all = plan.tiles.map(([tx, ty]) => { const tid = this.world.getFg(tx, ty); return { tx, ty, tid, drops: this.dropsFor(tid, tx, ty) }; });
     for (const { tx, ty, tid, drops } of all) {
@@ -358,10 +512,20 @@ export class DelveGame {
         this.bed = null;
         this.events.push({ type: 'spawn', set: false, x: this.spawn.x, y: this.spawn.y });
       }
-      for (const d of drops) this.inventory.add(d.item, d.n);
+      for (const d of drops) {
+        const left = direct ? this.inventory.add(d.item, d.n) : d.n;
+        if (left > 0) this.dropAtTile(d.item, left, tx, ty);
+      }
       this.events.push({ type: 'mine', x: tx, y: ty, tile: tid, item: drops.length ? drops[0].item : null });
     }
     return true;
+  }
+
+  /** 在 tile (tx,ty) 中心丟出掉落物（彈出方向由座標雜湊決定，確定性） */
+  private dropAtTile(item: ItemId, n: number, tx: number, ty: number): void {
+    const h = ((Math.imul(tx, 73856093) ^ Math.imul(ty, 19349663)) >>> 0) % 1000;
+    const v = popVelocity(h / 1000, ((h * 7) % 1000) / 1000);
+    this.drops.spawn(item, n, (tx + 0.5) * TILE_SIZE, (ty + 0.5) * TILE_SIZE, v.vx, v.vy * 0.7);
   }
 
   /** 樹幹被砍：連帶收集上方相連的樹幹與樹葉（4 鄰、不往下、水平 ±4 格） */
@@ -522,14 +686,23 @@ export class DelveGame {
   private currentPick(): PickStats { return this.inventory.bestPick() ?? HAND; }
 
   // ── 飾品 / 移動能力 ───────────────────────────────────
-  /** 背包裡有沒有某種飾品（任一格即可） */
+  /**
+   * 某種飾品效果有沒有生效：資訊類（指南針 / 深度計 / 探險家地圖）放背包或裝備都算；
+   * 其他（靴子、護符、磁石、戰鬥飾品）要裝在裝備欄的飾品槽。
+   */
   hasAccessory(a: Accessory): boolean {
     const sl = this.inventory.slots;
-    let sig = '';
+    let sig = `${this.equipment.version}|`;
     for (let i = 0; i < sl.length; i++) { const st = sl[i]; if (st && ITEMS[st.item].accessory) sig += st.item + ','; }
     if (sig !== this.accSig) {
       this.accSig = sig;
-      this.acc = new Set(sig.split(',').filter(Boolean).map((id) => ITEMS[id as ItemId].accessory as Accessory));
+      const set = new Set<Accessory>();
+      for (const it of this.equipment.accessories()) { const ac = ITEMS[it].accessory; if (ac) set.add(ac); }
+      for (const st of sl) {
+        const ac = st ? ITEMS[st.item].accessory : undefined;
+        if (ac && INFO_ACCESSORIES.includes(ac)) set.add(ac);
+      }
+      this.acc = set;
     }
     return this.acc.has(a);
   }
@@ -538,6 +711,33 @@ export class DelveGame {
   }
   /** 伸手距離（格）：磁石 +3 */
   reach(): number { return REACH_TILES + (this.hasAccessory('magnet') ? MAGNET_REACH : 0); }
+  /** 掉落物吸取半徑（格）：一般 5、磁石 12 */
+  magnetRadius(): number { return this.hasAccessory('magnet') ? LODESTONE_TILES : MAGNET_TILES; }
+  /** 裝備帶來的數值（裝備變動才重算） */
+  stats(): PlayerStats {
+    if (this.statsVer !== this.equipment.version) { this.statsVer = this.equipment.version; this.statsCache = computeStats(this.equipment); }
+    return this.statsCache;
+  }
+  maxHp(): number { return Math.min(MAX_HP_CAP, this.baseMaxHp) + this.stats().maxHpBonus; }
+  maxMana(): number { return BASE_MANA; }
+  /** 直接裝上（debug / e2e / 測試；不經背包）。回傳裝到哪一槽。 */
+  equip(item: ItemId, slot?: EquipSlot): EquipSlot | null {
+    const s = slot ?? this.equipment.autoSlot(item);
+    if (!s || !this.equipment.set(s, item)) return null;
+    return s;
+  }
+  /** 背包第 i 格裝到 slot（省略 = 自動找槽） */
+  equipFromInventory(i: number, slot?: EquipSlot): boolean {
+    const st = this.inventory.slots[i];
+    if (!st) return false;
+    const s = slot ?? this.equipment.autoSlot(st.item);
+    return s ? this.equipment.equipFrom(this.inventory, i, s) : false;
+  }
+  unequip(slot: EquipSlot): boolean {
+    const ok = this.equipment.unequipTo(this.inventory, slot);
+    if (ok && this.hp > this.maxHp()) this.hp = this.maxHp();
+    return ok;
+  }
   /** 導航資訊：有指南針才有東西座標（相對出生點，東 = 正），有深度計才有深度格數 */
   navInfo(): { east: number | null; depth: number | null } {
     const f = this.feetTile();
@@ -561,6 +761,9 @@ export class DelveGame {
     if (this.tick % 20 === 0) {
       for (const st of this.inventory.slots) {
         if (st && ITEMS[st.item].unique && this.discovery.gainTreasure(st.item)) this.events.push({ type: 'treasure', item: st.item });
+      }
+      for (const it of this.equipment.items()) {
+        if (ITEMS[it].unique && this.discovery.gainTreasure(it)) this.events.push({ type: 'treasure', item: it });
       }
     }
   }
@@ -637,19 +840,26 @@ export class DelveGame {
     return dx * dx + dy * dy <= r * r;
   }
   /** 玩家中心 tile 的 STATION_RANGE 格（Chebyshev）內有工作台 */
-  nearWorkbench(): boolean {
+  nearWorkbench(): boolean { return this.nearTile(T.WORKBENCH); }
+  /** 附近有哪些合成站 */
+  stations(): Record<Station, boolean> {
+    return { workbench: this.nearTile(T.WORKBENCH), furnace: this.nearTile(T.FURNACE), anvil: this.nearTile(T.ANVIL) };
+  }
+  private nearTile(id: number): boolean {
     const p = this.playerTile();
     for (let y = p.y - STATION_RANGE; y <= p.y + STATION_RANGE; y++) {
       for (let x = p.x - STATION_RANGE; x <= p.x + STATION_RANGE; x++) {
-        if (this.world.inBounds(x, y) && this.world.getFg(x, y) === T.WORKBENCH) return true;
+        if (this.world.inBounds(x, y) && this.world.getFg(x, y) === id) return true;
       }
     }
     return false;
   }
   skyLevel(): number { return skyBrightness(this.time); }
+  isNight(): boolean { return isNightTime(this.time); }
 
   craft(recipeId: string): CraftResult {
-    const r = craftRecipe(this.inventory, recipeId, { nearWorkbench: this.nearWorkbench() });
+    const st = this.stations();
+    const r = craftRecipe(this.inventory, recipeId, { nearWorkbench: st.workbench, nearFurnace: st.furnace, nearAnvil: st.anvil });
     if (r.ok) {
       const out = findRecipe(recipeId)?.out;
       if (out) this.events.push({ type: 'craft', recipe: recipeId, item: out.item, n: out.n });
@@ -780,7 +990,469 @@ export class DelveGame {
       chest: this.openChest ? { ...this.openChest } : null,
       recall: this.recallT === null ? 0 : Math.min(1, this.recallT / RECALL_TIME),
       bed: this.bed ? { ...this.bed } : null,
+      hp: Math.ceil(this.hp), maxHp: this.maxHp(), mana: Math.floor(this.mana), maxMana: this.maxMana(),
+      dead: this.dead,
+      respawnIn: this.dead ? Math.max(0, this.respawnT) : 0,
+      defense: this.stats().defense,
+      facing: this.facing,
+      attack: this.attack ? { item: this.attack.item, kind: this.attack.kind, progress: Math.min(1, this.attack.t / this.attack.dur), angle: this.attack.angle, dir: this.attack.dir } : null,
+      iframes: Math.max(0, this.iframes),
+      equipment: this.equipment.toJSON(),
+      setBonus: this.stats().setBonus,
+      enemies: this.enemies.length,
+      drops: this.drops.list.length,
+      boss: (() => { const b = this.bossEnemy(); return b ? { kind: b.kind, hp: Math.max(0, Math.ceil(b.hp)), maxHp: b.maxHp, phase: b.phase ?? 1 } : null; })(),
+      peaceful: this.peacefulMode,
+      bossesDefeated: [...this.bossesDefeated].sort(),
     };
+  }
+
+  // ── 戰鬥 ───────────────────────────────────────────────
+  get peaceful(): boolean { return this.peacefulMode; }
+  /** 切換和平模式：切到和平時清掉一般怪物（首領保留）與怪物的投射物 */
+  set peaceful(v: boolean) {
+    this.peacefulMode = v;
+    if (v) {
+      this.enemies = this.enemies.filter((e) => ENEMIES[e.kind].boss || ENEMIES[e.kind].minion);
+      for (const p of this.projectiles.list) if (p.hostile && !this.bossEnemy()) p.life = 0;
+    }
+  }
+
+  /** 手上拿的武器（快捷欄選中格） */
+  heldWeapon(): { item: ItemId; def: WeaponDef } | null {
+    const st = this.inventory.selectedStack();
+    const w = st ? ITEMS[st.item].weapon : undefined;
+    return st && w ? { item: st.item, def: w } : null;
+  }
+  /** 肩膀位置（px）：揮砍 / 射擊的起點 */
+  shoulder(): { x: number; y: number } {
+    const p = this.player;
+    return { x: p.x + p.w / 2 + this.facing * 2, y: p.y + p.h - 26 };
+  }
+  bossEnemy(): Enemy | null { return this.enemies.find((e) => ENEMIES[e.kind].boss) ?? null; }
+
+  /** 最近的怪物（中心距離 ≤ maxPx）；自動瞄準用 */
+  nearestEnemy(maxPx: number): Enemy | null {
+    const c = this.playerCenter();
+    let best: Enemy | null = null, bd = maxPx * maxPx;
+    for (const e of this.enemies) {
+      const b = e.body, dx = b.x + b.w / 2 - c.x, dy = b.y + b.h / 2 - c.y, d = dx * dx + dy * dy;
+      if (d < bd) { bd = d; best = e; }
+    }
+    return best;
+  }
+
+  /** 攻擊瞄準點（px）：自動瞄準開著且附近有怪 → 最近那隻；否則游標 */
+  private attackAim(): { x: number; y: number } {
+    if (this.autoAim) {
+      const e = this.nearestEnemy(16 * TILE_SIZE);
+      if (e) return { x: e.body.x + e.body.w / 2, y: e.body.y + e.body.h / 2 };
+    }
+    return this.aimPx;
+  }
+
+  private tryAttack(item: ItemId, w: WeaponDef): void {
+    if (this.attackCd > 0) return;
+    const aim = this.attackAim();
+    const c = this.playerCenter();
+    this.facing = aim.x >= c.x ? 1 : -1;
+    const sh = this.shoulder();
+    const angle = Math.atan2(aim.y - sh.y, aim.x - sh.x);
+    const ux = Math.cos(angle), uy = Math.sin(angle);
+    const ox = sh.x + ux * 12, oy = sh.y + uy * 12;
+    const st = this.stats();
+    const dmg = (base: number): number => base * st.damageMul;
+    const crit = w.crit + st.crit;
+    switch (w.kind) {
+      case 'bow': {
+        const ammo = this.findAmmo();
+        if (!ammo) { this.block('use', 'ammo', this.aim.x, this.aim.y); this.attackCd = 0.3; return; }
+        this.inventory.remove(ammo, 1);
+        const ad = ITEMS[ammo].ammo!;
+        const sp = w.speed ?? 500;
+        this.projectiles.spawn('arrow', false, ox, oy, ux * sp, uy * sp, {
+          damage: dmg(w.damage + ad.damage), knockback: w.knockback, crit, life: 3, gravity: 420, pierce: 1, flame: ad.flame, item: ammo,
+        });
+        break;
+      }
+      case 'throw': {
+        this.inventory.takeFromSlot(this.inventory.selected, 1);
+        const sp = w.speed ?? 500;
+        this.projectiles.spawn('knife', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 2.5, gravity: 520, pierce: 1, item });
+        break;
+      }
+      case 'boomerang': {
+        if (this.projectiles.list.some((p) => p.kind === 'boomerang' && !p.hostile)) return;
+        const sp = w.speed ?? 440;
+        this.projectiles.spawn('boomerang', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 4, pierce: 99, item });
+        break;
+      }
+      case 'staff': {
+        const cost = w.mana ?? 0;
+        if (this.mana < cost) { this.block('use', 'mana', this.aim.x, this.aim.y); this.attackCd = 0.3; return; }
+        this.mana -= cost; this.manaDelay = 0.9;
+        const sp = w.speed ?? 480;
+        this.projectiles.spawn('bolt', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 1.4, pierce: 1, item });
+        break;
+      }
+      default:
+        if (w.wave) {
+          const sp = w.speed ?? 420;
+          this.projectiles.spawn('wave', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage * 0.6), knockback: w.knockback * 0.5, crit, life: 0.55, pierce: 3, item });
+        }
+    }
+    this.swingId++;
+    this.attack = { item, kind: w.kind, t: 0, dur: w.useTime, angle, dir: this.facing, id: this.swingId };
+    this.attackCd = w.useTime;
+    this.events.push({ type: 'attack', item, kind: w.kind });
+  }
+
+  /** 背包裡第一種箭（依格子順序） */
+  private findAmmo(): ItemId | null {
+    for (const s of this.inventory.slots) if (s && ITEMS[s.item].ammo?.kind === 'arrow') return s.item;
+    return null;
+  }
+
+  private updateAttack(dt: number): void {
+    const a = this.attack;
+    if (!a) return;
+    a.t += dt;
+    if (a.t >= a.dur) { this.attack = null; return; }
+    this.facing = a.dir;
+    const w = ITEMS[a.item].weapon;
+    if (!w || (w.kind !== 'sword' && w.kind !== 'broadsword' && w.kind !== 'spear')) return;
+    const f = a.t / a.dur;
+    const st = this.stats();
+    for (const e of [...this.enemies]) {
+      if (e.lastSwing === a.id || !this.meleeTouches(a, w, f, e.body)) continue;
+      e.lastSwing = a.id;
+      const dir = e.body.x + e.body.w / 2 >= this.player.x + this.player.w / 2 ? 1 : -1;
+      this.damageEnemy(e, w.damage * st.damageMul, w.knockback, w.crit + st.crit, dir as 1 | -1);
+    }
+  }
+
+  /** 近戰判定：劍 / 大劍 = 身前一塊弧形範圍（揮擊前 85%）；矛 = 沿瞄準方向的線段（伸出時） */
+  meleeTouches(a: AttackState, w: WeaponDef, f: number, box: Body): boolean {
+    const p = this.player, cx = p.x + p.w / 2, cy = p.y + p.h / 2;
+    const reach = w.reach ?? 32;
+    if (w.kind === 'spear') {
+      if (f < 0.08 || f > 0.75) return false;
+      const ext = Math.sin(Math.min(1, f / 0.45) * Math.PI * 0.5) * reach;
+      const sh = this.shoulder(), ux = Math.cos(a.angle), uy = Math.sin(a.angle);
+      for (let s = 8; s <= ext; s += 5) {
+        const x = sh.x + ux * s, y = sh.y + uy * s;
+        if (x >= box.x && x <= box.x + box.w && y >= box.y && y <= box.y + box.h) return true;
+      }
+      return false;
+    }
+    if (f > 0.85) return false;
+    const x0 = a.dir > 0 ? cx - 6 : cx - reach, x1 = a.dir > 0 ? cx + reach : cx + 6;
+    const y0 = cy - reach - 4, y1 = cy + reach * 0.75;
+    return box.x < x1 && box.x + box.w > x0 && box.y < y1 && box.y + box.h > y0;
+  }
+
+  /** 對怪物造成傷害（已含玩家加成的原始值）；回傳是否打中 */
+  private damageEnemy(e: Enemy, raw: number, kb: number, critChance: number, dir: 1 | -1, flame = false): boolean {
+    const def = ENEMIES[e.kind];
+    if (e.state === 'shatter' || e.hp <= 0) return false;
+    const crit = rollCrit(critChance, this.combatRng);
+    const amount = enemyDamage(raw * (crit ? 2 : 1), def.defense);
+    e.hp -= amount;
+    e.flash = 0.14;
+    const k = knockbackScale(kb, def.kbRes);
+    if (k > 0) {
+      e.body.vx = dir * k;
+      if (def.ai !== 'flyer' && def.ai !== 'swooper' && def.ai !== 'shooter' && def.ai !== 'ghost') e.body.vy = Math.min(e.body.vy, -k * 0.55);
+      else e.body.vy -= k * 0.2;
+      e.stun = 0.25;
+    }
+    if (flame) e.burn = 3;
+    this.events.push({ type: 'hit', id: e.id, kind: e.kind, x: e.body.x + e.body.w / 2, y: e.body.y, amount, crit });
+    if (e.hp <= 0) this.killEnemy(e);
+    return true;
+  }
+  /** debug：直接扣血（不看防禦 / 不擊退） */
+  debugDamage(id: number, amount: number): boolean {
+    const e = this.enemies.find((q) => q.id === id);
+    if (!e) return false;
+    e.hp -= amount; e.flash = 0.14;
+    if (e.state === 'shatter') e.hp = Math.max(1, e.hp);
+    this.events.push({ type: 'hit', id: e.id, kind: e.kind, x: e.body.x + e.body.w / 2, y: e.body.y, amount, crit: false });
+    if (e.hp <= 0) this.killEnemy(e);
+    return true;
+  }
+
+  private killEnemy(e: Enemy): void {
+    const def = ENEMIES[e.kind], b = e.body;
+    this.enemies = this.enemies.filter((q) => q !== e);
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    const r = this.combatRng;
+    const drop = (item: ItemId, n: number): void => {
+      if (n <= 0) return;
+      const v = popVelocity(r.next(), r.next());
+      this.drops.spawn(item, n, cx, cy, v.vx, v.vy);
+    };
+    for (const d of def.drops) if (r.next() < d.chance) drop(d.item, r.int(d.min, d.max + 1));
+    if (def.coins[1] > 0) drop('copper_coin', r.int(def.coins[0], def.coins[1] + 1));
+    this.kills[e.kind] = (this.kills[e.kind] ?? 0) + 1;
+    this.events.push({ type: 'kill', id: e.id, kind: e.kind, x: cx, y: cy });
+    if (def.boss) {
+      for (const it of BOSS_DROPS) drop(it.item, it.n);
+      this.bossesDefeated.add(e.kind);
+      this.enemies = this.enemies.filter((q) => !ENEMIES[q.kind].minion);
+      for (const p of this.projectiles.list) if (p.hostile) p.life = 0;
+      this.events.push({ type: 'boss', phase: 'defeated', kind: e.kind });
+    }
+  }
+
+  /** 玩家受傷（原始傷害，扣防禦）；srcX = 傷害來源 x（擊退方向）。回傳是否有受傷 */
+  hurtPlayer(raw: number, srcX: number): boolean {
+    if (this.dead || this.iframes > 0) return false;
+    const amount = damageTaken(raw, this.stats().defense);
+    this.applyDamage(amount, false);
+    if (this.dead) return true;
+    const p = this.player;
+    p.vx = (p.x + p.w / 2 >= srcX ? 1 : -1) * 230;
+    p.vy = -240; p.onGround = false;
+    this.motion.climbing = false; this.motion.jumpTimer = 0;
+    this.knockT = 0.18;
+    return true;
+  }
+  private applyDamage(amount: number, fall: boolean): void {
+    const p = this.player;
+    this.hp -= amount;
+    this.iframes = fall ? 0.4 : IFRAMES;
+    this.sinceHit = 0;
+    this.events.push({ type: 'hurt', x: p.x + p.w / 2, y: p.y, amount, fall });
+    if (this.recallT !== null) { const r = this.respawnPoint(); this.recallT = null; this.events.push({ type: 'recall', phase: 'cancel', x: r.x, y: r.y }); }
+    if (this.hp <= 0) this.die();
+  }
+
+  private die(): void {
+    const p = this.player, cx = p.x + p.w / 2, cy = p.y + p.h / 2;
+    this.dead = true; this.hp = 0; this.respawnT = RESPAWN_TIME;
+    this.mining = null; this.attack = null; this.recallT = null; this.miningHeld = false;
+    this.closeChest();
+    // 身上的錢掉一半在死亡地點
+    for (const coin of ['copper_coin', 'silver_coin'] as const) {
+      const n = Math.floor(this.inventory.count(coin) * DEATH_COIN_LOSS);
+      if (n > 0 && this.inventory.remove(coin, n)) {
+        const v = popVelocity(this.combatRng.next(), this.combatRng.next());
+        this.drops.spawn(coin, n, cx, cy, v.vx, v.vy, 1.2);
+      }
+    }
+    p.vx = 0; p.vy = 0;
+    this.events.push({ type: 'death', x: cx, y: cy });
+  }
+  private updateDeath(dt: number): void {
+    this.respawnT -= dt;
+    if (this.respawnT > 0) return;
+    const r = this.respawnPoint();
+    this.dead = false;
+    this.teleport(r.x, r.y);
+    this.hp = this.maxHp(); this.mana = this.maxMana();
+    this.iframes = 2; this.sinceHit = 99;
+    this.spawnT = Math.max(this.spawnT, 4);
+    this.events.push({ type: 'respawn', x: r.x, y: r.y });
+  }
+
+  /** 摔落傷害：記住騰空時的最高點，落地時算掉了幾格 */
+  private updateFall(): void {
+    const p = this.player;
+    if (this.motion.climbing) { this.fallPeak = null; return; }
+    if (!p.onGround) { this.fallPeak = this.fallPeak === null ? p.y : Math.min(this.fallPeak, p.y); return; }
+    if (this.fallPeak !== null) {
+      const tiles = (p.y - this.fallPeak) / TILE_SIZE;
+      this.fallPeak = null;
+      if (this.hasAccessory('nofall')) return;
+      const dmg = fallDamage(tiles, SAFE_FALL_TILES + (this.hasAccessory('jump') ? 8 : 0));
+      if (dmg > 0) this.applyDamage(dmg, true);
+    }
+  }
+  private updateVitals(dt: number): void {
+    if (this.iframes > 0) this.iframes -= dt;
+    if (this.knockT > 0) this.knockT -= dt;
+    if (this.potionCd > 0) this.potionCd -= dt;
+    this.sinceHit += dt;
+    const max = this.maxHp();
+    if (this.hp < max) this.hp = Math.min(max, this.hp + regenRate(this.sinceHit, this.stats().regenMul) * dt);
+    else if (this.hp > max) this.hp = max;
+    if (this.manaDelay > 0) this.manaDelay -= dt;
+    else if (this.mana < this.maxMana()) this.mana = Math.min(this.maxMana(), this.mana + MANA_REGEN * dt);
+  }
+
+  /** 手持消耗品按「使用」 */
+  private consume(use: 'life' | 'heal' | 'summon'): void {
+    const st = this.inventory.selectedStack();
+    if (!st) return;
+    const { x, y } = this.aim, p = this.player;
+    if (use === 'life') {
+      if (this.baseMaxHp >= MAX_HP_CAP) { this.block('use', 'maxlife', x, y); return; }
+      this.inventory.takeFromSlot(this.inventory.selected, 1);
+      this.baseMaxHp = Math.min(MAX_HP_CAP, this.baseMaxHp + LIFE_CORE_HP);
+      this.hp = Math.min(this.maxHp(), this.hp + LIFE_CORE_HP);
+      this.events.push({ type: 'lifeup', maxHp: this.maxHp() });
+    } else if (use === 'heal') {
+      if (this.potionCd > 0 || this.hp >= this.maxHp()) { this.block('use', 'potion', x, y); return; }
+      this.inventory.takeFromSlot(this.inventory.selected, 1);
+      const before = this.hp;
+      this.hp = Math.min(this.maxHp(), this.hp + POTION_HEAL);
+      this.potionCd = POTION_COOLDOWN;
+      this.events.push({ type: 'heal', amount: Math.round(this.hp - before), x: p.x + p.w / 2, y: p.y });
+    } else {
+      if (!this.canSummon()) { this.block('use', 'summon', x, y); return; }
+      this.inventory.takeFromSlot(this.inventory.selected, 1);
+      this.summonBoss();
+    }
+  }
+  /** 能不能召喚首領：場上沒有首領，而且是夜晚或在洞穴層以下 */
+  canSummon(): boolean {
+    if (this.bossEnemy()) return false;
+    const f = this.feetTile();
+    const deep = this.layers.deep[Math.max(0, Math.min(this.world.width - 1, f.x))];
+    return this.isNight() || f.y >= deep;
+  }
+  /** 召喚燈脈守望者（在玩家正上方畫面外） */
+  summonBoss(): Enemy | null {
+    if (this.bossEnemy()) return null;
+    const c = this.playerCenter();
+    const e = this.addEnemy('lantern_warden', c.x, c.y - 16 * TILE_SIZE);
+    this.events.push({ type: 'boss', phase: 'spawn', kind: e.kind });
+    return e;
+  }
+  /** 在 (cx px, bottom px) 生一隻怪 */
+  private addEnemy(kind: EnemyKind, cx: number, bottom: number): Enemy {
+    const e = makeEnemy(this.nextEnemyId++, kind, cx, bottom);
+    e.dir = cx < this.playerCenter().x ? 1 : -1;
+    this.enemies.push(e);
+    return e;
+  }
+  /** debug / e2e：在 tile (tx, ty)（腳底）生一隻怪 */
+  spawnEnemy(kind: EnemyKind, tx: number, ty: number): Enemy {
+    return this.addEnemy(kind, (tx + 0.5) * TILE_SIZE, (ty + 1) * TILE_SIZE);
+  }
+
+  // ── 實體更新（生成 / AI / 投射物 / 掉落物） ─────────────
+  private updateEntities(dt: number): void {
+    const pc = this.playerCenter();
+    const S = TILE_SIZE;
+    // 生成
+    if (!this.peacefulMode && !this.dead) {
+      this.spawnT -= dt;
+      if (this.spawnT <= 0) { this.spawnT = SPAWN_INTERVAL; this.trySpawn(); }
+    }
+    // 怪物
+    const night = this.isNight();
+    const ctx: AiCtx = {
+      q: this.world, px: pc.x, py: pc.y, playerDead: this.dead, rng: this.combatRng, night,
+      shoot: (kind, x, y, vx, vy, damage, noclip) => {
+        this.projectiles.spawn(kind, true, x, y, vx, vy, { damage, knockback: 160, life: kind === 'stinger' ? 2.2 : 3, solidHit: !noclip });
+        this.events.push({ type: 'shot', kind, hostile: true });
+      },
+      teleportSpot: (e) => this.impSpot(e),
+      summon: (kind, x, y) => { if (this.enemies.filter((q) => q.kind === kind).length < 6) this.addEnemy(kind, x, y); },
+      bossEvent: (phase) => this.events.push({ type: 'boss', phase, kind: 'lantern_warden' }),
+    };
+    const p = this.player;
+    for (const e of [...this.enemies]) {
+      const def = ENEMIES[e.kind], b = e.body;
+      const dx = Math.abs(b.x + b.w / 2 - pc.x) / S, dy = Math.abs(b.y + b.h / 2 - pc.y) / S;
+      if (!def.boss && !def.minion && (dx > DESPAWN.x || dy > DESPAWN.y || this.dayDespawn(e, dx, dy))) { this.removeEnemy(e); continue; }
+      if (!def.boss && (dx > ACTIVE.x || dy > ACTIVE.y)) continue;
+      if (!stepEnemy(e, ctx, dt)) { this.removeEnemy(e); continue; }
+      if (e.burn > 0) {
+        e.burn -= dt; e.burnTick -= dt;
+        if (e.burnTick <= 0) {
+          e.burnTick = 0.5;
+          e.hp -= 2; e.flash = 0.06;
+          this.events.push({ type: 'hit', id: e.id, kind: e.kind, x: b.x + b.w / 2, y: b.y, amount: 2, crit: false });
+          if (e.hp <= 0) { this.killEnemy(e); continue; }
+        }
+      }
+      if (!this.dead && e.state !== 'leave' && overlaps(b, p)) {
+        const mul = def.boss && e.phase === 2 ? 1.25 : 1;
+        this.hurtPlayer(def.damage * mul, b.x + b.w / 2);
+      }
+    }
+    // 投射物
+    for (const w of this.projectiles.step(this.world, dt, pc)) {
+      this.events.push({ type: 'impact', kind: w.kind, x: w.body.x + w.body.w / 2, y: w.body.y + w.body.h / 2 });
+    }
+    for (const pr of this.projectiles.list) {
+      if (pr.life <= 0 || pr.pierce < 1 || pr.stuck) continue;
+      if (pr.hostile) {
+        if (!this.dead && overlaps(pr.body, p) && this.hurtPlayer(pr.damage, pr.body.x + pr.body.w / 2)) pr.life = 0;
+        continue;
+      }
+      if (pr.kind === 'boomerang' && pr.returning && overlaps(pr.body, p)) { pr.life = 0; continue; }
+      for (const e of this.enemies) {
+        if (pr.hit.has(e.id) || !overlaps(pr.body, e.body)) continue;
+        if (!this.damageEnemy(e, pr.damage, pr.knockback, pr.crit, pr.body.vx >= 0 ? 1 : -1, pr.flame)) continue;
+        pr.hit.add(e.id);
+        pr.pierce--;
+        if (pr.kind === 'boomerang') pr.returning = true;
+        if (pr.pierce < 1) { pr.life = 0; break; }
+      }
+    }
+    // 掉落物
+    const inv = this.inventory;
+    const got = this.drops.step(this.world, {
+      player: p, magnetPx: this.magnetRadius() * S, activePx: ACTIVE.x * S, canPickup: !this.dead,
+      room: (item, n) => (inv.canAdd(item, n) ? n : inv.canAdd(item, 1) ? 1 : 0),
+      take: (item, n) => n - inv.add(item, n),
+    }, dt);
+    for (const [item, n] of got) this.events.push({ type: 'pickup', item, n });
+  }
+  private removeEnemy(e: Enemy): void { this.enemies = this.enemies.filter((q) => q !== e); }
+  /** 夜行怪在白天、離開畫面就消失 */
+  private dayDespawn(e: Enemy, dx: number, dy: number): boolean {
+    if (e.kind !== 'night_walker' && e.kind !== 'dusk_owl') return false;
+    return !this.isNight() && (dx > this.viewHalf.w + 2 || dy > this.viewHalf.h + 2);
+  }
+
+  private trySpawn(): void {
+    const w = this.world, r = this.spawnRng, S = TILE_SIZE;
+    if (this.enemies.length >= MAX_ENEMIES) return;
+    const pt = this.playerTile();
+    const vw = this.viewHalf.w + 2, vh = this.viewHalf.h + 2;
+    let dx: number, dy: number;
+    if (r.next() < 0.7) {
+      dx = (r.next() < 0.5 ? -1 : 1) * Math.round(vw + r.next() * Math.max(1, SPAWN_MAX.x - vw));
+      dy = Math.round((r.next() * 2 - 1) * Math.min(SPAWN_MAX.y, vh * 1.2));
+    } else {
+      dx = Math.round((r.next() * 2 - 1) * SPAWN_MAX.x);
+      dy = (r.next() < 0.5 ? -1 : 1) * Math.round(vh + r.next() * Math.max(1, SPAWN_MAX.y - vh));
+    }
+    const tx = pt.x + dx, ty = pt.y + dy;
+    if (!w.inBounds(tx, ty)) return;
+    const hab = habitatAt({ world: w, layers: this.layers, night: this.isNight() }, tx, ty);
+    let near = 0;
+    for (const e of this.enemies) {
+      const b = e.body;
+      if (Math.abs(b.x / S - pt.x) < ACTIVE.x && Math.abs(b.y / S - pt.y) < ACTIVE.y && !ENEMIES[e.kind].minion) near++;
+    }
+    if (near >= spawnCap(hab) || r.next() >= spawnChance(hab)) return;
+    if (this.bed && Math.hypot(tx - this.bed.x, ty - this.bed.y) < BED_SAFE) return;
+    if (inHouse(w, tx, ty)) return;
+    const entry = pickEntry(spawnTable(hab), r);
+    if (!entry) return;
+    const spot = findSpot(w, entry.kind, tx, ty);
+    if (!spot) return;
+    // 生成點仍要在畫面外
+    if (Math.abs(spot.x / S - pt.x) <= vw && Math.abs(spot.y / S - pt.y) <= vh) return;
+    const n = entry.group ? r.int(entry.group[0], entry.group[1] + 1) : 1;
+    for (let k = 0; k < n && this.enemies.length < MAX_ENEMIES; k++) this.addEnemy(entry.kind, spot.x + k * 10, spot.y - k * 6);
+  }
+
+  /** 燼角魔瞬移點：玩家左右 4–9 格、站得住的地方 */
+  private impSpot(e: Enemy): { x: number; y: number } | null {
+    const pt = this.playerTile(), r = this.combatRng;
+    for (let k = 0; k < 8; k++) {
+      const tx = pt.x + (r.next() < 0.5 ? -1 : 1) * r.int(4, 10), ty = pt.y + r.int(-3, 4);
+      const s = findSpot(this.world, e.kind, tx, ty);
+      if (s) return s;
+    }
+    return null;
   }
 
   // ── debug / e2e / 存檔還原 ─────────────────────────────
@@ -792,9 +1464,10 @@ export class DelveGame {
     p.vx = 0; p.vy = 0; p.gfxOffY = 0;
     this.motion.jumpTimer = 0;
     this.motion.climbing = false;
+    this.fallPeak = null;
   }
   /** 立即挖掉一格（不檢查距離 / 等級），掉落物照常入背包。 */
-  mineInstant(x: number, y: number): boolean { return this.breakTile(x, y); }
+  mineInstant(x: number, y: number): boolean { return this.breakTile(x, y, true); }
   give(item: ItemId, n = 1): number { return this.inventory.add(item, n); }
 }
 

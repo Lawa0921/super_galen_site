@@ -22,6 +22,8 @@ export const T = {
   CHAIN: 57, BANNER: 58, CANDLE: 59, LANTERN: 60, BOOKSHELF: 61, BONES: 62, LORE_TABLET: 63,
   // ── 探索：裂紋石（密室的假牆，一敲就碎）、繩索、床（床頭 + 床尾兩格） ──
   CRACKED_STONE: 64, ROPE: 65, BED_HEAD: 66, BED_FOOT: 67,
+  // ── 戰鬥：合成站（熔爐：礦 → 錠；鐵砧：錠 → 高階裝備） ──
+  FURNACE: 68, ANVIL: 69,
 } as const;
 export type TileId = (typeof T)[keyof typeof T];
 
@@ -165,6 +167,9 @@ export const TILES: readonly TileDef[] = [
   decor(T.ROPE, 'rope', n('繩索', 'Rope'), 'rope', 'rope', '#c99660', { hardness: 0.05 }),
   decor(T.BED_HEAD, 'bed_head', n('床', 'Bed'), 'floor', 'bed', '#a83a10', { hardness: 0.3 }),
   decor(T.BED_FOOT, 'bed_foot', n('床', 'Bed'), 'floor', null, '#a83a10', { hardness: 0.3 }),
+  // ── 戰鬥：合成站 ──
+  decor(T.FURNACE, 'furnace', n('熔爐', 'Furnace'), 'floor', 'furnace', '#5e5e74', { hardness: 0.6, light: 0.55 }),
+  decor(T.ANVIL, 'anvil', n('鐵砧', 'Anvil'), 'floor', 'anvil', '#423f54', { hardness: 0.6 }),
 ];
 
 export const WALLS: readonly WallDef[] = [

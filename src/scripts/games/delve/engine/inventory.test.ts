@@ -128,12 +128,12 @@ describe('crafting', () => {
   });
   it('銅鎬需要工作台在附近', () => {
     const inv = new Inventory();
-    inv.add('planks', 5); inv.add('copper_ore', 8);
+    inv.add('planks', 4); inv.add('copper_bar', 5);
     expect(canCraft(inv, findRecipe('copper_pickaxe')!, free)).toBe(false);
     expect(craft(inv, 'copper_pickaxe', free)).toEqual({ ok: false, reason: 'station' });
     expect(craft(inv, 'copper_pickaxe', bench)).toEqual({ ok: true });
     expect(inv.count('copper_pickaxe')).toBe(1);
-    expect(inv.count('copper_ore')).toBe(0);
+    expect(inv.count('copper_bar')).toBe(0);
   });
   it('背包滿且產出放不下 → full，不消耗', () => {
     const inv = new Inventory();

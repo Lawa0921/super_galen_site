@@ -98,14 +98,15 @@ describe('新道具', () => {
 });
 
 describe('新配方', () => {
-  it('銀鎬 / 金鎬 / 箱子 / 石磚 需要工作台', () => {
-    for (const id of ['silver_pickaxe', 'gold_pickaxe', 'chest', 'stone_brick']) {
+  it('箱子 / 石磚 需要工作台；銀鎬 / 金鎬改在鐵砧用錠做', () => {
+    for (const id of ['chest', 'stone_brick']) {
       const r = findRecipe(id);
       expect(r, id).toBeDefined();
       expect(r!.station).toBe('workbench');
     }
-    expect(findRecipe('silver_pickaxe')!.inputs.some((a) => a.item === 'silver_ore')).toBe(true);
-    expect(findRecipe('gold_pickaxe')!.inputs.some((a) => a.item === 'gold_ore')).toBe(true);
+    for (const id of ['silver_pickaxe', 'gold_pickaxe']) expect(findRecipe(id)!.station).toBe('anvil');
+    expect(findRecipe('silver_pickaxe')!.inputs.some((a) => a.item === 'silver_bar')).toBe(true);
+    expect(findRecipe('gold_pickaxe')!.inputs.some((a) => a.item === 'gold_bar')).toBe(true);
   });
   it('所有配方的輸入輸出都是已知道具、id 唯一', () => {
     const ids = new Set<string>();

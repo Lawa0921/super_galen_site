@@ -166,13 +166,13 @@ describe('挖掘', () => {
     expect(g.world.getFg(64, 59)).toBe(T.AIR);
     expect(g.inventory.count('torch')).toBe(before + 1);
   });
-  it('背包滿時無法挖掘（不吞道具）', () => {
+  it('背包滿時照樣挖掉，掉落物留在地上（不吞道具）', () => {
     const g = arena();
     for (let i = 0; i < g.inventory.slots.length; i++) if (!g.inventory.slots[i]) g.inventory.slots[i] = { item: 'wood_pickaxe', count: 1 };
     g.setAim(61, 60); g.setMining(true);
-    runFor(g, 3);
-    expect(g.world.getFg(61, 60)).toBe(T.STONE);
-    expect(g.drainEvents().some((e) => e.type === 'blocked' && e.reason === 'full')).toBe(true);
+    runFor(g, 1.2);
+    expect(g.world.getFg(61, 60)).toBe(T.AIR);
+    expect(g.drops.list.map((d) => [d.item, d.count])).toEqual([['stone', 1]]);
   });
 });
 
@@ -254,7 +254,7 @@ describe('合成（經由遊戲）', () => {
   });
   it('銅鎬需在工作台 4 格內', () => {
     const g = arena();
-    g.give('planks', 10); g.give('copper_ore', 16);
+    g.give('planks', 10); g.give('copper_bar', 16);
     expect(g.nearWorkbench()).toBe(false);
     expect(g.craft('copper_pickaxe')).toEqual({ ok: false, reason: 'station' });
     g.world.setFg(70, 59, T.WORKBENCH); // 太遠
@@ -294,16 +294,16 @@ function fillInv(g: DelveGame, keep: { item: 'wood' | 'stone' | 'torch'; count: 
   keep.forEach((k, i) => { g.inventory.slots[i] = { ...k }; });
 }
 
-describe('掉落物放不下時拒絕（不吞道具）', () => {
-  it('砍樹：總木材放不下 → full 事件、樹保持原狀', () => {
+describe('掉落物放不下時留在地上（不吞道具）', () => {
+  it('砍樹：總木材放不下 → 樹照樣倒，收得下的撿起、其餘留在地上', () => {
     const g = arena();
     for (let y = 54; y < 60; y++) g.world.setFg(62, y, T.WOOD); // 6 段
     fillInv(g, [{ item: 'wood', count: 999 - 3 }]); // 只剩 3 格空間
     g.setAim(62, 59); g.setMining(true);
     runFor(g, 3);
-    for (let y = 54; y < 60; y++) expect(g.world.getFg(62, y)).toBe(T.WOOD);
-    expect(g.inventory.count('wood')).toBe(996);
-    expect(g.drainEvents().some((e) => e.type === 'blocked' && e.reason === 'full')).toBe(true);
+    for (let y = 54; y < 60; y++) expect(g.world.getFg(62, y)).toBe(T.AIR);
+    expect(g.inventory.count('wood')).toBe(999);
+    expect(g.drops.list.reduce((a, d) => a + (d.item === 'wood' ? d.count : 0), 0)).toBe(3);
   });
   it('砍樹：剛好放得下就照常倒', () => {
     const g = arena();
@@ -314,17 +314,17 @@ describe('掉落物放不下時拒絕（不吞道具）', () => {
     expect(g.world.getFg(62, 54)).toBe(T.AIR);
     expect(g.inventory.count('wood')).toBe(999);
   });
-  it('失去支撐的火把放不下 → 整個動作拒絕', () => {
+  it('失去支撐的火把放不下 → 方塊照樣挖掉，火把掉在地上', () => {
     const g = arena();
     g.world.setFg(63, 59, T.STONE);
     g.world.setFg(64, 59, T.TORCH);
     g.world.setFg(64, 60, T.AIR);
     fillInv(g, [{ item: 'stone', count: 5 }, { item: 'torch', count: 999 }]);
-    expect(g.mineInstant(63, 59)).toBe(false);
-    expect(g.world.getFg(63, 59)).toBe(T.STONE);
-    expect(g.world.getFg(64, 59)).toBe(T.TORCH);
+    expect(g.mineInstant(63, 59)).toBe(true);
+    expect(g.world.getFg(63, 59)).toBe(T.AIR);
+    expect(g.world.getFg(64, 59)).toBe(T.AIR);
     expect(g.inventory.count('torch')).toBe(999);
-    expect(g.drainEvents().some((e) => e.type === 'blocked' && e.reason === 'full')).toBe(true);
+    expect(g.drops.list.some((d) => d.item === 'torch')).toBe(true);
   });
 });
 

@@ -13,6 +13,7 @@ import { RUNE_METAL, iconDoor, iconKey, iconLantern, iconMap, iconPlatform } fro
 import {
   crackStone, iconBed, iconCompass, iconDepthMeter, iconJumpBoots, iconMagnet, iconNightAmulet, iconRecall, iconRope, iconSwiftBoots,
 } from './exploreArt';
+import { combatIcon } from './combatArt';
 
 const S = TILE_SIZE;
 export { VARIANTS };
@@ -51,8 +52,8 @@ const WALL_ROW0 = FG_ROW0 + TILES.length;
 const BLEND_ROW0 = WALL_ROW0 + WALLS.length;  // 3 列：MAT.DIRT/SAND/STONE
 const MISC_ROW = BLEND_ROW0 + 3;              // 裂痕 0..3、草葉 4..6、叢林草葉 7..9
 const ICON_ROW = MISC_ROW + 1;
-/** 圖示佔兩列（每列 FRAME_COLS 個） */
-const ICON_ROWS = 2;
+/** 圖示列數（每列 FRAME_COLS 個；依道具數量） */
+const ICON_ROWS = 3;
 const ROWS = ICON_ROW + ICON_ROWS;
 
 // ── 小工具 ───────────────────────────────────────────────
@@ -558,6 +559,15 @@ const ICON_ORDER: ItemId[] = [
   'deep_stone', 'basalt', 'ash', 'obsidian', 'magma_rock', 'dungeon_brick_blue', 'dungeon_brick_green', 'dungeon_brick_pink',
   'platform', 'wooden_door', 'dungeon_key', 'golden_key', 'lantern', 'rune_pickaxe', 'explorer_map',
   'rope', 'bed', 'recall_stone', 'compass', 'depth_meter', 'jump_boots', 'swift_boots', 'night_amulet', 'magnet',
+  // 戰鬥
+  'gel', 'bone', 'feather', 'fang', 'chitin', 'stinger', 'spore', 'ember',
+  'copper_bar', 'iron_bar', 'silver_bar', 'gold_bar', 'molten_bar', 'furnace', 'anvil',
+  'wood_sword', 'copper_sword', 'iron_sword', 'gold_sword', 'iron_spear', 'bone_greatsword', 'lumen_blade',
+  'wood_bow', 'silver_bow', 'throwing_knife', 'wood_boomerang', 'crystal_staff', 'wooden_arrow', 'flaming_arrow',
+  'wood_helmet', 'wood_chestplate', 'wood_greaves', 'copper_helmet', 'copper_chestplate', 'copper_greaves',
+  'iron_helmet', 'iron_chestplate', 'iron_greaves', 'gold_helmet', 'gold_chestplate', 'gold_greaves',
+  'bone_helmet', 'bone_chestplate', 'bone_greaves', 'molten_helmet', 'molten_chestplate', 'molten_greaves',
+  'life_core', 'healing_potion', 'wick_offering', 'chitin_buckler', 'fang_charm', 'feather_charm', 'warden_heart', 'warden_trophy',
 ];
 export { ICON_ORDER };
 export const PICK_METAL: Record<string, RGB[]> = {
@@ -576,6 +586,8 @@ const BLOCK_ICON: Partial<Record<ItemId, number>> = {
   dungeon_brick_blue: T.DUNGEON_BRICK_BLUE, dungeon_brick_green: T.DUNGEON_BRICK_GREEN, dungeon_brick_pink: T.DUNGEON_BRICK_PINK,
 };
 export function paintIcon(item: ItemId): Bmp {
+  const ci = combatIcon(item);
+  if (ci) return ci;
   switch (item) {
     case 'platform': return iconPlatform();
     case 'wooden_door': return iconDoor();

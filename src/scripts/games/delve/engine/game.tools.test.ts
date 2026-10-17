@@ -136,12 +136,12 @@ describe('傳送石', () => {
   });
 });
 
-describe('飾品', () => {
+describe('飾品（裝在飾品槽才生效）', () => {
   it('疾行靴：跑得更快；跳躍靴：跳得更高', () => {
-    const dist = (boots: boolean): number => { const g = arena(40); if (boots) g.give('swift_boots'); g.setMoveX(1); run(g, 0.8); return g.player.x; };
+    const dist = (boots: boolean): number => { const g = arena(40); if (boots) g.equip('swift_boots'); g.setMoveX(1); run(g, 0.8); return g.player.x; };
     expect(dist(true) - dist(false)).toBeGreaterThan(40);
     const peak = (boots: boolean): number => {
-      const g = arena(60); if (boots) g.give('jump_boots');
+      const g = arena(60); if (boots) g.equip('jump_boots');
       const y0 = g.player.y; let min = y0;
       g.setJump(true);
       for (let i = 0; i < 60; i++) { g.step(FIXED_DT); min = Math.min(min, g.player.y); }
@@ -152,12 +152,12 @@ describe('飾品', () => {
   it('夜視護符：身邊多一圈光；磁石：伸手距離 +3 格', () => {
     const g = arena(60);
     const v0 = Math.max(...g.heldLights().map((l) => l.v));
-    g.give('night_amulet');
+    g.equip('night_amulet');
     expect(Math.max(...g.heldLights().map((l) => l.v))).toBeGreaterThan(v0 + 0.3);
     const far = REACH_TILES + 2;
     const t = g.playerTile();
     expect(g.canReach(t.x + far, t.y)).toBe(false);
-    g.give('magnet');
+    g.equip('magnet');
     expect(g.canReach(t.x + far, t.y)).toBe(true);
   });
   it('指南針 / 深度計：navInfo 只在持有時提供東西座標 / 深度', () => {
