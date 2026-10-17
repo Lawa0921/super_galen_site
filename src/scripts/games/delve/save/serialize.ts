@@ -6,6 +6,10 @@
 // format 4 起（探索）：header.explored = 戰爭迷霧位元圖的 RLE（engine/explore.ts）再 base64、header.markers = 地圖標記、
 //   header.discovery = 已發現的地區 id / 讀過的碑文 / 拿到的珍寶 / 最深紀錄 / 移動距離、header.bed = 床（重生點）。
 //   舊格式（1–3）讀進來 = 什麼都沒探索、沒有標記、沒有床。
+// format 5 起（戰鬥）：header.combat = { hp, maxHp（不含飾品的上限 = 100 + 生命晶核）, mana, equipment（頭 / 身 / 腿 / 飾品槽）,
+//   bosses（已擊敗的首領 kind）, kills（各種怪物擊殺數）, peaceful（和平模式） }。
+//   怪物 / 投射物 / 地上的掉落物不存（讀檔後重新生成）。死亡中存檔 → 讀回來是活著、滿血。
+//   舊格式（1–4）讀進來 = 裝備空、滿血 100、沒擊敗首領、一般模式。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
 //
 // 二進位格式（little-endian）：
@@ -22,8 +26,18 @@ import { TILES, WALLS, T, isChestTile } from '../engine/tiles';
 import { ITEMS, isItemId } from '../engine/items';
 import { ExploredMap, MAX_MARKERS, decodeRle, type MapMarker } from '../engine/explore';
 import type { DiscoveryJSON } from '../engine/discovery';
+import { Equipment, type EquipmentJSON } from '../engine/equipment';
+import { ENEMIES, type EnemyKind } from '../engine/enemies';
+import { BASE_HP, MAX_HP_CAP } from '../engine/combat';
 
-export const SAVE_FORMAT = 4;
+export const SAVE_FORMAT = 5;
+export interface CombatSave {
+  hp: number; maxHp: number; mana: number;
+  equipment: EquipmentJSON;
+  bosses: string[];
+  kills: Partial<Record<EnemyKind, number>>;
+  peaceful: boolean;
+}
 export const CHUNK_BYTES = CHUNK * CHUNK * 2;
 const MAGIC = [0x44, 0x4c, 0x56, 0x53]; // "DLVS"
 const MAX_DIM = 8192;
@@ -56,6 +70,8 @@ export interface SaveHeader {
   discovery?: DiscoveryJSON;
   /** 床（重生點）；format 4 起 */
   bed?: { x: number; y: number } | null;
+  /** 戰鬥（生命 / 裝備 / 首領 / 和平模式）；format 5 起 */
+  combat?: CombatSave;
 }
 export interface ChestSave { i: number; slots: (Stack | null)[]; }
 export interface ChunkPayload { fg: Uint8Array; wall: Uint8Array; }
@@ -157,6 +173,13 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       markers: game.markers.map((m) => ({ x: m.x, y: m.y })),
       discovery: game.discovery.toJSON(),
       bed: game.bed ? { ...game.bed } : null,
+      combat: {
+        hp: Math.round(game.hp * 100) / 100, maxHp: game.baseMaxHp, mana: Math.round(game.mana * 100) / 100,
+        equipment: game.equipment.toJSON(),
+        bosses: [...game.bossesDefeated].sort(),
+        kills: { ...game.kills },
+        peaceful: game.peaceful,
+      },
     },
     chunks,
   };
@@ -255,6 +278,27 @@ function validBed(v: unknown): { x: number; y: number } | null {
   if (typeof o !== 'object' || !Number.isInteger(o.x) || !Number.isInteger(o.y)) throw new SaveFormatError('bed');
   return { x: o.x as number, y: o.y as number };
 }
+/** 戰鬥欄位：型別錯 → 損毀；數值範圍與未知裝備在還原時寬鬆處理 */
+function validCombat(v: unknown): CombatSave | undefined {
+  if (v === undefined) return undefined;
+  const o = v as Partial<CombatSave> | null;
+  if (!o || typeof o !== 'object' || !isNum(o.hp) || !isNum(o.maxHp) || !isNum(o.mana)
+    || (o.bosses !== undefined && (!Array.isArray(o.bosses) || !o.bosses.every((b) => typeof b === 'string')))
+    || (o.kills !== undefined && (typeof o.kills !== 'object' || o.kills === null || Array.isArray(o.kills)))
+    || (o.equipment !== undefined && (typeof o.equipment !== 'object' || o.equipment === null))) {
+    throw new SaveFormatError('combat');
+  }
+  const kills: Partial<Record<EnemyKind, number>> = {};
+  for (const [k, n] of Object.entries(o.kills ?? {})) {
+    if (Object.prototype.hasOwnProperty.call(ENEMIES, k) && Number.isInteger(n) && (n as number) >= 0) kills[k as EnemyKind] = n as number;
+  }
+  return {
+    hp: o.hp, maxHp: o.maxHp, mana: o.mana,
+    equipment: Equipment.fromJSON(o.equipment).toJSON(),
+    bosses: (o.bosses ?? []).filter((b) => Object.prototype.hasOwnProperty.call(ENEMIES, b) && ENEMIES[b as EnemyKind].boss),
+    kills, peaceful: Boolean(o.peaceful),
+  };
+}
 function validDiscovery(v: unknown): DiscoveryJSON | undefined {
   if (v === undefined) return undefined;
   if (!v || typeof v !== 'object' || Array.isArray(v)) throw new SaveFormatError('discovery');
@@ -323,6 +367,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     markers: validMarkers(h.markers),
     discovery: validDiscovery(h.discovery),
     bed: validBed(h.bed),
+    combat: validCombat(h.combat),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -382,6 +427,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       validMarkers(data.header.markers);
       validBed(data.header.bed);
       validDiscovery(data.header.discovery);
+      data.header.combat = validCombat(data.header.combat);
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
@@ -423,5 +469,17 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   if (h.discovery) game.discovery.load(h.discovery);
   else game.discovery.found.clear();
   game.bed = h.bed && w.inBounds(h.bed.x, h.bed.y) ? { ...h.bed } : null;
+  // 戰鬥（format 5）；舊格式 = 裝備空、滿血、一般模式
+  const c = h.combat;
+  if (c) {
+    game.baseMaxHp = Math.max(BASE_HP, Math.min(MAX_HP_CAP, Math.round(c.maxHp / 20) * 20));
+    game.equipment = Equipment.fromJSON(c.equipment);
+    for (const b of c.bosses) game.bossesDefeated.add(b);
+    game.kills = { ...c.kills };
+    game.peaceful = c.peaceful;
+    const max = game.maxHp();
+    game.hp = c.hp > 0 ? Math.min(max, c.hp) : max;
+    game.mana = Math.max(0, Math.min(game.maxMana(), c.mana));
+  }
   return { ok: true, game, header: h };
 }

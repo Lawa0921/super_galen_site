@@ -23,9 +23,9 @@ function played(): DelveGame {
 }
 
 describe('存檔格式 4（探索）', () => {
-  it('格式版本 4', () => {
-    expect(SAVE_FORMAT).toBe(4);
-    expect(snapshotGame(played()).header.format).toBe(4);
+  it('格式版本 ≥ 4', () => {
+    expect(SAVE_FORMAT).toBeGreaterThanOrEqual(4);
+    expect(snapshotGame(played()).header.format).toBe(SAVE_FORMAT);
   });
   it('迷霧位元圖、標記、發現的地區 / 碑文 / 珍寶 / 紀錄、床都能存回來', () => {
     const g = played();

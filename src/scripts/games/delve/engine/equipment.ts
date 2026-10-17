@@ -18,9 +18,12 @@ export function fitsSlot(slot: EquipSlot, item: ItemId): boolean {
 }
 
 export class Equipment {
+  private static seq = 0;
   private slots = new Map<EquipSlot, ItemId>();
   /** 每次改動 +1（快取失效用） */
   version = 0;
+  /** 每個實例不同（換掉整個裝備欄時讓快取失效） */
+  readonly uid = ++Equipment.seq;
 
   get(s: EquipSlot): ItemId | null { return this.slots.get(s) ?? null; }
   /** 直接設定（不檢查背包；null = 清空）。不合法時回傳 false。 */

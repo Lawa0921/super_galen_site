@@ -278,6 +278,7 @@ export class DelveGame {
   private readonly combatRng: Rng;
   private aimPx = { x: 0, y: 0 };
   private statsVer = -1;
+  private statsEq: Equipment | null = null;
   private statsCache: PlayerStats = computeStats(new Equipment());
 
   constructor(opts: DelveOptions = {}) {
@@ -692,7 +693,7 @@ export class DelveGame {
    */
   hasAccessory(a: Accessory): boolean {
     const sl = this.inventory.slots;
-    let sig = `${this.equipment.version}|`;
+    let sig = `${this.equipment.uid}:${this.equipment.version}|`;
     for (let i = 0; i < sl.length; i++) { const st = sl[i]; if (st && ITEMS[st.item].accessory) sig += st.item + ','; }
     if (sig !== this.accSig) {
       this.accSig = sig;
@@ -715,7 +716,10 @@ export class DelveGame {
   magnetRadius(): number { return this.hasAccessory('magnet') ? LODESTONE_TILES : MAGNET_TILES; }
   /** 裝備帶來的數值（裝備變動才重算） */
   stats(): PlayerStats {
-    if (this.statsVer !== this.equipment.version) { this.statsVer = this.equipment.version; this.statsCache = computeStats(this.equipment); }
+    if (this.statsVer !== this.equipment.version || this.statsEq !== this.equipment) {
+      this.statsVer = this.equipment.version; this.statsEq = this.equipment;
+      this.statsCache = computeStats(this.equipment);
+    }
     return this.statsCache;
   }
   maxHp(): number { return Math.min(MAX_HP_CAP, this.baseMaxHp) + this.stats().maxHpBonus; }
