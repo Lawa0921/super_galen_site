@@ -274,12 +274,14 @@ describe('depthClearExp', () => {
 });
 
 describe('ENEMY_POWER', () => {
-  it('is 1 up to its start level, then 1 + amount above it', () => {
+  it('is 1 up to its start level, then 1 + amount + ramp per level above it', () => {
     expect(enemyPower(1)).toBe(1);
     expect(enemyPower(ENEMY_POWER.from)).toBe(1);
-    expect(enemyPower(ENEMY_POWER.from + 1)).toBe(1 + ENEMY_POWER.amount);
-    expect(enemyPower(50)).toBe(1 + ENEMY_POWER.amount);
+    expect(enemyPower(ENEMY_POWER.from + 1)).toBeCloseTo(1 + ENEMY_POWER.amount + ENEMY_POWER.ramp, 12);
+    expect(enemyPower(50)).toBeCloseTo(1 + ENEMY_POWER.amount + ENEMY_POWER.ramp * (50 - ENEMY_POWER.from), 12);
     expect(ENEMY_POWER.amount).toBeGreaterThan(0);
+    expect(ENEMY_POWER.ramp).toBeGreaterThan(0);
+    expect(enemyPower(50)).toBeGreaterThan(enemyPower(ENEMY_POWER.from + 1));
   });
 
   it("scales every enemy's HP, atk and mag in a fight, bosses included, at the level it is met", () => {
