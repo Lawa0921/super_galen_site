@@ -53,10 +53,10 @@ export type Slot = 'weapon' | 'offhand' | 'head' | 'body' | 'hands' | 'feet' | '
 export type Rarity = 'common' | 'magic' | 'rare' | 'legendary' | 'unique' | 'set';
 export type GearSlot = 'weapon' | 'offhand' | 'head' | 'body' | 'hands' | 'feet' | 'neck' | 'ring';
 export interface EquipDef { id: string; name: string; slot: GearSlot; ilvl: number; price: number; bonus: Partial<Stats>; unlock?: { mat: string; qty: number }[] }
-/** One rolled piece of gear; enhance is always 0 until enhancement exists. */
+/** One rolled piece of gear; enhance runs 0 to ENHANCE_MAX; locked is the affix index first reforged (only that one can be reforged after). */
 export interface ItemInstance {
   uid: number; base: string; rarity: Rarity; ilvl: number; affixes: { key: AnyStat; value: number }[];
-  special?: string; enhance: number; junk?: boolean;
+  special?: string; enhance: number; locked?: number; junk?: boolean;
 }
 export type MaterialKind = 'essence' | 'monster' | 'region' | 'rare' | 'junk';
 export interface MaterialDef { id: string; name: string; price: number; kind: MaterialKind }

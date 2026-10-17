@@ -6,7 +6,7 @@ import { rollPortals } from './portals';
 import { mulberry32, type Rng } from './rng';
 import type { Element, ItemInstance, Party } from './types';
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export interface DungeonProgress {
   /** Deepest depth reached in each region; 1 until a run goes deeper. Runs start at 1 or a multiple of 5 up to this. */
@@ -35,12 +35,14 @@ export interface GameState {
   /** Ids of the special items and sets found so far. */
   codex: string[];
   autoJunk: AutoJunk;
+  /** Forge random draws used so far; seeds each craft, so reloading cannot reroll it. */
+  forgeDraws: number;
 }
 
 /** A new game; its first gates come from `rng` (a fixed seed when none is given, so the result is deterministic). */
 export function newGame(rng: Rng = mulberry32(0)): GameState {
   return {
     version: SAVE_VERSION, gold: 150, inventory: { potion: 3, 'return-lamp': 1 }, bag: [], nextUid: 1, sold: {}, party: newParty(),
-    dungeon: { reached: newReached(), bossDefeated: false, bossKills: {}, portals: rollPortals(rng) }, revealed: {}, codex: [], autoJunk: 'off',
+    dungeon: { reached: newReached(), bossDefeated: false, bossKills: {}, portals: rollPortals(rng) }, revealed: {}, codex: [], autoJunk: 'off', forgeDraws: 0,
   };
 }

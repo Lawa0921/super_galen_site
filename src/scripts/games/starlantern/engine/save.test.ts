@@ -126,6 +126,62 @@ describe('save', () => {
     expect(saveGame(st, g)).toBe(true);
     expect(loadGame(st)).toEqual({ status: 'ok', state: g });
   });
+  it('a version-5 save reports version', () => {
+    const { forgeDraws: _f, ...rest } = newGame();
+    const raw = JSON.stringify({ ...rest, version: 5 });
+    const st = memoryStorage({ [SAVE_KEY]: raw });
+    expect(loadGame(st)).toEqual({ status: 'version' });
+    expect(st.map.get(BACKUP_KEY)).toBe(raw);
+  });
+  it('round-trips forgeDraws, an enhanced item and a locked affix', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.forgeDraws = 12;
+    g.bag = [{ ...plainItem('iron-sword', 1), rarity: 'rare', enhance: 10, locked: 1, affixes: [{ key: 'crit', value: 3 }, { key: 'str', value: 7 }] }];
+    g.nextUid = 2;
+    expect(saveGame(st, g)).toBe(true);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+  it('a new game starts with zero forge draws and leaves the rng sequence alone', () => {
+    expect(newGame().forgeDraws).toBe(0);
+  });
+  it('rejects enhance 11, -1 and 1.5, a locked index out of range or fractional, and a bad forgeDraws', () => {
+    const bad = (mut: (g: ReturnType<typeof newGame>) => void) => {
+      const g = newGame();
+      g.bag = [{ ...plainItem('iron-sword', 1), rarity: 'rare', affixes: [{ key: 'crit', value: 3 }, { key: 'str', value: 7 }] }];
+      g.nextUid = 2;
+      mut(g);
+      return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+    };
+    expect(bad((g) => { g.bag[0].enhance = 10; })).toBe('ok');
+    expect(bad((g) => { g.bag[0].enhance = 11; })).toBe('corrupt');
+    expect(bad((g) => { g.bag[0].enhance = -1; })).toBe('corrupt');
+    expect(bad((g) => { g.bag[0].enhance = 1.5; })).toBe('corrupt');
+    expect(bad((g) => { g.bag[0].locked = 1; })).toBe('ok');
+    expect(bad((g) => { g.bag[0].locked = 2; })).toBe('corrupt');
+    expect(bad((g) => { g.bag[0].locked = -1; })).toBe('corrupt');
+    expect(bad((g) => { g.bag[0].locked = 0.5; })).toBe('corrupt');
+    expect(bad((g) => { g.bag[0].locked = '0' as never; })).toBe('corrupt');
+    expect(bad((g) => { g.bag[0].affixes = []; g.bag[0].locked = 0; })).toBe('corrupt');
+    expect(bad((g) => { g.forgeDraws = -1; })).toBe('corrupt');
+    expect(bad((g) => { g.forgeDraws = 1.5; })).toBe('corrupt');
+    expect(bad((g) => { g.forgeDraws = 1e9 + 1; })).toBe('corrupt');
+    expect(bad((g) => { g.forgeDraws = 1e9; })).toBe('ok');
+    expect(bad((g) => { g.forgeDraws = '3' as never; })).toBe('corrupt');
+    expect(bad((g) => { delete (g as Partial<typeof g>).forgeDraws; })).toBe('corrupt');
+  });
+  it('rejects a __proto__ key smuggled into an item or the state without crashing', () => {
+    const g = newGame();
+    g.bag = [{ ...plainItem('iron-sword', 1), rarity: 'rare', affixes: [{ key: 'crit', value: 3 }] }];
+    g.nextUid = 2;
+    const raw = JSON.stringify(g);
+    const hostileKey = raw.replace('"enhance":0', '"enhance":0,"__proto__":{"locked":9}');
+    expect(hostileKey).toContain('__proto__');
+    const r = loadGame(memoryStorage({ [SAVE_KEY]: hostileKey }));
+    expect(['ok', 'corrupt']).toContain(r.status);
+    const affixProto = raw.replace('"key":"crit"', '"key":"__proto__"');
+    expect(loadGame(memoryStorage({ [SAVE_KEY]: affixProto })).status).toBe('corrupt');
+  });
   it('a version-4 save reports version', () => {
     const g = newGame();
     const roster = Object.fromEntries(Object.entries(g.party.roster).map(([id, m]) => {
