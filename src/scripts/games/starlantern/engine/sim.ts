@@ -8,7 +8,7 @@ import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
 import { LIMIT_MAX, createBattle, resolveRound, skillCost, skillFor, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
 import { MAX_LEVEL, SLOTS, expToNext, gainExp, newMember, partyWith, statsOf, STANDARD_LINEUP } from './party';
-import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills } from './progression';
+import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills, memoriesOf } from './progression';
 import { HERO_BUILDS, type HeroBuild } from '../data/hero';
 import { mulberry32 } from './rng';
 import { depthClearExp, encounterTable, scaleEnemy } from './scaling';
@@ -52,8 +52,8 @@ export function partyAt(level: number, lineup: Lineup = {}): Party {
   for (const id of Object.keys(p.roster) as CharacterId[]) {
     const hero = id === 'hero';
     const m = {
-      ...newMember(id), level,
-      tree: hero ? heroTree(level, build, lineup.memories ?? 0) : defaultTree(id, level),
+      ...newMember(id), level, ...(hero ? { memories: lineup.memories ?? 0 } : {}),
+      tree: hero ? heroTree(level, build, memoriesOf({ id, memories: lineup.memories ?? 0 })) : defaultTree(id, level),
       talents: hero ? heroTalents(level, build) : defaultTalents(id, level),
     };
     const s = statsOf(m);

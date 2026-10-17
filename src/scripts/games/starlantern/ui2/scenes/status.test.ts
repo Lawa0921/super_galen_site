@@ -1259,6 +1259,18 @@ describe('StatusScene', () => {
       expect(r.root.querySelector('.slx-tree-capstone')!.textContent).toContain('限選 1');
     });
 
+    it("the abyss node opens with the hero's memories", () => {
+      const open = (memories: number) => {
+        const { root, game, tabTo } = heroSetup();
+        const hero = game.state.party.roster.hero;
+        game.state.party.roster.hero = { ...hero, level: 50, memories, tree: { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5 } };
+        tabTo(3);
+        return root.querySelector('.slx-tree-node[data-node="abyss-sword"]')!.textContent!;
+      };
+      expect(open(2)).not.toContain('深淵尚未甦醒');
+      expect(open(0)).toContain('深淵尚未甦醒');
+    });
+
     it('every ultimate the hero holds is named in the header', () => {
       const { root, game, tabTo } = heroSetup();
       const caps = TREES.hero.branches.slice(0, 2).map((b) => b.nodes[4]);

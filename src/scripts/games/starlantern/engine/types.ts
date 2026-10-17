@@ -81,9 +81,17 @@ export interface FloorDef {
  * `limit` is the ultimate gauge (0–100); older saves omit it.
  * `tree` holds skill-tree ranks by node id (see engine/progression.ts); `talents` holds talent-board ranks by node id.
  */
+/** One absorbed shard's permanent gain to a base stat (spec section 12). */
+export interface AbsorbGain { stat: StatKey; amount: number }
 export interface Member {
   id: CharacterId; level: number; exp: number; hp: number; tp: number; equip: Partial<Record<Slot, ItemInstance>>; limit?: number;
   tree: Record<string, number>; talents: Record<string, number>;
+  /** Memory pieces held, 0 to chainLength(id). Read it only through `memoriesOf`. */
+  memories?: number;
+  /** Shards absorbed so far, at most ABSORB_CAP. */
+  absorbed?: AbsorbGain[];
+  /** Rin's oath: set once she holds all seven pieces. */
+  oath?: true;
 }
 export interface Party {
   /** 3x3 placement, cells 0-2 front, 3-5 middle, 6-8 back (see engine/formation.ts). */

@@ -79,6 +79,13 @@ describe('lineups and hero builds', () => {
     expect(abyss(10).length).toBeGreaterThan(0);
     expect(partyAt(50, { memories: 10 }).roster.noel.tree).toEqual(partyAt(50).roster.noel.tree);
   });
+  it("partyAt puts the lineup's memories on the hero", () => {
+    const p = partyAt(50, { memories: 6 });
+    expect(p.roster.hero.memories).toBe(6);
+    expect(p.roster.hero.tree).toEqual(heroTree(50, 'balanced', 6));
+    expect(p.roster.rin.memories ?? 0).toBe(0);
+    expect(partyAt(50).roster.hero.memories ?? 0).toBe(0);
+  });
   it('a forced abyss bonus reaches the fight, and none leaves it as it was', () => {
     const fight = (abyss?: number) => simBattle(partyAt(50, { memories: 10 }), ['lanterneater'], true, 7919, { depth: 12, region: 'mainline' }, undefined, 'skill', abyss);
     expect(fight(0)).toEqual(fight());

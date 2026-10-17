@@ -9,11 +9,12 @@ import { addGear, BAG_SIZE } from './loot/bag';
 import { itemSlot } from './loot/item';
 import { MAX_ILVL, MAX_REACHED } from './levels';
 import { MAX_LEVEL, SLOTS, slotsFor } from './party';
-import { validBuild } from './progression';
+import { memoriesOf, validBuild } from './progression';
 import { SAVE_VERSION, type GameState } from './state';
 import { isSceneId } from '../data/story/scenes';
-import { TOWN_FRAGMENTS } from '../data/story/fragments';
-import type { ItemInstance, Slot } from './types';
+import { ABSORB_CAP, ABSORB_GAIN, TOWN_FRAGMENTS } from '../data/story/fragments';
+import { chainLength } from '../data/story/chains';
+import type { CharacterId, ItemInstance, Member, Slot } from './types';
 
 export const SAVE_KEY = 'starlantern-save';
 export const BACKUP_KEY = 'starlantern-save-backup';
@@ -31,6 +32,22 @@ const isListMap = (v: unknown, ok: (x: unknown) => boolean) => isObj(v) && Objec
 const has = (o: object, k: unknown) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
 /** Far above any depth the game reaches; bounds hostile boss-kill keys. */
 const MAX_DEPTH = 9999;
+/**
+ * A member's memory fields: `memories` a whole count within the member's chain, `absorbed` a short list of gains that
+ * are each one entry of the ABSORB_GAIN table (changing that table needs a SAVE_VERSION bump once saves ship), and
+ * `oath` only on Rin with every piece.
+ */
+const validMemory = (id: CharacterId, m: Record<string, unknown>): boolean => {
+  if (m.memories !== undefined && !(isCount(m.memories) && (m.memories as number) <= chainLength(id))) return false;
+  if (m.absorbed !== undefined) {
+    if (!Array.isArray(m.absorbed) || m.absorbed.length > ABSORB_CAP) return false;
+    const grades = Object.values(ABSORB_GAIN);
+    const stats = Object.keys(ABSORB_GAIN.dim);
+    if (!m.absorbed.every((a) => isObj(a) && stats.includes(a.stat as string) && grades.some((g) => g[a.stat as keyof typeof g] === a.amount))) return false;
+  }
+  if (m.oath !== undefined && !(m.oath === true && id === 'rin' && m.memories === chainLength('rin'))) return false;
+  return true;
+};
 /** A boss-kill key: `region:depth`, a known region and a depth from 1 to MAX_DEPTH. */
 const isBossKey = (k: string): boolean => {
   const m = /^([a-z]+):(\d{1,4})$/.exec(k);
@@ -95,8 +112,8 @@ function isValid(d: Record<string, unknown>): boolean {
     }
     if (!Number.isInteger(m.level) || (m.level as number) < 1 || (m.level as number) > MAX_LEVEL) return false;
     if (!isCount(m.exp) || !isCount(m.hp) || !isCount(m.tp)) return false;
-    // Memories are 0 until plan 6b, which reads the hero's memory-piece count from the save.
-    if (!validBuild(id, m.level as number, m.tree, m.talents, 0)) return false;
+    if (!validMemory(id, m)) return false;
+    if (!validBuild(id, m.level as number, m.tree, m.talents, memoriesOf(m as Pick<Member, 'id' | 'memories'>))) return false;
   }
   // Every uid once, bag and worn together, and all of them below nextUid.
   if (new Set(uids).size !== uids.length || uids.some((u) => u >= (d.nextUid as number))) return false;

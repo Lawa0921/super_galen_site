@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   canRaiseNode, canRaiseTalent, defaultTalents, defaultTree, freeNode, keystonesOf, learnedSkills, legacyDue, newTree, nodeRank, raiseNode,
   raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, ultimateFor, validBuild,
-  heroMainBranch, heroTalents, heroTree,
+  heroMainBranch, heroTalents, heroTree, memoriesOf,
 } from './progression';
+import { chainLength } from '../data/story/chains';
 import { HERO_ULTIMATES, ULTIMATES } from '../data/ultimates';
 import { gainExp, newMember } from './party';
 import { CHARACTERS, rulesOf } from '../data/characters';
@@ -509,6 +510,21 @@ describe("the hero's abyss capstones", () => {
     expect(canRaiseNode(m, 'abyss-sword')).toBe('abyss');
     expect(raiseNode(m, 'abyss-sword')).toEqual({ ok: false, reason: 'abyss' });
     expect(raiseNode(m, 'abyss-sword', ABYSS_UNLOCK[0]).ok).toBe(true);
+  });
+  it('memoriesOf clamps a hostile count', () => {
+    for (const id of ['hero', 'rin'] as const) {
+      for (const bad of [NaN, Infinity, -Infinity, -3, undefined]) expect(memoriesOf({ id, memories: bad }), `${id} ${String(bad)}`).toBe(0);
+      expect(memoriesOf({ id, memories: 2.7 })).toBe(2);
+      expect(memoriesOf({ id, memories: 99 })).toBe(chainLength(id));
+    }
+  });
+  it("the hero's own memories open his abyss node", () => {
+    const tree = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5 };
+    const m = hero(tree);
+    expect(canRaiseNode({ ...m, memories: ABYSS_UNLOCK[0] }, 'abyss-sword')).toBeNull();
+    expect(canRaiseNode({ ...m, memories: ABYSS_UNLOCK[0] - 1 }, 'abyss-sword')).toBe('abyss');
+    expect(canRaiseNode({ ...m, memories: NaN }, 'abyss-sword')).toBe('abyss');
+    expect(raiseNode({ ...m, memories: ABYSS_UNLOCK[0] }, 'abyss-sword').ok).toBe(true);
   });
   it("every branch's capstone opens at its own memory count, and not one short of it", () => {
     expect(ABYSS_UNLOCK).toEqual([2, 4, 6, 8, 10]);   // the spec's table: sword, guard, star, light, chain

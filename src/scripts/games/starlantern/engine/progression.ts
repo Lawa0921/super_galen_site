@@ -9,6 +9,7 @@ import { ABYSS_UNLOCK, HERO_BUILDS, type HeroBuild } from '../data/hero';
 import { HERO_ULTIMATES, ULTIMATES } from '../data/ultimates';
 import type { AnyStat, CharacterId, GrowthRules, Member, Sheet, UltimateDef } from './types';
 import { stackMods } from './skills';
+import { chainLength } from '../data/story/chains';
 
 /**
  * Skill-tree rules: points per level, what a member may raise next, and the default build.
@@ -172,20 +173,30 @@ function check(id: CharacterId, level: number, tree: unknown, node: string, memo
   for (let t = 0; t < info.tier; t++) below += rankIn(tree, branch[t].id);
   if (info.branch === 0 && info.tier > 0) below -= Math.min(1, rankIn(tree, branch[0].id));
   if (below < TIER_GATE[info.tier]) return 'gate';
-  if (id === 'hero' && info.tier === 4 && memories < ABYSS_UNLOCK[info.branch]) return 'abyss';
+  if (id === 'hero' && info.tier === 4 && !(memories >= ABYSS_UNLOCK[info.branch])) return 'abyss';   // `!(>=)`, so a NaN count keeps the node shut
   if (info.tier === 4 && TREES[id].branches.filter((b) => b.nodes[4].id !== node && rankIn(tree, b.nodes[4].id) > 0).length >= rulesOf(id).capstones) return 'capstone';
   if (pointsLeft(id, level, tree) <= 0) return 'points';
   return null;
 }
 
 /**
- * Why `node` cannot take its next rank, checked in the order of RaiseFail; null when it can. Never throws.
- * `memories` is the hero's memory count, which the abyss nodes wait for (ABYSS_UNLOCK); 0 keeps them shut.
+ * The memory pieces `m` holds: the only way the game reads the count. A count that is not a finite number, or is
+ * negative, is 0; otherwise it is whole pieces, never more than the member's chain has.
  */
-export const canRaiseNode = (m: Member, node: string, memories = 0): RaiseFail | null => check(m.id, m.level, m.tree, node, memories);
+export function memoriesOf(m: Pick<Member, 'id' | 'memories'>): number {
+  const n = m.memories;
+  if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) return 0;
+  return Math.min(chainLength(m.id), Math.floor(n));
+}
+
+/**
+ * Why `node` cannot take its next rank, checked in the order of RaiseFail; null when it can. Never throws.
+ * `memories` is the hero's memory count, which the abyss nodes wait for (ABYSS_UNLOCK); it defaults to the member's own.
+ */
+export const canRaiseNode = (m: Member, node: string, memories = memoriesOf(m)): RaiseFail | null => check(m.id, m.level, m.tree, node, memories);
 
 /** One more rank in `node`, on a copy; the member passed in is never changed. */
-export function raiseNode(m: Member, node: string, memories = 0): { ok: true; member: Member } | { ok: false; reason: RaiseFail } {
+export function raiseNode(m: Member, node: string, memories = memoriesOf(m)): { ok: true; member: Member } | { ok: false; reason: RaiseFail } {
   const reason = canRaiseNode(m, node, memories);
   if (reason) return { ok: false, reason };
   return { ok: true, member: { ...m, tree: { ...m.tree, [node]: nodeRank(m, node) + 1 } } };

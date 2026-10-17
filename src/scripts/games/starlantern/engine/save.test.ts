@@ -8,6 +8,8 @@ import { memoryStorage, plainItem, fullParty } from './testing';
 import { defaultTalents, defaultTree, validBuild } from './progression';
 import { BOARDS } from '../data/talents';
 import { TREES } from '../data/trees';
+import { ABSORB_CAP, ABSORB_GAIN } from '../data/story/fragments';
+import { chainLength } from '../data/story/chains';
 
 describe('save', () => {
   it('round-trips a game', () => {
@@ -420,6 +422,42 @@ describe('save v5 skill trees and talents', () => {
     expect(status((g) => { delete (g.party.roster.liz as Partial<typeof g.party.roster.liz>).talents; })).toBe('corrupt');
     expect(status((g) => { g.party.roster.liz.level = 2.5; })).toBe('corrupt');
     expect(BOARDS.liz.filter((n) => n.keystone).length).toBeGreaterThanOrEqual(2);
+  });
+  const capTree = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5, 'abyss-sword': 1 };
+  const withHero = (extra: Record<string, unknown>) => {
+    const g = newGame();
+    g.party.roster.hero = { ...g.party.roster.hero, level: 50, tree: capTree, ...extra } as typeof g.party.roster.hero;
+    return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  };
+  const withMember = (id: 'hero' | 'rin', extra: Record<string, unknown>) => {
+    const g = newGame();
+    g.party.roster[id] = { ...g.party.roster[id], ...extra } as typeof g.party.roster.hero;
+    return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  };
+  it("a saved capstone loads when the hero's memories allow it", () => {
+    expect(withHero({ memories: 2 })).toBe('ok');
+    expect(withHero({ memories: 1 })).toBe('corrupt');
+  });
+  it('hostile memories are corrupt', () => {
+    for (const bad of [null, -1, 1.5, '3', chainLength('hero') + 1]) expect(withHero({ memories: bad }), String(bad)).toBe('corrupt');
+    expect(withMember('rin', { memories: chainLength('rin') + 1 })).toBe('corrupt');
+  });
+  it('only Rin with all seven may hold her oath', () => {
+    expect(withMember('rin', { memories: chainLength('rin') - 1, oath: true })).toBe('corrupt');
+    expect(withMember('rin', { memories: chainLength('rin'), oath: true })).toBe('ok');
+    expect(withMember('rin', { oath: true })).toBe('corrupt');
+    expect(withMember('hero', { memories: chainLength('hero'), oath: true })).toBe('corrupt');
+    expect(withMember('rin', { memories: chainLength('rin'), oath: false })).toBe('corrupt');
+  });
+  it('absorbed gains must come from the table', () => {
+    const ok = { stat: 'atk', amount: ABSORB_GAIN.dim.atk };
+    expect(withMember('rin', { absorbed: [ok] })).toBe('ok');
+    expect(withMember('rin', { absorbed: [{ stat: 'hp', amount: ABSORB_GAIN.vivid.hp }] })).toBe('ok');
+    expect(withMember('rin', { absorbed: [{ stat: 'atk', amount: 999 }] })).toBe('corrupt');
+    expect(withMember('rin', { absorbed: [{ stat: 'crit', amount: 1 }] })).toBe('corrupt');
+    expect(withMember('rin', { absorbed: Array(ABSORB_CAP).fill(ok) })).toBe('ok');
+    expect(withMember('rin', { absorbed: Array(ABSORB_CAP + 1).fill(ok) })).toBe('corrupt');
+    expect(withMember('rin', { absorbed: 'x' })).toBe('corrupt');
   });
   it('a hero capstone without memories is corrupt', () => {
     const tree = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5, 'abyss-sword': 1 };

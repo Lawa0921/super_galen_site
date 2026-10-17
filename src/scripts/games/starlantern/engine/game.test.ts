@@ -16,7 +16,7 @@ import { activeIds, expToNext, gainExp, MAX_LEVEL, meet, newMember, rowOfCell, L
 import { depthClearExp, empower, encounterGroup, groupCap } from './scaling';
 import { favouredRegions } from '../data/meetings';
 import { MAX_ACTIVE } from './formation';
-import { ABYSS } from '../data/hero';
+import { ABYSS, ABYSS_UNLOCK } from '../data/hero';
 import { CONDITIONS } from '../data/conditions';
 import { BAG_SIZE } from './loot/bag';
 import { MAX_ILVL, MAX_REACHED } from './levels';
@@ -1374,6 +1374,19 @@ describe('setFormation', () => {
 
 describe('spending a skill point', () => {
   const lv2 = (g: Game) => { g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 2 }; };
+  it("raiseNode reads the hero's memories and the save loads back", () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
+    const tree = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5 };
+    g.state.party.roster.hero = { ...g.state.party.roster.hero, level: 50, memories: ABYSS_UNLOCK[0] - 1, tree };
+    expect(g.raiseNode('hero', 'abyss-sword')).toEqual({ ok: false, reason: 'abyss' });
+    g.state.party.roster.hero = { ...g.state.party.roster.hero, memories: ABYSS_UNLOCK[0] };
+    expect(g.raiseNode('hero', 'abyss-sword')).toEqual({ ok: true });
+    expect(g.state.party.roster.hero.tree['abyss-sword']).toBe(1);
+    const back = Game.boot(calm(), storage);
+    expect(back.notice).toBeNull();
+    expect(back.state.party.roster.hero.tree['abyss-sword']).toBe(1);
+  });
   it('saves the spend in town: a reload keeps the new rank', () => {
     const storage = memoryStorage();
     const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);

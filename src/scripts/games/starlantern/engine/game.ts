@@ -571,8 +571,7 @@ export class Game {
    */
   raiseNode(id: CharacterId, node: string): { ok: true } | { ok: false; reason: RaiseFail | 'invalid' } {
     if ((this.phase !== 'town' && this.phase !== 'map') || !this.state.party.recruited.includes(id)) return { ok: false, reason: 'invalid' };
-    // Plan 6a: no memory source yet, so the abyss nodes stay shut (6b changes this to `state.memories.hero`).
-    const r = raiseNode(this.state.party.roster[id], node, 0);
+    const r = raiseNode(this.state.party.roster[id], node);
     if (!r.ok) return r;
     const party = this.state.party;
     this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
