@@ -7,6 +7,7 @@ import { validPortals } from './portals';
 import { GRID_SIZE, MAX_ACTIVE } from './formation';
 import { addGear, BAG_SIZE } from './loot/bag';
 import { itemSlot } from './loot/item';
+import { MAX_ILVL, MAX_REACHED } from './levels';
 import { MAX_LEVEL, SLOTS, slotsFor } from './party';
 import { validBuild } from './progression';
 import { SAVE_VERSION, type GameState } from './state';
@@ -25,8 +26,6 @@ const isIdList = (v: unknown, nullable = false) =>
   Array.isArray(v) && v.every((x) => (nullable && x === null) || CHARACTER_IDS.includes(x));
 const ELEMENTS = ['phys', 'fire', 'ice', 'thunder'];
 const isListMap = (v: unknown, ok: (x: unknown) => boolean) => isObj(v) && Object.values(v).every((l) => Array.isArray(l) && l.every(ok));
-/** Far above any depth the game reaches (a depth-50 boss drops item level 202); bounds hostile saves. */
-const MAX_ILVL = 999;
 const has = (o: object, k: unknown) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
 /** Far above any depth the game reaches; bounds hostile boss-kill keys. */
 const MAX_DEPTH = 9999;
@@ -89,7 +88,7 @@ function isValid(d: Record<string, unknown>): boolean {
   if (!validPortals(g.portals)) return false;
   if (!isCounts(g.bossKills) || !Object.keys(g.bossKills as object).every(isBossKey)) return false;
   if (Object.keys(reached).length !== regions.length) return false;
-  return regions.every((r) => Number.isInteger(reached[r]) && (reached[r] as number) >= 1);
+  return regions.every((r) => Number.isInteger(reached[r]) && (reached[r] as number) >= 1 && (reached[r] as number) <= MAX_REACHED);
 }
 
 export function saveGame(storage: SaveStorage, s: GameState): boolean {

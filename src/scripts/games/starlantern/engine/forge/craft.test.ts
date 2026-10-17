@@ -6,7 +6,9 @@ import { GEAR_SLOTS, SETS, SPECIALS } from '../../data/gear';
 import { ITEMS } from '../../data/items';
 import { MATERIALS } from '../../data/materials';
 import { REGIONS } from '../../data/regions';
+import { EQUIPMENT } from '../../data/equipment';
 import { BAG_SIZE } from '../loot/bag';
+import { MAX_ILVL, MAX_REACHED, depthLevel } from '../levels';
 import { itemLevel, itemSlot } from '../loot/item';
 import { isUnlocked, sell } from '../town';
 import { craftBase, craftItem, craftLevel, craftSet, baseCost, itemRecipeCost, setCost } from './craft';
@@ -38,16 +40,20 @@ describe('craftItem', () => {
   });
   it('refuses bad qty and unknown recipes as invalid, and what it cannot pay for', () => {
     const s = rich();
+    const snap = structuredClone(s);
     for (const q of [0, -1, 1.5, NaN]) expect(craftItem(s, 'potion', q)).toEqual({ ok: false, reason: 'invalid' });
     expect(craftItem(s, 'nope', 1)).toEqual({ ok: false, reason: 'invalid' });
     expect(craftItem(s, 'toString', 1)).toEqual({ ok: false, reason: 'invalid' });
     expect(craftItem({ ...s, gold: 0 }, 'potion', 1)).toEqual({ ok: false, reason: 'gold' });
     expect(craftItem({ ...s, inventory: {} }, 'potion', 1)).toEqual({ ok: false, reason: 'mats' });
     expect(itemRecipeCost('potion', 0)).toBeNull();
+    expect(s).toEqual(snap);
   });
   it('every consumable recipe is cheaper than the shop, in gold and in selling value of the whole recipe', () => {
-    for (const [id, rec] of Object.entries(CONSUMABLE_RECIPES)) {
+    for (const id of Object.keys(CONSUMABLE_RECIPES)) {
+      const rec = itemRecipeCost(id, 1)!;
       const price = ITEMS[id].price;
+      expect(itemRecipeCost(id, 3), id).toEqual({ gold: rec.gold * 3, mats: Object.fromEntries(Object.entries(rec.mats).map(([m, n]) => [m, n * 3])) });
       const matValue = Object.entries(rec.mats).reduce((sum, [m, n]) => sum + MATERIALS[m].price * n, 0);
       expect(rec.gold, id).toBeLessThan(price);
       expect(rec.gold + matValue, id).toBeLessThan(price);
@@ -67,6 +73,16 @@ describe('craftLevel', () => {
     expect(craftLevel(s)).toBe(38);
     s.dungeon.reached.iron = 15;
     expect(craftLevel(s)).toBe(58);
+  });
+  it('is clamped to MAX_REACHED so a hostile reached value cannot inflate it', () => {
+    const s = newGame();
+    s.dungeon.reached.blaze = 1e9;
+    expect(craftLevel(s)).toBe(depthLevel(MAX_REACHED));
+    expect(craftLevel(s)).toBeLessThanOrEqual(MAX_ILVL);
+    s.dungeon.reached.blaze = MAX_REACHED;
+    expect(craftLevel(s)).toBe(depthLevel(MAX_REACHED));
+    const set = craftSet({ ...rich(), dungeon: { ...s.dungeon } }, piece);
+    expect(set.ok && set.out.item.ilvl).toBeLessThanOrEqual(MAX_ILVL);
   });
 });
 
@@ -144,9 +160,15 @@ describe('craftBase', () => {
     expect(inj.ok && inj.out.item.rarity).toBe('common');
     const mg = craftBase(s, 'head', () => 0.1);
     expect(mg.ok && mg.out.item.rarity).toBe('magic');
-    expect(craftBase({ ...s, gold: 0 }, 'head')).toEqual({ ok: false, reason: 'gold' });
-    expect(craftBase({ ...s, inventory: {} }, 'head')).toEqual({ ok: false, reason: 'mats' });
+    const snap = structuredClone(s);
+    const poor = { ...s, gold: 0 };
+    const bare = { ...s, inventory: {} };
+    expect(craftBase(poor, 'head')).toEqual({ ok: false, reason: 'gold' });
+    expect(craftBase(bare, 'head')).toEqual({ ok: false, reason: 'mats' });
     expect(craftBase(s, 'bogus' as never)).toEqual({ ok: false, reason: 'invalid' });
+    expect(poor.gold).toBe(0);
+    expect(bare.inventory).toEqual({});
+    expect(s).toEqual(snap);
     expect(s.forgeDraws).toBe(0);
   });
 });
@@ -165,6 +187,9 @@ describe('craftSet', () => {
     expect(r.state.gold).toBe(1000 - 300);
     expect(r.state.inventory).toEqual({ 'blaze-core': 1, 'star-tear': 1 });
     expect(r.out.item).toMatchObject({ uid: 50, rarity: 'set', special: piece, ilvl: craftLevel(s) });
+    expect(r.out.item.ilvl).toBe(18);
+    expect(r.out.item.affixes.map((a) => a.key)).toEqual(SPECIALS[piece].fixed);
+    expect(EQUIPMENT[r.out.item.base].slot).toBe(SPECIALS[piece].slot);
     expect(r.state.bag).toEqual([r.out.item]);
     expect(r.state.nextUid).toBe(51);
     expect(r.state.codex).toEqual([piece, 'set-blaze']);
@@ -186,9 +211,11 @@ describe('craftSet', () => {
   });
   it('refuses what it cannot pay for, and accepts exactly enough', () => {
     const s = rich();
+    const snap = structuredClone(s);
     expect(craftSet({ ...s, gold: 299 }, piece)).toEqual({ ok: false, reason: 'gold' });
     expect(craftSet({ ...s, inventory: { 'blaze-core': 8 } }, piece)).toEqual({ ok: false, reason: 'mats' });
     expect(craftSet({ ...s, inventory: { 'blaze-core': 7, 'star-tear': 1 } }, piece)).toEqual({ ok: false, reason: 'mats' });
+    expect(s).toEqual(snap);
     expect(craftSet({ ...s, gold: 300, inventory: { 'blaze-core': 8, 'star-tear': 1 } }, piece).ok).toBe(true);
   });
 });
@@ -199,6 +226,8 @@ describe('a full bag', () => {
     const snap = structuredClone(s);
     expect(craftBase(s, 'weapon')).toEqual({ ok: false, reason: 'full' });
     expect(craftSet(s, piece)).toEqual({ ok: false, reason: 'full' });
+    expect(craftSet({ ...s, gold: 0 }, piece)).toEqual({ ok: false, reason: 'full' });
+    expect(craftSet(s, 'potion')).toEqual({ ok: false, reason: 'invalid' });
     expect(s).toEqual(snap);
     expect(craftBase({ ...s, gold: 0 }, 'weapon')).toEqual({ ok: false, reason: 'full' });
     expect(craftBase({ ...s, bag: s.bag.slice(1) }, 'weapon').ok).toBe(true);

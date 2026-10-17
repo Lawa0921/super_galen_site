@@ -2,6 +2,7 @@ import { BASE_RECIPES, CONSUMABLE_RECIPES, CRAFT_MAGIC_CHANCE, SET_RECIPE, baseG
 import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { mintUid, BAG_SIZE } from '../loot/bag';
+import { MAX_REACHED } from '../levels';
 import { itemLevel, rollItem } from '../loot/item';
 import { mulberry32, type Rng } from '../rng';
 import type { GameState } from '../state';
@@ -11,9 +12,9 @@ import { addCost, canPay, forgeRng, pay, type ForgeResult } from './cost';
 
 const has = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
 
-/** The item level crafted gear gets: a monster drop's level at the deepest depth reached in any region. */
+/** The item level crafted gear gets: a monster drop's level at the deepest depth reached in any region (capped at MAX_REACHED, so a hostile save cannot inflate it). */
 export function craftLevel(s: GameState): number {
-  return itemLevel(Math.max(1, ...Object.values(s.dungeon.reached)), 'monster');
+  return itemLevel(Math.min(MAX_REACHED, Math.max(1, ...Object.values(s.dungeon.reached))), 'monster');
 }
 
 /** What crafting `qty` of consumable `id` costs; null when there is no recipe or qty is not a positive integer. */

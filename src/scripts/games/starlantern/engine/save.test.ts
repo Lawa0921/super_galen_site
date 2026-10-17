@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { BACKUP_KEY, SAVE_KEY, loadGame, saveGame } from './save';
 import { newGame } from './state';
+import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { mulberry32 } from './rng';
 import { memoryStorage, plainItem } from './testing';
@@ -222,6 +223,9 @@ describe('save', () => {
     expect(bad((g) => { g.dungeon.reached.frost = 0; })).toBe('corrupt');
     expect(bad((g) => { g.dungeon.reached.frost = 7.5; })).toBe('corrupt');
     expect(bad((g) => { g.dungeon.reached.frost = 7; })).toBe('ok');
+    expect(bad((g) => { g.dungeon.reached.frost = 1e9; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.reached.frost = MAX_REACHED + 1; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.reached.frost = MAX_REACHED; })).toBe('ok');
   });
   it('a saved game keeps its portals across a reload', () => {
     const st = memoryStorage();
