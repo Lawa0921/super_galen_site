@@ -12,6 +12,11 @@ describe('meetings', () => {
     }
   });
 
+  it('no two companions share a region and depth', () => {
+    const keys = MEETINGS.map((m) => m.region + ':' + m.depth);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
   it('rescuesFor drops whoever is met', () => {
     expect(rescuesFor('mainline', ['hero', 'rin'])).toEqual({ 2: 'selene', 6: 'bobby' });
     expect(rescuesFor('mainline', ['hero', 'rin', 'selene'])).toEqual({ 6: 'bobby' });

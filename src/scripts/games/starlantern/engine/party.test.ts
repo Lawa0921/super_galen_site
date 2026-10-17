@@ -4,11 +4,9 @@ import {
   gainExp, awardExp, hasPassive, MAX_LEVEL, SLOTS, slotsFor, defaultSlotFor, sheetOf, setCounts, powersOf,
 } from './party';
 import { partyAt } from './sim';
-import { joinLevel, meet } from './party';
 import { depthLevel } from './scaling';
-import { validBuild } from './progression';
-import { LEGACY_GRID, LEGACY_LINEUP, STANDARD_LINEUP, START_LINEUP, partyWith, placeInGrid } from './party';
-import { defaultTalents, defaultTree, learnedSkills, newTree, raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft } from './progression';
+import { LEGACY_GRID, LEGACY_LINEUP, STANDARD_LINEUP, START_LINEUP, partyWith, placeInGrid, joinLevel, meet } from './party';
+import { defaultTalents, defaultTree, learnedSkills, newTree, raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, validBuild } from './progression';
 import { fullParty, plainItem } from './testing';
 import { rollItem } from './loot/item';
 import { mulberry32 } from './rng';
@@ -348,21 +346,28 @@ describe('joinLevel and meet', () => {
 
   it('joinLevel averages the field, at least the depth level less two', () => {
     expect(joinLevel(at(['hero', 'rin'], [10, 6]), 1)).toBe(8);
-    expect(joinLevel(at(['hero', 'rin'], [10, 6]), 3)).toBe(8);
     expect(joinLevel(at(['hero', 'rin'], [10, 10]), 3)).toBe(10);
+    // The depth term decides: average 6, depthLevel(3) - 2 = 8, best 10.
     expect(depthLevel(3) - 2).toBe(8);
+    expect(joinLevel(at(['hero', 'rin'], [10, 2]), 3)).toBe(8);
   });
 
   it("joinLevel never passes the field's best", () => {
     expect(joinLevel(at(['hero', 'rin'], [3, 3]), 8)).toBe(3);
   });
 
-  it('joinLevel counts a fallen member and stays within 1 and MAX_LEVEL', () => {
-    const p = at(['hero', 'rin'], [1, 1]);
+  it('joinLevel counts a fallen member whatever their HP', () => {
+    const p = at(['hero', 'rin'], [10, 2]);
     p.roster.rin = { ...p.roster.rin, hp: 0 };
-    expect(joinLevel(p, 1)).toBe(1);
-    expect(joinLevel(at(['hero', 'rin'], [MAX_LEVEL, MAX_LEVEL]), 20)).toBe(MAX_LEVEL);
-    expect(joinLevel(at(['hero', 'rin'], [1, 1]), 1)).toBeGreaterThanOrEqual(1);
+    expect(joinLevel(p, 1)).toBe(6);
+    const q = at(['hero', 'rin'], [2, 10]);
+    q.roster.rin = { ...q.roster.rin, hp: 0 };
+    expect(joinLevel(q, 8)).toBe(10);
+  });
+
+  it('joinLevel stays within 1 and MAX_LEVEL', () => {
+    expect(joinLevel(at(['hero', 'rin'], [0, 0]), 1)).toBe(1);
+    expect(joinLevel(at(['hero', 'rin'], [MAX_LEVEL + 10, MAX_LEVEL + 10]), 1)).toBe(MAX_LEVEL);
   });
 
   it('meet places her on the field while there is room, else on the bench', () => {
@@ -390,5 +395,21 @@ describe('joinLevel and meet', () => {
   it('meeting someone already met changes nothing', () => {
     const p = partyWith(['hero', 'rin']);
     expect(meet(p, 'rin', 9)).toBe(p);
+  });
+
+  it('meet spills to the middle row when her own row is full', () => {
+    const g: (CharacterId | null)[] = Array(9).fill(null);
+    g[0] = 'hero'; g[1] = 'rin'; g[2] = 'noel';
+    const out = meet(partyWith(['hero', 'rin', 'noel'], 'front', g), 'chizuru', 3);
+    expect(CHARACTERS.chizuru.row).toBe('front');
+    expect(out.grid.slice(3, 6)).toContain('chizuru');
+    expect(out.grid.slice(0, 3)).toEqual(['hero', 'rin', 'noel']);
+  });
+
+  it('meet does not mutate its input party', () => {
+    const p = partyWith(['hero', 'rin']);
+    const snapshot = JSON.parse(JSON.stringify(p));
+    meet(p, 'selene', 5);
+    expect(JSON.parse(JSON.stringify(p))).toEqual(snapshot);
   });
 });
