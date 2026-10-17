@@ -504,6 +504,15 @@ describe('weapon kinds in battle', () => {
     expect([bare.melee, bare.attackScale, bare.weaponKind]).toEqual([true, 'atk', undefined]);
   });
 
+  it("the hero holding a legendary weapon gets that weapon's kind", () => {
+    const party = heroAt(6);
+    party.roster.hero.equip = { weapon: { ...plainItem('iron-sword', 1), rarity: 'legendary', special: 'storm-thunder-bow' } };
+    const h = start(party).party[0];
+    expect([h.melee, h.attackScale, h.weaponKind]).toEqual([false, 'atk', 'bow']);
+    party.roster.hero.equip = { weapon: { ...plainItem('iron-sword', 1), rarity: 'legendary', special: 'frost-winter-staff' } };
+    expect(start(party).party[0].weaponKind).toBe('staff');
+  });
+
   it('companions ignore their weapon', () => {
     const n = start(heroAt(0, undefined, 'iron-sword')).party.find((c) => c.key === 'noel')!;
     expect(n.melee).toBe(false);

@@ -7,12 +7,12 @@ import { REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { BattleEvent } from '../engine/combatant';
 import type { Dir, Tile } from '../engine/map';
-import type { CharacterId, WeaponKind } from '../engine/types';
+import type { CharacterId, FxKey, WeaponKind } from '../engine/types';
 
 export const ART_BASE = '/assets/games/starlantern';
 export const MANIFEST_URL = `${ART_BASE}/manifest.json`;
 export type TileKey = Tile | 'chest-open';
-export type FxKey = 'slash' | 'pierce' | 'strike' | 'fire' | 'ice' | 'thunder' | 'heal' | 'buff';
+export type { FxKey };
 export type Mood = 'normal' | 'attack' | 'hit' | 'dying' | 'down' | 'ultimate';
 /** Story-only faces that a few characters have besides the battle moods. */
 export type ExtraMood = 'smile' | 'sad';

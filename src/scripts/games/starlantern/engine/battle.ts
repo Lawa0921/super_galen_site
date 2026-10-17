@@ -5,7 +5,7 @@ import { ENEMIES } from '../data/enemies';
 import { REGIONS, type RegionId } from '../data/regions';
 import { ITEMS } from '../data/items';
 import { POWERS } from '../data/gear';
-import { EQUIPMENT, WEAPON_KINDS, WEAPON_MASTERY_PCT } from '../data/equipment';
+import { WEAPON_KINDS, WEAPON_MASTERY_PCT, weaponKindOf } from '../data/equipment';
 import { SKILLS } from '../data/skills';
 import { stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
 import { hasPassive, powersOf, sheetOf, statsOf } from './party';
@@ -59,7 +59,7 @@ function fromMember(m: Member, cell: number): Combatant {
   const x: Partial<Record<SecondaryKey, number>> = {};
   for (const k of SECONDARY_KEYS) if (sheet[k]) x[k] = sheet[k];
   // Only a weapon master (the hero) follows his weapon; a companion keeps its character's `melee` and the plain ATK attack.
-  const kind = def.weaponMaster ? EQUIPMENT[m.equip.weapon?.base ?? '']?.weaponKind : undefined;
+  const kind = def.weaponMaster ? weaponKindOf(m.equip.weapon) : undefined;
   const wk = kind ? WEAPON_KINDS[kind] : undefined;
   return { ...fresh(), key: m.id, side: 'party', defId: m.id, name: def.name, max: statsOf(m), hp: m.hp, tp: m.tp,
     row, cell, melee: wk ? wk.melee : def.melee, ...(def.weaponMaster ? { attackScale: wk ? wk.scale : 'atk' as const } : {}),

@@ -1,4 +1,4 @@
-import type { AnyStat, Effect, GearSlot, Rarity, Sheet, Target, Element } from '../engine/types';
+import type { AnyStat, Effect, GearSlot, Rarity, Sheet, Target, Element, WeaponKind } from '../engine/types';
 import type { RegionId } from './regions';
 
 export const GEAR_SLOTS: GearSlot[] = ['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring'];
@@ -106,6 +106,8 @@ export const POWERS: Record<string, PowerDef> = Object.fromEntries(POWER_LIST.ma
 export interface SpecialDef {
   id: string; name: string; rarity: 'legendary' | 'unique' | 'set'; slot: GearSlot; region: RegionId | null;
   source: 'any' | 'elite' | 'boss'; power?: string; fixed?: AnyStat[]; set?: string; lore: string;
+  /** Set on every weapon: what the hero's basic attack and mastery follow (data/equipment.ts weaponKindOf). */
+  weaponKind?: WeaponKind;
 }
 export interface SetDef {
   id: string; name: string; region: RegionId; pieces: string[]; two: Partial<Sheet>; four: Partial<Sheet>;
@@ -163,7 +165,15 @@ export const SETS: Record<string, SetDef> = Object.fromEntries(SET_DEFS.map((s) 
   id: s.id, name: `${s.stem}套裝`, region: s.region, pieces: s.slots.map((slot) => `${s.id}-${slot}`), two: s.two, four: s.four,
 }]));
 
-export const SPECIALS: Record<string, SpecialDef> = Object.fromEntries([...SPECIAL_LIST, ...SET_PIECES].map((s) => [s.id, s]));
+/** The kind of each legendary and unique weapon, by its name: 槍 and 叉 spear, 劍 sword, 杖 staff, 弓 bow, 刃 dagger. */
+const SPECIAL_WEAPON_KIND: Record<string, WeaponKind> = {
+  'lg-chizuru': 'spear', 'lg-liz': 'spear', 'blaze-heart-sword': 'sword', 'frost-winter-staff': 'staff',
+  'storm-thunder-bow': 'bow', 'shade-silent-blade': 'dagger',
+};
+/** Set weapons are all named "...之刃" and are swords. */
+const withKind = (s: SpecialDef): SpecialDef => s.slot !== 'weapon' ? s : { ...s, weaponKind: s.set ? 'sword' : SPECIAL_WEAPON_KIND[s.id] };
+
+export const SPECIALS: Record<string, SpecialDef> = Object.fromEntries([...SPECIAL_LIST, ...SET_PIECES].map(withKind).map((s) => [s.id, s]));
 
 /** A region's legendary and unique; set pieces are reached through SETS. */
 export function regionSpecials(region: RegionId): SpecialDef[] {

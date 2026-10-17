@@ -3,11 +3,10 @@ import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { SKILLS } from './skills';
 import { ENEMIES } from './enemies';
 import { ITEMS } from './items';
-import { EQUIPMENT } from './equipment';
+import { EQUIPMENT, WEAPON_KINDS, weaponKindOf } from './equipment';
 import { slotsFor } from '../engine/party';
-import { GEAR_SLOTS } from './gear';
+import { GEAR_SLOTS, SPECIALS } from './gear';
 import { MATERIALS } from './materials';
-import { WEAPON_KINDS } from './equipment';
 import { NODES } from './trees';
 import { FLOORS } from './floors';
 import { ULTIMATES } from './ultimates';
@@ -97,6 +96,27 @@ describe('weapon kinds', () => {
       'iron-sword': 'sword', 'crystal-blade': 'dagger', 'star-saber': 'scimitar', 'thorn-spear': 'spear',
       'hunter-bow': 'bow', 'wooden-staff': 'staff', 'frost-staff': 'staff',
     });
+  });
+});
+
+describe('every weapon-slot def has a kind', () => {
+  it('bases, legendaries, uniques and set weapons alike', () => {
+    for (const e of Object.values(EQUIPMENT)) if (e.slot === 'weapon') expect(WEAPON_KINDS[e.weaponKind!], e.id).toBeDefined();
+    const weapons = Object.values(SPECIALS).filter((s) => s.slot === 'weapon');
+    expect(weapons.length).toBeGreaterThanOrEqual(10);
+    for (const s of weapons) expect(WEAPON_KINDS[s.weaponKind!], s.id).toBeDefined();
+    for (const s of Object.values(SPECIALS)) if (s.slot !== 'weapon') expect(s.weaponKind, s.id).toBeUndefined();
+    expect(Object.fromEntries(weapons.filter((s) => !s.set).map((s) => [s.id, s.weaponKind]))).toEqual({
+      'lg-chizuru': 'spear', 'lg-liz': 'spear', 'blaze-heart-sword': 'sword', 'frost-winter-staff': 'staff',
+      'storm-thunder-bow': 'bow', 'shade-silent-blade': 'dagger',
+    });
+    for (const s of weapons.filter((s) => s.set)) expect(s.weaponKind, s.id).toBe('sword');
+  });
+  it('weaponKindOf prefers the special over its generic base', () => {
+    expect(weaponKindOf({ base: 'iron-sword' })).toBe('sword');
+    expect(weaponKindOf({ base: 'iron-sword', special: 'frost-winter-staff' })).toBe('staff');
+    expect(weaponKindOf({ base: 'moss-charm' })).toBeUndefined();
+    expect(weaponKindOf(undefined)).toBeUndefined();
   });
 });
 

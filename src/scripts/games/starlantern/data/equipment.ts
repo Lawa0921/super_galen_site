@@ -1,5 +1,5 @@
-import type { EquipDef, WeaponKind } from '../engine/types';
-import type { FxKey } from '../render/artPaths';
+import type { EquipDef, FxKey, ItemInstance, WeaponKind } from '../engine/types';
+import { SPECIALS } from './gear';
 
 const LIST: EquipDef[] = [
   { id: 'wooden-staff', name: '木杖', slot: 'weapon', ilvl: 1, price: 30, bonus: { mag: 3 }, weaponKind: 'staff' },
@@ -48,3 +48,12 @@ export const WEAPON_KINDS: Record<WeaponKind, { melee: boolean; scale: 'atk' | '
 
 /** Percent added to the power of a hero skill in a branch his weapon masters. */
 export const WEAPON_MASTERY_PCT = 10;
+
+/**
+ * The kind of an equipped weapon. A legendary, unique or set weapon is rolled on a generic base, so its own def decides;
+ * any other weapon is its base's kind. Not a weapon (or unknown): undefined.
+ */
+export function weaponKindOf(item: Pick<ItemInstance, 'base' | 'special'> | undefined): WeaponKind | undefined {
+  if (!item) return undefined;
+  return (item.special ? SPECIALS[item.special]?.weaponKind : undefined) ?? EQUIPMENT[item.base]?.weaponKind;
+}
