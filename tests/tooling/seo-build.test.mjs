@@ -287,7 +287,7 @@ describe('SEO build output', { skip }, () => {
     assert.ok(sitemapLocs.includes(`${ORIGIN}/games/cs/`), 'Breach Point 應在 sitemap');
     // 再加上可索引的 DELVE 深掘（/games/delve/）。
     assert.ok(sitemapLocs.includes(`${ORIGIN}/games/delve/`), 'DELVE 應在 sitemap');
-    assert.equal(sitemapLocs.length, 223);
+    assert.equal(sitemapLocs.length, 224);
   });
 
   test('首頁頁尾連到 /privacy/', () => {
