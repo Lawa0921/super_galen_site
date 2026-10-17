@@ -135,5 +135,6 @@ export function starterInventory(): Inventory {
   const inv = new Inventory();
   inv.add('wood_pickaxe', 1);
   inv.add('torch', 10);
+  inv.add('wood_sword', 1);
   return inv;
 }

@@ -3,7 +3,8 @@ import { describe, it, expect } from 'vitest';
 import { World, BIOME } from './world';
 import { T, W } from './tiles';
 import { Rng } from './rng';
-import { habitatAt, spawnTable, pickEntry, findSpot, spawnCap, inHouse, type Habitat } from './spawn';
+import { habitatAt, spawnTable, pickEntry, findSpot, spawnCap, spawnChance, spawnInterval, isFirstNight, inHouse, SPAWN_INTERVAL, NEAR_SPAWN_TILES, type Habitat } from './spawn';
+import { DAY_LENGTH } from './constants';
 import { NATURAL_KINDS } from './enemies';
 import { TILE_SIZE as S } from './constants';
 
@@ -79,5 +80,37 @@ describe('生成點', () => {
     w.setWall(5, 5, W.PLANK_WALL);
     expect(inHouse(w, 5, 5)).toBe(true);
     expect(inHouse(w, 6, 5)).toBe(false);
+  });
+});
+
+describe('生成平衡（第一夜 / 出生點附近 / 生成間隔漸進）', () => {
+  const night: Habitat = { zone: 'surface', biome: BIOME.FOREST, mushroom: false, night: true };
+  it('第一夜：地表夜晚上限 3、機率降低', () => {
+    expect(spawnCap(night, { firstNight: true, nearSpawn: true })).toBe(3);
+    expect(spawnCap(night, { firstNight: true, nearSpawn: false })).toBe(3);
+    expect(spawnChance(night, { firstNight: true, nearSpawn: true })).toBeLessThan(spawnChance(night));
+  });
+  it('之後的夜晚：出生點附近上限比遠方低；遠方維持 8', () => {
+    expect(spawnCap(night, { firstNight: false, nearSpawn: true })).toBe(5);
+    expect(spawnCap(night, { firstNight: false, nearSpawn: false })).toBe(8);
+    expect(spawnCap(night)).toBe(8);
+    expect(NEAR_SPAWN_TILES).toBeGreaterThan(0);
+  });
+  it('白天 / 地下不受第一夜影響', () => {
+    const day: Habitat = { ...night, night: false };
+    expect(spawnCap(day, { firstNight: true, nearSpawn: true })).toBe(4);
+    expect(spawnCap({ ...night, zone: 'cavern' }, { firstNight: true, nearSpawn: true })).toBe(7);
+  });
+  it('第一夜 = 遊戲開始後的第一個夜晚（第一天傍晚到第二天清晨）', () => {
+    expect(isFirstNight(DAY_LENGTH * 0.85)).toBe(true);
+    expect(isFirstNight(DAY_LENGTH * 1.1)).toBe(true);
+    expect(isFirstNight(DAY_LENGTH * 1.85)).toBe(false);
+  });
+  it('生成間隔：剛開始 / 剛重生較慢，逐漸加快到 SPAWN_INTERVAL', () => {
+    expect(spawnInterval(0)).toBeGreaterThanOrEqual(2);
+    expect(spawnInterval(30)).toBeLessThan(spawnInterval(0));
+    expect(spawnInterval(30)).toBeGreaterThan(SPAWN_INTERVAL);
+    expect(spawnInterval(600)).toBe(SPAWN_INTERVAL);
+    for (let t = 0; t < 300; t += 7) expect(spawnInterval(t + 7)).toBeLessThanOrEqual(spawnInterval(t));
   });
 });

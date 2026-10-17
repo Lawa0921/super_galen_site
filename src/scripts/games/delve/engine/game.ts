@@ -31,8 +31,8 @@ import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidConta
 import { ProjList, type ProjKind, type Projectile } from './projectiles';
 import { ENEMIES, makeEnemy, stepEnemy, type AiCtx, type Enemy, type EnemyKind } from './enemies';
 import {
-  ACTIVE, BED_SAFE, DEFAULT_VIEW_HALF, DESPAWN, MAX_ENEMIES, SPAWN_INTERVAL, SPAWN_MAX, findSpot, habitatAt, inHouse,
-  pickEntry, spawnCap, spawnChance, spawnTable,
+  ACTIVE, BED_SAFE, DEFAULT_VIEW_HALF, DESPAWN, MAX_ENEMIES, NEAR_SPAWN_TILES, SPAWN_MAX, findSpot, habitatAt, inHouse,
+  isFirstNight, pickEntry, spawnCap, spawnChance, spawnInterval, spawnTable, type SpawnPressure,
 } from './spawn';
 import { Rng } from './rng';
 import {
@@ -317,6 +317,8 @@ export class DelveGame {
   private potionCd = 0;
   private manaDelay = 0;
   private spawnT = SPAWN_GRACE;
+  /** 距上次喘息（新世界 / 讀檔 / 重生）的秒數：生成間隔由慢漸快（spawn.spawnInterval） */
+  private spawnCalm = 0;
   private readonly spawnRng: Rng;
   private readonly combatRng: Rng;
   private aimPx = { x: 0, y: 0 };
@@ -1336,6 +1338,7 @@ export class DelveGame {
     this.hp = this.maxHp(); this.mana = this.maxMana();
     this.iframes = 2; this.sinceHit = 99;
     this.spawnT = Math.max(this.spawnT, 4);
+    this.spawnCalm = 0;
     this.events.push({ type: 'respawn', x: r.x, y: r.y });
   }
 
@@ -1564,7 +1567,8 @@ export class DelveGame {
     // 生成
     if (!this.peacefulMode && !this.dead) {
       this.spawnT -= dt;
-      if (this.spawnT <= 0) { this.spawnT = SPAWN_INTERVAL; this.trySpawn(); }
+      this.spawnCalm += dt;
+      if (this.spawnT <= 0) { this.spawnT = spawnInterval(this.spawnCalm); this.trySpawn(); }
     }
     // 怪物
     const night = this.isNight();
@@ -1658,7 +1662,8 @@ export class DelveGame {
       const b = e.body;
       if (Math.abs(b.x / S - pt.x) < ACTIVE.x && Math.abs(b.y / S - pt.y) < ACTIVE.y && !ENEMIES[e.kind].minion) near++;
     }
-    if (near >= spawnCap(hab) || r.next() >= spawnChance(hab)) return;
+    const pressure: SpawnPressure = { firstNight: isFirstNight(this.time), nearSpawn: Math.abs(tx - this.spawn.x) < NEAR_SPAWN_TILES };
+    if (near >= spawnCap(hab, pressure) || r.next() >= spawnChance(hab, pressure)) return;
     if (this.bed && Math.hypot(tx - this.bed.x, ty - this.bed.y) < BED_SAFE) return;
     if (inHouse(w, tx, ty)) return;
     const entry = pickEntry(spawnTable(hab), r);

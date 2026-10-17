@@ -7,7 +7,7 @@ import { T, W, isSolidTile } from './tiles';
 import { LIQ } from './liquidKind';
 import { ENEMIES, type EnemyKind } from './enemies';
 import type { Rng } from './rng';
-import { TILE_SIZE as S } from './constants';
+import { TILE_SIZE as S, DAY_LENGTH } from './constants';
 
 export type Zone = 'surface' | 'underground' | 'cavern' | 'molten' | 'dungeon';
 export interface Habitat {
@@ -17,8 +17,22 @@ export interface Habitat {
 }
 export interface SpawnEntry { kind: EnemyKind; weight: number; group?: [number, number]; }
 
-/** 生成檢查間隔（秒）與每次成功機率 */
+/** 生成檢查間隔（秒，漸進後的最短值）與每次成功機率 */
 export const SPAWN_INTERVAL = 0.5;
+/** 剛開始 / 剛重生 / 剛讀檔時的生成間隔（秒），SPAWN_RAMP 秒內線性加快到 SPAWN_INTERVAL */
+export const SPAWN_INTERVAL_START = 2.5;
+export const SPAWN_RAMP = 150;
+/** 離世界出生點這麼近（格，水平）算「出生點附近」：地表夜晚上限較低 */
+export const NEAR_SPAWN_TILES = 160;
+/** 生成壓力修正：第一夜（新玩家還沒準備好）、出生點附近 */
+export interface SpawnPressure { firstNight: boolean; nearSpawn: boolean; }
+/** 第一夜 = 第一天傍晚到第二天清晨（夜晚是一天的前 / 後 20%，世界從第一天 30% 開始） */
+export function isFirstNight(time: number): boolean { return time < DAY_LENGTH * 1.2; }
+/** 距上次喘息（新世界 / 讀檔 / 重生）calm 秒後的生成間隔：從 SPAWN_INTERVAL_START 線性降到 SPAWN_INTERVAL */
+export function spawnInterval(calm: number): number {
+  const t = Math.max(0, Math.min(1, calm / SPAWN_RAMP));
+  return SPAWN_INTERVAL_START + (SPAWN_INTERVAL - SPAWN_INTERVAL_START) * t;
+}
 /** 生成點離玩家的最小距離（格）＝畫面外；renderer 會依實際視野更新 */
 export const DEFAULT_VIEW_HALF = { w: 34, h: 20 };
 /** 生成環（格）：在畫面外、但不超過這個距離 */
@@ -58,12 +72,13 @@ export function habitatAt(src: HabitatSource, x: number, y: number): Habitat {
   return { zone, biome, mushroom, night: src.night, water };
 }
 
-/** 附近（活動範圍內）最多幾隻怪 */
-export function spawnCap(h: Habitat): number {
+/** 附近（活動範圍內）最多幾隻怪。地表夜晚：第一夜 3、出生點附近 5、其他 8；第一夜的淺層地下也只有 3 */
+export function spawnCap(h: Habitat, p?: SpawnPressure): number {
   switch (h.zone) {
-    case 'surface': return h.night ? 8 : 4;
+    case 'surface': return h.night ? (p?.firstNight ? 3 : p?.nearSpawn ? 5 : 8) : 4;
     case 'dungeon': return 9;
     case 'molten': return 8;
+    case 'underground': return p?.firstNight && h.night ? 3 : 7;
     default: return 7;
   }
 }
@@ -77,9 +92,9 @@ function aquaticTable(h: Habitat): SpawnEntry[] {
   return out;
 }
 /** 每次檢查的生成機率 */
-export function spawnChance(h: Habitat): number {
+export function spawnChance(h: Habitat, p?: SpawnPressure): number {
   switch (h.zone) {
-    case 'surface': return h.night ? 0.45 : 0.16;
+    case 'surface': return h.night ? (p?.firstNight ? 0.22 : p?.nearSpawn ? 0.34 : 0.45) : 0.16;
     case 'dungeon': return 0.5;
     case 'molten': return 0.4;
     default: return 0.32;
