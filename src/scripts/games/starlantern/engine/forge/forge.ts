@@ -1,11 +1,13 @@
-import { DISMANTLE, REGION_AFFIX_GROUP } from '../../data/forge';
+import { DISMANTLE, FUSE_NEXT, REGION_AFFIX_GROUP } from '../../data/forge';
+import { generalLegendaries } from '../../data/gear';
+import { mintUid } from '../loot/bag';
 import { addItem, clampToMax } from '../town';
-import { pick } from '../rng';
-import { rollValue } from '../loot/item';
+import { mulberry32, pick } from '../rng';
+import { rollItem, rollValue } from '../loot/item';
 import type { GameState } from '../state';
-import type { AnyStat, ItemInstance } from '../types';
+import type { AnyStat, GearSlot, ItemInstance } from '../types';
 import type { Rng } from '../rng';
-import { canPay, enhanceChance, enhanceCost, findItem, forgeRng, pay, rerollCost, swapPool, type ForgeResult, type RerollOpts } from './cost';
+import { canPay, enhanceChance, enhanceCost, findItem, forgeRng, fuseCost, fuseSlots, pay, rerollCost, swapPool, type ForgeResult, type RerollOpts } from './cost';
 
 /** The essences a set of gear dismantles into: the sum of DISMANTLE by rarity. */
 export function dismantleYield(its: ItemInstance[]): Record<string, number> {
@@ -76,4 +78,41 @@ export function reroll(
   target.it.locked = index;
   if (target.member) clampToMax(n.party.roster[target.member]);
   return { ok: true, state: n, out: { before, after: { ...after } } };
+}
+
+/**
+ * Fuses three bag items of one rarity (common, magic or rare) into one random item a tier up, at the floored average item level.
+ * A chosen `slot` costs extra and must be in `fuseSlots(target)`; a legendary is always a general one. Pure: refusals change nothing.
+ * Refusals, in order: invalid (not three distinct uids), stock, invalid (rarity / slot), gold/mats. Without `rng` it draws once (`forgeDraws` + 1).
+ */
+export function fuse(s: GameState, uids: number[], slot?: GearSlot, rng?: Rng): ForgeResult<{ item: ItemInstance }> {
+  if (!Array.isArray(uids) || uids.length !== 3 || new Set(uids).size !== 3) return { ok: false, reason: 'invalid' };
+  const bag = s.bag ?? [];
+  const inputs = uids.map((u) => bag.find((it) => it.uid === u));
+  if (inputs.some((it) => !it)) return { ok: false, reason: 'stock' };
+  const gear = inputs as ItemInstance[];
+  const rarity = gear[0].rarity;
+  if (gear.some((it) => it.rarity !== rarity) || !Object.prototype.hasOwnProperty.call(FUSE_NEXT, rarity)) return { ok: false, reason: 'invalid' };
+  const target = FUSE_NEXT[rarity as keyof typeof FUSE_NEXT];
+  if (slot !== undefined && !fuseSlots(target).includes(slot)) return { ok: false, reason: 'invalid' };
+  const cost = fuseCost(target, slot);
+  const lacking = canPay(s, cost);
+  if (lacking) return { ok: false, reason: lacking };
+  const n = structuredClone(s);
+  pay(n, cost);
+  // One forge draw seeds the whole pick, so a fusion moves `forgeDraws` exactly once however many numbers it takes.
+  const draw = rng ?? mulberry32(Math.floor(forgeRng(n)() * 0x100000000));
+  const ilvl = Math.floor(gear.reduce((sum, it) => sum + it.ilvl, 0) / 3);
+  const uid = mintUid(n);
+  let item: ItemInstance;
+  if (target === 'legendary') {
+    const pool = generalLegendaries().filter((g) => slot === undefined || g.slot === slot);
+    item = rollItem(draw, { uid, ilvl, rarity: target, special: pick(draw, pool).id });
+  } else {
+    item = rollItem(draw, { uid, ilvl, rarity: target, slot });
+  }
+  n.bag = n.bag.filter((it) => !uids.includes(it.uid));
+  n.bag.push(item);
+  if (item.special && !n.codex.includes(item.special)) n.codex.push(item.special);
+  return { ok: true, state: n, out: { item } };
 }

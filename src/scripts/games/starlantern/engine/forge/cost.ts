@@ -1,10 +1,10 @@
-import { AFFIXES, ROLL_FLOOR, affixRange } from '../../data/gear';
-import { ENHANCE_COST, ENHANCE_MAX, ENHANCE_SUCCESS, ESSENCE_OF, REGION_AFFIX_GROUP, REROLL, type Cost } from '../../data/forge';
+import { AFFIXES, GEAR_SLOTS, ROLL_FLOOR, affixRange, generalLegendaries } from '../../data/gear';
+import { ENHANCE_COST, ENHANCE_MAX, ENHANCE_SUCCESS, ESSENCE_OF, FUSE_GOLD, FUSE_SLOT_COST, REGION_AFFIX_GROUP, REROLL, type Cost } from '../../data/forge';
 import { itemSlot } from '../loot/item';
 import { mix } from '../loot/drops';
 import { mulberry32, type Rng } from '../rng';
 import type { GameState } from '../state';
-import type { AnyStat, CharacterId, ItemInstance, Slot } from '../types';
+import type { AnyStat, CharacterId, GearSlot, ItemInstance, Slot } from '../types';
 
 /** Why a forge action was refused. `phase` is only ever returned by `Game`, never by the engine; `affixLocked` is not `T.reasons.locked`, which means "not unlocked yet" in the shop. */
 export type ForgeFail = 'invalid' | 'stock' | 'gold' | 'mats' | 'max' | 'full' | 'affixLocked' | 'none' | 'phase';
@@ -91,4 +91,19 @@ export function swapPool(it: ItemInstance, _index: number, mat?: string): AnySta
   const have = new Set(it.affixes.map((a) => a.key));
   const group = mat === undefined ? null : (REGION_AFFIX_GROUP[mat] ?? []);
   return (Object.keys(AFFIXES) as AnyStat[]).filter((k) => AFFIXES[k].slots.includes(slot) && !have.has(k) && (!group || group.includes(k)));
+}
+
+export type FuseTarget = 'magic' | 'rare' | 'legendary';
+
+/** The slots a fusion into `target` can be steered to: all of them, except that a legendary needs a general legendary in the slot (so never body). */
+export function fuseSlots(target: FuseTarget): GearSlot[] {
+  if (target !== 'legendary') return [...GEAR_SLOTS];
+  const have = new Set(generalLegendaries().map((g) => g.slot));
+  return GEAR_SLOTS.filter((sl) => have.has(sl));
+}
+
+/** What one fusion into `target` costs: FUSE_GOLD gold, plus FUSE_SLOT_COST when the slot is chosen. */
+export function fuseCost(target: FuseTarget, slot?: GearSlot): Cost {
+  const base: Cost = { gold: FUSE_GOLD[target], mats: {} };
+  return slot === undefined ? base : addCost(base, { gold: 0, mats: { ...FUSE_SLOT_COST[target] } });
 }

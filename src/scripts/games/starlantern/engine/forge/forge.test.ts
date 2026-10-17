@@ -2,10 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { newGame } from '../state';
 import { plainItem } from '../testing';
 import { DISMANTLE, ENHANCE_COST, ENHANCE_SUCCESS, ENHANCE_MAX } from '../../data/forge';
-import { dismantle, dismantleYield, enhance, reroll } from './forge';
-import { enhanceChance, enhanceCost, rerollCost, rerollRange, swapPool } from './cost';
-import { AFFIXES, ROLL_FLOOR, affixRange } from '../../data/gear';
-import { REGION_AFFIX_GROUP, REROLL } from '../../data/forge';
+import { dismantle, dismantleYield, enhance, fuse, reroll } from './forge';
+import { enhanceChance, enhanceCost, fuseCost, fuseSlots, rerollCost, rerollRange, swapPool } from './cost';
+import { AFFIXES, GEAR_SLOTS, ROLL_FLOOR, SPECIALS, affixRange, generalLegendaries } from '../../data/gear';
+import { FUSE_GOLD, FUSE_SLOT_COST, REGION_AFFIX_GROUP, REROLL } from '../../data/forge';
+import { BAG_SIZE } from '../loot/bag';
 import { itemSlot } from '../loot/item';
 import { statsOf } from '../party';
 import type { GameState } from '../state';
@@ -298,5 +299,149 @@ describe('reroll', () => {
     expect(worn.hp).toBe(statsOf(worn).hp);
     expect(worn.hp).toBeLessThan(full);
     expect(s.party.roster[m].hp).toBe(full);
+  });
+});
+
+describe('fuse', () => {
+  const trio = (rarity: Rarity, ilvls: number[]): ItemInstance[] => ilvls.map((l, i) => ({ ...at(rarity, i + 1), ilvl: l }));
+  const funded = (bag: ItemInstance[]): GameState => {
+    const s = withBag(bag);
+    s.gold = 1000;
+    s.inventory = { 'essence-common': 10, 'essence-magic': 10, 'king-scale': 10 };
+    return s;
+  };
+
+  it('three commons become one magic item at their floored average level and cost FUSE_GOLD.magic', () => {
+    const s = funded(trio('common', [3, 4, 4]));
+    const r = fuse(s, [1, 2, 3]);
+    if (!r.ok) throw new Error('refused');
+    expect(r.out.item.rarity).toBe('magic');
+    expect(r.out.item.ilvl).toBe(Math.floor((3 + 4 + 4) / 3));
+    expect(r.out.item.uid).toBe(100);
+    expect(r.state.nextUid).toBe(101);
+    expect(r.state.gold).toBe(1000 - FUSE_GOLD.magic);
+    expect(r.state.inventory).toEqual(s.inventory);
+    expect(r.state.bag).toEqual([r.out.item]);
+    expect(s.bag).toHaveLength(3);
+  });
+  it('three magics become a rare; a chosen slot costs FUSE_SLOT_COST.rare on top and is honoured', () => {
+    const s = funded(trio('magic', [10, 10, 10]));
+    for (const slot of GEAR_SLOTS) {
+      const r = fuse(s, [1, 2, 3], slot);
+      if (!r.ok) throw new Error('refused');
+      expect(r.out.item.rarity).toBe('rare');
+      expect(itemSlot(r.out.item)).toBe(slot);
+      expect(r.state.gold).toBe(s.gold - FUSE_GOLD.rare);
+      expect(r.state.inventory['essence-magic']).toBe(10 - FUSE_SLOT_COST.rare['essence-magic']);
+    }
+    expect(fuseCost('rare', 'head')).toEqual({ gold: FUSE_GOLD.rare, mats: FUSE_SLOT_COST.rare });
+    expect(fuseCost('rare')).toEqual({ gold: FUSE_GOLD.rare, mats: {} });
+  });
+  it('three rares become a general legendary; a chosen slot also costs FUSE_SLOT_COST.legendary', () => {
+    const general = new Set(generalLegendaries().map((g) => g.id));
+    const s = funded(trio('rare', [20, 21, 22]));
+    const free = fuse(s, [1, 2, 3]);
+    if (!free.ok) throw new Error('refused');
+    expect(general.has(free.out.item.special ?? '')).toBe(true);
+    expect(free.out.item.rarity).toBe('legendary');
+    expect(free.out.item.ilvl).toBe(21);
+    expect(free.state.gold).toBe(s.gold - FUSE_GOLD.legendary);
+    expect(free.state.inventory['king-scale']).toBe(10);
+    expect(free.state.codex).toEqual([free.out.item.special]);
+    for (const slot of fuseSlots('legendary')) {
+      const r = fuse(s, [1, 2, 3], slot);
+      if (!r.ok) throw new Error('refused');
+      expect(itemSlot(r.out.item)).toBe(slot);
+      expect(SPECIALS[r.out.item.special ?? ''].slot).toBe(slot);
+      expect(general.has(r.out.item.special ?? '')).toBe(true);
+      expect(r.state.inventory['king-scale']).toBe(10 - FUSE_SLOT_COST.legendary['king-scale']);
+    }
+  });
+  it('fusion never yields a region-limited special, over many draws', () => {
+    const general = new Set(generalLegendaries().map((g) => g.id));
+    const seen = new Set<string>();
+    for (let i = 0; i < 80; i++) {
+      const s = funded(trio('rare', [5, 5, 5]));
+      s.forgeDraws = i;
+      const r = fuse(s, [1, 2, 3]);
+      if (!r.ok) throw new Error('refused');
+      expect(general.has(r.out.item.special ?? '')).toBe(true);
+      seen.add(r.out.item.special ?? '');
+    }
+    expect(seen.size).toBeGreaterThan(1);
+  });
+  it('the codex does not repeat an id', () => {
+    const s = funded(trio('rare', [5, 5, 5]));
+    const r = fuse(s, [1, 2, 3], 'ring');
+    if (!r.ok) throw new Error('refused');
+    const again = { ...r.state, bag: trio('rare', [5, 5, 5]), forgeDraws: 0 };
+    const r2 = fuse(again, [1, 2, 3], 'ring');
+    if (!r2.ok) throw new Error('refused');
+    expect(r2.state.codex.length).toBeGreaterThan(0);
+    expect(new Set(r2.state.codex).size).toBe(r2.state.codex.length);
+  });
+  it('body is never a legendary fusion slot', () => {
+    expect(fuseSlots('legendary')).not.toContain('body');
+    expect(fuseSlots('legendary').length).toBe(GEAR_SLOTS.length - 1);
+    expect(fuseSlots('magic')).toEqual(GEAR_SLOTS);
+    expect(fuseSlots('rare')).toEqual(GEAR_SLOTS);
+    const s = funded(trio('rare', [5, 5, 5]));
+    const before = structuredClone(s);
+    expect(fuse(s, [1, 2, 3], 'body')).toEqual({ ok: false, reason: 'invalid' });
+    expect(s).toEqual(before);
+  });
+  it('mixed rarities, two items, a worn uid or a set piece are refused and nothing changes', () => {
+    const s = funded([...trio('common', [3, 3, 3]), { ...at('magic', 4) }, { ...at('legendary', 5) }, { ...at('set', 6) }, { ...at('unique', 7) }, { ...at('common', 8) }]);
+    s.party.roster[STARTING_RECRUITS[0]].equip.ring1 = at('common', 50);
+    const before = structuredClone(s);
+    expect(fuse(s, [1, 2, 4])).toEqual({ ok: false, reason: 'invalid' });
+    expect(fuse(s, [1, 2])).toEqual({ ok: false, reason: 'invalid' });
+    expect(fuse(s, [1, 2, 3, 8])).toEqual({ ok: false, reason: 'invalid' });
+    expect(fuse(s, [1, 1, 2])).toEqual({ ok: false, reason: 'invalid' });
+    expect(fuse(s, [1, 2, 50])).toEqual({ ok: false, reason: 'stock' });
+    expect(fuse(s, [1, 2, 999])).toEqual({ ok: false, reason: 'stock' });
+    expect(fuse(s, [5, 6, 7])).toEqual({ ok: false, reason: 'invalid' });
+    const sets = funded([at('set', 1), at('set', 2), at('set', 3)]);
+    expect(fuse(sets, [1, 2, 3])).toEqual({ ok: false, reason: 'invalid' });
+    const uniq = funded([at('unique', 1), at('unique', 2), at('unique', 3)]);
+    expect(fuse(uniq, [1, 2, 3])).toEqual({ ok: false, reason: 'invalid' });
+    const legs = funded([at('legendary', 1), at('legendary', 2), at('legendary', 3)]);
+    expect(fuse(legs, [1, 2, 3])).toEqual({ ok: false, reason: 'invalid' });
+    expect(fuse(s, 'x' as unknown as number[])).toEqual({ ok: false, reason: 'invalid' });
+    expect(s).toEqual(before);
+  });
+  it('lacking gold or the slot materials is refused and nothing changes', () => {
+    const poor = funded(trio('common', [3, 3, 3]));
+    poor.gold = FUSE_GOLD.magic - 1;
+    expect(fuse(poor, [1, 2, 3])).toEqual({ ok: false, reason: 'gold' });
+    const bare = funded(trio('common', [3, 3, 3]));
+    bare.inventory = {};
+    const before = structuredClone(bare);
+    expect(fuse(bare, [1, 2, 3], 'ring')).toEqual({ ok: false, reason: 'mats' });
+    expect(fuse(bare, [1, 2, 3]).ok).toBe(true);
+    expect(bare).toEqual(before);
+  });
+  it('fusing with a full bag works: 3 out, 1 in', () => {
+    const filler = Array.from({ length: BAG_SIZE - 3 }, (_, i) => at('rare', 1000 + i));
+    const s = funded([...trio('common', [3, 3, 3]), ...filler]);
+    expect(s.bag).toHaveLength(BAG_SIZE);
+    const r = fuse(s, [1, 2, 3]);
+    if (!r.ok) throw new Error('refused');
+    expect(r.state.bag).toHaveLength(BAG_SIZE - 2);
+    expect(r.state.bag.some((it) => [1, 2, 3].includes(it.uid))).toBe(false);
+    expect(r.state.bag.filter((it) => it.uid === r.out.item.uid)).toHaveLength(1);
+  });
+  it('forgeDraws advances exactly once per fusion, and not at all when refused or given an rng', () => {
+    const s = funded(trio('rare', [5, 5, 5]));
+    const r = fuse(s, [1, 2, 3]);
+    expect(r.ok && r.state.forgeDraws).toBe(s.forgeDraws + 1);
+    const m = fuse(funded(trio('common', [5, 5, 5])), [1, 2, 3], 'weapon');
+    expect(m.ok && m.state.forgeDraws).toBe(1);
+    const bad = funded(trio('common', [5, 5, 5]));
+    bad.gold = 0;
+    fuse(bad, [1, 2, 3]);
+    expect(bad.forgeDraws).toBe(0);
+    const own = fuse(funded(trio('common', [5, 5, 5])), [1, 2, 3], undefined, () => 0.5);
+    expect(own.ok && own.state.forgeDraws).toBe(0);
   });
 });
