@@ -56,6 +56,20 @@ describe('GateScene: the portal plaza', () => {
     expect(cards()[2].getAttribute('aria-selected')).toBe('true');
   });
 
+  it('a run that can only start at depth 1 says the region resist starts from depth 2', () => {
+    const { cards } = setup();
+    const affinity = (i: number) => cards()[i].querySelector('.slx-portal-affinity')?.textContent;
+    expect(affinity(1)).toBe('弱 冰　抗 火（第 2 層起）');
+    expect(affinity(2)).toBe('弱 雷　抗 物理（第 2 層起）');
+    expect(affinity(0)).toBeUndefined();
+  });
+
+  it('a portal that can start deeper than depth 1 shows the plain resist line', () => {
+    const { cards } = setup((g) => { g.state.dungeon.reached.iron = 5; g.state.dungeon.reached.blaze = 4; });
+    expect(cards()[2].querySelector('.slx-portal-affinity')!.textContent).toBe('弱 雷　抗 物理');
+    expect(cards()[1].querySelector('.slx-portal-affinity')!.textContent).toBe('弱 冰　抗 火（第 2 層起）');
+  });
+
   it('start depth offers only 1 and reached multiples of 5', () => {
     const { s, depths } = setup((g) => { g.state.dungeon.reached.blaze = 12; });
     s.onAction('right'); s.onAction('confirm');   // 熾焰之地

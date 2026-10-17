@@ -8,7 +8,7 @@ import { T } from '../../data/text.zh-TW';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { startDepths, terrainOf, type Portal } from '../../engine/dungeon/run';
-import { depthLevel, encounterTable } from '../../engine/scaling';
+import { REGION_TRAITS_FROM, depthLevel, encounterTable } from '../../engine/scaling';
 import { ART_BASE, art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
@@ -88,7 +88,10 @@ class PortalCards {
     const traitIcon = icon && has(portalArt.trait(icon)) ? [el('img', { class: 'slx-portal-icon', attrs: { src: portalArt.trait(icon), alt: '' } })] : [];
     const traitText = `${G.element(r.element ? T.element[r.element] : null)}・${r.trait ? G.traits[r.trait] : G.noTrait}`;
     const els = (list: string[]) => list.map((e) => T.element[e as keyof typeof T.element]).join('、');
-    const affinity = [r.weak.length ? G.weak(els(r.weak)) : '', r.resist.length ? G.resist(els(r.resist)) : ''].filter(Boolean).join('　');
+    // A run that can only start at depth 1 meets the region resist from REGION_TRAITS_FROM on (scaling.scaleEnemy), so the card says so.
+    const firstOnly = startDepths(p.region, reached).every((d) => d < REGION_TRAITS_FROM);
+    const resist = r.resist.length ? (firstOnly ? G.resistFrom(els(r.resist), REGION_TRAITS_FROM) : G.resist(els(r.resist))) : '';
+    const affinity = [r.weak.length ? G.weak(els(r.weak)) : '', resist].filter(Boolean).join('　');
     const c = win(`slx-portal slx-portal-${p.region}`, [
       ...(has(portalArt.card(p.region)) ? [el('img', { class: 'slx-portal-art', attrs: { src: portalArt.card(p.region), alt: '' } })] : []),
       el('div', { class: 'slx-portal-name', text: r.name }),

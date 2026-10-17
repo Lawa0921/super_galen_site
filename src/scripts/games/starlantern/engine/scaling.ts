@@ -88,6 +88,14 @@ const ELITE_REWARD = 3;
 /** Chance that a monster met in a random region also drops that region's material (the 主要掉落 on the portal card). */
 export const REGION_DROP_CHANCE = 0.15;
 const DEEP_FROM = 4;
+/**
+ * Region traits scale in: below this depth a regional monster keeps its own resists, not the region's, and iron's
+ * 鐵壁重擊 stays out. A first visit to mire or iron would otherwise halve every physical hit of a Lv1 party. The rest of
+ * the region (element tint, name, stat trait, weak points, other region skills, material) applies from depth 1.
+ */
+export const REGION_TRAITS_FROM = 2;
+/** Regions whose skill also waits for REGION_TRAITS_FROM: iron's row hit. */
+const SKILL_SCALES_IN: ReadonlySet<RegionId> = new Set<RegionId>(['iron']);
 
 /** Name prefix of a region's variants: 「熾焰・荊棘狼」. */
 const PREFIX: Record<RegionId, string> = { mainline: '', blaze: '熾焰', frost: '霜凍', storm: '雷鳴', mire: '腐毒', shade: '暗影', iron: '鋼鐵' };
@@ -128,6 +136,8 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
   stats = mul(stats, compensation(sec));
   const reward = rewardGrowth(def, depth) * (elite ? ELITE_REWARD : 1);
   const regional = region.id !== 'mainline';
+  const early = depth < REGION_TRAITS_FROM;
+  const skill = region.skill && !(early && SKILL_SCALES_IN.has(region.id)) ? region.skill : null;
   const name = [depth >= DEEP_FROM ? '深層' : '', PREFIX[region.id], def.name].filter(Boolean).join('・');
   return {
     ...def,
@@ -135,8 +145,8 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
     stats,
     sec,
     weak: regional ? [...region.weak] : [...def.weak],
-    resist: regional ? [...region.resist] : [...def.resist],
-    skills: region.skill ? [...def.skills, region.skill] : [...def.skills],
+    resist: regional && !early ? [...region.resist] : [...def.resist],
+    skills: skill ? [...def.skills, skill] : [...def.skills],
     exp: Math.round(def.exp * reward * condition.expMul),
     gold: Math.round(def.gold * reward * condition.goldMul),
     drops: [...def.drops.map((d) => ({ ...d })), ...(regional && region.material ? [{ mat: region.material, chance: REGION_DROP_CHANCE }] : [])],

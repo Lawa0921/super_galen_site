@@ -334,6 +334,8 @@ export const T = {
       element: (name: string | null) => (name ? `${name}屬性` : '無屬性'),
       traits: { burn: '灼燒', chill: '降速', swift: '迅捷', poison: '劇毒', evasive: '閃避', armored: '堅甲' } as Record<string, string>,
       noTrait: '無特性', weak: (els: string) => `弱 ${els}`, resist: (els: string) => `抗 ${els}`,
+      /** A run that can only start at depth 1: the region resist is not there yet (scaling.REGION_TRAITS_FROM). */
+      resistFrom: (els: string, depth: number) => `抗 ${els}（第 ${depth} 層起）`,
       monsters: '怪物', condition: '本次狀況', gear: '限定裝備', general: (n: number, total: number) => `通用傳說：已取得 ${n}／${total}`, moreGear: '↑↓ 捲動看更多', unknownGear: (name: string) => `${name}（未取得）`,
       drop: (name: string) => `主要掉落：${name}`, commonDrop: '一般素材',
       ask: (region: string, n: number, cond: string) => `要從第 ${n} 層進入「${region}」嗎？\n本次狀況：${cond}`,

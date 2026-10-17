@@ -6,7 +6,7 @@ import { REGIONS, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
 import { expToNext, newParty } from './party';
 import { mulberry32 } from './rng';
-import { DEPTH_CLEAR_SHARE, ENEMY_POWER, NORMAL_ENEMIES, REGION_DROP_CHANCE, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, scaleEnemy } from './scaling';
+import { DEPTH_CLEAR_SHARE, ENEMY_POWER, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, scaleEnemy } from './scaling';
 import { constRng } from './testing';
 
 const MAIN = REGIONS.mainline;
@@ -74,10 +74,43 @@ describe('scaleEnemy', () => {
   });
 
   it('a blaze wolf resists fire, is weak to ice, and knows 烈焰吐息', () => {
-    const w = scaleEnemy(wolf, 1, REGIONS.blaze, false);
+    const w = scaleEnemy(wolf, 2, REGIONS.blaze, false);
     expect(w.name).toBe('熾焰・荊棘狼');
     expect([w.resist, w.weak]).toEqual([['fire'], ['ice']]);
     expect(w.skills.map((s) => s.name)).toEqual(['咆哮', '烈焰吐息']);
+  });
+
+  it(`region resists scale in: at depth 1 a regional monster keeps its own, from depth ${REGION_TRAITS_FROM} it takes the region's`, () => {
+    expect(REGION_TRAITS_FROM).toBe(2);
+    for (const r of ['blaze', 'frost', 'storm', 'mire', 'shade', 'iron'] as RegionId[]) for (const id of NORMAL_ENEMIES) {
+      const e = ENEMIES[id], R = REGIONS[r];
+      const d1 = scaleEnemy(e, 1, R, false), d2 = scaleEnemy(e, 2, R, false);
+      expect(d1.resist, `${r} ${id} d1`).toEqual(e.resist);
+      expect(d1.weak, `${r} ${id} d1`).toEqual(R.weak);
+      expect(d2.resist, `${r} ${id} d2`).toEqual(R.resist);
+      expect(d2.weak, `${r} ${id} d2`).toEqual(R.weak);
+    }
+    // The early-game case: a mire or iron slime does not halve physical damage on a first visit.
+    expect(scaleEnemy(ENEMIES.slime, 1, REGIONS.mire, false).resist).toEqual([]);
+    expect(scaleEnemy(ENEMIES.slime, 1, REGIONS.iron, false).resist).toEqual([]);
+    expect(scaleEnemy(ENEMIES.slime, 2, REGIONS.iron, false).resist).toEqual(['phys']);
+  });
+
+  it('iron leaves 鐵壁重擊 out at depth 1 and learns it from depth 2; the other regions keep their skill at depth 1', () => {
+    const names = (d: number, r: RegionId) => scaleEnemy(wolf, d, REGIONS[r], false).skills.map((s) => s.name);
+    expect(names(1, 'iron')).toEqual(['咆哮']);
+    expect(names(2, 'iron')).toEqual(['咆哮', '鐵壁重擊']);
+    expect(names(1, 'mire')).toEqual(['咆哮', '瘴氣噴吐']);
+    expect(names(1, 'shade')).toEqual(['咆哮', '影襲']);
+    expect(names(1, 'storm')).toEqual(['咆哮', '連環落雷']);
+  });
+
+  it('the rest of the region stays at depth 1: name, trait stats and region material', () => {
+    const w = scaleEnemy(wolf, 1, REGIONS.iron, false);
+    expect(w.name).toBe('鋼鐵・荊棘狼');
+    expect([w.stats.def, w.stats.atk]).toEqual([Math.round(wolf.stats.def * 1.4), Math.round(wolf.stats.atk * 0.9)]);
+    expect(w.drops).toContainEqual({ mat: 'iron-shard', chance: REGION_DROP_CHANCE });
+    expect(scaleEnemy(wolf, 1, REGIONS.mire, false).stats.hp).toBe(Math.round(wolf.stats.hp * 1.3));
   });
 
   it('each region prefixes its name', () => {
