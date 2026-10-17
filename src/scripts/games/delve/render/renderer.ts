@@ -49,17 +49,12 @@ const LIGHT_MARGIN = 12;
 /** 游標四角：(是否右側, 是否下側, 水平延伸方向, 垂直延伸方向) */
 const CURSOR_CORNERS: [number, number, number, number][] = [[0, 0, 1, 1], [1, 0, -1, 1], [0, 1, 1, -1], [1, 1, -1, -1]];
 
-/** 一組光照遮罩畫布：multiply 的光色 + 'lighter' 的暗色補色（ImageData 與其 Uint32 視圖跟著尺寸重建） */
-interface LightSet {
-  canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; img: ImageData | null; pix: Uint32Array;
-  dark: HTMLCanvasElement; dctx: CanvasRenderingContext2D; dimg: ImageData | null; dpix: Uint32Array;
-}
-function makeLightSet(): LightSet {
-  const canvas = document.createElement('canvas'), dark = document.createElement('canvas');
-  const ctx = canvas.getContext('2d'), dctx = dark.getContext('2d');
-  if (!ctx || !dctx) throw new Error('2d context unavailable');
-  return { canvas, ctx, img: null, pix: new Uint32Array(0), dark, dctx, dimg: null, dpix: new Uint32Array(0) };
-}
+/**
+ * 光照遮罩的一組像素緩衝（multiply 光色 + 'lighter' 暗色補色的 ImageData 與 Uint32 視圖）。
+ * 兩組緩衝輪流分幀填色，畫布只有一組：填完才 putImageData 上去（畫布不會在填色中途被清掉 / 改尺寸）。
+ */
+interface LightSet { img: ImageData | null; pix: Uint32Array; dimg: ImageData | null; dpix: Uint32Array; }
+function makeLightSet(): LightSet { return { img: null, pix: new Uint32Array(0), dimg: null, dpix: new Uint32Array(0) }; }
 /** 分幀中的光照重算：寫進哪一組、引擎光照、遮罩矩形、已花的時間 */
 interface LightJob { set: LightSet; L: LightMap; rect: ShadeRect; ms: number; frames: number; fillMs: number; }
 
@@ -147,6 +142,10 @@ export class Renderer {
   private bctx: CanvasRenderingContext2D;
   /** 光照遮罩兩組（multiply 光色 + 'lighter' 暗色補色）：一組顯示、另一組分幀填色，填完互換 */
   private lightSets: [LightSet, LightSet] = [makeLightSet(), makeLightSet()];
+  private lightCanvas = document.createElement('canvas');
+  private darkCanvas = document.createElement('canvas');
+  private lightCtx = this.lightCanvas.getContext('2d');
+  private darkCtx = this.darkCanvas.getContext('2d');
   private front = 0;
   /** 分幀進行中的光照重算（null = 沒有） */
   private job: LightJob | null = null;
@@ -992,12 +991,11 @@ export class Renderer {
     }
     const lm = this.light;
     if (!lm) return;
-    const set = this.lightSets[this.front];
     ctx.imageSmoothingEnabled = false;
     ctx.globalCompositeOperation = 'multiply';
-    ctx.drawImage(set.canvas, lm.x0 * S, lm.y0 * S, lm.w * S, lm.h * S);
+    ctx.drawImage(this.lightCanvas, lm.x0 * S, lm.y0 * S, lm.w * S, lm.h * S);
     ctx.globalCompositeOperation = 'lighter';
-    ctx.drawImage(set.dark, lm.x0 * S, lm.y0 * S, lm.w * S, lm.h * S);
+    ctx.drawImage(this.darkCanvas, lm.x0 * S, lm.y0 * S, lm.w * S, lm.h * S);
     ctx.globalCompositeOperation = 'source-over';
   }
 
@@ -1022,11 +1020,9 @@ export class Renderer {
     // 寫進沒在顯示的那一組
     const set = this.lightSets[this.front ^ 1];
     const cw = lw * LSUB, chh = lh * LSUB;
-    if (set.canvas.width !== cw || set.canvas.height !== chh || !set.img || !set.dimg) {
-      set.canvas.width = cw; set.canvas.height = chh;
-      set.dark.width = cw; set.dark.height = chh;
-      set.img = set.ctx.createImageData(cw, chh);
-      set.dimg = set.dctx.createImageData(cw, chh);
+    if (!set.img || !set.dimg || set.img.width !== cw || set.img.height !== chh) {
+      set.img = new ImageData(cw, chh);
+      set.dimg = new ImageData(cw, chh);
       set.pix = new Uint32Array(set.img.data.buffer);
       set.dpix = new Uint32Array(set.dimg.data.buffer);
     }
@@ -1053,8 +1049,13 @@ export class Renderer {
     j.fillMs += t2 - t1;
     j.ms += t2 - t1;
     if (!done) return;
-    j.set.ctx.putImageData(j.set.img!, 0, 0);
-    j.set.dctx.putImageData(j.set.dimg!, 0, 0);
+    const img = j.set.img!, dimg = j.set.dimg!;
+    if (this.lightCanvas.width !== img.width || this.lightCanvas.height !== img.height) {
+      this.lightCanvas.width = img.width; this.lightCanvas.height = img.height;
+      this.darkCanvas.width = img.width; this.darkCanvas.height = img.height;
+    }
+    this.lightCtx?.putImageData(img, 0, 0);
+    this.darkCtx?.putImageData(dimg, 0, 0);
     const t3 = performance.now();
     j.ms += t3 - t2;
     this.front ^= 1;
