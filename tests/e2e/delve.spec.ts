@@ -593,9 +593,14 @@ test.describe('delve liquids', () => {
     await page.waitForFunction(([x0, fy]) => {
       const g = window.__delveDebug!.game, w = g.world;
       let s = 0;
-      for (let x = x0 + 5; x <= x0 + 12; x++) s += w.getLiquid(x, fy - 1);
-      return s >= 200 && g.liquids.activeCount === 0;
-    }, [x0, fy], { timeout: 15000 });
+      const row: number[] = [];
+      for (let x = x0 + 5; x <= x0 + 12; x++) { s += w.getLiquid(x, fy - 1); row.push(w.getLiquid(x, fy - 1)); }
+      // 這一段靜止了（世界裡的泉水瀑布會一直流，所以不能等全世界 activeCount === 0）
+      const key = row.join(','), win = window as unknown as { __lastRow?: string };
+      const same = win.__lastRow === key && g.liquids.activeCount < 5000;
+      win.__lastRow = key;
+      return s >= 200 && same;
+    }, [x0, fy], { timeout: 15000, polling: 400 });
     const vals = await page.evaluate(([x0, fy]) => { const w = window.__delveDebug!.game.world; const v: number[] = []; for (let x = x0 + 5; x <= x0 + 12; x++) v.push(w.getLiquid(x, fy - 1)); return v; }, [x0, fy]);
     expect(Math.max(...vals) - Math.min(...vals)).toBeLessThanOrEqual(3);
   });
@@ -681,9 +686,14 @@ test.describe('delve liquids', () => {
     await page.waitForFunction(([x0, fy]) => {
       const g = window.__delveDebug!.game, w = g.world;
       let s = 0;
-      for (let x = x0 + 5; x <= x0 + 9; x++) s += w.getLiquid(x, fy - 1);
-      return s >= 200 && g.liquids.activeCount === 0;
-    }, [x0, fy], { timeout: 15000 });
+      const row: number[] = [];
+      for (let x = x0 + 5; x <= x0 + 9; x++) { s += w.getLiquid(x, fy - 1); row.push(w.getLiquid(x, fy - 1)); }
+      // 這一段靜止了（世界裡的泉水瀑布會一直流，所以不能等全世界 activeCount === 0）
+      const key = row.join(','), win = window as unknown as { __lastRow?: string };
+      const same = win.__lastRow === key && g.liquids.activeCount < 5000;
+      win.__lastRow = key;
+      return s >= 200 && same;
+    }, [x0, fy], { timeout: 15000, polling: 400 });
     const before = await rowSum(page, x0 + 5, x0 + 9, fy - 1);
     await page.evaluate(() => window.__delveDebug!.save());
     await page.goto('/games/delve');
@@ -887,5 +897,100 @@ test.describe('delve 曆法 / 天氣', () => {
     expect(st.onGround).toBe(true);
     expect(st.feet).toBe(st.top - 1);
     expect(st.wet).toBe(0);
+  });
+});
+
+// ── 內容 / 打磨：釣魚、瀑布（液體總量有上限）、首領戰利品 ─────────────────────────
+test.describe('delve fishing / waterfalls / furniture', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+
+  test('釣魚：拋竿 → 浮標落水 → debug 強制上鉤 → 按「使用」釣起來（背包 + 日誌釣魚紀錄）', async ({ page }) => {
+    await page.goto('/games/delve?seed=fish-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    // 天空蓋一個小水池，玩家站在池邊
+    const pool = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, w = g.world;
+      const x0 = g.spawn.x - 20, fy = Math.max(14, w.surfaceAt(g.spawn.x) - 24);
+      for (let y = fy - 14; y < fy + 6; y++) for (let x = x0 - 3; x < x0 + 30; x++) { w.setFg(x, y, y >= fy ? 3 : 0); w.setLiquid(x, y, 0, 0); }
+      for (let y = fy; y < fy + 4; y++) for (let x = x0 + 6; x < x0 + 24; x++) { w.setFg(x, y, 0); w.setLiquid(x, y, 255, 1); }
+      g.teleport(x0 + 3, fy - 1);
+      g.give('worm', 5);
+      g.give('wood_rod', 1);
+      const i = g.inventory.slots.findIndex((s) => s?.item === 'wood_rod');
+      g.inventory.swap(i, 0); g.selectSlot(0);
+      window.__delveDebug!.handle.renderer.snapCamera();
+      g.setAim(x0 + 12, fy - 2);
+      g.setUse(true);
+      return { x0, fy };
+    });
+    await page.waitForTimeout(150);
+    await page.evaluate(() => window.__delveDebug!.game.setUse(false));
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.fishing?.state ?? null), { timeout: 5000 }).toBe('floating');
+    expect(await page.evaluate(() => window.__delveDebug!.game.debugForceBite('brook_trout'))).toBe(true);
+    await page.evaluate(() => window.__delveDebug!.game.setUse(true));
+    await page.waitForTimeout(150);
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.count('brook_trout'))).toBe(1);
+    await page.evaluate(() => window.__delveDebug!.game.setUse(false));
+    expect(await page.evaluate(() => window.__delveDebug!.game.inventory.count('worm'))).toBe(4);
+    await page.keyboard.press('KeyJ');
+    await expect(page.locator('[data-testid="journal-fish"]')).toContainText('釣魚紀錄 1 /');
+    void pool;
+  });
+
+  test('瀑布：世界裡有泉水瀑布在流；跑一段時間液體總量不會一直長', async ({ page }) => {
+    await page.goto('/games/delve?seed=falls-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const info = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, w = g.world;
+      const s = g.springs.find((q) => q.type === 1)!;
+      g.teleport(s.drains[0].x, s.drains[0].y - 1);
+      window.__delveDebug!.handle.renderer.snapCamera();
+      return { n: g.springs.length, spring: w.getFg(s.x, s.y), total: w.liquidTotal() };
+    });
+    expect(info.n).toBeGreaterThan(3);
+    expect(info.spring).toBe(72);
+    // 跑大約 12 秒遊戲時間：泉水有出水、有排水；全世界總量的成長有上限
+    const samples: number[] = [];
+    for (let k = 0; k < 6; k++) {
+      await page.waitForTimeout(2000);
+      samples.push(await page.evaluate(() => window.__delveDebug!.game.world.liquidTotal()));
+    }
+    const st = await page.evaluate(() => window.__delveDebug!.game.liquids.springStats());
+    expect(st.emitted).toBeGreaterThan(0);
+    expect(st.drained).toBeGreaterThan(0);
+    expect(samples[5] - samples[2]).toBeLessThan(255 * 60);
+    expect(samples[5] - info.total).toBeLessThan(255 * 400);
+    // 畫面上有瀑布水柱
+    expect(await page.evaluate(() => window.__delveDebug!.handle.renderer.liquidLayer.stats.falls)).toBeGreaterThan(0);
+  });
+
+  test('首領戰利品可以放在地上，也可以掛在牆上；拆下來拿回來', async ({ page }) => {
+    await page.goto('/games/delve?seed=trophy-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const r = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, w = g.world;
+      const x0 = g.spawn.x - 20, fy = Math.max(14, w.surfaceAt(g.spawn.x) - 24);
+      for (let y = fy - 10; y < fy; y++) for (let x = x0 - 2; x < x0 + 12; x++) { w.setFg(x, y, 0); w.setWall(x, y, 0); w.setLiquid(x, y, 0, 0); }
+      for (let x = x0 - 2; x < x0 + 12; x++) w.setFg(x, fy, 3);
+      g.teleport(x0 + 2, fy - 1);
+      const hold = (): void => { g.give('warden_trophy', 1); const i = g.inventory.slots.findIndex((s) => s?.item === 'warden_trophy'); g.inventory.swap(i, 0); g.selectSlot(0); };
+      hold();
+      const floor = g.tryPlace(x0 + 5, fy - 1);
+      w.setWall(x0 + 5, fy - 5, 3);
+      hold();
+      const wall = g.tryPlace(x0 + 5, fy - 5);
+      window.__delveDebug!.handle.renderer.snapCamera();
+      return { floor, wall, a: w.getFg(x0 + 5, fy - 1), b: w.getFg(x0 + 5, fy - 5), x0, fy };
+    });
+    expect(r.floor).toBe(true);
+    expect(r.wall).toBe(true);
+    expect(r.a).toBe(80);
+    expect(r.b).toBe(80);
+    await page.waitForTimeout(300);
+    const back = await page.evaluate(({ x0, fy }) => { const g = window.__delveDebug!.game; g.mineInstant(x0 + 5, fy - 5); return g.inventory.count('warden_trophy'); }, r);
+    expect(back).toBe(1);
   });
 });

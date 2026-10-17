@@ -4,7 +4,7 @@ export type AmbientKind = 'dust' | 'snow' | 'firefly' | 'ember' | 'spore';
 export const AMBIENT_CAP = 96;
 export const AMBIENT_COLORS: Record<AmbientKind, readonly string[]> = {
   // 浮塵畫在光照遮罩之後（暗處也看得到），所以用中灰～淡灰：像微光裡飄的塵，不會像星星
-  dust: ['#5e5e74', '#707490', '#858aa0', '#b4b9c8'],
+  dust: ['#423f54', '#5e5e74', '#5e5e74', '#707490'],
   snow: ['#ffffff', '#cceaf8', '#ffffff'],
   firefly: ['#c2e478', '#ffd86a', '#fff4c0'],
   ember: ['#ffa93a', '#e8701c', '#ffd86a'],
