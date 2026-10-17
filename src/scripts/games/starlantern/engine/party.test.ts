@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  rowOfCell, statSources, expToNext, statsOf, newMember, newParty, recruit, setFormation, activeIds,
+  rowOfCell, statSources, expToNext, statsOf, newMember, newParty, setFormation, activeIds,
   gainExp, awardExp, hasPassive, MAX_LEVEL, SLOTS, slotsFor, defaultSlotFor, sheetOf, setCounts, powersOf,
 } from './party';
 import { partyAt } from './sim';
@@ -138,7 +138,7 @@ describe('formation', () => {
     expect(rowOfCell(8)).toBe('back');
   });
   it('rejects bad formations, including more than five members', () => {
-    const p = recruit(fullParty(LEGACY_LINEUP), 'bobby');
+    const p = meet(fullParty(LEGACY_LINEUP), 'bobby', 1);
     const g = (...ids: (string | null)[]) => [...ids, ...Array(9 - ids.length).fill(null)] as never;
     expect(setFormation(p, ['scarlet', 'liz'] as never)).toEqual({ ok: false, reason: 'size' });
     expect(setFormation(p, g('sylvie'))).toEqual({ ok: false, reason: 'not-recruited' });
@@ -147,7 +147,7 @@ describe('formation', () => {
     expect(setFormation(p, g('scarlet', 'chizuru', 'liz', 'noel', 'selene', 'bobby'))).toEqual({ ok: false, reason: 'too-many' });
   });
   it('the hero cannot leave the field', () => {
-    const p = recruit(fullParty(), 'bobby');
+    const p = meet(fullParty(), 'bobby', 1);
     const h = p.grid.indexOf('hero');
     const off = [...p.grid]; off[h] = null;
     expect(setFormation(p, off)).toEqual({ ok: false, reason: 'no-hero' });
@@ -157,16 +157,16 @@ describe('formation', () => {
     expect(setFormation(p, moved).ok).toBe(true);
   });
   it('empty and too-many still win over no-hero', () => {
-    const p = recruit(fullParty(LEGACY_LINEUP), 'bobby');
+    const p = meet(fullParty(LEGACY_LINEUP), 'bobby', 1);
     const g = (...ids: (string | null)[]) => [...ids, ...Array(9 - ids.length).fill(null)] as never;
     expect(setFormation(p, g())).toEqual({ ok: false, reason: 'empty' });
     expect(setFormation(p, g('scarlet', 'chizuru', 'liz', 'noel', 'selene', 'bobby'))).toEqual({ ok: false, reason: 'too-many' });
     expect(setFormation(p, g('scarlet', 'liz'))).toEqual({ ok: false, reason: 'no-hero' });
   });
-  it('recruits once', () => {
-    const p = recruit(fullParty(LEGACY_LINEUP), 'bobby');
+  it('meets once', () => {
+    const p = meet(fullParty(LEGACY_LINEUP), 'bobby', 1);
     expect(p.recruited).toContain('bobby');
-    expect(recruit(p, 'bobby').recruited.filter((id) => id === 'bobby')).toHaveLength(1);
+    expect(meet(p, 'bobby', 1).recruited.filter((id) => id === 'bobby')).toHaveLength(1);
   });
 });
 
@@ -200,7 +200,7 @@ describe('experience', () => {
     expect(partyAt(38).roster.liz.level).toBe(38);
   });
   it('gives survivors full, the bench half, and downed actives nothing', () => {
-    const p = recruit(fullParty(LEGACY_LINEUP), 'sylvie');
+    const p = meet(fullParty(LEGACY_LINEUP), 'sylvie', 1);
     const { party } = awardExp(p, 10, ['scarlet', 'chizuru', 'noel', 'selene']);
     expect(party.roster.scarlet.exp).toBe(10);
     expect(party.roster.sylvie.exp).toBe(5);

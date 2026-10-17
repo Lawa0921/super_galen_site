@@ -14,7 +14,9 @@ import { applyAutoJunk, BAG_SIZE, mintUid } from './loot/bag';
 import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMaterial, type DropCtx } from './loot/drops';
 import { itemWeight, type DropSource } from './loot/item';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
-import { activeIds, awardExp, hasPassive, joinLevel, meet, setFormation, START_LINEUP, statsOf, type LevelUp, type SetFormationFail } from './party';
+import { CHARACTERS } from '../data/characters';
+import { MAX_ACTIVE } from './formation';
+import { activeIds, awardExp, hasPassive, joinLevel, meet, placeInGrid, setFormation, START_LINEUP, statsOf, type LevelUp, type SetFormationFail } from './party';
 import { raiseNode, raiseTalent, type RaiseFail, type TalentFail } from './progression';
 import { pick, type Rng } from './rng';
 import { depthClearExp, depthLevel, encounterGroup } from './scaling';
@@ -579,6 +581,26 @@ export class Game {
     if (!r.ok) return r;
     this.state = { ...this.state, party: r.party };
     if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    return { ok: true };
+  }
+
+  /**
+   * The guild recalls a companion already met: town only. `id` must be met, not the hero, and not on the field. With room on
+   * the field she takes her own row (`out` is ignored); on a full field `out` (on the field, never the hero) steps out and
+   * she takes the cell. Saved at once.
+   */
+  recall(id: CharacterId, out?: CharacterId): { ok: true } | { ok: false; reason: 'invalid' } {
+    const party = this.state.party;
+    const invalid = { ok: false, reason: 'invalid' } as const;
+    if (this.phase !== 'town' || id === 'hero' || !party.recruited.includes(id) || party.grid.includes(id)) return invalid;
+    let grid: (CharacterId | null)[];
+    if (activeIds(party).length < MAX_ACTIVE) grid = placeInGrid(party.grid, id, CHARACTERS[id].row);
+    else {
+      if (!out || out === 'hero' || !party.grid.includes(out)) return invalid;
+      grid = party.grid.map((c) => (c === out ? id : c));
+    }
+    this.state = { ...this.state, party: { ...party, grid } };
+    if (!(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return { ok: true };
   }
 

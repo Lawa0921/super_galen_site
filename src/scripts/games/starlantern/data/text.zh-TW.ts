@@ -529,8 +529,8 @@ export const T = {
       soldGear: (n: number, g: number) => `收下 ${n} 件裝備，這是 ${g} G。`,
     },
     guild: {
-      formation: '編隊', recruit: '招募', equip: '裝備', status: '狀態', tree: '技能樹', talent: '天賦',
-      ask: (name: string) => `要讓 ${name} 加入隊伍嗎？`, recruited: (name: string) => `${name} 加入了隊伍！`,
+      formation: '編隊', recall: '召回', equip: '裝備', status: '狀態', tree: '技能樹', talent: '天賦',
+      recallAsk: (name: string) => `要讓 ${name} 回到隊伍嗎？`, swapWho: '要讓誰回公會待命？', welcomeBack: (name: string) => `歡迎回來，${name}。`,
       roles: {
         noel: '後排。火、冰、雷攻擊；降低敵人能力、毒。', chizuru: '前排。全體攻擊；我方減傷。', liz: '前或後。多段攻擊；降低遇敵、素材掉落加成。',
         sylvie: '後排。單體高傷；先制攻擊、提高逃跑率。', scarlet: '前排。吸引攻擊、替隊友擋傷；消耗 HP 打火屬性大傷害。',

@@ -12,7 +12,7 @@ import type { CharacterId, Pos } from './types';
 import { ENEMIES } from '../data/enemies';
 import { CHARACTERS } from '../data/characters';
 import { SETS } from '../data/gear';
-import { activeIds, joinLevel, gainExp, MAX_LEVEL, meet, newMember, recruit, LEGACY_LINEUP, START_LINEUP } from './party';
+import { activeIds, joinLevel, gainExp, MAX_LEVEL, meet, newMember, LEGACY_LINEUP, START_LINEUP } from './party';
 import { depthClearExp, empower, encounterGroup, groupCap } from './scaling';
 import { favouredRegions } from '../data/meetings';
 import { MAX_ACTIVE } from './formation';
@@ -1119,7 +1119,7 @@ describe('dungeon gear', () => {
 describe('depth-clear exp', () => {
   it('descending pays the depth-clear exp: full to the standing, half to the bench, none to the downed', () => {
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
-    g.state.party = recruit(g.state.party, 'sylvie');
+    g.state.party = meet(g.state.party, 'sylvie', 1);
     g.depart(MAIN, 1);
     const p = g.state.party;
     expect(activeIds(p)).not.toContain('sylvie');
@@ -1217,9 +1217,72 @@ describe('respec', () => {
 });
 });
 
+describe('recall', () => {
+  /** Town, the hero's five on the field, and Bobby and Sylvie met and waiting. */
+  const waiting = (lineup: CharacterId[] = HERO_LINEUP) => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, lineup);
+    g.state.party = meet(meet(g.state.party, 'bobby', 1), 'sylvie', 1);
+    return { g, storage };
+  };
+  const saved = (storage: ReturnType<typeof memoryStorage>) => { const r = loadGame(storage); return r.status === 'ok' ? r.state.party : null; };
+  it('recall fills an empty cell and saves', () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, START_LINEUP);
+    g.state.party = meet(g.state.party, 'bobby', 1);
+    g.state.party = { ...g.state.party, grid: g.state.party.grid.map((c) => (c === 'bobby' ? null : c)) };
+    expect(g.recall('bobby', 'hero')).toEqual({ ok: true });   // room on the field: `out` is ignored
+    expect(g.state.party.grid.filter((c) => c).length).toBe(3);
+    expect(g.state.party.grid[g.state.party.grid.indexOf('bobby')]).toBe('bobby');
+    expect(g.state.party.grid).toContain('hero');
+    expect(saved(storage)!.grid).toEqual(g.state.party.grid);
+  });
+  it('a full field takes the one who steps out, in her cell', () => {
+    const { g, storage } = waiting();
+    const cell = g.state.party.grid.indexOf('liz');
+    expect(g.recall('bobby', 'liz')).toEqual({ ok: true });
+    expect(g.state.party.grid[cell]).toBe('bobby');
+    expect(g.state.party.grid).not.toContain('liz');
+    expect(saved(storage)!.grid).toEqual(g.state.party.grid);
+  });
+  it('a full field needs someone to step out, never the hero', () => {
+    const { g, storage } = waiting();
+    g.recall('bobby', 'liz'); // seeds a save
+    const before = JSON.stringify(g.state.party);
+    const stored = storage.map.get(SAVE_KEY);
+    expect(g.recall('sylvie')).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.recall('sylvie', 'hero')).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.recall('sylvie', 'liz')).toEqual({ ok: false, reason: 'invalid' });   // liz is on the bench now
+    expect(JSON.stringify(g.state.party)).toBe(before);
+    expect(storage.map.get(SAVE_KEY)).toBe(stored);
+  });
+  it('recall refuses the unmet, the hero and whoever is already on the field', () => {
+    const { g } = waiting();
+    const before = JSON.stringify(g.state.party);
+    expect(g.recall('safira', 'liz')).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.recall('hero', 'liz')).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.recall('noel', 'liz')).toEqual({ ok: false, reason: 'invalid' });
+    expect(JSON.stringify(g.state.party)).toBe(before);
+  });
+  it('recall works only in town', () => {
+    const g = inMap(1);
+    g.state.party = meet(g.state.party, 'bobby', 1);
+    const before = JSON.stringify(g.state.party);
+    expect(g.recall('bobby', 'liz')).toEqual({ ok: false, reason: 'invalid' });
+    expect(JSON.stringify(g.state.party)).toBe(before);
+  });
+  it('reports a failed save without losing the change', () => {
+    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, HERO_LINEUP);
+    g.state.party = meet(g.state.party, 'bobby', 1);
+    expect(g.recall('bobby', 'liz')).toEqual({ ok: true });
+    expect(g.notice).toBe('save-failed');
+    expect(g.state.party.grid).toContain('bobby');
+  });
+});
+
 describe('setFormation', () => {
   const swapIn = (g: Game) => {
-    g.state.party = recruit(g.state.party, 'bobby');
+    g.state.party = meet(g.state.party, 'bobby', 1);
     return g.state.party.grid;
   };
   it('saves in town: the stored grid is the new one', () => {

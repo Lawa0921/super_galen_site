@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
-import { recruit, LEGACY_GRID, partyWith } from '../../engine/party';
+import { meet, LEGACY_GRID, partyWith } from '../../engine/party';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { FormationScene } from './formation';
@@ -62,7 +62,7 @@ describe('FormationScene', () => {
   });
 
   it('refuses a sixth member and can take someone off the field', () => {
-    const { game, root, cell, pick } = setup((g) => { g.state.party = recruit(g.state.party, 'bobby'); });
+    const { game, root, cell, pick } = setup((g) => { g.state.party = meet(g.state.party, 'bobby', 1); });
     cell(4).click();
     pick('波比');
     expect(game.state.party.grid[4]).toBeNull();
@@ -83,7 +83,7 @@ describe('FormationScene', () => {
   });
 
   it('a refused formation shows the reason', () => {
-    const { game, root, cell, pick } = setup((g) => { g.state.party = recruit(g.state.party, 'bobby'); });
+    const { game, root, cell, pick } = setup((g) => { g.state.party = meet(g.state.party, 'bobby', 1); });
     cell(0).click();
     pick('波比');   // bobby takes the hero's cell: the hero is off the field
     expect(game.state.party.grid[0]).toBe('hero');

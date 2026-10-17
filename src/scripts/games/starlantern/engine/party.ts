@@ -144,10 +144,6 @@ export function partyWith(ids: CharacterId[], heroRow: Row = 'front', grid?: (Ch
   };
 }
 
-export function recruit(p: Party, id: CharacterId): Party {
-  return p.recruited.includes(id) ? p : { ...p, recruited: [...p.recruited, id] };
-}
-
 /** Members on the field, front row first, left to right. */
 export function activeIds(p: Party): CharacterId[] {
   return p.grid.filter((id): id is CharacterId => id !== null);
