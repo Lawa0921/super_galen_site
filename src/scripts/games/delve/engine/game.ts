@@ -32,7 +32,7 @@ import {
   knockbackScale, regenRate, rollCrit, type PlayerStats,
 } from './combat';
 import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type PhysEnv } from './entities';
-import { LiquidSim, type ReactionKind } from './liquid';
+import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidContact } from './swim';
 import { ProjList, type ProjKind, type Projectile } from './projectiles';
@@ -281,6 +281,8 @@ export class DelveGame {
   readonly tablets: readonly { x: number; y: number; id: number }[];
   /** 珍寶箱位置（debug / e2e） */
   readonly relics: GenRelic[];
+  /** 泉水（瀑布源；debug / e2e） */
+  readonly springs: readonly SpringSpec[];
   /** 地區 / 地標（依種子命名） */
   readonly regions: readonly Region[];
   /** 戰爭迷霧（存檔內容） */
@@ -401,6 +403,9 @@ export class DelveGame {
     this.world = gen.world;
     this.liquids = new LiquidSim(this.world);
     this.liquids.blocked = (x, y) => !this.dead && this.tileOverlapsPlayer(x, y);
+    // 泉水瀑布（無限源 + 滲水石排水）
+    this.springs = gen.springs;
+    this.liquids.setSprings(gen.springs);
     const w = this.world;
     this.env = {
       isSolid: (x, y) => w.isSolid(x, y),

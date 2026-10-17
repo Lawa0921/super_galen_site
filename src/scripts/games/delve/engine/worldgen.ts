@@ -17,6 +17,7 @@ import { FbmField, NoiseField, fbm2, seedInt, vnoise1 } from './noise';
 import { carveChamber, carveNetwork, carveNoiseTunnels, perlinWorm, carveDisc, paintBlob, noisePockets, fillTinyPockets } from './gen/caves';
 import { generateDungeon, type DungeonInfo } from './gen/dungeon';
 import { createLiquidGen, type LiquidGenStats } from './gen/liquids';
+import type { SpringSpec } from './liquid';
 import { LORE_SITES, type LoreSite } from './lore';
 import type { ItemId } from './items';
 import type { Stack } from './inventory';
@@ -29,7 +30,9 @@ export interface BiomeSegment { biome: BiomeId; x0: number; x1: number; }
 export type StructureKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'chasm' | 'ravine' | 'frozen_lake'
   | 'mushroom_biome' | 'crystal_cave' | 'sky_island' | 'lake_bed' | 'sinkhole' | 'dungeon' | 'secret_room'
   // 液體（v5）
-  | 'pond' | 'oasis' | 'hive' | 'underground_lake';
+  | 'pond' | 'oasis' | 'hive' | 'underground_lake'
+  // 泉水瀑布（v6）
+  | 'waterfall' | 'lavafall';
 /** 每欄的深度層分界（第一個屬於該層的 y） */
 export interface GenLayers { rock: Int16Array; deep: Int16Array; molten: Int16Array; }
 /** 地表地形種類（依生態區挑）；reserved = 預留給地城的平地 */
@@ -68,6 +71,8 @@ export interface GenResult {
   relics: { x: number; y: number; item: ItemId; where: string }[];
   /** 液體 pass 的統計（耗時 / 靜置刻數 / 各液體格數） */
   liquidStats: LiquidGenStats;
+  /** 泉水（瀑布的無限源；liquid.ts LiquidSim.setSprings） */
+  springs: SpringSpec[];
 }
 
 export interface RunnerOptions {
@@ -1633,5 +1638,5 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
   // ── 每欄地表的生態區 ──────────────────────────────────────
   world.biome.set(colBiome);
   mark('end');
-  return { world, spawn, surface, bands, biomes, structures, landforms, dungeonZone, layers, dungeon, tablets, relics, liquidStats: liq.stats };
+  return { world, spawn, surface, bands, biomes, structures, landforms, dungeonZone, layers, dungeon, tablets, relics, liquidStats: liq.stats, springs: liq.springs };
 }

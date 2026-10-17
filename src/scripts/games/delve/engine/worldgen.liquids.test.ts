@@ -146,6 +146,38 @@ describe('世界生成：液體', { timeout: 240_000 }, () => {
     void w;
   });
 
+  it('泉水瀑布：崖面 / 洞壁有泉水石、崖腳水潭旁有滲水石；熔岩深淵有熔岩瀑布', () => {
+    const w = r.world;
+    const water = r.springs.filter((s) => s.type === LIQ.WATER), lava = r.springs.filter((s) => s.type === LIQ.LAVA);
+    expect(water.length).toBeGreaterThanOrEqual(6);
+    expect(lava.length).toBeGreaterThanOrEqual(1);
+    for (const s of r.springs) {
+      expect(w.getFg(s.x, s.y)).toBe(s.type === LIQ.LAVA ? T.LAVA_SPRING : T.SPRING);
+      expect(s.drains.length).toBeGreaterThan(0);
+      for (const d of s.drains) expect(w.getFg(d.x, d.y)).toBe(T.DRAIN);
+    }
+    for (const s of lava) expect(s.y).toBeGreaterThanOrEqual(r.layers.molten[s.x]);
+  });
+
+  it('泉水一直流，但液體總量有上限（跑 6000 刻：每座泉水區域 ≤ 上限、全世界總量不再成長）', () => {
+    const copy = generateWorld('liquids');
+    const sim = new LiquidSim(copy.world);
+    sim.setSprings(copy.springs);
+    const tot = (): number => copy.world.liquidTotal();
+    for (let k = 0; k < 3000; k++) sim.step();
+    const mid = tot();
+    for (let k = 0; k < 3000; k++) sim.step();
+    const end = tot();
+    expect(sim.springStats().emitted).toBeGreaterThan(0);
+    expect(sim.springStats().drained).toBeGreaterThan(0);
+    expect(end - mid).toBeLessThan(255 * 40);
+    for (const s of copy.springs) {
+      let box = 0;
+      for (let y = s.box.y0; y < s.box.y1; y++) for (let x = s.box.x0; x < s.box.x1; x++) box += copy.world.getLiquid(x, y);
+      expect(box).toBeLessThanOrEqual(s.cap + 255 * 2);
+    }
+  });
+
   it('不淹進出生點、小屋（木板牆）與地城', () => {
     const w = r.world;
     for (let y = r.spawn.y - 3; y <= r.spawn.y; y++) for (let x = r.spawn.x - 2; x <= r.spawn.x + 2; x++) expect(w.getLiquid(x, y)).toBe(0);

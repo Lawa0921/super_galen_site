@@ -8,7 +8,7 @@ import { LIQ } from '../engine/liquidKind';
 import { SOLID_LUT } from '../engine/tiles';
 import { TILE_SIZE } from '../engine/constants';
 import { toCanvas } from './pixel';
-import { LIQUID_FRAMES, breathBubble, liquidPiece, liquidTile, type LiquidPiece } from './liquidArt';
+import { FOAM_FRAMES, LIQUID_FRAMES, breathBubble, fallFoam, liquidPiece, liquidTile, type LiquidPiece } from './liquidArt';
 
 const S = TILE_SIZE;
 const PIECES: LiquidPiece[] = ['surface', 'body', 'fall'];
@@ -19,7 +19,10 @@ const MAX_LAVA_GLOWS = 120;
 /** 內部貼片的橫條（連續的內部格一次畫完，減少 drawImage 次數） */
 const STRIP = 64;
 
-export interface LiquidDrawStats { cells: number; }
+export interface LiquidDrawStats { cells: number; /** 這一幀畫了幾格瀑布水柱 / 落點泡沫 */ falls: number; splashes: number; }
+/** 泡沫動畫速度（格 / 秒） */
+const FOAM_FPS = 10;
+const MAX_SPLASH = 48;
 
 export class LiquidLayer {
   readonly atlas: HTMLCanvasElement;
@@ -27,7 +30,10 @@ export class LiquidLayer {
   private readonly strip: HTMLCanvasElement;
   private readonly bubbleFull: HTMLCanvasElement;
   private readonly bubbleEmpty: HTMLCanvasElement;
-  stats: LiquidDrawStats = { cells: 0 };
+  stats: LiquidDrawStats = { cells: 0, falls: 0, splashes: 0 };
+  /** 瀑布泡沫：列 = 種類（水 / 熔岩），欄 = (kind, frame)；每格 16×32 */
+  private readonly foam: HTMLCanvasElement;
+  private readonly splashAt: number[] = [];
 
   constructor() {
     // 欄：h = 1..16（水面用；body / fall 用 h = 16 那欄）；列：(type, piece, frame)
@@ -58,6 +64,17 @@ export class LiquidLayer {
       }
     });
     this.strip = st;
+    const fc = document.createElement('canvas');
+    fc.width = FOAM_FRAMES * 2 * S; fc.height = 2 * S * 2;
+    const fctx = fc.getContext('2d');
+    if (!fctx) throw new Error('2d context unavailable');
+    [LIQ.WATER, LIQ.LAVA].forEach((t, ti) => {
+      for (let f = 0; f < FOAM_FRAMES; f++) {
+        toCanvas(fallFoam(t, f, 'stream'), { ctx: fctx, x: f * S, y: ti * S * 2 });
+        toCanvas(fallFoam(t, f, 'splash'), { ctx: fctx, x: (FOAM_FRAMES + f) * S, y: ti * S * 2 });
+      }
+    });
+    this.foam = fc;
     this.bubbleFull = toCanvas(breathBubble(true)) as HTMLCanvasElement;
     this.bubbleEmpty = toCanvas(breathBubble(false)) as HTMLCanvasElement;
   }
@@ -70,8 +87,11 @@ export class LiquidLayer {
     const ty0 = Math.max(0, Math.floor(camY / S)), ty1 = Math.min(w.height, Math.ceil((camY + vh) / S) + 1);
     const frames = [0, 0, 0, 0];
     for (const t of TYPES) frames[t] = Math.floor(clock * FPS[t]) % LIQUID_FRAMES;
-    let cells = 0, glows = 0;
+    let cells = 0, glows = 0, falls = 0;
     const H = w.height;
+    const ff = Math.floor(clock * FOAM_FPS);
+    const splash = this.splashAt;
+    splash.length = 0;
     /** (x,y) 是內部貼片（上方同種液體、下面流不動）→ 回傳種類，否則 0 */
     const bodyType = (i: number, y: number): number => {
       const t = LT[i];
@@ -108,10 +128,33 @@ export class LiquidLayer {
         if (p.piece === 'fall' && L[j] === 0 && y + 2 < w.height && LT[j + W] === t && SOLID_LUT[fg[j]] !== 1) {
           ctx.drawImage(this.atlas, (S - 1) * S, (((t - 1) * PIECES.length + 2) * LIQUID_FRAMES + frames[t]) * S, S, S, x * S, (y + 1) * S, S, S);
         }
+        // 瀑布：水柱上的白沫（水 / 熔岩），落到水面（下面是同種、不再往下流的液體）→ 記下落點畫翻騰泡沫
+        if (p.piece === 'fall' && t !== LIQ.HONEY) {
+          const ft = t === LIQ.LAVA ? 1 : 0, fr = (ff + x * 3 + (t === LIQ.LAVA ? 0 : y)) % FOAM_FRAMES;
+          ctx.drawImage(this.foam, fr * S, ft * S * 2, S, S, x * S, y * S, S, S);
+          falls++;
+          if (y + 2 < H && LT[j] === t && L[j] > 0 && splash.length < MAX_SPLASH * 2) {
+            const jb = j + W;
+            const stops = SOLID_LUT[fg[jb]] === 1 || (LT[jb] === t && L[jb] >= 255) || (LT[jb] !== LIQ.NONE && LT[jb] !== t);
+            if (stops) splash.push(j, t);
+          }
+        }
         if (t === LIQ.LAVA && !above && (x & 1) === 0 && glows < MAX_LAVA_GLOWS) { lavaGlows.push({ x: x * S + 8, y: y * S + S - p.h }); glows++; }
       }
     }
+    // 落點泡沫：落點那格 + 左右各一格（畫在整層液體之上）
+    for (let k = 0; k < splash.length; k += 2) {
+      const j = splash[k], t = splash[k + 1], x = j % W, y = (j - x) / W, ft = t === LIQ.LAVA ? 1 : 0;
+      for (let dx = -1; dx <= 1; dx++) {
+        const q = j + dx;
+        if (x + dx < 0 || x + dx >= W || LT[q] !== t || SOLID_LUT[fg[q]] === 1) continue;
+        const fr = (ff + (x + dx) * 2) % FOAM_FRAMES;
+        ctx.drawImage(this.foam, (FOAM_FRAMES + fr) * S, ft * S * 2, S, S * 2, (x + dx) * S, (y - 1) * S, S, S * 2);
+      }
+    }
     this.stats.cells = cells;
+    this.stats.falls = falls;
+    this.stats.splashes = splash.length / 2;
   }
 
   /** 呼吸泡泡：一排在玩家頭上（滿 / 破），breath 為剩幾顆（可小數） */

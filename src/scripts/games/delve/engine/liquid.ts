@@ -27,6 +27,29 @@ export const PANIC_TICKS = 600;
 /** 熔岩量至少這麼多才會在反應時留下方塊（太少只會冒煙消失） */
 export const REACT_MIN = 24;
 
+// ── 泉水 / 滲水石（瀑布）：泉水石每刻往崖外的空格出 SPRING_RATE 的液體（熔岩照熔岩節奏）；
+//    滲水石每刻從上 / 左 / 右鄰格吸走最多 DRAIN_RATE（溢流排水）。總量的上限：
+//    ① 每座泉水的區域（box）總量到 cap 就停水（滲水石被堵住也不會無限淹）；
+//    ② 欠量 debt = 出水 − 它的滲水石排掉的量；超過 SPRING_SLACK 就停水（水被引到區域外時不會無限流），
+//       停水時 debt 每 SPRING_DECAY_EVERY 刻 −1（最多一點點涓流）。
+export const SPRING_RATE: Record<number, number> = { [LIQ.WATER]: 40, [LIQ.LAVA]: 30, [LIQ.HONEY]: 20 };
+export const DRAIN_RATE = 96;
+export const SPRING_SLACK = 255 * 256;
+export const SPRING_DECAY_EVERY = 4;
+/** 每幾刻重算一次區域總量 */
+const BOX_EVERY = 8;
+export interface SpringSpec {
+  x: number; y: number;
+  /** LIQ.* */
+  type: number;
+  /** 區域（tile，x1 / y1 不含）與區域總量上限 */
+  box: { x0: number; y0: number; x1: number; y1: number };
+  cap: number;
+  /** 這座泉水的滲水石 */
+  drains: { x: number; y: number }[];
+}
+interface SpringRt { i: number; type: number; tile: number; box: SpringSpec['box']; cap: number; drains: number[]; debt: number; boxTotal: number; side: number; }
+
 export type ReactionKind = 'obsidian' | 'honeycrisp' | 'steam';
 export interface LiquidEvent { x: number; y: number; kind: ReactionKind; }
 export interface LiquidOptions { budget?: number; cap?: number; }
@@ -93,6 +116,9 @@ export class LiquidSim {
   private readonly nb = new Int32Array(5);
   private readonly old = new Int32Array(5);
   private readonly extra = new Uint8Array(5);
+  private springs: SpringRt[] = [];
+  private springOut = 0;
+  private springDrained = 0;
 
   constructor(readonly world: World, opts: LiquidOptions = {}) {
     const cap = opts.cap ?? DEFAULT_CAP;
@@ -143,11 +169,81 @@ export class LiquidSim {
     return out;
   }
 
+  /** 設定世界的泉水（世界生成給的；載入時重設） */
+  setSprings(list: readonly SpringSpec[]): void {
+    const W = this.world.width;
+    this.springs = list.map((s) => ({
+      i: s.y * W + s.x, type: s.type, tile: s.type === LIQ.LAVA ? T.LAVA_SPRING : T.SPRING, box: s.box, cap: s.cap,
+      drains: s.drains.map((d) => d.y * W + d.x), debt: 0, boxTotal: -1, side: 0,
+    }));
+  }
+  get springCount(): number { return this.springs.length; }
+  /** 累計出水 / 排水量（debug / 測試） */
+  springStats(): { emitted: number; drained: number } { return { emitted: this.springOut, drained: this.springDrained }; }
+
+  private boxTotal(b: SpringSpec['box']): number {
+    const w = this.world, L = w.liquid, W = w.width;
+    let s = 0;
+    const x0 = Math.max(0, b.x0), x1 = Math.min(W, b.x1), y0 = Math.max(0, b.y0), y1 = Math.min(w.height, b.y1);
+    for (let y = y0; y < y1; y++) { const r = y * W; for (let x = x0; x < x1; x++) s += L[r + x]; }
+    return s;
+  }
+
+  /** 泉水出水 + 滲水石排水（每刻；熔岩泉照熔岩節奏） */
+  private runSprings(t: number): void {
+    const w = this.world, L = w.liquid, LT = w.liquidType, fg = w.fg, F = w.frozen, W = w.width;
+    for (const sp of this.springs) {
+      const lavaTick = sp.type !== LIQ.LAVA || t % LAVA_EVERY === 0;
+      // 滲水石：吸上 / 左 / 右的液體
+      for (const d of sp.drains) {
+        if (fg[d] !== T.DRAIN) continue;
+        for (const j of [d - W, d - 1, d + 1]) {
+          if (j < 0 || j >= L.length || !L[j] || F[j]) continue;
+          if (LT[j] === LIQ.LAVA && !lavaTick) continue;
+          const k = Math.min(L[j], DRAIN_RATE);
+          L[j] -= k;
+          if (!L[j]) LT[j] = LIQ.NONE;
+          w.touchLiquid(j);
+          this.kill[j] = 0;
+          this.enqueue(j);
+          if (j >= W) this.enqueue(j - W);
+          this.enqueue(j - 1); this.enqueue(j + 1);
+          sp.debt = Math.max(0, sp.debt - k);
+          this.springDrained += k;
+        }
+      }
+      if (!lavaTick || fg[sp.i] !== sp.tile) continue;
+      if (sp.boxTotal < 0 || t % BOX_EVERY === 0) sp.boxTotal = this.boxTotal(sp.box);
+      if (sp.debt > SPRING_SLACK) { if (t % SPRING_DECAY_EVERY === 0) sp.debt--; continue; }
+      if (sp.boxTotal >= sp.cap) continue;
+      // 出水格：下 → 左右（兩邊都開就輪流）
+      const rate = SPRING_RATE[sp.type] ?? 20;
+      const ok = (j: number): boolean => j >= 0 && j < L.length && SOLID_LUT[fg[j]] !== 1 && !F[j]
+        && (LT[j] === LIQ.NONE || LT[j] === sp.type || L[j] === 0) && L[j] < LIQ_MAX;
+      const x = sp.i % W;
+      let j = -1;
+      if (ok(sp.i + W)) j = sp.i + W;
+      else {
+        const l = x > 0 && ok(sp.i - 1), r = x < W - 1 && ok(sp.i + 1);
+        if (l && r) { sp.side ^= 1; j = sp.side ? sp.i - 1 : sp.i + 1; } else if (l) j = sp.i - 1; else if (r) j = sp.i + 1;
+      }
+      if (j < 0) continue;
+      const k = Math.min(rate, LIQ_MAX - L[j]);
+      L[j] += k; LT[j] = sp.type;
+      w.touchLiquid(j);
+      this.kill[j] = 0;
+      this.enqueue(j);
+      sp.debt += k; sp.boxTotal += k;
+      this.springOut += k;
+    }
+  }
+
   /** 模擬一刻 */
   step(): void {
     const t = this.tick;
     const timed = this.timeBudgetMs > 0 || this.measure;
     const t0 = timed ? performance.now() : 0;
+    if (this.springs.length) this.runSprings(t);
     const anyOver = this.over[0].size + this.over[1].size + this.over[2].size > 0;
     this.overTicks = anyOver ? this.overTicks + 1 : 0;
     this.stats.panic = this.overTicks > PANIC_TICKS;

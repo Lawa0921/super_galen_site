@@ -26,6 +26,8 @@ export const T = {
   FURNACE: 68, ANVIL: 69,
   // ── 液體：蜂巢殼（叢林蜂巢）、酥脆蜜塊（蜂蜜碰到熔岩） ──
   HIVE: 70, CRISPY_HONEY: 71,
+  // ── 瀑布：泉水石（無限水源 / 熔岩源，固定速率出水）、滲水石（溢流排水）——挖不動 ──
+  SPRING: 72, LAVA_SPRING: 73, DRAIN: 74,
 } as const;
 export type TileId = (typeof T)[keyof typeof T];
 
@@ -176,6 +178,10 @@ export const TILES: readonly TileDef[] = [
   // ── 液體 ──
   block(T.HIVE, 'hive', n('蜂巢殼', 'Hive Comb'), 0.6, 'hive', '#e8701c'),
   block(T.CRISPY_HONEY, 'crispy_honey', n('酥蜜塊', 'Crisp Honey Block'), 0.4, 'crispy_honey', '#ffa93a'),
+  // ── 瀑布 ──
+  def({ id: T.SPRING, key: 'spring', name: n('湧泉石', 'Wellspring Stone'), solid: true, hardness: 1, drop: null, color: '#3e74c4', minTier: TIER_UNBREAKABLE }),
+  def({ id: T.LAVA_SPRING, key: 'lava_spring', name: n('熔泉石', 'Magma Vent Stone'), solid: true, hardness: 1, drop: null, color: '#e8701c', minTier: TIER_UNBREAKABLE, light: 0.6 }),
+  def({ id: T.DRAIN, key: 'drain', name: n('滲水石', 'Seep Stone'), solid: true, hardness: 1, drop: null, color: '#2c4486', minTier: TIER_UNBREAKABLE }),
 ];
 
 export const WALLS: readonly WallDef[] = [
@@ -219,6 +225,7 @@ export const LIGHT_HUE: Partial<Record<number, readonly [number, number, number]
   [T.GLOW_MUSHROOM]: [0.3, 0.58, 1],
   [T.MUSHROOM_GRASS]: [0.28, 0.52, 1],
   [T.CRYSTAL]: [0.42, 0.9, 1],
+  [T.LAVA_SPRING]: [1, 0.46, 0.2],
 };
 export const CRYSTAL_ALT_HUE: readonly [number, number, number] = [0.82, 0.5, 1];
 /** 發光 RGB 查表：i*3 + 通道 */

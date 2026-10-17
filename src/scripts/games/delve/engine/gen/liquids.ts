@@ -13,7 +13,7 @@ import { LIQ, LIQ_MAX } from '../liquidKind';
 import { T, W, SOLID_LUT, tileDef } from '../tiles';
 import { Rng, subSeed } from '../rng';
 import { vnoise1, seedInt } from '../noise';
-import { LiquidSim } from '../liquid';
+import { LiquidSim, SPRING_RATE, type SpringSpec } from '../liquid';
 
 export interface LiquidGenStats {
   ms: number;
@@ -25,8 +25,10 @@ export interface LiquidGenStats {
   lakes: number; ponds: number; caveLakes: number; lavaLakes: number; hives: number; oases: number;
   /** v6：挖盆地的大地下湖 */
   grandLakes: number;
+  /** v6：泉水瀑布 / 熔岩瀑布 */
+  waterfalls: number; lavafalls: number;
 }
-export interface LiquidStructure { kind: 'pond' | 'oasis' | 'hive' | 'underground_lake'; x: number; y: number; w: number; h: number; }
+export interface LiquidStructure { kind: 'pond' | 'oasis' | 'hive' | 'underground_lake' | 'waterfall' | 'lavafall'; x: number; y: number; w: number; h: number; }
 export interface LiquidGenCtx {
   world: World;
   seed: string | number;
@@ -61,7 +63,7 @@ for (const t of [T.FLOWER, T.TALL_GRASS, T.BUSH, T.DEAD_BUSH, T.SNOW_SHRUB, T.FE
  * 液體生成分兩段：surface()（湖床 / 池塘 / 綠洲）在種樹與地表裝飾之前跑（樹與花草避開水面），
  * deep()（地下湖 / 熔岩 / 蜂巢 + 靜置）在全部地形都完成之後跑。
  */
-export function createLiquidGen(ctx: LiquidGenCtx): { surface(): void; deep(): { stats: LiquidGenStats; structures: LiquidStructure[] } } {
+export function createLiquidGen(ctx: LiquidGenCtx): { surface(): void; deep(): { stats: LiquidGenStats; structures: LiquidStructure[]; springs: SpringSpec[] } } {
   let msAcc = 0;
   const { world, seed, surface, layers, colBiome } = ctx;
   const { width, height, fg, wall, liquid, liquidType } = world;
@@ -70,7 +72,7 @@ export function createLiquidGen(ctx: LiquidGenCtx): { surface(): void; deep(): {
   const structures: LiquidStructure[] = [];
   const stats: LiquidGenStats = {
     ms: 0, settleMs: 0, settleTicks: 0, leftActive: 0, cells: { water: 0, lava: 0, honey: 0 },
-    lakes: 0, ponds: 0, caveLakes: 0, lavaLakes: 0, hives: 0, oases: 0, grandLakes: 0,
+    lakes: 0, ponds: 0, caveLakes: 0, lavaLakes: 0, hives: 0, oases: 0, grandLakes: 0, waterfalls: 0, lavafalls: 0,
   };
   const placed: number[] = [];
 
@@ -274,7 +276,7 @@ export function createLiquidGen(ctx: LiquidGenCtx): { surface(): void; deep(): {
   msAcc += performance.now() - t0;
   };
 
-  const deepPhase = (): { stats: LiquidGenStats; structures: LiquidStructure[] } => {
+  const deepPhase = (): { stats: LiquidGenStats; structures: LiquidStructure[]; springs: SpringSpec[] } => {
   const t0 = performance.now();
   // ── 3a) v6 大地下湖：在洞穴裡夠寬的地板上挖一個碗形盆地（深 6–14 格），水位再高出地板 4–12 格 → 2000–6500 格 ──
   {
@@ -422,6 +424,97 @@ export function createLiquidGen(ctx: LiquidGenCtx): { surface(): void; deep(): {
     }
   }
 
+  // ── 6) v6 泉水瀑布：崖面 / 洞壁嵌一顆泉水石（無限源），水柱落進崖腳挖出的小水潭，
+  //    水潭遠端（上方是空氣的）碗緣換成滲水石排掉溢流 → 一直流、總量有上限（liquid.ts）。熔岩深淵另有幾道熔岩瀑布。
+  const springs: SpringSpec[] = [];
+  {
+    const rng = subSeed(seed, 'liquid-springs');
+    const ns = seedInt(seed, 'spring-pool-edge');
+    /** 從空氣格 (x,y) 往左或右走到第一個實心格 = 崖面 / 洞壁，回傳 [牆 x, 朝外方向] */
+    const findFace = (x: number, y: number): [number, 1 | -1] | null => {
+      if (SOLID_LUT[fg[y * WW + x]] || liquid[y * WW + x]) return null;
+      const walk: 1 | -1 = rng.next() < 0.5 ? 1 : -1;
+      for (let k = 1; k < 50; k++) {
+        const xx = x + walk * k;
+        if (xx < 2 || xx >= width - 2) return null;
+        if (SOLID_LUT[fg[y * WW + xx]]) return [xx, (-walk) as 1 | -1];
+      }
+      return null;
+    };
+    /** 在 (x,y) 的崖面朝 dir 放一道瀑布；成功回傳 true */
+    const tryFall = (x: number, y: number, dir: 1 | -1, type: number): boolean => {
+      const o = x + dir;
+      if (x < 60 || x > width - 60 || y < 4 || y > height - 30 || ctx.avoid(x) || ctx.avoid(o)) return false;
+      const i = y * WW + x;
+      if (!NATURAL[fg[i]] || !SOLID_LUT[fg[i - dir]] || (!SOLID_LUT[fg[i - WW]] && !SOLID_LUT[fg[i + WW]])) return false;
+      if (SOLID_LUT[fg[y * WW + o]] || liquid[y * WW + o] || FORBID_WALL[wall[y * WW + o]]) return false;
+      // 往下的落差
+      let h = 0;
+      while (y + 1 + h < height - 8 && !SOLID_LUT[fg[(y + 1 + h) * WW + o]]) { if (liquid[(y + 1 + h) * WW + o]) return false; h++; }
+      if (h < 6 || h > (type === LIQ.LAVA ? 75 : 42)) return false;
+      const fy = y + 1 + h;
+      if (!NATURAL[fg[fy * WW + o]]) return false;
+      const halfW = rng.int(4, 8);
+      const cx = o + dir * (halfW - 2);
+      for (let k = 0; k <= halfW * 2; k++) {
+        const xx = o + dir * k;
+        if (!SOLID_LUT[fg[fy * WW + xx]] && !SOLID_LUT[fg[(fy + 1) * WW + xx]]) return false;
+      }
+      if (near(Math.min(x, cx - halfW) - 2, y - 2, halfW * 2 + 6, fy - y + 10, 3)) return false;
+      const { undo, center } = carveBowl(cx, fy, halfW, rng.int(4, 8), ns + x);
+      if (center < 3) { undoBowl(undo); return false; }
+      const c = fitPocket(cx, fy + center, center, 500, 10);
+      if (!c) { undoBowl(undo); return false; }
+      // 兩側碗緣：從水潭往外第一個在 fy 列是實心的格；上方是空氣 → 換成滲水石
+      let bx0 = 1e9, bx1 = -1, by1 = fy;
+      for (const q of c) { const qx = q % WW, qy = (q - qx) / WW; if (qx < bx0) bx0 = qx; if (qx > bx1) bx1 = qx; if (qy > by1) by1 = qy; }
+      const drains: { x: number; y: number }[] = [];
+      for (const rx of [bx0 - 1, bx1 + 1]) {
+        const ri = fy * WW + rx;
+        if (!SOLID_LUT[fg[ri]]) { undoBowl(undo); return false; }
+        if (!SOLID_LUT[fg[ri - WW]]) {
+          if (!NATURAL[fg[ri]]) { undoBowl(undo); return false; }
+          drains.push({ x: rx, y: fy });
+        }
+      }
+      if (!drains.length) { undoBowl(undo); return false; }
+      fill(c, type);
+      fg[i] = type === LIQ.LAVA ? T.LAVA_SPRING : T.SPRING;
+      for (const d of drains) fg[d.y * WW + d.x] = T.DRAIN;
+      const box = { x0: Math.min(x, bx0) - 3, y0: y - 2, x1: Math.max(x, bx1) + 4, y1: by1 + 4 };
+      const cap = c.length * LIQ_MAX + LIQ_MAX * (h + (bx1 - bx0) + 8) + (SPRING_RATE[type] ?? 20) * 8;
+      springs.push({ x, y, type, box, cap, drains });
+      structures.push({ kind: type === LIQ.LAVA ? 'lavafall' : 'waterfall', x: box.x0, y: box.y0, w: box.x1 - box.x0, h: box.y1 - box.y0 });
+      if (type === LIQ.LAVA) stats.lavafalls++; else stats.waterfalls++;
+      return true;
+    };
+    // 地表懸崖：上方地表比旁邊高 ≥ 6 格的崖面，泉水在崖頂下 2 格
+    let surf = 0;
+    for (let k = 0; k < width && surf < Math.max(1, Math.round(width / 1100)); k++) {
+      const x = rng.int(80, width - 80);
+      for (const dir of [1, -1] as const) {
+        if (surface[x + dir] - surface[x] < 6 || !spawnOk(x - 30, x + 30)) continue;
+        if (tryFall(x, surface[x] + 2, dir, LIQ.WATER)) { surf++; break; }
+      }
+    }
+    // 洞壁：岩層 ~ 洞穴層
+    const wantCave = Math.max(1, Math.round(width / 380));
+    for (let tries = 0, made = 0; tries < wantCave * 400 && made < wantCave; tries++) {
+      const x = rng.int(70, width - 70);
+      const y = rng.int(layers.rock[x] + 4, Math.max(layers.rock[x] + 5, layers.molten[x] - 20));
+      const f = findFace(x, y);
+      if (f && tryFall(f[0], y, f[1], LIQ.WATER)) made++;
+    }
+    // 熔岩深淵的熔岩瀑布
+    const wantLava = Math.max(1, Math.round(width / 900));
+    for (let tries = 0, made = 0; tries < wantLava * 3000 && made < wantLava; tries++) {
+      const x = rng.int(70, width - 70);
+      const y = rng.int(layers.molten[x], height - 30);
+      const f = findFace(x, y);
+      if (f && tryFall(f[0], y, f[1], LIQ.LAVA)) made++;
+    }
+  }
+
   // ── 靜置：只把還能流動的邊緣格排入，跑到沒有活躍格 ──────────────
   const sim = new LiquidSim(world, { budget: Infinity, cap: 1 << 18 });
   for (const i of placed) {
@@ -442,7 +535,7 @@ export function createLiquidGen(ctx: LiquidGenCtx): { surface(): void; deep(): {
     if (t === LIQ.WATER) stats.cells.water++; else if (t === LIQ.LAVA) stats.cells.lava++; else if (t === LIQ.HONEY) stats.cells.honey++;
   }
   stats.ms = msAcc + performance.now() - t0;
-  return { stats, structures };
+  return { stats, structures, springs };
   };
   void tileDef;
   return { surface: surfacePhase, deep: deepPhase };
