@@ -1,5 +1,6 @@
 import { AFFIXES, AFFIX_COUNT, GEAR_SLOTS, IMPLICIT_PER_ILVL, ROLL_FLOOR, SLOT_WEIGHT, SPECIALS, affixRange } from '../../data/gear';
 import { EQUIPMENT } from '../../data/equipment';
+import { ENHANCE_STEP } from '../../data/forge';
 import { depthLevel } from '../levels';
 import { pick, randInt, type Rng } from '../rng';
 import type { AnyStat, GearSlot, ItemInstance, Rarity, Sheet, Stats } from '../types';
@@ -27,7 +28,7 @@ function bestBase(slot: GearSlot): string {
   return Object.values(EQUIPMENT).filter((e) => e.slot === slot).sort((a, b) => b.ilvl - a.ilvl || a.id.localeCompare(b.id))[0].id;
 }
 
-function rollValue(rng: Rng, key: AnyStat, ilvl: number, rarity: Rarity): number {
+export function rollValue(rng: Rng, key: AnyStat, ilvl: number, rarity: Rarity): number {
   const [lo, hi] = affixRange(key, ilvl);
   const floor = ROLL_FLOOR[rarity];
   const f = floor + (1 - floor) * rng();
@@ -60,12 +61,13 @@ export function rollItem(rng: Rng, o: RollOpts): ItemInstance {
   return item;
 }
 
-/** The base's own bonus, grown IMPLICIT_PER_ILVL per item level above the base's level. */
+/** The base's own bonus, grown IMPLICIT_PER_ILVL per item level above the base's level, then ENHANCE_STEP per enhance level. */
 export function implicitStats(it: ItemInstance): Partial<Stats> {
   const b = EQUIPMENT[it.base];
   const grow = 1 + IMPLICIT_PER_ILVL * Math.max(0, it.ilvl - b.ilvl);
+  const up = 1 + ENHANCE_STEP * it.enhance;
   const out: Partial<Stats> = {};
-  for (const [k, v] of Object.entries(b.bonus) as [keyof Stats, number][]) out[k] = Math.round(v * grow);
+  for (const [k, v] of Object.entries(b.bonus) as [keyof Stats, number][]) out[k] = Math.round(v * grow * up);
   return out;
 }
 

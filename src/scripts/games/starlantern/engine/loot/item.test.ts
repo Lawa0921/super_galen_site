@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { mulberry32 } from '../rng';
 import { AFFIXES, AFFIX_COUNT, GEAR_SLOTS, IMPLICIT_PER_ILVL, ROLL_FLOOR, SPECIALS, affixRange } from '../../data/gear';
 import { EQUIPMENT } from '../../data/equipment';
+import { ENHANCE_MAX, ENHANCE_STEP } from '../../data/forge';
 import type { GearSlot, Rarity } from '../types';
-import { baseFor, implicitStats, itemLevel, itemName, itemSlot, itemStats, itemWeight, rollItem, sellPrice } from './item';
+import { baseFor, implicitStats, itemLevel, itemName, itemSlot, itemStats, itemWeight, rollItem, rollValue, sellPrice } from './item';
 import { depthLevel } from '../levels';
 
 const rarities: Rarity[] = ['common', 'magic', 'rare', 'legendary'];
@@ -176,5 +177,34 @@ describe('item numbers', () => {
   it('survives an item level below 1', () => {
     const it = rollItem(mulberry32(1), { uid: 1, ilvl: 0, rarity: 'rare' });
     for (const a of it.affixes) { expect(Number.isFinite(a.value)).toBe(true); expect(a.value).toBeGreaterThanOrEqual(1); }
+  });
+});
+
+describe('enhancement', () => {
+  const base = EQUIPMENT['iron-sword'];
+  const make = (enhance: number, ilvl = 20) => ({ uid: 1, base: 'iron-sword', rarity: 'magic' as Rarity, ilvl, affixes: [{ key: 'crit' as const, value: 3 }], enhance });
+
+  it('enhancement scales the base bonus by ENHANCE_STEP per level and leaves affixes alone', () => {
+    const ilvl = 20;
+    const grow = 1 + IMPLICIT_PER_ILVL * Math.max(0, ilvl - base.ilvl);
+    const raw = base.bonus.atk! * grow;
+    expect(implicitStats(make(0, ilvl)).atk).toBe(Math.round(raw));
+    expect(implicitStats(make(5, ilvl)).atk).toBe(Math.round(raw * (1 + 5 * ENHANCE_STEP)));
+    expect(implicitStats(make(5, ilvl)).atk).toBeGreaterThan(implicitStats(make(0, ilvl)).atk!);
+    expect(make(5).affixes).toEqual(make(0).affixes);
+    expect(itemStats(make(5)).crit).toBe(3);
+    expect(itemStats(make(5)).atk).toBe(implicitStats(make(5)).atk);
+  });
+
+  it('an +ENHANCE_MAX item at item level 202 stays finite', () => {
+    const stats = itemStats(make(ENHANCE_MAX, 202));
+    for (const v of Object.values(stats)) expect(Number.isFinite(v)).toBe(true);
+    expect(implicitStats(make(ENHANCE_MAX, 202)).atk).toBe(Math.round(base.bonus.atk! * (1 + IMPLICIT_PER_ILVL * (202 - base.ilvl)) * (1 + ENHANCE_MAX * ENHANCE_STEP)));
+  });
+
+  it('rollValue is exported and stays within the affix range', () => {
+    const v = rollValue(mulberry32(3), 'atk', 20, 'rare');
+    expect(Number.isInteger(v)).toBe(true);
+    expect(v).toBeGreaterThanOrEqual(1);
   });
 });

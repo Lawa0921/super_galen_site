@@ -5,6 +5,7 @@ import { plainItem } from './testing';
 import { rollItem } from './loot/item';
 import { mulberry32 } from './rng';
 import { T } from '../data/text.zh-TW';
+import { ENHANCE_STEP } from '../data/forge';
 import { POWERS, SETS, SPECIALS } from '../data/gear';
 import type { ItemInstance, Member } from './types';
 
@@ -99,5 +100,11 @@ describe('specialLines', () => {
     expect(specialLines('set-iron').map((l) => l.kind)).toEqual(['set', 'set']);
     expect(specialLines('set-iron-body').map((l) => l.kind)).toEqual(['set', 'set', 'lore']);
     expect(specialLines('nope')).toEqual([]);
+  });
+
+  it('shows the enhanced value of a base bonus', () => {
+    const m: Member = { ...newMember('scarlet'), equip: { weapon: sword } };
+    const plus5: ItemInstance = { ...sword, enhance: 5 };
+    expect(compareDelta(m, 'weapon', plus5).atk).toBe(Math.round(4 * (1 + 5 * ENHANCE_STEP)) - 4);
   });
 });
