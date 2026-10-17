@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
+import { rulesOf } from '../../data/characters';
 import { statsOf } from '../../engine/party';
 import type { AnyStat } from '../../engine/types';
 import { STAT_CATEGORIES } from '../../engine/stats';
@@ -925,7 +926,7 @@ describe('StatusScene', () => {
       down(s, 6); s.onAction('swap'); s.onAction('swap');
       expect(cur()).toBe('noel-k2');
       s.onAction('confirm');
-      expect(msg()).toBe(T.ui2.talent.reason.keystones);
+      expect(msg()).toBe(T.ui2.talent.reason.keystones(rulesOf('noel').maxKeystones));
     });
 
     it('with no points left a shut node shows its structural reason, an open one 點數不足', () => {
@@ -941,14 +942,14 @@ describe('StatusScene', () => {
       expect(T.ui2.talent.cell.max).toBe('已滿級');
       expect(T.ui2.talent.cell.keystones).toBe('關鍵已滿');
       expect(new Set(Object.values(T.ui2.talent.cell)).size).toBe(Object.keys(T.ui2.talent.cell).length);
-      expect(T.ui2.talent.reason.keystones).toContain('關鍵天賦');
+      expect(T.ui2.talent.reason.keystones(2)).toContain('關鍵天賦');
       const { node } = onTalent(50, { ...eleven, 'noel-t02': 2, 'noel-k0': 1, 'noel-k1': 1 });
       expect(node('noel-k2').textContent).toContain('關鍵已滿');
       expect(node('noel-k0').textContent).not.toContain('關鍵已滿');
     });
 
     it('every refusal has its own words', () => {
-      for (const k of ['unknown', 'max', 'points', 'adjacent', 'gate', 'keystones'] as const) expect(T.ui2.talent.reason[k].length, k).toBeGreaterThan(0);
+      for (const k of ['unknown', 'max', 'points', 'adjacent', 'gate', 'keystones'] as const) expect(String(typeof T.ui2.talent.reason[k] === 'function' ? T.ui2.talent.reason[k](2) : T.ui2.talent.reason[k]).length, k).toBeGreaterThan(0);
       expect(new Set(Object.values(T.ui2.talent.reason)).size).toBe(6);
     });
 

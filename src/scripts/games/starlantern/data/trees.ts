@@ -12,7 +12,7 @@ import { SKILLS } from './skills';
  * node does not count. A character holds ranks in at most one ultimate node.
  */
 export interface TreeNode {
-  id: string; kind: 'active' | 'mod'; skill: string; maxRank: 1 | 2 | 3; name?: string; desc?: string; mods?: SkillMod[];
+  id: string; kind: 'active' | 'mod'; skill: string; maxRank: 1 | 2 | 3 | 4 | 5; name?: string; desc?: string; mods?: SkillMod[];
 }
 export interface TreeBranch { name: string; nodes: TreeNode[] }
 export interface TreeDef { branches: TreeBranch[] }
@@ -21,13 +21,13 @@ export interface TreeDef { branches: TreeBranch[] }
  * Damage and heal power (turret power too) of an active node at rank 1-3, in percent; rank 1 is the skill as written.
  * It never scales a buff's or debuff's percent: only a mod node whose text says so deepens one (`buffPct`).
  */
-export const ACTIVE_RANK_PCT = [100, 110, 120];
+export const ACTIVE_RANK_PCT = [100, 110, 120, 130, 140];
 /** Ranks already put into the branch's lower tiers before a node of tier t can take its first rank. */
 export const TIER_GATE = [0, 0, 2, 4, 7];
 
-const A = (skill: string, maxRank: 1 | 2 | 3): TreeNode => ({ id: skill, kind: 'active', skill, maxRank });
+const A = (skill: string, maxRank: 1 | 2 | 3 | 4 | 5): TreeNode => ({ id: skill, kind: 'active', skill, maxRank });
 const M = (id: string, name: string, skill: string, desc: string, mods: SkillMod[]): TreeNode =>
-  ({ id, kind: 'mod', skill, maxRank: mods.length as 1 | 2 | 3, name, desc, mods });
+  ({ id, kind: 'mod', skill, maxRank: mods.length as 1 | 2 | 3 | 4 | 5, name, desc, mods });
 const pct = (...v: number[]): SkillMod[] => v.map((powerPct) => ({ powerPct }));
 const buff = (...v: number[]): SkillMod[] => v.map((buffPct) => ({ buffPct }));
 /** Power and the debuff riding on it, by the same percent. */
@@ -225,7 +225,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
 };
 
 /** Which branch's ultimate the default build aims for (read by the auto-allocation of skill points). */
-export const DEFAULT_CAPSTONE: Record<CharacterId, 0 | 1 | 2> = {
+export const DEFAULT_CAPSTONE: Record<CharacterId, number> = {
   noel: 0, chizuru: 0, liz: 0, sylvie: 0, scarlet: 1, selene: 0, safira: 0, bobby: 0,
 };
 

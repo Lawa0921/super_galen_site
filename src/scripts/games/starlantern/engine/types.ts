@@ -36,8 +36,12 @@ export interface SkillDef {
   target: Target; effects: Effect[]; passive?: Passive; desc: string;
 }
 export interface UltimateDef { id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string }
+/** How a character grows: which point curve, how many skill branches, how many ultimates, board width and keystone cap. */
+export interface GrowthRules { curve: 'companion' | 'hero'; branches: 3 | 5; capstones: number; boardCols: number; maxKeystones: number }
 export interface CharacterDef {
   id: CharacterId; title: string; name: string; row: Row; melee: boolean; base: Stats; growth: Stats; affinity: PrimaryKey;
+  /** Growth rules this character changes from DEFAULT_RULES (data/characters.ts). */
+  rules?: Partial<GrowthRules>;
 }
 export interface EnemySkill { name: string; chance: number; target: Target; effects: Effect[] }
 export interface EnemyDef {

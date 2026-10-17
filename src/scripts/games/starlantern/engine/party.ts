@@ -1,5 +1,5 @@
 import { GRID_SIZE, MAX_ACTIVE } from './formation';
-import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
+import { CHARACTERS, CHARACTER_IDS, rulesOf } from '../data/characters';
 import { SKILLS } from '../data/skills';
 import { SETS, SPECIALS } from '../data/gear';
 import { itemSlot, itemStats } from './loot/item';
@@ -153,7 +153,8 @@ export function gainExp(m: Member, amount: number): { member: Member; levels: nu
   const after = statsOf(next);
   next.hp = m.hp > 0 ? Math.min(after.hp, m.hp + after.hp - before.hp) : 0;
   next.tp = Math.min(after.tp, m.tp + after.tp - before.tp);
-  const points = { skill: skillPoints(level) - skillPoints(m.level), talent: talentPoints(level) - talentPoints(m.level) };
+  const curve = rulesOf(m.id).curve;
+  const points = { skill: skillPoints(level, curve) - skillPoints(m.level, curve), talent: talentPoints(level, curve) - talentPoints(m.level, curve) };
   // Points are never spent here: the player spends them on the status screen's tree and talent tabs.
   return { member: next, levels: level - m.level, points };
 }

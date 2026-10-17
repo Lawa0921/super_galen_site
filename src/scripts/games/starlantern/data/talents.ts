@@ -1,5 +1,5 @@
 import type { AnyStat, CharacterId } from '../engine/types';
-import { CHARACTER_IDS } from './characters';
+import { CHARACTER_IDS, DEFAULT_RULES, rulesOf } from './characters';
 
 /**
  * Talent boards: a 6x4 grid of normal nodes (rank 0-5) plus 3 keystones per character (rank 0-1).
@@ -70,7 +70,8 @@ export const DEFAULT_KEYSTONES = Object.fromEntries(
 export interface TalentNode { id: string; row: number; col: number; maxRank: 1 | 5; stat?: AnyStat; keystone?: KeystoneId }
 
 export const KEYSTONE_GATE = 12;
-export const MAX_KEYSTONES = 2;
+/** The keystone cap a character gets by default; talentBlocker reads rulesOf(owner).maxKeystones. */
+export const MAX_KEYSTONES = DEFAULT_RULES.maxKeystones;
 
 export const BOARDS = Object.fromEntries(CHARACTER_IDS.map((c) => {
   const nodes: TalentNode[] = [];
@@ -112,7 +113,7 @@ export function talentBlocker(owner: CharacterId, nodeId: string, ranks: Record<
   if (rankOf(node, ranks) >= node.maxRank) return 'maxed';
   if (node.keystone) {
     if (boardPoints(owner, ranks) < KEYSTONE_GATE) return 'gate';
-    if (keystoneCount(owner, ranks) >= MAX_KEYSTONES) return 'keystone-cap';
+    if (keystoneCount(owner, ranks) >= rulesOf(owner).maxKeystones) return 'keystone-cap';
     return null;
   }
   if (node.row === 0) return null;

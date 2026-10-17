@@ -188,8 +188,8 @@ describe('skill trees', () => {
     expect(Object.keys(LEGACY_LEARN_LEVEL)).toHaveLength(27);
   });
 
-  it('ACTIVE_RANK_PCT[0] is 100', () => {
-    expect(ACTIVE_RANK_PCT).toEqual([100, 110, 120]);
+  it('ACTIVE_RANK_PCT has five ranks, starts at 100 and rises', () => {
+    expect(ACTIVE_RANK_PCT).toEqual([100, 110, 120, 130, 140]);
   });
 
   it("every legendary power names an active node of its owner's tree", () => {

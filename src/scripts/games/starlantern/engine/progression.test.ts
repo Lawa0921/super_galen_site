@@ -29,9 +29,30 @@ const spent = (tree: Record<string, number>) => Object.values(tree).reduce((s, r
 
 describe('progression', () => {
   it('skill points on every level to 4, then odd levels for skills and even levels for talents', () => {
-    expect([1, 2, 4, 5, 6, 7, 50].map(skillPoints)).toEqual([0, 1, 3, 4, 4, 5, 26]);
-    expect([5, 6, 7, 8, 50].map(talentPoints)).toEqual([0, 1, 1, 2, 23]);
+    expect([1, 2, 4, 5, 6, 7, 50].map((L) => skillPoints(L))).toEqual([0, 1, 3, 4, 4, 5, 26]);
+    expect([5, 6, 7, 8, 50].map((L) => talentPoints(L))).toEqual([0, 1, 1, 2, 23]);
     for (let L = 1; L <= 50; L++) expect(skillPoints(L) + talentPoints(L), `Lv${L}`).toBe(L - 1);
+  });
+
+  it('hero curve: skill points are one per level plus one every second level', () => {
+    expect(skillPoints(50, 'hero')).toBe(73);
+    expect(skillPoints(1, 'hero')).toBe(0);
+    expect(skillPoints(3, 'hero')).toBe(3);
+  });
+
+  it('hero curve: talent points from Lv6', () => {
+    expect(talentPoints(5, 'hero')).toBe(0);
+    expect(talentPoints(6, 'hero')).toBe(1);
+    expect(talentPoints(50, 'hero')).toBe(45);
+  });
+
+  it('companion curve is unchanged', () => {
+    for (let L = 1; L <= 50; L++) {
+      expect(skillPoints(L), `skill Lv${L}`).toBe(skillPoints(L, 'companion'));
+      expect(talentPoints(L), `talent Lv${L}`).toBe(talentPoints(L, 'companion'));
+    }
+    expect(skillPoints(50)).toBe(26);
+    expect(talentPoints(50)).toBe(23);
   });
 
   it('no tree fills by Lv50', () => {

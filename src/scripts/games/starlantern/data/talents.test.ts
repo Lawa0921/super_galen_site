@@ -3,7 +3,7 @@ import {
   BOARDS, BOARD_COLS, BOARD_ROWS, CHAR_KEYSTONES, DEFAULT_KEYSTONES, KEYSTONES, KEYSTONE_GATE, KEYSTONE_VALUES,
   MAX_KEYSTONES, PALETTES, TALENT_NODES, TALENT_PER, TEMPLATE, boardPoints, keystoneCount, talentBlocker,
 } from './talents';
-import { CHARACTER_IDS } from './characters';
+import { CHARACTER_IDS, DEFAULT_RULES, rulesOf } from './characters';
 
 const V = KEYSTONE_VALUES;
 /** Normal nodes of noel's board, row-major, that satisfy adjacency when taken in this order. */
@@ -101,6 +101,13 @@ describe('talent rules', () => {
     expect(talentBlocker('noel', 'noel-k0', twelve)).toBeNull();
     // keystone ranks never count as board points
     expect(boardPoints('noel', { ...eleven, 'noel-k0': 1 })).toBe(KEYSTONE_GATE - 1);
+  });
+
+  it('every companion reads the default rules', () => {
+    const COMPANIONS = CHARACTER_IDS.filter((id) => (id as string) !== 'hero');
+    expect(COMPANIONS).toHaveLength(8);
+    for (const id of COMPANIONS) expect(rulesOf(id), id).toEqual(DEFAULT_RULES);
+    expect(DEFAULT_RULES).toEqual({ curve: 'companion', branches: 3, capstones: 1, boardCols: 4, maxKeystones: 2 });
   });
 
   it('refuses a third keystone but still allows re-checking a held one as maxed', () => {

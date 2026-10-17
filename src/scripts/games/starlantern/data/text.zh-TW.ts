@@ -1,7 +1,7 @@
 import type { RaiseFail, TalentFail } from '../engine/progression';
 import type { StatCategory } from '../engine/stats';
 import type { SkillMod } from './gear';
-import { KEYSTONE_GATE, MAX_KEYSTONES } from './talents';
+import { KEYSTONE_GATE } from './talents';
 import { EQUIPMENT } from './equipment';
 import { ITEMS } from './items';
 import { MATERIALS } from './materials';
@@ -208,8 +208,8 @@ export const T = {
       left: (n: number) => `剩餘天賦點 ${n}`,
       /** Points on the board's normal nodes, against the keystone gate. */
       board: (n: number) => (n >= KEYSTONE_GATE ? `盤面已投 ${n} 點・可選關鍵天賦` : `盤面已投 ${n} 點・${KEYSTONE_GATE} 點後可選關鍵天賦`),
-      keystones: (k: number) => `關鍵天賦 ${k}／${MAX_KEYSTONES}`,
-      keysHead: `關鍵天賦（限選 ${MAX_KEYSTONES} 個）`,
+      keystones: (k: number, max: number) => `關鍵天賦 ${k}／${max}`,
+      keysHead: (max: number) => `關鍵天賦（限選 ${max} 個）`,
       /** A normal node's bonus per rank, e.g. 「+2／級」; a percent stat carries a % sign. */
       per: (key: AnyStat, v: number) => `${signed(v)}${POINT_STATS.includes(key) ? '' : '%'}／級`,
       /** The notes for a normal node: 「智力 +2／級（目前 +4）」. */
@@ -228,8 +228,8 @@ export const T = {
       /** Why a node cannot take its next rank (progression canRaiseTalent). */
       reason: {
         unknown: '無法投點', max: '已滿級', points: '點數不足', adjacent: '需相鄰上一列',
-        gate: `盤面需 ${KEYSTONE_GATE} 點`, keystones: `關鍵天賦已選滿 ${MAX_KEYSTONES} 個`,
-      } as Record<TalentFail, string>,
+        gate: `盤面需 ${KEYSTONE_GATE} 點`, keystones: (max: number) => `關鍵天賦已選滿 ${max} 個`,
+      } as Record<Exclude<TalentFail, 'keystones'>, string> & { keystones: (max: number) => string },
       /**
        * A board cell's state beside its bonus, at most 3 wide characters (a keystone cell has no bonus, so its own states take
        * up to 4); the notes under the board give `reason` in full. 已滿級 is a maxed node, 關鍵已滿 the keystone cap.

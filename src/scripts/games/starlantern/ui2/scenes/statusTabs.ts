@@ -1,4 +1,4 @@
-import { CHARACTERS } from '../../data/characters';
+import { CHARACTERS, rulesOf } from '../../data/characters';
 import { POWERS } from '../../data/gear';
 import { SKILLS } from '../../data/skills';
 import { BOARDS, BOARD_ROWS, KEYSTONES, TALENT_PER, TALENT_SCALE, boardPoints, rankOf, type TalentNode } from '../../data/talents';
@@ -11,6 +11,7 @@ import { ROW_MELEE, rowOfCell } from '../../engine/formation';
 import {
   canRaiseNode, canRaiseTalent, freeNode, keystonesOf, learnedSkills, nodeRank, rankMod, skillPointsLeft, talentPointsLeft,
 } from '../../engine/progression';
+import type { TalentFail } from '../../engine/progression';
 import { SLOTS, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
 import { STAT_CATEGORIES, type StatCategory } from '../../engine/stats';
 import type { AnyStat, CharacterId, Slot, StatKey, Stats } from '../../engine/types';
@@ -532,13 +533,19 @@ function moveTalent(node: string): boolean {
 }
 
 /** Enter on the cursor's node, or a click on `clicked` (which selects it first): the shared spend, as the tree page's. */
+/** The words for a refused talent raise; the keystone cap reads the character's own limit. */
+const talentReason = (why: TalentFail, id: CharacterId): string => {
+  const r = T.ui2.talent.reason[why];
+  return typeof r === 'function' ? r(rulesOf(id).maxKeystones) : r;
+};
+
 function pressTalent(ctx: SceneCtx, id: CharacterId, clicked?: string): void {
   const t = T.ui2.talent;
   const node = clicked ?? talentView.cur;
   const can = () => canRaiseTalent(ctx.game.state.party.roster[id], node);
   const raise = () => ctx.game.raiseTalent(id, node).ok;
   const r = clicked ? clickSpend(talentView.spend, node, moveTalent, can, raise, ctx.sfx) : pressSpend(talentView.spend, node, can, raise, ctx.sfx);
-  talentView.msg = r === 'armed' ? t.pending : r === 'raised' ? '' : r === 'failed' ? t.failed : t.reason[r.refused];
+  talentView.msg = r === 'armed' ? t.pending : r === 'raised' ? '' : r === 'failed' ? t.failed : talentReason(r.refused, id);
 }
 
 /** The notes under the board for the cursor's node: its bonus per rank and what it gives now, or the keystone's effect. */
@@ -556,7 +563,7 @@ function talentNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
       el('span', { class: 'slx-talent-info-name', text: name }),
       el('span', { text: key ? t.keystone : t.row(n.row + 1) }),
       el('span', { text: T.ui2.status.rank(rank, n.maxRank) }),
-      el('span', { class: 'slx-talent-state', text: why ? t.reason[why] : t.open }),
+      el('span', { class: 'slx-talent-state', text: why ? talentReason(why, id) : t.open }),
     ]),
     key
       ? el('p', { class: 'slx-desc', text: key.desc })
@@ -611,13 +618,13 @@ const talent: StatusTab = {
     // The board scrolls on its own above the fixed notes, with ▲/▼ cues; a redraw keeps where it was (see `shown`).
     const board = el('div', { class: 'slx-talent-board' }, [
       ...rows,
-      el('h5', { class: 'slx-talent-keys-head', text: t.keysHead }),
+      el('h5', { class: 'slx-talent-keys-head', text: t.keysHead(rulesOf(m.id).maxKeystones) }),
       el('div', { class: 'slx-talent-keys' }, BOARDS[id].filter((n) => n.keystone).map(cell)),
     ]);
     return el('div', { class: 'slx-tab-talent' }, [
       el('div', { class: 'slx-talent-top' }, [
         el('span', { class: 'slx-talent-left', text: t.left(talentPointsLeft(m)) }),
-        el('span', { class: 'slx-talent-count', text: t.keystones(keystonesOf(m).length) }),
+        el('span', { class: 'slx-talent-count', text: t.keystones(keystonesOf(m).length, rulesOf(m.id).maxKeystones) }),
         el('span', { class: 'slx-talent-gate', text: t.board(boardPoints(id, held)) }),
       ]),
       cueFrame('slx-talent-frame', board, (top) => { talentView.top = top; }),

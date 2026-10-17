@@ -4,7 +4,8 @@ import { SKILLS } from '../data/skills';
 import {
   BOARDS, DEFAULT_KEYSTONES, TALENT_NODES, TALENT_PER, TALENT_SCALE, boardPoints, keystoneCount, rankOf, talentBlocker, type KeystoneId, type TalentBlocker,
 } from '../data/talents';
-import type { AnyStat, CharacterId, Member, Sheet } from './types';
+import { rulesOf } from '../data/characters';
+import type { AnyStat, CharacterId, GrowthRules, Member, Sheet } from './types';
 import { stackMods } from './skills';
 
 /**
@@ -12,15 +13,23 @@ import { stackMods } from './skills';
  * The data and its rules are described in data/trees.ts; this file is the only place that applies them.
  */
 
-/** Skill points earned by `level`: one per level up to Lv4, then one on every odd level (5, 7, ... 49). Lv50 is 26. */
-export function skillPoints(level: number): number {
+/**
+ * Skill points earned by `level`. Companion curve: one per level up to Lv4, then one on every odd level (5, 7, ... 49), so
+ * Lv50 is 26. Hero curve: one per level plus one every second level, (L - 1) + floor((L - 1) / 2), so Lv50 is 73.
+ */
+export function skillPoints(level: number, curve: GrowthRules['curve'] = 'companion'): number {
   if (!(level > 1)) return 0;
+  if (curve === 'hero') return (level - 1) + Math.floor((level - 1) / 2);
   return level <= 4 ? level - 1 : 3 + Math.floor((level - 3) / 2);
 }
 
-/** Talent points earned by `level`: one on every even level from Lv6 (6, 8, ... 50). Lv50 is 23. */
-export function talentPoints(level: number): number {
-  return level < 6 || !Number.isFinite(level) ? 0 : Math.floor((level - 4) / 2);
+/**
+ * Talent points earned by `level`. Companion curve: one on every even level from Lv6 (6, 8, ... 50), so Lv50 is 23.
+ * Hero curve: one on every level from Lv6, max(0, L - 5), so Lv50 is 45.
+ */
+export function talentPoints(level: number, curve: GrowthRules['curve'] = 'companion'): number {
+  if (level < 6 || !Number.isFinite(level)) return 0;
+  return curve === 'hero' ? level - 5 : Math.floor((level - 4) / 2);
 }
 
 /**
@@ -111,7 +120,7 @@ function ranksHeld(id: CharacterId, tree: unknown): number {
   return n;
 }
 
-const pointsLeft = (id: CharacterId, level: number, tree: unknown): number => skillPoints(level) - (ranksHeld(id, tree) - 1);
+const pointsLeft = (id: CharacterId, level: number, tree: unknown): number => skillPoints(level, rulesOf(id).curve) - (ranksHeld(id, tree) - 1);
 
 export const skillPointsLeft = (m: Member): number => pointsLeft(m.id, m.level, m.tree);
 
@@ -125,7 +134,7 @@ function check(id: CharacterId, level: number, tree: unknown, node: string): Rai
   for (let t = 0; t < info.tier; t++) below += rankIn(tree, branch[t].id);
   if (info.branch === 0 && info.tier > 0) below -= Math.min(1, rankIn(tree, branch[0].id));
   if (below < TIER_GATE[info.tier]) return 'gate';
-  if (info.tier === 4 && TREES[id].branches.some((b) => b.nodes[4].id !== node && rankIn(tree, b.nodes[4].id) > 0)) return 'capstone';
+  if (info.tier === 4 && TREES[id].branches.filter((b) => b.nodes[4].id !== node && rankIn(tree, b.nodes[4].id) > 0).length >= rulesOf(id).capstones) return 'capstone';
   if (pointsLeft(id, level, tree) <= 0) return 'points';
   return null;
 }
@@ -165,8 +174,9 @@ export function defaultTree(id: CharacterId, level: number): Record<string, numb
   const byOld = (a: (typeof nodes)[number], b: (typeof nodes)[number]) =>
     LEGACY_LEARN_LEVEL[a.node.id] - LEGACY_LEARN_LEVEL[b.node.id] || order(a, b);
 
+  const curve = rulesOf(id).curve;
   for (let L = 2; L <= level; L++) {
-    for (let p = skillPoints(L) - skillPoints(L - 1); p > 0; p--) {
+    for (let p = skillPoints(L, curve) - skillPoints(L - 1, curve); p > 0; p--) {
       const unlearnedOld = nodes.filter((x) => legacy(x.node) && rankIn(tree, x.node.id) === 0);
       const due = unlearnedOld.filter((x) => legacyDue(x.node.id) <= L).sort(byOld);
       const upgrades = nodes.filter((x) => x.node.kind === 'active'
@@ -205,7 +215,7 @@ const talentsOf = (m: Member): Record<string, number> =>
 /** Talent points earned and not spent; ranks on other boards, unknown ids and junk ranks are not spent points. */
 export function talentPointsLeft(m: Member): number {
   const t = talentsOf(m);
-  return talentPoints(m.level) - boardPoints(m.id, t) - keystoneCount(m.id, t);
+  return talentPoints(m.level, rulesOf(m.id).curve) - boardPoints(m.id, t) - keystoneCount(m.id, t);
 }
 
 /** Why `node` cannot take its next rank, checked in the order of TalentFail; null when it can. Never throws. */
@@ -249,7 +259,7 @@ export function defaultTalents(id: CharacterId, level: number): Record<string, n
   const t: Record<string, number> = {};
   const keystones = DEFAULT_KEYSTONES[id].map((k) => BOARDS[id].find((n) => n.keystone === k)!);
   const normal = BOARDS[id].filter((n) => !n.keystone);
-  for (let p = talentPoints(level); p > 0; p--) {
+  for (let p = talentPoints(level, rulesOf(id).curve); p > 0; p--) {
     const pick = keystones.find((n) => talentBlocker(id, n.id, t) === null)
       ?? normal.filter((n) => talentBlocker(id, n.id, t) === null)
         .sort((a, b) => rankOf(a, t) - rankOf(b, t) || a.row - b.row || a.col - b.col)[0];

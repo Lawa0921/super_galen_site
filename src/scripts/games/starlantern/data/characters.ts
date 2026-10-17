@@ -1,8 +1,11 @@
-import type { CharacterDef, CharacterId } from '../engine/types';
+import type { CharacterDef, CharacterId, GrowthRules } from '../engine/types';
 
 export const CHARACTER_IDS: CharacterId[] = ['noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby'];
 
 const s = (hp: number, tp: number, atk: number, def: number, mag: number, res: number, spd: number) => ({ hp, tp, atk, def, mag, res, spd });
+
+/** The growth rules every character follows unless its CharacterDef.rules says otherwise. */
+export const DEFAULT_RULES: GrowthRules = { curve: 'companion', branches: 3, capstones: 1, boardCols: 4, maxKeystones: 2 };
 
 export const CHARACTERS: Record<CharacterId, CharacterDef> = {
   noel: { id: 'noel', title: '見習魔女', name: '諾艾兒', row: 'back', melee: false,
@@ -22,3 +25,6 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
   bobby: { id: 'bobby', title: '技師', name: '波比', row: 'back', melee: false,
     base: s(32, 22, 9, 8, 10, 8, 8), growth: s(5, 3, 1, 1, 2, 1, 1), affinity: 'int' },
 };
+
+/** The growth rules of `id`: DEFAULT_RULES with the character's own overrides on top. */
+export const rulesOf = (id: CharacterId): GrowthRules => ({ ...DEFAULT_RULES, ...CHARACTERS[id].rules });
