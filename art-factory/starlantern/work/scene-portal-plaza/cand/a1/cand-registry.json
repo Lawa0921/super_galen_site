@@ -1,0 +1,19 @@
+{
+  "assets": {
+    "scene-portal-plaza": {
+      "final": "art-factory/starlantern/work/scene-portal-plaza/cand/a1/scene-portal-plaza.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-portal-plaza\\scene-portal-plaza-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 15.78615154908548,
+        "block": 4.0,
+        "size": [
+          418,
+          235
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

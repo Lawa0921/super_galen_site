@@ -1,0 +1,19 @@
+{
+  "assets": {
+    "portal-card-iron": {
+      "final": "art-factory/starlantern/work/portal-card-iron/cand/a1/portal-card-iron.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-iron\\portal-card-iron-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 51.69402356902357,
+        "block": 8.911,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

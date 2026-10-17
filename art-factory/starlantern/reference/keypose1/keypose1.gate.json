@@ -1,0 +1,20 @@
+{
+  "pass": true,
+  "reasons": [],
+  "bbox": [
+    15,
+    154,
+    2158,
+    646
+  ],
+  "block_x": 40.04999999999987,
+  "block_y": 60.6999999999998,
+  "art_height": 8,
+  "art_width": 54,
+  "coherence": [
+    0.14973914245124614,
+    0.3018899193873014
+  ],
+  "touches_edge": false,
+  "magenta": "keypose1-magenta.png"
+}

@@ -1,0 +1,19 @@
+{
+  "assets": {
+    "portal-card-storm": {
+      "final": "art-factory/starlantern/work/portal-card-storm/cand/a2/portal-card-storm.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-storm\\portal-card-storm-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 39.16826599326599,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

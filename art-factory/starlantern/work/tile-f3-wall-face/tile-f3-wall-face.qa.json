@@ -1,0 +1,40 @@
+{
+  "raw_seam": {
+    "x": {
+      "seam": 19.844,
+      "interior": 12.167,
+      "ratio": 1.631
+    }
+  },
+  "seamless_fix": "overlap-cut",
+  "fixed_axes": "x",
+  "cut": {
+    "x": {
+      "overlap": 6,
+      "cut_ratio": 0.316
+    }
+  },
+  "seam": {
+    "x": {
+      "seam": 11.559,
+      "interior": 11.059,
+      "ratio": 1.045
+    }
+  },
+  "frame": {
+    "x": 0.935
+  },
+  "reasons": [],
+  "top_join": {
+    "seam": 14.796,
+    "interior": 20.546,
+    "ratio": 0.72
+  },
+  "pass": true,
+  "size": [
+    62,
+    62
+  ],
+  "block": 20.226,
+  "wrap": "x"
+}

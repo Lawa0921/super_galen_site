@@ -1,0 +1,5657 @@
+{
+  "assets": {
+    "char-noel-standee": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/noel-standee.png",
+      "final": "art-factory/starlantern/work/char-noel-standee/char-noel-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-standee\\char-noel-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 18,
+        "block": 5,
+        "size": [
+          148,
+          256
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "char-noel-portrait": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/noel-portrait.png",
+      "final": "art-factory/starlantern/work/char-noel-portrait/char-noel-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait\\char-noel-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "block": 10,
+        "size": [
+          118,
+          119
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-chizuru-standee": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/chizuru-standee.png",
+      "final": "art-factory/starlantern/work/char-chizuru-standee/char-chizuru-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-standee\\char-chizuru-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 18,
+        "block": 5,
+        "size": [
+          159,
+          282
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "char-chizuru-portrait": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait.png",
+      "final": "art-factory/starlantern/work/char-chizuru-portrait/char-chizuru-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait\\char-chizuru-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 13,
+        "block": 9,
+        "size": [
+          127,
+          123
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-liz-standee": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/liz-standee.png",
+      "final": "art-factory/starlantern/work/char-liz-standee/char-liz-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-standee\\char-liz-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 8,
+        "block": 5,
+        "size": [
+          156,
+          284
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "char-liz-portrait": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/liz-portrait.png",
+      "final": "art-factory/starlantern/work/char-liz-portrait/char-liz-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait\\char-liz-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          102,
+          121
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-sylvie-standee": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/sylvie-standee.png",
+      "final": "art-factory/starlantern/work/char-sylvie-standee/char-sylvie-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-standee\\char-sylvie-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 5,
+        "size": [
+          160,
+          278
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "char-sylvie-portrait": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait.png",
+      "final": "art-factory/starlantern/work/char-sylvie-portrait/char-sylvie-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait\\char-sylvie-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-scarlet-standee": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/scarlet-standee.png",
+      "final": "art-factory/starlantern/work/char-scarlet-standee/char-scarlet-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-standee\\char-scarlet-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "block": 5,
+        "size": [
+          158,
+          283
+        ]
+      },
+      "allow_holes": 3,
+      "notes": "3 enclosed pockets are magenta gaps between hair strands at raw (603,55),(698,110),(743,475); checked visually"
+    },
+    "char-scarlet-portrait": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait.png",
+      "final": "art-factory/starlantern/work/char-scarlet-portrait/char-scarlet-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait\\char-scarlet-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          108,
+          115
+        ]
+      },
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-selene-standee": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/selene-standee.png",
+      "final": "art-factory/starlantern/work/char-selene-standee/char-selene-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-standee\\char-selene-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 1,
+        "semi": 0,
+        "edge": 0,
+        "holes": 31,
+        "block": 5,
+        "size": [
+          161,
+          279
+        ]
+      },
+      "allow_residue": 1,
+      "notes": "1 in-palette pink pixel (231,89,172) at art (45,69) inside the face, surrounded by skin; checked visually",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "char-selene-portrait": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/selene-portrait.png",
+      "final": "art-factory/starlantern/work/char-selene-portrait/char-selene-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait\\char-selene-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 11,
+        "block": 10,
+        "size": [
+          123,
+          114
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-safira-standee": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/safira-standee.png",
+      "final": "art-factory/starlantern/work/char-safira-standee/char-safira-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-standee\\char-safira-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 35,
+        "block": 5,
+        "size": [
+          196,
+          269
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "char-safira-portrait": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/safira-portrait.png",
+      "final": "art-factory/starlantern/work/char-safira-portrait/char-safira-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait\\char-safira-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 9,
+        "size": [
+          121,
+          122
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-bobby-standee": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/bobby-standee.png",
+      "final": "art-factory/starlantern/work/char-bobby-standee/char-bobby-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-standee\\char-bobby-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 11,
+        "block": 5,
+        "size": [
+          160,
+          280
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "char-bobby-portrait": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait.png",
+      "final": "art-factory/starlantern/work/char-bobby-portrait/char-bobby-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait\\char-bobby-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "map-party-up": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/map/party-up.png",
+      "final": "art-factory/starlantern/work/map-party-up/map-party-up.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-map-party\\sheet-map-party-a1-frames\\0.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 10,
+        "size": [
+          24,
+          35
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "map-party-down": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/map/party-down.png",
+      "final": "art-factory/starlantern/work/map-party-down/map-party-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-map-party\\sheet-map-party-a1-frames\\1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 10,
+        "size": [
+          24,
+          35
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "map-party-left": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/map/party-left.png",
+      "final": "art-factory/starlantern/work/map-party-left/map-party-left.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-map-party\\sheet-map-party-a1-frames\\2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 10,
+        "size": [
+          23,
+          35
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "map-party-right": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/map/party-right.png",
+      "final": "art-factory/starlantern/work/map-party-right/map-party-right.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-map-party\\sheet-map-party-a1-frames\\3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 10,
+        "size": [
+          23,
+          35
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "sheet-tiles-f1": {
+      "kind": "tile-sheet",
+      "status": "processed",
+      "parts": [
+        "tile-f1-wall",
+        "tile-f1-floor",
+        "tile-f1-door",
+        "tile-f1-up",
+        "tile-f1-down",
+        "tile-f1-chest",
+        "tile-f1-chest-open",
+        "tile-f1-entrance",
+        "tile-f1-boss"
+      ],
+      "cols": 3,
+      "rows": 3,
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png"
+    },
+    "tile-f1-wall": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f1-wall.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-wall.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 27.25,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
+    },
+    "tile-f1-floor": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f1-floor.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-floor.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 31.0,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
+    },
+    "tile-f1-door": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f1-door.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-door.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 56.83870967741936,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
+    },
+    "tile-f1-up": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f1-up.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-up.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 20.922043010752688,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
+    },
+    "tile-f1-down": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f1-down.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 37.14784946236559,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
+    },
+    "tile-f1-chest": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f1-chest.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-chest.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 26.768817204301076,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
+    },
+    "tile-f1-chest-open": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f1-chest-open.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-chest-open.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 27.091397849462368,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
+    },
+    "tile-f1-entrance": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f1-entrance.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-entrance.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 27.282258064516128,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
+    },
+    "tile-f1-boss": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f1-boss.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-boss.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 48.674731182795696,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
+    },
+    "bg-f1": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/bg/f1.png",
+      "final": "art-factory/starlantern/work/bg-f1/bg-f1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\bg-f1\\bg-f1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 37.89913977399979,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      }
+    },
+    "sheet-tiles-f2": {
+      "kind": "tile-sheet",
+      "status": "processed",
+      "parts": [
+        "tile-f2-wall",
+        "tile-f2-floor",
+        "tile-f2-door",
+        "tile-f2-up",
+        "tile-f2-down",
+        "tile-f2-chest",
+        "tile-f2-chest-open",
+        "tile-f2-entrance",
+        "tile-f2-boss"
+      ],
+      "cols": 3,
+      "rows": 3,
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png"
+    },
+    "tile-f2-wall": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f2-wall.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-wall.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 42.57258064516129,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f2-floor": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f2-floor.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-floor.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 21.95906046183677,
+        "block": 6,
+        "size": [
+          61,
+          62
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f2-door": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f2-door.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-door.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 61.33333333333333,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f2-up": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f2-up.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-up.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 22.196236559139784,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f2-down": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f2-down.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 19.14225277630883,
+        "block": 6,
+        "size": [
+          61,
+          62
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f2-chest": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f2-chest.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-chest.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 13.54032258064516,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f2-chest-open": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f2-chest-open.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-chest-open.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 17.478494623655916,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f2-entrance": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f2-entrance.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-entrance.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 17.683853340384275,
+        "block": 6,
+        "size": [
+          61,
+          62
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f2-boss": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f2-boss.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-boss.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 51.49731182795699,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "bg-f2": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/bg/f2.png",
+      "final": "art-factory/starlantern/work/bg-f2/bg-f2.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\bg-f2\\bg-f2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 25.467099324714106,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "sheet-tiles-f3": {
+      "kind": "tile-sheet",
+      "status": "processed",
+      "parts": [
+        "tile-f3-wall",
+        "tile-f3-floor",
+        "tile-f3-door",
+        "tile-f3-up",
+        "tile-f3-down",
+        "tile-f3-chest",
+        "tile-f3-chest-open",
+        "tile-f3-entrance",
+        "tile-f3-boss"
+      ],
+      "cols": 3,
+      "rows": 3,
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png"
+    },
+    "tile-f3-wall": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f3-wall.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-wall.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 30.56720430107527,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f3-floor": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f3-floor.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-floor.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 14.279217345319935,
+        "block": 6,
+        "size": [
+          61,
+          62
+        ]
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f3-door": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f3-door.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-door.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 63.59139784946237,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f3-up": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f3-up.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-up.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 12.099462365591398,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f3-down": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f3-down.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 14.83029261413714,
+        "block": 6,
+        "size": [
+          61,
+          62
+        ]
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f3-chest": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f3-chest.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-chest.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 15.362903225806452,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f3-chest-open": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f3-chest-open.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-chest-open.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 14.56989247311828,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f3-entrance": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f3-entrance.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-entrance.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 16.2441829719725,
+        "block": 6,
+        "size": [
+          61,
+          62
+        ]
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "tile-f3-boss": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f3-boss.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-boss.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 60.68817204301075,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "bg-f3": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/bg/f3.png",
+      "final": "art-factory/starlantern/work/bg-f3/bg-f3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\bg-f3\\bg-f3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 13.753729342699106,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "enemy-slime": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/enemy/slime.png",
+      "final": "art-factory/starlantern/work/enemy-slime/enemy-slime.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-slime\\enemy-slime-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 12,
+        "size": [
+          53,
+          53
+        ]
+      }
+    },
+    "enemy-bat": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/enemy/bat.png",
+      "final": "art-factory/starlantern/work/enemy-bat/enemy-bat.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-bat\\enemy-bat-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          119,
+          65
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "enemy-wolf": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/enemy/wolf.png",
+      "final": "art-factory/starlantern/work/enemy-wolf/enemy-wolf.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-wolf\\enemy-wolf-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 16,
+        "size": [
+          55,
+          67
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "enemy-beetle": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/enemy/beetle.png",
+      "final": "art-factory/starlantern/work/enemy-beetle/enemy-beetle.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-beetle\\enemy-beetle-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 12,
+        "size": [
+          78,
+          65
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "enemy-wisp": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/enemy/wisp.png",
+      "final": "art-factory/starlantern/work/enemy-wisp/enemy-wisp.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-wisp\\enemy-wisp-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 13,
+        "size": [
+          50,
+          65
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "enemy-lizard": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/enemy/lizard.png",
+      "final": "art-factory/starlantern/work/enemy-lizard/enemy-lizard.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-lizard\\enemy-lizard-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 12,
+        "size": [
+          76,
+          68
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "enemy-golem": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/enemy/golem.png",
+      "final": "art-factory/starlantern/work/enemy-golem/enemy-golem.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-golem\\enemy-golem-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 13,
+        "size": [
+          72,
+          67
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "enemy-shade": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/enemy/shade.png",
+      "final": "art-factory/starlantern/work/enemy-shade/enemy-shade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-shade\\enemy-shade-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 18,
+        "size": [
+          39,
+          68
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "enemy-lanterneater": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/enemy/lanterneater.png",
+      "final": "art-factory/starlantern/work/enemy-lanterneater/enemy-lanterneater.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-lanterneater\\enemy-lanterneater-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 8,
+        "size": [
+          147,
+          154
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "fx-slash": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/slash.png",
+      "final": "art-factory/starlantern/work/fx-slash/fx-slash.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-slash\\fx-slash-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 14,
+        "size": [
+          58,
+          65
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "fx-pierce": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/pierce.png",
+      "final": "art-factory/starlantern/work/fx-pierce/fx-pierce.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-pierce\\fx-pierce-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          263,
+          62
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "fx-strike": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/strike.png",
+      "final": "art-factory/starlantern/work/fx-strike/fx-strike.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-strike\\fx-strike-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 10,
+        "size": [
+          62,
+          65
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "fx-fire": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/fire.png",
+      "final": "art-factory/starlantern/work/fx-fire/fx-fire.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-fire\\fx-fire-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 14,
+        "size": [
+          62,
+          67
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "fx-ice": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/ice.png",
+      "final": "art-factory/starlantern/work/fx-ice/fx-ice.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-ice\\fx-ice-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 14,
+        "size": [
+          56,
+          64
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "fx-thunder": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/thunder.png",
+      "final": "art-factory/starlantern/work/fx-thunder/fx-thunder.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-thunder\\fx-thunder-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 17,
+        "size": [
+          26,
+          67
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "fx-heal": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/heal.png",
+      "final": "art-factory/starlantern/work/fx-heal/fx-heal.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-heal\\fx-heal-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 14,
+        "size": [
+          25,
+          65
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "fx-buff": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/buff.png",
+      "final": "art-factory/starlantern/work/fx-buff/fx-buff.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-buff\\fx-buff-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 12,
+        "size": [
+          46,
+          66
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "ui-frame": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/ui/frame.png",
+      "final": "art-factory/starlantern/work/ui-frame/ui-frame.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\ui-frame\\ui-frame-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 3.7339181286549707,
+        "block": 11,
+        "size": [
+          114,
+          114
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-fire-star": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/fire-star.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-fire-star.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-ice-star": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/ice-star.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-ice-star.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          33,
+          34
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-hex": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/hex.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-hex.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 25,
+        "block": 8,
+        "size": [
+          31,
+          34
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-thunder-star": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/thunder-star.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-thunder-star.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          35,
+          35
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-sweep": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/sweep.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-sweep.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "block": 7,
+        "size": [
+          36,
+          33
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-ward": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/ward.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-ward.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 7,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-pierce": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/pierce.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-pierce.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 5,
+        "size": [
+          52,
+          35
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-twin-slash": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/twin-slash.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-twin-slash.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          33,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-stealth": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/stealth.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-stealth.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "block": 7,
+        "size": [
+          38,
+          34
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-treasure-sense": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/treasure-sense.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-treasure-sense.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          40,
+          37
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-triple-slash": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/triple-slash.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-triple-slash.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          36,
+          35
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-aimed-shot": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/aimed-shot.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-aimed-shot.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          45,
+          36
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-pin-shot": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/pin-shot.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-pin-shot.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          38,
+          33
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-arrow-rain": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/arrow-rain.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-arrow-rain.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 7,
+        "size": [
+          36,
+          36
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-provoke": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/provoke.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-provoke.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 7,
+        "size": [
+          36,
+          35
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-flame-burst": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/flame-burst.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-flame-burst.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          32,
+          34
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-iron-wall": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/iron-wall.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-iron-wall.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          23,
+          34
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-moonlight": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/moonlight.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-moonlight.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "block": 8,
+        "size": [
+          32,
+          34
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-cleanse": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/cleanse.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-cleanse.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 7,
+        "size": [
+          32,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-dream": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/dream.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-dream.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          37,
+          34
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-rebirth": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/rebirth.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-rebirth.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          29,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-blade-dance": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/blade-dance.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-blade-dance.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 11,
+        "block": 7,
+        "size": [
+          32,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-war-dance": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/war-dance.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-war-dance.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          33,
+          33
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-mirage": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/mirage.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-mirage.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 6,
+        "size": [
+          36,
+          34
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-turret": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/turret.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-turret.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          36,
+          34
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-tinker": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/tinker.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-tinker.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 6,
+        "size": [
+          37,
+          37
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-barrier": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/barrier.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-barrier.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          29,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-potion": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/potion.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-potion.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          24,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-ether": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/ether.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-ether.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          25,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-antidote": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/antidote.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-antidote.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          26,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-phoenix": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/phoenix.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-phoenix.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 7,
+        "size": [
+          29,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-return-lamp": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/return-lamp.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-return-lamp.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 7,
+        "size": [
+          21,
+          35
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-moss": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/moss.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-moss.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          40,
+          36
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-bat-wing": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/bat-wing.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-bat-wing.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          31,
+          33
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-thorn-fang": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/thorn-fang.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-thorn-fang.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          29,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-crystal-shell": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/crystal-shell.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-crystal-shell.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          33,
+          37
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-ice-crystal": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/ice-crystal.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-ice-crystal.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          27,
+          33
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-lizard-scale": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/lizard-scale.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-lizard-scale.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          30,
+          37
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-star-stone": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/star-stone.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-star-stone.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "block": 7,
+        "size": [
+          29,
+          33
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-dusk-cloth": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/dusk-cloth.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-dusk-cloth.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          40,
+          36
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-old-coin": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/old-coin.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-old-coin.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 5,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-ancient-gear": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/ancient-gear.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-ancient-gear.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          32,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-wooden-staff": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/wooden-staff.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-wooden-staff.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          28,
+          34
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-iron-sword": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/iron-sword.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-iron-sword.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          35,
+          37
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-hunter-bow": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/hunter-bow.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-hunter-bow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          28,
+          33
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-thorn-spear": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/thorn-spear.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-thorn-spear.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          26,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-crystal-blade": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/crystal-blade.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-crystal-blade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          30,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-frost-staff": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/frost-staff.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-frost-staff.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          20,
+          33
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-star-saber": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/star-saber.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-star-saber.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          32,
+          35
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-cloth-robe": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/cloth-robe.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-cloth-robe.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          26,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-leather-vest": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/leather-vest.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-leather-vest.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          32,
+          33
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-scale-mail": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/scale-mail.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-scale-mail.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          32,
+          32
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-dusk-mantle": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/dusk-mantle.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-dusk-mantle.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 7,
+        "size": [
+          31,
+          34
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-moss-charm": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/moss-charm.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-moss-charm.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          27,
+          33
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-bat-earring": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/bat-earring.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-bat-earring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 9,
+        "block": 5,
+        "size": [
+          30,
+          36
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-crystal-pendant": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/crystal-pendant.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-crystal-pendant.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          26,
+          33
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "icon-gear-ring": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/icon/gear-ring.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-gear-ring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 6,
+        "size": [
+          30,
+          31
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "sheet-icons-1": {
+      "kind": "icon-sheet",
+      "status": "processed",
+      "parts": [
+        "icon-fire-star",
+        "icon-ice-star",
+        "icon-hex",
+        "icon-thunder-star",
+        "icon-sweep",
+        "icon-ward",
+        "icon-pierce",
+        "icon-twin-slash",
+        "icon-stealth",
+        "icon-treasure-sense",
+        "icon-triple-slash",
+        "icon-aimed-shot",
+        "icon-pin-shot",
+        "icon-arrow-rain",
+        "icon-provoke",
+        "icon-flame-burst",
+        "icon-iron-wall",
+        "icon-moonlight",
+        "icon-cleanse",
+        "icon-dream"
+      ],
+      "cols": 5,
+      "rows": 4,
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png"
+    },
+    "sheet-icons-2": {
+      "kind": "icon-sheet",
+      "status": "processed",
+      "parts": [
+        "icon-rebirth",
+        "icon-blade-dance",
+        "icon-war-dance",
+        "icon-mirage",
+        "icon-turret",
+        "icon-tinker",
+        "icon-barrier",
+        "icon-potion",
+        "icon-ether",
+        "icon-antidote",
+        "icon-phoenix",
+        "icon-return-lamp",
+        "icon-moss",
+        "icon-bat-wing",
+        "icon-thorn-fang",
+        "icon-crystal-shell",
+        "icon-ice-crystal",
+        "icon-lizard-scale",
+        "icon-star-stone",
+        "icon-dusk-cloth"
+      ],
+      "cols": 5,
+      "rows": 4,
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png"
+    },
+    "sheet-icons-3": {
+      "kind": "icon-sheet",
+      "status": "processed",
+      "parts": [
+        "icon-old-coin",
+        "icon-ancient-gear",
+        "icon-wooden-staff",
+        "icon-iron-sword",
+        "icon-hunter-bow",
+        "icon-thorn-spear",
+        "icon-crystal-blade",
+        "icon-frost-staff",
+        "icon-star-saber",
+        "icon-cloth-robe",
+        "icon-leather-vest",
+        "icon-scale-mail",
+        "icon-dusk-mantle",
+        "icon-moss-charm",
+        "icon-bat-earring",
+        "icon-crystal-pendant",
+        "icon-gear-ring"
+      ],
+      "cols": 5,
+      "rows": 4,
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png"
+    },
+    "map-fog": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/map/fog.png",
+      "final": "art-factory/starlantern/work/map-fog/map-fog.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\map-fog\\map-fog-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 1.8955342902711325,
+        "block": 6,
+        "size": [
+          209,
+          209
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+    },
+    "char-noel-portrait-hit": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-hit.png",
+      "final": "art-factory/starlantern/work/char-noel-portrait-hit/char-noel-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-hit\\char-noel-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 10,
+        "size": [
+          118,
+          119
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-chizuru-portrait-hit": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-hit.png",
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-hit/char-chizuru-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-hit\\char-chizuru-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "block": 10,
+        "size": [
+          115,
+          111
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-liz-portrait-hit": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-hit.png",
+      "final": "art-factory/starlantern/work/char-liz-portrait-hit/char-liz-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-hit\\char-liz-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          103,
+          121
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-sylvie-portrait-hit": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-hit.png",
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-hit/char-sylvie-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-hit\\char-sylvie-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-scarlet-portrait-hit": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-hit.png",
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-hit/char-scarlet-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-hit\\char-scarlet-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 11,
+        "size": [
+          107,
+          114
+        ]
+      },
+      "allow_holes": 1,
+      "notes": "1 pocket at raw (562,203) is dark magenta (187,1,179) between hair strands; checked visually; block forced to 11 to match the normal portrait",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-selene-portrait-hit": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-hit.png",
+      "final": "art-factory/starlantern/work/char-selene-portrait-hit/char-selene-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-hit\\char-selene-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 10,
+        "size": [
+          123,
+          114
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-safira-portrait-hit": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-hit.png",
+      "final": "art-factory/starlantern/work/char-safira-portrait-hit/char-safira-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-hit\\char-safira-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 9,
+        "size": [
+          121,
+          122
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-bobby-portrait-hit": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-hit.png",
+      "final": "art-factory/starlantern/work/char-bobby-portrait-hit/char-bobby-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-hit\\char-bobby-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 11,
+        "size": [
+          112,
+          112
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-noel-portrait-attack": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-noel-portrait-attack/char-noel-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-attack\\char-noel-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          122,
+          119
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom",
+        "left"
+      ],
+      "notes": "bust shoulder/robe meets the left edge near the bottom corner; head and weapon intact; checked visually"
+    },
+    "char-noel-portrait-dying": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-noel-portrait-dying/char-noel-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-dying\\char-noel-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 10,
+        "size": [
+          118,
+          119
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-noel-portrait-down": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-noel-portrait-down/char-noel-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-down\\char-noel-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 10,
+        "size": [
+          117,
+          117
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-noel-portrait-ultimate": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-noel-portrait-ultimate/char-noel-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-ultimate\\char-noel-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 1,
+        "semi": 0,
+        "edge": 0,
+        "holes": 66,
+        "block": 10,
+        "size": [
+          123,
+          120
+        ]
+      },
+      "allow_residue": 1,
+      "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-chizuru-portrait-attack": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-attack/char-chizuru-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-attack\\char-chizuru-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 9,
+        "block": 10,
+        "size": [
+          125,
+          111
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-chizuru-portrait-dying": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-dying/char-chizuru-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-dying\\char-chizuru-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 12,
+        "block": 9,
+        "size": [
+          127,
+          123
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-chizuru-portrait-down": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-down/char-chizuru-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-down\\char-chizuru-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 18,
+        "block": 9,
+        "size": [
+          128,
+          123
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-chizuru-portrait-ultimate": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-ultimate/char-chizuru-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-ultimate\\char-chizuru-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 1,
+        "semi": 0,
+        "edge": 0,
+        "holes": 50,
+        "block": 10,
+        "size": [
+          122,
+          116
+        ]
+      },
+      "allow_residue": 1,
+      "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-liz-portrait-attack": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-liz-portrait-attack/char-liz-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-attack\\char-liz-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 10,
+        "size": [
+          115,
+          121
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom",
+        "right"
+      ],
+      "notes": "bust shoulder/robe meets the right edge near the bottom corner; head and weapon intact; checked visually"
+    },
+    "char-liz-portrait-dying": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-liz-portrait-dying/char-liz-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-dying\\char-liz-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 10,
+        "size": [
+          102,
+          121
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-liz-portrait-down": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-liz-portrait-down/char-liz-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-down\\char-liz-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 10,
+        "size": [
+          111,
+          120
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-liz-portrait-ultimate": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-liz-portrait-ultimate/char-liz-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-ultimate\\char-liz-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 34,
+        "block": 10,
+        "size": [
+          122,
+          122
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-sylvie-portrait-attack": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-attack/char-sylvie-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-attack\\char-sylvie-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 10,
+        "size": [
+          124,
+          120
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-sylvie-portrait-dying": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-dying/char-sylvie-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-dying\\char-sylvie-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-sylvie-portrait-down": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-down/char-sylvie-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-down\\char-sylvie-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          122,
+          119
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-sylvie-portrait-ultimate": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-ultimate/char-sylvie-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-ultimate\\char-sylvie-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 35,
+        "block": 10,
+        "size": [
+          125,
+          120
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-scarlet-portrait-attack": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-attack/char-scarlet-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-attack\\char-scarlet-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 11,
+        "size": [
+          113,
+          115
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-scarlet-portrait-dying": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-dying/char-scarlet-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-dying\\char-scarlet-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          108,
+          115
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-scarlet-portrait-down": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-down/char-scarlet-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-down\\char-scarlet-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 11,
+        "size": [
+          103,
+          114
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-scarlet-portrait-ultimate": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-ultimate/char-scarlet-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-ultimate\\char-scarlet-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 13,
+        "block": 11,
+        "size": [
+          114,
+          115
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom",
+        "right"
+      ],
+      "notes": "bust shoulder/robe meets the right edge near the bottom corner; head and weapon intact; checked visually"
+    },
+    "char-selene-portrait-attack": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-selene-portrait-attack/char-selene-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-attack\\char-selene-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 5,
+        "semi": 0,
+        "edge": 0,
+        "holes": 8,
+        "block": 10,
+        "size": [
+          124,
+          114
+        ]
+      },
+      "allow_residue": 5,
+      "notes": "5 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually | bust shoulder/robe meets the right edge near the bottom corner; head and weapon intact; checked visually",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom",
+        "right"
+      ]
+    },
+    "char-selene-portrait-dying": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-selene-portrait-dying/char-selene-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-dying\\char-selene-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "block": 10,
+        "size": [
+          123,
+          114
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-selene-portrait-down": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-selene-portrait-down/char-selene-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-down\\char-selene-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "block": 10,
+        "size": [
+          122,
+          114
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-selene-portrait-ultimate": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-selene-portrait-ultimate/char-selene-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-ultimate\\char-selene-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 1,
+        "semi": 0,
+        "edge": 0,
+        "holes": 239,
+        "block": 10,
+        "size": [
+          123,
+          117
+        ]
+      },
+      "allow_residue": 1,
+      "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-safira-portrait-attack": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-safira-portrait-attack/char-safira-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-attack\\char-safira-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 9,
+        "size": [
+          123,
+          122
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-safira-portrait-dying": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-safira-portrait-dying/char-safira-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-dying\\char-safira-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 9,
+        "size": [
+          121,
+          122
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-safira-portrait-down": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-safira-portrait-down/char-safira-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-down\\char-safira-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "block": 9,
+        "size": [
+          121,
+          121
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-safira-portrait-ultimate": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-safira-portrait-ultimate/char-safira-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-ultimate\\char-safira-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 18,
+        "block": 10,
+        "size": [
+          118,
+          113
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-bobby-portrait-attack": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-bobby-portrait-attack/char-bobby-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-attack\\char-bobby-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 8,
+        "block": 10,
+        "size": [
+          124,
+          119
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-bobby-portrait-dying": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-bobby-portrait-dying/char-bobby-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-dying\\char-bobby-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "block": 10,
+        "size": [
+          123,
+          121
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-bobby-portrait-down": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-bobby-portrait-down/char-bobby-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-down\\char-bobby-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "block": 10,
+        "size": [
+          116,
+          117
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "char-bobby-portrait-ultimate": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-bobby-portrait-ultimate/char-bobby-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-ultimate\\char-bobby-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 60,
+        "block": 11,
+        "size": [
+          114,
+          112
+        ]
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "scene-title": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/scene/title.png",
+      "final": "art-factory/starlantern/work/scene-title/scene-title.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-title\\scene-title-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 51.52585598425464,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
+    },
+    "scene-town": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/scene/town.png",
+      "final": "art-factory/starlantern/work/scene-town/scene-town.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-town\\scene-town-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 36.54744646917099,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
+    },
+    "scene-guild": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/scene/guild.png",
+      "final": "art-factory/starlantern/work/scene-guild/scene-guild.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-guild\\scene-guild-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 19.927198072550816,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
+    },
+    "scene-shop": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/scene/shop.png",
+      "final": "art-factory/starlantern/work/scene-shop/scene-shop.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-shop\\scene-shop-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 18.08790254165394,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      },
+      "approved_by": "user 2026-10-16: 看起來可以"
+    },
+    "scene-inn": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/scene/inn.png",
+      "final": "art-factory/starlantern/work/scene-inn/scene-inn.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-inn\\scene-inn-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 28.252212494485732,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      },
+      "approved_by": "user 2026-10-16: 看起來可以"
+    },
+    "scene-gate": {
+      "kind": "opaque",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/scene/gate.png",
+      "final": "art-factory/starlantern/work/scene-gate/scene-gate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-gate\\scene-gate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 64.79497268315858,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      },
+      "approved_by": "user 2026-10-16: 看起來可以"
+    },
+    "npc-guild": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/npc/guild.png",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/npc-guild/npc-guild.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-guild\\npc-guild-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          131,
+          186
+        ]
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看",
+      "defringe": "strong"
+    },
+    "npc-guild-happy": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/npc/guild-happy.png",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/npc-guild-happy/npc-guild-happy.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-guild-happy\\npc-guild-happy-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 7,
+        "size": [
+          139,
+          185
+        ]
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看",
+      "defringe": "strong"
+    },
+    "npc-shop": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/npc/shop.png",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/npc-shop/npc-shop.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-shop\\npc-shop-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 25,
+        "block": 8,
+        "size": [
+          140,
+          171
+        ]
+      },
+      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw",
+      "approved_by": "user 2026-10-16: 看起來可以"
+    },
+    "npc-shop-happy": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/npc/shop-happy.png",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/npc-shop-happy/npc-shop-happy.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-shop-happy\\npc-shop-happy-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 18,
+        "block": 8,
+        "size": [
+          140,
+          171
+        ]
+      },
+      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw",
+      "approved_by": "user 2026-10-16: 看起來可以"
+    },
+    "npc-inn": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/npc/inn.png",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/npc-inn/npc-inn.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-inn\\npc-inn-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 8,
+        "size": [
+          101,
+          178
+        ]
+      },
+      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw",
+      "approved_by": "user 2026-10-16: 看起來可以"
+    },
+    "npc-inn-happy": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/npc/inn-happy.png",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/npc-inn-happy/npc-inn-happy.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-inn-happy\\npc-inn-happy-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 8,
+        "size": [
+          100,
+          178
+        ]
+      },
+      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw",
+      "approved_by": "user 2026-10-16: 看起來可以"
+    },
+    "npc-gate": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/npc/gate.png",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/npc-gate/npc-gate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-gate\\npc-gate-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          165,
+          188
+        ]
+      },
+      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw",
+      "approved_by": "user 2026-10-16: 看起來可以"
+    },
+    "npc-gate-happy": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/npc/gate-happy.png",
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/npc-gate-happy/npc-gate-happy.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-gate-happy\\npc-gate-happy-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          165,
+          188
+        ]
+      },
+      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw",
+      "approved_by": "user 2026-10-16: 看起來可以"
+    },
+    "ui-logo": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/ui/logo.png",
+      "final": "art-factory/starlantern/work/ui-logo/ui-logo.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\ui-logo\\ui-logo-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 29,
+        "block": 6,
+        "size": [
+          252,
+          90
+        ]
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看",
+      "defringe": "strong"
+    },
+    "ui-window": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/ui/window.png",
+      "allow_edge": [
+        "left",
+        "top",
+        "right",
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/ui-window/ui-window.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\ui-window\\ui-window-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 4,
+        "size": [
+          316,
+          316
+        ]
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看",
+      "defringe": "strong"
+    },
+    "ui-cursor": {
+      "kind": "sprite",
+      "status": "published",
+      "runtime": "/assets/games/starlantern/ui/cursor.png",
+      "final": "art-factory/starlantern/work/ui-cursor/ui-cursor.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\ui-cursor\\ui-cursor-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 15,
+        "size": [
+          14,
+          14
+        ]
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看",
+      "defringe": "strong"
+    },
+    "fx-slash-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        58,
+        63
+      ],
+      "final": "art-factory/starlantern/work/fx-slash-anim/fx-slash-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-slash-anim\\fx-slash-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.1861,
+          0.3697,
+          0.2811
+        ],
+        "block": 8,
+        "size": [
+          232,
+          63
+        ],
+        "frames": 4,
+        "frame_size": [
+          58,
+          63
+        ]
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/slash-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
+    },
+    "fx-pierce-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        158,
+        66
+      ],
+      "final": "art-factory/starlantern/work/fx-pierce-anim/fx-pierce-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-pierce-anim\\fx-pierce-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.2479,
+          0.294,
+          0.1155
+        ],
+        "block": 5,
+        "size": [
+          632,
+          66
+        ],
+        "frames": 4,
+        "frame_size": [
+          158,
+          66
+        ]
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/pierce-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
+    },
+    "fx-strike-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        62,
+        66
+      ],
+      "final": "art-factory/starlantern/work/fx-strike-anim/fx-strike-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-strike-anim\\fx-strike-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.4621,
+          0.5002,
+          0.2532
+        ],
+        "block": 8,
+        "size": [
+          248,
+          66
+        ],
+        "frames": 4,
+        "frame_size": [
+          62,
+          66
+        ]
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/strike-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
+    },
+    "fx-fire-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        69,
+        70
+      ],
+      "final": "art-factory/starlantern/work/fx-fire-anim/fx-fire-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-fire-anim\\fx-fire-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.4369,
+          0.4865,
+          0.3089
+        ],
+        "block": 8,
+        "size": [
+          276,
+          70
+        ],
+        "frames": 4,
+        "frame_size": [
+          69,
+          70
+        ]
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/fire-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
+    },
+    "fx-ice-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        67,
+        68
+      ],
+      "final": "art-factory/starlantern/work/fx-ice-anim/fx-ice-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-ice-anim\\fx-ice-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.4346,
+          0.52,
+          0.2965
+        ],
+        "block": 8,
+        "size": [
+          268,
+          68
+        ],
+        "frames": 4,
+        "frame_size": [
+          67,
+          68
+        ]
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/ice-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
+    },
+    "fx-thunder-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        47,
+        69
+      ],
+      "final": "art-factory/starlantern/work/fx-thunder-anim/fx-thunder-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-thunder-anim\\fx-thunder-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.1779,
+          0.2547,
+          0.1428
+        ],
+        "block": 9,
+        "size": [
+          188,
+          69
+        ],
+        "frames": 4,
+        "frame_size": [
+          47,
+          69
+        ]
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/thunder-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
+    },
+    "fx-heal-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        36,
+        67
+      ],
+      "final": "art-factory/starlantern/work/fx-heal-anim/fx-heal-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-heal-anim\\fx-heal-anim-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 17,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.4225,
+          0.4726,
+          0.2098
+        ],
+        "block": 9,
+        "size": [
+          144,
+          67
+        ],
+        "frames": 4,
+        "frame_size": [
+          36,
+          67
+        ]
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/heal-anim.png",
+      "rejected_attempts": [
+        {
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-heal-anim\\fx-heal-anim-a1.png",
+          "reason": "magenta tint 3 px left after deblend; faded grey-pink speckles (46 tiny holes) read as dirty noise on the dark background",
+          "qa": {
+            "pass": false,
+            "reasons": [
+              "magenta tint"
+            ],
+            "warnings": [
+              "enclosed holes"
+            ],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 46,
+            "per_frame_edge": 0,
+            "blend": 0,
+            "tint": 3,
+            "frame_diff": [
+              0.3579,
+              0.4083,
+              0.2112
+            ],
+            "block": 9,
+            "size": [
+              124,
+              64
+            ],
+            "frames": 4,
+            "frame_size": [
+              31,
+              64
+            ]
+          }
+        }
+      ],
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
+    },
+    "fx-buff-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        50,
+        66
+      ],
+      "final": "art-factory/starlantern/work/fx-buff-anim/fx-buff-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-buff-anim\\fx-buff-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.5206,
+          0.5394,
+          0.3482
+        ],
+        "block": 8,
+        "size": [
+          200,
+          66
+        ],
+        "frames": 4,
+        "frame_size": [
+          50,
+          66
+        ]
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/fx/buff-anim.png",
+      "approved_by": "user 2026-10-16: 都可以 先套用上去"
+    },
+    "tile-f1-wall-top": {
+      "kind": "tile-wrap",
+      "wrap": "xy",
+      "final": "art-factory/starlantern/work/tile-f1-wall-top/tile-f1-wall-top.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\tile-f1-wall-top\\tile-f1-wall-top-a1.png",
+      "qa": {
+        "raw_seam": {
+          "x": {
+            "seam": 20.113,
+            "interior": 23.79,
+            "ratio": 0.845
+          },
+          "y": {
+            "seam": 19.425,
+            "interior": 25.944,
+            "ratio": 0.749
+          }
+        },
+        "seamless_fix": "none",
+        "fixed_axes": "",
+        "cut": {},
+        "seam": {
+          "x": {
+            "seam": 20.113,
+            "interior": 23.79,
+            "ratio": 0.845
+          },
+          "y": {
+            "seam": 19.425,
+            "interior": 25.944,
+            "ratio": 0.749
+          }
+        },
+        "frame": {
+          "x": 1.676,
+          "y": 6.19
+        },
+        "reasons": [],
+        "pass": true,
+        "size": [
+          62,
+          62
+        ],
+        "block": 20.226,
+        "wrap": "xy"
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f1-wall-top.png",
+      "approved_by": "user 2026-10-16: 牆壁你可以拼接讓我看看效果"
+    },
+    "tile-f2-wall-top": {
+      "kind": "tile-wrap",
+      "wrap": "xy",
+      "final": "art-factory/starlantern/work/tile-f2-wall-top/tile-f2-wall-top.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\tile-f2-wall-top\\tile-f2-wall-top-a1.png",
+      "qa": {
+        "raw_seam": {
+          "x": {
+            "seam": 25.14,
+            "interior": 27.489,
+            "ratio": 0.915
+          },
+          "y": {
+            "seam": 16.145,
+            "interior": 23.583,
+            "ratio": 0.685
+          }
+        },
+        "seamless_fix": "none",
+        "fixed_axes": "",
+        "cut": {},
+        "seam": {
+          "x": {
+            "seam": 25.14,
+            "interior": 27.489,
+            "ratio": 0.915
+          },
+          "y": {
+            "seam": 16.145,
+            "interior": 23.583,
+            "ratio": 0.685
+          }
+        },
+        "frame": {
+          "x": 3.005,
+          "y": 4.813
+        },
+        "reasons": [],
+        "pass": true,
+        "size": [
+          62,
+          62
+        ],
+        "block": 20.226,
+        "wrap": "xy"
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f2-wall-top.png",
+      "approved_by": "user 2026-10-16: 牆壁你可以拼接讓我看看效果"
+    },
+    "tile-f3-wall-top": {
+      "kind": "tile-wrap",
+      "wrap": "xy",
+      "final": "art-factory/starlantern/work/tile-f3-wall-top/tile-f3-wall-top.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\tile-f3-wall-top\\tile-f3-wall-top-a1.png",
+      "qa": {
+        "raw_seam": {
+          "x": {
+            "seam": 9.011,
+            "interior": 16.539,
+            "ratio": 0.545
+          },
+          "y": {
+            "seam": 34.247,
+            "interior": 15.918,
+            "ratio": 2.151
+          }
+        },
+        "seamless_fix": "overlap-cut",
+        "fixed_axes": "y",
+        "cut": {
+          "y": {
+            "overlap": 6,
+            "cut_ratio": 0.615
+          }
+        },
+        "seam": {
+          "x": {
+            "seam": 8.306,
+            "interior": 16.113,
+            "ratio": 0.516
+          },
+          "y": {
+            "seam": 11.914,
+            "interior": 15.075,
+            "ratio": 0.79
+          }
+        },
+        "frame": {
+          "x": 3.079,
+          "y": 1.433
+        },
+        "reasons": [],
+        "pass": true,
+        "size": [
+          62,
+          62
+        ],
+        "block": 20.226,
+        "wrap": "xy"
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f3-wall-top.png",
+      "approved_by": "user 2026-10-16: 牆壁你可以拼接讓我看看效果"
+    },
+    "tile-f1-wall-face": {
+      "kind": "tile-wrap",
+      "wrap": "x",
+      "final": "art-factory/starlantern/work/tile-f1-wall-face/tile-f1-wall-face.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\tile-f1-wall-face\\tile-f1-wall-face-a1.png",
+      "qa": {
+        "raw_seam": {
+          "x": {
+            "seam": 14.226,
+            "interior": 17.602,
+            "ratio": 0.808
+          }
+        },
+        "seamless_fix": "none",
+        "fixed_axes": "",
+        "cut": {},
+        "seam": {
+          "x": {
+            "seam": 14.226,
+            "interior": 17.602,
+            "ratio": 0.808
+          }
+        },
+        "frame": {
+          "x": 4.391
+        },
+        "reasons": [],
+        "top_join": {
+          "seam": 27.79,
+          "interior": 22.156,
+          "ratio": 1.254
+        },
+        "pass": true,
+        "size": [
+          62,
+          62
+        ],
+        "block": 20.226,
+        "wrap": "x"
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f1-wall-face.png",
+      "approved_by": "user 2026-10-16: 牆壁你可以拼接讓我看看效果"
+    },
+    "tile-f2-wall-face": {
+      "kind": "tile-wrap",
+      "wrap": "x",
+      "final": "art-factory/starlantern/work/tile-f2-wall-face/tile-f2-wall-face.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\tile-f2-wall-face\\tile-f2-wall-face-a1.png",
+      "qa": {
+        "raw_seam": {
+          "x": {
+            "seam": 16.366,
+            "interior": 24.215,
+            "ratio": 0.676
+          }
+        },
+        "seamless_fix": "none",
+        "fixed_axes": "",
+        "cut": {},
+        "seam": {
+          "x": {
+            "seam": 16.366,
+            "interior": 24.215,
+            "ratio": 0.676
+          }
+        },
+        "frame": {
+          "x": 5.439
+        },
+        "reasons": [],
+        "top_join": {
+          "seam": 32.608,
+          "interior": 20.086,
+          "ratio": 1.623
+        },
+        "pass": true,
+        "size": [
+          62,
+          62
+        ],
+        "block": 20.226,
+        "wrap": "x"
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f2-wall-face.png",
+      "approved_by": "user 2026-10-16: 牆壁你可以拼接讓我看看效果"
+    },
+    "tile-f3-wall-face": {
+      "kind": "tile-wrap",
+      "wrap": "x",
+      "final": "art-factory/starlantern/work/tile-f3-wall-face/tile-f3-wall-face.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\tile-f3-wall-face\\tile-f3-wall-face-a1.png",
+      "qa": {
+        "raw_seam": {
+          "x": {
+            "seam": 19.844,
+            "interior": 12.167,
+            "ratio": 1.631
+          }
+        },
+        "seamless_fix": "overlap-cut",
+        "fixed_axes": "x",
+        "cut": {
+          "x": {
+            "overlap": 6,
+            "cut_ratio": 0.316
+          }
+        },
+        "seam": {
+          "x": {
+            "seam": 11.559,
+            "interior": 11.059,
+            "ratio": 1.045
+          }
+        },
+        "frame": {
+          "x": 0.935
+        },
+        "reasons": [],
+        "top_join": {
+          "seam": 14.796,
+          "interior": 20.546,
+          "ratio": 0.72
+        },
+        "pass": true,
+        "size": [
+          62,
+          62
+        ],
+        "block": 20.226,
+        "wrap": "x"
+      },
+      "status": "published",
+      "runtime": "/assets/games/starlantern/tiles/f3-wall-face.png",
+      "approved_by": "user 2026-10-16: 牆壁你可以拼接讓我看看效果"
+    },
+    "scene-portal-plaza": {
+      "final": "art-factory/starlantern/work/scene-portal-plaza/scene-portal-plaza.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-portal-plaza\\scene-portal-plaza-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 25.96974278054905,
+        "block": 4.0,
+        "size": [
+          418,
+          235
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a3",
+      "source_id": "scene-portal-plaza",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/scene/portal-plaza.png",
+      "rejected_attempts": {
+        "a1": "三座門整體偏右，卡片置中時對不齊；漩渦是柔和噴槍漸層，不像像素畫",
+        "a2": "門群更偏右；漩渦仍偏柔和漸層（像素感比 a1 好，但 a3 置中且漩渦改成分階色帶）"
+      }
+    },
+    "portal-card-mainline": {
+      "final": "art-factory/starlantern/work/portal-card-mainline/portal-card-mainline.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-mainline\\portal-card-mainline-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 37.443518518518516,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a3",
+      "source_id": "portal-card-mainline",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/mainline.png",
+      "rejected_attempts": {
+        "a1": "遺跡拱門太小、焦點光源只是一個小點，1× 看起來雜",
+        "a2": "比 a1 清楚，但拱門仍小、暖光弱；a3 拱門占畫面中央三分之一、暖光明確"
+      }
+    },
+    "portal-card-blaze": {
+      "final": "art-factory/starlantern/work/portal-card-blaze/portal-card-blaze.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-blaze\\portal-card-blaze-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 28.112794612794612,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "portal-card-blaze",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/blaze.png",
+      "rejected_attempts": {
+        "a2": "熔岩瀑布與岩柱較雜，路徑不如 a1 清楚，與整組「路徑從下方中央延伸」的構圖不一致"
+      }
+    },
+    "portal-card-storm": {
+      "final": "art-factory/starlantern/work/portal-card-storm/portal-card-storm.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-storm\\portal-card-storm-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 39.23813131313131,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "portal-card-storm",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/storm.png",
+      "rejected_attempts": {
+        "a2": "整體偏暗、偏灰綠，1× 下地標與背景分不開，雷鳴之地的藍黃色調不鮮明"
+      }
+    },
+    "portal-card-mire": {
+      "final": "art-factory/starlantern/work/portal-card-mire/portal-card-mire.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-mire\\portal-card-mire-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 45.773737373737376,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a3",
+      "source_id": "portal-card-mire",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/mire.png",
+      "rejected_attempts": {
+        "a1": "對比低、沒有明確焦點，1× 糊成一片",
+        "a2": "有發光神龕但太小，路徑不明顯；a3 加強焦點與明暗"
+      }
+    },
+    "portal-card-shade": {
+      "final": "art-factory/starlantern/work/portal-card-shade/portal-card-shade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-shade\\portal-card-shade-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 6.723232323232323,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "portal-card-shade",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/shade.png",
+      "rejected_attempts": {
+        "a1": "前景台座雜、構圖左右失衡，遠方門光弱；a2 柱廊對稱、深處光源清楚"
+      }
+    },
+    "portal-card-iron": {
+      "final": "art-factory/starlantern/work/portal-card-iron/portal-card-iron.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-iron\\portal-card-iron-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 57.89040404040404,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "portal-card-iron",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/iron.png",
+      "rejected_attempts": {
+        "a1": "前景旗幟、樹叢雜，城門焦點不如 a2 明確、偏冷灰"
+      }
+    },
+    "tile-event-fountain": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-fountain/tile-event-fountain.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          38,
+          46
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-fountain.png",
+      "neutralize_tint": true
+    },
+    "tile-event-merchant": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-merchant/tile-event-merchant.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          47,
+          48
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-merchant.png",
+      "neutralize_tint": true
+    },
+    "tile-event-altar": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-altar/tile-event-altar.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          42,
+          42
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-altar.png",
+      "neutralize_tint": true
+    },
+    "tile-event-elite": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-elite/tile-event-elite.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          51,
+          49
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-elite.png",
+      "neutralize_tint": true
+    },
+    "tile-event-vault": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-vault/tile-event-vault.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          46,
+          43
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-vault.png",
+      "neutralize_tint": true
+    },
+    "tile-event-vault-open": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-vault-open/tile-event-vault-open.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          45,
+          50
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-vault-open.png",
+      "neutralize_tint": true
+    },
+    "tile-event-key": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-key/tile-event-key.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "subject": [
+          37,
+          29
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a3",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-key.png",
+      "neutralize_tint": true
+    },
+    "tile-event-trap": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/tile-event-trap/tile-event-trap.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          48,
+          44
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a3",
+      "source_id": "sheet-event-tiles",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/tiles/event-trap.png",
+      "neutralize_tint": true
+    },
+    "sheet-event-tiles": {
+      "rejected_attempts": {
+        "a1": "未採用：接地陰影混到洋紅變紫色、鑰匙周圍粉紅雜點、精英法陣散點雜訊、陷阱的灰石與地板混在一起看不出地刺",
+        "a2": "採用泉水、商人、祭壇、精英、寶庫（關／開成對）；鑰匙光環偏粉紅、陷阱地刺不清楚，改用 a3",
+        "a3": "採用鑰匙、陷阱；其餘件的接地陰影仍有紫色殘影、精英法陣線條細碎，寶庫為保持關／開成對沿用 a2"
+      },
+      "status": "processed",
+      "parts": [
+        "tile-event-fountain",
+        "tile-event-merchant",
+        "tile-event-altar",
+        "tile-event-elite",
+        "tile-event-vault",
+        "tile-event-vault-open",
+        "tile-event-key",
+        "tile-event-trap"
+      ],
+      "batch": "portal-dungeon",
+      "kind": "event-sheet",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles"
+    },
+    "sheet-trait-icons": {
+      "rejected_attempts": {
+        "a3": "影：改成黑靛色後在深色介面上幾乎看不見，周圍有暗紫雜點；其他圖示與 a1/a2 相當",
+        "a1": "未採用：冰、火外緣留有暗紫色去背殘邊；影的眼白被去背挖出洞（淡紫色太接近洋紅）",
+        "a2": "採用毒（綠色水滴＋紫色底影最有毒的意象）；影有洋紅殘留（QA 失敗），其他件外緣雜邊比 a4 多",
+        "a4": "採用火、冰、雷、鋼、影（影改藍紫加冷色輪廓光，在深色介面上清楚、無殘色）；毒的底影變成藍色、意象變弱，改用 a2"
+      },
+      "status": "processed",
+      "parts": [
+        "icon-trait-fire",
+        "icon-trait-ice",
+        "icon-trait-thunder",
+        "icon-trait-poison",
+        "icon-trait-shade",
+        "icon-trait-iron"
+      ],
+      "batch": "portal-dungeon",
+      "kind": "icon-sheet",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons"
+    },
+    "portal-card-frost": {
+      "final": "art-factory/starlantern/work/portal-card-frost/portal-card-frost.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-frost\\portal-card-frost-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 59.82828282828282,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a3",
+      "source_id": "portal-card-frost",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/portal/frost.png",
+      "rejected_attempts": {
+        "a1": "冰瀑地標最醒目，但沒有從下方中央延伸的路徑，與整組卡片的構圖語言不一致",
+        "a2": "畫面雜、前景岩塊多，路徑不清楚"
+      }
+    },
+    "icon-trait-fire": {
+      "defringe": "strong",
+      "deblend": true,
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/icon-trait-fire/icon-trait-fire.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          29,
+          35
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-trait-icons",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/icon/trait-fire.png"
+    },
+    "icon-trait-ice": {
+      "defringe": "strong",
+      "deblend": true,
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/icon-trait-ice/icon-trait-ice.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 12,
+        "size": [
+          29,
+          33
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-trait-icons",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/icon/trait-ice.png"
+    },
+    "icon-trait-iron": {
+      "defringe": "strong",
+      "deblend": true,
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/icon-trait-iron/icon-trait-iron.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          30,
+          34
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-trait-icons",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/icon/trait-iron.png"
+    },
+    "icon-trait-thunder": {
+      "defringe": "strong",
+      "deblend": true,
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/icon-trait-thunder/icon-trait-thunder.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 12,
+        "size": [
+          26,
+          34
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-trait-icons",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/icon/trait-thunder.png"
+    },
+    "icon-trait-shade": {
+      "final": "art-factory/starlantern/work/icon-trait-shade/icon-trait-shade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          31,
+          34
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-trait-icons",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/icon/trait-shade.png"
+    },
+    "icon-trait-poison": {
+      "final": "art-factory/starlantern/work/icon-trait-poison/icon-trait-poison.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-trait-icons\\sheet-trait-icons-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 12,
+        "size": [
+          28,
+          35
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-trait-icons",
+      "batch": "portal-dungeon",
+      "runtime": "/assets/games/starlantern/icon/trait-poison.png"
+    }
+  }
+}
