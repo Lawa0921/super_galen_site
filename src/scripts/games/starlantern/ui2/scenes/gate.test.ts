@@ -46,6 +46,17 @@ describe('GateScene: the portal plaza', () => {
     expect(root.querySelector('.slx-portals img')).toBeNull();
   });
 
+  it('a regional card says what its material is for; the mainline card does not', () => {
+    const { cards } = setup();
+    const use = cards()[1].querySelector('.slx-portal-drop-use')!.textContent!;
+    expect(use).toBe('用途：重鑄火焰詞綴、焰紋套裝');
+    const full = cards()[1].querySelector('.slx-portal-drop-use')!.getAttribute('title')!;
+    expect(full).toContain('重鑄時鎖定火焰系詞綴');
+    expect(full).toContain('焰紋套裝打造');
+    expect(cards()[2].querySelector('.slx-portal-drop-use')!.textContent).toBe('用途：重鑄防禦詞綴、鐵壁套裝');
+    expect(cards()[0].querySelector('.slx-portal-drop-use')).toBeNull();
+  });
+
   it('moves between cards with left and right', () => {
     const { s, cards } = setup();
     s.onAction('right');

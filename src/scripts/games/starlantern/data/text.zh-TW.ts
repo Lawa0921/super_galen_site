@@ -354,7 +354,7 @@ export const T = {
       /** A run that can only start at depth 1: the region resist is not there yet (scaling.REGION_TRAITS_FROM). */
       resistFrom: (els: string, depth: number) => `抗 ${els}（第 ${depth} 層起）`,
       monsters: '怪物', condition: '本次狀況', gear: '限定裝備', general: (n: number, total: number) => `通用傳說：已取得 ${n}／${total}`, moreGear: '↑↓ 捲動看更多', unknownGear: (name: string) => `${name}（未取得）`,
-      drop: (name: string) => `主要掉落：${name}`, commonDrop: '一般素材',
+      drop: (name: string) => `主要掉落：${name}`, commonDrop: '一般素材', dropUse: (list: string) => `用途：${list}`,
       ask: (region: string, n: number, cond: string) => `要從第 ${n} 層進入「${region}」嗎？\n本次狀況：${cond}`,
       banner: (cond: string) => `本次狀況　${cond}`,
       hint: '←→ 選擇　Enter／點擊 決定　Esc／右鍵 返回',
@@ -435,6 +435,19 @@ export const T = {
       }
     },
     usedFor: (list: string) => `用於：${list}`,
+    /** The portal card's short form: the same kinds as `use`, one word each, so a line fits the card. */
+    useShort: (u: MaterialUse): string => {
+      switch (u.kind) {
+        case 'enhance': return '強化';
+        case 'reroll': case 'legendaryReroll': return '重鑄裝備';
+        case 'regionReroll': return `重鑄${FORGE_GROUP[u.region].replace(/系$/, '')}詞綴`;
+        case 'fuseSlot': return '合成指定欄位';
+        case 'consumable': return ITEMS[u.item]?.name ?? u.item;
+        case 'base': return `${SLOT_KIND[u.slot]}打造`;
+        case 'set': return SETS[u.set]?.name ?? u.set;
+        case 'unlock': return `${EQUIPMENT[u.base]?.name ?? u.base}解鎖`;
+      }
+    },
     junkOnly: '雜物：只能賣錢',
   },
   clear: { title: '星燈重新亮起', body: '燈喰之獸倒下了。暮霧散去，露米亞迎來久違的晨光。', back: '回到城鎮' },

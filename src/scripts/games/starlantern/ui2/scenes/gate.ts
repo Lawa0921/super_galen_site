@@ -6,6 +6,7 @@ import { SETS, SPECIALS, codexName, generalLegendaries, regionSpecials } from '.
 import { REGIONS, type RegionId } from '../../data/regions';
 import { T } from '../../data/text.zh-TW';
 import { capacity, carried, formatWeight } from '../../data/weights';
+import { materialUses } from '../../engine/forge/uses';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { startDepths, terrainOf, type Portal } from '../../engine/dungeon/run';
 import { REGION_TRAITS_FROM, depthLevel, encounterTable } from '../../engine/scaling';
@@ -78,6 +79,13 @@ class PortalCards {
     return el('div', { class: 'slx-portal-general', text: T.ui2.gate.general(got, all.length) });
   }
 
+  /** What the region material is for, from `materialUses` in its short form (the card is narrow); the full wording is the tooltip. */
+  private dropUse(material: string): HTMLElement {
+    const uses = materialUses(material);
+    const short = [...new Set(uses.map(T.forge.useShort))].join('、');
+    return el('div', { class: 'slx-portal-drop-use', text: T.ui2.gate.dropUse(short), attrs: { title: T.forge.usedFor(uses.map(T.forge.use).join('、')) } });
+  }
+
   private card(p: Portal, i: number): HTMLElement {
     const G = T.ui2.gate;
     const r = REGIONS[p.region];
@@ -102,6 +110,7 @@ class PortalCards {
       el('div', { class: 'slx-portal-cond' }, [el('span', { class: 'slx-portal-label', text: G.condition }), el('b', { text: cond.name })]),
       el('div', { class: 'slx-portal-desc', text: cond.desc }),
       el('div', { class: 'slx-portal-drop', text: G.drop(r.material ? MATERIALS[r.material]?.name ?? r.material : G.commonDrop) }),
+      ...(r.material ? [this.dropUse(r.material)] : []),
       ...(p.region === 'mainline' ? [this.generalLine()] : [
         el('div', { class: 'slx-portal-gear' }, [el('div', { class: 'slx-portal-label', text: G.gear }), ...gearIds(p.region).map((id) => this.gearItem(id))]),
         el('div', { class: 'slx-codex-more', text: G.moreGear, attrs: { hidden: '' } }),
