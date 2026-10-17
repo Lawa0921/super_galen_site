@@ -210,8 +210,8 @@ export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, op
   const body: HTMLElement[] = opened ? [richLine(opened)] : [];
   if (r.bag && r.gear) body.push(richLine(fillRich(F.bagDesc, [gearPart(r.gear)])));
   if (r.need > 0 && r.item) body.push(line(F.desc(itemName(r.item), r.qty ?? 1, Number(fmtWeight(r.need)))));
-  if (r.fragments?.length) body.push(line(F.fragments(r.fragments.map(itemName).join('、'))));
   else if (r.need > 0 && r.gear) body.push(richLine(fillRich((name) => F.gearHeavy(name, Number(fmtWeight(r.need))), [gearPart(r.gear)])));
+  if (r.fragments?.length) body.push(line(F.fragments(r.fragments.map(itemName).join('、'))));
   body.push(line(stuck ? F.noGear : r.bag ? F.whichGear : F.which, 'slx-event-ask'));
   const held = r.need > 0 && !stuck ? carriedItems(host) : {};
   const items: MenuItem[] = [

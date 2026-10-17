@@ -266,6 +266,16 @@ describe('fragments in the labyrinth', () => {
     expect(root.querySelector('.slx-full')!.textContent).toContain('微光的碎片');
   });
 
+  it('a shut chest with materials and gear but no fragments shows only the material line', () => {
+    const { game, s, root, plant } = setup();
+    game.run!.loot.items['old-coin'] = 400;
+    const { dir, at } = plant('chest', {}, (spot) => chestHasGear(game.run!, game.floor, spot));
+    game.run!.rolls[`frag:${game.floor}:${at.x},${at.y}`] = { item: '', qty: 0, frags: [] };
+    s.onAction(dir);
+    const text = root.querySelector('.slx-full')!.textContent!;
+    expect(text.split('還差重量')).toHaveLength(2);   // one weight line, not the material line plus gearHeavy
+  });
+
   it('a glimmer that did not fit is taken after discarding, from the same window', () => {
     const { game, s, root, plant, pick, text } = setup();
     for (const m of Object.values(game.state.party.roster)) m.memories = 99;   // every chain is spent: the glimmer holds a shard
