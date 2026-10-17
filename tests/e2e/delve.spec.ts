@@ -805,3 +805,88 @@ test.describe('delve fixes', () => {
     await ctx.close();
   });
 });
+
+test.describe('delve 曆法 / 天氣', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+
+  test('debug 改日期 / 季節 → HUD 時鐘顯示「第1年 秋 3日 06:4x」；日曆面板有今天 / 明天天氣', async ({ page }) => {
+    await page.goto('/games/delve?seed=cal-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await expect(page.locator('#delve-clock-text')).toHaveText(/^第1年 春 1日 0\d:\d\d$/, { timeout: 5000 });
+    await page.evaluate(() => window.__delveDebug!.game.setDate({ year: 1, season: 2, day: 3, hour: 6 + 40 / 60 + 0.001 }));
+    await expect(page.locator('#delve-clock-text')).toHaveText(/^第1年 秋 3日 06:4\d$/, { timeout: 5000 });
+    await page.click('#delve-clock');
+    await expect(page.locator('#delve-calendar')).toBeVisible();
+    await expect(page.locator('[data-testid="calendar-date"]')).toHaveText('第1年 秋季 第3日');
+    await expect(page.locator('[data-testid="calendar-today"]')).toHaveAttribute('data-weather', /^(clear|cloudy|rain|storm|snow|fog)$/);
+    await expect(page.locator('[data-testid="calendar-tomorrow"]')).toHaveAttribute('data-weather', /^(clear|cloudy|rain|storm|snow|fog)$/);
+    await expect(page.locator('[data-testid="calendar-days"]')).toContainText('17 天');
+    await page.click('#delve-calendar-close');
+    await expect(page.locator('#delve-calendar')).toBeHidden();
+  });
+
+  test('晚上躺上床 → 淡出、睡到隔天日出', async ({ page }) => {
+    await page.goto('/games/delve?seed=bed-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    const bed = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, f = g.feetTile();
+      const bx = f.x + 1, by = f.y;
+      for (const x of [bx, bx + 1]) { g.world.setFg(x, by, 0); g.world.setFg(x, by - 1, 0); g.world.setFg(x, by + 1, 3); }
+      g.world.setFg(bx, by, 66); g.world.setFg(bx + 1, by, 67);
+      g.setDate({ season: 0, day: 2, hour: 22 });
+      return { bx, by, day: g.date().dayIndex };
+    });
+    await page.evaluate(({ bx, by }) => window.__delveDebug!.game.interact(bx, by), bed);
+    await page.waitForFunction(() => window.__delveDebug!.game.getState().sleep > 0, undefined, { timeout: 3000 });
+    await page.waitForFunction((d) => { const g = window.__delveDebug!.game; return g.date().dayIndex === d + 1 && !g.sleeping; }, bed.day, { timeout: 8000 });
+    const st = await page.evaluate(() => { const g = window.__delveDebug!.game; return { night: g.isNight(), hour: g.date().hour, sky: g.skyLevel() }; });
+    expect(st.night).toBe(false);
+    expect(st.hour).toBeGreaterThanOrEqual(5);
+    expect(st.hour).toBeLessThanOrEqual(8);
+    await expect(page.locator('#delve-clock-text')).toHaveText(/^第1年 春 3日 0[5-8]:\d\d$/, { timeout: 3000 });
+  });
+
+  test('強制下雨 → 畫面上有雨滴粒子、天空光變暗', async ({ page }) => {
+    await page.goto('/games/delve?seed=rain-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const clear = await page.evaluate(() => { const g = window.__delveDebug!.game; g.setDate({ season: 0, day: 3, hour: 12 }); g.forceWeather('clear'); return { sky: g.skyLevel(), rgb: Math.max(...g.skyRGB()) }; });
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => window.__delveDebug!.handle.renderer.fx.dropCount)).toBe(0);
+    await page.evaluate(() => window.__delveDebug!.game.forceWeather('rain'));
+    await page.waitForFunction(() => window.__delveDebug!.handle.renderer.fx.dropCount > 30, undefined, { timeout: 5000 });
+    const rain = await page.evaluate(() => { const g = window.__delveDebug!.game; return { sky: g.skyLevel(), rgb: Math.max(...g.skyRGB()), w: g.getState().weather }; });
+    expect(rain.w).toBe('rain');
+    expect(rain.sky).toBeLessThan(clear.sky - 0.15);
+    expect(rain.rgb).toBeLessThan(clear.rgb - 0.15);
+    await expect(page.locator('#delve-clock')).toHaveAttribute('data-weather', 'rain', { timeout: 3000 });
+  });
+
+  test('冬天：森林的湖面結冰，可以走在上面', async ({ page }) => {
+    await page.goto('/games/delve?seed=ice-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    // 在玩家右邊挖一個 10 寬 3 深的池子灌滿水（森林）
+    const lake = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, w = g.world, f = g.feetTile();
+      const x0 = f.x + 3, top = f.y + 1;
+      for (let x = x0 - 2; x < x0 + 12; x++) { w.biome[x] = 0; for (let y = top - 6; y < top; y++) w.setFg(x, y, 0); w.setFg(x, top, 3); }
+      for (let x = x0; x < x0 + 10; x++) for (let y = top; y < top + 3; y++) { w.setFg(x, y, 0); w.setWall(x, y, 0); w.setLiquid(x, y, 255, 1); }
+      for (let y = top; y < top + 4; y++) { w.setFg(x0 - 1, y, 3); w.setFg(x0 + 10, y, 3); }
+      for (let x = x0; x < x0 + 10; x++) w.setFg(x, top + 3, 3);
+      g.setDate({ season: 3, day: 6, hour: 12 });
+      return { x0, top, frozen: w.frozen[w.idx(x0 + 5, top)], solid: w.isSolid(x0 + 5, top) };
+    });
+    expect(lake.frozen).toBe(1);
+    expect(lake.solid).toBe(true);
+    await page.evaluate(({ x0, top }) => { const g = window.__delveDebug!.game; g.teleport(x0 + 5, top - 1); }, lake);
+    await page.waitForTimeout(800);
+    const st = await page.evaluate(({ top }) => { const g = window.__delveDebug!.game; return { onGround: g.player.onGround, feet: g.feetTile().y, wet: g.getState().liquid.frac, top }; }, lake);
+    expect(st.onGround).toBe(true);
+    expect(st.feet).toBe(st.top - 1);
+    expect(st.wet).toBe(0);
+  });
+});
