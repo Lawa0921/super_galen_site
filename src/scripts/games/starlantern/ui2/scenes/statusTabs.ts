@@ -461,8 +461,24 @@ function talentCues(board: HTMLElement, up: HTMLElement, down: HTMLElement): voi
   down.hidden = !(room > 1 && board.scrollTop < room - 1);
 }
 
-/** The member's talent nodes in cursor order: row 0 columns 0-3, row 1, ... row 5, then the keystones (BOARDS order). */
+/** The member's talent nodes: row 0 columns 0-3, row 1, ... row 5, then the keystones (BOARDS order). */
 const talentOrder = (id: CharacterId): string[] => BOARDS[id].map((n) => n.id);
+
+/**
+ * The board as the keys walk it: ↑/↓ go to the row above or below in the same column (the keystone row has three, so
+ * column 3 lands on its last one), held at the top and bottom rows; Tab goes along the row and wraps.
+ */
+function talentStep(id: CharacterId, from: string, how: 'up' | 'down' | 'swap'): string {
+  const nodes = BOARDS[id];
+  const at = nodes.find((n) => n.id === from) ?? nodes[0];
+  const inRow = (r: number) => nodes.filter((n) => n.row === r);
+  if (how === 'swap') {
+    const row = inRow(at.row);
+    return row[(row.indexOf(at) + 1) % row.length].id;
+  }
+  const row = inRow(Math.max(0, Math.min(BOARD_ROWS, at.row + (how === 'down' ? 1 : -1))));
+  return (row.find((n) => n.col === at.col) ?? row[row.length - 1]).id;
+}
 
 /** A saved talent record as the board rules read it: anything but a plain object is empty (as progression reads it). */
 const heldTalents = (t: unknown): Record<string, number> =>
@@ -517,7 +533,7 @@ function talentNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
 const talent: StatusTab = {
   id: 'talent',
   label: T.ui2.status.tabs.talent,
-  hint: T.ui2.status.hintTree,
+  hint: T.ui2.status.hintTalent,
   render(ctx, id, redraw) {
     const t = T.ui2.talent;
     const m = ctx.game.state.party.roster[id];
@@ -590,10 +606,8 @@ const talent: StatusTab = {
     ]);
   },
   onAction(a, ctx, id) {
-    if (a === 'up' || a === 'down') {
-      const list = talentOrder(id);
-      const i = Math.max(0, list.indexOf(talentView.cur));
-      if (moveTalent(list[Math.max(0, Math.min(list.length - 1, i + (a === 'down' ? 1 : -1)))])) ctx.sfx.cursor();
+    if (a === 'up' || a === 'down' || a === 'swap') {
+      if (moveTalent(talentStep(id, talentView.cur, a))) ctx.sfx.cursor();
       talentView.reveal = true;
       return true;
     }

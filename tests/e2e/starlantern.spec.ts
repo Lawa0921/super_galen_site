@@ -480,9 +480,14 @@ test.describe('starlantern', () => {
     expect(fit.rows).toBeGreaterThanOrEqual(3);
     expect(fit.cut).toEqual([]);
 
-    // The bottom end: the last keystone, rows hidden above.
-    for (let i = 0; i < 26; i++) await w.key('ArrowDown');
+    // ↓ goes down the column to the keystone row, Tab along it: the bottom end is the last keystone, rows hidden above.
+    await w.key('ArrowDown');
+    await expect(cur).toHaveAttribute('data-node', 'noel-t10');
+    for (let i = 0; i < 5; i++) await w.key('ArrowDown');
+    await expect(cur).toHaveAttribute('data-node', 'noel-k0');
+    await w.key('Tab'); await w.key('Tab');
     await expect(cur).toHaveAttribute('data-node', 'noel-k2');
+    await expect(page.locator('.slx-status-panel .slx-hint')).toContainText('↑↓ 換列　Tab 換欄');
     expect(await inView()).toBe(true);
     await expect(up).toBeVisible();
     await expect(down).toBeHidden();

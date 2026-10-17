@@ -297,8 +297,15 @@ describe('StatusScene', () => {
       expect(hint()).toContain('Enter 摺疊');
       for (let i = 0; i < 5; i++) {
         s.onAction('right');
-        if (tab() === '技能樹' || tab() === '天賦') {
+        if (tab() === '技能樹') {
           expect(hint()).toBe(T.ui2.status.hintTree);
+          continue;
+        }
+        if (tab() === '天賦') {
+          expect(hint()).toBe(T.ui2.status.hintTalent);
+          expect(hint()).toContain('↑↓ 換列');
+          expect(hint()).toContain('Tab 換欄');
+          expect(hint()).toContain('Enter 投點');
           continue;
         }
         expect(hint()).not.toContain('Enter');
@@ -872,7 +879,7 @@ describe('StatusScene', () => {
       expect(node('noel-k0').textContent).toContain('1／1');
       expect(node('noel-k2').classList.contains('slx-node-locked')).toBe(true);
       expect(node('noel-k2').textContent).toContain(T.ui2.talent.cell.keystones);
-      down(s, 26);
+      down(s, 6); s.onAction('swap'); s.onAction('swap');
       expect(cur()).toBe('noel-k2');
       s.onAction('confirm');
       expect(msg()).toBe(T.ui2.talent.reason.keystones);
@@ -892,15 +899,56 @@ describe('StatusScene', () => {
       expect(new Set(Object.values(T.ui2.talent.reason)).size).toBe(6);
     });
 
-    it('the keyboard reaches every node, row by row and then the keystones', () => {
+    it('↑/↓ move to the row above or below and keep the column; the keystone row holds the last column', () => {
       const { s, cur } = onTalent(6);
       const seen = [cur()];
-      for (let i = 0; i < order.length - 1; i++) { s.onAction('down'); seen.push(cur()); }
-      expect(seen).toEqual(order);
+      for (let i = 0; i < 6; i++) { s.onAction('down'); seen.push(cur()); }
+      expect(seen).toEqual(['noel-t00', 'noel-t10', 'noel-t20', 'noel-t30', 'noel-t40', 'noel-t50', 'noel-k0']);
       s.onAction('down');
-      expect(cur()).toBe('noel-k2');                            // held at the last node
-      for (let i = 0; i < 40; i++) s.onAction('up');
-      expect(cur()).toBe('noel-t00');
+      expect(cur()).toBe('noel-k0');                            // held on the bottom row
+      for (let i = 0; i < 10; i++) s.onAction('up');
+      expect(cur()).toBe('noel-t00');                           // held on the top row
+      for (let i = 0; i < 3; i++) s.onAction('swap');
+      expect(cur()).toBe('noel-t03');
+      down(s, 5);
+      expect(cur()).toBe('noel-t53');
+      s.onAction('down');
+      expect(cur()).toBe('noel-k2');                            // three keystones: column 3 lands on the last one
+      s.onAction('up');
+      expect(cur()).toBe('noel-t52');                           // and up keeps the keystone's own column
+    });
+
+    it('Tab moves along the row and wraps; ←/→ still switch tabs', () => {
+      const { s, cur, tab } = onTalent(6);
+      const seen = [cur()];
+      for (let i = 0; i < 4; i++) { s.onAction('swap'); seen.push(cur()); }
+      expect(seen).toEqual(['noel-t00', 'noel-t01', 'noel-t02', 'noel-t03', 'noel-t00']);
+      down(s, 6);
+      const keys = [cur()];
+      for (let i = 0; i < 3; i++) { s.onAction('swap'); keys.push(cur()); }
+      expect(keys).toEqual(['noel-k0', 'noel-k1', 'noel-k2', 'noel-k0']);
+      s.onAction('right');
+      expect(tab()).toBe('絕技');
+    });
+
+    it('the keyboard reaches every node', () => {
+      const { s, cur } = onTalent(6);
+      const seen = new Set<string>();
+      for (let r = 0; r <= 6; r++) {
+        for (let c = 0; c < 4; c++) { seen.add(cur()!); s.onAction('swap'); }
+        s.onAction('down');
+      }
+      expect([...seen].sort()).toEqual([...order].sort());
+    });
+
+    it('Tab drops a pending press like the other moves', () => {
+      const { s, msg, noel } = onTalent(6);
+      s.onAction('confirm');
+      expect(msg()).toBe(T.ui2.talent.pending);
+      s.onAction('swap');
+      expect(msg()).toBe('');
+      s.onAction('confirm');                                    // armed afresh on noel-t01, not raised
+      expect(noel().talents).toEqual({});
     });
 
     it('mouse and touch reach every node; the first click selects and arms, a second on it raises', () => {
@@ -921,7 +969,7 @@ describe('StatusScene', () => {
 
     it('a click on the node the keyboard put the cursor on arms it, and a second click raises', () => {
       const { s, node, msg, noel } = onTalent(6);
-      s.onAction('down');                                       // noel-t01
+      s.onAction('swap');                                       // noel-t01
       node('noel-t01').click();
       expect(msg()).toBe(T.ui2.talent.pending);
       node('noel-t01').click();
@@ -1034,7 +1082,7 @@ describe('StatusScene', () => {
       Object.defineProperty(Element.prototype, 'scrollIntoView', { configurable: true, writable: true, value: into });
       try {
         const { s, cur, root } = onTalent(6);
-        down(s, 26);
+        down(s, 6); s.onAction('swap'); s.onAction('swap');
         expect(cur()).toBe('noel-k2');
         into.mockClear();
         s.onAction('right'); s.onAction('left');                 // away and back: the board was reset to the top

@@ -167,6 +167,8 @@ export const T = {
       hintStats: '←→ 分頁　Q／E 換人　↑↓ 選擇　Enter 摺疊　Esc 返回',
       /** The tree and talent tabs' own keys: a node cursor and the two-press spend. */
       hintTree: '←→ 分頁　Q／E 換人　↑↓ 選擇　Enter 投點　Esc 返回',
+      /** The talent tab's own keys: ↑↓ go between the board's rows, Tab along a row (←→ stay the tab switch). */
+      hintTalent: '←→ 分頁　Q／E 換人　↑↓ 換列　Tab 換欄　Enter 投點　Esc 返回',
     },
     /** The status screen's talent tab. */
     talent: {
