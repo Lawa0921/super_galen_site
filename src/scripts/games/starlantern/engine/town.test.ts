@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { newGame } from './state';
-import { buy, equip, innCost, isUnlocked, respec, respecCost, rest, revive, reviveCost, sell, sellGear, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
+import { buy, equip, innCost, isUnlocked, respec, respecCost, rest, revive, reviveCost, sell, sellGear, sellJunk, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
 import { statsOf } from './party';
 import { defaultTalents, defaultTree, newTree, raiseTalent, skillPointsLeft, talentPointsLeft, validBuild } from './progression';
 import type { Member } from './types';
@@ -297,5 +297,15 @@ describe('respec', () => {
     expect(after.equip).toEqual(m.equip);
     expect([after.level, after.exp]).toEqual([m.level, m.exp]);
     expect(validBuild('scarlet', after.level, after.tree, after.talents)).toBe(true);
+  });
+});
+
+describe('sellJunk', () => {
+  it('sellJunk sells only junk and counts it as sold', () => {
+    const r = sellJunk(withInv({ moss: 3, 'old-coin': 2 }));
+    expect(r.ok && [r.state.gold, r.state.inventory.moss, r.state.inventory['old-coin'] ?? 0, r.state.sold['old-coin'], r.state.sold.moss]).toEqual([150 + 80, 3, 0, 2, undefined]);
+  });
+  it('sellJunk without junk is refused', () => {
+    expect(sellJunk(withInv({ moss: 3 }))).toEqual({ ok: false, reason: 'stock' });
   });
 });

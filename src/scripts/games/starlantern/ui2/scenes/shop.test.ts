@@ -3,6 +3,8 @@ import { EQUIPMENT } from '../../data/equipment';
 import { compareDelta } from '../../engine/compare';
 import { Game } from '../../engine/game';
 import { BAG_SIZE } from '../../engine/loot/bag';
+import { materialUses } from '../../engine/forge/uses';
+import { T } from '../../data/text.zh-TW';
 import { sellPrice } from '../../engine/loot/item';
 import { activeIds, defaultSlotFor } from '../../engine/party';
 import { constRng, plainItem } from '../../engine/testing';
@@ -272,5 +274,43 @@ describe('ShopScene', () => {
       pick('裝備');
       expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('沒有可以賣的裝備。');
     });
+  });
+
+  it('junk shows grey with 雜物 and one press sells it all', () => {
+    const { game, pick, root } = setup();
+    game.state.inventory['old-coin'] = 3;
+    game.state.inventory.moss = 2;
+    const gold = game.state.gold;
+    pick('販賣');
+    pick('素材');
+    const rows = [...topLayer(root)!.querySelectorAll('[role=option]')];
+    expect(rows[0].querySelector('.slx-label')!.textContent).toBe(T.ui2.shop.sellJunk(3, 120));
+    const coin = rows.find((o) => o.querySelector('.slx-label')!.textContent === '古代銀幣（雜物）')!;
+    expect(coin.querySelector('.slx-label')!.classList.contains('slx-junk-mat')).toBe(true);
+    (rows[0] as HTMLElement).click();
+    expect(game.state.inventory['old-coin'] ?? 0).toBe(0);
+    expect(game.state.inventory.moss).toBe(2);
+    expect(game.state.gold).toBe(gold + 120);
+    expect(game.state.sold['old-coin']).toBe(3);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe(T.ui2.shop.soldJunk(3, 120));
+    expect([...topLayer(root)!.querySelectorAll('[role=option]')].some((o) => o.textContent!.includes('古代銀幣'))).toBe(false);
+  });
+
+  it('the material detail lists every use', () => {
+    const { game, pick, s, root } = setup();
+    game.state.inventory.moss = 2;
+    game.state.inventory['old-coin'] = 1;
+    pick('販賣');
+    pick('素材');
+    const info = () => root.querySelector('.slx-info')!.textContent!;
+    s.onAction('down');                   // past the sell-all-junk row
+    expect(info()).toContain('發光苔');
+    expect(info()).toContain(T.forge.kind.monster);
+    expect(info()).toContain('6 G');
+    expect(info()).toContain(T.forge.usedFor(materialUses('moss').map(T.forge.use).join('、')));
+    s.onAction('down');
+    expect(info()).toContain(T.forge.junkOnly);
+    s.onAction('cancel');
+    expect(root.querySelector('.slx-info')).toBeNull();
   });
 });

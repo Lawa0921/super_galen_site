@@ -36,6 +36,20 @@ export function sell(s: GameState, matId: string, qty: number): TownResult {
   return { ok: true, state: n };
 }
 
+/** Sells every junk material at once; it counts toward the sell-to-unlock tally like any material sale. */
+export function sellJunk(s: GameState): TownResult {
+  const ids = Object.keys(s.inventory).filter((id) => MATERIALS[id]?.kind === 'junk' && s.inventory[id] > 0);
+  if (!ids.length) return fail('stock');
+  const n = structuredClone(s);
+  for (const id of ids) {
+    const qty = n.inventory[id];
+    addItem(n.inventory, id, -qty);
+    n.sold[id] = (n.sold[id] ?? 0) + qty;
+    n.gold += MATERIALS[id].price * qty;
+  }
+  return { ok: true, state: n };
+}
+
 export function isUnlocked(s: GameState, equipId: string): boolean {
   const e = EQUIPMENT[equipId];
   return !!e && (e.unlock ?? []).every((u) => (s.sold[u.mat] ?? 0) >= u.qty);

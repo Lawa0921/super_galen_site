@@ -4,11 +4,12 @@ import { MATERIALS } from '../../data/materials';
 import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
 import { compareDelta } from '../../engine/compare';
+import { materialUses } from '../../engine/forge/uses';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { rollItem, sellPrice } from '../../engine/loot/item';
 import { activeIds, defaultSlotFor, statsOf } from '../../engine/party';
 import { mulberry32 } from '../../engine/rng';
-import { buy, isUnlocked, sell, sellGear } from '../../engine/town';
+import { buy, isUnlocked, sell, sellGear, sellJunk } from '../../engine/town';
 import type { AnyStat } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
@@ -115,12 +116,51 @@ export class ShopScene extends FacilityScene {
     this.push({ el: win('slx-list slx-shop-pages', [pages.el]), onAction: (a) => pages.onAction(a) });
   }
 
+  private junkTotals(): { n: number; g: number } {
+    let n = 0; let g = 0;
+    for (const [id, c] of Object.entries(this.ctx.game.state.inventory)) if (MATERIALS[id]?.kind === 'junk' && c > 0) { n += c; g += MATERIALS[id].price * c; }
+    return { n, g };
+  }
+
+  private matRows(): MenuItem[] {
+    const inv = this.ctx.game.state.inventory;
+    const junk = this.junkTotals();
+    const rows = Object.entries(inv).filter(([id, n]) => MATERIALS[id] && n > 0).map(([id, n]): MenuItem => {
+      const isJunk = MATERIALS[id].kind === 'junk';
+      return {
+        id, label: isJunk ? `${MATERIALS[id].name}（${T.ui2.shop.junkTag}）` : MATERIALS[id].name, cls: isJunk ? 'slx-junk-mat' : undefined,
+        icon: this.icon(id), right: `${MATERIALS[id].price} G  ${T.ui2.shop.owned(n)}`,
+      };
+    });
+    return junk.n ? [{ id: 'sell-junk', label: T.ui2.shop.sellJunk(junk.n, junk.g) }, ...rows] : rows;
+  }
+
+  /** Kind, price and every use (from `materialUses`, so the list can never drift from the game). */
+  private describeMat(id: string): HTMLElement[] {
+    const m = MATERIALS[id];
+    if (!m) return [];
+    const uses = m.kind === 'junk' ? T.forge.junkOnly : T.forge.usedFor(materialUses(id).map(T.forge.use).join('、'));
+    return [el('p', { text: T.forge.kind[m.kind] }), el('p', { text: `${m.price} G` }), el('p', { class: 'slx-desc', text: uses })];
+  }
+
   private sellMats(): void {
-    const mats = () => Object.entries(this.ctx.game.state.inventory).filter(([id, n]) => MATERIALS[id] && n > 0)
-      .map(([id, n]) => ({ id, label: MATERIALS[id].name, icon: this.icon(id), right: `${MATERIALS[id].price} G  ${T.ui2.shop.owned(n)}` }));
-    if (!mats().length) { void this.say(T.ui2.shop.nothing); return; }
-    const v = new MenuView(new Menu(mats()), {
+    if (!this.matRows().length) { void this.say(T.ui2.shop.nothing); return; }
+    const info = win('slx-info slx-mat-info');
+    const show = () => {
+      const c = v.menu.current();
+      if (c && c.id !== 'sell-junk') info.replaceChildren(el('p', { class: 'slx-name-line', text: MATERIALS[c.id].name }), ...this.describeMat(c.id));
+      else info.replaceChildren();
+    };
+    const reload = () => {
+      const left = this.matRows();
+      if (!left.length) { info.remove(); this.popAll(); return; }
+      v.menu.items.splice(0, v.menu.items.length, ...left);
+      if (v.menu.cursor >= v.menu.items.length) v.menu.setCursor(0);
+      v.render(); show();
+    };
+    const v: MenuView = new MenuView(new Menu(this.matRows()), {
       pick: (it) => {
+        if (it.id === 'sell-junk') { this.sellAllJunk(reload); return; }
         const have = this.ctx.game.state.inventory[it.id] ?? 0;
         const q = new QtyView(have, {
           change: () => this.ctx.sfx.cursor(),
@@ -132,18 +172,31 @@ export class ShopScene extends FacilityScene {
             if (!r.ok) { this.fail(r.reason); return; }
             const fresh = Object.keys(EQUIPMENT).filter((e) => isUnlocked(this.ctx.game.state, e) && !before.has(e)).map((e) => EQUIPMENT[e].name);
             this.refresh();
-            const left = mats();
-            if (left.length) { v.menu.items.splice(0, v.menu.items.length, ...left); if (v.menu.cursor >= v.menu.items.length) v.menu.setCursor(0); v.render(); } else this.popAll();
+            reload();
             void this.say(fresh.length ? T.ui2.shop.unlocked(fresh.join('、')) : T.ui2.shop.sold(it.label, n, this.ctx.game.state.gold - gold), 'happy');
           },
           cancel: () => this.pop(),
         }, MATERIALS[it.id].price);
         this.push({ el: q.el, onAction: (a) => q.onAction(a) });
       },
-      moved: () => this.ctx.sfx.cursor(),
-      cancel: () => this.pop(),
+      moved: () => { this.ctx.sfx.cursor(); show(); },
+      cancel: () => { info.remove(); this.pop(); },
     }, 12);
+    show();
+    this.stage.append(info);
     this.push({ el: win('slx-list slx-shop-list', [v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  /** Junk has no other use, so one press sells all of it with no confirm; the sale counts toward unlocks like any material. */
+  private sellAllJunk(reload: () => void): void {
+    const before = new Set(Object.keys(EQUIPMENT).filter((e) => isUnlocked(this.ctx.game.state, e)));
+    const { n, g } = this.junkTotals();
+    const r = this.ctx.game.apply(sellJunk(this.ctx.game.state));
+    if (!r.ok) { this.fail(r.reason); return; }
+    const fresh = Object.keys(EQUIPMENT).filter((e) => isUnlocked(this.ctx.game.state, e) && !before.has(e)).map((e) => EQUIPMENT[e].name);
+    this.refresh();
+    reload();
+    void this.say(fresh.length ? T.ui2.shop.unlocked(fresh.join('、')) : T.ui2.shop.soldJunk(n, g), 'happy');
   }
 
   private gearRows(): MenuItem[] {
