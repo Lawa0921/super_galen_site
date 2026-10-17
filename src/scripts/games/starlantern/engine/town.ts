@@ -19,7 +19,7 @@ export function addItem(inv: Record<string, number>, id: string, qty: number): v
   else delete inv[id];
 }
 
-function clampToMax(m: Member): void {
+export function clampToMax(m: Member): void {
   const s = statsOf(m);
   m.hp = Math.min(m.hp, s.hp);
   m.tp = Math.min(m.tp, s.tp);

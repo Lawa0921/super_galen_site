@@ -2,8 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { newGame } from '../state';
 import { plainItem } from '../testing';
 import { DISMANTLE, ENHANCE_COST, ENHANCE_SUCCESS, ENHANCE_MAX } from '../../data/forge';
-import { dismantle, dismantleYield, enhance } from './forge';
-import { enhanceChance, enhanceCost } from './cost';
+import { dismantle, dismantleYield, enhance, reroll } from './forge';
+import { enhanceChance, enhanceCost, rerollCost, rerollRange, swapPool } from './cost';
+import { AFFIXES, ROLL_FLOOR, affixRange } from '../../data/gear';
+import { REGION_AFFIX_GROUP, REROLL } from '../../data/forge';
+import { itemSlot } from '../loot/item';
+import { statsOf } from '../party';
 import type { GameState } from '../state';
 import { STARTING_RECRUITS } from '../party';
 import type { ItemInstance, Rarity } from '../types';
@@ -145,5 +149,144 @@ describe('enhance', () => {
   });
   it('an unknown uid is refused', () => {
     expect(enhance(rich(lv(0)), 99)).toEqual({ ok: false, reason: 'stock' });
+  });
+});
+
+describe('reroll', () => {
+  const gear = (over: Partial<ItemInstance> = {}): ItemInstance => ({
+    ...plainItem('moss-charm', 1), rarity: 'rare', ilvl: 20,
+    affixes: [{ key: 'str', value: 5 }, { key: 'hp', value: 30 }, { key: 'spd', value: 2 }], ...over,
+  });
+  const stocked = (it: ItemInstance): GameState => {
+    const s = withBag([it]);
+    s.gold = 1_000_000;
+    s.inventory = { 'essence-common': 50, 'essence-magic': 50, 'essence-rare': 50, 'essence-legendary': 50, 'star-tear': 5 };
+    for (const m of Object.keys(REGION_AFFIX_GROUP)) s.inventory[m] = 50;
+    return s;
+  };
+
+  it('a value reroll stays in rerollRange and locks that affix', () => {
+    const it = gear();
+    const [lo, hi] = rerollRange(it, 1);
+    const lowR = reroll(stocked(it), 1, 1, { swap: false }, constRng(0));
+    expect(lowR.ok && lowR.out.after).toEqual({ key: 'hp', value: lo });
+    const [alo, ahi] = affixRange('hp', it.ilvl);
+    const floor = ROLL_FLOOR[it.rarity];
+    const expected = Math.max(1, Math.round(alo + (ahi - alo) * (floor + (1 - floor) * 0.9999)));
+    const highR = reroll(stocked(it), 1, 1, { swap: false }, constRng(0.9999));
+    expect(highR.ok && highR.out.after.value).toBe(expected);
+    expect(expected).toBeLessThanOrEqual(hi);
+    expect(highR.ok && highR.state.bag[0].locked).toBe(1);
+    expect(it.locked).toBeUndefined();
+  });
+  it('after rerolling affix 1, affix 0 is refused as affixLocked and nothing is spent', () => {
+    const first = reroll(stocked(gear()), 1, 1, { swap: false });
+    if (!first.ok) throw new Error('refused');
+    const before = structuredClone(first.state);
+    expect(reroll(first.state, 1, 0, { swap: false })).toEqual({ ok: false, reason: 'affixLocked' });
+    expect(reroll(first.state, 1, 0, { swap: true })).toEqual({ ok: false, reason: 'affixLocked' });
+    expect(first.state).toEqual(before);
+    expect(reroll(first.state, 1, 1, { swap: false }).ok).toBe(true);
+  });
+  it('a swap changes the key, keeps the index locked and never repeats a key on the item', () => {
+    for (let i = 0; i < 100; i++) {
+      const s = stocked(gear());
+      s.forgeDraws = i;
+      const r = reroll(s, 1, 1, { swap: true });
+      if (!r.ok) throw new Error('refused');
+      const it = r.state.bag[0];
+      expect(r.out.after.key).not.toBe('hp');
+      expect(it.locked).toBe(1);
+      expect(new Set(it.affixes.map((a) => a.key)).size).toBe(3);
+      expect(AFFIXES[r.out.after.key].slots).toContain(itemSlot(it));
+      expect(it.affixes[1]).toEqual(r.out.after);
+    }
+  });
+  it('a region material limits the new key to its group', () => {
+    let tried = 0;
+    for (const [mat, group] of Object.entries(REGION_AFFIX_GROUP)) {
+      const it = gear();
+      const pool = swapPool(it, 1, mat);
+      if (pool.length === 0) continue;
+      tried++;
+      for (let i = 0; i < 200; i++) {
+        const s = stocked(it);
+        s.forgeDraws = i;
+        const r = reroll(s, 1, 1, { swap: true, mat });
+        if (!r.ok) throw new Error('refused');
+        expect(group).toContain(r.out.after.key);
+        expect(pool).toContain(r.out.after.key);
+        expect(r.state.inventory[mat]).toBe(s.inventory[mat] - REROLL.regionQty);
+      }
+    }
+    expect(tried).toBeGreaterThan(2);
+    const c = rerollCost(gear(), { swap: true, mat: 'blaze-core' });
+    expect(c.mats['blaze-core']).toBe(REROLL.regionQty);
+    expect(c.gold).toBe(REROLL.gold(20) * 2);
+    expect(c.mats['essence-rare']).toBe(REROLL.essence.swap);
+    expect(rerollCost(gear(), { swap: false }).gold).toBe(REROLL.gold(20));
+  });
+  it('a value reroll draws once', () => {
+    const s = stocked(gear());
+    expect(s.forgeDraws).toBe(0);
+    const r = reroll(s, 1, 0, { swap: false });
+    expect(r.ok && r.state.forgeDraws).toBe(1);
+  });
+  it('a group with nothing left for the slot is refused as none and nothing is spent', () => {
+    const it: ItemInstance = {
+      ...plainItem('cloth-gloves', 1), rarity: 'rare', ilvl: 20, affixes: [{ key: 'atk', value: 5 }, { key: 'str', value: 5 }, { key: 'def', value: 2 }],
+    };
+    const s = stocked(it);
+    const before = structuredClone(s);
+    expect(swapPool(it, 0, 'blaze-core')).toEqual([]);
+    expect(reroll(s, 1, 0, { swap: true, mat: 'blaze-core' })).toEqual({ ok: false, reason: 'none' });
+    expect(s).toEqual(before);
+  });
+  it('uniques and set pieces reroll values only; a legendary also pays REROLL.legendaryMat', () => {
+    for (const rarity of ['unique', 'set'] as const) {
+      const s = stocked(gear({ rarity }));
+      const before = structuredClone(s);
+      expect(reroll(s, 1, 0, { swap: true })).toEqual({ ok: false, reason: 'invalid' });
+      expect(s).toEqual(before);
+      expect(reroll(s, 1, 0, { swap: false }).ok).toBe(true);
+    }
+    const s = stocked(gear({ rarity: 'legendary' }));
+    const r = reroll(s, 1, 0, { swap: false });
+    if (!r.ok) throw new Error('refused');
+    expect(r.state.inventory['star-tear']).toBe(s.inventory['star-tear'] - REROLL.legendaryQty);
+    expect(rerollCost(gear({ rarity: 'legendary' }), { swap: false }).mats[REROLL.legendaryMat]).toBe(REROLL.legendaryQty);
+    expect(rerollCost(gear(), { swap: false }).mats[REROLL.legendaryMat]).toBeUndefined();
+  });
+  it('plain items, bad indexes, bad mats, unknown uids and poverty are refused without change', () => {
+    const s = stocked(gear());
+    const before = structuredClone(s);
+    expect(reroll(s, 9, 0, { swap: false })).toEqual({ ok: false, reason: 'stock' });
+    expect(reroll(s, 1, 3, { swap: false })).toEqual({ ok: false, reason: 'invalid' });
+    expect(reroll(s, 1, -1, { swap: false })).toEqual({ ok: false, reason: 'invalid' });
+    expect(reroll(s, 1, 0, { swap: false, mat: 'blaze-core' })).toEqual({ ok: false, reason: 'invalid' });
+    expect(reroll(s, 1, 0, { swap: true, mat: 'moss' })).toEqual({ ok: false, reason: 'invalid' });
+    expect(reroll(stocked(gear({ rarity: 'common', affixes: [] })), 1, 0, { swap: false })).toEqual({ ok: false, reason: 'invalid' });
+    expect(s).toEqual(before);
+    s.gold = 0;
+    expect(reroll(s, 1, 0, { swap: false })).toEqual({ ok: false, reason: 'gold' });
+    s.gold = 1_000_000;
+    s.inventory = {};
+    expect(reroll(s, 1, 0, { swap: false })).toEqual({ ok: false, reason: 'mats' });
+    expect(s.forgeDraws).toBe(before.forgeDraws);
+  });
+  it('rerolling worn hp down holds HP at the new maximum', () => {
+    const m = STARTING_RECRUITS[0];
+    const s = stocked(gear());
+    s.bag = [];
+    s.party.roster[m].equip.neck = gear({ affixes: [{ key: 'hp', value: 500 }, { key: 'str', value: 1 }, { key: 'spd', value: 1 }] });
+    s.party.roster[m].hp = statsOf(s.party.roster[m]).hp;
+    const full = s.party.roster[m].hp;
+    const r = reroll(s, 1, 0, { swap: false }, constRng(0));
+    if (!r.ok) throw new Error('refused');
+    const worn = r.state.party.roster[m];
+    expect(worn.equip.neck?.affixes[0].value).toBe(rerollRange(worn.equip.neck!, 0)[0]);
+    expect(worn.hp).toBe(statsOf(worn).hp);
+    expect(worn.hp).toBeLessThan(full);
+    expect(s.party.roster[m].hp).toBe(full);
   });
 });
