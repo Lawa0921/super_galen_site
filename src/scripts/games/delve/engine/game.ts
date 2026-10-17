@@ -202,6 +202,8 @@ export const HONEY_TIME = 10;
 export const HONEY_REGEN = 2;
 /** 液體工具（水桶 / 海綿）按住時的重複間隔（秒） */
 export const LIQUID_TOOL_CD = 0.25;
+/** 空桶至少要舀到這麼多（半桶）才算一桶 */
+export const SCOOP_MIN = 128;
 /** 液體模擬在瀏覽器每刻的時間預算（ms；session 設定，測試不設 → 確定性） */
 export const LIQUID_BUDGET_MS = 2;
 /** 夜晚：一天的前 20% 與後 20% */
@@ -340,6 +342,7 @@ export class DelveGame {
     const gen = generateWorld(this.seed, { width: opts.width, height: opts.height });
     this.world = gen.world;
     this.liquids = new LiquidSim(this.world);
+    this.liquids.blocked = (x, y) => !this.dead && this.tileOverlapsPlayer(x, y);
     const w = this.world;
     this.env = {
       isSolid: (x, y) => w.isSolid(x, y),
@@ -1422,7 +1425,7 @@ export class DelveGame {
 
   /**
    * 水桶 / 海綿（按住會隔 LIQUID_TOOL_CD 秒重複）。
-   *   scoop：空桶從瞄準格（不夠再從左右同種格）舀滿一桶 → 換成對應的液體桶（不到一整桶也算一桶）。
+   *   scoop：空桶從瞄準格（不夠再從左右同種格）舀滿一桶 → 換成對應的液體桶（要至少半桶；半桶到一整桶都算一桶）。
    *   pour：把一整桶（255）倒進瞄準格（空格 / 同種）；倒在別種液體上直接反應（水 ↔ 熔岩 → 黑曜石）。
    *   sponge：吸掉瞄準格與上下左右的水 / 蜂蜜（熔岩吸不了）。
    */
@@ -1434,6 +1437,10 @@ export class DelveGame {
     if (use === 'scoop') {
       const t = w.getLiquidType(x, y);
       if (t === LIQ.NONE) return false;
+      // 至少要有半桶（瞄準格 + 左右同種格）才舀得起來：避免從薄膜無中生有
+      let avail = 0;
+      for (const dx of [0, -1, 1, -2, 2]) if (w.getLiquidType(x + dx, y) === t) avail += w.getLiquid(x + dx, y);
+      if (avail < SCOOP_MIN) return false;
       let got = 0;
       for (const dx of [0, -1, 1, -2, 2]) {
         if (got >= LIQ_MAX) break;
@@ -1450,7 +1457,7 @@ export class DelveGame {
     }
     if (use === 'pour') {
       const t = ITEMS[st.item].liquid ?? LIQ.WATER;
-      if (!this.liquids.pour(x, y, t, LIQ_MAX)) { this.block('place', 'occupied', x, y); return false; }
+      if (!this.liquids.pour(x, y, t, LIQ_MAX)) { this.block('place', this.tileOverlapsPlayer(x, y) ? 'body' : 'occupied', x, y); return false; }
       this.inventory.takeFromSlot(sel, 1);
       const left = this.inventory.add('bucket', 1);
       if (left > 0) this.dropAtTile('bucket', left, pt.x, pt.y);

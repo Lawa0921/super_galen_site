@@ -13,8 +13,11 @@
 // format 6 起（液體）：header.liquids = { chunks, data }：chunks = 液體或 tile 被改過的 chunk（world.liquidModified ∪
 //   modifiedChunks，排序），data = 那些 chunk 依序每格（量, 種類）的 RLE（[長度 varint][量 u8][種類 u8]…）再 base64。
 //   沒被動過、生成時已靜置的自然液體不存——讀檔時由 seed 重新生成。讀檔後存檔裡的液體 chunk 會被喚醒（繼續流）。
-//   遷移：format ≤ 5 的存檔（生成器 v4）可以讀——以 v5 生成器（多了液體）重建，再貼上被改過的 chunk；
+//   遷移：format ≤ 5 的存檔（生成器 v4）可以讀——以 v5 生成器重建，再貼上被改過的 chunk；
 //   那些 chunk 裡落在實心方塊上的新液體清掉、其餘液體喚醒（例如玩家挖過的洞會被附近的新湖灌進去）。
+//   v5 相對 v4 的地形差異：多了液體、沙漠綠洲的淺碗、叢林蜂巢、熔岩深淵的低窪池從熔岩石變成熔岩（液體）；
+//   樹 / 地表裝飾的亂數流維持 v4（只是水面上不放），所以沒動過的地表與 v4 相同。蜂巢 / 綠洲 / 熔岩池若緊鄰
+//   玩家改過的 chunk，接縫處可能不連續（已知限制）。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
 //
 // 二進位格式（little-endian）：
@@ -37,7 +40,7 @@ import { BASE_HP, MAX_HP_CAP } from '../engine/combat';
 import { LIQ, LIQ_MAX } from '../engine/liquidKind';
 
 export const SAVE_FORMAT = 6;
-/** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5 只多了液體 */
+/** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
 export const COMPAT_GEN: readonly number[] = [4];
 export interface LiquidSave { chunks: number[]; data: string; }
 export interface CombatSave {

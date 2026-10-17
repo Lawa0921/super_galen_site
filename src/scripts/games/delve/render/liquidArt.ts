@@ -149,10 +149,10 @@ function pixelOf(type: number, x: number, y: number, d: number, frame: number, p
     return (x + y) & 1 ? LAVA[2] : LAVA[3];
   }
   if (type === LIQ.HONEY) {
-    // 蜂蜜：3/4 抖動（只有 Bayer 最高那一階挖洞），琥珀色；水面亮
+    // 蜂蜜：5/8 抖動（比水密、仍看得到裡面的人），琥珀色；水面亮
     if (surf && d === 0) return HONEY[5];
     if (surf && d === 1) return HONEY[4];
-    if (t > 0.75) return null;
+    if (t > 0.625) return null;
     if (piece === 'fall' && ((y + frame * 2) & 7) === 0) return HONEY[5];
     // 琥珀：亮黃斑點（蜂蜜的光澤）+ 橘，最暗只到深橘
     if (surf && d < 4) return t < 0.4 ? HONEY[4] : HONEY[3];

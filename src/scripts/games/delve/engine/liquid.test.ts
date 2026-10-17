@@ -178,6 +178,34 @@ describe('LiquidSim', () => {
     expect(ev.some((e) => e.kind === 'obsidian' && e.x === 4 && e.y === 8)).toBe(true);
   });
 
+  it('反應發生在非空氣格（箱子等）→ 只冒煙、不放方塊，箱子與內容保留', () => {
+    const w = box(10, 10);
+    const sim = new LiquidSim(w);
+    w.setFg(4, 8, T.CHEST);
+    w.chests.get(w.idx(4, 8))![0] = { item: 'gold_bar', count: 5 };
+    w.setLiquid(4, 8, 255, LIQ.LAVA); sim.add(4, 8);
+    w.setLiquid(5, 8, 255, LIQ.WATER); sim.add(5, 8);
+    run(sim, 30);
+    expect(w.getFg(4, 8)).toBe(T.CHEST);
+    expect(w.chests.get(w.idx(4, 8))![0]).toEqual({ item: 'gold_bar', count: 5 });
+    expect(sim.drainEvents().some((e) => e.kind === 'steam')).toBe(true);
+    // 倒熔岩桶到放著箱子的水格 → 拒絕
+    w.setLiquid(4, 8, 255, LIQ.WATER);
+    expect(sim.pour(4, 8, LIQ.LAVA, 255)).toBe(false);
+    expect(w.getFg(4, 8)).toBe(T.CHEST);
+  });
+
+  it('blocked 回呼（有人站著）→ 反應只冒煙，不把方塊放進身體裡', () => {
+    const w = box(10, 10);
+    const sim = new LiquidSim(w);
+    sim.blocked = (x, y) => x === 4 && y === 8;
+    w.setLiquid(4, 8, 255, LIQ.LAVA); sim.add(4, 8);
+    w.setLiquid(5, 8, 255, LIQ.WATER); sim.add(5, 8);
+    run(sim, 30);
+    expect(w.getFg(4, 8)).toBe(T.AIR);
+    expect(sim.pour(4, 8, LIQ.LAVA, 255) && w.getFg(4, 8) === T.OBSIDIAN).toBe(false);
+  });
+
   it('蜂蜜碰熔岩 → 酥蜜塊', () => {
     const w = box(10, 10);
     const sim = new LiquidSim(w);

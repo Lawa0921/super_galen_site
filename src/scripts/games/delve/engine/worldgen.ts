@@ -1276,14 +1276,14 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       const ground = fg[gy * WW + x];
       const jungle = ground === T.JUNGLE_GRASS, snow = ground === T.SNOW;
       if (ground !== T.GRASS && !jungle && !snow) continue;
-      if (world.liquid[(gy - 1) * WW + x]) continue; // 水底不長樹
       const gap = jungle ? 7 : 4;
       if (x - lastTree < gap || Math.abs(x - sx) < 5) continue;
       if (!rng.chance(jungle ? 3 : snow ? 4 : 5)) continue;
       const h = jungle ? rng.int(11, 21) : snow ? rng.int(7, 15) : rng.int(5, 12);
       const r = jungle ? rng.int(4, 7) : snow ? rng.int(2, 4) : rng.int(2, 4);
       if (gy - h - r - 2 < 1) continue;
-      let clear = true;
+      // 水底不長樹（亂數照樣抽，讓沒有水的地方和 v4 一樣 → v4 存檔遷移時沒有接縫）
+      let clear = !world.liquid[(gy - 1) * WW + x];
       for (let dy = 1; dy <= h + 3 && clear; dy++) {
         for (let dx = -2; dx <= 2; dx++) if (fg[(gy - dy) * WW + x + dx] !== T.AIR || world.liquid[(gy - dy) * WW + x + dx]) { clear = false; break; }
       }
@@ -1309,7 +1309,8 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       const gy = surface[x];
       if (gy < 2 || gy >= height) continue;
       const ground = fg[gy * WW + x], ai = (gy - 1) * WW + x;
-      if (fg[ai] !== T.AIR || world.liquid[ai]) continue;
+      if (fg[ai] !== T.AIR) continue;
+      const wet = world.liquid[ai] > 0; // 水裡不放裝飾（亂數照樣抽，見上）
       const r = rng.next();
       let d = -1;
       if (ground === T.GRASS) {
@@ -1319,7 +1320,7 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
         if (r < 0.08 && x - lastCactus > 5) {
           const hc = rng.int(2, 6);
           let ok = true;
-          for (let k = 1; k <= hc; k++) if (get(x, gy - k) !== T.AIR) ok = false;
+          for (let k = 1; k <= hc; k++) if (get(x, gy - k) !== T.AIR || wet) ok = false;
           if (ok) { for (let k = 1; k <= hc; k++) put(x, gy - k, T.CACTUS); lastCactus = x; }
           continue;
         }
@@ -1331,7 +1332,7 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       } else if (ground === T.SAND) {
         d = r < 0.04 ? T.SMALL_ROCK : -1;
       }
-      if (d >= 0) fg[ai] = d;
+      if (d >= 0 && !wet) fg[ai] = d;
     }
   })();
   mark('地下裝飾：陶罐、石筍 /');

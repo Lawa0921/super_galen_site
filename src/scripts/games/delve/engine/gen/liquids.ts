@@ -191,6 +191,10 @@ export function createLiquidGen(ctx: LiquidGenCtx): { surface(): void; deep(): {
         for (let x = x0; x < x1 && solidOk; x++) for (let k = 0; k < depth + 4; k++) if (!SOLID_LUT[fg[(surface[x] + k) * WW + x]]) { solidOk = false; break; }
         if (!solidOk || near(x0, surface[x0] - 8, ow, depth + 12, 10)) continue;
         const rim = Math.max(surface[x0], surface[x1 - 1]);
+        // 先記下要動的格，注水失敗就整個還原（不留乾坑）
+        const undo: [number, number, number][] = [];
+        const surf0 = surface.slice(x0, x1);
+        for (let x = x0; x < x1; x++) for (let y = Math.min(surface[x], rim); y <= rim + depth + 2; y++) { const i = y * WW + x; undo.push([i, fg[i], wall[i]]); }
         for (let x = x0; x < x1; x++) {
           const t = ((x - x0) + 0.5) / ow * 2 - 1;
           const d = Math.round(depth * (1 - t * t) + (vnoise1(x, 4, ns) - 0.5) * 1.5);
@@ -201,7 +205,11 @@ export function createLiquidGen(ctx: LiquidGenCtx): { surface(): void; deep(): {
           surface[x] = Math.max(surface[x], bottom);
         }
         const c = flood((x0 + x1) >> 1, surface[(x0 + x1) >> 1] - 1, rim, 2500);
-        if (!c) continue;
+        if (!c) {
+          for (const [i, f, wl] of undo) { fg[i] = f; wall[i] = wl; }
+          surface.set(surf0, x0);
+          continue;
+        }
         fill(c, LIQ.WATER);
         // 岸邊：草叢 / 蕨類
         for (const sx of [x0 - 3, x0 - 2, x0 - 1, x1, x1 + 1, x1 + 2]) {

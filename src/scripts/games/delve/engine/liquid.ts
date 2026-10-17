@@ -85,6 +85,8 @@ export class LiquidSim {
   private readonly inQ: Uint8Array;
   private readonly kill: Uint8Array;
   private events: LiquidEvent[] = [];
+  /** (x,y) 有身體（玩家）：反應不放方塊（只冒煙），倒液體不反應——避免把人封進黑曜石 */
+  blocked: ((x: number, y: number) => boolean) | null = null;
   private overTicks = 0;
   private quick = false;
   /** 攤平用的鄰格暫存（本格 + 左右各 2） */
@@ -323,7 +325,8 @@ export class LiquidSim {
     this.enqueue(other);
     const x = lava % w.width, y = (lava - x) / w.width;
     let kind: ReactionKind = 'steam';
-    if (la >= REACT_MIN) {
+    // 只在空氣格凝成方塊：箱子 / 火把 / 門 / 平台等非實心物件裡的熔岩只會冒煙消失（不吞掉物件與內容）
+    if (la >= REACT_MIN && w.fg[lava] === T.AIR && !this.blocked?.(x, y)) {
       kind = otherType === LIQ.HONEY ? 'honeycrisp' : 'obsidian';
       w.setFg(x, y, kind === 'obsidian' ? T.OBSIDIAN : T.CRISPY_HONEY);
     }
@@ -333,7 +336,7 @@ export class LiquidSim {
 
   /**
    * 倒液體到 (x,y)：空格或同種液體 → 加量；倒在別種液體上 → 直接反應（水 / 蜂蜜倒進熔岩 → 方塊）。
-   * 實心、已滿、水 ↔ 蜂蜜 → false。
+   * 實心、已滿、水 ↔ 蜂蜜、要反應的格不是空氣或有人站著 → false。
    */
   pour(x: number, y: number, type: number, amount: number): boolean {
     const w = this.world;
@@ -347,7 +350,8 @@ export class LiquidSim {
       return true;
     }
     if (ct !== LIQ.LAVA && type !== LIQ.LAVA) return false;
-    // 反應：倒進去的量 vs 原有的量，那格變方塊
+    // 反應：那格變方塊——只在空氣格、而且沒有人站在那裡
+    if (w.fg[i] !== T.AIR || this.blocked?.(x, y)) return false;
     w.setLiquid(x, y, 0, LIQ.NONE);
     const honey = ct === LIQ.HONEY || type === LIQ.HONEY;
     w.setFg(x, y, honey ? T.CRISPY_HONEY : T.OBSIDIAN);

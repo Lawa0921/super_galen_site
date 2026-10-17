@@ -174,6 +174,22 @@ describe('液體工具', () => {
     g.setAim(51, 57); g.setUse(true); run(g, 0.05); g.setUse(false);
     expect(g.world.getFg(51, 57)).toBe(T.OBSIDIAN);
   });
+  it('薄薄一層水（不到半桶）舀不起來（不能無中生有）', () => {
+    const g = arena({ px: 48 });
+    g.world.setLiquid(50, 59, 40, LIQ.WATER);
+    hold(g, 'bucket');
+    g.setAim(50, 59); g.setUse(true); run(g, 0.05); g.setUse(false);
+    expect(g.inventory.count('water_bucket')).toBe(0);
+    expect(g.inventory.count('bucket')).toBe(1);
+  });
+  it('站在水裡往腳下倒熔岩 → 被擋（不會把黑曜石蓋在自己身上）', () => {
+    const g = arena({ px: 55, pool: { x0: 50, x1: 60, top: 57 } });
+    hold(g, 'lava_bucket');
+    const f = g.feetTile();
+    g.setAim(f.x, f.y); g.setUse(true); run(g, 0.05); g.setUse(false);
+    expect(g.world.getFg(f.x, f.y)).not.toBe(T.OBSIDIAN);
+    expect(g.inventory.count('lava_bucket')).toBe(1);
+  });
   it('海綿吸掉水', () => {
     const g = arena({ px: 48, pool: { x0: 50, x1: 52, top: 58 } });
     const before = g.world.liquidTotal();
