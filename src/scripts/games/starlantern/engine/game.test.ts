@@ -25,7 +25,7 @@ import { itemLevel, itemWeight, rollItem } from './loot/item';
 import { MATERIALS } from '../data/materials';
 import { buy } from './town';
 import { memoriesOf } from './progression';
-import { FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP } from '../data/story/fragments';
+import { SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
 
 vi.mock('./portals', async (importOriginal) => {
@@ -2189,5 +2189,52 @@ describe('fragments as run loot', () => {
     expect(g.useReturnLamp()).toBe(true);
     expect(shardsIn(g.state.inventory)).toBe(held);
     expect(shardsIn(g.banked!.items)).toBe(held);
+  });
+});
+
+describe('the fragment exchange in the game', () => {
+  const stocked = () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, START_LINEUP);
+    g.state.party = meet(g.state.party, 'bobby', 1);
+    g.state.inventory[SHARD_IDS.dim] = 3;
+    return { g, storage };
+  };
+  const savedState = (storage: ReturnType<typeof memoryStorage>) => { const r = loadGame(storage); return r.status === 'ok' ? r.state : null; };
+  it('selling and absorbing work only in town and save at once', () => {
+    const { g, storage } = stocked();
+    const gold = g.state.gold;
+    expect(g.sellShards('dim', 1)).toMatchObject({ ok: true });
+    expect(g.notice).toBeNull();
+    expect(g.state.gold).toBe(gold + SHARD_PRICE.dim);
+    expect(savedState(storage)!.gold).toBe(g.state.gold);
+    const a = g.absorb('bobby', 'dim');
+    expect(a.ok).toBe(true);
+    expect(g.state.party.roster.bobby.absorbed).toHaveLength(1);
+    expect(savedState(storage)!.party.roster.bobby.absorbed).toEqual(g.state.party.roster.bobby.absorbed);
+    expect(savedState(storage)!.inventory[SHARD_IDS.dim]).toBe(1);
+    // a refused call leaves state and save alone
+    const stored = storage.map.get(SAVE_KEY);
+    expect(g.sellShards('dim', 5)).toEqual({ ok: false, reason: 'stock' });
+    expect(g.absorb('sylvie', 'dim')).toEqual({ ok: false, reason: 'invalid' });
+    expect(storage.map.get(SAVE_KEY)).toBe(stored);
+  });
+  it('neither works away from town', () => {
+    const { g } = stocked();
+    g.phase = 'map';
+    const before = JSON.stringify(g.state);
+    expect(g.sellShards('dim', 1)).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.absorb('bobby', 'dim')).toEqual({ ok: false, reason: 'invalid' });
+    expect(JSON.stringify(g.state)).toBe(before);
+  });
+  it('a failed save sets the notice', () => {
+    const g = new Game(calm(), null, undefined, 0, START_LINEUP);
+    g.state.party = meet(g.state.party, 'bobby', 1);
+    g.state.inventory[SHARD_IDS.dim] = 2;
+    expect(g.sellShards('dim', 1).ok).toBe(true);
+    expect(g.notice).toBe('save-failed');
+    g.notice = null;
+    expect(g.absorb('bobby', 'dim').ok).toBe(true);
+    expect(g.notice).toBe('save-failed');
   });
 });

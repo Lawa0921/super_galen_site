@@ -1,4 +1,9 @@
-import { SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS, shardGrade, type TownFragmentId } from '../../data/story/fragments';
+import { ABSORB_CAP, ABSORB_GAIN, PERKS, SHARD_DROP, SHARD_IDS, SHARD_PRICE, TOWN_DROP, TOWN_FRAGMENTS, shardGrade, type ShardGrade, type TownFragmentId } from '../../data/story/fragments';
+import { STORY } from '../../data/story.zh-TW';
+import { mix } from '../loot/drops';
+import { pick, mulberry32 } from '../rng';
+import type { TownResult } from '../town';
+import type { AbsorbGain, CharacterId, StatKey } from '../types';
 import type { RegionId } from '../../data/regions';
 import type { Run } from '../dungeon/run';
 import type { Rng } from '../rng';
@@ -48,4 +53,55 @@ export function lootFragments(s: GameState, run: Run, ctx: FragmentCtx, rng: Rng
   const open = TOWN_FRAGMENTS.filter((f) => townFragmentEligible(s, run, f.id, ctx.region, ctx.depth));
   if (open.length > 0 && rng() < TOWN_DROP[ctx.source]) out.push({ kind: 'town', id: open[0].id });
   return out;
+}
+
+const isGrade = (g: unknown): g is ShardGrade => typeof g === 'string' && Object.prototype.hasOwnProperty.call(SHARD_PRICE, g);
+const STATS: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
+
+/** What the guild pays for one shard; Anna's returned fragment lifts it (Task 9 swaps the check for `hasPerk`). */
+export function shardPrice(s: GameState, grade: ShardGrade): number {
+  const base = SHARD_PRICE[grade];
+  return s.story.returned.includes('anna') ? Math.round(base * PERKS.shardPriceMul) : base;
+}
+
+/** Sells `qty` shards of one grade. A shard sale never counts toward `sold`, so it unlocks nothing. */
+export function sellShards(s: GameState, grade: ShardGrade, qty: number): TownResult {
+  if (!isGrade(grade) || !Number.isSafeInteger(qty) || qty <= 0) return { ok: false, reason: 'invalid' };
+  const id = SHARD_IDS[grade];
+  const have = s.inventory[id] ?? 0;
+  if (have < qty) return { ok: false, reason: 'stock' };
+  const inventory = { ...s.inventory, [id]: have - qty };
+  if (inventory[id] === 0) delete inventory[id];
+  return { ok: true, state: { ...s, gold: s.gold + shardPrice(s, grade) * qty, inventory } };
+}
+
+export const ABSORB_SALT = 0x1f83d9ab;
+
+/** The absorbing stream: seeded by the save and how much the party has absorbed, so a reload cannot re-roll. */
+export function absorbRng(s: GameState): Rng {
+  const total = Object.values(s.party.roster).reduce((n, m) => n + (m.absorbed?.length ?? 0), 0);
+  return mulberry32(mix(s.forgeSalt ^ ABSORB_SALT, total));
+}
+
+export type AbsorbResult =
+  | { ok: true; state: GameState; gain: AbsorbGain; line: string }
+  | { ok: false; reason: 'invalid' | 'stock' | 'cap' };
+
+/** One shard into a member who was met: a random stat from the grade's table, a line, one shard fewer. */
+export function absorb(s: GameState, id: CharacterId, grade: ShardGrade): AbsorbResult {
+  if (!isGrade(grade) || !s.party.recruited.includes(id)) return { ok: false, reason: 'invalid' };
+  const key = SHARD_IDS[grade];
+  const have = s.inventory[key] ?? 0;
+  if (have < 1) return { ok: false, reason: 'stock' };
+  const member = s.party.roster[id];
+  const list = member.absorbed ?? [];
+  if (list.length >= ABSORB_CAP) return { ok: false, reason: 'cap' };
+  const rng = absorbRng(s);
+  const stat = pick(rng, STATS);
+  const gain: AbsorbGain = { stat, amount: ABSORB_GAIN[grade][stat] };
+  const line = pick(rng, STORY.absorb);
+  const inventory = { ...s.inventory, [key]: have - 1 };
+  if (inventory[key] === 0) delete inventory[key];
+  const roster = { ...s.party.roster, [id]: { ...member, absorbed: [...list, gain] } };
+  return { ok: true, state: { ...s, inventory, party: { ...s.party, roster } }, gain, line };
 }

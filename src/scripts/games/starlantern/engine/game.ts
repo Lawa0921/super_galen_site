@@ -8,8 +8,8 @@ import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from '
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
 import { memScene, type SceneId } from '../data/story/scenes';
-import { SHARD_IDS, isFragmentItem, shardGrade } from '../data/story/fragments';
-import { fragmentItem, gainOf, lootFragments } from './story/fragments';
+import { SHARD_IDS, isFragmentItem, shardGrade, type ShardGrade } from '../data/story/fragments';
+import { absorb, fragmentItem, gainOf, lootFragments, sellShards, type AbsorbResult } from './story/fragments';
 import { advance, danger, type Danger } from './encounter';
 import { ALTAR_STAT_CAP_PCT, altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POISON_TP_LOSS_PCT, trapDamage, VAULT_CHEST_MULT } from './events';
 import { EQUIPMENT } from '../data/equipment';
@@ -708,6 +708,24 @@ export class Game {
     this.state = { ...this.state, party: { ...party, grid } };
     if (!(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return { ok: true };
+  }
+
+  /** The guild buys shards (it never sells them): town only, saved at once. */
+  sellShards(grade: ShardGrade, qty: number): TownResult {
+    if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
+    const r = this.apply(sellShards(this.state, grade, qty));
+    if (r.ok && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    return r;
+  }
+
+  /** One shard into a member who was met: town only, saved at once so a reload cannot re-roll the gain. */
+  absorb(id: CharacterId, grade: ShardGrade): AbsorbResult {
+    if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
+    const r = absorb(this.state, id, grade);
+    if (!r.ok) return r;
+    this.state = r.state;
+    if (!(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    return r;
   }
 
   /**
