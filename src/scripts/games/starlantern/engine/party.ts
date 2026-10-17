@@ -1,6 +1,7 @@
 import { GRID_SIZE, MAX_ACTIVE, ROWS } from './formation';
 import { CHARACTERS, CHARACTER_IDS, rulesOf } from '../data/characters';
 import { SKILLS } from '../data/skills';
+import { depthLevel } from './levels';
 import { SETS, SPECIALS } from '../data/gear';
 import { itemSlot, itemStats } from './loot/item';
 import { learnedSkills, newTree, skillPoints, talentPoints, talentStats } from './progression';
@@ -216,4 +217,22 @@ export function hasPassive(p: Party, passive: Passive): boolean {
     const m = p.roster[id];
     return m.hp > 0 && learnedSkills(m).some((s) => SKILLS[s].passive === passive);
   });
+}
+
+/** The level a newcomer joins at (spec 9.2): the field's average, at least the depth's level less two, never past the field's best. */
+export function joinLevel(p: Party, depth: number): number {
+  const levels = activeIds(p).map((id) => p.roster[id].level);
+  if (levels.length === 0) return 1;
+  const avg = Math.round(levels.reduce((a, b) => a + b, 0) / levels.length);
+  return Math.min(MAX_LEVEL, Math.max(1, Math.min(Math.max(...levels), Math.max(avg, depthLevel(depth) - 2))));
+}
+
+/** Meets a companion: she joins at the given level with the free rank only (points are spent on the status screen), full HP and TP, on the field while there is room, else on the bench. */
+export function meet(p: Party, id: CharacterId, level: number): Party {
+  if (p.recruited.includes(id)) return p;
+  const base: Member = { ...newMember(id), level, tree: newTree(id), talents: {} };
+  const s = statsOf(base);
+  const member: Member = { ...base, hp: s.hp, tp: s.tp };
+  const grid = activeIds(p).length < MAX_ACTIVE ? placeInGrid(p.grid, id, CHARACTERS[id].row) : p.grid;
+  return { ...p, roster: { ...p.roster, [id]: member }, recruited: [...p.recruited, id], grid };
 }
