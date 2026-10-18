@@ -61,6 +61,7 @@ import { WEATHER_KINDS, type WeatherKind } from '../engine/weather';
 import { isRngState, type RngState } from '../engine/rng';
 import { normalizeAppearance, type Appearance } from '../engine/appearance';
 import { Vanity, type VanityJSON } from '../engine/vanity';
+import type { SettlementJSON } from '../engine/settlement';
 
 export const SAVE_FORMAT = 9;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
@@ -140,6 +141,10 @@ export interface SaveHeader {
   appearance?: Appearance;
   /** 外觀欄（時裝）+ 防具隱藏開關；format 9 起（沒有 = 空、都不隱藏） */
   vanity?: VanityJSON;
+  /** 據點（爐心）與居民；沒有 = 沒有據點（壞欄位逐筆丟掉，不算損毀） */
+  settle?: SettlementJSON;
+  /** 半格方塊（建築木槌）：tile index 的差分（同結冰格）；沒有 = 都是整格 */
+  halves?: number[];
 }
 export interface ExtraSave {
   /** 釣魚紀錄：魚種 → 條數 */
@@ -321,6 +326,10 @@ function validEnv(v: unknown): EnvSave | undefined {
   const weather = wx && typeof wx === 'object' && WEATHER_KINDS.includes(wx.kind) && isNum(wx.until) ? { kind: wx.kind, until: wx.until } : null;
   return { weather, frozen: [...o.frozen] };
 }
+function validHalves(v: unknown): number[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  return v.filter((d) => Number.isInteger(d) && d >= 0).slice(0, 2_000_000);
+}
 function encodeFrozen(F: Uint8Array): number[] {
   const out: number[] = [];
   let last = 0;
@@ -430,6 +439,8 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce], codex: game.codex.toJSON(), rng: game.rngState() },
       appearance: { ...game.appearance },
       vanity: game.vanity.toJSON(),
+      settle: game.settle.toJSON(),
+      halves: encodeFrozen(w.half),
     },
     chunks,
   };
@@ -628,6 +639,8 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     extra: validExtra(h.extra),
     appearance: normalizeAppearance(h.appearance),
     vanity: Vanity.fromJSON(h.vanity).toJSON(),
+    settle: h.settle && typeof h.settle === 'object' ? h.settle : undefined,
+    halves: validHalves(h.halves),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -813,6 +826,15 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     game.codex.load(h.extra.codex);
     if (h.extra.rng) game.setRngState(h.extra.rng);
   }
+  // 半格方塊（只留在實心格）、據點 / 居民（核心那格要還是爐心）
+  if (h.halves) {
+    let i = 0;
+    for (let k = 0; k < h.halves.length; k++) {
+      i += h.halves[k];
+      if (i < w.half.length && w.isSolid(i % w.width, Math.floor(i / w.width))) w.half[i] = 1;
+    }
+  }
+  game.settle.load(h.settle, w);
   // 首領戰中存檔（怪物不存）：退還召喚道具，背包滿就掉在腳邊
   const refund = h.bossActive ? BOSS_SUMMON_ITEM[h.bossActive] : undefined;
   if (refund && !game.bossEnemy()) {

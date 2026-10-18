@@ -32,6 +32,13 @@ export const T = {
   CAMPFIRE: 75,
   // ── 家具：桌、椅、燈柱、畫（掛背景牆）、首領戰利品（立座 / 牆上） ──
   TABLE: 76, CHAIR: 77, LANTERN_POST: 78, PAINTING: 79, TROPHY: 80,
+  // ── 建築：木板變體、紅磚、屋瓦、玻璃（實心、自動接邊）、木圍欄 ──
+  DARK_PLANKS: 81, PALE_PLANKS: 82, RED_BRICK: 83, ROOF_RED: 84, ROOF_SLATE: 85, GLASS: 86, FENCE: 87,
+  // ── 家具（雙格：沙發 / 壁爐左右兩半）、層架、吊燈、檯燈、地毯、盆栽、長椅 ──
+  SOFA_L: 88, SOFA_R: 89, FIREPLACE_L: 90, FIREPLACE_R: 91, SHELF: 92, CHANDELIER: 93, TABLE_LAMP: 94, RUG: 95,
+  POTTED_PLANT: 96, BENCH: 97,
+  // ── 據點：據點爐心（核心，宣告範圍） ──
+  HEARTH: 98,
 } as const;
 export type TileId = (typeof T)[keyof typeof T];
 
@@ -41,6 +48,8 @@ export const W = {
   DEEP_STONE_WALL: 8, BASALT_WALL: 9,
   DUNGEON_WALL_BLUE: 10, DUNGEON_WALL_GREEN: 11, DUNGEON_WALL_PINK: 12,
   HIVE_WALL: 13,
+  // ── 建築：人造背景牆（房屋判定只認人造牆） ──
+  DARK_PLANK_WALL: 14, PALE_PLANK_WALL: 15, STONE_BRICK_WALL: 16, RED_BRICK_WALL: 17, GLASS_WALL: 18, PLASTER_WALL: 19,
 } as const;
 export type WallId = (typeof W)[keyof typeof W];
 
@@ -195,6 +204,27 @@ export const TILES: readonly TileDef[] = [
   decor(T.LANTERN_POST, 'lantern_post', n('燈柱', 'Lamp Post'), 'floor', 'lantern_post', '#ffd86a', { hardness: 0.4, light: 0.9 }),
   decor(T.PAINTING, 'painting', n('畫', 'Painting'), 'wall', 'painting', '#b8788e', { hardness: 0.2 }),
   decor(T.TROPHY, 'trophy', n('守望者戰利品', 'Warden Trophy'), 'mount', 'warden_trophy', '#ffd86a', { hardness: 0.3 }),
+  // ── 建築 ──
+  block(T.DARK_PLANKS, 'dark_planks', n('深色木板', 'Smoked Planks'), 0.6, 'dark_planks', '#623924'),
+  block(T.PALE_PLANKS, 'pale_planks', n('淺色木板', 'Pale Planks'), 0.6, 'pale_planks', '#c99660'),
+  block(T.RED_BRICK, 'red_brick', n('紅磚', 'Red Brick'), 1.0, 'red_brick', '#a83a10'),
+  block(T.ROOF_RED, 'roof_red', n('紅屋瓦', 'Red Roof Tile'), 0.7, 'roof_red', '#c8344c'),
+  block(T.ROOF_SLATE, 'roof_slate', n('青屋瓦', 'Slate Roof Tile'), 0.7, 'roof_slate', '#463c78'),
+  def({ id: T.GLASS, key: 'glass', name: n('玻璃', 'Glass'), solid: true, hardness: 0.3, drop: 'glass', color: '#cceaf8', blocksLight: false }),
+  decor(T.FENCE, 'fence', n('木圍欄', 'Wooden Fence'), 'floor', 'fence', '#966139', { hardness: 0.3 }),
+  // ── 家具 ──
+  decor(T.SOFA_L, 'sofa_l', n('沙發', 'Sofa'), 'floor', 'sofa', '#b8788e', { hardness: 0.3 }),
+  decor(T.SOFA_R, 'sofa_r', n('沙發', 'Sofa'), 'floor', null, '#b8788e', { hardness: 0.3 }),
+  decor(T.FIREPLACE_L, 'fireplace_l', n('壁爐', 'Fireplace'), 'floor', 'fireplace', '#858aa0', { hardness: 0.6, light: 0.85 }),
+  decor(T.FIREPLACE_R, 'fireplace_r', n('壁爐', 'Fireplace'), 'floor', null, '#858aa0', { hardness: 0.6, light: 0.85 }),
+  decor(T.SHELF, 'shelf', n('層架', 'Wall Shelf'), 'wall', 'shelf', '#7c4c2e', { hardness: 0.3 }),
+  decor(T.CHANDELIER, 'chandelier', n('吊燈', 'Chandelier'), 'ceiling', 'chandelier', '#ffd86a', { hardness: 0.3, light: 1 }),
+  decor(T.TABLE_LAMP, 'table_lamp', n('檯燈', 'Table Lamp'), 'floor', 'table_lamp', '#ffd86a', { hardness: 0.2, light: 0.8 }),
+  decor(T.RUG, 'rug', n('地毯', 'Rug'), 'floor', 'rug', '#a83a10', { hardness: 0.2 }),
+  decor(T.POTTED_PLANT, 'potted_plant', n('盆栽', 'Potted Plant'), 'floor', 'potted_plant', '#468a34', { hardness: 0.2 }),
+  decor(T.BENCH, 'bench', n('長椅', 'Bench'), 'floor', 'bench', '#966139', { hardness: 0.3 }),
+  // ── 據點 ──
+  decor(T.HEARTH, 'hearth', n('據點爐心', 'Hearthstone'), 'floor', 'hearth', '#e8701c', { hardness: 0.8, light: 0.9 }),
 ];
 
 export const WALLS: readonly WallDef[] = [
@@ -212,6 +242,12 @@ export const WALLS: readonly WallDef[] = [
   { id: W.DUNGEON_WALL_GREEN, key: 'dungeon_wall_green', name: n('綠地城牆', 'Green Dungeon Wall'), color: '#16301e' },
   { id: W.DUNGEON_WALL_PINK, key: 'dungeon_wall_pink', name: n('粉地城牆', 'Pink Dungeon Wall'), color: '#2c2450' },
   { id: W.HIVE_WALL, key: 'hive_wall', name: n('蜂巢牆', 'Hive Wall'), color: '#6c1e14' },
+  { id: W.DARK_PLANK_WALL, key: 'dark_plank_wall', name: n('深色木板牆', 'Smoked Plank Wall'), color: '#2a1810' },
+  { id: W.PALE_PLANK_WALL, key: 'pale_plank_wall', name: n('淺色木板牆', 'Pale Plank Wall'), color: '#966139' },
+  { id: W.STONE_BRICK_WALL, key: 'stone_brick_wall', name: n('石磚牆', 'Stone Brick Wall'), color: '#423f54' },
+  { id: W.RED_BRICK_WALL, key: 'red_brick_wall', name: n('紅磚牆', 'Red Brick Wall'), color: '#6c1e14' },
+  { id: W.GLASS_WALL, key: 'glass_wall', name: n('玻璃窗', 'Glass Window'), color: '#2c4486' },
+  { id: W.PLASTER_WALL, key: 'plaster_wall', name: n('灰泥牆', 'Plaster Wall'), color: '#b4b9c8' },
 ];
 
 /** 地城配色：每個世界挑一色（磚 + 背景牆） */
@@ -241,6 +277,11 @@ export const LIGHT_HUE: Partial<Record<number, readonly [number, number, number]
   [T.LAVA_SPRING]: [1, 0.46, 0.2],
   [T.CAMPFIRE]: [1, 0.66, 0.36],
   [T.LANTERN_POST]: [1, 0.88, 0.6],
+  [T.FIREPLACE_L]: [1, 0.62, 0.32],
+  [T.FIREPLACE_R]: [1, 0.62, 0.32],
+  [T.CHANDELIER]: [1, 0.9, 0.62],
+  [T.TABLE_LAMP]: [1, 0.86, 0.58],
+  [T.HEARTH]: [1, 0.66, 0.36],
 };
 export const CRYSTAL_ALT_HUE: readonly [number, number, number] = [0.82, 0.5, 1];
 /** 發光 RGB 查表：i*3 + 通道 */
@@ -274,7 +315,7 @@ export function isDoorTile(id: number): boolean { return id === T.DOOR_CLOSED ||
 export function isChestTile(id: number): boolean { return id === T.CHEST || id === T.LOCKED_CHEST; }
 export function isDungeonBrick(id: number): boolean { return id >= T.DUNGEON_BRICK_BLUE && id <= T.DUNGEON_BRICK_PINK; }
 /** 按「使用」會互動（而不是放方塊）的 tile */
-export function isInteractive(id: number): boolean { return isChestTile(id) || isDoorTile(id) || id === T.LORE_TABLET || isBedTile(id); }
+export function isInteractive(id: number): boolean { return isChestTile(id) || isDoorTile(id) || id === T.LORE_TABLET || isBedTile(id) || id === T.HEARTH; }
 export function isBedTile(id: number): boolean { return id === T.BED_HEAD || id === T.BED_FOOT; }
 /** 繩索掛得住：正上方實心 / 繩索 / 平台，或左右貼著實心 */
 export function ropeOk(above: number, left: number, right: number): boolean {
@@ -289,7 +330,9 @@ export function floorOk(id: number, below: number): boolean {
   if (SOLID_LUT[below] === 1) return true;
   if (id === T.CACTUS) return below === T.CACTUS;
   if (id === T.BOOKSHELF) return below === T.BOOKSHELF || below === T.PLATFORM;
-  if (id === T.CANDLE) return below === T.BOOKSHELF || below === T.PLATFORM || below === T.TABLE;
+  if (id === T.CANDLE || id === T.TABLE_LAMP) return below === T.BOOKSHELF || below === T.PLATFORM || below === T.TABLE;
+  if (id === T.POTTED_PLANT) return below === T.PLATFORM || below === T.TABLE || below === T.BOOKSHELF;
+  if (id === T.FENCE) return below === T.FENCE || below === T.PLATFORM;
   if (id === T.BONES || id === T.POT || id === T.CHEST) return below === T.PLATFORM;
   return false;
 }
@@ -299,6 +342,6 @@ export function ceilOk(id: number, above: number): boolean {
   if (id === T.VINE) return above === T.VINE || above === T.LEAVES;
   if (id === T.CHAIN) return above === T.CHAIN || above === T.PLATFORM;
   if (id === T.BANNER) return above === T.BANNER || above === T.PLATFORM;
-  if (id === T.LANTERN) return above === T.CHAIN || above === T.PLATFORM;
+  if (id === T.LANTERN || id === T.CHANDELIER) return above === T.CHAIN || above === T.PLATFORM;
   return false;
 }

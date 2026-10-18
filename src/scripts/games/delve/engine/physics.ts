@@ -11,7 +11,10 @@ export interface SolidQuery {
   isPlatform?(tx: number, ty: number): boolean;
   /** 可攀爬（繩索）；省略 = 沒有繩索 */
   isClimbable?(tx: number, ty: number): boolean;
+  /** 半格方塊（只有下半部 S/2 實心；建築木槌）；省略 = 沒有半格 */
+  isHalf?(tx: number, ty: number): boolean;
 }
+const HALF = S / 2;
 
 export interface Body {
   /** 左上角（px） */
@@ -70,10 +73,27 @@ export function makeBody(x: number, y: number, w = PLAYER_W, h = PLAYER_H): Body
 export function overlapsSolid(q: SolidQuery, x: number, y: number, w: number, h: number): boolean {
   const tx0 = Math.floor(x / S), tx1 = Math.floor((x + w - EPS) / S);
   const ty0 = Math.floor(y / S), ty1 = Math.floor((y + h - EPS) / S);
+  const bottom = y + h - EPS;
   for (let ty = ty0; ty <= ty1; ty++) {
-    for (let tx = tx0; tx <= tx1; tx++) if (q.isSolid(tx, ty)) return true;
+    for (let tx = tx0; tx <= tx1; tx++) {
+      if (!q.isSolid(tx, ty)) continue;
+      // 半格：身體底部沒進到下半部就不算碰到
+      if (q.isHalf && bottom < ty * S + HALF && q.isHalf(tx, ty)) continue;
+      return true;
+    }
   }
   return false;
+}
+/** 腳底落在第 row 列時，擋住的是不是只有半格（→ 站在半格頂上） */
+function halfFloor(q: SolidQuery, x: number, w: number, row: number): boolean {
+  if (!q.isHalf) return false;
+  let half = false;
+  for (let tx = Math.floor(x / S); tx <= Math.floor((x + w - EPS) / S); tx++) {
+    if (!q.isSolid(tx, row)) continue;
+    if (!q.isHalf(tx, row)) return false;
+    half = true;
+  }
+  return half;
 }
 
 /** 腳底剛好在第 row 列頂端（row*S）時，身體水平範圍下方有沒有平台 */
@@ -105,13 +125,17 @@ export function moveBody(q: SolidQuery, b: Body, dt: number, allowStep = b.onGro
       if (allowStep) {
         const feet = b.y + b.h;
         const row = Math.floor((feet - EPS) / S);
-        const lift = feet - row * S;
-        if (lift > 0 && lift <= STEP_MAX
-          && !overlapsSolid(q, b.x, b.y - lift, b.w, b.h)
-          && !overlapsSolid(q, nx, b.y - lift, b.w, b.h)) {
-          b.y -= lift; b.x = nx; b.gfxOffY += lift; res.stepped = true;
-          continue;
+        // 先試半格高（踩上半格方塊 / 從半格踩上整格），再試一整格
+        let stepped = false;
+        for (const lift of q.isHalf ? [feet - row * S - HALF, feet - row * S] : [feet - row * S]) {
+          if (lift > 0 && lift <= STEP_MAX
+            && !overlapsSolid(q, b.x, b.y - lift, b.w, b.h)
+            && !overlapsSolid(q, nx, b.y - lift, b.w, b.h)) {
+            b.y -= lift; b.x = nx; b.gfxOffY += lift; res.stepped = true; stepped = true;
+            break;
+          }
         }
+        if (stepped) continue;
       }
       // 貼齊阻擋格邊緣
       if (sdx > 0) {
@@ -144,7 +168,7 @@ export function moveBody(q: SolidQuery, b: Body, dt: number, allowStep = b.onGro
       if (!overlapsSolid(q, b.x, ny, b.w, b.h)) { b.y = ny; continue; }
       if (sdy > 0) {
         const row = Math.floor((ny + b.h - EPS) / S);
-        b.y = Math.max(b.y, row * S - b.h);
+        b.y = Math.max(b.y, row * S + (halfFloor(q, b.x, b.w, row) ? HALF : 0) - b.h);
       } else {
         const row = Math.floor(ny / S);
         b.y = Math.min(b.y, (row + 1) * S);

@@ -22,6 +22,8 @@ export class World {
   readonly liquidType: Uint8Array;
   /** 每格是否結冰（地表水在冬天：碰撞算實心、液體模擬不動它；見 frost.ts） */
   readonly frozen: Uint8Array;
+  /** 每格是不是半格方塊（建築木槌；只有下半部實心）——存檔內容（header.halves） */
+  readonly half: Uint8Array;
   /** 每格材質變體 0..2（座標雜湊，非存檔內容） */
   readonly variant: Uint8Array;
   readonly chunksX: number;
@@ -56,6 +58,8 @@ export class World {
   readonly liquidModified = new Set<number>();
   /** 前景 tile 改變時的通知（液體模擬用來喚醒鄰格）；setFg 之後呼叫 */
   onTileChange: ((x: number, y: number) => void) | null = null;
+  /** 前景 / 背景牆每改一格 +1（據點評分等快取用來判斷要不要重算） */
+  rev = 0;
 
   constructor(width: number, height: number) {
     this.width = width;
@@ -66,6 +70,7 @@ export class World {
     this.liquid = new Uint8Array(n);
     this.liquidType = new Uint8Array(n);
     this.frozen = new Uint8Array(n);
+    this.half = new Uint8Array(n);
     this.variant = new Uint8Array(n);
     this.surface = new Int16Array(width);
     this.biome = new Uint8Array(width);
@@ -107,6 +112,22 @@ export class World {
     return SOLID_LUT[this.fg[i]] === 1 || this.frozen[i] === 1;
   }
 
+  /** 半格方塊（只有下半部實心；物理 / 繪製用） */
+  isHalf(x: number, y: number): boolean {
+    if (!this.inBounds(x, y)) return false;
+    return this.half[y * this.width + x] === 1;
+  }
+  /** 設定 / 取消半格（只對實心方塊）；回傳是否有改變 */
+  setHalf(x: number, y: number, on: boolean): boolean {
+    if (!this.inBounds(x, y)) return false;
+    const i = y * this.width + x;
+    const v = on && SOLID_LUT[this.fg[i]] === 1 ? 1 : 0;
+    if (this.half[i] === v) return false;
+    this.half[i] = v;
+    this.touch(x, y);
+    return true;
+  }
+
   /** 單向平台（物理用） */
   isPlatform(x: number, y: number): boolean {
     if (!this.inBounds(x, y)) return false;
@@ -125,6 +146,7 @@ export class World {
     const old = this.fg[i];
     if (old === id) return false;
     this.fg[i] = id;
+    this.half[i] = 0;
     if (this.frozen[i] && SOLID_LUT[id] === 1) this.frozen[i] = 0;
     if ((old === T.CHEST || old === T.LOCKED_CHEST) && id !== T.CHEST && id !== T.LOCKED_CHEST) this.chests.delete(i);
     if ((id === T.CHEST || id === T.LOCKED_CHEST) && !this.chests.has(i)) this.chests.set(i, new Array<Stack | null>(CHEST_SLOTS).fill(null));
@@ -212,6 +234,7 @@ export class World {
   }
 
   private touch(x: number, y: number): void {
+    this.rev++;
     const cx = Math.floor(x / CHUNK), cy = Math.floor(y / CHUNK);
     const ci = this.chunkIndex(cx, cy);
     this.modifiedChunks.add(ci);

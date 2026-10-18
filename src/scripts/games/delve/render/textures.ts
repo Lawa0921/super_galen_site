@@ -64,7 +64,7 @@ const BLEND_ROW0 = WALL_ROW0 + WALLS.length;  // 3 列：MAT.DIRT/SAND/STONE
 const MISC_ROW = BLEND_ROW0 + 3;              // 裂痕 0..3、草葉 4..6、叢林草葉 7..9
 const ICON_ROW = MISC_ROW + 1;
 /** 圖示列數（每列 FRAME_COLS 個；依道具數量） */
-const ICON_ROWS = 5;
+const ICON_ROWS = 6;
 /** 季節草皮：春 / 夏 / 秋 / 冬（雪蓋）各一列，欄位同前景 tile（遮罩 × 變體） */
 const GRASS_SEASON_ROW0 = ICON_ROW + ICON_ROWS;
 /** 材質家族：FAMILY_TILES 每種 × (FAMILIES − 1) 列（家族 0 用原本的 tile 列） */

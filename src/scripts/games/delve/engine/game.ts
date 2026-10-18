@@ -10,7 +10,7 @@ import { World } from './world';
 import { generateWorld, type GenResult, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './worldgen';
 import type { DungeonInfo } from './gen/dungeon';
 type GenRelic = { x: number; y: number; item: ItemId; where: string };
-import { T, W, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
+import { T, W, TIER_UNBREAKABLE, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
 import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemDef, type ItemId, type PickStats, type WeaponDef, type WeaponKind } from './items';
 import { potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
@@ -53,6 +53,10 @@ import {
   isFirstNight, pickEntry, spawnCap, spawnChance, spawnInterval, spawnTable, type SpawnPressure,
 } from './spawn';
 import { Rng, type RngState } from './rng';
+import { CALM_REGEN, Settlements, type SettleEvent, type SettleHost, type Npc } from './settlement';
+import { NPCS, earn, forgeMul, npcLine, pay, shopPrice, walletOf, type NpcKind } from './npcs';
+import { PAIR_OF_LEFT, PAIR_OF_RIGHT } from './furniture';
+import { WALL_ITEM } from './items';
 import {
   TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH, HOTBAR_SIZE,
 } from './constants';
@@ -75,7 +79,9 @@ export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occu
   /** 床：附近有怪，不能睡 */
   | 'sleep'
   /** 釣魚：沒有魚餌；吃東西：血是滿的 */
-  | 'bait' | 'full_hp';
+  | 'bait' | 'full_hp'
+  /** 據點：範圍和別的據點重疊；商店：錢不夠 / 背包滿 */
+  | 'claim' | 'coins' | 'bagfull';
 export type DelveEvent =
   | { type: 'mine'; x: number; y: number; tile: number; item: ItemId | null }
   | { type: 'place'; x: number; y: number; tile: number; item: ItemId }
@@ -154,7 +160,17 @@ export type DelveEvent =
   /** 打開木箱 */
   | { type: 'crate'; item: ItemId; drops: { item: ItemId; n: number }[] }
   /** 吃東西 */
-  | { type: 'eat'; item: ItemId; amount: number };
+  | { type: 'eat'; item: ItemId; amount: number }
+  // ── 據點 / 居民 ──
+  | SettleEvent
+  /** 和居民說話（UI 開居民面板） */
+  | { type: 'talk'; kind: NpcKind; line: string }
+  /** 點了據點爐心（UI 開據點面板） */
+  | { type: 'hearth'; id: number; x: number; y: number }
+  /** 商店：買 / 賣 / 服務 */
+  | { type: 'trade'; kind: NpcKind; action: 'buy' | 'sell' | 'service'; item?: ItemId; n?: number; coins: number }
+  /** 傳送點：從一個據點傳到另一個 */
+  | { type: 'travel'; from: number; to: number; x: number; y: number };
 
 /** 釣魚狀態：flying 浮標在空中、floating 漂在液面等上鉤、bite 上鉤（判定窗內） */
 export interface FishingState {
@@ -415,6 +431,8 @@ export class DelveGame {
   private upHeld = false;
   /** 床（重生點，床頭 tile）；存檔內容 */
   bed: { x: number; y: number } | null = null;
+  /** 據點與居民（存檔內容） */
+  readonly settle = new Settlements();
   /** 傳送石引導經過秒數；null = 沒在引導 */
   private recallT: number | null = null;
   /** 飾品快取（以背包裡的飾品簽名判斷是否要重算） */
@@ -545,6 +563,7 @@ export class DelveGame {
       isSolid: (x, y) => w.isSolid(x, y),
       isPlatform: (x, y) => w.isPlatform(x, y),
       isClimbable: (x, y) => w.isClimbable(x, y),
+      isHalf: (x, y) => w.isHalf(x, y),
       mediumAt: (b) => liquidMedium(liquidContact(w, b)),
       itemMediumAt: (b) => liquidMedium(liquidContact(w, b), true),
       contactAt: (b) => liquidContact(w, b),
@@ -630,9 +649,10 @@ export class DelveGame {
     if (this.dead) {
       this.updateDeath(dt);
       this.updateEntities(dt);
+      this.updateSettlements(dt);
       return;
     }
-    if (this.sleepT !== null) { this.updateSleep(dt); return; }
+    if (this.sleepT !== null) { this.updateSleep(dt); this.updateSettlements(dt); return; }
     const knocked = this.knockT > 0;
     this.contact = liquidContact(this.world, this.player);
     const air0 = this.motion.airUsed ?? 0, climb0 = Boolean(this.motion.climbing), mantle0 = this.motion.mantle ?? null;
@@ -674,8 +694,13 @@ export class DelveGame {
       const { x, y } = this.aim;
       const held = this.inventory.selectedStack();
       const use = held ? ITEMS[held.item].use : undefined;
-      if (isInteractive(this.world.getFg(x, y))) {
+      const npc = this.useConsumed ? null : this.settle.npcAtPx(this.aimPx.x, this.aimPx.y);
+      if (npc && this.canReach(Math.floor((npc.body.x + npc.body.w / 2) / TILE_SIZE), Math.floor((npc.body.y + npc.body.h / 2) / TILE_SIZE), this.reach() + 1)) {
+        this.useConsumed = true; this.talkTo(npc);
+      } else if (isInteractive(this.world.getFg(x, y))) {
         if (!this.useConsumed) { this.useConsumed = true; this.interact(x, y); }
+      } else if (use === 'hammer') {
+        if (!this.useConsumed) { this.useConsumed = true; this.hammer(x, y); }
       } else if (use === 'recall') {
         if (!this.useConsumed) { this.useConsumed = true; this.startRecall(); }
       } else if (use === 'fish') {
@@ -687,6 +712,7 @@ export class DelveGame {
       } else if (!this.useConsumed && this.tryPlace(x, y)) this.placeCooldown = PLACE_COOLDOWN;
     }
     this.updateEntities(dt);
+    this.updateSettlements(dt);
     if (this.openChest) {
       const { x, y } = this.openChest;
       if (!isChestTile(this.world.getFg(x, y)) || !this.canReach(x, y, this.reach() + 1.5)) this.closeChest();
@@ -697,7 +723,7 @@ export class DelveGame {
     const { x, y } = this.aim;
     const id = this.world.getFg(x, y);
     if (id === T.AIR && this.world.inBounds(x, y) && this.world.frozen[this.world.idx(x, y)]) { this.mineIce(x, y, dt); return; }
-    if (id === T.AIR && this.world.getWall(x, y) === W.PLANK_WALL) { this.mineWall(x, y, dt); return; }
+    if (id === T.AIR && WALL_ITEM[this.world.getWall(x, y)]) { this.mineWall(x, y, dt); return; }
     if (!this.world.inBounds(x, y) || id === T.AIR) { this.mining = null; return; }
     if (!this.canReach(x, y)) { this.block('mine', 'reach', x, y); this.mining = null; return; }
     const def = tileDef(id);
@@ -747,8 +773,9 @@ export class DelveGame {
     }
     // 木門：整扇（3 格）只掉一個木門，算在最上面那格
     if (id === T.DOOR_CLOSED || id === T.DOOR_OPEN) return isDoorTile(this.world.getFg(x, y - 1)) ? [] : [{ item: 'wooden_door', n: 1 }];
-    // 床：整張只掉一個，算在床頭；孤立的床尾也掉一個
-    if (id === T.BED_FOOT) return this.world.getFg(x - 1, y) === T.BED_HEAD ? [] : [{ item: 'bed', n: 1 }];
+    // 雙格家具（床 / 沙發 / 壁爐）：整件只掉一個，算在左半；孤立的右半也掉一個
+    const pr = PAIR_OF_RIGHT.get(id);
+    if (pr) return this.world.getFg(x - 1, y) === pr.left ? [] : [{ item: pr.item, n: 1 }];
     const d = tileDef(id).drop;
     return d ? [{ item: d, n: 1 }] : [];
   }
@@ -769,9 +796,10 @@ export class DelveGame {
       tiles.push([tx, ty]);
       const tid = w.getFg(tx, ty);
       for (const d of this.dropsFor(tid, tx, ty)) drops.set(d.item, (drops.get(d.item) ?? 0) + d.n);
-      // 床的另一半一起拆
-      if (tid === T.BED_HEAD && w.getFg(tx + 1, ty) === T.BED_FOOT) take(tx + 1, ty);
-      if (tid === T.BED_FOOT && w.getFg(tx - 1, ty) === T.BED_HEAD) take(tx - 1, ty);
+      // 雙格家具的另一半一起拆
+      const pl = PAIR_OF_LEFT.get(tid), pr = PAIR_OF_RIGHT.get(tid);
+      if (pl && w.getFg(tx + 1, ty) === pl.right) take(tx + 1, ty);
+      if (pr && w.getFg(tx - 1, ty) === pr.left) take(tx - 1, ty);
     };
     const id = w.getFg(x, y);
     if (id === T.AIR || !w.inBounds(x, y)) return { tiles, drops, fits: true, chest: false };
@@ -830,6 +858,11 @@ export class DelveGame {
       if (tid === T.BED_HEAD && this.bed && this.bed.x === tx && this.bed.y === ty) {
         this.bed = null;
         this.events.push({ type: 'spawn', set: false, x: this.spawn.x, y: this.spawn.y });
+      }
+      if (tid === T.HEARTH) {
+        const lost = this.settle.coreAt(tx, ty);
+        if (lost && this.settle.spawnCore === lost.id) this.events.push({ type: 'spawn', set: false, x: this.spawn.x, y: this.spawn.y });
+        this.settle.remove(tx, ty);
       }
       const bug = this.baitDrop(tid);
       // 脈鳴（鎬的傳奇詞條）：礦石有機率加倍
@@ -932,18 +965,19 @@ export class DelveGame {
     return true;
   }
 
-  /** 床放置：(x,y) 床頭、(x+1,y) 床尾，兩格都要空、下面都要實心 */
-  private placeBed(x: number, y: number, item: ItemId): boolean {
-    const w = this.world;
+  /** 雙格家具放置（床 / 沙發 / 壁爐）：(x,y) 左半、(x+1,y) 右半，兩格都要空、下面都要實心 */
+  private placePair(x: number, y: number, item: ItemId, left: number): boolean {
+    const w = this.world, pair = PAIR_OF_LEFT.get(left);
+    if (!pair) return false;
     for (let k = 0; k < 2; k++) {
       const c = w.getFg(x + k, y);
       if (!w.inBounds(x + k, y) || (c !== T.AIR && !tileDef(c).replaceable)) { this.block('place', 'occupied', x, y); return false; }
       if (!isSolidTile(w.getFg(x + k, y + 1))) { this.block('place', 'support', x, y); return false; }
     }
-    w.setFg(x, y, T.BED_HEAD);
-    w.setFg(x + 1, y, T.BED_FOOT);
+    w.setFg(x, y, pair.left);
+    w.setFg(x + 1, y, pair.right);
     this.inventory.takeFromSlot(this.inventory.selected, 1);
-    this.events.push({ type: 'place', x, y, tile: T.BED_HEAD, item });
+    this.events.push({ type: 'place', x, y, tile: pair.left, item });
     return true;
   }
 
@@ -988,10 +1022,10 @@ export class DelveGame {
     this.mining.elapsed += dt;
     if (this.mining.elapsed + 1e-9 < need) return;
     this.mining = null;
-    const w = this.world;
+    const w = this.world, item = WALL_ITEM[w.getWall(x, y)] ?? 'plank_wall';
     w.setWall(x, y, 0);
-    this.dropAtTile('plank_wall', 1, x, y);
-    this.events.push({ type: 'mine', x, y, tile: T.PLANKS, item: 'plank_wall' });
+    this.dropAtTile(item, 1, x, y);
+    this.events.push({ type: 'mine', x, y, tile: T.PLANKS, item });
     const f = w.getFg(x, y), sup = tileDef(f).support;
     if ((sup === 'wall' || sup === 'any' || sup === 'mount') && !this.placeSupported(x, y, f)) this.breakTile(x, y);
   }
@@ -1012,7 +1046,8 @@ export class DelveGame {
     if (cur !== T.AIR && !replace) { this.block('place', 'occupied', x, y); return false; }
     if (!this.canReach(x, y)) { this.block('place', 'reach', x, y); return false; }
     if (place === T.DOOR_CLOSED) return this.placeDoor(x, y, stack.item);
-    if (place === T.BED_HEAD) return this.placeBed(x, y, stack.item);
+    if (PAIR_OF_LEFT.has(place)) return this.placePair(x, y, stack.item, place);
+    if (place === T.HEARTH && this.settle.canFound(x, y) !== 'ok') { this.block('place', 'claim', x, y); return false; }
     if (isSolidTile(place) && this.tileOverlapsPlayer(x, y)) { this.block('place', 'body', x, y); return false; }
     if (!this.placeSupported(x, y, place)) { this.block('place', 'support', x, y); return false; }
     if (replace) {
@@ -1022,6 +1057,7 @@ export class DelveGame {
     this.world.setFg(x, y, place);
     this.inventory.takeFromSlot(this.inventory.selected, 1);
     this.events.push({ type: 'place', x, y, tile: place, item: stack.item });
+    if (place === T.HEARTH) { this.settle.found(x, y); for (const e of this.settle.drainEvents()) this.events.push(e); }
     return true;
   }
 
@@ -1190,6 +1226,8 @@ export class DelveGame {
   // ── 床 / 傳送石 ───────────────────────────────────────
   /** 重生點（腳底 tile）：床還在 → 床頭那格；否則出生點 */
   respawnPoint(): { x: number; y: number } {
+    const hc = this.settle.spawnCore !== null ? this.settle.coreById(this.settle.spawnCore) : null;
+    if (hc && this.world.getFg(hc.x, hc.y) === T.HEARTH) return { x: hc.x + 1, y: hc.y };
     const b = this.bed;
     if (b && this.world.getFg(b.x, b.y) === T.BED_HEAD) return { x: b.x, y: b.y };
     return { x: this.spawn.x, y: this.spawn.y };
@@ -1198,6 +1236,7 @@ export class DelveGame {
     const hx = this.world.getFg(x, y) === T.BED_FOOT ? x - 1 : x;
     if (this.world.getFg(hx, y) !== T.BED_HEAD) return false;
     this.bed = { x: hx, y };
+    this.settle.spawnCore = null;
     this.events.push({ type: 'spawn', set: true, x: hx, y });
     if (this.isNight()) this.trySleep(hx, y);
     return true;
@@ -1295,7 +1334,13 @@ export class DelveGame {
   nearWorkbench(): boolean { return this.nearTile(T.WORKBENCH); }
   /** 附近有哪些合成站 */
   stations(): Record<Station, boolean> {
-    return { workbench: this.nearTile(T.WORKBENCH), furnace: this.nearTile(T.FURNACE), anvil: this.nearTile(T.ANVIL), campfire: this.nearTile(T.CAMPFIRE) };
+    const linked = this.linkedStations();
+    const has = (id: number): boolean => this.nearTile(id) || Boolean(linked?.has(id));
+    return {
+      workbench: has(T.WORKBENCH), furnace: has(T.FURNACE),
+      anvil: has(T.ANVIL) || this.nearNpc('smith'),
+      campfire: has(T.CAMPFIRE) || has(T.FIREPLACE_L) || this.nearNpc('cook'),
+    };
   }
   private nearTile(id: number): boolean {
     const p = this.playerTile();
@@ -1412,6 +1457,10 @@ export class DelveGame {
 
   craft(recipeId: string): CraftResult {
     const st = this.stations();
+    if (this.sharedStorage()) {
+      const r0 = this.craftFromStorage(recipeId, st);
+      if (r0) return r0;
+    }
     // 合成的裝備也擲一次稀有度（大多是普通 / 優良；物品等級 = 基底等級）
     const make = (item: ItemId): Gear | undefined => (gearSlot(item) ? this.rollFor(item, 'craft', 0, baseTier(item)) : undefined);
     const r = craftRecipe(this.inventory, recipeId, { nearWorkbench: st.workbench, nearFurnace: st.furnace, nearAnvil: st.anvil, nearCampfire: st.campfire }, make);
@@ -1430,6 +1479,11 @@ export class DelveGame {
     if (!this.canReach(x, y)) { this.block('use', 'reach', x, y); return false; }
     if (isDoorTile(id)) return this.useDoor(x, y);
     if (isBedTile(id)) return this.useBed(x, y);
+    if (id === T.HEARTH) {
+      const c = this.settle.coreAt(x, y) ?? (this.settle.canFound(x, y) === 'ok' ? this.settle.found(x, y) : null);
+      if (c) this.events.push({ type: 'hearth', id: c.id, x, y });
+      return Boolean(c);
+    }
     if (id === T.LORE_TABLET) {
       const lid = this.tabletId(x, y);
       this.events.push({ type: 'lore', id: lid, x, y, first: this.discovery.readLore(lid) });
@@ -1934,7 +1988,8 @@ export class DelveGame {
     this.sinceHit += dt;
     const max = this.maxHp();
     const st = this.stats();
-    const regen = (this.burning > 0 ? 0 : regenRate(this.sinceHit, st.regenMul) + st.gear.regen) + (this.honeyT > 0 ? HONEY_REGEN : 0);
+    const regen = (this.burning > 0 ? 0 : regenRate(this.sinceHit, st.regenMul) + st.gear.regen) + (this.honeyT > 0 ? HONEY_REGEN : 0)
+      + (this.calm() ? CALM_REGEN : 0);
     if (this.hp < max) this.hp = Math.min(max, this.hp + regen * dt);
     else if (this.hp > max) this.hp = max;
     if (this.manaDelay > 0) this.manaDelay -= dt;
@@ -2271,6 +2326,7 @@ export class DelveGame {
     if (near >= spawnCap(hab, pressure) || r.next() >= spawnChance(hab, pressure)) return;
     if (this.bed && Math.hypot(tx - this.bed.x, ty - this.bed.y) < BED_SAFE) return;
     if (inHouse(w, tx, ty) || homeNear(w, tx, ty)) return;
+    if (this.settle.cores.length && this.settle.hasPerk(tx, ty, w, 'ward')) return;
     const entry = pickEntry(spawnTable(hab), r);
     if (!entry) return;
     const spot = findSpot(w, entry.kind, tx, ty);
@@ -2591,19 +2647,20 @@ export class DelveGame {
     return tot;
   }
   /** 鍛造（洗煉 / 強化 / 升階）要在鐵砧旁 */
-  canForge(): boolean { return this.nearTile(T.ANVIL); }
+  canForge(): boolean { return this.nearTile(T.ANVIL) || this.nearNpc('smith'); }
   /** 鍛造成本（null = 已滿級 / 不能） */
   forgeCosts(at: GearAt): { reroll: Cost | null; upgrade: Cost | null; ascend: Cost | null } {
     const st = this.stackAt(at);
     if (!st || !gearSlot(st.item)) return { reroll: null, upgrade: null, ascend: null };
     const g = st.gear;
     const rerollable = Boolean(g?.affixes.some((a) => affixDef(a.id).kind !== 'unique'));
-    return { reroll: rerollable ? rerollCost(g) : null, upgrade: upgradeCost(g), ascend: ascendCost(g) };
+    return { reroll: rerollable ? this.discounted(rerollCost(g)) : null, upgrade: this.discounted(upgradeCost(g)), ascend: this.discounted(ascendCost(g)) };
   }
   private forge(at: GearAt, action: 'reroll' | 'upgrade' | 'ascend', cost: Cost | null, apply: (g: Gear) => Gear | null): ForgeResult {
     const st = this.stackAt(at);
     if (!st || !gearSlot(st.item)) return { ok: false, reason: 'none' };
     if (!this.canForge()) return { ok: false, reason: 'station' };
+    cost = this.discounted(cost);
     if (!cost) return { ok: false, reason: 'max' };
     if (!this.canPay(cost)) return { ok: false, reason: 'cost' };
     const base: Gear = st.gear ?? { rarity: 0, ilvl: baseTier(st.item), plus: 0, affixes: [] };
@@ -2651,6 +2708,200 @@ export class DelveGame {
   setRngState(s: { loot?: RngState; fish?: RngState }): void {
     if (s.loot) this.lootRng.setState(s.loot);
     if (s.fish) this.fishRng.setState(s.fish);
+  }
+
+  // ── 據點 / 居民 ───────────────────────────────────────
+  private settleHost: SettleHost | null = null;
+  private updateSettlements(dt: number): void {
+    this.settleHost ??= {
+      world: this.world, time: 0,
+      isNight: () => this.isNight(), sun: () => this.sun(), dayFrac: () => this.date().frac,
+      playerTile: () => this.playerTile(), playerOverlaps: (x, y) => this.tileOverlapsPlayer(x, y),
+    };
+    this.settleHost.time = this.time;
+    this.settle.update(dt, this.settleHost);
+    for (const e of this.settle.drainEvents()) this.events.push(e);
+  }
+  /** 玩家所在的據點（範圍內）與它的等級 */
+  settlementHere(): { id: number; level: number } | null {
+    const t = this.playerTile(), c = this.settle.claimAt(t.x, t.y);
+    return c ? { id: c.id, level: this.settle.levelAt(t.x, t.y, this.world) } : null;
+  }
+  /** 安心：在 Lv1 以上的據點範圍內 */
+  calm(): boolean {
+    if (!this.settle.cores.length) return false;
+    const t = this.playerTile();
+    return this.settle.hasPerk(t.x, t.y, this.world, 'calm');
+  }
+  /** 合成站聯動（Lv2）：玩家所在據點範圍內有的合成站 tile */
+  private linkedStations(): Set<number> | null {
+    if (!this.settle.cores.length) return null;
+    const t = this.playerTile(), c = this.settle.claimAt(t.x, t.y);
+    if (!c || !this.settle.hasPerk(t.x, t.y, this.world, 'craft')) return null;
+    const ev = this.settle.evaluation(c.id, this.world);
+    return ev ? new Set([...ev.counts.keys()]) : null;
+  }
+  /** 共享儲物（Lv3）：玩家所在據點的箱子 */
+  private sharedStorage(): number[] | null {
+    if (!this.settle.cores.length) return null;
+    const t = this.playerTile(), c = this.settle.claimAt(t.x, t.y);
+    if (!c || !this.settle.hasPerk(t.x, t.y, this.world, 'storage')) return null;
+    return this.settle.evaluation(c.id, this.world)?.chests ?? null;
+  }
+  /** 共享儲物：背包 + 據點箱子裡的數量 */
+  storageCount(item: ItemId): number {
+    let n = this.inventory.count(item);
+    for (const i of this.sharedStorage() ?? []) for (const st of this.world.chests.get(i) ?? []) if (st?.item === item) n += st.count;
+    return n;
+  }
+  /** 背包材料不夠、但加上據點箱子就夠 → 從箱子補（null = 交給一般合成處理） */
+  private craftFromStorage(recipeId: string, st: Record<Station, boolean>): CraftResult | null {
+    const rc = findRecipe(recipeId), chests = this.sharedStorage();
+    if (!rc || !chests || rc.inputs.every((a) => this.inventory.has(a.item, a.n))) return null;
+    if (!rc.inputs.every((a) => this.storageCount(a.item) >= a.n)) return { ok: false, reason: 'missing' };
+    const ok = rc.station === null || (rc.station === 'campfire' ? st.campfire || st.furnace : st[rc.station]);
+    if (!ok) return { ok: false, reason: 'station' };
+    const trial = Inventory.fromJSON(this.inventory.toJSON());
+    const fromChest = new Map<ItemId, number>();
+    for (const a of rc.inputs) {
+      const own = Math.min(a.n, trial.count(a.item));
+      trial.remove(a.item, own);
+      if (a.n > own) fromChest.set(a.item, a.n - own);
+    }
+    const gear = rc.out.n === 1 && gearSlot(rc.out.item) ? this.rollFor(rc.out.item, 'craft', 0, baseTier(rc.out.item)) : undefined;
+    if (trial.add(rc.out.item, rc.out.n, gear) > 0) return { ok: false, reason: 'full' };
+    for (const [item, need0] of fromChest) {
+      let need = need0;
+      for (const i of chests) {
+        const slots = this.world.chests.get(i);
+        if (!slots) continue;
+        for (let k = 0; k < slots.length && need > 0; k++) {
+          const s0 = slots[k];
+          if (s0?.item !== item) continue;
+          const take = Math.min(need, s0.count);
+          s0.count -= take; need -= take;
+          if (s0.count <= 0) slots[k] = null;
+        }
+        this.world.markModified(i % this.world.width, Math.floor(i / this.world.width));
+        if (need <= 0) break;
+      }
+    }
+    this.inventory.slots = trial.slots;
+    this.events.push({ type: 'craft', recipe: recipeId, item: rc.out.item, n: rc.out.n });
+    return { ok: true };
+  }
+  /** 玩家在某位居民身邊（6 格內） */
+  nearNpc(kind: NpcKind, tiles = 6): boolean {
+    const n = this.settle.npc(kind);
+    if (!n) return false;
+    const pc = this.playerCenter(), b = n.body;
+    return Math.abs(b.x + b.w / 2 - pc.x) <= tiles * TILE_SIZE && Math.abs(b.y + b.h / 2 - pc.y) <= tiles * TILE_SIZE;
+  }
+  /** 鍛冶師的折扣：她住的據點範圍內或在她身邊 → 依心情打折 */
+  forgeDiscount(): number {
+    const n = this.settle.npc('smith');
+    if (!n) return 1;
+    const t = this.playerTile(), c = this.settle.coreById(n.core);
+    const inside = c ? Math.abs(t.x - c.x) <= 40 && Math.abs(t.y - c.y) <= 24 : false;
+    return inside || this.nearNpc('smith') ? forgeMul(n.mood) : 1;
+  }
+  private discounted(c: Cost | null): Cost | null {
+    if (!c) return null;
+    const m = this.forgeDiscount();
+    return m >= 1 ? c : { ...c, shard: Math.max(c.shard ? 1 : 0, Math.ceil(c.shard * m)), dust: Math.max(c.dust ? 1 : 0, Math.ceil(c.dust * m)) };
+  }
+  private talkTo(n: Npc): void {
+    const wx = this.localWeatherState();
+    const line = npcLine(n.kind, { night: this.isNight(), rain: wx.kind === 'rain' || wx.kind === 'storm', mood: n.mood, homeless: n.home === null }, n.talks++);
+    n.say = line; n.sayT = 4;
+    n.dir = this.playerCenter().x >= n.body.x + n.body.w / 2 ? 1 : -1;
+    this.events.push({ type: 'talk', kind: n.kind, line });
+  }
+  /** 錢包（銅幣；1 銀幣 = 100） */
+  coins(): number { return walletOf(this.inventory); }
+  /** 向居民買第 i 項商品 */
+  buy(kind: NpcKind, i: number): boolean {
+    const n = this.settle.npc(kind), e = NPCS[kind].shop[i];
+    if (!n || !e) return false;
+    const price = shopPrice(e.price, n.mood);
+    if (this.coins() < price) { this.block('use', 'coins', 0, 0); return false; }
+    const trial = Inventory.fromJSON(this.inventory.toJSON());
+    if (!pay(trial, price) || trial.add(e.item, e.n) > 0) { this.block('use', 'bagfull', 0, 0); return false; }
+    this.inventory.slots = trial.slots;
+    this.events.push({ type: 'trade', kind, action: 'buy', item: e.item, n: e.n, coins: price });
+    return true;
+  }
+  /** 賣給商人：收購價 × 心情（越開心給越多） */
+  sellPrice(kind: NpcKind, item: ItemId): number {
+    const n = this.settle.npc(kind), base = NPCS[kind].buys?.[item] ?? (kind === 'merchant' && ITEMS[item].fish ? 10 : 0);
+    if (!n || !base) return 0;
+    return Math.max(1, Math.round(base * (2 - shopPrice(100, n.mood) / 100)));
+  }
+  sell(kind: NpcKind, item: ItemId, n = 1): boolean {
+    const price = this.sellPrice(kind, item);
+    const k = Math.min(n, this.inventory.count(item));
+    if (!price || k <= 0) return false;
+    this.inventory.remove(item, k);
+    const left = earn(this.inventory, price * k);
+    if (left > 0) this.dropAtTile('copper_coin', left, this.playerTile().x, this.playerTile().y);
+    this.events.push({ type: 'trade', kind, action: 'sell', item, n: k, coins: price * k });
+    return true;
+  }
+  /** 居民服務：製圖師打聽地點（其他服務是被動的） */
+  service(kind: NpcKind): boolean {
+    const n = this.settle.npc(kind), sv = NPCS[kind].service;
+    if (!n || !sv || sv.kind !== 'reveal') return false;
+    const price = shopPrice(sv.price ?? 100, n.mood);
+    const pt = this.playerTile();
+    const left = this.regions.filter((r) => r.ax >= 0 && !this.discovery.isFound(r.id) && !this.markers.some((m) => m.x === r.ax && m.y === r.ay));
+    if (!left.length) return false;
+    if (this.coins() < price) { this.block('use', 'coins', 0, 0); return false; }
+    left.sort((a, b) => Math.hypot(a.ax - pt.x, a.ay - pt.y) - Math.hypot(b.ax - pt.x, b.ay - pt.y));
+    const r = left[0];
+    pay(this.inventory, price);
+    this.explored.revealDisc(r.ax, r.ay, 12);
+    if (this.markers.length < 20) this.markers.push({ x: r.ax, y: r.ay });
+    this.events.push({ type: 'trade', kind, action: 'service', coins: price });
+    this.lastReveal = { name: r.name, x: r.ax, y: r.ay };
+    return true;
+  }
+  /** 製圖師上次打聽到的地點（UI 顯示） */
+  lastReveal: { name: string; x: number; y: number } | null = null;
+  /** 把某個據點的爐心設為重生點（Lv1 以上） */
+  setSpawnCore(id: number): boolean {
+    const c = this.settle.coreById(id);
+    if (!c || (this.settle.evaluation(id, this.world)?.level ?? 0) < 1) return false;
+    this.settle.spawnCore = id;
+    this.bed = null;
+    this.events.push({ type: 'spawn', set: true, x: c.x + 1, y: c.y });
+    return true;
+  }
+  /** 傳送點：玩家在 Lv3 據點範圍內 → 傳到另一個 Lv3 據點的爐心旁 */
+  waypoints(): { id: number; x: number; y: number; level: number }[] {
+    return this.settle.cores.map((c) => ({ id: c.id, x: c.x, y: c.y, level: this.settle.evaluation(c.id, this.world)?.level ?? 0 }))
+      .filter((c) => c.level >= 3);
+  }
+  travel(to: number): boolean {
+    const here = this.settlementHere(), dest = this.waypoints().find((c) => c.id === to);
+    if (!here || here.level < 3 || !dest || dest.id === here.id) return false;
+    this.teleport(dest.x + 1, dest.y);
+    this.closeChest();
+    this.events.push({ type: 'travel', from: here.id, to, x: dest.x + 1, y: dest.y });
+    return true;
+  }
+  /** 建築木槌：方塊整格 ⇄ 半格（只對實心、會自動接邊的方塊） */
+  private hammer(x: number, y: number): boolean {
+    const w = this.world, id = w.getFg(x, y);
+    if (!this.canReach(x, y)) { this.block('use', 'reach', x, y); return false; }
+    if (!isSolidTile(id) || tileDef(id).sprite || tileDef(id).minTier >= TIER_UNBREAKABLE) return false;
+    w.setHalf(x, y, !w.isHalf(x, y));
+    this.events.push({ type: 'place', x, y, tile: id, item: 'builder_hammer' });
+    return true;
+  }
+  /** debug / e2e：立刻讓居民搬進玩家所在（或第一個）據點 */
+  debugMoveIn(kind: NpcKind, force = false): boolean {
+    const here = this.settlementHere()?.id ?? this.settle.cores[0]?.id;
+    return here !== undefined && Boolean(this.settle.moveIn(kind, here, this.world, force));
   }
 
   // ── debug / e2e / 存檔還原 ─────────────────────────────

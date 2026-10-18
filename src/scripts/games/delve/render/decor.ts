@@ -6,6 +6,7 @@
 //   · 新道具圖示（硬幣、水晶碎片、仙人掌、蘑菇…）
 // 全部只用 pixel.ts 統一色票上的顏色；光從左上來；成簇不撒點；描邊 1px（植物用自身最暗色描邊）。
 import { anvilBmp, furnaceBmp } from './combatArt';
+import { buildWallBmp } from './buildArt';
 import { T } from '../engine/tiles';
 import { CACTUS_STYLE } from './autotile';
 import { Bmp, INK, h01, hex, ramp, type RGB } from './pixel';
@@ -428,7 +429,7 @@ export function texWall2(id: number, v: number): { b: Bmp; pal: RGB[] } | null {
       return { b: texDungeonWall(v, p), pal: p };
     }
     case 13: return { b: texHiveWall(v), pal: HIVE_WALL_PAL }; // 蜂巢牆
-    default: return null;
+    default: return buildWallBmp(id, v);
   }
 }
 

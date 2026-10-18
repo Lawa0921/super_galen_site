@@ -5,6 +5,7 @@ import { Bmp, INK, h01, ramp, type RGB } from './pixel';
 import type { ItemId } from '../engine/items';
 import { T } from '../engine/tiles';
 import { campfireBmp } from './fishArt';
+import { BUILD_ICONS, BUILD_TILE_PAL, buildDecorBmp, buildIcon, buildTileBmp } from './buildArt';
 
 const S = 16;
 const STONE = ramp('#1c1424', '#2c2838', '#423f54', '#5e5e74', '#707490', '#858aa0', '#b4b9c8');
@@ -90,13 +91,14 @@ export function extraTileBmp(id: number, v: number): Bmp | null {
     case T.SPRING: return texSpring(v);
     case T.LAVA_SPRING: return texLavaSpring(v);
     case T.DRAIN: return texDrain(v);
-    default: return null;
+    default: return buildTileBmp(id, v);
   }
 }
 
 /** 新方塊的外框色階（textures 的 frameTile 用） */
 export const EXTRA_TILE_PAL: Record<number, RGB[]> = {
   [T.SPRING]: STONE, [T.LAVA_SPRING]: BASALT.concat([STONE[5], STONE[6]]), [T.DRAIN]: STONE,
+  ...BUILD_TILE_PAL,
 };
 
 // ── 家具 ───────────────────────────────────────────────
@@ -229,7 +231,7 @@ export function extraDecorBmp(id: number, style: number): Bmp | null {
     case T.LANTERN_POST: return lampPost();
     case T.PAINTING: return painting(style);
     case T.TROPHY: return trophy(style % 2);
-    default: return null;
+    default: return buildDecorBmp(id, style);
   }
 }
 
@@ -248,7 +250,7 @@ export function furnitureIcon(item: ItemId, decor: (id: number, style: number) =
       for (let y = 1; y < 15; y++) for (let x = 1; x < 15; x++) b.set(x, y, (y - 1) % 4 === 3 ? WOOD[0] : x === 1 || (y - 1) % 4 === 0 ? WOOD[2] : WOOD[1]);
       return outline(b);
     }
-    default: return null;
+    default: return buildIcon(item);
   }
 }
-export const FURNITURE_ICONS: readonly ItemId[] = ['table', 'chair', 'lantern_post', 'painting', 'bookshelf', 'banner', 'candle', 'plank_wall'];
+export const FURNITURE_ICONS: readonly ItemId[] = ['table', 'chair', 'lantern_post', 'painting', 'bookshelf', 'banner', 'candle', 'plank_wall', ...BUILD_ICONS];

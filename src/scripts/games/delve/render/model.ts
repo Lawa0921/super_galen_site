@@ -212,6 +212,9 @@ const BLOCKED: Record<BlockReason, string | null> = {
   sleep: '附近有怪物，現在睡不著',
   bait: '沒有魚餌（挖泥土找蚯蚓、拔草叢抓蟲）',
   full_hp: '現在不餓（生命是滿的）',
+  claim: '這裡已經在別的據點範圍裡了（爐心之間要隔開一點）',
+  coins: '錢不夠',
+  bagfull: '背包放不下了',
 };
 
 /** 古碑碑文（佔位文字） */
