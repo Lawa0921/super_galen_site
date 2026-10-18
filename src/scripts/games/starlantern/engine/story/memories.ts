@@ -26,8 +26,8 @@ export const memoryRng = (run: Run): Rng => mulberry32(mix(run.seed ^ MEMORY_SAL
 
 /** Equal to the bound `isStory` puts on `story.pity`, so a long game never writes a save that will not load. */
 export const MAX_PITY = 999;
-/** Most chains one floor can force a glimmer for. */
-const MAX_FORCED = 2;
+/** Most chains one floor can force a glimmer for (an object, so a tuning test can change it for a while). */
+export const FORCED_GLIMMERS = { max: 2 };
 
 /** The number of `id`'s next piece (1-based), or null when the chain is complete. */
 export function nextPiece(p: Party, id: CharacterId): number | null {
@@ -85,14 +85,19 @@ export function pityAfterFloor(p: Party, pity: Pity, region: RegionId, depth: nu
   return next;
 }
 
-/** Chains whose glimmer on this floor must hold their piece: pity at MEMORY_PITY, Rin's first piece on the main road. At most two. */
+/**
+ * Chains whose glimmer on this floor must hold their piece, in roster order, at most FORCED_GLIMMERS.max: pity at
+ * MEMORY_PITY; and Rin on the main road while she has no piece yet, or once the depth reaches her last piece's
+ * threshold (her catch-up, so a player who reaches the finale without her choice gets her next piece every floor).
+ */
 export function forcedGlimmers(p: Party, pity: Pity, region: RegionId, depth: number): CharacterId[] {
   const ctx: PieceCtx = { region, depth, source: 'glimmer' };
+  const rinLast = CHAINS.rin.pieces[CHAINS.rin.pieces.length - 1].minDepth;
   return CHARACTER_IDS.filter((id) => {
     if (!eligible(p, id, ctx)) return false;
-    if (id === 'rin' && region === 'mainline' && memoriesOf(p.roster.rin) === 0) return true;
+    if (id === 'rin' && region === 'mainline' && (memoriesOf(p.roster.rin) === 0 || depth >= rinLast)) return true;
     return (pity[id] ?? 0) >= MEMORY_PITY;
-  }).slice(0, MAX_FORCED);
+  }).slice(0, FORCED_GLIMMERS.max);
 }
 
 /** Adds one piece per entry, in order; an id with no member, or a complete chain, is skipped; `gained` numbers each piece. The given party is not changed. */

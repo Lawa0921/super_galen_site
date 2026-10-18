@@ -6,6 +6,7 @@ import { REGIONS } from '../regions';
 import { STORY, PLACEHOLDERS, NPC_NAMES } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
 import { TOWN_FRAGMENTS, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
+import { memoryPace } from '../../engine/story/expect';
 import { ACT_DEPTHS, CHAT_COUNT, SCENE_IDS, STAGES, MAJOR_SCENES, isSceneId, lineCap, memScene, sceneKind } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
@@ -18,24 +19,38 @@ describe('story data', () => {
     expect(CHARACTER_IDS.reduce((n, id) => n + chainLength(id), 0)).toBe(57);
   });
 
-  it("the story chains open in the spec's order of depth", () => {
-    const depths = [4, 6, 9, 12, 15, 18, 21, 24, 25, 30];
-    expect(CHAINS.hero.pieces.map((p) => p.minDepth)).toEqual(depths);
-    expect(CHAINS.hero.pieces[8].bossOnly).toBe(true);
-    expect(CHAINS.hero.pieces[9].bossOnly).toBe(true);
-    expect(HERO_TOPUP.map((t) => t.depth)).toEqual([depths[8], depths[9]]);
-    expect(CHAINS.rin.pieces.map((p) => p.minDepth)).toEqual([1, 3, 4, 6, 8, 10, 15]);
-    expect(CHAINS.rin.pieces[6].minDepth).toBeGreaterThan(ACT_DEPTHS.act3);
+  it("the story chains keep the spec's fixed points of depth", () => {
+    // The pacing knobs (plan 6c Task 1) may move every other minDepth; these are the spec's and the user's.
+    const hero = CHAINS.hero.pieces;
+    expect(HERO_TOPUP).toEqual([{ depth: 25, to: 9 }, { depth: 30, to: 10 }]);
+    expect(hero[8].bossOnly).toBe(true);
+    expect(hero[9].bossOnly).toBe(true);
+    expect([hero[8].minDepth, hero[9].minDepth]).toEqual(HERO_TOPUP.map((t) => t.depth));
+    expect(hero.slice(0, 8).every((p) => !p.bossOnly)).toBe(true);
+    // The hero's 8th piece drops before the depth-25 top-up could pay it together with the 9th.
+    const heroPace = memoryPace('hero');
+    expect(heroPace[7]).toBeGreaterThanOrEqual(19);
+    expect(heroPace[7]).toBeLessThanOrEqual(23);
+    const rin = CHAINS.rin.pieces;
+    expect(rin[0].minDepth).toBe(1);   // her first piece waits in a glimmer on the first floor
+    expect(rin[1].minDepth).toBe(3);   // spec §7.3: the depth-3 boss
+    expect(rin[6].minDepth).toBeGreaterThan(ACT_DEPTHS.act3);
+    expect(rin[6].minDepth).toBeLessThanOrEqual(25);
+    expect(memoryPace('rin')[6]).toBeLessThanOrEqual(27);   // her choice can come before the finale
     expect(CHAINS.hero.key && CHAINS.rin.key).toBe(true);
   });
 
-  it("a companion's last two pieces wait for depth 6", () => {
+  it("a companion's last two pieces wait for depth 6, and no chain's depths go back", () => {
     for (const id of COMPANIONS) {
       const p = CHAINS[id].pieces;
-      expect(p.slice(0, 3).map((x) => x.minDepth)).toEqual([1, 1, 1]);
       expect(p[3].minDepth).toBeGreaterThanOrEqual(6);
       expect(p[4].minDepth).toBeGreaterThanOrEqual(6);
       expect(CHAINS[id].key).toBe(false);
+    }
+    for (const id of CHARACTER_IDS) {
+      const d = CHAINS[id].pieces.map((p) => p.minDepth);
+      expect(d.every((x) => Number.isInteger(x) && x >= 1), id).toBe(true);
+      expect(d, id).toEqual([...d].sort((a, b) => a - b));
     }
   });
 
@@ -61,7 +76,8 @@ describe('story data', () => {
       for (const p of chain.pieces) expect(p.regions).toEqual(want.regions);
       expect(chain.gain).toEqual(want.gain);
     }
-    expect(CHAINS.hero.gain).toEqual({ str: 1, int: 1, agi: 1, wil: 1 });
+    // Plan 6c Task 1 fallback (U2): the hero's earlier pieces made the depth-4 geared band too easy, so each is worth half.
+    expect(CHAINS.hero.gain).toEqual({ str: 0.5, int: 0.5, agi: 0.5, wil: 0.5 });
     expect(CHAINS.rin.gain).toEqual({ agi: 2 });
   });
 

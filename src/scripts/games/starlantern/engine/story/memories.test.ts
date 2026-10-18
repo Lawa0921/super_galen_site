@@ -5,7 +5,7 @@ import type { CharacterId, Party } from '../types';
 import { meet, newParty } from '../party';
 import { memoriesOf } from '../progression';
 import { mulberry32 } from '../rng';
-import { MAX_PITY, applyPieces, eligible, forcedGlimmers, nextPiece, pieceDrops, pityAfterFloor, type PieceCtx } from './memories';
+import { FORCED_GLIMMERS, MAX_PITY, applyPieces, eligible, forcedGlimmers, nextPiece, pieceDrops, pityAfterFloor, type PieceCtx } from './memories';
 
 /** A party where exactly `held` are met (plus the hero), each holding the given number of pieces. */
 const partyOf = (held: Partial<Record<CharacterId, number>>): Party => {
@@ -17,17 +17,19 @@ const partyOf = (held: Partial<Record<CharacterId, number>>): Party => {
 };
 const bossCtx = (depth: number, region: PieceCtx['region'] = 'mainline'): PieceCtx => ({ region, depth, source: 'boss' });
 const eliteCtx = (depth: number, region: PieceCtx['region'] = 'mainline'): PieceCtx => ({ region, depth, source: 'elite' });
+/** The depth `id`'s piece `i` (0-based) opens at. */
+const min = (id: CharacterId, i: number): number => CHAINS[id].pieces[i].minDepth;
 
 describe('memory piece rules', () => {
   it('only the next piece of a met companion', () => {
     const unmet = partyOf({});
-    expect(eligible(unmet, 'sylvie', bossCtx(1, 'mire'))).toBe(false);
+    expect(eligible(unmet, 'sylvie', bossCtx(min('sylvie', 0), 'mire'))).toBe(false);
     const met = partyOf({ sylvie: 0 });
-    expect(eligible(met, 'sylvie', bossCtx(1, 'mire'))).toBe(true);
-    expect(eligible(met, 'sylvie', bossCtx(1, 'blaze'))).toBe(false);
+    expect(eligible(met, 'sylvie', bossCtx(min('sylvie', 0), 'mire'))).toBe(true);
+    expect(eligible(met, 'sylvie', bossCtx(min('sylvie', 0), 'blaze'))).toBe(false);
     const three = partyOf({ sylvie: 3 });
-    expect(eligible(three, 'sylvie', bossCtx(5, 'mire'))).toBe(false);
-    expect(eligible(three, 'sylvie', bossCtx(6, 'mire'))).toBe(true);
+    expect(eligible(three, 'sylvie', bossCtx(min('sylvie', 3) - 1, 'mire'))).toBe(false);
+    expect(eligible(three, 'sylvie', bossCtx(min('sylvie', 3), 'mire'))).toBe(true);
     expect(nextPiece(three, 'sylvie')).toBe(4);
     expect(nextPiece(partyOf({ sylvie: 5 }), 'sylvie')).toBeNull();
     expect(eligible(partyOf({ sylvie: 5 }), 'sylvie', bossCtx(30, 'mire'))).toBe(false);
@@ -35,8 +37,8 @@ describe('memory piece rules', () => {
 
   it("the hero's pieces wait for their depth on the main road", () => {
     const p = partyOf({ hero: 0 });
-    expect(eligible(p, 'hero', bossCtx(3))).toBe(false);
-    expect(eligible(p, 'hero', bossCtx(4))).toBe(true);
+    expect(eligible(p, 'hero', bossCtx(min('hero', 0) - 1))).toBe(false);
+    expect(eligible(p, 'hero', bossCtx(min('hero', 0)))).toBe(true);
     expect(eligible(p, 'hero', bossCtx(10, 'blaze'))).toBe(false);
   });
 
@@ -87,7 +89,7 @@ describe('memory piece rules', () => {
   });
 
   it("a forced glimmer holds its own chain's piece", () => {
-    const g: PieceCtx = { region: 'storm', depth: 1, source: 'glimmer', who: 'noel' };
+    const g: PieceCtx = { region: 'storm', depth: min('noel', 0), source: 'glimmer', who: 'noel' };
     expect(pieceDrops(partyOf({ noel: 0 }), {}, g, mulberry32(1))).toEqual(['noel']);
     expect(pieceDrops(partyOf({ noel: 5 }), {}, g, mulberry32(1))).toEqual([]);
     expect(pieceDrops(partyOf({}), {}, g, mulberry32(1))).toEqual([]);
@@ -99,34 +101,37 @@ describe('memory piece rules', () => {
 
   it('pity grows on floors cleared without a piece and resets on one', () => {
     const p = partyOf({ selene: 0, chizuru: 0, noel: 0 });
-    const next = pityAfterFloor(p, { selene: 2, chizuru: 1 }, 'mainline', 3, ['selene']);
+    const d = Math.max(min('selene', 0), min('chizuru', 0));   // both can drop here; Noel's chain is storm-only
+    const next = pityAfterFloor(p, { selene: 2, chizuru: 1 }, 'mainline', d, ['selene']);
     expect(next.selene).toBe(0);
     expect(next.chizuru).toBe(2);
     expect(next.noel).toBeUndefined();
     const before = { selene: 2 };
-    pityAfterFloor(p, before, 'mainline', 3, []);
+    pityAfterFloor(p, before, 'mainline', d, []);
     expect(before).toEqual({ selene: 2 });
   });
 
   it('pity stops at MAX_PITY', () => {
     const p = partyOf({ selene: 0 });
-    expect(pityAfterFloor(p, { selene: MAX_PITY }, 'mainline', 3, []).selene).toBe(MAX_PITY);
+    expect(pityAfterFloor(p, { selene: MAX_PITY }, 'mainline', min('selene', 0), []).selene).toBe(MAX_PITY);
     expect(MAX_PITY).toBe(999);
   });
 
   it('pity forces a glimmer for that chain only where it can drop', () => {
     const p = partyOf({ selene: 0 });
     const pity = { selene: MEMORY_PITY };
-    expect(forcedGlimmers(p, pity, 'mainline', 2)).toContain('selene');
-    expect(forcedGlimmers(p, pity, 'blaze', 2)).not.toContain('selene');
-    expect(forcedGlimmers(p, { selene: MEMORY_PITY - 1 }, 'mainline', 2)).not.toContain('selene');
+    const d = min('selene', 0);
+    expect(forcedGlimmers(p, pity, 'mainline', d)).toContain('selene');
+    expect(forcedGlimmers(p, pity, 'blaze', d)).not.toContain('selene');
+    expect(forcedGlimmers(p, { selene: MEMORY_PITY - 1 }, 'mainline', d)).not.toContain('selene');
   });
 
-  it('forced glimmers are at most two, in roster order', () => {
+  it('forced glimmers are at most FORCED_GLIMMERS.max, in roster order', () => {
     const p = partyOf({ noel: 0, chizuru: 0, bobby: 0, selene: 0 });
     const pity = { noel: 9, chizuru: 9, bobby: 9, selene: 9 };
-    const got = forcedGlimmers(p, pity, 'mainline', 2);
-    expect(got).toHaveLength(2);
+    const d = Math.max(min('chizuru', 0), min('bobby', 0), min('selene', 0));   // three main-road chains can drop here
+    const got = forcedGlimmers(p, pity, 'mainline', d);
+    expect(got).toHaveLength(FORCED_GLIMMERS.max);
     const order = got.map((id) => CHARACTER_IDS.indexOf(id));
     expect(order).toEqual([...order].sort((a, b) => a - b));
   });
@@ -136,6 +141,37 @@ describe('memory piece rules', () => {
     expect(forcedGlimmers(p, {}, 'mainline', 1)).toEqual(['rin']);
     expect(forcedGlimmers(p, {}, 'blaze', 1)).toEqual([]);
     expect(forcedGlimmers(partyOf({ rin: 1 }), {}, 'mainline', 1)).toEqual([]);
+  });
+
+  it('Rin catches up past her last threshold', () => {
+    const last = CHAINS.rin.pieces[CHAINS.rin.pieces.length - 1].minDepth;
+    const four = partyOf({ rin: 4 });
+    // Her next piece (5) is eligible from its own minDepth, so a depth at or past her 7th piece's threshold forces it.
+    expect(forcedGlimmers(four, {}, 'mainline', last)).toEqual(['rin']);
+    expect(forcedGlimmers(four, {}, 'mainline', last + 3)).toEqual(['rin']);
+    // Shallower than her last threshold, with no pity, nothing is forced.
+    expect(CHAINS.rin.pieces[4].minDepth).toBeLessThan(last);
+    expect(forcedGlimmers(four, {}, 'mainline', last - 1)).toEqual([]);
+    // A whole chain, or another road, forces nothing.
+    expect(forcedGlimmers(partyOf({ rin: CHAINS.rin.pieces.length }), {}, 'mainline', last)).toEqual([]);
+    expect(forcedGlimmers(four, {}, 'blaze', last)).toEqual([]);
+    // It is one of the forced glimmers: it counts toward FORCED_GLIMMERS.max, in roster order.
+    const crowd = partyOf({ rin: 4, selene: 0, bobby: 0 });
+    expect(forcedGlimmers(crowd, { selene: 9, bobby: 9 }, 'mainline', last)).toEqual(['rin', 'selene'].slice(0, FORCED_GLIMMERS.max));
+  });
+
+  it('FORCED_GLIMMERS.max caps the forced glimmers of a floor', () => {
+    const p = partyOf({ noel: 0, chizuru: 0, bobby: 0, selene: 0 });
+    const pity = { noel: 9, chizuru: 9, bobby: 9, selene: 9 };
+    const d = Math.max(min('chizuru', 0), min('bobby', 0), min('selene', 0));   // three main-road chains can drop here
+    const saved = FORCED_GLIMMERS.max;
+    try {
+      FORCED_GLIMMERS.max = 1;
+      expect(forcedGlimmers(p, pity, 'mainline', d)).toHaveLength(1);
+    } finally {
+      FORCED_GLIMMERS.max = saved;
+    }
+    expect(forcedGlimmers(p, pity, 'mainline', d)).toHaveLength(Math.min(saved, 3));
   });
 
   it('the same inputs draw the same pieces', () => {
@@ -201,7 +237,7 @@ describe('memory piece rules', () => {
     const p = partyOf({ hero: 10, rin: 7, selene: 0, chizuru: 0 });
     for (let seed = 1; seed <= 20; seed++) expect(pieceDrops(p, { selene: 2 }, bossCtx(10), mulberry32(seed))).toHaveLength(1);
     const unmet = partyOf({});
-    expect(pityAfterFloor(unmet, {}, 'mainline', 3, []).selene).toBeUndefined();
-    expect(forcedGlimmers(unmet, { selene: 99 }, 'mainline', 3)).toEqual([]);
+    expect(pityAfterFloor(unmet, {}, 'mainline', min('selene', 0), []).selene).toBeUndefined();
+    expect(forcedGlimmers(unmet, { selene: 99 }, 'mainline', min('selene', 0))).toEqual([]);
   });
 });

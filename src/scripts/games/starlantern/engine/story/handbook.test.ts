@@ -38,9 +38,12 @@ describe("the adventurer's handbook", () => {
     expect(noel.met).toBe(true);
     expect(noel.pieces.map((p) => p.found)).toEqual([true, true, false, false, false]);
     expect(noel.pieces.map((p) => p.scene)).toEqual([1, 2, 3, 4, 5].map((n) => memScene('noel', n)));
-    const names = (i: number) => CHAINS.noel.pieces[i].regions.map((r) => REGIONS[r].name).join('、');
-    expect(noel.pieces[4].hint).toBe(`${names(4)}・深處`);
-    expect(noel.pieces[0].hint).toBe(`${names(0)}・淺層`);
+    const names = (id: CharacterId, i: number) => CHAINS[id].pieces[i].regions.map((r) => REGIONS[r].name).join('、');
+    expect(CHAINS.noel.pieces[4].minDepth).toBeGreaterThanOrEqual(6);
+    expect(noel.pieces[4].hint).toBe(`${names('noel', 4)}・深處`);
+    // A shallow piece: Rin's first, which lies on the first floor (minDepth below 6).
+    expect(CHAINS.rin.pieces[0].minDepth).toBeLessThan(6);
+    expect(handbook(s).memories.find((m) => m.id === 'rin')!.pieces[0].hint).toBe(`${names('rin', 0)}・淺層`);
     expect(handbook(s).memories.map((m) => m.id)).toEqual(CHARACTER_IDS);
   });
 

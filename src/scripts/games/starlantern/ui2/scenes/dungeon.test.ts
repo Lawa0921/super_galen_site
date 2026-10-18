@@ -22,11 +22,16 @@ import type { SceneCtx } from '../scene';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { art } from '../../render/artPaths';
 import { STORY } from '../../data/story.zh-TW';
+import { CHAINS } from '../../data/story/chains';
 import type { ArtIndex } from '../../render/textures';
 
-function setup(portal: Portal = { region: 'mainline', condition: 'plain' }, fast = true, extra: Partial<SceneCtx> = {}, prep?: (game: Game) => void) {
+/** The depth Selene's first piece opens at: a glimmer of hers holds a memory from there on. */
+const SELENE_FIRST = CHAINS.selene.pieces[0].minDepth;
+
+function setup(portal: Portal = { region: 'mainline', condition: 'plain' }, fast = true, extra: Partial<SceneCtx> = {}, prep?: (game: Game) => void, start = 1) {
   const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);   // 0.99: never an early encounter roll
-  expect(game.depart(portal, 1)).toEqual({ ok: true });
+  game.state.dungeon.reached[portal.region] = Math.max(game.state.dungeon.reached[portal.region], start);   // so `start` can be departed to
+  expect(game.depart(portal, start)).toEqual({ ok: true });
   prep?.(game);
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), stairs: vi.fn(), chest: vi.fn(), encounter: vi.fn(), loot: vi.fn() };
   const go = vi.fn();
@@ -57,7 +62,7 @@ describe('DungeonScene glimmers', () => {
   };
 
   it('stepping on a glimmer says what was found', async () => {
-    const { game, s, text } = setup();
+    const { game, s, text } = setup(undefined, true, {}, undefined, SELENE_FIRST);
     const { dir, at } = glimmerNext(game, 'selene');
     s.onAction(dir);
     await Promise.resolve();
@@ -650,7 +655,7 @@ describe('DungeonScene memories', () => {
   };
 
   it('the first memory of a floor plays as a memory scene', async () => {
-    const { game, s, root, text } = setup();
+    const { game, s, root, text } = setup(undefined, true, {}, undefined, SELENE_FIRST);
     s.onAction(glimmerNext(game, 'selene'));
     await flush();
     expect(text()).toBe(T.ui2.memory.piece(CHARACTERS.selene.name, 1));
@@ -673,7 +678,7 @@ describe('DungeonScene memories', () => {
   });
 
   it('story none records it without a line', async () => {
-    const { game, s, root } = setup(undefined, true, withStory('none'));
+    const { game, s, root } = setup(undefined, true, withStory('none'), undefined, SELENE_FIRST);
     s.onAction(glimmerNext(game, 'selene'));
     await flush();
     s.onAction('confirm');   // the found line
@@ -685,7 +690,7 @@ describe('DungeonScene memories', () => {
   });
 
   it('a wipe afterwards loses no seen mark', async () => {
-    const { game, s, root } = setup();
+    const { game, s, root } = setup(undefined, true, {}, undefined, SELENE_FIRST);
     s.onAction(glimmerNext(game, 'selene'));
     await flush();
     await through(s, root);
@@ -735,7 +740,7 @@ describe('DungeonScene memories', () => {
   });
 
   it('a scene that throws does not lock the labyrinth', async () => {
-    const { game, s, root } = setup();
+    const { game, s, root } = setup(undefined, true, {}, undefined, SELENE_FIRST);
     const err = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.spyOn(game, 'sceneDone').mockImplementation(() => { throw new Error('boom'); });
     s.onAction(glimmerNext(game, 'selene'));
