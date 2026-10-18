@@ -541,6 +541,16 @@ describe('DungeonScene loot', () => {
       expect(game.phase).toBe('battle');
       expect(go).not.toHaveBeenCalled();
       expect(sfx.encounter).not.toHaveBeenCalled();   // the fight's cue waits for the line to be read
+      // The written meeting (plan 6c Task 8) says more after the found line: each in turn, and no fight until the last.
+      const before = STORY.meet.selene.before;
+      expect(before.length).toBeGreaterThan(1);
+      for (let i = 1; i < before.length; i++) {
+        s.onAction('confirm');
+        await settle();
+        expect(text()).toBe(before[i].text);
+        expect(go).not.toHaveBeenCalled();
+        expect(sfx.encounter).not.toHaveBeenCalled();
+      }
       s.onAction('confirm');
       await settle();
       expect(sfx.encounter).toHaveBeenCalledTimes(1);
@@ -553,6 +563,11 @@ describe('DungeonScene loot', () => {
       expect(hidden()).toEqual([false, false]);
       s.onAction(dir);
       expect(hidden()).toEqual([true, true]);
+      for (let i = 1; i < STORY.meet.selene.before.length; i++) {   // every line of the meeting keeps them aside
+        s.onAction('confirm');
+        await settle();
+        expect(hidden()).toEqual([true, true]);
+      }
       s.onAction('confirm');
       await settle();
       expect(go).toHaveBeenCalledWith('battle');
@@ -772,7 +787,7 @@ describe('DungeonScene rescue meetings', () => {
   it('the found line is narration, hers carry her portrait, then the fight starts', async () => {
     const lines = STORY.meet.selene.before;
     const saved = [...lines];
-    lines.push({ who: 'selene', text: '謝謝你們。' });
+    lines.splice(1, lines.length - 1, { who: 'selene', text: '謝謝你們。' });   // the real found line, then one line of hers
     try {
       const { game, go, s, root, text } = setup(undefined, true, { art: ART });
       game.state.party.recruited = game.state.party.recruited.filter((id) => id !== 'selene');

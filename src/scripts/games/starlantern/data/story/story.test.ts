@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CHARACTER_IDS } from '../characters';
+import { CHARACTERS, CHARACTER_IDS } from '../characters';
 import { ITEMS } from '../items';
 import { MATERIALS } from '../materials';
 import { REGIONS } from '../regions';
@@ -258,6 +258,7 @@ const WRITTEN: string[] = [
   'scenes.act1-after.', 'scenes.act2.', 'scenes.act3.', 'scenes.act4.', 'act1Card.', 'truths.',   // Task 5: the acts and the truths
   'scenes.mem:hero:', 'scenes.chat:hero:', 'people.hero.',   // Task 6: Lorne
   'scenes.rin-reveal.', 'scenes.chat:rin:', 'people.rin.', 'rinLines.', 'rinOath.',   // Task 7: Rin
+  ...(['selene', 'chizuru', 'safira'] as const).flatMap((c) => [`scenes.mem:${c}:`, `scenes.chat:${c}:`, `people.${c}.`, `meet.${c}.`]),   // Task 8
 ];
 const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
 const isWritten = (key: string): boolean => writtenBy(WRITTEN, key);
@@ -735,5 +736,69 @@ describe('the script gates', () => {
 
   it('the first chat of anyone is never gated', () => {
     for (const c of CHARACTER_IDS) expect(CHAT_GATE[`chat:${c}:1`], c).toBeUndefined();
+  });
+});
+
+describe('Task 8: Selene, Chizuru and Safira', () => {
+  const linesOf = (id: SceneId) => STORY.scenes[id].lines;
+  const textOf = (id: SceneId) => linesOf(id).map((l) => l.text).join('');
+  /** Every line a companion speaks anywhere: her memories, chats and meeting. */
+  const spokenBy = (c: string) => storyTexts().filter((t) => t.line?.who === c);
+
+  it('each meeting opens on the found line, then she speaks; she joins after the fight', () => {
+    for (const c of ['selene', 'chizuru', 'safira'] as const) {
+      const { before, after } = STORY.meet[c];
+      expect(before[0].who, c).toBe('narrator');
+      expect(before[0].text, c).toContain(CHARACTERS[c].name);
+      expect(before.some((l) => l.who === c), c).toBe(true);
+      expect(after.length, c).toBeGreaterThanOrEqual(1);
+      expect(after.some((l) => l.who === c), c).toBe(true);
+    }
+  });
+
+  it("Selene's bright ending is the full moon's (2, 4), the dark one the new moon's (5), and 「我想看見」 waits for her last piece", () => {
+    expect(textOf('mem:selene:2')).toContain('滿月');
+    expect(textOf('mem:selene:4')).toContain('滿月');
+    expect(textOf('mem:selene:5')).toContain('新月');
+    expect(textOf('mem:selene:5')).toMatch(/熄/);
+    for (const n of [1, 2, 3, 4]) expect(textOf(memScene('selene', n)), `mem:selene:${n}`).not.toContain('新月');
+    for (const t of storyTexts()) if (t.text.includes('我想看見')) expect(t.key, t.key).toMatch(/^scenes\.mem:selene:5\./);
+    // She calls him 「洛恩先生」 until her memories are whole; her last piece is the first plain 「洛恩」 (style bible, I-22).
+    for (const t of spokenBy('selene')) {
+      if (t.key.startsWith('scenes.mem:selene:5.')) continue;
+      for (const m of t.text.matchAll(/洛恩(.?)/g)) expect(m[1], t.key).toBe('先');
+    }
+    expect(linesOf('mem:selene:5').some((l) => l.who === 'selene' && /洛恩(?!先生)/.test(l.text))).toBe(true);
+  });
+
+  it("Chizuru calls him 「洛恩大人」, and only her fourth piece on knows the shrine is gone", () => {
+    for (const t of spokenBy('chizuru')) for (const m of t.text.matchAll(/洛恩(.?.?)/g)) expect(m[1], t.key).toBe('大人');
+    const GONE = /不在了|早就不在|已經不在/;
+    for (const t of storyTexts()) {
+      if (!GONE.test(t.text) || !/chizuru/.test(t.key)) continue;
+      expect(/^scenes\.mem:chizuru:[45]\.|^people\.chizuru\.2$/.test(t.key), t.key).toBe(true);
+    }
+    expect(textOf('mem:chizuru:4')).toMatch(GONE);
+    expect(textOf('mem:chizuru:5')).toContain('鈴');
+    expect(textOf('mem:chizuru:5')).toContain('祠');
+  });
+
+  it('Safira finds one member of her troupe in each piece, the leader last, and calls him 「小洛」', () => {
+    const MEMBERS = ['鼓手', '吹笛', '縫衣裳', '牽駱駝', '團長'];
+    MEMBERS.forEach((who, i) => {
+      const own = textOf(memScene('safira', i + 1));
+      expect(own, `mem:safira:${i + 1}`).toContain(who);
+      // nobody is found before her own piece; the leader may stand beside the camel driver in piece 4 (she decides there)
+      for (const other of MEMBERS.slice(i + 1)) if (!(i === 3 && other === '團長')) expect(own, `mem:safira:${i + 1} ${other}`).not.toContain(other);
+    });
+    expect(textOf('mem:safira:4')).not.toContain('你要繼續跳');
+    for (const t of spokenBy('safira')) expect(t.text, t.key).not.toContain('洛恩');
+    expect(spokenBy('safira').some((t) => t.text.includes('小洛'))).toBe(true);
+  });
+
+  it('their chats wait where the lore ledger says', () => {
+    expect(CHAT_GATE['chat:selene:2']).toEqual({ stage: 'act3' });
+    expect(CHAT_GATE['chat:chizuru:2']).toBeUndefined();
+    expect(CHAT_GATE['chat:safira:2']).toBeUndefined();
   });
 });

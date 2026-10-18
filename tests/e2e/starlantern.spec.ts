@@ -1064,8 +1064,17 @@ test.describe('starlantern', () => {
     await page.keyboard.press(plan!.key);
     await expect(page.locator('.slx-dungeon .slx-talk .slx-text')).toContainText('瑟蕾');
     await shot('03-meeting-line');
-    await w.key('z');   // the meeting line, then the fight
+    // The found line, then the written meeting (plan 6c Task 8: up to four lines, hers among them), then the fight.
+    // A key may first finish a line's typing, so allow a few presses per line, as the second meeting below does.
+    const plates: string[] = [];
+    for (let i = 0; i < 12 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      const plate = page.locator('.slx-dungeon .slx-talk .slx-name');
+      if (await plate.isVisible()) plates.push((await plate.textContent()) ?? '');
+      await w.key('z');
+      await page.waitForTimeout(60);
+    }
     await expect(page.locator('.slx-battle')).toBeVisible();
+    expect(plates, 'Selene speaks in her own meeting').toContain('瑟蕾');
     await game((g) => { for (const e of g.battle.enemies) { e.hp = 0; e.alive = false; } });
     for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {
       if (await page.locator('.slx-bcmd [role=option]').count()) { await w.key('ArrowUp'); await w.key('Enter'); }   // 全員攻擊

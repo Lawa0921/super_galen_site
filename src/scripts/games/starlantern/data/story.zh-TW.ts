@@ -426,6 +426,195 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '凜說，銅鐘是在霧裡裂的，在洛恩抓住她手腕的那一下。她把它敲平了，再也不會響。',
   },
+  // Task 8: Selene (spec §6, §11.1). She fears that a spoken prophecy walks itself into being. Pieces 2 and 4 are the full
+  // moon's bright ending, piece 5 the new moon's dark one; in it she knows the people by the lamp, and says 「我想看見」.
+  // A companion's piece can drop in her own region before the main road reaches its act: no act content (lore ledger I-58).
+  'mem:selene:1': {
+    lines: [
+      N('山丘上的石屋。銀盆裡盛著水，水面映著月亮。村裡的人排著隊，來問明天的事。'),
+      N('她說那座橋會塌。從那天起，沒有人走那座橋，也沒有人去修。入秋的第一場雨，橋塌了。'),
+      { who: 'selene', mood: 'sad', text: '「是我說了，它才塌的嗎？……這個答案，我一直不敢知道。」' },
+      N('洛恩沒有說話，只是把提燈往她那邊挪近了一點。'),
+    ],
+    summary: '瑟蕾想起自己是讀月相的占星師。她說橋會塌，橋就塌了。她開始害怕自己說出口的預言。',
+  },
+  'mem:selene:2': {
+    lines: [
+      N('滿月的夜。銀盆裡的水自己亮了起來，映出一道從地底往上走的背影。'),
+      N('很多人在喊同一個名字。那個從深處走出來的人走過的地方，一盞很大的燈重新亮了。'),
+      { who: 'selene', mood: 'foresee', text: '「那是滿月給我看的結局。……很亮，也很暖呢。」' },
+      { who: 'selene', mood: 'wistful', text: '「那個人的臉，我沒有看清楚。也許，是我不敢看吧。」' },
+    ],
+    summary: '滿月的夜，瑟蕾在水盆裡看見一個光明的結局：從深處走出來的人被很多人記住，燈重新亮了。',
+  },
+  'mem:selene:3': {
+    lines: [
+      N('迷宮的入口，暮霧從門縫裡吐出來。她捧著銀盆，在霧前跪下。'),
+      N('她把盆裡的水倒進霧裡：「看見的，我不要了。未來，就讓它自己走過來吧。」'),
+      { who: 'hero', text: '「是妳自己交出去的？」' },
+      { who: 'selene', mood: 'sad', text: '「……兩種結局，我都看見了。我怕一開口，就替所有人選了其中一個。」' },
+    ],
+    summary: '瑟蕾想起，她看見的結局不是被迷宮奪走的，是她自己交出去的。她怕自己的話替所有人選了未來。',
+  },
+  'mem:selene:4': {
+    lines: [
+      N('又是滿月。這一次，銀盆裡那道背影的旁邊，站著好幾個人。'),
+      N('他們一起提著燈往下走，又一起走了回來。她只看見手和衣角，看不見臉。'),
+      { who: 'selene', mood: 'foresee', text: '「那個人，不是一個人走到燈前的。」' },
+      { who: 'selene', mood: 'wistful', text: '「……洛恩先生。我差一點，就看清楚他們的臉了。」' },
+    ],
+    summary: '又一個滿月的結局：從深處走出來的人身邊，站著好幾個一起提燈的人。他們的臉，瑟蕾還沒看清。',
+  },
+  'mem:selene:5': {
+    lines: [
+      N('新月的夜，銀盆裡沒有月亮。燈熄了，暮霧一層一層漫上來，吞掉了每一個人。'),
+      N('她曾把它和滿月的結局，一起倒進了霧裡。如今，滿月裡那些人的臉，一張一張清楚了。'),
+      { who: 'selene', mood: 'surprised', text: '「站在燈旁邊的那群人……是你們。」' },
+      { who: 'selene', mood: 'smile', text: '「洛恩。我不怕了。……我想看見，我們走到那一天。」' },
+    ],
+    summary: '新月的結局是燈熄、所有人被暮霧吞沒。瑟蕾也認出了光明結局裡的那群人，就是這支隊伍。她說：我想看見。',
+  },
+  'chat:selene:1': {
+    lines: [
+      N('深夜，月影旅館的屋頂。瑟蕾抱著膝蓋坐著，抬頭看著月亮。'),
+      { who: 'hero', text: '「看得見明天嗎？」' },
+      { who: 'selene', mood: 'wistful', text: '「一點點呢。……可是話一說出口，就會自己長出腳來。所以，我只說月亮的事。」' },
+    ],
+    summary: '瑟蕾在旅館的屋頂看月亮。洛恩問她看不看得見明天，她說只說月亮的事。',
+  },
+  'chat:selene:2': {
+    lines: [
+      { who: 'selene', mood: 'foresee', text: '「洛恩先生。如果我能替您讀一件未來的事，您想知道什麼？」' },
+      { who: 'hero', text: '「明天，大家有沒有都回來。」' },
+      { who: 'selene', mood: 'smile', text: '「那一件，不用讀月亮也知道呢。……您每一次，都把大家帶回來了。」' },
+    ],
+    summary: '瑟蕾問洛恩想知道什麼未來。他只想知道明天大家有沒有都回來。',
+  },
+  // Task 8: Chizuru (spec §6, §11.2). She thinks she left days ago; the pieces show the ice kept her for decades and the
+  // shrine is gone. Her last piece is the bell the last priest tied to her spear; she will build a small shrine by the town.
+  'mem:chizuru:1': {
+    lines: [
+      N('山腰的神社，石階兩旁積著雪。神主替她繫好袖帶，把長槍交到她手上。'),
+      N('「去封住迷宮的裂口吧。」神主說，「春祭之前，回來。」'),
+      { who: 'chizuru', mood: 'solemn', text: '「是。……不過是幾日前的事，記得這般清楚。」' },
+      { who: 'chizuru', mood: 'smile', text: '「洛恩大人，春祭時請務必來看。神社的石階，有九十九級呢。」' },
+    ],
+    summary: '千鶴想起神主送她出發：去封住迷宮的裂口，春祭之前回來。她以為那只是幾天前的事。',
+  },
+  'mem:chizuru:2': {
+    lines: [
+      N('迷宮深處，寒氣從石縫裡湧出來。她把槍插進冰面，閉上眼睛，念起封印的祝詞。'),
+      N('冰順著槍柄往上爬，爬上她的手、她的袖子。祝詞念到最後一句，她的呼吸也結成了霜。'),
+      { who: 'chizuru', mood: 'sad', text: '「封印……沒有念完。最後一句，凍在嘴裡了。」' },
+      { who: 'chizuru', mood: 'serious', text: '「無妨。既然醒了，再念一次便是。」' },
+    ],
+    summary: '千鶴想起封印的儀式。祝詞念到最後一句，她和槍一起被凍進了冰裡。',
+  },
+  'mem:chizuru:3': {
+    lines: [
+      N('從冰裡看出去，世界像隔著一層水。有人提著燈從冰前走過，又有人走過。'),
+      N('起初是草鞋與皮甲，後來是她沒見過的長靴與鐵扣。走過的人，衣裳換了好幾回樣式。'),
+      { who: 'chizuru', mood: 'bewildered', text: '「……幾日之間，換不了這麼多回衣裳。」' },
+      { who: 'chizuru', mood: 'sad', text: '「洛恩大人。我在冰裡，究竟待了多久？」' },
+    ],
+    summary: '千鶴想起冰外走過的冒險者，衣裳換了好幾回樣式。她在冰裡待的，不只幾天。',
+  },
+  'mem:chizuru:4': {
+    lines: [
+      N('出發的前一夜。神社的院子裡沒有別人，只有神主在掃石階上的雪，一下，又一下。'),
+      N('「參拜的人，一年比一年少了。」神主說，「我之後，這裡就沒有人了。」'),
+      { who: 'chizuru', mood: 'sad', text: '「神主大人那時，已經很老了。那是幾十年前的事。」' },
+      { who: 'chizuru', mood: 'sad', text: '「……神社，已經不在了吧。」' },
+    ],
+    summary: '神主是神社最後的守護者。千鶴明白，自己在冰裡待了幾十年，神社早就不在了。',
+  },
+  'mem:chizuru:5': {
+    lines: [
+      N('出發的清晨。神主解下拜殿前的鈴，繫在她的槍穗上。'),
+      N('「帶著吧。」神主說，「回不來也無妨。在你守著的地方掛上它，那裡就是神社。」'),
+      { who: 'chizuru', mood: 'solemn', text: '「神主大人，早就知道我可能回不去了。」' },
+      { who: 'chizuru', mood: 'smile', text: '「洛恩大人，回城之後，我想在鎮邊蓋一座小祠。為了此處的人，掛上這枚鈴。」' },
+    ],
+    summary: '槍穗上的鈴，是神主託付給千鶴的。她決定在露米亞的鎮邊蓋一座小祠，為了現在的人。',
+  },
+  'chat:chizuru:1': {
+    lines: [
+      { who: 'chizuru', mood: 'serious', text: '「封印一完成，我便回神社覆命。得在春祭之前趕回去才行。」' },
+      { who: 'hero', text: '「神社在哪裡？」' },
+      { who: 'chizuru', mood: 'bewildered', text: '「在山的那一頭……奇怪。回去的路，一時竟想不起來。」' },
+    ],
+    summary: '千鶴說封印完成就要回神社。洛恩問神社在哪裡，她想不起回去的路。',
+  },
+  'chat:chizuru:2': {
+    lines: [
+      N('清晨的鎮邊。千鶴搖了搖槍穗上的小鈴，閉上眼睛，等它響完。'),
+      { who: 'hero', text: '「那個鈴，是神社的？」' },
+      { who: 'chizuru', mood: 'solemn', text: '「不記得是何時繫上的。只是每日聽它響一回，心便定了。」' },
+    ],
+    summary: '千鶴每天清晨搖一次槍穗上的鈴。她不記得鈴是哪裡來的，只知道聽了心會定。',
+  },
+  // Task 8: Safira (spec §6, §11.2). One member of her troupe in each piece, the leader last: 「你要繼續跳。」
+  'mem:safira:1': {
+    lines: [
+      N('沙丘上的營火。鼓手敲著皮鼓，她赤著腳，在火光裡轉圈。'),
+      N('「慢了半拍！」鼓手笑著喊，「跟上我的鼓，別讓鼓跟著你跑！」'),
+      { who: 'safira', mood: 'laugh', text: '「哈哈，那個大鬍子，打起鼓來比誰都兇。是我們舞團的鼓手啦。」' },
+      { who: 'safira', mood: 'sad', text: '「……可是，鼓聲是哪一天停的，我想不起來。」' },
+    ],
+    summary: '莎菲拉想起舞團的鼓手，和營火邊跟不上的那半拍。鼓聲是哪一天停的，她想不起來。',
+  },
+  'mem:safira:2': {
+    lines: [
+      N('乾掉的河床。吹笛的少年跟在她後面，笛聲斷斷續續。水袋已經空了兩天。'),
+      N('她先看見了。地平線上浮著一座城，屋頂閃閃發亮。她喊著「那裡有城」，第一個跑了過去。'),
+      { who: 'safira', mood: 'sad', text: '「笛子是我教他吹的。他什麼都學我，連往哪裡跑，也學我。」' },
+      { who: 'safira', mood: 'sad', text: '「……小洛。是我先看見那座城的。」' },
+    ],
+    summary: '沙漠裡，莎菲拉第一個看見蜃樓裡的城，第一個跑了過去。吹笛的少年跟在她後面。',
+  },
+  'mem:safira:3': {
+    lines: [
+      N('帳篷裡熱得像爐子。縫衣裳的大姊替她的舞衣縫上最後一排銅片，針扎了手也不吭聲。'),
+      N('大姊把自己那一口水推給她：「跳舞的人，喉嚨不能乾。我只要拿得動針就好。」'),
+      { who: 'safira', mood: 'sad', text: '「這件舞衣，就是我身上這件。……銅片，一片都沒掉。」' },
+      { who: 'safira', mood: 'smile', text: '「很好看吧？大姊的手藝，可是全舞團第一喔。」' },
+    ],
+    summary: '莎菲拉身上的舞衣，是縫衣裳的大姊縫的。大姊把最後一口水讓給了她。',
+  },
+  'mem:safira:4': {
+    lines: [
+      N('她發著燒，躺在搖晃的駱駝背上。牽駱駝的老人走在前面，和團長低聲說話。'),
+      N('「那座城是假的。」老人說，「可身後的沙暴是真的。進去，也許還有一條路。」'),
+      N('團長沉默了很久，最後只說了一句：「走吧。」'),
+      { who: 'safira', mood: 'surprised', text: '「……做決定的，不是我？」' },
+    ],
+    summary: '發燒的莎菲拉在駱駝背上，聽見牽駱駝的老人和團長商量。走進蜃樓，是團長決定的。',
+  },
+  'mem:safira:5': {
+    lines: [
+      N('蜃樓裡的城燒了起來。團長抓住她的手臂，把她推向那道快要合上的光。'),
+      N('「進來是我選的，不是你的錯。」團長說，「你要繼續跳。」'),
+      { who: 'safira', mood: 'sad', text: '「……團長那一推，力氣也太大了啦。害我一路跳到了這裡。」' },
+      { who: 'safira', mood: 'smile', text: '「小洛，回城之後來廣場看囉。舞團最後的那支舞，我替大家跳完。」' },
+    ],
+    summary: '團長在最後一刻把莎菲拉推出了蜃樓：你要繼續跳。她要在露米亞的廣場，跳完舞團最後的那支舞。',
+  },
+  'chat:safira:1': {
+    lines: [
+      N('夜裡的傳送門廣場。莎菲拉一個人踩著拍子轉圈，腳踝上的銅環叮叮作響。'),
+      { who: 'hero', text: '「不累嗎？」' },
+      { who: 'safira', mood: 'wink', text: '「累？跳舞的人不說這個字啦。……倒是小洛，你的腳尖剛剛在跟著打拍子喔。」' },
+    ],
+    summary: '莎菲拉夜裡在廣場一個人跳舞。洛恩問她累不累，反被她抓到腳尖在打拍子。',
+  },
+  'chat:safira:2': {
+    lines: [
+      { who: 'safira', mood: 'wink', text: '「凜，妳的腳步這麼輕，天生是跳舞的料喔。來，跟上拍子囉！」' },
+      { who: 'rin', mood: 'guarded', text: '「……不要。」' },
+      { who: 'safira', mood: 'laugh', text: '「哈哈，被拒絕了！那小洛，換你囉。……欸，別跑啊！」' },
+    ],
+    summary: '莎菲拉想教凜跳舞，被一口回絕。她轉頭找洛恩，洛恩跑了。',
+  },
 };
 
 function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }> {
@@ -478,6 +667,72 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
     '她在鐘樓下長大，丟針是她小時候的遊戲。她戰鬥時從不眨眼。她的師父說，從深處走出來的，不是人。',
     '她的碎片裡，「凜」是靜鐘會給刺客的代號，銅鐘是信物。鐘響了三天，她走進迷宮，追那個從深處走出來的人。',
   ],
+  // Task 8: Lorne's notes on Selene, Chizuru and Safira. Each segment is placed at her meeting: no act content.
+  selene: [
+    '瑟蕾。在本道的水晶洞窟遇見她，被怪物圍著，還在讀月相。她叫我洛恩先生，說話總留一點餘地。',
+    '她是讀月亮的占星師，怕說出口的預言會自己成真。滿月的夜裡，她看過燈重新亮起。那些結局，是她自己交給迷宮的。',
+    '新月的夜裡，她看過燈熄滅。她說，滿月裡站在燈旁邊的，是我們。現在她叫我洛恩，說她想看見。',
+  ],
+  chizuru: [
+    '千鶴。在霜凍之地的冰裡找到她，她握著槍，還保持著封印的姿勢。她說只睡了幾天，叫我洛恩大人。',
+    '神社派她來封印迷宮，要她春祭之前回去。祝詞沒念完，她就被凍進冰裡。冰外走過的人，衣裳換了好幾回。',
+    '她是最後一位神主送出來的，神社早就不在了。槍穗上的鈴是神主託付的。她要在鎮邊蓋一座小祠，為了現在的人。',
+  ],
+  safira: [
+    '莎菲拉。在熾焰之地的火裡一個人跳劍舞，像在等誰跟上她的拍子。她叫我小洛，從不說累。',
+    '她是流浪舞團的舞者。碎片裡有打鼓的、吹笛的、縫衣裳的團員。她說，是她先看見沙漠裡那座蜃樓的城。',
+    '走進蜃樓是團長選的，團長把她推了出來：「你要繼續跳。」她要在鎮上的廣場，跳完舞團最後的那支舞。',
+  ],
+};
+
+/** The found line: narration that opens every meeting, as the rescue screen says it (`T.ui2.rescue.found`). */
+const foundLine = (id: Meetable): string => `有人被怪物圍住了──是${nameOf(id)}！`;
+/**
+ * The written meetings (spec §6): the found line, then what the party sees and her own words; after the fight, she joins.
+ * Played unfiltered: no `if`, and only she, Lorne, Rin and the narrator speak.
+ */
+const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[] }>> = {
+  // Task 8
+  selene: {
+    before: [
+      N(foundLine('selene')),
+      N('水晶洞窟的石壁上，映著一輪天上沒有的月亮。她跪在那片月光裡，被怪物圍著，卻抬頭讀著月相。'),
+      { who: 'selene', mood: 'foresee', text: '「……上弦的月。今晚，也許會有人經過吧。」' },
+      { who: 'rin', mood: 'guarded', text: '「……被圍住了，還在看月亮。」' },
+    ],
+    after: [
+      { who: 'selene', mood: 'smile', text: '「謝謝各位。我是瑟蕾，讀月亮的人。」' },
+      { who: 'hero', text: '「我是洛恩。妳怎麼一個人在這裡？」' },
+      { who: 'selene', mood: 'wistful', text: '「我好像，把很重要的東西忘在這座迷宮裡了。……洛恩先生，請讓我同行吧。」' },
+    ],
+  },
+  chizuru: {
+    before: [
+      N(foundLine('chizuru')),
+      N('一大塊冰裡，凍著一位巫女。她握著長槍，還保持著封印儀式的姿勢。'),
+      N('怪物繞著冰打轉。冰面忽然裂開一道細縫，裡面傳出很輕的聲音。'),
+      { who: 'chizuru', mood: 'solemn', text: '「……封印，尚未完成……」' },
+    ],
+    after: [
+      N('冰碎了。巫女跌了出來，用長槍拄著地，撐住了身子。'),
+      { who: 'chizuru', mood: 'bewildered', text: '「失禮了，是諸位破的冰？……我才睡了幾日，此處怎麼全變了樣。」' },
+      { who: 'hero', text: '「我是洛恩。站得起來嗎？」' },
+      { who: 'chizuru', mood: 'serious', text: '「我是千鶴，奉神社之命前來封印迷宮。洛恩大人，這份恩情，請容我以槍相報。」' },
+    ],
+  },
+  safira: {
+    before: [
+      N(foundLine('safira')),
+      N('熾焰之地的火海裡，一個少女握著彎刀，一個人跳著劍舞。每一步，都像在等誰接上她的拍子。'),
+      { who: 'safira', mood: 'wink', text: '「哎呀，有客人？來得正好，這首曲子一個人跳，太寂寞了。」' },
+    ],
+    after: [
+      { who: 'safira', mood: 'laugh', text: '「哈哈！好久沒有人陪我跳完一整首了。」' },
+      { who: 'hero', text: '「我是洛恩。妳一直一個人在這裡跳？」' },
+      { who: 'safira', mood: 'sad', text: '「……一停下來，好像就會忘掉什麼。所以，就一直跳囉。」' },
+      { who: 'safira', mood: 'wink', text: '「我是莎菲拉。小洛，讓我跟著你們吧，順便教你跟上拍子！」' },
+    ],
+  },
 };
 
 // The town's opening lines and the facility greetings, one set for every stage until 6c writes them per stage.
@@ -532,8 +787,8 @@ export const STORY = {
   act1Card: { title: '第一幕　星燈重新亮起', body: '燈喰之獸倒下了。暮霧從石板路上退去，露米亞第一次看見了晨光。' },
   endingTitle: ph('終幕　點燈'),
   /** Rescue meetings: what is said before the fight (the found line is narration; 6c adds hers) and after it is won. */
-  meet: Object.fromEntries(MEETINGS.map((m) => [m.id, {
-    before: [{ who: 'narrator' as const, text: ph(`有人被怪物圍住了──是${nameOf(m.id)}！`) }],
+  meet: Object.fromEntries(MEETINGS.map((m) => [m.id, MEET[m.id] ?? {
+    before: [{ who: 'narrator' as const, text: ph(foundLine(m.id)) }],
     after: [] as ScriptLine[],
   }])) as Record<Meetable, { before: ScriptLine[]; after: ScriptLine[] }>,
   absorb: [ph('碎片化開，一段陌生的暖意流進身體。')],
