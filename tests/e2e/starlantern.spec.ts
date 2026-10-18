@@ -1234,7 +1234,13 @@ test.describe('starlantern', () => {
     const memoryTalk = page.locator('.slx-dungeon .slx-talk.slx-talk--memory');
     for (let i = 0; i < 14 && !(await memoryTalk.isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
     await expect(memoryTalk).toBeVisible();
-    await expect(page.locator('.slx-dungeon .slx-talk .slx-talk-face')).toBeVisible();   // her memory is spoken with her portrait on the box
+    // The memory may open on narration (no face): advance to Rin's first spoken line, then her portrait must be on the box.
+    const rinFirst = STORY.scenes[memScene('rin', 1)].lines.find((l) => l.who === 'rin')!;
+    const memoryText = page.locator('.slx-dungeon .slx-talk.slx-talk--memory .slx-text');
+    for (let i = 0; i < 20 && !((await memoryText.textContent()) ?? '').includes(rinFirst.text); i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await expect(memoryText).toHaveText(rinFirst.text);
+    await expect(page.locator('.slx-dungeon .slx-talk .slx-name')).toHaveText(CHARACTERS.rin.name);
+    await expect(page.locator('.slx-dungeon .slx-talk img.slx-talk-face[src$="/char/rin-portrait.png"]')).toBeVisible();   // her memory is spoken with her portrait on the box
     await shot('03-memory-scene');
     await playOut();
     await expect(page.locator('.slx-talk--memory')).toHaveCount(0);
