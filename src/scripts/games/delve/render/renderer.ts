@@ -18,7 +18,7 @@ import { Background } from './background';
 import { scanTrees, torchMount, treeKind, TREE_KIND } from './scene';
 import { bufferSize, clampZoom, floatTextScale, snapCam, zoomScale } from './lowres';
 import { ambientReach, type LightMap, type PointLight } from '../engine/lighting';
-import { shadeTiles, LightFiller, rectCovers, AMBIENT_R, type ShadeRect } from './lightShade';
+import { shadeTiles, LightFiller, rectCovers, depthCurve, AMBIENT_R, type ShadeRect } from './lightShade';
 import { AmbientField, ambientKind, AMBIENT_GLOWS, type AmbientKind } from './ambient';
 import { LiquidLayer } from './liquidDraw';
 import { LIQ } from '../engine/liquidKind';
@@ -1070,11 +1070,12 @@ export class Renderer {
     this.stats.lightFrames = j.frames;
   }
 
-  /** 上次光照計算時某格（tile）的亮度（三通道最大值 ×1.08；沒算過 = 1） */
+  /** 上次光照計算時某格（tile）的亮度（三通道最大值 ×1.08，地下套同一條暗部曲線；沒算過 = 1） */
   lightAt(tx: number, ty: number): number {
     const L = this.lastLight;
     if (!L || this.fullbright) return 1;
-    return Math.min(1, L.get(tx, ty) * 1.08);
+    const w = this.game.world, x = Math.max(0, Math.min(w.width - 1, tx));
+    return depthCurve(Math.min(1, L.get(tx, ty) * 1.08), ty - w.surface[x]);
   }
 
   destroy(): void {

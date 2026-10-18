@@ -5,7 +5,16 @@ import { T, W } from './tiles';
 import { LightEngine, LightMap, skyBrightness, ambientReach } from './lighting';
 import { skyColor } from './sky';
 import { generateWorld } from './worldgen';
-import { LIGHT_AIR_DECAY, LIGHT_SOLID_DECAY, LIGHT_MARGIN, DAY_LENGTH, LIGHT_WATER_DECAY, LIGHT_HONEY_DECAY, LAVA_LIGHT, SKY_SHAFT_LEN } from './constants';
+import {
+  LIGHT_AIR_DECAY, LIGHT_AIR_DECAY_DEEP, LIGHT_DEEP_START, LIGHT_DEEP_FULL, LIGHT_SOLID_DECAY, LIGHT_MARGIN, DAY_LENGTH,
+  LIGHT_WATER_DECAY, LIGHT_HONEY_DECAY, LAVA_LIGHT, SKY_SHAFT_LEN,
+} from './constants';
+
+// 2026-10 洞穴對比：地下（每欄地表下 LIGHT_DEEP_START 格起、LIGHT_DEEP_FULL 格完全）的空氣改用 LIGHT_AIR_DECAY_DEEP，
+// 光池變小、未照到的地方真的暗。closedCave 的每欄地表 = 0（整個世界都是「深處」），所以下面那些封閉洞穴的
+// 衰減期望值從 LIGHT_AIR_DECAY 改成 LIGHT_AIR_DECAY_DEEP——是刻意的新行為，不是放寬比對。
+// 地表的測試世界補上每欄地表高度（w.surface），地表附近仍是原本的 LIGHT_AIR_DECAY（白天地表不變）。
+const AIR = LIGHT_AIR_DECAY_DEEP;
 
 /** 全石頭 + 背牆，中央挖一個封閉洞穴（20×10），surfaceY = 0 → 沒有天空光 */
 function closedCave(): World {
@@ -23,14 +32,14 @@ describe('LightEngine', () => {
     const m = new LightEngine().compute(w, { x: 30, y: 30, w: 40, h: 40 }, { sky: 1 });
     for (let i = 0; i < m.data.length; i++) expect(m.data[i]).toBe(0);
   });
-  it('火把照亮鄰格，隨距離以 0.91 衰減', () => {
+  it('火把照亮鄰格，深處隨距離以 LIGHT_AIR_DECAY_DEEP 衰減', () => {
     const w = closedCave();
     w.fg[w.idx(50, 50)] = T.TORCH;
     const m = new LightEngine().compute(w, { x: 30, y: 30, w: 40, h: 40 }, { sky: 0 });
     expect(m.get(50, 50)).toBeCloseTo(1, 5);
-    expect(m.get(51, 50)).toBeCloseTo(LIGHT_AIR_DECAY, 4);
-    expect(m.get(53, 50)).toBeCloseTo(LIGHT_AIR_DECAY ** 3, 4);
-    expect(m.get(50, 52)).toBeCloseTo(LIGHT_AIR_DECAY ** 2, 4);
+    expect(m.get(51, 50)).toBeCloseTo(AIR, 4);
+    expect(m.get(53, 50)).toBeCloseTo(AIR ** 3, 4);
+    expect(m.get(50, 52)).toBeCloseTo(AIR ** 2, 4);
     expect(m.get(52, 52)).toBeLessThan(m.get(51, 51));
     expect(m.get(51, 51)).toBeLessThan(m.get(51, 50));
   });
@@ -42,14 +51,15 @@ describe('LightEngine', () => {
     const air3 = m.get(44, 50);
     const solid3 = m.get(38, 50);
     expect(solid3).toBeLessThan(air3);
-    expect(m.get(39, 50)).toBeCloseTo(LIGHT_AIR_DECAY ** 2, 4); // x=40 是空氣，x=39 是第一格石頭
-    expect(m.get(38, 50)).toBeCloseTo(LIGHT_AIR_DECAY ** 2 * LIGHT_SOLID_DECAY, 4);
+    expect(m.get(39, 50)).toBeCloseTo(AIR ** 2, 4); // x=40 是空氣，x=39 是第一格石頭
+    expect(m.get(38, 50)).toBeCloseTo(AIR ** 2 * LIGHT_SOLID_DECAY, 4);
     expect(m.get(20, 50)).toBe(0); // 深入岩石 → 低於門檻
   });
   it('天空光照到地表、照不進深層岩石', () => {
     const w = new World(80, 80);
     for (let y = 30; y < 80; y++) for (let x = 0; x < 80; x++) { w.fg[w.idx(x, y)] = T.STONE; if (y > 32) w.wall[w.idx(x, y)] = W.STONE_WALL; }
     w.surfaceY = 35;
+    w.surface.fill(30);
     const m = new LightEngine().compute(w, { x: 10, y: 5, w: 60, h: 60 }, { sky: 1 });
     expect(m.get(40, 10)).toBeCloseTo(1, 5);
     expect(m.get(40, 29)).toBeCloseTo(1, 5);
@@ -124,7 +134,7 @@ describe('LightEngine', () => {
       w.setLiquid(45, 50, 20, LIQ.LAVA);
       const m = new LightEngine().compute(w, { x: 30, y: 30, w: 40, h: 40 }, { sky: 0 });
       expect(m.get(50, 50)).toBeCloseTo(LAVA_LIGHT, 4);
-      expect(m.get(51, 50)).toBeCloseTo(LAVA_LIGHT * LIGHT_AIR_DECAY, 3);
+      expect(m.get(51, 50)).toBeCloseTo(LAVA_LIGHT * AIR, 3);
     });
     it('光穿過深水：紅綠衰減得比空氣快、藍走得最遠；淺水（≤128）當空氣', () => {
       expect(LIGHT_WATER_DECAY[0]).toBeLessThan(LIGHT_AIR_DECAY);
@@ -139,7 +149,7 @@ describe('LightEngine', () => {
       const m = new LightEngine().compute(w, { x: 30, y: 30, w: 40, h: 40 }, { sky: 0 });
       // 深水那列：第 1 格之後每格 ×LIGHT_WATER_DECAY
       expect(m.getRGB(45, 50)[0] / m.getRGB(44, 50)[0]).toBeCloseTo(LIGHT_WATER_DECAY[0], 2);
-      expect(m.get(45, 46) / m.get(44, 46)).toBeCloseTo(LIGHT_AIR_DECAY, 2);
+      expect(m.get(45, 46) / m.get(44, 46)).toBeCloseTo(AIR, 2);
     });
     it('地表的湖：只有水面那格吃天空光，越深越暗', () => {
       const w = new World(60, 60);
@@ -260,6 +270,36 @@ describe('LightEngine', () => {
       const y = 30 + SKY_SHAFT_LEN + 50;
       const deep = eng.compute(w, { x: 20, y: y - 5, w: 40, h: 10 }, { sky: 1, margin: 4 });
       expect(deep.get(41, y)).toBe(0);
+    });
+  });
+
+  describe('洞穴對比：地下的空氣衰減更快（地表不變）', () => {
+    /** 一條水平走廊（y = row），每欄地表在 y = 40 */
+    function corridor(row: number): World {
+      const w = new World(120, 160);
+      w.fg.fill(T.STONE);
+      w.wall.fill(W.STONE_WALL);
+      w.surface.fill(40);
+      w.surfaceY = 0;
+      for (let x = 10; x < 110; x++) w.fg[w.idx(x, row)] = T.AIR;
+      w.fg[w.idx(60, row)] = T.TORCH;
+      return w;
+    }
+    const ratio = (row: number): number => {
+      const m = new LightEngine().compute(corridor(row), { x: 20, y: row - 10, w: 80, h: 20 }, { sky: 0 });
+      return m.get(63, row) / m.get(62, row);
+    };
+    it('地表附近（≤ LIGHT_DEEP_START 格）沿用 LIGHT_AIR_DECAY；夠深（≥ LIGHT_DEEP_FULL）用 LIGHT_AIR_DECAY_DEEP；中間線性過渡', () => {
+      expect(LIGHT_AIR_DECAY_DEEP).toBeLessThan(LIGHT_AIR_DECAY);
+      expect(ratio(40 + LIGHT_DEEP_START - 2)).toBeCloseTo(LIGHT_AIR_DECAY, 4);
+      expect(ratio(40 + LIGHT_DEEP_FULL + 5)).toBeCloseTo(LIGHT_AIR_DECAY_DEEP, 4);
+      const mid = ratio(40 + Math.round((LIGHT_DEEP_START + LIGHT_DEEP_FULL) / 2));
+      expect(mid).toBeLessThan(LIGHT_AIR_DECAY);
+      expect(mid).toBeGreaterThan(LIGHT_AIR_DECAY_DEEP);
+    });
+    it('深處的火把光比地表附近的短得多：20 格外降到原本的一半以下', () => {
+      const reach = (row: number): number => new LightEngine().compute(corridor(row), { x: 20, y: row - 10, w: 80, h: 20 }, { sky: 0 }).get(80, row);
+      expect(reach(100)).toBeLessThan(reach(42) * 0.5);
     });
   });
 

@@ -11,6 +11,7 @@ import type { LightMap } from '../engine/lighting';
 import { BLOCKS_LIGHT_LUT } from '../engine/tiles';
 import { LIGHT_LEVELS, PLATEAU } from './lowres';
 import { bayer } from './pixel';
+import { LIGHT_DEEP_START, LIGHT_DEEP_FULL } from '../engine/constants';
 
 /** 色相每通道幾階（0..HUE_STEPS） */
 export const HUE_STEPS = 8;
@@ -22,6 +23,21 @@ export const AMBIENT_FAR = 0.03;
 export const AMBIENT_R = 13;
 /** 色相飽和度（1 = 原色相、0 = 白光）：遮罩上的光色往白拉，避免暖光 / 冷光把亮度吃掉 */
 export const HUE_SAT = 0.6;
+/**
+ * 地下的暗部曲線：亮度 m → m^γ，γ 從每欄地表下 LIGHT_DEEP_START 格的 1 線性升到 LIGHT_DEEP_FULL 格的 DEEP_GAMMA。
+ * 光源附近（m ≈ 1）照樣亮、外圍的微光被壓到 0 → 洞穴裡是一個個邊界清楚的光池（亮度階仍由 LIGHT_LEVELS 分階）。
+ */
+export const DEEP_GAMMA = 1.8;
+const GAMMA_LUT = Float32Array.from({ length: LIGHT_DEEP_FULL + 1 }, (_, d) =>
+  d <= LIGHT_DEEP_START ? 1 : 1 + (DEEP_GAMMA - 1) * ((d - LIGHT_DEEP_START) / (LIGHT_DEEP_FULL - LIGHT_DEEP_START)));
+export function depthGamma(depth: number): number {
+  return depth <= LIGHT_DEEP_START ? 1 : depth >= LIGHT_DEEP_FULL ? DEEP_GAMMA : GAMMA_LUT[depth | 0];
+}
+export function depthCurve(m: number, depth: number): number {
+  const g = depthGamma(depth);
+  if (g === 1 || m <= 0) return m;
+  return m >= 1 ? 1 : Math.pow(m, g);
+}
 /** 全暗格補上的色票最暗色（#0c0a12） */
 export const DARK_RGB: readonly [number, number, number] = [12, 10, 18];
 
@@ -36,7 +52,7 @@ export function shadeTiles(
   sky: readonly number[], reach: Uint8Array, out: Float32Array,
 ): void {
   const { x0, y0, w, h } = rect;
-  const W = world.width, surf = world.surfaceY, fg = world.fg, wall = world.wall, LQ = world.liquid;
+  const W = world.width, surf = world.surfaceY, fg = world.fg, wall = world.wall, LQ = world.liquid, SURF = world.surface;
   // 開放天空的格：天空色往白拉一半（背景天空本身已經畫了晝夜色）
   const or = 1 - (1 - sky[0]) * 0.5, og = 1 - (1 - sky[1]) * 0.5, ob = 1 - (1 - sky[2]) * 0.5;
   const rgb = L.rgb;
@@ -51,6 +67,12 @@ export function shadeTiles(
       if (lx >= 0 && ly >= 0 && lx < L.w && ly < L.h) {
         const li = (ly * L.w + lx) * 3;
         r = Math.min(1, rgb[li] * GAIN); g = Math.min(1, rgb[li + 1] * GAIN); b = Math.min(1, rgb[li + 2] * GAIN);
+        // 地下：暗部曲線（對最大通道算，三通道等比縮放 → 色相不變）
+        const dep = ty - SURF[tx];
+        if (dep > LIGHT_DEEP_START) {
+          const m = r > g ? (r > b ? r : b) : (g > b ? g : b);
+          if (m > 0 && m < 1) { const k = depthCurve(m, dep) / m; r *= k; g *= k; b *= k; }
+        }
       }
       if (reach[y * w + x]) {
         const dxp = tx - player.x, dist = Math.sqrt(dxp * dxp + dyp * dyp);

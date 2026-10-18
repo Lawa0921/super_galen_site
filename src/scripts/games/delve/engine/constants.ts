@@ -42,6 +42,13 @@ export const MAX_STACK = 999;
 
 // 光照（泰拉 Color 模式常數）
 export const LIGHT_AIR_DECAY = 0.91;
+/**
+ * 地下的空氣衰減：每欄地表下 LIGHT_DEEP_START 格起線性過渡、LIGHT_DEEP_FULL 格起完全使用。
+ * 洞穴裡的火把 / 水晶 / 熔岩形成看得出邊界的光池，沒照到的地方是真的暗（地表附近與白天地表不變）。
+ */
+export const LIGHT_AIR_DECAY_DEEP = 0.85;
+export const LIGHT_DEEP_START = 8;
+export const LIGHT_DEEP_FULL = 24;
 export const LIGHT_SOLID_DECAY = 0.56;
 export const LIGHT_CUTOFF = 0.0185;
 /** 裂紋石（密室的假牆）每格衰減：比一般實心更擋光，牆後的密室不會被坑道裡的火把照出來 */

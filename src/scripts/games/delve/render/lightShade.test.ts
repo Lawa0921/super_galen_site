@@ -3,7 +3,9 @@ import { describe, it, expect } from 'vitest';
 import { World } from '../engine/world';
 import { T, W } from '../engine/tiles';
 import { LightEngine, ambientReach } from '../engine/lighting';
-import { shadeTiles, fillLightPixels, HUE_STEPS, HUE_SAT, DARK_RGB } from './lightShade';
+import { shadeTiles, fillLightPixels, depthCurve, HUE_STEPS, HUE_SAT, DARK_RGB, GAIN } from './lightShade';
+import { LIGHT_DEEP_START, LIGHT_DEEP_FULL } from '../engine/constants';
+import { lightLevel } from './lowres';
 import { LIGHT_LEVELS } from './lowres';
 
 function secretRoomWorld(): World {
@@ -40,6 +42,62 @@ describe('shadeTiles', () => {
     const o = (5 * 20 + 5) * 3;
     expect(out[o]).toBeCloseTo(0.55, 5);
     expect(out[o + 2]).toBeCloseTo(0.65, 5);
+  });
+});
+
+describe('depthCurve：地下的暗部曲線（未照到的地方更暗、光源附近照樣亮）', () => {
+  it('地表附近（深度 ≤ LIGHT_DEEP_START）完全不變', () => {
+    for (const m of [0, 0.1, 0.33, 0.6, 1]) for (const d of [-20, 0, LIGHT_DEEP_START]) expect(depthCurve(m, d)).toBe(m);
+  });
+  it('深處：0 與 1 不變、中間被壓暗；越深越暗（到 LIGHT_DEEP_FULL 封頂）；對亮度單調', () => {
+    const deep = LIGHT_DEEP_FULL + 10;
+    expect(depthCurve(0, deep)).toBe(0);
+    expect(depthCurve(1, deep)).toBe(1);
+    expect(depthCurve(0.3, deep)).toBeLessThan(0.3 * 0.75);
+    expect(depthCurve(0.3, deep)).toBeLessThan(depthCurve(0.3, LIGHT_DEEP_START + 4));
+    expect(depthCurve(0.3, deep)).toBe(depthCurve(0.3, deep + 100));
+    let last = 0;
+    for (let m = 0; m <= 1.0001; m += 0.05) { const v = depthCurve(m, deep); expect(v).toBeGreaterThanOrEqual(last); last = v; }
+  });
+  it('shadeTiles 套用曲線：同樣的引擎光，深處的格比地表附近暗、色相不變', () => {
+    const w = new World(40, 120);
+    w.wall.fill(W.STONE_WALL);
+    w.surface.fill(10);
+    w.surfaceY = 0;
+    const rect = { x0: 0, y0: 0, w: 40, h: 120 };
+    const L = new LightEngine().compute(w, { x: 0, y: 0, w: 40, h: 120 }, { sky: 0 });
+    L.rgb.fill(0);
+    const put = (y: number): void => { const i = ((y - L.y0) * L.w + (5 - L.x0)) * 3; L.rgb[i] = 0.4; L.rgb[i + 1] = 0.3; L.rgb[i + 2] = 0.2; };
+    put(12); put(100);
+    const out = new Float32Array(40 * 120 * 3);
+    shadeTiles(L, w, rect, { x: 30, y: 60 }, [0, 0, 0], new Uint8Array(40 * 120), out);
+    const at = (y: number): number[] => [...out.subarray((y * 40 + 5) * 3, (y * 40 + 5) * 3 + 3)];
+    const near = at(12), deep = at(100);
+    expect(near[0]).toBeCloseTo(0.4 * GAIN, 5);
+    expect(deep[0]).toBeLessThan(near[0] * 0.75);
+    expect(deep[1] / deep[0]).toBeCloseTo(near[1] / near[0], 5);
+  });
+  it('深處火把的光池：亮度階隨距離一階一階往下（階梯式），十幾格外全暗', () => {
+    const w = new World(140, 200);
+    w.fg.fill(T.STONE);
+    w.wall.fill(W.STONE_WALL);
+    w.surface.fill(20);
+    w.surfaceY = 0;
+    const row = 150;
+    for (let x = 10; x < 130; x++) for (let y = row - 6; y <= row; y++) w.fg[w.idx(x, y)] = T.AIR;
+    w.fg[w.idx(70, row)] = T.TORCH;
+    const rect = { x0: 20, y0: row - 20, w: 100, h: 30 };
+    const L = new LightEngine().compute(w, { x: rect.x0, y: rect.y0, w: rect.w, h: rect.h }, { sky: 0 });
+    const out = new Float32Array(rect.w * rect.h * 3);
+    shadeTiles(L, w, rect, { x: 0, y: 0 }, [0, 0, 0], new Uint8Array(rect.w * rect.h), out);
+    const lv = (x: number): number => lightLevel(out[((row - rect.y0) * rect.w + (x - rect.x0)) * 3], 0, 0);
+    const levels = Array.from({ length: 30 }, (_, d) => lv(70 + d));
+    for (let d = 1; d < levels.length; d++) expect(levels[d]).toBeLessThanOrEqual(levels[d - 1]);
+    expect(levels[0]).toBeGreaterThanOrEqual(6);
+    expect(new Set(levels).size).toBeGreaterThanOrEqual(5); // 看得到好幾階
+    const dark = levels.findIndex((v) => v === 0);
+    expect(dark).toBeGreaterThanOrEqual(9); // 光池半徑約 10 格
+    expect(dark).toBeLessThanOrEqual(13); // 13 格內就全暗（舊的 0.91 衰減、沒有暗部曲線要 35 格）
   });
 });
 

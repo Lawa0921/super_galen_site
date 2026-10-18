@@ -4,6 +4,7 @@
 // 2) 兩輪 blur：每輪對每欄做下→上、上→下，對每列做左→右、右→左；
 //    每個通道各自攜帶 v：v<cell 取 cell，否則（v ≥ 門檻）寫回 cell；離開該格時 v *= 該格該通道的衰減
 //    （空氣 0.91、實心 0.56 三通道相同；深水 / 深蜂蜜用各自的 RGB 三元組 → 越深越藍 / 越琥珀）。
+//    地下的空氣衰減更快：每欄地表下 LIGHT_DEEP_START 格起往 LIGHT_AIR_DECAY_DEEP 線性過渡（洞穴的光池較小、暗處真的暗）。
 // 液體：熔岩發紅橘光（量 / 128，最多 LAVA_LIGHT）；地表的水只有最上面那格（上方沒有液體）吃天空光。
 // 只算視窗 + margin 外框。輸出 row-major：data[i] = 三通道最大值（揭露 / 舊呼叫端用）、rgb[i*3+k]。
 import type { World } from './world';
@@ -11,8 +12,17 @@ import { BLOCKS_LIGHT_LUT, LIGHT_RGB_LUT, CRYSTAL_ALT_HUE, T } from './tiles';
 import { LIQ } from './liquidKind';
 import {
   LIGHT_AIR_DECAY, LIGHT_SOLID_DECAY, LIGHT_CUTOFF, LIGHT_MARGIN, DAY_LENGTH, LIGHT_WATER_DECAY, LIGHT_HONEY_DECAY, LAVA_LIGHT,
-  SKY_SHAFT_LEN, SKY_SHAFT_K, LIGHT_SECRET_DECAY,
+  SKY_SHAFT_LEN, SKY_SHAFT_K, LIGHT_SECRET_DECAY, LIGHT_AIR_DECAY_DEEP, LIGHT_DEEP_START, LIGHT_DEEP_FULL,
 } from './constants';
+
+/** 每欄地表下 depth 格的空氣衰減（地表附近 LIGHT_AIR_DECAY → 深處 LIGHT_AIR_DECAY_DEEP，中間線性） */
+export function airDecayAt(depth: number): number {
+  if (depth <= LIGHT_DEEP_START) return LIGHT_AIR_DECAY;
+  if (depth >= LIGHT_DEEP_FULL) return LIGHT_AIR_DECAY_DEEP;
+  return LIGHT_AIR_DECAY + (LIGHT_AIR_DECAY_DEEP - LIGHT_AIR_DECAY) * ((depth - LIGHT_DEEP_START) / (LIGHT_DEEP_FULL - LIGHT_DEEP_START));
+}
+/** airDecayAt 的查表（depth 0..LIGHT_DEEP_FULL） */
+const AIR_DECAY_LUT = Float32Array.from({ length: LIGHT_DEEP_FULL + 1 }, (_, d) => airDecayAt(d));
 
 export type LightRGB = readonly [number, number, number];
 export interface LightRect { x: number; y: number; w: number; h: number; }
@@ -105,7 +115,12 @@ export class LightEngine {
         const id = fg[wi];
         const i = (ly * w + lx) * 3;
         const solid = BLOCKS_LIGHT_LUT[id] === 1;
-        const d = solid ? (id === T.CRACKED_STONE ? LIGHT_SECRET_DECAY : LIGHT_SOLID_DECAY) : LIGHT_AIR_DECAY;
+        let d: number;
+        if (solid) d = id === T.CRACKED_STONE ? LIGHT_SECRET_DECAY : LIGHT_SOLID_DECAY;
+        else {
+          const dep = y - SURF[x0 + lx];
+          d = dep <= LIGHT_DEEP_START ? LIGHT_AIR_DECAY : dep >= LIGHT_DEEP_FULL ? LIGHT_AIR_DECAY_DEEP : AIR_DECAY_LUT[dep];
+        }
         D[i] = d; D[i + 1] = d; D[i + 2] = d;
         const t3 = id * 3;
         let er = LIGHT_RGB_LUT[t3], eg = LIGHT_RGB_LUT[t3 + 1], eb = LIGHT_RGB_LUT[t3 + 2];
