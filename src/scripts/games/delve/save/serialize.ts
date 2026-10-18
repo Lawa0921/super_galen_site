@@ -30,6 +30,7 @@
 //   沒有或不合法 → 從種子起點（不算損毀，舊存檔照讀）。
 //   尺寸上限：寬 ≤ MAX_WORLD_W、高 ≤ MAX_WORLD_H、面積 ≤ MAX_WORLD_AREA（生成器實際支援的範圍）；
 //   液體 chunk 清單長度先和世界 chunk 總數比對，再配置 RLE 解碼緩衝。
+// format 9 起：header.vanity = 外觀欄（頭 / 身 / 腿 / 背的時裝或當樣子用的防具 + 詞條）與防具隱藏開關（壞資料各自丟掉）。
 // format 9 起：header.appearance = 角色外觀（engine/appearance.ts 的選項索引）。沒有 / 壞掉 → 預設外觀（各欄獨立退回，
 //   不算存檔損毀：外觀是裝飾，不該讓整個世界讀不到）。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
@@ -59,6 +60,7 @@ import { LIQ, LIQ_MAX } from '../engine/liquidKind';
 import { WEATHER_KINDS, type WeatherKind } from '../engine/weather';
 import { isRngState, type RngState } from '../engine/rng';
 import { normalizeAppearance, type Appearance } from '../engine/appearance';
+import { Vanity, type VanityJSON } from '../engine/vanity';
 
 export const SAVE_FORMAT = 9;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
@@ -136,6 +138,8 @@ export interface SaveHeader {
   extra?: ExtraSave;
   /** 角色外觀；format 9 起（沒有 = 預設外觀） */
   appearance?: Appearance;
+  /** 外觀欄（時裝）+ 防具隱藏開關；format 9 起（沒有 = 空、都不隱藏） */
+  vanity?: VanityJSON;
 }
 export interface ExtraSave {
   /** 釣魚紀錄：魚種 → 條數 */
@@ -425,6 +429,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeFrozen(w.frozen) },
       extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce], codex: game.codex.toJSON(), rng: game.rngState() },
       appearance: { ...game.appearance },
+      vanity: game.vanity.toJSON(),
     },
     chunks,
   };
@@ -622,6 +627,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     env: validEnv(h.env),
     extra: validExtra(h.extra),
     appearance: normalizeAppearance(h.appearance),
+    vanity: Vanity.fromJSON(h.vanity).toJSON(),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -689,6 +695,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       data.header.env = validEnv(data.header.env);
       data.header.extra = validExtra(data.header.extra);
       data.header.appearance = normalizeAppearance(data.header.appearance);
+      data.header.vanity = Vanity.fromJSON(data.header.vanity).toJSON();
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
@@ -756,6 +763,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   game.player.vx = h.player.vx;
   game.player.vy = h.player.vy;
   game.inventory = Inventory.fromJSON(h.inventory);
+  game.vanity = Vanity.fromJSON(h.vanity);
   game.time = h.time;
   game.tick = h.tick;
   // 探索（format 4）；舊格式 = 什麼都沒探索

@@ -119,6 +119,21 @@ export const RECIPES: readonly Recipe[] = [
   r('candle', 'candle', 3, 'workbench', ['gel', 2]),
   r('lantern_post', 'lantern_post', 1, 'anvil', ['iron_bar', 2], ['torch', 2]),
   r('plank_wall', 'plank_wall', 4, null, ['planks', 1]),
+  // ── 時裝（工作台；布 = 旗幟、染料 = 凝膠 / 餘燼 / 螢光菇）。女僕裝、魔女帽、羽翼、大蝴蝶結只在地城 / 密室箱子裡找得到 ──
+  r('sailor_top', 'sailor_top', 1, 'workbench', ['banner', 2], ['gel', 4]),
+  r('sailor_skirt', 'sailor_skirt', 1, 'workbench', ['banner', 2], ['gel', 2]),
+  r('miko_robe', 'miko_robe', 1, 'workbench', ['banner', 3]),
+  r('miko_hakama', 'miko_hakama', 1, 'workbench', ['banner', 2], ['ember', 2]),
+  r('hoodie_top', 'hoodie_top', 1, 'workbench', ['banner', 2], ['gel', 2], ['feather', 2]),
+  r('hoodie_shorts', 'hoodie_shorts', 1, 'workbench', ['banner', 1], ['gel', 2]),
+  r('travel_coat', 'travel_coat', 1, 'workbench', ['banner', 3], ['chitin', 2]),
+  r('coat_trousers', 'coat_trousers', 1, 'workbench', ['banner', 2], ['chitin', 1]),
+  r('explorer_vest', 'explorer_vest', 1, 'workbench', ['banner', 1], ['planks', 4]),
+  r('explorer_shorts', 'explorer_shorts', 1, 'workbench', ['banner', 1], ['planks', 2]),
+  r('straw_hat', 'straw_hat', 1, 'workbench', ['wood', 6]),
+  r('beret', 'beret', 1, 'workbench', ['banner', 1], ['gel', 1]),
+  r('flower_crown', 'flower_crown', 1, 'workbench', ['mushroom', 2], ['glow_mushroom', 2]),
+  r('travel_cape', 'travel_cape', 1, 'workbench', ['banner', 3], ['feather', 2]),
 ];
 
 export function findRecipe(id: string): Recipe | undefined {

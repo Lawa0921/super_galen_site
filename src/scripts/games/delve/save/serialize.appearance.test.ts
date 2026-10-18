@@ -57,3 +57,34 @@ describe('存檔：角色外觀', { timeout: 60_000 }, () => {
     expect(c.ok && c.game.appearance).toEqual(DEFAULT_APPEARANCE);
   });
 });
+
+describe('存檔：外觀欄（時裝）與防具隱藏', { timeout: 60_000 }, () => {
+  it('外觀欄四格（含當樣子用的防具詞條）與隱藏開關存檔 → 讀回一樣；紙娃娃 key 也一樣', () => {
+    const g = new DelveGame({ seed: 'vanity', ...SMALL, peaceful: true });
+    g.equip('iron_chestplate'); g.equip('gold_helmet'); g.equip('feather_charm');
+    g.vanity.set('body', 'sailor_top');
+    g.vanity.set('legs', 'gold_greaves', { rarity: 4, ilvl: 4, plus: 2, affixes: [] });
+    g.vanity.set('back', 'travel_cape');
+    g.setHideArmor('head', true);
+    const key = g.doll().key;
+    const back = restoreGame(serializeGame(g));
+    expect(back.ok).toBe(true);
+    if (!back.ok) return;
+    expect(back.game.vanity.toJSON()).toEqual(g.vanity.toJSON());
+    expect(back.game.vanity.hide).toEqual({ head: true, body: false, legs: false });
+    expect(back.game.doll().key).toBe(key);
+    // 外觀欄不影響數值：防禦只算身上的防具
+    expect(back.game.stats().defense).toBe(g.stats().defense);
+  });
+  it('沒有外觀欄的存檔 / 壞資料：讀得到，外觀欄空、不隱藏', () => {
+    const g = new DelveGame({ seed: 'vanity-old', ...SMALL, peaceful: true });
+    const data = snapshotGame(g);
+    delete (data.header as { vanity?: unknown }).vanity;
+    const a = restoreGame(encodeSave(data));
+    expect(a.ok && a.game.vanity.toJSON()).toEqual(new DelveGame({ seed: 'x', ...SMALL }).vanity.toJSON());
+    (data.header as { vanity?: unknown }).vanity = { slots: { head: 'dirt', body: 'miko_robe' }, hide: 7 };
+    const b = restoreGame(encodeSave(data));
+    expect(b.ok && b.game.vanity.get('head')).toBeNull();
+    expect(b.ok && b.game.vanity.get('body')).toBe('miko_robe');
+  });
+});

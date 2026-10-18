@@ -39,6 +39,8 @@ import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidContact } from './swim';
 import { normalizeAppearance, type Appearance } from './appearance';
+import { Vanity, type HideSlot, type VanitySlot } from './vanity';
+import { buildDollLook, dollKey, type DollLook } from './doll';
 import { ProjList, type HitFx, type ProjKind, type Projectile } from './projectiles';
 import {
   ascendCost, ascendGear, baseTier, gearSlot, ilvlForDepth, rerollAffix, rerollCost, rollDropItem, rollGear, rollRarity,
@@ -400,6 +402,9 @@ export class DelveGame {
   inventory: Inventory;
   /** 角色外觀（存檔內容；換外觀用 setAppearance，換成新物件 → 渲染器以參考判斷要不要重烘精靈） */
   appearance: Readonly<Appearance>;
+  /** 外觀欄（時裝）+ 防具隱藏開關（存檔內容） */
+  vanity = new Vanity();
+  private dollMemo: { sig: string; look: DollLook; key: string } | null = null;
   /** 遊戲內經過秒數（日夜循環用） */
   time = START_TIME;
   tick = 0;
@@ -1113,6 +1118,26 @@ export class DelveGame {
     if (!st) return false;
     const s = slot ?? this.equipment.autoSlot(st.item);
     return s ? this.equipment.equipFrom(this.inventory, i, s) : false;
+  }
+  /** 背包第 i 格放進外觀欄 slot（省略 = 依道具決定） */
+  equipVanityFromInventory(i: number, slot?: VanitySlot): boolean {
+    const st = this.inventory.slots[i];
+    if (!st) return false;
+    const d = ITEMS[st.item];
+    const s = slot ?? d.vanity?.slot ?? d.armor?.slot;
+    return s ? this.vanity.equipFrom(this.inventory, i, s) : false;
+  }
+  unequipVanity(slot: VanitySlot): boolean { return this.vanity.unequipTo(this.inventory, slot); }
+  setHideArmor(slot: HideSlot, hide: boolean): void { this.vanity.setHide(slot, hide); }
+  /** 紙娃娃現在的樣子（外觀 / 裝備 / 外觀欄沒變就回傳同一個物件）與快取 key */
+  doll(): { look: DollLook; key: string } {
+    const e = this.equipment, v = this.vanity;
+    const sig = `${e.uid}:${e.version}:${v.version}:${v.hide.head ? 1 : 0}${v.hide.body ? 1 : 0}${v.hide.legs ? 1 : 0}`;
+    const m = this.dollMemo;
+    if (m && m.sig === sig && m.look.app === this.appearance) return m;
+    const look = buildDollLook(this.appearance, e, v);
+    this.dollMemo = { sig, look, key: dollKey(look) };
+    return this.dollMemo;
   }
   unequip(slot: EquipSlot): boolean {
     const ok = this.equipment.unequipTo(this.inventory, slot);

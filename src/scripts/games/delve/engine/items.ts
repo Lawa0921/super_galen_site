@@ -52,7 +52,12 @@ export type ItemId =
   // ── 家具 ──
   | 'table' | 'chair' | 'lantern_post' | 'painting' | 'bookshelf' | 'banner' | 'candle' | 'plank_wall'
   // ── 裝備分解材料：碎晶（洗煉 / 強化）、星塵（史詩以上分解；高階強化 / 升階） ──
-  | 'gear_shard' | 'stardust';
+  | 'gear_shard' | 'stardust'
+  // ── 外觀（時裝）：只改樣子、沒有數值；裝在外觀欄（頭 / 身 / 腿 / 背） ──
+  | 'sailor_top' | 'miko_robe' | 'maid_dress' | 'hoodie_top' | 'travel_coat' | 'explorer_vest'
+  | 'sailor_skirt' | 'miko_hakama' | 'maid_skirt' | 'hoodie_shorts' | 'coat_trousers' | 'explorer_shorts'
+  | 'straw_hat' | 'witch_hat' | 'beret' | 'maid_headdress' | 'flower_crown'
+  | 'travel_cape' | 'feather_wings' | 'ribbon_bow';
 
 /**
  * 飾品效果。移動 / 戰鬥類（jump、run、night、magnet、nofall、stat）要裝在裝備欄的飾品槽才生效；
@@ -130,7 +135,11 @@ export interface ItemDef {
   ammo?: AmmoDef;
   armor?: ArmorDef;
   stats?: StatMods;
+  /** 時裝：裝在外觀欄的哪一格、畫成什麼樣子（engine/doll.ts 的 look 字串） */
+  vanity?: VanityDef;
 }
+export type VanitySlot = 'head' | 'body' | 'legs' | 'back';
+export interface VanityDef { slot: VanitySlot; look: string; }
 
 const block = (id: ItemId, zh: string, en: string, place: number): ItemDef =>
   ({ id, name: { zh, en }, maxStack: MAX_STACK, place });
@@ -144,6 +153,8 @@ const arm = (id: ItemId, zh: string, en: string, slot: ArmorSlot, defense: numbe
 const acc = (id: ItemId, zh: string, en: string, accessory: Accessory, stats?: StatMods, unique = false): ItemDef =>
   ({ id, name: { zh, en }, maxStack: 1, accessory, ...(stats ? { stats } : {}), ...(unique ? { unique } : {}) });
 
+const vty = (id: ItemId, zh: string, en: string, slot: VanitySlot, look: string): ItemDef =>
+  ({ id, name: { zh, en }, maxStack: 1, vanity: { slot, look } });
 const rod = (id: ItemId, zh: string, en: string, power: number, lava = false): ItemDef =>
   ({ id, name: { zh, en }, maxStack: 1, use: 'fish', rod: lava ? { power, lava } : { power } });
 const bait = (id: ItemId, zh: string, en: string, power: number): ItemDef => ({ id, name: { zh, en }, maxStack: MAX_STACK, bait: power });
@@ -332,7 +343,31 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   // ── 裝備材料 ──
   gear_shard: mat('gear_shard', '碎晶', 'Gear Shard'),
   stardust: mat('stardust', '星塵', 'Stardust'),
+  // ── 時裝 ──
+  sailor_top: vty('sailor_top', '水手服上衣', 'Sailor Blouse', 'body', 'outfit:sailor'),
+  miko_robe: vty('miko_robe', '巫女白衣', 'Shrine Robe', 'body', 'outfit:miko'),
+  maid_dress: vty('maid_dress', '女僕洋裝', 'Maid Dress', 'body', 'outfit:maid'),
+  hoodie_top: vty('hoodie_top', '寬鬆連帽衫', 'Comfy Hoodie', 'body', 'outfit:hoodie'),
+  travel_coat: vty('travel_coat', '旅人大衣', 'Traveler Coat', 'body', 'outfit:coat'),
+  explorer_vest: vty('explorer_vest', '探險背心', 'Explorer Vest', 'body', 'outfit:explorer'),
+  sailor_skirt: vty('sailor_skirt', '百褶裙', 'Pleated Skirt', 'legs', 'outfit:sailor'),
+  miko_hakama: vty('miko_hakama', '緋袴', 'Scarlet Hakama', 'legs', 'outfit:miko'),
+  maid_skirt: vty('maid_skirt', '荷葉圍裙裙', 'Frilled Apron Skirt', 'legs', 'outfit:maid'),
+  hoodie_shorts: vty('hoodie_shorts', '短褲與褲襪', 'Shorts & Tights', 'legs', 'outfit:hoodie'),
+  coat_trousers: vty('coat_trousers', '長褲與長靴', 'Trousers & Tall Boots', 'legs', 'outfit:coat'),
+  explorer_shorts: vty('explorer_shorts', '探險短褲', 'Explorer Shorts', 'legs', 'outfit:explorer'),
+  straw_hat: vty('straw_hat', '草帽', 'Straw Hat', 'head', 'hat:straw'),
+  witch_hat: vty('witch_hat', '魔女帽', 'Witch Hat', 'head', 'hat:witch'),
+  beret: vty('beret', '貝雷帽', 'Beret', 'head', 'hat:beret'),
+  maid_headdress: vty('maid_headdress', '女僕頭飾', 'Maid Headdress', 'head', 'hat:maid'),
+  flower_crown: vty('flower_crown', '花冠', 'Flower Crown', 'head', 'hat:flower'),
+  travel_cape: vty('travel_cape', '旅人斗篷', 'Traveler Cape', 'back', 'back:cape'),
+  feather_wings: vty('feather_wings', '白羽翅膀', 'Feather Wings', 'back', 'back:wings'),
+  ribbon_bow: vty('ribbon_bow', '大蝴蝶結', 'Big Back Bow', 'back', 'back:bow'),
 };
+
+/** 時裝道具（顯示順序） */
+export const VANITY_ITEMS: readonly ItemId[] = (Object.keys(ITEMS) as ItemId[]).filter((id) => ITEMS[id].vanity);
 
 /** 套裝組成（頭 / 身 / 腿），順序 = 等級 */
 export const ARMOR_SETS: Record<ArmorSetId, readonly [ItemId, ItemId, ItemId]> = {
