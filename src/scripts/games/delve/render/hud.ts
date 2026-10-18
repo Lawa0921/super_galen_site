@@ -477,7 +477,8 @@ export class Hud {
     const tip = this.root.querySelector<HTMLElement>('#delve-tip');
     if (!tip) return;
     const st = this.stackFor(anchor) ?? { item, count: 1 };
-    const lines = gearTooltip(st, this.compareFor(st, anchor));
+    const cmp = this.compareFor(st, anchor);
+    const lines = gearTooltip(st, cmp.stack, cmp);
     tip.replaceChildren(...lines.map((l, i) => {
       const p = document.createElement('p');
       p.className = i === 0 ? 'delve-tip-name' : `delve-tip-line is-${l.tone}`;
@@ -580,15 +581,26 @@ export class Hud {
     if (el.closest('#delve-inv-grid') || el.closest('#delve-hotbar')) return g.inventory.slots[slot] ?? null;
     return null;
   }
-  /** 比較對象：防具 → 同部位裝著的；武器 → 手上的武器；鎬 → 使用中的鎬；飾品 → 裝著的同一種 */
-  private compareFor(st: Stack, el: HTMLElement): Stack | null {
-    if (el.dataset.equip || !gearSlot(st.item)) return null;
+  /**
+   * 比較對象：防具 → 同部位裝著的；武器 → 手上的武器；鎬 → 使用中的鎬；
+   * 飾品 → 裝上時實際會換掉的那格（裝著同一件就是它；有空槽 → 只提示；都滿 → 詞條最弱的那件）
+   */
+  private compareFor(st: Stack, el: HTMLElement): { stack: Stack | null; head?: string; note?: string } {
+    if (el.dataset.equip || !gearSlot(st.item)) return { stack: null };
     const g = this.game, d = ITEMS[st.item];
-    if (d.armor) return g.equipment.getStack(d.armor.slot);
-    if (d.weapon) { const h = g.inventory.selectedStack(); return h && h !== st && ITEMS[h.item].weapon ? h : null; }
-    if (d.pick) { const i = g.inventory.bestPickSlot(), p = i >= 0 ? g.inventory.slots[i] : null; return p && p !== st ? p : null; }
-    if (d.accessory) return g.equipment.stacks().find((x) => x.item === st.item && x !== st) ?? null;
-    return null;
+    if (d.armor) return { stack: g.equipment.getStack(d.armor.slot) };
+    if (d.weapon) { const h = g.inventory.selectedStack(); return { stack: h && h !== st && ITEMS[h.item].weapon ? h : null }; }
+    if (d.pick) { const i = g.inventory.bestPickSlot(), p = i >= 0 ? g.inventory.slots[i] : null; return { stack: p && p !== st ? p : null }; }
+    if (d.accessory) {
+      const c = g.equipment.compareTarget(st.item);
+      if (!c) return { stack: null };
+      if (!c.stack) return { stack: null, note: '裝上會放進空的飾品槽（不會換掉任何飾品）' };
+      if (c.stack === st) return { stack: null };
+      return c.weakest
+        ? { stack: c.stack, head: `飾品槽已滿：與詞條最弱的「${gearName(c.stack.item, c.stack.gear)}」比較（裝上會換掉它）：` }
+        : { stack: c.stack };
+    }
+    return { stack: null };
   }
 
   // ── 裝備詞條：鎖定 / 分解 / 鍛造 ───────────────────────

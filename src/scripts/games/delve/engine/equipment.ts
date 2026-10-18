@@ -2,7 +2,7 @@
 // 手上的武器 / 工具 = 快捷欄選中的那格（不在這裡）。每格存整個 Stack（含詞條 gear）。
 import { ITEMS, isItemId, type ArmorSlot, type ItemId } from './items';
 import { cloneStack, type Inventory, type Stack } from './inventory';
-import { cloneGear, validGear, type Gear } from './gear';
+import { cloneGear, gearPower, validGear, type Gear } from './gear';
 
 export const ACC_SLOTS = 5;
 export type EquipSlot = ArmorSlot | 'acc0' | 'acc1' | 'acc2' | 'acc3' | 'acc4';
@@ -55,13 +55,39 @@ export class Equipment {
     if (isAccSlot(s)) for (const [k, v] of this.slots) if (k !== s && v.item === item) return false;
     return true;
   }
-  /** 這件道具會自動裝到哪一槽：防具 → 對應槽；飾品 → 第一個空的飾品槽（都滿就第一槽）；不能裝 → null */
+  /** 這件道具會自動裝到哪一槽：防具 → 對應槽；飾品 → 第一個空的飾品槽（都滿就換掉詞條最弱的那格）；不能裝 → null */
   autoSlot(item: ItemId): EquipSlot | null {
     const d = ITEMS[item];
     if (d.armor) return d.armor.slot;
     if (d.accessory === undefined || this.has(item)) return null;
     const accs = EQUIP_SLOTS.filter(isAccSlot);
-    return accs.find((s) => !this.slots.has(s)) ?? accs[0];
+    return accs.find((s) => !this.slots.has(s)) ?? this.weakestAcc();
+  }
+  /** 詞條最弱的飾品槽（gearPower 最低；同分取前面）；沒有裝飾品 → acc0 */
+  weakestAcc(): EquipSlot {
+    let best: EquipSlot = 'acc0', bp = Infinity;
+    for (const s of EQUIP_SLOTS) {
+      if (!isAccSlot(s)) continue;
+      const st = this.slots.get(s);
+      if (!st) continue;
+      const p = gearPower(st.gear);
+      if (p < bp) { bp = p; best = s; }
+    }
+    return best;
+  }
+  /**
+   * 說明框的比較對象：裝上這件時實際會換掉的那格。防具 → 同部位；飾品 → 裝著同一件就是那件，
+   * 否則 autoSlot 會選的槽（空槽 → stack null；都滿 → 最弱那格，weakest = true）。不能裝 → null。
+   */
+  compareTarget(item: ItemId): { slot: EquipSlot; stack: Stack | null; weakest: boolean } | null {
+    const d = ITEMS[item];
+    if (d.armor) return { slot: d.armor.slot, stack: this.getStack(d.armor.slot), weakest: false };
+    if (d.accessory === undefined) return null;
+    for (const s of EQUIP_SLOTS) if (isAccSlot(s) && this.slots.get(s)?.item === item) return { slot: s, stack: this.getStack(s), weakest: false };
+    const s = this.autoSlot(item);
+    if (!s) return null;
+    const stack = this.getStack(s);
+    return { slot: s, stack, weakest: stack !== null };
   }
 
   /** 把背包第 i 格裝到 s；原本裝著的放回背包那格（交換）。詞條跟著移動。 */

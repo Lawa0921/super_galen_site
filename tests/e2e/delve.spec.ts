@@ -1172,6 +1172,38 @@ test.describe('delve loot', () => {
     await expect(tip.locator('.is-down')).toContainText('荊棘反傷');
   });
 
+  test('說明：飾品槽滿了 → 和詞條最弱的飾品比較；裝上就換掉那件', async ({ page }) => {
+    await page.goto('/games/delve?seed=loot-acc&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      const hale = (t: number): { id: 'hale'; tier: number; value: number } => ({ id: 'hale', tier: t, value: 5 * t });
+      const put: [string, number, number[]][] = [['compass', 3, [3, 3, 3]], ['depth_meter', 2, [2, 2]], ['jump_boots', 1, [1]], ['swift_boots', 3, [4, 4, 4]], ['night_amulet', 2, [2, 3]]];
+      for (const [item, r, tiers] of put) {
+        g.giveGear(item as 'compass', r, { affixes: tiers.map(hale) });
+        g.equipFromInventory(g.inventory.slots.findIndex((s) => s?.item === item));
+      }
+      g.giveGear('magnet', 2, { affixes: [hale(3), { id: 'gale', tier: 3, value: 8 }] });
+    });
+    await page.keyboard.press('KeyE');
+    const slot = page.locator('#delve-inv-grid .delve-slot[data-item="magnet"]');
+    await slot.hover();
+    const tip = page.locator('#delve-tip');
+    await expect(tip).toContainText('飾品槽已滿');
+    await expect(tip.locator('.is-head')).toContainText('跳躍靴');
+    await expect(tip.locator('.is-up').first()).toBeVisible();
+    // 裝上：換掉的是最弱的跳躍靴（不是第一格的指南針）
+    const after = await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      g.equipFromInventory(g.inventory.slots.findIndex((s) => s?.item === 'magnet'));
+      return { acc: g.equipment.accessories(), boots: g.inventory.count('jump_boots') };
+    });
+    expect(after.acc).toContain('magnet');
+    expect(after.acc).toContain('compass');
+    expect(after.acc).not.toContain('jump_boots');
+    expect(after.boots).toBe(1);
+  });
+
   test('分解：鎖定一件 → 「分解所有普通」確認後只分解沒鎖定的、拿到碎晶', async ({ page }) => {
     await page.goto('/games/delve?seed=loot-salvage&autostart=1&fresh=1');
     await waitGame(page);
