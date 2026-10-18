@@ -16,6 +16,7 @@ import { gearLabel } from '../loot';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { baseCost, craftLevel, setCost } from '../../engine/forge/craft';
 import { specialLines } from '../../engine/compare';
+import { priceOf } from '../../engine/town';
 import { ForgeScene, costText, forgeRows, type ForgeHost } from './forge';
 
 const gear = (uid: number, base: string, rarity: Rarity, extra: Partial<ItemInstance> = {}): ItemInstance =>
@@ -995,6 +996,17 @@ describe('ForgeScene craft page', () => {
     return { ...t, game, go, rows, ids, row, right, confirmEl, qty, info, loot };
   }
   const full = (n: number): ItemInstance[] => Array.from({ length: n }, (_, i) => gear(i + 1, 'iron-sword', 'common'));
+
+  it("the shop price beside a recipe is what the shop really asks, Orik's cut included", () => {
+    const plain = open((g) => { g.state.inventory = { moss: 10 }; });
+    plain.row('item').click();
+    expect(plain.right('potion').textContent).toBe(F.craftRow(priceOf(plain.game.state, 'potion')!, '6 G'));
+    const cut = open((g) => { g.state.inventory = { moss: 10 }; g.state.story.returned.push('orik'); });
+    cut.row('item').click();
+    const cheaper = priceOf(cut.game.state, 'potion')!;
+    expect(cheaper).toBeLessThan(priceOf(plain.game.state, 'potion')!);
+    expect(cut.right('potion').textContent).toBe(F.craftRow(cheaper, '6 G'));
+  });
 
   it('three categories; a potion recipe crafts the chosen quantity', () => {
     const { ids, row, right, go, qty, game, line, sfx, info } = open((g) => { g.state.inventory = { moss: 10 }; g.state.gold = 100; });

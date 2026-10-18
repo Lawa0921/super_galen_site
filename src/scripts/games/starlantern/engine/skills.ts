@@ -96,9 +96,9 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       for (let i = 0; i < (eff.hits ?? 1) + extra && target.alive; i++) {
         const { amount, mult, crit, miss } = calcDamage(actor, target, eff, ctx.rng);
         if (miss) { ctx.log.push({ type: 'miss', target: target.key }); continue; }
-        dealDamage(target, amount);
+        const lost = dealDamage(target, amount);
         if (target.side === 'enemy') reveal(ctx.revealed, target.defId, eff.element);
-        ctx.log.push({ type: 'damage', target: target.key, amount, element: eff.element, mult, ...(crit ? { crit } : {}) });
+        ctx.log.push({ type: 'damage', target: target.key, amount: lost, element: eff.element, mult, ...(crit ? { crit } : {}) });
         if (!target.alive) ctx.log.push({ type: 'ko', target: target.key });
         // crit-tp, weak-tp and kill-tp settle on every hit; none of them draws.
         if (crit) keystoneTp(actor, 'crit-tp', KEYSTONE_VALUES.critTp, ctx);

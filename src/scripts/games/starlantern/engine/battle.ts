@@ -155,8 +155,8 @@ export function createBattle(o: {
   if (o.survive) {
     s.survive = o.survive;
     for (const c of party) c.undying = true;
+    for (const c of enemies) if (ENEMIES[c.defId]?.undying) c.undying = true;
   }
-  for (const c of enemies) if (ENEMIES[c.defId]?.undying) c.undying = true;
   if (k !== 1) s.partyScale = k;
   s.abyss = o.abyss ?? abyssPct(depth);
   return s;
@@ -350,8 +350,7 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
   for (const c of [...s.party, ...s.enemies]) {
     if (c.alive && c.poison) {
       const amount = Math.max(1, Math.floor(c.max.hp * 0.1));
-      dealDamage(c, amount);
-      s.log.push({ type: 'poison-tick', target: c.key, amount });
+      s.log.push({ type: 'poison-tick', target: c.key, amount: dealDamage(c, amount) });
       if (!c.alive) s.log.push({ type: 'ko', target: c.key });
     }
     if (c.alive && c.keystones.includes('regen')) {

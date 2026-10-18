@@ -101,7 +101,7 @@ export const DEFAULT_KEYSTONES = Object.fromEntries(
   CHARACTER_IDS.map((c) => [c, CHAR_KEYSTONES[c].slice(0, rulesOf(c).maxKeystones)]),
 ) as Record<CharacterId, KeystoneId[]>;
 
-export interface TalentNode { id: string; row: number; col: number; maxRank: 1 | 5; stat?: AnyStat; keystone?: KeystoneId }
+export interface TalentNode { id: string; row: number; col: number; maxRank: 1 | 5; stat?: AnyStat; keystone?: BoardKeystoneId }
 
 export const KEYSTONE_GATE = 12;
 /** The keystone cap a character gets by default; talentBlocker reads rulesOf(owner).maxKeystones. */

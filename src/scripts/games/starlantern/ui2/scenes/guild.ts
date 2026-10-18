@@ -171,7 +171,7 @@ export class GuildScene extends FacilityScene {
         this.pop();
         const gold = this.ctx.game.state.gold;
         const r = this.ctx.game.sellShards(grade, n);
-        if (!r.ok) { this.exchangeFail(r.reason, {}); return; }
+        if (!r.ok) { this.reopenExchange(); this.exchangeFail(r.reason, {}); return; }   // the counts on the old list may be stale
         this.reopenExchange();
         void this.say(T.ui2.shop.sold(SHARD_NAMES[grade], n, this.ctx.game.state.gold - gold), 'happy');
       },

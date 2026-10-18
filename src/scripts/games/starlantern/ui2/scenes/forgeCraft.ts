@@ -7,6 +7,7 @@ import { specialLines } from '../../engine/compare';
 import { baseCost, craftLevel, itemRecipeCost, setCost } from '../../engine/forge/craft';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import type { GameState } from '../../engine/state';
+import { priceOf } from '../../engine/town';
 import type { GearSlot } from '../../engine/types';
 import { el } from '../../ui/dom';
 import { fillRich, gearPart } from '../loot';
@@ -89,11 +90,11 @@ export function openCraft(h: ForgeHost): void {
   const consumables = () => {
     const info = newInfo();
     layer(info, {
-      rows: () => Object.keys(CONSUMABLE_RECIPES).map((id) => recipeRow(game.state, { id, label: ITEMS[id]?.name ?? id, cost: itemRecipeCost(id, 1)!, shop: ITEMS[id]?.price ?? 0 })),
+      rows: () => Object.keys(CONSUMABLE_RECIPES).map((id) => recipeRow(game.state, { id, label: ITEMS[id]?.name ?? id, cost: itemRecipeCost(id, 1)!, shop: priceOf(game.state, id) ?? 0 })),
       detail: (id) => [
         el('p', { class: 'slx-name-line', text: ITEMS[id]?.name ?? id }),
         el('p', { class: 'slx-desc', text: ITEMS[id]?.desc ?? '' }),
-        el('p', { text: F.craftShop(ITEMS[id]?.price ?? 0) }),
+        el('p', { text: F.craftShop(priceOf(game.state, id) ?? 0) }),
         costLine(game.state, itemRecipeCost(id, 1)!),
       ],
       pick: (it, refresh) => {

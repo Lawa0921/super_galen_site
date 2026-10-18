@@ -12,7 +12,7 @@ import { rollItem } from './loot/item';
 import { mulberry32 } from './rng';
 import { CHARACTERS, CHARACTER_IDS, rulesOf } from '../data/characters';
 import { SETS } from '../data/gear';
-import { CHAINS } from '../data/story/chains';
+import { CHAINS, chainLength } from '../data/story/chains';
 import { convertPrimary } from './stats';
 import { TALENT_PER, TALENT_SCALE } from '../data/talents';
 import type { AnyStat, CharacterId, Member } from './types';
@@ -71,6 +71,19 @@ describe('memory stat source', () => {
     const m: Member = { ...withN('rin', 3), absorbed: [{ stat: 'hp', amount: 3 }] };
     expect(memoryStats(m, 0)).toEqual({});
     expect(Object.keys(memoryStats(m)).length).toBeGreaterThan(0);
+  });
+  it('a scale other than 1 multiplies both the chain pieces and the absorbed gains', () => {
+    const m: Member = { ...withN('rin', 3), absorbed: [{ stat: 'hp', amount: 3 }, { stat: 'atk', amount: 1 }] };
+    const one = memoryStats(m, 1) as Record<string, number>;
+    const two = memoryStats(m, 2) as Record<string, number>;
+    expect(Object.keys(two).sort()).toEqual(Object.keys(one).sort());
+    expect(two.agi).toBeCloseTo(2 * 3 * CHAINS.rin.gain.agi!, 9);   // the chain term
+    expect(two.hp).toBe(2 * one.hp);                                  // the absorbed term
+    for (const k of Object.keys(one)) expect(two[k], k).toBeCloseTo(2 * one[k], 9);
+  });
+  it('a count past the chain is held to the chain at the stat level', () => {
+    expect(col(withN('rin', 99)).agi).toBeCloseTo(chainLength('rin') * CHAINS.rin.gain.agi!, 9);
+    expect(statsOf(withN('rin', 99))).toEqual(statsOf(withN('rin', chainLength('rin'))));
   });
   it('a member without memories has an empty memory column', () => {
     expect(col(newMember('rin'))).toEqual({});

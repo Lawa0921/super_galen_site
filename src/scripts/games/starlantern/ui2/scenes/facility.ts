@@ -151,7 +151,8 @@ export abstract class FacilityScene implements Scene {
     this.talking = true;
     this.cmdWin.classList.add('slx-cmd-hidden');
     this.syncInert();
-    return p.done.finally(() => { this.playing = null; this.talking = false; this.cmdWin.classList.remove('slx-cmd-hidden'); this.syncInert(); });
+    // A scene that throws is reported and treated as over, so the caller carries on (the guild still pays the reward line).
+    return p.done.catch((e) => { console.error('starlantern: facility scene failed', e); }).finally(() => { this.playing = null; this.talking = false; this.cmdWin.classList.remove('slx-cmd-hidden'); this.syncInert(); });
   }
 
   protected fail(reason: string): void {

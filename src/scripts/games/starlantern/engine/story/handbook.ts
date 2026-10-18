@@ -75,8 +75,8 @@ export function handbook(s: GameState): Handbook {
   });
   const codex: CodexPage = {
     // A set piece sits in SPECIALS too, but it is listed under its set, not twice.
-    specials: s.codex.filter((id) => id in SPECIALS && !SPECIALS[id].set),
-    sets: s.codex.filter((id) => id in SETS),
+    specials: s.codex.filter((id) => Object.hasOwn(SPECIALS, id) && !SPECIALS[id].set),
+    sets: s.codex.filter((id) => Object.hasOwn(SETS, id)),
     monsters: Object.values(ENEMIES).filter((e) => !e.story).map((e) => ({ id: e.id, name: e.name, weak: s.revealed[e.id] ? [...s.revealed[e.id]] : null })),
   };
   const open = (stage: Stage): boolean => {

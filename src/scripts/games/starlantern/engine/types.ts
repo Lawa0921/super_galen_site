@@ -89,12 +89,12 @@ export interface MaterialDef { id: string; name: string; price: number; kind: Ma
 export interface FloorDef {
   id: 1 | 2 | 3; name: string; rows: string[]; encounters: string[][]; rate: [number, number]; chestLoot: { item: string; qty: number }[];
 }
+/** One absorbed shard's permanent gain to a base stat (spec section 12). */
+export interface AbsorbGain { stat: StatKey; amount: number }
 /**
  * `limit` is the ultimate gauge (0–100); older saves omit it.
  * `tree` holds skill-tree ranks by node id (see engine/progression.ts); `talents` holds talent-board ranks by node id.
  */
-/** One absorbed shard's permanent gain to a base stat (spec section 12). */
-export interface AbsorbGain { stat: StatKey; amount: number }
 export interface Member {
   id: CharacterId; level: number; exp: number; hp: number; tp: number; equip: Partial<Record<Slot, ItemInstance>>; limit?: number;
   tree: Record<string, number>; talents: Record<string, number>;

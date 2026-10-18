@@ -11,8 +11,9 @@ import { playAndRecord, storyCtx } from '../story';
 import { Dialogue, MenuView, win } from '../widgets';
 
 /**
- * The ending: the star lantern shines again, then back to town for more exploring. The finale first plays the hero's last
- * memories and then itself (each one recorded as played, skipped or, with story none, auto), and only then shows the card.
+ * The card after a clear. Act 1's clear (the lantern-eater falls) shows its card and goes back to town, where 'act1-after'
+ * waits. The finale (cleared === 'finale') first plays the hero's last memories and then itself (each one recorded as played,
+ * skipped or, with story none, auto), and only then shows the ending card.
  */
 export class ClearScene implements Scene {
   private view: MenuView | null = null;

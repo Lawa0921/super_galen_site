@@ -56,7 +56,8 @@ export function lootFragments(s: GameState, run: Run, ctx: FragmentCtx, rng: Rng
 }
 
 const isGrade = (g: unknown): g is ShardGrade => typeof g === 'string' && Object.prototype.hasOwnProperty.call(SHARD_PRICE, g);
-const STATS: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
+/** The stats a shard can raise, in the table's own order (the save check reads the same keys). */
+const STATS = Object.keys(ABSORB_GAIN.dim) as StatKey[];
 
 /** Whether the fragment that gives `perk` has been returned to its owner. */
 export function hasPerk(s: GameState, perk: TownPerk): boolean {

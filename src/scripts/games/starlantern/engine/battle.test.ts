@@ -751,7 +751,6 @@ describe('memory keystones in battle', () => {
       const after = s.log.slice(ko + 1);
       expect(after.find((e) => e.type === 'act')).toMatchObject({ type: 'act', actor: 'rin' });
       expect(after.find((e) => e.type === 'damage')).toMatchObject({ target: 'e0' });
-      expect(after.some((e) => e.type === 'damage' && e.target === 'e0')).toBe(true);
       const rin = s.party.find((c) => c.key === 'rin')!;
       expect(rin.buffs).toContainEqual(expect.objectContaining({ stat: 'atk', pct: MV.bellAtkPct }));
       expect(s.enemies[0].hp).toBeLessThan(99999);
@@ -859,6 +858,40 @@ describe('survive fights', () => {
       expect(s.enemies[0].hp).toBeGreaterThanOrEqual(1);
     }
     expect(s.outcome).toBe('win');
+    // The claim is only worth something if hits really landed on both sides.
+    const hits = s.log.filter((e): e is Extract<BattleEvent, { type: 'damage' }> => e.type === 'damage');
+    expect(hits.some((e) => e.target === 'e0')).toBe(true);
+    expect(hits.some((e) => s.party.some((c) => c.key === e.target))).toBe(true);
+  });
+  it('an undying target logs and fills the gauge for what it really lost', () => {
+    const t = P('p', { undying: true, hp: 11, limit: 0 });
+    expect(dealDamage(t, 5000)).toBe(10);
+    expect(t.hp).toBe(1);
+    expect(t.limit).toBe(Math.max(1, Math.floor((10 / t.max.hp) * 40)));
+    const before = t.limit;
+    expect(dealDamage(t, 5000)).toBe(0);
+    expect(t.limit).toBe(before);
+    // A plain target is unchanged: the whole amount, and it can fall.
+    const plain = P('q', { hp: 11 });
+    expect(dealDamage(plain, 50)).toBe(50);
+    expect(plain.alive).toBe(false);
+  });
+  it('the poison tick under undying stops at 1 and logs the real amount', () => {
+    const s = resolveRound(makeBattle([P('p', { undying: true, poison: true, hp: 6 })], [E('e0', { sleep: 3 })]), { p: { kind: 'defend' } }, rng);
+    expect(s.party[0].hp).toBe(1);
+    expect(s.party[0].alive).toBe(true);
+    expect(s.log).toContainEqual({ type: 'poison-tick', target: 'p', amount: 5 });
+    expect(s.log.some((e) => e.type === 'ko')).toBe(false);
+  });
+  it('a hit on an undying foe logs the HP it really took', () => {
+    const s = resolveRound(makeBattle([P('p')], [E('e0', { undying: true, hp: 6, sleep: 3 })]), { p: { kind: 'attack', target: 'e0' } }, rng);
+    expect(s.enemies[0].hp).toBe(1);
+    expect(s.log).toContainEqual(expect.objectContaining({ type: 'damage', target: 'e0', amount: 5 }));
+  });
+  it('a foe that is undying only stays so inside a survive fight', () => {
+    const plain = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['scarlet-foe'], inventory: {}, revealed: {}, depth: 5 });
+    expect(plain.enemies[0].undying).toBeUndefined();
+    expect(survival().enemies[0].undying).toBe(true);
   });
   it('a survive win pays only for the enemies knocked out', () => {
     const s = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['scarlet-foe', 'slime', 'bat'], inventory: {}, revealed: {}, depth: 5, extra: 2, survive: STORY_FIGHT_ROUNDS });

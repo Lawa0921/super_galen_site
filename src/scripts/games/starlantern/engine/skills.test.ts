@@ -9,7 +9,7 @@ import { LEGACY_LINEUP } from './party';
 import { constRng, makeBattle, makeCombatant, plainItem, fullParty } from './testing';
 import type { SkillDef } from './types';
 import { KEYSTONE_VALUES as V, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
-import type { Combatant } from './combatant';
+import { stat, type Combatant } from './combatant';
 import type { Element } from './types';
 
 const ctx = (over: Partial<EffectContext> = {}): EffectContext => ({ rng: constRng(0.5), itemBoost: false, revealed: {}, log: [], ...over });
@@ -411,8 +411,15 @@ describe('memory keystones', () => {
     expect(held.got).toBe(Math.floor(plain.got * (1 + MV.moonHealPct / 100)));
     expect(held.got).toBeGreaterThan(plain.got);
     expect(held.draws).toBe(plain.draws);
-    // It stacks with the heal bonus, and a different keystone changes nothing.
+    // A different keystone changes nothing.
     expect(heal(['regen']).got).toBe(plain.got);
+    // It multiplies with the heal bonus (1.5 x 1.2), it does not add to it (1.7).
+    const both = party({ keystones: ['moon-promise'] as KeystoneId[], x: { heal: 50 } });
+    const t = party({ key: 't', hp: 1, max: { hp: 9999 } as never });
+    applyEffect(both, t, { kind: 'heal', power: 120 }, ctx());
+    const base = (120 / 100) * (stat(both, 'mag') * 2 + 10);
+    expect(t.hp - 1).toBe(Math.floor(base * (1.5 * (1 + MV.moonHealPct / 100))));
+    expect(t.hp - 1).not.toBe(Math.floor(base * (1 + 0.5 + MV.moonHealPct / 100)));
   });
 
   it('troupe-step buffs last longer', () => {

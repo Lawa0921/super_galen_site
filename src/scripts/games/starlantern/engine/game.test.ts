@@ -26,11 +26,10 @@ import { itemLevel, itemWeight, rollItem } from './loot/item';
 import { MATERIALS } from '../data/materials';
 import { buy } from './town';
 import { memoriesOf } from './progression';
-import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP } from '../data/story/fragments';
+import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
-import { FINALE_BOSS, FINALE_DEPTH, type SceneId } from '../data/story/scenes';
+import { ACT_DEPTHS, FINALE_BOSS, FINALE_DEPTH, type SceneId } from '../data/story/scenes';
 import { STORY } from '../data/story.zh-TW';
-import { ACT_DEPTHS } from '../data/story/scenes';
 import { chainLength } from '../data/story/chains';
 
 vi.mock('./portals', async (importOriginal) => {
@@ -1363,6 +1362,15 @@ describe('setFormation', () => {
     expect(g.setFormation(grid)).toEqual({ ok: true });
     expect([g.notice, g.state.party.grid]).toEqual(['save-failed', grid]);
   });
+  it('with no storage at all a town formation says save-failed too', () => {
+    const g = new Game(calm(), null, undefined, 0, START_LINEUP);
+    const grid = [...g.state.party.grid];
+    const h = grid.indexOf('hero');
+    const to = (h + 4) % 9;
+    grid[to] = grid[h]; grid[h] = null;
+    expect(g.setFormation(grid)).toEqual({ ok: true });
+    expect([g.notice, g.state.party.grid]).toEqual(['save-failed', grid]);
+  });
   it('in the labyrinth it counts at once but is not saved mid-run', () => {
     const storage = memoryStorage();
     const g = inMap(1, calm(), storage);
@@ -1411,6 +1419,12 @@ describe('spending a skill point', () => {
     expect(g.raiseNode('noel', 'ice-star')).toEqual({ ok: true });
     expect([g.notice, g.state.party.roster.noel.tree['ice-star']]).toEqual(['save-failed', 1]);
   });
+  it('with no storage at all a town spend says save-failed too, like the other town actions', () => {
+    const g = new Game(calm(), null, undefined, 0, HERO_LINEUP);
+    lv2(g);
+    expect(g.raiseNode('noel', 'ice-star')).toEqual({ ok: true });
+    expect([g.notice, g.state.party.roster.noel.tree['ice-star']]).toEqual(['save-failed', 1]);
+  });
   it('a refused spend changes and saves nothing, and says why', () => {
     const storage = memoryStorage();
     const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
@@ -1445,6 +1459,12 @@ describe('spending a talent point', () => {
   });
   it('reports a failed save without losing the spend', () => {
     const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, HERO_LINEUP);
+    lv6(g);
+    expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: true });
+    expect([g.notice, g.state.party.roster.noel.talents['noel-t00']]).toEqual(['save-failed', 1]);
+  });
+  it('with no storage at all a town talent spend says save-failed too', () => {
+    const g = new Game(calm(), null, undefined, 0, HERO_LINEUP);
     lv6(g);
     expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: true });
     expect([g.notice, g.state.party.roster.noel.talents['noel-t00']]).toEqual(['save-failed', 1]);
@@ -1841,6 +1861,16 @@ describe('glimmers and memory pieces', () => {
     expect(tileAt(g.map(), at)).toBe('floor');
     expect(g.pending).toEqual([]);
     expect(g.run!.dropped[1] ?? []).toEqual([]);
+  });
+
+  it('a glimmer tile with no content behind it is dropped, not left as a stuck marker', () => {
+    const g = run(['hero'], 1);
+    const at = plantGlimmer(g);
+    floorOf(g.run!, 1).contents = floorOf(g.run!, 1).contents.filter((c) => c.kind !== 'glimmer');
+    expect(tileAt(g.map(), at)).toBe('glimmer');
+    expect(stepOnto(g, at).kind).not.toBe('glimmer');
+    expect(tileAt(g.map(), at)).toBe('floor');
+    expect(g.pending).toEqual([]);
   });
 
   it('a main-road boss pays the next piece of a story chain', () => {
@@ -2256,14 +2286,15 @@ describe('townsfolk fragments at home', () => {
     const storage = memoryStorage();
     const g = held(storage);
     const gold = g.state.gold;
+    const reward = TOWN_FRAGMENTS.find((f) => f.id === 'orik')!.reward.gold!;
     expect(g.returnFragment('orik').ok).toBe(true);
-    expect(g.state.gold).toBe(gold + 300);
+    expect(g.state.gold).toBe(gold + reward);
     expect(g.pending).toContain('town:orik');
     expect(savedState(storage)!.story.returned).toEqual(['orik']);
     expect(savedState(storage)!.inventory['tf-orik']).toBeUndefined();
     const stored = storage.map.get(SAVE_KEY);
     expect(g.returnFragment('orik')).toEqual({ ok: false, reason: 'invalid' });
-    expect(g.state.gold).toBe(gold + 300);
+    expect(g.state.gold).toBe(gold + reward);
     expect(storage.map.get(SAVE_KEY)).toBe(stored);
     const h = held();
     h.phase = 'map';
@@ -2301,8 +2332,10 @@ describe('townsfolk fragments at home', () => {
     const g = new Game(mulberry32(3), storage, undefined, 0, HERO_LINEUP);
     expect(g.rerollPortals()).toBe(false);
     g.state.story.returned.push('glen');
+    const before = JSON.stringify(g.state.dungeon.portals);
     expect(g.rerollPortals()).toBe(true);
     expect(validPortals(g.state.dungeon.portals)).toBe(true);
+    expect(JSON.stringify(g.state.dungeon.portals)).not.toBe(before);   // a reroll that only set the flag would keep them
     expect(savedState(storage)!.dungeon.portals).toEqual(g.state.dungeon.portals);
     expect(g.rerollPortals()).toBe(false);
     expect(g.depart(MAIN, 1)).toEqual({ ok: true });
@@ -2344,6 +2377,19 @@ describe("Scarlet's story fight", () => {
     expect(g.state.party.recruited).toContain('scarlet');
     expect(g.state.party.roster.hero.hp).toBeGreaterThanOrEqual(1);
     expect(tileAt(g.map(), at)).toBe('floor');
+  });
+  it('a story-fight win rolls no gear for the escorts that were never beaten', () => {
+    const { g, at } = scarletRun();
+    stepOnto(g, at);
+    expect(g.battle!.enemies.length).toBeGreaterThan(1);
+    const draws = g.run!.lootDraws;
+    let res = null;
+    for (let i = 0; i < STORY_FIGHT_ROUNDS; i++) res = g.submitRound(defend)!;
+    const end = res!.end;
+    expect(end!.outcome).toBe('win');
+    expect(res!.battle.enemies.slice(1).every((e) => e.alive)).toBe(true);
+    expect(g.run!.lootDraws).toBe(draws);
+    expect(end!.gear).toEqual([]);
   });
   it('another companion is still met by a plain rescue fight', () => {
     const g = new Game(calm(), memoryStorage(), undefined, 0, ['hero', 'rin']);

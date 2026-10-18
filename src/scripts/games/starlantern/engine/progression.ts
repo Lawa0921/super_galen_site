@@ -2,7 +2,7 @@ import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE
 import type { SkillMod } from '../data/gear';
 import { SKILLS } from '../data/skills';
 import {
-  BOARDS, DEFAULT_KEYSTONES, MEMORY_KEYSTONES, TALENT_NODES, TALENT_PER, TALENT_SCALE, boardPoints, keystoneCount, rankOf, talentBlocker, type KeystoneId, type TalentBlocker,
+  BOARDS, DEFAULT_KEYSTONES, MEMORY_KEYSTONES, TALENT_NODES, TALENT_PER, TALENT_SCALE, boardPoints, keystoneCount, rankOf, talentBlocker, type BoardKeystoneId, type KeystoneId, type TalentBlocker,
 } from '../data/talents';
 import { rulesOf } from '../data/characters';
 import { ABYSS_UNLOCK, HERO_BUILDS, type HeroBuild } from '../data/hero';
@@ -342,7 +342,7 @@ export function talentStats(m: Member): Partial<Sheet> {
 }
 
 /** The keystones the member holds on her talent board, in board order (what the cap and the point count see). */
-export function boardKeystonesOf(m: Member): KeystoneId[] {
+export function boardKeystonesOf(m: Member): BoardKeystoneId[] {
   const t = talentsOf(m);
   return BOARDS[m.id].filter((n) => n.keystone && rankOf(n, t) > 0).map((n) => n.keystone!);
 }

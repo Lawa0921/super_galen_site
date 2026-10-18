@@ -64,7 +64,7 @@ describe('expectedMemories (spec §9.4 point 7)', () => {
     const last = CHAINS.hero.pieces[chainLength('hero') - 1];
     expect(last.bossOnly).toBe(true);
     expect(last.minDepth).toBe(30);
-    expect(expectedMemories(30, STANDARD_LINEUP).hero.memories).toBeLessThan(chainLength('hero'));
+    expect(expectedMemories(30, STANDARD_LINEUP).hero.memories).toBe(chainLength('hero') - 1);   // nine pieces: all but the finale's own
     expect(expectedMemories(31, STANDARD_LINEUP).hero.memories).toBe(chainLength('hero'));
     // Arriving at depth 1 nothing has dropped and no shard has been found.
     for (const [id, e] of Object.entries(expectedMemories(1, STANDARD_LINEUP))) {

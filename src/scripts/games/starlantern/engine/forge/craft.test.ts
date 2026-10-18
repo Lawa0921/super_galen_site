@@ -253,6 +253,16 @@ describe("Doran's master", () => {
     expect(setCost(s, piece)!.mats).toEqual({ 'blaze-core': SET_RECIPE.regionQty - PERKS.setRecipeLess, 'star-tear': SET_RECIPE.rareQty });
     const r = craftSet(s, piece);
     expect(r.ok && r.state.inventory['blaze-core']).toBe(20 - (SET_RECIPE.regionQty - PERKS.setRecipeLess));
-    expect(setCost(s, piece)!.mats['blaze-core']).toBeGreaterThanOrEqual(1);
+  });
+  it('Doran never takes the region material below one', () => {
+    const s = rich();
+    s.story.returned.push('doran');
+    const perks = PERKS as { setRecipeLess: number };
+    const kept = perks.setRecipeLess;
+    try {
+      perks.setRecipeLess = SET_RECIPE.regionQty + 5;
+      expect(setRecipeOf(s).regionQty).toBe(1);
+      expect(setCost(s, piece)!.mats['blaze-core']).toBe(1);
+    } finally { perks.setRecipeLess = kept; }
   });
 });

@@ -526,6 +526,17 @@ describe("the hero's abyss capstones", () => {
     expect(canRaiseNode({ ...m, memories: NaN }, 'abyss-sword')).toBe('abyss');
     expect(raiseNode({ ...m, memories: ABYSS_UNLOCK[0] }, 'abyss-sword').ok).toBe(true);
   });
+  it('an explicit memory count that is not a count keeps the abyss shut, and only Infinity opens it', () => {
+    const tree = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5 };
+    const m = hero(tree);
+    for (const bad of [NaN, -1, 1.5, undefined as unknown as number]) expect(canRaiseNode(m, 'abyss-sword', bad), String(bad)).toBe('abyss');
+    expect(canRaiseNode(m, 'abyss-sword', Infinity)).toBeNull();
+    expect(canRaiseNode(m, 'abyss-sword', ABYSS_UNLOCK[0] + 0.5)).toBeNull();
+    const full = { ...tree, 'abyss-sword': 1 };
+    expect(validBuild('hero', 50, full, {}, NaN)).toBe(false);
+    expect(validBuild('hero', 50, full, {}, 1.5)).toBe(false);
+    expect(validBuild('hero', 50, full, {}, ABYSS_UNLOCK[0])).toBe(true);
+  });
   it("every branch's capstone opens at its own memory count, and not one short of it", () => {
     expect(ABYSS_UNLOCK).toEqual([2, 4, 6, 8, 10]);   // the spec's table: sword, guard, star, light, chain
     TREES.hero.branches.forEach((b, i) => {

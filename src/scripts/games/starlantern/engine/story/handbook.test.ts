@@ -84,6 +84,26 @@ describe("the adventurer's handbook", () => {
     expect(page(back).scene).toEqual({ scene: `town:${f.id}`, title: STORY.scenes[`town:${f.id}`].title, fresh: false });
   });
 
+  it('a returned fragment whose scene was not seen keeps its lines but offers no replay', () => {
+    const f = TOWN_FRAGMENTS[0];
+    const back = fresh();
+    back.story.returned = [f.id];
+    back.story.queue = [`town:${f.id}`];
+    const page = handbook(back).town.find((t) => t.id === f.id)!;
+    expect(page.scene).toBeNull();
+    expect(page.lines).toEqual([STORY.town[f.id].lost, STORY.town[f.id].after]);
+    // newness without a seen mark is not a replay either
+    back.story.fresh = [`town:${f.id}`];
+    expect(handbook(back).town.find((t) => t.id === f.id)!.scene).toBeNull();
+  });
+
+  it('inherited names are not codex entries', () => {
+    const s = fresh();
+    s.codex = ['constructor', 'toString', '__proto__'];
+    const c = handbook(s).codex;
+    expect([c.specials, c.sets]).toEqual([[], []]);
+  });
+
   it('the codex lists every ordinary monster and its known weaknesses', () => {
     const s = fresh();
     s.codex = [Object.keys(SPECIALS)[0], Object.keys(SETS)[0]];

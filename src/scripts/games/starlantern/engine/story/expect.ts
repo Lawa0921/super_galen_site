@@ -1,6 +1,6 @@
 import { REGIONS, type RegionId } from '../../data/regions';
 import { CHAINS, ELITE_PIECE_CHANCE, GLIMMER_CHANCE, HERO_TOPUP, MEMORY_PITY, chainLength } from '../../data/story/chains';
-import { ABSORB_CAP, ABSORB_GAIN, SHARD_DROP, SHARD_IDS, TOWN_DROP, shardGrade, type ShardGrade } from '../../data/story/fragments';
+import { ABSORB_CAP, ABSORB_GAIN, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS, shardGrade, type ShardGrade } from '../../data/story/fragments';
 import { isBossDepth, newRun } from '../dungeon/run';
 import { mix } from '../loot/drops';
 import { memoriesOf } from '../progression';
@@ -49,7 +49,7 @@ export function expectedMemories(depth: number, ids: CharacterId[]): Record<Char
 
 /** Every value the expectation reads that a tuning pass may change. */
 const knobs = (): string => JSON.stringify([
-  CHAINS, HERO_TOPUP, MEMORY_PITY, ELITE_PIECE_CHANCE, GLIMMER_CHANCE, ABSORB_CAP, ABSORB_GAIN, SHARD_DROP, TOWN_DROP,
+  CHAINS, HERO_TOPUP, MEMORY_PITY, ELITE_PIECE_CHANCE, GLIMMER_CHANCE, ABSORB_CAP, ABSORB_GAIN, SHARD_DROP, TOWN_DROP, TOWN_FRAGMENTS,
   EXPECT_ELITE_EVERY, EXPECT_SEED,
 ]);
 

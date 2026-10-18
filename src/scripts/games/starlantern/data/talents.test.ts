@@ -177,7 +177,7 @@ describe('talent rules', () => {
 
 describe('memory keystones', () => {
   it('memory keystones never sit on a board', () => {
-    const onBoards = new Set(CHARACTER_IDS.flatMap((c) => BOARDS[c].filter((n) => n.keystone).map((n) => n.keystone)));
+    const onBoards = new Set<string | undefined>(CHARACTER_IDS.flatMap((c) => BOARDS[c].filter((n) => n.keystone).map((n) => n.keystone)));
     expect(Object.keys(MEMORY_KEYSTONES).sort()).toEqual(CHARACTER_IDS.filter((c) => c !== 'hero').sort());
     for (const [c, k] of Object.entries(MEMORY_KEYSTONES)) {
       expect(onBoards.has(k), c).toBe(false);

@@ -916,7 +916,7 @@ export class Game {
     this.encounter = 0;
     this.run = null;
     this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited));
-this.rerolled = false;
+    this.rerolled = false;
     this.arrive();
   }
 
@@ -1040,7 +1040,7 @@ this.rerolled = false;
     this.encounter = 0;
     this.notice = 'wipe';
     this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited));
-this.rerolled = false;
+    this.rerolled = false;
     this.arrive();
   }
 }

@@ -171,6 +171,18 @@ const row = (root: HTMLElement, label: string) => [...root.querySelectorAll('.sl
 const cmd = (root: HTMLElement, label: string) => [...root.querySelectorAll('.slx-cmd [role=option]')].find((o) => o.textContent === label) as HTMLElement;
 
 describe('GuildScene fragment exchange', () => {
+  it('a refused sale goes back to the exchange menu, not to a stale grade list', () => {
+    const { game, root, pick, s } = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { [SHARD_IDS.clear]: 3 }));
+    vi.spyOn(game, 'sellShards').mockReturnValue({ ok: false, reason: 'stock' });
+    pick(T.ui2.exchange.title);
+    pick(T.ui2.exchange.sell);
+    pick(SHARD_NAMES.clear);
+    s.onAction('confirm');
+    expect(row(root, T.ui2.exchange.sell)).toBeDefined();
+    expect(row(root, SHARD_NAMES.clear)).toBeUndefined();
+    expect(game.state.gold).toBe(1000);
+  });
+
   it('the exchange sells shards for their price', () => {
     const { game, pick, s } = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { [SHARD_IDS.clear]: 3 }));
     pick(T.ui2.exchange.title);
@@ -291,6 +303,22 @@ describe('GuildScene fragment exchange', () => {
     expect(game.state.story.seen).toContain('town:orik');
     expect(game.state.story.fresh).toContain('town:orik');
     expect(game.pending).toEqual([]);
+  });
+
+  it('a return scene that throws is reported, the command window comes back and the reward still shows', async () => {
+    const { game, root, pick, s } = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { 'tf-anna': 1 }));
+    vi.spyOn(game, 'sceneDone').mockImplementation(() => { throw new Error('boom'); });
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    pick(T.ui2.exchange.title);
+    pick(T.ui2.exchange.give);
+    pick('安娜的記憶碎片');
+    pick('是');
+    const lines = await drain(root, s);
+    expect(err).toHaveBeenCalled();
+    expect(lines[lines.length - 1]).toContain('×1');   // the reward line, after the failed scene
+    expect(game.state.inventory['star-tear']).toBe(1);
+    expect(root.querySelector('.slx-cmd')!.classList.contains('slx-cmd-hidden')).toBe(false);
+    err.mockRestore();
   });
 
   it('a fragment that was already returned says so', async () => {
