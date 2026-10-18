@@ -14,6 +14,27 @@ test.use({ launchOptions: { args: ['--mute-audio'] } });
 
 const box = (page: Page) => page.locator('#sl-screen').boundingBox();
 
+type Rect = { x: number; y: number; width: number; height: number };
+const apart = (a: Rect, b: Rect) => a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y;
+/** If the dialogue box shows a speaker's portrait, it must lie inside the screen and clear of the text and the name plate. Returns the talk box height, or null with no portrait. */
+const faceFits = async (page: Page): Promise<number | null> => {
+  const faceEl = page.locator('.slx-talk:not([hidden]) img.slx-talk-face');
+  if ((await faceEl.count()) === 0) return null;
+  const scr = (await box(page))!;
+  const face = (await faceEl.first().boundingBox())!;
+  const talk = (await page.locator('.slx-talk:not([hidden])').first().boundingBox())!;
+  const text = (await page.locator('.slx-talk:not([hidden]) .slx-text').first().boundingBox())!;
+  const name = await page.locator('.slx-talk:not([hidden]) .slx-name:not([hidden])').first().boundingBox();
+  expect(face.y, 'portrait top inside the screen').toBeGreaterThanOrEqual(scr.y - 0.5);
+  expect(face.x, 'portrait left inside the screen').toBeGreaterThanOrEqual(scr.x - 0.5);
+  expect(face.x + face.width, 'portrait right inside the screen').toBeLessThanOrEqual(scr.x + scr.width + 0.5);
+  expect(face.y + face.height, 'portrait bottom inside the screen').toBeLessThanOrEqual(scr.y + scr.height + 0.5);
+  expect(apart(face, text), 'portrait clear of the dialogue text').toBe(true);
+  if (name) expect(apart(face, name), 'portrait clear of the name plate').toBe(true);
+  expect(apart(face, talk), 'portrait stands above the whole talk box').toBe(true);
+  return talk.height;
+};
+
 test.describe('starlantern', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'chromium only');
 
@@ -39,6 +60,30 @@ test.describe('starlantern', () => {
     expect(r.saved).not.toBeNull();
     expect(r.game).toEqual(r.saved);
   };
+
+  test('story portraits fit a 390x844 phone: no horizontal scroll, inside the screen, clear of the text', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await storySetting(page, 'all');
+    await page.goto('/games/starlantern?seed=7&fast=1');
+    await page.evaluate(() => localStorage.removeItem('starlantern-save'));
+    await page.reload();
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('新遊戲');
+    await page.keyboard.press('Enter');
+    let faces = 0;
+    for (let i = 0; i < 80 && faces < 6; i++) {
+      if (await page.locator('.slx-talk:not([hidden])').count()) {
+        if ((await faceFits(page)) !== null) {
+          faces++;
+          const k = (await box(page))!.width / 640;
+          expect((await page.locator('.slx-talk:not([hidden]) img.slx-talk-face').first().boundingBox())!.height).toBeGreaterThanOrEqual(2 * 96 * k - 0.5);
+          expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+        }
+        await page.keyboard.press('z');
+      }
+      await page.waitForTimeout(60);
+    }
+    expect(faces, 'the prologue shows portraits').toBeGreaterThanOrEqual(3);
+  });
 
   test('forwards the old preview address to the game page', async ({ page }) => {
     await page.goto('/games/starlantern-next?seed=3');
@@ -1267,6 +1312,15 @@ test.describe('starlantern', () => {
       expect(face.x + face.width).toBeLessThanOrEqual(scr.x + scr.width + 0.5);
     }
     await shot('03-memory-scene');
+    // Every line of the memory, wrapped or not: whenever a portrait shows it fits (the tall dungeon box is the risk that capped its size).
+    {
+      let tallest = 0;
+      for (let i = 0; i < 60 && (await memoryTalk.isVisible()); i++) {
+        tallest = Math.max(tallest, (await faceFits(page)) ?? 0);
+        await w.key('z'); await page.waitForTimeout(40);
+      }
+      expect(tallest, 'at least one memory line showed a portrait').toBeGreaterThan(0);
+    }
     await playOut();
     await expect(page.locator('.slx-talk--memory')).toHaveCount(0);
     await expect(page.locator('.slx-dungeon')).toBeVisible();
