@@ -3,7 +3,10 @@
 //   客製化畫面、背包的紙娃娃、說明框的小預覽、圖庫用；遊戲中由 renderer 用快取的 canvas 做同樣的事。
 import { Bmp, rotPrep, rotate } from './pixel';
 import type { DollLook } from '../engine/doll';
-import { ARM_PIV, AV_FH, AV_FW, AV_SHOULDER_BACK, AV_SHOULDER_FRONT, avatarArm, avatarFrame, type SheetAnim } from './avatarArt';
+import { ARMS_PAD, ARM_PIV, AV_FH, AV_FW, AV_SHOULDER_BACK, AV_SHOULDER_FRONT, avatarArm, avatarFrame, mantleArms, type SheetAnim } from './avatarArt';
+
+/** 預覽裡攀上邊緣的手抓的位置（沒有真的牆角：懸掛 → 撐起 → 膝蓋上台；最後一格用一般手臂） */
+export const MANTLE_HANDS: readonly ([number, number] | null)[] = [[34, 11], [34, 30], [33, 37], null];
 import { armAngles } from './anim';
 
 const ARM_CANVAS = 64;
@@ -15,7 +18,7 @@ export function previewArms(anim: SheetAnim, f: number): { front: number; back: 
     case 'fall': return armAngles('fall', 0, null);
     case 'swim': { const s = Math.sin((f / 6) * Math.PI * 2); return { front: 95 + s * 55, back: 95 - s * 55 }; }
     case 'hurt': return { front: 130, back: -50 };
-    case 'mantle': return { front: [160, 120, 60][f] ?? 120, back: [150, 110, 50][f] ?? 110 };
+    case 'mantle': return { front: 30, back: 20 };
     default: return armAngles('idle', f % 4, null);
   }
 }
@@ -35,9 +38,14 @@ export function dollPreview(l: DollLook, key: string, anim: SheetAnim, f: number
   if (!fr.meta.arms) { out.blit(fr.body, 0, 0); return out; }
   const a = previewArms(anim, f), { dx, dy } = fr.meta;
   const put = (b: Bmp, s: { x: number; y: number }): void => out.blit(b, s.x + dx - ARM_CANVAS / 2, s.y + dy - ARM_CANVAS / 2);
-  put(armAt(l, key, true, a.back), AV_SHOULDER_BACK);
+  const grip = anim === 'mantle' ? MANTLE_HANDS[f] ?? null : null;
+  const ma = grip ? mantleArms(l, fr.meta, grip[0], grip[1]) : null;
+  if (!grip) put(armAt(l, key, true, a.back), AV_SHOULDER_BACK);
   out.blit(fr.body, 0, 0);
-  put(armAt(l, key, false, a.front), AV_SHOULDER_FRONT);
+  if (!grip) put(armAt(l, key, false, a.front), AV_SHOULDER_FRONT);
+  // 攀上邊緣：手臂在頭後面、手掌蓋在頭上面抓著牆角
+  if (ma) out.blit(ma.arms, -ARMS_PAD, -ARMS_PAD);
   out.blit(fr.head, 0, 0);
+  if (ma) out.blit(ma.hands, -ARMS_PAD, -ARMS_PAD);
   return out;
 }

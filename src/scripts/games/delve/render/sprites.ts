@@ -12,7 +12,7 @@ import { R as CR, WEAPON_METAL } from './combatArt';
 import { dollKey, plainLook, type DollLook } from '../engine/doll';
 import { DEFAULT_APPEARANCE } from '../engine/appearance';
 import {
-  ARM_H, ARM_PIV, ARM_W, AV_FH, AV_FW, AV_SHOULDER_BACK, AV_SHOULDER_FRONT, HAND_REACH, avatarArm, avatarSheet, type FrameMeta,
+  ARMS_PAD, ARM_H, ARM_PIV, ARM_W, AV_FH, AV_FW, AV_SHOULDER_BACK, AV_SHOULDER_FRONT, HAND_REACH, avatarArm, avatarSheet, mantleArms, type FrameMeta,
 } from './avatarArt';
 
 export const FW = AV_FW;
@@ -461,6 +461,8 @@ export class Sprites {
   private treeCache = new Map<string, TreeSprite>();
   private miniCache = new Map<string, HTMLCanvasElement>();
   private sheets = new Map<string, DollSheet>();
+  /** 攀上邊緣的手臂 / 手掌（依手的位置快取；一次攀爬只會用到十幾種） */
+  private grips = new Map<string, { arms: HTMLCanvasElement; hands: HTMLCanvasElement }>();
   private weaponCache = new Map<string, HTMLCanvasElement>();
   private weaponPrep = new Map<string, Bmp>();
   /** 目前的紙娃娃樣子 / key（setDoll 換） */
@@ -493,6 +495,20 @@ export class Sprites {
     this.key = key;
     this.armPrep.clear();
     this.armCache.clear();
+    this.grips.clear();
+  }
+
+  /** 攀上邊緣：手臂（畫在頭後面）+ 手掌（畫在頭上面），hx / hy = 手在影格裡的位置；回傳的 canvas 要往左上偏 pad */
+  grip(meta: FrameMeta, fi: number, hx: number, hy: number): { arms: HTMLCanvasElement; hands: HTMLCanvasElement; pad: number } {
+    const k = `${fi}|${hx}|${hy}`;
+    let g = this.grips.get(k);
+    if (!g) {
+      const r = mantleArms(this.look, meta, hx, hy);
+      g = { arms: toCanvas(r.arms) as HTMLCanvasElement, hands: toCanvas(r.hands) as HTMLCanvasElement };
+      this.grips.set(k, g);
+      if (this.grips.size > 48) this.grips.delete(this.grips.keys().next().value as string);
+    }
+    return { ...g, pad: ARMS_PAD };
   }
   get dollKey(): string { return this.key; }
 

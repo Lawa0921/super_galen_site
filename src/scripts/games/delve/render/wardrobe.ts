@@ -17,6 +17,7 @@ const REEL: [SheetAnim, number][] = [['idle', 2], ['walk', 3], ['climb', 3], ['h
 const FPS = 10;
 /** 預覽放大倍率（依 CSS 尺寸自動挑整數倍） */
 const ZOOM = 4;
+const PAD = 2;
 
 export interface WardrobeOpen {
   /** 套上外觀之後畫成什麼樣子（遊戲中 = 身上的裝備 + 新外觀；標題 = 只有外觀） */
@@ -39,7 +40,8 @@ export class Wardrobe {
 
   constructor(private readonly root: HTMLElement, private readonly panel: HTMLElement, private readonly sound: SoundManager) {
     this.canvas = panel.querySelector<HTMLCanvasElement>('#delve-wr-doll')!;
-    this.canvas.width = AV_FW * ZOOM; this.canvas.height = AV_FH * ZOOM;
+    // 四周留 2 美術像素：走路時抬起的腳 / 飄起的頭髮不會被裁掉
+    this.canvas.width = (AV_FW + PAD * 2) * ZOOM; this.canvas.height = (AV_FH + PAD * 2) * ZOOM;
     this.cap = panel.querySelector('#delve-wr-cap');
     this.build();
     const on = (el: EventTarget | null, t: string, fn: EventListener): void => { if (!el) return; el.addEventListener(t, fn); this.offs.push(() => el.removeEventListener(t, fn)); };
@@ -88,8 +90,19 @@ export class Wardrobe {
     list.replaceChildren();
     let group = '';
     const GROUP: Record<string, string> = { hair: '頭髮', face: '臉', outfit: '服裝' };
+    const fill = (): void => {
+      // 兩欄排版時，這一組是奇數列：最後補一格說明，右邊不會空一格
+      const n = APPEARANCE_FIELDS.filter((x) => x.group === group).length;
+      if (group && n % 2 === 1) {
+        const note = document.createElement('p');
+        note.className = 'delve-wr-note';
+        note.textContent = group === 'outfit' ? '換服裝時主色 / 副色會換成那套的預設，之後可以再調。' : '左右鍵切換選項。';
+        list.appendChild(note);
+      }
+    };
     for (const f of APPEARANCE_FIELDS) {
       if (f.group !== group) {
+        fill();
         group = f.group;
         const h = document.createElement('p');
         h.className = 'delve-wr-group';
@@ -124,6 +137,7 @@ export class Wardrobe {
       list.appendChild(row);
       this.rows.push({ f, el: row, val: name, sw });
     }
+    fill();
   }
   private arrowBtn(dir: -1 | 1, f: AppearanceField): HTMLButtonElement {
     const b = document.createElement('button');
@@ -191,7 +205,7 @@ export class Wardrobe {
     if (!ctx) return;
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    ctx.drawImage(fr[r.f] ?? fr[0], 0, 0, this.canvas.width, this.canvas.height);
+    ctx.drawImage(fr[r.f] ?? fr[0], PAD * ZOOM, PAD * ZOOM, AV_FW * ZOOM, AV_FH * ZOOM);
     if (this.cap && this.cap.textContent !== r.label) this.cap.textContent = r.label;
   }
 

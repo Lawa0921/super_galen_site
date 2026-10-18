@@ -117,6 +117,7 @@ export const APPEARANCE_FIELDS: readonly AppearanceField[] = [
   { key: 'hair', label: '髮型', kind: 'list', options: HAIR_STYLES, group: 'hair' },
   { key: 'hairColor', label: '髮色', kind: 'color', options: HAIR_COLORS, group: 'hair' },
   { key: 'ahoge', label: '呆毛', kind: 'toggle', options: ONOFF, group: 'hair' },
+  { key: 'acc', label: '頭飾', kind: 'list', options: ACCESSORIES, group: 'hair' },
   { key: 'eyes', label: '瞳色', kind: 'color', options: EYE_COLORS, group: 'face' },
   { key: 'eyeShape', label: '眼型', kind: 'list', options: EYE_SHAPES, group: 'face' },
   { key: 'skin', label: '膚色', kind: 'color', options: SKIN_TONES, group: 'face' },
@@ -124,7 +125,6 @@ export const APPEARANCE_FIELDS: readonly AppearanceField[] = [
   { key: 'outfit', label: '服裝', kind: 'list', options: OUTFITS, group: 'outfit' },
   { key: 'color1', label: '主色', kind: 'color', options: CLOTH_COLORS, group: 'outfit' },
   { key: 'color2', label: '副色', kind: 'color', options: CLOTH_COLORS, group: 'outfit' },
-  { key: 'acc', label: '頭飾', kind: 'list', options: ACCESSORIES, group: 'outfit' },
 ];
 
 const BOOL_KEYS = new Set<AppearanceKey>(['ahoge', 'glasses']);

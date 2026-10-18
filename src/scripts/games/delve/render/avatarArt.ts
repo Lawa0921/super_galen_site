@@ -6,7 +6,7 @@
 //     第二張（head）：臉 → 前髮 → 頭飾（頭盔 / 帽子）→ 前飾品（髮飾 / 眼鏡）
 //   背面（爬繩）與倒地的影格手臂直接畫在第一張，第二張是空的（背面時背飾蓋在背上）。
 //   影格 44×54、腳底在最下一列、身體中心 x = 22；側面一律面向右（繪製時鏡像）。光從左上，1px 描邊。
-import { Bmp, INK, hex, type RGB } from './pixel';
+import { Bmp, INK, hex, rotPrep, rotate, type RGB } from './pixel';
 import { OUTFITS, type Appearance } from '../engine/appearance';
 import type { DollLook, DollPiece } from '../engine/doll';
 import type { ArmorSetId } from '../engine/items';
@@ -504,6 +504,108 @@ function deadFrame(l: DollLook): AvatarFrame {
   return { body: flip, head: new Bmp(AV_FW, AV_FH), meta: { dx: 0, dy: 0, arms: false } };
 }
 
+/** 精確順時針轉 90°（游泳：站姿 → 頭朝前趴著） */
+function rot90cw(src: Bmp): Bmp {
+  const o = new Bmp(src.h, src.w);
+  for (let y = 0; y < src.h; y++) for (let x = 0; x < src.w; x++) {
+    const v = src.raw(x, y);
+    if (v >>> 24) o.setRaw(src.h - 1 - y, x, v);
+  }
+  return o;
+}
+/** 內容外框 */
+function bbox(b: Bmp): { x0: number; y0: number; x1: number; y1: number } {
+  let x0 = b.w, y0 = b.h, x1 = -1, y1 = -1;
+  for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  return { x0, y0, x1, y1 };
+}
+/** 游泳時身體往前傾的角度（度，順時針）：頭朝前上方、腳在後下方 */
+const SWIM_TILT = 52;
+/**
+ * 游泳：側面站姿（腿上下打水、雙手往頭頂方向交替划）連同手臂一起畫好，再精確順時針轉 90° →
+ * 身體水平、頭朝前、臉朝下（自由式），頭髮自然往後飄。整個人放在碰撞框的中段（水面線附近也看得到）。
+ */
+function swimFrame(l: DollLook, f: number): AvatarFrame {
+  const ph = (f / SWIM_FRAMES) * Math.PI * 2;
+  const p = still();
+  p.snap = false;
+  p.near = { thigh: 18 * Math.sin(ph), shin: 18 * Math.sin(ph) - 14 };
+  p.far = { thigh: -18 * Math.sin(ph), shin: -18 * Math.sin(ph) - 14 };
+  p.hair = { swing: 0.2 * Math.sin(ph), lift: 0 };
+  const fr = sideFrame(l, p, f);
+  const stand = new Bmp(AV_FW, AV_FH);
+  const SWIM_REACH = HAND_REACH + 4;
+  const reach = (deg: number): { x: number; y: number } => ({ x: Math.round(Math.sin((deg * Math.PI) / 180) * SWIM_REACH), y: Math.round(Math.cos((deg * Math.PI) / 180) * SWIM_REACH) });
+  // 划水：前手 / 後手在「頭頂前方 ↔ 身側」之間交替（轉 90° 後 = 往前伸 ↔ 划到腰）
+  // 蛙式 / 自由式：雙手在「頭頂前方（180°）↔ 胸前（80°）」之間交替；轉 50° 後 = 往游的方向伸、再划回來
+  const front = 130 + 50 * Math.sin(ph), back = 130 - 50 * Math.sin(ph);
+  const sleeve = armSleeve(l), sk = skinRamp(l.app.skin);
+  const armLayer = (deg: number, s: { x: number; y: number }, dark: boolean): Bmp => {
+    const b = new Bmp(AV_FW, AV_FH), h = reach(deg), sl = dark ? darker(sleeve) : sleeve, kk = dark ? darker(sk) : sk;
+    seg(b, s.x, s.y, s.x + h.x * 0.6, s.y + h.y * 0.6, 1.4, sl);
+    seg(b, s.x + h.x * 0.6, s.y + h.y * 0.6, s.x + h.x, s.y + h.y, 1.3, kk);
+    b.outline(INK);
+    return b;
+  };
+  stand.blit(armLayer(back, AV_SHOULDER_BACK, true), 0, 0);
+  stand.blit(fr.body, 0, 0);
+  // 前手：伸過頭頂時在頭後面、划回胸前時在頭前面（不會整條蓋住臉）
+  const fa = armLayer(front, AV_SHOULDER_FRONT, false);
+  if (front > 150) { stand.blit(fa, 0, 0); stand.blit(fr.head, 0, 0); } else { stand.blit(fr.head, 0, 0); stand.blit(fa, 0, 0); }
+  const r = rotate(rotPrep(stand), CX, 33, (SWIM_TILT * Math.PI) / 180, 72), bb = bbox(r);
+  const out = new Bmp(AV_FW, AV_FH);
+  const w = bb.x1 - bb.x0 + 1, h = bb.y1 - bb.y0 + 1;
+  // 水平置中、垂直中心在碰撞框中段（影格第 ~34 列），微微上下浮
+  out.blit(r, Math.round((AV_FW - w) / 2) - bb.x0, Math.round(34 - h / 2) - bb.y0 + Math.round(Math.sin(ph) * 0.8));
+  return { body: out, head: new Bmp(AV_FW, AV_FH), meta: { dx: 0, dy: 0, arms: false } };
+}
+
+/**
+ * 攀上邊緣的手臂（畫在頭的上面）：肩膀 → 手抓在牆角（hx, hy：影格座標，面向右）。
+ * 距離夠長就伸直（太高的台階會拉長手臂搆上去）、短了就把手肘往後彎（撐起來的樣子）；手掌蓋在台面上。
+ * 回傳的點陣比影格大一圈（ARMS_PAD），畫的時候往左上偏移 ARMS_PAD。
+ */
+export const ARMS_PAD = 24;
+export function mantleArms(l: DollLook, meta: FrameMeta, hx: number, hy: number): { arms: Bmp; hands: Bmp } {
+  const W = AV_FW + ARMS_PAD * 2, H = AV_FH + ARMS_PAD * 2, o = ARMS_PAD;
+  const b = new Bmp(W, H), hands = new Bmp(W, H), sleeve = armSleeve(l), sk = skinRamp(l.app.skin);
+  const one = (s: { x: number; y: number }, tx: number, ty: number, dark: boolean): void => {
+    const sx = s.x + meta.dx + o, sy = s.y + meta.dy + o;
+    let ex = tx + o, ey = ty + o;
+    const U = 5, F = 5;
+    // 往上（懸掛）可以拉長手臂搆到高台；往下（撐起）最多伸直一隻手臂的長度
+    const d0 = Math.hypot(ex - sx, ey - sy);
+    if (ey > sy - 2 && d0 > U + F + 1) { const k = (U + F + 1) / d0; ex = Math.round(sx + (ex - sx) * k); ey = Math.round(sy + (ey - sy) * k); }
+    const d = Math.hypot(ex - sx, ey - sy);
+    const sl = dark ? darker(sleeve) : sleeve, kk = dark ? darker(sk) : sk;
+    const layer = new Bmp(W, H);
+    if (d >= U + F - 0.5) {
+      // 伸直（必要時拉長）：前 55% 袖子、後面是前臂
+      const mx = sx + (ex - sx) * 0.55, my = sy + (ey - sy) * 0.55;
+      seg(layer, sx, sy, mx, my, 1.4, sl);
+      seg(layer, mx, my, ex, ey, 1.3, kk);
+    } else {
+      // 兩段 IK：手肘往後（−x）、往上彎
+      const a = Math.atan2(ey - sy, ex - sx), c = Math.acos(Math.max(-1, Math.min(1, (U * U + d * d - F * F) / (2 * U * d))));
+      const ang = a + (Math.cos(a) >= 0 ? -c : c);
+      const kx = sx + Math.cos(ang) * U, ky = sy + Math.sin(ang) * U;
+      const elbow = { x: kx - Math.abs(kx - sx) * 0.4, y: ky };
+      seg(layer, sx, sy, elbow.x, elbow.y, 1.4, sl);
+      seg(layer, elbow.x, elbow.y, ex, ey, 1.3, kk);
+    }
+    layer.outline(INK);
+    b.blit(layer, 0, 0);
+    // 手掌（另一張，畫在頭上面）：抓在台面上、手指扣住牆角
+    const hand = new Bmp(W, H);
+    hand.rect(ex - 1, ey - 1, 3, 2, kk[3]); hand.set(ex - 1, ey - 1, kk[4]); hand.set(ex + 1, ey, kk[2]); hand.set(ex - 2, ey, kk[2]); hand.set(ex, ey + 1, kk[2]);
+    hand.outline(INK);
+    hands.blit(hand, 0, 0);
+  };
+  one(AV_SHOULDER_BACK, hx - 2, hy, true);
+  one(AV_SHOULDER_FRONT, hx, hy, false);
+  return { arms: b, hands };
+}
+
 /** 依動畫與影格畫出一格（trace：記錄側面影格的圖層合成順序，測試用） */
 export function avatarFrame(l: DollLook, anim: SheetAnim, f: number, trace?: string[]): AvatarFrame {
   switch (anim) {
@@ -547,24 +649,16 @@ export function avatarFrame(l: DollLook, anim: SheetAnim, f: number, trace?: str
       return backFrame(l, { handL: 11, handR: 11, liftL: [0, 1, 2, 1][f] ?? 0, liftR: [2, 1, 0, 1][f] ?? 0, bodyDx: sway, bodyDy: 1, swing: sway * 0.5 }, f);
     }
     case 'mantle': {
+      // 0 懸掛拉起（腿垂著）→ 1 撐起手肘（腿蹬）→ 2 膝蓋上台 → 3 蹲著站起；手臂由 mantleArms 畫在頭的上面
       const p = still('effort');
-      p.snap = f === 2; p.sweat = f < 2;
-      if (f === 0) { p.near = { thigh: -8, shin: -24 }; p.far = { thigh: 12, shin: -6 }; p.bodyDx = 1; p.headDx = 1; p.hair = { swing: 0.5, lift: 0.2 }; }
-      else if (f === 1) { p.near = { thigh: 88, shin: -30 }; p.far = { thigh: -18, shin: -22 }; p.bodyDx = 2; p.headDx = 1; p.bodyDy = -1; p.hair = { swing: 0.4, lift: 0.1 }; }
+      p.snap = f === 3; p.sweat = f < 3;
+      if (f === 0) { p.near = { thigh: 6, shin: 2 }; p.far = { thigh: -6, shin: -6 }; p.headDy = -1; p.hair = { swing: 0.3, lift: 0 }; }
+      else if (f === 1) { p.near = { thigh: 28, shin: -26 }; p.far = { thigh: -14, shin: -36 }; p.bodyDx = 1; p.headDx = 1; p.hair = { swing: 0.45, lift: 0.1 }; }
+      else if (f === 2) { p.near = { thigh: 92, shin: -28 }; p.far = { thigh: -20, shin: -24 }; p.bodyDx = 2; p.headDx = 1; p.bodyDy = -1; p.hair = { swing: 0.4, lift: 0.1 }; }
       else { p.near = { thigh: 55, shin: -45 }; p.far = { thigh: 35, shin: -55 }; p.bodyDx = 1; p.headDx = 1; p.hair = { swing: 0.2, lift: 0 }; p.expr = 'normal'; }
       return sideFrame(l, p, f, trace);
     }
-    case 'swim': {
-      const ph = (f / SWIM_FRAMES) * Math.PI * 2;
-      const p = still();
-      p.snap = false;
-      p.near = { thigh: 28 + 22 * Math.sin(ph), shin: 4 + 18 * Math.sin(ph + 1.2) };
-      p.far = { thigh: 28 - 22 * Math.sin(ph), shin: 4 - 18 * Math.sin(ph + 1.2) };
-      p.bodyDy = Math.round(Math.sin(ph) * 0.8);
-      p.hair = { swing: 0.5 + 0.3 * Math.sin(ph), lift: 0.8 };
-      p.flare = 1;
-      return sideFrame(l, p, f, trace);
-    }
+    case 'swim': return swimFrame(l, f);
     case 'hurt': {
       const p = still('hurt');
       p.near = { thigh: 30, shin: 10 }; p.far = { thigh: -25, shin: -10 }; p.snap = false;

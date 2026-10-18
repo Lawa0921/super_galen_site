@@ -40,8 +40,10 @@ describe('紙娃娃影格', () => {
     expect(SHEET.hang[1]).toBeGreaterThanOrEqual(2);
     expect(SHEET.mantle[1]).toBeGreaterThanOrEqual(2);
     // 背面爬繩 / 掛著 / 倒地：手臂畫在影格裡
-    for (const k of ['climb', 'hang', 'dead'] as const) for (let f = 0; f < SHEET[k][1]; f++) expect(meta[SHEET[k][0] + f].arms).toBe(false);
-    for (const k of ['idle', 'walk', 'jump', 'fall', 'mantle', 'swim', 'hurt'] as const) expect(meta[SHEET[k][0]].arms).toBe(true);
+    // 游泳：整個人連手臂一起斜著畫（划水）
+    for (const k of ['climb', 'hang', 'dead', 'swim'] as const) for (let f = 0; f < SHEET[k][1]; f++) expect(meta[SHEET[k][0] + f].arms).toBe(false);
+    for (const k of ['idle', 'walk', 'jump', 'fall', 'mantle', 'hurt'] as const) expect(meta[SHEET[k][0]].arms).toBe(true);
+    expect(SHEET.mantle[1]).toBe(4);
   });
   it('隨機外觀 × 各種穿搭：每格都有內容、只用色票、沒有半透明', { timeout: 60_000 }, () => {
     const r = lcg(5);

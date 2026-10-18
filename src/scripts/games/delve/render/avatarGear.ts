@@ -12,7 +12,11 @@ import { GOLD, LEATHER, WHITE, clothRamp } from './avatarPalette';
 export const armorSet = (p: DollPiece | null): ArmorSetId | null => (p && p.look.startsWith('armor:') ? (p.look.slice(6) as ArmorSetId) : null);
 export const lookId = (p: DollPiece | null, prefix: string): string | null => (p && p.look.startsWith(prefix) ? p.look.slice(prefix.length) : null);
 /** 防具 7 階 → 布料 5 階 */
-export const armor5 = (s: ArmorSetId): RGB[] => { const r = ARMOR_RAMP[s]; return [r[0], r[2], r[3], r[4], r[5]]; };
+export const armor5 = (s: ArmorSetId): RGB[] => {
+  const r = ARMOR_RAMP[s];
+  // 銅：整體壓暗一階（紅褐的銅色），和金（亮黃）分得開
+  return s === 'copper' ? [r[0], r[1], r[2], r[3], r[4]] : [r[0], r[2], r[3], r[4], r[5]];
+};
 
 /** 稀有度的滾邊色（普通 = 沒有） */
 export function trimOf(p: DollPiece | null): RGB | null {
@@ -105,36 +109,83 @@ const inCap = (x: number, y: number, k = 1): boolean => {
   const nx = (x + 0.5 - 8.6) / (10 * k), ny = (y + 0.5 - 7.8) / (9.4 * k);
   return nx * nx + ny * ny <= 1;
 };
-/** 頭盔（側面 / 背面）：蓋住頭頂與後腦，前緣在眉毛；鉚釘 / 冠飾 / 角 / 熔紋依套裝 */
+/**
+ * 頭盔（側面 / 背面）：圓頂 + 往前後突出的帽沿 + 後頸護片，再依套裝加輪廓——
+ * 木：皮帶箍；銅：護鼻條 + 鉚釘 + 護頰；鐵：前面的面甲（一道眼縫）+ 中脊 + 護頰；
+ * 金：高高的冠脊 + 往後飄的紅羽 + 深色帽沿（不會被看成金髮）；骸衛：大彎角 + 眼窩點；熔心：三根尖刺（尖端熔岩）+ 護頰。
+ */
 export function helmetArt(head: Bmp, p: DollPiece, ox: number, oy: number, f: number, view: 'side' | 'back'): void {
   const set = armorSet(p)!;
-  const r = ARMOR_RAMP[set];
-  const brim = 5;
+  const r = ARMOR_RAMP[set], m = armor5(set);
+  const S = (x: number, y: number, c: RGB): void => head.set(ox + x, oy + y, c);
+  const brim = 5, side = view === 'side';
   for (let y = -2; y <= 12; y++) for (let x = -2; x <= 19; x++) {
     const dome = inCap(x, y, 1.05) && y <= brim;
-    const nape = view === 'side' ? x <= 4 && y <= 12 && inCap(x, Math.min(y, 9), 1.05) : y <= 11 && inCap(x, Math.min(y, 8), 1.05);
+    const nape = side ? x <= 4 && y <= 12 && inCap(x, Math.min(y, 9), 1.05) : y <= 11 && inCap(x, Math.min(y, 8), 1.05);
     if (!dome && !nape) continue;
     const nx = (x + 0.5 - 8.6) / 10, ny = (y + 0.5 - 7.8) / 9.4;
     const v = -(nx * 0.55 + ny * 0.85);
-    head.set(ox + x, oy + y, v > 0.78 ? r[5] : v > 0.25 ? r[4] : v > -0.3 ? r[3] : r[2]);
+    S(x, y, v > 0.78 ? m[4] : v > 0.25 ? m[3] : v > -0.3 ? m[2] : m[1]);
   }
-  const x0 = view === 'side' ? 3 : -1;
-  for (let x = x0; x <= 18; x++) head.set(ox + x, oy + brim, r[2]);
-  const S = (x: number, y: number, c: RGB): void => head.set(ox + x, oy + y, c);
+  // 帽沿：深一階的一道邊，側面往前突出 2 格、往後 1 格
+  const rimC = set === 'gold' ? CR.leather[3] : m[1];
+  for (let x = side ? -2 : -2; x <= (side ? 20 : 19); x++) S(x, brim, rimC);
+  if (side) { S(19, brim + 1, m[0]); S(20, brim + 1, m[0]); }
+  const cheek = set === 'copper' || set === 'iron' || set === 'molten';
+  if (cheek) {
+    // 護頰：耳朵前面一片（側面）／兩側（背面）
+    const xs = side ? [4, 5, 6] : [-1, 0, 17, 18];
+    for (const x of xs) for (let y = brim + 1; y <= 11; y++) S(x, y, x === xs[0] || x === 17 ? m[3] : m[2]);
+    for (const x of xs) S(x, 12, m[1]);
+  }
   switch (set) {
-    case 'wood': S(6, 1, r[2]); S(11, 1, r[2]); S(8, 3, r[2]); break;
-    case 'copper': S(5, 3, r[6]); S(12, 3, r[6]); S(9, -1, r[5]); break;
-    case 'iron': for (let y = -1; y <= 4; y++) S(9, y, r[6]); S(9, -2, r[5]); break;
-    case 'gold': S(8, -3, CR.red[3]); S(9, -3, CR.red[4]); S(9, -4, CR.red[3]); S(8, -2, r[6]); S(9, -2, r[6]); break;
-    case 'bone':
-      // 小角
-      for (const [x, y] of view === 'side' ? [[3, -1], [2, -2], [2, -3], [14, -1], [15, -2], [16, -3]] as Pt[] : [[1, 0], [0, -1], [-1, -2], [16, 0], [17, -1], [18, -2]] as Pt[]) S(x, y, r[5]);
-      S(11, 1, r[1]); S(12, 2, r[1]); break;
-    case 'molten': S(6, 1, CR.lava[3]); S(11, 2, CR.lava[4]); S(2, 6, CR.lava[3]); S(13, 0, CR.lava[2]); break;
+    case 'wood':
+      for (let x = -1; x <= 18; x++) S(x, 3, CR.leather[x & 1 ? 3 : 4]);
+      S(6, 0, m[1]); S(11, 0, m[1]); S(8, 1, m[1]);
+      break;
+    case 'copper':
+      if (side) { for (let y = brim; y <= 9; y++) { S(17, y, m[3]); S(18, y, m[2]); } S(17, 10, m[1]); }
+      S(3, 2, r[6]); S(9, -1, r[6]); S(14, 2, r[6]);
+      break;
+    case 'iron':
+      if (side) {
+        // 面甲：額頭前方一片，一道眼縫
+        for (let y = 2; y <= brim; y++) for (let x = 15; x <= 19; x++) S(x, y, y === 4 ? r[0] : x === 19 ? m[1] : m[3]);
+        S(19, 4, r[1]);
+      }
+      for (let y = -2; y <= 4; y++) S(side ? 9 : 8, y, m[4]);
+      S(side ? 9 : 8, -3, m[3]);
+      break;
+    case 'gold': {
+      // 冠脊 + 紅羽
+      const red = CR.red;
+      for (let x = 4; x <= 13; x++) { const hgt = x < 6 || x > 11 ? 1 : 2; for (let k = 1; k <= hgt; k++) S(x, -2 - k, k === hgt ? m[4] : m[3]); }
+      if (side) {
+        for (let k = 0; k < 8; k++) { S(4 - k, -3 + Math.round(k * 0.6), red[k < 3 ? 4 : 3]); S(4 - k, -2 + Math.round(k * 0.6), red[2]); }
+        S(15, 3, red[4]); S(15, 2, hex('#ffffff'));
+      } else {
+        for (let k = 0; k < 9; k++) { S(8, -4 + k * 1.5, red[3]); S(9, -4 + k * 1.5, red[2]); }
+      }
+      break;
+    }
+    case 'bone': {
+      const horn: Pt[] = side ? [[3, 0], [2, -1], [1, -2], [1, -3], [2, -4], [14, 0], [15, -1], [16, -2], [16, -3], [15, -4]]
+        : [[0, 1], [-1, 0], [-2, -1], [-2, -2], [-1, -3], [17, 1], [18, 0], [19, -1], [19, -2], [18, -3]];
+      for (const [x, y] of horn) S(x, y, m[4]);
+      for (const [x, y] of horn.filter((_, i) => i % 5 === 4)) S(x, y, hex('#ffffff'));
+      if (side) { S(12, 2, r[1]); S(16, 2, r[1]); S(14, 4, r[1]); }
+      break;
+    }
+    case 'molten':
+      for (const x of side ? [4, 8, 12] : [3, 8, 13]) {
+        S(x, -2, m[2]); S(x + 1, -2, m[1]); S(x, -3, m[2]); S(x, -4, CR.lava[4]);
+      }
+      S(6, 1, CR.lava[3]); S(11, 2, CR.lava[4]); S(13, 0, CR.lava[2]);
+      break;
   }
   const spots: Pt[] = [];
-  for (let x = view === 'side' ? 4 : 0; x <= 18; x++) spots.push([ox + x, oy + brim]);
-  upgrades(head, p, spots, view === 'side' ? [ox + 15, oy + 3] : null, f, r);
+  for (let x = side ? 0 : -2; x <= (side ? 18 : 19); x++) spots.push([ox + x, oy + brim]);
+  upgrades(head, p, spots, side ? [ox + 13, oy + 3] : null, f, r);
 }
 
 // ── 時裝帽子 ─────────────────────────────────────────────

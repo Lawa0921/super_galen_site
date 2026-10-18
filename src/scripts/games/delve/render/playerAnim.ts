@@ -8,7 +8,8 @@ export type PlayerAnim = PoseKind | 'climb' | 'hang' | 'mantle' | 'swim' | 'hurt
 
 export const CLIMB_FRAMES = 6;
 export const HANG_FRAMES = 4;
-export const MANTLE_FRAMES = 3;
+/** 攀上邊緣：懸掛拉起 → 撐起手肘 → 膝蓋上台 → 站起 */
+export const MANTLE_FRAMES = 4;
 export const SWIM_FRAMES = 6;
 /** 手交替一整輪（左右手各換一次）爬的距離 px */
 export const CLIMB_STRIDE = 26;
@@ -52,7 +53,7 @@ export class PlayerAnimator {
     else if (i.mantle !== null) {
       anim = 'mantle';
       const p = Math.max(0, Math.min(1, i.mantle));
-      frame = p < 0.4 ? 0 : p < 0.72 ? 1 : 2;
+      frame = p < 0.3 ? 0 : p < 0.62 ? 1 : p < 0.84 ? 2 : 3;
     } else if (i.sinceHurt < HURT_SHOW) anim = 'hurt';
     else if (i.climbing) {
       if (!wasClimb) { this.climbPhase = 0; this.still = 0; this.hangT = 0; }

@@ -755,7 +755,10 @@ export class Renderer {
     else if (!st.dead) {
       if (p.vx > 8) this.facing = 1; else if (p.vx < -8) this.facing = -1;
       if (st.mining) this.facing = (st.mining.x + 0.5) * S >= p.x + p.w / 2 ? 1 : -1;
+      // 釣魚：面向浮標（拋竿時沿用遊戲的面向）
+      else if (st.fishing) this.facing = Math.abs(st.fishing.x - (p.x + p.w / 2)) > 2 ? (st.fishing.x >= p.x + p.w / 2 ? 1 : -1) : st.facing;
     }
+    this.elementSparks(doll.look, dt);
     this.swingPhase = st.mining ? (this.swingPhase + dt * SWING_RATE) % 1 : 0;
     // 受傷無敵時閃爍（倒地 / 縮身那一下不閃）
     if (!st.dead && st.iframes > 0 && an.anim !== 'hurt' && Math.floor(st.iframes * 16) % 2 === 1) return;
@@ -791,16 +794,18 @@ export class Renderer {
     const special = an.anim === 'mantle' || an.anim === 'swim' || an.anim === 'hurt';
     if (special) { swing = null; blade = null; rot = null; throwMini = null; }
     const arms = special ? previewArms(an.anim as 'mantle' | 'swim' | 'hurt', an.frame) : armAngles(kind, local, swing);
-    if (mt) {
-      // 攀上邊緣：兩手伸向牆角（手搆不到就盡量往那邊伸）
-      const sh = SP.shoulder(false);
-      const sx = cx + this.facing * (ox + sh.x + meta.dx), sy = bottom + oy + sh.y + meta.dy;
-      const deg = (Math.atan2((mt.edgeX - sx) * this.facing, mt.edgeY - sy) * 180) / Math.PI;
-      arms.front = deg; arms.back = deg - 8;
-    }
+    // 攀上邊緣（最後一格「站起來」以外）：手抓在牆角上（台面往內 3 px），換算成影格座標
+    const grip = mt && an.frame < 3
+      // 膝蓋上台那格：身體已經越過牆角，手改撐在身前的台面上（不會往後拉長）
+      ? SP.grip(meta, fi, Math.max(an.frame === 2 ? 31 : 0, Math.round((mt.edgeX + mt.dir * 3 - cx) * this.facing - ox)), Math.round(mt.edgeY - 1 - bottom - oy))
+      : null;
     // 待機 / 走路 / 跳躍時，手上的鎬 / 武器也拿著（往前斜舉）；挖掘時換成背包裡最好的鎬、攻擊時用攻擊動畫
     const carry = !st.mining && !atk && !special ? carryStyle(heldDef) : null;
     if (carry && carry !== 'mini') arms.front = carryArm(kind, arms.front);
+    // 鎬：扛在身前、鎬頭朝上（不會拖在腳邊）
+    // 釣竿：手往前平舉到胸口（竿子從胸前斜上去，線從竿尖出來）
+    if (carry === 'rod') arms.front = st.fishing?.state === 'bite' ? 120 : 98;
+    if (carry === 'pick') arms.front = (kind === 'jump' || kind === 'fall' ? 150 : 128) + (kind === 'walk' ? Math.round(Math.sin((local / 8) * Math.PI * 2) * 6) : 0);
     const showPick = special ? null : st.mining ? this.bestPickItem() : carry === 'pick' ? held : null;
     if (carry === 'blade') blade = held;
     const heldOther = !special && !st.mining && !atk && held && carry !== 'rod' && ((!heldDef?.pick && !heldDef?.weapon) || carry === 'mini') ? held : null;
@@ -813,8 +818,7 @@ export class Renderer {
     const sb0 = SP.shoulder(true), sf0 = SP.shoulder(false);
     const sb = { x: sb0.x + meta.dx, y: sb0.y }, sf = { x: sf0.x + meta.dx, y: sf0.y };
     // 紙娃娃順序：後手臂 → 第一張（背飾 / 後髮 / 身體 / 腿 / 胸）→ 前手臂 + 手持 → 第二張（臉 / 前髮 / 頭飾 / 前飾品）
-    const back = SP.arm(true, null, arms.back);
-    ctx.drawImage(back.canvas, ox + sb.x - back.ox, oy + sb.y + bodyDy - back.oy);
+    if (!grip) { const back = SP.arm(true, null, arms.back); ctx.drawImage(back.canvas, ox + sb.x - back.ox, oy + sb.y + bodyDy - back.oy); }
     ctx.drawImage(sheet.canvas, fi * FW, 0, FW, FH, ox, oy, FW, FH);
     // 手持非鎬物件（火把 / 方塊）：手在前、物件直立
     const radA = (arms.front * Math.PI) / 180;
@@ -834,9 +838,11 @@ export class Renderer {
         for (let r = r0 + Math.round(fade * 6); r <= r1; r += 3) ctx.fillRect(Math.round(sx + ux * r), Math.round(sy + uy * r), 1, 1);
       }
     }
-    const front = SP.arm(false, showPick, arms.front, blade);
-    ctx.drawImage(front.canvas, ox + sf.x - front.ox, oy + sf.y + bodyDy - front.oy);
+    if (grip) ctx.drawImage(grip.arms, ox - grip.pad, oy - grip.pad);
+    else { const front = SP.arm(false, showPick, arms.front, blade); ctx.drawImage(front.canvas, ox + sf.x - front.ox, oy + sf.y + bodyDy - front.oy); }
     ctx.drawImage(sheet.canvas, fi * FW, FH, FW, FH, ox, oy, FW, FH);
+    // 手掌蓋在臉 / 頭髮上面：看得出抓住了邊緣
+    if (grip) ctx.drawImage(grip.hands, ox - grip.pad, oy - grip.pad);
     if (heldOther && heldOther !== 'torch') {
       const m = SP.mini(heldOther);
       ctx.drawImage(m, hx - 2, hy - 6);
@@ -876,7 +882,8 @@ export class Renderer {
       const px = cx + this.facing * hx, py = bottom + hy;
       const ix = Math.round(px - c.width / 2 + Math.cos(ang) * 5), iy = Math.round(py - c.height / 2 + Math.sin(ang) * 5);
       ctx.drawImage(c, ix, iy);
-      this.rodTip = { x: Math.round(px + Math.cos(ang) * 13), y: Math.round(py + Math.sin(ang) * 13) };
+      // 竿尖：圖示中心（手 + 5）再往外半條對角線（≈ 9）
+      this.rodTip = { x: Math.round(px + Math.cos(ang) * 14), y: Math.round(py + Math.sin(ang) * 14) };
     }
   }
 
@@ -926,6 +933,28 @@ export class Renderer {
       ctx.fillRect(Math.round(q.x), Math.round(q.y), sz, sz);
     }
     if (ps.length > 600) ps.splice(0, ps.length - 600);
+  }
+
+  /** 元素詞條的點綴粒子：熾焰往上飄的火星、霜寒落下的冰晶、引雷一閃一閃的電光、劇毒的泡泡、螢光的光點 */
+  private sparkT = 0;
+  private elementSparks(l: import('../engine/doll').DollLook, dt: number): void {
+    this.sparkT -= dt;
+    if (this.sparkT > 0) return;
+    this.sparkT = 0.07;
+    const p = this.game.player;
+    const parts: [import('../engine/doll').DollPiece | null, number][] = [[l.head, 36], [l.body, 20], [l.legs, 6]];
+    for (const [pc, h] of parts) {
+      if (!pc?.elem || Math.random() > 0.75) continue;
+      const big = Math.random() < 0.35 ? 2 : 1;
+      const x = p.x + p.w / 2 + (Math.random() - 0.5) * 12, y = p.y + p.h - h + (Math.random() - 0.5) * 6;
+      switch (pc.elem) {
+        case 'fire': this.particles.push({ x, y, vx: (Math.random() - 0.5) * 12, vy: -28 - Math.random() * 20, life: 0.6, color: Math.random() < 0.5 ? '#ffa93a' : '#ffd86a', g: -30, size: big }); break;
+        case 'ice': this.particles.push({ x, y, vx: (Math.random() - 0.5) * 8, vy: 6, life: 0.8, color: Math.random() < 0.5 ? '#cceaf8' : '#ffffff', g: 18, size: big }); break;
+        case 'storm': this.particles.push({ x, y, vx: (Math.random() - 0.5) * 90, vy: (Math.random() - 0.5) * 40, life: 0.16, color: Math.random() < 0.5 ? '#ffffff' : '#9a6ee0', g: 0, size: big }); break;
+        case 'poison': this.particles.push({ x, y, vx: 0, vy: -14, life: 0.5, color: '#93cc50', g: -10, size: 1 }); break;
+        case 'light': this.particles.push({ x, y, vx: (Math.random() - 0.5) * 6, vy: -10, life: 0.7, color: '#fff4c0', g: -6, size: 1 }); break;
+      }
+    }
   }
 
   /** 攀爬的粉塵：換手時繩上掉一點繩屑；攀上邊緣時牆角揚起一小撮灰 + 一滴汗 */

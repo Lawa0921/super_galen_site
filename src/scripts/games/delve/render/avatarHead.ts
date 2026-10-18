@@ -130,7 +130,7 @@ const EYES: Record<string, { near: string[]; far: string[]; y: number }> = {
 
 function face(b: Bmp, a: Appearance, expr: Expr, ox: number, oy: number): void {
   const e = eyeRamp(a.eyes), sk = skinRamp(a.skin);
-  const kind = expr === 'blink' ? 'blink' : expr === 'happy' ? 'happy' : expr === 'hurt' || expr === 'effort' ? 'hurt' : expr === 'dead' ? 'dead' : (['round', 'sharp', 'droopy'][a.eyeShape] ?? 'round');
+  const kind = expr === 'blink' ? 'blink' : expr === 'happy' ? 'happy' : expr === 'hurt' ? 'hurt' : expr === 'effort' ? 'sharp' : expr === 'dead' ? 'dead' : (['round', 'sharp', 'droopy'][a.eyeShape] ?? 'round');
   const g = EYES[kind];
   const pal = { L: INK, D: e[0], M: e[1], B: e[2], H: EYE_WHITE, W: EYE_WHITE };
   grid(b, g.near, pal, ox + 8, oy + g.y);
@@ -147,7 +147,8 @@ function face(b: Bmp, a: Appearance, expr: Expr, ox: number, oy: number): void {
   } else if (expr === 'dead') {
     b.set(ox + 13, oy + 14, sk[0]); b.set(ox + 14, oy + 14, sk[0]);
   } else {
-    b.set(ox + 14, oy + 14, sk[0]); b.set(ox + 13, oy + 14, sk[1]);
+    // 嘴：比膚色深一階的短線（不用最暗那階，淺膚色上不會像髒點）
+    b.set(ox + 14, oy + 14, sk[1]); b.set(ox + 13, oy + 14, sk[2]);
   }
 }
 

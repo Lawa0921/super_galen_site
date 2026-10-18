@@ -370,12 +370,12 @@ const lang: Language = defaultLang;
           <div class="delve-wr-stage">
             <canvas class="delve-wr-doll" id="delve-wr-doll" aria-label="角色預覽（輪播待機、走路、爬繩、攀上邊緣）"></canvas>
             <p class="delve-wr-cap" id="delve-wr-cap" aria-hidden="true"></p>
-            <button class="delve-btn" id="delve-wr-random" type="button">隨機</button>
           </div>
           <div class="delve-wr-rows" id="delve-wr-rows"></div>
         </div>
         <p class="delve-field-hint delve-wr-keys"><kbd>↑</kbd><kbd>↓</kbd> 選項　<kbd>←</kbd><kbd>→</kbd> 切換　<kbd>Enter</kbd> 完成　<kbd>Esc</kbd> 取消</p>
-        <div class="delve-tpanel-btns">
+        <div class="delve-tpanel-btns delve-wr-btns">
+          <button class="delve-btn" id="delve-wr-random" type="button">隨機</button>
           <button class="delve-btn" id="delve-wr-cancel" type="button">取消</button>
           <button class="delve-btn delve-btn--main" id="delve-wr-done" type="button">完成</button>
         </div>
@@ -1042,7 +1042,9 @@ const lang: Language = defaultLang;
   .delve-wr-box { width: min(760px, 100%); }
   .delve-wr-body { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; }
   .delve-wr-stage { display: grid; gap: 6px; justify-items: center; position: sticky; top: 0; }
-  .delve-wr-doll { width: 176px; height: 216px; image-rendering: pixelated; border: 2px solid; border-color: #0c0a12 #966139 #966139 #0c0a12; background: repeating-conic-gradient(#18204a 0% 25%, #2c2450 0% 50%) 0 0 / 16px 16px; box-shadow: 0 0 0 2px var(--outline); }
+  .delve-wr-btns { grid-template-columns: 1fr 1fr 1.4fr; }
+  .delve-wr-note { margin: 0; padding: 4px; font-size: 16px; line-height: 1.4; color: #c99660; align-self: center; }
+  .delve-wr-doll { width: 192px; height: 232px; image-rendering: pixelated; border: 2px solid; border-color: #0c0a12 #966139 #966139 #0c0a12; background: repeating-conic-gradient(#18204a 0% 25%, #2c2450 0% 50%) 0 0 / 16px 16px; box-shadow: 0 0 0 2px var(--outline); }
   .delve-wr-cap { margin: 0; min-height: 1.2em; font-size: 16px; color: #94c8ee; text-shadow: var(--text-outline); }
   .delve-wr-stage .delve-btn { width: 100%; min-height: 44px; }
   .delve-wr-rows { display: grid; gap: 4px; }
@@ -1066,23 +1068,32 @@ const lang: Language = defaultLang;
     .delve-wr .delve-tpanel-btns { bottom: -12px; margin: 0 -12px -12px; padding: 8px 12px 12px; }
     .delve-wr-body { grid-template-columns: 1fr; }
     .delve-wr-stage { position: static; grid-template-columns: auto 1fr; align-items: center; justify-items: stretch; }
-    .delve-wr-doll { width: 132px; height: 162px; grid-row: span 2; }
+    .delve-wr-doll { width: 144px; height: 174px; grid-row: span 2; }
+    .delve-wr-note { display: none; }
     .delve-wr-row { grid-template-columns: 4em 44px 1fr 44px; }
     .delve-wr-arrow { width: 44px; min-height: 44px; }
     .delve-wr-keys { display: none; }
   }
+  /* 手機：紙娃娃 + 隱藏開關在左、防具 / 外觀欄在右（觸控版背包只有 ~190px 高：整組不用捲就看得到） */
   @media (max-width: 640px) {
-    .delve .delve-doll-canvas { width: 132px; height: 162px; }
-    .delve .delve-doll { flex-basis: 100%; }
-    .delve .delve-doll-row { display: grid; grid-template-columns: 1fr; }
-    .delve .delve-equip-cols { display: grid; grid-template-columns: 1fr; gap: 10px; width: 100%; }
+    .delve .delve-doll-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); grid-template-areas: "doll armor" "hide vanity" "btn btn"; gap: 6px 8px; align-items: start; }
+    .delve .delve-doll { grid-area: doll; padding: 2px; }
+    .delve .delve-doll-canvas { width: 66px; height: 81px; }
+    .delve .delve-doll-cap { display: none; }
+    .delve .delve-equip-cols { display: contents; }
+    .delve .delve-equip-col:first-child { grid-area: armor; }
+    .delve .delve-equip-col:nth-child(2) { grid-area: vanity; }
+    .delve .delve-hide-wrap { grid-area: hide; }
+    .delve .delve-doll-row .delve-equip-h { display: none; }
+    .delve .delve-equip-btn { grid-area: btn; }
     .delve .delve-doll-row .delve-equip,
-    .delve .delve-vanity { grid-template-columns: repeat(4, minmax(40px, 1fr)); width: 100%; }
+    .delve .delve-vanity { grid-template-columns: repeat(4, 40px); gap: 2px; width: auto; }
     .delve .delve-doll-row .delve-equip .delve-slot,
-    .delve .delve-vanity .delve-slot { width: 100%; height: auto; min-height: 40px; aspect-ratio: 1; }
-    .delve .delve-hide { min-height: 40px; flex: 1; }
+    .delve .delve-vanity .delve-slot { width: 40px; height: 40px; min-height: 0; aspect-ratio: auto; }
     .delve .delve-vanity .delve-slot-icon,
     .delve .delve-doll-row .delve-equip .delve-slot-icon { width: 32px; height: 32px; }
+    .delve .delve-hide-row { gap: 2px; }
+    .delve .delve-hide { flex: 1; min-width: 0; min-height: 40px; padding: 0; flex-direction: column; justify-content: center; gap: 0; }
   }
   .delve-tpanel-btns--one { grid-template-columns: 1fr; }
   .delve-tpanel-btns .delve-btn { min-height: 44px; }
@@ -1528,13 +1539,15 @@ const lang: Language = defaultLang;
   .delve-hide-row { display: flex; gap: calc(var(--px) * 2); }
   .delve-hide {
     --bv-hi: #623924; --bv-lo: #1c1424; --bv-bg: #2a1810;
-    min-width: calc(var(--px) * 20); min-height: 32px; padding: 2px 6px;
+    display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+    min-width: 44px; min-height: 32px; padding: 2px 6px;
     border: var(--px) solid; border-color: var(--bv-hi) var(--bv-lo) var(--bv-lo) var(--bv-hi); border-radius: 0;
     background: var(--bv-bg); box-shadow: 0 0 0 var(--px) var(--outline); font-size: 16px; color: #c99660; cursor: pointer;
   }
+  .delve-hide-eye { width: 18px; height: 12px; image-rendering: pixelated; }
   .delve-hide[aria-pressed='true'] { --bv-bg: #6c1e14; --bv-hi: #a83a10; color: #fff4c0; }
   .delve-hide:hover, .delve-hide:focus-visible { --bv-hi: #fff4c0; outline: none; }
-  .delve-tip-doll { display: block; width: 88px; height: 108px; margin: 4px 0 2px; image-rendering: pixelated; border: 2px solid; border-color: #1c1424 #623924 #623924 #1c1424; background: #18204a; }
+  .delve-tip-doll { display: block; width: 132px; height: 162px; margin: 4px 0 2px; image-rendering: pixelated; border: 2px solid; border-color: #1c1424 #623924 #623924 #1c1424; background: #18204a; }
   .delve-tip-dollcap { color: #94c8ee; }
   .delve-stats { color: #cceaf8; }
   .delve-chip--aim[aria-pressed='true'] { --bv-hi: #cceaf8; --bv-bg: #1f6474; --bv-lo: #18204a; }

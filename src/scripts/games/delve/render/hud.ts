@@ -34,6 +34,21 @@ const VANITY_LABEL: Record<VanitySlot, string> = { head: '頭', body: '身', leg
 const HIDE_LABEL: Record<HideSlot, string> = { head: '頭盔', body: '胸甲', legs: '護脛' };
 /** 背包紙娃娃預覽輪播：待機 → 走路 */
 const DOLL_REEL: [SheetAnim, number][] = [['idle', 3], ['walk', 2]];
+/** 9×6 像素眼睛：睜眼 = 顯示、閉眼 + 斜線 = 隱藏 */
+const EYE_OPEN = ['..#####..', '.#wwwww#.', '#ww##ww.#', '#ww##ww.#', '.#wwwww#.', '..#####..'];
+const EYE_SHUT = ['.........', '#.......#', '.#.....#.', '..#####..', '.#..#..#.', '.........'];
+function drawEye(c: HTMLCanvasElement, open: boolean): void {
+  const ctx = c.getContext('2d');
+  if (!ctx) return;
+  ctx.clearRect(0, 0, c.width, c.height);
+  (open ? EYE_OPEN : EYE_SHUT).forEach((row, y) => { for (let x = 0; x < row.length; x++) {
+    const ch = row[x];
+    if (ch === '.') continue;
+    ctx.fillStyle = ch === 'w' ? '#f2e2b0' : open ? '#93cc50' : '#e8701c';
+    if (open && (x === 4 || x === 3) && (y === 2 || y === 3)) ctx.fillStyle = '#1c1424';
+    ctx.fillRect(x, y, 1, 1);
+  } });
+}
 /** 這件道具穿在身上看得見嗎（防具 / 時裝 / 看得見的飾品） */
 function wearSlot(item: ItemId): 'head' | 'body' | 'legs' | 'back' | 'acc' | null {
   const d = ITEMS[item];
@@ -142,6 +157,13 @@ export class Hud {
         b.type = 'button';
         b.className = 'delve-hide';
         b.dataset.hide = slot;
+        const lab = document.createElement('span');
+        lab.textContent = VANITY_LABEL[slot];
+        const eye = document.createElement('canvas');
+        eye.width = 9; eye.height = 6;
+        eye.className = 'delve-hide-eye';
+        eye.setAttribute('aria-hidden', 'true');
+        b.append(lab, eye);
         b.addEventListener('click', () => { this.game.setHideArmor(slot, !this.game.vanity.hide[slot]); this.refresh(); });
         hr.appendChild(b);
         this.hideBtns.push({ slot, btn: b });
@@ -388,7 +410,9 @@ export class Hud {
     for (const h of this.hideBtns) {
       const on = v.hide[h.slot];
       h.btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      h.btn.textContent = `${HIDE_LABEL[h.slot]}${on ? '（隱藏）' : ''}`;
+      const eye = h.btn.querySelector<HTMLCanvasElement>('canvas');
+      if (eye && eye.dataset.on !== String(on)) { eye.dataset.on = String(on); drawEye(eye, !on); }
+      h.btn.title = `${HIDE_LABEL[h.slot]}：${on ? '隱藏中' : '顯示中'}`;
       h.btn.setAttribute('aria-label', `${on ? '顯示' : '隱藏'}${HIDE_LABEL[h.slot]}的樣子（數值照算）`);
     }
     this.drawDoll(true);
