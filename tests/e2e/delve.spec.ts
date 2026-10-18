@@ -1603,3 +1603,166 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     expect(b2.sheets).toBe(b1.sheets + 1);
   });
 });
+
+test.describe('delve settlements', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+
+  /** 在玩家右邊整地並蓋 n 間房子（內部 8×5）；skip = 不放的家具；回傳房子 0 的內部左下角與地面 y */
+  const village = (page: Page, rooms: number, skip: string[] = []): Promise<{ x: number; gy: number }> => page.evaluate(([rooms, skip]) => {
+    const d = window.__delveDebug!, g = d.game, w = g.world, t = g.feetTile();
+    g.setDate({ hour: 10 });
+    const gy = t.y + 1, x0 = t.x + 3;
+    for (let x = x0 - 12; x < x0 + 9 * rooms + 24; x++) {
+      for (let y = gy - 12; y < gy; y++) { w.setFg(x, y, 0); w.setWall(x, y, 0); w.setLiquid(x, y, 0, 0); }
+      for (let y = gy; y < gy + 3; y++) w.setFg(x, y, 3);
+    }
+    for (let k = 0; k < rooms; k++) {
+      const x = x0 + k * 9, top = gy - 6;
+      for (let yy = top; yy < gy; yy++) for (let xx = x - 1; xx <= x + 8; xx++) {
+        const edge = yy === top || xx === x - 1 || xx === x + 8;
+        if (edge && w.getFg(xx, yy) === 53) continue;
+        w.setFg(xx, yy, edge ? 7 : 0);
+        if (!edge) w.setWall(xx, yy, 3);
+      }
+      for (let i = 0; i < 3; i++) w.setFg(x - 1, gy - 1 - i, 53);
+      if (!skip.includes('table')) w.setFg(x + 1, gy - 1, 76);
+      if (!skip.includes('chair')) w.setFg(x + 2, gy - 1, 77);
+      if (!skip.includes('bed')) { w.setFg(x + 4, gy - 1, 66); w.setFg(x + 5, gy - 1, 67); }
+      if (!skip.includes('light')) w.setFg(x + 7, top + 1, 10);
+      if (k > 0) { w.setFg(x + 6, gy - 1, 24); w.setFg(x + 6, top + 2, 79); w.setFg(x + 3, top + 1, 92); w.setFg(x + 7, gy - 1, 61); }
+    }
+    g.teleport(x0 + 2, gy - 1);
+    d.handle.renderer.snapCamera();
+    return { x: x0, gy };
+  }, [rooms, skip] as [number, string[]]);
+  const tileOnScreen = (page: Page, x: number, y: number): Promise<{ sx: number; sy: number }> => page.evaluate(([x, y]) => {
+    const r = window.__delveDebug!.handle.renderer, c = (document.querySelector('#delve-canvas') as HTMLCanvasElement).getBoundingClientRect();
+    return { sx: c.left + ((x + 0.5) * 16 - r.drawCam.x) * r.zoom, sy: c.top + ((y + 0.5) * 16 - r.drawCam.y) * r.zoom };
+  }, [x, y]);
+  const rightClick = async (page: Page, p: { sx: number; sy: number }): Promise<void> => {
+    await page.mouse.move(p.sx, p.sy);
+    await page.mouse.down({ button: 'right' }); await page.waitForTimeout(120); await page.mouse.up({ button: 'right' });
+    await page.waitForTimeout(80);
+  };
+  const hold = (page: Page, item: string, n = 1): Promise<void> => page.evaluate(([item, n]) => {
+    const g = window.__delveDebug!.game;
+    g.give(item as never, n as number);
+    const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === item);
+    g.inventory.swap(i, 1); g.selectSlot(1);
+  }, [item, n] as [string, number]);
+
+  test('查房模式：缺床的房間顯示紅色原因；右鍵放床後變成可入住', async ({ page }) => {
+    await page.goto('/games/delve?seed=house-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    const h = await village(page, 1, ['bed']);
+    await page.keyboard.press('KeyH');
+    await expect(page.locator('#delve-house-btn')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.delve-room-tag.is-bad')).toContainText('沒有床');
+    await hold(page, 'bed');
+    await rightClick(page, await tileOnScreen(page, h.x + 4, h.gy - 1));
+    expect(await page.evaluate(([x, y]) => window.__delveDebug!.game.world.getFg(x, y), [h.x + 4, h.gy - 1])).toBe(66);
+    await expect(page.locator('.delve-room-tag.is-ok')).toContainText('可入住');
+    await expect(page.locator('.delve-room-tag.is-bad')).toHaveCount(0);
+    await page.keyboard.press('KeyH');
+    await expect(page.locator('.delve-room-tag')).toHaveCount(0);
+  });
+
+  test('據點：放爐心 → 面板 Lv1；再蓋一間有裝飾的房間 → 升 Lv2（提示 + 面板）', async ({ page }) => {
+    await page.goto('/games/delve?seed=settle-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    const h = await village(page, 1);
+    await hold(page, 'hearth');
+    const hx = h.x + 10;
+    await page.evaluate(([x, y]) => { const d = window.__delveDebug!; d.game.teleport(x - 2, y); d.handle.renderer.snapCamera(); }, [hx, h.gy - 1]);
+    await page.waitForTimeout(150);
+    await rightClick(page, await tileOnScreen(page, hx, h.gy - 1));
+    expect(await page.evaluate(() => window.__delveDebug!.game.settle.cores.length)).toBe(1);
+    await page.keyboard.press('KeyB');
+    await expect(page.locator('#delve-settle')).toBeVisible();
+    await expect(page.locator('[data-testid=settle-level]')).toHaveAttribute('data-level', '1');
+    await expect(page.locator('[data-testid=settle-needs]')).toContainText('可入住的房間：1 / 2');
+    // 第二間（左邊；有箱子、畫、層架、書架、蠟燭）
+    await page.evaluate(([x, gy]) => {
+      const w = window.__delveDebug!.game.world, top = gy - 6;
+      for (let yy = top; yy < gy; yy++) for (let xx = x - 1; xx <= x + 8; xx++) {
+        const edge = yy === top || xx === x - 1 || xx === x + 8;
+        if (edge && w.getFg(xx, yy) === 53) continue;
+        w.setFg(xx, yy, edge ? 7 : 0);
+        if (!edge) w.setWall(xx, yy, 3);
+      }
+      for (let i = 0; i < 3; i++) w.setFg(x - 1, gy - 1 - i, 53);
+      for (const [dx, dy, id] of [[1, 0, 76], [2, 0, 77], [4, 0, 66], [5, 0, 67], [7, 4, 10], [6, 0, 24], [6, 3, 79], [3, 4, 92], [7, 0, 61], [1, 1, 59]]) w.setFg(x + dx, gy - 1 - dy, id);
+    }, [h.x - 9, h.gy]);
+    await expect(page.locator('#delve-toast')).toContainText('據點升級', { timeout: 5000 });
+    await expect(page.locator('[data-testid=settle-level]')).toHaveAttribute('data-level', '2', { timeout: 5000 });
+    expect(await page.evaluate(() => window.__delveDebug!.game.settlementHere()?.level)).toBe(2);
+  });
+
+  test('居民：白天搬進來（提示）→ 右鍵說話開商店 → 用銅幣買火把', async ({ page }) => {
+    await page.goto('/games/delve?seed=npc-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    const h = await village(page, 1);
+    await page.evaluate(([x, y]) => {
+      const g = window.__delveDebug!.game;
+      g.world.setFg(x, y, 98); g.settle.found(x, y);
+      g.give('copper_coin', 120);
+    }, [h.x + 10, h.gy - 1]);
+    await expect(page.locator('#delve-toast')).toContainText('搬進了你的據點', { timeout: 15000 });
+    expect(await page.evaluate(() => window.__delveDebug!.game.settle.npcs.map((q) => q.kind))).toEqual(['merchant']);
+    // 走到她旁邊、右鍵點她
+    await page.evaluate(() => {
+      const d = window.__delveDebug!, q = d.game.settle.npcs[0];
+      d.game.teleport(Math.floor((q.body.x + q.body.w / 2) / 16) + 2, Math.floor((q.body.y + q.body.h - 1) / 16));
+      d.handle.renderer.snapCamera();
+    });
+    await page.waitForTimeout(200);
+    const p = await page.evaluate(() => {
+      const d = window.__delveDebug!, q = d.game.settle.npcs[0], r = d.handle.renderer, c = (document.querySelector('#delve-canvas') as HTMLCanvasElement).getBoundingClientRect();
+      return { sx: c.left + (q.body.x + q.body.w / 2 - r.drawCam.x) * r.zoom, sy: c.top + (q.body.y + q.body.h / 2 - r.drawCam.y) * r.zoom };
+    });
+    await rightClick(page, p);
+    await expect(page.locator('#delve-npc')).toBeVisible();
+    await expect(page.locator('[data-testid=npc-line]')).toHaveText(/「.+」/);
+    const torches0 = await page.evaluate(() => window.__delveDebug!.game.inventory.count('torch'));
+    await page.locator('[data-testid=npc-shop] [data-buy="0"]').click();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.count('torch'))).toBe(torches0 + 10);
+    expect(await page.evaluate(() => window.__delveDebug!.game.coins())).toBeLessThan(120);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#delve-npc')).toBeHidden();
+  });
+
+  test('存檔 → 重新整理 → 繼續：爐心、居民（還住同一間）與爐心重生點都還在', async ({ page }) => {
+    await page.goto('/games/delve?seed=settle-save&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    const h = await village(page, 2);
+    const before = await page.evaluate(async ([x, y]) => {
+      const d = window.__delveDebug!, g = d.game;
+      g.world.setFg(x, y, 98); const c = g.settle.found(x, y);
+      g.settle.refresh(g.world, true);
+      g.debugMoveIn('merchant'); g.debugMoveIn('cook', true);
+      g.setSpawnCore(c.id);
+      await d.save();
+      return { npcs: g.settle.npcs.map((n) => [n.kind, n.home]), spawn: g.respawnPoint(), level: g.settlementHere()?.level };
+    }, [h.x + 19, h.gy - 1]);
+    expect(before.npcs.length).toBe(2);
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-continue');
+    await waitGame(page);
+    const after = await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      return { npcs: g.settle.npcs.map((n) => [n.kind, n.home]), spawn: g.respawnPoint(), level: g.settlementHere()?.level, cores: g.settle.cores.length };
+    });
+    expect(after.cores).toBe(1);
+    expect(after.npcs).toEqual(before.npcs);
+    expect(after.spawn).toEqual(before.spawn);
+    expect(after.level).toBe(before.level);
+  });
+});

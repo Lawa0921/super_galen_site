@@ -349,7 +349,7 @@ export class SettleUi {
     const box = this.labels;
     if (!box) return;
     const seen = new Set<string>();
-    const place = (key: string, cls: string, text: string, wx: number, wy: number): void => {
+    const place = (key: string, cls: string, text: string, wx: number, wy: number, maxW = 0): void => {
       seen.add(key);
       let t = this.tags.get(key);
       if (!t) { t = el('span', cls); this.tags.set(key, t); box.appendChild(t); }
@@ -358,6 +358,7 @@ export class SettleUi {
       const p = this.renderer.worldToScreen(wx, wy);
       t.style.setProperty('--x', `${Math.round(p.x)}px`);
       t.style.setProperty('--y', `${Math.round(p.y)}px`);
+      if (maxW) t.style.setProperty('--w', `${Math.max(96, Math.round(maxW))}px`);
     };
     if (this.housing) {
       const vr = this.renderer.viewRect();
@@ -366,8 +367,9 @@ export class SettleUi {
         const rooms = this.renderer.settleLayer.roomsInView(vb).filter((r) => r.reasons[0] !== 'open' && r.x1 >= vr.x && r.x0 <= vr.x + vr.w && r.y1 >= vr.y && r.y0 <= vr.y + vr.h).slice(0, 16);
         for (const r of rooms) {
           const who = this.game.settle.npcs.find((n) => n.home === r.key);
-          const text = r.ok ? `✓ 可入住${who ? `：${NPCS[who.kind].name}` : '（空房）'} · 舒適 ${r.comfort}` : `✗ ${roomReasonsText(r)}`;
-          place(`room:${r.key}`, r.ok ? 'delve-room-tag is-ok' : 'delve-room-tag is-bad', text, ((r.x0 + r.x1 + 1) / 2) * S, r.y0 * S);
+          const text = r.ok ? `✓ ${who ? `${NPCS[who.kind].name}的房間` : '可入住（空房）'} 舒適 ${r.comfort}` : `✗ ${roomReasonsText(r)}`;
+          const zoom = this.renderer.worldToScreen(S, 0).x - this.renderer.worldToScreen(0, 0).x;
+          place(`room:${r.key}`, r.ok ? 'delve-room-tag is-ok' : 'delve-room-tag is-bad', text, ((r.x0 + r.x1 + 1) / 2) * S, r.y0 * S, (r.width + 1) * zoom);
         }
       }
     }
