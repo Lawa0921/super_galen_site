@@ -16,10 +16,10 @@ const TIMEOUT = 300_000;
 /** With BALANCE_REPORT set, print every measurement and let the assertions carry on, so one run shows every number. */
 const report = !!process.env.BALANCE_REPORT && process.env.BALANCE_REPORT !== '0';
 const ex = report ? expect.soft : expect;
-const say = (label: string, m: { rate?: number; hpLoss?: number; rounds?: number; n?: number }) => {
+const say = (label: string, m: { rate?: number; hpLoss?: number; rounds?: number; n?: number; wins?: number; wipes?: number; cap?: number }) => {
   if (!report) return;
   const f = (k: string, v: number | undefined, d: number) => (v === undefined ? '' : ` ${k}=${v.toFixed(d)}`);
-  console.info(`[deep] ${label}${f('rate', m.rate, 3)}${f('hpLoss', m.hpLoss, 3)}${f('rounds', m.rounds, 2)}${f('n', m.n, 0)}`);
+  console.info(`[deep] ${label}${f('rate', m.rate, 3)}${f('hpLoss', m.hpLoss, 3)}${f('rounds', m.rounds, 2)}${f('n', m.n, 0)}${f('wins', m.wins, 0)}${f('wipes', m.wipes, 0)}${f('cap', m.cap, 0)}`);
 };
 
 const levelAt = (d: number) => Math.min(MAX_LEVEL, depthLevel(d));
@@ -43,21 +43,24 @@ describe('balance 19: the deep road and the finale', () => {
     }
   }, TIMEOUT);
 
-  // 6b Task 20c: the finale wins .200 (< .30) at depth 30, Lv50, mean 29.95 rounds, hpLoss .882.
+  // 6b Task 20c: the finale wins .125 (< .30) at depth 30, Lv50: 5 wins, 34 wipes, 1 round cap; mean 25.05 rounds, hpLoss .917
+  // (Task 20b's arrival fix: the party no longer holds the finale's own drops).
   it.fails('19b the finale is a real fight. the expected party wins .30-.85 at depth 30, never in under three rounds', () => {
     const d = 30;
-    let wins = 0, rounds = 0, hpLoss = 0;
+    let wins = 0, wipes = 0, cap = 0, rounds = 0, hpLoss = 0;   // cap: still going at the sim's round cap, counted as a loss
     const n = 40;
     for (let seed = 1; seed <= n; seed++) {
       const party = kitParty(levelAt(d), d, seed, undefined, expectedEnhance(d), EXPECT);
       const r = simBattle(party, [FINALE_BOSS.base], true, seed, { depth: d, region: 'mainline' }, undefined, 'skill', undefined, FINALE_BOSS.power);
       if (r.outcome === 'win') wins++;
+      else if (r.outcome === 'lose') wipes++;
+      else if (r.outcome === 'ongoing') cap++;
       rounds += r.rounds;
       hpLoss += r.hpLoss;
       ex(r.rounds, `seed ${seed}`).toBeGreaterThanOrEqual(3);
     }
     const rate = wins / n;
-    say(`19b finale depth ${d} Lv${levelAt(d)}`, { rate, hpLoss: hpLoss / n, rounds: rounds / n });
+    say(`19b finale depth ${d} Lv${levelAt(d)}`, { rate, hpLoss: hpLoss / n, rounds: rounds / n, wins, wipes, cap });
     ex(rate).toBeGreaterThanOrEqual(0.3);
     ex(rate).toBeLessThanOrEqual(0.85);
   }, TIMEOUT);

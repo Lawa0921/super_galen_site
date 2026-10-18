@@ -168,8 +168,7 @@ describe('balance', () => {
 
   it('10. random gear in expectation keeps the bands', () => gearBands('', {}), 120_000);
 
-  // 6b Task 20b: the memory expectation trivialises mainline d4/d8/d10 (hpLoss .0999/.098/.097 < .10).
-  it.fails('10 (記憶期望). random gear in expectation keeps the bands with the memory expectation, the abyss by depth', () => gearBands(' (記憶期望)', { expect: true, heroBuild: MEMORIES_BUILD }), 120_000);
+  it('10 (記憶期望). random gear in expectation keeps the bands with the memory expectation, the abyss by depth', () => gearBands(' (記憶期望)', { expect: true, heroBuild: MEMORIES_BUILD }), 120_000);
 
   it('the memories variants measure something: the build holds an abyss capstone and changes the runs', () => {
     const caps = Object.keys(heroTree(depthLevel(10), MEMORIES_BUILD, 10)).filter((k) => k.startsWith('abyss-'));

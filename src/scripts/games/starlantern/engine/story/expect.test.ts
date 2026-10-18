@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { chainLength } from '../../data/story/chains';
-import { ABSORB_CAP } from '../../data/story/fragments';
+import { CHAINS, chainLength } from '../../data/story/chains';
+import { ABSORB_CAP, ABSORB_GAIN } from '../../data/story/fragments';
 import { floorOf, newRun } from '../dungeon/run';
 import { STANDARD_LINEUP } from '../party';
 import type { CharacterId } from '../types';
@@ -44,10 +44,50 @@ describe('expectedMemories (spec §9.4 point 7)', () => {
       [9, 'elite', 'rin'],                 // hero pity 0 (dropped on 8), Rin 1 (8): Rin 5
       [10, 'boss', 'hero'],                // hero pity 1 (9), Rin 0 (dropped on 9): hero 3
     ];
-    const count = (id: CharacterId) => schedule.filter(([, , who]) => who === id).length;
-    const e = expectedMemories(10, STANDARD_LINEUP);
-    expect(e.hero.memories).toBe(count('hero'));
-    expect(e.rin.memories).toBe(count('rin'));   // Rin's chain is main-road only, so the other regions add nothing
+    // The expectation of a depth is what the party holds on ARRIVING there: every floor above it is cleared, and its own
+    // drops have not happened yet. So arriving at 10 counts the rows of depths 1-9 (hero 5, 8: 2; Rin 1, 3, 4, 6, 9: 5)
+    // and leaves out the depth-10 boss; arriving at 11 counts the whole trace (hero 3, Rin 5). Both chains are main-road
+    // only, so the other regions add nothing.
+    const count = (id: CharacterId, before: number) => schedule.filter(([d, , who]) => d < before && who === id).length;
+    for (const arrive of [1, 4, 10, 11]) {
+      const e = expectedMemories(arrive, STANDARD_LINEUP);
+      expect(e.hero.memories, `hero arriving at ${arrive}`).toBe(count('hero', arrive));
+      expect(e.rin.memories, `rin arriving at ${arrive}`).toBe(count('rin', arrive));
+    }
+    expect(count('hero', 10)).toBe(2);
+    expect(count('rin', 10)).toBe(5);
+  });
+
+  it("a depth's own drops wait for the next depth: arriving at the finale does not hold the finale's piece", () => {
+    // The hero's last piece is boss-only at depth 30 (the finale itself), and HERO_TOPUP's depth-30 top-up is paid by
+    // that same boss, so whoever arrives at depth 30 cannot hold it yet.
+    const last = CHAINS.hero.pieces[chainLength('hero') - 1];
+    expect(last.bossOnly).toBe(true);
+    expect(last.minDepth).toBe(30);
+    expect(expectedMemories(30, STANDARD_LINEUP).hero.memories).toBeLessThan(chainLength('hero'));
+    expect(expectedMemories(31, STANDARD_LINEUP).hero.memories).toBe(chainLength('hero'));
+    // Arriving at depth 1 nothing has dropped and no shard has been found.
+    for (const [id, e] of Object.entries(expectedMemories(1, STANDARD_LINEUP))) {
+      expect(e.memories, id).toBe(0);
+      expect(e.absorbed, id).toEqual([]);
+    }
+  });
+
+  it('a changed memory knob is never answered from the cache', () => {
+    const before = expectedMemories(20, STANDARD_LINEUP);
+    const gained = (e: typeof before) => STANDARD_LINEUP.flatMap((id) => e[id].absorbed);
+    expect(gained(before).length).toBeGreaterThan(0);
+    const saved = structuredClone(ABSORB_GAIN);
+    try {
+      for (const g of Object.keys(ABSORB_GAIN) as (keyof typeof ABSORB_GAIN)[]) {
+        for (const k of Object.keys(ABSORB_GAIN[g]) as (keyof (typeof ABSORB_GAIN)[typeof g])[]) ABSORB_GAIN[g][k] += 100;
+      }
+      const after = expectedMemories(20, STANDARD_LINEUP);
+      for (const a of gained(after)) expect(a.amount).toBeGreaterThan(100);
+    } finally {
+      for (const g of Object.keys(saved) as (keyof typeof saved)[]) Object.assign(ABSORB_GAIN[g], saved[g]);
+    }
+    expect(expectedMemories(20, STANDARD_LINEUP)).toEqual(before);
   });
 
   it('the elite rate behind EXPECT_ELITE_EVERY is honest', () => {
