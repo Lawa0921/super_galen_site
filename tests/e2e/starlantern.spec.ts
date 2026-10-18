@@ -3,6 +3,12 @@ import { SPECIALS, AFFIXES } from '../../src/scripts/games/starlantern/data/gear
 import { CHARACTERS } from '../../src/scripts/games/starlantern/data/characters';
 import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
 import { LEGACY_GRID, LEGACY_LINEUP } from '../../src/scripts/games/starlantern/engine/party';
+import { STORY } from '../../src/scripts/games/starlantern/data/story.zh-TW';
+import { T } from '../../src/scripts/games/starlantern/data/text.zh-TW';
+import { CHAINS, chainLength } from '../../src/scripts/games/starlantern/data/story/chains';
+import { ABSORB_CAP, ABSORB_GAIN, SHARD_IDS, SHARD_NAMES } from '../../src/scripts/games/starlantern/data/story/fragments';
+import { memScene } from '../../src/scripts/games/starlantern/data/story/scenes';
+import { mkdirSync } from 'node:fs';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
 
@@ -16,13 +22,16 @@ test.describe('starlantern', () => {
    * the story tests pass 'all' or 'major'. Other settings keep their defaults.
    */
   const storySetting = (page: Page, story: 'none' | 'major' | 'all' = 'none') =>
-    page.addInitScript((s) => localStorage.setItem('starlantern-settings', JSON.stringify({ volume: 70, textSpeed: 'mid', vibrate: true, story: s })), story);
+    // Written only when absent: the init script runs again on every navigation, and a reload must not undo a setting the test changed.
+    page.addInitScript((s) => {
+      if (localStorage.getItem('starlantern-settings') === null) localStorage.setItem('starlantern-settings', JSON.stringify({ volume: 70, textSpeed: 'mid', vibrate: true, story: s }));
+    }, story);
 
-  /** The town's own greeting lines: what it says on 繼續 when there is no notice (such as 存檔無法讀取) to give. */
-  const TOWN_LINE = /暮霧又濃了些|聽說迷宮深處有星燈的光|補給品記得在出發前備齊/;
+  /** The town's own greeting lines, straight from the story data: what it says on 繼續 when there is no notice (such as 存檔無法讀取) to give. */
+  const townLines = (): string[] => [...Object.values(STORY.townLines).flat(), ...Object.values(STORY.rinLines).flat()];
   /** After 繼續: the town greets as usual, and the game in play is exactly the stored save. */
   const expectSaveLoaded = async (page: Page) => {
-    await expect(page.locator('.slx-town .slx-talk .slx-text')).toHaveText(TOWN_LINE);
+    await expect.poll(async () => townLines().includes((await page.locator('.slx-town .slx-talk .slx-text').textContent()) ?? '')).toBe(true);
     const r = await page.evaluate(() => ({
       saved: JSON.parse(localStorage.getItem('starlantern-save') ?? 'null'),
       game: JSON.parse(JSON.stringify((window as unknown as Dbg).__starlanternDebug.game.state)),
@@ -1148,6 +1157,315 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-town')).toBeVisible();
     await expectSaveLoaded(page);
     expect(await game((g) => g.state.party.recruited)).toContain('selene');
+    expect(w.errors).toEqual([]);
+  });
+
+  test("prologue, Rin's first memory, Selene, recall, handbook, Rin's reveal and Scarlet's fight", async ({ page }) => {
+    test.setTimeout(300_000);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    /** With SL_SHOTS=<dir> the run also leaves its screenshots there; otherwise this is a no-op. */
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => {
+      if (!shots) return;
+      await page.waitForTimeout(700);   // windows fade in: wait until they are fully drawn
+      await page.screenshot({ path: `${shots}/${name}.png` });
+    };
+    /** Runs `fn` in the page on the live game (the debug hook), with one serialisable argument. */
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    /**
+     * Confirms through whatever is being said until the screen has stayed quiet for a few checks: no dialogue box, and no
+     * window hidden for a scene (the town menu, the pad, the guild's command window). Keyed on structure, not on any wording.
+     */
+    const playOut = async () => {
+      for (let quiet = 0, i = 0; quiet < 4 && i < 400; i++) {
+        if (await page.locator('.slx-talk').first().isVisible()) { quiet = 0; await page.keyboard.press('z'); await page.waitForTimeout(30); }
+        else if ((await page.locator('.slx-cmd-hidden').count()) > 0) { quiet = 0; await page.waitForTimeout(60); }
+        else { quiet++; await page.waitForTimeout(60); }
+      }
+      await expect(page.locator('.slx-talk').first()).toBeHidden();
+    };
+    const w = await setup(page, 7, { story: 'all' });
+
+    // 1. A new game plays the prologue to its end, with no return chat before it, and lands on the town menu.
+    await playOut();
+    await expect(page.locator('.slx-town-menu')).not.toHaveClass(/slx-cmd-hidden/);
+    const first = await game((g) => ({ seen: g.state.story.seen, fresh: g.state.story.fresh, queue: g.state.story.queue }));
+    expect(first.seen).toContain('prologue');
+    expect(first.seen.filter((id: string) => id.startsWith('chat:'))).toEqual([]);
+    expect([first.fresh, first.queue]).toEqual([[], []]);   // played, not skipped: nothing is new, nothing waits
+
+    // 2. Another new game: Esc on the first sentence shows the skip summary, then the town menu. (The setting survives the reload.)
+    await page.evaluate(() => localStorage.removeItem('starlantern-save'));
+    await page.reload();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-settings') ?? '{}').story)).toBe('all');
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('新遊戲');
+    await w.key('Enter');
+    await expect(page.locator('.slx-town .slx-talk')).toBeVisible();
+    await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+    await shot('01-prologue');
+    await w.key('Escape');
+    await expect(page.locator('.slx-town .slx-talk .slx-text')).toContainText(STORY.scenes.prologue.summary);
+    await shot('02-prologue-skip-summary');
+    await playOut();
+    await expect(page.locator('.slx-town-menu')).not.toHaveClass(/slx-cmd-hidden/);
+    expect(await game((g) => g.state.story.seen)).toContain('prologue');
+
+    // 3. Out through the mainline gate. Rin's glimmer: stand two cells off, step once (it shows on the map), then onto it.
+    await depart(page, w);
+    const glimmer = await game((g) => {
+      const c = g.run.floors.get(g.floor).contents.find((x: any) => x.kind === 'glimmer' && x.owner === 'rin');
+      if (!c) return null;
+      const open = (x: number, y: number) => ['floor', 'door'].includes(g.map().tiles[y]?.[x]);
+      for (const [key, dx, dy] of [['ArrowRight', 1, 0], ['ArrowLeft', -1, 0], ['ArrowDown', 0, 1], ['ArrowUp', 0, -1]] as const) {
+        const far = { x: c.at.x - 2 * dx, y: c.at.y - 2 * dy };
+        if (open(far.x, far.y) && open(c.at.x - dx, c.at.y - dy)) { g.pos = far; g.encounter = 0; return { key, at: c.at }; }
+      }
+      return null;
+    });
+    expect(glimmer, "a straight way to Rin's glimmer on floor 1").not.toBeNull();
+    await page.keyboard.press(glimmer!.key);
+    await expect.poll(() => game((g, at: string) => g.run.explored[g.floor].includes(at), `${glimmer!.at.x},${glimmer!.at.y}`)).toBe(true);
+    await shot('04-map-glimmer-marker');
+    await game((g) => { g.encounter = 0; });
+    await page.keyboard.press(glimmer!.key);
+    // What the glimmer held, line by line, and then the memory scene in its own look.
+    const memoryTalk = page.locator('.slx-dungeon .slx-talk.slx-talk--memory');
+    for (let i = 0; i < 14 && !(await memoryTalk.isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await expect(memoryTalk).toBeVisible();
+    await expect(page.locator('.slx-dungeon .slx-talk .slx-talk-face')).toBeVisible();   // her memory is spoken with her portrait on the box
+    await shot('03-memory-scene');
+    await playOut();
+    await expect(page.locator('.slx-talk--memory')).toHaveCount(0);
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    const rin1 = await game((g) => ({ memories: g.state.party.roster.rin.memories, seen: g.state.story.seen, fresh: g.state.story.fresh }));
+    expect(rin1.memories).toBe(1);
+    expect(rin1.seen).toContain(memScene('rin', 1));
+    expect(rin1.fresh).not.toContain(memScene('rin', 1));
+
+    // 4. Both at Lv4, down to floor 2, and Selene waits in a room there.
+    await game((g) => { g.state.party.roster.hero.level = 4; g.state.party.roster.rin.level = 4; });
+    const toStairs = await pathTo(page, 'down');
+    expect(toStairs?.keys.length).toBeGreaterThan(0);
+    for (const k of toStairs!.keys) {
+      await game((g) => { g.encounter = 0; });
+      await page.keyboard.press(k);
+    }
+    await w.choose('.slx-event-stairs', '前往');
+    await expect.poll(() => game((g) => g.floor)).toBe(2);
+    await w.closeTalk();
+    const plan = await game((g) => {
+      const room = g.run.floors.get(g.floor).contents.find((c: any) => c.kind === 'rescue');
+      const open = (x: number, y: number) => ['floor', 'door'].includes(g.map().tiles[y]?.[x]);
+      for (const [key, dx, dy] of [['ArrowRight', 1, 0], ['ArrowLeft', -1, 0], ['ArrowDown', 0, 1], ['ArrowUp', 0, -1]] as const) {
+        const far = { x: room.at.x - 2 * dx, y: room.at.y - 2 * dy };
+        if (open(far.x, far.y) && open(room.at.x - dx, room.at.y - dy)) { g.pos = far; g.encounter = 0; return { key, who: room.who, at: room.at }; }
+      }
+      return null;
+    });
+    expect(plan, 'a straight way into the rescue room').not.toBeNull();
+    expect(plan!.who).toBe('selene');
+    await page.keyboard.press(plan!.key);
+    await expect.poll(() => game((g, at: string) => g.run.explored[g.floor].includes(at), `${plan!.at.x},${plan!.at.y}`)).toBe(true);
+    await shot('05-map-rescue-marker');
+    await game((g) => { g.encounter = 0; });
+    await page.keyboard.press(plan!.key);
+    // The meeting line first, then the fight.
+    await expect(page.locator('.slx-dungeon .slx-talk')).toBeVisible();
+    await shot('06-meeting-line');
+    for (let i = 0; i < 12 && !(await page.locator('.slx-battle').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    await game((g) => { for (const e of g.battle.enemies) { e.hp = 0; e.alive = false; } });
+    for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) { await w.key('ArrowUp'); await w.key('Enter'); }   // 全員攻擊
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-result')).toContainText(/瑟蕾（Lv\d+）加入了隊伍！/);
+    await shot('07-rescue-result');
+    await w.key('Enter');
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    await playOut();
+    expect(await game((g) => g.state.party.recruited)).toEqual(['hero', 'rin', 'selene']);
+
+    // 5. Home with the lamp: whatever the town says on arrival (a return chat, maybe) plays out. Then Selene to the bench and back.
+    await game((g) => { g.state.inventory['return-lamp'] = 1; });
+    await lampHome(page, w);
+    await playOut();
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-cmd [data-id=formation]').click();
+    await expect(page.locator('.slx-formation-scene')).toBeVisible();
+    const cellOf = (id: string) => game((g, who: string) => g.state.party.grid.indexOf(who), id);
+    await page.locator(`[data-cell="${await cellOf('selene')}"]`).click();
+    await page.locator('.slx-formation-pick [role=option]').filter({ hasText: '移出隊伍' }).click();
+    expect(await cellOf('selene')).toBe(-1);
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await expect(page.locator('.slx-cmd [data-id=recall]')).not.toHaveAttribute('aria-disabled', 'true');
+    await page.locator('.slx-cmd [data-id=recall]').click();
+    await shot('08-guild-recall');
+    await page.locator('.slx-layer [data-id=selene]').click();
+    await w.key('ArrowUp'); await w.key('Enter');   // 是
+    await expect.poll(() => cellOf('selene')).toBeGreaterThanOrEqual(0);
+    await w.closeTalk();
+
+    // 6. The fragment exchange at the absorb cap: Rin is one short of ABSORB_CAP, the hero is full.
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await game((g, a: { shard: string; amount: number; cap: number }) => {
+      g.state.inventory[a.shard] = 3;
+      const fill = (n: number) => Array.from({ length: n }, () => ({ stat: 'hp', amount: a.amount }));
+      g.state.party.roster.hero.absorbed = fill(a.cap);
+      g.state.party.roster.rin.absorbed = fill(a.cap - 1);
+    }, { shard: SHARD_IDS.dim, amount: ABSORB_GAIN.dim.hp, cap: ABSORB_CAP });
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    const layerRow = (label: string) => page.locator('.slx-layer:last-child [role=option]').filter({ hasText: label });
+    await page.locator('.slx-cmd [data-id=exchange]').click();
+    await shot('09-exchange-menu');
+    await layerRow(T.ui2.exchange.absorb).click();
+    await layerRow(SHARD_NAMES.dim).click();
+    await expect(layerRow(CHARACTERS.hero.name)).toHaveAttribute('aria-disabled', 'true');
+    await expect(layerRow(CHARACTERS.rin.name)).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(layerRow(CHARACTERS.rin.name)).toContainText(T.ui2.exchange.count(ABSORB_CAP - 1, ABSORB_CAP));
+    await shot('10-exchange-absorb-cap');
+    for (let i = 0; i < 6 && (await page.locator('.slx-layer').count()) > 0; i++) { await w.key('Escape'); await page.waitForTimeout(80); }
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await w.key('Escape');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    // 7. The handbook from the town menu: something new to clear, Rin's first piece, the truths, all five pages.
+    // A hero chat stands in for one heard before (the return chat did not necessarily play), so a plain scene with a portrait can be shot.
+    await game((g, ids: string[]) => {
+      for (const id of ids) {
+        if (!g.state.story.seen.includes(id)) g.state.story.seen.push(id);
+        if (!g.state.story.fresh.includes(id)) g.state.story.fresh.push(id);
+      }
+    }, [memScene('rin', 1), 'prologue', 'chat:hero:1']);
+    await page.locator('.slx-town [data-id=handbook]').click();
+    await expect(page.locator('.slx-handbook')).toBeVisible();
+    const H = T.ui2.handbook;
+    const hbTab = (label: string) => page.locator('.slx-tabs .slx-tab').filter({ hasText: label });
+    const hbRow = (label: string) => page.locator('.slx-hb-list [role=option]').filter({ hasText: label });
+    const replay = async () => {
+      await expect(page.locator('.slx-handbook.slx-hb-playing')).toBeVisible();
+      for (let i = 0; i < 120 && (await page.locator('.slx-handbook.slx-hb-playing').count()) > 0; i++) { await w.key('z'); await page.waitForTimeout(40); }
+      await expect(page.locator('.slx-handbook.slx-hb-playing')).toHaveCount(0);
+    };
+    await expect(page.locator('.slx-hb-list .slx-fresh')).toHaveCount(1);   // Rin's row carries 新
+    await shot('11-handbook-memories');
+    await hbRow(CHARACTERS.rin.name).click();
+    await expect(hbRow(STORY.scenes[memScene('rin', 1)].title).locator('.slx-fresh')).toHaveCount(1);
+    await hbRow(STORY.scenes[memScene('rin', 1)].title).click();
+    await replay();
+    await expect(page.locator('.slx-hb-list .slx-fresh')).toHaveCount(0);
+    await page.locator('.slx-back').click();   // from the piece list back to the memories
+    for (const [tab, name] of [['people', '12-handbook-people'], ['town', '13-handbook-town'], ['codex', '14-handbook-codex']] as const) {
+      await hbTab(H.tabs[tab]).click();
+      await expect(hbTab(H.tabs[tab])).toHaveAttribute('aria-selected', 'true');
+      await shot(name);
+    }
+    await hbTab(H.tabs.people).click();
+    await hbRow(CHARACTERS.hero.name).click();
+    await hbRow(STORY.scenes['chat:hero:1'].title).click();
+    await expect(page.locator('.slx-handbook.slx-hb-playing')).toBeVisible();
+    await expect(page.locator('.slx-handbook .slx-talk .slx-talk-face')).toBeVisible();
+    await expect(page.locator('.slx-talk--memory')).toHaveCount(0);   // a chat is plain, a memory is dimmed
+    await shot('12b-dialogue-portrait');
+    await replay();
+    await page.locator('.slx-back').click();
+    await hbTab(H.tabs.truths).click();
+    await expect(page.locator('.slx-hb-list .slx-fresh')).toHaveCount(1);   // the prologue is still marked new
+    await shot('15-handbook-truths');
+    await hbRow(H.stages.prologue).click();
+    await replay();
+    await expect(page.locator('.slx-hb-list .slx-fresh')).toHaveCount(0);
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    expect(await game((g) => g.state.story.fresh)).toEqual([]);
+
+    // 8. Save at the inn, reload, continue: a valid save, Rin holds one memory, and the arrival has no return chat.
+    await w.choose('.slx-town', '旅館');
+    await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter'); await w.key('ArrowUp'); await w.key('Enter');
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText(T.ui2.inn.saved, { timeout: 5000 });
+    await page.reload();
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('繼續');
+    await w.key('Enter');
+    await expect(page.locator('.slx-town')).toBeVisible();
+    await expectSaveLoaded(page);
+    const back = await game((g) => ({ rin: g.state.party.roster.rin.memories, arrival: g.arrival, recruited: g.state.party.recruited }));
+    expect(back.rin).toBe(1);
+    expect(back.arrival).toEqual([]);
+    expect(back.recruited).toContain('selene');
+    await w.closeTalk();
+
+    // 9. Rin's seventh piece, then home: the reveal plays alone in the town.
+    await depart(page, w);
+    await game((g, n: number) => { g.state.party.roster.rin.memories = n; g.state.inventory['return-lamp'] = 1; }, chainLength('rin'));
+    await lampHome(page, w);
+    await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+    expect(await game((g) => g.arrival)).toEqual(['rin-reveal']);
+    for (let i = 0; i < 2; i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await shot('16-rin-reveal');
+    await playOut();
+    const reveal = await game((g) => ({ oath: g.state.party.roster.rin.oath, seen: g.state.story.seen }));
+    expect(reveal.oath).toBe(true);
+    expect(reveal.seen).toContain('rin-reveal');
+
+    // 10. The status page's memory column shows what her pieces added.
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-cmd [data-id=status]').click();
+    await flipTo(page, CHARACTERS.rin.name);
+    await page.locator('[data-tab=stats]').click();
+    const gainKey = Object.keys(CHAINS.rin.gain)[0];
+    const memoryCell = page.locator(`.slx-stat-cat[data-cat=primary] tr[data-stat=${gainKey}] td.slx-memory`);
+    await expect(page.locator('.slx-stat-cat[data-cat=primary] thead th')).toContainText([T.ui2.status.sources.memory]);
+    await expect(memoryCell).toHaveText(/^\+/);
+    await memoryCell.scrollIntoViewIfNeeded();
+    await shot('17-status-memory-column');
+    await page.locator('.slx-back').click();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    // 11. Scarlet at iron depth 8: her story fight, with her standee in the enemy slot.
+    await game((g) => {
+      g.state.dungeon.reached.iron = 8;
+      g.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }, { region: 'iron', condition: 'plain' }, { region: 'blaze', condition: 'plain' }];
+    });
+    await w.choose('.slx-town', '傳送門廣場');
+    await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');
+    await expect(page.locator('.slx-portal')).toHaveCount(3);
+    await page.locator('.slx-portal').nth(1).click();
+    await page.locator('.slx-depths [role=option]').nth(1).click();   // depth 5, the deepest start the region offers
+    await w.key('ArrowUp'); await w.key('Enter');                    // 是
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    await game((g) => { g.changeFloor(8); });
+    await w.key('ArrowDown');                                        // the scene redraws on the next step
+    const scarlet = await game((g) => {
+      const room = g.run.floors.get(g.floor).contents.find((c: any) => c.kind === 'rescue');
+      if (!room) return null;
+      const open = (x: number, y: number) => ['floor', 'door'].includes(g.map().tiles[y]?.[x]);
+      for (const [key, dx, dy] of [['ArrowRight', 1, 0], ['ArrowLeft', -1, 0], ['ArrowDown', 0, 1], ['ArrowUp', 0, -1]] as const) {
+        const far = { x: room.at.x - 2 * dx, y: room.at.y - 2 * dy };
+        if (open(far.x, far.y) && open(room.at.x - dx, room.at.y - dy)) { g.pos = far; g.encounter = 0; return { key, who: room.who, floor: g.floor }; }
+      }
+      return null;
+    });
+    expect(scarlet, "a straight way into Scarlet's room").not.toBeNull();
+    expect([scarlet!.who, scarlet!.floor]).toEqual(['scarlet', 8]);
+    await page.keyboard.press(scarlet!.key);
+    await game((g) => { g.encounter = 0; });
+    await page.keyboard.press(scarlet!.key);
+    for (let i = 0; i < 14 && !(await page.locator('.slx-battle').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    const fight = await game((g) => ({ survive: g.battle.survive, foes: g.battle.enemies.map((e: any) => e.defId) }));
+    expect(fight.survive).toBeGreaterThan(0);
+    expect(fight.foes[0]).toBe('scarlet-foe');
+    await shot('18-scarlet-story-fight');
     expect(w.errors).toEqual([]);
   });
 });
