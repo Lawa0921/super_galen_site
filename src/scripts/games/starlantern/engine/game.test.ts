@@ -2396,6 +2396,21 @@ describe('the arrival queue', () => {
     expect(reloaded.arrival).toEqual(['prologue']);
   });
 
+  it('a boot with no storage still opens on the prologue, with no chat', () => {
+    const g = Game.boot(calm(), null);
+    expect(g.arrival).toEqual(['prologue']);
+  });
+
+  it('a town action with no storage reports a failed save, as recall, forge and inn do', () => {
+    const g = new Game(calm(), null, undefined, 0, START_LINEUP);
+    const grid = [...g.state.party.grid];
+    const h = grid.indexOf('hero');
+    const to = (h + 4) % 9;
+    grid[to] = grid[h]; grid[h] = null;
+    expect(g.setFormation(grid)).toEqual({ ok: true });
+    expect(g.notice).toBe('save-failed');
+  });
+
   it('a reload never adds a chat, however much has been met', () => {
     const storage = memoryStorage();
     const g = townGame(HERO_LINEUP, storage);

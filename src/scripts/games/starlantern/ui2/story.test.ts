@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CHARACTERS } from '../data/characters';
 import { MAJOR_SCENES, type SceneId } from '../data/story/scenes';
 import { STORY, type ScriptLine } from '../data/story.zh-TW';
@@ -159,6 +159,27 @@ describe('playAndRecord', () => {
     expect(game.state.story).toMatchObject({ queue: [], fresh: [] });
     expect(game.state.story.seen).toContain('chat:liz:1');
     expect(game.arrival).toEqual([]);
+  });
+
+  it('hands the game the way it ended: played, skipped or auto', async () => {
+    const calls = (mode: 'all' | 'none', cancel: boolean) => {
+      const { game, talk, ctx } = due('chat:liz:1');
+      const spy = vi.spyOn(game, 'sceneDone');
+      stage('chat:liz:1', [{ who: 'liz', text: '一' }, { who: 'liz', text: '二' }]);
+      const p = playAndRecord(talk, 'chat:liz:1', { ...ctx, mode });
+      return { spy, p, talk, cancel };
+    };
+    const a = calls('all', false);
+    a.p.onAction('confirm'); await tick(); a.p.onAction('confirm');
+    await a.p.done;
+    expect(a.spy.mock.calls).toEqual([['chat:liz:1', 'played']]);
+    const b = calls('all', true);
+    b.p.onAction('cancel'); await tick(); b.p.onAction('confirm');
+    await b.p.done;
+    expect(b.spy.mock.calls).toEqual([['chat:liz:1', 'skipped']]);
+    const c = calls('none', false);
+    await c.p.done;
+    expect(c.spy.mock.calls).toEqual([['chat:liz:1', 'auto']]);
   });
 
   it('records a skipped scene as seen but not new', async () => {

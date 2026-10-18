@@ -124,7 +124,11 @@ export class Game {
   }
 
   static boot(rng: Rng, storage: SaveStorage | null, forgeSalt = 0): Game {
-    if (!storage) return new Game(rng, null, undefined, forgeSalt, START_LINEUP);
+    if (!storage) {
+      const g = new Game(rng, null, undefined, forgeSalt, START_LINEUP);
+      g.arrival = arrivalScenes(g.state, { chat: false });
+      return g;
+    }
     const r = loadGame(storage);
     const g = new Game(rng, storage, r.status === 'ok' ? r.state : undefined, forgeSalt, START_LINEUP);
     if (r.status === 'corrupt' || r.status === 'version') g.notice = 'save-reset';
@@ -687,7 +691,7 @@ export class Game {
     if (!r.ok) return r;
     const party = this.state.party;
     this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
-    if (this.phase === 'town' && this.storage && !saveGame(this.storage, this.state)) this.notice = 'save-failed';
+    if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return { ok: true };
   }
 
@@ -700,7 +704,7 @@ export class Game {
     const r = setFormation(this.state.party, grid);
     if (!r.ok) return r;
     this.state = { ...this.state, party: r.party };
-    if (this.phase === 'town' && this.storage && !saveGame(this.storage, this.state)) this.notice = 'save-failed';
+    if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return { ok: true };
   }
 
@@ -782,7 +786,7 @@ export class Game {
     if (!r.ok) return r;
     const party = this.state.party;
     this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
-    if (this.phase === 'town' && this.storage && !saveGame(this.storage, this.state)) this.notice = 'save-failed';
+    if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return { ok: true };
   }
 
