@@ -181,4 +181,8 @@ describe('story data', () => {
     expect(PLACEHOLDERS.size).toBeGreaterThan(0);
     expect(PLACEHOLDERS.has(STORY.scenes.prologue.lines[0].text)).toBe(true);
   });
+
+  it('the milestone cards and the survive line are story copy, found by the placeholder sweep', () => {
+    for (const t of [STORY.survived, STORY.act1Card.title, STORY.act1Card.body, STORY.endingTitle]) expect(PLACEHOLDERS.has(t), t).toBe(true);
+  });
 });

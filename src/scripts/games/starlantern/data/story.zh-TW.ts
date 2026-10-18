@@ -64,8 +64,7 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
   return out;
 }
 
-// The opening lines are copied from the current T.ui2.town.lines and T.ui2.facility.<x>.greet as literals (never referenced):
-// the originals are deleted in a later task.
+// The town's opening lines and the facility greetings, one set for every stage until 6c writes them per stage.
 const stageEach = <V>(make: () => V): Record<Stage, V> =>
   Object.fromEntries(STAGES.map((s) => [s, make()])) as Record<Stage, V>;
 
@@ -87,6 +86,11 @@ export const STORY = {
   },
   /** The finale's boss: the lantern-eater under her own name. */
   finaleBossName: ph('燈喰之母'),
+  /** The log line that ends Scarlet's story fight. */
+  survived: ph('她收起了劍。'),
+  /** The Act 1 milestone card, and the finale's closing card title (its text is the finale scene's summary). */
+  act1Card: { title: ph('第一幕　星燈重新亮起'), body: ph('燈喰之獸倒下了。暮霧散去，露米亞迎來久違的晨光。') },
+  endingTitle: ph('終幕　點燈'),
   /** Rescue meetings: what is said before the fight (the found line is narration; 6c adds hers) and after it is won. */
   meet: Object.fromEntries(MEETINGS.map((m) => [m.id, {
     before: [{ who: 'narrator' as const, text: ph(`有人被怪物圍住了──是${nameOf(m.id)}！`) }],

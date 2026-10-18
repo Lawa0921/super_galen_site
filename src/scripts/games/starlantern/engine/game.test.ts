@@ -12,6 +12,7 @@ import { capacity, carried, weightOf } from '../data/weights';
 import type { CharacterId, ItemInstance, Pos } from './types';
 import { ENEMIES } from '../data/enemies';
 import { CHARACTERS } from '../data/characters';
+import { handbook } from './story/handbook';
 import { SETS } from '../data/gear';
 import { activeIds, expToNext, gainExp, MAX_LEVEL, meet, newMember, rowOfCell, LEGACY_LINEUP, START_LINEUP } from './party';
 import { depthClearExp, empower, encounterGroup, groupCap } from './scaling';
@@ -2313,6 +2314,31 @@ describe('townsfolk fragments at home', () => {
     expect(g.state.gold).toBe(gold);
   });
 
+  it("a returned fragment's scene survives a reload and is replayable once it has played", () => {
+    const storage = memoryStorage();
+    const g = held(storage);
+    expect(g.returnFragment('orik').ok).toBe(true);
+    expect(savedState(storage)!.story.queue).toContain('town:orik');   // saved with the return, not only held in memory
+    const back = Game.boot(calm(), storage);   // the tab closed during the scene
+    expect(back.arrival).toContain('town:orik');
+    expect(handbook(back.state).town.find((t) => t.id === 'orik')!.scene).toBeNull();
+    expect(back.sceneDone('town:orik', 'played')).toBe(true);
+    expect(back.state.story.queue).not.toContain('town:orik');
+    expect(handbook(back.state).town.find((t) => t.id === 'orik')!.scene).toMatchObject({ scene: 'town:orik' });
+    expect(savedState(storage)!.story.seen).toContain('town:orik');
+  });
+
+  it("a returned fragment's scene plays exactly once on the guild path", () => {
+    const g = held();
+    expect(g.returnFragment('orik').ok).toBe(true);
+    expect(g.pending.filter((s) => s === 'town:orik')).toHaveLength(1);
+    expect(g.sceneDone('town:orik', 'played')).toBe(true);
+    expect(g.sceneDone('town:orik', 'played')).toBe(false);
+    expect(g.state.story.queue).not.toContain('town:orik');
+    expect(g.state.story.seen.filter((s) => s === 'town:orik')).toHaveLength(1);
+    expect(g.pending).toEqual([]);
+  });
+
   it('a fed party sets out with the meal and is hungry again', () => {
     const g = new Game(calm(), null, undefined, 0, HERO_LINEUP);
     g.state.story.returned.push('marta');
@@ -2367,6 +2393,10 @@ describe("Scarlet's story fight", () => {
     expect(stepOnto(g, at)).toEqual({ kind: 'rescue', who: 'scarlet' });
     expect(g.battle!.survive).toBe(STORY_FIGHT_ROUNDS);
     expect(g.battle!.enemies[0].defId).toBe('scarlet-foe');
+    // She is a person: her own name with no region prefix, and her own weakness and resistance.
+    expect(g.battle!.enemies[0].name).toBe(CHARACTERS.scarlet.name);
+    expect(g.battle!.enemies[0].weak).toEqual(ENEMIES['scarlet-foe'].weak);
+    expect(g.battle!.enemies[0].resist).toEqual(ENEMIES['scarlet-foe'].resist);
     let end = null;
     for (let i = 0; i < STORY_FIGHT_ROUNDS; i++) {
       expect(end).toBeNull();

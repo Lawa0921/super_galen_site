@@ -162,8 +162,9 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
     name: `${elite ? '★' : ''}${name}`,
     stats,
     sec,
-    weak: regional ? [...region.weak] : [...def.weak],
-    resist: regional && !early ? [...region.resist] : [...def.resist],
+    // A named story foe keeps its own elements: the region's belong to its monsters.
+    weak: regional && !def.story ? [...region.weak] : [...def.weak],
+    resist: regional && !early && !def.story ? [...region.resist] : [...def.resist],
     skills: skill ? [...def.skills, skill] : [...def.skills],
     exp: Math.round(def.exp * reward * condition.expMul),
     gold: Math.round(def.gold * reward * condition.goldMul),

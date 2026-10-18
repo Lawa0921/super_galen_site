@@ -442,6 +442,17 @@ describe('save v5 skill trees and talents', () => {
     for (const bad of [null, -1, 1.5, '3', chainLength('hero') + 1]) expect(withHero({ memories: bad }), String(bad)).toBe('corrupt');
     expect(withMember('rin', { memories: chainLength('rin') + 1 })).toBe('corrupt');
   });
+  it("a queued reveal needs all seven of Rin's pieces", () => {
+    const withQueue = (pieces: number | undefined) => {
+      const g = newGame();
+      g.story.queue = ['rin-reveal'];
+      if (pieces !== undefined) g.party.roster.rin = { ...g.party.roster.rin, memories: pieces };
+      return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+    };
+    expect(withQueue(undefined)).toBe('corrupt');
+    expect(withQueue(chainLength('rin') - 1)).toBe('corrupt');
+    expect(withQueue(chainLength('rin'))).toBe('ok');
+  });
   it('only Rin with all seven may hold her oath', () => {
     expect(withMember('rin', { memories: chainLength('rin') - 1, oath: true })).toBe('corrupt');
     expect(withMember('rin', { memories: chainLength('rin'), oath: true })).toBe('ok');

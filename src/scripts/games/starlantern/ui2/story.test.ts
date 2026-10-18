@@ -182,6 +182,17 @@ describe('playAndRecord', () => {
     expect(c.spy.mock.calls).toEqual([['chat:liz:1', 'auto']]);
   });
 
+  it('a scene that fails is still recorded, so the handbook can replay it', async () => {
+    const { game, talk, ctx } = due('chat:liz:1');
+    stage('chat:liz:1', [{ who: 'liz', text: '一' }]);
+    vi.spyOn(talk, 'say').mockImplementation(() => { throw new Error('boom'); });
+    await expect(playAndRecord(talk, 'chat:liz:1', ctx).done).rejects.toThrow('boom');   // callers still report it
+    expect(game.state.story.seen).toContain('chat:liz:1');
+    expect(game.state.story.fresh).toContain('chat:liz:1');
+    expect(game.state.story.queue).toEqual([]);
+    expect(game.arrival).toEqual([]);
+  });
+
   it('records a skipped scene as seen but not new', async () => {
     const { game, talk, ctx } = due('chat:liz:1');
     stage('chat:liz:1', [{ who: 'liz', text: '一' }, { who: 'liz', text: '二' }]);

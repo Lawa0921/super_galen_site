@@ -1,4 +1,5 @@
 import { CHARACTERS } from '../data/characters';
+import { STORY } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
 import type { BattleEvent } from '../engine/combatant';
 import { SHARD_NAMES, TOWN_FRAGMENTS, fragmentName } from '../data/story/fragments';
@@ -29,7 +30,7 @@ export function battleLines(log: BattleEvent[], nameOf: (key: string) => string)
       case 'no-limit': return T.log.noLimit(nameOf(e.actor));
       case 'escape': return T.log.escape(e.success);
       case 'poison-tick': return T.log.poison(nameOf(e.target), e.amount);
-      case 'survived': return T.ui2.battle.survived;
+      case 'survived': return STORY.survived;
     }
   });
 }

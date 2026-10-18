@@ -171,7 +171,7 @@ export class HandbookScene implements Scene {
     const c = h.codex;
     const have = (set: string) => SETS[set].pieces.filter((id) => this.ctx.game.state.codex.includes(id));
     const weak = (id: string) => c.monsters.find((m) => m.id === id)!.weak;
-    const weakText = (w: string[] | null) => (w ? (w.length ? H.codex.weak(w.map((e) => T.element[e as keyof typeof T.element]).join('、')) : H.codex.weak('無')) : H.codex.weakUnknown);
+    const weakText = (w: string[] | null) => (w ? (w.length ? H.codex.weak(w.map((e) => T.element[e as keyof typeof T.element]).join('、')) : H.codex.none) : H.codex.weakUnknown);
     const rows: MenuItem[] = [
       ...c.specials.map((id): MenuItem => ({ id, label: codexName(id), cls: `slx-rarity-${SPECIALS[id].rarity}`, right: H.codex.rarity[SPECIALS[id].rarity] })),
       ...c.sets.map((id): MenuItem => ({ id, label: codexName(id), cls: 'slx-rarity-set', right: H.codex.setPieces(have(id).length, SETS[id].pieces.length) })),

@@ -110,6 +110,9 @@ export function playAndRecord(talk: Dialogue, id: SceneId, ctx: StoryCtx): { don
     ctx.game.sceneDone(id, 'auto');
     return { done: Promise.resolve(), onAction() {} };
   }
-  const p = playScene(talk, id, ctx);
-  return { done: p.done.then((how) => { ctx.game.sceneDone(id, how === 'done' ? 'played' : 'skipped'); }), onAction: p.onAction };
+  // A scene that fails is still recorded (as auto, so it reads as new in the handbook) and the error goes on to the caller.
+  const failed = (e: unknown): never => { ctx.game.sceneDone(id, 'auto'); throw e; };
+  let p: ReturnType<typeof playScene>;
+  try { p = playScene(talk, id, ctx); } catch (e) { return failed(e); }
+  return { done: p.done.then((how) => { ctx.game.sceneDone(id, how === 'done' ? 'played' : 'skipped'); }, failed), onAction: p.onAction };
 }

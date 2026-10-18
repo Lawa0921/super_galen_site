@@ -6,6 +6,7 @@ import { CHAINS, chainLength } from '../../data/story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from '../../data/story/fragments';
 import { CHAT_COUNT, memScene, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
+import { T } from '../../data/text.zh-TW';
 import { memoriesOf } from '../progression';
 import type { GameState } from '../state';
 import type { CharacterId, Element } from '../types';
@@ -29,7 +30,7 @@ const TRUTH_SCENE: Record<Stage, SceneId> = {
 /** How deep a piece lies (spec §7.6): the example reads 「熾焰之地・深處」. */
 const hintOf = (id: CharacterId, i: number): string => {
   const p = CHAINS[id].pieces[i];
-  return `${p.regions.map((r) => REGIONS[r].name).join('、')}・${p.minDepth >= 6 ? '深處' : '淺層'}`;
+  return T.ui2.handbook.pieceHint(p.regions.map((r) => REGIONS[r].name).join('、'), p.minDepth >= 6);
 };
 
 /** Titles, newness and the seen-only rule, for one state. */

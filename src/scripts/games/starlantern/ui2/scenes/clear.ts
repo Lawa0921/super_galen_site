@@ -32,8 +32,8 @@ export class ClearScene implements Scene {
     const bg = this.ctx.art.has(art.scene('title')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('title'), alt: '' } })] : [];
     this.body = el('div', { class: 'slx-scene slx-clear' }, [...bg, this.talk.el]);
     root.append(this.body);
-    if (this.ctx.game.cleared === 'finale') void this.playFinale().then(() => { if (!this.exited) this.showCard(T.ending.title, STORY.scenes.finale.summary, T.ending.back); });
-    else this.showCard(T.clear.title, T.clear.body, T.clear.back);
+    if (this.ctx.game.cleared === 'finale') void this.playFinale().then(() => { if (!this.exited) this.showCard(STORY.endingTitle, STORY.scenes.finale.summary, T.ending.back); });
+    else this.showCard(STORY.act1Card.title, STORY.act1Card.body, T.clear.back);
   }
 
   exit(): void {

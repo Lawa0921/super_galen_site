@@ -16,7 +16,7 @@ describe('ClearScene', () => {
     const root = document.createElement('div');
     const s = new ClearScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() });
     s.enter(root);
-    expect(root.textContent).toContain(T.clear.title);
+    expect(root.textContent).toContain(STORY.act1Card.title);
     s.onAction('confirm');
     expect(game.phase).toBe('town');
     expect(go).toHaveBeenCalledWith('town');
@@ -26,8 +26,8 @@ describe('ClearScene', () => {
     game.phase = 'clear';
     const root = document.createElement('div');
     new ClearScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }).enter(root);
-    expect(root.querySelector('h2')!.textContent).toBe(T.clear.title);
-    expect(T.clear.title).toBe('第一幕　星燈重新亮起');
+    expect(root.querySelector('h2')!.textContent).toBe(STORY.act1Card.title);
+    expect(STORY.act1Card.title).toBe('第一幕　星燈重新亮起');
     const opts = [...root.querySelectorAll('.slx-opt')].map((o) => o.textContent);
     expect(opts).toEqual(['繼續']);
     expect(T.clear.back).toBe('繼續');
@@ -70,7 +70,7 @@ describe('ClearScene finale', () => {
     expect(done).toEqual(['mem:hero:9:played', 'mem:hero:10:played', 'finale:played']);
     expect(styles[0]).toBe(true);                 // the memories are dimmed
     expect(styles[styles.length - 1]).toBe(false);   // the finale itself is not
-    expect(root.querySelector('.slx-clear-card h2')!.textContent).toBe(T.ending.title);
+    expect(root.querySelector('.slx-clear-card h2')!.textContent).toBe(STORY.endingTitle);
     expect(root.querySelector('.slx-clear-card p')!.textContent).toBe(STORY.scenes.finale.summary);
     expect([...root.querySelectorAll('.slx-opt')].map((o) => o.textContent)).toEqual([T.ending.back]);
     s.onAction('confirm');
@@ -107,7 +107,7 @@ describe('ClearScene finale', () => {
     game.cleared = 'act1';
     const root = document.createElement('div');
     new ClearScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }).enter(root);
-    expect(root.querySelector('.slx-clear-card h2')!.textContent).toBe(T.clear.title);
+    expect(root.querySelector('.slx-clear-card h2')!.textContent).toBe(STORY.act1Card.title);
   });
 
   it('a scene that fails to record does not lock the ending', async () => {

@@ -229,7 +229,7 @@ export class Game {
         const c = floorOf(this.run!, this.floor).contents.find((x) => x.kind === 'rescue' && x.at.x === this.pos.x && x.at.y === this.pos.y);
         if (!c?.who) return this.walk();
         const group = encounterGroup(this.run!.region, this.floor, this.rng);
-        if (c.who === 'scarlet') this.startBattle(['scarlet-foe', ...group], false, true, undefined, 1, { survive: STORY_FIGHT_ROUNDS });   // her story fight: last it out
+        if (c.who === 'scarlet') this.startBattle(['scarlet-foe', ...group], false, true, undefined, 1, { survive: STORY_FIGHT_ROUNDS, names: { 'scarlet-foe': CHARACTERS.scarlet.name } });   // her story fight: last it out
         else this.startBattle([...group, group[0]], false, true, undefined, 1);
         this.rescueAt = { at: { ...this.pos }, who: c.who };
         return { kind: 'rescue', who: c.who };
@@ -761,6 +761,9 @@ export class Game {
     const r = this.apply(returnFragment(this.state, id));
     if (!r.ok) return r;
     this.pending.push(`town:${id}`);
+    // Queued and saved with the reward: a reload mid-scene plays it on arrival, and nothing can lose it for good.
+    const scene: SceneId = `town:${id}`;
+    if (!this.state.story.queue.includes(scene) && !this.state.story.seen.includes(scene)) this.state.story.queue.push(scene);
     if (!(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return r;
   }

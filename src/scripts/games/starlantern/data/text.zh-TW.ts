@@ -158,7 +158,7 @@ export const T = {
     crit: '（暴擊）',
   },
   ui2: {
-    battle: { survive: (left: number) => `撐過去！還有 ${left} 回合`, survived: '她收起了劍。' },
+    battle: { survive: (left: number) => `撐過去！還有 ${left} 回合` },
     memory: {
       piece: (name: string, n: number) => `找回了${name}的記憶（第 ${n} 片）。`,
       shard: (name: string) => `撿到了${name}。`,
@@ -355,7 +355,8 @@ export const T = {
       unknown: '？？？', fresh: '新', status: { unknown: '尚未找到', held: '持有中', returned: '已交還' },
       stages: { prologue: '序章', act1: '第一幕', act2: '第二幕', act3: '第三幕', act4: '第四幕', after: '終幕' },
       pieces: (found: number, total: number) => `${found}/${total}`,
-      codex: { rarity: { legendary: '傳說', unique: '獨特', set: '套裝' }, weak: (list: string) => `弱點：${list}`, weakUnknown: '弱點：？？？', setPieces: (have: number, total: number) => `${have}/${total} 件` },
+      codex: { none: '無', rarity: { legendary: '傳說', unique: '獨特', set: '套裝' }, weak: (list: string) => `弱點：${list}`, weakUnknown: '弱點：？？？', setPieces: (have: number, total: number) => `${have}/${total} 件` },
+      pieceHint: (regions: string, deep: boolean) => `${regions}・${deep ? '深處' : '淺層'}`,
       hint: '◀▶ 換分頁　確定：選取　取消：返回',
       hintReadonly: '◀▶ 換分頁　確定：重看　取消：回到迷宮',
       empty: '還沒有可以重看的場景。',
@@ -611,7 +612,7 @@ export const T = {
     },
     junkOnly: '雜物：只能賣錢',
   },
-  clear: { title: '第一幕　星燈重新亮起', body: '燈喰之獸倒下了。暮霧散去，露米亞迎來久違的晨光。', back: '繼續' },
+  clear: { back: '繼續' },   // the Act 1 card's title and body are story copy: STORY.act1Card
   /** The finale's closing card; its text is the finale scene's summary. */
-  ending: { title: '終幕　點燈', back: '繼續' },
+  ending: { back: '繼續' },   // its title is STORY.endingTitle
 };

@@ -94,6 +94,7 @@ export class TownScene implements Scene {
     this.menuWin.setAttribute('inert', '');
     this.backEl.setAttribute('inert', '');
     this.menuWin.classList.add('slx-cmd-hidden');
+    this.backEl.classList.add('slx-cmd-hidden');
     try {
       const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
       this.playing = p;
@@ -101,6 +102,7 @@ export class TownScene implements Scene {
     } finally {
       this.playing = null;
       this.menuWin.classList.remove('slx-cmd-hidden');
+      this.backEl.classList.remove('slx-cmd-hidden');
     }
   }
 

@@ -120,6 +120,8 @@ function isValid(d: Record<string, unknown>): boolean {
   if (!Array.isArray(d.codex) || !d.codex.every((id) => has(SPECIALS, id) || has(SETS, id))) return false;
   if (!['off', 'common', 'magic'].includes(d.autoJunk as string)) return false;
   if (!isStory(d.story)) return false;
+  // Rin's reveal is only ever queued once she holds all her pieces; the oath it sets needs them (see validMemory).
+  if ((d.story as { queue: unknown[] }).queue.includes('rin-reveal') && memoriesOf((p.roster as Record<string, Member>).rin) !== chainLength('rin')) return false;
   const g = d.dungeon;
   if (!isObj(g) || !isObj(g.reached)) return false;
   const reached = g.reached;
