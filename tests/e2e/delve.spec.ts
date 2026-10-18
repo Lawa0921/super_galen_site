@@ -1603,3 +1603,151 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     expect(b2.sheets).toBe(b1.sheets + 1);
   });
 });
+
+test.describe('delve 等級系統（經驗 / 升級 / 技能樹 / 主動技能）', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+  const tileOnScreen = (page: Page, x: number, y: number): Promise<{ sx: number; sy: number }> => page.evaluate(([x, y]) => {
+    const r = window.__delveDebug!.handle.renderer, c = (document.querySelector('#delve-canvas') as HTMLCanvasElement).getBoundingClientRect();
+    return { sx: c.left + ((x + 0.5) * 16 - r.drawCam.x) * r.zoom, sy: c.top + ((y + 0.5) * 16 - r.drawCam.y) * r.zoom };
+  }, [x, y]);
+  /** 清出平地、從 0 經驗開始 */
+  const flat = (page: Page): Promise<{ x: number; y: number }> => page.evaluate(() => {
+    const g = window.__delveDebug!.game, w = g.world, f = g.feetTile();
+    for (let x = f.x - 8; x <= f.x + 10; x++) { for (let y = f.y - 6; y <= f.y; y++) { w.setFg(x, y, 0); w.setLiquid(x, y, 0, 0); } w.setFg(x, f.y + 1, 3); }
+    g.drainEvents();
+    g.levels.load(null);
+    return { x: f.x, y: f.y };
+  });
+
+  test('拿劍打死怪物 → 經驗條與數字增加；升級 → 橫幅 + 提示；生命上限 +2', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=lv-kill&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    const f = await flat(page);
+    await expect(page.locator('#delve-xp-text')).toHaveText('1 級 · 0/200');
+    const t = await page.evaluate(({ x, y }) => {
+      const g = window.__delveDebug!.game;
+      g.give('iron_sword', 1);
+      const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === 'iron_sword');
+      g.inventory.swap(i, 4); g.selectSlot(4);
+      const e = g.spawnEnemy('gel_blob', x + 2, y);
+      return { x: x + 2, y, id: e.id };
+    }, f);
+    const p = await tileOnScreen(page, t.x, t.y);
+    await page.mouse.move(p.sx, p.sy);
+    await page.mouse.down();
+    await expect.poll(() => page.evaluate((id) => window.__delveDebug!.game.enemies.some((e: { id: number }) => e.id === id), t.id), { timeout: 8000 }).toBe(false);
+    await page.mouse.up();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.levels.xp), { timeout: 4000 }).toBeGreaterThan(0);
+    await expect(page.locator('#delve-xp-text')).not.toHaveText('1 級 · 0/200');
+    const hp0 = await page.evaluate(() => window.__delveDebug!.game.getState().maxHp);
+    // 升級（debug 加經驗到 2 級）
+    await page.evaluate(() => { const g = window.__delveDebug!.game; g.addXp(200 - g.levels.xp + 3); });
+    await expect(page.locator('#delve-lvup')).toBeVisible();
+    await expect(page.locator('#delve-lvup-title')).toHaveText('升級！等級 2');
+    await expect(page.locator('#delve-toast')).toContainText('升級！');
+    await expect(page.locator('#delve-skill-pts')).toHaveText('1');
+    expect(await page.evaluate(() => window.__delveDebug!.game.getState().maxHp)).toBe(hp0 + 2);
+    await expect(page.locator('#delve-lvup')).toBeHidden({ timeout: 5000 });
+    expect(errors).toEqual([]);
+  });
+
+  test('K 打開技能樹 → 方向鍵 + Enter 點技能 → 數值改變；存檔 → 重新整理 → 繼續：還在；重置技能樹', async ({ page }) => {
+    await page.goto('/games/delve?seed=lv-tree&autostart=1&fresh=1');
+    await waitGame(page);
+    await flat(page);
+    await page.evaluate(() => { const g = window.__delveDebug!.game; g.addXp(2160 - g.levels.xp); g.drainEvents(); });
+    const hp0 = await page.evaluate(() => window.__delveDebug!.game.getState().maxHp);
+    await page.keyboard.press('KeyK');
+    const panel = page.locator('#delve-skills');
+    await expect(panel).toBeVisible();
+    expect(await page.evaluate(() => window.__delveDebug!.handle.paused)).toBe(true);
+    await expect(page.locator('#delve-sk-points')).toContainText('可用技能點 6');
+    // 焦點在根節點「鍛體」：Enter 點一級
+    await expect(page.locator('.delve-sk-node[data-skill="b_vigor"]')).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.delve-sk-node[data-skill="b_vigor"]')).toHaveAttribute('data-rank', '1');
+    expect(await page.evaluate(() => window.__delveDebug!.game.getState().maxHp)).toBe(hp0 + 6);
+    // ↓ 走到「突進」（前置剛點好）→ Enter
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('.delve-sk-node[data-skill="b_dash"]')).toBeFocused();
+    await expect(page.locator('#delve-sk-detail')).toContainText('突進');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.delve-sk-node[data-skill="b_dash"]')).toHaveAttribute('data-state', 'learned');
+    // 沒點前置的：說明框寫原因
+    await page.locator('.delve-sk-node[data-skill="b_eye"]').hover();
+    await expect(page.locator('#delve-sk-tip-b_eye')).toBeVisible();
+    await expect(page.locator('#delve-sk-tip-b_eye')).toContainText('前置：銳鋒');
+    await page.keyboard.press('Escape');
+    await expect(panel).toBeHidden();
+    expect(await page.evaluate(() => window.__delveDebug!.handle.paused)).toBe(false);
+    // 主動技能：Q 突進
+    const x0 = await page.evaluate(() => { const g = window.__delveDebug!.game; g.facing = 1; return g.player.x; });
+    await page.keyboard.press('KeyQ');
+    await expect.poll(() => page.evaluate((x) => (window.__delveDebug!.game.player.x - x) / 16, x0), { timeout: 3000 }).toBeGreaterThan(3);
+    await expect(page.locator('#delve-act-dash')).toBeHidden(); // 桌面（非觸控）不顯示觸控鍵
+    // 存檔 → 重新整理 → 繼續
+    const before = await page.evaluate(async () => { const d = window.__delveDebug!; await d.save(); return d.game.levels.toJSON(); });
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await expect(page.locator('#delve-continue-sub')).toContainText('等級');
+    await page.click('#delve-continue');
+    await waitGame(page);
+    const after = await page.evaluate(() => { const g = window.__delveDebug!.game; return { lv: g.levels.toJSON(), maxHp: g.getState().maxHp }; });
+    expect(after.lv).toEqual(before);
+    expect(after.maxHp).toBe(hp0 + 6);
+    await expect(page.locator('#delve-xp-text')).toContainText('6 級');
+    // 重置技能樹：要碎晶，按兩下確認
+    await page.evaluate(() => window.__delveDebug!.game.give('gear_shard', 20));
+    await page.click('#delve-skill-btn');
+    await expect(page.locator('#delve-skills')).toBeVisible();
+    await expect(page.locator('#delve-sk-respec')).toContainText('碎晶 6');
+    await page.click('#delve-sk-respec');
+    await expect(page.locator('#delve-sk-respec')).toHaveText('確定重置？');
+    await page.click('#delve-sk-respec');
+    await expect(page.locator('#delve-sk-msg')).toContainText('退回 3 點');
+    const r = await page.evaluate(() => { const g = window.__delveDebug!.game; return { spent: g.levels.spent, shards: g.inventory.count('gear_shard'), maxHp: g.getState().maxHp }; });
+    expect(r).toEqual({ spent: 0, shards: 14, maxHp: hp0 });
+    await expect(page.locator('.delve-sk-node[data-skill="b_vigor"]')).toHaveAttribute('data-rank', '0');
+  });
+
+  test('日誌顯示等級；手機：技能鈕在生命區、技能樹分頁 + 大節點、沒有橫向捲動、觸控主動技能鍵', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+    await page.goto('/games/delve?seed=lv-phone&autostart=1&fresh=1');
+    await waitGame(page);
+    await flat(page);
+    await page.evaluate(() => { const g = window.__delveDebug!.game; g.addXp(2200); for (const id of ['b_vigor', 'b_dash'] as const) g.learnSkill(id); g.drainEvents(); });
+    await expect(page.locator('#delve-act-dash')).toBeVisible();
+    await expect(page.locator('#delve-act-slam')).toBeHidden();
+    await page.locator('#delve-skill-btn').tap();
+    const panel = page.locator('#delve-skills');
+    await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute('data-compact', '1');
+    await expect(page.locator('.delve-sk-branch[data-branch="path"]')).toBeHidden();
+    await page.locator('.delve-sk-tab[data-tab="path"]').tap();
+    await expect(page.locator('.delve-sk-branch[data-branch="path"]')).toBeVisible();
+    const node = page.locator('.delve-sk-node[data-skill="p_stride"]');
+    const box = await node.boundingBox();
+    expect(box!.width).toBeGreaterThanOrEqual(40);
+    // 點一下選取（詳情）、再點一下點一級
+    await node.tap();
+    await expect(page.locator('#delve-sk-detail')).toContainText('輕足');
+    expect(await page.evaluate(() => window.__delveDebug!.game.levels.rank('p_stride'))).toBe(0);
+    await node.tap();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.levels.rank('p_stride'))).toBe(1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.locator('#delve-skills-close').tap();
+    await expect(panel).toBeHidden();
+    // 日誌：等級行
+    await page.evaluate(() => window.__delveDebug!.handle.ui.setJournal(true));
+    await expect(page.locator('[data-testid="journal-level"]')).toContainText('等級 6');
+    await ctx.close();
+  });
+});
