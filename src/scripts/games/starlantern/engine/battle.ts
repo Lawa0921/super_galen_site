@@ -106,6 +106,10 @@ export function createBattle(o: {
   extra?: number;
   /** A survive fight: it is won after this many rounds, and nobody in it (the party and any undying foe) falls. */
   survive?: number;
+  /** Another name for an enemy, by its id, in this fight only (the finale's boss). */
+  names?: Record<string, string>;
+  /** A multiplier on every enemy's hp, atk and mag, applied after the party-size scale; default 1. */
+  bossPower?: number;
 }): BattleState {
   const party: Combatant[] = [];
   o.party.grid.forEach((id, cell) => { if (id) party.push(fromMember(o.party.roster[id], cell)); });
@@ -135,7 +139,9 @@ export function createBattle(o: {
     // An enemy is met at the fight's depth level, or at its own home level when the fight has no scale.
     const level = sc ? depthLevel(sc.depth) : homeLevel(met);
     const empowered = empower(met, level);
-    const d = k === 1 ? empowered : { ...empowered, stats: mul(empowered.stats, { hp: k, atk: k, mag: k }) };
+    const power = k * (o.bossPower ?? 1);
+    const scaled = power === 1 ? empowered : { ...empowered, stats: mul(empowered.stats, { hp: power, atk: power, mag: power }) };
+    const d = o.names?.[id] ? { ...scaled, name: o.names[id] } : scaled;
     defs[`e${i}`] = d;
     const name = counts[id] > 1 ? `${d.name} ${String.fromCharCode(64 + n)}` : d.name;
     return fromEnemy(d, `e${i}`, name, elite ? 'elite' : region ? regionTint(region) : undefined, level);

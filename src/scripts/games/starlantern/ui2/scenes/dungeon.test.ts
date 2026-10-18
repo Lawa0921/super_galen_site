@@ -18,14 +18,19 @@ import { T } from '../../data/text.zh-TW';
 import { CHARACTERS } from '../../data/characters';
 import { memoriesOf } from '../../engine/progression';
 import type { CharacterId } from '../../engine/types';
+import type { SceneCtx } from '../scene';
+import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
+import { art } from '../../render/artPaths';
+import type { ArtIndex } from '../../render/textures';
 
-function setup(portal: Portal = { region: 'mainline', condition: 'plain' }, fast = true) {
+function setup(portal: Portal = { region: 'mainline', condition: 'plain' }, fast = true, extra: Partial<SceneCtx> = {}, prep?: (game: Game) => void) {
   const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);   // 0.99: never an early encounter roll
   expect(game.depart(portal, 1)).toEqual({ ok: true });
+  prep?.(game);
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), stairs: vi.fn(), chest: vi.fn(), encounter: vi.fn(), loot: vi.fn() };
   const go = vi.fn();
   const root = document.createElement('div');
-  const s = new DungeonScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast }, Infinity);
+  const s = new DungeonScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast, ...extra }, Infinity);
   s.enter(root);
   const text = () => root.querySelector('.slx-talk .slx-text')?.textContent ?? '';
   const pick = (label: string) => {
@@ -592,5 +597,163 @@ describe('DungeonScene loot', () => {
     s.onAction('menu');
     pick('歸還之燈');
     expect(root.querySelector('.slx-confirm')!.textContent).not.toContain('背包剩');
+  });
+});
+
+const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
+const withStory = (story: StoryMode): Partial<SceneCtx> => ({ settings: { get: () => ({ ...DEFAULT_SETTINGS, story }) } });
+
+describe('DungeonScene memories', () => {
+  const glimmerNext = (game: Game, owner: CharacterId) => {
+    const m = game.map();
+    for (const dir of ['right', 'left', 'down', 'up'] as const) {
+      const at = { x: game.pos.x + DELTA[dir].x, y: game.pos.y + DELTA[dir].y };
+      if (m.tiles[at.y][at.x] !== 'floor') continue;
+      m.tiles[at.y][at.x] = 'glimmer';
+      floorOf(game.run!, game.floor).contents.push({ kind: 'glimmer', at, room: 0, owner });
+      return dir;
+    }
+    throw new Error('no open cell beside the party');
+  };
+  /** Confirms until the talk box is gone (a scene plays through). */
+  const through = async (s: DungeonScene, root: HTMLElement) => {
+    for (let i = 0; i < 40 && !root.querySelector('.slx-talk')!.hasAttribute('hidden'); i++) { s.onAction('confirm'); await flush(); }
+  };
+
+  it('the first memory of a floor plays as a memory scene', async () => {
+    const { game, s, root, text } = setup();
+    s.onAction(glimmerNext(game, 'selene'));
+    await flush();
+    expect(text()).toBe(T.ui2.memory.piece(CHARACTERS.selene.name, 1));
+    expect(root.querySelector('.slx-talk--memory')).toBeNull();
+    s.onAction('confirm');
+    await flush();
+    expect(root.querySelector('.slx-talk--memory')).not.toBeNull();
+    expect(root.querySelector('.slx-pad')!.classList.contains('slx-cmd-hidden')).toBe(true);   // the pad steps aside for the scene
+    expect(game.pending).toEqual(['mem:selene:1']);
+    await through(s, root);
+    expect(root.querySelector('.slx-talk--memory')).toBeNull();
+    expect(root.querySelector('.slx-pad')!.classList.contains('slx-cmd-hidden')).toBe(false);
+    expect(game.pending).toEqual([]);
+    expect(game.state.story.seen).toContain('mem:selene:1');
+    expect(game.state.story.fresh).not.toContain('mem:selene:1');   // it was played, so it is not new
+  });
+
+  it('story none records it without a line', async () => {
+    const { game, s, root } = setup(undefined, true, withStory('none'));
+    s.onAction(glimmerNext(game, 'selene'));
+    await flush();
+    s.onAction('confirm');   // the found line
+    await flush();
+    expect(root.querySelector('.slx-talk--memory')).toBeNull();
+    expect(game.pending).toEqual([]);
+    expect(game.state.story.seen).toContain('mem:selene:1');
+    expect(game.state.story.fresh).toContain('mem:selene:1');   // never shown, so the handbook marks it new
+  });
+
+  it('a wipe afterwards loses no seen mark', async () => {
+    const { game, s, root } = setup();
+    s.onAction(glimmerNext(game, 'selene'));
+    await flush();
+    await through(s, root);
+    game.pos = { ...game.map().entrance };
+    game.encounter = 99;
+    game.move('right');
+    expect(game.phase).toBe('battle');
+    for (const m of game.battle!.party) { m.hp = 0; m.alive = false; }
+    game.submitRound({});
+    expect(game.phase).toBe('town');
+    expect(game.state.story.seen).toContain('mem:selene:1');
+    expect(memoriesOf(game.state.party.roster.selene)).toBe(1);
+  });
+
+  it('the return lamp plays a memory still waiting before it leaves', async () => {
+    const { game, go, s, pick, root } = setup(undefined, true, {}, (g) => { g.pending.push('mem:rin:1'); });
+    await flush();   // entering the floor plays it first
+    await through(s, root);
+    expect(game.state.story.seen).toContain('mem:rin:1');
+    game.pending.push('mem:rin:2');   // and one that turned up after
+    const lamps = game.state.inventory['return-lamp'] ?? 0;
+    s.onAction('menu');
+    pick('歸還之燈');
+    pick('是');
+    expect(go).not.toHaveBeenCalled();   // the scene comes first
+    expect(game.state.inventory['return-lamp'] ?? 0).toBe(lamps);
+    await flush();
+    await through(s, root);
+    expect(go).toHaveBeenCalledWith('town');
+    expect(game.state.story.seen).toContain('mem:rin:2');
+    expect(game.state.inventory['return-lamp'] ?? 0).toBe(lamps - 1);
+  });
+
+  it('walking out at the entrance plays a waiting memory first', async () => {
+    const { game, go, s, root } = setup(undefined, true, {}, (g) => { g.pending.push('mem:rin:1'); });
+    await flush();
+    await through(s, root);
+    game.pending.push('mem:rin:2');
+    s.onAction('right'); s.onAction('left');
+    s.onAction('up');
+    s.onAction('confirm');
+    expect(go).not.toHaveBeenCalled();
+    await flush();
+    await through(s, root);
+    expect(go).toHaveBeenCalledWith('town');
+    expect(game.state.story.seen).toEqual(expect.arrayContaining(['mem:rin:1', 'mem:rin:2']));
+  });
+
+  it('a scene that throws does not lock the labyrinth', async () => {
+    const { game, s, root } = setup();
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(game, 'sceneDone').mockImplementation(() => { throw new Error('boom'); });
+    s.onAction(glimmerNext(game, 'selene'));
+    await flush();
+    await through(s, root);   // the found line, then the memory, which fails on recording
+    expect(err).toHaveBeenCalled();
+    expect(root.querySelector('.slx-pad')!.classList.contains('slx-cmd-hidden')).toBe(false);
+    expect(root.querySelector('.slx-pad')!.hasAttribute('inert')).toBe(false);
+    err.mockRestore();
+  });
+});
+
+describe('DungeonScene rescue meetings', () => {
+  const PORTRAIT = art.portrait('selene', 'normal');
+  const ART: ArtIndex = { has: (u) => u === PORTRAIT };
+  const meetNext = (game: Game) => {
+    const m = game.map();
+    for (const dir of ['right', 'left', 'down', 'up'] as const) {
+      const at = { x: game.pos.x + DELTA[dir].x, y: game.pos.y + DELTA[dir].y };
+      if (m.tiles[at.y][at.x] !== 'floor') continue;
+      m.tiles[at.y][at.x] = 'rescue';
+      floorOf(game.run!, game.floor).contents.push({ kind: 'rescue', at, room: 0, who: 'selene' });
+      return dir;
+    }
+    throw new Error('no open cell beside the party');
+  };
+
+  it('she speaks her own meeting lines with her portrait, then the fight starts', async () => {
+    const { game, go, s, root, text } = setup(undefined, true, { art: ART });
+    game.state.party.recruited = game.state.party.recruited.filter((id) => id !== 'selene');
+    s.onAction(meetNext(game));
+    await flush();
+    const lines = T.meet.selene.before;
+    for (let i = 0; i < lines.length; i++) {
+      expect(text()).toBe(lines[i]);
+      expect(root.querySelector('.slx-talk .slx-name')!.textContent).toBe(CHARACTERS.selene.name);
+      const face = root.querySelector('.slx-talk .slx-talk-face') as HTMLImageElement;
+      expect(face.getAttribute('src')).toBe(PORTRAIT);
+      expect(go).not.toHaveBeenCalled();
+      s.onAction('confirm');
+      await flush();
+    }
+    expect(go).toHaveBeenCalledWith('battle');
+  });
+
+  it('without published art she still speaks, by name', async () => {
+    const { game, s, root } = setup();
+    game.state.party.recruited = game.state.party.recruited.filter((id) => id !== 'selene');
+    s.onAction(meetNext(game));
+    await flush();
+    expect(root.querySelector('.slx-talk .slx-name')!.textContent).toBe(CHARACTERS.selene.name);
+    expect(root.querySelector('.slx-talk .slx-talk-face')).toBeNull();
   });
 });

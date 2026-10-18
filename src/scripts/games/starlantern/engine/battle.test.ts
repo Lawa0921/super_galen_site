@@ -870,3 +870,45 @@ describe('survive fights', () => {
     expect(Object.keys(r.drops)).toEqual(ENEMIES.slime.drops.map((d) => d.mat));
   });
 });
+
+describe('names and boss power', () => {
+  const fight = (o: { names?: Record<string, string>; bossPower?: number } = {}) =>
+    createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['lanterneater'], boss: true, inventory: {}, revealed: {}, depth: 30, ...o });
+  it('names and boss power change only that fight', () => {
+    const plain = fight();
+    const mother = fight({ names: { lanterneater: '燈喰之母' }, bossPower: 1.5 });
+    const [a, b] = [plain.enemies[0], mother.enemies[0]];
+    expect(b.name).toBe('燈喰之母');
+    expect(a.name).toBe(ENEMIES.lanterneater.name);
+    for (const k of ['hp', 'atk', 'mag'] as const) expect(b.max[k]).toBe(Math.round(a.max[k] * 1.5));
+    for (const k of ['tp', 'def', 'res', 'spd'] as const) expect(b.max[k]).toBe(a.max[k]);
+    expect(b.hp).toBe(b.max.hp);
+    // The next fight, with no options, is the plain one again.
+    const again = fight().enemies[0];
+    expect([again.name, again.max]).toEqual([a.name, a.max]);
+  });
+  it('a power of one and no names are the plain fight', () => {
+    expect(fight({ bossPower: 1 }).enemies[0]).toEqual(fight().enemies[0]);
+  });
+});
+
+describe('names and boss power', () => {
+  const fight = (o: { names?: Record<string, string>; bossPower?: number } = {}) =>
+    createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['lanterneater'], boss: true, inventory: {}, revealed: {}, depth: 30, ...o });
+  it('names and boss power change only that fight', () => {
+    const plain = fight();
+    const mother = fight({ names: { lanterneater: '燈喰之母' }, bossPower: 1.5 });
+    const [a, b] = [plain.enemies[0], mother.enemies[0]];
+    expect(b.name).toBe('燈喰之母');
+    expect(a.name).toBe(ENEMIES.lanterneater.name);
+    for (const k of ['hp', 'atk', 'mag'] as const) expect(b.max[k]).toBe(Math.round(a.max[k] * 1.5));
+    for (const k of ['tp', 'def', 'res', 'spd'] as const) expect(b.max[k]).toBe(a.max[k]);
+    expect(b.hp).toBe(b.max.hp);
+    // The next fight, with no options, is the plain one again.
+    const again = fight().enemies[0];
+    expect([again.name, again.max]).toEqual([a.name, a.max]);
+  });
+  it('a power of one and no names are the plain fight', () => {
+    expect(fight({ bossPower: 1 }).enemies[0]).toEqual(fight().enemies[0]);
+  });
+});

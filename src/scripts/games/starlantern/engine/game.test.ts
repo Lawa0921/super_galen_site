@@ -28,6 +28,7 @@ import { buy } from './town';
 import { memoriesOf } from './progression';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
+import { FINALE_BOSS, FINALE_DEPTH } from '../data/story/scenes';
 import { ACT_DEPTHS } from '../data/story/scenes';
 import { chainLength } from '../data/story/chains';
 
@@ -2499,9 +2500,13 @@ describe('the arrival queue', () => {
     const before = JSON.stringify(g.state);
     expect(g.sceneDone('act3', 'played')).toBe(false);   // queued, but not on this arrival
     expect(g.sceneDone('mem:hero:1', 'played')).toBe(false);
-    expect(g.sceneDone('finale', 'played')).toBe(false);
+    expect(g.sceneDone('finale', 'played')).toBe(false);   // there is no finale yet
     expect(JSON.stringify(g.state)).toBe(before);
     expect(g.arrival).toEqual(['act2']);
+    g.finale = { pieces: ['mem:hero:9'] };   // once the finale is due, it and its own memories are, and nothing else
+    expect(g.sceneDone('mem:hero:10', 'played')).toBe(false);
+    expect(g.sceneDone('mem:hero:9', 'played')).toBe(true);
+    expect(g.sceneDone('finale', 'played')).toBe(true);
   });
 
   it('a scene on the arrival is recorded, taken off it and saved at once', () => {
@@ -2582,5 +2587,119 @@ describe('the state after Act 1', () => {
     s.story.queue = ['act1-after'];
     expect(saveGame(storage, s)).toBe(true);
     expect(loadGame(storage)).toEqual({ status: 'ok', state: s });
+  });
+});
+
+describe('the finale', () => {
+  const duo: CharacterId[] = ['hero', 'rin'];
+  const run = (depth: number, tweak: (g: Game) => void = () => {}) => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, duo);
+    g.state.dungeon.reached.mainline = Math.max(3, depth);
+    tweak(g);
+    expect(g.depart(MAIN, depth)).toEqual({ ok: true });
+    return g;
+  };
+  const heroMemories = (g: Game) => g.state.story.queue.filter((id) => id.startsWith('mem:hero:'));
+  const heroPieces = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => `mem:hero:${from + i}`);
+
+  it("the depth-30 boss is the lantern's mother until the finale", () => {
+    const g = run(FINALE_DEPTH);
+    stepOnto(g, g.map().boss!);
+    expect(g.phase).toBe('battle');
+    expect(g.battle!.boss).toBe(true);
+    expect(g.battle!.enemies.map((e) => [e.defId, e.name])).toEqual([[FINALE_BOSS.base, FINALE_BOSS.name]]);
+  });
+
+  it('only the main road names her: a depth-30 boss elsewhere is the ordinary beast', () => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, duo);
+    g.state.dungeon.reached.blaze = FINALE_DEPTH;
+    expect(g.depart({ region: 'blaze', condition: 'plain' }, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(g, g.map().boss!);
+    expect(g.battle!.enemies[0].name).toContain(ENEMIES[FINALE_BOSS.base].name);   // the grown beast, not her
+    expect(g.battle!.enemies[0].name).not.toBe(FINALE_BOSS.name);
+  });
+
+  it('beating her clears the finale and brings the hero to ten', () => {
+    const g = run(FINALE_DEPTH, (x) => { x.state.party.roster.hero.memories = 2; });
+    stepOnto(g, g.map().boss!);
+    const end = killAll(g);
+    expect(memoriesOf(g.state.party.roster.hero)).toBe(10);
+    expect(g.finale).toEqual({ pieces: heroPieces(3, 10) });
+    expect(end.fragments!.filter((f) => f.kind === 'piece').every((f) => f.kind === 'piece' && !f.play)).toBe(true);
+    expect([g.phase, g.cleared, g.state.story.finaleCleared]).toEqual(['clear', 'finale', true]);
+    // The finale plays them, so nothing is marked seen, new or waiting for the town or the screen.
+    expect(g.state.story.seen.some((id) => id.startsWith('mem:hero:'))).toBe(false);
+    expect(g.state.story.fresh.some((id) => id.startsWith('mem:hero:'))).toBe(false);
+    expect(heroMemories(g)).toEqual([]);
+    expect(g.pending).toEqual([]);
+  });
+
+  it('the finale needs no memories and no full party', () => {
+    const g = run(FINALE_DEPTH);   // the hero and Rin only, nobody holds a piece
+    expect(g.state.party.recruited).toEqual(duo);
+    expect(memoriesOf(g.state.party.roster.hero)).toBe(0);
+    expect(memoriesOf(g.state.party.roster.rin)).toBe(0);
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect([g.phase, g.cleared]).toEqual(['clear', 'finale']);
+    expect(g.finale).toEqual({ pieces: heroPieces(1, 10) });
+    expect(memoriesOf(g.state.party.roster.hero)).toBe(10);
+  });
+
+  it('the finale save still loads: the first act counts as cleared with it', () => {
+    const g = run(FINALE_DEPTH);
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.state.story.act1Cleared).toBe(true);
+    g.restartAfterClear();
+    const saved = memoryStorage();
+    expect(saveGame(saved, g.state)).toBe(true);
+    expect(loadGame(saved).status).toBe('ok');
+  });
+
+  it('after the finale the depth-30 boss is an ordinary boss', () => {
+    const g = run(FINALE_DEPTH, (x) => { x.state.story.finaleCleared = true; x.state.story.act1Cleared = true; });
+    stepOnto(g, g.map().boss!);
+    expect(g.battle!.enemies[0].name).toContain(ENEMIES[FINALE_BOSS.base].name);   // the grown beast, not her
+    expect(g.battle!.enemies[0].name).not.toBe(FINALE_BOSS.name);
+    killAll(g);
+    expect([g.phase, g.cleared, g.finale]).toEqual(['map', null, null]);
+  });
+
+  it('memories still queued from depth 25 play before the finale', () => {
+    const g = run(25, (x) => { x.state.party.roster.hero.memories = 5; });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(heroMemories(g)).toEqual(heroPieces(6, 9));   // owed at depth 25, waiting for the next return to town
+    for (let f = 25; f < FINALE_DEPTH; f++) expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: f + 1 });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale).toEqual({ pieces: heroPieces(6, 10) });
+    expect(heroMemories(g)).toEqual([]);
+    expect([g.phase, g.cleared]).toEqual(['clear', 'finale']);
+  });
+
+  it('a queued piece of someone else stays queued', () => {
+    const g = run(FINALE_DEPTH, (x) => { x.state.story.queue.push('mem:rin:1'); });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.state.story.queue).toContain('mem:rin:1');
+    expect(g.finale!.pieces.every((id) => id.startsWith('mem:hero:'))).toBe(true);
+  });
+
+  it('the finale and its memories are due only while the finale is', () => {
+    const g = run(FINALE_DEPTH, (x) => { x.state.party.roster.hero.memories = 8; });
+    expect(g.sceneDone('finale', 'played')).toBe(false);
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.sceneDone('mem:hero:9', 'played')).toBe(true);
+    expect(g.sceneDone('mem:hero:10', 'auto')).toBe(true);
+    expect(g.sceneDone('finale', 'played')).toBe(true);
+    expect(g.sceneDone('mem:hero:8', 'played')).toBe(false);   // not one of hers
+    expect(g.state.story.seen).toEqual(expect.arrayContaining(['mem:hero:9', 'mem:hero:10', 'finale']));
+    expect(g.state.story.fresh).toEqual(['mem:hero:10']);   // only the auto one reads as new
+    g.restartAfterClear();
+    expect([g.phase, g.finale, g.cleared]).toEqual(['town', null, null]);
+    expect(g.sceneDone('finale', 'played')).toBe(false);
   });
 });

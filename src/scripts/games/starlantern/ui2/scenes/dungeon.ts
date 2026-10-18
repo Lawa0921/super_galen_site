@@ -6,7 +6,9 @@ import { ITEMS } from '../../data/items';
 import type { Meetable } from '../../data/meetings';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import { T } from '../../data/text.zh-TW';
+import { memScene, sceneKind, type SceneId } from '../../data/story/scenes';
 import { floorOf } from '../../engine/dungeon/run';
+import type { FragmentGain } from '../../engine/story/memories';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { step, type Dir } from '../../engine/map';
 import { rowOfCell } from '../../engine/formation';
@@ -22,6 +24,7 @@ import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich } from '../widgets';
 import { fragmentLines, levelUpLines } from '../battleText';
+import { playAndRecord, speakerOf, storyCtx } from '../story';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import { eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
 
@@ -47,6 +50,8 @@ export class DungeonScene implements Scene {
   private layers: Layer[] = [];
   private talk: Dialogue;
   private leaving = false;
+  /** The memory scene on screen, if any: it takes the actions while it plays. */
+  private playing: ReturnType<typeof playAndRecord> | null = null;
   /** Set on exit, so a line waiting on an earlier one (the depth-clear reward) never speaks on a scene that has gone. */
   private exited = false;
   /** Counts the lines said, so a follow-up line can tell that a newer one took its turn. */
@@ -78,6 +83,7 @@ export class DungeonScene implements Scene {
     this.ctx.stage?.show('map');
     this.refresh();
     if (this.ctx.from === 'gate') this.conditionBanner();
+    void this.flushPending();   // a memory still waiting from before (the settings screen, a battle) plays now
   }
 
   exit(): void {
@@ -91,6 +97,7 @@ export class DungeonScene implements Scene {
 
   onAction(a: UiAction): void {
     if (this.leaving) return;
+    if (this.playing) { this.playing.onAction(a); return; }
     // Confirm or cancel ends a legendary drop's moment first (fast mode never waits on it); directions always step.
     if (!this.ctx.fast && skipPillar(this.body, a)) return;
     if (this.talk.busy()) { this.talk.onAction(a); return; }
@@ -160,9 +167,9 @@ export class DungeonScene implements Scene {
     return [badge, tip];
   }
 
-  private say(text: string | Rich): Promise<void> {
+  private say(text: string | Rich, name = '', face?: { src: string; side: 'left' | 'right' }): Promise<void> {
     this.said++;
-    const shown = this.talk.say('', text);
+    const shown = this.talk.say(name, text, face);
     this.syncInert();
     return shown;
   }
@@ -241,7 +248,7 @@ export class DungeonScene implements Scene {
         this.say(r.effect === 'hurt' ? T.ui2.event.trap.hurt(r.amount) : T.ui2.event.trap.poison(r.amount, r.tp));
         return;
       case 'key': s.chest?.(); this.refresh(); this.say(T.ui2.event.key); return;
-      case 'glimmer': s.chest?.(); this.refresh(); void this.found(fragmentLines(r.gained)); return;
+      case 'glimmer': s.chest?.(); this.refresh(); void this.found(r.gained); return;
       case 'full': this.refresh(); showPickUp(this.host(), r); return;
       case 'rescue': { void this.meeting(r.who); return; }
       case 'battle': case 'boss': this.fightOn(r.kind === 'boss'); return;
@@ -249,18 +256,62 @@ export class DungeonScene implements Scene {
     this.refresh();
   }
 
-  /** What a glimmer held, one line at a time (the memory scene itself comes in Task 17). A glimmer always holds a piece or a shard. */
-  private async found(lines: string[]): Promise<void> {
-    for (const line of lines) {
+  /** What a glimmer held, one line at a time, then the memory scene of a piece that plays now. A glimmer always holds a piece or a shard. */
+  private async found(gained: FragmentGain[]): Promise<void> {
+    for (const line of fragmentLines(gained)) {
       await this.say(line);
+      if (this.exited) return;
+    }
+    for (const g of gained) {
+      if (g.kind !== 'piece' || !g.play) continue;
+      await this.memory(memScene(g.id, g.n));
       if (this.exited) return;
     }
   }
 
-  /** A rescue room: the meeting lines one at a time, then the fight as for any encounter. */
+  /**
+   * Plays one memory scene and records it, with the pad out of the way (the portrait stands over it). A scene that fails
+   * is reported in the console and the labyrinth carries on: it must never lock the screen.
+   */
+  private async memory(id: SceneId): Promise<void> {
+    this.pad.classList.add('slx-cmd-hidden');
+    try {
+      const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
+      this.playing = p;
+      await p.done;
+    } catch (e) {
+      console.error('starlantern: memory scene failed', e);
+    } finally {
+      this.playing = null;
+      this.pad.classList.remove('slx-cmd-hidden');
+      this.syncInert();
+    }
+  }
+
+  /** Memory scenes the game still holds as due: leaving the floor drops them, so they play before the party goes. */
+  private waitingMemories(): SceneId[] {
+    return this.ctx.game.pending.filter((id) => sceneKind(id) === 'memory');
+  }
+
+  private async flushPending(): Promise<void> {
+    for (const id of this.waitingMemories()) {
+      await this.memory(id);
+      if (this.exited) return;
+    }
+  }
+
+  /** Runs `go` now, or once the memories still waiting have played. */
+  private beforeLeaving(go: () => void): void {
+    if (this.waitingMemories().length === 0) { go(); return; }
+    void this.flushPending().then(() => { if (!this.exited) go(); });
+  }
+
+  /** A rescue room: she speaks her meeting lines one at a time with her portrait, then the fight as for any encounter. */
   private async meeting(who: Meetable): Promise<void> {
+    const sp = speakerOf(who, this.ctx.game.state, this.ctx.art);
+    const face = sp.face ? { src: sp.face, side: 'left' as const } : undefined;
     for (const line of T.meet[who].before) {
-      await this.say(line);
+      await this.say(line, sp.name, face);
       if (this.exited) return;   // the scene went while a line was waiting: no fight from a scene that is gone
     }
     this.fightOn(false);
@@ -342,7 +393,8 @@ export class DungeonScene implements Scene {
   private askTown(): void {
     const box = confirmBox(this.bagWarning(T.ui2.dungeon.askTown), (yes) => {
       this.pop();
-      if (yes && this.ctx.game.returnToTown()) { this.leaving = true; this.ctx.go('town'); }
+      if (!yes) return;
+      this.beforeLeaving(() => { if (this.ctx.game.returnToTown()) { this.leaving = true; this.ctx.go('town'); } });
     });
     box.view.menu.setCursor(1);
     box.view.render();
@@ -375,11 +427,14 @@ export class DungeonScene implements Scene {
     const g = this.ctx.game;
     const box = confirmBox(this.bagWarning(T.ui2.dungeon.askLamp), (yes) => {
       this.pop();
-      if (!yes || !g.useReturnLamp()) return;
-      g.notice = 'lamp';
-      this.popAll();
-      this.leaving = true;
-      this.ctx.go('town');
+      if (!yes) return;
+      this.beforeLeaving(() => {
+        if (!g.useReturnLamp()) return;
+        g.notice = 'lamp';
+        this.popAll();
+        this.leaving = true;
+        this.ctx.go('town');
+      });
     });
     box.view.menu.setCursor(1);
     box.view.render();

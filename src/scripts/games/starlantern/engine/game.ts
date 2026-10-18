@@ -7,7 +7,7 @@ import { STORY_FIGHT_ROUNDS, createBattle, planEnemies, resolveRound, rewards, w
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
-import { memScene, type SceneId } from '../data/story/scenes';
+import { FINALE_BOSS, FINALE_DEPTH, memScene, type SceneId } from '../data/story/scenes';
 import { PERKS, SHARD_IDS, isFragmentItem, shardGrade, type ShardGrade, type TownFragmentId } from '../data/story/fragments';
 import { absorb, fragmentItem, gainOf, hasPerk, lootFragments, returnFragment, sellShards, type AbsorbResult } from './story/fragments';
 import { advance, danger, type Danger } from './encounter';
@@ -115,6 +115,8 @@ export class Game {
   private rerolled = false;
   /** Which ending the clear screen is for; set on entering `clear`, dropped by restartAfterClear. */
   cleared: 'act1' | 'finale' | null = null;
+  /** The finale's own scenes, once it is won: the hero's memories it filled in, in piece order (not saved). `finale` follows them. */
+  finale: { pieces: SceneId[] } | null = null;
   /** What the last safe return brought home; the town screen shows it, then clears it. `overflow` is gear the full bag could not take. */
   banked: { items: Record<string, number>; gold: number; viaLamp: boolean; gear: ItemInstance[]; overflow: ItemInstance[] } | null = null;
 
@@ -173,6 +175,7 @@ export class Game {
     if (!activeIds(this.state.party).some((id) => this.state.party.roster[id].hp > 0)) return { ok: false, reason: 'party-down' };
     this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth, rescuesFor(portal.region, this.state.party.recruited));
     this.pending = [];
+    this.finale = null;
     if (this.state.story.fed) {   // Marta's meal counts against the altar cap like any altar buff, and is eaten
       this.run.altarBuffs.push({ ...PERKS.meal });
       this.state.story.fed = false;
@@ -199,7 +202,8 @@ export class Game {
       case 'entrance': return { kind: 'entrance' };
       case 'boss':
         // The mainline story boss stays as written; every other boss is the 燈喰之獸 grown by depth and region.
-        this.startBattle(['lanterneater'], true, !this.isStoryDepth(this.floor));
+        if (this.isFinaleFight()) this.startBattle([FINALE_BOSS.base], true, true, undefined, 0, { names: { [FINALE_BOSS.base]: FINALE_BOSS.name }, bossPower: FINALE_BOSS.power });
+        else this.startBattle(['lanterneater'], true, !this.isStoryDepth(this.floor));
         return { kind: 'boss' };
       case 'chest': return this.openChest() ?? { kind: 'moved' };
       case 'fountain': return this.run!.usedFountain ? this.walk() : this.eventHere();
@@ -265,7 +269,7 @@ export class Game {
   }
 
   /** Gives each chain in `ids` its next piece, in order, and works out which memory scenes play now, wait in the handbook, or queue. */
-  private takePieces(ids: CharacterId[], topUp = false): FragmentGain[] {
+  private takePieces(ids: CharacterId[], topUp = false, finale = false): FragmentGain[] {
     if (ids.length === 0) return [];
     const run = this.run!;
     const story = this.state.story;
@@ -275,8 +279,10 @@ export class Game {
     for (const id of ids) story.pity[id] = 0;   // a piece resets its chain's count now, so leaving the floor any way keeps it
     return applied.gained.map(({ id, n }) => {
       const scene = memScene(id, n);
+      if (finale && id === 'hero') return { kind: 'piece' as const, id, n, play: false };   // the finale plays these itself: neither queued nor seen
       let play = false;
-      if (topUp) story.queue.push(scene);
+      // A top-up (and anyone else's piece in the finale fight) waits in the queue for the next return to town.
+      if (topUp || finale) story.queue.push(scene);
       else if (!run.played.includes(this.floor)) { play = true; run.played.push(this.floor); this.pending.push(scene); }
       else {
         if (!story.seen.includes(scene)) story.seen.push(scene);
@@ -599,13 +605,15 @@ export class Game {
     }
     // Memory pieces come after exp and the meeting, and before the phase can switch to clear (the story boss pays too).
     let fragments: FragmentGain[] = [];
+    const finale = b.boss && this.isFinaleFight();
     if (b.boss || elite) {
       const run = this.run!;
       const source = b.boss ? 'boss' : 'elite';
       const rng = memoryRng(run);
       const ids = pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source }, rng);
       const topUp = b.boss && run.region === 'mainline' && this.floor === 25 && ids.every((id) => id === 'hero');
-      fragments = this.takePieces(ids, topUp);
+      fragments = this.takePieces(ids, topUp, finale);
+      if (finale) this.finale = { pieces: this.finalePieces(fragments) };
       // Ownerless and townsfolk fragments ride in the run pack like materials; one that does not fit is left behind.
       for (const gain of lootFragments(this.state, run, { region: run.region, depth: this.floor, source }, rng)) {
         const item = fragmentItem(gain)!;
@@ -615,7 +623,14 @@ export class Game {
       }
     }
     if (b.boss) openStairs(this.map());   // a beaten boss leaves stairs down where it stood, so the run can go deeper
-    if (b.boss && this.isStoryDepth(this.floor)) {
+    if (finale) {
+      // The act-one flag rides along, so a game that skipped straight to the end still writes a save that loads.
+      this.state.story.finaleCleared = true;
+      this.state.story.act1Cleared = true;
+      this.cleared = 'finale';
+      this.phase = 'clear';
+    }
+    else if (b.boss && this.isStoryDepth(this.floor)) {
       const story = this.state.story;
       story.act1Cleared = true;
       if (!story.queue.includes('act1-after') && !story.seen.includes('act1-after')) story.queue.push('act1-after');
@@ -818,6 +833,7 @@ export class Game {
   restartAfterClear(): void {
     if (this.phase !== 'clear') return;
     this.cleared = null;
+    this.finale = null;
     this.toTown();   // the clear banks the run pack like any safe return
   }
 
@@ -826,7 +842,7 @@ export class Game {
    * finale, one of its own scenes. It leaves that list and the story queue; town saves at once.
    */
   sceneDone(id: SceneId, how: 'played' | 'skipped' | 'auto'): boolean {
-    const due = this.arrival.includes(id) || this.pending.includes(id);
+    const due = this.arrival.includes(id) || this.pending.includes(id) || (this.finale !== null && (id === 'finale' || this.finale.pieces.includes(id)));
     if (!due) return false;
     this.arrival = this.arrival.filter((s) => s !== id);
     this.pending = this.pending.filter((s) => s !== id);
@@ -849,6 +865,24 @@ export class Game {
   private arrive(): void {
     this.state.story = onReturn(this.state);
     this.arrival = arrivalScenes(this.state, { chat: true });
+  }
+
+  /** The main road's depth 30 boss is the finale until it has been beaten once (spec §8.4); after that it is an ordinary boss. */
+  private isFinaleFight(): boolean {
+    return this.run?.region === 'mainline' && this.floor === FINALE_DEPTH && !this.state.story.finaleCleared;
+  }
+
+  /**
+   * The memories the finale plays: the hero pieces this fight filled in and any still waiting in the queue from an earlier
+   * floor (depth 25's top-up), in piece order. The queued ones leave the queue, so the town does not play them again.
+   */
+  private finalePieces(gained: FragmentGain[]): SceneId[] {
+    const story = this.state.story;
+    const heroNo = (id: SceneId) => Number(id.slice('mem:hero:'.length));
+    const queued = story.queue.filter((id) => id.startsWith('mem:hero:'));
+    story.queue = story.queue.filter((id) => !id.startsWith('mem:hero:'));
+    const filled = gained.flatMap((g) => (g.kind === 'piece' && g.id === 'hero' ? [memScene('hero', g.n)] : []));
+    return [...new Set([...queued, ...filled])].sort((a, b) => heroNo(a) - heroNo(b));
   }
 
   /** The mainline's depth 3 holds the story boss: beating it ends Act 1. */
@@ -987,7 +1021,7 @@ this.rerolled = false;
     return { kind: 'chest', item, qty, ...extra, ...this.offerGear(id, gear) };
   }
 
-  private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string, extra = 0, opts: { survive?: number } = {}): void {
+  private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string, extra = 0, opts: { survive?: number; names?: Record<string, string>; bossPower?: number } = {}): void {
     const scale = scaled && this.run ? { depth: this.floor, region: this.run.region, condition: this.run.condition, elite } : undefined;
     this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs, extra, ...opts });
     planEnemies(this.battle, this.rng);

@@ -12,10 +12,13 @@ import { LEGACY_LINEUP } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
 import { CHARACTERS } from '../../data/characters';
 import { SHARD_NAMES } from '../../data/story/fragments';
+import { FINALE_BOSS, FINALE_DEPTH } from '../../data/story/scenes';
+import { DEFAULT_SETTINGS } from '../settings';
+import type { SceneCtx } from '../scene';
 
 const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); await new Promise((r) => setTimeout(r, 0)); };
 
-function setup(prep?: (game: Game) => void) {
+function setup(prep?: (game: Game) => void, extra: Partial<SceneCtx> = {}) {
   const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
   expect(game.depart({ region: 'mainline', condition: 'plain' }, 1)).toEqual({ ok: true });
   game.encounter = 99;
@@ -23,7 +26,7 @@ function setup(prep?: (game: Game) => void) {
   prep?.(game);
   const go = vi.fn();
   const root = document.createElement('div');
-  const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: true });
+  const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: true, ...extra });
   s.enter(root);
   const labels = () => [...root.querySelectorAll('.slx-bcmd [role=option]')].map((o) => o.querySelector('.slx-label')!.textContent);
   const heading = () => root.querySelector('.slx-bcmd .slx-who')!.textContent;
@@ -748,5 +751,78 @@ describe('BattleScene after the oath', () => {
     await vi.waitFor(() => expect(faces.length).toBeGreaterThan(0), { timeout: 4000 });
     expect(faces[0]).toBe(art.portrait('rin-oath', 'ultimate'));
     s.exit?.();
+  });
+});
+
+describe('BattleScene story', () => {
+  const instant: Partial<SceneCtx> = { settings: { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant' }) } };
+  const win = (game: Game, fragments: { kind: 'piece'; id: 'rin'; n: number; play: boolean }[]) => {
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [], fragments };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+  };
+  const fight = async (s: BattleScene) => { for (let i = 0; i < 5; i++) s.onAction('down'); s.onAction('confirm'); await flush(); };
+  const talkHidden = (root: HTMLElement) => root.querySelector('.slx-talk')!.hasAttribute('hidden');
+
+  it('the finale boss shows its own name', () => {
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
+    game.state.dungeon.reached.mainline = FINALE_DEPTH;
+    expect(game.depart({ region: 'mainline', condition: 'plain' }, FINALE_DEPTH)).toEqual({ ok: true });
+    const boss = game.map().boss!;
+    game.pos = { x: boss.x - 1, y: boss.y };
+    if (game.map().tiles[boss.y][boss.x - 1] === 'wall') game.pos = { x: boss.x + 1, y: boss.y };
+    game.move(game.pos.x < boss.x ? 'right' : 'left');
+    expect(game.phase).toBe('battle');
+    const root = document.createElement('div');
+    new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: null, fast: true }).enter(root);
+    expect(root.querySelector('.slx-msg')!.textContent).toContain(FINALE_BOSS.name);
+  });
+
+  it('a played memory follows the result window', async () => {
+    const { game, go, s, root } = setup((g) => { g.pending.push('mem:rin:1'); }, instant);
+    win(game, [{ kind: 'piece', id: 'rin', n: 1, play: true }]);
+    await fight(s);
+    s.onAction('confirm');   // 繼續
+    await flush();
+    expect(go).not.toHaveBeenCalled();
+    expect(root.querySelector('.slx-talk--memory')).not.toBeNull();
+    expect((root.querySelector('.slx-result') as HTMLElement).hidden).toBe(true);
+    for (let i = 0; i < 40 && !talkHidden(root); i++) { s.onAction('confirm'); await flush(); }
+    expect(go).toHaveBeenCalledWith('dungeon');
+    expect(game.state.story.seen).toContain('mem:rin:1');
+    expect(game.pending).toEqual([]);
+  });
+
+  it('a memory that does not play now leaves at once', async () => {
+    const { game, go, s, root } = setup(undefined, instant);
+    win(game, [{ kind: 'piece', id: 'rin', n: 2, play: false }]);
+    await fight(s);
+    s.onAction('confirm');
+    expect(go).toHaveBeenCalledWith('dungeon');
+    expect(root.querySelector('.slx-talk--memory')).toBeNull();
+  });
+
+  it('after a played memory a clear still goes to the clear screen', async () => {
+    const { game, go, s, root } = setup((g) => { g.pending.push('mem:rin:2'); }, instant);
+    win(game, [{ kind: 'piece', id: 'rin', n: 2, play: true }]);
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'clear'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end: { outcome: 'win', exp: 1, gold: 1, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [], fragments: [{ kind: 'piece', id: 'rin', n: 2, play: true }] } }; });
+    await fight(s);
+    s.onAction('confirm');
+    await flush();
+    for (let i = 0; i < 40 && !talkHidden(root); i++) { s.onAction('confirm'); await flush(); }
+    expect(go).toHaveBeenCalledWith('clear');
+  });
+
+  it('a memory that fails to record does not lock the result', async () => {
+    const { game, go, s, root } = setup((g) => { g.pending.push('mem:rin:1'); }, instant);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(game, 'sceneDone').mockImplementation(() => { throw new Error('boom'); });
+    win(game, [{ kind: 'piece', id: 'rin', n: 1, play: true }]);
+    await fight(s);
+    s.onAction('confirm');
+    await flush();
+    for (let i = 0; i < 40 && !talkHidden(root); i++) { s.onAction('confirm'); await flush(); }
+    expect(go).toHaveBeenCalledWith('dungeon');
+    expect(err).toHaveBeenCalled();
+    err.mockRestore();
   });
 });

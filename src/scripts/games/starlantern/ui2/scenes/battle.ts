@@ -20,7 +20,10 @@ import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import { PartyBar, type PulseOpts } from '../partyBar';
 import type { Scene, SceneCtx } from '../scene';
-import { MenuView, backControl, richNodes, win, type Rich } from '../widgets';
+import { Dialogue, MenuView, backControl, richNodes, win, type Rich } from '../widgets';
+import { textCps } from '../settings';
+import { playAndRecord, storyCtx } from '../story';
+import { memScene, type SceneId } from '../../data/story/scenes';
 
 /** Width kept clear for the command window; must match $slx-battle-left in _starlantern-ui.scss. */
 export const BATTLE_LEFT = 150;
@@ -57,9 +60,14 @@ export class BattleScene implements Scene {
   private actLine = '';
   private cutins = 0;
   private shakeTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Tells a played memory after the result window. */
+  private talk: Dialogue;
+  /** The memory scene on screen, if any: it takes the actions while it plays. */
+  private playing: ReturnType<typeof playAndRecord> | null = null;
 
-  constructor(private ctx: SceneCtx) {
+  constructor(private ctx: SceneCtx, cps = textCps(ctx)) {
     this.bar = new PartyBar(ctx.art);
+    this.talk = new Dialogue(cps);
   }
 
   enter(root: HTMLElement): void {
@@ -70,7 +78,7 @@ export class BattleScene implements Scene {
     this.marker = el('div', { class: 'slx-target', text: '▼', attrs: { hidden: '', 'aria-hidden': 'true' } });
     this.cutin = el('div', { class: 'sl-cutin', attrs: { hidden: '', 'aria-hidden': 'true' } });
     this.backEl = backControl(() => this.onAction('cancel'));
-    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.msg, this.marker, this.bar.el, this.cmd, this.backEl, this.cutin]);
+    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.msg, this.marker, this.bar.el, this.cmd, this.backEl, this.cutin, this.talk.el]);
     root.append(this.body);
     if (this.ctx.stage) {
       this.ctx.stage.show('battle');
@@ -82,11 +90,13 @@ export class BattleScene implements Scene {
   }
 
   exit(): void {
+    this.talk.stop();
     if (this.body) clearPillars(this.body);
     this.ctx.stage?.show(null);
   }
 
   onAction(a: UiAction): void {
+    if (this.playing) { this.playing.onAction(a); return; }
     if (this.busy) return;
     // Confirm or cancel ends a legendary drop's moment first (fast mode never waits on it).
     if (!this.ctx.fast && skipPillar(this.body, a)) return;
@@ -463,6 +473,32 @@ export class BattleScene implements Scene {
     setTimeout(() => this.renderResult(end, false), WIN_MS);
   }
 
+  /** The memory pieces this win brought that play now (the rest were recorded as new when found). */
+  private memoriesToPlay(end: BattleEnd): SceneId[] {
+    return (end.fragments ?? []).flatMap((g) => (g.kind === 'piece' && g.play ? [memScene(g.id, g.n)] : []));
+  }
+
+  /** Plays the memories one by one with the result window out of the way. A scene that fails is reported and skipped: it must never lock the way out. */
+  private async playMemories(ids: SceneId[]): Promise<void> {
+    const box = this.body.querySelector<HTMLElement>('.slx-result');
+    if (box) box.hidden = true;
+    for (const id of ids) {
+      try {
+        const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
+        this.playing = p;
+        await p.done;
+      } catch (e) {
+        console.error('starlantern: memory scene failed', e);
+      } finally {
+        this.playing = null;
+      }
+    }
+  }
+
+  private leave(): void {
+    this.ctx.go(this.ctx.game.phase === 'clear' ? 'clear' : 'dungeon');
+  }
+
   private renderResult(end: BattleEnd, fanfare = true): void {
     // `cls` styles the whole line: a level-up, or a piece of gear in its rarity colour.
     const lines: { text: string | Rich; cls?: string }[] = [];
@@ -494,9 +530,10 @@ export class BattleScene implements Scene {
       pick: () => {
         if (!this.resultReady) return;   // clicks too, not just keys
         this.ctx.sfx.confirm();
-        if (end.outcome === 'lose') this.ctx.go('town');
-        else if (this.ctx.game.phase === 'clear') this.ctx.go('clear');
-        else this.ctx.go('dungeon');
+        if (end.outcome === 'lose') { this.ctx.go('town'); return; }
+        const scenes = this.memoriesToPlay(end);
+        if (scenes.length === 0) { this.leave(); return; }
+        void this.playMemories(scenes).then(() => this.leave());
       },
     });
     // A held or repeated key must not skip the rewards: accept input after a short beat.
