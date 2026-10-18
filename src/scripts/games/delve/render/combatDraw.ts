@@ -26,7 +26,7 @@ const GORE: Partial<Record<EnemyKind, string[]>> = {
   ember_imp: ['#e8701c', '#ffd86a', '#6c1e14'], magma_bat: ['#e8701c', '#ffa93a', '#2c2838'], lantern_warden: ['#4aaeb0', '#cceaf8', '#423f54', '#ffd86a'],
   warden_wisp: ['#cceaf8', '#4aaeb0'],
 };
-const NUM_COLOR: Record<FloatKind, string> = { hit: '#fff4c0', crit: '#ffa93a', hurt: '#e8701c', heal: '#93cc50', info: '#cceaf8' };
+const NUM_COLOR: Record<FloatKind, string> = { hit: '#fff4c0', crit: '#ffa93a', hurt: '#e8701c', heal: '#93cc50', info: '#cceaf8', xp: '#c2e478' };
 
 export class CombatLayer {
   readonly numbers = new FloatNumbers();
@@ -112,6 +112,18 @@ export class CombatLayer {
       case 'chain': this.chains.push({ pts: e.pts.map((p) => ({ ...p })), life: 0.36 }); break;
       case 'undying': this.burst(e.x, e.y + 20, ['#ffd86a', '#fff4c0', '#ffa93a'], 30, 180, 120); this.shake(3, 0.3); break;
       case 'airjump': this.burst(e.x, e.y, ['#ffffff', '#cceaf8', '#b4b9c8'], 8, 60, 0); break;
+      // ── 等級系統：經驗飄字、升級金色爆發、震地塵土 ──
+      case 'xp': this.numbers.add(e.x, e.y - 6, `+${e.amount}XP`, 'xp'); break;
+      case 'levelup': {
+        const p = this.game.player;
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, ['#ffd86a', '#fff4c0', '#ffffff', '#e8701c'], 46, 220, 140);
+        this.shake(2, 0.25);
+        break;
+      }
+      case 'skill':
+        if (e.skill === 'slam' && e.phase === 'land') { this.burst(e.x, e.y - 2, ['#d8ba76', '#966139', '#f2e2b0'], 26, 170, 520); this.shake(e.n > 0 ? 4 : 3, 0.3); }
+        else if (e.skill === 'dash' && e.phase === 'start') this.burst(e.x, e.y - 4, ['#ffffff', '#cceaf8'], 10, 80, 0);
+        break;
       default: break;
     }
   }

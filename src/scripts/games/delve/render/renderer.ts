@@ -14,6 +14,7 @@ import { PlayerAnimator, blinkAt, type PlayerAnim } from './playerAnim';
 import { SHEET } from './avatarArt';
 import { previewArms } from './dollPreview';
 import { CombatLayer } from './combatDraw';
+import { LevelFx } from './levelFx';
 import { aimArmDeg, attackArmDeg, spearThrust } from './combatAnim';
 import { Background } from './background';
 import { scanTrees, torchMount, treeKind, TREE_KIND } from './scene';
@@ -122,6 +123,8 @@ export class Renderer {
   ambientNow: AmbientKind | null = null;
   /** 戰鬥圖層（掉落物 / 怪物 / 投射物 / 飄字 / 震動） */
   readonly combat: CombatLayer;
+  /** 等級系統的世界特效（升級光柱 / 突進 / 震地 / 尋礦感知） */
+  readonly levelFx: LevelFx;
   /** 季節植物（草葉 / 花 / 高草 × 四季 × 擺動）與冰面 */
   readonly flora = new FloraAtlas();
   private ice: HTMLCanvasElement[] = [0, 1, 2].flatMap((v) => [toCanvas(iceBmp(v, false)) as HTMLCanvasElement, toCanvas(iceBmp(v, true)) as HTMLCanvasElement]);
@@ -202,6 +205,7 @@ export class Renderer {
     this.atlas = buildAtlas();
     this.sprites = new Sprites((item) => this.atlas.iconBmp(item));
     this.combat = new CombatLayer(game, this.atlas, this.sprites);
+    this.levelFx = new LevelFx(game);
     this.cache = new ChunkLRU(48);
     let s = 0;
     for (const ch of game.seed) s = (s * 31 + ch.charCodeAt(0)) >>> 0;
@@ -273,6 +277,7 @@ export class Renderer {
   /** 遊戲事件 → 粒子 / 光照重算 */
   onEvent(e: DelveEvent): void {
     this.combat.onEvent(e);
+    this.levelFx.onEvent(e);
     if (e.type === 'respawn') this.snapCamera();
     if (e.type === 'hurt' && !e.cause) this.hurtAt = this.clock;
     if (e.type === 'climb') this.climbDust(e.phase !== 'grab', e.phase === 'mantle' ? e : null);
@@ -458,6 +463,7 @@ export class Renderer {
     this.drawRecall(ctx);
     this.drawGlows(ctx);
     this.combat.drawOverlay(ctx, dt);
+    this.levelFx.draw(ctx, dt);
     // 睡覺：全畫面抖動淡出 / 淡入
     const sl = g.sleepFade();
     if (sl > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); this.fx.drawSleep(ctx, sl, this.bufW, this.bufH); }

@@ -1,0 +1,266 @@
+---
+// DelveLevels.astro — DELVE 等級系統的 HUD / 面板標記與樣式（行為在 src/scripts/games/delve/render/levelsUi.ts）。
+// 放在 #delve-hud 裡；經驗條（同時是「角色 / 技能」按鈕，K）由 JS 搬進 #delve-vitals（生命愛心下方，版面跟著原本的 HUD 走）。
+// 色票全部取自遊戲的統一色票（render/pixel.ts）；不用 !important、不用行內樣式。
+---
+<button class="delve-xp" id="delve-skill-btn" type="button" data-testid="xp-bar" aria-haspopup="dialog">
+  <canvas class="delve-xp-badge" id="delve-xp-badge" width="11" height="11" aria-hidden="true"></canvas>
+  <canvas class="delve-xp-bar" id="delve-xp-bar" width="82" height="7" aria-hidden="true"></canvas>
+  <span class="delve-xp-text" id="delve-xp-text"></span>
+  <span class="delve-xp-pts" id="delve-skill-pts" hidden></span>
+</button>
+
+<div class="delve-lvup" id="delve-lvup" hidden role="status" aria-live="polite" data-testid="levelup">
+  <canvas class="delve-lvup-rays" id="delve-lvup-rays" width="120" height="44" aria-hidden="true"></canvas>
+  <div class="delve-lvup-box">
+    <p class="delve-lvup-title" id="delve-lvup-title"></p>
+    <p class="delve-lvup-sub" id="delve-lvup-sub"></p>
+  </div>
+</div>
+
+<div class="delve-sk-touch" id="delve-sk-touch">
+  <button class="delve-sk-act" id="delve-act-dash" type="button" data-skill="dash" aria-label="突進" hidden><canvas width="18" height="18"></canvas></button>
+  <button class="delve-sk-act" id="delve-act-slam" type="button" data-skill="slam" aria-label="震地" hidden><canvas width="18" height="18"></canvas></button>
+  <button class="delve-sk-act" id="delve-act-pulse" type="button" data-skill="pulse" aria-label="尋礦感知" hidden><canvas width="18" height="18"></canvas></button>
+</div>
+
+<section class="delve-panel delve-panel--skills" id="delve-skills" hidden role="dialog" aria-labelledby="delve-skills-h" data-tab="blade">
+  <div class="delve-panel-head">
+    <h2 id="delve-skills-h">角色 / 技能</h2>
+    <button class="delve-x" id="delve-skills-close" type="button" aria-label="關閉角色與技能">×</button>
+  </div>
+  <div class="delve-sk-char" id="delve-sk-char" data-testid="skills-char">
+    <canvas class="delve-sk-badge" id="delve-sk-badge" width="11" height="11" aria-hidden="true"></canvas>
+    <div class="delve-sk-charinfo">
+      <p class="delve-sk-name" id="delve-sk-name"></p>
+      <canvas class="delve-sk-xpbar" id="delve-sk-xpbar" width="120" height="7" aria-hidden="true"></canvas>
+      <p class="delve-sk-line" id="delve-sk-xpline"></p>
+      <p class="delve-sk-line" id="delve-sk-growth"></p>
+      <p class="delve-sk-line delve-sk-line--dim" id="delve-sk-next"></p>
+    </div>
+  </div>
+  <p class="delve-sk-points" id="delve-sk-points" data-testid="skill-points"></p>
+  <div class="delve-sk-tabs" id="delve-sk-tabs" role="tablist" aria-label="技能分支">
+    <button class="delve-btn delve-btn--sm delve-sk-tab" type="button" role="tab" data-tab="blade" aria-selected="true">劍心</button>
+    <button class="delve-btn delve-btn--sm delve-sk-tab" type="button" role="tab" data-tab="path" aria-selected="false">行者</button>
+    <button class="delve-btn delve-btn--sm delve-sk-tab" type="button" role="tab" data-tab="craft" aria-selected="false">匠魂</button>
+  </div>
+  <div class="delve-sk-tree" id="delve-sk-tree" role="group" aria-label="技能樹（方向鍵移動、Enter 點一級）"></div>
+  <div class="delve-sk-detail" id="delve-sk-detail" aria-live="polite"></div>
+  <div class="delve-sk-foot">
+    <button class="delve-btn delve-btn--sm delve-btn--main" id="delve-sk-learn" type="button">點一級</button>
+    <button class="delve-btn delve-btn--sm delve-btn--danger" id="delve-sk-respec" type="button">重置技能樹</button>
+  </div>
+  <p class="delve-hint delve-sk-msg" id="delve-sk-msg" role="status"></p>
+  <ul class="delve-sk-stats" id="delve-sk-stats" aria-label="技能數值"></ul>
+  <p class="delve-field-hint delve-sk-keys"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 選技能　<kbd>Enter</kbd> 點一級　<kbd>Esc</kbd> / <kbd>K</kbd> 關閉　主動技能：<kbd>Q</kbd> 突進 <kbd>F</kbd> 震地 <kbd>R</kbd> 尋礦感知</p>
+</section>
+
+<style is:global>
+  /* ── 經驗條（生命愛心下方；整條是「角色 / 技能」按鈕） ── */
+  .delve-xp {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: calc(var(--px) * 2);
+    row-gap: 1px;
+    align-items: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  .delve-xp:focus-visible { outline: var(--px) solid var(--gold); outline-offset: var(--px); }
+  .delve-xp-badge { grid-row: 1 / span 2; height: calc(var(--px) * 11); width: auto; image-rendering: pixelated; }
+  .delve-xp-bar { width: calc(var(--px) * 82); height: calc(var(--px) * 7); image-rendering: pixelated; }
+  .delve-xp-text { justify-self: start; font-family: var(--pixel); font-size: 8px; line-height: 9px; color: #c2e478; text-shadow: var(--text-outline); white-space: nowrap; }
+  .delve-xp[data-flash='1'] .delve-xp-text { color: #ffd86a; }
+  .delve-xp-pts {
+    position: absolute;
+    left: calc(var(--px) * -5);
+    top: calc(var(--px) * -3);
+    min-width: 12px;
+    padding: 0 2px;
+    font-family: var(--pixel);
+    font-size: 8px;
+    line-height: 11px;
+    color: #1c1424;
+    background: #ffd86a;
+    box-shadow: 0 0 0 var(--px) #0c0a12;
+  }
+
+  /* ── 升級橫幅 ── */
+  .delve-lvup {
+    position: absolute;
+    left: 50%;
+    top: 26%;
+    transform: translateX(-50%);
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    z-index: 4;
+  }
+  .delve-lvup-rays {
+    grid-area: 1 / 1;
+    width: calc(var(--px) * 120);
+    height: calc(var(--px) * 44);
+    image-rendering: pixelated;
+  }
+  .delve-lvup-box {
+    grid-area: 1 / 1;
+    padding: 6px 14px;
+    text-align: center;
+    border: var(--px) solid;
+    border-color: #fff4c0 #a83a10 #a83a10 #fff4c0;
+    background: #472819;
+    box-shadow: 0 0 0 var(--px) #0c0a12;
+  }
+  .delve-lvup-title { margin: 0; font-size: 24px; line-height: 28px; color: #ffd86a; text-shadow: var(--text-outline); }
+  .delve-lvup-sub { margin: 2px 0 0; font-size: 16px; color: #f2e2b0; text-shadow: var(--text-outline); white-space: pre-line; }
+  .delve[data-reduced='1'] .delve-lvup-rays { display: none; }
+
+  /* ── 主動技能觸控鍵：跳躍鍵左邊一排；直立手機改成右側一欄（生命區上方）；橫向矮螢幕放在下方中間 ── */
+  .delve-sk-touch {
+    position: absolute;
+    right: 122px;
+    bottom: 40px;
+    display: none;
+    flex-direction: row-reverse;
+    gap: 8px;
+  }
+  .delve[data-touch='1'] .delve-sk-touch { display: flex; }
+  @media (pointer: coarse) {
+    .delve-sk-touch { display: flex; }
+  }
+  .delve[data-map='1'] .delve-sk-touch,
+  .delve[data-skills='1'] .delve-sk-touch { display: none; }
+  .delve-sk-act {
+    width: 54px;
+    height: 54px;
+    padding: 0;
+    border: 0;
+    background: none;
+    touch-action: none;
+    cursor: pointer;
+  }
+  .delve-sk-act canvas { display: block; width: 54px; height: 54px; image-rendering: pixelated; }
+  @media (max-width: 640px) {
+    .delve-sk-touch { right: 10px; bottom: 236px; flex-direction: column-reverse; }
+  }
+  @media (max-height: 520px) and (orientation: landscape) {
+    .delve-sk-touch { right: auto; left: 50%; bottom: 12px; transform: translateX(-50%); flex-direction: row; }
+  }
+
+  /* ── 角色 / 技能面板 ── */
+  .delve .delve-panel--skills {
+    /* 技能樹的美術像素大小：桌面跟著 --px；觸控分頁模式固定 2px（節點 44 CSS px，好點） */
+    --skpx: var(--px);
+    left: 50%;
+    top: calc(var(--px) * 22 + 20px);
+    max-height: calc(100vh - var(--px) * 22 - 30px);
+    transform: translateX(-50%);
+    width: min(calc(var(--px) * 300 + 40px), calc(100vw - 20px));
+    z-index: 8;
+  }
+  /* 觸控：面板開著時遊戲暫停，可以蓋住 HUD 用整個畫面 */
+  .delve[data-touch='1'] .delve-panel.delve-panel--skills { top: 8px; max-height: calc(100vh - 16px); }
+  .delve[data-touch='1'] .delve-panel--skills[data-compact='1'] { --skpx: 2px; }
+  .delve-sk-char { display: flex; gap: 10px; align-items: flex-start; margin-top: 8px; }
+  .delve-sk-badge { height: calc(var(--px) * 22); width: auto; image-rendering: pixelated; }
+  .delve-sk-charinfo { display: grid; gap: 2px; min-width: 0; }
+  .delve-sk-name { margin: 0; font-size: 16px; color: #fff4c0; text-shadow: var(--text-outline); }
+  .delve-sk-xpbar { width: calc(var(--px) * 120); max-width: 100%; height: calc(var(--px) * 7); image-rendering: pixelated; }
+  .delve-sk-line { margin: 0; font-size: 16px; color: var(--ink); text-shadow: var(--text-outline); }
+  .delve-sk-line--dim { color: #d8ba76; }
+  .delve-sk-points { margin: 8px 0 4px; font-size: 16px; color: #c2e478; text-shadow: var(--text-outline); }
+  .delve-sk-tabs { display: none; gap: 6px; margin: 4px 0 8px; }
+  .delve-sk-tab[aria-selected='true'] { --bv-hi: #fff4c0; --bv-lo: #e8701c; --bv-bg: #623924; }
+  .delve-sk-tree { display: flex; justify-content: space-between; gap: 8px; }
+  .delve-sk-branch { display: grid; justify-items: center; gap: 4px; }
+  .delve-sk-bh { margin: 0; font-size: 16px; color: #ffd86a; text-shadow: var(--text-outline); }
+  .delve-sk-bh-sub { font-size: 16px; color: #d8ba76; }
+  .delve-sk-grid {
+    position: relative;
+    width: calc(var(--skpx) * 90);
+    height: calc(var(--skpx) * 150);
+  }
+  .delve-sk-lines {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    pointer-events: none;
+  }
+  .delve-sk-node {
+    position: absolute;
+    width: calc(var(--skpx) * 22);
+    height: calc(var(--skpx) * 22);
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+  .delve-sk-node canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+  .delve-sk-node:focus-visible { outline: var(--px) solid #ffffff; outline-offset: var(--px); }
+  .delve-sk-node[data-col='0'] { left: 0; }
+  .delve-sk-node[data-col='1'] { left: calc(var(--skpx) * 34); }
+  .delve-sk-node[data-col='2'] { left: calc(var(--skpx) * 68); }
+  .delve-sk-node[data-row='0'] { top: 0; }
+  .delve-sk-node[data-row='1'] { top: calc(var(--skpx) * 32); }
+  .delve-sk-node[data-row='2'] { top: calc(var(--skpx) * 64); }
+  .delve-sk-node[data-row='3'] { top: calc(var(--skpx) * 96); }
+  .delve-sk-node[data-row='4'] { top: calc(var(--skpx) * 128); }
+  /* 節點說明框：滑過 / 鍵盤焦點時出現（右欄往左開） */
+  .delve-sk-tip {
+    position: absolute;
+    top: 0;
+    left: calc(100% + 6px);
+    z-index: 6;
+    display: none;
+    width: 220px;
+    padding: 6px 8px;
+    text-align: left;
+    border: var(--px) solid;
+    border-color: #966139 #1c1424 #1c1424 #966139;
+    background: #2a1810;
+    box-shadow: 0 0 0 var(--px) #0c0a12;
+    pointer-events: none;
+  }
+  .delve-sk-node[data-col='2'] .delve-sk-tip,
+  .delve-sk-branch[data-branch='craft'] .delve-sk-node[data-col='1'] .delve-sk-tip { left: auto; right: calc(100% + 6px); }
+  .delve-sk-node:hover .delve-sk-tip,
+  .delve-sk-node:focus-visible .delve-sk-tip { display: block; }
+  /* 滑鼠在別的節點上：只顯示滑過的那個 */
+  .delve-sk-tree:hover .delve-sk-node:focus-visible:not(:hover) .delve-sk-tip { display: none; }
+  .delve-sk-tip p { margin: 0; font-size: 16px; line-height: 20px; color: var(--ink); text-shadow: var(--text-outline); }
+  .delve-sk-tip .is-name { color: #ffd86a; }
+  .delve-sk-tip .is-kind { color: #94c8ee; }
+  .delve-sk-tip .is-ok { color: #93cc50; }
+  .delve-sk-tip .is-no { color: #e8701c; }
+  .delve-sk-tip .is-dim { color: #d8ba76; }
+  .delve-sk-detail { min-height: 44px; margin-top: 8px; padding: 6px 8px; background: #2a1810; box-shadow: inset 0 0 0 var(--px) #1c1424; }
+  .delve-sk-detail p { margin: 0; font-size: 16px; line-height: 20px; color: var(--ink); text-shadow: var(--text-outline); }
+  .delve-sk-detail .is-name { color: #ffd86a; }
+  .delve-sk-detail .is-ok { color: #93cc50; }
+  .delve-sk-detail .is-no { color: #e8701c; }
+  .delve-sk-foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .delve-sk-msg { min-height: 20px; margin: 6px 0 0; }
+  .delve-sk-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 0 0; padding: 0; list-style: none; }
+  .delve-sk-stats li { font-size: 16px; color: #c2e478; text-shadow: var(--text-outline); }
+  .delve-sk-keys { margin-top: 6px; }
+  .delve[data-touch='1'] .delve-sk-keys { display: none; }
+
+  /* 窄畫面（JS 依實際像素大小判斷）：一次只看一條分支，用分頁切換；說明框改成面板下方的詳情 */
+  .delve-panel--skills[data-compact='1'] .delve-sk-tabs { display: flex; }
+  .delve-panel--skills[data-compact='1'] .delve-sk-tree { justify-content: center; }
+  .delve-panel--skills[data-compact='1'] .delve-sk-tip { display: none; }
+  .delve-panel--skills[data-compact='1'][data-tab='blade'] .delve-sk-branch:not([data-branch='blade']),
+  .delve-panel--skills[data-compact='1'][data-tab='path'] .delve-sk-branch:not([data-branch='path']),
+  .delve-panel--skills[data-compact='1'][data-tab='craft'] .delve-sk-branch:not([data-branch='craft']) { display: none; }
+  @media (max-width: 640px) {
+    .delve .delve-panel--skills { top: 60px; max-height: calc(100vh - 70px); }
+    .delve-sk-foot .delve-btn { flex: 1 1 auto; min-height: 40px; }
+  }
+</style>

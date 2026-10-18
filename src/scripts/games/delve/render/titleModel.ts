@@ -9,11 +9,13 @@ export type { SaveSummary };
 export interface SummarySource {
   seed: string; time: number; tick: number; peaceful: boolean;
   discovery: { stats(): { completion: number; depthRecord: number } };
+  /** 等級系統（engine/levels.ts Progression） */
+  levels?: { level: number };
 }
 
 export function summarizeGame(g: SummarySource): SaveSummary {
   const s = g.discovery.stats();
-  return { seed: g.seed, time: g.time, playSec: Math.floor(g.tick / 60), depth: s.depthRecord, completion: s.completion, peaceful: g.peaceful };
+  return { seed: g.seed, time: g.time, playSec: Math.floor(g.tick / 60), depth: s.depthRecord, completion: s.completion, peaceful: g.peaceful, ...(g.levels ? { level: g.levels.level } : {}) };
 }
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -45,6 +47,7 @@ export function continueLines(meta: { seed: string; savedAt: number; summary?: S
   if (!validSummary(s)) return [`「${meta.seed}」`, `上次存檔 ${savedAgo(meta.savedAt, now)}`];
   const d = dateOf(s.time);
   const facts = [`遊玩 ${formatPlayTime(s.playSec)}`];
+  if (num(s.level) && s.level >= 1) facts.unshift(`等級 ${Math.floor(s.level)}`);
   if (s.depth > 0) facts.push(`最深 ${Math.floor(s.depth)} 格`);
   facts.push(`完成度 ${Math.round(Math.max(0, Math.min(1, s.completion)) * 100)}%`);
   if (s.peaceful) facts.push('和平');

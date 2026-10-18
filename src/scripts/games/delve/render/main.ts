@@ -9,6 +9,7 @@ import { FixedStepper, blockedMessage, hintText } from './model';
 import { MapCache, Minimap, FullMap } from './mapView';
 import { ExploreUi } from './journal';
 import { CalendarUi } from './calendarUi';
+import { LevelsUi } from './levelsUi';
 import { SoundManager } from '../audio/SoundManager';
 import { T } from '../engine/tiles';
 import { ITEMS } from '../engine/items';
@@ -55,6 +56,8 @@ export interface DelveHandle {
   ui: ExploreUi;
   /** HUD 日期時鐘 + 日曆 / 天氣預報面板 */
   calendar: CalendarUi;
+  /** 等級系統：經驗條、升級橫幅、角色 / 技能面板、主動技能按鍵 */
+  levels: LevelsUi;
   sound: SoundManager;
   stats(): FrameStats;
   /** 暫停模擬（選單開啟時） */
@@ -99,10 +102,20 @@ export function startDelve(opts: StartOptions): DelveHandle {
     onToast: (m) => hud.toast(m),
   });
   let paused = false;
+  // 等級系統：角色 / 技能面板開著時暫停（面板用方向鍵選技能）
+  const levels = new LevelsUi({
+    root, game, sound, hud,
+    isBlocked: () => menuPaused || fullmap.isOpen,
+    onToggle: () => {
+      paused = menuPaused || fullmap.isOpen || levels.isOpen;
+      if (paused) controls.releaseAll();
+      last = performance.now();
+    },
+  });
   const setMap = (open: boolean): void => {
     if (open === fullmap.isOpen) return;
     if (open) { fullmap.open(); root.dataset.map = '1'; } else { fullmap.close(); delete root.dataset.map; }
-    paused = menuPaused || fullmap.isOpen;
+    paused = menuPaused || fullmap.isOpen || levels.isOpen;
     if (paused) controls.releaseAll();
     last = performance.now();
   };
@@ -162,6 +175,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
     onInventory: () => hud.toggleInventory(),
     onMenu: () => {
       if (fullmap.isOpen) setMap(false);
+      else if (levels.isOpen) levels.setOpen(false);
       else if (ui.loreOpen) ui.closeLore();
       else if (hud.confirmOpen) hud.cancelConfirm();
       else if (game.openChest) game.closeChest();
@@ -193,6 +207,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       let invChanged = false;
       for (const e of game.drainEvents()) {
         renderer.onEvent(e);
+        levels.onEvent(e);
         if (e.type === 'blocked') {
           const m = blockedMessage(e.reason);
           if (m) hud.toast(m);
@@ -293,6 +308,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
     }
     renderer.render(paused ? 0 : dt);
     hud.tick();
+    levels.tick(dt);
     ui.tick(dt);
     calendar.tick();
     const tm = performance.now();
@@ -324,7 +340,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
   };
 
   const handle: DelveHandle = {
-    game, renderer, hud, ui, calendar, sound,
+    game, renderer, hud, ui, calendar, sound, levels,
     map: { cache: mapCache, minimap, full: fullmap },
     stats: () => {
       const f = avg(gaps);
@@ -338,7 +354,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
     },
     setPaused: (p) => {
       menuPaused = p;
-      paused = menuPaused || fullmap.isOpen;
+      if (p && levels.isOpen) levels.setOpen(false);
+      paused = menuPaused || fullmap.isOpen || levels.isOpen;
       if (paused) controls.releaseAll();
       last = performance.now();
     },
@@ -372,6 +389,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       fullmap.destroy();
       ui.destroy();
       calendar.destroy();
+      levels.destroy();
       sound.destroy();
       hud.destroy();
       renderer.destroy();

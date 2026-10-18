@@ -10,6 +10,7 @@ import { AFFIXES, BASE_TIER, RARITIES, STAT_LABEL } from '../engine/gear';
 import type { ItemId } from '../engine/items';
 import { drawIcon, type Atlas } from './textures';
 import { BannerQueue, distanceLabel, exploredLabel, percentLabel } from './model';
+import { journalLevelLine } from './levelModel';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] => {
   const e = document.createElement(tag);
@@ -114,7 +115,7 @@ export class ExploreUi {
     const killSig = Object.values(g.kills).reduce((a, n) => a + (n ?? 0), 0);
     const fishSig = Object.values(g.fishLog).reduce((a, n) => a + (n ?? 0), 0);
     const codexSig = [...g.codex.affixes.values()].reduce((a, n) => a + n, 0) * 100 + [...g.codex.items.values()].reduce((a, n) => a + n + 1, 0);
-    const sig = `${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${exploredLabel(explored)}|${killSig}|${g.bossesDefeated.size}|${fishSig}|${codexSig}`;
+    const sig = `${g.levels.xp}|${g.levels.spent}|${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${exploredLabel(explored)}|${killSig}|${g.bossesDefeated.size}|${fishSig}|${codexSig}`;
     if (sig === this.journalSig) return;
     this.journalSig = sig;
     body.replaceChildren();
@@ -134,6 +135,10 @@ export class ExploreUi {
     const facts = el('p', 'delve-j-facts', `存活第 ${this.game.date().dayIndex + 1} 天（${this.game.dateText()}）· 最深 ${s.depthRecord} 格 · 移動 ${distanceLabel(s.distance)} · 地圖探索 ${exploredLabel(explored)}`);
     facts.dataset.testid = 'journal-facts';
     body.appendChild(facts);
+    // 等級系統：等級 / 稱號 / 經驗 / 技能點
+    const lv = el('p', 'delve-j-facts delve-j-level', journalLevelLine(g.levels));
+    lv.dataset.testid = 'journal-level';
+    body.appendChild(lv);
 
     const cats = el('ul', 'delve-j-cats');
     cats.dataset.sec = 'regions';
