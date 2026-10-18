@@ -18,7 +18,7 @@ import {
 } from './avatarGear';
 import { ARMOR_RAMP } from './combatArt';
 import { WALK_FRAMES, IDLE_FRAMES } from './anim';
-import { CLIMB_FRAMES, HANG_FRAMES, MANTLE_FRAMES, SWIM_FRAMES } from './playerAnim';
+import { CLIMB_FRAMES, CLIMBDOWN_FRAMES, HANG_FRAMES, MANTLE_FRAMES, SWIM_FRAMES } from './playerAnim';
 
 export const AV_FW = 44;
 export const AV_FH = 54;
@@ -29,9 +29,19 @@ const HIP_Y = 43;
 const THIGH = 4.5, SHIN = 4.5;
 /** 頭的區域原點（側面 / 背面） */
 const HEAD_X = 13, HEAD_Y = 13;
-/** 肩膀軸心（影格座標，未加每格位移） */
+/** 肩膀軸心（影格座標，未加每格位移）：女生（預設）；男生肩膀寬一格 */
 export const AV_SHOULDER_FRONT = { x: 24, y: 33 };
 export const AV_SHOULDER_BACK = { x: 20, y: 33 };
+const SHOULDERS = [
+  { front: AV_SHOULDER_FRONT, back: AV_SHOULDER_BACK },
+  { front: { x: 25, y: 32 }, back: { x: 19, y: 32 } },
+];
+export function shoulderOf(body: number, back: boolean): { x: number; y: number } {
+  const s = SHOULDERS[body] ?? SHOULDERS[0];
+  return back ? s.back : s.front;
+}
+/** 爬繩時繩子在影格裡的 x（角色在繩子左邊、面向繩子；畫的時候整格往左偏 ROPE_X − 中心） */
+export const ROPE_X = 37;
 /** 手臂圖：26×34、軸心 (13,3)；手心距軸心 HAND_REACH px */
 export const ARM_W = 26, ARM_H = 34, ARM_PIV = { x: 13, y: 3 };
 export const HAND_REACH = 7;
@@ -40,17 +50,20 @@ export const HAND_REACH = 7;
 export const SHEET = (() => {
   const order: [string, number][] = [
     ['idle', IDLE_FRAMES], ['blink', IDLE_FRAMES], ['walk', WALK_FRAMES], ['jump', 1], ['fall', 1],
-    ['climb', CLIMB_FRAMES], ['hang', HANG_FRAMES], ['mantle', MANTLE_FRAMES], ['swim', SWIM_FRAMES], ['hurt', 1], ['dead', 1],
+    ['climb', CLIMB_FRAMES], ['climbdown', CLIMBDOWN_FRAMES], ['hang', HANG_FRAMES * 2], ['mantle', MANTLE_FRAMES], ['swim', SWIM_FRAMES], ['hurt', 1], ['dead', 1],
   ];
   const out: Record<string, [number, number]> = {};
   let i = 0;
   for (const [k, n] of order) { out[k] = [i, n]; i += n; }
   return { ...out, total: i } as Record<SheetAnim, [number, number]> & { total: number };
 })();
-export type SheetAnim = 'idle' | 'blink' | 'walk' | 'jump' | 'fall' | 'climb' | 'hang' | 'mantle' | 'swim' | 'hurt' | 'dead';
-export const SHEET_ANIMS: readonly SheetAnim[] = ['idle', 'blink', 'walk', 'jump', 'fall', 'climb', 'hang', 'mantle', 'swim', 'hurt', 'dead'];
-/** 每格：身體相對站立的位移（肩膀跟著動）、要不要由渲染器畫可旋轉的手臂 */
-export interface FrameMeta { dx: number; dy: number; arms: boolean; }
+export type SheetAnim = 'idle' | 'blink' | 'walk' | 'jump' | 'fall' | 'climb' | 'climbdown' | 'hang' | 'mantle' | 'swim' | 'hurt' | 'dead';
+export const SHEET_ANIMS: readonly SheetAnim[] = ['idle', 'blink', 'walk', 'jump', 'fall', 'climb', 'climbdown', 'hang', 'mantle', 'swim', 'hurt', 'dead'];
+/**
+ * 每格：身體相對站立的位移（肩膀跟著動）、要不要由渲染器畫可旋轉的手臂；
+ * ox = 整格畫的時候往左右偏多少（爬繩：讓繩子對準碰撞框中心）
+ */
+export interface FrameMeta { dx: number; dy: number; arms: boolean; ox?: number; }
 export interface AvatarFrame { body: Bmp; head: Bmp; meta: FrameMeta; }
 
 // ── 部位 → 畫法 ──────────────────────────────────────────
@@ -112,15 +125,15 @@ function legStyle(l: DollLook, w: Wear): LegStyle {
 }
 
 /** 一條腿（側面）：大腿 / 小腿依樣式分段上色，鞋尖朝右；護脛加膝甲 */
-function legBmp(pose: LegPose, hipX: number, hipY: number, st: LegStyle, far: boolean): { b: Bmp; ankleY: number; knee: [number, number] } {
+function legBmp(pose: LegPose, hipX: number, hipY: number, st: LegStyle, far: boolean, len = THIGH, big = false): { b: Bmp; ankleY: number; knee: [number, number] } {
   const b = new Bmp(AV_FW, AV_FH);
   const rad = (d: number): number => (d * Math.PI) / 180;
-  const kx = hipX + Math.sin(rad(pose.thigh)) * THIGH, ky = hipY + Math.cos(rad(pose.thigh)) * THIGH;
-  const ax = kx + Math.sin(rad(pose.shin)) * SHIN, ay = ky + Math.cos(rad(pose.shin)) * SHIN;
+  const kx = hipX + Math.sin(rad(pose.thigh)) * len, ky = hipY + Math.cos(rad(pose.thigh)) * len;
+  const ax = kx + Math.sin(rad(pose.shin)) * len, ay = ky + Math.cos(rad(pose.shin)) * len;
   const at = (t: number): [number, number] => t <= 0.5 ? [hipX + (kx - hipX) * t * 2, hipY + (ky - hipY) * t * 2] : [kx + (ax - kx) * (t - 0.5) * 2, ky + (ay - ky) * (t - 0.5) * 2];
   paintLeg(b, st, at, far);
   if (st.greave && !far) greaveKnee(b, st.greave, kx, ky);
-  shoe(b, st, Math.round(ax - 2), Math.round(ay), far);
+  shoe(b, st, Math.round(ax - 2), Math.round(ay), far, big);
   b.outline(INK);
   return { b, ankleY: ay, knee: [kx, ky] };
 }
@@ -135,8 +148,10 @@ function paintLeg(b: Bmp, st: LegStyle, at: (t: number) => [number, number], far
     for (let k = cuts.length - 2; k >= 0; k--) { const p = at(cuts[k]), q = at(cuts[k + 1]); seg(b, p[0], p[1], q[0], q[1], half, dk(r)); }
   }
 }
-function shoe(b: Bmp, st: LegStyle, x: number, y: number, far: boolean): void {
+function shoe(b: Bmp, st: LegStyle, x: number, y: number, far: boolean, big = false): void {
   const s = st.shoe, r = far ? darker(s.r) : s.r;
+  // 男生的鞋大一號：先往前多補一格鞋尖（下面再照常畫）
+  if (big) { b.rect(x + 5, y, 2, 1, r[3]); b.rect(x + 5, y + 1, 2, 1, r[1]); b.set(x - 1, y + 1, r[1]); }
   switch (s.kind) {
     case 'boot': case 'armor':
       b.rect(x, y - 2, 5, 1, r[4]); b.rect(x, y - 1, 5, 1, r[3]); b.rect(x, y, 6, 1, r[3]); b.rect(x, y + 1, 6, 1, r[1]);
@@ -162,13 +177,24 @@ function shoe(b: Bmp, st: LegStyle, x: number, y: number, far: boolean): void {
 }
 
 // ── 身體（側面） ─────────────────────────────────────────
-const TORSO_ROWS: Record<number, [number, number]> = {
-  31: [20, 24], 32: [18, 26], 33: [17, 27], 34: [17, 27], 35: [17, 27], 36: [17, 27], 37: [17, 27],
+/** 女：肩窄、胸前微微往前一格的弧度、收腰、臀稍寬 */
+const TORSO_F: Record<number, [number, number]> = {
+  31: [20, 24], 32: [18, 26], 33: [17, 27], 34: [17, 28], 35: [17, 28], 36: [17, 27], 37: [17, 27],
   38: [18, 26], 39: [18, 26], 40: [18, 26], 41: [17, 27], 42: [17, 27],
 };
-const HOODIE_ROWS: Record<number, [number, number]> = {
-  ...TORSO_ROWS, 33: [16, 27], 34: [16, 27], 35: [16, 27], 36: [16, 27], 37: [16, 27], 38: [17, 26], 39: [17, 26], 40: [17, 26], 41: [16, 27], 42: [16, 27],
+/** 男：肩膀寬（前後各多一格）、胸口平、腰臀窄直 */
+const TORSO_M: Record<number, [number, number]> = {
+  31: [19, 25], 32: [16, 28], 33: [15, 29], 34: [15, 29], 35: [15, 28], 36: [16, 28], 37: [17, 27],
+  38: [18, 26], 39: [18, 26], 40: [18, 26], 41: [18, 26], 42: [18, 26],
 };
+/** 某個體型的身體列（連帽衫寬鬆：後背多一格） */
+function torsoRows(body: number, hoodie: boolean): Record<number, [number, number]> {
+  const base = body === 1 ? TORSO_M : TORSO_F;
+  if (!hoodie) return base;
+  const out: Record<number, [number, number]> = {};
+  for (const k of Object.keys(base)) { const y = Number(k), [x0, x1] = base[y]; out[y] = y >= 33 ? [x0 - 1, x1] : [x0, x1]; }
+  return out;
+}
 function fillRows(b: Bmp, rows: Record<number, [number, number]>, r: RGB[], dx: number, dy: number, from = 0, to = 99): void {
   const ys = Object.keys(rows).map(Number).filter((y) => y >= from && y <= to);
   const top = Math.min(...ys), bot = Math.max(...ys);
@@ -225,7 +251,7 @@ function topSide(b: Bmp, l: DollLook, w: Wear, lowerMiko: boolean, p: BodyPose):
     }
   }
   const top = w.kind === 'armor' ? armor5(w.set) : o === 'sailor' || o === 'miko' ? WHITE : o === 'explorer' ? w.c2 : w.c1;
-  const rows = o === 'hoodie' ? HOODIE_ROWS : TORSO_ROWS;
+  const rows = torsoRows(l.app.body, o === 'hoodie');
   fillRows(b, rows, top, dx, dy, 31, o === 'miko' && lowerMiko ? 38 : 42);
   if (w.kind === 'armor') {
     chestDetail(b, w.set, rows, dx, dy, 'side');
@@ -235,7 +261,7 @@ function topSide(b: Bmp, l: DollLook, w: Wear, lowerMiko: boolean, p: BodyPose):
     const { c1, c2 } = w;
     if (o === 'explorer') {
       for (let y = 32; y <= 40; y++) for (let x = 17; x <= 27; x++) {
-        const r0 = TORSO_ROWS[y];
+        const r0 = rows[y];
         if (!r0 || x < r0[0] || x > r0[1]) continue;
         if (x <= 21 || x >= 26) S(x, y, x === r0[0] ? c1[4] : x >= r0[1] ? c1[2] : c1[3]);
       }
@@ -285,78 +311,6 @@ function topSide(b: Bmp, l: DollLook, w: Wear, lowerMiko: boolean, p: BodyPose):
   if (l.belt) beltArt(b, l.belt, dx, dy);
 }
 
-// ── 身體（背面：爬繩） ───────────────────────────────────
-const BACK_ROWS: Record<number, [number, number]> = {
-  31: [19, 25], 32: [17, 27], 33: [17, 27], 34: [17, 27], 35: [17, 27], 36: [17, 27], 37: [17, 27],
-  38: [18, 26], 39: [18, 26], 40: [18, 26], 41: [17, 27], 42: [17, 27],
-};
-function lowerBack(b: Bmp, w: Wear, dx: number, dy: number, sway: number): void {
-  if (w.kind !== 'outfit') return;
-  const c1 = w.c1, S = (x: number, y: number, c: RGB): void => b.set(x + dx, y + dy, c);
-  if (w.o === 'sailor') skirt(b, 41, [[17, 27], [16, 28], [16, 28], [15, 29], [15, 29]], c1, dx, dy, true, sway);
-  if (w.o === 'maid') {
-    skirt(b, 41, [[17, 27], [16, 28], [15, 29], [15, 29], [14, 30], [14, 30]], c1, dx, dy, false, sway);
-    for (let x = 14; x <= 30; x++) S(x, 46, (x & 1) ? WHITE[2] : WHITE[3]);
-  }
-  if (w.o === 'miko') { skirt(b, 39, [[17, 27], [17, 27], [16, 28], [16, 28], [16, 28], [15, 29], [15, 29]], c1, dx, dy, true, sway * 0.5); for (let x = 20; x <= 24; x++) S(x, 39, c1[4]); S(19, 40, c1[3]); S(25, 40, c1[3]); }
-}
-function topBack(b: Bmp, l: DollLook, w: Wear, lowerMiko: boolean, dx: number, dy: number, sway: number, f: number): void {
-  const o = outfitOf(w), S = (x: number, y: number, c: RGB): void => b.set(x + dx, y + dy, c);
-  if (w.kind === 'outfit' && w.o === 'coat') {
-    const c1 = w.c1;
-    for (let k = 0; k <= 6; k++) for (let x = 16; x <= 28; x++) {
-      if (x === 22 && k > 1) continue;
-      S(x + (x < 22 ? -Math.round(sway * k * 0.3) : 0), 42 + k, x === 16 ? c1[4] : x === 28 ? c1[2] : k === 6 ? c1[2] : c1[3]);
-    }
-  }
-  const top = w.kind === 'armor' ? armor5(w.set) : o === 'sailor' || o === 'miko' ? WHITE : w.c1;
-  fillRows(b, BACK_ROWS, top, dx, dy, 31, o === 'miko' && lowerMiko ? 38 : 42);
-  if (w.kind === 'armor') {
-    chestDetail(b, w.set, BACK_ROWS, dx, dy, 'back');
-    upgrades(b, w.p, chestSpots(BACK_ROWS, dx, dy).spots, null, f, ARMOR_RAMP[w.set]);
-    return;
-  }
-  const { c1, c2 } = w;
-  if (o === 'explorer') {
-    for (let y = 33; y <= 40; y++) for (let x = 18; x <= 26; x++) S(x, y, y <= 34 ? LEATHER[4] : x === 18 ? LEATHER[4] : x === 26 ? LEATHER[2] : LEATHER[3]);
-    for (let x = 18; x <= 26; x++) S(x, 35, LEATHER[2]);
-    S(22, 36, GOLD); S(18, 32, LEATHER[2]); S(26, 32, LEATHER[2]); S(18, 31, LEATHER[2]); S(26, 31, LEATHER[2]);
-    for (let x = 17; x <= 27; x++) S(x, 41, LEATHER[2]);
-  } else if (o === 'sailor') {
-    for (let y = 31; y <= 36; y++) for (let x = 17; x <= 27; x++) {
-      const stripe = (y === 35 && x >= 18 && x <= 26) || ((x === 18 || x === 26) && y <= 35);
-      S(x, y, stripe ? WHITE[3] : x === 17 ? c1[4] : x === 27 ? c1[2] : c1[3]);
-    }
-  } else if (o === 'hoodie') {
-    for (let y = 30; y <= 36; y++) for (let x = 18; x <= 26; x++) {
-      const nx = (x + 0.5 - 22) / 4.4, ny = (y + 0.5 - 32.6) / 3.6, d = nx * nx + ny * ny;
-      if (d > 1) continue;
-      S(x, y, d < 0.3 ? c1[1] : nx < -0.4 ? c1[4] : ny > 0.4 ? c1[2] : c1[3]);
-    }
-    for (let x = 17; x <= 27; x++) S(x, 42, c1[2]);
-  } else if (o === 'coat') {
-    for (let y = 35; y <= 42; y++) S(22, y, c1[2]);
-    for (let x = 17; x <= 27; x++) S(x, 40, LEATHER[2]);
-  } else if (o === 'maid') {
-    for (let k = 0; k <= 7; k++) { S(18 + k, 32 + k, c2[3]); S(26 - k, 32 + k, c2[3]); }
-    ['bb...bb', 'bBbkbBb', 'bbbkbbb', '.bb.bb.'].forEach((row, y) => { for (let x = 0; x < row.length; x++) { const ch = row[x]; if (ch !== '.') S(19 + x, 38 + y, ch === 'B' ? c2[4] : ch === 'k' ? c2[2] : c2[3]); } });
-  }
-  void l;
-}
-
-/** 背面的腿：lift = 這條腿抬起幾 px（膝蓋往外彎） */
-function backLeg(hipX: number, lift: number, st: LegStyle, far: boolean): Bmp {
-  const b = new Bmp(AV_FW, AV_FH);
-  const ay = ANKLE - lift, ky = HIP_Y + (ay - HIP_Y) / 2 - lift * 0.3, kx = hipX + (hipX < CX ? -1 : 1) * lift * 0.35;
-  const at = (t: number): [number, number] => t <= 0.5 ? [hipX + (kx - hipX) * t * 2, HIP_Y + (ky - HIP_Y) * t * 2] : [kx + (hipX - kx) * (t - 0.5) * 2, ky + (ay - ky) * (t - 0.5) * 2];
-  paintLeg(b, st, at, far);
-  if (st.greave) greaveKnee(b, st.greave, kx, ky);
-  const r = far ? darker(st.shoe.r) : st.shoe.r, x = Math.round(hipX - 1.5), y = Math.round(ay);
-  b.rect(x, y - 1, 4, 1, r[3]); b.rect(x, y, 4, 1, r[3]); b.rect(x, y + 1, 4, 1, r[1]); b.set(x, y - 1, r[4]);
-  b.outline(INK);
-  return b;
-}
-
 // ── 手臂 ─────────────────────────────────────────────────
 /** 手臂朝下（軸心 = 肩）；袖子依上衣：短袖 / 長袖 + 袖口 / 泡泡袖 / 巫女大袖 / 防具（套裝細節 + 稀有度滾邊） */
 export function avatarArm(l: DollLook, back: boolean, f = 0): Bmp {
@@ -364,10 +318,15 @@ export function avatarArm(l: DollLook, back: boolean, f = 0): Bmp {
   const dk = (r: RGB[]): RGB[] => (back ? darker(r) : r);
   const sk = dk(sk0);
   const arm = new Bmp(ARM_W, ARM_H);
-  const col = (y0: number, y1: number, r: RGB[], x0 = 12, x1 = 14): void => {
+  // 男生手臂粗一格
+  const col = (y0: number, y1: number, r: RGB[], x0 = l.app.body === 1 ? 11 : 12, x1 = 14): void => {
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) arm.set(x, y, x === x0 ? r[4] : x === x1 ? r[2] : r[3]);
   };
-  const hand = (): void => { arm.rect(12, 8, 3, 2, sk[3]); arm.set(12, 8, sk[4]); arm.set(14, 9, sk[2]); arm.set(13, 10, sk[2]); };
+  const big = l.app.body === 1;
+  const hand = (): void => {
+    if (big) { arm.rect(11, 8, 4, 3, sk[3]); arm.set(11, 8, sk[4]); arm.set(14, 9, sk[2]); arm.set(14, 10, sk[2]); arm.set(12, 11, sk[2]); arm.set(13, 11, sk[2]); return; }
+    arm.rect(12, 8, 3, 2, sk[3]); arm.set(12, 8, sk[4]); arm.set(14, 9, sk[2]); arm.set(13, 10, sk[2]);
+  };
   if (w.kind === 'armor') {
     const r = dk(armor5(w.set)), R = ARMOR_RAMP[w.set];
     col(1, 6, r); col(1, 3, r, 11, 15); arm.set(11, 1, r[4]); col(7, 7, sk); hand();
@@ -406,16 +365,22 @@ interface SidePose {
   /** 身體 / 頭相對站立的位移 */
   bodyDx: number; bodyDy: number; headDx: number; headDy: number;
   flare: number; flap: number; sweat?: boolean;
+  /** 不畫頭（倒地：身體轉 90°、頭另外正著畫） */
+  noHead?: boolean;
 }
 
 function sideFrame(l: DollLook, p: SidePose, f: number, trace?: string[]): AvatarFrame {
-  const top = wearOf(l, l.body), low = wearOf(l, l.legs);
-  const st = legStyle(l, low);
-  const far = legBmp(p.far, CX - 1.5, HIP_Y, st, true), near = legBmp(p.near, CX + 1, HIP_Y, st, false);
+  const top = wearOf(l, l.body), low = wearOf(l, l.legs), male = l.app.body === 1;
+  const st0 = legStyle(l, low);
+  // 男生腿粗一點、兩腿分開一點
+  const st: LegStyle = male ? { ...st0, parts: st0.parts.map(([t, r, h]) => [t, r, h + 0.25] as [number, RGB[], number]) } : st0;
+  // 男生：髖高一格、腿長 5（比女生高 2 格）、兩腿分得開；女生腿細、併得比較攏
+  const hipY = male ? HIP_Y - 1 : HIP_Y, legLen = male ? 5 : THIGH, up = male ? -1 : 0;
+  const far = legBmp(p.far, CX - (male ? 2.5 : 1.5), hipY, st, true, legLen, male), near = legBmp(p.near, CX + (male ? 2 : 1), hipY, st, false, legLen, male);
   const dy = p.snap ? Math.round(ANKLE - Math.max(far.ankleY, near.ankleY)) : 0;
   const body = new Bmp(AV_FW, AV_FH), head = new Bmp(AV_FW, AV_FH), hairBack = new Bmp(AV_FW, AV_FH);
   const headTrace: string[] = [];
-  drawHead(hairBack, head, HEAD_X + p.headDx + p.bodyDx, HEAD_Y + dy + p.bodyDy + p.headDy, {
+  if (!p.noHead) drawHead(hairBack, head, HEAD_X + p.headDx + p.bodyDx, HEAD_Y + dy + p.bodyDy + p.headDy + (male ? -2 : 0), {
     app: l.app, expr: p.expr, motion: p.hair, gear: l.head, view: 'side', sweat: p.sweat, f, trace: headTrace,
   });
   // 背飾（身體後面）
@@ -423,13 +388,13 @@ function sideFrame(l: DollLook, p: SidePose, f: number, trace?: string[]): Avata
   body.blit(hairBack, 0, 0); trace?.push('backHair');
   // 脖子
   const neck = new Bmp(AV_FW, AV_FH), sk = skinRamp(l.app.skin);
-  neck.rect(21 + p.bodyDx, 29 + dy + p.bodyDy, 3, 2, sk[2]);
+  neck.rect((male ? 20 : 21) + p.bodyDx, 29 + dy + p.bodyDy + up, male ? 4 : 3, 2, sk[2]);
   body.blit(neck, 0, 0); trace?.push('body');
   body.blit(far.b, p.bodyDx, dy);
   body.blit(near.b, p.bodyDx, dy);
   if (st.greave) upgrades(body, low.kind === 'armor' ? low.p : null, [[Math.round(near.knee[0]) + p.bodyDx, Math.round(near.knee[1]) + dy - 1], [Math.round(near.knee[0]) + p.bodyDx + 1, Math.round(near.knee[1]) + dy - 1]], null, f, ARMOR_RAMP[st.greave]);
   trace?.push('legs');
-  const chest = new Bmp(AV_FW, AV_FH), bp: BodyPose = { dx: p.bodyDx, dy: dy + p.bodyDy, flare: p.flare, flap: p.flap, f };
+  const chest = new Bmp(AV_FW, AV_FH), bp: BodyPose = { dx: p.bodyDx, dy: dy + p.bodyDy + up, flare: p.flare, flap: p.flap, f };
   const lowerMiko = low.kind === 'outfit' && low.o === 'miko';
   lowerSide(chest, low, bp);
   topSide(chest, l, top, lowerMiko, bp);
@@ -444,40 +409,6 @@ const still = (expr: Expr = 'normal'): SidePose => ({
   bodyDx: 0, bodyDy: 0, headDx: 0, headDy: 0, flare: 0, flap: 0,
 });
 
-/** 背面爬繩：手交替（抓在頭的兩側上方）、對側的腳抬起；背飾蓋在背上 */
-function backFrame(l: DollLook, o: { handL: number; handR: number; liftL: number; liftR: number; bodyDx: number; bodyDy: number; swing: number }, f: number): AvatarFrame {
-  const top = wearOf(l, l.body), low = wearOf(l, l.legs);
-  const st = legStyle(l, low), body = new Bmp(AV_FW, AV_FH);
-  const { bodyDx: dx, bodyDy: dy } = o;
-  body.blit(backLeg(CX + 2, o.liftR, st, true), dx, dy);
-  body.blit(backLeg(CX - 2, o.liftL, st, false), dx, dy);
-  const chest = new Bmp(AV_FW, AV_FH);
-  lowerBack(chest, low, dx, dy, o.swing);
-  topBack(chest, l, top, low.kind === 'outfit' && low.o === 'miko', dx, dy, o.swing, f);
-  chest.outline(INK);
-  body.blit(chest, 0, 0);
-  if (l.back) backArt(body, l.back, 'back', o.swing, 0, dx, dy, f);
-  const back = new Bmp(AV_FW, AV_FH), headL = new Bmp(AV_FW, AV_FH);
-  drawHead(back, headL, HEAD_X + dx, HEAD_Y + dy, { app: l.app, expr: 'normal', motion: { swing: o.swing, lift: 0 }, gear: l.head, view: 'back', f });
-  body.blit(back, 0, 0);
-  body.blit(headL, 0, 0);
-  // 手臂畫在頭上面：肩 → 往外的手肘 → 手抓在頭的兩側（高的那隻在頭頂旁邊）
-  const arms = new Bmp(AV_FW, AV_FH), sk = skinRamp(l.app.skin), sleeve = armSleeve(l);
-  const arm = (side: -1 | 1, hy: number): void => {
-    const sx = CX + side * 5 + dx, sy = 33 + dy;
-    const hx = CX + side * (hy < 14 ? 6 : 8) + dx, ex = CX + side * 10 + dx, ey = (sy + hy) / 2 + 2;
-    seg(arms, sx, sy, ex, ey, 1.5, sleeve);
-    seg(arms, ex, ey, hx, hy + 2, 1.3, sleeve);
-    const x = Math.round(hx) - 1, y = Math.round(hy) - 1;
-    arms.rect(x, y, 3, 3, sk[3]); arms.set(x, y, sk[4]); arms.set(x + 2, y + 2, sk[2]); arms.set(x + (side < 0 ? 2 : 0), y + 1, sk[2]);
-  };
-  arm(-1, o.handL);
-  arm(1, o.handR);
-  arms.outline(INK);
-  body.blit(arms, 0, 0);
-  return { body, head: new Bmp(AV_FW, AV_FH), meta: { dx, dy, arms: false } };
-}
-
 /** 把點陣逆時針轉 90°（倒地用；精確轉置，不失真） */
 function rot90ccw(src: Bmp): Bmp {
   const o = new Bmp(src.h, src.w);
@@ -488,20 +419,45 @@ function rot90ccw(src: Bmp): Bmp {
   return o;
 }
 
+/**
+ * 倒地（KO）：仰躺、一邊膝蓋立起來、一隻手擱在肚子上、頭髮散在地上、× × 眼，頭上轉著兩顆小星星。
+ * 先畫成「站姿但姿勢是躺著的樣子」（膝蓋往前抬 = 躺下後朝上、
+ * 頭髮往後甩 = 躺下後鋪在地上），再精確轉 90°（像素不變形），最後貼地。
+ */
 function deadFrame(l: DollLook): AvatarFrame {
-  const fr = sideFrame(l, { ...still('dead'), hair: { swing: 0.6, lift: 0 } }, 0);
-  const stand = fr.body;
-  stand.blit(avatarArm(l, false), AV_SHOULDER_FRONT.x - ARM_PIV.x, AV_SHOULDER_FRONT.y - ARM_PIV.y);
-  stand.blit(fr.head, 0, 0);
-  // 逆時針轉 90°：頭在左、臉朝上；再鏡像 → 頭在右（面向右時躺下的頭朝前）
-  const r = rot90ccw(stand);
-  let x0 = r.w, x1 = -1, y1 = -1;
-  for (let y = 0; y < r.h; y++) for (let x = 0; x < r.w; x++) if (r.on(x, y)) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  // 身體（不含頭）擺成「躺著」的姿勢：一邊膝蓋立起來、一隻手擱在肚子上；轉 90° 後背貼地
+  const p = still('dead');
+  p.snap = false; p.noHead = true;
+  p.near = { thigh: 75, shin: -55 }; p.far = { thigh: 50, shin: -45 }; p.flap = -1;
+  const fr = sideFrame(l, p, 0);
+  const meta: FrameMeta = { dx: 0, dy: 0, arms: false };
+  const arms = armsTo(l, meta, [28, 37], [17, 41]);
+  const stand = new Bmp(AV_FW, AV_FH);
+  stand.blit(arms.back, -ARMS_PAD, -ARMS_PAD);
+  stand.blit(fr.body, 0, 0);
+  stand.blit(arms.front, -ARMS_PAD, -ARMS_PAD);
+  stand.blit(arms.hands, -ARMS_PAD, -ARMS_PAD);
+  const r = rot90ccw(stand), bb = bbox(r);
   const out = new Bmp(AV_FW, AV_FH);
-  out.blit(r, Math.round((AV_FW - (x1 - x0 + 1)) / 2) - x0, AV_FH - 1 - y1);
+  // 貼地；鏡像之後脖子那一端接在頭的左邊（頭佔右邊 18 格）
+  out.blit(r, 15 - bb.x0, AV_FH - 1 - bb.y1);
   const flip = new Bmp(AV_FW, AV_FH);
   flip.blit(out, 0, 0, true);
-  return { body: flip, head: new Bmp(AV_FW, AV_FH), meta: { dx: 0, dy: 0, arms: false } };
+  // 頭：正著畫在身體的右端（臉朝我們、× × 眼），下巴貼地——躺著也認得出是誰
+  const hb = new Bmp(AV_FW, AV_FH), hf = new Bmp(AV_FW, AV_FH);
+  const hx = AV_FW - 19, hy = AV_FH - 1 - 17 - (l.app.body === 1 ? 1 : 0);
+  drawHead(hb, hf, hx, hy, { app: l.app, expr: 'dead', motion: { swing: 0.5, lift: -0.4 }, gear: l.head, view: 'side' });
+  flip.blit(hb, 0, 0);
+  flip.blit(hf, 0, 0);
+  // 頭上的暈眩小星星
+  const star = (cx: number, cy: number): void => {
+    const st = new Bmp(AV_FW, AV_FH), y = GOLD, w = hex('#fff4c0');
+    st.set(cx, cy - 1, y); st.set(cx - 1, cy, y); st.set(cx, cy, w); st.set(cx + 1, cy, y); st.set(cx, cy + 1, y);
+    st.outline(INK);
+    flip.blit(st, 0, 0);
+  };
+  star(hx + 4, hy - 4); star(hx + 13, hy - 2);
+  return { body: flip, head: new Bmp(AV_FW, AV_FH), meta };
 }
 
 /** 精確順時針轉 90°（游泳：站姿 → 頭朝前趴著） */
@@ -547,10 +503,10 @@ function swimFrame(l: DollLook, f: number): AvatarFrame {
     b.outline(INK);
     return b;
   };
-  stand.blit(armLayer(back, AV_SHOULDER_BACK, true), 0, 0);
+  stand.blit(armLayer(back, shoulderOf(l.app.body, true), true), 0, 0);
   stand.blit(fr.body, 0, 0);
   // 前手：伸過頭頂時在頭後面、划回胸前時在頭前面（不會整條蓋住臉）
-  const fa = armLayer(front, AV_SHOULDER_FRONT, false);
+  const fa = armLayer(front, shoulderOf(l.app.body, false), false);
   if (front > 150) { stand.blit(fa, 0, 0); stand.blit(fr.head, 0, 0); } else { stand.blit(fr.head, 0, 0); stand.blit(fa, 0, 0); }
   const r = rotate(rotPrep(stand), CX, 33, (SWIM_TILT * Math.PI) / 180, 72), bb = bbox(r);
   const out = new Bmp(AV_FW, AV_FH);
@@ -561,49 +517,153 @@ function swimFrame(l: DollLook, f: number): AvatarFrame {
 }
 
 /**
- * 攀上邊緣的手臂（畫在頭的上面）：肩膀 → 手抓在牆角（hx, hy：影格座標，面向右）。
- * 距離夠長就伸直（太高的台階會拉長手臂搆上去）、短了就把手肘往後彎（撐起來的樣子）；手掌蓋在台面上。
+ * 手伸到指定位置（影格座標，面向右）：肩膀 → 手。前手 / 後手分開兩張（後手在身體後、前手在身體和頭之間），手掌另一張（最上層）。
+ * 往上可以拉長手臂搆到（攀高台、爬繩往上伸）；往下最多伸直一隻手臂的長度（撐起來）；短了就把手肘往後彎。
  * 回傳的點陣比影格大一圈（ARMS_PAD），畫的時候往左上偏移 ARMS_PAD。
  */
 export const ARMS_PAD = 24;
-export function mantleArms(l: DollLook, meta: FrameMeta, hx: number, hy: number): { arms: Bmp; hands: Bmp } {
+export interface ArmLayers { back: Bmp; front: Bmp; hands: Bmp; }
+export function armsTo(l: DollLook, meta: FrameMeta, front: [number, number], back: [number, number], grip: 'ledge' | 'rope' = 'ledge'): ArmLayers {
   const W = AV_FW + ARMS_PAD * 2, H = AV_FH + ARMS_PAD * 2, o = ARMS_PAD;
-  const b = new Bmp(W, H), hands = new Bmp(W, H), sleeve = armSleeve(l), sk = skinRamp(l.app.skin);
+  const out: ArmLayers = { back: new Bmp(W, H), front: new Bmp(W, H), hands: new Bmp(W, H) };
+  const sleeve = armSleeve(l), sk = skinRamp(l.app.skin);
   const one = (s: { x: number; y: number }, tx: number, ty: number, dark: boolean): void => {
     const sx = s.x + meta.dx + o, sy = s.y + meta.dy + o;
     let ex = tx + o, ey = ty + o;
-    const U = 5, F = 5;
-    // 往上（懸掛）可以拉長手臂搆到高台；往下（撐起）最多伸直一隻手臂的長度
+    const U = 5.5, F = 5.5;
     const d0 = Math.hypot(ex - sx, ey - sy);
-    if (ey > sy - 2 && d0 > U + F + 1) { const k = (U + F + 1) / d0; ex = Math.round(sx + (ex - sx) * k); ey = Math.round(sy + (ey - sy) * k); }
+    if (grip !== 'rope' && ey > sy - 2 && d0 > U + F + 1) { const k = (U + F + 1) / d0; ex = Math.round(sx + (ex - sx) * k); ey = Math.round(sy + (ey - sy) * k); }
     const d = Math.hypot(ex - sx, ey - sy);
     const sl = dark ? darker(sleeve) : sleeve, kk = dark ? darker(sk) : sk;
     const layer = new Bmp(W, H);
-    if (d >= U + F - 0.5) {
-      // 伸直（必要時拉長）：前 55% 袖子、後面是前臂
+    if (grip === 'rope') {
+      // 握繩：手在頭頂上 → 整隻手臂伸直往上（袖子在下半、前臂在上半）；手在胸口 → 手肘往前下彎
+      if (ey < sy - 6) {
+        const mx = sx + (ex - sx) * 0.45, my = sy + (ey - sy) * 0.45;
+        seg(layer, sx, sy, mx, my, 1.5, sl);
+        seg(layer, mx, my, ex, ey, 1.4, kk);
+      } else {
+        const kx = Math.min(ex - 2, sx + 5), ky = Math.max(sy + 3, ey + 2);
+        seg(layer, sx, sy, kx, ky, 1.5, sl);
+        seg(layer, kx, ky, ex, ey, 1.4, kk);
+      }
+    } else if (d >= U + F - 0.5) {
       const mx = sx + (ex - sx) * 0.55, my = sy + (ey - sy) * 0.55;
       seg(layer, sx, sy, mx, my, 1.4, sl);
       seg(layer, mx, my, ex, ey, 1.3, kk);
     } else {
-      // 兩段 IK：手肘往後（−x）、往上彎
-      const a = Math.atan2(ey - sy, ex - sx), c = Math.acos(Math.max(-1, Math.min(1, (U * U + d * d - F * F) / (2 * U * d))));
-      const ang = a + (Math.cos(a) >= 0 ? -c : c);
+      // 兩段 IK：手肘往後（−x）、往下垂
+      const ang0 = Math.atan2(ey - sy, ex - sx), c = Math.acos(Math.max(-1, Math.min(1, (U * U + d * d - F * F) / (2 * U * Math.max(0.5, d)))));
+      const ang = ang0 + (Math.cos(ang0) >= 0 ? c : -c);
       const kx = sx + Math.cos(ang) * U, ky = sy + Math.sin(ang) * U;
-      const elbow = { x: kx - Math.abs(kx - sx) * 0.4, y: ky };
-      seg(layer, sx, sy, elbow.x, elbow.y, 1.4, sl);
-      seg(layer, elbow.x, elbow.y, ex, ey, 1.3, kk);
+      seg(layer, sx, sy, kx, ky, 1.4, sl);
+      seg(layer, kx, ky, ex, ey, 1.3, kk);
     }
     layer.outline(INK);
-    b.blit(layer, 0, 0);
-    // 手掌（另一張，畫在頭上面）：抓在台面上、手指扣住牆角
+    (dark ? out.back : out.front).blit(layer, 0, 0);
     const hand = new Bmp(W, H);
-    hand.rect(ex - 1, ey - 1, 3, 2, kk[3]); hand.set(ex - 1, ey - 1, kk[4]); hand.set(ex + 1, ey, kk[2]); hand.set(ex - 2, ey, kk[2]); hand.set(ex, ey + 1, kk[2]);
+    if (grip === 'rope') {
+      // 握繩：拳頭包住繩子（左右各一格露在繩子兩邊）
+      hand.rect(ex - 1, ey - 1, 3, 3, kk[3]); hand.set(ex - 1, ey - 1, kk[4]); hand.set(ex + 1, ey + 1, kk[2]); hand.set(ex, ey + 1, kk[2]);
+    } else {
+      hand.rect(ex - 1, ey - 1, 3, 2, kk[3]); hand.set(ex - 1, ey - 1, kk[4]); hand.set(ex + 1, ey, kk[2]); hand.set(ex - 2, ey, kk[2]); hand.set(ex, ey + 1, kk[2]);
+    }
     hand.outline(INK);
-    hands.blit(hand, 0, 0);
+    // 爬繩時後手的拳頭跟著後手（畫在身體後面，拳頭永遠接著手臂）
+    (grip === 'rope' && dark ? out.back : out.hands).blit(hand, 0, 0);
   };
-  one(AV_SHOULDER_BACK, hx - 2, hy, true);
-  one(AV_SHOULDER_FRONT, hx, hy, false);
-  return { arms: b, hands };
+  one(shoulderOf(l.app.body, true), back[0], back[1], true);
+  one(shoulderOf(l.app.body, false), front[0], front[1], false);
+  return out;
+}
+/** 攀上邊緣的手臂：兩手都抓在牆角（前後差 2 格）；arms = 手臂（畫在頭後面）、hands = 手掌（畫在頭上面） */
+export function mantleArms(l: DollLook, meta: FrameMeta, hx: number, hy: number): { arms: Bmp; hands: Bmp } {
+  const r = armsTo(l, meta, [hx, hy], [hx - 2, hy]);
+  r.back.blit(r.front, 0, 0);
+  return { arms: r.back, hands: r.hands };
+}
+
+// ── 爬繩（側面，面向繩子；繩子在影格 x = ROPE_X）──────────────
+const lerp = (a: number, b: number, t: number): number => a + (b - a) * Math.max(0, Math.min(1, t));
+const easeOut = (t: number): number => 1 - (1 - t) * (1 - t);
+const easeIO = (t: number): number => { const u = Math.max(0, Math.min(1, t)); return u * u * (3 - 2 * u); };
+/**
+ * 往上爬（8 格、兩個半輪）：
+ *   拉（每半輪前半）：兩手抓著，上面那隻從頭頂上方拉到臉旁、下面那隻拉到胸口 → 身體被拉上來 4 px，膝蓋縮起來；
+ *   伸（後半）：胸口那隻手放開、一口氣伸過頭頂抓住更高的地方，腿蹬直把身體撐住、身體慢慢沉回去。
+ * 手的移動距離（頭頂 8 → 胸口 36）= 半輪往上爬的距離，抓著的手跟著繩子不打滑（CLIMB_STRIDE = 兩倍）。
+ */
+const HAND_HI = 8, HAND_MID = 21, HAND_LO = 36;
+function climbPose(f: number): { front: number; back: number; dy: number; knee: number; lead: 'near' | 'far'; pulling: boolean } {
+  const ph = (((f % CLIMB_FRAMES) + CLIMB_FRAMES) % CLIMB_FRAMES) / CLIMB_FRAMES, half = Math.floor(ph * 2) % 2, s = (ph * 2) % 1;
+  let high: number, low: number, dy: number, knee: number;
+  if (s < 0.5) {
+    const t = easeIO(s / 0.5);
+    high = lerp(HAND_HI, HAND_MID, t); low = lerp(HAND_MID + 2, HAND_LO, t); dy = lerp(2, -2, t); knee = t;
+  } else {
+    const t = (s - 0.5) / 0.5;
+    high = lerp(HAND_MID, HAND_MID + 2, t); low = lerp(HAND_LO, HAND_HI, easeOut(t)); dy = lerp(-2, 2, easeIO(t)); knee = 1 - easeIO(t);
+  }
+  // 半輪 0：前手是剛抓高的那隻；半輪 1 換手
+  return half === 0 ? { front: high, back: low, dy, knee, lead: 'near', pulling: s < 0.5 } : { front: low, back: high, dy, knee, lead: 'far', pulling: s < 0.5 };
+}
+/** 往下爬：手抓在手下面（上面那隻手放開、移到另一隻手下面）、身體慢慢放下；腿夾著繩子 */
+function climbDownPose(f: number): { front: number; back: number; dy: number } {
+  const ph = (((f % CLIMBDOWN_FRAMES) + CLIMBDOWN_FRAMES) % CLIMBDOWN_FRAMES) / CLIMBDOWN_FRAMES, half = Math.floor(ph * 2) % 2, s = (ph * 2) % 1, R = 0.6;
+  const topY = s < R ? lerp(21, 17, s / R) : lerp(17, 29, easeIO((s - R) / (1 - R)));
+  const botY = s < R ? lerp(28, 23, s / R) : lerp(23, 21, (s - R) / (1 - R));
+  const dy = s < R ? lerp(0, 1, s / R) : lerp(1, 0, easeIO((s - R) / (1 - R)));
+  return { front: half === 0 ? topY : botY, back: half === 0 ? botY : topY, dy };
+}
+const HANG_SWAY = [0, 1, 0, -1];
+/** 掛著：兩種握法（和往上爬第 0 / 第 4 格一樣：前手在頭頂上 / 後手在頭頂上），停下來時接得上不跳格 */
+export const HANG_VARIANTS = 2;
+
+/** 爬繩 / 往下爬 / 掛著的一格：側面面向繩子，臉往上看；頭髮 / 衣服比身體慢一格（用上一格的位移算） */
+function ropeFrame(l: DollLook, kind: 'climb' | 'climbdown' | 'hang', f: number): AvatarFrame {
+  const p = still('up');
+  p.snap = false;
+  let hands: { front: number; back: number }, dy: number, dyPrev: number, dx = 1, dxPrev = 1;
+  if (kind === 'climb') {
+    const c = climbPose(f), c0 = climbPose(f - 1);
+    hands = c; dy = c.dy; dyPrev = c0.dy;
+    // 腿和手相反：手拉的時候膝蓋縮起來（腳勾住繩子），手伸的時候腿蹬直；帶頭的那條腿動作大、另一條慢半拍
+    const tuck = (k: number): LegPose => ({ thigh: 18 + 62 * k, shin: 26 + 30 * k });
+    const leadK = c.knee, followK = Math.max(0, c.knee - 0.25) / 0.75;
+    p.near = tuck(c.lead === 'near' ? leadK : followK);
+    p.far = tuck(c.lead === 'far' ? leadK : followK);
+    p.far = { thigh: p.far.thigh - 6, shin: p.far.shin - 6 };
+    if (c.pulling) p.expr = 'effort';
+  } else if (kind === 'climbdown') {
+    const c = climbDownPose(f), c0 = climbDownPose(f - 1);
+    hands = c; dy = c.dy; dyPrev = c0.dy;
+    const w = Math.sin((f / CLIMBDOWN_FRAMES) * Math.PI * 4);
+    p.near = { thigh: 62 + w * 4, shin: 30 }; p.far = { thigh: 48 - w * 4, shin: 24 };
+    p.expr = 'normal';
+  } else {
+    const i = ((f % HANG_FRAMES) + HANG_FRAMES) % HANG_FRAMES, variant = Math.floor(f / HANG_FRAMES) % HANG_VARIANTS;
+    dx = 1 + HANG_SWAY[i]; dxPrev = 1 + HANG_SWAY[(i + HANG_FRAMES - 1) % HANG_FRAMES];
+    // 和往上爬那一格的握法一樣（一手在頭頂上、一手在臉旁），身體掛低一點
+    hands = variant === 0 ? { front: HAND_HI, back: HAND_MID + 2 } : { front: HAND_MID + 2, back: HAND_HI }; dy = 2; dyPrev = 2;
+    p.near = { thigh: 40 + HANG_SWAY[i] * 5, shin: 30 }; p.far = { thigh: 24 - HANG_SWAY[i] * 4, shin: 10 };
+    p.expr = i === 2 ? 'blink' : 'up';
+  }
+  const ddy = Math.round(dy) - Math.round(dyPrev);
+  p.bodyDx = dx; p.bodyDy = Math.round(dy); p.headDy = kind === 'climb' ? -1 : 0;
+  // 頭髮 / 裙襬跟著上一格的動作（身體往上 → 頭髮慢一步往下垂；往下 → 往上飄），左右晃 → 往反方向甩
+  p.hair = { swing: 0.25 - (dx - dxPrev) * 0.45, lift: Math.max(-0.6, Math.min(0.6, ddy * 0.35 + (kind === 'climbdown' ? 0.25 : 0))) };
+  p.flap = ddy * 0.6 - (dx - dxPrev) * 0.5;
+  const fr = sideFrame(l, p, f);
+  const meta: FrameMeta = { dx, dy: Math.round(dy), arms: false, ox: CX - ROPE_X };
+  const arms = armsTo(l, meta, [ROPE_X, Math.round(hands.front)], [ROPE_X - 1, Math.round(hands.back)], 'rope');
+  const out = new Bmp(AV_FW, AV_FH), P = -ARMS_PAD;
+  // 後手（連拳頭）在身體後面；前手在身體前、頭後面（伸過頭頂時從頭後面出來，不會疊在臉上）；前手拳頭在最上面
+  out.blit(arms.back, P, P);
+  out.blit(fr.body, 0, 0);
+  out.blit(arms.front, P, P);
+  out.blit(fr.head, 0, 0);
+  out.blit(arms.hands, P, P);
+  return { body: out, head: new Bmp(AV_FW, AV_FH), meta };
 }
 
 /** 依動畫與影格畫出一格（trace：記錄側面影格的圖層合成順序，測試用） */
@@ -613,11 +673,14 @@ export function avatarFrame(l: DollLook, anim: SheetAnim, f: number, trace?: str
       const p = still(anim === 'blink' ? 'blink' : 'normal');
       p.bodyDy = f === 2 || f === 3 ? 1 : 0;
       p.hair = { swing: [0, 0.15, 0.25, 0.1][f] ?? 0, lift: 0 };
+      if (l.app.body === 1) { p.near = { thigh: 8, shin: 1 }; p.far = { thigh: -9, shin: -2 }; }
+      else { p.near = { thigh: 1, shin: -3 }; p.far = { thigh: -2, shin: 2 }; p.headDx = f === 2 || f === 3 ? 1 : 0; }
       return sideFrame(l, p, f, trace);
     }
     case 'walk': {
       const ph = (f / WALK_FRAMES) * Math.PI * 2;
-      const th = (q: number): LegPose => ({ thigh: 32 * Math.sin(q), shin: 32 * Math.sin(q) - (6 + 50 * Math.max(0, Math.cos(q))) });
+      const amp = l.app.body === 1 ? 38 : 28;
+      const th = (q: number): LegPose => ({ thigh: amp * Math.sin(q), shin: amp * Math.sin(q) - (6 + 50 * Math.max(0, Math.cos(q))) });
       const p = still();
       p.near = th(ph); p.far = th(ph + Math.PI);
       p.hair = { swing: 0.55 + 0.35 * Math.cos(ph * 2), lift: 0.15 * Math.abs(Math.cos(ph)) };
@@ -637,25 +700,17 @@ export function avatarFrame(l: DollLook, anim: SheetAnim, f: number, trace?: str
       p.hair = { swing: -0.1, lift: 1 }; p.flare = 1; p.flap = -0.6;
       return sideFrame(l, p, f, trace);
     }
-    case 'climb': {
-      const ph = (f / CLIMB_FRAMES) * Math.PI * 2, c = Math.cos(ph);
-      return backFrame(l, {
-        handL: 15 - 5 * c, handR: 15 + 5 * c, liftL: Math.round(2 - 2 * c), liftR: Math.round(2 + 2 * c),
-        bodyDx: 0, bodyDy: Math.round(Math.sin(ph * 2) * 0.6), swing: 0.35 * Math.sin(ph),
-      }, f);
-    }
-    case 'hang': {
-      const sway = [0, 1, 0, -1][f] ?? 0;
-      return backFrame(l, { handL: 11, handR: 11, liftL: [0, 1, 2, 1][f] ?? 0, liftR: [2, 1, 0, 1][f] ?? 0, bodyDx: sway, bodyDy: 1, swing: sway * 0.5 }, f);
-    }
+    case 'climb': case 'climbdown': case 'hang': return ropeFrame(l, anim, f);
     case 'mantle': {
       // 0 懸掛拉起（腿垂著）→ 1 撐起手肘（腿蹬）→ 2 膝蓋上台 → 3 蹲著站起；手臂由 mantleArms 畫在頭的上面
       const p = still('effort');
       p.snap = f === 3; p.sweat = f < 3;
-      if (f === 0) { p.near = { thigh: 6, shin: 2 }; p.far = { thigh: -6, shin: -6 }; p.headDy = -1; p.hair = { swing: 0.3, lift: 0 }; }
+      // 預備：懸掛時身體往下沉、膝蓋收起來蓄力（下一格才蹬）
+      if (f === 0) { p.near = { thigh: 38, shin: -34 }; p.far = { thigh: 22, shin: -40 }; p.headDy = -1; p.bodyDy = 1; p.hair = { swing: 0.3, lift: 0.15 }; }
       else if (f === 1) { p.near = { thigh: 28, shin: -26 }; p.far = { thigh: -14, shin: -36 }; p.bodyDx = 1; p.headDx = 1; p.hair = { swing: 0.45, lift: 0.1 }; }
       else if (f === 2) { p.near = { thigh: 92, shin: -28 }; p.far = { thigh: -20, shin: -24 }; p.bodyDx = 2; p.headDx = 1; p.bodyDy = -1; p.hair = { swing: 0.4, lift: 0.1 }; }
-      else { p.near = { thigh: 55, shin: -45 }; p.far = { thigh: 35, shin: -55 }; p.bodyDx = 1; p.headDx = 1; p.hair = { swing: 0.2, lift: 0 }; p.expr = 'normal'; }
+      // 收尾：站起來時身體往前帶、頭髮慢一步往前甩下來
+      else { p.near = { thigh: 55, shin: -45 }; p.far = { thigh: 35, shin: -55 }; p.bodyDx = 1; p.headDx = 2; p.bodyDy = 1; p.hair = { swing: -0.35, lift: -0.3 }; p.flap = -0.8; p.expr = 'normal'; }
       return sideFrame(l, p, f, trace);
     }
     case 'swim': return swimFrame(l, f);
@@ -669,9 +724,25 @@ export function avatarFrame(l: DollLook, anim: SheetAnim, f: number, trace?: str
   }
 }
 
-/** 整張影格表：SHEET.total 格橫排、兩列（第 0 列 = body、第 1 列 = head） */
+/** 暗處的輪廓光：上緣與背側最外圈的像素換成冷灰，在洞穴裡剪影還認得出來 */
+export const RIM = hex('#423f54');
+export function rimOf(flat: Bmp): Bmp {
+  const W = flat.w, H = flat.h, m = new Uint8Array(W * H);
+  // 只描受光那一側（上緣 + 背側）：像自己身上的微光照出來的一道細邊，不是整圈貼紙描邊
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (flat.on(x, y) && (!flat.on(x, y - 1) || !flat.on(x - 1, y))) m[y * W + x] = 1;
+  // 連續：孤立的點（八鄰沒有別的邊）丟掉，細腿上不會變成一段一段的虛線
+  const r = new Bmp(W, H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (!m[y * W + x]) continue;
+    let n = 0;
+    for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if ((i || j) && x + i >= 0 && y + j >= 0 && x + i < W && y + j < H && m[(y + j) * W + x + i]) n++;
+    if (n >= 1) r.set(x, y, RIM);
+  }
+  return r;
+}
+/** 整張影格表：SHEET.total 格橫排、三列（第 0 列 = body、第 1 列 = head、第 2 列 = 暗處輪廓光） */
 export function avatarSheet(l: DollLook): { b: Bmp; meta: FrameMeta[] } {
-  const b = new Bmp(AV_FW * SHEET.total, AV_FH * 2);
+  const b = new Bmp(AV_FW * SHEET.total, AV_FH * 3);
   const meta: FrameMeta[] = [];
   for (const k of SHEET_ANIMS) {
     const [s, n] = SHEET[k];
@@ -679,6 +750,7 @@ export function avatarSheet(l: DollLook): { b: Bmp; meta: FrameMeta[] } {
       const r = avatarFrame(l, k, f);
       b.blit(r.body, (s + f) * AV_FW, 0);
       b.blit(r.head, (s + f) * AV_FW, AV_FH);
+      b.blit(rimOf(flatFrame(r)), (s + f) * AV_FW, AV_FH * 2);
       meta[s + f] = r.meta;
     }
   }

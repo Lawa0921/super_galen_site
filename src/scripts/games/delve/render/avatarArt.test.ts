@@ -9,8 +9,10 @@ import { dollPreview } from './dollPreview';
 import { fashionIcon } from './fashionIcon';
 import { VANITY_ITEMS, type ArmorSetId } from '../engine/items';
 import { DelveGame } from '../engine/game';
-import { hairRamp } from './avatarPalette';
+import { eyeRamp, hairRamp } from './avatarPalette';
 
+/** 測試用的中性外觀（探險家、栗色髮、沒有頭飾）：預設外觀是粉髮水手服，粉髮的高光是白色、水手服的領巾 / 長袖會和被測的東西重疊 */
+const DEF = { ...DEFAULT_APPEARANCE, hair: 0, hairColor: 2, outfit: 0, color1: OUTFITS[0].colors[0], color2: OUTFITS[0].colors[1], acc: 0 };
 function lcg(seed: number): () => number {
   let s = seed >>> 0;
   return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 2 ** 32; };
@@ -32,9 +34,9 @@ const diff = (a: Bmp, b: Bmp): number => { let n = 0; for (let i = 0; i < a.px.l
 
 describe('紙娃娃影格', () => {
   it('影格表：每個動畫都有，格數對得上；兩列（body / head）', () => {
-    const { b, meta } = avatarSheet(plainLook(DEFAULT_APPEARANCE));
+    const { b, meta } = avatarSheet(plainLook(DEF));
     expect(b.w).toBe(AV_FW * SHEET.total);
-    expect(b.h).toBe(AV_FH * 2);
+    expect(b.h).toBe(AV_FH * 3);
     expect(meta.length).toBe(SHEET.total);
     expect(SHEET.climb[1]).toBeGreaterThanOrEqual(4);
     expect(SHEET.hang[1]).toBeGreaterThanOrEqual(2);
@@ -50,7 +52,7 @@ describe('紙娃娃影格', () => {
     const looks: DollLook[] = [];
     for (let i = 0; i < 8; i++) looks.push(plainLook(randomAppearance(r)));
     SETS.forEach((s, i) => looks.push({ ...plainLook(randomAppearance(r)), head: piece(`armor:${s}`, i % 6, i % 4, (['fire', 'ice', 'poison', 'light', 'storm', null] as const)[i]), body: piece(`armor:${s}`, 5 - i), legs: piece(`armor:${s}`, i), feet: i & 1 ? 'jump' : 'swift', neck: 'heart', belt: 'compass' }));
-    for (const v of VANITY_ITEMS) looks.push({ ...plainLook(DEFAULT_APPEARANCE), back: v.includes('cape') || v.includes('wings') || v.includes('bow') ? piece(`back:${v === 'travel_cape' ? 'cape' : v === 'feather_wings' ? 'wings' : 'bow'}`) : null });
+    for (const v of VANITY_ITEMS) looks.push({ ...plainLook(DEF), back: v.includes('cape') || v.includes('wings') || v.includes('bow') ? piece(`back:${v === 'travel_cape' ? 'cape' : v === 'feather_wings' ? 'wings' : 'bow'}`) : null });
     for (const l of looks) {
       const { b } = avatarSheet(l);
       clean(b, dollKey(l));
@@ -62,14 +64,14 @@ describe('紙娃娃影格', () => {
   });
   it('每種髮型、每套服裝都長得不一樣', () => {
     const imgs = new Set<string>();
-    for (let h = 0; h < HAIR_STYLES.length; h++) imgs.add(flatFrame(avatarFrame(plainLook({ ...DEFAULT_APPEARANCE, hair: h }), 'idle', 0)).px.join());
+    for (let h = 0; h < HAIR_STYLES.length; h++) imgs.add(flatFrame(avatarFrame(plainLook({ ...DEF, hair: h }), 'idle', 0)).px.join());
     expect(imgs.size).toBe(HAIR_STYLES.length);
     const outfits = new Set<string>();
-    for (let o = 0; o < OUTFITS.length; o++) outfits.add(flatFrame(avatarFrame(plainLook({ ...DEFAULT_APPEARANCE, outfit: o }), 'idle', 0)).px.join());
+    for (let o = 0; o < OUTFITS.length; o++) outfits.add(flatFrame(avatarFrame(plainLook({ ...DEF, outfit: o }), 'idle', 0)).px.join());
     expect(outfits.size).toBe(OUTFITS.length);
   });
   it('爬繩的影格依序不同（手交替），掛著的影格會晃', () => {
-    const l = plainLook(DEFAULT_APPEARANCE);
+    const l = plainLook(DEF);
     const climb = new Set<string>(), hang = new Set<string>();
     for (let f = 0; f < SHEET.climb[1]; f++) climb.add(avatarFrame(l, 'climb', f).body.px.join());
     for (let f = 0; f < SHEET.hang[1]; f++) hang.add(avatarFrame(l, 'hang', f).body.px.join());
@@ -80,16 +82,16 @@ describe('紙娃娃影格', () => {
 
 describe('圖層', () => {
   it('側面影格依 DOLL_LAYERS 的順序合成（手臂 / 手持由渲染器畫在兩張中間）', () => {
-    const l: DollLook = { ...plainLook(DEFAULT_APPEARANCE), head: piece('armor:iron'), back: piece('back:cape') };
+    const l: DollLook = { ...plainLook(DEF), head: piece('armor:iron'), back: piece('back:cape') };
     const trace: string[] = [];
     avatarFrame(l, 'idle', 0, trace);
     expect(trace).toEqual(DOLL_LAYERS.filter((k) => k !== 'arms' && k !== 'held'));
     const t2: string[] = [];
-    avatarFrame(plainLook(DEFAULT_APPEARANCE), 'walk', 3, t2);
+    avatarFrame(plainLook(DEF), 'walk', 3, t2);
     expect(t2).toEqual(DOLL_LAYERS.filter((k) => k !== 'arms' && k !== 'held' && k !== 'back' && k !== 'headgear'));
   });
   it('頭盔：頭頂的呆毛 / 頭髮收起來（頭頂上方看不到髮色），瀏海留著', () => {
-    const a = { ...DEFAULT_APPEARANCE, ahoge: true, hair: HAIR_STYLES.findIndex((h) => h.id === 'spiky') };
+    const a = { ...DEF, ahoge: true, hair: HAIR_STYLES.findIndex((h) => h.id === 'spiky') };
     const bare = avatarFrame(plainLook(a), 'idle', 0).head;
     const helm = avatarFrame({ ...plainLook(a), head: piece('armor:iron') }, 'idle', 0).head;
     const hr = new Set(hairRamp(a.hairColor).map((c) => c.join()));
@@ -100,16 +102,16 @@ describe('圖層', () => {
     expect(hairPx(helm, 19, 21)).toBeGreaterThan(3);
   });
   it('外觀欄 / 時裝蓋過防具：穿鐵甲 vs 鐵甲 + 水手服外觀，畫出來的身體不同、而且和純水手服一樣', () => {
-    const base = plainLook(DEFAULT_APPEARANCE);
+    const base = plainLook(DEF);
     const armor = avatarFrame({ ...base, body: piece('armor:iron') }, 'idle', 0).body;
     const sailor = avatarFrame({ ...base, body: piece('outfit:sailor') }, 'idle', 0).body;
     expect(diff(armor, sailor)).toBeGreaterThan(30);
     const fullSailor = avatarFrame({ ...base, body: piece('outfit:sailor'), legs: piece('outfit:sailor') }, 'idle', 0).body;
-    const plainSailor = avatarFrame(plainLook({ ...DEFAULT_APPEARANCE, outfit: OUTFITS.findIndex((o) => o.id === 'sailor'), color1: OUTFITS[1].colors[0], color2: OUTFITS[1].colors[1] }), 'idle', 0).body;
+    const plainSailor = avatarFrame(plainLook({ ...DEF, outfit: OUTFITS.findIndex((o) => o.id === 'sailor'), color1: OUTFITS[1].colors[0], color2: OUTFITS[1].colors[1] }), 'idle', 0).body;
     expect(diff(fullSailor, plainSailor)).toBe(0);
   });
   it('稀有度 / 強化 / 元素看得出來（但只是少量點綴）', () => {
-    const base = plainLook(DEFAULT_APPEARANCE);
+    const base = plainLook(DEF);
     const common = flatFrame(avatarFrame({ ...base, body: piece('armor:gold'), head: piece('armor:gold') }, 'idle', 0));
     const epic = flatFrame(avatarFrame({ ...base, body: piece('armor:gold', 3), head: piece('armor:gold', 3) }, 'idle', 0));
     const myth = flatFrame(avatarFrame({ ...base, body: piece('armor:gold', 5, 5, 'fire'), head: piece('armor:gold', 5, 5, 'fire') }, 'idle', 0));
@@ -124,7 +126,7 @@ describe('圖層', () => {
     expect(diff(m0, m1)).toBeGreaterThan(diff(c0, c1));
   });
   it('看得見的飾品：飾品鞋、背飾、墜飾、腰間小物都會改變畫面', () => {
-    const base = plainLook(DEFAULT_APPEARANCE), b0 = flatFrame(avatarFrame(base, 'idle', 0));
+    const base = plainLook(DEF), b0 = flatFrame(avatarFrame(base, 'idle', 0));
     for (const extra of [{ feet: 'jump' }, { feet: 'swift' }, { neck: 'night' }, { belt: 'compass' }, { back: piece('back:feathers') }, { back: piece('back:buckler') }, { back: piece('back:wings') }] as Partial<DollLook>[]) {
       expect(diff(b0, flatFrame(avatarFrame({ ...base, ...extra }, 'idle', 0))), JSON.stringify(extra)).toBeGreaterThanOrEqual(2);
     }
@@ -133,7 +135,7 @@ describe('圖層', () => {
 
 describe('預覽 / 圖示 / 快取', () => {
   it('預覽：手臂畫上去（比只有身體多）', () => {
-    const l = plainLook(DEFAULT_APPEARANCE);
+    const l = plainLook(DEF);
     const p = dollPreview(l, dollKey(l), 'walk', 2);
     expect(opaque(p)).toBeGreaterThan(opaque(flatFrame(avatarFrame(l, 'walk', 2))));
     clean(p, 'preview');
@@ -145,7 +147,7 @@ describe('預覽 / 圖示 / 快取', () => {
       expect(opaque(b), id).toBeGreaterThan(20);
       clean(b, id);
     }
-    expect(opaque(pieceBmp({ ...plainLook(DEFAULT_APPEARANCE), head: piece('armor:bone', 4) }, 'head'))).toBeGreaterThan(40);
+    expect(opaque(pieceBmp({ ...plainLook(DEF), head: piece('armor:bone', 4) }, 'head'))).toBeGreaterThan(40);
   });
   it('game.doll()：沒變就回傳同一份（不重算），換裝 / 外觀欄 / 隱藏 / 外觀才換 key', () => {
     const g = new DelveGame({ seed: 'doll', width: 96, height: 96, peaceful: true });
@@ -158,7 +160,7 @@ describe('預覽 / 圖示 / 快取', () => {
     expect(g.doll().key).toBe(a.key);
     g.vanity.set('back', 'feather_wings');
     expect(g.doll().key).not.toBe(a.key);
-    g.setAppearance({ ...DEFAULT_APPEARANCE, hair: 4 });
+    g.setAppearance({ ...DEF, hair: 4 });
     const c = g.doll();
     expect(c.look.app.hair).toBe(4);
     expect(g.doll()).toBe(c);
@@ -169,5 +171,45 @@ describe('預覽 / 圖示 / 快取', () => {
     const t0 = performance.now();
     for (let i = 0; i < 3; i++) avatarSheet(l);
     expect((performance.now() - t0) / 3).toBeLessThan(250);
+  });
+});
+
+describe('體型（男 / 女）與爬繩', () => {
+  const male = { ...DEF, body: 1, blush: false }, female = { ...DEF, body: 0 };
+  it('男女畫出來不一樣：男生肩膀寬、沒有腮紅；每套防具 / 服裝在兩種體型上都畫得出來、只用色票', () => {
+    const fb = avatarFrame(plainLook(female), 'idle', 0).body, mb = avatarFrame(plainLook(male), 'idle', 0).body;
+    const width = (b: Bmp, y: number): number => { let n = 0; for (let x = 0; x < b.w; x++) if (b.on(x, y)) n++; return n; };
+    expect(width(mb, 34)).toBeGreaterThan(width(fb, 34));
+    // 男生整體高 2 格（頭頂比較高）
+    const topRow = (b: Bmp): number => { for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) return y; return b.h; };
+    const ff = flatFrame(avatarFrame(plainLook({ ...female, ahoge: false }), 'idle', 0)), mf = flatFrame(avatarFrame(plainLook({ ...male, ahoge: false }), 'idle', 0));
+    expect(topRow(ff) - topRow(mf)).toBeGreaterThanOrEqual(2);
+    expect(diff(fb, mb)).toBeGreaterThan(20);
+    for (const body of [0, 1]) {
+      for (let o = 0; o < OUTFITS.length; o++) clean(avatarSheet(plainLook({ ...DEF, body, outfit: o })).b, `body ${body} outfit ${o}`);
+      for (const s of SETS) clean(avatarSheet({ ...plainLook({ ...DEF, body }), head: piece(`armor:${s}`), body: piece(`armor:${s}`), legs: piece(`armor:${s}`) }).b, `body ${body} ${s}`);
+    }
+  });
+  it('爬繩是側面（臉看得到）：往上 8 格、往下 6 格是另一套、掛著 4 格；整格往左偏讓繩子對準中心', () => {
+    const l = plainLook(DEF);
+    const up = new Set<string>(), down = new Set<string>();
+    for (let f = 0; f < SHEET.climb[1]; f++) { const r = avatarFrame(l, 'climb', f); up.add(r.body.px.join()); expect(r.meta.ox).toBeLessThan(0); }
+    for (let f = 0; f < SHEET.climbdown[1]; f++) down.add(avatarFrame(l, 'climbdown', f).body.px.join());
+    expect(SHEET.climb[1]).toBe(8);
+    expect(up.size).toBe(8);
+    expect(down.size).toBeGreaterThanOrEqual(5);
+    for (const d of down) expect(up.has(d)).toBe(false);
+    // 眼睛（瞳色）看得到 = 臉朝外，不是背面
+    const eye = new Set(eyeRamp(DEF.eyes).map((c) => c.join()));
+    let eyes = 0;
+    const b = avatarFrame(l, 'climb', 2).body;
+    for (let i = 0; i < b.px.length; i++) if (b.px[i] >>> 24 && eye.has(Bmp.unpack(b.px[i]).join())) eyes++;
+    expect(eyes).toBeGreaterThan(4);
+  });
+  it('暗處輪廓光：影格表第三列是外框那一圈（只用色票）', () => {
+    const { b } = avatarSheet(plainLook(DEF));
+    let n = 0;
+    for (let y = AV_FH * 2; y < AV_FH * 3; y++) for (let x = 0; x < AV_FW; x++) if (b.on(x, y)) n++;
+    expect(n).toBeGreaterThan(60);
   });
 });

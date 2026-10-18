@@ -2,7 +2,7 @@
 // 攀爬的「手交替」循環跟著爬的距離走（往下爬倒著播）、停下來一下才換成掛著搖晃、每次換手發出 grip 提示（音效 / 粉塵）。
 import { describe, it, expect } from 'vitest';
 import {
-  PlayerAnimator, CLIMB_FRAMES, HANG_FRAMES, MANTLE_FRAMES, SWIM_FRAMES, HANG_DELAY, HURT_SHOW, CLIMB_STRIDE, blinkAt, type AnimInput,
+  PlayerAnimator, CLIMB_FRAMES, CLIMBDOWN_FRAMES, HANG_FRAMES, MANTLE_FRAMES, SWIM_FRAMES, HANG_DELAY, HURT_SHOW, CLIMB_STRIDE, blinkAt, type AnimInput,
 } from './playerAnim';
 
 const base: AnimInput = { dt: 1 / 60, dead: false, climbing: false, mantle: null, onGround: true, vx: 0, vy: 0, swim: false, sinceHurt: 99 };
@@ -47,18 +47,17 @@ describe('PlayerAnimator：攀爬狀態機', () => {
     expect(new Set(r.frames).size).toBe(CLIMB_FRAMES);
     for (const f of r.frames) { expect(f).toBeGreaterThanOrEqual(0); expect(f).toBeLessThan(CLIMB_FRAMES); }
   });
-  it('往下爬：影格倒著播', () => {
+  it('往下爬是另一套動作（climbdown：手抓在手下面），不是往上爬倒著播；影格往前、會換手', () => {
     const a = new PlayerAnimator();
-    feed(a, { climbing: true, onGround: false, vy: -120 }, 3);
-    const up = feed(a, { climbing: true, onGround: false, vy: -120 }, 12).frames;
-    const down = feed(a, { climbing: true, onGround: false, vy: 120 }, 12).frames;
-    const step = (fs: number[]): number => {
-      let s = 0;
-      for (let i = 1; i < fs.length; i++) { const d = (fs[i] - fs[i - 1] + CLIMB_FRAMES) % CLIMB_FRAMES; if (d) s += d === CLIMB_FRAMES - 1 ? -1 : d; }
-      return s;
-    };
-    expect(step(up)).toBeGreaterThan(0);
-    expect(step(down)).toBeLessThan(0);
+    feed(a, { climbing: true, onGround: false, vy: -120 }, 12);
+    expect(a.anim).toBe('climb');
+    const down = feed(a, { climbing: true, onGround: false, vy: 120 }, 60);
+    expect(a.anim).toBe('climbdown');
+    expect(new Set(down.frames).size).toBe(CLIMBDOWN_FRAMES);
+    expect(down.grips).toBeGreaterThan(4);
+    let fwd = 0;
+    for (let i = 1; i < down.frames.length; i++) { const d = (down.frames[i] - down.frames[i - 1] + CLIMBDOWN_FRAMES) % CLIMBDOWN_FRAMES; if (d === 1) fwd++; }
+    expect(fwd).toBeGreaterThan(5);
   });
   it('在繩上停下：HANG_DELAY 之內維持 climb（點一下上不會閃成掛著），之後換成 hang 並慢慢搖晃', () => {
     const a = new PlayerAnimator();
@@ -68,7 +67,8 @@ describe('PlayerAnimator：攀爬狀態機', () => {
     expect(a.anim).toBe('climb');
     const r = feed(a, { climbing: true, onGround: false }, 240);
     expect(a.anim).toBe('hang');
-    expect(r.grips).toBe(0);
+    // 停下來時手爬到握繩姿勢：最多一次換手聲
+    expect(r.grips).toBeLessThanOrEqual(1);
     expect(new Set(r.frames.slice(-120)).size).toBe(HANG_FRAMES);
   });
   it('在繩上橫移也算 climb', () => {
@@ -107,5 +107,42 @@ describe('游泳 / 眨眼', () => {
     for (let i = 0; i < N; i++) if (blinkAt(i / 600)) closed++;
     expect(closed / N).toBeGreaterThan(0.01);
     expect(closed / N).toBeLessThan(0.08);
+  });
+});
+
+describe('攀爬的銜接（不跳格）', () => {
+  it('停下來時先把手爬到「兩手都抓著」的那一格（第 0 / 4 格）才換成掛著，掛著的握法和那一格一樣', () => {
+    for (const n of [5, 9, 13, 17, 21]) {
+      const a = new PlayerAnimator();
+      feed(a, { climbing: true, onGround: false, vy: -120 }, n);
+      const r = feed(a, { climbing: true, onGround: false }, 90);
+      const firstHang = r.frames.findIndex((_, i) => i > 0 && a.anim === 'hang' && i === r.frames.length - 1) >= 0;
+      expect(firstHang).toBe(true);
+      expect(a.anim).toBe('hang');
+      // 換成掛著之前的最後一格 climb 是 0 或 4
+      const b = new PlayerAnimator();
+      feed(b, { climbing: true, onGround: false, vy: -120 }, n);
+      let lastClimb = -1, hangFrame = -1;
+      for (let k = 0; k < 90; k++) {
+        const o = b.update({ ...base, climbing: true, onGround: false });
+        if (o.anim === 'climb') lastClimb = o.frame;
+        if (o.anim === 'hang') { hangFrame = o.frame; break; }
+      }
+      // 掛著的握法 = 停下來之後手爬到的那一格（下一個半輪的邊界：第 0 或 4 格）
+      const half = CLIMB_FRAMES / 2;
+      const boundary = lastClimb % half === 0 ? lastClimb : ((Math.floor(lastClimb / half) + 1) * half) % CLIMB_FRAMES;
+      expect(Math.floor(hangFrame / HANG_FRAMES)).toBe(boundary / half);
+    }
+  });
+  it('從掛著再往上爬：從第 0 或第 4 格開始（不會跳過開頭幾格）', () => {
+    const a = new PlayerAnimator();
+    feed(a, { climbing: true, onGround: false, vy: -120 }, 7);
+    feed(a, { climbing: true, onGround: false }, 60);
+    expect(a.anim).toBe('hang');
+    const r = a.update({ ...base, climbing: true, onGround: false, vy: -120 });
+    expect(r.anim).toBe('climb');
+    expect(r.frame % (CLIMB_FRAMES / 2)).toBe(0);
+    const fresh = new PlayerAnimator();
+    expect(fresh.update({ ...base, climbing: true, onGround: false, vy: -120 }).frame).toBe(0);
   });
 });
