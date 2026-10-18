@@ -9,7 +9,11 @@ import { FISH_SPECIES } from '../engine/fishing';
 import { AFFIXES, BASE_TIER, RARITIES, STAT_LABEL } from '../engine/gear';
 import type { ItemId } from '../engine/items';
 import { drawIcon, type Atlas } from './textures';
-import { BannerQueue, distanceLabel, exploredLabel, percentLabel } from './model';
+import { BannerQueue, biomeLabel, distanceLabel, exploredLabel, percentLabel } from './model';
+import { NPCS, NPC_KINDS, moodLabel } from '../engine/npcs';
+import { FURNITURE } from '../engine/furniture';
+import { LEVEL_NAMES } from '../engine/settlement';
+import { npcPortrait } from './settleUi';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] => {
   const e = document.createElement(tag);
@@ -114,7 +118,8 @@ export class ExploreUi {
     const killSig = Object.values(g.kills).reduce((a, n) => a + (n ?? 0), 0);
     const fishSig = Object.values(g.fishLog).reduce((a, n) => a + (n ?? 0), 0);
     const codexSig = [...g.codex.affixes.values()].reduce((a, n) => a + n, 0) * 100 + [...g.codex.items.values()].reduce((a, n) => a + n + 1, 0);
-    const sig = `${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${exploredLabel(explored)}|${killSig}|${g.bossesDefeated.size}|${fishSig}|${codexSig}`;
+    const settleSig = g.settle.cores.map((c) => `${c.id}:${g.settle.evaluation(c.id, w)?.level ?? 0}`).join() + '/' + g.settle.npcs.map((n) => `${n.kind}${n.mood}`).join();
+    const sig = `${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${exploredLabel(explored)}|${killSig}|${g.bossesDefeated.size}|${fishSig}|${codexSig}|${settleSig}`;
     if (sig === this.journalSig) return;
     this.journalSig = sig;
     body.replaceChildren();
@@ -122,7 +127,7 @@ export class ExploreUi {
     // 目錄（日誌很長：直接跳到裝備圖鑑等）
     const nav = el('nav', 'delve-j-nav');
     nav.setAttribute('aria-label', '日誌目錄');
-    for (const [k, label] of [['regions', '地區'], ['lore', '古碑'], ['bestiary', '怪物'], ['fish', '釣魚'], ['codex', '裝備圖鑑']] as const) {
+    for (const [k, label] of [['regions', '地區'], ['lore', '古碑'], ['bestiary', '怪物'], ['fish', '釣魚'], ['settle', '據點'], ['codex', '裝備圖鑑']] as const) {
       const b = el('button', 'delve-btn', label);
       b.type = 'button'; b.dataset.jump = k;
       nav.appendChild(b);
@@ -218,7 +223,48 @@ export class ExploreUi {
       fl.appendChild(cell);
     }
     body.appendChild(fl);
+    this.renderSettle(body);
     this.renderCodex(body);
+  }
+
+  /** 據點與居民：據點等級、居民（沒來過的是黑影 + 入住條件）、家具圖鑑（舒適度） */
+  private renderSettle(body: HTMLElement): void {
+    const g = this.game, st = g.settle;
+    const h = el('h3', 'delve-j-h', `據點與居民：據點 ${st.cores.length} 個 · 居民 ${st.npcs.length} / ${NPC_KINDS.length}`);
+    h.dataset.sec = 'settle';
+    h.dataset.testid = 'journal-settle';
+    body.appendChild(h);
+    body.appendChild(el('p', 'delve-j-names', st.cores.length
+      ? st.cores.map((c) => { const lv = st.evaluation(c.id, g.world)?.level ?? 0; return `${biomeLabel(g.world.biomeAt(c.x))}據點 Lv${lv}「${LEVEL_NAMES[lv]}」（${c.x}, ${c.y}）`; }).join('、')
+      : '還沒有據點：做一個「據點爐心」放在地上，範圍內的合格房間會吸引居民搬來'));
+    const ppl = el('div', 'delve-j-npcs');
+    for (const k of NPC_KINDS) {
+      const n = st.npc(k), d = NPCS[k];
+      const cell = el('span', n ? 'delve-j-npc is-got' : 'delve-j-npc');
+      cell.dataset.npc = k;
+      cell.appendChild(npcPortrait(k));
+      cell.appendChild(el('span', '', n ? `${d.name}・${d.title}` : `？？？・${d.title}`));
+      cell.title = n ? `${d.intro}（心情：${moodLabel(n.mood)}）` : `入住條件：${d.need.zh}`;
+      ppl.appendChild(cell);
+    }
+    body.appendChild(ppl);
+    body.appendChild(el('p', 'delve-j-names', '合格的房間：封閉、人造背景牆、門、光源、桌子、椅子、床，20–120 格。家具越多樣、越舒適，據點等級越高。'));
+    const ul = el('ul', 'delve-j-furn');
+    ul.dataset.testid = 'journal-furniture';
+    for (const f of FURNITURE) {
+      const li = el('li');
+      const c = el('canvas', 'delve-slot-icon');
+      c.width = 16; c.height = 16;
+      const ctx = c.getContext('2d');
+      if (ctx) drawIcon(this.atlas, ctx, f.item, 16);
+      const role = { table: '桌子', seat: '座位', bed: '床', light: '光源', decor: '裝飾', storage: '收納', station: '合成站' }[f.role];
+      const txt = el('span', '', `${ITEMS[f.item].name.zh}（${role} · 舒適 ${f.comfort}）`);
+      txt.appendChild(document.createElement('br'));
+      txt.appendChild(el('small', '', f.note));
+      li.append(c, txt);
+      ul.appendChild(li);
+    }
+    body.appendChild(ul);
   }
 
   /** 裝備圖鑑：詞條（見過的最高階）、傳奇詞條（效果）、每種基底拿過的最高稀有度 */

@@ -624,6 +624,8 @@ export class DelveGame {
     this.aimPx = { x: (Number.isInteger(tx) ? tx + 0.5 : tx) * TILE_SIZE, y: (Number.isInteger(ty) ? ty + 0.5 : ty) * TILE_SIZE };
     if (x !== this.aim.x || y !== this.aim.y) { this.aim = { x, y }; this.mining = null; this.lastBlocked = ''; }
   }
+  /** 目前瞄準的 tile（不配置新物件，每幀查詢用） */
+  aimTile(): Readonly<{ x: number; y: number }> { return this.aim; }
   /** 游標所指世界 px 座標（renderer 換算好鏡頭偏移後傳入） */
   setAimWorld(px: number, py: number): void { this.setAim(px / TILE_SIZE, py / TILE_SIZE); }
   setMining(held: boolean): void { this.miningHeld = held; if (!held) this.mining = null; }
@@ -2897,6 +2899,37 @@ export class DelveGame {
     w.setHalf(x, y, !w.isHalf(x, y));
     this.events.push({ type: 'place', x, y, tile: id, item: 'builder_hammer' });
     return true;
+  }
+  /**
+   * 放置預覽（藍圖 / 鬼影）：手上的方塊 / 家具放在 (x,y) 會佔哪些格、能不能放（不改世界）。
+   * 不是可放置的東西 → null。門往上 3 格、雙格家具往右 1 格。
+   */
+  placementPreview(x: number, y: number): { tiles: [number, number, number][]; ok: boolean; wall?: number } | null {
+    const st = this.inventory.selectedStack();
+    if (!st) return null;
+    const d = ITEMS[st.item], w = this.world;
+    if (d.placeWall !== undefined) {
+      const near = isSolidTile(w.getFg(x, y)) || [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => w.getWall(x + dx, y + dy) !== 0 || isSolidTile(w.getFg(x + dx, y + dy)));
+      return { tiles: [[x, y, T.AIR]], ok: w.inBounds(x, y) && w.getWall(x, y) === 0 && this.canReach(x, y) && near, wall: d.placeWall };
+    }
+    const place = d.place;
+    if (place === undefined || place === T.ROPE || place === T.TORCH) return null;
+    const free = (tx: number, ty: number): boolean => { const c = w.getFg(tx, ty); return w.inBounds(tx, ty) && (c === T.AIR || tileDef(c).replaceable); };
+    const tiles: [number, number, number][] = [];
+    let ok = this.canReach(x, y);
+    if (place === T.DOOR_CLOSED) {
+      for (let k = 0; k < 3; k++) { tiles.push([x, y - k, T.DOOR_CLOSED]); ok &&= free(x, y - k) && !this.tileOverlapsPlayer(x, y - k); }
+      ok &&= isSolidTile(w.getFg(x, y + 1));
+    } else if (PAIR_OF_LEFT.has(place)) {
+      const pr = PAIR_OF_LEFT.get(place)!;
+      tiles.push([x, y, pr.left], [x + 1, y, pr.right]);
+      for (let k = 0; k < 2; k++) ok &&= free(x + k, y) && isSolidTile(w.getFg(x + k, y + 1));
+    } else {
+      tiles.push([x, y, place]);
+      ok &&= free(x, y) && this.placeSupported(x, y, place) && !(isSolidTile(place) && this.tileOverlapsPlayer(x, y));
+      if (place === T.HEARTH) ok &&= this.settle.canFound(x, y) === 'ok';
+    }
+    return { tiles, ok };
   }
   /** debug / e2e：立刻讓居民搬進玩家所在（或第一個）據點 */
   debugMoveIn(kind: NpcKind, force = false): boolean {

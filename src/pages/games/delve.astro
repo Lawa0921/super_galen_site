@@ -43,6 +43,8 @@ const lang: Language = defaultLang;
         <button class="delve-chip" id="delve-inv-btn" type="button">背包<kbd class="delve-kbd">E</kbd></button>
         <button class="delve-chip" id="delve-map-btn" type="button">地圖<kbd class="delve-kbd">M</kbd></button>
         <button class="delve-chip" id="delve-journal-btn" type="button">日誌<kbd class="delve-kbd">J</kbd></button>
+        <button class="delve-chip" id="delve-settle-btn" type="button">據點<kbd class="delve-kbd">B</kbd></button>
+        <button class="delve-chip delve-chip--house" id="delve-house-btn" type="button" aria-pressed="false">查房<kbd class="delve-kbd">H</kbd></button>
         <button class="delve-chip delve-chip--aim" id="delve-aim-btn" type="button" aria-pressed="false">自動瞄準</button>
         <button class="delve-chip" id="delve-menu-btn" type="button">選單<kbd class="delve-kbd">Esc</kbd></button>
       </div>
@@ -60,6 +62,24 @@ const lang: Language = defaultLang;
         <span class="delve-banner-sub" id="delve-banner-sub"></span>
         <span class="delve-banner-title" id="delve-banner-title"></span>
       </div>
+
+      <div class="delve-wlabels" id="delve-wlabels" aria-hidden="true"></div>
+
+      <section class="delve-panel delve-panel--settle" id="delve-settle" hidden aria-label="據點">
+        <header class="delve-panel-head">
+          <h2 id="delve-settle-title">據點</h2>
+          <button class="delve-x" id="delve-settle-close" type="button" aria-label="關閉據點面板">×</button>
+        </header>
+        <div class="delve-settle-body" id="delve-settle-body"></div>
+      </section>
+
+      <section class="delve-panel delve-panel--npc" id="delve-npc" hidden aria-label="居民">
+        <header class="delve-panel-head">
+          <h2 id="delve-npc-title">居民</h2>
+          <button class="delve-x" id="delve-npc-close" type="button" aria-label="關閉居民面板">×</button>
+        </header>
+        <div class="delve-npc-body" id="delve-npc-body"></div>
+      </section>
 
       <section class="delve-panel delve-panel--journal" id="delve-journal" hidden aria-label="探險日誌">
         <header class="delve-panel-head">
@@ -216,6 +236,7 @@ const lang: Language = defaultLang;
           <li><kbd class="delve-help-key">1–0</kbd><span>換快捷欄（或滾輪）；開局第 3 格是木劍</span></li>
           <li><kbd class="delve-help-key">E</kbd><span>背包與合成</span></li>
           <li><kbd class="delve-help-key">M</kbd><span>地圖（N 小地圖、J 日誌）</span></li>
+          <li><kbd class="delve-help-key">B</kbd><span>據點面板（H 查房模式：看哪間房可以住人）</span></li>
         </ul>
         <ul class="delve-help-list delve-help-list--touch">
           <li><span class="delve-help-key">搖桿</span><span>左下拖曳移動</span></li>
@@ -225,7 +246,7 @@ const lang: Language = defaultLang;
           <li><span class="delve-help-key">背包</span><span>右上「背包」看道具與合成</span></li>
           <li><span class="delve-help-key">地圖</span><span>右上「地圖」或點小地圖</span></li>
         </ul>
-        <p class="delve-note">晚上怪物比較多：先蓋個小屋、放張床當重生點。之後可從選單的「操作說明」再打開。</p>
+        <p class="delve-note">晚上怪物比較多：先蓋個小屋、放張床當重生點。放下「據點爐心」、把房子補齊門 / 燈 / 桌椅 / 床，就會有居民搬來。之後可從選單的「操作說明」再打開。</p>
         <button class="delve-btn delve-btn--main" id="delve-help-close" type="button">知道了</button>
       </div>
     </section>
@@ -1735,5 +1756,89 @@ const lang: Language = defaultLang;
     /* 直立：提示放在虛擬搖桿 / 跳躍鍵上方 */
     .delve[data-touch='1'] .delve-toast { bottom: 196px; }
     .delve[data-touch='1'][data-boss='1'] .delve-toast { bottom: 236px; }
+  }
+
+  /* ── 據點 / 居民 ── */
+  .delve-chip--house[aria-pressed='true'] { --bv-hi: #c2e478; --bv-bg: #2d672e; --bv-lo: #16301e; }
+  .delve-panel--settle,
+  .delve-panel--npc { left: auto; right: 10px; width: min(460px, calc(100vw - 20px)); }
+  .delve-settle-body,
+  .delve-npc-body { display: grid; gap: 8px; margin-top: 8px; }
+  .delve-st-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .delve-st-lv { padding: 2px 8px; font-family: var(--pixel); font-size: 16px; color: #fff4c0; background: #a83a10; box-shadow: 0 0 0 var(--px) var(--outline); text-shadow: var(--text-outline); }
+  .delve-st-score { font-size: 16px; color: #d8ba76; }
+  .delve-st-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 0; }
+  .delve-st-cell { display: flex; justify-content: space-between; gap: 6px; padding: 4px 6px; background: #2a1810; box-shadow: inset 0 0 0 var(--px) #472819; }
+  .delve-st-cell dt { font-size: 16px; color: #b07a4b; }
+  .delve-st-cell dd { margin: 0; font-size: 16px; color: var(--gold); }
+  .delve-st-needs,
+  .delve-st-perks,
+  .delve-st-res,
+  .delve-st-rooms,
+  .delve-shop { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .delve-st-need { font-size: 16px; color: #e890b0; }
+  .delve-st-need.is-ok { color: #93cc50; }
+  .delve-st-perk { display: grid; grid-template-columns: 7.5em 1fr; gap: 6px; font-size: 16px; color: #7c4c2e; }
+  .delve-st-perk.is-on { color: var(--ink); }
+  .delve-st-perk.is-on .delve-st-perk-name { color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-st-perk-desc { color: inherit; }
+  .delve-st-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .delve-st-npc { display: flex; gap: 8px; align-items: center; padding: 4px; background: #2a1810; box-shadow: inset 0 0 0 var(--px) #472819; }
+  .delve-st-npc.is-wait { opacity: 1; background: #1c1424; }
+  .delve-st-npc-info { display: grid; gap: 2px; }
+  .delve-st-npc-name { font-size: 16px; color: var(--gold); }
+  .delve-st-npc.is-wait .delve-st-npc-name { color: #966139; }
+  .delve-st-npc-mood { font-size: 16px; color: #cceaf8; }
+  .delve-st-npc-note,
+  .delve-npc-note { margin: 0; font-size: 16px; line-height: 1.35; color: #b07a4b; }
+  .delve-st-room { font-size: 16px; line-height: 1.35; color: #e890b0; }
+  .delve-st-room.is-ok { color: #93cc50; }
+  .delve-npc-face { width: calc(var(--px) * 44); height: calc(var(--px) * 34); image-rendering: pixelated; background: #18204a; box-shadow: 0 0 0 var(--px) var(--outline); flex: none; }
+  .delve-npc-head { display: flex; gap: 10px; align-items: flex-start; }
+  .delve-npc-info { display: grid; gap: 4px; }
+  .delve-npc-line { margin: 0; font-size: 16px; line-height: 1.45; color: #fff4c0; text-shadow: var(--text-outline); }
+  .delve-npc-intro,
+  .delve-npc-mood { margin: 0; font-size: 16px; line-height: 1.4; color: #d8ba76; }
+  .delve-shop-row { grid-template-columns: 36px 1fr; }
+  .delve-sell-row { display: grid; grid-template-columns: 32px 1fr auto auto; gap: 6px; align-items: center; font-size: 16px; }
+  .delve-sell-row .delve-slot-icon { width: 32px; height: 32px; }
+  /* 世界上的標籤（查房 / 對話泡泡）：--x / --y = 畫面座標（CSS px），往上置中 */
+  .delve-hud > .delve-wlabels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .delve-room-tag,
+  .delve-say {
+    --x: 0px;
+    --y: 0px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(calc(var(--x) - 50%), calc(var(--y) - 100% - 4px));
+    max-width: 260px;
+    padding: 2px 6px;
+    font-size: 16px;
+    line-height: 1.3;
+    white-space: normal;
+    text-align: center;
+    box-shadow: 0 0 0 var(--px) var(--outline);
+    text-shadow: var(--text-outline);
+  }
+  .delve-room-tag.is-ok { color: #ffffff; background: #2d672e; }
+  .delve-room-tag.is-bad { color: #fff4c0; background: #8c2038; }
+  .delve-say { color: #2a1810; background: #fff4c0; text-shadow: none; }
+  .delve-j-npcs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .delve-j-npc { display: grid; justify-items: center; gap: 2px; width: calc(var(--px) * 46); font-size: 16px; color: #b07a4b; text-align: center; }
+  .delve-j-npc.is-got { color: var(--gold); }
+  .delve-j-npc .delve-npc-face { width: calc(var(--px) * 44); height: calc(var(--px) * 34); }
+  .delve-j-npc:not(.is-got) .delve-npc-face { filter: brightness(0); }
+  .delve-j-furn { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
+  .delve-j-furn li { display: grid; grid-template-columns: 32px 1fr; gap: 6px; align-items: center; font-size: 16px; line-height: 1.25; color: #d8ba76; }
+  .delve-j-furn .delve-slot-icon { width: 32px; height: 32px; }
+  .delve-j-furn small { font-size: 16px; color: #966139; }
+  @media (max-width: 640px) {
+    .delve-st-grid { grid-template-columns: repeat(2, 1fr); }
+    .delve-j-furn { grid-template-columns: 1fr; }
+    .delve-st-perk { grid-template-columns: 6.5em 1fr; }
+    .delve-npc-face { width: calc(var(--px) * 33); height: calc(var(--px) * 25.5); }
+    .delve-sell-row { grid-template-columns: 32px 1fr auto; }
+    .delve-sell-row .delve-btn:last-child { grid-column: 3; }
   }
 </style>

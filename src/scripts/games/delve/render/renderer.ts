@@ -32,6 +32,7 @@ import { WeatherFx, type Canopy } from './weatherFx';
 import { lootGlyphScale } from './lootArt';
 import { toCanvas } from './pixel';
 import { bobberBmp, campfireBmp } from './fishArt';
+import { SettleLayer } from './settleDraw'; // [settle]
 
 const S = TILE_SIZE;
 const CPX = CHUNK * S;
@@ -122,6 +123,8 @@ export class Renderer {
   ambientNow: AmbientKind | null = null;
   /** 戰鬥圖層（掉落物 / 怪物 / 投射物 / 飄字 / 震動） */
   readonly combat: CombatLayer;
+  /** [settle] 據點圖層：居民、查房模式、放置預覽 */
+  readonly settleLayer: SettleLayer;
   /** 季節植物（草葉 / 花 / 高草 × 四季 × 擺動）與冰面 */
   readonly flora = new FloraAtlas();
   private ice: HTMLCanvasElement[] = [0, 1, 2].flatMap((v) => [toCanvas(iceBmp(v, false)) as HTMLCanvasElement, toCanvas(iceBmp(v, true)) as HTMLCanvasElement]);
@@ -202,6 +205,7 @@ export class Renderer {
     this.atlas = buildAtlas();
     this.sprites = new Sprites((item) => this.atlas.iconBmp(item));
     this.combat = new CombatLayer(game, this.atlas, this.sprites);
+    this.settleLayer = new SettleLayer(game, this.atlas); // [settle]
     this.cache = new ChunkLRU(48);
     let s = 0;
     for (const ch of game.seed) s = (s * 31 + ch.charCodeAt(0)) >>> 0;
@@ -264,6 +268,10 @@ export class Renderer {
     return { x: this.drawCam.x + sx / this.zoom, y: this.drawCam.y + sy / this.zoom };
   }
 
+  /** [settle] 世界 px → CSS px（相對 canvas；DOM 標籤定位用） */
+  worldToScreen(wx: number, wy: number): { x: number; y: number } {
+    return { x: (wx - this.drawCam.x) * this.zoom, y: (wy - this.drawCam.y) * this.zoom };
+  }
   snapCamera(): void { this.snapNext = true; }
   invalidateAll(): void {
     for (const k of this.cache.keys()) this.pending.add(k);
@@ -426,6 +434,7 @@ export class Renderer {
     const vb = this.viewBox;
     vb.x = camX; vb.y = camY; vb.w = vw; vb.h = vh;
     this.combat.drawWorld(ctx, vb, this.glowSeen);
+    this.settleLayer.drawWorld(ctx, vb, this.clock); // [settle]
     this.drawPlayer(ctx, dt);
     ph.sprites = this.lap();
     const tl = performance.now();
@@ -458,6 +467,7 @@ export class Renderer {
     this.drawRecall(ctx);
     this.drawGlows(ctx);
     this.combat.drawOverlay(ctx, dt);
+    if (this.showCursor) this.settleLayer.drawOverlay(ctx, vb); // [settle]
     // 睡覺：全畫面抖動淡出 / 淡入
     const sl = g.sleepFade();
     if (sl > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); this.fx.drawSleep(ctx, sl, this.bufW, this.bufH); }
@@ -533,6 +543,11 @@ export class Renderer {
         const s = isDecor(f) ? A.decor(f, decorStyleAt(f, x, y, nb, this.seasonDay, w.surface[x])) // [polish] cobweb corners + seasonal decor
           : f === T.GRASS ? A.grass(this.grassSeason(x, y, i), variant[i], masks[(y - y0) * CHUNK + (x - x0)])
           : A.tile(f, tileVariant(f, x, y, variant[i]), masks[(y - y0) * CHUNK + (x - x0)]); // [polish] stone/dirt families
+        if (w.half[i]) { // [settle] 半格：上緣 4 列 + 下緣 4 列疊成下半格
+          ctx.drawImage(img, s.sx, s.sy, S, 4, (x - x0) * S, (y - y0) * S + 8, S, 4);
+          ctx.drawImage(img, s.sx, s.sy + 12, S, 4, (x - x0) * S, (y - y0) * S + 12, S, 4);
+          continue;
+        }
         ctx.drawImage(img, s.sx, s.sy, S, S, (x - x0) * S, (y - y0) * S, S, S);
       }
     }
