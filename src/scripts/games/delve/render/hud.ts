@@ -15,6 +15,11 @@ import { RARITIES, affixDef, affixText, gearName, gearSlot, rarityOf, type Cost 
 import type { ForgeResult } from '../engine/game';
 import { gearTooltip, statRows } from './gearTip';
 import { ToastQueue, TOAST_NORMAL } from './toastQueue';
+import { VANITY_SLOTS, type HideSlot, type VanitySlot } from '../engine/vanity';
+import { buildDollLook, dollKey, pieceOf, type DollLook } from '../engine/doll';
+import { dollPreview } from './dollPreview';
+import { toCanvas } from './pixel';
+import { SHEET, type SheetAnim } from './avatarArt';
 
 /** 圖示以原生 16×16 烘進小 canvas，由 CSS 以整數倍（image-rendering: pixelated）放大 */
 const ICON_PX = 16;
@@ -25,6 +30,18 @@ const CRAFT_FAIL: Record<string, string> = {
   missing: '材料不足', station: '需要靠近合成站', full: '背包放不下', unknown: '未知配方',
 };
 const SLOT_LABEL: Record<EquipSlot, string> = { head: '頭', body: '身', legs: '腿', acc0: '飾', acc1: '飾', acc2: '飾', acc3: '飾', acc4: '飾' };
+const VANITY_LABEL: Record<VanitySlot, string> = { head: '頭', body: '身', legs: '腿', back: '背' };
+const HIDE_LABEL: Record<HideSlot, string> = { head: '頭盔', body: '胸甲', legs: '護脛' };
+/** 背包紙娃娃預覽輪播：待機 → 走路 */
+const DOLL_REEL: [SheetAnim, number][] = [['idle', 3], ['walk', 2]];
+/** 這件道具穿在身上看得見嗎（防具 / 時裝 / 看得見的飾品） */
+function wearSlot(item: ItemId): 'head' | 'body' | 'legs' | 'back' | 'acc' | null {
+  const d = ITEMS[item];
+  if (d.vanity) return d.vanity.slot;
+  if (d.armor) return d.armor.slot;
+  if (['jump_boots', 'swift_boots', 'feather_charm', 'chitin_buckler', 'night_amulet', 'fang_charm', 'warden_heart', 'magma_ward', 'compass', 'depth_meter', 'magnet', 'explorer_map'].includes(item)) return 'acc';
+  return null;
+}
 const FORGE_FAIL: Record<Exclude<ForgeResult, { ok: true }>['reason'], string> = {
   none: '先在背包選一件裝備', station: '要在鐵砧旁（4 格內）才能鍛造', cost: '材料不足（碎晶 / 星塵）', max: '已經到上限了', unique: '傳奇詞條不能洗煉', locked: '已鎖定',
 };
@@ -39,6 +56,12 @@ export class Hud {
   private grid: SlotEl[] = [];
   private chestGrid: SlotEl[] = [];
   private equip: SlotEl[] = [];
+  private vanity: SlotEl[] = [];
+  private hideBtns: { slot: HideSlot; btn: HTMLButtonElement }[] = [];
+  /** 紙娃娃預覽：快取（key|anim → 各格 canvas）與輪播計數 */
+  private dollFrames = new Map<string, HTMLCanvasElement[]>();
+  private dollTick = 0;
+  private dollDrawn = '';
   private picked: number | null = null;
   private toastTimer = 0;
   private frame = 0;
@@ -94,6 +117,35 @@ export class Hud {
         eq.appendChild(s.btn);
         this.equip.push(s);
       });
+    }
+    const vy = this.root.querySelector<HTMLElement>('#delve-vanity');
+    if (vy) {
+      vy.replaceChildren();
+      VANITY_SLOTS.forEach((slot, k) => {
+        const s = this.makeSlot(k, '');
+        s.btn.dataset.vanity = slot;
+        s.btn.classList.add('delve-slot--vanity');
+        const lab = document.createElement('span');
+        lab.className = 'delve-slot-label';
+        lab.textContent = VANITY_LABEL[slot];
+        s.btn.appendChild(lab);
+        s.btn.addEventListener('click', () => this.clickVanity(slot));
+        vy.appendChild(s.btn);
+        this.vanity.push(s);
+      });
+    }
+    const hr = this.root.querySelector<HTMLElement>('#delve-hide-row');
+    if (hr) {
+      hr.replaceChildren();
+      for (const slot of ['head', 'body', 'legs'] as const) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'delve-hide';
+        b.dataset.hide = slot;
+        b.addEventListener('click', () => { this.game.setHideArmor(slot, !this.game.vanity.hide[slot]); this.refresh(); });
+        hr.appendChild(b);
+        this.hideBtns.push({ slot, btn: b });
+      }
     }
     const equipBtn = this.root.querySelector('#delve-equip-btn');
     const onEquipBtn = (): void => { if (this.picked !== null) this.quickEquip(this.picked); };
@@ -222,10 +274,27 @@ export class Hud {
     }
     this.refresh();
   }
-  /** 背包第 i 格自動裝上 */
+  /** 點外觀欄：有選中的背包格 → 放進來；否則卸下 */
+  private clickVanity(slot: VanitySlot): void {
+    if (this.picked !== null) {
+      const it = this.game.inventory.slots[this.picked]?.item;
+      if (!this.game.equipVanityFromInventory(this.picked, slot)) this.toast(it ? `${ITEMS[it].name.zh}不能放在外觀欄的這一格` : '不能放在這裡');
+      this.picked = null;
+    } else if (this.game.vanity.get(slot)) {
+      if (!this.game.unequipVanity(slot)) this.toast('背包已滿，卸不下來');
+    }
+    this.refresh();
+  }
+  /** 背包第 i 格自動裝上（時裝 → 外觀欄） */
   private quickEquip(i: number): void {
     const st = this.game.inventory.slots[i];
     if (!st) return;
+    if (ITEMS[st.item].vanity) {
+      if (!this.game.equipVanityFromInventory(i)) this.toast('放不進外觀欄');
+      this.picked = null;
+      this.refresh();
+      return;
+    }
     if (!this.game.equipFromInventory(i)) this.toast(ITEMS[st.item].armor || ITEMS[st.item].accessory ? '已經裝了同一件' : '這不是裝備');
     this.picked = null;
     this.refresh();
@@ -314,6 +383,15 @@ export class Hud {
       const it = e.get(slot);
       this.paintStack(this.equip[k], it ? { item: it, count: 1 } : null, k);
     });
+    const v = this.game.vanity;
+    VANITY_SLOTS.forEach((slot, k) => { if (this.vanity[k]) this.paintStack(this.vanity[k], v.getStack(slot), k); });
+    for (const h of this.hideBtns) {
+      const on = v.hide[h.slot];
+      h.btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      h.btn.textContent = `${HIDE_LABEL[h.slot]}${on ? '（隱藏）' : ''}`;
+      h.btn.setAttribute('aria-label', `${on ? '顯示' : '隱藏'}${HIDE_LABEL[h.slot]}的樣子（數值照算）`);
+    }
+    this.drawDoll(true);
     const st = this.game.getState();
     const statsEl = this.root.querySelector('#delve-stats');
     if (statsEl) {
@@ -339,7 +417,7 @@ export class Hud {
     const btn = this.root.querySelector<HTMLElement>('#delve-equip-btn');
     if (btn) {
       const it = this.picked !== null ? this.game.inventory.slots[this.picked]?.item : undefined;
-      btn.hidden = !(it && (ITEMS[it].armor || ITEMS[it].accessory));
+      btn.hidden = !(it && (ITEMS[it].armor || ITEMS[it].accessory || ITEMS[it].vanity));
     }
   }
 
@@ -487,6 +565,18 @@ export class Hud {
       return p;
     }));
     if (gearSlot(st.item)) tip.dataset.rarity = String(rarityOf(st.gear)); else delete tip.dataset.rarity;
+    // 穿得到身上的東西：小預覽「穿上去的樣子」
+    const tryOn = this.tryOnLook(st);
+    if (tryOn) {
+      const c = toCanvas(dollPreview(tryOn, dollKey(tryOn), 'idle', 0)) as HTMLCanvasElement;
+      c.className = 'delve-tip-doll';
+      c.setAttribute('aria-hidden', 'true');
+      c.dataset.testid = 'tip-doll';
+      const cap = document.createElement('p');
+      cap.className = 'delve-tip-line delve-tip-dollcap';
+      cap.textContent = ITEMS[st.item].vanity ? '穿上去的樣子（外觀欄）' : '穿上去的樣子';
+      tip.append(c, cap);
+    }
     tip.hidden = false;
     const r = anchor.getBoundingClientRect(), rr = this.root.getBoundingClientRect();
     const tw = tip.offsetWidth, th = tip.offsetHeight;
@@ -504,6 +594,51 @@ export class Hud {
     clearTimeout(this.tipTimer);
     if (ms) this.tipTimer = window.setTimeout(() => this.hideTip(), ms);
   }
+  /** 說明框的試穿：目前的紙娃娃換上這件（時裝 → 外觀欄那格；防具 → 防具那格，外觀欄有東西時仍以外觀欄為準） */
+  private tryOnLook(st: Stack): DollLook | null {
+    const ws = wearSlot(st.item);
+    if (!ws) return null;
+    const g = this.game, cur = g.doll().look, d = ITEMS[st.item];
+    const p = pieceOf(st);
+    if (ws === 'acc') {
+      const e = g.equipment.clone();
+      const s = e.autoSlot(st.item) ?? 'acc4';
+      e.set(s, st.item, st.gear);
+      return buildDollLook(g.appearance, e, g.vanity);
+    }
+    if (!p) return null;
+    if (d.vanity) return { ...cur, [ws]: p };
+    // 防具：外觀欄蓋著就看不出差別，照實顯示
+    const vs = ws as VanitySlot;
+    return g.vanity.get(vs) ? cur : { ...cur, [ws]: p };
+  }
+  /** 背包的紙娃娃（開著背包時每幾幀換一格；樣子變了立刻重畫） */
+  private drawDoll(force = false): void {
+    if (!this.inventoryOpen) return;
+    const c = this.root.querySelector<HTMLCanvasElement>('#delve-doll-canvas');
+    const ctx = c?.getContext('2d');
+    if (!c || !ctx) return;
+    const { look, key } = this.game.doll();
+    const total = DOLL_REEL.reduce((n, [a, k]) => n + SHEET[a][1] * k, 0);
+    let t = Math.floor(this.dollTick / 8) % total, anim: SheetAnim = 'idle', f = 0;
+    for (const [a, k] of DOLL_REEL) { const len = SHEET[a][1] * k; if (t < len) { anim = a; f = t % SHEET[a][1]; break; } t -= len; }
+    const sig = `${key}|${anim}|${f}`;
+    if (!force && sig === this.dollDrawn) return;
+    this.dollDrawn = sig;
+    const fk = `${key}|${anim}`;
+    let fr = this.dollFrames.get(fk);
+    if (!fr) {
+      fr = [];
+      for (let i = 0; i < SHEET[anim][1]; i++) fr.push(toCanvas(dollPreview(look, key, anim, i)) as HTMLCanvasElement);
+      this.dollFrames.set(fk, fr);
+      if (this.dollFrames.size > 12) this.dollFrames.delete(this.dollFrames.keys().next().value as string);
+    }
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.drawImage(fr[f], 0, 0);
+    const doll = this.root.querySelector<HTMLElement>('#delve-doll');
+    if (doll) doll.dataset.key = key;
+  }
   hideTip(): void {
     const tip = this.root.querySelector<HTMLElement>('#delve-tip');
     if (tip) tip.hidden = true;
@@ -512,6 +647,7 @@ export class Hud {
   /** 每幀呼叫；內部節流 */
   tick(): void {
     this.frame++;
+    if (this.inventoryOpen) { this.dollTick++; this.drawDoll(); }
     this.drawVitals();
     if (this.frame % 6 === 0) this.drawUndying();
     this.drawBoss();
@@ -571,10 +707,11 @@ export class Hud {
   }
 
   // ── 裝備詞條：說明對應的格子、比較對象 ─────────────────
-  /** 說明框要顯示哪一格（背包 / 快捷欄 / 箱子 / 裝備欄 / 鍛造台） */
+  /** 說明框要顯示哪一格（背包 / 快捷欄 / 箱子 / 裝備欄 / 外觀欄 / 鍛造台） */
   private stackFor(el: HTMLElement): Stack | null {
     const g = this.game, slot = Number(el.dataset.slot);
     if (el.dataset.equip) return g.equipment.getStack(el.dataset.equip as EquipSlot);
+    if (el.dataset.vanity) return g.vanity.getStack(el.dataset.vanity as VanitySlot);
     if (el.dataset.forgeItem !== undefined) return this.forgeTarget;
     if (!Number.isInteger(slot)) return null;
     if (el.closest('#delve-chest-grid')) return g.chestSlots()?.[slot] ?? null;

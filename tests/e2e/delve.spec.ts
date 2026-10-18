@@ -1035,6 +1035,9 @@ test.describe('delve title', () => {
     await page.keyboard.press('Enter');
     await expect(page.locator('#delve-tmenu')).toBeVisible();
     await expect(page.locator('#delve-new')).toBeFocused();
+    // 新世界 → 角色外觀 → 匯入存檔
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('#delve-look')).toBeFocused();
     await page.keyboard.press('ArrowDown');
     await expect(page.locator('#delve-import')).toBeFocused();
     await page.keyboard.press('End');
@@ -1425,5 +1428,178 @@ test.describe('delve 標題流程（生成畫面 / 回到標題）', () => {
     await backToTitle(page);
     await expect(page.locator('#delve-continue-sub')).toContainText('rt-new');
     expect(errors).toEqual([]);
+  });
+});
+
+test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+
+  test('標題「角色外觀」→ 換髮型 → 完成；新世界用這個外觀，存檔 → 重新整理 → 繼續後還在', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-look');
+    const wr = page.locator('#delve-wardrobe');
+    await expect(wr).toBeVisible();
+    const row = wr.locator('.delve-wr-row[data-key="hair"]');
+    await expect(row).toBeFocused();
+    const before = Number(await row.getAttribute('data-value'));
+    // 鍵盤 → 換一個，再用滑鼠點「下一個」再換一個
+    await page.keyboard.press('ArrowRight');
+    await row.locator('[data-dir="1"]').click();
+    const hair = Number(await row.getAttribute('data-value'));
+    expect(hair).not.toBe(before);
+    await wr.locator('.delve-wr-row[data-key="hairColor"] [data-dir="1"]').click();
+    const hairColor = Number(await wr.locator('.delve-wr-row[data-key="hairColor"]').getAttribute('data-value'));
+    await page.click('#delve-wr-done');
+    await expect(wr).toBeHidden();
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('delve.appearance') ?? '{}'));
+    expect(saved.hair).toBe(hair);
+    // 標題背景的主角也換了
+    await page.waitForFunction(() => Boolean(window.__delveTitle));
+    expect(await page.evaluate(() => window.__delveTitle!.game.appearance.hair)).toBe(hair);
+    // 新世界
+    await page.click('#delve-new');
+    await page.fill('#delve-seed', 'look-e2e');
+    await page.click('#delve-create');
+    await waitGame(page);
+    expect(await page.evaluate(() => window.__delveDebug!.game.appearance.hair)).toBe(hair);
+    await page.evaluate(() => window.__delveDebug!.save());
+    // 預設外觀清掉：讀檔後的外觀要來自存檔本身
+    await page.evaluate(() => localStorage.removeItem('delve.appearance'));
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-continue');
+    await waitGame(page);
+    const look = await page.evaluate(() => window.__delveDebug!.game.appearance);
+    expect(look.hair).toBe(hair);
+    expect(look.hairColor).toBe(hairColor);
+    expect(errors).toEqual([]);
+  });
+
+  test('遊戲中選單「角色外觀」：Esc 關掉回到選單；隨機 → 完成 → 紙娃娃 key 換了', async ({ page }) => {
+    await page.goto('/games/delve?seed=look-menu&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForTimeout(200);
+    const k0 = await page.evaluate(() => window.__delveDebug!.handle.renderer.sprites.dollKey);
+    await page.click('#delve-menu-btn');
+    await page.click('#delve-look-menu');
+    await expect(page.locator('#delve-wardrobe')).toBeVisible();
+    await expect(page.locator('#delve-menu')).toBeHidden();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#delve-wardrobe')).toBeHidden();
+    await expect(page.locator('#delve-menu')).toBeVisible();
+    await page.click('#delve-look-menu');
+    for (let i = 0; i < 3; i++) await page.click('#delve-wr-random');
+    await page.click('#delve-wr-done');
+    await page.click('#delve-resume');
+    await page.waitForTimeout(250);
+    const k1 = await page.evaluate(() => window.__delveDebug!.handle.renderer.sprites.dollKey);
+    expect(k1).not.toBe(k0);
+  });
+
+  test('紙娃娃：戴頭盔 → 精靈快取 key 換了；外觀欄蓋過防具的樣子；隱藏開關；說明框試穿；存檔後還在', async ({ page }) => {
+    await page.goto('/games/delve?seed=doll-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const key = (): Promise<string> => page.evaluate(() => window.__delveDebug!.handle.renderer.sprites.dollKey);
+    await page.waitForTimeout(200);
+    const k0 = await key();
+    await page.evaluate(() => { window.__delveDebug!.game.equip('iron_helmet'); window.__delveDebug!.game.equip('iron_chestplate'); });
+    await page.waitForTimeout(200);
+    const k1 = await key();
+    expect(k1).not.toBe(k0);
+    expect(k1).toContain('armor:iron');
+    // 背包放一件時裝 → 右鍵 = 放進外觀欄
+    await page.evaluate(() => { window.__delveDebug!.game.give('sailor_top', 1); });
+    await page.keyboard.press('KeyE');
+    await expect(page.locator('#delve-inv')).toBeVisible();
+    await page.locator('#delve-inv-grid .delve-slot[data-item="sailor_top"]').click({ button: 'right' });
+    await expect(page.locator('#delve-vanity .delve-slot[data-vanity="body"]')).toHaveAttribute('data-item', 'sailor_top');
+    const doll = await page.evaluate(() => { const g = window.__delveDebug!.game; return { body: g.doll().look.body?.look, armor: g.equipment.get('body'), def: g.getState().defense }; });
+    expect(doll.body).toBe('outfit:sailor');
+    expect(doll.armor).toBe('iron_chestplate');
+    expect(doll.def).toBeGreaterThan(0);
+    await page.waitForTimeout(200);
+    const k2 = await key();
+    expect(k2).not.toBe(k1);
+    await expect(page.locator('#delve-doll')).toHaveAttribute('data-key', k2);
+    // 隱藏頭盔：樣子回到沒戴，防禦不變
+    await page.click('#delve-hide-row [data-hide="head"]');
+    await expect(page.locator('#delve-hide-row [data-hide="head"]')).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.evaluate(() => window.__delveDebug!.game.doll().look.head)).toBeNull();
+    expect(await page.evaluate(() => window.__delveDebug!.game.getState().defense)).toBe(doll.def);
+    // 說明框：時裝有「穿上去的樣子」
+    await page.evaluate(() => { window.__delveDebug!.game.give('witch_hat', 1); });
+    await page.waitForTimeout(150);
+    await page.locator('#delve-inv-grid .delve-slot[data-item="witch_hat"]').hover();
+    await expect(page.locator('#delve-tip [data-testid="tip-doll"]')).toBeVisible();
+    // 存檔 → 讀回：外觀欄與隱藏開關都還在
+    await page.evaluate(() => window.__delveDebug!.save());
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-continue');
+    await waitGame(page);
+    const after = await page.evaluate(() => { const g = window.__delveDebug!.game; return { v: g.vanity.get('body'), hide: g.vanity.hide.head }; });
+    expect(after).toEqual({ v: 'sailor_top', hide: true });
+  });
+
+  test('爬繩：按住 W → climb；放開 → hang；爬到井口 → 攀上邊緣（mantle）站到地面上', async ({ page }) => {
+    await page.goto('/games/delve?seed=climb-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const at = await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game, w = g.world;
+      // 3 格寬、13 格深的豎井，中間掛繩；井口兩邊是地面，上面清出空間
+      const t = g.feetTile(), cx = t.x + 6, top = t.y - 2;
+      for (let y = top - 6; y < top; y++) for (let x = cx - 5; x <= cx + 5; x++) { w.setFg(x, y, 0); w.setWall(x, y, 0); }
+      for (let y = top; y < top + 14; y++) for (let x = cx - 5; x <= cx + 5; x++) w.setFg(x, y, Math.abs(x - cx) <= 1 && y < top + 13 ? 0 : 3);
+      for (let y = top; y < top + 13; y++) w.setFg(cx, y, 65);
+      g.teleport(cx, top + 12);
+      d.handle.renderer.snapCamera();
+      return { cx, top };
+    });
+    await page.waitForTimeout(300);
+    await page.keyboard.down('KeyW');
+    await page.waitForTimeout(350);
+    expect(await page.evaluate(() => window.__delveDebug!.handle.renderer.playerAnim)).toBe('climb');
+    await page.keyboard.up('KeyW');
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => window.__delveDebug!.handle.renderer.playerAnim)).toBe('hang');
+    const seen = new Set<string>();
+    await page.keyboard.down('KeyW');
+    for (let i = 0; i < 60; i++) {
+      seen.add(await page.evaluate(() => window.__delveDebug!.handle.renderer.playerAnim));
+      if (await page.evaluate(() => { const p = window.__delveDebug!.game.getState().player; return p.onGround && !p.climbing && !p.mantle; })) break;
+      await page.waitForTimeout(40);
+    }
+    await page.keyboard.up('KeyW');
+    expect(seen.has('mantle')).toBe(true);
+    const st = await page.evaluate(() => window.__delveDebug!.game.getState().player);
+    expect(st.onGround).toBe(true);
+    expect(st.climbing).toBe(false);
+    expect(st.y + 42).toBeLessThanOrEqual(at.top * 16 + 0.5);
+  });
+
+  test('效能：跑來跑去不重烘紙娃娃，換裝才烘一次', async ({ page }) => {
+    await page.goto('/games/delve?seed=perf-doll&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForTimeout(300);
+    const bakes = (): Promise<{ sheets: number; arms: number }> => page.evaluate(() => ({ ...window.__delveDebug!.handle.renderer.sprites.bakes }));
+    const b0 = await bakes();
+    await page.keyboard.down('KeyD');
+    await page.waitForTimeout(800);
+    await page.keyboard.up('KeyD');
+    await page.keyboard.down('KeyA');
+    await page.waitForTimeout(500);
+    await page.keyboard.up('KeyA');
+    const b1 = await bakes();
+    expect(b1.sheets).toBe(b0.sheets);
+    await page.evaluate(() => window.__delveDebug!.game.equip('gold_helmet'));
+    await page.waitForTimeout(200);
+    const b2 = await bakes();
+    expect(b2.sheets).toBe(b1.sheets + 1);
   });
 });

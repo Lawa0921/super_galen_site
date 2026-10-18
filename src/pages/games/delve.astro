@@ -101,9 +101,26 @@ const lang: Language = defaultLang;
           <span class="delve-mats" id="delve-mats" data-testid="mats"></span>
         </div>
         <h2 class="delve-craft-title">裝備</h2>
-        <p class="delve-hint">選背包裡的防具 / 飾品再點裝備格（或按「裝上」、右鍵背包格）；點裝備格卸下</p>
-        <div class="delve-equip-row">
-          <div class="delve-equip" id="delve-equip"></div>
+        <p class="delve-hint">選背包裡的防具 / 飾品 / 時裝再點格子（或按「裝上」、右鍵背包格）；點格子卸下。外觀欄只改樣子，數值看防具。</p>
+        <div class="delve-doll-row">
+          <figure class="delve-doll" id="delve-doll" data-testid="doll-preview">
+            <canvas class="delve-doll-canvas" id="delve-doll-canvas" width="44" height="54" aria-label="角色紙娃娃預覽"></canvas>
+            <figcaption class="delve-doll-cap">目前的樣子</figcaption>
+          </figure>
+          <div class="delve-equip-cols">
+            <div class="delve-equip-col">
+              <h3 class="delve-equip-h">防具 · 飾品</h3>
+              <div class="delve-equip" id="delve-equip"></div>
+            </div>
+            <div class="delve-equip-col">
+              <h3 class="delve-equip-h">外觀（時裝）</h3>
+              <div class="delve-vanity" id="delve-vanity"></div>
+            </div>
+            <div class="delve-hide-wrap">
+              <span class="delve-equip-h" id="delve-hide-h">隱藏防具的樣子</span>
+              <div class="delve-hide-row" id="delve-hide-row" role="group" aria-labelledby="delve-hide-h"></div>
+            </div>
+          </div>
           <button class="delve-btn delve-equip-btn" id="delve-equip-btn" type="button" hidden>裝上</button>
         </div>
         <h2 class="delve-craft-title">能力總覽</h2>
@@ -174,6 +191,7 @@ const lang: Language = defaultLang;
       <div class="delve-menu-box">
         <h2>暫停</h2>
         <button class="delve-btn" id="delve-resume" type="button">繼續遊戲</button>
+        <button class="delve-btn" id="delve-look-menu" type="button">角色外觀</button>
         <button class="delve-btn" id="delve-peaceful" type="button" aria-pressed="false">難度：一般</button>
         <button class="delve-btn" id="delve-help-btn" type="button">操作說明</button>
         <button class="delve-btn" id="delve-calendar-btn" type="button">日曆與天氣</button>
@@ -262,6 +280,7 @@ const lang: Language = defaultLang;
             <span class="delve-ti-text"><span class="delve-ti-label">繼續冒險</span><span class="delve-ti-sub" id="delve-continue-sub"></span></span>
           </button>
           <button class="delve-ti delve-ti--new" id="delve-new" type="button" data-icon="new"><span class="delve-ti-text"><span class="delve-ti-label">新世界</span></span></button>
+          <button class="delve-ti" id="delve-look" type="button" data-icon="look"><span class="delve-ti-text"><span class="delve-ti-label">角色外觀</span></span></button>
           <div class="delve-ti-row">
             <button class="delve-ti" id="delve-import" type="button" data-icon="import"><span class="delve-ti-text"><span class="delve-ti-label">匯入存檔</span></span></button>
             <button class="delve-ti" id="delve-export-title" type="button" data-icon="export" hidden><span class="delve-ti-text"><span class="delve-ti-label">匯出存檔</span></span></button>
@@ -300,6 +319,11 @@ const lang: Language = defaultLang;
             <button class="delve-seg2-btn" id="delve-diff-peaceful" type="button" role="radio" aria-checked="false">和平</button>
           </div>
           <p class="delve-field-hint" id="delve-diff-hint"></p>
+          <span class="delve-field-label">角色</span>
+          <div class="delve-newlook">
+            <canvas class="delve-newlook-doll" id="delve-new-doll" width="44" height="54" aria-hidden="true"></canvas>
+            <button class="delve-btn" id="delve-new-look" type="button">更換外觀</button>
+          </div>
           <div class="delve-tpanel-btns">
             <button class="delve-btn" id="delve-new-cancel" type="button">返回</button>
             <button class="delve-btn delve-btn--main" id="delve-create" type="button">開始冒險</button>
@@ -337,6 +361,25 @@ const lang: Language = defaultLang;
           </div>
         </div>
       </section>
+    </section>
+
+    <section class="delve-tpanel delve-wr" id="delve-wardrobe" hidden role="dialog" aria-modal="true" aria-labelledby="delve-wr-h">
+      <div class="delve-tpanel-box delve-wr-box">
+        <h2 class="delve-tpanel-h" id="delve-wr-h"><span class="delve-tpanel-icon" data-icon="look"></span>角色外觀</h2>
+        <div class="delve-wr-body">
+          <div class="delve-wr-stage">
+            <canvas class="delve-wr-doll" id="delve-wr-doll" aria-label="角色預覽（輪播待機、走路、爬繩、攀上邊緣）"></canvas>
+            <p class="delve-wr-cap" id="delve-wr-cap" aria-hidden="true"></p>
+            <button class="delve-btn" id="delve-wr-random" type="button">隨機</button>
+          </div>
+          <div class="delve-wr-rows" id="delve-wr-rows"></div>
+        </div>
+        <p class="delve-field-hint delve-wr-keys"><kbd>↑</kbd><kbd>↓</kbd> 選項　<kbd>←</kbd><kbd>→</kbd> 切換　<kbd>Enter</kbd> 完成　<kbd>Esc</kbd> 取消</p>
+        <div class="delve-tpanel-btns">
+          <button class="delve-btn" id="delve-wr-cancel" type="button">取消</button>
+          <button class="delve-btn delve-btn--main" id="delve-wr-done" type="button">完成</button>
+        </div>
+      </div>
     </section>
 
     <canvas class="delve-wipe" id="delve-wipe" hidden aria-hidden="true"></canvas>
@@ -990,6 +1033,57 @@ const lang: Language = defaultLang;
   .delve-seg2-btn:hover,
   .delve-seg2-btn:focus-visible { --bv-hi: #fff4c0; outline: none; color: #fff4c0; }
   .delve-tpanel-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+  /* ── 新世界：角色預覽 ── */
+  .delve-newlook { display: flex; gap: 10px; align-items: center; }
+  .delve-newlook-doll { width: 88px; height: 108px; image-rendering: pixelated; border: 2px solid; border-color: #1c1424 #966139 #966139 #1c1424; background: #18204a; }
+  .delve-newlook .delve-btn { flex: 1; min-height: 44px; }
+  /* ── 角色外觀（客製化）── */
+  .delve-wr { z-index: 45; }
+  .delve-wr-box { width: min(760px, 100%); }
+  .delve-wr-body { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; }
+  .delve-wr-stage { display: grid; gap: 6px; justify-items: center; position: sticky; top: 0; }
+  .delve-wr-doll { width: 176px; height: 216px; image-rendering: pixelated; border: 2px solid; border-color: #0c0a12 #966139 #966139 #0c0a12; background: repeating-conic-gradient(#18204a 0% 25%, #2c2450 0% 50%) 0 0 / 16px 16px; box-shadow: 0 0 0 2px var(--outline); }
+  .delve-wr-cap { margin: 0; min-height: 1.2em; font-size: 16px; color: #94c8ee; text-shadow: var(--text-outline); }
+  .delve-wr-stage .delve-btn { width: 100%; min-height: 44px; }
+  .delve-wr-rows { display: grid; gap: 4px; }
+  .delve-wr-group { margin: 6px 0 0; font-size: 16px; color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-wr-group:first-child { margin-top: 0; }
+  .delve-wr-row { display: grid; grid-template-columns: 4.5em 40px 1fr 40px; gap: 6px; align-items: center; min-height: 44px; padding: 0 4px; border: 2px solid transparent; }
+  .delve-wr-row:focus-visible, .delve-wr-row:focus { outline: none; border-color: var(--gold); background: #472819; }
+  .delve-wr-label { font-size: 16px; color: #f2e2b0; }
+  .delve-wr-arrow { width: 40px; min-height: 40px; color: #ffd86a; }
+  .delve-wr-val { display: flex; gap: 8px; align-items: center; justify-content: center; font-size: 16px; color: #ffffff; text-shadow: var(--text-outline); }
+  .delve-wr-swatch { width: 20px; height: 20px; image-rendering: pixelated; box-shadow: 0 0 0 2px var(--outline); }
+  .delve-wr .delve-tpanel-btns { position: sticky; bottom: -18px; margin: 0 -18px -18px; padding: 10px 18px 18px; background: #2a1810; border-top: 2px solid #472819; }
+  @media (min-width: 900px) and (min-height: 521px) {
+    .delve-wr-box { width: min(980px, 100%); }
+    .delve-wr-rows { grid-template-columns: 1fr 1fr; column-gap: 16px; }
+    .delve-wr-group { grid-column: 1 / -1; }
+  }
+  .delve-wr-keys kbd { display: inline-block; min-width: 1.4em; padding: 0 4px; margin: 0 2px; border: 2px solid #966139; background: #1c1424; color: #f2e2b0; font: inherit; text-align: center; }
+  @media (max-width: 640px), (max-height: 520px) and (orientation: landscape) {
+    .delve-wr-box { padding: 12px; }
+    .delve-wr .delve-tpanel-btns { bottom: -12px; margin: 0 -12px -12px; padding: 8px 12px 12px; }
+    .delve-wr-body { grid-template-columns: 1fr; }
+    .delve-wr-stage { position: static; grid-template-columns: auto 1fr; align-items: center; justify-items: stretch; }
+    .delve-wr-doll { width: 132px; height: 162px; grid-row: span 2; }
+    .delve-wr-row { grid-template-columns: 4em 44px 1fr 44px; }
+    .delve-wr-arrow { width: 44px; min-height: 44px; }
+    .delve-wr-keys { display: none; }
+  }
+  @media (max-width: 640px) {
+    .delve .delve-doll-canvas { width: 132px; height: 162px; }
+    .delve .delve-doll { flex-basis: 100%; }
+    .delve .delve-doll-row { display: grid; grid-template-columns: 1fr; }
+    .delve .delve-equip-cols { display: grid; grid-template-columns: 1fr; gap: 10px; width: 100%; }
+    .delve .delve-doll-row .delve-equip,
+    .delve .delve-vanity { grid-template-columns: repeat(4, minmax(40px, 1fr)); width: 100%; }
+    .delve .delve-doll-row .delve-equip .delve-slot,
+    .delve .delve-vanity .delve-slot { width: 100%; height: auto; min-height: 40px; aspect-ratio: 1; }
+    .delve .delve-hide { min-height: 40px; flex: 1; }
+    .delve .delve-vanity .delve-slot-icon,
+    .delve .delve-doll-row .delve-equip .delve-slot-icon { width: 32px; height: 32px; }
+  }
   .delve-tpanel-btns--one { grid-template-columns: 1fr; }
   .delve-tpanel-btns .delve-btn { min-height: 44px; }
   .delve-set { display: grid; grid-template-columns: 7.5em 1fr; gap: 10px; align-items: center; min-height: 44px; }
@@ -1418,6 +1512,30 @@ const lang: Language = defaultLang;
   .delve-slot--acc .delve-slot-label { color: #2c4486; }
   .delve-slot.is-filled .delve-slot-label { display: none; }
   .delve-equip-btn { padding: 6px 10px; }
+  /* ── 紙娃娃：預覽 + 防具 / 外觀欄並排 ── */
+  .delve-doll-row { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+  .delve-doll { margin: 0; display: grid; justify-items: center; gap: 2px; padding: 4px; border: var(--px) solid; border-color: #1c1424 #623924 #623924 #1c1424; background: #18204a; }
+  .delve-doll-canvas { width: calc(var(--px) * 66); height: calc(var(--px) * 81); image-rendering: pixelated; }
+  .delve-doll-cap { font-size: 16px; color: #94c8ee; }
+  .delve-equip-cols { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; flex: 1; min-width: 0; }
+  .delve-doll-row .delve-equip { grid-template-columns: repeat(4, calc(var(--px) * 20)); }
+  .delve-hide-wrap { flex-basis: 100%; display: grid; gap: 4px; }
+  .delve-equip-col { display: grid; gap: 4px; }
+  .delve-equip-h { margin: 0; font-size: 16px; font-weight: 400; color: #f2e2b0; }
+  .delve-vanity { display: grid; grid-template-columns: repeat(2, calc(var(--px) * 20)); gap: calc(var(--px) * 2); }
+  .delve-vanity .delve-slot { width: calc(var(--px) * 20); height: calc(var(--px) * 20); --bv-bg: #2c2450; }
+  .delve-vanity .delve-slot-label { color: #7a5a8c; }
+  .delve-hide-row { display: flex; gap: calc(var(--px) * 2); }
+  .delve-hide {
+    --bv-hi: #623924; --bv-lo: #1c1424; --bv-bg: #2a1810;
+    min-width: calc(var(--px) * 20); min-height: 32px; padding: 2px 6px;
+    border: var(--px) solid; border-color: var(--bv-hi) var(--bv-lo) var(--bv-lo) var(--bv-hi); border-radius: 0;
+    background: var(--bv-bg); box-shadow: 0 0 0 var(--px) var(--outline); font-size: 16px; color: #c99660; cursor: pointer;
+  }
+  .delve-hide[aria-pressed='true'] { --bv-bg: #6c1e14; --bv-hi: #a83a10; color: #fff4c0; }
+  .delve-hide:hover, .delve-hide:focus-visible { --bv-hi: #fff4c0; outline: none; }
+  .delve-tip-doll { display: block; width: 88px; height: 108px; margin: 4px 0 2px; image-rendering: pixelated; border: 2px solid; border-color: #1c1424 #623924 #623924 #1c1424; background: #18204a; }
+  .delve-tip-dollcap { color: #94c8ee; }
   .delve-stats { color: #cceaf8; }
   .delve-chip--aim[aria-pressed='true'] { --bv-hi: #cceaf8; --bv-bg: #1f6474; --bv-lo: #18204a; }
   .delve[data-boss='1'] .delve-toast { bottom: 110px; }

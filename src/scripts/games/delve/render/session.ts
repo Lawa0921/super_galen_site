@@ -16,6 +16,11 @@ import { Wipe } from './wipe';
 import { genProgress, genStageLabel, GEN_STAGE_LABELS, readVolume, rollWorldName, summarizeGame } from './titleModel';
 import { liveCounts, type LiveCounts } from './live';
 import { GEN_PHASES, GenSectionView, genPhaseLabel, genPhaseOf } from './genSection';
+import { Wardrobe } from './wardrobe';
+import { loadDefaultAppearance, saveDefaultAppearance, type Appearance } from '../engine/appearance';
+import { dollKey, plainLook } from '../engine/doll';
+import { dollPreview } from './dollPreview';
+import { toCanvas } from './pixel';
 
 const SLOT = 'main';
 /** 進度條格數 */
@@ -99,6 +104,10 @@ export function bootDelve(root: HTMLElement): Session {
   on(root, 'pointerdown', unlock);
   on(window, 'keydown', unlock);
   const wipe = wipeCanvas ? new Wipe(wipeCanvas, reduced) : null;
+  const wardrobeEl = $('#delve-wardrobe');
+  const wardrobe = wardrobeEl ? new Wardrobe(root, wardrobeEl, uiSound) : null;
+  /** 新世界用的預設外觀（localStorage） */
+  const defaultLook = (): Appearance => loadDefaultAppearance(storage);
 
   // ── 標題背景：第一次繪製之後才生成小世界（不擋住標題畫面出現） ──
   let scene: TitleScene | null = null;
@@ -107,7 +116,7 @@ export function bootDelve(root: HTMLElement): Session {
   function startScene(skipIntro: boolean): void {
     if (root.dataset.phase !== 'title' || scene) return;
     try {
-      scene = new TitleScene(canvas!, { reducedMotion: reduced });
+      scene = new TitleScene(canvas!, { reducedMotion: reduced, appearance: defaultLook() });
       window.__delveTitle = scene;
       if (skipIntro) scene.skipIntro();
       scene.start();
@@ -142,6 +151,7 @@ export function bootDelve(root: HTMLElement): Session {
   }
   function setMenu(open: boolean): void {
     if (!menu || leaving) return;
+    if (wardrobe?.isOpen) { wardrobe.close(); return; }
     menu.hidden = !open;
     handle?.setPaused(open);
     say(menuMsg, '');
@@ -364,7 +374,7 @@ export function bootDelve(root: HTMLElement): Session {
     const s = seed.trim() || rollWorldName(Math.random);
     void transition('生成世界中…', async () => {
       const gen = await generate(s, {});
-      return new DelveGame({ seed: s, peaceful, gen });
+      return new DelveGame({ seed: s, peaceful, gen, appearance: defaultLook() });
     }, 'title');
   }
 
@@ -485,7 +495,30 @@ export function bootDelve(root: HTMLElement): Session {
     onExport: () => void exportSlot(),
     onHelp: () => setHelp(true),
     onPressStart: () => scene?.skipIntro(),
+    onLook: () => {
+      wardrobe?.open(defaultLook(), {
+        onDone: (a) => { saveDefaultAppearance(storage, a); scene?.game.setAppearance(a); syncLookPreview(); },
+      });
+    },
   }, { reducedMotion: reduced, storage, sound: uiSound, peaceful: defaultPeaceful() });
+  /** 新世界面板的角色小預覽（跟著預設外觀） */
+  function syncLookPreview(): void {
+    const l = plainLook(defaultLook());
+    ui.setLookPreview(toCanvas(dollPreview(l, dollKey(l), 'idle', 0)) as HTMLCanvasElement);
+  }
+  syncLookPreview();
+  // 遊戲中選單「角色外觀」：換的是這個世界的角色（身上的裝備照樣穿著），也記成新世界的預設
+  on($('#delve-look-menu'), 'click', () => {
+    const g = handle?.game;
+    if (!g || !wardrobe || !menu) return;
+    menu.hidden = true;
+    handle?.setPaused(true);
+    wardrobe.open(g.appearance, {
+      look: (a) => ({ ...g.doll().look, app: a }),
+      onDone: (a) => { g.setAppearance(a); saveDefaultAppearance(storage, a); },
+      onClose: () => { if (handle) { menu.hidden = false; handle.setPaused(true); $('#delve-look-menu')?.focus(); } },
+    });
+  });
 
   on(upgradeNew, 'click', () => { if (upgradeNew) upgradeNew.hidden = true; ui.openPanel('#delve-newpanel', '#delve-seed'); });
   on(confirmOk, 'click', () => {
@@ -547,6 +580,7 @@ export function bootDelve(root: HTMLElement): Session {
       handle?.destroy();
       stopScene();
       ui.destroy();
+      wardrobe?.destroy();
       wipe?.destroy();
       section?.destroy();
       uiSound.destroy();

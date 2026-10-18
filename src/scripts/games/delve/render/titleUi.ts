@@ -22,6 +22,8 @@ export interface TitleHandlers {
   onHelp(): void;
   /** 「按任意鍵開始」→ 選單滑進來（場景跳過開場下降） */
   onPressStart(): void;
+  /** 主選單「角色外觀」/ 新世界面板「更換外觀」 */
+  onLook(): void;
 }
 
 export interface TitleUiOptions {
@@ -160,6 +162,8 @@ export class TitleUi {
     click('#delve-export-title', () => this.h.onExport());
     click('#delve-help-open', () => this.h.onHelp());
     click('#delve-settings-btn', () => this.openPanel('#delve-settings', '#delve-vol'));
+    click('#delve-look', () => this.h.onLook());
+    click('#delve-new-look', () => this.h.onLook());
     click('#delve-back', () => { /* 連結本身導頁 */ });
     click('#delve-new-cancel', () => this.closePanel(), 'back');
     click('#delve-settings-close', () => this.closePanel(), 'back');
@@ -213,7 +217,7 @@ export class TitleUi {
   }
 
   private onKey(e: KeyboardEvent): void {
-    if (this.root.dataset.phase !== 'title' || this.root.dataset.confirm || this.root.dataset.help) return;
+    if (this.root.dataset.phase !== 'title' || this.root.dataset.confirm || this.root.dataset.help || this.root.dataset.wardrobe) return;
     if (this.root.dataset.title === 'press') {
       if (e.key === 'Tab' || e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta' || e.metaKey || e.ctrlKey || e.altKey) return;
       e.preventDefault();
@@ -339,6 +343,15 @@ export class TitleUi {
     this.$<HTMLButtonElement>('#delve-zp-inc')!.disabled = z >= ZOOM_MAX;
     const aim = this.aimPref(), ab = this.$('#delve-aim-pref');
     if (ab) { ab.setAttribute('aria-checked', aim ? 'true' : 'false'); ab.textContent = aim ? '開' : '關'; }
+  }
+
+  /** 新世界面板的角色小預覽 */
+  setLookPreview(img: HTMLCanvasElement): void {
+    const c = this.$<HTMLCanvasElement>('#delve-new-doll'), ctx = c?.getContext('2d');
+    if (!c || !ctx) return;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0);
   }
 
   // ── 存檔摘要 ──
