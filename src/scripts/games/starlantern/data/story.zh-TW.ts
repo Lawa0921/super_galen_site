@@ -62,7 +62,7 @@ const MAJOR_TEXT: Record<MajorScene, string> = {
 };
 
 type Written = { lines: ScriptLine[]; summary: string };
-const N = (text: string): ScriptLine => ({ who: 'narrator', text });
+const N = (text: string, oath?: boolean): ScriptLine => (oath === undefined ? { who: 'narrator', text } : { who: 'narrator', text, if: { oath } });
 
 /** The finished script, scene by scene (plan 6c). Read the style bible and the lore ledger before adding to it. */
 const SCRIPT: Partial<Record<SceneId, Written>> = {
@@ -363,6 +363,64 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '洛恩對凜說，碑上的那個人，每一次都是一個人走下去的。',
   },
+  // Task 7: Rin's choice (spec §5.2), the darkest scene. It plays alone at night, after her 7th piece and before the finale (U3).
+  // It may come before or after the hero's 9th piece, so it does not say he is the lamp keeper (lore ledger I-50).
+  'rin-reveal': {
+    lines: [
+      N('深夜的月影旅館。窗外星燈的光很淡，淡得只照得到床邊那一截刀刃。'),
+      N('洛恩睡著了。凜站在床邊，短刃出鞘，刀尖落在他的喉嚨上。'),
+      N('她數著他的呼吸。一下，又一下。'),
+      N('每數一下，就有一個一起回城的夜晚浮上來：瑪莎的熱湯、旅館的燈、走在她前面的那個背影。'),
+      N('她沒有眨眼。先抖起來的，是刀尖。'),
+      N('她收起短刃，靠著床腳坐下，一直坐到窗外發白。'),
+      N('洛恩醒來時，桌上放著一枚裂開的小銅鐘。凜坐在桌邊，直直看著他的眼睛。'),
+      N('她把一切都說了：鐘樓、名單、吐霧的石門、響了三天的鐘，還有出口前那一刀。'),
+      { who: 'rin', text: '「洛恩。我被派來殺你。我現在選擇不要。」' },
+      N('洛恩看著那枚鐘，看了很久。他沒有問為什麼，像是早就知道它會被放在那裡。'),
+      { who: 'hero', text: '「明天也一起回來吧。」' },
+      { who: 'rin', mood: 'smile', text: '「『凜』是他們給的代號。……可是，這個名字是我自己決定要用的。」' },
+    ],
+    summary: '深夜，凜的刀尖停在洛恩的喉嚨上，最後收了回去。天亮後她說出一切，選擇不殺他。洛恩只說：明天也一起回來吧。',
+  },
+  // Task 7: Rin's chats. 2 waits for act 2, 3 for act 3 (she looks away only from her 4th piece), 4 for her choice.
+  // 2 and 3 can be delayed past her choice (one chat per return): each reading has its own lines.
+  'chat:rin:1': {
+    lines: [
+      { who: 'rin', text: '「喂。葛倫說，是你把我從門裡拖出來的。」' },
+      { who: 'hero', text: '「記不得了。……手好像，自己就伸出去了。」' },
+      N('凜只說了一句「下次不用」，就上樓了。走到樓梯轉角，她停下來，回頭看了他一眼。'),
+    ],
+    summary: '凜問洛恩，是不是他把她從門裡拖出來的。他說記不得，手自己伸出去了。',
+  },
+  'chat:rin:2': {
+    lines: [
+      N('旅館的後院。凜坐在井邊，一隻手一直按在領口那枚小銅鐘上。', false),
+      N('旅館的後院。凜坐在井邊，手指碰了碰領口，又放了下來。', true),
+      { who: 'hero', text: '「怎麼了？」' },
+      { who: 'rin', text: '「……沒什麼。只是，不想聽見它響。」', if: { oath: false } },
+      { who: 'rin', mood: 'smile', text: '「……習慣了。那裡的鐘，已經不會響了。」', if: { oath: true } },
+    ],
+    summary: '凜坐在旅館後院的井邊，手按著領口。洛恩問她怎麼了。',
+  },
+  'chat:rin:3': {
+    lines: [
+      N('凜在擦短刃。洛恩在她對面坐下，她的視線便落回刀刃上，再也沒有抬起來。', { oath: false }),
+      { who: 'rin', text: '「……喂。你是人吧。」', if: { oath: false } },
+      { who: 'hero', text: '「我想是。會餓，會累，回來的時候也會想睡。」', if: { oath: false } },
+      N('凜在擦短刃。洛恩在她對面坐下，她停下手，抬起頭看著他。', { oath: true }),
+      { who: 'rin', mood: 'smile', text: '「以前，我不敢看你的眼睛。……現在，想多看一點。」', if: { oath: true } },
+      N('洛恩沒有說話，也沒有移開視線。', { oath: true }),
+    ],
+    summary: '洛恩在擦短刃的凜對面坐下。她說了一句話，眼神說得更多。',
+  },
+  'chat:rin:4': {
+    lines: [
+      { who: 'rin', text: '「洛恩。那枚銅鐘，扣上的時候還是好的。從霧裡出來，就裂了。」' },
+      { who: 'rin', text: '「我想，是你抓住我手腕的那一下。……所以，我把它敲平了。」' },
+      { who: 'rin', mood: 'smile', text: '「再也不會有鐘聲，叫我去殺誰。我們明天，也一起回來。」' },
+    ],
+    summary: '凜說，銅鐘是在霧裡裂的，在洛恩抓住她手腕的那一下。她把它敲平了，再也不會響。',
+  },
 };
 
 function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }> {
@@ -409,6 +467,12 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
     '我的手記得的事比我多：劍怎麼放出去、繩結怎麼絆住、盾怎麼推回來。我也記得，自己死在一條巷子裡。',
     '我是守燈人，從艾斯特拉走下去的那一個。這把劍是燈鑰，燈芯是我在地面上活過的日子。這一次，我想和大家一起回來。',
   ],
+  // Task 7: segment 3 unlocks with her 7th piece, before the reveal (the handbook opens in the dungeon): no choice (F6).
+  rin: [
+    '凜，失憶的短刃使。和洛恩一起倒在傳送門廣場，刀柄上刻著一個「凜」字，她就用它當名字。',
+    '在鐘樓下長大，丟針是她小時候的遊戲。戰鬥時從不眨眼。師父教她：從深處走出來的，不是人。',
+    '「凜」是靜鐘會給刺客的代號，領口的銅鐘是信物。鐘響那天，她追著從深處走出來的人進了迷宮。',
+  ],
 };
 
 // The town's opening lines and the facility greetings, one set for every stage until 6c writes them per stage.
@@ -421,11 +485,21 @@ const greetOf = (a: string, b: string) => stageEach(() => [ph(a), ph(b)]);
 export const STORY = {
   scenes: buildScenes(),
   townLines: stageEach(() => TOWN_OPENING.map((t) => ph(t))),
+  /**
+   * Rin's town lines before her choice (Task 7). Act 2 starts at depth 4, before her 4th piece: she goes quiet, touches the
+   * bell, walks behind, but does not look away yet. From act 3 she looks away. After the finale she has always chosen (U3).
+   */
   rinLines: {
-    act2: [ph('……沒什麼。')], act3: [ph('……沒什麼。')], act4: [ph('……沒什麼。')], after: [ph('……沒什麼。')],
+    act2: ['……沒什麼。', '喂，你走前面。……我習慣走在後面。', '……剛才，是不是有鐘在響？……沒事，聽錯了。'],
+    act3: ['……別一直看我。看路。', '靜鐘會……好像在哪裡聽過。想不起來。', '沒事。……問那麼多做什麼。'],
+    act4: ['……今晚早點睡。門，記得鎖好。', '不要站在我背後。……也不要讓我站在你背後。', '……沒事。不要問。'],
   } as Partial<Record<Stage, string[]>>,
-  /** Rin's lines in the town once she has made her choice; they replace `rinLines`. */
-  rinOath: [ph('……我在這裡。哪裡也不去。'), ph('今天也，一起回來了呢。')],
+  /** Rin's lines in the town once she has made her choice; they replace `rinLines`. They read right before and after the finale. */
+  rinOath: [
+    '洛恩，我們今天也一起回來了呢。',
+    '我現在會眨眼了。……看你的時候，也是。',
+    '湯可以慢慢喝了。瑪莎說，明天還會有。',
+  ],
   /** The bellkeeper in the town: after Rin's choice, and once the finale is won. */
   bellkeeper: {
     oath: [ph('鐘聲停了。我只是來看看，那孩子過得好不好。')],

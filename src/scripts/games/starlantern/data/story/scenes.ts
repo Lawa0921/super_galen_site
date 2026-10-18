@@ -67,4 +67,6 @@ export function lineCap(id: SceneId): number {
 export const CHAT_GATE: Partial<Record<SceneId, { stage?: Stage; oath?: true }>> = {
   // Task 6: Lorne's chats follow the acts (lore ledger I-47).
   'chat:hero:2': { stage: 'act2' }, 'chat:hero:3': { stage: 'act3' }, 'chat:hero:4': { stage: 'act4' },
+  // Task 7: Rin's chats. She looks away only from her 4th piece (act 3); her last chat is her choice (lore ledger I-54).
+  'chat:rin:2': { stage: 'act2' }, 'chat:rin:3': { stage: 'act3' }, 'chat:rin:4': { oath: true },
 };

@@ -205,16 +205,17 @@ describe('story data', () => {
     expect(keys('finaleWait').length).toBeLessThanOrEqual(2);
     expect(STORY.finaleWait.every((l) => l.who !== undefined && PLACEHOLDERS.has(l.text))).toBe(true);
     expect(keys('rinOath').length).toBe(STORY.rinOath.length);
-    expect(STORY.rinOath.length).toBeGreaterThan(0);
+    expect(STORY.rinOath.length).toBeGreaterThanOrEqual(3);   // Task 7 writes them: at least three
     expect(keys('bellkeeper.oath').length).toBe(STORY.bellkeeper.oath.length);
     expect(keys('bellkeeper.after').length).toBe(STORY.bellkeeper.after.length);
     expect(STORY.bellkeeper.oath.length).toBeGreaterThan(0);
     expect(STORY.bellkeeper.after.length).toBeGreaterThan(0);
     expect(keys('merchant').map((t) => t.key).sort()).toEqual(['merchant.found', 'merchant.lost']);
-    for (const t of [...keys('rinOath'), ...keys('bellkeeper'), ...keys('merchant'), ...keys('finaleWait')]) {
+    for (const t of [...keys('bellkeeper'), ...keys('merchant'), ...keys('finaleWait')]) {
       expect(PLACEHOLDERS.has(t.text), t.key).toBe(true);
       expect(() => position(t.key), t.key).not.toThrow();
     }
+    for (const t of keys('rinOath')) expect(() => position(t.key), t.key).not.toThrow();   // written in Task 7
     // Rin's oath lines and the bellkeeper's first lines are for after her choice; the wait is for act 4 at the earliest.
     expect(position('rinOath.0')).toBe(rinSeventh());
     expect(position('bellkeeper.oath.0')).toBe(rinSeventh());
@@ -255,6 +256,7 @@ const WRITTEN: string[] = [
   'scenes.prologue.', 'scenes.mem:rin:',   // Task 4: the sample
   'scenes.act1-after.', 'scenes.act2.', 'scenes.act3.', 'scenes.act4.', 'act1Card.', 'truths.',   // Task 5: the acts and the truths
   'scenes.mem:hero:', 'scenes.chat:hero:', 'people.hero.',   // Task 6: Lorne
+  'scenes.rin-reveal.', 'scenes.chat:rin:', 'people.rin.', 'rinLines.', 'rinOath.',   // Task 7: Rin
 ];
 const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
 const isWritten = (key: string): boolean => writtenBy(WRITTEN, key);
@@ -606,6 +608,53 @@ describe('the script gates', () => {
     expect(lines('mem:hero:7')[0]).toMatch(/一季|幾天|後/);
     // chat:hero:1 can play before mem:hero:1 (d3): it may not tell that he walked up toward the light.
     expect(lines('chat:hero:1').join('')).not.toMatch(/走出來|走上來/);
+  });
+
+  it("Rin's last chat waits for her choice", () => {
+    // Task 7: her chats follow the acts; the avoidance chat waits for act 3 (after her 4th piece), the last for the oath.
+    expect(CHAT_GATE['chat:rin:2']).toEqual({ stage: 'act2' });
+    expect(CHAT_GATE['chat:rin:3']).toEqual({ stage: 'act3' });
+    expect(CHAT_GATE['chat:rin:4']).toEqual({ oath: true });
+    // Chats 2 and 3 can be delayed past her choice (one chat per return, the least-heard first): both readings play her.
+    for (const id of ['chat:rin:2', 'chat:rin:3'] as SceneId[]) {
+      for (const oath of [false, true]) {
+        const w: LineWhen = { met: ['hero', 'rin'], full: [], returned: [], oath };
+        expect(linesWhen(STORY.scenes[id].lines, w).some((l) => l.who === 'rin'), `${id} ${oath}`).toBe(true);
+      }
+    }
+  });
+
+  it("Rin avoids his eyes only from her fourth piece, and never after her choice", () => {
+    // Controller ruling (lore ledger I-11, I-29): she first looks away in mem:rin:4 (depth 8-9). Act 2 can play from depth 4.
+    const AVOID = /視線|移開|避開|別開|不看|別看|看路|看著地|低著頭/;
+    const early = storyTexts().filter((t) => t.key.startsWith('rinLines.act2.') || t.key.startsWith('scenes.chat:rin:1.') || t.key.startsWith('scenes.chat:rin:2.'));
+    expect(early.length).toBeGreaterThan(0);
+    for (const t of early) expect(t.text, t.key).not.toMatch(AVOID);
+    expect(STORY.rinLines.act3!.some((x) => AVOID.test(x))).toBe(true);   // act 3 is where her town lines start looking away
+    // After her choice she looks at him: the oath lines and every oath:true line of her chats.
+    for (const t of STORY.rinOath) expect(t).not.toMatch(AVOID);
+    for (let n = 1; n <= 4; n++) {
+      for (const l of STORY.scenes[`chat:rin:${n}` as SceneId].lines.filter((x) => x.if?.oath === true || n === 4)) expect(l.text, `chat:rin:${n}`).not.toMatch(/避開|別開|不看|別看/);
+    }
+    expect(STORY.rinLines.after).toBeUndefined();   // after the finale she has always chosen (U3): only rinOath plays
+  });
+
+  it("Rin never says his name before her choice, and the reveal keeps the finale's truths", () => {
+    // Style bible: before rin-reveal she calls him 「你」 or 「喂」; the reveal is the first 「洛恩」 (lore ledger I-20).
+    const chosen = (key: string, line?: ScriptLine) => line?.if?.oath === true || key.startsWith('scenes.rin-reveal.')
+      || key.startsWith('scenes.finale.') || (key.startsWith('scenes.chat:rin:') && CHAT_GATE[key.split('.')[1] as SceneId]?.oath === true);
+    for (const { key, text, line } of storyTexts()) {
+      if (key.startsWith('rinLines.')) expect(text, key).not.toContain('洛恩');
+      if (line?.who === 'rin' && !chosen(key, line)) expect(text, key).not.toContain('洛恩');
+    }
+    const reveal = STORY.scenes['rin-reveal'].lines;
+    expect(reveal.some((l) => l.who === 'rin' && l.text.includes('洛恩'))).toBe(true);
+    expect(STORY.rinOath.some((t) => t.includes('洛恩'))).toBe(true);
+    // The reveal plays before the hero's 9th piece as a rule (d22 against d25): it does not confirm he is the keeper,
+    // and the society's real crime is the finale's (spec §3.6).
+    const all = [...reveal.map((l) => l.text), STORY.scenes['rin-reveal'].summary].join('');
+    expect(all).not.toMatch(/守燈人|燈鑰|晚一次|殺的一直是/);
+    expect(reveal.every((l) => l.if === undefined)).toBe(true);   // her choice is not the player's: one version
   });
 
   it('the first chat of anyone is never gated', () => {
