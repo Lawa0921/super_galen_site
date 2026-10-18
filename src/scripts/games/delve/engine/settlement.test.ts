@@ -164,6 +164,27 @@ describe('settlers moving in', () => {
     expect(s2.pending).toEqual({ kind: 'smith', core: s.cores[0].id, at: 123 });
   });
 
+  it('a bed against the wall: the settler never stands inside the wall (moving in / waking up) and can lie down', () => {
+    const w = world();
+    const s = new Settlements();
+    core(w, s);
+    buildHouse(w, 10, 24, 8, 5, { bed: false, extra: [[6, 4, T.BED_HEAD], [7, 4, T.BED_FOOT]] });
+    s.refresh(w, true);
+    const n = s.moveIn('merchant', s.cores[0].id, w, true)!;
+    const clear = (): boolean => {
+      const b = n.body;
+      for (let ty = Math.floor(b.y / S); ty <= Math.floor((b.y + b.h - 0.01) / S); ty++)
+        for (let tx = Math.floor(b.x / S); tx <= Math.floor((b.x + b.w - 0.01) / S); tx++) if (w.isSolid(tx, ty)) return false;
+      return true;
+    };
+    expect(clear()).toBe(true);
+    for (let i = 0; i < 60 * 16; i++) s.update(1 / 60, host(w, { night: true, d: 0.95, px: 14 }));
+    expect(n.state).toBe('sleep');
+    for (let i = 0; i < 10; i++) s.update(1 / 60, host(w, { d: 0.5, px: 14 }));
+    expect(n.state).not.toBe('sleep');
+    expect(clear()).toBe(true);
+  });
+
   it('nobody moves in at night', () => {
     const w = world();
     const s = new Settlements();

@@ -353,8 +353,10 @@ export class Settlements {
     const core = this.coreById(id);
     if (!core) return null;
     const room = this.freeRooms(id, w)[0] ?? null;
-    let sx = room?.bed ? room.bed.x + 2 : room ? Math.floor((room.x0 + room.x1) / 2) : core.x + 1;
+    let sx = room ? Math.floor((room.x0 + room.x1) / 2) : core.x + 1;
     let sy = room ? room.y1 : core.y;
+    const inRoom = findStandSpot(w, sx, sy, 4);
+    if (inRoom) { sx = inRoom.x; sy = inRoom.y; }
     if (walkIn) {
       const side = room && (room.x0 + room.x1) / 2 < core.x ? -1 : 1;
       const ex = Math.max(2, Math.min(w.width - 3, core.x + side * (CLAIM.x - 2)));
@@ -430,8 +432,9 @@ export class Settlements {
     n.away = inside ? 0 : (n.away ?? 0) + dt;
     if ((n.away ?? 0) < AWAY_LIMIT) return;
     n.away = 0;
-    const x = n.bed ? n.bed.x + 2 : Math.floor((n.room.x0 + n.room.x1) / 2);
-    b.x = x * S + S / 2 - b.w / 2; b.y = (n.room.y1 + 1) * S - b.h; b.vx = 0; b.vy = 0;
+    const spot = findStandSpot(w, Math.floor((n.room.x0 + n.room.x1) / 2), n.room.y1, 4);
+    const x = spot ? spot.x : Math.floor((n.room.x0 + n.room.x1) / 2), y = spot ? spot.y : n.room.y1;
+    b.x = x * S + S / 2 - b.w / 2; b.y = (y + 1) * S - b.h; b.vx = 0; b.vy = 0;
     n.path = null; n.targetX = null;
     void w;
   }
@@ -449,8 +452,12 @@ export class Settlements {
   }
   private wake(n: Npc, w: World): void {
     n.state = 'idle';
-    if (n.bed) { n.body.x = (n.bed.x + 2) * S + 1; n.body.y = (n.bed.y + 1) * S - n.body.h; }
-    if (this.overlapsSolid(n, w)) { n.body.x -= 3 * S; if (this.overlapsSolid(n, w)) n.body.x += 2 * S; }
+    // 起床：站到床邊最近的空位（不會卡進牆裡）
+    if (n.bed) {
+      const spot = findStandSpot(w, n.bed.x + 1, n.bed.y, 4);
+      const x = spot ? spot.x : n.bed.x + 1, y = spot ? spot.y : n.bed.y;
+      n.body.x = x * S + S / 2 - n.body.w / 2; n.body.y = (y + 1) * S - n.body.h;
+    }
   }
   private overlapsSolid(n: Npc, w: World): boolean {
     const b = n.body;
