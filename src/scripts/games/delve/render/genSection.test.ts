@@ -1,6 +1,6 @@
 // genSection.test.ts — 生成畫面的地層剖面：階段推進、取樣、揭露
 import { describe, it, expect } from 'vitest';
-import { GEN_PHASES, genPhaseOf, sampleSection, revealStep, revealThreshold, SECTION_COLORS } from './genSection';
+import { GEN_PHASES, genPhaseOf, genPhaseLabel, sampleSection, revealStep, revealThreshold, SECTION_COLORS } from './genSection';
 import { generateWorldSteps, GEN_STAGE_COUNT } from '../engine/worldgen';
 import { World } from '../engine/world';
 import { T } from '../engine/tiles';
@@ -28,9 +28,17 @@ describe('genPhaseOf：生成器實際的段名 → 六個大階段', () => {
     expect([...new Set(seen)]).toEqual([0, 1, 2, 3, 4, 5]);
     expect(GEN_PHASES.map((x) => x.key)).toEqual(['terrain', 'caves', 'ores', 'dungeon', 'decor', 'liquids']);
   });
+  it('階段文字跟著高亮的大階段走（不會出現「劃分生態區」配「洞穴」以外的錯位）', () => {
+    expect(GEN_PHASES.map((_, k) => genPhaseLabel(k))).toEqual(GEN_PHASES.map((p) => p.label));
+    expect(genPhaseLabel(1)).toContain('洞穴');
+    expect(genPhaseLabel(-1)).toBe(GEN_PHASES[0].label);
+    expect(genPhaseLabel(99)).toBe(GEN_PHASES[5].label);
+    // 每個階段的文字都提到自己的名字（地形 / 洞穴 / 礦脈 / 地城 / 草木 / 泉水與熔岩）
+    for (const [k, p] of GEN_PHASES.entries()) expect(genPhaseLabel(k).includes(p.zh) || (p.key === 'liquids' && genPhaseLabel(k).includes('泉水'))).toBe(true);
+  });
   it('不認得的段名沿用目前的階段（不會倒退）', () => {
     expect(genPhaseOf('不認得', 3)).toBe(3);
-    expect(genPhaseOf('Shinies：礦脈群（', 4)).toBe(4);
+    expect(genPhaseOf('礦脈群（', 4)).toBe(4);
     expect(genPhaseOf('caves:worms', 1)).toBe(1);
   });
 });

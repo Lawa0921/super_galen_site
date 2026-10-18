@@ -15,7 +15,7 @@ import { TitleUi, PEACEFUL_KEY, publishVolume } from './titleUi';
 import { Wipe } from './wipe';
 import { genProgress, genStageLabel, GEN_STAGE_LABELS, readVolume, rollWorldName, summarizeGame } from './titleModel';
 import { liveCounts, type LiveCounts } from './live';
-import { GEN_PHASES, GenSectionView, genPhaseOf } from './genSection';
+import { GEN_PHASES, GenSectionView, genPhaseLabel, genPhaseOf } from './genSection';
 
 const SLOT = 'main';
 /** 進度條格數 */
@@ -280,7 +280,7 @@ export function bootDelve(root: HTMLElement): Session {
   ];
   // 載入畫面的字是之後才放進去的：先把點陣字（Google Fonts 依字分段下載）的字形載好，免得第一次顯示時是系統字
   try {
-    void document.fonts?.load("16px 'DotGothic16'", ['生成世界中…載入世界中…完成提示：', ...GEN_STAGE_LABELS, ...GEN_PHASES.map((p) => p.zh), ...TIPS].join('')).catch(() => { /* 離線：用系統字 */ });
+    void document.fonts?.load("16px 'DotGothic16'", ['生成世界中…載入世界中…完成提示：', ...GEN_STAGE_LABELS, ...GEN_PHASES.map((p) => p.zh + p.label), ...TIPS].join('')).catch(() => { /* 離線：用系統字 */ });
   } catch { /* 舊瀏覽器 */ }
   function showLoading(text: string): void {
     say(loadingText, text);
@@ -314,7 +314,7 @@ export function bootDelve(root: HTMLElement): Session {
             i++;
             phase = genPhaseOf(r.value, phase);
             setPhase(phase);
-            setProgress(genProgress(i, GEN_STAGE_COUNT), `${genStageLabel(r.value)}…`);
+            setProgress(genProgress(i, GEN_STAGE_COUNT), `${genPhaseLabel(phase)}…`);
             if (performance.now() - t0 > 14) break;
           }
           section?.update();

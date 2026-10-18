@@ -8,22 +8,26 @@ import { LIQ } from '../engine/liquidKind';
 import { buildMapLut, type MapLut } from './mapModel';
 import { bayer, hex } from './pixel';
 
-/** 六個大階段（生成器實際的順序；裝飾在液體之前） */
-export const GEN_PHASES: readonly { key: string; zh: string }[] = [
-  { key: 'terrain', zh: '地形' },
-  { key: 'caves', zh: '洞穴' },
-  { key: 'ores', zh: '礦脈' },
-  { key: 'dungeon', zh: '地城' },
-  { key: 'decor', zh: '草木' },
-  { key: 'liquids', zh: '液體' },
+/** 六個大階段（生成器實際的順序；裝飾在液體之前）。label = 載入畫面的階段文字（和高亮的那個階段永遠一致） */
+export const GEN_PHASES: readonly { key: string; zh: string; label: string }[] = [
+  { key: 'terrain', zh: '地形', label: '雕出地形與地層' },
+  { key: 'caves', zh: '洞穴', label: '挖掘洞穴、劃分生態區' },
+  { key: 'ores', zh: '礦脈', label: '埋下礦脈、鋪上草地' },
+  { key: 'dungeon', zh: '地城', label: '建造遺跡與地城' },
+  { key: 'decor', zh: '草木', label: '種下草木、藏好寶物' },
+  { key: 'liquids', zh: '液體', label: '引入泉水與熔岩' },
 ];
+/** 第 k 個大階段的階段文字（k 超出範圍時夾住） */
+export function genPhaseLabel(k: number): string {
+  return GEN_PHASES[Math.max(0, Math.min(GEN_PHASES.length - 1, k))].label;
+}
 
 /** 每個大階段的第一段（生成器 yield 的段名開頭）；其餘的段沿用目前的階段 */
 const PHASE_START: [RegExp, number][] = [
   [/^洞穴系統/, 1],
-  [/^Shinies/, 2],
+  [/^礦脈群/, 2],
   [/^礦坑/, 3],
-  [/^Trees/, 4],
+  [/^樹木/, 4],
   [/^液體/, 5],
 ];
 

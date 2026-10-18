@@ -37,7 +37,7 @@ export function isRngState(v: unknown): v is RngState {
 }
 
 /**
- * 方便用的包裝：int 為 max-exclusive（與泰拉 genRand.Next(a,b) 同語意）。
+ * 方便用的包裝：int 為 max-exclusive（[min, maxExcl)）。
  * 和 sfc32 逐位元相同；另外可以讀寫狀態（存檔：掉寶 / 釣魚亂數讀檔後不重骰）。
  */
 export class Rng {
