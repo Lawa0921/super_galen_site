@@ -156,6 +156,69 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '凜想起她追進迷宮，在出口前和目標一起被暮霧吞沒。那個人，就是洛恩。',
   },
+  // Task 5: the act nodes (spec §8.4, §8.5, §3.4, §3.6). Each plays in the town, the first return after its depth.
+  'act1-after': {
+    lines: [
+      N('三天後的清晨。暮霧從傳送門的方向漫回來，貼著石板，流進鎮上每一條巷子。'),
+      N('西邊高地上，星燈的光柱還亮著，卻比打倒燈喰之獸以前更暗了。'),
+      { who: 'glen', text: '「才三天。……小子，別洩氣。門還開著。」' },
+    ],
+    summary: '燈喰之獸倒下三天後，暮霧又回來了。星燈的光，比以前更暗。',
+  },
+  act2: {
+    lines: [
+      N('冒險者公會。洛恩把一塊石頭放上櫃台，那是從本道第四層的牆上敲下來的。'),
+      N('石頭裡有光，細得像葉脈，全都往同一個方向流──往下。'),
+      { who: 'anna', text: '「這紋路……西邊高地的星燈，基座上刻的就是這個。」' },
+      { who: 'hero', text: '「有幾條是灰的。摸上去，會聽見不認識的人在說話。」' },
+      { who: 'anna', text: '「公會的老人說過：山上那道光只是燈罩，真正在燒的燈芯，在迷宮的最底下。」' },
+      { who: 'anna', text: '「迷宮的牆如果是燈的根……那它是在燈壞掉之後，才長出來的。」' },
+      { who: 'hero', text: '「燈芯還在燒嗎？」' },
+      { who: 'anna', text: '「光柱一年比一年暗。……還在燒，可是快燒完了。」' },
+      N('月影旅館。瑪莎端上熱湯，凜捧起碗，一口氣喝到見底，眉頭也沒有皺一下。'),
+      { who: 'marta', text: '「慢點，孩子，那是剛起鍋的。」' },
+      { who: 'rin', text: '「……湯要趁熱喝完。不然，就沒有了。」' },
+      N('洛恩看著她空掉的碗，什麼也沒說。'),
+    ],
+    summary: '第四層的牆裡流著星燈的光。燈芯在迷宮最底下，迷宮是燈壞掉之後長出來的。凜喝湯的樣子有點不對勁。',
+  },
+  act3: {
+    lines: [
+      N('冒險者公會的地下室。安娜搬出最舊的一本登記簿，封皮上的字已經磨平了。'),
+      { who: 'anna', text: '「替你的碎片建檔的時候，我總覺得，這些字我在哪裡讀過。」' },
+      N('泛黃的一頁。找到的地點：傳送門廣場。身上的東西：一把刻著怪紋路的劍。'),
+      N('記得的最後一句話，只有一個字：「洛」。'),
+      { who: 'anna', text: '「比我出生還早。後面還有，每隔幾十年就一筆。……我數到第七筆，就數不下去了。」' },
+      N('每一筆的最後一欄，不是「回到迷宮，未歸」，就是「死亡」。'),
+      { who: 'anna', text: '「寫著死亡的那幾筆，邊上都有人補了同一個名字。不是人名，是一個結社。」' },
+      { who: 'anna', text: '「『靜鐘會』。老冒險者說，他們不搶錢，也不搶碎片。只要一條命。」' },
+      { who: 'hero', mood: 'sad', text: '「……我被殺過。不只一次。」' },
+      N('安娜闔上登記簿，把今年那一張登記表抽出來，放在最上面。'),
+      { who: 'anna', text: '「你這一張，最後一欄我還空著。……我打算一直空著。」' },
+      N('回旅館的路上，洛恩第一次停下腳步，回頭看了一眼身後的暮霧。'),
+    ],
+    summary: '公會最舊的登記簿裡，記著好幾個和洛恩一模一樣的人，有幾筆死於「靜鐘會」之手。安娜說，他這一張的最後一欄會一直空著。',
+  },
+  act4: {
+    lines: [
+      N('本道第十六層。崩落的牆後面，埋著一整座城：石板街、屋頂、乾掉的噴泉。'),
+      N('廣場中央的石碑，刻滿和洛恩的劍上一樣的紋路。沒有人教過他，他卻讀得出來。'),
+      { who: 'hero', text: '「『艾斯特拉。此燈收逝者之記憶，點之為光，使其長明。』」' },
+      { who: 'hero', text: '「『戰後，眾人欲忘，盡傾悲傷於燈。光遂變質，燈根生為迷宮。』」' },
+      { who: 'hero', text: '「『一人自願下行，以己之記憶為燈芯。後人稱之守燈人。』」' },
+      { who: 'hero', text: '「『芯盡，其人被吐還地面，一無所記；終將復歸深處，再點此燈。』」' },
+      N('冒險者公會。安娜聽完，翻開那本舊登記簿，指著邊上一行褪色的小字。'),
+      { who: 'anna', text: '「靜鐘會的人說，那個走出來的人『走到哪裡，暮霧就跟到哪裡』。」' },
+      { who: 'anna', text: '「他們看反了。霧變濃，是因為燈芯燒完了。走出來的人，是要回去點燈的那一個。」' },
+      { who: 'hero', mood: 'sad', text: '「……那我為什麼，讀得懂那塊碑？」' },
+      // Rin's lines know whether she has made her choice: act 4 may play before her reveal or after it (U1).
+      { who: 'narrator', text: '凜一直站在門邊。她的手按著刀柄，像是在等某個聲音。', if: { oath: false } },
+      { who: 'rin', text: '「……我出去走走。這裡太安靜了。」', if: { oath: false } },
+      { who: 'rin', mood: 'sad', text: '「我等過那口鐘響。……原來，那是燈熄掉的聲音。」', if: { oath: true } },
+      { who: 'rin', text: '「洛恩。他們錯了。……你不是霧。」', if: { oath: true } },
+    ],
+    summary: '地底的古城艾斯特拉。石碑說，有人自願當燈芯，叫守燈人；靜鐘會把燈熄的徵兆看成了災禍的源頭。洛恩讀得懂碑文。',
+  },
 };
 
 function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }> {
@@ -231,7 +294,7 @@ export const STORY = {
   /** The log line that ends Scarlet's story fight. */
   survived: ph('她收起了劍。'),
   /** The Act 1 milestone card, and the finale's closing card title (its text is the finale scene's summary). */
-  act1Card: { title: ph('第一幕　星燈重新亮起'), body: ph('燈喰之獸倒下了。暮霧散去，露米亞迎來久違的晨光。') },
+  act1Card: { title: '第一幕　星燈重新亮起', body: '燈喰之獸倒下了。暮霧從石板路上退去，露米亞第一次看見了晨光。' },
   endingTitle: ph('終幕　點燈'),
   /** Rescue meetings: what is said before the fight (the found line is narration; 6c adds hers) and after it is won. */
   meet: Object.fromEntries(MEETINGS.map((m) => [m.id, {
@@ -240,6 +303,14 @@ export const STORY = {
   }])) as Record<Meetable, { before: ScriptLine[]; after: ScriptLine[] }>,
   absorb: [ph('碎片化開，一段陌生的暖意流進身體。')],
   people: Object.fromEntries(CHARACTER_IDS.map((id) => [id, [1, 2, 3].map((n) => ph(`${nameOf(id)}的簡介（${numeral(n)}）。`))])) as Record<CharacterId, string[]>,
-  truths: Object.fromEntries(STAGES.map((s, i) => [s, ph(`第${numeral(i + 1)}條真相。`)])) as Record<Stage, string>,
+  /** The handbook's truth pages: Lorne's own notes, one per stage, saying only what is known by then (spec §7.6, §8.4). */
+  truths: {
+    prologue: '我在傳送門廣場醒來，什麼都不記得。鎮上的人說，我是唯一從迷宮深處走出來的人。',
+    act1: '迷宮吞掉人的記憶，暮霧也是它吐出來的。燈喰之獸倒下，霧散了。三天後，又回來了。',
+    act2: '山上的光柱只是燈罩，燈芯在迷宮最底下。迷宮是燈壞掉之後長出來的根。凜喝湯的樣子，像有人規定她非喝完不可。',
+    act3: '舊登記簿裡，有好幾個我。有幾筆死在靜鐘會手上。這一次的最後一欄，安娜說會一直空著。',
+    act4: '地底的艾斯特拉，有人自願當燈芯，叫守燈人。靜鐘會把燈熄的徵兆看成了禍根。那塊碑，我讀得懂。',
+    after: '燈點亮了，這一次不必有人燒盡自己。碎片的光回到了主人身上。現在我們下去，是為了把失去的東西找回來。',
+  } as Record<Stage, string>,
   town: Object.fromEntries(TOWN_FRAGMENTS.map((f) => [f.id, { lost: ph(`${f.npc}遺失了一段記憶。`), after: ph(`${f.npc}想起來了，謝謝你。`) }])) as Record<TownFragmentId, { lost: string; after: string }>,
 };

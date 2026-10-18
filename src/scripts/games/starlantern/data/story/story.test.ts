@@ -195,7 +195,7 @@ describe('story data', () => {
 
   it('placeholders are registered', () => {
     expect(PLACEHOLDERS.size).toBeGreaterThan(0);
-    expect(PLACEHOLDERS.has(STORY.truths.act2)).toBe(true);   // a key no task has written yet (the prologue is written in Task 4)
+    expect(PLACEHOLDERS.has(STORY.absorb[0])).toBe(true);   // a key no task has written yet (the acts and the truths are written in Task 5)
   });
 
   it("the finale's wait, Rin's oath lines, the bellkeeper and the merchant are story copy", () => {
@@ -223,7 +223,7 @@ describe('story data', () => {
   });
 
   it('the milestone cards and the survive line are story copy, found by the placeholder sweep', () => {
-    for (const t of [STORY.survived, STORY.act1Card.title, STORY.act1Card.body, STORY.endingTitle]) expect(PLACEHOLDERS.has(t), t).toBe(true);
+    for (const t of [STORY.survived, STORY.endingTitle]) expect(PLACEHOLDERS.has(t), t).toBe(true);   // act1Card is written in Task 5
   });
 });
 
@@ -253,6 +253,7 @@ function storyTexts(): Text[] {
 /** The keys that are finished copy. Each entry is a prefix ending in "." or ":" (so `town.` never eats `townLines`) or one whole leaf key. */
 const WRITTEN: string[] = [
   'scenes.prologue.', 'scenes.mem:rin:',   // Task 4: the sample
+  'scenes.act1-after.', 'scenes.act2.', 'scenes.act3.', 'scenes.act4.', 'act1Card.', 'truths.',   // Task 5: the acts and the truths
 ];
 const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
 const isWritten = (key: string): boolean => writtenBy(WRITTEN, key);
@@ -558,6 +559,20 @@ describe('the script gates', () => {
     }
     expect(rinSecretAllowed('scenes.act4.lines.0.text', oathLine)).toBe(true);
     expect(RIN_SECRET_TERMS.length).toBeGreaterThan(0);
+  });
+
+  it("act 4 reads right before and after Rin's choice", () => {
+    // Act 4 is the one act that may play before or after her reveal (U1): every line she speaks there knows which.
+    const rin = STORY.scenes.act4.lines.filter((l) => l.who === 'rin');
+    expect(rin.length).toBeGreaterThan(0);
+    for (const l of rin) expect(typeof l.if?.oath, l.text).toBe('boolean');
+    expect(rin.some((l) => l.if?.oath === true)).toBe(true);
+    expect(rin.some((l) => l.if?.oath === false)).toBe(true);
+    // and both readings play her
+    for (const oath of [false, true]) {
+      const w: LineWhen = { met: ['hero', 'rin'], full: [], returned: [], oath };
+      expect(linesWhen(STORY.scenes.act4.lines, w).some((l) => l.who === 'rin'), String(oath)).toBe(true);
+    }
   });
 
   it('the first chat of anyone is never gated', () => {
