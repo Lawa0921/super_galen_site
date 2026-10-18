@@ -17,8 +17,8 @@ import { aimArmDeg, attackArmDeg, spearThrust } from './combatAnim';
 import { Background } from './background';
 import { scanTrees, torchMount, treeKind, TREE_KIND } from './scene';
 import { bufferSize, clampZoom, floatTextScale, snapCam, zoomScale } from './lowres';
-import { ambientReach, type LightMap, type PointLight } from '../engine/lighting';
-import { shadeTiles, LightFiller, rectCovers, AMBIENT_R, type ShadeRect } from './lightShade';
+import { ambientReach, depthSurfaceAt, type LightMap, type PointLight } from '../engine/lighting';
+import { shadeTiles, LightFiller, rectCovers, depthCurve, AMBIENT_R, type ShadeRect } from './lightShade';
 import { AmbientField, ambientKind, AMBIENT_GLOWS, type AmbientKind } from './ambient';
 import { LiquidLayer } from './liquidDraw';
 import { LIQ } from '../engine/liquidKind';
@@ -28,6 +28,7 @@ import { FloraAtlas, iceBmp } from './seasonArt';
 import { decorStyleAt } from './decorPick'; // [polish]
 import { tileVariant } from './tileFamily'; // [polish]
 import { WeatherFx, type Canopy } from './weatherFx';
+import { lootGlyphScale } from './lootArt';
 import { toCanvas } from './pixel';
 import { bobberBmp, campfireBmp } from './fishArt';
 
@@ -178,6 +179,8 @@ export class Renderer {
   private bg: Background;
   private torchesSeen: { x: number; y: number }[] = [];
   private coolSeen: { x: number; y: number }[] = [];
+  /** 畫面上的水晶簇（光暈中心 + 變體：0 青 / 1 紫） */
+  private crystalSeen: { x: number; y: number; v: number }[] = [];
   private glowSeen = { warm: this.torchesSeen, cool: this.coolSeen };
   /** 平均地表高度（世界 px），地下背景起點用 */
   private horizonPx: number;
@@ -226,6 +229,7 @@ export class Renderer {
     this.buf.width = b.w; this.buf.height = b.h;
     this.zoom = this.scale / this.dpr;
     this.combat.numScale = floatTextScale(this.viewW, this.zoom);
+    this.combat.lootScale = lootGlyphScale(this.zoom);
     const vis = (Math.ceil(this.worldViewW() / CPX) + 1) * (Math.ceil(this.worldViewH() / CPX) + 1);
     if (vis + 8 > this.cache.capacity) {
       const old = this.cache;
@@ -652,14 +656,15 @@ export class Renderer {
     const w = this.game.world, W = w.width, fg = w.fg;
     const tx0 = Math.max(0, Math.floor(camX / S) - 1), tx1 = Math.min(W, Math.ceil((camX + vw) / S) + 1);
     const ty0 = Math.max(0, Math.floor(camY / S) - 1), ty1 = Math.min(w.height, Math.ceil((camY + vh) / S) + 1);
-    const seen = this.torchesSeen, cool = this.coolSeen;
-    seen.length = 0; cool.length = 0;
+    const seen = this.torchesSeen, cool = this.coolSeen, crys = this.crystalSeen, VAR = w.variant;
+    seen.length = 0; cool.length = 0; crys.length = 0;
     const t = this.clock;
     for (let y = ty0; y < ty1; y++) {
       const row = y * W;
       for (let x = tx0; x < tx1; x++) {
         const f = fg[row + x];
-        if (f === T.CRYSTAL || f === T.GLOW_MUSHROOM) { cool.push({ x: x * S + 8, y: y * S + 9 }); continue; }
+        if (f === T.CRYSTAL) { crys.push({ x: x * S + 8, y: y * S + 8, v: VAR[row + x] & 1 }); continue; }
+        if (f === T.GLOW_MUSHROOM) { cool.push({ x: x * S + 8, y: y * S + 9 }); continue; }
         if (f === T.CANDLE || f === T.LANTERN) { seen.push({ x: x * S + 8, y: y * S + (f === T.LANTERN ? 8 : 5) }); continue; }
         if (f === T.LANTERN_POST) { seen.push({ x: x * S + 8, y: y * S + 3 }); continue; }
         if (f === T.CAMPFIRE) { ctx.drawImage(this.campfires[flameFrame(t, x, y) % 3], x * S, y * S); seen.push({ x: x * S + 8, y: y * S + 8 }); continue; }
@@ -964,12 +969,14 @@ export class Renderer {
   }
 
   private drawGlows(ctx: CanvasRenderingContext2D): void {
-    if (!this.torchesSeen.length && !this.coolSeen.length) return;
+    if (!this.torchesSeen.length && !this.coolSeen.length && !this.crystalSeen.length) return;
     const gl = this.sprites.glow, hw = gl.width / 2;
     const cg = this.sprites.coolGlow, ch = cg.width / 2;
+    const xg = this.sprites.crystalGlow, xh = xg[0].width / 2;
     ctx.globalCompositeOperation = 'lighter';
     for (const t of this.torchesSeen) ctx.drawImage(gl, Math.round(t.x - hw), Math.round(t.y - hw));
     for (const t of this.coolSeen) ctx.drawImage(cg, Math.round(t.x - ch), Math.round(t.y - ch));
+    for (const t of this.crystalSeen) ctx.drawImage(xg[t.v], Math.round(t.x - xh), Math.round(t.y - xh));
     ctx.globalCompositeOperation = 'source-over';
   }
 
@@ -1070,11 +1077,11 @@ export class Renderer {
     this.stats.lightFrames = j.frames;
   }
 
-  /** 上次光照計算時某格（tile）的亮度（三通道最大值 ×1.08；沒算過 = 1） */
+  /** 上次光照計算時某格（tile）的亮度（三通道最大值 ×1.08，地下套同一條暗部曲線；沒算過 = 1） */
   lightAt(tx: number, ty: number): number {
     const L = this.lastLight;
     if (!L || this.fullbright) return 1;
-    return Math.min(1, L.get(tx, ty) * 1.08);
+    return depthCurve(Math.min(1, L.get(tx, ty) * 1.08), ty - depthSurfaceAt(this.game.world.surface, tx));
   }
 
   destroy(): void {

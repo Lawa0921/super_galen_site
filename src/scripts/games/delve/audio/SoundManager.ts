@@ -1,5 +1,7 @@
 // SoundManager.ts — DELVE 的 Web Audio 合成音效（不載入音檔）。首次使用者手勢時 ensure() 解鎖 AudioContext。
 // 音量跟著遊戲廳共用的 window.__arcadeAudio.sfxVolume，並監聽 arcade-audio-change 即時更新（同其他遊戲）。
+import { LIVE } from '../render/live';
+
 const BASE = 0.6;
 
 export class SoundManager {
@@ -12,7 +14,10 @@ export class SoundManager {
     if (this.master) this.master.gain.value = BASE * this.sfxVolume;
   };
 
+  private dead = false;
+
   constructor() {
+    LIVE.sounds++;
     if (typeof window !== 'undefined') {
       const w = window as unknown as { __arcadeAudio?: { sfxVolume?: number } };
       this.sfxVolume = w.__arcadeAudio?.sfxVolume ?? 1;
@@ -21,6 +26,7 @@ export class SoundManager {
   }
 
   ensure(): void {
+    if (this.dead) return;
     if (!this.ctx) {
       const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AC) return;
@@ -291,6 +297,9 @@ export class SoundManager {
   codex(): void { this.tone(1174.66, 0, 0.18, 'triangle', 0.05); this.tone(1567.98, 0.09, 0.3, 'triangle', 0.05); }
 
   destroy(): void {
+    if (this.dead) return;
+    this.dead = true;
+    LIVE.sounds--;
     if (typeof window !== 'undefined') window.removeEventListener('arcade-audio-change', this.onChange);
     void this.ctx?.close?.();
     this.ctx = null; this.master = null;

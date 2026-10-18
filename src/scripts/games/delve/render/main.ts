@@ -16,6 +16,7 @@ import { parseZoomPref } from './lowres';
 import { FISH } from '../engine/fishing';
 import { RARITIES, affixDef, gearSlot } from '../engine/gear';
 import { TOAST_HIGH, TOAST_LOW, TOAST_NORMAL } from './toastQueue';
+import { LIVE, endLoop, loopId, markFrame } from './live';
 
 /** 稀有 / 傳說的漁獲（釣到時多一聲鈴） */
 const FISH_RARE = new Set(FISH.filter((f) => f.rarity === 'rare' || f.rarity === 'legendary').map((f) => f.item));
@@ -74,6 +75,8 @@ const WINDOW = 120;
 export function startDelve(opts: StartOptions): DelveHandle {
   const { root, canvas, game } = opts;
   const renderer = new Renderer(canvas, game);
+  LIVE.handles++;
+  const lid = loopId();
   // 液體模擬每刻最多花 LIQUID_BUDGET_MS（大洪水分到之後的刻，不會卡住一幀）
   game.liquids.timeBudgetMs = LIQUID_BUDGET_MS;
   renderer.zoomOffset = loadZoom();
@@ -177,6 +180,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
   const frame = (now: number): void => {
     if (destroyed) return;
     raf = requestAnimationFrame(frame);
+    markFrame(lid, now);
     const dt = Math.min(0.25, Math.max(0, (now - last) / 1000));
     gaps[frames % WINDOW] = now - last;
     last = now;
@@ -340,7 +344,17 @@ export function startDelve(opts: StartOptions): DelveHandle {
     destroy: () => {
       if (destroyed) return;
       destroyed = true;
+      LIVE.handles--;
       cancelAnimationFrame(raf);
+      endLoop(lid);
+      // 開著的面板收起來、遊戲寫在根元素上的狀態清掉（回到標題後再開局是乾淨的）
+      if (fullmap.isOpen) setMap(false);
+      if (ui.loreOpen) ui.closeLore();
+      if (ui.journalOpen) ui.setJournal(false);
+      if (calendar.isOpen) calendar.setOpen(false);
+      hud.setChest(false);
+      hud.setInventory(false);
+      for (const k of ['chest', 'boss', 'dead', 'forge', 'map']) delete root.dataset[k];
       ro?.disconnect();
       window.removeEventListener('resize', resize);
       controls.destroy();

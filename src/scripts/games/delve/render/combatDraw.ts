@@ -38,6 +38,8 @@ export class CombatLayer {
   private numCache = new Map<string, HTMLCanvasElement>();
   /** 飄字放大倍數（手機上放大；renderer.resize 設定，見 lowres.floatTextScale） */
   numScale = 1;
+  /** 地上裝備標記 / 光柱的整數放大倍數（縮小時加粗；見 lootGlyphScale） */
+  lootScale = 1;
   /** 連鎖閃電（折線，短暫顯示） */
   private chains: { pts: { x: number; y: number }[]; life: number }[] = [];
   /** 上一次 drawWorld 的視窗（光照後的掉落物光柱用） */
@@ -267,36 +269,39 @@ export class CombatLayer {
    * 全部是整數像素的實心色塊（不用半透明），黑暗中也看得到。
    */
   private drawLoot(ctx: CanvasRenderingContext2D, dt: number): void {
-    const v = this.view, t = this.clock;
+    const v = this.view, t = this.clock, K = this.lootScale;
     for (const d of this.game.drops.list) {
       const r = d.gear?.rarity ?? -1;
       if (r < 1) continue;
       const b = d.body;
-      if (b.x + b.w < v.x - 8 || b.x > v.x + v.w + 8 || b.y < v.y - 80 || b.y > v.y + v.h + 8) continue;
+      if (b.x + b.w < v.x - 8 * K || b.x > v.x + v.w + 8 * K || b.y < v.y - 80 * K || b.y > v.y + v.h + 8 * K) continue;
       const cx = Math.round(b.x + b.w / 2), bot = Math.round(b.y + b.h + 1), top = Math.round(b.y + b.h - 16);
       const hi = rarityColor(r, t, d.id), lo = r >= 5 ? rarityColor(r, t, d.id + 3) : RARITIES[r].dark;
-      // 底線：深色描邊包住的亮色線（草地上也分得出來）
-      ctx.fillStyle = '#0c0a12'; ctx.fillRect(cx - 6, bot - 1, 12, 3);
-      ctx.fillStyle = lo; ctx.fillRect(cx - 5, bot, 10, 1);
-      ctx.fillStyle = hi; ctx.fillRect(cx - 3, bot, 6, 1);
+      // 以 (cx, ay) 為錨點、放大 K 倍畫一個實心矩形（K = 1 時與原本逐像素相同）
+      const box = (ay: number, x: number, y: number, w: number, h: number): void => ctx.fillRect(cx + x * K, ay + y * K, w * K, h * K);
+      // 底線：深色描邊包住的亮色線（草地上也分得出來）；縮小時往下長，不蓋住道具本身
+      ctx.fillStyle = '#0c0a12'; box(bot, -6, -1, 12, 3);
+      ctx.fillStyle = lo; box(bot, -5, 0, 10, 1);
+      ctx.fillStyle = hi; box(bot, -3, 0, 6, 1);
       // 優良 / 稀有：頭上浮著一顆菱形標記
-      if (r <= 2) for (const p of markerPixels(r, t + d.id * 0.31)) { ctx.fillStyle = p.c; ctx.fillRect(cx + p.x, top + p.y, 1, 1); }
+      if (r <= 2) for (const p of markerPixels(r, t + d.id * 0.31)) { ctx.fillStyle = p.c; box(top, p.x, p.y, 1, 1); }
       if (r >= 3 && b.onGround) {
         const H = r >= 5 ? 64 : r >= 4 ? 46 : 32, cols = beamColors(r, t + d.id * 0.13);
         for (const p of beamPixels(H, t + d.id * 0.37)) {
           ctx.fillStyle = cols[p.c];
-          ctx.fillRect(cx + p.x, top + p.y, 1, 1);
+          box(top, p.x, p.y, 1, 1);
         }
       }
       if (r >= 4) {
+        const ay = Math.round(b.y);
         for (let k = 0; k < (r >= 5 ? 2 : 1); k++) {
           const s = sparkleAt(t, d.id * 7 + k * 13);
           if (!s) continue;
-          const [sx, sy, size] = s, x = cx + sx, y = Math.round(b.y) + sy;
-          ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, 1, 1);
+          const [x, y, size] = s;
+          ctx.fillStyle = '#ffffff'; box(ay, x, y, 1, 1);
           ctx.fillStyle = hi;
-          ctx.fillRect(x - size, y, size, 1); ctx.fillRect(x + 1, y, size, 1);
-          ctx.fillRect(x, y - size, 1, size); ctx.fillRect(x, y + 1, 1, size);
+          box(ay, x - size, y, size, 1); box(ay, x + 1, y, size, 1);
+          box(ay, x, y - size, 1, size); box(ay, x, y + 1, 1, size);
         }
       }
     }

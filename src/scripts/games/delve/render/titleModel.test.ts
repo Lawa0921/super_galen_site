@@ -128,8 +128,8 @@ describe('zoomPrefLabel', () => {
 describe('世界生成進度', () => {
   it('階段名 → 玩家看得懂的標籤', () => {
     expect(genStageLabel('caves:worms')).toBe('挖掘洞穴');
-    expect(genStageLabel('Shinies：礦脈群（')).toBe('埋下礦脈');
-    expect(genStageLabel('Trees')).toBe('種下樹木');
+    expect(genStageLabel('礦脈群（')).toBe('埋下礦脈');
+    expect(genStageLabel('樹木')).toBe('種下樹木');
     expect(genStageLabel('液體')).toBe('引入泉水');
     expect(genStageLabel('不認得的')).toBe('塑造世界');
   });

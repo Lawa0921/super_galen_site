@@ -30,12 +30,36 @@ export function sfc32(a: number, b: number, c: number, d: number): () => number 
   };
 }
 
-/** 方便用的包裝：int 為 max-exclusive（與泰拉 genRand.Next(a,b) 同語意）。 */
+/** sfc32 的 128-bit 狀態（四個 uint32） */
+export type RngState = [number, number, number, number];
+export function isRngState(v: unknown): v is RngState {
+  return Array.isArray(v) && v.length === 4 && v.every((n) => Number.isInteger(n) && n >= 0 && n <= 0xffffffff);
+}
+
+/**
+ * 方便用的包裝：int 為 max-exclusive（[min, maxExcl)）。
+ * 和 sfc32 逐位元相同；另外可以讀寫狀態（存檔：掉寶 / 釣魚亂數讀檔後不重骰）。
+ */
 export class Rng {
   readonly next: () => number;
+  /** 目前狀態（四個 uint32） */
+  readonly getState: () => RngState;
+  /** 接回某個狀態：之後的序列與存下狀態時的那一刻起相同 */
+  readonly setState: (s: RngState) => void;
   constructor(seed: string | number) {
     const s = xmur3(String(seed));
-    this.next = sfc32(s(), s(), s(), s());
+    let a = s() >>> 0, b = s() >>> 0, c = s() >>> 0, d = s() >>> 0;
+    this.next = (): number => {
+      const t = (((a + b) | 0) + d) | 0;
+      d = (d + 1) | 0;
+      a = b ^ (b >>> 9);
+      b = (c + (c << 3)) | 0;
+      c = (c << 21) | (c >>> 11);
+      c = (c + t) | 0;
+      return (t >>> 0) / 4294967296;
+    };
+    this.getState = () => [a >>> 0, b >>> 0, c >>> 0, d >>> 0];
+    this.setState = (st) => { a = st[0] >>> 0; b = st[1] >>> 0; c = st[2] >>> 0; d = st[3] >>> 0; };
     for (let i = 0; i < 12; i++) this.next(); // 暖機，打散初始狀態
   }
   /** [min, maxExcl) 整數 */

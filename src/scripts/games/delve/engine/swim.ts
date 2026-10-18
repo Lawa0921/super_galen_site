@@ -54,7 +54,7 @@ export const ITEM_BUOY: Record<number, number> = { [LIQ.WATER]: 1000, [LIQ.LAVA]
 const WATER_M: Medium = { gravityMul: 0.5, dragMul: 3, maxFallMul: 0.5 };
 const HONEY_M: Medium = { gravityMul: 0.3, dragMul: 7, maxFallMul: 0.3 };
 
-/** 實體介質：有接觸就整個套用液體係數（泰拉的「濕了」判定）；item = 掉落物（加浮力） */
+/** 實體介質：有接觸就整個套用液體係數（「濕了」判定）；item = 掉落物（加浮力） */
 export function liquidMedium(c: LiquidContact, item = false): Medium {
   if (c.frac <= 0 || c.type === LIQ.NONE) return AIR;
   const base = c.type === LIQ.HONEY ? HONEY_M : WATER_M;

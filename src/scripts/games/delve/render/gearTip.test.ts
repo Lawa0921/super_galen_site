@@ -41,6 +41,14 @@ describe('裝備說明', () => {
     expect(t.some((l) => l.tone === 'head')).toBe(true);
     expect(compareLines(a, a)[0].text).toBe('數值相同');
   });
+  it('比較的標題可以換（飾品：和最弱的那件比、會換掉它）；空槽有提示', () => {
+    const a = sword({ rarity: 2, ilvl: 2, plus: 0, affixes: [{ id: 'keen', tier: 2, value: 8 }] });
+    const b = sword({ rarity: 1, ilvl: 2, plus: 0, affixes: [{ id: 'keen', tier: 1, value: 4 }] });
+    const t = gearTooltip(a, b, { head: '和最弱的飾品「X」比較（裝上會換掉它）：' });
+    expect(t.find((l) => l.tone === 'head')!.text).toBe('和最弱的飾品「X」比較（裝上會換掉它）：');
+    const e = gearTooltip(a, null, { note: '會裝進空的飾品槽' });
+    expect(e.at(-1)).toEqual({ text: '會裝進空的飾品槽', tone: 'note' });
+  });
   it('能力總覽：基本四列 + 非 0 的詞條', () => {
     const g = emptyTotals();
     g.move = 12; g.djump = 1; g.regen = 0.5;

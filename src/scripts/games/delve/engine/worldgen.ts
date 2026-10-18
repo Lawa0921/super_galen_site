@@ -1,6 +1,6 @@
 // worldgen.ts — 確定性世界生成。每個 pass 用 subSeed(seed, passName) 取獨立亂數流。
 // 只用 + − × ÷ / floor / abs 與整數雜湊，不用 Math.sin / pow 等超越函數，確保跨引擎位元一致。
-// 演算法概念參考泰拉（地表 feature 隨機漫步、TileRunner 菱形筆刷、依面積縮放的 pass 數量），程式為自行重寫。
+// 演算法：地表 feature 隨機漫步、TileRunner 菱形筆刷、依面積縮放的 pass 數量（程式為自行撰寫）。
 //
 // Pass 順序：生態區配置 → 地形（沙丘 / 雪峰 / 大山塊 / 乾湖床 / 懸崖 / 突岩）→ 深度層（泥土層厚度起伏、岩層、
 // 洞穴層深層岩、熔岩深淵）→ 土石互滲、黏土、碎石 → 洞穴系統（義大利麵隧道、柏林蟲、長水平廊道、洞穴層大洞窟網路
@@ -22,7 +22,11 @@ import { LORE_SITES, type LoreSite } from './lore';
 import type { ItemId } from './items';
 import type { Stack } from './inventory';
 
-export interface GenOptions { width?: number; height?: number; }
+export interface GenOptions {
+  width?: number; height?: number;
+  /** 世界一建立就交給呼叫端（生成畫面的地層剖面用來邊生成邊取樣；不影響生成結果） */
+  peek?: (world: World) => void;
+}
 export interface GenBands {
   surfaceLow: number; surfaceHigh: number; rockLow: number; rockHigh: number;
 }
@@ -241,6 +245,7 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
   const width = opts.width ?? WORLD_W;
   const height = opts.height ?? WORLD_H;
   const world = new World(width, height);
+  opts.peek?.(world);
   const { fg, wall } = world;
   const A = width * height;
   const WW = width;
@@ -977,9 +982,9 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
       }
     }
   })();
-  mark('Shinies：礦脈群（');
-  yield 'Shinies：礦脈群（';
-  // ── Shinies：礦脈群（每群 2–6 條同向的細長礦脈），依深度層分帶：銅（泥土 / 岩層）、鐵（岩層 ~ 洞穴層上段）、
+  mark('礦脈群（');
+  yield '礦脈群（';
+  // ── 礦脈群（每群 2–6 條同向的細長礦脈），依深度層分帶：銅（泥土 / 岩層）、鐵（岩層 ~ 洞穴層上段）、
   //    銀（岩層下段 ~ 洞穴層）、金（洞穴層下段 ~ 熔岩深淵頂）
   (() => {
     const rng = subSeed(seed, 'shinies');
@@ -1341,8 +1346,8 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
   if (dungeon) structures.push({ kind: 'dungeon', ...dungeon.bbox });
   remeasure();
 
-  mark('Trees：森林闊葉樹、');
-  yield 'Trees：森林闊葉樹、';
+  mark('樹木：森林闊葉樹、');
+  yield '樹木：森林闊葉樹、';
   // ── 液體（生成器 v5）前半：湖床注滿 / 山谷池塘 / 沙漠綠洲（樹與地表裝飾之後會避開水面） ──
   const liquidGen = createLiquidGen({
     world, seed, surface, layers, colBiome, biomes, lakeBeds, lavaPool, spawnX: spawn.x,
@@ -1351,9 +1356,9 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
       && st.kind !== 'sinkhole' && st.kind !== 'lake_bed' && st.kind !== 'frozen_lake' && st.kind !== 'mushroom_biome' && st.kind !== 'crystal_cave')],
   });
   liquidGen.surface();
-  mark('Trees');
-  yield 'Trees';
-  // ── Trees：森林闊葉樹、雪原松樹、叢林大樹（樹幹 + 菱形樹葉格，外觀由 render 依地面挑） ──
+  mark('樹木');
+  yield '樹木';
+  // ── 樹木：森林闊葉樹、雪原松樹、叢林大樹（樹幹 + 菱形樹葉格，外觀由 render 依地面挑） ──
   (() => {
     const rng = subSeed(seed, 'trees');
     let lastTree = -10;

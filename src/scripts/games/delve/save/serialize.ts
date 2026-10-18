@@ -26,6 +26,8 @@
 // format 8 起（裝備詞條）：背包 / 箱子 / 掉落物的每格可帶 gear（稀有度 / 物品等級 / 強化 / 詞條 / 鎖定）；
 //   header.combat.equipGear = 裝備欄各格的 gear（與 equipment 同形）；header.extra.codex = 裝備圖鑑。
 //   gear 結構不合法 → 存檔損毀（同其他欄位）；舊格式讀進來 = 全部普通、圖鑑空。
+//   header.extra.rng = 掉寶 / 釣魚亂數的 sfc32 狀態（各 4 個 uint32）：讀檔後的掉落 / 漁獲接著原本的序列，不會因重讀而重骰；
+//   沒有或不合法 → 從種子起點（不算損毀，舊存檔照讀）。
 //   尺寸上限：寬 ≤ MAX_WORLD_W、高 ≤ MAX_WORLD_H、面積 ≤ MAX_WORLD_AREA（生成器實際支援的範圍）；
 //   液體 chunk 清單長度先和世界 chunk 總數比對，再配置 RLE 解碼緩衝。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
@@ -53,6 +55,7 @@ import { ENEMIES, type EnemyKind } from '../engine/enemies';
 import { BASE_HP, MAX_HP_CAP } from '../engine/combat';
 import { LIQ, LIQ_MAX } from '../engine/liquidKind';
 import { WEATHER_KINDS, type WeatherKind } from '../engine/weather';
+import { isRngState, type RngState } from '../engine/rng';
 
 export const SAVE_FORMAT = 8;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
@@ -136,6 +139,8 @@ export interface ExtraSave {
   minedIce?: number[];
   /** 裝備圖鑑；format 8 起 */
   codex?: CodexJSON;
+  /** 掉寶 / 釣魚亂數的狀態（讀檔後不重骰）；沒有 / 壞的 = 從種子起點開始（不算損毀） */
+  rng?: { loot?: RngState; fish?: RngState };
 }
 export interface EnvSave {
   weather: { kind: WeatherKind; until: number } | null;
@@ -323,6 +328,13 @@ function validExtra(v: unknown): ExtraSave | undefined {
   const minedIce = Array.isArray(o.minedIce) ? o.minedIce.filter((i) => Number.isInteger(i) && i >= 0).slice(0, 100000) : [];
   const out: ExtraSave = { fishLog, minedIce };
   if (o.codex && typeof o.codex === 'object') out.codex = o.codex;
+  const r = o.rng as { loot?: unknown; fish?: unknown } | undefined;
+  if (r && typeof r === 'object') {
+    const rng: NonNullable<ExtraSave['rng']> = {};
+    if (isRngState(r.loot)) rng.loot = [...r.loot];
+    if (isRngState(r.fish)) rng.fish = [...r.fish];
+    if (rng.loot || rng.fish) out.rng = rng;
+  }
   return out;
 }
 function validBossActive(v: unknown): EnemyKind | null {
@@ -406,7 +418,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       }),
       bossActive: boss && boss.state !== 'leave' ? boss.kind : null,
       env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeFrozen(w.frozen) },
-      extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce], codex: game.codex.toJSON() },
+      extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce], codex: game.codex.toJSON(), rng: game.rngState() },
     },
     chunks,
   };
@@ -783,6 +795,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     game.fishLog = { ...h.extra.fishLog };
     for (const i of h.extra.minedIce ?? []) if (i < w.liquid.length) game.minedIce.add(i);
     game.codex.load(h.extra.codex);
+    if (h.extra.rng) game.setRngState(h.extra.rng);
   }
   // 首領戰中存檔（怪物不存）：退還召喚道具，背包滿就掉在腳邊
   const refund = h.bossActive ? BOSS_SUMMON_ITEM[h.bossActive] : undefined;

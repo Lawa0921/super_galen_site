@@ -56,8 +56,11 @@ function plusLine(item: ItemId, g: Gear): string | null {
   return `強化 +${g.plus}：詞條數值 +${g.plus * 8}%`;
 }
 
-/** 一格道具的完整說明。cmp = 目前裝備中、同部位的那件（有就附比較） */
-export function gearTooltip(st: Stack, cmp?: Stack | null): TipLine[] {
+/**
+ * 一格道具的完整說明。cmp = 目前裝備中、裝上會換掉的那件（有就附比較）；
+ * o.head 換掉比較標題（例：飾品和最弱的那件比）、o.note 在最後加一行提示（例：會裝進空槽）。
+ */
+export function gearTooltip(st: Stack, cmp?: Stack | null, o: { head?: string; note?: string } = {}): TipLine[] {
   const item = st.item, d = ITEMS[item];
   const base = itemTooltip(item);
   if (!gearSlot(item)) return base.map((t, i) => ({ text: t, tone: i === 0 ? 'name' : 'base' }));
@@ -77,9 +80,10 @@ export function gearTooltip(st: Stack, cmp?: Stack | null): TipLine[] {
     }
   }
   if (cmp && cmp !== st) {
-    out.push({ text: `與裝備中的「${gearName(cmp.item, cmp.gear)}」比較：`, tone: 'head' });
+    out.push({ text: o.head ?? `與裝備中的「${gearName(cmp.item, cmp.gear)}」比較：`, tone: 'head' });
     out.push(...compareLines(st, cmp));
   }
+  if (o.note) out.push({ text: o.note, tone: 'note' });
   return out;
 }
 

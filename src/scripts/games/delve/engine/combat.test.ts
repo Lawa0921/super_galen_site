@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { ITEMS, ARMOR_SETS, type ItemId } from './items';
 import { Equipment, ACC_SLOTS } from './equipment';
+import { gearPower, type Gear } from './gear';
 import { computeStats, damageTaken, enemyDamage, rollCrit, knockbackScale, SET_BONUS } from './combat';
 import { RECIPES, findRecipe, craft } from './crafting';
 import { Inventory } from './inventory';
@@ -97,6 +98,33 @@ describe('裝備欄', () => {
     e.set('acc0', 'magnet');
     expect(e.autoSlot('jump_boots')).toBe('acc1');
     expect(e.autoSlot('dirt')).toBeNull();
+  });
+  const G = (rarity: number, tiers: number[], plus = 0): Gear => ({ rarity, ilvl: 5, plus, affixes: tiers.map((t) => ({ id: 'hale' as const, tier: t, value: 5 * t })) });
+  it('gearPower：沒有詞條 = 0；稀有度 / 詞條階數 / 強化越高越強；傳奇詞條算很多', () => {
+    expect(gearPower(undefined)).toBe(0);
+    expect(gearPower(G(2, [2, 2]))).toBeGreaterThan(gearPower(G(1, [2])));
+    expect(gearPower(G(2, [3, 3]))).toBeGreaterThan(gearPower(G(2, [1, 1])));
+    expect(gearPower(G(2, [3, 3], 4))).toBeGreaterThan(gearPower(G(2, [3, 3])));
+    const uniq: Gear = { rarity: 4, ilvl: 5, plus: 0, affixes: [{ id: 'skyleap', tier: 5, value: 1 }] };
+    expect(gearPower(uniq)).toBeGreaterThan(gearPower(G(3, [2, 2])));
+  });
+  it('autoSlot：飾品槽都滿了 → 換掉詞條最弱的那格（同分取前面）；比較對象就是那格', () => {
+    const e = new Equipment();
+    const items = ['compass', 'depth_meter', 'jump_boots', 'swift_boots', 'night_amulet'] as const;
+    const power = [G(3, [3, 3, 3]), G(2, [2, 2]), G(1, [1]), G(4, [4, 4, 4]), G(1, [1])];
+    items.forEach((it, k) => e.set(`acc${k}` as 'acc0', it, power[k]));
+    expect(e.autoSlot('magnet')).toBe('acc2');
+    expect(e.compareTarget('magnet')).toEqual({ slot: 'acc2', stack: e.getStack('acc2'), weakest: true });
+    // 有空槽：裝進空槽、沒有比較對象
+    e.set('acc1', null);
+    expect(e.autoSlot('magnet')).toBe('acc1');
+    expect(e.compareTarget('magnet')).toEqual({ slot: 'acc1', stack: null, weakest: false });
+    // 已經裝著同一件：比較那一件（換裝 = 換掉它）
+    expect(e.compareTarget('jump_boots')).toEqual({ slot: 'acc2', stack: e.getStack('acc2'), weakest: false });
+    // 防具：同部位
+    e.set('head', 'copper_helmet');
+    expect(e.compareTarget('iron_helmet')).toEqual({ slot: 'head', stack: e.getStack('head'), weakest: false });
+    expect(e.compareTarget('dirt')).toBeNull();
   });
 });
 

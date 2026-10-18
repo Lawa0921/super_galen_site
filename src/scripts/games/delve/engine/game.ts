@@ -49,7 +49,7 @@ import {
   ACTIVE, BED_SAFE, DEFAULT_VIEW_HALF, DESPAWN, MAX_ENEMIES, NEAR_SPAWN_TILES, SPAWN_MAX, findSpot, habitatAt, homeNear, inHouse,
   isFirstNight, pickEntry, spawnCap, spawnChance, spawnInterval, spawnTable, type SpawnPressure,
 } from './spawn';
-import { Rng } from './rng';
+import { Rng, type RngState } from './rng';
 import {
   TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH, HOTBAR_SIZE,
 } from './constants';
@@ -2600,6 +2600,13 @@ export class DelveGame {
     const g = rollGear(item, this.lootRng, { rarity, ilvl: 5 });
     this.spawnGearDrop(item, g, (tx + 0.5) * TILE_SIZE, (ty + 0.5) * TILE_SIZE);
     return g;
+  }
+
+  /** 掉寶 / 釣魚亂數的狀態（存檔用：讀檔後的掉落 / 漁獲不會重骰） */
+  rngState(): { loot: RngState; fish: RngState } { return { loot: this.lootRng.getState(), fish: this.fishRng.getState() }; }
+  setRngState(s: { loot?: RngState; fish?: RngState }): void {
+    if (s.loot) this.lootRng.setState(s.loot);
+    if (s.fish) this.fishRng.setState(s.fish);
   }
 
   // ── debug / e2e / 存檔還原 ─────────────────────────────

@@ -318,6 +318,16 @@ export function gearName(item: ItemId, g: Gear | undefined): string {
   return `${pre ? `${affixDef(pre.id).word} ` : ''}${base}${suf ? ` · ${affixDef(suf.id).word}` : ''}${g.plus > 0 ? ` +${g.plus}` : ''}`;
 }
 export function rarityOf(g: Gear | undefined): Rarity { return g ? clampRarity(g.rarity) : 0; }
+/**
+ * 詞條強度（同部位比較「哪件最弱」用；不看物品本身的基礎效果）：
+ * 稀有度 + 每條一般詞條的階數 + 傳奇詞條各 6，整體 ×(1 + 0.08 × 強化)。沒有詞條 = 0。
+ */
+export function gearPower(g: Gear | undefined): number {
+  if (!g) return 0;
+  let s = clampRarity(g.rarity);
+  for (const a of g.affixes) s += affixDef(a.id).kind === 'unique' ? 6 : a.tier;
+  return s * (1 + 0.08 * g.plus);
+}
 
 // ── 數值 ─────────────────────────────────────────────────
 export type GearTotals = Record<StatKey, number>;

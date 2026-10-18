@@ -96,8 +96,8 @@ export function zoomPrefLabel(z: number): string {
 // ── 世界生成進度：generateWorldSteps 每段的名字 → 標籤 ──
 const STAGES: [RegExp, string][] = [
   [/^caves|洞穴系統|填掉/, '挖掘洞穴'],
-  [/^Shinies/, '埋下礦脈'],
-  [/^Trees/, '種下樹木'],
+  [/^礦脈群/, '埋下礦脈'],
+  [/^樹木/, '種下樹木'],
   [/^液體/, '引入泉水'],
   [/熔岩/, '點燃熔岩深淵'],
   [/^深度層|^L:|土石|花崗岩/, '堆疊地層'],
