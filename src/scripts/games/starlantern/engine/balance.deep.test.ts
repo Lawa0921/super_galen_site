@@ -43,9 +43,8 @@ describe('balance 19: the deep road and the finale', () => {
     }
   }, TIMEOUT);
 
-  // 6b Task 20c: the finale wins .125 (< .30) at depth 30, Lv50: 5 wins, 34 wipes, 1 round cap; mean 25.05 rounds, hpLoss .917
-  // (Task 20b's arrival fix: the party no longer holds the finale's own drops).
-  it.fails('19b the finale is a real fight. the expected party wins .30-.85 at depth 30, never in under three rounds', () => {
+  // Tuned by 6b Task 20c with FINALE_BOSS.power 1 -> 0.8: wins .575 (23 wins, 16 wipes, 1 round cap), mean 31.63 rounds, hpLoss .670.
+  it('19b the finale is a real fight. the expected party wins .30-.85 at depth 30, never in under three rounds', () => {
     const d = 30;
     let wins = 0, wipes = 0, cap = 0, rounds = 0, hpLoss = 0;   // cap: still going at the sim's round cap, counted as a loss
     const n = 40;

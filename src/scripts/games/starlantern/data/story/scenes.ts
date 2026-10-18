@@ -8,9 +8,9 @@ export const ACT_DEPTHS: Record<ActNode, number> = { act2: 4, act3: 10, act4: 16
 export const FINALE_DEPTH = 30;
 /**
  * The finale's boss: the 燈喰之獸 under another name (spec §8.4; the name is `STORY.finaleBossName`). `power` multiplies its hp, atk and mag after the party-size
- * scale (1 leaves the ordinary boss as it is). It is a balance knob (6b Task 20c).
+ * scale (1 leaves the ordinary boss as it is). It is a balance knob: 6b Task 20c set it 1 -> 0.8 (band 19b, the finale, .125 -> .575).
  */
-export const FINALE_BOSS = { base: 'lanterneater', power: 1 };
+export const FINALE_BOSS = { base: 'lanterneater', power: 0.8 };
 
 export type Stage = 'prologue' | 'act1' | 'act2' | 'act3' | 'act4' | 'after';
 export const STAGES: Stage[] = ['prologue', 'act1', 'act2', 'act3', 'act4', 'after'];

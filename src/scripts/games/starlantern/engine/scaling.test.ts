@@ -6,7 +6,7 @@ import { REGIONS, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
 import { expToNext, LEGACY_LINEUP } from './party';
 import { mulberry32 } from './rng';
-import { DEEP_ENEMIES, deepPower, enemyLevelAt, BOSS_PARTY_SCALE, DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy, bossPartyScale } from './scaling';
+import { DEEP_ENEMIES, deepPower, enemyLevelAt, homeLevel, BOSS_PARTY_SCALE, DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy, bossPartyScale } from './scaling';
 import { constRng, fullParty } from './testing';
 
 const MAIN = REGIONS.mainline;
@@ -375,11 +375,18 @@ describe('the deep enemy knobs (plan 6b Task 20c, added at their start values by
   });
 
   it('deep enemies grow strictly with depth', () => {
-    let last = met('wolf', 1);
-    for (let d = 2; d <= 250; d++) {
-      const e = met('wolf', d);
-      for (const k of ['hp', 'atk', 'mag'] as const) expect(e.max[k], `${k} at depth ${d}`).toBeGreaterThan(last.max[k]);
-      last = e;
+    // Every ordinary monster and the lanterneater, from the first depth it is met above its home level (below that it
+    // stays at its home numbers by design), through the deep road to depth 250.
+    for (const id of [...NORMAL_ENEMIES, 'lanterneater']) {
+      let from = 1;
+      while (enemyLevelAt(from) < homeLevel(ENEMIES[id])) from++;
+      expect(from, id).toBeLessThan(DEEP_ENEMIES.fromDepth);
+      let last = met(id, from);
+      for (let d = from + 1; d <= 250; d++) {
+        const e = met(id, d);
+        for (const k of ['hp', 'atk', 'mag'] as const) expect(e.max[k], `${id} ${k} at depth ${d}`).toBeGreaterThan(last.max[k]);
+        last = e;
+      }
     }
   });
 
