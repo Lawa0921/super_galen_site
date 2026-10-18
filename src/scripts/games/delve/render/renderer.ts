@@ -8,10 +8,11 @@ import { TILE_SIZE, CHUNK, DAY_LENGTH } from '../engine/constants';
 import { buildAtlas, perpMask, type Atlas } from './textures';
 import { ChunkLRU, biomeBlend, cameraFocus, chunksTouchRect, followCamera, nearRect, visibleChunks, type Cam, type TileRect } from './model';
 import { CORNER, EDGE, blendOverlay, decorStyle, edgeMask, innerCornerMask, type Neighbor } from './autotile';
-import {
-  advancePhase, armAngles, carryArm, carryStyle, flameFrame, idleFrame, poseKind, swingAngle, walkFrame, SWING_RATE,
-} from './anim';
-import { FRAME, FW, FH, Sprites, type ArmorLook } from './sprites';
+import { armAngles, carryArm, carryStyle, flameFrame, swingAngle, SWING_RATE, type PoseKind } from './anim';
+import { FW, FH, Sprites } from './sprites';
+import { PlayerAnimator, blinkAt, type PlayerAnim } from './playerAnim';
+import { SHEET } from './avatarArt';
+import { previewArms } from './dollPreview';
 import { CombatLayer } from './combatDraw';
 import { aimArmDeg, attackArmDeg, spearThrust } from './combatAnim';
 import { Background } from './background';
@@ -273,6 +274,8 @@ export class Renderer {
   onEvent(e: DelveEvent): void {
     this.combat.onEvent(e);
     if (e.type === 'respawn') this.snapCamera();
+    if (e.type === 'hurt' && !e.cause) this.hurtAt = this.clock;
+    if (e.type === 'climb') this.climbDust(e.phase !== 'grab', e.phase === 'mantle' ? e : null);
     if (e.type === 'lightning') { this.bolt = { x: e.x * S + S / 2, seed: ++this.boltN }; this.lightDirty = true; }
     if (e.type === 'mine' && e.tile === T.ICE) this.fx.invalidate(this.game.world, [this.game.world.chunkIndex(Math.floor(e.x / CHUNK), Math.floor(e.y / CHUNK))]);
     if ((e.type === 'mine' || e.type === 'place') && this.nearView(e.x, e.y, LIGHT_MARGIN)) this.lightDirty = true;
@@ -720,27 +723,57 @@ export class Renderer {
     return best;
   }
 
+  /** 玩家動畫狀態機（climb / hang / mantle / swim / hurt / dead …）；e2e 讀 playerAnim */
+  private readonly animator = new PlayerAnimator();
+  /** 最近一次受傷的時間（clock 秒） */
+  private hurtAt = -99;
+  /** 目前的玩家動畫（e2e / debug） */
+  playerAnim: PlayerAnim = 'idle';
+  /** 動畫提示（換手 → 攀爬音效）；main.ts 接到音效 */
+  onCue: ((cue: 'grip') => void) | null = null;
+
   private drawPlayer(ctx: CanvasRenderingContext2D, dt: number): void {
     const g = this.game, p = g.player, st = g.getState();
-    if (st.dead || this.hidePlayer) return;
+    if (this.hidePlayer) return;
+    const SP = this.sprites;
+    // 紙娃娃：樣子沒變（key 一樣）就沿用快取的影格表
+    const doll = g.doll();
+    SP.setDoll(doll.look, doll.key);
+    const sheet = SP.dollSheet();
+    const mt = st.player.mantle;
+    const swim = st.liquid.frac > 0.55 && !p.onGround && !st.player.climbing;
+    const an = this.animator.update({
+      dt, dead: st.dead, climbing: st.player.climbing, mantle: mt ? mt.p : null, onGround: p.onGround, vx: p.vx, vy: p.vy,
+      swim, sinceHurt: this.clock - this.hurtAt,
+    });
+    this.playerAnim = an.anim;
+    if (an.cue === 'grip') this.climbDust(false);
+    if (an.cue) this.onCue?.(an.cue);
     const atk = st.attack;
-    if (atk) this.facing = atk.dir;
-    else {
+    if (mt) this.facing = mt.dir;
+    else if (atk) this.facing = atk.dir;
+    else if (!st.dead) {
       if (p.vx > 8) this.facing = 1; else if (p.vx < -8) this.facing = -1;
       if (st.mining) this.facing = (st.mining.x + 0.5) * S >= p.x + p.w / 2 ? 1 : -1;
     }
-    // 攀爬：上下移動時用走路的腿部循環，掛著不動時用待機
-    const kind = st.player.climbing ? (Math.abs(p.vy) > 1 || Math.abs(p.vx) > 8 ? 'walk' : 'idle') : poseKind(p.onGround, p.vx, p.vy);
-    this.walkPhase = kind === 'walk' ? advancePhase(this.walkPhase, st.player.climbing ? Math.abs(p.vy) + Math.abs(p.vx) : p.vx, dt) : 0;
     this.swingPhase = st.mining ? (this.swingPhase + dt * SWING_RATE) % 1 : 0;
-    // 受傷無敵時閃爍
-    if (st.iframes > 0 && Math.floor(st.iframes * 16) % 2 === 1) return;
-    let fi: number, local: number;
-    if (kind === 'walk') { local = walkFrame(this.walkPhase); fi = FRAME.WALK + local; }
-    else if (kind === 'jump') { local = 0; fi = FRAME.JUMP; }
-    else if (kind === 'fall') { local = 0; fi = FRAME.FALL; }
-    else { local = idleFrame(this.clock); fi = FRAME.IDLE + local; }
-
+    // 受傷無敵時閃爍（倒地 / 縮身那一下不閃）
+    if (!st.dead && st.iframes > 0 && an.anim !== 'hurt' && Math.floor(st.iframes * 16) % 2 === 1) return;
+    const sheetAnim = an.anim === 'idle' && blinkAt(this.clock) ? 'blink' : an.anim;
+    const fi = SHEET[sheetAnim][0] + Math.min(an.frame, SHEET[sheetAnim][1] - 1);
+    const meta = sheet.meta[fi];
+    const cx = Math.round(p.x + p.w / 2), bottom = Math.round(p.y + p.h + p.gfxOffY);
+    const ox = -FW / 2, oy = -FH;
+    if (!meta.arms) {
+      // 背面爬繩 / 掛著 / 倒地：手臂畫在影格裡，手上的東西收起來
+      ctx.save(); ctx.translate(cx, bottom); ctx.scale(this.facing, 1);
+      ctx.drawImage(sheet.canvas, fi * FW, 0, FW, FH, ox, oy, FW, FH);
+      ctx.restore();
+      this.rodTip = null;
+      return;
+    }
+    const kind: PoseKind = an.anim === 'walk' || an.anim === 'jump' || an.anim === 'fall' ? an.anim : 'idle';
+    const local = an.anim === 'walk' || an.anim === 'idle' ? an.frame : 0;
     const held = st.held ? st.held.item : null;
     const heldDef = held ? ITEMS[held] : null;
     let swing: number | null = st.mining ? swingAngle(this.swingPhase) : null;
@@ -755,27 +788,32 @@ export class Renderer {
       else if (atk.kind === 'spear') rot = { item: atk.item, base: -Math.PI / 4, push: 4 + spearThrust(atk.progress) * 16 };
       else if (atk.progress < 0.5) throwMini = atk.item;
     }
-    const arms = armAngles(kind, local, swing);
+    const special = an.anim === 'mantle' || an.anim === 'swim' || an.anim === 'hurt';
+    if (special) { swing = null; blade = null; rot = null; throwMini = null; }
+    const arms = special ? previewArms(an.anim as 'mantle' | 'swim' | 'hurt', an.frame) : armAngles(kind, local, swing);
+    if (mt) {
+      // 攀上邊緣：兩手伸向牆角（手搆不到就盡量往那邊伸）
+      const sh = SP.shoulder(false);
+      const sx = cx + this.facing * (ox + sh.x + meta.dx), sy = bottom + oy + sh.y + meta.dy;
+      const deg = (Math.atan2((mt.edgeX - sx) * this.facing, mt.edgeY - sy) * 180) / Math.PI;
+      arms.front = deg; arms.back = deg - 8;
+    }
     // 待機 / 走路 / 跳躍時，手上的鎬 / 武器也拿著（往前斜舉）；挖掘時換成背包裡最好的鎬、攻擊時用攻擊動畫
-    const carry = !st.mining && !atk ? carryStyle(heldDef) : null;
+    const carry = !st.mining && !atk && !special ? carryStyle(heldDef) : null;
     if (carry && carry !== 'mini') arms.front = carryArm(kind, arms.front);
-    const showPick = st.mining ? this.bestPickItem() : carry === 'pick' ? held : null;
+    const showPick = special ? null : st.mining ? this.bestPickItem() : carry === 'pick' ? held : null;
     if (carry === 'blade') blade = held;
-    const heldOther = !st.mining && !atk && held && carry !== 'rod' && ((!heldDef?.pick && !heldDef?.weapon) || carry === 'mini') ? held : null;
+    const heldOther = !special && !st.mining && !atk && held && carry !== 'rod' && ((!heldDef?.pick && !heldDef?.weapon) || carry === 'mini') ? held : null;
     if (heldOther && kind !== 'jump' && kind !== 'fall') arms.front = 62 + Math.round(arms.front * 0.15);
 
-    const SP = this.sprites;
-    const set = (it: ItemId | null): ArmorLook['head'] => (it ? ITEMS[it].armor?.set ?? null : null);
-    const armor: ArmorLook = { head: set(st.equipment.head), body: set(st.equipment.body), legs: set(st.equipment.legs) };
-    const sheet = SP.bodySheet(armor);
-    const bodyDy = sheet.dy[fi] ?? 0;
-    const cx = Math.round(p.x + p.w / 2), bottom = Math.round(p.y + p.h + p.gfxOffY);
+    const bodyDy = meta.dy;
     ctx.save();
     ctx.translate(cx, bottom);
     ctx.scale(this.facing, 1);
-    const ox = -FW / 2, oy = -FH;
-    const sb = SP.shoulder(true), sf = SP.shoulder(false);
-    const back = SP.arm(true, null, arms.back, armor.body);
+    const sb0 = SP.shoulder(true), sf0 = SP.shoulder(false);
+    const sb = { x: sb0.x + meta.dx, y: sb0.y }, sf = { x: sf0.x + meta.dx, y: sf0.y };
+    // 紙娃娃順序：後手臂 → 第一張（背飾 / 後髮 / 身體 / 腿 / 胸）→ 前手臂 + 手持 → 第二張（臉 / 前髮 / 頭飾 / 前飾品）
+    const back = SP.arm(true, null, arms.back);
     ctx.drawImage(back.canvas, ox + sb.x - back.ox, oy + sb.y + bodyDy - back.oy);
     ctx.drawImage(sheet.canvas, fi * FW, 0, FW, FH, ox, oy, FW, FH);
     // 手持非鎬物件（火把 / 方塊）：手在前、物件直立
@@ -796,8 +834,9 @@ export class Renderer {
         for (let r = r0 + Math.round(fade * 6); r <= r1; r += 3) ctx.fillRect(Math.round(sx + ux * r), Math.round(sy + uy * r), 1, 1);
       }
     }
-    const front = SP.arm(false, showPick, arms.front, armor.body, blade);
+    const front = SP.arm(false, showPick, arms.front, blade);
     ctx.drawImage(front.canvas, ox + sf.x - front.ox, oy + sf.y + bodyDy - front.oy);
+    ctx.drawImage(sheet.canvas, fi * FW, FH, FW, FH, ox, oy, FW, FH);
     if (heldOther && heldOther !== 'torch') {
       const m = SP.mini(heldOther);
       ctx.drawImage(m, hx - 2, hy - 6);
@@ -887,6 +926,18 @@ export class Renderer {
       ctx.fillRect(Math.round(q.x), Math.round(q.y), sz, sz);
     }
     if (ps.length > 600) ps.splice(0, ps.length - 600);
+  }
+
+  /** 攀爬的粉塵：換手時繩上掉一點繩屑；攀上邊緣時牆角揚起一小撮灰 + 一滴汗 */
+  private climbDust(big: boolean, at: { x: number; y: number } | null = null): void {
+    const p = this.game.player;
+    const x = at ? at.x : p.x + p.w / 2, y = at ? at.y : p.y + 4;
+    const cols = ['#c99660', '#966139', '#d8ba76'];
+    for (let i = 0; i < (big ? 6 : 2); i++) {
+      this.particles.push({ x: x + (Math.random() - 0.5) * (big ? 10 : 4), y, vx: (Math.random() - 0.5) * (big ? 60 : 16), vy: big ? -20 - Math.random() * 40 : 10 + Math.random() * 20,
+        life: 0.3 + Math.random() * 0.3, color: cols[i % cols.length], size: 1, g: big ? 200 : 120 });
+    }
+    if (big) this.particles.push({ x: p.x + p.w / 2 - this.facing * 8, y: p.y + 14, vx: -this.facing * 25, vy: -50, life: 0.45, color: '#94c8ee', size: 1, g: 300 });
   }
 
   /** 濺起一圈水花（世界 px） */

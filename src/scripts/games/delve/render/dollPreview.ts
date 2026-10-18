@@ -1,0 +1,43 @@
+// dollPreview.ts — 紙娃娃預覽（純 Bmp）：把一格動畫依遊戲裡的順序合成成一張圖
+//   後手臂 → 第一張（背飾 / 後髮 / 身體 / 腿 / 胸）→ 前手臂 → 第二張（臉 / 前髮 / 頭飾 / 前飾品）。
+//   客製化畫面、背包的紙娃娃、說明框的小預覽、圖庫用；遊戲中由 renderer 用快取的 canvas 做同樣的事。
+import { Bmp, rotPrep, rotate } from './pixel';
+import type { DollLook } from '../engine/doll';
+import { ARM_PIV, AV_FH, AV_FW, AV_SHOULDER_BACK, AV_SHOULDER_FRONT, avatarArm, avatarFrame, type SheetAnim } from './avatarArt';
+import { armAngles } from './anim';
+
+const ARM_CANVAS = 64;
+/** 預覽影格的手臂角度（度；0 = 下垂、正 = 往前抬） */
+export function previewArms(anim: SheetAnim, f: number): { front: number; back: number } {
+  switch (anim) {
+    case 'walk': return armAngles('walk', f, null);
+    case 'jump': return armAngles('jump', 0, null);
+    case 'fall': return armAngles('fall', 0, null);
+    case 'swim': { const s = Math.sin((f / 6) * Math.PI * 2); return { front: 95 + s * 55, back: 95 - s * 55 }; }
+    case 'hurt': return { front: 130, back: -50 };
+    case 'mantle': return { front: [160, 120, 60][f] ?? 120, back: [150, 110, 50][f] ?? 110 };
+    default: return armAngles('idle', f % 4, null);
+  }
+}
+
+const prepCache = new Map<string, Bmp>();
+function armAt(l: DollLook, key: string, back: boolean, deg: number): Bmp {
+  const k = `${key}:${back ? 1 : 0}`;
+  let p = prepCache.get(k);
+  if (!p) { p = rotPrep(avatarArm(l, back)); prepCache.set(k, p); if (prepCache.size > 64) prepCache.delete(prepCache.keys().next().value as string); }
+  return rotate(p, ARM_PIV.x, ARM_PIV.y, -(deg * Math.PI) / 180, ARM_CANVAS);
+}
+
+/** 一格完整的紙娃娃（面向右）；key = dollKey（手臂預處理的快取用） */
+export function dollPreview(l: DollLook, key: string, anim: SheetAnim, f: number): Bmp {
+  const fr = avatarFrame(l, anim, f);
+  const out = new Bmp(AV_FW, AV_FH);
+  if (!fr.meta.arms) { out.blit(fr.body, 0, 0); return out; }
+  const a = previewArms(anim, f), { dx, dy } = fr.meta;
+  const put = (b: Bmp, s: { x: number; y: number }): void => out.blit(b, s.x + dx - ARM_CANVAS / 2, s.y + dy - ARM_CANVAS / 2);
+  put(armAt(l, key, true, a.back), AV_SHOULDER_BACK);
+  out.blit(fr.body, 0, 0);
+  put(armAt(l, key, false, a.front), AV_SHOULDER_FRONT);
+  out.blit(fr.head, 0, 0);
+  return out;
+}

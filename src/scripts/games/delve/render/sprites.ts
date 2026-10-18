@@ -5,182 +5,26 @@
 //   · 火把：4 格火焰 + 階梯式光暈。
 import { Bmp, INK, bayer, h01, hex, mix, ramp, rotPrep, rotate, shade, toCanvas, type RGB } from './pixel';
 import { leafColors, type TreeLook } from './seasonLook';
-import { ARM_STEPS, WALK_FRAMES, IDLE_FRAMES, FLAME_FRAMES, angleIndex } from './anim';
+import { ARM_STEPS, FLAME_FRAMES, angleIndex } from './anim';
 import { PAL, PICK_METAL } from './textures';
-import { ITEMS, type ArmorSetId, type ItemId } from '../engine/items';
-import { ARMOR_RAMP, R as CR, WEAPON_METAL, shadeMask } from './combatArt';
+import { ITEMS, type ItemId } from '../engine/items';
+import { R as CR, WEAPON_METAL } from './combatArt';
+import { dollKey, plainLook, type DollLook } from '../engine/doll';
+import { DEFAULT_APPEARANCE } from '../engine/appearance';
+import {
+  ARM_H, ARM_PIV, ARM_W, AV_FH, AV_FW, AV_SHOULDER_BACK, AV_SHOULDER_FRONT, HAND_REACH, avatarArm, avatarSheet, type FrameMeta,
+} from './avatarArt';
 
-/** 身上穿的防具（各部位的套裝 id；null = 沒穿） */
-export interface ArmorLook { head: ArmorSetId | null; body: ArmorSetId | null; legs: ArmorSetId | null; }
-export const NO_ARMOR: ArmorLook = { head: null, body: null, legs: null };
-export function armorKey(a: ArmorLook): string { return `${a.head ?? ''}|${a.body ?? ''}|${a.legs ?? ''}`; }
-/** 防具色階（7 階）→ 上衣 6 階 / 褲子 5 階 / 靴子 5 階 */
-const asShirt = (r: RGB[]): RGB[] => [r[0], r[1], r[2], r[3], r[4], r[5]];
-const asPants = (r: RGB[]): RGB[] => [r[0], r[1], r[2], r[3], r[4]];
-const asBoots = (r: RGB[]): RGB[] => [r[0], r[0], r[1], r[2], r[3]];
+export const FW = AV_FW;
+export const FH = AV_FH;
+/** 紙娃娃影格表（兩列：body / head）與每格資料 */
+export interface DollSheet { canvas: HTMLCanvasElement; meta: FrameMeta[]; key: string; }
+/** 快取幾組不同樣子的影格表（換裝備來回切時不必重烘） */
+const SHEET_CACHE = 6;
 
-// ── 可自訂外觀（之後的角色客製化用） ─────────────────────
-export const SKIN_TONES: RGB[][] = [
-  ramp('#623924', '#b07a4b', '#d98f66', '#f2b888', '#fff4c0'),
-  ramp('#4a2418', '#7e4430', '#a8623e', '#c88250', '#e0a470'),
-  ramp('#2c140c', '#52281a', '#734026', '#935a34', '#b07848'),
-];
-export const HAIR_COLORS: RGB[][] = [
-  ramp('#1c1424', '#2a1810', '#472819', '#623924', '#7c4c2e'),
-  ramp('#141018', '#24202c', '#363244', '#4c4860', '#66627c'),
-  ramp('#3a1a08', '#7a3a12', '#b05a1c', '#d8802c', '#f0a850'),
-];
-export interface Look { skin: number; hair: number; }
-export const DEFAULT_LOOK: Look = { skin: 0, hair: 0 };
-
-const SHIRT_BASE = ramp('#0c0a12', '#1f6474', '#1f6474', '#2c8692', '#4aaeb0', '#a2c8b0');
-const PANTS_BASE = ramp('#0c0a12', '#1c1424', '#2c2450', '#463c78', '#7a5a8c');
-const BOOTS_BASE = ramp('#0c0a12', '#2a1810', '#472819', '#623924', '#7c4c2e');
-const BELT = ramp('#1c1424', '#2a1810', '#472819');
-const BUCKLE = hex('#ffd86a');
-
-export const FW = 32;
-export const FH = 48;
-/** 身體影格索引 */
-export const FRAME = { IDLE: 0, WALK: IDLE_FRAMES, JUMP: IDLE_FRAMES + WALK_FRAMES, FALL: IDLE_FRAMES + WALK_FRAMES + 1 } as const;
-const FRAMES = FRAME.FALL + 1;
-/** 肩膀軸心（影格座標，含呼吸 / 走路的身體位移前） */
-const SHOULDER_FRONT = { x: 18, y: 22 };
-const SHOULDER_BACK = { x: 14, y: 22 };
-
-// 頭（面向右；12×12） a=髮 A=髮暗 q=髮亮 s=膚 S=膚暗 h=膚亮 w=眼白 e=瞳 m=嘴
-const HEAD = [
-  '...aaaaaa...',
-  '.aaqqqqaaa..',
-  'aaqqaaaaaaa.',
-  'aaaaaaaaaaaa',
-  'aaaaaAhhhhAa',
-  'aaaAShhsssss',
-  'aaASSssswess',
-  'aaAhSssswess',
-  'AaSSsssssssS',
-  '.ASssssssmSS',
-  '..SSsssssSS.',
-  '...SSSSSSS..',
-];
-// 上衣（10×12，從脖子到腰帶下緣） c/C/k/K = 衣服各階、n = 脖子膚色、b = 腰帶、u = 扣環
-const TORSO = [
-  '...nnnn...',
-  '.kkkCCkkk.',
-  'kkkkkccccC',
-  'kkkcccccCC',
-  'kkccccccCC',
-  'kkccccccCC',
-  'kkccccccCC',
-  'kccccccCCC',
-  'kccccccCCC',
-  'KccccccCCK',
-  'bbbbbbbubb',
-  'bbbbbbbbbb',
-];
-
-interface LegPose { thigh: number; shin: number; }
-
-/** 以粗線段畫肢體：左側受光 */
-function limb(b: Bmp, x0: number, y0: number, x1: number, y1: number, half: number, pal: RGB[]): void {
-  const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len, uy = dy / len, nx = uy, ny = -ux;
-  const minX = Math.floor(Math.min(x0, x1) - half - 1), maxX = Math.ceil(Math.max(x0, x1) + half + 1);
-  const minY = Math.floor(Math.min(y0, y1) - 1), maxY = Math.ceil(Math.max(y0, y1) + 1);
-  for (let y = minY; y <= maxY; y++) {
-    for (let x = minX; x <= maxX; x++) {
-      const px = x + 0.5 - x0, py = y + 0.5 - y0;
-      const t = px * ux + py * uy, s = px * nx + py * ny;
-      if (t < -0.5 || t > len + 0.5 || Math.abs(s) > half) continue;
-      // s 以 n=(uy,-ux) 為正：向下的肢體 n = (1,0)，s<0 在左（受光）
-      b.set(x, y, s < -half + 1 ? pal[3] : s > half - 1 ? pal[1] : pal[2]);
-    }
-  }
-}
-
-function leg(pose: LegPose, hipX: number, hipY: number, pants: RGB[], boots: RGB[]): { b: Bmp; ankleY: number } {
-  const b = new Bmp(FW, FH);
-  const r = (d: number): number => (d * Math.PI) / 180;
-  const kx = hipX + Math.sin(r(pose.thigh)) * 7, ky = hipY + Math.cos(r(pose.thigh)) * 7;
-  const ax = kx + Math.sin(r(pose.shin)) * 7, ay = ky + Math.cos(r(pose.shin)) * 7;
-  limb(b, hipX, hipY, kx, ky, 2, pants);
-  limb(b, kx, ky, ax, ay, 2, pants);
-  // 靴子：5×3、鞋尖朝前
-  const bx = Math.round(ax - 2), by = Math.round(ay) - 1;
-  b.rect(bx, by, 5, 1, boots[3]);
-  b.rect(bx, by + 1, 6, 1, boots[2]);
-  b.rect(bx, by + 2, 6, 1, boots[1]);
-  b.set(bx, by, boots[4]);
-  b.outline(INK);
-  return { b, ankleY: ay };
-}
-
-/** 頭盔：蓋住頭髮（頭頂 + 後腦），前緣到眉毛；各套裝有自己的細節 */
-function helmetOver(head: Bmp, set: ArmorSetId, ox: number, oy: number): void {
-  const r = ARMOR_RAMP[set];
-  const m = (x: number, y: number): boolean => {
-    const lx = x - ox, ly = y - oy;
-    if (ly < -1 || ly > 9 || lx < -1 || lx > 12) return false;
-    if (ly <= 3) return Math.hypot(lx + 0.5 - 6, (ly + 0.5 - 4.5) * 1.15) <= 6.6;
-    if (ly === 4) return lx >= -1 && lx <= 12;
-    return lx >= -1 && lx <= 3 - (ly > 7 ? 1 : 0);
-  };
-  shadeMask(head, m, r, { x0: 0, y0: 0, x1: head.w - 1, y1: head.h - 1 });
-  head.rect(ox, oy + 4, 13, 1, r[2]);
-  if (set === 'gold') { head.set(ox + 5, oy - 2, CR.red[3]); head.set(ox + 6, oy - 2, CR.red[4]); head.set(ox + 6, oy - 3, CR.red[3]); }
-  if (set === 'molten') { head.set(ox + 4, oy + 1, CR.lava[3]); head.set(ox + 8, oy + 2, CR.lava[4]); head.set(ox + 1, oy + 6, CR.lava[3]); }
-  if (set === 'bone') { head.set(ox + 8, oy + 1, r[1]); head.set(ox + 9, oy + 2, r[1]); head.set(ox + 3, oy + 2, r[1]); }
-  if (set === 'iron' || set === 'copper') { head.set(ox + 6, oy, r[6]); head.set(ox + 6, oy + 1, r[5]); }
-  if (set === 'wood') { head.set(ox + 4, oy + 1, r[2]); head.set(ox + 8, oy + 1, r[2]); }
-}
-
-function bodyFrame(look: Look, kind: 'idle' | 'walk' | 'jump' | 'fall', f: number, armor: ArmorLook = NO_ARMOR): { b: Bmp; dy: number } {
-  const skin = SKIN_TONES[look.skin] ?? SKIN_TONES[0];
-  const hair = HAIR_COLORS[look.hair] ?? HAIR_COLORS[0];
-  const SHIRT = armor.body ? asShirt(ARMOR_RAMP[armor.body]) : SHIRT_BASE;
-  const PANTS = armor.legs ? asPants(ARMOR_RAMP[armor.legs]) : PANTS_BASE;
-  const BOOTS = armor.legs ? asBoots(ARMOR_RAMP[armor.legs]) : BOOTS_BASE;
-  let near: LegPose, far: LegPose, snap = true, breath = 0;
-  if (kind === 'walk') {
-    const ph = (f / WALK_FRAMES) * Math.PI * 2;
-    const th = (p: number): LegPose => ({ thigh: 30 * Math.sin(p), shin: 30 * Math.sin(p) - (6 + 46 * Math.max(0, Math.cos(p))) });
-    near = th(ph); far = th(ph + Math.PI);
-  } else if (kind === 'jump') {
-    near = { thigh: 48, shin: -6 }; far = { thigh: -12, shin: -40 }; snap = false;
-  } else if (kind === 'fall') {
-    near = { thigh: 18, shin: 6 }; far = { thigh: -22, shin: -14 }; snap = false;
-  } else {
-    near = { thigh: 4, shin: 2 }; far = { thigh: -4, shin: -3 };
-    breath = f === 2 || f === 3 ? 1 : 0;
-  }
-  const farDark = PANTS.map((c) => shade(c, 0.78));
-  const bootDark = BOOTS.map((c) => shade(c, 0.8));
-  const L1 = leg(far, 14.5, 31, farDark, bootDark), L2 = leg(near, 17.5, 31, PANTS, BOOTS);
-  const ground = 46;
-  const dy = snap ? Math.round(ground - Math.max(L1.ankleY, L2.ankleY)) : 0;
-
-  const torso = new Bmp(FW, FH);
-  torso.grid(TORSO, { n: skin[2], k: SHIRT[4], c: SHIRT[3], C: SHIRT[2], K: SHIRT[1], b: BELT[1], u: BUCKLE }, 11, 19 + breath);
-  torso.set(12, 20 + breath, SHIRT[5]); torso.set(13, 20 + breath, SHIRT[5]);
-  torso.outline(INK);
-  const head = new Bmp(FW, FH);
-  head.grid(HEAD, {
-    a: hair[2], A: hair[1], q: hair[3], s: skin[3], S: skin[2], h: skin[4], w: hex('#f4f2ea'), e: hex('#1c1424'), m: skin[1],
-  }, 10, 7 + breath);
-  if (armor.head) helmetOver(head, armor.head, 10, 7 + breath);
-  head.outline(INK);
-
-  const out = new Bmp(FW, FH);
-  const legs = new Bmp(FW, FH);
-  legs.blit(L1.b, 0, 0); legs.blit(L2.b, 0, 0);
-  out.blit(legs, 0, dy);
-  out.blit(torso, 0, dy);
-  out.blit(head, 0, dy);
-  return { b: out, dy: dy + breath };
-}
-
-// ── 手臂 + 手持鎬 ──────────────────────────────────────
-const ARM_W = 26, ARM_H = 34, PIV = { x: 13, y: 3 };
+// ── 手臂 + 手持鎬 / 劍 ──────────────────────────────────
+// 手臂本身由 avatarArt.avatarArm 依紙娃娃的上衣畫；工具 / 刀身畫成「手在 y≈9」的位置（舊版手在 y≈12：整張往上移 3）
+const ITEM_DY = -3;
 /** 劍 / 大劍：握把在手心、刀身沿手臂往外伸（跟著手臂旋轉） */
 function bladeBmp(item: ItemId): Bmp {
   const w = ITEMS[item].weapon;
@@ -189,54 +33,38 @@ function bladeBmp(item: ItemId): Bmp {
   const len = broad ? 17 : item === 'lumen_blade' ? 17 : item === 'wood_sword' ? 12 : Math.min(17, Math.round((w?.reach ?? 34) / 2.4));
   const g = item === 'lumen_blade' || item === 'gold_sword' ? CR.gold : item === 'wood_sword' ? CR.wood : broad ? CR.leather : m;
   const b = new Bmp(ARM_W, ARM_H);
-  // 握把（手心）+ 護手
   b.rect(12, 11, 2, 3, CR.leather[3]); b.set(12, 11, CR.leather[5]);
   b.rect(9, 14, 8, 1, g[4]); b.set(9, 14, g[5]); b.set(16, 14, g[2]);
-  // 刀身
   const x0 = broad ? 11 : 12, wd = broad ? 4 : 2;
   for (let y = 15; y < 15 + len && y < ARM_H - 1; y++) {
     for (let k = 0; k < wd; k++) b.set(x0 + k, y, k === 0 ? m[5] : k === wd - 1 ? m[2] : m[4]);
     if (broad && y % 4 === 1) b.set(x0 + wd - 1, y, m[1]);
   }
   const tip = Math.min(ARM_H - 1, 15 + len);
-  b.set(broad ? 12 : 12, tip, m[4]); if (broad) b.set(13, tip, m[3]);
+  b.set(12, tip, m[4]); if (broad) b.set(13, tip, m[3]);
   if (item === 'lumen_blade') for (let y = 17; y < tip; y += 3) b.set(12, y, CR.cyan[6]);
   return b.outline(INK);
 }
-
-function armBmp(look: Look, back: boolean, pick: ItemId | null, bodySet: ArmorSetId | null = null, blade: ItemId | null = null): Bmp {
-  const skin = (SKIN_TONES[look.skin] ?? SKIN_TONES[0]).map((c) => (back ? shade(c, 0.8) : c));
-  const SH = bodySet ? asShirt(ARMOR_RAMP[bodySet]) : SHIRT_BASE;
-  const sh = SH.map((c) => (back ? shade(c, 0.78) : c));
-  const b = new Bmp(ARM_W, ARM_H);
-  if (blade) b.blit(bladeBmp(blade), 0, 0);
-  if (pick) {
-    const w = PAL.bark, m = PICK_METAL[pick] ?? PAL.metal;
-    const item = new Bmp(ARM_W, ARM_H);
-    // 柄：從手往外延伸
-    for (let y = 10; y <= 24; y++) { item.set(12, y, w[4]); item.set(13, y, w[2]); }
-    // 鎬頭：中間厚、兩端尖、微微朝手彎
-    for (let dx = -7; dx <= 7; dx++) {
-      const ad = Math.abs(dx);
-      const y = 25 - Math.round((dx * dx) / 18);
-      const th = ad <= 1 ? 4 : ad <= 3 ? 3 : ad <= 5 ? 2 : 1;
-      const x = 12.5 + dx;
-      for (let k = 0; k < th; k++) item.set(x, y + k, k === 0 ? m[5] : k === th - 1 ? m[2] : m[3]);
-    }
-    item.set(6, 24, m[6]); item.set(19, 24, m[4]);
-    // 綁繩
-    item.set(12, 24, w[1]); item.set(13, 24, w[1]); item.set(12, 23, w[2]); item.set(13, 23, w[1]);
-    item.outline(INK);
-    b.blit(item, 0, 0);
+function pickBmp(pick: ItemId): Bmp {
+  const w = PAL.bark, m = PICK_METAL[pick] ?? PAL.metal;
+  const item = new Bmp(ARM_W, ARM_H);
+  for (let y = 10; y <= 24; y++) { item.set(12, y, w[4]); item.set(13, y, w[2]); }
+  for (let dx = -7; dx <= 7; dx++) {
+    const ad = Math.abs(dx);
+    const y = 25 - Math.round((dx * dx) / 18);
+    const th = ad <= 1 ? 4 : ad <= 3 ? 3 : ad <= 5 ? 2 : 1;
+    const x = 12.5 + dx;
+    for (let k = 0; k < th; k++) item.set(x, y + k, k === 0 ? m[5] : k === th - 1 ? m[2] : m[3]);
   }
-  const arm = new Bmp(ARM_W, ARM_H);
-  // 袖子（肩到手肘）+ 前臂 + 手
-  arm.rect(11, 1, 4, 5, sh[3]); arm.rect(11, 1, 1, 5, sh[4]); arm.rect(14, 1, 1, 5, sh[2]);
-  arm.rect(11, 6, 4, 1, sh[2]);
-  arm.rect(11, 7, 4, 4, skin[3]); arm.rect(11, 7, 1, 4, skin[4]); arm.rect(14, 7, 1, 4, skin[2]);
-  arm.rect(11, 11, 4, 3, skin[3]); arm.set(14, 12, skin[2]); arm.set(11, 13, skin[2]); arm.set(14, 13, skin[1]);
-  arm.outline(INK);
-  b.blit(arm, 0, 0);
+  item.set(6, 24, m[6]); item.set(19, 24, m[4]);
+  item.set(12, 24, w[1]); item.set(13, 24, w[1]); item.set(12, 23, w[2]); item.set(13, 23, w[1]);
+  return item.outline(INK);
+}
+function armBmp(look: DollLook, back: boolean, pick: ItemId | null, blade: ItemId | null): Bmp {
+  const b = new Bmp(ARM_W, ARM_H);
+  if (blade) b.blit(bladeBmp(blade), 0, ITEM_DY);
+  if (pick) b.blit(pickBmp(pick), 0, ITEM_DY);
+  b.blit(avatarArm(look, back), 0, 0);
   return b;
 }
 
@@ -619,10 +447,6 @@ function paintPine(h: number, r: number, grounded: boolean): { b: Bmp; ax: numbe
 export interface HeldDraw { canvas: HTMLCanvasElement; ox: number; oy: number; }
 
 export class Sprites {
-  /** 身體影格表：FRAMES × (FW×FH) */
-  readonly body: HTMLCanvasElement;
-  /** 每格身體影格的垂直位移（肩膀跟著動） */
-  readonly bodyDy: number[];
   readonly torches: HTMLCanvasElement[] = [];
   /** 壁掛火把：貼左牆 / 貼右牆（右牆 = 左牆鏡像） */
   readonly torchesLeft: HTMLCanvasElement[] = [];
@@ -636,15 +460,16 @@ export class Sprites {
   private armCache = new Map<string, HTMLCanvasElement>();
   private treeCache = new Map<string, TreeSprite>();
   private miniCache = new Map<string, HTMLCanvasElement>();
-
-  private sheets = new Map<string, { canvas: HTMLCanvasElement; dy: number[] }>();
+  private sheets = new Map<string, DollSheet>();
   private weaponCache = new Map<string, HTMLCanvasElement>();
   private weaponPrep = new Map<string, Bmp>();
+  /** 目前的紙娃娃樣子 / key（setDoll 換） */
+  private look: DollLook = plainLook(DEFAULT_APPEARANCE);
+  private key = dollKey(this.look);
+  /** 統計：烘過幾次影格表（效能檢查用） */
+  readonly bakes = { sheets: 0, arms: 0 };
 
-  constructor(private readonly iconBmp: (item: ItemId) => Bmp, readonly look: Look = DEFAULT_LOOK) {
-    const s = this.bodySheet(NO_ARMOR);
-    this.body = s.canvas;
-    this.bodyDy = s.dy;
+  constructor(private readonly iconBmp: (item: ItemId) => Bmp) {
     for (let f = 0; f < FLAME_FRAMES; f++) {
       this.torches.push(toCanvas(torchBmp(f)) as HTMLCanvasElement);
       const wb = torchBmp(f, 'wall');
@@ -661,41 +486,43 @@ export class Sprites {
     ];
   }
 
-  /** 身體影格表（依穿的防具烘焙、快取） */
-  bodySheet(armor: ArmorLook): { canvas: HTMLCanvasElement; dy: number[] } {
-    const key = armorKey(armor);
-    let s = this.sheets.get(key);
-    if (s) return s;
-    const sheet = new Bmp(FW * FRAMES, FH);
-    const dy: number[] = [];
-    const add = (i: number, kind: 'idle' | 'walk' | 'jump' | 'fall', f: number): void => {
-      const r = bodyFrame(this.look, kind, f, armor);
-      sheet.blit(r.b, i * FW, 0);
-      dy[i] = r.dy;
-    };
-    for (let f = 0; f < IDLE_FRAMES; f++) add(FRAME.IDLE + f, 'idle', f);
-    for (let f = 0; f < WALK_FRAMES; f++) add(FRAME.WALK + f, 'walk', f);
-    add(FRAME.JUMP, 'jump', 0);
-    add(FRAME.FALL, 'fall', 0);
-    s = { canvas: toCanvas(sheet) as HTMLCanvasElement, dy };
-    this.sheets.set(key, s);
+  /** 換紙娃娃的樣子：key 一樣就什麼都不做；不一樣才讓手臂快取失效（影格表照 key 快取） */
+  setDoll(look: DollLook, key: string): void {
+    if (key === this.key) return;
+    this.look = look;
+    this.key = key;
+    this.armPrep.clear();
+    this.armCache.clear();
+  }
+  get dollKey(): string { return this.key; }
+
+  /** 目前樣子的影格表（第一次用到才烘；最多快取 SHEET_CACHE 組） */
+  dollSheet(): DollSheet {
+    let s = this.sheets.get(this.key);
+    if (s) { this.sheets.delete(this.key); this.sheets.set(this.key, s); return s; }
+    const r = avatarSheet(this.look);
+    s = { canvas: toCanvas(r.b) as HTMLCanvasElement, meta: r.meta, key: this.key };
+    this.bakes.sheets++;
+    this.sheets.set(this.key, s);
+    while (this.sheets.size > SHEET_CACHE) this.sheets.delete(this.sheets.keys().next().value as string);
     return s;
   }
 
-  shoulder(back: boolean): { x: number; y: number } { return back ? SHOULDER_BACK : SHOULDER_FRONT; }
+  shoulder(back: boolean): { x: number; y: number } { return back ? AV_SHOULDER_BACK : AV_SHOULDER_FRONT; }
 
-  /** 旋轉後的手臂（含鎬 / 劍）；bodySet = 胸甲套裝（袖子顏色）。回傳 canvas 與「軸心在 canvas 中的位置」 */
-  arm(back: boolean, pick: ItemId | null, deg: number, bodySet: ArmorSetId | null = null, blade: ItemId | null = null): HeldDraw {
+  /** 旋轉後的手臂（含鎬 / 劍；袖子依紙娃娃的上衣）。回傳 canvas 與「軸心在 canvas 中的位置」 */
+  arm(back: boolean, pick: ItemId | null, deg: number, blade: ItemId | null = null): HeldDraw {
     const idx = angleIndex(deg, ARM_STEPS);
-    const pk = `${back ? 1 : 0}:${pick ?? ''}:${bodySet ?? ''}:${blade ?? ''}`;
+    const pk = `${back ? 1 : 0}:${pick ?? ''}:${blade ?? ''}`;
     const key = `${pk}:${idx}`;
     const size = 64;
     let c = this.armCache.get(key);
     if (!c) {
       let prep = this.armPrep.get(pk);
-      if (!prep) { prep = rotPrep(armBmp(this.look, back, pick, bodySet, blade)); this.armPrep.set(pk, prep); }
+      if (!prep) { prep = rotPrep(armBmp(this.look, back, pick, blade)); this.armPrep.set(pk, prep); }
       const rad = -(idx / ARM_STEPS) * Math.PI * 2;
-      c = toCanvas(rotate(prep, PIV.x, PIV.y, rad, size)) as HTMLCanvasElement;
+      c = toCanvas(rotate(prep, ARM_PIV.x, ARM_PIV.y, rad, size)) as HTMLCanvasElement;
+      this.bakes.arms++;
       this.armCache.set(key, c);
     }
     return { canvas: c, ox: size / 2, oy: size / 2 };
@@ -720,7 +547,7 @@ export class Sprites {
   }
 
   /** 手到肩的距離（px），手持物件定位用 */
-  readonly handReach = 10;
+  readonly handReach = HAND_REACH;
 
   mini(item: ItemId): HTMLCanvasElement {
     let c = this.miniCache.get(item);

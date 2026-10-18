@@ -83,6 +83,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
   const hud = new Hud(root, game, renderer.atlas);
   const stepper = new FixedStepper(FIXED_DT, 0.25);
   const sound = new SoundManager();
+  renderer.onCue = () => sound.climbGrip();
   const ui = new ExploreUi(root, game, renderer.atlas);
   const calendar = new CalendarUi(root, game);
   const mapCache = new MapCache(game);
@@ -268,6 +269,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'chain') sound.zap();
         else if (e.type === 'undying') { sound.undying(); hud.toast('不滅：撐住了致命一擊！', 2200, TOAST_HIGH); }
         else if (e.type === 'airjump') sound.airJump();
+        else if (e.type === 'climb') { if (e.phase === 'grab') sound.climbGrab(); else if (e.phase === 'mantle') sound.mantle(); else sound.mantleTop(); }
         else if (e.type === 'codex') { sound.codex(); hud.toast(`圖鑑收錄新詞條：${affixDef(e.affix).word}`, 1800, TOAST_LOW); }
         else if (e.type === 'salvage') { sound.salvage(); invChanged = true; }
         else if (e.type === 'forge') { sound.forge(e.action); invChanged = true; }

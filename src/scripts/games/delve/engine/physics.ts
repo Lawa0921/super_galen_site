@@ -310,8 +310,8 @@ export function stepPlayer(q: SolidQuery, b: Body, m: PlayerMotion, ctl: MoveCon
         const l = findLedge(q, b, dir, 2, b.h + 1, ROPE_REACH_X);
         if (l) { startMantle(m, b, dir, l); return stepMantle(q, b, m, dt); }
       } else if (ctl.up && b.y + b.h <= ropeTop(q, b) * S + 1.5) {
-        const f = m.face ?? 1;
-        for (const dir of [f, -f] as const) {
+        const f: 1 | -1 = m.face ?? 1;
+        for (const dir of [f, f === 1 ? -1 : 1] as const) {
           const l = findLedge(q, b, dir, 2, b.h + 1, ROPE_REACH_X);
           if (l) { startMantle(m, b, dir, l); return stepMantle(q, b, m, dt); }
         }

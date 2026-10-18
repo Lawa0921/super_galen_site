@@ -99,6 +99,18 @@ export class SoundManager {
   }
   /** 收竿 / 魚跑了：下滑的捲線聲 */
   reel(miss: boolean): void { this.tone(miss ? 520 : 760, 0, 0.18, 'square', 0.025, miss ? 260 : 520); }
+  // ── 攀爬（輕柔：每次換手一聲繩子的沙沙 + 很小的木頭聲；兩手音高略不同） ──
+  private gripAlt = false;
+  climbGrip(): void {
+    this.gripAlt = !this.gripAlt;
+    this.noise(0, 0.07, this.gripAlt ? 1500 : 1250, 700, 0.028, 1.4);
+    this.tone(this.gripAlt ? 196 : 174.61, 0, 0.05, 'triangle', 0.018, 150);
+  }
+  /** 抓住繩索：一聲輕拍 */
+  climbGrab(): void { this.noise(0, 0.06, 900, 500, 0.05, 1.1); }
+  /** 攀上邊緣：使力的悶響 + 布料摩擦；站穩時一聲小腳步 */
+  mantle(): void { this.noise(0, 0.16, 700, 260, 0.06, 0.9); this.tone(130.81, 0.02, 0.12, 'triangle', 0.03, 98); }
+  mantleTop(): void { this.noise(0, 0.05, 1100, 500, 0.045, 1.6); }
   /** 吃東西：兩下咀嚼 */
   munch(): void { this.noise(0, 0.05, 900, 400, 0.06, 2); this.noise(0.12, 0.05, 900, 400, 0.06, 2); }
 
