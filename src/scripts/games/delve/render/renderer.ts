@@ -6,7 +6,7 @@ import { BLOCKS_LIGHT_LUT, T, isSolidTile, isDecor } from '../engine/tiles';
 import { ITEMS, type ItemId } from '../engine/items';
 import { TILE_SIZE, CHUNK, DAY_LENGTH } from '../engine/constants';
 import { buildAtlas, perpMask, type Atlas } from './textures';
-import { ChunkLRU, biomeBlend, cameraFocus, chunksTouchRect, followCamera, nearRect, visibleChunks, type Cam, type TileRect } from './model';
+import { ChunkLRU, cameraFocus, chunksTouchRect, followCamera, nearRect, visibleChunks, type Cam, type TileRect } from './model';
 import { CORNER, EDGE, blendOverlay, decorStyle, edgeMask, innerCornerMask, type Neighbor } from './autotile';
 import { armAngles, carryArm, carryStyle, flameFrame, swingAngle, SWING_RATE, type PoseKind } from './anim';
 import { FW, FH, Sprites } from './sprites';
@@ -378,7 +378,9 @@ export class Renderer {
     this.bg.draw(ctx, {
       viewW: this.bufW, viewH: this.bufH, camX, camY,
       horizonY: this.localHorizon(camX + vw / 2), time: g.time, dayFrac: day,
-      biome: this.plainBackdrop ? { a: w.biome[Math.max(0, Math.min(w.width - 1, Math.floor((camX + vw / 2) / S)))], b: 0, t: 0 } : biomeBlend((x) => w.biome[x], (camX + vw / 2) / S, w.width),
+      biome: { a: w.biome[Math.max(0, Math.min(w.width - 1, Math.floor((camX + vw / 2) / S)))], b: 0, t: 0 },
+      // 生態區交界：每層依鏡頭中心連續混合（標題背景不混）
+      biomeCols: this.plainBackdrop ? undefined : w.biome, centerTile: (camX + vw / 2) / S,
       sunrise: sun.sunrise, sunset: sun.sunset, twilight: sun.twilight, moon: g.moon(),
       season: seasonBlend(g.time),
       weather: { kind: wx.kind, intensity: wx.intensity, flash, wind: g.wind() },

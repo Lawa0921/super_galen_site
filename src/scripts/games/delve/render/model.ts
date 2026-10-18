@@ -250,24 +250,6 @@ export function autostartPlan(search: string, existingSeed: string | null): Auto
   return { kind: 'start', seed };
 }
 
-/**
- * 背景的生態區過渡：鏡頭所在欄的生態區 a，若 range 欄內有別的生態區 b，就混入 b，
- * 比例 t 越靠邊界越大（最多 0.5，邊界兩側對稱），並量化成 0 / 0.25 / 0.5 三階 → 一階一階地換色。
- */
-export function biomeBlend(biomeAt: (x: number) => number, cx: number, width: number, range = 60): { a: number; b: number; t: number } {
-  const x = Math.max(0, Math.min(width - 1, Math.floor(cx)));
-  const a = biomeAt(x);
-  let best = range + 1, b = a;
-  for (let d = 1; d <= range; d++) {
-    const l = x - d, r = x + d;
-    if (l >= 0 && biomeAt(l) !== a) { best = d; b = biomeAt(l); break; }
-    if (r < width && biomeAt(r) !== a) { best = d; b = biomeAt(r); break; }
-  }
-  if (b === a) return { a, b: a, t: 0 };
-  const t = Math.round(Math.max(0, 0.5 * (1 - (best - 1) / range)) * 4) / 4;
-  return { a, b: t > 0 ? b : a, t };
-}
-
 const BIOME_NAMES = ['森林', '沙漠', '雪原', '叢林'];
 export function biomeLabel(biome: number): string { return BIOME_NAMES[biome] ?? BIOME_NAMES[0]; }
 const REGION_NAMES: Record<string, string> = { mushroom_biome: '螢光菇林', crystal_cave: '水晶洞', sky_island: '浮空島', cabin: '廢棄小屋', mineshaft: '礦坑', ruin: '遺跡', dungeon: '地城' };

@@ -1,24 +1,29 @@
 // underground.ts — 地下背景（純邏輯 + 純資料 Bmp，無 DOM）：
-//   · ugThemeBmp：每種主題一張 64×64 可平鋪的暗紋（全部取自統一色票）；keep < 1 = 2×2 成簇 Bayer 挖空
-//     （淡入 / 交界抖動用，不用半透明；keep 小的挖空是 keep 大的子集）
+//   · ugThemeBmp：每種主題一張 64×64 可平鋪的暗紋（全部取自統一色票）：近層有洞口（透出遠層）、遠層是依深度上色的
+//     環境色整片；keep < 1 = 1×1 Bayer 挖空（淡入 / 過渡 / 交界抖動用，不用半透明；keep 小的挖空是 keep 大的子集）
 //   · ugColumnBands：一欄 tile 從上到下要畫哪些主題、哪個 keep —— 土 / 岩依該欄生態區換成
 //     砂岩層理 / 碎冰 / 泥巴垂根，生態區交界兩側幾欄疊上鄰區主題的抖動層；菇林（橢圓）與地城（矩形）
-//     不分深度整段覆蓋，外緣 3 圈遞減的抖動邊。
+//     不分深度整段覆蓋，外緣 3 圈遞減的抖動邊。土 / 岩 / 深層 / 熔岩之間是 UG_SEAM 高的 7 階抖動過渡帶（沒有硬接縫）。
 import { Bmp, bayer, h01, hex, type RGB } from './pixel';
 
 export const UG = { DIRT: 0, ROCK: 1, DEEP: 2, MOLTEN: 3, SAND: 4, ICE: 5, MUD: 6, SPORE: 7, BRICK: 8, COUNT: 9 } as const;
-/** keep 階（索引 0..4）：淡入四階 + 實心 */
-export const UG_KEEPS = [0.2, 0.4, 0.6, 0.8, 1] as const;
+/** keep 階（索引 0..7）：1/8 … 7/8 + 實心 */
+export const UG_KEEPS = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1] as const;
 const FULL = UG_KEEPS.length - 1;
+/** 地表淡入的階數（每階 fade / 8 px） */
+export const UG_FADE_STEPS = 8;
+/** 土 → 岩 → 深層 → 熔岩 分界的過渡帶高度（px，分界上下各一半）：下一層以 1/8 … 7/8 抖動疊上去 */
+export const UG_SEAM = 64;
 /** 生態區（BIOME id）→ 土 / 岩層主題（森林 = 土 / 岩各自） */
 const BIOME_THEME: Record<number, number> = { 1: UG.SAND, 2: UG.ICE, 3: UG.MUD };
-/** 交界抖動：距離另一區 ≤ 2 欄 → 0.4、≤ 4 欄 → 0.2 */
-const BORDER_R = 4;
+/** 交界抖動：距離另一區 d 欄（1..BORDER_R）→ keep 約 (BORDER_R+1−d) / (2(BORDER_R+1))（邊界上約五五開） */
+const BORDER_R = 6;
 /** 覆蓋區外緣：3 圈、每圈 2 tile */
 const RING = 2, RINGS = 3;
 
 export interface UgArea { theme: number; round: boolean; x: number; y: number; w: number; h: number; }
-export interface UgBand { theme: number; keep: number; y0: number; y1: number; overlay?: boolean; }
+/** overlay = 疊在別的帶上；fade = 地表淡入（遠層不畫，避免兩層抖動疊成更密） */
+export interface UgBand { theme: number; keep: number; y0: number; y1: number; overlay?: boolean; fade?: boolean; }
 export interface UgColumn {
   /** tile 欄 */
   tx: number;
@@ -54,13 +59,29 @@ export function ugColumnBands(c: UgColumn): UgBand[] {
   const bio = c.biomeAt(c.tx);
   const upper = (b: number): number => BIOME_THEME[b] ?? UG.DIRT;
   const lower = (b: number): number => BIOME_THEME[b] ?? UG.ROCK;
-  const step = c.fade / 4;
+  const step = c.fade / UG_FADE_STEPS;
   const fadeEnd = Math.min(c.rockY, c.top + c.fade);
-  for (let i = 0; i < 4; i++) push(upper(bio), i, c.top + i * step, Math.min(c.rockY, c.top + (i + 1) * step));
-  push(upper(bio), FULL, fadeEnd, c.rockY);
-  push(lower(bio), FULL, Math.max(c.top, c.rockY), c.deepY);
-  push(UG.DEEP, FULL, Math.max(c.top, c.deepY), c.moltenY);
-  push(UG.MOLTEN, FULL, Math.max(c.top, c.moltenY), Infinity);
+  for (let i = 0; i < UG_FADE_STEPS; i++) {
+    const a = Math.max(lo, c.top + i * step), b = Math.min(hi, c.rockY, c.top + (i + 1) * step);
+    if (b > a) out.push({ theme: upper(bio), keep: Math.min(FULL - 1, i), y0: a, y1: b, fade: true });
+  }
+  // 各層實心帶；相鄰兩層主題不同時，上一層畫到分界帶底、下一層從分界帶頂以遞增的密度疊上（沒有硬接縫）
+  const layers: [number, number, number][] = [[upper(bio), fadeEnd, c.rockY], [lower(bio), c.rockY, c.deepY], [UG.DEEP, c.deepY, c.moltenY], [UG.MOLTEN, c.moltenY, Infinity]];
+  for (let i = 0; i < layers.length; i++) {
+    while (i + 1 < layers.length && layers[i + 1][0] === layers[i][0]) { layers[i][2] = layers[i + 1][2]; layers.splice(i + 1, 1); }
+  }
+  const H = UG_SEAM / 2;
+  for (let i = 0; i < layers.length; i++) {
+    const [theme, y0, y1] = layers[i];
+    const start = i === 0 ? y0 : Math.max(fadeEnd, y0 + H);
+    const end = i + 1 < layers.length ? layers[i + 1][1] + H : y1;
+    push(theme, FULL, start, end);
+    if (i > 0) {
+      // 過渡帶：分界上下各 H，由疏到密 7 階（不跨進地表淡入區）
+      const a0 = Math.max(fadeEnd, y0 - H), a1 = Math.max(a0, y0 + H);
+      for (let k = 0; k < FULL; k++) push(theme, k, Math.round(a0 + ((a1 - a0) * k) / FULL), Math.round(a0 + ((a1 - a0) * (k + 1)) / FULL), true);
+    }
+  }
   // 生態區交界：最近的另一區（左右各找 BORDER_R 欄）
   let nd = 0, nb = bio;
   for (let d = 1; d <= BORDER_R && !nd; d++) {
@@ -70,10 +91,10 @@ export function ugColumnBands(c: UgColumn): UgBand[] {
       if (b !== bio) { nd = d; nb = b; break; }
     }
   }
-  if (nd && upper(nb) !== upper(bio)) {
-    const k = nd <= 2 ? 1 : 0;
-    push(upper(nb), k, fadeEnd, c.rockY, true);
-    push(lower(nb), k, Math.max(c.top, c.rockY), c.deepY, true);
+  if (nd) {
+    const k = Math.max(0, Math.min(FULL - 1, Math.round(((BORDER_R + 1 - nd) / (2 * (BORDER_R + 1))) * UG_KEEPS.length) - 1));
+    if (upper(nb) !== upper(bio)) push(upper(nb), k, fadeEnd, c.rockY + H, true);
+    if (lower(nb) !== lower(bio)) push(lower(nb), k, Math.max(fadeEnd, c.rockY - H), c.deepY + H, true);
   }
   // 覆蓋區
   const T = c.tile, cx = c.tx + 0.5;
@@ -277,11 +298,79 @@ function themeBase(theme: number): Bmp {
   BASE.set(theme, b);
   return b;
 }
-/** 主題暗紋；keep < 1 = 2×2 成簇的 Bayer 挖空 */
-export function ugThemeBmp(theme: number, keep: number): Bmp {
+/** 遠層（視差較慢、在洞口後面）的環境色：依深度帶上色（土偏暖、岩偏灰紫、深層偏藍、熔岩偏紅），比近層暗 */
+export const FAR_RAMP: Record<number, string[]> = {
+  [UG.DIRT]: ['#0c0a12', '#1c1424', '#2a1810'],
+  [UG.ROCK]: ['#0c0a12', '#1c1424', '#2c2450'],
+  [UG.DEEP]: ['#0c0a12', '#18204a', '#2c4486'],
+  [UG.MOLTEN]: ['#1c1424', '#2a1810', '#6c1e14'],
+  [UG.SAND]: ['#0c0a12', '#1c1424', '#2a1810'],
+  [UG.ICE]: ['#0c0a12', '#1c1424', '#18204a'],
+  [UG.MUD]: ['#0c0a12', '#0c0a12', '#16301e'],
+  [UG.SPORE]: ['#0c0a12', '#1c1424', '#18204a'],
+  [UG.BRICK]: ['#0c0a12', '#0c0a12', '#1c1424'],
+};
+const lum = (v: number): number => 0.299 * (v & 255) + 0.587 * ((v >>> 8) & 255) + 0.114 * ((v >>> 16) & 255);
+/** 遠層：近層暗紋依亮度排名重新上色成 FAR_RAMP（整片不透明） */
+function farBase(theme: number): Bmp {
+  const src = themeBase(theme), out = new Bmp(N, N);
+  let mn = Infinity, mx = -Infinity;
+  for (const v of src.px) { const l = lum(v); if (l < mn) mn = l; if (l > mx) mx = l; }
+  const pal = (FAR_RAMP[theme] ?? FAR_RAMP[UG.ROCK]).map(hex);
+  for (let i = 0; i < src.px.length; i++) {
+    const t = mx > mn ? (lum(src.px[i]) - mn) / (mx - mn) : 0;
+    out.px[i] = Bmp.pack(pal[Math.min(pal.length - 1, Math.floor(Math.pow(t, 1.4) * pal.length))]);
+  }
+  return out;
+}
+/** 近層的洞口：挑出約 HOLE_FRAC 的 Voronoi 岩面整塊挖空（透出後面的遠層，看起來像剝落 / 凹進去的岩塊），
+ *  岩縫保留；洞口邊一圈最暗的描邊、上緣再一排暗影（光從上方來，凹處上緣在陰影裡） */
+const NO_HOLES = new Set<number>([UG.BRICK, UG.SPORE]);
+const HOLE_FRAC = 0.24;
+/** 與主題暗紋同一組 Voronoi 點（岩面類主題）→ 洞口剛好是整塊岩面 */
+const HOLE_CELLS: Record<number, [number, number]> = {
+  [UG.DIRT]: [4, 4], [UG.ROCK]: [4, 3], [UG.DEEP]: [4, 3], [UG.MOLTEN]: [4, 3], [UG.ICE]: [3, 61], [UG.SAND]: [4, 94], [UG.MUD]: [4, 96],
+};
+function nearBase(theme: number): Bmp {
   const src = themeBase(theme);
+  if (NO_HOLES.has(theme)) return src;
+  const out = src.clone();
+  const [n, seed] = HOLE_CELLS[theme] ?? [4, 90 + theme];
+  const pts = gridPts(n, seed);
+  // 依雜湊排序挑格：每個主題的洞口比例接近 HOLE_FRAC
+  const order = pts.map((_, i) => i).sort((p, q) => h01(p, 9, seed + theme) - h01(q, 9, seed + theme));
+  const pick = new Set(order.slice(0, Math.max(1, Math.round(pts.length * HOLE_FRAC * 1.25))));
+  const open = new Uint8Array(N * N);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const q = pvoronoi(x, y, pts);
+    if (pick.has(q.i) && q.d2 - q.d1 > 1.6) open[y * N + x] = 1;
+  }
+  const rim = hex('#0c0a12');
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x;
+    if (open[i]) { out.px[i] = 0; continue; }
+    const o = (dx: number, dy: number): number => open[((y + dy + N) % N) * N + ((x + dx + N) % N)];
+    if (o(1, 0) || o(-1, 0) || o(0, 1) || o(0, -1)) out.set(x, y, rim);
+  }
+  // 凹處上緣的陰影：洞口最上面一排（貼著岩面下緣）畫成描邊色
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x;
+    if (open[i] && !open[((y - 1 + N) % N) * N + x]) out.set(x, y, rim);
+  }
+  return out;
+}
+export type UgLayer = 'near' | 'far' | 'flat';
+const CACHE: Record<UgLayer, Map<number, Bmp>> = { near: new Map(), far: new Map(), flat: new Map() };
+/**
+ * 主題暗紋：near = 有洞口的近層、far = 依深度上色的遠層（整片）、flat = 沒有洞口的近層（地表淡入用：那裡沒有遠層墊底）。
+ * keep < 1 = 1×1 Bayer 挖空（keep 小的是 keep 大的子集）
+ */
+export function ugThemeBmp(theme: number, keep: number, kind: UgLayer = 'near'): Bmp {
+  const cache = CACHE[kind];
+  let src = cache.get(theme);
+  if (!src) { src = kind === 'far' ? farBase(theme) : kind === 'near' ? nearBase(theme) : themeBase(theme); cache.set(theme, src); }
   if (keep >= 1) return src.clone();
   const b = new Bmp(N, N);
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (bayer(x >> 1, y >> 1) < keep) b.setRaw(x, y, src.raw(x, y));
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (bayer(x, y) < keep) b.setRaw(x, y, src.raw(x, y));
   return b;
 }
