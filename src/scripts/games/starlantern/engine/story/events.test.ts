@@ -4,7 +4,7 @@ import { chainLength } from '../../data/story/chains';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
-import { arrivalScenes, chatOpen, markRead, nextChat, onReturn, sceneDone, storyStage } from './events';
+import { arrivalScenes, chatOpen, markRead, nextChat, onReturn, sceneDone, settleOpening, storyStage } from './events';
 
 /** A new game with the prologue already behind it, so only what a test adds is waiting. */
 const base = (): GameState => {
@@ -224,5 +224,105 @@ describe('chat gates', () => {
 
   it('no first chat is gated', () => {
     expect(Object.keys(CHAT_GATE).filter((id) => id.endsWith(':1'))).toEqual([]);
+  });
+});
+
+// Task 10b: the inn night after the prologue, and the first return after a won fight (lore ledger I-81 to I-86).
+describe('the opening: the inn night and the first return', () => {
+  /** What a won fight leaves behind: someone in the party has earned exp. */
+  const fought = (s: GameState): GameState => { s.party.roster.rin.exp = 1; return s; };
+
+  it('a new game waits on the prologue and then the inn night, in that order, before the town', () => {
+    const s = newGame();
+    expect(s.story.queue).toEqual(['prologue', 'prologue-inn']);
+    expect(arrivalScenes(s, { chat: false })).toEqual(['prologue', 'prologue-inn']);
+    s.story.queue = ['prologue-inn', 'prologue'];   // a queue out of order still plays the prologue first
+    expect(arrivalScenes(s, { chat: false })).toEqual(['prologue', 'prologue-inn']);
+    const done = sceneDone(sceneDone(s, 'prologue', 'played'), 'prologue-inn', 'skipped');
+    expect(done.story.queue).toEqual([]);
+    expect(done.story.seen).toEqual(['prologue', 'prologue-inn']);
+    expect(arrivalScenes(done, { chat: false })).toEqual([]);
+  });
+
+  it('the first return after a won fight queues the first-return scene, once', () => {
+    const s = base();
+    s.story.seen.push('prologue-inn');
+    expect(onReturn(s).queue).toEqual([]);   // home without a won fight: nothing to tell yet
+    const back = returned(fought(s));
+    expect(back.story.queue).toEqual(['first-return']);
+    expect(returned(back).story.queue).toEqual(['first-return']);   // waiting, not doubled
+    const done = sceneDone(back, 'first-return', 'played');
+    expect(returned(done).story.queue).toEqual([]);   // never again
+    expect(returned(sceneDone(back, 'first-return', 'skipped')).story.queue).toEqual([]);
+  });
+
+  it('the first return plays before the acts, and the chat still comes after it', () => {
+    const s = fought(base());
+    s.story.seen.push('prologue-inn');
+    s.dungeon.reached.mainline = ACT_DEPTHS.act2;
+    s.story.queue = ['act1-after'];
+    const back = returned(s);
+    expect(arrivalScenes(back, { chat: false })).toEqual(['first-return', 'act1-after', 'act2']);
+    const withChat = arrivalScenes(back, { chat: true });
+    expect(withChat.slice(0, 3)).toEqual(['first-return', 'act1-after', 'act2']);
+    expect(withChat[3]).toMatch(/^chat:/);
+    expect(withChat).toHaveLength(4);
+  });
+
+  it("Rin's reveal still plays alone, and the first return waits for the next arrival", () => {
+    const s = withMemories(fought(base()), 'rin', chainLength('rin'));
+    s.story.seen.push('prologue-inn');
+    const back = returned(s);
+    expect(back.story.queue).toEqual(['first-return', 'rin-reveal']);
+    expect(arrivalScenes(back, { chat: true })).toEqual(['rin-reveal']);
+  });
+
+  it('an old save already past the prologue counts the inn night as seen, not new', () => {
+    const s = base();   // seen: the prologue; nothing waits (a save from before the inn night existed)
+    const settled = settleOpening(s);
+    expect(settled.story.seen).toEqual(['prologue', 'prologue-inn']);
+    expect(settled.story.fresh).toEqual([]);
+    expect(arrivalScenes(settled, { chat: false })).toEqual([]);
+  });
+
+  it('an old save still before its prologue gets the inn night after it', () => {
+    const s = newGame();
+    s.story.queue = ['prologue'];   // the old new game
+    const settled = settleOpening(s);
+    expect(settled.story.queue).toEqual(['prologue', 'prologue-inn']);
+    expect(settled.story.seen).toEqual([]);
+  });
+
+  it('an old save that has already won a fight counts the first return as seen', () => {
+    const s = fought(base());
+    const settled = settleOpening(s);
+    expect(settled.story.seen).toContain('first-return');
+    expect(settled.story.fresh).not.toContain('first-return');
+    expect(returned(settled).story.queue).toEqual([]);
+    const lv = base();
+    lv.party.roster.hero.level = 2;   // a level is a won fight too, whatever the exp now reads
+    expect(settleOpening(lv).story.seen).toContain('first-return');
+  });
+
+  it('a save from this version is left as it is', () => {
+    const fresh = newGame();
+    expect(settleOpening(fresh)).toEqual(fresh);
+    const mid = sceneDone(newGame(), 'prologue', 'played');   // the inn night still waits
+    expect(settleOpening(mid)).toEqual(mid);
+    const queued = returned(fought(sceneDone(sceneDone(newGame(), 'prologue', 'played'), 'prologue-inn', 'played')));
+    expect(queued.story.queue).toEqual(['first-return']);
+    expect(settleOpening(queued)).toEqual(queued);
+    const unfought = sceneDone(sceneDone(newGame(), 'prologue', 'played'), 'prologue-inn', 'played');
+    expect(settleOpening(unfought)).toEqual(unfought);
+    // Levels without a return (a debug hand, or anything else) never make a save of this version look old.
+    const leveled = sceneDone(sceneDone(newGame(), 'prologue', 'played'), 'prologue-inn', 'played');
+    leveled.party.roster.hero.level = 10;
+    expect(settleOpening(leveled)).toBe(leveled);
+  });
+
+  it('an old save without a prologue at all (a state written by hand) still gets the inn night as seen', () => {
+    const s = newGame();
+    s.story.queue = [];
+    expect(settleOpening(s).story.seen).toEqual(['prologue-inn']);
   });
 });

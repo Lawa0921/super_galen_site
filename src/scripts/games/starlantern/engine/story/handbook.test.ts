@@ -137,15 +137,16 @@ describe("the adventurer's handbook", () => {
 
   it('fresh scenes carry the new mark', () => {
     const s = everything();
-    s.story.fresh = [memScene('hero', 1), 'act2', 'chat:rin:2', 'rin-reveal', 'town:orik'];
+    s.story.fresh = [memScene('hero', 1), 'act2', 'chat:rin:2', 'rin-reveal', 'town:orik', 'first-return'];
     const h = handbook(s);
     expect(h.memories.find((m) => m.id === 'hero')!.pieces[0].fresh).toBe(true);
     expect(h.memories.find((m) => m.id === 'hero')!.pieces[1].fresh).toBe(false);
     expect(h.truths.find((t) => t.stage === 'act2')!.scenes[0].fresh).toBe(true);
     expect(h.truths.find((t) => t.stage === 'act3')!.scenes[0].fresh).toBe(false);
     const rin = h.people.find((p) => p.id === 'rin')!;
+    // Task 10b: the inn night and the first return are the two of them before her story; they sit on her page, in story order.
     expect(rin.scenes.map((e) => [e.scene, e.fresh])).toEqual([
-      ['rin-reveal', true], ['chat:rin:1', false], ['chat:rin:2', true], ['chat:rin:3', false], ['chat:rin:4', false],
+      ['prologue-inn', false], ['first-return', true], ['rin-reveal', true], ['chat:rin:1', false], ['chat:rin:2', true], ['chat:rin:3', false], ['chat:rin:4', false],
     ]);
     expect(h.town.find((t) => t.id === 'orik')!.scene!.fresh).toBe(true);
     expect(h.town.find((t) => t.id === 'marta')!.scene!.fresh).toBe(false);
@@ -176,6 +177,10 @@ describe("the adventurer's handbook", () => {
     const h2 = handbook(s);
     expect(h2.truths[0].scenes.map((e) => e.scene)).toEqual(['prologue']);
     expect(h2.people.find((p) => p.id === 'hero')!.scenes.map((e) => e.scene)).toEqual(['chat:hero:2']);
+    s.story.seen = ['prologue', 'prologue-inn'];
+    const h3 = handbook(s);
+    expect(h3.truths[0].scenes.map((e) => e.scene)).toEqual(['prologue']);   // the truth page replays the prologue alone
+    expect(h3.people.find((p) => p.id === 'rin')!.scenes.map((e) => e.scene)).toEqual(['prologue-inn']);   // not the first return, unseen
   });
 
   it('a piece is replayable only when it is found and seen: a found piece may still be queued', () => {

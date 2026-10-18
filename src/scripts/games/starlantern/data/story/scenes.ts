@@ -16,7 +16,7 @@ export type Stage = 'prologue' | 'act1' | 'act2' | 'act3' | 'act4' | 'after';
 export const STAGES: Stage[] = ['prologue', 'act1', 'act2', 'act3', 'act4', 'after'];
 
 export type SceneId =
-  | 'prologue' | 'act1-after' | ActNode | 'rin-reveal' | 'finale'
+  | 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'finale'
   | `mem:${CharacterId}:${number}` | `chat:${CharacterId}:${number}` | `town:${TownFragmentId}`;
 
 export const memScene = (id: CharacterId, n: number): SceneId => `mem:${id}:${n}`;
@@ -25,8 +25,14 @@ export const CHAT_COUNT: Record<CharacterId, number> = {
   hero: 4, rin: 4, noel: 2, chizuru: 2, liz: 2, sylvie: 2, scarlet: 2, selene: 2, safira: 2, bobby: 2,
 };
 
-export type MajorScene = 'prologue' | 'act1-after' | ActNode | 'rin-reveal' | 'finale';
-export const MAJOR_SCENES: MajorScene[] = ['prologue', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'finale'];
+/**
+ * `prologue-inn` is the first night, right after the prologue and before the town is the player's; `first-return` is the
+ * first arrival in town after a won fight (Task 10b: why the two of them go down together; lore ledger I-81 to I-86).
+ */
+export type MajorScene = 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'finale';
+export const MAJOR_SCENES: MajorScene[] = ['prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'finale'];
+/** The two short scenes of the opening: ten lines each at most (Task 10b). */
+const OPENING_SCENES = new Set<SceneId>(['prologue-inn', 'first-return']);
 
 /** Every scene id, in a fixed order: major scenes, then memories, chats and returns. */
 export const SCENE_IDS: SceneId[] = [
@@ -52,7 +58,7 @@ const LONG_MEMORIES = new Set<SceneId>(['mem:hero:9', 'mem:hero:10', 'mem:rin:7'
 /** The most lines a scene may have (spec §8.2, §17). */
 export function lineCap(id: SceneId): number {
   switch (sceneKind(id)) {
-    case 'major': return id === 'act1-after' ? 3 : 12;
+    case 'major': return id === 'act1-after' ? 3 : OPENING_SCENES.has(id) ? 10 : 12;
     case 'memory': return LONG_MEMORIES.has(id) ? 12 : 4;
     case 'chat': return 3;
     case 'town': return 8;

@@ -114,7 +114,7 @@ describe('story data', () => {
     const chats = CHARACTER_IDS.reduce((n, id) => n + CHAT_COUNT[id], 0);
     expect(SCENE_IDS.filter((s) => s.startsWith('chat:')).length).toBe(chats);
     expect(SCENE_IDS.filter((s) => s.startsWith('town:')).length).toBe(5);
-    for (const s of ['prologue', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'finale'] as const) expect(SCENE_IDS).toContain(s);
+    for (const s of ['prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'finale'] as const) expect(SCENE_IDS).toContain(s);
     expect(new Set(SCENE_IDS).size).toBe(SCENE_IDS.length);
     expect(memScene('rin', 3)).toBe('mem:rin:3');
     expect(MAJOR_SCENES.every((s) => sceneKind(s) === 'major')).toBe(true);
@@ -134,6 +134,9 @@ describe('story data', () => {
     expect(lineCap('chat:noel:1')).toBe(3);
     expect(lineCap('town:orik')).toBe(8);
     expect(lineCap('act2')).toBe(12);
+    expect(lineCap('prologue')).toBe(12);
+    expect(lineCap('prologue-inn')).toBe(10);
+    expect(lineCap('first-return')).toBe(10);
     for (const id of SCENE_IDS) {
       const sc = STORY.scenes[id];
       expect(sc.title.trim()).not.toBe('');
@@ -261,6 +264,7 @@ const WRITTEN: string[] = [
   ...(['selene', 'chizuru', 'safira'] as const).flatMap((c) => [`scenes.mem:${c}:`, `scenes.chat:${c}:`, `people.${c}.`, `meet.${c}.`]),   // Task 8
   ...(['sylvie', 'noel', 'bobby'] as const).flatMap((c) => [`scenes.mem:${c}:`, `scenes.chat:${c}:`, `people.${c}.`, `meet.${c}.`]),   // Task 9
   ...(['liz', 'scarlet'] as const).flatMap((c) => [`scenes.mem:${c}:`, `scenes.chat:${c}:`, `people.${c}.`, `meet.${c}.`]), 'survived',   // Task 10
+  'scenes.prologue-inn.', 'scenes.first-return.',   // Task 10b: why the two of them go down together
 ];
 const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
 const isWritten = (key: string): boolean => writtenBy(WRITTEN, key);
@@ -309,7 +313,7 @@ function position(key: string): Stage {
   switch (top) {
     case 'scenes': {
       const id = a as SceneId;
-      if (id === 'prologue') return 'prologue';
+      if (id === 'prologue' || id === 'prologue-inn' || id === 'first-return') return 'prologue';   // the first return can come before depth 2
       if (id === 'act1-after') return 'act1';
       if (id === 'act2' || id === 'act3' || id === 'act4') return id;
       if (id === 'rin-reveal') return rinSeventh();
@@ -1094,5 +1098,94 @@ describe('Task 10: Liz, Scarlet and the survive line', () => {
 
   it('their chats are open as soon as she is met', () => {
     for (const c of TWO) expect(CHAT_GATE[`chat:${c}:2`], c).toBeUndefined();
+  });
+});
+
+describe('Task 10b: why the two of them go down together', () => {
+  const OPENING = ['prologue-inn', 'first-return'] as const;
+  const lines = (id: SceneId) => STORY.scenes[id].lines;
+  const said = (id: SceneId, who: string) => lines(id).filter((l) => l.who === who).map((l) => l.text);
+
+  it('the approved prologue is untouched: twelve lines, from the dawn plaza to 「歸來者」', () => {
+    const p = lines('prologue');
+    expect(p).toHaveLength(12);
+    expect(p[0].text).toBe('黎明前的傳送門廣場。暮霧貼著石板流動，西邊高地上的星燈，淡得像快燒盡的燭火。');
+    expect(p[2].text).toBe('「沒人走進去，門卻自己亮了。這小子抓著那女孩的手腕，把她拖了出來，走了三步就倒了。」');
+    expect(p[10].text).toBe('「回復藥五瓶，歸還之燈一盞。在下面迷路了就點燈，星燈會把你們拉回來。」');
+    expect(p[11].text).toBe('從那天起，鎮上的人叫他「歸來者」──唯一從迷宮深處走出來的人。');
+  });
+
+  it('each scene is ten lines at most, one reading, spoken by the two of them and the narrator', () => {
+    for (const id of OPENING) {
+      expect(lines(id).length, id).toBeGreaterThanOrEqual(4);
+      expect(lines(id).length, id).toBeLessThanOrEqual(10);
+      for (const l of lines(id)) {
+        expect(['hero', 'rin', 'narrator'], `${id}: ${l.who}`).toContain(l.who);
+        expect(l.if, `${id}: ${l.text}`).toBeUndefined();   // the same for every party: nothing here depends on who is met
+      }
+    }
+  });
+
+  it("every spoken line wears a face of its speaker's, and Rin never looks away here", () => {
+    for (const id of OPENING) {
+      for (const l of lines(id)) {
+        if (l.who === 'narrator') { expect(l.mood, `${id}: ${l.text}`).toBeUndefined(); continue; }
+        expect(l.mood, `${id}: ${l.text} is tagged`).toBeDefined();
+        expect(moodAllowed(l.who, l.mood), `${id}: ${l.who} ${l.mood}`).toBe(true);
+        if (l.who === 'rin') expect(l.mood, `${id}: ${l.text}`).not.toBe('averted');
+      }
+      // Her eyes turn away first in her fourth piece (I-11, I-54): no line here, hers or the narrator's, shows it.
+      for (const l of lines(id)) expect(l.text, `${id}: ${l.text}`).not.toMatch(/視線|移開|避開|別開|不看|別看|看路|看著地|低著頭|低頭/);
+    }
+  });
+
+  it("before her reveal Rin names neither him nor 「我們」, nor the bell, the society or an order", () => {
+    const BELL = ['鐘', '結社', '教團', '教義', '修會', '靜鐘', '師父', ...RIN_SECRET_TERMS];
+    for (const id of OPENING) {
+      for (const t of said(id, 'rin')) {
+        expect(t, `${id}: ${t}`).not.toContain('洛恩');
+        expect(t, `${id}: ${t}`).not.toContain('我們');
+        expect(t, `${id}: ${t}`).not.toMatch(/！/);   // no exclamation before her choice
+        for (const term of BELL) expect(t, `${id}: ${t}`).not.toContain(term);
+      }
+      // Nothing here tells what her seventh piece or the finale will: the knife, the floors she followed him, the keeper, the key.
+      const all = [...lines(id).map((l) => l.text), STORY.scenes[id].summary].join('');
+      expect(all, id).not.toMatch(/守燈人|燈鑰|後頸|刀尖|跟了好幾層|追了|目標|殺/);
+    }
+  });
+
+  it('the inn night carries the grip, the lead, the lamp, the debt and the pull, and ends on her choice to go', () => {
+    const inn = lines('prologue-inn');
+    const text = inn.map((l) => l.text).join('');
+    expect(text).toMatch(/指痕/);   // 1. the grip: Glen could not pry his fingers off
+    expect(text).toMatch(/掰/);
+    expect(text).toMatch(/線索/);   // 2. each other's only lead
+    expect(text).toMatch(/同一盞燈/);   // 3. one lamp for the two of them (I-83)
+    expect(text).toMatch(/欠/);   // 4. the debt, and only the depths pay it
+    expect(text).toMatch(/碎片/);
+    expect(text).toMatch(/睡不著/);   // 5. she cannot sleep without knowing where he is
+    const go = inn.findIndex((l) => l.who === 'rin' && l.text.includes('我跟你去'));
+    const why = inn.findIndex((l) => l.who === 'hero' && l.text.includes('為什麼'));
+    const left = inn.findIndex((l) => l.who === 'rin' && l.text.includes('只剩下面'));
+    expect(go).toBeGreaterThanOrEqual(0);
+    expect(why).toBeGreaterThan(go);
+    expect(left).toBeGreaterThan(why);
+    // and then one line: the way he walks seems familiar (her seventh piece pays it off; I-85)
+    expect(inn.slice(left + 1)).toHaveLength(1);
+    expect(inn[inn.length - 1].who).toBe('rin');
+    expect(inn[inn.length - 1].text).toMatch(/走路/);
+  });
+
+  it("the first return is her first trust in a fight: 「身體自己動的。」, and she will not take his thanks", () => {
+    const fr = lines('first-return');
+    expect(said('first-return', 'rin').some((t) => t.includes('身體自己動的。'))).toBe(true);
+    expect(said('first-return', 'hero').some((t) => t.includes('謝'))).toBe(true);
+    // Her bell may be touched once, unexplained: only the narrator says so, and only once across the two scenes.
+    const bells = OPENING.flatMap((id) => lines(id).filter((l) => l.text.includes('鐘')));
+    expect(bells.length).toBeLessThanOrEqual(1);
+    for (const l of bells) expect(l.who).toBe('narrator');
+    // A skipper still learns what happened, and no more than the scene says.
+    expect(STORY.scenes['first-return'].summary).toMatch(/身體自己動/);
+    expect(fr.length).toBeLessThanOrEqual(10);
   });
 });

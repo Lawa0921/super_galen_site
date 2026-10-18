@@ -42,8 +42,8 @@ export interface StoryState {
   fed: boolean;
 }
 
-/** A new game opens with the prologue waiting for its first arrival in town. */
-export const newStory = (): StoryState => ({ act1Cleared: false, finaleCleared: false, seen: [], fresh: [], queue: ['prologue'], nodes: [], pity: {}, returned: [], fed: false });
+/** A new game opens with the prologue and the inn night after it waiting for its first arrival in town. */
+export const newStory = (): StoryState => ({ act1Cleared: false, finaleCleared: false, seen: [], fresh: [], queue: ['prologue', 'prologue-inn'], nodes: [], pity: {}, returned: [], fed: false });
 
 export interface GameState {
   version: typeof SAVE_VERSION;

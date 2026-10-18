@@ -17,12 +17,20 @@ export function storyStage(s: GameState): Stage {
   return 'prologue';
 }
 
+/** Whether the party has ever won a fight: someone met has a level or exp to show for it (absorbing and memories give neither). */
+const hasFought = (s: GameState): boolean => s.party.recruited.some((id) => {
+  const m = s.party.roster[id];
+  return !!m && (m.level > 1 || m.exp > 0);
+});
+
 /**
- * What a return to town adds to the queue: each act whose depth was reached, and Rin's reveal once she holds every piece.
+ * What a return to town adds to the queue: the first return after a won fight (Task 10b), each act whose depth was reached,
+ * and Rin's reveal once she holds every piece.
  * Pure: it returns the new story block and leaves the state alone. Nobody else's fragment count matters (spec §2).
  */
 export function onReturn(s: GameState): StoryState {
   const story: StoryState = { ...s.story, queue: [...s.story.queue], nodes: [...s.story.nodes] };
+  if (hasFought(s) && !story.seen.includes('first-return') && !story.queue.includes('first-return')) story.queue.push('first-return');
   for (const node of ACT_NODES) {
     if (s.dungeon.reached.mainline >= ACT_DEPTHS[node] && !story.nodes.includes(node)) {
       story.nodes.push(node);
@@ -34,8 +42,15 @@ export function onReturn(s: GameState): StoryState {
   return story;
 }
 
-/** Play order for the queue: Act 1's close, the acts, the hero's late memories by piece, then the rest as they came. */
+/**
+ * Play order for the queue: the prologue and its inn night, the first return, Act 1's close, the acts, the hero's late
+ * memories by piece, then the rest as they came. The first return sits ahead of everything a return can bring, so it
+ * never waits behind a chat (chats come after the whole queue) nor follows the "three days later" of Act 1.
+ */
 const rank = (id: SceneId): number => {
+  if (id === 'prologue') return -3;
+  if (id === 'prologue-inn') return -2;
+  if (id === 'first-return') return -1;
   if (id === 'act1-after') return 0;
   if (id === 'act2') return 1;
   if (id === 'act3') return 2;
@@ -83,6 +98,23 @@ export function arrivalScenes(s: GameState, o: { chat: boolean }): SceneId[] {
   const list = [...s.story.queue].sort((a, b) => rank(a) - rank(b));
   const chat = o.chat ? nextChat(s) : null;
   return chat ? [...list, chat] : list;
+}
+
+/**
+ * A save from before Task 10b, brought up to the opening scenes without replaying what it is already past. Every game of
+ * this version holds the inn night in its queue or seen from its first moment (`newStory`), so a save without it anywhere
+ * is an old one, and only an old one is changed. Past its prologue, the inn night counts as seen; past a won fight, the
+ * first return does too. What it counts as seen is not new (no 新 mark): the player was there.
+ */
+export function settleOpening(s: GameState): GameState {
+  const { story } = s;
+  if (story.seen.includes('prologue-inn') || story.queue.includes('prologue-inn')) return s;
+  const seen = [...story.seen];
+  const queue = [...story.queue];
+  if (queue.includes('prologue')) queue.splice(queue.indexOf('prologue') + 1, 0, 'prologue-inn');
+  else seen.push('prologue-inn');
+  if (hasFought(s) && !seen.includes('first-return') && !queue.includes('first-return')) seen.push('first-return');
+  return { ...s, story: { ...story, seen, queue } };
 }
 
 /** A scene is over, played or skipped; `auto` is one the player's story setting never showed, so it also reads as new. */

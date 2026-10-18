@@ -66,10 +66,10 @@ export const numeral = (n: number): string => {
 };
 
 const MAJOR_TITLES: Record<MajorScene, string> = {
-  prologue: '序章', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
+  prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '第一次回城', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
 };
 const MAJOR_TEXT: Record<MajorScene, string> = {
-  prologue: '序章', 'act1-after': '第一幕之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
+  prologue: '序章', 'prologue-inn': '旅館的第一夜', 'first-return': '第一次回城', 'act1-after': '第一幕之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
 };
 
 type Written = { lines: ScriptLine[]; summary: string };
@@ -94,6 +94,38 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('從那天起，鎮上的人叫他「歸來者」──唯一從迷宮深處走出來的人。'),
     ],
     summary: '黎明的傳送門廣場倒著兩個失憶的人。安娜替他取名洛恩，凜則用刀柄上的字當名字。他是唯一從深處走出來的人。',
+  },
+  // Task 10b: why the two of them go down together (lore ledger I-81 to I-86). The first night, before the town is the
+  // player's: the grip, each other's only lead, one lamp, the debt, and the pull she takes for instinct (her 7th piece pays it).
+  'prologue-inn': {
+    lines: [
+      N('月影旅館的二樓。洛恩從夢裡驚醒，窗邊的凜還醒著，正看著他。'),
+      N('她的手腕上一圈發青的指痕。那幾根手指，葛倫怎麼掰也掰不開，直到洛恩昏了過去。'),
+      { who: 'rin', mood: 'guarded', text: '「……不知道你在哪裡，就睡不著。為什麼，我也不知道。」' },
+      { who: 'hero', mood: 'serious', text: '「明天我要下去。欠公會的藥錢和房錢，只有下面的碎片還得起。」' },
+      { who: 'hero', mood: 'normal', text: '「妳是唯一和我一起出來的人。我以前是誰，也許妳看過。」' },
+      { who: 'rin', mood: 'guarded', text: '「我跟你去。」' },
+      { who: 'hero', mood: 'surprised', text: '「為什麼？」' },
+      { who: 'rin', mood: 'serious', text: '「公會說，一起下去的，算同一盞燈。……你是我唯一的線索。」' },
+      { who: 'rin', mood: 'sad', text: '「……我也只剩下面了。」' },
+      { who: 'rin', mood: 'normal', text: '「……還有。你走路的樣子，我好像在哪裡看過。」' },
+    ],
+    summary: '旅館的第一夜。兩人都欠著公會，又只有彼此是自己的線索。同一盞燈的兩個人，決定一起下去。',
+  },
+  // Task 10b: the first return after a won fight. Her first trust in a fight, mirrored on his grip; she will not take thanks.
+  'first-return': {
+    lines: [
+      N('月影旅館。第一次從迷宮回來的晚上，洛恩替自己的手臂纏上繃帶。'),
+      N('下面那一擊，本來會正中他的胸口。是凜撲過來，抓住他的手腕，往後一扯。'),
+      { who: 'hero', mood: 'smile', text: '「那一下，謝謝。」' },
+      { who: 'rin', mood: 'guarded', text: '「……不用謝。身體自己動的。」' },
+      { who: 'hero', mood: 'surprised', text: '「想都沒想？」' },
+      { who: 'rin', mood: 'serious', text: '「想了，就來不及了。」' },
+      N('她看著自己那隻手，像是不認得它。指尖碰到領口的小銅鐘，停了一下，才收回來。'),
+      { who: 'hero', mood: 'smile', text: '「那就，下次也拜託了。」' },
+      N('凜沒有回答。她把椅子拉到窗邊，坐在看得見他的地方。'),
+    ],
+    summary: '第一次回城的晚上。下面那一擊，是凜把洛恩拉開的。她不收道謝，只說身體自己動的。',
   },
   // Task 4: Rin's seven memories (spec §5, §5.1, §3.6). Pieces 1–2 warm and a little off, 3–5 cold, 6–7 heavy.
   'mem:rin:1': {

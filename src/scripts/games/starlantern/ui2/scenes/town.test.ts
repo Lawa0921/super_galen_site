@@ -173,19 +173,24 @@ describe('TownScene story', () => {
 
   it('arrival scenes play before the menu', async () => {
     const game = Game.fresh(constRng(0.5), null);
-    expect(game.arrival).toEqual(['prologue']);
+    expect(game.arrival).toEqual(['prologue', 'prologue-inn']);
     const t = open(game);
     expect(t.menu().hasAttribute('inert')).toBe(true);
     expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(true);
     expect(t.root.querySelector('.slx-back')!.classList.contains('slx-cmd-hidden')).toBe(true);   // 返回 is not offered over a scene
     expect(t.text()).toBe(firstLine('prologue', game));
     for (let i = 0; i < linesOf('prologue', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    // The inn night follows at once: still no menu, no 返回 (Task 10b).
+    expect(t.text()).toBe(firstLine('prologue-inn', game));
+    expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(true);
+    expect(t.root.querySelector('.slx-back')!.classList.contains('slx-cmd-hidden')).toBe(true);
+    for (let i = 0; i < linesOf('prologue-inn', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
     expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);   // the town's own line is up now
     expect(t.root.querySelector('.slx-back')!.classList.contains('slx-cmd-hidden')).toBe(false);
     t.s.onAction('confirm');
     expect(t.menu().hasAttribute('inert')).toBe(false);
     expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);
-    expect(game.state.story.seen).toContain('prologue');
+    expect(game.state.story.seen).toEqual(['prologue', 'prologue-inn']);
     expect(game.arrival).toEqual([]);
   });
 

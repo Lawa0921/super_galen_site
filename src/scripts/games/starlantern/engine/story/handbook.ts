@@ -62,7 +62,8 @@ export function handbook(s: GameState): Handbook {
     const len = chainLength(id);
     const k = !met ? 0 : have >= len ? 3 : have >= Math.ceil(len / 2) ? 2 : 1;
     const chats = Array.from({ length: CHAT_COUNT[id] }, (_, i): SceneId => `chat:${id}:${i + 1}`);
-    return { id, met, title: titleOf(m), segments: STORY.people[id].slice(0, k), scenes: entries(id === 'rin' ? ['rin-reveal', ...chats] : chats) };
+    // Rin's page also replays the two of them before her story: the inn night and the first return (Task 10b).
+    return { id, met, title: titleOf(m), segments: STORY.people[id].slice(0, k), scenes: entries(id === 'rin' ? ['prologue-inn', 'first-return', 'rin-reveal', ...chats] : chats) };
   });
   const town = TOWN_FRAGMENTS.map((f): TownPage => {
     const lines = STORY.town[f.id];

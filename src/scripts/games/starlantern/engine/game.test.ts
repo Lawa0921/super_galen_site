@@ -441,9 +441,9 @@ describe('battles', () => {
     expect(g.map().boss).toBeNull();
     expect(g.map().down).not.toBeNull();
   });
-  it('a new game queues the prologue', () => {
-    expect(new Game(calm(), null).state.story.queue).toEqual(['prologue']);
-    expect(newGame().story).toEqual({ act1Cleared: false, finaleCleared: false, seen: [], fresh: [], queue: ['prologue'], nodes: [], pity: {}, returned: [], fed: false });
+  it('a new game queues the prologue, then the inn night', () => {
+    expect(new Game(calm(), null).state.story.queue).toEqual(['prologue', 'prologue-inn']);
+    expect(newGame().story).toEqual({ act1Cleared: false, finaleCleared: false, seen: [], fresh: [], queue: ['prologue', 'prologue-inn'], nodes: [], pity: {}, returned: [], fed: false });
   });
   it('a region boss opens the stairs down instead of clearing the game', () => {
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
@@ -2465,18 +2465,72 @@ describe('the arrival queue', () => {
   const inRun = (g: Game) => { expect(g.depart(MAIN, 1)).toEqual({ ok: true }); return g; };
   const chatsOf = (g: Game) => g.arrival.filter((id) => id.startsWith('chat:'));
 
-  it("the new game's first arrival is the prologue", () => {
+  it("the new game's first arrival is the prologue, then the inn night", () => {
     const storage = memoryStorage();
     const g = Game.fresh(calm(), storage);
-    expect(g.arrival).toEqual(['prologue']);
+    expect(g.arrival).toEqual(['prologue', 'prologue-inn']);
     const reloaded = Game.boot(calm(), storage);
     expect(chatsOf(reloaded)).toEqual([]);
-    expect(reloaded.arrival).toEqual(['prologue']);
+    expect(reloaded.arrival).toEqual(['prologue', 'prologue-inn']);
+    // The prologue is done and saved; a reload before the inn night still plays it, and only it.
+    expect(reloaded.sceneDone('prologue', 'played')).toBe(true);
+    expect(Game.boot(calm(), storage).arrival).toEqual(['prologue-inn']);
   });
 
-  it('a boot with no storage still opens on the prologue, with no chat', () => {
+  it('a boot with no storage still opens on the prologue and the inn night, with no chat', () => {
     const g = Game.boot(calm(), null);
-    expect(g.arrival).toEqual(['prologue']);
+    expect(g.arrival).toEqual(['prologue', 'prologue-inn']);
+  });
+
+  /** Wins the fight in the first room, then lights the lamp home. */
+  const winAndLampHome = (g: Game) => {
+    g.pos = { ...g.map().entrance };
+    g.encounter = 99;
+    g.move('right');
+    expect(g.phase).toBe('battle');
+    for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
+    g.submitRound({});
+    expect(g.phase).toBe('map');
+    g.state.inventory['return-lamp'] = 1;
+    expect(g.useReturnLamp()).toBe(true);
+  };
+
+  it('the first return after a won fight opens on the first-return scene, then the chat, and never again', () => {
+    const storage = memoryStorage();
+    const g = townGame(HERO_LINEUP, storage);
+    g.state.story.seen.push('prologue-inn');
+    inRun(g);
+    g.returnToTown();
+    expect(g.arrival).toEqual(['chat:hero:1']);   // no fight yet: nothing to tell
+    expect(g.sceneDone('chat:hero:1', 'played')).toBe(true);
+    inRun(g);
+    winAndLampHome(g);
+    expect(g.arrival[0]).toBe('first-return');
+    expect(g.arrival).toHaveLength(2);
+    expect(chatsOf(g)).toHaveLength(1);
+    expect(Game.boot(calm(), storage).arrival).toEqual([]);   // the arrival was not saved yet: the reload is the town before it
+    expect(g.sceneDone('first-return', 'played')).toBe(true);
+    expect(Game.boot(calm(), storage).arrival).toEqual([]);
+    inRun(g);
+    winAndLampHome(g);
+    expect(g.arrival).not.toContain('first-return');
+  });
+
+  it('a save from before the opening scenes existed plays neither of them on load', () => {
+    const storage = memoryStorage();
+    const s = newGame();
+    s.story.queue = [];
+    s.story.seen = ['prologue', 'chat:hero:1'];
+    s.party.roster.hero.level = 3;
+    saveGame(storage, s);
+    const g = Game.boot(calm(), storage);
+    expect(g.arrival).toEqual([]);
+    expect(g.state.story.seen).toEqual(expect.arrayContaining(['prologue-inn', 'first-return']));
+    expect(g.state.story.fresh).toEqual([]);
+    inRun(g);
+    winAndLampHome(g);
+    expect(g.arrival).not.toContain('first-return');
+    expect(g.arrival).not.toContain('prologue-inn');
   });
 
   it('a town action with no storage reports a failed save, as recall, forge and inn do', () => {
@@ -2637,6 +2691,8 @@ describe('the state after Act 1', () => {
   it('saves and loads a valid v8 game with Act 1 cleared and its close queued', () => {
     const storage = memoryStorage();
     const g = inMap(3, calm(), storage);
+    g.state.story.queue = [];
+    g.state.story.seen = ['prologue', 'prologue-inn'];   // the opening is behind this party
     stepOnto(g, g.map().boss!);
     for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
     g.submitRound({});
@@ -2644,7 +2700,8 @@ describe('the state after Act 1', () => {
     g.restartAfterClear();
     expect(g.state.story.act1Cleared).toBe(true);
     expect(g.state.story.queue).toContain('act1-after');
-    expect(g.arrival[0]).toBe('act1-after');
+    // The boss was this party's first won fight: the first return comes first, then Act 1's close (Task 10b).
+    expect(g.arrival.slice(0, 2)).toEqual(['first-return', 'act1-after']);
     expect(saveGame(storage, g.state)).toBe(true);
     const loaded = loadGame(storage);
     expect(loaded.status).toBe('ok');

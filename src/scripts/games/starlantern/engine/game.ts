@@ -28,7 +28,7 @@ import { depthClearExp, depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
-import { arrivalScenes, markRead, onReturn, sceneDone } from './story/events';
+import { arrivalScenes, markRead, onReturn, sceneDone, settleOpening } from './story/events';
 import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeResult, RerollOpts } from './forge/cost';
@@ -135,7 +135,8 @@ export class Game {
       return g;
     }
     const r = loadGame(storage);
-    const g = new Game(rng, storage, r.status === 'ok' ? r.state : undefined, forgeSalt, START_LINEUP);
+    // A save from before the opening scenes (Task 10b) is past them: they count as seen and never replay late.
+    const g = new Game(rng, storage, r.status === 'ok' ? settleOpening(r.state) : undefined, forgeSalt, START_LINEUP);
     if (r.status === 'corrupt' || r.status === 'version') g.notice = 'save-reset';
     g.rerolled = true;
     g.arrival = arrivalScenes(g.state, { chat: false });

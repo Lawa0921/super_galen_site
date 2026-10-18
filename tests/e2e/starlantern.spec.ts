@@ -1242,11 +1242,12 @@ test.describe('starlantern', () => {
     };
     const w = await setup(page, 7, { story: 'all' });
 
-    // 1. A new game plays the prologue to its end, with no return chat before it, and lands on the town menu.
+    // 1. A new game plays the prologue and then the inn night to their end, with no return chat before them, and lands on the town menu.
+    expect(await game((g) => g.arrival)).toEqual(['prologue', 'prologue-inn']);
     await playOut();
     await expect(page.locator('.slx-town-menu')).not.toHaveClass(/slx-cmd-hidden/);
     const first = await game((g) => ({ seen: g.state.story.seen, fresh: g.state.story.fresh, queue: g.state.story.queue }));
-    expect(first.seen).toContain('prologue');
+    expect(first.seen).toEqual(['prologue', 'prologue-inn']);
     expect(first.seen.filter((id: string) => id.startsWith('chat:'))).toEqual([]);
     expect([first.fresh, first.queue]).toEqual([[], []]);   // played, not skipped: nothing is new, nothing waits
 
@@ -1262,9 +1263,20 @@ test.describe('starlantern', () => {
     await w.key('Escape');
     await expect(page.locator('.slx-town .slx-talk .slx-text')).toContainText(STORY.scenes.prologue.summary);
     await shot('02-prologue-skip-summary');
+    // The inn night follows before the town is the player's (Task 10b): the menu stays hidden until its first line is up.
+    const talkText = page.locator('.slx-town .slx-talk .slx-text');
+    const innFirst = STORY.scenes['prologue-inn'].lines[0].text;
+    for (let i = 0; i < 6 && ((await talkText.textContent()) ?? '') !== innFirst; i++) {
+      await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+      await w.key('z'); await page.waitForTimeout(80);
+    }
+    await expect(talkText).toHaveText(innFirst);
+    await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+    expect(await game((g) => ({ seen: g.state.story.seen, arrival: g.arrival }))).toEqual({ seen: ['prologue'], arrival: ['prologue-inn'] });
+    await shot('02b-prologue-inn');
     await playOut();
     await expect(page.locator('.slx-town-menu')).not.toHaveClass(/slx-cmd-hidden/);
-    expect(await game((g) => g.state.story.seen)).toContain('prologue');
+    expect(await game((g) => g.state.story.seen)).toEqual(['prologue', 'prologue-inn']);
 
     // 3. Out through the mainline gate. Rin's glimmer: stand two cells off, step once (it shows on the map), then onto it.
     await depart(page, w);
@@ -1373,10 +1385,31 @@ test.describe('starlantern', () => {
     await playOut();
     expect(await game((g) => g.state.party.recruited)).toEqual(['hero', 'rin', 'selene']);
 
-    // 5. Home with the lamp: whatever the town says on arrival (a return chat, maybe) plays out. Then Selene to the bench and back.
+    // 5. Home with the lamp, after the party's first won fight: the first-return scene opens the arrival, ahead of any return
+    // chat, while the town menu waits (Task 10b). It plays with its portraits in the screen. Then Selene to the bench and back.
     await game((g) => { g.state.inventory['return-lamp'] = 1; });
     await lampHome(page, w);
+    const homeArrival = await game((g) => g.arrival);
+    expect(homeArrival[0]).toBe('first-return');
+    expect(homeArrival.slice(1).every((id: string) => id.startsWith('chat:'))).toBe(true);
+    await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+    {
+      const trust = STORY.scenes['first-return'].lines.find((l) => l.who === 'rin' && l.text.includes('身體自己動的'))!.text;
+      let heard = false;
+      let faces = 0;
+      for (let i = 0; i < 40 && !heard; i++) {
+        if (((await talkText.textContent()) ?? '') === trust) heard = true;
+        else if (await page.locator('.slx-town .slx-talk').isVisible()) { if ((await faceFits(page)) !== null) faces++; await w.key('z'); await page.waitForTimeout(60); }
+        else await page.waitForTimeout(60);
+      }
+      expect(heard, 'the first return reaches 「身體自己動的。」').toBe(true);
+      await expect(page.locator('.slx-town .slx-talk .slx-name')).toHaveText(CHARACTERS.rin.name);
+      expect((await faceFits(page)) ?? faces, 'the first return shows a portrait that fits').toBeGreaterThan(0);
+      await shot('07b-first-return');
+    }
     await playOut();
+    expect(await game((g) => g.state.story.seen)).toContain('first-return');
+    expect(await game((g) => g.arrival)).toEqual([]);
     await w.choose('.slx-town', '冒險者公會');
     await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
     await page.locator('.slx-cmd [data-id=formation]').click();
