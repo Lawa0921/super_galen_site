@@ -141,7 +141,7 @@ export function bootDelve(root: HTMLElement): Session {
     }
   }
   function setMenu(open: boolean): void {
-    if (!menu) return;
+    if (!menu || leaving) return;
     menu.hidden = !open;
     handle?.setPaused(open);
     say(menuMsg, '');
@@ -192,10 +192,23 @@ export function bootDelve(root: HTMLElement): Session {
    * 遊戲中「回到標題」：先存檔（失敗就留在遊戲裡回報，不丟進度）→ 轉場蓋上 → 收掉遊戲（迴圈 / 輸入 / 音效 / 自動存檔）
    * → 標題畫面（場景直接停在洞窟、選單模式、「繼續」摘要是剛存的）→ 掀開。之後的繼續 / 新世界走一般流程。
    */
+  /** 沒有 IndexedDB（無法存檔）時第一次按「回到標題」只警告；再按一次才真的離開 */
+  let noSaveWarned = false;
+  /** 正在「回到標題」（存檔 / 轉場中）：選單與 Esc 不再切換暫停 */
+  let leaving = false;
   async function returnToTitle(): Promise<void> {
     if (busy) await inFlight;
     if (busy || !handle) return;
+    if (!hasIndexedDB() && !noSaveWarned) {
+      noSaveWarned = true;
+      say(menuMsg, '這個瀏覽器不能存檔：離開後進度會消失。要保留請先「匯出存檔」，確定要離開就再按一次「回到標題」。');
+      return;
+    }
     busy = true;
+    leaving = true;
+    // 離開途中遊戲保持暫停、選單不能再操作（存完檔之後的動作不會被丟掉）
+    handle.setPaused(true);
+    if (menu) menu.inert = true;
     try {
       say(menuMsg, '存檔中…');
       try { await saveNow(); } catch (e) {
@@ -210,6 +223,7 @@ export function bootDelve(root: HTMLElement): Session {
       handle = null;
       delete window.__delveDebug;
       if (menu) menu.hidden = true;
+      noSaveWarned = false;
       say(menuMsg, '');
       if (helpEl && !helpEl.hidden) { helpEl.hidden = true; delete root.dataset.help; }
       hudEl!.hidden = true;
@@ -223,6 +237,8 @@ export function bootDelve(root: HTMLElement): Session {
       await wipe?.reveal();
       ui.focusFirst(true);
     } finally {
+      if (menu) menu.inert = false;
+      leaving = false;
       busy = false;
     }
   }
@@ -302,7 +318,7 @@ export function bootDelve(root: HTMLElement): Session {
             if (performance.now() - t0 > 14) break;
           }
           section?.update();
-        } catch (e) { reject(e); return; }
+        } catch (e) { section?.reset(null); reject(e); return; }
         nextTick(pump);
       };
       nextTick(pump);
