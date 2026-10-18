@@ -195,7 +195,7 @@ describe('story data', () => {
 
   it('placeholders are registered', () => {
     expect(PLACEHOLDERS.size).toBeGreaterThan(0);
-    expect(PLACEHOLDERS.has(STORY.scenes.prologue.lines[0].text)).toBe(true);
+    expect(PLACEHOLDERS.has(STORY.truths.act2)).toBe(true);   // a key no task has written yet (the prologue is written in Task 4)
   });
 
   it("the finale's wait, Rin's oath lines, the bellkeeper and the merchant are story copy", () => {
@@ -251,7 +251,9 @@ function storyTexts(): Text[] {
 }
 
 /** The keys that are finished copy. Each entry is a prefix ending in "." or ":" (so `town.` never eats `townLines`) or one whole leaf key. */
-const WRITTEN: string[] = [];
+const WRITTEN: string[] = [
+  'scenes.prologue.', 'scenes.mem:rin:',   // Task 4: the sample
+];
 const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
 const isWritten = (key: string): boolean => writtenBy(WRITTEN, key);
 // The WRITTEN-only gates are pure functions of their arrays, so they can be tested with an injected list while WRITTEN is empty.
@@ -343,6 +345,21 @@ function position(key: string): Stage {
   }
 }
 
+/** Words that give away Rin's secret: 「凜」 is a code name, the bell is the society's token, she was sent to kill. */
+const RIN_SECRET_TERMS = ['代號', '信物', '派來殺', '派去殺'];
+/**
+ * Where Rin's secret may be said: her 6th and 7th pieces, the reveal, her oath lines, the bellkeeper, the finale and the
+ * after stage, her last handbook segment (it unlocks with the 7th piece; it never tells her choice), a line that plays only
+ * after her choice (`if.oath: true`), and a chat of hers gated on the oath.
+ */
+const rinSecretAllowed = (key: string, line?: ScriptLine): boolean => {
+  if (['scenes.mem:rin:6.', 'scenes.mem:rin:7.', 'scenes.rin-reveal.', 'rinOath.', 'bellkeeper.', 'people.rin.2'].some((p) => key === p || key.startsWith(p))) return true;
+  if (line?.if?.oath === true) return true;
+  const id = key.split('.')[1];
+  if (key.startsWith('scenes.chat:rin:') && CHAT_GATE[id as SceneId]?.oath === true) return true;
+  return position(key) === 'after';
+};
+
 const SPOILERS: { terms: string[]; allowed: (key: string, line?: ScriptLine) => boolean; why: string }[] = [
   {
     terms: ['守燈人'],
@@ -353,6 +370,11 @@ const SPOILERS: { terms: string[]; allowed: (key: string, line?: ScriptLine) => 
     terms: ['靜鐘會'],
     allowed: (key) => stageIdx(position(key)) >= stageIdx('act3'),
     why: 'spec §8.4: the Silent Bell society is named from act 3 on',
+  },
+  {
+    terms: RIN_SECRET_TERMS,
+    allowed: rinSecretAllowed,
+    why: "spec §5.1: Rin's code name, her bell and her errand are told by her 6th and 7th pieces, and after them (lore ledger, 揭露表)",
   },
 ];
 
@@ -522,6 +544,20 @@ describe('the script gates', () => {
         if (sp.terms.some((term) => text.includes(term))) expect(sp.allowed(key, line), `${key}: ${sp.why}`).toBe(true);
       }
     }
+  });
+
+  it("Rin's secret stays behind her sixth piece", () => {
+    const oathLine: ScriptLine = { who: 'rin', text: '甲', if: { oath: true } };
+    for (const n of [1, 2, 3, 4, 5]) expect(rinSecretAllowed(`scenes.mem:rin:${n}.lines.0.text`), `mem:rin:${n}`).toBe(false);
+    for (const k of ['scenes.prologue.lines.0.text', 'scenes.act3.lines.0.text', 'scenes.act4.lines.0.text', 'truths.act4', 'people.rin.1', 'scenes.chat:rin:1.lines.0.text', 'rinLines.act4.0', 'greet.inn.act4.0']) {
+      expect(rinSecretAllowed(k), k).toBe(false);
+    }
+    expect(rinSecretAllowed('scenes.act4.lines.0.text', { who: 'rin', text: '甲', if: { oath: false } })).toBe(false);
+    for (const k of ['scenes.mem:rin:6.lines.0.text', 'scenes.mem:rin:7.summary', 'scenes.rin-reveal.lines.0.text', 'rinOath.0', 'bellkeeper.oath.0', 'people.rin.2', 'scenes.finale.lines.0.text', 'townLines.after.0', 'truths.after']) {
+      expect(rinSecretAllowed(k), k).toBe(true);
+    }
+    expect(rinSecretAllowed('scenes.act4.lines.0.text', oathLine)).toBe(true);
+    expect(RIN_SECRET_TERMS.length).toBeGreaterThan(0);
   });
 
   it('the first chat of anyone is never gated', () => {
