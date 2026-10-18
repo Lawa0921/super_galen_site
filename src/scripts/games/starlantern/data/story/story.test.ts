@@ -224,8 +224,8 @@ describe('story data', () => {
     expect(position('finaleWait.0.text')).toBe('act4');
   });
 
-  it('the milestone cards and the survive line are story copy, found by the placeholder sweep', () => {
-    for (const t of [STORY.survived, STORY.endingTitle]) expect(PLACEHOLDERS.has(t), t).toBe(true);   // act1Card is written in Task 5
+  it('the milestone cards are story copy, found by the placeholder sweep', () => {
+    for (const t of [STORY.endingTitle]) expect(PLACEHOLDERS.has(t), t).toBe(true);   // act1Card is written in Task 5, the survive line in Task 10
   });
 });
 
@@ -260,6 +260,7 @@ const WRITTEN: string[] = [
   'scenes.rin-reveal.', 'scenes.chat:rin:', 'people.rin.', 'rinLines.', 'rinOath.',   // Task 7: Rin
   ...(['selene', 'chizuru', 'safira'] as const).flatMap((c) => [`scenes.mem:${c}:`, `scenes.chat:${c}:`, `people.${c}.`, `meet.${c}.`]),   // Task 8
   ...(['sylvie', 'noel', 'bobby'] as const).flatMap((c) => [`scenes.mem:${c}:`, `scenes.chat:${c}:`, `people.${c}.`, `meet.${c}.`]),   // Task 9
+  ...(['liz', 'scarlet'] as const).flatMap((c) => [`scenes.mem:${c}:`, `scenes.chat:${c}:`, `people.${c}.`, `meet.${c}.`]), 'survived',   // Task 10
 ];
 const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
 const isWritten = (key: string): boolean => writtenBy(WRITTEN, key);
@@ -535,7 +536,7 @@ describe('the script gates', () => {
       const { before, after } = STORY.meet[m.id];
       expect(before.length, m.id).toBeGreaterThanOrEqual(1);
       expect(before.length, m.id).toBeLessThanOrEqual(4);
-      expect(after.length, m.id).toBeGreaterThanOrEqual(0);   // Task 10 raises this to 1
+      expect(after.length, m.id).toBeGreaterThanOrEqual(1);   // raised from 0 in Task 10: every companion joins in words
       expect(after.length, m.id).toBeLessThanOrEqual(4);
     }
   });
@@ -717,20 +718,21 @@ describe('the script gates', () => {
 
   it('every line condition is well formed', () => {
     // Task 7 fix round 1: a condition object passed where a flag was meant made `if.oath` an object, and linesWhen dropped the line in every reading.
-    const KEYS = ['met', 'notMet', 'returned', 'full', 'notFull', 'oath'];
+    const KEYS = ['met', 'notMet', 'returned', 'notReturned', 'full', 'notFull', 'oath'];
     for (const { key, line } of storyTexts().filter((t) => t.line)) {
       const c = line!.if;
       if (c === undefined) continue;
       expect(typeof c, key).toBe('object');
       for (const k of Object.keys(c)) expect(KEYS, `${key}: if.${k}`).toContain(k);
       if ('oath' in c) expect(typeof c.oath, `${key}: if.oath`).toBe('boolean');
-      for (const k of ['met', 'notMet', 'returned', 'full', 'notFull'] as const) if (k in c) expect(typeof c[k], `${key}: if.${k}`).toBe('string');
+      for (const k of ['met', 'notMet', 'returned', 'notReturned', 'full', 'notFull'] as const) if (k in c) expect(typeof c[k], `${key}: if.${k}`).toBe('string');
     }
-    // and every line of every scene plays in at least one reading
+    // and every line of every scene plays in at least one reading (Task 10: with no fragment returned too, for `notReturned`)
     for (const id of SCENE_IDS) {
       const lines = STORY.scenes[id].lines;
       const everyone: LineWhen = { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: TOWN_FRAGMENTS.map((f) => f.id), oath: false };
-      const played = new Set([true, false].flatMap((oath) => [everyone, { ...everyone, full: [] }].flatMap((w) => linesWhen(lines, { ...w, oath }))));
+      const readings: LineWhen[] = [everyone, { ...everyone, full: [] }].flatMap((w) => [w, { ...w, returned: [] }]);
+      const played = new Set([true, false].flatMap((oath) => readings.flatMap((w) => linesWhen(lines, { ...w, oath }))));
       for (const l of lines) if (!l.if?.notMet) expect(played.has(l), `${id}: ${l.text}`).toBe(true);
     }
   });
@@ -810,6 +812,10 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
       { who: 'noel', re: /歸來者/, piece: 5 },                          // I-25: 「洛恩」 from her last piece
       { who: 'noel', re: /小氣|怕本小姐/, piece: 4 },                   // she thinks her teacher is stingy until her fourth piece
       { who: 'noel', re: /忘了.{0,4}(怎麼|為什麼).{0,4}(進來|迷宮)/, piece: 2 },   // her second piece tells how she came in
+      // Task 10
+      { who: 'liz', re: /臉.{0,2}想不起來|一定有人在等/, piece: 5 },         // she remembers her father's face in her last piece
+      { who: 'scarlet', re: /洛恩閣下/, piece: 5 },                       // I-26: plain 「洛恩」 from her last piece
+      { who: 'scarlet', re: /是我的職責|欠了誰/, piece: 5 },              // her last piece: she guards by choice, she owes no one a flight
     ];
     // `heard`: the row is also checked against the narration of her chats (what the scene shows, not only what she says).
     const REVEALED: { who: string; re: RegExp; piece: number; heard?: true }[] = [
@@ -823,8 +829,13 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
       { who: 'noel', re: /洛恩/, piece: 5 },
       { who: 'noel', re: /星火|燒掉|燒光|為薪|保護|商人/, piece: 3 },
       { who: 'bobby', re: /祖先|一族|構造圖|都能裝|錯了|閥|道歉|修好/, piece: 1 },
+      // Task 10: the shop, the debt, the hat, the lamp's light, the vault and her father (1-5); she is Orik's daughter (5)
+      { who: 'liz', re: /櫃檯|估價的本事|瓶罐|債|借據|賒|帽子|星燈|光柱|麵包.{0,4}焦|焦.{0,4}麵包|寶庫的門|爸爸|父親|歐里克|臉想起來/, piece: 1, heard: true },
+      { who: 'scarlet', re: /洛恩(?!閣下)/, piece: 5 },
+      // her oath, her kingdom, her turning away, the princess and the retreat (1-5)
+      { who: 'scarlet', re: /起誓|立誓|誓言|國家|王國|王城|轉身|逃|號角|公主|殿下|朋友|活下去|撤退|密道/, piece: 1, heard: true },
     ];
-    for (const c of ['selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby'] as const) {
+    for (const c of ['selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby', 'liz', 'scarlet'] as const) {
       for (let n = 1; n <= CHAT_COUNT[c]; n++) {
         for (const full of [false, true]) {
           for (const oath of [false, true]) {
@@ -840,7 +851,7 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
       }
     }
     // the variants exist: before her last piece and after it, each chat still plays her
-    for (const [id, c] of [['chat:selene:2', 'selene'], ['chat:chizuru:2', 'chizuru'], ['chat:sylvie:2', 'sylvie'], ['chat:noel:2', 'noel']] as const) {
+    for (const [id, c] of [['chat:selene:2', 'selene'], ['chat:chizuru:2', 'chizuru'], ['chat:sylvie:2', 'sylvie'], ['chat:noel:2', 'noel'], ['chat:liz:2', 'liz'], ['chat:scarlet:2', 'scarlet']] as const) {
       const lines = STORY.scenes[id].lines;
       expect(lines.some((l) => l.if?.notFull === c), id).toBe(true);
       expect(lines.some((l) => l.if?.full === c), id).toBe(true);
@@ -965,5 +976,114 @@ describe('Task 9: Sylvie, Noel and Bobby', () => {
 
   it('their chats are open as soon as she is met', () => {
     for (const c of THREE) expect(CHAT_GATE[`chat:${c}:2`], c).toBeUndefined();
+  });
+});
+
+describe('Task 10: Liz, Scarlet and the survive line', () => {
+  const linesOf = (id: SceneId) => STORY.scenes[id].lines;
+  const textOf = (id: SceneId) => linesOf(id).map((l) => l.text).join('');
+  const spokenBy = (c: string) => storyTexts().filter((t) => t.line?.who === c);
+  const TWO = ['liz', 'scarlet'] as const;
+  const read = (id: SceneId, returned: boolean) =>
+    linesWhen(linesOf(id), { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: returned ? ['orik'] : [], oath: false });
+
+  it('a line can wait for a fragment not yet returned', () => {
+    const l = (ifc: ScriptLine['if']): ScriptLine => ({ who: 'narrator', text: '甲', if: ifc });
+    const w = (returned: string[]): LineWhen => ({ met: [], full: [], returned: returned as LineWhen['returned'], oath: false });
+    expect(linesWhen([l({ notReturned: 'orik' })], w([])).length).toBe(1);
+    expect(linesWhen([l({ notReturned: 'orik' })], w(['orik'])).length).toBe(0);
+    expect(linesWhen([l({ notReturned: 'orik' })], w(['marta'])).length).toBe(1);
+    expect(linesWhen([l({ returned: 'orik' })], w([])).length).toBe(0);
+  });
+
+  it('each meeting opens on the found line, then she speaks; she joins after the fight', () => {
+    for (const c of TWO) {
+      const { before, after } = STORY.meet[c];
+      expect(before[0].who, c).toBe('narrator');
+      expect(before[0].text, c).toContain(CHARACTERS[c].name);
+      expect(before.some((l) => l.who === c), c).toBe(true);
+      expect(after.length, c).toBeGreaterThanOrEqual(1);
+      expect(after.some((l) => l.who === c), c).toBe(true);
+    }
+    // the spec's pictures (§6): a locked vault, gold, too hungry to stand; a gate, her and the fortress's machine soldiers
+    const liz = STORY.meet.liz.before.map((l) => l.text).join('');
+    for (const word of ['寶庫', '金幣', '餓']) expect(liz, word).toContain(word);
+    const scarlet = STORY.meet.scarlet.before.map((l) => l.text).join('');
+    for (const word of ['城門', '機兵']) expect(scarlet, word).toContain(word);
+    // style bible: Liz bargains, she never begs
+    for (const l of [...STORY.meet.liz.before, ...STORY.meet.liz.after]) if (l.who === 'liz') expect(l.text).not.toMatch(/求求|拜託/);
+  });
+
+  it("the survive line ends Scarlet's story fight in her own name, as story copy", () => {
+    expect(PLACEHOLDERS.has(STORY.survived)).toBe(false);
+    expect(STORY.survived).toContain(CHARACTERS.scarlet.name);
+    expect(STORY.survived).toMatch(/劍/);
+    expect(STORY.survived).not.toMatch(/公主|朋友|逃|洛恩/);   // she has remembered nothing yet, and does not know his name
+  });
+
+  it("Liz calls him 「老大」, goes quiet at her family, and never names her father before the reveal", () => {
+    for (const t of spokenBy('liz')) expect(t.text, t.key).not.toContain('洛恩');
+    expect(spokenBy('liz').some((t) => t.text.includes('老大'))).toBe(true);
+    expect(spokenBy('liz').some((t) => t.line!.mood === 'hushed')).toBe(true);
+    expect(spokenBy('liz').some((t) => t.line!.mood === 'scheming')).toBe(true);
+    // Reveal table: she is Orik's daughter only in the lines that know both halves are back (mem:liz:5 with orik returned).
+    for (const t of storyTexts()) {
+      if (!(ownerOf(t.key) === 'liz' || t.key.startsWith('people.liz.') || t.key === 'survived')) continue;
+      expect(t.text, t.key).not.toContain('爸爸的店');
+      if (/歐里克/.test(t.text)) expect(t.key.startsWith('scenes.mem:liz:5.') && t.line?.if?.returned === 'orik', t.key).toBe(true);
+      if (t.line?.who === 'orik') expect(t.line.if?.returned, t.key).toBe('orik');
+    }
+    for (const n of [1, 2, 3, 4]) expect(textOf(memScene('liz', n)), `mem:liz:${n}`).not.toMatch(/歐里克|道具店|露米亞/);
+    expect(STORY.scenes['mem:liz:5'].summary).not.toMatch(/歐里克|道具店/);
+  });
+
+  it("Liz's last piece is whole either way: her father's face, and the reunion only once Orik's fragment is back", () => {
+    const alone = read('mem:liz:5', false);
+    const both = read('mem:liz:5', true);
+    expect(alone.length).toBe(4);
+    expect(both.length).toBe(4);
+    for (const r of [alone, both]) expect(r.map((l) => l.text).join('')).toMatch(/臉/);
+    expect(alone.map((l) => l.text).join('')).not.toMatch(/歐里克/);
+    expect(alone.some((l) => l.who === 'orik')).toBe(false);
+    expect(both.some((l) => l.who === 'orik')).toBe(true);
+    expect(both.map((l) => l.text).join('')).toMatch(/歐里克/);
+    expect(both.filter((l) => l.who === 'liz').map((l) => l.text).join('')).toMatch(/爸爸/);
+    for (const r of [alone, both]) expect(r[r.length - 1].who, 'she has the last word').toBe('liz');
+    // every conditional line there belongs to one reading
+    for (const l of linesOf('mem:liz:5')) if (l.if) expect(Object.keys(l.if).every((k) => k === 'returned' || k === 'notReturned'), l.text).toBe(true);
+  });
+
+  it("Scarlet says 「洛恩閣下」 until her memories are whole; the princess's words live in her last piece alone", () => {
+    for (const t of spokenBy('scarlet')) {
+      if (t.key.startsWith('scenes.mem:scarlet:5.') || t.line?.if?.full === 'scarlet') continue;
+      for (const m of t.text.matchAll(/洛恩(.?.?)/g)) expect(m[1], t.key).toBe('閣下');
+    }
+    expect(spokenBy('scarlet').some((t) => t.text.includes('洛恩閣下'))).toBe(true);
+    expect(linesOf('mem:scarlet:5').some((l) => l.who === 'scarlet' && /洛恩(?!閣下)/.test(l.text))).toBe(true);
+    const QUOTE = '你不是盾，你是我的朋友。活下去。';
+    for (const t of storyTexts()) if (t.text.includes(QUOTE)) expect(t.key, t.key).toMatch(/^scenes\.mem:scarlet:5\./);
+    expect(textOf('mem:scarlet:5')).toContain(QUOTE);
+    for (const n of [1, 2, 3, 4]) expect(textOf(memScene('scarlet', n)), `mem:scarlet:${n}`).not.toMatch(/朋友|活下去|撤退/);
+    // spec §6: she believes she fled (her third piece); she swears by her sword
+    expect(textOf('mem:scarlet:3')).toMatch(/逃/);
+    expect(spokenBy('scarlet').some((t) => t.line!.mood === 'vow')).toBe(true);
+    expect(spokenBy('scarlet').some((t) => t.line!.mood === 'shaken')).toBe(true);
+  });
+
+  it('their pages and pieces keep to her own story: no act content, and each page waits for its pieces (I-58)', () => {
+    const ACT = /登記簿|靜鐘會|艾斯特拉|守燈人|燈鑰|燈喰/;
+    for (const t of storyTexts()) {
+      if (TWO.some((c) => ownerOf(t.key) === c || t.key.startsWith(`people.${c}.`)) || t.key === 'survived') expect(t.text, t.key).not.toMatch(ACT);
+    }
+    // page 1 is the meeting, page 2 pieces 1-3, page 3 pieces 4-5
+    expect(STORY.people.liz[0]).not.toMatch(/櫃檯|債|帽子|星燈|爸爸|父親/);
+    expect(STORY.people.liz[1]).not.toMatch(/寶庫的門|麵包|父親|爸爸|歐里克/);
+    expect(STORY.people.liz[2]).not.toMatch(/歐里克|道具店/);
+    expect(STORY.people.scarlet[0]).not.toMatch(/誓|國家|逃|公主|朋友/);
+    expect(STORY.people.scarlet[1]).not.toMatch(/公主|朋友|撤退|活下去/);
+  });
+
+  it('their chats are open as soon as she is met', () => {
+    for (const c of TWO) expect(CHAT_GATE[`chat:${c}:2`], c).toBeUndefined();
   });
 });

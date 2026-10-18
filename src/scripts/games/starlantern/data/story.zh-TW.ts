@@ -18,8 +18,9 @@ export interface ScriptLine {
   /**
    * `full`: that person's memories are all found; `notFull`: not yet (a chat can play before or after her last piece).
    * `oath`: Rin has made her choice (`true`) or has not yet (`false`).
+   * `returned`: that townsfolk fragment has been given back; `notReturned`: not yet (Liz's last piece reads both ways).
    */
-  if?: { met?: CharacterId; notMet?: CharacterId; returned?: TownFragmentId; full?: CharacterId; notFull?: CharacterId; oath?: boolean };
+  if?: { met?: CharacterId; notMet?: CharacterId; returned?: TownFragmentId; notReturned?: TownFragmentId; full?: CharacterId; notFull?: CharacterId; oath?: boolean };
 }
 
 /** What a scene's conditions are checked against. */
@@ -33,6 +34,7 @@ export function linesWhen(lines: ScriptLine[], w: LineWhen): ScriptLine[] {
     if (c.met && !w.met.includes(c.met)) return false;
     if (c.notMet && w.met.includes(c.notMet)) return false;
     if (c.returned && !w.returned.includes(c.returned)) return false;
+    if (c.notReturned && w.returned.includes(c.notReturned)) return false;
     if (c.full && !w.full.includes(c.full)) return false;
     if (c.notFull && w.full.includes(c.notFull)) return false;
     if (c.oath !== undefined && c.oath !== w.oath) return false;
@@ -819,6 +821,144 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '波比做了一支會自己轉的湯勺，弄得旅館廚房一陣白煙。瑪莎要她先去洗臉。',
   },
+  // Task 10: Liz (spec §6, §7.5). She came to pay her family's debt and forgot their faces. Each piece narrows where home
+  // is (a shop, its credit, the lamp's light overhead) without naming it; her last piece gives back her father's face. Only
+  // when Orik's own fragment is back does the voice in that memory carry his name: the reveal waits for both (揭露表).
+  'mem:liz:1': {
+    lines: [
+      N('擺滿瓶罐的小店。小女孩趴在櫃檯上，把冒險者拿來換藥的一枚舊銀幣舉到燈下。'),
+      N('「丫頭，這個值多少？」櫃檯後面的人笑著問。她答對了，頭髮就被一隻大手揉亂。'),
+      { who: 'liz', mood: 'scheming', text: '「估價的本事，就是在那裡學的。老大，我很厲害吧？」' },
+      { who: 'liz', mood: 'hushed', text: '「……可是揉我頭髮的那個人，臉是一片霧。」' },
+    ],
+    summary: '莉茲想起小時候，在一間小店的櫃檯學估價。教她的人，她想不起臉。',
+  },
+  'mem:liz:2': {
+    lines: [
+      N('深夜。她從樓梯的縫往下看，櫃檯的燈還亮著，有人一枚一枚數著銅幣。'),
+      N('牆上釘著一疊借據，每一張都寫著「回來再付」。寫下它們的冒險者，很多都沒有回來。'),
+      { who: 'liz', mood: 'hushed', text: '「賒出去的東西收不回來，進貨的錢就還不出去。家裡的債，是這樣來的。」' },
+      { who: 'liz', mood: 'serious', text: '「所以我才進迷宮。挖到寶藏換成錢，債就還得完了。」' },
+    ],
+    summary: '莉茲想起家裡的債：賒給冒險者的帳，人沒回來，錢也沒回來。她是為了還債，才進了迷宮。',
+  },
+  'mem:liz:3': {
+    lines: [
+      N('天還沒亮。她把那頂紅帽子掛在門後，留下一張字條：「等我把寶藏帶回來。」'),
+      N('她推開門。屋頂的上方，一道好大的光柱直直衝上夜空。'),
+      { who: 'liz', mood: 'hushed', text: '「那道光，近得像就在屋頂上。……老大，我家離星燈很近。」' },
+      { who: 'liz', mood: 'sad', text: '「帽子留在門後了。說好了，回家再戴。」' },
+    ],
+    summary: '莉茲想起出門的那個清晨。她把紅帽子留在門後，說好回家再戴。她的家，離星燈很近。',
+  },
+  'mem:liz:4': {
+    lines: [
+      N('寶庫的門在她身後闔上了。黑暗裡，金幣堆成的小山閃著光。'),
+      N('她一枚一枚地數。數到肚子不再叫，數到忘了這些錢要拿去還給誰。'),
+      { who: 'liz', mood: 'sad', text: '「金幣一枚也啃不動。……那時候，好想吃一口家裡那種邊邊烤焦的麵包。」' },
+      { who: 'liz', mood: 'hushed', text: '「數著數著，家人的臉，就一張一張被數掉了。」' },
+    ],
+    summary: '寶庫的門在莉茲身後關上。她守著吃不下的金幣一枚一枚地數，把家人的臉數忘了。',
+  },
+  'mem:liz:5': {
+    lines: [
+      // Plays in the shade on pickup. Orik's fragment not yet back: she has the face, not the name, and goes home to find it
+      // (Task 11's town:orik picks it up). Already back: the voice in the memory is Orik's, and the reunion is here.
+      N('傍晚的店門口。那張臉終於從霧裡浮了出來：鬍子扎人，一笑，眼睛就瞇成一條線。'),
+      { who: 'narrator', text: '「回來啦，丫頭！」他張開雙手，把她連人帶帽子抱了起來。', if: { notReturned: 'orik' } },
+      { who: 'orik', text: '「回來啦，丫頭！今天又撿到什麼好貨了？」', if: { returned: 'orik' } },
+      { who: 'liz', mood: 'hushed', text: '「……想起來了。是爸爸的臉。這張臉，我好像在哪裡看過。」', if: { notReturned: 'orik' } },
+      { who: 'hero', text: '「歐里克說過，他想起女兒的臉了。」', if: { returned: 'orik' } },
+      { who: 'liz', mood: 'smile', text: '「老大，回城以後，陪我去一個地方。這一次，換我走回家。」', if: { notReturned: 'orik' } },
+      { who: 'liz', mood: 'smile', text: '「……那是爸爸。老大，我們回家吧。這一次，換我在店門口喊『我回來了』。」', if: { returned: 'orik' } },
+    ],
+    summary: '莉茲終於想起了父親的臉，和每天傍晚在店門口等她回家的那個人。她要回家了。',
+  },
+  'chat:liz:1': {
+    lines: [
+      // Read right before and after any of her pieces: the hunger is her meeting's, not a memory (I-58).
+      N('月影旅館的晚餐桌。莉茲把第三塊麵包，悄悄塞進了口袋。'),
+      { who: 'hero', text: '「吃不完？」' },
+      { who: 'liz', mood: 'scheming', text: '「這叫存糧，老大。金幣餓了啃不動，麵包可以。這個道理，算你便宜一點。」' },
+    ],
+    summary: '旅館的晚餐桌上，莉茲把麵包塞進口袋。她說這叫存糧，金幣餓了啃不動。',
+  },
+  'chat:liz:2': {
+    lines: [
+      // Until her last piece the faces at home are gone; after it she has her father's, but the text still does not name him.
+      N('深夜的旅館房間。莉茲把今天分到的錢，一枚一枚收進一只舊布袋。'),
+      { who: 'hero', text: '「家裡，有人在等？」' },
+      { who: 'liz', mood: 'hushed', text: '「……嗯。臉想不起來。可是，一定有人在等。」', if: { notFull: 'liz' } },
+      { who: 'liz', mood: 'smile', text: '「……嗯。現在，臉想起來了。這些錢，我要親手交出去。」', if: { full: 'liz' } },
+    ],
+    summary: '深夜，莉茲把分到的錢收進舊布袋。洛恩問她，家裡是不是有人在等。',
+  },
+  // Task 10: Scarlet (spec §6). The iron fortress was her kingdom; she believes she turned and fled from her gate. Her last
+  // piece is the princess's order: 「你不是盾，你是我的朋友。活下去。」 From there she guards by choice, not by oath.
+  'mem:scarlet:1': {
+    lines: [
+      N('石造的大殿，火盆燒得正旺。她單膝跪地，把劍橫舉過頭頂。'),
+      N('「以我的劍起誓。」她說，「從今以後，我是您的盾。」'),
+      { who: 'scarlet', mood: 'shaken', text: '「誓言，我一個字也沒有忘。……聽我起誓的人，我卻想不起來。」' },
+      N('她按著劍柄的手，很久都沒有放開。'),
+    ],
+    summary: '絲嘉蕾想起受封為騎士的那天，她以劍起誓，要做某個人的盾。那個人是誰，她想不起來。',
+  },
+  'mem:scarlet:2': {
+    lines: [
+      N('鋼鐵的城牆上飄著紅旗。城下的街道，擠滿了趕集的人。'),
+      N('那一夜，暮霧從城牆的裂縫湧了進來。怪物跟著霧，爬上了城牆。'),
+      { who: 'scarlet', mood: 'sad', text: '「這座要塞……是我的國家。迷宮把它整個吞了下去。」' },
+      { who: 'scarlet', mood: 'serious', text: '「洛恩閣下。我們相遇的那扇城門，就是我的崗位。」' },
+    ],
+    summary: '鋼鐵要塞曾經是絲嘉蕾的國家。暮霧湧進城牆的那一夜，迷宮把它整個吞了下去。',
+  },
+  'mem:scarlet:3': {
+    lines: [
+      N('火光裡，城門被撞得一下一下地震。她背對著城門，往城裡跑。'),
+      N('身後，號角一聲接著一聲。她沒有回頭。'),
+      { who: 'scarlet', mood: 'shaken', text: '「我轉身了。……在城門最需要我的時候，我逃了。」' },
+      { who: 'hero', text: '「妳記得的，只有背影？」' },
+    ],
+    summary: '絲嘉蕾想起城門快被攻破時，自己背對城門往城裡跑。她認定，自己臨陣脫逃了。',
+  },
+  'mem:scarlet:4': {
+    lines: [
+      N('王城的庭院。公主提著木劍追著她跑，裙襬沾滿了草屑。'),
+      N('「別叫我殿下。」公主笑著說，「在這裡，我們只是一起練劍的人。」'),
+      { who: 'scarlet', mood: 'sad', text: '「我立誓守護的人，是公主殿下。……她總是不讓我這樣叫她。」' },
+      { who: 'scarlet', mood: 'shaken', text: '「而我，把她一個人留在了城門後面。」' },
+    ],
+    summary: '絲嘉蕾想起誓言守護的人：和她一起練劍長大的公主。她以為，自己把公主丟在了城門後面。',
+  },
+  'mem:scarlet:5': {
+    lines: [
+      N('城門快要倒下的時候，公主抓住她的手臂，把她推進了撤退的密道。'),
+      N('「這是命令。」公主說，「你不是盾，你是我的朋友。活下去。」'),
+      { who: 'scarlet', mood: 'sad', text: '「那些號角，是撤退的號角。……我不是逃走的。是她，要我活下去。」' },
+      { who: 'scarlet', mood: 'smile', text: '「洛恩閣下……不，洛恩。今後我擋在前面，不是為了誓言，是我自己選的。」' },
+    ],
+    summary: '公主下令絲嘉蕾撤退，要她活下去。她不是逃走的。從今以後，她守護別人，是出於自己的選擇。',
+  },
+  'chat:scarlet:1': {
+    lines: [
+      // Read right before and after any of her pieces: a knight keeping watch is her meeting's, not a memory (I-58).
+      N('深夜的傳送門廣場。絲嘉蕾佩著劍站在門前，一動也不動。'),
+      { who: 'glen', text: '「喂，騎士大人。守門是我的工作。妳啊，回去睡。」' },
+      { who: 'scarlet', mood: 'serious', text: '「……遵命。只是，請容我明晚再來確認一次。」' },
+    ],
+    summary: '深夜，絲嘉蕾站在傳送門前守夜，被葛倫趕回去睡。她說明晚還會再來。',
+  },
+  'chat:scarlet:2': {
+    lines: [
+      // Until her last piece she calls him 「洛恩閣下」 and shields him as a duty; after it, 「洛恩」, by choice (I-26).
+      N('回城的路上，絲嘉蕾的盾上，又多了一道新的凹痕。'),
+      { who: 'hero', text: '「剛才那一下，不必替我擋。」' },
+      { who: 'scarlet', mood: 'serious', text: '「洛恩閣下，擋下攻擊是我的職責。……總覺得，我欠了誰一次。」', if: { notFull: 'scarlet' } },
+      { who: 'scarlet', mood: 'smile', text: '「……洛恩。替你擋下，不是職責。是我想這麼做。」', if: { full: 'scarlet' } },
+    ],
+    summary: '絲嘉蕾又替洛恩擋下了一擊。洛恩說不必，她說了自己的理由。',
+  },
 };
 
 function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }> {
@@ -902,6 +1042,18 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
     '波比。在本道的星燈神殿，她趴在倒下的古代機兵身上修東西，怪物圍過來都沒發現。她叫我洛恩哥。',
     '她家是替星燈造機關的工匠一族，被時間忘了。碎片拼出星燈的構造圖：祖先把燈造得什麼記憶都能裝。',
     '她修機兵，是想替祖先道歉。現在她讀懂了整張構造圖，說祖先造錯的地方，她要親手修好。',
+  ],
+  // Task 10: Lorne's notes on Liz and Scarlet (I-58). Liz's last page unlocks with her 5th piece whether or not Orik's
+  // fragment is back, so it stops at her father's face (揭露表).
+  liz: [
+    '莉茲。在暗影迴廊上鎖的寶庫裡找到她，身邊堆著金幣，她卻餓得站不起來。嘴很快，愛估價，叫我老大。',
+    '她小時候在一間擺滿瓶罐的小店裡學估價。家裡的債，是賒出去收不回來的帳。她說，她家離星燈很近。',
+    '寶庫的門關上之後，她數著吃不下的金幣，把家人的臉數忘了。現在她想起了父親的臉，說要回家。',
+  ],
+  scarlet: [
+    '絲嘉蕾。在鋼鐵要塞的城門前，她和機兵一起把劍對著我們，撐過三個回合才收劍。她叫我洛恩閣下。',
+    '她是騎士，以劍起誓要做某個人的盾。鋼鐵要塞是她的國家，被迷宮吞了下去。她說，城門快破的那一夜，她轉身逃了。',
+    '她立誓守護的，是一起練劍長大的公主。那一夜的號角是撤退的號角，是公主要她活下去。現在她叫我洛恩，說擋在前面是她自己選的。',
   ],
 };
 
@@ -996,6 +1148,37 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
       { who: 'bobby', mood: 'smile', text: '「我是波比，技師。洛恩哥，帶上我吧！壞掉的東西，我都修得好喔。」' },
     ],
   },
+  // Task 10
+  liz: {
+    before: [
+      N(foundLine('liz')),
+      N('暗影迴廊深處，一間寶庫的門鎖被撬開了。金幣堆成小山，在火把下閃著光。'),
+      N('一個少女靠著金幣山坐著，手裡握著短刀，餓得站不起來。'),
+      { who: 'liz', mood: 'scheming', text: '「……喂，那邊的。這堆金幣分你們一半，先換一口吃的。成交嗎？」' },
+    ],
+    after: [
+      N('洛恩遞過乾糧。她兩口就吞了下去，連掉在膝上的碎屑都撿起來吃掉。'),
+      { who: 'liz', mood: 'smile', text: '「活過來了！我是莉茲，尋寶獵人。說好的，金幣分你們一半。」' },
+      { who: 'hero', text: '「我是洛恩。一個人來這裡做什麼？」' },
+      { who: 'liz', mood: 'hushed', text: '「得把錢帶回家。……家人的臉，卻一張也想不起來了。老大，讓我跟著你們吧。」' },
+    ],
+  },
+  // Her story fight (spec §6): she takes the party for the ones storming her gate, and fights beside the fortress's machine
+  // soldiers until the party has lasted STORY_FIGHT_ROUNDS; the battle log then says `survived`, and she joins.
+  scarlet: {
+    before: [
+      N(foundLine('scarlet')),
+      N('鋼鐵要塞的城門前，一位騎士舉著燃燒的劍，背對著城門站著。'),
+      N('圍在她身邊的機兵，一台也沒有對她動手。它們和她一起，轉向了隊伍。'),
+      { who: 'scarlet', mood: 'vow', text: '「止步。這扇門後，一步也不許過。以我的劍起誓，我不會再轉身。」' },
+    ],
+    after: [
+      { who: 'scarlet', mood: 'shaken', text: '「……你們不是敵人。是我把你們，錯看成了攻破城門的人。」' },
+      { who: 'hero', text: '「我是洛恩。妳在守這扇門？」' },
+      { who: 'scarlet', mood: 'serious', text: '「我是絲嘉蕾，騎士。這扇門是為誰而守……我想不起來了。」' },
+      { who: 'scarlet', mood: 'vow', text: '「洛恩閣下，請讓我同行。對各位拔劍的失禮，就讓我用這把劍償還。」' },
+    ],
+  },
 };
 
 // The town's opening lines and the facility greetings, one set for every stage until 6c writes them per stage.
@@ -1045,7 +1228,7 @@ export const STORY = {
   /** The finale's boss: the lantern-eater under her own name. */
   finaleBossName: ph('燈喰之母'),
   /** The log line that ends Scarlet's story fight. */
-  survived: ph('她收起了劍。'),
+  survived: '絲嘉蕾的劍停在半空。她看清了對手的臉，收起了劍。',
   /** The Act 1 milestone card, and the finale's closing card title (its text is the finale scene's summary). */
   act1Card: { title: '第一幕　星燈重新亮起', body: '燈喰之獸倒下了。暮霧從石板路上退去，露米亞第一次看見了晨光。' },
   endingTitle: ph('終幕　點燈'),
