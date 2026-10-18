@@ -1845,14 +1845,41 @@ const lang: Language = defaultLang;
   .delve-j-furn .delve-slot-icon { width: 32px; height: 32px; }
   .delve-j-furn small { font-size: 16px; color: #966139; }
   /* 手機：角落按鈕放不下 → 據點 / 查房改從選單或點爐心打開 */
-  @media (max-width: 640px) {
+  @media (max-width: 640px), (max-height: 520px) and (orientation: landscape) {
     .delve-chip--settle,
     .delve-chip--house { display: none; }
+  }
+  @media (max-width: 640px) {
     .delve-st-grid { grid-template-columns: repeat(2, 1fr); }
     .delve-j-furn { grid-template-columns: 1fr; }
     .delve-st-perk { grid-template-columns: 6.5em 1fr; }
     .delve-npc-face { width: calc(var(--px) * 33); height: calc(var(--px) * 25.5); }
     .delve-sell-row { grid-template-columns: 32px 1fr auto; }
     .delve-sell-row .delve-btn:last-child { grid-column: 3; }
+  }
+
+  /* ── HUD 版面（桌機 641–1599px）：角落按鈕不能蓋到生命 / 快捷欄 ──
+     自動瞄準是觸控用的：滑鼠操作時不顯示；生命在 1600px 以下改放左側時鐘下方；1279px 以下角落按鈕不顯示按鍵提示 */
+  @media (pointer: fine) {
+    .delve:not([data-touch='1']) .delve-chip--aim { display: none; }
+  }
+  @media (min-width: 641px) and (max-width: 1599px) {
+    .delve:not([data-touch='1']) .delve-vitals { top: calc(var(--px) * 22 + 100px); left: 10px; transform: none; justify-items: start; }
+  }
+  @media (min-width: 641px) and (max-width: 1279px) {
+    .delve:not([data-touch='1']) .delve-corner .delve-kbd { display: none; }
+    .delve:not([data-touch='1']) .delve-corner { gap: 6px; }
+  }
+  /* 面板開著時：提示框移到面板旁邊 / 下方（不蓋面板內容）；觸控鍵收起來（橫放手機的跳鍵不會蓋住面板） */
+  .delve[data-panel-side='right'] .delve-toast { left: calc((100vw - min(480px, 100vw - 20px) - 10px) / 2); }
+  .delve[data-panel-side='left'] .delve-toast { left: calc(100vw - (100vw - min(480px, 100vw - 20px) - 10px) / 2); }
+  .delve[data-spanel='1'] .delve-touch { display: none; }
+  @media (max-width: 900px), (max-height: 520px) {
+    .delve[data-panel-side] .delve-toast,
+    .delve[data-touch='1'][data-panel-side] .delve-toast { left: 50%; bottom: 8px; max-width: calc(100vw - 24px); }
+  }
+  @media (max-height: 520px) and (orientation: landscape) {
+    .delve[data-spanel='1'] .delve-panel--settle,
+    .delve[data-spanel='1'] .delve-panel--npc { top: 50px; bottom: 54px; max-height: none; z-index: 9; }
   }
 </style>

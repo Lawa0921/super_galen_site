@@ -11,6 +11,7 @@ import { DECOR_TILES, FURNITURE_BY_TILE, LIGHT_TILES, SAFETY_TILES } from './fur
 import { NPCS, NPC_KINDS, npcActivity, npcMood, type NpcActivity, type NpcKind } from './npcs';
 import { makeBody, moveBody, type Body, type SolidQuery } from './physics';
 import { TILE_SIZE as S, GRAVITY, MAX_FALL, JUMP_SPEED } from './constants';
+import { findPath, standable, type PathNode } from './npcPath';
 import type { SunTimes } from './calendar';
 
 /** 據點範圍：核心 ±x / ±y 格 */
@@ -164,6 +165,10 @@ export interface Npc {
   talks: number;
   /** 剛說的話與剩餘顯示秒數（頭上對話泡泡） */
   say: string | null; sayT: number;
+  /** 目的地的列（tile；尋路用，省略 = 只看欄） */
+  goalY?: number;
+  /** 快取的路（世界改了 / 目的地換了才重算） */
+  path?: { nodes: PathNode[]; rev: number; gx: number; gy: number | undefined } | null;
 }
 export interface NpcJSON { kind: NpcKind; x: number; y: number; core: number; home: number | null; talks?: number; }
 export interface SettlementJSON { cores: Core[]; npcs: NpcJSON[]; spawnCore: number | null; nextId: number; }
@@ -398,24 +403,28 @@ export class Settlements {
   /** 目的地欄（px 中心） */
   private goal(n: Npc, w: World): number | null {
     const ev = this.evals.get(n.core), core = this.coreById(n.core);
-    if (n.act === 'sleep' && n.bed) return (n.bed.x + 1) * S;
+    n.goalY = undefined;
+    if (n.act === 'sleep' && n.bed) { n.goalY = n.bed.y; return (n.bed.x + 1) * S; }
     if (n.act === 'work' && ev && core) {
       const work = NPCS[n.kind].work ?? [];
       let best: number | null = null, bd = Infinity;
       if (work.length) {
+        // 整個據點範圍找最近的工作 tile（站在它旁邊）；走不走得到交給尋路
         const x0 = Math.max(0, core.x - CLAIM.x), x1 = Math.min(w.width - 1, core.x + CLAIM.x);
         const y0 = Math.max(0, core.y - CLAIM.y), y1 = Math.min(w.height - 1, core.y + CLAIM.y);
         const ny = Math.floor((n.body.y + n.body.h - 1) / S);
-        for (let y = Math.max(y0, ny - 2); y <= Math.min(y1, ny + 2); y++) for (let x = x0; x <= x1; x++) {
+        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
           if (!work.includes(w.fg[y * w.width + x])) continue;
-          const dd = Math.abs(x * S - n.body.x);
-          if (dd < bd) { bd = dd; best = (x + 0.5) * S + (x * S > n.body.x ? -S : S); }
+          const dd = Math.abs(x * S - n.body.x) + Math.abs(y - ny) * S * 3;
+          if (dd < bd) { bd = dd; best = (x + 0.5) * S + (x * S > n.body.x ? -S : S); n.goalY = y; }
         }
       }
       if (best !== null) return best;
+      n.goalY = core.y;
       return (core.x + 0.5) * S + ((n.id % 3) - 1) * 2 * S;
     }
     if (n.room) {
+      n.goalY = n.room.y1;
       const span = Math.max(0, n.room.x1 - n.room.x0);
       const r = ((n.id * 7 + Math.floor(n.t * 0.37)) % (span + 1));
       return (n.room.x0 + r + 0.5) * S;
@@ -439,12 +448,15 @@ export class Settlements {
     }
     const tx = n.targetX;
     const cx = b.x + b.w / 2;
-    if (tx === null || Math.abs(tx - cx) < 3) {
-      n.targetX = null; n.state = 'idle'; b.vx = 0;
+    const step = tx === null ? null : this.nextStep(n, tx, w);
+    if (tx === null || step === null) {
+      n.targetX = null; n.state = 'idle'; b.vx = 0; n.path = null;
       if (n.act !== 'sleep') n.t = 0;
     } else {
-      n.dir = tx > cx ? 1 : -1;
-      b.vx = n.dir * NPC_WALK;
+      n.dir = step.x > cx ? 1 : -1;
+      b.vx = Math.abs(step.x - cx) < 2 ? 0 : n.dir * NPC_WALK;
+      // 下一步比腳下高兩格：起跳
+      if (step.up >= 2 && b.onGround) b.vy = -JUMP_SPEED;
       this.openDoorAhead(n, w);
     }
     const res = this.physics(n, dt, w, h);
@@ -454,6 +466,51 @@ export class Settlements {
       if (n.stuck > 2.5) { n.targetX = null; n.state = 'idle'; n.t = 0; b.vx = 0; }
     } else n.stuck = 0;
     this.closeDoor(n, w, false, h);
+  }
+  /**
+   * 沿著 BFS 路往目的地走：回傳這一刻要朝向的 px 與下一格比腳下高幾格；已經到了 → null。
+   * 路以 world.rev + 目的地快取（世界沒變就不重算）；人不在路上（被推走 / 掉下去）才重算。
+   */
+  private nextStep(n: Npc, tx: number, w: World): { x: number; up: number } | null {
+    const b = n.body, cx = b.x + b.w / 2;
+    const fx = Math.floor(cx / S), fy = Math.floor((b.y + b.h - 1) / S), gx = Math.floor(tx / S);
+    const atY = n.goalY === undefined || Math.abs(fy - n.goalY) <= 1;
+    if (fx === gx && atY && Math.abs(tx - cx) < 3) return null;
+    const core = this.coreById(n.core);
+    const bounds = core ? { x0: core.x - CLAIM.x - 12, x1: core.x + CLAIM.x + 12, y0: core.y - CLAIM.y - 12, y1: core.y + CLAIM.y + 12 } : undefined;
+    let p = n.path;
+    const air = !b.onGround;
+    // 身體 20px 寬，會跨兩欄：兩欄都算「在路上」
+    const cols = [fx, Math.floor(b.x / S), Math.floor((b.x + b.w - 0.01) / S)];
+    // 取路上最後一個碰得到的節點（走得最遠的那個），不會卡在「以為還在上一格」
+    const onPath = (q: typeof p): number => {
+      if (!q) return -1;
+      for (let k = q.nodes.length - 1; k >= 0; k--) { const m = q.nodes[k]; if (cols.includes(m.x) && Math.abs(m.y - fy) <= (air ? 6 : 1)) return k; }
+      return -1;
+    };
+    let i = onPath(p);
+    // 跳 / 掉的途中不重算（空中站不住，BFS 會只回傳起點）
+    if (air && p && i >= 0) { const nx = p.nodes[i + 1]; return nx ? { x: (nx.x + 0.5) * S, up: 0 } : { x: tx, up: 0 }; }
+    if (air && !p) return { x: tx, up: 0 };
+    if (!p || p.rev !== w.rev || p.gx !== gx || p.gy !== n.goalY || i < 0) {
+      const sx = cols.find((c) => standable(w, c, fy)) ?? fx;
+      p = n.path = { nodes: findPath(w, sx, fy, gx, n.goalY, undefined, bounds), rev: w.rev, gx, gy: n.goalY };
+      i = onPath(p);
+      if (i < 0) i = 0;
+    }
+    const next = p.nodes[i + 1];
+    if (!next) {
+      // 路的終點：到目的地那欄就對準 px，不然（到不了）就停
+      // 走到路的盡頭：盡頭就是目的地那欄 → 對準目的地 px；到不了（盡頭不是目的地）→ 停
+      const last = p.nodes[p.nodes.length - 1];
+      if (atY && last.x === gx && Math.abs(tx - cx) >= 3) return { x: tx, up: 0 };
+      return null;
+    }
+    if (next.x === gx && i + 2 >= p.nodes.length) return { x: tx, up: fy - next.y };
+    // 往下掉：身體比一格寬，要多走一點才會整個離開台邊
+    const d = Math.sign(next.x - p.nodes[i].x);
+    const over = next.y > p.nodes[i].y && d ? d * ((b.w - S) / 2 + 3) : 0;
+    return { x: (next.x + 0.5) * S + over, up: fy - next.y };
   }
   private physics(n: Npc, dt: number, w: World, h: SettleHost): { hitX: boolean } {
     const b = n.body;

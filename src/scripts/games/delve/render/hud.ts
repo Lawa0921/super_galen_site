@@ -362,12 +362,14 @@ export class Hud {
     }
     this.refreshEquip();
     const near = this.game.stations();
-    const rows = recipeRows(this.game.inventory, near);
-    const sig = `${near.workbench}${near.furnace}${near.anvil}|` + rows.map((r) => `${r.id}${r.craftable ? 1 : 0}${r.inputs.map((a) => a.have).join(',')}`).join(';');
+    const shared = this.game.storageChests();
+    const rows = recipeRows(this.game.inventory, near, shared ?? undefined);
+    const sig = `${near.workbench}${near.furnace}${near.anvil}${shared ? 's' : ''}|` + rows.map((r) => `${r.id}${r.craftable ? 1 : 0}${r.inputs.map((a) => `${a.have}:${a.fromChest ?? 0}`).join(',')}`).join(';');
     if (sig === this.recipeSig) return;
     this.recipeSig = sig;
     const names = (Object.keys(near) as (keyof typeof near)[]).filter((k) => near[k]).map((k) => STATION_NAME[k]);
-    this.q('#delve-station').textContent = names.length ? `附近的合成站：${names.join('、')} ✓` : '附近沒有合成站（工作台 / 熔爐 / 鐵砧）';
+    this.q('#delve-station').textContent = (names.length ? `附近的合成站：${names.join('、')} ✓` : '附近沒有合成站（工作台 / 熔爐 / 鐵砧）')
+      + (shared ? ' · 共享儲物：據點箱子裡的材料也算（標「箱」的會從箱子拿）' : '');
     const ul = this.q('#delve-recipes');
     ul.replaceChildren();
     // 可合成的排前面；缺站或缺料的排後面
@@ -391,7 +393,7 @@ export class Hud {
       name.textContent = `${ITEMS[r.out.item].name.zh}${r.out.n > 1 ? ` ×${r.out.n}` : ''}`;
       const need = document.createElement('span');
       need.className = 'delve-recipe-need';
-      need.textContent = r.inputs.map((a) => `${ITEMS[a.item].name.zh} ${a.have}/${a.n}`).join('、')
+      need.textContent = r.inputs.map((a) => `${ITEMS[a.item].name.zh} ${a.have}/${a.n}${a.fromChest ? `（箱 ${a.fromChest}）` : ''}`).join('、')
         + (r.needStation && r.station ? `（需${STATION_NAME[r.station]}）` : '');
       b.append(icon, name, need);
       li.appendChild(b);

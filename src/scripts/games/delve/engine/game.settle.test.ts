@@ -216,3 +216,55 @@ describe('save round-trip', () => {
     expect(h.settlementHere()?.level).toBe(1);
   });
 });
+
+describe('safe arrival spots', () => {
+  it('hearth respawn never puts the player inside blocks; boxed-in hearth falls back to the world spawn', () => {
+    const g = arena();
+    village(g);
+    const id = g.settle.cores[0].id;
+    g.setSpawnCore(id);
+    // 爐心右邊堆滿方塊：重生點換到附近的空位
+    for (let y = GROUND - 4; y < GROUND; y++) for (let x = 61; x <= 63; x++) g.world.setFg(x, y, T.STONE);
+    const r = g.respawnPoint();
+    const free = (x: number, y: number): boolean => [-1, 0, 1].every((dx) => [0, 1, 2].every((k) => !g.world.isSolid(x + dx, y - k)));
+    expect(free(r.x, r.y)).toBe(true);
+    expect(g.world.isSolid(r.x, r.y + 1)).toBe(true);
+    // 整圈封死 → 回到出生點
+    for (let y = GROUND - 12; y < GROUND; y++) for (let x = 48; x <= 72; x++) if (!(x === 60 && y === GROUND - 1)) g.world.setFg(x, y, T.STONE);
+    expect(g.respawnPoint()).toEqual({ x: g.spawn.x, y: g.spawn.y });
+  });
+  it('fast travel lands on a free spot next to the destination hearth, or refuses when it is sealed', () => {
+    const g = new DelveGame({ seed: 'travel', width: 400, height: 100, peaceful: true });
+    const w = g.world;
+    g.liquids.setSprings([]);
+    for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) { w.setFg(x, y, y >= GROUND ? T.STONE : T.AIR); w.setWall(x, y, W.NONE); w.setLiquid(x, y, 0, 0); }
+    const decos: [number, number, number][][] = [
+      [[5, 4, T.CHEST], [6, 2, T.PAINTING], [2, 0, T.CHANDELIER]],
+      [[5, 4, T.BOOKSHELF], [6, 1, T.SHELF], [2, 0, T.CHANDELIER]],
+      [[5, 4, T.POTTED_PLANT], [6, 4, T.RUG], [6, 1, T.BANNER]],
+      [[5, 4, T.SOFA_L], [6, 4, T.SOFA_R], [6, 1, T.PAINTING]],
+    ];
+    for (const base of [20, 250]) {
+      decos.forEach((extra, k) => buildHouse(w, base + k * 9, GROUND - 6, 8, 5, { extra }));
+      w.setFg(base + 40, GROUND - 1, T.HEARTH);
+      g.settle.found(base + 40, GROUND - 1);
+    }
+    g.settle.refresh(w, true);
+    const [a, b] = g.settle.cores;
+    expect(g.waypoints().map((c) => c.id).sort()).toEqual([a.id, b.id].sort());
+    g.teleport(a.x - 2, a.y);
+    // 目的地爐心右邊被堵住
+    for (let y = GROUND - 3; y < GROUND; y++) w.setFg(b.x + 1, y, T.STONE);
+    expect(g.travel(b.id)).toBe(true);
+    const t = g.feetTile();
+    expect([-1, 0, 1].every((dx) => [0, 1, 2].every((k) => !w.isSolid(t.x + dx, t.y - k)))).toBe(true);
+    expect(Math.abs(t.x - b.x)).toBeLessThanOrEqual(8);
+    // 回去 a，把 b 整個封死 → 傳不過去，玩家不動
+    g.teleport(a.x - 2, a.y);
+    for (let y = GROUND - 12; y < GROUND; y++) for (let x = b.x - 10; x <= b.x + 10; x++) if (!(x === b.x && y === b.y)) w.setFg(x, y, T.STONE);
+    g.drainEvents();
+    expect(g.travel(b.id)).toBe(false);
+    expect(g.drainEvents()).toContainEqual(expect.objectContaining({ type: 'blocked', reason: 'blockedspot' }));
+    expect(g.feetTile().x).toBe(a.x - 2);
+  });
+});

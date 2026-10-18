@@ -332,6 +332,7 @@ export class SettleUi {
   // ── 每幀 ──
   tick(): void {
     this.frame++;
+    this.trackPanels();
     if ((this.frame & 15) === 0) {
       if (this.settleOpen) this.renderSettle();
       if (this.npcOpen) {
@@ -343,6 +344,20 @@ export class SettleUi {
       }
     }
     this.updateLabels();
+  }
+  /** 開著的面板在哪一邊（root.dataset.panelSide：提示框避開它）；據點 / 居民面板開著 → data-spanel（收起觸控鍵） */
+  private trackPanels(): void {
+    let side = '';
+    for (const p of this.root.querySelectorAll<HTMLElement>('.delve-panel')) {
+      if (p.hidden) continue;
+      const r = p.getBoundingClientRect();
+      if (r.width <= 0) continue;
+      side = r.left + r.width / 2 < window.innerWidth / 2 ? (side === 'right' ? 'both' : 'left') : (side === 'left' ? 'both' : 'right');
+    }
+    const ds = this.root.dataset;
+    if (side && side !== 'both') { if (ds.panelSide !== side) ds.panelSide = side; } else if (side === 'both') ds.panelSide = 'right'; else delete ds.panelSide;
+    const sp = this.settleOpen || this.npcOpen;
+    if (sp) ds.spanel = '1'; else delete ds.spanel;
   }
   /** 查房標籤 + 對話泡泡（DOM，跟著鏡頭走） */
   private updateLabels(): void {

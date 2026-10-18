@@ -215,6 +215,7 @@ const BLOCKED: Record<BlockReason, string | null> = {
   claim: '這裡已經在別的據點範圍裡了（爐心之間要隔開一點）',
   coins: '錢不夠',
   bagfull: '背包放不下了',
+  blockedspot: '目的地的爐心被方塊圍住了，傳不過去（先清出一點空間）',
 };
 
 /** 古碑碑文（佔位文字） */
@@ -271,7 +272,8 @@ export function countLabel(s: Stack | null): string {
 export interface RecipeRow {
   id: string;
   out: { item: ItemId; n: number };
-  inputs: { item: ItemId; n: number; have: number }[];
+  /** have = 可用總數；bag = 背包裡的；fromChest = 這次會從據點箱子拿幾個（共享儲物） */
+  inputs: { item: ItemId; n: number; have: number; bag?: number; fromChest?: number }[];
   craftable: boolean;
   /** 需要合成站但不在附近 */
   needStation: boolean;
@@ -281,16 +283,23 @@ export interface RecipeRow {
   missing: boolean;
 }
 
-export function recipeRows(inv: Inventory, near: boolean | Partial<Record<Station, boolean>>): RecipeRow[] {
+/**
+ * 合成清單。chests = 據點共享儲物（Lv3）：背包外、範圍內箱子裡的數量（省略 = 沒有共享儲物）；
+ * 有的話 have = 背包 + 箱子、fromChest = 這次要從箱子拿幾個。
+ */
+export function recipeRows(inv: Inventory, near: boolean | Partial<Record<Station, boolean>>, chests?: (item: ItemId) => number): RecipeRow[] {
   const ctx: CraftContext = typeof near === 'boolean' ? { nearWorkbench: near }
     : { nearWorkbench: Boolean(near.workbench), nearFurnace: Boolean(near.furnace), nearAnvil: Boolean(near.anvil), nearCampfire: Boolean(near.campfire) };
   return RECIPES.map((r) => {
-    const inputs = r.inputs.map((a) => ({ item: a.item, n: a.n, have: inv.count(a.item) }));
+    const inputs = r.inputs.map((a) => {
+      const bag = inv.count(a.item), extra = chests ? chests(a.item) : 0;
+      return { item: a.item, n: a.n, have: bag + extra, bag, fromChest: Math.max(0, Math.min(extra, a.n - bag)) };
+    });
     return {
       id: r.id,
       out: { ...r.out },
       inputs,
-      craftable: canCraft(inv, r, ctx),
+      craftable: chests ? stationOk(r, ctx) && inputs.every((a) => a.have >= a.n) : canCraft(inv, r, ctx),
       needStation: r.station !== null && !stationOk(r, ctx),
       station: r.station,
       missing: inputs.some((a) => a.have < a.n),

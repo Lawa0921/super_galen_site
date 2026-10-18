@@ -56,6 +56,7 @@ import { Rng, type RngState } from './rng';
 import { CALM_REGEN, Settlements, inClaim, type SettleEvent, type SettleHost, type Npc } from './settlement';
 import { NPCS, earn, forgeMul, npcLine, pay, shopPrice, walletOf, type NpcKind } from './npcs';
 import { PAIR_OF_LEFT, PAIR_OF_RIGHT } from './furniture';
+import { findStandSpot } from './npcPath';
 import { WALL_ITEM } from './items';
 import {
   Progression, levelDef, levelHp, lootIlvl, milestoneAt, respecCost, skillPointsAt, titleFor, xpForEvent, type GainResult, type XpCtx, type XpSource,
@@ -88,7 +89,9 @@ export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occu
   /** 釣魚：沒有魚餌；吃東西：血是滿的 */
   | 'bait' | 'full_hp'
   /** 據點：範圍和別的據點重疊；商店：錢不夠 / 背包滿 */
-  | 'claim' | 'coins' | 'bagfull';
+  | 'claim' | 'coins' | 'bagfull'
+  /** 傳送點：目的地爐心旁沒有空位 */
+  | 'blockedspot';
 export type DelveEvent =
   | { type: 'mine'; x: number; y: number; tile: number; item: ItemId | null }
   | { type: 'place'; x: number; y: number; tile: number; item: ItemId }
@@ -1284,7 +1287,11 @@ export class DelveGame {
   /** 重生點（腳底 tile）：床還在 → 床頭那格；否則出生點 */
   respawnPoint(): { x: number; y: number } {
     const hc = this.settle.spawnCore !== null ? this.settle.coreById(this.settle.spawnCore) : null;
-    if (hc && this.world.getFg(hc.x, hc.y) === T.HEARTH) return { x: hc.x + 1, y: hc.y };
+    if (hc && this.world.getFg(hc.x, hc.y) === T.HEARTH) {
+      // 爐心旁最近的空位（被方塊圍住 → 改用床 / 出生點）
+      const spot = findStandSpot(this.world, hc.x + 1, hc.y);
+      if (spot) return spot;
+    }
     const b = this.bed;
     if (b && this.world.getFg(b.x, b.y) === T.BED_HEAD) return { x: b.x, y: b.y };
     return { x: this.spawn.x, y: this.spawn.y };
@@ -2830,6 +2837,14 @@ export class DelveGame {
     if (!c || !this.settle.hasPerk(t.x, t.y, this.world, 'storage')) return null;
     return this.settle.evaluation(c.id, this.world)?.chests ?? null;
   }
+  /** 共享儲物：據點箱子裡（不含背包）的數量；不在 Lv3 據點裡 → null（UI 用來決定要不要算箱子） */
+  storageChests(): ((item: ItemId) => number) | null {
+    const chests = this.sharedStorage();
+    if (!chests) return null;
+    const cnt = new Map<ItemId, number>();
+    for (const i of chests) for (const st of this.world.chests.get(i) ?? []) if (st) cnt.set(st.item, (cnt.get(st.item) ?? 0) + st.count);
+    return (item) => cnt.get(item) ?? 0;
+  }
   /** 共享儲物：背包 + 據點箱子裡的數量 */
   storageCount(item: ItemId): number {
     let n = this.inventory.count(item);
@@ -2966,9 +2981,12 @@ export class DelveGame {
   travel(to: number): boolean {
     const here = this.settlementHere(), dest = this.waypoints().find((c) => c.id === to);
     if (!here || here.level < 3 || !dest || dest.id === here.id) return false;
-    this.teleport(dest.x + 1, dest.y);
+    // 爐心旁最近、站得下的空位；整圈都被填滿 → 不傳（提示），不會把人塞進方塊裡
+    const spot = findStandSpot(this.world, dest.x + 1, dest.y);
+    if (!spot) { this.block('use', 'blockedspot', dest.x, dest.y); return false; }
+    this.teleport(spot.x, spot.y);
     this.closeChest();
-    this.events.push({ type: 'travel', from: here.id, to, x: dest.x + 1, y: dest.y });
+    this.events.push({ type: 'travel', from: here.id, to, x: spot.x, y: spot.y });
     return true;
   }
   /** 建築木槌：方塊整格 ⇄ 半格（只對實心、會自動接邊的方塊） */
