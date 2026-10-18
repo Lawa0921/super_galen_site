@@ -8,6 +8,18 @@ import { badgeTier } from './levelArt';
 
 const fmt = (n: number): string => Math.round(n).toLocaleString('en-US');
 
+/**
+ * 觸控版的說法：拿掉按鍵提示（「（Q）」「按 K」「或 Enter」），改成點擊的說法。
+ * 文字本身用鍵盤版寫，顯示前在觸控裝置上過一次這個函式。
+ */
+export function touchText(s: string): string {
+  return s
+    .replace(/（按 K 分配）/g, '（點經驗條分配）')
+    .replace(/（[A-Z]）/g, '')
+    .replace(/再點一下或 Enter/g, '再點一下')
+    .replace(/（Enter）/g, '');
+}
+
 /** HUD 經驗條旁的小字 */
 export function xpLabel(level: number, into: number, need: number): string {
   return level >= MAX_LEVEL ? `${level} 級 · 滿級` : `${level} 級 · ${fmt(into)}/${fmt(need)}`;

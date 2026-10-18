@@ -61,7 +61,7 @@ export function badgeBmp(level: number, flash = false): Bmp {
   return b;
 }
 
-export const XP_BAR_W = 82;
+export const XP_BAR_W = 74;
 export const XP_BAR_H = 7;
 /** HUD 經驗條：frac 0..1；flash = 升級閃光（金色） */
 export function xpBarBmp(frac: number, flash = false, w = XP_BAR_W): Bmp {

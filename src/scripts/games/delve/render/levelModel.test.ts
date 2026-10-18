@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cdLabel, journalLevelLine, levelUpLines, moveFocus, nextMilestone, respecLabel, skillStatLines, skillTip, xpLabel } from './levelModel';
+import { touchText, cdLabel, journalLevelLine, levelUpLines, moveFocus, nextMilestone, respecLabel, skillStatLines, skillTip, xpLabel } from './levelModel';
 import { continueLines, summarizeGame } from './titleModel';
 import { Progression, xpAtLevel } from '../engine/levels';
 import { skillTotals, SKILLS, BRANCHES } from '../engine/skills';
@@ -21,6 +21,12 @@ describe('levelModel text', () => {
     expect(many.title).toBe('升級！等級 4（+3）');
     expect(levelUpLines(9, 10).lines.join()).toContain('防禦 +1');
   });
+  it('touch wording drops key hints', () => {
+    expect(touchText(levelUpLines(2, 3).lines[0])).toBe('生命上限 +2 · 技能點 +1（點經驗條分配）');
+    expect(touchText(cdLabel('dash', 1.2))).toBe('突進冷卻 2 秒');
+    expect(touchText('花費 1 點（再點一下或 Enter）')).toBe('花費 1 點（再點一下）');
+    expect(touchText(skillTip('b_dash', {}, 5, 3).now!)).not.toContain('（Q）');
+  });
   it('next milestone', () => {
     expect(nextMilestone(1)).toMatchObject({ level: 5, frame: '銅框' });
     expect(nextMilestone(5)).toMatchObject({ level: 10, frame: null });
@@ -39,7 +45,8 @@ describe('levelModel text', () => {
   it('skill stat lines list only non-zero totals', () => {
     expect(skillStatLines(skillTotals({}))).toEqual([]);
     const l = skillStatLines(skillTotals({ b_vigor: 2, p_stride: 1, p_reach: 1 }));
-    expect(l).toContain('生命上限 +12');
+    expect(l).toContain('生命上限 +20');
+    expect(l).toContain('跳躍高度 +4%');
     expect(l).toContain('伸手距離 +1 格');
   });
   it('labels', () => {

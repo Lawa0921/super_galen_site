@@ -11,7 +11,7 @@ import { TOAST_HIGH, TOAST_LOW } from './toastQueue';
 import { toCanvas, Bmp, hex } from './pixel';
 import { activeKeyBmp, badgeBmp, nodeBmp, raysBmp, xpBarBmp, NODE_PX } from './levelArt';
 import {
-  ACTIVE_KEYS, ACTIVE_ZH, branchSpent, cdLabel, failText, levelUpLines, moveFocus, nextMilestone, respecLabel, skillStatLines, skillTip, xpLabel,
+  touchText, ACTIVE_KEYS, ACTIVE_ZH, branchSpent, cdLabel, failText, levelUpLines, moveFocus, nextMilestone, respecLabel, skillStatLines, skillTip, xpLabel,
 } from './levelModel';
 
 const ACTIVES: readonly ActiveSkill[] = ['dash', 'slam', 'pulse'];
@@ -62,6 +62,8 @@ export class LevelsUi {
   private focusId: SkillId = 'b_vigor';
   /** 滑鼠 / 觸控點過一次的節點：再點一次同一個 = 點一級 */
   private armed: SkillId | null = null;
+  /** 開面板時第一次設焦點不捲動；之後用方向鍵移動才捲 */
+  private focusScrolls = false;
   private hudSig = '';
   private panelSig = '';
   private actSig = '';
@@ -103,6 +105,8 @@ export class LevelsUi {
     this.offs.push(() => t.removeEventListener(type, fn));
   }
 
+  /** 觸控裝置：不顯示按鍵提示 */
+  private readonly tx = (s: string): string => (this.root.dataset.touch === '1' ? touchText(s) : s);
   get isOpen(): boolean { return Boolean(this.panel && !this.panel.hidden); }
   toggle(): void { this.setOpen(!this.isOpen); }
   setOpen(open: boolean): void {
@@ -117,7 +121,10 @@ export class LevelsUi {
       this.renderPanel();
       // 焦點：上次選的；沒有就第一個能點的
       const firstOpen = SKILLS.find((s) => nodeState(this.game.levels.ranks, s.id, this.game.levels.level) === 'open');
+      this.focusScrolls = false;
+      this.panel.scrollTop = 0;
       this.focusNode(this.nodes.some((n) => n.id === this.focusId) ? this.focusId : firstOpen?.id ?? 'b_vigor');
+      this.focusScrolls = true;
     } else {
       delete this.root.dataset.skills;
       this.respecArm = 0;
@@ -187,6 +194,9 @@ export class LevelsUi {
     // 觸控（手機 / 平板直式）一律分頁 + 大節點；滑鼠操作時只有放不下才分頁
     const compact = window.innerWidth < need || (this.root.dataset.touch === '1' && window.innerWidth < 900);
     if (compact) this.panel.dataset.compact = '1'; else delete this.panel.dataset.compact;
+    // 夠寬：技能樹在左、資訊與按鈕在右（矮螢幕不必捲動）
+    const wide = !compact && window.innerWidth >= GRID_W * 3 * px + 16 + 280 + 16 + 60;
+    if (wide) this.panel.dataset.wide = '1'; else delete this.panel.dataset.wide;
   }
   private visibleNodes(): { id: SkillId; gx: number; row: number }[] {
     return SKILLS.filter((s) => !this.compact || s.branch === this.tab)
@@ -247,7 +257,10 @@ export class LevelsUi {
     this.focusId = id;
     const d = skillDef(id);
     if (this.compact && d.branch !== this.tab) this.setTab(d.branch, false);
-    this.nodes.find((n) => n.id === id)?.btn.focus();
+    // 不讓瀏覽器為了焦點捲動面板（面板開的時候會停在最上面）；之後用方向鍵移動才把節點捲進看得到的地方
+    const btn = this.nodes.find((n) => n.id === id)?.btn;
+    btn?.focus({ preventScroll: true });
+    if (btn && this.isOpen && this.focusScrolls) btn.scrollIntoView({ block: 'nearest' });
     this.renderDetail();
   }
 
@@ -290,7 +303,7 @@ export class LevelsUi {
       case 'respec': this.sound.respec(); break;
       case 'refund': this.hud.toast(`惜料：退回了 1 個${ITEMS[e.item].name.zh}`, 1400, TOAST_LOW); break;
       case 'skill':
-        if (e.phase === 'cd') { this.sound.denied(); this.hud.toast(cdLabel(e.skill, e.n), 900, TOAST_LOW); }
+        if (e.phase === 'cd') { this.sound.denied(); this.hud.toast(this.tx(cdLabel(e.skill, e.n)), 900, TOAST_LOW); }
         else if (e.phase === 'start') {
           if (e.skill === 'dash') this.sound.dash();
           else if (e.skill === 'pulse') { this.sound.pulse(); this.hud.toast(e.n ? `尋礦感知：附近有 ${e.n} 格礦脈` : '尋礦感知：附近沒有礦脈', 1800, TOAST_LOW); }
@@ -323,10 +336,10 @@ export class LevelsUi {
     const box = this.root.querySelector<HTMLElement>('#delve-lvup');
     const t = this.root.querySelector('#delve-lvup-title'), s = this.root.querySelector('#delve-lvup-sub');
     if (t) t.textContent = u.title;
-    if (s) s.textContent = u.lines.join('\n');
+    if (s) s.textContent = this.tx(u.lines.join('\n'));
     if (box) { box.hidden = false; box.dataset.level = String(to); }
     this.sound.levelUp(u.milestone);
-    this.hud.toast(`${u.title}　${u.lines[0]}`, 2600, TOAST_HIGH);
+    this.hud.toast(this.tx(`${u.title}　${u.lines[0]}`), 2600, TOAST_HIGH);
     if (this.isOpen) this.renderPanel(true);
   }
   private tickBanner(dt: number): void {
@@ -393,7 +406,7 @@ export class LevelsUi {
     set('#delve-sk-growth', `等級成長：生命上限 +${levelHp(p.level)}、防禦 +${levelDef(p.level)}`);
     const nm = nextMilestone(p.level);
     set('#delve-sk-next', nm ? `下個里程碑：${nm.level} 級「${nm.title}」· 額外 +1 技能點${nm.frame ? `、${nm.frame}徽章` : ''}` : '所有里程碑都達成了');
-    set('#delve-sk-points', `可用技能點 ${L.points}（已花 ${L.spent}）· ${ACTIVES.filter((a) => g.levels.has(ACTIVE_NODE[a])).map((a) => cdLabel(a, g.skillCooldown(a))).join(' · ') || '還沒學主動技能'}`);
+    set('#delve-sk-points', this.tx(`可用技能點 ${L.points}（已花 ${L.spent}）· ${ACTIVES.filter((a) => g.levels.has(ACTIVE_NODE[a])).map((a) => cdLabel(a, g.skillCooldown(a))).join(' · ') || '還沒學主動技能'}`));
     for (const b of BRANCHES) {
       const sub = this.root.querySelector(`[data-spent='${b.id}']`);
       if (sub) sub.textContent = `${branchSpent(L.ranks, b.id)} 點`;
@@ -424,7 +437,7 @@ export class LevelsUi {
     n.btn.dataset.rank = String(k);
     const t = skillTip(n.id, L.ranks, L.level, L.points);
     n.btn.setAttribute('aria-label', `${t.name}（${t.kind}）${t.rank}`);
-    n.tip.replaceChildren(...tipLines(t));
+    n.tip.replaceChildren(...tipLines(t, this.tx));
   }
   /** 前置連線：兩個節點都點了 = 金、前置點了 = 棕、否則暗灰（2 美術 px 寬、轉角走直角） */
   private drawLines(b: Branch): void {
@@ -458,7 +471,7 @@ export class LevelsUi {
     const id = hover ?? this.focusId, L = this.game.levels;
     const box = this.root.querySelector('#delve-sk-detail');
     const t = skillTip(id, L.ranks, L.level, L.points);
-    if (box) box.replaceChildren(...tipLines(t));
+    if (box) box.replaceChildren(...tipLines(t, this.tx));
     const learn = this.root.querySelector<HTMLButtonElement>('#delve-sk-learn');
     if (learn) {
       learn.textContent = t.state === null ? `點一級：${t.name}（${skillDef(id).cost} 點）` : `${t.name}：${failText(t.state)}`;
@@ -477,15 +490,15 @@ export class LevelsUi {
   }
 }
 
-function tipLines(t: ReturnType<typeof skillTip>): HTMLElement[] {
+function tipLines(t: ReturnType<typeof skillTip>, tx: (s: string) => string): HTMLElement[] {
   const out: HTMLElement[] = [];
   const head = el('p', 'is-name', `${t.name}　`);
   head.appendChild(el('span', 'is-kind', `${t.kind} · ${t.rank}`));
   out.push(head);
-  if (t.now) out.push(el('p', '', t.now));
+  if (t.now) out.push(el('p', '', tx(t.now)));
   if (t.next) out.push(el('p', 'is-dim', t.next));
   for (const r of t.reqs) out.push(el('p', r.ok ? 'is-ok' : 'is-no', `${r.ok ? '✔' : '✘'} ${r.text}`));
-  out.push(el('p', t.state === null ? 'is-ok' : 'is-dim', t.state === null ? `${t.cost}（再點一下或 Enter）` : t.state === 'max' ? t.cost : `${t.cost} · ${failText(t.state)}`));
+  out.push(el('p', t.state === null ? 'is-ok' : 'is-dim', t.state === null ? tx(`${t.cost}（再點一下或 Enter）`) : t.state === 'max' ? t.cost : `${t.cost} · ${failText(t.state)}`));
   return out;
 }
 

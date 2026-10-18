@@ -1687,8 +1687,8 @@ test.describe('delve 等級系統（經驗 / 升級 / 技能樹 / 主動技能�
     await expect(page.locator('.delve-sk-node[data-skill="b_vigor"]')).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('.delve-sk-node[data-skill="b_vigor"]')).toHaveAttribute('data-rank', '1');
-    expect(await page.evaluate(() => window.__delveDebug!.game.getState().maxHp)).toBe(hp0 + 6);
-    // ↓ 走到「突進」（前置剛點好）→ Enter
+    expect(await page.evaluate(() => window.__delveDebug!.game.getState().maxHp)).toBe(hp0 + 10);
+    // ↓ 走到「突進」（2 級就能點）→ Enter
     await page.keyboard.press('ArrowDown');
     await expect(page.locator('.delve-sk-node[data-skill="b_dash"]')).toBeFocused();
     await expect(page.locator('#delve-sk-detail')).toContainText('突進');
@@ -1715,19 +1715,19 @@ test.describe('delve 等級系統（經驗 / 升級 / 技能樹 / 主動技能�
     await waitGame(page);
     const after = await page.evaluate(() => { const g = window.__delveDebug!.game; return { lv: g.levels.toJSON(), maxHp: g.getState().maxHp }; });
     expect(after.lv).toEqual(before);
-    expect(after.maxHp).toBe(hp0 + 6);
+    expect(after.maxHp).toBe(hp0 + 10);
     await expect(page.locator('#delve-xp-text')).toContainText('6 級');
     // 重置技能樹：要碎晶，按兩下確認
     await page.evaluate(() => window.__delveDebug!.game.give('gear_shard', 20));
     await page.click('#delve-skill-btn');
     await expect(page.locator('#delve-skills')).toBeVisible();
-    await expect(page.locator('#delve-sk-respec')).toContainText('碎晶 6');
+    await expect(page.locator('#delve-sk-respec')).toContainText('碎晶 5');
     await page.click('#delve-sk-respec');
     await expect(page.locator('#delve-sk-respec')).toHaveText('確定重置？');
     await page.click('#delve-sk-respec');
-    await expect(page.locator('#delve-sk-msg')).toContainText('退回 3 點');
+    await expect(page.locator('#delve-sk-msg')).toContainText('退回 2 點');
     const r = await page.evaluate(() => { const g = window.__delveDebug!.game; return { spent: g.levels.spent, shards: g.inventory.count('gear_shard'), maxHp: g.getState().maxHp }; });
-    expect(r).toEqual({ spent: 0, shards: 14, maxHp: hp0 });
+    expect(r).toEqual({ spent: 0, shards: 15, maxHp: hp0 });
     await expect(page.locator('.delve-sk-node[data-skill="b_vigor"]')).toHaveAttribute('data-rank', '0');
   });
 
@@ -1741,6 +1741,10 @@ test.describe('delve 等級系統（經驗 / 升級 / 技能樹 / 主動技能�
     await page.evaluate(() => { const g = window.__delveDebug!.game; g.addXp(2200); for (const id of ['b_vigor', 'b_dash'] as const) g.learnSkill(id); g.drainEvents(); });
     await expect(page.locator('#delve-act-dash')).toBeVisible();
     await expect(page.locator('#delve-act-slam')).toBeHidden();
+    // 觸控版不寫按鍵：經驗條提示「點經驗條分配」、冷卻說明沒有（Q）
+    await page.evaluate(() => { const g = window.__delveDebug!.game; g.addXp(5000); });
+    await expect(page.locator('#delve-lvup-sub')).toContainText('點經驗條分配');
+    await expect(page.locator('#delve-lvup-sub')).not.toContainText('按 K');
     await page.locator('#delve-skill-btn').tap();
     const panel = page.locator('#delve-skills');
     await expect(panel).toBeVisible();
@@ -1754,6 +1758,8 @@ test.describe('delve 等級系統（經驗 / 升級 / 技能樹 / 主動技能�
     // 點一下選取（詳情）、再點一下點一級
     await node.tap();
     await expect(page.locator('#delve-sk-detail')).toContainText('輕足');
+    await expect(page.locator('#delve-sk-points')).not.toContainText('（Q）');
+    expect(await page.evaluate(() => document.querySelector('#delve-skills')!.scrollTop)).toBeLessThan(200);
     expect(await page.evaluate(() => window.__delveDebug!.game.levels.rank('p_stride'))).toBe(0);
     await node.tap();
     await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.levels.rank('p_stride'))).toBe(1);
@@ -1762,7 +1768,7 @@ test.describe('delve 等級系統（經驗 / 升級 / 技能樹 / 主動技能�
     await expect(panel).toBeHidden();
     // 日誌：等級行
     await page.evaluate(() => window.__delveDebug!.handle.ui.setJournal(true));
-    await expect(page.locator('[data-testid="journal-level"]')).toContainText('等級 6');
+    await expect(page.locator('[data-testid="journal-level"]')).toContainText('等級 10');
     await ctx.close();
   });
 });

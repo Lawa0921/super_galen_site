@@ -17,8 +17,10 @@ describe('skill tree data', () => {
       const cells = new Set(nodes.map((n) => `${n.col},${n.row}`));
       expect(cells.size).toBe(nodes.length);
       for (const n of nodes) for (const q of n.req) expect(skillDef(q).branch).toBe(b.id);
-      // 每條分支剛好一個根（沒有前置、1 級就能點）
-      expect(nodes.filter((n) => n.req.length === 0).map((n) => n.level)).toEqual([1]);
+      // 每條分支都有 1 級就能點的根（劍心另外有 2 級就能點的突進：前期選擇）
+      const roots = nodes.filter((n) => n.req.length === 0);
+      expect(roots.filter((n) => n.level === 1)).toHaveLength(1);
+      expect(roots.every((n) => n.level <= 2)).toBe(true);
       // 有主動或核心節點
       expect(nodes.some((n) => n.kind !== 'passive')).toBe(true);
     }
@@ -42,8 +44,9 @@ describe('learnCheck / prerequisites', () => {
     expect(learnCheck({ b_vigor: 1 }, 'b_edge', 5, 5)).toBeNull();
   });
   it('level gate and max rank', () => {
-    expect(learnCheck({ b_vigor: 1 }, 'b_dash', 2, 5)).toBe('level');
-    expect(learnCheck({ b_vigor: 1 }, 'b_dash', 3, 5)).toBeNull();
+    expect(learnCheck({}, 'b_dash', 1, 5)).toBe('level');
+    expect(learnCheck({}, 'b_dash', 2, 1)).toBeNull(); // 2 級、1 點就能點突進
+    expect(learnCheck({ b_vigor: 1 }, 'b_fury', 15, 5)).toBe('req');
     expect(learnCheck({ b_vigor: 5 }, 'b_vigor', 50, 5)).toBe('max');
   });
   it('multi-parent node needs every parent', () => {
@@ -57,17 +60,17 @@ describe('learnCheck / prerequisites', () => {
     expect(nodeState({ b_vigor: 2 }, 'b_vigor', 10)).toBe('partial');
     expect(nodeState({ b_vigor: 2 }, 'b_edge', 10)).toBe('open');
     expect(nodeState({}, 'b_edge', 10)).toBe('locked');
-    expect(nodeState({ b_vigor: 1 }, 'b_dash', 2)).toBe('locked');
+    expect(nodeState({}, 'b_dash', 1)).toBe('locked');
   });
   it('spentPoints counts rank × cost', () => {
-    expect(spentPoints({ b_vigor: 3, b_dash: 1, b_fury: 1 })).toBe(3 + 2 + 3);
+    expect(spentPoints({ b_vigor: 3, b_dash: 1, b_fury: 1 })).toBe(3 + 1 + 3);
   });
 });
 
 describe('skill totals and caps', () => {
   it('ranks multiply the per-rank value', () => {
     const t = skillTotals({ b_vigor: 3, b_edge: 2, p_feather: 2 });
-    expect(t.hp).toBe(18);
+    expect(t.hp).toBe(30);
     expect(t.dmg).toBe(8);
     expect(t.fallSafe).toBe(12);
     expect(t.fallRed).toBe(30);
@@ -91,7 +94,7 @@ describe('skill totals and caps', () => {
     const eq = new Equipment();
     const base = computeStats(eq);
     const withSkills = computeStats(eq, [], gearBonus(skillTotals({ b_vigor: 2, b_edge: 5, b_guard: 3 })));
-    expect(withSkills.maxHpBonus - base.maxHpBonus).toBe(12);
+    expect(withSkills.maxHpBonus - base.maxHpBonus).toBe(20);
     expect(withSkills.damageMul - base.damageMul).toBeCloseTo(0.2, 5);
     expect(withSkills.defense - base.defense).toBe(3);
     // 詞條已經到頂：技能不再多給

@@ -24,7 +24,7 @@ export const SKILL_ONLY: readonly SkillOnlyStat[] = [
 ];
 /** 技能專屬數值的上限（全部點滿也到不了更高；%、格或次數） */
 export const SKILL_CAPS: Record<SkillOnlyStat, number> = {
-  reach: 2, breath: 60, fallSafe: 12, fallRed: 30, fishPower: 12, refund: 18, salvage: 40, forge: 20, mineSpd: 40,
+  reach: 2, breath: 60, fallSafe: 12, fallRed: 30, fishPower: 12, refund: 18, salvage: 40, forge: 20, mineSpd: 60,
   vein: 12, xp: 10, airJump: 1, fury: 25, masterwork: 25,
 };
 
@@ -62,17 +62,17 @@ const N = (id: SkillId, branch: Branch, zh: string, kind: SkillDef['kind'], col:
 
 export const SKILLS: readonly SkillDef[] = [
   // ── 劍心 ──
-  N('b_vigor', 'blade', '鍛體', 'passive', 1, 0, 5, 1, [], 1, { hp: 6 }, '生命上限 +{v}'),
+  N('b_vigor', 'blade', '鍛體', 'passive', 1, 0, 5, 1, [], 1, { hp: 10 }, '生命上限 +{v}'),
   N('b_edge', 'blade', '銳鋒', 'passive', 0, 1, 5, 1, ['b_vigor'], 2, { dmg: 4 }, '傷害 +{v}%'),
   N('b_guard', 'blade', '鐵壁', 'passive', 2, 1, 3, 1, ['b_vigor'], 2, { def: 1 }, '防禦 +{v}'),
-  N('b_dash', 'blade', '突進', 'active', 1, 1, 1, 2, ['b_vigor'], 3, {}, '主動（Q）：朝前方疾衝約 5 格，途中無敵（冷卻 2.5 秒）'),
+  N('b_dash', 'blade', '突進', 'active', 1, 1, 1, 1, [], 2, {}, '主動（Q）：朝前方疾衝約 6 格，途中無敵（冷卻 2.5 秒）'),
   N('b_eye', 'blade', '心眼', 'passive', 0, 2, 3, 1, ['b_edge'], 5, { crit: 2 }, '暴擊率 +{v}%'),
   N('b_tempo', 'blade', '疾刃', 'passive', 1, 2, 2, 1, ['b_edge'], 6, { atkspd: 5 }, '攻擊速度 +{v}%'),
   N('b_mend', 'blade', '回春', 'passive', 2, 2, 2, 1, ['b_guard'], 6, { regen: 0.3 }, '生命回復 +{v}/秒'),
   N('b_slam', 'blade', '震地', 'active', 2, 3, 1, 2, ['b_dash', 'b_guard'], 8, {}, '主動（F）：在地面震出衝擊波；空中使用會先急墜再落地重擊（威力更大、不受摔落傷害；冷卻 6 秒）'),
   N('b_fury', 'blade', '背水', 'keystone', 0, 4, 1, 3, ['b_eye'], 15, { fury: 25 }, '核心：生命低於 35% 時傷害 +25%'),
   // ── 行者 ──
-  N('p_stride', 'path', '輕足', 'passive', 1, 0, 4, 1, [], 1, { move: 4 }, '移動速度 +{v}%'),
+  N('p_stride', 'path', '輕足', 'passive', 1, 0, 4, 1, [], 1, { move: 6, jump: 4 }, '移動速度 +{v}%、跳躍高度 +{v2}%'),
   N('p_lamp', 'path', '燈心', 'passive', 0, 1, 2, 1, ['p_stride'], 2, { light: 20 }, '身邊照明 +{v}%'),
   N('p_reach', 'path', '長臂', 'passive', 1, 1, 2, 1, ['p_stride'], 4, { reach: 1 }, '伸手距離 +{v} 格'),
   N('p_feather', 'path', '落羽', 'passive', 2, 1, 2, 1, ['p_stride'], 3, { fallSafe: 6, fallRed: 15 }, '安全落差 +{v} 格、摔落傷害 −{v2}%'),
@@ -82,7 +82,7 @@ export const SKILLS: readonly SkillDef[] = [
   N('p_angler', 'path', '釣運', 'passive', 1, 3, 2, 1, ['p_gills'], 8, { fishPower: 6 }, '釣力 +{v}（更快上鉤、判定窗更寬）'),
   N('p_cloud', 'path', '雲步', 'keystone', 2, 4, 1, 3, ['p_spring'], 12, { airJump: 1 }, '核心：可以在空中再跳一次；與凌雲詞條疊加成三段跳'),
   // ── 匠魂 ──
-  N('c_hands', 'craft', '巧手', 'passive', 1, 0, 5, 1, [], 1, { mineSpd: 8 }, '挖掘速度 +{v}%'),
+  N('c_hands', 'craft', '巧手', 'passive', 1, 0, 5, 1, [], 1, { mineSpd: 12 }, '挖掘速度 +{v}%'),
   N('c_thrift', 'craft', '惜料', 'passive', 0, 1, 3, 1, ['c_hands'], 3, { refund: 6 }, '合成時 {v}% 機率退回一份主要材料'),
   N('c_vein', 'craft', '礦脈直覺', 'passive', 1, 1, 2, 1, ['c_hands'], 4, { vein: 6 }, '挖礦時 {v}% 機率礦石加倍'),
   N('c_salvage', 'craft', '拆解', 'passive', 2, 1, 2, 1, ['c_hands'], 3, { salvage: 20 }, '分解得到的碎晶 / 星塵 +{v}%'),
@@ -168,6 +168,10 @@ export const SKILL_CD: Record<ActiveSkill, number> = { dash: 2.5, slam: 6, pulse
 export const DASH_SPEED = 560;
 export const DASH_TIME = 0.16;
 export const DASH_IFRAMES = 0.28;
+/** 突進結束後保留的水平速度（px/s，約跑速）：不會滑出一大段 */
+export const DASH_CARRY = 190;
+/** 三段跳的第三跳：按住時間倍率 */
+export const THIRD_JUMP_HOLD = 0.4;
 /** 震地：衝擊波半徑（格）、傷害 = 基礎 + 每級、擊退、空中急墜速度（px/s）、急墜加成上限 */
 export const SLAM_RADIUS = 4.5;
 export const SLAM_BASE = 16;

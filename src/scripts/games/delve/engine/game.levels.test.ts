@@ -6,6 +6,7 @@ import { FIXED_DT, TILE_SIZE as S } from './constants';
 import { enemyXp, levelHp, respecCost, xpAtLevel, DEATH_XP_LOSS } from './levels';
 import { SKILL_CD, DASH_TIME } from './skills';
 import { STAT_CAPS } from './gear';
+import { fallDamage } from './combat';
 import type { ItemId } from './items';
 import { serializeGame, restoreGame } from '../save/serialize';
 
@@ -97,7 +98,7 @@ describe('技能點 → 數值', () => {
     toLevel(g, 8);
     const hp = g.maxHp(), dm = g.stats().damageMul;
     expect(g.learnSkill('b_vigor')).toBeNull();
-    expect(g.maxHp()).toBe(hp + 6);
+    expect(g.maxHp()).toBe(hp + 10);
     expect(g.learnSkill('b_edge')).toBeNull();
     expect(g.stats().damageMul).toBeCloseTo(dm + 0.04, 5);
     expect(evs(g).some((x) => x.type === 'learn')).toBe(true);
@@ -173,7 +174,7 @@ describe('重置技能樹', () => {
     expect(g.inventory.count('gear_shard')).toBe(0);
     expect(g.levels.spent).toBe(0);
     expect(g.levels.points).toBe(6);
-    expect(g.maxHp()).toBe(hpSkilled - 12);
+    expect(g.maxHp()).toBe(hpSkilled - 20);
     expect(g.respecSkills()).toEqual({ ok: false, reason: 'none' });
   });
 });
@@ -193,6 +194,9 @@ describe('主動技能', () => {
     expect(g.getState().iframes).toBeGreaterThan(0);
     run(g, 0.3);
     expect((g.player.x - x0) / S).toBeGreaterThanOrEqual(4);
+    // 結束後收掉動量：總共約 6 格，不會再滑一大段
+    run(g, 0.8);
+    expect((g.player.x - x0) / S).toBeLessThanOrEqual(7);
     expect(g.useSkill('dash')).toBe(false);
     expect(g.skillCooldown('dash')).toBeGreaterThan(0);
     run(g, SKILL_CD.dash);
@@ -234,6 +238,60 @@ describe('主動技能', () => {
     expect(g.orePulse?.ores.some((o) => o.x === 70 && o.y === 75)).toBe(true);
     run(g, 9);
     expect(g.orePulse).toBeNull();
+  });
+});
+
+describe('驗收修正', () => {
+  it('震地：急墜前已經掉的高度照算摔落傷害，只有急墜那段免傷', () => {
+    const g = arena({ floorY: 90 });
+    toLevel(g, 8);
+    for (const id of ['b_vigor', 'b_dash', 'b_guard', 'b_slam'] as const) g.learnSkill(id);
+    g.teleport(60, 39); // 腳底離地 50 格
+    run(g, 1.15); // 先自由落下約 35 格
+    evs(g);
+    expect(g.useSkill('slam')).toBe(true);
+    run(g, 1.5);
+    const fall = evs(g).filter((x): x is Extract<DelveEvent, { type: 'hurt' }> => x.type === 'hurt' && x.fall);
+    expect(fall).toHaveLength(1);
+    expect(fall[0].amount).toBeGreaterThan(30); // 約 (35 − 24) × 7
+    expect(fall[0].amount).toBeLessThan(fallDamage(50)); // 整段 50 格的摔落傷害
+  });
+  it('背水和傷害詞條共用上限：低血時有加成，詞條已經到頂就沒有', () => {
+    const g = arena();
+    toLevel(g, 15);
+    for (const id of ['b_vigor', 'b_edge', 'b_eye', 'b_fury'] as const) expect(g.learnSkill(id)).toBeNull();
+    const fury = (): number => (g as unknown as { furyBonus(): number }).furyBonus();
+    expect(fury()).toBe(0); // 滿血
+    g.hp = g.maxHp() * 0.2;
+    expect(fury()).toBeCloseTo(0.25, 5);
+    hold(g, 'copper_sword');
+    g.inventory.slots[0]!.gear = { rarity: 4, ilvl: 5, plus: 0, affixes: [{ id: 'keen', tier: 5, value: STAT_CAPS.dmg }] };
+    g.invalidateStats();
+    expect(fury()).toBe(0);
+  });
+  it('三段跳的第三跳比較矮（按住時間縮短）', () => {
+    const g = arena({ floorY: 90 });
+    toLevel(g, 20);
+    for (const id of ['p_stride', 'p_feather', 'p_spring', 'p_cloud'] as const) g.learnSkill(id);
+    g.giveGear('wood_greaves', 4, { affixes: [{ id: 'skyleap', tier: 5, value: 1 }] });
+    g.equipFromInventory(g.inventory.slots.findIndex((s) => s?.item === 'wood_greaves'));
+    run(g, 0.5);
+    const rise = (): number => {
+      // 在空中按一下跳（按住到頂點）→ 這一跳往上升了多少 px
+      g.setJump(true); g.step(FIXED_DT);
+      const y0 = g.player.y;
+      let top = y0;
+      for (let k = 0; k < 90 && g.player.vy <= 0; k++) { g.step(FIXED_DT); top = Math.min(top, g.player.y); }
+      g.setJump(false); g.step(FIXED_DT);
+      return y0 - top;
+    };
+    g.setJump(true); run(g, 0.3); g.setJump(false); run(g, 0.3); // 第一跳，落到下降段
+    const second = rise();
+    run(g, 0.2);
+    const third = rise();
+    expect(g.moveStats().airJumps).toBe(2);
+    expect(third).toBeGreaterThan(0);
+    expect(third).toBeLessThan(second * 0.75);
   });
 });
 

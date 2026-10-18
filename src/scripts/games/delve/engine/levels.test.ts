@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BOSS_FIRST_XP, BOSS_XP, DAILY_CAP, DEATH_XP_LOSS, KILL_FULL, MAX_LEVEL, MAX_XP, Progression, REGION_XP, chestXp, enemyXp, killMul,
+  BOSS_FIRST_XP, BOSS_FLOOR, BOSS_XP, DAILY_CAP, DEATH_XP_LOSS, KILL_FULL, MAX_LEVEL, MAX_XP, Progression, REGION_XP, chestXp, enemyXp, killMul,
   levelDef, levelForXp, levelHp, lootIlvl, milestoneAt, progressOf, recipeXp, respecCost, skillPointsAt, titleFor, xpAtLevel, xpForEvent,
   xpToNext, type XpCtx,
 } from './levels';
@@ -123,10 +123,10 @@ describe('Progression', () => {
     expect(p.learn('b_edge')).toBeNull();
     expect(p.learn('b_dash')).toBeNull();
     expect(p.rank('b_dash')).toBe(1);
-    expect(p.spent).toBe(4);
-    expect(p.points).toBe(2);
+    expect(p.spent).toBe(3);
+    expect(p.points).toBe(3);
     const v = p.version;
-    expect(p.respec()).toBe(4);
+    expect(p.respec()).toBe(3);
     expect(p.version).toBeGreaterThan(v);
     expect(p.spent).toBe(0);
     expect(p.points).toBe(6);
@@ -165,10 +165,16 @@ describe('xpForEvent (anti-farm)', () => {
     // 隔天恢復
     expect(xpForEvent(p, kill('gel_blob'), ctx({ day: 1 }))!.amount).toBe(enemyXp('gel_blob'));
   });
-  it('boss: big first-time bonus, then the flat amount', () => {
+  it('boss: big first-time bonus; repeat kills (cheap re-summons) halve each time on the same day, with a floor', () => {
     const p = new Progression();
     expect(xpForEvent(p, kill('lantern_warden'), ctx())!.amount).toBe(BOSS_XP + BOSS_FIRST_XP);
-    expect(xpForEvent(p, kill('lantern_warden'), ctx())!.amount).toBe(BOSS_XP);
+    const same = [1, 2, 3, 4, 5, 6].map(() => xpForEvent(p, kill('lantern_warden'), ctx())!.amount);
+    expect(same).toEqual([300, 150, 75, BOSS_FLOOR, BOSS_FLOOR, BOSS_FLOOR]);
+    // 隔天第一次重打：一半（不再是滿額）
+    expect(xpForEvent(p, kill('lantern_warden'), ctx({ day: 1 }))!.amount).toBe(BOSS_XP / 2);
+    let farm = 0;
+    for (let k = 0; k < 20; k++) farm += xpForEvent(p, kill('lantern_warden'), ctx({ day: 2 }))!.amount;
+    expect(farm).toBeLessThan(BOSS_XP + BOSS_FIRST_XP);
   });
   it('ore: small XP, nothing for player-placed ore, and a daily cap', () => {
     const p = new Progression();

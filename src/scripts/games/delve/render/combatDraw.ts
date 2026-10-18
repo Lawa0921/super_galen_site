@@ -8,7 +8,9 @@ import type { Sprites } from './sprites';
 import { toCanvas } from './pixel';
 import { enemyFrames, flashBmp, silhouetteBmp, silhouetteWanted } from './enemyArt';
 import type { Enemy } from '../engine/enemies';
-import { FloatNumbers, digitRows, enemyFrameIndex, type FloatKind } from './combatAnim';
+import { FloatNumbers, digitRows, enemyFrameIndex, type FloatKind, type FloatNum } from './combatAnim';
+/** 經驗飄字合併的時間窗（秒） */
+const XP_MERGE = 0.6;
 import { beamColors, beamPixels, markerPixels, rarityColor, sparkleAt } from './lootArt';
 import { RARITIES } from '../engine/gear';
 
@@ -58,6 +60,22 @@ export class CombatLayer {
       };
     }
     this.sprites = out;
+  }
+
+  /** 經驗飄字：短時間內（XP_MERGE 秒）在附近再拿到的經驗併進同一個數字，不會疊成一團 */
+  private xpFloat: { f: FloatNum; total: number; at: number } | null = null;
+  private addXpFloat(x: number, y: number, amount: number): void {
+    const m = this.xpFloat;
+    if (m && this.clock - m.at < XP_MERGE && this.numbers.list.includes(m.f) && Math.abs(m.f.x - x) < 64 && Math.abs(m.f.y - y) < 64) {
+      m.total += amount; m.at = this.clock;
+      m.f.text = `+${m.total}XP`; m.f.life = m.f.max;
+      return;
+    }
+    // 還有別的經驗飄字在附近：往上錯開一格字高
+    let yy = y;
+    for (const f of this.numbers.list) if (f.kind === 'xp' && Math.abs(f.x - x) < 40 && Math.abs(f.y - yy) < 8) yy = f.y - 9;
+    this.numbers.add(x, yy, `+${amount}XP`, 'xp');
+    this.xpFloat = { f: this.numbers.list[this.numbers.list.length - 1], total: amount, at: this.clock };
   }
 
   shake(amp: number, t: number): void { if (amp >= this.shakeAmp || this.shakeT <= 0) { this.shakeAmp = amp; this.shakeT = t; } }
@@ -113,7 +131,7 @@ export class CombatLayer {
       case 'undying': this.burst(e.x, e.y + 20, ['#ffd86a', '#fff4c0', '#ffa93a'], 30, 180, 120); this.shake(3, 0.3); break;
       case 'airjump': this.burst(e.x, e.y, ['#ffffff', '#cceaf8', '#b4b9c8'], 8, 60, 0); break;
       // ── 等級系統：經驗飄字、升級金色爆發、震地塵土 ──
-      case 'xp': this.numbers.add(e.x, e.y - 6, `+${e.amount}XP`, 'xp'); break;
+      case 'xp': this.addXpFloat(e.x, e.y - 6, e.amount); break;
       case 'levelup': {
         const p = this.game.player;
         this.burst(p.x + p.w / 2, p.y + p.h / 2, ['#ffd86a', '#fff4c0', '#ffffff', '#e8701c'], 46, 220, 140);

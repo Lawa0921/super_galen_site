@@ -44,7 +44,7 @@ import { buildDollLook, dollKey, type DollLook } from './doll';
 import { ProjList, type HitFx, type ProjKind, type Projectile } from './projectiles';
 import {
   ascendCost, ascendGear, baseTier, gearSlot, ilvlForDepth, rerollAffix, rerollCost, rollDropItem, rollGear, rollRarity,
-  salvageYield, upgradeCost, upgradeGear, weaponDamage, affixDef, pickSpeed, MAX_PLUS, type AffixId, type Cost, type Gear, type GearTotals, type LootSource,
+  salvageYield, upgradeCost, upgradeGear, weaponDamage, affixDef, pickSpeed, MAX_PLUS, STAT_CAPS, type AffixId, type Cost, type Gear, type GearTotals, type LootSource,
 } from './gear';
 import { Codex } from './codex';
 import { ENEMIES, makeEnemy, stepEnemy, type AiCtx, type Enemy, type EnemyKind } from './enemies';
@@ -57,7 +57,7 @@ import {
   Progression, levelDef, levelHp, lootIlvl, milestoneAt, respecCost, skillPointsAt, titleFor, xpForEvent, type GainResult, type XpCtx, type XpSource,
 } from './levels';
 import {
-  ACTIVE_NODE, DASH_IFRAMES, DASH_SPEED, DASH_TIME, FURY_BELOW, PULSE_MAX, PULSE_RADIUS, PULSE_TIME, SKILL_CD, SLAM_BASE, SLAM_DIVE,
+  ACTIVE_NODE, DASH_CARRY, DASH_IFRAMES, DASH_SPEED, DASH_TIME, THIRD_JUMP_HOLD, FURY_BELOW, PULSE_MAX, PULSE_RADIUS, PULSE_TIME, SKILL_CD, SLAM_BASE, SLAM_DIVE,
   SLAM_DIVE_BONUS, SLAM_KB, SLAM_PER_LEVEL, SLAM_RADIUS, gearBonus, type ActiveSkill, type LearnFail, type SkillId,
 } from './skills';
 import {
@@ -563,8 +563,11 @@ export class DelveGame {
   private skillCd: Record<ActiveSkill, number> = { dash: 0, slam: 0, pulse: 0 };
   private dashT = 0;
   private dashDir: 1 | -1 = 1;
+  /** 突進剛結束（下一刻把水平速度收回 DASH_CARRY） */
+  private dashEnd = false;
   private slamming = false;
   private slamY = 0;
+  private slamPre = 0;
   /** 尋礦感知：t = 剩幾秒、max = 總秒數、x / y = 發動點（tile）、ores = 標到的礦（tile） */
   orePulse: { t: number; max: number; x: number; y: number; ores: { x: number; y: number; tile: number }[] } | null = null;
 
@@ -679,7 +682,12 @@ export class DelveGame {
     const air0 = this.motion.airUsed ?? 0, climb0 = Boolean(this.motion.climbing), mantle0 = this.motion.mantle ?? null;
     this.preMoveSkills(dt);
     stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
-    if ((this.motion.airUsed ?? 0) > air0) { const pl = this.player; this.events.push({ type: 'airjump', x: pl.x + pl.w / 2, y: pl.y + pl.h }); this.fallPeak = null; }
+    if ((this.motion.airUsed ?? 0) > air0) {
+      const pl = this.player;
+      // 三段跳（雲步 + 凌雲）的第三跳只有一半的按住時間：跳得比較矮，豎井不會變成一路連跳
+      if ((this.motion.airUsed ?? 0) >= 2) this.motion.jumpTimer *= THIRD_JUMP_HOLD;
+      this.events.push({ type: 'airjump', x: pl.x + pl.w / 2, y: pl.y + pl.h }); this.fallPeak = null;
+    }
     {
       const pl = this.player, mt = this.motion.mantle ?? null;
       if (mt && mt !== mantle0) this.events.push({ type: 'climb', phase: 'mantle', x: mt.edgeX, y: mt.edgeY });
@@ -1729,8 +1737,7 @@ export class DelveGame {
     const ux = Math.cos(angle), uy = Math.sin(angle);
     const ox = sh.x + ux * 12, oy = sh.y + uy * 12;
     const st = this.stats();
-    const fury = this.furyMul();
-    const dmg = (base: number): number => base * st.damageMul * fury;
+    const dmg = (base: number): number => base * (st.damageMul + this.furyBonus());
     const crit = w.crit + st.crit;
     switch (w.kind) {
       case 'bow': {
@@ -2799,7 +2806,7 @@ export class DelveGame {
     if (a === 'dash') {
       this.dashDir = this.moveX !== 0 ? (this.moveX > 0 ? 1 : -1) : this.facing;
       this.facing = this.dashDir;
-      this.dashT = DASH_TIME;
+      this.dashT = DASH_TIME; this.dashEnd = true;
       this.iframes = Math.max(this.iframes, DASH_IFRAMES);
       this.knockT = 0;
       this.motion.climbing = false; this.motion.mantle = null; this.motion.jumpTimer = 0;
@@ -2807,6 +2814,8 @@ export class DelveGame {
       if (p.onGround) this.slamShock(1);
       else {
         this.slamming = true; this.slamY = p.y;
+        // 急墜前已經掉了多高（px）：落地時照算摔落傷害，只有急墜這一段免傷
+        this.slamPre = this.fallPeak === null ? 0 : Math.max(0, p.y - this.fallPeak);
         p.vy = Math.max(p.vy, SLAM_DIVE); p.vx *= 0.3;
         this.motion.jumpTimer = 0; this.motion.climbing = false; this.motion.mantle = null;
         this.fallPeak = null;
@@ -2828,20 +2837,25 @@ export class DelveGame {
     }
     if (this.slamming) p.vy = Math.max(p.vy, SLAM_DIVE);
   }
-  /** 物理之後：震地落地 → 衝擊波（急墜越久威力越大），這次落地不算摔落傷害 */
+  /** 物理之後：突進結束收掉多餘速度；震地落地 → 衝擊波（急墜越久威力越大），急墜那段不算摔落、急墜前的高度照算 */
   private postMoveSkills(): void {
-    if (!this.slamming) return;
     const p = this.player;
-    this.fallPeak = null;
+    if (this.dashEnd && this.dashT <= 0) {
+      this.dashEnd = false;
+      if (Math.abs(p.vx) > DASH_CARRY) p.vx = Math.sign(p.vx) * DASH_CARRY;
+    }
+    if (!this.slamming) return;
+    // 急墜中：高度只記「急墜前」那段（落地時 updateFall 用它算傷害）
+    this.fallPeak = this.slamPre > 0 ? p.y - this.slamPre : null;
     if (p.onGround) {
       this.slamming = false;
       this.slamShock(1 + Math.min(SLAM_DIVE_BONUS, Math.max(0, (p.y - this.slamY) / TILE_SIZE) / 20));
-    } else if (this.motion.climbing || this.contact.frac > 0) this.slamming = false;
+    } else if (this.motion.climbing || this.contact.frac > 0) { this.slamming = false; this.fallPeak = null; }
   }
   /** 衝擊波：腳邊 SLAM_RADIUS 格內的怪受傷、被往外震開 */
   private slamShock(power: number): void {
     const p = this.player, cx = p.x + p.w / 2, fy = p.y + p.h, R = SLAM_RADIUS * TILE_SIZE;
-    const dmg = (SLAM_BASE + SLAM_PER_LEVEL * this.levels.level) * power * this.stats().damageMul * this.furyMul();
+    const dmg = (SLAM_BASE + SLAM_PER_LEVEL * this.levels.level) * power * (this.stats().damageMul + this.furyBonus());
     let n = 0;
     for (const e of [...this.enemies]) {
       const b = e.body, ex = b.x + b.w / 2, ey = b.y + b.h / 2;
@@ -2866,10 +2880,14 @@ export class DelveGame {
     this.orePulse = { t: PULSE_TIME, max: PULSE_TIME, x: t.x, y: t.y, ores: ores.slice(0, PULSE_MAX).map(({ x, y, tile }) => ({ x, y, tile })) };
     return this.orePulse.ores.length;
   }
-  /** 背水（技能核心）：生命低於 FURY_BELOW 時的傷害倍率 */
-  private furyMul(): number {
+  /**
+   * 背水（技能核心）：生命低於 FURY_BELOW 時的傷害加成（加在傷害倍率上）。和裝備 / 技能的傷害詞條共用 STAT_CAPS.dmg：
+   * 詞條 + 技能已經到上限時就沒有額外加成。
+   */
+  private furyBonus(): number {
     const f = this.levels.totals().fury;
-    return f > 0 && this.hp < this.maxHp() * FURY_BELOW ? 1 + f / 100 : 1;
+    if (f <= 0 || this.hp >= this.maxHp() * FURY_BELOW) return 0;
+    return Math.max(0, Math.min(f, STAT_CAPS.dmg - this.stats().gear.dmg)) / 100;
   }
   /** 分解產量（拆解技能加成） */
   private salvageOut(g: Gear | undefined): Cost {

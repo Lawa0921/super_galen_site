@@ -69,6 +69,8 @@ export function milestoneAt(level: number): Milestone | null {
 // ── 經驗來源 ─────────────────────────────────────────────
 export const BOSS_XP = 1200;
 export const BOSS_FIRST_XP = 1500;
+/** 同一天重打首領的經驗下限 */
+export const BOSS_FLOOR = 60;
 /** 怪物經驗：依血量 / 攻擊 / 防禦（= 怪物強度）；首領固定；召喚物很少 */
 export function enemyXp(kind: EnemyKind): number {
   const d = ENEMIES[kind];
@@ -286,7 +288,11 @@ export function xpForEvent(p: Progression, e: DelveEvent, c: XpCtx): XpAward | n
       if (def.boss) {
         const first = !p.bosses.has(e.kind);
         p.bosses.add(e.kind);
-        return { amount: BOSS_XP + (first ? BOSS_FIRST_XP : 0), src: 'boss', x: e.x, y: e.y };
+        // 重打（召喚很便宜）：同一天第 n 次重打 ×0.5ⁿ（600 → 300 → 150 …，最低 BOSS_FLOOR）
+        const n = p.kills.get(e.kind) ?? 0;
+        p.kills.set(e.kind, n + 1);
+        const amount = first ? BOSS_XP + BOSS_FIRST_XP : Math.max(BOSS_FLOOR, Math.round(BOSS_XP * 0.5 ** (n + 1)));
+        return { amount, src: 'boss', x: e.x, y: e.y };
       }
       const n = p.kills.get(e.kind) ?? 0;
       p.kills.set(e.kind, n + 1);
