@@ -33,6 +33,8 @@
 // format 9 起：header.vanity = 外觀欄（頭 / 身 / 腿 / 背的時裝或當樣子用的防具 + 詞條）與防具隱藏開關（壞資料各自丟掉）。
 // format 9 起：header.appearance = 角色外觀（engine/appearance.ts 的選項索引）。沒有 / 壞掉 → 預設外觀（各欄獨立退回，
 //   不算存檔損毀：外觀是裝飾，不該讓整個世界讀不到）。
+// header.levels = 等級 / 經驗 / 技能樹 / 防刷紀錄（engine/levels.ts LevelsJSON）。沒有 / 壞掉 → 各欄位獨立退回預設
+//   （技能樹不合法 → 整棵重置、點數退回），不算存檔損毀。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
 //
 // 二進位格式（little-endian）：
@@ -62,6 +64,7 @@ import { isRngState, type RngState } from '../engine/rng';
 import { normalizeAppearance, type Appearance } from '../engine/appearance';
 import { Vanity, type VanityJSON } from '../engine/vanity';
 import type { SettlementJSON } from '../engine/settlement';
+import { Progression, type LevelsJSON } from '../engine/levels';
 
 export const SAVE_FORMAT = 9;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
@@ -145,6 +148,14 @@ export interface SaveHeader {
   settle?: SettlementJSON;
   /** 半格方塊（建築木槌）：tile index 的差分（同結冰格）；沒有 = 都是整格 */
   halves?: number[];
+  /** 等級 / 技能樹（沒有 = 1 級、沒點技能） */
+  levels?: LevelsJSON;
+}
+/** 存檔裡的等級資料 → 正規化後的副本 */
+function validLevels(raw: unknown): LevelsJSON {
+  const p = new Progression();
+  p.load(raw);
+  return p.toJSON();
 }
 export interface ExtraSave {
   /** 釣魚紀錄：魚種 → 條數 */
@@ -441,6 +452,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       vanity: game.vanity.toJSON(),
       settle: game.settle.toJSON(),
       halves: encodeFrozen(w.half),
+      levels: game.levels.toJSON(),
     },
     chunks,
   };
@@ -641,6 +653,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     vanity: Vanity.fromJSON(h.vanity).toJSON(),
     settle: h.settle && typeof h.settle === 'object' ? h.settle : undefined,
     halves: validHalves(h.halves),
+    levels: validLevels(h.levels),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -709,6 +722,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       data.header.extra = validExtra(data.header.extra);
       data.header.appearance = normalizeAppearance(data.header.appearance);
       data.header.vanity = Vanity.fromJSON(data.header.vanity).toJSON();
+      data.header.levels = validLevels(data.header.levels);
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
@@ -777,6 +791,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   game.player.vy = h.player.vy;
   game.inventory = Inventory.fromJSON(h.inventory);
   game.vanity = Vanity.fromJSON(h.vanity);
+  game.levels.load(h.levels);
   game.time = h.time;
   game.tick = h.tick;
   // 探索（format 4）；舊格式 = 什麼都沒探索

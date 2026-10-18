@@ -14,6 +14,7 @@ import { PlayerAnimator, blinkAt, type PlayerAnim } from './playerAnim';
 import { SHEET } from './avatarArt';
 import { previewArms } from './dollPreview';
 import { CombatLayer } from './combatDraw';
+import { LevelFx } from './levelFx';
 import { aimArmDeg, attackArmDeg, spearThrust } from './combatAnim';
 import { Background } from './background';
 import { scanTrees, torchMount, treeKind, TREE_KIND } from './scene';
@@ -125,6 +126,8 @@ export class Renderer {
   readonly combat: CombatLayer;
   /** [settle] 據點圖層：居民、查房模式、放置預覽 */
   readonly settleLayer: SettleLayer;
+  /** 等級系統的世界特效（升級光柱 / 突進 / 震地 / 尋礦感知） */
+  readonly levelFx: LevelFx;
   /** 季節植物（草葉 / 花 / 高草 × 四季 × 擺動）與冰面 */
   readonly flora = new FloraAtlas();
   private ice: HTMLCanvasElement[] = [0, 1, 2].flatMap((v) => [toCanvas(iceBmp(v, false)) as HTMLCanvasElement, toCanvas(iceBmp(v, true)) as HTMLCanvasElement]);
@@ -206,6 +209,7 @@ export class Renderer {
     this.sprites = new Sprites((item) => this.atlas.iconBmp(item));
     this.combat = new CombatLayer(game, this.atlas, this.sprites);
     this.settleLayer = new SettleLayer(game, this.atlas); // [settle]
+    this.levelFx = new LevelFx(game);
     this.cache = new ChunkLRU(48);
     let s = 0;
     for (const ch of game.seed) s = (s * 31 + ch.charCodeAt(0)) >>> 0;
@@ -281,6 +285,7 @@ export class Renderer {
   /** 遊戲事件 → 粒子 / 光照重算 */
   onEvent(e: DelveEvent): void {
     this.combat.onEvent(e);
+    this.levelFx.onEvent(e);
     if (e.type === 'respawn') this.snapCamera();
     if (e.type === 'hurt' && !e.cause) this.hurtAt = this.clock;
     if (e.type === 'climb') this.climbDust(e.phase !== 'grab', e.phase === 'mantle' ? e : null);
@@ -460,7 +465,7 @@ export class Renderer {
     ph.fx = this.lap();
     this.drawLight(ctx, camX, camY, vw, vh);
     ph.light = this.lap();
-    if (!this.fullbright) this.combat.drawDark(ctx, vb, this.lightAtFn);
+    if (!this.fullbright) { this.combat.drawDark(ctx, vb, this.lightAtFn); this.drawPlayerRim(ctx); }
     // 霧 / 雨雪畫在光照之後（夜裡也看得到，顏色依天空亮度分階）
     const lvl = this.fullbright ? 1 : g.skyLevel();
     if (wx.kind === 'fog') this.fx.drawFog(ctx, w, camX, camY, vw, vh, wx.intensity, lvl);
@@ -470,6 +475,7 @@ export class Renderer {
     this.drawGlows(ctx);
     this.combat.drawOverlay(ctx, dt);
     if (this.showCursor) this.settleLayer.drawOverlay(ctx, vb); // [settle]
+    this.levelFx.draw(ctx, dt);
     // 睡覺：全畫面抖動淡出 / 淡入
     const sl = g.sleepFade();
     if (sl > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); this.fx.drawSleep(ctx, sl, this.bufW, this.bufH); }
@@ -746,11 +752,14 @@ export class Renderer {
   private hurtAt = -99;
   /** 目前的玩家動畫（e2e / debug） */
   playerAnim: PlayerAnim = 'idle';
+  /** 這一幀玩家畫在哪（光照遮罩之後補畫暗處輪廓光用）；沒畫 = null */
+  private rimDraw: { cx: number; bottom: number; facing: number; fi: number; x: number; y: number; canvas: HTMLCanvasElement } | null = null;
   /** 動畫提示（換手 → 攀爬音效）；main.ts 接到音效 */
   onCue: ((cue: 'grip') => void) | null = null;
 
   private drawPlayer(ctx: CanvasRenderingContext2D, dt: number): void {
     const g = this.game, p = g.player, st = g.getState();
+    this.rimDraw = null;
     if (this.hidePlayer) return;
     const SP = this.sprites;
     // 紙娃娃：樣子沒變（key 一樣）就沿用快取的影格表
@@ -784,10 +793,11 @@ export class Renderer {
     const meta = sheet.meta[fi];
     const cx = Math.round(p.x + p.w / 2), bottom = Math.round(p.y + p.h + p.gfxOffY);
     const ox = -FW / 2, oy = -FH;
+    this.rimDraw = { cx, bottom, facing: this.facing, fi, x: ox + (meta.arms ? 0 : meta.ox ?? 0), y: oy, canvas: sheet.canvas };
     if (!meta.arms) {
       // 背面爬繩 / 掛著 / 倒地：手臂畫在影格裡，手上的東西收起來
       ctx.save(); ctx.translate(cx, bottom); ctx.scale(this.facing, 1);
-      ctx.drawImage(sheet.canvas, fi * FW, 0, FW, FH, ox, oy, FW, FH);
+      ctx.drawImage(sheet.canvas, fi * FW, 0, FW, FH, ox + (meta.ox ?? 0), oy, FW, FH);
       ctx.restore();
       this.rodTip = null;
       return;
@@ -1172,6 +1182,20 @@ export class Renderer {
     this.stats.lightPutMs = t3 - t2;
     this.stats.lightMs = j.ms;
     this.stats.lightFrames = j.frames;
+  }
+
+  /** 暗處的玩家輪廓光：站的地方很暗時，在光照遮罩之上補畫一圈冷灰的外框（身體 / 頭；手臂很細就不補） */
+  private drawPlayerRim(ctx: CanvasRenderingContext2D): void {
+    const r = this.rimDraw;
+    if (!r) return;
+    const t = this.game.playerTile();
+    const lv = Math.max(this.lightAt(t.x, t.y), this.lightAt(t.x, t.y - 1));
+    if (lv > 0.32) return;
+    ctx.save();
+    ctx.translate(r.cx, r.bottom);
+    ctx.scale(r.facing, 1);
+    ctx.drawImage(r.canvas, r.fi * FW, FH * 2, FW, FH, r.x, r.y, FW, FH);
+    ctx.restore();
   }
 
   /** 上次光照計算時某格（tile）的亮度（三通道最大值 ×1.08，地下套同一條暗部曲線；沒算過 = 1） */

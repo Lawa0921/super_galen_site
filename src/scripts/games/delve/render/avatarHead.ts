@@ -11,7 +11,7 @@ import { R as CR } from './combatArt';
 import { HAT_HIDES_TOP, armorSet, hatArt, helmetArt, lookId } from './avatarGear';
 import { BLUSH, EYE_WHITE, GLASSES, GOLD, MOUTH, SWEAT, TONGUE, clothRamp, darker, eyeRamp, hairRamp, skinRamp } from './avatarPalette';
 
-export type Expr = 'normal' | 'blink' | 'hurt' | 'effort' | 'dead' | 'happy';
+export type Expr = 'normal' | 'blink' | 'hurt' | 'effort' | 'dead' | 'happy' | 'up';
 /** 頭髮的動態：swing = 馬尾往後甩（−1..1）、lift = 往上飄（0..1：跳 / 掉落 / 水中）、bob = 上下彈（px） */
 export interface HairMotion { swing: number; lift: number; bob?: number; }
 export interface HeadOpts {
@@ -30,6 +30,11 @@ export interface HeadOpts {
 const HEAD_ROWS: readonly [number, number][] = [
   [5, 12], [3, 14], [2, 15], [1, 16], [1, 16], [0, 17], [0, 17], [0, 17], [0, 17],
   [0, 17], [0, 17], [0, 17], [1, 17], [1, 17], [2, 16], [3, 16], [5, 15], [8, 13],
+];
+/** 男生的頭：下巴方（兩側到底才收）、比女生長一列 */
+const HEAD_ROWS_M: readonly [number, number][] = [
+  [5, 12], [3, 14], [2, 15], [1, 16], [1, 16], [0, 17], [0, 17], [0, 17], [0, 17],
+  [0, 17], [0, 17], [0, 17], [0, 17], [1, 17], [1, 17], [2, 17], [3, 16], [5, 16], [7, 15],
 ];
 const inSkull = (x: number, y: number): boolean => { const r = HEAD_ROWS[y]; return Boolean(r) && x >= r[0] && x <= r[1]; };
 /** 髮量的外框（比頭大一圈） */
@@ -126,19 +131,44 @@ const EYES: Record<string, { near: string[]; far: string[]; y: number }> = {
   happy: { y: 9, near: ['..L.', '.L.L'], far: ['L.', '.L'] },
   hurt: { y: 8, near: ['.L..', '..LL', '.L..'], far: ['..L', 'LL.', '..L'] },
   dead: { y: 8, near: ['.L.L', '..L.', '.L.L'], far: ['L.L', '.L.', 'L.L'] },
+  // 往上看（爬繩）：眼睛高一格、瞳孔在上半
+  up: { y: 7, near: ['LLLL', 'DHDD', 'WDMB', '..BB'], far: ['LLL', 'HD.', 'DB.', 'B..'] },
+  // 男生：眼睛矮一格（3 列）、上揚、睫毛不往外翹
+  // 男生：眼睛細（上眼線 + 兩列瞳孔）、只有上眼線不翹睫毛、高光壓在下半
+  round_m: { y: 9, near: ['.LLL', '.DDM', '.DHB'], far: ['LL.', 'DM.', 'HB.'] },
+  sharp_m: { y: 9, near: ['..LL', '.LDM', '.DHB'], far: ['LL.', 'DM.', 'H..'] },
+  droopy_m: { y: 9, near: ['.LLL', '.DDM', '..HB'], far: ['LL.', 'DM.', 'HB.'] },
+  up_m: { y: 8, near: ['.LLL', '.DHM', '.DMB'], far: ['LL.', 'HM.', 'DB.'] },
+  effort_m: { y: 9, near: ['.LLL', '.LDM', '..HB'], far: ['LL.', 'LM.', 'H..'] },
 };
+/** 男生的眉毛（粗一點、畫在瀏海上面）：眼睛上方兩列 */
+export function brows(b: Bmp, a: Appearance, expr: Expr, ox: number, oy: number): void {
+  if (a.body !== 1 || expr === 'dead') return;
+  const g = EYES[eyeKind(a, expr)], c = hairRamp(a.hairColor)[0];
+  const y = oy + g.y - 2, angry = expr === 'effort' || expr === 'hurt';
+  // 粗直眉：近側 5 格、遠側 3 格，內側兩格加粗一列；用力時內側往下壓
+  for (let x = 8; x <= 12; x++) b.set(ox + x, y + (angry && x >= 11 ? 1 : 0), c);
+  for (let x = 10; x <= 12; x++) b.set(ox + x, y - 1 + (angry && x >= 11 ? 1 : 0), c);
+  for (let x = 14; x <= 16; x++) b.set(ox + x, y + (angry && x === 14 ? 1 : 0), c);
+  b.set(ox + 14, y - 1 + (angry ? 1 : 0), c);
+}
+function eyeKind(a: Appearance, expr: Expr): string {
+  const k = expr === 'blink' ? 'blink' : expr === 'happy' ? 'happy' : expr === 'hurt' ? 'hurt' : expr === 'effort' ? (a.body === 1 ? 'effort' : 'sharp') : expr === 'dead' ? 'dead' : expr === 'up' ? 'up' : (['round', 'sharp', 'droopy'][a.eyeShape] ?? 'round');
+  return a.body === 1 && EYES[`${k}_m`] ? `${k}_m` : k;
+}
 
 function face(b: Bmp, a: Appearance, expr: Expr, ox: number, oy: number): void {
   const e = eyeRamp(a.eyes), sk = skinRamp(a.skin);
-  const kind = expr === 'blink' ? 'blink' : expr === 'happy' ? 'happy' : expr === 'hurt' ? 'hurt' : expr === 'effort' ? 'sharp' : expr === 'dead' ? 'dead' : (['round', 'sharp', 'droopy'][a.eyeShape] ?? 'round');
-  const g = EYES[kind];
+  const g = EYES[eyeKind(a, expr)];
   const pal = { L: INK, D: e[0], M: e[1], B: e[2], H: EYE_WHITE, W: EYE_WHITE };
   grid(b, g.near, pal, ox + 8, oy + g.y);
   grid(b, g.far, pal, ox + 14, oy + g.y);
   // 腮紅（每邊兩格，閉眼開心時多一點）
-  const bl = BLUSH[a.skin] ?? BLUSH[1];
-  b.set(ox + 9, oy + 12, bl); b.set(ox + 10, oy + 12, bl);
-  b.set(ox + 15, oy + 12, bl); b.set(ox + 16, oy + 12, bl);
+  if (a.blush || expr === 'happy') {
+    const bl = BLUSH[a.skin] ?? BLUSH[1];
+    b.set(ox + 9, oy + 12, bl); b.set(ox + 10, oy + 12, bl);
+    b.set(ox + 15, oy + 12, bl); b.set(ox + 16, oy + 12, bl);
+  }
   // 嘴
   if (expr === 'hurt' || expr === 'effort') {
     b.set(ox + 13, oy + 13, MOUTH); b.set(ox + 14, oy + 13, MOUTH); b.set(ox + 13, oy + 14, TONGUE); b.set(ox + 14, oy + 14, MOUTH);
@@ -212,16 +242,21 @@ function sideHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): v
   const a = o.app, h = hairRamp(a.hairColor), sk = skinRamp(a.skin), st = styleId(a), acc = o.gear ? 'none' : accId(a), m = o.motion;
   const sw = m.swing, lift = m.lift;
   const head = new Bmp(front.w, front.h);
-  // 臉：頭型 + 遠側臉頰 / 下巴陰影
-  for (let y = 0; y < HEAD_ROWS.length; y++) {
-    const [x0, x1] = HEAD_ROWS[y];
+  // 臉：頭型 + 遠側臉頰 / 下巴陰影（男生：方下巴、長一列）
+  const rows = a.body === 1 ? HEAD_ROWS_M : HEAD_ROWS;
+  for (let y = 0; y < rows.length; y++) {
+    const [x0, x1] = rows[y];
     for (let x = x0; x <= x1; x++) {
-      const sh = (x === x1 && y >= 5 && y <= 14) || y >= 16 || (y === 15 && x >= 14);
+      const chin = rows.length - 3;
+      const sh = (x === x1 && y >= 5 && y <= chin - 2) || y >= chin || (y === chin - 1 && x >= 14);
       head.set(ox + x, oy + y, sh ? sk[2] : sk[3]);
     }
   }
-  // 脖子
-  head.rect(ox + 8, oy + 18, 4, 2, sk[2]);
+  // 下顎線（男生）：下巴底下一道深一階
+  if (a.body === 1) for (let x = 8; x <= 15; x++) head.set(ox + x, oy + rows.length - 1, sk[1]);
+  // 脖子（男生長、粗一點）
+  if (a.body === 1) head.rect(ox + 7, oy + rows.length, 5, 3, sk[2]);
+  else head.rect(ox + 8, oy + 18, 4, 2, sk[2]);
   // 耳朵
   const def = HAIR[st] ?? HAIR.bob;
   // 頭髮主體
@@ -320,6 +355,7 @@ function sideHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): v
     hair.set(ox + 9, oy - 1, h[3]);
   }
   head.blit(hair, 0, 0);
+  brows(head, a, o.expr, ox, oy);
   o.trace?.push('frontHair');
   // 頭盔 / 兜帽 蓋在頭髮上（帽子另外描邊）
   headGear(head, o, ox, oy);
@@ -412,83 +448,6 @@ function hood(head: Bmp, behind: Bmp, a: Appearance, ox: number, oy: number, vie
 }
 
 
-// ── 背面（爬繩時）：整顆頭都是頭髮 ─────────────────────────
-function backHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): void {
-  const cov = headCover(o);
-  const a = o.app, h = hairRamp(a.hairColor), sk = skinRamp(a.skin), st = styleId(a), acc = o.gear ? 'none' : accId(a), sw = o.motion.swing, lift = o.motion.lift;
-  const head = new Bmp(front.w, front.h), behind = new Bmp(back.w, back.h);
-  const def = HAIR[st] ?? HAIR.bob;
-  const P = (x: number, y: number): Pt => [ox + x, oy + y];
-  // 後頸（短髮才看得到）
-  head.rect(ox + 7, oy + 15, 4, 5, sk[2]);
-  const len = st === 'long' || st === 'hime' ? 17 : def.back;
-  for (let y = -1; y <= 17; y++) for (let x = -1; x <= 18; x++) {
-    const inHead = inCap(x + 0.2, y, 0.98) || (y >= 0 && inSkull(x, y));
-    if (!inHead || y >= len) continue;
-    // 鮑伯 / 長髮的下緣往內收
-    if (y >= len - 1 && (x <= 0 || x >= 17)) continue;
-    const nx = (x + 0.5 - 8.8) / 10, ny = (y + 0.5 - 7.8) / 9.4, d = Math.hypot(nx, ny);
-    let c = capShade(x + 0.2, y, h);
-    if (y > 9) c = x < 4 ? h[2] : x > 13 ? h[1] : h[2];
-    // 後腦的髮流：幾條暗線往下
-    if (y > 4 && (x === 5 || x === 9 || x === 13) && d > 0.35) c = h[1];
-    if (y >= len - 2) c = h[1];
-    head.set(ox + x, oy + y, c);
-  }
-  if (st === 'long' || st === 'hime') {
-    for (let y = 15; y <= 29; y++) {
-      const t = (y - 15) / 14, w = Math.round(t * 2), dx = Math.round(sw * t * 2);
-      for (let x = 2 + w + dx; x <= 15 - w + dx; x++) {
-        if (y >= 28 && (x % 3) === 0) continue;
-        const c = x < 4 + w + dx ? h[3] : x > 13 - w + dx ? h[1] : (x === 7 + dx || x === 11 + dx) ? h[1] : h[2];
-        head.set(ox + x, oy + y - Math.round(lift * t * 3), c);
-      }
-    }
-  }
-  const tie = clothRamp(a.color2);
-  if (st === 'ponytail') {
-    strand(head, P(8.5, 2), P(8.5 + sw * 3, 10 - lift * 4), P(8.5 + sw * 5, 22 - lift * 8), 5, 1.2, h);
-    head.rect(ox + 7, oy + 1, 4, 2, tie[3]);
-  }
-  if (st === 'twintails') {
-    strand(head, P(1, 3), P(-4 + sw * 2, 9 - lift * 3), P(-3 + sw * 4, 21 - lift * 8), 5, 1.2, h);
-    strand(head, P(16, 3), P(21 + sw * 2, 9 - lift * 3), P(20 + sw * 4, 21 - lift * 8), 5, 1.2, h);
-    head.rect(ox + 0, oy + 2, 2, 2, tie[3]); head.rect(ox + 16, oy + 2, 2, 2, tie[3]);
-  }
-  if (st === 'braid') strand(head, P(15, 11), P(17 + sw, 15), P(16 + sw * 2, 23 - lift * 4), 3, 1.5, h, (t) => (Math.floor(t * 10) % 2 ? 1 : 3));
-  if (st === 'odango' && !cov.top) { disc(head, ox + 3, oy - 0.5, 3.4, h); disc(head, ox + 14, oy - 0.5, 3.4, h); }
-  if (st === 'spiky') {
-    for (const [s, t] of ([[[2, 2], [-3, -2]], [[8, -1], [8, -5]], [[14, 2], [19, -2]], [[1, 9], [-4, 10]], [[16, 9], [21, 10]]] as [Pt, Pt][]).filter(([q]) => !cov.top || q[1] >= 6)) {
-      strand(head, P(s[0], s[1]), P((s[0] + t[0]) / 2, (s[1] + t[1]) / 2), P(t[0] + sw, t[1] - lift), 4, 0.6, h, (tt, ss) => (tt > 0.7 ? 1 : ss < 0 ? 3 : 2));
-    }
-  }
-  if (st === 'messy') {
-    for (const [s, t] of [[[3, 0], [1, -3]], [[9, -1], [10, -3]], [[15, 1], [17, -1]], [[2, 13], [1, 16]], [[8, 14], [8, 17]], [[14, 13], [15, 16]]] as [Pt, Pt][]) {
-      strand(head, P(s[0], s[1]), P((s[0] + t[0]) / 2, (s[1] + t[1]) / 2), P(t[0] + sw * 0.5, t[1] - lift * 0.5), 2.6, 0.6, h, (tt) => (tt > 0.6 ? 1 : 2));
-    }
-  }
-  if (a.ahoge && acc !== 'hood' && !cov.top) strand(head, P(9, 0), P(9.5, -5 - lift), P(12, -4 - lift), 1.8, 1, h, () => 2);
-  headGear(head, o, ox, oy);
-  if (!o.gear && acc === 'hood') hood(head, behind, a, ox, oy, 'back');
-  head.outline(INK);
-  front.blit(head, 0, 0);
-  if (cov.hat) hatArt(front, cov.hat, ox, oy, 'back', sw);
-  {
-    const r = clothRamp(a.color2);
-    if (acc === 'ribbon') bow(front, ox + 9, oy + 3, r, true);
-    if (acc === 'catears') {
-      const s = new Bmp(front.w, front.h), c = clothRamp(a.color2);
-      grid(s, ['..e', '.ee', 'eee'], { e: c[3] }, ox + 2, oy - 4);
-      grid(s, ['e..', 'ee.', 'eee'], { e: c[3] }, ox + 13, oy - 4);
-      s.outline(INK);
-      front.blit(s, 0, 0);
-    }
-  }
-  behind.outline(INK);
-  back.blit(behind, 0, 0);
-}
-
 export function drawHead(back: Bmp, front: Bmp, ox: number, oy: number, o: HeadOpts): void {
-  if (o.view === 'back') backHead(back, front, o, ox, oy);
-  else sideHead(back, front, o, ox, oy);
+  sideHead(back, front, o, ox, oy);
 }

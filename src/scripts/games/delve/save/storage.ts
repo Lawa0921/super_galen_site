@@ -19,6 +19,8 @@ export interface SaveSummary {
   /** 日誌完成度 0..1 */
   completion: number;
   peaceful: boolean;
+  /** 角色等級（等級系統；舊摘要沒有） */
+  level?: number;
 }
 export interface SlotMeta { slot: string; seed: string; savedAt: number; bytes: number; summary?: SaveSummary; }
 interface SlotRecord extends SlotMeta { data: Uint8Array; }

@@ -308,6 +308,43 @@ export class SoundManager {
   /** 圖鑑收錄新詞條 */
   codex(): void { this.tone(1174.66, 0, 0.18, 'triangle', 0.05); this.tone(1567.98, 0.09, 0.3, 'triangle', 0.05); }
 
+  // ── 等級系統 ───────────────────────────────────────────
+  private lastXp = 0;
+  /** 得到經驗：很輕的高音（太密集時跳過，避免連續挖礦變成噪音） */
+  xpGain(big: boolean): void {
+    const now = this.ctx?.currentTime ?? 0;
+    if (!big && now - this.lastXp < 0.09) return;
+    this.lastXp = now;
+    this.tone(big ? 1567.98 : 1318.51, 0, 0.09, 'square', big ? 0.03 : 0.018);
+    this.tone(big ? 2093 : 1760, 0.04, 0.12, 'triangle', big ? 0.035 : 0.02);
+  }
+  /** 升級：號角式上行琶音（C E G C）+ 主和弦延長 + 高音閃光；milestone = 里程碑多一段 */
+  levelUp(milestone: boolean): void {
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => this.tone(f, i * 0.08, 0.22, 'square', 0.05));
+    for (const f of [523.25, 659.25, 783.99, 1046.5]) this.tone(f, 0.34, 0.9, 'triangle', 0.06);
+    [2093, 2637, 3136].forEach((f, i) => this.tone(f, 0.42 + i * 0.05, 0.3, 'sine', 0.03));
+    if (milestone) [783.99, 987.77, 1174.66, 1567.98].forEach((f, i) => this.tone(f, 0.9 + i * 0.09, 0.5, 'square', 0.04));
+  }
+  /** 點技能：兩聲上行鈴 */
+  learn(): void { this.tone(880, 0, 0.12, 'square', 0.04); this.tone(1318.51, 0.07, 0.25, 'triangle', 0.06); }
+  /** 重置技能樹：下滑的光 */
+  respec(): void { this.tone(1318.51, 0, 0.6, 'sine', 0.06, 330); this.noise(0.05, 0.4, 3000, 600, 0.04, 0.8); }
+  /** 技能還在冷卻 / 點不上去：低沉的嗶 */
+  denied(): void { this.tone(196, 0, 0.12, 'square', 0.03); }
+  /** 突進：一陣急促的風 */
+  dash(): void { this.noise(0, 0.2, 3200, 700, 0.1, 1.4); this.tone(330, 0, 0.12, 'triangle', 0.04, 660); }
+  /** 震地：低頻重擊 + 碎石 */
+  slam(hit: boolean): void {
+    this.tone(90, 0, 0.35, 'sine', 0.2, 45); this.noise(0, 0.3, 700, 120, 0.2, 0.7);
+    if (hit) this.tone(220, 0.02, 0.15, 'square', 0.04, 110);
+  }
+  /** 尋礦感知：聲納 ping + 兩聲回音 */
+  pulse(): void {
+    this.tone(1046.5, 0, 0.5, 'sine', 0.08, 880);
+    this.tone(1046.5, 0.25, 0.4, 'sine', 0.035, 880);
+    this.tone(1046.5, 0.5, 0.35, 'sine', 0.015, 880);
+  }
+
   destroy(): void {
     if (this.dead) return;
     this.dead = true;

@@ -298,7 +298,7 @@ export class SettleUi {
         body.appendChild(b);
         if (g.lastReveal) body.appendChild(el('p', 'delve-hint', `上次打聽到：${g.lastReveal.name}（地圖上的標記 · ${g.lastReveal.x}, ${g.lastReveal.y}）`));
       } else {
-        const extra = sv.kind === 'forge' ? `目前鍛造費用 ×${g.forgeDiscount().toFixed(2)}（在背包選裝備 → 鍛造）` : '';
+        const extra = sv.kind === 'forge' ? `目前鍛造費用 ×${g.smithMul().toFixed(2)}（在背包選裝備 → 鍛造）` : '';
         body.appendChild(el('p', 'delve-hint', `${sv.zh}${extra ? ` · ${extra}` : ''}`));
       }
     }

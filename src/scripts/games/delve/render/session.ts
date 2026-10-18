@@ -17,7 +17,7 @@ import { genProgress, genStageLabel, GEN_STAGE_LABELS, readVolume, rollWorldName
 import { liveCounts, type LiveCounts } from './live';
 import { GEN_PHASES, GenSectionView, genPhaseLabel, genPhaseOf } from './genSection';
 import { Wardrobe } from './wardrobe';
-import { loadDefaultAppearance, saveDefaultAppearance, type Appearance } from '../engine/appearance';
+import { loadDefaultAppearance, saveDefaultAppearance, setAppearance, type Appearance } from '../engine/appearance';
 import { dollKey, plainLook } from '../engine/doll';
 import { dollPreview } from './dollPreview';
 import { toCanvas } from './pixel';
@@ -500,11 +500,19 @@ export function bootDelve(root: HTMLElement): Session {
         onDone: (a) => { saveDefaultAppearance(storage, a); scene?.game.setAppearance(a); syncLookPreview(); },
       });
     },
+    onBody: (body) => {
+      const a = setAppearance(defaultLook(), 'body', body);
+      saveDefaultAppearance(storage, a);
+      scene?.game.setAppearance(a);
+      uiSound.ensure(); uiSound.uiMove();
+      syncLookPreview();
+    },
   }, { reducedMotion: reduced, storage, sound: uiSound, peaceful: defaultPeaceful() });
   /** 新世界面板的角色小預覽（跟著預設外觀） */
   function syncLookPreview(): void {
     const l = plainLook(defaultLook());
     ui.setLookPreview(toCanvas(dollPreview(l, dollKey(l), 'idle', 0)) as HTMLCanvasElement);
+    ui.syncBody(l.app.body);
   }
   syncLookPreview();
   // 遊戲中選單「角色外觀」：換的是這個世界的角色（身上的裝備照樣穿著），也記成新世界的預設

@@ -1,7 +1,7 @@
 // appearance.test.ts — 角色外觀（純資料）：選項數量、正規化（壞值退回預設）、隨機、循環切換、localStorage 預設外觀
 import { describe, it, expect } from 'vitest';
 import {
-  APPEARANCE_FIELDS, DEFAULT_APPEARANCE, HAIR_STYLES, HAIR_COLORS, EYE_COLORS, EYE_SHAPES, SKIN_TONES, OUTFITS,
+  APPEARANCE_FIELDS, DEFAULT_APPEARANCE, BODY_TYPES, bodyDefaults, HAIR_STYLES, HAIR_COLORS, EYE_COLORS, EYE_SHAPES, SKIN_TONES, OUTFITS,
   CLOTH_COLORS, ACCESSORIES, appearanceKey, normalizeAppearance, randomAppearance, stepAppearance,
   loadDefaultAppearance, saveDefaultAppearance, APPEARANCE_KEY, sameAppearance, type Appearance,
 } from './appearance';
@@ -54,9 +54,42 @@ describe('外觀選項', () => {
   });
 });
 
+describe('體型（男 / 女）', () => {
+  it('第一個欄位是體型；男女各有典型的預設外觀，換體型時沒改過的預設會換成那一邊的預設', () => {
+    expect(APPEARANCE_FIELDS[0].key).toBe('body');
+    expect(BODY_TYPES.map((b) => b.zh)).toEqual(['女', '男']);
+    const f = bodyDefaults(0), m = bodyDefaults(1);
+    expect(f.body).toBe(0); expect(m.body).toBe(1);
+    expect(HAIR_STYLES[f.hair].id).toBe('twintails');
+    expect(['messy', 'spiky']).toContain(HAIR_STYLES[m.hair].id);
+    expect(['coat', 'hoodie']).toContain(OUTFITS[m.outfit].id);
+    expect(f.blush).toBe(true); expect(m.blush).toBe(false);
+    expect(DEFAULT_APPEARANCE).toEqual(f);
+    // 沒改過 → 換成男生預設；改過 → 只換體型（與腮紅），其他保留（不鎖性別）
+    expect(stepAppearance(f, 'body', 1)).toEqual(m);
+    const custom = { ...f, hair: HAIR_STYLES.findIndex((h) => h.id === 'long'), outfit: 5 };
+    const sw = stepAppearance(custom, 'body', 1);
+    expect(sw.body).toBe(1);
+    expect(sw.hair).toBe(custom.hair);
+    expect(sw.outfit).toBe(5);
+    // 腮紅是玩家自己的選擇：換體型不重設
+    expect(sw.blush).toBe(true);
+    expect(stepAppearance({ ...custom, blush: false }, 'body', 1).blush).toBe(false);
+  });
+  it('隨機也會挑體型', () => {
+    const r = lcg(21), seen = new Set<number>();
+    for (let i = 0; i < 40; i++) seen.add(randomAppearance(r).body);
+    expect([...seen].sort()).toEqual([0, 1]);
+  });
+  it('舊存檔沒有體型 / 腮紅 → 女、有腮紅', () => {
+    const n = normalizeAppearance({ hair: 2 });
+    expect(n.body).toBe(0); expect(n.blush).toBe(true);
+  });
+});
+
 describe('normalizeAppearance', () => {
   it('合法的外觀原樣保留', () => {
-    const a: Appearance = { ...DEFAULT_APPEARANCE, hair: 3, hairColor: 7, ahoge: true, glasses: true, acc: 2 };
+    const a: Appearance = { ...DEFAULT_APPEARANCE, hair: 3, hairColor: 7, ahoge: true, glasses: true, acc: 2, body: 1, blush: false };
     expect(normalizeAppearance(a)).toEqual(a);
   });
   it('壞值 / 越界 / 型別錯：該欄退回預設，其他欄保留（外觀壞掉不會讓存檔壞掉）', () => {
