@@ -12,6 +12,8 @@ import { ITEMS } from '../../data/items';
 import { capacity, carried, weightOf } from '../../data/weights';
 import type { ItemInstance } from '../../engine/types';
 import { DungeonScene } from './dungeon';
+import { STORY } from '../../data/story.zh-TW';
+import { chainLength } from '../../data/story/chains';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 
@@ -85,6 +87,22 @@ describe('EventLayer', () => {
     expect(game.state.inventory.potion).toBe(before + 2);
     expect(game.state.gold).toBe(110);
     expect(root.querySelector('.slx-event-merchant .slx-event-gold')!.textContent).toContain('110 G');
+  });
+
+  it('the merchant remembers once Noel does', () => {
+    const greet = (memories: number) => {
+      const { game, s, layer, plant } = setup();
+      game.state.party.roster.noel.memories = memories;
+      const { dir } = plant('merchant', { stock: ['potion', 'ether', 'antidote'] });
+      s.onAction(dir);
+      return layer()!.textContent!;
+    };
+    const lost = greet(chainLength('noel') - 1);
+    expect(lost).toContain(STORY.merchant.lost);
+    expect(lost).not.toContain(STORY.merchant.found);
+    const found = greet(chainLength('noel'));
+    expect(found).toContain(STORY.merchant.found);
+    expect(found).not.toContain(STORY.merchant.lost);
   });
 
   it('the merchant refuses a purchase the pack cannot carry', () => {

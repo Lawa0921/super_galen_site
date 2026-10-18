@@ -2669,9 +2669,11 @@ describe('the state after Act 1', () => {
 
 describe('the finale', () => {
   const duo: CharacterId[] = ['hero', 'rin'];
-  const run = (depth: number, tweak: (g: Game) => void = () => {}) => {
+  // Rin has made her choice unless a test says otherwise: the finale waits for it (U3).
+  const run = (depth: number, tweak: (g: Game) => void = () => {}, oath = true) => {
     const g = new Game(calm(), memoryStorage(), undefined, 0, duo);
     g.state.dungeon.reached.mainline = Math.max(3, depth);
+    if (oath) Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });   // a valid save: the oath needs every piece
     tweak(g);
     expect(g.depart(MAIN, depth)).toEqual({ ok: true });
     return g;
@@ -2685,6 +2687,64 @@ describe('the finale', () => {
     expect(g.phase).toBe('battle');
     expect(g.battle!.boss).toBe(true);
     expect(g.battle!.enemies.map((e) => [e.defId, e.name])).toEqual([[FINALE_BOSS.base, STORY.finaleBossName]]);
+  });
+
+  it("the finale waits for Rin's choice", () => {
+    const g = run(FINALE_DEPTH, () => {}, false);
+    const boss = g.map().boss!;
+    const r = stepOnto(g, boss);
+    expect(r.kind).not.toBe('boss');
+    expect([g.phase, g.battle, g.finaleWaiting, g.cleared]).toEqual(['map', null, true, null]);
+    expect(tileAt(g.map(), boss)).toBe('boss');   // she is still there: the boss keeps its place
+    // Any other step clears the flag, and stepping back onto her says it again.
+    const away = DIRS.find((d) => tileAt(g.map(), { x: boss.x + DELTA[d].x, y: boss.y + DELTA[d].y }) !== 'wall')!;
+    g.move(away);
+    expect(g.finaleWaiting).toBe(false);
+    stepOnto(g, boss);
+    expect(g.finaleWaiting).toBe(true);
+    expect(g.state.story.finaleCleared).toBe(false);
+  });
+
+  it('with her choice the finale starts', () => {
+    const g = run(FINALE_DEPTH);
+    expect(g.state.party.roster.rin.oath).toBe(true);
+    stepOnto(g, g.map().boss!);
+    expect([g.phase, g.finaleWaiting]).toEqual(['battle', false]);
+    expect(g.battle!.enemies.map((e) => e.name)).toEqual([STORY.finaleBossName]);
+  });
+
+  it('a party that waited can leave, get her choice, and come back to the finale', () => {
+    const g = run(FINALE_DEPTH, () => {}, false);
+    stepOnto(g, g.map().boss!);
+    expect(g.finaleWaiting).toBe(true);
+    g.state.inventory['return-lamp'] = 1;
+    expect(g.useReturnLamp()).toBe(true);
+    expect(g.finaleWaiting).toBe(false);
+    Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    expect(g.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(g, g.map().boss!);
+    expect(g.phase).toBe('battle');
+  });
+
+  it('only the finale waits: an ordinary depth-30 boss and another road are not held back', () => {
+    const g = run(FINALE_DEPTH, (x) => { x.state.story.finaleCleared = true; x.state.story.act1Cleared = true; }, false);
+    stepOnto(g, g.map().boss!);
+    expect([g.phase, g.finaleWaiting]).toEqual(['battle', false]);
+    const h = new Game(calm(), memoryStorage(), undefined, 0, duo);
+    h.state.dungeon.reached.blaze = FINALE_DEPTH;
+    expect(h.depart({ region: 'blaze', condition: 'plain' }, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(h, h.map().boss!);
+    expect([h.phase, h.finaleWaiting]).toEqual(['battle', false]);
+  });
+
+  it('Rin catches up while the finale waits', () => {
+    const g = run(26, (x) => { x.state.party.roster.rin.memories = 6; }, false);
+    expect(g.run!.glimmers[26]).toContain('rin');
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 27 });
+    // Her seventh piece is the last one: the floor after she holds it forces nothing for her.
+    g.state.party.roster.rin.memories = 7;
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 28 });
+    expect(g.run!.glimmers[28]).not.toContain('rin');
   });
 
   it('only the main road names her: a depth-30 boss elsewhere is the ordinary beast', () => {
@@ -2711,11 +2771,11 @@ describe('the finale', () => {
     expect(g.pending).toEqual([]);
   });
 
-  it('the finale needs no memories and no full party', () => {
+  it('the finale needs no hero memories and no full party', () => {
     const g = run(FINALE_DEPTH);   // the hero and Rin only, nobody holds a piece
     expect(g.state.party.recruited).toEqual(duo);
     expect(memoriesOf(g.state.party.roster.hero)).toBe(0);
-    expect(memoriesOf(g.state.party.roster.rin)).toBe(0);
+    expect(memoriesOf(g.state.party.roster.rin)).toBe(chainLength('rin'));   // only Rin's choice is asked for
     stepOnto(g, g.map().boss!);
     killAll(g);
     expect([g.phase, g.cleared]).toEqual(['clear', 'finale']);

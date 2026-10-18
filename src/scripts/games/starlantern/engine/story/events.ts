@@ -1,6 +1,6 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import { chainLength } from '../../data/story/chains';
-import { ACT_DEPTHS, CHAT_COUNT, type ActNode, type SceneId, type Stage } from '../../data/story/scenes';
+import { ACT_DEPTHS, CHAT_COUNT, CHAT_GATE, STAGES, type ActNode, type SceneId, type Stage } from '../../data/story/scenes';
 import { memoriesOf } from '../progression';
 import type { GameState, StoryState } from '../state';
 
@@ -44,8 +44,20 @@ const rank = (id: SceneId): number => {
   return 5;
 };
 
-/** The next chat for a return to town: whoever has said least among the people met, their next one in order. */
-export function nextChat(s: GameState): SceneId | null {
+/** Whether a chat may be offered yet: its stage reached, and Rin's choice made if it needs it. A chat with no gate is always open. */
+export function chatOpen(s: GameState, id: SceneId, gates: Partial<Record<SceneId, { stage?: Stage; oath?: true }>> = CHAT_GATE): boolean {
+  const g = gates[id];
+  if (!g) return true;
+  if (g.stage && STAGES.indexOf(storyStage(s)) < STAGES.indexOf(g.stage)) return false;
+  if (g.oath && !s.party.roster.rin?.oath) return false;
+  return true;
+}
+
+/**
+ * The next chat for a return to town: whoever has said least among the people met, their next one in order.
+ * A person whose next chat is still gated is not a candidate this time, and what comes after it waits too.
+ */
+export function nextChat(s: GameState, gates = CHAT_GATE): SceneId | null {
   const seen = new Set<SceneId>(s.story.seen);
   let best: { id: SceneId; heard: number } | null = null;
   for (const who of CHARACTER_IDS) {
@@ -55,7 +67,7 @@ export function nextChat(s: GameState): SceneId | null {
     for (let n = 1; n <= CHAT_COUNT[who]; n++) {
       const id: SceneId = `chat:${who}:${n}`;
       if (seen.has(id)) { heard++; continue; }
-      if (!next && (n === 1 || seen.has(`chat:${who}:${n - 1}`))) next = id;
+      if (!next && (n === 1 || seen.has(`chat:${who}:${n - 1}`)) && chatOpen(s, id, gates)) next = id;
     }
     if (next && (!best || heard < best.heard)) best = { id: next, heard };
   }

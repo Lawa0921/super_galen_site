@@ -28,7 +28,7 @@ test.describe('starlantern', () => {
     }, story);
 
   /** The town's own greeting lines, straight from the story data: what it says on 繼續 when there is no notice (such as 存檔無法讀取) to give. */
-  const townLines = (): string[] => [...Object.values(STORY.townLines).flat(), ...Object.values(STORY.rinLines).flat()];
+  const townLines = (): string[] => [...Object.values(STORY.townLines).flat(), ...Object.values(STORY.rinLines).flat(), ...STORY.rinOath, ...STORY.bellkeeper.oath, ...STORY.bellkeeper.after];
   /** After 繼續: the town greets as usual, and the game in play is exactly the stored save. */
   const expectSaveLoaded = async (page: Page) => {
     await expect.poll(async () => townLines().includes((await page.locator('.slx-town .slx-talk .slx-text').textContent()) ?? '')).toBe(true);

@@ -1,6 +1,6 @@
 import { CHARACTERS } from '../../data/characters';
 import type { SceneId } from '../../data/story/scenes';
-import { STORY } from '../../data/story.zh-TW';
+import { NPC_NAMES, STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { art } from '../../render/artPaths';
 import type { Game } from '../../engine/game';
@@ -82,8 +82,15 @@ export class TownScene implements Scene {
     else {
       // The day's line: the town's own, and from act 2 Rin's foreshadowing once she has joined.
       const stage = storyStage(game.state);
-      const rin = game.state.party.recruited.includes('rin') ? (STORY.rinLines[stage] ?? []) : [];
-      const pool = [...STORY.townLines[stage].map((text) => ({ who: t.place.split(' ').pop() ?? '', text })), ...rin.map((text) => ({ who: CHARACTERS.rin.name, text }))];
+      const chose = !!game.state.party.roster.rin?.oath;
+      const rinSays = game.state.party.recruited.includes('rin') ? (chose ? STORY.rinOath : STORY.rinLines[stage] ?? []) : [];
+      // The bellkeeper comes to town after her choice; once the finale is won he speaks of what came after.
+      const keeper = chose ? (game.state.story.finaleCleared ? STORY.bellkeeper.after : STORY.bellkeeper.oath) : [];
+      const pool = [
+        ...STORY.townLines[stage].map((text) => ({ who: t.place.split(' ').pop() ?? '', text })),
+        ...rinSays.map((text) => ({ who: CHARACTERS.rin.name, text })),
+        ...keeper.map((text) => ({ who: NPC_NAMES.bellkeeper, text })),
+      ];
       const pick = pool[Math.floor(game.rng() * pool.length)];
       void this.speak(pick.who, pick.text);
     }

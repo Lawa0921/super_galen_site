@@ -118,6 +118,8 @@ export class Game {
   cleared: 'act1' | 'finale' | null = null;
   /** The finale's own scenes, once it is won: the hero's memories it filled in, in piece order (not saved). `finale` follows them. */
   finale: { pieces: SceneId[] } | null = null;
+  /** The party stepped onto the finale's boss before Rin made her choice: no fight, and the map says why (not saved). */
+  finaleWaiting = false;
   /** What the last safe return brought home; the town screen shows it, then clears it. `overflow` is gear the full bag could not take. */
   banked: { items: Record<string, number>; gold: number; viaLamp: boolean; gear: ItemInstance[]; overflow: ItemInstance[] } | null = null;
 
@@ -194,6 +196,7 @@ export class Game {
   move(dir: Dir): MoveResult {
     if (this.phase !== 'map') return { kind: 'ignored' };
     this.facing = dir;
+    this.finaleWaiting = false;
     const r = step(this.map(), this.pos, dir);
     if (!r.moved) return { kind: 'blocked' };
     this.pos = r.pos;
@@ -203,6 +206,7 @@ export class Game {
       case 'entrance': return { kind: 'entrance' };
       case 'boss':
         // The mainline story boss stays as written; every other boss is the 燈喰之獸 grown by depth and region.
+        if (this.isFinaleFight() && !this.state.party.roster.rin?.oath) { this.finaleWaiting = true; return { kind: 'moved' }; }
         if (this.isFinaleFight()) this.startBattle([FINALE_BOSS.base], true, true, undefined, 0, { names: { [FINALE_BOSS.base]: STORY.finaleBossName }, bossPower: FINALE_BOSS.power });
         else this.startBattle(['lanterneater'], true, !this.isStoryDepth(this.floor));
         return { kind: 'boss' };
@@ -899,6 +903,7 @@ export class Game {
    * has slots (the rest is reported as `overflow`); special items and their sets enter the codex.
    */
   private toTown(viaLamp = false): void {
+    this.finaleWaiting = false;
     const loot = this.run?.loot;
     this.banked = null;
     if (loot && (loot.gold > 0 || Object.keys(loot.items).length || loot.gear.length)) {

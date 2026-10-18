@@ -198,6 +198,30 @@ describe('story data', () => {
     expect(PLACEHOLDERS.has(STORY.scenes.prologue.lines[0].text)).toBe(true);
   });
 
+  it("the finale's wait, Rin's oath lines, the bellkeeper and the merchant are story copy", () => {
+    const texts = storyTexts();
+    const keys = (prefix: string) => texts.filter((t) => t.key === prefix || t.key.startsWith(`${prefix}.`));
+    expect(keys('finaleWait').length).toBeGreaterThanOrEqual(1);
+    expect(keys('finaleWait').length).toBeLessThanOrEqual(2);
+    expect(STORY.finaleWait.every((l) => l.who !== undefined && PLACEHOLDERS.has(l.text))).toBe(true);
+    expect(keys('rinOath').length).toBe(STORY.rinOath.length);
+    expect(STORY.rinOath.length).toBeGreaterThan(0);
+    expect(keys('bellkeeper.oath').length).toBe(STORY.bellkeeper.oath.length);
+    expect(keys('bellkeeper.after').length).toBe(STORY.bellkeeper.after.length);
+    expect(STORY.bellkeeper.oath.length).toBeGreaterThan(0);
+    expect(STORY.bellkeeper.after.length).toBeGreaterThan(0);
+    expect(keys('merchant').map((t) => t.key).sort()).toEqual(['merchant.found', 'merchant.lost']);
+    for (const t of [...keys('rinOath'), ...keys('bellkeeper'), ...keys('merchant'), ...keys('finaleWait')]) {
+      expect(PLACEHOLDERS.has(t.text), t.key).toBe(true);
+      expect(() => position(t.key), t.key).not.toThrow();
+    }
+    // Rin's oath lines and the bellkeeper's first lines are for after her choice; the wait is for act 4 at the earliest.
+    expect(position('rinOath.0')).toBe(rinSeventh());
+    expect(position('bellkeeper.oath.0')).toBe(rinSeventh());
+    expect(position('bellkeeper.after.0')).toBe('after');
+    expect(position('finaleWait.0.text')).toBe('act4');
+  });
+
   it('the milestone cards and the survive line are story copy, found by the placeholder sweep', () => {
     for (const t of [STORY.survived, STORY.act1Card.title, STORY.act1Card.body, STORY.endingTitle]) expect(PLACEHOLDERS.has(t), t).toBe(true);
   });

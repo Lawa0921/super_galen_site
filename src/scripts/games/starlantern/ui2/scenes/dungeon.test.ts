@@ -12,7 +12,7 @@ import { capacity, carried, formatWeight as kg, weightOf } from '../../data/weig
 import { MATERIALS } from '../../data/materials';
 import { showPillar } from '../lootFx';
 import { DungeonScene } from './dungeon';
-import { LEGACY_LINEUP } from '../../engine/party';
+import { LEGACY_LINEUP, meet } from '../../engine/party';
 import { floorOf } from '../../engine/dungeon/run';
 import { T } from '../../data/text.zh-TW';
 import { CHARACTERS } from '../../data/characters';
@@ -23,6 +23,7 @@ import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { art } from '../../render/artPaths';
 import { STORY } from '../../data/story.zh-TW';
 import { CHAINS } from '../../data/story/chains';
+import { FINALE_DEPTH } from '../../data/story/scenes';
 import type { ArtIndex } from '../../render/textures';
 
 /** The depth Selene's first piece opens at: a glimmer of hers holds a memory from there on. */
@@ -810,5 +811,35 @@ describe('DungeonScene rescue meetings', () => {
     } finally {
       lines.splice(0, lines.length, ...saved);
     }
+  });
+});
+
+describe("DungeonScene: the finale waits for Rin's choice", () => {
+  const toBoss = (game: Game): Dir => {
+    const at = game.map().boss!;
+    for (const dir of ['right', 'left', 'down', 'up'] as const) {
+      const from = { x: at.x - DELTA[dir].x, y: at.y - DELTA[dir].y };
+      if (tileAt(game.map(), from) === 'floor') { game.pos = from; return dir; }
+    }
+    throw new Error('no way onto the boss');
+  };
+
+  it("the finale's waiting line plays and the map stays", async () => {
+    const { game, go, s, text } = setup(undefined, true, {}, (g) => { g.state.party = meet(g.state.party, 'rin', 1); }, FINALE_DEPTH);
+    s.onAction(toBoss(game));
+    await flush();
+    expect(game.finaleWaiting).toBe(true);
+    expect(text()).toBe(STORY.finaleWait[0].text);
+    expect(game.phase).toBe('map');
+    expect(go).not.toHaveBeenCalled();
+    expect(tileAt(game.map(), game.map().boss!)).toBe('boss');
+  });
+
+  it('with her choice the finale starts as before', async () => {
+    const { game, go, s } = setup(undefined, true, {}, (g) => { g.state.party = meet(g.state.party, 'rin', 1); Object.assign(g.state.party.roster.rin, { memories: 7, oath: true }); }, FINALE_DEPTH);
+    s.onAction(toBoss(game));
+    await flush();
+    expect(game.finaleWaiting).toBe(false);
+    expect(go).toHaveBeenCalledWith('battle');
   });
 });

@@ -6,7 +6,7 @@ import type { ItemInstance } from '../../engine/types';
 import { TownScene } from './town';
 import { CHARACTERS } from '../../data/characters';
 import type { SceneId } from '../../data/story/scenes';
-import { STORY } from '../../data/story.zh-TW';
+import { NPC_NAMES, STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { linesOf } from '../story';
@@ -257,6 +257,54 @@ describe('TownScene story', () => {
     const t = open(game, 'all', () => 0.999);
     expect(STORY.townLines.prologue).toContain(t.text());
     expect(t.root.querySelector('.slx-talk .slx-name')!.textContent).not.toBe(CHARACTERS.rin.name);
+  });
+
+  it('after her choice Rin speaks her oath lines', () => {
+    const game = Game.fresh(constRng(0.5), null);
+    game.arrival = [];
+    game.state.story.nodes.push('act2');
+    game.state.party.recruited.push('rin');
+    Object.assign(game.state.party.roster.rin, { memories: 7, oath: true });
+    // Sweep the rng across the whole pool: everything Rin says is from the oath set, none from the old one.
+    const rin: string[] = [];
+    for (let i = 0; i < 60; i++) {
+      const t = open(game, 'all', () => i / 60);
+      if (t.root.querySelector('.slx-talk .slx-name')!.textContent === CHARACTERS.rin.name) rin.push(t.text()!);
+    }
+    expect(rin.length).toBeGreaterThan(0);
+    expect(rin.every((x) => STORY.rinOath.includes(x))).toBe(true);
+    expect(rin.some((x) => (STORY.rinLines.act2 ?? []).includes(x))).toBe(false);
+  });
+
+  it('the bellkeeper speaks only after her choice, and differently after the finale', () => {
+    /** Everything the town can say on a return: sweep the rng across the whole pool. */
+    const said = (game: Game) => {
+      const out: { who: string; text: string }[] = [];
+      for (let i = 0; i < 60; i++) {
+        const t = open(game, 'all', () => i / 60);
+        out.push({ who: t.root.querySelector('.slx-talk .slx-name')!.textContent!, text: t.text()! });
+      }
+      return out;
+    };
+    const fresh = (oath: boolean) => {
+      const g = Game.fresh(constRng(0.5), null);
+      g.arrival = [];
+      g.state.story.nodes.push('act2', 'act3', 'act4');
+      g.state.story.act1Cleared = true;
+      g.state.party.recruited.push('rin');
+      if (oath) Object.assign(g.state.party.roster.rin, { memories: 7, oath: true });
+      return g;
+    };
+    const keeper = (g: Game) => said(g).filter((x) => x.who === NPC_NAMES.bellkeeper).map((x) => x.text);
+    expect(keeper(fresh(false))).toEqual([]);
+    const chose = keeper(fresh(true));
+    expect(chose.length).toBeGreaterThan(0);
+    expect(chose.every((x) => STORY.bellkeeper.oath.includes(x))).toBe(true);
+    const done = fresh(true);
+    done.state.story.finaleCleared = true;
+    const after = keeper(done);
+    expect(after.length).toBeGreaterThan(0);
+    expect(after.every((x) => STORY.bellkeeper.after.includes(x))).toBe(true);
   });
 
   it('a scene that throws does not lock the town: the menu comes back and the day line shows', async () => {

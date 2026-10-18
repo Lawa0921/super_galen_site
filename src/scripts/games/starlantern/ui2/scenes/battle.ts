@@ -23,7 +23,7 @@ import { PartyBar, type PulseOpts } from '../partyBar';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, richNodes, win, type Rich } from '../widgets';
 import { textCps } from '../settings';
-import { playAndRecord, storyCtx } from '../story';
+import { playAndRecord, speakerOf, storyCtx } from '../story';
 import { memScene, type SceneId } from '../../data/story/scenes';
 
 /** Width kept clear for the command window; must match $slx-battle-left in _starlantern-ui.scss. */
@@ -523,7 +523,11 @@ export class BattleScene implements Scene {
       for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it)]), cls: 'slx-loot-left' });
       lines.push(...levelUpLines(end.levelUps, this.ctx.game.state.party));
       if (end.met) {
-        for (const l of STORY.meet[end.met.id].after) lines.push({ text: l.text });
+        // Each line says who speaks; narration stands alone.
+        for (const l of STORY.meet[end.met.id].after) {
+          const name = l.who === 'narrator' ? '' : speakerOf(l.who, this.ctx.game.state, this.ctx.art, l.mood).name;
+          lines.push({ text: name ? T.battle.saidBy(name, l.text) : l.text });
+        }
       }
     } else if (end.outcome === 'lose') this.ctx.sfx.lose?.();
     const title = end.outcome === 'win' ? T.battle.win : end.outcome === 'lose' ? T.battle.lose : T.battle.fled;

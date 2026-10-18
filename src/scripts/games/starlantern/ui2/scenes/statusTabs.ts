@@ -595,8 +595,9 @@ function memoryLine(m: Member): HTMLElement[] {
   const k = KEYSTONES[MEMORY_KEYSTONES[m.id]];
   const awake = memoryKeystoneAwake(m);
   return [el('div', { class: `slx-talent-memkey ${awake ? 'slx-memkey-awake' : 'slx-memkey-locked'}` }, [
-    el('span', { class: 'slx-talent-memkey-name', text: t.memoryKeystone(k.name) }),
-    el('span', { class: 'slx-talent-memkey-desc', text: awake ? k.desc : m.id === 'rin' ? t.oathLocked : t.memoryLocked(chainLength(m.id)) }),
+    // A sleeping keystone keeps its name back: the name would tell what the memories hold.
+    el('span', { class: 'slx-talent-memkey-name', text: t.memoryKeystone(awake ? k.name : T.ui2.handbook.unknown) }),
+    el('span', { class: 'slx-talent-memkey-desc', text: awake ? k.desc : t.memoryLocked(chainLength(m.id)) }),
   ])];
 }
 

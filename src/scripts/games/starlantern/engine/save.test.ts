@@ -526,4 +526,17 @@ describe('save v8 story', () => {
     raw.story = null;
     expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) })).status).toBe('corrupt');
   });
+  it('a save while the finale waits loads: the main road at 30, no finale, no oath', () => {
+    const g = newGame();
+    g.dungeon.reached.mainline = 30;
+    g.story.act1Cleared = true;
+    g.story.nodes = ['act2', 'act3', 'act4'];
+    expect(g.story.finaleCleared).toBe(false);
+    expect(g.party.roster.rin?.oath).toBeUndefined();
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r.status).toBe('ok');
+    expect(r.status === 'ok' && r.state.dungeon.reached.mainline).toBe(30);
+  });
 });

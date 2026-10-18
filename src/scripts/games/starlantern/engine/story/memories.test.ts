@@ -160,6 +160,28 @@ describe('memory piece rules', () => {
     expect(forcedGlimmers(crowd, { selene: 9, bobby: 9 }, 'mainline', last)).toEqual(['rin', 'selene'].slice(0, FORCED_GLIMMERS.max));
   });
 
+  it("Rin's catch-up takes a slot, so a pity glimmer waits a floor or two but is never lost (6c Task 3)", () => {
+    // From her last threshold a Rin who is behind holds one forced slot every floor. Selene's and Bobby's fifth pieces are
+    // both owed by then (pity at the cap); they take the second slot in roster order, one a floor, and pity keeps them owed.
+    const last = CHAINS.rin.pieces[CHAINS.rin.pieces.length - 1].minDepth;
+    expect(min('selene', 4)).toBeLessThanOrEqual(last);
+    expect(min('bobby', 4)).toBeLessThanOrEqual(last);
+    let p = partyOf({ rin: 4, selene: 4, bobby: 4 });
+    let pity: Partial<Record<CharacterId, number>> = { selene: MEMORY_PITY, bobby: MEMORY_PITY };
+    const order: CharacterId[][] = [];
+    for (let d = last; d < last + 3; d++) {
+      const got = forcedGlimmers(p, pity, 'mainline', d);
+      order.push(got);
+      pity = pityAfterFloor(p, pity, 'mainline', d, got);
+      p = applyPieces(p, got).party;
+    }
+    expect(FORCED_GLIMMERS.max).toBe(2);
+    expect(order).toEqual([['rin', 'selene'], ['rin', 'bobby'], ['rin']]);
+    expect(memoriesOf(p.roster.rin)).toBe(CHAINS.rin.pieces.length);
+    expect(memoriesOf(p.roster.selene)).toBe(CHAINS.selene.pieces.length);
+    expect(memoriesOf(p.roster.bobby)).toBe(CHAINS.bobby.pieces.length);
+  });
+
   it('FORCED_GLIMMERS.max caps the forced glimmers of a floor', () => {
     const p = partyOf({ noel: 0, chizuru: 0, bobby: 0, selene: 0 });
     const pity = { noel: 9, chizuru: 9, bobby: 9, selene: 9 };

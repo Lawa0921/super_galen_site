@@ -1,4 +1,7 @@
 import { ITEMS } from '../../data/items';
+import { STORY } from '../../data/story.zh-TW';
+import { chainLength } from '../../data/story/chains';
+import { memoriesOf } from '../../engine/progression';
 import { fragmentName } from '../../data/story/fragments';
 import { T } from '../../data/text.zh-TW';
 import { weightOf } from '../../data/weights';
@@ -106,7 +109,7 @@ export function eventLayer(host: EventHost, content: Content): Layer {
       const show = () => { gold.textContent = E.merchant.gold(g.state.gold); };
       show();
       const stock = (content.stock ?? []).filter((id) => ITEMS[id]);
-      return eventWindow(host, 'merchant', E.merchant.title, [line(E.merchant.desc), gold],
+      return eventWindow(host, 'merchant', E.merchant.title, [line(memoriesOf(g.state.party.roster.noel) >= chainLength('noel') ? STORY.merchant.found : STORY.merchant.lost), gold],
         [...stock.map((id) => ({ id, label: ITEMS[id].name, right: T.gold(ITEMS[id].price) })), leaveItem()], (id) => {
           const r = g.buy(content.at, id);
           if (!r.ok) { host.ctx.sfx.error(); host.say(T.reasons[r.reason] ?? T.reasons.invalid); return; }

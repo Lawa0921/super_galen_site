@@ -8,7 +8,7 @@ import { art } from '../../render/artPaths';
 import { chainLength } from '../../data/story/chains';
 import { BattleScene } from './battle';
 import { STORY_FIGHT_ROUNDS } from '../../engine/battle';
-import { LEGACY_LINEUP } from '../../engine/party';
+import { LEGACY_LINEUP, meet } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
 import { CHARACTERS } from '../../data/characters';
 import { SHARD_NAMES } from '../../data/story/fragments';
@@ -204,6 +204,26 @@ describe('BattleScene', () => {
     const benched = await run(true);
     expect(benched[0]).toBe(T.ui2.rescue.benched(CHARACTERS.selene.name, 4));
     expect(benched).not.toContain(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));
+  });
+
+  it("a meeting's after-lines show who speaks", async () => {
+    const lines = STORY.meet.selene.after;
+    const saved = [...lines];
+    lines.splice(0, lines.length, { who: 'selene', text: '謝謝你們。' }, { who: 'narrator', text: '她收起了劍。' });
+    try {
+      const { game, s, root } = setup();
+      const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [], met: { id: 'selene' as const, level: 4, benched: false } };
+      vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+      for (let i = 0; i < 5; i++) s.onAction('down');
+      s.onAction('confirm');
+      await flush();
+      const got = [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
+      expect(got).toContain(T.battle.saidBy(CHARACTERS.selene.name, '謝謝你們。'));
+      expect(got).toContain('她收起了劍。');
+      expect(got).not.toContain(T.battle.saidBy('', '她收起了劍。'));
+    } finally {
+      lines.splice(0, lines.length, ...saved);
+    }
   });
 
   it('a won fight lists the memories found', async () => {
@@ -767,6 +787,8 @@ describe('BattleScene story', () => {
   it('the finale boss shows its own name', () => {
     const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.state.dungeon.reached.mainline = FINALE_DEPTH;
+    game.state.party = meet(game.state.party, 'rin', 1);   // the finale starts once Rin has made her choice
+    Object.assign(game.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
     expect(game.depart({ region: 'mainline', condition: 'plain' }, FINALE_DEPTH)).toEqual({ ok: true });
     const boss = game.map().boss!;
     game.pos = { x: boss.x - 1, y: boss.y };

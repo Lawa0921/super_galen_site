@@ -236,7 +236,10 @@ export class DungeonScene implements Scene {
     switch (r.kind) {
       case 'ignored': return;
       case 'blocked': s.bump?.(); break;
-      case 'moved': s.step?.(); break;
+      case 'moved':
+        s.step?.();
+        if (this.ctx.game.finaleWaiting) { this.refresh(); void this.finaleWait(); return; }
+        break;
       case 'entrance': s.step?.(); this.refresh(); this.askTown(); return;
       case 'floor': s.stairs?.(); this.refresh(); this.say(T.map.floor(r.floor, FLOORS[this.ctx.game.terrain(r.floor) - 1].name)); return;
       case 'stairs': s.step?.(); this.refresh(); this.push(stairsLayer(this.host(), r, () => this.descend())); return;
@@ -311,6 +314,20 @@ export class DungeonScene implements Scene {
   private beforeLeaving(go: () => void): void {
     if (this.waitingMemories().length === 0) { go(); return; }
     void this.flushPending().then(() => { if (!this.exited) go(); });
+  }
+
+  /** The finale's room before Rin has made her choice: what is missing is said once and the party stays where it stands. */
+  private async finaleWait(): Promise<void> {
+    this.hideHud(true);
+    try {
+      for (const line of STORY.finaleWait) {
+        const sp = speakerOf(line.who, this.ctx.game.state, this.ctx.art, line.mood);
+        await this.say(line.text, sp.name, sp.face ? { src: sp.face, side: 'left' } : undefined);
+        if (this.exited) return;
+      }
+    } finally {
+      if (!this.exited) this.hideHud(false);
+    }
   }
 
   /** A rescue room: its lines one at a time, each with its own speaker, then the fight as for any encounter. */

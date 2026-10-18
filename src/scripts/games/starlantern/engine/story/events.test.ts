@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { ACT_DEPTHS } from '../../data/story/scenes';
+import { ACT_DEPTHS, CHAT_GATE } from '../../data/story/scenes';
 import { chainLength } from '../../data/story/chains';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
-import { arrivalScenes, markRead, nextChat, onReturn, sceneDone, storyStage } from './events';
+import { arrivalScenes, chatOpen, markRead, nextChat, onReturn, sceneDone, storyStage } from './events';
 
 /** A new game with the prologue already behind it, so only what a test adds is waiting. */
 const base = (): GameState => {
@@ -108,23 +108,23 @@ describe('story triggers', () => {
     const s = base();
     s.party = meet(s.party, 'rin', 1);
     // Hero and Rin are met; neither has said anything, so the hero (first in order) speaks.
-    expect(nextChat(s)).toBe('chat:hero:1');
+    expect(nextChat(s, {})).toBe('chat:hero:1');
     s.story.seen.push('chat:hero:1');
-    expect(nextChat(s)).toBe('chat:rin:1');
+    expect(nextChat(s, {})).toBe('chat:rin:1');
     s.story.seen.push('chat:rin:1');
-    expect(nextChat(s)).toBe('chat:hero:2');   // tied at one each, so CHARACTER_IDS breaks it
+    expect(nextChat(s, {})).toBe('chat:hero:2');   // tied at one each, so CHARACTER_IDS breaks it
     s.party = meet(s.party, 'noel', 1);
-    expect(nextChat(s)).toBe('chat:noel:1');   // nobody has heard from her yet
+    expect(nextChat(s, {})).toBe('chat:noel:1');   // nobody has heard from her yet
     expect(arrivalScenes(s, { chat: true })).toEqual(['chat:noel:1']);
   });
 
   it('a chat waits for the one before it, and a spent character offers none', () => {
     const s = base();
     s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4', 'chat:rin:1', 'chat:rin:2', 'chat:rin:3', 'chat:rin:4');
-    expect(nextChat(s)).toBeNull();
+    expect(nextChat(s, {})).toBeNull();
     const t = base();
     t.story.seen.push('chat:rin:1', 'chat:rin:2', 'chat:rin:3', 'chat:rin:4', 'chat:hero:2');   // the second was seen without the first: the first is the one offered
-    expect(nextChat(t)).toBe('chat:hero:1');
+    expect(nextChat(t, {})).toBe('chat:hero:1');
   });
 
   it('no chat without a return', () => {
@@ -168,5 +168,61 @@ describe('story triggers', () => {
     sceneDone(s, 'mem:hero:7', 'played');
     markRead(s, 'act2');
     expect(JSON.stringify(s)).toBe(before);
+  });
+});
+
+describe('chat gates', () => {
+  const met = (): GameState => { const s = base(); s.party = meet(s.party, 'rin', 1); return s; };
+  const rinSeen = (s: GameState, n: number) => { for (let i = 1; i <= n; i++) s.story.seen.push(`chat:rin:${i}`); };
+
+  it('a gated chat waits and the others still talk', () => {
+    const s = met();
+    rinSeen(s, 1);
+    s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4');
+    const gates = { 'chat:rin:2': { stage: 'act3' as const } };
+    s.dungeon.reached.mainline = 2;   // act1
+    expect(chatOpen(s, 'chat:rin:2', gates)).toBe(false);
+    expect(nextChat(s, gates)).toBeNull();   // hero spent; Rin waits, and her later chats wait with her
+    rinSeen(s, 1);
+    s.party = meet(s.party, 'noel', 1);
+    expect(nextChat(s, gates)).toBe('chat:noel:1');   // someone else still talks
+    s.story.nodes = ['act2', 'act3'];
+    expect(chatOpen(s, 'chat:rin:2', gates)).toBe(true);
+    s.story.seen.push('chat:noel:1');
+    expect(nextChat(s, gates)).toBe('chat:rin:2');
+  });
+
+  it('an oath-gated chat waits for her choice', () => {
+    const s = met();
+    s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4');
+    rinSeen(s, 1);
+    const gates = { 'chat:rin:2': { oath: true as const } };
+    expect(chatOpen(s, 'chat:rin:2', gates)).toBe(false);
+    expect(nextChat(s, gates)).toBeNull();
+    s.party.roster.rin.oath = true;
+    expect(chatOpen(s, 'chat:rin:2', gates)).toBe(true);
+    expect(nextChat(s, gates)).toBe('chat:rin:2');
+  });
+
+  it('a stage and an oath gate both have to hold', () => {
+    const s = met();
+    const gates = { 'chat:rin:2': { stage: 'act2' as const, oath: true as const } };
+    s.party.roster.rin.oath = true;
+    expect(chatOpen(s, 'chat:rin:2', gates)).toBe(false);   // stage not reached
+    s.story.nodes = ['act2'];
+    expect(chatOpen(s, 'chat:rin:2', gates)).toBe(true);
+  });
+
+  it('no gate, no change', () => {
+    const s = base();
+    s.party = meet(s.party, 'rin', 1);
+    expect(chatOpen(s, 'chat:rin:1', {})).toBe(true);
+    expect(nextChat(s, {})).toBe('chat:hero:1');
+    s.story.seen.push('chat:hero:1');
+    expect(nextChat(s, {})).toBe('chat:rin:1');
+  });
+
+  it('no first chat is gated', () => {
+    expect(Object.keys(CHAT_GATE).filter((id) => id.endsWith(':1'))).toEqual([]);
   });
 });

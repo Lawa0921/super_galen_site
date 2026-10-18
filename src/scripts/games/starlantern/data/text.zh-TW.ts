@@ -123,6 +123,8 @@ export const T = {
     win: '勝利！', lose: '全滅……', fled: '成功逃跑', cont: '繼續', poison: '毒', sleep: '睡眠',
     exp: (n: number) => `經驗值 +${n}`, gold: (n: number) => `金錢 +${n}`, drop: (name: string, n: number) => `${name} ×${n}`,
     leftBehind: (name: string, n: number) => `背包已滿，留下了 ${name} ×${n}`,
+    /** A line spoken after a meeting fight, with the name of who says it. */
+    saidBy: (name: string, text: string) => `${name}：${text}`,
     levelUp: (name: string, lv: number) => `${name} 升到 Lv ${lv}`,
     /** Points a level-up brought, each pointing to the status tab where it is spent; the talent part only when there is one. */
     points: (name: string, skill: number, talent: number) =>
@@ -227,7 +229,6 @@ export const T = {
       /** The memory keystone's line under the board (it takes no slot): its name once awake, or what wakes it. */
       memoryKeystone: (name: string) => `記憶關鍵天賦：${name}`,
       memoryLocked: (n: number) => `找回全部 ${n} 片記憶後覺醒`,
-      oathLocked: '在她做出選擇之後覺醒',
       /** A normal node's bonus per rank, e.g. 「+2／級」; a percent stat carries a % sign. */
       per: (key: AnyStat, v: number) => `${signed(v)}${POINT_STATS.includes(key) ? '' : '%'}／級`,
       /** The notes for a normal node: 「智力 +2／級（目前 +4）」. */
@@ -503,7 +504,7 @@ export const T = {
     event: {
       leave: '離開',
       fountain: { title: '泉水', desc: '清澈的泉水湧出。喝下能回復全隊 HP 與 TP 的 30%，每趟只能喝一次。', drink: '飲用', done: '喝下泉水，全隊的 HP 與 TP 回復了。' },
-      merchant: { title: '流浪商人', desc: '「旅途中缺什麼嗎？價錢跟城裡一樣。」', gold: (n: number) => `持有 ${n} G` },
+      merchant: { title: '流浪商人', gold: (n: number) => `持有 ${n} G` },
       altar: {
         title: '祭壇', accept: '接受', decline: '拒絕',
         cost: (hpPct: number | undefined, gold: number | undefined) => `代價：${[hpPct ? `全隊 HP ${hpPct}%` : '', gold ? `${gold} G` : ''].filter(Boolean).join('、')}`,
@@ -565,7 +566,7 @@ export const T = {
       giveAsk: (name: string) => `要把${name}還給他嗎？`,
       /** After a return: what the owner paid. */
       reward: (parts: string) => `作為謝禮，收下了 ${parts}。`,
-      absorbFail: { cap: '已經吸收不了更多了。', stock: '手上沒有這種碎片了。', invalid: '這個人還沒遇見，吸收不了。' } as Record<string, string>,
+      absorbFail: { cap: '已經吸收不了更多了。', stock: '手上沒有這種碎片了。', invalid: '這個人還沒加入隊伍，或這不是能吸收的碎片。' } as Record<string, string>,
       giveFail: { invalid: '已經還給他了。', stock: '手上沒有這個碎片了。' } as Record<string, string>,
     },
     guild: {

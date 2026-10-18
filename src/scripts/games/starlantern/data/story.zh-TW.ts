@@ -104,6 +104,20 @@ export const STORY = {
   rinLines: {
     act2: [ph('……沒什麼。')], act3: [ph('……沒什麼。')], act4: [ph('……沒什麼。')], after: [ph('……沒什麼。')],
   } as Partial<Record<Stage, string[]>>,
+  /** Rin's lines in the town once she has made her choice; they replace `rinLines`. */
+  rinOath: [ph('……我在這裡。哪裡也不去。'), ph('今天也，一起回來了呢。')],
+  /** The bellkeeper in the town: after Rin's choice, and once the finale is won. */
+  bellkeeper: {
+    oath: [ph('鐘聲停了。我只是來看看，那孩子過得好不好。')],
+    after: [ph('鐘不響了，也沒有人再需要它了。')],
+  },
+  /** The wandering merchant's greeting: before Noel has all her memories, and after. */
+  merchant: {
+    lost: ph('「旅途中缺什麼嗎？價錢跟城裡一樣。」'),
+    found: ph('「旅途中缺什麼嗎？……啊，我想起來了。價錢跟城裡一樣。」'),
+  },
+  /** The finale's boss room when Rin has not made her choice yet: said once, and the party stays on the map. */
+  finaleWait: [{ who: 'narrator' as const, text: ph('還少了什麼……現在還不是時候。') }] as ScriptLine[],
   greet: {
     guild: greetOf('歡迎回來，要整頓隊伍嗎？', '今天也請平安歸來。'),
     shop: greetOf('歡迎光臨！看看有什麼需要的。', '剛進了新貨喔。'),

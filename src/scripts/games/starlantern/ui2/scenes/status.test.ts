@@ -996,9 +996,35 @@ describe('StatusScene', () => {
       expect(awake.line).toContain(t.memoryKeystone(name));
       expect(awake.line).toContain(KEYSTONES[MEMORY_KEYSTONES.selene].desc);
       expect(awake.line).not.toContain(t.memoryLocked(total));
-      // Rin waits on her oath, not on her pieces.
-      expect(open(chainLength('rin'), 'rin').line).toContain(t.oathLocked);
+      // Rin's wakes with her oath; until then it reads like everyone's, without naming her choice.
+      expect(open(chainLength('rin'), 'rin').line).toContain(t.memoryLocked(chainLength('rin')));
       expect(open(chainLength('rin'), 'rin', { oath: true }).line).toContain(KEYSTONES[MEMORY_KEYSTONES.rin].desc);
+    });
+
+    it('a sleeping memory keystone keeps its name to itself', () => {
+      const t = T.ui2.talent;
+      const open = (id: 'selene' | 'rin', memories: number, extra: object = {}) => {
+        const r = setup(id, NO_ART, (g) => { if (!g.state.party.recruited.includes(id)) g.state.party.recruited.push(id);
+        g.state.party.roster[id] = { ...(g.state.party.roster[id]), level: 50, memories, ...extra }; });
+        for (let i = 0; i < 4; i++ ) r.s.onAction('right');
+        return r.root.querySelector('.slx-talent-memkey')!.textContent!;
+      };
+      for (const id of ['selene', 'rin'] as const) {
+        const k = KEYSTONES[MEMORY_KEYSTONES[id]];
+        const total = chainLength(id);
+        const asleep = open(id, total - 1);
+        expect(asleep).not.toContain(k.name);
+        expect(asleep).toContain(T.ui2.handbook.unknown);
+        expect(asleep).toContain(t.memoryLocked(total));
+        const awake = open(id, total, id === 'rin' ? { oath: true } : {});
+        expect(awake).toContain(k.name);
+        expect(awake).toContain(k.desc);
+        expect(awake).not.toContain(T.ui2.handbook.unknown);
+      }
+      // Rin's holds all seven pieces but not yet her choice: still asleep, still unnamed.
+      const waiting = open('rin', chainLength('rin'));
+      expect(waiting).not.toContain(KEYSTONES[MEMORY_KEYSTONES.rin].name);
+      expect(waiting).toContain(T.ui2.handbook.unknown);
     });
 
     it('with no points left a shut node shows its structural reason, an open one 點數不足', () => {
