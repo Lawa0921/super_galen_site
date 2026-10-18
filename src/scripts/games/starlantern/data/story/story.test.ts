@@ -811,14 +811,15 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
       { who: 'noel', re: /小氣|怕本小姐/, piece: 4 },                   // she thinks her teacher is stingy until her fourth piece
       { who: 'noel', re: /忘了.{0,4}(怎麼|為什麼).{0,4}(進來|迷宮)/, piece: 2 },   // her second piece tells how she came in
     ];
-    const REVEALED: { who: string; re: RegExp; piece: number }[] = [
+    // `heard`: the row is also checked against the narration of her chats (what the scene shows, not only what she says).
+    const REVEALED: { who: string; re: RegExp; piece: number; heard?: true }[] = [
       { who: 'selene', re: /洛恩(?!先生)/, piece: 5 },
       { who: 'selene', re: /我想看見|新月/, piece: 5 },
       { who: 'chizuru', re: /不在了/, piece: 4 },
       { who: 'chizuru', re: /託付/, piece: 5 },
       { who: 'safira', re: /團長|你要繼續跳|做決定的/, piece: 4 },
       // Task 9
-      { who: 'sylvie', re: /林子|守林|帶出去|帶出來|種子|新綠|發芽/, piece: 1 },   // the mire was her forest (1); the rest comes later
+      { who: 'sylvie', re: /林子|守林|帶出去|帶出來|種子|種下|空地|新綠|發芽/, piece: 1, heard: true },   // the mire was her forest (1); the seed and its clearing (5) (fix round 1)
       { who: 'noel', re: /洛恩/, piece: 5 },
       { who: 'noel', re: /星火|燒掉|燒光|為薪|保護|商人/, piece: 3 },
       { who: 'bobby', re: /祖先|一族|構造圖|都能裝|錯了|閥|道歉|修好/, piece: 1 },
@@ -828,11 +829,12 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
         for (const full of [false, true]) {
           for (const oath of [false, true]) {
             const id = `chat:${c}:${n}` as SceneId;
-            const said = linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: full ? [c] : [], returned: [], oath })
-              .filter((l) => l.who === c).map((l) => l.text).join('');
+            const played = linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: full ? [c] : [], returned: [], oath });
+            const said = played.filter((l) => l.who === c).map((l) => l.text).join('');
+            const heard = played.filter((l) => l.who === c || l.who === 'narrator').map((l) => l.text).join('');
             const tag = `${id} full=${full}`;
             for (const r of UNDONE.filter((x) => x.who === c)) if (full || r.piece < 5) expect(said, `${tag} ${r.re}`).not.toMatch(r.re);
-            for (const r of REVEALED.filter((x) => x.who === c)) if (!full) expect(said, `${tag} ${r.re}`).not.toMatch(r.re);
+            for (const r of REVEALED.filter((x) => x.who === c)) if (!full) expect(r.heard ? heard : said, `${tag} ${r.re}`).not.toMatch(r.re);
           }
         }
       }
@@ -925,14 +927,18 @@ describe('Task 9: Sylvie, Noel and Bobby', () => {
     expect(textOf('mem:noel:3')).toMatch(/星火/);
     expect(textOf('mem:noel:4')).toMatch(/老師/);
     for (const n of [1, 2]) expect(textOf(memScene('noel', n)), `mem:noel:${n}`).not.toMatch(/燒掉|燒光|為薪/);
-    // the merchant speaks only in her last piece, in his recovered voice (style bible): her name, no scolding for the book
-    const merchant = storyTexts().filter((t) => t.line?.who === 'merchant');
-    expect(merchant.length).toBeGreaterThan(0);
-    for (const t of merchant) expect(t.key, t.key).toMatch(/^scenes\.mem:noel:5\./);
-    expect(merchant.some((t) => t.text.includes('諾艾兒'))).toBe(true);
-    for (const t of merchant) expect(t.text, t.key).not.toMatch(/偷|本小姐/);
-    // and his reunion line is not the town greeting still waiting for Task 11
-    for (const t of merchant) expect(PLACEHOLDERS.has(t.text), t.key).toBe(false);
+    // the merchant speaks in her last piece, in his recovered voice (style bible): her name, no scolding for the book.
+    // Fix round 1: later tasks (Task 11's merchant lines) may give him lines elsewhere; he never speaks in her story before it.
+    const reunion = linesOf('mem:noel:5').filter((l) => l.who === 'merchant');
+    expect(reunion.length).toBeGreaterThan(0);
+    expect(reunion.some((l) => l.text.includes('諾艾兒'))).toBe(true);
+    for (const l of reunion) expect(l.text).not.toMatch(/偷|本小姐/);
+    for (const l of reunion) expect(PLACEHOLDERS.has(l.text), l.text).toBe(false);   // not the greeting still waiting for Task 11
+    const beforeReunion = (key: string) => /^scenes\.mem:noel:[1-4]\.|^scenes\.chat:noel:|^meet\.noel\.|^people\.noel\.[01]$/.test(key);
+    for (const t of storyTexts()) {
+      if (beforeReunion(t.key)) expect(t.line?.who, t.key).not.toBe('merchant');
+      if (beforeReunion(t.key) && t.line?.who === 'noel') expect(t.text, t.key).not.toMatch(/商人/);
+    }
   });
 
   it("Bobby calls him 「洛恩哥」, and her last piece ends on the spec's line, said nowhere else", () => {
@@ -942,7 +948,10 @@ describe('Task 9: Sylvie, Noel and Bobby', () => {
     const last = linesOf('mem:bobby:5').slice(-1)[0];
     expect(last.who).toBe('bobby');
     expect(last.text).toBe(`「${QUOTE}」`);
-    for (const t of storyTexts()) if (t.text.includes(QUOTE)) expect(t.key, t.key).toBe('scenes.mem:bobby:5.lines.3.text');
+    // Fix round 1: the finale (Task 14) may echo it; nothing of hers before her last piece says it.
+    const beforeLast = (key: string) => /^scenes\.mem:bobby:[1-4]\.|^scenes\.chat:bobby:|^meet\.bobby\.|^people\.bobby\.[01]$/.test(key)
+      || (key.startsWith('scenes.mem:bobby:5.') && key !== 'scenes.mem:bobby:5.lines.3.text');
+    for (const t of storyTexts()) if (beforeLast(t.key)) expect(t.text, t.key).not.toContain(QUOTE);
     expect(textOf('mem:bobby:3')).toMatch(/什麼記憶都能裝|無論何種記憶/);   // spec §6: the ancestors' guilt
     for (const t of spokenBy('bobby')) expect(t.text, t.key).not.toContain('修不好');   // style bible: never says it can't be fixed
   });

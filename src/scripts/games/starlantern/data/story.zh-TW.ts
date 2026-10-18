@@ -682,12 +682,12 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'chat:sylvie:2': {
     lines: [
-      // Until her last piece she thinks she has no right to the bed; after it, she has planted the seed (I-58).
+      // Until her last piece she thinks she has no right to the bed; after it, her seed has sprouted in the clearing (I-58, I-66).
       { who: 'narrator', text: '深夜的月影旅館。希爾薇的床鋪得整整齊齊，她卻抱著弓，靠在窗邊的牆上。', if: { notFull: 'sylvie' } },
-      { who: 'narrator', text: '深夜的月影旅館。希爾薇抱著弓靠在窗邊，看著樓下那塊剛翻過土的空地。', if: { full: 'sylvie' } },
+      { who: 'narrator', text: '深夜的月影旅館。希爾薇抱著弓靠在窗邊，看著樓下空地上冒出來的一點新綠。', if: { full: 'sylvie' } },
       { who: 'hero', text: '「不睡？」' },
       { who: 'sylvie', mood: 'sad', text: '「床，留給該睡的人。……我在這裡就好。」', if: { notFull: 'sylvie' } },
-      { who: 'sylvie', mood: 'smile', text: '「……種下去了。再看一下，就去睡床。」', if: { full: 'sylvie' } },
+      { who: 'sylvie', mood: 'smile', text: '「……發芽了。再看一下，就去睡床。」', if: { full: 'sylvie' } },
     ],
     summary: '深夜，希爾薇抱著弓，靠在旅館的窗邊。洛恩問她不睡嗎。',
   },
@@ -805,11 +805,11 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'chat:bobby:1': {
     lines: [
-      { who: 'bobby', mood: 'excited', text: '「洛恩哥，你的劍借我看一下下。這些紋路不是花樣，是線路喔。」' },
-      { who: 'hero', text: '「線路？」' },
-      { who: 'bobby', mood: 'grin', text: '「嘿嘿，通到哪裡，我還看不出來。總有一天，我會弄懂的。」' },
+      { who: 'bobby', mood: 'excited', text: '「洛恩哥，你的劍借我看一下下。這些紋路，不像是刻好看的喔。」' },
+      { who: 'hero', text: '「不是裝飾？」' },
+      { who: 'bobby', mood: 'grin', text: '「嘿嘿，我也說不上來。就是覺得，有人很認真地做過它。」' },
     ],
-    summary: '波比盯著洛恩的劍，說上面的紋路不是花樣，是線路。',
+    summary: '波比盯著洛恩的劍，說上面的紋路不像是刻好看的。',
   },
   'chat:bobby:2': {
     lines: [
@@ -890,11 +890,11 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   // Task 9: Lorne's notes on Sylvie, Noel and Bobby. Each segment is placed at her meeting: no act content (I-58).
   sylvie: [
     '希爾薇。在腐毒沼澤被毒藤纏住，箭筒只剩一支箭，還在射。話很少，只說路、風和氣味。',
-    '腐毒沼澤，以前是她守的林子。霧來的時候，她牽著人走出去，又一趟趟回頭。她說，林子是在她眼前死的。',
+    '腐毒沼澤，以前是她守的林子。霧來的時候，她牽著一家人走出去，又回頭了。她說，林子是在她眼前死的。',
     '人全出來之後，她才回頭，帶出了林子最後一顆種子。她要把它種在鎮上的空地。她說，林子還能再長。',
   ],
   noel: [
-    '諾艾兒。在雷鳴之地亂放雷，魔力和記憶都快燒乾了。自稱本小姐，叫我歸來者。',
+    '諾艾兒。在雷鳴之地亂放雷，魔力都快見底了，眼神空空的。自稱本小姐，叫我歸來者。',
     '她偷了老師的魔法書，逃進迷宮。書裡的星火，用一次就燒掉施法者的一段記憶。她的失憶，是自己燒的。',
     '老師不讓她念那一頁，是為了保護她。流浪商人就是她的老師，他們在攤前重逢了。現在她叫我洛恩，叫之前會先臉紅。',
   ],
