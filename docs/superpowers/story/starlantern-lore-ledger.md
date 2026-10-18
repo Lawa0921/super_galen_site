@@ -197,3 +197,4 @@ spec：`docs/superpowers/specs/2026-10-17-starlantern-story-world-design.md`（�
 
 - `SPOILERS`（`story.test.ts`）：`守燈人`（第四幕以後、主角第 9、10 片）、`靜鐘會`（第三幕以後）、凜的秘密 `RIN_SECRET_TERMS` = `代號`、`信物`、`刺客`、`派來殺`、`派去殺`、`去殺`、`要殺的人`（T4 加入；`刺客` 不放行第三幕的文字，第三幕要寫結社派人殺他時用別的說法；放行規則見揭露表與 `rinSecretAllowed`）。只能收緊，不能放寬。
 - `MAX_LINE_CHARS` 維持 60（T4 實測）：序章最長的一句（修正後是葛倫的 42 字）與凜第 7 片最長的一句（41 字）在 1280×720 的畫面上都只佔一行，對話框約 45 字一行、放得下三行，60 字是兩行，不爆框。截圖：`tmp/starlantern/6c-style/prologue-longest.png`、`tmp/starlantern/6c-style/rin-7-longest.png`。
+- `averted`（凜移開視線）的位置規則：第三幕以後、凜第四片以後的回憶、或帶 `if.oath: true` 的句子（I-11、I-29；`story.test.ts` 的 `avertedAllowed`）。`if.oath: false` 不算。（T7.5）

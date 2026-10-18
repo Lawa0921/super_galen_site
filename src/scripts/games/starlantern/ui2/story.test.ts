@@ -163,6 +163,20 @@ describe('speakerOf', () => {
     expect(speakerOf('noel', game.state, bare, 'sad').face).toBe(art.portrait('noel', 'normal'));
     expect(speakerOf('liz', game.state, { has: () => false }, 'smile').face).toBeUndefined();
   });
+
+  it('a face with no art yet shows normal; one with art shows itself', () => {
+    // Spec §10.3: a new face never borrows another feeling; until its art is published it is the normal face.
+    const { game } = mk();
+    expect(speakerOf('selene', game.state, ART, 'blush').face).toBe(art.portrait('selene', 'normal'));
+    expect(speakerOf('hero', game.state, ART, 'resolve').face).toBe(art.portrait('hero', 'normal'));
+    const withBlush: ArtIndex = { has: (u) => ART.has(u) || u === art.portrait('selene', 'blush') };
+    expect(speakerOf('selene', game.state, withBlush, 'blush').face).toBe(art.portrait('selene', 'blush'));
+    // Rin after her oath wears the rin-oath set of the same faces.
+    game.state.party.roster.rin.oath = true;
+    const withAverted: ArtIndex = { has: (u) => ART.has(u) || u === art.portrait('rin-oath', 'averted') };
+    expect(speakerOf('rin', game.state, withAverted, 'averted').face).toBe(art.portrait('rin-oath', 'averted'));
+    expect(speakerOf('rin', game.state, ART, 'averted').face).toBe(art.portrait('rin-oath', 'normal'));
+  });
 });
 
 describe('shouldPlay', () => {

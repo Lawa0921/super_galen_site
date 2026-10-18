@@ -4,10 +4,11 @@ import { ITEMS } from '../items';
 import { MATERIALS } from '../materials';
 import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
-import { numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, STORY_MOODS, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
+import { numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
 import { TOWN_FRAGMENTS, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
 import { memoryPace } from '../../engine/story/expect';
+import type { StoryMood } from '../../render/artPaths';
 import { ACT_DEPTHS, CHAT_COUNT, CHAT_GATE, SCENE_IDS, STAGES, MAJOR_SCENES, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
@@ -364,6 +365,18 @@ const rinSecretAllowed = (key: string, line?: ScriptLine): boolean => {
   return position(key) === 'after';
 };
 
+/**
+ * Rin may be shown looking away only once she has started to (lore ledger I-11, I-29): from act 3 on, in her 4th piece or a
+ * later one (a memory plays when it is found, so the 4th is in hand), or in a line that plays only after her choice.
+ * `if.oath: false` does not count: it says nothing about her 4th piece (chat:rin:2 waits only for act 2).
+ */
+const avertedAllowed = (key: string, line: ScriptLine): boolean => {
+  if (stageIdx(position(key)) >= stageIdx('act3')) return true;
+  const mem = /^scenes\.mem:rin:(\d+)\./.exec(key);
+  if (mem && Number(mem[1]) >= 4) return true;
+  return line.if?.oath === true;
+};
+
 const SPOILERS: { terms: string[]; allowed: (key: string, line?: ScriptLine) => boolean; why: string }[] = [
   {
     terms: ['守燈人'],
@@ -450,9 +463,46 @@ describe('the script gates', () => {
     for (const { key, line } of storyTexts().filter((t) => t.line)) {
       const l = line!;
       expect(SPEAKERS.has(l.who), `${key}: ${l.who}`).toBe(true);
-      if (l.mood !== undefined) expect(STORY_MOODS, key).toContain(l.mood);
-      if (!(CHARACTER_IDS as string[]).includes(l.who)) expect(l.mood, key).toBeUndefined();   // narrator and the town people have no face to change
+      expect(moodAllowed(l.who, l.mood), `${key}: ${l.who} ${l.mood}`).toBe(true);   // narrator and the town people have no face to change
     }
+  });
+
+  it('a mood belongs to its speaker', () => {
+    expect(moodAllowed('selene', 'smug')).toBe(false);
+    expect(moodAllowed('noel', 'smug')).toBe(true);
+    expect(moodAllowed('rin', 'averted')).toBe(true);
+    expect(moodAllowed('hero', 'averted')).toBe(false);
+    expect(moodAllowed('anna', 'smile')).toBe(false);
+    expect(moodAllowed('narrator', undefined)).toBe(true);
+    expect(moodAllowed('scarlet', 'down')).toBe(true);
+    expect(moodAllowed('scarlet', 'attack' as string as StoryMood)).toBe(false);   // battle faces never speak
+  });
+
+  it('Rin looks away only once she has started to', () => {
+    for (const { key, line } of storyTexts().filter((t) => t.line)) {
+      if (line!.who === 'rin' && line!.mood === 'averted') expect(avertedAllowed(key, line!), key).toBe(true);
+    }
+    const rin = (c?: ScriptLine['if']): ScriptLine => ({ who: 'rin', mood: 'averted', text: '甲', ...(c ? { if: c } : {}) });
+    expect(avertedAllowed('scenes.chat:rin:2.lines.3.text', rin({ oath: false }))).toBe(false);   // act 2: her 4th piece may not be found yet
+    expect(avertedAllowed('scenes.mem:rin:4.lines.2.text', rin())).toBe(true);
+    expect(avertedAllowed('scenes.mem:rin:3.lines.2.text', rin())).toBe(false);
+    expect(avertedAllowed('scenes.act4.lines.0.text', rin())).toBe(true);
+    expect(avertedAllowed('scenes.chat:rin:2.lines.3.text', rin({ oath: true }))).toBe(true);
+  });
+
+  it('the written scenes wear their faces', () => {
+    // Task 7.5 retag pins, found by content.
+    const face = (id: SceneId, who: string, has: string, oath?: boolean): StoryMood | undefined => {
+      const hits = STORY.scenes[id].lines.filter((l) => l.who === who && l.text.includes(has) && (oath === undefined || l.if?.oath === oath));
+      expect(hits, `${id} ${who} ${has}`).toHaveLength(1);
+      return hits[0].mood;
+    };
+    expect(face('mem:rin:6', 'rin', '別看我')).toBe('averted');
+    expect(face('mem:rin:7', 'rin', '那把劍')).toBe('surprised');
+    expect(face('mem:hero:10', 'hero', '是燈鑰')).toBe('resolve');
+    expect(face('rin-reveal', 'rin', '選擇不要')).toBe('serious');
+    expect(face('chat:rin:3', 'rin', '', true)).toBe('blush');
+    expect(face('prologue', 'rin', '')).toBe('guarded');
   });
 
   it('nobody unmet speaks', () => {

@@ -13,19 +13,48 @@ export const ART_BASE = '/assets/games/starlantern';
 export const MANIFEST_URL = `${ART_BASE}/manifest.json`;
 export type TileKey = Tile | 'chest-open';
 export type { FxKey };
+/** Battle faces (unchanged). */
 export type Mood = 'normal' | 'attack' | 'hit' | 'dying' | 'down' | 'ultimate';
-/** Story-only faces that a few characters have besides the battle moods. */
-export type ExtraMood = 'smile' | 'sad';
-export const EXTRA_MOODS: ExtraMood[] = ['smile', 'sad'];
+/** Talking faces everyone has. */
+export type CoreMood = 'normal' | 'smile' | 'sad' | 'surprised' | 'serious' | 'blush';
+/** Talking faces only one character has (Rin's two looks share hers). */
+export type SpecialMood =
+  | 'resolve' | 'distant'                 // hero
+  | 'averted' | 'guarded'                 // rin, rin-oath
+  | 'foresee' | 'wistful'                 // selene
+  | 'solemn' | 'bewildered'               // chizuru
+  | 'wink' | 'laugh'                      // safira
+  | 'alert' | 'unguarded'                 // sylvie
+  | 'smug' | 'pout' | 'panic'             // noel
+  | 'excited' | 'grin' | 'focused'        // bobby
+  | 'scheming' | 'hushed'                 // liz
+  | 'vow' | 'shaken';                     // scarlet
+/** What a story line may ask for: a talking face, or the battle `down` for a collapse. */
+export type StoryMood = CoreMood | SpecialMood | 'down';
+/** Story faces beyond the battle set (kept as a name so existing imports still compile). */
+export type ExtraMood = Exclude<StoryMood, Mood>;
 export const MOODS: Mood[] = ['normal', 'attack', 'hit', 'dying', 'down', 'ultimate'];
+export const CORE_MOODS: CoreMood[] = ['normal', 'smile', 'sad', 'surprised', 'serious', 'blush'];
+export const SPECIAL_MOODS_OF: Record<string, SpecialMood[]> = {
+  hero: ['resolve', 'distant'], rin: ['averted', 'guarded'], 'rin-oath': ['averted', 'guarded'],
+  selene: ['foresee', 'wistful'], chizuru: ['solemn', 'bewildered'], safira: ['wink', 'laugh'],
+  sylvie: ['alert', 'unguarded'], noel: ['smug', 'pout', 'panic'], bobby: ['excited', 'grin', 'focused'],
+  liz: ['scheming', 'hushed'], scarlet: ['vow', 'shaken'],
+};
+/** Every talking face of an art id: the core six, then that id's own. */
+export const MOODS_OF: Record<string, StoryMood[]> = Object.fromEntries(
+  Object.entries(SPECIAL_MOODS_OF).map(([id, own]) => [id, [...CORE_MOODS, ...own]]),
+);
+/** Story faces on disk, by art id. An art batch adds its moods here in the same commit as its registry entries. */
+export const PUBLISHED_FACES: Record<string, StoryMood[]> = {
+  hero: ['smile', 'sad'], rin: ['smile', 'sad'], 'rin-oath': ['smile', 'sad'],
+};
 
 /** Characters whose art is not on disk yet; allArtUrls leaves them out. */
 export const NO_ART_YET = new Set<CharacterId>();
 export const ART_CHARACTER_IDS = CHARACTER_IDS.filter((id) => !NO_ART_YET.has(id));
 /** Art ids that are not characters of their own but a second look of one (Rin after her oath). */
 export const ART_VARIANT_IDS = ['rin-oath'];
-/** Everyone who also has the smile and sad faces. */
-const EXTRA_MOOD_IDS = ['hero', 'rin', 'rin-oath'];
 
 export const TILE_KEYS: TileKey[] = ['wall', 'floor', 'door', 'up', 'down', 'chest', 'chest-open', 'entrance', 'boss'];
 export const FX_KEYS: FxKey[] = ['slash', 'pierce', 'strike', 'fire', 'ice', 'thunder', 'heal', 'buff'];
@@ -44,7 +73,7 @@ export const art = {
   fx: (key: FxKey) => `${ART_BASE}/fx/${key}.png`,
   /** Four equal frames left to right: wind-up, burst, spread, fade. */
   fxAnim: (key: FxKey) => `${ART_BASE}/fx/${key}-anim.png`,
-  portrait: (cid: string, mood: Mood | ExtraMood) => `${ART_BASE}/char/${cid}-portrait${mood === 'normal' ? '' : `-${mood}`}.png`,
+  portrait: (cid: string, mood: Mood | StoryMood) => `${ART_BASE}/char/${cid}-portrait${mood === 'normal' ? '' : `-${mood}`}.png`,
   standee: (cid: string) => `${ART_BASE}/char/${cid}-standee.png`,
   icon: (id: string) => `${ART_BASE}/icon/${id}.png`,
   frame: `${ART_BASE}/ui/frame.png`,
@@ -103,7 +132,7 @@ export function enemyArt(id: string): string {
 export function allArtUrls(): string[] {
   const urls: string[] = [];
   for (const id of [...ART_CHARACTER_IDS, ...ART_VARIANT_IDS]) urls.push(art.standee(id), ...MOODS.map((m) => art.portrait(id, m)));
-  for (const id of EXTRA_MOOD_IDS) urls.push(...EXTRA_MOODS.map((m) => art.portrait(id, m)));
+  for (const [id, faces] of Object.entries(PUBLISHED_FACES)) urls.push(...faces.map((m) => art.portrait(id, m)));
   for (const d of DIRS) urls.push(art.party(d));
   urls.push(art.fog);
   for (const f of [1, 2, 3]) { for (const k of TILE_KEYS) urls.push(art.tile(f, k)); urls.push(art.wallTop(f), art.wallFace(f), art.bg(f)); }

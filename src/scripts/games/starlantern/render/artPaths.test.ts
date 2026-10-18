@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../data/enemies';
 import type { BattleEvent } from '../engine/combatant';
-import { ART_BASE, ART_CHARACTER_IDS, allArtUrls, art, effectFor, enemyArt, moodFor, parseManifest, tileKey } from './artPaths';
+import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, MOODS, MOODS_OF, PUBLISHED_FACES, SPECIAL_MOODS_OF, allArtUrls, art, effectFor, enemyArt, moodFor, parseManifest, tileKey } from './artPaths';
 
 describe('artPaths', () => {
   it('builds urls under the starlantern base', () => {
@@ -36,6 +36,43 @@ describe('artPaths', () => {
     const reg = JSON.parse(readFileSync('art-factory/starlantern/registry.json', 'utf8')) as { assets: Record<string, { runtime?: string }> };
     const runtime = Object.values(reg.assets).flatMap((a) => (a.runtime ? [a.runtime] : [])).sort();
     expect(runtime).toEqual([...allArtUrls()].sort());
+  });
+
+  it('everyone has at least eight talking faces, the core six first', () => {
+    for (const id of [...ART_CHARACTER_IDS, ...ART_VARIANT_IDS]) {
+      const faces = MOODS_OF[id];
+      expect(faces.length, id).toBeGreaterThanOrEqual(8);
+      expect(faces.slice(0, 6), id).toEqual(CORE_MOODS);
+      expect(new Set(faces).size, id).toBe(faces.length);
+    }
+    expect(MOODS_OF.rin).toEqual(MOODS_OF['rin-oath']);
+  });
+
+  it('a special face belongs to one character', () => {
+    // Rin's oath look is her, not another character: the two share one set.
+    const owner = (id: string) => (id === 'rin-oath' ? 'rin' : id);
+    const owners = new Map<string, Set<string>>();
+    for (const [id, faces] of Object.entries(SPECIAL_MOODS_OF)) {
+      for (const f of faces) owners.set(f, (owners.get(f) ?? new Set()).add(owner(id)));
+    }
+    for (const [f, who] of owners) {
+      expect([...who], f).toHaveLength(1);
+      expect(CORE_MOODS as string[], f).not.toContain(f);
+      expect(MOODS as string[], f).not.toContain(f);
+    }
+  });
+
+  it('a declared face adds no url until it is published', () => {
+    const urls = allArtUrls();
+    expect(urls).not.toContain(art.portrait('selene', 'blush'));
+    expect(urls).not.toContain(art.portrait('hero', 'resolve'));
+    expect(urls).not.toContain(art.portrait('rin-oath', 'averted'));
+    for (const [id, faces] of Object.entries(PUBLISHED_FACES)) {
+      for (const f of faces) {
+        expect(urls).toContain(art.portrait(id, f));
+        expect(MOODS_OF[id], `${id} ${f}`).toContain(f);
+      }
+    }
   });
 
   it('maps an opened chest to its own tile', () => {

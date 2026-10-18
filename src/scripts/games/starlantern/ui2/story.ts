@@ -7,7 +7,7 @@ import type { Game } from '../engine/game';
 import { memoriesOf } from '../engine/progression';
 import type { GameState } from '../engine/state';
 import type { CharacterId } from '../engine/types';
-import { art, type ExtraMood, type Mood } from '../render/artPaths';
+import { art, type StoryMood } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { artIdOf } from '../ui/art';
 import type { UiAction } from './input';
@@ -34,12 +34,12 @@ export const NPC_FACILITY: Partial<Record<NpcId, 'guild' | 'shop' | 'inn' | 'gat
   anna: 'guild', orik: 'shop', marta: 'inn', glen: 'gate', doran: 'forge',
 };
 
-/** Faces to try for a mood, best first. Smile falls back to normal, sad to down and then normal. */
-const faceOrder = (mood: Mood | ExtraMood): (Mood | ExtraMood)[] =>
+/** Faces to try for a mood, best first. Sad falls back to down and then normal; any other face straight to normal (never another feeling). */
+const faceOrder = (mood: StoryMood): StoryMood[] =>
   mood === 'normal' ? ['normal'] : mood === 'sad' ? ['sad', 'down', 'normal'] : [mood, 'normal'];
 
 /** Who speaks: the name plate, and the face when there is published art for it. */
-export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: Mood | ExtraMood = 'normal'): { name: string; face?: string } {
+export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: StoryMood = 'normal'): { name: string; face?: string } {
   if (who === 'narrator') return { name: '' };
   if (who in CHARACTERS) {
     const id = who as CharacterId;
