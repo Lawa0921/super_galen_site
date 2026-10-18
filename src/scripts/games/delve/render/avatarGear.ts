@@ -34,8 +34,9 @@ const SPARK = hex('#ffffff');
 export function upgrades(b: Bmp, p: DollPiece | null, spots: [number, number][], gem: [number, number] | null, f: number, base: RGB[]): void {
   if (!p) return;
   const trim = trimOf(p), el = elemOf(p);
-  if (trim) for (let i = 0; i < spots.length; i += 2) b.set(spots[i][0], spots[i][1], trim);
-  if (el) for (let i = 1; i < spots.length; i += 3) b.set(spots[i][0], spots[i][1], i % 2 ? el[0] : el[1]);
+  // 滾邊：整條實線（稀有度色）；元素：每 4 格一顆點綴（兩色交替）
+  if (trim) for (const s of spots) b.set(s[0], s[1], trim);
+  if (el) for (let i = 1; i < spots.length; i += 4) b.set(spots[i][0], spots[i][1], (i >> 2) % 2 ? el[0] : el[1]);
   for (let k = 0; k < Math.min(3, p.plus); k++) { const s = spots[(k * 5 + 3) % spots.length]; if (s) b.set(s[0], s[1], base[base.length - 1]); }
   if (gem && (p.rarity >= 3 || p.plus >= 3)) {
     const c = trim ?? hex('#5c9ce0');
@@ -83,7 +84,9 @@ export function chestSpots(rows: Record<number, [number, number]>, dx: number, d
   if (top) for (let x = top[0]; x <= top[1]; x++) spots.push([x + dx, 32 + dy]);
   if (bot) for (let x = bot[1]; x >= bot[0]; x--) spots.push([x + dx, 40 + dy]);
   const mid = rows[36] ?? [18, 26];
-  return { spots, gem: [Math.round((mid[0] + mid[1]) / 2) + 1 + dx, 36 + dy] };
+  void mid;
+  // 寶石放在腰帶扣（側面不會被前手臂擋住）
+  return { spots, gem: [21 + dx, 40 + dy] };
 }
 
 // ── 護脛：膝甲 + 腿上的套裝細節 ───────────────────────────
