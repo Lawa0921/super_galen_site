@@ -12,7 +12,7 @@ export const LAYER_HALF: readonly [number, number, number] = [104, 68, 40];
 /** 天空色調的混合半寬（格） */
 export const SKY_HALF = 128;
 /** 分界抖動帶寬度（美術 px） */
-export const WIPE_BAND = 24;
+export const WIPE_BAND = 80;
 const NB = 4;
 
 export interface BiomePair { left: number; right: number; u: number; }
@@ -75,7 +75,7 @@ export function wipeFront(u: number, W: number): number {
   return (W + WIPE_BAND) * (1 - s) - WIPE_BAND / 2;
 }
 /** 分界帶的抖動階數：帶切成這麼多段，每段 WIPE_BAND / WIPE_LEVELS px */
-export const WIPE_LEVELS = 4;
+export const WIPE_LEVELS = 10;
 /** 第 l 段的覆蓋率 */
 export function levelKeep(l: number): number { return (l + 0.5) / WIPE_LEVELS; }
 /** 分界帶各段（相對帶左緣的 x 範圍與階數；越右越密） */

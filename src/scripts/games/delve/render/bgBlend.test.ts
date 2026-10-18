@@ -77,7 +77,9 @@ describe('wipeFront（垂直抹過的分界線）', () => {
 });
 
 describe('分界帶（WIPE_LEVELS 段、1×1 Bayer 遮罩、錨定圖層）', () => {
-  it('各段剛好鋪滿 WIPE_BAND、越右越密', () => {
+  it('各段剛好鋪滿 WIPE_BAND（夠寬、夠多階）、越右越密', () => {
+    expect(WIPE_BAND).toBeGreaterThanOrEqual(64);
+    expect(WIPE_LEVELS).toBeGreaterThanOrEqual(8);
     expect(BAND_SLICES[0].x0).toBe(0);
     expect(BAND_SLICES[BAND_SLICES.length - 1].x1).toBe(WIPE_BAND);
     for (let i = 1; i < BAND_SLICES.length; i++) {
@@ -97,7 +99,7 @@ describe('分界帶（WIPE_LEVELS 段、1×1 Bayer 遮罩、錨定圖層）', ()
     }
   });
   it('沒有 2×2 成簇的方塊（中間階）', () => {
-    const m = levelMask(1, 32, 32), on = (x: number, y: number): boolean => m.px[y * 32 + x] !== 0;
+    const m = levelMask(Math.floor(WIPE_LEVELS / 2), 32, 32), on = (x: number, y: number): boolean => m.px[y * 32 + x] !== 0;
     let blocks = 0, cells = 0;
     for (let y = 0; y < 32; y += 2) for (let x = 0; x < 32; x += 2) {
       cells++;

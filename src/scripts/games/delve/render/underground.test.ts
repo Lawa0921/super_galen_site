@@ -1,7 +1,7 @@
 // underground.test.ts — 地下背景每欄的色帶規劃：生態區主題、層與層之間的抖動過渡帶、交界抖動、菇林 / 地城覆蓋；
 // 主題暗紋（近層有洞口、遠層是整片的環境色）。
 import { describe, it, expect } from 'vitest';
-import { FAR_RAMP, UG, UG_KEEPS, UG_FADE_STEPS, UG_SEAM, ugAreas, ugColumnBands, ugThemeBmp, type UgColumn } from './underground';
+import { FAR_RAMP, UG, UG_KEEPS, UG_FADE_STEPS, UG_SEAM, UG_TILE, smoothTops, ugAreas, ugColumnBands, ugThemeBmp, type UgColumn } from './underground';
 
 const T = 16;
 const base = (o: Partial<UgColumn> = {}): UgColumn => ({
@@ -78,50 +78,88 @@ describe('ugColumnBands', () => {
 });
 
 describe('ugThemeBmp', () => {
-  it('遠層：每個主題 64×64、完全不透明', () => {
+  it('遠層：每個主題 UG_TILE×UG_TILE（256，重複得少）、完全不透明', () => {
     for (let t = 0; t < UG.COUNT; t++) {
       const b = ugThemeBmp(t, 1, 'far');
-      expect(b.w).toBe(64);
-      for (const v of b.px) expect(v >>> 24).toBe(255);
+      expect(b.w).toBe(UG_TILE);
+      expect(UG_TILE).toBeGreaterThanOrEqual(128);
+      expect(b.px.every((v) => v >>> 24 === 255)).toBe(true);
     }
   });
   it('近層：洞穴主題有洞口（透出遠層，約 15–40%），地城磚沒有', () => {
     for (const t of [UG.DIRT, UG.ROCK, UG.DEEP, UG.MOLTEN, UG.SAND, UG.ICE, UG.MUD]) {
       const b = ugThemeBmp(t, 1);
       let open = 0;
-      for (const v of b.px) { const a = v >>> 24; expect(a === 0 || a === 255).toBe(true); if (!a) open++; }
+      let bad = 0;
+      for (const v of b.px) { const a = v >>> 24; if (a !== 0 && a !== 255) bad++; if (!a) open++; }
+      expect(bad).toBe(0);
       expect(open / b.px.length).toBeGreaterThan(0.12);
       expect(open / b.px.length).toBeLessThan(0.4);
     }
-    for (const v of ugThemeBmp(UG.BRICK, 1).px) expect(v >>> 24).toBe(255);
+    expect(ugThemeBmp(UG.BRICK, 1).px.every((v) => v >>> 24 === 255)).toBe(true);
   });
   it('遠層：只用該深度帶的環境色（土暖、岩紫、深層藍、熔岩紅各不相同）；flat 沒有洞口', () => {
     const cols = (t: number): Set<number> => { const o = new Set<number>(); for (const v of ugThemeBmp(t, 1, 'far').px) o.add(v & 0xffffff); return o; };
     const hexOf = (h: string): number => { const n = parseInt(h.slice(1), 16); return ((n & 255) << 16) | (n & 0xff00) | (n >> 16); };
     for (const t of [UG.DIRT, UG.ROCK, UG.DEEP, UG.MOLTEN, UG.ICE, UG.SAND]) {
       const allowed = new Set(FAR_RAMP[t].map(hexOf));
-      for (const c of cols(t)) expect(allowed.has(c)).toBe(true);
+      expect([...cols(t)].every((c) => allowed.has(c))).toBe(true);
     }
     const tops = [UG.DIRT, UG.ROCK, UG.DEEP, UG.MOLTEN].map((t) => FAR_RAMP[t][2]);
     expect(new Set(tops).size).toBe(4);
-    for (const v of ugThemeBmp(UG.DIRT, 1, 'flat').px) expect(v >>> 24).toBe(255);
+    expect(ugThemeBmp(UG.DIRT, 1, 'flat').px.every((v) => v >>> 24 === 255)).toBe(true);
   });
   it('keep < 1：1×1 Bayer 挖空（不透明 / 全透明），是 keep 越大的子集；沒有 2×2 成簇', () => {
     const lo = ugThemeBmp(UG.SAND, UG_KEEPS[1], 'far'), hi = ugThemeBmp(UG.SAND, UG_KEEPS[4], 'far');
-    let nlo = 0;
+    let nlo = 0, bad = 0;
     for (let i = 0; i < lo.px.length; i++) {
       const a = lo.px[i] >>> 24;
-      expect(a === 0 || a === 255).toBe(true);
-      if (a) { nlo++; expect(hi.px[i] >>> 24).toBe(255); }
+      if (a !== 0 && a !== 255) bad++;
+      if (a) { nlo++; if (hi.px[i] >>> 24 !== 255) bad++; }
     }
+    expect(bad).toBe(0);
     expect(nlo / lo.px.length).toBeCloseTo(UG_KEEPS[1], 1);
     // 1×1：任何 2×2 格都不會「四格全開」或「四格全關」地成塊（keep 0.5 時）
     const mid = ugThemeBmp(UG.ROCK, 0.5, 'far');
     let blocks = 0;
-    for (let y = 0; y < 64; y += 2) for (let x = 0; x < 64; x += 2) {
-      const s = [mid.px[y * 64 + x], mid.px[y * 64 + x + 1], mid.px[(y + 1) * 64 + x], mid.px[(y + 1) * 64 + x + 1]].map((v) => (v >>> 24) > 0);
+    const M = UG_TILE;
+    for (let y = 0; y < M; y += 2) for (let x = 0; x < M; x += 2) {
+      const s = [mid.px[y * M + x], mid.px[y * M + x + 1], mid.px[(y + 1) * M + x], mid.px[(y + 1) * M + x + 1]].map((v) => (v >>> 24) > 0);
       if (s.every((q) => q === s[0])) blocks++;
     }
     expect(blocks).toBe(0);
+  });
+  it('土層和岩層看得出差別：用的顏色不同、岩層有更亮的灰紫岩面', () => {
+    const cols = (t: number): Set<number> => { const o = new Set<number>(); for (const v of ugThemeBmp(t, 1, 'flat').px) o.add(v); return o; };
+    const dirt = cols(UG.DIRT), rock = cols(UG.ROCK);
+    const onlyDirt = [...dirt].filter((c) => !rock.has(c)), onlyRock = [...rock].filter((c) => !dirt.has(c));
+    expect(onlyDirt.length).toBeGreaterThan(0);
+    expect(onlyRock.length).toBeGreaterThan(0);
+  });
+  it('一塊暗紋裡不會短週期重複：左右兩半不相同（冰洞尤其）', () => {
+    for (const t of [UG.ICE, UG.ROCK, UG.DIRT]) {
+      const b = ugThemeBmp(t, 1, 'flat'), M = UG_TILE;
+      let same = 0;
+      for (let y = 0; y < M; y++) for (let x = 0; x < M / 2; x++) if (b.px[y * M + x] === b.px[y * M + x + M / 2]) same++;
+      expect(same / (M * M / 2)).toBeLessThan(0.75);
+    }
+  });
+});
+
+describe('smoothTops（欄頂平滑：水裡 / 洞裡沒有垂直硬邊）', () => {
+  const T = 16;
+  // 第 100 欄起地表突然低 12 格
+  const raw = (tx: number): number => (tx < 100 ? 200 : 212) * T;
+  it('高低差被攤開：相鄰欄的差距遠小於原本的 12 格', () => {
+    const t = smoothTops(raw, 80, 120, T);
+    let worst = 0;
+    for (let i = 1; i < t.length; i++) worst = Math.max(worst, Math.abs(t[i] - t[i - 1]));
+    expect(worst).toBeLessThanOrEqual(4 * T);
+  });
+  it('最多只往上提 3 格（不會冒到地面上）；平地不變', () => {
+    const t = smoothTops(raw, 80, 120, T);
+    for (let i = 0; i < t.length; i++) expect(t[i]).toBeGreaterThanOrEqual(raw(80 + i) - 3 * T);
+    const flat = smoothTops(() => 300 * T, 0, 10, T);
+    for (const v of flat) expect(v).toBe(300 * T);
   });
 });

@@ -9,7 +9,7 @@ import { dayness as dayAmount, skyColors, type SkyColors } from './scene';
 import { bgSeasonDark, bgSeasonDay, bgSeasonLite } from './seasonLook';
 import { boltBmp, moonPhaseBmp } from './seasonArt';
 import type { Season } from '../engine/calendar';
-import { UG_KEEPS, ugAreas, ugColumnBands, ugThemeBmp, type UgArea, type UgBand, type UgLayer } from './underground';
+import { UG_KEEPS, smoothTops, ugAreas, ugColumnBands, ugThemeBmp, type UgArea, type UgBand, type UgLayer } from './underground';
 
 const STRIP_W = 640;
 
@@ -18,8 +18,73 @@ const LEVEL_BITS: Uint8Array[] = [];
 function levelMaskBits(l: number): Uint8Array {
   return (LEVEL_BITS[l] ??= Uint8Array.from(levelMask(l, 4, 4).px, (v) => (v ? 1 : 0)));
 }
-/** 抖動版圖集裡，每份圖層下面接著幾列「填色」的抖動版（剪影下方的填色區用；4 的倍數） */
-const FILL_ROWS = 128;
+/**
+ * 剪影下方的填色不是一片平的：往下 DEEP_H px 依色票一階一階變暗（1×1 Bayer 過渡）到 DEEP_END，
+ * 這樣挖開的豎井 / 湖底看到的遠景會沉進黑暗，接上洞穴背景時不會是「亮綠色 → 黑」的粗網點。
+ */
+const DEEP_H = 96;
+const DEEP_END: RGB = hex('#0c0a12');
+/** 抖動版圖集裡，每份圖層下面接著幾列「填色」的抖動版（= 漸暗段；再往下兩區都是 DEEP_END，不用混） */
+const FILL_ROWS = DEEP_H;
+/** 填色的漸暗色（第 y 列、x 欄；圖層座標）：c0 → c1 → c2 → DEEP_END，各段之間 8 列 Bayer 過渡 */
+function deepRamp(base: RGB): RGB[] {
+  const c1 = nudge(base, -1), c2 = nudge(c1, -1);
+  return [base, c1, c2, DEEP_END];
+}
+const DEEP_STOPS = [0, 20, 44, 68];
+function deepColor(ramp: RGB[], x: number, y: number): RGB {
+  let k = 0;
+  while (k + 1 < DEEP_STOPS.length && y >= DEEP_STOPS[k + 1]) k++;
+  const into = y - DEEP_STOPS[k], next = DEEP_STOPS[k + 1];
+  // 每段最後 12 列漸漸換成下一階
+  if (next !== undefined && into >= next - DEEP_STOPS[k] - 12) {
+    const t = (into - (next - DEEP_STOPS[k] - 12) + 0.5) / 12;
+    if (bayer(x, y) < t) return ramp[k + 1];
+  }
+  return ramp[k];
+}
+/** 漸暗填色的寬畫布（DEEP_GRAD_W × DEEP_H，用到才建；依基色快取） */
+const DEEP_GRAD_W = 1024;
+const DEEP_GRADS = new Map<string, HTMLCanvasElement>();
+function deepGrad(base: RGB): HTMLCanvasElement {
+  const key = base.join();
+  let c = DEEP_GRADS.get(key);
+  if (!c) {
+    const ramp = deepRamp(base), b = new Bmp(DEEP_GRAD_W, DEEP_H);
+    for (let y = 0; y < DEEP_H; y++) for (let x = 0; x < DEEP_GRAD_W; x++) b.set(x, y, deepColor(ramp, x, y));
+    c = toCanvas(b) as HTMLCanvasElement;
+    if (DEEP_GRADS.size > 24) DEEP_GRADS.clear();
+    DEEP_GRADS.set(key, c);
+  }
+  return c;
+}
+/** 漸暗段裡的 Bayer 過渡列（[起, 迄)）；其餘是平色，用 fillRect（比整片貼圖便宜） */
+const DEEP_MIX: [number, number][] = DEEP_STOPS.slice(1).map((y) => [y - 12, y]);
+/** 在 [x0, x1) × [bottomY, Hh) 畫漸暗填色；off = 圖層的水平偏移（抖動跟著圖層捲動） */
+function deepFill(ctx: CanvasRenderingContext2D, base: RGB, x0: number, x1: number, bottomY: number, Hh: number, off: number): void {
+  if (bottomY >= Hh || x1 <= x0) return;
+  const ramp = deepRamp(base);
+  // 平色段：c0 [0, 8)、c1 [20, 32)、c2 [44, 56)、DEEP_END [68, ∞)
+  let y = 0;
+  for (let k = 0; k < ramp.length; k++) {
+    const end = k < DEEP_MIX.length ? DEEP_MIX[k][0] : Infinity;
+    const a = Math.max(0, bottomY + y), b = Math.min(Hh, bottomY + end);
+    if (b > a) { ctx.fillStyle = `rgb(${ramp[k].join(',')})`; ctx.fillRect(x0, a, x1 - x0, b - a); }
+    if (k < DEEP_MIX.length) y = DEEP_MIX[k][1];
+  }
+  const g = deepGrad(base), ph = (((x0 - off) % 4) + 4) % 4;
+  for (const [m0, m1] of DEEP_MIX) {
+    const a = Math.max(m0, -bottomY), b = Math.min(m1, Hh - bottomY);
+    if (b <= a) continue;
+    for (let x = x0; x < x1; x += DEEP_GRAD_W - 4) {
+      const w = Math.min(DEEP_GRAD_W - 4, x1 - x);
+      ctx.drawImage(g, ph, a, w, b - a, x, bottomY + a, w, b - a);
+    }
+  }
+}
+/** 抖動版圖集只留最近用到的幾張（每張數 MB） */
+const LV_KEEP = 4;
+const LV_LRU: { release(): void }[] = [];
 
 /** 以索引圖存的剪影層：重新上色只要重填 ImageData */
 class IndexedLayer {
@@ -32,8 +97,11 @@ class IndexedLayer {
   /** 分界帶用的抖動版（WIPE_LEVELS 階，用到才烘；色票換了重烘） */
   private lv = document.createElement('canvas');
   private lvKey = '';
-  /** 剪影下方填色（= 色票索引 1，打包 RGBA） */
-  private fillPx = 0;
+  /** 剪影下方填色（= 色票索引 1） */
+  private fill: RGB = [0, 0, 0];
+  /** 最前面的近景層：剪影下方填色往下漸暗（豎井 / 湖底看得到的就是它）；遠 / 中層填色多半被前一層蓋住，用平色省一次大圖貼 */
+  deep = false;
+  release(): void { this.lv.width = 0; this.lv.height = 0; this.lvKey = ''; }
   constructor(readonly w: number, readonly h: number) {
     this.idx = new Uint8Array(w * h);
     this.canvas = document.createElement('canvas');
@@ -56,7 +124,13 @@ class IndexedLayer {
   levels(): HTMLCanvasElement {
     if (this.lvKey !== this.key && this.img) {
       this.lvKey = this.key;
+      const at = LV_LRU.indexOf(this);
+      if (at >= 0) LV_LRU.splice(at, 1);
+      LV_LRU.push(this);
+      while (LV_LRU.length > LV_KEEP) LV_LRU.shift()?.release();
       const src = new Uint32Array(this.img.data.buffer), W = this.w, H = this.h, R = H + FILL_ROWS;
+      const ramp = deepRamp(this.fill), fillRow: Uint32Array[] = [], flat = Bmp.pack(this.fill);
+      for (let y = 0; y < FILL_ROWS; y++) { const r = new Uint32Array(4); for (let q = 0; q < 4; q++) r[q] = this.deep ? Bmp.pack(deepColor(ramp, q, y)) : flat; fillRow.push(r); }
       const c = this.lv;
       if (c.width !== W || c.height !== R * WIPE_LEVELS) { c.width = W; c.height = R * WIPE_LEVELS; }
       const x = c.getContext('2d');
@@ -66,7 +140,7 @@ class IndexedLayer {
           const m = levelMaskBits(k), o0 = k * W * R;
           for (let y = 0; y < R; y++) {
             const row = (y & 3) * 4, o = y * W;
-            for (let xx = 0; xx < W; xx++) if (m[row + (xx & 3)]) out[o0 + o + xx] = y < H ? src[o + xx] : this.fillPx;
+            for (let xx = 0; xx < W; xx++) if (m[row + (xx & 3)]) out[o0 + o + xx] = y < H ? src[o + xx] : fillRow[y - H][xx & 3];
           }
         }
         x.putImageData(img, 0, 0);
@@ -79,7 +153,7 @@ class IndexedLayer {
     if (key === this.key || !this.ctx) return;
     this.key = key;
     if (!this.img) this.img = this.ctx.createImageData(this.w, this.h);
-    this.fillPx = Bmp.pack(snap(pal[1]));
+    this.fill = snap(pal[1]);
     const d = this.img.data, n = this.w * this.h;
     for (let i = 0; i < n; i++) {
       const k = this.idx[i], o = i * 4;
@@ -555,6 +629,7 @@ export class Background {
     this.sets[1] = [buildMesas(seed + 2), buildDunes(seed + 3, 110, 14, 40), buildDesertNear(seed + 4)];
     this.sets[2] = [buildMountains(seed + 5, 48), buildHills(seed + 6, true), buildPines(seed + 7)];
     this.sets[3] = [buildKarst(seed + 8), buildCanopy(seed + 9), buildJungleNear(seed + 10)];
+    for (const set of this.sets) set[2].deep = true;
     this.winterSet = [buildMountains(seed, 60), buildHills(seed + 1, true), this.sets[0][2]];
     for (let i = 0; i < 5; i++) this.clouds.push(cloudLayer(i));
     for (let l = 1; l <= 4; l++) this.stars.push(toCanvas(starsBmp(seed, l)) as HTMLCanvasElement);
@@ -708,8 +783,9 @@ export class Background {
       if (p.front === -Infinity) { this.layer(ctx, p.R, f, by0, B.base, W, Hh, v); continue; }
       // 垂直抹過：分界線左邊畫左區、右邊畫右區，中間 WIPE_BAND px 用 1×1 Bayer（圖樣錨定在右區圖層上）
       const bx0 = p.front - WIPE_BAND / 2, bx1 = bx0 + WIPE_BAND;
-      this.span(ctx, p.L, f, by0, A.base, 0, Math.min(W, bx1), Hh, v);
-      this.span(ctx, p.R, f, by0, B.base, Math.max(0, bx1), W, Hh, v);
+      const fx = Math.max(0, Math.min(W, p.front));
+      this.span(ctx, p.L, f, by0, A.base, 0, Math.min(W, bx1), Hh, v, 0, fx);
+      this.span(ctx, p.R, f, by0, B.base, Math.max(0, bx1), W, Hh, v, fx, W);
       if (bx1 > 0 && bx0 < W) this.band(ctx, p.R, f, by0, bx0, Hh, v);
     }
   }
@@ -732,7 +808,8 @@ export class Background {
   }
 
   /** 只在螢幕欄 [x0, x1) 畫一層（含下方填色）：直接取來源子矩形，不用 clip */
-  private span(ctx: CanvasRenderingContext2D, L: IndexedLayer, factor: number, bottomY: number, fill: RGB, x0: number, x1: number, Hh: number, v: BgView): void {
+  private span(ctx: CanvasRenderingContext2D, L: IndexedLayer, factor: number, bottomY: number, fill: RGB, x0: number, x1: number, Hh: number, v: BgView,
+    f0 = x0, f1 = x1): void {
     if (x1 <= x0) return;
     const top = bottomY - L.h;
     if (top > Hh) return;
@@ -742,7 +819,8 @@ export class Background {
       const a = Math.max(x, x0), b = Math.min(x + sw, x1);
       if (b > a) ctx.drawImage(L.canvas, a - x, 0, b - a, L.h, a, top, b - a, L.h);
     }
-    if (bottomY < Hh) { ctx.fillStyle = `rgb(${fill.join(',')})`; ctx.fillRect(x0, bottomY, x1 - x0, Hh - bottomY); }
+    if (L.deep) deepFill(ctx, fill, x0, x1, bottomY, Hh, off);
+    else if (bottomY < Hh && f1 > f0) { ctx.fillStyle = `rgb(${fill.join(',')})`; ctx.fillRect(f0, bottomY, f1 - f0, Hh - bottomY); }
   }
 
   /** 分界帶：WIPE_LEVELS 段細長切片，每段畫右區圖層「該階抖動版」的同一位置（圖層座標對齊 → 抖動黏在圖層上） */
@@ -760,13 +838,14 @@ export class Background {
         if (b > a) ctx.drawImage(atlas, a - x, sy, b - a, R.h, a, top, b - a, R.h);
       }
       // 剪影下方的填色：圖集裡同一階的填色列（每次最多 FILL_ROWS 列）
-      const y0 = bottomY >= 0 ? bottomY : bottomY + Math.floor(-bottomY / FILL_ROWS) * FILL_ROWS;
-      for (let y = y0; y < Hh; y += FILL_ROWS) {
-        const hh = Math.min(FILL_ROWS, Hh - y), fy = sy + R.h;
-        for (let x = off; x < x1; x += sw) {
-          const a = Math.max(x, x0), b = Math.min(x + sw, x1);
-          if (b > a) ctx.drawImage(atlas, a - x, fy, b - a, hh, a, y, b - a, hh);
-        }
+      // 近景層的漸暗填色：只有 FILL_ROWS 列（再往下兩區都是 DEEP_END，不用混）。
+      // 遠 / 中層的填色幾乎都被前一層蓋住 → 在分界線直接切開（span 那邊），省掉一大串小貼圖
+      if (!R.deep) continue;
+      const g0 = Math.max(0, -bottomY), g1 = Math.min(FILL_ROWS, Hh - bottomY);
+      if (g1 <= g0) continue;
+      for (let x = off; x < x1; x += sw) {
+        const a = Math.max(x, x0), b = Math.min(x + sw, x1);
+        if (b > a) ctx.drawImage(atlas, a - x, sy + R.h + g0, b - a, g1 - g0, a, bottomY + g0, b - a, g1 - g0);
       }
     }
   }
@@ -809,7 +888,8 @@ export class Background {
     const sw = L.w;
     const off = -(((snapPx(v.camX * factor) % sw) + sw) % sw);
     for (let x = off; x < W; x += sw) ctx.drawImage(L.canvas, x, top);
-    if (doFill && bottomY < Hh) { ctx.fillStyle = `rgb(${fill.join(',')})`; ctx.fillRect(0, bottomY, W, Hh - bottomY); }
+    if (doFill && L.deep) deepFill(ctx, fill, 0, W, bottomY, Hh, off);
+    else if (doFill && bottomY < Hh) { ctx.fillStyle = `rgb(${fill.join(',')})`; ctx.fillRect(0, bottomY, W, Hh - bottomY); }
   }
 
   /**
@@ -846,14 +926,15 @@ export class Background {
     const runs = this.ugRuns;
     runs.length = 0;
     // 這一幀（加上四周 UG_COVER_M 的餘裕）每一欄都已經過了地表淡入 → 下一幀的天空 / 遠景可以不畫
+    // 欄頂平滑（地表高低差在水裡 / 洞裡不會變成垂直硬邊）；畫面外再多算 UG_COVER_M 給「蓋滿」判定用
+    const cx0 = Math.floor((camX - UG_COVER_M) / tile), cx1 = Math.ceil((camX + vw + UG_COVER_M) / tile);
+    const tops = smoothTops(colTop, cx0, cx1, tile);
     let covered = true;
-    for (let tx = Math.floor((camX - UG_COVER_M) / tile); tx <= Math.ceil((camX + vw + UG_COVER_M) / tile) && covered; tx++) {
-      if (colTop(tx) + UG_FADE > camY - UG_COVER_M) covered = false;
-    }
+    for (let i = 0; i < tops.length && covered; i++) if (tops[i] + UG_FADE > camY - UG_COVER_M) covered = false;
     this.ugCover = covered ? { x: camX, y: camY, w: vw, h: vh } : null;
     const same = (a: UgBand[], b: UgBand[]): boolean => a.length === b.length && a.every((q, i) => q.theme === b[i].theme && q.keep === b[i].keep && q.y0 === b[i].y0 && q.y1 === b[i].y1);
     for (let tx = tx0; tx <= tx1; tx++) {
-      const y0 = snapPx(colTop(tx)), x = tx * tile;
+      const y0 = snapPx(tops[tx - cx0]), x = tx * tile;
       if (y0 >= bottom) continue;
       const bands = ugColumnBands({
         tx, top: y0, fade: UG_FADE, rockY: cavernY, deepY, moltenY, viewTop: camY, viewBottom: bottom, tile, biomeAt, width: W, areas,
@@ -863,6 +944,8 @@ export class Background {
       runs.push({ x, w: tile, bands });
     }
     const pass = (far: boolean, ox: number, oy: number): void => {
+      // 遠層圖樣再錯開半塊多：近 / 遠兩層的接縫不會對齊（重複感更低）
+      if (far) { ox += 53; oy += 37; }
       ctx.save();
       ctx.translate(ox, oy);
       for (const r of runs) for (const b of r.bands) {

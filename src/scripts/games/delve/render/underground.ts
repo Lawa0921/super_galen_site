@@ -17,7 +17,7 @@ export const UG_SEAM = 64;
 /** 生態區（BIOME id）→ 土 / 岩層主題（森林 = 土 / 岩各自） */
 const BIOME_THEME: Record<number, number> = { 1: UG.SAND, 2: UG.ICE, 3: UG.MUD };
 /** 交界抖動：距離另一區 d 欄（1..BORDER_R）→ keep 約 (BORDER_R+1−d) / (2(BORDER_R+1))（邊界上約五五開） */
-const BORDER_R = 6;
+const BORDER_R = 10;
 /** 覆蓋區外緣：3 圈、每圈 2 tile */
 const RING = 2, RINGS = 3;
 
@@ -140,7 +140,11 @@ export function ugColumnBands(c: UgColumn): UgBand[] {
 }
 
 // ── 主題暗紋 ─────────────────────────────────────────────
-const N = 64;
+/** 暗紋邊長（px）：256 → 一個畫面裡最多重複一兩次（以前 64 的平鋪感太明顯） */
+export const UG_TILE = 256;
+const N = UG_TILE;
+/** 主題 → 每格屬於哪一塊岩面（Voronoi 類暗紋才有；近層的洞口挑整塊岩面挖空） */
+const CELLS = new Map<number, Int16Array>();
 /** 可平鋪的值雜訊（格點在 N 上環繞） */
 function pnoise(x: number, y: number, cell: number, seed: number): number {
   const g = N / cell, fx = x / cell, fy = y / cell, gx = Math.floor(fx), gy = Math.floor(fy);
@@ -149,38 +153,72 @@ function pnoise(x: number, y: number, cell: number, seed: number): number {
   const a = h01(w(gx), w(gy), seed), b = h01(w(gx + 1), w(gy), seed), c = h01(w(gx), w(gy + 1), seed), d = h01(w(gx + 1), w(gy + 1), seed);
   return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
 }
-/** 可平鋪的 Voronoi：最近點、次近點距離、最近點座標 */
-function pvoronoi(x: number, y: number, pts: readonly [number, number][]): { d1: number; d2: number; cx: number; cy: number; i: number } {
+/** 抖動格點的 Voronoi（可平鋪）：點 i = 格 (i % n, i / n)，只看附近 5×5 格；sy > 1 = 垂直方向壓扁（橫向岩板） */
+interface Grid { pts: [number, number][]; n: number; ny: number; }
+function pvoronoi(x: number, y: number, g: Grid, sy = 1): { d1: number; d2: number; cx: number; cy: number; i: number } {
   let d1 = 1e9, d2 = 1e9, cx = 0, cy = 0, bi = 0;
-  pts.forEach(([px, py], i) => {
-    for (let oy = -N; oy <= N; oy += N) for (let ox = -N; ox <= N; ox += N) {
-      const d = Math.hypot(x + 0.5 - px - ox, y + 0.5 - py - oy);
-      if (d < d1) { d2 = d1; d1 = d; cx = px + ox; cy = py + oy; bi = i; } else if (d < d2) d2 = d;
-    }
-  });
+  const cw = N / g.n, chh = N / g.ny, gx = Math.floor(x / cw), gy = Math.floor(y / chh);
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+    const ix = gx + dx, iy = gy + dy;
+    const wx = ((ix % g.n) + g.n) % g.n, wy = ((iy % g.ny) + g.ny) % g.ny, i = wy * g.n + wx;
+    const [px0, py0] = g.pts[i];
+    const px = px0 + (ix - wx) * cw, py = py0 + (iy - wy) * chh;
+    const d = Math.hypot(x + 0.5 - px, (y + 0.5 - py) * sy);
+    if (d < d1) { d2 = d1; d1 = d; cx = px; cy = py; bi = i; } else if (d < d2) d2 = d;
+  }
   return { d1, d2, cx, cy, i: bi };
 }
-function gridPts(n: number, seed: number): [number, number][] {
-  const s = N / n, pts: [number, number][] = [];
-  for (let gy = 0; gy < n; gy++) for (let gx = 0; gx < n; gx++) pts.push([(gx + 0.2 + h01(gx, gy, seed) * 0.6) * s, (gy + 0.2 + h01(gx, gy, seed + 1) * 0.6) * s]);
-  return pts;
+function gridPts(n: number, seed: number, ny = n): Grid {
+  const s = N / n, t = N / ny, pts: [number, number][] = [];
+  for (let gy = 0; gy < ny; gy++) for (let gx = 0; gx < n; gx++) pts.push([(gx + 0.1 + h01(gx, gy, seed) * 0.8) * s, (gy + 0.1 + h01(gx, gy, seed + 1) * 0.8) * t]);
+  return { pts, n, ny };
 }
 const P = (...cs: string[]): RGB[] => cs.map(hex);
 
-/** 原本的岩面紋（大塊岩面 + 縫）：土 / 岩 / 深層 / 熔岩 */
-function rockFaces(b: Bmp, pal: RGB[], seed: number): void {
-  const pts = gridPts(4, seed);
+/** 岩面紋（大塊岩面 + 縫）：岩層 / 深層 / 熔岩；sy > 1 = 壓扁成橫向的岩板。記下每格的岩面編號（近層洞口用） */
+function rockFaces(b: Bmp, pal: RGB[], seed: number, theme: number, n = 16, ny = n, sy = 1): void {
+  const pts = gridPts(n, seed, ny), cells = new Int16Array(N * N);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const q = pvoronoi(x, y, pts), e = q.d2 - q.d1;
+    const q = pvoronoi(x, y, pts, sy), e = q.d2 - q.d1;
     let k = 2;
     if (e < 1.2) k = 0;
-    else if (e < 3) k = (x - q.cx) + (y - q.cy) < 0 ? 3 : 1;
+    else if (e < 3) k = (x - q.cx) + (y - q.cy) * sy < 0 ? 3 : 1;
+    // 每塊岩面明暗略有不同（大塊色斑，打散重複感）
+    else if (h01(q.i, 5, seed) > 0.72) k = 1;
+    cells[y * N + x] = q.i;
     b.set(x, y, pal[k]);
+  }
+  CELLS.set(theme, cells);
+}
+/** 土層：一團團壓實的土塊（橫向拉長的雜訊、上緣受光）、灰色碎石、垂下的細根 —— 和岩層的大塊岩板分得開 */
+function dirtClods(b: Bmp): void {
+  const pal = P('#0c0a12', '#1c1424', '#2a1810', '#472819', '#2c2838');
+  const v = (x: number, y: number): number => pnoise(x, y, 32, 39) * 0.3 + pnoise(x, y, 16, 41) * 0.45 + pnoise(x, y, 8, 43) * 0.25;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const n = v(x, y);
+    let c = n > 0.62 ? pal[3] : n > 0.4 ? pal[2] : n > 0.3 ? pal[1] : pal[0];
+    if (c === pal[2] && v(x, (y - 1 + N) % N) <= 0.4) c = pal[3];
+    b.set(x, y, c);
+  }
+  for (let k = 0; k < 280; k++) {
+    const x = Math.floor(h01(k, 1, 45) * N), y = Math.floor(h01(k, 2, 45) * N);
+    b.set(x, y, pal[4]);
+    if (k % 3 === 0) b.set((x + 1) % N, y, pal[4]);
+    b.set(x, (y + 1) % N, pal[0]);
+  }
+  for (let r = 0; r < 40; r++) {
+    let x = Math.floor(h01(r, 3, 47) * N);
+    const y0 = Math.floor(h01(r, 4, 47) * N), len = 8 + Math.floor(h01(r, 5, 47) * 18);
+    for (let k = 0; k < len; k++) {
+      b.set(((x % N) + N) % N, (y0 + k) % N, pal[0]);
+      if (h01(r, k, 49) > 0.7) x += h01(r, k, 51) > 0.5 ? 1 : -1;
+    }
   }
 }
 /** 砂岩層理：高度不一的橫帶（隨 x 緩緩起伏）、帶間暗縫、少數帶頂一道亮線、帶內零星直裂 */
 function sandStrata(b: Bmp): void {
-  const H = [7, 5, 9, 4, 8, 6, 10, 5, 10];
+  const H0 = [7, 5, 9, 4, 8, 6, 10, 5, 10, 6, 9, 5, 8, 7, 4, 10, 6, 9];
+  const H = [...H0, ...H0.slice().reverse()];
   const pal = P('#0c0a12', '#1c1424', '#2a1810', '#472819');
   const edges: number[] = [];
   let acc = 0;
@@ -206,18 +244,20 @@ function sandStrata(b: Bmp): void {
 /** 碎冰：大塊冰面、暗裂縫、左上一道冷藍受光邊、零星斜向冰光 */
 function crackedIce(b: Bmp): void {
   const pal = P('#0c0a12', '#18204a', '#2c4486', '#1c1424', '#2c4486');
-  const pts = gridPts(3, 61);
+  const pts = gridPts(12, 61), cells = new Int16Array(N * N);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     const q = pvoronoi(x, y, pts), e = q.d2 - q.d1;
+    cells[y * N + x] = q.i;
     let c = h01(q.i, 2, 63) > 0.7 ? pal[3] : pal[1];
     if (e < 1.1) c = pal[0];
     else if (e < 1.7 && (x - q.cx) + (y - q.cy) < 0 && h01(q.i, 4, 63) > 0.35) c = pal[2];
     // 冰面裡的細裂（短斜線）
-    const d = (((x + y * 2) % 23) + 23) % 23;
+    const d = (((x + y * 2) % 32) + 32) % 32;
     if (d === 0 && pnoise(x, y, 16, 65) > 0.62) c = pal[0];
     if (d === 1 && pnoise(x, y, 16, 65) > 0.7 && e > 3) c = pal[4];
     b.set(x, y, c);
   }
+  CELLS.set(UG.ICE, cells);
 }
 /** 泥巴：暗泥團塊 + 由上往下垂的根（暗綠芯、左側受光） */
 function mudRoots(b: Bmp): void {
@@ -226,7 +266,7 @@ function mudRoots(b: Bmp): void {
     const n = pnoise(x, y, 8, 71);
     b.set(x, y, n > 0.72 ? pal[2] : n < 0.3 ? pal[0] : pal[1]);
   }
-  for (let r = 0; r < 7; r++) {
+  for (let r = 0; r < 32; r++) {
     let x = Math.floor(h01(r, 1, 73) * N);
     const y0 = Math.floor(h01(r, 2, 73) * N), len = 14 + Math.floor(h01(r, 3, 73) * 26);
     for (let k = 0; k < len; k++) {
@@ -246,7 +286,8 @@ function sporeGlow(b: Bmp): void {
     const n = pnoise(x, y, 16, 81);
     b.set(x, y, n < 0.36 ? pal[2] : pal[1]);
   }
-  const caps: [number, number, number][] = [[10, 46, 4], [38, 20, 3], [52, 55, 2], [24, 8, 2]];
+  const caps0: [number, number, number][] = [[10, 46, 4], [38, 20, 3], [52, 55, 2], [24, 8, 2], [84, 30, 3], [110, 70, 4], [70, 100, 2], [96, 118, 3], [20, 90, 3]];
+  const caps = [...caps0, ...caps0.map(([x, y, r]): [number, number, number] => [(x + 128 + 17) % N, (y + 64) % N, r]), ...caps0.map(([x, y, r]): [number, number, number] => [(x + 61) % N, (y + 150) % N, Math.max(2, r - 1)])];
   for (const [cx, cy, r] of caps) {
     for (let y = cy + 1; y < cy + 5 + r; y++) b.set(cx, y % N, pal[2]);
     for (let dy = -Math.ceil(r * 0.6); dy <= 0; dy++) for (let dx = -r; dx <= r; dx++) {
@@ -256,7 +297,7 @@ function sporeGlow(b: Bmp): void {
     }
     b.set((cx - Math.round(r * 0.4) + N) % N, (cy - Math.max(1, Math.round(r * 0.4)) + N) % N, pal[4]);
   }
-  for (let k = 0; k < 14; k++) {
+  for (let k = 0; k < 140; k++) {
     const x = Math.floor(h01(k, 1, 83) * N), y = Math.floor(h01(k, 2, 83) * N);
     b.set(x, y, k % 5 === 0 ? pal[5] : pal[3]);
   }
@@ -285,10 +326,11 @@ function themeBase(theme: number): Bmp {
   if (b) return b;
   b = new Bmp(N, N);
   switch (theme) {
-    case UG.DIRT: rockFaces(b, P('#0c0a12', '#1c1424', '#1c1424', '#2a1810'), 4); break;
-    case UG.ROCK: rockFaces(b, P('#0c0a12', '#0c0a12', '#1c1424', '#1c1424'), 3); break;
-    case UG.DEEP: rockFaces(b, P('#0c0a12', '#0c0a12', '#18204a', '#1c1424'), 3); break;
-    case UG.MOLTEN: rockFaces(b, P('#2a1810', '#472819', '#6c1e14', '#472819'), 3); break;
+    case UG.DIRT: dirtClods(b); break;
+    // 岩層：橫向的灰紫大岩板（和土層的暖色土塊分得開）
+    case UG.ROCK: rockFaces(b, P('#0c0a12', '#1c1424', '#2c2838', '#2c2450'), 3, theme, 10, 20, 1.9); break;
+    case UG.DEEP: rockFaces(b, P('#0c0a12', '#0c0a12', '#18204a', '#1c1424'), 3, theme); break;
+    case UG.MOLTEN: rockFaces(b, P('#2a1810', '#472819', '#6c1e14', '#472819'), 3, theme); break;
     case UG.SAND: sandStrata(b); break;
     case UG.ICE: crackedIce(b); break;
     case UG.MUD: mudRoots(b); break;
@@ -326,24 +368,26 @@ function farBase(theme: number): Bmp {
 /** 近層的洞口：挑出約 HOLE_FRAC 的 Voronoi 岩面整塊挖空（透出後面的遠層，看起來像剝落 / 凹進去的岩塊），
  *  岩縫保留；洞口邊一圈最暗的描邊、上緣再一排暗影（光從上方來，凹處上緣在陰影裡） */
 const NO_HOLES = new Set<number>([UG.BRICK, UG.SPORE]);
-const HOLE_FRAC = 0.24;
-/** 與主題暗紋同一組 Voronoi 點（岩面類主題）→ 洞口剛好是整塊岩面 */
-const HOLE_CELLS: Record<number, [number, number]> = {
-  [UG.DIRT]: [4, 4], [UG.ROCK]: [4, 3], [UG.DEEP]: [4, 3], [UG.MOLTEN]: [4, 3], [UG.ICE]: [3, 61], [UG.SAND]: [4, 94], [UG.MUD]: [4, 96],
-};
+const HOLE_FRAC = 0.22;
 function nearBase(theme: number): Bmp {
   const src = themeBase(theme);
   if (NO_HOLES.has(theme)) return src;
-  const out = src.clone();
-  const [n, seed] = HOLE_CELLS[theme] ?? [4, 90 + theme];
-  const pts = gridPts(n, seed);
-  // 依雜湊排序挑格：每個主題的洞口比例接近 HOLE_FRAC
-  const order = pts.map((_, i) => i).sort((p, q) => h01(p, 9, seed + theme) - h01(q, 9, seed + theme));
-  const pick = new Set(order.slice(0, Math.max(1, Math.round(pts.length * HOLE_FRAC * 1.25))));
-  const open = new Uint8Array(N * N);
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const q = pvoronoi(x, y, pts);
-    if (pick.has(q.i) && q.d2 - q.d1 > 1.6) open[y * N + x] = 1;
+  const out = src.clone(), open = new Uint8Array(N * N), cells = CELLS.get(theme);
+  if (cells) {
+    // Voronoi 類：挑整塊岩面挖空（依雜湊排序挑，比例接近 HOLE_FRAC）；岩縫（最暗色）保留
+    let n = 0;
+    for (const c of cells) if (c + 1 > n) n = c + 1;
+    const order = Array.from({ length: n }, (_, i) => i).sort((p, q) => h01(p, 9, 17 + theme) - h01(q, 9, 17 + theme));
+    const pick = new Uint8Array(n);
+    for (const i of order.slice(0, Math.max(1, Math.round(n * HOLE_FRAC * 1.6)))) pick[i] = 1;
+    const crack = Bmp.pack(hex('#0c0a12'));
+    for (let i = 0; i < N * N; i++) if (pick[cells[i]] && src.px[i] !== crack) open[i] = 1;
+  } else {
+    // 雜訊類（土 / 砂 / 泥）：圓圓的洞穴團塊，門檻取分位數
+    const nz = new Float32Array(N * N), seed = 101 + theme * 7;
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) nz[y * N + x] = pnoise(x, y, 32, seed) * 0.6 + pnoise(x, y, 16, seed + 3) * 0.3 + pnoise(x, y, 8, seed + 5) * 0.1;
+    const th = Float32Array.from(nz).sort()[Math.floor(N * N * (1 - HOLE_FRAC))];
+    for (let i = 0; i < N * N; i++) open[i] = nz[i] > th ? 1 : 0;
   }
   const rim = hex('#0c0a12');
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
@@ -373,4 +417,24 @@ export function ugThemeBmp(theme: number, keep: number, kind: UgLayer = 'near'):
   const b = new Bmp(N, N);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (bayer(x, y) < keep) b.setRaw(x, y, src.raw(x, y));
   return b;
+}
+
+/** 欄頂平滑的半寬（欄）與最多往上提幾格 */
+export const UG_SMOOTH_R = 6;
+const UG_SMOOTH_UP = 3;
+/**
+ * 每欄背景起點（世界 px）的平滑版：±UG_SMOOTH_R 欄平均，但最多比原本高 UG_SMOOTH_UP 格（不會冒到地面上）。
+ * 地表忽高忽低時，相鄰欄的淡入不會錯開好幾格 → 水裡 / 洞裡看不到一道道垂直的硬邊。回傳 tx0..tx1 的值。
+ */
+export function smoothTops(raw: (tx: number) => number, tx0: number, tx1: number, tile: number, r = UG_SMOOTH_R): Float64Array {
+  const n = tx1 - tx0 + 1, src = new Float64Array(n + 2 * r);
+  for (let i = 0; i < src.length; i++) src[i] = raw(tx0 - r + i);
+  const out = new Float64Array(n);
+  let sum = 0;
+  for (let i = 0; i < 2 * r + 1; i++) sum += src[i];
+  for (let i = 0; i < n; i++) {
+    if (i > 0) sum += src[i + 2 * r] - src[i - 1];
+    out[i] = Math.max(sum / (2 * r + 1), src[i + r] - UG_SMOOTH_UP * tile);
+  }
+  return out;
 }
