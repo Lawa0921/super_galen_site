@@ -596,6 +596,18 @@ describe('the script gates', () => {
     }
   });
 
+  it("Lorne's canon holds: the sword never leaves him, the bell rings before the blade, the first chat claims no memory", () => {
+    // Task 6 fix round 1 (lore ledger I-45, I-49): every round he carries the sword; a distant bell rings days or a season before the blade.
+    const lines = (id: SceneId) => STORY.scenes[id].lines.map((l) => l.text);
+    for (let n = 1; n <= 10; n++) for (const t of lines(memScene('hero', n))) expect(t, `mem:hero:${n}`).not.toMatch(/兩手空空|空著手/);
+    expect(lines('mem:hero:9').join('')).toMatch(/躺了好幾年|好幾年/);   // a death leaves decades before the next registry entry
+    expect(lines('mem:hero:5')[0]).toContain('鐘');
+    expect(lines('mem:hero:5')[0]).not.toMatch(/刀|背後/);   // the bell rings first, alone
+    expect(lines('mem:hero:7')[0]).toMatch(/一季|幾天|後/);
+    // chat:hero:1 can play before mem:hero:1 (d3): it may not tell that he walked up toward the light.
+    expect(lines('chat:hero:1').join('')).not.toMatch(/走出來|走上來/);
+  });
+
   it('the first chat of anyone is never gated', () => {
     for (const c of CHARACTER_IDS) expect(CHAT_GATE[`chat:${c}:1`], c).toBeUndefined();
   });
