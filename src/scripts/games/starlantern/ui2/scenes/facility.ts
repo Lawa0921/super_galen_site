@@ -1,4 +1,7 @@
+import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
+import { storyStage } from '../../engine/story/events';
+import type { TownFragmentId } from '../../data/story/fragments';
 import type { SceneId } from '../../data/story/scenes';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
@@ -10,6 +13,8 @@ import { playAndRecord, storyCtx } from '../story';
 import { Dialogue, MenuView, backControl, win, type Rich } from '../widgets';
 
 export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate' | 'forge';
+/** The facility each town fragment's owner keeps. */
+const NPC_FACILITY: Record<TownFragmentId, FacilityId> = { anna: 'guild', orik: 'shop', marta: 'inn', glen: 'gate', doran: 'forge' };
 const RETURNING: SceneName[] = ['formation', 'status', 'equip', 'settings'];
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 
@@ -54,7 +59,14 @@ export abstract class FacilityScene implements Scene {
     ]));
     this.refresh();
     // Coming back from one of the guild's own screens (or settings) is not a new visit: no greeting.
-    if (!RETURNING.includes(this.ctx.from ?? 'town')) void this.say(f.greet[Math.floor(this.ctx.game.rng() * f.greet.length)]);
+    if (!RETURNING.includes(this.ctx.from ?? 'town')) { const pool = this.greetings(); void this.say(pool[Math.floor(this.ctx.game.rng() * pool.length)]); }
+  }
+
+  /** What the keeper says today: the lines for the story stage, and the thanks of a townsperson who got her memory back. */
+  private greetings(): string[] {
+    const s = this.ctx.game.state;
+    const thanks = s.story.returned.filter((n) => NPC_FACILITY[n] === this.id).map((n) => STORY.town[n].after);
+    return [...STORY.greet[this.id][storyStage(s)], ...thanks];
   }
 
   exit(): void {

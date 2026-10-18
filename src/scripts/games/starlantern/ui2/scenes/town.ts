@@ -1,13 +1,18 @@
+import { CHARACTERS } from '../../data/characters';
+import type { SceneId } from '../../data/story/scenes';
+import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { art } from '../../render/artPaths';
 import type { Game } from '../../engine/game';
 import { BAG_SIZE } from '../../engine/loot/bag';
+import { storyStage } from '../../engine/story/events';
 import { el, itemName } from '../../ui/dom';
 import { fillRich, gearPart, joinParts } from '../loot';
 import type { UiAction } from '../input';
 import { Menu } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
+import { playAndRecord, storyCtx } from '../story';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich, type RichPart } from '../widgets';
 
 const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'forge', 'settings'] as const;
@@ -32,9 +37,11 @@ export class TownScene implements Scene {
   private talk: Dialogue;
   private root!: HTMLElement;
   private ask: MenuView | null = null;
+  /** The story scene on screen, if any: it takes the actions while it plays. */
+  private playing: ReturnType<typeof playAndRecord> | null = null;
 
   constructor(private ctx: SceneCtx, charsPerSecond = textCps(ctx)) {
-    this.talk = new Dialogue(charsPerSecond, () => { this.menuWin?.removeAttribute('inert'); this.backEl?.removeAttribute('inert'); });
+    this.talk = new Dialogue(charsPerSecond, () => { if (this.playing) return; this.menuWin?.removeAttribute('inert'); this.backEl?.removeAttribute('inert'); });
   }
 
   enter(root: HTMLElement): void {
@@ -52,19 +59,47 @@ export class TownScene implements Scene {
       el('p', { class: 'slx-keyhint', text: T.ui2.hints.town }),
       this.talk.el,
     ]));
-    const notice = this.ctx.game.notice;
-    const banked = this.ctx.game.banked;
-    this.ctx.game.notice = null;
-    this.ctx.game.banked = null;
+    void this.arrive();
+  }
+
+  /** The queued scenes play first, with the menu out of the way; then the notice, or the day's line. */
+  private async arrive(): Promise<void> {
+    const game = this.ctx.game;
+    for (const id of [...game.arrival]) await this.playScene(id);
+    const t = T.ui2.town;
+    const notice = game.notice;
+    const banked = game.banked;
+    game.notice = null;
+    game.banked = null;
     // A safe return (walking home, or the lamp, whose notice replaces 'banked') says what came home.
     if (banked && (notice === 'banked' || notice === 'lamp')) void this.speak('', bankedLine(banked));
     else if (notice) void this.speak('', T.notices[notice]);
-    else void this.speak(t.place.split(' ').pop() ?? '', t.lines[Math.floor(this.ctx.game.rng() * t.lines.length)]);
+    else {
+      // The day's line: the town's own, and from act 2 Rin's foreshadowing once she has joined.
+      const stage = storyStage(game.state);
+      const rin = game.state.party.recruited.includes('rin') ? (STORY.rinLines[stage] ?? []) : [];
+      const pool = [...STORY.townLines[stage].map((text) => ({ who: t.place.split(' ').pop() ?? '', text })), ...rin.map((text) => ({ who: CHARACTERS.rin.name, text }))];
+      const pick = pool[Math.floor(game.rng() * pool.length)];
+      void this.speak(pick.who, pick.text);
+    }
+  }
+
+  /** Plays one arrival scene with the menu hidden (the 96px face stands over its last row) and records it. */
+  private async playScene(id: SceneId): Promise<void> {
+    const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
+    this.playing = p;
+    this.menuWin.setAttribute('inert', '');
+    this.backEl.setAttribute('inert', '');
+    this.menuWin.classList.add('slx-cmd-hidden');
+    await p.done;
+    this.playing = null;
+    this.menuWin.classList.remove('slx-cmd-hidden');
   }
 
   exit(): void { this.talk.stop(); }
 
   onAction(a: UiAction): void {
+    if (this.playing) { this.playing.onAction(a); return; }
     if (this.talk.busy()) { this.talk.onAction(a); return; }
     if (this.ask) { this.ask.onAction(a); return; }
     this.view.onAction(a);

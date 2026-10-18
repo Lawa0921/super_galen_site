@@ -11,6 +11,13 @@ const box = (page: Page) => page.locator('#sl-screen').boundingBox();
 test.describe('starlantern', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'chromium only');
 
+  /**
+   * Writes the story setting before the game opens. A new game plays the prologue, so most tests turn the story off;
+   * the story tests pass 'all' or 'major'. Other settings keep their defaults.
+   */
+  const storySetting = (page: Page, story: 'none' | 'major' | 'all' = 'none') =>
+    page.addInitScript((s) => localStorage.setItem('starlantern-settings', JSON.stringify({ volume: 70, textSpeed: 'mid', vibrate: true, story: s })), story);
+
   /** The town's own greeting lines: what it says on 繼續 when there is no notice (such as 存檔無法讀取) to give. */
   const TOWN_LINE = /暮霧又濃了些|聽說迷宮深處有星燈的光|補給品記得在出發前備齊/;
   /** After 繼續: the town greets as usual, and the game in play is exactly the stored save. */
@@ -58,6 +65,7 @@ test.describe('starlantern', () => {
   });
 
   test('tells the player when a save could not be read, and starts fresh', async ({ page }) => {
+    await storySetting(page);
     await page.goto('/games/starlantern');
     await page.evaluate(() => localStorage.setItem('starlantern-save', '{broken'));
     await page.reload();
@@ -67,6 +75,7 @@ test.describe('starlantern', () => {
   });
 
   test('plays title → town with the keyboard only', async ({ page }) => {
+    await storySetting(page);
     await page.goto('/games/starlantern');
     await page.evaluate(() => localStorage.removeItem('starlantern-save'));
     await page.reload();
@@ -89,6 +98,7 @@ test.describe('starlantern', () => {
   });
 
   test('walks through the four facilities with the keyboard', async ({ page }) => {
+    await storySetting(page);
     await page.goto('/games/starlantern');
     await page.evaluate(() => localStorage.removeItem('starlantern-save'));
     await page.reload();
@@ -120,6 +130,7 @@ test.describe('starlantern', () => {
   });
 
   test('plays with the mouse only: menus, dialogue and the 返回 control', async ({ page }) => {
+    await storySetting(page);
     await page.goto('/games/starlantern');
     await page.evaluate(() => localStorage.removeItem('starlantern-save'));
     await page.reload();
@@ -163,6 +174,7 @@ test.describe('starlantern', () => {
   });
 
   test('plays the whole loop: depart, fight, return with the lamp, rest, reload and continue', async ({ page }) => {
+    await storySetting(page);
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/games/starlantern?seed=7&fast=1');
@@ -238,7 +250,8 @@ test.describe('starlantern', () => {
     const label = page.locator('.slx-status-name');
     for (let i = 0; i < recruited && !((await label.textContent()) ?? '').includes(name); i++) await page.locator('.slx-status-next').click();
   };
-  const setup = async (page: Page, seed: number) => {
+  const setup = async (page: Page, seed: number, opts: { story: 'none' | 'major' | 'all' } = { story: 'none' }) => {
+    await storySetting(page, opts.story);
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });

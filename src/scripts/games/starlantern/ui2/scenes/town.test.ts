@@ -4,6 +4,11 @@ import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import type { ItemInstance } from '../../engine/types';
 import { TownScene } from './town';
+import { CHARACTERS } from '../../data/characters';
+import type { SceneId } from '../../data/story/scenes';
+import { STORY } from '../../data/story.zh-TW';
+import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
+import { linesOf } from '../story';
 
 describe('TownScene', () => {
   it('shows place, gold and the facility menu with a greeting', () => {
@@ -136,5 +141,108 @@ describe('TownScene banked gear', () => {
     const text = root.querySelector('.slx-talk .slx-text')!.textContent!;
     expect(text).toContain('背包已滿（60 件），沒能帶回：獵弓・魔法、布袍。');
     expect(root.querySelector('.slx-talk .slx-text .slx-rarity-magic')!.textContent).toBe('獵弓・魔法');
+  });
+});
+
+describe('TownScene story', () => {
+  const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
+  const open = (game: Game, story: StoryMode = 'all', rng?: () => number) => {
+    if (rng) Object.assign(game, { rng });
+    const root = document.createElement('div');
+    const settings = { get: () => ({ ...DEFAULT_SETTINGS, story }) };
+    const go = vi.fn();
+    const s = new TownScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), settings }, Infinity);
+    s.enter(root);
+    const menu = () => root.querySelector('.slx-town-menu') as HTMLElement;
+    const text = () => root.querySelector('.slx-talk .slx-text')!.textContent;
+    const settle = () => new Promise((r) => setTimeout(r, 0));
+    return { root, s, go, menu, text, settle };
+  };
+  const firstLine = (id: SceneId, game: Game) => linesOf(id, game.state)[0].text;
+
+  it('arrival scenes play before the menu', async () => {
+    const game = Game.fresh(constRng(0.5), null);
+    expect(game.arrival).toEqual(['prologue']);
+    const t = open(game);
+    expect(t.menu().hasAttribute('inert')).toBe(true);
+    expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(true);
+    expect(t.text()).toBe(firstLine('prologue', game));
+    for (let i = 0; i < linesOf('prologue', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);   // the town's own line is up now
+    t.s.onAction('confirm');
+    expect(t.menu().hasAttribute('inert')).toBe(false);
+    expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);
+    expect(game.state.story.seen).toContain('prologue');
+    expect(game.arrival).toEqual([]);
+  });
+
+  it('cancel skips a scene, records it, and the next one plays', async () => {
+    const game = Game.fresh(constRng(0.5), null);
+    game.arrival = ['prologue', 'act1-after'];
+    game.state.story.queue = ['prologue', 'act1-after'];
+    const t = open(game);
+    t.s.onAction('cancel');
+    await t.settle();
+    expect(t.text()).toContain('（略過）');
+    t.s.onAction('confirm');
+    await t.settle();
+    expect(game.state.story.seen).toContain('prologue');
+    expect(t.text()).toBe(firstLine('act1-after', game));
+    expect(t.menu().hasAttribute('inert')).toBe(true);
+    t.s.onAction('cancel'); await t.settle(); t.s.onAction('confirm'); await t.settle();
+    expect(game.state.story.seen).toEqual(expect.arrayContaining(['prologue', 'act1-after']));
+    expect(t.menu().hasAttribute('inert')).toBe(true);   // the day's greeting is up now
+    t.s.onAction('confirm');
+    expect(t.menu().hasAttribute('inert')).toBe(false);
+    expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);
+  });
+
+  it('story set to none plays nothing and marks every scene new', async () => {
+    const game = Game.fresh(constRng(0.5), null);
+    const t = open(game, 'none');
+    await t.settle();
+    expect(t.text()).not.toBe(firstLine('prologue', game));
+    expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);
+    t.s.onAction('confirm');
+    expect(t.menu().hasAttribute('inert')).toBe(false);
+    expect(game.state.story.fresh).toContain('prologue');
+    expect(game.state.story.seen).toContain('prologue');
+  });
+
+  it('major only plays the reveal but not a chat', async () => {
+    const game = Game.fresh(constRng(0.5), null);
+    game.arrival = ['chat:liz:1', 'act2'];
+    game.state.story.queue = ['act2'];
+    game.pending = ['chat:liz:1'];
+    const t = open(game, 'major');
+    await t.settle();
+    expect(t.text()).toBe(firstLine('act2', game));
+    expect(game.state.story.fresh).toContain('chat:liz:1');
+    expect(game.state.story.fresh).not.toContain('act2');
+  });
+
+  it('town lines follow the stage', () => {
+    const game = Game.fresh(constRng(0.5), null);
+    game.arrival = [];
+    game.state.story.nodes.push('act2');
+    const t = open(game);
+    expect([...STORY.townLines.act2, ...(STORY.rinLines.act2 ?? [])]).toContain(t.text());
+  });
+
+  it('Rin foreshadowing joins the town lines from act 2', () => {
+    const game = Game.fresh(constRng(0.5), null);
+    game.arrival = [];
+    game.state.story.nodes.push('act2');
+    const t = open(game, 'all', () => 0.999);
+    expect(t.text()).toBe(STORY.rinLines.act2![STORY.rinLines.act2!.length - 1]);
+    expect(t.root.querySelector('.slx-talk .slx-name')!.textContent).toBe(CHARACTERS.rin.name);
+  });
+
+  it('Rin says nothing in the town before act 2', () => {
+    const game = Game.fresh(constRng(0.5), null);
+    game.arrival = [];
+    const t = open(game, 'all', () => 0.999);
+    expect(STORY.townLines.prologue).toContain(t.text());
+    expect(t.root.querySelector('.slx-talk .slx-name')!.textContent).not.toBe(CHARACTERS.rin.name);
   });
 });

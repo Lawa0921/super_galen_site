@@ -1,3 +1,4 @@
+import { STORY } from '../../data/story.zh-TW';
 import { describe, expect, it, vi } from 'vitest';
 import { T } from '../../data/text.zh-TW';
 import { Game } from '../../engine/game';
@@ -63,7 +64,7 @@ describe('ForgeScene', () => {
     const { root, line } = setup();
     expect(root.querySelector('.slx-place')!.textContent).toBe('鍛造屋');
     expect(root.querySelector('.slx-talk .slx-name')!.textContent).toBe('多蘭');
-    expect(T.ui2.facility.forge.greet).toContain(line());
+    expect(STORY.greet.forge.prologue).toContain(line());
     expect(root.querySelector('.slx-facility.slx-forge')).not.toBeNull();
   });
 
