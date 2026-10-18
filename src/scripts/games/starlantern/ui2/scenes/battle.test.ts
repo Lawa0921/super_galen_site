@@ -12,7 +12,8 @@ import { LEGACY_LINEUP } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
 import { CHARACTERS } from '../../data/characters';
 import { SHARD_NAMES } from '../../data/story/fragments';
-import { FINALE_BOSS, FINALE_DEPTH } from '../../data/story/scenes';
+import { FINALE_DEPTH } from '../../data/story/scenes';
+import { STORY } from '../../data/story.zh-TW';
 import { DEFAULT_SETTINGS } from '../settings';
 import type { SceneCtx } from '../scene';
 
@@ -774,7 +775,7 @@ describe('BattleScene story', () => {
     expect(game.phase).toBe('battle');
     const root = document.createElement('div');
     new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: null, fast: true }).enter(root);
-    expect(root.querySelector('.slx-msg')!.textContent).toContain(FINALE_BOSS.name);
+    expect(root.querySelector('.slx-msg')!.textContent).toContain(STORY.finaleBossName);
   });
 
   it('a played memory follows the result window', async () => {

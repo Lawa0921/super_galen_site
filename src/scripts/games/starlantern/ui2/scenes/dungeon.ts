@@ -25,6 +25,7 @@ import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich } from '../widgets';
 import { fragmentLines, levelUpLines } from '../battleText';
 import { playAndRecord, speakerOf, storyCtx } from '../story';
+import { STORY } from '../../data/story.zh-TW';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import { eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
 
@@ -46,6 +47,7 @@ export class DungeonScene implements Scene {
   private pad!: HTMLElement;
   private backEl!: HTMLElement;
   private weightEl!: HTMLElement;
+  private hintEl!: HTMLElement;
   private minimap!: Minimap;
   private layers: Layer[] = [];
   private talk: Dialogue;
@@ -73,11 +75,11 @@ export class DungeonScene implements Scene {
     const menuBtn = this.tapper('slx-menu-btn', T.ui2.dungeon.menuHint, 'menu');
     this.backEl = backControl(() => this.onAction('cancel'));
     this.backEl.hidden = true;
-    const hint = el('p', { class: 'slx-keyhint', text: T.ui2.hints.dungeon });
+    this.hintEl = el('p', { class: 'slx-keyhint', text: T.ui2.hints.dungeon });
     this.weightEl = el('p', { class: 'slx-weight', attrs: { 'aria-live': 'polite' } });
     this.minimap = new Minimap();
     this.body = el('div', { class: 'slx-scene slx-dungeon' }, [
-      this.floorName, ...this.conditionBadge(), this.lamp, menuBtn, this.minimap.el, this.backEl, this.weightEl, hint, this.pad, this.bar.el, this.talk.el,
+      this.floorName, ...this.conditionBadge(), this.lamp, menuBtn, this.minimap.el, this.backEl, this.weightEl, this.hintEl, this.pad, this.bar.el, this.talk.el,
     ]);
     root.append(this.body);
     this.ctx.stage?.show('map');
@@ -274,7 +276,7 @@ export class DungeonScene implements Scene {
    * is reported in the console and the labyrinth carries on: it must never lock the screen.
    */
   private async memory(id: SceneId): Promise<void> {
-    this.pad.classList.add('slx-cmd-hidden');
+    this.hideHud(true);
     try {
       const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
       this.playing = p;
@@ -283,9 +285,14 @@ export class DungeonScene implements Scene {
       console.error('starlantern: memory scene failed', e);
     } finally {
       this.playing = null;
-      this.pad.classList.remove('slx-cmd-hidden');
+      this.hideHud(false);
       this.syncInert();
     }
+  }
+
+  /** The pad and the two text lines under the dialogue box step aside while a scene plays. */
+  private hideHud(on: boolean): void {
+    for (const e of [this.pad, this.weightEl, this.hintEl]) e.classList.toggle('slx-cmd-hidden', on);
   }
 
   /** Memory scenes the game still holds as due: leaving the floor drops them, so they play before the party goes. */
@@ -306,12 +313,12 @@ export class DungeonScene implements Scene {
     void this.flushPending().then(() => { if (!this.exited) go(); });
   }
 
-  /** A rescue room: she speaks her meeting lines one at a time with her portrait, then the fight as for any encounter. */
+  /** A rescue room: its lines one at a time, each with its own speaker, then the fight as for any encounter. */
   private async meeting(who: Meetable): Promise<void> {
-    const sp = speakerOf(who, this.ctx.game.state, this.ctx.art);
-    const face = sp.face ? { src: sp.face, side: 'left' as const } : undefined;
-    for (const line of T.meet[who].before) {
-      await this.say(line, sp.name, face);
+    for (const line of STORY.meet[who].before) {
+      // Each line has its own speaker: the found line is narration (no plate, no face), hers carry her portrait.
+      const sp = speakerOf(line.who, this.ctx.game.state, this.ctx.art, line.mood);
+      await this.say(line.text, sp.name, sp.face ? { src: sp.face, side: 'left' } : undefined);
       if (this.exited) return;   // the scene went while a line was waiting: no fight from a scene that is gone
     }
     this.fightOn(false);

@@ -7,10 +7,10 @@ export type ActNode = 'act2' | 'act3' | 'act4';
 export const ACT_DEPTHS: Record<ActNode, number> = { act2: 4, act3: 10, act4: 16 };
 export const FINALE_DEPTH = 30;
 /**
- * The finale's boss: the 燈喰之獸 under another name (spec §8.4). `power` multiplies its hp, atk and mag after the party-size
+ * The finale's boss: the 燈喰之獸 under another name (spec §8.4; the name is `STORY.finaleBossName`). `power` multiplies its hp, atk and mag after the party-size
  * scale (1 leaves the ordinary boss as it is). It is a balance knob (6b Task 20c).
  */
-export const FINALE_BOSS = { base: 'lanterneater', name: '燈喰之母', power: 1 };
+export const FINALE_BOSS = { base: 'lanterneater', power: 1 };
 
 export type Stage = 'prologue' | 'act1' | 'act2' | 'act3' | 'act4' | 'after';
 export const STAGES: Stage[] = ['prologue', 'act1', 'act2', 'act3', 'act4', 'after'];

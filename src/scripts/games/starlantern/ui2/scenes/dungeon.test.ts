@@ -21,6 +21,7 @@ import type { CharacterId } from '../../engine/types';
 import type { SceneCtx } from '../scene';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { art } from '../../render/artPaths';
+import { STORY } from '../../data/story.zh-TW';
 import type { ArtIndex } from '../../render/textures';
 
 function setup(portal: Portal = { region: 'mainline', condition: 'plain' }, fast = true, extra: Partial<SceneCtx> = {}, prep?: (game: Game) => void) {
@@ -522,7 +523,7 @@ describe('DungeonScene loot', () => {
     it('stepping in says the meeting line, then fights', async () => {
       const { game, sfx, go, s, text, dir } = rescueSetup();
       s.onAction(dir);
-      expect(text()).toBe(T.meet.selene.before[0]);
+      expect(text()).toBe(STORY.meet.selene.before[0].text);
       expect(text()).toBe(T.ui2.rescue.found(CHARACTERS.selene.name));
       expect(game.phase).toBe('battle');
       expect(go).not.toHaveBeenCalled();
@@ -534,9 +535,9 @@ describe('DungeonScene loot', () => {
     });
 
     it('says every line of a longer meeting in turn, and fights after the last', async () => {
-      const lines = T.meet.selene.before;
+      const lines = STORY.meet.selene.before;
       const saved = [...lines];
-      lines.splice(0, lines.length, '第一句', '第二句');
+      lines.splice(0, lines.length, { who: 'narrator', text: '第一句' }, { who: 'narrator', text: '第二句' });
       try {
         const { sfx, go, s, text, dir } = rescueSetup();
         s.onAction(dir);
@@ -630,10 +631,14 @@ describe('DungeonScene memories', () => {
     await flush();
     expect(root.querySelector('.slx-talk--memory')).not.toBeNull();
     expect(root.querySelector('.slx-pad')!.classList.contains('slx-cmd-hidden')).toBe(true);   // the pad steps aside for the scene
+    expect(root.querySelector('.slx-weight')!.classList.contains('slx-cmd-hidden')).toBe(true);   // and so do the lines under the box
+    expect(root.querySelector('.slx-keyhint')!.classList.contains('slx-cmd-hidden')).toBe(true);
     expect(game.pending).toEqual(['mem:selene:1']);
     await through(s, root);
     expect(root.querySelector('.slx-talk--memory')).toBeNull();
     expect(root.querySelector('.slx-pad')!.classList.contains('slx-cmd-hidden')).toBe(false);
+    expect(root.querySelector('.slx-weight')!.classList.contains('slx-cmd-hidden')).toBe(false);
+    expect(root.querySelector('.slx-keyhint')!.classList.contains('slx-cmd-hidden')).toBe(false);
     expect(game.pending).toEqual([]);
     expect(game.state.story.seen).toContain('mem:selene:1');
     expect(game.state.story.fresh).not.toContain('mem:selene:1');   // it was played, so it is not new
@@ -730,30 +735,47 @@ describe('DungeonScene rescue meetings', () => {
     throw new Error('no open cell beside the party');
   };
 
-  it('she speaks her own meeting lines with her portrait, then the fight starts', async () => {
-    const { game, go, s, root, text } = setup(undefined, true, { art: ART });
-    game.state.party.recruited = game.state.party.recruited.filter((id) => id !== 'selene');
-    s.onAction(meetNext(game));
-    await flush();
-    const lines = T.meet.selene.before;
-    for (let i = 0; i < lines.length; i++) {
-      expect(text()).toBe(lines[i]);
-      expect(root.querySelector('.slx-talk .slx-name')!.textContent).toBe(CHARACTERS.selene.name);
-      const face = root.querySelector('.slx-talk .slx-talk-face') as HTMLImageElement;
-      expect(face.getAttribute('src')).toBe(PORTRAIT);
+  it('the found line is narration, hers carry her portrait, then the fight starts', async () => {
+    const lines = STORY.meet.selene.before;
+    const saved = [...lines];
+    lines.push({ who: 'selene', text: '謝謝你們。' });
+    try {
+      const { game, go, s, root, text } = setup(undefined, true, { art: ART });
+      game.state.party.recruited = game.state.party.recruited.filter((id) => id !== 'selene');
+      s.onAction(meetNext(game));
+      await flush();
+      const name = () => root.querySelector('.slx-talk .slx-name') as HTMLElement;
+      const face = () => root.querySelector('.slx-talk .slx-talk-face') as HTMLImageElement | null;
+      expect(text()).toBe(T.ui2.rescue.found(CHARACTERS.selene.name));
+      expect(name().hidden).toBe(true);   // narration: no name plate
+      expect(face()).toBeNull();          // and no portrait
+      s.onAction('confirm');
+      await flush();
+      expect(text()).toBe('謝謝你們。');
+      expect(name().textContent).toBe(CHARACTERS.selene.name);
+      expect(face()!.getAttribute('src')).toBe(PORTRAIT);
       expect(go).not.toHaveBeenCalled();
       s.onAction('confirm');
       await flush();
+      expect(go).toHaveBeenCalledWith('battle');
+    } finally {
+      lines.splice(0, lines.length, ...saved);
     }
-    expect(go).toHaveBeenCalledWith('battle');
   });
 
-  it('without published art she still speaks, by name', async () => {
-    const { game, s, root } = setup();
-    game.state.party.recruited = game.state.party.recruited.filter((id) => id !== 'selene');
-    s.onAction(meetNext(game));
-    await flush();
-    expect(root.querySelector('.slx-talk .slx-name')!.textContent).toBe(CHARACTERS.selene.name);
-    expect(root.querySelector('.slx-talk .slx-talk-face')).toBeNull();
+  it('without published art her own line still shows her name', async () => {
+    const lines = STORY.meet.selene.before;
+    const saved = [...lines];
+    lines.splice(0, lines.length, { who: 'selene', text: '謝謝你們。' });
+    try {
+      const { game, s, root } = setup();
+      game.state.party.recruited = game.state.party.recruited.filter((id) => id !== 'selene');
+      s.onAction(meetNext(game));
+      await flush();
+      expect(root.querySelector('.slx-talk .slx-name')!.textContent).toBe(CHARACTERS.selene.name);
+      expect(root.querySelector('.slx-talk .slx-talk-face')).toBeNull();
+    } finally {
+      lines.splice(0, lines.length, ...saved);
+    }
   });
 });

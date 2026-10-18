@@ -11,17 +11,17 @@ import { NODES } from './trees';
 import { FLOORS } from './floors';
 import { ULTIMATES } from './ultimates';
 import { MEETINGS } from './meetings';
-import { T } from './text.zh-TW';
+import { STORY } from './story.zh-TW';
 
 describe('meeting copy', () => {
   it('every companion has meeting copy', () => {
     for (const m of MEETINGS) {
-      const t = T.meet[m.id];
+      const t = STORY.meet[m.id];
       expect(t, m.id).toBeDefined();
       expect(t.before.length).toBeGreaterThanOrEqual(1);
-      for (const l of [...t.before, ...t.after]) expect(l.trim()).not.toBe('');
+      for (const l of [...t.before, ...t.after]) expect(l.text.trim()).not.toBe('');
     }
-    expect(Object.keys(T.meet).sort()).toEqual(MEETINGS.map((m) => m.id).sort());
+    expect(Object.keys(STORY.meet).sort()).toEqual(MEETINGS.map((m) => m.id).sort());
   });
 });
 

@@ -8,6 +8,7 @@ import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from '
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
 import { FINALE_BOSS, FINALE_DEPTH, memScene, type SceneId } from '../data/story/scenes';
+import { STORY } from '../data/story.zh-TW';
 import { PERKS, SHARD_IDS, isFragmentItem, shardGrade, type ShardGrade, type TownFragmentId } from '../data/story/fragments';
 import { absorb, fragmentItem, gainOf, hasPerk, lootFragments, returnFragment, sellShards, type AbsorbResult } from './story/fragments';
 import { advance, danger, type Danger } from './encounter';
@@ -202,7 +203,7 @@ export class Game {
       case 'entrance': return { kind: 'entrance' };
       case 'boss':
         // The mainline story boss stays as written; every other boss is the 燈喰之獸 grown by depth and region.
-        if (this.isFinaleFight()) this.startBattle([FINALE_BOSS.base], true, true, undefined, 0, { names: { [FINALE_BOSS.base]: FINALE_BOSS.name }, bossPower: FINALE_BOSS.power });
+        if (this.isFinaleFight()) this.startBattle([FINALE_BOSS.base], true, true, undefined, 0, { names: { [FINALE_BOSS.base]: STORY.finaleBossName }, bossPower: FINALE_BOSS.power });
         else this.startBattle(['lanterneater'], true, !this.isStoryDepth(this.floor));
         return { kind: 'boss' };
       case 'chest': return this.openChest() ?? { kind: 'moved' };

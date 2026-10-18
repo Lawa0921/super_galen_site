@@ -28,7 +28,8 @@ import { buy } from './town';
 import { memoriesOf } from './progression';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
-import { FINALE_BOSS, FINALE_DEPTH } from '../data/story/scenes';
+import { FINALE_BOSS, FINALE_DEPTH, type SceneId } from '../data/story/scenes';
+import { STORY } from '../data/story.zh-TW';
 import { ACT_DEPTHS } from '../data/story/scenes';
 import { chainLength } from '../data/story/chains';
 
@@ -2607,7 +2608,7 @@ describe('the finale', () => {
     stepOnto(g, g.map().boss!);
     expect(g.phase).toBe('battle');
     expect(g.battle!.boss).toBe(true);
-    expect(g.battle!.enemies.map((e) => [e.defId, e.name])).toEqual([[FINALE_BOSS.base, FINALE_BOSS.name]]);
+    expect(g.battle!.enemies.map((e) => [e.defId, e.name])).toEqual([[FINALE_BOSS.base, STORY.finaleBossName]]);
   });
 
   it('only the main road names her: a depth-30 boss elsewhere is the ordinary beast', () => {
@@ -2616,7 +2617,7 @@ describe('the finale', () => {
     expect(g.depart({ region: 'blaze', condition: 'plain' }, FINALE_DEPTH)).toEqual({ ok: true });
     stepOnto(g, g.map().boss!);
     expect(g.battle!.enemies[0].name).toContain(ENEMIES[FINALE_BOSS.base].name);   // the grown beast, not her
-    expect(g.battle!.enemies[0].name).not.toBe(FINALE_BOSS.name);
+    expect(g.battle!.enemies[0].name).not.toBe(STORY.finaleBossName);
   });
 
   it('beating her clears the finale and brings the hero to ten', () => {
@@ -2661,7 +2662,7 @@ describe('the finale', () => {
     const g = run(FINALE_DEPTH, (x) => { x.state.story.finaleCleared = true; x.state.story.act1Cleared = true; });
     stepOnto(g, g.map().boss!);
     expect(g.battle!.enemies[0].name).toContain(ENEMIES[FINALE_BOSS.base].name);   // the grown beast, not her
-    expect(g.battle!.enemies[0].name).not.toBe(FINALE_BOSS.name);
+    expect(g.battle!.enemies[0].name).not.toBe(STORY.finaleBossName);
     killAll(g);
     expect([g.phase, g.cleared, g.finale]).toEqual(['map', null, null]);
   });
@@ -2701,5 +2702,29 @@ describe('the finale', () => {
     g.restartAfterClear();
     expect([g.phase, g.finale, g.cleared]).toEqual(['town', null, null]);
     expect(g.sceneDone('finale', 'played')).toBe(false);
+  });
+});
+
+describe('the depth-3 story boss after the finale branch', () => {
+  const kill = (queue: SceneId[] = [], seen: SceneId[] = []) => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, ['hero', 'rin']);
+    g.state.dungeon.reached.mainline = 3;
+    g.state.story.queue = queue;
+    g.state.story.seen = seen;
+    expect(g.depart(MAIN, 3)).toEqual({ ok: true });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    return g;
+  };
+  it('queues act1-after once and clears as the first act', () => {
+    const g = kill(['prologue']);
+    expect([g.phase, g.cleared, g.finale]).toEqual(['clear', 'act1', null]);
+    expect(g.state.story.act1Cleared).toBe(true);
+    expect(g.state.story.finaleCleared).toBe(false);
+    expect(g.state.story.queue.filter((id) => id === 'act1-after')).toHaveLength(1);
+  });
+  it('a later kill does not queue it again, while it waits or once it was seen', () => {
+    expect(kill(['act1-after']).state.story.queue.filter((id) => id === 'act1-after')).toHaveLength(1);
+    expect(kill([], ['act1-after']).state.story.queue).not.toContain('act1-after');
   });
 });

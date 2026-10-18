@@ -2,6 +2,7 @@
 import type { CharacterId } from '../engine/types';
 import type { ExtraMood, Mood } from '../render/artPaths';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
+import { MEETINGS, type Meetable } from './meetings';
 import { CHAINS } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
 import { CHAT_COUNT, MAJOR_SCENES, STAGES, type MajorScene, memScene, type SceneId, type Stage } from './story/scenes';
@@ -84,6 +85,13 @@ export const STORY = {
     gate: greetOf('三座傳送門都開著。要去哪裡？別逞強。', '傳送門今天也在發光。'),
     forge: greetOf('爐火正旺。要拆、要打，還是要重新鍛一回？', '帶素材來了嗎？好鐵配好手藝。'),
   },
+  /** The finale's boss: the lantern-eater under her own name. */
+  finaleBossName: ph('燈喰之母'),
+  /** Rescue meetings: what is said before the fight (the found line is narration; 6c adds hers) and after it is won. */
+  meet: Object.fromEntries(MEETINGS.map((m) => [m.id, {
+    before: [{ who: 'narrator' as const, text: ph(`有人被怪物圍住了──是${nameOf(m.id)}！`) }],
+    after: [] as ScriptLine[],
+  }])) as Record<Meetable, { before: ScriptLine[]; after: ScriptLine[] }>,
   absorb: [ph('碎片化開，一段陌生的暖意流進身體。')],
   people: Object.fromEntries(CHARACTER_IDS.map((id) => [id, [1, 2, 3].map((n) => ph(`${nameOf(id)}的簡介（${n}）。`))])) as Record<CharacterId, string[]>,
   truths: Object.fromEntries(STAGES.map((s, i) => [s, ph(`第 ${i + 1} 條真相。`)])) as Record<Stage, string>,

@@ -8,7 +8,6 @@ import { MATERIALS } from './materials';
 import { SETS } from './gear';
 import type { RegionId } from './regions';
 import { CHARACTERS } from './characters';
-import { MEETINGS, type Meetable } from './meetings';
 import type { MaterialUse } from '../engine/forge/uses';
 import type { MaterialKind } from '../engine/types';
 import type { AnyStat, BuffStat, Rarity, Slot, StatKey, Target } from '../engine/types';
@@ -601,8 +600,6 @@ export const T = {
     },
     junkOnly: '雜物：只能賣錢',
   },
-  /** What is said before a rescue fight and after it is won; one entry per companion, so each can be rewritten on its own. */
-  meet: Object.fromEntries(MEETINGS.map((m) => [m.id, { before: [rescueFound(CHARACTERS[m.id].name)], after: [] as string[] }])) as Record<Meetable, { before: string[]; after: string[] }>,
   clear: { title: '第一幕　星燈重新亮起', body: '燈喰之獸倒下了。暮霧散去，露米亞迎來久違的晨光。', back: '繼續' },
   /** The finale's closing card; its text is the finale scene's summary. */
   ending: { title: '終幕　點燈', back: '繼續' },

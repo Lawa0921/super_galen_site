@@ -3,6 +3,7 @@ import type { HitExtra, PartyCue } from '../../render/BattleView';
 import type { FxKey } from '../../render/artPaths';
 import { ITEMS } from '../../data/items';
 import { T } from '../../data/text.zh-TW';
+import { STORY } from '../../data/story.zh-TW';
 import { CHARACTERS } from '../../data/characters';
 import { LIMIT_MAX, intentLabel, skillCost, skillFor, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
@@ -522,7 +523,7 @@ export class BattleScene implements Scene {
       for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it)]), cls: 'slx-loot-left' });
       lines.push(...levelUpLines(end.levelUps, this.ctx.game.state.party));
       if (end.met) {
-        for (const l of T.meet[end.met.id].after) lines.push({ text: l });
+        for (const l of STORY.meet[end.met.id].after) lines.push({ text: l.text });
       }
     } else if (end.outcome === 'lose') this.ctx.sfx.lose?.();
     const title = end.outcome === 'win' ? T.battle.win : end.outcome === 'lose' ? T.battle.lose : T.battle.fled;
