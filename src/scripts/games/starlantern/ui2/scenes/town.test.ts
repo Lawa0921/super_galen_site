@@ -245,4 +245,20 @@ describe('TownScene story', () => {
     expect(STORY.townLines.prologue).toContain(t.text());
     expect(t.root.querySelector('.slx-talk .slx-name')!.textContent).not.toBe(CHARACTERS.rin.name);
   });
+
+  it('a scene that throws does not lock the town: the menu comes back and the day line shows', async () => {
+    const game = Game.fresh(constRng(0.5), null);
+    vi.spyOn(game, 'sceneDone').mockImplementation(() => { throw new Error('boom'); });
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const t = open(game);
+    t.s.onAction('cancel');            // skip the scene: the summary shows
+    await t.settle();
+    t.s.onAction('confirm');           // recording it throws
+    await t.settle(); await t.settle();
+    expect(err).toHaveBeenCalled();
+    expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);
+    t.s.onAction('confirm');           // the day line closes
+    expect(t.menu().hasAttribute('inert')).toBe(false);
+    err.mockRestore();
+  });
 });

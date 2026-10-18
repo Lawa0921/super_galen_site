@@ -28,7 +28,7 @@ export function shouldPlay(id: SceneId, mode: StoryMode): boolean {
 }
 
 /** The town people who have a published face: the facility keeper each one stands in. */
-const NPC_FACILITY: Partial<Record<NpcId, 'guild' | 'shop' | 'inn' | 'gate' | 'forge'>> = {
+export const NPC_FACILITY: Partial<Record<NpcId, 'guild' | 'shop' | 'inn' | 'gate' | 'forge'>> = {
   anna: 'guild', orik: 'shop', marta: 'inn', glen: 'gate', doran: 'forge',
 };
 

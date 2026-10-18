@@ -65,7 +65,12 @@ export class TownScene implements Scene {
   /** The queued scenes play first, with the menu out of the way; then the notice, or the day's line. */
   private async arrive(): Promise<void> {
     const game = this.ctx.game;
-    for (const id of [...game.arrival]) await this.playScene(id);
+    try {
+      for (const id of [...game.arrival]) await this.playScene(id);
+    } catch (e) {
+      // A broken scene must not lock the town: say so in the console and carry on to the day's line.
+      console.error('starlantern: arrival scene failed', e);
+    }
     const t = T.ui2.town;
     const notice = game.notice;
     const banked = game.banked;
@@ -86,14 +91,17 @@ export class TownScene implements Scene {
 
   /** Plays one arrival scene with the menu hidden (the 96px face stands over its last row) and records it. */
   private async playScene(id: SceneId): Promise<void> {
-    const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
-    this.playing = p;
     this.menuWin.setAttribute('inert', '');
     this.backEl.setAttribute('inert', '');
     this.menuWin.classList.add('slx-cmd-hidden');
-    await p.done;
-    this.playing = null;
-    this.menuWin.classList.remove('slx-cmd-hidden');
+    try {
+      const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
+      this.playing = p;
+      await p.done;
+    } finally {
+      this.playing = null;
+      this.menuWin.classList.remove('slx-cmd-hidden');
+    }
   }
 
   exit(): void { this.talk.stop(); }

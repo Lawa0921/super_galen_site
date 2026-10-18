@@ -1,7 +1,6 @@
 import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { storyStage } from '../../engine/story/events';
-import type { TownFragmentId } from '../../data/story/fragments';
 import type { SceneId } from '../../data/story/scenes';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
@@ -9,12 +8,10 @@ import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx, SceneName } from '../scene';
 import { textCps } from '../settings';
-import { playAndRecord, storyCtx } from '../story';
+import { NPC_FACILITY, playAndRecord, storyCtx } from '../story';
 import { Dialogue, MenuView, backControl, win, type Rich } from '../widgets';
 
 export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate' | 'forge';
-/** The facility each town fragment's owner keeps. */
-const NPC_FACILITY: Record<TownFragmentId, FacilityId> = { anna: 'guild', orik: 'shop', marta: 'inn', glen: 'gate', doran: 'forge' };
 const RETURNING: SceneName[] = ['formation', 'status', 'equip', 'settings'];
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 
