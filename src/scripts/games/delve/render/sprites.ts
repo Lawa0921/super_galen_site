@@ -12,7 +12,7 @@ import { R as CR, WEAPON_METAL } from './combatArt';
 import { dollKey, plainLook, type DollLook } from '../engine/doll';
 import { DEFAULT_APPEARANCE } from '../engine/appearance';
 import {
-  ARMS_PAD, ARM_H, ARM_PIV, ARM_W, AV_FH, AV_FW, AV_SHOULDER_BACK, AV_SHOULDER_FRONT, HAND_REACH, avatarArm, avatarSheet, mantleArms, type FrameMeta,
+  ARMS_PAD, ARM_H, ARM_PIV, ARM_W, AV_FH, AV_FW, HAND_REACH, avatarArm, avatarSheet, mantleArms, shoulderOf, type FrameMeta,
 } from './avatarArt';
 
 export const FW = AV_FW;
@@ -524,7 +524,7 @@ export class Sprites {
     return s;
   }
 
-  shoulder(back: boolean): { x: number; y: number } { return back ? AV_SHOULDER_BACK : AV_SHOULDER_FRONT; }
+  shoulder(back: boolean): { x: number; y: number } { return shoulderOf(this.look.app.body, back); }
 
   /** 旋轉後的手臂（含鎬 / 劍；袖子依紙娃娃的上衣）。回傳 canvas 與「軸心在 canvas 中的位置」 */
   arm(back: boolean, pick: ItemId | null, deg: number, blade: ItemId | null = null): HeldDraw {

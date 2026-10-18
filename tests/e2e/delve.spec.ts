@@ -1445,8 +1445,11 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     await page.click('#delve-look');
     const wr = page.locator('#delve-wardrobe');
     await expect(wr).toBeVisible();
+    // 第一列是體型
+    await expect(wr.locator('.delve-wr-row').first()).toHaveAttribute('data-key', 'body');
+    await expect(wr.locator('.delve-wr-row').first()).toBeFocused();
     const row = wr.locator('.delve-wr-row[data-key="hair"]');
-    await expect(row).toBeFocused();
+    await row.focus();
     const before = Number(await row.getAttribute('data-value'));
     // 鍵盤 → 換一個，再用滑鼠點「下一個」再換一個
     await page.keyboard.press('ArrowRight');
@@ -1462,12 +1465,17 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     // 標題背景的主角也換了
     await page.waitForFunction(() => Boolean(window.__delveTitle));
     expect(await page.evaluate(() => window.__delveTitle!.game.appearance.hair)).toBe(hair);
-    // 新世界
+    // 新世界：面板裡選「男」→ 預設外觀換成男生體型、標題主角也換
     await page.click('#delve-new');
+    await page.click('#delve-body-m');
+    await expect(page.locator('#delve-body-m')).toHaveAttribute('aria-checked', 'true');
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('delve.appearance') ?? '{}').body)).toBe(1);
+    expect(await page.evaluate(() => window.__delveTitle!.game.appearance.body)).toBe(1);
     await page.fill('#delve-seed', 'look-e2e');
     await page.click('#delve-create');
     await waitGame(page);
     expect(await page.evaluate(() => window.__delveDebug!.game.appearance.hair)).toBe(hair);
+    expect(await page.evaluate(() => window.__delveDebug!.game.appearance.body)).toBe(1);
     await page.evaluate(() => window.__delveDebug!.save());
     // 預設外觀清掉：讀檔後的外觀要來自存檔本身
     await page.evaluate(() => localStorage.removeItem('delve.appearance'));
@@ -1478,6 +1486,7 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     const look = await page.evaluate(() => window.__delveDebug!.game.appearance);
     expect(look.hair).toBe(hair);
     expect(look.hairColor).toBe(hairColor);
+    expect(look.body).toBe(1);
     expect(errors).toEqual([]);
   });
 
@@ -1568,6 +1577,12 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     await page.keyboard.up('KeyW');
     await page.waitForTimeout(500);
     expect(await page.evaluate(() => window.__delveDebug!.handle.renderer.playerAnim)).toBe('hang');
+    // 往下爬是另一套動作
+    await page.keyboard.down('KeyS');
+    await page.waitForTimeout(250);
+    expect(await page.evaluate(() => window.__delveDebug!.handle.renderer.playerAnim)).toBe('climbdown');
+    await page.keyboard.up('KeyS');
+    await page.waitForTimeout(300);
     const seen = new Set<string>();
     await page.keyboard.down('KeyW');
     for (let i = 0; i < 60; i++) {

@@ -2,7 +2,7 @@
 // 攀爬的「手交替」循環跟著爬的距離走（往下爬倒著播）、停下來一下才換成掛著搖晃、每次換手發出 grip 提示（音效 / 粉塵）。
 import { describe, it, expect } from 'vitest';
 import {
-  PlayerAnimator, CLIMB_FRAMES, HANG_FRAMES, MANTLE_FRAMES, SWIM_FRAMES, HANG_DELAY, HURT_SHOW, CLIMB_STRIDE, blinkAt, type AnimInput,
+  PlayerAnimator, CLIMB_FRAMES, CLIMBDOWN_FRAMES, HANG_FRAMES, MANTLE_FRAMES, SWIM_FRAMES, HANG_DELAY, HURT_SHOW, CLIMB_STRIDE, blinkAt, type AnimInput,
 } from './playerAnim';
 
 const base: AnimInput = { dt: 1 / 60, dead: false, climbing: false, mantle: null, onGround: true, vx: 0, vy: 0, swim: false, sinceHurt: 99 };
@@ -47,18 +47,17 @@ describe('PlayerAnimator：攀爬狀態機', () => {
     expect(new Set(r.frames).size).toBe(CLIMB_FRAMES);
     for (const f of r.frames) { expect(f).toBeGreaterThanOrEqual(0); expect(f).toBeLessThan(CLIMB_FRAMES); }
   });
-  it('往下爬：影格倒著播', () => {
+  it('往下爬是另一套動作（climbdown：手抓在手下面），不是往上爬倒著播；影格往前、會換手', () => {
     const a = new PlayerAnimator();
-    feed(a, { climbing: true, onGround: false, vy: -120 }, 3);
-    const up = feed(a, { climbing: true, onGround: false, vy: -120 }, 12).frames;
-    const down = feed(a, { climbing: true, onGround: false, vy: 120 }, 12).frames;
-    const step = (fs: number[]): number => {
-      let s = 0;
-      for (let i = 1; i < fs.length; i++) { const d = (fs[i] - fs[i - 1] + CLIMB_FRAMES) % CLIMB_FRAMES; if (d) s += d === CLIMB_FRAMES - 1 ? -1 : d; }
-      return s;
-    };
-    expect(step(up)).toBeGreaterThan(0);
-    expect(step(down)).toBeLessThan(0);
+    feed(a, { climbing: true, onGround: false, vy: -120 }, 12);
+    expect(a.anim).toBe('climb');
+    const down = feed(a, { climbing: true, onGround: false, vy: 120 }, 60);
+    expect(a.anim).toBe('climbdown');
+    expect(new Set(down.frames).size).toBe(CLIMBDOWN_FRAMES);
+    expect(down.grips).toBeGreaterThan(4);
+    let fwd = 0;
+    for (let i = 1; i < down.frames.length; i++) { const d = (down.frames[i] - down.frames[i - 1] + CLIMBDOWN_FRAMES) % CLIMBDOWN_FRAMES; if (d === 1) fwd++; }
+    expect(fwd).toBeGreaterThan(5);
   });
   it('在繩上停下：HANG_DELAY 之內維持 climb（點一下上不會閃成掛著），之後換成 hang 並慢慢搖晃', () => {
     const a = new PlayerAnimator();

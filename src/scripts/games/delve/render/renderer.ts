@@ -449,7 +449,7 @@ export class Renderer {
     ph.fx = this.lap();
     this.drawLight(ctx, camX, camY, vw, vh);
     ph.light = this.lap();
-    if (!this.fullbright) this.combat.drawDark(ctx, vb, this.lightAtFn);
+    if (!this.fullbright) { this.combat.drawDark(ctx, vb, this.lightAtFn); this.drawPlayerRim(ctx); }
     // 霧 / 雨雪畫在光照之後（夜裡也看得到，顏色依天空亮度分階）
     const lvl = this.fullbright ? 1 : g.skyLevel();
     if (wx.kind === 'fog') this.fx.drawFog(ctx, w, camX, camY, vw, vh, wx.intensity, lvl);
@@ -729,11 +729,14 @@ export class Renderer {
   private hurtAt = -99;
   /** 目前的玩家動畫（e2e / debug） */
   playerAnim: PlayerAnim = 'idle';
+  /** 這一幀玩家畫在哪（光照遮罩之後補畫暗處輪廓光用）；沒畫 = null */
+  private rimDraw: { cx: number; bottom: number; facing: number; fi: number; x: number; y: number; canvas: HTMLCanvasElement } | null = null;
   /** 動畫提示（換手 → 攀爬音效）；main.ts 接到音效 */
   onCue: ((cue: 'grip') => void) | null = null;
 
   private drawPlayer(ctx: CanvasRenderingContext2D, dt: number): void {
     const g = this.game, p = g.player, st = g.getState();
+    this.rimDraw = null;
     if (this.hidePlayer) return;
     const SP = this.sprites;
     // 紙娃娃：樣子沒變（key 一樣）就沿用快取的影格表
@@ -767,10 +770,11 @@ export class Renderer {
     const meta = sheet.meta[fi];
     const cx = Math.round(p.x + p.w / 2), bottom = Math.round(p.y + p.h + p.gfxOffY);
     const ox = -FW / 2, oy = -FH;
+    this.rimDraw = { cx, bottom, facing: this.facing, fi, x: ox + (meta.arms ? 0 : meta.ox ?? 0), y: oy, canvas: sheet.canvas };
     if (!meta.arms) {
       // 背面爬繩 / 掛著 / 倒地：手臂畫在影格裡，手上的東西收起來
       ctx.save(); ctx.translate(cx, bottom); ctx.scale(this.facing, 1);
-      ctx.drawImage(sheet.canvas, fi * FW, 0, FW, FH, ox, oy, FW, FH);
+      ctx.drawImage(sheet.canvas, fi * FW, 0, FW, FH, ox + (meta.ox ?? 0), oy, FW, FH);
       ctx.restore();
       this.rodTip = null;
       return;
@@ -1155,6 +1159,20 @@ export class Renderer {
     this.stats.lightPutMs = t3 - t2;
     this.stats.lightMs = j.ms;
     this.stats.lightFrames = j.frames;
+  }
+
+  /** 暗處的玩家輪廓光：站的地方很暗時，在光照遮罩之上補畫一圈冷灰的外框（身體 / 頭；手臂很細就不補） */
+  private drawPlayerRim(ctx: CanvasRenderingContext2D): void {
+    const r = this.rimDraw;
+    if (!r) return;
+    const t = this.game.playerTile();
+    const lv = Math.max(this.lightAt(t.x, t.y), this.lightAt(t.x, t.y - 1));
+    if (lv > 0.32) return;
+    ctx.save();
+    ctx.translate(r.cx, r.bottom);
+    ctx.scale(r.facing, 1);
+    ctx.drawImage(r.canvas, r.fi * FW, FH * 2, FW, FH, r.x, r.y, FW, FH);
+    ctx.restore();
   }
 
   /** 上次光照計算時某格（tile）的亮度（三通道最大值 ×1.08，地下套同一條暗部曲線；沒算過 = 1） */
