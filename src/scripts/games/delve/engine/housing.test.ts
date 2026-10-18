@@ -160,6 +160,20 @@ describe('housing: scanRooms', () => {
     expect(new Set(rooms.map((r) => r.key)).size).toBe(2);
   });
 
+  it('shells: an enclosed build without any background wall is reported (缺少背景牆), caves are not', () => {
+    const w = world();
+    buildHouse(w, 10, 24, 8, 5, { walls: false });
+    expect(scanRooms(w, 0, 0, 79, 39)).toEqual([]);
+    const shells = scanRooms(w, 0, 0, 79, 39, { shells: true });
+    expect(shells.length).toBe(1);
+    expect(shells[0].reasons).toContain('wall');
+    expect(shells[0].missingWalls).toBe(40);
+    // 天然的封閉洞穴（四周都是石頭）不算
+    const w2 = world();
+    for (let y = 33; y < 37; y++) for (let x = 20; x < 28; x++) w2.setFg(x, y, T.AIR);
+    expect(scanRooms(w2, 0, 0, 79, 39, { shells: true })).toEqual([]);
+  });
+
   it('ignores outdoor air without built walls', () => {
     const w = world();
     expect(scanRooms(w, 0, 0, 79, 39)).toEqual([]);

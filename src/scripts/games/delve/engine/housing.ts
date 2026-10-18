@@ -5,7 +5,7 @@
 //     每格都有人造背景牆、有門（或平台出入口）、有光源、有桌子、有座位、有床（居民要睡）。
 //   舒適度：家具舒適度相加，同一種第二件起只算一半，每間上限 ROOM.COMFORT_CAP。
 import type { World } from './world';
-import { isSolidTile } from './tiles';
+import { T, isSolidTile } from './tiles';
 import { FURNITURE_BY_TILE, HOUSE_WALLS, LIGHT_TILES, PAIR_OF_RIGHT, isEntrance } from './furniture';
 
 export const ROOM = {
@@ -24,7 +24,7 @@ export const REASON_ZH: Record<RoomReason, string> = {
   too_small: `房間太小（至少 ${ROOM.MIN} 格）`,
   low: `天花板太低（至少 ${ROOM.MIN_H} 格高）`,
   narrow: `房間太窄（至少 ${ROOM.MIN_W} 格寬）`,
-  wall: '有地方缺少人造背景牆',
+  wall: '缺少背景牆',
   door: '沒有門（或平台出入口）',
   light: '沒有光源',
   table: '沒有桌子',
@@ -54,9 +54,16 @@ export interface RoomCheck {
   furniture: Map<number, number>;
   /** 房間識別：最小的內部 tile index */
   key: number;
+  /** 邊界有玩家蓋的方塊 / 門（區分「蓋到一半的房子」和天然洞穴） */
+  built: boolean;
 }
 
 const boundary = (id: number): boolean => isSolidTile(id) || isEntrance(id);
+/** 玩家蓋房子會用的方塊（查房模式用來認出還沒貼牆的空殼） */
+export const BUILT_BLOCKS = new Set<number>([
+  T.PLANKS, T.DARK_PLANKS, T.PALE_PLANKS, T.STONE_BRICK, T.RED_BRICK, T.ROOF_RED, T.ROOF_SLATE, T.GLASS,
+  T.DOOR_CLOSED, T.DOOR_OPEN, T.PLATFORM,
+]);
 
 /** 從 (x,y) 找房間；(x,y) 是邊界 / 越界 → null */
 export function checkRoom(w: World, x: number, y: number): RoomCheck | null {
@@ -67,7 +74,7 @@ export function checkRoom(w: World, x: number, y: number): RoomCheck | null {
   const start = y * W0 + x;
   const stack = [start];
   seen.add(start);
-  let leaked = false, door = false;
+  let leaked = false, door = false, built = false;
   while (stack.length) {
     const i = stack.pop()!;
     tiles.push(i);
@@ -77,7 +84,7 @@ export function checkRoom(w: World, x: number, y: number): RoomCheck | null {
       const nx = tx + (k === 0 ? 1 : k === 1 ? -1 : 0), ny = ty + (k === 2 ? 1 : k === 3 ? -1 : 0);
       if (!w.inBounds(nx, ny)) { leaked = true; continue; }
       const ni = ny * W0 + nx, id = fg[ni];
-      if (boundary(id)) { if (isEntrance(id)) door = true; continue; }
+      if (boundary(id)) { if (isEntrance(id)) door = true; if (BUILT_BLOCKS.has(id)) built = true; continue; }
       if (seen.has(ni)) continue;
       seen.add(ni);
       stack.push(ni);
@@ -119,7 +126,7 @@ export function checkRoom(w: World, x: number, y: number): RoomCheck | null {
   }
   return {
     ok: reasons.length === 0, reasons, tiles, x0, y0, x1, y1, size, width, height, missingWalls: missing,
-    door, light, table, seat, bed, comfort: leaked ? 0 : comfortOf(furniture), furniture, key,
+    door, light, table, seat, bed, comfort: leaked ? 0 : comfortOf(furniture), furniture, key, built,
   };
 }
 
@@ -137,7 +144,7 @@ export function comfortOf(furniture: ReadonlyMap<number, number>): number {
  * 矩形 (x0,y0)–(x1,y1) 內所有「看起來是室內」的房間（種子格：非邊界、有人造背景牆）：每間只回傳一次（含不合格的）。
  * 漏到外面的房間也會回傳（reasons = ['open']），讓查房模式能指出破口。
  */
-export function scanRooms(w: World, x0: number, y0: number, x1: number, y1: number): RoomCheck[] {
+export function scanRooms(w: World, x0: number, y0: number, x1: number, y1: number, opts: { shells?: boolean } = {}): RoomCheck[] {
   const out: RoomCheck[] = [];
   const claimed = new Set<number>();
   const ax = Math.max(0, x0), ay = Math.max(0, y0), bx = Math.min(w.width - 1, x1), by = Math.min(w.height - 1, y1);
@@ -149,6 +156,17 @@ export function scanRooms(w: World, x0: number, y0: number, x1: number, y1: numb
     if (!r) continue;
     for (const t of r.tiles) claimed.add(t);
     out.push(r);
+  }
+  // 空殼：還沒貼背景牆、但已經用建材圍起來的空間（查房模式要能告訴新玩家「缺少背景牆」；天然洞穴不算）
+  if (opts.shells) {
+    for (let y = ay; y <= by; y++) for (let x = ax; x <= bx; x++) {
+      const i = y * W0 + x;
+      if (claimed.has(i) || boundary(w.fg[i])) continue;
+      const r = checkRoom(w, x, y);
+      if (!r) continue;
+      for (const t of r.tiles) claimed.add(t);
+      if (r.reasons[0] !== 'open' && r.built) out.push(r);
+    }
   }
   return out;
 }

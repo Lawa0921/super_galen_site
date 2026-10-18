@@ -292,7 +292,9 @@ export function recipeRows(inv: Inventory, near: boolean | Partial<Record<Statio
     : { nearWorkbench: Boolean(near.workbench), nearFurnace: Boolean(near.furnace), nearAnvil: Boolean(near.anvil), nearCampfire: Boolean(near.campfire) };
   return RECIPES.map((r) => {
     const inputs = r.inputs.map((a) => {
-      const bag = inv.count(a.item), extra = chests ? chests(a.item) : 0;
+      const bag = inv.count(a.item);
+      if (!chests) return { item: a.item, n: a.n, have: bag };
+      const extra = chests(a.item);
       return { item: a.item, n: a.n, have: bag + extra, bag, fromChest: Math.max(0, Math.min(extra, a.n - bag)) };
     });
     return {

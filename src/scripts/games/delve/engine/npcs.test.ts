@@ -19,6 +19,10 @@ describe('npc definitions', () => {
 });
 
 describe('mood', () => {
+  it('the first pair (merchant + smith) get along', () => {
+    expect(npcMood('merchant', { comfort: 0, level: 1, neighbours: ['smith'], homeless: false }).value).toBeGreaterThanOrEqual(50);
+    expect(npcMood('smith', { comfort: 0, level: 1, neighbours: ['merchant'], homeless: false }).value).toBeGreaterThanOrEqual(50);
+  });
   it('room comfort, level and liked neighbours raise mood; disliked and crowding lower it', () => {
     const base = npcMood('cook', { comfort: 0, level: 1, neighbours: [], homeless: false }).value;
     expect(base).toBe(50);

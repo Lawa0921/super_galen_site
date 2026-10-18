@@ -29,6 +29,10 @@ export function npcLook(kind: NpcKind): DollLook {
 export interface NpcFrames { idle: Bmp[]; blink: Bmp; walk: Bmp[]; sleep: Bmp; portrait: Bmp; }
 /** 睡覺：閉眼那格的頭（第一個不透明列往下 SLEEP_HEAD 列）露在被子外 */
 const SLEEP_HEAD = 21;
+/** 睡覺的頭最寬幾 px（床 32px 寬，兩側留床頭板 / 床尾板） */
+const SLEEP_MAX_W = 26;
+/** 睡覺的頭在床上的位置：左邊靠床頭板內側（床頭 tile x + 4） */
+export function sleepHeadX(bedX: number, headW: number): number { return bedX + 4 + Math.max(0, Math.floor((SLEEP_MAX_W - headW) / 2) - 6); }
 /** 一位居民的全部影格（純 Bmp；測試 / 圖庫也用） */
 export function npcFrames(kind: NpcKind): NpcFrames {
   const l = npcLook(kind), key = `npc:${kind}:${dollKey(l)}`;
@@ -37,8 +41,13 @@ export function npcFrames(kind: NpcKind): NpcFrames {
   const blink = dollPreview(l, key, 'blink', 0);
   let top = 0;
   outer: for (; top < blink.h; top++) for (let x = 0; x < blink.w; x++) if (blink.on(x, top)) break outer;
-  const sleep = new Bmp(AV_FW, SLEEP_HEAD);
-  for (let y = 0; y < SLEEP_HEAD; y++) for (let x = 0; x < AV_FW; x++) sleep.setRaw(x, y, blink.raw(x, top + y));
+  // 睡覺：閉眼那格的頭，左右裁到不透明範圍（長髮 / 雙馬尾不會伸出床外）
+  let hl = AV_FW, hr = -1;
+  for (let y = 0; y < SLEEP_HEAD; y++) for (let x = 0; x < AV_FW; x++) if (blink.on(x, top + y)) { hl = Math.min(hl, x); hr = Math.max(hr, x); }
+  // 頭最多 SLEEP_MAX_W 寬，從臉那側（右邊）往回留
+  if (hr - hl + 1 > SLEEP_MAX_W) hl = hr - SLEEP_MAX_W + 1;
+  const sleep = new Bmp(Math.max(1, hr - hl + 1), SLEEP_HEAD);
+  for (let y = 0; y < SLEEP_HEAD; y++) for (let x = 0; x < sleep.w; x++) sleep.setRaw(x, y, blink.raw(hl + x, top + y));
   // 肖像：頭到胸口
   const portrait = new Bmp(AV_FW, 34);
   for (let y = 0; y < 34; y++) for (let x = 0; x < AV_FW; x++) portrait.setRaw(x, y, idle[0].raw(x, top + y));
@@ -110,7 +119,7 @@ export class SettleLayer {
     if (n.state === 'sleep' && n.bed) {
       // 頭靠在枕頭上（床頭格 x+4..8），被子蓋到下巴；Zzz 往上飄
       const bx = n.bed.x * S, by = n.bed.y * S;
-      ctx.drawImage(a.sleep, Math.round(bx + 7 - AV_FW / 2), Math.round(by + 10 - SLEEP_HEAD));
+      ctx.drawImage(a.sleep, sleepHeadX(bx, a.sleep.width), Math.round(by + 10 - SLEEP_HEAD));
       ctx.drawImage(a.blanket, bx + 5, by + 7);
       const t = (clock + n.id * 0.7) % 3;
       for (let k = 0; k < 2; k++) {
@@ -142,7 +151,7 @@ export class SettleLayer {
     const x1 = Math.ceil((vb.x + vb.w) / S / 8) * 8 + 8, y1 = Math.ceil((vb.y + vb.h) / S / 8) * 8 + 8;
     const key = `${x0},${y0},${x1},${y1}`;
     if (!this.roomCache || this.roomCache.rev !== w.rev || this.roomCache.key !== key) {
-      this.roomCache = { rev: w.rev, key, rooms: scanRooms(w, x0, y0, x1, y1) };
+      this.roomCache = { rev: w.rev, key, rooms: scanRooms(w, x0, y0, x1, y1, { shells: true }) };
     }
     return this.roomCache.rooms;
   }

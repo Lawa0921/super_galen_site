@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BUILD_DECOR_STYLES, BUILD_ICONS, BUILD_TILE_PAL, buildDecorBmp, buildIcon, buildTileBmp, buildWallBmp } from './buildArt';
 import { Bmp, inPalette } from './pixel';
 import { T, W } from '../engine/tiles';
-import { npcFrames, npcLook } from './settleDraw';
+import { npcFrames, npcLook, sleepHeadX } from './settleDraw';
 import { NPC_KINDS } from '../engine/npcs';
 import { DECOR_STYLES, decorStyle } from './autotile';
 
@@ -70,6 +70,10 @@ describe('settler sprites', () => {
       expect(f.walk.length).toBeGreaterThan(1);
       for (const b of [...f.idle, ...f.walk, f.sleep, f.portrait]) expect(clean(b)).toBe(true);
       expect(opaque(f.sleep)).toBeGreaterThan(100);
+      // 睡覺的頭放在床（兩格 32px）內：不會伸出床外
+      const x = sleepHeadX(0, f.sleep.w);
+      expect(x).toBeGreaterThanOrEqual(1);
+      expect(x + f.sleep.w).toBeLessThanOrEqual(31);
     }
     expect(keys.size).toBe(NPC_KINDS.length);
   });

@@ -408,7 +408,7 @@ const ORE_TILES = new Set<number>([T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOL
 /** 傳說之魚（第一次釣到給比較多經驗） */
 const LEGEND_FISH = new Set<ItemId>(FISH.filter((f) => f.rarity === 'legendary').map((f) => f.item));
 /** 會換算經驗的事件種類（engine/levels.ts xpForEvent） */
-const LEVEL_EVENTS = new Set<DelveEvent['type']>(['kill', 'place', 'mine', 'chest', 'craft', 'discover', 'lore', 'treasure', 'codex', 'fish']);
+const LEVEL_EVENTS = new Set<DelveEvent['type']>(['kill', 'place', 'mine', 'chest', 'craft', 'discover', 'lore', 'treasure', 'codex', 'fish', 'rooms', 'settlement', 'npc']);
 /** 裝備的位置：背包格號碼或裝備槽 */
 export type GearAt = number | EquipSlot;
 export type ForgeResult = { ok: true } | { ok: false; reason: 'none' | 'station' | 'cost' | 'max' | 'unique' | 'locked' };

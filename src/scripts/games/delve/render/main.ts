@@ -305,7 +305,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'talk') { if (ui.journalOpen) ui.setJournal(false); settleUi.openNpc(e.kind, e.line); sound.pickup(); }
         else if (e.type === 'npc') {
           const d = NPCS[e.kind];
-          if (e.phase === 'arrive') { hud.toast(`${d.title}「${d.name}」搬進了你的據點！`, 3000, TOAST_HIGH); sound.treasure(); }
+          if (e.phase === 'arrive') { hud.toast(`${d.title}「${d.name}」搬進來了！`, 3000, TOAST_HIGH); sound.treasure(); }
+          else if (e.phase === 'coming') hud.toast(`${d.title}「${d.name}」聽說了你的據點，正在搬來的路上`, 2600);
           else if (e.phase === 'leave') hud.toast(`${d.title}「${d.name}」搬走了`, 2400);
           else hud.toast(`${d.title}「${d.name}」沒有房間了（房間不合格或床被拆了）`, 2600);
         }

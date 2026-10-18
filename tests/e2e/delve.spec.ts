@@ -1882,8 +1882,9 @@ test.describe('delve settlements', () => {
       const g = window.__delveDebug!.game;
       g.world.setFg(x, y, 98); g.settle.found(x, y);
       g.give('copper_coin', 120);
+      g.settle.arriveDelay = 3;
     }, [h.x + 10, h.gy - 1]);
-    await expect(page.locator('#delve-toast')).toContainText('搬進了你的據點', { timeout: 15000 });
+    await expect(page.locator('#delve-toast')).toContainText('搬進來了', { timeout: 30000 });
     expect(await page.evaluate(() => window.__delveDebug!.game.settle.npcs.map((q) => q.kind))).toEqual(['merchant']);
     // 走到她旁邊、右鍵點她
     await page.evaluate(() => {
@@ -1934,5 +1935,111 @@ test.describe('delve settlements', () => {
     expect(after.npcs).toEqual(before.npcs);
     expect(after.spawn).toEqual(before.spawn);
     expect(after.level).toBe(before.level);
+  });
+});
+
+test.describe('delve settlements · layout & storage', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+
+  /** HUD 上會互相蓋到的元素：角落按鈕、生命、快捷欄、小地圖 */
+  const overlaps = (page: Page): Promise<string[]> => page.evaluate(() => {
+    const vis = (e: Element): boolean => { const s = getComputedStyle(e); const r = e.getBoundingClientRect(); return s.display !== 'none' && s.visibility !== 'hidden' && r.width > 0 && r.height > 0; };
+    const els = [...document.querySelectorAll('.delve-corner > .delve-chip'), document.querySelector('#delve-vitals'), document.querySelector('#delve-hotbar'), document.querySelector('#delve-minimap-canvas')]
+      .filter((e): e is Element => Boolean(e) && vis(e as Element));
+    const out: string[] = [];
+    for (let i = 0; i < els.length; i++) for (let j = i + 1; j < els.length; j++) {
+      const a = els[i].getBoundingClientRect(), b = els[j].getBoundingClientRect();
+      const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left), oy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      if (ox > 1 && oy > 1) out.push(`${els[i].id || els[i].className} × ${els[j].id || els[j].className}`);
+    }
+    return out;
+  });
+
+  test('桌機 1024–1920：角落按鈕、生命、快捷欄、小地圖互不重疊', async ({ browser }) => {
+    for (const [w, h] of [[1024, 768], [1280, 720], [1366, 768], [1440, 900], [1536, 864], [1920, 1080]]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h } });
+      const page = await ctx.newPage();
+      await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+      await page.goto('/games/delve?seed=layout-e2e&autostart=1&fresh=1');
+      await waitGame(page);
+      await expect(page.locator('#delve-vitals')).toBeVisible();
+      await expect(page.locator('#delve-settle-btn')).toBeVisible();
+      expect(await overlaps(page), `${w}×${h}`).toEqual([]);
+      await ctx.close();
+    }
+  });
+
+  test('橫放手機：開據點面板時觸控鍵收起來、不蓋住面板；HUD 不重疊', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+    await page.goto('/games/delve?seed=layout-phone&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    expect(await overlaps(page)).toEqual([]);
+    await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game, t = g.feetTile();
+      g.world.setFg(t.x + 2, t.y, 98); g.settle.found(t.x + 2, t.y);
+      d.handle.settleUi.openSettle(g.settle.cores[0].id);
+    });
+    await expect(page.locator('#delve-settle')).toBeVisible();
+    await expect(page.locator('#delve-jump')).toBeHidden();
+    const panel = await page.locator('#delve-settle').boundingBox();
+    expect(panel!.y + panel!.height).toBeLessThanOrEqual(390);
+    await page.evaluate(() => window.__delveDebug!.handle.settleUi.closeSettle());
+    await expect(page.locator('#delve-jump')).toBeVisible();
+    await ctx.close();
+  });
+
+  test('共享儲物（Lv3）：合成清單算上據點箱子的材料、標出「箱」，按下去從箱子扣、不會複製', async ({ page }) => {
+    await page.goto('/games/delve?seed=storage-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    const info = await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game, w = g.world, t = g.feetTile();
+      g.setDate({ hour: 10 });
+      const gy = t.y + 1, x0 = t.x - 20;
+      for (let x = x0 - 4; x < x0 + 60; x++) { for (let y = gy - 12; y < gy; y++) { w.setFg(x, y, 0); w.setWall(x, y, 0); w.setLiquid(x, y, 0, 0); } for (let y = gy; y < gy + 3; y++) w.setFg(x, y, 3); }
+      const decos = [[[5, 0, 24], [6, 2, 79], [2, 4, 93]], [[5, 0, 61], [6, 3, 92], [2, 4, 93]], [[5, 0, 96], [6, 0, 95], [6, 3, 58]], [[5, 0, 88], [6, 0, 89], [6, 2, 79]]];
+      decos.forEach((extra, k) => {
+        const x = x0 + k * 9, top = gy - 6;
+        for (let yy = top; yy < gy; yy++) for (let xx = x - 1; xx <= x + 8; xx++) {
+          const edge = yy === top || xx === x - 1 || xx === x + 8;
+          if (edge && w.getFg(xx, yy) === 53) continue;
+          w.setFg(xx, yy, edge ? 7 : 0);
+          if (!edge) w.setWall(xx, yy, 3);
+        }
+        for (let i = 0; i < 3; i++) w.setFg(x - 1, gy - 1 - i, 53);
+        for (const [dx, dy, id] of [[1, 0, 76], [2, 0, 77], [3, 0, 66], [4, 0, 67], [7, 4, 10], ...extra]) w.setFg(x + dx, gy - 1 - dy, id);
+      });
+      const hx = x0 + 40;
+      w.setFg(hx, gy - 1, 98); g.settle.found(hx, gy - 1);
+      w.setFg(hx + 2, gy - 1, 11); // 工作台
+      g.settle.refresh(w, true);
+      const chest = w.chests.get(w.idx(x0 + 5, gy - 1))!;
+      chest[0] = { item: 'planks', count: 30 };
+      g.inventory.remove('planks', g.inventory.count('planks'));
+      g.give('planks', 2);
+      g.teleport(hx + 1, gy - 1);
+      d.handle.renderer.snapCamera();
+      return { level: g.settlementHere()?.level, ci: w.idx(x0 + 5, gy - 1) };
+    });
+    expect(info.level).toBe(3);
+    await page.keyboard.press('KeyE');
+    await expect(page.locator('#delve-station')).toContainText('共享儲物');
+    const row = page.locator('.delve-recipe[data-recipe="table"]');
+    await expect(row).toBeEnabled();
+    await expect(row).toContainText('木板 32/8（箱 6）');
+    await row.click();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.count('table'))).toBe(1);
+    const after = await page.evaluate((ci) => {
+      const g = window.__delveDebug!.game;
+      return { bag: g.inventory.count('planks'), chest: g.world.chests.get(ci)![0]?.count ?? 0 };
+    }, info.ci);
+    // 背包的 2 片先用掉、其餘 6 片從箱子扣：總數剛好少 8
+    expect(after).toEqual({ bag: 0, chest: 24 });
   });
 });

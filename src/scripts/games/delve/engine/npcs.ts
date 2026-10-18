@@ -53,7 +53,7 @@ export const NPCS: Record<NpcKind, NpcDef> = {
   merchant: {
     kind: 'merchant', name: '米拉', title: '旅行商人',
     intro: '背著大背包四處跑的商人，什麼都賣一點、什麼都收一點。',
-    likes: ['cartographer', 'cook'], dislikes: ['smith'],
+    likes: ['cartographer', 'cook', 'smith'], dislikes: [],
     need: { level: 1, zh: '據點 Lv1（有一間可入住的房間）' },
     shop: [
       { item: 'torch', n: 10, price: 30 }, { item: 'rope', n: 20, price: 30 }, { item: 'healing_potion', n: 1, price: 80 },
@@ -67,14 +67,14 @@ export const NPCS: Record<NpcKind, NpcDef> = {
       night: ['晚上外面不安全，買完就待在屋裡吧。', '呼啊……要打烊了，明天再來？'],
       rain: ['下雨天生意清淡，給你算便宜一點……騙你的。', '雨聲聽起來像銅幣掉進錢袋的聲音。'],
       happy: ['住在這裡真的很棒！我給你打個折吧。', '鄰居們都好親切，連我的帳本都變輕了。'],
-      sad: ['房間有點擠……心情不好，價格也只好高一點。', '隔壁一直叮叮噹噹的，我都睡不好。'],
+      sad: ['房間有點擠……心情不好，價格也只好高一點。', '最近客人好少，帳本都長灰塵了。'],
       homeless: ['我的房間不見了？沒有床我可沒辦法做生意。'],
     },
   },
   smith: {
     kind: 'smith', name: '阿焰', title: '鍛冶師',
     intro: '火氣跟爐火一樣旺的鍛冶師。在她身邊鍛造、洗煉都比較便宜。',
-    likes: ['cook'], dislikes: ['gardener', 'merchant'],
+    likes: ['cook', 'merchant'], dislikes: ['gardener'],
     need: { level: 1, tiles: [T.ANVIL, T.FURNACE], count: 1, zh: '據點裡有熔爐或鐵砧' },
     shop: [
       { item: 'copper_bar', n: 1, price: 25 }, { item: 'iron_bar', n: 1, price: 50 }, { item: 'silver_bar', n: 1, price: 90 },

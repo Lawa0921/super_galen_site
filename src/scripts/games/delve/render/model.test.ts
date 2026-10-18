@@ -122,6 +122,17 @@ describe('HUD 文字', () => {
 });
 
 describe('recipeRows', () => {
+  it('共享儲物：箱子裡的材料也算、標出要從箱子拿幾個', () => {
+    const inv = new Inventory();
+    inv.add('planks', 3);
+    const rows = recipeRows(inv, true, (it) => (it === 'planks' ? 10 : 0));
+    const t = rows.find((r) => r.id === 'table')!;
+    expect(t.craftable).toBe(true);
+    expect(t.inputs[0]).toEqual({ item: 'planks', n: 8, have: 13, bag: 3, fromChest: 5 });
+    const solo = recipeRows(inv, true).find((r) => r.id === 'table')!;
+    expect(solo.craftable).toBe(false);
+  });
+
   it('標示可合成、缺料、需工作台', () => {
     const inv = new Inventory();
     inv.add('wood', 1);

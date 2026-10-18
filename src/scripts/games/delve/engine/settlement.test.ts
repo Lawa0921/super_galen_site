@@ -3,7 +3,7 @@ import { World } from './world';
 import { T } from './tiles';
 import { buildHouse, flatWorld } from './houseFixture';
 import {
-  CLAIM, LEVELS, Settlements, claimsOverlap, evaluate, levelFor, nextNeeds, perksFor, scoreOf, type SettleHost,
+  ARRIVE_DELAY, CLAIM, LEVELS, Settlements, claimsOverlap, evaluate, levelFor, nextNeeds, perksFor, scoreOf, type SettleHost,
 } from './settlement';
 import { sunTimes } from './calendar';
 import { TILE_SIZE as S } from './constants';
@@ -27,6 +27,12 @@ function host(w: World, o: { night?: boolean; d?: number; px?: number; py?: numb
     playerTile: () => ({ x: o.px ?? 40, y: o.py ?? 28 }),
     playerOverlaps: () => false,
   };
+}
+/** 白天跑兩次搬入檢查：第一次排定「在路上」、第二次（等待設成 0）走進來 */
+function arrive(s: Settlements, h: SettleHost): void {
+  s.arriveDelay = 0;
+  s.update(10, h);
+  s.update(10, h);
 }
 function core(w: World, s: Settlements, x = 40): number {
   w.setFg(x, GROUND - 1, T.HEARTH);
@@ -123,13 +129,39 @@ describe('settlers moving in', () => {
     const w = world();
     const s = new Settlements();
     core(w, s);
-    s.update(10, host(w));
+    arrive(s, host(w));
     expect(s.npcs.length).toBe(0);
     house(w, 0);
-    s.update(10, host(w));
+    arrive(s, host(w));
     expect(s.npcs.map((n) => n.kind)).toEqual(['merchant']);
     expect(s.npcs[0].bed).toEqual({ x: 13, y: 28 });
     expect(s.drainEvents()).toContainEqual(expect.objectContaining({ type: 'npc', phase: 'arrive', kind: 'merchant' }));
+  });
+
+  it('settlers announce themselves, arrive after a delay, and walk in from the claim edge (not on the bed)', () => {
+    const w = world();
+    const s = new Settlements();
+    const c = core(w, s);
+    house(w, 0);
+    const at = (t: number): SettleHost => ({ ...host(w), time: t });
+    s.update(10, at(0));
+    expect(s.npcs.length).toBe(0);
+    expect(s.pending?.kind).toBe('merchant');
+    expect(s.drainEvents()).toContainEqual(expect.objectContaining({ type: 'npc', phase: 'coming', kind: 'merchant' }));
+    s.update(10, at(30));
+    expect(s.npcs.length).toBe(0); // 還在路上
+    s.update(10, at(30 + ARRIVE_DELAY));
+    expect(s.npcs.length).toBe(1);
+    const ev = s.drainEvents().find((e) => e.type === 'npc' && e.phase === 'arrive')!;
+    expect(ev).toBeDefined();
+    const tx = Math.floor((ev.x + 10) / S);
+    expect(Math.abs(tx - s.coreById(c)!.x)).toBeGreaterThan(CLAIM.x - 16);
+    expect(s.npcs[0].state).not.toBe('sleep');
+    // 存檔裡的「在路上」也會留著
+    const s2 = new Settlements();
+    s.pending = { kind: 'smith', core: s.cores[0].id, at: 123 };
+    s2.load(JSON.parse(JSON.stringify(s.toJSON())), w);
+    expect(s2.pending).toEqual({ kind: 'smith', core: s.cores[0].id, at: 123 });
   });
 
   it('nobody moves in at night', () => {
@@ -137,7 +169,7 @@ describe('settlers moving in', () => {
     const s = new Settlements();
     core(w, s);
     house(w, 0);
-    s.update(10, host(w, { night: true }));
+    arrive(s, host(w, { night: true }));
     expect(s.npcs.length).toBe(0);
   });
 
@@ -146,11 +178,11 @@ describe('settlers moving in', () => {
     const s = new Settlements();
     const id = core(w, s);
     house(w, 0, [[5, 4, T.ANVIL]]);
-    s.update(10, host(w));
+    arrive(s, host(w));
     expect(s.npcs.length).toBe(1);
     expect(s.canMoveIn('smith', id, w)).toEqual({ ok: false, why: '沒有空房間（要有床）' });
     house(w, 1);
-    s.update(10, host(w));
+    arrive(s, host(w));
     expect(s.npcs.map((n) => n.kind).sort()).toEqual(['merchant', 'smith']);
     expect(new Set(s.npcs.map((n) => n.home)).size).toBe(2);
   });
@@ -171,7 +203,7 @@ describe('settlers moving in', () => {
     const s = new Settlements();
     core(w, s);
     house(w, 0);
-    s.update(10, host(w));
+    arrive(s, host(w));
     const n = s.npcs[0];
     expect(n.home).not.toBeNull();
     w.setFg(13, 28, T.AIR); w.setFg(14, 28, T.AIR); // 拆床
@@ -189,7 +221,7 @@ describe('settlers moving in', () => {
     const s = new Settlements();
     core(w, s);
     house(w, 0);
-    s.update(10, host(w));
+    arrive(s, host(w));
     s.drainEvents();
     s.remove(40, GROUND - 1);
     expect(s.cores).toEqual([]);
@@ -206,9 +238,9 @@ describe('settler schedule', () => {
     const s = new Settlements();
     core(w, s);
     house(w, 0);
-    s.update(10, host(w));
+    arrive(s, host(w));
     const n = s.npcs[0];
-    n.body.x = 16 * S; // 房間右邊
+    n.body.x = 16 * S; n.body.y = 29 * S - n.body.h; // 房間右邊
     for (let i = 0; i < 60 * 12; i++) s.update(1 / 60, host(w, { night: true, d: 0.95, px: 14 }));
     expect(n.state).toBe('sleep');
     expect(Math.floor(n.body.x / S)).toBe(13);
@@ -221,9 +253,9 @@ describe('settler schedule', () => {
     const s = new Settlements();
     core(w, s);
     house(w, 0);
-    s.update(10, host(w));
+    arrive(s, host(w));
     const n = s.npcs[0];
-    n.body.x = 16 * S;
+    n.body.x = 16 * S; n.body.y = 29 * S - n.body.h;
     s.update(1 / 60, host(w, { night: true, d: 0.95, px: 159, py: 0 }));
     s.update(1 / 60, host(w, { night: true, d: 0.95, px: 159, py: 0 }));
     expect(n.state).toBe('sleep');
@@ -234,11 +266,11 @@ describe('settler schedule', () => {
     const s = new Settlements();
     core(w, s, 50);
     house(w, 0);
-    s.update(10, host(w, { px: 30 }));
+    arrive(s, host(w, { px: 30 }));
     const n = s.npcs[0];
     n.room = null; n.home = null; // 讓他往外面的核心走（模擬上班）
     n.act = 'work';
-    n.targetX = 4 * S; n.state = 'walk'; n.body.x = 11 * S;
+    n.targetX = 4 * S; n.state = 'walk'; n.body.x = 11 * S; n.body.y = 29 * S - n.body.h;
     let opened = false;
     for (let i = 0; i < 60 * 6; i++) {
       n.act = 'work'; if (n.targetX === null) n.targetX = 4 * S;
@@ -257,7 +289,7 @@ describe('settlement save', () => {
     const s = new Settlements();
     const id = core(w, s);
     house(w, 0);
-    s.update(10, host(w));
+    arrive(s, host(w));
     s.spawnCore = id;
     s.npcs[0].talks = 3;
     const j = JSON.parse(JSON.stringify(s.toJSON()));

@@ -9,6 +9,7 @@ import { buildHouse } from './houseFixture';
 import { restoreGame, serializeGame } from '../save/serialize';
 import { NPCS, shopPrice } from './npcs';
 import { CALM_REGEN } from './settlement';
+import { ROOM_XP, SETTLE_LEVEL_XP, SETTLER_XP } from './levels';
 
 const SMALL = { width: 200, height: 100 };
 const GROUND = 60;
@@ -132,7 +133,8 @@ describe('settlers in the game', () => {
   it('a merchant moves in during the day and sells for coins', () => {
     const g = arena();
     village(g);
-    steps(g, 60 * 7);
+    g.settle.arriveDelay = 0;
+    steps(g, 60 * 13);
     expect(g.settle.npc('merchant')).not.toBeNull();
     g.give('copper_coin', 200);
     const price = shopPrice(NPCS.merchant.shop[0].price, g.settle.npc('merchant')!.mood);
@@ -266,5 +268,34 @@ describe('safe arrival spots', () => {
     expect(g.travel(b.id)).toBe(false);
     expect(g.drainEvents()).toContainEqual(expect.objectContaining({ type: 'blocked', reason: 'blockedspot' }));
     expect(g.feetTile().x).toBe(a.x - 2);
+  });
+});
+
+describe('settlement XP (anti-farm)', () => {
+  it('first valid room, first settlement level and first settler give XP once; rebuilding gives nothing', () => {
+    const g = arena();
+    g.levels.load(null);
+    village(g);
+    steps(g, 40);
+    const xp1 = g.levels.xp;
+    expect(xp1).toBe(ROOM_XP + SETTLE_LEVEL_XP[1]);
+    g.debugMoveIn('merchant');
+    steps(g, 2);
+    expect(g.levels.xp).toBe(xp1 + SETTLER_XP);
+    // 拆床（房間不合格）再放回去、拆爐心重放：都不再給
+    const xp2 = g.levels.xp;
+    g.world.setFg(54, GROUND - 1, T.AIR); g.world.setFg(55, GROUND - 1, T.AIR);
+    steps(g, 40);
+    g.world.setFg(54, GROUND - 1, T.BED_HEAD); g.world.setFg(55, GROUND - 1, T.BED_FOOT);
+    steps(g, 40);
+    g.mineInstant(60, GROUND - 1);
+    hold(g, 'hearth');
+    g.tryPlace(60, GROUND - 1);
+    steps(g, 40);
+    expect(g.levels.xp).toBe(xp2);
+    // 存檔來回：最高紀錄也留著
+    const r = restoreGame(serializeGame(g));
+    expect(r.ok).toBe(true);
+    if (r.ok) { r.game.step(FIXED_DT); for (let i = 0; i < 40; i++) r.game.step(FIXED_DT); expect(r.game.levels.xp).toBe(xp2); }
   });
 });

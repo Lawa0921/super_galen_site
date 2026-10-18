@@ -11,13 +11,17 @@ import { DECOR_TILES, FURNITURE_BY_TILE, LIGHT_TILES, SAFETY_TILES } from './fur
 import { NPCS, NPC_KINDS, npcActivity, npcMood, type NpcActivity, type NpcKind } from './npcs';
 import { makeBody, moveBody, type Body, type SolidQuery } from './physics';
 import { TILE_SIZE as S, GRAVITY, MAX_FALL, JUMP_SPEED } from './constants';
-import { findPath, standable, type PathNode } from './npcPath';
+import { findPath, findStandSpot, standable, type PathNode } from './npcPath';
 import type { SunTimes } from './calendar';
 
 /** 據點範圍：核心 ±x / ±y 格 */
 export const CLAIM = { x: 40, y: 24 } as const;
 /** 搬入檢查間隔（秒；白天才有人搬來） */
 export const MOVE_IN_EVERY = 6;
+/** 條件達成後過多久（遊戲秒）才真的搬來（≈ 3.5 遊戲小時；晚上不來，等到天亮） */
+export const ARRIVE_DELAY = 90;
+/** 回不了家（路被擋 / 卡在外面）這麼久（秒）就直接回房間 */
+export const AWAY_LIMIT = 60;
 /** 重算據點分數的最短間隔（秒；世界有變動才重算） */
 export const EVAL_EVERY = 0.5;
 /** 居民在這個距離（格）內才跑物理；再遠就凍結 */
@@ -167,15 +171,21 @@ export interface Npc {
   say: string | null; sayT: number;
   /** 目的地的列（tile；尋路用，省略 = 只看欄） */
   goalY?: number;
+  /** 該在家卻不在房間裡的累計秒數（homeFallback） */
+  away?: number;
   /** 快取的路（世界改了 / 目的地換了才重算） */
   path?: { nodes: PathNode[]; rev: number; gx: number; gy: number | undefined } | null;
 }
 export interface NpcJSON { kind: NpcKind; x: number; y: number; core: number; home: number | null; talks?: number; }
-export interface SettlementJSON { cores: Core[]; npcs: NpcJSON[]; spawnCore: number | null; nextId: number; }
+export interface PendingJSON { kind: NpcKind; core: number; at: number; }
+export interface SettlementJSON { cores: Core[]; npcs: NpcJSON[]; spawnCore: number | null; nextId: number; pending?: PendingJSON | null; }
 
 export type SettleEvent =
-  | { type: 'npc'; phase: 'arrive' | 'leave' | 'homeless'; kind: NpcKind; x: number; y: number }
-  | { type: 'settlement'; phase: 'found' | 'level' | 'lost'; id: number; level: number; x: number; y: number };
+  /** coming = 條件達成、在路上（ARRIVE_DELAY 後從據點邊緣走進來）；arrive = 走進據點了 */
+  | { type: 'npc'; phase: 'coming' | 'arrive' | 'leave' | 'homeless'; kind: NpcKind; x: number; y: number }
+  | { type: 'settlement'; phase: 'found' | 'level' | 'lost'; id: number; level: number; x: number; y: number }
+  /** 所有據點合格房間的總數變多了（經驗用；x, y = 新房間的位置 px） */
+  | { type: 'rooms'; total: number; x: number; y: number };
 
 /** 據點系統要從遊戲拿的東西 */
 export interface SettleHost {
@@ -202,7 +212,13 @@ export class Settlements {
   private evalRev = -1;
   private evalT = 0;
   private moveInT = 0;
+  /** 正在路上的居民（條件達成時排定，at = 抵達的遊戲時間） */
+  pending: PendingJSON | null = null;
+  /** 搬來前的等待（遊戲秒；測試 / e2e 可以調短） */
+  arriveDelay = ARRIVE_DELAY;
   private lastLevel = new Map<number, number>();
+  /** 上次重算時所有據點的合格房間總數（rooms 事件） */
+  private lastRooms = 0;
   private events: SettleEvent[] = [];
 
   drainEvents(): SettleEvent[] { const e = this.events; this.events = []; return e; }
@@ -219,6 +235,7 @@ export class Settlements {
   found(x: number, y: number): Core {
     const c: Core = { id: this.nextId++, x, y };
     this.cores.push(c);
+    this.lastLevel.set(c.id, 0);
     this.evalRev = -1;
     this.events.push({ type: 'settlement', phase: 'found', id: c.id, level: 0, x, y });
     return c;
@@ -254,6 +271,10 @@ export class Settlements {
     }
     this.assignHomes(w);
     this.updateMoods();
+    let total = 0, nx = 0, ny = 0;
+    for (const ev of this.evals.values()) for (const r of ev.valid) { total++; nx = (r.x0 + r.x1 + 1) * S / 2; ny = r.y0 * S; }
+    if (total > this.lastRooms) this.events.push({ type: 'rooms', total, x: nx, y: ny });
+    this.lastRooms = total;
     for (const c of this.cores) {
       const lv = this.evals.get(c.id)?.level ?? 0, prev = this.lastLevel.get(c.id);
       if (prev !== undefined && lv > prev) this.events.push({ type: 'settlement', phase: 'level', id: c.id, level: lv, x: c.x, y: c.y });
@@ -322,15 +343,24 @@ export class Settlements {
     if (!this.freeRooms(id, w).length) return { ok: false, why: '沒有空房間（要有床）' };
     return { ok: true, why: '' };
   }
-  /** 立刻讓一位居民搬進來（條件不符 → null）；force = 不檢查條件（debug） */
-  moveIn(kind: NpcKind, id: number, w: World, force = false): Npc | null {
+  /**
+   * 讓一位居民搬進來（條件不符 → null）；force = 不檢查條件（debug）。
+   * walkIn = 從據點範圍邊緣（靠房間那側）站得住的地方出現、自己走回家；否則直接出現在房間裡（debug / 讀檔）。
+   */
+  moveIn(kind: NpcKind, id: number, w: World, force = false, walkIn = false): Npc | null {
     if (this.npc(kind)) return null;
     if (!force && !this.canMoveIn(kind, id, w).ok) return null;
     const core = this.coreById(id);
     if (!core) return null;
     const room = this.freeRooms(id, w)[0] ?? null;
-    const sx = room?.bed ? room.bed.x : room ? Math.floor((room.x0 + room.x1) / 2) : core.x + 1;
-    const sy = room ? room.y1 : core.y;
+    let sx = room?.bed ? room.bed.x + 2 : room ? Math.floor((room.x0 + room.x1) / 2) : core.x + 1;
+    let sy = room ? room.y1 : core.y;
+    if (walkIn) {
+      const side = room && (room.x0 + room.x1) / 2 < core.x ? -1 : 1;
+      const ex = Math.max(2, Math.min(w.width - 3, core.x + side * (CLAIM.x - 2)));
+      const spot = findStandSpot(w, ex, core.y, 12) ?? findStandSpot(w, core.x + 1, core.y, 10);
+      if (spot) { sx = spot.x; sy = spot.y; }
+    }
     const n = this.makeNpc(kind, id, sx, sy);
     if (room) this.setHome(n, room);
     this.npcs.push(n);
@@ -356,7 +386,7 @@ export class Settlements {
     this.moveInT -= dt;
     if (this.moveInT <= 0) {
       this.moveInT = MOVE_IN_EVERY;
-      if (!h.isNight()) this.tryMoveIn(w);
+      if (!h.isNight()) this.tryMoveIn(w, h.time);
     }
     const night = h.isNight(), sun = h.sun(), d = h.dayFrac(), pt = h.playerTile();
     for (const n of this.npcs) {
@@ -366,15 +396,44 @@ export class Settlements {
       const far = Math.abs(n.body.x / S - pt.x) > NPC_ACTIVE.x || Math.abs(n.body.y / S - pt.y) > NPC_ACTIVE.y;
       if (far) { this.freeze(n, w); continue; }
       this.stepNpc(n, dt, w, h);
+      this.homeFallback(n, dt, w);
     }
   }
-  /** 搬入：照 NPC_KINDS 順序，第一位條件符合的人搬進第一個有空房的據點 */
-  tryMoveIn(w: World): Npc | null {
+  /**
+   * 搬入（白天、每 MOVE_IN_EVERY 秒）：照 NPC_KINDS 順序找第一位條件符合的人 → 排定「在路上」（coming 事件）；
+   * arriveDelay 秒後還符合條件 → 從據點邊緣走進來（arrive 事件）。條件不再符合 → 取消。
+   */
+  tryMoveIn(w: World, now = 0): Npc | null {
+    const p = this.pending;
+    if (p) {
+      if (!this.coreById(p.core) || this.npc(p.kind) || !this.canMoveIn(p.kind, p.core, w).ok) { this.pending = null; return null; }
+      if (now < p.at) return null;
+      this.pending = null;
+      return this.moveIn(p.kind, p.core, w, false, true);
+    }
     for (const kind of NPC_KINDS) {
       if (this.npc(kind)) continue;
-      for (const c of this.cores) if (this.canMoveIn(kind, c.id, w).ok) return this.moveIn(kind, c.id, w);
+      for (const c of this.cores) {
+        if (!this.canMoveIn(kind, c.id, w).ok) continue;
+        this.pending = { kind, core: c.id, at: now + this.arriveDelay };
+        this.events.push({ type: 'npc', phase: 'coming', kind, x: c.x, y: c.y });
+        return null;
+      }
     }
     return null;
+  }
+  /** 該在家（home / sleep）卻一直不在房間裡（路被擋住）→ AWAY_LIMIT 秒後直接回房間 */
+  private homeFallback(n: Npc, dt: number, w: World): void {
+    if (!n.room || n.state === 'sleep' || n.act === 'work') { n.away = 0; return; }
+    const b = n.body, fx = Math.floor((b.x + b.w / 2) / S), fy = Math.floor((b.y + b.h - 1) / S);
+    const inside = fx >= n.room.x0 && fx <= n.room.x1 && Math.abs(fy - n.room.y1) <= 1;
+    n.away = inside ? 0 : (n.away ?? 0) + dt;
+    if ((n.away ?? 0) < AWAY_LIMIT) return;
+    n.away = 0;
+    const x = n.bed ? n.bed.x + 2 : Math.floor((n.room.x0 + n.room.x1) / 2);
+    b.x = x * S + S / 2 - b.w / 2; b.y = (n.room.y1 + 1) * S - b.h; b.vx = 0; b.vy = 0;
+    n.path = null; n.targetX = null;
+    void w;
   }
   /** 遠處：不跑物理，直接放到該在的地方（晚上在床上、白天在房間裡） */
   private freeze(n: Npc, w: World): void {
@@ -561,7 +620,7 @@ export class Settlements {
   toJSON(): SettlementJSON {
     const r = (v: number): number => Math.round(v * 100) / 100;
     return {
-      cores: this.cores.map((c) => ({ ...c })), spawnCore: this.spawnCore, nextId: this.nextId,
+      cores: this.cores.map((c) => ({ ...c })), spawnCore: this.spawnCore, nextId: this.nextId, pending: this.pending ? { ...this.pending } : null,
       npcs: this.npcs.map((n) => {
         // 睡著的人存成床邊站著（讀檔後依時段再躺回去）
         const o: NpcJSON = { kind: n.kind, x: r(n.body.x), y: r(n.body.y), core: n.core, home: n.home };
@@ -593,6 +652,9 @@ export class Settlements {
       this.npcs.push(n);
     }
     this.spawnCore = int(o.spawnCore) && this.coreById(o.spawnCore) ? o.spawnCore : null;
+    const pd = o.pending as Partial<PendingJSON> | null | undefined;
+    this.pending = pd && NPC_KINDS.includes(pd.kind as NpcKind) && int(pd.core) && this.coreById(pd.core) && typeof pd.at === 'number' && Number.isFinite(pd.at)
+      ? { kind: pd.kind as NpcKind, core: pd.core, at: pd.at } : null;
     this.nextId = Math.max(int(o.nextId) ? o.nextId : 1, maxId + 1, this.nextId);
     for (const n of this.npcs) n.id = this.nextId++;
     this.refresh(w, true);

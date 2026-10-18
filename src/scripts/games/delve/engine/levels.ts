@@ -115,7 +115,15 @@ export function respecCost(spent: number): Cost {
   return { shard: 3 + spent, dust: Math.floor(spent / 10) };
 }
 
-export type XpSource = 'kill' | 'boss' | 'discover' | 'lore' | 'treasure' | 'codex' | 'craft' | 'mine' | 'chest' | 'fish' | 'debug';
+export type XpSource = 'kill' | 'boss' | 'discover' | 'lore' | 'treasure' | 'codex' | 'craft' | 'mine' | 'chest' | 'fish' | 'settle' | 'debug';
+/**
+ * 據點經驗（防刷：全部是「歷史最高」或「第一次」——拆掉重蓋不會再給）：
+ * 合格房間數創新高每間 ROOM_XP（最多算 ROOM_XP_ROOMS 間）、據點第一次升到某級、每位居民第一次搬來。
+ */
+export const ROOM_XP = 25;
+export const ROOM_XP_ROOMS = 10;
+export const SETTLE_LEVEL_XP: readonly number[] = [0, 60, 150, 300];
+export const SETTLER_XP = 80;
 
 // ── 狀態 ─────────────────────────────────────────────────
 export interface LevelsJSON {
@@ -133,6 +141,10 @@ export interface LevelsJSON {
   recipes: string[];
   cats: string[];
   bosses: string[];
+  /** 據點：合格房間的歷史最高數、達到過的最高據點等級、搬來過的居民 */
+  rooms?: number;
+  settleLv?: number;
+  settlers?: string[];
 }
 export interface GainResult { amount: number; from: number; to: number; }
 
@@ -151,6 +163,9 @@ export class Progression {
   readonly recipes = new Set<string>();
   readonly cats = new Set<string>();
   readonly bosses = new Set<string>();
+  rooms = 0;
+  settleLv = 0;
+  readonly settlers = new Set<string>();
   private memo: { v: number; t: SkillTotals } | null = null;
   /** 測試用：鎖住 = 不拿經驗（不存檔） */
   locked = false;
@@ -215,6 +230,7 @@ export class Progression {
       xp: this.xp, ranks, respecs: this.respecs, day: this.day,
       kills: Object.fromEntries([...this.kills].sort(([a], [b]) => (a < b ? -1 : 1))), ore: this.ore, fish: this.fish,
       placed: num(this.placed), chests: num(this.chests), recipes: [...this.recipes].sort(), cats: [...this.cats].sort(), bosses: [...this.bosses].sort(),
+      rooms: this.rooms, settleLv: this.settleLv, settlers: [...this.settlers].sort(),
     };
   }
   /** 由存檔還原；壞資料各欄位獨立退回預設（技能樹不合法 → 整棵重置，點數退回） */
@@ -233,7 +249,9 @@ export class Progression {
       for (const [k, n] of Object.entries(o.kills)) if (Object.prototype.hasOwnProperty.call(ENEMIES, k) && Number.isInteger(n) && (n as number) > 0) this.kills.set(k, n as number);
     }
     for (const [set, v] of [[this.placed, o.placed], [this.chests, o.chests]] as const) { set.clear(); for (const i of ints(v)) set.add(i); }
-    for (const [set, v] of [[this.recipes, o.recipes], [this.cats, o.cats], [this.bosses, o.bosses]] as const) { set.clear(); for (const s of strs(v)) set.add(s); }
+    for (const [set, v] of [[this.recipes, o.recipes], [this.cats, o.cats], [this.bosses, o.bosses], [this.settlers, o.settlers]] as const) { set.clear(); for (const s of strs(v)) set.add(s); }
+    this.rooms = int(o.rooms, 0, 1e6, 0);
+    this.settleLv = int(o.settleLv, 0, 99, 0);
     // 技能樹：依前置順序重放，任何一級點不上去（前置 / 等級 / 點數）→ 整棵重置
     const want: Ranks = {};
     if (o.ranks && typeof o.ranks === 'object') {
@@ -344,6 +362,25 @@ export function xpForEvent(p: Progression, e: DelveEvent, c: XpCtx): XpAward | n
       if (amount <= 0) return null;
       p.fish += amount;
       return { amount, src: 'fish' };
+    }
+    case 'rooms': {
+      const best = Math.min(ROOM_XP_ROOMS, e.total);
+      if (best <= p.rooms) return null;
+      const amount = (best - p.rooms) * ROOM_XP;
+      p.rooms = best;
+      return { amount, src: 'settle', x: e.x, y: e.y };
+    }
+    case 'settlement': {
+      if (e.phase !== 'level' || e.level <= p.settleLv) return null;
+      let amount = 0;
+      for (let L = p.settleLv + 1; L <= e.level; L++) amount += SETTLE_LEVEL_XP[L] ?? 0;
+      p.settleLv = e.level;
+      return amount > 0 ? { amount, src: 'settle', x: (e.x + 0.5) * 16, y: e.y * 16 } : null;
+    }
+    case 'npc': {
+      if (e.phase !== 'arrive' || p.settlers.has(e.kind)) return null;
+      p.settlers.add(e.kind);
+      return { amount: SETTLER_XP, src: 'settle', x: e.x + 10, y: e.y };
     }
     default: return null;
   }
