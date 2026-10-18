@@ -1,8 +1,10 @@
-import { CHARACTERS } from '../data/characters';
+import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
+import { chainLength } from '../data/story/chains';
 import { MAJOR_SCENES, sceneKind, type SceneId } from '../data/story/scenes';
-import { NPC_NAMES, STORY, type NpcId, type ScriptLine, type Speaker } from '../data/story.zh-TW';
+import { NPC_NAMES, STORY, linesWhen, type NpcId, type ScriptLine, type Speaker } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
 import type { Game } from '../engine/game';
+import { memoriesOf } from '../engine/progression';
 import type { GameState } from '../engine/state';
 import type { CharacterId } from '../engine/types';
 import { art, type ExtraMood, type Mood } from '../render/artPaths';
@@ -53,15 +55,11 @@ export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: Moo
 
 /** A scene's lines without the ones whose condition does not hold for this game. */
 export function linesOf(id: SceneId, s: GameState): ScriptLine[] {
-  const met = (c: CharacterId) => s.party.recruited.includes(c);
-  return STORY.scenes[id].lines.filter((l) => {
-    const c = l.if;
-    if (!c) return true;
-    if (c.met && !met(c.met)) return false;
-    if (c.notMet && met(c.notMet)) return false;
-    if (c.returned && !s.story.returned.includes(c.returned)) return false;
-    return true;
+  const full = CHARACTER_IDS.filter((c) => {
+    const m = s.party.roster[c];
+    return !!m && memoriesOf(m) >= chainLength(c);
   });
+  return linesWhen(STORY.scenes[id].lines, { met: s.party.recruited, full, returned: s.story.returned, oath: !!s.party.roster.rin?.oath });
 }
 
 /**

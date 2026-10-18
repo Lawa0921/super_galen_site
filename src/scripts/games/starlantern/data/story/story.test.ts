@@ -3,11 +3,12 @@ import { CHARACTER_IDS } from '../characters';
 import { ITEMS } from '../items';
 import { MATERIALS } from '../materials';
 import { REGIONS } from '../regions';
-import { STORY, PLACEHOLDERS, NPC_NAMES } from '../story.zh-TW';
+import { MEETINGS } from '../meetings';
+import { STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, STORY_MOODS, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
 import { TOWN_FRAGMENTS, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
 import { memoryPace } from '../../engine/story/expect';
-import { ACT_DEPTHS, CHAT_COUNT, SCENE_IDS, STAGES, MAJOR_SCENES, isSceneId, lineCap, memScene, sceneKind } from './scenes';
+import { ACT_DEPTHS, CHAT_COUNT, CHAT_GATE, SCENE_IDS, STAGES, MAJOR_SCENES, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
 
@@ -123,7 +124,7 @@ describe('story data', () => {
     for (const s of SCENE_IDS) expect(isSceneId(s)).toBe(true);
   });
 
-  it('every scene has a title, a summary and lines within its cap', () => {
+  it('every scene has a title, a summary and lines', () => {
     const speakers = new Set<string>([...CHARACTER_IDS, ...Object.keys(NPC_NAMES), 'narrator']);
     expect(lineCap('act1-after')).toBe(3);
     expect(lineCap('mem:hero:9')).toBe(12);
@@ -137,8 +138,7 @@ describe('story data', () => {
       expect(sc.title.trim()).not.toBe('');
       expect(sc.summary.trim()).not.toBe('');
       expect(sc.summary).not.toMatch(/TODO/);
-      expect(sc.lines.length).toBeGreaterThanOrEqual(1);
-      expect(sc.lines.length).toBeLessThanOrEqual(lineCap(id));
+      expect(sc.lines.length).toBeGreaterThanOrEqual(1);   // the cap is checked on the lines that play, by the combination test below
       for (const l of sc.lines) {
         expect(l.text.trim()).not.toBe('');
         expect(l.text).not.toMatch(/TODO/);
@@ -200,5 +200,260 @@ describe('story data', () => {
 
   it('the milestone cards and the survive line are story copy, found by the placeholder sweep', () => {
     for (const t of [STORY.survived, STORY.act1Card.title, STORY.act1Card.body, STORY.endingTitle]) expect(PLACEHOLDERS.has(t), t).toBe(true);
+  });
+});
+
+// ---- The gates every line of the script must pass (plan 6c Task 2) ----
+
+interface Text { key: string; text: string; line?: ScriptLine }
+/** Every string leaf of STORY, keyed by its path; a scene line's text carries its ScriptLine. Skips who, mood, if and scene titles (interface labels). */
+function storyTexts(): Text[] {
+  const out: Text[] = [];
+  const walk = (v: unknown, path: string[], line?: ScriptLine): void => {
+    if (typeof v === 'string') { out.push({ key: path.join('.'), text: v, ...(line ? { line } : {}) }); return; }
+    if (Array.isArray(v)) { v.forEach((x, i) => walk(x, [...path, String(i)])); return; }
+    if (v && typeof v === 'object') {
+      const o = v as Record<string, unknown>;
+      const isLine = typeof o.who === 'string' && typeof o.text === 'string';
+      for (const [k, x] of Object.entries(o)) {
+        if (k === 'who' || k === 'mood' || k === 'if') continue;
+        if (k === 'title' && path.length === 2 && path[0] === 'scenes') continue;
+        walk(x, [...path, k], isLine && k === 'text' ? (o as unknown as ScriptLine) : undefined);
+      }
+    }
+  };
+  for (const [k, v] of Object.entries(STORY)) walk(v, [k]);
+  return out;
+}
+
+/** The keys that are finished copy. Each entry is a prefix ending in "." or ":" (so `town.` never eats `townLines`) or one whole leaf key. */
+const WRITTEN: string[] = [];
+const isWritten = (key: string): boolean => WRITTEN.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
+
+const stageIdx = (s: Stage): number => STAGES.indexOf(s);
+const later = (a: Stage, b: Stage): Stage => (stageIdx(a) >= stageIdx(b) ? a : b);
+/** The stage a mainline depth belongs to, built from ACT_DEPTHS and STAGES. */
+function stageOf(d: number): Stage {
+  if (d >= ACT_DEPTHS.act4) return 'act4';
+  if (d >= ACT_DEPTHS.act3) return 'act3';
+  if (d >= ACT_DEPTHS.act2) return 'act2';
+  return d >= 2 ? 'act1' : 'prologue';
+}
+const rinSeventh = (): Stage => stageOf(CHAINS.rin.pieces[chainLength('rin') - 1].minDepth);
+/** When a companion is first met: on the main road at her depth, else (another region) from the start. */
+const metStage = (c: string): Stage => {
+  const m = MEETINGS.find((x) => x.id === c);
+  return m && m.region === 'mainline' ? stageOf(m.depth) : 'prologue';
+};
+const fragmentStage = (id: string): Stage => {
+  const f = TOWN_FRAGMENTS.find((x) => x.id === id)!;
+  return Array.isArray(f.regions) && f.regions.length === 1 && f.regions[0] === 'mainline' ? stageOf(f.minDepth) : 'prologue';
+};
+const isStage = (v: string): v is Stage => (STAGES as string[]).includes(v);
+
+/** The earliest stage a text can be seen in. */
+function position(key: string): Stage {
+  const [top, a, b] = key.split('.');
+  switch (top) {
+    case 'scenes': {
+      const id = a as SceneId;
+      if (id === 'prologue') return 'prologue';
+      if (id === 'act1-after') return 'act1';
+      if (id === 'act2' || id === 'act3' || id === 'act4') return id;
+      if (id === 'rin-reveal') return rinSeventh();
+      if (id === 'finale') return 'after';
+      const [kind, c, n] = id.split(':');
+      if (kind === 'town') return fragmentStage(c);
+      if (kind === 'mem') {
+        if (c === 'hero' || c === 'rin') return stageOf(CHAINS[c].pieces[Number(n) - 1].minDepth);
+        return metStage(c);
+      }
+      // A chat: when she is met, or later if it is gated.
+      const base = c === 'hero' || c === 'rin' ? 'prologue' : metStage(c);
+      const gate = CHAT_GATE[id];
+      let st = gate?.stage ? later(base, gate.stage) : base;
+      if (gate?.oath) st = later(st, rinSeventh());
+      return st;
+    }
+    case 'townLines': case 'greet': case 'rinLines': case 'truths': {
+      const st = top === 'greet' ? b : a;
+      if (!isStage(st)) throw new Error(`no stage in ${key}`);
+      return st;
+    }
+    case 'act1Card': return 'act1';
+    case 'finaleBossName': case 'finaleWait': return 'act4';
+    case 'endingTitle': case 'finale': return 'after';
+    case 'rinOath': return rinSeventh();
+    case 'bellkeeper': return a === 'after' ? 'after' : a === 'oath' ? rinSeventh() : 'prologue';
+    case 'meet': return metStage(a);
+    case 'people': {
+      if (a === 'hero' || a === 'rin') {
+        const c = a as 'hero' | 'rin';
+        const n = chainLength(c);
+        if (b === '0') return 'prologue';
+        return stageOf(CHAINS[c].pieces[(b === '1' ? Math.ceil(n / 2) : n) - 1].minDepth);
+      }
+      return metStage(a);
+    }
+    case 'town': return fragmentStage(a);
+    case 'absorb': case 'merchant': case 'survived': return 'prologue';
+    default: throw new Error(`no position for ${key}`);
+  }
+}
+
+const SPOILERS: { terms: string[]; allowed: (key: string, line?: ScriptLine) => boolean; why: string }[] = [
+  {
+    terms: ['守燈人'],
+    allowed: (key) => stageIdx(position(key)) >= stageIdx('act4') || key.startsWith('scenes.mem:hero:9.') || key.startsWith('scenes.mem:hero:10.'),
+    why: 'spec §8.4: the lamp keeper is named from act 4 on, or in the hero memories that tell of it',
+  },
+  {
+    terms: ['靜鐘會'],
+    allowed: (key) => stageIdx(position(key)) >= stageIdx('act3'),
+    why: 'spec §8.4: the Silent Bell society is named from act 3 on',
+  },
+];
+
+const SPEC_QUOTES: [string, string][] = [
+  ['scenes.rin-reveal.', '我被派來殺你。我現在選擇不要。'],
+  ['scenes.rin-reveal.', '明天也一起回來吧。'],
+  ['scenes.rin-reveal.', '這個名字是我自己決定要用的。'],
+  ['scenes.mem:rin:', '從深處走出來的，不是人'],
+  ['scenes.mem:scarlet:', '你不是盾，你是我的朋友。活下去。'],
+  ['scenes.mem:safira:', '你要繼續跳。'],
+  ['scenes.mem:bobby:', '祖先造錯的東西，我來修好。'],
+  ['scenes.mem:selene:', '我想看見'],
+  ['scenes.town:marta.', '現在想記住的事變多了'],
+  ['act1Card.', '第一幕　星燈重新亮起'],
+  ['finaleBossName', '燈喰之母'],
+];
+
+const SPEAKERS = new Set<string>([...CHARACTER_IDS, ...Object.keys(NPC_NAMES), 'narrator']);
+const sceneLines = (): { id: SceneId; line: ScriptLine; key: string }[] =>
+  storyTexts().filter((t) => t.line && t.key.startsWith('scenes.')).map((t) => ({ id: t.key.split('.')[1] as SceneId, line: t.line!, key: t.key }));
+/** The companion a scene belongs to: her memory, her chat or her meeting. */
+const ownerOf = (key: string): string | undefined => {
+  const [top, a] = key.split('.');
+  if (top === 'meet') return a;
+  if (top === 'scenes') { const [kind, c] = a.split(':'); return kind === 'mem' || kind === 'chat' ? c : undefined; }
+  return undefined;
+};
+
+describe('the script gates', () => {
+  it('no scene plays more lines than its cap, in any party', () => {
+    const subsets = Array.from({ length: 1 << COMPANIONS.length }, (_, mask) => COMPANIONS.filter((_, i) => mask & (1 << i)));
+    const returnedAll = TOWN_FRAGMENTS.map((f) => f.id);
+    for (const id of SCENE_IDS) {
+      const lines = STORY.scenes[id].lines;
+      const cap = lineCap(id);
+      for (const met of subsets) {
+        for (const full of [[], met]) {
+          for (const returned of [[], returnedAll]) {
+            for (const oath of id === 'finale' ? [true] : [false, true]) {
+              const w: LineWhen = { met: ['hero', 'rin', ...met], full: full.length ? ['hero', 'rin', ...full] : [], returned, oath };
+              const n = linesWhen(lines, w).length;
+              if (n < 1 || n > cap) throw new Error(`${id} plays ${n} lines (cap ${cap}) for ${JSON.stringify(w)}`);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('no line is longer than MAX_LINE_CHARS', () => {
+    expect(MAX_LINE_CHARS).toBe(60);
+    for (const { key, text } of storyTexts()) {
+      expect(text.trim() !== '', `${key} is empty`).toBe(true);
+      expect([...text].length, key).toBeLessThanOrEqual(MAX_LINE_CHARS);
+      expect(text, key).not.toMatch(/TODO|TBD|[\r\n]/);
+    }
+  });
+
+  it('story text uses zh-TW typography', () => {
+    for (const { key, text } of storyTexts()) {
+      expect(text, key).not.toMatch(/[A-Za-z0-9]/);
+      expect(text, key).not.toMatch(/["'`]/);
+      expect(text, key).not.toMatch(/\.\.\./);
+      expect(text, key).not.toMatch(/[,!?:;]/);
+    }
+  });
+
+  it('speakers and moods are valid', () => {
+    for (const { key, line } of storyTexts().filter((t) => t.line)) {
+      const l = line!;
+      expect(SPEAKERS.has(l.who), `${key}: ${l.who}`).toBe(true);
+      if (l.mood !== undefined) expect(STORY_MOODS, key).toContain(l.mood);
+      if (!(CHARACTER_IDS as string[]).includes(l.who)) expect(l.mood, key).toBeUndefined();   // narrator and the town people have no face to change
+    }
+  });
+
+  it('nobody unmet speaks', () => {
+    for (const { key, line } of storyTexts().filter((t) => t.line)) {
+      const who = line!.who;
+      if (!(COMPANIONS as string[]).includes(who) || who === ownerOf(key)) continue;
+      const c = line!.if;
+      expect(c?.met === who || c?.full === who, `${key}: ${who} speaks without being met`).toBe(true);
+    }
+  });
+
+  it('memories are told by their owner', () => {
+    for (const { id, line, key } of sceneLines().filter((x) => x.id.startsWith('mem:'))) {
+      const owner = id.split(':')[1];
+      const ok = new Set<string>([owner, 'hero', 'narrator', ...(MEMORY_GUESTS[id] ?? [])]);
+      expect(ok.has(line.who), `${key}: ${line.who}`).toBe(true);
+    }
+    for (const t of storyTexts().filter((x) => x.line && x.key.startsWith('meet.'))) {
+      const c = ownerOf(t.key)!;
+      expect([c, 'hero', 'rin', 'narrator'], t.key).toContain(t.line!.who);
+      expect(t.line!.if, t.key).toBeUndefined();   // meet lines are played unfiltered
+    }
+    for (const id of Object.keys(MEMORY_GUESTS)) expect(isSceneId(id) && id.startsWith('mem:'), id).toBe(true);
+  });
+
+  it('meetings say one to four lines before and after', () => {
+    for (const m of MEETINGS) {
+      const { before, after } = STORY.meet[m.id];
+      expect(before.length, m.id).toBeGreaterThanOrEqual(1);
+      expect(before.length, m.id).toBeLessThanOrEqual(4);
+      expect(after.length, m.id).toBeGreaterThanOrEqual(0);   // Task 10 raises this to 1
+      expect(after.length, m.id).toBeLessThanOrEqual(4);
+    }
+  });
+
+  it('people and truths are one to three sentences', () => {
+    const sentences = (t: string) => (t.match(/[^。！？]+[。！？]+/g) ?? []).length;
+    for (const { key, text } of storyTexts().filter((t) => t.key.startsWith('people.') || t.key.startsWith('truths.'))) {
+      expect(sentences(text), key).toBeGreaterThanOrEqual(1);
+      expect(sentences(text), key).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it('WRITTEN entries never reach into another category', () => {
+    const keys = new Set(storyTexts().map((t) => t.key));
+    for (const w of WRITTEN) expect(/[.:]$/.test(w) || keys.has(w), w).toBe(true);
+  });
+
+  it('written categories hold no placeholder', () => {
+    for (const { key, text } of storyTexts().filter((t) => isWritten(t.key))) expect(PLACEHOLDERS.has(text), key).toBe(false);
+  });
+
+  it('spec quotes appear verbatim', () => {
+    for (const [prefix, quote] of SPEC_QUOTES) {
+      if (!WRITTEN.some((w) => prefix.startsWith(w))) continue;
+      const hit = storyTexts().some((t) => t.key.startsWith(prefix) && t.text.includes(quote));
+      expect(hit, `${prefix} lacks 「${quote}」`).toBe(true);
+    }
+  });
+
+  it('spoilers stay behind their owner', () => {
+    for (const sp of SPOILERS) {
+      for (const { key, text, line } of storyTexts()) {
+        if (sp.terms.some((term) => text.includes(term))) expect(sp.allowed(key, line), `${key}: ${sp.why}`).toBe(true);
+      }
+    }
+  });
+
+  it('the first chat of anyone is never gated', () => {
+    for (const c of CHARACTER_IDS) expect(CHAT_GATE[`chat:${c}:1`], c).toBeUndefined();
   });
 });

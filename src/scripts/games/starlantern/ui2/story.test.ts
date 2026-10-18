@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CHARACTERS } from '../data/characters';
 import { MAJOR_SCENES, type SceneId } from '../data/story/scenes';
-import { STORY, type ScriptLine } from '../data/story.zh-TW';
+import { chainLength } from '../data/story/chains';
+import { STORY, linesWhen, type LineWhen, type ScriptLine } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
 import { Game } from '../engine/game';
 import { constRng } from '../engine/testing';
@@ -83,6 +84,44 @@ describe('playScene', () => {
     s.party.recruited.push('bobby');
     s.story.returned = ['anna'];
     expect(linesOf('chat:liz:1', s).map((l) => l.text)).toEqual(['甲', '丙', '丁']);
+  });
+
+  it('full and oath conditions pick the right lines', () => {
+    const { game } = mk();
+    stage('chat:liz:1', [
+      { who: 'liz', text: '甲' },
+      { who: 'liz', text: '乙', if: { full: 'rin' } },
+      { who: 'liz', text: '丙', if: { oath: true } },
+      { who: 'liz', text: '丁', if: { oath: false } },
+      { who: 'liz', text: '戊', if: { full: 'liz' } },
+    ]);
+    const s = game.state;
+    const texts = () => linesOf('chat:liz:1', s).map((l) => l.text);
+    expect(texts()).toEqual(['甲', '丁']);                       // nobody full, no choice yet; liz is not even met
+    s.party.roster.rin.memories = chainLength('rin');
+    expect(texts()).toEqual(['甲', '乙', '丁']);                 // a full chain is read through memoriesOf
+    s.party.roster.rin.memories = chainLength('rin') - 1;
+    expect(texts()).toEqual(['甲', '丁']);
+    s.party.roster.rin.oath = true;
+    expect(texts()).toEqual(['甲', '丙']);
+    s.party.roster.rin.memories = chainLength('rin');
+    expect(texts()).toEqual(['甲', '乙', '丙']);
+  });
+
+  it('linesWhen keeps a line only when every one of its conditions holds', () => {
+    const none: LineWhen = { met: [], full: [], returned: [], oath: false };
+    const ls: ScriptLine[] = [
+      { who: 'narrator', text: '無' },
+      { who: 'liz', text: '遇', if: { met: 'liz' } },
+      { who: 'liz', text: '未遇', if: { notMet: 'liz' } },
+      { who: 'liz', text: '滿', if: { full: 'liz' } },
+      { who: 'liz', text: '歸', if: { returned: 'anna' } },
+      { who: 'liz', text: '兩', if: { met: 'liz', oath: true } },
+    ];
+    const t = (w: Partial<LineWhen>) => linesWhen(ls, { ...none, ...w }).map((l) => l.text);
+    expect(t({})).toEqual(['無', '未遇']);
+    expect(t({ met: ['liz'], full: ['liz'], returned: ['anna'] })).toEqual(['無', '遇', '滿', '歸']);
+    expect(t({ met: ['liz'], oath: true })).toEqual(['無', '遇', '兩']);
   });
 });
 

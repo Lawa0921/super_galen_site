@@ -15,14 +15,41 @@ export const NPC_NAMES: Record<NpcId, string> = {
 export type Speaker = CharacterId | NpcId | 'narrator';
 export interface ScriptLine {
   who: Speaker; mood?: Mood | ExtraMood; text: string;
-  if?: { met?: CharacterId; notMet?: CharacterId; returned?: TownFragmentId };
+  /** `full`: that person's memories are all found. `oath`: Rin has made her choice (`true`) or has not yet (`false`). */
+  if?: { met?: CharacterId; notMet?: CharacterId; returned?: TownFragmentId; full?: CharacterId; oath?: boolean };
 }
+
+/** What a scene's conditions are checked against. */
+export interface LineWhen { met: CharacterId[]; full: CharacterId[]; returned: TownFragmentId[]; oath: boolean }
+
+/** The lines that play: every line whose conditions all hold (a line with none always plays). */
+export function linesWhen(lines: ScriptLine[], w: LineWhen): ScriptLine[] {
+  return lines.filter((l) => {
+    const c = l.if;
+    if (!c) return true;
+    if (c.met && !w.met.includes(c.met)) return false;
+    if (c.notMet && w.met.includes(c.notMet)) return false;
+    if (c.returned && !w.returned.includes(c.returned)) return false;
+    if (c.full && !w.full.includes(c.full)) return false;
+    if (c.oath !== undefined && c.oath !== w.oath) return false;
+    return true;
+  });
+}
+
+/** The faces a line may ask for. */
+export const STORY_MOODS: (Mood | ExtraMood)[] = ['normal', 'smile', 'sad', 'down'];
+/** The longest a line of story text may be, in characters (the dialogue box shows about this much). */
+export const MAX_LINE_CHARS = 60;
+/** Who may speak in a memory besides its owner, the hero and the narrator. Each entry needs a reason in the lore ledger. */
+export const MEMORY_GUESTS: Partial<Record<SceneId, Speaker[]>> = { 'mem:liz:5': ['orik'], 'mem:noel:5': ['merchant'] };
 
 /** Every string that is still draft copy. 6c empties this set by writing the real script. */
 export const PLACEHOLDERS = new Set<string>();
 const ph = (text: string): string => { PLACEHOLDERS.add(text); return text; };
 
 const nameOf = (id: CharacterId): string => CHARACTERS[id].name;
+/** 1 to 10 in Chinese numerals: story text carries no Arabic digits. */
+const numeral = (n: number): string => '一二三四五六七八九十'[n - 1];
 
 const MAJOR_TITLES: Record<MajorScene, string> = {
   prologue: '序章', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
@@ -42,14 +69,14 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
       const n = i + 1;
       out[memScene(id, n)] = {
         title: `${name}・第 ${n} 片`,
-        lines: [{ who: id, text: ph(`（${name}想起了第 ${n} 段記憶。）`) }],
+        lines: [{ who: id, text: ph(`（${name}想起了第${numeral(n)}段記憶。）`) }],
         summary: ph(`${name}找回了一段記憶。`),
       };
     });
     for (let n = 1; n <= CHAT_COUNT[id]; n++) {
       out[`chat:${id}:${n}`] = {
         title: `${name}・對話 ${n}`,
-        lines: [{ who: id, text: ph(`（${name}說了第 ${n} 段話。）`) }],
+        lines: [{ who: id, text: ph(`（${name}說了第${numeral(n)}段話。）`) }],
         summary: ph(`和${name}聊了一會兒。`),
       };
     }
@@ -97,7 +124,7 @@ export const STORY = {
     after: [] as ScriptLine[],
   }])) as Record<Meetable, { before: ScriptLine[]; after: ScriptLine[] }>,
   absorb: [ph('碎片化開，一段陌生的暖意流進身體。')],
-  people: Object.fromEntries(CHARACTER_IDS.map((id) => [id, [1, 2, 3].map((n) => ph(`${nameOf(id)}的簡介（${n}）。`))])) as Record<CharacterId, string[]>,
-  truths: Object.fromEntries(STAGES.map((s, i) => [s, ph(`第 ${i + 1} 條真相。`)])) as Record<Stage, string>,
+  people: Object.fromEntries(CHARACTER_IDS.map((id) => [id, [1, 2, 3].map((n) => ph(`${nameOf(id)}的簡介（${numeral(n)}）。`))])) as Record<CharacterId, string[]>,
+  truths: Object.fromEntries(STAGES.map((s, i) => [s, ph(`第${numeral(i + 1)}條真相。`)])) as Record<Stage, string>,
   town: Object.fromEntries(TOWN_FRAGMENTS.map((f) => [f.id, { lost: ph(`${f.npc}遺失了一段記憶。`), after: ph(`${f.npc}想起來了，謝謝你。`) }])) as Record<TownFragmentId, { lost: string; after: string }>,
 };

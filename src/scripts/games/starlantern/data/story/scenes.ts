@@ -58,3 +58,10 @@ export function lineCap(id: SceneId): number {
     case 'town': return 8;
   }
 }
+
+/**
+ * Chats that wait: a later `stage`, and/or Rin's choice (`oath`). A chat with no entry is open as soon as the person is met.
+ * `position` in the story tests reads it; `nextChat` reads it from Task 3. The first chat of anyone is never gated.
+ * Every entry needs a reason in the lore ledger.
+ */
+export const CHAT_GATE: Partial<Record<SceneId, { stage?: Stage; oath?: true }>> = {};
