@@ -38,7 +38,8 @@ export function genPhaseOf(stage: string, prev: number): number {
 
 const pack = (h: string): number => { const c = hex(h); return ((255 << 24) | (c[2] << 16) | (c[1] << 8) | c[0]) >>> 0; };
 export const SECTION_COLORS = {
-  void: pack('#0c0a12'), voidDot: pack('#1c1424'),
+  /** 還沒成形：近黑底 + 稀疏靛色點（和洞穴的純暗色分得開） */
+  void: pack('#0c0a12'), voidDot: pack('#2c2450'),
   skyHi: pack('#3e74c4'), skyLo: pack('#5c9ce0'),
   cave: pack('#0c0a12'), caveWall: pack('#1c1424'),
 };

@@ -68,7 +68,7 @@ describe('sampleSection', () => {
     sampleSection(r.value.world, OW, OH, b);
     expect(b).toEqual(a);
     // 生成完的世界：有天空、有地層、沒有「未成形」
-    expect(a.includes(SECTION_COLORS.void)).toBe(false);
+    expect(a.includes(SECTION_COLORS.voidDot)).toBe(false);
     expect(a.includes(SECTION_COLORS.skyHi) || a.includes(SECTION_COLORS.skyLo)).toBe(true);
   });
 });
