@@ -259,6 +259,7 @@ const WRITTEN: string[] = [
   'scenes.mem:hero:', 'scenes.chat:hero:', 'people.hero.',   // Task 6: Lorne
   'scenes.rin-reveal.', 'scenes.chat:rin:', 'people.rin.', 'rinLines.', 'rinOath.',   // Task 7: Rin
   ...(['selene', 'chizuru', 'safira'] as const).flatMap((c) => [`scenes.mem:${c}:`, `scenes.chat:${c}:`, `people.${c}.`, `meet.${c}.`]),   // Task 8
+  ...(['sylvie', 'noel', 'bobby'] as const).flatMap((c) => [`scenes.mem:${c}:`, `scenes.chat:${c}:`, `people.${c}.`, `meet.${c}.`]),   // Task 9
 ];
 const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
 const isWritten = (key: string): boolean => writtenBy(WRITTEN, key);
@@ -804,6 +805,11 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
       { who: 'selene', re: /洛恩先生/, piece: 5 },                       // I-22: plain 「洛恩」 from her last piece
       { who: 'chizuru', re: /不記得是何時|記不得是何時/, piece: 5 },      // the bell is explained by her last piece
       { who: 'chizuru', re: /趕回去|回神社覆命|回神社/, piece: 4 },       // the shrine is gone from her fourth piece
+      // Task 9
+      { who: 'sylvie', re: /該睡的人|不配/, piece: 5 },                 // she thinks she has no right to live until her last piece
+      { who: 'noel', re: /歸來者/, piece: 5 },                          // I-25: 「洛恩」 from her last piece
+      { who: 'noel', re: /小氣|怕本小姐/, piece: 4 },                   // she thinks her teacher is stingy until her fourth piece
+      { who: 'noel', re: /忘了.{0,4}(怎麼|為什麼).{0,4}(進來|迷宮)/, piece: 2 },   // her second piece tells how she came in
     ];
     const REVEALED: { who: string; re: RegExp; piece: number }[] = [
       { who: 'selene', re: /洛恩(?!先生)/, piece: 5 },
@@ -811,8 +817,13 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
       { who: 'chizuru', re: /不在了/, piece: 4 },
       { who: 'chizuru', re: /託付/, piece: 5 },
       { who: 'safira', re: /團長|你要繼續跳|做決定的/, piece: 4 },
+      // Task 9
+      { who: 'sylvie', re: /林子|守林|帶出去|帶出來|種子|新綠|發芽/, piece: 1 },   // the mire was her forest (1); the rest comes later
+      { who: 'noel', re: /洛恩/, piece: 5 },
+      { who: 'noel', re: /星火|燒掉|燒光|為薪|保護|商人/, piece: 3 },
+      { who: 'bobby', re: /祖先|一族|構造圖|都能裝|錯了|閥|道歉|修好/, piece: 1 },
     ];
-    for (const c of ['selene', 'chizuru', 'safira'] as const) {
+    for (const c of ['selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby'] as const) {
       for (let n = 1; n <= CHAT_COUNT[c]; n++) {
         for (const full of [false, true]) {
           for (const oath of [false, true]) {
@@ -827,7 +838,7 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
       }
     }
     // the variants exist: before her last piece and after it, each chat still plays her
-    for (const [id, c] of [['chat:selene:2', 'selene'], ['chat:chizuru:2', 'chizuru']] as const) {
+    for (const [id, c] of [['chat:selene:2', 'selene'], ['chat:chizuru:2', 'chizuru'], ['chat:sylvie:2', 'sylvie'], ['chat:noel:2', 'noel']] as const) {
       const lines = STORY.scenes[id].lines;
       expect(lines.some((l) => l.if?.notFull === c), id).toBe(true);
       expect(lines.some((l) => l.if?.full === c), id).toBe(true);
@@ -860,5 +871,90 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
     expect(CHAT_GATE['chat:selene:2']).toEqual({ stage: 'act3' });
     expect(CHAT_GATE['chat:chizuru:2']).toBeUndefined();
     expect(CHAT_GATE['chat:safira:2']).toBeUndefined();
+  });
+});
+
+describe('Task 9: Sylvie, Noel and Bobby', () => {
+  const linesOf = (id: SceneId) => STORY.scenes[id].lines;
+  const textOf = (id: SceneId) => linesOf(id).map((l) => l.text).join('');
+  const spokenBy = (c: string) => storyTexts().filter((t) => t.line?.who === c);
+  const THREE = ['sylvie', 'noel', 'bobby'] as const;
+
+  it('each meeting opens on the found line, then she speaks; she joins after the fight', () => {
+    for (const c of THREE) {
+      const { before, after } = STORY.meet[c];
+      expect(before[0].who, c).toBe('narrator');
+      expect(before[0].text, c).toContain(CHARACTERS[c].name);
+      expect(before.some((l) => l.who === c), c).toBe(true);
+      expect(after.length, c).toBeGreaterThanOrEqual(1);
+      expect(after.some((l) => l.who === c), c).toBe(true);
+    }
+    // the spec's pictures (§6): one arrow left and still shooting; lightning everywhere; mending a fallen machine soldier
+    expect(STORY.meet.sylvie.before.map((l) => l.text).join('')).toMatch(/一支箭/);
+    expect(STORY.meet.noel.before.map((l) => l.text).join('')).toMatch(/雷/);
+    expect(STORY.meet.bobby.before.map((l) => l.text).join('')).toMatch(/機兵/);
+    // Rin's line in a meeting is unfiltered and may come after her oath: no face reserved for before it
+    for (const c of THREE) for (const l of [...STORY.meet[c].before, ...STORY.meet[c].after]) {
+      if (l.who === 'rin') expect(l.mood ?? 'normal', `${c}: ${l.text}`).not.toMatch(/guarded|averted/);
+    }
+  });
+
+  it('Sylvie calls him 「洛恩」, never says she brought them out before her last piece, and her seed waits for it', () => {
+    for (const t of spokenBy('sylvie')) for (const m of t.text.matchAll(/洛恩(.?)/g)) expect(m[1], t.key).not.toMatch(/先|大|哥|閣/);
+    // style bible: 「我把人帶出去了」 is hers only in the last piece; Lorne may say it for her before that
+    for (const t of spokenBy('sylvie')) if (/帶出去了|帶出來了/.test(t.text)) expect(t.key, t.key).toMatch(/^scenes\.mem:sylvie:5\./);
+    expect(linesOf('mem:sylvie:5').some((l) => l.who === 'sylvie' && /帶出去了/.test(l.text))).toBe(true);
+    expect(textOf('mem:sylvie:1')).toMatch(/沼澤/);
+    expect(textOf('mem:sylvie:1')).toMatch(/林子/);
+    expect(textOf('mem:sylvie:5')).toContain('種子');
+    for (const n of [1, 2, 3, 4]) expect(textOf(memScene('sylvie', n)), `mem:sylvie:${n}`).not.toContain('種子');
+  });
+
+  it("Noel says 「喂，歸來者」 until her memories are whole, then 「洛恩」 with a blush; her teacher is the merchant in her last piece", () => {
+    const full = (key: string, line?: ScriptLine) => key.startsWith('scenes.mem:noel:5.') || line?.if?.full === 'noel';
+    for (const t of spokenBy('noel')) {
+      if (t.text.includes('洛恩')) expect(full(t.key, t.line), t.key).toBe(true);
+      if (t.text.includes('歸來者')) expect(full(t.key, t.line), t.key).toBe(false);
+    }
+    const named = spokenBy('noel').filter((t) => t.text.includes('洛恩'));
+    expect(named.length).toBeGreaterThan(0);
+    for (const t of named) expect(t.line!.mood, t.key).toBe('blush');
+    expect(spokenBy('noel').some((t) => t.text.includes('喂，歸來者'))).toBe(true);
+    // the spec's line of memories: the stolen book, the star fire that burns her own memory, the teacher who protected her
+    expect(textOf('mem:noel:1')).toMatch(/書/);
+    expect(textOf('mem:noel:3')).toMatch(/星火/);
+    expect(textOf('mem:noel:4')).toMatch(/老師/);
+    for (const n of [1, 2]) expect(textOf(memScene('noel', n)), `mem:noel:${n}`).not.toMatch(/燒掉|燒光|為薪/);
+    // the merchant speaks only in her last piece, in his recovered voice (style bible): her name, no scolding for the book
+    const merchant = storyTexts().filter((t) => t.line?.who === 'merchant');
+    expect(merchant.length).toBeGreaterThan(0);
+    for (const t of merchant) expect(t.key, t.key).toMatch(/^scenes\.mem:noel:5\./);
+    expect(merchant.some((t) => t.text.includes('諾艾兒'))).toBe(true);
+    for (const t of merchant) expect(t.text, t.key).not.toMatch(/偷|本小姐/);
+    // and his reunion line is not the town greeting still waiting for Task 11
+    for (const t of merchant) expect(PLACEHOLDERS.has(t.text), t.key).toBe(false);
+  });
+
+  it("Bobby calls him 「洛恩哥」, and her last piece ends on the spec's line, said nowhere else", () => {
+    for (const t of spokenBy('bobby')) for (const m of t.text.matchAll(/洛恩(.?)/g)) expect(m[1], t.key).toBe('哥');
+    expect(spokenBy('bobby').some((t) => t.text.includes('洛恩哥'))).toBe(true);
+    const QUOTE = '祖先造錯的東西，我來修好。';
+    const last = linesOf('mem:bobby:5').slice(-1)[0];
+    expect(last.who).toBe('bobby');
+    expect(last.text).toBe(`「${QUOTE}」`);
+    for (const t of storyTexts()) if (t.text.includes(QUOTE)) expect(t.key, t.key).toBe('scenes.mem:bobby:5.lines.3.text');
+    expect(textOf('mem:bobby:3')).toMatch(/什麼記憶都能裝|無論何種記憶/);   // spec §6: the ancestors' guilt
+    for (const t of spokenBy('bobby')) expect(t.text, t.key).not.toContain('修不好');   // style bible: never says it can't be fixed
+  });
+
+  it("their pages and pieces keep to her own story: no act content (I-58)", () => {
+    const ACT = /登記簿|靜鐘會|艾斯特拉|守燈人|燈鑰|燈喰/;
+    for (const t of storyTexts()) {
+      if (THREE.some((c) => ownerOf(t.key) === c || t.key.startsWith(`people.${c}.`))) expect(t.text, t.key).not.toMatch(ACT);
+    }
+  });
+
+  it('their chats are open as soon as she is met', () => {
+    for (const c of THREE) expect(CHAT_GATE[`chat:${c}:2`], c).toBeUndefined();
   });
 });

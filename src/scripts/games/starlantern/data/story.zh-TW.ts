@@ -624,6 +624,201 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '莎菲拉想教凜跳舞，被一口回絕。她轉頭找洛恩，洛恩跑了。',
   },
+  // Task 9: Sylvie (spec §6, §11.2). The mire is her forest rotted. She led its people out, one family at a time, and turned
+  // back last; she never says so herself until her last piece (style bible). Her last piece is the seed she has held since.
+  'mem:sylvie:1': {
+    lines: [
+      N('綠得發亮的林子。她在樹皮上刻下小小的箭頭，一棵接一棵，指向林外的路。'),
+      N('「迷了路，就跟著箭頭走。」她對林子裡的孩子說，「走到底，就出得去。」'),
+      { who: 'sylvie', mood: 'sad', text: '「這箭頭，是我刻的。……這片沼澤，以前是我守的林子。」' },
+      N('她蹲在一截爛掉的樹幹前，用指尖把箭頭上的泥，一點一點擦乾淨。'),
+    ],
+    summary: '希爾薇在沼澤的枯木上，認出自己刻的箭頭。腐毒沼澤，以前是她守的林子。',
+  },
+  'mem:sylvie:2': {
+    lines: [
+      N('那一年，霧從林子深處漫了出來。樹從根開始發灰，一棵接著一棵。'),
+      N('她拉滿了弓，卻不知道該對著什麼射。霧，是射不死的。'),
+      { who: 'sylvie', mood: 'sad', text: '「我沒守住。……林子死了，我還活著。」' },
+      { who: 'hero', text: '「霧，不是一個人擋得住的。」' },
+    ],
+    summary: '暮霧吞掉了希爾薇的林子。她覺得是自己沒守住，不該一個人活下來。',
+  },
+  'mem:sylvie:3': {
+    lines: [
+      N('霧裡，她牽著一個抱著嬰兒的女人，踩著樹上的箭頭，一棵一棵往外走。'),
+      N('林子邊上透進了光。她把那一家人推出去，自己轉身，又鑽回霧裡。'),
+      { who: 'sylvie', mood: 'serious', text: '「才一家。……林子裡的人，不只這些。」' },
+      N('她說完就站了起來，背好弓，往沼澤更深的地方看。'),
+    ],
+    summary: '霧裡，希爾薇把一家人帶到林外，又轉身回去。她說，才一家而已。',
+  },
+  'mem:sylvie:4': {
+    lines: [
+      N('一趟，又一趟。砍柴的、採藥的、迷路的獵人，一個一個跟著箭頭走出了霧。'),
+      N('最後一趟出來，林外的人點著火把，數了又數：「都出來了。一個也沒少。」'),
+      { who: 'hero', text: '「妳把他們，全都帶出去了。」' },
+      { who: 'sylvie', mood: 'sad', text: '「……那又怎樣。林子，我還是沒守住。」' },
+    ],
+    summary: '希爾薇一趟又一趟，把林子裡的人全部帶了出去。她還是覺得，自己沒守住林子。',
+  },
+  'mem:sylvie:5': {
+    lines: [
+      N('人都出來了，她才回頭，走進正在倒下的林子。'),
+      N('最老的那棵樹，落下了最後一顆種子。她把它握進手心，霧就漫了上來。'),
+      { who: 'sylvie', mood: 'sad', text: '「這顆種子，我一直握著。……人，我都帶出去了。它，也帶出來了。」' },
+      { who: 'sylvie', mood: 'smile', text: '「洛恩。回城以後，找一塊空地。……林子，還能再長。」' },
+    ],
+    summary: '人都出來之後，希爾薇才回頭，帶出了林子最後一顆種子。她要把它種在露米亞的空地上。',
+  },
+  'chat:sylvie:1': {
+    lines: [
+      // Read right before and after any of her pieces: the quiver is from her meeting, not from a memory (I-58).
+      N('天還沒亮，傳送門廣場的石階上。希爾薇在削箭桿，腳邊的箭筒插得滿滿的。'),
+      { who: 'hero', text: '「這麼多？」' },
+      { who: 'sylvie', mood: 'serious', text: '「箭筒要滿。……只剩一支的時候，什麼都護不住。」' },
+    ],
+    summary: '天亮前，希爾薇在廣場削箭。她說箭筒要滿，只剩一支的時候，什麼都護不住。',
+  },
+  'chat:sylvie:2': {
+    lines: [
+      // Until her last piece she thinks she has no right to the bed; after it, she has planted the seed (I-58).
+      { who: 'narrator', text: '深夜的月影旅館。希爾薇的床鋪得整整齊齊，她卻抱著弓，靠在窗邊的牆上。', if: { notFull: 'sylvie' } },
+      { who: 'narrator', text: '深夜的月影旅館。希爾薇抱著弓靠在窗邊，看著樓下那塊剛翻過土的空地。', if: { full: 'sylvie' } },
+      { who: 'hero', text: '「不睡？」' },
+      { who: 'sylvie', mood: 'sad', text: '「床，留給該睡的人。……我在這裡就好。」', if: { notFull: 'sylvie' } },
+      { who: 'sylvie', mood: 'smile', text: '「……種下去了。再看一下，就去睡床。」', if: { full: 'sylvie' } },
+    ],
+    summary: '深夜，希爾薇抱著弓，靠在旅館的窗邊。洛恩問她不睡嗎。',
+  },
+  // Task 9: Noel (spec §6, §7.5). She stole her teacher's book; its star fire burns the caster's own memory; the teacher
+  // forbade it to protect her. Her last piece holds the teacher's memory too: she gives it back at the merchant's stall.
+  'mem:noel:1': {
+    lines: [
+      N('深夜的書房。老師上了鎖的書櫃，被一根髮夾撬開了。'),
+      N('她抱出一本封面嵌著星星的書。翻開來，紙上的字像火一樣在跳。'),
+      { who: 'noel', mood: 'smug', text: '「哼，老師最寶貝的書，本小姐一眼就挑中了。」' },
+      { who: 'noel', mood: 'pout', text: '「……幹嘛那樣看我。是借的啦，只是沒說一聲。」' },
+    ],
+    summary: '諾艾兒想起自己撬開老師的書櫃，抱走了一本封面嵌著星星的魔法書。',
+  },
+  'mem:noel:2': {
+    lines: [
+      N('老師一把闔上那本書，壓住了她的手：「這一頁，不准念。」'),
+      N('她甩開那隻手，抱著書跑出門，一路跑進了迷宮。'),
+      { who: 'noel', mood: 'pout', text: '「小氣鬼。……老師一定是怕本小姐太厲害。」' },
+      { who: 'noel', mood: 'sad', text: '「……可是那時候，老師的手好冰。」' },
+    ],
+    summary: '老師不准諾艾兒念書裡的一頁。她甩開老師的手，抱著書逃進了迷宮。',
+  },
+  'mem:noel:3': {
+    lines: [
+      N('迷宮裡，怪物撲了上來。她念出那一頁，掌心開出一朵藍白色的星火。'),
+      N('她低頭看著自己的手。剛才是從哪裡跑進來的，她想不起來了。'),
+      { who: 'noel', mood: 'panic', text: '「……不是迷宮偷走的。是我自己，用那一頁燒掉的。」' },
+      { who: 'hero', mood: 'serious', text: '「那一頁，別再念了。」' },
+    ],
+    summary: '書裡的星火，每用一次就燒掉施法者的一段記憶。諾艾兒的失憶，是她自己燒掉的。',
+  },
+  'mem:noel:4': {
+    lines: [
+      N('出走的前一夜，她從門縫看見書房的燈還亮著。老師在那本書的空白處寫字。'),
+      N('「此術以記憶為薪。」老師低聲說，「那孩子要是學了，會連自己是誰都燒掉。」'),
+      { who: 'noel', mood: 'sad', text: '「老師不教我，不是小氣……是怕我把自己燒光。」' },
+      { who: 'noel', mood: 'panic', text: '「我、我才沒有哭。是這裡的雨太大了。」' },
+    ],
+    summary: '老師不讓諾艾兒念那一頁，是怕她把自己燒光。老師一直在保護她。',
+  },
+  'mem:noel:5': {
+    lines: [
+      N('迷宮的入口。有人提著燈，一遍又一遍喊著她的名字，走進了暮霧。'),
+      N('岔路口亮著一盞攤燈。諾艾兒把碎片裡的另一段光，放進流浪商人的掌心。'),
+      { who: 'merchant', text: '「……諾艾兒。啊，我想起來了。比起那本書，妳平安，就夠了。」' },
+      { who: 'noel', mood: 'smile', text: '「……老師。對不起。我回來了。」' },
+    ],
+    summary: '老師為了找諾艾兒也走進迷宮，成了失憶的流浪商人。她把老師的記憶還給他，師徒在攤前重逢。',
+  },
+  'chat:noel:1': {
+    lines: [
+      N('深夜的月影旅館。諾艾兒用指尖點起一朵小小的電光，照著攤開的筆記本。'),
+      { who: 'hero', text: '「在寫什麼？」' },
+      { who: 'noel', mood: 'panic', text: '「我、我的咒語筆記啦。不准看！……裡面才沒有錯字。」' },
+    ],
+    summary: '深夜，諾艾兒點著小小的電光寫咒語筆記。洛恩一問，她就慌了，說不准看。',
+  },
+  'chat:noel:2': {
+    lines: [
+      // Until her last piece she calls him 「喂，歸來者」; after it, 「洛恩」, and she blushes first (style bible, I-25).
+      N('傳送門廣場。諾艾兒搶先一步，擋在洛恩前面。'),
+      { who: 'noel', mood: 'smug', text: '「喂，歸來者。下一層的怪，全交給本小姐的雷。你們站後面就好。」', if: { notFull: 'noel' } },
+      { who: 'noel', mood: 'blush', text: '「洛、洛恩。下一層……我的雷，借你們用。不准笑。」', if: { full: 'noel' } },
+      { who: 'hero', text: '「好。一起回來。」' },
+    ],
+    summary: '出發前，諾艾兒搶先擋在洛恩前面，說下一層交給她的雷。',
+  },
+  // Task 9: Bobby (spec §6). Met on the main road at depth 6, so her lines sit in act 2: she may name the lamp she sees, not
+  // what the acts tell of it (I-58). Her pieces build the lamp's plan and her ancestors' guilt; the last ends on the spec line.
+  'mem:bobby:1': {
+    lines: [
+      N('山谷裡的小工坊，牆上掛滿了扳手。小女孩踮起腳，打開一只上了鎖的鐵箱。'),
+      N('箱底壓著半張發黃的圖，畫著一道衝上天的光柱。'),
+      { who: 'bobby', mood: 'excited', text: '「那是星燈喔。我家的祖先，畫過星燈的圖！」' },
+      { who: 'bobby', mood: 'grin', text: '「嘿嘿，只看到半張。……剩下的，我得一片一片想起來喔。」' },
+    ],
+    summary: '波比想起家裡鐵箱底的半張舊圖。圖上畫的，是星燈。',
+  },
+  'mem:bobby:2': {
+    lines: [
+      N('山谷外的村子。她報出家裡的名號，村裡卻沒有一個人聽過。'),
+      N('家裡最老的工匠只是笑：「被忘掉，是我們自己選的。祖先做錯了事，後人就躲起來。」'),
+      { who: 'bobby', mood: 'sad', text: '「被時間忘掉的一族……說的就是我們家喔。」' },
+      { who: 'bobby', mood: 'serious', text: '「洛恩哥，祖先到底做錯了什麼？……那時候，我沒敢問。」' },
+    ],
+    summary: '波比的一族被時間遺忘了。家裡的老工匠說，祖先做錯了事，後人才躲了起來。',
+  },
+  'mem:bobby:3': {
+    lines: [
+      N('構造圖又拼上了一角。燈的開口畫得好大，大得像一張嘴。'),
+      N('旁邊是祖先的字：「無論何種記憶，皆可收納。」底下另一個筆跡，只寫了兩個字：「錯了。」'),
+      { who: 'bobby', mood: 'focused', text: '「什麼記憶都能裝……所以，連不該裝的，也全裝進去了。」' },
+      { who: 'bobby', mood: 'sad', text: '「洛恩哥。這張圖……我第一次，沒辦法說它畫得好。」' },
+    ],
+    summary: '構造圖上，祖先把星燈造得什麼記憶都能裝。旁邊有人補了兩個字：錯了。',
+  },
+  'mem:bobby:4': {
+    lines: [
+      N('老工匠把那半張圖交到她手上：「祖先造的機兵，還守在星燈底下。去看看它們吧。」'),
+      N('神殿裡倒著一台機兵。它胸口的記號，和圖上畫的一模一樣。'),
+      { who: 'bobby', mood: 'sad', text: '「它們是家裡的人造的。……修好一台，就像替祖先道一次歉喔。」' },
+      N('洛恩想起相遇那天，她趴在機兵的胸口，連怪物圍過來都沒發現。'),
+    ],
+    summary: '老工匠要波比去看祖先造的機兵。她修機兵，是想替祖先道歉。',
+  },
+  'mem:bobby:5': {
+    lines: [
+      N('最後一角拼上了。整張構造圖在她眼前亮起來，齒輪和管線，一條一條連上。'),
+      { who: 'bobby', mood: 'excited', text: '「看懂了。祖先錯在燈芯這裡──沒有閥，什麼都吞，也什麼都還不回來。」' },
+      { who: 'hero', text: '「修得好嗎？」' },
+      { who: 'bobby', mood: 'smile', text: '「祖先造錯的東西，我來修好。」' },
+    ],
+    summary: '波比讀懂了整張構造圖，找到祖先造錯的地方。她說，她來修好。',
+  },
+  'chat:bobby:1': {
+    lines: [
+      { who: 'bobby', mood: 'excited', text: '「洛恩哥，你的劍借我看一下下。這些紋路不是花樣，是線路喔。」' },
+      { who: 'hero', text: '「線路？」' },
+      { who: 'bobby', mood: 'grin', text: '「嘿嘿，通到哪裡，我還看不出來。總有一天，我會弄懂的。」' },
+    ],
+    summary: '波比盯著洛恩的劍，說上面的紋路不是花樣，是線路。',
+  },
+  'chat:bobby:2': {
+    lines: [
+      N('月影旅館的廚房冒出一陣白煙。波比抱著一支會自己轉的湯勺，臉上全是灰。'),
+      { who: 'bobby', mood: 'grin', text: '「嘿嘿，彈簧上得太緊了。瑪莎阿姨，再讓我試一次就好喔。」' },
+      { who: 'marta', text: '「孩子，湯我自己攪就好。……先去把臉洗乾淨。」' },
+    ],
+    summary: '波比做了一支會自己轉的湯勺，弄得旅館廚房一陣白煙。瑪莎要她先去洗臉。',
+  },
 };
 
 function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }> {
@@ -692,6 +887,22 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
     '她是流浪舞團的舞者。碎片裡有打鼓的、吹笛的、縫衣裳的團員。她說，是她先看見沙漠裡那座蜃樓的城。',
     '走進蜃樓是團長選的，團長把她推了出來：「你要繼續跳。」她要在鎮上的廣場，跳完舞團最後的那支舞。',
   ],
+  // Task 9: Lorne's notes on Sylvie, Noel and Bobby. Each segment is placed at her meeting: no act content (I-58).
+  sylvie: [
+    '希爾薇。在腐毒沼澤被毒藤纏住，箭筒只剩一支箭，還在射。話很少，只說路、風和氣味。',
+    '腐毒沼澤，以前是她守的林子。霧來的時候，她牽著人走出去，又一趟趟回頭。她說，林子是在她眼前死的。',
+    '人全出來之後，她才回頭，帶出了林子最後一顆種子。她要把它種在鎮上的空地。她說，林子還能再長。',
+  ],
+  noel: [
+    '諾艾兒。在雷鳴之地亂放雷，魔力和記憶都快燒乾了。自稱本小姐，叫我歸來者。',
+    '她偷了老師的魔法書，逃進迷宮。書裡的星火，用一次就燒掉施法者的一段記憶。她的失憶，是自己燒的。',
+    '老師不讓她念那一頁，是為了保護她。流浪商人就是她的老師，他們在攤前重逢了。現在她叫我洛恩，叫之前會先臉紅。',
+  ],
+  bobby: [
+    '波比。在本道的星燈神殿，她趴在倒下的古代機兵身上修東西，怪物圍過來都沒發現。她叫我洛恩哥。',
+    '她家是替星燈造機關的工匠一族，被時間忘了。碎片拼出星燈的構造圖：祖先把燈造得什麼記憶都能裝。',
+    '她修機兵，是想替祖先道歉。現在她讀懂了整張構造圖，說祖先造錯的地方，她要親手修好。',
+  ],
 };
 
 /** The found line: narration that opens every meeting, as the rescue screen says it (`T.ui2.rescue.found`). */
@@ -740,6 +951,49 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
       { who: 'hero', text: '「我是洛恩。妳一直一個人在這裡跳？」' },
       { who: 'safira', mood: 'sad', text: '「……一停下來，好像就會忘掉什麼。所以，就一直跳囉。」' },
       { who: 'safira', mood: 'wink', text: '「我是莎菲拉。小洛，讓我跟著你們吧，順便教你跟上拍子！」' },
+    ],
+  },
+  // Task 9
+  sylvie: {
+    before: [
+      N(foundLine('sylvie')),
+      N('腐毒沼澤的爛泥裡，毒藤纏住了一個少女的腿。她的箭筒裡，只剩最後一支箭。'),
+      N('她還在射。弓弦一響，撲過來的怪物就倒下一隻。'),
+      { who: 'sylvie', mood: 'alert', text: '「別過來。……風向不對，毒會往你們那邊飄。」' },
+    ],
+    after: [
+      N('洛恩割斷了毒藤。她把射出去的箭一支一支撿回來，插回箭筒。'),
+      { who: 'sylvie', text: '「希爾薇。……謝了。」' },
+      { who: 'hero', text: '「我是洛恩。」' },
+      { who: 'sylvie', mood: 'serious', text: '「洛恩。這片沼澤的路，我認得。跟著我。」' },
+    ],
+  },
+  noel: {
+    before: [
+      N(foundLine('noel')),
+      N('雷鳴之地的岩台上，雷光四處亂竄。一個少女揮著法杖，連自己腳邊都劈。'),
+      { who: 'noel', mood: 'panic', text: '「別、別過來！我的雷……還、還沒用完！」' },
+      N('她的眼睛空空的，像是連自己為什麼在這裡都忘了。'),
+    ],
+    after: [
+      N('雷光熄了。少女腿一軟，坐倒在岩石上。'),
+      { who: 'noel', mood: 'pout', text: '「哼……本小姐一個人，本來也打得贏。」' },
+      { who: 'hero', text: '「我是洛恩。走得動嗎？一起回去吧。」' },
+      { who: 'noel', mood: 'smug', text: '「……諾艾兒。看你們這麼想帶本小姐走，就勉強跟你們一起吧。」' },
+    ],
+  },
+  bobby: {
+    before: [
+      N(foundLine('bobby')),
+      N('星燈神殿的石柱之間，倒著一台古代機兵。一個少女趴在它的胸口，扳手轉個不停。'),
+      { who: 'bobby', mood: 'focused', text: '「這顆螺絲……再半圈……好，接上了喔。」' },
+      { who: 'rin', text: '「……後面。」' },   // a meeting plays unfiltered and may come after her oath: no guarded face
+    ],
+    after: [
+      { who: 'bobby', mood: 'grin', text: '「嘿嘿，原來剛才那麼危險？完全沒注意到耶。」' },
+      { who: 'hero', text: '「我是洛恩。妳一個人在這裡修這個？」' },
+      { who: 'bobby', mood: 'excited', text: '「它是古代的機兵喔。關節裡的齒輪，到現在都還咬得好好的。」' },
+      { who: 'bobby', mood: 'smile', text: '「我是波比，技師。洛恩哥，帶上我吧！壞掉的東西，我都修得好喔。」' },
     ],
   },
 };
