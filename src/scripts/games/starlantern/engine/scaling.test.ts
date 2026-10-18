@@ -6,7 +6,7 @@ import { REGIONS, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
 import { expToNext, LEGACY_LINEUP } from './party';
 import { mulberry32 } from './rng';
-import { BOSS_PARTY_SCALE, DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy, bossPartyScale } from './scaling';
+import { DEEP_ENEMIES, deepPower, enemyLevelAt, BOSS_PARTY_SCALE, DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy, bossPartyScale } from './scaling';
 import { constRng, fullParty } from './testing';
 
 const MAIN = REGIONS.mainline;
@@ -350,5 +350,56 @@ describe('story enemies', () => {
     expect(story).toContain('scarlet-foe');
     for (const id of story) expect(NORMAL_ENEMIES).not.toContain(id);
     expect(NORMAL_ENEMIES).toHaveLength(8);
+  });
+});
+
+describe('the deep enemy knobs (plan 6b Task 20c, added at their start values by Task 20a)', () => {
+  /** An enemy alone in a full-party fight at a main-road depth: the scaled, empowered numbers createBattle gives it. */
+  const met = (id: string, depth: number) =>
+    createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: [id], boss: !!ENEMIES[id].boss, inventory: {}, revealed: {}, scale: { depth, region: 'mainline' } }).enemies[0];
+
+  it('the deep knobs at their start values change nothing', () => {
+    for (let d = 1; d <= 60; d++) {
+      expect(enemyLevelAt(d), `depth ${d}`).toBe(depthLevel(d));
+      expect(deepPower(d), `depth ${d}`).toBe(1);
+    }
+    // FNV-1a over level, hp, atk and mag of every ordinary monster and the lanterneater at depths 1-60, taken at
+    // cae0b228 before the knobs existed.
+    let h = 0x811c9dc5;
+    const feed = (n: number) => { h = Math.imul(h ^ n, 0x01000193) >>> 0; };
+    for (const id of [...NORMAL_ENEMIES, 'lanterneater']) for (let d = 1; d <= 60; d++) {
+      const e = met(id, d);
+      feed(e.level); feed(e.max.hp); feed(e.max.atk); feed(e.max.mag);
+    }
+    expect(h.toString(16)).toBe('ea2e9278');
+  });
+
+  it('deep enemies grow strictly with depth', () => {
+    let last = met('wolf', 1);
+    for (let d = 2; d <= 250; d++) {
+      const e = met('wolf', d);
+      for (const k of ['hp', 'atk', 'mag'] as const) expect(e.max[k], `${k} at depth ${d}`).toBeGreaterThan(last.max[k]);
+      last = e;
+    }
+  });
+
+  it('enemyLevelAt and deepPower follow the knobs past fromDepth', () => {
+    const saved = { ...DEEP_ENEMIES };
+    const before = { wolf: scaleEnemy(wolf, 20, MAIN, false), clear: depthClearExp(20), met: met('wolf', 20) };
+    try {
+      Object.assign(DEEP_ENEMIES, { fromDepth: 11, levelsPerDepth: 2, power: 0.1 });
+      expect(enemyLevelAt(11)).toBe(depthLevel(11));
+      expect(enemyLevelAt(15)).toBe(depthLevel(11) + 2 * 4);
+      expect(deepPower(11)).toBe(1);
+      expect(deepPower(12)).toBeCloseTo(1.1);
+      // The enemy is met at the lower level, but exp, gold and the depth-clear grant stay on the depth level.
+      const after = scaleEnemy(wolf, 20, MAIN, false);
+      expect([after.exp, after.gold, depthClearExp(20)]).toEqual([before.wolf.exp, before.wolf.gold, before.clear]);
+      expect(after.stats.hp).toBeLessThan(before.wolf.stats.hp);
+      expect(met('wolf', 20).level).toBe(enemyLevelAt(20));
+      expect(met('wolf', 20).max.hp).not.toBe(before.met.max.hp);
+    } finally {
+      Object.assign(DEEP_ENEMIES, saved);
+    }
   });
 });

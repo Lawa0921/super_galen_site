@@ -10,7 +10,7 @@ import { SKILLS } from '../data/skills';
 import { addBuff, stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
 import { activeIds, hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
-import { abyssPct, bossPartyScale, depthLevel, empower, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
+import { abyssPct, bossPartyScale, deepPower, empower, enemyLevelAt, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
 import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
@@ -136,10 +136,11 @@ export function createBattle(o: {
     const n = (seen[id] = (seen[id] ?? 0) + 1);
     const elite = !!sc && sc.elite === id && n === 1;
     const met = sc && region ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']) : ENEMIES[id];
-    // An enemy is met at the fight's depth level, or at its own home level when the fight has no scale.
-    const level = sc ? depthLevel(sc.depth) : homeLevel(met);
+    // An enemy is met at its level for the fight's depth (enemyLevelAt; the deep road's own extra power on top), or at
+    // its own home level when the fight has no scale.
+    const level = sc ? enemyLevelAt(sc.depth) : homeLevel(met);
     const empowered = empower(met, level);
-    const power = k * (o.bossPower ?? 1);
+    const power = k * (o.bossPower ?? 1) * (sc ? deepPower(sc.depth) : 1);
     const scaled = power === 1 ? empowered : { ...empowered, stats: mul(empowered.stats, { hp: power, atk: power, mag: power }) };
     const d = o.names?.[id] ? { ...scaled, name: o.names[id] } : scaled;
     defs[`e${i}`] = d;

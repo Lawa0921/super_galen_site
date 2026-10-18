@@ -7,10 +7,12 @@ import type { BattleScale } from './battle';
 import { ALTAR_STAT_CAP_PCT } from './events';
 import { depthLevel, encounterTable } from './scaling';
 import { ENHANCE_MAX, expectedEnhance } from '../data/forge';
-import { ABYSS } from '../data/hero';
+import { ABYSS, ABYSS_UNLOCK } from '../data/hero';
 import type { CharacterId } from './types';
 import type { HeroBuild } from '../data/hero';
 import { heroTree } from './progression';
+import { STANDARD_LINEUP } from './party';
+import { expectedMemories } from './story/expect';
 
 const groups = (f: number) => FLOORS[f - 1].encounters;
 
@@ -96,9 +98,10 @@ describe('balance', () => {
     }
   });
 
-  it('7. same depth level, same odds', () => {
+  // Band 7's odds run twice: as before, and with the memory expectation of each depth (spec §9.4 point 7).
+  const sameOdds = (tag: string, lineup: Lineup) => {
     const band = (r: { rate: number; hpLoss: number }, label: string) => {
-      say(`7 ${label}`, r);
+      say(`7${tag} ${label}`, r);
       ex(r.rate, label).toBeGreaterThanOrEqual(0.85);
       ex(r.hpLoss, label).toBeGreaterThanOrEqual(0.1);
       ex(r.hpLoss, label).toBeLessThanOrEqual(0.45);
@@ -107,11 +110,15 @@ describe('balance', () => {
       const lv = depthLevel(d);
       for (const region of Object.keys(REGIONS) as RegionId[]) {
         const gs = encounterTable(region, d);
-        band(winRate(lv, gs, false, region === 'mainline' ? 40 : 20, { depth: d, region }), `${region} depth ${d}`);
+        band(winRate(lv, gs, false, region === 'mainline' ? 40 : 20, { depth: d, region }, undefined, undefined, 'skill', 0, lineup), `${region} depth ${d}`);
       }
     }
-    for (const d of [2, 3]) band(winRate(depthLevel(d), encounterTable('blaze', d), false, 20, { depth: d, region: 'blaze' }), `blaze depth ${d}`);
-  }, 120_000);
+    for (const d of [2, 3]) band(winRate(depthLevel(d), encounterTable('blaze', d), false, 20, { depth: d, region: 'blaze' }, undefined, undefined, 'skill', 0, lineup), `blaze depth ${d}`);
+  };
+
+  it('7. same depth level, same odds', () => sameOdds('', {}), 120_000);
+
+  it('7 (記憶期望). same depth level, same odds with the memory expectation', () => sameOdds(' (記憶期望)', { expect: true }), 300_000);
 
   it('8. a party at the depth level beats an elite of that depth', () => {
     for (const d of [2, 4, 8]) for (const g of encounterTable('mainline', d)) {
@@ -132,8 +139,9 @@ describe('balance', () => {
     }
   });
 
-  // Band 10 runs twice: as before, and with ten memories on the hero. Neither forces the abyss: it follows the fight's
-  // depth, as createBattle computes it from the scale (spec §9.4 point 8).
+  // Band 10 runs twice: as before, and with the memory expectation of each depth (the hero keeps MEMORIES_BUILD, so the
+  // band still carries an abyss capstone). Neither forces the abyss: it follows the fight's depth, as createBattle
+  // computes it from the scale (spec §9.4 point 8).
   const gearBands = (tag: string, lineup: Lineup) => {
     // The kit is really worn: every slot of every member, uids from 1, each piece at the depth's expected enhance level.
     const kit = kitParty(depthLevel(4), 4, 1, undefined, expectedEnhance(4), lineup);
@@ -160,8 +168,8 @@ describe('balance', () => {
 
   it('10. random gear in expectation keeps the bands', () => gearBands('', {}), 120_000);
 
-  // 6b Task 20b: the memory stat source trivialises mainline d4/d8 (hpLoss .089/.096 < .10).
-  it.fails('10 (memories). random gear in expectation keeps the bands with ten memories, the abyss by depth', () => gearBands(' memories', { memories: 10, heroBuild: MEMORIES_BUILD }), 120_000);
+  // 6b Task 20b: the memory expectation trivialises mainline d4/d8/d10 (hpLoss .0999/.098/.097 < .10).
+  it.fails('10 (記憶期望). random gear in expectation keeps the bands with the memory expectation, the abyss by depth', () => gearBands(' (記憶期望)', { expect: true, heroBuild: MEMORIES_BUILD }), 120_000);
 
   it('the memories variants measure something: the build holds an abyss capstone and changes the runs', () => {
     const caps = Object.keys(heroTree(depthLevel(10), MEMORIES_BUILD, 10)).filter((k) => k.startsWith('abyss-'));
@@ -177,8 +185,12 @@ describe('balance', () => {
       return [rounds, hp];
     };
     expect(boss(DEEP)).not.toEqual(boss(plain));
-    const gear = (lineup: Lineup) => winRate(depthLevel(8), encounterTable('mainline', 8), false, 8, { depth: 8, region: 'mainline' }, undefined, 1, undefined, expectedEnhance(8), lineup);
-    expect(gear({ memories: 10, heroBuild: MEMORIES_BUILD })).not.toEqual(gear(plain));
+    // The memory expectation of depth 10 holds the capstone too, and changes a geared depth-10 run.
+    const hero = expectedMemories(10, STANDARD_LINEUP).hero.memories;
+    expect(hero).toBeGreaterThanOrEqual(ABYSS_UNLOCK[0]);
+    expect(Object.keys(heroTree(depthLevel(10), MEMORIES_BUILD, hero))).toContain('abyss-sword');
+    const gear = (lineup: Lineup) => winRate(depthLevel(10), encounterTable('mainline', 10), false, 8, { depth: 10, region: 'mainline' }, undefined, 1, undefined, expectedEnhance(10), lineup);
+    expect(gear({ expect: true, heroBuild: MEMORIES_BUILD })).not.toEqual(gear(plain));
   }, 120_000);
 
   const bossRounds = (tag: string, lineup: Lineup) => {

@@ -4,13 +4,17 @@ import { expectedEnhance } from '../data/forge';
 import { depthLevel } from './levels';
 import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
-import { LEGACY_LINEUP, SLOTS, STANDARD_LINEUP, rowOfCell } from './party';
+import { LEGACY_LINEUP, MAX_LEVEL, SLOTS, STANDARD_LINEUP, rowOfCell, statsOf } from './party';
 import { mulberry32 } from './rng';
 import { KIT_ORDER, attackAll, kitParty, partyAt, simBattle, winRate } from './sim';
 import { heroTalents, heroTree } from './progression';
 import { fullParty } from './testing';
 import { CHARACTER_IDS } from '../data/characters';
 import type { CharacterId, GearSlot } from './types';
+import { expectedMemories } from './story/expect';
+import { chainLength } from '../data/story/chains';
+import { HERO_BUILDS, type HeroBuild } from '../data/hero';
+import { EQUIPMENT, WEAPON_KINDS, weaponKindOf } from '../data/equipment';
 
 /** The eight members as they were ordered before Rin: the order kitParty drew their gear in. */
 const LEGACY_KIT_ORDER: CharacterId[] = ['noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby'];
@@ -108,5 +112,72 @@ describe('lineups and hero builds', () => {
       const b = kitParty(10, 3, seed);
       for (const id of KIT_ORDER) if (id !== 'hero') expect(a.roster[id].equip, `${id} seed ${seed}`).toEqual(b.roster[id].equip);
     }
+  });
+});
+
+describe('the memory expectation and armed casters (plan 6b Task 20a)', () => {
+  it('partyAt applies the expectation for its depth', () => {
+    const lv = depthLevel(10);
+    const e = expectedMemories(10, STANDARD_LINEUP);
+    const p = partyAt(lv, { expect: true }, 10);
+    for (const id of STANDARD_LINEUP) {
+      expect(p.roster[id].memories, id).toBe(e[id].memories);
+      expect(p.roster[id].absorbed ?? [], id).toEqual(e[id].absorbed);
+    }
+    expect(e.rin.memories).toBeGreaterThan(0);
+    expect(p.roster.hero.tree).toEqual(heroTree(lv, 'balanced', e.hero.memories));
+    // The memories and shards really reach the member's stats.
+    expect(statsOf(p.roster.rin)).not.toEqual(statsOf(partyAt(lv, {}, 10).roster.rin));
+    // Rin's oath is set once she holds her whole chain.
+    const deep = expectedMemories(30, STANDARD_LINEUP);
+    expect(partyAt(MAX_LEVEL, { expect: true }, 30).roster.rin.oath ?? false).toBe(deep.rin.oath);
+    // The lineup's memories still set the hero's count; the shards stay.
+    const ten = partyAt(lv, { expect: true, memories: 10 }, 10);
+    expect(ten.roster.hero.memories).toBe(10);
+    expect(ten.roster.hero.absorbed ?? []).toEqual(e.hero.absorbed);
+    // Each fight's party follows its own depth: kitParty and winRate pass theirs.
+    const k = kitParty(lv, 10, 1, undefined, 0, { expect: true });
+    for (const id of STANDARD_LINEUP) expect(k.roster[id].memories, `kit ${id}`).toBe(e[id].memories);
+    const shallow = partyAt(lv, { expect: true }, 1);
+    expect(shallow.roster.rin.memories).toBe(expectedMemories(1, STANDARD_LINEUP).rin.memories);
+    expect(shallow.roster.rin.memories).toBeLessThan(e.rin.memories);
+    // Without the flag, nobody but the hero carries a count.
+    expect(partyAt(lv, {}, 10).roster.rin.memories).toBeUndefined();
+  });
+
+  it('partyAt stores the clamped count, never the raw one', () => {
+    expect(partyAt(50, { memories: 99 }).roster.hero.memories).toBe(chainLength('hero'));
+    expect(partyAt(50, { memories: 2.7 }).roster.hero.memories).toBe(2);
+    expect(partyAt(50, { memories: -3 }).roster.hero.memories).toBe(0);
+    expect(partyAt(50, { memories: Number.NaN }).roster.hero.memories).toBe(0);
+    expect(partyAt(50, { memories: 99, expect: true }, 30).roster.hero.memories).toBe(chainLength('hero'));
+  });
+
+  it('armHero arms only a caster', () => {
+    let casters = 0, others = 0;
+    for (const build of Object.keys(HERO_BUILDS) as HeroBuild[]) {
+      const base = HERO_BUILDS[build].weapon;
+      const caster = WEAPON_KINDS[weaponKindOf({ base })!].scale === 'mag';
+      const hero = partyAt(10, { heroBuild: build, armHero: true }).roster.hero;
+      if (caster) {
+        casters++;
+        expect(hero.equip.weapon, build).toEqual({ uid: 0, base, rarity: 'common', ilvl: EQUIPMENT[base].ilvl, affixes: [], enhance: 0 });
+        expect(statsOf(hero).mag, build).toBeGreaterThan(statsOf(partyAt(10, { heroBuild: build }).roster.hero).mag);
+      } else {
+        others++;
+        expect(hero.equip.weapon, build).toBeUndefined();
+      }
+      expect(partyAt(10, { heroBuild: build }).roster.hero.equip.weapon, `${build} unarmed`).toBeUndefined();
+    }
+    expect(casters).toBeGreaterThan(0);
+    expect(others).toBeGreaterThan(0);
+    expect(partyAt(10, { heroBuild: 'mage', armHero: true }).roster.noel.equip).toEqual({});
+  });
+
+  it('simBattle hands bossPower to the fight', () => {
+    const party = partyAt(30, {}, 8);
+    const fight = (bossPower?: number) => simBattle(party, ['lanterneater'], true, 7919, { depth: 8, region: 'mainline' }, undefined, 'skill', undefined, bossPower);
+    expect(fight(1)).toEqual(fight());
+    expect(fight(2)).not.toEqual(fight(1));
   });
 });

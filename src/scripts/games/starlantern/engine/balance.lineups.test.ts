@@ -10,7 +10,8 @@ import type { CharacterId, Row } from './types';
 /**
  * Band 18, "any lineup works" (spec §4.5, §9.4 point 9; plan 6a Task 20). The four lopsided lineups of ODD_LINEUPS and
  * the standard five, each with every hero build, at depths 4 and 8 (the depth level, the region's encounter table,
- * 20 seeds per group, no gear). The matrix is measured once; the bands below read it.
+ * 20 seeds per group, no gear but a caster hero's own staff: plan 6b Task 20a, hand-off M9). The matrix is measured once;
+ * the bands below read it.
  */
 const BUILDS: HeroBuild[] = ['balanced', 'sword', 'mage', 'healer', 'tank'];
 const DEPTHS = [4, 8];
@@ -31,7 +32,7 @@ const matrix = (): Cell[] => {
   for (const [lineup, l] of Object.entries(LINEUPS) as [LineupKey, (typeof LINEUPS)[LineupKey]][]) {
     for (const build of BUILDS) for (const depth of DEPTHS) for (const region of l.regions) {
       const r = winRate(depthLevel(depth), encounterTable(region, depth), false, 20, { depth, region }, undefined, undefined, 'skill', 0,
-        { ids: l.ids, heroBuild: build, heroRow: l.heroRow });
+        { ids: l.ids, heroBuild: build, heroRow: l.heroRow, armHero: true });
       cells.push({ lineup, build, depth, region, ...r });
     }
   }

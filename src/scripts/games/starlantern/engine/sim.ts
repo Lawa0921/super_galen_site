@@ -10,13 +10,15 @@ import { LIMIT_MAX, createBattle, resolveRound, skillCost, skillFor, type Action
 import { MAX_LEVEL, SLOTS, expToNext, gainExp, newMember, partyWith, statsOf, STANDARD_LINEUP } from './party';
 import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills, memoriesOf } from './progression';
 import { HERO_BUILDS, type HeroBuild } from '../data/hero';
+import { EQUIPMENT, WEAPON_KINDS, weaponKindOf } from '../data/equipment';
+import { expectedMemories } from './story/expect';
 import { mulberry32 } from './rng';
 import { depthClearExp, encounterTable, scaleEnemy } from './scaling';
 import { genFloor } from './dungeon/gen';
 import { terrainOf } from './dungeon/run';
 import { advance } from './encounter';
 import { DELTA, posKey, tileAt, type FloorMap } from './map';
-import type { BuffStat, CharacterId, GearSlot, Party, Pos, Rarity, Row, SkillDef } from './types';
+import type { BuffStat, CharacterId, GearSlot, Member, Party, Pos, Rarity, Row, SkillDef } from './types';
 import type { RegionId } from '../data/regions';
 
 /** The eight members as CHARACTER_IDS ordered them before Rin: kitParty drew their gear in this order, and still does. */
@@ -41,21 +43,41 @@ export const ODD_LINEUPS: Record<'noHeal' | 'noTank' | 'allMagic' | 'allPhys', {
   allPhys: { ids: ['hero', 'rin', 'scarlet', 'chizuru', 'liz'], fill: 'mage', regions: ['iron', 'mire'] },
 };
 
-/** Who the simulation fields: the members (default the standard five), the hero's build, row and memories, and a forced abyss bonus. */
-export interface Lineup { ids?: CharacterId[]; heroBuild?: HeroBuild; heroRow?: Row; memories?: number; abyss?: number }
+/**
+ * Who the simulation fields: the members (default the standard five), the hero's build, row and memories, and a forced
+ * abyss bonus. `expect` gives every member the memory expectation of the fight's depth (`expectedMemories`); `memories`
+ * still sets the hero's count over it. `armHero` gives a caster hero his build's own staff (plan 6b Task 20a, hand-off M9).
+ */
+export interface Lineup { ids?: CharacterId[]; heroBuild?: HeroBuild; heroRow?: Row; memories?: number; abyss?: number; expect?: boolean; armHero?: boolean }
 
-/** A fresh party with everyone at `level`, held to the real level cap, each with the default tree and talents of that level; the hero follows his build. */
-export function partyAt(level: number, lineup: Lineup = {}): Party {
+/**
+ * A fresh party with everyone at `level`, held to the real level cap, each with the default tree and talents of that
+ * level; the hero follows his build. `depth` is the depth whose memory expectation `lineup.expect` applies. Every count
+ * written is the clamped one (`memoriesOf`), never the raw number.
+ */
+export function partyAt(level: number, lineup: Lineup = {}, depth = 1): Party {
   level = Math.min(level, MAX_LEVEL);
   const build = lineup.heroBuild ?? 'balanced';
-  const p = partyWith(lineup.ids ?? STANDARD_LINEUP, lineup.heroRow ?? HERO_BUILDS[build].row);
+  const ids = lineup.ids ?? STANDARD_LINEUP;
+  const p = partyWith(ids, lineup.heroRow ?? HERO_BUILDS[build].row);
+  const expected = lineup.expect ? expectedMemories(depth, ids) : undefined;
   for (const id of Object.keys(p.roster) as CharacterId[]) {
     const hero = id === 'hero';
-    const m = {
-      ...newMember(id), level, ...(hero ? { memories: lineup.memories ?? 0 } : {}),
-      tree: hero ? heroTree(level, build, memoriesOf({ id, memories: lineup.memories ?? 0 })) : defaultTree(id, level),
+    const e = expected?.[id];
+    const memories = memoriesOf({ id, memories: hero ? lineup.memories ?? e?.memories ?? 0 : e?.memories ?? 0 });
+    const m: Member = {
+      ...newMember(id), level,
+      ...(hero || e ? { memories } : {}),
+      ...(e && e.absorbed.length > 0 ? { absorbed: e.absorbed } : {}),
+      ...(e?.oath && memories === e.memories ? { oath: true as const } : {}),
+      tree: hero ? heroTree(level, build, memories) : defaultTree(id, level),
       talents: hero ? heroTalents(level, build) : defaultTalents(id, level),
     };
+    if (hero && lineup.armHero) {
+      const base = HERO_BUILDS[build].weapon;
+      const kind = weaponKindOf({ base });
+      if (kind && WEAPON_KINDS[kind].scale === 'mag') m.equip = { ...m.equip, weapon: { uid: 0, base, rarity: 'common', ilvl: EQUIPMENT[base].ilvl, affixes: [], enhance: 0 } };
+    }
     const s = statsOf(m);
     p.roster[id] = { ...m, hp: s.hp, tp: s.tp };
   }
@@ -70,7 +92,7 @@ export function partyAt(level: number, lineup: Lineup = {}): Party {
  */
 export function kitParty(level: number, depth: number, seed: number, rarity?: Rarity, enhance = 0, lineup: Lineup = {}): Party {
   const rng = mulberry32(seed);
-  const p = partyAt(level, lineup);
+  const p = partyAt(level, lineup, depth);
   const ilvl = itemLevel(depth, 'monster');
   const weights = rarityWeights('monster', depthLevel(depth), 'plain');
   let uid = 1;
@@ -125,9 +147,9 @@ function power(def: SkillDef): number {
   return def.effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
 }
 
-export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed: number, scale?: BattleScale, altar?: Altar, ai: SimAi = 'skill', abyss?: number): { outcome: Outcome; rounds: number; hpLoss: number } {
+export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed: number, scale?: BattleScale, altar?: Altar, ai: SimAi = 'skill', abyss?: number, bossPower?: number): { outcome: Outcome; rounds: number; hpLoss: number } {
   const rng = mulberry32(seed);
-  let s = createBattle({ party, enemyIds, boss, inventory: {}, revealed: {}, scale, altar, abyss });
+  let s = createBattle({ party, enemyIds, boss, inventory: {}, revealed: {}, scale, altar, abyss, bossPower });
   const maxHp = s.party.reduce((n, c) => n + c.max.hp, 0);
   let rounds = 0;
   while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, ai === 'attack' ? attackAll(s) : choose(s, party), rng); rounds++; }
@@ -142,7 +164,7 @@ export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed:
 export function winRate(level: number, groups: string[][], boss: boolean, seeds = 40, scale?: BattleScale, altar?: Altar, kitSeed?: number, ai: SimAi = 'skill', kitEnhance = 0, lineup: Lineup = {}): { rate: number; hpLoss: number } {
   let wins = 0, loss = 0, n = 0;
   for (const g of groups) for (let k = 1; k <= seeds; k++) {
-    const party = kitSeed === undefined ? partyAt(level, lineup) : kitParty(level, scale?.depth ?? 1, kitSeed, undefined, kitEnhance, lineup);
+    const party = kitSeed === undefined ? partyAt(level, lineup, scale?.depth ?? 1) : kitParty(level, scale?.depth ?? 1, kitSeed, undefined, kitEnhance, lineup);
     const r = simBattle(party, g, boss, k * 7919, scale, altar, ai, lineup.abyss);
     n++; loss += r.hpLoss; if (r.outcome === 'win') wins++;
   }

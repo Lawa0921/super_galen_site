@@ -40,9 +40,22 @@ const BOSS_HOME = 12;
 const DAMPING = 0.9;
 export const homeLevel = (def: EnemyDef): number => (def.boss ? BOSS_HOME : depthLevel(def.floor));
 
+/**
+ * Plan 6b Task 20c's knob for the deep road: past `fromDepth` an enemy's level (its growth and ENEMY_POWER) climbs
+ * `levelsPerDepth` per depth instead of the depth level's 4, and its hp, atk and mag are multiplied by `1 + power`.
+ * Exp, gold, item levels, the depth-clear grant and the suggested level stay on `depthLevel`. Task 20a added it at its
+ * start values, which leave every fight bit-identical (scaling.test: "the deep knobs at their start values change nothing").
+ */
+export const DEEP_ENEMIES = { fromDepth: 11, levelsPerDepth: 4, power: 0 };
+/** The level an enemy is met at on `depth`: the depth level up to DEEP_ENEMIES.fromDepth, then DEEP_ENEMIES.levelsPerDepth a depth. */
+export const enemyLevelAt = (depth: number): number =>
+  depth <= DEEP_ENEMIES.fromDepth ? depthLevel(depth) : depthLevel(DEEP_ENEMIES.fromDepth) + DEEP_ENEMIES.levelsPerDepth * (depth - DEEP_ENEMIES.fromDepth);
+/** The deep road's extra multiplier on an enemy's hp, atk and mag: 1 up to DEEP_ENEMIES.fromDepth, then 1 + DEEP_ENEMIES.power. */
+export const deepPower = (depth: number): number => (depth <= DEEP_ENEMIES.fromDepth ? 1 : 1 + DEEP_ENEMIES.power);
+
 function growth(def: EnemyDef, depth: number): Partial<Record<StatKey, number>> {
   const home = homeLevel(def);
-  const lv = Math.max(home, depthLevel(depth));
+  const lv = Math.max(home, enemyLevelAt(depth));
   if (lv === home) return {};
   const r = (k: StatKey) => partyStat(k, lv) / partyStat(k, home);
   const damp = (m: number) => m ** DAMPING;
