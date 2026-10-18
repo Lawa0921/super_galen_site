@@ -63,9 +63,9 @@ describe('bayer', () => {
 });
 
 describe('統一色票', () => {
-  it('32–50 色、不重複、INK 在色票內', () => {
+  it('32–51 色、不重複、INK 在色票內（第 51 色 = 史詩紫）', () => {
     expect(PALETTE.length).toBeGreaterThanOrEqual(32);
-    expect(PALETTE.length).toBeLessThanOrEqual(50);
+    expect(PALETTE.length).toBeLessThanOrEqual(51);
     expect(new Set(PALETTE.map((c) => c.join())).size).toBe(PALETTE.length);
     expect(inPalette(INK)).toBe(true);
   });

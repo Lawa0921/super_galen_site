@@ -2,6 +2,7 @@
 //   workbench 工作台（木 / 銅裝備、基本物件）、furnace 熔爐（礦 → 錠）、anvil 鐵砧（鐵 / 金 / 骸衛 / 熔心裝備、高階武器）。
 import { Inventory } from './inventory';
 import type { ItemId } from './items';
+import type { Gear } from './gear';
 
 /** campfire = 料理（營火或熔爐旁都可以） */
 export type Station = 'workbench' | 'furnace' | 'anvil' | 'campfire';
@@ -145,8 +146,8 @@ export function availableRecipes(inv: Inventory, ctx: CraftContext): Recipe[] {
   return RECIPES.filter((q) => canCraft(inv, q, ctx));
 }
 
-/** 合成一次。失敗時背包不變。 */
-export function craft(inv: Inventory, recipeId: string, ctx: CraftContext): CraftResult {
+/** 合成一次。失敗時背包不變。makeGear = 產出是裝備時替它擲詞條（省略 = 普通）。 */
+export function craft(inv: Inventory, recipeId: string, ctx: CraftContext, makeGear?: (item: ItemId) => Gear | undefined): CraftResult {
   const rc = findRecipe(recipeId);
   if (!rc) return { ok: false, reason: 'unknown' };
   if (!stationOk(rc, ctx)) return { ok: false, reason: 'station' };
@@ -154,7 +155,8 @@ export function craft(inv: Inventory, recipeId: string, ctx: CraftContext): Craf
   // 先在副本上試，確保產出放得下才提交
   const trial = Inventory.fromJSON(inv.toJSON());
   for (const a of rc.inputs) trial.remove(a.item, a.n);
-  if (trial.add(rc.out.item, rc.out.n) > 0) return { ok: false, reason: 'full' };
+  const gear = rc.out.n === 1 && makeGear ? makeGear(rc.out.item) : undefined;
+  if (trial.add(rc.out.item, rc.out.n, gear) > 0) return { ok: false, reason: 'full' };
   inv.slots = trial.slots;
   return { ok: true };
 }

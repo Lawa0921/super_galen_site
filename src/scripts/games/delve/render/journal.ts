@@ -6,6 +6,8 @@ import { CATEGORY_LABEL, type RegionCat } from '../engine/discovery';
 import { LORE, loreEntry } from '../engine/lore';
 import { ITEMS } from '../engine/items';
 import { FISH_SPECIES } from '../engine/fishing';
+import { AFFIXES, BASE_TIER, RARITIES, STAT_LABEL } from '../engine/gear';
+import type { ItemId } from '../engine/items';
 import { drawIcon, type Atlas } from './textures';
 import { BannerQueue, distanceLabel, exploredLabel, percentLabel } from './model';
 
@@ -42,6 +44,9 @@ export class ExploreUi {
     const body = root.querySelector('#delve-journal-body');
     if (body) {
       const onBody = (e: Event): void => {
+        // 目錄：跳到那一節
+        const j = (e.target as HTMLElement).closest<HTMLElement>('[data-jump]');
+        if (j?.dataset.jump) { body.querySelector(`[data-sec="${j.dataset.jump}"]`)?.scrollIntoView({ block: 'start' }); return; }
         const b = (e.target as HTMLElement).closest<HTMLElement>('[data-lore]');
         if (b?.dataset.lore) this.showLore(Number(b.dataset.lore), false);
       };
@@ -108,11 +113,21 @@ export class ExploreUi {
     const explored = g.explored.count / (w.width * w.height);
     const killSig = Object.values(g.kills).reduce((a, n) => a + (n ?? 0), 0);
     const fishSig = Object.values(g.fishLog).reduce((a, n) => a + (n ?? 0), 0);
-    const sig = `${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${exploredLabel(explored)}|${killSig}|${g.bossesDefeated.size}|${fishSig}`;
+    const codexSig = [...g.codex.affixes.values()].reduce((a, n) => a + n, 0) * 100 + [...g.codex.items.values()].reduce((a, n) => a + n + 1, 0);
+    const sig = `${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${exploredLabel(explored)}|${killSig}|${g.bossesDefeated.size}|${fishSig}|${codexSig}`;
     if (sig === this.journalSig) return;
     this.journalSig = sig;
     body.replaceChildren();
 
+    // 目錄（日誌很長：直接跳到裝備圖鑑等）
+    const nav = el('nav', 'delve-j-nav');
+    nav.setAttribute('aria-label', '日誌目錄');
+    for (const [k, label] of [['regions', '地區'], ['lore', '古碑'], ['bestiary', '怪物'], ['fish', '釣魚'], ['codex', '裝備圖鑑']] as const) {
+      const b = el('button', 'delve-btn', label);
+      b.type = 'button'; b.dataset.jump = k;
+      nav.appendChild(b);
+    }
+    body.appendChild(nav);
     const top = el('div', 'delve-j-top');
     top.append(el('span', 'delve-j-big', `完成度 ${percentLabel(s.completion)}`), segBar(s.completion));
     body.appendChild(top);
@@ -121,6 +136,7 @@ export class ExploreUi {
     body.appendChild(facts);
 
     const cats = el('ul', 'delve-j-cats');
+    cats.dataset.sec = 'regions';
     for (const c of s.cats) {
       const li = el('li', 'delve-j-cat');
       li.dataset.cat = c.cat;
@@ -136,7 +152,9 @@ export class ExploreUi {
     }
     body.appendChild(cats);
 
-    body.appendChild(el('h3', 'delve-j-h', `古碑 ${s.lore.found} / ${s.lore.total}`));
+    const loreH = el('h3', 'delve-j-h', `古碑 ${s.lore.found} / ${s.lore.total}`);
+    loreH.dataset.sec = 'lore';
+    body.appendChild(loreH);
     const lore = el('ol', 'delve-j-lore');
     LORE.forEach((e, i) => {
       const li = el('li');
@@ -168,7 +186,9 @@ export class ExploreUi {
     // 首領擊敗 + 圖鑑（擊殺過的怪物種類與數量）
     const bosses = ENEMY_KINDS.filter((k) => ENEMIES[k].boss);
     const beaten = bosses.filter((k) => g.bossesDefeated.has(k)).length;
-    body.appendChild(el('h3', 'delve-j-h', `首領擊敗 ${beaten} / ${bosses.length}`));
+    const bossH = el('h3', 'delve-j-h', `首領擊敗 ${beaten} / ${bosses.length}`);
+    bossH.dataset.sec = 'bestiary';
+    body.appendChild(bossH);
     const bl = el('p', 'delve-j-names');
     bl.dataset.testid = 'journal-bosses';
     bl.textContent = bosses.map((k) => (g.bossesDefeated.has(k) ? `${ENEMIES[k].name.zh} ✓` : '？？？（燈芯祭品）')).join('、');
@@ -182,6 +202,7 @@ export class ExploreUi {
     const caught = FISH_SPECIES.filter((f) => (g.fishLog[f] ?? 0) > 0);
     const fh = el('h3', 'delve-j-h', `釣魚紀錄 ${caught.length} / ${FISH_SPECIES.length}`);
     fh.dataset.testid = 'journal-fish';
+    fh.dataset.sec = 'fish';
     body.appendChild(fh);
     const fl = el('div', 'delve-j-treasures');
     for (const id of FISH_SPECIES) {
@@ -197,6 +218,51 @@ export class ExploreUi {
       fl.appendChild(cell);
     }
     body.appendChild(fl);
+    this.renderCodex(body);
+  }
+
+  /** 裝備圖鑑：詞條（見過的最高階）、傳奇詞條（效果）、每種基底拿過的最高稀有度 */
+  private renderCodex(body: HTMLElement): void {
+    const cx = this.game.codex, st = cx.stats();
+    const h = el('h3', 'delve-j-h', `裝備圖鑑：詞條 ${st.affixes} / ${st.affixTotal} · 傳奇 ${st.uniques} / ${st.uniqueTotal}`);
+    h.dataset.testid = 'journal-codex';
+    h.dataset.sec = 'codex';
+    body.appendChild(h);
+    const ul = el('ul', 'delve-j-affixes');
+    for (const a of AFFIXES.filter((x) => x.kind !== 'unique')) {
+      const t = cx.affixes.get(a.id);
+      // 晶片：名稱 + 效果（沒見過也先告訴你它是什麼效果）
+      const li = el('li', t ? 'delve-j-affix is-got' : 'delve-j-affix', t ? `${a.kind === 'prefix' ? a.word : `· ${a.word}`} T${t} ` : '？？？ ');
+      li.appendChild(el('span', 'delve-j-affix-fx', STAT_LABEL[a.stat]));
+      li.dataset.affix = a.id;
+      ul.appendChild(li);
+    }
+    body.appendChild(ul);
+    const uq = el('ul', 'delve-j-affixes');
+    for (const a of AFFIXES.filter((x) => x.kind === 'unique')) {
+      const got = cx.affixes.has(a.id);
+      const li = el('li', got ? 'delve-j-affix is-unique is-got' : 'delve-j-affix is-unique', got ? `★ ${a.word.slice(0, -1)}：${a.desc}` : '★ ？？？（傳說以上的裝備才會出現）');
+      li.dataset.affix = a.id;
+      uq.appendChild(li);
+    }
+    body.appendChild(uq);
+    const bases = (Object.keys(BASE_TIER) as ItemId[]).filter((id) => !ITEMS[id].unique);
+    const got = bases.filter((id) => cx.items.has(id)).length;
+    body.appendChild(el('p', 'delve-j-names', `收藏：${got} / ${bases.length} 種裝備（外框 = 拿過的最高稀有度）`));
+    const grid = el('div', 'delve-j-treasures');
+    for (const id of bases) {
+      const r = cx.items.get(id);
+      const cell = el('span', 'delve-j-gear');
+      if (r !== undefined) cell.dataset.rarity = String(r);
+      const c = el('canvas', 'delve-slot-icon');
+      c.width = 16; c.height = 16;
+      const ctx = c.getContext('2d');
+      if (ctx) drawIcon(this.atlas, ctx, id, 16);
+      cell.title = r !== undefined ? `${ITEMS[id].name.zh}（最高：${RARITIES[r].zh}）` : '？？？';
+      cell.appendChild(c);
+      grid.appendChild(cell);
+    }
+    body.appendChild(grid);
   }
 
   destroy(): void { for (const f of this.offs) f(); }

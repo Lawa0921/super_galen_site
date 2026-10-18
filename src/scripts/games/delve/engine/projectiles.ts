@@ -30,7 +30,11 @@ export interface Projectile {
   stuck?: boolean;
   /** 迴旋木刃 / 法術的武器 id（渲染用） */
   item?: string;
+  /** 發射當下武器詞條的命中效果（燃燒 / 冰凍 / 中毒 / 吸血 / 連鎖 / 破甲；玩家投射物） */
+  fx?: HitFx;
 }
+/** 命中效果（機率 / 比例都是 %） */
+export interface HitFx { burn: number; frost: number; poison: number; leech: number; chain: number; soul: number; pen: number; }
 
 const SIZE: Record<ProjKind, [number, number]> = {
   arrow: [6, 6], knife: [6, 6], boomerang: [12, 12], bolt: [8, 8], wave: [14, 22],

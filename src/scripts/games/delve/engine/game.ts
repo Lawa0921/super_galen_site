@@ -29,7 +29,7 @@ import {
 } from './fishing';
 import { ExploredMap, toggleMarker, type MapMarker } from './explore';
 import { Discovery, buildRegions, type Region, type RegionCat } from './discovery';
-import { Equipment, type EquipSlot } from './equipment';
+import { Equipment, EQUIP_SLOTS, type EquipSlot } from './equipment';
 import {
   BASE_HP, BASE_MANA, LIFE_CORE_HP, MAX_HP_CAP, SAFE_FALL_TILES, computeStats, damageTaken, enemyDamage, fallDamage,
   knockbackScale, regenRate, rollCrit, type PlayerStats,
@@ -38,7 +38,12 @@ import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type Ph
 import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidContact } from './swim';
-import { ProjList, type ProjKind, type Projectile } from './projectiles';
+import { ProjList, type HitFx, type ProjKind, type Projectile } from './projectiles';
+import {
+  ascendCost, ascendGear, baseTier, gearSlot, ilvlForDepth, rerollAffix, rerollCost, rollDropItem, rollGear, rollRarity,
+  salvageYield, upgradeCost, upgradeGear, weaponDamage, affixDef, pickSpeed, MAX_PLUS, type AffixId, type Cost, type Gear, type GearTotals, type LootSource,
+} from './gear';
+import { Codex } from './codex';
 import { ENEMIES, makeEnemy, stepEnemy, type AiCtx, type Enemy, type EnemyKind } from './enemies';
 import {
   ACTIVE, BED_SAFE, DEFAULT_VIEW_HALF, DESPAWN, MAX_ENEMIES, NEAR_SPAWN_TILES, SPAWN_MAX, findSpot, habitatAt, homeNear, inHouse,
@@ -46,7 +51,7 @@ import {
 } from './spawn';
 import { Rng } from './rng';
 import {
-  TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH,
+  TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH, HOTBAR_SIZE,
 } from './constants';
 
 export interface DelveOptions {
@@ -96,7 +101,23 @@ export type DelveEvent =
   | { type: 'kill'; id: number; kind: EnemyKind; x: number; y: number }
   | { type: 'death'; x: number; y: number }
   | { type: 'respawn'; x: number; y: number }
-  | { type: 'pickup'; item: ItemId; n: number }
+  /** 撿起來；rarity = 帶詞條裝備的稀有度 */
+  | { type: 'pickup'; item: ItemId; n: number; rarity?: number }
+  // ── 裝備詞條 ──
+  /** 地上出現一件裝備（掉落 / 擊殺；音效與光柱用） */
+  | { type: 'loot'; item: ItemId; rarity: number; x: number; y: number }
+  /** 連鎖閃電（px 折線：第一點 = 被打中的怪） */
+  | { type: 'chain'; pts: { x: number; y: number }[] }
+  /** 不滅：致命傷被撐住 */
+  | { type: 'undying'; x: number; y: number }
+  /** 圖鑑新收錄詞條 */
+  | { type: 'codex'; affix: AffixId }
+  /** 分解 */
+  | { type: 'salvage'; count: number; shard: number; dust: number }
+  /** 鍛造（洗煉 / 強化 / 升階） */
+  | { type: 'forge'; action: 'reroll' | 'upgrade' | 'ascend'; slot: number | EquipSlot; item: ItemId }
+  /** 空中再跳（凌雲）；px */
+  | { type: 'airjump'; x: number; y: number }
   | { type: 'heal'; amount: number; x: number; y: number }
   | { type: 'lifeup'; maxHp: number }
   | { type: 'boss'; phase: 'spawn' | 'phase2' | 'defeated' | 'leave'; kind: EnemyKind }
@@ -144,6 +165,9 @@ export interface FishingState {
 /** 進行中的攻擊（render 動畫 + 近戰判定） */
 export interface AttackState {
   item: ItemId; kind: WeaponKind;
+  /** 這次攻擊的傷害 / 擊退（含強化與詞條；近戰判定用） */
+  dmg?: number; kb?: number;
+  fx?: HitFx;
   /** 已經過秒數 / 總秒數 */
   t: number; dur: number;
   /** 瞄準角（弧度，世界座標，0 = 右） */
@@ -209,6 +233,10 @@ export interface DelveState {
   sleep: number;
   /** 釣魚（浮標位置 px / 狀態）；null = 沒在釣 */
   fishing: { state: FishingState['state']; x: number; y: number; liquid: number } | null;
+  /** 裝備詞條加總（已套上限；含手上武器 / 使用中的鎬） */
+  gear: GearTotals;
+  /** 不滅冷卻剩餘秒數 */
+  undyingCd: number;
 }
 
 /** 徒手（背包沒有鎬）時的挖掘能力 */
@@ -305,6 +333,27 @@ export const BOSS_DROPS: { item: ItemId; n: number }[] = [
 ];
 /** 首領 → 召喚它用掉的道具（首領戰中存檔讀檔時退還） */
 export const BOSS_SUMMON_ITEM: Partial<Record<EnemyKind, ItemId>> = { lantern_warden: 'wick_offering' };
+// ── 裝備詞條 ──
+/** 一般怪物掉一件裝備的機率（× (1 + 幸運%)）；首領另外掉 BOSS_GEAR 件 */
+export const GEAR_DROP_CHANCE = 0.05;
+export const BOSS_GEAR = 2;
+/** 木箱開出裝備的機率；釣魚直接釣到裝備的機率 */
+export const CRATE_GEAR: Record<'wooden_crate' | 'iron_crate' | 'golden_crate', number> = { wooden_crate: 0.12, iron_crate: 0.3, golden_crate: 0.65 };
+export const FISH_GEAR_CHANCE = 0.02;
+/** 連鎖閃電：半徑（格）、最多幾隻、傷害倍率 */
+export const CHAIN_RADIUS = 6;
+export const CHAIN_MAX = 3;
+export const CHAIN_MUL = 0.6;
+/** 冰凍：秒數 / 動作速度倍率；中毒：秒數、每 0.5 秒扣 maxHp 的 1.5%（1..6） */
+export const FROST_TIME = 2.5;
+export const FROST_SLOW = 0.5;
+export const POISON_TIME = 4;
+/** 生命竊取每下最多回多少 */
+export const LEECH_CAP = 6;
+const ORE_TILES = new Set<number>([T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOLD_ORE]);
+/** 裝備的位置：背包格號碼或裝備槽 */
+export type GearAt = number | EquipSlot;
+export type ForgeResult = { ok: true } | { ok: false; reason: 'none' | 'station' | 'cost' | 'max' | 'unique' | 'locked' };
 
 export class DelveGame {
   static readonly TILE_SIZE = TILE_SIZE;
@@ -412,7 +461,6 @@ export class DelveGame {
   private readonly spawnRng: Rng;
   private readonly combatRng: Rng;
   private aimPx = { x: 0, y: 0 };
-  private statsVer = -1;
   private statsEq: Equipment | null = null;
   private statsCache: PlayerStats = computeStats(new Equipment());
   // ── 液體 ───────────────────────────────────────────────
@@ -451,6 +499,18 @@ export class DelveGame {
   private miningWas = false;
   /** 玩家敲開的冰洞（tile index；存檔內容）：到那一欄融化的季節前不會再結冰 */
   readonly minedIce = new Set<number>();
+  // ── 裝備詞條 ───────────────────────────────────────────
+  /** 裝備圖鑑（存檔內容） */
+  codex = new Codex();
+  /** 掉寶 / 合成 / 鍛造的亂數 */
+  private readonly lootRng: Rng;
+  /** 不滅冷卻（秒） */
+  undyingCd = 0;
+  /** debug / e2e：怪物掉裝備的機率（null = 正常） */
+  debugGearChance: number | null = null;
+  private statsKey = '';
+  private statsRefs: unknown[] = [];
+  private statsDirty = 0;
 
   constructor(opts: DelveOptions = {}) {
     this.seed = String(opts.seed ?? 'delve');
@@ -498,6 +558,7 @@ export class DelveGame {
     this.combatRng = new Rng(`${this.seed}:combat`);
     this.weatherRng = new Rng(`${this.seed}:weather`);
     this.fishRng = new Rng(`${this.seed}:fish`);
+    this.lootRng = new Rng(`${this.seed}:loot`);
     this.peacefulMode = Boolean(opts.peaceful);
     this.world.markAllDirty();
     // 出生點：周圍已揭露、所在地區算已發現（不跳橫幅）
@@ -557,7 +618,9 @@ export class DelveGame {
     if (this.sleepT !== null) { this.updateSleep(dt); return; }
     const knocked = this.knockT > 0;
     this.contact = liquidContact(this.world, this.player);
+    const air0 = this.motion.airUsed ?? 0;
     stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
+    if ((this.motion.airUsed ?? 0) > air0) { const pl = this.player; this.events.push({ type: 'airjump', x: pl.x + pl.w / 2, y: pl.y + pl.h }); this.fallPeak = null; }
     this.contact = liquidContact(this.world, this.player);
     this.updateFall();
     this.updateLiquid(dt);
@@ -746,7 +809,11 @@ export class DelveGame {
         this.events.push({ type: 'spawn', set: false, x: this.spawn.x, y: this.spawn.y });
       }
       const bug = this.baitDrop(tid);
-      for (const d of bug ? [...drops, { item: bug, n: 1 }] : drops) {
+      // 脈鳴（鎬的傳奇詞條）：礦石有機率加倍
+      const ap = this.activePick();
+      const vein = ORE_TILES.has(tid) ? (ap?.gear?.affixes.find((a) => a.id === 'veinsong')?.value ?? 0) : 0;
+      const got = vein > 0 && this.lootRng.next() * 100 < vein ? drops.map((d) => ({ item: d.item, n: d.n * 2 })) : drops;
+      for (const d of bug ? [...got, { item: bug, n: 1 }] : got) {
         const left = direct ? this.inventory.add(d.item, d.n) : d.n;
         if (left > 0) this.dropAtTile(d.item, left, tx, ty);
       }
@@ -949,7 +1016,18 @@ export class DelveGame {
     this.events.push({ type: 'blocked', action, reason, x, y });
   }
 
-  private currentPick(): PickStats { return this.inventory.bestPick() ?? HAND; }
+  /**
+   * 使用中的鎬：永遠自動用背包裡實際最快的那把（含強化 / 勤掘）。
+   * 它的挖掘類詞條（勤掘 → 速度、脈鳴）挖礦時一定生效；其他詞條（幸運 / 疾風 / 螢光…）要把「這把」拿在手上才生效。
+   */
+  activePick(): Stack | null {
+    const i = this.inventory.bestPickSlot();
+    return i >= 0 ? this.inventory.slots[i] : null;
+  }
+  private currentPick(): PickStats {
+    const st = this.activePick();
+    return st ? { speed: pickSpeed(st.item, st.gear), tier: ITEMS[st.item].pick!.tier } : HAND;
+  }
 
   // ── 飾品 / 移動能力 ───────────────────────────────────
   /**
@@ -973,20 +1051,36 @@ export class DelveGame {
     return this.acc.has(a);
   }
   moveStats(): MoveStats {
-    return { runMul: this.hasAccessory('run') ? 1.45 : 1, jumpMul: this.hasAccessory('jump') ? 1.25 : 1 };
+    const g = this.stats().gear;
+    return {
+      runMul: (this.hasAccessory('run') ? 1.45 : 1) * (1 + g.move / 100),
+      // 跳躍高度約與初速平方成正比：+X% 高度 ≈ 初速 × √(1 + X%)
+      jumpMul: (this.hasAccessory('jump') ? 1.25 : 1) * Math.sqrt(1 + g.jump / 100),
+      airJumps: g.djump > 0 ? 1 : 0,
+    };
   }
   /** 伸手距離（格）：磁石 +3 */
   reach(): number { return REACH_TILES + (this.hasAccessory('magnet') ? MAGNET_REACH : 0); }
   /** 掉落物吸取半徑（格）：一般 5、磁石 12 */
   magnetRadius(): number { return this.hasAccessory('magnet') ? LODESTONE_TILES : MAGNET_TILES; }
-  /** 裝備帶來的數值（裝備變動才重算） */
+  /**
+   * 裝備帶來的數值（含手上武器、使用中的鎬的詞條）。裝備欄 / 選中格 / 那兩格的道具或詞條換了才重算。
+   */
   stats(): PlayerStats {
-    if (this.statsVer !== this.equipment.version || this.statsEq !== this.equipment) {
-      this.statsVer = this.equipment.version; this.statsEq = this.equipment;
-      this.statsCache = computeStats(this.equipment);
+    const inv = this.inventory, held = inv.selectedStack();
+    const weapon = held && ITEMS[held.item].weapon ? held : null;
+    // 鎬的一般詞條：只有拿在手上的正是使用中的那把才算
+    const pick = held && ITEMS[held.item].pick && inv.slots[inv.bestPickSlot()] === held ? held : null;
+    const key = `${this.equipment.uid}:${this.equipment.version}:${this.statsDirty}`;
+    const refs = [weapon, weapon?.gear, pick, pick?.gear];
+    if (key !== this.statsKey || this.statsEq !== this.equipment || refs.some((r, i) => r !== this.statsRefs[i])) {
+      this.statsKey = key; this.statsEq = this.equipment; this.statsRefs = refs;
+      this.statsCache = computeStats(this.equipment, [weapon, pick]);
     }
     return this.statsCache;
   }
+  /** 詞條在原處被改了（鍛造 / 鎖定）→ 數值重算 */
+  invalidateStats(): void { this.statsDirty++; }
   maxHp(): number { return Math.min(MAX_HP_CAP, this.baseMaxHp) + this.stats().maxHpBonus; }
   maxMana(): number { return BASE_MANA; }
   /** 直接裝上（debug / e2e / 測試；不經背包）。回傳裝到哪一槽。 */
@@ -1034,6 +1128,7 @@ export class DelveGame {
       for (const it of this.equipment.items()) {
         if (ITEMS[it].unique && this.discovery.gainTreasure(it)) this.events.push({ type: 'treasure', item: it });
       }
+      this.observeGear();
     }
   }
   /** 畫面上（view，tile 座標）光照夠亮的格 → 揭露。回傳新揭露格數 */
@@ -1274,7 +1369,9 @@ export class DelveGame {
 
   craft(recipeId: string): CraftResult {
     const st = this.stations();
-    const r = craftRecipe(this.inventory, recipeId, { nearWorkbench: st.workbench, nearFurnace: st.furnace, nearAnvil: st.anvil, nearCampfire: st.campfire });
+    // 合成的裝備也擲一次稀有度（大多是普通 / 優良；物品等級 = 基底等級）
+    const make = (item: ItemId): Gear | undefined => (gearSlot(item) ? this.rollFor(item, 'craft', 0, baseTier(item)) : undefined);
+    const r = craftRecipe(this.inventory, recipeId, { nearWorkbench: st.workbench, nearFurnace: st.furnace, nearAnvil: st.anvil, nearCampfire: st.campfire }, make);
     if (r.ok) {
       const out = findRecipe(recipeId)?.out;
       if (out) this.events.push({ type: 'craft', recipe: recipeId, item: out.item, n: out.n });
@@ -1325,7 +1422,13 @@ export class DelveGame {
     const slots = this.chestSlots(), c = this.openChest;
     const st = slots?.[i];
     if (!slots || !c || !st) return false;
-    const left = this.inventory.add(st.item, st.count);
+    // 世界生成時放進箱子、還沒擲過詞條的裝備（珍寶等）：第一次拿的時候擲（依箱子座標，確定性）
+    if (!st.gear && gearSlot(st.item)) {
+      const depth = this.depthFrac(c.x, c.y), r = new Rng(`${this.seed}:chestroll:${c.x}:${c.y}:${i}`);
+      const ilvl = Math.max(baseTier(st.item), ilvlForDepth(depth));
+      st.gear = rollGear(st.item, r, { rarity: rollRarity(r, 'dungeon', depth, this.stats().gear.luck, ITEMS[st.item].unique ? 2 : 0), ilvl });
+    }
+    const left = this.inventory.add(st.item, st.count, st.gear);
     if (left === st.count) { this.block('mine', 'full', c.x, c.y); return false; }
     if (left > 0) st.count = left; else slots[i] = null;
     this.world.markModified(c.x, c.y);
@@ -1350,6 +1453,14 @@ export class DelveGame {
     const slots = this.chestSlots(), c = this.openChest;
     const st = this.inventory.slots[invSlot];
     if (!slots || !c || !st) return false;
+    if (st.gear) {
+      const k = slots.indexOf(null);
+      if (k < 0) return false;
+      slots[k] = st;
+      this.inventory.slots[invSlot] = null;
+      this.world.markModified(c.x, c.y);
+      return true;
+    }
     const max = ITEMS[st.item].maxStack;
     let left = st.count;
     for (const s of slots) {
@@ -1371,8 +1482,8 @@ export class DelveGame {
     const pt = this.playerTile();
     const v = held ? (held.item === 'torch' ? 0.85 : ITEMS[held.item].heldLight ?? 0) : 0;
     const c = held ? HELD_HUE[held.item] : undefined;
-    // 夜視護符：身邊一圈柔和的微光（比火把暗、不需要拿在手上）
-    const night = this.hasAccessory('night') ? 0.78 : 0;
+    // 夜視護符：身邊一圈柔和的微光（比火把暗、不需要拿在手上）；螢光詞條也算
+    const night = Math.max(this.hasAccessory('night') ? 0.78 : 0, Math.min(1, this.stats().gear.light / 100));
     // 空手時不再有實體光（會穿牆照出密室）；玩家身邊的輪廓微光改由 render 的 ambientReach 處理
     const out: PointLight[] = [];
     if (v > 0) out.push({ x: pt.x, y: pt.y, v, c });
@@ -1438,6 +1549,8 @@ export class DelveGame {
       liquid: { type: this.contact.type, frac: this.contact.frac, head: this.contact.head },
       day: dayIndexOf(this.time), season: this.season(), weather: this.localWeatherState().kind, sleep: this.sleepFade(),
       fishing: this.fishing ? { state: this.fishing.state, x: this.fishing.x, y: this.fishing.y, liquid: this.fishing.liquid } : null,
+      gear: { ...this.stats().gear },
+      undyingCd: this.undyingCd,
     };
   }
 
@@ -1485,8 +1598,18 @@ export class DelveGame {
     return this.aimPx;
   }
 
-  private tryAttack(item: ItemId, w: WeaponDef): void {
+  /** 手上武器 / 全身詞條的命中效果 */
+  hitFx(): HitFx {
+    const g = this.stats().gear;
+    return { burn: g.burn, frost: g.frost, poison: g.poison, leech: g.leech, chain: g.chain, soul: g.soul, pen: g.pen };
+  }
+  private tryAttack(item: ItemId, w0: WeaponDef): void {
     if (this.attackCd > 0) return;
+    const held = this.inventory.selectedStack(), gear = held?.item === item ? held.gear : undefined;
+    const gs = this.stats().gear;
+    // 強化 / 詞條：基礎傷害、攻速、擊退
+    const w: WeaponDef = { ...w0, damage: weaponDamage(item, gear), useTime: w0.useTime / (1 + gs.atkspd / 100), knockback: w0.knockback * (1 + gs.kb / 100) };
+    const fx = this.hitFx();
     const aim = this.attackAim();
     const c = this.playerCenter();
     this.facing = aim.x >= c.x ? 1 : -1;
@@ -1505,20 +1628,20 @@ export class DelveGame {
         const ad = ITEMS[ammo].ammo!;
         const sp = w.speed ?? 500;
         this.projectiles.spawn('arrow', false, ox, oy, ux * sp, uy * sp, {
-          damage: dmg(w.damage + ad.damage), knockback: w.knockback, crit, life: 3, gravity: 420, pierce: 1, flame: ad.flame, item: ammo,
+          damage: dmg(w.damage + ad.damage), knockback: w.knockback, crit, life: 3, gravity: 420, pierce: 1, flame: ad.flame, item: ammo, fx,
         });
         break;
       }
       case 'throw': {
         this.inventory.takeFromSlot(this.inventory.selected, 1);
         const sp = w.speed ?? 500;
-        this.projectiles.spawn('knife', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 2.5, gravity: 520, pierce: 1, item });
+        this.projectiles.spawn('knife', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 2.5, gravity: 520, pierce: 1, item, fx });
         break;
       }
       case 'boomerang': {
         if (this.projectiles.list.some((p) => p.kind === 'boomerang' && !p.hostile)) return;
         const sp = w.speed ?? 440;
-        this.projectiles.spawn('boomerang', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 4, pierce: 99, item });
+        this.projectiles.spawn('boomerang', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 4, pierce: 99, item, fx });
         break;
       }
       case 'staff': {
@@ -1526,17 +1649,17 @@ export class DelveGame {
         if (this.mana < cost) { this.block('use', 'mana', this.aim.x, this.aim.y); this.attackCd = 0.3; return; }
         this.mana -= cost; this.manaDelay = 0.9;
         const sp = w.speed ?? 480;
-        this.projectiles.spawn('bolt', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 1.4, pierce: 1, item });
+        this.projectiles.spawn('bolt', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 1.4, pierce: 1, item, fx });
         break;
       }
       default:
         if (w.wave) {
           const sp = w.speed ?? 420;
-          this.projectiles.spawn('wave', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage * 0.6), knockback: w.knockback * 0.5, crit, life: 0.55, pierce: 3, item });
+          this.projectiles.spawn('wave', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage * 0.6), knockback: w.knockback * 0.5, crit, life: 0.55, pierce: 3, item, fx });
         }
     }
     this.swingId++;
-    this.attack = { item, kind: w.kind, t: 0, dur: w.useTime, angle, dir: this.facing, id: this.swingId };
+    this.attack = { item, kind: w.kind, t: 0, dur: w.useTime, angle, dir: this.facing, id: this.swingId, dmg: dmg(w.damage), kb: w.knockback, fx };
     this.attackCd = w.useTime;
     this.events.push({ type: 'attack', item, kind: w.kind });
   }
@@ -1561,7 +1684,7 @@ export class DelveGame {
       if (e.lastSwing === a.id || !this.meleeTouches(a, w, f, e.body)) continue;
       e.lastSwing = a.id;
       const dir = e.body.x + e.body.w / 2 >= this.player.x + this.player.w / 2 ? 1 : -1;
-      this.damageEnemy(e, w.damage * st.damageMul, w.knockback, w.crit + st.crit, dir as 1 | -1);
+      this.damageEnemy(e, a.dmg ?? w.damage * st.damageMul, a.kb ?? w.knockback, w.crit + st.crit, dir as 1 | -1, false, a.fx);
     }
   }
 
@@ -1586,11 +1709,11 @@ export class DelveGame {
   }
 
   /** 對怪物造成傷害（已含玩家加成的原始值）；回傳是否打中 */
-  private damageEnemy(e: Enemy, raw: number, kb: number, critChance: number, dir: 1 | -1, flame = false): boolean {
+  private damageEnemy(e: Enemy, raw: number, kb: number, critChance: number, dir: 1 | -1, flame = false, fx?: HitFx): boolean {
     const def = ENEMIES[e.kind];
     if (e.state === 'shatter' || e.hp <= 0) return false;
     const crit = rollCrit(critChance, this.combatRng);
-    const amount = enemyDamage(raw * (crit ? 2 : 1), def.defense);
+    const amount = enemyDamage(raw * (crit ? 2 : 1), Math.max(0, def.defense - (fx?.pen ?? 0)));
     e.hp -= amount;
     e.flash = 0.14;
     const k = knockbackScale(kb, def.kbRes);
@@ -1602,8 +1725,41 @@ export class DelveGame {
     }
     if (flame) e.burn = 3;
     this.events.push({ type: 'hit', id: e.id, kind: e.kind, x: e.body.x + e.body.w / 2, y: e.body.y, amount, crit });
-    if (e.hp <= 0) this.killEnemy(e);
+    if (fx) this.applyHitFx(e, raw, kb, dir, fx, amount);
+    if (e.hp <= 0) {
+      if (fx?.soul && !this.dead) this.healBy(this.maxHp() * fx.soul / 100, true);
+      if (this.enemies.includes(e)) this.killEnemy(e);
+    }
     return true;
+  }
+  /** 詞條命中效果：吸血、燃燒 / 冰凍 / 中毒、連鎖閃電 */
+  private applyHitFx(e: Enemy, raw: number, kb: number, dir: 1 | -1, fx: HitFx, amount: number): void {
+    const r = this.combatRng;
+    if (fx.leech > 0 && !this.dead) this.healBy(Math.min(LEECH_CAP, amount * fx.leech / 100), false);
+    if (fx.burn > 0 && r.next() * 100 < fx.burn) e.burn = Math.max(e.burn, 3);
+    if (fx.frost > 0 && r.next() * 100 < fx.frost) e.frost = FROST_TIME;
+    if (fx.poison > 0 && r.next() * 100 < fx.poison) e.poison = POISON_TIME;
+    if (fx.chain > 0 && r.next() * 100 < fx.chain) {
+      const b = e.body, cx = b.x + b.w / 2, cy = b.y + b.h / 2, R = CHAIN_RADIUS * TILE_SIZE;
+      const near = this.enemies.filter((q) => q !== e && q.hp > 0 && q.state !== 'shatter')
+        .map((q) => ({ q, d: Math.hypot(q.body.x + q.body.w / 2 - cx, q.body.y + q.body.h / 2 - cy) }))
+        .filter((o) => o.d <= R).sort((p, q) => p.d - q.d).slice(0, CHAIN_MAX);
+      if (!near.length) return;
+      const pts = [{ x: cx, y: cy }];
+      const sub: HitFx = { ...fx, chain: 0, leech: 0 };
+      for (const { q } of near) {
+        pts.push({ x: q.body.x + q.body.w / 2, y: q.body.y + q.body.h / 2 });
+        this.damageEnemy(q, raw * CHAIN_MUL, kb * 0.3, 0, dir, false, sub);
+      }
+      this.events.push({ type: 'chain', pts });
+    }
+  }
+  /** 回血（show = 飄綠字） */
+  private healBy(v: number, show: boolean): void {
+    const before = this.hp;
+    this.hp = Math.min(this.maxHp(), this.hp + v);
+    const got = this.hp - before;
+    if (show && got >= 1) { const p = this.player; this.events.push({ type: 'heal', amount: Math.round(got), x: p.x + p.w / 2, y: p.y }); }
   }
   /** debug：直接扣血（不看防禦 / 不擊退） */
   debugDamage(id: number, amount: number): boolean {
@@ -1626,12 +1782,24 @@ export class DelveGame {
       const v = popVelocity(r.next(), r.next());
       this.drops.spawn(item, n, cx, cy, v.vx, v.vy);
     };
-    for (const d of def.drops) if (r.next() < d.chance) drop(d.item, r.int(d.min, d.max + 1));
+    const luck = this.stats().gear.luck;
+    for (const d of def.drops) if (r.next() < Math.min(1, d.chance * (1 + luck / 100))) drop(d.item, r.int(d.min, d.max + 1));
     if (def.coins[1] > 0) drop('copper_coin', r.int(def.coins[0], def.coins[1] + 1));
     this.kills[e.kind] = (this.kills[e.kind] ?? 0) + 1;
     this.events.push({ type: 'kill', id: e.id, kind: e.kind, x: cx, y: cy });
+    // 裝備：一般怪機率掉一件（越深等級越高）；首領必掉
+    const depth = this.depthFrac(Math.floor(cx / TILE_SIZE), Math.floor(cy / TILE_SIZE));
+    const chance = this.debugGearChance ?? GEAR_DROP_CHANCE * (1 + luck / 100);
+    if (!def.boss && !def.minion && this.lootRng.next() < chance) {
+      const ilvl = ilvlForDepth(depth), item = rollDropItem(this.lootRng, ilvl);
+      this.spawnGearDrop(item, this.rollFor(item, 'enemy', depth, ilvl), cx, cy);
+    }
     if (def.boss) {
-      for (const it of BOSS_DROPS) drop(it.item, it.n);
+      for (const it of BOSS_DROPS) {
+        if (gearSlot(it.item)) this.spawnGearDrop(it.item, this.rollFor(it.item, 'boss', 1, 5), cx, cy);
+        else drop(it.item, it.n);
+      }
+      for (let k = 0; k < BOSS_GEAR; k++) { const item = rollDropItem(this.lootRng, 5); this.spawnGearDrop(item, this.rollFor(item, 'boss', 1, 5), cx, cy); }
       this.bossesDefeated.add(e.kind);
       this.enemies = this.enemies.filter((q) => !ENEMIES[q.kind].minion);
       for (const p of this.projectiles.list) if (p.hostile) p.life = 0;
@@ -1659,7 +1827,16 @@ export class DelveGame {
     this.sinceHit = 0;
     this.events.push({ type: 'hurt', x: p.x + p.w / 2, y: p.y, amount, fall, ...(cause ? { cause } : {}) });
     if (this.recallT !== null) { const r = this.respawnPoint(); this.recallT = null; this.events.push({ type: 'recall', phase: 'cancel', x: r.x, y: r.y }); }
-    if (this.hp <= 0) this.die();
+    if (this.hp <= 0 && !this.tryUndying()) this.die();
+  }
+  /** 不滅：致命傷時以 1 點生命撐住（冷卻 = 詞條秒數）。回傳是否撐住 */
+  private tryUndying(): boolean {
+    const cd = this.stats().gear.undying;
+    if (cd <= 0 || this.undyingCd > 0) return false;
+    this.hp = 1; this.undyingCd = cd; this.iframes = Math.max(this.iframes, 1.5);
+    const p = this.player;
+    this.events.push({ type: 'undying', x: p.x + p.w / 2, y: p.y });
+    return true;
   }
 
   private die(): void {
@@ -1709,9 +1886,11 @@ export class DelveGame {
     if (this.iframes > 0) this.iframes -= dt;
     if (this.knockT > 0) this.knockT -= dt;
     if (this.potionCd > 0) this.potionCd -= dt;
+    if (this.undyingCd > 0) this.undyingCd = Math.max(0, this.undyingCd - dt);
     this.sinceHit += dt;
     const max = this.maxHp();
-    const regen = (this.burning > 0 ? 0 : regenRate(this.sinceHit, this.stats().regenMul)) + (this.honeyT > 0 ? HONEY_REGEN : 0);
+    const st = this.stats();
+    const regen = (this.burning > 0 ? 0 : regenRate(this.sinceHit, st.regenMul) + st.gear.regen) + (this.honeyT > 0 ? HONEY_REGEN : 0);
     if (this.hp < max) this.hp = Math.min(max, this.hp + regen * dt);
     else if (this.hp > max) this.hp = max;
     if (this.manaDelay > 0) this.manaDelay -= dt;
@@ -1773,7 +1952,7 @@ export class DelveGame {
     this.hp -= amount;
     this.sinceHit = 0;
     this.events.push({ type: 'hurt', x: p.x + p.w / 2, y: p.y, amount, fall: false, cause });
-    if (this.hp <= 0) this.die();
+    if (this.hp <= 0 && !this.tryUndying()) this.die();
   }
 
   /**
@@ -1952,7 +2131,9 @@ export class DelveGame {
       const dx = Math.abs(b.x + b.w / 2 - pc.x) / S, dy = Math.abs(b.y + b.h / 2 - pc.y) / S;
       if (!def.boss && !def.minion && (dx > DESPAWN.x || dy > DESPAWN.y || this.dayDespawn(e, dx, dy))) { this.removeEnemy(e); continue; }
       if (!def.boss && (dx > ACTIVE.x || dy > ACTIVE.y)) continue;
-      if (!stepEnemy(e, ctx, dt)) { this.removeEnemy(e); continue; }
+      // 冰凍：整隻怪的動作（移動 / 冷卻 / 動畫）變慢
+      if (e.frost > 0) e.frost = Math.max(0, e.frost - dt);
+      if (!stepEnemy(e, ctx, e.frost > 0 ? dt * FROST_SLOW : dt)) { this.removeEnemy(e); continue; }
       if (this.enemyLiquid(e, dt)) continue;
       if (e.burn > 0) {
         e.burn -= dt; e.burnTick -= dt;
@@ -1963,9 +2144,24 @@ export class DelveGame {
           if (e.hp <= 0) { this.killEnemy(e); continue; }
         }
       }
+      if (e.poison > 0) {
+        e.poison -= dt; e.poisonTick -= dt;
+        if (e.poisonTick <= 0) {
+          e.poisonTick = 0.5;
+          const pd = Math.max(1, Math.min(6, Math.round(e.maxHp * 0.015)));
+          e.hp -= pd; e.flash = 0.06;
+          this.events.push({ type: 'hit', id: e.id, kind: e.kind, x: b.x + b.w / 2, y: b.y, amount: pd, crit: false });
+          if (e.hp <= 0) { this.killEnemy(e); continue; }
+        }
+      }
       if (!this.dead && e.state !== 'leave' && overlaps(b, p)) {
         const mul = def.boss && e.phase === 2 ? 1.25 : 1;
-        this.hurtPlayer(def.damage * mul, b.x + b.w / 2);
+        // 荊棘：被碰到時反傷
+        const thorns = this.stats().gear.thorns;
+        if (this.hurtPlayer(def.damage * mul, b.x + b.w / 2) && thorns > 0 && e.hp > 0) {
+          this.damageEnemy(e, thorns, 80, 0, b.x + b.w / 2 >= p.x + p.w / 2 ? 1 : -1);
+          if (e.hp <= 0) continue;
+        }
       }
     }
     // 投射物
@@ -1981,7 +2177,7 @@ export class DelveGame {
       if (pr.kind === 'boomerang' && pr.returning && overlaps(pr.body, p)) { pr.life = 0; continue; }
       for (const e of this.enemies) {
         if (pr.hit.has(e.id) || !overlaps(pr.body, e.body)) continue;
-        if (!this.damageEnemy(e, pr.damage, pr.knockback, pr.crit, pr.body.vx >= 0 ? 1 : -1, pr.flame)) continue;
+        if (!this.damageEnemy(e, pr.damage, pr.knockback, pr.crit, pr.body.vx >= 0 ? 1 : -1, pr.flame, pr.fx)) continue;
         pr.hit.add(e.id);
         pr.pierce--;
         if (pr.kind === 'boomerang') pr.returning = true;
@@ -1993,9 +2189,9 @@ export class DelveGame {
     const got = this.drops.step(this.env, {
       player: p, magnetPx: this.magnetRadius() * S, activePx: ACTIVE.x * S, canPickup: !this.dead,
       room: (item, n) => (inv.canAdd(item, n) ? n : inv.canAdd(item, 1) ? 1 : 0),
-      take: (item, n) => n - inv.add(item, n),
+      take: (item, n, gear) => n - inv.add(item, n, gear),
     }, dt);
-    for (const [item, n] of got) this.events.push({ type: 'pickup', item, n });
+    for (const [item, n, gear] of got) this.events.push(gear ? { type: 'pickup', item, n, rarity: gear.rarity } : { type: 'pickup', item, n });
   }
   private removeEnemy(e: Enemy): void { this.enemies = this.enemies.filter((q) => q !== e); }
   /** 夜行怪在白天、離開畫面就消失 */
@@ -2178,6 +2374,13 @@ export class DelveGame {
     }, this.fishRng.next()) ?? 'soggy_boot';
     this.fishing = null;
     this.inventory.remove(f.bait, 1);
+    // 偶爾釣起沉在水底的裝備（取代這次的漁獲）
+    if (!f.forced && this.lootRng.next() < FISH_GEAR_CHANCE) {
+      const ilvl = ilvlForDepth(this.depthFrac(tx, ty)), it = rollDropItem(this.lootRng, ilvl);
+      this.giveOrDrop(it, this.rollFor(it, 'fish', this.depthFrac(tx, ty), ilvl));
+      this.events.push({ type: 'fish', phase: 'catch', x: f.x, y: f.y, item: it, liquid: f.liquid });
+      return;
+    }
     const left = this.inventory.add(item, 1);
     if (left > 0) { const pt = this.playerTile(); this.dropAtTile(item, left, pt.x, pt.y); }
     if (ITEMS[item].fish) this.fishLog[item] = (this.fishLog[item] ?? 0) + 1;
@@ -2226,7 +2429,177 @@ export class DelveGame {
       if (left > 0) this.dropAtTile(d.item, left, pt.x, pt.y);
       this.events.push({ type: 'pickup', item: d.item, n: d.n });
     }
+    // 木箱裡的裝備（鐵皮 / 金邊箱機率更高、等級更高）
+    if (this.lootRng.next() < CRATE_GEAR[item]) {
+      const ilvl = item === 'wooden_crate' ? 2 : item === 'iron_crate' ? 3 : 4;
+      const it = rollDropItem(this.lootRng, ilvl), g = this.rollFor(it, 'fish', ilvl / 5, ilvl);
+      this.giveOrDrop(it, g);
+    }
     this.events.push({ type: 'crate', item, drops });
+  }
+
+  // ── 裝備詞條：掉落 / 圖鑑 / 分解 / 鍛造 ─────────────────
+  /** 擲一件裝備：稀有度（來源 + 深度 + 幸運；珍寶至少稀有）→ 詞條 */
+  private rollFor(item: ItemId, src: LootSource, depth: number, ilvl: number): Gear {
+    const floor = ITEMS[item].unique ? 2 : 0;
+    const luck = src === 'craft' ? 0 : this.stats().gear.luck;
+    const g = rollGear(item, this.lootRng, { rarity: rollRarity(this.lootRng, src, depth, luck, floor), ilvl });
+    if (src === 'craft') g.crafted = true;
+    return g;
+  }
+  /** 在 (x,y) px 丟出一件裝備（彈出）；史詩以上發 loot 事件（光柱 / 音效） */
+  private spawnGearDrop(item: ItemId, gear: Gear, x: number, y: number): void {
+    const v = popVelocity(this.lootRng.next(), this.lootRng.next());
+    this.drops.spawn(item, 1, x, y, v.vx, v.vy, 0, gear);
+    this.events.push({ type: 'loot', item, rarity: gear.rarity, x, y });
+  }
+  /** 放進背包；放不下掉在腳邊 */
+  private giveOrDrop(item: ItemId, gear: Gear): void {
+    if (this.inventory.add(item, 1, gear) > 0) {
+      const c = this.playerCenter();
+      this.spawnGearDrop(item, gear, c.x, c.y);
+    } else this.events.push({ type: 'pickup', item, n: 1, rarity: gear.rarity });
+  }
+  /** 把背包 / 裝備欄的裝備收進圖鑑；新詞條發 codex 事件 */
+  observeGear(): void {
+    const seen = (item: ItemId, g: Gear | undefined): void => {
+      for (const a of this.codex.observe(item, g)) this.events.push({ type: 'codex', affix: a });
+    };
+    for (const st of this.inventory.slots) if (st && gearSlot(st.item)) seen(st.item, st.gear);
+    for (const st of this.equipment.stacks()) seen(st.item, st.gear);
+  }
+  /** 裝備的位置：背包格號碼，或裝備欄的槽 */
+  stackAt(at: GearAt): Stack | null {
+    return typeof at === 'number' ? this.inventory.slots[at] ?? null : this.equipment.getStack(at);
+  }
+  /** 某個 Stack 物件現在在哪（背包格 / 裝備槽）；不在身上 → null。介面追蹤物件用 */
+  locate(st: Stack): GearAt | null {
+    const i = this.inventory.slots.indexOf(st);
+    if (i >= 0) return i;
+    return EQUIP_SLOTS.find((s) => this.equipment.getStack(s) === st) ?? null;
+  }
+  /** 裝備的詞條（背包格或裝備槽） */
+  gearAt(at: GearAt): Gear | undefined { return this.stackAt(at)?.gear; }
+  /** 詞條改了：裝備欄的要讓數值快取失效、超出的生命扣回來 */
+  private gearChanged(at: GearAt): void {
+    if (typeof at !== 'number') this.equipment.touch();
+    this.invalidateStats();
+    if (this.hp > this.maxHp()) this.hp = this.maxHp();
+  }
+  /** 鎖定 / 解鎖（鎖定的不會被分解）。回傳鎖定後的狀態；不是裝備 → null */
+  toggleLock(at: GearAt): boolean | null {
+    const st = this.stackAt(at);
+    if (!st || !gearSlot(st.item)) return null;
+    const g: Gear = st.gear ? { ...st.gear } : { rarity: 0, ilvl: baseTier(st.item), plus: 0, affixes: [] };
+    if (g.locked) delete g.locked; else g.locked = true;
+    st.gear = g;
+    if (typeof at !== 'number') this.equipment.touch();
+    return Boolean(g.locked);
+  }
+  /** 加材料（放不下掉在腳邊） */
+  private giveMats(c: Cost): void {
+    const pt = this.playerTile();
+    for (const [item, n] of [['gear_shard', c.shard], ['stardust', c.dust]] as const) {
+      if (n <= 0) continue;
+      const left = this.inventory.add(item, n);
+      if (left > 0) this.dropAtTile(item, left, pt.x, pt.y);
+    }
+  }
+  private canPay(c: Cost): boolean { return this.inventory.has('gear_shard', c.shard) && this.inventory.has('stardust', c.dust); }
+  private pay(c: Cost): void {
+    if (c.shard > 0) this.inventory.remove('gear_shard', c.shard);
+    if (c.dust > 0) this.inventory.remove('stardust', c.dust);
+  }
+  /** 分解（背包格或裝備中的）→ 碎晶 / 星塵。鎖定 / 不是裝備 → null */
+  salvage(at: GearAt): Cost | null {
+    const st = this.stackAt(at);
+    if (!st || !gearSlot(st.item) || st.gear?.locked) return null;
+    const y = salvageYield(st.gear);
+    if (typeof at === 'number') this.inventory.slots[at] = null; else this.equipment.set(at, null);
+    this.giveMats(y);
+    this.gearChanged(at);
+    this.events.push({ type: 'salvage', count: 1, shard: y.shard, dust: y.dust });
+    return y;
+  }
+  /** 這些格會被「分解全部」：快捷欄以外、沒鎖定、稀有度 ≤ maxRarity 的裝備 */
+  salvageTargets(maxRarity = 0): number[] {
+    const out: number[] = [];
+    this.inventory.slots.forEach((st, i) => {
+      if (i < HOTBAR_SIZE || !st || !gearSlot(st.item) || st.gear?.locked || (st.gear?.rarity ?? 0) > maxRarity) return;
+      out.push(i);
+    });
+    return out;
+  }
+  /** 一次分解 salvageTargets(maxRarity) 的所有裝備 */
+  salvageAll(maxRarity = 0): { count: number; shard: number; dust: number } {
+    const tot = { count: 0, shard: 0, dust: 0 };
+    for (const i of this.salvageTargets(maxRarity)) {
+      const st = this.inventory.slots[i]!;
+      const y = salvageYield(st.gear);
+      this.inventory.slots[i] = null;
+      tot.count++; tot.shard += y.shard; tot.dust += y.dust;
+    }
+    if (tot.count) {
+      this.giveMats(tot);
+      this.invalidateStats();
+      this.events.push({ type: 'salvage', ...tot });
+    }
+    return tot;
+  }
+  /** 鍛造（洗煉 / 強化 / 升階）要在鐵砧旁 */
+  canForge(): boolean { return this.nearTile(T.ANVIL); }
+  /** 鍛造成本（null = 已滿級 / 不能） */
+  forgeCosts(at: GearAt): { reroll: Cost | null; upgrade: Cost | null; ascend: Cost | null } {
+    const st = this.stackAt(at);
+    if (!st || !gearSlot(st.item)) return { reroll: null, upgrade: null, ascend: null };
+    const g = st.gear;
+    const rerollable = Boolean(g?.affixes.some((a) => affixDef(a.id).kind !== 'unique'));
+    return { reroll: rerollable ? rerollCost(g) : null, upgrade: upgradeCost(g), ascend: ascendCost(g) };
+  }
+  private forge(at: GearAt, action: 'reroll' | 'upgrade' | 'ascend', cost: Cost | null, apply: (g: Gear) => Gear | null): ForgeResult {
+    const st = this.stackAt(at);
+    if (!st || !gearSlot(st.item)) return { ok: false, reason: 'none' };
+    if (!this.canForge()) return { ok: false, reason: 'station' };
+    if (!cost) return { ok: false, reason: 'max' };
+    if (!this.canPay(cost)) return { ok: false, reason: 'cost' };
+    const base: Gear = st.gear ?? { rarity: 0, ilvl: baseTier(st.item), plus: 0, affixes: [] };
+    const next = apply(base);
+    if (!next) return { ok: false, reason: action === 'reroll' ? 'unique' : 'max' };
+    this.pay(cost);
+    st.gear = next;
+    this.gearChanged(at);
+    this.events.push({ type: 'forge', action, slot: at, item: st.item });
+    return { ok: true };
+  }
+  /** 洗煉：換掉第 affix 條詞條（傳奇詞條不能洗） */
+  reroll(at: GearAt, affix: number): ForgeResult {
+    const st = this.stackAt(at);
+    return this.forge(at, 'reroll', st ? rerollCost(st.gear) : null, (g) => (st ? rerollAffix(st.item, g, affix, this.lootRng) : null));
+  }
+  /** 強化 +1（最多 +5） */
+  upgrade(at: GearAt): ForgeResult {
+    const st = this.stackAt(at);
+    return this.forge(at, 'upgrade', st ? upgradeCost(st.gear) : null, (g) => (g.plus >= MAX_PLUS ? null : upgradeGear(g)));
+  }
+  /** 升階：稀有度 +1（到傳說為止），多一條詞條 */
+  ascend(at: GearAt): ForgeResult {
+    const st = this.stackAt(at);
+    return this.forge(at, 'ascend', st ? ascendCost(st.gear) : null, (g) => (st ? ascendGear(st.item, g, this.lootRng) : null));
+  }
+  /** debug / e2e：給一件指定稀有度的裝備（affixes 指定時直接用） */
+  giveGear(item: ItemId, rarity: number, o: { ilvl?: number; affixes?: Gear['affixes']; plus?: number } = {}): Gear | null {
+    if (!gearSlot(item)) return null;
+    const g = rollGear(item, this.lootRng, { rarity, ilvl: o.ilvl ?? 5 });
+    if (o.affixes) g.affixes = o.affixes.map((a) => ({ ...a }));
+    if (o.plus) g.plus = o.plus;
+    return this.inventory.add(item, 1, g) > 0 ? null : g;
+  }
+  /** debug / e2e：在 tile (tx, ty) 上方丟一件指定稀有度的裝備到地上 */
+  dropGear(item: ItemId, rarity: number, tx: number, ty: number): Gear | null {
+    if (!gearSlot(item)) return null;
+    const g = rollGear(item, this.lootRng, { rarity, ilvl: 5 });
+    this.spawnGearDrop(item, g, (tx + 0.5) * TILE_SIZE, (ty + 0.5) * TILE_SIZE);
+    return g;
   }
 
   // ── debug / e2e / 存檔還原 ─────────────────────────────

@@ -1115,3 +1115,161 @@ test.describe('delve title', () => {
     await ctx.close();
   });
 });
+
+// ── 裝備詞條：掉落稀有度 / 說明 / 分解 / 洗煉 / 存讀檔 ─────────────────
+test.describe('delve loot', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+  /** 玩家腳下清出一塊平地（x −6..+12），回傳腳底 tile */
+  async function flatGround(page: Page): Promise<{ x: number; y: number }> {
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    return page.evaluate(() => {
+      const g = window.__delveDebug!.game, w = g.world, f = g.feetTile();
+      for (let x = f.x - 6; x <= f.x + 12; x++) { for (let y = f.y - 6; y <= f.y; y++) w.setFg(x, y, 0); w.setFg(x, f.y + 1, 2); }
+      return f;
+    });
+  }
+
+  test('掉落：地上的傳說裝備有稀有度 → 撿起來後快捷欄外框是橙色（data-rarity=4）', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=loot-drop&autostart=1&fresh=1');
+    await waitGame(page);
+    const f = await flatGround(page);
+    await page.evaluate(({ x, y }) => { window.__delveDebug!.game.dropGear('gold_sword', 4, x + 2, y - 1); }, f);
+    expect(await page.evaluate(() => window.__delveDebug!.game.drops.list.some((d) => d.gear?.rarity === 4))).toBe(true);
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.slots.findIndex((s) => s?.item === 'gold_sword' && s.gear?.rarity === 4)), { timeout: 8000 }).toBeGreaterThanOrEqual(0);
+    await expect(page.locator('#delve-hotbar .delve-slot[data-item="gold_sword"]')).toHaveAttribute('data-rarity', '4');
+    await expect(page.locator('#delve-toast')).toContainText('獲得傳說裝備');
+    // 圖鑑收錄的提示排在後面，不會蓋掉傳說：1.2 秒後仍是傳說那則
+    await page.waitForTimeout(1200);
+    await expect(page.locator('#delve-toast')).toContainText('傳說');
+    expect(errors).toEqual([]);
+  });
+
+  test('說明：滑過裝備 → 名稱 / 稀有度 / 詞條；和裝備中的防具比較（綠升紅降）', async ({ page }) => {
+    await page.goto('/games/delve?seed=loot-tip&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      g.giveGear('iron_chestplate', 1, { affixes: [{ id: 'thorned', tier: 2, value: 5 }] });
+      g.equipFromInventory(g.inventory.slots.findIndex((s) => s?.item === 'iron_chestplate'));
+      g.giveGear('gold_chestplate', 3, { affixes: [{ id: 'hale', tier: 4, value: 20 }, { id: 'gale', tier: 3, value: 8 }, { id: 'glow', tier: 2, value: 20 }] });
+    });
+    await page.keyboard.press('KeyE');
+    const slot = page.locator('#delve-inv-grid .delve-slot[data-item="gold_chestplate"]');
+    await expect(slot).toHaveAttribute('data-rarity', '3');
+    await slot.hover();
+    const tip = page.locator('#delve-tip');
+    await expect(tip).toContainText('強健的 金胸甲 · 疾風');
+    await expect(tip.locator('.delve-tip-name')).not.toContainText('Gold');
+    await expect(tip).toContainText('史詩');
+    await expect(tip).toContainText('生命上限 +20');
+    await expect(tip).toContainText('比較');
+    await expect(tip.locator('.is-up').first()).toContainText('防禦');
+    await expect(tip.locator('.is-down')).toContainText('荊棘反傷');
+  });
+
+  test('分解：鎖定一件 → 「分解所有普通」確認後只分解沒鎖定的、拿到碎晶', async ({ page }) => {
+    await page.goto('/games/delve?seed=loot-salvage&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      for (let i = 0; i < 10; i++) if (!g.inventory.slots[i]) g.inventory.slots[i] = { item: 'stone', count: 1 };
+      g.giveGear('copper_sword', 0); g.giveGear('copper_helmet', 0); g.giveGear('wood_bow', 0);
+    });
+    await page.keyboard.press('KeyE');
+    await page.locator('#delve-inv-grid .delve-slot[data-item="copper_helmet"]').click();
+    await page.locator('#delve-lock-btn').click();
+    await expect(page.locator('#delve-inv-grid .delve-slot[data-item="copper_helmet"]')).toHaveClass(/is-locked/);
+    await page.locator('#delve-inv-grid .delve-slot[data-item="copper_helmet"]').click();
+    await page.locator('#delve-salvage-all').click();
+    await expect(page.locator('#delve-salvage-confirm')).toBeVisible();
+    await expect(page.locator('#delve-sc-msg')).toContainText('2 件');
+    await page.locator('#delve-sc-ok').click();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.count('gear_shard'))).toBeGreaterThan(0);
+    const left = await page.evaluate(() => { const g = window.__delveDebug!.game; return [g.inventory.count('copper_sword'), g.inventory.count('wood_bow'), g.inventory.count('copper_helmet')]; });
+    expect(left).toEqual([0, 0, 1]);
+    await expect(page.locator('#delve-mats')).toContainText('碎晶');
+  });
+
+  test('洗煉：鐵砧旁打開鍛造台 → 洗煉第一條詞條（換掉、扣碎晶）→ 強化 +1', async ({ page }) => {
+    await page.goto('/games/delve?seed=loot-forge&autostart=1&fresh=1');
+    await waitGame(page);
+    const f = await flatGround(page);
+    const ok = await page.evaluate(({ x, y }) => {
+      const g = window.__delveDebug!.game;
+      g.give('anvil', 1);
+      const i = g.inventory.slots.findIndex((s) => s?.item === 'anvil');
+      g.inventory.swap(i, 5); g.selectSlot(5);
+      const placed = g.tryPlace(x + 2, y);
+      g.selectSlot(0);
+      g.giveGear('iron_sword', 2, { affixes: [{ id: 'keen', tier: 2, value: 8 }, { id: 'swift', tier: 2, value: 4 }] });
+      g.give('gear_shard', 200); g.give('stardust', 20);
+      return placed && g.canForge();
+    }, f);
+    expect(ok).toBe(true);
+    await page.keyboard.press('KeyE');
+    await page.locator('#delve-inv-grid .delve-slot[data-item="iron_sword"]').click();
+    await page.locator('#delve-forge-btn').click();
+    await expect(page.locator('#delve-forge')).toBeVisible();
+    await expect(page.locator('#delve-forge-station')).toContainText('鐵砧就在旁邊');
+    await page.locator('#delve-forge [data-op="reroll"][data-affix="0"]').click();
+    const after = await page.evaluate(() => { const g = window.__delveDebug!.game; const s = g.inventory.slots.find((x) => x?.item === 'iron_sword')!; return { ids: s.gear!.affixes.map((a) => a.id), shard: g.inventory.count('gear_shard'), rerolls: s.gear!.rerolls }; });
+    expect(after.ids[0]).not.toBe('keen');
+    expect(after.ids).toContain('swift');
+    expect(after.shard).toBeLessThan(200);
+    expect(after.rerolls).toBe(1);
+    await page.locator('#delve-forge [data-op="upgrade"]').click();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.slots.find((x) => x?.item === 'iron_sword')!.gear!.plus)).toBe(1);
+    await expect(page.locator('#delve-forge-item')).toContainText('+1');
+    // 搬動那把劍（換格）→ 鍛造台追著同一把，不會強化到換過來的東西
+    await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      g.giveGear('gold_sword', 1);
+      const a = g.inventory.slots.findIndex((x) => x?.item === 'iron_sword'), b = g.inventory.slots.findIndex((x) => x?.item === 'gold_sword');
+      g.inventory.swap(a, b);
+    });
+    await page.locator('#delve-forge [data-op="upgrade"]').click();
+    const pl = await page.evaluate(() => { const g = window.__delveDebug!.game; return [g.inventory.slots.find((x) => x?.item === 'iron_sword')!.gear!.plus, g.inventory.slots.find((x) => x?.item === 'gold_sword')!.gear!.plus]; });
+    expect(pl).toEqual([2, 0]);
+    // 點裝備欄裡的胸甲 → 鍛造台換成處理它（不卸下），強化裝備中的
+    await page.evaluate(() => { const g = window.__delveDebug!.game; g.giveGear('iron_chestplate', 2); g.equipFromInventory(g.inventory.slots.findIndex((x) => x?.item === 'iron_chestplate')); });
+    await page.locator('#delve-equip .delve-slot[data-equip="body"]').click();
+    await expect(page.locator('#delve-forge-item')).toContainText('裝備中');
+    await page.locator('#delve-forge [data-op="upgrade"]').click();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.equipment.gearAt('body')?.plus)).toBe(1);
+    expect(await page.evaluate(() => window.__delveDebug!.game.equipment.get('body'))).toBe('iron_chestplate');
+  });
+
+  test('存檔 → 重新整理 → 繼續：背包與裝備欄的詞條、鎖定、圖鑑都還在', async ({ page }) => {
+    await page.goto('/games/delve?seed=loot-save&autostart=1&fresh=1');
+    await waitGame(page);
+    const before = await page.evaluate(async () => {
+      const d = window.__delveDebug!, g = d.game;
+      g.giveGear('gold_sword', 4, { affixes: [{ id: 'blazing', tier: 5, value: 30 }, { id: 'stormcall', tier: 5, value: 25 }, { id: 'swift', tier: 4, value: 10 }], plus: 2 });
+      g.toggleLock(g.inventory.slots.findIndex((s) => s?.item === 'gold_sword'));
+      g.giveGear('iron_greaves', 4, { affixes: [{ id: 'skyleap', tier: 5, value: 1 }, { id: 'gale', tier: 3, value: 8 }] });
+      g.equipFromInventory(g.inventory.slots.findIndex((s) => s?.item === 'iron_greaves'));
+      g.observeGear();
+      await d.save();
+      return { sword: g.inventory.slots.find((s) => s?.item === 'gold_sword')!.gear, legs: g.equipment.gearAt('legs'), codex: g.codex.toJSON() };
+    });
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
+    await page.click('#delve-continue');
+    await waitGame(page);
+    const after = await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      return { sword: g.inventory.slots.find((s) => s?.item === 'gold_sword')?.gear, legs: g.equipment.gearAt('legs'), codex: g.codex.toJSON(), djump: g.getState().gear.djump };
+    });
+    expect(after.sword).toEqual(before.sword);
+    expect(after.sword!.locked).toBe(true);
+    expect(after.legs).toEqual(before.legs);
+    expect(after.codex).toEqual(before.codex);
+    expect(after.djump).toBe(1);
+  });
+});

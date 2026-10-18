@@ -244,6 +244,52 @@ export class SoundManager {
   /** 轉場開始：往下沉的掃頻（鑽進地底） */
   uiDelve(): void { this.tone(330, 0, 0.5, 'triangle', 0.06, 110); this.tone(880, 0.02, 0.2, 'sine', 0.025, 440); }
 
+  // ── 裝備詞條 ───────────────────────────────────────────
+  /** 史詩以上的裝備落地：鐘聲和弦（傳說多一段琶音；神話再加高音閃爍） */
+  lootDrop(rarity: number): void {
+    if (rarity < 3) return;
+    const chord = rarity >= 5 ? [523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98] : rarity >= 4 ? [440, 554.37, 659.25, 880, 1108.73] : [392, 493.88, 587.33];
+    chord.forEach((f, i) => this.tone(f, i * 0.06, 1.1, 'triangle', 0.06));
+    this.tone(chord[chord.length - 1] * 2, chord.length * 0.06, 1.4, 'sine', 0.03);
+    if (rarity >= 4) this.noise(0.02, 0.5, 7000, 3500, 0.02, 2);
+    if (rarity >= 5) [2637, 3136, 3520, 4186].forEach((f, i) => this.tone(f, 0.45 + i * 0.05, 0.12, 'square', 0.012));
+  }
+  /** 撿起裝備：普通 / 優良 = 一般撿拾；稀有兩音；史詩以上一串亮音 */
+  lootPickup(rarity: number): void {
+    if (rarity <= 1) { this.pickup(); return; }
+    if (rarity === 2) { this.tone(987.77, 0, 0.1, 'square', 0.04); this.tone(1318.51, 0.07, 0.16, 'square', 0.04); return; }
+    const up = rarity >= 4 ? [1046.5, 1318.51, 1567.98, 2093] : [880, 1108.73, 1318.51];
+    up.forEach((f, i) => this.tone(f, i * 0.05, 0.22, 'square', 0.035));
+    this.tone(up[up.length - 1], up.length * 0.05, 0.6, 'sine', 0.04);
+  }
+  /** 分解：碎裂 + 低沉的兩聲 */
+  salvage(): void {
+    this.noise(0, 0.16, 2400, 500, 0.12, 1.4);
+    this.noise(0.08, 0.2, 1200, 200, 0.08, 1);
+    this.tone(220, 0.02, 0.18, 'square', 0.04, 110);
+    this.tone(1760, 0.12, 0.25, 'sine', 0.03, 2640);
+  }
+  /** 鍛造：強化 = 打鐵兩聲、洗煉 = 上滑的光、升階 = 號角 */
+  forge(action: 'reroll' | 'upgrade' | 'ascend'): void {
+    if (action === 'upgrade') {
+      for (const t of [0, 0.16]) { this.tone(1244.51, t, 0.25, 'square', 0.05); this.tone(1864.66, t, 0.18, 'triangle', 0.04); this.noise(t, 0.08, 5000, 2000, 0.08, 3); }
+    } else if (action === 'reroll') {
+      this.tone(440, 0, 0.45, 'sine', 0.07, 1760);
+      [1318.51, 1567.98, 1975.53].forEach((f, i) => this.tone(f, 0.25 + i * 0.05, 0.2, 'triangle', 0.035));
+    } else {
+      [392, 523.25, 659.25, 783.99].forEach((f, i) => this.tone(f, i * 0.09, 0.5, 'square', 0.04));
+      this.tone(1567.98, 0.36, 0.9, 'triangle', 0.06);
+    }
+  }
+  /** 連鎖閃電：高頻劈啪 + 往下的電弧 */
+  zap(): void { this.noise(0, 0.12, 6000, 1800, 0.08, 2.5); this.tone(1800, 0, 0.12, 'sawtooth', 0.03, 300); }
+  /** 不滅：低沉鐘聲 + 上升 */
+  undying(): void { this.tone(130.81, 0, 1.1, 'triangle', 0.14); this.tone(261.63, 0.05, 0.9, 'sine', 0.08, 523.25); this.tone(1046.5, 0.3, 0.8, 'sine', 0.04); }
+  /** 空中再跳：一陣輕風 */
+  airJump(): void { this.noise(0, 0.12, 2600, 900, 0.06, 1.6); }
+  /** 圖鑑收錄新詞條 */
+  codex(): void { this.tone(1174.66, 0, 0.18, 'triangle', 0.05); this.tone(1567.98, 0.09, 0.3, 'triangle', 0.05); }
+
   destroy(): void {
     if (typeof window !== 'undefined') window.removeEventListener('arcade-audio-change', this.onChange);
     void this.ctx?.close?.();

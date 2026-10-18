@@ -115,13 +115,17 @@ export interface Enemy {
   phase?: number;
   /** 液體傷害計時（秒；火系碰水 / 一般怪碰熔岩） */
   wetT: number;
+  /** 冰凍剩餘秒數（動作變慢）；中毒剩餘秒數與跳傷計時（裝備詞條） */
+  frost: number;
+  poison: number;
+  poisonTick: number;
 }
 
 export function makeEnemy(id: number, kind: EnemyKind, cx: number, bottom: number): Enemy {
   const def = ENEMIES[kind];
   return {
     id, kind, hp: def.hp, maxHp: def.hp, dir: 1, state: 'idle', t: 0.4, cd: 1, age: 0, flash: 0, lastSwing: -1,
-    burn: 0, burnTick: 0, stun: 0, stuckT: 0, lastX: cx, wetT: 0,
+    burn: 0, burnTick: 0, stun: 0, stuckT: 0, lastX: cx, wetT: 0, frost: 0, poison: 0, poisonTick: 0,
     body: { x: cx - def.w / 2, y: bottom - def.h, w: def.w, h: def.h, vx: 0, vy: 0, onGround: false, gfxOffY: 0 },
   };
 }

@@ -3,6 +3,7 @@ import { Rng } from './rng';
 import type { ItemId } from './items';
 import { ITEMS } from './items';
 import type { Stack } from './inventory';
+import { ilvlForDepth, rollDropItem, rollGear, rollRarity, type LootSource } from './gear';
 
 export const CHEST_SLOTS = 20;
 export type ChestKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'sky' | 'dungeon' | 'treasure'
@@ -32,8 +33,37 @@ export function potLoot(seed: string, x: number, y: number, depth: number): Drop
   return out;
 }
 
-/** 箱子內容（CHEST_SLOTS 格，前面幾格有東西） */
+/**
+ * 箱子裡的裝備（獨立亂數流 seed:chestgear:x:y，不影響原本的戰利品）：
+ * 一般箱子 45% 一件、地城箱 60% 一件、密室 / 珍寶箱一件、寶藏室兩件；地城系來源的稀有度表比較好。
+ */
+export function chestGear(seed: string, x: number, y: number, kind: ChestKind, depth: number): Stack[] {
+  const r = new Rng(`${seed}:chestgear:${x}:${y}`);
+  const d = clamp01(depth);
+  const deep = kind === 'dungeon' || kind === 'treasure' || kind === 'secret' || kind === 'relic';
+  const src: LootSource = deep ? 'dungeon' : 'chest';
+  const n = kind === 'treasure' ? 2 : kind === 'secret' || kind === 'relic' ? 1 : r.next() < (kind === 'dungeon' ? 0.6 : 0.45) ? 1 : 0;
+  const ilvl = kind === 'dungeon' || kind === 'treasure' ? Math.max(4, ilvlForDepth(d)) : Math.min(5, ilvlForDepth(d) + (kind === 'sky' || deep ? 1 : 0));
+  const out: Stack[] = [];
+  for (let k = 0; k < n; k++) {
+    const item = rollDropItem(r, ilvl);
+    out.push({ item, count: 1, gear: rollGear(item, r, { rarity: rollRarity(r, src, d, 0), ilvl }) });
+  }
+  return out;
+}
+
+/** 箱子內容（CHEST_SLOTS 格，前面幾格有東西；最後接上 chestGear 的裝備） */
 export function chestLoot(seed: string, x: number, y: number, kind: ChestKind, depth: number): (Stack | null)[] {
+  const slots = baseChestLoot(seed, x, y, kind, depth);
+  for (const g of chestGear(seed, x, y, kind, depth)) {
+    const i = slots.indexOf(null);
+    if (i < 0) break;
+    slots[i] = g;
+  }
+  return slots;
+}
+
+function baseChestLoot(seed: string, x: number, y: number, kind: ChestKind, depth: number): (Stack | null)[] {
   const r = new Rng(`${seed}:chest:${x}:${y}`);
   const d = clamp01(depth);
   const slots: (Stack | null)[] = new Array<Stack | null>(CHEST_SLOTS).fill(null);
