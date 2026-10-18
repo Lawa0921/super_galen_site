@@ -60,12 +60,18 @@ describe('繩索攀爬', () => {
     run(w, b, m, { moveX: 1, jump: false }, 120);
     expect(b.onGround).toBe(true);
   });
-  it('爬到頂端會停在繩頂（不會越過繩索往上飄），側移可以上到旁邊的高台', () => {
+  it('爬到頂端會停在繩頂（不會越過繩索往上飄）；旁邊有高台時側移就能上去（攀上邊緣，見 physics.mantle.test.ts）', () => {
+    // 繩頂旁邊沒有台面（左側高台挖掉）：一直按上也只是停在繩頂
+    const open = world();
+    for (let x = 0; x <= 8; x++) for (let y = 20; y < 50; y++) open.setFg(x, y, T.AIR);
+    const a = atCol(10, 45), ma = motion();
+    run(open, a, ma, { moveX: 0, jump: false, up: true }, 400);
+    expect(ma.climbing).toBe(true);
+    expect(Math.abs(a.y + a.h - 20 * S)).toBeLessThanOrEqual(2);
+    // 有高台：爬到快到頂再側移
     const w = world(), b = atCol(10, 45), m = motion();
-    run(w, b, m, { moveX: 0, jump: false, up: true }, 400);
+    for (let i = 0; i < 400 && b.y + b.h > 21 * S; i++) stepPlayer(w, b, m, { moveX: 0, jump: false, up: true }, FIXED_DT);
     expect(m.climbing).toBe(true);
-    // 腳底停在繩頂那列附近
-    expect(Math.abs(b.y + b.h - 20 * S)).toBeLessThanOrEqual(2);
     run(w, b, m, { moveX: -1, jump: false, up: true }, 60);
     run(w, b, m, { moveX: -1, jump: false }, 30);
     expect(b.x + b.w).toBeLessThan(9 * S + 1);

@@ -31,7 +31,25 @@ export interface PlayerMotion {
   ropeGrace?: number;
   /** 這次騰空已用掉的空中跳躍次數（落地歸零） */
   airUsed?: number;
+  /** 正在攀上邊緣（null / 省略 = 沒有） */
+  mantle?: MantleState | null;
+  /** 最後一次按的水平方向（繩頂只按「上」時先試這一邊） */
+  face?: 1 | -1;
 }
+/**
+ * 攀上邊緣：t / dur = 進度；身體從 (x0,y0) 先往上到 y1（前 MANTLE_LIFT 的時間）、再橫移到 x1。
+ * edgeX / edgeY = 抓住的牆角（px：牆的側面 x、台面 y），渲染時手放在這裡。
+ */
+export interface MantleState { t: number; dur: number; x0: number; y0: number; x1: number; y1: number; dir: 1 | -1; edgeX: number; edgeY: number; }
+/** 攀上邊緣最久幾秒（越高越久） */
+export const MANTLE_MAX_S = 0.5;
+const MANTLE_MIN_S = 0.24;
+/** 進度的前這麼多是往上拉，之後是往台面上移 */
+export const MANTLE_LIFT = 0.62;
+/** 繩索上伸手搆得到旁邊多遠的牆（px，中間可以隔一格空氣）；空中要貼著牆 */
+const ROPE_REACH_X = S + 0.5, AIR_REACH_X = 2;
+/** 空中攀邊：速度至少要慢到這樣（已過最高點或快到了）才抓 */
+const AIR_GRAB_VY = -40;
 export interface MoveControl {
   moveX: number; jump: boolean;
   /** 按住「下」：穿過單向平台往下掉；在繩索上 = 往下爬 */
@@ -163,6 +181,78 @@ function ropeTop(q: SolidQuery, b: Body): number {
   return ty;
 }
 
+function solidOrPlatform(q: SolidQuery, tx: number, ty: number): boolean {
+  return q.isSolid(tx, ty) || Boolean(q.isPlatform?.(tx, ty));
+}
+
+/**
+ * 朝 dir 那邊找一個手搆得到的牆角：身體旁邊那欄（間隔 ≤ reachX px）某列是實心（或平台）、上一列是空的，
+ * 台面 y 在 [b.y + top, b.y + bottom] 之間；台面上站得下（身體 + 從現在位置往上、再橫移過去的路徑都不卡牆）。
+ * 找到回傳站上去的位置 (x1, y1) 與牆角 (edgeX, edgeY)；否則 null。
+ */
+export function findLedge(q: SolidQuery, b: Body, dir: 1 | -1, top: number, bottom: number, reachX = AIR_REACH_X): { x1: number; y1: number; edgeX: number; edgeY: number } | null {
+  const c = dir > 0 ? Math.floor((b.x + b.w - EPS) / S) + 1 : Math.floor(b.x / S) - 1;
+  const gap = dir > 0 ? c * S - (b.x + b.w) : b.x - (c + 1) * S;
+  if (gap > reachX) return null;
+  const r0 = Math.floor((b.y + top) / S), r1 = Math.floor((b.y + bottom) / S);
+  for (let r = Math.max(1, r0); r <= r1; r++) {
+    const edgeY = r * S;
+    if (edgeY < b.y + top || edgeY > b.y + bottom) continue;
+    if (!solidOrPlatform(q, c, r) || q.isSolid(c, r - 1)) continue;
+    const y1 = edgeY - b.h;
+    // 站上去的位置：先試「整個身體跨過牆邊 2px」，再試只踩到一部分（窄台）
+    const cands = dir > 0 ? [c * S + 2, c * S - 2, (c + 1) * S - b.w] : [(c + 1) * S - b.w - 2, (c + 1) * S - b.w + 2, c * S];
+    for (const x1 of cands) {
+      if (dir > 0 ? x1 + b.w <= c * S : x1 >= (c + 1) * S) continue;
+      if (overlapsSolid(q, x1, y1, b.w, b.h)) continue;
+      // 腳下要有東西
+      const tx0 = Math.floor(x1 / S), tx1 = Math.floor((x1 + b.w - EPS) / S);
+      let support = false;
+      for (let tx = tx0; tx <= tx1 && !support; tx++) support = solidOrPlatform(q, tx, r);
+      if (!support) continue;
+      // 路徑：在原地往上（含原本高度到 y1 的整段），再橫移
+      const yTop = Math.min(y1, b.y), yBot = Math.max(y1, b.y) + b.h;
+      if (overlapsSolid(q, b.x, yTop, b.w, yBot - yTop)) continue;
+      const xl = Math.min(b.x, x1), xr = Math.max(b.x, x1) + b.w;
+      if (overlapsSolid(q, xl, y1, xr - xl, b.h)) continue;
+      return { x1, y1, edgeX: dir > 0 ? c * S : (c + 1) * S, edgeY };
+    }
+  }
+  return null;
+}
+
+function startMantle(m: PlayerMotion, b: Body, dir: 1 | -1, l: { x1: number; y1: number; edgeX: number; edgeY: number }): void {
+  const lift = Math.max(0, b.y - l.y1), slide = Math.abs(l.x1 - b.x);
+  const dur = Math.min(MANTLE_MAX_S, Math.max(MANTLE_MIN_S, 0.16 + lift / 140 + slide / 400));
+  m.mantle = { t: 0, dur, x0: b.x, y0: b.y, x1: l.x1, y1: l.y1, dir, edgeX: l.edgeX, edgeY: l.edgeY };
+  m.climbing = false; m.jumpTimer = 0; m.ropeGrace = 0;
+  b.vx = 0; b.vy = 0; b.onGround = false;
+}
+
+const smooth = (t: number): number => t * t * (3 - 2 * t);
+/** 攀上邊緣的一步：照固定路徑移動（不受輸入影響）；路徑被擋住（例如途中有人放了方塊）就放手 */
+function stepMantle(q: SolidQuery, b: Body, m: PlayerMotion, dt: number): MoveResult {
+  const k = m.mantle!;
+  k.t = Math.min(k.dur, k.t + dt);
+  const p = k.t / k.dur;
+  const nx = p < MANTLE_LIFT ? k.x0 : k.x0 + (k.x1 - k.x0) * smooth((p - MANTLE_LIFT) / (1 - MANTLE_LIFT));
+  const ny = p < MANTLE_LIFT ? k.y0 + (k.y1 - k.y0) * smooth(p / MANTLE_LIFT) : k.y1;
+  b.vx = 0; b.vy = 0;
+  if (overlapsSolid(q, nx, ny, b.w, b.h)) {
+    m.mantle = null;
+    b.onGround = overlapsSolid(q, b.x, b.y + 1, b.w, b.h);
+    return { hitX: true, hitY: false, stepped: false };
+  }
+  b.x = nx; b.y = ny;
+  if (k.t >= k.dur) {
+    m.mantle = null;
+    m.airUsed = 0;
+    b.onGround = overlapsSolid(q, b.x, b.y + 1, b.w, b.h) || onPlatform(q, b);
+  } else b.onGround = false;
+  if (b.gfxOffY > 0) b.gfxOffY = Math.max(0, b.gfxOffY - 120 * dt);
+  return { hitX: false, hitY: false, stepped: false };
+}
+
 /** 攀爬中的一步：上 / 下爬、少量水平移動、往繩索中心靠；頂端停住，不越過繩頂 */
 function stepClimb(q: SolidQuery, b: Body, ctl: MoveControl, mx: number, dt: number): MoveResult {
   b.vx = approach(b.vx, mx * CLIMB_X, RUN_ACCEL * dt);
@@ -195,6 +285,11 @@ export interface LiquidMove {
  */
 export function stepPlayer(q: SolidQuery, b: Body, m: PlayerMotion, ctl: MoveControl, dt: number, stats: MoveStats = {}, med?: LiquidMove): MoveResult {
   const mx = Math.max(-1, Math.min(1, ctl.moveX));
+  if (mx !== 0) m.face = mx > 0 ? 1 : -1;
+  if (m.mantle) {
+    m.jumpWasHeld = ctl.jump || Boolean(ctl.up);
+    return stepMantle(q, b, m, dt);
+  }
   const runMul = (stats.runMul ?? 1) * (med?.runMul ?? 1), jumpMul = (stats.jumpMul ?? 1) * (med?.jumpMul ?? 1);
   const onRope = overlapsRope(q, b);
   // 「上」在繩索上是爬，否則是跳
@@ -209,6 +304,18 @@ export function stepPlayer(q: SolidQuery, b: Body, m: PlayerMotion, ctl: MoveCon
     } else {
       m.jumpWasHeld = jumpIn;
       m.jumpTimer = 0;
+      // 繩上：朝旁邊按方向 → 頭到腳之間搆得到的台面就攀上去；繩頂只按「上」→ 先試面向那邊、再試另一邊
+      if (mx !== 0) {
+        const dir = mx > 0 ? 1 : -1;
+        const l = findLedge(q, b, dir, 2, b.h + 1, ROPE_REACH_X);
+        if (l) { startMantle(m, b, dir, l); return stepMantle(q, b, m, dt); }
+      } else if (ctl.up && b.y + b.h <= ropeTop(q, b) * S + 1.5) {
+        const f = m.face ?? 1;
+        for (const dir of [f, -f] as const) {
+          const l = findLedge(q, b, dir, 2, b.h + 1, ROPE_REACH_X);
+          if (l) { startMantle(m, b, dir, l); return stepMantle(q, b, m, dt); }
+        }
+      }
       const res = stepClimb(q, b, ctl, mx, dt);
       if (b.gfxOffY > 0) b.gfxOffY = Math.max(0, b.gfxOffY - 120 * dt);
       return res;
@@ -237,6 +344,12 @@ export function stepPlayer(q: SolidQuery, b: Body, m: PlayerMotion, ctl: MoveCon
 
   const res = moveBody(q, b, dt, b.onGround || (m.ropeGrace ?? 0) > 0, ctl.drop ?? false);
   if (res.hitY && b.vy === 0 && !b.onGround) m.jumpTimer = 0; // 撞頭
+  // 空中攀邊：朝牆按方向、已經不在往上衝、牆角在頭頂附近 → 抓住邊緣攀上去（游泳時不抓）
+  if (!b.onGround && !m.climbing && mx !== 0 && b.vy >= AIR_GRAB_VY && !med?.swim) {
+    const dir = mx > 0 ? 1 : -1;
+    const l = findLedge(q, b, dir, -4, 14);
+    if (l) startMantle(m, b, dir, l);
+  }
   // step-up 視覺偏移平滑歸零
   if (b.gfxOffY > 0) b.gfxOffY = Math.max(0, b.gfxOffY - 120 * dt);
   return res;

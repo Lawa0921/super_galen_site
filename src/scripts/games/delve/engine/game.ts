@@ -121,6 +121,8 @@ export type DelveEvent =
   | { type: 'forge'; action: 'reroll' | 'upgrade' | 'ascend'; slot: number | EquipSlot; item: ItemId }
   /** 空中再跳（凌雲）；px */
   | { type: 'airjump'; x: number; y: number }
+  /** 攀爬：grab = 抓住繩索、mantle = 開始攀上邊緣（x, y = 牆角 px）、top = 攀上去站穩 */
+  | { type: 'climb'; phase: 'grab' | 'mantle' | 'top'; x: number; y: number }
   | { type: 'heal'; amount: number; x: number; y: number }
   | { type: 'lifeup'; maxHp: number }
   | { type: 'boss'; phase: 'spawn' | 'phase2' | 'defeated' | 'leave'; kind: EnemyKind }
@@ -186,7 +188,11 @@ export interface DelveState {
   tick: number;
   time: number;
   sky: number;
-  player: { x: number; y: number; vx: number; vy: number; onGround: boolean; tileX: number; tileY: number; gfxOffY: number; climbing: boolean };
+  player: {
+    x: number; y: number; vx: number; vy: number; onGround: boolean; tileX: number; tileY: number; gfxOffY: number; climbing: boolean;
+    /** 攀上邊緣：p = 進度 0..1、dir = 朝哪邊、edgeX / edgeY = 牆角（px）；null = 沒在攀 */
+    mantle: { p: number; dir: 1 | -1; edgeX: number; edgeY: number } | null;
+  };
   spawn: { x: number; y: number };
   aim: { x: number; y: number };
   selected: number;
@@ -624,9 +630,15 @@ export class DelveGame {
     if (this.sleepT !== null) { this.updateSleep(dt); return; }
     const knocked = this.knockT > 0;
     this.contact = liquidContact(this.world, this.player);
-    const air0 = this.motion.airUsed ?? 0;
+    const air0 = this.motion.airUsed ?? 0, climb0 = Boolean(this.motion.climbing), mantle0 = this.motion.mantle ?? null;
     stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
     if ((this.motion.airUsed ?? 0) > air0) { const pl = this.player; this.events.push({ type: 'airjump', x: pl.x + pl.w / 2, y: pl.y + pl.h }); this.fallPeak = null; }
+    {
+      const pl = this.player, mt = this.motion.mantle ?? null;
+      if (mt && mt !== mantle0) this.events.push({ type: 'climb', phase: 'mantle', x: mt.edgeX, y: mt.edgeY });
+      else if (!mt && mantle0) this.events.push({ type: 'climb', phase: 'top', x: pl.x + pl.w / 2, y: pl.y + pl.h });
+      if (this.motion.climbing && !climb0) this.events.push({ type: 'climb', phase: 'grab', x: pl.x + pl.w / 2, y: pl.y + 10 });
+    }
     this.contact = liquidContact(this.world, this.player);
     this.updateFall();
     this.updateLiquid(dt);
@@ -1525,7 +1537,8 @@ export class DelveGame {
       tick: this.tick,
       time: this.time,
       sky: this.skyLevel(),
-      player: { x: p.x, y: p.y, vx: p.vx, vy: p.vy, onGround: p.onGround, tileX: t.x, tileY: t.y, gfxOffY: p.gfxOffY, climbing: Boolean(this.motion.climbing) },
+      player: { x: p.x, y: p.y, vx: p.vx, vy: p.vy, onGround: p.onGround, tileX: t.x, tileY: t.y, gfxOffY: p.gfxOffY, climbing: Boolean(this.motion.climbing),
+        mantle: this.motion.mantle ? { p: this.motion.mantle.t / this.motion.mantle.dur, dir: this.motion.mantle.dir, edgeX: this.motion.mantle.edgeX, edgeY: this.motion.mantle.edgeY } : null },
       spawn: { ...this.spawn },
       aim: { ...this.aim },
       selected: this.inventory.selected,
@@ -1822,7 +1835,7 @@ export class DelveGame {
     const p = this.player;
     p.vx = (p.x + p.w / 2 >= srcX ? 1 : -1) * 230;
     p.vy = -240; p.onGround = false;
-    this.motion.climbing = false; this.motion.jumpTimer = 0;
+    this.motion.climbing = false; this.motion.jumpTimer = 0; this.motion.mantle = null;
     this.knockT = 0.18;
     return true;
   }
@@ -1878,7 +1891,7 @@ export class DelveGame {
   /** 摔落傷害：記住騰空時的最高點，落地時算掉了幾格 */
   private updateFall(): void {
     const p = this.player;
-    if (this.motion.climbing || this.contact.frac > 0) { this.fallPeak = null; return; }
+    if (this.motion.climbing || this.motion.mantle || this.contact.frac > 0) { this.fallPeak = null; return; }
     if (!p.onGround) { this.fallPeak = this.fallPeak === null ? p.y : Math.min(this.fallPeak, p.y); return; }
     if (this.fallPeak !== null) {
       const tiles = (p.y - this.fallPeak) / TILE_SIZE;
@@ -1938,7 +1951,7 @@ export class DelveGame {
         this.applyDamage(damageTaken(LAVA_DMG, this.stats().defense), false, 'lava');
         if (this.dead) return;
         p.vy = Math.min(p.vy, -280); p.onGround = false;
-        this.motion.jumpTimer = 0; this.motion.climbing = false;
+        this.motion.jumpTimer = 0; this.motion.climbing = false; this.motion.mantle = null;
       }
     }
     if (ward || (c.type === LIQ.WATER && c.frac > 0.25)) this.burning = 0;
@@ -2627,6 +2640,7 @@ export class DelveGame {
     p.vx = 0; p.vy = 0; p.gfxOffY = 0;
     this.motion.jumpTimer = 0;
     this.motion.climbing = false;
+    this.motion.mantle = null;
     this.fallPeak = null;
   }
   /** 立即挖掉一格（不檢查距離 / 等級），掉落物照常入背包。 */
