@@ -127,25 +127,27 @@ describe('HandbookScene', () => {
     expect({ ...t.game.state.story, fresh: [] }).toEqual(before);
   });
 
-  it('a companion not yet met shows a silhouette and ？？？, never the real name or title', () => {
+  it('a companion not yet met shows a silhouette and ？？？, never the real name or title, and no detail heading', () => {
     const lost = CHARACTER_IDS.find((id) => !new Game(constRng(0.5), null).state.party.recruited.includes(id))!;
     const t = setup(undefined, undefined, { has: (u) => u === art.standee(lost) });
     t.goTab(H.tabs.people);
-    const game = t.game;
-    const m = game.state.party.roster[lost];
-    const idx = t.labels().indexOf(H.unknown);
-    expect(idx).toBeGreaterThanOrEqual(0);
-    const order = CHARACTER_IDS.filter((id) => !game.state.party.recruited.includes(id));
-    // walk the cursor onto the first unmet person
-    const first = CHARACTER_IDS.indexOf(order[0]);
-    for (let i = 0; i < first; i++) t.s.onAction('down');
+    for (let i = 0; i < CHARACTER_IDS.indexOf(lost); i++) t.s.onAction('down');
     const img = t.root.querySelector('.slx-status-standee')!;
     expect(img.classList.contains('slx-silhouette')).toBe(true);
-    expect(img.getAttribute('src')).toBe(art.standee(artIdOf(game.state.party.roster[order[0]])));
+    expect(img.getAttribute('src')).toBe(art.standee(artIdOf(t.game.state.party.roster[lost])));
     expect(t.root.textContent).toContain(H.unknown);
-    expect(t.root.textContent).not.toContain(titleOf(game.state.party.roster[order[0]]));
-    expect(t.root.textContent).not.toContain(CHARACTERS[order[0]].name);
-    expect(m).toBeDefined();
+    expect(t.root.textContent).not.toContain(titleOf(t.game.state.party.roster[lost]));
+    expect(t.root.textContent).not.toContain(CHARACTERS[lost].name);
+    // a big ？？？ beside the first row would read as that row's person
+    expect(t.root.querySelector('.slx-hb-detail h4')).toBeNull();
+  });
+
+  it('the standee picture is kept, not rebuilt, while the cursor stays on the same person', () => {
+    const t = setup(undefined, (g) => meetAll(g, ['noel'], 1), { has: (u) => u === art.standee('noel') });
+    t.pick(CHARACTERS.noel.name);
+    const img = t.root.querySelector('.slx-status-standee')!;
+    t.s.onAction('down');
+    expect(t.root.querySelector('.slx-status-standee')).toBe(img);
   });
 
   it('a person not yet met with no standee art shows only ？？？', () => {

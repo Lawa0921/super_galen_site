@@ -494,11 +494,10 @@ $slx-battle-left: 150px;
 
 // Adventurer's handbook: the status sheet's frame, a list beside its detail
 .slx-silhouette { filter: brightness(0); }
-.slx-handbook .slx-status-standee.slx-silhouette { filter: brightness(0); }
 .slx-hb-body { flex: 1; display: flex; gap: 12px; min-height: 0; }
 .slx-hb-list { flex: 1 1 44%; min-width: 0; }
 .slx-hb-detail { flex: 1 1 56%; min-width: 0; overflow-y: auto; }
-.slx-hb-detail:empty { display: none; }
+.slx-hb-solo .slx-hb-detail { display: none; }
 .slx-hb-detail h4 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
 .slx-hb-detail p { margin: 0 0 6px; }
 .slx-hb-detail .slx-dim { color: $slx-dim; }

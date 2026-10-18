@@ -27,7 +27,7 @@ const LIST_ROWS = 10;
 /** The standee on the left: whose, and whether the person is still a silhouette. */
 interface Shown { id: CharacterId; met: boolean }
 /** One list on a page: its rows, what a pick does, and the detail beside the cursor. */
-interface Level { key: string; rows: MenuItem[]; pick(id: string): void; detail(id: string | undefined): Node[]; shown(id: string | undefined): Shown | null }
+interface Level { key: string; /** No detail column at all: the list takes the whole width. */ solo?: boolean; rows: MenuItem[]; pick(id: string): void; detail(id: string | undefined): Node[]; shown(id: string | undefined): Shown | null }
 
 const paras = (lines: string[]) => lines.map((text) => el('p', { text }));
 const freshRight = (fresh: boolean): Pick<MenuItem, 'right' | 'rightClass'> => (fresh ? { right: H.fresh, rightClass: 'slx-fresh' } : {});
@@ -43,7 +43,7 @@ export class HandbookScene implements Scene {
   private cursors = new Map<string, number>();
   private view: MenuView | null = null;
   private level!: Level;
-  private data!: Handbook;
+  private bodyEl!: HTMLElement;
   private closed = false;
   private talk: Dialogue;
   private playing: ReturnType<typeof playScene> | null = null;
@@ -70,7 +70,7 @@ export class HandbookScene implements Scene {
     this.hintEl = el('p', { class: 'slx-hint', text: this.dungeon() ? H.hintReadonly : H.hint });
     this.sceneEl = el('div', { class: 'slx-scene slx-status-scene slx-handbook' }, [
       this.artEl,
-      (this.panelEl = win('slx-status-panel', [this.tabsEl, el('div', { class: 'slx-hb-body' }, [this.listEl, this.detailEl]), this.hintEl])),
+      (this.panelEl = win('slx-status-panel', [this.tabsEl, (this.bodyEl = el('div', { class: 'slx-hb-body' }, [this.listEl, this.detailEl])), this.hintEl])),
       (this.backEl = backControl(() => this.onAction('cancel'))),
       this.talk.el,
     ]);
@@ -114,7 +114,7 @@ export class HandbookScene implements Scene {
           ? { id: m.id, label: CHARACTERS[m.id].name, right: H.pieces(m.pieces.filter((p) => p.found).length, chainLength(m.id)), ...(m.pieces.some((p) => p.found && p.seen && p.fresh) ? freshRight(true) : {}) }
           : { id: m.id, label: H.unknown }),
         pick: (id) => { if (pages.find((m) => m.id === id)!.met) { this.sub = id as CharacterId; this.render(); } else this.ctx.sfx.error(); },
-        detail: () => [], shown: (id) => (id ? { id: id as CharacterId, met: pages.find((m) => m.id === id)!.met } : null),
+        detail: () => [], solo: true, shown: (id) => (id ? { id: id as CharacterId, met: pages.find((m) => m.id === id)!.met } : null),
       };
     }
     const who = this.sub;
@@ -126,7 +126,7 @@ export class HandbookScene implements Scene {
         ? { id: p.scene, label: STORY.scenes[p.scene].title, ...freshRight(p.fresh) }
         : { id: `hint:${p.n}`, label: H.unknown, right: p.hint }),
       pick: (id) => this.pickScene(id),
-      detail: () => [], shown: () => ({ id: who, met: page.met }),
+      detail: () => [], solo: true, shown: () => ({ id: who, met: page.met }),
     };
   }
 
@@ -135,7 +135,7 @@ export class HandbookScene implements Scene {
     const page = (id: string | undefined) => pages.find((p) => p.id === id);
     const detail = (p: Handbook['people'][number] | undefined): Node[] => !p ? [] : p.met
       ? [el('h4', { text: `${p.title} ${CHARACTERS[p.id].name}` }), ...paras(p.segments)]
-      : [el('h4', { text: H.unknown })];
+      : [];
     if (this.sub === null) {
       return {
         key: 'people', rows: pages.map((p): MenuItem => p.met
@@ -202,9 +202,10 @@ export class HandbookScene implements Scene {
 
   private render(): void {
     if (this.closed) return;
-    const h = this.data = handbook(this.ctx.game.state);
+    const h = handbook(this.ctx.game.state);
     const tab = TABS[this.tab] as Tab;
     this.level = { memories: () => this.memories(h), people: () => this.people(h), town: () => this.town(h), codex: () => this.codex(h), truths: () => this.truths(h) }[tab]();
+    this.bodyEl.classList.toggle('slx-hb-solo', !!this.level.solo);
     this.tabsEl.replaceChildren(...TABS.map((t, i) => {
       const b = el('span', { class: i === this.tab ? 'slx-tab slx-tab-sel' : 'slx-tab', text: H.tabs[t], attrs: { role: 'tab', 'aria-selected': String(i === this.tab) } });
       b.addEventListener('click', () => { if (this.playing) return; this.tab = i; this.sub = null; this.ctx.sfx.cursor(); this.render(); });
@@ -233,7 +234,11 @@ export class HandbookScene implements Scene {
     const state = this.ctx.game.state;
     const face = shown ? artIdOf(state.party.roster[shown.id] ?? { id: shown.id, oath: undefined }) : null;
     const src = face && this.ctx.art.has(art.standee(face)) ? art.standee(face) : null;
-    this.artEl.replaceChildren(...(src && shown ? [el('img', { class: shown.met ? 'slx-status-standee' : 'slx-status-standee slx-silhouette', attrs: { src, alt: shown.met ? CHARACTERS[shown.id].name : '' } })] : []));
+    if (!src || !shown) { this.artEl.replaceChildren(); return; }
+    // The same picture stays put, so its slide-in does not restart on every cursor move.
+    const cur = this.artEl.firstElementChild;
+    if (cur && cur.getAttribute('src') === src && cur.classList.contains('slx-silhouette') === !shown.met) return;
+    this.artEl.replaceChildren(el('img', { class: shown.met ? 'slx-status-standee' : 'slx-status-standee slx-silhouette', attrs: { src, alt: shown.met ? CHARACTERS[shown.id].name : '' } }));
   }
 
   // ---- Replay ----
