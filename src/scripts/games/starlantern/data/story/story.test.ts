@@ -631,10 +631,16 @@ describe('the script gates', () => {
     expect(early.length).toBeGreaterThan(0);
     for (const t of early) expect(t.text, t.key).not.toMatch(AVOID);
     expect(STORY.rinLines.act3!.some((x) => AVOID.test(x))).toBe(true);   // act 3 is where her town lines start looking away
-    // After her choice she looks at him: the oath lines and every oath:true line of her chats.
+    // Each chat is read as it plays (linesWhen), so a malformed condition cannot drop a line out of the check unseen.
+    const reading = (n: number, oath: boolean) => linesWhen(STORY.scenes[`chat:rin:${n}` as SceneId].lines, { met: ['hero', 'rin'], full: [], returned: [], oath });
+    // Before her choice, chat 3 (act 3) is where she looks away, in all three lines it plays.
+    expect(reading(3, false).length).toBe(3);
+    expect(reading(3, false).some((l) => l.who === 'narrator' && AVOID.test(l.text))).toBe(true);
+    // After her choice she looks at him: the oath lines and every chat as it plays then.
     for (const t of STORY.rinOath) expect(t).not.toMatch(AVOID);
+    expect(reading(3, true).length).toBe(3);
     for (let n = 1; n <= 4; n++) {
-      for (const l of STORY.scenes[`chat:rin:${n}` as SceneId].lines.filter((x) => x.if?.oath === true || n === 4)) expect(l.text, `chat:rin:${n}`).not.toMatch(/避開|別開|不看|別看/);
+      for (const l of reading(n, true)) expect(l.text, `chat:rin:${n}`).not.toMatch(/避開|別開|不看|別看|落回/);
     }
     expect(STORY.rinLines.after).toBeUndefined();   // after the finale she has always chosen (U3): only rinOath plays
   });
@@ -655,6 +661,26 @@ describe('the script gates', () => {
     const all = [...reveal.map((l) => l.text), STORY.scenes['rin-reveal'].summary].join('');
     expect(all).not.toMatch(/守燈人|燈鑰|晚一次|殺的一直是/);
     expect(reveal.every((l) => l.if === undefined)).toBe(true);   // her choice is not the player's: one version
+  });
+
+  it('every line condition is well formed', () => {
+    // Task 7 fix round 1: a condition object passed where a flag was meant made `if.oath` an object, and linesWhen dropped the line in every reading.
+    const KEYS = ['met', 'notMet', 'returned', 'full', 'oath'];
+    for (const { key, line } of storyTexts().filter((t) => t.line)) {
+      const c = line!.if;
+      if (c === undefined) continue;
+      expect(typeof c, key).toBe('object');
+      for (const k of Object.keys(c)) expect(KEYS, `${key}: if.${k}`).toContain(k);
+      if ('oath' in c) expect(typeof c.oath, `${key}: if.oath`).toBe('boolean');
+      for (const k of ['met', 'notMet', 'returned', 'full'] as const) if (k in c) expect(typeof c[k], `${key}: if.${k}`).toBe('string');
+    }
+    // and every line of every scene plays in at least one reading
+    for (const id of SCENE_IDS) {
+      const lines = STORY.scenes[id].lines;
+      const everyone: LineWhen = { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: TOWN_FRAGMENTS.map((f) => f.id), oath: false };
+      const played = new Set([...linesWhen(lines, everyone), ...linesWhen(lines, { ...everyone, oath: true })]);
+      for (const l of lines) if (!l.if?.notMet) expect(played.has(l), `${id}: ${l.text}`).toBe(true);
+    }
   });
 
   it('the first chat of anyone is never gated', () => {

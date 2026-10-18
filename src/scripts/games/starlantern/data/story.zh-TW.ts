@@ -404,12 +404,12 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'chat:rin:3': {
     lines: [
-      N('凜在擦短刃。洛恩在她對面坐下，她的視線便落回刀刃上，再也沒有抬起來。', { oath: false }),
-      { who: 'rin', text: '「……喂。你是人吧。」', if: { oath: false } },
+      N('凜在擦短刃。洛恩在她對面坐下，她的視線便落回刀刃上，再也沒有抬起來。', false),
+      { who: 'rin', text: '「……喂。你是人？」', if: { oath: false } },
       { who: 'hero', text: '「我想是。會餓，會累，回來的時候也會想睡。」', if: { oath: false } },
-      N('凜在擦短刃。洛恩在她對面坐下，她停下手，抬起頭看著他。', { oath: true }),
+      N('凜在擦短刃。洛恩在她對面坐下，她停下手，抬起頭看著他。', true),
       { who: 'rin', mood: 'smile', text: '「以前，我不敢看你的眼睛。……現在，想多看一點。」', if: { oath: true } },
-      N('洛恩沒有說話，也沒有移開視線。', { oath: true }),
+      N('洛恩沒有說話，也沒有移開視線。', true),
     ],
     summary: '洛恩在擦短刃的凜對面坐下。她說了一句話，眼神說得更多。',
   },
@@ -469,9 +469,9 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   ],
   // Task 7: segment 3 unlocks with her 7th piece, before the reveal (the handbook opens in the dungeon): no choice (F6).
   rin: [
-    '凜，失憶的短刃使。和洛恩一起倒在傳送門廣場，刀柄上刻著一個「凜」字，她就用它當名字。',
-    '在鐘樓下長大，丟針是她小時候的遊戲。戰鬥時從不眨眼。師父教她：從深處走出來的，不是人。',
-    '「凜」是靜鐘會給刺客的代號，領口的銅鐘是信物。鐘響那天，她追著從深處走出來的人進了迷宮。',
+    '凜。和我一起倒在傳送門廣場的女孩，刀柄上刻著這個字，她就用它當名字。話很少，常在我背後。',
+    '她在鐘樓下長大，丟針是她小時候的遊戲。她戰鬥時從不眨眼。她的師父說，從深處走出來的，不是人。',
+    '她的碎片裡，「凜」是靜鐘會給刺客的代號，銅鐘是信物。鐘響了三天，她走進迷宮，追那個從深處走出來的人。',
   ],
 };
 
