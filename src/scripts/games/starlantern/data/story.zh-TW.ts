@@ -209,15 +209,15 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'hero', text: '「『芯盡，其人被吐還地面，一無所記；終將復歸深處，再點此燈。』」' },
       N('冒險者公會。安娜聽完，翻開那本舊登記簿，指著邊上一行褪色的小字。'),
       { who: 'anna', text: '「靜鐘會的人說，那個走出來的人『走到哪裡，暮霧就跟到哪裡』。」' },
-      { who: 'anna', text: '「他們看反了。霧變濃，是因為燈芯燒完了。走出來的人，是要回去點燈的那一個。」' },
+      { who: 'anna', text: '「他們看反了。不是有人走出來，霧才變濃。是燈芯快燒完了，霧才變濃。」' },
       { who: 'hero', mood: 'sad', text: '「……那我為什麼，讀得懂那塊碑？」' },
       // Rin's lines know whether she has made her choice: act 4 may play before her reveal or after it (U1).
       { who: 'narrator', text: '凜一直站在門邊。她的手按著刀柄，像是在等某個聲音。', if: { oath: false } },
       { who: 'rin', text: '「……我出去走走。這裡太安靜了。」', if: { oath: false } },
-      { who: 'rin', mood: 'sad', text: '「我等過那口鐘響。……原來，那是燈熄掉的聲音。」', if: { oath: true } },
+      { who: 'rin', mood: 'sad', text: '「我等過那口鐘響。……等的，原來是一個誤會。」', if: { oath: true } },
       { who: 'rin', text: '「洛恩。他們錯了。……你不是霧。」', if: { oath: true } },
     ],
-    summary: '地底的古城艾斯特拉。石碑說，有人自願當燈芯，叫守燈人；靜鐘會把燈熄的徵兆看成了災禍的源頭。洛恩讀得懂碑文。',
+    summary: '地底的古城艾斯特拉。石碑說，有人自願當燈芯，叫守燈人。霧變濃是因為燈芯快燒完，靜鐘會看反了。洛恩讀得懂碑文。',
   },
 };
 
@@ -309,7 +309,7 @@ export const STORY = {
     act1: '迷宮吞掉人的記憶，暮霧也是它吐出來的。燈喰之獸倒下，霧散了。三天後，又回來了。',
     act2: '山上的光柱只是燈罩，燈芯在迷宮最底下。迷宮是燈壞掉之後長出來的根。凜喝湯的樣子，像有人規定她非喝完不可。',
     act3: '舊登記簿裡，有好幾個我。有幾筆死在靜鐘會手上。這一次的最後一欄，安娜說會一直空著。',
-    act4: '地底的艾斯特拉，有人自願當燈芯，叫守燈人。靜鐘會把燈熄的徵兆看成了禍根。那塊碑，我讀得懂。',
+    act4: '地底的艾斯特拉，有人自願當燈芯，叫守燈人。霧變濃是因為燈芯快燒完，靜鐘會看反了。那塊碑，我讀得懂。',
     after: '燈點亮了，這一次不必有人燒盡自己。碎片的光回到了主人身上。現在我們下去，是為了把失去的東西找回來。',
   } as Record<Stage, string>,
   town: Object.fromEntries(TOWN_FRAGMENTS.map((f) => [f.id, { lost: ph(`${f.npc}遺失了一段記憶。`), after: ph(`${f.npc}想起來了，謝謝你。`) }])) as Record<TownFragmentId, { lost: string; after: string }>,
