@@ -14,12 +14,16 @@ export const HANG_FRAMES = 4;
 export const MANTLE_FRAMES = 4;
 export const SWIM_FRAMES = 6;
 /** 手交替一整輪（左右手各換一次）爬的距離 px */
-export const CLIMB_STRIDE = 26;
+export const CLIMB_STRIDE = 58;
+/** 往下爬一輪的距離（手抓在手下面，一次只換一小段） */
+export const CLIMBDOWN_STRIDE = 26;
 /** 停在繩上多久才換成 hang（秒） */
 export const HANG_DELAY = 0.16;
 /** 受傷縮身顯示多久（秒） */
 export const HURT_SHOW = 0.22;
 const HANG_RATE = 2.4;
+/** 停下來時把手爬到握繩姿勢的速度（輪 / 秒） */
+const SETTLE_RATE = 1.6;
 const SWIM_PERIOD = 0.9;
 
 export interface AnimInput {
@@ -43,6 +47,8 @@ export class PlayerAnimator {
   private walkPhase = 0;
   private climbPhase = 0;
   private descending = false;
+  /** 停下來後已經對齊到握繩姿勢 */
+  private settled = false;
   private still = 0;
   private hangT = 0;
   private t = 0;
@@ -59,7 +65,7 @@ export class PlayerAnimator {
       frame = p < 0.3 ? 0 : p < 0.62 ? 1 : p < 0.84 ? 2 : 3;
     } else if (i.sinceHurt < HURT_SHOW) anim = 'hurt';
     else if (i.climbing) {
-      if (!wasClimb) { this.climbPhase = 0; this.still = 0; this.hangT = 0; }
+      if (!wasClimb) { this.climbPhase = 0; this.still = 0; this.hangT = 0; this.settled = false; }
       const moving = Math.abs(i.vy) > 1 || Math.abs(i.vx) > 8;
       const down = i.vy > 1;
       if (down !== this.descending && moving) { this.descending = down; this.climbPhase = 0; }
@@ -67,16 +73,30 @@ export class PlayerAnimator {
         // 往上 / 往下各自一套動作，都依爬的距離往前播
         const dist = (Math.abs(i.vy) > 1 ? Math.abs(i.vy) : Math.abs(i.vx)) * dt;
         const before = Math.floor(this.climbPhase * 2);
-        const p = this.climbPhase + dist / CLIMB_STRIDE;
+        const p = this.climbPhase + dist / (this.descending ? CLIMBDOWN_STRIDE : CLIMB_STRIDE);
         if (Math.floor(p * 2) !== before) cue = 'grip';
         this.climbPhase = p - Math.floor(p);
         this.still = 0;
         this.hangT = 0;
-      } else this.still += dt;
-      if (this.still > HANG_DELAY) {
+      } else {
+        this.still += dt;
+        // 停下來：往上爬時先把手爬到下一個「兩手都抓著」的姿勢（半輪的邊界）再掛著，不會從半空中的手跳到掛著
+        if (!this.descending && !this.settled && Math.abs(this.climbPhase * 2 - Math.round(this.climbPhase * 2)) < 1e-6) this.settled = true;
+        if (!this.descending && !this.settled) {
+          const before = Math.floor(this.climbPhase * 2);
+          const p = this.climbPhase + dt * SETTLE_RATE;
+          if (Math.floor(p * 2) !== before) { this.climbPhase = (Math.floor(p * 2) / 2) % 1; this.settled = true; cue = 'grip'; }
+          else this.climbPhase = p;
+        }
+      }
+      if (moving) this.settled = false;
+      const ready = this.descending || this.settled;
+      if (this.still > HANG_DELAY && ready) {
         anim = 'hang';
         this.hangT += dt;
-        frame = Math.floor(this.hangT * HANG_RATE) % HANG_FRAMES;
+        // 兩種握法：停在第 0 格 → 前手在上；停在第 4 格 → 後手在上（和停下來那一格一樣）
+        const variant = this.descending ? 0 : Math.round(this.climbPhase * 2) % 2;
+        frame = variant * HANG_FRAMES + (Math.floor(this.hangT * HANG_RATE) % HANG_FRAMES);
       } else {
         anim = this.descending ? 'climbdown' : 'climb';
         const n = this.descending ? CLIMBDOWN_FRAMES : CLIMB_FRAMES;

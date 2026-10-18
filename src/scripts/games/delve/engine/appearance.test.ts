@@ -72,7 +72,9 @@ describe('體型（男 / 女）', () => {
     expect(sw.body).toBe(1);
     expect(sw.hair).toBe(custom.hair);
     expect(sw.outfit).toBe(5);
-    expect(sw.blush).toBe(false);
+    // 腮紅是玩家自己的選擇：換體型不重設
+    expect(sw.blush).toBe(true);
+    expect(stepAppearance({ ...custom, blush: false }, 'body', 1).blush).toBe(false);
   });
   it('隨機也會挑體型', () => {
     const r = lcg(21), seen = new Set<number>();

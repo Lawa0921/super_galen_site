@@ -188,11 +188,12 @@ export function setAppearance(a: Appearance, key: AppearanceKey, value: number |
   return out;
 }
 
-/** 換體型：還是另一邊的預設（沒改過）→ 換成這一邊的預設；改過 → 只換體型與腮紅，其他保留 */
+/** 換體型：還是另一邊的預設（沒改過）→ 換成這一邊的預設；改過 → 只換體型，其他（含腮紅）保留 */
 function switchBody(a: Appearance, body: number): Appearance {
   if (body === a.body) return { ...a };
   if (sameAppearance(a, bodyDefaults(a.body))) return bodyDefaults(body);
-  return { ...a, body, blush: body === 0 };
+  // 改過的外觀：只換體型，腮紅等其他選擇都保留
+  return { ...a, body };
 }
 
 /**

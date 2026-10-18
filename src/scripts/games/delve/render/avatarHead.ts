@@ -31,6 +31,11 @@ const HEAD_ROWS: readonly [number, number][] = [
   [5, 12], [3, 14], [2, 15], [1, 16], [1, 16], [0, 17], [0, 17], [0, 17], [0, 17],
   [0, 17], [0, 17], [0, 17], [1, 17], [1, 17], [2, 16], [3, 16], [5, 15], [8, 13],
 ];
+/** 男生的頭：下巴方（兩側到底才收）、比女生長一列 */
+const HEAD_ROWS_M: readonly [number, number][] = [
+  [5, 12], [3, 14], [2, 15], [1, 16], [1, 16], [0, 17], [0, 17], [0, 17], [0, 17],
+  [0, 17], [0, 17], [0, 17], [0, 17], [1, 17], [1, 17], [2, 17], [3, 16], [5, 16], [7, 15],
+];
 const inSkull = (x: number, y: number): boolean => { const r = HEAD_ROWS[y]; return Boolean(r) && x >= r[0] && x <= r[1]; };
 /** 髮量的外框（比頭大一圈） */
 const inCap = (x: number, y: number, k = 1): boolean => {
@@ -129,21 +134,26 @@ const EYES: Record<string, { near: string[]; far: string[]; y: number }> = {
   // 往上看（爬繩）：眼睛高一格、瞳孔在上半
   up: { y: 7, near: ['LLLL', 'DHDD', 'WDMB', '..BB'], far: ['LLL', 'HD.', 'DB.', 'B..'] },
   // 男生：眼睛矮一格（3 列）、上揚、睫毛不往外翹
-  round_m: { y: 9, near: ['.LLL', '.HDD', '.DMB'], far: ['LL.', 'HD.', 'MB.'] },
-  sharp_m: { y: 8, near: ['...L', '.LLL', '.HDD', '..MB'], far: ['L..', 'LL.', 'HD.', 'B..'] },
-  droopy_m: { y: 9, near: ['.LLL', 'LHDD', '..MB'], far: ['LL.', 'HDL', 'MB.'] },
-  up_m: { y: 8, near: ['.LLL', '.DHD', '.DMB'], far: ['LL.', 'HD.', 'DB.'] },
+  // 男生：眼睛細（上眼線 + 兩列瞳孔）、只有上眼線不翹睫毛、高光壓在下半
+  round_m: { y: 9, near: ['.LLL', '.DDM', '.DHB'], far: ['LL.', 'DM.', 'HB.'] },
+  sharp_m: { y: 9, near: ['..LL', '.LDM', '.DHB'], far: ['LL.', 'DM.', 'H..'] },
+  droopy_m: { y: 9, near: ['.LLL', '.DDM', '..HB'], far: ['LL.', 'DM.', 'HB.'] },
+  up_m: { y: 8, near: ['.LLL', '.DHM', '.DMB'], far: ['LL.', 'HM.', 'DB.'] },
+  effort_m: { y: 9, near: ['.LLL', '.LDM', '..HB'], far: ['LL.', 'LM.', 'H..'] },
 };
 /** 男生的眉毛（粗一點、畫在瀏海上面）：眼睛上方兩列 */
 export function brows(b: Bmp, a: Appearance, expr: Expr, ox: number, oy: number): void {
   if (a.body !== 1 || expr === 'dead') return;
   const g = EYES[eyeKind(a, expr)], c = hairRamp(a.hairColor)[0];
   const y = oy + g.y - 2, angry = expr === 'effort' || expr === 'hurt';
-  for (let x = 9; x <= 11; x++) b.set(ox + x, y + (angry && x === 11 ? 1 : 0), c);
-  b.set(ox + 14, y + (angry ? 1 : 0), c); b.set(ox + 15, y, c);
+  // 粗直眉：近側 5 格、遠側 3 格，內側兩格加粗一列；用力時內側往下壓
+  for (let x = 8; x <= 12; x++) b.set(ox + x, y + (angry && x >= 11 ? 1 : 0), c);
+  for (let x = 10; x <= 12; x++) b.set(ox + x, y - 1 + (angry && x >= 11 ? 1 : 0), c);
+  for (let x = 14; x <= 16; x++) b.set(ox + x, y + (angry && x === 14 ? 1 : 0), c);
+  b.set(ox + 14, y - 1 + (angry ? 1 : 0), c);
 }
 function eyeKind(a: Appearance, expr: Expr): string {
-  const k = expr === 'blink' ? 'blink' : expr === 'happy' ? 'happy' : expr === 'hurt' ? 'hurt' : expr === 'effort' ? 'sharp' : expr === 'dead' ? 'dead' : expr === 'up' ? 'up' : (['round', 'sharp', 'droopy'][a.eyeShape] ?? 'round');
+  const k = expr === 'blink' ? 'blink' : expr === 'happy' ? 'happy' : expr === 'hurt' ? 'hurt' : expr === 'effort' ? (a.body === 1 ? 'effort' : 'sharp') : expr === 'dead' ? 'dead' : expr === 'up' ? 'up' : (['round', 'sharp', 'droopy'][a.eyeShape] ?? 'round');
   return a.body === 1 && EYES[`${k}_m`] ? `${k}_m` : k;
 }
 
@@ -232,16 +242,21 @@ function sideHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): v
   const a = o.app, h = hairRamp(a.hairColor), sk = skinRamp(a.skin), st = styleId(a), acc = o.gear ? 'none' : accId(a), m = o.motion;
   const sw = m.swing, lift = m.lift;
   const head = new Bmp(front.w, front.h);
-  // 臉：頭型 + 遠側臉頰 / 下巴陰影
-  for (let y = 0; y < HEAD_ROWS.length; y++) {
-    const [x0, x1] = HEAD_ROWS[y];
+  // 臉：頭型 + 遠側臉頰 / 下巴陰影（男生：方下巴、長一列）
+  const rows = a.body === 1 ? HEAD_ROWS_M : HEAD_ROWS;
+  for (let y = 0; y < rows.length; y++) {
+    const [x0, x1] = rows[y];
     for (let x = x0; x <= x1; x++) {
-      const sh = (x === x1 && y >= 5 && y <= 14) || y >= 16 || (y === 15 && x >= 14);
+      const chin = rows.length - 3;
+      const sh = (x === x1 && y >= 5 && y <= chin - 2) || y >= chin || (y === chin - 1 && x >= 14);
       head.set(ox + x, oy + y, sh ? sk[2] : sk[3]);
     }
   }
-  // 脖子
-  head.rect(ox + 8, oy + 18, 4, 2, sk[2]);
+  // 下顎線（男生）：下巴底下一道深一階
+  if (a.body === 1) for (let x = 8; x <= 15; x++) head.set(ox + x, oy + rows.length - 1, sk[1]);
+  // 脖子（男生長、粗一點）
+  if (a.body === 1) head.rect(ox + 7, oy + rows.length, 5, 3, sk[2]);
+  else head.rect(ox + 8, oy + 18, 4, 2, sk[2]);
   // 耳朵
   const def = HAIR[st] ?? HAIR.bob;
   // 頭髮主體

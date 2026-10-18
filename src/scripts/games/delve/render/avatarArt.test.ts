@@ -180,6 +180,10 @@ describe('體型（男 / 女）與爬繩', () => {
     const fb = avatarFrame(plainLook(female), 'idle', 0).body, mb = avatarFrame(plainLook(male), 'idle', 0).body;
     const width = (b: Bmp, y: number): number => { let n = 0; for (let x = 0; x < b.w; x++) if (b.on(x, y)) n++; return n; };
     expect(width(mb, 34)).toBeGreaterThan(width(fb, 34));
+    // 男生整體高 2 格（頭頂比較高）
+    const topRow = (b: Bmp): number => { for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) return y; return b.h; };
+    const ff = flatFrame(avatarFrame(plainLook({ ...female, ahoge: false }), 'idle', 0)), mf = flatFrame(avatarFrame(plainLook({ ...male, ahoge: false }), 'idle', 0));
+    expect(topRow(ff) - topRow(mf)).toBeGreaterThanOrEqual(2);
     expect(diff(fb, mb)).toBeGreaterThan(20);
     for (const body of [0, 1]) {
       for (let o = 0; o < OUTFITS.length; o++) clean(avatarSheet(plainLook({ ...DEF, body, outfit: o })).b, `body ${body} outfit ${o}`);
