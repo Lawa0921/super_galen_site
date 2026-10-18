@@ -315,13 +315,20 @@ export class DungeonScene implements Scene {
 
   /** A rescue room: its lines one at a time, each with its own speaker, then the fight as for any encounter. */
   private async meeting(who: Meetable): Promise<void> {
-    for (const line of STORY.meet[who].before) {
-      // Each line has its own speaker: the found line is narration (no plate, no face), hers carry her portrait.
-      const sp = speakerOf(line.who, this.ctx.game.state, this.ctx.art, line.mood);
-      await this.say(line.text, sp.name, sp.face ? { src: sp.face, side: 'left' } : undefined);
-      if (this.exited) return;   // the scene went while a line was waiting: no fight from a scene that is gone
+    this.hideHud(true);
+    let fighting = false;
+    try {
+      for (const line of STORY.meet[who].before) {
+        // Each line has its own speaker: the found line is narration (no plate, no face), hers carry her portrait.
+        const sp = speakerOf(line.who, this.ctx.game.state, this.ctx.art, line.mood);
+        await this.say(line.text, sp.name, sp.face ? { src: sp.face, side: 'left' } : undefined);
+        if (this.exited) return;   // the scene went while a line was waiting: no fight from a scene that is gone
+      }
+      fighting = true;
+      this.fightOn(false);   // the scene leaves for the battle: the lines stay hidden under the closing bars
+    } finally {
+      if (!fighting) this.hideHud(false);
     }
-    this.fightOn(false);
   }
 
   /** A flash and closing bars before the battle (red for the boss); skipped in fast mode. */

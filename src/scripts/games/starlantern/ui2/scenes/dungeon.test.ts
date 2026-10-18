@@ -523,7 +523,7 @@ describe('DungeonScene loot', () => {
       const at = floorOf(game.run!, 2).contents.find((c) => c.kind === 'rescue')!.at;
       const dir = (['up', 'down', 'left', 'right'] as const).find((d) => !['wall', 'trap'].includes(tileAt(game.map(), { x: at.x - DELTA[d].x, y: at.y - DELTA[d].y })))!;
       game.pos = { x: at.x - DELTA[dir].x, y: at.y - DELTA[dir].y };
-      return { game, sfx, go, s, text, dir };
+      return { game, sfx, go, s, text, dir, root };
     };
     const settle = () => new Promise((r) => setTimeout(r, 0));
 
@@ -539,6 +539,27 @@ describe('DungeonScene loot', () => {
       await settle();
       expect(sfx.encounter).toHaveBeenCalledTimes(1);
       expect(go).toHaveBeenCalledWith('battle');
+    });
+
+    it('the weight and key hint step aside during the meeting and stay hidden into the fight', async () => {
+      const { go, s, dir, root } = rescueSetup();
+      const hidden = () => ['.slx-weight', '.slx-keyhint'].map((c) => root.querySelector(c)!.classList.contains('slx-cmd-hidden'));
+      expect(hidden()).toEqual([false, false]);
+      s.onAction(dir);
+      expect(hidden()).toEqual([true, true]);
+      s.onAction('confirm');
+      await settle();
+      expect(go).toHaveBeenCalledWith('battle');
+      expect(hidden()).toEqual([true, true]);   // the scene leaves for the battle: nothing flashes back
+    });
+
+    it('they come back when the scene went before the meeting ended', async () => {
+      const { s, dir, root } = rescueSetup();
+      s.onAction(dir);
+      s.exit();
+      s.onAction('confirm');
+      await settle();
+      expect(root.querySelector('.slx-weight')!.classList.contains('slx-cmd-hidden')).toBe(false);
     });
 
     it('says every line of a longer meeting in turn, and fights after the last', async () => {
