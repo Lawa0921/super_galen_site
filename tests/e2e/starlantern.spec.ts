@@ -1250,6 +1250,22 @@ test.describe('starlantern', () => {
     await expect(memoryText).toHaveText(rinFirst.text);
     await expect(page.locator('.slx-dungeon .slx-talk .slx-name')).toHaveText(CHARACTERS.rin.name);
     await expect(page.locator('.slx-dungeon .slx-talk img.slx-talk-face[src$="/char/rin-portrait.png"]')).toBeVisible();   // her memory is spoken with her portrait on the box
+    // Task 10a: the portrait stands at least twice its old 96px (on-screen, at the page's own scale), and clear of the text and the name plate.
+    {
+      const scr = (await box(page))!;
+      const k = scr.width / 640;
+      const face = (await page.locator('.slx-dungeon .slx-talk img.slx-talk-face').boundingBox())!;
+      const textBox = (await memoryText.boundingBox())!;
+      const nameBox = (await page.locator('.slx-dungeon .slx-talk .slx-name').boundingBox())!;
+      expect(face.height).toBeGreaterThanOrEqual(2 * 96 * k - 0.5);
+      expect(face.width).toBeGreaterThanOrEqual(2 * 96 * k - 0.5);
+      const clear = (a: { x: number; y: number; width: number; height: number }, b: typeof a) => a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y;
+      expect(clear(face, textBox), 'portrait clear of the dialogue text').toBe(true);
+      expect(clear(face, nameBox), 'portrait clear of the name plate').toBe(true);
+      expect(face.y).toBeGreaterThanOrEqual(scr.y - 0.5);
+      expect(face.x).toBeGreaterThanOrEqual(scr.x - 0.5);
+      expect(face.x + face.width).toBeLessThanOrEqual(scr.x + scr.width + 0.5);
+    }
     await shot('03-memory-scene');
     await playOut();
     await expect(page.locator('.slx-talk--memory')).toHaveCount(0);
