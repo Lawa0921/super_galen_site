@@ -252,7 +252,21 @@ function storyTexts(): Text[] {
 
 /** The keys that are finished copy. Each entry is a prefix ending in "." or ":" (so `town.` never eats `townLines`) or one whole leaf key. */
 const WRITTEN: string[] = [];
-const isWritten = (key: string): boolean => WRITTEN.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
+const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
+const isWritten = (key: string): boolean => writtenBy(WRITTEN, key);
+// The WRITTEN-only gates are pure functions of their arrays, so they can be tested with an injected list while WRITTEN is empty.
+/** Keys that are finished copy but still carry placeholder text. */
+const placeholdersIn = (texts: Text[], written: string[], placeholders: ReadonlySet<string>): string[] =>
+  texts.filter((t) => writtenBy(written, t.key) && placeholders.has(t.text)).map((t) => t.key);
+/** WRITTEN entries that match no key at all (a typo would leave its placeholder gate inert), and prefixes that do not end at a separator. */
+const strayEntries = (texts: Text[], written: string[]): string[] =>
+  written.filter((w) => (/[.:]$/.test(w) ? !texts.some((t) => t.key.startsWith(w)) : !texts.some((t) => t.key === w)));
+/** Spec quotes missing from a category that is entirely written (every key under the prefix, so narrower entries count too). */
+const missingQuotes = (texts: Text[], written: string[], quotes: [string, string][]): string[] =>
+  quotes.filter(([prefix, quote]) => {
+    const under = texts.filter((t) => t.key.startsWith(prefix));
+    return under.length > 0 && under.every((t) => writtenBy(written, t.key)) && !under.some((t) => t.text.includes(quote));
+  }).map(([prefix, quote]) => `${prefix} lacks 「${quote}」`);
 
 const stageIdx = (s: Stage): number => STAGES.indexOf(s);
 const later = (a: Stage, b: Stage): Stage => (stageIdx(a) >= stageIdx(b) ? a : b);
@@ -308,7 +322,7 @@ function position(key: string): Stage {
     case 'finaleBossName': case 'finaleWait': return 'act4';
     case 'endingTitle': case 'finale': return 'after';
     case 'rinOath': return rinSeventh();
-    case 'bellkeeper': return a === 'after' ? 'after' : a === 'oath' ? rinSeventh() : 'prologue';
+    case 'bellkeeper': return a === 'after' ? 'after' : a === 'oath' ? rinSeventh() : 'act3';   // the bellkeeper shows up after act 3 (spec §8.4)
     case 'meet': return metStage(a);
     case 'people': {
       if (a === 'hero' || a === 'rin') {
@@ -399,6 +413,7 @@ describe('the script gates', () => {
       expect(text, key).not.toMatch(/["'`]/);
       expect(text, key).not.toMatch(/\.\.\./);
       expect(text, key).not.toMatch(/[,!?:;]/);
+      expect(text, key).not.toMatch(/[.\-~()]/);   // full-width 。、──～（） only
     }
   });
 
@@ -453,20 +468,43 @@ describe('the script gates', () => {
   });
 
   it('WRITTEN entries never reach into another category', () => {
-    const keys = new Set(storyTexts().map((t) => t.key));
-    for (const w of WRITTEN) expect(/[.:]$/.test(w) || keys.has(w), w).toBe(true);
+    expect(strayEntries(storyTexts(), WRITTEN)).toEqual([]);
   });
 
   it('written categories hold no placeholder', () => {
-    for (const { key, text } of storyTexts().filter((t) => isWritten(t.key))) expect(PLACEHOLDERS.has(text), key).toBe(false);
+    expect(placeholdersIn(storyTexts(), WRITTEN, PLACEHOLDERS)).toEqual([]);
   });
 
   it('spec quotes appear verbatim', () => {
-    for (const [prefix, quote] of SPEC_QUOTES) {
-      if (!WRITTEN.some((w) => prefix.startsWith(w))) continue;
-      const hit = storyTexts().some((t) => t.key.startsWith(prefix) && t.text.includes(quote));
-      expect(hit, `${prefix} lacks 「${quote}」`).toBe(true);
-    }
+    expect(missingQuotes(storyTexts(), WRITTEN, SPEC_QUOTES)).toEqual([]);
+  });
+
+  it('the WRITTEN-only gates catch what they guard', () => {
+    const t = (key: string, text: string): Text => ({ key, text });
+    const texts = [t('town.orik.lost', '甲'), t('townLines.act1.0', '乙'), t('scenes.mem:rin:1.lines.0.text', '丙'), t('scenes.mem:rin:2.lines.0.text', '丁'), t('survived', '戊')];
+    // a written key that still holds a placeholder is caught; an unwritten one is not
+    expect(placeholdersIn(texts, ['town.'], new Set(['甲']))).toEqual(['town.orik.lost']);
+    expect(placeholdersIn(texts, ['town.'], new Set(['乙']))).toEqual([]);   // `town.` does not eat `townLines`
+    expect(placeholdersIn(texts, ['survived'], new Set(['戊']))).toEqual(['survived']);
+    expect(placeholdersIn(texts, [], new Set(['甲', '乙', '戊']))).toEqual([]);
+    // an entry that matches nothing is caught
+    expect(strayEntries(texts, ['town.', 'scenes.mem:rin:1.', 'survived'])).toEqual([]);
+    expect(strayEntries(texts, ['scene.town:', 'town', 'surviv', 'scenes.mem:rin:9.'])).toEqual(['scene.town:', 'town', 'surviv', 'scenes.mem:rin:9.']);
+    // a quote must be in a category once all of it is written, whether by one broad entry or by narrower ones
+    const q: [string, string][] = [['scenes.mem:rin:', '我想看見']];
+    expect(missingQuotes(texts, ['scenes.mem:rin:'], q)).toEqual(['scenes.mem:rin: lacks 「我想看見」']);
+    expect(missingQuotes(texts, ['scenes.mem:rin:1.', 'scenes.mem:rin:2.'], q)).toEqual(['scenes.mem:rin: lacks 「我想看見」']);
+    expect(missingQuotes(texts, ['scenes.mem:rin:1.'], q)).toEqual([]);   // rin 2 is not written yet
+    expect(missingQuotes(texts, [], q)).toEqual([]);
+    const withQuote = [...texts, t('scenes.mem:rin:3.lines.0.text', '她說：我想看見。')];
+    expect(missingQuotes(withQuote, ['scenes.mem:rin:'], q)).toEqual([]);
+  });
+
+  it('an unknown bellkeeper line is placed after act 3, and the known ones as before', () => {
+    expect(position('bellkeeper.greeting.0')).toBe('act3');
+    expect(position('bellkeeper.oath.0')).toBe(rinSeventh());
+    expect(position('bellkeeper.after.0')).toBe('after');
+    expect(() => position('nope.0')).toThrow();
   });
 
   it('spoilers stay behind their owner', () => {
