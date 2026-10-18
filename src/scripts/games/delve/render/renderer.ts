@@ -28,6 +28,7 @@ import { FloraAtlas, iceBmp } from './seasonArt';
 import { decorStyleAt } from './decorPick'; // [polish]
 import { tileVariant } from './tileFamily'; // [polish]
 import { WeatherFx, type Canopy } from './weatherFx';
+import { lootGlyphScale } from './lootArt';
 import { toCanvas } from './pixel';
 import { bobberBmp, campfireBmp } from './fishArt';
 
@@ -226,6 +227,7 @@ export class Renderer {
     this.buf.width = b.w; this.buf.height = b.h;
     this.zoom = this.scale / this.dpr;
     this.combat.numScale = floatTextScale(this.viewW, this.zoom);
+    this.combat.lootScale = lootGlyphScale(this.zoom);
     const vis = (Math.ceil(this.worldViewW() / CPX) + 1) * (Math.ceil(this.worldViewH() / CPX) + 1);
     if (vis + 8 > this.cache.capacity) {
       const old = this.cache;

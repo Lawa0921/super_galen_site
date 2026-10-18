@@ -1,7 +1,24 @@
 // lootArt.test.ts — 掉落物標記 / 光柱的像素：只用色票色（不透明）、優良 / 稀有有浮動標記、史詩光柱有白芯 + 描邊、神話光柱不是米白色。
 import { describe, it, expect } from 'vitest';
-import { beamPixels, beamColors, markerPixels, rarityColor } from './lootArt';
+import { beamPixels, beamColors, markerPixels, rarityColor, lootGlyphScale, LOOT_MIN_CSS_PER_PX } from './lootArt';
 import { inPalette, hex } from './pixel';
+
+describe('lootGlyphScale：縮小時標記 / 光柱整數倍加粗', () => {
+  it('預設縮放（每美術像素 ≥ 2 CSS px）= 1；縮到 1 CSS px = 2；更小 = 更粗，最多 4；永遠是整數', () => {
+    expect(lootGlyphScale(2)).toBe(1);
+    expect(lootGlyphScale(3)).toBe(1);
+    expect(lootGlyphScale(1.5)).toBe(2);
+    expect(lootGlyphScale(1)).toBe(2);
+    expect(lootGlyphScale(0.5)).toBe(4);
+    expect(lootGlyphScale(0.1)).toBe(4);
+    expect(lootGlyphScale(0)).toBe(1);
+    for (const z of [0.4, 0.75, 1, 1.25, 2, 2.5, 4]) {
+      const k = lootGlyphScale(z);
+      expect(Number.isInteger(k)).toBe(true);
+      if (k < 4) expect(k * z).toBeGreaterThanOrEqual(LOOT_MIN_CSS_PER_PX - 1e-9); // 在畫面上至少 2 CSS px 一個美術像素
+    }
+  });
+});
 
 describe('掉落物標記', () => {
   it('優良 / 稀有：5×5 菱形，有深色描邊、填稀有度色；隨時間上下浮動 1px', () => {

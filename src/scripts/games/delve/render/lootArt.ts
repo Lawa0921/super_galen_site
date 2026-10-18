@@ -109,6 +109,17 @@ export function markerPixels(r: number, t: number): { x: number; y: number; c: s
   return out;
 }
 
+/** 稀有度標記 / 光柱在畫面上至少要這麼多 CSS px 一個美術像素（縮小時整數倍加粗，遠看也讀得出來） */
+export const LOOT_MIN_CSS_PER_PX = 2;
+/**
+ * 地上裝備的標記放大倍數（整數 1..4）：zoom = 目前每個美術像素佔幾 CSS px。
+ * 預設縮放（≥ 2）維持 1；縮小到 1 CSS px / 美術像素時 ×2，標記與光柱仍是整數像素的實心色塊。
+ */
+export function lootGlyphScale(zoom: number): number {
+  if (!(zoom > 0)) return 1;
+  return Math.max(1, Math.min(4, Math.ceil(LOOT_MIN_CSS_PER_PX / zoom - 1e-6)));
+}
+
 /** 傳說 / 神話的閃光：四個方向的十字星，隨時間在掉落物周圍跳動（回傳 [dx, dy, 大小]） */
 export function sparkleAt(t: number, seed: number): [number, number, number] | null {
   const f = Math.floor(t * 6 + seed * 3);
