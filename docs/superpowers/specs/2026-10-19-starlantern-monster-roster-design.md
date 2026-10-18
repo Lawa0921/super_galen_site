@@ -1,614 +1,851 @@
 # 星燈迷宮：怪物名冊擴充設計（Monster Roster）
 
-日期：2026-10-19
+日期：2026-10-19（第二版：依使用者回覆擴大規模、加入掉落、特性與故事連結）
 狀態：草案，待使用者核准
-起因：使用者：「怪物的種類目前也太少」。
-依據（皆已讀過程式碼與文件）：
-- `src/scripts/games/starlantern/data/enemies.ts`、`data/floors.ts`、`data/regions.ts`
-- `engine/scaling.ts`（`encounterTable`、`scaleEnemy`、`DEEP_ENEMIES`、`ENEMY_POWER`、`PARTY_SCALE`、`BOSS_PARTY_SCALE`、`GROUP_CAP`）
-- `engine/battle.ts`（敵人 AI `chooseEnemyActions`、`planEnemies`、`createBattle`）、`engine/skills.ts`（`applyEffect`）、`engine/combatant.ts`
-- `engine/events.ts`（`eliteGroup`）、`engine/game.ts`（遇敵、精英、頭目、`battleGear`）
-- `engine/sim.ts`、`engine/balance*.test.ts`（第 1–20 項平衡帶）
-- `engine/story/handbook.ts`、`ui2/scenes/handbook.ts`（手冊的「圖鑑」頁）
-- `render/artPaths.ts`、`render/artPaths.test.ts`（`allArtUrls` 釘在 246）、`render/BattleView.ts`（地區色調）
-- `art-factory/starlantern/contract.md`、`registry.json`、`tools/batch.py`、`prompts/enemy-*.txt`
-- `docs/superpowers/specs/2026-10-17-starlantern-story-world-design.md`、`2026-10-18-starlantern-affinity-expressions-design.md`
-- `docs/superpowers/plans/2026-10-17-starlantern-plan5d-art.md`、`2026-10-18-starlantern-plan6c-writing.md`
+起因：
+- 使用者：「怪物的種類目前也太少」。
+- 使用者（第二次）：「可以做更多種，頭目肯定也是要夠多的，並且每種怪物要有不同的掉落物和特性，那些也應該一併考慮進去，某些怪物最好還可以跟故事本身結合」。
+- controller 裁定：燈喰之母有自己的造型，數值與技能和燈喰之獸相同。
 
-標記規則：本文件所有數值（屬性、機率、經驗、表格權重）都是**提案**，必須通過平衡模擬才能定案。標「決定」的是本文件的設計判斷，核准時可以改。
+依據（皆已讀過程式碼與文件）：
+- 資料：`src/scripts/games/starlantern/data/enemies.ts`、`floors.ts`、`regions.ts`、`materials.ts`、`items.ts`、`equipment.ts`、`gear.ts`、`forge.ts`
+- 引擎：`engine/scaling.ts`、`battle.ts`、`skills.ts`、`combatant.ts`、`events.ts`、`game.ts`（`battleGear`、`rewards` 的呼叫）、`loot/drops.ts`（`lootRng`、`rollGear`、`pickSpecial`、`mix`）、`dungeon/run.ts`（`floorOf` 與各種 SALT）、`dungeon/rooms.ts`（`placeSpecial`）、`forge/cost.ts`（`forgeRng`）、`sim.ts`、`balance*.test.ts`
+- 手冊：`engine/story/handbook.ts`、`ui2/scenes/handbook.ts`
+- 美術：`render/artPaths.ts`、`render/artPaths.test.ts`（`allArtUrls` 釘在 246）、`render/BattleView.ts`、`art-factory/starlantern/contract.md`、`registry.json`、`tools/batch.py`
+- 故事：`docs/superpowers/specs/2026-10-17-starlantern-story-world-design.md`、`docs/superpowers/story/starlantern-lore-ledger.md`（落點表 §2、揭露表 §3、發明登記 I-xx）、`data/story.zh-TW.ts`
+- 好感度：`docs/superpowers/specs/2026-10-18-starlantern-affinity-expressions-design.md` §6（送禮）、§11（6d、6e）
+- 計畫：`docs/superpowers/plans/2026-10-17-starlantern-plan5d-art.md`、`2026-10-18-starlantern-plan6c-writing.md`
+
+標記規則：
+- 所有數值（屬性、機率、價格、經驗、表格權重）都是**提案**，必須通過平衡模擬才能定案。
+- 標「決定」的是本文件的設計判斷，核准時可以改。
+
+---
+
+## 0. 總數一覽
+
+| 項目 | 數量 | 新美術 |
+|---|---|---|
+| 一般怪物（本道 29、地區 30） | **59** | 59 張敵人圖 |
+| 中頭目（具名精英「守關者」：本道 5、地區 6） | **11** | 11 張 |
+| 頭目（本道 10、地區 18） | **28** | 28 張 |
+| 頭目部件（多部位頭目的手、柱） | 2 | 2 張 |
+| **新敵人定義合計** | **100** | **100 張敵人圖** |
+| 新素材：每種一般怪物的招牌素材 | 59 | 59 個圖示 |
+| 新素材：頭目與中頭目的戰利品（`trophy`） | 39 | 39 個圖示 |
+| 新物品：頭目與中頭目專屬的獨特裝備（`unique`） | 39 | 39 張裝備圖（照 5d 的 `gear-<id>` 做法） |
+| 銘文（一般怪物的專屬詞綴，用既有詞綴鍵） | 59 | 0 |
+| 精英詞綴「飽食個體」 | 5 | 0 |
+| 舊怪物的深層特性（第 4 層起） | 3 | 0 |
+| **新美術合計** | | **100 敵人圖＋98 素材圖示＋39 裝備圖 = 237 件**。圖示與裝備圖做成 5×4 的工作表，共 7 張 codex 生成圖 |
 
 ---
 
 ## 1. 現況（讀過程式碼）
 
 ### 1.1 名冊
-- 一般怪物只有 **8 種**（`NORMAL_ENEMIES`，`scaling.test.ts` 釘死長度 8）：
-  - 第 1 層：`slime`、`bat`、`wolf`
-  - 第 2 層：`beetle`、`wisp`、`lizard`
-  - 第 3 層：`golem`、`shade`
-- 頭目只有 **1 種**：`lanterneater`。
-  - 本道第 3 層（劇情）、每個 5 的倍數層、所有地區的頭目層，全部都是它，只是依深度放大。
-  - 終幕的「燈喰之母」也是它：`FINALE_BOSS = { base: 'lanterneater', power: 0.8 }`，只換名字。
-- 劇情敵人 1 種：`scarlet-foe`（借絲嘉蕾立繪，`look`）。
+- 一般怪物只有 **8 種**（`NORMAL_ENEMIES`，`scaling.test.ts` 釘死長度 8）：第 1 層 `slime`、`bat`、`wolf`；第 2 層 `beetle`、`wisp`、`lizard`；第 3 層 `golem`、`shade`。
+- 頭目只有 **1 種**：`lanterneater`。本道第 3 層、每個 5 的倍數層、所有地區的頭目層都是它，只是依深度放大。終幕也是它（`FINALE_BOSS = { base: 'lanterneater', power: 0.8 }`，只換名字）。
+- 劇情敵人 `scarlet-foe`（借絲嘉蕾立繪）。
+- 8 種裡有 3 種沒有任何技能：`bat`、`beetle`、`golem`。它們只差數值。
 
-### 1.2 遇敵怎麼組
-- `encounterTable(region, depth)`：
-  - 本道：用該深度地形（`terrainOf`，1→2→3 循環）的那一層 `FLOORS[n].encounters`。所以**本道第 25 層遇到的還是第 1 層的史萊姆**，只是被 `growth()` 放大。
-  - 地區：把 `id ≤ depth` 的各層表合在一起（第 3 層以後就是固定的 11 組）。
+### 1.2 遇敵
+- `encounterTable(region, depth)`：本道用該深度地形（1→2→3 循環）那一層的 `FLOORS[n].encounters`，所以**本道第 25 層遇到的還是第 1 層的史萊姆**；地區把 `id ≤ depth` 的各層表合在一起。
 - `encounterGroup` 從表裡 `pick` 一組，**只從 `game.rng` 抽一次**。
-- 精英：`eliteGroup(run, depth)` 用自己加鹽的 `mulberry32(run.seed ^ depth*0x9e3779b1 ^ 0xe11e)`，從同一張表挑一組，第一隻當精英（`ELITE`：hp ×2.2、atk ×1.3、報酬 ×3）。
+- 精英：`eliteGroup(run, depth)` 用自己加鹽的 `mulberry32`，從同一張表挑一組，第一隻當精英。
+- 地區變體：`scaleEnemy` 加前綴、**用地區的弱點與抗性蓋掉**怪物自己的、加地區技能與地區素材；`BattleView` 執行期上色。換色變體已經有了，問題是剪影只有 8 個。
 
-### 1.3 「變體」其實已經有了
-- 地區變體：`scaleEnemy` 加名字前綴（「熾焰・荊棘狼」），**用地區的弱點與抗性整個蓋掉**怪物自己的（劇情敵人除外），加地區技能與地區素材。
-- `BattleView` 在執行期用 ColorMatrix 濾鏡上色（`tintKey`）。
-- 所以「換色變體」已經在用，而且不花美術。玩家抱怨「太少」的原因不是缺色，是**同樣 8 個剪影從第 1 層看到第 30 層**。結論：擴充必須以**新物種**為主，換色只是倍增器（§3.3）。
+### 1.3 戰利品與素材（讀過）
+- **素材掉落**：`EnemyDef.drops: { mat, chance }[]`，勝利時在 `rewards(b, game.rng, …)` 裡**用 `game.rng`** 每隻每條抽一次（`dropMul` 的小數部分再抽一次）。地區素材由 `scaleEnemy` 附加（`REGION_DROP_CHANCE = 0.15`）。
+- **裝備掉落**：`game.battleGear`，全部走 `lootRng(run) = mulberry32(mix(run.seed, run.lootDraws++))`：
+  - 每隻一般怪物一個 `lootRng`，`rng() < GEAR_CHANCE.monster (0.08)` 才 `rollGear`；
+  - 精英一個 `lootRng`：一件裝備（精英機率）＋ `rollRareMaterial`（同一個 rng 實例接著抽）；
+  - 頭目一個 `lootRng`：`rollBossGear` 兩件（同一個實例）。
+  - **每次呼叫 `lootRng` 是一個新的產生器**：在同一個實例裡多抽幾次，不會改變 `lootDraws`，也不會影響之後任何一次掉落；但會改變同一實例裡**後面**那次抽取（例如精英的稀有素材）。
+- **特殊裝備**：`SPECIALS`（傳說、獨特、套裝）。獨特＝固定 3 條詞綴、`ROLL_FLOOR.unique = 0.9`；傳說＝帶一個技能改寫（`POWERS`）。`pickSpecial` 在 `legendaryTier` 時決定是哪一件：本道只出 8 件角色傳說；地區另有該區傳說、獨特、套裝。
+- **素材用途**：
+  - 賣錢（`price`）；
+  - 商店底材解鎖（`EQUIPMENT.unlock`，用第 1–3 層怪物素材）；
+  - 鍛造屋：底材配方（`BASE_RECIPES`）、消耗品配方（`CONSUMABLE_RECIPES`）、強化（精華與稀有素材）、重洗（`REROLL`：地區素材鎖定一組詞綴 `REGION_AFFIX_GROUP`）、融合、套裝製作（`SET_RECIPE`：地區素材 8＋星燈之淚 1）；
+  - 鍛造屋的亂數是 `forgeRng`（`forgeDraws` 計數，玩家主動操作才抽）。
+- **送禮**（affinity spec §6，6d 尚未實作）：`GIFTABLE` 是 `kind` 為 `monster`、`junk`、`rare`、`region` 的素材；每位夥伴有「最愛 +4／喜歡 +2／普通 +1／婉拒 0」，婉拒與痊癒各要寫專屬反應句；同一種素材第 3 份起一律 +1；`BOND_CAP.gift = 30`。
+- **平衡與裝備**：第 10、19a 項的 `kitParty` 依怪物掉落的稀有度權重給全身裝備，`legendaryTier` 算成稀有（「特殊效果不是數值，不進期望」）；第 11、14 項用全身稀有＋強化。
 
 ### 1.4 敵人能做的事
-- 敵人技能 `EnemySkill { name, chance, target, effects }`，`chooseEnemyActions` 依序對每個技能抽一次 `rng() < chance`，抽中第一個就用，否則普攻。
-- 現有 `Effect` 已經支援、可以直接拿來給敵人用（**不需要引擎工作**）：
-  - `damage`：`hits`（多段）、`crit: 'always'`、`melee: false`（打得到後排）、`execute`、`wounded`；
-  - `inflict`：`poison`、`sleep`（頭目抵抗減半）；
-  - `buff`：負的 `pct` 就是減益（`addBuff` 依正負號分開存，最多 `MAX_BUFFS = 3`）；
-  - `heal`、`buff` 對 `ally`／`allies`：敵方的 `resolveTargets` 已經會找敵方的隊友（`ally` 找血量比例最低的）；
-  - `target`：`enemy`、`enemies`、`row`、`column`、`cross`、`self`、`ally`、`allies`。
-- 只有 2 種狀態：`poison`、`sleep`。
+- `EnemySkill { name, chance, target, effects }`；`chooseEnemyActions` 依序對每個技能抽一次 `rng() < chance`。
+- 現有、可以直接給敵人用的效果：`damage`（`hits`、`crit: 'always'`、`melee: false`、`execute`、`wounded`）、`inflict`（`poison`、`sleep`）、`buff`（負值＝減益）、`heal`／`buff` 對 `ally`／`allies`。
+- 平衡帶**窮舉**整張 `encounterTable`，新怪物一進表就被第 7–10、12、17–19a 項量到；頭目帶寫死 `lanterneater`。
 
-### 1.5 平衡模擬怎麼取樣
-- 平衡帶**窮舉**整張 `encounterTable`：`winRate(level, groups, …)` 對每一組跑 N 個種子。
-- 所以：**新怪物只要進了 `encounterTable`，就自動進入第 7、8、9、10、12、17、18、19a 項**。不需要另外「抽樣」；反過來說，進表的那一刻，所有凍結帶都會量到它。
-- 頭目帶（第 6、11、14、16、18e、19b 項）寫死 `'lanterneater'` 或 `FINALE_BOSS.base`。新頭目不會被它們量到，需要新帶（§6.3）。
+### 1.5 美術
+- 敵人圖：單張、單格、透明 PNG，沒有動畫格或表情；動作由程式做。一般 `--height 64`（prompt「about 72 art pixels tall」）、頭目 `--height 150`（「about 160」），每張附已核准的 `enemy-slime` 原圖當風格錨點。
+- `allArtUrls()` 對 `ENEMIES` 每個沒有 `look` 的 id 列一張圖、對 `MATERIALS` 每個不在 `NO_ICON_YET` 的 id 列一個圖示。**只要把 id 加進去，246 就會變**，`published.test.ts` 會去找磁碟上的檔案。
+- 5d 計畫的規則：獨特、傳說、套裝沒有專屬圖時只顯示文字，不借底材圖。
 
-### 1.6 美術
-- 敵人圖都是**單張、單格、透明 PNG**（沒有動畫格、沒有表情）。戰鬥中的晃動、閃白、上色都是程式做的。
-- 已發布尺寸（美術像素）：slime 53×53、bat 119×65、wolf 55×67、beetle 78×65、wisp 50×65、lizard 76×68、golem 72×67、shade 39×68、lanterneater 147×154。
-- 後處理：`sl_art.py process --kind sprite --height 64`（一般）／`--height 150`（頭目）。prompt 寫「about 72 art pixels tall」／「about 160 art pixels tall」。
-- 風格錨點：每張敵人 prompt 都附上已核准的 `enemy-slime` 原圖。
-- `allArtUrls()` 對 `ENEMIES` 裡每個沒有 `look` 的 id 都列一張 `art.enemy(id)`。**只要把新 id 加進 `ENEMIES`，246 就會變**，`published.test.ts` 也會去找磁碟上的檔案。這決定了 §8 的開關設計。
-
-### 1.7 圖鑑
-- 已經有一個很陽春的：手冊第 4 頁「圖鑑」（`CodexPage.monsters`）。
-  - 它列出**全部**非劇情敵人（連沒遇過的都列）；
-  - 只顯示名字與已揭露的弱點（`state.revealed`）；
-  - 沒有圖、沒有介紹、沒有遇過／擊倒的紀錄。
+### 1.6 圖鑑
+- 手冊第 4 頁「圖鑑」列出**全部**非劇情敵人（連沒遇過的都列），只有名字與已揭露的弱點。
 
 ---
 
 ## 2. 目標、非目標、反目標
 
 **目標**
-1. 玩家在任何一段連續 5–6 層的路程裡，看到的怪物組合都會明顯換一批。量化：§3.4 的「新鮮度」驗收。
-2. 每種新怪物都要「打起來不一樣」，不是改數字：至少一個行為讓玩家改變選擇（先打誰、要不要防禦、要不要留 TP）。
-3. 頭目不再全是燈喰之獸。
-4. 任何隊伍組成都要可以用（使用者規則）：沒有任何新機制讓某種職業變成必帶。
-5. 凍結的平衡帶一個都不放寬；只加新帶。
-6. 沒有核准美術的怪物不上線（不用佔位圖）。
+1. 任何連續 5–6 層的路程，看到的怪物明顯換一批（§3.4 的量化驗收）。
+2. **每種怪物**都有改變打法的特性，不是換數字（§5、§6，舊的 `bat`、`beetle`、`golem` 也補上，§5.6）。
+3. **頭目夠多**：本道每 5 層一隻不重複的頭目，到第 50 層；每 5 層之間再有一隻中頭目；每個地區 3 隻頭目＋1 隻中頭目。
+4. **每種怪物有自己的掉落**：招牌素材、專屬銘文或專屬獨特裝備，必要時有稀有掉落；全部接進既有的素材、鍛造、送禮系統（§7）。
+5. **一部分怪物和故事結合**：夥伴的過去、靜鐘會、暮霧、燈喰之母的子嗣（§4），並遵守揭露順序。
+6. 任何隊伍組成都要可以用；凍結平衡帶一個都不放寬；沒有核准美術就不上線。
 
 **非目標**
-- 新素材、新圖示（新怪物掉既有素材，§4.6）。
-- 懸賞任務（第 2 項）。本文件只留接口（§4.8）。
-- 怪物動畫格。沿用單張圖＋程式動畫。
+- 懸賞任務（第 2 項）；本文件留接口（§5.8）。
+- 怪物動畫格。
+- 戰鬥中夥伴認出故人的台詞（需要 6e 之後的文字，列為之後的計畫 7c，§12.4）。
 
 **反目標**
-- 不改既有 8 種怪物與燈喰之獸的定義、技能、表格。第 1–3 層（新手區）一個位元都不變。
-- 不動任何既有平衡旋鈕（`ENEMY_POWER`、`DEEP_ENEMIES`、`PARTY_SCALE`、`BOSS_PARTY_SCALE`、`GROUP_CAP`、`ELITE`）。新怪物只能調**自己**的數字。
-- 不用 `Math.random`；不從既有 rng 串流多抽（§5.3）。
+- 第 1–3 層位元不變（理由：平衡第 1–6、13、15 項與新手體驗的地基；多樣性的問題出在第 4 層以後，新手前三層本來就只走一趟）。
+- 不改舊怪物的定義與技能（舊怪物的深層特性只在新表上線的深度生效，§5.6）。
+- 不動既有平衡旋鈕（`ENEMY_POWER`、`DEEP_ENEMIES`、`PARTY_SCALE`、`BOSS_PARTY_SCALE`、`GROUP_CAP`、`ELITE`、`AFFIX_SCALE`、`GEAR_CHANCE`、`BOSS_LEGENDARY`、`REGION_DROP_CHANCE`）。
+- 不用 `Math.random`；不從既有串流多抽（§7.5）。
+- 不讓怪物把夥伴的過去「當成反派」：故人的殘影不是那個人，打倒是「放下」，不是殺死（§4.1）。
 
 ---
 
-## 3. 名冊規模與分佈（決定）
+## 3. 規模與分佈（決定）
 
 ### 3.1 深度帶
-| 帶 | 深度 | 對應劇情（story spec §8.4） | 主題 |
+| 帶 | 深度 | 劇情階段（ledger §2 的 `ACT_DEPTHS`） | 主題 |
 |---|---|---|---|
-| A | 1–3 | 第一幕 | **不變**：既有 8 種＋燈喰之獸（新手區、平衡第 1–6、13、15 項的地基） |
-| B | 4–9 | 第二幕：燈芯在深處、迷宮是燈變質長出來的 | 「霧根層」：鎮民日常的記憶被吞下去後長出的迴響 |
-| C | 10–15 | 第三幕：靜鐘會、主角被殺過很多次 | 「鐘聲層」：鐘、獵人、成對的影子 |
-| D | 16–24 | 第四幕：艾斯特拉、守燈人 | 「碑文層」：古城的衛像、鎮魂歌、燈喰的幼體 |
-| E | 25–30+ | 終幕：星燈之底、燈喰之母 | 「燈芯層」：燭芯、提燈人、餘燼。30 層之後的無限深度沿用 E |
+| A | 1–3 | 序章、第一幕 | **不變** |
+| B | 4–9 | 第二幕 | 「霧根層」：露米亞鎮民日常的記憶 |
+| C | 10–15 | 第三幕 | 「鐘聲層」：鐘、巡守、空殼、成對的影子 |
+| D | 16–24 | 第四幕 | 「古城層」：古城的衛像、鎮魂歌、燈喰的幼體、祖先的機兵 |
+| E | 25–30 | 第四幕到終幕 | 「燈芯層」：燭芯、提燈人、燈底的子嗣 |
+| F | 31+ | 終幕之後 | 「失物層」：迷宮成了找回失去之物的地方（ledger §1.1 終幕條目），語氣明亮一些 |
 
-`bandOf(depth)`：`≤3 → 'A'`、`≤9 → 'B'`、`≤15 → 'C'`、`≤24 → 'D'`、其餘 `'E'`。
+`bandOf(depth)`：`≤3 → A`、`≤9 → B`、`≤15 → C`、`≤24 → D`、`≤30 → E`、其餘 `F`。
 
-### 3.2 數量（決定）
-| 類別 | 本道 | 地區（6 個） | 合計 | 新美術 |
-|---|---|---|---|---|
-| 一般怪物 | B 4、C 4、D 4、E 3，另有跨帶的寶物怪 1 = **16** | 每區 3 種原生 = **18** | **34** | 34 |
-| 頭目 | 第 5、10、15、20、25 層各 1 = 5，另有燈喰之母 1 = **6** | 每區 1 = **6** | **12** | 12 |
-| 頭目部件（多部位頭目的手／柱） | 1 | 1 | **2** | 2 |
-| 精英詞綴（不是新物種） | 5 種，任何物種都能帶 | 同左 | 5 | 0 |
-| **新怪物定義合計** | | | **48** | **48 張** |
+### 3.2 數量與理由
+| | 本道 | 每個地區 | 合計 |
+|---|---|---|---|
+| 一般怪物 | B 6、C 6、D 6、E 5、F 4、寶物怪 2 = 29 | 5（其中 1–2 種是夥伴的故事） | 29 + 30 = 59 |
+| 中頭目（守關者） | 5（第 8、13、18、23、28 層） | 1（第 8、13、18…層） | 5 + 6 = 11 |
+| 頭目 | 10（第 5、10…50 層） | 3（第 5、10、15…層輪替） | 10 + 18 = 28 |
+| 部件 | 1（執政像的手） | 霜凍 1（冰柱） | 2 |
 
-每帶每區的分佈（玩家實際遇到的種類數，含延續物種與舊物種）：
+- **一般怪物**：每帶 6 種新物種，加上延續上一帶的 3–4 種，一張表約 9–11 種。地區 5 種原生＋本道當帶 6 組，所以地區跑 10 層也會換兩次面孔。
+- **頭目**：
+  - 本道第 5–50 層每 5 層一隻**不重複**的頭目（10 隻），第 55 層以後依序循環。這回應「頭目肯定也是要夠多的」：玩家從第 4 層到第 50 層不會打到同一隻頭目兩次。
+  - 地區 3 隻，第 5、10、15 層各一隻，之後循環（第 20 層＝第 5 層那隻）。地區一趟通常 5–15 層，所以一趟裡會遇到 2–3 隻不同的頭目。
+  - 原本「地區第 10、20 層打本道頭目的上色版」不再需要。
+- **中頭目（守關者）**：在不是頭目層、也不是第 1–3 層的「x3、x8」層放一個守關者房（§8.3）。打不打由玩家決定，像精英一樣。本道 5 隻依深度不同；地區每區 1 隻，都是夥伴故事的殘影（§4.2）。
+- **工作量**：100 張敵人圖分 5 輪審核（§12.5）。素材圖示與裝備圖做成工作表（一張 codex 圖 20 件），共 7 張，跟著敵人圖的輪次一起審。
 
-| 深度帶 | 本道：新物種 | 本道：同表其他物種 | 本道表內種類 | 地區表內種類（原生 3＋本道該帶 6 組的物種） | 頭目 |
-|---|---|---|---|---|---|
-| A 1–3 | 0 | 舊 8 | 3（每層） | 舊表合併（不變） | 燈喰之獸（第 3 層，劇情） |
-| B 4–9 | 4＋寶物怪 | 舊 6（wolf、wisp、lizard、beetle、golem、shade） | 11 | 3＋約 6 | 第 5 層 `fog-warden`（地區第 5 層：地區頭目） |
-| C 10–15 | 4 | B 帶 4 種延續、舊 2（golem、shade） | 11 | 3＋約 6 | 第 10 層 `silent-bell`；第 15 層 `hollow-champion`（地區第 15 層：地區頭目） |
-| D 16–24 | 4 | C 帶 3 種延續 | 8 | 3＋約 6 | 第 20 層 `estra-archon` |
-| E 25–30+ | 3 | D 帶 4 種延續 | 8 | 3＋約 6 | 第 25 層 `gorged-beast`；第 30 層 `lantern-mother` |
+### 3.3 換色與詞綴（不花美術的倍增器）
+- 地區色調（既有）：本道物種一進地區表，就自動得到 6 種地區外觀。
+- 精英詞綴「飽食個體」5 種（§5.7）。
+- 這兩者只是倍增器；剪影的多樣性靠 100 張新圖。
 
-理由：
-- 每帶 4 個新物種＋延續上一帶，所以每過一帶，表內大約一半是新面孔，另一半是「認得的」。這比整批換掉更像 DRPG 的地層感，也讓每一帶的平衡有連續性。
-- 地區 3 種原生，不是 1 種：只有 1 種的話，地區跑 10 層還是在打同一隻。
-- 頭目每 5 層換一隻，終於不再全是燈喰之獸。地區頭目 6 隻，地區在 5、15、25…層打自己的頭目；10、20、30…層打該深度本道頭目的地區上色版（零美術）。
-
-### 3.3 換色／詞綴變體 vs 新物種（決定：混合，新物種為主）
-- **換色（地區色調）**：已經有了（§1.3）。新物種一進表就自動得到 6 個地區上色版。等於 34 種 × 7 個地方的外觀組合，**0 張新圖**。
-- **精英詞綴（新，0 張圖）**：「飽食個體」，吞了太多記憶而變怪的個體（story spec §3.1）。5 種詞綴（§4.7），畫面用既有的精英色調＋名字標籤。
-- **新物種（48 張圖）**：負責剪影的多樣性，這是玩家真正抱怨的東西。
-- 比例：新剪影 48；免費變體（地區 7 × 物種 42 ≈ 294 種外觀，加上精英詞綴 5 種）。換色不能取代新物種：同一個剪影換顏色，玩家一眼就認得是同一隻。
-
-### 3.4 「不會一直看到同一批」的量化驗收
-`roster.test.ts` 的 `freshness`：
-- 對本道的每個深度 d（4–40），計算 `encounterTable('mainline', d)` 出現的物種集合 S(d)。
-- 任兩個相差 ≥ 6 層的深度，|S(a) ∩ S(b)| / |S(a)| ≤ 0.6（6 層以上就有至少四成是新面孔）。
-- 任一深度的表至少有 7 種物種（含舊物種），每種物種最多出現在表內 40% 的組。
-- 地區（depth ≥ 4）：表內至少 3 種原生物種，原生組至少佔表的 40%。
+### 3.4 「不會一直看到同一批」的量化驗收（`data/roster.test.ts`）
+- `freshness`：本道任兩個相差 ≥ 6 層的深度（4–60），表內物種集合的重疊 ≤ 60%。
+- 任一深度的表至少 8 種物種，每種最多出現在 40% 的組。
+- 地區（第 4 層起）：表內至少 4 種原生物種，原生組至少佔 40%。
+- 本道第 5–50 層的頭目兩兩不同；每個地區第 5、10、15 層的頭目兩兩不同。
 
 ---
 
-## 4. 每隻怪物的設計
+## 4. 故事連結
 
-### 4.1 世界觀總則（決定，與 story spec 一致）
-- **怪物是霧生的迴響**：迷宮吞下的記憶，在暮霧裡凝成形體。牠們長成原本那段記憶的樣子：沒寄出的信、等不到孩子回家的玩具兵、沒人敲的鐘。
-- 越深，被吞的記憶越古老：淺層是露米亞鎮民的日常，深層是艾斯特拉古城的悲傷，最底下是一輪又一輪守燈人自己的記憶。
-- 語氣：一路上是暗的，但不殘忍、不血腥。每一隻都帶一點「想被記住」的哀傷；圖鑑的介紹在終幕之後會多一句「牠們回到原主人身上了」的語氣（§7）。
-- **防劇透**：名字不能早於劇情節點揭露事實。例如 E 帶的提燈人取名「無名的提燈人」，不寫「守燈人」；牠的圖鑑介紹第二句在第四幕之後才顯示（§7.3）。
+### 4.1 總則（決定）
+- **怪物是霧生的迴響**：迷宮吞下的記憶在暮霧裡凝成形體（story spec §3.1、§3.3）。越深，被吞的記憶越古老：淺層是露米亞鎮民的日常，中層是靜鐘會與空殼，深層是古城的悲傷，最底下是燈喰之母與一輪又一輪的提燈人。
+- **故人的殘影不是那個人**：舞團、騎士團、神社的狛犬、老師的書……都是「被迷宮吞下的那段記憶的形狀」。打倒時的戰鬥紀錄寫「霧散了」，不寫死亡；圖鑑在夥伴的那一片之後，補一句「她記得的那個人不在這裡」的語氣。這守住 ledger 的語氣（一路上是暗的、快樂結局），也避免把夥伴的過去寫成反派。
+- **靜鐘會的人不是活人**：迷宮吞過不少追進來的巡守（ledger I-17：凜追進迷宮、在出口前被暮霧吞沒），出現的是**被吞下的巡守的殘影**。不殺活人；不出現凜的師父（I-10：不出場）、不出現鐘守（活著的 NPC）。
+- **名字不劇透**：戰鬥中的名字在任何深度都看得到，所以名字只能用揭露表（ledger §3）「在那之前只能」那一欄的程度。所有故事細節放在圖鑑，以 `story.seen` 的場景 id 閘門控制（§10）。
 
-### 4.2 數值形狀（決定方法；數字是提案）
-- 所有新的一般怪物都用 `floor: 3`（家鄉等級 Lv10，`homeLevel`），由既有的 `growth()` 放大到遇到的深度。理由：
-  - 成長曲線（`growth`、`DAMPING`、`enemySecondary`、`compensation`、`ENEMY_POWER`、`DEEP_ENEMIES`）全部沿用，**不需要新曲線**；
-  - `rewardGrowth` 用 `HOME_SPAN[3]`，經驗節奏和舊的第 3 層怪物同一把尺。
-- 新頭目一律 `boss: true`（家鄉 `BOSS_HOME = 12`），以燈喰之獸 `s(1200,36,20,30,20,12)`、exp 300 為基準。
-- 先定 6 個「原型」（Lv10 家鄉的基準，對照舊的 golem `s(280,65,24,10,10,5)` exp 40、shade `s(180,30,10,70,20,15)` exp 42）：
+### 4.2 故事怪物與閘門
+欄位：「出現」是最早遇得到的深度；「名字安全的理由」對照 ledger §3；「圖鑑閘門」是介紹第二句（含故事內容）解鎖的場景；「需要的文字」是圖鑑那幾句誰來寫、依賴什麼。
+
+| 怪物 | 類別 | 出現 | 連結 | 名字安全的理由 | 圖鑑閘門與模糊規則 | 需要的文字 |
+|---|---|---|---|---|---|---|
+| `false-moon` 不存在的月亮 | 本道中頭目 | 本道 8 | 瑟蕾：水晶洞窟映著不存在的月亮（§6、I-60） | 相遇（本道 2）已經演出月亮 | 第一句只寫月相輪替。第二句 `mem:selene:2`：「她說過，滿月與新月是兩個結局」，不寫結局內容（I-60 在第 4、5 片） | 自足（ledger I-60、I-64） |
+| `bell-watcher` 鐘樓巡守 | 本道 C 一般 | 本道 10 | 靜鐘會的巡守殘影 | 不寫「靜鐘會」「刺客」「代號」「信物」（`act3`、`mem:rin:6` 的檢查詞）；「鐘樓」在凜第 1 片就有 | 第二句 `act3`：可寫「靜鐘會的巡守」。永遠不寫凜、不寫「從深處走出來的人」與殺人的任務；`mem:rin:6` 之後也不寫（凜的事留在凜的文字裡） | 6c Task 11（鐘守的聲音）之後寫，對齊 I-28 的用語 |
+| `bell-warden` 鐘樓的守門人 | 本道中頭目 | 本道 13 | 同上；守門呼應凜守的那扇石門（I-12） | 「守門」在凜第 1–5 片可提 | 同上；另外不寫「石門」「出口」的細節（I-12 的畫面屬於凜） | 同上 |
+| `hush-acolyte` 靜默侍者 | 暗影一般 | 暗影 4 | 靜鐘會的誓言 | 名字中性 | 第二句 `act3` | 同上 |
+| `hollow-hunter` 空殼獵人、`hollow-champion` 空殼勇者 | C 一般、本道 15 頭目 | 10、15 | 「空殼」：吸收太多別人記憶的冒險者（§3.1） | 「空殼」是鎮上的常識，不是秘密 | 不需閘門；用語對齊 6c Task 13 的吸收台詞 | 6c Task 13 之後寫 |
+| `ancestor-automaton` 古代機兵 | D 一般 | 本道 16 | 波比：祖先造的機兵守在星燈底下（I-69 第 4 片） | 舊的神殿石像已經是同類；名字不寫「祖先」 | 第二句 `mem:bobby:4`：「她說，這是祖先造的」。不寫燈芯機構、閥（I-69 第 5 片與終幕） | 自足 |
+| `toppled-automaton` 倒下的機兵 | 本道中頭目 | 本道 18 | 同上 | 同上 | 第二句 `mem:bobby:4`；同上 | 自足 |
+| `old-city-sentinel` 古城衛像、`requiem-choir` 鎮魂歌隊、`requiem-conductor` 鎮魂指揮者、`old-city-archon` 古城執政像 | D 一般、中頭目、頭目 | 16–23 | 艾斯特拉的戰爭與悲傷（§3.4） | 名字用「古城」，不寫「艾斯特拉」（`act4` 才揭露歷史；第 16 層第一次到時，第四幕的場景要回城才播） | 第二句 `act4`：可寫「艾斯特拉」 | 自足 |
+| `keeper-echo` 無名的提燈人 | E 一般 | 本道 25 | 以前每一輪的提燈人＝洛恩過去的自己（§3.4、§4） | 不寫「守燈人」 | 第一句只寫「提著燈往下走的影子」。第二句 `act4`：「很久以前，有人把自己點成燈芯」（傳說的程度）。第三句 `mem:hero:9`：「每一個都是同一個人」。永遠不寫劍、燈鑰（`mem:hero:10`） | 自足；第三句在 6c Task 14 之後對齊 |
+| `lantern-larva` 燈喰幼體、`deep-tendril` 燈底之鬚、`lantern-brood` 燈底之巢、`gorged-beast` 飽食之獸 | D、E 一般；中頭目；頭目 | 16–28 | 燈喰之母的子嗣 | 不寫「母」 | 第二句 `finale`：寫出「燈喰之母」 | 6c Task 14 之後寫 |
+| `lantern-mother` 燈喰之母 | 本道 30 頭目 | 30 | 終幕頭目 | 名字已經是終幕的 `STORY.finaleBossName` | 介紹在 `finale` 之前只有「？？？」；之後寫一句終幕的語氣 | 6c Task 14 之後寫 |
+| `mirage-dancer` 蜃樓舞者、`mirage-lead` 蜃樓的領舞者、`mirage-city` 蜃樓之城 | 熾焰一般、中頭目、頭目 | 熾焰 4、8、15 | 莎菲拉：流浪舞團、蜃樓的城（I-63） | 相遇（熾焰 3）就是火中獨舞；「蜃樓」不揭露舞團 | 第二句 `mem:safira:1`（舞團存在）；城的介紹第二句 `mem:safira:5`（城是假的、燒起來）。不寫團長的話 | 自足 |
+| `sand-scorpion` 沙海蠍、`sandstorm-maw` 沙暴之口 | 熾焰一般、頭目 | 熾焰 4、10 | 熾焰之地是被吞下的沙漠 | 名字只寫沙 | 第二句 `mem:safira:5`：「這片火海原來是沙漠」 | 自足 |
+| `ice-komainu` 冰狛犬、`frozen-pilgrim` 凍結的參拜者、`ice-shrine` 冰中的拜殿、`rift-maw` 迷宮的裂口 | 霜凍一般、中頭目、頭目 | 霜凍 4、8、15 | 千鶴：神社、封印裂口、冰裡的幾十年（I-61、I-62） | 相遇（霜凍 3）就是凍在冰裡的巫女；狛犬、拜殿不揭露神社已經不在 | 拜殿第二句 `mem:chizuru:4`（神社早就不在了）；裂口第二句 `mem:chizuru:2`（她來封的就是它）。不寫鈴（I-62 是第 5 片） | 自足 |
+| `star-ember` 星屑火、`stolen-tome` 飛舞的魔法書、`burning-page` 燃燒的那一頁、`starfire-colossus` 星火巨像 | 雷鳴一般、中頭目、頭目 | 雷鳴 4、8、15 | 諾艾兒：偷來的書、燒記憶的那一頁（I-67） | 名字不寫「記憶」；牠吸的是 TP | 那一頁的第二句 `mem:noel:3`（燒的是記憶）；第三句 `mem:noel:4`（老師在保護她）。不寫商人（`mem:noel:5`） | 自足 |
+| `ashen-treant` 枯灰樹人、`grey-elder` 灰化的老樹、`grey-blight` 灰枯 | 腐毒一般、中頭目、頭目 | 腐毒 4、8、10 | 希爾薇：她守的林子、樹皮上的箭頭、灰化（I-66） | 「樹人」「老樹」中性 | 樹人第二句 `mem:sylvie:1`（沼澤是她的林子）；老樹第二句 `mem:sylvie:5`（最後一顆種子）；灰枯第二句 `mem:sylvie:2`（霧是射不死的） | 自足 |
+| `vault-mimic` 餓肚子的寶庫、`locked-vault` 鎖著的金庫 | 暗影一般、中頭目 | 暗影 4、8 | 莉茲：上鎖的寶庫、餓著肚子（§6 相遇） | 相遇已經演出 | 第二句 `mem:liz:3`（還債）。**永遠不寫道具店、露米亞、歐里克**（ledger §3 莉茲列） | 自足 |
+| `debt-collector` 討債的影子 | 暗影一般 | 暗影 10 | 莉茲：家裡的債 | 中性 | 第二句 `mem:liz:2`。同上 | 自足 |
+| `fallen-knight` 要塞的騎士殘影、`banner-bearer` 紅旗旗手、`gate-breaker` 撞門的巨影、`last-commander` 最後的指揮官 | 鋼鐵一般、中頭目、頭目 | 鋼鐵 4、8、15 | 絲嘉蕾：被吞下的要塞、紅旗、被撞的城門（I-77、I-78） | 相遇（鋼鐵 8）就是守城門；名字不寫公主、撤退 | 騎士第二句 `mem:scarlet:2`（要塞是她的國家）；撞門第二句 `mem:scarlet:3`；指揮官第二句 `mem:scarlet:5`。**任何地方都不寫「撤退」「號角是撤退的」**，直到 `mem:scarlet:5` | 自足 |
+
+- 總計：故事怪物 **42 種**（一般 20、守關者 11、頭目 11），其餘 58 個定義是世界觀的迴響與部件。
+- **不做**的連結（理由）：凜的師父（I-10 不出場）；鐘守（活著的 NPC）；洛恩的劍、燈鑰（`mem:hero:10`）；公主（I-78 不寫她之後怎麼了）；老師本人（`mem:noel:5` 的重逢屬於鎮上）。
+- 機械檢查（`data/bestiary.test.ts`）：
+  - 名字掃描：100 個名字與 39 件獨特裝備的名字、39 個戰利品名字都不含 ledger §3 的檢查詞（`靜鐘會`、`守燈人`、`燈鑰`、`代號`、`信物`、`刺客`、`派來殺`、`派去殺`、`去殺`），也不含 `艾斯特拉`、`燈喰之母`（`lantern-mother` 本身除外）、`撤退`、`歐里克`、`道具店`；
+  - 圖鑑每句含上述詞的，必須有對應的 `loreAfter`（例：含 `靜鐘會` → `act3` 以後；含 `守燈人` → `act4` 以後，且指向洛恩的句子要 `mem:hero:9`）。
+  - 這份清單抄自 ledger §3；ledger 改了，這個測試要跟著改（`story.test.ts` 屬於 6c，不改它）。
+
+---
+
+## 5. 名冊
+
+### 5.1 數值形狀（方法決定；數字是提案）
+- 新的一般怪物與中頭目一律 `floor: 3`（家鄉 Lv10），由既有 `growth()` 放大；頭目 `boss: true`（家鄉 `BOSS_HOME = 12`），以燈喰之獸 `s(1200,36,20,30,20,12)`、exp 300 為基準。不需要新曲線。
+- 原型（Lv10 家鄉；對照舊 golem `s(280,65,24,10,10,5)` exp 40、shade `s(180,30,10,70,20,15)` exp 42）：
 
 | 原型 | 典型成組 | 基準 s(hp,atk,def,mag,res,spd) | exp / gold |
 |---|---|---|---|
-| 群 swarm | 3 隻 | s(110,32,6,24,10,18) | 15 / 11 |
-| 標準 mid | 2 隻 | s(200,48,13,24,13,13) | 28 / 21 |
-| 重 heavy | 1–2 隻 | s(310,58,25,14,14,6) | 42 / 31 |
-| 術 caster | 1–2 隻 | s(170,24,10,62,22,13) | 38 / 29 |
-| 輔 support | 搭配其他 | s(165,22,12,44,22,12) | 28 / 21 |
-| 寶 treasure | 單獨 | s(90,18,60,18,60,30) | 90 / 150 |
+| 群 | 3 隻 | s(110,32,6,24,10,18) | 15 / 11 |
+| 標準 | 2 隻 | s(200,48,13,24,13,13) | 28 / 21 |
+| 重 | 1–2 隻 | s(310,58,25,14,14,6) | 42 / 31 |
+| 術 | 1–2 隻 | s(170,24,10,62,22,13) | 38 / 29 |
+| 輔 | 搭配 | s(165,22,12,44,22,12) | 28 / 21 |
+| 寶 | 單獨 | s(90,18,60,18,60,30) | 90 / 150 |
+| 中頭目 | 單獨或＋1 | 精英化的標準或重（hp ×2.2、atk ×1.3，同 `ELITE`），exp ×3 | — |
 
-- 每隻怪物的數值在原型 ±15% 內調形狀（例如更硬但更慢）；有強力機制的，原型上扣 hp 或攻擊來付機制的錢。§6.2 的平衡帶 22a 檢查每隻是否和原型同一個威脅等級。
+- 每隻在原型 ±15% 內調形狀；機制強的扣 hp 或攻擊付費。表中「形狀」欄只寫和原型的差別。
+- 每張本道表：抗物理物種 ≤ 25%；任一屬性被抗的物種 ≤ 1/3；沒有弱點的物種 ≤ 20%（`no element wall`）。地區原生的弱點與抗性寫成該地區的（`scaleEnemy` 本來就會蓋掉），表中寫「區」。
 
-### 4.3 本道一般怪物（16 種）
-欄位：數值是 Lv10 家鄉的 `s(hp,atk,def,mag,res,spd)`；機制代號見 §5.1（`D` = 只用現有效果的資料）。
+### 5.2 欄位說明
+- **特性**：打起來的差別；機制代號見 §6。
+- **招牌素材**：該物種專屬的新素材（`kind: 'monster'`，§7.1），一般怪物 0.35–0.5。
+- **稀有**：既有稀有素材（`star-tear`、`king-scale`、`ancient-gear`）的小機率，只放在合理的物種上。
+- **銘文**：牠掉的裝備有機會帶的專屬詞綴鍵（§7.2）。
 
-| id | 名稱 | 帶 | 原型 | 數值（提案） | exp/gold | 弱／抗 | 行為（打起來的差別） | 機制 | 掉落 |
-|---|---|---|---|---|---|---|---|---|---|
-| `paper-moth` | 遺信紙蛾 | B | 群 | s(100,30,6,26,10,19) | 14/10 | 火／— | 「撲粉」row，sleep 0.25（技能機率 0.3）。三隻一起來，讓玩家學會全體技的價值，但單體也打得完 | D | `dusk-cloth` 0.3 |
-| `lamp-wight` | 提燈幽影 | B | 輔 | s(160,22,12,46,22,12) | 28/22 | 冰／火 | 「借光」ally heal 60（0.35）。不先打牠，隊友會一直回血：教玩家選目標 | D | `star-stone` 0.3 |
-| `root-hound` | 霧根獵犬 | B | 標準 | s(200,50,12,10,10,13) | 27/20 | 火／— | 「伏低」蓄力一回合（意圖欄顯示），下一回合「撲咬」enemy 230 phys 近戰。玩家可以防禦、讓牠睡著打斷、或先殺掉 | M1 | `thorn-fang` 0.4 |
-| `tin-soldier` | 錫兵殘影 | B | 重 | s(260,44,26,10,14,8) | 34/26 | 雷／冰 | 「列隊」守護 2 回合：我方單體攻擊打到牠身上。全體技不受影響 | M2 | `crystal-shell` 0.3 |
-| `hoarder` | 拾憶鼠 | B–E | 寶 | s(90,18,60,18,60,30) | 90/150 | —／— | 身上塞滿發光碎片。不太攻擊；第 3 回合結束時逃走，逃走就什麼都不給。高防高抗：要集中火力或用暴擊 | M3 | `star-tear` 0.25、`old-coin` 0.6 |
-| `tongueless-bell` | 無舌鐘 | C | 術 | s(220,24,20,56,24,7) | 38/29 | 冰／雷 | 「無聲的鐘鳴」row，遺忘 1 回合（0.3）：中招的人這回合只能普攻或用道具；「共鳴」column 雷 80 | M9 | `star-stone` 0.35 |
-| `hollow-hunter` | 空殼獵人 | C | 標準 | s(200,48,14,30,14,14) | 30/22 | 雷／— | 吸了太多別人記憶的冒險者的影子（「空殼」）。「借來的招式」（0.35）：用我方上一個傷害技能的屬性打回施放者，威力上限 150 | M6 | `dusk-cloth` 0.4 |
-| `mist-twin` | 霧雙子 | C | 群 | s(140,38,10,30,12,15) | 18/13 | 火／冰 | 一定成對出現。一隻倒下時，另一隻「另一半」：atk +40% 3 回合。要嘛一起壓低再收、要嘛先防禦 | M10 | `ice-crystal` 0.3 |
-| `moon-crow` | 映月鴉 | C | 標準 | s(170,44,10,30,16,17) | 28/21 | 輪替 | 弱點每回合輪替 phys→fire→ice→thunder，抗性是輪到的下下個；目前弱點顯示在名牌。四種屬性都輪得到（全物理隊也有一回合打弱點） | M5 | `bat-wing` 0.5 |
-| `estra-sentinel` | 艾斯特拉衛像 | D | 重 | s(320,60,28,14,14,5) | 42/31 | 雷／物 | 守護（同錫兵）＋「審判之光」蓄力後 column 火 150（mag）。本表唯一抗物理的物種 | M1、M2 | `star-stone` 0.4 |
-| `requiem-choir` | 鎮魂歌隊 | D | 輔 | s(180,20,12,52,22,11) | 34/25 | 物／冰 | 「安魂曲」allies heal 40（0.3）；「呼喚」召喚 1 隻提燈幽影（每場最多 1 次，0.25） | M4 | `dusk-cloth` 0.35 |
-| `lantern-larva` | 燈喰幼體 | D | 標準 | s(210,50,14,20,12,12) | 30/22 | 冰／火 | 「啃光」enemy 120 phys，吸血 50%；「長大」self atk +30% 3 回合。拖越久越難打 | M11 | `lizard-scale` 0.4 |
-| `epitaph-golem` | 碑文守 | D | 重 | s(340,52,24,30,26,4) | 44/33 | 火／雷 | 「抹消之文」row def −30% 3 回合（減益，現有效果）。很慢，給玩家時間先處理別的 | D | `star-stone` 0.4 |
-| `wick-shade` | 燭芯之影 | E | 群 | s(120,36,8,36,12,16) | 16/12 | 冰／火 | 倒下時「最後的火光」：enemies 火 40（mag）。三隻同時打倒會連爆，玩家可以分開收 | M10 | `dusk-cloth` 0.3 |
-| `keeper-echo` | 無名的提燈人 | E | 術 | s(230,46,16,56,20,12) | 44/33 | 物／— | 以前某一輪的提燈人留下的影子。「借來的招式」＋「燈火之誓」蓄力後 enemies 火 120 | M1、M6 | `star-tear` 0.05、`star-stone` 0.4 |
-| `ember-maw` | 餘燼之口 | E | 重 | s(330,58,20,40,18,6) | 44/33 | 雷／冰 | 「吞吐」row 火 90；「吐出」召喚 1 隻燭芯之影（每場最多 2 次，0.25） | M4 | `crystal-shell` 0.4 |
-
-屬性分佈檢查（每張本道表）：抗物理的物種 ≤ 25%；任一屬性被抗的物種 ≤ 1/3；沒有弱點的物種 ≤ 20%（`roster.test.ts`：`no element wall`）。E 帶表（D 的 4 種＋E 的 3 種）：抗火 2/7（幼體、燭芯）、抗冰 2/7（歌隊、餘燼之口）、抗雷 1/7、抗物 1/7。
-
-### 4.4 地區原生怪物（18 種）
-- 地區原生的 `weak`／`resist` 寫成該地區的（`scaleEnemy` 本來就會用地區的蓋掉），所以圖鑑顯示一致。
-- 出現深度：該地區第 4 層起的所有深度（第 1–3 層維持舊表，平衡第 7、13 項的地區淺層不動）。
-- 地區技能（`REGIONS[r].skill`）照舊由 `scaleEnemy` 加上，不寫進定義。
-
-| 地區 | id | 名稱 | 原型 | 數值（提案） | exp/gold | 行為 | 機制 | 傳說 |
+### 5.3 本道一般怪物（29）
+| id | 名稱 | 帶 | 原型／形狀 | 弱／抗 | 特性（機制） | 招牌素材 | 稀有 | 銘文 |
 |---|---|---|---|---|---|---|---|---|
-| 熾焰 blaze | `cinder-imp` | 灰燼小鬼 | 群 | s(100,32,6,30,10,17) | 14/10 | 倒下時 row 火 35 | M10 | 戰火裡燒掉的信件灰 |
-| | `forge-hound` | 熔爐犬 | 標準 | s(200,50,12,24,10,13) | 27/20 | 蓄力「熔吼」row 火 150 | M1 | 守著熄滅爐子的狗 |
-| | `ash-mourner` | 灰衣弔者 | 輔 | s(160,20,12,48,22,12) | 28/21 | allies mag +30% 3 回合；ally heal 50 | D | 艾斯特拉戰後沒能下葬的人的哀悼 |
-| 霜凍 frost | `frost-doll` | 霜人偶 | 重 | s(260,42,26,20,20,7) | 34/26 | 守護 | M2 | 想永遠留住的童年玩偶 |
-| | `glacier-tortoise` | 冰河龜 | 重 | s(360,50,30,20,20,3) | 44/33 | self def +50% 3 回合；蓄力「冰河崩落」enemies 冰 110 | M1 | 不肯融化的舊日子 |
-| | `snow-caller` | 雪中呼喚 | 術 | s(170,22,10,64,22,14) | 38/29 | cross sleep 0.35；column 冰 100 | D | 在雪裡喊一個想不起來的名字 |
-| 雷鳴 storm | `thunder-kite` | 雷鳶 | 群 | s(110,30,6,20,8,22) | 15/11 | 「迅雷爪」enemy 3 段 × 45 | D | 突然傳來的壞消息 |
-| | `storm-totem` | 避雷石柱 | 輔 | s(200,10,20,40,30,2) | 26/20 | allies spd +30%；allies atk +20%。本身幾乎不打人 | D | 被雷打過一次就再也不敢忘的地方 |
-| | `charge-jelly` | 蓄電水母 | 術 | s(180,20,10,62,22,10) | 38/29 | 蓄力「放電」enemies 雷 130 | M1 | 一直說不出口的話 |
-| 腐毒 mire | `bog-mother` | 泥沼母體 | 重 | s(320,40,20,30,20,4) | 42/31 | 召喚舊的苔蘚史萊姆（地區上色，每場最多 2 次） | M4 | 腐掉的怨恨會生出更多小怨恨 |
-| | `rot-lily` | 腐百合 | 輔 | s(160,20,12,46,22,8) | 28/21 | cross poison 0.5；row res −30% 3 回合 | D | 沒送出去、在花瓶裡爛掉的花 |
-| | `leech-knight` | 蛭甲騎士 | 標準 | s(220,50,18,10,12,10) | 30/22 | 「吸血刺」吸血 50% | M11 | 靠別人的記憶活下去的騎士 |
-| 暗影 shade | `mirror-thief` | 鏡中竊影 | 標準 | s(180,46,10,40,16,16) | 28/21 | 借來的招式 | M6 | 偷看別人人生的影子 |
-| | `veil-stalker` | 帷幕潛行者 | 標準 | s(170,54,10,10,10,18) | 28/21 | 「背刺」enemy 140，`melee: false`（打得到後排）、`crit: 'always'`（0.25） | D | 藏起來不讓自己看見的記憶 |
-| | `hush-acolyte` | 靜默侍者 | 術 | s(160,20,10,58,24,13) | 36/27 | cross 遺忘 1 回合 | M9 | 靜鐘會讓人忘記的誓言（第三幕之後介紹才寫出「靜鐘會」） |
-| 鋼鐵 iron | `rivet-golem` | 鉚釘機兵 | 重 | s(280,48,28,10,14,6) | 36/27 | 守護 | M2 | 等不到下一道命令的哨兵 |
-| | `siege-crab` | 攻城蟹 | 重 | s(300,58,26,10,12,5) | 40/30 | 蓄力「破城鉗」row 170 phys 近戰 | M1 | 要塞陷落那天的記憶 |
-| | `herald-engine` | 號令機 | 輔 | s(190,24,20,40,20,9) | 30/22 | allies atk +25%、def +20% | D | 一直重複最後一道軍令 |
+| `paper-moth` | 遺信紙蛾 | B | 群，spd+ | 火／— | 「撲粉」row 睡眠 0.25：三隻一起來，教全體技的價值（D） | `faded-letter` 褪色信紙 | `star-tear` 0.5% | `sleepRes` |
+| `lamp-wight` | 提燈幽影 | B | 輔 | 冰／火 | 「借光」補血量最低的同伴：不先打牠，隊友一直回血（D） | `wight-wick` 幽影燈芯 | — | `heal` |
+| `root-hound` | 霧根獵犬 | B | 標準，atk+ | 火／— | 「伏低」蓄力，下回合「撲咬」230（M1） | `mist-root` 霧根 | — | `atk` |
+| `tin-soldier` | 錫兵殘影 | B | 重，def+ | 雷／冰 | 「列隊」守護 2 回合（M2） | `tin-key` 發條鑰匙 | `ancient-gear` 1% | `armor` |
+| `dust-mimic` | 塵封木箱 | B | 標準 | 火／— | 偽裝：開戰時名牌顯示「寶箱？」，第一回合必定先手且 atk +50%；被打中一次就現形（M14） | `mimic-hinge` 木箱鉸鍊 | `old-coin` 10% | `goldFind` |
+| `market-ghost` | 市集的吆喝聲 | B | 輔，spd+ | 雷／— | 「順手牽羊」命中時從這趟的背包偷金幣（每次上限 depth×5），打倒就全部還回；逃走前沒打倒就拿不回來（M13） | `market-token` 市集籌碼 | `old-coin` 15% | `matFind` |
+| `tongueless-bell` | 無舌鐘 | C | 術，spd− | 冰／雷 | 「無聲的鐘鳴」row 遺忘 1 回合（M9） | `bell-shard` 啞鐘碎片 | — | `tpCost` |
+| `hollow-hunter` | 空殼獵人 | C | 標準 | 雷／— | 「借來的招式」：用我方上一招的屬性打回施放者（M6） | `hollow-buckle` 空殼的皮扣 | `king-scale` 0.5% | `critDmg` |
+| `mist-twin` | 霧雙子 | C | 群 | 火／冰 | 一定成對；一隻倒下時另一隻 atk +40%（M10） | `twin-thread` 雙生線 | — | `multi` |
+| `moon-crow` | 映月鴉 | C | 標準，spd+ | 輪替 | 弱點每回合輪替，四種屬性都會輪到（M5） | `mirror-feather` 鏡羽 | `star-tear` 1% | `crit` |
+| `bell-watcher` | 鐘樓巡守（故事） | C | 標準 | 冰／— | 「宣告」標記一名隊員，下回合同伴集中攻擊他；防禦或嘲諷可以化解（M24） | `grey-cord` 灰繩結 | — | `evasion` |
+| `sleepwalker` | 夢遊者 | C | 重，atk+ | 火／雷 | 開戰時睡著；被打或第 3 回合醒來，醒來 atk +50% 3 回合。先處理別隻，別吵醒牠（M14） | `dream-sand` 夢砂 | — | `hp` |
+| `old-city-sentinel` | 古城衛像（故事） | D | 重 | 雷／物 | 守護＋蓄力「審判之光」column 火（M1、M2） | `marble-shard` 白石碎片 | `ancient-gear` 2% | `def` |
+| `requiem-choir` | 鎮魂歌隊（故事） | D | 輔 | 物／冰 | 全體補血；召喚提燈幽影（每場 1 次）（M4） | `hymn-sheet` 無字歌譜 | — | `tpRegen` |
+| `lantern-larva` | 燈喰幼體（故事） | D | 標準 | 冰／火 | 「啃光」吸血 50%＋自己 atk +30%：拖越久越難打（M11） | `larva-glow` 幼體光囊 | — | `vuln` |
+| `epitaph-golem` | 碑文守 | D | 重，spd−− | 火／雷 | 「抹消之文」row def −30%；很慢（D） | `epitaph-stone` 碑文石 | — | `res` |
+| `ancestor-automaton` | 古代機兵（故事） | D | 重 | 雷／冰 | 每回合結束修復 12% HP；那回合被雷打中就短路不修（M21） | `old-cog` 古機齒輪 | `ancient-gear` 4% | `meleeDR` |
+| `ash-archivist` | 灰燼書記 | D | 術 | 冰／— | 「抹去」清掉一名隊員的所有增益，加到自己身上（M15） | `ash-ink` 灰墨 | — | `mag` |
+| `wick-shade` | 燭芯之影 | E | 群 | 冰／火 | 倒下時 enemies 火 40：三隻同時倒會連爆，分開收（M10） | `spent-wick` 燃盡的燭芯 | — | `fireRes` |
+| `keeper-echo` | 無名的提燈人（故事） | E | 術 | 物／— | 借來的招式＋蓄力「燈火之誓」enemies 火 120（M1、M6） | `lantern-ash` 提燈的灰 | `star-tear` 3% | `gauge` |
+| `ember-maw` | 餘燼之口 | E | 重 | 雷／冰 | 「吞吐」row 火；召喚燭芯之影（每場 2 次）（M4） | `ember-tooth` 餘燼之牙 | — | `fireDmg` |
+| `sorrow-crystal` | 悲傷結晶 | E | 標準 | 物／適應 | 第一個打中牠的屬性，變成牠 3 回合的抗性；換屬性打（M16） | `sorrow-shard` 悲傷結晶片 | `star-tear` 2% | `iceRes` |
+| `deep-tendril` | 燈底之鬚（故事） | E | 標準 | 火／冰 | 「汲取」命中時吸走 TP 15（M17）；名牌顯示吸走的量 | `pale-tendril` 蒼白觸鬚 | — | `tp` |
+| `music-box` | 走音的音樂盒 | F | 輔 | 物／雷 | 「演奏」蓄力兩回合：期間同伴每回合回 10%，結束時我方 row 睡眠；受傷就中斷（M1 變體） | `music-comb` 音梳 | — | `wil` |
+| `paper-cranes` | 千紙鶴群 | F | 群 | 火／— | 「重摺」：第一隻倒下的同伴會被摺回來（全場一次，30% HP）（M22） | `crane-paper` 紙鶴紙 | — | `agi` |
+| `lost-shadow` | 走失的影子 | F | 標準 | 物／— | 開戰時複製我方攻擊最高者的 atk、mag 的 60%（M18） | `shadow-thread` 影線 | — | `str` |
+| `returning-light` | 歸途之光 | F | 輔，hp− | —／— | 不攻擊，只替同伴加 def +30%；倒下時我方全體回 10% HP。打牠是好事（D＋M10） | `homeward-glow` 歸途微光 | `star-tear` 3% | `expBonus` |
+| `hoarder` | 拾憶鼠 | B–D | 寶 | —／— | 第 3 回合結束逃走，逃走就什麼都不給（M3） | `glitter-scrap` 閃光碎屑 | `star-tear` 25% | `matFind` |
+| `gilded-hoarder` | 金箔拾憶鼠 | E–F | 寶 | —／— | 第 2 回合結束逃走；每挨一下閃避 +10%（M3） | `gilded-scrap` 金箔碎屑 | `king-scale` 20% | `goldFind` |
 
-每個地區原生物種的掉落：該物種的近親舊素材 0.3–0.4（熾焰 `thorn-fang`、霜凍 `ice-crystal`、雷鳴 `bat-wing`、腐毒 `moss`、暗影 `dusk-cloth`、鋼鐵 `crystal-shell`）；地區素材由 `scaleEnemy` 照舊加 `REGION_DROP_CHANCE`。
+### 5.4 地區一般怪物（30，第 4 層起）
+| 地區 | id | 名稱 | 原型 | 特性（機制） | 招牌素材 | 稀有 | 銘文 |
+|---|---|---|---|---|---|---|---|
+| 熾焰 | `cinder-imp` | 灰燼小鬼 | 群 | 倒下時 row 火 35（M10） | `cinder-dust` 灰燼塵 | — | `fireDmg` |
+| | `forge-hound` | 熔爐犬 | 標準 | 蓄力「熔吼」row 火 150（M1） | `forge-slag` 爐渣 | — | `atk` |
+| | `ash-mourner` | 灰衣弔者 | 輔 | 同伴 mag +30%；補血（D） | `mourning-veil` 弔者面紗 | — | `heal` |
+| | `mirage-dancer` | 蜃樓舞者（故事） | 標準 | 開戰召出 1 個 1 HP 的幻影（無報酬）；幻影在時本體閃避 +20%（M19） | `mirage-sequin` 蜃樓亮片 | `king-scale` 1% | `evasion` |
+| | `sand-scorpion` | 沙海蠍（故事） | 標準 | 毒針；對已中毒的目標傷害 ×1.5（`wounded` 的變體 `vsPoisoned`）（M25） | `scorpion-stinger` 蠍尾針 | — | `poisonRes` |
+| 霜凍 | `frost-doll` | 霜人偶 | 重 | 守護（M2） | `porcelain-chip` 瓷片 | — | `iceRes` |
+| | `glacier-tortoise` | 冰河龜 | 重 | 自身 def +50%；蓄力「冰河崩落」（M1） | `glacier-scute` 冰河甲片 | — | `def` |
+| | `snow-caller` | 雪中呼喚 | 術 | cross 睡眠；column 冰（D） | `snow-voice` 回音雪石 | — | `sleepRes` |
+| | `ice-komainu` | 冰狛犬（故事） | 重 | 成對；兩隻都活著時傷害平分（M20） | `komainu-fang` 狛犬牙 | — | `block` |
+| | `frozen-pilgrim` | 凍結的參拜者（故事） | 標準 | 冰封：開戰 def、res ×2.5 且不行動；被火打中或第 3 回合解凍（M23） | `prayer-rope` 結冰的注連繩 | `old-coin` 10% | `res` |
+| 雷鳴 | `thunder-kite` | 雷鳶 | 群 | 「迅雷爪」3 段（D） | `kite-plume` 雷鳶羽 | — | `spd` |
+| | `storm-totem` | 避雷石柱 | 輔 | 同伴 spd +30%、atk +20%；本身幾乎不打人（D） | `copper-band` 銅箍 | — | `thunderRes` |
+| | `charge-jelly` | 蓄電水母 | 術 | 蓄力「放電」enemies 雷（M1） | `jelly-cell` 水母電囊 | — | `thunderDmg` |
+| | `star-ember` | 星屑火（故事） | 術 | 命中時吸走 TP 15（M17） | `blue-ember` 藍白餘火 | `star-tear` 1% | `tpRegen` |
+| | `stolen-tome` | 飛舞的魔法書（故事） | 術 | 依序施放火→冰→雷，名牌預告下一招的屬性（M5 變體） | `torn-page` 撕下的書頁 | — | `mag` |
+| 腐毒 | `bog-mother` | 泥沼母體 | 重 | 召喚苔蘚史萊姆（每場 2 次）（M4） | `bog-peat` 沼泥炭 | — | `hp` |
+| | `rot-lily` | 腐百合 | 輔 | cross 毒；row res −30%（D） | `rot-petal` 腐花瓣 | — | `poisonRes` |
+| | `leech-knight` | 蛭甲騎士 | 標準 | 吸血 50%（M11） | `leech-plate` 蛭甲片 | — | `armor` |
+| | `ashen-treant` | 枯灰樹人（故事） | 重 | 每回合再生 10%；「纏根」row spd −40%（M21） | `carved-bark` 刻痕樹皮 | — | `wil` |
+| | `spore-moth` | 孢子蛾 | 群 | 倒下時 cross 毒（M10） | `spore-sac` 孢子囊 | — | `tp` |
+| 暗影 | `mirror-thief` | 鏡中竊影 | 標準 | 借來的招式（M6） | `mirror-sliver` 鏡片 | — | `crit` |
+| | `veil-stalker` | 帷幕潛行者 | 標準 | 「背刺」打後排、必暴（D） | `black-veil` 黑紗 | — | `critDmg` |
+| | `hush-acolyte` | 靜默侍者（故事） | 術 | cross 遺忘（M9） | `hush-bell` 無聲小鈴 | — | `tpCost` |
+| | `vault-mimic` | 餓肚子的寶庫（故事） | 重 | 偽裝＋偷金幣（M14、M13） | `vault-lock` 寶庫的鎖 | `old-coin` 20% | `goldFind` |
+| | `debt-collector` | 討債的影子（故事） | 標準 | 宣告標記＋偷金幣（M24、M13） | `iou-slip` 泛黃的借條 | — | `vuln` |
+| 鋼鐵 | `rivet-golem` | 鉚釘機兵 | 重 | 守護（M2） | `rivet` 鉚釘 | `ancient-gear` 2% | `armor` |
+| | `siege-crab` | 攻城蟹 | 重 | 蓄力「破城鉗」row 170（M1） | `crab-plate` 蟹甲 | — | `meleeDR` |
+| | `herald-engine` | 號令機 | 輔 | 同伴 atk +25%、def +20%（D） | `herald-horn` 號令喇叭 | — | `gauge` |
+| | `fallen-knight` | 要塞的騎士殘影（故事） | 重 | 守護；同伴倒下時自己 def +30%（M2、M10） | `knight-crest` 騎士團紋章 | `king-scale` 1% | `block` |
+| | `banner-bearer` | 紅旗旗手（故事） | 輔 | 活著時同伴 atk +20%；先打掉旗手（D 光環，M26） | `red-pennant` 紅旗布 | — | `str` |
 
-### 4.5 頭目（12 隻）與部件（2 種）
-`bossFor(region, depth)`（新，`data/roster.ts`）：
-- 本道第 3 層：`lanterneater`（不變）。本道第 30 層第一次：終幕（`FINALE_BOSS`，見 §8.4）。
-- 本道其他 5 的倍數：依 `(depth / 5 − 1) % 6` 循環 `fog-warden`、`silent-bell`、`hollow-champion`、`estra-archon`、`gorged-beast`、`lantern-mother`（第 5、10、15、20、25、30 層，35 層以後循環）。
-- 地區：`depth % 10 === 5`（5、15、25…）打該地區頭目；`depth % 10 === 0` 打同深度本道頭目的地區版。
-- 頭目尚未上線（§8.1）時，該處回到 `lanterneater`，和現在一模一樣。
-- 回傳值是一個組（`string[]`），多部位頭目回傳 `['estra-archon', 'archon-hand', 'archon-hand']`。
+### 5.5 中頭目「守關者」（11）
+守關者用精英化的數值（§5.1）。招牌掉落是**戰利品**（`kind: 'trophy'`，必掉 1 個）＋專屬獨特裝備（§7.3）。
 
-| id | 名稱 | 出現 | 數值（提案） | 弱／抗 | 行為 | 機制 |
-|---|---|---|---|---|---|---|
-| `fog-warden` | 霧門守衛 | 本道 5 | s(1150,40,22,26,20,11) exp 300 | 火／冰 | 「霧門落下」蓄力後 enemies phys 140；「霧鎖」row def −25%。第一隻新頭目，教玩家看意圖防禦 | M1 |
-| `silent-bell` | 啞鐘 | 本道 10 | s(1250,30,24,40,22,8) | 冰／雷 | row 遺忘；血量 ≤ 50% 進第二階段：「破鐘」enemies 雷 120 機率提高 | M9、M8 |
-| `hollow-champion` | 空殼勇者 | 本道 15 | s(1100,44,20,34,18,14) | 雷／— | 「記得一百種劍法，記不得自己的名字」。借來的招式；≤ 40%「一百種劍法」enemy 3 段 | M6、M8 |
-| `estra-archon` | 艾斯特拉執政像 | 本道 20 | 本體 s(800,30,24,40,26,8)；`archon-hand` ×2 s(260,44,20,10,14,10) exp 30 | 本體 雷／火；手 火／— | 手還在時本體受到的傷害 ×0.5。手：「壓制」row phys 100。全體技一次打三個，但單體一樣可以先拆手 | M7 |
-| `gorged-beast` | 飽食之獸 | 本道 25 | s(1300,40,20,34,20,10) | 冰／火 | 長大的燈喰之獸。召喚燭芯之影（每場 2 次）；「啃食」吸血 40% | M4、M11 |
-| `lantern-mother` | 燈喰之母 | 本道 30 | **與 `lanterneater` 完全相同的數值與技能**，只有 id、名字、圖不同 | 冰／火 | 第一階段只換外觀，平衡位元相同（§8.4） | — |
-| `ember-tyrant` | 焚城之焰 | 熾焰 5/15/25 | s(1200,38,20,36,20,12) | 依地區 | ≤ 50%：「焚城」enemies 火 130 | M8 |
-| `rime-sovereign` | 永凍之守 | 霜凍 5/15/25 | 本體 s(820,30,24,40,26,8)；`rime-pillar` ×2 s(240,20,24,30,20,4) exp 30 | 依地區 | 柱子在時本體傷害 ×0.5；柱子：ally heal 50、allies def +20% | M7 |
-| `thunder-roc` | 雷鳴巨鵬 | 雷鳴 5/15/25 | s(1100,40,18,36,18,18) | 依地區 | 很快；「天雷俯衝」蓄力後 enemies 雷 140；「雙爪」enemy 2 段 | M1 |
-| `mire-hydra` | 腐沼多頭蛇 | 腐毒 5/15/25 | s(1350,36,22,28,20,8) | 依地區 | 66%、33% 各進一階段，每階段多一個「蛇首咬」技能（頭長出來）；cross poison | M8 |
-| `faceless-host` | 無面之主 | 暗影 5/15/25 | s(1100,40,18,40,20,14) | 依地區 | 借來的招式；召喚鏡中竊影（每場 2 次） | M6、M4 |
-| `fortress-colossus` | 要塞巨像 | 鋼鐵 5/15/25 | s(1300,42,30,20,20,5) | 依地區 | 召喚鉚釘機兵（每場 2 次）；蓄力「攻城砲」enemies phys 130 | M4、M1 |
+| id | 名稱 | 位置 | 特性 | 戰利品 | 專屬獨特（欄位、固定詞綴） |
+|---|---|---|---|---|---|
+| `false-moon` | 不存在的月亮（瑟蕾） | 本道 8、33 | 每 2 回合在滿月與新月之間切換：滿月替同伴補血加防，新月 enemies 冰（M8 變體：依回合切換） | `moon-silver` 月影銀 | `moonless-mirror` 無月之鏡（副手：`res`、`heal`、`int`） |
+| `bell-warden` | 鐘樓的守門人（凜／靜鐘會） | 本道 13、38 | 宣告標記＋row 遺忘；≤ 50% 鐘聲加速（M24、M9、M8） | `tower-dust` 鐘樓的灰 | `unrung-clapper` 不響的鐘舌（頸：`sleepRes`、`tpCost`、`wil`） |
+| `toppled-automaton` | 倒下的機兵（波比） | 本道 18、43 | 修復＋倒下後重新啟動一次（30% HP）（M21、M22） | `automaton-core` 機兵核心 | `ancestor-gauntlet` 祖傳的手甲（手：`armor`、`atk`、`int`） |
+| `requiem-conductor` | 鎮魂指揮者（古城） | 本道 23、48 | 召喚鎮魂歌隊；「指揮」同伴 spd +40%（M4） | `dusk-baton` 暮色指揮棒 | `requiem-staff` 鎮魂之杖（武器・杖：`mag`、`heal`、`wil`） |
+| `lantern-brood` | 燈底之巢（子嗣） | 本道 28、53 | 本身不攻擊；每回合孵一隻燈喰幼體（場上上限內）。先打巢還是先清幼體（M4） | `brood-shell` 巢殼 | `brood-lantern` 巢燈（頸：`hp`、`res`、`gauge`） |
+| `mirage-lead` | 蜃樓的領舞者（莎菲拉） | 熾焰 8、13、18… | 召出 2 個幻影舞者；每 3 回合「轉拍」同伴 spd +30%（M19） | `copper-anklet` 銅腳環 | `last-dance-veil` 最後一支舞的紗（身：`agi`、`gauge`、`res`） |
+| `ice-shrine` | 冰中的拜殿（千鶴） | 霜凍 | 不移動；召喚冰狛犬；狛犬在時本體受護盾（M4、M7） | `shrine-rope` 拜殿的繩 | `ninety-nine-steps` 九十九級石階（腳：`def`、`wil`、`iceRes`） |
+| `burning-page` | 燃燒的那一頁（諾艾兒） | 雷鳴 | 吸 TP＋遺忘；倒下時我方全體 TP +20（M17、M9、M10） | `ash-page` 燒剩的書角 | `starbound-tome` 星封之書（副手：`mag`、`int`、`tp`） |
+| `grey-elder` | 灰化的老樹（希爾薇） | 腐毒 | 再生＋纏根；每 3 回合長出一隻孢子蛾（M21、M4） | `ashen-acorn` 灰橡實 | `arrowmark-bow` 刻痕長弓（武器・弓：`agi`、`crit`、`critDmg`） |
+| `locked-vault` | 鎖著的金庫（莉茲） | 暗影 | 高防；偷金幣；打倒時偷走的兩倍奉還（M13） | `vault-coin` 寶庫金幣 | `hungry-purse` 空腹的錢袋（戒：`goldFind`、`matFind`、`agi`） |
+| `gate-breaker` | 撞門的巨影（絲嘉蕾） | 鋼鐵 | 蓄力「撞門」enemies phys；召喚爬牆的騎士殘影（M1、M4） | `gate-splinter` 城門的木片 | `gatewarden-shield` 守門者之盾（副手：`block`、`def`、`hp`） |
 
-頭目的 exp 都是 300、gold 0、drops `[]`，和燈喰之獸相同（頭目的裝備與記憶碎片由 `battleGear`、`pieceDrops` 依 `b.boss` 給，不看 id）。部件 exp 30、gold 0、drops `[]`，`partOf` 標記（不算一般怪物、不進遇敵表、不進 `NORMAL_ENEMIES`）。
+### 5.6 頭目（28）與部件（2）
+`bossFor(region, depth)`（`data/roster.ts`）：
+- 本道第 3 層：`lanterneater`（不變）；本道第 30 層第一次：終幕（`FINALE_BOSS`，§12.3 的 Task）。
+- 本道其他 5 的倍數：第 5、10…50 層依表；第 55 層以後 `(depth/5 − 1) % 10` 循環。
+- 地區：`(depth/5 − 1) % 3` 依序打該地區的 3 隻。
+- 頭目尚未上線時，該處回到 `lanterneater`，和現在一模一樣。
+- 回傳一個組（`string[]`），多部位回傳 `['old-city-archon', 'archon-hand', 'archon-hand']`。
 
-### 4.6 掉落（決定）
-- 新怪物只掉既有素材（`data/materials.ts`），所以不需要新圖示，也不動 `NO_ICON_YET`。
-- 物種掉落的機率總量和舊的第 3 層怪物同級（0.3–0.5）。`engine/forge/economy.test.ts` 在每次上線切換時要重跑，素材流入的帶不放寬。
+| id | 名稱 | 位置 | 形狀（對照燈喰之獸） | 弱／抗 | 特性 | 戰利品 | 專屬獨特 |
+|---|---|---|---|---|---|---|---|
+| `fog-warden` | 霧門守衛 | 本道 5 | hp −5% | 火／冰 | 蓄力「霧門落下」；row def −25%。第一隻新頭目，教玩家看意圖防禦（M1） | `fog-gate-plate` 霧門鎧片 | `fog-halberd` 霧門長戟（武器・槍：`atk`、`str`、`eliteDmg`） |
+| `silent-bell` | 啞鐘 | 本道 10 | hp +5%、spd− | 冰／雷 | row 遺忘；≤ 50% 進第二階段（M9、M8） | `silent-bronze` 啞鐘青銅 | `silent-chime` 無聲鐘墜（頸：`sleepRes`、`tpCost`、`res`） |
+| `hollow-champion` | 空殼勇者 | 本道 15 | atk+ | 雷／— | 借來的招式；≤ 40%「一百種劍法」3 段（M6、M8） | `hundred-hilts` 百劍之柄 | `borrowed-blade` 借來的劍（武器・劍：`multi`、`critDmg`、`str`） |
+| `old-city-archon` | 古城執政像 | 本道 20 | 本體 hp 800＋手 ×2（260） | 本體 雷／火；手 火／— | 手在時本體受傷 ×0.5；手「壓制」row（M7） | `archon-gold` 執政金冠片 | `archon-crown` 古城之冠（頭：`res`、`tpCost`、`int`） |
+| `gorged-beast` | 飽食之獸 | 本道 25 | hp +8% | 冰／火 | 召喚燭芯之影；「啃食」吸血 40%（M4、M11） | `gorged-lantern` 被吞的提燈 | `glutton-gauntlet` 飽食手甲（手：`atk`、`crit`、`def`） |
+| `lantern-mother` | 燈喰之母 | 本道 30 | **與 `lanterneater` 完全相同的數值與技能** | 冰／火 | 只換外觀（controller 裁定） | `mother-light` 母燈殘光 | `cradled-light` 搖籃之光（頸：`heal`、`wil`、`gauge`） |
+| `forgotten-festival` | 被遺忘的祭典 | 本道 35 | — | 冰／— | 每回合點起一盞燈籠（召喚，上限 3）；燈籠全亮時「祭典之火」enemies（M4、M8） | `festival-paper` 祭典燈籠紙 | `festival-mask` 祭典面具（頭：`goldFind`、`evasion`、`agi`） |
+| `starless-whale` | 無星之鯨 | 本道 40 | hp +15%、spd−− | 雷／冰 | 每 3 回合「吞沒」enemies；吸血（M1、M11） | `starless-ambergris` 無星龍涎 | `whale-song-ring` 鯨歌指環（戒：`tp`、`tpRegen`、`mag`） |
+| `stopped-clock` | 停擺的鐘心 | 本道 45 | — | 物／雷 | 「停針」每回合讓一名隊員跳過下一回合（不可連續對同一人）（M27） | `clock-spring` 鐘心發條 | `still-hand-boots` 停針之靴（腳：`spd`、`evasion`、`agi`） |
+| `first-lantern` | 最初的燈 | 本道 50 | hp +10% | 輪替 | 三階段，每階段換弱點與全體技的屬性（M8、M5） | `first-flame` 最初的火種 | `first-lantern-staff` 最初的燈杖（武器・杖：`mag`、`fireDmg`、`int`） |
+| `ember-tyrant` | 焚城之焰 | 熾焰 | — | 區 | ≤ 50%「焚城」enemies 火（M8） | `tyrant-cinder` 暴君餘燼 | `burning-crown-ring` 焚冠之戒（戒：`fireDmg`、`atk`、`crit`） |
+| `sandstorm-maw` | 沙暴之口（故事） | 熾焰 | spd+ | 區 | 每 2 回合「沙暴」enemies＋我方 spd −20%（D 增益輪替） | `storm-glass` 沙暴琉璃 | `sand-veil-boots` 沙幕之靴（腳：`evasion`、`fireRes`、`agi`） |
+| `mirage-city` | 蜃樓之城（故事） | 熾焰 | 本體 hp −20% | 區 | 召喚 2 個蜃樓舞者；舞者在時本體受護盾（M4、M7） | `mirage-brick` 蜃樓磚 | `troupe-drum` 舞團的鼓（副手：`tp`、`heal`、`agi`） |
+| `rime-sovereign` | 永凍之守 | 霜凍 | 本體 820＋冰柱 ×2（240） | 區 | 冰柱在時本體受傷 ×0.5；冰柱補血加防（M7） | `rime-crown-shard` 永凍冠片 | `everwinter-veil` 永冬之紗（身：`iceRes`、`res`、`hp`） |
+| `white-silence` | 白色寂靜 | 霜凍 | — | 區 | 每回合我方 spd −10%（可疊 3 次）；cross 遺忘（D、M9） | `silence-snow` 寂靜之雪 | `snowmute-ring` 無聲雪戒（戒：`tp`、`iceDmg`、`int`） |
+| `rift-maw` | 迷宮的裂口（故事） | 霜凍 | — | 區 | 召喚霜凍原生物種；≤ 50% 裂口張大，全體技更頻繁（M4、M8） | `rift-ice` 裂口之冰 | `sealing-spear` 封印之槍（武器・槍：`atk`、`iceDmg`、`wil`） |
+| `thunder-roc` | 雷鳴巨鵬 | 雷鳴 | spd++ | 區 | 蓄力「天雷俯衝」；「雙爪」2 段（M1） | `roc-plume` 巨鵬羽 | `roc-feather-boots` 鵬羽之靴（腳：`spd`、`thunderRes`、`agi`） |
+| `storm-conductor` | 雷霆指揮者 | 雷鳴 | — | 區 | 宣告標記＋cross 連鎖雷（M24） | `conductor-rod` 導雷桿 | `conductor-ring` 指揮者之戒（戒：`thunderDmg`、`crit`、`mag`） |
+| `starfire-colossus` | 星火巨像（故事） | 雷鳴 | — | 區 | 吸 TP＋「星火」enemies 火（M17） | `starfire-core` 星火核 | `starfire-tiara` 星火頭冠（頭：`int`、`tp`、`tpCost`） |
+| `mire-hydra` | 腐沼多頭蛇 | 腐毒 | hp +12% | 區 | 66%、33% 各長出一個頭（新技能）；cross 毒（M8） | `hydra-scale` 多頭蛇鱗 | `hydra-fang` 蛇牙短刃（武器・短刃：`crit`、`vuln`、`agi`） |
+| `grey-blight` | 灰枯（故事） | 腐毒 | — | 區 | 召喚孢子莢；孢子莢在時本體受護盾、莢破裂時 cross 毒（M4、M7、M10） | `blight-ash` 灰枯之塵 | `greenward-cloak` 護林斗篷（身：`hp`、`wil`、`res`） |
+| `bog-leviathan` | 沼底巨口 | 腐毒 | hp +10% | 區 | 「吞入」把一名隊員關 1 回合（期間中毒、不能行動）；對牠造成 15% 最大 HP 的傷害就吐出（M28） | `leviathan-tooth` 巨口之牙 | `bog-ring` 沼底指環（戒：`tp`、`wil`、`tpRegen`） |
+| `faceless-host` | 無面之主 | 暗影 | — | 區 | 借來的招式；召喚鏡中竊影（M6、M4） | `blank-mirror` 無面之鏡 | `faceless-mask` 無面面具（頭：`evasion`、`int`、`res`） |
+| `vault-dragon` | 金庫之龍 | 暗影 | hp +10% | 區 | 偷金幣；「金幣吐息」row，偷得越多越痛；打倒奉還（M13） | `dragon-gold` 龍藏金 | `gilded-mail` 鍍金之鎧（身：`armor`、`hp`、`def`） |
+| `shadow-parade` | 影之行列 | 暗影 | — | 區 | 每回合行列多一個影子（召喚），影子越多本體越強（M4、M26） | `parade-lantern` 行列的燈 | `parade-boots` 夜行之靴（腳：`agi`、`evasion`、`spd`） |
+| `fortress-colossus` | 要塞巨像 | 鋼鐵 | — | 區 | 召喚鉚釘機兵；蓄力「攻城砲」（M4、M1） | `colossus-bolt` 巨像螺栓 | `colossus-gauntlet` 巨像手甲（手：`armor`、`def`、`str`） |
+| `siege-titan` | 攻城巨獸（故事） | 鋼鐵 | atk+ | 區 | 「破甲」row def −30%＋蓄力重擊（M1） | `titan-hide` 巨獸皮 | `wallclimber-boots` 攀牆之靴（腳：`def`、`spd`、`str`） |
+| `last-commander` | 最後的指揮官（故事） | 鋼鐵 | — | 區 | 守護同伴；吹號角 allies def +30%（不寫撤退）（M2） | `commander-medal` 指揮官的勳章 | `red-horn` 紅色號角（頸：`gauge`、`hp`、`wil`） |
+| `archon-hand` | 執政像之手（部件） | — | 260 | 火／— | 「壓制」row | — | — |
+| `rime-pillar` | 冰柱（部件） | — | 240 | 區 | 補血、加防 | — | — |
 
-### 4.7 精英詞綴「飽食個體」（5 種，0 張圖）
-- 從第 4 層起，每個精英都帶一個詞綴；第 1–3 層的精英不變。
-- 選法：`eliteAffix(run, depth) = AFFIX_IDS[mix(run.seed ^ AFFIX_SALT, depth) % 5]`。純雜湊（和 `chestHasGear` 同一種寫法），**不抽任何串流**。同一層重進一樣。
-- 名字：`★〔急躁〕深層・熾焰・荊棘狼`（詞綴兩個字，放在 ★ 後）。
+- 專屬獨特的固定詞綴都已對照 `AFFIXES` 的欄位字母（W/O/H/B/G/F/N/R）挑過；`data/roster.test.ts` 的 `every unique's fixed keys are legal for its slot` 仍要擋住之後的修改。
+- 頭目的 exp、gold、記憶碎片、頭目裝備兩件，全部照燈喰之獸（`battleGear`、`pieceDrops` 看 `b.boss`，不看 id）。部件 exp 30、gold 0、無掉落、不進表。
 
-| id | 名稱 | 效果 | 付費（讓威脅不變） |
+### 5.7 精英詞綴「飽食個體」（5 種，0 張圖）
+- 第 4 層起，每個精英帶一個詞綴；第 1–3 層不變。
+- `eliteAffix(run, depth) = AFFIX_IDS[mix(run.seed ^ AFFIX_SALT, depth) % 5]`，純雜湊，不抽串流。
+- 名字：`★〔急躁〕深層・熾焰・荊棘狼`。
+
+| id | 名稱 | 效果 | 付費 |
 |---|---|---|---|
 | `swift` | 急躁 | spd ×1.4 | hp ×0.85 |
 | `thick` | 厚重 | hp ×1.35 | atk、mag ×0.85 |
-| `echoing` | 回響 | 每次行動後再普攻一次，威力 50% | atk、mag ×0.8 |
+| `echoing` | 回響 | 每次行動後追加一次 50% 的普攻 | atk、mag ×0.8 |
 | `draining` | 吸憶 | 所有傷害吸血 30% | hp ×0.9 |
-| `splitting` | 分裂 | 倒下時召喚一隻同物種、40% hp、非精英、無報酬 | hp ×0.8 |
+| `splitting` | 分裂 | 倒下時召喚同物種一隻（40% HP、非精英、無報酬） | hp ×0.8 |
 
-### 4.8 給第 2 項（懸賞）的接口
-- 詞綴精英就是世界觀的「吞了太多記憶的怪物」。懸賞上線時，可以指定「某地區、某詞綴、某物種」當目標，不需要新物種。
-- `eliteAffix` 是純函式，懸賞板可以預先算出某次出發的某層會有哪個詞綴（若想給提示）。
+### 5.8 舊怪物的深層特性（決定）
+- 舊 8 種裡 `bat`、`beetle`、`golem` 沒有任何技能。決定：它們出現在**新表**（第 4 層起、該帶已上線）時，帶一個深層特性：
+  - `bat`：偽裝的變體「伏擊」：第一回合必定先手（M14）；
+  - `beetle`：守護（M2）；
+  - `golem`：蓄力「重踏」row（M1）。
+- 實作成 `scaleEnemy` 的 `DEEP_TRAITS`，只在 `encounterTable` 回傳新表時套用。第 1–3 層、以及新表未上線的深度不變，所以 §9.1 的位元相同保證仍成立。
+- 懸賞（第 2 項）的接口：詞綴精英就是「吞了太多記憶的怪物」。`eliteAffix` 是純函式，懸賞板可以預先算出某次出發某層的詞綴。
 
 ---
 
-## 5. 機制
+## 6. 機制
 
-### 5.1 引擎工作清單
-原則：
-- 每個新機制的**決定**（要不要召喚、換哪個弱點、何時逃走、哪個詞綴）都是確定性的，不抽 rng（§5.3）。
-- 每個機制都用 `EnemyDef` 或 `EnemySkill`／`Effect` 上的可選欄位表示；舊定義沒有這些欄位，行為位元相同。
-- 每個機制都在意圖欄（`intentLabel`）或名牌上看得到。DRPG 的公平：玩家看得到才算數。
+### 6.1 原則
+- 每個機制的**決定**（要不要召喚、換哪個弱點、何時逃走、標記誰、選哪個詞綴）都是確定性的，不抽 rng。
+- 用 `EnemyDef`、`EnemySkill`、`Effect` 的可選欄位表示；舊定義沒有這些欄位，行為位元相同。
+- 玩家看得到：每個機制都在意圖欄（`intentLabel`）、名牌或戰鬥紀錄上顯示。
 
-| 代號 | 機制 | 資料形狀（提案） | 引擎位置 | 用到的怪物數 | 測試義務（TDD 先寫） |
-|---|---|---|---|---|---|
-| D | 現有效果（減益、補血、增益、多段、必暴、遠程） | 無 | 無 | 9 | `roster.test.ts`：每個 D 技能只用 §1.4 列的效果種類 |
-| M1 | 蓄力 | `EnemySkill.charge?: string`（蓄力回合的名稱） | `battle.ts`：`Combatant.charging?: number`；選到蓄力技能時這回合只記 log `charge`，下一回合的 `planEnemies` 強制用該技能；睡著會清掉蓄力 | 11 | `a charged skill lands the round after its wind-up`、`sleep breaks a charge`、`the wind-up shows in intentLabel`、`charging draws nothing` |
-| M2 | 守護 | `Effect { kind: 'guard'; turns }` | `battle.ts`：`Combatant.guard`；我方 `enemy` 目標的技能、普攻、絕技，目標若是另一隻活著的敵人而場上有 `guard > 0` 的敵人，改打守護者。範圍技不受影響。回合結束遞減 | 5 | `a guard takes single-target hits for its allies`、`area skills ignore a guard`、`a guard ends after its turns`、`a sleeping guard still guards`（決定：是） |
-| M3 | 逃走 | `EnemyDef.fleeAfter?: number` | `battle.ts`：回合結束時 `round >= fleeAfter` 的活著的牠設 `fled`、`alive=false`，log `flee`；`checkOutcome` 把逃走的算離場；`rewards`、`game.battleGear` 跳過 `fled` | 1 | `the hoarder flees at the end of round 3`、`a fled foe pays nothing and takes no loot draw`、`a fight of only a fled foe is won with no reward` |
-| M4 | 召喚 | `Effect { kind: 'summon'; id; max }` | 抽出 `meetEnemy()`（`createBattle` 的單隻生成，位元相同的重構），召喚時用同一個 scale、非精英；新的 key 接在最後（`e{n}`）；場上活著的敵人已達 `groupCap(size, depth)` 時失敗（頭目戰上限 4）；每個召喚者對該技能最多 `max` 次；被召喚的 `summoned: true`：exp、gold 0，drops 空，`battleGear` 跳過；本回合不行動 | 6 | `meetEnemy matches createBattle bit for bit`、`a summon respects the group cap`、`a summon pays nothing and takes no loot draw`、`a summon acts from the next round`、`BattleView adds a sprite for a summon` |
-| M5 | 弱點輪替 | `EnemyDef.prism?: true` | `battle.ts`：每回合開始設 `weak = [ORDER[(round + i) % 4]]`、`resist = [ORDER[(round + i + 2) % 4]]`（`i` = 第幾隻）；`scaleEnemy` 對 `prism` 不套地區弱點；名牌顯示目前弱點 | 1 | `a prism foe cycles through all four elements`、`a region does not override a prism`、`prism draws nothing` |
-| M6 | 借來的招式（回聲） | `Effect { kind: 'echo'; cap }` | `BattleState.lastPartyDamage?: { actor; element; power; scale }`，我方每個傷害技能結束時更新；echo 用自己的數值、該屬性、`min(power, cap)` 打回 `actor`（已倒下就隨機目標，走既有 `pickTarget`）；沒有紀錄時改普攻 | 4 | `echo returns the last party element at most cap`、`echo without a record is an attack`、`echo targets the caster` |
-| M7 | 多部位護盾 | `EnemyDef.shieldedBy?: string[]`、`shieldPct` | `combatant.ts` 的傷害計算：目標有 `shieldedBy` 且場上有活著的對應部件時，傷害 × `shieldPct / 100`（提案 50）；名牌顯示「受保護」 | 2 | `a shielded core takes half while a part stands`、`the shield drops with the last part` |
-| M8 | 階段 | `EnemyDef.phases?: { below: number; skills: EnemySkill[]; name?: string }[]` | `enemyDef()` 取技能時依目前 hp 比例選最後一個符合的階段；第一次進入時 log `phase`（畫面閃一下） | 4 | `a boss switches skills under its threshold`、`phases never switch back after healing`（決定：記住最低階段） |
-| M9 | 遺忘（新狀態） | `inflict` 的 `status` 加 `'forget'` | `Combatant.forget`（回合數，固定 1）；被遺忘的人 `skill` 行動改成普攻（log `forgot`），`ultimate`、`item`、`defend`、`escape` 照常；用 `sleepRes` 抵抗（精神抗性，不新增次要屬性）；頭目減半照舊；`cure` 會解除 | 3 | `a forgotten member attacks instead of casting`、`items and ultimates still work while forgotten`、`cure clears forget`、`sleepRes resists forget` |
-| M10 | 倒下時 | `EnemyDef.onDeath?: EnemySkill`（chance 視為 1） | `skills.ts` 的 `ko` 之後立即結算（目標依技能，`allies` 指牠的隊友）；只結算一次 | 3＋分裂詞綴 | `a twin enrages its partner when it falls`、`a wick bursts once when it falls`、`onDeath does not chain forever`（燭芯爆炸只打我方） |
-| M11 | 吸血 | `damage` 效果加 `drain?: number`（%） | `skills.ts`：造成的傷害 × drain% 回到施放者 | 4＋詞綴 | `drain heals the actor by its share of the damage dealt`、`drain on a miss heals nothing` |
-| M12 | 精英詞綴 | `BattleScale.affix?: AffixId`；`data/affixes.ts` | `scaleEnemy` 套數值；`echoing`、`draining`、`splitting` 用 M10、M11 與「行動後追加」 | 5 種 | `eliteAffix is a pure function of seed and depth`、`depths 1-3 elites carry no affix`、`each affix changes the elite as listed` |
+### 6.2 引擎工作清單
+| 代號 | 機制 | 資料形狀（提案） | 引擎要點 | 測試義務（先寫） |
+|---|---|---|---|---|
+| D | 現有效果 | 無 | 無 | 每個 D 技能只用 §1.4 的效果種類 |
+| M1 | 蓄力 | `EnemySkill.charge?: string` | `Combatant.charging`；蓄力回合只記 `charge`，下一回合強制施放；睡眠、遺忘以外的狀態不影響；睡眠會打斷 | `lands the round after its wind-up`、`sleep breaks a charge`、`shows in intentLabel`、`draws nothing` |
+| M2 | 守護 | `Effect { kind: 'guard'; turns }` | 我方單體行動（攻擊、技能、絕技）目標是另一隻敵人時，改打守護者；範圍技不受影響 | `takes single-target hits`、`area ignores a guard`、`ends after its turns` |
+| M3 | 逃走 | `EnemyDef.fleeAfter` | 回合結束時設 `fled`；`checkOutcome` 算離場；`rewards`、`battleGear` 跳過 | `flees at the end of round N`、`a fled foe pays nothing and takes no loot draw` |
+| M4 | 召喚 | `Effect { kind: 'summon'; id; max }` | 抽出 `meetEnemy()`（`createBattle` 單隻生成的位元相同重構）；達 `groupCap`（頭目戰 4）就失敗；被召喚的 `summoned`：無報酬、`battleGear` 跳過；本回合不行動；目標 id 必須已上線 | `meetEnemy matches createBattle`、`respects the cap`、`a summon pays nothing`、`acts from the next round`、`BattleView adds a sprite` |
+| M5 | 弱點輪替 | `EnemyDef.prism?: 'cycle' \| 'phase'` | 每回合（或每階段）設 `weak`、`resist`；`scaleEnemy` 不套地區弱點 | `cycles through all four elements`、`a region does not override` |
+| M6 | 借來的招式 | `Effect { kind: 'echo'; cap }` | `BattleState.lastPartyDamage`；用自己的數值、該屬性、`min(power, cap)` 打回施放者 | `returns the last element at most cap`、`without a record is an attack` |
+| M7 | 多部位護盾 | `EnemyDef.shieldedBy`、`shieldPct` | 有活著的部件時傷害 × `shieldPct/100`（提案 50） | `half while a part stands`、`drops with the last part` |
+| M8 | 階段 | `EnemyDef.phases` | 依 hp 比例（或回合，`false-moon`）換技能表；記住最低階段 | `switches under its threshold`、`never switches back after healing` |
+| M9 | 遺忘（新狀態） | `inflict.status: 'forget'` | 1 回合；`skill` 改普攻；道具、絕技、防禦照常；`sleepRes` 抵抗；頭目減半；`cure` 解除 | `attacks instead of casting`、`items and ultimates still work`、`cure clears` |
+| M10 | 倒下時 | `EnemyDef.onDeath` | `ko` 後立即結算一次 | `fires once`、`does not chain forever` |
+| M11 | 吸血 | `damage.drain` | 傷害 × drain% 回到施放者 | `heals by its share`、`a miss heals nothing` |
+| M12 | 精英詞綴 | `BattleScale.affix` | `scaleEnemy` 套數值；`echoing` 追加普攻 | `pure in seed and depth`、`d1–3 elites carry none` |
+| M13 | 偷竊 | `Effect { kind: 'steal'; perDepth }` | 從 `run.loot.gold` 移到 `Combatant.stolen`；打倒時奉還（守關者 ×2）；逃走或戰鬥失敗就沒了；模擬沒有 `run`，不偷 | `returns on a kill`、`lost on a flee`、`never below zero`、`the sim steals nothing` |
+| M14 | 偽裝、沉睡、伏擊 | `EnemyDef.opener?: 'disguise' \| 'asleep' \| 'ambush'` | 開場狀態；偽裝名牌顯示「寶箱？」直到第一次受傷；沉睡在受傷或第 3 回合醒；伏擊第一回合先手 | 每種一個成功、一個邊界測試 |
+| M15 | 抹去增益 | `Effect { kind: 'dispel'; steal: true }` | 移除目標正值增益、加到自己身上（同 `MAX_BUFFS`） | `moves buffs`、`leaves debuffs` |
+| M16 | 適應 | `EnemyDef.adapt` | 第一次受到的屬性加入 `resist` 3 回合；名牌顯示 | `adapts to the first element`、`expires` |
+| M17 | 吸 TP | `damage.tpDrain` | 目標 TP 減少、名牌顯示 | `never below zero` |
+| M18 | 模仿 | `EnemyDef.mimic: pct` | 開戰時把 atk、mag 設成我方最高值 × pct（再套成長以外的倍率） | `copies the strongest member`、`scales with party size` |
+| M19 | 幻影 | `opener: 'decoy'` | 開戰召出 1 HP、無報酬的幻影；幻影在時本體 `evasion` +20 | `decoy pays nothing`、`evasion drops with it` |
+| M20 | 傷害平分 | `EnemyDef.shareWith` | 成對的兩隻都活著時，受到的傷害各半 | `splits while both stand` |
+| M21 | 再生、修復 | `EnemyDef.regen: { pct; stopBy? }` | 回合結束回復；`stopBy` 屬性在那回合打中就不回 | `stops on its element` |
+| M22 | 重新站起 | `EnemyDef.revive: { pct; once }` | 第一次倒下時以 pct 復活（自己或同伴，`paper-cranes`） | `only once` |
+| M23 | 冰封 | `opener: 'frozen'` | def、res ×2.5、不行動；火命中或第 3 回合解除 | `fire thaws`、`thaws by round 3` |
+| M24 | 宣告標記 | `Effect { kind: 'mark' }` | 下回合所有同伴的單體目標改成被標記者；我方防禦或嘲諷可化解 | `focuses the marked member`、`taunt overrides` |
+| M25 | 對中毒加傷 | `damage.vsPoisoned` | 同 `wounded` 的寫法 | `only against poisoned` |
+| M26 | 光環 | `EnemyDef.aura` | 活著時同伴得到增益；倒下時移除 | `removed on death` |
+| M27 | 停針 | `inflict.status: 'stop'` | 跳過下一回合（1 回合）；不能連兩回合對同一人；頭目戰才有 | `never twice in a row on one member` |
+| M28 | 吞入 | `Effect { kind: 'swallow' }` | 目標離開陣型 1 回合；對施放者造成 15% 最大 HP 的傷害就提早吐出；全員被吞不會發生（最後一人不能被吞） | `released by damage`、`never swallows the last standing` |
 
-### 5.2 為什麼這些不會讓某種隊伍變成必帶
+### 6.3 為什麼這些不會讓某種隊伍變成必帶
 | 機制 | 擔心 | 處理 |
 |---|---|---|
-| 守護、多部位 | 沒有全體技的隊伍打不動 | 守護只擋單體、2 回合；護盾是 ×0.5 不是免疫。單體隊伍先拆部件即可；第 18、22d 項量全物理、全魔法、無坦、無補四種歪隊 |
-| 遺忘 | 治療被封 | 只封技能 1 回合；道具、絕技、防禦照常；頭目減半；任何人都能用道具補血 |
-| 弱點輪替 | 某屬性永遠打不到弱點 | 四種屬性（含物理）都會輪到 |
-| 逃走 | 沒有爆發的隊伍拿不到 | 寶物怪只是額外獎勵，不在經驗節奏的必要路徑上（表內 1/12，§6.4 的經驗等價把牠算成 0） |
-| 回聲 | 處罰大招 | 威力上限 150，屬性跟隨施放者，不分職業 |
-| 蓄力 | 沒有坦就吃滿 | 任何人都能防禦；睡眠打斷；先殺掉也行。第 18 項的 `noTank` 量這件事 |
-| 地區抗性 | 全物理在鋼鐵、腐毒 | 不變（既有行為，第 18b 項已在量） |
-| 抗物理物種 | 全物理隊 | 每張本道表 ≤ 25%（§4.3） |
-
-### 5.3 rng 規則（決定）
-- 不用 `Math.random`（`roster.test.ts` 掃 `data/roster.ts`、`data/affixes.ts`、新增的引擎碼）。
-- 遇敵：`encounterGroup` 照舊從 `game.rng` **抽一次** `pick`。表變長不會多抽。
-- 精英組：照舊用 `eliteGroup` 自己的鹽。精英詞綴：純雜湊 `mix(run.seed ^ AFFIX_SALT, depth)`，`AFFIX_SALT = 0xaff1c5`（提案，必須和 `MEMORY_SALT`、`FORGE_SALT`、`0xe11e`、`0x3c6ef372` 不同；測試檢查）。
-- 頭目：`bossFor` 是查表，不抽。
-- 戰鬥中：新機制的決定不抽 rng。牠們的技能命中、暴擊、閃避、狀態機率，走既有的 `applyEffect`／`calcDamage`，和任何敵人一樣使用戰鬥的 rng。這不是「多抽」：舊怪物的抽取序列不變（§6.1 的位元相同測試）。
-- 被召喚、逃走的敵人在 `game.battleGear` 裡不呼叫 `lootRng`、在 `rewards` 裡不抽掉落：召喚不會讓 `lootDraws` 多走。
-- `lootRng`、`memoryRng`、`fillRooms` 的 rng、`forgeRng`：本計畫不碰。
+| 守護、多部位、平分 | 沒有全體技打不動 | 只擋單體、有回合數；護盾 ×0.5 不是免疫；單體隊先拆部件即可 |
+| 遺忘、停針、吞入 | 治療被封 | 都只有 1 回合；道具、絕技照常；遺忘頭目減半；停針不連續；最後一人不被吞 |
+| 吸 TP | 處罰法系 | 每次 15、名牌看得到；道具可回 TP；第 22d 項把全魔法隊放進雷鳴 |
+| 弱點輪替、適應 | 某屬性永遠打不到 | 輪替含物理；適應只擋第一個屬性 3 回合 |
+| 冰封（火解凍） | 沒火就打不動 | 第 3 回合自己解凍 |
+| 偷竊 | 金錢損失 | 打倒必還；只偷這趟背包的錢、上限每次 depth×5 |
+| 逃走、寶物怪 | 沒爆發拿不到 | 純額外獎勵，經驗等價把牠算 0 |
+| 地區抗性 | 全物理在鋼鐵、腐毒 | 既有行為，第 18b 項已在量 |
 
 ---
 
-## 6. 平衡安全
+## 7. 掉落
 
-### 6.1 不動凍結帶的做法
-1. **第 1–3 層位元不變**：`encounterTable(region, depth ≤ 3)` 永遠回傳舊表。第 1–6、13、15 項與第 7 項的熾焰第 2、3 層，不會因為本計畫改變任何一個數字。
-2. **上線前位元不變**：`ROSTER_LIVE` 為空時，所有深度的 `encounterTable`、`bossFor`、`eliteGroup`、名字、報酬都和現在完全相同。測試：
-   - `the roster with nothing live changes nothing`：對 7 個地區 × 深度 1–40，`encounterTable` 等於舊實作的快照；`bossFor` 全部是 `lanterneater`（劇情與終幕除外）。
-   - `legacy fights replay bit for bit`：Task 0 先把「舊表每組 × 種子 1–3 在第 4、8 層」的完整戰鬥 log 存成 fixture（`engine/__fixtures__/legacy-fights.json`），之後每次改 `battle.ts`、`skills.ts`、`scaling.ts` 都要比對相同。
-3. **上線時每一個凍結帶都要綠**：每次把一批 id 加進 `ROSTER_LIVE`，跑第 1–20 項（6d 上線後含第 21 項）全部套件，加上 §6.3 的新帶。不綠就**只調新怪物自己的數字**（或從表裡拿掉某一組），不碰既有旋鈕，也不改任何門檻。
-4. **經驗等價**（`roster.test.ts`，快、不跑模擬）：對 7 個地區 × 深度 4–30，新表的平均 `groupExp`（寶物怪算 0）÷ 舊表的平均 `groupExp`，必須在 [0.92, 1.08]。這讓第 7 項的節奏與第 12 項的清層等級不會被新表推出帶外。
-5. **組的大小**：每組 1–3 隻（和舊表相同）；`GROUP_CAP` 照舊裁切。表的長度 10–12 組（控制第 7、8、18 項的執行時間）。
+### 7.1 招牌素材（59）與戰利品（39）
+- **資料**：新檔 `data/materials.roster.ts`，合併進 `MATERIALS`。
+  - 招牌素材 `kind: 'monster'`；
+  - 頭目與守關者的戰利品 `kind: 'trophy'`（新的 `MaterialKind`）。
+- **價格**（提案）：B 帶 20、C 30、D 40、E 50、F 60；地區原生依出現深度的帶；戰利品 120（守關者）／200（頭目）。
+  - 舊素材 6–32 G、地區素材 25 G，所以深層的錢包跟著深度長。這會改變 `economy.test.ts` 的量測，上線時重跑，門檻不放寬。
+- **掉落路徑**：
+  - 招牌素材與既有稀有素材寫在 `EnemyDef.drops`，走既有的 `rewards()`；
+  - 戰利品寫在 `EnemyDef.drops`，機率 1；
+  - 地區素材照舊由 `scaleEnemy` 附加。
+- **用途**（全部接既有系統，不另開經濟）：
+  1. **賣錢**：既有的商店賣出。
+  2. **鍛造屋・銘刻**（新的重洗變體，§7.2）：同種招牌素材 3 個＋`REROLL.gold(ilvl)`，把一件裝備的一條詞綴重洗成該物種的銘文鍵。和 `REGION_AFFIX_GROUP` 一樣是「用素材鎖定詞綴」，只是鎖定 1 個鍵。
+  3. **鍛造屋・專屬裝備製作**（新的 `SET_RECIPE` 變體，§7.3）：戰利品 5＋`star-tear` 1＋`setGold(ilvl)`，做出該頭目或守關者的專屬獨特。要先打倒過那隻一次（`bossKills` 或新的 `wardenKills`），保證「刷不到也做得出來」。
+  4. **消耗品**：不新增配方（避免回復資源的平衡變動）。
+  5. **送禮**（§7.4）。
 
-### 6.2 模擬會不會量到新怪物
-- 一般怪物：會，進表就被窮舉（§1.5）。
-- 頭目、精英詞綴、地區深處（15、25 層）、深帶的歪隊：現有的帶量不到，所以加 §6.3。
-- 未上線的物種：`ENEMIES` 查得到定義（§8.1），所以第 22 項可以在美術還沒好之前就調數值。
+### 7.2 銘文（一般怪物的專屬詞綴）
+- 每個一般物種有一個**銘文鍵**（§5.3、§5.4 的「銘文」欄），都是既有 `AFFIXES` 的鍵。沒有新詞綴、沒有新的詞綴池，`rollItem` 的抽取不變。
+- **掉落**：新物種的那一次 `lootRng` 若 `rng() < GEAR_CHANCE.monster` 掉了裝備，再用 **`trophyRng`**（§7.5）抽 `INSCRIBE_CHANCE = 0.25`。中了就把該件一條詞綴**換成**銘文鍵（槽位不允許該鍵就不換）。
+  - 數值在該件稀有度與 ilvl 的**同一個範圍**內，由 `trophyRng` 重擲；
+  - 條數不變、範圍不變。
+  - 結果：一件裝備的期望威力不變，只是「這件是紙蛾掉的、帶睡眠抗性」的身分。
+- 顯示：裝備名稱後加「・紙蛾銘」，圖鑑記錄見過的銘文。
+- `ItemInstance.inscription?: string`（物種 id，可選欄位；存檔驗證：必須是已知 id）。
 
-### 6.3 新增的平衡帶：第 22 項（`engine/balance.roster.test.ts`，新檔）
-所有門檻都沿用既有帶的數字，沒有新的寬鬆門檻。
+### 7.3 專屬獨特（39）
+- 每個頭目與守關者 1 件（§5.5、§5.6），`SpecialDef`：`rarity: 'unique'`、`source: 'boss'`（守關者 `'elite'`）、固定 3 條詞綴、`region` 依位置、`lore` 1 句（照 §4 的閘門寫：介紹在獲得時顯示，不得含揭露詞）。
+- 威力預算＝既有獨特（同 `ROLL_FLOOR.unique`、同 3 條）。
+- **掉落方式（不改總量）**：在新頭目／守關者的戰鬥裡，`rollBossGear` 或精英那一件照舊用 `lootRng` 跑完（抽取次數不變）。若結果是 `legendaryTier`，再用 `trophyRng` 抽 `OWN_UNIQUE_SHARE = 0.5`：中了就把那件換成該頭目的專屬獨特，數值由 `trophyRng` 重擲。
+  - 特殊裝備的總出現率不變（第 10、11、14 項的期望不受影響）；
+  - 被換掉的是角色傳說或地區特殊的一部分機率。
+- **保底**：§7.1 的製作。
+- **平衡**：新增 22h（§9.3）：全身換成 6 件專屬獨特（取最強的 6 件）＋其餘稀有，在第 10、20 層：頭目不在 2 回合內倒下（同第 14 項）、表的 hpLoss ≥ 10%（同第 18d 項的天花板）。
+- 美術：照 5d 的 `gear-<id>` 做法；圖還沒發布時照 5d 規則只顯示文字（不借底材圖），但 §11.1 規定：頭目上線前它的專屬獨特圖必須已發布，所以玩家實際上不會看到只有文字的版本。
+
+### 7.4 送禮（接 affinity spec §6）
+- **決定**：新的 `monster` 招牌素材全部可送（`GIFTABLE` 用 `kind` 推導，而不是寫死 18 種；這一條要寫進 6d Task 1 的說明，§12.3）。戰利品（`trophy`）**只有 8 件夥伴故事的守關者戰利品可送**，其餘不可送（打頭目的成就感不該被拿去刷好感）。
+- 口味原則：
+  - 不新增任何「最愛」（不改變 affinity spec §6.3 的送禮速度：最愛 ×2 種 ×2 份 = 16 的節奏）；
+  - 新素材預設「普通」；每位夥伴最多新增 3 種「喜歡」；
+  - **夥伴自己故事的戰利品**：集滿記憶之前「婉拒」、集滿之後「喜歡」（照 §6.2 的痊癒規則：已收下的口味不變）。這是好感度系統原本就有的「傷口好了才收得下」，正好對上故事。
+
+| 夥伴 | 新增「喜歡」（提案） | 自己故事的戰利品（集滿前婉拒 → 之後喜歡） |
+|---|---|---|
+| 凜 | `black-veil` 黑紗、`grey-cord` 灰繩結 | `tower-dust` 鐘樓的灰（集滿＝她立誓之後；婉拒句不得提靜鐘會） |
+| 瑟蕾 | `mirror-feather` 鏡羽、`sorrow-shard` 悲傷結晶片 | `moon-silver` 月影銀 |
+| 千鶴 | `prayer-rope` 結冰的注連繩、`komainu-fang` 狛犬牙 | `shrine-rope` 拜殿的繩 |
+| 莎菲拉 | `mirage-sequin` 蜃樓亮片、`market-token` 市集籌碼 | `copper-anklet` 銅腳環 |
+| 希爾薇 | `carved-bark` 刻痕樹皮、`kite-plume` 雷鳶羽 | `ashen-acorn` 灰橡實 |
+| 諾艾兒 | `jelly-cell` 水母電囊、`blue-ember` 藍白餘火（集滿前「普通」，之後「喜歡」，避免碰星火） | `ash-page` 燒剩的書角 |
+| 波比 | `old-cog` 古機齒輪、`rivet` 鉚釘、`tin-key` 發條鑰匙 | `automaton-core` 機兵核心 |
+| 莉茲 | `gilded-scrap` 金箔碎屑、`vault-lock` 寶庫的鎖 | `vault-coin` 寶庫金幣 |
+| 絲嘉蕾 | `knight-crest` 騎士團紋章、`marble-shard` 白石碎片 | `gate-splinter` 城門的木片 |
+
+- 需要的文字：每位夥伴 1 句婉拒＋1 句痊癒（共 18 句），屬於 6e 的 `BOND_TEXT.gift[cid]`。在 6e 寫好之前，這 8 件戰利品先標成「不可送」（`GIFT_TASTE` 不列它們），6e 完成時才打開。
+- 機械檢查：`GIFT_TASTE` 的每個鍵都在 `GIFTABLE` 裡；新素材不得出現在任何人的 `loved`。
+
+### 7.5 決定論與串流（決定）
+| 抽取 | 串流 | 對既有串流的影響 |
+|---|---|---|
+| 遇敵組 | `game.rng`，`pick` 一次 | 次數不變（表變長不多抽） |
+| 精英組 | `eliteGroup` 自己的鹽 | 不變；挑到寶物怪組就取下一組（索引 +1，不多抽） |
+| 精英詞綴 | 純雜湊 `mix(run.seed ^ AFFIX_SALT, depth)` | 無 |
+| 守關者位置 | `mulberry32(floorSeed ^ WARDEN_SALT)`，在 `floorOf` 裡**排在微光之後**呼叫 `placeSpecial` | 地圖其他內容（`fillRooms`、救援、微光）一格都不動（同 `RESCUE_SALT`、`GLIMMER_SALT` 的做法） |
+| 頭目選擇 | `bossFor` 查表 | 無 |
+| 戰鬥中新機制的決定 | 不抽 | 無 |
+| 戰鬥中命中、暴擊、狀態 | 既有的戰鬥 rng（遊戲中是 `game.rng`） | 只有**新怪物參戰**的戰鬥抽取序列不同（和任何新內容一樣）；舊組的戰鬥位元相同（§9.1 fixture） |
+| 招牌素材、稀有素材、戰利品 | `rewards()` 的 `game.rng`（既有的素材掉落契約） | 同上：只在新怪物的戰鬥裡多出牠自己那幾條 |
+| 裝備是否掉落、底材、稀有度 | `lootRng`，每隻一次（既有契約） | 新怪物每隻照舊用一次，和舊怪物一樣；召喚與逃走的不用 |
+| 銘文、專屬獨特的替換與重擲 | **新的加鹽串流** `trophyRng(run) = mulberry32(mix(run.seed ^ TROPHY_SALT, run.trophyDraws++))`；`Run.trophyDraws` 新欄位（`Run` 不存檔） | `lootRng` 的實例內抽取次數**完全不變**（替換在 `lootRng` 用完之後才做），所以精英的稀有素材、頭目第二件都和沒有替換時相同 |
+| 鍛造屋的銘刻、製作 | 既有 `forgeRng`（玩家主動操作才抽） | 只在玩家選這些新操作時抽 |
+| 偷竊 | 不抽 | 無 |
+
+- 新的鹽：`AFFIX_SALT`、`WARDEN_SALT`、`TROPHY_SALT`，測試檢查它們和 `MEMORY_SALT`、`FORGE_SALT`、`RESCUE_SALT`、`GLIMMER_SALT`、`0xe11e`、`0x3c6ef372`、`0x27d4eb2f` 都不同。
+- 不用 `Math.random`（掃新檔）。
+
+---
+
+## 8. 遇敵組成
+
+### 8.1 表的資料（`data/roster.ts`）
+- `MAINLINE_TABLES: Record<'B'|'C'|'D'|'E'|'F', string[][]>`、`NATIVE_GROUPS: Record<地區, string[][]>`。
+- `encounterTable(region, depth)`（舊實作保留為 `legacyTable`）：
+  1. `depth ≤ 3` → `legacyTable`。
+  2. 本道：`live = MAINLINE_TABLES[band].filter(allLive)`；地區：`live = [...NATIVE_GROUPS[region], ...MAINLINE_TABLES[band].slice(0, 6)].filter(allLive)`。
+  3. `live` 沒有含新 id 的組 → `legacyTable`（位元相同）。
+  4. `live.length < 6` → `[...legacyTable, ...live 的新組]`（過渡）。
+  5. 否則 → `live`。
+- 每組 1–3 隻；本道表 12 組；地區表 12 組（原生 6＋本道 6）。
+
+### 8.2 本道表（提案；舊 id 永遠算上線）
+| 帶 | 組 |
+|---|---|
+| B | `paper-moth×3`；`root-hound+wolf`；`tin-soldier+lamp-wight`；`lamp-wight+root-hound`；`dust-mimic`；`market-ghost+paper-moth×2`；`root-hound×2`；`wisp+market-ghost`；`tin-soldier+beetle`；`golem+lamp-wight`；`dust-mimic+shade`；`hoarder` |
+| C | `tongueless-bell+hollow-hunter`；`mist-twin×2`；`moon-crow×2`；`bell-watcher×2`；`sleepwalker+bell-watcher`；`hollow-hunter+lamp-wight`；`tongueless-bell+tin-soldier`；`moon-crow+root-hound`；`mist-twin×2+paper-moth`；`sleepwalker`；`bell-watcher+market-ghost`；`hoarder` |
+| D | `old-city-sentinel+requiem-choir`；`lantern-larva×2`；`epitaph-golem`；`ancestor-automaton+lantern-larva`；`ash-archivist+old-city-sentinel`；`requiem-choir+hollow-hunter`；`ancestor-automaton×2`；`epitaph-golem+moon-crow`；`ash-archivist+bell-watcher`；`lantern-larva+mist-twin×2`；`sleepwalker+requiem-choir`；`hoarder` |
+| E | `wick-shade×3`；`keeper-echo`；`ember-maw`；`sorrow-crystal×2`；`deep-tendril+wick-shade×2`；`keeper-echo+requiem-choir`；`ember-maw+old-city-sentinel`；`sorrow-crystal+lantern-larva`；`deep-tendril×2`；`epitaph-golem+wick-shade`；`ash-archivist+keeper-echo`；`gilded-hoarder` |
+| F | `music-box+paper-cranes×2`；`lost-shadow×2`；`returning-light+lost-shadow`；`paper-cranes×3`；`music-box+keeper-echo`；`sorrow-crystal+paper-cranes×2`；`lost-shadow+deep-tendril`；`returning-light+ember-maw`；`music-box+sorrow-crystal`；`lost-shadow+wick-shade×2`；`keeper-echo+paper-cranes`；`gilded-hoarder` |
+
+### 8.3 地區原生組與守關者房
+- 地區原生組（每區 6 組，形狀相同）：`[群×3]`、`[標準]`、`[輔+標準]`、`[群×2+輔]`、`[標準×2]`、`[重+群]`。各區用自己 5 種填，故事物種至少出現在 2 組；成對物種（`ice-komainu`）一律兩隻。
+- **守關者房**：
+  - 深度 `d ≥ 8`、`d % 5 === 3`、而且不是頭目層時，`floorOf` 在微光之後用 `WARDEN_SALT` 放一個守關者格（地圖標記沿用精英的事件地磚美術，不需要新地磚；名牌與圖鑑寫守關者的名字）；
+  - 打倒後那一格變地板，這趟不再出現；
+  - 戰鬥走精英的報酬路徑（`battleGear` 的精英分支）＋戰利品；
+  - **不給記憶碎片**（`pieceDrops` 不用 `'warden'` 這個來源），所以 `balance.pace.test.ts` 的第 20 項不受影響。
+
+---
+
+## 9. 平衡安全
+
+### 9.1 不動凍結帶的做法
+1. 第 1–3 層位元不變（`encounterTable` 回舊表、舊怪物的深層特性只在新表生效、精英詞綴從第 4 層起、守關者從第 8 層起）。
+2. 上線前位元不變：`ROSTER_LIVE` 為空時，`encounterTable`、`bossFor`、`eliteGroup`、`floorOf`（不放守關者）、名字、報酬全部和現在相同。測試：
+   - `the roster with nothing live changes nothing`：7 區 × 深度 1–60 的表快照、`bossFor`、`floorOf` 的地圖快照；
+   - `legacy fights replay bit for bit`：Task 0 把「舊表每組 × 種子 1–3、第 4、8 層」的完整戰鬥 log 存成 fixture，之後每次改 `battle.ts`、`skills.ts`、`scaling.ts`、`drops.ts` 都比對。
+3. 每次上線切換（把一批 id 加進 `ROSTER_LIVE`）跑第 1–20 項（6d 之後含第 21 項）全部套件，再加第 22 項。不綠就只調新怪物自己的數字，或從表裡拿掉某一組；不碰既有旋鈕與門檻。
+4. 經驗等價（`roster.test.ts`，不跑模擬）：7 區 × 深度 4–30，新表的平均 `groupExp`（寶物怪算 0）÷ 舊表平均，必須在 [0.92, 1.08]。
+5. 裝備威力：銘文不增加條數與範圍（`an inscription never raises an item's affix count or range`）；專屬獨特只替換、不增加特殊裝備的總出現率（`own uniques never raise the special rate`，以 10 萬次頭目掉落的統計測試）；製作要先擊倒過。
+6. 送禮速度：不新增「最愛」（`no new loved gift`）。
+
+### 9.2 模擬會不會量到新內容
+- 一般怪物：會，進表就被窮舉。
+- 頭目、守關者、詞綴、地區深處、深帶歪隊、專屬獨特：現有帶量不到 → 第 22 項。
+- 未上線的物種：`ENEMIES` 查得到定義，第 22a、22b、22e、22f、22i 在美術還沒好之前就能調數字。
+
+### 9.3 新增：第 22 項（`engine/balance.roster.test.ts`）
+門檻全部沿用既有帶的數字。
 
 | 帶 | 內容 | 門檻（沿用） |
 |---|---|---|
-| 22a 物種等價 | 每個新一般物種的「代表組」（群 ×3、其餘 ×2）在該帶第一個深度（B 4、C 10、D 16、E 25；地區原生在 4 與 15），深度等級、期望記憶、期望裝備（同 19a 做法）；和同原型的參考組（舊的 golem ×2 或 shade ×2 在同一深度）比 | 勝率 ≥ 0.85；hpLoss 10–45%；且和參考組的 hpLoss 差 ≤ 0.08 |
-| 22b 頭目等價 | 每個新頭目在它的每個出現深度（≤ 30），對照同深度、同地區的 `lanterneater`（同種子、同套裝備） | 勝率差 ≤ 0.10；稀有套裝每個種子 ≥ 3 回合（同第 11 項）；+`ENHANCE_MAX` ≥ 2 回合（同第 14 項）；2、3、4 人的勝率 ≤ 全隊 + 0.05（同第 16 項） |
-| 22c 地區深處 | 6 個地區在第 15、25 層，期望隊伍（同 19a） | 勝率 ≥ 0.85；hpLoss 10–45% |
-| 22d 深帶歪隊 | `ODD_LINEUPS` 四隊各配 fill build，本道第 12、20 層與 `allPhys` 的鋼鐵第 12 層 | 勝率 ≥ 0.85；hpLoss 10–45%（同 18a） |
-| 22e 詞綴精英 | 5 種詞綴 × 本道第 4、8 層表的每一組 | 勝率 ≥ 0.6（同第 8 項） |
-| 22f 頭目歪隊 | `ODD_LINEUPS` × fill build × 每個多部位／召喚／遺忘頭目在第一個出現深度 | 勝率 ≥ 同條件下 `lanterneater` − 0.10 |
+| 22a 物種等價 | 每個新一般物種的代表組（群 ×3、成對 ×2、其餘 ×2）在它的帶的第一個深度，期望隊伍（同 19a）；對照同原型的舊參考組 | 勝率 ≥ 0.85；hpLoss 10–45%；和參考組的 hpLoss 差 ≤ 0.08 |
+| 22b 頭目等價 | 每個新頭目在每個出現深度（≤ 50），對照同深度同地區的 `lanterneater` | 勝率差 ≤ 0.10；稀有套裝每種子 ≥ 3 回合（第 11 項）；+`ENHANCE_MAX` ≥ 2 回合（第 14 項）；2、3、4 人勝率 ≤ 全隊 + 0.05（第 16 項） |
+| 22c 地區深處 | 6 區在第 15、25 層，期望隊伍 | 勝率 ≥ 0.85；hpLoss 10–45% |
+| 22d 深帶歪隊 | `ODD_LINEUPS` 四隊配 fill build：本道第 12、20、35 層；`allPhys` 在鋼鐵、腐毒第 12 層；`allMagic` 在雷鳴第 12 層 | 勝率 ≥ 0.85；hpLoss 10–45%（第 18a 項） |
+| 22e 詞綴精英 | 5 種詞綴 × 本道第 4、8 層表的每一組 | 勝率 ≥ 0.6（第 8 項） |
+| 22f 頭目歪隊 | `ODD_LINEUPS` × fill build × 每個有 M4、M7、M9、M17、M27、M28 的頭目，第一個出現深度 | 勝率 ≥ 同條件 `lanterneater` − 0.10 |
+| 22g 寶物怪（只記錄） | 預設隊伍在逃走前擊殺的比率 | 不擋；提案目標 50–70% |
+| 22h 專屬獨特天花板 | 6 件最強專屬獨特＋稀有，第 10、20 層 | 頭目 ≥ 2 回合（第 14 項）；表 hpLoss ≥ 10%（第 18d 項） |
+| 22i 守關者 | 每個守關者在它的第一、二個深度，深度等級＋期望裝備 | 勝率 ≥ 0.6（第 8 項）；稀有套裝 ≥ 2 回合（第 14 項） |
 
-- 22a、22b、22e、22f 在美術上線前就能跑（用 `ENEMIES` 裡的定義），這是調數字的主要工具。
-- 22c、22d 量的是「上線後的表」，所以 `ROSTER_LIVE` 為空時它們量的就是舊表，必須本來就綠（Task 0 先確認；不綠就回報，不放寬）。
-- 時間：每個 `it` 標 300 秒上限；整套平衡只能一次跑一個（使用者的 WSL 規則精神；在 Windows 上也照樣一次一套）。
-
-### 6.4 寶物怪與節奏
-- `hoarder` 的 exp 90、gold 150 很高，但牠第 3 回合結束就跑。經驗等價把牠算成 0；節奏帶（第 7、12 項）用 `groupExp` 算的是全額，所以表內只放 1 組，並在 22a 之外單獨量「預設隊伍 3 回合內擊殺率」，提案目標 50–70%（新帶 22g，只記錄、不擋，給調數值參考；這不是凍結帶）。
-
----
-
-## 7. 圖鑑（決定：升級既有的圖鑑頁，不另開）
-
-### 7.1 為什麼
-- 已經有一頁（§1.7），但它列出沒遇過的怪物、沒有圖、沒有介紹。48 種新怪物如果只是一長串名字，反而顯得更空。
-- 圖鑑是「怪物是被吞下的記憶」最好的說故事位置：每隻 1–2 句，劇情推進後多一句。這也呼應手冊「找回記憶」的主題。
-
-### 7.2 規格
-- 狀態：`GameState.bestiary?: Record<string, { seen: number; felled: number }>`（可選欄位，`SAVE_VERSION` 維持 8，照 6d 的 `bond` 做法；`isGameState` 驗證：未知 id 丟掉、數字為 0–999999 的整數）。
-- 記錄：`startBattle` 記 `seen`（每場每個物種 +1，以定義 id 計，地區變體算同一種）；勝利時記 `felled`。不抽 rng。召喚出來的也算見過、打倒。
-- 顯示（`engine/story/handbook.ts` 的 `CodexPage.monsters` 擴充）：
-  - 只列**已上線**（`liveEnemyIds()`）的物種；沒見過的顯示「？？？」與剪影（同一張圖加 CSS `brightness(0)`，不是新圖）。
-  - 見過：圖、名字、出沒（「本道 10–15 層」「熾焰之地」）、已揭露弱點（沿用 `revealed`）、見過／擊倒次數。
-  - 擊倒過：多顯示介紹第一句。
-  - 劇情到達 `loreAfter`（`act2`／`act3`／`act4`／`after`）：多顯示第二句。
-- 文字：新檔 `data/bestiary.zh-TW.ts`（不碰 `story.zh-TW.ts`、`text.zh-TW.ts`），帶自己的 `BESTIARY_PLACEHOLDERS` 與閘門測試（`PLACEHOLDERS.size === 0` 的同款做法）。寫作照 6c 的文風聖經與設定帳本；新出現的名詞（例如「霧生迴響」）登記進帳本。
-- 介面字串（頁籤、標籤）放 `data/bestiary.zh-TW.ts` 的 `UI` 區塊，避免和 6d Task 7 搶 `text.zh-TW.ts`。
+- 22c、22d 在 `ROSTER_LIVE` 為空時量的是舊表，Task 0 先確認本來就綠；不綠就回報，不放寬。
+- 每個 `it` 上限 300 秒；整套平衡一次只跑一套。
 
 ---
 
-## 8. 計畫切分與順序
+## 10. 圖鑑（決定：升級既有的圖鑑頁）
 
-### 8.1 開關：沒有核准美術就不上線（決定）
-`data/roster.ts`（新）：
+- **狀態**：`GameState.bestiary?: Record<string, { seen; felled; inscriptions?: number }>`，可選欄位，`SAVE_VERSION` 維持 8（照 6d `bond` 的做法）；驗證丟掉未知 id。
+- **記錄**：`startBattle` 記 `seen`（以定義 id；地區變體算同一種；召喚的也算），勝利記 `felled`。不抽 rng。
+- **顯示**（`CodexPage.monsters` 擴充）：
+  - 只列已上線；沒見過顯示「？？？」＋剪影（同一張圖加 CSS `brightness(0)`，不是新圖）；
+  - 見過：圖、名字、出沒（「本道 10–15 層」「熾焰之地」）、已揭露弱點（`revealed`）、見過與擊倒次數、特性一句；
+  - 擊倒過：介紹第一句、招牌素材與銘文；
+  - 第二、三句依 `loreAfter`（§4.2）解鎖；
+  - 頭目與守關者另列「專屬裝備：已取得／未取得」。
+- **分頁**：圖鑑內加篩選「本道／各地區／頭目」，100 種才不會變成一長串。
+- **文字**：新檔 `data/bestiary.zh-TW.ts`，帶 `BESTIARY_PLACEHOLDERS` 與閘門測試；介面字串也放這個檔（避開 6d Task 7 的 `text.zh-TW.ts`）。新名詞（「霧生迴響」「守關者」「銘文」）登記進 ledger 的發明登記。
+
+---
+
+## 11. 開關
+
+### 11.1 沒有核准美術就不上線
+`data/roster.ts`：
 ```ts
-/** 美術已發布（registry 狀態 published、檔案在 public/）的新怪物 id。只由美術計畫在發布 commit 加入。 */
+/** 美術已發布的新敵人 id（敵人圖，以及它的招牌素材或戰利品圖示、專屬獨特的裝備圖）。只由美術計畫在發布 commit 加入。 */
 export const ROSTER_ART: ReadonlySet<string> = new Set([]);
-/** 已進遇敵表、頭目表與圖鑑的新怪物 id。只由引擎計畫在上線 commit 加入；必須是 ROSTER_ART 的子集。 */
+/** 已進遇敵表、頭目表、守關者房與圖鑑的 id。只由引擎計畫在上線 commit 加入；必須是 ROSTER_ART 的子集。 */
 export const ROSTER_LIVE: ReadonlySet<string> = new Set([]);
 ```
-- 新怪物的定義放在 `data/enemies.roster.ts`（新），合併進 `ENEMIES` 給**查詢**用（`createBattle`、`scaleEnemy`、模擬）。
-- **列表**全部改讀 `liveEnemyIds()`／`artEnemyIds()`（舊 id 永遠算在內）：
-  - `allArtUrls()`：舊的迴圈改成「舊 id ＋ `ROSTER_ART`」。所以 246 只在美術發布時改；
-  - `NORMAL_ENEMIES`：舊 8 ＋ `ROSTER_LIVE` 的一般物種；
-  - 手冊圖鑑：舊 ＋ `ROSTER_LIVE`；
-  - `encounterTable`、`bossFor`：組裡每個 id 都上線，該組才進表（§8.2）。
+- 新定義在 `data/enemies.roster.ts`、`data/materials.roster.ts`、`data/gear.roster.ts`，合併進 `ENEMIES`、`MATERIALS`、`SPECIALS` 供**查詢**；**列表**改讀 `liveEnemyIds()`、`artEnemyIds()`：
+  - `allArtUrls()`：舊 id ＋ `ROSTER_ART` 的敵人圖與它的素材圖示；
+  - 新素材的圖示在 `ROSTER_ART` 之前一律視為 `NO_ICON_YET`；
+  - `NORMAL_ENEMIES`、手冊、`encounterTable`、`bossFor`、守關者房：只認 `ROSTER_LIVE`；
+  - `pickSpecial` 的替換：只換成 `ROSTER_LIVE` 頭目的專屬獨特。
 - 測試：
   - `ROSTER_LIVE ⊆ ROSTER_ART`；
-  - `ROSTER_ART` 每個 id 的 `enemy-<id>` 在 registry 是 `published`，而且 `runtime` 等於 `art.enemy(id)`；
-  - `published.test.ts` 本來就會檢查 `allArtUrls` 的檔案存在，所以「沒有圖就上線」在機械上不可能發生。
-- 召喚的目標也必須上線：`roster.test.ts` 檢查 `summon.id ∈ 舊 id ∪ ROSTER_LIVE`，否則該技能在戰鬥裡跳過（不會召出沒有圖的怪）。
+  - `ROSTER_ART` 的每個 id：`enemy-<id>` 在 registry 是 `published`；它的招牌素材或戰利品 `icon-<mat>` 是 `published`；頭目與守關者的 `gear-<unique>` 是 `published`；
+  - 召喚目標必須已上線；
+  - `published.test.ts` 本來就會檢查檔案存在。
 
-### 8.2 表的資料（`data/roster.ts`）
-- `MAINLINE_TABLES: Record<'B'|'C'|'D'|'E', string[][]>`、`NATIVE_GROUPS: Record<Exclude<RegionId,'mainline'>, string[][]>`。
-- `encounterTable(region, depth)`（改寫 `engine/scaling.ts`，舊行為保留成 `legacyTable`）：
-  1. `depth ≤ 3` → `legacyTable`。
-  2. 本道：`live = MAINLINE_TABLES[band].filter(allLive)`；地區：`live = [...NATIVE_GROUPS[region], ...MAINLINE_TABLES[band].slice(0, 6)].filter(allLive)`。
-  3. `live` 裡沒有任何含新 id 的組 → `legacyTable`（位元相同）。
-  4. `live.length < 6` → `[...legacyTable, ...live 的新組]`（過渡期，避免表太短）。
-  5. 否則 → `live`。
-- 本道表（提案；舊 id 永遠算上線）：
-
-| 帶 | 組（每行一組） |
-|---|---|
-| B | `paper-moth×3`；`root-hound+wolf`；`tin-soldier+lamp-wight`；`lamp-wight+root-hound`；`tin-soldier+paper-moth×2`；`root-hound×2`；`wisp+paper-moth`；`lizard+lamp-wight`；`tin-soldier+beetle`；`golem`；`shade+paper-moth`；`hoarder` |
-| C | `tongueless-bell+hollow-hunter`；`mist-twin×2`；`moon-crow×2`；`hollow-hunter+lamp-wight`；`tongueless-bell+tin-soldier`；`moon-crow+root-hound`；`hollow-hunter×2`；`mist-twin×2+paper-moth`；`tin-soldier+moon-crow`；`golem+tongueless-bell`；`shade+hollow-hunter`；`hoarder` |
-| D | `estra-sentinel+requiem-choir`；`lantern-larva×2`；`epitaph-golem`；`requiem-choir+hollow-hunter`；`estra-sentinel+lantern-larva`；`epitaph-golem+moon-crow`；`lantern-larva+mist-twin×2`；`requiem-choir+tongueless-bell`；`estra-sentinel×2`；`epitaph-golem+lantern-larva`；`hollow-hunter+moon-crow`；`hoarder` |
-| E | `wick-shade×3`；`keeper-echo`；`ember-maw`；`keeper-echo+wick-shade`；`ember-maw+estra-sentinel`；`wick-shade+lantern-larva`；`keeper-echo+requiem-choir`；`epitaph-golem+wick-shade`；`ember-maw+wick-shade`；`keeper-echo×2`；`requiem-choir+lantern-larva`；`hoarder` |
-
-- 地區原生組（每區 6 組，提案，形狀相同）：`[群×3]`、`[標準]`、`[輔+標準]`、`[群×2+輔]`、`[標準×2]`、`[重+群]`。例：熾焰 `cinder-imp×3`、`forge-hound`、`ash-mourner+forge-hound`、`cinder-imp×2+ash-mourner`、`forge-hound×2`、`cinder-imp+ash-mourner`；各區照該區三種的原型填（重型的區以 `[重]` 取代 `[標準]`）。
-- 精英：`eliteGroup` 不改，仍從 `encounterTable` 挑，所以新物種自動會當精英（寶物怪除外：`eliteGroup` 若挑到 `hoarder` 組，改取下一組，索引 +1，不多抽）。
-
-### 8.3 兩個計畫
-**計畫 7a：怪物名冊（引擎與資料）**（`docs/superpowers/plans/2026-10-xx-starlantern-plan7a-roster.md`）
-
-| Task | 內容 | 主要檔案 | 驗收 |
-|---|---|---|---|
-| 0 | 基準：舊戰鬥 log fixture、舊 `encounterTable` 快照；先跑 22c、22d 在舊表上必須綠 | `engine/__fixtures__/`、`engine/roster.baseline.test.ts`（新） | fixture 產生並提交；22c、22d 舊表綠（不綠就停下回報） |
-| 1 | `data/roster.ts`、`data/enemies.roster.ts`（48 個定義）、`liveEnemyIds`／`artEnemyIds`；列表改讀它們 | `data/`、`render/artPaths.ts`（一行）、`engine/story/handbook.ts`（一行）、`engine/scaling.ts` | 246 不變；`NORMAL_ENEMIES` 仍是 8；`the roster with nothing live changes nothing` |
-| 2 | `encounterTable` 改寫、`bossFor`、`game.ts` 頭目改用 `bossFor` | `engine/scaling.ts`、`engine/game.ts` | 舊快照相同；`bossFor` 表格測試 |
-| 3 | M1 蓄力、M2 守護、M3 逃走（第一波需要的） | `engine/battle.ts`、`engine/skills.ts`、`engine/combatant.ts`、`render/BattleView.ts`、`ui2/scenes/battle.ts` | §5.1 測試；legacy fixture 相同 |
-| 4 | 第 22 項骨架（22a、22b、22e、22f 讀 `ENEMIES` 定義）＋經驗等價、`no element wall`、`freshness` 資料測試 | `engine/balance.roster.test.ts`、`data/roster.test.ts`（新） | 第一波物種的 22a、22b 綠 |
-| 5 | M4 召喚（含 `meetEnemy` 重構、戰鬥畫面加圖）、M10 倒下時、M11 吸血 | 同 Task 3 | §5.1 測試；fixture 相同 |
-| 6 | M5 輪替、M9 遺忘 | 同上、`engine/save.ts`（不需要：戰鬥不存檔） | §5.1 測試 |
-| 7 | M6 回聲、M8 階段、M7 多部位 | 同上 | §5.1 測試 |
-| 8 | M12 詞綴、`data/affixes.ts`、22e | `engine/scaling.ts`、`engine/events.ts`、`engine/game.ts` | 22e 綠；第 8 項不變 |
-| 9 | 圖鑑：`bestiary` 狀態、手冊頁、`data/bestiary.zh-TW.ts`（暫定文案） | `engine/state.ts`、`engine/save.ts`、`engine/story/handbook.ts`、`ui2/scenes/handbook.ts` | 存檔 v8 可讀；未上線不列；剪影 |
-| 10 | 圖鑑文字（48 條 × 1–2 句） | `data/bestiary.zh-TW.ts` | `BESTIARY_PLACEHOLDERS.size === 0`；文風審查 |
-| 11–14 | 上線第 1–4 波（§8.5）：加進 `ROSTER_LIVE`、全套平衡、只調新怪物數字、更新釘住的測試（`NORMAL_ENEMIES` 長度、`scaling.test` 的「frost depth 6 見到全部」）、e2e 冒煙、截圖 | `data/roster.ts`、`data/enemies.roster.ts` | 第 1–22 項全綠；`economy.test` 綠 |
-| 15 | 終幕外觀：`FINALE_BOSS.base` → `lantern-mother` | `data/story/scenes.ts` | 19b 位元相同（同數值同技能；比對 fixture） |
-
-- 每個 Task 先寫失敗的測試（AGENTS.md 的 TDD 規則）。行為測試至少一個成功路徑、一個邊界或回歸路徑。
-- 平衡數字在 Task 4 之後就能調（22a、22b 不需要美術）。
-
-**計畫 5f：怪物美術**（`docs/superpowers/plans/2026-10-xx-starlantern-plan5f-monster-art.md`），§9。
-
-### 8.4 和 6c、6d、6e 的關係
-- **6c（Task 11–15 寫作中）**：只碰 `data/story.zh-TW.ts` 與故事測試。7a 的 Task 0–8 與 5f 全部**可以現在並行**，不碰那些檔案。
-  - 例外：Task 15 改 `data/story/scenes.ts` 的 `FINALE_BOSS`，排在 6c Task 15（收尾）合併之後。
-- **6d（好感度引擎，6c 之後開始）**會改 `engine/battle.ts`、`engine/game.ts`、`engine/dungeon/run.ts`（Task 4）、`engine/save.ts`、`engine/state.ts`（Task 2）、`ui2/scenes/handbook.ts`（Task 9）、`data/text.zh-TW.ts`（Task 7）。
-  - 決定：7a 的 Task 2、3、5–8（`battle.ts`、`game.ts`）**在 6d 開始前合併**；來不及的話，暫停到 6d Task 4 合併後再接，不同時改。
-  - 7a Task 9（圖鑑，改 `save.ts`、`state.ts`、`handbook.ts`）排在 6d Task 2 與 Task 9 之後，照它們的可選欄位做法接上。
-  - 6d 的 `bond draws nothing` 測試與 7a 的 `charging/prism/summon draws nothing` 是同一種保證，互不影響。
-  - 6d 加的第 21 項，在 7a 的每次上線切換時一起跑。
-- **6e（羈絆文字）**：不相關；Task 10 的圖鑑文字可以和 6e 由同一組寫作者做，共用帳本。
-- **5e（表情美術）**：和 5f 並行沒有檔案衝突，但都會改 `artPaths.test.ts` 的總數與 `registry.json`。決定：兩個美術計畫的發布 commit 依序合併，後合併的重算總數。
-
-### 8.5 上線波次（引擎）與美術批次（審核）
-| 上線波 | 內容 | 需要的機制 | 需要的美術批次 |
-|---|---|---|---|
-| 第 1 波 | B 帶 4 種＋`hoarder`＋`fog-warden` | D、M1、M2、M3 | R0、R1 |
-| 第 2 波 | C、D 帶 8 種＋`silent-bell`、`hollow-champion`、`estra-archon`＋`archon-hand` | M4–M11 | R1 |
-| 第 3 波 | E 帶 3 種＋`gorged-beast`、`lantern-mother`；詞綴 | M12 | R1 |
-| 第 4 波 | 6 區原生 18 種＋6 隻地區頭目＋`rime-pillar` | 全部 | R2 |
-
-- 美術先到、引擎晚到：沒關係，圖發布了只是沒人用（`ROSTER_ART` 有、`ROSTER_LIVE` 沒有）。
-- 引擎先到、美術晚到：沒關係，玩家看不到（`ROSTER_LIVE` 不能超過 `ROSTER_ART`）。
-- 在美術之前可以出貨給玩家的：機制（沒有怪物用它們時不會觸發）、第 22 項、精英詞綴（詞綴不需要新圖，可以在第 1 波之前就上線；但它會改第 4 層以後的精英，所以上線時跑第 8、22e 項）、圖鑑頁的升級（列的仍是舊 9 種，但多了見過／擊倒、介紹與剪影）。
+### 11.2 在美術之前可以先出貨給玩家的
+- 引擎機制（沒有怪物用時不觸發）；
+- 第 22 項；
+- 精英詞綴（不需要新圖；上線時跑第 8、22e 項）；
+- 舊怪物的深層特性**不行**：它們只在新表生效，新表要等美術；
+- 圖鑑頁升級（列的仍是舊 9 種，但多了見過／擊倒、剪影、篩選）。
 
 ---
 
-## 9. 美術（計畫 5f）
+## 12. 計畫切分與順序
 
-### 9.1 資產契約（每隻都一樣，依 `contract.md` 的「敵人」列）
-| 類別 | id | runtime | 去背 | 格數 | `--height` | prompt 高度 | 允許範圍（QA） |
-|---|---|---|---|---|---|---|---|
-| 群 | `enemy-<eid>` | `/assets/games/starlantern/enemy/<eid>.png` | 透明，magenta 去背 | 1 | 52 | about 56 art pixels tall | 高 40–64 |
-| 一般 | 同上 | 同上 | 同上 | 1 | 64 | about 72 art pixels tall | 高 48–112 |
-| 重型 | 同上 | 同上 | 同上 | 1 | 76 | about 84 art pixels tall | 高 48–112 |
-| 部件 | 同上（`archon-hand`、`rime-pillar`） | 同上 | 同上 | 1 | 80 | about 88 art pixels tall | 高 48–112 |
-| 頭目 | 同上 | 同上 | 同上 | 1 | 150 | about 160 art pixels tall, filling much of the canvas | 高 120–200 |
+### 12.1 四個計畫
+| 計畫 | 範圍 | 主要檔案 |
+|---|---|---|
+| **7a 怪物名冊：引擎與資料** | 定義、表、`bossFor`、守關者房、M1–M28、詞綴、深層特性、第 22 項、上線切換 | `data/roster.ts`、`data/enemies.roster.ts`（新）；`engine/scaling.ts`、`battle.ts`、`skills.ts`、`combatant.ts`、`events.ts`、`game.ts`、`dungeon/run.ts`；`render/BattleView.ts`、`ui2/scenes/battle.ts` |
+| **7b 掉落、鍛造與送禮** | 招牌素材、戰利品、銘文、專屬獨特、`trophyRng`、銘刻與製作、`GIFTABLE` 推導、口味表 | `data/materials.roster.ts`、`data/gear.roster.ts`（新）；`engine/loot/drops.ts`、`engine/forge/*`、`ui2/scenes/forge*.ts`；6d 之後的 `data/story/bond.ts` |
+| **7c 圖鑑與文字** | 圖鑑狀態與頁面、100 條介紹、39 件裝備介紹、（之後）夥伴認出故人的戰鬥台詞 | `data/bestiary.zh-TW.ts`（新）、`engine/state.ts`、`engine/save.ts`、`engine/story/handbook.ts`、`ui2/scenes/handbook.ts` |
+| **5f 怪物美術** | 100 張敵人圖、7 張圖示與裝備工作表 | `art-factory/starlantern/tools/roster_art.py`、`review_roster.py`（新）、`registry.json`、`public/assets/games/starlantern/enemy|icon|gear/` |
 
-- 沒有姿勢差分、沒有表情：戰鬥的受擊、攻擊、倒下全由程式做（和既有 9 張相同）。
-- 群（3 隻同框）的寬度上限 72 美術像素，否則 `BattleView` 的三隻排不下（QA：`width <= 72` 給群）。
+### 12.2 7a 的 Task
+| Task | 內容 | 驗收 |
+|---|---|---|
+| 0 | 基準：舊戰鬥 fixture、表與地圖快照；22c、22d 舊表綠 | fixture 提交；不綠就停下回報 |
+| 1 | `data/roster.ts`、100 個定義、列表改讀 live／art | 246 不變；`NORMAL_ENEMIES` 仍 8；nothing-live 測試 |
+| 2 | `encounterTable`、`bossFor`、守關者房（`WARDEN_SALT`） | 快照相同；`bossFor` 表格測試；地圖其他內容不動 |
+| 3 | 第一波機制：M1、M2、M3、M13、M14 | §6.2 測試；fixture 相同 |
+| 4 | 第 22 項骨架＋資料測試（等價、元素牆、freshness、名字劇透掃描） | 第一波 22a、22b 綠 |
+| 5 | M4、M10、M11、M19、M20、M22 | 同上 |
+| 6 | M5、M9、M15、M16、M17、M18、M21、M23、M25、M26 | 同上 |
+| 7 | M6、M7、M8、M24、M27、M28 | 同上 |
+| 8 | M12 詞綴、舊怪物深層特性、22e | 第 8 項不變 |
+| 9–13 | 上線第 1–5 波（§12.5）：加 `ROSTER_LIVE`、全套平衡、只調新數字、更新釘住的測試（`NORMAL_ENEMIES` 長度、`scaling.test` 的「frost depth 6 見到全部」）、e2e 冒煙、截圖 | 第 1–22 項全綠；`economy.test` 綠 |
+| 14 | `FINALE_BOSS.base` → `lantern-mother` | 19b 位元相同（同數值同技能） |
 
-### 9.2 Prompt（每張都用 `batch.py` 的敵人句型）
-共同句（逐字沿用 `batch.py`）：
-> Pixel art monster sprite of `<描述>`, facing the viewer, full body. Match the art style, pixel density, outline and shading of the attached approved monster sprite. 16-bit JRPG battle sprite, `<高度>`, strict square pixel grid, crisp 1px dark outline, limited palette, light from upper left, no anti-aliasing, no blur, no gradients. Centred on a perfectly flat solid pure magenta #FF00FF background with empty space around it. No text, no ground shadow, no particles. The design must be original and not resemble any existing anime or game character. Generate the image once with the image tool; do not post-process, resize, quantize or regenerate it.
+### 12.3 和 6c、6d、6e、5e 的關係
+- **6c（Task 11–15 寫作中）**：只碰 `data/story.zh-TW.ts` 與故事測試。
+  - 7a Task 0–8、7b 的資料層、5f 全部可以**現在並行**。
+  - 7a Task 14（`data/story/scenes.ts`）排在 6c Task 15 合併之後。
+  - 7c 的介紹文字依 §4.2 的「需要的文字」欄：自足的現在就能寫；靜鐘會相關等 Task 11；空殼等 Task 13；燈喰之母與子嗣、提燈人第三句等 Task 14。
+- **6d（6c 之後開始）**會改 `battle.ts`、`game.ts`、`dungeon/run.ts`（Task 4）、`save.ts`、`state.ts`（Task 2）、`ui2/scenes/handbook.ts`（Task 9）、`text.zh-TW.ts`（Task 7）。
+  - 7a 改 `battle.ts`、`game.ts`、`run.ts` 的 Task 2、3、5–8 **在 6d 開始前合併**；來不及就暫停到 6d Task 4 合併之後。
+  - 7b 的送禮部分（`GIFTABLE` 推導、口味表）**依附 6d Task 1**：在 6d Task 1 的說明裡寫明「`GIFTABLE` 由 `kind` 推導」，7b 在 6d Task 5 合併後補口味表。
+  - 7c 的圖鑑狀態（`save.ts`、`state.ts`、`handbook.ts`）排在 6d Task 2 與 Task 9 之後。
+  - 6d 的第 21 項在每次上線切換時一起跑。
+- **6e（羈絆文字）**：§7.4 的 18 句婉拒與痊癒反應句列入 6e 的工作量；6e 完成前，8 件故事戰利品不可送。
+- **5e（表情美術）**：和 5f 沒有檔案衝突，但都改 `artPaths.test.ts` 的總數與 `registry.json`；兩者的發布 commit 依序合併，後合併的重算。
+- **5d（裝備美術）**：專屬獨特的 `gear-<id>` 沿用 5d 的工具與欄位。5d 尚未發布時，5f 的裝備圖批次排在 5d 的工具合併之後。
 
-附圖：一般怪物附已核准的 `enemy-slime` 原圖（既有錨點）；頭目與部件另附 `enemy-lanterneater` 原圖。R0 核准後，R1、R2 再多附一張 R0 已核准的同類型新圖（群／一般／頭目各一），讓新一批貼近新樣本。
+### 12.4 之後的計畫（非本文件範圍，留接口）
+- **7c 後半：故人台詞**。夥伴在隊上、遇到自己故事的守關者或頭目時，戰鬥開始說一句（只是台詞，沒有數值效果，避免「帶她才好打」）。需要 6e 之後的寫作與 `ScriptLine` 格式；閘門照 §4.2。
+- **第 2 項懸賞**：以 `eliteAffix`、守關者、詞綴為目標。
 
-**配色規則（重要）**：本道的新物種用**中性、偏亮**的配色（灰、象牙、淡紫、淡金），因為地區上色是以亮度乘顏色（`tintMatrix`），太暗或太飽和的圖上色後糊掉。QA 量亮度範圍（§9.3）。地區原生用該地區的本色（它們在地區裡還會被上色，同色系上色只會更濃）。
+### 12.5 上線波次與審核輪次
+| 上線波 | 內容 | 機制 | 需要的美術輪 |
+|---|---|---|---|
+| 第 1 波 | 本道 B 帶 6＋`hoarder`＋`fog-warden`＋`false-moon`（`bell-watcher` 在 R0 但屬 C 帶，第 2 波上線） | M1–M3、M13、M14 | R0、R1 |
+| 第 2 波 | 本道 C 帶 6＋`silent-bell`、`hollow-champion`＋`bell-warden` | 加 M5、M6、M8、M9、M10、M24 | R1 |
+| 第 3 波 | 本道 D、E、F 帶 15＋`gilded-hoarder`＋第 20–50 層頭目 7＋`archon-hand`＋守關者 3；詞綴；深層特性 | 其餘 | R2 |
+| 第 4 波 | 熾焰、霜凍、雷鳴：原生 15＋頭目 9＋守關者 3＋`rime-pillar` | 全部 | R3 |
+| 第 5 波 | 腐毒、暗影、鋼鐵：原生 15＋頭目 9＋守關者 3 | 全部 | R4 |
 
-描述（`<描述>`，英文，交給 `tools/roster_art.py` 的 `DESC` 表）：
+美術先到、引擎晚到：沒關係（`ROSTER_ART` 有、`ROSTER_LIVE` 沒有）。引擎先到：玩家看不到。
 
-| eid | 描述 |
+---
+
+## 13. 美術（計畫 5f）
+
+### 13.1 敵人圖的資產契約（依 `contract.md` 的「敵人」列）
+| 類別 | `--height` | prompt 高度 | 允許範圍（QA） |
+|---|---|---|---|
+| 群 | 52 | about 56 art pixels tall | 高 40–64，寬 ≤ 72 |
+| 一般 | 64 | about 72 art pixels tall | 高 48–112 |
+| 重 | 76 | about 84 art pixels tall | 高 48–112 |
+| 中頭目、部件 | 96 | about 104 art pixels tall | 高 80–120 |
+| 頭目 | 150 | about 160 art pixels tall, filling much of the canvas | 高 120–200 |
+
+- 全部：透明、magenta `#FF00FF` 去背、單格、沒有姿勢或表情差分（受擊、攻擊、倒下由程式做）。
+- runtime：`/assets/games/starlantern/enemy/<id>.png`；registry id `enemy-<id>`、`kind: sprite`。
+
+### 13.2 圖示與裝備圖的契約
+- 素材圖示：照 `contract.md` 的「圖示」列（24×24 方框、`--height 32`），5×4 工作表、厚 magenta 槽，部件清單寫在 registry 的 `sheet-icons-roster-<n>.parts`。
+- 專屬獨特：照 5d 的 `gear-<id>` 規格與工具。
+- 圖示不得有字：`iou-slip`（借條）、`hymn-sheet`（無字歌譜）、`torn-page`、`ash-page`、`epitaph-stone` 一律寫「blank」「unreadable marks, no letters」。
+
+### 13.3 Prompt
+- 敵人（逐字沿用 `batch.py` 的句型）：
+  > Pixel art monster sprite of `<描述>`, facing the viewer, full body. Match the art style, pixel density, outline and shading of the attached approved monster sprite. 16-bit JRPG battle sprite, `<高度>`, strict square pixel grid, crisp 1px dark outline, limited palette, light from upper left, no anti-aliasing, no blur, no gradients. Centred on a perfectly flat solid pure magenta #FF00FF background with empty space around it. No text, no ground shadow, no particles. The design must be original and not resemble any existing anime or game character. Generate the image once with the image tool; do not post-process, resize, quantize or regenerate it.
+- 附圖：
+  - 一般怪物附 `enemy-slime` 原圖；
+  - 中頭目、頭目再附 `enemy-lanterneater` 原圖；
+  - R0 核准後，R1 以後再附一張 R0 同類型的新圖；
+  - 故事怪物不附夥伴的立繪（避免畫成夥伴本人）。
+- **配色規則**：本道物種用中性、偏亮的配色（灰、象牙、淡紫、淡金），因為地區上色是「亮度 × 顏色」（`tintMatrix`）。地區原生用該區本色。
+- **故事怪物的畫法**：故人的殘影一律是「由霧、光、材質構成的剪影」，**沒有清楚的臉**。例如：
+  - 舞者是熱浪與亮片構成的人形；
+  - 騎士殘影是空的盔甲裡冒出灰霧；
+  - 巡守是灰袍兜帽下一片霧。
+  理由：不畫出可辨認的真人，語氣上是「記憶的形狀」，也避免和夥伴的回憶畫面衝突。
+- 描述表（英文，交給 `roster_art.py` 的 `DESC`）。下面列出故事怪物與頭目；其餘一般怪物依 §5 的名稱與特性在 Task 2 補齊，並在審核頁顯示：
+
+| id | 描述 |
 |---|---|
-| paper-moth | a small moth folded from an old yellowed letter, faded handwriting on its paper wings, a tiny wax-seal body |
-| lamp-wight | a faint hooded ghost holding a small brass lantern, pale ivory cloth body, warm glow on its face-less hood |
-| root-hound | a lean hound made of pale grey mist and twisted roots, root claws, low hunting stance |
-| tin-soldier | a dented life-sized tin toy soldier with a chipped painted face, a round shield and a wind-up key in its back |
-| hoarder | a plump round rat with glowing crystal shards bursting out of its stuffed cheeks and a little sack on its back, startled eyes |
-| tongueless-bell | a floating cracked bronze bell with no clapper, faint violet runes, thin chains trailing below |
+| paper-moth | a small moth folded from an old yellowed letter, faded unreadable marks on its paper wings, a tiny wax-seal body |
+| bell-watcher | a hooded watcher in a long grey robe with only mist under the hood, a small dull bronze bell hanging at its belt, a short staff |
 | hollow-hunter | an empty suit of adventurer leather armour with a hood and nothing inside, holding a short sword, faint mist where the face should be |
-| mist-twin | a small childlike figure made of pale blue mist holding out one hand, as if reaching for someone beside it |
-| moon-crow | a crow with mirror-like silver feathers reflecting four different colours, a pale crescent mark on its head |
-| estra-sentinel | an ancient white marble guardian statue with gold inlay, a tall tower shield and a halberd, a cracked star crown |
-| requiem-choir | three small hooded singers fused into one floating shape, open mouths, a shared pale lantern glow |
-| lantern-larva | a fat pale larva with a lantern-shaped glowing belly and tiny sharp teeth, a young version of a lantern-devouring beast |
-| epitaph-golem | a slow golem built from stacked gravestone slabs covered in worn carved letters that cannot be read, no readable text |
-| wick-shade | a small flickering shadow shaped like a candle wick with a single ember eye |
+| ancestor-automaton | a tall old bronze automaton with a round glass eye and riveted plates, a mark on its chest shaped like a lantern, moss in its joints |
 | keeper-echo | a tall faceless figure in a long travelling cloak holding up a star lantern, translucent and pale gold |
-| ember-maw | a large dark furnace-like mouth on stubby legs, glowing embers inside, small wick shadows rising from it |
-| cinder-imp | a tiny grinning imp made of grey ash and glowing cinders |
-| forge-hound | a heavy hound with an iron forge furnace in its chest and molten cracks along its legs |
-| ash-mourner | a tall thin figure in tattered grey mourning robes and a veil, carrying a smouldering censer |
-| frost-doll | a porcelain doll the size of a child, covered in frost, cracked cheek, holding a frozen bouquet |
-| glacier-tortoise | a huge tortoise whose shell is a small glacier with blue ice spires |
-| snow-caller | a pale snow spirit with long white hair blowing sideways, mouth open as if calling a name |
-| thunder-kite | a sharp-winged kite bird crackling with yellow lightning, talons spread |
-| storm-totem | a carved standing stone pillar with copper bands and a glowing lightning rod on top |
-| charge-jelly | a floating jellyfish with glowing yellow electric tendrils and a swirling charge in its bell |
-| bog-mother | a bloated mound of green-brown swamp mud with many small eyes and tiny slimes budding from its sides |
-| rot-lily | a giant wilted lily with dark purple petals dripping poison, its stem in a cracked vase |
-| leech-knight | a knight in dark green armour made of overlapping leech segments, a long thin piercing lance |
-| mirror-thief | a slim shadow figure wearing a hand mirror as its face, long fingers, crouching |
-| veil-stalker | a hunched figure hidden under a long black veil, only two thin daggers showing |
-| hush-acolyte | a hooded acolyte in dark grey robes with a finger raised to where its lips would be, a small silent bell at its belt |
-| rivet-golem | a squat riveted iron sentry machine with one round lamp eye and a pike |
-| siege-crab | a huge armoured crab with siege-engine claws and iron plates bolted to its shell |
-| herald-engine | a tall brass machine with a horn-shaped speaker for a head and flag arms |
-| fog-warden（頭目） | a towering gatekeeper of grey fog wearing heavy stone gate plates as armour, holding a great lantern halberd |
-| silent-bell（頭目） | a colossal cracked bronze bell hanging from chains with a hollow mouth, violet runes, small bells orbiting it |
-| hollow-champion（頭目） | a huge empty suit of heroic armour with many different swords stuck in its back like a fan, mist instead of a face |
-| estra-archon（頭目） | a seated colossal marble ruler statue with a gold star crown and a cracked face, no hands, glowing eyes |
+| deep-tendril | a pale glowing tendril rising from dark ground, ending in a lantern-shaped bud, faintly translucent |
+| mirage-dancer | a dancer-shaped figure made of rippling heat haze and bronze sequins, no face, one arm raised mid-twirl |
+| ice-komainu | a guardian lion-dog statue carved from blue ice, a cracked rope with paper streamers around its neck |
+| frozen-pilgrim | a pilgrim figure in straw cape and hat sealed inside a block of clear ice, only a silhouette visible |
+| star-ember | a floating blue-white star-shaped flame with tiny sparks, a cold core |
+| stolen-tome | a flying old spellbook with a star set into its cover, pages flapping like wings, no readable text |
+| ashen-treant | a grey dead tree creature with tiny arrow marks carved along its bark, roots like legs, a few green buds left |
+| vault-mimic | a heavy iron-banded treasure vault door with a huge padlock that opens like a hungry mouth, coins spilling |
+| debt-collector | a thin shadow in a long coat holding a lantern and a blank yellowed slip of paper, no face |
+| fallen-knight | an empty dented knight's armour with a red tattered tabard, grey mist rising from the neck, a broken sword |
+| banner-bearer | an armoured shadow holding a tall pole with a torn red flag, mist instead of a face |
+| false-moon（中頭目） | a large floating crescent-and-full moon made of pale crystal, half of it dark, soft silver light |
+| bell-warden（中頭目） | a tall grey-robed gatekeeper of mist with a great bronze bell hanging from a yoke on its shoulders, faceless hood |
+| toppled-automaton（中頭目） | a huge old bronze automaton half collapsed on one knee, sparks in its joints, a lantern mark on its chest plate |
+| requiem-conductor（中頭目） | a tall marble figure in a ruined ceremonial robe raising a dusk-coloured baton, small hooded singers floating around it |
+| lantern-brood（中頭目） | a pulsing nest of pale lantern-shaped eggs on dark roots, faint glow inside each egg |
+| mirage-lead（中頭目） | a tall heat-haze dancer with flowing veils of light and a copper anklet, faceless, two faint mirror copies behind it |
+| ice-shrine（中頭目） | a small wooden shrine hall frozen inside a pillar of ice, a rope and paper streamers across its front, two ice lion-dogs at its steps |
+| burning-page（中頭目） | a single huge torn book page burning with blue-white star fire, no readable text, embers drifting |
+| grey-elder（中頭目） | an ancient grey tree with a hollow face-like knot, arrow marks carved in its bark, one glowing acorn among dead branches |
+| locked-vault（中頭目） | a giant locked vault with a starving thin frame, gold coins bulging from its seams, chains |
+| gate-breaker（中頭目） | a huge hunched shadow creature carrying a battering ram made of a tree trunk, climbing mist around its legs |
+| fog-warden | a towering gatekeeper of grey fog wearing heavy stone gate plates as armour, holding a great lantern halberd |
+| silent-bell | a colossal cracked bronze bell hanging from chains with a hollow mouth, violet runes, small bells orbiting it |
+| hollow-champion | a huge empty suit of heroic armour with many different swords stuck in its back like a fan, mist instead of a face |
+| old-city-archon | a seated colossal marble ruler statue with a gold star crown and a cracked face, no hands, glowing eyes |
 | archon-hand（部件） | a giant floating marble hand with gold rings and a glowing star in the palm |
-| gorged-beast（頭目） | an enormous bloated lantern-devouring beast, much older and larger, dozens of swallowed lanterns glowing through its stretched hide |
-| lantern-mother（頭目） | a vast dim shadow of a fading star lantern shaped like a veiled mother figure, cradling a guttering light, sorrowful rather than monstrous |
-| ember-tyrant（頭目） | a giant crowned figure made of burning city ruins and flame, holding a melted sceptre |
-| rime-sovereign（頭目） | a frozen queen-like figure sealed inside a tall ice throne, cold blue light |
+| gorged-beast | an enormous bloated lantern-devouring beast, dozens of swallowed lanterns glowing through its stretched hide |
+| lantern-mother | a vast dim shadow of a fading star lantern shaped like a veiled mother figure cradling a guttering light, sorrowful rather than monstrous |
+| forgotten-festival | a giant paper festival lantern float with a painted smiling mask, small paper lanterns orbiting, faded colours |
+| starless-whale | a huge whale swimming through dark mist, its body like a night sky with all the stars gone out |
+| stopped-clock | a giant brass clock heart with frozen hands and broken springs, gears floating around it |
+| first-lantern | a primitive ancient stone lantern on a pillar holding a small eternal flame, older and simpler than all others, carved with worn patterns |
+| ember-tyrant | a giant crowned figure made of burning city ruins and flame, holding a melted sceptre |
+| sandstorm-maw | a towering whirl of sand with a huge mouth of glassy teeth, bits of a caravan swirling inside |
+| mirage-city | a floating desert city of domes made of heat haze, half of it on fire, faint dancers on its walls |
+| rime-sovereign | a frozen queen-like figure sealed inside a tall ice throne, cold blue light |
 | rime-pillar（部件） | a tall jagged ice pillar with a faint glowing rune core |
-| thunder-roc（頭目） | a huge roc bird with storm-cloud feathers and lightning crackling across its wings |
-| mire-hydra（頭目） | a swamp hydra with three heads of different sizes, rotting green scales, poison dripping |
-| faceless-host（頭目） | a tall figure in a black coat whose face is a blank oval mirror, many small mirror shards orbiting it |
-| fortress-colossus（頭目） | a walking fortress tower colossus with cannon arms and rivet plates |
+| white-silence | a vast white snow spirit with no features, a blizzard trailing from its sleeves |
+| rift-maw | a jagged crack in the air rimmed with ice, a dark maw inside, a spear stuck in the ice at its edge |
+| thunder-roc | a huge roc bird with storm-cloud feathers and lightning crackling across its wings |
+| storm-conductor | a tall figure of copper rods and storm clouds raising a lightning baton |
+| starfire-colossus | a colossus made of blue-white star fire and floating book pages, a star at its core |
+| mire-hydra | a swamp hydra with three heads of different sizes, rotting green scales, poison dripping |
+| grey-blight | a creeping mass of grey ash and fungus with pale spore pods around it, dead branches inside |
+| bog-leviathan | an enormous swamp maw rising from black water, moss-covered lips, small eyes |
+| faceless-host | a tall figure in a black coat whose face is a blank oval mirror, mirror shards orbiting it |
+| vault-dragon | a lean dragon coiled around a hoard of gold, coins embedded in its scales |
+| shadow-parade | a long procession of small shadow figures carrying lanterns, led by a tall masked shadow |
+| fortress-colossus | a walking fortress tower colossus with cannon arms and rivet plates |
+| siege-titan | a huge beast with iron-plated hide climbing out of fog, claws gripping a stone wall fragment |
+| last-commander | an empty grand knight commander's armour with a red cape and a horn at its belt, mist rising from the collar |
 
-- 規則：沒有任何字（碑文守寫「worn carved letters that cannot be read, no readable text」）；不寫作品名或畫師名；全部原創。
-- 終幕的燈喰之母：只用「哀傷、像母親」的剪影，不畫恐怖臉。快樂結局的語氣要成立。
+### 13.4 機械 QA（`sl_art.py`，TDD 擴充 `test_sl_art.py`）
+- 沿用：magenta 殘留 0、半透明 0、碰邊 0、不被畫布切到、16 px 以下的洞只列警告。
+- 新增：
+  - `height_band`（§13.1；群加寬度上限）；
+  - `palette_max`（不透明像素色數 ≤ 32）；
+  - `lum_range`（不透明像素亮度第 5–95 百分位差 ≥ 0.35，否則 `too flat to tint`）；本道物種另要求平均亮度 ≥ 0.35（`too dark to tint`）；
+  - `no_face`（只限故事怪物：人工檢查項，在審核頁打勾，不自動擋）。
+- 每個 id 最多 3 次生成；R0 每個至少 2 版擇優。
 
-### 9.3 後處理與機械 QA（`sl_art.py`，TDD 擴充）
-- 沿用：magenta 殘留 0、半透明 0、碰邊 0、主體被畫布切到、16 px 以下封閉洞只列警告。
-- 新增（`test_sl_art.py` 先寫失敗的測試）：
-  - `height_band`：高度在 §9.1 的範圍內，否則 `out of height band`；群加 `width <= 72`。
-  - `palette_max`：不透明像素的色數 ≤ 32（契約本來就寫了，現在變成機械檢查）。
-  - `lum_range`：不透明像素亮度的第 5 到第 95 百分位差 ≥ 0.35（0–1），否則 `too flat to tint`；本道物種另外要求平均亮度 ≥ 0.35（`too dark to tint`）。
-- 每個 id 最多 3 次生成（契約）；樣本批每個 id 至少 2 版擇優（5d、計畫 4 的品質優先做法）。
+### 13.5 工具、審核頁、輪次
+- `tools/roster_art.py`（結構照抄 `portal.py`、5d 的 `gear_art.py`）：`gen`、`cand`、`pick`、`note`、`approve --batch B --by TEXT`、`publish --batch B`、`plan-json`。
+  - `gen --batch=r1..r4` 在 registry 沒有 `roster_style_approved` 時拒絕（`PermissionError`）；
+  - `publish` 只發布 `approved`，在同一個 commit 寫 `runtime`、加 `ROSTER_ART`、更新 `artPaths.test.ts` 的總數與註解。
+- `tools/review_roster.py` → `tmp/starlantern/review-roster/index.html`：
+  1. 每隻在三張戰鬥背景（`bg-f1/2/3`）上的遊戲內大小（放大 3 倍、`pixelated`）；
+  2. 和既有 9 張並排；
+  3. 7 種地區色調模擬（和 `tintMatrix` 同公式的 CSS 濾鏡）；
+  4. 群三隻一排、多部位頭目和部件一起、守關者和它召喚的一起；
+  5. 黑色剪影（圖鑑「？？？」）；
+  6. 圖示工作表切好的格子、放進背包列與鍛造屋列的樣子；
+  7. 故事怪物旁邊列出它的閘門與「不得畫出的東西」清單（給人工打勾）；
+  8. QA 數字、所有版本、淘汰原因。
+- 主對話用 Artifact 工具發布審核頁（`files` 帶 `img/*`，超過 255 檔分兩次發布到同一個 url）。
 
-### 9.4 工具與審核頁
-- `tools/roster_art.py`（新，結構照抄 `portal.py`／5d 的 `gear_art.py`）：`gen`、`cand`、`pick`、`note`、`approve --batch B --by TEXT`、`publish --batch B`、`plan-json`。
-  - `gen --batch=r1|r2` 在 registry 沒有 `roster_style_approved` 時拒絕（`PermissionError`），和 5d 的樣本鎖一樣。
-  - `publish` 只發布 `approved` 的件，寫 `runtime`，並在**同一個 commit** 把 id 加進 `ROSTER_ART`、更新 `artPaths.test.ts` 的總數。
-- `tools/review_roster.py`（新）→ `tmp/starlantern/review-roster/index.html`：
-  1. 每隻新怪物放在三張既有戰鬥背景（`bg-f1/2/3`）上，用遊戲內的大小（放大 3 倍、`image-rendering: pixelated`）；
-  2. 和既有 9 張並排（風格一致性）；
-  3. 7 種地區色調的模擬（用和 `tintMatrix` 同公式的 CSS 濾鏡），檢查上色後還認得出來；
-  4. 群的三隻排一排、多部位頭目和部件排在一起；
-  5. 黑色剪影（圖鑑的「？？？」狀態）；
-  6. QA 數字與所有版本、淘汰原因。
-- 主對話用 Artifact 工具發布審核頁（`files` 帶入 `img/*`），把網址給使用者。
-
-### 9.5 批次與核准（3 輪）
-| 輪 | 內容 | 張數 | 核准方式 |
+| 輪 | 敵人圖 | 圖示與裝備工作表 | 核准 |
 |---|---|---|---|
-| R0 風格樣本 | `paper-moth`（群）、`root-hound`（一般）、`hollow-hunter`（人形）、`fog-warden`（頭目） | 4 | **使用者看風格**；沒核准前不能生成其他批（`roster_style_approved` 鎖） |
-| R1 本道 | 其餘本道一般怪物 13 種（含 `hoarder`）＋頭目 `silent-bell`、`hollow-champion`、`estra-archon`、`gorged-beast`、`lantern-mother`＋部件 `archon-hand` | 19 | 照 5d：機械 QA ＋沒參與生成的代理在審核頁做視覺檢查即可發布；網址仍給使用者，使用者在發布前提出異議就重做 |
-| R2 地區 | 18 種原生＋6 隻地區頭目＋`rime-pillar` | 25 | 同 R1 |
-| 合計 | | **48** | |
+| R0 風格樣本 | 5：`paper-moth`（群）、`root-hound`（一般）、`bell-watcher`（故事人形）、`false-moon`（中頭目）、`fog-warden`（頭目） | 1 張（20 件：R0、R1 的素材＋2 件獨特） | **使用者看風格**；未核准前不生成其他批 |
+| R1 本道淺層 | 13：B 其餘 4（`lamp-wight`、`tin-soldier`、`dust-mimic`、`market-ghost`）＋C 其餘 5＋`hoarder`＋`silent-bell`、`hollow-champion`＋`bell-warden` | 1 張 | 照 5d：機械 QA＋沒參與生成的代理在審核頁視覺檢查即可發布；網址仍給使用者，發布前有異議就重做 |
+| R2 本道深層 | 27：D、E、F 15＋`gilded-hoarder`＋第 20–50 層頭目 7＋`archon-hand`＋守關者 3 | 2 張 | 同 R1 |
+| R3 地區甲 | 28：熾焰、霜凍、雷鳴原生 15＋頭目 9＋守關者 3＋`rime-pillar` | 2 張 | 同 R1；故事怪物的閘門清單另由使用者看一次（只看語氣，不看技術） |
+| R4 地區乙 | 27：腐毒、暗影、鋼鐵原生 15＋頭目 9＋守關者 3 | 1 張 | 同 R3 |
+| 合計 | **100** | **7 張（137 件）** | |
 
-### 9.6 數量的變化
-- `allArtUrls()`：246 → R0 發布後 250 → R1 後 269 → R2 後 **294**（+48）。每次發布的 commit 同時改 `artPaths.test.ts` 的數字與註解（照現有註解寫法：「246 + plan 5f R0 的 4 張敵人 = 250」）。
-- `registry.json`：`assets` 從 254 → 302（+48 個 `enemy-<eid>`，`kind: sprite`）；被淘汰的版本記在各自的 `rejected_attempts`，不留在 runtime 路徑。
-- 若 5e（表情）先發布，總數以合併當時的實際值重算，兩者相加。
+五輪合計 5＋13＋27＋28＋27 = 100。`roster_art.py plan-json` 產生每輪的精確清單，測試檢查五輪的聯集剛好是 100 個 id、沒有重複。
 
----
-
-## 10. 驗收總表（給計畫寫手抄進 Task）
-
-**資料（`data/roster.test.ts`，快）**
-- 48 個新 id 唯一、不和舊 id 衝突；每個 `drops.mat` 存在於 `MATERIALS`；每個 `summon.id` 存在。
-- 每組 1–3 隻；本道每張表 10–12 組；地區表 12 組；每個上線物種至少出現在 2 組。
-- `no element wall`、`freshness`、經驗等價 [0.92, 1.08]。
-- `ROSTER_LIVE ⊆ ROSTER_ART`；`ROSTER_ART` 的 registry 狀態都是 `published`。
-- `bossFor`：表格測試涵蓋本道 3、5、10…40，各地區 5、10、15、20、25、30；未上線回 `lanterneater`。
-- `AFFIX_SALT` 和既有的鹽都不同；`eliteAffix` 純函式。
-- 原始碼不含 `Math.random`。
-
-**引擎（行為）**：§5.1 每列的測試；`legacy fights replay bit for bit`；`the roster with nothing live changes nothing`。
-
-**平衡**：第 1–20 項（6d 之後含 21）不改任何門檻，全綠；第 22a–22f 項全綠；`economy.test` 綠。
-
-**畫面**：意圖欄顯示蓄力、守護；名牌顯示輪替弱點、受保護、詞綴；召喚的怪物有圖；圖鑑的「？？？」剪影。`ui2/scenes/battle.test.ts`、`render/BattleView.test.ts`、`ui2/scenes/handbook.test.ts` 各有對應測試；e2e 冒煙（第 4 層一場戰鬥、第 5 層頭目）在第 1 波上線時加。
-
-**美術**：每張通過 §9.3 的 QA；`published.test.ts`、`artPaths.test.ts` 綠；R0 有使用者核准紀錄（`approved_by`）。
+### 13.6 數量的變化
+- `allArtUrls()`：每個 id 進 `ROSTER_ART` 時加它的敵人圖與它的素材圖示。全部發布後 **+100 敵人圖 +98 素材圖示 = +198**（246 → 444，若 5d、5e 先發布則以合併當時的實際值為基準）。專屬獨特的 39 張裝備圖照 5d 的計數方式另計。
+- `registry.json`：
+  - +100 個 `enemy-<id>`、+98 個 `icon-<mat>`、+7 個工作表、+39 個 `gear-<id>`；
+  - 被淘汰的版本記在 `rejected_attempts`，不留在 runtime 路徑。
 
 ---
 
-## 11. 留給實作者決定的部分
-- 原型的確切數字與每隻的 ±15% 形狀（以 22a 為準）。
-- 召喚、蓄力、技能機率的確切值（以 22a、22b、22f 為準）。
-- 地區原生組的確切組合（照 §8.2 的形狀）。
-- `shieldPct`（提案 50）。
-- 圖鑑頁的版面細節（照現有手冊頁的 `MenuItem` 與 detail 結構）。
+## 14. 驗收總表
 
-## 12. 需要使用者決定的事
-1. 規模：本文件提案 48 種新怪物（48 張圖、3 輪審核）。要全部做，還是先做本道的 23 種（第 1–3 波，R0＋R1），地區的 25 種之後再說？
-2. 燈喰之母要不要換成自己的造型（數值與技能和燈喰之獸完全相同，終幕平衡不變）？這會改 `FINALE_BOSS.base`，排在 6c 收尾之後。
+**資料（`data/roster.test.ts`、`data/bestiary.test.ts`，快）**
+- 100 個新 id、98 個新素材、39 件獨特唯一，不和舊 id 衝突；每個 `drops.mat`、`summon.id`、銘文鍵存在；銘文鍵與獨特固定詞綴合法於欄位。
+- 每組 1–3 隻；表 12 組；每個上線物種至少出現在 2 組；成對物種一律成對。
+- `no element wall`、`freshness`、經驗等價、頭目不重複。
+- `ROSTER_LIVE ⊆ ROSTER_ART`；`ROSTER_ART` 的圖都已發布。
+- `bossFor`、守關者深度的表格測試；未上線回到舊行為。
+- 鹽互不相同；原始碼不含 `Math.random`。
+- 名字與介紹的劇透掃描（§4.2）。
+- 不新增「最愛」禮物；故事戰利品在 6e 前不可送。
+
+**引擎**：§6.2 每列的測試；`legacy fights replay bit for bit`；`the roster with nothing live changes nothing`；`trophy draws never move a lootRng draw`（同一個 seed，有沒有替換，`lootDraws` 與每一件 `lootRng` 產出相同）；`a warden pays no memory piece`；`placing a warden moves nothing else on the floor`。
+
+**平衡**：第 1–20 項（6d 之後含 21）不改任何門檻，全綠；第 22a–22f、22h、22i 全綠；`economy.test` 綠。
+
+**畫面**：
+- 意圖欄：蓄力、守護、標記、演奏；
+- 名牌：輪替弱點、受保護、適應、詞綴、偽裝的「寶箱？」、偷走的金額；
+- 召喚有圖；圖鑑剪影與篩選；
+- 鍛造屋：銘刻、製作的介面與「尚未擊倒」的灰色提示；
+- 對應的 `*.test.ts`；e2e 冒煙（第 4 層一場、第 5 層頭目、第 8 層守關者）在第 1 波上線時加。
+
+**美術**：每張通過 §13.4；`published.test.ts`、`artPaths.test.ts` 綠；R0 有使用者核准紀錄。
+
+---
+
+## 15. 留給實作者決定的部分
+- 原型確切數字與每隻 ±15% 的形狀（以 22a 為準）；機率、召喚次數（以 22a、22b、22f、22i 為準）。
+- 地區原生組的確切組合（照 §8.3 的形狀）。
+- 專屬獨特固定詞綴的微調（必須仍合法於欄位）。
+- 素材價格的確切值（以 `economy.test` 為準）。
+- 圖鑑版面細節（照現有手冊頁的 `MenuItem` 與 detail 結構）。
+
+## 16. 需要使用者決定的事
+1. 夥伴過去的人（舞團、騎士團、神社的狛犬、老師的書）以「霧裡的殘影」出現在敵方：沒有臉，打倒時寫「霧散了」而不是死亡，夥伴集滿記憶後才收下它們的遺物。這個語氣可以嗎？還是希望這些故人完全不當敵人，只留在回憶裡？
