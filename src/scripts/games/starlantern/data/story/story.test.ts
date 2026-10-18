@@ -815,7 +815,7 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
       // Task 10
       { who: 'liz', re: /臉.{0,2}想不起來|一定有人在等/, piece: 5 },         // she remembers her father's face in her last piece
       { who: 'scarlet', re: /洛恩閣下/, piece: 5 },                       // I-26: plain 「洛恩」 from her last piece
-      { who: 'scarlet', re: /是我的職責|欠了誰/, piece: 5 },              // her last piece: she guards by choice, she owes no one a flight
+      { who: 'scarlet', re: /本是騎士的本分|欠著誰/, piece: 5 },          // her last piece: she guards by choice, she owes no one a flight
     ];
     // `heard`: the row is also checked against the narration of her chats (what the scene shows, not only what she says).
     const REVEALED: { who: string; re: RegExp; piece: number; heard?: true }[] = [
@@ -1048,6 +1048,13 @@ describe('Task 10: Liz, Scarlet and the survive line', () => {
     expect(both.some((l) => l.who === 'orik')).toBe(true);
     expect(both.map((l) => l.text).join('')).toMatch(/歐里克/);
     expect(both.filter((l) => l.who === 'liz').map((l) => l.text).join('')).toMatch(/爸爸/);
+    // spec §6 「父女…認出彼此」 (fix round 1): Orik's half too, by the red hat she hung behind the door (piece 3)
+    const orik = both.filter((l) => l.who === 'orik').map((l) => l.text).join('');
+    expect(orik).toMatch(/紅帽子/);
+    expect(orik).toMatch(/認得/);
+    expect(textOf('mem:liz:3')).toMatch(/紅帽子.*門後|門後.*紅帽子/);
+    // the reading without Orik promises no particular next return (fix round 1)
+    expect(alone.map((l) => l.text).join('')).not.toMatch(/回城以後|下次回城|陪我去/);
     for (const r of [alone, both]) expect(r[r.length - 1].who, 'she has the last word').toBe('liz');
     // every conditional line there belongs to one reading
     for (const l of linesOf('mem:liz:5')) if (l.if) expect(Object.keys(l.if).every((k) => k === 'returned' || k === 'notReturned'), l.text).toBe(true);
@@ -1066,6 +1073,8 @@ describe('Task 10: Liz, Scarlet and the survive line', () => {
     for (const n of [1, 2, 3, 4]) expect(textOf(memScene('scarlet', n)), `mem:scarlet:${n}`).not.toMatch(/朋友|活下去|撤退/);
     // spec §6: she believes she fled (her third piece); she swears by her sword
     expect(textOf('mem:scarlet:3')).toMatch(/逃/);
+    expect(textOf('mem:scarlet:3')).toMatch(/號角/);   // the horns she runs from are the retreat of her last piece
+    expect(textOf('mem:scarlet:5')).toMatch(/撤退的號角/);
     expect(spokenBy('scarlet').some((t) => t.line!.mood === 'vow')).toBe(true);
     expect(spokenBy('scarlet').some((t) => t.line!.mood === 'shaken')).toBe(true);
   });

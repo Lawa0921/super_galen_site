@@ -862,15 +862,16 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'mem:liz:5': {
     lines: [
-      // Plays in the shade on pickup. Orik's fragment not yet back: she has the face, not the name, and goes home to find it
-      // (Task 11's town:orik picks it up). Already back: the voice in the memory is Orik's, and the reunion is here.
+      // Plays in the shade on pickup. Orik's fragment not yet back: she has the face, not the name (Task 11's town:orik picks
+      // it up). Already back: the two halves of that evening meet, and the memory comes true: the voice in it is Orik's, and
+      // he knows her by the red hat she hung behind the door (piece 3, I-72): both recognise each other here (I-75).
       N('傍晚的店門口。那張臉終於從霧裡浮了出來：鬍子扎人，一笑，眼睛就瞇成一條線。'),
       { who: 'narrator', text: '「回來啦，丫頭！」他張開雙手，把她連人帶帽子抱了起來。', if: { notReturned: 'orik' } },
-      { who: 'orik', text: '「回來啦，丫頭！今天又撿到什麼好貨了？」', if: { returned: 'orik' } },
+      { who: 'orik', text: '「紅帽子還掛在門後，等妳回來戴。……是妳吧，丫頭。爸爸認得妳的臉了。」', if: { returned: 'orik' } },
       { who: 'liz', mood: 'hushed', text: '「……想起來了。是爸爸的臉。這張臉，我好像在哪裡看過。」', if: { notReturned: 'orik' } },
       { who: 'hero', text: '「歐里克說過，他想起女兒的臉了。」', if: { returned: 'orik' } },
-      { who: 'liz', mood: 'smile', text: '「老大，回城以後，陪我去一個地方。這一次，換我走回家。」', if: { notReturned: 'orik' } },
-      { who: 'liz', mood: 'smile', text: '「……那是爸爸。老大，我們回家吧。這一次，換我在店門口喊『我回來了』。」', if: { returned: 'orik' } },
+      { who: 'liz', mood: 'smile', text: '「老大。爸爸的臉，我不會再弄丟了。……總有一天，換我自己走回家。」', if: { notReturned: 'orik' } },
+      { who: 'liz', mood: 'smile', text: '「……是爸爸。那頂帽子，是我掛的。老大，我們回家吧，換我在店門口喊『我回來了』。」', if: { returned: 'orik' } },
     ],
     summary: '莉茲終於想起了父親的臉，和每天傍晚在店門口等她回家的那個人。她要回家了。',
   },
@@ -889,7 +890,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('深夜的旅館房間。莉茲把今天分到的錢，一枚一枚收進一只舊布袋。'),
       { who: 'hero', text: '「家裡，有人在等？」' },
       { who: 'liz', mood: 'hushed', text: '「……嗯。臉想不起來。可是，一定有人在等。」', if: { notFull: 'liz' } },
-      { who: 'liz', mood: 'smile', text: '「……嗯。現在，臉想起來了。這些錢，我要親手交出去。」', if: { full: 'liz' } },
+      { who: 'liz', mood: 'smile', text: '「……嗯。爸爸的臉，想起來了。這些錢，我要親手交到他手上。」', if: { full: 'liz' } },
     ],
     summary: '深夜，莉茲把分到的錢收進舊布袋。洛恩問她，家裡是不是有人在等。',
   },
@@ -918,7 +919,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('火光裡，城門被撞得一下一下地震。她背對著城門，往城裡跑。'),
       N('身後，號角一聲接著一聲。她沒有回頭。'),
       { who: 'scarlet', mood: 'shaken', text: '「我轉身了。……在城門最需要我的時候，我逃了。」' },
-      { who: 'hero', text: '「妳記得的，只有背影？」' },
+      { who: 'hero', text: '「那些號角，是為了什麼吹的？」' },
     ],
     summary: '絲嘉蕾想起城門快被攻破時，自己背對城門往城裡跑。她認定，自己臨陣脫逃了。',
   },
@@ -954,8 +955,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       // Until her last piece she calls him 「洛恩閣下」 and shields him as a duty; after it, 「洛恩」, by choice (I-26).
       N('回城的路上，絲嘉蕾的盾上，又多了一道新的凹痕。'),
       { who: 'hero', text: '「剛才那一下，不必替我擋。」' },
-      { who: 'scarlet', mood: 'serious', text: '「洛恩閣下，擋下攻擊是我的職責。……總覺得，我欠了誰一次。」', if: { notFull: 'scarlet' } },
-      { who: 'scarlet', mood: 'smile', text: '「……洛恩。替你擋下，不是職責。是我想這麼做。」', if: { full: 'scarlet' } },
+      { who: 'scarlet', mood: 'serious', text: '「洛恩閣下，替人擋下攻擊，本是騎士的本分。……總覺得，我還欠著誰。」', if: { notFull: 'scarlet' } },
+      { who: 'scarlet', mood: 'smile', text: '「……洛恩。替你擋下，不是本分。是我想這麼做。」', if: { full: 'scarlet' } },
     ],
     summary: '絲嘉蕾又替洛恩擋下了一擊。洛恩說不必，她說了自己的理由。',
   },
