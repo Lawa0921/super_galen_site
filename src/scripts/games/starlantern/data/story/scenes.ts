@@ -64,4 +64,7 @@ export function lineCap(id: SceneId): number {
  * `position` in the story tests reads it; `nextChat` reads it from Task 3. The first chat of anyone is never gated.
  * Every entry needs a reason in the lore ledger.
  */
-export const CHAT_GATE: Partial<Record<SceneId, { stage?: Stage; oath?: true }>> = {};
+export const CHAT_GATE: Partial<Record<SceneId, { stage?: Stage; oath?: true }>> = {
+  // Task 6: Lorne's chats follow the acts (lore ledger I-47).
+  'chat:hero:2': { stage: 'act2' }, 'chat:hero:3': { stage: 'act3' }, 'chat:hero:4': { stage: 'act4' },
+};

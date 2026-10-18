@@ -219,6 +219,150 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '地底的古城艾斯特拉。石碑說，有人自願當燈芯，叫守燈人。霧變濃是因為燈芯快燒完，靜鐘會看反了。洛恩讀得懂碑文。',
   },
+  // Task 6: Lorne's memories (spec §4, §3.4, §3.6, §4.6, §8.4). Pieces 1–8 hint; piece 9 names the keeper, piece 10 the key.
+  'mem:hero:1': {
+    lines: [
+      N('黑暗裡有一點光，遠得像針尖。他拖著劍，一層一層往上走。'),
+      N('他不知道自己是誰，也不知道要去哪裡。只知道，要朝那點光走。'),
+      { who: 'hero', text: '「想起來一點了。……我是朝著光，走上來的。」' },
+      N('洛恩握緊劍柄。上面的紋路，摸起來還是溫的。'),
+    ],
+    summary: '洛恩想起自己拖著劍，在黑暗裡朝頭頂的一點光往上走。',
+  },
+  'mem:hero:2': {
+    lines: [
+      N('下著雪的院子。他握著一把木劍，手凍得發紅，一遍又一遍地揮。'),
+      N('有人從背後扶正他的手腕：「太緊了。劍是放出去的，不是抓著的。」'),
+      { who: 'hero', mood: 'sad', text: '「這把劍，是那個人教的。……那張臉，我想不起來。」' },
+      N('他照著那句話，把握劍的手鬆開一點。這一劍，比剛才快。'),
+    ],
+    summary: '洛恩想起雪地裡有人教他握劍。教他的人，他想不起臉。',
+  },
+  'mem:hero:3': {
+    lines: [
+      N('秋天的獵場。他蹲在草裡，把細繩繞成活結，繫在兩棵樹之間。'),
+      N('「不用殺牠。」老獵人說，「讓牠慢下來、站不穩，剩下的交給同伴。」'),
+      { who: 'hero', text: '「絆住，不是為了殺。……手還記得。」' },
+      { who: 'hero', text: '「劍、繩結……都有人教過我。那些人，我一個也想不起來。」' },
+    ],
+    summary: '洛恩想起老獵人教他設陷阱：不用殺，讓牠慢下來就好。',
+  },
+  'mem:hero:4': {
+    lines: [
+      N('風沙裡，一輛馬車翻倒在路邊。他舉著一面裂開的盾，擋在車輪前。'),
+      N('身後有人在哭。盾一次次被撞歪，他一次次把它推回來。'),
+      { who: 'hero', text: '「我擋過。擋在誰前面……想不起來。」' },
+      N('那些人身上的衣服，洛恩在鎮上從來沒見過，像是很久以前的樣式。'),
+    ],
+    summary: '洛恩想起自己在風沙裡舉盾，護著一輛翻倒的馬車。那些人的衣服，是很舊的樣式。',
+  },
+  'mem:hero:5': {
+    lines: [
+      N('夜裡的巷子。遠方響起鐘聲，他回過頭，什麼也沒看見。'),
+      N('背後一涼。他倒進暮霧裡，最後聽見的，還是那口鐘。'),
+      { who: 'hero', mood: 'sad', text: '「……我死過。在那條巷子裡。」' },
+      N('凜的手按住了領口的小銅鐘，按得很緊，像是怕它響。'),
+    ],
+    summary: '洛恩想起自己死在夜裡的巷子，倒下前聽見遠方的鐘聲。',
+  },
+  'mem:hero:6': {
+    lines: [
+      N('石塔頂上，有人指著夜空，一顆一顆念星星的名字。他跟著念，念錯了就重來。'),
+      N('「火、冰、雷，都在星星裡。」那人說，「叫得出名字，它們就會回應你。」'),
+      { who: 'hero', text: '「那座塔，鎮上沒有。那片天上的星星，位置也不對。」' },
+      { who: 'hero', text: '「教我劍、盾、繩結和星星的人……也許，不是同一輩子遇見的。」' },
+    ],
+    summary: '洛恩想起在石塔上學星星的名字。那片星空的位置不對，像是另一輩子的事。',
+  },
+  'mem:hero:7': {
+    lines: [
+      N('市集的人群裡，遠方的鐘又響了。這一次，他看見了拿刀的人。'),
+      N('然後是黑暗。他在很深很深的地方醒來，什麼都不記得，只看得見頭頂一點光。'),
+      { who: 'hero', mood: 'sad', text: '「死了，就在最底下醒來，再走上來一次。……這條路，我走過不只一次。」' },
+      { who: 'hero', text: '「拿刀的那個人，手在發抖。……他們在怕什麼？」' },
+    ],
+    summary: '洛恩又想起一次死亡，和死後在最深處醒來、再往上走的路。拿刀的人，手在發抖。',
+  },
+  'mem:hero:8': {
+    lines: [
+      N('荒地上圍著一圈帳篷。從迷宮裡抬出來的人躺了一地，什麼都不記得。'),
+      N('他跪在他們中間，雙手捧著一點光，照著有人教過的樣子，一個一個祈禱。'),
+      { who: 'hero', text: '「那一圈帳篷……是露米亞最早的樣子。」' },
+      { who: 'hero', text: '「那時候我也什麼都不記得。照顧人的方法，手卻記得。」' },
+    ],
+    summary: '洛恩想起露米亞還只是一圈帳篷的時候，他捧著光，照顧失憶的人。',
+  },
+  // Piece 9 may play before Rin's reveal (d25 against her d22): her one line knows which.
+  'mem:hero:9': {
+    lines: [
+      N('最深處，一盞大得看不見頂的燈。燈芯的光，細得像一根快斷的線。'),
+      N('他走到燈前，閉上眼睛。記得的每一張臉、每一句話，一段段化成光，沿著燈芯往上爬。'),
+      N('燈亮了，他睡在光裡。很多年以後，燈芯燒完，迷宮把他吐了出來。'),
+      N('他什麼都不記得，朝頭頂的光往上走，倒在迷宮的入口。有人替他登記，替他取名字。'),
+      N('有幾次，他在鎮上住了下來，交了朋友，學了本事。然後底下有什麼在拉他，他就走回深處。'),
+      N('也有幾次，遠方的鐘響了。他在鎮上還住不滿一季，靜鐘會的刀就到了背後。'),
+      N('死了的那幾次，他在最底下的黑暗裡醒來，兩手空空，再從頭往上走。'),
+      { who: 'hero', mood: 'sad', text: '「……想起來了。我是守燈人。」' },
+      { who: 'hero', text: '「我在上面活過的日子，就是下一次的燈芯。」' },
+      { who: 'narrator', text: '凜站在光照不到的地方，手緊緊按著領口的小銅鐘。', if: { oath: false } },
+      { who: 'narrator', text: '凜走到他身邊，什麼也沒說，只是抓住了他的袖口。', if: { oath: true } },
+      { who: 'hero', text: '「被殺了那麼多次，還是一直往上走。……原來我一直，想回來。」' },
+    ],
+    summary: '洛恩想起了一切：他是守燈人。點燈、被吐回地面、被靜鐘會殺死，一輪又一輪。',
+  },
+  // Piece 10 plays at the bottom, after the depth-30 boss and before the finale (which always follows Rin's choice, U3).
+  'mem:hero:10': {
+    lines: [
+      N('很久以前的艾斯特拉。戰爭結束了，廣場上排著長長的隊，人們把悲傷倒進燈裡。'),
+      N('只有他沒有排隊。死去的人，他一張臉也不想忘。'),
+      N('燈變了顏色，地底長出了迷宮。城裡的工匠把一把刻滿文字的劍，放進他手裡。'),
+      N('「這是燈鑰。往下的路上有獸，所以做成了劍。」工匠說，「插進燈座，燈就認得你。」'),
+      N('送他到階梯口的人說：「城裡只剩你還記得。……要回來。」'),
+      N('他說會回來。然後他往下走，走了很久很久。'),
+      N('星燈之底。燈喰之母倒下了，牠身後那盞燈，只剩一點快熄的藍。'),
+      N('洛恩手上的劍，紋路一條一條亮了起來，和燈座上刻的一模一樣。'),
+      { who: 'hero', text: '「這把劍，是燈鑰。……我一直帶著它，走回來。」' },
+      { who: 'hero', text: '「第一次，是我自己選的。那時候，只剩我還記得。」' },
+      { who: 'hero', text: '「我知道該怎麼做。每一次，都是一個人做的。」' },
+      N('他握緊劍，朝燈走去。身後的腳步聲，沒有停。'),
+    ],
+    summary: '洛恩想起第一輪：艾斯特拉的人都想忘，只有他記得，所以自願下去。他的劍，就是燈鑰。',
+  },
+  // Task 6: Lorne's chats. 2–4 wait for act 2, 3 and 4 (CHAT_GATE); the last one knows whether Rin has chosen.
+  'chat:hero:1': {
+    lines: [
+      { who: 'glen', text: '「小子。下去之前，先看一眼那道光。迷路了，就朝它走。」' },
+      { who: 'hero', text: '「嗯。我就是朝著它，走出來的。」' },
+      { who: 'glen', text: '「……這話，怎麼聽著耳熟。錯覺吧。去吧，別逞強。」' },
+    ],
+    summary: '葛倫要洛恩迷路時朝星燈走。洛恩說，他就是朝著它走出來的。',
+  },
+  'chat:hero:2': {
+    lines: [
+      N('深夜的月影旅館。凜坐在窗邊，一直看著傳送門的方向，眼睛一下也沒眨。'),
+      { who: 'hero', text: '「睡不著？」' },
+      { who: 'rin', text: '「……習慣了。總覺得，有什麼會從那裡走出來。」' },
+    ],
+    summary: '深夜，凜坐在旅館窗邊盯著傳送門。她說，總覺得有什麼會從那裡走出來。',
+  },
+  'chat:hero:3': {
+    lines: [
+      { who: 'marta', text: '「洛恩，今天的事說給我聽。我記下來。」' },
+      { who: 'hero', text: '「回來了。……就這樣。」' },
+      { who: 'marta', text: '「傻孩子，那是最要緊的一句。我寫在最上面。」' },
+    ],
+    summary: '瑪莎要把洛恩的一天寫進日記。他只說「回來了」，她把這句寫在最上面。',
+  },
+  'chat:hero:4': {
+    lines: [
+      { who: 'hero', text: '「凜。碑上那個人，每一次都是一個人走下去的。」' },
+      { who: 'rin', text: '「……為什麼跟我說這個。」', if: { oath: false } },
+      { who: 'narrator', text: '她轉身上樓，走到一半停了一下，沒有回頭。', if: { oath: false } },
+      { who: 'rin', text: '「這一次，不是一個人。」', if: { oath: true } },
+      { who: 'rin', text: '「洛恩，你下去的地方，我也去。我們一起回來。」', if: { oath: true } },
+    ],
+    summary: '洛恩對凜說，碑上的那個人，每一次都是一個人走下去的。',
+  },
 };
 
 function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }> {
@@ -238,11 +382,10 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
       }));
     });
     for (let n = 1; n <= CHAT_COUNT[id]; n++) {
-      out[`chat:${id}:${n}`] = {
-        title: `${name}・對話 ${n}`,
+      scene(`chat:${id}:${n}`, `${name}・對話 ${n}`, () => ({
         lines: [{ who: id, text: ph(`（${name}說了第${numeral(n)}段話。）`) }],
         summary: ph(`和${name}聊了一會兒。`),
-      };
+      }));
     }
   }
   for (const f of TOWN_FRAGMENTS) {
@@ -254,6 +397,19 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
   }
   return out;
 }
+
+/**
+ * The handbook's people pages that are written: met, half the memories, all of them (spec §7.6). Lorne's are his own notes.
+ * Unconditional strings: they never tell Rin's choice.
+ */
+const PEOPLE: Partial<Record<CharacterId, string[]>> = {
+  // Task 6
+  hero: [
+    '洛恩。安娜替我取的名字，因為我醒來時只念得出一個「洛」字。我從迷宮深處走出來，手上握著一把刻著紋路的劍。',
+    '我的手記得的事比我多：劍怎麼放出去、繩結怎麼絆住、盾怎麼推回來。我也記得，自己死在一條巷子裡。',
+    '我是守燈人，從艾斯特拉走下去的那一個。這把劍是燈鑰，燈芯是我在地面上活過的日子。這一次，我想和大家一起回來。',
+  ],
+};
 
 // The town's opening lines and the facility greetings, one set for every stage until 6c writes them per stage.
 const stageEach = <V>(make: () => V): Record<Stage, V> =>
@@ -302,7 +458,7 @@ export const STORY = {
     after: [] as ScriptLine[],
   }])) as Record<Meetable, { before: ScriptLine[]; after: ScriptLine[] }>,
   absorb: [ph('碎片化開，一段陌生的暖意流進身體。')],
-  people: Object.fromEntries(CHARACTER_IDS.map((id) => [id, [1, 2, 3].map((n) => ph(`${nameOf(id)}的簡介（${numeral(n)}）。`))])) as Record<CharacterId, string[]>,
+  people: Object.fromEntries(CHARACTER_IDS.map((id) => [id, PEOPLE[id] ?? [1, 2, 3].map((n) => ph(`${nameOf(id)}的簡介（${numeral(n)}）。`))])) as Record<CharacterId, string[]>,
   /** The handbook's truth pages: Lorne's own notes, one per stage, saying only what is known by then (spec §7.6, §8.4). */
   truths: {
     prologue: '我在傳送門廣場醒來，什麼都不記得。鎮上的人說，我是唯一從迷宮深處走出來的人。',

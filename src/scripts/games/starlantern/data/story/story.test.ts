@@ -254,6 +254,7 @@ function storyTexts(): Text[] {
 const WRITTEN: string[] = [
   'scenes.prologue.', 'scenes.mem:rin:',   // Task 4: the sample
   'scenes.act1-after.', 'scenes.act2.', 'scenes.act3.', 'scenes.act4.', 'act1Card.', 'truths.',   // Task 5: the acts and the truths
+  'scenes.mem:hero:', 'scenes.chat:hero:', 'people.hero.',   // Task 6: Lorne
 ];
 const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
 const isWritten = (key: string): boolean => writtenBy(WRITTEN, key);
@@ -572,6 +573,26 @@ describe('the script gates', () => {
     for (const oath of [false, true]) {
       const w: LineWhen = { met: ['hero', 'rin'], full: [], returned: [], oath };
       expect(linesWhen(STORY.scenes.act4.lines, w).some((l) => l.who === 'rin'), String(oath)).toBe(true);
+    }
+  });
+
+  it("Lorne's chats wait for their acts, and only his last two pieces say who he is", () => {
+    // Task 6: his chats follow the acts (lore ledger, CHAT_GATE); piece 9 names the lamp keeper, piece 10 the lamp key.
+    expect(CHAT_GATE['chat:hero:2']).toEqual({ stage: 'act2' });
+    expect(CHAT_GATE['chat:hero:3']).toEqual({ stage: 'act3' });
+    expect(CHAT_GATE['chat:hero:4']).toEqual({ stage: 'act4' });
+    const text = (id: SceneId) => STORY.scenes[id].lines.map((l) => l.text).join('');
+    expect(text('mem:hero:9')).toContain('守燈人');
+    expect(text('mem:hero:10')).toContain('燈鑰');
+    for (let n = 1; n <= 8; n++) {
+      for (const word of ['守燈人', '燈鑰']) expect(text(memScene('hero', n)), `mem:hero:${n}`).not.toContain(word);
+    }
+    // His last chat may play before or after Rin's choice: each line of hers knows which, and both readings play her.
+    const rin = STORY.scenes['chat:hero:4'].lines.filter((l) => l.who === 'rin');
+    for (const l of rin) expect(typeof l.if?.oath, l.text).toBe('boolean');
+    for (const oath of [false, true]) {
+      const w: LineWhen = { met: ['hero', 'rin'], full: [], returned: [], oath };
+      expect(linesWhen(STORY.scenes['chat:hero:4'].lines, w).some((l) => l.who === 'rin'), String(oath)).toBe(true);
     }
   });
 
