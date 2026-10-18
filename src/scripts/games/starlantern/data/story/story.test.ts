@@ -345,8 +345,8 @@ function position(key: string): Stage {
   }
 }
 
-/** Words that give away Rin's secret: 「凜」 is a code name, the bell is the society's token, she was sent to kill. */
-const RIN_SECRET_TERMS = ['代號', '信物', '派來殺', '派去殺'];
+/** Words that give away Rin's secret: 「凜」 is a code name, the bell is the society's token, she is an assassin sent to kill. */
+const RIN_SECRET_TERMS = ['代號', '信物', '刺客', '派來殺', '派去殺', '去殺', '要殺的人'];
 /**
  * Where Rin's secret may be said: her 6th and 7th pieces, the reveal, her oath lines, the bellkeeper, the finale and the
  * after stage, her last handbook segment (it unlocks with the 7th piece; it never tells her choice), a line that plays only
