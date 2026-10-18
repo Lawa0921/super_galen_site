@@ -4,7 +4,7 @@ import { ITEMS } from '../items';
 import { MATERIALS } from '../materials';
 import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
-import { STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, STORY_MOODS, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
+import { numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, STORY_MOODS, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
 import { TOWN_FRAGMENTS, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
 import { memoryPace } from '../../engine/story/expect';
@@ -265,8 +265,12 @@ const strayEntries = (texts: Text[], written: string[]): string[] =>
 const missingQuotes = (texts: Text[], written: string[], quotes: [string, string][]): string[] =>
   quotes.filter(([prefix, quote]) => {
     const under = texts.filter((t) => t.key.startsWith(prefix));
-    return under.length > 0 && under.every((t) => writtenBy(written, t.key)) && !under.some((t) => t.text.includes(quote));
-  }).map(([prefix, quote]) => `${prefix} lacks 「${quote}」`);
+    return under.length === 0 || (under.every((t) => writtenBy(written, t.key)) && !under.some((t) => t.text.includes(quote)));
+  }).map(([prefix, quote]) => `${prefix} ${texts.some((t) => t.key.startsWith(prefix)) ? `lacks 「${quote}」` : 'matches no key'}`);
+/** The zh-TW typography rules a text breaks: Latin letters or digits, ASCII quotes, `...`, half-width `,!?:;` and half-width `. - ~ ( )`. */
+const typographyBreaks = (text: string): string[] => [
+  /[A-Za-z0-9]/, /["'`]/, /\.\.\./, /[,!?:;]/, /[.\-~()]/,
+].filter((re) => re.test(text)).map((re) => String(re));
 
 const stageIdx = (s: Stage): number => STAGES.indexOf(s);
 const later = (a: Stage, b: Stage): Stage => (stageIdx(a) >= stageIdx(b) ? a : b);
@@ -408,13 +412,12 @@ describe('the script gates', () => {
   });
 
   it('story text uses zh-TW typography', () => {
-    for (const { key, text } of storyTexts()) {
-      expect(text, key).not.toMatch(/[A-Za-z0-9]/);
-      expect(text, key).not.toMatch(/["'`]/);
-      expect(text, key).not.toMatch(/\.\.\./);
-      expect(text, key).not.toMatch(/[,!?:;]/);
-      expect(text, key).not.toMatch(/[.\-~()]/);   // full-width 。、──～（） only
-    }
+    for (const { key, text } of storyTexts()) expect(typographyBreaks(text), key).toEqual([]);
+  });
+
+  it('the typography gate rejects half-width punctuation and Latin text', () => {
+    for (const bad of ['好.', '好-好', '好~', '(好)', '好)', '好...', '好,好', '好!', 'a', '7', '"好"', '好:好']) expect(typographyBreaks(bad), bad).not.toEqual([]);
+    for (const ok of ['好。', '好──好', '好～', '（好）', '好……', '「好」，好！']) expect(typographyBreaks(ok), ok).toEqual([]);
   });
 
   it('speakers and moods are valid', () => {
@@ -496,8 +499,14 @@ describe('the script gates', () => {
     expect(missingQuotes(texts, ['scenes.mem:rin:1.', 'scenes.mem:rin:2.'], q)).toEqual(['scenes.mem:rin: lacks 「我想看見」']);
     expect(missingQuotes(texts, ['scenes.mem:rin:1.'], q)).toEqual([]);   // rin 2 is not written yet
     expect(missingQuotes(texts, [], q)).toEqual([]);
+    expect(missingQuotes(texts, [], [['scene.mem:rin:', '我想看見']])).toEqual(['scene.mem:rin: matches no key']);   // a typo in a quote prefix is not skipped
     const withQuote = [...texts, t('scenes.mem:rin:3.lines.0.text', '她說：我想看見。')];
     expect(missingQuotes(withQuote, ['scenes.mem:rin:'], q)).toEqual([]);
+  });
+
+  it('numeral counts one to ten and throws elsewhere', () => {
+    expect([1, 2, 10].map(numeral)).toEqual(['一', '二', '十']);
+    for (const n of [0, 11, -1, 1.5, NaN]) expect(() => numeral(n), String(n)).toThrow();
   });
 
   it('an unknown bellkeeper line is placed after act 3, and the known ones as before', () => {

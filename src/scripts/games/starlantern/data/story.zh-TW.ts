@@ -49,7 +49,7 @@ const ph = (text: string): string => { PLACEHOLDERS.add(text); return text; };
 
 const nameOf = (id: CharacterId): string => CHARACTERS[id].name;
 /** 1 to 10 in Chinese numerals: story text carries no Arabic digits. */
-const numeral = (n: number): string => {
+export const numeral = (n: number): string => {
   if (!Number.isInteger(n) || n < 1 || n > 10) throw new Error(`numeral(${n}): only 1 to 10`);
   return '一二三四五六七八九十'[n - 1];
 };
