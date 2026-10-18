@@ -38,6 +38,7 @@ import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type Ph
 import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidContact } from './swim';
+import { normalizeAppearance, type Appearance } from './appearance';
 import { ProjList, type HitFx, type ProjKind, type Projectile } from './projectiles';
 import {
   ascendCost, ascendGear, baseTier, gearSlot, ilvlForDepth, rerollAffix, rerollCost, rollDropItem, rollGear, rollRarity,
@@ -62,6 +63,8 @@ export interface DelveOptions {
   peaceful?: boolean;
   /** 預先生成好的世界（generateWorldSteps 分段生成；必須是同一個 seed / 大小） */
   gen?: GenResult;
+  /** 角色外觀（省略 = 預設外觀） */
+  appearance?: Appearance;
 }
 
 export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest' | 'locked' | 'golden'
@@ -389,6 +392,8 @@ export class DelveGame {
   private lastTile = { x: -1, y: -1 };
   player: Body;
   inventory: Inventory;
+  /** 角色外觀（存檔內容；換外觀用 setAppearance，換成新物件 → 渲染器以參考判斷要不要重烘精靈） */
+  appearance: Readonly<Appearance>;
   /** 遊戲內經過秒數（日夜循環用） */
   time = START_TIME;
   tick = 0;
@@ -514,6 +519,7 @@ export class DelveGame {
 
   constructor(opts: DelveOptions = {}) {
     this.seed = String(opts.seed ?? 'delve');
+    this.appearance = normalizeAppearance(opts.appearance);
     // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）
     const pre = opts.gen && (opts.width === undefined || opts.gen.world.width === opts.width) && (opts.height === undefined || opts.gen.world.height === opts.height) ? opts.gen : null;
     const gen = pre ?? generateWorld(this.seed, { width: opts.width, height: opts.height });
@@ -2610,6 +2616,9 @@ export class DelveGame {
   }
 
   // ── debug / e2e / 存檔還原 ─────────────────────────────
+  /** 換角色外觀（存一份正規化後的新物件） */
+  setAppearance(a: Appearance): void { this.appearance = normalizeAppearance(a); }
+
   /** 把玩家腳底放到 tile (tx, ty)（身體底 = (ty+1)*16），水平置中。 */
   teleport(tx: number, ty: number): void {
     const p = this.player;

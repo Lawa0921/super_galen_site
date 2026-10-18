@@ -30,6 +30,8 @@
 //   沒有或不合法 → 從種子起點（不算損毀，舊存檔照讀）。
 //   尺寸上限：寬 ≤ MAX_WORLD_W、高 ≤ MAX_WORLD_H、面積 ≤ MAX_WORLD_AREA（生成器實際支援的範圍）；
 //   液體 chunk 清單長度先和世界 chunk 總數比對，再配置 RLE 解碼緩衝。
+// format 9 起：header.appearance = 角色外觀（engine/appearance.ts 的選項索引）。沒有 / 壞掉 → 預設外觀（各欄獨立退回，
+//   不算存檔損毀：外觀是裝飾，不該讓整個世界讀不到）。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
 //
 // 二進位格式（little-endian）：
@@ -56,8 +58,9 @@ import { BASE_HP, MAX_HP_CAP } from '../engine/combat';
 import { LIQ, LIQ_MAX } from '../engine/liquidKind';
 import { WEATHER_KINDS, type WeatherKind } from '../engine/weather';
 import { isRngState, type RngState } from '../engine/rng';
+import { normalizeAppearance, type Appearance } from '../engine/appearance';
 
-export const SAVE_FORMAT = 8;
+export const SAVE_FORMAT = 9;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
 export const COMPAT_GEN: readonly number[] = [4];
 export interface LiquidSave { chunks: number[]; data: string; }
@@ -131,6 +134,8 @@ export interface SaveHeader {
   env?: EnvSave;
   /** 內容 / 打磨（釣魚紀錄等）；沒有 = 空 */
   extra?: ExtraSave;
+  /** 角色外觀；format 9 起（沒有 = 預設外觀） */
+  appearance?: Appearance;
 }
 export interface ExtraSave {
   /** 釣魚紀錄：魚種 → 條數 */
@@ -419,6 +424,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       bossActive: boss && boss.state !== 'leave' ? boss.kind : null,
       env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeFrozen(w.frozen) },
       extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce], codex: game.codex.toJSON(), rng: game.rngState() },
+      appearance: { ...game.appearance },
     },
     chunks,
   };
@@ -615,6 +621,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     bossActive: validBossActive(h.bossActive),
     env: validEnv(h.env),
     extra: validExtra(h.extra),
+    appearance: normalizeAppearance(h.appearance),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -681,6 +688,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       data.header.bossActive = validBossActive(data.header.bossActive);
       data.header.env = validEnv(data.header.env);
       data.header.extra = validExtra(data.header.extra);
+      data.header.appearance = normalizeAppearance(data.header.appearance);
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
@@ -697,7 +705,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   if (!validDims(h.width, h.height)) {
     return { ok: false, error: 'size', message: `bad size ${h.width}x${h.height}` };
   }
-  const game = new DelveGame({ seed: h.seed, width: h.width, height: h.height, gen: opts.gen });
+  const game = new DelveGame({ seed: h.seed, width: h.width, height: h.height, gen: opts.gen, appearance: h.appearance });
   const w = game.world;
   const total = w.chunksX * w.chunksY;
   for (const ci of h.chunks) {

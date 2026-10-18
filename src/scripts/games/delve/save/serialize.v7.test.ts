@@ -25,8 +25,8 @@ const run = (g: DelveGame, sec: number): void => { for (let i = 0; i < Math.roun
 const feet = (g: DelveGame): { x: number; y: number } => g.feetTile();
 
 describe('存檔格式 7', { timeout: 120_000 }, () => {
-  it('格式版本（7 起有 vitals / drops；8 起有裝備詞條）', () => {
-    expect(SAVE_FORMAT).toBe(8);
+  it('格式版本（7 起有 vitals / drops；8 起有裝備詞條；9 起有角色外觀）', () => {
+    expect(SAVE_FORMAT).toBe(9);
     expect(snapshotGame(flat()).header.format).toBe(SAVE_FORMAT);
   });
 
