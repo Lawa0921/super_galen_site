@@ -89,14 +89,14 @@ export class Wardrobe {
     if (!list) return;
     list.replaceChildren();
     let group = '';
-    const GROUP: Record<string, string> = { hair: '頭髮', face: '臉', outfit: '服裝' };
+    const GROUP: Record<string, string> = { body: '體型', hair: '頭髮', face: '臉', outfit: '服裝' };
     const fill = (): void => {
       // 兩欄排版時，這一組是奇數列：最後補一格說明，右邊不會空一格
       const n = APPEARANCE_FIELDS.filter((x) => x.group === group).length;
       if (group && n % 2 === 1) {
         const note = document.createElement('p');
         note.className = 'delve-wr-note';
-        note.textContent = group === 'outfit' ? '換服裝時主色 / 副色會換成那套的預設，之後可以再調。' : '左右鍵切換選項。';
+        note.textContent = group === 'outfit' ? '換服裝時主色 / 副色會換成那套的預設，之後可以再調。' : group === 'body' ? '男女都能穿任何髮型、服裝與裝備。' : '左右鍵切換選項。';
         list.appendChild(note);
       }
     };
@@ -104,10 +104,13 @@ export class Wardrobe {
       if (f.group !== group) {
         fill();
         group = f.group;
-        const h = document.createElement('p');
-        h.className = 'delve-wr-group';
-        h.textContent = GROUP[group];
-        list.appendChild(h);
+        // 體型只有一列、列名就寫著「體型」：不另外加標題
+        if (group !== 'body') {
+          const h = document.createElement('p');
+          h.className = 'delve-wr-group';
+          h.textContent = GROUP[group];
+          list.appendChild(h);
+        }
       }
       const row = document.createElement('div');
       row.className = 'delve-wr-row';

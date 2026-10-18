@@ -319,7 +319,11 @@ const lang: Language = defaultLang;
             <button class="delve-seg2-btn" id="delve-diff-peaceful" type="button" role="radio" aria-checked="false">和平</button>
           </div>
           <p class="delve-field-hint" id="delve-diff-hint"></p>
-          <span class="delve-field-label">角色</span>
+          <span class="delve-field-label" id="delve-body-h">角色（體型）</span>
+          <div class="delve-seg2" id="delve-body" role="radiogroup" aria-labelledby="delve-body-h">
+            <button class="delve-seg2-btn" id="delve-body-f" type="button" role="radio" aria-checked="true" data-body="0">女</button>
+            <button class="delve-seg2-btn" id="delve-body-m" type="button" role="radio" aria-checked="false" data-body="1">男</button>
+          </div>
           <div class="delve-newlook">
             <canvas class="delve-newlook-doll" id="delve-new-doll" width="44" height="54" aria-hidden="true"></canvas>
             <button class="delve-btn" id="delve-new-look" type="button">更換外觀</button>

@@ -3,6 +3,10 @@
 // 另外在 localStorage（APPEARANCE_KEY）存一份「預設外觀」給新世界用。壞值一律退回該欄預設（外觀壞掉不讓存檔壞掉）。
 
 export interface Appearance {
+  /** 體型：0 = 女、1 = 男（只改身形 / 臉型；任何髮型 / 服裝兩邊都能用） */
+  body: number;
+  /** 腮紅（女生預設有、男生預設沒有） */
+  blush: boolean;
   hair: number;
   hairColor: number;
   /** 頭頂一撮翹起來的呆毛 */
@@ -22,6 +26,10 @@ export interface Appearance {
 export interface AppearanceOption { id: string; zh: string; }
 export interface OutfitOption extends AppearanceOption { colors: readonly [number, number]; }
 
+export const BODY_TYPES: readonly AppearanceOption[] = [
+  { id: 'female', zh: '女' },
+  { id: 'male', zh: '男' },
+];
 export const HAIR_STYLES: readonly AppearanceOption[] = [
   { id: 'bob', zh: '鮑伯短髮' },
   { id: 'twintails', zh: '雙馬尾' },
@@ -102,18 +110,27 @@ export const ACCESSORIES: readonly AppearanceOption[] = [
   { id: 'flower', zh: '小花' },
 ];
 
-export const DEFAULT_APPEARANCE: Readonly<Appearance> = Object.freeze({
-  hair: 0, hairColor: 2, ahoge: true, eyes: 0, eyeShape: 0, skin: 1,
-  outfit: 0, color1: OUTFITS[0].colors[0], color2: OUTFITS[0].colors[1], acc: 0, glasses: false,
-});
+const H = (id: string): number => HAIR_STYLES.findIndex((h) => h.id === id);
+const O = (id: string): number => OUTFITS.findIndex((o) => o.id === id);
+const HC = (id: string): number => HAIR_COLORS.findIndex((h) => h.id === id);
+/** 兩種體型的典型預設：女 = 櫻粉雙馬尾 + 水手服 + 蝴蝶結；男 = 深棕亂翹短髮 + 冒險大衣、上揚眼、沒有腮紅 */
+const BODY_DEFAULTS: readonly Readonly<Appearance>[] = [
+  Object.freeze({ body: 0, blush: true, hair: H('twintails'), hairColor: HC('pink'), ahoge: true, eyes: 0, eyeShape: 0, skin: 0,
+    outfit: O('sailor'), color1: OUTFITS[O('sailor')].colors[0], color2: OUTFITS[O('sailor')].colors[1], acc: 1, glasses: false }),
+  Object.freeze({ body: 1, blush: false, hair: H('messy'), hairColor: HC('brown'), ahoge: true, eyes: 2, eyeShape: 1, skin: 1,
+    outfit: O('coat'), color1: OUTFITS[O('coat')].colors[0], color2: OUTFITS[O('coat')].colors[1], acc: 0, glasses: false }),
+];
+export function bodyDefaults(body: number): Appearance { return { ...(BODY_DEFAULTS[body] ?? BODY_DEFAULTS[0]) }; }
+export const DEFAULT_APPEARANCE: Readonly<Appearance> = BODY_DEFAULTS[0];
 
 export type AppearanceKey = keyof Appearance;
 export type AppearanceField =
-  | { key: AppearanceKey; label: string; kind: 'list' | 'color'; options: readonly AppearanceOption[]; group: 'hair' | 'face' | 'outfit' }
-  | { key: AppearanceKey; label: string; kind: 'toggle'; options: readonly AppearanceOption[]; group: 'hair' | 'face' | 'outfit' };
+  | { key: AppearanceKey; label: string; kind: 'list' | 'color'; options: readonly AppearanceOption[]; group: 'body' | 'hair' | 'face' | 'outfit' }
+  | { key: AppearanceKey; label: string; kind: 'toggle'; options: readonly AppearanceOption[]; group: 'body' | 'hair' | 'face' | 'outfit' };
 const ONOFF: readonly AppearanceOption[] = [{ id: 'off', zh: '無' }, { id: 'on', zh: '有' }];
 /** 客製化畫面的欄位（順序 = 畫面上的順序） */
 export const APPEARANCE_FIELDS: readonly AppearanceField[] = [
+  { key: 'body', label: '體型', kind: 'list', options: BODY_TYPES, group: 'body' },
   { key: 'hair', label: '髮型', kind: 'list', options: HAIR_STYLES, group: 'hair' },
   { key: 'hairColor', label: '髮色', kind: 'color', options: HAIR_COLORS, group: 'hair' },
   { key: 'ahoge', label: '呆毛', kind: 'toggle', options: ONOFF, group: 'hair' },
@@ -122,12 +139,13 @@ export const APPEARANCE_FIELDS: readonly AppearanceField[] = [
   { key: 'eyeShape', label: '眼型', kind: 'list', options: EYE_SHAPES, group: 'face' },
   { key: 'skin', label: '膚色', kind: 'color', options: SKIN_TONES, group: 'face' },
   { key: 'glasses', label: '眼鏡', kind: 'toggle', options: ONOFF, group: 'face' },
+  { key: 'blush', label: '腮紅', kind: 'toggle', options: ONOFF, group: 'face' },
   { key: 'outfit', label: '服裝', kind: 'list', options: OUTFITS, group: 'outfit' },
   { key: 'color1', label: '主色', kind: 'color', options: CLOTH_COLORS, group: 'outfit' },
   { key: 'color2', label: '副色', kind: 'color', options: CLOTH_COLORS, group: 'outfit' },
 ];
 
-const BOOL_KEYS = new Set<AppearanceKey>(['ahoge', 'glasses']);
+const BOOL_KEYS = new Set<AppearanceKey>(['ahoge', 'glasses', 'blush']);
 function countOf(key: AppearanceKey): number {
   return APPEARANCE_FIELDS.find((f) => f.key === key)?.options.length ?? 1;
 }
@@ -146,7 +164,7 @@ export function normalizeAppearance(raw: unknown): Appearance {
 }
 
 export function appearanceKey(a: Appearance): string {
-  return [a.hair, a.hairColor, a.ahoge ? 1 : 0, a.eyes, a.eyeShape, a.skin, a.outfit, a.color1, a.color2, a.acc, a.glasses ? 1 : 0].join('.');
+  return [a.body, a.blush ? 1 : 0, a.hair, a.hairColor, a.ahoge ? 1 : 0, a.eyes, a.eyeShape, a.skin, a.outfit, a.color1, a.color2, a.acc, a.glasses ? 1 : 0].join('.');
 }
 export function sameAppearance(a: Appearance, b: Appearance): boolean { return appearanceKey(a) === appearanceKey(b); }
 
@@ -155,6 +173,7 @@ export function stepAppearance(a: Appearance, key: AppearanceKey, dir: number): 
   const out = { ...a };
   if (BOOL_KEYS.has(key)) { (out[key] as boolean) = !a[key]; return out; }
   const n = countOf(key), d = dir < 0 ? -1 : 1;
+  if (key === 'body') return switchBody(a, (((a.body + d) % n) + n) % n);
   (out[key] as number) = (((a[key] as number) + d) % n + n) % n;
   if (key === 'outfit') { out.color1 = OUTFITS[out.outfit].colors[0]; out.color2 = OUTFITS[out.outfit].colors[1]; }
   return out;
@@ -164,22 +183,38 @@ export function setAppearance(a: Appearance, key: AppearanceKey, value: number |
   const out = { ...a };
   if (BOOL_KEYS.has(key)) { (out[key] as boolean) = Boolean(value); return out; }
   (out[key] as number) = Math.max(0, Math.min(countOf(key) - 1, Math.round(Number(value) || 0)));
+  if (key === 'body') return switchBody(a, out.body);
   if (key === 'outfit') { out.color1 = OUTFITS[out.outfit].colors[0]; out.color2 = OUTFITS[out.outfit].colors[1]; }
   return out;
 }
 
-/** 隨機外觀：服裝配色七成用該服裝的預設、三成隨機；頭飾 / 眼鏡偏少 */
+/** 換體型：還是另一邊的預設（沒改過）→ 換成這一邊的預設；改過 → 只換體型與腮紅，其他保留 */
+function switchBody(a: Appearance, body: number): Appearance {
+  if (body === a.body) return { ...a };
+  if (sameAppearance(a, bodyDefaults(a.body))) return bodyDefaults(body);
+  return { ...a, body, blush: body === 0 };
+}
+
+/**
+ * 隨機外觀：先抽體型；髮型 / 服裝不鎖性別（全部都抽得到），但 65% 從該體型常見的那幾種裡挑，
+ * 抽出來的角色比較像「典型」的男生 / 女生。服裝配色七成用該服裝的預設；頭飾 / 眼鏡偏少；腮紅女生多、男生少。
+ */
 export function randomAppearance(rand: () => number): Appearance {
   const pick = (n: number): number => Math.min(n - 1, Math.floor(rand() * n));
-  const outfit = pick(OUTFITS.length);
+  const body = pick(BODY_TYPES.length);
+  const typical = (ids: readonly string[], all: readonly AppearanceOption[]): number =>
+    rand() < 0.65 ? Math.max(0, all.findIndex((o) => o.id === ids[pick(ids.length)])) : pick(all.length);
+  const hair = typical(body === 1 ? ['messy', 'spiky', 'bob', 'ponytail'] : ['twintails', 'long', 'hime', 'bob', 'odango', 'braid', 'ponytail'], HAIR_STYLES);
+  const outfit = typical(body === 1 ? ['explorer', 'hoodie', 'coat'] : ['sailor', 'miko', 'maid', 'hoodie', 'explorer', 'coat'], OUTFITS);
   const own = rand() < 0.7;
   return {
-    hair: pick(HAIR_STYLES.length), hairColor: pick(HAIR_COLORS.length), ahoge: rand() < 0.45,
+    body, blush: rand() < (body === 0 ? 0.85 : 0.15),
+    hair, hairColor: pick(HAIR_COLORS.length), ahoge: rand() < 0.45,
     eyes: pick(EYE_COLORS.length), eyeShape: pick(EYE_SHAPES.length), skin: pick(SKIN_TONES.length),
     outfit,
     color1: own ? OUTFITS[outfit].colors[0] : pick(CLOTH_COLORS.length),
     color2: own ? OUTFITS[outfit].colors[1] : pick(CLOTH_COLORS.length),
-    acc: rand() < 0.55 ? 1 + pick(ACCESSORIES.length - 1) : 0,
+    acc: rand() < (body === 1 ? 0.3 : 0.55) ? 1 + pick(ACCESSORIES.length - 1) : 0,
     glasses: rand() < 0.15,
   };
 }
