@@ -57,12 +57,12 @@ export function enemyFrameIndex(e: Enemy, n: number): number {
 }
 
 // ── 飄字 ───────────────────────────────────────────────
-export type FloatKind = 'hit' | 'crit' | 'hurt' | 'heal' | 'info';
+export type FloatKind = 'hit' | 'crit' | 'hurt' | 'heal' | 'info' | 'xp';
 export interface FloatNum { x: number; y: number; vy: number; text: string; kind: FloatKind; life: number; max: number; }
 export class FloatNumbers {
   readonly list: FloatNum[] = [];
   add(x: number, y: number, text: string, kind: FloatKind): void {
-    const life = kind === 'crit' ? 1.1 : kind === 'info' ? 1.6 : 0.9;
+    const life = kind === 'crit' ? 1.1 : kind === 'info' || kind === 'xp' ? 1.4 : 0.9;
     this.list.push({ x: x + ((this.list.length * 7) % 9) - 4, y, vy: kind === 'crit' ? -70 : -50, text, kind, life, max: life });
     if (this.list.length > 64) this.list.shift();
   }
@@ -86,5 +86,7 @@ const FONT: Record<string, string[]> = {
   '8': ['###', '#.#', '###', '#.#', '###'], '9': ['###', '#.#', '###', '..#', '###'],
   '+': ['...', '.#.', '###', '.#.', '...'], '-': ['...', '...', '###', '...', '...'],
   '!': ['.#.', '.#.', '.#.', '...', '.#.'],
+  // 經驗飄字「+12XP」（等級系統）
+  X: ['#.#', '#.#', '.#.', '#.#', '#.#'], P: ['##.', '#.#', '##.', '#..', '#..'],
 };
 export function digitRows(ch: string): string[] { return FONT[ch] ?? ['...', '...', '...', '...', '...']; }

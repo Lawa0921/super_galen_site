@@ -37,6 +37,11 @@ export function itemTooltip(item: ItemId): string[] {
     if (w.kind === 'boomerang') out.push('會飛回手上');
   }
   if (d.ammo) out.push(`彈藥・傷害 +${d.ammo.damage}${d.ammo.flame ? '・點燃目標' : ''}`);
+  if (d.vanity) {
+    const where = { head: '頭', body: '身', legs: '腿', back: '背' }[d.vanity.slot];
+    out.push(`時裝・外觀欄（${where}）`);
+    out.push('只改樣子、沒有數值；會蓋過同部位防具的樣子');
+  }
   if (d.armor) {
     const a = d.armor;
     out.push(`${a.slot === 'head' ? '頭部' : a.slot === 'body' ? '身體' : '腿部'}防具・防禦 ${a.defense}`);

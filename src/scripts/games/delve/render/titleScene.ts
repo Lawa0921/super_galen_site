@@ -13,6 +13,7 @@ import { FixedStepper } from './model';
 import { descentY, focusFor, realDate } from './titleModel';
 import { bayer } from './pixel';
 import { LIVE } from './live';
+import type { Appearance } from '../engine/appearance';
 
 /** 精選的種子 / 世界大小（小世界：生成快） */
 export const TITLE_SEED = 'delve-title-7';
@@ -30,6 +31,8 @@ export interface TitleSceneOptions {
   reducedMotion: boolean;
   /** 現在時間（測試 / 截圖用；預設 new Date()） */
   now?: Date;
+  /** 主角的外觀（預設外觀 = 玩家在「角色外觀」選的） */
+  appearance?: Appearance;
 }
 
 interface Showcase { cx: number; top: number; floor: number; surf: number; ore: { x: number; y: number }[]; }
@@ -56,7 +59,7 @@ export class TitleScene {
   readonly perf = { avgMs: 0, maxMs: 0, frames: 0 };
 
   constructor(readonly canvas: HTMLCanvasElement, private readonly opts: TitleSceneOptions) {
-    const g = new DelveGame({ seed: TITLE_SEED, ...WORLD, peaceful: true });
+    const g = new DelveGame({ seed: TITLE_SEED, ...WORLD, peaceful: true, appearance: opts.appearance });
     this.game = g;
     LIVE.scenes++;
     const rd = realDate(opts.now ?? new Date());

@@ -42,13 +42,15 @@ export interface PlayerStats {
  * 裝備 → 玩家數值。extras = 不在裝備欄但也算詞條的格（手上的武器、使用中的鎬）。
  * 詞條：防禦 / 生命 / 傷害 / 暴擊直接併進對應欄位；其他留在 gear 給遊戲邏輯用。
  */
-export function computeStats(eq: Equipment, extras: readonly (Stack | null | undefined)[] = []): PlayerStats {
+export function computeStats(eq: Equipment, extras: readonly (Stack | null | undefined)[] = [], bonus?: Partial<GearTotals>): PlayerStats {
   let defense = 0, damage = 0, crit = 0, maxHp = 0, regen = 0;
   const h = eq.get('head'), b = eq.get('body'), l = eq.get('legs');
   for (const s of ['head', 'body', 'legs'] as const) { const it = eq.get(s); if (it) defense += armorDefense(it, eq.gearAt(s)); }
   const raw = emptyTotals();
   for (const st of eq.stacks()) addGearTotals(raw, st.item, st.gear);
   for (const st of extras) if (st) addGearTotals(raw, st.item, st.gear);
+  // 技能樹（engine/skills.ts）和裝備共用的數值：先加進原始加總，再和詞條一起封頂
+  if (bonus) for (const [k, v] of Object.entries(bonus) as [keyof GearTotals, number][]) raw[k] += v;
   const gear = capTotals(raw);
   let setBonus: ArmorSetId | null = null;
   const sh = h ? ITEMS[h].armor?.set : undefined;

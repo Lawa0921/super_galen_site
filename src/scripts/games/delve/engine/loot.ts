@@ -55,12 +55,26 @@ export function chestGear(seed: string, x: number, y: number, kind: ChestKind, d
 /** 箱子內容（CHEST_SLOTS 格，前面幾格有東西；最後接上 chestGear 的裝備） */
 export function chestLoot(seed: string, x: number, y: number, kind: ChestKind, depth: number): (Stack | null)[] {
   const slots = baseChestLoot(seed, x, y, kind, depth);
-  for (const g of chestGear(seed, x, y, kind, depth)) {
+  for (const g of [...chestGear(seed, x, y, kind, depth), ...chestFashion(seed, x, y, kind)]) {
     const i = slots.indexOf(null);
     if (i < 0) break;
     slots[i] = g;
   }
   return slots;
+}
+
+/** 只在箱子裡找得到的時裝（收集目標） */
+export const LOOT_ONLY_FASHION: readonly ItemId[] = ['maid_dress', 'maid_skirt', 'maid_headdress', 'witch_hat', 'feather_wings', 'ribbon_bow'];
+/**
+ * 箱子裡的時裝（獨立亂數流 seed:chestfashion:x:y，不影響原本的戰利品）：地城 / 寶藏室 / 密室 / 珍寶箱
+ * 有機會開出一件只能撿到的時裝；一般箱子很少、只開得出工作台做得出來的那幾件。
+ */
+export function chestFashion(seed: string, x: number, y: number, kind: ChestKind): Stack[] {
+  const r = new Rng(`${seed}:chestfashion:${x}:${y}`);
+  const deep = kind === 'dungeon' || kind === 'treasure' || kind === 'secret' || kind === 'relic';
+  if (r.next() >= (kind === 'treasure' ? 0.8 : deep ? 0.3 : 0.06)) return [];
+  const pool: readonly ItemId[] = deep ? LOOT_ONLY_FASHION : ['straw_hat', 'beret', 'explorer_vest', 'flower_crown'];
+  return [{ item: pool[Math.floor(r.next() * pool.length) % pool.length], count: 1 }];
 }
 
 function baseChestLoot(seed: string, x: number, y: number, kind: ChestKind, depth: number): (Stack | null)[] {

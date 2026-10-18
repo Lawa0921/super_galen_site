@@ -212,6 +212,10 @@ const BLOCKED: Record<BlockReason, string | null> = {
   sleep: '附近有怪物，現在睡不著',
   bait: '沒有魚餌（挖泥土找蚯蚓、拔草叢抓蟲）',
   full_hp: '現在不餓（生命是滿的）',
+  claim: '這裡已經在別的據點範圍裡了（爐心之間要隔開一點）',
+  coins: '錢不夠',
+  bagfull: '背包放不下了',
+  blockedspot: '目的地的爐心被方塊圍住了，傳不過去（先清出一點空間）',
 };
 
 /** 古碑碑文（佔位文字） */
@@ -247,24 +251,6 @@ export function autostartPlan(search: string, existingSeed: string | null): Auto
   return { kind: 'start', seed };
 }
 
-/**
- * 背景的生態區過渡：鏡頭所在欄的生態區 a，若 range 欄內有別的生態區 b，就混入 b，
- * 比例 t 越靠邊界越大（最多 0.5，邊界兩側對稱），並量化成 0 / 0.25 / 0.5 三階 → 一階一階地換色。
- */
-export function biomeBlend(biomeAt: (x: number) => number, cx: number, width: number, range = 60): { a: number; b: number; t: number } {
-  const x = Math.max(0, Math.min(width - 1, Math.floor(cx)));
-  const a = biomeAt(x);
-  let best = range + 1, b = a;
-  for (let d = 1; d <= range; d++) {
-    const l = x - d, r = x + d;
-    if (l >= 0 && biomeAt(l) !== a) { best = d; b = biomeAt(l); break; }
-    if (r < width && biomeAt(r) !== a) { best = d; b = biomeAt(r); break; }
-  }
-  if (b === a) return { a, b: a, t: 0 };
-  const t = Math.round(Math.max(0, 0.5 * (1 - (best - 1) / range)) * 4) / 4;
-  return { a, b: t > 0 ? b : a, t };
-}
-
 const BIOME_NAMES = ['森林', '沙漠', '雪原', '叢林'];
 export function biomeLabel(biome: number): string { return BIOME_NAMES[biome] ?? BIOME_NAMES[0]; }
 const REGION_NAMES: Record<string, string> = { mushroom_biome: '螢光菇林', crystal_cave: '水晶洞', sky_island: '浮空島', cabin: '廢棄小屋', mineshaft: '礦坑', ruin: '遺跡', dungeon: '地城' };
@@ -286,7 +272,8 @@ export function countLabel(s: Stack | null): string {
 export interface RecipeRow {
   id: string;
   out: { item: ItemId; n: number };
-  inputs: { item: ItemId; n: number; have: number }[];
+  /** have = 可用總數；bag = 背包裡的；fromChest = 這次會從據點箱子拿幾個（共享儲物） */
+  inputs: { item: ItemId; n: number; have: number; bag?: number; fromChest?: number }[];
   craftable: boolean;
   /** 需要合成站但不在附近 */
   needStation: boolean;
@@ -296,16 +283,25 @@ export interface RecipeRow {
   missing: boolean;
 }
 
-export function recipeRows(inv: Inventory, near: boolean | Partial<Record<Station, boolean>>): RecipeRow[] {
+/**
+ * 合成清單。chests = 據點共享儲物（Lv3）：背包外、範圍內箱子裡的數量（省略 = 沒有共享儲物）；
+ * 有的話 have = 背包 + 箱子、fromChest = 這次要從箱子拿幾個。
+ */
+export function recipeRows(inv: Inventory, near: boolean | Partial<Record<Station, boolean>>, chests?: (item: ItemId) => number): RecipeRow[] {
   const ctx: CraftContext = typeof near === 'boolean' ? { nearWorkbench: near }
     : { nearWorkbench: Boolean(near.workbench), nearFurnace: Boolean(near.furnace), nearAnvil: Boolean(near.anvil), nearCampfire: Boolean(near.campfire) };
   return RECIPES.map((r) => {
-    const inputs = r.inputs.map((a) => ({ item: a.item, n: a.n, have: inv.count(a.item) }));
+    const inputs = r.inputs.map((a) => {
+      const bag = inv.count(a.item);
+      if (!chests) return { item: a.item, n: a.n, have: bag };
+      const extra = chests(a.item);
+      return { item: a.item, n: a.n, have: bag + extra, bag, fromChest: Math.max(0, Math.min(extra, a.n - bag)) };
+    });
     return {
       id: r.id,
       out: { ...r.out },
       inputs,
-      craftable: canCraft(inv, r, ctx),
+      craftable: chests ? stationOk(r, ctx) && inputs.every((a) => a.have >= a.n) : canCraft(inv, r, ctx),
       needStation: r.station !== null && !stationOk(r, ctx),
       station: r.station,
       missing: inputs.some((a) => a.have < a.n),

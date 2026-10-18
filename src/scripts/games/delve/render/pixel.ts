@@ -35,7 +35,7 @@ export function bayer(x: number, y: number): number { return (BAYER[(y & 3) * 4 
 /** 全域描邊色（帶紫的近黑） */
 export const INK: RGB = hex('#1c1424');
 
-// ── 統一色票（50 色）：所有 tile / 精靈 / 背景 / 天空最後都吸附到這裡 ──────────
+// ── 統一色票（57 色）：所有 tile / 精靈 / 背景 / 天空最後都吸附到這裡 ──────────
 export const PALETTE_HEX = [
   // 冷灰（描邊、石頭、金屬、雲影）
   '#0c0a12', '#1c1424', '#2c2838', '#423f54', '#5e5e74', '#707490', '#858aa0', '#b4b9c8', '#ffffff',
@@ -59,6 +59,8 @@ export const PALETTE_HEX = [
   '#6c1e14', '#a83a10', '#e8701c', '#ffa93a', '#ffd86a', '#fff4c0',
   // 膚
   '#d98f66', '#f2b888',
+  // 角色外觀（日系配色）：櫻粉 / 淡粉（髮色、腮紅）、緋紅 / 深緋（髮色、緋袴、領巾）、白皙膚色、淡紫（紫藤髮的亮部）
+  '#e890b0', '#ffc8dc', '#c8344c', '#8c2038', '#ffe2cc', '#c4a0f0',
 ] as const;
 export const PALETTE: RGB[] = PALETTE_HEX.map(hex);
 

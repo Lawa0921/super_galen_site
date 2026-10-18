@@ -30,6 +30,11 @@
 //   沒有或不合法 → 從種子起點（不算損毀，舊存檔照讀）。
 //   尺寸上限：寬 ≤ MAX_WORLD_W、高 ≤ MAX_WORLD_H、面積 ≤ MAX_WORLD_AREA（生成器實際支援的範圍）；
 //   液體 chunk 清單長度先和世界 chunk 總數比對，再配置 RLE 解碼緩衝。
+// format 9 起：header.vanity = 外觀欄（頭 / 身 / 腿 / 背的時裝或當樣子用的防具 + 詞條）與防具隱藏開關（壞資料各自丟掉）。
+// format 9 起：header.appearance = 角色外觀（engine/appearance.ts 的選項索引）。沒有 / 壞掉 → 預設外觀（各欄獨立退回，
+//   不算存檔損毀：外觀是裝飾，不該讓整個世界讀不到）。
+// header.levels = 等級 / 經驗 / 技能樹 / 防刷紀錄（engine/levels.ts LevelsJSON）。沒有 / 壞掉 → 各欄位獨立退回預設
+//   （技能樹不合法 → 整棵重置、點數退回），不算存檔損毀。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
 //
 // 二進位格式（little-endian）：
@@ -56,8 +61,12 @@ import { BASE_HP, MAX_HP_CAP } from '../engine/combat';
 import { LIQ, LIQ_MAX } from '../engine/liquidKind';
 import { WEATHER_KINDS, type WeatherKind } from '../engine/weather';
 import { isRngState, type RngState } from '../engine/rng';
+import { normalizeAppearance, type Appearance } from '../engine/appearance';
+import { Vanity, type VanityJSON } from '../engine/vanity';
+import type { SettlementJSON } from '../engine/settlement';
+import { Progression, type LevelsJSON } from '../engine/levels';
 
-export const SAVE_FORMAT = 8;
+export const SAVE_FORMAT = 9;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
 export const COMPAT_GEN: readonly number[] = [4];
 export interface LiquidSave { chunks: number[]; data: string; }
@@ -131,6 +140,22 @@ export interface SaveHeader {
   env?: EnvSave;
   /** 內容 / 打磨（釣魚紀錄等）；沒有 = 空 */
   extra?: ExtraSave;
+  /** 角色外觀；format 9 起（沒有 = 預設外觀） */
+  appearance?: Appearance;
+  /** 外觀欄（時裝）+ 防具隱藏開關；format 9 起（沒有 = 空、都不隱藏） */
+  vanity?: VanityJSON;
+  /** 據點（爐心）與居民；沒有 = 沒有據點（壞欄位逐筆丟掉，不算損毀） */
+  settle?: SettlementJSON;
+  /** 半格方塊（建築木槌）：tile index 的差分（同結冰格）；沒有 = 都是整格 */
+  halves?: number[];
+  /** 等級 / 技能樹（沒有 = 1 級、沒點技能） */
+  levels?: LevelsJSON;
+}
+/** 存檔裡的等級資料 → 正規化後的副本 */
+function validLevels(raw: unknown): LevelsJSON {
+  const p = new Progression();
+  p.load(raw);
+  return p.toJSON();
 }
 export interface ExtraSave {
   /** 釣魚紀錄：魚種 → 條數 */
@@ -312,6 +337,10 @@ function validEnv(v: unknown): EnvSave | undefined {
   const weather = wx && typeof wx === 'object' && WEATHER_KINDS.includes(wx.kind) && isNum(wx.until) ? { kind: wx.kind, until: wx.until } : null;
   return { weather, frozen: [...o.frozen] };
 }
+function validHalves(v: unknown): number[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  return v.filter((d) => Number.isInteger(d) && d >= 0).slice(0, 2_000_000);
+}
 function encodeFrozen(F: Uint8Array): number[] {
   const out: number[] = [];
   let last = 0;
@@ -419,6 +448,11 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       bossActive: boss && boss.state !== 'leave' ? boss.kind : null,
       env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeFrozen(w.frozen) },
       extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce], codex: game.codex.toJSON(), rng: game.rngState() },
+      appearance: { ...game.appearance },
+      vanity: game.vanity.toJSON(),
+      settle: game.settle.toJSON(),
+      halves: encodeFrozen(w.half),
+      levels: game.levels.toJSON(),
     },
     chunks,
   };
@@ -615,6 +649,11 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     bossActive: validBossActive(h.bossActive),
     env: validEnv(h.env),
     extra: validExtra(h.extra),
+    appearance: normalizeAppearance(h.appearance),
+    vanity: Vanity.fromJSON(h.vanity).toJSON(),
+    settle: h.settle && typeof h.settle === 'object' ? h.settle : undefined,
+    halves: validHalves(h.halves),
+    levels: validLevels(h.levels),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -681,6 +720,9 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       data.header.bossActive = validBossActive(data.header.bossActive);
       data.header.env = validEnv(data.header.env);
       data.header.extra = validExtra(data.header.extra);
+      data.header.appearance = normalizeAppearance(data.header.appearance);
+      data.header.vanity = Vanity.fromJSON(data.header.vanity).toJSON();
+      data.header.levels = validLevels(data.header.levels);
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
@@ -697,7 +739,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   if (!validDims(h.width, h.height)) {
     return { ok: false, error: 'size', message: `bad size ${h.width}x${h.height}` };
   }
-  const game = new DelveGame({ seed: h.seed, width: h.width, height: h.height, gen: opts.gen });
+  const game = new DelveGame({ seed: h.seed, width: h.width, height: h.height, gen: opts.gen, appearance: h.appearance });
   const w = game.world;
   const total = w.chunksX * w.chunksY;
   for (const ci of h.chunks) {
@@ -748,6 +790,8 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   game.player.vx = h.player.vx;
   game.player.vy = h.player.vy;
   game.inventory = Inventory.fromJSON(h.inventory);
+  game.vanity = Vanity.fromJSON(h.vanity);
+  game.levels.load(h.levels);
   game.time = h.time;
   game.tick = h.tick;
   // 探索（format 4）；舊格式 = 什麼都沒探索
@@ -797,6 +841,15 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     game.codex.load(h.extra.codex);
     if (h.extra.rng) game.setRngState(h.extra.rng);
   }
+  // 半格方塊（只留在實心格）、據點 / 居民（核心那格要還是爐心）
+  if (h.halves) {
+    let i = 0;
+    for (let k = 0; k < h.halves.length; k++) {
+      i += h.halves[k];
+      if (i < w.half.length && w.isSolid(i % w.width, Math.floor(i / w.width))) w.half[i] = 1;
+    }
+  }
+  game.settle.load(h.settle, w);
   // 首領戰中存檔（怪物不存）：退還召喚道具，背包滿就掉在腳邊
   const refund = h.bossActive ? BOSS_SUMMON_ITEM[h.bossActive] : undefined;
   if (refund && !game.bossEnemy()) {

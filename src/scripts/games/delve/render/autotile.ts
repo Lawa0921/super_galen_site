@@ -1,5 +1,6 @@
 // autotile.ts — 自動接邊的純邏輯（無 DOM）：4 鄰外緣遮罩 → 框線影格欄、斜角內角、材質滲透、草邊。
 import { SOLID_LUT, T } from '../engine/tiles';
+import { BUILD_DECOR_STYLES } from './buildArt';
 
 /** 外緣（該側鄰格是開口）位元 */
 export const EDGE = { UP: 1, RIGHT: 2, DOWN: 4, LEFT: 8 } as const;
@@ -76,6 +77,7 @@ export const DECOR_STYLES: Record<number, number> = {
   [T.ROPE]: 4, [T.BED_HEAD]: 1, [T.BED_FOOT]: 1, [T.FURNACE]: 1, [T.ANVIL]: 1,
   [T.CAMPFIRE]: 1,
   [T.TABLE]: 1, [T.CHAIR]: 2, [T.LANTERN_POST]: 1, [T.PAINTING]: 4, [T.TROPHY]: 2,
+  ...BUILD_DECOR_STYLES,
 };
 /** 門 / 旗幟等直向多格物件：同種在上 → 不是頂；同種在下 → 不是底 */
 function doorPart(id: number, n: Neighbor): number {
@@ -126,6 +128,14 @@ export function decorStyle(id: number, x: number, y: number, n: Neighbor): numbe
     case T.CHAIN: return y & 1;
     // 椅子面向旁邊的桌子；戰利品：下面實心 / 桌子 → 立座，否則掛牆
     case T.CHAIR: return n(1, 0) === T.TABLE ? 0 : n(-1, 0) === T.TABLE ? 1 : h & 1;
+    // 圍欄：左右接著圍欄（或實心牆）就把橫木接過去
+    case T.FENCE: {
+      const l = n(-1, 0) === T.FENCE || solid(-1, 0), r = n(1, 0) === T.FENCE || solid(1, 0);
+      return (l ? 1 : 0) | (r ? 2 : 0);
+    }
+    // 壁爐 / 爐心：火焰依座標交錯（三種火形，看起來不會整排同步）
+    case T.FIREPLACE_L: return h % 3;
+    case T.FIREPLACE_R: return n(-1, 0) === T.FIREPLACE_L ? cellHash(x - 1, y) % 3 : h % 3;
     case T.TROPHY: return solid(0, 1) || n(0, 1) === T.TABLE ? 0 : 1;
     case T.ROPE: {
       // 0 中段、1 底端、2 頂端（繩結）、3 單格

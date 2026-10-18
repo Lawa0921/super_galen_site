@@ -9,6 +9,7 @@ import { FixedStepper, blockedMessage, hintText } from './model';
 import { MapCache, Minimap, FullMap } from './mapView';
 import { ExploreUi } from './journal';
 import { CalendarUi } from './calendarUi';
+import { LevelsUi } from './levelsUi';
 import { SoundManager } from '../audio/SoundManager';
 import { T } from '../engine/tiles';
 import { ITEMS } from '../engine/items';
@@ -17,6 +18,9 @@ import { FISH } from '../engine/fishing';
 import { RARITIES, affixDef, gearSlot } from '../engine/gear';
 import { TOAST_HIGH, TOAST_LOW, TOAST_NORMAL } from './toastQueue';
 import { LIVE, endLoop, loopId, markFrame } from './live';
+import { SettleUi } from './settleUi';
+import { NPCS } from '../engine/npcs';
+import { LEVEL_NAMES } from '../engine/settlement';
 
 /** 稀有 / 傳說的漁獲（釣到時多一聲鈴） */
 const FISH_RARE = new Set(FISH.filter((f) => f.rarity === 'rare' || f.rarity === 'legendary').map((f) => f.item));
@@ -53,8 +57,12 @@ export interface DelveHandle {
   hud: Hud;
   map: { cache: MapCache; minimap: Minimap; full: FullMap };
   ui: ExploreUi;
+  /** 據點面板 / 居民面板 / 查房標籤 */
+  settleUi: SettleUi;
   /** HUD 日期時鐘 + 日曆 / 天氣預報面板 */
   calendar: CalendarUi;
+  /** 等級系統：經驗條、升級橫幅、角色 / 技能面板、主動技能按鍵 */
+  levels: LevelsUi;
   sound: SoundManager;
   stats(): FrameStats;
   /** 暫停模擬（選單開啟時） */
@@ -83,8 +91,10 @@ export function startDelve(opts: StartOptions): DelveHandle {
   const hud = new Hud(root, game, renderer.atlas);
   const stepper = new FixedStepper(FIXED_DT, 0.25);
   const sound = new SoundManager();
+  renderer.onCue = () => sound.climbGrip();
   const ui = new ExploreUi(root, game, renderer.atlas);
   const calendar = new CalendarUi(root, game);
+  const settleUi = new SettleUi(root, game, renderer, renderer.atlas, (m) => hud.toast(m, 2400));
   const mapCache = new MapCache(game);
   renderer.onWorldDirty = (cis) => mapCache.markWorld(cis);
   const mmRoot = root.querySelector<HTMLElement>('#delve-minimap'), mmCanvas = root.querySelector<HTMLCanvasElement>('#delve-minimap-canvas');
@@ -98,10 +108,20 @@ export function startDelve(opts: StartOptions): DelveHandle {
     onToast: (m) => hud.toast(m),
   });
   let paused = false;
+  // 等級系統：角色 / 技能面板開著時暫停（面板用方向鍵選技能）
+  const levels = new LevelsUi({
+    root, game, sound, hud,
+    isBlocked: () => menuPaused || fullmap.isOpen,
+    onToggle: () => {
+      paused = menuPaused || fullmap.isOpen || levels.isOpen;
+      if (paused) controls.releaseAll();
+      last = performance.now();
+    },
+  });
   const setMap = (open: boolean): void => {
     if (open === fullmap.isOpen) return;
     if (open) { fullmap.open(); root.dataset.map = '1'; } else { fullmap.close(); delete root.dataset.map; }
-    paused = menuPaused || fullmap.isOpen;
+    paused = menuPaused || fullmap.isOpen || levels.isOpen;
     if (paused) controls.releaseAll();
     last = performance.now();
   };
@@ -161,7 +181,9 @@ export function startDelve(opts: StartOptions): DelveHandle {
     onInventory: () => hud.toggleInventory(),
     onMenu: () => {
       if (fullmap.isOpen) setMap(false);
+      else if (levels.isOpen) levels.setOpen(false);
       else if (ui.loreOpen) ui.closeLore();
+      else if (settleUi.closeTop()) { /* 據點 / 居民面板 */ }
       else if (hud.confirmOpen) hud.cancelConfirm();
       else if (game.openChest) game.closeChest();
       else if (hud.forgeOpen) hud.setForge(null);
@@ -173,6 +195,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
     onMap: () => { if (!menuPaused) setMap(!fullmap.isOpen); },
     onMinimap: () => { if (!menuPaused && !fullmap.isOpen) hud.toast(minimap.toggle() ? '小地圖：開' : '小地圖：關'); },
     onJournal: () => { if (!menuPaused && !fullmap.isOpen) ui.toggleJournal(); },
+    onHousing: () => { if (!menuPaused && !fullmap.isOpen) settleUi.toggleHousing(); },
+    onSettle: () => { if (!menuPaused && !fullmap.isOpen) { if (ui.journalOpen) ui.setJournal(false); settleUi.toggleSettle(); } },
     onZoom: zoom,
     isBlocked: () => paused,
   });
@@ -192,6 +216,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       let invChanged = false;
       for (const e of game.drainEvents()) {
         renderer.onEvent(e);
+        levels.onEvent(e);
         if (e.type === 'blocked') {
           const m = blockedMessage(e.reason);
           if (m) hud.toast(m);
@@ -199,7 +224,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'lore') { ui.showLore(e.id, e.first); sound.lore(e.first); }
         else if (e.type === 'discover') { ui.discover(e.region.name, e.region.cat); sound.discover(); }
         else if (e.type === 'treasure') { hud.toast(`獲得珍寶：${ITEMS[e.item].name.zh}`, 2400); sound.treasure(); invChanged = true; }
-        else if (e.type === 'spawn') { hud.toast(e.set ? '已設定重生點（床）' : '床被拆掉了：重生點回到出生點'); if (e.set) sound.spawn(); }
+        else if (e.type === 'spawn') { hud.toast(e.set ? (game.settle.spawnCore !== null ? '已設定重生點（據點爐心）' : '已設定重生點（床）') : '重生點被拆掉了：回到出生點'); if (e.set) sound.spawn(); }
         else if (e.type === 'recall') {
           sound.recall(e.phase);
           if (e.phase === 'done') { renderer.snapCamera(); hud.toast('傳送回重生點'); }
@@ -268,6 +293,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'chain') sound.zap();
         else if (e.type === 'undying') { sound.undying(); hud.toast('不滅：撐住了致命一擊！', 2200, TOAST_HIGH); }
         else if (e.type === 'airjump') sound.airJump();
+        else if (e.type === 'climb') { if (e.phase === 'grab') sound.climbGrab(); else if (e.phase === 'mantle') sound.mantle(); else sound.mantleTop(); }
         else if (e.type === 'codex') { sound.codex(); hud.toast(`圖鑑收錄新詞條：${affixDef(e.affix).word}`, 1800, TOAST_LOW); }
         else if (e.type === 'salvage') { sound.salvage(); invChanged = true; }
         else if (e.type === 'forge') { sound.forge(e.action); invChanged = true; }
@@ -275,6 +301,22 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'lifeup') { sound.heal(); hud.toast(`生命上限提升到 ${e.maxHp}`); invChanged = true; }
         else if (e.type === 'shot') { if (e.hostile) sound.enemyShot(e.kind === 'fireball' || e.kind === 'ember'); }
         else if (e.type === 'impact') { /* 火花由 renderer 畫 */ }
+        else if (e.type === 'hearth') { if (ui.journalOpen) ui.setJournal(false); settleUi.openSettle(e.id); }
+        else if (e.type === 'talk') { if (ui.journalOpen) ui.setJournal(false); settleUi.openNpc(e.kind, e.line); sound.pickup(); }
+        else if (e.type === 'npc') {
+          const d = NPCS[e.kind];
+          if (e.phase === 'arrive') { hud.toast(`${d.title}「${d.name}」搬進來了！`, 3000, TOAST_HIGH); sound.treasure(); }
+          else if (e.phase === 'coming') hud.toast(`${d.title}「${d.name}」聽說了你的據點，正在搬來的路上`, 2600);
+          else if (e.phase === 'leave') hud.toast(`${d.title}「${d.name}」搬走了`, 2400);
+          else hud.toast(`${d.title}「${d.name}」沒有房間了（房間不合格或床被拆了）`, 2600);
+        }
+        else if (e.type === 'settlement') {
+          if (e.phase === 'found') hud.toast('建立了據點！在範圍內蓋好房間（H 查房、B 據點面板）', 3000);
+          else if (e.phase === 'level') { hud.toast(`據點升級：Lv${e.level}「${LEVEL_NAMES[e.level]}」！`, 3000, TOAST_HIGH); sound.discover(); }
+          else hud.toast('據點爐心被拆掉了：據點解散', 2400);
+        }
+        else if (e.type === 'trade') { sound.pickup(); invChanged = true; }
+        else if (e.type === 'travel') { renderer.snapCamera(); sound.recall('done'); hud.toast('傳送到另一個據點'); }
         else if (e.type === 'boss') {
           if (e.phase === 'spawn') { sound.roar(); hud.toast('燈脈守望者甦醒了！', 2600); invChanged = true; }
           else if (e.phase === 'phase2') { sound.roar(); hud.toast('鐵籠碎裂——守望者發狂了！', 2400); }
@@ -291,7 +333,9 @@ export function startDelve(opts: StartOptions): DelveHandle {
     }
     renderer.render(paused ? 0 : dt);
     hud.tick();
+    levels.tick(dt);
     ui.tick(dt);
+    settleUi.tick();
     calendar.tick();
     const tm = performance.now();
     mapCache.update(fullmap.isOpen ? 64 : 16);
@@ -322,7 +366,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
   };
 
   const handle: DelveHandle = {
-    game, renderer, hud, ui, calendar, sound,
+    game, renderer, hud, ui, settleUi, calendar, sound, levels,
     map: { cache: mapCache, minimap, full: fullmap },
     stats: () => {
       const f = avg(gaps);
@@ -336,7 +380,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
     },
     setPaused: (p) => {
       menuPaused = p;
-      paused = menuPaused || fullmap.isOpen;
+      if (p && levels.isOpen) levels.setOpen(false);
+      paused = menuPaused || fullmap.isOpen || levels.isOpen;
       if (paused) controls.releaseAll();
       last = performance.now();
     },
@@ -368,8 +413,10 @@ export function startDelve(opts: StartOptions): DelveHandle {
       root.removeEventListener('pointerdown', unlock);
       window.removeEventListener('keydown', unlock);
       fullmap.destroy();
+      settleUi.destroy();
       ui.destroy();
       calendar.destroy();
+      levels.destroy();
       sound.destroy();
       hud.destroy();
       renderer.destroy();

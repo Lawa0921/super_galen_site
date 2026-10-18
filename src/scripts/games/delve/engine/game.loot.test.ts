@@ -11,6 +11,8 @@ const SMALL = { width: 160, height: 100 };
 function arena(opts: { px?: number; floorY?: number; seed?: string } = {}): DelveGame {
   const { px = 60, floorY = 60, seed = 'loot' } = opts;
   const g = new DelveGame({ seed, ...SMALL, peaceful: true });
+  // 這些測試假設 1 級角色（小世界裡走幾步就會發現地區、升級）：不拿經驗
+  g.levels.locked = true;
   const w = g.world;
   for (let i = 0; i < w.liquid.length; i++) { w.liquid[i] = 0; w.liquidType[i] = 0; }
   for (let y = 0; y < w.height; y++) for (let x = 30; x < 100; x++) { w.setFg(x, y, y >= floorY ? T.STONE : T.AIR); w.setWall(x, y, W.NONE); }

@@ -142,11 +142,14 @@ export function logoBmp(frame = 0): Bmp {
 }
 
 // ── 選單小圖示（12×12：10×10 圖 + 描邊） ──────────────────
-export type TitleIcon = 'continue' | 'new' | 'import' | 'export' | 'help' | 'settings' | 'back' | 'dice';
+export type TitleIcon = 'continue' | 'new' | 'import' | 'export' | 'help' | 'settings' | 'back' | 'dice' | 'look';
 const ICONS: Record<TitleIcon, { rows: string[]; pal: Record<string, string> }> = {
   // 繼續：燃燒中的火把燈籠
   continue: { rows: ['....aa....', '...abba...', '...abca...', '..dddddd..', '..deffed..', '..deffed..', '..deffed..', '..dddddd..', '...g..g...', '..gggggg..'],
     pal: { a: '#e8701c', b: '#ffa93a', c: '#fff4c0', d: '#5e5e74', e: '#ffd86a', f: '#fff4c0', g: '#2c2838' } },
+  // 角色外觀：Q 版小臉（呆毛、大眼、腮紅）
+  look: { rows: ['.....a....', '..aaaa.a..', '.abbbbaa..', 'abbbbbbba.', 'abccbcccba', 'acdecdecca', 'accecceca.', '.cfccfcc..', '..cccccc..', '...gggg...'],
+    pal: { a: '#e890b0', b: '#ffc8dc', c: '#f2b888', d: '#1c1424', e: '#3e74c4', f: '#e890b0', g: '#2c4486' } },
   // 新世界：小樹苗 + 土地
   new: { rows: ['....aa....', '...abba...', '..abbbba..', '..aabbaa..', '....cc....', '....cc....', '.d..cc..d.', 'ffffffffff', 'eeeeeeeeee', 'eegeeeegee'],
     pal: { a: '#2d672e', b: '#67ab3c', c: '#7c4c2e', d: '#93cc50', e: '#7c4c2e', f: '#468a34', g: '#472819' } },

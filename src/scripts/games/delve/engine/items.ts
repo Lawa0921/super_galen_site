@@ -51,8 +51,17 @@ export type ItemId =
   | 'grilled_fish' | 'smoked_eel' | 'fish_stew' | 'campfire'
   // ── 家具 ──
   | 'table' | 'chair' | 'lantern_post' | 'painting' | 'bookshelf' | 'banner' | 'candle' | 'plank_wall'
+  // ── 建築 / 據點：新方塊、人造牆、家具、據點爐心、木槌 ──
+  | 'dark_planks' | 'pale_planks' | 'red_brick' | 'roof_red' | 'roof_slate' | 'glass' | 'fence' | 'wood_beam'
+  | 'dark_plank_wall' | 'pale_plank_wall' | 'stone_brick_wall' | 'red_brick_wall' | 'glass_wall' | 'plaster_wall'
+  | 'sofa' | 'fireplace' | 'shelf' | 'chandelier' | 'table_lamp' | 'rug' | 'potted_plant' | 'bench' | 'hearth' | 'builder_hammer'
   // ── 裝備分解材料：碎晶（洗煉 / 強化）、星塵（史詩以上分解；高階強化 / 升階） ──
-  | 'gear_shard' | 'stardust';
+  | 'gear_shard' | 'stardust'
+  // ── 外觀（時裝）：只改樣子、沒有數值；裝在外觀欄（頭 / 身 / 腿 / 背） ──
+  | 'sailor_top' | 'miko_robe' | 'maid_dress' | 'hoodie_top' | 'travel_coat' | 'explorer_vest'
+  | 'sailor_skirt' | 'miko_hakama' | 'maid_skirt' | 'hoodie_shorts' | 'coat_trousers' | 'explorer_shorts'
+  | 'straw_hat' | 'witch_hat' | 'beret' | 'maid_headdress' | 'flower_crown'
+  | 'travel_cape' | 'feather_wings' | 'ribbon_bow';
 
 /**
  * 飾品效果。移動 / 戰鬥類（jump、run、night、magnet、nofall、stat）要裝在裝備欄的飾品槽才生效；
@@ -115,7 +124,9 @@ export interface ItemDef {
    */
   use?: 'recall' | 'life' | 'heal' | 'summon' | 'scoop' | 'pour' | 'sponge'
     /** 釣竿：拋竿 / 收竿；料理：吃（回血）；木箱：打開 */
-    | 'fish' | 'eat' | 'crate';
+    | 'fish' | 'eat' | 'crate'
+    /** 建築木槌：方塊整格 ⇄ 半格 */
+    | 'hammer';
   /** 釣竿：釣力、能不能在熔岩裡釣 */
   rod?: { power: number; lava?: boolean };
   /** 魚餌的釣力 */
@@ -130,7 +141,11 @@ export interface ItemDef {
   ammo?: AmmoDef;
   armor?: ArmorDef;
   stats?: StatMods;
+  /** 時裝：裝在外觀欄的哪一格、畫成什麼樣子（engine/doll.ts 的 look 字串） */
+  vanity?: VanityDef;
 }
+export type VanitySlot = 'head' | 'body' | 'legs' | 'back';
+export interface VanityDef { slot: VanitySlot; look: string; }
 
 const block = (id: ItemId, zh: string, en: string, place: number): ItemDef =>
   ({ id, name: { zh, en }, maxStack: MAX_STACK, place });
@@ -144,6 +159,9 @@ const arm = (id: ItemId, zh: string, en: string, slot: ArmorSlot, defense: numbe
 const acc = (id: ItemId, zh: string, en: string, accessory: Accessory, stats?: StatMods, unique = false): ItemDef =>
   ({ id, name: { zh, en }, maxStack: 1, accessory, ...(stats ? { stats } : {}), ...(unique ? { unique } : {}) });
 
+const wall = (id: ItemId, zh: string, en: string, placeWall: number): ItemDef => ({ id, name: { zh, en }, maxStack: MAX_STACK, placeWall });
+const vty = (id: ItemId, zh: string, en: string, slot: VanitySlot, look: string): ItemDef =>
+  ({ id, name: { zh, en }, maxStack: 1, vanity: { slot, look } });
 const rod = (id: ItemId, zh: string, en: string, power: number, lava = false): ItemDef =>
   ({ id, name: { zh, en }, maxStack: 1, use: 'fish', rod: lava ? { power, lava } : { power } });
 const bait = (id: ItemId, zh: string, en: string, power: number): ItemDef => ({ id, name: { zh, en }, maxStack: MAX_STACK, bait: power });
@@ -329,10 +347,61 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   banner: { ...block('banner', '旗幟', 'Banner', T.BANNER), maxStack: 99 },
   candle: { ...block('candle', '蠟燭', 'Candle', T.CANDLE), maxStack: 99 },
   plank_wall: { id: 'plank_wall', name: { zh: '木板牆', en: 'Plank Wall' }, maxStack: MAX_STACK, placeWall: W.PLANK_WALL },
+  // ── 建築 ──
+  dark_planks: block('dark_planks', '深色木板', 'Smoked Planks', T.DARK_PLANKS),
+  pale_planks: block('pale_planks', '淺色木板', 'Pale Planks', T.PALE_PLANKS),
+  red_brick: block('red_brick', '紅磚', 'Red Brick', T.RED_BRICK),
+  roof_red: block('roof_red', '紅屋瓦', 'Red Roof Tile', T.ROOF_RED),
+  roof_slate: block('roof_slate', '青屋瓦', 'Slate Roof Tile', T.ROOF_SLATE),
+  glass: block('glass', '玻璃', 'Glass', T.GLASS),
+  fence: block('fence', '木圍欄', 'Wooden Fence', T.FENCE),
+  wood_beam: block('wood_beam', '木樑', 'Wooden Beam', T.BEAM),
+  dark_plank_wall: wall('dark_plank_wall', '深色木板牆', 'Smoked Plank Wall', W.DARK_PLANK_WALL),
+  pale_plank_wall: wall('pale_plank_wall', '淺色木板牆', 'Pale Plank Wall', W.PALE_PLANK_WALL),
+  stone_brick_wall: wall('stone_brick_wall', '石磚牆', 'Stone Brick Wall', W.STONE_BRICK_WALL),
+  red_brick_wall: wall('red_brick_wall', '紅磚牆', 'Red Brick Wall', W.RED_BRICK_WALL),
+  glass_wall: wall('glass_wall', '玻璃窗', 'Glass Window', W.GLASS_WALL),
+  plaster_wall: wall('plaster_wall', '灰泥牆', 'Plaster Wall', W.PLASTER_WALL),
+  // 沙發 / 壁爐：放置時佔兩格（左半 + 右半，game.tryPlace 特別處理）
+  sofa: { ...block('sofa', '沙發', 'Sofa', T.SOFA_L), maxStack: 99 },
+  fireplace: { ...block('fireplace', '壁爐', 'Fireplace', T.FIREPLACE_L), maxStack: 99 },
+  shelf: { ...block('shelf', '層架', 'Wall Shelf', T.SHELF), maxStack: 99 },
+  chandelier: { ...block('chandelier', '吊燈', 'Chandelier', T.CHANDELIER), maxStack: 99 },
+  table_lamp: { ...block('table_lamp', '檯燈', 'Table Lamp', T.TABLE_LAMP), maxStack: 99 },
+  rug: { ...block('rug', '地毯', 'Rug', T.RUG), maxStack: 99 },
+  potted_plant: { ...block('potted_plant', '盆栽', 'Potted Plant', T.POTTED_PLANT), maxStack: 99 },
+  bench: { ...block('bench', '長椅', 'Bench', T.BENCH), maxStack: 99 },
+  hearth: { ...block('hearth', '據點爐心', 'Hearthstone', T.HEARTH), maxStack: 9 },
+  // 木槌：敲方塊切換「整格 ⇄ 半格」（半格可以當階梯走上去）
+  builder_hammer: { id: 'builder_hammer', name: { zh: '建築木槌', en: "Builder's Mallet" }, maxStack: 1, use: 'hammer' },
   // ── 裝備材料 ──
   gear_shard: mat('gear_shard', '碎晶', 'Gear Shard'),
   stardust: mat('stardust', '星塵', 'Stardust'),
+  // ── 時裝 ──
+  sailor_top: vty('sailor_top', '水手服上衣', 'Sailor Blouse', 'body', 'outfit:sailor'),
+  miko_robe: vty('miko_robe', '巫女白衣', 'Shrine Robe', 'body', 'outfit:miko'),
+  maid_dress: vty('maid_dress', '女僕洋裝', 'Maid Dress', 'body', 'outfit:maid'),
+  hoodie_top: vty('hoodie_top', '寬鬆連帽衫', 'Comfy Hoodie', 'body', 'outfit:hoodie'),
+  travel_coat: vty('travel_coat', '旅人大衣', 'Traveler Coat', 'body', 'outfit:coat'),
+  explorer_vest: vty('explorer_vest', '探險背心', 'Explorer Vest', 'body', 'outfit:explorer'),
+  sailor_skirt: vty('sailor_skirt', '百褶裙', 'Pleated Skirt', 'legs', 'outfit:sailor'),
+  miko_hakama: vty('miko_hakama', '緋袴', 'Scarlet Hakama', 'legs', 'outfit:miko'),
+  maid_skirt: vty('maid_skirt', '荷葉圍裙裙', 'Frilled Apron Skirt', 'legs', 'outfit:maid'),
+  hoodie_shorts: vty('hoodie_shorts', '短褲與褲襪', 'Shorts & Tights', 'legs', 'outfit:hoodie'),
+  coat_trousers: vty('coat_trousers', '長褲與長靴', 'Trousers & Tall Boots', 'legs', 'outfit:coat'),
+  explorer_shorts: vty('explorer_shorts', '探險短褲', 'Explorer Shorts', 'legs', 'outfit:explorer'),
+  straw_hat: vty('straw_hat', '草帽', 'Straw Hat', 'head', 'hat:straw'),
+  witch_hat: vty('witch_hat', '魔女帽', 'Witch Hat', 'head', 'hat:witch'),
+  beret: vty('beret', '貝雷帽', 'Beret', 'head', 'hat:beret'),
+  maid_headdress: vty('maid_headdress', '女僕頭飾', 'Maid Headdress', 'head', 'hat:maid'),
+  flower_crown: vty('flower_crown', '花冠', 'Flower Crown', 'head', 'hat:flower'),
+  travel_cape: vty('travel_cape', '旅人斗篷', 'Traveler Cape', 'back', 'back:cape'),
+  feather_wings: vty('feather_wings', '白羽翅膀', 'Feather Wings', 'back', 'back:wings'),
+  ribbon_bow: vty('ribbon_bow', '大蝴蝶結', 'Big Back Bow', 'back', 'back:bow'),
 };
+
+/** 時裝道具（顯示順序） */
+export const VANITY_ITEMS: readonly ItemId[] = (Object.keys(ITEMS) as ItemId[]).filter((id) => ITEMS[id].vanity);
 
 /** 套裝組成（頭 / 身 / 腿），順序 = 等級 */
 export const ARMOR_SETS: Record<ArmorSetId, readonly [ItemId, ItemId, ItemId]> = {
@@ -343,6 +412,11 @@ export const ARMOR_SETS: Record<ArmorSetId, readonly [ItemId, ItemId, ItemId]> =
   bone: ['bone_helmet', 'bone_chestplate', 'bone_greaves'],
   molten: ['molten_helmet', 'molten_chestplate', 'molten_greaves'],
 };
+
+/** 背景牆 id → 拆下來掉的道具（沒有 = 不能拆） */
+export const WALL_ITEM: Partial<Record<number, ItemId>> = Object.fromEntries(
+  (Object.values(ITEMS) as ItemDef[]).filter((d) => d.placeWall !== undefined).map((d) => [d.placeWall as number, d.id]),
+);
 
 export function isItemId(v: unknown): v is ItemId {
   return typeof v === 'string' && Object.prototype.hasOwnProperty.call(ITEMS, v);
