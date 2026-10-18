@@ -43,7 +43,13 @@ function setup(from?: 'formation' | 'status', lineup: readonly string[] = LEGACY
 describe('GuildScene', () => {
   it('lists the guild commands', () => {
     const { root } = setup();
-    expect([...root.querySelectorAll('.slx-cmd [role=option]')].map((o) => o.textContent)).toEqual(['編隊', T.ui2.guild.recall, '裝備', '狀態', '技能樹', '天賦', T.ui2.exchange.title, '離開']);
+    expect([...root.querySelectorAll('.slx-cmd [role=option]')].map((o) => o.textContent)).toEqual(['編隊', T.ui2.guild.recall, '裝備', '狀態', '技能樹', '天賦', T.ui2.exchange.title, T.ui2.handbook.title, '離開']);
+  });
+
+  it('the guild opens the handbook', () => {
+    const { pick, go } = setup();
+    pick(T.ui2.handbook.title);
+    expect(go).toHaveBeenCalledWith('handbook');
   });
 
   it('recall is disabled when nobody waits', () => {

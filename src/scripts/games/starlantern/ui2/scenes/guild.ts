@@ -31,13 +31,13 @@ export class GuildScene extends FacilityScene {
 
   protected commands(): MenuItem[] {
     const g = T.ui2.guild;
-    return [{ id: 'formation', label: g.formation }, { id: 'recall', label: g.recall, disabled: this.waiting().length === 0 }, { id: 'equip', label: g.equip }, { id: 'status', label: g.status }, { id: 'tree', label: g.tree }, { id: 'talent', label: g.talent }, { id: 'exchange', label: T.ui2.exchange.title }];
+    return [{ id: 'formation', label: g.formation }, { id: 'recall', label: g.recall, disabled: this.waiting().length === 0 }, { id: 'equip', label: g.equip }, { id: 'status', label: g.status }, { id: 'tree', label: g.tree }, { id: 'talent', label: g.talent }, { id: 'exchange', label: T.ui2.exchange.title }, { id: 'handbook', label: T.ui2.handbook.title }];
   }
 
   protected onCommand(id: string): void {
     if (id === 'recall') this.recallList();
     else if (id === 'exchange') this.exchangeMenu();
-    else if (id === 'formation' || id === 'equip' || id === 'status') this.ctx.go(id);
+    else if (id === 'formation' || id === 'equip' || id === 'status' || id === 'handbook') this.ctx.go(id);
     else if (id === 'tree' || id === 'talent') this.ctx.go('status', `tab:${id}`);
   }
 

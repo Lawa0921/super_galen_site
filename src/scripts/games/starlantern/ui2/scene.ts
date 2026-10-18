@@ -6,7 +6,7 @@ import type { SettingsStore } from './settings';
 import type { Stage } from './stage';
 
 export type SceneName = 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate' | 'forge' | 'dungeon' | 'battle' | 'clear' | 'settings'
-  | 'formation' | 'status' | 'equip';
+  | 'formation' | 'status' | 'equip' | 'handbook';
 export interface Scene { enter(root: HTMLElement): void; exit(): void; onAction(a: UiAction): void }
 export interface SceneCtx {
   game: Game; art: ArtIndex;

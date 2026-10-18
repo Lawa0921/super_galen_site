@@ -10,7 +10,8 @@ import { memoriesOf } from '../progression';
 import type { GameState } from '../state';
 import type { CharacterId, Element } from '../types';
 
-export interface PiecePage { n: number; scene: SceneId; found: boolean; fresh: boolean; hint: string }
+/** `seen` is what makes a piece replayable: a found piece can still be waiting in the story queue. */
+export interface PiecePage { n: number; scene: SceneId; found: boolean; seen: boolean; fresh: boolean; hint: string }
 export interface MemoryPage { id: CharacterId; met: boolean; pieces: PiecePage[] }
 /** A scene the handbook can replay: only scenes already seen are listed. */
 export interface SceneEntry { scene: SceneId; title: string; fresh: boolean }
@@ -37,19 +38,19 @@ function entryMaker(s: GameState) {
   const fresh = new Set<SceneId>(s.story.fresh);
   const entry = (scene: SceneId): SceneEntry | null => (seen.has(scene) ? { scene, title: STORY.scenes[scene].title, fresh: fresh.has(scene) } : null);
   const entries = (scenes: SceneId[]): SceneEntry[] => scenes.flatMap((id) => entry(id) ?? []);
-  return { entry, entries, fresh };
+  return { entry, entries, fresh, seen };
 }
 
 /** Everything the adventurer's handbook shows, from the state alone. */
 export function handbook(s: GameState): Handbook {
-  const { entry, entries, fresh } = entryMaker(s);
+  const { entry, entries, fresh, seen } = entryMaker(s);
   const memories = CHARACTER_IDS.map((id): MemoryPage => {
     const have = memoriesOf(s.party.roster[id]);
     return {
       id, met: s.party.recruited.includes(id),
       pieces: CHAINS[id].pieces.map((_, i) => {
         const scene = memScene(id, i + 1);
-        return { n: i + 1, scene, found: i + 1 <= have, fresh: fresh.has(scene), hint: hintOf(id, i) };
+        return { n: i + 1, scene, found: i + 1 <= have, seen: seen.has(scene), fresh: fresh.has(scene), hint: hintOf(id, i) };
       }),
     };
   });
@@ -73,7 +74,8 @@ export function handbook(s: GameState): Handbook {
     };
   });
   const codex: CodexPage = {
-    specials: s.codex.filter((id) => id in SPECIALS),
+    // A set piece sits in SPECIALS too, but it is listed under its set, not twice.
+    specials: s.codex.filter((id) => id in SPECIALS && !SPECIALS[id].set),
     sets: s.codex.filter((id) => id in SETS),
     monsters: Object.values(ENEMIES).filter((e) => !e.story).map((e) => ({ id: e.id, name: e.name, weak: s.revealed[e.id] ? [...s.revealed[e.id]] : null })),
   };

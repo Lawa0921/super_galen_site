@@ -349,9 +349,20 @@ export const T = {
     story: {
       skipped: (summary: string) => `（略過）${summary}`,
     },
+    handbook: {
+      title: '冒險者手冊',
+      tabs: { memories: '記憶', people: '人物', town: '鎮民', codex: '圖鑑', truths: '真相' },
+      unknown: '？？？', fresh: '新', status: { unknown: '尚未找到', held: '持有中', returned: '已交還' },
+      stages: { prologue: '序章', act1: '第一幕', act2: '第二幕', act3: '第三幕', act4: '第四幕', after: '終幕' },
+      pieces: (found: number, total: number) => `${found}/${total}`,
+      codex: { rarity: { legendary: '傳說', unique: '獨特', set: '套裝' }, weak: (list: string) => `弱點：${list}`, weakUnknown: '弱點：？？？', setPieces: (have: number, total: number) => `${have}/${total} 件` },
+      hint: '◀▶ 換分頁　確定：選取　取消：返回',
+      hintReadonly: '◀▶ 換分頁　確定：重看　取消：回到迷宮',
+      empty: '還沒有可以重看的場景。',
+    },
     town: {
       place: '邊境小鎮 露米亞',
-      facilities: { guild: '冒險者公會', shop: '道具店', inn: '旅館', gate: '傳送門廣場', forge: '鍛造屋', settings: '設定' },
+      facilities: { guild: '冒險者公會', shop: '道具店', inn: '旅館', gate: '傳送門廣場', forge: '鍛造屋', handbook: '冒險者手冊', settings: '設定' },
       soon: (name: string) => `${name}的新介面正在製作中，下一階段開放。`,
       toTitle: '要回到標題畫面嗎？上次存檔之後的進度不會保留。',
     },
@@ -454,7 +465,7 @@ export const T = {
       crafted: (label: string) => `製作完成！得到了${label}。`,
     },
     dungeon: {
-      status: '隊伍狀態', items: '道具', lamp: (n: number) => `歸還之燈 ×${n}`, close: '關閉', askTown: '要回到城鎮嗎？',
+      status: '隊伍狀態', handbook: '冒險者手冊', items: '道具', lamp: (n: number) => `歸還之燈 ×${n}`, close: '關閉', askTown: '要回到城鎮嗎？',
       noItems: '沒有可以使用的道具。', askLamp: '要使用歸還之燈回到城鎮嗎？', who: (item: string) => `${item}要給誰使用？`, used: (item: string, who: string) => `${who} 使用了${item}。`, menuHint: '選單',
       weight: (now: string, cap: string) => `重量 ${now}／${cap}`,
       bagRoom: (n: number) => `背包剩 ${n} 格，帶回的裝備放不下的會遺失。`,

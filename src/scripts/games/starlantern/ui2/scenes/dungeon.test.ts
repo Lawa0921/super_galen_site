@@ -307,6 +307,13 @@ describe('DungeonScene', () => {
     expect(go).toHaveBeenCalledWith('settings');
   });
 
+  it('the labyrinth menu opens the handbook, read-only, and it comes back here', () => {
+    const { s, go, pick } = setup();
+    s.onAction('menu');
+    pick(T.ui2.handbook.title);
+    expect(go).toHaveBeenCalledWith('handbook', 'dungeon');
+  });
+
   it('uses a potion from the field menu', () => {
     const { game, s, pick } = setup();
     game.state.party.roster.liz.hp = 3;

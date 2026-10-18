@@ -154,4 +154,23 @@ describe("the adventurer's handbook", () => {
     expect(h2.truths[0].scenes.map((e) => e.scene)).toEqual(['prologue']);
     expect(h2.people.find((p) => p.id === 'hero')!.scenes.map((e) => e.scene)).toEqual(['chat:hero:2']);
   });
+
+  it('a piece is replayable only when it is found and seen: a found piece may still be queued', () => {
+    const s = withMemories(fresh(), 'noel', 2);
+    s.story.seen = [memScene('noel', 1)];
+    s.story.queue = [memScene('noel', 2)];
+    const noel = handbook(s).memories.find((m) => m.id === 'noel')!;
+    expect(noel.pieces.map((p) => p.found)).toEqual([true, true, false, false, false]);
+    expect(noel.pieces.map((p) => p.seen)).toEqual([true, false, false, false, false]);
+  });
+
+  it('a set piece is listed under its set only, never under the specials too', () => {
+    const piece = Object.values(SPECIALS).find((d) => d.set)!;
+    const lone = Object.values(SPECIALS).find((d) => !d.set)!;
+    const s = fresh();
+    s.codex = [lone.id, piece.id, piece.set!];
+    const c = handbook(s).codex;
+    expect(c.specials).toEqual([lone.id]);
+    expect(c.sets).toEqual([piece.set]);
+  });
 });

@@ -418,6 +418,7 @@ export class DungeonScene implements Scene {
       { id: 'items', label: d.items, disabled: this.usableItems().length === 0 },
       { id: 'lamp', label: d.lamp(lamps), disabled: lamps <= 0 },
       ...(cond ? [{ id: 'condition', label: d.conditionItem(cond.name) }] : []),
+      { id: 'handbook', label: d.handbook },
       { id: 'settings', label: T.ui2.title.settings },
       { id: 'close', label: d.close },
     ], (it) => {
@@ -425,6 +426,7 @@ export class DungeonScene implements Scene {
       if (it.id === 'condition' && cond) { this.popAll(); this.say(d.conditionLine(cond.name, cond.desc)); return; }
       if (it.id === 'lamp') { this.askLamp(); return; }
       if (it.id === 'settings') { this.popAll(); this.leaving = true; this.ctx.go('settings'); return; }
+      if (it.id === 'handbook') { this.popAll(); this.leaving = true; this.ctx.go('handbook', 'dungeon'); return; }
       if (it.id === 'items') { this.itemList(); return; }
       this.statusList();
     }, 'slx-list slx-field-menu');

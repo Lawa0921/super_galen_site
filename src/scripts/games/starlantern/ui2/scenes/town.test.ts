@@ -7,6 +7,7 @@ import { TownScene } from './town';
 import { CHARACTERS } from '../../data/characters';
 import type { SceneId } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
+import { T } from '../../data/text.zh-TW';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { linesOf } from '../story';
 
@@ -18,7 +19,7 @@ describe('TownScene', () => {
     s.enter(root);
     expect(root.querySelector('.slx-place')!.textContent).toBe('邊境小鎮 露米亞');
     expect(root.querySelector('.slx-gold')!.textContent).toBe('150 G');
-    expect([...root.querySelectorAll('[role=option]')].map((o) => o.textContent)).toEqual(['冒險者公會', '道具店', '旅館', '傳送門廣場', '鍛造屋', '設定']);
+    expect([...root.querySelectorAll('[role=option]')].map((o) => o.textContent)).toEqual(['冒險者公會', '道具店', '旅館', '傳送門廣場', '鍛造屋', '冒險者手冊', '設定']);
     expect(root.querySelector('.slx-talk .slx-text')!.textContent!.length).toBeGreaterThan(0);
   });
 
@@ -30,7 +31,7 @@ describe('TownScene', () => {
     s.onAction('confirm');               // greeting closes
     s.onAction('confirm');               // 冒險者公會
     expect(go).toHaveBeenCalledWith('guild');
-    for (let i = 0; i < 5; i++) s.onAction('down');
+    for (let i = 0; i < 6; i++) s.onAction('down');
     s.onAction('confirm');               // 設定
     expect(go).toHaveBeenCalledWith('settings');
     s.onAction('cancel');
@@ -41,6 +42,16 @@ describe('TownScene', () => {
     expect(go).not.toHaveBeenCalledWith('title');
     s.onAction('cancel'); s.onAction('up'); s.onAction('confirm');
     expect(go).toHaveBeenCalledWith('title');
+  });
+
+  it('the town menu opens the handbook', () => {
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const s = new TownScene({ game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    s.onAction('confirm');               // greeting closes
+    (([...root.querySelectorAll('[role=option]')] as HTMLElement[]).find((o) => o.textContent === T.ui2.town.facilities.handbook))!.click();
+    expect(go).toHaveBeenCalledWith('handbook');
   });
 });
 
