@@ -716,20 +716,20 @@ describe('the script gates', () => {
 
   it('every line condition is well formed', () => {
     // Task 7 fix round 1: a condition object passed where a flag was meant made `if.oath` an object, and linesWhen dropped the line in every reading.
-    const KEYS = ['met', 'notMet', 'returned', 'full', 'oath'];
+    const KEYS = ['met', 'notMet', 'returned', 'full', 'notFull', 'oath'];
     for (const { key, line } of storyTexts().filter((t) => t.line)) {
       const c = line!.if;
       if (c === undefined) continue;
       expect(typeof c, key).toBe('object');
       for (const k of Object.keys(c)) expect(KEYS, `${key}: if.${k}`).toContain(k);
       if ('oath' in c) expect(typeof c.oath, `${key}: if.oath`).toBe('boolean');
-      for (const k of ['met', 'notMet', 'returned', 'full'] as const) if (k in c) expect(typeof c[k], `${key}: if.${k}`).toBe('string');
+      for (const k of ['met', 'notMet', 'returned', 'full', 'notFull'] as const) if (k in c) expect(typeof c[k], `${key}: if.${k}`).toBe('string');
     }
     // and every line of every scene plays in at least one reading
     for (const id of SCENE_IDS) {
       const lines = STORY.scenes[id].lines;
       const everyone: LineWhen = { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: TOWN_FRAGMENTS.map((f) => f.id), oath: false };
-      const played = new Set([...linesWhen(lines, everyone), ...linesWhen(lines, { ...everyone, oath: true })]);
+      const played = new Set([true, false].flatMap((oath) => [everyone, { ...everyone, full: [] }].flatMap((w) => linesWhen(lines, { ...w, oath }))));
       for (const l of lines) if (!l.if?.notMet) expect(played.has(l), `${id}: ${l.text}`).toBe(true);
     }
   });
@@ -765,7 +765,7 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
     for (const t of storyTexts()) if (t.text.includes('我想看見')) expect(t.key, t.key).toMatch(/^scenes\.mem:selene:5\./);
     // She calls him 「洛恩先生」 until her memories are whole; her last piece is the first plain 「洛恩」 (style bible, I-22).
     for (const t of spokenBy('selene')) {
-      if (t.key.startsWith('scenes.mem:selene:5.')) continue;
+      if (t.key.startsWith('scenes.mem:selene:5.') || t.line?.if?.full === 'selene') continue;
       for (const m of t.text.matchAll(/洛恩(.?)/g)) expect(m[1], t.key).toBe('先');
     }
     expect(linesOf('mem:selene:5').some((l) => l.who === 'selene' && /洛恩(?!先生)/.test(l.text))).toBe(true);
@@ -794,6 +794,66 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
     expect(textOf('mem:safira:4')).not.toContain('你要繼續跳');
     for (const t of spokenBy('safira')) expect(t.text, t.key).not.toContain('洛恩');
     expect(spokenBy('safira').some((t) => t.text.includes('小洛'))).toBe(true);
+  });
+
+  it('a chat never says what her pieces undo, nor what they reveal, in any piece state (fix round 1)', () => {
+    // Chats play one per return and are not ordered against pieces (nextChat), and Selene's and Chizuru's pieces also drop on
+    // the main road. The only piece state a line can see is `full` (all five): a line undone or revealed by an earlier piece
+    // may not be in a chat at all; one undone by her last piece needs `notFull`. A revealed line needs `full` (I-58).
+    const UNDONE: { who: string; re: RegExp; piece: number }[] = [
+      { who: 'selene', re: /洛恩先生/, piece: 5 },                       // I-22: plain 「洛恩」 from her last piece
+      { who: 'chizuru', re: /不記得是何時|記不得是何時/, piece: 5 },      // the bell is explained by her last piece
+      { who: 'chizuru', re: /趕回去|回神社覆命|回神社/, piece: 4 },       // the shrine is gone from her fourth piece
+    ];
+    const REVEALED: { who: string; re: RegExp; piece: number }[] = [
+      { who: 'selene', re: /洛恩(?!先生)/, piece: 5 },
+      { who: 'selene', re: /我想看見|新月/, piece: 5 },
+      { who: 'chizuru', re: /不在了/, piece: 4 },
+      { who: 'chizuru', re: /託付/, piece: 5 },
+      { who: 'safira', re: /團長|你要繼續跳|做決定的/, piece: 4 },
+    ];
+    for (const c of ['selene', 'chizuru', 'safira'] as const) {
+      for (let n = 1; n <= CHAT_COUNT[c]; n++) {
+        for (const full of [false, true]) {
+          for (const oath of [false, true]) {
+            const id = `chat:${c}:${n}` as SceneId;
+            const said = linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: full ? [c] : [], returned: [], oath })
+              .filter((l) => l.who === c).map((l) => l.text).join('');
+            const tag = `${id} full=${full}`;
+            for (const r of UNDONE.filter((x) => x.who === c)) if (full || r.piece < 5) expect(said, `${tag} ${r.re}`).not.toMatch(r.re);
+            for (const r of REVEALED.filter((x) => x.who === c)) if (!full) expect(said, `${tag} ${r.re}`).not.toMatch(r.re);
+          }
+        }
+      }
+    }
+    // the variants exist: before her last piece and after it, each chat still plays her
+    for (const [id, c] of [['chat:selene:2', 'selene'], ['chat:chizuru:2', 'chizuru']] as const) {
+      const lines = STORY.scenes[id].lines;
+      expect(lines.some((l) => l.if?.notFull === c), id).toBe(true);
+      expect(lines.some((l) => l.if?.full === c), id).toBe(true);
+      for (const full of [false, true]) {
+        const got = linesWhen(lines, { met: [...CHARACTER_IDS], full: full ? [c] : [], returned: [], oath: false });
+        expect(got.some((l) => l.who === c), `${id} ${full}`).toBe(true);
+        expect(got.length, `${id} ${full}`).toBe(3);
+      }
+    }
+    // the condition itself
+    const l = (ifc: ScriptLine['if']): ScriptLine => ({ who: 'narrator', text: '甲', if: ifc });
+    const w = (full: string[]): LineWhen => ({ met: [], full: full as LineWhen['full'], returned: [], oath: false });
+    expect(linesWhen([l({ notFull: 'selene' })], w([])).length).toBe(1);
+    expect(linesWhen([l({ notFull: 'selene' })], w(['selene'])).length).toBe(0);
+    expect(linesWhen([l({ notFull: 'selene' })], w(['chizuru'])).length).toBe(1);
+  });
+
+  it("Rin's line in Safira's ungated chat wears no face reserved for after her oath", () => {
+    // Ruling (fix round 1): post-oath `guarded` belongs to the bellkeeper; an ungated companion chat may play after her oath.
+    const rin = STORY.scenes['chat:safira:2'].lines.filter((l) => l.who === 'rin');
+    expect(rin.length).toBeGreaterThan(0);
+    for (const x of rin) if (x.if?.oath !== false) expect(x.mood ?? 'normal', x.text).not.toMatch(/guarded|averted/);
+  });
+
+  it("Safira's last piece knows the blaze is the desert the labyrinth swallowed (spec §6)", () => {
+    expect(textOf('mem:safira:5')).toMatch(/火海.*沙漠|沙漠.*火海/);
   });
 
   it('their chats wait where the lore ledger says', () => {

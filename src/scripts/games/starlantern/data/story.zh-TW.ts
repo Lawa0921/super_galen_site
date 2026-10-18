@@ -15,8 +15,11 @@ export const NPC_NAMES: Record<NpcId, string> = {
 export type Speaker = CharacterId | NpcId | 'narrator';
 export interface ScriptLine {
   who: Speaker; mood?: StoryMood; text: string;
-  /** `full`: that person's memories are all found. `oath`: Rin has made her choice (`true`) or has not yet (`false`). */
-  if?: { met?: CharacterId; notMet?: CharacterId; returned?: TownFragmentId; full?: CharacterId; oath?: boolean };
+  /**
+   * `full`: that person's memories are all found; `notFull`: not yet (a chat can play before or after her last piece).
+   * `oath`: Rin has made her choice (`true`) or has not yet (`false`).
+   */
+  if?: { met?: CharacterId; notMet?: CharacterId; returned?: TownFragmentId; full?: CharacterId; notFull?: CharacterId; oath?: boolean };
 }
 
 /** What a scene's conditions are checked against. */
@@ -31,6 +34,7 @@ export function linesWhen(lines: ScriptLine[], w: LineWhen): ScriptLine[] {
     if (c.notMet && w.met.includes(c.notMet)) return false;
     if (c.returned && !w.returned.includes(c.returned)) return false;
     if (c.full && !w.full.includes(c.full)) return false;
+    if (c.notFull && w.full.includes(c.notFull)) return false;
     if (c.oath !== undefined && c.oath !== w.oath) return false;
     return true;
   });
@@ -484,9 +488,12 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'chat:selene:2': {
     lines: [
-      { who: 'selene', mood: 'foresee', text: '「洛恩先生。如果我能替您讀一件未來的事，您想知道什麼？」' },
+      // Her last piece can come before this chat (one chat per return): after it she calls him 「洛恩」 (I-22, I-58).
+      { who: 'selene', mood: 'foresee', text: '「洛恩先生。如果我能替您讀一件未來的事，您想知道什麼？」', if: { notFull: 'selene' } },
+      { who: 'selene', mood: 'foresee', text: '「洛恩。如果我能替你讀一件未來的事，你想知道什麼？」', if: { full: 'selene' } },
       { who: 'hero', text: '「明天，大家有沒有都回來。」' },
-      { who: 'selene', mood: 'smile', text: '「那一件，不用讀月亮也知道呢。……您每一次，都把大家帶回來了。」' },
+      { who: 'selene', mood: 'smile', text: '「那一件，不用讀月亮也知道呢。……您每一次，都把大家帶回來了。」', if: { notFull: 'selene' } },
+      { who: 'selene', mood: 'smile', text: '「那一件，不用讀月亮也知道呢。……你每一次，都把大家帶回來了。」', if: { full: 'selene' } },
     ],
     summary: '瑟蕾問洛恩想知道什麼未來。他只想知道明天大家有沒有都回來。',
   },
@@ -539,19 +546,21 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'chat:chizuru:1': {
     lines: [
-      { who: 'chizuru', mood: 'serious', text: '「封印一完成，我便回神社覆命。得在春祭之前趕回去才行。」' },
-      { who: 'hero', text: '「神社在哪裡？」' },
-      { who: 'chizuru', mood: 'bewildered', text: '「在山的那一頭……奇怪。回去的路，一時竟想不起來。」' },
+      // Read right before and after any of her pieces: the words she wrote stay true (I-58).
+      { who: 'chizuru', mood: 'bewildered', text: '「洛恩大人，公會要我寫下『記得的最後一句話』。此處的規矩，甚是奇特。」' },
+      { who: 'hero', text: '「妳寫了什麼？」' },
+      { who: 'chizuru', mood: 'solemn', text: '「『春祭之前，回來。』……是送我出門的人說的。」' },
     ],
-    summary: '千鶴說封印完成就要回神社。洛恩問神社在哪裡，她想不起回去的路。',
+    summary: '千鶴在公會的登記表上，寫下送她出門的人說的話：春祭之前，回來。',
   },
   'chat:chizuru:2': {
     lines: [
       N('清晨的鎮邊。千鶴搖了搖槍穗上的小鈴，閉上眼睛，等它響完。'),
       { who: 'hero', text: '「那個鈴，是神社的？」' },
-      { who: 'chizuru', mood: 'solemn', text: '「不記得是何時繫上的。只是每日聽它響一回，心便定了。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「不記得是何時繫上的。只是每日聽它響一回，心便定了。」', if: { notFull: 'chizuru' } },
+      { who: 'chizuru', mood: 'solemn', text: '「是神主大人託付的鈴。……每日聽它響一回，心便定了。」', if: { full: 'chizuru' } },
     ],
-    summary: '千鶴每天清晨搖一次槍穗上的鈴。她不記得鈴是哪裡來的，只知道聽了心會定。',
+    summary: '千鶴每天清晨搖一次槍穗上的鈴，聽它響完，心就定了。',
   },
   // Task 8: Safira (spec §6, §11.2). One member of her troupe in each piece, the leader last: 「你要繼續跳。」
   'mem:safira:1': {
@@ -592,9 +601,9 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'mem:safira:5': {
     lines: [
-      N('蜃樓裡的城燒了起來。團長抓住她的手臂，把她推向那道快要合上的光。'),
+      N('蜃樓裡的城燒了起來，火順著沙丘一路燒開。團長抓住她的手臂，把她推向那道快要合上的光。'),
       N('「進來是我選的，不是你的錯。」團長說，「你要繼續跳。」'),
-      { who: 'safira', mood: 'sad', text: '「……團長那一推，力氣也太大了啦。害我一路跳到了這裡。」' },
+      { who: 'safira', mood: 'sad', text: '「……這片火海，原來就是那片沙漠啊。團長那一推，害我一路跳到了這裡。」' },
       { who: 'safira', mood: 'smile', text: '「小洛，回城之後來廣場看囉。舞團最後的那支舞，我替大家跳完。」' },
     ],
     summary: '團長在最後一刻把莎菲拉推出了蜃樓：你要繼續跳。她要在露米亞的廣場，跳完舞團最後的那支舞。',
@@ -610,7 +619,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'chat:safira:2': {
     lines: [
       { who: 'safira', mood: 'wink', text: '「凜，妳的腳步這麼輕，天生是跳舞的料喔。來，跟上拍子囉！」' },
-      { who: 'rin', mood: 'guarded', text: '「……不要。」' },
+      { who: 'rin', text: '「……不要。」' },   // ungated: may play after her oath, where guarded is the bellkeeper's
       { who: 'safira', mood: 'laugh', text: '「哈哈，被拒絕了！那小洛，換你囉。……欸，別跑啊！」' },
     ],
     summary: '莎菲拉想教凜跳舞，被一口回絕。她轉頭找洛恩，洛恩跑了。',
