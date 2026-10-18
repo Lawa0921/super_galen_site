@@ -13,6 +13,8 @@ const SMALL = { width: 160, height: 100 };
 /** 玩家站在 x=40、地面 y=60；x 46..70 是一池深 6 格的水（或指定液體） */
 function pond(type: number = LIQ.WATER): DelveGame {
   const g = new DelveGame({ seed: 'fishing', ...SMALL, peaceful: true });
+  // 這些測試假設 1 級角色（小世界裡走幾步就會發現地區、升級）：不拿經驗
+  g.levels.locked = true;
   const w = g.world;
   g.liquids.setSprings([]);
   for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) w.setLiquid(x, y, 0, LIQ.NONE);
