@@ -1682,7 +1682,8 @@ test.describe('delve settlements', () => {
     await page.waitForTimeout(150);
     await rightClick(page, await tileOnScreen(page, hx, h.gy - 1));
     expect(await page.evaluate(() => window.__delveDebug!.game.settle.cores.length)).toBe(1);
-    await page.keyboard.press('KeyB');
+    // 放下後按住右鍵會直接打開據點面板；沒開的話按 B
+    if (!(await page.locator('#delve-settle').isVisible())) await page.keyboard.press('KeyB');
     await expect(page.locator('#delve-settle')).toBeVisible();
     await expect(page.locator('[data-testid=settle-level]')).toHaveAttribute('data-level', '1');
     await expect(page.locator('[data-testid=settle-needs]')).toContainText('可入住的房間：1 / 2');

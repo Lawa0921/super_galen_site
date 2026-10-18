@@ -43,7 +43,7 @@ const lang: Language = defaultLang;
         <button class="delve-chip" id="delve-inv-btn" type="button">背包<kbd class="delve-kbd">E</kbd></button>
         <button class="delve-chip" id="delve-map-btn" type="button">地圖<kbd class="delve-kbd">M</kbd></button>
         <button class="delve-chip" id="delve-journal-btn" type="button">日誌<kbd class="delve-kbd">J</kbd></button>
-        <button class="delve-chip" id="delve-settle-btn" type="button">據點<kbd class="delve-kbd">B</kbd></button>
+        <button class="delve-chip delve-chip--settle" id="delve-settle-btn" type="button">據點<kbd class="delve-kbd">B</kbd></button>
         <button class="delve-chip delve-chip--house" id="delve-house-btn" type="button" aria-pressed="false">查房<kbd class="delve-kbd">H</kbd></button>
         <button class="delve-chip delve-chip--aim" id="delve-aim-btn" type="button" aria-pressed="false">自動瞄準</button>
         <button class="delve-chip" id="delve-menu-btn" type="button">選單<kbd class="delve-kbd">Esc</kbd></button>
@@ -215,6 +215,7 @@ const lang: Language = defaultLang;
         <button class="delve-btn" id="delve-peaceful" type="button" aria-pressed="false">難度：一般</button>
         <button class="delve-btn" id="delve-help-btn" type="button">操作說明</button>
         <button class="delve-btn" id="delve-calendar-btn" type="button">日曆與天氣</button>
+        <button class="delve-btn" id="delve-settle-menu" type="button">據點與查房</button>
         <button class="delve-btn" id="delve-save" type="button">立即存檔</button>
         <button class="delve-btn" id="delve-export" type="button">匯出存檔 .delve</button>
         <button class="delve-btn" id="delve-import-menu" type="button">匯入存檔</button>
@@ -1834,7 +1835,10 @@ const lang: Language = defaultLang;
   .delve-j-furn li { display: grid; grid-template-columns: 32px 1fr; gap: 6px; align-items: center; font-size: 16px; line-height: 1.25; color: #d8ba76; }
   .delve-j-furn .delve-slot-icon { width: 32px; height: 32px; }
   .delve-j-furn small { font-size: 16px; color: #966139; }
+  /* 手機：角落按鈕放不下 → 據點 / 查房改從選單或點爐心打開 */
   @media (max-width: 640px) {
+    .delve-chip--settle,
+    .delve-chip--house { display: none; }
     .delve-st-grid { grid-template-columns: repeat(2, 1fr); }
     .delve-j-furn { grid-template-columns: 1fr; }
     .delve-st-perk { grid-template-columns: 6.5em 1fr; }
