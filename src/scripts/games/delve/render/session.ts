@@ -1,5 +1,5 @@
 // session.ts — 頁面流程：標題畫面（即時背景場景、選單：繼續 / 新世界 / 匯入匯出 / 說明 / 設定）、
-// 像素抖動轉場 + 分段生成世界的進度、選單（存檔 / 匯出 / 匯入）、自動存檔、debug 鉤。
+// 像素抖動轉場 + 分段生成世界的進度、選單（存檔 / 匯出 / 匯入 / 回到標題）、自動存檔、debug 鉤。
 import { DelveGame } from '../engine/game';
 import { generateWorldSteps, GEN_STAGE_COUNT, type GenResult } from '../engine/worldgen';
 import { GEN_VERSION } from '../engine/constants';
@@ -14,6 +14,7 @@ import { TitleScene } from './titleScene';
 import { TitleUi, PEACEFUL_KEY, publishVolume } from './titleUi';
 import { Wipe } from './wipe';
 import { genProgress, genStageLabel, GEN_STAGE_LABELS, readVolume, rollWorldName, summarizeGame } from './titleModel';
+import { liveCounts, type LiveCounts } from './live';
 
 const SLOT = 'main';
 /** 進度條格數 */
@@ -22,7 +23,7 @@ const PROGRESS_CELLS = 20;
 /** debug / e2e 鉤（唯一的型別宣告；tests/e2e/delve.spec.ts 也用這個） */
 export interface DelveDebug { game: DelveGame; handle: DelveHandle; save: () => Promise<void> }
 declare global {
-  interface Window { __delveDebug?: DelveDebug; __delveTitle?: TitleScene }
+  interface Window { __delveDebug?: DelveDebug; __delveTitle?: TitleScene; __delveLive?: () => LiveCounts }
 }
 
 export interface Session { destroy(): void; }
@@ -80,6 +81,8 @@ export function bootDelve(root: HTMLElement): Session {
   let stopAutosave: (() => void) | null = null;
   let persisted = false;
   let busy = false;
+  /** 進行中的轉場（開局掀開動畫還在播時按「回到標題」→ 等它播完再走） */
+  let inFlight: Promise<void> = Promise.resolve();
   const offs: (() => void)[] = [];
   const on = (el: EventTarget | null, type: string, fn: EventListener): void => {
     if (!el) return;
@@ -97,17 +100,19 @@ export function bootDelve(root: HTMLElement): Session {
   // ── 標題背景：第一次繪製之後才生成小世界（不擋住標題畫面出現） ──
   let scene: TitleScene | null = null;
   let sceneTimer = 0;
+  /** 建立並啟動標題背景場景（已有就不重建）；skipIntro = 直接停在洞窟構圖（從遊戲回到標題時） */
+  function startScene(skipIntro: boolean): void {
+    if (root.dataset.phase !== 'title' || scene) return;
+    try {
+      scene = new TitleScene(canvas!, { reducedMotion: reduced });
+      window.__delveTitle = scene;
+      if (skipIntro) scene.skipIntro();
+      scene.start();
+      root.dataset.scene = '1';
+    } catch (e) { console.warn('[delve] title scene failed', e); }
+  }
   if (!new URLSearchParams(location.search).get('autostart')) {
-    sceneTimer = window.setTimeout(() => {
-      sceneTimer = 0;
-      if (root.dataset.phase !== 'title' || scene) return;
-      try {
-        scene = new TitleScene(canvas, { reducedMotion: reduced });
-        window.__delveTitle = scene;
-        scene.start();
-        root.dataset.scene = '1';
-      } catch (e) { console.warn('[delve] title scene failed', e); }
-    }, 60);
+    sceneTimer = window.setTimeout(() => { sceneTimer = 0; startScene(false); }, 60);
   }
   function stopScene(): void {
     if (sceneTimer) { clearTimeout(sceneTimer); sceneTimer = 0; }
@@ -180,6 +185,45 @@ export function bootDelve(root: HTMLElement): Session {
     }
   }
 
+  /**
+   * 遊戲中「回到標題」：先存檔（失敗就留在遊戲裡回報，不丟進度）→ 轉場蓋上 → 收掉遊戲（迴圈 / 輸入 / 音效 / 自動存檔）
+   * → 標題畫面（場景直接停在洞窟、選單模式、「繼續」摘要是剛存的）→ 掀開。之後的繼續 / 新世界走一般流程。
+   */
+  async function returnToTitle(): Promise<void> {
+    if (busy) await inFlight;
+    if (busy || !handle) return;
+    busy = true;
+    try {
+      say(menuMsg, '存檔中…');
+      try { await saveNow(); } catch (e) {
+        say(menuMsg, `存檔失敗，沒有離開：${e instanceof Error ? e.message : String(e)}`);
+        return;
+      }
+      uiSound.uiBack();
+      await wipe?.cover();
+      stopAutosave?.();
+      stopAutosave = null;
+      handle.destroy();
+      handle = null;
+      delete window.__delveDebug;
+      if (menu) menu.hidden = true;
+      say(menuMsg, '');
+      if (helpEl && !helpEl.hidden) { helpEl.hidden = true; delete root.dataset.help; }
+      hudEl!.hidden = true;
+      title!.hidden = false;
+      root.dataset.phase = 'title';
+      root.dataset.title = 'menu';
+      say(titleMsg, '');
+      ui.setSave(await existingSlot());
+      startScene(true);
+      ui.focusFirst(true);
+      await wipe?.reveal();
+      ui.focusFirst(true);
+    } finally {
+      busy = false;
+    }
+  }
+
   /** 目前存檔槽；沒有存檔 / 無 IndexedDB 時 null */
   async function existingSlot(): Promise<SlotMeta | null> {
     if (!hasIndexedDB()) return null;
@@ -244,9 +288,13 @@ export function bootDelve(root: HTMLElement): Session {
   }
 
   /** 蓋上轉場 → 生成 / 讀檔 → 開局 → 掀開；失敗時回到原畫面並回報 */
-  async function transition(text: string, work: () => Promise<DelveGame | null>, from: 'title' | 'menu'): Promise<void> {
-    if (busy) return;
+  function transition(text: string, work: () => Promise<DelveGame | null>, from: 'title' | 'menu'): Promise<void> {
+    if (busy) return inFlight;
     busy = true;
+    inFlight = runTransition(text, work, from);
+    return inFlight;
+  }
+  async function runTransition(text: string, work: () => Promise<DelveGame | null>, from: 'title' | 'menu'): Promise<void> {
     const prevPhase = root.dataset.phase ?? 'title';
     try {
       uiSound.uiDelve();
@@ -420,6 +468,7 @@ export function bootDelve(root: HTMLElement): Session {
     if ((e as KeyboardEvent).key === 'Escape') { e.stopPropagation(); setHelp(false); }
   });
   on($('#delve-menu-btn'), 'click', () => setMenu(true));
+  on($('#delve-to-title'), 'click', () => void returnToTitle());
   on($('#delve-save'), 'click', () => {
     saveNow().then(() => say(menuMsg, '已存檔')).catch((e: unknown) => say(menuMsg, `存檔失敗：${String(e)}`));
   });
@@ -433,6 +482,7 @@ export function bootDelve(root: HTMLElement): Session {
   });
   on($('#delve-import-menu'), 'click', () => { importFrom = menuMsg; fileInput?.click(); });
 
+  window.__delveLive = () => liveCounts(performance.now());
   root.dataset.ready = '1';
   // 有存檔才顯示「繼續」（附存檔摘要）與「匯出存檔」
   ui.setSave(null);
@@ -462,6 +512,7 @@ export function bootDelve(root: HTMLElement): Session {
       wipe?.destroy();
       uiSound.destroy();
       for (const f of offs) f();
+      delete window.__delveLive;
     },
   };
 }

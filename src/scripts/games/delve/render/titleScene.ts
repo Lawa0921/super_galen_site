@@ -12,6 +12,7 @@ import { Renderer } from './renderer';
 import { FixedStepper } from './model';
 import { descentY, focusFor, realDate } from './titleModel';
 import { bayer } from './pixel';
+import { LIVE } from './live';
 
 /** 精選的種子 / 世界大小（小世界：生成快） */
 export const TITLE_SEED = 'delve-title-7';
@@ -57,6 +58,7 @@ export class TitleScene {
   constructor(readonly canvas: HTMLCanvasElement, private readonly opts: TitleSceneOptions) {
     const g = new DelveGame({ seed: TITLE_SEED, ...WORLD, peaceful: true });
     this.game = g;
+    LIVE.scenes++;
     const rd = realDate(opts.now ?? new Date());
     g.setDate({ year: 1, season: rd.season, day: rd.day, hour: rd.hour });
     this.show = buildShowcase(g);
@@ -199,6 +201,7 @@ export class TitleScene {
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
+    LIVE.scenes--;
     this.running = false;
     this.pause();
     this.ro?.disconnect();

@@ -1273,3 +1273,104 @@ test.describe('delve loot', () => {
     expect(after.djump).toBe(1);
   });
 });
+
+test.describe('delve 回到標題', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+
+  /** 遊戲中 Esc → 選單「回到標題」：先存檔、轉場、回到標題選單（「繼續」摘要已更新）；舊的迴圈 / 渲染器 / 音效都收掉 */
+  async function backToTitle(page: Page): Promise<void> {
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#delve-menu')).toBeVisible();
+    await page.click('#delve-to-title');
+    await expect(page.locator('#delve-root')).toHaveAttribute('data-phase', 'title', { timeout: 15000 });
+    await expect(page.locator('#delve-title')).toBeVisible();
+    await expect(page.locator('#delve-tmenu')).toBeVisible();
+    await expect(page.locator('#delve-menu')).toBeHidden();
+    await expect(page.locator('#delve-hud')).toBeHidden();
+    await expect(page.locator('#delve-wipe')).toBeHidden({ timeout: 5000 });
+  }
+  const live = (page: Page): Promise<{ handles: number; scenes: number; sounds: number; loops: number }> =>
+    page.evaluate(() => window.__delveLive!());
+
+  test('遊戲 → 回到標題 → 繼續：先存檔、摘要更新、舊迴圈停掉、不重新整理就能繼續', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=rt-cont&autostart=1&fresh=1');
+    await waitGame(page);
+    const spot = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, t = g.playerTile();
+      const x = t.x + 3, y = t.y + 4;
+      g.world.setFg(x, y, 7);
+      g.tick = 60 * 60 * 3; // 遊玩 3 分鐘（摘要要顯示新的值，不是開局時的存檔）
+      (window as unknown as { __old: unknown }).__old = g;
+      return { x, y };
+    });
+    await expect.poll(() => live(page)).toMatchObject({ handles: 1, scenes: 0, sounds: 2 });
+    await backToTitle(page);
+    await expect(page.locator('#delve-continue')).toBeVisible();
+    await expect(page.locator('#delve-continue-sub')).toContainText('rt-cont');
+    await expect(page.locator('#delve-continue-sub')).toContainText('遊玩 3 分鐘');
+    await expect(page.locator('#delve-continue')).toBeFocused();
+    expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
+    await expect.poll(() => live(page)).toMatchObject({ handles: 0, scenes: 1, sounds: 1 });
+    // 舊的遊戲不再前進（迴圈 / 輸入都停了）
+    const t0 = await page.evaluate(() => (window as unknown as { __old: { tick: number } }).__old.tick);
+    await page.keyboard.down('d');
+    await page.waitForTimeout(400);
+    await page.keyboard.up('d');
+    expect(await page.evaluate(() => (window as unknown as { __old: { tick: number } }).__old.tick)).toBe(t0);
+    // 標題場景在跑
+    const f0 = await page.evaluate(() => window.__delveTitle!.perf.frames);
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => window.__delveTitle!.perf.frames)).toBeGreaterThan(f0);
+    // 繼續：同一個世界、修改的格子還在
+    await page.click('#delve-continue');
+    await waitGame(page);
+    await expect(page.locator('#delve-title')).toBeHidden({ timeout: 15000 });
+    expect(await page.evaluate(({ x, y }) => window.__delveDebug!.game.world.getFg(x, y), spot)).toBe(7);
+    expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('rt-cont');
+    await expect(page.locator('#delve-hotbar .delve-slot')).toHaveCount(10);
+    await expect.poll(() => live(page)).toMatchObject({ handles: 1, scenes: 0, sounds: 2, loops: 1 });
+    const a = await page.evaluate(() => window.__delveDebug!.game.tick);
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => window.__delveDebug!.game.tick)).toBeGreaterThan(a);
+    // 再來一輪：還是只有一個迴圈
+    await backToTitle(page);
+    await page.click('#delve-continue');
+    await waitGame(page);
+    await expect(page.locator('#delve-hotbar .delve-slot')).toHaveCount(10);
+    await expect.poll(() => live(page)).toMatchObject({ handles: 1, scenes: 0, sounds: 2, loops: 1 });
+    expect(errors).toEqual([]);
+  });
+
+  test('遊戲 → 回到標題 → 新世界（覆蓋確認）→ 換成新種子，沒有重複的迴圈', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=rt-old&autostart=1&fresh=1');
+    await waitGame(page);
+    await backToTitle(page);
+    await expect(page.locator('#delve-continue-sub')).toContainText('rt-old');
+    await page.click('#delve-new');
+    await expect(page.locator('#delve-newpanel')).toBeVisible();
+    await page.fill('#delve-seed', 'rt-new');
+    await page.click('#delve-create');
+    await expect(page.locator('#delve-confirm')).toBeVisible();
+    await expect(page.locator('#delve-confirm-msg')).toContainText('rt-old');
+    await page.click('#delve-confirm-ok');
+    await page.waitForFunction(() => window.__delveDebug?.game.seed === 'rt-new', undefined, { timeout: 30000 });
+    await expect(page.locator('#delve-title')).toBeHidden({ timeout: 15000 });
+    await expect(page.locator('#delve-hotbar .delve-slot')).toHaveCount(10);
+    await expect.poll(() => live(page)).toMatchObject({ handles: 1, scenes: 0, sounds: 2, loops: 1 });
+    const a = await page.evaluate(() => window.__delveDebug!.game.tick);
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => window.__delveDebug!.game.tick)).toBeGreaterThan(a);
+    // 新世界的存檔蓋掉舊的
+    await backToTitle(page);
+    await expect(page.locator('#delve-continue-sub')).toContainText('rt-new');
+    expect(errors).toEqual([]);
+  });
+});
