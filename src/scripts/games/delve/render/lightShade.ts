@@ -12,6 +12,7 @@ import { BLOCKS_LIGHT_LUT } from '../engine/tiles';
 import { LIGHT_LEVELS, PLATEAU } from './lowres';
 import { bayer } from './pixel';
 import { LIGHT_DEEP_START, LIGHT_DEEP_FULL } from '../engine/constants';
+import { depthSurface } from '../engine/lighting';
 
 /** 色相每通道幾階（0..HUE_STEPS） */
 export const HUE_STEPS = 8;
@@ -27,7 +28,7 @@ export const HUE_SAT = 0.6;
  * 地下的暗部曲線：亮度 m → m^γ，γ 從每欄地表下 LIGHT_DEEP_START 格的 1 線性升到 LIGHT_DEEP_FULL 格的 DEEP_GAMMA。
  * 光源附近（m ≈ 1）照樣亮、外圍的微光被壓到 0 → 洞穴裡是一個個邊界清楚的光池（亮度階仍由 LIGHT_LEVELS 分階）。
  */
-export const DEEP_GAMMA = 1.8;
+export const DEEP_GAMMA = 1.5;
 const GAMMA_LUT = Float32Array.from({ length: LIGHT_DEEP_FULL + 1 }, (_, d) =>
   d <= LIGHT_DEEP_START ? 1 : 1 + (DEEP_GAMMA - 1) * ((d - LIGHT_DEEP_START) / (LIGHT_DEEP_FULL - LIGHT_DEEP_START)));
 export function depthGamma(depth: number): number {
@@ -52,7 +53,10 @@ export function shadeTiles(
   sky: readonly number[], reach: Uint8Array, out: Float32Array,
 ): void {
   const { x0, y0, w, h } = rect;
-  const W = world.width, surf = world.surfaceY, fg = world.fg, wall = world.wall, LQ = world.liquid, SURF = world.surface;
+  const W = world.width, surf = world.surfaceY, fg = world.fg, wall = world.wall, LQ = world.liquid;
+  if (DEPTH_REF.length < w) DEPTH_REF = new Int32Array(w);
+  const DS = DEPTH_REF;
+  depthSurface(world.surface, x0, w, DS);
   // 開放天空的格：天空色往白拉一半（背景天空本身已經畫了晝夜色）
   const or = 1 - (1 - sky[0]) * 0.5, og = 1 - (1 - sky[1]) * 0.5, ob = 1 - (1 - sky[2]) * 0.5;
   const rgb = L.rgb;
@@ -68,7 +72,7 @@ export function shadeTiles(
         const li = (ly * L.w + lx) * 3;
         r = Math.min(1, rgb[li] * GAIN); g = Math.min(1, rgb[li + 1] * GAIN); b = Math.min(1, rgb[li + 2] * GAIN);
         // 地下：暗部曲線（對最大通道算，三通道等比縮放 → 色相不變）
-        const dep = ty - SURF[tx];
+        const dep = ty - DS[x];
         if (dep > LIGHT_DEEP_START) {
           const m = r > g ? (r > b ? r : b) : (g > b ? g : b);
           if (m > 0 && m < 1) { const k = depthCurve(m, dep) / m; r *= k; g *= k; b *= k; }
@@ -85,6 +89,9 @@ export function shadeTiles(
     }
   }
 }
+
+/** shadeTiles 的參考地表工作區 */
+let DEPTH_REF = new Int32Array(0);
 
 const H1 = HUE_STEPS + 1;
 /** 光色表：lv × hr × hg × hb → 不透明 RGBA（ABGR uint32） */

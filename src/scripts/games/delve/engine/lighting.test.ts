@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { World, LIQ } from './world';
 import { T, W } from './tiles';
-import { LightEngine, LightMap, skyBrightness, ambientReach } from './lighting';
+import { LightEngine, LightMap, skyBrightness, ambientReach, depthSurface, depthSurfaceAt, DEPTH_SMOOTH_R } from './lighting';
 import { skyColor } from './sky';
 import { generateWorld } from './worldgen';
 import {
@@ -270,6 +270,23 @@ describe('LightEngine', () => {
       const y = 30 + SKY_SHAFT_LEN + 50;
       const deep = eng.compute(w, { x: 20, y: y - 5, w: 40, h: 10 }, { sky: 1, margin: 4 });
       expect(deep.get(41, y)).toBe(0);
+    });
+  });
+
+  describe('depthSurface：深度參考地表（±DEPTH_SMOOTH_R 欄平均）', () => {
+    it('平地不變；24 格的落差變成逐欄的緩坡；單欄版本相同；世界邊緣夾住', () => {
+      const s = new Int16Array(100);
+      for (let x = 0; x < 100; x++) s[x] = x < 50 ? 40 : 64;
+      const out = new Int32Array(100);
+      depthSurface(s, 0, 100, out);
+      expect(out[10]).toBe(40);
+      expect(out[90]).toBe(64);
+      for (let x = 0; x < 99; x++) expect(Math.abs(out[x + 1] - out[x])).toBeLessThanOrEqual(2);
+      for (const x of [0, 7, 45, 50, 55, 99]) expect(depthSurfaceAt(s, x)).toBe(out[x]);
+      const part = new Int32Array(10);
+      depthSurface(s, 45, 10, part);
+      expect([...part]).toEqual([...out.subarray(45, 55)]);
+      expect(DEPTH_SMOOTH_R).toBe(8);
     });
   });
 

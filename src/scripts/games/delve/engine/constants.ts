@@ -10,7 +10,7 @@ export const WORLD_H = 1200;
 export const GEN_VERSION = 6;
 export const FIXED_DT = 1 / 60;
 
-// 玩家物理（px/s、px/s²）。值參考泰拉每 tick 數值 ×60 換算後自行調整。
+// 玩家物理（px/s、px/s²）。每 tick 數值 ×60 換算後調整。
 export const PLAYER_W = 20;
 export const PLAYER_H = 42;
 export const GRAVITY = 1440;
@@ -40,13 +40,13 @@ export const INV_SIZE = 40;
 export const HOTBAR_SIZE = 10;
 export const MAX_STACK = 999;
 
-// 光照（泰拉 Color 模式常數）
+// 光照（RGB 掃描光照的衰減常數）
 export const LIGHT_AIR_DECAY = 0.91;
 /**
  * 地下的空氣衰減：每欄地表下 LIGHT_DEEP_START 格起線性過渡、LIGHT_DEEP_FULL 格起完全使用。
  * 洞穴裡的火把 / 水晶 / 熔岩形成看得出邊界的光池，沒照到的地方是真的暗（地表附近與白天地表不變）。
  */
-export const LIGHT_AIR_DECAY_DEEP = 0.85;
+export const LIGHT_AIR_DECAY_DEEP = 0.87;
 export const LIGHT_DEEP_START = 8;
 export const LIGHT_DEEP_FULL = 24;
 export const LIGHT_SOLID_DECAY = 0.56;
@@ -54,7 +54,7 @@ export const LIGHT_CUTOFF = 0.0185;
 /** 裂紋石（密室的假牆）每格衰減：比一般實心更擋光，牆後的密室不會被坑道裡的火把照出來 */
 export const LIGHT_SECRET_DECAY = 0.25;
 export const LIGHT_MARGIN = 28;
-/** 深水（量 > 128）每格衰減（R, G, B）：紅掉最快、藍走最遠 → 越深越藍（泰拉 (0.88, 0.96, 1.015)×0.91 再壓暗一點） */
+/** 深水（量 > 128）每格衰減（R, G, B）：紅掉最快、藍走最遠 → 越深越藍 */
 export const LIGHT_WATER_DECAY: readonly [number, number, number] = [0.78, 0.85, 0.9];
 /** 深蜂蜜每格衰減（R, G, B）：藍掉最快 → 琥珀色 */
 export const LIGHT_HONEY_DECAY: readonly [number, number, number] = [0.8, 0.68, 0.42];

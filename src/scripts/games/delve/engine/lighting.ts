@@ -1,4 +1,4 @@
-// lighting.ts — 泰拉 Color 模式風格的可分離掃描光照（RGB 三通道，交錯存放 r,g,b）。
+// lighting.ts — 可分離掃描光照（RGB 三通道，交錯存放 r,g,b）。
 // 1) 寫入發光量（天空光：地表線以上、無背牆、不擋光的格吃 skyColor；天光井：地表直通下去的豎井上段吃漸淡的天光；
 //    tile 光依 LIGHT_RGB_LUT 上色；動態光可帶色相）
 // 2) 兩輪 blur：每輪對每欄做下→上、上→下，對每列做左→右、右→左；
@@ -20,6 +20,32 @@ export function airDecayAt(depth: number): number {
   if (depth <= LIGHT_DEEP_START) return LIGHT_AIR_DECAY;
   if (depth >= LIGHT_DEEP_FULL) return LIGHT_AIR_DECAY_DEEP;
   return LIGHT_AIR_DECAY + (LIGHT_AIR_DECAY_DEEP - LIGHT_AIR_DECAY) * ((depth - LIGHT_DEEP_START) / (LIGHT_DEEP_FULL - LIGHT_DEEP_START));
+}
+/** 深度參考地表的平滑半徑（欄）：湖岸 / 懸崖那種一欄就差 20 幾格的地表，不會在光照上切出一條直線 */
+export const DEPTH_SMOOTH_R = 8;
+/**
+ * 「地下有多深」用的參考地表：每欄地表高度在 ±DEPTH_SMOOTH_R 欄內的平均（四捨五入、世界邊緣夾住）。
+ * out[i] 對應第 x0 + i 欄，共 w 欄。O(w + 2R)。
+ */
+export function depthSurface(surf: ArrayLike<number>, x0: number, w: number, out: Int32Array): void {
+  const n = surf.length, R = DEPTH_SMOOTH_R, span = 2 * R + 1;
+  if (!n) { out.fill(0, 0, w); return; }
+  const at = (x: number): number => surf[x < 0 ? 0 : x >= n ? n - 1 : x];
+  let sum = 0;
+  for (let x = x0 - R; x <= x0 + R; x++) sum += at(x);
+  for (let i = 0; i < w; i++) {
+    out[i] = Math.round(sum / span);
+    const x = x0 + i;
+    sum += at(x + R + 1) - at(x - R);
+  }
+}
+/** 單一欄的參考地表（同 depthSurface） */
+export function depthSurfaceAt(surf: ArrayLike<number>, x: number): number {
+  const n = surf.length, R = DEPTH_SMOOTH_R;
+  if (!n) return 0;
+  let sum = 0;
+  for (let k = x - R; k <= x + R; k++) sum += surf[k < 0 ? 0 : k >= n ? n - 1 : k];
+  return Math.round(sum / (2 * R + 1));
 }
 /** airDecayAt 的查表（depth 0..LIGHT_DEEP_FULL） */
 const AIR_DECAY_LUT = Float32Array.from({ length: LIGHT_DEEP_FULL + 1 }, (_, d) => airDecayAt(d));
@@ -73,6 +99,7 @@ export class LightEngine {
   private buf = new Float32Array(0);
   private decay = new Float32Array(0);
   private colEnd = new Int32Array(0);
+  private depthRef = new Int32Array(0);
 
   compute(world: World, view: LightRect, opts: LightOptions): LightMap {
     const margin = opts.margin ?? LIGHT_MARGIN;
@@ -83,13 +110,14 @@ export class LightEngine {
     const w = Math.max(0, x1 - x0), h = Math.max(0, y1 - y0);
     const n = w * h, n3 = n * 3;
     if (this.buf.length < n3) { this.buf = new Float32Array(n3); this.decay = new Float32Array(n3); }
-    if (this.colEnd.length < w) this.colEnd = new Int32Array(w);
-    const L = this.buf, D = this.decay, CE = this.colEnd;
+    if (this.colEnd.length < w) { this.colEnd = new Int32Array(w); this.depthRef = new Int32Array(w); }
+    const L = this.buf, D = this.decay, CE = this.colEnd, DS = this.depthRef;
     const { fg, wall, width: WW, liquid: LQ, liquidType: LT, variant: VAR, surface: SURF } = world;
     const surf = world.surfaceY;
     const sc = opts.skyColor ?? [opts.sky, opts.sky, opts.sky];
     const sr = sc[0], sg = sc[1], sb = sc[2];
     const skyOn = sr > 0 || sg > 0 || sb > 0;
+    depthSurface(SURF, x0, w, DS);
 
     // ── 天光井：每欄從世界頂端往下走到第一個擋光 / 有液體的格（只在視窗靠近地表時需要）──
     for (let lx = 0; lx < w; lx++) {
@@ -118,7 +146,7 @@ export class LightEngine {
         let d: number;
         if (solid) d = id === T.CRACKED_STONE ? LIGHT_SECRET_DECAY : LIGHT_SOLID_DECAY;
         else {
-          const dep = y - SURF[x0 + lx];
+          const dep = y - DS[lx];
           d = dep <= LIGHT_DEEP_START ? LIGHT_AIR_DECAY : dep >= LIGHT_DEEP_FULL ? LIGHT_AIR_DECAY_DEEP : AIR_DECAY_LUT[dep];
         }
         D[i] = d; D[i + 1] = d; D[i + 2] = d;

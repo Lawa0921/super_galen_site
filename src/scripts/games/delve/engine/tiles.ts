@@ -144,7 +144,7 @@ export const TILES: readonly TileDef[] = [
   decor(T.FERN, 'fern', n('蕨類', 'Fern'), 'floor', null, '#67ab3c', { hardness: 0.05, replaceable: true }),
   decor(T.VINE, 'vine', n('藤蔓', 'Vine'), 'ceiling', null, '#468a34', { hardness: 0.05, replaceable: true }),
   decor(T.GLOW_MUSHROOM, 'glow_mushroom', n('螢光菇', 'Glowing Mushroom'), 'floor', 'glow_mushroom', '#4aaeb0', { hardness: 0.05, light: 0.75 }),
-  decor(T.CRYSTAL, 'crystal', n('水晶簇', 'Crystal Cluster'), 'any', 'crystal', '#b8788e', { hardness: 0.35, light: 0.85 }),
+  decor(T.CRYSTAL, 'crystal', n('水晶簇', 'Crystal Cluster'), 'any', 'crystal', '#b8788e', { hardness: 0.35, light: 0.95 }),
   decor(T.STALACTITE, 'stalactite', n('鐘乳石', 'Stalactite'), 'ceiling', null, '#707490', { hardness: 0.1 }),
   decor(T.STALAGMITE, 'stalagmite', n('石筍', 'Stalagmite'), 'floor', null, '#707490', { hardness: 0.1 }),
   decor(T.COBWEB, 'cobweb', n('蜘蛛網', 'Cobweb'), 'none', null, '#b4b9c8', { hardness: 0.05, replaceable: true }),

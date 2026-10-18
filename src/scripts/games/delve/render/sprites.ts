@@ -630,6 +630,8 @@ export class Sprites {
   readonly glow: HTMLCanvasElement;
   /** 螢光菇 / 水晶的冷色小光暈 */
   readonly coolGlow: HTMLCanvasElement;
+  /** 水晶簇自己的光暈（比螢光菇大一圈、青 / 紫兩種，跟著格子變體） */
+  readonly crystalGlow: readonly [HTMLCanvasElement, HTMLCanvasElement];
   private armPrep = new Map<string, Bmp>();
   private armCache = new Map<string, HTMLCanvasElement>();
   private treeCache = new Map<string, TreeSprite>();
@@ -653,6 +655,10 @@ export class Sprites {
     }
     this.glow = toCanvas(glowBmp(), null, true) as HTMLCanvasElement;
     this.coolGlow = toCanvas(glowBmp(12, [10, 30, 44], [4, 14, 24]), null, true) as HTMLCanvasElement;
+    this.crystalGlow = [
+      toCanvas(glowBmp(28, [26, 64, 88], [10, 28, 44]), null, true) as HTMLCanvasElement,
+      toCanvas(glowBmp(28, [64, 34, 88], [28, 14, 44]), null, true) as HTMLCanvasElement,
+    ];
   }
 
   /** 身體影格表（依穿的防具烘焙、快取） */

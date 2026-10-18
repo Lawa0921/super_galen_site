@@ -77,6 +77,30 @@ describe('depthCurve：地下的暗部曲線（未照到的地方更暗、光源
     expect(deep[0]).toBeLessThan(near[0] * 0.75);
     expect(deep[1] / deep[0]).toBeCloseTo(near[1] / near[0], 5);
   });
+  /** 深處的一條走廊，(70, row) 放火把（tile）或手持火把（動態光 0.85）；回傳每格距離的亮度階 */
+  function poolLevels(held: boolean): number[] {
+    const w = new World(140, 200);
+    w.fg.fill(T.STONE);
+    w.wall.fill(W.STONE_WALL);
+    w.surface.fill(20);
+    w.surfaceY = 0;
+    const row = 150;
+    for (let x = 10; x < 130; x++) for (let y = row - 6; y <= row; y++) w.fg[w.idx(x, y)] = T.AIR;
+    if (!held) w.fg[w.idx(70, row)] = T.TORCH;
+    const rect = { x0: 20, y0: row - 20, w: 100, h: 30 };
+    const L = new LightEngine().compute(w, { x: rect.x0, y: rect.y0, w: rect.w, h: rect.h }, { sky: 0, lights: held ? [{ x: 70, y: row, v: 0.85 }] : [] });
+    const out = new Float32Array(rect.w * rect.h * 3);
+    shadeTiles(L, w, rect, { x: 0, y: 0 }, [0, 0, 0], new Uint8Array(rect.w * rect.h), out);
+    return Array.from({ length: 30 }, (_, d) => lightLevel(out[((row - rect.y0) * rect.w + (70 + d - rect.x0)) * 3], 0, 0));
+  }
+  it('手持火把在深處：亮核約 2.5–3 格、光的邊緣約 14 格（第一次玩也看得清楚）', () => {
+    const lv = poolLevels(true);
+    const core = lv.findIndex((v) => v < 5), edge = lv.findIndex((v) => v === 0);
+    expect(core).toBeGreaterThanOrEqual(2);
+    expect(core).toBeLessThanOrEqual(4);
+    expect(edge).toBeGreaterThanOrEqual(13);
+    expect(edge).toBeLessThanOrEqual(16);
+  });
   it('深處火把的光池：亮度階隨距離一階一階往下（階梯式），十幾格外全暗', () => {
     const w = new World(140, 200);
     w.fg.fill(T.STONE);
@@ -96,8 +120,29 @@ describe('depthCurve：地下的暗部曲線（未照到的地方更暗、光源
     expect(levels[0]).toBeGreaterThanOrEqual(6);
     expect(new Set(levels).size).toBeGreaterThanOrEqual(5); // 看得到好幾階
     const dark = levels.findIndex((v) => v === 0);
-    expect(dark).toBeGreaterThanOrEqual(9); // 光池半徑約 10 格
-    expect(dark).toBeLessThanOrEqual(13); // 13 格內就全暗（舊的 0.91 衰減、沒有暗部曲線要 35 格）
+    expect(dark).toBeGreaterThanOrEqual(14); // 插著的火把光池半徑約 15 格
+    expect(dark).toBeLessThanOrEqual(18); // 18 格內就全暗（舊的 0.91 衰減、沒有暗部曲線要 35 格）
+  });
+});
+
+describe('湖岸 / 懸崖：地表一欄就差 24 格時，深度曲線不切出直線', () => {
+  it('同樣的引擎光、同一列，相鄰兩欄的亮度差很小（參考地表在 ±8 欄內平滑）', () => {
+    const w = new World(120, 160);
+    w.wall.fill(W.STONE_WALL);
+    for (let x = 0; x < 120; x++) w.surface[x] = x < 60 ? 40 : 64; // x = 60 是湖岸的落差
+    w.surfaceY = 0;
+    const rect = { x0: 0, y0: 0, w: 120, h: 160 };
+    const L = new LightEngine().compute(w, { x: 0, y: 0, w: 120, h: 160 }, { sky: 0 });
+    L.rgb.fill(0);
+    const y = 70; // 左邊在地下 30 格（深）、右邊只有 6 格（淺）
+    for (let x = 0; x < 120; x++) { const i = ((y - L.y0) * L.w + (x - L.x0)) * 3; L.rgb[i] = L.rgb[i + 1] = L.rgb[i + 2] = 0.35; }
+    const out = new Float32Array(120 * 160 * 3);
+    shadeTiles(L, w, rect, { x: 0, y: 0 }, [0, 0, 0], new Uint8Array(120 * 160), out);
+    const v = (x: number): number => out[(y * 120 + x) * 3];
+    let maxStep = 0;
+    for (let x = 30; x < 90; x++) maxStep = Math.max(maxStep, Math.abs(v(x + 1) - v(x)));
+    expect(v(30)).toBeLessThan(v(89)); // 深的那側比較暗
+    expect(maxStep).toBeLessThan((v(89) - v(30)) / 6); // 沒有一刀切：至少分 6 欄以上慢慢過渡
   });
 });
 
