@@ -22,7 +22,11 @@ import { LORE_SITES, type LoreSite } from './lore';
 import type { ItemId } from './items';
 import type { Stack } from './inventory';
 
-export interface GenOptions { width?: number; height?: number; }
+export interface GenOptions {
+  width?: number; height?: number;
+  /** 世界一建立就交給呼叫端（生成畫面的地層剖面用來邊生成邊取樣；不影響生成結果） */
+  peek?: (world: World) => void;
+}
 export interface GenBands {
   surfaceLow: number; surfaceHigh: number; rockLow: number; rockHigh: number;
 }
@@ -241,6 +245,7 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
   const width = opts.width ?? WORLD_W;
   const height = opts.height ?? WORLD_H;
   const world = new World(width, height);
+  opts.peek?.(world);
   const { fg, wall } = world;
   const A = width * height;
   const WW = width;

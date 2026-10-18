@@ -1274,10 +1274,31 @@ test.describe('delve loot', () => {
   });
 });
 
-test.describe('delve 回到標題', () => {
+test.describe('delve 標題流程（生成畫面 / 回到標題）', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+
+  test('生成畫面：地層剖面跟著生成器真的取樣、六個階段依序完成', async ({ page }) => {
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-new');
+    await page.fill('#delve-seed', 'gen-screen');
+    await page.click('#delve-create');
+    await expect(page.locator('#delve-gen-phases .delve-gen-phase')).toHaveCount(6);
+    await waitGame(page);
+    // 生成結束：六個階段都打勾；剖面不是空的（有天空色 #3e74c4 / #5c9ce0 與至少 6 種顏色）
+    await expect(page.locator('#delve-gen-phases .delve-gen-phase[data-state="done"]')).toHaveCount(6);
+    const px = await page.evaluate(() => {
+      const c = document.querySelector<HTMLCanvasElement>('#delve-gen-map')!, d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+      const set = new Set<string>();
+      let alpha = true;
+      for (let i = 0; i < d.length; i += 4) { set.add(`${d[i]},${d[i + 1]},${d[i + 2]}`); if (d[i + 3] !== 255) alpha = false; }
+      return { w: c.width, h: c.height, colors: set.size, sky: set.has('62,116,196') || set.has('92,156,224'), alpha };
+    });
+    expect(px).toMatchObject({ w: 280, h: 80, sky: true, alpha: true });
+    expect(px.colors).toBeGreaterThan(6);
   });
 
   /** 遊戲中 Esc → 選單「回到標題」：先存檔、轉場、回到標題選單（「繼續」摘要已更新）；舊的迴圈 / 渲染器 / 音效都收掉 */

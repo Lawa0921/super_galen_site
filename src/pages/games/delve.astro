@@ -228,6 +228,12 @@ const lang: Language = defaultLang;
         <canvas class="delve-loading-logo" id="delve-loading-logo" width="1" height="1" aria-hidden="true"></canvas>
         <p class="delve-loading-en" aria-hidden="true">GENERATING WORLD</p>
         <p class="delve-loading-text" id="delve-loading-text">生成世界中…</p>
+        <div class="delve-gen-frame">
+          <canvas class="delve-gen-map" id="delve-gen-map" width="280" height="80" aria-hidden="true"></canvas>
+        </div>
+        <ol class="delve-gen-phases" id="delve-gen-phases" aria-label="生成階段">
+          {['地形', '洞穴', '礦脈', '地城', '草木', '液體'].map((p) => <li class="delve-gen-phase">{p}</li>)}
+        </ol>
         <div class="delve-progress" id="delve-progress" role="progressbar" aria-label="世界生成進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
           {Array.from({ length: 20 }, () => <span class="delve-progress-cell"></span>)}
         </div>
@@ -1143,6 +1149,45 @@ const lang: Language = defaultLang;
   .delve-loading-en { margin: 0; font-family: var(--pixel); font-size: 8px; line-height: 16px; letter-spacing: 4px; color: #ffa93a; text-shadow: var(--text-outline); animation: delve-blink 1.2s steps(1) infinite; }
   .delve-loading-tip { max-width: 320px; margin: 4px 0 0; font-family: var(--cjk); font-size: 16px; line-height: 1.45; color: #b07a4b; text-align: center; }
   .delve[data-reduced='1'] .delve-loading-en { animation: none; }
+  /* 生成畫面的地層剖面（genSection.ts）：280×80 像素，整數倍放大 */
+  .delve-gen-frame {
+    padding: 2px;
+    background: #0c0a12;
+    border: 2px solid;
+    border-color: #0c0a12 #623924 #623924 #0c0a12;
+    line-height: 0;
+  }
+  .delve-gen-map { display: block; width: 280px; height: 80px; image-rendering: pixelated; }
+  .delve-gen-phases {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .delve-gen-phase {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 4px;
+    font-family: var(--cjk);
+    font-size: 16px;
+    line-height: 24px;
+    color: #623924;
+  }
+  .delve-gen-phase::before { content: ''; width: 6px; height: 6px; background: #472819; box-shadow: 0 0 0 2px #0c0a12; }
+  .delve-gen-phase[data-state='done'] { color: #93cc50; }
+  .delve-gen-phase[data-state='done']::before { background: #93cc50; }
+  .delve-gen-phase[data-state='now'] { color: #ffd86a; text-shadow: var(--text-outline); }
+  .delve-gen-phase[data-state='now']::before { background: #ffa93a; animation: delve-blink 0.5s steps(1) infinite; }
+  .delve[data-reduced='1'] .delve-gen-phase[data-state='now']::before { animation: none; }
+  @media (min-width: 700px) and (min-height: 620px) {
+    .delve-gen-map { width: 560px; height: 160px; }
+    .delve-progress { width: 560px; }
+    .delve-loading-tip { max-width: 560px; }
+  }
 
   @media (min-width: 700px) {
     .delve-tagline { font-size: 16px; line-height: 24px; letter-spacing: 6px; }

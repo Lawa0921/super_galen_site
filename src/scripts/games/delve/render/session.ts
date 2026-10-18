@@ -15,10 +15,13 @@ import { TitleUi, PEACEFUL_KEY, publishVolume } from './titleUi';
 import { Wipe } from './wipe';
 import { genProgress, genStageLabel, GEN_STAGE_LABELS, readVolume, rollWorldName, summarizeGame } from './titleModel';
 import { liveCounts, type LiveCounts } from './live';
+import { GEN_PHASES, GenSectionView, genPhaseOf } from './genSection';
 
 const SLOT = 'main';
 /** 進度條格數 */
 const PROGRESS_CELLS = 20;
+/** 生成畫面的地層剖面大小（像素；4200×1200 的世界每像素 = 15×15 格） */
+const SECTION_W = 280, SECTION_H = 80;
 
 /** debug / e2e 鉤（唯一的型別宣告；tests/e2e/delve.spec.ts 也用這個） */
 export interface DelveDebug { game: DelveGame; handle: DelveHandle; save: () => Promise<void> }
@@ -236,6 +239,13 @@ export function bootDelve(root: HTMLElement): Session {
   async function existingSeed(): Promise<string | null> { return (await existingSlot())?.seed ?? null; }
 
   // ── 轉場 + 分段生成 ──
+  const sectionCanvas = $<HTMLCanvasElement>('#delve-gen-map');
+  const section = sectionCanvas ? new GenSectionView(sectionCanvas, SECTION_W, SECTION_H, reduced) : null;
+  const phaseEls = [...root.querySelectorAll<HTMLElement>('#delve-gen-phases .delve-gen-phase')];
+  /** 大階段清單：已完成 / 進行中（-1 = 全部還沒開始；GEN_PHASES.length = 全部完成） */
+  function setPhase(k: number): void {
+    phaseEls.forEach((el, i) => { el.dataset.state = i < k ? 'done' : i === k ? 'now' : ''; });
+  }
   function setProgress(p: number, stage: string): void {
     if (progress) {
       const n = Math.round(p * PROGRESS_CELLS);
@@ -254,12 +264,14 @@ export function bootDelve(root: HTMLElement): Session {
   ];
   // 載入畫面的字是之後才放進去的：先把點陣字（Google Fonts 依字分段下載）的字形載好，免得第一次顯示時是系統字
   try {
-    void document.fonts?.load("16px 'DotGothic16'", ['生成世界中…載入世界中…完成提示：', ...GEN_STAGE_LABELS, ...TIPS].join('')).catch(() => { /* 離線：用系統字 */ });
+    void document.fonts?.load("16px 'DotGothic16'", ['生成世界中…載入世界中…完成提示：', ...GEN_STAGE_LABELS, ...GEN_PHASES.map((p) => p.zh), ...TIPS].join('')).catch(() => { /* 離線：用系統字 */ });
   } catch { /* 舊瀏覽器 */ }
   function showLoading(text: string): void {
     say(loadingText, text);
     say($('#delve-loading-tip'), `提示：${TIPS[Math.floor(Math.random() * TIPS.length)]}`);
     setProgress(0, '');
+    setPhase(-1);
+    section?.reset(null);
     if (loading) loading.hidden = false;
     root.dataset.phase = 'loading';
   }
@@ -267,19 +279,29 @@ export function bootDelve(root: HTMLElement): Session {
 
   /** 在段與段之間讓出主執行緒（每批最多 ~14 ms），邊生成邊畫進度條 */
   function generate(seed: string, size: { width?: number; height?: number }): Promise<GenResult> {
-    const it = generateWorldSteps(seed, size);
-    let i = 0;
+    // 剖面直接看生成中的世界：每批段落做完重新取樣一次（取樣 ~1 ms，比一段生成便宜得多）
+    const it = generateWorldSteps(seed, { ...size, peek: (w) => section?.reset(w) });
+    let i = 0, phase = -1;
     return new Promise((resolve, reject) => {
       const pump = (): void => {
         const t0 = performance.now();
         try {
           for (;;) {
             const r = it.next();
-            if (r.done) { setProgress(1, '完成'); resolve(r.value); return; }
+            if (r.done) {
+              setProgress(1, '完成');
+              setPhase(GEN_PHASES.length);
+              section?.finish();
+              resolve(r.value);
+              return;
+            }
             i++;
+            phase = genPhaseOf(r.value, phase);
+            setPhase(phase);
             setProgress(genProgress(i, GEN_STAGE_COUNT), `${genStageLabel(r.value)}…`);
             if (performance.now() - t0 > 14) break;
           }
+          section?.update();
         } catch (e) { reject(e); return; }
         nextTick(pump);
       };
@@ -510,6 +532,7 @@ export function bootDelve(root: HTMLElement): Session {
       stopScene();
       ui.destroy();
       wipe?.destroy();
+      section?.destroy();
       uiSound.destroy();
       for (const f of offs) f();
       delete window.__delveLive;
