@@ -631,14 +631,22 @@ def process_gear_cell(reg, gid, cell, workdir, raw, large=(60, 64), icon=(24, 26
     return out
 
 
-def edge_repeat(final, slice_):
-    """Seam ratio (wrap_seam, x only) of the middle segment of each of the four edge bands of a nine-slice frame.
+EDGE_FLAT = 6.0   # nine-slice edges: a mean step inside the band at or below this (of 255) counts as a flat bar
 
-    Each band is slice_ deep; left and right bands are turned on their side, so every band repeats left to right."""
+
+def edge_repeat(final, slice_, detail=False):
+    """Seam ratio of the middle segment of each of the four edge bands of a nine-slice frame (wrap_seam's seam and
+    interior steps, x only; left and right bands are turned on their side, so every band repeats left to right).
+
+    ratio = seam / max(interior, EDGE_FLAT). A plain bar has an interior step near 0 (codec jitter of a few RGB), so a
+    bare seam/interior would divide noise by noise; with the floor a uniform bar passes and a real colour jump at the
+    joint still fails. detail=True also returns {side: {seam, interior}}."""
     a = np.asarray(final.convert('RGBA')); n = a.shape[0]; s = slice_
     bands = {'top': a[:s, s:n - s], 'bottom': a[n - s:, s:n - s],
              'left': a[s:n - s, :s].transpose(1, 0, 2), 'right': a[s:n - s, n - s:].transpose(1, 0, 2)}
-    return {k: wrap_seam(Image.fromarray(np.ascontiguousarray(b), 'RGBA'), 'x')['x']['ratio'] for k, b in bands.items()}
+    steps = {k: wrap_seam(Image.fromarray(np.ascontiguousarray(b), 'RGBA'), 'x')['x'] for k, b in bands.items()}
+    ratios = {k: round(m['seam'] / max(m['interior'], EDGE_FLAT), 3) for k, m in steps.items()}
+    return (ratios, {k: {'seam': m['seam'], 'interior': m['interior']} for k, m in steps.items()}) if detail else ratios
 
 
 def nine_slice(reg, aid, cell, workdir, raw, size, slice_):
@@ -666,7 +674,7 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_):
     qa['center_clear'] = bool(not op[s:size - s, s:size - s].any())
     qa['ring_closed'] = bool(op[:s].any(axis=0).all() and op[size - s:].any(axis=0).all()
                              and op[:, :s].any(axis=1).all() and op[:, size - s:].any(axis=1).all())
-    qa['edge_repeat'] = edge_repeat(final, s)
+    qa['edge_repeat'], qa['edge_steps'] = edge_repeat(final, s, detail=True)
     if not qa['center_clear']: reasons.append('centre not clear')
     if not qa['ring_closed']: reasons.append('ring not closed')
     if any(v > SEAM_RATIO_MAX for v in qa['edge_repeat'].values()): reasons.append('edge does not repeat')

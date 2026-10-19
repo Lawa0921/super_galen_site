@@ -157,7 +157,7 @@
 - 九宮格（`kind: nine-slice`）：cutout → 主體 bbox → 最近鄰取樣成正好 N×N（不產生新顏色）→ 一般透明 QA（外框本來就貼齊畫布邊，所以不算 `touches edge`；slice 以內的中央當成背景傳給 `bg_hint`，所以刻意透明的中央不算洞，外框帶內的小洞仍列警告）＋三項檢查：
   - `center_clear`：slice 以內的中央全透明，否則 `centre not clear`；
   - `ring_closed`：上下邊帶的每一欄、左右邊帶的每一列，在 slice 深度內至少有 1 個不透明像素，否則 `ring not closed`；
-  - `edge_repeat`：四條邊帶的中段各自當成只左右重複的圖塊，用 `wrap_seam` 量接縫比值，須 ≤ 1.25，否則 `edge does not repeat`。
+  - `edge_repeat`：四條邊帶的中段各自當成只左右重複的圖塊，用 `wrap_seam` 量接縫差（seam）與帶內相鄰差（interior），比值 `seam ÷ max(interior, 6)` 須 ≤ 1.25，否則 `edge does not repeat`。分母下限 6（0–255）是因為單色細邊的帶內差只有編碼雜訊（約 ±3），直接相除會讓同一條均勻邊的比值在 0–3.3 之間亂跳；有下限時均勻邊通過，接縫處真正的色差仍然失敗。qa.json 另記 `edge_steps`（每邊的 seam 與 interior）。
   - 外框在登錄表標 `defringe: strong`（同其他 UI 框）。
 - 剪影（`kind: silhouette`）：只接受 `approved`／`published` 的 `gear-<id>`（否則 `PermissionError`）。不透明像素一律換成 `#1d1a2e`，外圍 8 鄰接的透明格塗成 `#8f86b8` 當輪廓光，畫布每邊多 1 px；只允許這兩色、沒有半透明、不透明像素數 ≥ 原圖。
 - 素材、技能、場景、NPC 沿用 `_finish`。

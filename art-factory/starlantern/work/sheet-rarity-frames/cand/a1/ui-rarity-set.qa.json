@@ -1,8 +1,6 @@
 {
-  "pass": false,
-  "reasons": [
-    "edge does not repeat"
-  ],
+  "pass": true,
+  "reasons": [],
   "warnings": [],
   "residue": 0,
   "semi": 0,
@@ -11,10 +9,28 @@
   "center_clear": true,
   "ring_closed": true,
   "edge_repeat": {
-    "top": 1.966,
-    "bottom": 0.4,
-    "left": 1.032,
-    "right": 1.852
+    "top": 0.389,
+    "bottom": 0.045,
+    "left": 0.144,
+    "right": 0.222
+  },
+  "edge_steps": {
+    "top": {
+      "seam": 2.333,
+      "interior": 1.187
+    },
+    "bottom": {
+      "seam": 0.267,
+      "interior": 0.667
+    },
+    "left": {
+      "seam": 0.867,
+      "interior": 0.84
+    },
+    "right": {
+      "seam": 1.333,
+      "interior": 0.72
+    }
   },
   "size": [
     16,

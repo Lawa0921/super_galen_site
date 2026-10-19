@@ -726,6 +726,44 @@ def test_nine_slice_fails_an_edge_that_does_not_repeat(tmp_path):
     assert q['edge_repeat']['top'] > A.SEAM_RATIO_MAX
 
 
+def _jittered_ring(seed=0, jump=None):
+    """A frame whose 1 art-px bar is one colour plus codec jitter of +-3 per art pixel (what codex frames look like after
+    sampling). jump=(x0, x1, colour): a block of another colour on the top bar, so the repeated edge shows a joint."""
+    rng = np.random.default_rng(seed); arr = np.asarray(canvas(176, 176)).copy(); r = arr[8:168, 8:168]
+    jitter = lambda: np.clip(np.array((70, 110, 170)) + rng.integers(-3, 4, 3), 0, 255)
+    for i in range(16):                      # 16 art px of 10 raw px each; the bar is the outer art pixel
+        for sl in (np.s_[:10, i * 10:(i + 1) * 10], np.s_[-10:, i * 10:(i + 1) * 10], np.s_[i * 10:(i + 1) * 10, :10], np.s_[i * 10:(i + 1) * 10, -10:]):
+            r[sl] = jitter()
+    if jump: r[:10, jump[0]:jump[1]] = jump[2]
+    return Image.fromarray(arr, 'RGB')
+
+
+@pytest.mark.parametrize('seed', range(8))
+def test_nine_slice_passes_a_uniform_bar_with_codec_jitter(tmp_path, seed):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-magic', _jittered_ring(seed), tmp_path / 'w', tmp_path / 'raw.png', 16, 5)
+    assert 'edge does not repeat' not in q['reasons'] and q['pass'], (q['edge_repeat'], q['edge_steps'])
+
+
+def test_nine_slice_still_fails_a_real_colour_jump_at_the_joint_of_a_jittered_bar(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-magic', _jittered_ring(jump=(80, 110, (230, 200, 40))), tmp_path / 'w',
+                     tmp_path / 'raw.png', 16, 5)
+    assert 'edge does not repeat' in q['reasons'] and q['edge_repeat']['top'] > A.SEAM_RATIO_MAX, q['edge_steps']
+
+
+A3_FRAMES = Path('C:/Users/bag57/art-refs/starlantern/raw/sheet-rarity-frames/sheet-rarity-frames-a3.png')
+
+
+@pytest.mark.skipif(not A3_FRAMES.exists(), reason='the plan 5d a3 frame sheet lives outside the repo')
+def test_nine_slice_passes_the_edges_of_the_real_a3_frame_sheet(tmp_path):
+    import portal as P
+    cells = P.sheet_cells(Image.open(A3_FRAMES).convert('RGB'), 3, 2)
+    for cell, (aid, size, sl) in zip(cells, [('ui-rarity-magic', 16, 5), ('ui-rarity-rare', 16, 5), ('ui-rarity-legendary', 16, 5),
+                                             ('ui-rarity-unique', 16, 5), ('ui-rarity-set', 16, 5), ('ui-glow-legendary', 20, 7)]):
+        reg = A.Registry(tmp_path / f'{aid}.json'); reg.set(aid, defringe='strong')
+        q = A.nine_slice(reg, aid, cell, tmp_path / 'w', A3_FRAMES, size, sl)
+        assert 'edge does not repeat' not in q['reasons'], (aid, q['edge_repeat'], q['edge_steps'])
+
+
 def _thick_ring(hole=False, colour=(180, 140, 60)):
     """160 px frame with a 54 px border: sampled to 12 x 12 it is a 4 art-px ring around a 4 x 4 (16 px) centre."""
     arr = np.asarray(canvas(176, 176)).copy(); r = arr[8:168, 8:168]
