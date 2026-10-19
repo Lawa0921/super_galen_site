@@ -46,6 +46,7 @@ const lang: Language = defaultLang;
         <button class="delve-chip" id="delve-journal-btn" type="button">日誌<kbd class="delve-kbd">J</kbd></button>
         <button class="delve-chip delve-chip--settle" id="delve-settle-btn" type="button">據點<kbd class="delve-kbd">B</kbd></button>
         <button class="delve-chip delve-chip--house" id="delve-house-btn" type="button" aria-pressed="false">查房<kbd class="delve-kbd">H</kbd></button>
+        <button class="delve-chip delve-chip--quests" id="delve-quests-btn" type="button" aria-pressed="false">委託<kbd class="delve-kbd">L</kbd></button>
         <button class="delve-chip delve-chip--aim" id="delve-aim-btn" type="button" aria-pressed="false">自動瞄準</button>
         <button class="delve-chip" id="delve-menu-btn" type="button">選單<kbd class="delve-kbd">Esc</kbd></button>
       </div>
@@ -80,6 +81,22 @@ const lang: Language = defaultLang;
           <button class="delve-x" id="delve-npc-close" type="button" aria-label="關閉居民面板">×</button>
         </header>
         <div class="delve-npc-body" id="delve-npc-body"></div>
+      </section>
+
+      <section class="delve-panel delve-panel--npc delve-panel--folk" id="delve-folk" hidden aria-label="NPC" data-testid="folk-panel">
+        <header class="delve-panel-head">
+          <h2 id="delve-folk-title">NPC</h2>
+          <button class="delve-x" id="delve-folk-close" type="button" aria-label="關閉 NPC 面板">×</button>
+        </header>
+        <div class="delve-npc-body" id="delve-folk-body"></div>
+      </section>
+
+      <section class="delve-panel delve-panel--quests" id="delve-quests" hidden aria-label="委託清單">
+        <header class="delve-panel-head">
+          <h2>委託清單</h2>
+          <button class="delve-x" id="delve-quests-close" type="button" aria-label="關閉委託清單">×</button>
+        </header>
+        <div class="delve-quests-body" id="delve-quests-body"></div>
       </section>
 
       <section class="delve-panel delve-panel--journal" id="delve-journal" hidden aria-label="探險日誌">
@@ -218,6 +235,7 @@ const lang: Language = defaultLang;
         <button class="delve-btn" id="delve-help-btn" type="button">操作說明</button>
         <button class="delve-btn" id="delve-calendar-btn" type="button">日曆與天氣</button>
         <button class="delve-btn" id="delve-settle-menu" type="button">據點與查房</button>
+        <button class="delve-btn" id="delve-quests-menu" type="button">委託清單</button>
         <button class="delve-btn" id="delve-save" type="button">立即存檔</button>
         <button class="delve-btn" id="delve-export" type="button">匯出存檔 .delve</button>
         <button class="delve-btn" id="delve-import-menu" type="button">匯入存檔</button>
@@ -1426,7 +1444,7 @@ const lang: Language = defaultLang;
   }
   .delve-lore-kicker { margin: 0; font-size: 16px; color: #a2c8b0; }
   .delve-lore-title { margin: 0; font-size: 16px; font-weight: 400; color: #fff4c0; text-shadow: var(--text-outline); }
-  .delve-lore-text { margin: 0; font-size: 16px; line-height: 1.7; color: var(--ink); text-shadow: var(--text-outline); }
+  .delve-lore-text { margin: 0; font-size: 16px; line-height: 1.7; color: var(--ink); text-shadow: var(--text-outline); white-space: pre-line; }
   .delve-lore-close { justify-self: end; padding: 6px 14px; }
 
   /* ── 探險日誌（右側面板） ── */
@@ -1835,6 +1853,36 @@ const lang: Language = defaultLang;
   .delve-room-tag.is-ok { color: #ffffff; background: #2d672e; }
   .delve-room-tag.is-bad { color: #fff4c0; background: #8c2038; }
   .delve-say { color: #2a1810; background: #fff4c0; text-shadow: none; }
+  .delve-say.is-help { color: #fff4c0; background: #8c2038; text-shadow: var(--text-outline); }
+  /* ── 世界 NPC 面板 / 委託清單 ── */
+  .delve-panel--quests { left: auto; right: 10px; width: min(460px, calc(100vw - 20px)); }
+  .delve-quests-body { display: grid; gap: 8px; margin-top: 8px; }
+  .delve-quest-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .delve-quest { display: grid; gap: 4px; padding: 6px 8px; background: #2a1810; box-shadow: inset 0 0 0 var(--px) #472819; }
+  .delve-quest.is-offer { background: #1c1424; }
+  .delve-quest.is-ready { box-shadow: inset 0 0 0 var(--px) #93cc50; }
+  .delve-quest .delve-btn { justify-self: start; }
+  .delve-quest-title { font-size: 16px; color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-quest.is-ready .delve-quest-title { color: #c2e478; }
+  .delve-quest-desc,
+  .delve-quest-prog,
+  .delve-quest-where { font-size: 16px; line-height: 1.4; color: #d8ba76; }
+  .delve-quest-reward { font-size: 16px; line-height: 1.4; color: #93cc50; }
+  .delve-folk-aff { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+  .delve-folk-aff-tier { font-size: 16px; color: #ffc8dc; text-shadow: var(--text-outline); }
+  .delve-folk-aff-note { font-size: 16px; color: #d8ba76; }
+  .delve-folk-svc { display: grid; gap: 6px; }
+  .delve-folk-svc .delve-btn { text-align: left; white-space: normal; line-height: 1.35; }
+  .delve-folk-msg { margin: 0; padding: 6px 8px; font-size: 16px; line-height: 1.4; color: #fff4c0; background: #2d672e; box-shadow: 0 0 0 var(--px) var(--outline); text-shadow: var(--text-outline); }
+  .delve-shop-row.is-locked .delve-recipe-name { color: #966139; }
+  .delve-shop-row.is-locked .delve-recipe-need { color: #e890b0; }
+  .delve-npc-face.is-dwarf { background: #2a1810; }
+  .delve-chip--quests[aria-pressed='true'] { --bv-hi: #ffd86a; --bv-bg: #a83a10; --bv-lo: #472819; }
+  /* 1279px 以下角落按鈕排不下「委託」：改用 L 鍵或選單裡的「委託清單」 */
+  @media (max-width: 1279px) {
+    .delve-chip--quests { display: none; }
+  }
+  .delve[data-fpanel='1'] .delve-touch { display: none; }
   .delve-j-npcs { display: flex; flex-wrap: wrap; gap: 8px; }
   .delve-j-npc { display: grid; justify-items: center; gap: 2px; width: calc(var(--px) * 46); font-size: 16px; color: #b07a4b; text-align: center; }
   .delve-j-npc.is-got { color: var(--gold); }
@@ -1847,7 +1895,8 @@ const lang: Language = defaultLang;
   /* 手機：角落按鈕放不下 → 據點 / 查房改從選單或點爐心打開 */
   @media (max-width: 640px), (max-height: 520px) and (orientation: landscape) {
     .delve-chip--settle,
-    .delve-chip--house { display: none; }
+    .delve-chip--house,
+    .delve-chip--quests { display: none; }
   }
   @media (max-width: 640px) {
     .delve-st-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1876,10 +1925,12 @@ const lang: Language = defaultLang;
   .delve[data-spanel='1'] .delve-touch { display: none; }
   @media (max-width: 900px), (max-height: 520px) {
     .delve[data-panel-side] .delve-toast,
-    .delve[data-touch='1'][data-panel-side] .delve-toast { left: 50%; bottom: 8px; max-width: calc(100vw - 24px); }
+    .delve[data-touch='1'][data-panel-side] .delve-toast { left: 50%; bottom: 8px; width: max-content; max-width: calc(100vw - 24px); }
   }
   @media (max-height: 520px) and (orientation: landscape) {
     .delve[data-spanel='1'] .delve-panel--settle,
-    .delve[data-spanel='1'] .delve-panel--npc { top: 50px; bottom: 54px; max-height: none; z-index: 9; }
+    .delve[data-spanel='1'] .delve-panel--npc,
+    .delve[data-fpanel='1'] .delve-panel--folk,
+    .delve[data-fpanel='1'] .delve-panel--quests { top: 50px; bottom: 54px; max-height: none; z-index: 9; }
   }
 </style>

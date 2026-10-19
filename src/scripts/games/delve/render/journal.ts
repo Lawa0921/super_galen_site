@@ -12,6 +12,7 @@ import { drawIcon, type Atlas } from './textures';
 import { BannerQueue, biomeLabel, distanceLabel, exploredLabel, percentLabel } from './model';
 import { NPCS, NPC_KINDS, moodLabel } from '../engine/npcs';
 import { FURNITURE } from '../engine/furniture';
+import { tileDef } from '../engine/tiles';
 import { LEVEL_NAMES } from '../engine/settlement';
 import { npcPortrait } from './settleUi';
 import { journalLevelLine } from './levelModel';
@@ -99,6 +100,17 @@ export class ExploreUi {
     this.journalSig = '';
   }
   closeLore(): void { const b = this.q('#delve-lore'); if (b) b.hidden = true; }
+  /** 同一個對話框顯示其他文字（地標的發現文字 / 線索） */
+  showNote(kicker: string, title: string, text: string): void {
+    const box = this.q('#delve-lore');
+    if (!box) return;
+    const k = this.q('#delve-lore-kicker'), t = this.q('#delve-lore-title'), x = this.q('#delve-lore-text');
+    if (k) k.textContent = kicker;
+    if (t) t.textContent = title;
+    if (x) x.textContent = text;
+    box.hidden = false;
+    this.journalSig = '';
+  }
 
   // ── 日誌 ──
   get journalOpen(): boolean { return !(this.q('#delve-journal')?.hidden ?? true); }
@@ -120,7 +132,7 @@ export class ExploreUi {
     const fishSig = Object.values(g.fishLog).reduce((a, n) => a + (n ?? 0), 0);
     const codexSig = [...g.codex.affixes.values()].reduce((a, n) => a + n, 0) * 100 + [...g.codex.items.values()].reduce((a, n) => a + n + 1, 0);
     const settleSig = g.settle.cores.map((c) => `${c.id}:${g.settle.evaluation(c.id, w)?.level ?? 0}`).join() + '/' + g.settle.npcs.map((n) => `${n.kind}${n.mood}`).join();
-    const sig = `${g.levels.xp}|${g.levels.spent}|${d.found.size}|${d.lore.size}|${d.treasures.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${exploredLabel(explored)}|${killSig}|${g.bossesDefeated.size}|${fishSig}|${codexSig}|${settleSig}`;
+    const sig = `${g.levels.xp}|${g.levels.spent}|${d.found.size}|${d.lore.size}|${d.treasures.size}|${d.landmarks.size}|${g.quests.completed.size}|${s.depthRecord}|${Math.round(s.distance / 10)}|${exploredLabel(explored)}|${killSig}|${g.bossesDefeated.size}|${fishSig}|${codexSig}|${settleSig}`;
     if (sig === this.journalSig) return;
     this.journalSig = sig;
     body.replaceChildren();
@@ -192,6 +204,22 @@ export class ExploreUi {
       tr.appendChild(cell);
     }
     body.appendChild(tr);
+
+    // 地標發現物：每種地點的一次性發現物（找到 / 總數）
+    const lmH = el('h3', 'delve-j-h', `地標發現物 ${s.landmarks.found} / ${s.landmarks.total}`);
+    lmH.dataset.testid = 'journal-landmarks';
+    body.appendChild(lmH);
+    const lm = el('ul', 'delve-j-furn');
+    const byTile = new Map<number, { got: number; all: number }>();
+    for (const l of g.landmarks) {
+      const e = byTile.get(l.tile) ?? { got: 0, all: 0 };
+      e.all++;
+      if (d.landmarks.has(w.idx(l.x, l.y))) e.got++;
+      byTile.set(l.tile, e);
+    }
+    for (const [tile, e] of byTile) lm.appendChild(el('li', e.got ? 'is-got' : '', `${tileDef(tile).name.zh}：${e.got} / ${e.all}`));
+    body.appendChild(lm);
+    body.appendChild(el('p', 'delve-j-names', `委託完成 ${g.quests.completed.size} 件 · 結識的村民與矮人 ${Object.keys(g.folk.aff).filter((k) => g.folk.aff[k] > 0).length} 位`));
 
     // 首領擊敗 + 圖鑑（擊殺過的怪物種類與數量）
     const bosses = ENEMY_KINDS.filter((k) => ENEMIES[k].boss);

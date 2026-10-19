@@ -46,13 +46,14 @@ export class SettleUi {
   private settleId: number | null = null;
   private npcKind: NpcKind | null = null;
   private npcLine = '';
+  private svcMsg = '';
   private sig = '';
   private labels: HTMLElement | null;
   private tags = new Map<string, HTMLElement>();
   private frame = 0;
 
   constructor(private root: HTMLElement, private game: DelveGame, private renderer: Renderer, private atlas: Atlas,
-    private onToast: (m: string) => void = () => {}) {
+    private onToast: (m: string) => void = () => {}, private onInventory: () => void = () => {}) {
     this.labels = root.querySelector('#delve-wlabels');
     const on = (sel: string, fn: (e: Event) => void): void => {
       const b = root.querySelector(sel);
@@ -225,6 +226,7 @@ export class SettleUi {
   openNpc(kind: NpcKind, line: string): void {
     this.npcKind = kind;
     this.npcLine = line;
+    this.svcMsg = '';
     const p = this.q('#delve-npc');
     if (p) p.hidden = false;
     this.closeSettle();
@@ -240,7 +242,7 @@ export class SettleUi {
     const d = NPCS[k], coins = g.coins();
     const sellable = (Object.keys(d.buys ?? {}) as ItemId[]).concat(k === 'merchant' ? (Object.keys(ITEMS) as ItemId[]).filter((i) => ITEMS[i].fish && !ITEMS[i].unique) : [])
       .filter((i) => g.inventory.count(i) > 0);
-    const sig = `npc|${k}|${n.mood}|${coins}|${this.npcLine}|${sellable.map((i) => `${i}${g.inventory.count(i)}`).join()}|${g.inventory.slots.filter(Boolean).length}`;
+    const sig = `npc|${k}|${n.mood}|${coins}|${this.npcLine}|${this.svcMsg}|${sellable.map((i) => `${i}${g.inventory.count(i)}`).join()}|${g.inventory.slots.filter(Boolean).length}`;
     if (sig === this.sig) return;
     this.sig = sig;
     body.replaceChildren();
@@ -291,15 +293,31 @@ export class SettleUi {
     if (d.service) {
       body.appendChild(el('h3', 'delve-j-h', '服務'));
       const sv = d.service;
-      if (sv.kind === 'reveal') {
+      if (sv.kind === 'heal' || sv.kind === 'guide') {
+        const acts: [string, string, number][] = sv.kind === 'heal'
+          ? [['heal', '治療（回滿生命）', shopPrice(sv.price ?? 20, n.mood)], ['bless', '祝福：回血 +2／秒（4 分鐘）', shopPrice((sv.price ?? 20) * 3, n.mood)], ['ward', '守護：受到的傷害 −20%（4 分鐘）', shopPrice((sv.price ?? 20) * 5, n.mood)]]
+          : [['hint', '請教下一步該做什麼（免費）', 0], ['scout', '標出附近一處沒去過的地點 / 沒領過的地標', shopPrice(sv.price ?? 40, n.mood)]];
+        const box = el('div', 'delve-folk-svc');
+        box.dataset.testid = 'npc-services';
+        for (const [k, zh, p] of acts) {
+          const b = el('button', 'delve-btn', `${zh}${p ? `（${coinText(p)}）` : ''}`);
+          b.type = 'button'; b.dataset.rsvc = k; b.disabled = p > 0 && coins < p;
+          box.appendChild(b);
+        }
+        body.appendChild(box);
+        if (this.svcMsg) { const m = el('p', 'delve-folk-msg', this.svcMsg); m.dataset.testid = 'npc-msg'; body.appendChild(m); }
+      } else if (sv.kind === 'forge') {
+        const b = el('button', 'delve-btn', '打開背包選裝備鍛造');
+        b.type = 'button'; b.dataset.openinv = '1';
+        body.append(el('p', 'delve-hint', `${sv.zh} · 目前鍛造費用 ×${g.smithMul().toFixed(2)}`), b);
+      } else if (sv.kind === 'reveal') {
         const price = shopPrice(sv.price ?? 100, n.mood);
         const b = el('button', 'delve-btn', `${sv.zh}（${coinText(price)}）`);
         b.type = 'button'; b.dataset.service = '1'; b.disabled = coins < price;
         body.appendChild(b);
         if (g.lastReveal) body.appendChild(el('p', 'delve-hint', `上次打聽到：${g.lastReveal.name}（地圖上的標記 · ${g.lastReveal.x}, ${g.lastReveal.y}）`));
       } else {
-        const extra = sv.kind === 'forge' ? `目前鍛造費用 ×${g.smithMul().toFixed(2)}（在背包選裝備 → 鍛造）` : '';
-        body.appendChild(el('p', 'delve-hint', `${sv.zh}${extra ? ` · ${extra}` : ''}`));
+        body.appendChild(el('p', 'delve-hint', sv.zh));
       }
     }
     if (n.moodNotes.length) body.appendChild(el('p', 'delve-npc-note', `心情來源：${n.moodNotes.join('、')}`));
@@ -321,6 +339,10 @@ export class SettleUi {
     } else if (t.dataset.sell) {
       const it = t.dataset.sell as ItemId;
       if (this.game.sell(k, it, Number(t.dataset.n) || 1)) this.onToast(`賣出 ${ITEMS[it].name.zh}`);
+    } else if (t.dataset.rsvc) {
+      this.svcMsg = this.game.residentService(k, t.dataset.rsvc as never).msg;
+    } else if (t.dataset.openinv) {
+      this.onInventory();
     } else if (t.dataset.service) {
       if (this.game.service(k) && this.game.lastReveal) this.onToast(`打聽到「${this.game.lastReveal.name}」的位置，已標在地圖上`);
       else this.onToast('目前沒有可以打聽的地點了');

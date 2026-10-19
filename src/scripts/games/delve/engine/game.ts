@@ -673,6 +673,9 @@ export class DelveGame {
     this.discovery = new Discovery(this.regions, { loreTotal: gen.tablets.length, landmarks: [...this.landmarkAt.keys()] });
     this.folk = new FolkWorld(this.seed, this.villages, this.halls);
     this.folk.populate(this.world);
+    // 開局一段時間內不會遇見（第一位旅人至少四分之一天後、第一位受困者半天後）
+    this.folk.enc.nextTraveller = this.time + DAY_LENGTH * 0.25;
+    this.folk.enc.nextStranded = this.time + DAY_LENGTH * 0.5;
     this.quests = new QuestLog(this.seed);
     this.player = makeBody(0, 0);
     this.teleport(this.spawn.x, this.spawn.y);

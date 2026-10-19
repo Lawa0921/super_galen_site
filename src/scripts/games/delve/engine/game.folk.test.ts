@@ -124,6 +124,9 @@ describe('遇見', { timeout: 120_000 }, () => {
     g.teleport(g.spawn.x, g.spawn.y);
     g.setDate({ hour: 10 });
     steps(g, 60 * 10);
+    expect(g.folk.travellers().length).toBe(0); // 開局的冷卻：剛開始不會馬上遇到
+    g.folk.enc.nextTraveller = 0;
+    steps(g, 60 * 10);
     const t = g.folk.travellers();
     expect(t.length).toBe(1);
     expect(['peddler', 'herbalist']).toContain(t[0].role);

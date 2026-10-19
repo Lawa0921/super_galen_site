@@ -19,6 +19,7 @@ import { RARITIES, affixDef, gearSlot } from '../engine/gear';
 import { TOAST_HIGH, TOAST_LOW, TOAST_NORMAL } from './toastQueue';
 import { LIVE, endLoop, loopId, markFrame } from './live';
 import { SettleUi } from './settleUi';
+import { FolkUi } from './folkUi';
 import { NPCS } from '../engine/npcs';
 import { LEVEL_NAMES } from '../engine/settlement';
 
@@ -59,6 +60,8 @@ export interface DelveHandle {
   ui: ExploreUi;
   /** 據點面板 / 居民面板 / 查房標籤 */
   settleUi: SettleUi;
+  /** 世界 NPC 面板 / 委託清單 */
+  folkUi: FolkUi;
   /** HUD 日期時鐘 + 日曆 / 天氣預報面板 */
   calendar: CalendarUi;
   /** 等級系統：經驗條、升級橫幅、角色 / 技能面板、主動技能按鍵 */
@@ -94,7 +97,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
   renderer.onCue = () => sound.climbGrip();
   const ui = new ExploreUi(root, game, renderer.atlas);
   const calendar = new CalendarUi(root, game);
-  const settleUi = new SettleUi(root, game, renderer, renderer.atlas, (m) => hud.toast(m, 2400));
+  const settleUi = new SettleUi(root, game, renderer, renderer.atlas, (m) => hud.toast(m, 2400), () => hud.setInventory(true));
+  const folkUi = new FolkUi(root, game, renderer, renderer.atlas, { onToast: (m, ms, prio) => hud.toast(m, ms ?? 2400, prio), onInventory: () => hud.setInventory(true) });
   const mapCache = new MapCache(game);
   renderer.onWorldDirty = (cis) => mapCache.markWorld(cis);
   const mmRoot = root.querySelector<HTMLElement>('#delve-minimap'), mmCanvas = root.querySelector<HTMLCanvasElement>('#delve-minimap-canvas');
@@ -184,6 +188,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       else if (levels.isOpen) levels.setOpen(false);
       else if (ui.loreOpen) ui.closeLore();
       else if (settleUi.closeTop()) { /* 據點 / 居民面板 */ }
+      else if (folkUi.closeTop()) { /* NPC 面板 / 委託清單 */ }
       else if (hud.confirmOpen) hud.cancelConfirm();
       else if (game.openChest) game.closeChest();
       else if (hud.forgeOpen) hud.setForge(null);
@@ -197,6 +202,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
     onJournal: () => { if (!menuPaused && !fullmap.isOpen) ui.toggleJournal(); },
     onHousing: () => { if (!menuPaused && !fullmap.isOpen) settleUi.toggleHousing(); },
     onSettle: () => { if (!menuPaused && !fullmap.isOpen) { if (ui.journalOpen) ui.setJournal(false); settleUi.toggleSettle(); } },
+    onQuests: () => { if (!menuPaused && !fullmap.isOpen) { if (ui.journalOpen) ui.setJournal(false); folkUi.toggleQuests(); } },
     onZoom: zoom,
     isBlocked: () => paused,
   });
@@ -301,8 +307,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'lifeup') { sound.heal(); hud.toast(`生命上限提升到 ${e.maxHp}`); invChanged = true; }
         else if (e.type === 'shot') { if (e.hostile) sound.enemyShot(e.kind === 'fireball' || e.kind === 'ember'); }
         else if (e.type === 'impact') { /* 火花由 renderer 畫 */ }
-        else if (e.type === 'hearth') { if (ui.journalOpen) ui.setJournal(false); settleUi.openSettle(e.id); }
-        else if (e.type === 'talk') { if (ui.journalOpen) ui.setJournal(false); settleUi.openNpc(e.kind, e.line); sound.pickup(); }
+        else if (e.type === 'hearth') { if (ui.journalOpen) ui.setJournal(false); folkUi.closeTop(); folkUi.closeTop(); settleUi.openSettle(e.id); }
+        else if (e.type === 'talk') { if (ui.journalOpen) ui.setJournal(false); folkUi.closeTop(); folkUi.closeTop(); settleUi.openNpc(e.kind, e.line); sound.pickup(); }
         else if (e.type === 'npc') {
           const d = NPCS[e.kind];
           if (e.phase === 'arrive') { hud.toast(`${d.title}「${d.name}」搬進來了！`, 3000, TOAST_HIGH); sound.treasure(); }
@@ -316,6 +322,19 @@ export function startDelve(opts: StartOptions): DelveHandle {
           else hud.toast('據點爐心被拆掉了：據點解散', 2400);
         }
         else if (e.type === 'trade') { sound.pickup(); invChanged = true; }
+        else if (e.type === 'folktalk') { if (ui.journalOpen) ui.setJournal(false); settleUi.closeNpc(); settleUi.closeSettle(); folkUi.open(e.key, e.line, e.board); sound.pickup(); }
+        else if (e.type === 'folktrade') { sound.pickup(); invChanged = true; }
+        else if (e.type === 'folk' || e.type === 'quest' || e.type === 'buff') {
+          folkUi.onEvent(e);
+          if (e.type === 'folk' && e.phase === 'appear') sound.discover();
+          else if (e.type === 'quest' && e.phase === 'done') { sound.treasure(); invChanged = true; }
+          else if (e.type === 'quest' && e.phase === 'ready') sound.lore(true);
+          else if (e.type === 'buff' && e.on) sound.heal();
+        }
+        else if (e.type === 'landmark') {
+          ui.showNote(e.first ? '地標 · 新發現' : '地標', e.title, e.first ? `${e.text}${e.items.length || e.coins ? `\n\n得到：${[...e.items.map((i) => `${ITEMS[i.item].name.zh} ×${i.n}`), ...(e.coins ? [`${e.coins} 銅幣`] : [])].join('、')}` : ''}${e.clue ? `\n\n線索：「${e.clue}」已經標在地圖上了。` : ''}` : e.text);
+          if (e.first) { sound.treasure(); invChanged = true; } else sound.tick();
+        }
         else if (e.type === 'travel') { renderer.snapCamera(); sound.recall('done'); hud.toast('傳送到另一個據點'); }
         else if (e.type === 'boss') {
           if (e.phase === 'spawn') { sound.roar(); hud.toast('燈脈守望者甦醒了！', 2600); invChanged = true; }
@@ -336,6 +355,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
     levels.tick(dt);
     ui.tick(dt);
     settleUi.tick();
+    folkUi.tick();
     calendar.tick();
     const tm = performance.now();
     mapCache.update(fullmap.isOpen ? 64 : 16);
@@ -366,7 +386,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
   };
 
   const handle: DelveHandle = {
-    game, renderer, hud, ui, settleUi, calendar, sound, levels,
+    game, renderer, hud, ui, settleUi, folkUi, calendar, sound, levels,
     map: { cache: mapCache, minimap, full: fullmap },
     stats: () => {
       const f = avg(gaps);
@@ -414,6 +434,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       window.removeEventListener('keydown', unlock);
       fullmap.destroy();
       settleUi.destroy();
+      folkUi.destroy();
       ui.destroy();
       calendar.destroy();
       levels.destroy();

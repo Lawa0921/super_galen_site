@@ -20,6 +20,8 @@ export interface ControlsOptions {
   /** H：查房模式、B：據點面板 */
   onHousing?: () => void;
   onSettle?: () => void;
+  /** L：委託清單 */
+  onQuests?: () => void;
   /** +1 放大 / −1 縮小 */
   onZoom?: (d: number) => void;
   /** 選單開啟等暫停狀態時忽略遊戲輸入 */
@@ -96,6 +98,7 @@ export function attachControls(o: ControlsOptions): Controls {
     if (o.isBlocked()) return;
     if (a === 'inventory') { if (!e.repeat) o.onInventory(); e.preventDefault(); return; }
     if (a === 'housing' || a === 'settle') { if (!e.repeat) (a === 'housing' ? o.onHousing : o.onSettle)?.(); e.preventDefault(); return; }
+    if (a === 'quests') { if (!e.repeat) o.onQuests?.(); e.preventDefault(); return; }
     if (a === 'zoomIn' || a === 'zoomOut') { if (!e.repeat) o.onZoom?.(a === 'zoomIn' ? 1 : -1); e.preventDefault(); return; }
     if (a === 'left' || a === 'right' || a === 'jump' || a === 'up' || a === 'down') {
       keys[a] = true; e.preventDefault(); applyMove(); return;

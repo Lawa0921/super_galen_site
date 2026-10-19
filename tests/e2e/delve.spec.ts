@@ -2043,3 +2043,152 @@ test.describe('delve settlements · layout & storage', () => {
     expect(after).toEqual({ bag: 0, chest: 24 });
   });
 });
+
+// ── 世界 NPC：村落 / 矮人 / 遇見 / 委託 / 地標 ─────────────────────────────
+test.describe('delve folk · villages, dwarves, encounters, quests', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'canvas sandbox smoke runs on chromium only');
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+  });
+  const rclick = async (page: Page, p: { sx: number; sy: number }): Promise<void> => {
+    await page.mouse.move(p.sx, p.sy);
+    await page.mouse.down({ button: 'right' }); await page.waitForTimeout(120); await page.mouse.up({ button: 'right' });
+    await page.waitForTimeout(80);
+  };
+  /** 走到某位 NPC 旁邊，回傳他在畫面上的位置 */
+  const nearFolk = async (page: Page, key: string): Promise<{ sx: number; sy: number }> => {
+    await page.evaluate((key) => {
+      const d = window.__delveDebug!, n = d.game.folk.byKey(key)!;
+      d.game.setDate({ hour: 12 });
+      d.game.teleport(Math.floor((n.body.x + n.body.w / 2) / 16) + 2, Math.floor((n.body.y + n.body.h - 1) / 16));
+      d.handle.renderer.snapCamera();
+    }, key);
+    await page.waitForTimeout(250);
+    return page.evaluate((key) => {
+      const d = window.__delveDebug!, q = d.game.folk.byKey(key)!, r = d.handle.renderer, c = (document.querySelector('#delve-canvas') as HTMLCanvasElement).getBoundingClientRect();
+      return { sx: c.left + (q.body.x + q.body.w / 2 - r.drawCam.x) * r.zoom, sy: c.top + (q.body.y + q.body.h / 2 - r.drawCam.y) * r.zoom };
+    }, key);
+  };
+
+  test('走近村落跳出發現橫幅；右鍵村長開面板 → 接委託 → L 委託清單有它；雜貨商買得到東西', async ({ page }) => {
+    await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const v = await page.evaluate(() => { const g = window.__delveDebug!.game; g.give('silver_coin', 20); return g.villages[0]; });
+    expect(v).toBeTruthy();
+    await page.evaluate(([x, y]) => { const d = window.__delveDebug!; d.game.setDate({ hour: 12 }); d.game.teleport(x, y); d.handle.renderer.snapCamera(); }, [v.x0 - 16, v.ground - 1]);
+    await expect(page.locator('#delve-banner-title')).toContainText(/發現：.+村/, { timeout: 5000 });
+    await rclick(page, await nearFolk(page, 'v0:elder'));
+    await expect(page.locator('#delve-folk')).toBeVisible();
+    await expect(page.locator('[data-testid=folk-line]')).toHaveText(/「.+」/);
+    await expect(page.locator('[data-testid=folk-aff]')).toContainText('好感');
+    const accept = page.locator('#delve-folk-body [data-accept]').first();
+    await expect(accept).toBeVisible();
+    await accept.click();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.quests.active.length)).toBe(1);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#delve-folk')).toBeHidden();
+    await page.keyboard.press('KeyL');
+    await expect(page.locator('#delve-quests')).toBeVisible();
+    await expect(page.locator('[data-testid=quest-log] .delve-quest')).toHaveCount(1);
+    await page.keyboard.press('KeyL');
+    await expect(page.locator('#delve-quests')).toBeHidden();
+    // 雜貨商
+    await rclick(page, await nearFolk(page, 'v0:trader'));
+    await expect(page.locator('#delve-folk-title')).toContainText('雜貨商');
+    const t0 = await page.evaluate(() => window.__delveDebug!.game.inventory.count('torch'));
+    await page.locator('[data-testid=folk-shop] [data-buy="0"]').click();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.count('torch'))).toBe(t0 + 10);
+    // 好感度不夠的商品是鎖著的
+    await expect(page.locator('[data-testid=folk-shop] .is-locked').first()).toBeDisabled();
+  });
+
+  test('矮人地廳：矮人的面板（礦石商）、委託板開村長的委託、地標只能領一次', async ({ page }) => {
+    await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => window.__delveDebug!.game.give('silver_coin', 20));
+    await rclick(page, await nearFolk(page, 'h0:ore_trader'));
+    await expect(page.locator('#delve-folk-title')).toContainText('礦石商');
+    await expect(page.locator('#delve-folk-title')).toContainText('・');
+    await page.keyboard.press('Escape');
+    // 委託板 → 村長的面板
+    await page.evaluate(() => {
+      const d = window.__delveDebug!, b = d.game.villages[0].board;
+      d.game.teleport(b.x + 1, b.y); d.handle.renderer.snapCamera();
+      d.game.interact(b.x, b.y);
+    });
+    await expect(page.locator('#delve-folk-title')).toContainText('村長');
+    await page.keyboard.press('Escape');
+    // 地標
+    const r = await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game, l = g.landmarks.find((q) => q.tile === 109) ?? g.landmarks[0];
+      g.teleport(l.x + 1, l.y); d.handle.renderer.snapCamera();
+      const c0 = g.coins();
+      g.interact(l.x, l.y);
+      return { l, c0 };
+    });
+    await expect(page.locator('#delve-lore')).toBeVisible();
+    await expect(page.locator('#delve-lore-kicker')).toContainText('新發現');
+    const c1 = await page.evaluate(() => window.__delveDebug!.game.coins());
+    expect(c1).toBeGreaterThanOrEqual(r.c0);
+    await page.locator('#delve-lore-close').click();
+    await page.evaluate((l) => window.__delveDebug!.game.interact(l.x, l.y), r.l);
+    await expect(page.locator('#delve-lore-text')).toContainText('已經搜過了');
+  });
+
+  test('受困的探險者：面板救援 → 跟著走 → 到地表安全 → 收下謝禮；存檔讀回好感度 / 委託 / 邀請', async ({ page }) => {
+    await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const key = await page.evaluate(() => {
+      // 洞穴深處（大洞窟的地標旁；不在村落 / 地廳這種安全的地方）
+      const d = window.__delveDebug!, g = d.game, l = g.landmarks.find((q) => q.site === 'cavern')!;
+      g.teleport(l.x - 2, l.y); d.handle.renderer.snapCamera();
+      return g.debugEncounter('stranded', 3)!.key;
+    });
+    await rclick(page, await nearFolk(page, key));
+    await expect(page.locator('#delve-folk-title')).toContainText('受困');
+    await page.locator('#delve-folk-body [data-svc=rescue]').click();
+    await expect.poll(() => page.evaluate((k) => window.__delveDebug!.game.folk.byKey(k)!.following, key)).toBe(true);
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => { const d = window.__delveDebug!; d.game.teleport(d.game.spawn.x, d.game.spawn.y); d.handle.renderer.snapCamera(); });
+    await expect.poll(() => page.evaluate((k) => { const n = window.__delveDebug!.game.folk.byKey(k)!; return { safe: Boolean(n.safe), following: Boolean(n.following) }; }, key), { timeout: 8000 })
+      .toEqual({ safe: true, following: false });
+    await rclick(page, await nearFolk(page, key));
+    await page.locator('#delve-folk-body [data-turnin]').click();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.quests.completed.size)).toBe(1);
+    await page.locator('#delve-folk-body [data-svc=invite]').click();
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.settle.invited.has('guide'))).toBe(true);
+    await page.evaluate(() => { window.__delveDebug!.game.folk.addAff('v0:trader', 33); });
+    await page.evaluate(async () => { await window.__delveDebug!.save(); });
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-continue');
+    await waitGame(page);
+    const after = await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      return { aff: g.folk.affinity('v0:trader'), done: g.quests.completed.size, invited: g.settle.invited.has('guide') };
+    });
+    expect(after).toEqual({ aff: 33, done: 1, invited: true });
+  });
+
+  test('手機直向 375 / 橫向：NPC 面板與委託清單在畫面內、不蓋住快捷欄', async ({ browser }) => {
+    for (const vp of [{ width: 375, height: 812 }, { width: 812, height: 375 }]) {
+      const ctx = await browser.newContext({ viewport: vp, hasTouch: true, isMobile: true });
+      const page = await ctx.newPage();
+      await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+      await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');
+      await waitGame(page);
+      await page.evaluate(() => { const d = window.__delveDebug!, n = d.game.folk.byKey('v0:elder')!; d.game.teleport(Math.floor(n.body.x / 16) + 2, Math.floor((n.body.y + n.body.h - 1) / 16)); d.game.debugTalk('v0:elder'); });
+      for (const sel of ['#delve-folk', '#delve-quests']) {
+        if (sel === '#delve-quests') await page.evaluate(() => window.__delveDebug!.handle.folkUi.setQuests(true));
+        await expect(page.locator(sel)).toBeVisible();
+        const b = (await page.locator(sel).boundingBox())!, hb = (await page.locator('#delve-hotbar').boundingBox())!;
+        expect(b.x, `${sel} ${vp.width}`).toBeGreaterThanOrEqual(0);
+        expect(b.x + b.width).toBeLessThanOrEqual(vp.width + 1);
+        expect(b.y + Math.min(b.height, 40)).toBeLessThanOrEqual(vp.height);
+        const ov = Math.min(b.x + b.width, hb.x + hb.width) - Math.max(b.x, hb.x) > 1 && Math.min(b.y + b.height, hb.y + hb.height) - Math.max(b.y, hb.y) > 1;
+        expect(ov, `${sel} 蓋到快捷欄 ${vp.width}×${vp.height}`).toBe(false);
+      }
+      await ctx.close();
+    }
+  });
+});

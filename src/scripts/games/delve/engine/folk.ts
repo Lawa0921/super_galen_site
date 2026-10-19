@@ -107,8 +107,10 @@ export class FolkWorld {
   npcs: FolkNpc[] = [];
   aff: Record<string, number> = {};
   affDay: Record<string, { day: number; n: number; talk?: number }> = {};
-  enc = { nextTraveller: 0, nextStranded: DAY_LENGTH * 0.5, stranded: 0, visits: 0 };
+  enc = { nextTraveller: DAY_LENGTH * 0.25, nextStranded: DAY_LENGTH * 0.5, stranded: 0, visits: 0 };
   private nextId = 1;
+  /** 上一刻玩家所在 tile（遇見提示的方向用） */
+  private pt = { x: 0, y: 0 };
   private encT = 0;
   private events: FolkEvent[] = [];
   private readonly rng: Rng;
@@ -201,6 +203,7 @@ export class FolkWorld {
   // ── 每刻 ──
   update(dt: number, h: FolkHost): void {
     const w = h.world, pt = h.playerTile(), night = h.isNight();
+    this.pt = pt;
     for (const n of this.npcs) {
       if (n.sayT > 0) { n.sayT -= dt; if (n.sayT <= 0) n.say = null; }
       const far = Math.abs(n.body.x / S - pt.x) > FOLK_ACTIVE.x || Math.abs(n.body.y / S - pt.y) > FOLK_ACTIVE.y;
@@ -364,7 +367,7 @@ export class FolkWorld {
     if (role === 'peddler') n.stock = peddlerStock(this.seed, visit);
     n.since = now; n.leaveAt = now + TRAVELLER_STAY;
     this.enc.nextTraveller = now + TRAVELLER_CD;
-    this.emit('appear', n, w);
+    this.emit('appear', n, w, this.pt);
     return n;
   }
   spawnStranded(w: World, x: number, y: number, now: number): FolkNpc {
@@ -372,7 +375,7 @@ export class FolkWorld {
     const n = this.add(w, `cave:stranded:${k}`, 'stranded', 'cave', -1, { x0: x, x1: x }, y, null);
     n.since = now; n.leaveAt = now + STRANDED_WAIT;
     this.enc.nextStranded = now + STRANDED_CD;
-    this.emit('appear', n, w);
+    this.emit('appear', n, w, this.pt);
     return n;
   }
   private emit(phase: FolkEvent['phase'], n: FolkNpc, w: World, pt?: { x: number; y: number }): void {
@@ -459,7 +462,7 @@ export class FolkWorld {
   }
   load(j: unknown, w: World): void {
     this.aff = {}; this.affDay = {};
-    this.enc = { nextTraveller: 0, nextStranded: DAY_LENGTH * 0.5, stranded: 0, visits: 0 };
+    this.enc = { nextTraveller: DAY_LENGTH * 0.25, nextStranded: DAY_LENGTH * 0.5, stranded: 0, visits: 0 };
     this.npcs = this.npcs.filter((n) => n.site >= 0);
     if (!j || typeof j !== 'object') return;
     const o = j as Partial<FolkJSON>;
