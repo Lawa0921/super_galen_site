@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { BACKUP_KEY, SAVE_KEY, loadGame, saveGame } from './save';
-import { newGame } from './state';
+import { SAVE_VERSION, newGame } from './state';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { mulberry32 } from './rng';
@@ -19,6 +19,37 @@ describe('save', () => {
     g.dungeon.reached.blaze = 10;
     expect(saveGame(st, g)).toBe(true);
     expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+  it('B1 ruling: an unknown banter id is dropped from the story lists, never a corrupt save; any other unknown id still is', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.story.seen = ['prologue', 'banter:noel-rin:1'];
+    g.story.queue = ['prologue-inn'];
+    const raw = JSON.parse(JSON.stringify({ ...g, version: SAVE_VERSION }));
+    raw.story.seen.push('banter:noel-rin:9', 'banter:bobby-zelda:1');
+    raw.story.fresh.push('banter:noel-rin:9');
+    raw.story.queue.push('banter:bobby-zelda:2');
+    st.setItem(SAVE_KEY, JSON.stringify(raw));
+    const r = loadGame(st);
+    expect(r.status).toBe('ok');
+    if (r.status !== 'ok') return;
+    expect(r.state.story.seen).toEqual(['prologue', 'banter:noel-rin:1']);
+    expect(r.state.story.fresh).toEqual([]);
+    expect(r.state.story.queue).toEqual(g.story.queue);
+    // a 6d `heard` record keyed by an unknown banter is dropped with it
+    const withHeard = JSON.parse(JSON.stringify(raw));
+    withHeard.story.heard = { 'banter:noel-rin:9': [0] };
+    st.setItem(SAVE_KEY, JSON.stringify(withHeard));
+    const h = loadGame(st);
+    expect(h.status).toBe('ok');
+    if (h.status === 'ok') expect((h.state.story as unknown as { heard: object }).heard).toEqual({});
+    // any other unknown scene id keeps its old meaning: the save is corrupt
+    for (const bad of ['chat:noel:9', 'nope', 42]) {
+      const other = JSON.parse(JSON.stringify({ ...g, version: SAVE_VERSION }));
+      other.story.seen.push(bad);
+      st.setItem(SAVE_KEY, JSON.stringify(other));
+      expect(loadGame(st).status, String(bad)).toBe('corrupt');
+    }
   });
   it('reports an empty slot', () => {
     expect(loadGame(memoryStorage())).toEqual({ status: 'empty' });

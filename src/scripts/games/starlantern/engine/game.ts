@@ -850,9 +850,10 @@ export class Game {
 
   restartAfterClear(): void {
     if (this.phase !== 'clear') return;
+    const afterFinale = this.cleared === 'finale';   // B1: the return right after the ending plays no banter
     this.cleared = null;
     this.finale = null;
-    this.toTown();   // the clear banks the run pack like any safe return
+    this.toTown(false, afterFinale);   // the clear banks the run pack like any safe return
   }
 
   /**
@@ -880,9 +881,9 @@ export class Game {
   }
 
   /** What a return to town queues: acts reached, Rin's reveal; then the arrival, with one chat and one banter (B1). */
-  private arrive(): void {
+  private arrive(afterFinale = false): void {
     this.state.story = onReturn(this.state);
-    this.arrival = arrivalScenes(this.state, { chat: true });
+    this.arrival = arrivalScenes(this.state, { chat: true, afterFinale });
     this.leadSaid = false;
   }
 
@@ -921,7 +922,7 @@ export class Game {
    * A safe return: what the run pack holds now counts, and the town is told what came home. Gear goes into the bag while it
    * has slots (the rest is reported as `overflow`); special items and their sets enter the codex.
    */
-  private toTown(viaLamp = false): void {
+  private toTown(viaLamp = false, afterFinale = false): void {
     this.finaleWaiting = false;
     const loot = this.run?.loot;
     this.banked = null;
@@ -944,7 +945,7 @@ export class Game {
     this.run = null;
     this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited), nextLead(this.state)?.region);
     this.rerolled = false;
-    this.arrive();
+    this.arrive(afterFinale);
   }
 
   private revealHere(): void {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ACT_DEPTHS, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, type BanterPair, type SceneId } from '../../data/story/scenes';
+import { ACT_DEPTHS, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, HEAVY_ARRIVAL, isHeavyArrival, type BanterPair, type SceneId } from '../../data/story/scenes';
 import { chainLength } from '../../data/story/chains';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
@@ -444,24 +444,45 @@ describe('town banter', () => {
     expect(banterOpen(base(), id, {})).toBe(false);
   });
 
-  it('one banter per return, after the chat, behind every story scene a return can bring', () => {
+  it('one banter per return, after the chat, behind every light story scene a return can bring', () => {
     const s = meetAll(base(), ['noel', 'safira', 'sylvie', 'liz', 'scarlet']);
     s.party.roster.safira.memories = chainLength('safira');
-    s.story.seen.push('prologue-inn', 'rin-reveal');
-    s.party.roster.rin.oath = true;
-    s.story.queue = ['home:safira', 'bellkeeper-arrives', 'act2', 'first-return', 'act1-after', 'mem:hero:7'];
+    s.story.queue = ['home:safira', 'town:orik', 'mem:noel:2', 'first-return', 'act1-after', 'mem:hero:7', 'prologue-inn'];
     const order = arrivalScenes(s, { chat: true });
-    expect(order.slice(0, 6)).toEqual(['first-return', 'act1-after', 'act2', 'bellkeeper-arrives', 'mem:hero:7', 'home:safira']);
-    expect(order[6]).toMatch(/^chat:/);
-    expect(order[7]).toMatch(/^banter:/);
-    expect(order).toHaveLength(8);
+    const story = ['prologue-inn', 'first-return', 'act1-after', 'mem:hero:7', 'town:orik', 'mem:noel:2', 'home:safira'];
+    expect(order.slice(0, 7)).toEqual(story);
+    expect(order[7]).toMatch(/^chat:/);
+    expect(order[8]).toMatch(/^banter:/);
+    expect(order).toHaveLength(9);
     expect(order.filter((id) => id.startsWith('banter:'))).toHaveLength(1);
     // with no chat due, the banter still comes last
     allChatsSeen(s);
     const quiet = arrivalScenes(s, { chat: true });
-    expect(quiet.slice(0, 6)).toEqual(order.slice(0, 6));
-    expect(quiet[6]).toMatch(/^banter:/);
-    expect(quiet).toHaveLength(7);
+    expect(quiet.slice(0, 7)).toEqual(story);
+    expect(quiet[7]).toMatch(/^banter:/);
+    expect(quiet).toHaveLength(8);
+  });
+
+  it('no light banter after a heavy arrival: an act, the bellkeeper, her reveal or the finale return; it waits for the next return', () => {
+    expect([...HEAVY_ARRIVAL]).toEqual(expect.arrayContaining(['rin-reveal', 'bellkeeper-arrives', 'act2', 'act3', 'act4', 'ending:', 'romance:', 'epilogue']));
+    const s = meetAll(base(), ['noel']);
+    s.story.seen.push('prologue-inn', 'rin-reveal');
+    s.party.roster.rin.oath = true;
+    for (const heavy of ['act2', 'act3', 'act4', 'bellkeeper-arrives'] as SceneId[]) {
+      s.story.queue = ['first-return', heavy, 'mem:noel:2', 'home:safira'];
+      const order = arrivalScenes(s, { chat: true });
+      expect(order.slice(0, 4), heavy).toEqual(['first-return', heavy, 'mem:noel:2', 'home:safira']);   // already in rank order
+      expect(order[4], heavy).toMatch(/^chat:/);   // the chat still comes
+      expect(order.some((id) => id.startsWith('banter:')), heavy).toBe(false);
+    }
+    // the finale return: the arrival right after the ending
+    s.story.queue = [];
+    expect(arrivalScenes(s, { chat: true, afterFinale: true }).some((id) => id.startsWith('banter:'))).toBe(false);
+    // not lost: the next return with nothing heavy brings it
+    expect(arrivalScenes(s, { chat: true }).at(-1)).toBe('banter:noel-rin:1');
+    // the predicate: exact ids, and the prefixes 6d's scenes will use
+    for (const id of ['rin-reveal', 'bellkeeper-arrives', 'act3', 'epilogue', 'ending:noel', 'romance:rin']) expect(isHeavyArrival(id), id).toBe(true);
+    for (const id of ['first-return', 'act1-after', 'prologue-inn', 'home:safira', 'mem:noel:2', 'mem:hero:7', 'town:orik', 'chat:noel:1', 'banter:noel-rin:1']) expect(isHeavyArrival(id), id).toBe(false);
   });
 
   it('no banter without a return, and none beside her reveal', () => {

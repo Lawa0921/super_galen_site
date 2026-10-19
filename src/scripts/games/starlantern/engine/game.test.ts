@@ -2708,6 +2708,33 @@ describe('the arrival queue', () => {
     expect(g.arrival).toEqual(['act1-after', 'chat:hero:1']);
   });
 
+  it('the return right after the finale plays no banter; the next return brings it (B1 ruling)', () => {
+    const g = inRun(townGame(duo));
+    g.state.story.seen.push('prologue-inn');
+    g.state.party = meet(g.state.party, 'noel', 1);
+    g.state.story.act1Cleared = true;
+    g.state.story.finaleCleared = true;
+    g.phase = 'clear';
+    g.cleared = 'finale';
+    g.restartAfterClear();
+    expect(g.arrival.some((id) => id.startsWith('banter:'))).toBe(false);
+    expect(chatsOf(g)).toHaveLength(1);   // the chat still comes
+    inRun(g);
+    g.returnToTown();
+    expect(g.arrival.at(-1)).toBe('banter:noel-rin:1');
+    // an act-one clear is not heavy: its return keeps the banter
+    const h = inRun(townGame(duo));
+    h.state.story.seen.push('prologue-inn');
+    h.state.party = meet(h.state.party, 'noel', 1);
+    h.state.story.act1Cleared = true;
+    h.state.story.queue = ['act1-after'];
+    h.phase = 'clear';
+    h.cleared = 'act1';
+    h.restartAfterClear();
+    expect(h.arrival[0]).toBe('act1-after');
+    expect(h.arrival.at(-1)).toBe('banter:noel-rin:1');
+  });
+
   it('the queue is not played twice: what is done leaves the next arrival', () => {
     const g = inRun(townGame());
     g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;

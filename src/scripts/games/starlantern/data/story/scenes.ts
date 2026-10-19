@@ -119,3 +119,12 @@ export const CHAT_GATE: Partial<Record<SceneId, { stage?: Stage; oath?: true }>>
  */
 export interface BanterGate { stage?: Stage; oath?: true; full?: CharacterId }
 export const BANTER_GATE: Partial<Record<SceneId, BanterGate>> = {};
+
+/**
+ * B1 ruling (fix round 1): no light banter after a heavy arrival. A return whose arrival holds one of these plays its chat but
+ * no banter; the banter waits for the next return (it is never queued, so nothing is lost). An entry ending in `:` is a
+ * prefix (6d's `ending:<c>` and `romance:<c>`); any other is an exact id. Rin's reveal plays alone anyway; the return right
+ * after the finale is heavy too (`arrivalScenes`' `afterFinale`). 6d adds its heavy scenes here.
+ */
+export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'bellkeeper-arrives', ...ACT_NODES, 'finale', 'epilogue', 'ending:', 'romance:'];
+export const isHeavyArrival = (id: string): boolean => HEAVY_ARRIVAL.some((h) => (h.endsWith(':') ? id.startsWith(h) : id === h));

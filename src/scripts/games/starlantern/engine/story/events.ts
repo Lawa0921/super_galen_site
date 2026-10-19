@@ -1,6 +1,6 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import { chainLength } from '../../data/story/chains';
-import { ACT_DEPTHS, ACT_NODES, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, STAGES, banterScene, banterTwo, homeScene, type BanterGate, type BanterPair, type SceneId, type Stage } from '../../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, STAGES, banterScene, banterTwo, homeScene, isHeavyArrival, type BanterGate, type BanterPair, type SceneId, type Stage } from '../../data/story/scenes';
 import { memoriesOf } from '../progression';
 import type { GameState, StoryState } from '../state';
 
@@ -144,14 +144,16 @@ export function nextBanter(s: GameState, gates: Partial<Record<SceneId, BanterGa
  * The scenes this arrival in town should play, in order. Rin's reveal plays alone (the rest wait for the next return).
  * `chat` is true only for a return to town: a new game or a reload never adds a chat, nor a banter. On a return the queue
  * plays first (the opening, the acts, the bellkeeper, the memories, the homecomings), then one chat, then one banter (B1):
- * a banter never goes ahead of anything the story owes, and it plays even when no chat is due.
+ * a banter never goes ahead of anything the story owes, and it plays even when no chat is due. No banter follows a heavy
+ * arrival (`HEAVY_ARRIVAL`, or `afterFinale`: the return right after the ending); it waits for the next return.
  */
-export function arrivalScenes(s: GameState, o: { chat: boolean }): SceneId[] {
+export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: boolean }): SceneId[] {
   if (s.story.queue.includes('rin-reveal')) return ['rin-reveal'];
   const list = [...s.story.queue].sort((a, b) => rank(a) - rank(b));
   if (!o.chat) return list;
   const chat = nextChat(s);
-  const banter = nextBanter(s);
+  const heavy = !!o.afterFinale || list.some(isHeavyArrival);
+  const banter = heavy ? null : nextBanter(s);
   return [...list, ...(chat ? [chat] : []), ...(banter ? [banter] : [])];
 }
 

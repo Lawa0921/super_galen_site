@@ -145,6 +145,22 @@ function backup(storage: SaveStorage, raw: string): void {
   try { storage.setItem(BACKUP_KEY, raw); } catch { /* storage full or denied: nothing more we can do */ }
 }
 
+/**
+ * B1 ruling: banters are cosmetic, so a banter id this build does not know (renamed, removed, or heard on a newer build before a
+ * rollback) is dropped from the story's scene lists, and from a `heard` record keyed by it, instead of making the save corrupt.
+ * Any other unknown scene id is left for `isStory` to refuse, as before.
+ */
+function dropUnknownBanters(data: Record<string, unknown>): void {
+  const story = data.story;
+  if (!isObj(story)) return;
+  const unknown = (x: unknown): boolean => typeof x === 'string' && x.startsWith('banter:') && !isSceneId(x);
+  for (const k of ['seen', 'fresh', 'queue'] as const) {
+    const list = story[k];
+    if (Array.isArray(list)) story[k] = list.filter((x) => !unknown(x));
+  }
+  if (isObj(story.heard)) for (const k of Object.keys(story.heard)) if (unknown(k)) delete story.heard[k];
+}
+
 export function loadGame(storage: SaveStorage): LoadResult {
   let raw: string | null;
   try { raw = storage.getItem(SAVE_KEY); } catch { return { status: 'empty' }; }
@@ -153,6 +169,7 @@ export function loadGame(storage: SaveStorage): LoadResult {
   try { data = JSON.parse(raw); } catch { backup(storage, raw); return { status: 'corrupt' }; }
   if (!isObj(data)) { backup(storage, raw); return { status: 'corrupt' }; }
   if (data.version !== SAVE_VERSION) { backup(storage, raw); return { status: 'version' }; }
+  dropUnknownBanters(data);
   if (!isValid(data)) { backup(storage, raw); return { status: 'corrupt' }; }
   const state = data as unknown as GameState;
   // The game never writes a codex id twice; a hand-edited save that does is tidied rather than refused.
