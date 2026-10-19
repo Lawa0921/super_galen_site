@@ -7,9 +7,9 @@ import { Bmp, type RGB } from './pixel';
 import { HAIR_RAMPS, SKIN_RAMPS, hairRamp } from './avatarPalette';
 
 /** 影格裡軀幹 / 腿的交界列（這列以下不動） */
-export const WAIST_ROW = 44;
+export const WAIST_ROW = 45;
 /** 原始影格裡下巴最低可能在哪一列（再下面是肩膀 / 軀幹：衣服的棕色會被誤認成深膚色） */
-export const CHIN_MAX_ROW = 35;
+export const CHIN_MAX_ROW = 38;
 const key = (c: RGB): number => (c[0] << 16) | (c[1] << 8) | c[2];
 /** 臉的膚色（色階的陰影 / 底色 / 亮部；深影和最暗那階和頭髮 / 衣服太像，不算） */
 function skinSet(skin?: number): Set<number> {

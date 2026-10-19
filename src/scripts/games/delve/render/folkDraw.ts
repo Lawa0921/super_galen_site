@@ -23,7 +23,7 @@ export function folkFrames(l: FolkLook): FolkFrames {
   const d = folkDollLook(l), key = `folk:${dollKey(d)}:${l.dwarf ? 1 : 0}${l.beard ? 1 : 0}`;
   let f = frameCache.get(key);
   if (f) return f;
-  const post = (b: Bmp): Bmp => (l.dwarf ? dwarfify(b, l.beard ? beardRamp(l.app.hairColor) : null, 5, l.app.skin) : b);
+  const post = (b: Bmp): Bmp => (l.dwarf ? dwarfify(b, l.beard ? beardRamp(l.app.hairColor) : null, 4, l.app.skin) : b);
   const idle = Array.from({ length: IDLE_FRAMES }, (_, k) => post(dollPreview(d, key, 'idle', k)));
   const walk = Array.from({ length: WALK_FRAMES }, (_, k) => post(dollPreview(d, key, 'walk', k)));
   const blink = post(dollPreview(d, key, 'blink', 0));
@@ -86,7 +86,7 @@ export class FolkLayer {
       ctx.restore();
       const m = n.role === 'stranded' && !n.following && !n.safe ? 0 : this.marks(n);
       if (m !== null && (m === 1 || Math.floor(clock * 3) % 2 === 0)) {
-        const top = bottom - AV_FH + (n.look.dwarf ? 5 : 0);
+        const top = bottom - AV_FH + (n.look.dwarf ? 4 : 0);
         ctx.drawImage(this.bang[m], cx - 3, top - 12 - Math.round(Math.abs(((clock * 2) % 2) - 1) * 2));
       }
     }

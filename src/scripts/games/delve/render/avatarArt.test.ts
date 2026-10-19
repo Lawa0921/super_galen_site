@@ -96,6 +96,25 @@ describe('動作：呼吸 / 擺動', () => {
   });
 });
 
+describe('3/4 正面的朝向感', () => {
+  const eyeX = (b: Bmp, ramp: Set<string>): number => { let s = 0, n = 0; for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y) && ramp.has(b.get(x, y).join())) { s += x; n++; } return n ? s / n : NaN; };
+  it('臉在頭的中央偏右（面向的那側）；走路 / 跳的時候眼睛再往前偏一格', () => {
+    const l = plainLook(DEF), er = new Set(eyeRamp(DEF.eyes).map((c) => c.join()));
+    const idle = avatarFrame(l, 'idle', 0).head, walk = avatarFrame(l, 'walk', 0).head;
+    // 頭的範圍
+    let x0 = idle.w, x1 = -1;
+    for (let y = 0; y < idle.h; y++) for (let x = 0; x < idle.w; x++) if (idle.on(x, y)) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
+    expect(eyeX(idle, er)).toBeGreaterThan((x0 + x1) / 2);
+    expect(eyeX(walk, er)).toBeGreaterThan(eyeX(idle, er) + 1.5);
+  });
+  it('小人的大小：約 38–42 px 高、頭約佔 6 成（約 1.6 頭身）', () => {
+    const b = flatFrame(avatarFrame(plainLook({ ...DEF, ahoge: false }), 'idle', 0));
+    let top = b.h; for (let y = 0; y < b.h && top === b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) { top = y; break; }
+    expect(AV_FH - top).toBeGreaterThanOrEqual(36);
+    expect(AV_FH - top).toBeLessThanOrEqual(43);
+  });
+});
+
 describe('臉的那一層（舉過頭的武器畫在頭髮前、臉後）', () => {
   it('側面影格的 face：有內容、每一格都和 head 那張同位置同顏色（是 head 的子集）、有眼睛、不含頭髮那一大片', () => {
     const l = plainLook(DEF), er = new Set(eyeRamp(DEF.eyes).map((c) => c.join()));
@@ -222,7 +241,8 @@ describe('體型（男 / 女）與爬繩', () => {
   it('男女畫出來不一樣：男生肩膀寬、沒有腮紅；每套防具 / 服裝在兩種體型上都畫得出來、只用色票', () => {
     const fb = avatarFrame(plainLook(female), 'idle', 0).body, mb = avatarFrame(plainLook(male), 'idle', 0).body;
     const width = (b: Bmp, y: number): number => { let n = 0; for (let x = 0; x < b.w; x++) if (b.on(x, y)) n++; return n; };
-    expect(width(mb, 34)).toBeGreaterThan(width(fb, 34));
+    // 肩膀那一列（3/4 正面的小身體：軀幹第 3 列）
+    expect(width(mb, 40)).toBeGreaterThan(width(fb, 40));
     // 男生整體高 2 格（頭頂比較高）
     const topRow = (b: Bmp): number => { for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) return y; return b.h; };
     const ff = flatFrame(avatarFrame(plainLook({ ...female, ahoge: false }), 'idle', 0)), mf = flatFrame(avatarFrame(plainLook({ ...male, ahoge: false }), 'idle', 0));

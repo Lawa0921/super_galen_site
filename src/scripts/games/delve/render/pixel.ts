@@ -127,6 +127,27 @@ export function outlineColor(n: RGB, maxLuma = 78): RGB {
   return r;
 }
 
+/**
+ * 柔和描邊（CQ 風）的線色：鄰色壓暗到約 6 成、保留色系；只從「比鄰色暗、但亮度 ≥ 26」的色票裡挑（不用 #1c1424 這類近黑）。
+ */
+const SOFT_CACHE = new Map<number, RGB>();
+export function softOutlineColor(n: RGB): RGB {
+  const key = (n[0] << 16) | (n[1] << 8) | n[2];
+  let r = SOFT_CACHE.get(key);
+  if (r) return r;
+  const t = shade(n, 0.6), ln = luma(n);
+  let best: RGB = n, bd = Infinity;
+  for (const p of PALETTE) {
+    const lp = luma(p);
+    if (lp < 26 || lp >= ln - 8) continue;
+    const dd = dist2(t, p);
+    if (dd < bd) { bd = dd; best = p; }
+  }
+  r = best;
+  SOFT_CACHE.set(key, r);
+  return r;
+}
+
 /** 把點陣吸附到色票：不透明像素換成最近色，任何 alpha>0 一律變成完全不透明 */
 export function snapBmp(b: Bmp): Bmp {
   const px = b.px;
@@ -224,6 +245,24 @@ export class Bmp {
           if (l < bl) { bl = l; best = v; }
         }
         if (best) this.set(x, y, outlineColor(Bmp.unpack(best), maxLuma));
+      }
+    }
+    return this;
+  }
+  /** 柔和描邊（CQ 風）：外緣用同色系壓暗約 6 成的顏色（softOutlineColor），不用近黑；多個鄰色取最暗的那個 */
+  softOutline(): Bmp {
+    const src = this.px.slice();
+    const at = (x: number, y: number): number => (x >= 0 && y >= 0 && x < this.w && y < this.h ? src[y * this.w + x] : 0);
+    for (let y = 0; y < this.h; y++) {
+      for (let x = 0; x < this.w; x++) {
+        if (at(x, y) !== 0) continue;
+        let best = 0, bl = Infinity;
+        for (const v of [at(x - 1, y), at(x + 1, y), at(x, y - 1), at(x, y + 1)]) {
+          if (!(v >>> 24)) continue;
+          const l = luma(Bmp.unpack(v));
+          if (l < bl) { bl = l; best = v; }
+        }
+        if (best) this.set(x, y, softOutlineColor(Bmp.unpack(best)));
       }
     }
     return this;
