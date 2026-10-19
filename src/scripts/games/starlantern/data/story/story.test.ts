@@ -1469,8 +1469,9 @@ describe('Task 14: the finale', () => {
       const played = linesWhen(lines(), w);
       expect(played.length, JSON.stringify(w)).toBe(12);
       for (const c of COMPANIONS) expect(played.filter((l) => l.if?.met === c || l.if?.notMet === c).length, `${c} ${JSON.stringify(w)}`).toBe(1);
-      // 1 Lorne the wick; 2 the eight; 3 the lamp; 4 the bell; 5 everyone
+      // 1 Lorne the wick; 2 the eight; 3 the lamp, dawn and each other; 4 the bell; 5 Rin closes the game (coordinator ruling)
       expect(played[0].who).toBe('hero');
+      expect(played[11].who).toBe('rin');
       for (const i of [0, 9, 10, 11]) expect(played[i].if, `${i}`).toBeUndefined();
       expect(played.slice(1, 9).every((l) => l.if !== undefined)).toBe(true);
       expect(played[8].if?.met === 'bobby' || played[8].if?.notMet === 'bobby', 'Bobby closes the eight with the valve').toBe(true);
@@ -1493,6 +1494,9 @@ describe('Task 14: the finale', () => {
     const tail = L.slice(-3).map((l) => l.text);
     expect(tail[0]).toMatch(/碎片的光/);
     expect(tail[0]).toMatch(/暮霧/);
+    expect(tail[0]).toMatch(/天亮/);
+    expect(tail[0]).toMatch(/找回了自己/);
+    expect(tail[0]).toMatch(/彼此/);
     // the finale's truths are said here first (spec §3.6), as the bellkeeper hears them, with her bell and his last one
     expect(tail[1]).toMatch(/凜/);
     expect(tail[1]).toMatch(/鐘守/);
@@ -1500,7 +1504,16 @@ describe('Task 14: the finale', () => {
     expect(tail[1]).toMatch(/晚一次點亮/);
     expect(tail[1]).toMatch(/最後一聲/);
     expect(tail[1]).toMatch(/散/);
-    expect(tail[2]).toMatch(/彼此/);
+    // Rin's last word echoes Lorne's from her reveal (「明天也一起回來吧。」), for everyone: after her choice she names him
+    const rin = L[L.length - 1];
+    expect(rin.who).toBe('rin');
+    expect(rin.if).toBeUndefined();
+    expect(rin.text).toMatch(/洛恩/);
+    expect(rin.text).toMatch(/明天/);
+    expect(rin.text).toMatch(/一起回來吧/);
+    expect(rin.text).toMatch(/大家|我們/);
+    expect(['smile', 'normal', 'blush', 'serious', 'sad']).toContain(rin.mood);
+    expect(L.filter((l) => l.who === 'rin').length).toBe(1);
     // no companion speaks a line nobody else gets: one line each, and none of her pieces' verbatim lines but Bobby's echo
     for (const q of ['我想看見', '你要繼續跳', '你不是盾，你是我的朋友。活下去。']) for (const l of L) expect(l.text).not.toContain(q);
   });
@@ -1512,6 +1525,7 @@ describe('Task 14: the finale', () => {
     expect(s).toMatch(/燈喰之母/);
     expect(s).toMatch(/星燈/);
     expect(s).toMatch(/回來/);
+    expect(s).toContain('從深處走出來的，再也不是一個人。');   // the closing image, bookending the prologue
   });
 
   it("the finale's wait points back to the town and to Rin, and gives nothing away", () => {
