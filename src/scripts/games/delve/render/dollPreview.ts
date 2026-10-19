@@ -8,22 +8,11 @@ import { hex } from './pixel';
 
 /** 預覽裡攀上邊緣的手抓的位置（沒有真的牆角：懸掛 → 撐起 → 膝蓋上台；最後一格用一般手臂） */
 export const MANTLE_HANDS: readonly ([number, number] | null)[] = [[40, 35], [40, 41], [38, 47], null];
-import { armAngles } from './anim';
+import { previewArms } from './anim';
+/** 預覽 / 遊戲裡特殊姿勢的手臂角度（定義在 anim.ts：avatarArt 也要用，避免循環引用） */
+export { previewArms };
 
 const ARM_CANVAS = 64;
-/** 預覽影格的手臂角度（度；0 = 下垂、正 = 往前抬） */
-export function previewArms(anim: SheetAnim, f: number): { front: number; back: number } {
-  switch (anim) {
-    case 'walk': return armAngles('walk', f, null);
-    case 'jump': return armAngles('jump', 0, null);
-    case 'fall': return armAngles('fall', 0, null);
-    case 'swim': { const s = Math.sin((f / 6) * Math.PI * 2); return { front: 95 + s * 55, back: 95 - s * 55 }; }
-    case 'hurt': return { front: 130, back: -50 };
-    case 'mantle': return { front: 30, back: 20 };
-    default: return armAngles('idle', f % 4, null);
-  }
-}
-
 const prepCache = new Map<string, Bmp>();
 function armAt(l: DollLook, key: string, back: boolean, deg: number): Bmp {
   const k = `${key}:${back ? 1 : 0}`;

@@ -5,7 +5,7 @@
 export interface Appearance {
   /** 體型：0 = 女、1 = 男（只改身形 / 臉型；任何髮型 / 服裝兩邊都能用） */
   body: number;
-  /** 種族（RACES 索引；0 = 人類）：只改耳 / 角 / 尾 / 鬍的畫法與被動（engine/race.ts），不改身形 */
+  /** 種族（RACES 索引；0 = 人類）：改耳 / 角 / 尾 / 鬍的畫法與被動（engine/race.ts）；矮人另外變矮（上半身矮 2 格，render/avatarArt.ts raceHeadDy），其他種族不改身形 */
   race: number;
   /** 腮紅（女生預設有、男生預設沒有） */
   blush: boolean;

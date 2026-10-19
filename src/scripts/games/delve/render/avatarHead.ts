@@ -10,7 +10,7 @@
 //   大波浪捲（後腦蓬、外緣一波一波、前面一束 S 形捲髮）、側分長瀏海（頭頂一個弧、瀏海往前斜掃、後髮半長）。
 //   頭飾（戴帽子 / 頭盔時不畫）：蝴蝶結、貓耳髮箍、星星髮夾、兜帽、小花、小皇冠、耳機、狐狸面具（斜掛在頭側）、髮簪（垂兩串金鍊）。
 //   back 圖層：畫在身體後面的頭髮（後頸、長髮後片、馬尾、雙馬尾、遠側丸子、兜帽尖）；front 圖層：頭、臉、瀏海、鬢髮、前垂的長髮、飾品。
-//   種族：精靈耳（膚色，從頭兩側的頭髮下面戳出來，眼睛到臉頰的高度、不高過帽沿：戴帽子也留著）、
+//   種族：精靈耳（膚色，從頭兩側的頭髮下面戳出來，眼睛到臉頰的高度、不高過帽沿：戴帽子也留著，戴兜帽時收在兜帽裡）、
 //   貓耳（髮色 + 粉色內耳，頭頂兩隻）、龍角（象牙色，從頭頂往後彎）；貓耳 / 龍角戴帽子 / 頭盔 / 兜帽時收起來。
 //   座標：(ox, oy) = 區域原點在畫布上的位置。光從前上方（右上）來。
 import { Bmp, hex, type RGB } from './pixel';
@@ -209,8 +209,8 @@ function shadeHair(p: Paint, mat: number, crown: boolean): void {
       // 亮部：頭頂偏前一大片（橢圓）
       const lx = (X + 0.5 - 12.5) / 9, ly = (Y + 0.5 - 3.2) / 4.2;
       if (lx * lx + ly * ly <= 1) l = 3;
-      // 陰影：後腦下半一大片（左下）
-      if (X + (Y - 7) * -0.55 < 5 && Y >= 7) l = 1;
+      // 陰影：後腦外緣一道月牙（越往下越寬）+ 後頸；中間留底色（不是一整片暗的頭盔）
+      if (Y >= 7 && X < 1.5 + (Y - 7) * 0.35) l = 1;
       if (Y >= 15 && X < 10) l = 1;
     }
     if (p.mat[i + W] === SKIN_M) l = 1;
@@ -220,7 +220,8 @@ function shadeHair(p: Paint, mat: number, crown: boolean): void {
       // 每束：左邊亮、右邊 1–2 欄暗（下一束蓋過來的影子）、尖端暗
       const nr = p.clump[i + 1] !== c && p.mat[i + 1] !== NONE, nr2 = p.clump[i + 2] !== c && p.mat[i + 2] !== NONE;
       const nl = p.clump[i - 1] !== c && p.mat[i - 1] !== NONE;
-      if (nr) l = 0; else if (nr2 && Y >= 6) l = 1;
+      // 束與束的分界用柔和的陰影階（不用最暗那階：淺髮色上不會變成一條條深色直線）；分界前一欄再暗一點點
+      if (nr) l = 1; else if (nr2 && Y >= 6) l = Math.min(l, 2);
       else if (nl && Y <= 9) l = Math.max(l, 3);
       if (p.mat[i + W] === SKIN_M || p.mat[i + W * 2] === SKIN_M) l = Math.min(l, 1);
     }
@@ -239,6 +240,17 @@ function shadeHair(p: Paint, mat: number, crown: boolean): void {
       for (const [v, n] of cnt) if (n > bn) { best = v; bn = n; }
       p.lvl[i] = best;
     }
+  }
+}
+
+/** 後腦的髮束分線（二次曲線三點）：從頭頂往後下方順著後腦的弧，把底色那片切成兩束 */
+const BACK_STRANDS: readonly [Pt, Pt, Pt][] = [[[8, 4.5], [4.8, 8], [5.2, 14]]];
+/** 後腦的髮束分線：只畫在底色（不蓋亮部 / 陰影 / 瀏海），帽子 / 頭盔底下露出來的後腦也有 */
+function backStrands(p: Paint, sw: number): void {
+  for (const ln of BACK_STRANDS) for (let k = 0; k <= 14; k++) {
+    const t = k / 14, u = 1 - t, x = u * u * ln[0][0] + 2 * u * t * ln[1][0] + t * t * ln[2][0] - sw * 0.4 * t, y = u * u * ln[0][1] + 2 * u * t * ln[1][1] + t * t * ln[2][1];
+    const i = p.idx(x, y);
+    if (i >= 0 && p.mat[i] === HAIR_M && p.lvl[i] === 2 && p.clump[i] < 2) p.lvl[i] = 1;
   }
 }
 
@@ -507,13 +519,14 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   despur(p, HAIR_M);
   // 頭頂最高到區域座標 HAIR_TOP
   p.clearBelow(HAIR_M, (_X, Y) => Y < HAIR_TOP);
-  // 種族的耳朵：精靈耳戴帽子也留著（在帽沿以下）；貓耳 / 龍角戴帽子 / 頭盔 / 兜帽時收起來
+  // 種族的耳朵：精靈耳戴帽子也留著（在帽沿以下）、戴兜帽時收起來；貓耳 / 龍角戴帽子 / 頭盔 / 兜帽時收起來
   const hideTop = cov.helmet || cov.hat !== null || acc === 'hood';
   // 兜帽從頭兩側包住：精靈耳收在兜帽裡（不從兜帽兩側戳出來）
   if (o.race === 'elf' && acc !== 'hood') elfEars(p);
   if (o.race === 'catfolk' && !hideTop) catEars(p);
   // 6. 打光 + 外框 + 頭頂的髮束分線 / 高光
   shadeHair(p, HAIR_M, true);
+  backStrands(p, sw);
   if (!cov.top) crownDetail(p, sw, look);
   shadeSkin(p);
   const head = new Bmp(front.w, front.h);

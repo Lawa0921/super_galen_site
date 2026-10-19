@@ -4,14 +4,14 @@ import { describe, it, expect } from 'vitest';
 import { Bmp } from './pixel';
 import { HAIR_STYLES, OUTFITS, ACCESSORIES, RACES, bodyDefaults, type RaceId } from '../engine/appearance';
 import { plainLook, dollKey, type DollLook, type DollPiece } from '../engine/doll';
-import { AV_FH, AV_FW, SHEET, SHEET_ANIMS, avatarFrame, flatFrame, armsTo, shoulderOf, ROPE_TOP_HANDS, mantleLean, raceHeadDy } from './avatarArt';
+import { ARM_PIV, AV_FH, AV_FW, SHEET, SHEET_ANIMS, avatarArm, avatarFrame, flatFrame, armsTo, shoulderOf, ROPE_TOP_HANDS, mantleLean, raceHeadDy, type SheetAnim } from './avatarArt';
 import { beardRamp } from './folkArt';
-import { dollPreview } from './dollPreview';
+import { dollPreview, previewArms } from './dollPreview';
 import { folkFrames } from './folkDraw';
 import { folkLook, ROLES, type FolkRole } from '../engine/folkDefs';
 import { Rng } from '../engine/rng';
-import { HAIR_RAMPS, SKIN_RAMPS, eyeRamp } from './avatarPalette';
-import { luma } from './pixel';
+import { HAIR_RAMPS, MOUTH, MOUTH_RED, SKIN_RAMPS, TONGUE, eyeRamp } from './avatarPalette';
+import { luma, rotPrep, rotate } from './pixel';
 import { PLAYER_H } from '../engine/constants';
 
 const P = (look: string): DollPiece => ({ look, rarity: 0, plus: 0, elem: null });
@@ -267,6 +267,44 @@ describe('種族外觀', () => {
       };
       expect(below(1), `male hair ${hairColor}`).toBeGreaterThan(10);
       expect(below(0), `female hair ${hairColor}`).toBe(0);
+    }
+  });
+  it('貓族 / 龍裔的尾巴畫在後手後面：後手內部（沒被頭蓋住的）和人類同一格合成出來一模一樣', () => {
+    let touch = 0;
+    const bad: string[] = [];
+    const frames: [SheetAnim, number][] = [['idle', 0], ['idle', 2], ['jump', 0], ['fall', 0], ['hurt', 0], ...Array.from({ length: SHEET.walk[1] }, (_, f): [SheetAnim, number] => ['walk', f])];
+    for (const body of [0, 1]) for (const race of [ID('catfolk'), ID('dragonkin')]) for (const [an, f] of frames) {
+      const l = raceLook(body, race, { hair: 0 }), h = raceLook(body, 0, { hair: 0 });
+      const fr = avatarFrame(l, an, f), hb = avatarFrame(h, an, f).body;
+      const s = shoulderOf(body, true), deg = previewArms(an, f).back;
+      const arm = rotate(rotPrep(avatarArm(l, true)), ARM_PIV.x, ARM_PIV.y, -(deg * Math.PI) / 180, 64);
+      const ax = s.x + fr.meta.dx - 32, ay = s.y + fr.meta.dy - 32;
+      // 手的內部（外框那一圈和尾巴的外框接在一起，不算）
+      const on = (x: number, y: number): boolean => arm.on(x - ax, y - ay);
+      const inArm = (x: number, y: number): boolean => on(x, y) && on(x - 1, y) && on(x + 1, y) && on(x, y - 1) && on(x, y + 1) && !fr.head.on(x, y);
+      const a = dollPreview(l, dollKey(l), an, f), b = dollPreview(h, dollKey(h), an, f);
+      let n = 0;
+      for (let y = 0; y < AV_FH; y++) for (let x = 0; x < AV_FW; x++) {
+        if (inArm(x, y) && a.raw(x, y) !== b.raw(x, y)) n++;
+        // 尾巴（和人類的身體那張不同的格）貼著後手：這一格真的有「尾巴碰到手」的情況
+        if (fr.body.raw(x, y) !== hb.raw(x, y) && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => inArm(x + dx, y + dy))) touch++;
+      }
+      if (n) bad.push(`body ${body} race ${race} ${an}:${f}: ${n}`);
+    }
+    expect(touch).toBeGreaterThan(0);
+    expect(bad).toEqual([]);
+  });
+  it('矮人男的鬍子把前臉頰包進去：八字鬍到下巴那幾列，鬍子前面（右邊）不會再露出一塊膚色', () => {
+    const MOUTHS = new Set([MOUTH, MOUTH_RED, TONGUE].map((c) => c.join()));
+    for (let skin = 0; skin < SKIN_RAMPS.length; skin++) for (const [an, f] of [['idle', 0], ['walk', 3]] as const) for (const hair of [0, 5]) {
+      const head = avatarFrame(raceLook(1, ID('dwarf'), { skin, hair, hairColor: 1 }), an, f).head;
+      let y0 = head.h, y1 = -1, x1 = -1;
+      for (let y = 0; y < head.h; y++) for (let x = 0; x < head.w; x++) if (head.on(x, y) && MOUTHS.has(head.get(x, y).join())) { y0 = Math.min(y0, y); y1 = Math.max(y1, y); x1 = Math.max(x1, x); }
+      expect(y1, `skin ${skin} ${an}`).toBeGreaterThanOrEqual(0);
+      const sk = new Set(SKIN_RAMPS[skin].map((c) => c.join()));
+      let n = 0;
+      for (let y = y0 - 1; y <= y1 + 2; y++) for (let x = x1 + 3; x < head.w; x++) if (head.on(x, y) && sk.has(head.get(x, y).join())) n++;
+      expect(n, `skin ${skin} ${an}:${f} hair ${hair}`).toBe(0);
     }
   });
   it('矮人男的鬍子不蓋眼睛 / 嘴：臉那一層還有眼睛和嘴，而且都是 head 的子集', () => {

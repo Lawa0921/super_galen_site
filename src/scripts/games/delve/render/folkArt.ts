@@ -62,8 +62,10 @@ function findMouth(b: Bmp, ya: number, yb: number): { y0: number; y1: number; x0
  * 鬍子順著 3/4 的臉：只長在臉的前下方（嘴以下的臉頰 + 下巴）、八字鬍在嘴的上面一列（不蓋住嘴），
  * 下巴下面垂三束到胸口；不會往後腦延伸，也不會蓋到眼睛。skin = 外觀的膚色索引。
  * waist = 軀幹 / 腿交界的列（預設 WAIST_ROW；玩家的影格身體會上下彈，傳這一格的腰）。
+ * wrapCheek = 八字鬍到下巴那幾列，鬍子一路長到臉的前緣（玩家 3/4 的大臉：近側臉頰在下巴前面鼓出來，
+ *   不包進去會在鬍子右邊多一塊自己描邊的膚色）；NPC 不傳（輸出不變）。
  */
-export function dwarfify(frame: Bmp, beard: RGB[] | null, shrink = 2, skin?: number, waistRow = WAIST_ROW): Bmp {
+export function dwarfify(frame: Bmp, beard: RGB[] | null, shrink = 2, skin?: number, waistRow = WAIST_ROW, wrapCheek = false): Bmp {
   const out = new Bmp(frame.w, frame.h);
   const waist = Math.min(waistRow, frame.h);
   for (let y = 0; y < frame.h; y++) {
@@ -91,6 +93,11 @@ export function dwarfify(frame: Bmp, beard: RGB[] | null, shrink = 2, skin?: num
   // 八字鬍：嘴上面那一列，從嘴的後緣到前緣再多一格（亮一階、兩端暗）
   const my = mo.y0 - 1;
   for (let x = mo.x0 - 2; x <= mo.x1 + 2; x++) if (isSkin(out.raw(x, my))) b.set(x, my, x === mo.x0 - 2 || x === mo.x1 + 2 ? r[2] : r[4]);
+  // 前臉頰：八字鬍那列到下巴，鬍子前面還連著的膚色（含膚色外框）一路換成鬍子（前緣暗一階）
+  if (wrapCheek) for (let y = my; y <= c0.y + 1; y++) {
+    let x = Math.max(mo.x1 + 3, y > mo.y1 ? c0.x1 + 2 : 0);
+    for (; isSkin(out.raw(x, y)); x++) b.set(x, y, isSkin(out.raw(x + 1, y)) ? (y === my ? r[3] : r[2]) : r[1]);
+  }
   // 下巴下面：三束往下垂、越下越窄、尖端 V 字，稍往前（右）
   const len = beard === r && r.length ? 6 : 6, lx = bx0, rx = c0.x1 + 1, lw = Math.max(2, Math.round((rx - lx + 1) / 3));
   for (let i = 0; i < 3; i++) {
