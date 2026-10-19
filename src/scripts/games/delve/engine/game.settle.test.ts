@@ -16,6 +16,7 @@ const GROUND = 60;
 
 function arena(seed = 'settle'): DelveGame {
   const g = new DelveGame({ seed, ...SMALL, peaceful: true });
+  g.setAppearance({ ...g.appearance, race: 1 }); // 精靈：沒有經驗加成（人類 +10% 會讓精確經驗數字對不上）
   const w = g.world;
   g.liquids.setSprings([]);
   for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) { w.setFg(x, y, y >= GROUND ? T.STONE : T.AIR); w.setWall(x, y, W.NONE); w.setLiquid(x, y, 0, 0); }
