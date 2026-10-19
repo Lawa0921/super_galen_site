@@ -1120,18 +1120,15 @@ const lang: Language = defaultLang;
     .delve-wr-body { grid-template-columns: 1fr; }
     /* 手機：預覽固定在面板上方，選項在下面捲動（改下面的選項也看得到角色） */
     .delve-wr-stage { position: sticky; top: -12px; z-index: 2; margin: -12px -12px 0; padding: 12px 12px 6px; background: #2a1810; border-bottom: 2px solid #472819; grid-template-columns: auto 1fr; align-items: center; justify-items: stretch; }
-    .delve-wr-doll { grid-row: span 3; }
+    .delve-wr-doll { width: 172px; height: 178px; grid-row: span 3; }
     .delve-wr-note { display: none; }
     .delve-wr-row { grid-template-columns: 4em 44px 1fr 44px; }
     .delve-wr-arrow { width: 44px; min-height: 44px; }
     .delve-wr-keys { display: none; }
   }
-  /* 預覽倍率（畫布 56×58，含 2px 邊框）：桌面 6×、≤768px 4×、≤480px 3×——一律整數倍 */
-  @media (max-width: 768px) {
+  /* 預覽倍率（畫布 56×58，含 2px 邊框）：桌面 6×、641–768px 4×；≤640px 與矮橫放（預覽固定蓋在選項上）3×（上面 640px 區塊）——一律整數倍 */
+  @media (min-width: 641px) and (max-width: 768px) {
     .delve-wr-doll { width: 228px; height: 236px; }
-  }
-  @media (max-width: 480px) {
-    .delve-wr-doll { width: 172px; height: 178px; }
   }
   /* 橫放手機（矮螢幕、寬度夠）：預覽放左邊、選項在右邊捲動——預覽不再蓋住選項列 */
   @media (min-width: 641px) and (max-height: 520px) and (orientation: landscape) {

@@ -1548,6 +1548,22 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     expect(differs).toBe(true);
   });
 
+  test('wardrobe preview 手機尺寸：600 寬 3 倍（168）、700 寬 4 倍（224）、選項列捲得到', async ({ page }) => {
+    for (const [width, cw] of [[600, 168], [700, 224]] as const) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/games/delve');
+      await pressStart(page);
+      await page.click('#delve-look');
+      const doll = page.locator('#delve-wr-doll');
+      await expect(doll).toBeVisible();
+      expect(await doll.evaluate((el) => (el as HTMLCanvasElement).clientWidth), `viewport ${width}`).toBe(cw);
+      await expectCrisp(page, '#delve-wr-doll');
+      const last = page.locator('#delve-wardrobe .delve-wr-row').last();
+      await last.scrollIntoViewIfNeeded();
+      await expect(last).toBeVisible();
+    }
+  });
+
   test('遊戲中選單「角色外觀」：Esc 關掉回到選單；隨機 → 完成 → 紙娃娃 key 換了', async ({ page }) => {
     await page.goto('/games/delve?seed=look-menu&autostart=1&fresh=1');
     await waitGame(page);
