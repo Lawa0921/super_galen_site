@@ -17,20 +17,28 @@ export function storyStage(s: GameState): Stage {
   return 'prologue';
 }
 
-/** Whether the party has ever won a fight: someone met has a level or exp to show for it (absorbing and memories give neither). */
+/** Whether the party has ever won a fight: someone met has a level or exp to show for it (absorbing and memories give neither). Old saves only. */
 const hasFought = (s: GameState): boolean => s.party.recruited.some((id) => {
   const m = s.party.roster[id];
   return !!m && (m.level > 1 || m.exp > 0);
 });
 
 /**
- * What a return to town adds to the queue: the first return after a won fight (Task 10b), each act whose depth was reached,
- * and Rin's reveal once she holds every piece.
+ * A fight is won: the first one Rin fought in queues `first-return` (Task 10b), which plays on the arrival that follows,
+ * whichever way the party gets home. Her first trust in a fight is only true if she was in it (the hero may go down alone,
+ * with Rin out of the formation). Pure: `fighters` are the party's combatants in that fight.
+ */
+export function afterWin(story: StoryState, fighters: readonly string[]): StoryState {
+  if (!fighters.includes('rin') || story.seen.includes('first-return') || story.queue.includes('first-return')) return story;
+  return { ...story, queue: [...story.queue, 'first-return'] };
+}
+
+/**
+ * What a return to town adds to the queue: each act whose depth was reached, and Rin's reveal once she holds every piece.
  * Pure: it returns the new story block and leaves the state alone. Nobody else's fragment count matters (spec §2).
  */
 export function onReturn(s: GameState): StoryState {
   const story: StoryState = { ...s.story, queue: [...s.story.queue], nodes: [...s.story.nodes] };
-  if (hasFought(s) && !story.seen.includes('first-return') && !story.queue.includes('first-return')) story.queue.push('first-return');
   for (const node of ACT_NODES) {
     if (s.dungeon.reached.mainline >= ACT_DEPTHS[node] && !story.nodes.includes(node)) {
       story.nodes.push(node);

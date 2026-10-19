@@ -66,10 +66,10 @@ export const numeral = (n: number): string => {
 };
 
 const MAJOR_TITLES: Record<MajorScene, string> = {
-  prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '第一次回城', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
+  prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
 };
 const MAJOR_TEXT: Record<MajorScene, string> = {
-  prologue: '序章', 'prologue-inn': '旅館的第一夜', 'first-return': '第一次回城', 'act1-after': '第一幕之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
+  prologue: '序章', 'prologue-inn': '旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
 };
 
 type Written = { lines: ScriptLine[]; summary: string };
@@ -99,23 +99,24 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   // player's: the grip, each other's only lead, one lamp, the debt, and the pull she takes for instinct (her 7th piece pays it).
   'prologue-inn': {
     lines: [
-      N('月影旅館的二樓。洛恩從夢裡驚醒，窗邊的凜還醒著，正看著他。'),
+      N('深夜的月影旅館。洛恩從夢裡驚醒，窗邊的凜還睜著眼，朝著他的床，像是不知道他在哪裡，就睡不著。'),
       N('她的手腕上一圈發青的指痕。那幾根手指，葛倫怎麼掰也掰不開，直到洛恩昏了過去。'),
-      { who: 'rin', mood: 'guarded', text: '「……不知道你在哪裡，就睡不著。為什麼，我也不知道。」' },
-      { who: 'hero', mood: 'serious', text: '「明天我要下去。欠公會的藥錢和房錢，只有下面的碎片還得起。」' },
       { who: 'hero', mood: 'normal', text: '「妳是唯一和我一起出來的人。我以前是誰，也許妳看過。」' },
+      { who: 'rin', mood: 'guarded', text: '「……我什麼都不記得。你是我唯一的線索。」' },
+      { who: 'hero', mood: 'serious', text: '「明天我要下去。欠公會的藥錢和房錢，只有下面的碎片還得起。」' },
       { who: 'rin', mood: 'guarded', text: '「我跟你去。」' },
       { who: 'hero', mood: 'surprised', text: '「為什麼？」' },
-      { who: 'rin', mood: 'serious', text: '「公會說，一起下去的，算同一盞燈。……你是我唯一的線索。」' },
+      { who: 'rin', mood: 'serious', text: '「公會說，一起下去的，算同一盞燈。一個人下去，就沒有燈帶你回來。」' },
       { who: 'rin', mood: 'sad', text: '「……我也只剩下面了。」' },
       { who: 'rin', mood: 'normal', text: '「……還有。你走路的樣子，我好像在哪裡看過。」' },
     ],
     summary: '旅館的第一夜。兩人都欠著公會，又只有彼此是自己的線索。同一盞燈的兩個人，決定一起下去。',
   },
-  // Task 10b: the first return after a won fight. Her first trust in a fight, mirrored on his grip; she will not take thanks.
+  // Task 10b: the return after the first fight Rin won in (not always the first return). Her first trust in a fight,
+  // mirrored on his grip; she will not take thanks. Nothing here says "first": an earlier return may have played a chat.
   'first-return': {
     lines: [
-      N('月影旅館。第一次從迷宮回來的晚上，洛恩替自己的手臂纏上繃帶。'),
+      N('月影旅館。從迷宮回來的那一晚，洛恩替自己的手臂纏上繃帶。'),
       N('下面那一擊，本來會正中他的胸口。是凜撲過來，抓住他的手腕，往後一扯。'),
       { who: 'hero', mood: 'smile', text: '「那一下，謝謝。」' },
       { who: 'rin', mood: 'guarded', text: '「……不用謝。身體自己動的。」' },
@@ -123,9 +124,9 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'rin', mood: 'serious', text: '「想了，就來不及了。」' },
       N('她看著自己那隻手，像是不認得它。指尖碰到領口的小銅鐘，停了一下，才收回來。'),
       { who: 'hero', mood: 'smile', text: '「那就，下次也拜託了。」' },
-      N('凜沒有回答。她把椅子拉到窗邊，坐在看得見他的地方。'),
+      N('凜沒有回答。她背靠著房門，在地上坐下，短刃橫在膝上。從那裡，看得見他。'),
     ],
-    summary: '第一次回城的晚上。下面那一擊，是凜把洛恩拉開的。她不收道謝，只說身體自己動的。',
+    summary: '從迷宮回來的那一晚。下面那一擊，是凜把洛恩拉開的。她不收道謝，只說身體自己動的。',
   },
   // Task 4: Rin's seven memories (spec §5, §5.1, §3.6). Pieces 1–2 warm and a little off, 3–5 cold, 6–7 heavy.
   'mem:rin:1': {
@@ -429,11 +430,11 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   // 2 and 3 can be delayed past her choice (one chat per return): each reading has its own lines.
   'chat:rin:1': {
     lines: [
-      { who: 'rin', mood: 'guarded', text: '「喂。葛倫說，是你把我從門裡拖出來的。」' },
+      { who: 'rin', mood: 'guarded', text: '「喂。手腕上的印子退了。……那時候，你為什麼抓著不放？」' },
       { who: 'hero', text: '「記不得了。……手好像，自己就伸出去了。」' },
       N('凜只說了一句「下次不用」，就上樓了。走到樓梯轉角，她停下來，回頭看了他一眼。'),
     ],
-    summary: '凜問洛恩，是不是他把她從門裡拖出來的。他說記不得，手自己伸出去了。',
+    summary: '凜手腕上的指痕退了。她問洛恩那時候為什麼不放手，他說記不得，手自己伸出去了。',
   },
   'chat:rin:2': {
     lines: [

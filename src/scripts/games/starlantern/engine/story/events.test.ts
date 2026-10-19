@@ -4,7 +4,7 @@ import { chainLength } from '../../data/story/chains';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
-import { arrivalScenes, chatOpen, markRead, nextChat, onReturn, sceneDone, settleOpening, storyStage } from './events';
+import { arrivalScenes, chatOpen, markRead, nextChat, onReturn, sceneDone, settleOpening, storyStage, afterWin } from './events';
 
 /** A new game with the prologue already behind it, so only what a test adds is waiting. */
 const base = (): GameState => {
@@ -244,16 +244,21 @@ describe('the opening: the inn night and the first return', () => {
     expect(arrivalScenes(done, { chat: false })).toEqual([]);
   });
 
-  it('the first return after a won fight queues the first-return scene, once', () => {
+  /** A won fight with Rin in it, then home. */
+  const wonWithRin = (s: GameState): GameState => ({ ...s, story: afterWin(s.story, ['hero', 'rin']) });
+
+  it('the first fight Rin wins in queues the first-return scene, once; a return alone queues nothing', () => {
     const s = base();
     s.story.seen.push('prologue-inn');
-    expect(onReturn(s).queue).toEqual([]);   // home without a won fight: nothing to tell yet
-    const back = returned(fought(s));
+    expect(onReturn(fought(s)).queue).toEqual([]);   // home, even after a win: the return itself queues nothing
+    expect(afterWin(s.story, ['hero']).queue).toEqual([]);   // Rin out of the formation: she pulled no one out
+    expect(afterWin(s.story, ['hero'])).toBe(s.story);
+    const back = returned(wonWithRin(s));
     expect(back.story.queue).toEqual(['first-return']);
-    expect(returned(back).story.queue).toEqual(['first-return']);   // waiting, not doubled
+    expect(afterWin(back.story, ['hero', 'rin']).queue).toEqual(['first-return']);   // waiting, not doubled
     const done = sceneDone(back, 'first-return', 'played');
-    expect(returned(done).story.queue).toEqual([]);   // never again
-    expect(returned(sceneDone(back, 'first-return', 'skipped')).story.queue).toEqual([]);
+    expect(afterWin(done.story, ['rin']).queue).toEqual([]);   // never again
+    expect(afterWin(sceneDone(back, 'first-return', 'skipped').story, ['rin']).queue).toEqual([]);
   });
 
   it('the first return plays before the acts, and the chat still comes after it', () => {
@@ -261,7 +266,7 @@ describe('the opening: the inn night and the first return', () => {
     s.story.seen.push('prologue-inn');
     s.dungeon.reached.mainline = ACT_DEPTHS.act2;
     s.story.queue = ['act1-after'];
-    const back = returned(s);
+    const back = returned(wonWithRin(s));
     expect(arrivalScenes(back, { chat: false })).toEqual(['first-return', 'act1-after', 'act2']);
     const withChat = arrivalScenes(back, { chat: true });
     expect(withChat.slice(0, 3)).toEqual(['first-return', 'act1-after', 'act2']);
@@ -272,7 +277,7 @@ describe('the opening: the inn night and the first return', () => {
   it("Rin's reveal still plays alone, and the first return waits for the next arrival", () => {
     const s = withMemories(fought(base()), 'rin', chainLength('rin'));
     s.story.seen.push('prologue-inn');
-    const back = returned(s);
+    const back = returned(wonWithRin(s));
     expect(back.story.queue).toEqual(['first-return', 'rin-reveal']);
     expect(arrivalScenes(back, { chat: true })).toEqual(['rin-reveal']);
   });
@@ -309,7 +314,7 @@ describe('the opening: the inn night and the first return', () => {
     expect(settleOpening(fresh)).toEqual(fresh);
     const mid = sceneDone(newGame(), 'prologue', 'played');   // the inn night still waits
     expect(settleOpening(mid)).toEqual(mid);
-    const queued = returned(fought(sceneDone(sceneDone(newGame(), 'prologue', 'played'), 'prologue-inn', 'played')));
+    const queued = returned(wonWithRin(fought(sceneDone(sceneDone(newGame(), 'prologue', 'played'), 'prologue-inn', 'played'))));
     expect(queued.story.queue).toEqual(['first-return']);
     expect(settleOpening(queued)).toEqual(queued);
     const unfought = sceneDone(sceneDone(newGame(), 'prologue', 'played'), 'prologue-inn', 'played');

@@ -28,7 +28,7 @@ import { depthClearExp, depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
-import { arrivalScenes, markRead, onReturn, sceneDone, settleOpening } from './story/events';
+import { afterWin, arrivalScenes, markRead, onReturn, sceneDone, settleOpening } from './story/events';
 import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeResult, RerollOpts } from './forge/cost';
@@ -598,6 +598,8 @@ export class Game {
     const survivors = b.party.filter((c) => c.alive).map((c) => c.key as CharacterId);
     const awarded = awardExp(this.state.party, rw.exp, survivors);
     this.state.party = awarded.party;
+    // Rin's first won fight queues the first-return scene for the next arrival (Task 10b).
+    this.state.story = afterWin(this.state.story, b.party.map((c) => c.key));
     if (elite) this.map().tiles[elite.y][elite.x] = 'floor';   // a beaten elite is gone
     let met: BattleEnd['met'];
     if (rescue) {

@@ -1176,6 +1176,39 @@ describe('Task 10b: why the two of them go down together', () => {
     expect(inn[inn.length - 1].text).toMatch(/走路/);
   });
 
+  it("review fixes: the lamp has its own line and its consequence, the sleepless beat is the narrator's, and the reasons are spread", () => {
+    const inn = lines('prologue-inn');
+    // The lamp, the strongest reason, answers 「為什麼？」 alone: one lamp for those who go down together, none for one alone.
+    const why = inn.findIndex((l) => l.who === 'hero' && l.text.includes('為什麼'));
+    const lamp = inn[why + 1];
+    expect(lamp.who).toBe('rin');
+    expect(lamp.text).toMatch(/同一盞燈/);
+    expect(lamp.text).toMatch(/一個人下去/);
+    expect(lamp.text).not.toMatch(/線索|只剩/);
+    // The lead and the debt come before her choice, each in a line of its own.
+    const lead = inn.findIndex((l) => l.who === 'rin' && l.text.includes('線索'));
+    const debt = inn.findIndex((l) => l.who === 'hero' && l.text.includes('欠'));
+    const go = inn.findIndex((l) => l.text.includes('我跟你去'));
+    expect(lead).toBeGreaterThanOrEqual(0);
+    expect(lead).toBeLessThan(go);
+    expect(debt).toBeLessThan(go);
+    expect(inn[lead].text).not.toMatch(/燈|欠/);
+    // Pre-reveal Rin does not confess her sleeplessness; the narrator shows it.
+    for (const t of said('prologue-inn', 'rin')) expect(t).not.toMatch(/睡/);
+    expect(inn.some((l) => l.who === 'narrator' && /睡不著/.test(l.text))).toBe(true);
+  });
+
+  it('review fixes: the first-return scene never claims to be the first return, and leaves the window to the inn night', () => {
+    const fr = STORY.scenes['first-return'];
+    for (const t of [fr.title, fr.summary, ...fr.lines.map((l) => l.text)]) expect(t).not.toMatch(/第一次|頭一次|初次/);
+    for (const l of fr.lines) expect(l.text).not.toMatch(/窗/);
+    expect(lines('prologue-inn').some((l) => /窗/.test(l.text))).toBe(true);
+    // Rin's first chat builds on the bruise the inn night showed, instead of telling the drag as news.
+    const chat = said('chat:rin:1', 'rin').join('');
+    expect(chat).not.toMatch(/葛倫說/);
+    expect(chat).toMatch(/手腕/);
+  });
+
   it("the first return is her first trust in a fight: 「身體自己動的。」, and she will not take his thanks", () => {
     const fr = lines('first-return');
     expect(said('first-return', 'rin').some((t) => t.includes('身體自己動的。'))).toBe(true);

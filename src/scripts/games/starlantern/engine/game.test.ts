@@ -2495,9 +2495,9 @@ describe('the arrival queue', () => {
     expect(g.useReturnLamp()).toBe(true);
   };
 
-  it('the first return after a won fight opens on the first-return scene, then the chat, and never again', () => {
+  it('the first return after a fight Rin won in opens on the first-return scene, then the chat, and never again', () => {
     const storage = memoryStorage();
-    const g = townGame(HERO_LINEUP, storage);
+    const g = townGame(duo, storage);
     g.state.story.seen.push('prologue-inn');
     inRun(g);
     g.returnToTown();
@@ -2516,9 +2516,24 @@ describe('the arrival queue', () => {
     expect(g.arrival).not.toContain('first-return');
   });
 
+  it('a fight won without Rin on the field queues no first return; her first one does', () => {
+    const g = townGame(duo);
+    g.state.story.seen.push('prologue-inn');
+    const grid = g.state.party.grid.map((c) => (c === 'rin' ? null : c));
+    expect(g.setFormation(grid)).toEqual({ ok: true });   // the hero may go down alone
+    inRun(g);
+    winAndLampHome(g);
+    expect(g.arrival).not.toContain('first-return');
+    expect(g.state.party.roster.rin.exp + g.state.party.roster.rin.level).toBeGreaterThan(1);   // the bench earned exp, and still no scene
+    expect(g.recall('rin')).toEqual({ ok: true });
+    inRun(g);
+    winAndLampHome(g);
+    expect(g.arrival[0]).toBe('first-return');
+  });
+
   it('a save from before the opening scenes existed plays neither of them on load', () => {
     const storage = memoryStorage();
-    const s = newGame();
+    const s = newGame(undefined, 0, duo);
     s.story.queue = [];
     s.story.seen = ['prologue', 'chat:hero:1'];
     s.party.roster.hero.level = 3;
@@ -2700,8 +2715,8 @@ describe('the state after Act 1', () => {
     g.restartAfterClear();
     expect(g.state.story.act1Cleared).toBe(true);
     expect(g.state.story.queue).toContain('act1-after');
-    // The boss was this party's first won fight: the first return comes first, then Act 1's close (Task 10b).
-    expect(g.arrival.slice(0, 2)).toEqual(['first-return', 'act1-after']);
+    // Rin is not in this lineup, so no first-return scene: Act 1's close leads the arrival (Task 10b).
+    expect(g.arrival[0]).toBe('act1-after');
     expect(saveGame(storage, g.state)).toBe(true);
     const loaded = loadGame(storage);
     expect(loaded.status).toBe('ok');
