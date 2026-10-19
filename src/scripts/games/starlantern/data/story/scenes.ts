@@ -132,19 +132,23 @@ export const BANTER_GATE: Partial<Record<SceneId, BanterGate>> = {
 };
 
 /**
- * B1 ruling (fix round 1): no light banter after a heavy arrival. A return whose arrival holds one of these plays its chat but
- * no banter; the banter waits for the next return (it is never queued, so nothing is lost). An entry ending in `:` is a
- * prefix (6d's `ending:<c>` and `romance:<c>`); any other is an exact id. Rin's reveal plays alone anyway; the return right
- * after the finale is heavy too (`arrivalScenes`' `afterFinale`). 6d adds its heavy scenes here.
- */
-/**
- * Fix round 3: the closing memory pieces, which are heavy arrivals: each chain's last piece, and Lorne's and Rin's last two (the
- * keeper and the lamp key; her code name and her errand). Derived from the chain lengths. A middle piece stays light enough:
- * chats already follow them. `home:*` stays light too: her happy ending, and the warm line comes last.
+ * Fix round 3: the closing memory pieces: each chain's last piece, and Lorne's and Rin's last two (the keeper and the lamp key;
+ * her code name and her errand). Derived from the chain lengths; a middle piece stays light. A memory piece normally plays in
+ * the dungeon the moment it drops, so it never reaches the town arrival; only the hero's depth-25 top-up and the pieces of the
+ * finale fight are queued for town (`Game.takePieces`). In practice this list suppresses a banter for `mem:hero:9` alone; the
+ * closing pieces are listed so the rule still holds if more pieces ever play on the arrival.
  */
 export const CLOSING_PIECES: SceneId[] = CHARACTER_IDS.flatMap((id) => {
   const n = CHAINS[id].pieces.length;
   return (id === 'hero' || id === 'rin' ? [n - 1, n] : [n]).map((k) => memScene(id, k));
 });
-export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'bellkeeper-arrives', ...ACT_NODES, ...CLOSING_PIECES, 'finale', 'epilogue', 'ending:', 'romance:'];
+/**
+ * B1 ruling (fix round 1): no light banter after a heavy arrival. A return whose arrival (the queue, and the scene in the chat
+ * slot) holds one of these plays no banter; the banter waits for the next return (it is never queued, so nothing is lost). An
+ * entry ending in `:` is a prefix (6d's `romance:<c>`); any other is an exact id. Rin's reveal plays alone anyway; the return
+ * right after the finale is heavy too (`arrivalScenes`' `afterFinale`). Light, by ruling: `home:*` and 6d's `ending:<c>`
+ * (a companion's happy after-story; the warm line comes last), middle memory pieces, `first-return`, `act1-after`.
+ * 6d adds its heavy scenes here.
+ */
+export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'bellkeeper-arrives', ...ACT_NODES, ...CLOSING_PIECES, 'finale', 'epilogue', 'romance:'];
 export const isHeavyArrival = (id: string): boolean => HEAVY_ARRIVAL.some((h) => (h.endsWith(':') ? id.startsWith(h) : id === h));

@@ -1913,20 +1913,30 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
   });
 
   it("a quiet beat keeps its own line: Liz's family line carries no joke, and her cover-up comes in the next box after a turn (bible §2.2)", () => {
-    // V2 fix 1 (controller ruling): the sample's cover-up stays, as its own box after a clear shift, never in the quiet line.
+    // V2 fix 1 (controller ruling): the sample's cover-up stays, as its own box after a turn word, never in the quiet line.
+    // Final review issue 1: the box must exist and open on a turn word, and the quiet line before it carries no joke.
+    const TURN = /^「?(好啦|再說|話說回來|算了|──)/;
+    const JOKE = /老大|成交|分紅|商量|銅板|估/;
+    const coverUpBreaks = (after: ScriptLine[]): string[] => {
+      const i = after.findIndex((l) => l.who === 'liz' && l.mood === 'hushed' && /臉/.test(l.text));
+      if (i < 0) return ['no quiet line'];
+      const out: string[] = [];
+      if (JOKE.test(after[i].text)) out.push('the quiet line carries a joke');
+      const next = after[i + 1];
+      if (!next) return [...out, 'no cover-up box'];
+      if (!TURN.test(next.text)) out.push('the cover-up box opens without a turn word');
+      if (!/老大|分紅|商量/.test(next.text)) out.push('the next box is not the cover-up');   // the cover-up itself (sample §5.6)
+      return out;
+    };
     const after = STORY.meet.liz.after;
-    const i = after.findIndex((l) => l.who === 'liz' && l.mood === 'hushed' && /臉/.test(l.text));
-    expect(i).toBeGreaterThanOrEqual(0);
-    expect(after[i].text).not.toMatch(/老大|成交|分紅|商量|銅板|估/);
-    const next = after[i + 1];
-    if (next) {
-      const shift = next.who !== after[i].who || /^「?(好啦|再說|話說回來|算了|──)/.test(next.text);
-      expect(shift, next.text).toBe(true);
-      expect(next.text).toMatch(/老大|分紅|商量/);   // the cover-up itself (sample §5.6)
-    }
-    // the gate catches what it guards: the sample's one-line version
-    const sample = '「得把錢帶回家。……家人的臉，卻想不起來。老大，讓我跟著你們，分紅好商量。」';
-    expect(sample).toMatch(/老大|分紅|商量/);
+    expect(coverUpBreaks(after)).toEqual([]);
+    // the gate catches what it guards
+    const i = after.findIndex((l) => l.who === 'liz' && l.mood === 'hushed');
+    expect(coverUpBreaks(after.slice(0, i + 1))).toEqual(['no cover-up box']);   // the box deleted
+    const sample = '「得把錢帶回家。……家人的臉，卻想不起來。老大，讓我跟著你們，分紅好商量。」';   // the sample's one-line form
+    expect(coverUpBreaks([{ who: 'liz', mood: 'hushed', text: sample }])).toEqual(['the quiet line carries a joke', 'no cover-up box']);
+    const noTurn = [...after.slice(0, i + 1), { ...after[i + 1], text: '「老大，讓我跟著你們吧，分紅好商量。」' }];
+    expect(coverUpBreaks(noTurn)).toEqual(['the cover-up box opens without a turn word']);
   });
 
   it("Lorne's straight man has more than one move: one counting joke at most across V2's scenes", () => {

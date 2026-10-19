@@ -145,14 +145,15 @@ export function nextBanter(s: GameState, gates: Partial<Record<SceneId, BanterGa
  * `chat` is true only for a return to town: a new game or a reload never adds a chat, nor a banter. On a return the queue
  * plays first (the opening, the acts, the bellkeeper, the memories, the homecomings), then one chat, then one banter (B1):
  * a banter never goes ahead of anything the story owes, and it plays even when no chat is due. No banter follows a heavy
- * arrival (`HEAVY_ARRIVAL`, or `afterFinale`: the return right after the ending); it waits for the next return.
+ * arrival (`HEAVY_ARRIVAL`, or `afterFinale`: the return right after the ending); it waits for the next return. The heavy
+ * check reads the queue and the scene in the chat slot: `slot` fills that slot, `nextChat` by default (6d: an ending first).
  */
-export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: boolean }): SceneId[] {
+export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: boolean; slot?: (s: GameState) => SceneId | null }): SceneId[] {
   if (s.story.queue.includes('rin-reveal')) return ['rin-reveal'];
   const list = [...s.story.queue].sort((a, b) => rank(a) - rank(b));
   if (!o.chat) return list;
-  const chat = nextChat(s);
-  const heavy = !!o.afterFinale || list.some(isHeavyArrival);
+  const chat = (o.slot ?? nextChat)(s);
+  const heavy = !!o.afterFinale || [...list, ...(chat ? [chat] : [])].some(isHeavyArrival);
   const banter = heavy ? null : nextBanter(s);
   return [...list, ...(chat ? [chat] : []), ...(banter ? [banter] : [])];
 }

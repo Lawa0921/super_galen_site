@@ -5,7 +5,11 @@ import { floorOf, newRun } from '../dungeon/run';
 import { STANDARD_LINEUP } from '../party';
 import type { CharacterId } from '../types';
 import { EXPECT_ELITE_EVERY, expectedMemories, memoryPace } from './expect';
-import { FORCED_GLIMMERS } from './memories';
+import { FORCED_GLIMMERS, applyPieces, eligible, forcedGlimmers, pityAfterFloor, type Pity } from './memories';
+import { MEMORY_PITY } from '../../data/story/chains';
+import { meet } from '../party';
+import { mulberry32 } from '../rng';
+import { newGame } from '../state';
 
 describe('expectedMemories (spec §9.4 point 7)', () => {
   it('the expectation grows with depth and stays within every chain', () => {
@@ -107,6 +111,34 @@ describe('expectedMemories (spec §9.4 point 7)', () => {
     }
     expect(every()).toEqual(all);
     expect(memoryPace('selene')).toEqual(pace);
+  });
+
+  it("the forced-glimmer cap holds at its value: Lorne's pity and Rin's catch-up take the two slots, and the third chain waits a floor without losing its piece", () => {
+    // Final review issue 5: with MEMORY_PITY = 2, pity and Rin's catch-up contend for the forced slots more often.
+    expect(FORCED_GLIMMERS.max).toBe(2);
+    let party = meet(newGame(mulberry32(1), 1, ['hero', 'rin']).party, 'bobby', 1);
+    const depth = CHAINS.bobby.pieces[0].minDepth;   // bobby's first piece opens here; Lorne's next and Rin's first are open too
+    for (const id of ['hero', 'rin', 'bobby'] as CharacterId[]) expect(eligible(party, id, { region: 'mainline', depth, source: 'glimmer' }), id).toBe(true);
+    let pity: Pity = { hero: MEMORY_PITY, bobby: MEMORY_PITY };   // Rin has no piece yet: her catch-up forces her slot
+    const first = forcedGlimmers(party, pity, 'mainline', depth);
+    expect(first).toEqual(['hero', 'rin']);   // three contenders, two slots, roster order
+    // the one left out keeps her pity, and is forced on the next floor: nothing is lost
+    party = applyPieces(party, first).party;
+    pity = pityAfterFloor(party, pity, 'mainline', depth, first);
+    expect(pity.bobby).toBe(MEMORY_PITY + 1);
+    expect(forcedGlimmers(party, pity, 'mainline', depth + 1)).toEqual(['bobby']);
+    // the cap's value is what binds: one slot fewer drops Rin, one more lets all three in
+    const max = FORCED_GLIMMERS.max;
+    try {
+      const fresh = meet(newGame(mulberry32(1), 1, ['hero', 'rin']).party, 'bobby', 1);
+      const contended: Pity = { hero: MEMORY_PITY, bobby: MEMORY_PITY };
+      FORCED_GLIMMERS.max = max - 1;
+      expect(forcedGlimmers(fresh, contended, 'mainline', depth)).toEqual(['hero']);
+      FORCED_GLIMMERS.max = max + 1;
+      expect(forcedGlimmers(fresh, contended, 'mainline', depth)).toEqual(['hero', 'rin', 'bobby']);
+    } finally {
+      FORCED_GLIMMERS.max = max;
+    }
   });
 
   it('the elite rate behind EXPECT_ELITE_EVERY is honest', () => {

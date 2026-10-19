@@ -476,8 +476,9 @@ describe('town banter', () => {
   });
 
   it('no light banter after a heavy arrival: an act, the bellkeeper, a closing memory piece, her reveal or the finale return; it waits for the next return', () => {
-    expect([...HEAVY_ARRIVAL]).toEqual(expect.arrayContaining(['rin-reveal', 'bellkeeper-arrives', 'act2', 'act3', 'act4', ...CLOSING_PIECES, 'ending:', 'romance:', 'epilogue']));
+    expect([...HEAVY_ARRIVAL]).toEqual(expect.arrayContaining(['rin-reveal', 'bellkeeper-arrives', 'act2', 'act3', 'act4', ...CLOSING_PIECES, 'romance:', 'epilogue']));
     expect(HEAVY_ARRIVAL).not.toContain('mem:');
+    expect(HEAVY_ARRIVAL).not.toContain('ending:');   // final review ruling: a 後日談 is a happy after-story, light like home:*
     const s = meetAll(base(), ['noel']);
     s.story.seen.push('prologue-inn', 'rin-reveal');
     s.party.roster.rin.oath = true;
@@ -494,10 +495,25 @@ describe('town banter', () => {
     // not lost: the next return with nothing heavy brings it
     expect(arrivalScenes(s, { chat: true }).at(-1)).toBe('banter:noel-rin:1');
     // the predicate: exact ids, and the prefixes 6d's scenes will use
-    for (const id of ['rin-reveal', 'bellkeeper-arrives', 'act3', 'mem:noel:5', 'mem:hero:9', 'mem:rin:6', 'epilogue', 'ending:noel', 'romance:rin']) expect(isHeavyArrival(id), id).toBe(true);
+    for (const id of ['rin-reveal', 'bellkeeper-arrives', 'act3', 'mem:noel:5', 'mem:hero:9', 'mem:rin:6', 'epilogue', 'romance:rin', 'romance:liz']) expect(isHeavyArrival(id), id).toBe(true);
     // her homecoming stays light (her happy ending, the warm line last), and so do the middle pieces
     for (const id of ['mem:noel:4', 'mem:hero:8', 'mem:rin:5', 'mem:rin:1', 'mem:hero:1']) expect(isHeavyArrival(id), id).toBe(false);
-    for (const id of ['first-return', 'act1-after', 'prologue-inn', 'home:safira', 'home:liz', 'town:orik', 'chat:noel:1', 'banter:noel-rin:1']) expect(isHeavyArrival(id), id).toBe(false);
+    for (const id of ['first-return', 'act1-after', 'prologue-inn', 'home:safira', 'home:liz', 'town:orik', 'chat:noel:1', 'banter:noel-rin:1', 'ending:noel', 'ending:rin']) expect(isHeavyArrival(id), id).toBe(false);
+  });
+
+  it('the heavy check reads the chat slot too: a heavy scene there drops the banter, a light one keeps it (final review H1)', () => {
+    const s = meetAll(base(), ['noel']);
+    // today the slot holds a chat, which is light: the default is unchanged
+    expect(arrivalScenes(s, { chat: true })).toEqual([nextChat(s)!, 'banter:noel-rin:1']);
+    // 6d puts its own scenes in the slot (nextEnding ?? nextChat): a heavy one there is heavy for the whole arrival
+    const heavy = 'romance:noel' as SceneId;
+    expect(arrivalScenes(s, { chat: true, slot: () => heavy })).toEqual([heavy]);
+    expect(arrivalScenes(s, { chat: true, slot: () => 'act3' })).toEqual(['act3']);
+    // a light one keeps the banter after it; an empty slot still lets the banter play
+    expect(arrivalScenes(s, { chat: true, slot: () => 'ending:noel' as SceneId })).toEqual(['ending:noel', 'banter:noel-rin:1']);
+    expect(arrivalScenes(s, { chat: true, slot: () => null })).toEqual(['banter:noel-rin:1']);
+    // no slot without a return
+    expect(arrivalScenes(s, { chat: false, slot: () => heavy })).toEqual([]);
   });
 
   it('no banter without a return, and none beside her reveal', () => {
