@@ -229,7 +229,11 @@ export class FolkUi {
     if (!done) {
       body.append(btn(`邀請${n.name}到你的據點入住（成為據點的嚮導）`, { svc: 'invite' }, 'delve-btn'),
         el('p', 'delve-hint', '據點的嚮導：告訴你下一步、把沒領過的地標標在地圖上。'));
-    } else if (!q) body.appendChild(el('p', 'delve-hint', `${n.name}向你揮揮手，自己往家的方向走了。`));
+    } else if (!q) {
+      // 被邀請的就是這個人 → 正往據點出發；據點已經有別的嚮導 → 自己回家
+      const mine = g.settle.idents.guide?.name === n.name;
+      body.appendChild(el('p', 'delve-hint', mine ? `${n.name}已經答應搬到你的據點，正收拾行李往那邊出發。` : `${n.name}向你揮揮手，自己往家的方向走了。`));
+    }
   }
   private renderQuests(body: HTMLElement, n: FolkNpc, offers: ReturnType<DelveGame['questOffers']>, mine: QuestState[]): void {
     const g = this.game;

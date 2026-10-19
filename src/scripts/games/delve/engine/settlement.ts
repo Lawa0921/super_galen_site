@@ -8,7 +8,8 @@ import type { World } from './world';
 import { T, isSolidTile } from './tiles';
 import { checkRoom, scanRooms, type RoomCheck } from './housing';
 import { DECOR_TILES, FURNITURE_BY_TILE, LIGHT_TILES, SAFETY_TILES } from './furniture';
-import { NPCS, NPC_KINDS, npcActivity, npcMood, type NpcActivity, type NpcKind } from './npcs';
+import { NPCS, NPC_KINDS, npcActivity, npcMood, validIdent, withIdent, type NpcActivity, type NpcDef, type NpcIdent, type NpcKind } from './npcs';
+import { normalizeAppearance } from './appearance';
 import { makeBody, moveBody, type Body, type SolidQuery } from './physics';
 import { TILE_SIZE as S, GRAVITY, MAX_FALL, JUMP_SPEED } from './constants';
 import { findPath, findStandSpot, standable, type PathNode } from './npcPath';
@@ -178,7 +179,7 @@ export interface Npc {
 }
 export interface NpcJSON { kind: NpcKind; x: number; y: number; core: number; home: number | null; talks?: number; }
 export interface PendingJSON { kind: NpcKind; core: number; at: number; }
-export interface SettlementJSON { cores: Core[]; npcs: NpcJSON[]; spawnCore: number | null; nextId: number; pending?: PendingJSON | null; invited?: NpcKind[]; }
+export interface SettlementJSON { cores: Core[]; npcs: NpcJSON[]; spawnCore: number | null; nextId: number; pending?: PendingJSON | null; invited?: NpcKind[]; idents?: Partial<Record<NpcKind, NpcIdent>>; }
 
 export type SettleEvent =
   /** coming = 條件達成、在路上（ARRIVE_DELAY 後從據點邊緣走進來）；arrive = 走進據點了 */
@@ -217,11 +218,17 @@ export class Settlements {
   /** 邀請過的招募型居民（藥師 / 嚮導）：條件達成就會搬來 */
   readonly invited = new Set<NpcKind>();
   /** 邀請招募型居民（已經住進來 / 已邀請 → false） */
-  invite(kind: NpcKind): boolean {
+  invite(kind: NpcKind, ident?: NpcIdent): boolean {
     if (!NPCS[kind].need.recruit || this.invited.has(kind) || this.npc(kind)) return false;
     this.invited.add(kind);
+    if (ident) this.idents[kind] = { name: ident.name, look: { ...ident.look, app: { ...ident.look.app } } };
     return true;
   }
+  /** 招募型居民的個人身分（被邀請的那個人；存檔內容） */
+  idents: Partial<Record<NpcKind, NpcIdent>> = {};
+  /** 這位居民的設定（套上被邀請那個人的名字 / 外觀） */
+  def(kind: NpcKind): NpcDef { return withIdent(kind, this.idents[kind]); }
+  nameOf(kind: NpcKind): string { return this.def(kind).name; }
   /** 搬來前的等待（遊戲秒；測試 / e2e 可以調短） */
   arriveDelay = ARRIVE_DELAY;
   private lastLevel = new Map<number, number>();
@@ -638,6 +645,7 @@ export class Settlements {
     return {
       cores: this.cores.map((c) => ({ ...c })), spawnCore: this.spawnCore, nextId: this.nextId, pending: this.pending ? { ...this.pending } : null,
       invited: [...this.invited],
+      idents: Object.fromEntries(Object.entries(this.idents).map(([k, v]) => [k, { name: v.name, look: { ...v.look, app: { ...v.look.app } } }])),
       npcs: this.npcs.map((n) => {
         // 睡著的人存成床邊站著（讀檔後依時段再躺回去）
         const o: NpcJSON = { kind: n.kind, x: r(n.body.x), y: r(n.body.y), core: n.core, home: n.home };
@@ -648,9 +656,15 @@ export class Settlements {
   }
   /** 讀檔：壞欄位丟掉（不讓存檔壞掉）；核心那格不是爐心了也丟掉 */
   load(j: unknown, w: World): void {
-    this.cores = []; this.npcs = []; this.spawnCore = null; this.evals.clear(); this.evalRev = -1; this.lastLevel.clear(); this.invited.clear();
+    this.cores = []; this.npcs = []; this.spawnCore = null; this.evals.clear(); this.evalRev = -1; this.lastLevel.clear(); this.invited.clear(); this.idents = {};
     if (!j || typeof j !== 'object') return;
     const o = j as Partial<SettlementJSON>;
+    if (o.idents && typeof o.idents === 'object') {
+      for (const [k, v] of Object.entries(o.idents)) {
+        const id = NPC_KINDS.includes(k as NpcKind) && NPCS[k as NpcKind].need.recruit ? validIdent(v, normalizeAppearance) : null;
+        if (id) this.idents[k as NpcKind] = id;
+      }
+    }
     for (const k of Array.isArray(o.invited) ? o.invited : []) if (NPC_KINDS.includes(k) && NPCS[k].need.recruit) this.invited.add(k);
     const int = (v: unknown): v is number => Number.isInteger(v);
     let maxId = 0;

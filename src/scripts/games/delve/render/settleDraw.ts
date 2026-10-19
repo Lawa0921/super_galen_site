@@ -5,7 +5,7 @@
 //   全部不透明像素（抖動代替半透明）、色票色。居民影格第一次畫到才烘（每種約 13 張 44×54）。
 import type { DelveGame } from '../engine/game';
 import type { Npc } from '../engine/settlement';
-import { NPCS, type NpcKind } from '../engine/npcs';
+import { NPCS, type NpcKind, type NpcLook } from '../engine/npcs';
 import { scanRooms, type RoomCheck } from '../engine/housing';
 import { isSolidTile, T } from '../engine/tiles';
 import type { DollLook, DollPiece } from '../engine/doll';
@@ -21,8 +21,7 @@ import { TILE_SIZE } from '../engine/constants';
 const S = TILE_SIZE;
 const piece = (look: string | undefined): DollPiece | null => (look ? { look, rarity: 0, plus: 0, elem: null } : null);
 /** 居民的紙娃娃樣子（純資料） */
-export function npcLook(kind: NpcKind): DollLook {
-  const l = NPCS[kind].look;
+export function npcLook(kind: NpcKind, l: NpcLook = NPCS[kind].look): DollLook {
   return { app: l.app, head: piece(l.head), body: piece(l.body), legs: piece(l.legs), back: piece(l.back), feet: null, neck: l.neck ?? null, belt: l.belt ?? null };
 }
 
@@ -34,8 +33,8 @@ const SLEEP_MAX_W = 26;
 /** 睡覺的頭在床上的位置：左邊靠床頭板內側（床頭 tile x + 4） */
 export function sleepHeadX(bedX: number, headW: number): number { return bedX + 4 + Math.max(0, Math.floor((SLEEP_MAX_W - headW) / 2) - 6); }
 /** 一位居民的全部影格（純 Bmp；測試 / 圖庫也用） */
-export function npcFrames(kind: NpcKind): NpcFrames {
-  const l = npcLook(kind), key = `npc:${kind}:${dollKey(l)}`;
+export function npcFrames(kind: NpcKind, look?: NpcLook): NpcFrames {
+  const l = npcLook(kind, look), key = `npc:${kind}:${dollKey(l)}`;
   const idle = Array.from({ length: IDLE_FRAMES }, (_, f) => dollPreview(l, key, 'idle', f));
   const walk = Array.from({ length: WALK_FRAMES }, (_, f) => dollPreview(l, key, 'walk', f));
   const blink = dollPreview(l, key, 'blink', 0);
@@ -54,8 +53,8 @@ export function npcFrames(kind: NpcKind): NpcFrames {
   return { idle, blink, walk, sleep, portrait };
 }
 /** 被子（蓋住頭以下）：居民主色的布 + 上緣反摺 */
-function blanketBmp(kind: NpcKind): Bmp {
-  const r = CLOTH_RAMPS[NPCS[kind].look.app.color1] ?? CLOTH_RAMPS[0];
+function blanketBmp(kind: NpcKind, look: NpcLook = NPCS[kind].look): Bmp {
+  const r = CLOTH_RAMPS[look.app.color1] ?? CLOTH_RAMPS[0];
   const b = new Bmp(26, 6);
   for (let y = 0; y < 6; y++) for (let x = 0; x < 26; x++) {
     if (y === 5 && (x === 0 || x === 25)) continue;
@@ -78,7 +77,7 @@ const FILL_OK: RGB = hex('#93cc50'), FILL_BAD: RGB = hex('#c8344c'), EDGE_OK: RG
 export class SettleLayer {
   /** 查房模式 */
   housing = false;
-  private npcArt = new Map<NpcKind, NpcCanvases>();
+  private npcArt = new Map<string, NpcCanvases>();
   private z = [toCanvas(zBmp(false)) as HTMLCanvasElement, toCanvas(zBmp(true)) as HTMLCanvasElement];
   private fills: HTMLCanvasElement[] = [];
   private ghosts = new Map<string, HTMLCanvasElement>();
@@ -95,13 +94,15 @@ export class SettleLayer {
     }
   }
 
+  /** 居民的影格（依外觀快取：被邀請的那個人長什麼樣子，住進來就是那個樣子） */
   private art(kind: NpcKind): NpcCanvases {
-    let a = this.npcArt.get(kind);
+    const look = this.game.settle.def(kind).look, key = `${kind}:${JSON.stringify(look)}`;
+    let a = this.npcArt.get(key);
     if (!a) {
-      const f = npcFrames(kind);
+      const f = npcFrames(kind, look);
       const c = (b: Bmp): HTMLCanvasElement => toCanvas(b) as HTMLCanvasElement;
-      a = { idle: f.idle.map(c), walk: f.walk.map(c), blink: c(f.blink), sleep: c(f.sleep), blanket: c(blanketBmp(kind)) };
-      this.npcArt.set(kind, a);
+      a = { idle: f.idle.map(c), walk: f.walk.map(c), blink: c(f.blink), sleep: c(f.sleep), blanket: c(blanketBmp(kind, look)) };
+      this.npcArt.set(key, a);
     }
     return a;
   }

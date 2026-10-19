@@ -1,7 +1,7 @@
 // settleUi.ts — 據點 UI（DOM）：據點面板（B / 點爐心）、居民面板（點居民：對話 / 商店 / 服務）、
 // 查房模式的房間標籤（H）、居民頭上的對話泡泡。內容一律 textContent / class 組成；定位用 CSS 變數（--x / --y）。
 import { FOLK_TALK_RANGE, type DelveGame } from '../engine/game';
-import { NPCS, NPC_KINDS, moodLabel, shopPrice, type NpcKind } from '../engine/npcs';
+import { NPCS, NPC_KINDS, moodLabel, shopPrice, type NpcKind, type NpcLook } from '../engine/npcs';
 import { LEVEL_NAMES, LEVELS, MAX_LEVEL, PERKS, PERK_ORDER, nextNeeds, type Evaluation } from '../engine/settlement';
 import { roomReasonsText } from '../engine/housing';
 import { ITEMS, type ItemId } from '../engine/items';
@@ -30,11 +30,12 @@ export function coinText(c: number): string {
   return s ? (r ? `${s} 銀 ${r} 銅` : `${s} 銀`) : `${r} 銅`;
 }
 
-const portraitCache = new Map<NpcKind, HTMLCanvasElement>();
-/** 居民肖像（44×34 美術 px；CSS 整數倍放大） */
-export function npcPortrait(kind: NpcKind): HTMLCanvasElement {
-  let src = portraitCache.get(kind);
-  if (!src) { src = toCanvas(npcFrames(kind).portrait) as HTMLCanvasElement; portraitCache.set(kind, src); }
+const portraitCache = new Map<string, HTMLCanvasElement>();
+/** 居民肖像（44×34 美術 px；CSS 整數倍放大）；look = 被邀請那個人的外觀（省略 = 預設） */
+export function npcPortrait(kind: NpcKind, look: NpcLook = NPCS[kind].look): HTMLCanvasElement {
+  const key = `${kind}:${JSON.stringify(look)}`;
+  let src = portraitCache.get(key);
+  if (!src) { src = toCanvas(npcFrames(kind, look).portrait) as HTMLCanvasElement; portraitCache.set(key, src); }
   const c = el('canvas', 'delve-npc-face');
   c.width = src.width; c.height = src.height;
   c.getContext('2d')?.drawImage(src, 0, 0);
@@ -181,9 +182,9 @@ export class SettleUi {
     const rl = el('ul', 'delve-st-res');
     rl.dataset.testid = 'settle-residents';
     for (const n of res) {
-      const d = NPCS[n.kind], li = el('li', 'delve-st-npc');
+      const d = g.settle.def(n.kind), li = el('li', 'delve-st-npc');
       li.dataset.npc = n.kind;
-      li.appendChild(npcPortrait(n.kind));
+      li.appendChild(npcPortrait(n.kind, d.look));
       const info = el('div', 'delve-st-npc-info');
       info.append(el('span', 'delve-st-npc-name', `${d.name}・${d.title}`),
         el('span', 'delve-st-npc-mood', `心情：${moodLabel(n.mood)}（${n.mood}）`), segBar(n.mood / 100),
@@ -207,7 +208,7 @@ export class SettleUi {
       if (r.reasons[0] === 'open') continue;
       const who = res.find((n) => n.home === r.key);
       rooms.appendChild(el('li', r.ok ? 'delve-st-room is-ok' : 'delve-st-room',
-        `${r.ok ? '✓' : '✗'}（${r.x0}, ${r.y0}）${r.size} 格 · 舒適 ${r.comfort}${who ? ` · ${NPCS[who.kind].name}的房間` : ''}${r.ok ? '' : `：${roomReasonsText(r)}`}`));
+        `${r.ok ? '✓' : '✗'}（${r.x0}, ${r.y0}）${r.size} 格 · 舒適 ${r.comfort}${who ? ` · ${g.settle.nameOf(who.kind)}的房間` : ''}${r.ok ? '' : `：${roomReasonsText(r)}`}`));
     }
     if (!rooms.children.length) rooms.appendChild(el('li', 'delve-st-room', '範圍內還沒有房間：用方塊圍出一個空間、貼上人造背景牆'));
     body.appendChild(rooms);
@@ -239,7 +240,7 @@ export class SettleUi {
     if (!body || !k) return;
     const n = g.settle.npc(k);
     if (!n) { this.closeNpc(); return; }
-    const d = NPCS[k], coins = g.coins();
+    const d = g.settle.def(k), coins = g.coins();
     const sellable = (Object.keys(d.buys ?? {}) as ItemId[]).concat(k === 'merchant' ? (Object.keys(ITEMS) as ItemId[]).filter((i) => ITEMS[i].fish && !ITEMS[i].unique) : [])
       .filter((i) => g.inventory.count(i) > 0);
     const sig = `npc|${k}|${n.mood}|${coins}|${this.npcLine}|${this.svcMsg}|${sellable.map((i) => `${i}${g.inventory.count(i)}`).join()}|${g.inventory.slots.filter(Boolean).length}`;
@@ -249,7 +250,7 @@ export class SettleUi {
     const title = this.q('#delve-npc-title');
     if (title) title.textContent = `${d.name}・${d.title}`;
     const head = el('div', 'delve-npc-head');
-    head.appendChild(npcPortrait(k));
+    head.appendChild(npcPortrait(k, d.look));
     const info = el('div', 'delve-npc-info');
     const say = el('p', 'delve-npc-line', `「${this.npcLine}」`);
     say.dataset.testid = 'npc-line';
@@ -362,7 +363,7 @@ export class SettleUi {
         const n = this.npcKind ? this.game.settle.npc(this.npcKind) : null;
         const pc = this.game.playerCenter();
         // 收起面板的距離 = 服務的距離
-        if (!n || !this.game.nearNpc(n.kind, FOLK_TALK_RANGE)) { if (n) this.onToast(`離${NPCS[n.kind].name}太遠了，對話結束`); this.closeNpc(); }
+        if (!n || !this.game.nearNpc(n.kind, FOLK_TALK_RANGE)) { if (n) this.onToast(`離${this.game.settle.nameOf(n.kind)}太遠了，對話結束`); this.closeNpc(); }
         else this.renderNpc();
       }
     }
@@ -405,7 +406,7 @@ export class SettleUi {
         const rooms = this.renderer.settleLayer.roomsInView(vb).filter((r) => r.reasons[0] !== 'open' && r.x1 >= vr.x && r.x0 <= vr.x + vr.w && r.y1 >= vr.y && r.y0 <= vr.y + vr.h).slice(0, 16);
         for (const r of rooms) {
           const who = this.game.settle.npcs.find((n) => n.home === r.key);
-          const text = r.ok ? `✓ ${who ? `${NPCS[who.kind].name}的房間` : '可入住（空房）'} 舒適 ${r.comfort}` : `✗ ${roomReasonsText(r)}`;
+          const text = r.ok ? `✓ ${who ? `${this.game.settle.nameOf(who.kind)}的房間` : '可入住（空房）'} 舒適 ${r.comfort}` : `✗ ${roomReasonsText(r)}`;
           const zoom = this.renderer.worldToScreen(S, 0).x - this.renderer.worldToScreen(0, 0).x;
           place(`room:${r.key}`, r.ok ? 'delve-room-tag is-ok' : 'delve-room-tag is-bad', text, ((r.x0 + r.x1 + 1) / 2) * S, r.y0 * S, (r.width + 1) * zoom);
         }

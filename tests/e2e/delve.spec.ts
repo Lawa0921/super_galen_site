@@ -1856,6 +1856,12 @@ test.describe('delve settlements', () => {
     await expect(page.locator('#delve-settle')).toBeVisible();
     await expect(page.locator('[data-testid=settle-level]')).toHaveAttribute('data-level', '1');
     await expect(page.locator('[data-testid=settle-needs]')).toContainText('可入住的房間：1 / 2');
+    // 記下每一則提示（同一刻升級的經驗提示可能馬上蓋掉據點升級的提示：看「有沒有出現過」，不看最後一則）
+    await page.evaluate(() => {
+      const hud = window.__delveDebug!.handle.hud, orig = hud.toast.bind(hud), log: string[] = [];
+      (window as unknown as { __toasts: string[] }).__toasts = log;
+      hud.toast = (m: string, ...a: unknown[]) => { log.push(m); return (orig as (...x: unknown[]) => void)(m, ...a); };
+    });
     // 第二間（左邊；有箱子、畫、層架、書架、蠟燭）
     await page.evaluate(([x, gy]) => {
       const w = window.__delveDebug!.game.world, top = gy - 6;
@@ -1868,7 +1874,7 @@ test.describe('delve settlements', () => {
       for (let i = 0; i < 3; i++) w.setFg(x - 1, gy - 1 - i, 53);
       for (const [dx, dy, id] of [[1, 0, 76], [2, 0, 77], [4, 0, 66], [5, 0, 67], [7, 4, 10], [6, 0, 24], [6, 3, 79], [3, 4, 92], [7, 0, 61], [1, 1, 59]]) w.setFg(x + dx, gy - 1 - dy, id);
     }, [h.x - 9, h.gy]);
-    await expect(page.locator('#delve-toast')).toContainText('據點升級', { timeout: 5000 });
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __toasts: string[] }).__toasts.some((m) => m.includes('據點升級'))), { timeout: 5000 }).toBe(true);
     await expect(page.locator('[data-testid=settle-level]')).toHaveAttribute('data-level', '2', { timeout: 5000 });
     expect(await page.evaluate(() => window.__delveDebug!.game.settlementHere()?.level)).toBe(2);
   });
@@ -2158,6 +2164,10 @@ test.describe('delve folk · villages, dwarves, encounters, quests', () => {
     await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.quests.completed.size)).toBe(1);
     await page.locator('#delve-folk-body [data-svc=invite]').click();
     await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.settle.invited.has('guide'))).toBe(true);
+    // 面板的敘述要一致：答應搬過來，就不會同時說「自己往家的方向走了」
+    await expect(page.locator('#delve-folk-body')).toContainText('答應');
+    await expect(page.locator('#delve-folk-body')).not.toContainText('往家的方向');
+    const rescuedName = await page.evaluate((k) => window.__delveDebug!.game.folk.byKey(k)?.name ?? window.__delveDebug!.game.settle.idents.guide?.name, key);
     await page.evaluate(() => { window.__delveDebug!.game.folk.addAff('v0:trader', 33); });
     await page.evaluate(async () => { await window.__delveDebug!.save(); });
     await page.goto('/games/delve');
@@ -2166,9 +2176,9 @@ test.describe('delve folk · villages, dwarves, encounters, quests', () => {
     await waitGame(page);
     const after = await page.evaluate(() => {
       const g = window.__delveDebug!.game;
-      return { aff: g.folk.affinity('v0:trader'), done: g.quests.completed.size, invited: g.settle.invited.has('guide') };
+      return { aff: g.folk.affinity('v0:trader'), done: g.quests.completed.size, invited: g.settle.invited.has('guide'), guide: g.settle.def('guide').name };
     });
-    expect(after).toEqual({ aff: 33, done: 1, invited: true });
+    expect(after).toEqual({ aff: 33, done: 1, invited: true, guide: rescuedName });
   });
 
   test('觸控：拿著鎬點 NPC 會打開面板（不會挖地）；鍵盤 T 和最近的人說話、靠近時有提示；buff 顯示在 HUD', async ({ browser }) => {
