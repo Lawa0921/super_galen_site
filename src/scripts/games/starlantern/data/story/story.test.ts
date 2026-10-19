@@ -1261,8 +1261,13 @@ describe('Task 11: the townsfolk, the merchant and the bellkeeper', () => {
       expect(orik, full.join()).toMatch(/紅帽子/);
       expect(orik, full.join()).toMatch(/門後/);
     }
-    // the parts that play without her never name her
-    expect(textOf(linesOf('town:orik').filter((l) => !l.if))).not.toMatch(/莉茲/);
+    // the parts that play without her never name her, nor echo her pieces 2-3 (fix round 1: the debt, the IOUs, 「回家再戴」)
+    const alone = textOf(linesOf('town:orik').filter((l) => !l.if));
+    expect(alone).not.toMatch(/莉茲/);
+    expect(alone).not.toMatch(/債|借據|賒|帳|回家再戴|說好/);
+    // I-75 (一): the face he gets back is the little girl's of the year she left, so he cannot know the grown Liz in town
+    expect(alone).toMatch(/出門那年/);
+    expect(STORY.scenes['town:orik'].summary).not.toMatch(/債/);
     expect(STORY.scenes['town:orik'].summary).not.toMatch(/莉茲/);
     expect(STORY.town.orik.lost + STORY.town.orik.after).not.toMatch(/莉茲/);
   });
@@ -1285,6 +1290,11 @@ describe('Task 11: the townsfolk, the merchant and the bellkeeper', () => {
     expect(said('glen')).toMatch(/換/);                     // the portal reroll
     expect(said('doran')).toMatch(/洛恩/);
     expect(said('doran')).toMatch(/配方/);
+    // fix round 1: every fixed reward has its source in the scene (guild.ts shows it right after)
+    expect(said('orik')).toMatch(/三百金幣/);
+    expect(said('anna')).toMatch(/星燈之淚/);
+    expect(said('glen')).toMatch(/五百金幣/);
+    expect(said('doran')).toMatch(/王者之鱗/);
     expect(PERKS.shopDiscountPct).toBe(10);
   });
 
@@ -1325,6 +1335,8 @@ describe('Task 11: the townsfolk, the merchant and the bellkeeper', () => {
     expect(STORY.merchant.found).toMatch(/諾艾兒/);
     expect(STORY.merchant.found).toMatch(/年輕人/);
     expect(STORY.merchant.found).not.toMatch(/偷/);
+    // fix round 1: a greeting plays on its own, so it answers no question nobody asked
+    for (const t of [STORY.merchant.lost, STORY.merchant.found, ...STORY.bellkeeper.oath, ...STORY.bellkeeper.after]) expect(t).not.toMatch(/^「?[^。！？]{0,6}？/);
     const reunion = STORY.scenes['mem:noel:5'].lines.find((l) => l.who === 'merchant')!.text;
     expect(STORY.merchant.found).not.toBe(reunion);
   });

@@ -998,22 +998,24 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
 /**
  * Task 11: the townsfolk returns (spec §7.5, §3.3; lore ledger I-87 to I-93). Each owner gets back what she lost, changes,
  * and says where the reward comes from. Orik's return reads two ways: Liz with her memories whole meets him at the shop
- * door (`if.full: 'liz'`); otherwise he only tells Lorne of the daughter and the red hat, and the meeting waits for her
- * last piece (mem:liz:5 with orik returned). Father and daughter meet once, in whichever comes second (I-75).
+ * door (`if.full: 'liz'`); otherwise he only tells Lorne of the daughter's face and the red hat, and the meeting waits for
+ * her last piece (mem:liz:5 with orik returned). The face he gets back is the little girl's of the year she left, so he
+ * cannot know the grown Liz in town; and nothing unconditional echoes her pieces 2-3 (the debt, the IOUs, 「回家再戴」).
+ * Father and daughter meet once, in whichever comes second (I-75, I-87).
  */
 const TOWN_SCENES: Record<TownFragmentId, Written> = {
   orik: {
     lines: [
       N('道具店，打烊以後。歐里克把碎片捧在掌心。嗓門大了一輩子的人，半天說不出一句話。'),
       { who: 'orik', text: '「……小兄弟，我想起來了。是我女兒的臉。一笑，眼睛就瞇成一條線，跟我一個樣。」' },
-      { who: 'orik', text: '「她是去替我還債的。……傻丫頭，帳哪有人要緊。」' },
-      { who: 'orik', text: '「往後店裡的東西，都算你便宜一成。冒險者平安回來，帳才有人付。這道理，我早該懂。」' },
-      { who: 'orik', text: '「她出門那天，把一頂紅帽子掛在門後，說回家再戴。那頂帽子，到今天還掛著。」' },
+      { who: 'orik', text: '「想起來的，是她出門那年的臉，還是個小丫頭。……現在長成什麼模樣，老頭子我可猜不著。」' },
+      { who: 'orik', text: '「門後還掛著一頂紅帽子，是她的。這些年，我一直沒捨得收。」' },
+      { who: 'orik', text: '「壓箱底的好貨，我賣了。這三百金幣是謝禮。往後店裡的東西，都算你便宜一成！」' },
       { who: 'narrator', text: '店門被推開了。莉茲站在門口，看著門後那頂紅帽子，一步也沒有動。', if: { full: 'liz' } },
       { who: 'liz', mood: 'sad', text: '「……爸爸。我回來了。」', if: { full: 'liz' } },
       { who: 'orik', text: '「……丫頭？是妳。爸爸認得這張臉。……帽子，還等著妳戴呢。」', if: { full: 'liz' } },
     ],
-    summary: '歐里克想起了女兒的臉。女兒為了替家裡還債出了門，她掛在門後的紅帽子，到今天還在等她回來。',
+    summary: '歐里克想起了女兒小時候的臉。門後那頂紅帽子，他一直沒捨得收。他賣了壓箱底的好貨當謝禮，往後也算便宜一成。',
   },
   marta: {
     lines: [
@@ -1037,7 +1039,7 @@ const TOWN_SCENES: Record<TownFragmentId, Written> = {
       { who: 'anna', text: '「暮霧湧上來的時候，我鬆開了手。……醒來，已經躺在公會的床上。」' },
       { who: 'hero', mood: 'serious', text: '「其他三個人呢？」' },
       { who: 'anna', text: '「不知道。可是他們的名字，我想起來了。他們的登記表，我會一張一張找。」' },
-      { who: 'anna', text: '「碎片的收購價，我會調高。那是有人在下面，拚了命帶上來的東西。」' },
+      { who: 'anna', text: '「收購價我會調高，碎片都是拚了命帶上來的。這顆星燈之淚，是我們當年帶上來的，給你們。」' },
     ],
     summary: '安娜想起了進迷宮之前的名字。她也當過冒險者，在暮霧裡鬆開了同伴的手。她要找回同伴們的登記，也調高了碎片的收購價。',
   },
@@ -1050,7 +1052,7 @@ const TOWN_SCENES: Record<TownFragmentId, Written> = {
       { who: 'glen', text: '「倒下之前，他還笑了一下：『門，還開著啊。』……那張臉，跟你很像。」' },
       { who: 'hero', mood: 'distant', text: '「……後來呢？」' },
       { who: 'glen', text: '「碎片裡只有那個早上。『門還開著』這句，我說了幾十年……原來是跟他學的。」' },
-      { who: 'glen', text: '「這一次，我記住了，洛恩。門的脾氣我熟，哪一扇不合意，說一聲，我替你換。」' },
+      { who: 'glen', text: '「這一次，我記住了，洛恩。五百金幣，守門攢的，拿去買藥。哪扇門不合意，我替你換。」' },
     ],
     summary: '葛倫想起年輕時的一個早上：傳送門自己亮了，走出來一個渾身是灰、長得像洛恩的男人。這一次，他記住了洛恩的名字。',
   },
@@ -1063,7 +1065,7 @@ const TOWN_SCENES: Record<TownFragmentId, Written> = {
       { who: 'hero', mood: 'serious', text: '「現在，聽得見嗎？」' },
       N('多蘭拉起風箱。爐火一亮，燒紅的鐵塊發出一聲細細的鳴響。'),
       { who: 'doran', text: '「……聽見了。差的那一點，原來在耳朵裡。」' },
-      { who: 'doran', text: '「洛恩。套裝的配方，往後少兩份料就打得成。師父的手法，該用在你們身上。」' },
+      { who: 'doran', text: '「洛恩。這塊王者之鱗是師父留給我的，拿去。套裝的配方，往後少兩份料就打得成。」' },
     ],
     summary: '多蘭想起師父的鍛造手法：別看火，聽鐵。他第一次叫了洛恩的名字，套裝的配方也省下了素材。',
   },
@@ -1319,7 +1321,7 @@ export const STORY = {
       '吾等不是來動手的。那孩子的選擇，吾等……還不知道該怎麼回答。',
       '那孩子領口的鐘，被敲平了。要還，也得由她自己來還。吾等不去取。',
       '這幾天，我在鎮上看著你。你替旅館劈柴，替孩子撿球。……迷宮的意志，會做這些事嗎？',
-      '怕？……是啊。吾等怕了很久。怕霧，怕深處，也怕自己弄錯。',
+      '吾等怕了很久。怕霧，怕深處，也怕自己弄錯。',
     ],
     after: [
       '洛恩。最後那一聲鐘，是我敲的。靜鐘會散了，往後不必再有人等它響。',
@@ -1329,7 +1331,7 @@ export const STORY = {
   },
   /** The wandering merchant's greeting: before Noel has all her memories, and after (his recovered voice, I-68). */
   merchant: {
-    lost: '「客人，旅途中缺什麼嗎？價錢跟城裡一樣。……從哪裡來？哈哈，這我可答不上來。」',
+    lost: '「客人，旅途中缺什麼嗎？價錢跟城裡一樣。我是打哪裡來的……哈哈，連我自己都想不起來。」',
     found: '「年輕人，諾艾兒沒給你們添麻煩吧？記住，回去的燈，要比藥先備好。」',
   },
   /** The finale's boss room when Rin has not made her choice yet: said once, and the party stays on the map. */
