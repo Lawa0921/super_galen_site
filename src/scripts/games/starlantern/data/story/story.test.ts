@@ -1268,6 +1268,13 @@ describe('Task 11: the townsfolk, the merchant and the bellkeeper', () => {
     // I-75 (一): the face he gets back is the little girl's of the year she left, so he cannot know the grown Liz in town
     expect(alone).toMatch(/出門那年/);
     expect(STORY.scenes['town:orik'].summary).not.toMatch(/債/);
+    // fix round 2: he has only the little girl's face back, so he never claims to know the grown face; he knows her by the hat
+    for (const id of ['town:orik', 'mem:liz:5'] as SceneId[]) {
+      for (const l of linesOf(id).filter((x) => x.who === 'orik')) expect(l.text, id).not.toMatch(/認得[^。！？]{0,3}臉/);
+    }
+    const knows = (id: SceneId) => linesOf(id).filter((l) => l.who === 'orik' && /認得/.test(l.text));
+    for (const id of ['town:orik', 'mem:liz:5'] as SceneId[]) expect(knows(id).some((l) => /帽子/.test(l.text)), id).toBe(true);
+    expect(knows('town:orik')[0].text).not.toBe(knows('mem:liz:5')[0].text);
     expect(STORY.scenes['town:orik'].summary).not.toMatch(/莉茲/);
     expect(STORY.town.orik.lost + STORY.town.orik.after).not.toMatch(/莉茲/);
   });

@@ -900,7 +900,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       // he knows her by the red hat she hung behind the door (piece 3, I-72): both recognise each other here (I-75).
       N('傍晚的店門口。那張臉終於從霧裡浮了出來：鬍子扎人，一笑，眼睛就瞇成一條線。'),
       { who: 'narrator', text: '「回來啦，丫頭！」他張開雙手，把她連人帶帽子抱了起來。', if: { notReturned: 'orik' } },
-      { who: 'orik', text: '「紅帽子還掛在門後，等妳回來戴。……是妳吧，丫頭。爸爸認得妳的臉了。」', if: { returned: 'orik' } },
+      { who: 'orik', text: '「紅帽子還掛在門後，等妳回來戴。……是妳吧，丫頭。爸爸認得那頂帽子，也認得妳了。」', if: { returned: 'orik' } },
       { who: 'liz', mood: 'hushed', text: '「……想起來了。是爸爸的臉。這張臉，我好像在哪裡看過。」', if: { notReturned: 'orik' } },
       { who: 'hero', text: '「歐里克說過，他想起女兒的臉了。」', if: { returned: 'orik' } },
       { who: 'liz', mood: 'smile', text: '「老大。爸爸的臉，我不會再弄丟了。……總有一天，換我自己走回家。」', if: { notReturned: 'orik' } },
@@ -1013,7 +1013,7 @@ const TOWN_SCENES: Record<TownFragmentId, Written> = {
       { who: 'orik', text: '「壓箱底的好貨，我賣了。這三百金幣是謝禮。往後店裡的東西，都算你便宜一成！」' },
       { who: 'narrator', text: '店門被推開了。莉茲站在門口，看著門後那頂紅帽子，一步也沒有動。', if: { full: 'liz' } },
       { who: 'liz', mood: 'sad', text: '「……爸爸。我回來了。」', if: { full: 'liz' } },
-      { who: 'orik', text: '「……丫頭？是妳。爸爸認得這張臉。……帽子，還等著妳戴呢。」', if: { full: 'liz' } },
+      { who: 'orik', text: '「……丫頭？是妳。妳看那頂帽子的樣子，爸爸認得。……它還等著妳戴呢。」', if: { full: 'liz' } },
     ],
     summary: '歐里克想起了女兒小時候的臉。門後那頂紅帽子，他一直沒捨得收。他賣了壓箱底的好貨當謝禮，往後也算便宜一成。',
   },
