@@ -1,4 +1,4 @@
-// Story copy (zh-TW). Every line of dialogue goes through ph(): it is placeholder text until plan 6c writes the real script.
+// Story copy (zh-TW): the script plan 6c wrote. Read the style bible and the lore ledger before changing a line.
 import type { CharacterId } from '../engine/types';
 import { MOODS_OF, type StoryMood } from '../render/artPaths';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
@@ -54,9 +54,16 @@ export const MAX_LINE_CHARS = 60;
 /** Who may speak in a memory besides its owner, the hero and the narrator. Each entry needs a reason in the lore ledger. */
 export const MEMORY_GUESTS: Partial<Record<SceneId, Speaker[]>> = { 'mem:liz:5': ['orik'], 'mem:noel:5': ['merchant'] };
 
-/** Every string that is still draft copy. 6c empties this set by writing the real script. */
-export const PLACEHOLDERS = new Set<string>();
-const ph = (text: string): string => { PLACEHOLDERS.add(text); return text; };
+/**
+ * Every string that is still draft copy. Plan 6c has written the whole script, so it stays empty (Task 14 removed the draft
+ * generators); the story gates keep checking it so that no draft can come back.
+ */
+export const PLACEHOLDERS: ReadonlySet<string> = new Set<string>();
+/** A written part of the script; a missing one is a bug now that there are no drafts. */
+function written<T>(v: T | undefined, what: string): T {
+  if (v === undefined) throw new Error(`starlantern story: ${what} is not written`);
+  return v;
+}
 
 const nameOf = (id: CharacterId): string => CHARACTERS[id].name;
 /** 1 to 10 in Chinese numerals: story text carries no Arabic digits. */
@@ -67,9 +74,6 @@ export const numeral = (n: number): string => {
 
 const MAJOR_TITLES: Record<MajorScene, string> = {
   prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
-};
-const MAJOR_TEXT: Record<MajorScene, string> = {
-  prologue: '序章', 'prologue-inn': '旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
 };
 
 type Written = { lines: ScriptLine[]; summary: string };
@@ -993,6 +997,40 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '絲嘉蕾又替洛恩擋下了一擊。洛恩說不必，她說了自己的理由。',
   },
+  // Task 14: the finale (spec §8.4, §3.4, §3.6, §6; lore ledger I-109 to I-115). It opens where the hero's 10th piece ends,
+  // the footsteps behind him, and always follows Rin's choice (U3): no `if.oath`. Twelve lines in every party: Lorne means to
+  // burn this round's days as the wick; each companion gives a memory of him in her own voice (met) or Lorne hears her in
+  // the lamp and names her (not met); Bobby's valve closes the eight; the light goes home; the bell; each other.
+  // Address forms that change with a full chain (Selene, Noel, Scarlet, and Bobby's ancestors) read both ways.
+  finale: {
+    lines: [
+      { who: 'hero', mood: 'resolve', text: '「這一輪走過的每一天，就是這一次的燈芯。……送到這裡就好。」' },
+      { who: 'selene', mood: 'smile', text: '「洛恩先生。上弦的那一夜，經過洞窟的人，是您呢。……這一段月光，交給燈吧。」', if: { met: 'selene', notFull: 'selene' } },
+      { who: 'selene', mood: 'smile', text: '「洛恩。銀盆裡，很多人喊著同一個名字。……原來是你呢。這一聲，我也交給燈。」', if: { met: 'selene', full: 'selene' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡，有一段光在讀月亮。……瑟蕾。還沒找到妳，但我記住妳了。」', if: { notMet: 'selene' } },
+      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人。冰碎之後，頭一句聽見的，是『站得起來嗎？』……謹以此段，奉於燈前。」', if: { met: 'chizuru' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡，有人還在念沒念完的祝詞。……千鶴。封印，可以停下了。」', if: { notMet: 'chizuru' } },
+      { who: 'safira', mood: 'smile', text: '「小洛，在火裡陪我跳完一整首的，是你。……這一拍，交給燈囉。」', if: { met: 'safira' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡，有人一個人跳著舞，等誰接上拍子。……莎菲拉。我會去接。」', if: { notMet: 'safira' } },
+      { who: 'sylvie', mood: 'unguarded', text: '「洛恩。毒藤，是你割斷的。……這個，給燈。」', if: { met: 'sylvie' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡，還有一支箭在射。……希爾薇。不用再一個人守了。」', if: { notMet: 'sylvie' } },
+      { who: 'noel', mood: 'pout', text: '「哼。喂，歸來者，『一起回去吧』是你先說的。……這句，本小姐借給燈。」', if: { met: 'noel', notFull: 'noel' } },
+      { who: 'noel', mood: 'blush', text: '「洛、洛恩。『一起回去吧』，是你先說的。……這一句，我交出去。」', if: { met: 'noel', full: 'noel' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡，有人快把自己的雷燒乾了。……諾艾兒。一起回去吧。」', if: { notMet: 'noel' } },
+      { who: 'scarlet', mood: 'vow', text: '「洛恩閣下。城門前，閣下問我在守什麼。……以我的劍起誓，這一段，交給燈。」', if: { met: 'scarlet', notFull: 'scarlet' } },
+      { who: 'scarlet', mood: 'smile', text: '「洛恩。城門前，你問我在守什麼。……現在，我答得出來了。這一段，交給燈。」', if: { met: 'scarlet', full: 'scarlet' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡，有個騎士還守著城門，不肯轉身。……絲嘉蕾。劍，可以放下了。」', if: { notMet: 'scarlet' } },
+      { who: 'liz', mood: 'smile', text: '「老大在寶庫遞給我的那塊乾糧，我估過了──無價。這種好貨，借燈用用。」', if: { met: 'liz' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡，有人數著吃不下的金幣。……莉茲。家裡，有人在等。」', if: { notMet: 'liz' } },
+      { who: 'bobby', mood: 'focused', text: '「燈芯少了一道閥，只會吞，不會還喔。……好，裝上了！洛恩哥，燈不用再燒掉誰了。」', if: { met: 'bobby', notFull: 'bobby' } },
+      { who: 'bobby', mood: 'smile', text: '「洛恩哥，閥裝好了喔。祖先造錯的東西，我修好了。……燈，再也不用燒掉誰。」', if: { met: 'bobby', full: 'bobby' } },
+      { who: 'hero', mood: 'resolve', text: '「燈芯少一道閥，才會把點燈的人燒盡。……波比，造燈那一族的孩子。這道閥，我替妳補上。」', if: { notMet: 'bobby' } },
+      N('燈穩了下來。碎片的光一道道飛回地面，回到每一個弄丟了它的人身上。暮霧散了。'),
+      N('凜把敲平的鐘交給鐘守。他聽完真相，敲響最後一聲：「吾等殺的一直是守燈人。每殺一次，燈就晚一次點亮。靜鐘會，散了。」'),
+      N('天亮了。每個人都找回了自己，也選擇了彼此。從深處走出來的，再也不是一個人。'),
+    ],
+    summary: '燈喰之母倒下了。星燈由許多人的記憶一起點亮，再也不必有人獨自燒盡。暮霧散了，靜鐘會敲完最後一聲。大家一起回來了。',
+  },
 };
 
 /**
@@ -1073,26 +1111,13 @@ const TOWN_SCENES: Record<TownFragmentId, Written> = {
 
 function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }> {
   const out = {} as Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }>;
-  // A written scene takes its SCRIPT entry; the draft (and its placeholder strings) is only made for the rest.
-  const scene = (id: SceneId, title: string, draft: () => Written): void => { out[id] = { title, ...(SCRIPT[id] ?? draft()) }; };
-  for (const id of MAJOR_SCENES) {
-    scene(id, MAJOR_TITLES[id], () => ({ lines: [{ who: 'narrator', text: ph(`（${MAJOR_TEXT[id]}。）`) }], summary: ph(`${MAJOR_TEXT[id]}的故事。`) }));
-  }
+  // Plan 6c wrote every scene (Task 14 removed the drafts): a scene without its SCRIPT entry is a bug, not a draft.
+  const scene = (id: SceneId, title: string): void => { out[id] = { title, ...written(SCRIPT[id], id) }; };
+  for (const id of MAJOR_SCENES) scene(id, MAJOR_TITLES[id]);
   for (const id of CHARACTER_IDS) {
     const name = nameOf(id);
-    CHAINS[id].pieces.forEach((_, i) => {
-      const n = i + 1;
-      scene(memScene(id, n), `${name}・第 ${n} 片`, () => ({
-        lines: [{ who: id, text: ph(`（${name}想起了第${numeral(n)}段記憶。）`) }],
-        summary: ph(`${name}找回了一段記憶。`),
-      }));
-    });
-    for (let n = 1; n <= CHAT_COUNT[id]; n++) {
-      scene(`chat:${id}:${n}`, `${name}・對話 ${n}`, () => ({
-        lines: [{ who: id, text: ph(`（${name}說了第${numeral(n)}段話。）`) }],
-        summary: ph(`和${name}聊了一會兒。`),
-      }));
-    }
+    CHAINS[id].pieces.forEach((_, i) => scene(memScene(id, i + 1), `${name}・第 ${i + 1} 片`));
+    for (let n = 1; n <= CHAT_COUNT[id]; n++) scene(`chat:${id}:${n}`, `${name}・對話 ${n}`);
   }
   for (const f of TOWN_FRAGMENTS) out[`town:${f.id}`] = { title: `${f.npc}的記憶`, ...TOWN_SCENES[f.id] };
   return out;
@@ -1374,7 +1399,11 @@ export const STORY = {
     found: '「年輕人，諾艾兒沒給你們添麻煩吧？記住，回去的燈，要比藥先備好。」',
   },
   /** The finale's boss room when Rin has not made her choice yet: said once, and the party stays on the map. */
-  finaleWait: [{ who: 'narrator' as const, text: ph('還少了什麼……現在還不是時候。') }] as ScriptLine[],
+  // Task 14: it plays in act 4 before her choice, maybe before her 6th piece: something is missing, and it is hers to give.
+  finaleWait: [
+    { who: 'hero', mood: 'serious', text: '「……還少了什麼。今天，先回去吧。」' },
+    N('凜站在他身後，手按著領口的小銅鐘，一步也沒有往前。'),
+  ] as ScriptLine[],
   /**
    * Each facility's greeting, said by its townsperson (Task 12; I-96 to I-101). A greeting knows the stage, not whether its
    * speaker has her fragment back, so it holds both ways: Orik never speaks of his daughter, Anna of her old name, Martha of
@@ -1423,17 +1452,14 @@ export const STORY = {
     },
   } as Record<'guild' | 'shop' | 'inn' | 'gate' | 'forge', Record<Stage, string[]>>,
   /** The finale's boss: the lantern-eater under her own name. */
-  finaleBossName: ph('燈喰之母'),
+  finaleBossName: '燈喰之母',
   /** The log line that ends Scarlet's story fight. */
   survived: '絲嘉蕾的劍停在半空。她看清了對手的臉，收起了劍。',
   /** The Act 1 milestone card, and the finale's closing card title (its text is the finale scene's summary). */
   act1Card: { title: '第一幕　星燈重新亮起', body: '燈喰之獸倒下了。暮霧從石板路上退去，露米亞第一次看見了晨光。' },
-  endingTitle: ph('終幕　點燈'),
+  endingTitle: '終幕　點燈',
   /** Rescue meetings: what is said before the fight (the found line is narration; 6c adds hers) and after it is won. */
-  meet: Object.fromEntries(MEETINGS.map((m) => [m.id, MEET[m.id] ?? {
-    before: [{ who: 'narrator' as const, text: ph(foundLine(m.id)) }],
-    after: [] as ScriptLine[],
-  }])) as Record<Meetable, { before: ScriptLine[]; after: ScriptLine[] }>,
+  meet: Object.fromEntries(MEETINGS.map((m) => [m.id, written(MEET[m.id], `meet.${m.id}`)])) as Record<Meetable, { before: ScriptLine[]; after: ScriptLine[] }>,
   /**
    * Strangers' memories, one played when a shard is absorbed (Task 13; spec §3.1, §7.4; lore ledger I-102). Ordinary lives,
    * one voice each, in quotes: no named person, no lore, nothing of the lamp, the bell or the deep. The hollow adventurers
@@ -1474,7 +1500,7 @@ export const STORY = {
     '「醫生說熬過今晚就沒事了。我就坐在這裡，哪裡也不去。」',
     '「市場收攤前，賣魚的大叔總會多塞一條給我。」',
   ],
-  people: Object.fromEntries(CHARACTER_IDS.map((id) => [id, PEOPLE[id] ?? [1, 2, 3].map((n) => ph(`${nameOf(id)}的簡介（${numeral(n)}）。`))])) as Record<CharacterId, string[]>,
+  people: Object.fromEntries(CHARACTER_IDS.map((id) => [id, written(PEOPLE[id], `people.${id}`)])) as Record<CharacterId, string[]>,
   /** The handbook's truth pages: Lorne's own notes, one per stage, saying only what is known by then (spec §7.6, §8.4). */
   truths: {
     prologue: '我在傳送門廣場醒來，什麼都不記得。鎮上的人說，我是唯一從迷宮深處走出來的人。',

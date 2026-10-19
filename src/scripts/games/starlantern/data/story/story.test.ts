@@ -191,9 +191,9 @@ describe('story data', () => {
     expect(fragmentName('phoenix')).toBeUndefined();
   });
 
-  it('placeholders are registered', () => {
-    expect(PLACEHOLDERS.size).toBeGreaterThan(0);
-    expect(PLACEHOLDERS.has(STORY.endingTitle)).toBe(true);   // a key no task has written yet (the absorb lines are written in Task 13)
+  it('no placeholder is left: plan 6c has written the whole script (Task 14)', () => {
+    expect([...PLACEHOLDERS]).toEqual([]);
+    expect(PLACEHOLDERS.has(STORY.endingTitle)).toBe(false);
   });
 
   it("the finale's wait, Rin's oath lines, the bellkeeper and the merchant are story copy", () => {
@@ -201,7 +201,7 @@ describe('story data', () => {
     const keys = (prefix: string) => texts.filter((t) => t.key === prefix || t.key.startsWith(`${prefix}.`));
     expect(keys('finaleWait').length).toBeGreaterThanOrEqual(1);
     expect(keys('finaleWait').length).toBeLessThanOrEqual(2);
-    expect(STORY.finaleWait.every((l) => l.who !== undefined && PLACEHOLDERS.has(l.text))).toBe(true);
+    expect(STORY.finaleWait.every((l) => l.who !== undefined && !PLACEHOLDERS.has(l.text))).toBe(true);   // written in Task 14
     expect(keys('rinOath').length).toBe(STORY.rinOath.length);
     expect(STORY.rinOath.length).toBeGreaterThanOrEqual(3);   // Task 7 writes them: at least three
     expect(keys('bellkeeper.oath').length).toBe(STORY.bellkeeper.oath.length);
@@ -210,7 +210,7 @@ describe('story data', () => {
     expect(STORY.bellkeeper.after.length).toBeGreaterThan(0);
     expect(keys('merchant').map((t) => t.key).sort()).toEqual(['merchant.found', 'merchant.lost']);
     for (const t of keys('finaleWait')) {
-      expect(PLACEHOLDERS.has(t.text), t.key).toBe(true);
+      expect(PLACEHOLDERS.has(t.text), t.key).toBe(false);
       expect(() => position(t.key), t.key).not.toThrow();
     }
     // Task 11 writes the bellkeeper (three lines at least while he waits, two after) and the merchant.
@@ -223,10 +223,6 @@ describe('story data', () => {
     expect(position('bellkeeper.oath.0')).toBe(rinSeventh());
     expect(position('bellkeeper.after.0')).toBe('after');
     expect(position('finaleWait.0.text')).toBe('act4');
-  });
-
-  it('the milestone cards are story copy, found by the placeholder sweep', () => {
-    for (const t of [STORY.endingTitle]) expect(PLACEHOLDERS.has(t), t).toBe(true);   // act1Card is written in Task 5, the survive line in Task 10
   });
 });
 
@@ -266,6 +262,7 @@ const WRITTEN: string[] = [
   'scenes.town:', 'town.', 'merchant.', 'bellkeeper.',   // Task 11: the townsfolk, the merchant and the bellkeeper
   'townLines.', 'greet.',   // Task 12: the town's days, stage by stage
   'absorb.',   // Task 13: strangers' memories
+  'scenes.finale.', 'endingTitle', 'finaleBossName', 'finaleWait.',   // Task 14: the finale
 ];
 const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
 const isWritten = (key: string): boolean => writtenBy(WRITTEN, key);
@@ -1432,5 +1429,107 @@ describe("Task 13: strangers' memories", () => {
 
   it("a stranger's memory says nothing of the lamp, the bell, the mist or the deep (spec §7.4: mood, not lore)", () => {
     for (const t of STORY.absorb) expect(t).not.toMatch(/燈|鐘|鑰|霧|迷宮|深處|碎片|靜鐘會|守燈人|刺客|代號/);
+  });
+});
+
+describe('Task 14: the finale', () => {
+  const lines = () => STORY.scenes.finale.lines;
+  /** Every reading the finale can play in: any companions met, any of those whole, any fragments returned; always after her choice. */
+  const readings = function* (): Generator<LineWhen> {
+    const returnedAll = TOWN_FRAGMENTS.map((f) => f.id);
+    for (let mask = 0; mask < 1 << COMPANIONS.length; mask++) {
+      const met = COMPANIONS.filter((_, i) => mask & (1 << i));
+      for (let sub = mask; ; sub = (sub - 1) & mask) {
+        const full = COMPANIONS.filter((_, i) => sub & (1 << i));
+        for (const returned of [[], returnedAll]) yield { met: ['hero', 'rin', ...met], full: ['hero', 'rin', ...full], returned, oath: true };
+        if (sub === 0) break;
+      }
+    }
+  };
+
+  it('the finale names every companion, met or not', () => {
+    for (const c of COMPANIONS) {
+      const own = lines().filter((l) => l.if?.met === c);
+      expect(own.length, c).toBeGreaterThan(0);
+      for (const l of own) expect(l.who, c).toBe(c);   // a met companion gives her own memory of him, in her own voice
+      const named = lines().filter((l) => l.if?.notMet === c);
+      expect(named.length, c).toBe(1);
+      expect(named[0].who, c).toBe('hero');   // an unmet one is named by Lorne (spec §8.4)
+      expect(named[0].text, c).toContain(CHARACTERS[c].name);
+    }
+  });
+
+  it('the finale assumes her choice', () => {
+    for (const l of lines()) expect(l.if?.oath, l.text).toBeUndefined();   // U3: it always follows her choice
+  });
+
+  it('every party hears twelve lines, one for each companion, and the beats in order', () => {
+    let n = 0;
+    for (const w of readings()) {
+      const played = linesWhen(lines(), w);
+      expect(played.length, JSON.stringify(w)).toBe(12);
+      for (const c of COMPANIONS) expect(played.filter((l) => l.if?.met === c || l.if?.notMet === c).length, `${c} ${JSON.stringify(w)}`).toBe(1);
+      // 1 Lorne the wick; 2 the eight; 3 the lamp; 4 the bell; 5 everyone
+      expect(played[0].who).toBe('hero');
+      for (const i of [0, 9, 10, 11]) expect(played[i].if, `${i}`).toBeUndefined();
+      expect(played.slice(1, 9).every((l) => l.if !== undefined)).toBe(true);
+      expect(played[8].if?.met === 'bobby' || played[8].if?.notMet === 'bobby', 'Bobby closes the eight with the valve').toBe(true);
+      n++;
+    }
+    expect(n).toBeGreaterThan(1000);
+  });
+
+  it("each beat says what the spec says: the wick, the valve, the light, the bell, each other", () => {
+    const L = lines();
+    expect(L[0].text).toMatch(/燈芯/);   // he means to burn this round's days, as every round (I-45)
+    // Bobby's line is the wick repair (I-69): whole, she echoes her last piece; unmet, Lorne tells the mechanism.
+    const bobby = L.filter((l) => l.if?.met === 'bobby');
+    for (const l of bobby) expect(l.text).toMatch(/閥/);
+    expect(bobby.some((l) => l.if?.full === 'bobby' && /祖先造錯的東西/.test(l.text) && /修好/.test(l.text))).toBe(true);
+    for (const l of bobby) if (l.if?.full !== 'bobby') expect(l.text).not.toMatch(/祖先/);   // her ancestors are her pieces' to tell
+    const lorne = L.find((l) => l.if?.notMet === 'bobby')!;
+    expect(lorne.text).toMatch(/閥/);
+    expect(lorne.text).toMatch(/燒盡/);
+    const tail = L.slice(-3).map((l) => l.text);
+    expect(tail[0]).toMatch(/碎片的光/);
+    expect(tail[0]).toMatch(/暮霧/);
+    // the finale's truths are said here first (spec §3.6), as the bellkeeper hears them, with her bell and his last one
+    expect(tail[1]).toMatch(/凜/);
+    expect(tail[1]).toMatch(/鐘守/);
+    expect(tail[1]).toMatch(/殺的一直是守燈人/);
+    expect(tail[1]).toMatch(/晚一次點亮/);
+    expect(tail[1]).toMatch(/最後一聲/);
+    expect(tail[1]).toMatch(/散/);
+    expect(tail[2]).toMatch(/彼此/);
+    // no companion speaks a line nobody else gets: one line each, and none of her pieces' verbatim lines but Bobby's echo
+    for (const q of ['我想看見', '你要繼續跳', '你不是盾，你是我的朋友。活下去。']) for (const l of L) expect(l.text).not.toContain(q);
+  });
+
+  it('the ending card stands alone, under the finale boss and the ending title', () => {
+    expect(STORY.finaleBossName).toBe('燈喰之母');
+    expect(STORY.endingTitle).toBe('終幕　點燈');
+    const s = STORY.scenes.finale.summary;
+    expect(s).toMatch(/燈喰之母/);
+    expect(s).toMatch(/星燈/);
+    expect(s).toMatch(/回來/);
+  });
+
+  it("the finale's wait points back to the town and to Rin, and gives nothing away", () => {
+    const wait = STORY.finaleWait;
+    expect(wait.length).toBeGreaterThanOrEqual(1);
+    expect(wait.length).toBeLessThanOrEqual(2);
+    const all = wait.map((l) => l.text).join('');
+    expect(all).toMatch(/少了/);
+    expect(all).toMatch(/凜/);
+    expect(all).toMatch(/回去|回鎮|回城/);
+    // it plays in act 4 before her choice, maybe before her 6th and 7th pieces: no secret, no choice, no keeper
+    for (const t of [...RIN_SECRET_TERMS, '守燈人', '燈鑰', '靜鐘會', '鐘守', '選擇', '殺', '刀']) expect(all, t).not.toContain(t);
+    for (const l of wait) {
+      expect(l.if, l.text).toBeUndefined();   // played unfiltered
+      if (l.who === 'rin') {
+        expect(l.mood ?? 'normal', l.text).not.toBe('averted');
+        expect(l.text).not.toContain('洛恩');
+      }
+    }
   });
 });
