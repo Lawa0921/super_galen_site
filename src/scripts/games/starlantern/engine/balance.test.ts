@@ -139,10 +139,17 @@ describe('balance', () => {
     }
   });
 
+  /**
+   * Band 10 (記憶期望) hpLoss floor overrides per cell; every other cell keeps the shared .10. User decision 2026-10-19
+   * (「接受前期稍微簡單」): with a memory every two or three floors the expected party at mainline depth 8 holds more
+   * pieces (measured .0946), and the early game may be slightly easier, so that one cell's floor is .094.
+   */
+  const MEMORY_GEAR_FLOOR: Partial<Record<string, number>> = { 'mainline 8': 0.094 };
+
   // Band 10 runs twice: as before, and with the memory expectation of each depth (the hero keeps MEMORIES_BUILD, so the
   // band still carries an abyss capstone). Neither forces the abyss: it follows the fight's depth, as createBattle
   // computes it from the scale (spec §9.4 point 8).
-  const gearBands = (tag: string, lineup: Lineup) => {
+  const gearBands = (tag: string, lineup: Lineup, hpFloor: Partial<Record<string, number>> = {}) => {
     // The kit is really worn: every slot of every member, uids from 1, each piece at the depth's expected enhance level.
     const kit = kitParty(depthLevel(4), 4, 1, undefined, expectedEnhance(4), lineup);
     const worn = KIT_ORDER.flatMap((id) => SLOTS.map((s) => kit.roster[id].equip[s]));
@@ -161,14 +168,14 @@ describe('balance', () => {
       const label = `${region} depth ${d} with gear`;
       say(`10${tag} ${label}`, { rate, hpLoss });
       ex(rate, label).toBeGreaterThanOrEqual(0.85);
-      ex(hpLoss, label).toBeGreaterThanOrEqual(0.1);
+      ex(hpLoss, label).toBeGreaterThanOrEqual(hpFloor[`${region} ${d}`] ?? 0.1);
       ex(hpLoss, label).toBeLessThanOrEqual(0.45);
     }
   };
 
   it('10. random gear in expectation keeps the bands', () => gearBands('', {}), 120_000);
 
-  it('10 (記憶期望). random gear in expectation keeps the bands with the memory expectation, the abyss by depth', () => gearBands(' (記憶期望)', { expect: true, heroBuild: MEMORIES_BUILD }), 120_000);
+  it('10 (記憶期望). random gear in expectation keeps the bands with the memory expectation, the abyss by depth', () => gearBands(' (記憶期望)', { expect: true, heroBuild: MEMORIES_BUILD }, MEMORY_GEAR_FLOOR), 120_000);
 
   it('the memories variants measure something: the build holds an abyss capstone and changes the runs', () => {
     const caps = Object.keys(heroTree(depthLevel(10), MEMORIES_BUILD, 10)).filter((k) => k.startsWith('abyss-'));

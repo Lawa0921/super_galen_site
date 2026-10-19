@@ -26,25 +26,28 @@ describe('expectedMemories (spec §9.4 point 7)', () => {
 
   it("the hero's expected pieces follow the drop schedule", () => {
     // A hand trace of the main road, depths 1-10, for the standard five (hero, Rin, Chizuru, Noel, Selene; Noel's chain
-    // is storm-only). Natural glimmers fall on depths 4 and 8 (every round(1 / GLIMMER_CHANCE) = 4), elites on 3, 6 and 9
-    // (EXPECT_ELITE_EVERY), bosses on 3, 5 and 10. Piece depths (plan 6c Task 1): hero 3, 5, 7, 9, 12 ...; Rin 1, 3, 5,
-    // 8, 13 ...; Selene 3, 6, 11 ...; Chizuru 8, 12 ... A key chain (hero, Rin) beats every companion; between them the
-    // longer wait wins, a tie goes to Rin. Pity counts the floors a chain could drop on and did not; MEMORY_PITY (3)
-    // forces a glimmer. Rin's catch-up glimmer starts at her 7th piece's depth (22), past this trace.
+    // is storm-only, and the expectation meets everyone at depth 1). The natural glimmer falls on depth 7 (every
+    // round(1 / GLIMMER_CHANCE) = 7), elites on 3, 6 and 9 (EXPECT_ELITE_EVERY), bosses on 3, 5 and 10. Piece depths
+    // (2026-10-19 pace): hero 3, 5, 7, 9, 11 ...; Rin 1, 3, 6, 8, 11 ...; Selene 3, 6, 9 ...; Chizuru 5, 7, 10 ... A key chain
+    // (hero, Rin) beats every companion; between them the longer wait wins, a tie goes to Rin. Pity counts the floors a
+    // chain could drop on and did not; MEMORY_PITY (2) forces a glimmer, at most FORCED_GLIMMERS.max (2) a floor, in
+    // roster order. Rin's catch-up glimmer starts at her 7th piece's depth (17), past this trace.
     const schedule: [depth: number, source: string, who: CharacterId | null][] = [
       [1, 'forced glimmer', 'rin'],        // Rin's first piece is always forced on the main road
       [3, 'elite', 'rin'],                 // the hero (piece 1) is a candidate, so no roll; hero and Rin (piece 2) both wait 0: the tie goes to Rin, Rin 2
-      [3, 'boss', 'hero'],                 // Rin's piece 3 waits for depth 5, the hero is the only key chain: hero 1
-      [4, 'glimmer', 'selene'],            // no key chain can drop (hero 2 and Rin 3 wait for 5); Selene (piece 1 at 3) is alone: Selene 1
-      [5, 'boss', 'rin'],                  // hero (piece 2) and Rin (piece 3) both wait 0 (neither could drop on 4): the tie goes to Rin, Rin 3
-      [6, 'elite', 'hero'],                // Rin's piece 4 waits for depth 8, the hero is the only key chain (no roll): hero 2
-      [8, 'glimmer', 'hero'],              // hero waited 1 (7), Rin 0 (piece 4 opens here): hero 3; Selene (piece 2) is at pity 2, not forced yet
-      [9, 'forced glimmer', 'selene'],     // Selene waited 6, 7 and 8: pity 3, Selene 2
-      [9, 'elite', 'rin'],                 // hero waited 0 (dropped on 8), Rin 1 (8): Rin 4
-      [10, 'boss', 'hero'],                // Rin's piece 5 waits for depth 13, the hero is the only key chain: hero 4
+      [3, 'boss', 'hero'],                 // Rin's piece 3 waits for depth 6, the hero is the only key chain: hero 1; Selene (piece 1 at 3) waited: pity 1
+      [5, 'forced glimmer', 'selene'],     // Selene waited 3 and 4 (no source on 4): pity 2, Selene 1
+      [5, 'boss', 'hero'],                 // hero (piece 2 at 5) is the only key chain (Rin's piece 3 waits for 6): hero 2; Chizuru (piece 1 at 5) pity 1
+      [6, 'elite', 'rin'],                 // no hero piece opens before 7, so the elite rolls; the floor's first draw is under ELITE_PIECE_CHANCE: Rin (key) 3; Chizuru pity 2
+      [7, 'forced glimmer', 'chizuru'],    // Chizuru waited 5 and 6: Chizuru 1 (Selene's piece 2 opened on 6, so she is at pity 1)
+      [7, 'glimmer', 'hero'],              // the natural glimmer: the hero (piece 3 at 7) is the only key chain that can drop: hero 3; Selene pity 2
+      [8, 'forced glimmer', 'selene'],     // Selene 2; Rin (piece 4 at 8) and Chizuru (piece 2 at 7) wait: pity 1 each; no other source on 8
+      [9, 'elite', 'rin'],                 // hero (piece 4 at 9) waits 0, Rin 1: the longer wait wins, Rin 4 (no roll, the hero is a candidate); hero pity 1, Chizuru 2
+      [10, 'forced glimmer', 'chizuru'],   // Chizuru waited 8 and 9: Chizuru 2
+      [10, 'boss', 'hero'],                // Rin's piece 5 waits for 11, the hero is the only key chain: hero 4
     ];
     // The expectation of a depth is what the party holds on ARRIVING there: every floor above it is cleared, and its own
-    // drops have not happened yet. So arriving at 10 counts the rows of depths 1-9 (hero 3, 6, 8: 3; Rin 1, 3, 5, 9: 4)
+    // drops have not happened yet. So arriving at 10 counts the rows of depths 1-9 (hero 3, 5, 7: 3; Rin 1, 3, 6, 9: 4)
     // and leaves out the depth-10 boss; arriving at 11 counts the whole trace (hero 4, Rin 4). Both chains are main-road
     // only, so the other regions add nothing.
     const count = (id: CharacterId, before: number) => schedule.filter(([d, , who]) => d < before && who === id).length;
@@ -87,15 +90,16 @@ describe('expectedMemories (spec §9.4 point 7)', () => {
       for (const g of Object.keys(saved) as (keyof typeof saved)[]) Object.assign(ABSORB_GAIN[g], saved[g]);
     }
     expect(expectedMemories(20, STANDARD_LINEUP)).toEqual(before);
-    // The forced-glimmer cap is a knob too: one forced glimmer a floor starves the later chains of the roster, so some
-    // depth of the expectation of the four main-road chains, and Selene's pace, answer differently while it is changed.
+    // The forced-glimmer cap is a knob too: with no forced glimmer a floor, Rin's first piece and every pity glimmer are
+    // gone, so some depth of the expectation of the four main-road chains, and Selene's pace, answer differently while it
+    // is changed. (With the 2026-10-19 tables a cap of 1 never binds on the main road, so it would show nothing.)
     const road: CharacterId[] = ['hero', 'rin', 'selene', 'bobby'];
     const every = () => Array.from({ length: 30 }, (_, i) => expectedMemories(i + 1, road));
     const all = every();
     const pace = memoryPace('selene');
     const max = FORCED_GLIMMERS.max;
     try {
-      FORCED_GLIMMERS.max = 1;
+      FORCED_GLIMMERS.max = 0;
       expect(every()).not.toEqual(all);
       expect(memoryPace('selene')).not.toEqual(pace);
     } finally {

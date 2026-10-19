@@ -166,7 +166,9 @@ describe('memory piece rules', () => {
     const last = CHAINS.rin.pieces[CHAINS.rin.pieces.length - 1].minDepth;
     expect(min('selene', 4)).toBeLessThanOrEqual(last);
     expect(min('bobby', 4)).toBeLessThanOrEqual(last);
-    let p = partyOf({ rin: 4, selene: 4, bobby: 4 });
+    // The hero holds every piece a glimmer can give (his next is boss-only), so his own pity never takes a slot here.
+    const heroGlimmers = CHAINS.hero.pieces.findIndex((x) => x.bossOnly);
+    let p = partyOf({ hero: heroGlimmers, rin: 4, selene: 4, bobby: 4 });
     let pity: Partial<Record<CharacterId, number>> = { selene: MEMORY_PITY, bobby: MEMORY_PITY };
     const order: CharacterId[][] = [];
     for (let d = last; d < last + 3; d++) {
