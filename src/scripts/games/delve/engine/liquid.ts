@@ -3,7 +3,7 @@
 //     （Int32Array 環形緩衝 + 每格一個 inQ 旗標避免重複）；佇列滿了排進溢出區，有空位再補回去。
 //   · 單格更新：① 往下落：下方非實心、同種或空 → 盡量往下倒；② 落不完（下方滿 / 實心 / 別種液體）→ 與左右
 //     可流入的鄰格平均（整數，餘數留在中央 → 質量守恆、沒有左右偏差）；③ 平均後中央 < 3 → 蒸發 1（薄膜會乾掉）。
-//     有改變 → 本格 / 被改的鄰格 / 上方格重新排入；沒改變 → kill+1，連續 RETIRE_AFTER 次沒變就退休（不再更新）。
+//     有改變 → 本格與被改的鄰格，連同它們上 / 左 / 右能流進來的液體格都重新排入（湖底挖穿時整湖才會跟著補過去）；沒改變 → kill+1，連續 RETIRE_AFTER 次沒變就退休（不再更新）。
 //   · 水每刻更新；熔岩每 LAVA_EVERY 刻、蜂蜜每 HONEY_EVERY 刻（比較黏）。
 //   · 每刻每條佇列最多處理 budget 格（確定性的時間切片）；可另設 timeBudgetMs（瀏覽器用，超時就留到下一刻）。
 //     溢出區連續 PANIC_TICKS 刻都還有東西 → 「靜置模式」：預算 ×4 直到清空（大洪水追進度）。
@@ -386,12 +386,23 @@ export class LiquidSim {
     return w.liquid[j] >= LIQ_MAX || (w.liquidType[j] !== LIQ.NONE && w.liquidType[j] !== w.liquidType[i]);
   }
 
-  /** 本格有變：重設 kill、排入本格與上方格 */
+  /** 本格有變：重設 kill、排入本格與能流進來的鄰格（上 / 左 / 右） */
   private afterChange(i: number): void {
-    const w = this.world;
     this.kill[i] = 0;
+    this.wakeAround(i);
+  }
+
+  /**
+   * 排入 i 與上 / 左 / 右的液體格。格的量變了（尤其是變少、甚至落光變空）時，能流進它的鄰格都要醒來：
+   * 空掉的格本身排不進佇列（enqueue 要有液體），只叫上方的話，左右已退休的湖水永遠不會補過來
+   * → 挖穿湖底只有破口那一欄洩光。下方格不用叫：它不會因為上面變少而改變。
+   */
+  private wakeAround(i: number): void {
+    const W = this.world.width, x = i % W;
     this.enqueue(i);
-    if (i >= w.width) this.enqueue(i - w.width);
+    if (i >= W) this.enqueue(i - W);
+    if (x > 0) this.enqueue(i - 1);
+    if (x < W - 1) this.enqueue(i + 1);
   }
 
   private setSide(j: number, v: number, t: number): boolean {
@@ -401,7 +412,7 @@ export class LiquidSim {
     L[j] = v; LT[j] = nt;
     w.touchLiquid(j);
     this.kill[j] = 0;
-    this.enqueue(j);
+    this.wakeAround(j);
     return true;
   }
 
@@ -420,7 +431,8 @@ export class LiquidSim {
     const left = Math.max(0, L[other] - la);
     L[other] = left; if (left === 0) LT[other] = LIQ.NONE;
     w.touchLiquid(other);
-    this.enqueue(other);
+    this.wakeAround(other);
+    this.wakeAround(lava);
     const x = lava % w.width, y = (lava - x) / w.width;
     let kind: ReactionKind = 'steam';
     // 只在空氣格凝成方塊：箱子 / 火把 / 門 / 平台等非實心物件裡的熔岩只會冒煙消失（不吞掉物件與內容）
