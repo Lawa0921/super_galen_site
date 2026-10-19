@@ -1919,3 +1919,97 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
     expect(hers.some((t) => /[唷呀]/.test(t))).toBe(true);
   });
 });
+
+describe('V3 voice pass: the town talks (style bible §2.2 to §2.5, §3 townsfolk)', () => {
+  const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'forge'] as const;
+  type Facility = (typeof FACILITIES)[number];
+  const OWNER: Record<Facility, TownFragmentId> = { guild: 'anna', shop: 'orik', inn: 'marta', gate: 'glen', forge: 'doran' };
+  const dots = (t: string): number => (t.match(/……/g) ?? []).length;
+  const opens = (t: string): boolean => /^「?……/.test(t);
+  /** What a counter can say in a stage: the stage's greetings and, once she has her fragment back, her thanks (facility.ts). */
+  const pool = (f: Facility, st: Stage): string[] => [...STORY.greet[f][st], STORY.town[OWNER[f]].after];
+  /** Everything a townsperson says at her counter, every stage. */
+  const said = (f: Facility): string[] => [...STAGES.flatMap((st) => STORY.greet[f][st]), STORY.town[OWNER[f]].after];
+
+  it('a counter spends one 「……」 a stage at most, her thanks included; the town one a stage; none opens a line', () => {
+    for (const f of FACILITIES) {
+      for (const st of STAGES) {
+        expect(dots(pool(f, st).join('')), `${f} ${st}`).toBeLessThanOrEqual(1);
+        for (const t of pool(f, st)) expect(opens(t), t).toBe(false);
+      }
+    }
+    for (const st of STAGES) {
+      expect(dots(STORY.townLines[st].join('')), st).toBeLessThanOrEqual(1);
+      for (const t of STORY.townLines[st]) expect(opens(t), t).toBe(false);
+    }
+    // the light side: the merchant, the bellkeeper after the finale, the guild's leads
+    for (const t of [STORY.merchant.lost, STORY.merchant.found, ...STORY.bellkeeper.after, ...Object.values(STORY.leads)]) {
+      expect(dots(t), t).toBeLessThanOrEqual(1);
+      expect(opens(t), t).toBe(false);
+    }
+    // the bellkeeper while he waits is the heavy side: one a line, in half his lines at most
+    for (const t of STORY.bellkeeper.oath) expect(dots(t), t).toBeLessThanOrEqual(1);
+    expect(STORY.bellkeeper.oath.filter((t) => dots(t) > 0).length * 2).toBeLessThanOrEqual(STORY.bellkeeper.oath.length);
+    // the gate catches what it guards: Martha's act 4 pool before V3 (her stage line and her thanks)
+    const oldInn = ['孩子，臉色好差。……不想說就別說，湯先喝了。', '今天多添了一道菜。吃飽了，身子才擋得住。……等一下，今天的事說給我聽。'];
+    expect(dots(oldInn.join(''))).toBe(2);
+  });
+
+  it('only Orik shouts at his counter, three a stage at most; the bellkeeper never shouts or laughs', () => {
+    for (const f of FACILITIES.filter((x) => x !== 'shop')) for (const t of said(f)) expect(t, f).not.toMatch(/！/);
+    for (const st of STAGES) expect((STORY.greet.shop[st].join('').match(/！/g) ?? []).length, st).toBeLessThanOrEqual(3);
+    for (const t of [...STORY.bellkeeper.oath, ...STORY.bellkeeper.after]) expect(t).not.toMatch(/！|哈哈/);
+  });
+
+  it('every townsperson has a running bit in most stages, and every greeting of Orik is a pitch', () => {
+    const BIT: Record<Facility, RegExp> = {
+      guild: /紅筆|打勾|勾|欄|表格|蓋章|規章|登記/,   // Anna: forms, checkboxes, the red pen
+      shop: /好貨|算你|價|老頭子我/,                    // Orik: the pitch
+      inn: /湯|日記|吃/,                                 // Martha: soup and the diary
+      gate: /別逞強|呵欠/,                              // Glen: 「別逞強」 and his yawn
+      forge: /鐵|爐/,                                    // Doran: iron and the fire
+    };
+    const MIN: Record<Facility, number> = { guild: 5, shop: 6, inn: 6, gate: 5, forge: 5 };
+    for (const f of FACILITIES) {
+      const stages = STAGES.filter((st) => STORY.greet[f][st].some((t) => BIT[f].test(t)));
+      expect(stages.length, `${f}: ${stages.join()}`).toBeGreaterThanOrEqual(MIN[f]);
+    }
+    for (const st of STAGES) for (const t of STORY.greet.shop[st]) expect(t, st).toMatch(/好貨|算你|價|買|賣|帶|囤|挑|拿|光臨/);
+    expect(STAGES.filter((st) => STORY.greet.gate[st].some((t) => /別逞強/.test(t))).length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('a running bit comes back changed: no two greetings of one townsperson share a clause, her catchphrases aside', () => {
+    // the catchphrases are meant to recur (style bible §3); what follows them must not
+    const CATCH = new Set(['今天也請平安歸來', '門還開著', '好鐵配好手藝', '爐火正旺', '歡迎光臨', '歡迎回來', '去吧']);
+    const clauses = (t: string): string[] => t.replace(/[「」『』]/g, '').split(/[。！？，：、]|──/).filter((c) => c.length >= 4 && !CATCH.has(c));
+    for (const f of FACILITIES) {
+      const seen = new Map<string, string>();
+      for (const t of said(f)) {
+        for (const c of new Set(clauses(t))) {
+          expect(seen.get(c), `${f}: 「${c}」 in ${seen.get(c)} and ${t}`).toBeUndefined();
+          seen.set(c, t);
+        }
+      }
+    }
+    // the splitter: the catchphrase and short beats are not counted, the clauses around them are
+    expect(clauses('下去之前，燈帶了嗎？……好。今天也請平安歸來。')).toEqual(['下去之前', '燈帶了嗎']);
+  });
+
+  it('Doran says it in few words', () => {
+    for (const t of said('forge')) expect([...t].length, t).toBeLessThanOrEqual(28);
+  });
+
+  it("the leads keep each sighting's picture (lore ledger I-127 to I-134), whatever Anna adds", () => {
+    const PICTURE: Record<string, string[]> = {
+      selene: ['水晶洞窟', '看見了月光', '照不到天的洞裡', '跪著一個人影', '登記表上，還沒有這個人'],
+      chizuru: ['霜凍之地回來的人', '冰裡', '握長槍的人', '姿勢像在做什麼儀式'],
+      safira: ['火海', '一個人跳著劍舞', '那拍子像在等誰跟上'],
+      sylvie: ['一直有弓弦的聲音', '一響就有怪物倒下', '箭，總有用完的時候'],
+      noel: ['岩台上', '雷整天亂劈', '雷光裡有個小小的人影', '連自己腳邊都劈', '撐不了多久'],
+      bobby: ['星燈神殿', '一直傳出扳手的聲音', '倒下的古代機兵身上趴著一個人', '怪物圍過來也不抬頭'],
+      liz: ['寶庫的鎖被撬開了', '金幣堆成小山', '旁邊靠著一個人', '一直沒有站起來'],
+      scarlet: ['一位騎士舉著燃燒的劍', '守在城門前', '靠近的人，全被趕了回來', '把隊伍整好'],
+    };
+    for (const m of MEETINGS) for (const p of PICTURE[m.id]) expect(STORY.leads[m.id], m.id).toContain(p);
+  });
+});
