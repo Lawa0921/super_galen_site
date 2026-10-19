@@ -65,6 +65,9 @@ import { normalizeAppearance, type Appearance } from '../engine/appearance';
 import { Vanity, type VanityJSON } from '../engine/vanity';
 import type { SettlementJSON } from '../engine/settlement';
 import { Progression, type LevelsJSON } from '../engine/levels';
+import type { FolkJSON } from '../engine/folk';
+import type { QuestLogJSON } from '../engine/quests';
+import { BUFFS, type BuffKind } from '../engine/folkDefs';
 
 export const SAVE_FORMAT = 9;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
@@ -150,6 +153,17 @@ export interface SaveHeader {
   halves?: number[];
   /** 等級 / 技能樹（沒有 = 1 級、沒點技能） */
   levels?: LevelsJSON;
+  /** 世界 NPC（好感度 / 遇見的旅人 / 冷卻）+ 委託 + buff；沒有 = 都是初始值 */
+  folk?: FolkSave;
+}
+export interface FolkSave { world: FolkJSON; quests: QuestLogJSON; buff: { kind: BuffKind; until: number } | null; }
+function validFolk(v: unknown): FolkSave | undefined {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
+  const o = v as Partial<FolkSave>;
+  const b = o.buff as { kind?: unknown; until?: unknown } | null | undefined;
+  const buff = b && typeof b === 'object' && typeof b.kind === 'string' && b.kind in BUFFS && typeof b.until === 'number' && Number.isFinite(b.until)
+    ? { kind: b.kind as BuffKind, until: b.until } : null;
+  return { world: (o.world ?? {}) as FolkJSON, quests: (o.quests ?? {}) as QuestLogJSON, buff };
 }
 /** 存檔裡的等級資料 → 正規化後的副本 */
 function validLevels(raw: unknown): LevelsJSON {
@@ -453,6 +467,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       settle: game.settle.toJSON(),
       halves: encodeFrozen(w.half),
       levels: game.levels.toJSON(),
+      folk: { world: game.folk.toJSON(), quests: game.quests.toJSON(), buff: game.buff ? { ...game.buff } : null },
     },
     chunks,
   };
@@ -654,6 +669,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     settle: h.settle && typeof h.settle === 'object' ? h.settle : undefined,
     halves: validHalves(h.halves),
     levels: validLevels(h.levels),
+    folk: validFolk(h.folk),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -850,6 +866,9 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     }
   }
   game.settle.load(h.settle, w);
+  game.folk.load(h.folk?.world, w);
+  game.quests.load(h.folk?.quests);
+  game.buff = h.folk?.buff ? { ...h.folk.buff } : null;
   // 首領戰中存檔（怪物不存）：退還召喚道具，背包滿就掉在腳邊
   const refund = h.bossActive ? BOSS_SUMMON_ITEM[h.bossActive] : undefined;
   if (refund && !game.bossEnemy()) {

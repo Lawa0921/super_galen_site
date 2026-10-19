@@ -57,6 +57,13 @@ import { CALM_REGEN, Settlements, inClaim, type SettleEvent, type SettleHost, ty
 import { NPCS, earn, forgeMul, npcLine, pay, shopPrice, walletOf, type NpcKind } from './npcs';
 import { PAIR_OF_LEFT, PAIR_OF_RIGHT } from './furniture';
 import { findStandSpot } from './npcPath';
+import { FolkWorld, type FolkEvent, type FolkHost, type FolkNpc } from './folk';
+import { ROLES, AFF_QUEST, AFF_RESCUE, BUFFS, affMul, affTier, type BuffKind, type FolkService } from './folkDefs';
+import { QuestLog, type QuestDef, type GiverInfo, type QuestCtx } from './quests';
+import { landmarkReward } from './sites';
+import type { VillageInfo, HallInfo } from './gen/settlements';
+import type { LandmarkInfo } from './gen/landmarks';
+import { isLandmarkTile } from './tiles';
 import { WALL_ITEM } from './items';
 import {
   Progression, levelDef, levelHp, lootIlvl, milestoneAt, respecCost, skillPointsAt, titleFor, xpForEvent, type GainResult, type XpCtx, type XpSource,
@@ -181,6 +188,18 @@ export type DelveEvent =
   | { type: 'trade'; kind: NpcKind; action: 'buy' | 'sell' | 'service'; item?: ItemId; n?: number; coins: number }
   /** 傳送點：從一個據點傳到另一個 */
   | { type: 'travel'; from: number; to: number; x: number; y: number }
+  // ── 世界 NPC / 委託 / 地標 ──
+  | FolkEvent
+  /** 和村民 / 矮人 / 旅人說話（UI 開 NPC 面板）；board = 從委託板打開 */
+  | { type: 'folktalk'; key: string; line: string; board?: boolean }
+  /** 和村民 / 矮人 / 旅人交易 / 服務 */
+  | { type: 'folktrade'; key: string; action: 'buy' | 'sell' | 'service'; item?: ItemId; n?: number; coins: number; service?: FolkService }
+  /** 委託：接下 / 進度 / 條件達成 / 交付 */
+  | { type: 'quest'; phase: 'accept' | 'progress' | 'ready' | 'done'; id: string; title: string; progress?: number; n?: number }
+  /** 地標：第一次領到（first）/ 已經領過 */
+  | { type: 'landmark'; x: number; y: number; tile: number; first: boolean; title: string; text: string; clue: string | null; items: { item: ItemId; n: number }[]; coins: number }
+  /** 得到 / 失去 buff */
+  | { type: 'buff'; kind: BuffKind; on: boolean }
   // ── 等級 / 技能（engine/levels.ts、engine/skills.ts） ──
   /** 得到經驗（x, y = 飄字位置 px） */
   | { type: 'xp'; amount: number; src: XpSource; x: number; y: number }
@@ -409,6 +428,8 @@ const ORE_TILES = new Set<number>([T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOL
 const LEGEND_FISH = new Set<ItemId>(FISH.filter((f) => f.rarity === 'legendary').map((f) => f.item));
 /** 會換算經驗的事件種類（engine/levels.ts xpForEvent） */
 const LEVEL_EVENTS = new Set<DelveEvent['type']>(['kill', 'place', 'mine', 'chest', 'craft', 'discover', 'lore', 'treasure', 'codex', 'fish', 'rooms', 'settlement', 'npc']);
+/** 救援護送的獎勵 */
+const ESCORT_REWARD = { xp: 180, coins: 150, item: { item: 'gear_shard' as ItemId, n: 2 } };
 /** 裝備的位置：背包格號碼或裝備槽 */
 export type GearAt = number | EquipSlot;
 export type ForgeResult = { ok: true } | { ok: false; reason: 'none' | 'station' | 'cost' | 'max' | 'unique' | 'locked' };
@@ -464,6 +485,21 @@ export class DelveGame {
   bed: { x: number; y: number } | null = null;
   /** 據點與居民（存檔內容） */
   readonly settle = new Settlements();
+  /** 地表村落 / 矮人地廳（世界生成） */
+  readonly villages: readonly VillageInfo[];
+  readonly halls: readonly HallInfo[];
+  /** 每個發現地點的地標（一次性發現物；領過的記在 discovery.landmarks） */
+  readonly landmarks: readonly LandmarkInfo[];
+  private landmarkAt = new Map<number, LandmarkInfo>();
+  /** 村民 / 矮人 / 旅人 / 受困探險者 + 好感度（存檔內容） */
+  readonly folk: FolkWorld;
+  /** 委託（存檔內容） */
+  readonly quests: QuestLog;
+  /** 目前的 buff（祝福 / 守護 / 礦工之歌；存檔內容） */
+  buff: { kind: BuffKind; until: number } | null = null;
+  private folkHost: FolkHost | null = null;
+  /** 嚮導上次標出的地點（UI 顯示） */
+  lastScout: { name: string; x: number; y: number } | null = null;
   /** 傳送石引導經過秒數；null = 沒在引導 */
   private recallT: number | null = null;
   /** 飾品快取（以背包裡的飾品簽名判斷是否要重算） */
@@ -630,7 +666,14 @@ export class DelveGame {
       surface: this.world.surface, layers: gen.layers, biomes: gen.biomes, structures: gen.structures, dungeon: gen.dungeon,
     });
     this.explored = new ExploredMap(this.world.width, this.world.height);
-    this.discovery = new Discovery(this.regions, { loreTotal: gen.tablets.length });
+    this.villages = gen.villages ?? [];
+    this.halls = gen.halls ?? [];
+    this.landmarks = gen.landmarks ?? [];
+    for (const l of this.landmarks) this.landmarkAt.set(this.world.idx(l.x, l.y), l);
+    this.discovery = new Discovery(this.regions, { loreTotal: gen.tablets.length, landmarks: [...this.landmarkAt.keys()] });
+    this.folk = new FolkWorld(this.seed, this.villages, this.halls);
+    this.folk.populate(this.world);
+    this.quests = new QuestLog(this.seed);
     this.player = makeBody(0, 0);
     this.teleport(this.spawn.x, this.spawn.y);
     this.inventory = starterInventory();
@@ -701,7 +744,7 @@ export class DelveGame {
       this.updateSettlements(dt);
       return;
     }
-    if (this.sleepT !== null) { this.updateSleep(dt); this.updateSettlements(dt); return; }
+    if (this.sleepT !== null) { this.updateSleep(dt); this.updateSettlements(dt); this.updateFolk(dt); return; }
     const knocked = this.knockT > 0;
     this.contact = liquidContact(this.world, this.player);
     const air0 = this.motion.airUsed ?? 0, climb0 = Boolean(this.motion.climbing), mantle0 = this.motion.mantle ?? null;
@@ -751,8 +794,11 @@ export class DelveGame {
       const held = this.inventory.selectedStack();
       const use = held ? ITEMS[held.item].use : undefined;
       const npc = this.useConsumed ? null : this.settle.npcAtPx(this.aimPx.x, this.aimPx.y);
+      const fk = this.useConsumed || npc ? null : this.folk.atPx(this.aimPx.x, this.aimPx.y);
       if (npc && this.canReach(Math.floor((npc.body.x + npc.body.w / 2) / TILE_SIZE), Math.floor((npc.body.y + npc.body.h / 2) / TILE_SIZE), this.reach() + 1)) {
         this.useConsumed = true; this.talkTo(npc);
+      } else if (fk && this.canReach(Math.floor((fk.body.x + fk.body.w / 2) / TILE_SIZE), Math.floor((fk.body.y + fk.body.h / 2) / TILE_SIZE), this.reach() + 1)) {
+        this.useConsumed = true; this.talkFolk(fk);
       } else if (isInteractive(this.world.getFg(x, y))) {
         if (!this.useConsumed) { this.useConsumed = true; this.interact(x, y); }
       } else if (use === 'hammer') {
@@ -769,6 +815,7 @@ export class DelveGame {
     }
     this.updateEntities(dt);
     this.updateSettlements(dt);
+    this.updateFolk(dt);
     if (this.openChest) {
       const { x, y } = this.openChest;
       if (!isChestTile(this.world.getFg(x, y)) || !this.canReach(x, y, this.reach() + 1.5)) this.closeChest();
@@ -1141,7 +1188,7 @@ export class DelveGame {
   }
   private currentPick(): PickStats {
     const st = this.activePick();
-    const k = 1 + this.levels.totals().mineSpd / 100;
+    const k = (1 + this.levels.totals().mineSpd / 100) * (this.buffOn('minesong') ? BUFFS.minesong.mine : 1);
     return st ? { speed: pickSpeed(st.item, st.gear) * k, tier: ITEMS[st.item].pick!.tier } : { ...HAND, speed: HAND.speed * k };
   }
 
@@ -1401,8 +1448,8 @@ export class DelveGame {
     const linked = this.linkedStations();
     const has = (id: number): boolean => this.nearTile(id) || Boolean(linked?.has(id));
     return {
-      workbench: has(T.WORKBENCH), furnace: has(T.FURNACE),
-      anvil: has(T.ANVIL) || this.nearNpc('smith'),
+      workbench: has(T.WORKBENCH), furnace: has(T.FURNACE) || this.nearTile(T.DWARF_FORGE),
+      anvil: has(T.ANVIL) || this.nearNpc('smith') || this.nearTile(T.DWARF_FORGE) || this.forgeFolk() !== null,
       campfire: has(T.CAMPFIRE) || has(T.FIREPLACE_L) || this.nearNpc('cook'),
     };
   }
@@ -1561,6 +1608,14 @@ export class DelveGame {
       if (c) this.events.push({ type: 'hearth', id: c.id, x, y });
       return Boolean(c);
     }
+    if (id === T.QUEST_BOARD) {
+      const v = this.villages.findIndex((q) => Math.abs(q.board.x - x) <= 2 && Math.abs(q.board.y - y) <= 2);
+      const elder = this.folk.byKey(`v${Math.max(0, v)}:elder`);
+      if (!elder) return false;
+      this.events.push({ type: 'folktalk', key: elder.key, line: '委託板上釘著幾張紙條。做完了去找村長領報酬。', board: true });
+      return true;
+    }
+    if (isLandmarkTile(id)) return this.claimLandmark(x, y);
     if (id === T.LORE_TABLET) {
       const lid = this.tabletId(x, y);
       this.events.push({ type: 'lore', id: lid, x, y, first: this.discovery.readLore(lid) });
@@ -1992,7 +2047,7 @@ export class DelveGame {
   /** 玩家受傷（原始傷害，扣防禦）；srcX = 傷害來源 x（擊退方向）。回傳是否有受傷 */
   hurtPlayer(raw: number, srcX: number): boolean {
     if (this.dead || this.iframes > 0) return false;
-    const amount = damageTaken(raw, this.stats().defense);
+    const amount = Math.max(1, Math.round(damageTaken(raw, this.stats().defense) * (this.buffOn('ward') ? BUFFS.ward.dmgMul : 1)));
     this.applyDamage(amount, false);
     if (this.dead) return true;
     const p = this.player;
@@ -2078,7 +2133,8 @@ export class DelveGame {
     const max = this.maxHp();
     const st = this.stats();
     const regen = (this.burning > 0 ? 0 : regenRate(this.sinceHit, st.regenMul) + st.gear.regen) + (this.honeyT > 0 ? HONEY_REGEN : 0)
-      + (this.calm() ? CALM_REGEN : 0);
+      + (this.calm() ? CALM_REGEN * (this.healerHome() ? 2 : 1) : 0) + (this.buffOn('bless') ? BUFFS.bless.regen : 0);
+    if (this.buff && this.time >= this.buff.until) { this.events.push({ type: 'buff', kind: this.buff.kind, on: false }); this.buff = null; }
     if (this.hp < max) this.hp = Math.min(max, this.hp + regen * dt);
     else if (this.hp > max) this.hp = max;
     if (this.manaDelay > 0) this.manaDelay -= dt;
@@ -2736,7 +2792,7 @@ export class DelveGame {
     return tot;
   }
   /** 鍛造（洗煉 / 強化 / 升階）要在鐵砧旁 */
-  canForge(): boolean { return this.nearTile(T.ANVIL) || this.nearNpc('smith'); }
+  canForge(): boolean { return this.nearTile(T.ANVIL) || this.nearNpc('smith') || this.nearTile(T.DWARF_FORGE) || this.forgeFolk() !== null; }
   /** 鍛造成本（null = 已滿級 / 不能） */
   forgeCosts(at: GearAt): { reroll: Cost | null; upgrade: Cost | null; ascend: Cost | null } {
     const st = this.stackAt(at);
@@ -2904,7 +2960,7 @@ export class DelveGame {
   }
   private discounted(c: Cost | null): Cost | null {
     if (!c) return null;
-    const m = this.smithMul();
+    const m = Math.min(this.smithMul(), this.folkForgeMul());
     return m >= 1 ? c : { ...c, shard: Math.max(c.shard ? 1 : 0, Math.ceil(c.shard * m)), dust: Math.max(c.dust ? 1 : 0, Math.ceil(c.dust * m)) };
   }
   private talkTo(n: Npc): void {
@@ -2944,7 +3000,7 @@ export class DelveGame {
     this.events.push({ type: 'trade', kind, action: 'sell', item, n: k, coins: price * k });
     return true;
   }
-  /** 居民服務：製圖師打聽地點（其他服務是被動的） */
+  /** 居民服務：製圖師打聽地點（藥師 / 嚮導用 residentService；其他服務是被動的） */
   service(kind: NpcKind): boolean {
     const n = this.settle.npc(kind), sv = NPCS[kind].service;
     if (!n || !sv || sv.kind !== 'reveal') return false;
@@ -3034,6 +3090,363 @@ export class DelveGame {
     const here = this.settlementHere()?.id ?? this.settle.cores[0]?.id;
     return here !== undefined && Boolean(this.settle.moveIn(kind, here, this.world, force));
   }
+  // ── 世界 NPC（村民 / 矮人 / 旅人 / 受困探險者）、委託、地標、buff ──────
+  private updateFolk(dt: number): void {
+    const self = this;
+    this.folkHost ??= {
+      world: this.world, time: 0, day: 0,
+      get viewHalf() { return self.viewHalf; },
+      isNight: () => this.isNight(), playerTile: () => this.playerTile(),
+      underground: (x, y) => {
+        const cx = Math.max(0, Math.min(this.world.width - 1, x));
+        const b = this.dungeon?.bbox;
+        return y > this.layers.rock[cx] + 4 && !(b && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h);
+      },
+      onSurface: (x, y) => {
+        const cx = Math.max(0, Math.min(this.world.width - 1, x));
+        return y <= this.layers.rock[cx] - 6 && y <= this.world.surface[cx] + 4;
+      },
+      safeAt: (x, y) => this.settle.claimAt(x, y) !== null || this.siteAt(x, y) !== null,
+      playerOverlaps: (x, y) => this.tileOverlapsPlayer(x, y),
+      wantHerbalist: () => !this.settle.npc('healer') && !this.settle.invited.has('healer'),
+    };
+    const h = this.folkHost!;
+    h.time = this.time; h.day = dayIndexOf(this.time);
+    this.folk.update(dt, h);
+    for (const e of this.folk.drainEvents()) {
+      this.events.push(e);
+      if (e.phase === 'safe') this.refreshQuests();
+    }
+    if (this.tick % 30 === 0) this.refreshQuests();
+  }
+  /** (x,y) 在哪個村落 / 地廳裡（範圍含村外的緩坡） */
+  siteAt(x: number, y: number): { kind: 'village' | 'hall'; i: number } | null {
+    for (let i = 0; i < this.villages.length; i++) {
+      const v = this.villages[i];
+      if (x >= v.x0 - 12 && x <= v.x1 + 12 && y >= v.ground - 28 && y <= v.ground + 4) return { kind: 'village', i };
+    }
+    for (let i = 0; i < this.halls.length; i++) {
+      const h = this.halls[i];
+      if (x >= h.x0 - 4 && x <= h.x1 + 4 && y >= h.y0 - 5 && y <= h.floorY + 2) return { kind: 'hall', i };
+    }
+    return null;
+  }
+  /** 地區名（村落 / 地廳：discovery 的名字） */
+  siteName(kind: 'village' | 'hall', i: number): string {
+    const rk = kind === 'village' ? 'village' : 'dwarf_hall';
+    const s = kind === 'village' ? this.villages[i] : this.halls[i];
+    if (!s) return '';
+    const cx = (s.x0 + s.x1) >> 1, cy = kind === 'village' ? (s as VillageInfo).ground - 2 : (s as HallInfo).floorY - 2;
+    return this.regions.find((r) => r.kind === rk && r.contains(cx, cy))?.name ?? '';
+  }
+  private talkFolk(n: FolkNpc): void {
+    const lines = ROLES[n.role].lines;
+    const line = n.role === 'stranded' ? (n.safe ? '多虧了你，我終於回到安全的地方了！' : n.following ? '我跟著你，別走太快喔。' : lines[0]) : lines[n.talks++ % lines.length];
+    n.say = line; n.sayT = 4;
+    n.dir = this.playerCenter().x >= n.body.x + n.body.w / 2 ? 1 : -1;
+    this.folk.talkAff(n.key, dayIndexOf(this.time));
+    this.refreshQuests();
+    this.events.push({ type: 'folktalk', key: n.key, line });
+  }
+  /** debug / e2e：直接打開某人的面板（不用走過去） */
+  debugTalk(key: string): boolean { const n = this.folk.byKey(key); if (!n) return false; this.talkFolk(n); return true; }
+  /** 好感度的價格倍率 */
+  folkMul(key: string): number { return affMul(this.folk.affinity(key)); }
+  folkPrice(key: string, base: number): number { return Math.max(1, Math.round(base * this.folkMul(key))); }
+  /** 玩家在某人身邊（tiles 格內） */
+  nearFolk(n: FolkNpc, tiles = 7): boolean {
+    const pc = this.playerCenter(), b = n.body;
+    return Math.abs(b.x + b.w / 2 - pc.x) <= tiles * TILE_SIZE && Math.abs(b.y + b.h / 2 - pc.y) <= tiles * TILE_SIZE;
+  }
+  /** 身邊的鐵匠 / 符文匠（鍛造站 + 好感度折扣） */
+  forgeFolk(): FolkNpc | null {
+    for (const n of this.folk.npcs) if ((n.role === 'smith' || n.role === 'runesmith') && this.nearFolk(n, 6)) return n;
+    return null;
+  }
+  private folkForgeMul(): number {
+    const n = this.forgeFolk();
+    return n ? Math.max(0.6, Math.round((affMul(this.folk.affinity(n.key)) - 0.05) * 100) / 100) : 1;
+  }
+  /** 向 NPC 買第 i 項（好感度不夠 / 錢不夠 / 背包滿 → false） */
+  folkBuy(key: string, i: number): boolean {
+    const n = this.folk.byKey(key), e = n ? this.folk.shop(n)[i] : undefined;
+    if (!n || !e) return false;
+    if ((e.tier ?? 0) > affTier(this.folk.affinity(key))) return false;
+    const price = this.folkPrice(key, e.price);
+    if (this.coins() < price) { this.block('use', 'coins', 0, 0); return false; }
+    const trial = Inventory.fromJSON(this.inventory.toJSON());
+    if (!pay(trial, price) || trial.add(e.item, e.n) > 0) { this.block('use', 'bagfull', 0, 0); return false; }
+    this.inventory.slots = trial.slots;
+    this.folk.tradeAff(key, dayIndexOf(this.time));
+    this.events.push({ type: 'folktrade', key, action: 'buy', item: e.item, n: e.n, coins: price });
+    return true;
+  }
+  /** 賣給 NPC 的單價（好感度每一級 +8%） */
+  folkSellPrice(key: string, item: ItemId): number {
+    const n = this.folk.byKey(key), base = n ? ROLES[n.role].buys?.[item] ?? 0 : 0;
+    return base ? Math.max(1, Math.round(base * (1 + affTier(this.folk.affinity(key)) * 0.08))) : 0;
+  }
+  folkSell(key: string, item: ItemId, k = 1): boolean {
+    const price = this.folkSellPrice(key, item), n = Math.min(k, this.inventory.count(item));
+    if (!price || n <= 0) return false;
+    this.inventory.remove(item, n);
+    const left = earn(this.inventory, price * n);
+    if (left > 0) this.dropAtTile('copper_coin', left, this.playerTile().x, this.playerTile().y);
+    this.folk.tradeAff(key, dayIndexOf(this.time));
+    this.events.push({ type: 'folktrade', key, action: 'sell', item, n, coins: price * n });
+    return true;
+  }
+  buffOn(k: BuffKind): boolean { return this.buff !== null && this.buff.kind === k && this.time < this.buff.until; }
+  giveBuff(k: BuffKind): void {
+    this.buff = { kind: k, until: this.time + BUFFS[k].secs };
+    this.events.push({ type: 'buff', kind: k, on: true });
+  }
+  /** 藥師住在玩家所在的據點：據點回血加倍 */
+  private healerHome(): boolean {
+    const n = this.settle.npc('healer');
+    if (!n) return false;
+    const t = this.playerTile(), c = this.settle.claimAt(t.x, t.y);
+    return Boolean(c && c.id === n.core);
+  }
+  /**
+   * 服務（NPC 或居民共用）：heal / bless / ward / minesong 付錢；hint 免費；scout 標地點；invite / rescue 不收錢。
+   * 回傳顯示給玩家的訊息（null = 做不到，原因在 block 事件或回傳的 fail）
+   */
+  doService(kind: FolkService, price: number, who: { key?: string; resident?: NpcKind }): { ok: boolean; msg: string } {
+    const fail = (msg: string): { ok: boolean; msg: string } => ({ ok: false, msg });
+    if (price > 0 && this.coins() < price) { this.block('use', 'coins', 0, 0); return fail('錢不夠'); }
+    let msg = '';
+    switch (kind) {
+      case 'heal': {
+        if (this.hp >= this.maxHp()) return fail('你很健康，不需要治療');
+        const before = this.hp;
+        this.hp = this.maxHp();
+        this.burning = 0;
+        const p = this.player;
+        this.events.push({ type: 'heal', amount: Math.round(this.hp - before), x: p.x + p.w / 2, y: p.y });
+        msg = '傷口都處理好了';
+        break;
+      }
+      case 'bless': case 'ward': case 'minesong':
+        this.giveBuff(kind);
+        msg = `得到「${BUFFS[kind].zh}」：${BUFFS[kind].desc}（${Math.round(BUFFS[kind].secs / 60)} 分鐘）`;
+        break;
+      case 'hint': return { ok: true, msg: this.nextStepHint() };
+      case 'scout': {
+        const r = this.scout();
+        if (!r) return fail('附近已經沒有我不知道的地方了');
+        msg = `「${r.name}」在（${r.x}, ${r.y}），已經標在你的地圖上了`;
+        break;
+      }
+      default: return fail('');
+    }
+    if (price > 0) pay(this.inventory, price);
+    if (who.key) {
+      this.folk.tradeAff(who.key, dayIndexOf(this.time));
+      this.events.push({ type: 'folktrade', key: who.key, action: 'service', coins: price, service: kind });
+    } else if (who.resident) this.events.push({ type: 'trade', kind: who.resident, action: 'service', coins: price });
+    return { ok: true, msg };
+  }
+  /** NPC 的服務（依好感度等級門檻、價格倍率） */
+  folkService(key: string, kind: FolkService): { ok: boolean; msg: string } {
+    const n = this.folk.byKey(key);
+    const def = n ? ROLES[n.role].services.find((s) => s.kind === kind) : undefined;
+    if (!n || !def) return { ok: false, msg: '' };
+    if ((def.tier ?? 0) > affTier(this.folk.affinity(key))) return { ok: false, msg: '還不夠熟，對方不願意幫這個忙' };
+    if (kind === 'invite') return this.inviteFolk(n);
+    if (kind === 'rescue') return this.rescue(n);
+    if (kind === 'forge' || kind === 'deepforge') return { ok: true, msg: '在背包選一件裝備，按「鍛造」' };
+    return this.doService(kind, def.price ? this.folkPrice(key, def.price) : 0, { key });
+  }
+  /** 居民的服務（藥師 / 嚮導；依心情調價） */
+  residentService(kind: NpcKind, action: FolkService): { ok: boolean; msg: string } {
+    const n = this.settle.npc(kind), sv = NPCS[kind].service;
+    if (!n || !sv) return { ok: false, msg: '' };
+    const base = sv.price ?? 0;
+    const price = action === 'hint' ? 0 : action === 'bless' ? shopPrice(base * 3, n.mood) : action === 'ward' ? shopPrice(base * 5, n.mood) : shopPrice(base, n.mood);
+    if (sv.kind === 'heal' && !['heal', 'bless', 'ward'].includes(action)) return { ok: false, msg: '' };
+    if (sv.kind === 'guide' && !['hint', 'scout'].includes(action)) return { ok: false, msg: '' };
+    return this.doService(action, price, { resident: kind });
+  }
+  /** 旅行藥師 → 邀請她到據點（成為藥師居民）；探險者 → 嚮導 */
+  private inviteFolk(n: FolkNpc): { ok: boolean; msg: string } {
+    const kind: NpcKind = n.role === 'herbalist' ? 'healer' : 'guide';
+    if (n.role === 'stranded' && !n.safe) return { ok: false, msg: '先把他安全帶回去吧' };
+    if (!this.settle.invite(kind)) return { ok: false, msg: this.settle.npc(kind) ? `據點已經有${NPCS[kind].title}了` : '已經邀請過了' };
+    this.folk.addAff(n.key, 10);
+    this.folk.dismiss(n);
+    const has = this.settle.cores.length > 0;
+    this.events.push({ type: 'folktrade', key: n.key, action: 'service', coins: 0, service: 'invite' });
+    return { ok: true, msg: has ? `${n.name}答應了！等據點有一間合格的空房（有床），白天就會搬過來。` : `${n.name}答應了！先做一個「據點爐心」、蓋好有床的房間，她就會搬過來。` };
+  }
+  /** 救援受困探險者：開始跟著玩家 + 接下護送委託 */
+  private rescue(n: FolkNpc): { ok: boolean; msg: string } {
+    if (!this.folk.startFollow(n)) return { ok: false, msg: '' };
+    const def: QuestDef = {
+      id: `${n.key}#escort`, giver: n.key, giverName: n.name, kind: 'escort', n: 1, target: n.key,
+      title: `護送：${n.name}`, desc: `把受困的${n.name}帶到地表、村落或據點。他會跟著你走（太遠會自己跟上）。`, reward: { ...ESCORT_REWARD },
+    };
+    if (this.quests.active.length >= 5) this.quests.active.push({ def, progress: 0 }); else this.quests.accept(def);
+    this.folk.addAff(n.key, AFF_RESCUE);
+    this.events.push({ type: 'quest', phase: 'accept', id: def.id, title: def.title });
+    return { ok: true, msg: `${n.name}抓住你的衣角：「我、我跟著你！」帶他到地表、村落或據點就安全了。` };
+  }
+  /** 深岩升階（矮人符文匠）：用金錠 / 熔岩錠 + 銅幣代替星塵，把裝備升一階 */
+  deepforgeCost(at: GearAt, key: string): { bar: ItemId; n: number; coins: number } | null {
+    const st = this.stackAt(at);
+    if (!st || !gearSlot(st.item)) return null;
+    const r = st.gear?.rarity ?? 0;
+    if (r >= 4) return null;
+    return r < 2 ? { bar: 'gold_bar', n: 2 + r, coins: this.folkPrice(key, 120 * (r + 1)) } : { bar: 'molten_bar', n: r, coins: this.folkPrice(key, 200 * (r + 1)) };
+  }
+  deepforge(at: GearAt, key: string): ForgeResult {
+    const n = this.folk.byKey(key), st = this.stackAt(at);
+    if (!n || n.role !== 'runesmith' || !st || !gearSlot(st.item)) return { ok: false, reason: 'none' };
+    if (!this.nearFolk(n, 8)) return { ok: false, reason: 'station' };
+    if (affTier(this.folk.affinity(key)) < 1) return { ok: false, reason: 'locked' };
+    const c = this.deepforgeCost(at, key);
+    if (!c) return { ok: false, reason: 'max' };
+    if (!this.inventory.has(c.bar, c.n) || this.coins() < c.coins) return { ok: false, reason: 'cost' };
+    const base: Gear = st.gear ?? { rarity: 0, ilvl: baseTier(st.item), plus: 0, affixes: [] };
+    const next = ascendGear(st.item, base, this.lootRng);
+    if (!next) return { ok: false, reason: 'max' };
+    this.inventory.remove(c.bar, c.n);
+    pay(this.inventory, c.coins);
+    st.gear = next;
+    this.gearChanged(at);
+    this.folk.tradeAff(key, dayIndexOf(this.time));
+    this.events.push({ type: 'forge', action: 'ascend', slot: at, item: st.item });
+    return { ok: true };
+  }
+  /** 嚮導 / 地標線索：把最近的、還沒去過的地點（或還沒領過的地標）標在地圖上 */
+  scout(): { name: string; x: number; y: number } | null {
+    const pt = this.playerTile();
+    const marked = (x: number, y: number): boolean => this.markers.some((m) => m.x === x && m.y === y);
+    const cand: { name: string; x: number; y: number; d: number }[] = [];
+    for (const l of this.landmarks) {
+      const i = this.world.idx(l.x, l.y);
+      if (this.discovery.landmarks.has(i) || marked(l.x, l.y)) continue;
+      cand.push({ name: tileDef(l.tile).name.zh, x: l.x, y: l.y, d: Math.hypot(l.x - pt.x, (l.y - pt.y) * 1.5) });
+    }
+    for (const r of this.regions) {
+      if (r.ax < 0 || r.cat === 'land' || r.cat === 'depth' || this.discovery.isFound(r.id) || marked(r.ax, r.ay)) continue;
+      cand.push({ name: r.name, x: r.ax, y: r.ay, d: Math.hypot(r.ax - pt.x, (r.ay - pt.y) * 1.5) * 0.9 });
+    }
+    cand.sort((a, b) => a.d - b.d);
+    const c = cand[0];
+    if (!c) return null;
+    this.explored.revealDisc(c.x, c.y, 10);
+    if (this.markers.length < 20) this.markers.push({ x: c.x, y: c.y });
+    this.lastScout = { name: c.name, x: c.x, y: c.y };
+    return this.lastScout;
+  }
+  /** 嚮導的「下一步」：依目前進度給一句具體的建議 */
+  nextStepHint(): string {
+    const pt = this.playerTile();
+    const dir = (x: number, y: number): string => `${x > pt.x ? '往東' : '往西'} ${Math.abs(x - pt.x)} 格${y > pt.y + 20 ? '、往下 ' + (y - pt.y) + ' 格' : ''}`;
+    const pick = this.activePick();
+    const tier = pick ? ITEMS[pick.item].pick!.tier : 0;
+    if (tier <= 1) return '先換一把好鎬：挖銅礦，用熔爐煉成銅錠，在鐵砧旁做銅鎬。挖得快，往下才有意思。';
+    if (!this.settle.cores.length) return '做一個「據點爐心」（石頭 15、木材 5、火把 3）放在地上，蓋好有床的房間，就會有人搬來住。';
+    const vi = this.villages.findIndex((v) => !this.regions.some((r) => r.kind === 'village' && r.contains(v.x0 + 3, v.ground - 2) && this.discovery.isFound(r.id)));
+    if (vi >= 0) { const v = this.villages[vi]; return `${dir(v.x0, v.ground)}有一座村子「${this.siteName('village', vi)}」。村民會賣東西、幫你鍛造治療，村長那裡還有委託。`; }
+    if (!this.settle.invited.has('healer') && !this.settle.npc('healer')) return '白天在地表多走走：路邊偶爾會遇到旅行藥師，邀請她到據點，回血會快很多。';
+    const hi = this.halls.findIndex((h) => !this.regions.some((r) => r.kind === 'dwarf_hall' && r.contains((h.x0 + h.x1) >> 1, h.floorY - 2) && this.discovery.isFound(r.id)));
+    if (hi >= 0) { const h = this.halls[hi]; return `洞穴層深處住著矮人：${dir((h.x0 + h.x1) >> 1, h.floorY)}有「${this.siteName('hall', hi)}」。他們賣地表買不到的礦石，還能用錠幫你升階裝備。`; }
+    if (this.dungeon && !this.regions.some((r) => r.kind === 'dungeon' && this.discovery.isFound(r.id))) return `${dir(this.dungeon.bbox.x, this.dungeon.bbox.y)}有一座地下城。帶夠藥水，裡面的鑰匙能打開金寶箱。`;
+    if (!this.bossesDefeated.has('lantern_warden')) return '地下城最深處的守望者還沒被擊敗。準備好之後，用燈芯祭品把它叫出來吧。';
+    const left = this.landmarks.length - this.discovery.landmarks.size;
+    return left > 0 ? `這個世界還有 ${left} 件地標沒被發現。讓我幫你標一個在地圖上？` : '你已經走遍這個世界了。要不要試試蓋一座 Lv3 的村莊？';
+  }
+  // ── 委託 ──
+  private giverInfo(n: FolkNpc): GiverInfo {
+    return { key: n.key, name: n.name, race: n.race, x: Math.floor(n.body.x / TILE_SIZE), y: Math.floor(n.body.y / TILE_SIZE) };
+  }
+  private questCtx(): QuestCtx {
+    return {
+      day: dayIndexOf(this.time),
+      nearestUnfound: (x, y, cats, skip) => {
+        let best: { id: number; name: string; x: number; y: number } | null = null, bd = Infinity;
+        for (const r of this.regions) {
+          if (r.ax < 0 || !cats.includes(r.cat) || this.discovery.isFound(r.id) || skip.has(r.id) || r.kind === 'village' || r.kind === 'dwarf_hall') continue;
+          const d = Math.hypot(r.ax - x, (r.ay - y) * 1.2);
+          if (d < bd && d > 30) { bd = d; best = { id: r.id, name: r.name, x: r.ax, y: r.ay }; }
+        }
+        return best;
+      },
+    };
+  }
+  /** 某位委託人現在掛在板上的委託 */
+  questOffers(key: string): QuestDef[] {
+    const n = this.folk.byKey(key);
+    return n && ROLES[n.role].quests ? this.quests.offers(this.giverInfo(n), this.questCtx()) : [];
+  }
+  acceptQuest(key: string, id: string): boolean {
+    const q = this.questOffers(key).find((d) => d.id === id);
+    if (!q || !this.quests.accept(q)) return false;
+    if (q.at && this.markers.length < 20 && !this.markers.some((m) => m.x === q.at!.x && m.y === q.at!.y)) this.markers.push({ ...q.at });
+    if (q.at) this.explored.revealDisc(q.at.x, q.at.y, 8);
+    this.refreshQuests();
+    this.events.push({ type: 'quest', phase: 'accept', id, title: q.title });
+    return true;
+  }
+  /** 交付：要在委託人身邊（村長 / 長老 / 被護送的人） */
+  turnInQuest(id: string): boolean {
+    this.refreshQuests();
+    const q = this.quests.get(id);
+    if (!q || !this.quests.ready(q)) return false;
+    const giver = this.folk.byKey(q.def.giver);
+    if (!giver || !this.nearFolk(giver, 9)) return false;
+    if (q.def.kind === 'collect' && q.def.item && !this.inventory.has(q.def.item, q.def.n)) return false;
+    const def = this.quests.turnIn(id);
+    if (!def) return false;
+    if (def.kind === 'collect' && def.item) this.inventory.remove(def.item, def.n);
+    const left = earn(this.inventory, def.reward.coins);
+    const pt = this.playerTile();
+    if (left > 0) this.dropAtTile('copper_coin', left, pt.x, pt.y);
+    if (def.reward.item) { const l2 = this.inventory.add(def.reward.item.item, def.reward.item.n); if (l2 > 0) this.dropAtTile(def.reward.item.item, l2, pt.x, pt.y); }
+    this.folk.addAff(def.giver, AFF_QUEST);
+    this.addXp(def.reward.xp, 'quest');
+    this.events.push({ type: 'quest', phase: 'done', id, title: def.title });
+    if (def.kind === 'escort' && giver.role === 'stranded' && (this.settle.npc('guide') || this.settle.invited.has('guide'))) this.folk.dismiss(giver);
+    return true;
+  }
+  private questKill(kind: EnemyKind): void {
+    for (const q of this.quests.onKill(kind)) {
+      this.events.push({ type: 'quest', phase: this.quests.ready(q) ? 'ready' : 'progress', id: q.def.id, title: q.def.title, progress: q.progress, n: q.def.n });
+    }
+  }
+  /** 收集 / 探索 / 護送的進度；剛達成的發 ready 事件 */
+  refreshQuests(): void {
+    if (!this.quests.active.length) return;
+    const before = new Map(this.quests.active.map((q) => [q.def.id, this.quests.ready(q)]));
+    this.quests.refresh((it) => this.inventory.count(it), (r) => this.discovery.isFound(r), (k) => Boolean(this.folk.byKey(k)?.safe));
+    for (const q of this.quests.active) if (this.quests.ready(q) && !before.get(q.def.id)) this.events.push({ type: 'quest', phase: 'ready', id: q.def.id, title: q.def.title });
+  }
+  // ── 地標 ──
+  /** 領地標：第一次 → 獎勵 + 文字 + 線索；之後只顯示文字 */
+  private claimLandmark(x: number, y: number): boolean {
+    const i = this.world.idx(x, y), info = this.landmarkAt.get(i), tile = this.world.getFg(x, y);
+    const r = landmarkReward(this.seed, tile, info?.site ?? '', this.depthFrac(x, y), i);
+    if (!info || !this.discovery.claimLandmark(i)) {
+      this.events.push({ type: 'landmark', x, y, tile, first: false, title: r.title, text: '這裡已經搜過了。', clue: null, items: [], coins: 0 });
+      return true;
+    }
+    for (const it of r.items) { const left = this.inventory.add(it.item, it.n); if (left > 0) this.dropAtTile(it.item, left, x, y); }
+    if (r.coins) { const left = earn(this.inventory, r.coins); if (left > 0) this.dropAtTile('copper_coin', left, x, y); }
+    if (r.buff) this.giveBuff(r.buff);
+    const clue = r.clue ? this.scout() : null;
+    this.addXp(r.xp, 'discover', (x + 0.5) * TILE_SIZE, y * TILE_SIZE);
+    this.events.push({ type: 'landmark', x, y, tile, first: true, title: r.title, text: r.text, clue: clue ? clue.name : null, items: r.items, coins: r.coins });
+    this.refreshQuests();
+    return true;
+  }
+  /** debug / e2e：在玩家附近生出一位旅人 / 受困探險者 */
+  debugEncounter(role: 'peddler' | 'herbalist' | 'stranded', dx = 4): FolkNpc | null {
+    const t = this.playerTile(), s = findStandSpot(this.world, t.x + dx, t.y, 6);
+    if (!s) return null;
+    return role === 'stranded' ? this.folk.spawnStranded(this.world, s.x, s.y, this.time) : this.folk.spawnTraveller(this.world, role, s.x, s.y, this.time);
+  }
   // ── 等級 / 技能（engine/levels.ts、engine/skills.ts） ──────
   private levelCtx(): XpCtx {
     const w = this.world;
@@ -3054,6 +3467,7 @@ export class DelveGame {
     let ctx: XpCtx | null = null;
     for (; this.lvScan < ev.length; this.lvScan++) {
       const e = ev[this.lvScan];
+      if (e.type === 'kill') this.questKill(e.kind);
       if (!LEVEL_EVENTS.has(e.type)) continue;
       ctx ??= this.levelCtx();
       const a = xpForEvent(this.levels, e, ctx);

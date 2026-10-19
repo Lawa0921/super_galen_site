@@ -178,7 +178,7 @@ export interface Npc {
 }
 export interface NpcJSON { kind: NpcKind; x: number; y: number; core: number; home: number | null; talks?: number; }
 export interface PendingJSON { kind: NpcKind; core: number; at: number; }
-export interface SettlementJSON { cores: Core[]; npcs: NpcJSON[]; spawnCore: number | null; nextId: number; pending?: PendingJSON | null; }
+export interface SettlementJSON { cores: Core[]; npcs: NpcJSON[]; spawnCore: number | null; nextId: number; pending?: PendingJSON | null; invited?: NpcKind[]; }
 
 export type SettleEvent =
   /** coming = 條件達成、在路上（ARRIVE_DELAY 後從據點邊緣走進來）；arrive = 走進據點了 */
@@ -214,6 +214,14 @@ export class Settlements {
   private moveInT = 0;
   /** 正在路上的居民（條件達成時排定，at = 抵達的遊戲時間） */
   pending: PendingJSON | null = null;
+  /** 邀請過的招募型居民（藥師 / 嚮導）：條件達成就會搬來 */
+  readonly invited = new Set<NpcKind>();
+  /** 邀請招募型居民（已經住進來 / 已邀請 → false） */
+  invite(kind: NpcKind): boolean {
+    if (!NPCS[kind].need.recruit || this.invited.has(kind) || this.npc(kind)) return false;
+    this.invited.add(kind);
+    return true;
+  }
   /** 搬來前的等待（遊戲秒；測試 / e2e 可以調短） */
   arriveDelay = ARRIVE_DELAY;
   private lastLevel = new Map<number, number>();
@@ -335,6 +343,7 @@ export class Settlements {
     const ev = this.evaluation(id, w);
     if (!ev) return { ok: false, why: '沒有據點' };
     const need = NPCS[kind].need;
+    if (need.recruit && !this.invited.has(kind)) return { ok: false, why: need.zh };
     if (ev.level < need.level) return { ok: false, why: `據點要 Lv${need.level}` };
     if (need.tiles) {
       const have = need.tiles.reduce((a, t) => a + (ev.counts.get(t) ?? 0), 0);
@@ -628,6 +637,7 @@ export class Settlements {
     const r = (v: number): number => Math.round(v * 100) / 100;
     return {
       cores: this.cores.map((c) => ({ ...c })), spawnCore: this.spawnCore, nextId: this.nextId, pending: this.pending ? { ...this.pending } : null,
+      invited: [...this.invited],
       npcs: this.npcs.map((n) => {
         // 睡著的人存成床邊站著（讀檔後依時段再躺回去）
         const o: NpcJSON = { kind: n.kind, x: r(n.body.x), y: r(n.body.y), core: n.core, home: n.home };
@@ -638,9 +648,10 @@ export class Settlements {
   }
   /** 讀檔：壞欄位丟掉（不讓存檔壞掉）；核心那格不是爐心了也丟掉 */
   load(j: unknown, w: World): void {
-    this.cores = []; this.npcs = []; this.spawnCore = null; this.evals.clear(); this.evalRev = -1; this.lastLevel.clear();
+    this.cores = []; this.npcs = []; this.spawnCore = null; this.evals.clear(); this.evalRev = -1; this.lastLevel.clear(); this.invited.clear();
     if (!j || typeof j !== 'object') return;
     const o = j as Partial<SettlementJSON>;
+    for (const k of Array.isArray(o.invited) ? o.invited : []) if (NPC_KINDS.includes(k) && NPCS[k].need.recruit) this.invited.add(k);
     const int = (v: unknown): v is number => Number.isInteger(v);
     let maxId = 0;
     for (const c of Array.isArray(o.cores) ? o.cores : []) {
