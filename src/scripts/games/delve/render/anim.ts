@@ -57,13 +57,15 @@ export function armAngles(kind: PoseKind, frame: number, swing: number | null): 
   switch (kind) {
     case 'walk': {
       const s = Math.sin((frame / WALK_FRAMES) * Math.PI * 2);
-      front = Math.round(-s * 34);
+      // Q 版走路：手擺得大（前後各 ~48°）
+      front = Math.round(-s * 48);
       back = -front;
       break;
     }
     case 'jump': front = 150; back = -40; break;
     case 'fall': front = 115; back = -55; break;
-    default: front = frame === 1 || frame === 2 ? 4 : 2; back = -2;
+    // 待機：跟著呼吸，吸氣時肩膀往上、手微微往前後張開
+    default: front = [2, 5, 7, 4][((frame % 4) + 4) % 4]; back = [-2, -4, -6, -4][((frame % 4) + 4) % 4];
   }
   if (swing !== null) front = swing;
   return { front, back };

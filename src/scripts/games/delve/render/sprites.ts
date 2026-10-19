@@ -60,7 +60,7 @@ function pickBmp(pick: ItemId): Bmp {
   item.set(12, 24, w[1]); item.set(13, 24, w[1]); item.set(12, 23, w[2]); item.set(13, 23, w[1]);
   return item.outline(INK);
 }
-function armBmp(look: DollLook, back: boolean, pick: ItemId | null, blade: ItemId | null): Bmp {
+export function armBmp(look: DollLook, back: boolean, pick: ItemId | null, blade: ItemId | null): Bmp {
   const b = new Bmp(ARM_W, ARM_H);
   if (blade) b.blit(bladeBmp(blade), 0, ITEM_DY);
   if (pick) b.blit(pickBmp(pick), 0, ITEM_DY);

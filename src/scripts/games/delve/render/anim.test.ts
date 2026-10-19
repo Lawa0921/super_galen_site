@@ -106,6 +106,12 @@ describe('armAngles', () => {
     const i = armAngles('idle', 0, null);
     expect(Math.abs(i.front)).toBeLessThan(15);
   });
+  it('走路的手擺幅夠大（Q 版的誇張擺手，≥ 40°）；待機時手跟著呼吸微微動', () => {
+    const amp = Math.max(...Array.from({ length: WALK_FRAMES }, (_, f) => Math.abs(armAngles('walk', f, null).front)));
+    expect(amp).toBeGreaterThanOrEqual(40);
+    const idle = new Set(Array.from({ length: IDLE_FRAMES }, (_, f) => armAngles('idle', f, null).front));
+    expect(idle.size).toBeGreaterThanOrEqual(2);
+  });
   it('揮動時前手用 swing 角度', () => {
     expect(armAngles('walk', 3, 120).front).toBe(120);
     expect(armAngles('jump', 0, null).front).toBeGreaterThan(90);

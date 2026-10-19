@@ -104,6 +104,29 @@ export function nudge(c: RGB, dir: number): RGB {
   };
   return pick(NUDGE_MIN) ?? pick(0) ?? s;
 }
+/**
+ * 選擇性描邊（selective outline）的線色：同色系、夠深的色票色（不是一律純黑）。
+ * 目標 = 鄰色壓暗到約 4 成再拉高彩度；只從亮度 ≤ min(鄰色 × 0.6, maxLuma) 的色票裡挑最接近的。
+ */
+const OUT_CACHE = new Map<number, RGB>();
+export function outlineColor(n: RGB, maxLuma = 78): RGB {
+  const key = ((n[0] << 16) | (n[1] << 8) | n[2]) * 128 + maxLuma;
+  let r = OUT_CACHE.get(key);
+  if (r) return r;
+  const d = shade(n, 0.42), m = (d[0] + d[1] + d[2]) / 3;
+  const t = d.map((v) => Math.max(0, Math.min(255, Math.round(m + (v - m) * 1.7)))) as RGB;
+  const cap = Math.max(16, Math.min(luma(n) * 0.6, maxLuma));
+  let best: RGB = PALETTE[0], bd = Infinity;
+  for (const p of PALETTE) {
+    if (luma(p) > cap) continue;
+    const dd = dist2(t, p);
+    if (dd < bd) { bd = dd; best = p; }
+  }
+  r = best;
+  OUT_CACHE.set(key, r);
+  return r;
+}
+
 /** 把點陣吸附到色票：不透明像素換成最近色，任何 alpha>0 一律變成完全不透明 */
 export function snapBmp(b: Bmp): Bmp {
   const px = b.px;
@@ -180,6 +203,27 @@ export class Bmp {
         if (!n) continue;
         const c = color ?? shade(Bmp.unpack(n), 0.45);
         this.set(x, y, selOut > 0 ? mix(c, shade(Bmp.unpack(n), 0.5), selOut) : c);
+      }
+    }
+    return this;
+  }
+  /**
+   * 選擇性描邊：與不透明像素 4 鄰相接的透明像素，填「該鄰色的深同色系」（outlineColor）。
+   * 有多個鄰色時取最暗的那個鄰色來算（頭髮 / 臉的交界用頭髮的線色）。
+   */
+  selOutline(maxLuma = 78): Bmp {
+    const src = this.px.slice();
+    const at = (x: number, y: number): number => (x >= 0 && y >= 0 && x < this.w && y < this.h ? src[y * this.w + x] : 0);
+    for (let y = 0; y < this.h; y++) {
+      for (let x = 0; x < this.w; x++) {
+        if (at(x, y) !== 0) continue;
+        let best = 0, bl = Infinity;
+        for (const v of [at(x - 1, y), at(x + 1, y), at(x, y - 1), at(x, y + 1)]) {
+          if (!(v >>> 24)) continue;
+          const l = luma(Bmp.unpack(v));
+          if (l < bl) { bl = l; best = v; }
+        }
+        if (best) this.set(x, y, outlineColor(Bmp.unpack(best), maxLuma));
       }
     }
     return this;

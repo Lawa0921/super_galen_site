@@ -8,12 +8,20 @@ export function aimArmDeg(rad: number, facing: 1 | -1): number {
 }
 const easeOut = (t: number): number => 1 - (1 - t) * (1 - t);
 
+/** 三段揮擊：起手 a0 → 預備 a1（到 t1）→ 劈到 a2（到 t2，ease-in 加速）→ 收招 a3（ease-out） */
+function swing3(q: number, a0: number, a1: number, a2: number, a3: number, t1: number, t2: number): number {
+  if (q < t1) return a0 + (a1 - a0) * easeOut(q / t1);
+  if (q < t2) { const t = (q - t1) / (t2 - t1); return a1 + (a2 - a1) * (t * t * (1.6 - 0.6 * t)); }
+  return a2 + (a3 - a2) * easeOut((q - t2) / (1 - t2));
+}
 /** 攻擊時前手的角度。p = 進度 0..1、aimDeg = 指向瞄準點的手臂角度 */
 export function attackArmDeg(kind: WeaponKind, p: number, aimDeg: number): number {
   const q = Math.max(0, Math.min(1, p));
   switch (kind) {
-    case 'sword': return 200 - 175 * easeOut(Math.min(1, q / 0.8));
-    case 'broadsword': return 210 - 190 * Math.min(1, q < 0.25 ? q * 0.6 : 0.15 + (q - 0.25) * 1.6);
+    // 劍：預備（往後上拉）→ 加速下劈、劈過頭 → 收招回彈一點
+    case 'sword': return swing3(q, 200, 222, 12, 30, 0.12, 0.58);
+    // 大劍：預備更久更高、劈得更低、收得更慢
+    case 'broadsword': return swing3(q, 210, 236, 4, 22, 0.25, 0.64);
     case 'throw':
     case 'boomerang': return q < 0.5 ? 175 - 230 * q : 60;
     default: return aimDeg; // spear / bow / staff

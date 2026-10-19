@@ -80,6 +80,22 @@ describe('紙娃娃影格', () => {
   });
 });
 
+describe('動作：呼吸 / 擺動', () => {
+  it('待機呼吸：四格裡身體有起伏（胸口那幾列會變）、頭慢一拍跟著沉；四格不全相同', () => {
+    const l = plainLook(DEF);
+    const fr = [0, 1, 2, 3].map((f) => flatFrame(avatarFrame(l, 'idle', f)));
+    expect(new Set(fr.map((b) => b.px.join())).size).toBeGreaterThanOrEqual(3);
+    const top = (b: Bmp): number => { for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) return y; return b.h; };
+    expect(new Set(fr.map(top)).size).toBeGreaterThanOrEqual(2);
+  });
+  it('走路：身體在踏步時上下彈（頭頂高度至少兩種）', () => {
+    const l = plainLook({ ...DEF, ahoge: false });
+    const top = (b: Bmp): number => { for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) return y; return b.h; };
+    const ys = new Set(Array.from({ length: SHEET.walk[1] }, (_, f) => top(flatFrame(avatarFrame(l, 'walk', f)))));
+    expect(ys.size).toBeGreaterThanOrEqual(2);
+  });
+});
+
 describe('圖層', () => {
   it('側面影格依 DOLL_LAYERS 的順序合成（手臂 / 手持由渲染器畫在兩張中間）', () => {
     const l: DollLook = { ...plainLook(DEF), head: piece('armor:iron'), back: piece('back:cape') };
@@ -134,10 +150,10 @@ describe('圖層', () => {
 });
 
 describe('預覽 / 圖示 / 快取', () => {
-  it('預覽：手臂畫上去（比只有身體多）', () => {
+  it('預覽：手臂畫上去（和只有身體的那張差很多格：袖子 / 手 / 手臂的描邊）', () => {
     const l = plainLook(DEF);
     const p = dollPreview(l, dollKey(l), 'walk', 2);
-    expect(opaque(p)).toBeGreaterThan(opaque(flatFrame(avatarFrame(l, 'walk', 2))));
+    expect(diff(p, flatFrame(avatarFrame(l, 'walk', 2)))).toBeGreaterThan(20);
     clean(p, 'preview');
   });
   it('每件時裝的圖示都有內容、只用色票', () => {

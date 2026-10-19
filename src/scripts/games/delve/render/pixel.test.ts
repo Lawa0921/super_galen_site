@@ -1,6 +1,6 @@
 // pixel.test.ts — 點陣工具：描邊、scale2x、RotSprite 旋轉。
 import { describe, it, expect } from 'vitest';
-import { Bmp, scale2x, rotPrep, rotate, INK, bayer, PALETTE, snap, snapBmp, nudge, inPalette, luma } from './pixel';
+import { Bmp, scale2x, rotPrep, rotate, INK, bayer, PALETTE, snap, snapBmp, nudge, inPalette, luma, outlineColor, hex } from './pixel';
 
 const RED: [number, number, number] = [200, 30, 30];
 
@@ -105,5 +105,21 @@ describe('統一色票', () => {
     const d = nudge([0x6a, 0x9c, 0x88], -1);
     expect(luma([0x6a, 0x9c, 0x88]) - luma(d)).toBeGreaterThanOrEqual(15);
     expect(d[1]).toBeGreaterThan(d[0]);
+  });
+  it('選擇性描邊：線色在色票內、比鄰色深、保留色系（膚色的線是暖棕，不是灰；綠的線還是綠）', () => {
+    for (const c of PALETTE) {
+      const o = outlineColor(c);
+      expect(inPalette(o)).toBe(true);
+      expect(luma(o)).toBeLessThanOrEqual(Math.max(16, luma(c)));
+    }
+    const skin = outlineColor(hex('#f2b888'));
+    expect(skin[0]).toBeGreaterThan(skin[2] + 30);
+    const grass = outlineColor(hex('#67ab3c'));
+    expect(grass[1]).toBeGreaterThan(grass[0]);
+    const b = new Bmp(5, 5);
+    b.set(2, 2, hex('#f2b888'));
+    b.selOutline();
+    expect(b.get(1, 2)).toEqual(skin);
+    expect(b.on(1, 1)).toBe(false);
   });
 });
