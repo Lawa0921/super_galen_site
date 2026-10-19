@@ -1666,44 +1666,49 @@ describe("the guild's leads (6c Task 16)", () => {
 });
 
 describe('V1 voice pass: the two of them, livelier (style bible §2.2 to §2.5)', () => {
-  const ELLIPSIS = /……/g;
-  const dots = (t: string): number => (t.match(ELLIPSIS) ?? []).length;
+  const dots = (t: string): number => (t.match(/……/g) ?? []).length;
   const opensOnDots = (t: string): boolean => /^「?……/.test(t);
   const readings = (id: SceneId): ScriptLine[][] => [false, true].map((oath) =>
     linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: [], returned: [], oath }));
-  /** The light scenes V1 rewrote: one 「……」 per scene at most, for a real pause, and never as an opener. */
-  const LIGHT: SceneId[] = ['prologue-inn', 'first-return', 'chat:hero:1', 'chat:hero:3', 'chat:rin:1'];
-  /** Her shadow chats and his act chats keep their weight, with one 「……」 a line at most. */
-  const HEAVY: SceneId[] = ['chat:hero:2', 'chat:hero:4', 'chat:rin:2', 'chat:rin:3', 'chat:rin:4'];
+  /** What a light scene, as played, breaks: more than one 「……」 in the scene, or a line that opens on one (§2.3). */
+  const lightBreaks = (played: ScriptLine[]): string[] => [
+    ...(dots(played.map((l) => l.text).join('')) > 1 ? ['more than one 「……」'] : []),
+    ...played.filter((l) => opensOnDots(l.text)).map((l) => `opens on 「……」: ${l.text}`),
+  ];
+  /** What a heavy scene, as played, breaks: a line with two 「……」, or 「……」 in more than half of the spoken lines (§2.3). */
+  const heavyBreaks = (played: ScriptLine[]): string[] => {
+    const spoken = played.filter((l) => l.who !== 'narrator');
+    return [
+      ...played.filter((l) => dots(l.text) > 1).map((l) => `two 「……」: ${l.text}`),
+      ...(spoken.filter((l) => dots(l.text) > 0).length * 2 > spoken.length ? ['「……」 in more than half the spoken lines'] : []),
+    ];
+  };
+  /** The light scenes V1 rewrote, and the heavy ones it touched (style bible §2.2: Rin's and Lorne's chats 2–4 are heavy). */
+  const LIGHT: SceneId[] = ['prologue-inn', 'first-return', 'chat:hero:1', 'chat:rin:1'];
+  const HEAVY: SceneId[] = ['chat:hero:2', 'chat:hero:3', 'chat:hero:4', 'chat:rin:2', 'chat:rin:3', 'chat:rin:4'];
+  const line = (who: ScriptLine['who'], text: string): ScriptLine => ({ who, text });
 
   it('a light scene spends one 「……」 at most, and no line opens on one', () => {
-    for (const id of LIGHT) {
-      for (const played of readings(id)) {
-        expect(dots(played.map((l) => l.text).join('')), id).toBeLessThanOrEqual(1);
-        for (const l of played) expect(opensOnDots(l.text), `${id}: ${l.text}`).toBe(false);
-      }
-    }
-    // the gate catches what it guards: the pre-V1 inn night spent three, two of them as openers
-    expect(dots('「……我什麼都不記得。」「……我也只剩下面了。」「……還有。」')).toBe(3);
-    expect(opensOnDots('「……還有。你走路的樣子。」')).toBe(true);
-    expect(opensOnDots('「吵是吵。……反正。」')).toBe(false);
+    for (const id of LIGHT) for (const played of readings(id)) expect(lightBreaks(played), id).toEqual([]);
+    // the gate catches what it guards: the pre-V1 inn night (three 「……」, two of them openers) and a single opener
+    const oldInn = [line('rin', '「……我什麼都不記得。你是我唯一的線索。」'), line('rin', '「……我也只剩下面了。」'), line('rin', '「……還有。你走路的樣子，我好像在哪裡看過。」')];
+    expect(lightBreaks(oldInn)).toHaveLength(4);
+    expect(lightBreaks([line('rin', '「……後面。」')])).toEqual(['opens on 「……」: 「……後面。」']);
+    expect(lightBreaks([line('rin', '「吵是吵。……反正，我也只剩下面了。」'), line('narrator', '她走了。')])).toEqual([]);
   });
 
-  it('a heavy chat keeps one 「……」 a line at most', () => {
-    for (const id of HEAVY) for (const l of STORY.scenes[id].lines) expect(dots(l.text), `${id}: ${l.text}`).toBeLessThanOrEqual(1);
+  it('a heavy chat keeps one 「……」 a line at most, in half its spoken lines at most', () => {
+    for (const id of HEAVY) for (const played of readings(id)) expect(heavyBreaks(played), id).toEqual([]);
+    expect(heavyBreaks([line('rin', '「……沒事。……不要問。」')])).toHaveLength(2);
+    expect(heavyBreaks([line('rin', '「……沒事。」'), line('hero', '「……嗯。」'), line('rin', '「不要問。」')])).toEqual(['「……」 in more than half the spoken lines']);
+    expect(heavyBreaks([line('rin', '「……沒事。」'), line('hero', '「嗯。」')])).toEqual([]);
   });
 
-  it("Rin's town lines: act 2 is light, every line spends one 「……」 at most, and her oath lines none as an opener", () => {
-    const act2 = STORY.rinLines.act2!;
-    expect(dots(act2.join('')), 'act2').toBeLessThanOrEqual(1);
+  it("Rin's town lines keep her shadow within the heavy budget, and her oath lines within the light one", () => {
     for (const [stage, lines] of Object.entries(STORY.rinLines)) {
-      for (const t of lines ?? []) {
-        expect(dots(t), `${stage}: ${t}`).toBeLessThanOrEqual(1);
-        expect(opensOnDots(t), `${stage}: ${t}`).toBe(false);
-      }
+      expect(heavyBreaks((lines ?? []).map((t) => line('rin', t))), stage).toEqual([]);
     }
-    expect(dots(STORY.rinOath.join(''))).toBeLessThanOrEqual(1);
-    for (const t of STORY.rinOath) expect(opensOnDots(t), t).toBe(false);
+    expect(lightBreaks(STORY.rinOath.map((t) => line('rin', t)))).toEqual([]);
   });
 
   it("Rin's lines in the meetings are deadpan: no 「……」, no face kept for either side of her oath", () => {
@@ -1724,11 +1729,21 @@ describe('V1 voice pass: the two of them, livelier (style bible §2.2 to §2.5)'
     }
   });
 
-  it('before her choice Rin uses no sentence-final particle and no exclamation in her town lines and the opening', () => {
+  it('before her choice Rin uses no sentence-final particle and no exclamation in her town lines, the opening and the chats she may say before it', () => {
     const PARTICLE = /[呢吧啦喔囉嘛耶]|！/;
     for (const t of Object.values(STORY.rinLines).flat()) expect(t, t).not.toMatch(PARTICLE);
-    for (const id of ['prologue-inn', 'first-return', 'chat:rin:1'] as SceneId[]) {
-      for (const l of STORY.scenes[id].lines) if (l.who === 'rin') expect(l.text, `${id}: ${l.text}`).not.toMatch(PARTICLE);
+    for (const id of ['prologue-inn', 'first-return', 'chat:rin:1', 'chat:hero:2'] as SceneId[]) {
+      const rin = linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: [], returned: [], oath: false }).filter((l) => l.who === 'rin');
+      expect(rin.length, id).toBeGreaterThan(0);
+      for (const l of rin) expect(l.text, `${id}: ${l.text}`).not.toMatch(PARTICLE);
     }
+  });
+
+  it("「還有。」 is Rin's tic: always with a full stop, and rare (four times at most across V1's scenes)", () => {
+    const V1: SceneId[] = [...LIGHT, ...HEAVY];
+    const texts = [...V1.flatMap((id) => STORY.scenes[id].lines.map((l) => l.text)), ...Object.values(STORY.rinLines).flat(), ...STORY.rinOath];
+    const uses = texts.flatMap((t) => t.match(/還有[。，]/g) ?? []);
+    expect(uses.filter((u) => u !== '還有。'), 'punctuation').toEqual([]);
+    expect(uses.length).toBeLessThanOrEqual(4);
   });
 });

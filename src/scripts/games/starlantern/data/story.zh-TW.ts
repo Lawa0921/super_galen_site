@@ -106,9 +106,9 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'prologue-inn': {
     lines: [
       N('深夜的月影旅館。洛恩從夢裡驚醒，窗邊的凜還睜著眼，朝著他的床，像是不知道他在哪裡，就睡不著。'),
-      N('她手腕上一圈發青的指痕。那幾根手指，葛倫怎麼掰也掰不開。洛恩把自己的手，悄悄縮回被子裡。'),
+      N('她手腕上一圈發青的指痕。那幾根手指，葛倫怎麼掰也掰不開，直到洛恩昏了過去。他把自己的手，悄悄縮回被子裡。'),
       { who: 'hero', mood: 'normal', text: '「妳是唯一和我一起出來的人。我以前是誰，也許妳看過。」' },
-      { who: 'rin', mood: 'guarded', text: '「我什麼都不記得。你是我唯一的線索。還有。你說夢話，三次。吵。」' },
+      { who: 'rin', mood: 'guarded', text: '「我什麼都不記得。你是我唯一的線索。還有。你說夢話。吵。」' },
       { who: 'hero', mood: 'serious', text: '「明天我要下去。我怎麼會從下面走出來，只有下面知道。何況欠公會的帳，也只有碎片還得起。」' },
       { who: 'rin', mood: 'normal', text: '「我跟你去。」' },
       { who: 'hero', mood: 'surprised', text: '「為什麼？妳不是嫌我吵？」' },
@@ -130,7 +130,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'rin', mood: 'normal', text: '「還有。那個繃帶，纏成那樣，不如不纏。」' },
       N('她拆掉繃帶，三兩下重新纏好。緊得洛恩倒吸了一口氣。'),
       { who: 'rin', mood: 'normal', text: '「太鬆會掉。太緊，是故意的。」' },
-      { who: 'hero', mood: 'smile', text: '「那就，下次也拜託了。兩件事都是。」' },
+      { who: 'hero', mood: 'smile', text: '「那就，下次也拜託了。」' },
       N('凜沒有回答。她背靠著房門，在地上坐下，短刃橫在膝上。從那裡，看得見他。'),
     ],
     summary: '從迷宮回來的那一晚。下面那一擊，是凜把洛恩拉開的。她說身體自己動的，又嫌他繃帶纏得太醜。',
@@ -392,15 +392,15 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('深夜的月影旅館。凜坐在窗邊，一直看著傳送門的方向，眼睛一下也沒眨。'),
       { who: 'hero', text: '「睡不著？」' },
-      { who: 'rin', mood: 'serious', text: '「看門。總覺得，有什麼會從那裡走出來。還有。你翻身，太吵。」' },
+      { who: 'rin', mood: 'serious', text: '「看門。總覺得，有什麼會從那裡走出來。」' },
     ],
     summary: '深夜，凜坐在旅館窗邊盯著傳送門。她說，總覺得有什麼會從那裡走出來。',
   },
   'chat:hero:3': {
     lines: [
       { who: 'marta', text: '「洛恩，今天的事說給我聽。我記下來。」' },
-      { who: 'hero', mood: 'smile', text: '「回來了。就這樣。」' },
-      { who: 'marta', text: '「傻孩子，那是最要緊的一句，我寫在最上面。下面再補一行：晚飯又剩了半碗。」' },
+      { who: 'hero', mood: 'smile', text: '「回來了。……就這樣。」' },
+      { who: 'marta', text: '「傻孩子，那是最要緊的一句。我寫在最上面。」' },
     ],
     summary: '瑪莎要把洛恩的一天寫進日記。他只說「回來了」，她把這句寫在最上面。',
   },
@@ -410,7 +410,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'rin', mood: 'averted', text: '「……為什麼跟我說這個。」', if: { oath: false } },
       { who: 'narrator', text: '她轉身上樓，走到一半停了一下，沒有回頭。', if: { oath: false } },
       { who: 'rin', mood: 'serious', text: '「這一次，不是一個人。你下去的地方，我也去。我們一起回來。」', if: { oath: true } },
-      { who: 'rin', mood: 'smile', text: '「何況，洛恩。你一個人，連繃帶都纏不好。」', if: { oath: true } },
+      { who: 'rin', mood: 'smile', text: '「再說，洛恩。你一個人，連繃帶都纏不好。」', if: { oath: true } },
     ],
     summary: '洛恩對凜說，碑上的那個人，每一次都是一個人走下去的。',
   },
@@ -453,7 +453,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'rin', mood: 'normal', text: '「喂。手腕上的印子退了。那時候，你為什麼抓著不放？」' },
       { who: 'hero', mood: 'smile', text: '「記不得了。我的手，好像比我還固執。」' },
-      N('「下次不用。會痛。還有，指甲剪一剪。」凜說完就上樓了。走到樓梯轉角，她回頭看了他一眼。'),
+      N('「下次不用。會痛。還有。指甲，剪一剪。」凜說完就上樓了。走到樓梯轉角，她回頭看了他一眼。'),
     ],
     summary: '凜手腕上的指痕退了。她問洛恩那時候為什麼不放手，他說記不得，他的手比他還固執。',
   },
@@ -463,7 +463,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('旅館的後院。凜坐在井邊，手指碰了碰領口，又放了下來。', true),
       { who: 'hero', text: '「怎麼了？」' },
       { who: 'rin', mood: 'guarded', text: '「……沒什麼。只是，不想聽見它響。」', if: { oath: false } },
-      { who: 'rin', mood: 'smile', text: '「手自己摸過去的，跟你那隻固執的手一樣。放心，那裡的鐘不會再響了。」', if: { oath: true } },
+      { who: 'rin', mood: 'smile', text: '「手自己摸過去的。放心，那裡的鐘，已經不會響了。」', if: { oath: true } },
     ],
     summary: '凜坐在旅館後院的井邊，手按著領口。洛恩問她怎麼了。',
   },
@@ -471,7 +471,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('凜在擦短刃。洛恩在她對面坐下，她的視線便落回刀刃上，再也沒有抬起來。', false),
       { who: 'rin', mood: 'averted', text: '「喂。你是人？」', if: { oath: false } },
-      { who: 'hero', mood: 'smile', text: '「我想是。會餓，會累，回來會想睡。睡著了還會被嫌吵。」', if: { oath: false } },
+      { who: 'hero', mood: 'smile', text: '「我想是。會餓，會累，回來的時候也會想睡。」', if: { oath: false } },
       N('凜在擦短刃。洛恩在她對面坐下，她停下手，抬起頭看著他。', true),
       { who: 'rin', mood: 'blush', text: '「以前，我不敢看你的眼睛。現在，想多看一點。」', if: { oath: true } },
       N('洛恩沒有說話，也沒有移開視線。最後先眨眼的，是凜。', true),
@@ -482,7 +482,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'rin', mood: 'serious', text: '「洛恩。那枚銅鐘，扣上的時候還是好的。從霧裡出來，就裂了。」' },
       { who: 'rin', text: '「我想，是你抓住我手腕的那一下。……所以，我把它敲平了。」' },
-      { who: 'rin', mood: 'smile', text: '「再也不會有鐘聲，叫我去殺誰。我們明天，也一起回來。還有，指甲剪了沒？」' },
+      { who: 'rin', mood: 'smile', text: '「再也不會有鐘聲，叫我去殺誰。我們明天，也一起回來。」' },
     ],
     summary: '凜說，銅鐘是在霧裡裂的，在洛恩抓住她手腕的那一下。她把它敲平了，再也不會響。',
   },
@@ -1280,7 +1280,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
       { who: 'selene', mood: 'smile', text: '「謝謝各位。我是瑟蕾，讀月亮的人。」' },
       { who: 'hero', text: '「我是洛恩。妳怎麼一個人在這裡？」' },
       { who: 'selene', mood: 'wistful', text: '「我好像，把很重要的東西忘在這座迷宮裡了。……洛恩先生，請讓我同行吧。」' },
-      { who: 'rin', text: '「可以。」' },   // V1: her one-word verdict, before he can answer (no face kept for either side of her oath)
+      N('凜比洛恩先開了口：「可以。」瑟蕾眨了眨眼，輕輕笑出聲來。'),   // V1 fix 1: her verdict, and Selene's answer to it
     ],
   },
   chizuru: {
@@ -1459,8 +1459,8 @@ export const STORY = {
    * bell, walks behind, but does not look away yet. From act 3 she looks away. After the finale she has always chosen (U3).
    */
   rinLines: {
-    // V1 voice pass: act 2 is light (her deadpan), acts 3 and 4 keep their shadow with one 「……」 at most per line.
-    act2: ['葛倫說我走路沒聲音。是他太吵。', '喂，你走前面。我走後面。理由，不用問。', '剛才，是不是有鐘在響？……沒事。聽錯了。'],
+    // V1 voice pass: her shadow, kept restrained (no jokes about her strangeness); one 「……」 at most per line, in half the lines at most.
+    act2: ['……沒什麼。', '喂，你走前面。我走後面。', '剛才，是不是有鐘在響？──沒事，聽錯了。'],
     act3: ['別一直看我。看路。', '最近，夢裡一直有鐘聲。……沒事。', '沒事。問那麼多做什麼。'],
     act4: ['今晚早點睡。門，記得鎖好。', '不要站在我背後。……也不要讓我站在你背後。', '沒事。不要問。'],
   } as Partial<Record<Stage, string[]>>,
