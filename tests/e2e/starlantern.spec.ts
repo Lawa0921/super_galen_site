@@ -2,12 +2,14 @@ import { test, expect, type Page } from '@playwright/test';
 import { SPECIALS, AFFIXES } from '../../src/scripts/games/starlantern/data/gear';
 import { CHARACTERS } from '../../src/scripts/games/starlantern/data/characters';
 import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
-import { LEGACY_GRID, LEGACY_LINEUP } from '../../src/scripts/games/starlantern/engine/party';
+import { LEGACY_GRID, LEGACY_LINEUP, meet } from '../../src/scripts/games/starlantern/engine/party';
 import { STORY } from '../../src/scripts/games/starlantern/data/story.zh-TW';
 import { T } from '../../src/scripts/games/starlantern/data/text.zh-TW';
 import { CHAINS, chainLength } from '../../src/scripts/games/starlantern/data/story/chains';
 import { ABSORB_CAP, ABSORB_GAIN, SHARD_IDS, SHARD_NAMES } from '../../src/scripts/games/starlantern/data/story/fragments';
 import { memScene } from '../../src/scripts/games/starlantern/data/story/scenes';
+import { favouredRegions } from '../../src/scripts/games/starlantern/data/meetings';
+import { rollPortals, withLead } from '../../src/scripts/games/starlantern/engine/portals';
 import { mkdirSync } from 'node:fs';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
@@ -804,21 +806,42 @@ test.describe('starlantern', () => {
     await w.key('Escape'); await w.key('Escape');
     await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
 
-    // Selene met on the main road's second floor: the next lead is the frost's, and the roll on the way home offers it.
-    await page.evaluate(() => {
+    // Selene met on the main road's second floor (the game's own `meet`, run here on the party and written back): the next
+    // lead is the frost's. The way home rolls the portals on a constant rng chosen so that the plain roll has no frost (checked
+    // here with the game's own rollPortals), so the frost portal proves the guarantee rather than a lucky roll.
+    const party = await page.evaluate(() => JSON.parse(JSON.stringify((window as unknown as Dbg).__starlanternDebug.game.state.party)));
+    const met = meet(party, 'selene', 1);
+    const favoured = favouredRegions(met.recruited);
+    const v = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].find((x) => !rollPortals(() => x, favoured).some((p) => p.region === 'frost'))!;
+    expect(v, 'some constant rng rolls no frost').toBeDefined();
+    const plain = rollPortals(() => v, favoured);
+    expect(plain.map((p) => p.region)).not.toContain('frost');
+    await page.evaluate(([p]) => {
       const s = (window as unknown as Dbg).__starlanternDebug.game.state;
-      s.party.recruited.push('selene');
+      s.party = p;
       s.dungeon.reached.mainline = 2;
       s.inventory['return-lamp'] = 3;
-    });
+    }, [met] as const);
     await depart(page, w);
+    await page.evaluate((x) => { (window as unknown as Dbg).__starlanternDebug.game.rng = () => x; }, v);
     await lampHome(page, w);
     await w.closeTalk();
-    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.dungeon.portals.map((p: { region: string }) => p.region))).toContain('frost');
+    const rolled = await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.dungeon.portals);
+    expect(rolled.map((p: { region: string }) => p.region)).toContain('frost');
+    expect(rolled).toEqual(withLead(plain, 'frost', favoured));   // exactly the plain roll with the lead put in
+    // Back to a draw that is not a payoff line (a drawn debt line, I-96, would be said first and the lead the visit after).
+    await page.evaluate(() => { (window as unknown as Dbg).__starlanternDebug.game.rng = () => 0.99; });
     await w.choose('.slx-town', '冒險者公會');
     await expect(page.locator('.slx-guild')).toBeVisible();
     await expect(said).toHaveText(STORY.leads.chizuru);
     await shot('02-guild-lead-chizuru');
+    await w.closeTalk();
+    await w.key('Escape');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    // Once per arrival: a second visit in the same stay is Anna's usual greeting.
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await expect(said).toHaveText(STORY.greet.guild.act1[1]);   // the rng's 0.99 draws act 1's second line
     await w.closeTalk();
     await w.key('Escape');
     await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();

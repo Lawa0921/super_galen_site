@@ -18,8 +18,6 @@ const SLOT: Record<Slot, string> = {
 };
 
 const RARITY: Record<Rarity, string> = { common: '普通', magic: '魔法', rare: '稀有', legendary: '傳說', unique: '獨特', set: '套裝' };
-/** A depth in Chinese numerals for the leads' markers (6c Task 16), matching the guild's words: 第三層, not 第 3 層. */
-const zhDepth = (n: number): string => (Number.isInteger(n) && n >= 1 && n <= 10 ? '一二三四五六七八九十'[n - 1] : String(n));
 /** Every stat's name: the seven base names come from STAT, so they are written once. */
 const STAT_NAME: Record<AnyStat, string> = {
   ...STAT,
@@ -366,7 +364,7 @@ export const T = {
       hintReadonly: '◀▶ 換分頁　確定：重看　取消：回到迷宮',
       empty: '還沒有可以重看的場景。',
       /** The guild's leads (6c Task 16): sightings, never a call for help (the lost remember nothing). */
-      leads: { now: '目前的線索', found: '已找到', heard: '公會聽來的目擊', place: (region: string, depth: number) => `${region}・第${zhDepth(depth)}層`, allFound: '目擊過的人影，都已經找到了。', none: '公會還沒有新的目擊消息。' },
+      leads: { now: '目前的線索', found: '已找到', heard: '公會聽來的目擊', place: (region: string, depth: number) => `${region}・第 ${depth} 層`, allFound: '目擊過的人影，都已經找到了。', none: '公會還沒有新的目擊消息。' },
     },
     town: {
       place: '邊境小鎮 露米亞',
@@ -492,7 +490,7 @@ export const T = {
     gate: {
       reroll: '重抽傳送門',
       /** The portal of the guild's lead, and where someone was sighted (6c Task 16): a sighting, never a distress call. */
-      lead: '公會的線索', leadAt: (depth: number) => `線索・第${zhDepth(depth)}層`, sighted: (depth: number) => `目擊・第${zhDepth(depth)}層`,
+      lead: '公會的線索', leadAt: (depth: number) => `線索・第 ${depth} 層`, sighted: (depth: number) => `目擊・第 ${depth} 層`,
       choose: '選擇傳送門', floor: (n: number, name?: string) => (name ? `第 ${n} 層 ${name}` : `第 ${n} 層`),
       suggest: (lv: number) => `建議 Lv ${lv}`,
       heavy: (now: string, cap: string) => `超重！重量 ${now}／${cap}，出發後撿不了任何東西`,

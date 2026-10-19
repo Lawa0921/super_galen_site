@@ -309,7 +309,8 @@ describe('GateScene: the leads (6c Task 16)', () => {
     expect(isLead(main)).toBe(true);
     expect(main.querySelector('.slx-portal-lead-tag')!.getAttribute('title')).toBe(T.ui2.gate.lead);
     expect(mark(main)).toBe(T.ui2.gate.leadAt(2));
-    expect([T.ui2.gate.leadAt(2), T.ui2.gate.sighted(3)]).toEqual(['線索・第二層', '目擊・第三層']);
+    // UI copy, so the card's own numerals (「最深 第 1 層」); only Anna's lead lines use Chinese numerals (6c Task 16 fix round 1)
+    expect([T.ui2.gate.leadAt(2), T.ui2.gate.sighted(3)]).toEqual(['線索・第 2 層', '目擊・第 3 層']);
     // beside the name, so the card is no taller than before
     expect(main.querySelector('.slx-portal-head .slx-portal-sighting')).not.toBeNull();
     expect([isLead(blaze), mark(blaze)]).toEqual([false, T.ui2.gate.sighted(3)]);   // Safira

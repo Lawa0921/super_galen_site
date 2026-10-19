@@ -19,6 +19,11 @@ import { MenuView, QtyView, confirmBox, win } from '../widgets';
 import { FacilityScene } from './facility';
 
 const name = (id: CharacterId) => CHARACTERS[id].name;
+/**
+ * Anna's greetings that close a thread and must not be crowded out by a lead (6c Task 16 fix round 1): the debt crossed out
+ * in act 1 (I-96, which closes I-84) and her thanks once her own fragment is back (`town.anna.after`).
+ */
+const payoffs = (): Set<string> => new Set([STORY.greet.guild.act1[0], STORY.town.anna.after]);
 const GRADES: ShardGrade[] = ['dim', 'clear', 'vivid'];
 
 /** Guild: recalling companions met in the labyrinth; formation, equipment and the character sheet open their own screens. */
@@ -26,12 +31,17 @@ export class GuildScene extends FacilityScene {
   constructor(ctx: SceneCtx, cps?: number) { super(ctx, 'guild', cps); }
 
   /**
-   * While someone is still out there, Anna passes on the guild's lead in place of her greeting (6c Task 16): what another
-   * adventurer saw, and where. The greeting is drawn all the same, so the rng stream after the guild does not move.
+   * While someone is still out there, Anna passes on the guild's lead once per arrival, in place of her greeting (6c Task 16;
+   * fix round 1): what another adventurer saw, and where. Later visits in the same stay get her usual greeting. The greeting
+   * is drawn all the same, so the rng stream after the guild does not move. A drawn line that pays off a story thread is
+   * never lost to the lead (`PAYOFFS`): it is said, and the lead waits for the next visit.
    */
   protected greet(line: string): Promise<void> {
-    const lead = nextLead(this.ctx.game.state);
-    return this.say(lead ? STORY.leads[lead.id] : line);
+    const game = this.ctx.game;
+    const lead = nextLead(game.state);
+    if (!lead || game.leadSaid || payoffs().has(line)) return this.say(line);
+    game.leadSaid = true;
+    return this.say(STORY.leads[lead.id]);
   }
 
   /** Met, off the field and not the hero: who the guild can recall. */

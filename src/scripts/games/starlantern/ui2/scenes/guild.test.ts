@@ -414,3 +414,62 @@ describe("GuildScene: the guild's lead (6c Task 16)", () => {
     expect(counter.n).toBe(0);
   });
 });
+
+describe("GuildScene: the lead once per arrival (6c Task 16 fix round 1)", () => {
+  /** A game whose rng returns what `next` holds, so a test picks the greeting each visit draws. */
+  const world = (prep?: (g: Game) => void) => {
+    const r = { next: 0.5, n: 0 };
+    const game = new Game(() => { r.n++; return r.next; }, memoryStorage(), undefined, 0, [...START_LINEUP]);
+    prep?.(game);
+    r.n = 0;
+    const visit = () => {
+      const root = document.createElement('div');
+      const s = new GuildScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+      s.enter(root);
+      const said = root.querySelector('.slx-talk .slx-text')!.textContent;
+      s.onAction('confirm');
+      s.exit();
+      return said;
+    };
+    return { game, r, visit };
+  };
+  const act1 = (g: Game) => { g.state.party = meet(g.state.party, 'selene', 1); g.state.dungeon.reached.mainline = 2; };
+
+  it('the first visit of a stay says the lead; a second visit in the same stay greets as usual', () => {
+    const { visit, r } = world();
+    expect(visit()).toBe(STORY.leads.selene);
+    expect(STORY.greet.guild.prologue).toContain(visit());
+    expect(r.n).toBe(2);   // one draw per visit, lead or not
+  });
+
+  it('a new arrival brings the lead back', () => {
+    const { visit, game } = world(act1);
+    game.state.inventory['return-lamp'] = 1;
+    expect(visit()).toBe(STORY.leads.chizuru);
+    expect(STORY.greet.guild.act1).toContain(visit());
+    expect(game.depart({ region: 'mainline', condition: 'plain' }, 1)).toEqual({ ok: true });
+    expect(game.useReturnLamp()).toBe(true);
+    expect(visit()).toBe(STORY.leads.chizuru);
+  });
+
+  it("the debt paid off (I-96) is never lost to a lead: drawn on an arrival visit, it is said, and the lead waits for the next visit", () => {
+    const { visit, r } = world(act1);
+    expect(STORY.greet.guild.act1[0]).toContain('劃掉了');
+    r.next = 0;                                 // draws act 1's first line, the debt
+    expect(visit()).toBe(STORY.greet.guild.act1[0]);
+    r.next = 0.99;
+    expect(visit()).toBe(STORY.leads.chizuru);
+    expect(STORY.greet.guild.act1).toContain(visit());
+  });
+
+  it("Anna's thanks for her returned fragment are never lost to a lead either", () => {
+    const { visit, r, game } = world((g) => { g.state.story.returned.push('anna'); });
+    const pool = [...STORY.greet.guild.prologue, STORY.town.anna.after];
+    r.next = 0.99;   // draws the thanks, the pool's last line
+    expect(Math.floor(0.99 * pool.length)).toBe(pool.length - 1);
+    expect(visit()).toBe(STORY.town.anna.after);
+    r.next = 0;
+    expect(visit()).toBe(STORY.leads.selene);
+    expect(game.state.story.returned).toContain('anna');
+  });
+});

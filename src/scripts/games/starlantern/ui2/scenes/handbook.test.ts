@@ -208,6 +208,7 @@ describe('HandbookScene: the leads (6c Task 16)', () => {
     const { goTab, labels, root, rows, sfx, pick } = setup();
     goTab(H.tabs.leads);
     expect(labels()).toEqual([H.leads.place('星燈迷宮・本道', 2)]);
+    expect(H.leads.place('霜凍之地', 3)).toBe('霜凍之地・第 3 層');   // UI copy: the card style
     expect(rows()[0].querySelector('.slx-label')!.classList.contains('slx-lead-now')).toBe(true);   // gold, and no right column to squeeze it
     expect(detail(root)).toContain(H.leads.now);
     expect(detail(root)).toContain(STORY.leads.selene);

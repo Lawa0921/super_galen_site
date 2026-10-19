@@ -115,6 +115,11 @@ export class Game {
   arrival: SceneId[] = [];
   /** Whether this arrival's portal reroll is spent (not saved): `boot` sets it, so a reload grants none; `toTown` and `wipe` clear it. */
   private rerolled = false;
+  /**
+   * Whether Anna has passed on the guild's lead during this stay (6c Task 16): not saved, cleared by `arrive`, so the lead
+   * is said once per arrival (or reload) and later visits get her usual greeting.
+   */
+  leadSaid = false;
   /** Which ending the clear screen is for; set on entering `clear`, dropped by restartAfterClear. */
   cleared: 'act1' | 'finale' | null = null;
   /** The finale's own scenes, once it is won (not saved): any act still owed, the bellkeeper's arrival if it waits, then the hero's memories in piece order (`finalePieces`). `finale` follows them. */
@@ -878,6 +883,7 @@ export class Game {
   private arrive(): void {
     this.state.story = onReturn(this.state);
     this.arrival = arrivalScenes(this.state, { chat: true });
+    this.leadSaid = false;
   }
 
   /** The main road's depth 30 boss is the finale until it has been beaten once (spec §8.4); after that it is an ordinary boss. */

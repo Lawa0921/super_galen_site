@@ -977,11 +977,13 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-portal-name { font-size: 16px; line-height: 18px; color: $slx-ink; }
 .slx-portal-on .slx-portal-name { color: $slx-gold; }
 // 6c Task 16: someone was sighted beyond this portal: a small text marker on the name's line (no shape), so the card keeps
-// its height. The guild's lead is gold, and its card gets a gold edge.
+// its height. The guild's lead is gold, and its card gets a gold inner edge: a box-shadow, because the skinned frame's
+// border-image wins over border-color (fix round 1). Chosen and lead together keep both edges and the glow.
 .slx-portal-head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; }
 .slx-portal-sighting { margin-left: auto; font-size: 10px; line-height: 12px; color: #a9d4ff; white-space: nowrap; }
 .slx-portal-lead-tag { color: $slx-gold; }
-.slx-portals .slx-portal-lead { border-color: rgba(232, 196, 106, 0.7); }
+.slx-portals .slx-portal-lead { box-shadow: inset 0 0 0 2px rgba(232, 196, 106, 0.8), inset 0 0 14px rgba(232, 196, 106, 0.35); }
+.slx-portals .slx-portal-lead.slx-portal-on { box-shadow: inset 0 0 0 2px $slx-gold, inset 0 0 14px rgba(232, 196, 106, 0.35), 0 0 10px rgba(232, 196, 106, 0.55); }
 .slx-portal-trait { display: flex; align-items: center; gap: 4px; }
 .slx-portal-icon { width: 16px; height: 16px; image-rendering: pixelated; }
 .slx-portal-affinity, .slx-portal-desc { color: $slx-dim; }
