@@ -187,9 +187,18 @@ export const T = {
         '敵人的範圍技能會打中整排、整列或十字範圍。',
       ],
       hint: '方向鍵 選格　Enter／點擊 放人　Esc 返回',
+      /** The rules shown in the labyrinth, where only the rows move (the bench is in town). */
+      fieldRules: [
+        '迷宮裡只能調整站位：前、中、後排與同一排的格子。',
+        '換人要回公會。',
+        '近戰攻擊力：前排 100%、中排 75%、後排 50%。',
+        '近戰敵人只會攻擊最前面有人站著的一排。',
+      ],
     },
     status: {
       tabs: { stats: '能力', gear: '裝備', skills: '技能', tree: '技能樹', talent: '天賦', ultimate: '絕技' },
+      /** Beside a skill's name on the skills page: it can be cast outside battle (SkillDef.field). */
+      fieldTag: '迷宮中可用',
       /** Column titles for statSources; a new source needs one line here. */
       sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', memory: '記憶', primary: '主屬性' } as Record<string, string>,
       total: '合計',
@@ -305,6 +314,8 @@ export const T = {
       title: '裝備',
       dollTitle: '身上裝備',
       bag: (n: number, max: number) => `背包 ${n}／${max}`,
+      /** The labyrinth's bag line: the run pack's pieces and the party's load against its limit. */
+      pack: (n: number, w: string, cap: string) => `冒險背包 ${n} 件　重量 ${w}／${cap}`,
       menuBtn: '選單',
       target: (slot: string) => `目標：${slot}`,
       worn: (slot: string, name: string) => `${slot}：${name}`,
@@ -317,6 +328,7 @@ export const T = {
       pickSlot: 'Enter 選這一格，再到背包挑裝備',
       emptyCell: '空格',
       full: '背包已滿，無法卸下。先整理背包吧。',
+      fullField: '回城時背包放不下了，不能再卸下',
       /** The number of a comparison row: `+11`, `-3%`. */
       delta: (key: AnyStat, v: number) => `${signed(Math.round(v * 10) / 10)}${POINT_STATS.includes(key) ? '' : '%'}`,
       menu: {
@@ -329,10 +341,13 @@ export const T = {
         markNone: '標記垃圾（先選一件）',
         wornNoMark: (name: string) => `標記垃圾：${name}（穿著中）`,
         unequip: (name: string) => `卸下：${name}`,
+        /** In the labyrinth, with nothing to take off: sorting and marking wait for town. */
+        townOnly: '整理背包要回城才能做',
       },
       hint: '方向鍵 移動　Tab 切換　Enter 決定　C 選單　Q／E 換人　R／F 捲動說明　Esc 返回',
       hintTarget: 'Enter 穿上　選空格 卸下　Esc 取消目標',
       hintTargetFull: 'Enter 穿上　C 選單 卸下　Esc 取消目標',
+      hintField: '方向鍵 移動　Tab 切換　Enter 穿上／卸下　Q／E 換人　R／F 捲動說明　Esc 返回',
     },
     settings: {
       title: '設定', volume: '音效音量', speed: '文字速度', vibrate: '震動', story: '劇情播放', on: '開', off: '關', fullscreen: '全螢幕', keys: '按鍵說明', back: '返回',

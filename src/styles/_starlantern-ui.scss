@@ -548,6 +548,9 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-skill-rank { color: $slx-dim; min-width: 40px; text-align: right; }
 .slx-skill .slx-desc { margin: 1px 0 0; }
 .slx-skill-target { color: $slx-dim; }
+// 迷宮中可用: a small green word right after the name; the name gives up its spare width so the word sits beside it.
+.slx-skill-name:has(+ .slx-field-tag) { flex: 0 1 auto; }
+.slx-field-tag { flex: 1; color: #5fd068; font-size: 10px; white-space: nowrap; }
 .slx-skill-power { margin: 1px 0 0; color: #ff9a3c; font-size: 10px; }
 // Skill-tree tab: three branch columns of text rows (the skill rows' rule lines); a node's state only changes its text colour.
 // The columns scroll on their own so the notes for the cursor's node always stay in view below them.

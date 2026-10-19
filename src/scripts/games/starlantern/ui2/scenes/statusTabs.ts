@@ -247,6 +247,8 @@ const skills: StatusTab = {
       return el('div', { class: 'slx-skill', attrs: { 'data-skill': sk } }, [
         el('div', { class: 'slx-skill-head' }, [
           el('span', { class: 'slx-skill-name', text: s.name }),
+          // A recovery skill that can also be cast from the labyrinth's field menu (SkillDef.field).
+          ...(SKILLS[sk]?.field ? [el('span', { class: 'slx-field-tag', text: t.fieldTag })] : []),
           ...(s.passive ? [] : [el('span', { class: 'slx-skill-target', text: t.targets[s.target] })]),
           el('span', { class: 'slx-skill-cost', text: s.passive ? t.passive : t.tp(skillCost(caster, sk)) }),
           el('span', { class: 'slx-skill-rank', text: t.rank(nodeRank(m, sk), NODES[sk].node.maxRank) }),

@@ -5,7 +5,8 @@ import { compareDelta, itemLines } from '../../engine/compare';
 import { BAG_SIZE, type AutoJunk } from '../../engine/loot/bag';
 import { itemName, itemSlot, itemWeight } from '../../engine/loot/item';
 import { activeIds, defaultSlotFor, slotsFor, statsOf } from '../../engine/party';
-import { equip, setAutoJunk, sortBagIn, toggleJunk, unequip, type TownResult } from '../../engine/town';
+import { equip, setAutoJunk, sortBagIn, toggleJunk, unequip } from '../../engine/town';
+import { capacity, carried, formatWeight } from '../../data/weights';
 import type { AnyStat, CharacterId, ItemInstance, Slot, Stats } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
@@ -54,6 +55,10 @@ const fits = (it: ItemInstance, slot: Slot): boolean => slotsFor(itemSlot(it)).i
  * - A click is the cursor moving there plus Enter; hovering moves the cursor, but hovering the doll only does so while the
  *   doll has focus, so the pointer can cross it from the bag to the detail panel.
  * - On touch, a first tap on bag gear only selects it (showing the comparison); a second tap on that piece wears it.
+ *
+ * In the labyrinth (`field`) the same screen works on the run pack instead of the town bag: the grid shows the pieces
+ * found this run, Q/E pass over the members on the field only, and the menu only takes off (sorting and junk marks wait
+ * for town). The rules are the Game's `equipFromPack` / `unequipToPack`.
  */
 export class EquipScene implements Scene {
   private id!: CharacterId;
@@ -94,7 +99,8 @@ export class EquipScene implements Scene {
 
   enter(root: HTMLElement): void {
     const p = this.ctx.game.state.party;
-    this.id = p.recruited.includes(this.ctx.arg as CharacterId) ? (this.ctx.arg as CharacterId) : (p.recruited.includes('hero') ? 'hero' : (activeIds(p)[0] ?? p.recruited[0]));
+    const list = this.members;
+    this.id = list.includes(this.ctx.arg as CharacterId) ? (this.ctx.arg as CharacterId) : (list.includes('hero') ? 'hero' : (activeIds(p)[0] ?? p.recruited[0]));
     this.head = win('slx-equip-head');
 
     this.bagCells = Array.from({ length: BAG_SIZE }, (_, i) => this.cell('bag', i, el('div', { class: 'slx-bag-cell', attrs: { role: 'gridcell', 'data-index': String(i) } })));
@@ -129,7 +135,7 @@ export class EquipScene implements Scene {
     this.keyhint = el('p', { class: 'slx-keyhint' });
     this.noticeEl = el('p', { class: 'slx-equip-notice', attrs: { 'aria-live': 'polite' } });
 
-    const bg = this.ctx.art.has(art.scene('guild')) ? [el('img', { class: 'slx-bg slx-bg-dim', attrs: { src: art.scene('guild'), alt: '' } })] : [];
+    const bg = !this.field && this.ctx.art.has(art.scene('guild')) ? [el('img', { class: 'slx-bg slx-bg-dim', attrs: { src: art.scene('guild'), alt: '' } })] : [];
     this.sceneEl = el('div', { class: 'slx-scene slx-equip-scene' }, [
       ...bg, this.head, this.bagWin, this.dollWin, this.statsWin, this.detail, this.keyhint, this.noticeEl, backControl(() => this.onAction('cancel')),
     ]);
@@ -164,7 +170,12 @@ export class EquipScene implements Scene {
   }
 
   private get member() { return this.ctx.game.state.party.roster[this.id]; }
-  private get bag() { return this.ctx.game.state.bag; }
+  /** In the labyrinth: the bag grid is the run pack and only the members on the field change gear. */
+  private get field(): boolean { return this.ctx.game.phase === 'map' && !!this.ctx.game.run; }
+  /** The town bag, or in the labyrinth the run pack (it fits the same 60 cells: at most BAG_SIZE − bag.length pieces). */
+  private get bag(): ItemInstance[] { return this.field ? this.ctx.game.run!.loot.gear : this.ctx.game.state.bag; }
+  /** Who Q/E pass over: everyone recruited, or in the labyrinth the members on the field (the bench is in town). */
+  private get members(): CharacterId[] { const p = this.ctx.game.state.party; return this.field ? activeIds(p) : p.recruited; }
 
   /**
    * Pointer wiring for a slot or bag cell: hover moves the cursor there (a doll slot only while the doll has focus), a
@@ -227,7 +238,7 @@ export class EquipScene implements Scene {
   }
 
   private page(d: 1 | -1): void {
-    const list = this.ctx.game.state.party.recruited;
+    const list = this.members;
     this.id = list[(list.indexOf(this.id) + d + list.length) % list.length];
     this.target = null;
     this.flash = null;
@@ -244,7 +255,6 @@ export class EquipScene implements Scene {
       return;
     }
     const it = this.bag[this.bagCur];
-    const s = this.ctx.game.state;
     if (!it) {
       const t = this.target;
       if (!t || !this.member.equip[t]) { this.refuse(''); return; }
@@ -252,12 +262,16 @@ export class EquipScene implements Scene {
       return;
     }
     const slot = this.slotFor(it);
-    this.done(equip(s, this.id, it.uid, slot), slot, this.member.equip[slot] ? this.bagCur : null);
+    const index = this.member.equip[slot] ? this.bagCur : null;
+    const g = this.ctx.game;
+    this.done(this.field ? g.equipFromPack(this.id, it.uid, slot) : g.apply(equip(g.state, this.id, it.uid, slot)), slot, index);
   }
 
-  /** Puts the gear in `slot` into the bag; a full bag refuses and says so. */
+  /** Puts the gear in `slot` into the bag (the run pack in the labyrinth); a full bag refuses and says so. */
   private takeOff(slot: Slot): void {
-    this.done(unequip(this.ctx.game.state, this.id, slot), slot, this.bag.length);
+    const g = this.ctx.game;
+    const index = this.bag.length;
+    this.done(this.field ? g.unequipToPack(this.id, slot) : g.apply(unequip(g.state, this.id, slot)), slot, index);
   }
 
   /** The error cue, the reason (if any) under the hint, and a render so a tap's cursor move shows. */
@@ -272,9 +286,9 @@ export class EquipScene implements Scene {
     return this.target && fits(it, this.target) ? this.target : defaultSlotFor(this.member, it);
   }
 
-  private done(r: TownResult, slot: Slot, index: number | null): void {
-    const res = this.ctx.game.apply(r);
-    if (!res.ok) { this.refuse(res.reason === 'full' ? T.ui2.equip.full : T.reasons[res.reason] ?? ''); return; }
+  /** After a change the Game has already applied (or refused): the cue, the reason, or the flash. */
+  private done(res: { ok: true } | { ok: false; reason: string }, slot: Slot, index: number | null): void {
+    if (!res.ok) { this.refuse(res.reason === 'full' ? (this.field ? T.ui2.equip.fullField : T.ui2.equip.full) : T.reasons[res.reason] ?? ''); return; }
     this.ctx.sfx.confirm();
     this.target = null;
     this.flash = null;
@@ -286,7 +300,6 @@ export class EquipScene implements Scene {
 
   private openMenu(): void {
     const t = T.ui2.equip.menu;
-    const auto = this.ctx.game.state.autoJunk;
     // The menu acts on the piece the detail shows: bag gear can be marked; worn gear can be taken off, not marked.
     // In the bag with a target set, 卸下 offers the target's piece (the route the full-bag hint names).
     const wornSlot = this.focus === 'doll' ? DOLL[this.dollCur] : null;
@@ -294,19 +307,29 @@ export class EquipScene implements Scene {
     const worn = offSlot ? this.member.equip[offSlot] : undefined;
     const it = wornSlot ? undefined : this.bag[this.bagCur];
     const shown = wornSlot ? this.member.equip[wornSlot] : undefined;
-    const junk: MenuItem = shown ? { id: 'junk', label: t.wornNoMark(gearLabel(shown)), disabled: true }
-      : { id: 'junk', label: !it ? t.markNone : it.junk ? t.unmark(gearLabel(it)) : t.mark(gearLabel(it)), disabled: !it };
-    const items: MenuItem[] = [
-      ...SORTS.map((k) => ({ id: `sort-${k}`, label: t.sort[k] })),
-      ...AUTOS.map((k) => ({ id: `auto-${k}`, label: t.auto[k], right: k === auto ? t.current : '' })),
-      junk,
-      ...(worn ? [{ id: 'unequip', label: t.unequip(gearLabel(worn)) }] : []),
-    ];
+    // In the labyrinth only taking off is offered; with nothing to take off, one greyed line says the rest waits for town.
+    const items: MenuItem[] = this.field
+      ? [worn ? { id: 'unequip', label: t.unequip(gearLabel(worn)) } : { id: 'townOnly', label: t.townOnly, disabled: true }]
+      : this.townMenu(worn, it, shown);
     this.menuView = new MenuView(new Menu(items), { pick: (m) => this.menuPick(m.id), moved: () => this.ctx.sfx.cursor() });
     this.menuWin = win('slx-bag-menu', [el('div', { class: 'slx-who', text: t.title }), this.menuView.el]);
     this.sceneEl.append(this.menuWin);
     this.ctx.sfx.confirm();
     this.render();
+  }
+
+  /** The town bag menu: sort, auto junk, mark the bag piece, and take off the worn one. */
+  private townMenu(worn: ItemInstance | undefined, it: ItemInstance | undefined, shown: ItemInstance | undefined): MenuItem[] {
+    const t = T.ui2.equip.menu;
+    const auto = this.ctx.game.state.autoJunk;
+    const junk: MenuItem = shown ? { id: 'junk', label: t.wornNoMark(gearLabel(shown)), disabled: true }
+      : { id: 'junk', label: !it ? t.markNone : it.junk ? t.unmark(gearLabel(it)) : t.mark(gearLabel(it)), disabled: !it };
+    return [
+      ...SORTS.map((k) => ({ id: `sort-${k}`, label: t.sort[k] })),
+      ...AUTOS.map((k) => ({ id: `auto-${k}`, label: t.auto[k], right: k === auto ? t.current : '' })),
+      junk,
+      ...(worn ? [{ id: 'unequip', label: t.unequip(gearLabel(worn)) }] : []),
+    ];
   }
 
   private closeMenu(): void {
@@ -325,6 +348,7 @@ export class EquipScene implements Scene {
       if (slot) this.takeOff(slot);
       return;
     }
+    if (this.field) { this.refuse(''); return; }          // sorting and marking are for town
     const it = this.focus === 'bag' ? this.bag[this.bagCur] : undefined;
     const r = kind === 'sort' ? sortBagIn(s, arg as (typeof SORTS)[number])
       : kind === 'auto' ? setAutoJunk(s, arg as AutoJunk)
@@ -345,7 +369,7 @@ export class EquipScene implements Scene {
     if (this.headId !== this.id) this.renderHead();
     this.noticeEl.textContent = this.notice;
 
-    this.bagCount.textContent = T.ui2.equip.bag(this.bag.length, BAG_SIZE);
+    this.renderCount();
     this.bagCells.forEach((c, i) => {
       const it = this.bag[i];
       const cls = ['slx-bag-cell'];
@@ -382,8 +406,17 @@ export class EquipScene implements Scene {
     });
 
     // A full bag has no empty cell to pick, so the target hint names the menu route instead.
-    this.keyhint.textContent = !this.target ? T.ui2.equip.hint : this.bag.length >= BAG_SIZE ? T.ui2.equip.hintTargetFull : T.ui2.equip.hintTarget;
+    this.keyhint.textContent = !this.target ? (this.field ? T.ui2.equip.hintField : T.ui2.equip.hint) : this.bag.length >= BAG_SIZE ? T.ui2.equip.hintTargetFull : T.ui2.equip.hintTarget;
     this.renderDetail();
+  }
+
+  /** The bag line: `背包 n／60`, or in the labyrinth the pack's count and the load, red at the limit as on the map. */
+  private renderCount(): void {
+    const g = this.ctx.game;
+    if (!this.field) { this.bagCount.textContent = T.ui2.equip.bag(this.bag.length, BAG_SIZE); return; }
+    const w = carried(g.state, g.run), cap = capacity(g.state.party);
+    this.bagCount.textContent = T.ui2.equip.pack(this.bag.length, formatWeight(w), formatWeight(cap));
+    this.bagCount.classList.toggle('slx-weight-full', w >= cap);
   }
 
   private renderHead(): void {

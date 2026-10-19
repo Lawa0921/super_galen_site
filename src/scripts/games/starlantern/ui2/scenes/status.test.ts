@@ -488,6 +488,16 @@ describe('StatusScene', () => {
     expect(root.querySelector('[data-skill=flame-wave] .slx-skill-cost')!.textContent).toBe(T.ui2.status.tp(want));
   });
 
+  it('the skills tab marks the skills usable in the labyrinth', () => {
+    const { root, s } = setup('selene', NO_ART, (g) => { g.state.party.roster.selene.tree = { moonlight: 1, dream: 1 }; });
+    s.onAction('right'); s.onAction('right');
+    const tag = (sk: string) => root.querySelector(`[data-skill=${sk}] .slx-skill-head .slx-field-tag`);
+    expect(tag('moonlight')!.textContent).toBe(T.ui2.status.fieldTag);
+    expect(tag('moonlight')!.previousElementSibling!.classList.contains('slx-skill-name')).toBe(true);   // right after the name
+    expect(root.querySelector('[data-skill=dream]')).not.toBeNull();
+    expect(tag('dream')).toBeNull();
+  });
+
   it('the gear tab marks a power the member has not learned as 尚未習得', () => {
     const { root, s, game } = setup('noel');
     game.state.party.roster.noel.equip.neck = { ...plainItem('moss-charm', 7), rarity: 'legendary', special: 'frost-bloom-neck' };

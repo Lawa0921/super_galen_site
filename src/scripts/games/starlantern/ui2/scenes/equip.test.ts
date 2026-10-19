@@ -7,7 +7,10 @@ import { constRng, plainItem } from '../../engine/testing';
 import type { ItemInstance, Rarity } from '../../engine/types';
 import { NO_ART } from '../../render/textures';
 import { EquipScene } from './equip';
-import { LEGACY_LINEUP } from '../../engine/party';
+import { LEGACY_LINEUP, meet } from '../../engine/party';
+import { capacity, carried, formatWeight as kg, weightOf } from '../../data/weights';
+import { gearLabel } from '../loot';
+import type { SceneName } from '../scene';
 
 const gear = (base: string, uid: number, rarity: Rarity = 'common', extra: Partial<ItemInstance> = {}): ItemInstance =>
   ({ ...plainItem(base, uid), rarity, ...extra });
@@ -18,10 +21,15 @@ function setup(prep?: (g: Game) => void, arg = 'scarlet') {
   game.state.bag = [plainItem('iron-sword', 1)];
   game.state.nextUid = 100;
   prep?.(game);
+  return open(game, 'guild', arg);
+}
+
+/** The scene on `game`, opened from `from`, with the helpers every test uses. */
+function open(game: Game, from: SceneName, arg?: string) {
   const go = vi.fn();
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
   const root = document.createElement('div');
-  const s = new EquipScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), from: 'guild', arg });
+  const s = new EquipScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), from, arg });
   s.enter(root);
   const slot = (k: string) => root.querySelector<HTMLElement>(`.slx-doll-slot[data-slot=${k}]`)!;
   const cell = (i: number) => root.querySelector<HTMLElement>(`.slx-bag-cell[data-index="${i}"]`)!;
@@ -589,5 +597,129 @@ describe('EquipScene, the hero leads', () => {
     const s = new EquipScene({ game, art: NO_ART, sfx, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), from: 'guild' });
     s.enter(root);
     expect(root.querySelector('.slx-equip-scene')!.textContent).toContain('洛恩');
+  });
+});
+
+/**
+ * Out in the labyrinth (departed as dungeon.test.ts does) with the opening pair, the hero and Rin, plus Selene on the
+ * bench; the hero wears an iron sword. What changes hands is the run pack, never the town bag.
+ */
+function fieldSetup(prep?: (g: Game) => void, arg?: string) {
+  const game = new Game(constRng(0.99), null);
+  game.state.party = meet(game.state.party, 'selene', 1);
+  game.state.party.grid = game.state.party.grid.map((c) => (c === 'selene' ? null : c));   // she waits in town
+  expect(game.depart({ region: 'mainline', condition: 'plain' }, 1)).toEqual({ ok: true });
+  game.state.party.roster.hero.equip.weapon = plainItem('iron-sword', 60);
+  game.state.nextUid = 100;
+  prep?.(game);
+  return { ...open(game, 'dungeon', arg), run: game.run! };
+}
+
+describe('EquipScene in the labyrinth', () => {
+  const rarityCells = (root: HTMLElement) => root.querySelectorAll('.slx-bag .slx-bag-cell[class*="slx-rarity-"]');
+
+  it('in the labyrinth the bag shows the run pack, and wearing from it works', () => {
+    const { root, game, run, cell } = fieldSetup((g) => {
+      g.run!.loot.gear = [plainItem('iron-sword', 70), plainItem('leather-cap', 71)];
+    });
+    expect(root.querySelectorAll('.slx-bag .slx-bag-cell')).toHaveLength(60);
+    expect(rarityCells(root)).toHaveLength(run.loot.gear.length);
+    expect(root.querySelector('.slx-bg')).toBeNull();                                   // no guild behind the labyrinth
+    expect(root.querySelector('.slx-keyhint')!.textContent).toBe(T.ui2.equip.hintField);
+    cell(0).click();                                                                    // a mouse click wears at once
+    expect(game.state.party.roster.hero.equip.weapon!.uid).toBe(70);
+    expect(game.run!.loot.gear.map((it) => it.uid)).toEqual([60, 71]);                   // the old sword took its place
+    expect(game.state.bag).toEqual([]);
+    expect(rarityCells(root)).toHaveLength(2);
+  });
+
+  it('in the labyrinth the town bag is out of reach', () => {
+    const { root, game, cell } = fieldSetup((g) => { g.state.bag = [plainItem('iron-sword', 1), plainItem('leather-cap', 2)]; });
+    expect(game.run!.loot.gear).toEqual([]);
+    expect(rarityCells(root)).toHaveLength(0);
+    cell(0).click();                                                                    // an empty cell, no target: refused
+    expect(game.state.party.roster.hero.equip.weapon!.uid).toBe(60);
+    expect(game.state.bag.map((it) => it.uid)).toEqual([1, 2]);
+  });
+
+  it('in the labyrinth the menu offers only taking off', () => {
+    const { root, game, press } = fieldSetup((g) => { g.run!.loot.gear = [plainItem('leather-cap', 71)]; });
+    const options = () => [...root.querySelectorAll('.slx-bag-menu [role=option]')];
+    const labels = () => options().map((o) => o.querySelector('.slx-label')!.textContent);
+    const ids = () => options().map((o) => o.getAttribute('data-id')!);
+    press('menu');                                                                      // on the worn sword
+    expect(labels()).toEqual([T.ui2.equip.menu.unequip(gearLabel(game.state.party.roster.hero.equip.weapon!))]);
+    press('cancel', 'up');                                                              // the empty neck slot
+    press('menu');
+    expect(labels()).toEqual([T.ui2.equip.menu.townOnly]);
+    expect(options()[0].getAttribute('aria-disabled')).toBe('true');
+    press('cancel', 'swap');                                                            // the bag, on the cap
+    press('menu');
+    expect(ids().filter((id) => /^(sort|auto)-|^junk$/.test(id))).toEqual([]);
+    expect(labels()).toEqual([T.ui2.equip.menu.townOnly]);
+  });
+
+  it('in the labyrinth taking off from the menu puts the piece in the run pack', () => {
+    const { game, root, press } = fieldSetup();
+    press('menu');
+    (root.querySelector('.slx-bag-menu [role=option]') as HTMLElement).click();
+    expect(game.state.party.roster.hero.equip.weapon).toBeUndefined();
+    expect(game.run!.loot.gear.map((it) => it.uid)).toEqual([60]);
+    expect(game.state.bag).toEqual([]);
+  });
+
+  it('in the labyrinth paging skips members on the bench', () => {
+    const { root, press } = fieldSetup();
+    const who = () => root.querySelector('.slx-equip-name b')!.textContent;
+    const seen = [who()];
+    for (let i = 0; i < 4; i++) { press('next'); seen.push(who()); }
+    expect(seen).toEqual(['洛恩', '凜', '洛恩', '凜', '洛恩']);
+    press('prev');
+    expect(who()).toBe('凜');
+  });
+
+  it('opened on a member on the bench, it shows the hero instead', () => {
+    const { root } = fieldSetup(undefined, 'selene');
+    expect(root.querySelector('.slx-equip-name b')!.textContent).toBe('洛恩');
+  });
+
+  it('the pack line shows its count and weight against the limit', () => {
+    const { root, game } = fieldSetup((g) => { g.run!.loot.gear = [plainItem('leather-cap', 71)]; });
+    const line = root.querySelector('.slx-bag-count')!;
+    expect(line.textContent).toBe(T.ui2.equip.pack(1, kg(carried(game.state, game.run)), kg(capacity(game.state.party))));
+    expect(line.textContent).toContain('冒險背包 1 件');
+    expect(line.classList.contains('slx-weight-full')).toBe(false);
+  });
+
+  it('a refusal for weight says why', () => {
+    const { root, game, sfx, press, cell } = fieldSetup((g) => {
+      const room = capacity(g.state.party) - carried(g.state, g.run);
+      g.run!.loot.items.moss = (g.run!.loot.items.moss ?? 0) + Math.ceil(room / weightOf('moss')) + 1;   // over the limit
+    });
+    expect(carried(game.state, game.run)).toBeGreaterThan(capacity(game.state.party));
+    expect(root.querySelector('.slx-bag-count')!.classList.contains('slx-weight-full')).toBe(true);
+    press('confirm');                                                                   // the weapon slot is the target
+    cell(0).click();                                                                    // an empty cell: take it off
+    expect(root.querySelector('.slx-equip-notice')!.textContent).toBe(T.reasons.heavy);
+    expect(sfx.error).toHaveBeenCalled();
+    expect(game.state.party.roster.hero.equip.weapon!.uid).toBe(60);
+    expect(game.run!.loot.gear).toEqual([]);
+  });
+
+  it('a pack that would not fit in the bag at home refuses to take off, and says so', () => {
+    const { root, game, sfx, press, cell } = fieldSetup((g) => {
+      g.state.bag = Array.from({ length: 60 }, (_, i) => plainItem('leather-cap', 200 + i));
+    });
+    press('confirm');
+    cell(0).click();
+    expect(root.querySelector('.slx-equip-notice')!.textContent).toBe(T.ui2.equip.fullField);
+    expect(sfx.error).toHaveBeenCalled();
+    expect(game.state.party.roster.hero.equip.weapon!.uid).toBe(60);
+  });
+
+  it('cancel goes back to the labyrinth', () => {
+    const { go, press } = fieldSetup();
+    press('cancel');
+    expect(go).toHaveBeenCalledWith('dungeon');
   });
 });

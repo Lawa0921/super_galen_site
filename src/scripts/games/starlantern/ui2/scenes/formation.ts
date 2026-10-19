@@ -11,7 +11,10 @@ import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { MenuView, backControl, win } from '../widgets';
 
-/** Formation: a 3x3 grid (front row on top, nearest the enemies); pick a cell, then who stands there. */
+/**
+ * Formation: a 3x3 grid (front row on top, nearest the enemies); pick a cell, then who stands there. In the labyrinth
+ * (`field`) only the rows move: the list offers the members on the field and no remove, since the bench is in town.
+ */
 export class FormationScene implements Scene {
   private body!: HTMLElement;
   private gridEl!: HTMLElement;
@@ -30,10 +33,10 @@ export class FormationScene implements Scene {
     this.msg = el('p', { class: 'slx-formation-msg', attrs: { role: 'status' } });
     const info = win('slx-formation-info', [
       el('h3', { text: t.title }), this.count,
-      el('ul', { class: 'slx-formation-rules' }, t.rules.map((r) => el('li', { text: r }))),
+      el('ul', { class: 'slx-formation-rules' }, (this.field ? t.fieldRules : t.rules).map((r) => el('li', { text: r }))),
       this.msg, el('p', { class: 'slx-hint', text: t.hint }),
     ]);
-    const bg = this.ctx.art.has(art.scene('guild')) ? [el('img', { class: 'slx-bg slx-bg-dim', attrs: { src: art.scene('guild'), alt: '' } })] : [];
+    const bg = !this.field && this.ctx.art.has(art.scene('guild')) ? [el('img', { class: 'slx-bg slx-bg-dim', attrs: { src: art.scene('guild'), alt: '' } })] : [];
     this.body = el('div', { class: 'slx-scene slx-formation-scene' }, [...bg, this.gridEl, info, backControl(() => this.onAction('cancel'))]);
     root.append(this.body);
     this.render();
@@ -57,6 +60,8 @@ export class FormationScene implements Scene {
   }
 
   private get grid(): (CharacterId | null)[] { return this.ctx.game.state.party.grid; }
+  /** Out in the labyrinth: the bench is in town, so only who is on the field can move. */
+  private get field(): boolean { return this.ctx.game.phase === 'map' && !!this.ctx.game.run; }
 
   /** The published normal face of a member (Rin's oath look after her oath), or nothing. */
   private faceUrl(id: CharacterId): string | undefined {
@@ -95,9 +100,9 @@ export class FormationScene implements Scene {
   private openPick(): void {
     const p = this.ctx.game.state.party;
     const where = (id: CharacterId) => { const j = this.grid.indexOf(id); return j < 0 ? T.ui2.formation.reserve : T.ui2.rows[rowOfCell(j)]; };
-    const items: MenuItem[] = p.recruited.map((id) => ({ id, label: CHARACTERS[id].name, right: where(id), icon: this.faceUrl(id) }));
+    const items: MenuItem[] = (this.field ? activeIds(p) : p.recruited).map((id) => ({ id, label: CHARACTERS[id].name, right: where(id), icon: this.faceUrl(id) }));
     const here = this.grid[this.cursor];
-    if (here && here !== 'hero') items.push({ id: '', label: T.ui2.formation.remove });
+    if (here && here !== 'hero' && !this.field) items.push({ id: '', label: T.ui2.formation.remove });
     this.ctx.sfx.confirm();
     this.pickView = new MenuView(new Menu(items), {
       pick: (it) => { this.closePick(); this.place((it.id || null) as CharacterId | null); },

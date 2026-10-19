@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
-import { meet, LEGACY_GRID, partyWith } from '../../engine/party';
+import { activeIds, meet, LEGACY_GRID, partyWith } from '../../engine/party';
+import { CHARACTERS } from '../../data/characters';
+import { T } from '../../data/text.zh-TW';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { FormationScene } from './formation';
@@ -99,5 +101,67 @@ describe('FormationScene', () => {
     expect(root.querySelector('.slx-formation-pick')).toBeNull();
     s.onAction('cancel');
     expect(go).toHaveBeenCalledWith('guild');
+  });
+});
+
+/**
+ * Out in the labyrinth (departed as dungeon.test.ts does): the opening pair, the hero and Rin, with Selene, Liz and Noel
+ * on the field and Bobby on the bench in town.
+ */
+function fieldSetup() {
+  const game = new Game(constRng(0.99), null);
+  for (const id of ['selene', 'liz', 'noel', 'bobby'] as const) game.state.party = meet(game.state.party, id, 1);
+  expect(game.state.party.grid).not.toContain('bobby');
+  expect(game.depart({ region: 'mainline', condition: 'plain' }, 1)).toEqual({ ok: true });
+  const go = vi.fn();
+  const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
+  const root = document.createElement('div');
+  const s = new FormationScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), from: 'dungeon' });
+  s.enter(root);
+  const at = (id: string) => game.state.party.grid.indexOf(id as never);
+  const cell = (i: number) => root.querySelector(`[data-cell="${i}"]`) as HTMLElement;
+  const labels = () => [...root.querySelectorAll('.slx-formation-pick [role=option] .slx-label')].map((x) => x.textContent);
+  const pick = (label: string) => {
+    const o = [...root.querySelectorAll('.slx-formation-pick [role=option]')].find((x) => x.querySelector('.slx-label')!.textContent === label);
+    if (!o) throw new Error(`no ${label}`);
+    (o as HTMLElement).click();
+  };
+  return { game, go, sfx, root, s, at, cell, labels, pick };
+}
+
+describe('FormationScene in the labyrinth', () => {
+  it('in the labyrinth the pick list holds only members on the field and no remove', () => {
+    const { game, root, at, cell, labels } = fieldSetup();
+    expect(root.querySelector('.slx-bg')).toBeNull();                                  // no guild behind the labyrinth
+    const rules = [...root.querySelectorAll('.slx-formation-rules li')].map((x) => x.textContent);
+    expect(rules).toEqual(T.ui2.formation.fieldRules);
+    cell(at('liz')).click();                                                           // a cell that would offer remove in town
+    const onField = activeIds(game.state.party).map((id) => CHARACTERS[id].name);
+    expect(labels()).toEqual(onField);
+    expect(labels()).not.toContain(CHARACTERS.bobby.name);
+    expect(labels()).not.toContain(T.ui2.formation.remove);
+  });
+
+  it('in the labyrinth two members swap cells', () => {
+    const { game, go, at, cell, pick } = fieldSetup();
+    const [hero, rin] = [at('hero'), at('rin')];
+    cell(hero).click();
+    pick('凜');
+    expect(at('rin')).toBe(hero);
+    expect(at('hero')).toBe(rin);
+    expect([...activeIds(game.state.party)].sort()).toEqual(['hero', 'liz', 'noel', 'rin', 'selene']);
+    expect(go).not.toHaveBeenCalled();
+  });
+
+  it('in the labyrinth a member moves to an empty cell and Esc goes back to the labyrinth', () => {
+    const { game, go, s, at, cell, pick } = fieldSetup();
+    const empty = game.state.party.grid.indexOf(null);
+    const from = at('noel');
+    cell(empty).click();
+    pick('諾艾兒');
+    expect(at('noel')).toBe(empty);
+    expect(game.state.party.grid[from]).toBeNull();
+    s.onAction('cancel');
+    expect(go).toHaveBeenCalledWith('dungeon');
   });
 });
