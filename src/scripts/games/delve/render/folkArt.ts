@@ -61,10 +61,11 @@ function findMouth(b: Bmp, ya: number, yb: number): { y0: number; y1: number; x0
  * 一格紙娃娃 → 矮人（同尺寸）：軀幹拿掉 shrink 列（腳底不動 → 矮壯），再畫鬍子。
  * 鬍子順著 3/4 的臉：只長在臉的前下方（嘴以下的臉頰 + 下巴）、八字鬍在嘴的上面一列（不蓋住嘴），
  * 下巴下面垂三束到胸口；不會往後腦延伸，也不會蓋到眼睛。skin = 外觀的膚色索引。
+ * waist = 軀幹 / 腿交界的列（預設 WAIST_ROW；玩家的影格身體會上下彈，傳這一格的腰）。
  */
-export function dwarfify(frame: Bmp, beard: RGB[] | null, shrink = 2, skin?: number): Bmp {
+export function dwarfify(frame: Bmp, beard: RGB[] | null, shrink = 2, skin?: number, waistRow = WAIST_ROW): Bmp {
   const out = new Bmp(frame.w, frame.h);
-  const waist = Math.min(WAIST_ROW, frame.h);
+  const waist = Math.min(waistRow, frame.h);
   for (let y = 0; y < frame.h; y++) {
     const sy = y >= waist ? y : y - shrink;
     if (sy < 0) continue;

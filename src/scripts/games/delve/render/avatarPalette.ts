@@ -72,6 +72,10 @@ export const LASH = hex('#472819');
 export const TONGUE = hex('#e890b0');
 export const SWEAT = ramp('#5c9ce0', '#94c8ee', '#ffffff');
 export const GLASSES = hex('#423f54');
+/** 龍角（象牙 / 骨色 5 階：[最暗, 陰影, 底色, 亮部, 高光]） */
+export const HORN = ramp('#7c4c2e', '#c99660', '#d8ba76', '#f2e2b0', '#fff4c0');
+/** 貓耳內側（粉：[陰影, 底色]） */
+export const EAR_PINK = ramp('#e890b0', '#ffc8dc');
 
 export const hairRamp = (i: number): RGB[] => HAIR_RAMPS[i] ?? HAIR_RAMPS[0];
 /** 頭髮剪影最外一圈的外框色（深棕 / 深紫，亮度約 2–3 成） */

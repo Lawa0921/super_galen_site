@@ -8,12 +8,15 @@
 //     第二張（head）：臉 → 前髮 → 頭飾（頭盔 / 帽子）→ 前飾品（髮飾 / 眼鏡）
 //   爬繩 / 掛著 / 游泳 / 倒地的影格手臂直接畫在第一張，第二張是空的。
 //   影格 52×54、腳底在最下一列、身體中心 x = 26；一律面向右（繪製時鏡像）。外緣是柔和的同色系描邊（不用近黑）。
+//   種族：耳 / 角在 avatarHead；貓族 / 龍裔的尾巴畫在第一張最後面（後髮之後、背飾之前），走路時左右擺；
+//   矮人整個上半身經過 folkArt.dwarfify 變矮 raceHeadDy 格（腳底不動、meta.dy 跟著加：手臂接在變矮後的肩膀），男生加鬍子。
 import { Bmp, hex, rotPrep, rotate, type RGB } from './pixel';
-import { OUTFITS, type Appearance } from '../engine/appearance';
+import { OUTFITS, raceId, type Appearance, type RaceId } from '../engine/appearance';
 import type { DollLook, DollPiece } from '../engine/doll';
 import type { ArmorSetId } from '../engine/items';
 import { drawHead, type Expr, type HairMotion } from './avatarHead';
-import { CLOTH_RAMPS, DARK, GOLD, LEATHER, WHITE, clothRamp, darker, skinRamp } from './avatarPalette';
+import { CLOTH_RAMPS, DARK, GOLD, HORN, LEATHER, WHITE, clothRamp, darker, hairRamp, skinRamp } from './avatarPalette';
+import { beardRamp, dwarfify } from './folkArt';
 import {
   armor5, armorSet, backArt, beltArt, bootExtra, bootRamp, capeShoulders, chestDetail, chestSpots, greaveKnee, lookId, neckArt, upgrades,
   helmetOnly as helmetHeadOnly, hatOnly as hatHeadOnly,
@@ -25,6 +28,8 @@ import { CLIMB_FRAMES, CLIMBDOWN_FRAMES, HANG_FRAMES, MANTLE_FRAMES, SWIM_FRAMES
 export const AV_FW = 52;
 export const AV_FH = 54;
 const CX = 26;
+/** 種族讓頭（連整個上半身）往下移幾格：矮人 2（變矮），其他 0 */
+export function raceHeadDy(race: RaceId): number { return race === 'dwarf' ? 2 : 0; }
 /** 站立時腳踝的列（鞋子 3 列：腳踝..腳踝 + 2 = 最下一列） */
 const ANKLE = AV_FH - 2;
 /** 頭的區域原點：女 / 男（男生高 2 格） */
@@ -377,10 +382,56 @@ interface Pose {
   /** 身體 / 頭相對站立的位移 */
   bodyDx: number; bodyDy: number; headDx: number; headDy: number;
   flare: number; flap: number; sweat?: boolean;
+  /** 尾巴往後甩（−1..1，走路時左右擺） */
+  wag?: number;
   /** 不畫頭（倒地：身體轉 90°、頭另外正著畫） */
   noHead?: boolean;
   /** 臉 / 眼睛往面向的方向多偏幾格 */
   look?: number;
+}
+
+/** 二次貝茲曲線上的點 */
+const qbez = (p0: readonly number[], p1: readonly number[], p2: readonly number[], u: number): [number, number] => {
+  const v = 1 - u;
+  return [v * v * p0[0] + 2 * v * u * p1[0] + u * u * p2[0], v * v * p0[1] + 2 * v * u * p1[1] + u * u * p2[1]];
+};
+/**
+ * 尾巴（面向右 → 在身體左邊 = 身後）：根部 (x, y) 藏在腰後；wag = 左右擺、lift = 往上翹（跳 / 掉落）。
+ * 貓：細長、往後下再往上勾、尾尖亮一階；龍：粗、往後下方拖、上緣一排背棘、腹側象牙色、鱗片紋。都用髮色色階 + 選擇性描邊。
+ */
+function tail(b: Bmp, race: RaceId, hairColor: number, x: number, y: number, wag: number, lift: number): void {
+  const h = hairRamp(hairColor), t = new Bmp(b.w, b.h);
+  const bez = (p0: number[], p1: number[], p2: number[], w0: number, w1: number, col: (u: number, s: number, xx: number, yy: number) => RGB): void => {
+    const n = 48;
+    for (let i = 0; i <= n; i++) {
+      const u = i / n, v = 1 - u, [cx, cy] = qbez(p0, p1, p2, u);
+      const dx = 2 * v * (p1[0] - p0[0]) + 2 * u * (p2[0] - p1[0]), dy = 2 * v * (p1[1] - p0[1]) + 2 * u * (p2[1] - p1[1]);
+      const dl = Math.hypot(dx, dy) || 1, nx = dy / dl, ny = -dx / dl, r = (w0 + (w1 - w0) * u) / 2;
+      for (let yy = Math.floor(cy - r - 1); yy <= Math.ceil(cy + r + 1); yy++) for (let xx = Math.floor(cx - r - 1); xx <= Math.ceil(cx + r + 1); xx++) {
+        const px = xx + 0.5 - cx, py = yy + 0.5 - cy;
+        if (px * px + py * py > r * r + 0.12 || t.on(xx, yy)) continue;
+        // s：法線方向的位置（−1..1；尾巴往左走時 −1 = 上緣）
+        t.set(xx, yy, col(u, r > 0 ? (px * nx + py * ny) / Math.max(0.5, r) : 0, xx, yy));
+      }
+    }
+  };
+  if (race === 'catfolk') {
+    bez([x, y], [x - 9 + wag, y + 4 - lift * 2], [x - 12 + wag * 2.5, y - 8 - lift * 4], 3, 2.4, (u, s) => (u > 0.82 ? (s < 0.2 ? h[4] : h[3]) : s > 0.35 ? h[3] : s < -0.4 ? h[1] : h[2]));
+  } else {
+    const p0 = [x + 1, y - 1], p1 = [x - 7 + wag * 0.5, y + 7 - lift * 3], p2 = [x - 14 + wag * 2, y + 2 - lift * 6];
+    bez(p0, p1, p2, 5.4, 1.2, (u, s, xx, yy) => {
+      if (s > 0.45) return u > 0.7 ? HORN[2] : HORN[3];
+      if (s < -0.5) return h[1];
+      return (xx + yy * 2) % 4 === 0 ? h[1] : s < -0.1 ? h[2] : h[3];
+    });
+    // 背棘：上緣三根小刺（往後上方）
+    for (const [u, len] of [[0.3, 2], [0.52, 2], [0.72, 1]] as const) {
+      const [cx, cy] = qbez(p0, p1, p2, u), r = (5.4 + (1.2 - 5.4) * u) / 2;
+      for (let j = 0; j < len; j++) t.set(Math.round(cx - j * 0.5), Math.round(cy - r - 0.5 - j), j === len - 1 ? h[3] : h[2]);
+    }
+  }
+  t.selOutline();
+  b.blit(t, 0, 0);
 }
 
 function standFrame(l: DollLook, p: Pose, f: number, trace?: string[]): AvatarFrame {
@@ -390,12 +441,15 @@ function standFrame(l: DollLook, p: Pose, f: number, trace?: string[]): AvatarFr
   const dy = p.snap ? Math.round(ANKLE - Math.max(far.ankleY, near.ankleY)) : 0;
   const body = new Bmp(AV_FW, AV_FH), head = new Bmp(AV_FW, AV_FH), hairBack = new Bmp(AV_FW, AV_FH), face = new Bmp(AV_FW, AV_FH);
   const headTrace: string[] = [];
+  const race = raceId(l.app);
   const rows = shiftRows(torsoRows(bt, outfitOf(top) === 'hoodie'), p.bodyDx, dy + p.bodyDy);
   const ty = Math.min(...Object.keys(rows).map(Number)), [ra, rz] = rows[ty + 1];
   if (!p.noHead) drawHead(hairBack, head, HEAD_X + p.headDx + p.bodyDx, HEAD_Y[bt] + dy + p.bodyDy + p.headDy, {
-    app: l.app, expr: p.expr, motion: p.hair, gear: l.head, view: 'side', sweat: p.sweat, f, trace: headTrace, face, look: p.look,
+    app: l.app, race, expr: p.expr, motion: p.hair, gear: l.head, view: 'side', sweat: p.sweat, f, trace: headTrace, face, look: p.look,
   });
   body.blit(hairBack, 0, 0); trace?.push('backHair');
+  // 尾巴：根部在腰後（軀幹倒數第二列、靠後緣）
+  if (race === 'catfolk' || race === 'dragonkin') tail(body, race, l.app.hairColor, ra - 1, ty + 6, (p.wag ?? 0) + p.flap * 0.3, Math.max(0, p.hair.lift));
   // 背飾（身體後面、後髮前面：3/4 正面時從身體兩側露出來）
   if (l.back) { backArt(body, l.back, p.flap * 0.5 + (p.flare ? 0.6 : 0), p.flare ? (p.hair.lift > 0.7 ? 1 : 0.4) : 0, Math.round((ra + rz) / 2), ty, rz - ra + 1, f); trace?.push('back'); }
   trace?.push('body');
@@ -412,7 +466,16 @@ function standFrame(l: DollLook, p: Pose, f: number, trace?: string[]): AvatarFr
   if (l.back && l.back.look === 'back:cape') capeShoulders(body, ra, rz, ty);
   trace?.push('chest');
   trace?.push(...headTrace);
-  return { body, head, face, meta: { dx: p.bodyDx, dy: dy + p.bodyDy, arms: true } };
+  const meta: FrameMeta = { dx: p.bodyDx, dy: dy + p.bodyDy, arms: true };
+  const short = p.noHead ? 0 : raceHeadDy(race);
+  if (!short) return { body, head, face, meta };
+  // 矮人：腰（軀幹最下一列）以上整個往下移 short 格（腳底不動 → 矮壯）；男生沿著臉畫鬍子（畫在 head：蓋在手臂上面）
+  const waist = ty + 7, skin = l.app.skin;
+  const dHead = dwarfify(head, l.app.body === 1 ? beardRamp(l.app.hairColor) : null, short, skin, waist), dFace = dwarfify(face, null, short, skin, waist);
+  // 臉那層只留沒被鬍子蓋住的
+  for (let i = 0; i < dFace.px.length; i++) if (dFace.px[i] !== dHead.px[i]) dFace.px[i] = 0;
+  meta.dy += short;
+  return { body: dwarfify(body, null, short, skin, waist), head: dHead, face: dFace, meta };
 }
 
 const still = (expr: Expr = 'normal'): Pose => ({
@@ -439,7 +502,8 @@ function deadFrame(l: DollLook): AvatarFrame {
   p.near = { thigh: 60, shin: -40 }; p.far = { thigh: 30, shin: -20 }; p.flap = -1; p.hair = { swing: 0.6, lift: 0.3 };
   const fr = standFrame(l, p, 0);
   const meta: FrameMeta = { dx: 0, dy: 0, arms: false };
-  const arms = armsTo(l, meta, [31, 46], [21, 47]);
+  // 肩膀跟著身體（矮人變矮：fr.meta.dy 多 raceHeadDy）
+  const arms = armsTo(l, { ...meta, dy: fr.meta.dy }, [31, 46], [21, 47]);
   const stand = new Bmp(AV_FW, AV_FH);
   stand.blit(arms.back, -ARMS_PAD, -ARMS_PAD);
   stand.blit(fr.body, 0, 0);
@@ -503,11 +567,15 @@ function swimFrame(l: DollLook, f: number): AvatarFrame {
   const PIV = { x: CX, y: 45 }, rad = (SWIM_TILT * Math.PI) / 180;
   const r = rotate(rotPrep(stand), PIV.x, PIV.y, rad, 72);
   // 頭：正著畫，脖子接在轉過去的身體前端（右上）
-  const hb = new Bmp(72, 72), hf = new Bmp(72, 72);
+  const hb = new Bmp(72, 72);
+  let hf = new Bmp(72, 72);
   const neck = { x: 0, y: -3 }, nx = Math.cos(rad) * neck.x - Math.sin(rad) * neck.y, ny = Math.sin(rad) * neck.x + Math.cos(rad) * neck.y;
   // 頭在身體前端（往前 8、往下 4）：臉朝前進的方向
   const hx = Math.round(36 + nx - 13 + 8), hy = Math.round(36 + ny - 20 + 4);
-  drawHead(hb, hf, hx, hy, { app: l.app, expr: 'normal', motion: { swing: 0.9 + 0.2 * Math.sin(ph), lift: 0.5 }, gear: l.head, view: 'side', f, look: 2 });
+  const race = raceId(l.app);
+  drawHead(hb, hf, hx, hy, { app: l.app, race, expr: 'normal', motion: { swing: 0.9 + 0.2 * Math.sin(ph), lift: 0.5 }, gear: l.head, view: 'side', f, look: 2 });
+  // 矮人男游泳也有鬍子（游泳的身體不縮：轉過去之後看不出高矮）
+  if (race === 'dwarf' && l.app.body === 1) hf = dwarfify(hf, beardRamp(l.app.hairColor), 0, l.app.skin);
   const all = new Bmp(72, 72);
   all.blit(hb, 0, 0); all.blit(r, 0, 0); all.blit(hf, 0, 0);
   const bb = bbox(all);
@@ -651,7 +719,7 @@ function ropeFrame(l: DollLook, kind: 'climb' | 'climbdown' | 'hang' | 'ropetop'
   p.hair = { swing: 0.25 - (dx - dxPrev) * 0.45, lift: Math.max(-0.6, Math.min(0.6, ddy * 0.35 + (kind === 'climbdown' ? 0.25 : 0))) };
   p.flap = ddy * 0.6 - (dx - dxPrev) * 0.5;
   const fr = standFrame(l, p, f);
-  const meta: FrameMeta = { dx, dy: Math.round(dy), arms: false, ox: CX - ROPE_X };
+  const meta: FrameMeta = { dx, dy: fr.meta.dy, arms: false, ox: CX - ROPE_X };
   const arms = armsTo(l, meta, [ROPE_X, Math.round(hands.front)], [ROPE_X - 1, Math.round(hands.back)], 'rope');
   const out = new Bmp(AV_FW, AV_FH), P = -ARMS_PAD;
   out.blit(arms.back, P, P);
@@ -671,6 +739,7 @@ export function avatarFrame(l: DollLook, anim: SheetAnim, f: number, trace?: str
       p.bodyDy = f === 2 || f === 3 ? 1 : 0;
       p.headDy = f === 2 ? -1 : 0;
       p.hair = { swing: [0, 0.12, 0.3, 0.18][f] ?? 0, lift: [0, 0, 0.12, 0][f] ?? 0 };
+      p.wag = [0, 0.4, 0.7, 0.4][f] ?? 0;
       return standFrame(l, p, f, trace);
     }
     case 'walk': {
@@ -681,6 +750,7 @@ export function avatarFrame(l: DollLook, anim: SheetAnim, f: number, trace?: str
       p.near = th(ph); p.far = th(ph + Math.PI);
       p.hair = { swing: 0.55 + 0.35 * Math.cos(ph * 2), lift: 0.15 * Math.abs(Math.cos(ph)) };
       p.flap = 1 + Math.sin(ph * 2) * 0.8;
+      p.wag = Math.sin(ph);
       p.headDx = 1; p.look = 1;
       const down = Math.abs(Math.sin(ph)) > 0.6 ? 1 : 0, downPrev = Math.abs(Math.sin(ph - Math.PI / 4)) > 0.6 ? 1 : 0;
       p.bodyDy = down; p.headDy = downPrev - down;

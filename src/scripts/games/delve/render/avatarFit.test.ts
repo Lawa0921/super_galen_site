@@ -2,9 +2,10 @@
 //   KO 是整個人倒下、游泳臉朝前進方向、背飾從 3/4 正面看得到、攀邊的手搆得到牆角、爬到繩頂的手不高過繩頂。
 import { describe, it, expect } from 'vitest';
 import { Bmp } from './pixel';
-import { HAIR_STYLES, OUTFITS, ACCESSORIES, bodyDefaults } from '../engine/appearance';
+import { HAIR_STYLES, OUTFITS, ACCESSORIES, RACES, bodyDefaults, type RaceId } from '../engine/appearance';
 import { plainLook, dollKey, type DollLook, type DollPiece } from '../engine/doll';
-import { AV_FH, AV_FW, SHEET, SHEET_ANIMS, avatarFrame, flatFrame, armsTo, shoulderOf, ROPE_TOP_HANDS, mantleLean } from './avatarArt';
+import { AV_FH, AV_FW, SHEET, SHEET_ANIMS, avatarFrame, flatFrame, armsTo, shoulderOf, ROPE_TOP_HANDS, mantleLean, raceHeadDy } from './avatarArt';
+import { beardRamp } from './folkArt';
 import { dollPreview } from './dollPreview';
 import { folkFrames } from './folkDraw';
 import { folkLook, ROLES, type FolkRole } from '../engine/folkDefs';
@@ -19,11 +20,11 @@ const bbox = (b: Bmp): { x0: number; y0: number; x1: number; y1: number } => {
   for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
   return { x0, y0, x1, y1 };
 };
-/** 測試的外觀：每種髮型 × 兩種體型、每種頭飾、帽子 / 頭盔 / 背飾 */
+/** 測試的外觀：每種髮型 × 兩種體型 × 五個種族、每種頭飾、帽子 / 頭盔 / 背飾 */
 function looks(): DollLook[] {
   const out: DollLook[] = [];
-  for (const body of [0, 1]) {
-    const base = bodyDefaults(body);
+  for (const body of [0, 1]) for (let race = 0; race < RACES.length; race++) {
+    const base = { ...bodyDefaults(body), race };
     for (let h = 0; h < HAIR_STYLES.length; h++) out.push(plainLook({ ...base, hair: h, ahoge: true }));
     for (let a = 0; a < ACCESSORIES.length; a++) out.push(plainLook({ ...base, acc: a, hair: 2 }));
     for (const hat of ['straw', 'witch', 'beret', 'maid', 'miner', 'flower']) out.push({ ...plainLook(base), head: P(`hat:${hat}`) });
@@ -189,5 +190,93 @@ describe('髮型剪影', () => {
         expect(n, `body ${body}: ${HAIR_STYLES[i].id} vs ${HAIR_STYLES[j].id}`).toBeGreaterThanOrEqual(30);
       }
     }
+  });
+});
+
+describe('種族外觀', () => {
+  const CX = AV_FW / 2;
+  const ID = (id: string): number => RACES.findIndex((r) => r.id === id);
+  const raceLook = (body: number, race: number, extra: Record<string, unknown> = {}): DollLook => plainLook({ ...bodyDefaults(body), acc: 0, ahoge: false, race, ...extra });
+  const opaqueDiff = (a: Bmp, b: Bmp): { x: number; y: number }[] => {
+    const out: { x: number; y: number }[] = [];
+    for (let y = 0; y < a.h; y++) for (let x = 0; x < a.w; x++) if (a.raw(x, y) !== b.raw(x, y)) out.push({ x, y });
+    return out;
+  };
+  const meanX = (ps: { x: number }[]): number => ps.reduce((s, p) => s + p.x, 0) / ps.length;
+  it('五個種族的待機剪影兩兩至少差 30 格（只看外形）', () => {
+    for (const body of [0, 1]) {
+      const sil = RACES.map((_, race) => flatFrame(avatarFrame(raceLook(body, race), 'idle', 0)));
+      for (let i = 0; i < sil.length; i++) for (let j = i + 1; j < sil.length; j++) {
+        let n = 0;
+        for (let k = 0; k < sil[i].px.length; k++) if ((sil[i].px[k] >>> 24 ? 1 : 0) !== (sil[j].px[k] >>> 24 ? 1 : 0)) n++;
+        expect(n, `body ${body}: ${RACES[i].id} vs ${RACES[j].id}`).toBeGreaterThanOrEqual(30);
+      }
+    }
+  });
+  it('精靈的頭比人類寬：耳朵往兩側（前後）都突出', () => {
+    for (const body of [0, 1]) for (let hair = 0; hair < HAIR_STYLES.length; hair++) {
+      const h = bbox(avatarFrame(raceLook(body, 0, { hair }), 'idle', 0).head), e = bbox(avatarFrame(raceLook(body, ID('elf'), { hair }), 'idle', 0).head);
+      expect(e.x1 - e.x0, `body ${body} hair ${hair}`).toBeGreaterThan(h.x1 - h.x0);
+      expect(e.x0, `body ${body} hair ${hair} back ear`).toBeLessThan(h.x0);
+      expect(e.x1, `body ${body} hair ${hair} front ear`).toBeGreaterThan(h.x1);
+    }
+  });
+  it('貓族 / 龍裔的尾巴在身後：面向右時在身體中心左邊、鏡像（面向左）後在右邊', () => {
+    for (const body of [0, 1]) for (const race of [ID('catfolk'), ID('dragonkin')]) {
+      const human = avatarFrame(raceLook(body, 0), 'idle', 0).body, r = avatarFrame(raceLook(body, race), 'idle', 0).body;
+      const tail = opaqueDiff(r, human);
+      expect(tail.length, `body ${body} race ${race}`).toBeGreaterThan(15);
+      expect(meanX(tail), `body ${body} race ${race}`).toBeLessThan(CX);
+      const fh = new Bmp(AV_FW, AV_FH), fr = new Bmp(AV_FW, AV_FH);
+      fh.blit(human, 0, 0, true); fr.blit(r, 0, 0, true);
+      expect(meanX(opaqueDiff(fr, fh)), `body ${body} race ${race} mirrored`).toBeGreaterThan(CX);
+    }
+  });
+  it('走路時尾巴會擺：8 格裡尾巴（扣掉身體上下彈）的位置至少兩種', () => {
+    for (const race of [ID('catfolk'), ID('dragonkin')]) {
+      const seen = new Set<string>();
+      for (let f = 0; f < SHEET.walk[1]; f++) {
+        const r = avatarFrame(raceLook(0, race), 'walk', f), h = avatarFrame(raceLook(0, 0), 'walk', f);
+        seen.add(opaqueDiff(r.body, h.body).map((p) => `${p.x},${p.y - r.meta.dy}`).join(';'));
+      }
+      expect(seen.size, `race ${race}`).toBeGreaterThanOrEqual(2);
+    }
+  });
+  it('矮人：待機時頭頂比人類低 raceHeadDy = 2 格（只有矮人會變矮）；手臂跟著接在變矮後的肩膀（meta.dy 多 2）', () => {
+    const top = (b: Bmp): number => bbox(b).y0;
+    for (const id of RACES.map((r) => r.id)) expect(raceHeadDy(id as RaceId), id).toBe(id === 'dwarf' ? 2 : 0);
+    for (const body of [0, 1]) {
+      const h = avatarFrame(raceLook(body, 0), 'idle', 0), d = avatarFrame(raceLook(body, ID('dwarf')), 'idle', 0);
+      expect(top(flatFrame(d)) - top(flatFrame(h)), `body ${body}`).toBe(2);
+      expect(d.meta.dy - h.meta.dy, `body ${body}`).toBe(2);
+      // 腳底不動
+      expect(bbox(flatFrame(d)).y1).toBe(bbox(flatFrame(h)).y1);
+    }
+  });
+  it('矮人男有鬍子（下巴下面出現髮色的鬍子）、矮人女沒有', () => {
+    for (const hairColor of [1, 8]) {
+      const beard = new Set(beardRamp(hairColor).map((c) => c.join()));
+      const below = (body: number): number => {
+        const humanFace = avatarFrame(raceLook(body, 0, { hair: 0, hairColor }), 'idle', 0).face!;
+        const chin = bbox(humanFace).y1 + raceHeadDy('dwarf');
+        const head = avatarFrame(raceLook(body, ID('dwarf'), { hair: 0, hairColor }), 'idle', 0).head;
+        let n = 0;
+        for (let y = chin + 1; y < head.h; y++) for (let x = 0; x < head.w; x++) if (head.on(x, y) && beard.has(head.get(x, y).join())) n++;
+        return n;
+      };
+      expect(below(1), `male hair ${hairColor}`).toBeGreaterThan(10);
+      expect(below(0), `female hair ${hairColor}`).toBe(0);
+    }
+  });
+  it('矮人男的鬍子不蓋眼睛 / 嘴：臉那一層還有眼睛和嘴，而且都是 head 的子集', () => {
+    const r = avatarFrame(raceLook(1, ID('dwarf'), { eyes: 1 }), 'idle', 0), e = new Set(eyeRamp(1).slice(0, 2).map((c) => c.join()));
+    let eyes = 0;
+    for (let i = 0; i < r.face!.px.length; i++) {
+      const v = r.face!.px[i];
+      if (!(v >>> 24)) continue;
+      expect(v).toBe(r.head.px[i]);
+      if (e.has(Bmp.unpack(v).join())) eyes++;
+    }
+    expect(eyes).toBeGreaterThan(4);
   });
 });
