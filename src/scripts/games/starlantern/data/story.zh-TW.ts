@@ -1400,7 +1400,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       { who: 'safira', mood: 'surprised', text: '「咦，只找一條？另外兩條呢？」' },
       { who: 'sylvie', mood: 'smile', text: '「今天不找了。坐著看。」' },
     ],
-    summary: '莎菲拉在旅館大廳辦了一場只有希爾薇一個觀眾的公演。希爾薇只找了一條退路，另外兩條，她說今天不找了。',
+    summary: '莎菲拉辦了一場只有希爾薇一個觀眾的公演。希爾薇只找了一條退路，另外兩條，她說今天不找了。',
   },
   // Scarlet tries to command the moon; she puts it on the night watch, and Selene finds that kind.
   'banter:scarlet-selene:1': {
@@ -1417,7 +1417,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'selene', mood: 'foresee', text: '「今晚的晚餐，我已經讀到了呢。可是說出口，就不靈了。」' },
       { who: 'sylvie', mood: 'serious', text: '「南瓜湯。烤魚。魚，煎過頭了。」' },
-      { who: 'selene', mood: 'surprised', text: '「妳、妳也讀得到月亮？」' },
+      { who: 'selene', mood: 'surprised', text: '「月亮也告訴妳了？」' },
       { who: 'sylvie', mood: 'smile', text: '「不用月亮。用鼻子。」' },
     ],
     summary: '瑟蕾讀到了今晚的晚餐，卻不肯說。希爾薇一口氣說了出來：她不用月亮，用鼻子。',
