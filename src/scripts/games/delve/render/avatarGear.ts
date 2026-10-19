@@ -189,7 +189,29 @@ export function helmetArt(head: Bmp, p: DollPiece, ox: number, oy: number, f: nu
 }
 
 // ── 時裝帽子 ─────────────────────────────────────────────
-export const HAT_HIDES_TOP = new Set(['straw', 'witch', 'beret']);
+export const HAT_HIDES_TOP = new Set(['straw', 'witch', 'beret', 'miner']);
+/** 礦工頭燈盔：黃銅圓頂 + 帽緣，正面（右）一顆亮黃頭燈 */
+const BRASS: RGB[] = [hex('#472819'), hex('#966139'), hex('#c99660'), hex('#d8ba76'), hex('#f2e2b0')];
+function minerHelm(S: (x: number, y: number, c: RGB) => void, view: 'side' | 'back'): void {
+  const r = BRASS;
+  for (let y = -3; y <= 3; y++) for (let x = -1; x <= 18; x++) {
+    const nx = (x + 0.5 - 8.6) / 9.2, ny = (y + 0.5 - 3.4) / 6.4;
+    if (nx * nx + ny * ny > 1) continue;
+    // 光從左上：左上亮、右下暗；中間一道鉚接線
+    const c = x === 8 && view === 'back' ? r[1] : nx + ny < -0.75 ? r[4] : nx + ny < -0.2 ? r[3] : nx > 0.55 ? r[1] : r[2];
+    S(x, y, c);
+  }
+  for (let x = -2; x <= 19; x++) S(x, 4, x < 3 ? r[3] : r[1]);
+  for (const x of [2, 8, 14]) S(x, 2, r[0]);
+  if (view === 'side') {
+    // 頭燈：外殼 + 鏡片（亮黃）
+    S(16, -1, hex('#2c2838')); S(17, -1, hex('#2c2838')); S(18, 0, hex('#2c2838')); S(18, 1, hex('#2c2838'));
+    S(16, 0, hex('#fff4c0')); S(17, 0, hex('#ffd86a')); S(16, 1, hex('#ffd86a')); S(17, 1, hex('#ffa93a'));
+    S(16, 2, hex('#2c2838')); S(17, 2, hex('#2c2838'));
+  } else {
+    for (let x = 1; x <= 16; x++) S(x, 3, hex('#2a1810')); // 頭燈的皮帶
+  }
+}
 export function hatArt(b: Bmp, id: string, ox: number, oy: number, view: 'side' | 'back', sway: number): void {
   const s = new Bmp(b.w, b.h);
   const S = (x: number, y: number, c: RGB): void => s.set(ox + x, oy + y, c);
@@ -226,6 +248,8 @@ export function hatArt(b: Bmp, id: string, ox: number, oy: number, view: 'side' 
     const w = WHITE;
     g(['.w.w.w.w.w.', 'wWwWwWwWwWw', 'kkkkkkkkkkk'], { w: w[3], W: w[2], k: clothRamp(1)[3] }, 3, -2);
     if (view === 'back') { S(8, 2, w[3]); S(9, 3, w[2]); S(10, 2, w[3]); }
+  } else if (id === 'miner') {
+    minerHelm(S, view);
   } else if (id === 'flower') {
     const leaf = CR.green, cols = [hex('#ffc8dc'), hex('#ffffff'), hex('#ffd86a'), hex('#e890b0')];
     for (let x = 1; x <= 16; x++) S(x, -1 + (x > 4 && x < 13 ? -1 : 0), leaf[3]);

@@ -17,8 +17,8 @@ describe('世界生成：液體', { timeout: 240_000 }, () => {
   let r: GenResult;
   beforeAll(() => { r = generateWorld('liquids'); }, 240_000);
 
-  it('生成器版本 6（v6 = 熔岩湖 / 地下湖挖盆地、泉水瀑布）', () => {
-    expect(GEN_VERSION).toBe(6);
+  it('生成器版本 7（v6 = 熔岩湖 / 地下湖挖盆地、泉水瀑布；v7 = NPC 村落 / 矮人地廳 / 地標）', () => {
+    expect(GEN_VERSION).toBe(7);
   });
 
   it('熔岩深淵：熔岩湖是挖出來的盆地（深 4–12 格），很少寬的一格厚薄片', () => {

@@ -115,7 +115,7 @@ export function respecCost(spent: number): Cost {
   return { shard: 3 + spent, dust: Math.floor(spent / 10) };
 }
 
-export type XpSource = 'kill' | 'boss' | 'discover' | 'lore' | 'treasure' | 'codex' | 'craft' | 'mine' | 'chest' | 'fish' | 'settle' | 'debug';
+export type XpSource = 'kill' | 'boss' | 'quest' | 'discover' | 'lore' | 'treasure' | 'codex' | 'craft' | 'mine' | 'chest' | 'fish' | 'settle' | 'debug';
 /**
  * 據點經驗（防刷：全部是「歷史最高」或「第一次」——拆掉重蓋不會再給）：
  * 合格房間數創新高每間 ROOM_XP（最多算 ROOM_XP_ROOMS 間）、據點第一次升到某級、每位居民第一次搬來。

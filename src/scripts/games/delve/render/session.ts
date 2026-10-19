@@ -543,6 +543,7 @@ export function bootDelve(root: HTMLElement): Session {
   on($('#delve-help-btn'), 'click', () => { setMenu(false); setHelp(true); });
   on($('#delve-calendar-btn'), 'click', () => { setMenu(false); handle?.calendar.setOpen(true); });
   on($('#delve-settle-menu'), 'click', () => { setMenu(false); handle?.settleUi.toggleSettle(); });
+  on($('#delve-quests-menu'), 'click', () => { setMenu(false); handle?.folkUi.setQuests(true); });
   on(helpClose, 'click', () => setHelp(false));
   on(helpEl, 'keydown', (e) => {
     if ((e as KeyboardEvent).key === 'Escape') { e.stopPropagation(); setHelp(false); }

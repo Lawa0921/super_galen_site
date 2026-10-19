@@ -17,6 +17,8 @@ import { FbmField, NoiseField, fbm2, seedInt, vnoise1 } from './noise';
 import { carveChamber, carveNetwork, carveNoiseTunnels, perlinWorm, carveDisc, paintBlob, noisePockets, fillTinyPockets } from './gen/caves';
 import { generateDungeon, type DungeonInfo } from './gen/dungeon';
 import { createLiquidGen, type LiquidGenStats } from './gen/liquids';
+import { placeVillages, placeDwarfHalls, type VillageInfo, type HallInfo } from './gen/settlements';
+import { placeLandmarks, type LandmarkInfo } from './gen/landmarks';
 import type { SpringSpec } from './liquid';
 import { LORE_SITES, type LoreSite } from './lore';
 import type { ItemId } from './items';
@@ -36,7 +38,9 @@ export type StructureKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'chasm' 
   // 液體（v5）
   | 'pond' | 'oasis' | 'hive' | 'underground_lake'
   // 泉水瀑布（v6）
-  | 'waterfall' | 'lavafall';
+  | 'waterfall' | 'lavafall'
+  // NPC 聚落（地表村落 / 矮人地廳）
+  | 'village' | 'dwarf_hall';
 /** 每欄的深度層分界（第一個屬於該層的 y） */
 export interface GenLayers { rock: Int16Array; deep: Int16Array; molten: Int16Array; }
 /** 地表地形種類（依生態區挑）；reserved = 預留給地城的平地 */
@@ -79,6 +83,12 @@ export interface GenResult {
   liquidStats: LiquidGenStats;
   /** 泉水（瀑布的無限源；liquid.ts LiquidSim.setSprings） */
   springs: SpringSpec[];
+  /** 地表村落（房子 / 委託板位置；engine/folk.ts 安排村民） */
+  villages: VillageInfo[];
+  /** 矮人地廳 */
+  halls: HallInfo[];
+  /** 每個發現地點的地標物件（一次性發現物） */
+  landmarks: LandmarkInfo[];
 }
 
 export interface RunnerOptions {
@@ -217,7 +227,7 @@ const overlap = (a: Rect, b: Rect, m = 0): boolean =>
   a.x - m < b.x + b.w && a.x + a.w + m > b.x && a.y - m < b.y + b.h && a.y + a.h + m > b.y;
 
 /** generateWorldSteps 會 yield 幾段（進度條分母） */
-export const GEN_STAGE_COUNT = 39;
+export const GEN_STAGE_COUNT = 41;
 
 /** 一次生成整個世界 */
 export function generateWorld(seed: string | number, opts: GenOptions = {}): GenResult {
@@ -1346,12 +1356,41 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
   if (dungeon) structures.push({ kind: 'dungeon', ...dungeon.bbox });
   remeasure();
 
+  mark('聚落：地表村落 + 矮人地廳');
+  yield '聚落：地表村落 + 矮人地廳';
+  // ── NPC 聚落：平坦森林地表的村落（2～4）+ 洞穴層深處的矮人地廳（1～2）；見 gen/settlements.ts ──
+  const villageCol = new Uint8Array(width);
+  /** 液體不能進去的範圍（村落 / 地廳 / 地廳隧道，各留緩衝） */
+  const dry: Rect[] = [];
+  const { villages, halls } = (() => {
+    const blocked = (): Rect[] => [...occupied, ...structures.filter((st) => st.kind !== 'frozen_lake' && st.kind !== 'lake_bed')];
+    const wet = (x: number): boolean => lakes.some((l) => x >= l.x0 - 12 && x <= l.x1 + 12) || lakeBeds.some((l) => x >= l.x0 - 12 && x <= l.x1 + 12);
+    const ctx = { world, seed, surface, colBiome, deepLine, moltenLine, spawnX: sx, dz: { x0: dzX0, x1: dzX1 }, beachW, blocked, wetCols: wet };
+    const v = placeVillages(ctx);
+    for (const r of v.rects) occupied.push(r);
+    v.villages.forEach((vi, i) => {
+      structures.push({ kind: 'village', ...v.rects[i] });
+      dry.push({ x: vi.x0 - 16, y: vi.ground - 40, w: vi.x1 - vi.x0 + 33, h: 46 });
+      for (let x = Math.max(0, vi.x0 - 10); x <= Math.min(width - 1, vi.x1 + 10); x++) villageCol[x] = 1;
+    });
+    const h = placeDwarfHalls(ctx);
+    for (const r of h.rects) occupied.push(r);
+    h.halls.forEach((hi, i) => {
+      structures.push({ kind: 'dwarf_hall', ...h.rects[i] });
+      dry.push({ x: hi.x0 - 6, y: hi.y0 - 6, w: hi.x1 - hi.x0 + 13, h: hi.floorY - hi.y0 + 10 });
+      for (const t of hi.tunnels) dry.push({ x: t.x0 - 3, y: hi.floorY - 8, w: t.x1 - t.x0 + 7, h: 11 });
+    });
+    return { villages: v.villages, halls: h.halls };
+  })();
+  remeasure();
+
   mark('樹木：森林闊葉樹、');
   yield '樹木：森林闊葉樹、';
   // ── 液體（生成器 v5）前半：湖床注滿 / 山谷池塘 / 沙漠綠洲（樹與地表裝飾之後會避開水面） ──
   const liquidGen = createLiquidGen({
     world, seed, surface, layers, colBiome, biomes, lakeBeds, lavaPool, spawnX: spawn.x,
-    avoid: (x) => inDz(x, 20) || x < beachW + 8 || x > width - beachW - 8,
+    avoid: (x) => inDz(x, 20) || x < beachW + 8 || x > width - beachW - 8 || villageCol[Math.max(0, Math.min(width - 1, x))] === 1,
+    protect: (x, y) => dry.some((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h),
     occupied: () => [...occupied, ...structures.filter((st) => st.kind !== 'cavern' && st.kind !== 'chasm' && st.kind !== 'ravine'
       && st.kind !== 'sinkhole' && st.kind !== 'lake_bed' && st.kind !== 'frozen_lake' && st.kind !== 'mushroom_biome' && st.kind !== 'crystal_cave')],
   });
@@ -1369,7 +1408,7 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
       const jungle = ground === T.JUNGLE_GRASS, snow = ground === T.SNOW;
       if (ground !== T.GRASS && !jungle && !snow) continue;
       const gap = jungle ? 7 : 4;
-      if (x - lastTree < gap || Math.abs(x - sx) < 5) continue;
+      if (x - lastTree < gap || Math.abs(x - sx) < 5 || villageCol[x]) continue;
       if (!rng.chance(jungle ? 3 : snow ? 4 : 5)) continue;
       const h = jungle ? rng.int(11, 21) : snow ? rng.int(7, 15) : rng.int(5, 12);
       const r = jungle ? rng.int(4, 7) : snow ? rng.int(2, 4) : rng.int(2, 4);
@@ -1716,10 +1755,15 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
   for (const ls of liq.structures) structures.push(ls);
   for (const ls of liq.structures) if (ls.kind === 'oasis') for (let x = ls.x; x < ls.x + ls.w; x++) world.surface[x] = Math.max(world.surface[x], surface[x]);
 
+  mark('地標：每個發現地點的發現物');
+  yield '地標：每個發現地點的發現物';
+  // ── 地標：每種發現地點放一件看得出地方特色的一次性發現物（見 gen/landmarks.ts） ──
+  const landmarks = placeLandmarks(world, structures, surface);
+
   mark('每欄地表的生態區 ───');
   yield '每欄地表的生態區 ───';
   // ── 每欄地表的生態區 ──────────────────────────────────────
   world.biome.set(colBiome);
   mark('end');
-  return { world, spawn, surface, bands, biomes, structures, landforms, dungeonZone, layers, dungeon, tablets, relics, liquidStats: liq.stats, springs: liq.springs };
+  return { world, spawn, surface, bands, biomes, structures, landforms, dungeonZone, layers, dungeon, tablets, relics, liquidStats: liq.stats, springs: liq.springs, villages, halls, landmarks };
 }

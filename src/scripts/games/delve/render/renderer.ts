@@ -34,6 +34,7 @@ import { lootGlyphScale } from './lootArt';
 import { toCanvas } from './pixel';
 import { bobberBmp, campfireBmp } from './fishArt';
 import { SettleLayer } from './settleDraw'; // [settle]
+import { FolkLayer } from './folkDraw';
 
 const S = TILE_SIZE;
 const CPX = CHUNK * S;
@@ -126,6 +127,8 @@ export class Renderer {
   readonly combat: CombatLayer;
   /** [settle] 據點圖層：居民、查房模式、放置預覽 */
   readonly settleLayer: SettleLayer;
+  /** 世界 NPC：村民 / 矮人 / 旅人 / 受困探險者 */
+  readonly folkLayer: FolkLayer;
   /** 等級系統的世界特效（升級光柱 / 突進 / 震地 / 尋礦感知） */
   readonly levelFx: LevelFx;
   /** 季節植物（草葉 / 花 / 高草 × 四季 × 擺動）與冰面 */
@@ -209,6 +212,7 @@ export class Renderer {
     this.sprites = new Sprites((item) => this.atlas.iconBmp(item));
     this.combat = new CombatLayer(game, this.atlas, this.sprites);
     this.settleLayer = new SettleLayer(game, this.atlas); // [settle]
+    this.folkLayer = new FolkLayer(game);
     this.levelFx = new LevelFx(game);
     this.cache = new ChunkLRU(48);
     let s = 0;
@@ -442,6 +446,7 @@ export class Renderer {
     vb.x = camX; vb.y = camY; vb.w = vw; vb.h = vh;
     this.combat.drawWorld(ctx, vb, this.glowSeen);
     this.settleLayer.drawWorld(ctx, vb, this.clock); // [settle]
+    this.folkLayer.drawWorld(ctx, vb, this.clock);
     this.drawPlayer(ctx, dt);
     ph.sprites = this.lap();
     const tl = performance.now();

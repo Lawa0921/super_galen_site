@@ -97,7 +97,7 @@ describe('存檔格式 6（液體）', { timeout: 180_000 }, () => {
     let inSolid = 0;
     for (let i = 0; i < rw.liquid.length; i++) if (rw.liquid[i] && SOLID_LUT[rw.fg[i]]) inSolid++;
     expect(inSolid).toBe(0);
-    expect(GEN_VERSION).toBe(6);
+    expect(GEN_VERSION).toBe(7);
   });
 
   it('其他生成器版本（v3）還是回報 gen_version', () => {

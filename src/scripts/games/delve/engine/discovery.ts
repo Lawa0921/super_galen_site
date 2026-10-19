@@ -70,6 +70,8 @@ const NAMES: Record<string, readonly string[]> = {
   crystal_cave: ['寂靜晶洞', '冷光晶窟', '星屑晶洞', '玻璃之心'],
   secret_room: ['被遺忘的儲藏室', '礦工的密藏', '封死的隱室', '走私者暗室', '燈脈人的寶庫', '無人知曉的房間', '石縫後的小間'],
   dungeon: ['沉眠地城', '燈脈地下城', '磚影古城', '無光王廷'],
+  village: ['楓溪村', '白石村', '麥浪村', '鈴蘭村', '橡木村', '暮光村', '風鈴村', '青苔村'],
+  dwarf_hall: ['鐵脈地廳', '深爐大廳', '灰鬚石廳', '琥珀礦廳'],
 };
 const ROOM_NAMES: Partial<Record<RoomKind, readonly string[]>> = {
   entry: ['入口大廳'], library: ['塵封書庫', '禁書庫', '低語書齋'], prison: ['鐵鍊牢房', '沉默監牢', '鏽鎖牢區'],
@@ -106,6 +108,7 @@ const STRUCT_CAT: Partial<Record<string, RegionCat>> = {
   hive: 'cave', underground_lake: 'cave',
   cavern: 'cave', chasm: 'cave', ravine: 'cave', sinkhole: 'cave', mushroom_biome: 'cave', crystal_cave: 'cave',
   secret_room: 'secret',
+  village: 'site', dwarf_hall: 'site',
 };
 
 export function buildRegions(src: RegionSource): Region[] {
@@ -166,8 +169,12 @@ export function buildRegions(src: RegionSource): Region[] {
     let list = NAMES[s.kind];
     if (s.kind === 'cavern') list = NAMES[`cavern_${s.flavor ?? 'plain'}`];
     const round = s.kind === 'mushroom_biome' || s.kind === 'crystal_cave' || s.kind === 'cavern';
-    add({ cat, kind: s.kind, name: nm.pick(list), x: s.x, y: s.y, w: s.w, h: s.h,
-      contains: round ? ellipseHit(s.x, s.y, s.w, s.h) : rectHit(s.x, s.y, s.w, s.h) });
+    // 村落：走近（左右各 22 格、上方多 10 格）就算發現——還沒進村就跳出「發現：○○村」
+    const pad = s.kind === 'village' ? 22 : 0, padY = s.kind === 'village' ? 10 : 0;
+    const rx = s.x - pad, ry = s.y - padY, rw = s.w + pad * 2, rh = s.h + padY;
+    add({ cat, kind: s.kind, name: nm.pick(list), x: rx, y: ry, w: rw, h: rh,
+      ax: s.x + (s.w >> 1), ay: s.y + (s.h >> 1),
+      contains: round ? ellipseHit(rx, ry, rw, rh) : rectHit(rx, ry, rw, rh) });
   }
 
   // ── 地城 + 重要房間 ──
@@ -191,12 +198,16 @@ export const TREASURE_ITEMS: readonly ItemId[] = (Object.keys(ITEMS) as ItemId[]
 export interface DiscoveryJSON {
   regions: number[]; lore: number[]; treasures: ItemId[];
   depthRecord: number; distance: number;
+  /** 領過的地標（tile index，排序）；沒有 = 都還沒領 */
+  landmarks?: number[];
 }
 export interface CategoryStat { cat: RegionCat; label: string; found: number; total: number; }
 export interface JournalStats {
   cats: CategoryStat[];
   lore: { found: number; total: number };
   treasures: { found: number; total: number };
+  /** 地標發現物 */
+  landmarks: { found: number; total: number };
   /** 0..1 */
   completion: number;
   depthRecord: number;
@@ -210,17 +221,22 @@ export class Discovery {
   readonly found = new Set<number>();
   readonly lore = new Set<number>();
   readonly treasures = new Set<ItemId>();
+  /** 領過的地標（tile index） */
+  readonly landmarks = new Set<number>();
   depthRecord = 0;
   /** 移動距離（格） */
   distance = 0;
   readonly loreTotal: number;
   readonly treasureItems: readonly ItemId[];
+  /** 世界裡所有地標的 tile index（存檔讀回時只認這些） */
+  readonly landmarkSet: ReadonlySet<number>;
   private grid = new Map<number, number[]>();
   private lastX: number | null = null;
   private lastY = 0;
 
-  constructor(readonly regions: readonly Region[], opts: { loreTotal?: number; treasureItems?: readonly ItemId[] } = {}) {
+  constructor(readonly regions: readonly Region[], opts: { loreTotal?: number; treasureItems?: readonly ItemId[]; landmarks?: readonly number[] } = {}) {
     this.loreTotal = opts.loreTotal ?? LORE.length;
+    this.landmarkSet = new Set(opts.landmarks ?? []);
     this.treasureItems = opts.treasureItems ?? TREASURE_ITEMS;
     for (const r of regions) {
       for (let gy = Math.floor(r.y / CELL); gy <= Math.floor((r.y + r.h - 1) / CELL); gy++) {
@@ -268,6 +284,13 @@ export class Discovery {
     return true;
   }
 
+  /** 領地標；回傳是否第一次（不是地標 / 領過 → false） */
+  claimLandmark(i: number): boolean {
+    if (!this.landmarkSet.has(i) || this.landmarks.has(i)) return false;
+    this.landmarks.add(i);
+    return true;
+  }
+
   /** 每步呼叫：玩家中心（px）與目前深度（格）。單步跳太遠（傳送）不算距離。 */
   track(px: number, py: number, depth: number): void {
     if (this.lastX !== null) {
@@ -285,9 +308,10 @@ export class Discovery {
     }).filter((c) => c.total > 0);
     const lore = { found: this.lore.size, total: this.loreTotal };
     const treasures = { found: this.treasures.size, total: this.treasureItems.length };
-    const total = cats.reduce((a, c) => a + c.total, 0) + lore.total + treasures.total;
-    const found = cats.reduce((a, c) => a + c.found, 0) + lore.found + treasures.found;
-    return { cats, lore, treasures, completion: total ? found / total : 0, depthRecord: this.depthRecord, distance: this.distance };
+    const landmarks = { found: this.landmarks.size, total: this.landmarkSet.size };
+    const total = cats.reduce((a, c) => a + c.total, 0) + lore.total + treasures.total + landmarks.total;
+    const found = cats.reduce((a, c) => a + c.found, 0) + lore.found + treasures.found + landmarks.found;
+    return { cats, lore, treasures, landmarks, completion: total ? found / total : 0, depthRecord: this.depthRecord, distance: this.distance };
   }
 
   toJSON(): DiscoveryJSON {
@@ -295,6 +319,7 @@ export class Discovery {
       regions: [...this.found].sort((a, b) => a - b),
       lore: [...this.lore].sort((a, b) => a - b),
       treasures: [...this.treasures].sort(),
+      landmarks: [...this.landmarks].sort((a, b) => a - b),
       depthRecord: this.depthRecord,
       distance: Math.round(this.distance * 100) / 100,
     };
@@ -307,6 +332,7 @@ export class Discovery {
     for (const id of ints(j.regions)) if (id < this.regions.length) this.found.add(id);
     for (const id of ints(j.lore)) this.readLore(id);
     if (Array.isArray(j.treasures)) for (const t of j.treasures) if (isItemId(t)) this.gainTreasure(t);
+    for (const i of ints(j.landmarks)) this.claimLandmark(i);
     if (typeof j.depthRecord === 'number' && Number.isFinite(j.depthRecord) && j.depthRecord >= 0) this.depthRecord = Math.floor(j.depthRecord);
     if (typeof j.distance === 'number' && Number.isFinite(j.distance) && j.distance >= 0) this.distance = j.distance;
   }

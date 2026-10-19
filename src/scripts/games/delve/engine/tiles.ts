@@ -39,6 +39,13 @@ export const T = {
   POTTED_PLANT: 96, BENCH: 97,
   // ── 據點：據點爐心（核心，宣告範圍） ──
   HEARTH: 98,
+  // ── NPC 聚落：村落（茅草屋頂、木骨灰泥牆、委託板、旗桿、木桶）、矮人地廳（鑿石磚、熔爐、火盆、礦車軌道） ──
+  THATCH: 99, TIMBER: 100, DWARF_BRICK: 101, RAIL: 102, ORE_CART: 103, QUEST_BOARD: 104, FLAGPOLE: 105,
+  DWARF_FORGE: 106, BRAZIER: 107, BARREL: 108,
+  // ── 地標（每種發現地點的一次性發現物：靠近互動 → 獎勵 + 線索） ──
+  CAIRN: 109, RELIC_PACK: 110, GUARDIAN_STATUE: 111, GEODE: 112, SPORE_TOTEM: 113, HONEY_JAR: 114,
+  // ── 村落旗桿：3×3 的大村旗（布，不擋路）、桿頂的燈（夜裡遠遠看得到） ──
+  FLAG_CLOTH: 115, FLAG_LAMP: 116,
 } as const;
 export type TileId = (typeof T)[keyof typeof T];
 
@@ -50,6 +57,8 @@ export const W = {
   HIVE_WALL: 13,
   // ── 建築：人造背景牆（房屋判定只認人造牆） ──
   DARK_PLANK_WALL: 14, PALE_PLANK_WALL: 15, STONE_BRICK_WALL: 16, RED_BRICK_WALL: 17, GLASS_WALL: 18, PLASTER_WALL: 19,
+  // ── 矮人地廳：鑿刻石牆（符文柱）——人造牆 ──
+  DWARF_WALL: 20,
 } as const;
 export type WallId = (typeof W)[keyof typeof W];
 
@@ -225,6 +234,26 @@ export const TILES: readonly TileDef[] = [
   decor(T.BENCH, 'bench', n('長椅', 'Bench'), 'floor', 'bench', '#966139', { hardness: 0.3 }),
   // ── 據點 ──
   decor(T.HEARTH, 'hearth', n('據點爐心', 'Hearthstone'), 'floor', 'hearth', '#e8701c', { hardness: 0.8, light: 0.9 }),
+  // ── NPC 聚落 ──
+  block(T.THATCH, 'thatch', n('茅草屋頂', 'Thatch'), 0.4, 'thatch', '#d8ba76'),
+  block(T.TIMBER, 'timber', n('木骨灰泥牆', 'Timber Frame'), 0.7, 'timber', '#f2e2b0'),
+  block(T.DWARF_BRICK, 'dwarf_brick', n('鑿石磚', 'Carved Stone'), 1.6, 'dwarf_brick', '#5e5e74', 2),
+  decor(T.RAIL, 'rail', n('礦車軌道', 'Rail Track'), 'floor', 'rail', '#858aa0', { hardness: 0.2 }),
+  decor(T.ORE_CART, 'ore_cart', n('滿載的礦車', 'Loaded Ore Cart'), 'floor', null, '#623924', { hardness: 1, minTier: TIER_UNBREAKABLE }),
+  decor(T.QUEST_BOARD, 'quest_board', n('委託板', 'Request Board'), 'floor', null, '#966139', { hardness: 1, minTier: TIER_UNBREAKABLE }),
+  decor(T.FLAGPOLE, 'flagpole', n('旗桿', 'Flagpole'), 'floor', 'wood', '#c99660', { hardness: 0.3 }),
+  decor(T.DWARF_FORGE, 'dwarf_forge', n('矮人熔爐', 'Deepforge'), 'floor', null, '#e8701c', { hardness: 1, minTier: TIER_UNBREAKABLE, light: 1 }),
+  decor(T.BRAZIER, 'brazier', n('火盆', 'Brazier'), 'floor', 'brazier', '#ffa93a', { hardness: 0.5, light: 0.9 }),
+  decor(T.BARREL, 'barrel', n('木桶', 'Barrel'), 'floor', 'barrel', '#7c4c2e', { hardness: 0.3 }),
+  // ── 地標 ──
+  decor(T.CAIRN, 'cairn', n('旅人石堆', 'Wayfarer Cairn'), 'floor', null, '#858aa0', { hardness: 1, minTier: TIER_UNBREAKABLE }),
+  decor(T.RELIC_PACK, 'relic_pack', n('遺落的行囊', 'Lost Pack'), 'floor', null, '#b07a4b', { hardness: 1, minTier: TIER_UNBREAKABLE, light: 0.55 }),
+  decor(T.GUARDIAN_STATUE, 'guardian_statue', n('守望石像', 'Watcher Statue'), 'floor', null, '#858aa0', { hardness: 1, minTier: TIER_UNBREAKABLE, light: 0.5 }),
+  decor(T.GEODE, 'geode', n('巨晶之心', 'Heart Geode'), 'floor', null, '#94c8ee', { hardness: 1, minTier: TIER_UNBREAKABLE, light: 1 }),
+  decor(T.SPORE_TOTEM, 'spore_totem', n('菇之圖騰', 'Spore Totem'), 'floor', null, '#4aaeb0', { hardness: 1, minTier: TIER_UNBREAKABLE, light: 0.85 }),
+  decor(T.HONEY_JAR, 'honey_jar', n('蜂王蜜罐', "Queen's Honeypot"), 'floor', null, '#ffa93a', { hardness: 1, minTier: TIER_UNBREAKABLE, light: 0.45 }),
+  decor(T.FLAG_CLOTH, 'flag_cloth', n('村旗', 'Village Flag'), 'none', null, '#c8344c', { hardness: 1, minTier: TIER_UNBREAKABLE }),
+  decor(T.FLAG_LAMP, 'flag_lamp', n('旗桿燈', 'Flagpole Lamp'), 'floor', null, '#ffd86a', { hardness: 1, minTier: TIER_UNBREAKABLE, light: 1 }),
 ];
 
 export const WALLS: readonly WallDef[] = [
@@ -248,6 +277,7 @@ export const WALLS: readonly WallDef[] = [
   { id: W.RED_BRICK_WALL, key: 'red_brick_wall', name: n('紅磚牆', 'Red Brick Wall'), color: '#6c1e14' },
   { id: W.GLASS_WALL, key: 'glass_wall', name: n('玻璃窗', 'Glass Window'), color: '#2c4486' },
   { id: W.PLASTER_WALL, key: 'plaster_wall', name: n('灰泥牆', 'Plaster Wall'), color: '#b4b9c8' },
+  { id: W.DWARF_WALL, key: 'dwarf_wall', name: n('鑿刻石牆', 'Carved Stone Wall'), color: '#2c2838' },
 ];
 
 /** 地城配色：每個世界挑一色（磚 + 背景牆） */
@@ -282,6 +312,14 @@ export const LIGHT_HUE: Partial<Record<number, readonly [number, number, number]
   [T.CHANDELIER]: [1, 0.9, 0.62],
   [T.TABLE_LAMP]: [1, 0.86, 0.58],
   [T.HEARTH]: [1, 0.66, 0.36],
+  [T.DWARF_FORGE]: [1, 0.55, 0.25],
+  [T.BRAZIER]: [1, 0.7, 0.4],
+  [T.RELIC_PACK]: [1, 0.86, 0.55],
+  [T.GUARDIAN_STATUE]: [0.35, 0.95, 0.9],
+  [T.GEODE]: [0.55, 0.85, 1],
+  [T.SPORE_TOTEM]: [0.3, 0.6, 1],
+  [T.HONEY_JAR]: [1, 0.72, 0.3],
+  [T.FLAG_LAMP]: [1, 0.82, 0.5],
 };
 export const CRYSTAL_ALT_HUE: readonly [number, number, number] = [0.82, 0.5, 1];
 /** 發光 RGB 查表：i*3 + 通道 */
@@ -315,7 +353,12 @@ export function isDoorTile(id: number): boolean { return id === T.DOOR_CLOSED ||
 export function isChestTile(id: number): boolean { return id === T.CHEST || id === T.LOCKED_CHEST; }
 export function isDungeonBrick(id: number): boolean { return id >= T.DUNGEON_BRICK_BLUE && id <= T.DUNGEON_BRICK_PINK; }
 /** 按「使用」會互動（而不是放方塊）的 tile */
-export function isInteractive(id: number): boolean { return isChestTile(id) || isDoorTile(id) || id === T.LORE_TABLET || isBedTile(id) || id === T.HEARTH; }
+/** 地標（一次性發現物） */
+export const LANDMARK_TILES: ReadonlySet<number> = new Set<number>([T.CAIRN, T.RELIC_PACK, T.GUARDIAN_STATUE, T.GEODE, T.SPORE_TOTEM, T.HONEY_JAR, T.ORE_CART]);
+export function isLandmarkTile(id: number): boolean { return LANDMARK_TILES.has(id); }
+export function isInteractive(id: number): boolean {
+  return isChestTile(id) || isDoorTile(id) || id === T.LORE_TABLET || isBedTile(id) || id === T.HEARTH || id === T.QUEST_BOARD || LANDMARK_TILES.has(id);
+}
 export function isBedTile(id: number): boolean { return id === T.BED_HEAD || id === T.BED_FOOT; }
 /** 繩索掛得住：正上方實心 / 繩索 / 平台，或左右貼著實心 */
 export function ropeOk(above: number, left: number, right: number): boolean {
@@ -333,6 +376,9 @@ export function floorOk(id: number, below: number): boolean {
   if (id === T.CANDLE || id === T.TABLE_LAMP) return below === T.BOOKSHELF || below === T.PLATFORM || below === T.TABLE;
   if (id === T.POTTED_PLANT) return below === T.PLATFORM || below === T.TABLE || below === T.BOOKSHELF;
   if (id === T.FENCE) return below === T.FENCE || below === T.PLATFORM;
+  if (id === T.FLAGPOLE || id === T.FLAG_LAMP) return below === T.FLAGPOLE;
+  if (id === T.ORE_CART) return below === T.RAIL;
+  if (id === T.BARREL) return below === T.BARREL || below === T.PLATFORM;
   if (id === T.BONES || id === T.POT || id === T.CHEST) return below === T.PLATFORM;
   return false;
 }

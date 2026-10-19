@@ -65,6 +65,9 @@ import { normalizeAppearance, type Appearance } from '../engine/appearance';
 import { Vanity, type VanityJSON } from '../engine/vanity';
 import type { SettlementJSON } from '../engine/settlement';
 import { Progression, type LevelsJSON } from '../engine/levels';
+import type { FolkJSON } from '../engine/folk';
+import type { QuestLogJSON } from '../engine/quests';
+import { BUFFS, type BuffKind } from '../engine/folkDefs';
 
 export const SAVE_FORMAT = 9;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
@@ -150,6 +153,30 @@ export interface SaveHeader {
   halves?: number[];
   /** 等級 / 技能樹（沒有 = 1 級、沒點技能） */
   levels?: LevelsJSON;
+  /** 世界 NPC（好感度 / 遇見的旅人 / 冷卻）+ 委託 + buff；沒有 = 都是初始值 */
+  folk?: FolkSave;
+}
+export interface FolkSave {
+  world: FolkJSON; quests: QuestLogJSON;
+  /** 每種 buff 的到期時間（遊戲秒） */
+  buffs: Partial<Record<BuffKind, number>>;
+  /** 嚮導 / 線索標記 */
+  scoutMarks: MapMarker[];
+  /** 招募居民的每日好處（上次觸發的天） */
+  perkDays: { guide: number; healer: number };
+  /** 標過的所有地點（"x,y"） */
+  scouted?: string[];
+}
+function validFolk(v: unknown): FolkSave | undefined {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
+  const o = v as Partial<FolkSave>;
+  const buffs: Partial<Record<BuffKind, number>> = {};
+  if (o.buffs && typeof o.buffs === 'object') for (const [k, t] of Object.entries(o.buffs)) if (k in BUFFS && typeof t === 'number' && Number.isFinite(t)) buffs[k as BuffKind] = t;
+  const scoutMarks = Array.isArray(o.scoutMarks) ? o.scoutMarks.filter((m) => m && Number.isInteger(m.x) && Number.isInteger(m.y)).slice(0, 60).map((m) => ({ x: m.x, y: m.y })) : [];
+  const pd = o.perkDays as { guide?: unknown; healer?: unknown } | undefined;
+  const perkDays = { guide: pd && Number.isInteger(pd.guide) ? pd.guide as number : -1, healer: pd && Number.isInteger(pd.healer) ? pd.healer as number : -1 };
+  const scouted = Array.isArray(o.scouted) ? o.scouted.filter((k) => typeof k === 'string' && /^\d+,\d+$/.test(k)).slice(0, 4000) : [];
+  return { world: (o.world ?? {}) as FolkJSON, quests: (o.quests ?? {}) as QuestLogJSON, buffs, scoutMarks, perkDays, scouted };
 }
 /** 存檔裡的等級資料 → 正規化後的副本 */
 function validLevels(raw: unknown): LevelsJSON {
@@ -453,6 +480,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       settle: game.settle.toJSON(),
       halves: encodeFrozen(w.half),
       levels: game.levels.toJSON(),
+      folk: { world: game.folk.toJSON(), quests: game.quests.toJSON(), buffs: { ...game.buffs }, scoutMarks: game.scoutMarks.map((m) => ({ ...m })), perkDays: { ...game.perkDays }, scouted: [...game.scouted] },
     },
     chunks,
   };
@@ -654,6 +682,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     settle: h.settle && typeof h.settle === 'object' ? h.settle : undefined,
     halves: validHalves(h.halves),
     levels: validLevels(h.levels),
+    folk: validFolk(h.folk),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -850,6 +879,14 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     }
   }
   game.settle.load(h.settle, w);
+  game.folk.load(h.folk?.world, w);
+  game.quests.load(h.folk?.quests);
+  game.buffs = h.folk ? { ...h.folk.buffs } : {};
+  game.scoutMarks = h.folk ? h.folk.scoutMarks.map((m) => ({ ...m })) : [];
+  if (h.folk) game.perkDays = { ...h.folk.perkDays };
+  game.scouted.clear();
+  for (const k of h.folk?.scouted ?? []) game.scouted.add(k);
+  for (const m of game.scoutMarks) game.scouted.add(`${m.x},${m.y}`);
   // 首領戰中存檔（怪物不存）：退還召喚道具，背包滿就掉在腳邊
   const refund = h.bossActive ? BOSS_SUMMON_ITEM[h.bossActive] : undefined;
   if (refund && !game.bossEnemy()) {

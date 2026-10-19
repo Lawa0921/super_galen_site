@@ -20,6 +20,9 @@ export interface ControlsOptions {
   /** H：查房模式、B：據點面板 */
   onHousing?: () => void;
   onSettle?: () => void;
+  /** L：委託清單；T：和最近的人說話 */
+  onQuests?: () => void;
+  onTalk?: () => void;
   /** +1 放大 / −1 縮小 */
   onZoom?: (d: number) => void;
   /** 選單開啟等暫停狀態時忽略遊戲輸入 */
@@ -96,6 +99,8 @@ export function attachControls(o: ControlsOptions): Controls {
     if (o.isBlocked()) return;
     if (a === 'inventory') { if (!e.repeat) o.onInventory(); e.preventDefault(); return; }
     if (a === 'housing' || a === 'settle') { if (!e.repeat) (a === 'housing' ? o.onHousing : o.onSettle)?.(); e.preventDefault(); return; }
+    if (a === 'quests') { if (!e.repeat) o.onQuests?.(); e.preventDefault(); return; }
+    if (a === 'talk') { if (!e.repeat) o.onTalk?.(); e.preventDefault(); return; }
     if (a === 'zoomIn' || a === 'zoomOut') { if (!e.repeat) o.onZoom?.(a === 'zoomIn' ? 1 : -1); e.preventDefault(); return; }
     if (a === 'left' || a === 'right' || a === 'jump' || a === 'up' || a === 'down') {
       keys[a] = true; e.preventDefault(); applyMove(); return;
@@ -139,7 +144,9 @@ export function attachControls(o: ControlsOptions): Controls {
     aimAt(p.x, p.y);
     const aim = game.getState().aim;
     const wp = o.screenToWorld(p.x, p.y);
-    const intent = touchIntent(game.inventory.selectedStack(), game.world.getFg(aim.x, aim.y), game.settle.npcAtPx(wp.x, wp.y) !== null);
+    // 點到人（居民 / 村民 / 矮人 / 旅人）：立刻對話，不會挖到他腳下的地（點一下太快也接得到）
+    if (game.talkAtPx(wp.x, wp.y)) { e.preventDefault(); return; }
+    const intent = touchIntent(game.inventory.selectedStack(), game.world.getFg(aim.x, aim.y), game.settle.npcAtPx(wp.x, wp.y) !== null || game.folk.atPx(wp.x, wp.y) !== null);
     if (intent === 'place' || intent === 'use') game.setUse(true);
     else game.setMining(true);
     e.preventDefault();

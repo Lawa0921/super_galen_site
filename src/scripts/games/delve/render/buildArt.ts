@@ -7,6 +7,7 @@
 import { Bmp, INK, h01, ramp, type RGB } from './pixel';
 import { T, W } from '../engine/tiles';
 import type { ItemId } from '../engine/items';
+import { SITE_DECOR_STYLES, SITE_ICONS, SITE_TILE_PAL, siteDecorBmp, siteIcon, siteTileBmp, siteWallBmp } from './siteArt';
 
 const S = 16;
 // ── 色階（[0] 最暗 → 亮） ──
@@ -110,13 +111,14 @@ export function buildTileBmp(id: number, v: number): Bmp | null {
     case T.ROOF_RED: return roof(ROOFR, v);
     case T.ROOF_SLATE: return roof(ROOFS, v);
     case T.GLASS: return glass(v);
-    default: return null;
+    default: return siteTileBmp(id, v);
   }
 }
 /** 新方塊的外框色階（frameTile 用：[0] 外框、[1] 受光外框、[6] 受光高光） */
 export const BUILD_TILE_PAL: Record<number, RGB[]> = {
   [T.DARK_PLANKS]: DARKWOOD, [T.PALE_PLANKS]: PALEWOOD, [T.RED_BRICK]: BRICK,
   [T.ROOF_RED]: ROOFR, [T.ROOF_SLATE]: ROOFS, [T.GLASS]: GLASS,
+  ...SITE_TILE_PAL,
 };
 
 // ── 背景牆 ───────────────────────────────────────────────
@@ -162,7 +164,7 @@ export function buildWallBmp(id: number, v: number): { b: Bmp; pal: RGB[] } | nu
     case W.RED_BRICK_WALL: return { b: bricks(W_BRICK, W_STONE[2], W_STONE[1], v, 3261), pal: W_BRICK };
     case W.GLASS_WALL: return { b: windowWall(v), pal: W_GLASS };
     case W.PLASTER_WALL: return { b: plaster(v), pal: W_PLASTER };
-    default: return null;
+    default: return siteWallBmp(id, v);
   }
 }
 
@@ -337,13 +339,14 @@ export function buildDecorBmp(id: number, style: number): Bmp | null {
     case T.POTTED_PLANT: return pottedPlant(style);
     case T.BENCH: return bench();
     case T.HEARTH: return hearth(style % 3);
-    default: return null;
+    default: return siteDecorBmp(id, style);
   }
 }
 /** 每種新裝飾在圖集裡的欄數 */
 export const BUILD_DECOR_STYLES: Record<number, number> = {
   [T.FENCE]: 4, [T.SOFA_L]: 1, [T.SOFA_R]: 1, [T.FIREPLACE_L]: 3, [T.FIREPLACE_R]: 3, [T.SHELF]: 2, [T.CHANDELIER]: 1,
   [T.TABLE_LAMP]: 1, [T.RUG]: 2, [T.POTTED_PLANT]: 3, [T.BENCH]: 1, [T.HEARTH]: 3,
+  ...SITE_DECOR_STYLES,
 };
 
 // ── 圖示 ─────────────────────────────────────────────────
@@ -418,11 +421,16 @@ export function buildIcon(item: ItemId): Bmp | null {
     case 'bench': return bench();
     case 'hearth': return hearth(0);
     case 'builder_hammer': return hammerIcon();
-    default: return null;
+    case 'thatch': return tileIcon(T.THATCH);
+    case 'timber': return tileIcon(T.TIMBER);
+    case 'dwarf_brick': return tileIcon(T.DWARF_BRICK);
+    case 'dwarf_wall': return wall(W.DWARF_WALL);
+    default: return siteIcon(item);
   }
 }
 export const BUILD_ICONS: readonly ItemId[] = [
   'dark_planks', 'pale_planks', 'red_brick', 'roof_red', 'roof_slate', 'glass', 'fence', 'wood_beam',
   'dark_plank_wall', 'pale_plank_wall', 'stone_brick_wall', 'red_brick_wall', 'glass_wall', 'plaster_wall',
   'sofa', 'fireplace', 'shelf', 'chandelier', 'table_lamp', 'rug', 'potted_plant', 'bench', 'hearth', 'builder_hammer',
+  ...SITE_ICONS,
 ];

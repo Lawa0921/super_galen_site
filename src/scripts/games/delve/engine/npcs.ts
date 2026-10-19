@@ -6,12 +6,15 @@ import type { ItemId } from './items';
 import type { Inventory } from './inventory';
 import type { SunTimes } from './calendar';
 
-export type NpcKind = 'merchant' | 'smith' | 'cook' | 'cartographer' | 'gardener';
-export const NPC_KINDS: readonly NpcKind[] = ['merchant', 'smith', 'cook', 'cartographer', 'gardener'];
+export type NpcKind = 'merchant' | 'smith' | 'cook' | 'cartographer' | 'gardener' | 'healer' | 'guide';
+export const NPC_KINDS: readonly NpcKind[] = ['merchant', 'smith', 'cook', 'cartographer', 'gardener', 'healer', 'guide'];
+/** 只能在旅途中招募的居民（邀請過才會搬來）：藥師 = 路上遇到的旅行藥師、嚮導 = 從洞穴救出來的探險者 */
+export const RECRUIT_KINDS: readonly NpcKind[] = ['healer', 'guide'];
 
 export interface ShopEntry { item: ItemId; n: number; price: number; }
-/** 服務：forge = 在身邊就能鍛造（並打折）、cook = 在身邊就算料理站、reveal = 付錢打聽一處未發現的地點 */
-export type NpcService = 'forge' | 'cook' | 'reveal' | 'garden';
+/** 服務：forge = 在身邊就能鍛造（並打折）、cook = 在身邊就算料理站、reveal = 付錢打聽一處未發現的地點、
+ *  heal = 治療 + 祝福（藥師）、guide = 下一步提示 + 標出沒領過的地標（嚮導） */
+export type NpcService = 'forge' | 'cook' | 'reveal' | 'garden' | 'heal' | 'guide';
 export interface NpcLook {
   app: Appearance;
   /** 紙娃娃部位（engine/doll.ts 的 look 字串；省略 = 基本服裝） */
@@ -22,6 +25,8 @@ export interface NpcLook {
 export interface NpcNeed {
   /** 據點等級下限 */
   level: number;
+  /** 只能招募：要先在旅途中邀請過 */
+  recruit?: boolean;
   /** 據點範圍內要有這些 tile 之一（共 count 件） */
   tiles?: readonly number[];
   count?: number;
@@ -152,7 +157,66 @@ export const NPCS: Record<NpcKind, NpcDef> = {
       homeless: ['我的盆栽們沒有家了……'],
     },
   },
+  healer: {
+    kind: 'healer', name: '薰', title: '藥師',
+    intro: '在路上遇見的旅行藥師，被你的據點留了下來。治傷、賣藥水、為出門的人祈福；她住的據點回血特別快。',
+    likes: ['gardener', 'cook'], dislikes: ['smith'],
+    need: { level: 1, recruit: true, zh: '在地表遇到旅行藥師並邀請她（據點 Lv1）' },
+    shop: [{ item: 'healing_potion', n: 1, price: 60 }, { item: 'healing_potion', n: 3, price: 160 }, { item: 'glow_mushroom', n: 3, price: 25 }, { item: 'life_core', n: 1, price: 800 }],
+    service: { kind: 'heal', zh: '治療（回滿生命）/ 祝福 / 守護', price: 20 },
+    work: [T.TABLE, T.POTTED_PLANT],
+    look: { app: A({ hair: 3, hairColor: 6, ahoge: false, eyes: 1, eyeShape: 2, skin: 0, outfit: 2, color1: 0, color2: 6, acc: 5 }), head: 'hat:flower' },
+    lines: {
+      greet: ['今天也平安回來了呢。', '藥水我熬好了，放在架子上。', '受傷了不要逞強，先來找我。', '這裡的空氣很好，藥草長得特別快。'],
+      night: ['晚上別出門了，傷口會好得比較慢。', '我還要再熬一鍋藥……'],
+      rain: ['雨水洗過的藥草，藥效特別好。'],
+      happy: ['能在這裡定居真是太好了。', '大家都很健康，這是最好的事。'],
+      sad: ['房間有點吵，熬藥的火候都抓不準。'],
+      homeless: ['沒有房間的話，藥箱只能淋雨了……'],
+    },
+  },
+  guide: {
+    kind: 'guide', name: '卡洛', title: '嚮導',
+    intro: '被你從洞穴深處救出來的探險者。他把一身的探險經驗都教給你：下一步該做什麼、哪裡還有沒去過的地標。',
+    likes: ['merchant', 'cartographer'], dislikes: [],
+    need: { level: 1, recruit: true, zh: '在洞穴裡救出受困的探險者並邀請他（據點 Lv1）' },
+    shop: [{ item: 'rope', n: 30, price: 30 }, { item: 'torch', n: 15, price: 30 }, { item: 'recall_stone', n: 1, price: 300 }, { item: 'explorer_map', n: 1, price: 1200 }],
+    service: { kind: 'guide', zh: '下一步提示（免費）/ 標出附近沒領過的地標', price: 40 },
+    work: [T.TABLE, T.BOOKSHELF],
+    look: { app: A({ body: 1, blush: false, hair: 6, hairColor: 1, ahoge: true, eyes: 2, eyeShape: 1, skin: 2, outfit: 0, color1: 7, color2: 8, acc: 0 }), back: 'back:cape', belt: 'depth' },
+    lines: {
+      greet: ['要出發了嗎？我幫你看看地圖。', '我欠你一條命，你想去哪裡我都告訴你。', '洞穴裡的風聲，會告訴你哪裡有路。', '每一個地點都藏著點什麼，別只是路過。'],
+      night: ['晚上的洞穴特別吵……我還是待在屋裡好了。'],
+      rain: ['雨天的地表比洞裡還危險，小心滑倒。'],
+      happy: ['住在這裡，我終於不用再半夜驚醒了。'],
+      sad: ['房間好窄，讓我想起被困住的那幾天……'],
+      homeless: ['我又無家可歸了嗎……'],
+    },
+  },
 };
+
+/** 招募型居民的個人身分（邀請時從那位旅行藥師 / 探險者帶過來：名字 + 外觀） */
+export interface NpcIdent { name: string; look: NpcLook; }
+/** 套上個人身分後的居民設定（沒有身分 → 原本的設定）；介紹文字換成這個人的名字 */
+export function withIdent(kind: NpcKind, ident?: NpcIdent | null): NpcDef {
+  const d = NPCS[kind];
+  if (!ident) return d;
+  return { ...d, name: ident.name, look: ident.look, intro: d.intro.replace(d.name, ident.name) };
+}
+const LOOK_BELTS = new Set(['compass', 'depth', 'map', 'magnet']);
+const LOOK_NECKS = new Set(['night', 'fang', 'heart', 'magma']);
+/** 存檔讀回的身分：壞掉的欄位丟掉（名字 1～12 字、外觀正規化、部位只收字串） */
+export function validIdent(raw: unknown, normalize: (a: unknown) => Appearance): NpcIdent | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as { name?: unknown; look?: Record<string, unknown> };
+  if (typeof o.name !== 'string' || !o.name.length || o.name.length > 12 || !o.look || typeof o.look !== 'object') return null;
+  const s = (v: unknown): string | undefined => (typeof v === 'string' && /^[a-z]+:[a-z_]+$/.test(v) ? v : undefined);
+  const look: NpcLook = { app: normalize(o.look.app) };
+  for (const k of ['head', 'body', 'legs', 'back'] as const) { const v = s(o.look[k]); if (v) look[k] = v; }
+  if (typeof o.look.belt === 'string' && LOOK_BELTS.has(o.look.belt)) look.belt = o.look.belt as NpcLook['belt'];
+  if (typeof o.look.neck === 'string' && LOOK_NECKS.has(o.look.neck)) look.neck = o.look.neck as NpcLook['neck'];
+  return { name: o.name, look };
+}
 
 // ── 心情 ────────────────────────────────────────────────
 export interface MoodCtx {

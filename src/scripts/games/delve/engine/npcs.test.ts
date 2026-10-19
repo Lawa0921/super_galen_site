@@ -5,8 +5,8 @@ import { sunTimes } from './calendar';
 import { ITEMS } from './items';
 
 describe('npc definitions', () => {
-  it('five original settlers with zh dialogue and a shop each', () => {
-    expect(NPC_KINDS.length).toBe(5);
+  it('seven settlers (five original + two recruitable) with zh dialogue and a shop each', () => {
+    expect(NPC_KINDS.length).toBe(7);
     for (const k of NPC_KINDS) {
       const d = NPCS[k];
       expect(d.name.length).toBeGreaterThan(0);
