@@ -71,14 +71,23 @@ export function chestDetail(b: Bmp, set: ArmorSetId, rows: Record<number, [numbe
     case 'bone': each((x, y, x0, x1) => { if ((y === 34 || y === 36 || y === 38) && x > x0 && x < x1) S(x, y, (x & 1) ? r[2] : r[1]); }); break;
     case 'molten': each((x, y) => { const h = ((x * 7 + y * 13) % 11); if (h === 0 && y > 32) S(x, y, CR.lava[3]); if (h === 5 && y > 34) S(x, y, CR.lava[2]); }); break;
   }
+  // 共通的層次：胸口一道金屬高光（左上斜的亮條）、腰帶分隔（皮帶 + 金扣）、下擺的甲片（一片一片）
+  const ys = Object.keys(rows).map(Number), y0 = Math.min(...ys), yb = Math.max(...ys);
+  const [a0] = rows[y0 + 2] ?? rows[y0];
+  for (const [x, y, c] of [[a0 + 2, y0 + 2, 6], [a0 + 3, y0 + 2, 5], [a0 + 2, y0 + 3, 5], [a0 + 3, y0 + 3, 6], [a0 + 4, y0 + 4, 5], [a0 + 2, y0 + 4, 4]] as [number, number, number][]) S(x, y, r[c]);
+  const by = yb - 3, [b0, b1] = rows[by] ?? rows[yb];
+  for (let x = b0; x <= b1; x++) { S(x, by, x === b0 ? CR.leather[4] : CR.leather[3]); S(x, by + 1, r[1]); }
+  S(b1 - 2, by, GOLD); S(b1 - 3, by, hex('#fff4c0'));
+  for (let y = by + 2; y <= yb; y++) { const [c0, c1] = rows[y] ?? rows[yb]; for (let x = c0; x <= c1; x++) S(x, y, (x - c0) % 3 === 2 ? r[1] : y === yb ? r[2] : (x - c0) % 3 === 0 ? r[4] : r[3]); }
   if (view === 'side') {
-    // 護肩（前肩）
-    for (let y = 30; y <= 34; y++) for (let x = 22; x <= 27; x++) {
-      const d = Math.hypot(x + 0.5 - 24.6, y + 0.5 - 32.2);
-      if (d <= 2.7) S(x, y, d < 1.2 && x < 25 ? r[5] : x >= 26 || y >= 34 ? r[2] : r[4]);
+    // 後肩的護肩（往背後凸出一圈；前肩的護肩畫在前手臂上）
+    const cx = a0 + 1.5, cy = y0 + 2.5;
+    for (let y = y0 - 1; y <= y0 + 5; y++) for (let x = Math.floor(cx - 4); x <= Math.ceil(cx + 3); x++) {
+      const d = Math.hypot(x + 0.5 - cx, (y + 0.5 - cy) * 1.15);
+      if (d <= 3.3) S(x, y, d > 2.6 && y >= cy ? r[1] : d < 1.3 && x < cx ? r[6] : x < cx - 0.5 ? r[4] : r[3]);
     }
-    if (set === 'bone') { S(26, 30, r[5]); S(27, 29, r[5]); }
-    if (set === 'molten') S(25, 31, CR.lava[4]);
+    if (set === 'bone') { S(Math.floor(cx), y0 - 2, r[5]); S(Math.floor(cx) - 1, y0 - 3, r[5]); }
+    if (set === 'molten') S(Math.floor(cx), y0 + 1, CR.lava[4]);
   }
 }
 /** 胸甲上可以放點綴的位置（滾邊） */
@@ -105,14 +114,27 @@ export function greaveKnee(b: Bmp, set: ArmorSetId, kx: number, ky: number): voi
 
 /// ── 頭盔 ─────────────────────────────────────────────────
 type Pt = [number, number];
-/** 頭髮 / 頭盔的球心與半徑（頭的區域座標，頭 20×19） */
-export const CAP = { cx: 9.6, cy: 8.2, rx: 10.7, ry: 10.1 };
+/** 頭髮 / 頭盔的球心與半徑（頭的區域座標，頭 23×22） */
+export const CAP = { cx: 11.2, cy: 9.8, rx: 12.4, ry: 11.6 };
+/**
+ * 帽子 / 頭盔的細節是照 20 寬的頭設計的：每個設計格放大成 1.15 倍的一塊（最近鄰，不留縫），
+ * 圓頂與帽沿則直接用新頭型（CAP / BRIM）畫，輪廓保持單像素乾淨。
+ */
+const UP = 1.15;
+const T = (v: number): number => Math.round(v * UP);
+type Plot = (x: number, y: number, c: RGB) => void;
+export function up(S: Plot): Plot {
+  return (x, y, c) => {
+    const x0 = T(x), x1 = Math.max(x0 + 1, T(x + 1)), y0 = T(y), y1 = Math.max(y0 + 1, T(y + 1));
+    for (let yy = y0; yy < y1; yy++) for (let xx = x0; xx < x1; xx++) S(xx, yy, c);
+  };
+}
 export const inCap = (x: number, y: number, k = 1): boolean => {
   const nx = (x + 0.5 - CAP.cx) / (CAP.rx * k), ny = (y + 0.5 - CAP.cy) / (CAP.ry * k);
   return nx * nx + ny * ny <= 1;
 };
 /** 帽沿那一列（眼睛在第 9 列起；瀏海尖露在帽沿下面） */
-const BRIM = 5;
+const BRIM = 6;
 /**
  * 頭盔（側面 / 背面）：圓頂（四階打光 + 左上一道高光）+ 往前突出的帽沿 + 後頸護片，再依套裝加輪廓——
  * 木：皮帶箍 + 木紋；銅：護鼻條 + 鉚釘 + 護頰；鐵：前面的面甲（一道眼縫）+ 中脊 + 護頰；
@@ -121,30 +143,31 @@ const BRIM = 5;
 export function helmetArt(head: Bmp, p: DollPiece, ox: number, oy: number, f: number, view: 'side' | 'back'): void {
   const set = armorSet(p)!;
   const r = ARMOR_RAMP[set], m = armor5(set);
-  const S = (x: number, y: number, c: RGB): void => head.set(ox + x, oy + y, c);
+  const S0 = (x: number, y: number, c: RGB): void => head.set(ox + x, oy + y, c);
+  const S = up(S0);
   const brim = BRIM, side = view === 'side';
-  for (let y = -3; y <= 14; y++) for (let x = -3; x <= 21; x++) {
+  for (let y = -4; y <= 16; y++) for (let x = -4; x <= 25; x++) {
     const dome = inCap(x, y, 1.07) && y <= brim;
     // 後頸護片：只蓋後腦勺（耳朵後面），下緣往後收成圓角
-    const nape = side ? x <= 3 && y <= 12 - Math.max(0, 1 - x) && inCap(x, Math.min(y, 10), 1.07) : y <= 12 && inCap(x, Math.min(y, 9), 1.07);
+    const nape = side ? x <= 4 && y <= 14 - Math.max(0, 1 - x) && inCap(x, Math.min(y, 12), 1.07) : y <= 14 && inCap(x, Math.min(y, 11), 1.07);
     if (!dome && !nape) continue;
     const nx = (x + 0.5 - CAP.cx) / CAP.rx, ny = (y + 0.5 - CAP.cy) / CAP.ry;
     const v = -(nx * 0.55 + ny * 0.85);
-    S(x, y, v > 0.8 ? m[4] : v > 0.3 ? m[3] : v > -0.25 ? m[2] : m[1]);
+    S0(x, y, v > 0.8 ? m[4] : v > 0.3 ? m[3] : v > -0.25 ? m[2] : m[1]);
   }
   // 高光：左上一道（金屬亮點）
   for (const [x, y] of [[4, -1], [5, -1], [3, 0], [6, -2]] as Pt[]) S(x, y, r[6]);
   // 帽沿：深一階的一道邊（上面一列亮邊），側面往前突出 2 格
   const rimC = set === 'gold' ? CR.leather[3] : m[1];
-  for (let x = -2; x <= (side ? 21 : 20); x++) { S(x, brim, rimC); if (x > -2 && x < 20) S(x, brim - 1, set === 'gold' ? r[5] : m[3]); }
-  if (side) { S(20, brim + 1, m[0]); S(21, brim + 1, m[0]); }
+  for (let x = -2; x <= (side ? 25 : 24); x++) { S0(x, brim, rimC); if (x > -2 && x < 24) S0(x, brim - 1, set === 'gold' ? r[5] : m[3]); }
+  if (side) { S0(24, brim + 1, m[0]); S0(25, brim + 1, m[0]); }
   // 後頸護片下緣
-  if (side) for (let x = -2; x <= 3; x++) S(x, 12 - Math.max(0, 1 - x) + 1, m[1]);
+  if (side) for (let x = -2; x <= 4; x++) S0(x, 14 - Math.max(0, 1 - x) + 1, m[1]);
   const cheek = set === 'copper' || set === 'iron' || set === 'molten';
   if (cheek) {
     // 護頰：耳朵前面一片（側面）／兩側（背面）
     const xs = side ? [4, 5, 6] : [-1, 0, 19, 20];
-    for (const x of xs) for (let y = brim + 1; y <= 12; y++) S(x, y, x === xs[0] || x === 19 ? m[3] : x === xs[xs.length - 1] ? m[1] : m[2]);
+    for (const x of xs) for (let y = 6; y <= 12; y++) S(x, y, x === xs[0] || x === 19 ? m[3] : x === xs[xs.length - 1] ? m[1] : m[2]);
     for (const x of xs) S(x, 13, m[1]);
     if (side) S(4, 8, r[6]);
   }
@@ -155,13 +178,13 @@ export function helmetArt(head: Bmp, p: DollPiece, ox: number, oy: number, f: nu
       for (const [x, y] of [[7, 0], [12, 0], [9, 1], [15, 1], [3, 1]] as Pt[]) S(x, y, m[1]);
       break;
     case 'copper':
-      if (side) { for (let y = brim; y <= 10; y++) { S(18, y, m[3]); S(19, y, m[2]); } S(18, 11, m[1]); }
+      if (side) { for (let y = 5; y <= 10; y++) { S(18, y, m[3]); S(19, y, m[2]); } S(18, 11, m[1]); }
       for (const [x, y] of [[3, 2], [10, -1], [15, 2], [1, 7]] as Pt[]) { S(x, y, r[6]); S(x + 1, y + 1, m[1]); }
       break;
     case 'iron':
       if (side) {
         // 面甲：額頭前方一片，一道眼縫
-        for (let y = 1; y <= brim; y++) for (let x = 16; x <= 21; x++) if (y > 1 || x < 20) S(x, y, y === 3 ? r[0] : x === 21 ? m[1] : y === 1 ? m[4] : m[3]);
+        for (let y = 1; y <= 5; y++) for (let x = 16; x <= 21; x++) if (y > 1 || x < 20) S(x, y, y === 3 ? r[0] : x === 21 ? m[1] : y === 1 ? m[4] : m[3]);
         S(21, 3, r[1]); S(17, 2, r[6]);
       }
       for (let y = -3; y <= 4; y++) S(side ? 10 : 9, y, y < 0 ? r[6] : m[4]);
@@ -195,8 +218,8 @@ export function helmetArt(head: Bmp, p: DollPiece, ox: number, oy: number, f: nu
       break;
   }
   const spots: Pt[] = [];
-  for (let x = side ? 0 : -2; x <= (side ? 19 : 20); x++) spots.push([ox + x, oy + brim]);
-  upgrades(head, p, spots, side ? [ox + 14, oy + 3] : null, f, r);
+  for (let x = side ? 0 : -2; x <= (side ? 23 : 24); x++) spots.push([ox + x, oy + brim]);
+  upgrades(head, p, spots, side ? [ox + 16, oy + 3] : null, f, r);
 }
 
 // ── 時裝帽子 ─────────────────────────────────────────────
@@ -227,7 +250,7 @@ function minerHelm(S: (x: number, y: number, c: RGB) => void, view: 'side' | 'ba
 }
 export function hatArt(b: Bmp, id: string, ox: number, oy: number, view: 'side' | 'back', sway: number): void {
   const s = new Bmp(b.w, b.h);
-  const S = (x: number, y: number, c: RGB): void => s.set(ox + x, oy + y, c);
+  const S = up((x: number, y: number, c: RGB): void => s.set(ox + x, oy + y, c));
   const g = (rows: string[], pal: Record<string, RGB>, x0: number, y0: number): void => {
     rows.forEach((row, y) => { for (let x = 0; x < row.length; x++) { const c = pal[row[x]]; if (c) S(x0 + x, y0 + y, c); } });
   };
@@ -286,14 +309,23 @@ export function backArt(b: Bmp, p: DollPiece, view: 'side' | 'back', flap: numbe
   const s = new Bmp(b.w, b.h);
   const S = (x: number, y: number, c: RGB): void => s.set(x + dx, y + dy, c);
   if (id === 'cape') {
-    const c = clothRamp(3), lin = clothRamp(9);
+    // 紅披風（外）+ 金色內裡：側面時內裡在靠身體那側露出兩欄、往後飄時下襬翻起來露出一角內裡
+    const c = clothRamp(3), lin = clothRamp(8);
     if (view === 'side') {
-      for (let y = 31; y <= 48; y++) {
-        const t = (y - 31) / 17, trail = Math.round(t * t * (3 + flap * 4 + lift * 2));
-        const x0 = 15 - trail - Math.round(t * 2), x1 = 20 - Math.round(trail * 0.5);
-        for (let x = x0; x <= x1; x++) S(x, y - Math.round(lift * t * 6), x === x0 ? c[4] : x === x1 ? lin[3] : y > 46 ? c[2] : c[3]);
+      for (let y = 31; y <= 49; y++) {
+        const t = (y - 31) / 18, trail = Math.round(t * t * (3 + flap * 4 + lift * 2));
+        const wave = Math.round(Math.sin(t * Math.PI * 1.6 + flap) * t * 1.2);
+        const x0 = 14 - trail - Math.round(t * 2.5) + wave, x1 = 20 - Math.round(trail * 0.4);
+        const yy = y - Math.round(lift * t * 6);
+        for (let x = x0; x <= x1; x++) {
+          let col = x === x0 ? c[4] : x >= x1 - 1 ? (y < 34 ? lin[4] : x === x1 ? lin[2] : lin[3]) : y > 47 ? c[2] : (x - x0) % 3 === 2 && y > 35 ? c[2] : x === x0 + 1 && y < 42 ? c[4] : c[3];
+          // 下襬翻起來的一角（飄動時）
+          if (flap > 0.3 && y >= 46 && x <= x0 + (49 - y)) col = y === 49 ? lin[2] : lin[3];
+          S(x, yy, col);
+        }
       }
-      S(21, 31, GOLD); S(21, 32, GOLD);
+      for (let x = 15; x <= 21; x++) S(x, 31, c[4]);
+      S(21, 32, GOLD); S(21, 33, GOLD); S(20, 32, hex('#fff4c0'));
     } else {
       for (let y = 31; y <= 48; y++) {
         const t = (y - 31) / 17, w = 6 + Math.round(t * 2.5), sw = Math.round(flap * t * 2);
@@ -365,5 +397,5 @@ export function beltArt(b: Bmp, kind: string, dx: number, dy: number): void {
 }
 
 /** 圖示用：只有頭盔 / 帽子（不畫頭） */
-export function helmetOnly(b: Bmp, p: DollPiece): void { helmetArt(b, p, 12, 13, 0, 'side'); }
-export function hatOnly(b: Bmp, id: string): void { hatArt(b, id, 12, 13, 'side', 0); }
+export function helmetOnly(b: Bmp, p: DollPiece): void { helmetArt(b, p, 11, 12, 0, 'side'); }
+export function hatOnly(b: Bmp, id: string): void { hatArt(b, id, 11, 12, 'side', 0); }

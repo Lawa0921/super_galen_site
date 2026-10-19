@@ -7,9 +7,9 @@ import { Bmp, type RGB } from './pixel';
 import { HAIR_RAMPS, SKIN_RAMPS, hairRamp } from './avatarPalette';
 
 /** 影格裡軀幹 / 腿的交界列（這列以下不動） */
-export const WAIST_ROW = 41;
+export const WAIST_ROW = 44;
 /** 原始影格裡下巴最低可能在哪一列（再下面是肩膀 / 軀幹：衣服的棕色會被誤認成深膚色） */
-export const CHIN_MAX_ROW = 33;
+export const CHIN_MAX_ROW = 35;
 const key = (c: RGB): number => (c[0] << 16) | (c[1] << 8) | c[2];
 /** 臉的膚色（色階的陰影 / 底色 / 亮部；深影和最暗那階和頭髮 / 衣服太像，不算） */
 function skinSet(skin?: number): Set<number> {
@@ -59,19 +59,22 @@ export function dwarfify(frame: Bmp, beard: RGB[] | null, shrink = 5, skin?: num
   const r = beard, b = new Bmp(out.w, out.h);
   const cx = (chin.x0 + chin.x1) / 2 + 2;
   // 上半：嘴角以下的臉頰 + 鬢角（膚色換成鬍子；左緣亮一階、往下漸暗）
-  for (let y = chin.y - 3; y <= chin.y; y++) for (let x = chin.x0 + 1; x <= chin.x1; x++) {
+  // 大頭（23×22）：鬍子從鬢角一路包到下巴（臉頰下半都是鬍子）
+  const bx0 = chin.x0 - 3, bx1 = chin.x1 + 1;
+  for (let y = chin.y - 4; y <= chin.y; y++) for (let x = bx0; x <= bx1; x++) {
     if (!isSkin(out.raw(x, y))) continue;
-    b.set(x, y, x <= chin.x0 + 2 ? r[3] : y === chin.y - 3 ? r[3] : r[2]);
+    if (y < chin.y - 2 && x > bx0 + 3 && x < chin.x1 - 1) continue;
+    b.set(x, y, x <= bx0 + 1 ? r[3] : y === chin.y - 4 ? r[3] : (x + y) % 4 === 0 ? r[1] : r[2]);
   }
   // 八字鬍：嘴那一列往兩邊垂（亮一階、兩端暗）
   const my = chin.y - 2;
   for (let x = Math.round(cx) - 3; x <= chin.x1 + 1; x++) b.set(x, my, x >= chin.x1 ? r[1] : r[4]);
   b.set(Math.round(cx) - 3, my + 1, r[2]); b.set(chin.x1 + 1, my + 1, r[1]);
   // 下半：三束往下垂、越下越窄、尖端 V 字；每束左亮右暗、束縫深一階，尖端稍往前（右）
-  const len = 7, w0 = chin.x1 - chin.x0 + 1;
+  const len = 8, w0 = bx1 - bx0 + 1;
   const locks = 3, lw = Math.max(2, Math.round((w0 - 1) / locks));
   for (let i = 0; i < locks; i++) {
-    const lx0 = chin.x0 + 1 + i * lw, lx1 = lx0 + lw, tip = len - (i === 0 ? 2 : i === locks - 1 ? 1 : 0);
+    const lx0 = bx0 + 1 + i * lw, lx1 = lx0 + lw, tip = len - (i === 0 ? 2 : i === locks - 1 ? 1 : 0);
     for (let k = 1; k <= tip; k++) {
       const y = chin.y + k, sh = Math.round(k / 3);
       const shrink = Math.max(0, Math.round((k - tip + 3) * 0.7));

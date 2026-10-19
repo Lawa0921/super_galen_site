@@ -28,7 +28,7 @@ export function npcLook(kind: NpcKind): DollLook {
 
 export interface NpcFrames { idle: Bmp[]; blink: Bmp; walk: Bmp[]; sleep: Bmp; portrait: Bmp; }
 /** 睡覺：閉眼那格的頭（第一個不透明列往下 SLEEP_HEAD 列）露在被子外 */
-const SLEEP_HEAD = 21;
+const SLEEP_HEAD = 25;
 /** 睡覺的頭最寬幾 px（床 32px 寬，兩側留床頭板 / 床尾板） */
 const SLEEP_MAX_W = 26;
 /** 睡覺的頭在床上的位置：左邊靠床頭板內側（床頭 tile x + 4） */

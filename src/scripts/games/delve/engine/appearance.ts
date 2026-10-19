@@ -113,12 +113,12 @@ export const ACCESSORIES: readonly AppearanceOption[] = [
 const H = (id: string): number => HAIR_STYLES.findIndex((h) => h.id === id);
 const O = (id: string): number => OUTFITS.findIndex((o) => o.id === id);
 const HC = (id: string): number => HAIR_COLORS.findIndex((h) => h.id === id);
-/** 兩種體型的典型預設：女 = 櫻粉雙馬尾 + 水手服 + 蝴蝶結；男 = 深棕亂翹短髮 + 冒險大衣、上揚眼、沒有腮紅 */
+/** 兩種體型的典型預設：女 = 櫻粉雙馬尾 + 水手服（藏青 + 紅領巾）+ 蝴蝶結；男 = 深棕亂翹短髮 + 藏青冒險大衣配橘金滾邊、上揚眼、沒有腮紅 */
 const BODY_DEFAULTS: readonly Readonly<Appearance>[] = [
   Object.freeze({ body: 0, blush: true, hair: H('twintails'), hairColor: HC('pink'), ahoge: true, eyes: 0, eyeShape: 0, skin: 0,
     outfit: O('sailor'), color1: OUTFITS[O('sailor')].colors[0], color2: OUTFITS[O('sailor')].colors[1], acc: 1, glasses: false }),
   Object.freeze({ body: 1, blush: false, hair: H('messy'), hairColor: HC('brown'), ahoge: true, eyes: 2, eyeShape: 1, skin: 1,
-    outfit: O('coat'), color1: OUTFITS[O('coat')].colors[0], color2: OUTFITS[O('coat')].colors[1], acc: 0, glasses: false }),
+    outfit: O('coat'), color1: C('navy'), color2: C('orange'), acc: 0, glasses: false }),
 ];
 export function bodyDefaults(body: number): Appearance { return { ...(BODY_DEFAULTS[body] ?? BODY_DEFAULTS[0]) }; }
 export const DEFAULT_APPEARANCE: Readonly<Appearance> = BODY_DEFAULTS[0];

@@ -159,7 +159,8 @@ describe('圖層', () => {
     const myth = flatFrame(avatarFrame({ ...base, body: piece('armor:gold', 5, 5, 'fire'), head: piece('armor:gold', 5, 5, 'fire') }, 'idle', 0));
     const ice = flatFrame(avatarFrame({ ...base, body: piece('armor:gold', 5, 5, 'ice'), head: piece('armor:gold', 5, 5, 'ice') }, 'idle', 0));
     expect(diff(common, epic)).toBeGreaterThan(4);
-    expect(diff(common, epic)).toBeLessThan(60);
+    // 頭 23×22 的帽沿比較長：點綴的格數跟著變多，但仍是少量（< 整張的 1/10）
+    expect(diff(common, epic)).toBeLessThan(85);
     expect(diff(epic, myth)).toBeGreaterThan(4);
     expect(diff(myth, ice)).toBeGreaterThan(2);
     // 傳說以上的閃光會跟著影格移動
