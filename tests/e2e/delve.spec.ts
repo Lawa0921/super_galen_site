@@ -1505,6 +1505,49 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     expect(errors).toEqual([]);
   });
 
+  test('wardrobe race row：種族列在體型之後、右鍵三次 → 3（貓族）、說明跟著換、完成後存進 localStorage', async ({ page }) => {
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-look');
+    const wr = page.locator('#delve-wardrobe');
+    await expect(wr).toBeVisible();
+    const keys = await wr.locator('.delve-wr-row').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.key));
+    expect(keys.indexOf('race')).toBeGreaterThan(keys.indexOf('body'));
+    const row = wr.locator('.delve-wr-row[data-key="race"]');
+    const blurb = wr.locator('.delve-wr-blurb');
+    const b0 = await blurb.textContent();
+    expect((b0 ?? '').length).toBeGreaterThan(0);
+    for (let i = 0; i < 3; i++) await row.locator('[data-dir="1"]').click();
+    await expect(row).toHaveAttribute('data-value', '3');
+    expect(await blurb.textContent()).not.toBe(b0);
+    await page.click('#delve-wr-done');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('delve.appearance') ?? '{}'));
+    expect(saved.race).toBe(3);
+  });
+
+  test('wardrobe preview turns：#delve-wr-turn 切換面向、畫布內容改變；桌面 6 倍 = 336 寬', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-look');
+    const doll = page.locator('#delve-wr-doll');
+    await expect(doll).toBeVisible();
+    expect(await doll.evaluate((el) => (el as HTMLCanvasElement).clientWidth)).toBe(336);
+    // 輪播會自己變：點擊前後在同一個 JS 任務內取圖（click 會同步重畫）
+    let differs = false;
+    for (let i = 0; i < 6 && !differs; i++) {
+      const [a, b] = await doll.evaluate(async (el) => {
+        const c = el as HTMLCanvasElement;
+        const before = c.toDataURL();
+        (document.querySelector('#delve-wr-turn') as HTMLButtonElement).click();
+        return [before, c.toDataURL()];
+      });
+      differs = a !== b;
+      await page.waitForTimeout(150);
+    }
+    expect(differs).toBe(true);
+  });
+
   test('遊戲中選單「角色外觀」：Esc 關掉回到選單；隨機 → 完成 → 紙娃娃 key 換了', async ({ page }) => {
     await page.goto('/games/delve?seed=look-menu&autostart=1&fresh=1');
     await waitGame(page);
