@@ -1624,6 +1624,15 @@ describe('continuity fixes (plan 6c Task 15 Step 6)', () => {
     }
   });
 
+  it('re-review: the hat is taken from behind his door in both readings; no 「我等」; no dawn tied to the reveal', () => {
+    for (const returned of [[], ['orik']] as TownFragmentId[][]) {
+      expect(reading('home:liz', { returned })[0].text, String(returned)).toMatch(/門後.{0,2}取下|取下門後/);
+    }
+    for (const l of linesOf('home:chizuru')) if (l.who === 'chizuru') expect(l.text).not.toMatch(/我等/);
+    expect(linesOf('bellkeeper-arrives')[0].text).not.toMatch(/天剛亮/);
+    expect(linesOf('bellkeeper-arrives')[0].text).toMatch(/幾天後/);
+  });
+
   it("fix 15: no stranger's memory reads as Liz's home", () => {
     for (const t of STORY.absorb) expect(t).not.toMatch(/麵包|焦/);
   });

@@ -437,7 +437,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   // Rin's `guarded` belongs here after her oath (style bible §3: it is kept for the bellkeeper).
   'bellkeeper-arrives': {
     lines: [
-      N('傳送門廣場，天剛亮。一位穿長袍的老人站在門前，雙手捧著一口小小的鐘。'),
+      N('幾天後的清晨，傳送門廣場。一位穿長袍的老人站在門前，雙手捧著一口小小的鐘。'),
       { who: 'bellkeeper', text: '「吾等敲了三回鐘。那孩子領口的鐘，一回也沒有應。」' },
       { who: 'rin', mood: 'guarded', text: '「……那枚鐘，我敲平了。洛恩，站到我後面。」' },
       { who: 'bellkeeper', text: '「鐘不應，吾等便知道了。……所以，我來了。」' },
@@ -1140,10 +1140,10 @@ const TOWN_SCENES: Record<TownFragmentId, Written> = {
 const HOME: Record<HomeOwner, Written> = {
   chizuru: {
     lines: [
-      N('清晨的鎮邊。一座小小的祠立在路旁，屋簷下掛著那枚鈴。'),
+      N('幾天後的清晨，鎮邊。一座小小的祠立在路旁，屋簷下掛著那枚鈴。'),
       { who: 'chizuru', mood: 'solemn', text: '「洛恩大人。祠雖小，鈴一響，此處便是神社了。」' },
       N('賣菜的老婆婆路過，停下來合了合掌。風一吹，鈴響了一聲。'),
-      { who: 'chizuru', mood: 'smile', text: '「春祭時，請務必來看。……這一回，我等得到了。」' },
+      { who: 'chizuru', mood: 'smile', text: '「春祭時，請務必來看。……這一回，我會等到春祭。」' },
     ],
     summary: '千鶴在露米亞的鎮邊蓋了一座小祠，掛上神主託付的鈴。鈴一響，這裡就是她為現在的人守著的神社。',
   },
@@ -1158,7 +1158,7 @@ const HOME: Record<HomeOwner, Written> = {
   },
   sylvie: {
     lines: [
-      N('清晨的月影旅館。希爾薇站在窗邊，看著樓下那塊空地。'),
+      N('幾天後的清晨，月影旅館。希爾薇站在窗邊，看著樓下那塊空地。'),
       N('她種下的那顆種子，冒出了兩片小小的葉子，還沾著露水。'),
       { who: 'sylvie', mood: 'surprised', text: '「……發芽了。」' },
       { who: 'sylvie', mood: 'smile', text: '「洛恩。林子，從這裡再長。」' },
@@ -1171,7 +1171,7 @@ const HOME: Record<HomeOwner, Written> = {
       { who: 'orik', text: '「喂，那頂不賣！……它一直掛在門後。妳這張臉，老頭子我怎麼想不起來。」', if: { notReturned: 'orik' } },
       { who: 'liz', mood: 'hushed', text: '「……沒關係。等你想起來，我再戴。」', if: { notReturned: 'orik' } },
       { who: 'narrator', text: '她把帽子掛回門後，回頭笑了一下。櫃檯後面的人撓著頭，也跟著笑了。', if: { notReturned: 'orik' } },
-      { who: 'narrator', text: '傍晚的道具店門口。莉茲戴著那頂紅帽子，在門外深深吸了一口氣。', if: { returned: 'orik' } },
+      { who: 'narrator', text: '傍晚的道具店。莉茲推開店門，從門後取下那頂紅帽子戴上，深深吸了一口氣。', if: { returned: 'orik' } },
       { who: 'liz', mood: 'smile', text: '「爸爸，我回來了！今天的帳，交給我來對！」', if: { returned: 'orik' } },
       { who: 'orik', text: '「回來啦，丫頭！帽子戴歪了。過來，爸爸替妳扶正。」', if: { returned: 'orik' } },
       { who: 'narrator', text: '櫃檯上擺著一枚舊銀幣。他笑著問：「丫頭，這個值多少？」', if: { returned: 'orik' } },
