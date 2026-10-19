@@ -72,12 +72,34 @@ export function placeLandmarks(world: World, structures: readonly Structure[], s
     }
     return null;
   };
+  /** 外圍：結構矩形往外擴 pad 格再找（湖岸 / 洞窟邊） */
+  const around = (s: Structure, pad: number): { x: number; y: number } | null =>
+    nearest({ ...s, x: Math.max(2, s.x - pad), y: Math.max(2, s.y - pad), w: s.w + pad * 2, h: s.h + pad * 2 });
+  /** 水面上鑿一塊 3 格寬的石台（地下湖找不到岸時）：水面那一列中間 3 格換成石頭、地標放在上面 */
+  const islet = (s: Structure): { x: number; y: number } | null => {
+    for (let y = Math.max(3, s.y); y < Math.min(height - 3, s.y + s.h); y++) {
+      for (let d = 0; d < s.w >> 1; d++) for (const x of [s.x + (s.w >> 1) - d, s.x + (s.w >> 1) + d]) {
+        const i = y * WW + x;
+        if (x < 3 || x >= width - 3 || !world.liquid[i]) continue;
+        // 水面：上面兩格是空氣、沒有水
+        let ok = true;
+        for (let k = -1; k <= 1 && ok; k++) for (let h = 1; h <= 3; h++) { const j = (y - h) * WW + x + k; if (fg[j] !== T.AIR || world.liquid[j]) ok = false; }
+        if (!ok) continue;
+        for (let k = -1; k <= 1; k++) { const j = i + k; fg[j] = T.STONE; world.liquid[j] = 0; world.liquidType[j] = 0; }
+        return standOk(x, y - 1) ? { x, y: y - 1 } : null;
+      }
+    }
+    return null;
+  };
   for (const s of structures) {
     const tile = landmarkFor(s);
     if (tile === null) continue;
     let spot: { x: number; y: number } | null = null;
     if (s.kind === 'mineshaft') spot = mineCart(world, s, standOk);
     else spot = RIM.has(s.kind) ? rim(s) ?? nearest(s) : nearest(s);
+    // 找不到地板：往外擴一圈（岸邊 / 洞窟邊緣），湖再找不到就在水面鑿一塊石台
+    if (!spot) spot = around(s, 12);
+    if (!spot && (s.kind === 'underground_lake' || s.kind === 'lake_bed' || s.kind === 'frozen_lake' || s.kind === 'oasis')) spot = islet(s);
     if (!spot) continue;
     fg[spot.y * WW + spot.x] = tile;
     used.add(spot.y * WW + spot.x);

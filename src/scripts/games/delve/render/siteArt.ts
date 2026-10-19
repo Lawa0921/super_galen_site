@@ -207,6 +207,57 @@ function questBoard(): Bmp {
   return outline(b);
 }
 /** 旗桿：style 0 = 桿身、1 = 桿頂（金色桿頭 + 往右飄的紅金三角旗） */
+/** 村旗全圖（48×48 = 3×3 格）：紅底、金邊、中間一束金色麥穗 + 星、右緣燕尾、布面波浪；整張描邊後再切九塊（塊與塊之間沒有接縫線） */
+const FLAG_N = 3, FLAG_PX = FLAG_N * S;
+const FLAG_FULL = ((): Bmp => {
+  const F = FLAG_PX, b = new Bmp(F, F);
+  for (let x = 0; x < F; x++) {
+    const wave = ((x / 12) | 0) & 1 ? 2 : 0;
+    for (let y = 3 + wave; y < F - 4 + wave; y++) {
+      const ly = y - wave;
+      if (x >= F - 12 && ly >= F / 2 - 6 && ly <= F / 2 + 4 && x - (F - 12) > Math.abs(ly - (F / 2 - 1)) * 1.3 - 1) continue; // 燕尾缺口
+      let c = CLOTH[2];
+      if (ly <= 5 || ly >= F - 8) c = GOLD[3];
+      else if (ly === 6 || ly === F - 9) c = GOLD[1];
+      else if (x < 3) c = CLOTH[1];
+      else if ((x + ly) % 9 === 0) c = CLOTH[3];
+      else if (bayer(x, y) < 0.18 && (((x / 12) | 0) & 1)) c = CLOTH[1];
+      b.set(x, y, c);
+    }
+  }
+  // 麥穗（中軸 + 左右穗粒）+ 頂端的星
+  const cx = 21;
+  for (let y = 15; y <= 34; y++) { b.set(cx, y, GOLD[4]); b.set(cx + 1, y, GOLD[3]); }
+  for (let k = 0; k < 6; k++) {
+    const y = 18 + k * 3;
+    for (const [dx, c] of [[-1, GOLD[5]], [-2, GOLD[4]], [-3, GOLD[3]], [2, GOLD[5]], [3, GOLD[4]], [4, GOLD[3]]] as const) b.set(cx + dx, y + (Math.abs(dx) > 1 ? 1 : 0), c);
+  }
+  for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (Math.abs(dx) + Math.abs(dy) <= 3 && (dx === 0 || dy === 0 || Math.abs(dx) + Math.abs(dy) <= 2)) b.set(cx + dx, 10 + dy, GOLD[5]);
+  b.set(cx, 10, CREAM[3]);
+  return b.outline(INK);
+})();
+/** 村旗的九分之一：style = 列 × 3 + 欄（0 左上 … 8 右下） */
+function flagCloth(style: number): Bmp {
+  const b = new Bmp(S, S), ox = (style % FLAG_N) * S, oy = Math.floor(style / FLAG_N) * S;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) b.setRaw(x, y, FLAG_FULL.raw(ox + x, oy + y));
+  return b;
+}
+/** 桿頂燈：金色桿頭 + 一盞暖黃的吊燈（夜裡遠遠看得到村子） */
+function flagLamp(): Bmp {
+  const b = new Bmp(S, S), w = WOOD;
+  for (let y = 4; y < S; y++) { b.set(7, y, w[6]); b.set(8, y, w[3]); }
+  b.set(7, 1, GOLD[5]); b.set(8, 1, GOLD[4]); b.set(7, 2, GOLD[4]); b.set(8, 2, GOLD[2]); b.set(7, 3, GOLD[3]); b.set(8, 3, GOLD[2]);
+  // 橫桿 + 吊燈
+  for (let x = 4; x <= 11; x++) b.set(x, 5, IRON[3]);
+  for (const lx of [4, 11]) {
+    b.set(lx, 6, IRON[2]);
+    for (let y = 7; y <= 11; y++) for (let x = lx - 2; x <= lx + 2; x++) {
+      const edge = x === lx - 2 || x === lx + 2 || y === 7 || y === 11;
+      b.set(x, y, edge ? IRON[2] : y === 8 ? FIRE[6] : FIRE[4]);
+    }
+  }
+  return outline(b);
+}
 function flagpole(style: number): Bmp {
   const b = new Bmp(S, S), w = WOOD;
   const top = style === 1 ? 2 : 0;
@@ -408,6 +459,8 @@ export function siteDecorBmp(id: number, style: number): Bmp | null {
     case T.ORE_CART: return oreCart();
     case T.QUEST_BOARD: return questBoard();
     case T.FLAGPOLE: return flagpole(style & 1);
+    case T.FLAG_CLOTH: return flagCloth(style % 9);
+    case T.FLAG_LAMP: return flagLamp();
     case T.DWARF_FORGE: return dwarfForge(style % 3);
     case T.BRAZIER: return brazier(style % 3);
     case T.BARREL: return barrel();
@@ -422,7 +475,7 @@ export function siteDecorBmp(id: number, style: number): Bmp | null {
 }
 /** 每種新裝飾在圖集裡的欄數 */
 export const SITE_DECOR_STYLES: Record<number, number> = {
-  [T.RAIL]: 1, [T.ORE_CART]: 1, [T.QUEST_BOARD]: 1, [T.FLAGPOLE]: 2, [T.DWARF_FORGE]: 3, [T.BRAZIER]: 3, [T.BARREL]: 1,
+  [T.RAIL]: 1, [T.ORE_CART]: 1, [T.QUEST_BOARD]: 1, [T.FLAGPOLE]: 2, [T.FLAG_CLOTH]: 9, [T.FLAG_LAMP]: 1, [T.DWARF_FORGE]: 3, [T.BRAZIER]: 3, [T.BARREL]: 1,
   [T.CAIRN]: 1, [T.RELIC_PACK]: 1, [T.GUARDIAN_STATUE]: 1, [T.GEODE]: 1, [T.SPORE_TOTEM]: 1, [T.HONEY_JAR]: 1,
 };
 

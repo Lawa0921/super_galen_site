@@ -1360,6 +1360,8 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
   yield '聚落：地表村落 + 矮人地廳';
   // ── NPC 聚落：平坦森林地表的村落（2～4）+ 洞穴層深處的矮人地廳（1～2）；見 gen/settlements.ts ──
   const villageCol = new Uint8Array(width);
+  /** 液體不能進去的範圍（村落 / 地廳 / 地廳隧道，各留緩衝） */
+  const dry: Rect[] = [];
   const { villages, halls } = (() => {
     const blocked = (): Rect[] => [...occupied, ...structures.filter((st) => st.kind !== 'frozen_lake' && st.kind !== 'lake_bed')];
     const wet = (x: number): boolean => lakes.some((l) => x >= l.x0 - 12 && x <= l.x1 + 12) || lakeBeds.some((l) => x >= l.x0 - 12 && x <= l.x1 + 12);
@@ -1368,11 +1370,16 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
     for (const r of v.rects) occupied.push(r);
     v.villages.forEach((vi, i) => {
       structures.push({ kind: 'village', ...v.rects[i] });
+      dry.push({ x: vi.x0 - 16, y: vi.ground - 40, w: vi.x1 - vi.x0 + 33, h: 46 });
       for (let x = Math.max(0, vi.x0 - 10); x <= Math.min(width - 1, vi.x1 + 10); x++) villageCol[x] = 1;
     });
     const h = placeDwarfHalls(ctx);
     for (const r of h.rects) occupied.push(r);
-    h.halls.forEach((_, i) => structures.push({ kind: 'dwarf_hall', ...h.rects[i] }));
+    h.halls.forEach((hi, i) => {
+      structures.push({ kind: 'dwarf_hall', ...h.rects[i] });
+      dry.push({ x: hi.x0 - 6, y: hi.y0 - 6, w: hi.x1 - hi.x0 + 13, h: hi.floorY - hi.y0 + 10 });
+      for (const t of hi.tunnels) dry.push({ x: t.x0 - 3, y: hi.floorY - 8, w: t.x1 - t.x0 + 7, h: 11 });
+    });
     return { villages: v.villages, halls: h.halls };
   })();
   remeasure();
@@ -1383,6 +1390,7 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
   const liquidGen = createLiquidGen({
     world, seed, surface, layers, colBiome, biomes, lakeBeds, lavaPool, spawnX: spawn.x,
     avoid: (x) => inDz(x, 20) || x < beachW + 8 || x > width - beachW - 8 || villageCol[Math.max(0, Math.min(width - 1, x))] === 1,
+    protect: (x, y) => dry.some((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h),
     occupied: () => [...occupied, ...structures.filter((st) => st.kind !== 'cavern' && st.kind !== 'chasm' && st.kind !== 'ravine'
       && st.kind !== 'sinkhole' && st.kind !== 'lake_bed' && st.kind !== 'frozen_lake' && st.kind !== 'mushroom_biome' && st.kind !== 'crystal_cave')],
   });

@@ -44,6 +44,8 @@ export const T = {
   DWARF_FORGE: 106, BRAZIER: 107, BARREL: 108,
   // ── 地標（每種發現地點的一次性發現物：靠近互動 → 獎勵 + 線索） ──
   CAIRN: 109, RELIC_PACK: 110, GUARDIAN_STATUE: 111, GEODE: 112, SPORE_TOTEM: 113, HONEY_JAR: 114,
+  // ── 村落旗桿：3×3 的大村旗（布，不擋路）、桿頂的燈（夜裡遠遠看得到） ──
+  FLAG_CLOTH: 115, FLAG_LAMP: 116,
 } as const;
 export type TileId = (typeof T)[keyof typeof T];
 
@@ -250,6 +252,8 @@ export const TILES: readonly TileDef[] = [
   decor(T.GEODE, 'geode', n('巨晶之心', 'Heart Geode'), 'floor', null, '#94c8ee', { hardness: 1, minTier: TIER_UNBREAKABLE, light: 1 }),
   decor(T.SPORE_TOTEM, 'spore_totem', n('菇之圖騰', 'Spore Totem'), 'floor', null, '#4aaeb0', { hardness: 1, minTier: TIER_UNBREAKABLE, light: 0.85 }),
   decor(T.HONEY_JAR, 'honey_jar', n('蜂王蜜罐', "Queen's Honeypot"), 'floor', null, '#ffa93a', { hardness: 1, minTier: TIER_UNBREAKABLE, light: 0.45 }),
+  decor(T.FLAG_CLOTH, 'flag_cloth', n('村旗', 'Village Flag'), 'none', null, '#c8344c', { hardness: 1, minTier: TIER_UNBREAKABLE }),
+  decor(T.FLAG_LAMP, 'flag_lamp', n('旗桿燈', 'Flagpole Lamp'), 'floor', null, '#ffd86a', { hardness: 1, minTier: TIER_UNBREAKABLE, light: 1 }),
 ];
 
 export const WALLS: readonly WallDef[] = [
@@ -315,6 +319,7 @@ export const LIGHT_HUE: Partial<Record<number, readonly [number, number, number]
   [T.GEODE]: [0.55, 0.85, 1],
   [T.SPORE_TOTEM]: [0.3, 0.6, 1],
   [T.HONEY_JAR]: [1, 0.72, 0.3],
+  [T.FLAG_LAMP]: [1, 0.82, 0.5],
 };
 export const CRYSTAL_ALT_HUE: readonly [number, number, number] = [0.82, 0.5, 1];
 /** 發光 RGB 查表：i*3 + 通道 */
@@ -371,7 +376,7 @@ export function floorOk(id: number, below: number): boolean {
   if (id === T.CANDLE || id === T.TABLE_LAMP) return below === T.BOOKSHELF || below === T.PLATFORM || below === T.TABLE;
   if (id === T.POTTED_PLANT) return below === T.PLATFORM || below === T.TABLE || below === T.BOOKSHELF;
   if (id === T.FENCE) return below === T.FENCE || below === T.PLATFORM;
-  if (id === T.FLAGPOLE) return below === T.FLAGPOLE;
+  if (id === T.FLAGPOLE || id === T.FLAG_LAMP) return below === T.FLAGPOLE;
   if (id === T.ORE_CART) return below === T.RAIL;
   if (id === T.BARREL) return below === T.BARREL || below === T.PLATFORM;
   if (id === T.BONES || id === T.POT || id === T.CHEST) return below === T.PLATFORM;

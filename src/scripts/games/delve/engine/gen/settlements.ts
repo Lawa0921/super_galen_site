@@ -34,6 +34,8 @@ export interface HallInfo {
   y0: number; floorY: number;
   forge: { x: number; y: number };
   cart: { x: number; y: number };
+  /** 兩側鑿出的軌道隧道（欄範圍，含；列 = floorY-5 .. floorY） */
+  tunnels: { x0: number; x1: number }[];
 }
 
 export interface SettleGenCtx {
@@ -56,11 +58,20 @@ export interface SettleGenCtx {
 const overlap = (a: GenRect, b: GenRect, m = 0): boolean =>
   a.x - m < b.x + b.w && a.x + a.w + m > b.x && a.y - m < b.y + b.h && a.y + a.h + m > b.y;
 
-/** 世界大小 → 村落數目標（預設 4200 欄 → 2～4） */
+/** 世界大小 → 村落數目標（預設 4200 欄 → 多半 3 座，有時 2 或 4 座） */
 export function villageTarget(width: number, rng: Rng): number {
-  if (width >= 3000) return rng.int(2, 5);
+  if (width >= 3000) { const r = rng.next(); return r < 0.15 ? 2 : r < 0.75 ? 3 : 4; }
   return width >= 1000 ? 1 : 0;
 }
+/** 村落選址條件：一輪比一輪寬鬆（地面起伏上限、彼此間距、兩側緩坡也要是森林），最後一輪逐欄掃描 */
+const VILLAGE_PASSES: readonly { rough: number; gap: number; edgeForest: boolean; tries: number }[] = [
+  { rough: 10, gap: 0.1, edgeForest: true, tries: 260 },
+  { rough: 18, gap: 0.075, edgeForest: true, tries: 260 },
+  { rough: 26, gap: 0.06, edgeForest: false, tries: 260 },
+  { rough: 30, gap: 0.05, edgeForest: false, tries: 0 },
+];
+/** 村落最少幾座（世界夠大時保證） */
+export const MIN_VILLAGES = 2;
 export function hallTarget(width: number, rng: Rng): number {
   if (width >= 3000) return rng.chance(3) ? 1 : 2;
   return width >= 1000 ? 1 : 0;
@@ -76,20 +87,41 @@ export function placeVillages(c: SettleGenCtx): { villages: VillageInfo[]; rects
   const putWall = (x: number, y: number, t: number): void => { if (x >= 0 && y >= 0 && x < width && y < height) wall[y * WW + x] = t; };
   const solid = (x: number, y: number): boolean => x < 0 || y < 0 || x >= width || y >= height || SOLID_LUT[fg[y * WW + x]] === 1;
   const minSpawn = Math.max(160, Math.floor(width * 0.07));
-  for (let tries = 0; tries < 500 && villages.length < want; tries++) {
-    const vw = rng.int(58, 74);
-    const x0 = rng.int(c.beachW + 30, Math.max(c.beachW + 31, width - c.beachW - 30 - vw)), x1 = x0 + vw - 1;
+  const need = width >= 3000 ? Math.max(MIN_VILLAGES, want) : want;
+  // 候選位置：前三輪隨機抽，最後一輪（還不夠 MIN_VILLAGES 才跑）每 9 欄掃一次
+  const cands: { x0: number; vw: number; p: number }[] = [];
+  let pass = 0, scanX = c.beachW + 30, tries = 0;
+  const next = (): { x0: number; vw: number; p: number } | null => {
+    for (;;) {
+      if (villages.length >= need || pass >= VILLAGE_PASSES.length) return null;
+      const P = VILLAGE_PASSES[pass];
+      // 最後一輪（逐欄掃描）只用來保證最少座數
+      if (pass === VILLAGE_PASSES.length - 1 && villages.length >= MIN_VILLAGES) return null;
+      if (P.tries > 0) {
+        if (tries++ >= P.tries) { pass++; tries = 0; continue; }
+        return { x0: rng.int(c.beachW + 30, Math.max(c.beachW + 31, width - c.beachW - 30 - 74)), vw: rng.int(58, 74), p: pass };
+      }
+      if (scanX > width - c.beachW - 30 - 66) { pass++; continue; }
+      const x0 = scanX; scanX += 9;
+      return { x0, vw: 66, p: pass };
+    }
+  };
+  void cands;
+  for (let cand = next(); cand; cand = next()) {
+    const P = VILLAGE_PASSES[cand.p];
+    const vw = cand.vw, x0 = cand.x0, x1 = x0 + vw - 1;
     const cx = (x0 + x1) >> 1;
     if (Math.abs(cx - c.spawnX) < minSpawn + vw / 2) continue;
     if (x1 + 90 > c.dz.x0 && x0 - 90 < c.dz.x1) continue;
-    if (villages.some((v) => Math.abs(((v.x0 + v.x1) >> 1) - cx) < Math.max(200, Math.floor(width * 0.1)))) continue;
+    if (villages.some((v) => Math.abs(((v.x0 + v.x1) >> 1) - cx) < Math.max(150, Math.floor(width * P.gap)))) continue;
     let ok = true, lo = height, hi = 0;
     for (let x = x0 - 8; x <= x1 + 8 && ok; x++) {
-      if (x < 0 || x >= width || c.colBiome[x] !== BIOME.FOREST || c.wetCols?.(x)) { ok = false; break; }
+      const inside = x >= x0 && x <= x1;
+      if (x < 0 || x >= width || c.wetCols?.(x) || ((inside || P.edgeForest) && c.colBiome[x] !== BIOME.FOREST)) { ok = false; break; }
       const s = c.surface[x];
-      if (x >= x0 && x <= x1) { lo = Math.min(lo, s); hi = Math.max(hi, s); }
+      if (inside) { lo = Math.min(lo, s); hi = Math.max(hi, s); }
     }
-    if (!ok || hi - lo > 10) continue;
+    if (!ok || hi - lo > P.rough) continue;
     // 地面：取中位數（整平時削高補低）
     const col: number[] = [];
     for (let x = x0; x <= x1; x++) col.push(c.surface[x]);
@@ -104,8 +136,10 @@ export function placeVillages(c: SettleGenCtx): { villages: VillageInfo[]; rects
 
     // ── 整平（含兩側 9 欄的緩坡） ──
     const shape = (x: number, top: number): void => {
-      for (let y = Math.max(1, ground - 28); y < top; y++) { put(x, y, T.AIR); putWall(x, y, W.NONE); w.liquid[y * WW + x] = 0; }
-      for (let y = top; y < top + 6; y++) if (!solid(x, y)) put(x, y, T.DIRT);
+      const s0 = c.surface[x];
+      for (let y = Math.max(1, Math.min(ground, top) - 28); y < top; y++) { put(x, y, T.AIR); putWall(x, y, W.NONE); w.liquid[y * WW + x] = 0; }
+      // 補低：一路填到原本的地表下面（窪地整平後底下不會是空的）
+      for (let y = top; y < Math.max(top + 6, s0 + 3); y++) if (!solid(x, y)) put(x, y, T.DIRT);
       put(x, top, T.GRASS);
       c.surface[x] = top; w.surface[x] = top;
     };
@@ -148,8 +182,13 @@ export function placeVillages(c: SettleGenCtx): { villages: VillageInfo[]; rects
     put(bx - 3, ground - 1, T.BARREL);
     put(bx - 4, ground - 1, T.BARREL);
     put(bx - 4, ground - 2, T.BARREL);
-    // ── 旗桿（12 格高，遠遠就看得到）+ 短圍欄 ──
-    for (const fx of [x0 + 1, x1 - 1]) for (let k = 1; k <= 12; k++) put(fx, ground - k, T.FLAGPOLE);
+    // ── 旗桿（14 格高 + 桿頂燈）+ 3×3 的大村旗（往村外飄）+ 短圍欄：遠遠就看得到，晚上桿頂的燈也亮著 ──
+    for (const [fx, dir] of [[x0 + 1, -1], [x1 - 1, 1]] as const) {
+      for (let k = 1; k <= 13; k++) put(fx, ground - k, T.FLAGPOLE);
+      put(fx, ground - 14, T.FLAG_LAMP);
+      const cx = dir < 0 ? fx - 3 : fx + 1;
+      for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 3; dx++) put(cx + dx, ground - 13 + dy, T.FLAG_CLOTH);
+    }
     for (const [a, b] of [[x0 + 3, x0 + 6], [x1 - 6, x1 - 3]] as const) for (let x = a; x <= b; x++) if (fg[(ground - 1) * WW + x] === T.AIR) put(x, ground - 1, T.FENCE);
     villages.push({ x0, x1, ground, houses, board: { x: bx, y: ground - 1 }, style });
     rects.push({ x: x0 - 9, y: ground - 24, w: vw + 18, h: 30 });
@@ -233,12 +272,14 @@ export function placeDwarfHalls(c: SettleGenCtx): { halls: HallInfo[]; rects: Ge
     for (let x = x0; x <= x1; x++) for (let y = y0 + archAt(x); y < floorY; y++) put(x, y, T.AIR);
     // ── 軌道（橫貫大廳）+ 兩側鑿出的軌道隧道（碰到洞穴就停） ──
     for (let x = x0; x <= x1; x++) put(x, floorY - 1, T.RAIL);
+    const tunnels: { x0: number; x1: number }[] = [];
     for (const dir of [-1, 1] as const) {
       const sx = dir < 0 ? x0 - 3 : x1 + 3;
-      let open = 0;
+      let open = 0, last = sx;
       for (let k = 0; k < 70; k++) {
         const x = sx + dir * k;
         if (x < 4 || x >= width - 4) break;
+        last = x;
         // 已經接到天然洞穴（隧道口有一段都是空氣）→ 停
         let air = 0;
         for (let y = floorY - 4; y < floorY; y++) if (get(x, y) === T.AIR) air++;
@@ -247,8 +288,10 @@ export function placeDwarfHalls(c: SettleGenCtx): { halls: HallInfo[]; rects: Ge
         if (SOLID_LUT[get(x, floorY)] !== 1) put(x, floorY, T.DWARF_BRICK);
         put(x, floorY - 1, T.RAIL);
         put(x, floorY - 5, SOLID_LUT[get(x, floorY - 5)] === 1 ? get(x, floorY - 5) : T.DWARF_BRICK);
-        if (k % 8 === 4) { put(x, floorY - 4, T.LANTERN); }
+        // 隧道裡每 5 格一支火把（貼著天花板）：遠遠就看得到一條亮著的坑道
+        if (k % 5 === 2) put(x, floorY - 4, T.TORCH);
       }
+      tunnels.push({ x0: Math.min(sx, last), x1: Math.max(sx, last) });
       // 隧道口的門框
       for (let y = floorY - 4; y < floorY; y++) { put(dir < 0 ? x0 - 1 : x1 + 1, y, T.AIR); put(dir < 0 ? x0 - 2 : x1 + 2, y, T.AIR); }
       put(dir < 0 ? x0 - 1 : x1 + 1, floorY - 1, T.RAIL); put(dir < 0 ? x0 - 2 : x1 + 2, floorY - 1, T.RAIL);
@@ -271,11 +314,14 @@ export function placeDwarfHalls(c: SettleGenCtx): { halls: HallInfo[]; rects: Ge
     }
     // 火盆：放在大廳兩端的石台（地板上加一層鑿石磚台階）
     for (const bx of [x0 + 1, x1 - 1]) { put(bx, fy, T.DWARF_BRICK); put(bx, fy - 1, T.BRAZIER); }
+    // 後牆火把（每 6 格，鑿刻石牆上）+ 入口門框上的旗幟：大廳在預設縮放下也夠亮、入口一眼認得出來
+    for (let x = x0 + 3; x < x1 - 2; x += 6) if (fg[(fy - 3) * WW + x] === T.AIR) put(x, fy - 3, T.TORCH);
+    for (const dx of [x0 - 2, x1 + 2]) { put(dx, floorY - 4, T.BANNER); put(dx, floorY - 3, T.BANNER); }
     // 長桌 + 長椅（軌道之上一格高的平台當「宴會桌」：平台站得上去、不擋路）
     const tx = cx - 4;
     for (let x = tx; x < tx + 8; x++) put(x, fy - 3, T.PLATFORM);
     put(tx + 1, fy - 4, T.CANDLE); put(tx + 6, fy - 4, T.CANDLE);
-    halls.push({ x0, x1, y0, floorY, forge, cart });
+    halls.push({ x0, x1, y0, floorY, forge, cart, tunnels });
     rects.push({ x: x0 - 3, y: y0 - 4, w: hw + 6, h: ih + 8 });
   }
   return { halls, rects };

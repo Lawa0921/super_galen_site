@@ -46,6 +46,8 @@ export interface LiquidGenCtx {
   avoid: (x: number) => boolean;
   /** 已有的結構矩形（蜂巢 / 綠洲避開；呼叫當下的清單） */
   occupied: () => readonly { x: number; y: number; w: number; h: number }[];
+  /** 液體絕對不能進去的格（村落 / 矮人地廳 / 地廳隧道 + 緩衝區）：注水範圍碰到就整個放棄 */
+  protect?: (x: number, y: number) => boolean;
 }
 
 const BIOME_DESERT = 1, BIOME_SNOW = 2, BIOME_JUNGLE = 3;
@@ -90,7 +92,7 @@ export function createLiquidGen(ctx: LiquidGenCtx): { surface(): void; deep(): {
     for (let k = 0; k < out.length && ok; k++) {
       const i = out[k], x = i % WW, y = (i - x) / WW;
       const id = fg[i];
-      if (FORBID[id] || FORBID_WALL[wall[i]] || (!allowDecor && id !== T.AIR)) { ok = false; break; }
+      if (FORBID[id] || FORBID_WALL[wall[i]] || (!allowDecor && id !== T.AIR) || ctx.protect?.(x, y)) { ok = false; break; }
       if (x <= 1 || x >= width - 2 || y >= height - 2) { ok = false; break; }
       const nb = [i - 1, i + 1, i + WW, i - WW];
       for (let q = 0; q < 4; q++) {
