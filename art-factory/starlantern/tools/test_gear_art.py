@@ -214,6 +214,36 @@ def test_region_limited_and_set_first_name_the_eighteen_silhouettes():
     assert len(G.silhouette_ids()) == 18 and G.silhouette_ids() == [f'gear-{k}-silhouette' for k in keys]
 
 
+def test_review_page_lists_every_part_of_the_batch_and_copies_only_existing_files(factory, monkeypatch):
+    import re
+    import review_gear as R
+    monkeypatch.setattr(R, 'OUT', factory / 'review')
+    reg = A.Registry(factory / 'registry.json')
+    for p in ('iron-sword', 'blaze-heart-sword', 'set-blaze-weapon'):     # some parts have candidates, the rest do not
+        reg.set(f'gear-{p}', status='qa_passed', batch='gear-5d-sample', final=_png(factory / f'work/gear-{p}.png'),
+                source={'raw': 'r.png', 'cell': p}, chosen_attempt='a1')
+        reg.set(f'gear-{p}-large', status='qa_passed', batch='gear-5d-sample', final=_png(factory / f'work/gear-{p}-large.png', (64, 64)),
+                source={'raw': 'r.png', 'cell': p}, chosen_attempt='a1')
+    reg.set('ui-rarity-rare', status='qa_passed', batch='gear-5d-sample', final=_png(factory / 'work/ui-rarity-rare.png', (16, 16)))
+    reg.set('icon-essence-rare', status='qa_passed', batch='gear-5d-sample', final=str(factory / 'work/missing.png'))   # final gone
+    _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a1.png')
+    before = (factory / 'registry.json').read_bytes()
+
+    page_path = R.main('sample')
+    page = page_path.read_text(encoding='utf-8')
+    assert page_path == factory / 'review/index.html'
+    for j in G.jobs():
+        for p in j['parts']:
+            if p is None: continue
+            assert page.count(f'data-part="{p}"') == (1 if j['batch'] == 'sample' else 0), p
+    srcs = re.findall(r'src="([^"]*)"', page)
+    assert srcs and all(s.startswith('img/') and (factory / 'review' / s).is_file() for s in srcs), [s for s in srcs if not (factory / 'review' / s).is_file()]
+    assert 'qa_passed，尚未核准、未發布' in page
+    assert 'img/sil-blaze-heart-sword.png' in page                  # silhouette preview made in the page, not the registry
+    assert (factory / 'registry.json').read_bytes() == before        # read-only for the registry
+    assert 'gear-blaze-heart-sword-silhouette' not in A.Registry(factory / 'registry.json').data['assets']
+
+
 def test_committed_gear_plan_json_is_current(factory):
     G.plan_json([])
     fresh = json.loads((factory / 'gear-plan.json').read_text(encoding='utf-8'))
