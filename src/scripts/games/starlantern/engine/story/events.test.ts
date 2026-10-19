@@ -405,15 +405,22 @@ describe('town banter', () => {
     return s;
   };
 
-  it('the three sample banters are the pairs, sorted, and none is gated yet', () => {
-    expect(BANTER_PAIRS).toEqual(['liz-scarlet', 'noel-rin', 'safira-sylvie']);
+  it('the pairs are sorted and never the hero; the three sample banters keep their ids and stay ungated (B2 adds the rest)', () => {
+    expect(BANTER_PAIRS).toEqual(expect.arrayContaining(['liz-scarlet', 'noel-rin', 'safira-sylvie']));
+    expect(BANTER_PAIRS).toEqual([...BANTER_PAIRS].sort());
     for (const p of BANTER_PAIRS) {
       const [a, b] = p.split('-');
       expect(a < b, p).toBe(true);
       expect(a).not.toBe('hero');
       expect(b).not.toBe('hero');
     }
-    expect(BANTER_GATE).toEqual({});
+    // B2: gates are only on banters that exist, never on a sample, and a full gate names one of the two
+    for (const f of ['banter:liz-scarlet:1', 'banter:noel-rin:1', 'banter:safira-sylvie:1'] as SceneId[]) expect(BANTER_GATE[f], f).toBeUndefined();
+    for (const [id, g] of Object.entries(BANTER_GATE)) {
+      const [, pair, n] = id.split(':');
+      expect(Number(n), id).toBeLessThanOrEqual(BANTER_COUNT[pair as BanterPair] ?? 0);
+      if (g?.full) expect(pair.split('-'), id).toContain(g.full);
+    }
   });
 
   it('a banter waits until both of its two are met', () => {

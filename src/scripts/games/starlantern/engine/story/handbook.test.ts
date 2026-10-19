@@ -5,13 +5,17 @@ import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { chainLength, CHAINS } from '../../data/story/chains';
 import { TOWN_FRAGMENTS } from '../../data/story/fragments';
-import { CHAT_COUNT, HOME_OWNERS, SCENE_IDS, STAGES, homeScene, memScene, sceneKind, type SceneId } from '../../data/story/scenes';
+import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, SCENE_IDS, banterScene, STAGES, homeScene, memScene, sceneKind, type SceneId } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { handbook } from './handbook';
 import { arrivalScenes, onReturn, sceneDone } from './events';
+
+/** Every banter Rin is half of, in the pairs' fixed order: what her people page lists after her chats (B1, B2). */
+const rinBanters = (): SceneId[] => BANTER_PAIRS.filter((p) => p.split('-').includes('rin'))
+  .flatMap((p) => Array.from({ length: BANTER_COUNT[p] ?? 0 }, (_, i) => banterScene(p, i + 1)));
 
 const withMemories = (s: GameState, id: CharacterId, n: number): GameState => {
   if (!s.party.recruited.includes(id)) s.party = meet(s.party, id, 1);
@@ -200,7 +204,7 @@ describe("the adventurer's handbook", () => {
     // Task 10b: the inn night and the first return are the two of them before her story; they sit on her page, in story order.
     expect(rin.scenes.map((e) => [e.scene, e.fresh])).toEqual([
       ['prologue-inn', false], ['first-return', true], ['rin-reveal', true], ['bellkeeper-arrives', false], ['chat:rin:1', false], ['chat:rin:2', true], ['chat:rin:3', false], ['chat:rin:4', false],
-      ['banter:noel-rin:1', false],   // B1: her banters follow her chats
+      ...rinBanters().map((id) => [id, false]),   // B1: her banters follow her chats, in the pairs' order (B2: all of them)
     ]);
     expect(h.town.find((t) => t.id === 'orik')!.scene!.fresh).toBe(true);
     expect(h.town.find((t) => t.id === 'marta')!.scene!.fresh).toBe(false);
@@ -239,7 +243,8 @@ describe("the adventurer's handbook", () => {
     expect(scenesOf(s, 'noel')).toEqual([]);   // nobody else's page
     // everyone's banters, in the fixed pair order
     const all = everything();
-    expect(scenesOf(all, 'rin').filter((x) => x.startsWith('banter:'))).toEqual(['banter:noel-rin:1']);
+    expect(scenesOf(all, 'rin').filter((x) => x.startsWith('banter:'))).toEqual(rinBanters());
+    expect(rinBanters()).toContain('banter:noel-rin:1');
     expect(scenesOf(all, 'hero').filter((x) => x.startsWith('banter:'))).toEqual([]);   // Lorne listens
   });
 

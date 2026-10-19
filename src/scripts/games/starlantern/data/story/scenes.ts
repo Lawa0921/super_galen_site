@@ -42,7 +42,12 @@ export const CHAT_COUNT: Record<CharacterId, number> = {
  * `BANTER_PAIRS` is the fixed order that breaks ties when the least-heard pair is picked (`nextBanter`).
  */
 export type BanterPair = `${CharacterId}-${CharacterId}`;
-export const BANTER_COUNT: Partial<Record<BanterPair, number>> = { 'liz-scarlet': 1, 'noel-rin': 1, 'safira-sylvie': 1 };
+export const BANTER_COUNT: Partial<Record<BanterPair, number>> = {
+  // B1's three fixtures, then B2 (lore ledger I-158): ids are frozen once shipped, so a pair only ever grows at the end.
+  'liz-scarlet': 2, 'noel-rin': 2, 'safira-sylvie': 2,
+  'bobby-chizuru': 1, 'bobby-liz': 1, 'bobby-noel': 1, 'bobby-sylvie': 1, 'chizuru-rin': 1, 'chizuru-safira': 1, 'chizuru-scarlet': 1,
+  'liz-noel': 1, 'liz-selene': 1, 'noel-selene': 2, 'rin-scarlet': 1, 'rin-sylvie': 1, 'safira-scarlet': 1, 'scarlet-selene': 1, 'selene-sylvie': 1,
+};
 export const BANTER_PAIRS: BanterPair[] = (Object.keys(BANTER_COUNT) as BanterPair[]).sort();
 export const banterScene = (pair: BanterPair, n: number): SceneId => `banter:${pair}:${n}`;
 /** The two of a banter scene, from its id. */
@@ -118,7 +123,13 @@ export const CHAT_GATE: Partial<Record<SceneId, { stage?: Stage; oath?: true }>>
  * Every entry needs a reason in the lore ledger.
  */
 export interface BanterGate { stage?: Stage; oath?: true; full?: CharacterId }
-export const BANTER_GATE: Partial<Record<SceneId, BanterGate>> = {};
+export const BANTER_GATE: Partial<Record<SceneId, BanterGate>> = {
+  // B2 (lore ledger §5): later chapters of a pair. A stage for time spent together, Rin's choice for the Rin who teases back,
+  // a full memory for the one who has changed.
+  'banter:liz-noel:1': { stage: 'act3' }, 'banter:safira-sylvie:2': { stage: 'act3' },
+  'banter:noel-rin:2': { oath: true }, 'banter:rin-sylvie:1': { oath: true },
+  'banter:liz-scarlet:2': { full: 'scarlet' }, 'banter:noel-selene:2': { full: 'selene' },
+};
 
 /**
  * B1 ruling (fix round 1): no light banter after a heavy arrival. A return whose arrival holds one of these plays its chat but

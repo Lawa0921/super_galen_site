@@ -2212,3 +2212,65 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
     expect(ls.filter((l) => l.who === 'scarlet').map((l) => l.text).join('')).toContain('回報');
   });
 });
+
+describe('B2: what they say to each other (the banter content)', () => {
+  const ids = (): SceneId[] => SCENE_IDS.filter((id) => sceneKind(id) === 'banter');
+  const twoOf = (id: SceneId): string[] => id.split(':')[1].split('-');
+  const FIXTURES: SceneId[] = ['banter:liz-scarlet:1', 'banter:noel-rin:1', 'banter:safira-sylvie:1'];
+
+  it('sixteen new banters at least, nineteen in all, over many pairs; every companion and Rin is in three or more', () => {
+    for (const f of FIXTURES) expect(ids(), f).toContain(f);   // shipped ids are frozen (B1)
+    expect(ids().filter((id) => !FIXTURES.includes(id)).length).toBeGreaterThanOrEqual(16);
+    expect(ids().length).toBeGreaterThanOrEqual(19);
+    expect(new Set(ids().map((id) => id.split(':')[1])).size).toBeGreaterThanOrEqual(15);
+    for (const c of [...COMPANIONS, 'rin']) expect(ids().filter((id) => twoOf(id).includes(c)).length, c).toBeGreaterThanOrEqual(3);
+  });
+
+  it('relationships move: some banters wait for a stage, some for Rin\'s choice, some for a full memory', () => {
+    const gates = Object.entries(BANTER_GATE);
+    expect(gates.some(([, g]) => g?.stage)).toBe(true);
+    expect(gates.some(([, g]) => g?.oath)).toBe(true);
+    expect(gates.some(([, g]) => g?.full)).toBe(true);
+    for (const [id, g] of gates) {
+      expect(ids(), id).toContain(id);
+      if (g?.full) expect(twoOf(id as SceneId), id).toContain(g.full);
+    }
+    // the fixtures keep playing as they did: no gate was put on them
+    for (const f of FIXTURES) expect(BANTER_GATE[f], f).toBeUndefined();
+  });
+
+  it('after her choice Rin teases Noel back: the second banter of the two waits for it, and she speaks like the Rin who chose', () => {
+    expect(BANTER_GATE['banter:noel-rin:2']).toEqual({ oath: true });
+    const rin = STORY.scenes['banter:noel-rin:2'].lines.filter((l) => l.who === 'rin');
+    expect(rin.length).toBeGreaterThan(0);
+    expect(rin.some((l) => /[呢吧]|我們|洛恩/.test(l.text))).toBe(true);
+    // and every other Rin banter that waits for nothing keeps her from before (story.test B1 checks each reading)
+    for (const id of ids().filter((x) => twoOf(x).includes('rin') && !BANTER_GATE[x]?.oath)) {
+      for (const l of STORY.scenes[id].lines.filter((x) => x.who === 'rin')) expect(l.text, id).not.toMatch(/洛恩|我們|[呢吧啦喔囉嘛耶]|！|……|還有/);
+    }
+  });
+
+  it('light text: Scarlet never swears, Sylvie never says 「林子」, in any banter line or the narration around them', () => {
+    for (const id of ids()) {
+      const two = twoOf(id);
+      for (const l of STORY.scenes[id].lines) {
+        if (l.who === 'scarlet' || (two.includes('scarlet') && l.who === 'narrator')) expect(l.text, id).not.toMatch(/起誓|誓言/);
+        if (l.who === 'sylvie' || (two.includes('sylvie') && l.who === 'narrator')) expect(l.text, id).not.toMatch(/林子/);
+      }
+    }
+  });
+
+  it('no line is said twice across the banters, and Lorne never counts (his counting joke is used up)', () => {
+    const all = ids().flatMap((id) => STORY.scenes[id].lines.map((l) => l.text));
+    expect(new Set(all).size).toBe(all.length);
+    const COUNT = /第[一二三四五六七八九十]+[支塊遍道次口個隻]|[一二三四五六七八九十]+遍了/;
+    for (const id of ids()) for (const l of STORY.scenes[id].lines.filter((x) => x.who === 'hero')) expect(l.text, id).not.toMatch(COUNT);
+  });
+
+  it('each banter is two voices: both speak, and the last line is one of the two or the narration (a button, not Lorne)', () => {
+    for (const id of ids()) {
+      const lines = linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: [], oath: true });
+      expect(lines.at(-1)!.who, id).not.toBe('hero');
+    }
+  });
+});
