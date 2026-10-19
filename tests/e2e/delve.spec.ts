@@ -1517,9 +1517,14 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     const blurb = wr.locator('.delve-wr-blurb');
     const b0 = await blurb.textContent();
     expect((b0 ?? '').length).toBeGreaterThan(0);
+    // 體型組是偶數列、沒有補位說明：「男女都能穿…」改成種族說明的第二句（換種族也一直在）
+    expect(b0).toContain('男女都能穿任何髮型、服裝與裝備。');
+    await expect(wr.locator('.delve-wr-note', { hasText: '男女都能穿' })).toHaveCount(0);
     for (let i = 0; i < 3; i++) await row.locator('[data-dir="1"]').click();
     await expect(row).toHaveAttribute('data-value', '3');
     expect(await blurb.textContent()).not.toBe(b0);
+    await expect(blurb).toContainText('貓族');
+    await expect(blurb).toContainText('男女都能穿任何髮型、服裝與裝備。');
     await page.click('#delve-wr-done');
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('delve.appearance') ?? '{}'));
     expect(saved.race).toBe(3);

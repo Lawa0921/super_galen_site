@@ -16,6 +16,8 @@ import type { SoundManager } from '../audio/SoundManager';
 /** 預覽輪播：每段 [動畫, 播幾輪] */
 const REEL: [SheetAnim, number][] = [['idle', 2], ['walk', 3], ['jump', 2], ['climb', 3], ['hang', 2], ['mantle', 2], ['blink', 1]];
 const FPS = 10;
+/** 種族說明的第二句：體型不綁髮型 / 服裝 / 裝備 */
+const UNISEX_NOTE = '男女都能穿任何髮型、服裝與裝備。';
 /** 預覽放大倍率（依 CSS 尺寸自動挑整數倍） */
 const ZOOM = 1;
 const PAD = 2;
@@ -102,7 +104,7 @@ export class Wardrobe {
       if (group && n % 2 === 1) {
         const note = document.createElement('p');
         note.className = 'delve-wr-note';
-        note.textContent = group === 'outfit' ? '換服裝時主色 / 副色會換成那套的預設，之後可以再調。' : group === 'body' ? '男女都能穿任何髮型、服裝與裝備。' : '左右鍵切換選項。';
+        note.textContent = group === 'outfit' ? '換服裝時主色 / 副色會換成那套的預設，之後可以再調。' : '左右鍵切換選項。';
         list.appendChild(note);
       }
     };
@@ -146,7 +148,7 @@ export class Wardrobe {
       list.appendChild(row);
       this.rows.push({ f, el: row, val: name, sw });
       if (f.key === 'race') {
-        // 種族說明：跟著目前選的種族換（體型 + 種族兩列之後，整排寬）
+        // 種族說明：跟著目前選的種族換（體型 + 種族兩列之後，整排寬）；第二句是不分男女的穿搭說明（體型組是偶數列，沒有補位說明可放）
         const b = document.createElement('p');
         b.className = 'delve-wr-blurb';
         b.setAttribute('aria-live', 'polite');
@@ -189,7 +191,7 @@ export class Wardrobe {
         }
       }
     }
-    if (this.blurb) this.blurb.textContent = RACE_BLURB[raceId(a)];
+    if (this.blurb) this.blurb.textContent = `${RACE_BLURB[raceId(a)]}　${UNISEX_NOTE}`;
     this.panel.dataset.look = dollKey(plainLook(a));
     this.draw();
   }
