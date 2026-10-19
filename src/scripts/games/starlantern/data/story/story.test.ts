@@ -176,13 +176,6 @@ describe('story data', () => {
     for (const id of CHARACTER_IDS) expect(STORY.people[id].length).toBe(3);
   });
 
-  it('town lines and greetings start from the current copy (as literals, not references)', () => {
-    expect(STORY.townLines.prologue.slice(0, 3)).toEqual(['暮霧又濃了些。冒險者們，今天要往哪裡去？', '聽說迷宮深處有星燈的光。', '補給品記得在出發前備齊。']);
-    expect(STORY.greet.guild.act1).toEqual(['歡迎回來，要整頓隊伍嗎？', '今天也請平安歸來。']);
-    expect(STORY.greet.forge.after).toEqual(['爐火正旺。要拆、要打，還是要重新鍛一回？', '帶素材來了嗎？好鐵配好手藝。']);
-    expect(STORY.greet.guild.act1).not.toBe(STORY.greet.guild.act2);
-  });
-
   it('shards deepen with depth', () => {
     for (const r of [0, 0.5, 0.99]) expect(shardGrade(1, r)).toBe('dim');
     expect(shardGrade(40, 0)).toBe('vivid');
@@ -271,6 +264,7 @@ const WRITTEN: string[] = [
   ...(['liz', 'scarlet'] as const).flatMap((c) => [`scenes.mem:${c}:`, `scenes.chat:${c}:`, `people.${c}.`, `meet.${c}.`]), 'survived',   // Task 10
   'scenes.prologue-inn.', 'scenes.first-return.',   // Task 10b: why the two of them go down together
   'scenes.town:', 'town.', 'merchant.', 'bellkeeper.',   // Task 11: the townsfolk, the merchant and the bellkeeper
+  'townLines.', 'greet.',   // Task 12: the town's days, stage by stage
 ];
 const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
 const isWritten = (key: string): boolean => writtenBy(WRITTEN, key);
@@ -1346,5 +1340,68 @@ describe('Task 11: the townsfolk, the merchant and the bellkeeper', () => {
     for (const t of [STORY.merchant.lost, STORY.merchant.found, ...STORY.bellkeeper.oath, ...STORY.bellkeeper.after]) expect(t).not.toMatch(/^「?[^。！？]{0,6}？/);
     const reunion = STORY.scenes['mem:noel:5'].lines.find((l) => l.who === 'merchant')!.text;
     expect(STORY.merchant.found).not.toBe(reunion);
+  });
+});
+
+describe("Task 12: the town's days, stage by stage", () => {
+  const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'forge'] as const;
+  const before = STAGES.filter((s) => s !== 'after');
+  const AVOID = /視線|移開|避開|別開|不看|別看|看路|看著地|低著頭|不抬頭/;
+
+  it('each stage sounds different', () => {
+    for (let i = 1; i < STAGES.length; i++) {
+      const prev = new Set(STORY.townLines[STAGES[i - 1]]);
+      for (const t of STORY.townLines[STAGES[i]]) expect(prev.has(t), `${STAGES[i]}: ${t}`).toBe(false);
+      for (const f of FACILITIES) {
+        const g = new Set(STORY.greet[f][STAGES[i - 1]]);
+        for (const t of STORY.greet[f][STAGES[i]]) expect(g.has(t), `${f} ${STAGES[i]}: ${t}`).toBe(false);
+      }
+    }
+    expect(STORY.greet.guild.act1).not.toBe(STORY.greet.guild.act2);   // literals, not one shared array
+  });
+
+  it("act 2 shows that Lorne has noticed Rin, without her looking away yet (I-57, I-54)", () => {
+    const act2 = STORY.townLines.act2;
+    expect(act2.filter((t) => /凜|那孩子|那丫頭/.test(t)).length).toBeGreaterThanOrEqual(2);
+    expect(act2.some((t) => /洛恩|小子|你/.test(t) && /凜|那孩子|那丫頭/.test(t))).toBe(true);
+    for (const t of [...act2, ...FACILITIES.flatMap((f) => STORY.greet[f].act2)]) expect(t).not.toMatch(AVOID);
+    for (const st of ['prologue', 'act1'] as Stage[]) {
+      for (const t of [...STORY.townLines[st], ...FACILITIES.flatMap((f) => STORY.greet[f][st])]) expect(t, st).not.toMatch(AVOID);
+    }
+  });
+
+  it("before the after stage, nothing tells Rin's choice, the society's end, or who Lorne is", () => {
+    for (const st of before) {
+      for (const t of [...STORY.townLines[st], ...FACILITIES.flatMap((f) => STORY.greet[f][st])]) {
+        expect(t, st).not.toMatch(/解散|散了|選擇|刺客|鐘守|燈鑰|殺的一直是|晚一次/);
+        expect(t, st).not.toMatch(/守燈人/);   // the legend may be told in act 4, never named as him
+      }
+    }
+    // Rin may choose during act 4: the act-4 town says nothing that her choice would undo
+    for (const t of STORY.townLines.act4) expect(t).not.toMatch(AVOID);
+  });
+
+  it('the guild crosses off the debt early (I-84)', () => {
+    const early = [...STORY.greet.guild.act1, ...STORY.greet.guild.act2, ...STORY.townLines.act1, ...STORY.townLines.act2];
+    expect(early.some((t) => /藥錢|房錢/.test(t) && /劃掉/.test(t))).toBe(true);
+    for (const st of STAGES) for (const t of [...STORY.townLines[st], ...STORY.greet.guild[st]]) expect(t, st).not.toMatch(/欠(公會|著|的|錢|帳)/);   // once crossed off, never owed again
+  });
+
+  it('a greeting holds whether or not its speaker has her fragment back', () => {
+    const say = (f: (typeof FACILITIES)[number]) => STAGES.flatMap((st) => STORY.greet[f][st]).join('|');
+    expect(say('shop')).not.toMatch(/女兒|丫頭|帽子/);
+    expect(say('guild')).not.toMatch(/緹雅|冒險者的時候|當過|隊長/);
+    expect(say('gate')).not.toMatch(/見過|上一輪|錯覺|耳熟|十七/);
+    expect(say('forge')).not.toMatch(/拿劍的|洛恩|師父|聽鐵|鐵唱|火候差/);
+    expect(say('inn')).not.toMatch(/丈夫|他走的|路上小心/);
+  });
+
+  it('the town names no companion but Rin, so it holds for any party', () => {
+    const names = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin').map((id) => CHARACTERS[id].name);
+    for (const st of STAGES) {
+      for (const t of [...STORY.townLines[st], ...FACILITIES.flatMap((f) => STORY.greet[f][st])]) {
+        for (const n of names) expect(t, st).not.toContain(n);
+      }
+    }
   });
 });

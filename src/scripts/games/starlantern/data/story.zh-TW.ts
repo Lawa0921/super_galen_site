@@ -5,7 +5,7 @@ import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { MEETINGS, type Meetable } from './meetings';
 import { CHAINS } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
-import { CHAT_COUNT, MAJOR_SCENES, STAGES, type MajorScene, memScene, type SceneId, type Stage } from './story/scenes';
+import { CHAT_COUNT, MAJOR_SCENES, type MajorScene, memScene, type SceneId, type Stage } from './story/scenes';
 
 export type NpcId = 'anna' | 'orik' | 'marta' | 'glen' | 'doran' | 'merchant' | 'bellkeeper';
 export const NPC_NAMES: Record<NpcId, string> = {
@@ -1285,16 +1285,55 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
   },
 };
 
-// The town's opening lines and the facility greetings, one set for every stage until 6c writes them per stage.
-const stageEach = <V>(make: () => V): Record<Stage, V> =>
-  Object.fromEntries(STAGES.map((s) => [s, make()])) as Record<Stage, V>;
-
-const TOWN_OPENING = ['暮霧又濃了些。冒險者們，今天要往哪裡去？', '聽說迷宮深處有星燈的光。', '補給品記得在出發前備齊。'];
-const greetOf = (a: string, b: string) => stageEach(() => [ph(a), ph(b)]);
-
 export const STORY = {
   scenes: buildScenes(),
-  townLines: stageEach(() => TOWN_OPENING.map((t) => ph(t))),
+  /**
+   * The town's line of the day, said under the town's own name (Task 12; lore ledger I-96 to I-101). Everyone is pretending
+   * all is well (spec §3.3). Unconditional: no companion but Rin, no townsfolk secret, and before `after` neither Rin's
+   * choice nor the society's end. Act 2 seeds that Lorne has noticed her (§5.2, I-57) without her looking away (I-54);
+   * act 4 may come before or after her choice, so it says nothing her choice would undo.
+   */
+  townLines: {
+    prologue: [
+      '廣場的早市照常開張。賣麵包的大嬸笑著吆喝，忘了昨天已經跟你打過招呼。',
+      '井邊的婦人壓低聲音：「從深處走出來的？」看見你走近，她又笑著聊起天氣。',
+      '西邊高地上，星燈今晚也亮著。老人們說，它以前比現在亮得多。',
+      '暮霧貼著石板流進巷子。鎮上的人關緊窗，說一句「今天霧大」，就不再提了。',
+    ],
+    act1: [
+      '公會的布告欄上，失憶登記又多了兩張。安娜把它們釘得整整齊齊，像這樣就不會再掉下來。',
+      '酒館裡，冒險者們說起下面的事。說到一半，誰也想不起是誰先開的頭。',
+      '道具店門口排起了隊。歸還之燈賣得最快──大家都想確定，自己回得來。',
+      '廣場上，孩子們玩著「迷路了就朝光走」的遊戲，閉著眼睛，一個一個朝星燈走。',
+    ],
+    act2: [
+      '公會的老人又在說：山上那道光，只是燈罩。說完，大家照樣舉杯，誰也沒有接話。',
+      '瑪莎收著碗：「凜那孩子，總要等你房裡的燈熄了才肯睡。……洛恩，你也知道吧。」',
+      '葛倫打著呵欠：「那丫頭走路沒聲音。小子，你倒是每回都知道，她就在你後面。」',
+      '旅館的走廊。凜跟在洛恩身後一步，手按著領口的小銅鐘。他沒有回頭，只是放慢了腳步。',
+    ],
+    act3: [
+      '霧又濃了一層。白天也得點燈，鎮上的人卻說，這樣看起來比較熱鬧。',
+      '天還沒亮，葛倫就站在傳送門前了。他說是睡不著，眼睛卻一直盯著門裡。',
+      '月影旅館的門閂換了新的。瑪莎說舊的鬆了，換好的那天，她等到你們全回來，才落了鎖。',
+      '瑪莎小聲說：「那孩子最近吃飯都不抬頭。……你看見了，也什麼都沒問，是吧。」',
+    ],
+    act4: [
+      '鎮上流傳起一個很老的故事：很久以前，有人自己走下去，替燈點火。聽的人都說，那只是故事。',
+      '星燈的光柱，暗得只剩一條細線。孩子問它會不會熄，大人只說：「快睡吧。」',
+      '歐里克在店門口多點了兩盞燈：「霧再大，也得讓回來的人找得到門！」',
+      '公會的牆上，失憶登記多得釘不下了。安娜換了一面更大的牆，什麼也沒說。',
+      '洛恩和凜，總是一起出門，一起回來。瑪莎每晚都把湯，留在他們常坐的那張桌上。',
+    ],
+    after: [
+      '暮霧散了。推開窗看得見遠方的山，鎮上的人說，原來山是這個顏色。',
+      '星燈的光柱又亮又直。孩子們說，往後迷了路，再也不用閉著眼睛找它了。',
+      '傳送門前排著隊。下去的人不是去打寶，是去找回自己弄丟的東西。',
+      '旅館窗外那塊空地，今年綠得特別早。路過的人，都會停下來多看一眼。',
+      '鐘不響了。一位穿長袍的老人在鎮上住了下來，每天早上，都到廣場坐一會兒。',
+      '凜現在會跟瑪莎說早安了。瑪莎把這件事記進日記，還在旁邊畫了一個圈。',
+    ],
+  } as Record<Stage, string[]>,
   /**
    * Rin's town lines before her choice (Task 7). Act 2 starts at depth 4, before her 4th piece: she goes quiet, touches the
    * bell, walks behind, but does not look away yet. From act 3 she looks away. After the finale she has always chosen (U3).
@@ -1336,13 +1375,53 @@ export const STORY = {
   },
   /** The finale's boss room when Rin has not made her choice yet: said once, and the party stays on the map. */
   finaleWait: [{ who: 'narrator' as const, text: ph('還少了什麼……現在還不是時候。') }] as ScriptLine[],
+  /**
+   * Each facility's greeting, said by its townsperson (Task 12; I-96 to I-101). A greeting knows the stage, not whether its
+   * speaker has her fragment back, so it holds both ways: Orik never speaks of his daughter, Anna of her old name, Martha of
+   * the day her husband left, Glen of the earlier dawn; Doran, who calls Lorne by name only once returned, calls him nothing.
+   */
   greet: {
-    guild: greetOf('歡迎回來，要整頓隊伍嗎？', '今天也請平安歸來。'),
-    shop: greetOf('歡迎光臨！看看有什麼需要的。', '剛進了新貨喔。'),
-    inn: greetOf('辛苦了，要休息一下嗎？', '熱湯已經準備好了。'),
-    gate: greetOf('三座傳送門都開著。要去哪裡？別逞強。', '傳送門今天也在發光。'),
-    forge: greetOf('爐火正旺。要拆、要打，還是要重新鍛一回？', '帶素材來了嗎？好鐵配好手藝。'),
-  },
+    guild: {
+      prologue: ['洛恩，登記表我收好了。想起什麼，隨時來補上，一個字也算數。', '下去之前，燈帶了嗎？……好。今天也請平安歸來。'],
+      act1: ['帳上那筆藥錢和房錢，我劃掉了。你們帶上來的碎片，早就抵清了。', '歡迎回來。找到的碎片先登記，主人是誰，我替你們問。'],
+      act2: ['那塊石頭，我收進櫃子裡了。……裡面的光，到現在還往下流。', '回來了就好。找到的地點、看見的東西，慢慢說，我一條一條記。'],
+      act3: ['下去的時候，別讓誰落在最後面。……這是公會的規矩，今天剛訂的。', '你那一張登記表，我今天也看過了。最後一欄，還空著。'],
+      act4: ['碑文我抄了一份，鎖在櫃子裡。……想看的時候，再跟我說。', '霧再濃，登記表上的名字也不會被吹走。今天也請平安歸來，洛恩。'],
+      after: ['歡迎回來。今天來登記的人，都是來領回東西的，不是來報失的。', '洛恩，你那一張的最後一欄，我終於填上了：「回來了」。'],
+    },
+    shop: {
+      prologue: ['小兄弟，剛醒來就要下去？好膽量！回復藥多帶幾瓶，算你便宜。', '歡迎光臨！架上都是好貨，看中哪個，老頭子我算你實在價。'],
+      act1: ['燈多帶一盞，不吃虧。回得來，才有下一回生意嘛！', '小兄弟，那把劍的紋路……哈哈，看不懂！不過看得出是好貨。'],
+      act2: ['回復藥最近賣得真快！……哈哈，好事，好事。', '小兄弟，最近下得深了吧？回復藥多帶兩瓶，老頭子我替你挑好的！'],
+      act3: ['最近夜裡收攤早。……不是怕，是老頭子我也得睡覺嘛！', '好貨都替你留著。小兄弟，你可得回來買，聽見沒有？'],
+      act4: ['歡迎光臨！……小兄弟，今天別講價了，挑好的拿。', '活著回來，下回才有好貨給你挑。老頭子我等著！'],
+      after: ['好貨！好天氣！小兄弟，今天看什麼都順眼吧？', '有人拿著從下面找回來的東西，來問值多少。老頭子我只說：那個，無價！'],
+    },
+    inn: {
+      prologue: ['孩子，先吃。名字想不起來不要緊，熱湯喝下去，肚子會記得。', '房間替你們留著。今天下了幾層、吃了什麼，回來都說給我聽。'],
+      act1: ['回來啦。被褥曬過了，今晚會睡得好一點。', '又瘦了一點。坐下，湯馬上就好。'],
+      act2: ['湯要慢慢喝，燙著了我可不管。……說的是你們每一個。', '今天的日記，寫到你們出門為止。剩下的，等你們回來再寫。'],
+      act3: ['回來了。……好，我記下來了。今天也是，回來了。', '孩子，吃得下嗎？吃不下也坐一會兒，湯我替你溫著。'],
+      act4: ['孩子，臉色好差。……不想說就別說，湯先喝了。', '日記寫到第幾本，我也數不清了。只要你們還回來，我就一直寫下去。'],
+      after: ['窗外看得見山了。……今天的早飯，大家一起吃吧。', '今天的日記好寫。第一行就寫：天晴了。'],
+    },
+    gate: {
+      prologue: ['三座門都開著。挑一扇，去吧。別逞強，小子。', '燈帶了沒？……帶了就好。迷路了就點，別硬撐。'],
+      act1: ['門還開著。去吧，小子。別洩氣，也別逞強。', '走路的樣子像樣多了。……別得意，回來再說。'],
+      act2: ['門今天也亮著。……比去年暗了點，你別跟人說。', '下去吧。那丫頭跟在你後面，你自己也看著點腳下。'],
+      act3: ['天亮前我就站在這兒了。誰從門裡出來，我都看得見。', '小子，回頭看什麼？後面有我盯著，往前走。'],
+      act4: ['霧大得看不見對面了。……門還開著，我在這裡等。', '別逞強。這句我說了幾十年，今天說給你聽，你可得聽進去。'],
+      after: ['天亮了，門也亮著。小子，下去撿點好東西回來。', '從門裡出來的人，現在都笑著出來。……這樣的早上，我守得起。'],
+    },
+    forge: {
+      prologue: ['那把劍，誰打的？……紋路沒見過。放著別動，我只是看看。', '帶素材來。好鐵配好手藝，缺一樣都不成。'],
+      act1: ['爐火正旺。要拆、要打，說。', '刃口缺了。下去之前，補好。'],
+      act2: ['那兩把短刃，主人天天來磨。磨得比要用的還利。', '鐵也會累。打太多回，就脆了。……人也一樣。'],
+      act3: ['盔甲的扣環，我加了一道。背後，最容易被盯上。', '爐子一夜沒熄。……睡不著，就打鐵。'],
+      act4: ['霧裡的鐵，生鏽得快。回來就拿來，我替你上油。', '好鐵配好手藝。……再加上一個肯回來的人，才算打完。'],
+      after: ['爐火正旺。今天，想打點不是拿來砍的東西。', '素材帶來了？好。天晴的日子，連爐火都旺些。'],
+    },
+  } as Record<'guild' | 'shop' | 'inn' | 'gate' | 'forge', Record<Stage, string[]>>,
   /** The finale's boss: the lantern-eater under her own name. */
   finaleBossName: ph('燈喰之母'),
   /** The log line that ends Scarlet's story fight. */
