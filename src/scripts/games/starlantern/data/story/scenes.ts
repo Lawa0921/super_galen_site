@@ -126,6 +126,14 @@ export const BANTER_GATE: Partial<Record<SceneId, BanterGate>> = {};
  * prefix (6d's `ending:<c>` and `romance:<c>`); any other is an exact id. Rin's reveal plays alone anyway; the return right
  * after the finale is heavy too (`arrivalScenes`' `afterFinale`). 6d adds its heavy scenes here.
  */
-// Fix round 2: every memory piece is heavy (the bible's tone split); `home:*` stays light, her happy ending.
-export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'bellkeeper-arrives', ...ACT_NODES, 'mem:', 'finale', 'epilogue', 'ending:', 'romance:'];
+/**
+ * Fix round 3: the closing memory pieces, which are heavy arrivals: each chain's last piece, and Lorne's and Rin's last two (the
+ * keeper and the lamp key; her code name and her errand). Derived from the chain lengths. A middle piece stays light enough:
+ * chats already follow them. `home:*` stays light too: her happy ending, and the warm line comes last.
+ */
+export const CLOSING_PIECES: SceneId[] = CHARACTER_IDS.flatMap((id) => {
+  const n = CHAINS[id].pieces.length;
+  return (id === 'hero' || id === 'rin' ? [n - 1, n] : [n]).map((k) => memScene(id, k));
+});
+export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'bellkeeper-arrives', ...ACT_NODES, ...CLOSING_PIECES, 'finale', 'epilogue', 'ending:', 'romance:'];
 export const isHeavyArrival = (id: string): boolean => HEAVY_ARRIVAL.some((h) => (h.endsWith(':') ? id.startsWith(h) : id === h));

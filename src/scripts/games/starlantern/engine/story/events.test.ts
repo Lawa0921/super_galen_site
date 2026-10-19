@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { ACT_DEPTHS, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, HEAVY_ARRIVAL, isHeavyArrival, type BanterPair, type SceneId } from '../../data/story/scenes';
+import { ACT_DEPTHS, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, CLOSING_PIECES, HEAVY_ARRIVAL, isHeavyArrival, type BanterPair, type SceneId } from '../../data/story/scenes';
 import { chainLength } from '../../data/story/chains';
+import { CHARACTER_IDS } from '../../data/characters';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
@@ -447,28 +448,30 @@ describe('town banter', () => {
   it('one banter per return, after the chat, behind every light story scene a return can bring', () => {
     const s = meetAll(base(), ['noel', 'safira', 'sylvie', 'liz', 'scarlet']);
     s.party.roster.safira.memories = chainLength('safira');
-    s.story.queue = ['home:safira', 'town:orik', 'first-return', 'act1-after', 'prologue-inn'];
+    // fix round 3: a middle memory piece is light; only the closing pieces are heavy
+    s.story.queue = ['home:safira', 'town:orik', 'mem:noel:2', 'first-return', 'act1-after', 'mem:hero:7', 'prologue-inn'];
     const order = arrivalScenes(s, { chat: true });
-    const story = ['prologue-inn', 'first-return', 'act1-after', 'town:orik', 'home:safira'];
-    expect(order.slice(0, 5)).toEqual(story);
-    expect(order[5]).toMatch(/^chat:/);
-    expect(order[6]).toMatch(/^banter:/);
-    expect(order).toHaveLength(7);
+    const story = ['prologue-inn', 'first-return', 'act1-after', 'mem:hero:7', 'town:orik', 'mem:noel:2', 'home:safira'];
+    expect(order.slice(0, 7)).toEqual(story);
+    expect(order[7]).toMatch(/^chat:/);
+    expect(order[8]).toMatch(/^banter:/);
+    expect(order).toHaveLength(9);
     expect(order.filter((id) => id.startsWith('banter:'))).toHaveLength(1);
     // with no chat due, the banter still comes last
     allChatsSeen(s);
     const quiet = arrivalScenes(s, { chat: true });
-    expect(quiet.slice(0, 5)).toEqual(story);
-    expect(quiet[5]).toMatch(/^banter:/);
-    expect(quiet).toHaveLength(6);
+    expect(quiet.slice(0, 7)).toEqual(story);
+    expect(quiet[7]).toMatch(/^banter:/);
+    expect(quiet).toHaveLength(8);
   });
 
-  it('no light banter after a heavy arrival: an act, the bellkeeper, a memory piece, her reveal or the finale return; it waits for the next return', () => {
-    expect([...HEAVY_ARRIVAL]).toEqual(expect.arrayContaining(['rin-reveal', 'bellkeeper-arrives', 'act2', 'act3', 'act4', 'mem:', 'ending:', 'romance:', 'epilogue']));
+  it('no light banter after a heavy arrival: an act, the bellkeeper, a closing memory piece, her reveal or the finale return; it waits for the next return', () => {
+    expect([...HEAVY_ARRIVAL]).toEqual(expect.arrayContaining(['rin-reveal', 'bellkeeper-arrives', 'act2', 'act3', 'act4', ...CLOSING_PIECES, 'ending:', 'romance:', 'epilogue']));
+    expect(HEAVY_ARRIVAL).not.toContain('mem:');
     const s = meetAll(base(), ['noel']);
     s.story.seen.push('prologue-inn', 'rin-reveal');
     s.party.roster.rin.oath = true;
-    for (const heavy of ['act2', 'act3', 'act4', 'bellkeeper-arrives', 'mem:hero:7', 'mem:noel:2', 'mem:rin:1'] as SceneId[]) {
+    for (const heavy of ['act2', 'act3', 'act4', 'bellkeeper-arrives', 'mem:hero:9', 'mem:hero:10', 'mem:rin:6', 'mem:rin:7', `mem:noel:${chainLength('noel')}`] as SceneId[]) {
       s.story.queue = ['first-return', heavy, 'town:orik', 'home:safira'];
       const order = arrivalScenes(s, { chat: true });
       expect(order.slice(0, 4), heavy).toEqual(['first-return', heavy, 'town:orik', 'home:safira']);   // already in rank order
@@ -481,8 +484,9 @@ describe('town banter', () => {
     // not lost: the next return with nothing heavy brings it
     expect(arrivalScenes(s, { chat: true }).at(-1)).toBe('banter:noel-rin:1');
     // the predicate: exact ids, and the prefixes 6d's scenes will use
-    for (const id of ['rin-reveal', 'bellkeeper-arrives', 'act3', 'mem:noel:2', 'mem:hero:7', 'epilogue', 'ending:noel', 'romance:rin']) expect(isHeavyArrival(id), id).toBe(true);
-    // her homecoming stays light: her happy ending, and the warm line comes last
+    for (const id of ['rin-reveal', 'bellkeeper-arrives', 'act3', 'mem:noel:5', 'mem:hero:9', 'mem:rin:6', 'epilogue', 'ending:noel', 'romance:rin']) expect(isHeavyArrival(id), id).toBe(true);
+    // her homecoming stays light (her happy ending, the warm line last), and so do the middle pieces
+    for (const id of ['mem:noel:4', 'mem:hero:8', 'mem:rin:5', 'mem:rin:1', 'mem:hero:1']) expect(isHeavyArrival(id), id).toBe(false);
     for (const id of ['first-return', 'act1-after', 'prologue-inn', 'home:safira', 'home:liz', 'town:orik', 'chat:noel:1', 'banter:noel-rin:1']) expect(isHeavyArrival(id), id).toBe(false);
   });
 
@@ -492,6 +496,16 @@ describe('town banter', () => {
     expect(arrivalScenes(s, { chat: true })).toContain('banter:noel-rin:1');
     s.party.roster.rin.memories = chainLength('rin');
     expect(arrivalScenes(returned(s), { chat: true })).toEqual(['rin-reveal']);
+  });
+
+  it('the closing pieces are derived from the chain lengths: every last piece, and the last two of Lorne and Rin (fix round 3)', () => {
+    const want = CHARACTER_IDS.flatMap((id) => {
+      const n = chainLength(id);
+      return (id === 'hero' || id === 'rin' ? [n - 1, n] : [n]).map((k) => `mem:${id}:${k}`);
+    });
+    expect([...CLOSING_PIECES].sort()).toEqual(want.sort());
+    expect(CLOSING_PIECES).toEqual(expect.arrayContaining(['mem:hero:9', 'mem:hero:10', 'mem:rin:6', 'mem:rin:7', 'mem:safira:5']));
+    expect(CLOSING_PIECES).toHaveLength(CHARACTER_IDS.length + 2);
   });
 
   it('banters never enter the saved queue: onReturn queues none', () => {
