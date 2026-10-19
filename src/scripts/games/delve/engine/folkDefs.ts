@@ -180,7 +180,7 @@ export interface FolkLook {
   beard?: boolean;
 }
 const A = (o: Partial<Appearance>): Appearance => ({
-  body: 0, blush: true, hair: 0, hairColor: 2, ahoge: false, eyes: 0, eyeShape: 0, skin: 1, outfit: 0, color1: 8, color2: 6, acc: 0, glasses: false, ...o,
+  body: 0, race: 0, blush: true, hair: 0, hairColor: 2, ahoge: false, eyes: 0, eyeShape: 0, skin: 1, outfit: 0, color1: 8, color2: 6, acc: 0, glasses: false, ...o,
 });
 /** 依職能 + 種子產生外觀（同一個人永遠同一個樣子） */
 export function folkLook(role: FolkRole, rng: Rng): FolkLook {
@@ -196,7 +196,7 @@ export function folkLook(role: FolkRole, rng: Rng): FolkLook {
     return { app, head: role === 'runesmith' ? undefined : 'hat:miner', dwarf: true, beard: body === 1 || role === 'dwarf_elder', neck: role === 'runesmith' ? 'magma' : undefined };
   }
   const app = A({
-    body, blush: body === 0, hair: rng.int(0, 9), hairColor: rng.int(0, 12), ahoge: rng.chance(3), eyes: rng.int(0, 9), eyeShape: rng.int(0, 3), skin: rng.int(0, 5),
+    body, race: 0, blush: body === 0, hair: rng.int(0, 9), hairColor: rng.int(0, 12), ahoge: rng.chance(3), eyes: rng.int(0, 9), eyeShape: rng.int(0, 3), skin: rng.int(0, 5),
     outfit: rng.int(0, 6), color1: rng.int(0, 12), color2: rng.int(0, 12), acc: 0, glasses: rng.chance(6),
   });
   switch (role) {

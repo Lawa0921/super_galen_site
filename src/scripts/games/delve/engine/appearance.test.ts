@@ -161,3 +161,29 @@ describe('預設外觀（localStorage，新世界用）', () => {
     expect(() => saveDefaultAppearance(bad, DEFAULT_APPEARANCE)).not.toThrow();
   });
 });
+
+describe('種族欄位', () => {
+  it('舊外觀沒有 race → 0，其他欄位不變；壞值 → 0；合法值保留', () => {
+    const old: Record<string, unknown> = { ...DEFAULT_APPEARANCE, hair: 5, hairColor: 3 };
+    delete old.race;
+    expect(normalizeAppearance(old)).toEqual({ ...DEFAULT_APPEARANCE, hair: 5, hairColor: 3, race: 0 });
+    expect(normalizeAppearance({ ...old, race: 7 }).race).toBe(0);
+    expect(normalizeAppearance({ ...old, race: 3 }).race).toBe(3);
+  });
+  it('只改 race，appearanceKey 不同', () => {
+    expect(appearanceKey({ ...DEFAULT_APPEARANCE, race: 1 })).not.toBe(appearanceKey(DEFAULT_APPEARANCE));
+  });
+  it('換體型保留目前種族；兩種預設都是人類', () => {
+    expect(bodyDefaults(0).race).toBe(0);
+    expect(bodyDefaults(1).race).toBe(0);
+    const a = { ...DEFAULT_APPEARANCE, race: 4 };
+    expect(stepAppearance(a, 'body', 1).race).toBe(4);
+    expect(stepAppearance({ ...bodyDefaults(0), race: 2 }, 'body', 1)).toMatchObject({ body: 1, race: 2 });
+  });
+  it('隨機外觀的種族在範圍內，且五族都抽得到', () => {
+    let s = 7; const rand = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 2 ** 32; };
+    const seen = new Set<number>();
+    for (let i = 0; i < 200; i++) seen.add(randomAppearance(rand).race);
+    expect([...seen].sort()).toEqual([0, 1, 2, 3, 4]);
+  });
+});
