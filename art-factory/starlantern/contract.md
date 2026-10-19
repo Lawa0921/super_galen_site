@@ -142,12 +142,14 @@
 - 3×2 技能表放不滿時，空格畫 `plain empty stone slab`，切完丟棄：noel 1 格、rin-2 2 格、hero-4 3 格（照 sheet-icons-3 的先例）。
 - `pick` 寫 `chosen_attempt`、`source_id`、`batch`（`gear-5d-<batch>`），**不寫 `runtime`**；`runtime` 只由 `publish` 寫入，和 `artPaths.ts` 的 `NO_ICON_YET` 刪除放在同一個 commit。
 - **每一批**都要使用者在審核頁核准後，才可以 `approve --batch B --by "<使用者原話> <YYYY-MM-DD>"`（沒有日期會拒絕），再 `silhouettes`、`publish --batch B`。核准記在登錄表根部 `approved_batches`；`publish` 沒有該批的核准紀錄就拒絕。獨立代理的視覺檢查是交給使用者之前的前置步驟，不能取代使用者核准。
-- 樣本批核准時另寫 `style_approved`。沒有它，`gen` 拒絕生成 `main-gear` 與 `skills` 的任何工作表，`approve` 也拒絕這兩批。
+- 核准綁定使用者看到的圖：`review_gear.py <batch>` 把頁面上每張成品的 sha256 記在 `work/review/<batch>-shown.json`（清單欄也印出前 12 碼）。`approve` 在下列任一情況整批拒絕、什麼都不改：沒有這份紀錄、頁面什麼都沒顯示、有 part 未挑選或成品檔不見、有 part 不是 `qa_passed`（例如 `qa_failed`）、成品的 hash 和頁面紀錄不同（審核後又重挑）。重挑之後要重新產生審核頁、重新給使用者看。
+- 樣本批只有在 `approve` 成功時才寫 `style_approved`，同時記下風格錨點 `style_anchor`（sheet-gear-1 多數 part 出自的那一版）；`gear-anchor.png` 只由這個紀錄的版本產生。沒有 `style_approved`，`gen` 拒絕生成 `main-gear` 與 `skills` 的任何工作表，`approve` 也拒絕這兩批。
+- 已 `approved`／`published` 的 part 不能直接重挑：`pick` 拒絕，除非加 `--reopen`。`--reopen` 會把已發布的檔 `retire`（刪檔、移出 manifest），清掉 `runtime` 與 `approved_by`，舊狀態記進 `history`，由它轉出的剪影也一起重開；重挑後要重新核准。
 - 剪影只從 `approved`／`published` 的圖示產生；它是確定性轉換，QA 通過就直接標 `approved`（`approved_by: derived from gear-<id>`，`batch` 跟來源相同），失敗就停下回報。
 
 ### QA 關卡（`sl_art.py`）
 - 裝備格（`kind: gear-cell`）：`fit_side` 以主體長邊決定 block（`ceil(長邊 ÷ 目標)`），大圖目標 60、畫布 64，小圖示目標 24、畫布 26；兩張都走 `_finish` 的透明 QA（magenta 殘留、半透明、被原圖畫布切到、16 px 以下的洞只列警告）與 `larger than the canvas`。
-- 九宮格（`kind: nine-slice`）：cutout → 主體 bbox → 最近鄰取樣成正好 N×N（不產生新顏色）→ 一般透明 QA（外框本來就貼齊畫布邊，所以不算 `touches edge`）＋三項檢查：
+- 九宮格（`kind: nine-slice`）：cutout → 主體 bbox → 最近鄰取樣成正好 N×N（不產生新顏色）→ 一般透明 QA（外框本來就貼齊畫布邊，所以不算 `touches edge`；slice 以內的中央當成背景傳給 `bg_hint`，所以刻意透明的中央不算洞，外框帶內的小洞仍列警告）＋三項檢查：
   - `center_clear`：slice 以內的中央全透明，否則 `centre not clear`；
   - `ring_closed`：上下邊帶的每一欄、左右邊帶的每一列，在 slice 深度內至少有 1 個不透明像素，否則 `ring not closed`；
   - `edge_repeat`：四條邊帶的中段各自當成只左右重複的圖塊，用 `wrap_seam` 量接縫比值，須 ≤ 1.25，否則 `edge does not repeat`。
@@ -161,7 +163,7 @@
 - 參考圖：樣本批附 `raw/portal-refs/icons-old-x8.png`；量產批另附 `raw/gear-refs/gear-anchor.png`（`gen` 由已核准的 sheet-gear-1 原圖縮半自動產生）；角色傳說附 `reference/crops/<cid>.png`；`set-blaze-ring`（sheet 6）附 sheet-gear-1 已核准的原圖。
 - 素材表（`MAT_DESC`）：`about 28 by 28 art pixels`；精華是同一顆結晶滴的四階（灰白、藍、黃、橘）；地區素材照 `portal.py` 的 `TRAITS` 配色。
 - 技能表（`SKILL_DESC`）：`about 28 by 28 art pixels, one bold emblem`，依角色配色；夥伴附 `reference/crops/<cid>.png`，洛恩與凜沒有 crop，改附已核准的 `char-hero-standee`、`char-rin-standee`（凜用誓約前的樣子）。
-- 外框表（`FRAME_DESC`）：`six square pixel-art item-slot frames, each a thin 2-pixel border with small ornamental corners, the inside of each frame perfectly flat magenta, straight edge segments designed to repeat`；第 6 格是寬 3 px 的橘色硬邊階梯光暈。
+- 外框表（`FRAME_DESC`）：`six square pixel-art item-slot frames, each a thin 2-pixel border with small ornamental corners, the inside of each frame perfectly flat magenta, straight edge segments designed to repeat`，寫明每個外框約 16×16 美術像素、光暈約 20×20，句尾用 `PIX`；第 6 格是寬 3 px 的橘色硬邊階梯光暈。
 - 鍛造屋：`UI_SCENES` 句型，附 `bg-f1` 已發布原圖；多蘭沿用 `UI_NPCS` 句型與 `JP` 前綴，附 `char-scarlet-standee`；笑臉附已核准的 `npc-forge`。
 
 ### 交給 5f 的東西（補遺 §2）

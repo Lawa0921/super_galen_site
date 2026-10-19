@@ -5,9 +5,10 @@ cells with rarity frames and the legendary glow, the 64 px detail image, at 1x a
 ones, large/icon pairs from the same cell, portal cards with owned icons and silhouettes (made here in the page, never in
 the registry), list rows (shop, forge, loot line), materials, skills beside the character's existing ones, the forge
 with Doran, and a gallery of every attempt with its QA and the reason it was not chosen.
-Read-only for public/ and the registry; the main conversation publishes the page with the Artifact tool.
+Read-only for public/ and the registry. It records the sha256 of every final it shows in work/review/<batch>-shown.json;
+`gear_art.py approve` refuses parts whose file changed since. The main conversation publishes the page with the Artifact tool.
 """
-import html, json, re, shutil, sys
+import datetime, html, json, re, shutil, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -32,11 +33,22 @@ def esc(s): return html.escape(str(s))
 def _read(f): return (DATA / f).read_text(encoding='utf-8')
 
 
+def _objects(src):
+    """{id: the text of that `{ id: '...' ... }` object up to the next one}, so other keys may come in any order
+    (the abyss skills put `abyss: true` before `name`)."""
+    starts = [(m.start(), m.group(1)) for m in re.finditer(r"\{ id: '([a-z0-9-]+)'", src)]
+    return {i: src[a:b] for (a, i), (b, _) in zip(starts, starts[1:] + [(len(src), '')])}
+
+
+def _field(text, key):
+    m = re.search(rf"\b{key}: '([^']*)'", text); return m.group(1) if m else None
+
+
 def names():
     """Display names read from the game data (never hand-copied)."""
     n = {}
     for f in ('equipment.ts', 'materials.ts', 'skills.ts', 'items.ts'):
-        n.update(re.findall(r"\bid: '([a-z0-9-]+)', name: '([^']+)'", _read(f)))
+        n.update({i: _field(t, 'name') for i, t in _objects(_read(f)).items() if _field(t, 'name')})
     g = _read('gear.ts')
     n.update(re.findall(r"\(\['([a-z0-9-]+)', '([^']+)'", g))
     nouns = dict(re.findall(r"(\w+): '(之[^']+)'", g))
@@ -47,7 +59,10 @@ def names():
 
 
 def skill_owners():
-    return dict(re.findall(r"\bid: '([a-z0-9-]+)', name: '[^']+', owner: '([a-z-]+)'", _read('skills.ts')))
+    """Owner of every skill in skills.ts; the plan 5d skills are grouped by gear_art.SKILL_OWNERS, which drives the sheets."""
+    own = {i: _field(t, 'owner') for i, t in _objects(_read('skills.ts')).items() if _field(t, 'owner')}
+    own.update({s: o for o, (_, ids) in G.SKILL_OWNERS.items() for s in ids})
+    return own
 
 
 def rarity_of(part):
@@ -135,6 +150,10 @@ def main(batch='sample'):
     gear = [p for j in js if j['kind'] == 'gear-sheet' for p in j['parts']]
     mats = [p for j in js if j['id'].startswith('sheet-mat-') for p in j['parts']]
     skills = [p for j in js if j['id'].startswith('sheet-skill-') for p in j['parts'] if p]
+    shown = {}
+    for a in G.batch_assets(batch):
+        f = reg.get(a, {}).get('final'); fp = A._final_path(f) if f else None
+        if fp and fp.is_file(): shown[a] = G.sha256(fp)
     icon = {p: pg.final(f'gear-{p}') for p in gear}; large = {p: pg.final(f'gear-{p}-large') for p in gear}
     frame = {r: pg.final(f'ui-rarity-{r}') or pg.pub(f'ui/rarity-{r}.png') for r in FRAMED}
     glow = pg.final('ui-glow-legendary') or pg.pub('ui/glow-legendary.png')
@@ -142,7 +161,8 @@ def main(batch='sample'):
     # 0. checklist: every part of the batch exactly once
     def status_row(job, p):
         aids = G.assets_of(job, p)
-        st = '；'.join(f'{a}：{reg.get(a, {}).get("status", "未挑選")} {reg.get(a, {}).get("chosen_attempt", "")}' for a in aids)
+        st = '；'.join(f'{a}：{reg.get(a, {}).get("status", "未挑選")} {reg.get(a, {}).get("chosen_attempt", "")}'
+                       f'{" sha " + shown[a][:12] if a in shown else ""}' for a in aids)
         qa = '；'.join(qa_line(reg.get(a, {}).get('qa')) for a in aids if reg.get(a, {}).get('qa'))
         return f'<tr data-part="{esc(p)}"><td>{esc(p)}</td><td>{esc(nm.get(p, ""))}</td><td>{esc(job["id"])}</td><td>{esc(st)}</td><td class="small">{esc(qa)}</td></tr>'
     checklist = ''.join(status_row(j, p) for j in js for p in j['parts'] if p is not None)
@@ -221,7 +241,7 @@ def main(batch='sample'):
         new = [p for p in skills if owners.get(p) == o]
         if not new: return ''
         old = [s for s, w in owners.items() if w == o and s not in G.SKILL_DESC]
-        cells = ''.join(f'<figure>{img(pg.final(f"icon-{s}"), "px", "height:64px")}<figcaption>{esc(nm.get(s, s))}<br><small>新 {s}</small></figcaption></figure>' for s in new)
+        cells = ''.join(f'<figure data-skill="{s}" data-owner="{o}">{img(pg.final(f"icon-{s}"), "px", "height:64px")}<figcaption>{esc(nm.get(s, s))}<br><small>新 {s}</small></figcaption></figure>' for s in new)
         olds_ = ''.join(f'<figure>{img(pg.pub(f"icon/{s}.png", f"old-icon-{s}.png"), "px", "height:64px")}<figcaption>{esc(nm.get(s, s))}<br><small>現有 {s}</small></figcaption></figure>' for s in old)
         return f'<h3>{OWNER_NAME.get(o, o)}</h3><div class="row dark">{cells}</div><div class="row dark">{olds_ or "<small>這個角色還沒有現有技能圖示。</small>"}</div>'
     skill_html = ''.join(owner_block(o) for o in G.SKILL_OWNERS)
@@ -255,7 +275,7 @@ table{{border-collapse:collapse}} td,th{{padding:6px 10px;border-bottom:1px soli
 .artbox .rf{{inset:0}} .zoom3{{zoom:3;width:max-content}}
 .card{{display:inline-block;vertical-align:top;margin:0 16px 16px 0;background:#1b1d2a;border:3px solid #b08a3e;padding-bottom:6px}}
 .card .art{{display:block}} .card .cap{{padding:3px 8px;font-weight:600;color:#f1e3b8}} .lims{{padding:0 8px}}
-.lim{{display:flex;gap:12px;align-items:center;font-size:13px}} .lim .ttl{{min-width:6em}} .li{{width:26px;height:26px;zoom:2;vertical-align:middle}}
+.lim{{display:flex;gap:12px;align-items:center;font-size:13px}} .lim .ttl{{min-width:6em}} .li{{zoom:2;vertical-align:middle}}
 .lrow{{display:flex;align-items:center;gap:6px;min-height:24px;padding:2px 8px;border-bottom:1px solid #2b2b33;width:320px;background:#1b1d2a}}
 .lrow .gi,.loot .gi{{width:24px;height:24px;object-fit:none;vertical-align:middle}} .price,.tag{{margin-left:auto;color:#d9c27a;font-size:12px}}
 .loot{{background:#10111a;border:2px solid #3a3f66;padding:6px 10px;width:max-content}}
@@ -305,6 +325,10 @@ table{{border-collapse:collapse}} td,th{{padding:6px 10px;border-bottom:1px soli
 {gallery(pg, js)}
 </body></html>'''
     (OUT / 'index.html').write_text(page, encoding='utf-8', newline='\n')
+    # What this page showed: `approve` refuses any part whose final no longer has this hash (the user approves pictures).
+    sp = G.shown_path(batch); sp.parent.mkdir(parents=True, exist_ok=True)
+    sp.write_text(json.dumps({'batch': batch, 'generated': datetime.datetime.now().isoformat(timespec='seconds'), 'page': str(OUT / 'index.html'),
+                              'parts': shown}, indent=2, ensure_ascii=False) + '\n', encoding='utf-8', newline='\n')
     print(OUT / 'index.html')
     return OUT / 'index.html'
 

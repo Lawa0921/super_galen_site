@@ -24,14 +24,17 @@ const registry = JSON.parse(readFileSync('art-factory/starlantern/registry.json'
  * to plan 5f, so plan 5d's cross-checks leave them out. No roster file yet means an empty set.
  */
 const rosterModules = import.meta.glob('../data/*.roster.ts', { eager: true }) as Record<string, Record<string, unknown>>;
+const idOf = (v: unknown): string | null =>
+  v && typeof v === 'object' && typeof (v as { id?: unknown }).id === 'string' ? (v as { id: string }).id : null;
+/**
+ * Only real definitions count: an export that is a list of `{ id }` objects, or a record whose every value is a `{ id }`
+ * object. Anything else a roster file exports (weights, names, plain string lists) adds nothing, so it can never hide
+ * a missing 5d cell.
+ */
 function idsIn(value: unknown): string[] {
-  if (Array.isArray(value)) return value.flatMap((v) => (typeof v === 'string' ? [v] : idsIn(v)));
-  if (value instanceof Set || value instanceof Map) return idsIn([...value.keys()]);
-  if (value && typeof value === 'object') {
-    const id = (value as { id?: unknown }).id;
-    return typeof id === 'string' ? [id] : Object.keys(value);
-  }
-  return [];
+  const items = Array.isArray(value) ? value : value && typeof value === 'object' ? Object.values(value) : [];
+  const ids = items.map(idOf);
+  return items.length > 0 && ids.every((id): id is string => id !== null) ? ids : [];
 }
 const ROSTER = new Set(Object.values(rosterModules).flatMap((m) => Object.values(m).flatMap(idsIn)));
 
@@ -42,6 +45,16 @@ const cellsOf = (prefix: string): string[] =>
 const MATERIALS_WITH_ART = ['moss', 'bat-wing', 'thorn-fang', 'crystal-shell', 'ice-crystal', 'lizard-scale', 'star-stone', 'dusk-cloth', 'old-coin', 'ancient-gear'];
 
 describe('plan 5d gear art plan (art-factory/starlantern/gear-plan.json)', () => {
+  it('roster ids come only from real id fields', () => {
+    expect(idsIn([{ id: 'a' }, { id: 'b' }])).toEqual(['a', 'b']);
+    expect(idsIn({ x: { id: 'a', name: 'A' }, y: { id: 'b' } })).toEqual(['a', 'b']);
+    expect(idsIn(['iron-sword', 'moss'])).toEqual([]);                 // a plain string list
+    expect(idsIn({ 'iron-sword': 3, moss: 1 })).toEqual([]);            // weights keyed by id
+    expect(idsIn({ a: { id: 'a' }, w: 2 })).toEqual([]);                // mixed: not a definition table
+    expect(idsIn('iron-sword')).toEqual([]);
+    expect(idsIn([])).toEqual([]);
+  });
+
   it('every base and special has exactly one gear cell', () => {
     const cells = cellsOf('sheet-gear-');
     expect(cells).toHaveLength(new Set(cells).size);

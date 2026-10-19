@@ -636,9 +636,12 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_):
         final = defringe(_sample(cut.crop(box), size, size), strong=entry.get('defringe') == 'strong')
         if box[0] == 0 or box[1] == 0 or box[2] == cell.width or box[3] == cell.height:
             reasons.append('subject cut by the canvas edge')
-    qa = alpha_qa(final, entry.get('allow_holes', 0), allow_residue=entry.get('allow_residue', 0))
+    s = slice_
+    # The frame's intended transparent centre is background, never a hole; a pocket inside the ring band still counts.
+    centre = np.zeros((size, size), bool); centre[s:size - s, s:size - s] = True
+    qa = alpha_qa(final, entry.get('allow_holes', 0), bg_hint=centre, allow_residue=entry.get('allow_residue', 0))
     reasons = [r for r in qa['reasons'] if r != 'touches edge'] + reasons
-    op = np.asarray(final)[..., 3] == 255; s = slice_
+    op = np.asarray(final)[..., 3] == 255
     qa['center_clear'] = bool(not op[s:size - s, s:size - s].any())
     qa['ring_closed'] = bool(op[:s].any(axis=0).all() and op[size - s:].any(axis=0).all()
                              and op[:, :s].any(axis=1).all() and op[:, size - s:].any(axis=1).all())

@@ -726,6 +726,24 @@ def test_nine_slice_fails_an_edge_that_does_not_repeat(tmp_path):
     assert q['edge_repeat']['top'] > A.SEAM_RATIO_MAX
 
 
+def _thick_ring(hole=False, colour=(180, 140, 60)):
+    """160 px frame with a 54 px border: sampled to 12 x 12 it is a 4 art-px ring around a 4 x 4 (16 px) centre."""
+    arr = np.asarray(canvas(176, 176)).copy(); r = arr[8:168, 8:168]
+    r[:54, :] = colour; r[-54:, :] = colour; r[:, :54] = colour; r[:, -54:] = colour
+    if hole: r[16:26, 80:94] = M          # one art pixel erased inside the top band (art row 1, column 6)
+    return Image.fromarray(arr, 'RGB')
+
+
+def test_nine_slice_does_not_count_its_transparent_centre_as_a_hole(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-rare', _thick_ring(), tmp_path / 'w', tmp_path / 'raw.png', 12, 4)
+    assert q['center_clear'] and q['pass'] and q['holes'] == 0 and q['warnings'] == [], q
+
+
+def test_nine_slice_still_flags_a_hole_in_the_ring(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-rare', _thick_ring(hole=True), tmp_path / 'w', tmp_path / 'raw.png', 12, 4)
+    assert q['holes'] >= 1 and q['warnings'] == ['enclosed holes'], q
+
+
 INK, RIM = (29, 26, 46), (143, 134, 184)
 
 

@@ -318,9 +318,9 @@ ESSENCES = ('The four essences are one crystal droplet shape in four grades (pal
 FRAME_SHEET = (
     'A 3 by 2 grid of six square pixel art item-slot frames for a 16-bit Japanese console RPG, with flat pure magenta #FF00FF gutters and margin. '
     'Six square pixel-art item-slot frames, each a thin 2-pixel border with small ornamental corners, the inside of each frame perfectly flat magenta, '
-    'straight edge segments designed to repeat; every frame the same square size. In this order, left to right, top to bottom: {listing}. '
-    'Strict square pixel grid, crisp outline, limited palette, no anti-aliasing, no blur. No text, no numbers, no items inside the frames, '
-    'no background inside the frames. ' + ORIGINAL)
+    'straight edge segments designed to repeat; each of the five item-slot frames about 16 by 16 art pixels and the glow ring about 20 by 20 art pixels. '
+    'In this order, left to right, top to bottom: {listing}. '
+    '16-bit JRPG menu frame style, ' + PIX + '. No text, no numbers, no items inside the frames, no background inside the frames. ' + ORIGINAL)
 FORGE_SCENE = (
     "Interior of a blacksmith's forge: a glowing furnace on the left, an anvil, racks of blades and shields, hanging tools, warm orange firelight and soot-dark beams, "
     'the right third of the picture kept fairly plain for a character to stand in front of. '
@@ -440,13 +440,24 @@ def chosen_raw(reg, aid):
     return Path(e['raw']) if e.get('raw') and e.get('status') in ('approved', 'published') else None
 
 
-def make_anchor(reg):
-    """raw/gear-refs/gear-anchor.png: the approved sheet-gear-1 raw at half size (plan 5d Task 9 Step 1)."""
+def anchor_attempt(reg):
+    """The sheet-gear-1 attempt most of its approved-to-be parts were picked from (ties: the lower attempt)."""
+    picks = [reg.data['assets'].get(a, {}).get('chosen_attempt') for p in GEAR_SHEETS['sheet-gear-1'] for a in (f'gear-{p}', f'gear-{p}-large')]
+    picks = [k for k in picks if k]
+    if not picks: return None
+    return sorted(set(picks), key=lambda k: (-picks.count(k), int(k[1:])))[0]
+
+
+def make_anchor(reg, out=None):
+    """raw/gear-refs/gear-anchor.png: the sheet-gear-1 attempt recorded as the style anchor when the user approved the
+    sample (`style_anchor` at the registry root), at half size (plan 5d Task 9 Step 1)."""
     from PIL import Image
-    src = chosen_raw(reg, 'gear-iron-sword')
-    if src is None: raise PermissionError('sheet-gear-1 is not approved yet; the main-gear style anchor needs it')
-    GEAR_ANCHOR.parent.mkdir(parents=True, exist_ok=True)
-    im = Image.open(src).convert('RGB'); im.resize((im.width // 2, im.height // 2), Image.NEAREST).save(GEAR_ANCHOR)
+    rec = reg.data.get('style_anchor')
+    if not rec or not reg.data.get('style_approved'):
+        raise PermissionError('no approved style anchor; approve the sample batch first')
+    out = Path(out or GEAR_ANCHOR); out.parent.mkdir(parents=True, exist_ok=True)
+    im = Image.open(rec['raw']).convert('RGB'); im.resize((im.width // 2, im.height // 2), Image.NEAREST).save(out)
+    return out
 
 
 def _opt(argv, name, default=None):
@@ -536,10 +547,28 @@ def _arg(argv, name):
     return next((argv[i + 1] for i, a in enumerate(argv) if a == name and i + 1 < len(argv)), None)
 
 
+def reopen(reg, aid, public=None):
+    """Take an approved or published part back to the candidate stage so it can be re-picked: a published file is
+    retired (deleted from public/, url out of the manifest), approval is dropped, and the old state goes to `history`."""
+    e = reg.data['assets'][aid]; old = {k: e[k] for k in ('status', 'runtime', 'approved_by', 'chosen_attempt') if k in e}
+    if e.get('status') == 'published':
+        reg.retire(aid, Path(public or PUBLIC), 'reopened for a re-pick (plan 5d)')
+    for k in ('approved_by', 'retired_runtime', 'retired_reason', 'retired_on', 'runtime'): e.pop(k, None)
+    e.setdefault('history', []).append({**old, 'reopened_on': datetime.date.today().isoformat()})
+    e['status'] = 'reopened'; reg._save()
+
+
 def pick(argv):
     sid, k, part = _arg(argv, '--id'), _arg(argv, '--attempt'), _arg(argv, '--part')
     job = job_by_id(sid); reg = _registry()
     if part and part not in job['parts']: raise ValueError(f'{part} is not a part of {sid}')
+    targets = [a for p in job['parts'] if p is not None and (not part or p == part) for a in assets_of(job, p)]
+    # A silhouette made from a re-picked icon is stale too.
+    targets += [f'gear-{key}-silhouette' for key in (*REGION_LIMITED, *SET_FIRST) if f'gear-{SET_FIRST.get(key, key)}' in targets]
+    locked = [a for a in targets if reg.data['assets'].get(a, {}).get('status') in ('approved', 'published')]
+    if locked and '--reopen' not in argv:
+        raise PermissionError(f'{locked} are already approved or published; pass --reopen to take them back (a published file is retired)')
+    for a in locked: reopen(reg, a)
     res = process_attempt(reg, job, RAW / sid / f'{sid}-a{k}.png', WORK / sid, parts=[part] if part else None)
     for aid in res:   # never `runtime`: that is written by publish, in the same commit as the artPaths change
         reg.set(aid, chosen_attempt=f'a{k}', source_id=sid, batch=label(job['batch']))
@@ -555,20 +584,54 @@ def note(argv):
 
 # --- approval and publishing -------------------------------------------------------------------------------------------
 
+def batch_assets(batch):
+    """Every registry id a batch's sheets produce (silhouettes are derived later, not approved here)."""
+    return [a for j in jobs() if j['batch'] == batch for p in j['parts'] for a in assets_of(j, p)]
+
+
+def shown_path(batch):
+    """What the review page showed for a batch: {aid: sha256 of its final}, written by review_gear.py."""
+    return WORK / 'review' / f'{batch}-shown.json'
+
+
+def sha256(path):
+    import hashlib
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
 def do_approve(reg, batch, by):
-    """Record the USER's approval of a batch (their words and the date in `by`): its qa_passed parts become approved."""
+    """Record the USER's approval of a batch (their words and the date in `by`).
+
+    Approval is tied to what the user saw: every part of the batch must be picked, have passed QA, and its final file
+    must still have the hash the review page recorded (`work/review/<batch>-shown.json`). Any miss refuses the whole
+    batch and changes nothing; only then do the parts become approved (and, for the sample, `style_approved` and the
+    style anchor attempt are recorded)."""
     lab = label(batch)
     if not by or not re.search(r'\d{4}-\d{2}-\d{2}', by):
         raise ValueError("--by must quote the user's approval and carry its date (YYYY-MM-DD)")
     if batch != 'sample' and not reg.data.get('style_approved'):
         raise PermissionError('the style sample is not approved yet')
+    sp = shown_path(batch)
+    if not sp.exists(): raise PermissionError(f'no review page record for {batch} ({sp}); build and show the review page first')
+    shown = json.loads(sp.read_text(encoding='utf-8')).get('parts', {})
+    aids = batch_assets(batch); problems = {}
+    if not shown: problems['nothing was shown'] = [batch]
+    for aid in aids:
+        e = reg.data['assets'].get(aid, {}); f = A._final_path(e['final']) if e.get('final') else None
+        if not e.get('chosen_attempt') or f is None or not f.is_file(): problems.setdefault('not picked', []).append(aid)
+        elif e.get('status') not in ('qa_passed', 'approved', 'published'): problems.setdefault(f'status {e.get("status")}', []).append(aid)
+        elif shown.get(aid) != sha256(f): problems.setdefault('changed since (or missing from) the review page', []).append(aid)
+    if problems: raise PermissionError(f'refusing to approve {batch}: {problems}')
     done = []
-    for aid, e in reg.data['assets'].items():
-        if e.get('batch') == lab and e.get('status') == 'qa_passed':
-            e['status'] = 'approved'; e['approved_by'] = by; done.append(aid)
+    for aid in aids:
+        e = reg.data['assets'][aid]
+        if e.get('status') == 'qa_passed': e['status'] = 'approved'; e['approved_by'] = by; done.append(aid)
     today = datetime.date.today().isoformat()
-    reg.data.setdefault('approved_batches', {})[batch] = {'by': by, 'date': today}
-    if batch == 'sample': reg.data['style_approved'] = today
+    reg.data.setdefault('approved_batches', {})[batch] = {'by': by, 'date': today, 'shown': str(sp)}
+    if batch == 'sample':
+        k = anchor_attempt(reg)
+        reg.data['style_anchor'] = {'sheet': 'sheet-gear-1', 'attempt': k, 'raw': str(RAW / 'sheet-gear-1' / f'sheet-gear-1-{k}.png')}
+        reg.data['style_approved'] = today
     reg._save()
     return done
 

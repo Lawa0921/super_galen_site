@@ -155,17 +155,36 @@ def _png(path, size=(26, 26)):
     path.parent.mkdir(parents=True, exist_ok=True); Image.fromarray(rgba, 'RGBA').save(path); return str(path)
 
 
-def test_publish_requires_approval_and_writes_runtime_then_retires_replaced_base_icons(factory):
+def _fill(factory, batch, attempt=lambda aid: 'a1'):
+    """Every part of a batch picked and qa_passed, each with a small final PNG of its own."""
+    reg = A.Registry(factory / 'registry.json')
+    for j in G.jobs():
+        if j['batch'] != batch: continue
+        for p in j['parts']:
+            for aid in G.assets_of(j, p):
+                size = (64, 64) if aid.endswith('-large') else (26, 26)
+                reg.set(aid, status='qa_passed', batch=G.label(batch), chosen_attempt=attempt(aid), source_id=j['id'],
+                        final=_png(factory / 'work' / j['id'] / f'{aid}.png', size))
+    return reg
+
+
+@pytest.fixture
+def review(factory, monkeypatch):
+    import review_gear as R
+    monkeypatch.setattr(R, 'OUT', factory / 'review')
+    return R
+
+
+def test_publish_requires_approval_and_writes_runtime_then_retires_replaced_base_icons(factory, review):
     public = factory / 'public'; old = public / 'assets/games/starlantern/icon/iron-sword.png'
     old.parent.mkdir(parents=True); Image.new('RGBA', (4, 4), (1, 2, 3, 255)).save(old)
     subprocess.run(['git', 'init', '-q'], cwd=public, check=True)
     subprocess.run(['git', 'add', 'assets/games/starlantern/icon/iron-sword.png'], cwd=public, check=True)
-    reg = A.Registry(factory / 'registry.json')
+    reg = _fill(factory, 'sample')
     reg.set('icon-iron-sword', status='published', runtime='/assets/games/starlantern/icon/iron-sword.png')
     reg.set('icon-moss', status='published', runtime='/assets/games/starlantern/icon/moss.png')
-    for aid, size in (('gear-iron-sword', (26, 26)), ('gear-iron-sword-large', (64, 64))):
-        reg.set(aid, status='qa_passed', batch='gear-5d-sample', final=_png(factory / 'work' / f'{aid}.png', size))
     reg.set('icon-flame-wave', status='qa_passed', batch='gear-5d-skills', final=_png(factory / 'work/icon-flame-wave.png'))
+    review.main('sample')
 
     with pytest.raises(PermissionError):
         G.do_publish(A.Registry(factory / 'registry.json'), 'sample', public)       # no user approval yet
@@ -174,7 +193,8 @@ def test_publish_requires_approval_and_writes_runtime_then_retires_replaced_base
     with pytest.raises(PermissionError):
         G.do_approve(A.Registry(factory / 'registry.json'), 'skills', 'user 2026-10-20: ok')   # style first
 
-    G.do_approve(A.Registry(factory / 'registry.json'), 'sample', 'user 2026-10-20: 可以')
+    done = G.do_approve(A.Registry(factory / 'registry.json'), 'sample', 'user 2026-10-20: 可以')
+    assert len(done) == 32
     reg = A.Registry(factory / 'registry.json')
     assert reg.data['style_approved'] and reg.data['approved_batches']['sample']['by'] == 'user 2026-10-20: 可以'
     assert reg.get('gear-iron-sword')['status'] == 'approved' and reg.get('gear-iron-sword')['approved_by'] == 'user 2026-10-20: 可以'
@@ -192,6 +212,84 @@ def test_publish_requires_approval_and_writes_runtime_then_retires_replaced_base
     urls = json.loads((public / 'assets/games/starlantern/manifest.json').read_text(encoding='utf-8'))['urls']
     assert '/assets/games/starlantern/gear/iron-sword.png' in urls and '/assets/games/starlantern/icon/iron-sword.png' not in urls
     assert 'runtime' not in reg.get('icon-flame-wave')
+    assert (public / 'assets/games/starlantern/ui/rarity-set.png').exists() and (public / 'assets/games/starlantern/scene/forge.png').exists()
+
+
+def _refused(factory, batch='sample'):
+    """approve refuses and changes nothing: no approvals, no style flag, no batch record."""
+    before = (factory / 'registry.json').read_bytes()
+    with pytest.raises(PermissionError):
+        G.do_approve(A.Registry(factory / 'registry.json'), batch, 'user 2026-10-20: ok')
+    reg = A.Registry(factory / 'registry.json')
+    assert (factory / 'registry.json').read_bytes() == before
+    assert 'style_approved' not in reg.data and 'approved_batches' not in reg.data and 'style_anchor' not in reg.data
+
+
+def test_approve_refuses_without_the_review_page_record(factory):
+    _fill(factory, 'sample'); _refused(factory)
+
+
+def test_approve_refuses_when_nothing_was_picked(factory, review):
+    A.Registry(factory / 'registry.json').set('x', status='todo'); review.main('sample'); _refused(factory)
+
+
+def test_approve_refuses_an_unpicked_part(factory, review):
+    reg = _fill(factory, 'sample'); reg.data['assets'].pop('icon-king-scale'); reg._save()
+    review.main('sample'); _refused(factory)
+
+
+def test_approve_refuses_a_part_that_failed_qa(factory, review):
+    reg = _fill(factory, 'sample'); reg.set('ui-rarity-set', status='qa_failed')
+    review.main('sample'); _refused(factory)
+
+
+def test_approve_refuses_a_part_changed_after_the_review_page(factory, review):
+    _fill(factory, 'sample'); review.main('sample')
+    _png(factory / 'work/sheet-gear-1/gear-iron-sword.png', (24, 24))     # a re-pick after the user looked
+    _refused(factory)
+    review.main('sample')                                                   # shown again: now it may be approved
+    assert G.do_approve(A.Registry(factory / 'registry.json'), 'sample', 'user 2026-10-21: ok')
+
+
+def test_sample_approval_records_the_style_anchor_attempt_and_the_anchor_uses_it(factory, review):
+    reg = _fill(factory, 'sample', attempt=lambda aid: 'a2' if aid.startswith(('gear-iron-sword', 'gear-leather-cap')) else 'a3')
+    _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a2.png', cell=60); _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a3.png')
+    with pytest.raises(PermissionError):
+        G.make_anchor(reg, factory / 'anchor.png')                          # nothing approved yet
+    review.main('sample'); G.do_approve(A.Registry(factory / 'registry.json'), 'sample', 'user 2026-10-20: ok')
+    reg = A.Registry(factory / 'registry.json')
+    assert reg.data['style_anchor']['attempt'] == 'a3'                      # most of sheet-gear-1 came from a3
+    out = G.make_anchor(reg, factory / 'anchor.png')
+    src = Image.open(factory / 'raw/sheet-gear-1/sheet-gear-1-a3.png')
+    assert Image.open(out).size == (src.width // 2, src.height // 2)
+
+
+def test_repick_of_an_approved_or_published_part_needs_reopen(factory):
+    public = factory / 'public'
+    _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a1.png'); _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a2.png')
+    G.pick(['--id', 'sheet-gear-1', '--attempt', '1'])
+    reg = A.Registry(factory / 'registry.json')
+    reg.set('gear-iron-sword-large', status='approved', approved_by='user 2026-10-20: ok')
+    rel = 'assets/games/starlantern/gear/iron-sword.png'; (public / rel).parent.mkdir(parents=True); Image.new('RGBA', (2, 2)).save(public / rel)
+    subprocess.run(['git', 'init', '-q'], cwd=public, check=True); subprocess.run(['git', 'add', rel], cwd=public, check=True)
+    reg.set('gear-iron-sword', status='published', runtime='/' + rel, approved_by='user 2026-10-20: ok')
+    reg.set('gear-blaze-heart-sword', status='published', runtime='/assets/games/starlantern/gear/blaze-heart-sword.png')
+    reg.write_manifest(public)
+    before = (factory / 'registry.json').read_bytes()
+    with pytest.raises(PermissionError):
+        G.pick(['--id', 'sheet-gear-1', '--attempt', '2', '--part', 'iron-sword'])
+    assert (factory / 'registry.json').read_bytes() == before and (public / rel).exists()
+    G.pick(['--id', 'sheet-gear-1', '--attempt', '2', '--part', 'iron-sword', '--reopen'])
+    reg = A.Registry(factory / 'registry.json')
+    for aid in ('gear-iron-sword', 'gear-iron-sword-large'):
+        e = reg.get(aid)
+        assert e['status'] == 'qa_passed' and e['chosen_attempt'] == 'a2' and 'runtime' not in e and 'approved_by' not in e, aid
+        assert e['history'][-1]['status'] in ('approved', 'published') and 'retired_runtime' not in e
+    assert reg.get('gear-iron-sword')['history'][-1]['runtime'] == '/' + rel
+    assert not (public / rel).exists()
+    urls = json.loads((public / 'assets/games/starlantern/manifest.json').read_text(encoding='utf-8'))['urls']
+    assert urls == ['/assets/games/starlantern/gear/blaze-heart-sword.png']
+    assert reg.get('gear-blaze-heart-sword')['status'] == 'published'          # other parts are untouched
 
 
 def test_silhouettes_come_only_from_approved_sources_and_are_marked_derived(factory):
@@ -240,8 +338,29 @@ def test_review_page_lists_every_part_of_the_batch_and_copies_only_existing_file
     assert srcs and all(s.startswith('img/') and (factory / 'review' / s).is_file() for s in srcs), [s for s in srcs if not (factory / 'review' / s).is_file()]
     assert 'qa_passed，尚未核准、未發布' in page
     assert 'img/sil-blaze-heart-sword.png' in page                  # silhouette preview made in the page, not the registry
+    assert Image.open(factory / 'review/img/sil-blaze-heart-sword.png').size == (28, 28)
+    assert re.search(r'\.li\{\{?zoom:2;', page) and not re.search(r'\.li\{[^}]*width', page)    # shown at 2x its native 28 px
+    shown = json.loads(G.shown_path('sample').read_text(encoding='utf-8'))['parts']
+    assert set(shown) == {'gear-iron-sword', 'gear-iron-sword-large', 'gear-blaze-heart-sword', 'gear-blaze-heart-sword-large',
+                          'gear-set-blaze-weapon', 'gear-set-blaze-weapon-large', 'ui-rarity-rare'}       # only files that exist
+    assert shown['gear-iron-sword'] == G.sha256(factory / 'work/gear-iron-sword.png')
     assert (factory / 'registry.json').read_bytes() == before        # read-only for the registry
     assert 'gear-blaze-heart-sword-silhouette' not in A.Registry(factory / 'registry.json').data['assets']
+
+
+def test_skills_review_page_shows_all_78_icons_each_under_its_owner(factory, review):
+    import re
+    _fill(factory, 'skills')
+    page = review.main('skills').read_text(encoding='utf-8')
+    names = review.names()
+    figs = re.findall(r'<figure data-skill="([a-z0-9-]+)" data-owner="([a-z]+)"><img class="px" src="(img/[^"]+)"', page)
+    assert len(figs) == 78
+    want = {s: o for o, (_, ids) in G.SKILL_OWNERS.items() for s in ids}
+    assert {s: o for s, o, _ in figs} == want
+    for s in ('abyss-sword', 'abyss-guard', 'abyss-star', 'abyss-light', 'abyss-chain'):      # `abyss: true` comes before `name`
+        assert names[s] and want[s] == 'hero' and review.skill_owners()[s] == 'hero'
+    assert all(names.get(s) for s in want)
+    assert names['abyss-sword'] in page
 
 
 def test_committed_gear_plan_json_is_current(factory):
