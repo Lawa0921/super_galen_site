@@ -1000,7 +1000,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   // Task 14: the finale (spec §8.4, §3.4, §3.6, §6; lore ledger I-109 to I-115). It opens where the hero's 10th piece ends,
   // the footsteps behind him, and always follows Rin's choice (U3): no `if.oath`. Twelve lines in every party: Lorne means to
   // burn this round's days as the wick; each companion gives a memory of him in her own voice (met) or Lorne hears her in
-  // the lamp and names her (not met); Bobby's valve closes the eight; the light goes home, dawn, each other; the bell; Rin.
+  // the lamp and names her (not met); Bobby's valve closes the eight; Rin's hand on his as the lamp steadies and the light
+  // goes home; the society's last bell; Rin's last word.
   // Address forms that change with a full chain (Selene, Noel, Scarlet, and Bobby's ancestors) read both ways.
   finale: {
     lines: [
@@ -1025,12 +1026,14 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'bobby', mood: 'focused', text: '「燈芯少了一道閥，只會吞，不會還喔。……好，裝上了！洛恩哥，燈不用再燒掉誰了。」', if: { met: 'bobby', notFull: 'bobby' } },
       { who: 'bobby', mood: 'smile', text: '「洛恩哥，閥裝好了喔。祖先造錯的東西，我修好了。……燈，再也不用燒掉誰。」', if: { met: 'bobby', full: 'bobby' } },
       { who: 'hero', mood: 'resolve', text: '「燈芯少一道閥，才會把點燈的人燒盡。……波比，造燈那一族的孩子。這道閥，我替妳補上。」', if: { notMet: 'bobby' } },
-      N('燈穩了下來。碎片的光回到每一個弄丟它的人身上，暮霧散了。天亮了，每個人都找回了自己，也選擇了彼此。'),
-      N('凜把敲平的鐘交給鐘守。他聽完真相，敲響最後一聲：「吾等殺的一直是守燈人。每殺一次，燈就晚一次點亮。靜鐘會，散了。」'),
+      // Fix round 1: Rin's hand is on his when the lamp takes, in every reading; each other is shown, not said. The bell he
+      // strikes is the society's own: her flattened one never rings again (I-51).
+      N('凜的手疊上他握著燈鑰的手。燈穩了下來，碎片的光回到每一個弄丟它的人身上。暮霧散了。天亮時，沒有一個人鬆開手。'),
+      N('鎮上，凜把敲平的鐘交給鐘守。他敲響結社的鐘，最後一聲：「吾等殺的一直是守燈人。每殺一次，燈就晚一次點亮。靜鐘會，散了。」'),
       // Coordinator ruling: Rin closes the game, echoing Lorne's line from her reveal; 「大家」 makes it everyone's, not a pick.
       { who: 'rin', mood: 'smile', text: '「……洛恩。明天，大家也一起回來吧。」' },
     ],
-    summary: '燈喰之母倒下，星燈由許多人的記憶點亮。暮霧散了，靜鐘會敲完最後一聲。大家一起回來了。從深處走出來的，再也不是一個人。',
+    summary: '燈喰之母倒下，星燈不再由一個人點亮。暮霧散了，靜鐘會敲完最後一聲。大家一起回來了。從深處走出來的，再也不是一個人。',
   },
 };
 
@@ -1459,7 +1462,7 @@ export const STORY = {
   /** The Act 1 milestone card, and the finale's closing card title (its text is the finale scene's summary). */
   act1Card: { title: '第一幕　星燈重新亮起', body: '燈喰之獸倒下了。暮霧從石板路上退去，露米亞第一次看見了晨光。' },
   endingTitle: '終幕　點燈',
-  /** Rescue meetings: what is said before the fight (the found line is narration; 6c adds hers) and after it is won. */
+  /** Rescue meetings: what is said before the fight (the found line is narration, then hers) and after it is won. */
   meet: Object.fromEntries(MEETINGS.map((m) => [m.id, written(MEET[m.id], `meet.${m.id}`)])) as Record<Meetable, { before: ScriptLine[]; after: ScriptLine[] }>,
   /**
    * Strangers' memories, one played when a shard is absorbed (Task 13; spec §3.1, §7.4; lore ledger I-102). Ordinary lives,

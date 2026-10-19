@@ -1472,6 +1472,9 @@ describe('Task 14: the finale', () => {
       // 1 Lorne the wick; 2 the eight; 3 the lamp, dawn and each other; 4 the bell; 5 Rin closes the game (coordinator ruling)
       expect(played[0].who).toBe('hero');
       expect(played[11].who).toBe('rin');
+      const lamp = played.findIndex((l) => l.text.includes('燈穩了下來'));
+      expect(lamp, 'the lamp line plays').toBe(9);
+      expect(played.slice(0, lamp + 1).some((l) => l.who !== 'hero' && (l.who !== 'narrator' || /凜/.test(l.text))), 'he is not alone at the lamp').toBe(true);
       for (const i of [0, 9, 10, 11]) expect(played[i].if, `${i}`).toBeUndefined();
       expect(played.slice(1, 9).every((l) => l.if !== undefined)).toBe(true);
       expect(played[8].if?.met === 'bobby' || played[8].if?.notMet === 'bobby', 'Bobby closes the eight with the valve').toBe(true);
@@ -1495,14 +1498,18 @@ describe('Task 14: the finale', () => {
     expect(tail[0]).toMatch(/碎片的光/);
     expect(tail[0]).toMatch(/暮霧/);
     expect(tail[0]).toMatch(/天亮/);
-    expect(tail[0]).toMatch(/找回了自己/);
-    expect(tail[0]).toMatch(/彼此/);
+    // fix round 1 (§8.4, the wick): he is never alone when the lamp takes. Rin, met in every reading, puts her hand on his
+    // in the same line, before the lamp steadies; each other is shown, not stated (style bible §1.1)
+    expect(tail[0]).toMatch(/^凜的手/);
+    expect(tail[0].indexOf('凜')).toBeLessThan(tail[0].indexOf('燈穩'));
+    expect(tail[0]).not.toMatch(/找回了自己|選擇了彼此/);
     // the finale's truths are said here first (spec §3.6), as the bellkeeper hears them, with her bell and his last one
     expect(tail[1]).toMatch(/凜/);
     expect(tail[1]).toMatch(/鐘守/);
     expect(tail[1]).toMatch(/殺的一直是守燈人/);
     expect(tail[1]).toMatch(/晚一次點亮/);
     expect(tail[1]).toMatch(/最後一聲/);
+    expect(tail[1]).toMatch(/結社的鐘|靜鐘會的鐘/);   // fix round 1: the society's own bell; her flattened one never rings (I-51)
     expect(tail[1]).toMatch(/散/);
     // Rin's last word echoes Lorne's from her reveal (「明天也一起回來吧。」), for everyone: after her choice she names him
     const rin = L[L.length - 1];
