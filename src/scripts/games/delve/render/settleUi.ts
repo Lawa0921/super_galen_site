@@ -1,6 +1,6 @@
 // settleUi.ts — 據點 UI（DOM）：據點面板（B / 點爐心）、居民面板（點居民：對話 / 商店 / 服務）、
 // 查房模式的房間標籤（H）、居民頭上的對話泡泡。內容一律 textContent / class 組成；定位用 CSS 變數（--x / --y）。
-import type { DelveGame } from '../engine/game';
+import { FOLK_TALK_RANGE, type DelveGame } from '../engine/game';
 import { NPCS, NPC_KINDS, moodLabel, shopPrice, type NpcKind } from '../engine/npcs';
 import { LEVEL_NAMES, LEVELS, MAX_LEVEL, PERKS, PERK_ORDER, nextNeeds, type Evaluation } from '../engine/settlement';
 import { roomReasonsText } from '../engine/housing';
@@ -361,7 +361,8 @@ export class SettleUi {
         // 走太遠就收起來
         const n = this.npcKind ? this.game.settle.npc(this.npcKind) : null;
         const pc = this.game.playerCenter();
-        if (!n || Math.hypot(n.body.x - pc.x, n.body.y - pc.y) > 12 * S) this.closeNpc();
+        // 收起面板的距離 = 服務的距離
+        if (!n || !this.game.nearNpc(n.kind, FOLK_TALK_RANGE)) { if (n) this.onToast(`離${NPCS[n.kind].name}太遠了，對話結束`); this.closeNpc(); }
         else this.renderNpc();
       }
     }

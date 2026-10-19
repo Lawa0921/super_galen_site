@@ -1,7 +1,7 @@
 // folkUi.ts — 世界 NPC 的 DOM 介面：NPC 面板（對話 / 好感度 / 商店 / 收購 / 服務 / 委託 / 邀請 / 救援）、
 // 委託清單面板（L）、NPC 頭上的對話泡泡與「！」、遇見 / 委託 / buff 的提示文字。
 // 內容一律 textContent / class 組成；定位用 CSS 變數（--x / --y），沒有行內樣式。
-import type { DelveGame, DelveEvent } from '../engine/game';
+import { FOLK_TALK_RANGE, type DelveGame, type DelveEvent } from '../engine/game';
 import type { FolkNpc } from '../engine/folk';
 import { ROLES, AFF_TIERS, BUFFS, affTier } from '../engine/folkDefs';
 import { questKindLabel, MAX_ACTIVE, type QuestState } from '../engine/quests';
@@ -284,6 +284,7 @@ export class FolkUi {
     const n = this.npc(), g = this.game;
     if (!t || !n) return;
     const d = t.dataset;
+    if (!g.nearFolk(n, FOLK_TALK_RANGE)) { this.msg = '太遠了，靠近一點再說'; this.sig = ''; this.render(); return; }
     if (d.buy !== undefined) {
       const it = g.folk.shop(n)[Number(d.buy)];
       if (g.folkBuy(n.key, Number(d.buy)) && it) this.msg = `買了 ${ITEMS[it.item].name.zh}${it.n > 1 ? ` ×${it.n}` : ''}`;
@@ -379,8 +380,10 @@ export class FolkUi {
     this.frame++;
     if ((this.frame & 15) === 0) {
       if (this.isOpen) {
-        const n = this.npc(), pc = this.game.playerCenter();
-        if (!n || Math.hypot(n.body.x - pc.x, n.body.y - pc.y) > 14 * S) this.close();
+        // 收起面板的距離 = 交易距離（不會出現「面板還開著、按了卻沒反應」）
+        const n = this.npc();
+        if (!n) this.close();
+        else if (!this.game.nearFolk(n, FOLK_TALK_RANGE)) { this.close(); this.o.onToast(`離${n.name}太遠了，對話結束（靠近一點再說話）`, 2200); }
         else this.render();
       }
       if (this.questsOpen) this.renderQuestLog();
@@ -388,7 +391,27 @@ export class FolkUi {
     const ds = this.root.dataset;
     if (this.isOpen || this.questsOpen) ds.fpanel = '1'; else delete ds.fpanel;
     if ((this.frame & 7) === 0) this.updateBuffs();
+    this.dodgeToast();
     this.updateLabels();
+  }
+  /**
+   * 提示訊息避開開著的面板（NPC / 居民 / 據點 / 委託）：
+   * 面板下面還有空間 → 提示放在畫面最下面；面板左邊夠寬 → 提示放在左邊那塊的中間、寬度不超過面板；都不行 → 放在面板上方
+   */
+  private dodgeToast(): void {
+    const ds = this.root.dataset, st = this.root.style;
+    let p: DOMRect | null = null;
+    for (const sel of ['#delve-folk', '#delve-quests', '#delve-npc', '#delve-settle']) {
+      const e = this.q(sel);
+      if (e && !e.hidden) { const r = e.getBoundingClientRect(); if (r.width > 0) { p = r; break; } }
+    }
+    if (!p) { if (ds.toastDodge) delete ds.toastDodge; return; }
+    const H = window.innerHeight;
+    let mode: string;
+    if (H - p.bottom >= 70) mode = 'below';
+    else if (p.left >= 220) { mode = 'left'; st.setProperty('--toast-cx', `${Math.round(p.left / 2)}px`); st.setProperty('--toast-max', `${Math.round(p.left - 20)}px`); }
+    else { mode = 'above'; st.setProperty('--toast-bottom', `${Math.round(H - p.top + 8)}px`); }
+    if (ds.toastDodge !== mode) ds.toastDodge = mode;
   }
   /** HUD：生效中的 buff（名字 + 剩餘時間），可以同時好幾種 */
   private updateBuffs(): void {
@@ -444,5 +467,6 @@ export class FolkUi {
     for (const t of this.tags.values()) t.remove();
     this.tags.clear();
     delete this.root.dataset.fpanel;
+    delete this.root.dataset.toastDodge;
   }
 }
