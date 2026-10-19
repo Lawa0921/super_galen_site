@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { constRng, memoryStorage, plainItem } from '../../engine/testing';
-import { NO_ART } from '../../render/textures';
+import { NO_ART, type ArtIndex } from '../../render/textures';
 import { GuildScene } from './guild';
 import { LEGACY_LINEUP, START_LINEUP, meet } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
@@ -18,7 +18,7 @@ const benchBobby = (g: Game) => {
   g.state.party = { ...g.state.party, grid: g.state.party.grid.map((c) => (c === 'bobby' ? null : c)) };
 };
 
-function setup(from?: 'formation' | 'status', lineup: readonly string[] = LEGACY_LINEUP, prep?: (g: Game) => void, story?: StoryMode) {
+function setup(from?: 'formation' | 'status', lineup: readonly string[] = LEGACY_LINEUP, prep?: (g: Game) => void, story?: StoryMode, art: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), memoryStorage(), undefined, 0, [...lineup] as never);
   prep?.(game);
   game.state.gold = 1000;
@@ -26,7 +26,7 @@ function setup(from?: 'formation' | 'status', lineup: readonly string[] = LEGACY
   game.state.nextUid = 2;
   const root = document.createElement('div');
   const go = vi.fn();
-  const s = new GuildScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), from, settings: story ? ({ get: () => ({ ...DEFAULT_SETTINGS, story }) } as never) : undefined }, Infinity);
+  const s = new GuildScene({ game, art, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), from, settings: story ? ({ get: () => ({ ...DEFAULT_SETTINGS, story }) } as never) : undefined }, Infinity);
   s.enter(root);
   if (!from) s.onAction('confirm'); // greeting
   const opts = () => [...root.querySelectorAll('.slx-layer:last-child [role=option]')].map((o) => o.querySelector('.slx-label')!.textContent);
@@ -239,6 +239,32 @@ describe('GuildScene fragment exchange', () => {
     expect(STORY.absorb).toContain(lines[0]);
     expect(lines[1]).toContain(`${T.gear.statName[gain.stat]} +${gain.amount}`);
     expect(game.state.inventory[SHARD_IDS.vivid]).toBeUndefined();
+  });
+
+  it("a stranger's line is nobody's: no nameplate, no face, a remembered box, Anna's face left neutral; the gain is Anna's", async () => {
+    const art: ArtIndex = { has: () => true };
+    const { game, root, pick, s } = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { [SHARD_IDS.dim]: 1 }), undefined, art);
+    const id = game.state.party.recruited[0];
+    pick(T.ui2.exchange.title);
+    pick(T.ui2.exchange.absorb);
+    pick(SHARD_NAMES.dim);
+    row(root, CHARACTERS[id].name).click();
+    pick('是');
+    await new Promise((r) => setTimeout(r, 0));
+    const talk = root.querySelector('.slx-talk')!;
+    const name = talk.querySelector('.slx-name') as HTMLElement;
+    expect(STORY.absorb).toContain(talk.querySelector('.slx-text')!.textContent);
+    expect(name.hidden || name.textContent === '').toBe(true);
+    expect(talk.textContent).not.toContain(T.ui2.facility.guild.npc);
+    expect(talk.querySelector('.slx-talk-face')).toBeNull();
+    expect(talk.classList.contains('slx-talk--memory')).toBe(true);
+    expect(root.querySelector('.slx-npc')!.getAttribute('src')).not.toContain('guild-happy');
+    s.onAction('confirm');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(name.hidden).toBe(false);
+    expect(name.textContent).toBe(T.ui2.facility.guild.npc);
+    expect(talk.querySelector('.slx-text')!.textContent).toContain(T.gear.statName[game.state.party.roster[id].absorbed!.at(-1)!.stat]);
+    expect(talk.classList.contains('slx-talk--memory')).toBe(false);
   });
 
   it('absorbing lists only the members the party has met', () => {

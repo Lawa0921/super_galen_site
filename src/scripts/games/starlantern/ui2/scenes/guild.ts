@@ -219,7 +219,7 @@ export class GuildScene extends FacilityScene {
     const r = this.ctx.game.absorb(id, grade);
     if (!r.ok) { this.exchangeFail(r.reason, T.ui2.exchange.absorbFail); return; }
     this.reopenExchange();
-    await this.say(r.line, 'happy');
+    await this.narrate(r.line);   // a stranger's memory, not Anna's words (6c Task 13)
     await this.say(T.ui2.exchange.gain(T.gear.statName[r.gain.stat], r.gain.amount));
   }
 

@@ -122,10 +122,25 @@ export abstract class FacilityScene implements Scene {
   }
 
   protected say(text: string | Rich, mood: 'normal' | 'happy' = 'normal'): Promise<void> {
+    this.talk.setStyle('plain');
     if (mood === 'happy') this.setMood('happy');
     this.talking = true;
     this.syncInert();
     const done = this.talk.say(T.ui2.facility[this.id].npc, text);
+    void done.then(() => { this.talking = false; this.syncInert(); });
+    return done;
+  }
+
+  /**
+   * A line that is nobody's here (a stranger's memory surfacing from an absorbed shard): the remembered box, with no nameplate
+   * and no face, and the keeper's face back to neutral so it does not read as hers (6c Task 13).
+   */
+  protected narrate(text: string | Rich): Promise<void> {
+    this.setMood('normal');
+    this.talk.setStyle('memory');
+    this.talking = true;
+    this.syncInert();
+    const done = this.talk.say('', text);
     void done.then(() => { this.talking = false; this.syncInert(); });
     return done;
   }

@@ -997,7 +997,8 @@ describe('StatusScene', () => {
       expect(awake.line).toContain(KEYSTONES[MEMORY_KEYSTONES.selene].desc);
       expect(awake.line).not.toContain(t.memoryLocked(total));
       // Rin's wakes with her oath; until then it reads like everyone's, without naming her choice.
-      expect(open(chainLength('rin'), 'rin').line).toContain(t.memoryLocked(chainLength('rin')));
+      expect(open(chainLength('rin'), 'rin').line).toContain(t.memoryLockedRin);
+      expect(open(chainLength('rin'), 'rin').line).not.toContain(t.memoryLocked(chainLength('rin')));
       expect(open(chainLength('rin'), 'rin', { oath: true }).line).toContain(KEYSTONES[MEMORY_KEYSTONES.rin].desc);
     });
 
@@ -1015,7 +1016,7 @@ describe('StatusScene', () => {
         const asleep = open(id, total - 1);
         expect(asleep).not.toContain(k.name);
         expect(asleep).toContain(T.ui2.handbook.unknown);
-        expect(asleep).toContain(t.memoryLocked(total));
+        expect(asleep).toContain(id === 'rin' ? t.memoryLockedRin : t.memoryLocked(total));
         const awake = open(id, total, id === 'rin' ? { oath: true } : {});
         expect(awake).toContain(k.name);
         expect(awake).toContain(k.desc);
@@ -1025,6 +1026,10 @@ describe('StatusScene', () => {
       const waiting = open('rin', chainLength('rin'));
       expect(waiting).not.toContain(KEYSTONES[MEMORY_KEYSTONES.rin].name);
       expect(waiting).toContain(T.ui2.handbook.unknown);
+      // Her hint waits on the oath, not the pieces, and is seen before her reveal: it must not name the choice (6c Task 13, I-107).
+      expect(waiting).toContain(t.memoryLockedRin);
+      expect(open('rin', 0)).toContain(t.memoryLockedRin);
+      expect(t.memoryLockedRin).not.toMatch(/選擇|誓|鐘|殺|刺客|片/);
     });
 
     it('with no points left a shut node shows its structural reason, an open one 點數不足', () => {

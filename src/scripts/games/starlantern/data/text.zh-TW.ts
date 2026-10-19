@@ -229,6 +229,8 @@ export const T = {
       /** The memory keystone's line under the board (it takes no slot): its name once awake, or what wakes it. */
       memoryKeystone: (name: string) => `記憶關鍵天賦：${name}`,
       memoryLocked: (n: number) => `找回全部 ${n} 片記憶後覺醒`,
+      /** Rin's wakes on her oath, not on her pieces. Seen before her reveal, so it names no choice (6c Task 13; lore ledger I-107). */
+      memoryLockedRin: '當她不再等待的那天覺醒',
       /** A normal node's bonus per rank, e.g. 「+2／級」; a percent stat carries a % sign. */
       per: (key: AnyStat, v: number) => `${signed(v)}${POINT_STATS.includes(key) ? '' : '%'}／級`,
       /** The notes for a normal node: 「智力 +2／級（目前 +4）」. */

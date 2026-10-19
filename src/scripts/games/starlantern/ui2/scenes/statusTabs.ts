@@ -596,8 +596,9 @@ function memoryLine(m: Member): HTMLElement[] {
   const awake = memoryKeystoneAwake(m);
   return [el('div', { class: `slx-talent-memkey ${awake ? 'slx-memkey-awake' : 'slx-memkey-locked'}` }, [
     // A sleeping keystone keeps its name back: the name would tell what the memories hold.
+    // Rin's wakes on her oath, not her pieces, so her hint says so without naming the choice.
     el('span', { class: 'slx-talent-memkey-name', text: t.memoryKeystone(awake ? k.name : T.ui2.handbook.unknown) }),
-    el('span', { class: 'slx-talent-memkey-desc', text: awake ? k.desc : t.memoryLocked(chainLength(m.id)) }),
+    el('span', { class: 'slx-talent-memkey-desc', text: awake ? k.desc : m.id === 'rin' ? t.memoryLockedRin : t.memoryLocked(chainLength(m.id)) }),
   ])];
 }
 
