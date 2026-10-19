@@ -33,9 +33,10 @@ export const EYE_RAMPS: RGB[][] = [
 ];
 
 export const SKIN_RAMPS: RGB[][] = [
-  ramp('#b07a4b', '#d98f66', '#f2b888', '#ffe2cc', '#fff4c0'), // 白皙
-  ramp('#7c4c2e', '#b07a4b', '#d98f66', '#f2b888', '#ffe2cc'), // 淺色
-  ramp('#623924', '#7c4c2e', '#b07a4b', '#d98f66', '#f2b888'), // 小麥
+  // 暖粉膚色：陰影往紅 / 紫偏（不是把底色調暗），最深那階是帶紫的玫瑰色
+  ramp('#7a5a8c', '#b8788e', '#f2b888', '#ffe2cc', '#fff4c0'), // 白皙
+  ramp('#7a5a8c', '#b8788e', '#d98f66', '#f2b888', '#ffe2cc'), // 淺色
+  ramp('#623924', '#b8788e', '#b07a4b', '#d98f66', '#f2b888'), // 小麥
   ramp('#2a1810', '#623924', '#966139', '#c99660', '#d8ba76'), // 褐色
   ramp('#1c1424', '#472819', '#623924', '#7c4c2e', '#b07a4b'), // 深色
 ];
@@ -64,6 +65,9 @@ export const WHITE = CLOTH_RAMPS[0];
 export const GOLD = hex('#ffd86a');
 export const EYE_WHITE = hex('#ffffff');
 export const MOUTH = hex('#8c2038');
+export const MOUTH_RED = hex('#c8344c');
+/** 上眼瞼 / 睫毛（暖的深棕，不用純黑） */
+export const LASH = hex('#472819');
 export const TONGUE = hex('#e890b0');
 export const SWEAT = ramp('#5c9ce0', '#94c8ee', '#ffffff');
 export const GLASSES = hex('#423f54');

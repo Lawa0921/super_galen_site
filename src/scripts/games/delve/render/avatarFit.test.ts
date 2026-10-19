@@ -62,10 +62,11 @@ describe('男女一眼分得出', () => {
     const m = { ...f, body: 1, blush: false };
     const fb = flatFrame(avatarFrame(plainLook(f), 'idle', 0)), mb = flatFrame(avatarFrame(plainLook(m), 'idle', 0));
     let eyeDiff = 0;
-    for (let y = 22; y <= 33; y++) for (let x = 0; x < AV_FW; x++) if (fb.raw(x, y) !== mb.raw(x, y)) eyeDiff++;
+    for (let y = 31; y <= 39; y++) for (let x = 0; x < AV_FW; x++) if (fb.raw(x, y) !== mb.raw(x, y)) eyeDiff++;
     expect(eyeDiff).toBeGreaterThanOrEqual(14);
     const width = (b: Bmp, y: number): number => { let a = b.w, z = -1; for (let x = 0; x < b.w; x++) if (b.on(x, y)) { a = Math.min(a, x); z = Math.max(z, x); } return z - a + 1; };
-    const sy = shoulderOf(0, false).y + 1;
+    // 後頸頭髮下面那列（只量到身體）
+    const sy = shoulderOf(0, false).y + 3;
     expect(width(mb, sy) - width(fb, sy)).toBeGreaterThanOrEqual(2);
   });
 });

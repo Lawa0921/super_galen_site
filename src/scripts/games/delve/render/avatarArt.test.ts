@@ -2,7 +2,7 @@
 // 圖層順序、頭盔收起頭頂的頭髮、外觀欄蓋過防具、稀有度 / 元素 / 強化看得出來、背面爬繩把手臂畫進影格。
 import { describe, it, expect } from 'vitest';
 import { Bmp, inPalette } from './pixel';
-import { DEFAULT_APPEARANCE, HAIR_STYLES, OUTFITS, randomAppearance } from '../engine/appearance';
+import { DEFAULT_APPEARANCE, HAIR_STYLES, OUTFITS, bodyDefaults, randomAppearance } from '../engine/appearance';
 import { DOLL_LAYERS, dollKey, plainLook, type DollLook, type DollPiece } from '../engine/doll';
 import { AV_FH, AV_FW, SHEET, SHEET_ANIMS, avatarFrame, avatarSheet, flatFrame, pieceBmp } from './avatarArt';
 import { dollPreview } from './dollPreview';
@@ -107,11 +107,28 @@ describe('3/4 正面的朝向感', () => {
     expect(eyeX(idle, er)).toBeGreaterThan((x0 + x1) / 2);
     expect(eyeX(walk, er)).toBeGreaterThan(eyeX(idle, er) + 1.5);
   });
-  it('小人的大小：約 38–42 px 高、頭約佔 6 成（約 1.6 頭身）', () => {
-    const b = flatFrame(avatarFrame(plainLook({ ...DEF, ahoge: false }), 'idle', 0));
-    let top = b.h; for (let y = 0; y < b.h && top === b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) { top = y; break; }
-    expect(AV_FH - top).toBeGreaterThanOrEqual(36);
-    expect(AV_FH - top).toBeLessThanOrEqual(43);
+  it('小人的大小：約 33–38 px 高、頭佔 6 成以上（身體 + 腿只有 12–14 列：Q 版小身體）', () => {
+    for (const body of [0, 1]) {
+      const r = avatarFrame(plainLook({ ...bodyDefaults(body), ahoge: false }), 'idle', 0), b = flatFrame(r);
+      let top = b.h; for (let y = 0; y < b.h && top === b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) { top = y; break; }
+      expect(AV_FH - top, `body ${body}`).toBeGreaterThanOrEqual(32);
+      expect(AV_FH - top, `body ${body}`).toBeLessThanOrEqual(40);
+      // 頭（臉那張）的最下一列 = 下巴；下巴以下（身體 + 腿）12–14 列
+      let chin = 0; for (let y = 0; y < r.face!.h; y++) for (let x = 0; x < r.face!.w; x++) if (r.face!.on(x, y)) chin = y;
+      expect(AV_FH - 1 - chin, `body ${body}`).toBeGreaterThanOrEqual(11);
+      expect(AV_FH - 1 - chin, `body ${body}`).toBeLessThanOrEqual(14);
+      expect((chin - top) / (AV_FH - top), `body ${body}`).toBeGreaterThanOrEqual(0.55);
+    }
+  });
+  it('身體比頭窄很多：頭寬約是身寬的 2.5–3 倍（軀幹 7–10 寬）', () => {
+    for (const body of [0, 1]) {
+      const r = avatarFrame(plainLook({ ...bodyDefaults(body), hair: 0, acc: 0, ahoge: false }), 'idle', 0);
+      const w = (b: Bmp, y: number): number => { let a = b.w, z = -1; for (let x = 0; x < b.w; x++) if (b.on(x, y)) { a = Math.min(a, x); z = Math.max(z, x); } return z < 0 ? 0 : z - a + 1; };
+      const torso = w(r.body, 45), head = Math.max(...Array.from({ length: 10 }, (_, k) => w(r.head, 28 + k)));
+      expect(torso, `body ${body}`).toBeGreaterThanOrEqual(7);
+      expect(torso, `body ${body}`).toBeLessThanOrEqual(12);
+      expect(head / torso, `body ${body}`).toBeGreaterThanOrEqual(2);
+    }
   });
 });
 
@@ -157,10 +174,10 @@ describe('圖層', () => {
     const helm = avatarFrame({ ...plainLook(a), head: piece('armor:iron') }, 'idle', 0).head;
     const hr = new Set(hairRamp(a.hairColor).map((c) => c.join()));
     const hairPx = (b: Bmp, y0: number, y1: number): number => { let n = 0; for (let y = y0; y <= y1; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y) && hr.has(b.get(x, y).join())) n++; return n; };
-    expect(hairPx(bare, 0, 12)).toBeGreaterThan(5);
-    expect(hairPx(helm, 0, 12)).toBe(0);
+    expect(hairPx(bare, 0, 19)).toBeGreaterThan(5);
+    expect(hairPx(helm, 0, 19)).toBe(0);
     // 瀏海（額頭那一帶）還在
-    expect(hairPx(helm, 25, 27)).toBeGreaterThan(3);
+    expect(hairPx(helm, 29, 33)).toBeGreaterThan(2);
   });
   it('外觀欄 / 時裝蓋過防具：穿鐵甲 vs 鐵甲 + 水手服外觀，畫出來的身體不同、而且和純水手服一樣', () => {
     const base = plainLook(DEF);
@@ -241,8 +258,8 @@ describe('體型（男 / 女）與爬繩', () => {
   it('男女畫出來不一樣：男生肩膀寬、沒有腮紅；每套防具 / 服裝在兩種體型上都畫得出來、只用色票', () => {
     const fb = avatarFrame(plainLook(female), 'idle', 0).body, mb = avatarFrame(plainLook(male), 'idle', 0).body;
     const width = (b: Bmp, y: number): number => { let n = 0; for (let x = 0; x < b.w; x++) if (b.on(x, y)) n++; return n; };
-    // 肩膀那一列（3/4 正面的小身體：軀幹第 3 列）
-    expect(width(mb, 40)).toBeGreaterThan(width(fb, 40));
+    // 軀幹第 3 列（3/4 正面的小身體）
+    expect(width(mb, 44)).toBeGreaterThan(width(fb, 44));
     // 男女同高（都收在碰撞盒 42 px 裡；男生靠肩寬 / 粗眉 / 方眼分辨）
     const topRow = (b: Bmp): number => { for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) return y; return b.h; };
     const ff = flatFrame(avatarFrame(plainLook({ ...female, ahoge: false }), 'idle', 0)), mf = flatFrame(avatarFrame(plainLook({ ...male, ahoge: false }), 'idle', 0));

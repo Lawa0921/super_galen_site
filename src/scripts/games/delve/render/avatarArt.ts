@@ -1,12 +1,13 @@
-// avatarArt.ts — 玩家角色的 Q 版紙娃娃（純 Bmp，無 DOM；toCanvas 在 sprites.ts）：克魯賽德戰技風的 3/4 正面小人。
-//   全身約 38 px（頭 24×23、約 1.6 頭身）、軀幹約 10×8、腿 3 寬的小短腿；臉 / 眼睛 / 鞋尖 / 前手都朝面向的方向（右）。
+// avatarArt.ts — 玩家角色的 Q 版紙娃娃（純 Bmp，無 DOM；toCanvas 在 sprites.ts）：日系 Q 版像素人，真正的 3/4 轉頭（面向右）。
+//   全身約 33–37 px：頭 24×22（臉在前 6 成）、身體 + 腿只有 12 列（軀幹女 7–9 寬 / 男 10 寬、6 列，2 寬的小短腿、小圓點腳）；
+//   頭寬約是身寬的 2.5–3 倍。臉 / 眼睛 / 鞋尖 / 前手都朝面向的方向（右）。
 //   樣子由 engine/doll.ts 的 DollLook 決定：頭 / 身 / 腿 / 背各部位是「基本服裝（客製化）」、時裝或防具，
 //   外加看得見的飾品（飾品鞋、胸前墜飾、腰間小物）。每格依圖層順序合成（engine/doll.ts DOLL_LAYERS）：
 //     第一張（body）：背飾 → 後髮 → 身體 → 腿 → 胸（上衣 / 胸甲 / 墜飾 / 腰間）
 //     （渲染器在中間畫：手臂 + 手持工具 / 武器）
 //     第二張（head）：臉 → 前髮 → 頭飾（頭盔 / 帽子）→ 前飾品（髮飾 / 眼鏡）
 //   爬繩 / 掛著 / 游泳 / 倒地的影格手臂直接畫在第一張，第二張是空的。
-//   影格 44×54、腳底在最下一列、身體中心 x = 22；一律面向右（繪製時鏡像）。光從左上；外緣是柔和的同色系描邊（不用近黑）。
+//   影格 52×54、腳底在最下一列、身體中心 x = 26；一律面向右（繪製時鏡像）。外緣是柔和的同色系描邊（不用近黑）。
 import { Bmp, hex, rotPrep, rotate, type RGB } from './pixel';
 import { OUTFITS, type Appearance } from '../engine/appearance';
 import type { DollLook, DollPiece } from '../engine/doll';
@@ -25,22 +26,22 @@ export const AV_FW = 52;
 export const AV_FH = 54;
 const CX = 26;
 /** 站立時腳踝的列（鞋子 3 列：腳踝..腳踝 + 2 = 最下一列） */
-const ANKLE = AV_FH - 3;
+const ANKLE = AV_FH - 2;
 /** 頭的區域原點：女 / 男（男生高 2 格） */
 const HEAD_X = 14;
-/** 男女同高（頭頂 + 呆毛 / 帽子都收在碰撞盒 42 px 裡）；男生靠肩寬 / 粗眉 / 方眼分辨 */
-const HEAD_Y = [16, 16];
+/** 男女同高（頭頂 + 毛尖 / 帽子都收在碰撞盒 42 px 裡）；男生靠肩寬 / 粗眉 / 方眼分辨 */
+const HEAD_Y = [21, 21];
 /** 體型的骨架：髖的列、大腿 / 小腿長、兩腳髖的 x、腿的半寬 */
 const BODY = [
-  { hip: 46, len: 2.5, legX: [CX - 2.5, CX + 2.5], legHalf: 1.5, top: 38 },
-  { hip: 46, len: 2.5, legX: [CX - 3, CX + 3], legHalf: 1.9, top: 38 },
+  { hip: 47, len: 2.5, legX: [CX - 2, CX + 2], legHalf: 1.05, top: 42 },
+  { hip: 47, len: 2.5, legX: [CX - 2.5, CX + 2.5], legHalf: 1.2, top: 42 },
 ];
 /** 肩膀軸心（影格座標，未加每格位移）：女（預設）/ 男 */
-export const AV_SHOULDER_FRONT = { x: 32, y: 39 };
-export const AV_SHOULDER_BACK = { x: 22, y: 39 };
+export const AV_SHOULDER_FRONT = { x: 30, y: 43 };
+export const AV_SHOULDER_BACK = { x: 23, y: 43 };
 const SHOULDERS = [
   { front: AV_SHOULDER_FRONT, back: AV_SHOULDER_BACK },
-  { front: { x: 34, y: 39 }, back: { x: 20, y: 39 } },
+  { front: { x: 31, y: 43 }, back: { x: 21, y: 43 } },
 ];
 export function shoulderOf(body: number, back: boolean): { x: number; y: number } {
   const s = SHOULDERS[body] ?? SHOULDERS[0];
@@ -51,10 +52,10 @@ export const ROPE_X = 37;
 /** 攀上邊緣第 2 格（膝蓋上台）手撐在身前台面上的最小 x（renderer 用） */
 export const MANTLE_KNEE_X = 35;
 /** 爬到繩頂（繩子到頭了）：兩手抓在胸口 / 腰的高度，不會高過繩頂 */
-export const ROPE_TOP_HANDS = [41, 44] as const;
+export const ROPE_TOP_HANDS = [46, 49] as const;
 /** 手臂圖：26×34、軸心 (13,3)；手心距軸心 HAND_REACH px（Q 版的短手） */
 export const ARM_W = 26, ARM_H = 34, ARM_PIV = { x: 13, y: 3 };
-export const HAND_REACH = 5;
+export const HAND_REACH = 4;
 
 /** 影格表的排列：動畫 → [起始索引, 格數] */
 export const SHEET = (() => {
@@ -121,10 +122,11 @@ function legStyle(l: DollLook, w: Wear): LegStyle {
   else {
     const { c1, c2 } = w;
     switch (w.o) {
-      case 'sailor': st = { parts: [[0.45, sk, 0], [1, DARK, 0]], shoe: { kind: 'loafer', r: LEATHER }, greave: null }; break;
+      // 小短腿要看得出兩條：膚色 + 白襪（不用深色襪，免得和鞋子糊成一團）
+      case 'sailor': st = { parts: [[0.55, sk, 0], [1, WHITE, 0]], shoe: { kind: 'loafer', r: LEATHER }, greave: null }; break;
       case 'miko': st = { parts: [[1, c1, 0.8]], shoe: { kind: 'zori', r: WHITE }, greave: null }; break;
       case 'hoodie': st = { parts: [[1, CLOTH_RAMPS[2], 0]], shoe: { kind: 'sneaker', r: WHITE, accent: c2[3] }, greave: null }; break;
-      case 'coat': st = { parts: [[1, CLOTH_RAMPS[1], 0]], shoe: { kind: 'tall', r: LEATHER }, greave: null }; break;
+      case 'coat': st = { parts: [[1, CLOTH_RAMPS[8], 0]], shoe: { kind: 'tall', r: LEATHER }, greave: null }; break;
       case 'maid': st = { parts: [[1, WHITE, 0]], shoe: { kind: 'mary', r: DARK }, greave: null }; break;
       default: st = { parts: [[0.45, darker(c1), 0.2], [1, sk, 0]], shoe: { kind: 'boot', r: LEATHER }, greave: null };
     }
@@ -157,18 +159,19 @@ function legBmp(pose: LegPose, hipX: number, hipY: number, st: LegStyle, far: bo
 /** 鞋：4 寬 × 3 列的圓頭小鞋（鞋尖往右多一格）、鞋底一道暗、鞋面左上一點亮 */
 function shoe(b: Bmp, st: LegStyle, x: number, y: number, far: boolean): void {
   const s = st.shoe, r = far ? darker(s.r) : s.r;
-  const x0 = x - 2;
+  const x0 = x - 1;
+  // 小圓點腳：上排 3 格、下排 4 格（鞋尖往前一格）
   const body = (top: RGB, mid: RGB): void => {
-    b.rect(x0, y, 4, 1, top); b.rect(x0, y + 1, 5, 1, mid); b.rect(x0, y + 2, 5, 1, r[1]);
-    b.set(x0, y, r[4]); b.set(x0 + 4, y + 1, r[2]);
+    b.rect(x0, y, 3, 1, top); b.rect(x0, y + 1, 4, 1, mid);
+    b.set(x0, y, r[4]); b.set(x0 + 3, y + 1, r[2]); b.set(x0, y + 1, r[2]);
   };
   switch (s.kind) {
     case 'boot': case 'armor': body(r[3], r[3]); b.set(x0 + 1, y, r[4]); if (s.kind === 'armor') b.set(x0 + 2, y + 1, r[4]); break;
-    case 'tall': body(r[3], r[3]); b.rect(x0, y - 1, 4, 1, r[2]); b.set(x0 + 1, y, GOLD); break;
+    case 'tall': body(r[3], r[3]); b.rect(x0, y - 1, 3, 1, r[2]); b.set(x0 + 1, y, GOLD); break;
     case 'loafer': body(r[3], r[3]); break;
     case 'mary': body(r[3], r[3]); b.set(x0 + 1, y, r[4]); b.set(x0 + 2, y, CLOTH_RAMPS[0][3]); break;
-    case 'sneaker': body(r[3], r[3]); b.set(x0 + 1, y + 1, s.accent ?? r[2]); b.set(x0 + 2, y + 1, s.accent ?? r[2]); b.rect(x0, y + 2, 5, 1, r[2]); break;
-    case 'zori': b.rect(x0, y + 1, 4, 1, r[3]); b.rect(x0, y + 2, 5, 1, LEATHER[3]); b.set(x0 + 1, y + 1, CLOTH_RAMPS[3][3]); break;
+    case 'sneaker': body(r[3], r[3]); b.set(x0 + 1, y + 1, s.accent ?? r[2]); b.set(x0 + 2, y + 1, s.accent ?? r[2]); break;
+    case 'zori': b.rect(x0, y, 3, 1, r[3]); b.rect(x0, y + 1, 4, 1, LEATHER[3]); b.set(x0 + 1, y, CLOTH_RAMPS[3][3]); break;
   }
   if (s.extra && !far) bootExtra(b, s.extra, x0, y);
 }
@@ -183,11 +186,13 @@ function torsoRows(body: number, wide: boolean): Rows {
   const out: Rows = {};
   const top = BODY[body]?.top ?? 38, male = body === 1;
   const w = wide ? 1 : 0;
-  for (let k = 0; k < 8; k++) {
-    let x0 = male ? 20 : 22, x1 = male ? 32 : 31;
+  // 小小的身體：女 7–9 寬、男 9–10 寬、6 列；靠前（右）的肩膀鼓一格、靠後的肩被身體擋住一點
+  for (let k = 0; k < 6; k++) {
+    let x0 = male ? 21 : 23, x1 = male ? 30 : 29;
     if (k === 0) { x0 += 1; x1 -= 1; }
-    if (k >= 1 && k <= 2) x1 += 1;
-    if (!male && (k === 4 || k === 5)) { x0 += 1; x1 -= 1; }
+    if (k === 1) x1 += 1;
+    if (!male && k === 3) { x0 += 1; x1 -= 1; }
+    if (k === 5) { x0 -= 1; }
     out[top + k] = [x0 - w, x1 + w];
   }
   return out;
@@ -232,20 +237,20 @@ function lowerFront(b: Bmp, w: Wear, rows: Rows, p: BodyPose): void {
   if (w.kind !== 'outfit') return;
   const ys = Object.keys(rows).map(Number), yb = Math.max(...ys), [x0, x1] = rows[yb];
   const { c1, c2 } = w, fl = p.flare;
-  if (w.o === 'sailor') skirt(b, yb - 1, x0, x1, 5, c1, true, p.flap, fl);
+  if (w.o === 'sailor') skirt(b, yb, x0, x1, 2, c1, true, p.flap, fl);
   if (w.o === 'maid') {
-    skirt(b, yb - 1, x0, x1, 5, c1, false, p.flap, fl);
-    for (let k = 0; k < 4; k++) for (let x = x0 + 3; x <= x1 - 2; x++) b.set(x - Math.round(p.flap * k * 0.3), yb - 1 + k, x === x0 + 3 || x === x1 - 2 ? c2[2] : c2[3]);
-    const hy = yb + 3;
+    skirt(b, yb, x0, x1, 3, c1, false, p.flap, fl);
+    for (let k = 0; k < 3; k++) for (let x = x0 + 3; x <= x1 - 2; x++) b.set(x - Math.round(p.flap * k * 0.3), yb - 1 + k, x === x0 + 3 || x === x1 - 2 ? c2[2] : c2[3]);
+    const hy = yb + 2;
     for (let x = x0 - 4; x <= x1 + 4; x++) if (b.on(x, hy)) b.set(x, hy + 1, (x & 1) ? WHITE[2] : WHITE[3]);
   }
-  if (w.o === 'miko') skirt(b, yb - 2, x0, x1, 8, c1, true, p.flap * 0.5, fl);
+  if (w.o === 'miko') skirt(b, yb - 1, x0, x1, 5, c1, true, p.flap * 0.5, fl);
   if (w.o === 'coat') {
     // 大衣下擺：兩側垂到膝蓋，前面敞開
-    for (let k = 0; k < 5; k++) {
+    for (let k = 0; k < 3; k++) {
       const trail = Math.round(p.flap * k * 0.5) + (fl ? k : 0);
-      for (let x = x0 - 1 - trail; x <= x0 + 2; x++) b.set(x, yb + k, x === x0 - 1 - trail ? c1[4] : k === 4 ? c1[2] : c1[3]);
-      for (let x = x1 - 2; x <= x1 + 1 - Math.round(trail * 0.3); x++) b.set(x, yb + k, x === x1 - 2 ? c2[3] : k === 4 ? c1[1] : c1[2]);
+      for (let x = x0 - 1 - trail; x <= x0 + 2; x++) b.set(x, yb + k, x === x0 - 1 - trail ? c1[4] : k === 2 ? c1[2] : c1[3]);
+      for (let x = x1 - 2; x <= x1 + 1 - Math.round(trail * 0.3); x++) b.set(x, yb + k, x === x1 - 2 ? c2[3] : k === 2 ? c1[1] : c1[2]);
     }
   }
 }
@@ -322,18 +327,17 @@ export function avatarArm(l: DollLook, back: boolean, f = 0): Bmp {
   const dk = (r: RGB[]): RGB[] => (back ? darker(r) : r);
   const sk = dk(sk0);
   const arm = new Bmp(ARM_W, ARM_H);
-  const big = l.app.body === 1, X0 = big ? 11 : 12, X1 = 14;
+  // Q 版細短手：2 寬（男生 3 寬）、袖子 3 列 + 2×2 小手
+  const big = l.app.body === 1, X0 = big ? 12 : 13, X1 = 14;
   const col = (y0: number, y1: number, r: RGB[], x0 = X0, x1 = X1): void => {
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) arm.set(x, y, x === x0 ? r[4] : x === x1 ? r[2] : r[3]);
   };
   const hand = (): void => {
-    const w2 = X1 - X0 + 1;
-    arm.rect(X0, 7, w2, 3, sk[3]); arm.set(X0, 7, sk[4]); arm.set(X1, 8, sk[2]); arm.set(X1, 9, sk[1]); arm.clear(X0, 9); arm.set(X0 + 1, 9, sk[2]);
-    arm.set(X1 + 1, 7, sk[3]);
+    arm.rect(13, 5, 2, 2, sk[3]); arm.set(13, 5, sk[4]); arm.set(14, 6, sk[2]);
   };
   if (w.kind === 'armor') {
     const r = dk(armor5(w.set)), R = ARMOR_RAMP[w.set];
-    col(2, 6, r); hand();
+    col(1, 4, r); hand();
     // 護肩：比手臂寬一圈的圓殼、左上亮點、下緣暗
     for (let y = 0; y <= 4; y++) for (let x = 9; x <= 17; x++) {
       const d = Math.hypot(x + 0.5 - 13, (y + 0.5 - 2) * 1.2);
@@ -343,17 +347,17 @@ export function avatarArm(l: DollLook, back: boolean, f = 0): Bmp {
     if (!back) upgrades(arm, w.p, [[10, 3], [11, 4], [12, 4], [13, 4], [14, 4], [15, 3]], null, f, R);
   } else {
     const { o, c1, c2 } = w;
-    if (o === 'explorer') { col(2, 4, dk(c2)); col(5, 6, sk); hand(); }
-    else if (o === 'sailor') { col(2, 5, dk(WHITE)); col(6, 6, dk(c1)); hand(); }
-    else if (o === 'hoodie') { col(2, 6, dk(c1)); hand(); }
-    else if (o === 'coat') { col(2, 5, dk(c1)); col(6, 6, dk(c2)); hand(); }
-    else if (o === 'maid') { col(2, 3, dk(c1), X0 - 1, X1 + 1); col(4, 5, sk); col(6, 6, dk(WHITE)); hand(); }
+    if (o === 'explorer') { col(1, 2, dk(c2)); col(3, 4, sk); hand(); }
+    else if (o === 'sailor') { col(1, 3, dk(WHITE)); col(4, 4, dk(c1)); hand(); }
+    else if (o === 'hoodie') { col(1, 4, dk(c1)); hand(); }
+    else if (o === 'coat') { col(1, 3, dk(c1)); col(4, 4, dk(c2)); hand(); }
+    else if (o === 'maid') { col(1, 2, dk(c1), X0 - 1, X1 + 1); col(3, 3, sk); col(4, 4, dk(WHITE)); hand(); }
     else if (o === 'miko') {
       const wh = dk(WHITE), r = dk(c1);
-      col(2, 6, wh);
-      for (let y = 3; y <= 9; y++) for (let x = X1 + 1; x <= X1 + 3; x++) arm.set(x, y, y === 9 ? r[3] : x === X1 + 3 ? wh[2] : wh[3]);
+      col(1, 4, wh);
+      for (let y = 2; y <= 6; y++) for (let x = X1 + 1; x <= X1 + 3; x++) arm.set(x, y, y === 6 ? r[3] : x === X1 + 3 ? wh[2] : wh[3]);
       hand();
-    } else { col(2, 6, dk(c1)); hand(); }
+    } else { col(1, 4, dk(c1)); hand(); }
   }
   arm.softOutline();
   return arm;
@@ -436,7 +440,7 @@ function deadFrame(l: DollLook): AvatarFrame {
   p.near = { thigh: 60, shin: -40 }; p.far = { thigh: 30, shin: -20 }; p.flap = -1; p.hair = { swing: 0.6, lift: 0.3 };
   const fr = standFrame(l, p, 0);
   const meta: FrameMeta = { dx: 0, dy: 0, arms: false };
-  const arms = armsTo(l, meta, [30, 44], [19, 45]);
+  const arms = armsTo(l, meta, [31, 46], [21, 47]);
   const stand = new Bmp(AV_FW, AV_FH);
   stand.blit(arms.back, -ARMS_PAD, -ARMS_PAD);
   stand.blit(fr.body, 0, 0);
@@ -457,7 +461,8 @@ function deadFrame(l: DollLook): AvatarFrame {
     st.softOutline();
     flip.blit(st, 0, 0);
   };
-  star(fb.x1 - 14, Math.max(3, fb.y0 - 3)); star(fb.x1 - 5, Math.max(3, fb.y0 - 1));
+  // 暈眩星星：疊在頭的上緣（不把剪影墊高：倒地的人還是寬比高大）
+  star(fb.x1 - 14, Math.max(3, fb.y0 + 1)); star(fb.x1 - 5, Math.max(3, fb.y0 + 2));
   return { body: flip, head: new Bmp(AV_FW, AV_FH), meta };
 }
 
@@ -496,7 +501,7 @@ function swimFrame(l: DollLook, f: number): AvatarFrame {
   stand.blit(armLayer(back, shoulderOf(l.app.body, true), true), 0, 0);
   stand.blit(fr.body, 0, 0);
   stand.blit(armLayer(front, shoulderOf(l.app.body, false), false), 0, 0);
-  const PIV = { x: CX, y: 40 }, rad = (SWIM_TILT * Math.PI) / 180;
+  const PIV = { x: CX, y: 45 }, rad = (SWIM_TILT * Math.PI) / 180;
   const r = rotate(rotPrep(stand), PIV.x, PIV.y, rad, 72);
   // 頭：正著畫，脖子接在轉過去的身體前端（右上）
   const hb = new Bmp(72, 72), hf = new Bmp(72, 72);
@@ -584,7 +589,7 @@ const lerp = (a: number, b: number, t: number): number => a + (b - a) * Math.max
 const easeOut = (t: number): number => 1 - (1 - t) * (1 - t);
 const easeIO = (t: number): number => { const u = Math.max(0, Math.min(1, t)); return u * u * (3 - 2 * u); };
 /** 手的高度：大頭旁邊（舉高）↔ 臉頰 ↔ 胸口；Q 版手短，搆不到頭頂 */
-const HAND_HI = 26, HAND_MID = 33, HAND_LO = 41;
+const HAND_HI = 31, HAND_MID = 38, HAND_LO = 46;
 /** 爬繩時舉高那隻手的列（renderer 判斷繩頂用） */
 export const ROPE_HAND_HI = HAND_HI;
 function climbPose(f: number): { front: number; back: number; dy: number; knee: number; lead: 'near' | 'far'; pulling: boolean } {
@@ -601,8 +606,8 @@ function climbPose(f: number): { front: number; back: number; dy: number; knee: 
 }
 function climbDownPose(f: number): { front: number; back: number; dy: number } {
   const ph = (((f % CLIMBDOWN_FRAMES) + CLIMBDOWN_FRAMES) % CLIMBDOWN_FRAMES) / CLIMBDOWN_FRAMES, half = Math.floor(ph * 2) % 2, s = (ph * 2) % 1, R = 0.6;
-  const topY = s < R ? lerp(32, 29, s / R) : lerp(29, 37, easeIO((s - R) / (1 - R)));
-  const botY = s < R ? lerp(38, 34, s / R) : lerp(34, 32, (s - R) / (1 - R));
+  const topY = s < R ? lerp(37, 34, s / R) : lerp(34, 42, easeIO((s - R) / (1 - R)));
+  const botY = s < R ? lerp(43, 39, s / R) : lerp(39, 37, (s - R) / (1 - R));
   const dy = s < R ? lerp(0, 1, s / R) : lerp(1, 0, easeIO((s - R) / (1 - R)));
   return { front: half === 0 ? topY : botY, back: half === 0 ? botY : topY, dy };
 }
