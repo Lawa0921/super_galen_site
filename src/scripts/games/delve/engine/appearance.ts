@@ -53,6 +53,11 @@ export const HAIR_STYLES: readonly AppearanceOption[] = [
   { id: 'messy', zh: '亂翹短髮' },
   { id: 'braid', zh: '側邊辮子' },
   { id: 'odango', zh: '雙丸子頭' },
+  // 以下新加的只能接在末尾（存檔存索引）
+  { id: 'lowpony', zh: '低馬尾' },
+  { id: 'wolf', zh: '狼尾' },
+  { id: 'wavy', zh: '大波浪捲' },
+  { id: 'sidepart', zh: '側分長瀏海' },
 ];
 export const HAIR_COLORS: readonly AppearanceOption[] = [
   { id: 'black', zh: '烏黑' },
@@ -121,6 +126,11 @@ export const ACCESSORIES: readonly AppearanceOption[] = [
   { id: 'clip', zh: '星星髮夾' },
   { id: 'hood', zh: '兜帽' },
   { id: 'flower', zh: '小花' },
+  // 以下新加的只能接在末尾（存檔存索引）
+  { id: 'crown', zh: '小皇冠' },
+  { id: 'headphones', zh: '耳機' },
+  { id: 'foxmask', zh: '狐狸面具' },
+  { id: 'hairpin', zh: '髮簪' },
 ];
 
 const H = (id: string): number => HAIR_STYLES.findIndex((h) => h.id === id);

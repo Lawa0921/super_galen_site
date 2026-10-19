@@ -5,8 +5,10 @@
 //   後腦下半一大片暗。每束至少 2–3 格寬，毛尖至少 2 格寬、沒有孤立的單像素。
 //   外框：整個剪影最外一圈是深色外框（頭髮 = 每種髮色專用的深棕 / 深紫，亮度約 2–3 成、不是純黑；膚色 = 深紅棕），
 //   剪影裡面的線條（瀏海下緣、髮束分界）是柔和的中間色。
-//   九款髮型的剪影都不一樣：鮑伯（下緣往外翹）、雙馬尾、高馬尾、直長髮（前後都垂到腰）、姬髮（齊瀏海 + 切齊的鬢髮 + 平剪長髮）、
-//   刺蝟頭、亂翹（頭頂和後腦四面亂翹）、側邊辮子、雙丸子。
+//   十三款髮型的剪影都不一樣：鮑伯（下緣往外翹）、雙馬尾、高馬尾、直長髮（前後都垂到腰）、姬髮（齊瀏海 + 切齊的鬢髮 + 平剪長髮）、
+//   刺蝟頭、亂翹（頭頂和後腦四面亂翹）、側邊辮子、雙丸子、低馬尾（後頸綁起、貼背垂下）、狼尾（碎層次 + 後頸留長往後翹）、
+//   大波浪捲（後腦蓬、外緣一波一波、前面一束 S 形捲髮）、側分長瀏海（頭頂一個弧、瀏海往前斜掃、後髮半長）。
+//   頭飾（戴帽子 / 頭盔時不畫）：蝴蝶結、貓耳髮箍、星星髮夾、兜帽、小花、小皇冠、耳機、狐狸面具（斜掛在頭側）、髮簪（垂兩串金鍊）。
 //   back 圖層：畫在身體後面的頭髮（後頸、長髮後片、馬尾、雙馬尾、遠側丸子、兜帽尖）；front 圖層：頭、臉、瀏海、鬢髮、前垂的長髮、飾品。
 //   種族：精靈耳（膚色，從頭兩側的頭髮下面戳出來，眼睛到臉頰的高度、不高過帽沿：戴帽子也留著）、
 //   貓耳（髮色 + 粉色內耳，頭頂兩隻）、龍角（象牙色，從頭頂往後彎）；貓耳 / 龍角戴帽子 / 頭盔 / 兜帽時收起來。
@@ -70,7 +72,7 @@ const faceOf = (a: Appearance): Record<number, [number, number]> => (a.body === 
 type Pt = [number, number];
 /** 一束瀏海：x0..x1 欄、尖端 (tx, ty)；往兩側每欄往上縮 k 列 */
 type Clump = [number, number, number, number, number];
-type BangKind = 'tips' | 'blunt' | 'swept' | 'parted' | 'spiky' | 'messy';
+type BangKind = 'tips' | 'blunt' | 'swept' | 'parted' | 'spiky' | 'messy' | 'shag' | 'side';
 /** 瀏海（只蓋在臉上：x ≥ 8）；尖端停在眼睛上面（眼睛在第 9 列），中間那束最長、蓋到兩眼之間 */
 const BANGS: Record<BangKind, Clump[]> = {
   tips: [[8, 12, 10.5, 8.4, 1.2], [11, 15, 13.5, 9.6, 1], [14, 18, 16.5, 8.2, 1.3], [17, 21, 20, 8.8, 1.1]],
@@ -79,6 +81,10 @@ const BANGS: Record<BangKind, Clump[]> = {
   parted: [[8, 12, 8.5, 8.6, 0.9], [10, 14, 11, 7.4, 0.9], [15, 19, 18.5, 7.6, 0.9], [18, 21, 21, 9, 1]],
   spiky: [[8, 11, 10, 7.8, 1.5], [10, 14, 13, 8.8, 1.5], [13, 18, 16.5, 7.6, 1.5], [17, 21, 20, 8.4, 1.5]],
   messy: [[8, 12, 9.5, 8.2, 1.3], [11, 15, 14, 9.2, 1.3], [14, 19, 16, 7.8, 1.3], [18, 21, 20.5, 8.6, 1.3]],
+  /** 狼尾：碎碎的層次，五束細尖 */
+  shag: [[8, 11, 9.5, 8.6, 1.6], [10, 13, 12, 9.4, 1.6], [12, 16, 14.5, 8, 1.5], [15, 18, 17, 9.2, 1.6], [18, 21, 20, 8.4, 1.4]],
+  /** 側分：分線在後眼上方，後面那側短、一大片往前（面向那側）斜掃，尖端都偏前 */
+  side: [[8, 10, 8.5, 6.6, 0.9], [10, 16, 15.5, 9.4, 0.45], [14, 21, 20.5, 9.6, 0.4]],
 };
 interface HairDef {
   bang: BangKind;
@@ -97,6 +103,10 @@ const HAIR: Record<string, HairDef> = {
   messy: { bang: 'messy', front: 10, nape: 19, tufts: 1.3 },
   braid: { bang: 'tips', front: 11, nape: 19, tufts: 1 },
   odango: { bang: 'swept', front: 11, nape: 19, tufts: 0.8 },
+  lowpony: { bang: 'parted', front: 12, nape: 17, tufts: 0 },
+  wolf: { bang: 'shag', front: 12, nape: 19, tufts: 1.6 },
+  wavy: { bang: 'swept', front: 12, nape: 28, tufts: 0 },
+  sidepart: { bang: 'side', front: 14, nape: 22, tufts: 0 },
 };
 const styleId = (a: Appearance): string => HAIR_STYLES[a.hair]?.id ?? 'bob';
 const accId = (a: Appearance): string => ACCESSORIES[a.acc]?.id ?? 'none';
@@ -456,6 +466,20 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   }
   // 直長髮：前面一束從鬢角順著垂到胸前（和鬢髮連成一束，不是另外貼一塊）
   if (st === 'long') strand(p, [20.5, 6], [23.5 - sw * 0.3, 16], [22.5 - sw * 1.2 - lift, 28 - lift * 6], 3.4, 2, HAIR_M, 10);
+  if (st === 'wavy') {
+    // 大波浪捲：後腦外緣一層一層蓬出去（波浪的外緣）；前面一束 S 形的捲髮垂到胸前
+    for (let y = 4; y <= 16; y++) {
+      const w = Math.round(1.4 + Math.sin(y * 0.95) * 1 + (y - 4) * 0.12);
+      for (let x = SKULL[y][0] - w; x < SKULL[y][0]; x++) p.set(x, y, HAIR_M);
+    }
+    strand(p, [20.5, 6], [25 - sw * 0.3, 10], [22.2, 15], 3.6, 3, HAIR_M, 10);
+    strand(p, [22.2, 15], [19.4 - sw * 0.6, 20 - lift * 2], [23.2 - sw * 1.2 - lift, 26 - lift * 5], 3, 2, HAIR_M, 10);
+  }
+  if (st === 'sidepart') {
+    // 側分：分線那邊頭頂蓬起一個弧（往前梳的髮量）、長瀏海的尖端從前眼外側垂到臉頰旁（不蓋眼睛）
+    strand(p, [10, 1.2], [14, -1.2 - lift * 0.3], [18.5, 1.8], 2.6, 2, HAIR_M, 0);
+    strand(p, [11, 3], [21 + sw * 0.2, 5.5], [22.4 - sw * 0.6 - lift, 15.5 - lift * 2], 3, 1.8, HAIR_M, 9);
+  }
   // 4. 毛尖（後腦外緣）
   if (!cov.top && def.tufts > 0) for (const [x, y, dx, dy, len] of TUFTS) {
     const L = len * def.tufts, nx = -dy, ny = dx;
@@ -472,6 +496,11 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
     const sp: [Pt, Pt, Pt][] = [[[3, 3], [7, 1], [3, -1.5]], [[8, 0.5], [12, 0.5], [9.5, -2]], [[12.5, 0.5], [16.5, 1.5], [17, -1.5]], [[0, 4], [2, 2], [-2.5, 1.5]], [[0, 8], [0, 11], [-3, 9]], [[1, 13], [3, 16], [-1.5, 17.5]], [[19, 5], [21, 8], [23.5, 6.5]], [[4, 16], [8, 17], [6, 19.5]]];
     for (const [s0, s1, t] of sp) tri(p, s0, s1, [t[0] - sw * 0.5, t[1] - lift * 0.5], HAIR_M, true);
   }
+  if (st === 'wolf' && !cov.top) {
+    // 狼尾：頭頂往後一層一層的碎尖、後腦兩側往後下方的層次
+    const sp: [Pt, Pt, Pt][] = [[[2.5, 3], [7.5, 0.5], [0.5, -1]], [[0, 5], [1, 9], [-3.5, 8.5]]];
+    for (const [s0, s1, t] of sp) tri(p, s0, s1, [t[0] - sw * 0.6, t[1] - lift * 0.5], HAIR_M, true);
+  }
   if (a.ahoge && acc !== 'hood' && !cov.top) strand(p, [10.5, 1], [10 + sw * 0.5, -2.2 - lift * 0.3], [13, -1.8], 2.6, 2, HAIR_M, 0);
   // 戴帽子 / 頭盔：帽沿以上的頭髮全部收起來（帽子蓋不到的地方也不會露出一塊頭髮）
   if (cov.top) p.clearBelow(HAIR_M, (_X, Y) => Y < BRIM - 1);
@@ -480,7 +509,8 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   p.clearBelow(HAIR_M, (_X, Y) => Y < HAIR_TOP);
   // 種族的耳朵：精靈耳戴帽子也留著（在帽沿以下）；貓耳 / 龍角戴帽子 / 頭盔 / 兜帽時收起來
   const hideTop = cov.helmet || cov.hat !== null || acc === 'hood';
-  if (o.race === 'elf') elfEars(p);
+  // 兜帽從頭兩側包住：精靈耳收在兜帽裡（不從兜帽兩側戳出來）
+  if (o.race === 'elf' && acc !== 'hood') elfEars(p);
   if (o.race === 'catfolk' && !hideTop) catEars(p);
   // 6. 打光 + 外框 + 頭頂的髮束分線 / 高光
   shadeHair(p, HAIR_M, true);
@@ -509,8 +539,10 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   for (let y = 11; y <= Math.ceil(nape); y++) {
     const t = Math.max(0, (y - 14) / Math.max(1, nape - 14));
     const shift = Math.round((-sw * 3 - lift * 1.5) * t);
-    // 直長髮：往下張開、髮尾往外翹；姬髮：直直平剪（一整片方的）；其他：往下收
-    const x0 = Math.round(-0.4 - t * (hime ? 0.4 : long ? 3 : 1.2)) + shift, x1 = Math.round(10 - t * (hime ? 0 : long ? 2 : 5)) + shift;
+    // 直長髮：往下張開、髮尾往外翹；姬髮：直直平剪（一整片方的）；大波浪：更蓬、外緣一波一波；側分：半長、幾乎直直垂下；其他：往下收
+    const wave = st === 'wavy' ? Math.sin(y * 0.8 + 1) * 1.4 : 0;
+    const [out0, in1] = hime ? [0.4, 0] : st === 'wavy' ? [4, 1.5] : long ? [3, 2] : st === 'sidepart' ? [1.6, 3] : [1.2, 5];
+    const x0 = Math.round(-0.4 - t * out0 + wave) + shift, x1 = Math.round(10 - t * in1 + wave * 0.5) + shift;
     for (let x = x0; x <= x1; x++) {
       // 髮尾：姬髮平剪；其他每 3 欄一撮尖（2 格寬）
       if (!hime && y > nape - 2 && ((x - x0) % 3 === 2 || y > nape - 0.5)) continue;
@@ -524,6 +556,14 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
     strand(bp, [18.5, 3], [22.5 - sw, 7 - lift * 2], [21.5 - sw * 2 - lift, 23 - lift * 8], 4.6, 2, HAIR_D, 2, (t, s) => Math.max(1, TAIL(t, s) - 1));
   }
   if (st === 'ponytail') strand(bp, [2, 2], [-4.6 - sw * 1.2, 4 - lift * 2], [-3 - sw * 2.4 - lift * 1.2, 22 - lift * 10], 6, 2.2, HAIR_D, 1, TAIL);
+  // 低馬尾：在後頸綁起來、貼著背垂下
+  const lowTail: [Pt, Pt, Pt] = [[3, 13.5], [-1.6 - sw * 1.4, 19 - lift * 2], [2 - sw * 3 - lift * 1.5, 28 - lift * 9]];
+  if (st === 'lowpony') strand(bp, ...lowTail, 6, 2.6, HAIR_D, 1, TAIL);
+  if (st === 'wolf') {
+    // 狼尾（mullet）：後頸留長、一層一層的尖往後下方翹
+    const sp: [Pt, Pt, Pt][] = [[[-1, 15], [3, 17], [-4.5, 22]], [[1, 17], [5.5, 18], [0.5, 25]], [[4.5, 17], [8.5, 17.5], [5.5, 22.5]]];
+    for (const [s0, s1, t] of sp) tri(bp, s0, s1, [t[0] - sw * 1.5 - lift, t[1] - lift * 3], HAIR_D, true);
+  }
   if (st === 'odango' && !cov.top && acc !== 'hood') strand(bp, [17.5, 0], [18.5, -0.5], [19, 0], 5.6, 5.6, HAIR_D, 1);
   if (cov.top) bp.clearBelow(HAIR_D, (_X, Y) => Y < BRIM - 1);
   despur(bp, HAIR_D);
@@ -535,6 +575,7 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
     if (st === 'twintails') { tieBand(head, ox + 2, oy + 4, tie); tieBand(behind, ox + 18, oy + 4, tie); }
     if (st === 'ponytail') tieBand(head, ox + 1, oy + 3, tie);
   }
+  if (st === 'lowpony') { const [x, y] = bez(lowTail, 0.3); tieBand(behind, ox + Math.round(x) - 1, oy + Math.round(y) - 1, tie); }
   if (st === 'braid') braid(head, a, ox, oy, sw, lift);
   if (st === 'odango' && !cov.top && acc !== 'hood') bun(head, ox + 4, oy + 0, h, ho, tie);
   if (o.race === 'dragonkin' && !hideTop) horns(head, ox, oy);
@@ -548,7 +589,7 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   front.blit(head, 0, 0);
   if (cov.hat) hatArt(front, cov.hat, ox, oy, 'side', m.swing);
   if (o.gear) o.trace?.push('headgear');
-  sideAcc(front, a, st, acc, ox, oy);
+  sideAcc(front, a, st, acc, ox, oy, o.race);
   // 頭飾 / 帽子最高到頭的區域座標 −4（含外框）：不高過碰撞盒
   for (let yy = 0; yy < Math.min(front.h, oy - 4); yy++) for (let x = 0; x < front.w; x++) front.clear(x, yy);
   if (a.glasses) glasses(front, ox + look, oy);
@@ -561,6 +602,11 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   back.blit(behind, 0, 0);
 }
 
+/** 二次貝茲曲線上的一點 */
+function bez([p0, p1, p2]: readonly [Pt, Pt, Pt], t: number): Pt {
+  const u = 1 - t;
+  return [u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0], u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1]];
+}
 /** 粗髮束（馬尾 / 雙馬尾）的打光：受光側（左上）一道亮、暗側一階、髮尾暗（大塊、不做細線） */
 const TAIL = (t: number, s: number): number => (t > 0.86 ? 1 : s > 0.45 ? 1 : s < -0.4 && t < 0.7 ? 3 : 2);
 function tieBand(b: Bmp, x: number, y: number, r: RGB[]): void {
@@ -613,7 +659,7 @@ function bow(b: Bmp, x: number, y: number, r: RGB[], big = false): void {
   b.blit(s, 0, 0);
 }
 
-function sideAcc(b: Bmp, a: Appearance, st: string, acc: string, ox: number, oy: number): void {
+function sideAcc(b: Bmp, a: Appearance, st: string, acc: string, ox: number, oy: number, race: RaceId): void {
   const r = clothRamp(a.color2);
   if (acc === 'ribbon') {
     if (st === 'twintails') { bow(b, ox + 2, oy + 3, r); return; }
@@ -624,8 +670,11 @@ function sideAcc(b: Bmp, a: Appearance, st: string, acc: string, ox: number, oy:
     // 貓耳髮箍：箍子順著頭頂、兩隻大耳朵（前面那隻在臉的上方、後面那隻在後腦）
     const s = new Bmp(b.w, b.h), c = clothRamp(a.color2), pink = hex('#ffc8dc');
     for (let x = 3; x <= 18; x++) s.set(ox + x, oy - (x < 6 || x > 15 ? 0 : 1), c[2]);
-    grid(s, ['..e..', '.eee.', 'eepee', 'epppe'], { e: c[3], p: pink }, ox + 3, oy - 4);
-    grid(s, ['..e..', '.eee.', 'eepee', 'epppe'], { e: c[2], p: pink }, ox + 13, oy - 4);
+    // 貓族自己就有貓耳：只戴箍子、不再多畫兩隻（不會變成四隻耳朵）
+    if (race !== 'catfolk') {
+      grid(s, ['..e..', '.eee.', 'eepee', 'epppe'], { e: c[3], p: pink }, ox + 3, oy - 4);
+      grid(s, ['..e..', '.eee.', 'eepee', 'epppe'], { e: c[2], p: pink }, ox + 13, oy - 4);
+    }
     s.softOutline();
     b.blit(s, 0, 0);
   } else if (acc === 'clip') {
@@ -637,6 +686,40 @@ function sideAcc(b: Bmp, a: Appearance, st: string, acc: string, ox: number, oy:
     const s = new Bmp(b.w, b.h), p = hex('#ffc8dc'), pd = hex('#e890b0'), c = GOLD, lf = CR.green;
     grid(s, ['.pp.', 'pPcp', 'pccd', '.pd.', 'g..g'], { p, P: hex('#ffffff'), c, d: pd, g: lf[3] }, ox + 3, oy + 2);
     s.softOutline();
+    b.blit(s, 0, 0);
+  } else if (acc === 'crown') {
+    // 小皇冠：戴在頭頂正中、三個尖 + 中間一顆紅寶石、兩側藍寶石；左邊（受光）亮、右邊暗一階
+    const s = new Bmp(b.w, b.h);
+    grid(s, ['y...W...y', 'yy.yWy.yo', 'WyyyRyyyo', 'oBoooooBd'], { y: GOLD, W: hex('#fff4c0'), o: hex('#ffa93a'), d: hex('#e8701c'), R: hex('#c8344c'), B: hex('#3e74c4') }, ox + 6, oy - 3);
+    s.softOutline();
+    b.blit(s, 0, 0);
+  } else if (acc === 'headphones') {
+    // 耳機：頭帶順著頭頂繞過去（兩格粗、上緣亮），兩側耳罩（後面那個大、前面那個在臉的前緣只露一半）；耳罩外圈是副色
+    const s = new Bmp(b.w, b.h), c = clothRamp(a.color2), dk = hex('#2c2838'), md = hex('#423f54'), hi = hex('#707490');
+    for (let k = 0; k <= 60; k++) {
+      const t = 0.42 + (Math.PI - 0.84) * (k / 60), x = 10.5 - Math.cos(t) * 11, y = 9.2 - Math.sin(t) * 10.4;
+      s.set(ox + Math.round(x), oy + Math.round(y), hi);
+      s.set(ox + Math.round(x + Math.cos(t) * 1.1), oy + Math.round(y + Math.sin(t) * 1.1), md);
+    }
+    grid(s, ['.dd.', 'dhmd', 'cmmd', 'cmmd', 'cmmd', 'cmdd', '.dd.'], { d: dk, m: md, h: hi, c: c[3] }, ox - 2, oy + 7);
+    grid(s, ['md', 'mc', 'mc', 'mc', 'dd'], { d: dk, m: md, c: c[3] }, ox + 21, oy + 7);
+    s.softOutline();
+    b.blit(s, 0, 0);
+  } else if (acc === 'foxmask') {
+    // 狐狸面具：白臉、尖耳、紅色眼紋和鼻尖；斜斜地掛在頭的側邊（後腦上方），不蓋臉
+    const s = new Bmp(b.w, b.h), W = hex('#ffffff'), sh = hex('#cceaf8'), sd = hex('#b4b9c8'), r = hex('#c8344c'), k = hex('#8c2038');
+    const rows = ['W.....W', 'Wr...rW', 'WWWWWWW', 'WkrWrkW', 'WWWWWWs', '.WWWWs.', '..dRd..'];
+    // 往後歪：上面那幾列往前（右）偏、下巴往後（左）
+    rows.forEach((row, ry) => grid(s, [row], { W, s: sh, d: sd, r, k, R: r }, ox + Math.round((3 - ry) * 0.4), oy + 1 + ry));
+    s.softOutline();
+    b.blit(s, 0, 0);
+  } else if (acc === 'hairpin') {
+    // 髮簪：一根金色的簪子斜插在後腦、外端一朵副色的花；花下面垂兩串細金鍊、鍊尾各一顆珠子（鍊子不描邊，保持細）
+    const s = new Bmp(b.w, b.h), c = clothRamp(a.color2), g = GOLD, gd = hex('#e8701c');
+    for (let k = 0; k <= 6; k++) s.set(ox + 8 - k, oy + 3 - Math.round(k * 0.8), k < 2 ? gd : g);
+    grid(s, ['.pp.', 'pgPp', '.pd.'], { p: c[3], P: c[4], d: c[2], g }, ox, oy - 4);
+    s.softOutline();
+    grid(s, ['g.g', 'd.d', 'g.b', 'b.B', 'B..'], { g, d: gd, b: c[3], B: c[2] }, ox, oy);
     b.blit(s, 0, 0);
   }
 }

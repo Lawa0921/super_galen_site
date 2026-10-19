@@ -2,7 +2,7 @@
 // 圖層順序、頭盔收起頭頂的頭髮、外觀欄蓋過防具、稀有度 / 元素 / 強化看得出來、背面爬繩把手臂畫進影格。
 import { describe, it, expect } from 'vitest';
 import { Bmp, inPalette } from './pixel';
-import { DEFAULT_APPEARANCE, HAIR_STYLES, OUTFITS, RACES, bodyDefaults, randomAppearance } from '../engine/appearance';
+import { ACCESSORIES, DEFAULT_APPEARANCE, HAIR_STYLES, OUTFITS, RACES, bodyDefaults, randomAppearance } from '../engine/appearance';
 import { DOLL_LAYERS, dollKey, plainLook, type DollLook, type DollPiece } from '../engine/doll';
 import { AV_FH, AV_FW, AV_HEAD, SHEET, SHEET_ANIMS, avatarFrame, avatarSheet, flatFrame, pieceBmp } from './avatarArt';
 import { BRIM, HAT_HIDES_TOP, hatArt, helmetArt } from './avatarGear';
@@ -222,6 +222,41 @@ describe('圖層', () => {
         expect(above, `${look} hair ${hair} body ${body} ${an} ${RACES[race].id}`).toBe(0);
         // 精靈戴帽子耳朵還在
         if (race === ID('elf')) expect(extra, `${look} hair ${hair} body ${body} ${an} elf ears`).toBeGreaterThan(6);
+      }
+    }
+  });
+  it('兜帽蓋住精靈耳：精靈戴兜帽和人類戴兜帽畫出來一模一樣（耳朵不會從兜帽兩側戳出來）', () => {
+    const hood = ACCESSORIES.findIndex((a) => a.id === 'hood'), elf = RACES.findIndex((r) => r.id === 'elf');
+    for (const body of [0, 1]) for (let hair = 0; hair < HAIR_STYLES.length; hair++) for (const [an, f] of [['idle', 0], ['walk', 2], ['jump', 0]] as const) {
+      const at = (race: number): Bmp => flatFrame(avatarFrame(plainLook({ ...DEF, body, hair, acc: hood, race }), an, f));
+      expect(diff(at(elf), at(0)), `hair ${hair} body ${body} ${an}`).toBe(0);
+    }
+  });
+  it('貓族戴貓耳髮箍：不會有四隻耳朵（髮箍的耳朵不畫，頭頂上方和不戴一樣；人類戴髮箍則有耳朵）', () => {
+    const cat = ACCESSORIES.findIndex((a) => a.id === 'catears'), catfolk = RACES.findIndex((r) => r.id === 'catfolk');
+    // 頭頂上方（區域第 −2 列以上）只有髮箍的耳朵會畫到；箍子本身（含描邊）在第 −2 列以下
+    const above = (a: Bmp, b: Bmp): number => { let n = 0; for (let y = 0; y < AV_HEAD.y - 2; y++) for (let x = 0; x < AV_FW; x++) if (a.raw(x, y) !== b.raw(x, y)) n++; return n; };
+    for (const body of [0, 1]) for (const hair of [0, 1, 2]) {
+      const at = (race: number, acc: number): Bmp => flatFrame(avatarFrame(plainLook({ ...DEF, body, hair, acc, race, ahoge: false }), 'idle', 0));
+      expect(above(at(catfolk, cat), at(catfolk, 0)), `catfolk hair ${hair} body ${body}`).toBe(0);
+      expect(above(at(0, cat), at(0, 0)), `human hair ${hair} body ${body}`).toBeGreaterThan(10);
+    }
+  });
+  it('每款髮型（含側分長瀏海）× 男女：兩隻眼睛都露出來（後眼完整、前眼最多被鬢髮 / 辮子蓋掉邊緣）', () => {
+    const er = new Set(eyeRamp(3).slice(0, 2).map((c) => c.join()));
+    const eyes = (body: number, hair: number): { back: number; front: number } => {
+      const fc = avatarFrame(plainLook({ ...DEF, body, hair, eyes: 3, ahoge: true }), 'idle', 0).face!;
+      // 後眼在頭的區域第 11–12 欄、前眼在第 17–19 欄：以第 15 欄分開
+      const n = { back: 0, front: 0 };
+      for (let y = 0; y < fc.h; y++) for (let x = 0; x < fc.w; x++) if (fc.on(x, y) && er.has(fc.get(x, y).join())) n[x < AV_HEAD.x + 15 ? 'back' : 'front']++;
+      return n;
+    };
+    for (const body of [0, 1]) {
+      const bob = eyes(body, 0);
+      for (let hair = 0; hair < HAIR_STYLES.length; hair++) {
+        const e = eyes(body, hair), id = HAIR_STYLES[hair].id;
+        expect(e.back, `${id} body ${body} back eye`).toBe(bob.back);
+        expect(e.front, `${id} body ${body} front eye`).toBeGreaterThanOrEqual(id === 'sidepart' ? bob.front : 2);
       }
     }
   });
