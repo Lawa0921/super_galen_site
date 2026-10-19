@@ -11,7 +11,8 @@ import type { Stack } from './inventory';
 import type { AffixId } from './gear';
 
 /** 合成順序（由後往前）。渲染：背飾 / 後髮 / 身體 / 腿 / 胸 在第一張，手臂 + 手持由渲染器畫，臉 / 前髮 / 頭飾 / 前飾品在第二張 */
-export const DOLL_LAYERS = ['back', 'backHair', 'body', 'legs', 'chest', 'arms', 'held', 'face', 'frontHair', 'headgear', 'frontAcc'] as const;
+/** 3/4 正面：背飾（翅膀 / 披風 / 蝴蝶結）蓋在後髮上面，才從身體兩側露得出來 */
+export const DOLL_LAYERS = ['backHair', 'back', 'body', 'legs', 'chest', 'arms', 'held', 'face', 'frontHair', 'headgear', 'frontAcc'] as const;
 export type DollLayer = typeof DOLL_LAYERS[number];
 
 export type DollElem = 'fire' | 'ice' | 'poison' | 'light' | 'storm';

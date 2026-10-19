@@ -104,6 +104,60 @@ export function nudge(c: RGB, dir: number): RGB {
   };
   return pick(NUDGE_MIN) ?? pick(0) ?? s;
 }
+/**
+ * 選擇性描邊（selective outline）的線色：同色系、夠深的色票色（不是一律純黑）。
+ * 目標 = 鄰色壓暗到約 4 成再拉高彩度；只從亮度 ≤ min(鄰色 × 0.6, maxLuma) 的色票裡挑最接近的。
+ */
+const OUT_CACHE = new Map<number, RGB>();
+export function outlineColor(n: RGB, maxLuma = 78): RGB {
+  const key = ((n[0] << 16) | (n[1] << 8) | n[2]) * 128 + maxLuma;
+  let r = OUT_CACHE.get(key);
+  if (r) return r;
+  const d = shade(n, 0.42), m = (d[0] + d[1] + d[2]) / 3;
+  const t = d.map((v) => Math.max(0, Math.min(255, Math.round(m + (v - m) * 1.7)))) as RGB;
+  const cap = Math.max(16, Math.min(luma(n) * 0.6, maxLuma));
+  let best: RGB = PALETTE[0], bd = Infinity;
+  for (const p of PALETTE) {
+    if (luma(p) > cap) continue;
+    const dd = dist2(t, p);
+    if (dd < bd) { bd = dd; best = p; }
+  }
+  r = best;
+  OUT_CACHE.set(key, r);
+  return r;
+}
+
+/**
+ * 柔和描邊（CQ 風）的線色：鄰色壓暗到約一半（k）、保留色系；只從「比鄰色暗、但亮度 ≥ 26」的色票裡挑（不用 #1c1424 這類近黑）。
+ */
+const SOFT_CACHE = new Map<number, RGB>();
+const SOFT_RAW = new Map<number, number>();
+/** softOutlineColor 的打包版（Bmp 原始像素值進、原始像素值出；查快取） */
+function softRaw(v: number, k: number): number {
+  const key = (v & 0xffffff) * 128 + Math.round(k * 100);
+  let r = SOFT_RAW.get(key);
+  if (r === undefined) { r = Bmp.pack(softOutlineColor(Bmp.unpack(v), k)); SOFT_RAW.set(key, r); }
+  return r;
+}
+export function softOutlineColor(n: RGB, k = 0.5): RGB {
+  const key = (((n[0] << 16) | (n[1] << 8) | n[2]) * 100) + Math.round(k * 100);
+  let r = SOFT_CACHE.get(key);
+  if (r) return r;
+  // 壓暗後把彩度拉高一點再找最近色：膚色的線是暖棕、不是灰
+  const d = shade(n, k), mm = (d[0] + d[1] + d[2]) / 3;
+  const t = d.map((v) => Math.max(0, Math.min(255, Math.round(mm + (v - mm) * 1.6)))) as RGB, ln = luma(n);
+  let best: RGB = n, bd = Infinity;
+  for (const p of PALETTE) {
+    const lp = luma(p);
+    if (lp < 26 || lp >= ln - 8) continue;
+    const dd = dist2(t, p);
+    if (dd < bd) { bd = dd; best = p; }
+  }
+  r = best;
+  SOFT_CACHE.set(key, r);
+  return r;
+}
+
 /** 把點陣吸附到色票：不透明像素換成最近色，任何 alpha>0 一律變成完全不透明 */
 export function snapBmp(b: Bmp): Bmp {
   const px = b.px;
@@ -180,6 +234,51 @@ export class Bmp {
         if (!n) continue;
         const c = color ?? shade(Bmp.unpack(n), 0.45);
         this.set(x, y, selOut > 0 ? mix(c, shade(Bmp.unpack(n), 0.5), selOut) : c);
+      }
+    }
+    return this;
+  }
+  /**
+   * 選擇性描邊：與不透明像素 4 鄰相接的透明像素，填「該鄰色的深同色系」（outlineColor）。
+   * 有多個鄰色時取最暗的那個鄰色來算（頭髮 / 臉的交界用頭髮的線色）。
+   */
+  selOutline(maxLuma = 78): Bmp {
+    const src = this.px.slice();
+    const at = (x: number, y: number): number => (x >= 0 && y >= 0 && x < this.w && y < this.h ? src[y * this.w + x] : 0);
+    for (let y = 0; y < this.h; y++) {
+      for (let x = 0; x < this.w; x++) {
+        if (at(x, y) !== 0) continue;
+        let best = 0, bl = Infinity;
+        for (const v of [at(x - 1, y), at(x + 1, y), at(x, y - 1), at(x, y + 1)]) {
+          if (!(v >>> 24)) continue;
+          const l = luma(Bmp.unpack(v));
+          if (l < bl) { bl = l; best = v; }
+        }
+        if (best) this.set(x, y, outlineColor(Bmp.unpack(best), maxLuma));
+      }
+    }
+    return this;
+  }
+  /** 柔和描邊（CQ 風）：外緣用同色系壓暗約 6 成的顏色（softOutlineColor），不用近黑；多個鄰色取最暗的那個 */
+  softOutline(k = 0.5): Bmp {
+    // （熱點：每張圖層都描一次；不配置陣列、亮度與線色都查快取）
+    const w = this.w, h = this.h, src = this.px.slice(), out = this.px;
+    const lum = (v: number): number => 0.299 * (v & 255) + 0.587 * ((v >>> 8) & 255) + 0.114 * ((v >>> 16) & 255);
+    // 只掃內容外框外擴一格的範圍（小圖層：腿 / 鞋 / 帽子很快）
+    let bx0 = w, by0 = h, bx1 = -1, by1 = -1;
+    for (let y = 0; y < h; y++) { const row = y * w; for (let x = 0; x < w; x++) if (src[row + x]) { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; by1 = y; } }
+    if (bx1 < 0) return this;
+    for (let y = Math.max(0, by0 - 1); y <= Math.min(h - 1, by1 + 1); y++) {
+      const row = y * w;
+      for (let x = Math.max(0, bx0 - 1); x <= Math.min(w - 1, bx1 + 1); x++) {
+        const i = row + x;
+        if (src[i] !== 0) continue;
+        let best = 0, bl = 1e9, v = 0, l = 0;
+        if (x > 0 && (v = src[i - 1]) >>> 24) { l = lum(v); if (l < bl) { bl = l; best = v; } }
+        if (x < w - 1 && (v = src[i + 1]) >>> 24) { l = lum(v); if (l < bl) { bl = l; best = v; } }
+        if (y > 0 && (v = src[i - w]) >>> 24) { l = lum(v); if (l < bl) { bl = l; best = v; } }
+        if (y < h - 1 && (v = src[i + w]) >>> 24) { l = lum(v); if (l < bl) { bl = l; best = v; } }
+        if (best) out[i] = softRaw(best, k);
       }
     }
     return this;

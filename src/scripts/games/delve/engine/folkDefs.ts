@@ -191,7 +191,7 @@ export function folkLook(role: FolkRole, rng: Rng): FolkLook {
     // 矮人：大地色系的衣服、紅 / 橘 / 棕 / 黑髮、膚色偏深、礦工頭燈盔或兜帽；男性有大鬍子
     const app = A({
       body, blush: body === 0, hair: body ? pick([5, 6]) : pick([7, 2, 8]), hairColor: pick([8, 11, 1, 0, 4]), ahoge: false,
-      eyes: pick([2, 5, 8]), eyeShape: 1, skin: pick([2, 3, 4]), outfit: pick([4, 0]), color1: pick([9, 8, 11]), color2: pick([3, 1, 9]), acc: role === 'runesmith' ? 4 : 0,
+      eyes: pick([2, 5, 8]), eyeShape: 1, skin: pick([2, 3, 4]), outfit: pick([4, 0]), color1: pick([9, 8, 11]), color2: pick([3, 2, 7]), acc: role === 'runesmith' ? 4 : 0,
     });
     return { app, head: role === 'runesmith' ? undefined : 'hat:miner', dwarf: true, beard: body === 1 || role === 'dwarf_elder', neck: role === 'runesmith' ? 'magma' : undefined };
   }
@@ -205,9 +205,9 @@ export function folkLook(role: FolkRole, rng: Rng): FolkLook {
     case 'healer': return { app: { ...app, outfit: 2, color1: 0, color2: 7, acc: 5 } };
     case 'guide': return { app: { ...app, outfit: 0, color1: 7, color2: 8 }, back: 'back:cape', belt: 'compass' };
     case 'elder': return { app: { ...app, hairColor: 4, glasses: true, outfit: 4, color1: 10, color2: 0 } };
-    case 'peddler': return { app: { ...app, outfit: 4, color1: 8, color2: 9 }, head: 'hat:straw', back: 'back:cape' };
+    case 'peddler': return { app: { ...app, outfit: 4, color1: 8, color2: 3 }, head: 'hat:straw', back: 'back:cape' };
     case 'herbalist': return { app: { ...app, outfit: 3, color1: 6, color2: 0 }, head: 'hat:flower' };
-    case 'stranded': return { app: { ...app, outfit: 0, color1: 8, color2: 9 }, belt: 'depth' };
+    case 'stranded': return { app: { ...app, outfit: 0, color1: 8, color2: 6 }, belt: 'depth' };
     default: return { app };
   }
 }

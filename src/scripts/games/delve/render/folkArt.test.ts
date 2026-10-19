@@ -48,7 +48,8 @@ describe('dwarfify（矮人外觀）', () => {
       const c = findChin(f, undefined, skin)!;
       expect(c, `skin ${skin}`).not.toBeNull();
       expect(c.y).toBeGreaterThan(20);
-      expect(c.y).toBeLessThan(33);
+      // 頭 23×22：下巴在第 33 列附近（軀幹從第 34 列開始）
+      expect(c.y).toBeLessThan(40);
       const d = dwarfify(f, beardRamp(0), 5, skin), p = dwarfify(f, null, 5, skin);
       let n = 0;
       for (let i = 0; i < d.px.length; i++) if (d.px[i] !== p.px[i]) n++;

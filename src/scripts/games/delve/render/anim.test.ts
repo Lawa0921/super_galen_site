@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   poseKind, advancePhase, walkFrame, WALK_FRAMES, STRIDE_PX, idleFrame, IDLE_FRAMES, IDLE_PERIOD,
-  swingAngle, SWING_FROM, SWING_TO, angleIndex, flameFrame, FLAME_FRAMES, armAngles, carryStyle, carryArm, CARRY_ARM,
+  swingAngle, SWING_FROM, SWING_TO, angleIndex, flameFrame, FLAME_FRAMES, armAngles, carryStyle, carryArm, CARRY_ARM, heldOverHead, heldOverFace, heldCarryArm,
 } from './anim';
 
 describe('手持工具 / 武器（待機、走路時也拿在手上）', () => {
@@ -71,9 +71,11 @@ describe('idleFrame', () => {
 });
 
 describe('swingAngle', () => {
-  it('起點舉在頭後上方、揮到前下方，再回去', () => {
+  it('起點舉在頭前上方、揮到前下方，再回去', () => {
     expect(swingAngle(0)).toBeCloseTo(SWING_FROM);
-    expect(SWING_FROM).toBeGreaterThan(150);
+    // 揮鎬從頭的前上方開始（不從頭後面：大頭會讓鎬頭穿過臉）
+    expect(SWING_FROM).toBeGreaterThan(130);
+    expect(SWING_FROM).toBeLessThanOrEqual(170);
     expect(SWING_TO).toBeLessThan(60);
     const mid = swingAngle(0.35);
     expect(mid).toBeLessThan(SWING_FROM);
@@ -106,9 +108,34 @@ describe('armAngles', () => {
     const i = armAngles('idle', 0, null);
     expect(Math.abs(i.front)).toBeLessThan(15);
   });
+  it('走路的手擺幅夠大（Q 版的誇張擺手，≥ 40°）；待機時手跟著呼吸微微動', () => {
+    const amp = Math.max(...Array.from({ length: WALK_FRAMES }, (_, f) => Math.abs(armAngles('walk', f, null).front)));
+    expect(amp).toBeGreaterThanOrEqual(40);
+    const idle = new Set(Array.from({ length: IDLE_FRAMES }, (_, f) => armAngles('idle', f, null).front));
+    expect(idle.size).toBeGreaterThanOrEqual(2);
+  });
   it('揮動時前手用 swing 角度', () => {
     expect(armAngles('walk', 3, 120).front).toBe(120);
     expect(armAngles('jump', 0, null).front).toBeGreaterThan(90);
+  });
+});
+
+describe('手持物的圖層與手勢', () => {
+  it('火把 / 釣竿 / 小東西（方塊、投擲物）畫在頭的前面；鎬 / 劍照常在頭後面（舉過頭時另外處理）', () => {
+    for (const k of ['torch', 'rod', 'mini', 'rotated'] as const) expect(heldOverFace(k)).toBe(true);
+    for (const k of ['pick', 'blade'] as const) expect(heldOverFace(k)).toBe(false);
+  });
+  it('拿火把 / 方塊時前手往前平舉（手在身體前面、離開臉）', () => {
+    expect(heldCarryArm('torch')).toBeGreaterThanOrEqual(70);
+    expect(heldCarryArm('torch')).toBeLessThanOrEqual(100);
+  });
+});
+
+describe('heldOverHead', () => {
+  it('手舉過頭 / 往後拉（揮劍預備、揮鎬起手）時，手上的武器要畫在大頭前面；平舉 / 下垂時不用', () => {
+    for (const d of [160, 200, 222, 236, 260]) expect(heldOverHead(d)).toBe(true);
+    for (const d of [0, 40, 90, 130, -30, 330]) expect(heldOverHead(d)).toBe(false);
+    expect(heldOverHead(200 + 360)).toBe(true);
   });
 });
 

@@ -17,13 +17,27 @@ export function folkDollLook(l: FolkLook): DollLook {
   return { app: l.app, head: piece(l.head), body: piece(l.body), legs: piece(l.legs), back: piece(l.back), feet: null, neck: l.neck ?? null, belt: l.belt ?? null };
 }
 export interface FolkFrames { idle: Bmp[]; walk: Bmp[]; blink: Bmp; portrait: Bmp; }
+const oneCache = new Map<string, Bmp>();
+const folkKey = (l: FolkLook): string => `folk:${dollKey(folkDollLook(l))}:${l.dwarf ? 1 : 0}${l.beard ? 1 : 0}`;
+/** 一位 NPC 的某一格（只烘這一格；畫面上用，進村時不會一次烘十幾格） */
+export function folkFrame(l: FolkLook, kind: 'idle' | 'walk' | 'blink', k: number): Bmp {
+  const key = `${folkKey(l)}|${kind}|${k}`;
+  let b = oneCache.get(key);
+  if (b) return b;
+  const d = folkDollLook(l);
+  const raw = dollPreview(d, folkKey(l), kind, kind === 'blink' ? 0 : k);
+  b = l.dwarf ? dwarfify(raw, l.beard ? beardRamp(l.app.hairColor) : null, 4, l.app.skin) : raw;
+  oneCache.set(key, b);
+  if (oneCache.size > 600) oneCache.delete(oneCache.keys().next().value as string);
+  return b;
+}
 const frameCache = new Map<string, FolkFrames>();
 /** 一位 NPC 的全部影格（純 Bmp；測試 / 圖庫 / 肖像也用） */
 export function folkFrames(l: FolkLook): FolkFrames {
   const d = folkDollLook(l), key = `folk:${dollKey(d)}:${l.dwarf ? 1 : 0}${l.beard ? 1 : 0}`;
   let f = frameCache.get(key);
   if (f) return f;
-  const post = (b: Bmp): Bmp => (l.dwarf ? dwarfify(b, l.beard ? beardRamp(l.app.hairColor) : null, 5, l.app.skin) : b);
+  const post = (b: Bmp): Bmp => (l.dwarf ? dwarfify(b, l.beard ? beardRamp(l.app.hairColor) : null, 4, l.app.skin) : b);
   const idle = Array.from({ length: IDLE_FRAMES }, (_, k) => post(dollPreview(d, key, 'idle', k)));
   const walk = Array.from({ length: WALK_FRAMES }, (_, k) => post(dollPreview(d, key, 'walk', k)));
   const blink = post(dollPreview(d, key, 'blink', 0));
@@ -44,7 +58,10 @@ function bangBmp(color: string): Bmp {
   return b.outline(hex('#1c1424'));
 }
 
-interface Canv { idle: HTMLCanvasElement[]; walk: HTMLCanvasElement[]; blink: HTMLCanvasElement; }
+/** 一位 NPC 已經烘好的 canvas（還沒烘的格子是 undefined；第一次要用到才烘） */
+interface Canv { idle: (HTMLCanvasElement | undefined)[]; walk: (HTMLCanvasElement | undefined)[]; blink?: HTMLCanvasElement; }
+/** 一幀最多花多少 ms 烘 NPC 的新影格（超過就先用這個人已經烘好的那格頂著） */
+const FOLK_BAKE_BUDGET_MS = 2;
 
 export class FolkLayer {
   private art = new Map<number, Canv>();
@@ -59,14 +76,26 @@ export class FolkLayer {
   private canv(n: FolkNpc): Canv {
     let a = this.art.get(n.id);
     if (!a) {
-      const f = folkFrames(n.look), c = (b: Bmp): HTMLCanvasElement => toCanvas(b) as HTMLCanvasElement;
-      a = { idle: f.idle.map(c), walk: f.walk.map(c), blink: c(f.blink) };
+      a = { idle: new Array(IDLE_FRAMES), walk: new Array(WALK_FRAMES) };
       this.art.set(n.id, a);
       if (this.art.size > 80) { const k = this.art.keys().next().value as number; this.art.delete(k); }
     }
     return a;
   }
+  private budgetT0 = 0;
+  /** 取某一格：還沒烘 → 預算內就烘、超過預算就用已經有的那格頂著（每人至少一格：待機第 0 格） */
+  private frame(n: FolkNpc, a: Canv, kind: 'idle' | 'walk' | 'blink', k: number): HTMLCanvasElement {
+    const list = kind === 'blink' ? null : a[kind];
+    const have = kind === 'blink' ? a.blink : list![k];
+    if (have) return have;
+    const fallback = a.idle[0] ?? a.idle.find(Boolean) ?? a.walk.find(Boolean);
+    if (fallback && performance.now() - this.budgetT0 > FOLK_BAKE_BUDGET_MS) return fallback;
+    const c = toCanvas(folkFrame(n.look, kind, k)) as HTMLCanvasElement;
+    if (kind === 'blink') a.blink = c; else list![k] = c;
+    return c;
+  }
   drawWorld(ctx: CanvasRenderingContext2D, vb: { x: number; y: number; w: number; h: number }, clock: number): void {
+    this.budgetT0 = performance.now();
     for (const n of this.game.folk.npcs) {
       const b = n.body;
       if (b.x + b.w + AV_FW < vb.x || b.x - AV_FW > vb.x + vb.w || b.y + b.h + 8 < vb.y || b.y - AV_FH > vb.y + vb.h) continue;
@@ -76,8 +105,8 @@ export class FolkLayer {
       const dist = (this.walkDist.get(n.id) ?? 0) + Math.abs(b.x - prev);
       this.walkDist.set(n.id, dist);
       const walking = Math.abs(b.vx) > 4;
-      const img = walking ? a.walk[Math.floor(dist / 5) % a.walk.length]
-        : (clock + n.id) % 4 < 0.12 ? a.blink : a.idle[Math.floor((clock + n.id * 0.3) * 4) % a.idle.length];
+      const img = walking ? this.frame(n, a, 'walk', Math.floor(dist / 5) % WALK_FRAMES)
+        : (clock + n.id) % 4 < 0.12 ? this.frame(n, a, 'blink', 0) : this.frame(n, a, 'idle', Math.floor((clock + n.id * 0.3) * 4) % IDLE_FRAMES);
       const cx = Math.round(b.x + b.w / 2), bottom = Math.round(b.y + b.h + b.gfxOffY);
       ctx.save();
       ctx.translate(cx, bottom);
@@ -86,7 +115,7 @@ export class FolkLayer {
       ctx.restore();
       const m = n.role === 'stranded' && !n.following && !n.safe ? 0 : this.marks(n);
       if (m !== null && (m === 1 || Math.floor(clock * 3) % 2 === 0)) {
-        const top = bottom - AV_FH + (n.look.dwarf ? 5 : 0);
+        const top = bottom - AV_FH + (n.look.dwarf ? 4 : 0);
         ctx.drawImage(this.bang[m], cx - 3, top - 12 - Math.round(Math.abs(((clock * 2) % 2) - 1) * 2));
       }
     }

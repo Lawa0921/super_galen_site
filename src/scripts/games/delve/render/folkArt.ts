@@ -3,13 +3,13 @@
 //     從軀幹 / 腿交界拿掉 shrink 列（腳底固定、上半身往下移 → 矮壯），再在下巴畫一把大鬍子（偵測頭部膚色定位）。
 //   · beardRamp：鬍子色階（沿用髮色色階，跟頭髮同色）。
 //   全部色票色、不透明；鬍子自己 1px INK 描邊（落在胸口的描邊 = 鬍子和衣服的分界線）。
-import { Bmp, INK, type RGB } from './pixel';
+import { Bmp, type RGB } from './pixel';
 import { HAIR_RAMPS, SKIN_RAMPS, hairRamp } from './avatarPalette';
 
 /** 影格裡軀幹 / 腿的交界列（這列以下不動） */
-export const WAIST_ROW = 41;
+export const WAIST_ROW = 45;
 /** 原始影格裡下巴最低可能在哪一列（再下面是肩膀 / 軀幹：衣服的棕色會被誤認成深膚色） */
-export const CHIN_MAX_ROW = 33;
+export const CHIN_MAX_ROW = 38;
 const key = (c: RGB): number => (c[0] << 16) | (c[1] << 8) | c[2];
 /** 臉的膚色（色階的陰影 / 底色 / 亮部；深影和最暗那階和頭髮 / 衣服太像，不算） */
 function skinSet(skin?: number): Set<number> {
@@ -58,24 +58,33 @@ export function dwarfify(frame: Bmp, beard: RGB[] | null, shrink = 5, skin?: num
   const isSkin = (v: number): boolean => isSkinIn(set, v);
   const r = beard, b = new Bmp(out.w, out.h);
   const cx = (chin.x0 + chin.x1) / 2 + 2;
-  // 上半：嘴角以下的臉頰（膚色換成鬍子；小鬍子蓋住嘴）
-  for (let y = chin.y - 3; y <= chin.y; y++) for (let x = chin.x0 + 2; x <= chin.x1; x++) {
+  // 上半：嘴角以下的臉頰 + 鬢角（膚色換成鬍子；左緣亮一階、往下漸暗）
+  // 大頭（23×22）：鬍子從鬢角一路包到下巴（臉頰下半都是鬍子）
+  const bx0 = chin.x0 - 3, bx1 = chin.x1 + 1;
+  for (let y = chin.y - 4; y <= chin.y; y++) for (let x = bx0; x <= bx1; x++) {
     if (!isSkin(out.raw(x, y))) continue;
-    const top = y === chin.y - 3;
-    b.set(x, y, top ? r[3] : x < cx - 2 ? r[3] : (x + y) % 5 === 0 ? r[1] : r[2]);
+    if (y < chin.y - 2 && x > bx0 + 3 && x < chin.x1 - 1) continue;
+    b.set(x, y, x <= bx0 + 1 ? r[3] : y === chin.y - 4 ? r[3] : (x + y) % 4 === 0 ? r[1] : r[2]);
   }
-  // 下半：往下垂、越往下越窄，尖端稍微往前（右）
-  const len = 7;
-  for (let k = 1; k <= len; k++) {
-    const y = chin.y + k;
-    const half = Math.max(1, Math.round(((chin.x1 - chin.x0) / 2 - 1) * (1 - (k / (len + 1)) ** 1.6)));
-    const mid = cx + Math.round(k / 3);
-    for (let x = mid - half; x <= mid + half; x++) {
-      const edgeL = x <= mid - half + 1;
-      b.set(x, y, edgeL ? r[3] : x >= mid + half ? r[1] : (x * 2 + k) % 5 === 0 ? r[1] : (x + k * 3) % 7 === 0 ? r[3] : r[2]);
+  // 八字鬍：嘴那一列往兩邊垂（亮一階、兩端暗）
+  const my = chin.y - 2;
+  for (let x = Math.round(cx) - 3; x <= chin.x1 + 1; x++) b.set(x, my, x >= chin.x1 ? r[1] : r[4]);
+  b.set(Math.round(cx) - 3, my + 1, r[2]); b.set(chin.x1 + 1, my + 1, r[1]);
+  // 下半：三束往下垂、越下越窄、尖端 V 字；每束左亮右暗、束縫深一階，尖端稍往前（右）
+  const len = 8, w0 = bx1 - bx0 + 1;
+  const locks = 3, lw = Math.max(2, Math.round((w0 - 1) / locks));
+  for (let i = 0; i < locks; i++) {
+    const lx0 = bx0 + 1 + i * lw, lx1 = lx0 + lw, tip = len - (i === 0 ? 2 : i === locks - 1 ? 1 : 0);
+    for (let k = 1; k <= tip; k++) {
+      const y = chin.y + k, sh = Math.round(k / 3);
+      const shrink = Math.max(0, Math.round((k - tip + 3) * 0.7));
+      for (let x = lx0 + shrink; x <= lx1 - shrink; x++) {
+        const c = k === tip ? r[1] : x === lx0 + shrink ? r[3] : x === lx1 - shrink ? r[1] : (k === 2 && x === lx0 + shrink + 1) ? r[4] : r[2];
+        b.set(x + sh, y, c);
+      }
     }
   }
-  b.outline(INK);
+  b.selOutline();
   out.blit(b, 0, 0);
   return out;
 }

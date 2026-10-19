@@ -7,7 +7,7 @@ import { ARMS_PAD, ARM_PIV, AV_FH, AV_FW, ROPE_X, avatarArm, avatarFrame, mantle
 import { hex } from './pixel';
 
 /** 預覽裡攀上邊緣的手抓的位置（沒有真的牆角：懸掛 → 撐起 → 膝蓋上台；最後一格用一般手臂） */
-export const MANTLE_HANDS: readonly ([number, number] | null)[] = [[34, 11], [34, 30], [33, 37], null];
+export const MANTLE_HANDS: readonly ([number, number] | null)[] = [[40, 31], [40, 37], [38, 43], null];
 import { armAngles } from './anim';
 
 const ARM_CANVAS = 64;

@@ -8,10 +8,10 @@ import { TILE_SIZE, CHUNK, DAY_LENGTH } from '../engine/constants';
 import { buildAtlas, perpMask, type Atlas } from './textures';
 import { ChunkLRU, cameraFocus, chunksTouchRect, followCamera, nearRect, visibleChunks, type Cam, type TileRect } from './model';
 import { CORNER, EDGE, blendOverlay, decorStyle, edgeMask, innerCornerMask, type Neighbor } from './autotile';
-import { armAngles, carryArm, carryStyle, flameFrame, swingAngle, SWING_RATE, type PoseKind } from './anim';
+import { armAngles, carryArm, carryStyle, flameFrame, heldCarryArm, heldOverFace, heldOverHead, swingAngle, SWING_RATE, type PoseKind } from './anim';
 import { FW, FH, Sprites } from './sprites';
-import { PlayerAnimator, blinkAt, type PlayerAnim } from './playerAnim';
-import { SHEET } from './avatarArt';
+import { PlayerAnimator, atRopeTop, blinkAt, type PlayerAnim } from './playerAnim';
+import { MANTLE_KNEE_X, mantleLean, ROPE_HAND_HI, SHEET, type SheetAnim } from './avatarArt';
 import { previewArms } from './dollPreview';
 import { CombatLayer } from './combatDraw';
 import { LevelFx } from './levelFx';
@@ -762,6 +762,15 @@ export class Renderer {
   /** 動畫提示（換手 → 攀爬音效）；main.ts 接到音效 */
   onCue: ((cue: 'grip') => void) | null = null;
 
+  /** 玩家中心欄這段繩子最上面那格的頂端（世界 px） */
+  private ropeTopY(p: { x: number; y: number; w: number; h: number }): number {
+    const w = this.game.world, tx = Math.floor((p.x + p.w / 2) / S);
+    let ty = Math.floor((p.y + p.h - 0.01) / S);
+    while (ty >= 0 && !w.isClimbable(tx, ty)) ty--;
+    while (ty > 0 && w.isClimbable(tx, ty - 1)) ty--;
+    return ty * S;
+  }
+
   private drawPlayer(ctx: CanvasRenderingContext2D, dt: number): void {
     const g = this.game, p = g.player, st = g.getState();
     this.rimDraw = null;
@@ -770,7 +779,6 @@ export class Renderer {
     // 紙娃娃：樣子沒變（key 一樣）就沿用快取的影格表
     const doll = g.doll();
     SP.setDoll(doll.look, doll.key);
-    const sheet = SP.dollSheet();
     const mt = st.player.mantle;
     const swim = st.liquid.frac > 0.55 && !p.onGround && !st.player.climbing;
     const an = this.animator.update({
@@ -793,11 +801,16 @@ export class Renderer {
     this.swingPhase = st.mining ? (this.swingPhase + dt * SWING_RATE) % 1 : 0;
     // 受傷無敵時閃爍（倒地 / 縮身那一下不閃）
     if (!st.dead && st.iframes > 0 && an.anim !== 'hurt' && Math.floor(st.iframes * 16) % 2 === 1) return;
-    const sheetAnim = an.anim === 'idle' && blinkAt(this.clock) ? 'blink' : an.anim;
-    const fi = SHEET[sheetAnim][0] + Math.min(an.frame, SHEET[sheetAnim][1] - 1);
-    const meta = sheet.meta[fi];
     const cx = Math.round(p.x + p.w / 2), bottom = Math.round(p.y + p.h + p.gfxOffY);
     const ox = -FW / 2, oy = -FH;
+    // 爬到繩頂：舉高的那隻手以上沒有繩子了 → 換成兩手抓在胸口的繩頂影格
+    let sheetAnim: SheetAnim = an.anim === 'idle' && blinkAt(this.clock) ? 'blink' : an.anim;
+    let sheetFrame = an.frame;
+    if (st.player.climbing && atRopeTop(an.anim, bottom + oy + ROPE_HAND_HI, this.ropeTopY(p))) { sheetAnim = 'ropetop'; sheetFrame = Math.floor(this.clock * 3) % 2; }
+    const fi = SHEET[sheetAnim][0] + Math.min(sheetFrame, SHEET[sheetAnim][1] - 1);
+    // 分幀烘焙：換裝那一幀只烘這一格 + 時間預算內的幾格（不會整張同步烘完卡住）
+    const sheet = SP.dollSheet(fi);
+    const meta = sheet.meta[fi];
     this.rimDraw = { cx, bottom, facing: this.facing, fi, x: ox + (meta.arms ? 0 : meta.ox ?? 0), y: oy, canvas: sheet.canvas };
     if (!meta.arms) {
       // 背面爬繩 / 掛著 / 倒地：手臂畫在影格裡，手上的東西收起來
@@ -826,26 +839,33 @@ export class Renderer {
     const special = an.anim === 'mantle' || an.anim === 'swim' || an.anim === 'hurt';
     if (special) { swing = null; blade = null; rot = null; throwMini = null; }
     const arms = special ? previewArms(an.anim as 'mantle' | 'swim' | 'hurt', an.frame) : armAngles(kind, local, swing);
-    // 攀上邊緣（最後一格「站起來」以外）：手抓在牆角上（台面往內 3 px），換算成影格座標
-    const grip = mt && an.frame < 3
+    // 攀上邊緣（最後一格「站起來」以外）：手掌撐在牆角那一格上（手掌 3 寬：從牆邊往內），換算成影格座標
+    // 牆角在胸口以下、手搆不到（繩頂旁的台面）→ 整個人往牆那邊傾幾格，手掌才落得到牆角上（不會浮在半空）
+    let lean = 0, grip: ReturnType<typeof SP.grip> | null = null;
+    if (mt && an.frame < 3) {
+      const gx = Math.round((mt.edgeX + mt.dir - cx) * this.facing - ox), gy = Math.round(mt.edgeY - 1 - bottom - oy);
+      const s0 = SP.shoulder(false);
+      lean = mantleLean(gx, gy, { x: s0.x + meta.dx, y: s0.y + meta.dy });
       // 膝蓋上台那格：身體已經越過牆角，手改撐在身前的台面上（不會往後拉長）
-      ? SP.grip(meta, fi, Math.max(an.frame === 2 ? 31 : 0, Math.round((mt.edgeX + mt.dir * 3 - cx) * this.facing - ox)), Math.round(mt.edgeY - 1 - bottom - oy))
-      : null;
+      grip = SP.grip(meta, fi, Math.max(an.frame === 2 ? MANTLE_KNEE_X : 0, gx - lean), gy);
+    }
     // 待機 / 走路 / 跳躍時，手上的鎬 / 武器也拿著（往前斜舉）；挖掘時換成背包裡最好的鎬、攻擊時用攻擊動畫
     const carry = !st.mining && !atk && !special ? carryStyle(heldDef) : null;
     if (carry && carry !== 'mini') arms.front = carryArm(kind, arms.front);
     // 鎬：扛在身前、鎬頭朝上（不會拖在腳邊）
     // 釣竿：手往前平舉到胸口（竿子從胸前斜上去，線從竿尖出來）
-    if (carry === 'rod') arms.front = st.fishing?.state === 'bite' ? 120 : 98;
+    // 釣竿：手往前平舉（竿子從手往前上方斜出去、不會蓋到大頭）
+    if (carry === 'rod') arms.front = st.fishing?.state === 'bite' ? 105 : 85;
     if (carry === 'pick') arms.front = (kind === 'jump' || kind === 'fall' ? 150 : 128) + (kind === 'walk' ? Math.round(Math.sin((local / 8) * Math.PI * 2) * 6) : 0);
     const showPick = special ? null : st.mining ? this.bestPickItem() : carry === 'pick' ? held : null;
     if (carry === 'blade') blade = held;
     const heldOther = !special && !st.mining && !atk && held && carry !== 'rod' && ((!heldDef?.pick && !heldDef?.weapon) || carry === 'mini') ? held : null;
-    if (heldOther && kind !== 'jump' && kind !== 'fall') arms.front = 62 + Math.round(arms.front * 0.15);
+    // 火把 / 方塊：前手往前平舉（手在身體前面、離開臉）
+    if (heldOther && kind !== 'jump' && kind !== 'fall') arms.front = heldCarryArm(heldOther === 'torch' || heldOther === 'lantern' ? 'torch' : 'mini') + Math.round(arms.front * 0.15);
 
     const bodyDy = meta.dy;
     ctx.save();
-    ctx.translate(cx, bottom);
+    ctx.translate(cx + lean * this.facing, bottom);
     ctx.scale(this.facing, 1);
     const sb0 = SP.shoulder(true), sf0 = SP.shoulder(false);
     const sb = { x: sb0.x + meta.dx, y: sb0.y }, sf = { x: sf0.x + meta.dx, y: sf0.y };
@@ -855,10 +875,6 @@ export class Renderer {
     // 手持非鎬物件（火把 / 方塊）：手在前、物件直立
     const radA = (arms.front * Math.PI) / 180;
     const hx = Math.round(ox + sf.x + Math.sin(radA) * SP.handReach), hy = Math.round(oy + sf.y + bodyDy + Math.cos(radA) * SP.handReach);
-    if (heldOther === 'torch') {
-      const c = SP.torches[flameFrame(this.clock, 7, 3)];
-      ctx.drawImage(c, hx - 5, hy - 14);
-    }
     // 揮劍殘影：刀身掃過的弧（前 80%）
     if (atk && blade && atk.progress < 0.8) {
       const r0 = 20, r1 = atk.kind === 'broadsword' ? 34 : 30;
@@ -873,13 +889,26 @@ export class Renderer {
     if (grip) ctx.drawImage(grip.arms, ox - grip.pad, oy - grip.pad);
     else { const front = SP.arm(false, showPick, arms.front, blade); ctx.drawImage(front.canvas, ox + sf.x - front.ox, oy + sf.y + bodyDy - front.oy); }
     ctx.drawImage(sheet.canvas, fi * FW, FH, FW, FH, ox, oy, FW, FH);
+    // 舉過頭的劍 / 鎬（揮擊預備）：大頭會擋住，武器另外疊在頭前面（手臂還在頭後面）
+    if (!grip && (showPick || blade) && heldOverHead(arms.front)) {
+      const it = SP.arm(false, showPick, arms.front, blade, true);
+      ctx.drawImage(it.canvas, ox + sf.x - it.ox, oy + sf.y + bodyDy - it.oy);
+      // 臉那一層再蓋回去：武器在頭髮前面、臉後面（不會一刀劃過眼睛）
+      ctx.drawImage(sheet.canvas, fi * FW, FH * 3, FW, FH, ox, oy, FW, FH);
+    }
     // 手掌蓋在臉 / 頭髮上面：看得出抓住了邊緣
     if (grip) ctx.drawImage(grip.hands, ox - grip.pad, oy - grip.pad);
-    if (heldOther && heldOther !== 'torch') {
+    // 手持的火把 / 方塊畫在頭的前面（大頭不會把它蓋掉）
+    if (heldOther === 'torch' && heldOverFace('torch')) {
+      const c = SP.torches[flameFrame(this.clock, 7, 3)];
+      ctx.drawImage(c, hx - 4, hy - 13);
+    }
+    if (heldOther && heldOther !== 'torch' && heldOverFace('mini')) {
       const m = SP.mini(heldOther);
       ctx.drawImage(m, hx - 2, hy - 6);
     }
-    if (throwMini) ctx.drawImage(SP.mini(throwMini), hx - 4, hy - 4);
+    // 投擲物握在手上（往外偏一格：不會蓋在臉頰上）
+    if (throwMini) ctx.drawImage(SP.mini(throwMini), hx - 2, hy - 5);
     ctx.restore();
     if (rot && atk) {
       // 弓 / 法杖 / 矛：世界座標下旋轉到瞄準角，畫在手上
@@ -893,12 +922,13 @@ export class Renderer {
     if (carry === 'rotated' && held) {
       // 弓 / 法杖 / 矛拿在手上：法杖 / 矛朝上斜立、弓朝前
       const wk = heldDef?.weapon?.kind;
-      const up = wk === 'bow' ? 0.3 : -Math.PI / 2 + 0.35;
+      // （圖示中心沿著拿的方向往外推：握的那端在手上，不會整支蓋到大頭）
+      const up = wk === 'bow' ? 0.3 : -Math.PI / 2 + 0.6;
       const ang = this.facing > 0 ? up : Math.PI - up;
       const base = wk === 'bow' ? -Math.PI * 0.75 : -Math.PI / 4;
       const c = SP.rotatedIcon(held, ang, base);
-      const px = cx + this.facing * hx, py = bottom + hy;
-      ctx.drawImage(c, Math.round(px - c.width / 2 + Math.cos(ang) * 4), Math.round(py - c.height / 2 + Math.sin(ang) * 4));
+      const px = cx + this.facing * hx, py = bottom + hy, push = wk === 'bow' ? 4 : 8;
+      ctx.drawImage(c, Math.round(px - c.width / 2 + Math.cos(ang) * push), Math.round(py - c.height / 2 + Math.sin(ang) * push));
     }
     if (heldOther === 'torch' || heldOther === 'lantern') {
       this.torchesSeen.push({ x: cx + this.facing * (hx + 0), y: bottom + hy - 8 });
@@ -908,14 +938,15 @@ export class Renderer {
     if (carry === 'rod' && held) {
       const fishing = st.fishing;
       // 浮標在水上時竿子比較平（往浮標那邊）、上鉤時往上抬
-      const up = fishing?.state === 'bite' ? -Math.PI / 2 + 0.25 : fishing ? -Math.PI / 2 + 0.75 : -Math.PI / 2 + 0.5;
+      // 竿子比較平（往前上方）、握把在手上：整支在臉的前面外側，不會蓋到額頭
+      const up = fishing?.state === 'bite' ? -Math.PI / 2 + 0.55 : fishing ? -Math.PI / 2 + 1.05 : -Math.PI / 2 + 0.85;
       const ang = this.facing > 0 ? up : Math.PI - up;
       const c = this.sprites.rotatedIcon(held, ang, -Math.PI / 4);
       const px = cx + this.facing * hx, py = bottom + hy;
-      const ix = Math.round(px - c.width / 2 + Math.cos(ang) * 5), iy = Math.round(py - c.height / 2 + Math.sin(ang) * 5);
+      const ix = Math.round(px - c.width / 2 + Math.cos(ang) * 9), iy = Math.round(py - c.height / 2 + Math.sin(ang) * 9);
       ctx.drawImage(c, ix, iy);
-      // 竿尖：圖示中心（手 + 5）再往外半條對角線（≈ 9）
-      this.rodTip = { x: Math.round(px + Math.cos(ang) * 14), y: Math.round(py + Math.sin(ang) * 14) };
+      // 竿尖：圖示中心（手 + 9）再往外半條對角線（≈ 9）
+      this.rodTip = { x: Math.round(px + Math.cos(ang) * 18), y: Math.round(py + Math.sin(ang) * 18) };
     }
   }
 
