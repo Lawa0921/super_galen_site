@@ -10,6 +10,7 @@ import { ABSORB_CAP, ABSORB_GAIN, SHARD_IDS, SHARD_NAMES } from '../../src/scrip
 import { memScene } from '../../src/scripts/games/starlantern/data/story/scenes';
 import { favouredRegions } from '../../src/scripts/games/starlantern/data/meetings';
 import { rollPortals, withLead } from '../../src/scripts/games/starlantern/engine/portals';
+import { SKILLS } from '../../src/scripts/games/starlantern/data/skills';
 import { mkdirSync } from 'node:fs';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
@@ -1368,6 +1369,94 @@ test.describe('starlantern', () => {
     expect(after.seen).toContain(id);
     expect(after.queue).toEqual([]);
     expect(after.arrival).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test('in the labyrinth: wear a found piece, move a row and heal with a skill', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const w = await setup(page, 7, { story: 'all' });
+    const playOut = async () => {
+      for (let quiet = 0, i = 0; quiet < 4 && i < 400; i++) {
+        if (await page.locator('.slx-talk').first().isVisible()) { quiet = 0; await page.keyboard.press('z'); await page.waitForTimeout(30); }
+        else if ((await page.locator('.slx-cmd-hidden').count()) > 0) { quiet = 0; await page.waitForTimeout(60); }
+        else { quiet++; await page.waitForTimeout(60); }
+      }
+      await expect(page.locator('.slx-talk').first()).toBeHidden();
+    };
+    /** The topmost window of the labyrinth's menu stack. */
+    const top = () => page.locator('.slx-dungeon .slx-layer').last();
+    const option = (label: string) => top().locator('[role=option]').filter({ has: page.locator('.slx-label', { hasText: new RegExp(`^${label}$`) }) });
+
+    // 1. The prologue and the inn night play out; Selene joins (as a won rescue would leave her), then the party sets out.
+    await playOut();
+    const party = await game((g) => JSON.parse(JSON.stringify(g.state.party)));
+    await game((g, p) => { g.state.party = p; }, meet(party, 'selene', 1));
+    await depart(page, w);
+    await playOut();
+
+    // 2. A weapon in the run pack, Selene on the field knowing 月光, and the hero at 1 HP.
+    const uid: number = await game((g) => {
+      const uid = g.mintUid();
+      g.run.loot.gear.push({ uid, base: 'thorn-spear', rarity: 'common', ilvl: 5, enhance: 0, affixes: [] });
+      const p = g.state.party;
+      if (!p.grid.includes('selene')) p.grid[p.grid.indexOf(null)] = 'selene';
+      p.roster.selene.tree.moonlight = 1;
+      p.roster.hero.hp = 1;
+      g.encounter = 0;
+      return uid;
+    });
+    expect(await game((g) => g.state.party.grid.includes('selene'))).toBe(true);
+
+    // 3. C → 裝備: the piece from the run pack goes on, and the doll's weapon slot names it. Esc is back in the labyrinth.
+    await w.key('c');
+    await w.choose('.slx-field-menu', '裝備');
+    await expect(page.locator('.slx-equip-scene')).toBeVisible();
+    const weapon = page.locator('.slx-doll-slot[data-slot=weapon]');
+    await expect(weapon).not.toHaveAttribute('aria-label', /荊棘槍/);
+    await page.locator('.slx-bag-cell[aria-label="荊棘槍"]').click();
+    await expect(weapon).toHaveAttribute('aria-label', /荊棘槍/);
+    expect(await game((g, u) => g.state.party.roster.hero.equip.weapon?.uid === u && !g.run.loot.gear.some((it: any) => it.uid === u), uid)).toBe(true);
+    await w.key('Escape');
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+
+    // 4. C → 隊形: two members trade cells. Esc is back in the labyrinth.
+    const before: (string | null)[] = await game((g) => [...g.state.party.grid]);
+    const [a, b] = before.flatMap((id, i) => (id ? [i] : [])).slice(0, 2);
+    await w.key('c');
+    await w.choose('.slx-field-menu', '隊形');
+    await expect(page.locator('.slx-formation-scene')).toBeVisible();
+    await page.locator(`.slx-formation-scene [data-cell="${a}"]`).click();
+    await page.locator('.slx-formation-pick [role=option]').filter({ hasText: CHARACTERS[before[b] as keyof typeof CHARACTERS].name }).click();
+    const after: (string | null)[] = await game((g) => [...g.state.party.grid]);
+    expect([after[a], after[b]]).toEqual([before[b], before[a]]);
+    await w.key('Escape');
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+
+    // 5. C → 技能 → 瑟蕾 → 月光 → 洛恩: the hero's HP goes up, on the party bar too.
+    await w.key('c');
+    await w.choose('.slx-field-menu', T.ui2.dungeon.skills);
+    await expect(top().locator('.slx-who')).toHaveText(T.ui2.dungeon.castWho);
+    await option(CHARACTERS.selene.name).click();
+    await expect(top().locator('.slx-who')).toHaveText(T.ui2.dungeon.castWhat(CHARACTERS.selene.name));
+    await option(SKILLS.moonlight.name).click();
+    await expect(top().locator('.slx-who')).toHaveText(T.ui2.dungeon.castOn(SKILLS.moonlight.name));
+    await option(CHARACTERS.hero.name).click();
+    await expect(page.locator('.slx-dungeon .slx-talk .slx-text')).toContainText(T.ui2.dungeon.cast(CHARACTERS.selene.name, SKILLS.moonlight.name));
+    const hp: number = await game((g) => g.state.party.roster.hero.hp);
+    expect(hp).toBeGreaterThan(1);
+    await expect(page.locator('.slx-dungeon .slx-pm[data-key=hero] [role=meter]').first()).toHaveAttribute('aria-valuenow', String(hp));
+    await w.closeTalk();
+
+    // 7. Home with the lamp (an arrival chat and a banter may play first): the weapon worn in the labyrinth is still worn.
+    await game((g) => { g.state.inventory['return-lamp'] = 1; });
+    await lampHome(page, w);
+    await playOut();
+    expect(await game((g, u) => g.state.party.roster.hero.equip.weapon?.uid === u, uid)).toBe(true);
+
+    // 6. No console error all the way.
     expect(w.errors).toEqual([]);
   });
 
