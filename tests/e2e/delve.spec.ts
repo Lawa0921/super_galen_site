@@ -2219,6 +2219,45 @@ test.describe('delve folk · villages, dwarves, encounters, quests', () => {
     expect(await page.evaluate(() => window.__delveDebug!.game.tick)).toBeGreaterThan(t0);
   });
 
+  test('走開超過交易距離（10 格）面板就收起來（不會按了沒反應）', async ({ page }) => {
+    await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await nearFolk(page, 'v0:trader');
+    await page.evaluate(() => window.__delveDebug!.game.debugTalk('v0:trader'));
+    await expect(page.locator('#delve-folk')).toBeVisible();
+    await page.evaluate(() => { const d = window.__delveDebug!, n = d.game.folk.byKey('v0:trader')!; d.game.teleport(Math.floor(n.body.x / 16) + 12, Math.floor((n.body.y + n.body.h - 1) / 16)); });
+    await expect(page.locator('#delve-folk')).toBeHidden({ timeout: 3000 });
+    await expect(page.locator('#delve-toast')).toContainText('太遠');
+  });
+
+  test('面板不蓋小地圖按鈕列（含 iPad 直向 768×1024），提示訊息不蓋面板', async ({ browser }) => {
+    const sizes: [number, number, boolean][] = [[768, 1024, true], [768, 1024, false], [1024, 768, false], [1440, 900, false], [375, 667, true], [812, 375, true]];
+    for (const [w, h, touch] of sizes) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h }, ...(touch ? { hasTouch: true, isMobile: true } : {}) });
+      const page = await ctx.newPage();
+      await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+      await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');
+      await waitGame(page);
+      await page.evaluate((touch) => {
+        const d = window.__delveDebug!, n = d.game.folk.byKey('v0:elder')!;
+        if (touch) document.querySelector<HTMLElement>('#delve-root')!.dataset.touch = '1';
+        d.game.teleport(Math.floor(n.body.x / 16) + 1, Math.floor((n.body.y + n.body.h - 1) / 16));
+        d.game.debugTalk('v0:elder');
+      }, touch);
+      await expect(page.locator('#delve-folk')).toBeVisible();
+      await page.evaluate(() => window.__delveDebug!.handle.hud.toast('接下委託：收集：木材 ×34（這是一段比較長的提示訊息，看看會不會蓋到面板）', 5000));
+      await page.waitForTimeout(500);
+      const r = await page.evaluate(() => {
+        const box = (s: string): DOMRect | null => { const e = document.querySelector(s); if (!e) return null; const st = getComputedStyle(e); if (st.display === 'none' || st.visibility === 'hidden') return null; const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 ? b : null; };
+        const ov = (a: DOMRect | null, b: DOMRect | null): boolean => Boolean(a && b && Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1);
+        const p = box('#delve-folk'), t = box('#delve-toast'), mm = box('.delve-minimap-btns'), mc = box('#delve-minimap-canvas');
+        return { toast: ov(p, t), mmBtns: ov(p, mm), mmCanvas: ov(p, mc), toastIn: t ? t.left >= -1 && t.right <= innerWidth + 1 : true };
+      });
+      expect(r, `${w}×${h}${touch ? ' touch' : ''}`).toEqual({ toast: false, mmBtns: false, mmCanvas: false, toastIn: true });
+      await ctx.close();
+    }
+  });
+
   test('手機直向 375 / 橫向：NPC 面板與委託清單在畫面內、不蓋住快捷欄', async ({ browser }) => {
     for (const vp of [{ width: 375, height: 667 }, { width: 375, height: 812 }, { width: 812, height: 375 }]) {
       const ctx = await browser.newContext({ viewport: vp, hasTouch: true, isMobile: true });

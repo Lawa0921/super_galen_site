@@ -1891,6 +1891,10 @@ const lang: Language = defaultLang;
     .delve-panel--settle,
     .delve-panel--npc,
     .delve-panel--quests { top: 256px; max-height: calc(100vh - 266px); }
+    /* 觸控時小地圖的 －/地圖/＋ 按鈕比較高（40px）：面板再往下讓一點 */
+    .delve[data-touch='1'] .delve-panel--settle,
+    .delve[data-touch='1'] .delve-panel--npc,
+    .delve[data-touch='1'] .delve-panel--quests { top: 272px; max-height: calc(100vh - 282px); }
   }
   /* 直立手機：面板開著時收起小地圖 / 時鐘 / 狀態列，面板從角落按鈕下面一直到生命值上面（不蓋生命） */
   @media (max-width: 460px) {
@@ -1949,7 +1953,7 @@ const lang: Language = defaultLang;
   .delve[data-spanel='1'] .delve-touch { display: none; }
   @media (max-width: 900px), (max-height: 520px) {
     .delve[data-panel-side] .delve-toast,
-    .delve[data-touch='1'][data-panel-side] .delve-toast { left: 50%; bottom: 8px; width: max-content; max-width: calc(100vw - 24px); }
+    .delve[data-touch='1'][data-panel-side] .delve-toast { left: 50%; bottom: 8px; width: max-content; max-width: calc(100vw - 60px); }
   }
   @media (max-height: 520px) and (orientation: landscape) {
     /* 橫放手機：面板放在畫面中間的生命值右邊（不蓋生命），小地圖先收起來 */
@@ -1960,4 +1964,17 @@ const lang: Language = defaultLang;
     .delve[data-spanel='1'] .delve-minimap,
     .delve[data-fpanel='1'] .delve-minimap { display: none; }
   }
+  /* 提示訊息避開開著的面板（folkUi.dodgeToast 依面板位置決定）：面板下面 / 面板左邊 / 面板上方 */
+  .delve[data-toast-dodge='below'] .delve-toast,
+  .delve[data-touch='1'][data-toast-dodge='below'][data-panel-side] .delve-toast { left: 50%; bottom: 8px; width: max-content; max-width: calc(100vw - 60px); }
+  .delve[data-toast-dodge='left'] .delve-toast,
+  .delve[data-touch='1'][data-toast-dodge='left'][data-panel-side] .delve-toast { left: var(--toast-cx); bottom: 8px; width: max-content; max-width: calc(var(--toast-max) - 36px); }
+  /* 觸控版的提示原本靠左（DelveLevels 的 left: 10px、不位移）：避開面板時改回置中 */
+  .delve[data-touch='1'][data-toast-dodge] .delve-hud .delve-toast { transform: translate(-50%, 12px); }
+  .delve[data-touch='1'][data-toast-dodge] .delve-hud .delve-toast.is-on { transform: translate(-50%, 0); }
+  .delve[data-touch='1'][data-toast-dodge='left'] .delve-hud .delve-toast { left: var(--toast-cx); bottom: 8px; max-width: calc(var(--toast-max) - 36px); }
+  .delve[data-touch='1'][data-toast-dodge='below'] .delve-hud .delve-toast { left: 50%; bottom: 8px; max-width: calc(100vw - 60px); }
+  .delve[data-touch='1'][data-toast-dodge='above'] .delve-hud .delve-toast { left: 50%; bottom: var(--toast-bottom); max-width: calc(100vw - 60px); }
+  .delve[data-toast-dodge='above'] .delve-toast,
+  .delve[data-touch='1'][data-toast-dodge='above'][data-panel-side] .delve-toast { left: 50%; bottom: var(--toast-bottom); width: max-content; max-width: calc(100vw - 60px); }
 </style>
