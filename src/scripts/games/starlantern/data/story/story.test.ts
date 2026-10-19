@@ -1747,3 +1747,133 @@ describe('V1 voice pass: the two of them, livelier (style bible §2.2 to §2.5)'
     expect(uses.length).toBeLessThanOrEqual(4);
   });
 });
+
+describe('V2 voice pass: the companions sound like themselves (style bible §2.2 to §2.5, §3)', () => {
+  const C = COMPANIONS;
+  const dots = (t: string): number => (t.match(/……/g) ?? []).length;
+  const join = (ls: ScriptLine[]): string => ls.map((l) => l.text).join('');
+  /** Every way a V2 scene can play: who is met, her memories whole or not, Orik back or not, before or after Rin's choice. */
+  const readings = (lines: ScriptLine[], c: CharacterId): ScriptLine[][] => {
+    const out: ScriptLine[][] = [];
+    for (const met of [[...CHARACTER_IDS], ['hero', 'rin', c]] as CharacterId[][]) {
+      for (const full of [[], [c]] as CharacterId[][]) {
+        for (const returned of [[], ['orik']] as TownFragmentId[][]) {
+          for (const oath of [false, true]) out.push(linesWhen(lines, { met, full, returned, oath }));
+        }
+      }
+    }
+    return out;
+  };
+  /** The light scenes V2 rewrote, as they play: each meeting (before and after are one scene), chats 1-2, the homecoming. */
+  const light = (): { id: string; c: CharacterId; played: ScriptLine[] }[] => C.flatMap((c) => {
+    const m = STORY.meet[c as keyof typeof STORY.meet];
+    const scenes: { id: string; lines: ScriptLine[] }[] = [
+      { id: `meet.${c}`, lines: [...m.before, ...m.after] },
+      ...[1, 2].map((n) => ({ id: `chat:${c}:${n}`, lines: STORY.scenes[`chat:${c}:${n}` as SceneId].lines })),
+      ...((HOME_OWNERS as string[]).includes(c) ? [{ id: `home:${c}`, lines: STORY.scenes[homeScene(c as typeof HOME_OWNERS[number])].lines }] : []),
+    ];
+    return scenes.flatMap((s) => readings(s.lines, c).map((played) => ({ id: s.id, c, played })));
+  });
+  const LOUD = new Set(['noel', 'bobby', 'safira', 'liz', 'orik']);
+  const chatLines = (): { id: SceneId; owner: string; line: ScriptLine }[] =>
+    C.flatMap((c) => [1, 2].flatMap((n) => {
+      const id = `chat:${c}:${n}` as SceneId;
+      return STORY.scenes[id].lines.map((line) => ({ id, owner: c as string, line }));
+    }));
+
+  it('a light scene spends one 「……」 at most, and no line opens on one (carry from V1: meet.selene, meet.bobby)', () => {
+    for (const { id, played } of light()) {
+      expect(dots(join(played)), `${id}: ${join(played)}`).toBeLessThanOrEqual(1);
+      for (const l of played) expect(l.text, id).not.toMatch(/^「?……/);
+    }
+  });
+
+  it('exclamation marks: three a scene at most, and only the loud ones use them', () => {
+    for (const { id, played } of light()) {
+      // spoken lines only: the meeting's found line (the rescue screen's, `foundLine`) is narration and not anyone's voice
+      const spoken = join(played.filter((l) => l.who !== 'narrator'));
+      expect((spoken.match(/！/g) ?? []).length, `${id}: ${spoken}`).toBeLessThanOrEqual(3);
+      for (const l of played) if (l.text.includes('！') && l.who !== 'narrator') expect(LOUD.has(l.who), `${id}: ${l.who} ${l.text}`).toBe(true);
+    }
+  });
+
+  it('the companions talk to each other: a guest in a chat is met first, and keeps her own reveal rules', () => {
+    const guests = chatLines().filter(({ owner, line }) => (C as string[]).includes(line.who) && line.who !== owner);
+    expect(new Set(guests.map((g) => g.id)).size).toBeGreaterThanOrEqual(3);
+    // a guest line never changes with her own memories, so it never names him in a form that changes (I-22, I-25, I-26)
+    const GUEST_NEVER: Record<string, RegExp> = {
+      selene: /洛恩先生|新月|我想看見/, chizuru: /不在了|託付|回神社/, safira: /團長|做決定的|洛恩/, sylvie: /林子|守林|種子|發芽|帶出去/,
+      noel: /歸來者|洛恩|星火|燒掉|老師|商人|小氣/, bobby: /祖先|一族|構造圖|閥|道歉|修好/, liz: /洛恩|債|帽子|櫃檯|星燈|光柱|爸爸/,
+      scarlet: /洛恩閣下|起誓|誓言|國家|逃|公主|朋友|活下去/,
+    };
+    for (const { id, line } of guests) {
+      expect(line.if?.met, `${id}: ${line.text}`).toBe(line.who);
+      expect(line.text, `${id}: ${line.who}`).not.toMatch(GUEST_NEVER[line.who]);
+    }
+    // and a guest line has a stand-in for the parties that have not met her, so no chat goes thin
+    for (const id of new Set(guests.map((g) => g.id))) {
+      const lines = STORY.scenes[id].lines;
+      expect(lines.some((l) => l.if?.notMet !== undefined), id).toBe(true);
+    }
+  });
+
+  it('Scarlet never swears and Sylvie never says 「林子」 in any chat line, hers or anyone\'s narration of her', () => {
+    for (const n of [1, 2]) {
+      for (const l of STORY.scenes[`chat:scarlet:${n}` as SceneId].lines) if (l.if?.full !== 'scarlet') expect(l.text).not.toMatch(/起誓|誓言/);
+      for (const l of STORY.scenes[`chat:sylvie:${n}` as SceneId].lines) if (l.if?.full !== 'sylvie') expect(l.text).not.toMatch(/林子/);
+    }
+    for (const { line } of chatLines()) if (line.who === 'scarlet') expect(line.text).not.toMatch(/起誓/);
+    for (const { line } of chatLines()) if (line.who === 'sylvie') expect(line.text).not.toMatch(/林子/);
+  });
+
+  it("Rin's deadpan in the companions' scenes keeps every rule from before her choice", () => {
+    const rin = [
+      ...MEETINGS.flatMap((m) => [...STORY.meet[m.id].before, ...STORY.meet[m.id].after]),
+      ...chatLines().map((x) => x.line),
+    ].filter((l) => l.who === 'rin' && l.if?.oath !== true);
+    expect(rin.length).toBeGreaterThanOrEqual(6);
+    for (const l of rin) {
+      expect(l.text, l.text).not.toMatch(/洛恩|我們|[呢吧啦喔囉嘛耶]|！|……|還有/);
+      expect(l.mood ?? 'normal', l.text).not.toMatch(/guarded|averted/);
+    }
+  });
+
+  it("forms of address between companions: Bobby's 「〇〇姊」 (a habit like 「洛恩哥」, not an age), Chizuru's 「姑娘」, Scarlet's 「小姐」", () => {
+    const FORM: Record<string, string[]> = { bobby: ['姊'], chizuru: ['姑娘'], scarlet: ['小姐'] };
+    const names = C.map((c) => CHARACTERS[c].name);
+    let bobbyNamed = 0;
+    for (const { key, text, line } of storyTexts()) {
+      if (!line || !(line.who in FORM)) continue;
+      for (const name of names) {
+        if (name === CHARACTERS[line.who as CharacterId].name) continue;
+        for (const m of text.matchAll(new RegExp(`${name}(.{0,2})`, 'g'))) {
+          expect(FORM[line.who].some((f) => m[1].startsWith(f)), `${key}: ${m[0]}`).toBe(true);
+          if (line.who === 'bobby') bobbyNamed++;
+        }
+      }
+    }
+    expect(bobbyNamed).toBeGreaterThanOrEqual(1);
+  });
+
+  it('the meetings keep what the finale remembers of them (lore ledger I-110)', () => {
+    const all = (c: keyof typeof STORY.meet) => join([...STORY.meet[c].before, ...STORY.meet[c].after]);
+    const hero = (c: keyof typeof STORY.meet) => join([...STORY.meet[c].before, ...STORY.meet[c].after].filter((l) => l.who === 'hero'));
+    expect(all('selene')).toMatch(/上弦/);
+    expect(all('selene')).toContain('今晚，也許會有人經過吧');
+    expect(hero('chizuru')).toContain('站得起來嗎？');
+    expect(all('safira')).toContain('陪我跳完一整首');
+    expect(all('sylvie')).toMatch(/割斷了毒藤/);
+    expect(hero('noel')).toContain('一起回去吧');
+    expect(hero('scarlet')).toMatch(/守/);
+    expect(all('liz')).toContain('乾糧');
+  });
+
+  it("a quiet beat keeps the last word: Liz's family line closes her meeting, with no joke after it in the line", () => {
+    const last = STORY.meet.liz.after[STORY.meet.liz.after.length - 1];
+    expect(last.who).toBe('liz');
+    expect(last.mood).toBe('hushed');
+    expect(last.text).toMatch(/臉/);
+    expect(last.text).toMatch(/[。」]$/);
+    expect(last.text).not.toMatch(/老大|成交|分紅|商量/);
+  });
+});
