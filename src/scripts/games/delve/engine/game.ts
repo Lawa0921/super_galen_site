@@ -508,6 +508,8 @@ export class DelveGame {
   lastScout: { name: string; x: number; y: number } | null = null;
   /** 嚮導 / 地標線索 / 探索委託標出的地點（和玩家自己的 20 個標記分開；存檔內容） */
   scoutMarks: MapMarker[] = [];
+  /** 嚮導 / 線索 / 委託標過的所有地點（"x,y"；永久記錄，地圖清單滿了擠掉舊標記也不會再當成新地點；存檔內容） */
+  readonly scouted = new Set<string>();
   /** 招募居民的每日好處：上次嚮導自動標點 / 藥師送祝福是哪一天（存檔內容） */
   perkDays = { guide: -1, healer: -1 };
   /** 傳送石引導經過秒數；null = 沒在引導 */
@@ -3407,7 +3409,7 @@ export class DelveGame {
   /** 嚮導 / 地標線索：把最近的、還沒去過的地點（或還沒領過的地標）標在地圖上 */
   scout(): { name: string; x: number; y: number } | null {
     const pt = this.playerTile();
-    const marked = (x: number, y: number): boolean => this.markers.some((m) => m.x === x && m.y === y) || this.scoutMarks.some((m) => m.x === x && m.y === y);
+    const marked = (x: number, y: number): boolean => this.scouted.has(`${x},${y}`) || this.markers.some((m) => m.x === x && m.y === y);
     const cand: { name: string; x: number; y: number; d: number }[] = [];
     for (const l of this.landmarks) {
       const i = this.world.idx(l.x, l.y);
@@ -3480,6 +3482,7 @@ export class DelveGame {
   }
   /** 嚮導 / 線索標記：最多 SCOUT_MAX 個，滿了丟掉最舊的（已經去過 / 領過的優先丟） */
   private addScoutMark(x: number, y: number): void {
+    this.scouted.add(`${x},${y}`);
     if (this.scoutMarks.some((m) => m.x === x && m.y === y)) return;
     if (this.scoutMarks.length >= SCOUT_MAX) this.scoutMarks.shift();
     this.scoutMarks.push({ x, y });

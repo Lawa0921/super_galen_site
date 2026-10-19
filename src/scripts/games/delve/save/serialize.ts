@@ -164,6 +164,8 @@ export interface FolkSave {
   scoutMarks: MapMarker[];
   /** 招募居民的每日好處（上次觸發的天） */
   perkDays: { guide: number; healer: number };
+  /** 標過的所有地點（"x,y"） */
+  scouted?: string[];
 }
 function validFolk(v: unknown): FolkSave | undefined {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
@@ -173,7 +175,8 @@ function validFolk(v: unknown): FolkSave | undefined {
   const scoutMarks = Array.isArray(o.scoutMarks) ? o.scoutMarks.filter((m) => m && Number.isInteger(m.x) && Number.isInteger(m.y)).slice(0, 60).map((m) => ({ x: m.x, y: m.y })) : [];
   const pd = o.perkDays as { guide?: unknown; healer?: unknown } | undefined;
   const perkDays = { guide: pd && Number.isInteger(pd.guide) ? pd.guide as number : -1, healer: pd && Number.isInteger(pd.healer) ? pd.healer as number : -1 };
-  return { world: (o.world ?? {}) as FolkJSON, quests: (o.quests ?? {}) as QuestLogJSON, buffs, scoutMarks, perkDays };
+  const scouted = Array.isArray(o.scouted) ? o.scouted.filter((k) => typeof k === 'string' && /^\d+,\d+$/.test(k)).slice(0, 4000) : [];
+  return { world: (o.world ?? {}) as FolkJSON, quests: (o.quests ?? {}) as QuestLogJSON, buffs, scoutMarks, perkDays, scouted };
 }
 /** 存檔裡的等級資料 → 正規化後的副本 */
 function validLevels(raw: unknown): LevelsJSON {
@@ -477,7 +480,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       settle: game.settle.toJSON(),
       halves: encodeFrozen(w.half),
       levels: game.levels.toJSON(),
-      folk: { world: game.folk.toJSON(), quests: game.quests.toJSON(), buffs: { ...game.buffs }, scoutMarks: game.scoutMarks.map((m) => ({ ...m })), perkDays: { ...game.perkDays } },
+      folk: { world: game.folk.toJSON(), quests: game.quests.toJSON(), buffs: { ...game.buffs }, scoutMarks: game.scoutMarks.map((m) => ({ ...m })), perkDays: { ...game.perkDays }, scouted: [...game.scouted] },
     },
     chunks,
   };
@@ -881,6 +884,9 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   game.buffs = h.folk ? { ...h.folk.buffs } : {};
   game.scoutMarks = h.folk ? h.folk.scoutMarks.map((m) => ({ ...m })) : [];
   if (h.folk) game.perkDays = { ...h.folk.perkDays };
+  game.scouted.clear();
+  for (const k of h.folk?.scouted ?? []) game.scouted.add(k);
+  for (const m of game.scoutMarks) game.scouted.add(`${m.x},${m.y}`);
   // 首領戰中存檔（怪物不存）：退還召喚道具，背包滿就掉在腳邊
   const refund = h.bossActive ? BOSS_SUMMON_ITEM[h.bossActive] : undefined;
   if (refund && !game.bossEnemy()) {

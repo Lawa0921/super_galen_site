@@ -95,6 +95,28 @@ describe('驗收回饋', { timeout: 180_000 }, () => {
     expect(g.coins()).toBe(c1);
   });
 
+  it('嚮導標記清單滿了（舊的被擠掉）也不會把標過的地點當成新地點重複收費；標過的地點會存檔', () => {
+    const g = fresh();
+    g.give('silver_coin', 900);
+    goTo(g, 'v0:guide');
+    const seen = new Set<string>();
+    let paid = 0;
+    for (let i = 0; i < 90; i++) {
+      const c0 = g.coins();
+      const r = g.folkService('v0:guide', 'scout');
+      if (!r.ok) { expect(g.coins()).toBe(c0); break; }
+      paid++;
+      const key = `${g.lastScout!.x},${g.lastScout!.y}`;
+      expect(seen.has(key), `重複：${key}`).toBe(false);
+      seen.add(key);
+    }
+    expect(paid).toBeGreaterThan(60);
+    expect(g.scoutMarks.length).toBeLessThanOrEqual(60);
+    expect(g.scouted.size).toBe(paid);
+    const r = restoreGame(serializeGame(g));
+    expect(r.ok && r.game.scouted.size).toBe(paid);
+  });
+
   it('買賣 / 服務 / 委託都要在 NPC 身邊才行', () => {
     const g = fresh();
     g.give('silver_coin', 50);
