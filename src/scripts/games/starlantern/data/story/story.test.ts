@@ -1384,6 +1384,8 @@ describe("Task 12: the town's days, stage by stage", () => {
   it('the guild crosses off the debt early (I-84)', () => {
     const early = [...STORY.greet.guild.act1, ...STORY.greet.guild.act2, ...STORY.townLines.act1, ...STORY.townLines.act2];
     expect(early.some((t) => /藥錢|房錢/.test(t) && /劃掉/.test(t))).toBe(true);
+    // fix round 1: a single trip from depth 1 to 4 skips act 1, and a greeting is one of several: act 2 closes it too
+    expect(STORY.greet.guild.act2.some((t) => /帳/.test(t) && /乾淨|清/.test(t))).toBe(true);
     for (const st of STAGES) for (const t of [...STORY.townLines[st], ...STORY.greet.guild[st]]) expect(t, st).not.toMatch(/欠(公會|著|的|錢|帳)/);   // once crossed off, never owed again
   });
 
@@ -1394,6 +1396,14 @@ describe("Task 12: the town's days, stage by stage", () => {
     expect(say('gate')).not.toMatch(/見過|上一輪|錯覺|耳熟|十七/);
     expect(say('forge')).not.toMatch(/拿劍的|洛恩|師父|聽鐵|鐵唱|火候差/);
     expect(say('inn')).not.toMatch(/丈夫|他走的|路上小心/);
+  });
+
+  it('fix round 1: the town narrates Lorne in the third person, and greetings replay', () => {
+    // narration outside quotes never says 你 (style bible §1.1); a greeting is not a one-time event
+    for (const st of STAGES) for (const t of STORY.townLines[st]) expect(t.replace(/「[^」]*」/g, ''), st).not.toMatch(/你/);
+    for (const st of STAGES) for (const f of FACILITIES) for (const t of STORY.greet[f][st]) expect(t, `${f} ${st}`).not.toMatch(/今天剛|剛醒來|今天說給你聽/);
+    const opens = FACILITIES.map((f) => STORY.greet[f].prologue.filter((t) => /燈帶/.test(t)).length);
+    expect(opens.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(1);
   });
 
   it('the town names no companion but Rin, so it holds for any party', () => {
