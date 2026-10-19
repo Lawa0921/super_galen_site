@@ -1,0 +1,118 @@
+{
+  "assets": {
+    "icon-essence-common": {
+      "final": "art-factory/starlantern/work/sheet-mat-1/cand/a3/icon-essence-common.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-mat-1\\sheet-mat-1-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          24,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-essence-magic": {
+      "final": "art-factory/starlantern/work/sheet-mat-1/cand/a3/icon-essence-magic.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-mat-1\\sheet-mat-1-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          25,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-essence-rare": {
+      "final": "art-factory/starlantern/work/sheet-mat-1/cand/a3/icon-essence-rare.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-mat-1\\sheet-mat-1-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 12,
+        "size": [
+          26,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-essence-legendary": {
+      "final": "art-factory/starlantern/work/sheet-mat-1/cand/a3/icon-essence-legendary.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-mat-1\\sheet-mat-1-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 14,
+        "size": [
+          23,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-star-tear": {
+      "final": "art-factory/starlantern/work/sheet-mat-1/cand/a3/icon-star-tear.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-mat-1\\sheet-mat-1-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          25,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-king-scale": {
+      "final": "art-factory/starlantern/work/sheet-mat-1/cand/a3/icon-king-scale.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-mat-1\\sheet-mat-1-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 13,
+        "size": [
+          31,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

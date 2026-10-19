@@ -1,0 +1,226 @@
+{
+  "assets": {
+    "ui-rarity-magic": {
+      "defringe": "strong",
+      "final": "art-factory/starlantern/work/sheet-rarity-frames/cand/a1/ui-rarity-magic.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames\\sheet-rarity-frames-a1.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "edge does not repeat"
+        ],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 8,
+        "holes": 0,
+        "center_clear": true,
+        "ring_closed": true,
+        "edge_repeat": {
+          "top": 0.455,
+          "bottom": 1.296,
+          "left": 0.484,
+          "right": 2.857
+        },
+        "size": [
+          16,
+          16
+        ],
+        "slice": 5,
+        "block": 26.688
+      },
+      "status": "qa_failed",
+      "kind": "nine-slice",
+      "slice": 5,
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames\\sheet-rarity-frames-a1.png",
+        "cell": "ui-rarity-magic"
+      }
+    },
+    "ui-rarity-rare": {
+      "defringe": "strong",
+      "final": "art-factory/starlantern/work/sheet-rarity-frames/cand/a1/ui-rarity-rare.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames\\sheet-rarity-frames-a1.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "edge does not repeat"
+        ],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 12,
+        "holes": 0,
+        "center_clear": true,
+        "ring_closed": true,
+        "edge_repeat": {
+          "top": 3.889,
+          "bottom": 1.154,
+          "left": 0.676,
+          "right": 0.625
+        },
+        "size": [
+          16,
+          16
+        ],
+        "slice": 5,
+        "block": 26.75
+      },
+      "status": "qa_failed",
+      "kind": "nine-slice",
+      "slice": 5,
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames\\sheet-rarity-frames-a1.png",
+        "cell": "ui-rarity-rare"
+      }
+    },
+    "ui-rarity-legendary": {
+      "defringe": "strong",
+      "final": "art-factory/starlantern/work/sheet-rarity-frames/cand/a1/ui-rarity-legendary.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames\\sheet-rarity-frames-a1.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "edge does not repeat"
+        ],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 14,
+        "holes": 0,
+        "center_clear": true,
+        "ring_closed": true,
+        "edge_repeat": {
+          "top": 1.061,
+          "bottom": 0.417,
+          "left": 1.471,
+          "right": 2.857
+        },
+        "size": [
+          16,
+          16
+        ],
+        "slice": 5,
+        "block": 27.062
+      },
+      "status": "qa_failed",
+      "kind": "nine-slice",
+      "slice": 5,
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames\\sheet-rarity-frames-a1.png",
+        "cell": "ui-rarity-legendary"
+      }
+    },
+    "ui-rarity-unique": {
+      "defringe": "strong",
+      "final": "art-factory/starlantern/work/sheet-rarity-frames/cand/a1/ui-rarity-unique.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames\\sheet-rarity-frames-a1.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "edge does not repeat"
+        ],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 52,
+        "holes": 0,
+        "center_clear": true,
+        "ring_closed": true,
+        "edge_repeat": {
+          "top": 2.246,
+          "bottom": 0.556,
+          "left": 2.5,
+          "right": 0.714
+        },
+        "size": [
+          16,
+          16
+        ],
+        "slice": 5,
+        "block": 26.625
+      },
+      "status": "qa_failed",
+      "kind": "nine-slice",
+      "slice": 5,
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames\\sheet-rarity-frames-a1.png",
+        "cell": "ui-rarity-unique"
+      }
+    },
+    "ui-rarity-set": {
+      "defringe": "strong",
+      "final": "art-factory/starlantern/work/sheet-rarity-frames/cand/a1/ui-rarity-set.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames\\sheet-rarity-frames-a1.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "edge does not repeat"
+        ],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 52,
+        "holes": 0,
+        "center_clear": true,
+        "ring_closed": true,
+        "edge_repeat": {
+          "top": 1.966,
+          "bottom": 0.4,
+          "left": 1.032,
+          "right": 1.852
+        },
+        "size": [
+          16,
+          16
+        ],
+        "slice": 5,
+        "block": 26.625
+      },
+      "status": "qa_failed",
+      "kind": "nine-slice",
+      "slice": 5,
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames\\sheet-rarity-frames-a1.png",
+        "cell": "ui-rarity-set"
+      }
+    },
+    "ui-glow-legendary": {
+      "defringe": "strong",
+      "final": "art-factory/starlantern/work/sheet-rarity-frames/cand/a1/ui-glow-legendary.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames\\sheet-rarity-frames-a1.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "edge does not repeat"
+        ],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 32,
+        "holes": 0,
+        "center_clear": true,
+        "ring_closed": true,
+        "edge_repeat": {
+          "top": 1.129,
+          "bottom": 0.818,
+          "left": 1.552,
+          "right": 1.538
+        },
+        "size": [
+          20,
+          20
+        ],
+        "slice": 7,
+        "block": 22.5
+      },
+      "status": "qa_failed",
+      "kind": "nine-slice",
+      "slice": 7,
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames\\sheet-rarity-frames-a1.png",
+        "cell": "ui-glow-legendary"
+      }
+    }
+  }
+}

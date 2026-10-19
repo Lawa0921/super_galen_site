@@ -1,0 +1,516 @@
+{
+  "assets": {
+    "gear-iron-sword-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-iron-sword-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          53,
+          52
+        ],
+        "block": 6,
+        "size": [
+          64,
+          64
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "iron-sword"
+      }
+    },
+    "gear-iron-sword": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-iron-sword.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          23,
+          22
+        ],
+        "block": 14,
+        "size": [
+          26,
+          26
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "iron-sword"
+      }
+    },
+    "gear-wooden-buckler-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-wooden-buckler-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          53,
+          55
+        ],
+        "block": 5,
+        "size": [
+          64,
+          64
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "wooden-buckler"
+      }
+    },
+    "gear-wooden-buckler": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-wooden-buckler.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          22,
+          23
+        ],
+        "block": 12,
+        "size": [
+          26,
+          26
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "wooden-buckler"
+      }
+    },
+    "gear-leather-cap-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-leather-cap-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          52,
+          38
+        ],
+        "block": 6,
+        "size": [
+          64,
+          64
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "leather-cap"
+      }
+    },
+    "gear-leather-cap": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-leather-cap.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          22,
+          16
+        ],
+        "block": 14,
+        "size": [
+          26,
+          26
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "leather-cap"
+      }
+    },
+    "gear-lg-chizuru-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-lg-chizuru-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "subject": [
+          52,
+          52
+        ],
+        "block": 7,
+        "size": [
+          64,
+          64
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "lg-chizuru"
+      }
+    },
+    "gear-lg-chizuru": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-lg-chizuru.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "subject": [
+          23,
+          23
+        ],
+        "block": 16,
+        "size": [
+          26,
+          26
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "lg-chizuru"
+      }
+    },
+    "gear-blaze-heart-sword-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-blaze-heart-sword-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          57,
+          56
+        ],
+        "block": 6,
+        "size": [
+          64,
+          64
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "blaze-heart-sword"
+      }
+    },
+    "gear-blaze-heart-sword": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-blaze-heart-sword.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          23,
+          22
+        ],
+        "block": 15,
+        "size": [
+          26,
+          26
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "blaze-heart-sword"
+      }
+    },
+    "gear-iron-unbroken-shield-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-iron-unbroken-shield-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          31,
+          57
+        ],
+        "block": 7,
+        "size": [
+          64,
+          64
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "iron-unbroken-shield"
+      }
+    },
+    "gear-iron-unbroken-shield": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-iron-unbroken-shield.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          13,
+          24
+        ],
+        "block": 17,
+        "size": [
+          26,
+          26
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "iron-unbroken-shield"
+      }
+    },
+    "gear-set-blaze-weapon-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-set-blaze-weapon-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          57,
+          58
+        ],
+        "block": 6,
+        "size": [
+          64,
+          64
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "set-blaze-weapon"
+      }
+    },
+    "gear-set-blaze-weapon": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-set-blaze-weapon.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          23,
+          23
+        ],
+        "block": 15,
+        "size": [
+          26,
+          26
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "set-blaze-weapon"
+      }
+    },
+    "gear-set-blaze-body-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-set-blaze-body-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          53,
+          51
+        ],
+        "block": 7,
+        "size": [
+          64,
+          64
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "set-blaze-body"
+      }
+    },
+    "gear-set-blaze-body": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-set-blaze-body.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          23,
+          22
+        ],
+        "block": 16,
+        "size": [
+          26,
+          26
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "set-blaze-body"
+      }
+    },
+    "gear-set-blaze-hands-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-set-blaze-hands-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "subject": [
+          58,
+          55
+        ],
+        "block": 6,
+        "size": [
+          64,
+          64
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "set-blaze-hands"
+      }
+    },
+    "gear-set-blaze-hands": {
+      "final": "art-factory/starlantern/work/sheet-gear-1/cand/a4/gear-set-blaze-hands.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "subject": [
+          23,
+          22
+        ],
+        "block": 15,
+        "size": [
+          26,
+          26
+        ]
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a4.png",
+        "cell": "set-blaze-hands"
+      }
+    }
+  }
+}

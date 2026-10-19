@@ -1,0 +1,25 @@
+{
+  "pass": false,
+  "reasons": [
+    "edge does not repeat"
+  ],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 8,
+  "holes": 0,
+  "center_clear": true,
+  "ring_closed": true,
+  "edge_repeat": {
+    "top": 4.615,
+    "bottom": 3.235,
+    "left": 1.591,
+    "right": 3.824
+  },
+  "size": [
+    16,
+    16
+  ],
+  "slice": 5,
+  "block": 27.5
+}
