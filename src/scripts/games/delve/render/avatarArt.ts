@@ -15,7 +15,7 @@ import { OUTFITS, raceId, type Appearance, type RaceId } from '../engine/appeara
 import type { DollLook, DollPiece } from '../engine/doll';
 import type { ArmorSetId } from '../engine/items';
 import { drawHead, type Expr, type HairMotion } from './avatarHead';
-import { CLOTH_RAMPS, DARK, GOLD, HORN, LEATHER, WHITE, clothRamp, darker, hairRamp, skinRamp } from './avatarPalette';
+import { CLOTH_RAMPS, DARK, GOLD, HORN, LEATHER, MAIL, WHITE, clothRamp, darker, hairRamp, skinRamp } from './avatarPalette';
 import { beardRamp, dwarfify } from './folkArt';
 import {
   armor5, armorSet, backArt, beltArt, bootExtra, bootRamp, capeShoulders, chestDetail, chestSpots, greaveKnee, lookId, neckArt, upgrades,
@@ -121,6 +121,8 @@ interface LegStyle {
   parts: [number, RGB[], number][];
   shoe: { kind: ShoeKind; r: RGB[]; accent?: RGB; extra?: 'jump' | 'swift' };
   greave: ArmorSetId | null;
+  /** 小腿（膝蓋以下）的花紋：wrap = 斜纏的綁腿、stripe = 橫條紋襪；r = 花紋的色階 */
+  pattern?: { kind: 'wrap' | 'stripe'; r: RGB[] };
 }
 function legStyle(l: DollLook, w: Wear): LegStyle {
   const sk = skinRamp(l.app.skin);
@@ -135,6 +137,16 @@ function legStyle(l: DollLook, w: Wear): LegStyle {
       case 'hoodie': st = { parts: [[1, CLOTH_RAMPS[2], 0]], shoe: { kind: 'sneaker', r: WHITE, accent: c2[3] }, greave: null }; break;
       case 'coat': st = { parts: [[1, CLOTH_RAMPS[8], 0]], shoe: { kind: 'tall', r: LEATHER }, greave: null }; break;
       case 'maid': st = { parts: [[1, WHITE, 0]], shoe: { kind: 'mary', r: DARK }, greave: null }; break;
+      // 忍者：寬鬆的褲管 + 小腿纏白綁腿（斜紋）
+      case 'ninja': st = { parts: [[0.5, c1, 0.3], [1, WHITE, 0]], shoe: { kind: 'loafer', r: DARK }, greave: null, pattern: { kind: 'wrap', r: WHITE } }; break;
+      case 'mage': st = { parts: [[1, darker(c1), 0]], shoe: { kind: 'loafer', r: darker(c1) }, greave: null }; break;
+      case 'knight': st = { parts: [[1, MAIL, 0.1]], shoe: { kind: 'armor', r: MAIL }, greave: null }; break;
+      case 'qipao': st = { parts: [[1, sk, 0]], shoe: { kind: 'mary', r: DARK }, greave: null }; break;
+      // 海盜：淺色馬褲 + 到膝蓋的黑長靴
+      case 'pirate': st = { parts: [[0.5, c2, 0.2], [1, DARK, 0.3]], shoe: { kind: 'tall', r: DARK }, greave: null }; break;
+      case 'idol': st = { parts: [[0.45, sk, 0], [1, c2, 0]], shoe: { kind: 'boot', r: WHITE }, greave: null }; break;
+      case 'priest': st = { parts: [[1, darker(c1), 0]], shoe: { kind: 'loafer', r: LEATHER }, greave: null }; break;
+      case 'gothic': st = { parts: [[1, c1, 0]], shoe: { kind: 'mary', r: DARK }, greave: null, pattern: { kind: 'stripe', r: c2 } }; break;
       default: st = { parts: [[0.45, darker(c1), 0.2], [1, sk, 0]], shoe: { kind: 'boot', r: LEATHER }, greave: null };
     }
   }
@@ -157,6 +169,14 @@ function legBmp(pose: LegPose, hipX: number, hipY: number, st: LegStyle, far: bo
     const [a0, a1, r, extra] = pieces[i];
     const cuts = [a0, ...(a0 < 0.5 && a1 > 0.5 ? [0.5] : []), a1];
     for (let k = cuts.length - 2; k >= 0; k--) { const p = at(cuts[k]), q = at(cuts[k + 1]); seg(b, p[0], p[1], q[0], q[1], half + extra, dk(r)); }
+  }
+  if (st.pattern) {
+    // 膝蓋以下：綁腿每 3 格一道斜紋、條紋襪隔列換色
+    const pr = dk(st.pattern.r), wrap = st.pattern.kind === 'wrap';
+    for (let y = Math.ceil(ky); y <= Math.floor(ay); y++) for (let x = 0; x < b.w; x++) {
+      if (!b.on(x, y)) continue;
+      if (wrap ? (x + y) % 3 === 0 : (y & 1) === 0) b.set(x, y, wrap ? pr[1] : pr[3]);
+    }
   }
   if (st.greave && !far) greaveKnee(b, st.greave, kx, ky);
   shoe(b, st, Math.round(ax), Math.round(ay), far);
@@ -233,6 +253,20 @@ function skirt(b: Bmp, y0: number, x0: number, x1: number, n: number, r: RGB[], 
   }
 }
 
+/** 長袍下襬：從 y0 往下 n 列、每列往外擴 spread 格（A 字）；左緣亮、右兩欄暗、一道褶線；trim = 最下一列的滾邊色 */
+function robe(b: Bmp, y0: number, x0: number, x1: number, n: number, r: RGB[], spread: number, flap: number, trim: RGB[] | null): void {
+  for (let k = 0; k < n; k++) {
+    const sh = Math.round(flap * k * 0.3), ex = Math.floor(k * spread);
+    const a = x0 - ex - sh, z = x1 + ex - Math.round(sh * 0.4);
+    for (let x = a; x <= z; x++) {
+      let c = x === a ? r[4] : x >= z - 1 ? r[2] : r[3];
+      if (k > 0 && x === a + 3) c = r[2];
+      if (k === n - 1) c = trim ? (x === a ? trim[4] : x >= z - 1 ? trim[2] : trim[3]) : x === a ? r[3] : r[2];
+      b.set(x, y0 + k, c);
+    }
+  }
+}
+
 interface BodyPose { dx: number; dy: number; flare: number; flap: number; f: number; }
 
 /** 下身的裙 / 袴 / 大衣下擺（腿之後、上衣之前） */
@@ -254,6 +288,81 @@ function lowerFront(b: Bmp, w: Wear, rows: Rows, p: BodyPose): void {
       const trail = Math.round(p.flap * k * 0.5) + (fl ? k : 0);
       for (let x = x0 - 1 - trail; x <= x0 + 2; x++) b.set(x, yb + k, x === x0 - 1 - trail ? c1[4] : k === 2 ? c1[2] : c1[3]);
       for (let x = x1 - 2; x <= x1 + 1 - Math.round(trail * 0.3); x++) b.set(x, yb + k, x === x1 - 2 ? c2[3] : k === 2 ? c1[1] : c1[2]);
+    }
+  }
+  const mx = Math.round((x0 + x1) / 2) + 1;
+  if (w.o === 'mage') {
+    // 魔導長袍：A 字長下襬到腳踝、正中前襟開口一道副色滾邊、下緣副色滾邊
+    robe(b, yb, x0, x1, 5, c1, 0.5 + fl * 0.3, p.flap, c2);
+    for (let k = 0; k < 4; k++) b.set(mx - Math.round(p.flap * k * 0.3), yb + k, c2[k === 0 ? 3 : 2]);
+  }
+  if (w.o === 'priest') {
+    // 神官袍：直筒長袍到腳踝；披帶（副色）兩條垂到膝下、末端金色流蘇
+    robe(b, yb, x0, x1, 5, c1, 0.25 + fl * 0.2, p.flap * 0.6, null);
+    for (let k = 0; k < 4; k++) {
+      const sh = Math.round(p.flap * 0.6 * k * 0.3);
+      b.set(mx - 2 - sh, yb + k, k === 3 ? GOLD : c2[3]); b.set(mx + 1 - sh, yb + k, k === 3 ? GOLD : c2[2]);
+    }
+  }
+  if (w.o === 'knight') {
+    // 罩袍下片：腰帶下垂一片（主色）、十字的直線延伸下來、下緣副色滾邊
+    for (let k = 0; k < 3; k++) {
+      const sh = Math.round(p.flap * k * 0.4);
+      for (let x = mx - 3; x <= mx + 2; x++) b.set(x - sh, yb + k, k === 2 ? (x === mx - 3 ? c2[3] : c2[2]) : x === mx - 3 ? c1[4] : x >= mx + 1 ? c1[2] : c1[3]);
+      if (k < 2) b.set(mx - sh, yb + k, c2[3]);
+    }
+  }
+  if (w.o === 'qipao') {
+    // 旗袍：合身長裙到小腿；前側（近腳那邊）高開衩露出腿，開衩邊和下緣是副色滾邊
+    for (let k = 0; k < 4; k++) {
+      const sh = Math.round(p.flap * k * 0.3);
+      for (let x = x0 - sh; x <= x1 - sh; x++) {
+        const slit = k >= 1 && x > mx - sh && x < x1 - sh;
+        if (slit) continue;
+        let c = x === x0 - sh ? c1[4] : x >= x1 - 1 - sh ? c1[2] : c1[3];
+        if (k >= 1 && x === mx - sh) c = c2[3];
+        if (k === 3) c = x === x0 - sh ? c2[3] : c2[2];
+        b.set(x, yb + k, c);
+      }
+    }
+  }
+  if (w.o === 'pirate') {
+    // 海盜長外套：兩片下擺垂到小腿、往後飄得比冒險大衣多；前面敞開；紅腰帶的結垂在左前
+    for (let k = 0; k < 4; k++) {
+      const trail = Math.round(p.flap * k * 0.6) + (fl ? k : 0);
+      for (let x = x0 - 1 - trail; x <= x0 + 2; x++) b.set(x, yb + k, x === x0 - 1 - trail ? c1[4] : k === 3 ? c1[2] : c1[3]);
+      for (let x = x1 - 2; x <= x1 + 1 - Math.round(trail * 0.3); x++) b.set(x, yb + k, x === x1 - 2 ? c1[4] : k === 3 ? c1[1] : c1[2]);
+    }
+    const R = CLOTH_RAMPS[3];
+    b.set(x0 + 2, yb, R[3]); b.set(x0 + 2, yb + 1, R[2]); b.set(x0 + 1, yb + 1, R[3]); b.set(x0 + 1, yb + 2, R[2]);
+  }
+  if (w.o === 'idol') {
+    // 偶像蓬蓬裙：三層往外鼓（主色 → 主色褶 → 副色裙撐），最下一列白色荷葉邊（隔格亮暗的波浪褶）
+    for (let k = 0; k < 4; k++) {
+      const sh = Math.round(p.flap * k * 0.3), ex = [1, 2, 3, 3][k] + (fl ? Math.min(k, 1) : 0);
+      const a = x0 - ex - sh, z = x1 + ex - Math.round(sh * 0.4);
+      for (let x = a; x <= z; x++) {
+        let c: RGB;
+        if (k === 3) c = x >= z - 1 || (x - a) % 2 === 1 ? WHITE[2] : WHITE[3];
+        else if (k === 2) c = x === a ? c2[4] : x >= z - 1 ? c2[2] : c2[3];
+        else c = x === a || (k === 0 && x <= a + 2) ? c1[4] : x >= z - 1 ? c1[2] : k === 1 && (x - a) % 3 === 2 ? c1[2] : c1[3];
+        b.set(x, yb + k, c);
+      }
+    }
+  }
+  if (w.o === 'gothic') {
+    // 哥德多層裙：上層主色（下緣一排白蕾絲點）、下層副色更寬、最下一列白蕾絲（扇形：隔格）
+    for (let k = 0; k < 4; k++) {
+      const sh = Math.round(p.flap * k * 0.3), ex = [1, 1, 2, 3][k] + (fl ? Math.min(k, 1) : 0);
+      const a = x0 - ex - sh, z = x1 + ex - Math.round(sh * 0.4);
+      for (let x = a; x <= z; x++) {
+        let c: RGB;
+        if (k === 3) { if ((x - a) % 2 === 1) continue; c = x >= z - 1 ? WHITE[2] : WHITE[3]; }
+        else if (k === 2) c = x === a ? c2[4] : x >= z - 1 ? c2[2] : (x - a) % 3 === 2 ? c2[2] : c2[3];
+        else if (k === 1) c = (x - a) % 2 === 0 ? WHITE[2] : x >= z - 1 ? c1[2] : c1[3];
+        else c = x === a ? c1[4] : x >= z - 1 ? c1[2] : c1[3];
+        b.set(x, yb + k, c);
+      }
     }
   }
 }
@@ -317,6 +426,69 @@ function topFront(b: Bmp, l: DollLook, w: Wear, rows: Rows, lowerMiko: boolean, 
       run(y0, 0, 99, (x) => (x & 1 ? c2[4] : c2[3]));
       for (let y = y0 + 2; y <= yb; y++) run(y, mid - 2, mid + 2, (x) => (x === mid - 2 ? c2[2] : x === mid + 2 ? c2[1] : (y === y0 + 2 && (x & 1)) ? c2[4] : c2[3]));
       S(mid - 3, y0 + 1, c2[3]); S(mid + 3, y0 + 1, c2[2]);
+    } else if (o === 'ninja') {
+      // 忍者：交叉衣襟（亮一階的 V）、副色圍巾繞脖子一圈、尾巴往身後飄（走 / 跳時更平、站著往下垂）；副色腰帶
+      for (let k = 0; k < 4; k++) { S(mid - 2 + Math.floor(k / 2), y0 + 1 + k, c1[4]); S(mid + 2 - Math.floor(k / 2), y0 + 1 + k, c1[3]); }
+      for (let y = y0; y <= y0 + 1; y++) { const [a, z] = E(y); for (let x = a - 1; x <= z + 1; x++) S(x, y, x <= a ? c2[4] : x >= z ? c2[2] : y === y0 + 1 && (x & 1) ? c2[2] : c2[3]); }
+      const [a1] = E(y0 + 1), droop = Math.max(-0.3, Math.min(0.8, 0.75 - 0.4 * (p.flap + p.flare)));
+      for (let i = 0; i < 6; i++) {
+        const x = a1 - 2 - i, y = y0 + 1 + Math.round(i * droop);
+        S(x, y, i === 5 ? c2[4] : c2[3]); if (i < 5) S(x, y + 1, c2[2]);
+      }
+      const [ba, bz] = E(yb - 1);
+      run(yb - 1, ba, bz, (x) => (x === ba ? c2[3] : x >= bz - 1 ? c2[1] : c2[2]));
+      S(mid - 1, yb - 1, c2[4]);
+    } else if (o === 'mage') {
+      // 魔導長袍：副色 V 形滾邊領、胸口金色寶石扣、細腰繩（前襟開口的滾邊在下襬）
+      for (let k = 0; k < 3; k++) { S(mid - 2 + k, y0 + k, c2[3]); S(mid + 3 - k, y0 + k, c2[2]); }
+      S(mid, y0 + 3, GOLD); S(mid + 1, y0 + 3, CLOTH_RAMPS[3][3]);
+      run(yb - 2, 0, 99, (x) => (x === mid ? GOLD : x & 1 ? c2[2] : c2[3]));
+    } else if (o === 'knight') {
+      // 騎士：鎖子甲的肩與兩側（鐵灰）、主色罩袍、副色十字、腰帶 + 金扣
+      run(y0, 0, 99, (x) => (x === E(y0)[0] ? MAIL[4] : x >= E(y0)[1] - 1 ? MAIL[2] : MAIL[3]));
+      run(y0 + 1, 0, 99, (x) => (x === E(y0 + 1)[0] ? MAIL[4] : x >= E(y0 + 1)[1] - 1 ? MAIL[1] : (x & 1) ? MAIL[2] : MAIL[3]));
+      for (let y = y0 + 2; y <= yb; y++) { const [a, z] = E(y); S(a, y, MAIL[3]); S(z, y, MAIL[1]); }
+      for (let y = y0 + 2; y <= yb; y++) S(mid, y, y === y0 + 2 ? c2[4] : c2[3]);
+      for (let x = mid - 2; x <= mid + 2; x++) S(x, y0 + 3, x === mid - 2 ? c2[4] : x === mid + 2 ? c2[2] : c2[3]);
+      belt(yb - 1);
+    } else if (o === 'qipao') {
+      // 旗袍：副色立領（貼著下巴）、斜襟滾邊從領口斜到前側腋下、兩顆金色盤扣
+      run(y0, mid - 3, mid + 2, (x) => (x === mid - 3 ? c2[4] : x >= mid + 1 ? c2[2] : c2[3]));
+      run(y0 + 1, mid - 3, mid + 2, (x) => (x === mid - 3 ? c2[3] : x >= mid + 1 ? c2[1] : c2[2]));
+      for (let k = 0; k < 3; k++) S(mid + k, y0 + 2 + k, c2[3]);
+      S(mid + 1, y0 + 2, GOLD); S(mid + 3, y0 + 4, GOLD);
+    } else if (o === 'pirate') {
+      // 海盜外套：敞開的前襟露出副色襯衫 + 荷葉領巾、翻領亮一階、紅色寬腰帶（兩列）
+      for (let k = 0; k < 4; k++) run(y0 + k, mid - 1 + Math.floor(k / 2), mid + 2 - Math.floor(k / 2), (x) => (x === mid + 2 - Math.floor(k / 2) ? c2[2] : c2[3]));
+      S(mid, y0 + 1, c2[4]); S(mid + 1, y0 + 2, c2[2]); S(mid, y0 + 3, c2[4]);
+      for (let k = 0; k < 4; k++) { S(mid - 2 + Math.floor(k / 2), y0 + k, c1[4]); S(mid + 3 - Math.floor(k / 2), y0 + k, c1[1]); }
+      const R = CLOTH_RAMPS[3];
+      for (let y = yb - 2; y <= yb - 1; y++) { const [a, z] = E(y); run(y, a, z, (x) => (x === a ? R[4] : x >= z - 1 ? R[2] : y === yb - 1 && (x & 1) ? R[2] : R[3])); }
+      S(mid + 2, y0 + 4, GOLD);
+    } else if (o === 'idol') {
+      // 偶像：白色荷葉領、胸前副色大蝴蝶結（兩個圈 + 結 + 兩條飄帶）、副色腰帶
+      run(y0, 0, 99, (x) => (x & 1 ? WHITE[3] : WHITE[2]));
+      run(y0 + 1, mid - 3, mid + 3, (x) => (x & 1 ? WHITE[2] : WHITE[3]));
+      const by = y0 + 2;
+      S(mid - 2, by - 1, c2[4]); S(mid + 2, by - 1, c2[3]);
+      S(mid - 2, by, c2[3]); S(mid - 1, by, c2[3]); S(mid, by, c2[1]); S(mid + 1, by, c2[2]); S(mid + 2, by, c2[2]);
+      S(mid - 2, by + 1, c2[3]); S(mid + 2, by + 1, c2[2]);
+      S(mid - 1, by + 2, c2[3]); S(mid + 1, by + 2, c2[2]);
+      run(yb - 1, 0, 99, (x) => (x === E(yb - 1)[0] ? c2[4] : x >= E(yb - 1)[1] - 1 ? c2[2] : c2[3]));
+    } else if (o === 'priest') {
+      // 神官：副色短披肩蓋住兩肩（比身體寬一格、下緣暗）+ 金扣；披帶兩條從肩垂下
+      for (let y = y0; y <= y0 + 2; y++) {
+        const [a, z] = E(y), wd = y === y0 + 2 ? 0 : 1;
+        for (let x = a - wd; x <= z + wd; x++) S(x, y, x <= a - wd + (wd ? 1 : 0) ? c2[4] : x >= z + wd - 1 ? c2[2] : y === y0 + 2 ? c2[2] : c2[3]);
+      }
+      S(mid, y0 + 2, GOLD);
+      for (let y = y0 + 3; y <= yb; y++) { S(mid - 2, y, c2[3]); S(mid + 1, y, c2[2]); }
+      S(mid - 2, y0 + 5, GOLD); S(mid + 1, y0 + 5, GOLD);
+    } else if (o === 'gothic') {
+      // 哥德：白蕾絲領（隔格）+ 副色小蝴蝶結、馬甲的副色交叉綁帶（之字）
+      run(y0 + 1, 0, 99, (x) => (x & 1 ? WHITE[3] : WHITE[2]));
+      S(mid - 1, y0 + 2, c2[3]); S(mid, y0 + 2, c2[1]); S(mid + 1, y0 + 2, c2[2]);
+      for (let y = y0 + 3; y <= yb; y++) { S(mid - 1, y, c1[4]); S(mid + ((y & 1) ? 0 : 1), y, c2[3]); S(mid + 2, y, c1[2]); }
     }
   }
   if (l.neck) neckArt(b, l.neck, mid - 1, y0 + 1);
@@ -361,7 +533,17 @@ export function avatarArm(l: DollLook, back: boolean, f = 0): Bmp {
       col(1, 5, wh);
       for (let y = 2; y <= 7; y++) for (let x = X1 + 1; x <= X1 + 3; x++) arm.set(x, y, y === 7 ? r[3] : x === X1 + 3 ? wh[2] : wh[3]);
       hand();
-    } else { col(1, 4, dk(c1)); col(5, 5, darker(dk(c1))); hand(); }
+    } else if (o === 'ninja') { col(1, 3, dk(c1)); col(4, 4, dk(WHITE)); col(5, 5, dk(MAIL)); hand(); }
+    else if (o === 'mage') {
+      // 喇叭寬袖：往下越來越寬、袖口副色滾邊，手從袖口伸出來
+      col(1, 2, dk(c1)); col(3, 3, dk(c1), X0, X1 + 1); col(4, 4, dk(c1), X0 - 1, X1 + 1); col(5, 5, dk(c2), X0 - 1, X1 + 2); hand();
+    } else if (o === 'knight') { col(1, 4, dk(MAIL)); col(5, 5, dk(LEATHER)); hand(); }
+    else if (o === 'qipao') { col(1, 2, dk(c1)); col(3, 3, dk(c2)); col(4, 5, sk); hand(); }
+    else if (o === 'pirate') { col(1, 3, dk(c1)); col(4, 4, darker(dk(c1)), X0 - 1, X1 + 1); col(5, 5, dk(c2)); hand(); }
+    else if (o === 'idol') { col(1, 2, dk(c1), X0 - 1, X1 + 1); col(3, 3, dk(WHITE), X0 - 1, X1 + 1); col(4, 4, sk); col(5, 5, dk(c2)); hand(); }
+    else if (o === 'priest') { col(1, 3, dk(c1)); col(4, 4, dk(c1), X0 - 1, X1 + 1); col(5, 5, dk(c2), X0 - 1, X1 + 1); hand(); }
+    else if (o === 'gothic') { col(1, 2, dk(c1), X0 - 1, X1 + 1); col(3, 4, dk(c1)); col(5, 5, dk(WHITE), X0 - 1, X1 + 1); hand(); }
+    else { col(1, 4, dk(c1)); col(5, 5, darker(dk(c1))); hand(); }
   }
   arm.softOutline();
   return arm;
@@ -370,6 +552,7 @@ export function avatarArm(l: DollLook, back: boolean, f = 0): Bmp {
 function armSleeve(l: DollLook): RGB[] {
   const w = wearOf(l, l.body);
   if (w.kind === 'armor') return armor5(w.set);
+  if (w.o === 'knight') return MAIL;
   return w.o === 'sailor' || w.o === 'miko' ? WHITE : w.o === 'explorer' ? w.c2 : w.c1;
 }
 

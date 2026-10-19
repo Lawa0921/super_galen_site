@@ -20,13 +20,14 @@ const bbox = (b: Bmp): { x0: number; y0: number; x1: number; y1: number } => {
   for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
   return { x0, y0, x1, y1 };
 };
-/** 測試的外觀：每種髮型 × 兩種體型 × 五個種族、每種頭飾、帽子 / 頭盔 / 背飾 */
+/** 測試的外觀：每種髮型 × 兩種體型 × 五個種族、每種頭飾、每套服裝、帽子 / 頭盔 / 背飾 */
 function looks(): DollLook[] {
   const out: DollLook[] = [];
   for (const body of [0, 1]) for (let race = 0; race < RACES.length; race++) {
     const base = { ...bodyDefaults(body), race };
     for (let h = 0; h < HAIR_STYLES.length; h++) out.push(plainLook({ ...base, hair: h, ahoge: true }));
     for (let a = 0; a < ACCESSORIES.length; a++) out.push(plainLook({ ...base, acc: a, hair: 2 }));
+    for (let o = 0; o < OUTFITS.length; o++) out.push(plainLook({ ...base, outfit: o, color1: OUTFITS[o].colors[0], color2: OUTFITS[o].colors[1] }));
     for (const hat of ['straw', 'witch', 'beret', 'maid', 'miner', 'flower']) out.push({ ...plainLook(base), head: P(`hat:${hat}`) });
     for (const s of ['wood', 'copper', 'iron', 'gold', 'bone', 'molten']) out.push({ ...plainLook(base), head: P(`armor:${s}`), body: P(`armor:${s}`), legs: P(`armor:${s}`) });
     for (const bk of ['cape', 'wings', 'feathers', 'bow', 'buckler']) out.push({ ...plainLook({ ...base, hair: 1 }), back: P(`back:${bk}`) });

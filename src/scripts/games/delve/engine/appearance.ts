@@ -118,6 +118,15 @@ export const OUTFITS: readonly OutfitOption[] = [
   { id: 'hoodie', zh: '連帽衫', colors: [C('sky'), C('white')] },
   { id: 'coat', zh: '冒險大衣', colors: [C('brown'), C('orange')] },
   { id: 'maid', zh: '女僕圍裙', colors: [C('black'), C('white')] },
+  // 以下新加的只能接在末尾（存檔存索引）
+  { id: 'ninja', zh: '忍者裝束', colors: [C('black'), C('red')] },
+  { id: 'mage', zh: '魔導長袍', colors: [C('purple'), C('khaki')] },
+  { id: 'knight', zh: '騎士罩袍', colors: [C('navy'), C('white')] },
+  { id: 'qipao', zh: '旗袍', colors: [C('red'), C('orange')] },
+  { id: 'pirate', zh: '海盜外套', colors: [C('brown'), C('white')] },
+  { id: 'idol', zh: '偶像舞台裝', colors: [C('pink'), C('sky')] },
+  { id: 'priest', zh: '神官袍', colors: [C('white'), C('khaki')] },
+  { id: 'gothic', zh: '哥德洋裝', colors: [C('black'), C('purple')] },
 ];
 export const ACCESSORIES: readonly AppearanceOption[] = [
   { id: 'none', zh: '無' },

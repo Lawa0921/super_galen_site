@@ -63,6 +63,8 @@ export const LEATHER = ramp('#1c1424', '#2a1810', '#472819', '#623924', '#7c4c2e
 /** 深色鞋 / 襪 */
 export const DARK = ramp('#0c0a12', '#0c0a12', '#1c1424', '#2c2838', '#423f54');
 export const WHITE = CLOTH_RAMPS[0];
+/** 鎖子甲 / 鐵灰（騎士罩袍的肩、袖、護腿） */
+export const MAIL = ramp('#2c2838', '#423f54', '#5e5e74', '#858aa0', '#b4b9c8');
 export const GOLD = hex('#ffd86a');
 export const EYE_WHITE = hex('#ffffff');
 export const MOUTH = hex('#8c2038');

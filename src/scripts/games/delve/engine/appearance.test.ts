@@ -24,22 +24,24 @@ function lcg(seed: number): () => number {
 }
 
 describe('外觀選項', () => {
-  it('數量符合需求：髮型 ≥ 13、髮色 ≥ 10、瞳色 ≥ 6、膚色 ≥ 5、服裝 ≥ 6、頭飾 ≥ 10（含緞帶 / 貓耳 / 髮夾 / 兜帽 / 皇冠 / 耳機 / 狐面 / 髮簪）', () => {
+  it('數量符合需求：髮型 ≥ 13、髮色 ≥ 10、瞳色 ≥ 6、膚色 ≥ 5、服裝 ≥ 14、頭飾 ≥ 10（含緞帶 / 貓耳 / 髮夾 / 兜帽 / 皇冠 / 耳機 / 狐面 / 髮簪）', () => {
     expect(HAIR_STYLES.length).toBeGreaterThanOrEqual(13);
     expect(ACCESSORIES.length).toBeGreaterThanOrEqual(10);
     expect(HAIR_COLORS.length).toBeGreaterThanOrEqual(10);
     expect(EYE_COLORS.length).toBeGreaterThanOrEqual(6);
     expect(EYE_SHAPES.length).toBeGreaterThanOrEqual(2);
     expect(SKIN_TONES.length).toBeGreaterThanOrEqual(5);
-    expect(OUTFITS.length).toBeGreaterThanOrEqual(6);
+    expect(OUTFITS.length).toBeGreaterThanOrEqual(14);
+    for (const id of ['ninja', 'mage', 'knight', 'qipao', 'pirate', 'idol', 'priest', 'gothic']) expect(OUTFITS.map((o) => o.id)).toContain(id);
     expect(CLOTH_COLORS.length).toBeGreaterThanOrEqual(8);
     for (const id of ['ribbon', 'catears', 'clip', 'hood', 'crown', 'headphones', 'foxmask', 'hairpin']) expect(ACCESSORIES.map((a) => a.id)).toContain(id);
     for (const id of ['twintails', 'ponytail', 'bob', 'long', 'spiky', 'messy', 'braid', 'odango', 'lowpony', 'wolf', 'wavy', 'sidepart']) expect(HAIR_STYLES.map((h) => h.id)).toContain(id);
     for (const id of ['pink', 'blue', 'silver', 'green']) expect(HAIR_COLORS.map((h) => h.id)).toContain(id);
   });
-  it('新髮型 / 頭飾只加在末尾：舊存檔的索引不變', () => {
+  it('新髮型 / 頭飾 / 服裝只加在末尾：舊存檔的索引不變', () => {
     expect(HAIR_STYLES.slice(0, 9).map((h) => h.id)).toEqual(['bob', 'twintails', 'ponytail', 'long', 'hime', 'spiky', 'messy', 'braid', 'odango']);
     expect(ACCESSORIES.slice(0, 6).map((a) => a.id)).toEqual(['none', 'ribbon', 'catears', 'clip', 'hood', 'flower']);
+    expect(OUTFITS.slice(0, 6).map((o) => o.id)).toEqual(['explorer', 'sailor', 'miko', 'hoodie', 'coat', 'maid']);
   });
   it('每個欄位都有中文名稱，id 不重複', () => {
     for (const f of APPEARANCE_FIELDS) {

@@ -10,7 +10,7 @@ import { dollPreview } from './dollPreview';
 import { fashionIcon } from './fashionIcon';
 import { VANITY_ITEMS, type ArmorSetId } from '../engine/items';
 import { DelveGame } from '../engine/game';
-import { eyeRamp, hairRamp } from './avatarPalette';
+import { clothRamp, eyeRamp, hairRamp } from './avatarPalette';
 
 /** 測試用的中性外觀（探險家、栗色髮、沒有頭飾）：預設外觀是粉髮水手服，粉髮的高光是白色、水手服的領巾 / 長袖會和被測的東西重疊 */
 const DEF = { ...DEFAULT_APPEARANCE, hair: 0, hairColor: 2, outfit: 0, color1: OUTFITS[0].colors[0], color2: OUTFITS[0].colors[1], acc: 0 };
@@ -70,6 +70,22 @@ describe('紙娃娃影格', () => {
     const outfits = new Set<string>();
     for (let o = 0; o < OUTFITS.length; o++) outfits.add(flatFrame(avatarFrame(plainLook({ ...DEF, outfit: o }), 'idle', 0)).px.join());
     expect(outfits.size).toBe(OUTFITS.length);
+  });
+  // 軀幹區域：待機第 0 格、面向右、只看 body 那張（手臂由渲染器另外畫、不在裡面），
+  //   列 = 肩膀那列（AV_SHOULDER y 42）到髖（47）、欄 = 中心 26 ± 5（男生最寬的那列 21..31）。
+  //   髮色用嫩綠（色階和這些服裝的布色不重疊）、鮑伯頭、沒有頭飾。Task 7 會把清單擴到全部服裝。
+  const SHADED_OUTFITS = ['ninja', 'mage', 'knight', 'qipao', 'pirate', 'idol', 'priest', 'gothic'];
+  it('每套服裝的軀幹至少用到主色 / 副色色階裡 3 種不同的色（亮 / 底 / 影三階）', () => {
+    for (const id of SHADED_OUTFITS) for (const body of [0, 1]) {
+      const o = OUTFITS.findIndex((x) => x.id === id);
+      expect(o, id).toBeGreaterThanOrEqual(0);
+      const [c1, c2] = OUTFITS[o].colors;
+      const cloth = new Set([...clothRamp(c1), ...clothRamp(c2)].map((c) => c.join()));
+      const b = avatarFrame(plainLook({ ...DEF, body, hairColor: 9, outfit: o, color1: c1, color2: c2 }), 'idle', 0).body;
+      const seen = new Set<string>();
+      for (let y = 42; y <= 47; y++) for (let x = 21; x <= 31; x++) if (b.on(x, y) && cloth.has(b.get(x, y).join())) seen.add(b.get(x, y).join());
+      expect(seen.size, `${id} body ${body}`).toBeGreaterThanOrEqual(3);
+    }
   });
   it('爬繩的影格依序不同（手交替），掛著的影格會晃', () => {
     const l = plainLook(DEF);
