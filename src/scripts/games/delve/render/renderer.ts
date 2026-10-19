@@ -8,7 +8,9 @@ import { TILE_SIZE, CHUNK, DAY_LENGTH } from '../engine/constants';
 import { buildAtlas, perpMask, type Atlas } from './textures';
 import { ChunkLRU, cameraFocus, chunksTouchRect, followCamera, nearRect, visibleChunks, type Cam, type TileRect } from './model';
 import { CORNER, EDGE, blendOverlay, decorStyle, edgeMask, innerCornerMask, type Neighbor } from './autotile';
-import { armAngles, carryArm, carryStyle, flameFrame, heldCarryArm, heldOverFace, heldOverHead, swingAngle, SWING_RATE, type PoseKind } from './anim';
+import { armAngles, carryArm, carryStyle, flameFrame, heldCarryArm, swingAngle, SWING_RATE, type PoseKind } from './anim';
+import { clearShiftAll, faceGuard } from './heldLayout';
+import { skinRamp } from './avatarPalette';
 import { FW, FH, Sprites } from './sprites';
 import { PlayerAnimator, atRopeTop, blinkAt, type PlayerAnim } from './playerAnim';
 import { MANTLE_KNEE_X, mantleLean, ROPE_HAND_HI, SHEET, type SheetAnim } from './avatarArt';
@@ -88,6 +90,10 @@ export class Renderer {
   /** 平滑鏡頭（內部計算用）；繪製時用對齊整數美術 px 的 drawCam */
   cam: Cam = { x: 0, y: 0 };
   drawCam: Cam = { x: 0, y: 0 };
+  /** 最後一次畫玩家：影格表第幾格、原點（緩衝座標）、影格偏移、面向（e2e 檢查武器不蓋臉用） */
+  playerDraw: { fi: number; x: number; y: number; ox: number; oy: number; facing: number } | null = null;
+  /** 最後一次畫玩家手上的東西（局部座標，面向右；e2e 檢查手持物整個看得到、不蓋臉用） */
+  heldDraws: { c: HTMLCanvasElement; x: number; y: number }[] = [];
   /** 世界 px（= 美術 px）→ CSS px 縮放 = scale / dpr */
   zoom = 1;
   /** 每個美術像素佔幾個裝置像素（整數） */
@@ -864,90 +870,85 @@ export class Renderer {
     if (heldOther && kind !== 'jump' && kind !== 'fall') arms.front = heldCarryArm(heldOther === 'torch' || heldOther === 'lantern' ? 'torch' : 'mini') + Math.round(arms.front * 0.15);
 
     const bodyDy = meta.dy;
-    ctx.save();
-    ctx.translate(cx + lean * this.facing, bottom);
-    ctx.scale(this.facing, 1);
+    const X = cx + lean * this.facing;
+    // e2e 用：這一幀玩家用影格表的哪一格、畫在哪（低解析緩衝座標）
+    this.playerDraw = { fi, x: X, y: bottom, ox, oy, facing: this.facing };
     const sb0 = SP.shoulder(true), sf0 = SP.shoulder(false);
     const sb = { x: sb0.x + meta.dx, y: sb0.y }, sf = { x: sf0.x + meta.dx, y: sf0.y };
-    // 紙娃娃順序：後手臂 → 第一張（背飾 / 後髮 / 身體 / 腿 / 胸）→ 前手臂 + 手持 → 第二張（臉 / 前髮 / 頭飾 / 前飾品）
+    // 局部座標（面向右；畫的時候整個鏡像）：肩膀 / 自然的手的位置
+    const sx = ox + sf.x, sy = oy + sf.y + bodyDy;
+    const radA = (arms.front * Math.PI) / 180;
+    const hx = Math.round(sx + Math.sin(radA) * SP.handReach), hy = Math.round(sy + Math.cos(radA) * SP.handReach);
+    // ── 手上的東西：先算好要畫哪幾張、畫在哪（局部座標）。一律畫在頭和臉的前面 ──
+    const parts: { c: HTMLCanvasElement; x: number; y: number }[] = [];
+    let glowAt: { x: number; y: number } | null = null, rodTipL: { x: number; y: number } | null = null;
+    if (!grip && (showPick || blade)) { const it = SP.arm(false, showPick, arms.front, blade, true); parts.push({ c: it.canvas, x: sx - it.ox, y: sy - it.oy }); }
+    if (heldOther === 'torch') parts.push({ c: SP.torches[flameFrame(this.clock, 7, 3)], x: hx - 4, y: hy - 13 });
+    else if (heldOther) parts.push({ c: SP.mini(heldOther), x: hx - 2, y: hy - 6 });
+    if (throwMini) parts.push({ c: SP.mini(throwMini), x: hx - 2, y: hy - 5 });
+    if (rot && atk) {
+      // 弓 / 法杖 / 矛：轉到瞄準角（局部座標：面向左時角度鏡像），從肩膀沿瞄準方向推出去
+      const la = this.facing > 0 ? atk.angle : Math.PI - atk.angle;
+      const c = SP.rotatedIcon(rot.item, la, rot.base), ux = Math.cos(la), uy = Math.sin(la);
+      const px = sx + ux * (SP.handReach + rot.push), py = sy + uy * (SP.handReach + rot.push);
+      parts.push({ c, x: Math.round(px - c.width / 2), y: Math.round(py - c.height / 2) });
+      if (rot.item === 'crystal_staff') glowAt = { x: px + ux * 8, y: py + uy * 8 };
+    }
+    if (carry === 'rotated' && held) {
+      // 弓 / 法杖 / 矛拿在手上：法杖 / 矛朝上斜立、弓朝前（圖示中心沿著拿的方向往外推：握的那端在手上）
+      const wk = heldDef?.weapon?.kind;
+      const up = wk === 'bow' ? 0.3 : -Math.PI / 2 + 0.6, base = wk === 'bow' ? -Math.PI * 0.75 : -Math.PI / 4, push = wk === 'bow' ? 4 : 8;
+      const c = SP.rotatedIcon(held, up, base);
+      parts.push({ c, x: Math.round(hx - c.width / 2 + Math.cos(up) * push), y: Math.round(hy - c.height / 2 + Math.sin(up) * push) });
+    }
+    if (carry === 'rod' && held) {
+      // 釣竿：往前斜舉（浮標在水上時比較平、上鉤時往上抬）；竿尖記下來畫釣線
+      const fishing = st.fishing;
+      const up = fishing?.state === 'bite' ? -Math.PI / 2 + 0.55 : fishing ? -Math.PI / 2 + 1.05 : -Math.PI / 2 + 0.85;
+      const c = SP.rotatedIcon(held, up, -Math.PI / 4);
+      parts.push({ c, x: Math.round(hx - c.width / 2 + Math.cos(up) * 9), y: Math.round(hy - c.height / 2 + Math.sin(up) * 9) });
+      rodTipL = { x: hx + Math.cos(up) * 18, y: hy + Math.sin(up) * 18 };
+    }
+    // 握點：手持物只要碰到臉上「眼睛 + 嘴」那一塊，整隻手（連手上的東西）往前推到碰不到為止（手臂往前伸）
+    const g0 = faceGuard(meta.dx, meta.dy), guard = { x0: g0.x0 + ox, x1: g0.x1 + ox, y0: g0.y0 + oy, y1: g0.y1 + oy };
+    const reach = special || grip ? 0 : clearShiftAll(parts.flatMap((q) => { const s = SP.spans(q.c); return s ? [{ s, x: q.x, y: q.y }] : []; }), guard);
+    const sk = skinRamp(doll.look.app.skin), css = (c: readonly number[]): string => `rgb(${c[0]},${c[1]},${c[2]})`;
+
+    ctx.save();
+    ctx.translate(X, bottom);
+    ctx.scale(this.facing, 1);
+    // 紙娃娃順序：後手臂 → 第一張（背飾 / 後髮 / 身體 / 腿 / 胸）→ 前手臂 → 第二張（臉 / 前髮 / 頭飾 / 前飾品）→ 手上的東西 + 手
     if (!grip) { const back = SP.arm(true, null, arms.back); ctx.drawImage(back.canvas, ox + sb.x - back.ox, oy + sb.y + bodyDy - back.oy); }
     ctx.drawImage(sheet.canvas, fi * FW, 0, FW, FH, ox, oy, FW, FH);
-    // 手持非鎬物件（火把 / 方塊）：手在前、物件直立
-    const radA = (arms.front * Math.PI) / 180;
-    const hx = Math.round(ox + sf.x + Math.sin(radA) * SP.handReach), hy = Math.round(oy + sf.y + bodyDy + Math.cos(radA) * SP.handReach);
     // 揮劍殘影：刀身掃過的弧（前 80%）
     if (atk && blade && atk.progress < 0.8) {
       const r0 = 20, r1 = atk.kind === 'broadsword' ? 34 : 30;
-      const sx = ox + sf.x, sy = oy + sf.y + bodyDy;
       for (let d = arms.front + 8; d <= Math.min(arms.front + 70, 205); d += 4) {
         const fade = (d - arms.front) / 70;
         ctx.fillStyle = fade < 0.35 ? '#ffffff' : fade < 0.7 ? '#cceaf8' : '#94c8ee';
         const ux = Math.sin((d * Math.PI) / 180), uy = Math.cos((d * Math.PI) / 180);
-        for (let r = r0 + Math.round(fade * 6); r <= r1; r += 3) ctx.fillRect(Math.round(sx + ux * r), Math.round(sy + uy * r), 1, 1);
+        for (let r = r0 + Math.round(fade * 6); r <= r1; r += 3) ctx.fillRect(Math.round(sx + reach + ux * r), Math.round(sy + uy * r), 1, 1);
       }
     }
     if (grip) ctx.drawImage(grip.arms, ox - grip.pad, oy - grip.pad);
-    else { const front = SP.arm(false, showPick, arms.front, blade); ctx.drawImage(front.canvas, ox + sf.x - front.ox, oy + sf.y + bodyDy - front.oy); }
-    ctx.drawImage(sheet.canvas, fi * FW, FH, FW, FH, ox, oy, FW, FH);
-    // 舉過頭的劍 / 鎬（揮擊預備）：大頭會擋住，武器另外疊在頭前面（手臂還在頭後面）
-    if (!grip && (showPick || blade) && heldOverHead(arms.front)) {
-      const it = SP.arm(false, showPick, arms.front, blade, true);
-      ctx.drawImage(it.canvas, ox + sf.x - it.ox, oy + sf.y + bodyDy - it.oy);
-      // 臉那一層再蓋回去：武器在頭髮前面、臉後面（不會一刀劃過眼睛）
-      ctx.drawImage(sheet.canvas, fi * FW, FH * 3, FW, FH, ox, oy, FW, FH);
+    else {
+      const front = SP.arm(false, null, arms.front, null);
+      ctx.drawImage(front.canvas, ox + sf.x - front.ox, oy + sf.y + bodyDy - front.oy);
+      // 手往前伸：前臂從原本的手一路接到推出去的握點（畫在頭後面：從臉的前緣外面露出來）
+      if (reach > 0) {
+        ctx.fillStyle = css(sk[1]); ctx.fillRect(hx - 1, hy - 2, reach + 2, 4);
+        ctx.fillStyle = css(sk[3]); ctx.fillRect(hx - 1, hy - 1, reach + 2, 2);
+      }
     }
+    ctx.drawImage(sheet.canvas, fi * FW, FH, FW, FH, ox, oy, FW, FH);
     // 手掌蓋在臉 / 頭髮上面：看得出抓住了邊緣
     if (grip) ctx.drawImage(grip.hands, ox - grip.pad, oy - grip.pad);
-    // 手持的火把 / 方塊畫在頭的前面（大頭不會把它蓋掉）
-    if (heldOther === 'torch' && heldOverFace('torch')) {
-      const c = SP.torches[flameFrame(this.clock, 7, 3)];
-      ctx.drawImage(c, hx - 4, hy - 13);
-    }
-    if (heldOther && heldOther !== 'torch' && heldOverFace('mini')) {
-      const m = SP.mini(heldOther);
-      ctx.drawImage(m, hx - 2, hy - 6);
-    }
-    // 投擲物握在手上（往外偏一格：不會蓋在臉頰上）
-    if (throwMini) ctx.drawImage(SP.mini(throwMini), hx - 2, hy - 5);
+    this.heldDraws = [];
+    for (const q of parts) { ctx.drawImage(q.c, q.x + reach, q.y); this.heldDraws.push({ c: q.c, x: q.x + reach, y: q.y }); }
     ctx.restore();
-    if (rot && atk) {
-      // 弓 / 法杖 / 矛：世界座標下旋轉到瞄準角，畫在手上
-      const wx = cx + this.facing * (ox + sf.x), wy = bottom + oy + sf.y + bodyDy;
-      const ux = Math.cos(atk.angle), uy = Math.sin(atk.angle);
-      const c = SP.rotatedIcon(rot.item, atk.angle, rot.base);
-      const px = wx + ux * (SP.handReach + rot.push), py = wy + uy * (SP.handReach + rot.push);
-      ctx.drawImage(c, Math.round(px - c.width / 2), Math.round(py - c.height / 2));
-      if (rot.item === 'crystal_staff') this.coolSeen.push({ x: px + ux * 8, y: py + uy * 8 });
-    }
-    if (carry === 'rotated' && held) {
-      // 弓 / 法杖 / 矛拿在手上：法杖 / 矛朝上斜立、弓朝前
-      const wk = heldDef?.weapon?.kind;
-      // （圖示中心沿著拿的方向往外推：握的那端在手上，不會整支蓋到大頭）
-      const up = wk === 'bow' ? 0.3 : -Math.PI / 2 + 0.6;
-      const ang = this.facing > 0 ? up : Math.PI - up;
-      const base = wk === 'bow' ? -Math.PI * 0.75 : -Math.PI / 4;
-      const c = SP.rotatedIcon(held, ang, base);
-      const px = cx + this.facing * hx, py = bottom + hy, push = wk === 'bow' ? 4 : 8;
-      ctx.drawImage(c, Math.round(px - c.width / 2 + Math.cos(ang) * push), Math.round(py - c.height / 2 + Math.sin(ang) * push));
-    }
-    if (heldOther === 'torch' || heldOther === 'lantern') {
-      this.torchesSeen.push({ x: cx + this.facing * (hx + 0), y: bottom + hy - 8 });
-    }
-    // 釣竿：往前斜舉；竿尖記下來畫釣線
-    this.rodTip = null;
-    if (carry === 'rod' && held) {
-      const fishing = st.fishing;
-      // 浮標在水上時竿子比較平（往浮標那邊）、上鉤時往上抬
-      // 竿子比較平（往前上方）、握把在手上：整支在臉的前面外側，不會蓋到額頭
-      const up = fishing?.state === 'bite' ? -Math.PI / 2 + 0.55 : fishing ? -Math.PI / 2 + 1.05 : -Math.PI / 2 + 0.85;
-      const ang = this.facing > 0 ? up : Math.PI - up;
-      const c = this.sprites.rotatedIcon(held, ang, -Math.PI / 4);
-      const px = cx + this.facing * hx, py = bottom + hy;
-      const ix = Math.round(px - c.width / 2 + Math.cos(ang) * 9), iy = Math.round(py - c.height / 2 + Math.sin(ang) * 9);
-      ctx.drawImage(c, ix, iy);
-      // 竿尖：圖示中心（手 + 9）再往外半條對角線（≈ 9）
-      this.rodTip = { x: Math.round(px + Math.cos(ang) * 18), y: Math.round(py + Math.sin(ang) * 18) };
-    }
+    if (glowAt) this.coolSeen.push({ x: X + this.facing * (glowAt.x + reach), y: bottom + glowAt.y });
+    if (heldOther === 'torch' || heldOther === 'lantern') this.torchesSeen.push({ x: X + this.facing * (hx + reach), y: bottom + hy - 8 });
+    this.rodTip = rodTipL ? { x: Math.round(X + this.facing * (rodTipL.x + reach)), y: Math.round(bottom + rodTipL.y) } : null;
   }
 
   /** 釣線（竿尖 → 浮標，往下垂的拋物線，1px 像素點）+ 浮標（上鉤時沉下去、頭上冒驚嘆號） */

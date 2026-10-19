@@ -15,6 +15,7 @@ import {
   ARMS_PAD, ARM_H, ARM_PIV, ARM_W, AV_FH, AV_FW, HAND_REACH, SHEET, avatarArm, avatarFrame, flatFrame, mantleArms, rimOf, sheetCell, shoulderOf, type FrameMeta,
 } from './avatarArt';
 import { BakeQueue } from './bakeQueue';
+import { spansOf, type Spans } from './heldLayout';
 
 export const FW = AV_FW;
 export const FH = AV_FH;
@@ -475,10 +476,15 @@ export class Sprites {
   private key = dollKey(this.look);
   /** 統計：烘過幾次影格表（效能檢查用） */
   readonly bakes = { sheets: 0, arms: 0 };
+  /** 手持物精靈的不透明範圍（握點避開臉用；canvas → 每列左右界） */
+  private spanMap = new WeakMap<HTMLCanvasElement, Spans>();
+  /** 這張手持物精靈的不透明範圍 */
+  spans(c: HTMLCanvasElement): Spans | undefined { return this.spanMap.get(c); }
+  private track(b: Bmp): HTMLCanvasElement { const c = toCanvas(b) as HTMLCanvasElement; this.spanMap.set(c, spansOf(b)); return c; }
 
   constructor(private readonly iconBmp: (item: ItemId) => Bmp) {
     for (let f = 0; f < FLAME_FRAMES; f++) {
-      this.torches.push(toCanvas(torchBmp(f)) as HTMLCanvasElement);
+      this.torches.push(this.track(torchBmp(f)));
       const wb = torchBmp(f, 'wall');
       this.torchesLeft.push(toCanvas(wb) as HTMLCanvasElement);
       const mb = new Bmp(wb.w, wb.h);
@@ -573,7 +579,7 @@ export class Sprites {
       let prep = this.armPrep.get(pk);
       if (!prep) { prep = rotPrep(armBmp(this.look, back, pick, blade, itemOnly)); this.armPrep.set(pk, prep); }
       const rad = -(idx / ARM_STEPS) * Math.PI * 2;
-      c = toCanvas(rotate(prep, ARM_PIV.x, ARM_PIV.y, rad, size)) as HTMLCanvasElement;
+      c = this.track(rotate(prep, ARM_PIV.x, ARM_PIV.y, rad, size));
       this.bakes.arms++;
       this.armCache.set(key, c);
     }
@@ -592,7 +598,7 @@ export class Sprites {
     if (!c) {
       let prep = this.weaponPrep.get(item);
       if (!prep) { prep = rotPrep(this.iconBmp(item)); this.weaponPrep.set(item, prep); }
-      c = toCanvas(rotate(prep, 8, 8, (idx / steps) * Math.PI * 2, 24)) as HTMLCanvasElement;
+      c = this.track(rotate(prep, 8, 8, (idx / steps) * Math.PI * 2, 24));
       this.weaponCache.set(key, c);
     }
     return c;
@@ -603,7 +609,7 @@ export class Sprites {
 
   mini(item: ItemId): HTMLCanvasElement {
     let c = this.miniCache.get(item);
-    if (!c) { c = toCanvas(miniIcon(this.iconBmp(item))) as HTMLCanvasElement; this.miniCache.set(item, c); }
+    if (!c) { c = this.track(miniIcon(this.iconBmp(item))); this.miniCache.set(item, c); }
     return c;
   }
 

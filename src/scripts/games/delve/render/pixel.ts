@@ -63,6 +63,35 @@ export const PALETTE_HEX = [
   '#e890b0', '#ffc8dc', '#c8344c', '#8c2038', '#ffe2cc', '#c4a0f0',
 ] as const;
 export const PALETTE: RGB[] = PALETTE_HEX.map(hex);
+/**
+ * 角色膚色專用的色（偏白的暖粉膚色、帶紅 / 紫的陰影、深紅棕外框、各膚色的腮紅）：只給紙娃娃用，
+ * 不參與 snap（地形 / 天空吸附的結果不變），但算是「在色票內」。頭髮色階一律不用這些色（膚色和頭髮不會同色）。
+ */
+export const AVATAR_SKIN_HEX = [
+  // 外框：白皙 / 淺色、小麥、褐色、深色
+  '#8a4038', '#6a2e26', '#4a221c', '#2e1410',
+  // 白皙：深影、陰影、底色、亮部
+  '#d88a8c', '#f2b4ac', '#fdd9d2', '#fff1ec',
+  // 淺色
+  '#c87a70', '#eeac9c', '#f8d4c8',
+  // 小麥
+  '#a8645a', '#c8866c', '#e2ac88', '#f0c8a6',
+  // 褐色
+  '#7c4639', '#9c5e4a', '#ba7c5e', '#d29c7a',
+  // 深色
+  '#54312a', '#6e4236', '#8c5842', '#aa7254',
+  // 腮紅
+  '#f08c98', '#d8707c', '#b0585e',
+] as const;
+export const AVATAR_SKIN: RGB[] = AVATAR_SKIN_HEX.map(hex);
+/**
+ * 頭髮剪影的外框（每種髮色一色：最暗那階再壓暗到亮度約 2–3 成，偏暖棕 / 深紫，不是純黑）。
+ * 一樣只給紙娃娃用、不參與 snap；順序 = HAIR_COLORS。
+ */
+export const AVATAR_HAIR_OUT_HEX = [
+  '#3a2e48', '#4c2e20', '#523022', '#6a4426', '#3e3a56', '#2c3466', '#1c4450', '#5a2a4a', '#66223a', '#24442c', '#3e3068', '#5c2a16',
+] as const;
+export const AVATAR_HAIR_OUT: RGB[] = AVATAR_HAIR_OUT_HEX.map(hex);
 
 export function luma(c: RGB): number { return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]; }
 /** redmean 加權距離平方（比純 RGB 更接近人眼） */
@@ -71,7 +100,7 @@ function dist2(a: RGB, b: RGB): number {
   return (2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db;
 }
 const SNAP_CACHE = new Map<number, RGB>();
-const PAL_SET = new Set(PALETTE.map((c) => (c[0] << 16) | (c[1] << 8) | c[2]));
+const PAL_SET = new Set([...PALETTE, ...AVATAR_SKIN, ...AVATAR_HAIR_OUT].map((c) => (c[0] << 16) | (c[1] << 8) | c[2]));
 export function inPalette(c: RGB): boolean { return PAL_SET.has((c[0] << 16) | (c[1] << 8) | c[2]); }
 /** 最近的色票色 */
 export function snap(c: RGB): RGB {

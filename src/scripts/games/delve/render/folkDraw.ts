@@ -26,7 +26,7 @@ export function folkFrame(l: FolkLook, kind: 'idle' | 'walk' | 'blink', k: numbe
   if (b) return b;
   const d = folkDollLook(l);
   const raw = dollPreview(d, folkKey(l), kind, kind === 'blink' ? 0 : k);
-  b = l.dwarf ? dwarfify(raw, l.beard ? beardRamp(l.app.hairColor) : null, 4, l.app.skin) : raw;
+  b = l.dwarf ? dwarfify(raw, l.beard ? beardRamp(l.app.hairColor) : null, 2, l.app.skin) : raw;
   oneCache.set(key, b);
   if (oneCache.size > 600) oneCache.delete(oneCache.keys().next().value as string);
   return b;
@@ -37,7 +37,7 @@ export function folkFrames(l: FolkLook): FolkFrames {
   const d = folkDollLook(l), key = `folk:${dollKey(d)}:${l.dwarf ? 1 : 0}${l.beard ? 1 : 0}`;
   let f = frameCache.get(key);
   if (f) return f;
-  const post = (b: Bmp): Bmp => (l.dwarf ? dwarfify(b, l.beard ? beardRamp(l.app.hairColor) : null, 4, l.app.skin) : b);
+  const post = (b: Bmp): Bmp => (l.dwarf ? dwarfify(b, l.beard ? beardRamp(l.app.hairColor) : null, 2, l.app.skin) : b);
   const idle = Array.from({ length: IDLE_FRAMES }, (_, k) => post(dollPreview(d, key, 'idle', k)));
   const walk = Array.from({ length: WALK_FRAMES }, (_, k) => post(dollPreview(d, key, 'walk', k)));
   const blink = post(dollPreview(d, key, 'blink', 0));

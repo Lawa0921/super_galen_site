@@ -9,7 +9,8 @@ import { dollPreview } from './dollPreview';
 import { folkFrames } from './folkDraw';
 import { folkLook, ROLES, type FolkRole } from '../engine/folkDefs';
 import { Rng } from '../engine/rng';
-import { eyeRamp } from './avatarPalette';
+import { HAIR_RAMPS, SKIN_RAMPS, eyeRamp } from './avatarPalette';
+import { luma } from './pixel';
 import { PLAYER_H } from '../engine/constants';
 
 const P = (look: string): DollPiece => ({ look, rarity: 0, plus: 0, elem: null });
@@ -49,6 +50,12 @@ describe('影格版面', () => {
       for (const b of [...fr.idle, ...fr.walk]) { const bb = bbox(b); expect(bb.x0, role).toBeGreaterThanOrEqual(1); expect(bb.x1, role).toBeLessThanOrEqual(AV_FW - 2); }
     }
   });
+  it('碰撞盒貼著角色的高度：沒戴帽子時頭頂離碰撞盒上緣最多 4 格（跳起來撞天花板時頭真的碰到）', () => {
+    for (const body of [0, 1]) for (let hair = 0; hair < HAIR_STYLES.length; hair++) {
+      const b = flatFrame(avatarFrame(plainLook({ ...bodyDefaults(body), hair, acc: 0, ahoge: false }), 'idle', 0));
+      expect(bbox(b).y0 - (AV_FH - PLAYER_H), `body ${body} hair ${hair}`).toBeLessThanOrEqual(4);
+    }
+  });
   it('站姿（待機 / 走 / 跳 / 落）的美術不高過碰撞盒（呆毛、帽尖不會插進天花板）', () => {
     for (const l of looks()) for (const a of ['idle', 'walk', 'jump', 'fall'] as const) for (let f = 0; f < SHEET[a][1]; f++) {
       expect(bbox(flatFrame(avatarFrame(l, a, f))).y0, `${dollKey(l)} ${a}${f}`).toBeGreaterThanOrEqual(AV_FH - PLAYER_H);
@@ -62,9 +69,10 @@ describe('男女一眼分得出', () => {
     const m = { ...f, body: 1, blush: false };
     const fb = flatFrame(avatarFrame(plainLook(f), 'idle', 0)), mb = flatFrame(avatarFrame(plainLook(m), 'idle', 0));
     let eyeDiff = 0;
-    for (let y = 22; y <= 33; y++) for (let x = 0; x < AV_FW; x++) if (fb.raw(x, y) !== mb.raw(x, y)) eyeDiff++;
+    for (let y = 30; y <= 38; y++) for (let x = 0; x < AV_FW; x++) if (fb.raw(x, y) !== mb.raw(x, y)) eyeDiff++;
     expect(eyeDiff).toBeGreaterThanOrEqual(14);
     const width = (b: Bmp, y: number): number => { let a = b.w, z = -1; for (let x = 0; x < b.w; x++) if (b.on(x, y)) { a = Math.min(a, x); z = Math.max(z, x); } return z - a + 1; };
+    // 肩膀下一列（軀幹第 3 列）
     const sy = shoulderOf(0, false).y + 1;
     expect(width(mb, sy) - width(fb, sy)).toBeGreaterThanOrEqual(2);
   });
@@ -122,5 +130,64 @@ describe('特殊姿勢', () => {
   it('爬到繩頂：最後那幾格的手不高過繩頂（手在胸口以下）', () => {
     for (const y of ROPE_TOP_HANDS) expect(y).toBeGreaterThanOrEqual(shoulderOf(0, false).y - 2);
     for (let f = 0; f < SHEET.ropetop[1]; f++) expect(avatarFrame(l, 'ropetop', f).meta.arms).toBe(false);
+  });
+});
+
+describe('日系 Q 版的配色 / 臉', () => {
+  const hex6 = (c: readonly number[]): string => c.map((v) => v.toString(16).padStart(2, '0')).join('');
+  it('頭髮和膚色的色階不共用任何一色（深棕髮 × 深膚色不會臉和頭髮同色）；頭髮外框不是近黑（暗處讀得出剪影）', () => {
+    const hair = new Set(HAIR_RAMPS.flat().map(hex6));
+    for (const [i, r] of SKIN_RAMPS.entries()) for (const c of r) expect(hair.has(hex6(c)), `skin ${i} ${hex6(c)}`).toBe(false);
+    for (const [i, r] of HAIR_RAMPS.entries()) expect(luma(r[0]), `hair ${i} outline`).toBeGreaterThanOrEqual(25);
+    // 烏黑髮：底色是帶藍的深灰（洞穴裡也看得到髮型）
+    expect(luma(HAIR_RAMPS[0][2])).toBeGreaterThanOrEqual(80);
+  });
+  it('膚色是偏白的暖粉（亮部 / 中間調），陰影往紅 / 紫偏、外框是深紅棕', () => {
+    for (const skin of [0, 1]) {
+      const [o, , sh, base, hi] = SKIN_RAMPS[skin];
+      // 中間調：紅 > 綠 > 藍、但綠藍差不多（粉，不是橘）
+      expect(base[0] - base[1], `skin ${skin} base`).toBeLessThanOrEqual(36);
+      expect(base[1] - base[2], `skin ${skin} base`).toBeLessThanOrEqual(24);
+      expect(luma(hi)).toBeGreaterThan(220);
+      expect(sh[0]).toBeGreaterThan(sh[2]);
+      expect(o[0]).toBeGreaterThan(o[2]);
+      expect(luma(o)).toBeLessThan(110);
+    }
+  });
+  it('前眼大（3 寬 × 5 高、2 格白高光）、後眼窄（2 寬）：看得出轉頭', () => {
+    const a = { ...bodyDefaults(0), eyes: 3, glasses: false };
+    const r = avatarFrame(plainLook(a), 'idle', 0), e = new Set(eyeRamp(3).slice(0, 2).map(hex6));
+    const cols = new Map<number, number>(), white = { n: 0 };
+    let x0 = 99, x1 = -1;
+    for (let y = 0; y < r.face!.h; y++) for (let x = 0; x < r.face!.w; x++) {
+      if (!r.face!.on(x, y)) continue;
+      const c = hex6(r.face!.get(x, y));
+      if (e.has(c)) { cols.set(x, (cols.get(x) ?? 0) + 1); x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
+      if (c === 'ffffff') white.n++;
+    }
+    // 兩群眼睛：前眼（右）那群的欄數 > 後眼（左）
+    const xs = [...cols.keys()].sort((p, q) => p - q);
+    const gap = xs.findIndex((x, i) => i > 0 && x - xs[i - 1] > 1);
+    expect(gap).toBeGreaterThan(0);
+    const back = xs.slice(0, gap), front = xs.slice(gap);
+    expect(front.length).toBeGreaterThanOrEqual(2);
+    const sum = (l: number[]): number => l.reduce((s, x) => s + (cols.get(x) ?? 0), 0);
+    expect(front.length).toBeGreaterThanOrEqual(3);
+    expect(back.length).toBeLessThanOrEqual(2);
+    expect(sum(front)).toBeGreaterThanOrEqual(sum(back) + 2);
+    expect(white.n).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('髮型剪影', () => {
+  it('九款髮型的剪影一眼分得出：兩兩之間（只看外形、不看顏色）至少差 30 格', () => {
+    for (const body of [0, 1]) {
+      const sil = HAIR_STYLES.map((_, hair) => flatFrame(avatarFrame(plainLook({ ...bodyDefaults(body), hair, acc: 0, ahoge: false }), 'idle', 0)));
+      for (let i = 0; i < sil.length; i++) for (let j = i + 1; j < sil.length; j++) {
+        let n = 0;
+        for (let k = 0; k < sil[i].px.length; k++) if ((sil[i].px[k] >>> 24 ? 1 : 0) !== (sil[j].px[k] >>> 24 ? 1 : 0)) n++;
+        expect(n, `body ${body}: ${HAIR_STYLES[i].id} vs ${HAIR_STYLES[j].id}`).toBeGreaterThanOrEqual(30);
+      }
+    }
   });
 });

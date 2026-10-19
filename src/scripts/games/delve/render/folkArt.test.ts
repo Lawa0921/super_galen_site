@@ -16,18 +16,18 @@ describe('dwarfify（矮人外觀）', () => {
     const l = plainLook(app);
     const f = dollPreview(l, dollKey(l), 'idle', 0);
     it(`體型 ${body}：尺寸不變、變矮、腳底不動`, () => {
-      const d = dwarfify(f, null, 5, app.skin);
+      const d = dwarfify(f, null, 2, app.skin);
       expect(d.w).toBe(AV_FW); expect(d.h).toBe(AV_FH);
-      expect(topRow(d) - topRow(f)).toBeGreaterThanOrEqual(4);
+      expect(topRow(d) - topRow(f)).toBeGreaterThanOrEqual(2);
       for (let y = WAIST_ROW; y < AV_FH; y++) for (let x = 0; x < AV_FW; x++) expect(d.raw(x, y)).toBe(f.raw(x, y));
     });
     it(`體型 ${body}：下巴找得到，鬍子畫在下巴附近、全在色票上、沒有半透明`, () => {
-      const plain = dwarfify(f, null, 5, app.skin);
+      const plain = dwarfify(f, null, 2, app.skin);
       const c0 = findChin(f, undefined, app.skin)!;
       expect(c0).not.toBeNull();
-      const chin = { ...c0, y: c0.y + 5 };
+      const chin = { ...c0, y: c0.y + 2 };
       const beard = beardRamp(app.hairColor);
-      const d = dwarfify(f, beard, 5, app.skin);
+      const d = dwarfify(f, beard, 2, app.skin);
       const bset = new Set(beard.map((c) => (c[0] << 16) | (c[1] << 8) | c[2]));
       let n = 0;
       for (let y = 0; y < d.h; y++) for (let x = 0; x < d.w; x++) {
@@ -48,9 +48,9 @@ describe('dwarfify（矮人外觀）', () => {
       const c = findChin(f, undefined, skin)!;
       expect(c, `skin ${skin}`).not.toBeNull();
       expect(c.y).toBeGreaterThan(20);
-      // 頭 23×22：下巴在第 33 列附近（軀幹從第 34 列開始）
-      expect(c.y).toBeLessThan(40);
-      const d = dwarfify(f, beardRamp(0), 5, skin), p = dwarfify(f, null, 5, skin);
+      // 頭 24×20：下巴在第 41–42 列附近（軀幹從第 42 列開始）
+      expect(c.y).toBeLessThanOrEqual(43);
+      const d = dwarfify(f, beardRamp(0), 2, skin), p = dwarfify(f, null, 2, skin);
       let n = 0;
       for (let i = 0; i < d.px.length; i++) if (d.px[i] !== p.px[i]) n++;
       expect(n, `skin ${skin}`).toBeGreaterThan(20);
