@@ -9,8 +9,9 @@ import { plainLook } from '../engine/doll';
 import { MOUTH, MOUTH_RED, eyeRamp } from './avatarPalette';
 
 const bar = (w: number, h: number): Bmp => { const b = new Bmp(w, h); b.rect(0, 0, w, h, hex('#ffffff')); return b; };
+// 矮人的頭往下移 raceHeadDy 格：正式繪製時這個位移已經在 meta.dy 裡，所以這裡同樣當成 dy 傳進去
 for (const [who, headDy] of [['人類', 0], ['矮人', raceHeadDy('dwarf')]] as const) describe(`握點避開臉（${who}）`, () => {
-  const r = faceGuard(0, 0, headDy);
+  const r = faceGuard(0, headDy);
   it('臉上那一塊包住前眼和嘴', () => {
     expect(r.x0).toBeLessThanOrEqual(AV_HEAD.x + EYE_FRONT);
     expect(r.x1).toBeGreaterThanOrEqual(AV_HEAD.x + EYE_FRONT + 3);
@@ -34,9 +35,16 @@ for (const [who, headDy] of [['人類', 0], ['矮人', raceHeadDy('dwarf')]] as 
   });
 });
 describe('種族的頭部位移', () => {
-  it('faceGuard 的 headDy：整塊往下移', () => {
-    const a = faceGuard(1, 1), b = faceGuard(1, 1, 2);
-    expect(b).toEqual({ ...a, y0: a.y0 + 2, y1: a.y1 + 2 });
+  it('矮人的 meta.dy 已含 raceHeadDy（faceGuard 不另收種族參數）：同一格比人類低 raceHeadDy 格', () => {
+    const dwarf = RACES.findIndex((r) => r.id === 'dwarf');
+    expect(raceHeadDy('dwarf')).toBeGreaterThan(0);
+    for (const [an, f] of [['idle', 0], ['walk', 1]] as const) {
+      const h = avatarFrame(plainLook({ ...bodyDefaults(0), race: 0 }), an, f).meta;
+      const d = avatarFrame(plainLook({ ...bodyDefaults(0), race: dwarf }), an, f).meta;
+      expect(d.dy - h.dy).toBe(raceHeadDy('dwarf'));
+      const gh = faceGuard(h.dx, h.dy), k = raceHeadDy('dwarf');
+      expect(faceGuard(d.dx, d.dy)).toEqual({ ...gh, y0: gh.y0 + k, y1: gh.y1 + k });
+    }
   });
   it('每個種族、兩種體型、待機 / 走路：影格裡真正的眼睛和嘴都在 faceGuard(meta.dx, meta.dy) 裡（矮人的 meta.dy 已含 raceHeadDy）', () => {
     const e = new Set([...eyeRamp(1).slice(0, 2), MOUTH, MOUTH_RED].map((c) => c.join()));

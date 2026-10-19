@@ -20,13 +20,13 @@ export function spansOf(b: Bmp): Spans {
 export interface Rect { x0: number; y0: number; x1: number; y1: number; }
 /**
  * 臉上不能被手持物蓋到的那一塊（影格座標）：後眼的後緣 − 1 到前眼睫毛 + 1、眼睛上一列到嘴下面一列；
- * (dx, dy) = 這一格身體的位移（頭跟著動，走路 / 呼吸時頭再差 1 格：外擴一格）；
- * headDy = 種族讓頭往下移的格數（avatarArt.raceHeadDy）。影格表的 meta.dy 已經含這個位移：用 meta 時不要再加。
+ * (dx, dy) = 這一格身體的位移（頭跟著動，走路 / 呼吸時頭再差 1 格：外擴一格）。
+ * 種族讓頭往下移的格數（avatarArt.raceHeadDy，例如矮人）已經折進影格表的 meta.dy：直接傳 faceGuard(meta.dx, meta.dy)，不另外加。
  */
-export function faceGuard(dx = 0, dy = 0, headDy = 0): Rect {
+export function faceGuard(dx = 0, dy = 0): Rect {
   return {
     x0: AV_HEAD.x + EYE_BACK - 2 + dx, x1: AV_HEAD.x + EYE_FRONT + 4 + dx,
-    y0: AV_HEAD.y + EYE_Y - 2 + dy + headDy, y1: AV_HEAD.y + MOUTH_Y + 2 + dy + headDy,
+    y0: AV_HEAD.y + EYE_Y - 2 + dy, y1: AV_HEAD.y + MOUTH_Y + 2 + dy,
   };
 }
 /** 精靈畫在 (x, y)（左上角）時要往前（右）推幾格才碰不到 r（0 = 本來就碰不到） */
