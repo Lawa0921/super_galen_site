@@ -81,6 +81,8 @@ export interface RenderStats {
 /** 上一幀各階段耗時（ms；效能剖析用，原地更新不配置） */
 export interface RenderPhases { bg: number; chunks: number; sprites: number; liquid: number; fx: number; light: number; over: number; blit: number; }
 
+/** 玩家的臉（眼睛 / 嘴 / 膚色）一律最後畫：手上的武器 / 工具不會蓋到臉（e2e：delve 武器不蓋臉） */
+export const PLAYER_FACE_LAST = true;
 export class Renderer {
   readonly atlas: Atlas;
   readonly sprites: Sprites;
@@ -88,6 +90,8 @@ export class Renderer {
   /** 平滑鏡頭（內部計算用）；繪製時用對齊整數美術 px 的 drawCam */
   cam: Cam = { x: 0, y: 0 };
   drawCam: Cam = { x: 0, y: 0 };
+  /** 最後一次畫玩家：影格表第幾格、原點（緩衝座標）、影格偏移、面向（e2e 檢查武器不蓋臉用） */
+  playerDraw: { fi: number; x: number; y: number; ox: number; oy: number; facing: number } | null = null;
   /** 世界 px（= 美術 px）→ CSS px 縮放 = scale / dpr */
   zoom = 1;
   /** 每個美術像素佔幾個裝置像素（整數） */
@@ -864,6 +868,8 @@ export class Renderer {
     if (heldOther && kind !== 'jump' && kind !== 'fall') arms.front = heldCarryArm(heldOther === 'torch' || heldOther === 'lantern' ? 'torch' : 'mini') + Math.round(arms.front * 0.15);
 
     const bodyDy = meta.dy;
+    // e2e 用：這一幀玩家用影格表的哪一格、畫在哪（低解析緩衝座標）
+    this.playerDraw = { fi, x: cx + lean * this.facing, y: bottom, ox, oy, facing: this.facing };
     ctx.save();
     ctx.translate(cx + lean * this.facing, bottom);
     ctx.scale(this.facing, 1);
@@ -947,6 +953,15 @@ export class Renderer {
       ctx.drawImage(c, ix, iy);
       // 竿尖：圖示中心（手 + 9）再往外半條對角線（≈ 9）
       this.rodTip = { x: Math.round(px + Math.cos(ang) * 18), y: Math.round(py + Math.sin(ang) * 18) };
+    }
+    // 手上的東西（弓 / 法杖 / 矛 / 飛刀 / 迴力鏢 / 火把 / 方塊 / 釣竿）都畫完之後，臉那一層再蓋回去：
+    // 武器可以在頭髮前面，但永遠不會蓋到眼睛和嘴（PLAYER_FACE_LAST）
+    if (PLAYER_FACE_LAST && !special && !grip && (atk || heldOther || carry || throwMini || rot)) {
+      ctx.save();
+      ctx.translate(cx + lean * this.facing, bottom);
+      ctx.scale(this.facing, 1);
+      ctx.drawImage(sheet.canvas, fi * FW, FH * 3, FW, FH, ox, oy, FW, FH);
+      ctx.restore();
     }
   }
 

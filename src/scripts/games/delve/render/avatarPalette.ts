@@ -6,8 +6,9 @@
 import { ramp, hex, type RGB } from './pixel';
 
 export const HAIR_RAMPS: RGB[][] = [
-  ramp('#0c0a12', '#1c1424', '#2c2838', '#423f54', '#707490'), // 烏黑（帶藍光澤）
-  ramp('#1c1424', '#472819', '#623924', '#7c4c2e', '#b07a4b'), // 深棕
+  // 烏黑：帶藍的深灰（不是近黑；外框也讀得出來，暗處剪影不會消失）
+  ramp('#2c2838', '#423f54', '#5e5e74', '#707490', '#b4b9c8'), // 烏黑（帶藍光澤）
+  ramp('#2a1810', '#472819', '#623924', '#7c4c2e', '#b07a4b'), // 深棕
   ramp('#2a1810', '#623924', '#7c4c2e', '#b07a4b', '#d8ba76'), // 栗色
   ramp('#7c4c2e', '#c99660', '#d8ba76', '#ffd86a', '#fff4c0'), // 金
   ramp('#423f54', '#707490', '#b4b9c8', '#cceaf8', '#ffffff'), // 銀白
@@ -32,15 +33,15 @@ export const EYE_RAMPS: RGB[][] = [
   ramp('#1c1424', '#5e5e74', '#b4b9c8'), // 銀灰
 ];
 
+//   膚 5 階：[外框（深紅棕）, 深影, 陰影, 底色, 亮部]——偏白的暖粉、陰影往紅 / 紫偏；全部是膚色專用色（pixel.ts AVATAR_SKIN），不和頭髮共用
 export const SKIN_RAMPS: RGB[][] = [
-  // 暖粉膚色：陰影往紅 / 紫偏（不是把底色調暗），最深那階是帶紫的玫瑰色
-  ramp('#7a5a8c', '#b8788e', '#f2b888', '#ffe2cc', '#fff4c0'), // 白皙
-  ramp('#7a5a8c', '#b8788e', '#d98f66', '#f2b888', '#ffe2cc'), // 淺色
-  ramp('#623924', '#b8788e', '#b07a4b', '#d98f66', '#f2b888'), // 小麥
-  ramp('#2a1810', '#623924', '#966139', '#c99660', '#d8ba76'), // 褐色
-  ramp('#1c1424', '#472819', '#623924', '#7c4c2e', '#b07a4b'), // 深色
+  ramp('#8a4038', '#d88a8c', '#f2b4ac', '#fdd9d2', '#fff1ec'), // 白皙
+  ramp('#8a4038', '#c87a70', '#eeac9c', '#f8d4c8', '#fdd9d2'), // 淺色
+  ramp('#6a2e26', '#a8645a', '#c8866c', '#e2ac88', '#f0c8a6'), // 小麥
+  ramp('#4a221c', '#7c4639', '#9c5e4a', '#ba7c5e', '#d29c7a'), // 褐色
+  ramp('#2e1410', '#54312a', '#6e4236', '#8c5842', '#aa7254'), // 深色
 ];
-export const BLUSH: RGB[] = [hex('#ffc8dc'), hex('#e890b0'), hex('#e890b0'), hex('#b8788e'), hex('#b8788e')];
+export const BLUSH: RGB[] = [hex('#f08c98'), hex('#f08c98'), hex('#d8707c'), hex('#b0585e'), hex('#b0585e')];
 
 export const CLOTH_RAMPS: RGB[][] = [
   ramp('#707490', '#858aa0', '#b4b9c8', '#ffffff', '#ffffff'), // 白

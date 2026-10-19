@@ -30,7 +30,9 @@ const ANKLE = AV_FH - 2;
 /** 頭的區域原點：女 / 男（男生高 2 格） */
 const HEAD_X = 14;
 /** 男女同高（頭頂 + 毛尖 / 帽子都收在碰撞盒 42 px 裡）；男生靠肩寬 / 粗眉 / 方眼分辨 */
-const HEAD_Y = [21, 21];
+const HEAD_Y = [22, 22];
+/** 站姿影格裡頭的區域原點（測試 / 圖示用） */
+export const AV_HEAD = { x: HEAD_X, y: HEAD_Y[0] };
 /** 體型的骨架：髖的列、大腿 / 小腿長、兩腳髖的 x、腿的半寬 */
 const BODY = [
   { hip: 47, len: 2.5, legX: [CX - 2, CX + 2], legHalf: 1.05, top: 42 },

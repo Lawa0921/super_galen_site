@@ -1632,6 +1632,82 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     const b2 = await bakes();
     expect(b2.sheets).toBe(b1.sheets + 1);
   });
+  test('武器不蓋臉：每種武器 × 前 / 斜上 / 上 / 斜下 × 揮擊每一段（加上拿著不揮），眼睛和嘴巴的像素都還在（左右都看）', async ({ page }) => {
+    test.setTimeout(120000);
+    // 紫眼（色票裡只有史詩紫用到，畫面上不會撞色）
+    await page.addInitScript(() => { try { localStorage.setItem('delve.appearance', JSON.stringify({ body: 0, blush: true, hair: 1, hairColor: 7, ahoge: true, eyes: 3, eyeShape: 0, skin: 0, outfit: 1, color1: 2, color2: 3, acc: 1, glasses: false })); } catch { /* ignore */ } });
+    await page.goto('/games/delve?seed=face-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game, w = g.world;
+      d.game.setDate({ hour: 12 });
+      const x0 = g.spawn.x - 20, fy = Math.max(12, w.surfaceAt(g.spawn.x) - 24);
+      for (let y = fy - 16; y < fy; y++) for (let x = x0 - 2; x < x0 + 44; x++) { w.setFg(x, y, 0); w.setLiquid(x, y, 0, 0); }
+      for (let x = x0 - 2; x < x0 + 44; x++) w.setFg(x, fy, 3);
+      g.teleport(x0 + 20, fy - 1); d.handle.renderer.snapCamera();
+    });
+    // 法杖尖端的光暈（'lighter' 疊加的照明效果，不是武器本身）先關掉：只看武器有沒有蓋到臉
+    await page.evaluate(() => { (window.__delveDebug!.handle.renderer as unknown as { drawGlows: () => void }).drawGlows = () => {}; });
+    await page.waitForTimeout(400);
+    // 臉那一層（影格表第 3 列）裡眼睛 / 嘴的像素，在畫面緩衝上是不是還是一樣的顏色
+    const face = (): Promise<{ n: number; bad: number }> => page.evaluate(() => {
+      const r = window.__delveDebug!.handle.renderer as unknown as { playerDraw: { fi: number; x: number; y: number; ox: number; oy: number; facing: number } | null; drawCam: { x: number; y: number }; buf: HTMLCanvasElement; sprites: { dollSheet(i?: number): { canvas: HTMLCanvasElement } } };
+      const pd = r.playerDraw;
+      if (!pd) return { n: 0, bad: -1 };
+      const FW = 52, FH = 54, t = document.createElement('canvas');
+      t.width = FW; t.height = FH;
+      const tc = t.getContext('2d')!;
+      tc.drawImage(r.sprites.dollSheet(pd.fi).canvas, pd.fi * FW, FH * 3, FW, FH, 0, 0, FW, FH);
+      const fd = tc.getImageData(0, 0, FW, FH).data, bc = r.buf.getContext('2d')!, bd = bc.getImageData(0, 0, r.buf.width, r.buf.height);
+      // 眼睛（紫羅蘭瞳 + 上眼瞼）與嘴（深紅 / 紅 / 舌頭）
+      const want = new Set(['2c2450', '9a6ee0', '472819', '8c2038', 'c8344c', 'e890b0']);
+      let n = 0, bad = 0;
+      for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) {
+        const i = (y * FW + x) * 4;
+        if (fd[i + 3] < 255) continue;
+        const hx = [fd[i], fd[i + 1], fd[i + 2]].map((v) => v.toString(16).padStart(2, '0')).join('');
+        if (!want.has(hx)) continue;
+        n++;
+        const bx = Math.round(pd.x - r.drawCam.x) + (pd.facing > 0 ? pd.ox + x : -(pd.ox + x) - 1), by = Math.round(pd.y - r.drawCam.y) + pd.oy + y;
+        const j = (by * bd.width + bx) * 4;
+        const bh = [bd.data[j], bd.data[j + 1], bd.data[j + 2]].map((v) => v.toString(16).padStart(2, '0')).join('');
+        if (bh !== hx) bad++;
+      }
+      return { n, bad };
+    });
+    const base = await face();
+    expect(base.n).toBeGreaterThan(8);
+    expect(base.bad).toBe(0);
+    const hold = (item: string): Promise<void> => page.evaluate((item) => {
+      const g = window.__delveDebug!.game; g.give(item as never, 1);
+      const i = g.inventory.slots.findIndex((s) => s?.item === item); g.inventory.swap(i, 0); g.selectSlot(0);
+    }, item);
+    const facing = async (key: string): Promise<void> => { await page.keyboard.down(key); await page.waitForTimeout(60); await page.keyboard.up(key); await page.waitForTimeout(200); };
+    const KIND: Record<string, string> = { wood_sword: 'sword', bone_greatsword: 'broadsword', iron_spear: 'spear', wood_bow: 'bow', crystal_staff: 'staff', throwing_knife: 'throw', wood_boomerang: 'boomerang' };
+    for (const item of Object.keys(KIND)) {
+      await hold(item);
+      for (const side of ['KeyD', 'KeyA']) {
+        await facing(side);
+        // 拿著不揮
+        await page.waitForTimeout(120);
+        const c = await face();
+        expect(c.bad, `${item} ${side} 拿著`).toBe(0);
+        const dir = side === 'KeyD' ? 1 : -1;
+        for (const deg of [0, -45, -90, 45]) for (const p of [0, 0.1, 0.2, 0.3, 0.45, 0.6, 0.8, 0.95]) {
+          // 揮擊定格：進度固定在 p（dur 拉很長）、瞄準角固定
+          await page.evaluate(([item, kind, deg, p, dir]) => {
+            const g = window.__delveDebug!.game as unknown as { attack: Record<string, unknown> | null };
+            const a = (dir as number) > 0 ? ((deg as number) * Math.PI) / 180 : Math.PI - ((deg as number) * Math.PI) / 180;
+            g.attack = { item, kind, t: (p as number) * 1e7, dur: 1e7, angle: a, dir, id: -1, dmg: 0, kb: 0, fx: null };
+          }, [item, KIND[item], deg, p, dir] as const);
+          await page.waitForTimeout(50);
+          const r = await face();
+          expect(r.bad, `${item} ${side} ${deg}° p=${p}`).toBe(0);
+        }
+        await page.evaluate(() => { (window.__delveDebug!.game as unknown as { attack: unknown }).attack = null; });
+      }
+    }
+  });
 });
 
 test.describe('delve 等級系統（經驗 / 升級 / 技能樹 / 主動技能）', () => {

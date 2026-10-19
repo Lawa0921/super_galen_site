@@ -107,15 +107,15 @@ export function greaveKnee(b: Bmp, set: ArmorSetId, kx: number, ky: number): voi
 
 // ── 頭盔 ─────────────────────────────────────────────────
 /** 頭髮 / 頭盔的球心與半徑（頭的區域座標，頭 24×22；3/4 轉頭：後腦在左、臉在右前） */
-export const CAP = { cx: 11.6, cy: 10.4, rx: 13, ry: 11.8 };
+export const CAP = { cx: 11.4, cy: 9.4, rx: 12.6, ry: 10.8 };
 export const inCap = (x: number, y: number, k = 1): boolean => {
   const nx = (x + 0.5 - CAP.cx) / (CAP.rx * k), ny = (y + 0.5 - CAP.cy) / (CAP.ry * k);
   return nx * nx + ny * ny <= 1;
 };
 /** 帽沿在臉上的那一列（瀏海露在帽沿下面一點、眼睛完整露出） */
-export const BRIM = 8;
+export const BRIM = 7;
 /** 3/4 轉頭的帽沿：臉的上緣（右前）在 BRIM、往後腦（左）斜斜往下蓋到耳後 */
-export const brimAt = (x: number): number => (x >= 12 ? BRIM : x >= 9 ? BRIM + Math.round((12 - x) * 1.4) : BRIM + 5);
+export const brimAt = (x: number): number => (x >= 11 ? BRIM : x >= 8 ? BRIM + Math.round((11 - x) * 1.4) : BRIM + 5);
 /** 實心三角（頭盔的角 / 刺 / 冠脊）；col(x, y, side)：side > 0 = 靠 a 那半邊 */
 function triS(S: (x: number, y: number, c: RGB) => void, a: Pt, b: Pt, c: Pt, col: (x: number, y: number, side: number) => RGB): void {
   const x0 = Math.floor(Math.min(a[0], b[0], c[0])), x1 = Math.ceil(Math.max(a[0], b[0], c[0])), y0 = Math.floor(Math.min(a[1], b[1], c[1])), y1 = Math.ceil(Math.max(a[1], b[1], c[1]));
@@ -149,33 +149,33 @@ export function helmetArt(head: Bmp, p: DollPiece, ox: number, oy: number, f: nu
   const S = (x: number, y: number, c: RGB): void => g.set(ox + x, oy + y, c);
   for (let y = -3; y <= BRIM + 5; y++) for (let x = -2; x <= 25; x++) {
     if (!inCap(x, y, 1.05) || y > brimAt(x)) continue;
-    const nx = (x + 0.5 - 12) / 13, ny = (y + 0.5 - 9) / 12, L = 0.45 * nx - 0.9 * ny;
+    const nx = (x + 0.5 - 12) / 13, ny = (y + 0.5 - 8) / 11, L = 0.45 * nx - 0.9 * ny;
     S(x, y, L > 0.95 ? m[4] : L > 0.45 ? m[3] : L > -0.1 ? m[2] : m[1]);
   }
   // 金屬高光：頭頂偏前一道斜的短筆
-  for (const [x, y] of [[14, -1], [15, -1], [16, 0], [17, 1]] as Pt[]) S(x, y, r[6]);
+  for (const [x, y] of [[13, -1], [14, -1], [15, 0], [16, 0], [17, 1]] as Pt[]) S(x, y, r[6]);
   const rimC = set === 'gold' ? CR.leather[3] : m[1];
   for (let x = -1; x <= 24; x++) { const y = brimAt(x); if (inCap(x, y, 1.05)) { S(x, y, rimC); S(x, y - 1, set === 'gold' ? r[5] : m[3]); } }
   const cheek = set === 'copper' || set === 'iron' || set === 'molten';
   if (cheek) {
-    // 前護頰：貼著臉的前緣（第 21–23 欄）；後護頰：蓋住耳後（第 8–10 欄）
-    for (const [xa, xb, yb] of [[21, 23, 16], [8, 10, 18]] as [number, number, number][]) for (let x = xa; x <= xb; x++) for (let y = brimAt(x) + 1; y <= yb; y++) S(x, y, y === yb ? m[1] : x === xa ? m[3] : m[2]);
+    // 前護頰：貼著臉的前緣（第 21–22 欄，不蓋到前眼）；後護頰：蓋住耳後（第 7–9 欄）
+    for (const [xa, xb, yb] of [[21, 22, 13], [7, 9, 16]] as [number, number, number][]) for (let x = xa; x <= xb; x++) for (let y = brimAt(x) + 1; y <= yb; y++) S(x, y, y === yb ? m[1] : x === xa ? m[3] : m[2]);
   }
-  const NOSE = 17;
+  const NOSE = 16;
   switch (set) {
     case 'wood':
-      for (let x = 0; x <= 23; x++) { const y = 4 + (x < 6 ? 1 : 0); if (inCap(x, y, 1.05)) S(x, y, CR.leather[x & 1 ? 3 : 4]); }
-      S(17, 4, GOLD);
+      for (let x = 0; x <= 23; x++) { const y = 3 + (x < 6 ? 1 : 0); if (inCap(x, y, 1.05)) S(x, y, CR.leather[x & 1 ? 3 : 4]); }
+      S(16, 3, GOLD);
       for (const [x, y] of [[6, 1], [11, 0], [9, 3], [3, 5], [19, 2]] as Pt[]) S(x, y, m[1]);
       break;
     case 'copper':
-      for (let y = BRIM; y <= 11; y++) { S(NOSE, y, m[3]); S(NOSE + 1, y, m[2]); }
+      for (let y = BRIM; y <= 9; y++) { S(NOSE, y, m[3]); S(NOSE + 1, y, m[2]); }
       for (const [x, y] of [[5, 3], [11, -1], [19, 2], [2, 8], [22, 6]] as Pt[]) { S(x, y, r[6]); S(x + 1, y + 1, m[1]); }
       break;
     case 'iron':
       // 中脊偏前（3/4 轉頭：頭頂的中線在前面）
       for (let y = -2; y <= BRIM; y++) S(14 + Math.round(y * 0.25), y, y < 2 ? r[6] : m[4]);
-      for (let y = BRIM; y <= 11; y++) { S(NOSE, y, m[4]); S(NOSE + 1, y, m[2]); }
+      for (let y = BRIM; y <= 9; y++) { S(NOSE, y, m[4]); S(NOSE + 1, y, m[2]); }
       break;
     case 'gold': {
       const red = CR.red;
@@ -200,7 +200,7 @@ export function helmetArt(head: Bmp, p: DollPiece, ox: number, oy: number, f: nu
   }
   inline(g, ox - 4, oy - 5, ox + 27, oy + 20, m[1], m[0]);
   const spots: Pt[] = [];
-  for (let x = 0; x <= 23; x++) spots.push([ox + x, oy + brimAt(x)]);
+  for (let x = 0; x <= 22; x++) spots.push([ox + x, oy + brimAt(x)]);
   upgrades(g, p, spots, [ox + NOSE, oy + 4], f, r);
   head.blit(g, 0, 0);
 }
@@ -218,10 +218,10 @@ function minerHelm(S: (x: number, y: number, c: RGB) => void): void {
   }
   // 帽緣：前面往外伸一點（遮陽）
   for (let x = -2; x <= 26; x++) { const y = brimAt(Math.min(x, 23)); if (x <= 24 || y === BRIM) S(x, y, x > 20 ? r[3] : r[1]); }
-  for (const x of [4, 9]) { S(x, 3, r[0]); S(x, 2, r[4]); }
+  for (const x of [4, 9]) { S(x, 2, r[0]); S(x, 1, r[4]); }
   // 頭燈：外殼 + 鏡片（亮黃），在臉的正上方偏前
   const k = hex('#2c2838');
-  for (let y = 1; y <= 6; y++) for (let x = 16; x <= 20; x++) S(x, y, x === 16 || x === 20 || y === 1 || y === 6 ? k : y === 2 && x < 19 ? hex('#ffffff') : y < 4 ? hex('#fff4c0') : y < 5 ? hex('#ffd86a') : hex('#ffa93a'));
+  for (let y = 0; y <= 5; y++) for (let x = 15; x <= 19; x++) S(x, y, x === 15 || x === 19 || y === 0 || y === 5 ? k : y === 1 && x < 18 ? hex('#ffffff') : y < 3 ? hex('#fff4c0') : y < 4 ? hex('#ffd86a') : hex('#ffa93a'));
 }
 export function hatArt(b: Bmp, id: string, ox: number, oy: number, _view: 'side' | 'back' = 'side', sway = 0): void {
   const s = new Bmp(b.w, b.h);
@@ -236,56 +236,57 @@ export function hatArt(b: Bmp, id: string, ox: number, oy: number, _view: 'side'
   };
   if (id === 'straw') {
     const st = clothRamp(8), band = clothRamp(3);
-    brim(12.5, 17, 7.6, st, st[4], st[1]);
-    for (let y = -2; y <= 6; y++) for (let x = 2; x <= 21; x++) {
-      const nx = (x + 0.5 - 11.2) / 9.4, ny = (y + 0.5 - 6.2) / 8;
+    brim(12.5, 16, 6.6, st, st[4], st[1]);
+    for (let y = -3; y <= 5; y++) for (let x = 2; x <= 21; x++) {
+      const nx = (x + 0.5 - 11.2) / 9.4, ny = (y + 0.5 - 5.2) / 8;
       if (nx * nx + ny * ny > 1) continue;
-      S(x, y, y >= 4 ? band[y === 4 ? 4 : 3] : ((x + y) & 3) === 0 ? st[2] : nx > 0.35 && ny < -0.2 ? st[4] : nx < -0.5 ? st[2] : st[3]);
+      S(x, y, y >= 3 ? band[y === 3 ? 4 : 3] : ((x + y) & 3) === 0 ? st[2] : nx > 0.35 && ny < -0.2 ? st[4] : nx < -0.5 ? st[2] : st[3]);
     }
   } else if (id === 'witch') {
     const c = clothRamp(10), band = clothRamp(11);
-    brim(12.5, 15, 7.6, c, c[4], c[1]);
+    brim(12.5, 14.5, 6.6, c, c[4], c[1]);
     // 尖頂：圓錐收得窄、往後（左）彎，帽尖再往後垂下來（頂部被裁在頭上 4 格內：尖帽輪廓靠「往後折」留住）
     let tx = 0;
     for (let k = 0; k < 10; k++) {
-      const y = 6 - k, w = Math.max(1, 6 - k * 0.6), cx = 11.6 - (k > 1 ? (k - 1) ** 1.4 * (0.75 + sway * 0.2) : 0);
+      // 圓錐的底蓋滿整個頭頂（前半部也蓋住：帽沿上面不會露出頭髮）
+      const y = 5 - k, w = Math.max(1, 8.5 - k * 0.8), cx = 12 - (k > 1 ? (k - 1) ** 1.4 * (0.75 + sway * 0.2) : 0);
       for (let x = Math.round(cx - w); x <= Math.round(cx + w); x++) S(x, y, x > cx + w - 1.5 ? c[4] : x < cx - w + 1.5 ? c[2] : c[3]);
       tx = Math.round(cx - w);
     }
     for (let i = 1; i <= 5; i++) {
-      const x = tx - i, y = -3 + Math.round(i * 0.7);
+      const x = tx - i, y = -4 + Math.round(i * 0.7);
       S(x, y, i < 4 ? c[3] : c[2]); S(x, y + 1, i < 4 ? c[2] : c[1]); if (i < 3) S(x, y + 2, c[2]);
     }
-    S(tx - 6, -3 + Math.round(6 * 0.7) + 1, GOLD);
-    for (let x = 6; x <= 18; x++) { S(x, 5, band[3]); S(x, 4, band[4]); }
-    S(16, 5, GOLD); S(16, 4, hex('#fff4c0')); S(17, 5, GOLD);
+    S(tx - 6, -4 + Math.round(6 * 0.7) + 1, GOLD);
+    for (let x = 4; x <= 20; x++) { S(x, 4, band[3]); S(x, 3, band[4]); }
+    S(16, 4, GOLD); S(16, 3, hex('#fff4c0')); S(17, 4, GOLD);
   } else if (id === 'beret') {
     // 貝雷帽：往後（左）斜戴、前面露出瀏海
     const c = clothRamp(3);
-    for (let y = -3; y <= 5; y++) for (let x = -2; x <= 21; x++) {
-      const nx = (x + 0.5 - 8.6) / 11.6, ny = (y + 0.5 - 1.6 + nx * 0.8) / 3.6;
+    for (let y = -4; y <= 4; y++) for (let x = -2; x <= 21; x++) {
+      const nx = (x + 0.5 - 8.6) / 11.6, ny = (y + 0.5 - 0.6 + nx * 0.8) / 3.6;
       if (nx * nx + ny * ny <= 1) S(x, y, ny > 0.5 ? c[2] : nx > 0.3 && ny < 0.1 ? c[4] : c[3]);
     }
-    for (let x = 0; x <= 20; x++) S(x, 5 - Math.round((x - 10) * 0.08), c[1]);
-    S(9, -4, c[2]); S(10, -4, c[3]);
+    for (let x = 0; x <= 21; x++) S(x, 5 - Math.round((x - 10) * 0.08), c[1]);
+    S(9, -5, c[2]); S(10, -5, c[3]);
   } else if (id === 'maid') {
     // 女僕頭飾：一圈白色荷葉邊（3/4：前面那段寬、後面窄）+ 黑色緞帶
     const w = WHITE, k = clothRamp(1);
-    for (let x = 6; x <= 21; x++) { const y = 3 - (x > 13 ? 1 : 0); S(x, y, (x & 1) ? w[3] : w[2]); S(x, y + 1, w[3]); S(x, y + 2, k[3]); if (!(x % 3)) S(x, y - 1, w[3]); }
+    for (let x = 6; x <= 21; x++) { const y = 2 - (x > 13 ? 1 : 0); S(x, y, (x & 1) ? w[3] : w[2]); S(x, y + 1, w[3]); S(x, y + 2, k[3]); if (!(x % 3)) S(x, y - 1, w[3]); }
   } else if (id === 'miner') {
     minerHelm(S);
   } else if (id === 'flower') {
     // 花冠：繞頭頂一圈（前面低、後面高），花朵前面大、後面小
     const leaf = CR.green, cols = [hex('#ffc8dc'), hex('#ffffff'), hex('#ffd86a'), hex('#e890b0'), hex('#c4a0f0')];
-    const ring = (x: number): number => Math.round(2 - (x - 4) * 0.12 + Math.max(0, x - 16) * 0.35);
+    const ring = (x: number): number => Math.round(1 - (x - 4) * 0.12 + Math.max(0, x - 16) * 0.35);
     for (let x = 3; x <= 22; x++) S(x, ring(x) + 1, leaf[x & 1 ? 3 : 4]);
     for (let k = 0; k < 7; k++) {
       const x = 4 + k * 3, y = ring(x), c = cols[k % cols.length];
       S(x, y, c); S(x - 1, y, c); S(x + 1, y, c); S(x, y - 1, c); S(x, y + 1, c); S(x, y, k % 2 ? GOLD : hex('#fff4c0'));
     }
   }
-  // 帽尖最高到頭的區域座標 −4（站著不會插進天花板）
-  for (let yy = 0; yy < Math.min(s.h, oy - 4); yy++) for (let x = 0; x < s.w; x++) s.clear(x, yy);
+  // 帽尖最高到頭的區域座標 −5（站著不會插進天花板；整個人還在 42 px 碰撞盒裡）
+  for (let yy = 0; yy < Math.min(s.h, oy - 5); yy++) for (let x = 0; x < s.w; x++) s.clear(x, yy);
   s.softOutline(0.45);
   b.blit(s, 0, 0);
 }

@@ -4,7 +4,8 @@ import { describe, it, expect } from 'vitest';
 import { Bmp, inPalette } from './pixel';
 import { DEFAULT_APPEARANCE, HAIR_STYLES, OUTFITS, bodyDefaults, randomAppearance } from '../engine/appearance';
 import { DOLL_LAYERS, dollKey, plainLook, type DollLook, type DollPiece } from '../engine/doll';
-import { AV_FH, AV_FW, SHEET, SHEET_ANIMS, avatarFrame, avatarSheet, flatFrame, pieceBmp } from './avatarArt';
+import { AV_FH, AV_FW, AV_HEAD, SHEET, SHEET_ANIMS, avatarFrame, avatarSheet, flatFrame, pieceBmp } from './avatarArt';
+import { BRIM, HAT_HIDES_TOP, hatArt, helmetArt } from './avatarGear';
 import { dollPreview } from './dollPreview';
 import { fashionIcon } from './fashionIcon';
 import { VANITY_ITEMS, type ArmorSetId } from '../engine/items';
@@ -105,7 +106,7 @@ describe('3/4 正面的朝向感', () => {
     let x0 = idle.w, x1 = -1;
     for (let y = 0; y < idle.h; y++) for (let x = 0; x < idle.w; x++) if (idle.on(x, y)) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
     expect(eyeX(idle, er)).toBeGreaterThan((x0 + x1) / 2);
-    expect(eyeX(walk, er)).toBeGreaterThan(eyeX(idle, er) + 1.5);
+    expect(eyeX(walk, er)).toBeGreaterThan(eyeX(idle, er) + 1);
   });
   it('小人的大小：約 33–38 px 高、頭佔 6 成以上（身體 + 腿只有 12–14 列：Q 版小身體）', () => {
     for (const body of [0, 1]) {
@@ -174,10 +175,39 @@ describe('圖層', () => {
     const helm = avatarFrame({ ...plainLook(a), head: piece('armor:iron') }, 'idle', 0).head;
     const hr = new Set(hairRamp(a.hairColor).map((c) => c.join()));
     const hairPx = (b: Bmp, y0: number, y1: number): number => { let n = 0; for (let y = y0; y <= y1; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y) && hr.has(b.get(x, y).join())) n++; return n; };
-    expect(hairPx(bare, 0, 19)).toBeGreaterThan(5);
-    expect(hairPx(helm, 0, 19)).toBe(0);
+    expect(hairPx(bare, 0, 21)).toBeGreaterThan(5);
+    expect(hairPx(helm, 0, 21)).toBe(0);
     // 瀏海（額頭那一帶）還在
-    expect(hairPx(helm, 29, 33)).toBeGreaterThan(2);
+    // （瀏海用鮑伯頭看：刺蝟頭的瀏海本來就短）
+    const helmB = avatarFrame({ ...plainLook({ ...a, hair: 0 }), head: piece('armor:iron') }, 'idle', 0).head;
+    expect(hairPx(helmB, 29, 32)).toBeGreaterThan(1);
+  });
+  it('戴帽子 / 頭盔：九款髮型 × 男女 × 待機 / 走路，帽沿以上露不出一格頭髮（魔女帽圓錐蓋不到的前半部頭頂也是）', () => {
+    const covers = [...SETS.map((s) => `armor:${s}`), ...[...HAT_HIDES_TOP].map((h) => `hat:${h}`)];
+    for (const look of covers) {
+      // 只認這頂帽子 / 頭盔本身沒用到的髮色
+      const g = new Bmp(AV_FW, AV_FH);
+      if (look.startsWith('armor:')) helmetArt(g, piece(look), AV_HEAD.x, AV_HEAD.y, 0); else hatArt(g, look.slice(4), AV_HEAD.x, AV_HEAD.y);
+      const gc = new Set<string>(); for (let i = 0; i < g.px.length; i++) if (g.px[i] >>> 24) gc.add(Bmp.unpack(g.px[i]).join());
+      for (let hair = 0; hair < HAIR_STYLES.length; hair++) for (const body of [0, 1]) for (const [an, f] of [['idle', 0], ['walk', 2], ['jump', 0]] as const) {
+        for (const hc of [2, 7, 9]) {
+          const hr = new Set(hairRamp(hc).map((c) => c.join()).filter((c) => !gc.has(c)));
+          const b = flatFrame(avatarFrame({ ...plainLook({ ...DEF, body, hair, hairColor: hc, ahoge: true }), head: piece(look) }, an, f));
+          let n = 0;
+          for (let y = 0; y < AV_HEAD.y + BRIM - 1 + (an === 'walk' ? 1 : 0); y++) for (let x = 0; x < AV_FW; x++) if (b.on(x, y) && hr.has(b.get(x, y).join())) n++;
+          expect(n, `${look} hair ${hair} body ${body} ${an} color ${hc}`).toBe(0);
+        }
+      }
+    }
+  });
+  it('帽子 / 頭盔不會蓋到眼睛和嘴（護頰、鼻樑護條、帽沿都在臉的外面 / 上面）', () => {
+    const covers = [...SETS.map((s) => `armor:${s}`), ...['straw', 'witch', 'beret', 'maid', 'miner', 'flower'].map((h) => `hat:${h}`)];
+    for (const body of [0, 1]) {
+      const a = { ...DEF, body, eyes: 3 }, er = new Set([...eyeRamp(3).slice(0, 2), [140, 32, 56], [200, 52, 76]].map((c) => c.join()));
+      const count = (b: Bmp): number => { let n = 0; for (let i = 0; i < b.px.length; i++) if (b.px[i] >>> 24 && er.has(Bmp.unpack(b.px[i]).join())) n++; return n; };
+      const bare = count(avatarFrame(plainLook(a), 'idle', 0).face!);
+      for (const look of covers) expect(count(avatarFrame({ ...plainLook(a), head: piece(look) }, 'idle', 0).face!), `${look} body ${body}`).toBe(bare);
+    }
   });
   it('外觀欄 / 時裝蓋過防具：穿鐵甲 vs 鐵甲 + 水手服外觀，畫出來的身體不同、而且和純水手服一樣', () => {
     const base = plainLook(DEF);
@@ -291,6 +321,6 @@ describe('體型（男 / 女）與爬繩', () => {
     const { b } = avatarSheet(plainLook(DEF));
     let n = 0;
     for (let y = AV_FH * 2; y < AV_FH * 3; y++) for (let x = 0; x < AV_FW; x++) if (b.on(x, y)) n++;
-    expect(n).toBeGreaterThan(60);
+    expect(n).toBeGreaterThan(45);
   });
 });

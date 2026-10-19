@@ -3,6 +3,7 @@ import { folkFrames, folkFrame } from './folkDraw';
 import { folkLook, ROLES, type FolkRole } from '../engine/folkDefs';
 import { Rng } from '../engine/rng';
 import { inPalette } from './pixel';
+import { eyeRamp, MOUTH, MOUTH_RED, TONGUE } from './avatarPalette';
 
 const topRow = (b: { w: number; h: number; on(x: number, y: number): boolean }): number => {
   for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) return y;
@@ -25,6 +26,25 @@ describe('世界 NPC 的紙娃娃', () => {
           n++;
         }
         expect(n).toBeGreaterThan(100);
+      }
+    }
+  });
+  it('矮人的鬍子只長在臉的前下方和下巴：每位矮人（各種子、男女、待機 / 走路 / 肖像）的眼睛和嘴巴都看得到', () => {
+    const mouth = new Set([MOUTH, MOUTH_RED, TONGUE].map((c) => c.join()));
+    for (const role of ['ore_trader', 'runesmith', 'dwarf_elder'] as FolkRole[]) for (let s = 0; s < 8; s++) {
+      const l = folkLook(role, new Rng(`dw:${role}:${s}`));
+      const er = new Set(eyeRamp(l.app.eyes).slice(0, 2).map((c) => c.join()));
+      const f = folkFrames(l);
+      for (const [k, b] of [['idle0', f.idle[0]], ['idle2', f.idle[2]], ['walk1', f.walk[1]], ['walk5', f.walk[5]], ['portrait', f.portrait]] as const) {
+        let eye = 0, mo = 0;
+        for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) {
+          if (!b.on(x, y)) continue;
+          const c = b.get(x, y).join();
+          if (er.has(c)) eye++;
+          if (mouth.has(c)) mo++;
+        }
+        expect(eye, `${role} ${s} ${k} 眼睛`).toBeGreaterThanOrEqual(6);
+        expect(mo, `${role} ${s} ${k} 嘴巴`).toBeGreaterThanOrEqual(2);
       }
     }
   });
