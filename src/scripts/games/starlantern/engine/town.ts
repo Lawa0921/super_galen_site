@@ -8,7 +8,7 @@ import { hasPerk } from './story/fragments';
 import { PERKS } from '../data/story/fragments';
 import { defaultSlotFor, slotsFor, statsOf } from './party';
 import type { GameState } from './state';
-import type { CharacterId, Member, Party, Slot } from './types';
+import type { CharacterId, ItemInstance, Member, Party, Slot } from './types';
 
 type FailReason = 'gold' | 'locked' | 'stock' | 'invalid' | 'full';
 export type TownResult = { ok: true; state: GameState } | { ok: false; reason: FailReason };
@@ -115,37 +115,64 @@ export function sortBagIn(s: GameState, by: 'rarity' | 'slot' | 'ilvl'): TownRes
   return { ok: true, state: n };
 }
 
-/** Wears the bag item `uid` in `slot` (or its default slot); whatever was there goes back into the bag in its place. */
-export function equip(s: GameState, memberId: CharacterId, uid: number, slot?: Slot): TownResult {
+/** A change of gear against a list of pieces (the town bag, or the run pack): the new state and the new list, or why not. */
+export type WearResult<F extends string> = { ok: true; state: GameState; list: ItemInstance[] } | { ok: false; reason: F };
+
+/**
+ * The one slot swap behind every change of gear: wears piece `uid` from `list` in `slot` (or its default slot), and what
+ * the slot held takes its place in the list. Wearing a piece clears its junk mark: the player wants it. HP and TP are
+ * clamped to the new maximum. Pure: `s` and `list` are never touched.
+ */
+export function wearFrom(s: GameState, list: ItemInstance[], memberId: CharacterId, uid: number, slot?: Slot): WearResult<'invalid' | 'stock'> {
   const m = s.party.roster[memberId];
-  if (!m) return fail('invalid');
-  const i = s.bag.findIndex((it) => it.uid === uid);
-  if (i < 0) return fail('stock');
-  const it = s.bag[i];
-  if (!EQUIPMENT[it.base]) return fail('invalid');
+  if (!m) return { ok: false, reason: 'invalid' };
+  const i = list.findIndex((it) => it.uid === uid);
+  if (i < 0) return { ok: false, reason: 'stock' };
+  const it = list[i];
+  if (!EQUIPMENT[it.base]) return { ok: false, reason: 'invalid' };
   const target = slot ?? defaultSlotFor(m, it);
-  if (!slotsFor(itemSlot(it)).includes(target)) return fail('invalid');
-  const n = structuredClone(s);
-  const nm = n.party.roster[memberId];
+  if (!slotsFor(itemSlot(it)).includes(target)) return { ok: false, reason: 'invalid' };
+  const state = structuredClone(s);
+  const next = structuredClone(list);
+  const nm = state.party.roster[memberId];
   const prev = nm.equip[target];
-  const [wearing] = prev ? n.bag.splice(i, 1, prev) : n.bag.splice(i, 1);
+  const [wearing] = prev ? next.splice(i, 1, prev) : next.splice(i, 1);
+  delete wearing.junk;
   nm.equip[target] = wearing;
   clampToMax(nm);
-  return { ok: true, state: n };
+  return { ok: true, state, list: next };
+}
+
+/**
+ * Takes off what is in `slot` and adds it to the end of `list`. `room` is how many pieces `list` may hold, so a piece that
+ * would have nowhere to go is refused (`full`) and nothing is ever lost. Pure, and HP and TP are clamped.
+ */
+export function takeOffInto(s: GameState, list: ItemInstance[], memberId: CharacterId, slot: Slot, room: number): WearResult<'invalid' | 'full'> {
+  const prev = s.party.roster[memberId]?.equip[slot];
+  if (!prev) return { ok: false, reason: 'invalid' };
+  if (list.length + 1 > room) return { ok: false, reason: 'full' };
+  const state = structuredClone(s);
+  const m = state.party.roster[memberId];
+  const it = m.equip[slot]!;
+  delete m.equip[slot];
+  clampToMax(m);
+  return { ok: true, state, list: [...structuredClone(list), it] };
+}
+
+/** Wears the bag item `uid` in `slot` (or its default slot); whatever was there goes back into the bag in its place. */
+export function equip(s: GameState, memberId: CharacterId, uid: number, slot?: Slot): TownResult {
+  const r = wearFrom(s, s.bag, memberId, uid, slot);
+  if (!r.ok) return r;
+  r.state.bag = r.list;
+  return { ok: true, state: r.state };
 }
 
 /** Takes off what is in `slot` and puts it in the bag; a full bag refuses, so nothing is ever lost. */
 export function unequip(s: GameState, memberId: CharacterId, slot: Slot): TownResult {
-  const prev = s.party.roster[memberId]?.equip[slot];
-  if (!prev) return fail('invalid');
-  if (s.bag.length >= BAG_SIZE) return fail('full');
-  const n = structuredClone(s);
-  const m = n.party.roster[memberId];
-  const it = m.equip[slot]!;
-  delete m.equip[slot];
-  n.bag.push(it);
-  clampToMax(m);
-  return { ok: true, state: n };
+  const r = takeOffInto(s, s.bag, memberId, slot, BAG_SIZE);
+  if (!r.ok) return r;
+  r.state.bag = r.list;
+  return { ok: true, state: r.state };
 }
 
 export function innCost(p: Party): number {

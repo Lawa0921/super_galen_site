@@ -8,15 +8,13 @@
 import { fromMember, skillCost, skillFor } from './battle';
 import type { Combatant } from './combatant';
 import { BAG_SIZE } from './loot/bag';
-import { itemSlot } from './loot/item';
-import { activeIds, defaultSlotFor, slotsFor } from './party';
+import { activeIds } from './party';
 import { learnedSkills, pctMod, skillRank } from './progression';
 import type { Rng } from './rng';
 import { abyssPct } from './scaling';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
 import type { GameState } from './state';
-import { clampToMax } from './town';
-import { EQUIPMENT } from '../data/equipment';
+import { takeOffInto, wearFrom, type WearResult } from './town';
 import { SKILLS } from '../data/skills';
 import type { CharacterId, Effect, ItemInstance, Member, Party, Slot } from './types';
 
@@ -150,44 +148,27 @@ export function castField(
 /** A change of gear from the run pack: the new state and the new pack, or why not. */
 export type PackResult<F extends string> = { ok: true; state: GameState; pack: ItemInstance[] } | { ok: false; reason: F };
 
+const toPack = <F extends string>(r: WearResult<F>): PackResult<F> => (r.ok ? { ok: true, state: r.state, pack: r.list } : r);
+
 /**
- * Wears piece `uid` from the run pack, as town `equip` does from the bag: in `slot`, or where defaultSlotFor puts it.
- * What the slot held goes back into the pack, so the pack keeps its count or loses one. Only a member on the field may
- * (`invalid`); the bench is in town. Pure: `s` and `pack` are never touched. HP and TP are clamped to the new maximum.
+ * Wears piece `uid` from the run pack through town's own slot swap (`wearFrom`): in `slot`, or where defaultSlotFor puts
+ * it; what the slot held goes back into the pack, so the pack keeps its count or loses one. Only a member on the field
+ * may (`invalid`); the bench is in town. Pure: `s` and `pack` are never touched.
  */
 export function packEquip(
   s: GameState, pack: ItemInstance[], member: CharacterId, uid: number, slot?: Slot,
 ): PackResult<'invalid' | 'stock'> {
-  if (!activeIds(s.party).includes(member) || !s.party.roster[member]) return { ok: false, reason: 'invalid' };
-  const i = pack.findIndex((it) => it.uid === uid);
-  if (i < 0) return { ok: false, reason: 'stock' };
-  const it = pack[i];
-  if (!EQUIPMENT[it.base]) return { ok: false, reason: 'invalid' };
-  const target = slot ?? defaultSlotFor(s.party.roster[member], it);
-  if (!slotsFor(itemSlot(it)).includes(target)) return { ok: false, reason: 'invalid' };
-  const state = structuredClone(s);
-  const next = structuredClone(pack);
-  const m = state.party.roster[member];
-  const prev = m.equip[target];
-  const [wearing] = prev ? next.splice(i, 1, prev) : next.splice(i, 1);
-  m.equip[target] = wearing;
-  clampToMax(m);
-  return { ok: true, state, pack: next };
+  if (!activeIds(s.party).includes(member)) return { ok: false, reason: 'invalid' };
+  return toPack(wearFrom(s, pack, member, uid, slot));
 }
 
 /**
- * Takes off what a member on the field wears in `slot` and puts it in the run pack. The bag and the pack together never
- * pass BAG_SIZE (`full`): a piece with no slot at home would be lost on the way back. HP and TP are clamped. Pure.
+ * Takes off what a member on the field wears in `slot` and puts it in the run pack (town's `takeOffInto`). The bag and
+ * the pack together never pass BAG_SIZE (`full`): a piece with no slot at home would be lost on the way back. Pure.
  */
 export function packUnequip(
   s: GameState, pack: ItemInstance[], member: CharacterId, slot: Slot,
 ): PackResult<'invalid' | 'full'> {
-  if (!activeIds(s.party).includes(member) || !s.party.roster[member]?.equip[slot]) return { ok: false, reason: 'invalid' };
-  if (s.bag.length + pack.length + 1 > BAG_SIZE) return { ok: false, reason: 'full' };
-  const state = structuredClone(s);
-  const m = state.party.roster[member];
-  const it = m.equip[slot]!;
-  delete m.equip[slot];
-  clampToMax(m);
-  return { ok: true, state, pack: [...structuredClone(pack), it] };
+  if (!activeIds(s.party).includes(member)) return { ok: false, reason: 'invalid' };
+  return toPack(takeOffInto(s, pack, member, slot, BAG_SIZE - s.bag.length));
 }

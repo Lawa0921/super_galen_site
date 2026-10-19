@@ -25,7 +25,7 @@ import { MAX_ILVL, MAX_REACHED } from './levels';
 import { chestHasGear, GEAR_CHANCE, RARE_MATERIALS, rollBossGear } from './loot/drops';
 import { itemLevel, itemWeight, rollItem } from './loot/item';
 import { MATERIALS } from '../data/materials';
-import { buy } from './town';
+import { buy, unequip } from './town';
 import { memoriesOf } from './progression';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
@@ -3215,6 +3215,43 @@ describe('gear and rows in the labyrinth (6f Task 3)', () => {
     expect(g.run!.loot.gear.map((it) => it.uid)).toEqual([501]);
   });
 
+  it('wearing from the pack is refused as heavy when the swap lowers the limit at the limit', () => {
+    const g = inMap(1);
+    // A worn sword with strength on it, and a plain one of the same weight in the pack.
+    const strong: ItemInstance = { ...plainItem('iron-sword', 510), affixes: [{ key: 'str', value: 10 }] };
+    g.state.party.roster.hero.equip.weapon = strong;
+    g.run!.loot.gear = [plainItem('iron-sword', 511)];
+    const room = capacity(g.state.party) - carried(g.state, g.run);
+    const moss = room / weightOf('moss');
+    expect(Number.isInteger(moss) && moss > 0).toBe(true);
+    g.run!.loot.items['moss'] = moss;
+    expect(carried(g.state, g.run)).toBe(capacity(g.state.party));
+    // Without the strength the limit drops, so the same load would be over it.
+    const weaker = structuredClone(g.state.party);
+    weaker.roster.hero.equip.weapon = plainItem('iron-sword', 511);
+    expect(capacity(weaker)).toBeLessThan(capacity(g.state.party));
+    const state = structuredClone(g.state);
+    const pack = g.run!.loot.gear;
+    expect(g.equipFromPack('hero', 511)).toEqual({ ok: false, reason: 'heavy' });
+    expect(g.state).toEqual(state);
+    expect(g.run!.loot.gear).toBe(pack);
+    expect(g.run!.loot.gear.map((it) => it.uid)).toEqual([511]);
+  });
+
+  it('a junk-marked piece worn from the pack loses the mark: taken off in town, it lands in the bag unmarked', () => {
+    const g = inMap(1);
+    g.run!.loot.gear = [{ ...plainItem('iron-sword', 520), junk: true }];
+    expect(g.equipFromPack('hero', 520)).toEqual({ ok: true });
+    expect(g.state.party.roster.hero.equip.weapon?.junk).toBeFalsy();
+    stepOnto(g, g.map().entrance);
+    expect(g.returnToTown()).toBe(true);
+    const r = unequip(g.state, 'hero', 'weapon');
+    if (!r.ok) throw new Error(r.reason);
+    const back = r.state.bag.find((it) => it.uid === 520);
+    expect(back).toBeDefined();
+    expect(back!.junk).toBeFalsy();
+  });
+
   it('field gear changes draw nothing', () => {
     let draws = 0;
     const base = calm();
@@ -3284,6 +3321,12 @@ describe('gear and rows in the labyrinth (6f Task 3)', () => {
     // Nobody leaves the field either.
     const out = swapped.map((c) => (c === 'liz' ? null : c));
     expect(g.setFormation(out)).toEqual({ ok: false, reason: 'lineup' });
+    expect(g.state.party.grid).toEqual(swapped);
+    // The same people with one of them twice still goes through the party rules.
+    const twice = [...swapped];
+    twice[twice.indexOf(null)] = 'liz';
+    expect(new Set(twice.filter((c) => c !== null))).toEqual(new Set(activeIds(g.state.party)));
+    expect(g.setFormation(twice)).toEqual({ ok: false, reason: 'duplicate' });
     expect(g.state.party.grid).toEqual(swapped);
 
     // In town the bench may come in as before.

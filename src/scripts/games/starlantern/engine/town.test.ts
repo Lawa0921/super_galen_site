@@ -104,6 +104,14 @@ describe('equipment', () => {
     expect(unequip(a.state, 'scarlet', 'neck')).toEqual({ ok: false, reason: 'full' });
     expect(a.state.party.roster.scarlet.equip.neck?.uid).toBe(1);
   });
+  it('wearing a junk-marked piece clears the mark: taken off again, it is back in the bag unmarked (6f Task 3)', () => {
+    const a = equip(withBag([{ ...plainItem('iron-sword', 1), junk: true }]), 'scarlet', 1);
+    if (!a.ok) throw new Error('equip failed');
+    expect(a.state.party.roster.scarlet.equip.weapon?.junk).toBeFalsy();
+    const b = unequip(a.state, 'scarlet', 'weapon');
+    if (!b.ok) throw new Error('unequip failed');
+    expect(b.state.bag.map((it) => [it.uid, !!it.junk])).toEqual([[1, false]]);
+  });
   it('mints uids in order', () => {
     const s = withBag([]);
     expect([mintUid(s), mintUid(s), s.nextUid]).toEqual([1, 2, 3]);
