@@ -1,5 +1,8 @@
 // pixel.test.ts — 點陣工具：描邊、scale2x、RotSprite 旋轉。
 import { describe, it, expect } from 'vitest';
+import { DEFAULT_APPEARANCE } from '../engine/appearance';
+import { dollKey, plainLook } from '../engine/doll';
+import { dollPreview } from './dollPreview';
 import { Bmp, scale2x, rotPrep, rotate, INK, bayer, PALETTE, snap, snapBmp, nudge, inPalette, luma, outlineColor, softOutlineColor, hex } from './pixel';
 
 const RED: [number, number, number] = [200, 30, 30];
@@ -138,5 +141,22 @@ describe('統一色票', () => {
     b.set(2, 2, hex('#f2b888'));
     b.softOutline();
     expect(b.get(1, 2)).toEqual(softOutlineColor(hex('#f2b888')));
+  });
+});
+
+describe('snap keeps avatar-only colours', () => {
+  it('櫻粉髮外框與膚色外框原樣回傳', () => {
+    expect(snap(hex('#5a2a4a'))).toEqual(hex('#5a2a4a'));
+    expect(snap(hex('#8a4038'))).toEqual(hex('#8a4038'));
+  });
+  it('預設女外觀的預覽（toCanvas 會做的 snapBmp）保有粉髮外框、沒有灰色鬼環', () => {
+    // vitest 沒有真 canvas：toCanvas 非 raw 路徑 = snapBmp(clone)，直接驗它
+    const l = plainLook({ ...DEFAULT_APPEARANCE });
+    const raw = dollPreview(l, dollKey(l), 'idle', 0);
+    const b = snapBmp(raw.clone());
+    const has = (h: string): boolean => { const t = hex(h); for (const v of b.px) { if (v >>> 24 && Bmp.unpack(v).every((n, i) => n === t[i])) return true; } return false; };
+    expect(has('#5a2a4a')).toBe(true);
+    // #423f54 本身是合法色票色（RIM / 鐵砧），不能斷言「不含」；改驗 snap 沒改動任何一格（鬼環 = 髮外框被改成 #423f54）
+    expect([...b.px]).toEqual([...raw.px]);
   });
 });
