@@ -654,3 +654,164 @@ def test_party_recover_ignores_strays_outside_the_attempt_window(tmp_path):
     # a stray already copied into another attempt is never reused
     (tmp_path / 'x-a2.png').write_bytes((tmp_path / 'x-single.png').read_bytes())
     assert party.recover(tmp_path, 'x-a1.png', now - 600, now + 10) is None
+
+
+# --- plan 5d: gear cells (large + icon from one cell), nine-slice rarity frames, silhouettes, retiring old art ---
+def test_fit_side_uses_the_longer_side():
+    img = blob(100, 100, (30, 40, 70, 60))   # 40 x 20 px subject
+    assert A.fit_side(img, 10) == 4
+    assert A.fit_side(img, 40) == 1
+
+
+def _gear_cell(box=(80, 100, 320, 300)):
+    arr = np.asarray(blob(400, 400, box, (40, 120, 200))).copy()
+    x0, y0, x1, y1 = box; arr[y0:y0 + 40, x0:x1] = (200, 180, 60)   # a second colour band
+    return Image.fromarray(arr, 'RGB')
+
+
+def test_gear_cell_makes_a_large_and_an_icon_from_the_same_cell(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json'); raw = tmp_path / 'sheet-gear-1-a1.png'
+    out = A.process_gear_cell(reg, 'iron-sword', _gear_cell(), tmp_path / 'w', raw)
+    assert set(out) == {'gear-iron-sword-large', 'gear-iron-sword'}
+    large, icon = reg.get('gear-iron-sword-large'), reg.get('gear-iron-sword')
+    assert out['gear-iron-sword-large']['size'] == [64, 64] and out['gear-iron-sword']['size'] == [26, 26]
+    assert Image.open(tmp_path / 'w' / 'gear-iron-sword-large.png').size == (64, 64)
+    assert Image.open(tmp_path / 'w' / 'gear-iron-sword.png').size == (26, 26)
+    assert large['source'] == icon['source'] == {'raw': str(raw), 'cell': 'iron-sword'}
+    assert large['status'] == icon['status'] == 'qa_passed'
+    assert 'runtime' not in large and 'runtime' not in icon
+
+
+def test_gear_cell_fails_both_when_the_subject_is_cut_by_the_canvas(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json')
+    out = A.process_gear_cell(reg, 'iron-sword', _gear_cell((0, 100, 240, 300)), tmp_path / 'w', tmp_path / 'raw.png')
+    for aid in ('gear-iron-sword-large', 'gear-iron-sword'):
+        assert 'subject cut by the canvas edge' in out[aid]['reasons'] and reg.get(aid)['status'] == 'qa_failed'
+
+
+def _ring(fill_centre=False, gap=False, colour=(180, 140, 60)):
+    """A 160 x 160 frame with a 20 px border, on a magenta cell with an 8 px margin (as portal.sheet_cells pads)."""
+    arr = np.asarray(canvas(176, 176)).copy(); r = arr[8:168, 8:168]
+    r[:20, :] = colour; r[-20:, :] = colour; r[:, :20] = colour; r[:, -20:] = colour
+    if fill_centre: r[60:100, 60:100] = colour
+    if gap: r[:20, 60:100] = M
+    return Image.fromarray(arr, 'RGB')
+
+
+def test_nine_slice_passes_a_clean_ring_and_samples_exact_size(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A.nine_slice(reg, 'ui-rarity-magic', _ring(), tmp_path / 'w', tmp_path / 'raw.png', 16, 5)
+    assert q['size'] == [16, 16] and q['center_clear'] and q['ring_closed'] and q['pass'], q
+    assert all(v <= A.SEAM_RATIO_MAX for v in q['edge_repeat'].values())
+    assert Image.open(tmp_path / 'w' / 'ui-rarity-magic.png').size == (16, 16)
+    e = reg.get('ui-rarity-magic')
+    assert e['status'] == 'qa_passed' and e['kind'] == 'nine-slice' and e['slice'] == 5 and 'runtime' not in e
+
+
+def test_nine_slice_fails_a_filled_centre(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-rare', _ring(fill_centre=True), tmp_path / 'w', tmp_path / 'raw.png', 16, 5)
+    assert not q['pass'] and not q['center_clear'] and 'centre not clear' in q['reasons']
+
+
+def test_nine_slice_fails_a_broken_ring(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-set', _ring(gap=True), tmp_path / 'w', tmp_path / 'raw.png', 16, 5)
+    assert not q['pass'] and not q['ring_closed'] and 'ring not closed' in q['reasons']
+
+
+def test_nine_slice_fails_an_edge_that_does_not_repeat(tmp_path):
+    arr = np.asarray(_ring()).copy()
+    arr[8:28, 88:148] = (60, 90, 220)     # the right half of the top edge changes colour: repeated, it shows a joint
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-unique', Image.fromarray(arr, 'RGB'), tmp_path / 'w', tmp_path / 'raw.png', 16, 5)
+    assert not q['pass'] and 'edge does not repeat' in q['reasons']
+    assert q['edge_repeat']['top'] > A.SEAM_RATIO_MAX
+
+
+INK, RIM = (29, 26, 46), (143, 134, 184)
+
+
+def _approved_icon(tmp_path, status='approved'):
+    rgba = np.zeros((26, 26, 4), np.uint8)
+    rgba[4:22, 8:18] = (200, 40, 40, 255); rgba[6:10, 10:14] = (250, 220, 90, 255); rgba[12, 12, 3] = 0   # a hole inside
+    final = tmp_path / 'gear-blaze-heart-sword.png'; Image.fromarray(rgba, 'RGBA').save(final)
+    reg = A.Registry(tmp_path / 'r.json'); reg.set('gear-blaze-heart-sword', status=status, final=str(final))
+    return reg, rgba
+
+
+def test_silhouette_uses_only_ink_and_rim_and_grows_one_pixel(tmp_path):
+    reg, src = _approved_icon(tmp_path)
+    q = A.silhouette(reg, 'blaze-heart-sword', tmp_path / 'w')
+    out = np.asarray(Image.open(tmp_path / 'w' / 'gear-blaze-heart-sword-silhouette.png').convert('RGBA'))
+    assert out.shape[:2] == (28, 28) and q['size'] == [28, 28] and q['pass'], q
+    op = out[..., 3] == 255
+    assert {tuple(int(v) for v in c) for c in out[op][:, :3]} == {INK, RIM}
+    assert set(np.unique(out[..., 3]).tolist()) <= {0, 255}
+    ys, xs = np.nonzero(src[..., 3] == 255)
+    assert all(tuple(int(v) for v in out[y + 1, x + 1, :3]) == INK for y, x in zip(ys, xs))
+    assert op.sum() >= (src[..., 3] == 255).sum()
+    e = reg.get('gear-blaze-heart-sword-silhouette')
+    assert e['kind'] == 'silhouette' and e['status'] == 'qa_passed' and e['source'] == {'from': 'gear-blaze-heart-sword'}
+    assert 'runtime' not in e
+
+
+def test_silhouette_can_name_a_set_after_its_first_piece(tmp_path):
+    reg, _ = _approved_icon(tmp_path, status='published')
+    A.silhouette(reg, 'blaze-heart-sword', tmp_path / 'w', out='set-blaze')
+    assert (tmp_path / 'w' / 'gear-set-blaze-silhouette.png').exists()
+    assert reg.get('gear-set-blaze-silhouette')['source'] == {'from': 'gear-blaze-heart-sword'}
+
+
+def test_silhouette_refuses_unapproved_art(tmp_path):
+    reg, _ = _approved_icon(tmp_path, status='qa_passed')
+    with pytest.raises(PermissionError):
+        A.silhouette(reg, 'blaze-heart-sword', tmp_path / 'w')
+    assert not (tmp_path / 'w' / 'gear-blaze-heart-sword-silhouette.png').exists()
+
+
+def _tracked_public(tmp_path, rel='assets/games/starlantern/icon/iron-sword.png', track=True):
+    import subprocess
+    public = tmp_path / 'public'; f = public / rel; f.parent.mkdir(parents=True)
+    Image.new('RGBA', (4, 4), (1, 2, 3, 255)).save(f)
+    subprocess.run(['git', 'init', '-q'], cwd=public, check=True)
+    if track: subprocess.run(['git', 'add', rel], cwd=public, check=True)
+    return public, f
+
+
+def test_retire_removes_the_runtime_file_and_url_but_keeps_history(tmp_path):
+    public, f = _tracked_public(tmp_path)
+    reg = A.Registry(tmp_path / 'r.json'); url = '/assets/games/starlantern/icon/iron-sword.png'
+    reg.set('icon-iron-sword', status='published', runtime=url, final='work/x.png', approved_by='user 2026-10-15')
+    reg.set('enemy-slime', status='published', runtime='/assets/games/starlantern/enemy/slime.png')
+    reg.write_manifest(public)
+    reg.retire('icon-iron-sword', public, 'replaced by gear-iron-sword (plan 5d)')
+    assert not f.exists()
+    e = A.Registry(tmp_path / 'r.json').get('icon-iron-sword')
+    assert 'runtime' not in e and e['retired_runtime'] == url and e['status'] == 'retired'
+    assert e['retired_reason'] == 'replaced by gear-iron-sword (plan 5d)'
+    assert e['final'] == 'work/x.png' and e['approved_by'] == 'user 2026-10-15'      # history kept
+    manifest = json.loads((public / 'assets/games/starlantern/manifest.json').read_text(encoding='utf-8'))
+    assert manifest['urls'] == ['/assets/games/starlantern/enemy/slime.png']
+
+
+def test_retire_refuses_a_file_git_does_not_track(tmp_path):
+    public, f = _tracked_public(tmp_path, track=False)
+    reg = A.Registry(tmp_path / 'r.json')
+    reg.set('icon-iron-sword', status='published', runtime='/assets/games/starlantern/icon/iron-sword.png')
+    with pytest.raises(PermissionError):
+        reg.retire('icon-iron-sword', public, 'x')
+    assert f.exists() and reg.get('icon-iron-sword')['status'] == 'published'
+
+
+def test_retire_refuses_a_path_outside_the_starlantern_assets(tmp_path):
+    public, f = _tracked_public(tmp_path, rel='assets/games/other/x.png')
+    reg = A.Registry(tmp_path / 'r.json')
+    reg.set('icon-x', status='published', runtime='/assets/games/starlantern/../other/x.png')
+    with pytest.raises(PermissionError):
+        reg.retire('icon-x', public, 'x')
+    assert f.exists()
+
+
+def test_retire_cli_calls_the_registry(monkeypatch):
+    calls = []
+    monkeypatch.setattr(A.Registry, 'retire', lambda self, aid, public, reason: calls.append((aid, reason)))
+    assert A.main(['retire', '--id', 'icon-iron-sword', '--reason', 'replaced']) == 0
+    assert calls == [('icon-iron-sword', 'replaced')]

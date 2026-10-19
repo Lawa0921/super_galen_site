@@ -1,6 +1,6 @@
 """Starlantern art postprocess: cutout, alpha QA, art-pixel downscale, grid slicing, seam score, registry/publish."""
 from pathlib import Path
-import argparse, json, shutil, sys
+import argparse, datetime, json, math, shutil, subprocess, sys
 import numpy as np
 from PIL import Image
 
@@ -485,6 +485,26 @@ class Registry:
         out = Path(public_root) / BASE.strip('/') / 'manifest.json'; out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps({'version': 1, 'urls': urls}, indent=2) + '\n', encoding='utf-8')
 
+    def retire(self, aid, public_root, reason):
+        """Take published art out of the game (plan 5d: an old base icon replaced by its gear art).
+
+        The runtime file is deleted only when it lies under public/assets/games/starlantern/ and git tracks it, so it
+        can always be restored from git. The entry keeps its history: `runtime` moves to `retired_runtime`, and the
+        final, raw, QA and approval fields stay. The manifest is rewritten without the url.
+        """
+        e = self.get(aid); url = e.get('runtime')
+        if not url: raise ValueError(f'{aid} has no runtime to retire')
+        base = (Path(public_root) / BASE.strip('/')).resolve(); dst = self._target(aid, public_root).resolve()
+        if not dst.is_relative_to(base): raise PermissionError(f'{dst} is outside {base}; refusing to delete')
+        if dst.exists():
+            tracked = subprocess.run(['git', 'ls-files', '--error-unmatch', dst.name], cwd=dst.parent, capture_output=True,
+                                     **({'creationflags': subprocess.CREATE_NO_WINDOW} if sys.platform == 'win32' else {}))
+            if tracked.returncode: raise PermissionError(f'{dst} is not tracked by git; refusing to delete it')
+            dst.unlink()
+        e.pop('runtime')
+        self.set(aid, status='retired', retired_runtime=url, retired_reason=reason, retired_on=datetime.date.today().isoformat())
+        self.write_manifest(public_root)
+
 
 def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None, block=None, height=None, frames=4, wrap='xy', size=62, fit=None, canvas=None):
     """Postprocess one raw codex PNG into final file(s) under art-factory/starlantern/work/<aid>/ and record QA."""
@@ -567,6 +587,110 @@ def _save_final(reg, aid, final, qa, workdir, raw):
     return qa
 
 
+# --- plan 5d: gear cells, nine-slice frames, silhouettes ---
+
+def fit_side(img, side):
+    """Block that makes the subject's longer side at most `side` art pixels: ceil(longer bbox side / side)."""
+    box = cutout(img).getbbox()
+    if not box: return 1
+    return max(1, math.ceil(max(box[2] - box[0], box[3] - box[1]) / side))
+
+
+def process_gear_cell(reg, gid, cell, workdir, raw, large=(60, 64), icon=(24, 26)):
+    """One sheet cell -> two transparent finals from the same pixels: `gear-<gid>-large` (longer side `large[0]`,
+    centred on a large[1] square canvas) and `gear-<gid>` (longer side `icon[0]` on an icon[1] canvas).
+
+    Both run the usual `_finish` QA (residue, semi alpha, raw-canvas cut, holes warning, larger than the canvas) and
+    record the same `source` ({raw, cell}). Any id works (plan 5f reuses this for its own uniques).
+    """
+    out = {}
+    for aid, (side, size) in ((f'gear-{gid}-large', large), (f'gear-{gid}', icon)):
+        out[aid] = _finish(reg, aid, cell, 'sprite', workdir, raw, block=fit_side(cell, side), canvas=size)
+        reg.set(aid, kind='gear-cell', source={'raw': str(raw), 'cell': gid})
+    return out
+
+
+def edge_repeat(final, slice_):
+    """Seam ratio (wrap_seam, x only) of the middle segment of each of the four edge bands of a nine-slice frame.
+
+    Each band is slice_ deep; left and right bands are turned on their side, so every band repeats left to right."""
+    a = np.asarray(final.convert('RGBA')); n = a.shape[0]; s = slice_
+    bands = {'top': a[:s, s:n - s], 'bottom': a[n - s:, s:n - s],
+             'left': a[s:n - s, :s].transpose(1, 0, 2), 'right': a[s:n - s, n - s:].transpose(1, 0, 2)}
+    return {k: wrap_seam(Image.fromarray(np.ascontiguousarray(b), 'RGBA'), 'x')['x']['ratio'] for k, b in bands.items()}
+
+
+def nine_slice(reg, aid, cell, workdir, raw, size, slice_):
+    """A frame drawn on magenta -> exactly size x size art pixels for CSS border-image (slice `slice_`).
+
+    Cutout, crop to the subject, nearest centre-sample (no new colours), then QA: the usual alpha checks (the ring
+    must reach the canvas edge, so `touches edge` is expected), `center_clear` (inside the slice fully transparent),
+    `ring_closed` (every column of the top and bottom bands and every row of the side bands has an opaque pixel) and
+    `edge_repeat` (seam ratio of each edge middle <= SEAM_RATIO_MAX).
+    """
+    entry = reg.data['assets'].get(aid, {})
+    cut = cutout(cell); box = cut.getbbox(); reasons = []
+    if box is None:
+        final = Image.new('RGBA', (size, size)); reasons.append('no foreground')
+    else:
+        final = defringe(_sample(cut.crop(box), size, size), strong=entry.get('defringe') == 'strong')
+        if box[0] == 0 or box[1] == 0 or box[2] == cell.width or box[3] == cell.height:
+            reasons.append('subject cut by the canvas edge')
+    qa = alpha_qa(final, entry.get('allow_holes', 0), allow_residue=entry.get('allow_residue', 0))
+    reasons = [r for r in qa['reasons'] if r != 'touches edge'] + reasons
+    op = np.asarray(final)[..., 3] == 255; s = slice_
+    qa['center_clear'] = bool(not op[s:size - s, s:size - s].any())
+    qa['ring_closed'] = bool(op[:s].any(axis=0).all() and op[size - s:].any(axis=0).all()
+                             and op[:, :s].any(axis=1).all() and op[:, size - s:].any(axis=1).all())
+    qa['edge_repeat'] = edge_repeat(final, s)
+    if not qa['center_clear']: reasons.append('centre not clear')
+    if not qa['ring_closed']: reasons.append('ring not closed')
+    if any(v > SEAM_RATIO_MAX for v in qa['edge_repeat'].values()): reasons.append('edge does not repeat')
+    qa.update(reasons=reasons, size=[size, size], slice=s, block=round(max(box[2] - box[0], box[3] - box[1]) / size, 3) if box else None)
+    qa['pass'] = not reasons
+    out = _save_final(reg, aid, final, qa, workdir, raw)
+    reg.set(aid, kind='nine-slice', slice=s, source={'raw': str(raw), 'cell': aid})
+    return out
+
+
+def silhouette_image(img, ink=(29, 26, 46), rim=(143, 134, 184)):
+    """Pure transform: every opaque pixel -> ink; transparent pixels 8-touching one -> rim. The canvas grows by one
+    pixel on every side so the rim always fits. Only ink, rim and full transparency appear."""
+    a = np.asarray(img.convert('RGBA'))[..., 3] == 255
+    op = np.pad(a, 1); ring = np.zeros_like(op); p = np.pad(op, 1)
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            ring |= p[1 + dy:1 + dy + op.shape[0], 1 + dx:1 + dx + op.shape[1]]
+    ring &= ~op
+    out = np.zeros(op.shape + (4,), np.uint8); out[op] = (*ink, 255); out[ring] = (*rim, 255)
+    return Image.fromarray(out, 'RGBA')
+
+
+def silhouette(reg, gid, workdir, ink=(29, 26, 46), rim=(143, 134, 184), out=None):
+    """`gear-<out or gid>-silhouette` from the approved (or published) icon `gear-<gid>` (a set passes its first
+    piece as gid and the set id as out). QA: colours only ink and rim, no semi alpha, size = source + 2, at least as
+    many opaque pixels as the source. Status qa_passed / qa_failed; approval is the caller's (gear_art.py)."""
+    src_id = f'gear-{gid}'; e = reg.data['assets'].get(src_id, {})
+    if e.get('status') not in ('approved', 'published'):
+        raise PermissionError(f'{src_id} is not approved; silhouettes come only from approved art')
+    src = Image.open(_final_path(e['final'])).convert('RGBA')
+    final = silhouette_image(src, ink, rim)
+    arr = np.asarray(final); op = arr[..., 3] == 255
+    colours = {tuple(int(v) for v in c) for c in arr[op][:, :3]}
+    reasons = []
+    if not colours <= {tuple(ink), tuple(rim)}: reasons.append('colour other than ink and rim')
+    if ((arr[..., 3] > 0) & (arr[..., 3] < 255)).any(): reasons.append('semi alpha')
+    if op.sum() < (np.asarray(src)[..., 3] == 255).sum(): reasons.append('fewer opaque pixels than the source')
+    if list(final.size) != [src.width + 2, src.height + 2]: reasons.append('wrong size')
+    if not op.any(): reasons.append('no foreground')
+    qa = {'pass': not reasons, 'reasons': reasons, 'size': list(final.size), 'opaque': int(op.sum()),
+          'source_opaque': int((np.asarray(src)[..., 3] == 255).sum())}
+    aid = f'gear-{out or gid}-silhouette'
+    res = _save_final(reg, aid, final, qa, workdir, e['final'])
+    reg.set(aid, kind='silhouette', source={'from': src_id})
+    return res
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='sl_art'); sub = ap.add_subparsers(dest='cmd', required=True)
     p = sub.add_parser('process'); p.add_argument('--id', required=True); p.add_argument('--raw', required=True, type=Path)
@@ -581,6 +705,8 @@ def main(argv=None):
     p.add_argument('--canvas', type=int, help='sprite: centre the result on an N x N transparent canvas (map-cell overlay)')
     a = sub.add_parser('approve'); a.add_argument('--id', required=True)
     r = sub.add_parser('reject'); r.add_argument('--id', required=True); r.add_argument('--reason', required=True)
+    rt = sub.add_parser('retire', help='take published art out of the game (file deleted only if git tracks it)')
+    rt.add_argument('--id', required=True); rt.add_argument('--reason', required=True)
     pub = sub.add_parser('publish'); pub.add_argument('--approved', action='store_true', required=True)
     sub.add_parser('status')
     args = ap.parse_args(argv)
@@ -591,6 +717,7 @@ def main(argv=None):
         print(json.dumps(out, ensure_ascii=False)); return 0 if all(q['pass'] for q in out.values()) else 1
     if args.cmd == 'approve': reg.approve(args.id)
     if args.cmd == 'reject': reg.reject(args.id, args.reason, public)
+    if args.cmd == 'retire': reg.retire(args.id, public, args.reason)
     if args.cmd == 'publish':
         for aid, a in reg.data['assets'].items():
             if a.get('status') == 'approved': reg.publish(aid, public)
