@@ -11,6 +11,7 @@ import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { handbook } from './handbook';
+import { arrivalScenes, onReturn, sceneDone } from './events';
 
 const withMemories = (s: GameState, id: CharacterId, n: number): GameState => {
   if (!s.party.recruited.includes(id)) s.party = meet(s.party, id, 1);
@@ -148,13 +149,43 @@ describe("the adventurer's handbook", () => {
     expect(open(fresh())).toEqual(['prologue']);
     const s = fresh();
     s.story.act1Cleared = true;
+    s.story.seen = ['act1-after'];
     expect(open(s)).toEqual(['prologue', 'act1']);
     s.story.nodes = ['act2', 'act4'];
+    s.story.seen.push('act2', 'act4');
     expect(open(s)).toEqual(['prologue', 'act1', 'act2', 'act4']);
     s.story.finaleCleared = true;
     expect(open(s)).toEqual(['prologue', 'act1', 'act2', 'act4', 'after']);
     expect(handbook(s).truths[0].text).toBe(STORY.truths.prologue);
     expect(handbook(fresh()).truths[2].text).toBeNull();
+  });
+
+  it('a truth page waits for its act scene, not only for the depth (final review I-2)', () => {
+    const open = (s: GameState) => handbook(s).truths.filter((t) => t.unlocked).map((t) => t.stage);
+    const s = fresh();
+    s.story.act1Cleared = true;
+    s.story.nodes = ['act2', 'act3', 'act4'];
+    s.story.queue = ['act1-after', 'act2', 'act3', 'act4'];   // reached, queued, not played yet
+    expect(open(s)).toEqual(['prologue']);
+    expect(handbook(s).truths.find((t) => t.stage === 'act4')!.text).toBeNull();
+    for (const id of ['act1-after', 'act2', 'act3', 'act4'] as const) s.story = sceneDone(s, id, 'played').story;
+    expect(open(s)).toEqual(['prologue', 'act1', 'act2', 'act3', 'act4']);
+  });
+
+  it('the fast dive: one dive past depth 16 with Rin whole at 22 plays her reveal alone, and the act pages stay shut until their scenes play', () => {
+    const open = (s: GameState) => handbook(s).truths.filter((t) => t.unlocked).map((t) => t.stage);
+    let s = withMemories(fresh(), 'rin', chainLength('rin'));
+    s.story.seen = ['prologue', 'prologue-inn', 'act1-after'];
+    s.story.queue = [];
+    s.story.act1Cleared = true;
+    s.dungeon.reached.mainline = 22;
+    s.story = onReturn(s);
+    expect(s.story.nodes).toEqual(['act2', 'act3', 'act4']);
+    expect(arrivalScenes(s, { chat: true })).toEqual(['rin-reveal']);
+    s = sceneDone(s, 'rin-reveal', 'played');
+    expect(open(s)).toEqual(['prologue', 'act1']);   // the stay after the reveal: the acts wait for the next return
+    for (const id of arrivalScenes(s, { chat: false })) s = sceneDone(s, id, 'played');
+    expect(open(s)).toEqual(['prologue', 'act1', 'act2', 'act3', 'act4']);
   });
 
   it('fresh scenes carry the new mark', () => {

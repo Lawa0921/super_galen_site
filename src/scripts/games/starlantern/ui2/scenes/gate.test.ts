@@ -303,7 +303,7 @@ describe('GateScene: the leads (6c Task 16)', () => {
   const mark = (c: HTMLElement) => c.querySelector('.slx-portal-sighting')?.querySelector('.slx-portal-sighting-depth')?.textContent ?? null;
   const isLead = (c: HTMLElement) => c.classList.contains('slx-portal-lead') && !!c.querySelector('.slx-portal-lead-tag');
 
-  it("a new game marks the main road as the guild's lead, and each region where someone was sighted", () => {
+  it("a new game marks the main road as the guild's lead, and no region yet: the regions' rumours come after the prologue (I-124)", () => {
     const { cards } = setup();
     const [main, blaze, iron] = cards();
     expect(isLead(main)).toBe(true);
@@ -313,6 +313,15 @@ describe('GateScene: the leads (6c Task 16)', () => {
     expect([T.ui2.gate.leadAt(2), T.ui2.gate.sighted(3)]).toEqual(['線索・第 2 層', '目擊・第 3 層']);
     // beside the name, so the card is no taller than before
     expect(main.querySelector('.slx-portal-head .slx-portal-sighting')).not.toBeNull();
+    // Safira and Scarlet are out there, but the guild has no word from the regions in the prologue (final review M-3)
+    expect([isLead(blaze), mark(blaze)]).toEqual([false, null]);
+    expect([isLead(iron), mark(iron)]).toEqual([false, null]);
+  });
+
+  it('past the prologue each region where someone is still unmet shows its sighting (the same opening as the leads)', () => {
+    const { cards } = setup((g) => { g.state.dungeon.reached.mainline = 2; });
+    const [main, blaze, iron] = cards();
+    expect([isLead(main), mark(main)]).toEqual([true, T.ui2.gate.leadAt(2)]);   // Selene is still the lead
     expect([isLead(blaze), mark(blaze)]).toEqual([false, T.ui2.gate.sighted(3)]);   // Safira
     expect([isLead(iron), mark(iron)]).toEqual([false, T.ui2.gate.sighted(8)]);     // Scarlet
   });

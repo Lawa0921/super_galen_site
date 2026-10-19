@@ -28,11 +28,18 @@ export abstract class FacilityScene implements Scene {
   private talk: Dialogue;
   private moodTimer: ReturnType<typeof setTimeout> | null = null;
   private talking = false;
+  /** A line `sayThen` holds for the next box: the dialogue's close brings it up at once, in place of unlocking the menu. */
+  private then: string | Rich | null = null;
   /** The story scene on screen, if any: it takes the actions while it plays. */
   private playing: ReturnType<typeof playAndRecord> | null = null;
 
   constructor(protected ctx: SceneCtx, protected id: FacilityId, cps = textCps(ctx)) {
-    this.talk = new Dialogue(cps, () => { this.talking = false; this.syncInert(); });
+    this.talk = new Dialogue(cps, () => {
+      const next = this.then;
+      if (next !== null) { void this.say(next); return; }
+      this.talking = false;
+      this.syncInert();
+    });
   }
 
   protected abstract commands(): MenuItem[];
@@ -72,6 +79,7 @@ export abstract class FacilityScene implements Scene {
   }
 
   exit(): void {
+    this.then = null;
     this.talk.stop();
     if (this.moodTimer) clearTimeout(this.moodTimer);
     this.moodTimer = null;
@@ -127,12 +135,21 @@ export abstract class FacilityScene implements Scene {
   }
 
   protected say(text: string | Rich, mood: 'normal' | 'happy' = 'normal'): Promise<void> {
+    this.then = null;
     this.talk.setStyle('plain');
     if (mood === 'happy') this.setMood('happy');
     this.talking = true;
     this.syncInert();
     const done = this.talk.say(T.ui2.facility[this.id].npc, text);
-    void done.then(() => { this.talking = false; this.syncInert(); });
+    // A line that settles while a newer one is up (a held line, or a line said over it) leaves the menu locked.
+    void done.then(() => { if (this.talk.busy()) return; this.talking = false; this.syncInert(); });
+    return done;
+  }
+
+  /** Two boxes from the keeper: `first`, and `second` once the player closes it (a key or a click). */
+  protected sayThen(first: string | Rich, second: string | Rich): Promise<void> {
+    const done = this.say(first);
+    this.then = second;
     return done;
   }
 
@@ -141,6 +158,7 @@ export abstract class FacilityScene implements Scene {
    * and no face, and the keeper's face back to neutral so it does not read as hers (6c Task 13).
    */
   protected narrate(text: string | Rich): Promise<void> {
+    this.then = null;
     this.setMood('normal');
     this.talk.setStyle('memory');
     this.talking = true;
@@ -166,6 +184,7 @@ export abstract class FacilityScene implements Scene {
 
   /** Plays story scene `id` in this facility's dialogue box and records it; resolves when it ends or the player skips it. */
   protected play(id: SceneId): Promise<void> {
+    this.then = null;
     const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
     this.playing = p;
     this.talking = true;

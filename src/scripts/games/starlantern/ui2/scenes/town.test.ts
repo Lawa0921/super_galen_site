@@ -10,6 +10,7 @@ import { NPC_NAMES, STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { linesOf } from '../story';
+import { sceneDone } from '../../engine/story/events';
 
 describe('TownScene', () => {
   it('shows place, gold and the facility menu with a greeting', () => {
@@ -298,6 +299,7 @@ describe('TownScene story', () => {
       g.state.story.act1Cleared = true;
       g.state.party.recruited.push('rin');
       if (oath) Object.assign(g.state.party.roster.rin, { memories: 7, oath: true });
+      if (oath) g.state.story.seen.push('bellkeeper-arrives');   // he has come to town (final review I-1)
       return g;
     };
     const keeper = (g: Game) => said(g).filter((x) => x.who === NPC_NAMES.bellkeeper).map((x) => x.text);
@@ -310,6 +312,17 @@ describe('TownScene story', () => {
     const after = keeper(done);
     expect(after.length).toBeGreaterThan(0);
     expect(after.every((x) => STORY.bellkeeper.after.includes(x))).toBe(true);
+
+    // Final review I-1: her choice queues his arrival for the next return; until that scene has played he is not in town,
+    // however often the town's day line is drawn in this stay.
+    const waiting = fresh(false);
+    Object.assign(waiting.state.party.roster.rin, { memories: 7 });
+    waiting.state = sceneDone(waiting.state, 'rin-reveal', 'played');
+    expect(waiting.state.party.roster.rin.oath).toBe(true);
+    expect(waiting.state.story.queue).toContain('bellkeeper-arrives');
+    expect(keeper(waiting)).toEqual([]);
+    waiting.state = sceneDone(waiting.state, 'bellkeeper-arrives', 'played');
+    expect(keeper(waiting).length).toBeGreaterThan(0);
   });
 
   it('a scene that throws does not lock the town: the menu comes back and the day line shows', async () => {

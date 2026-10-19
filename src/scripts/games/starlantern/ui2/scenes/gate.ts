@@ -5,7 +5,8 @@ import { MATERIALS } from '../../data/materials';
 import { SETS, SPECIALS, codexName, generalLegendaries, regionSpecials } from '../../data/gear';
 import { REGIONS, type RegionId } from '../../data/regions';
 import { rescuesFor } from '../../data/meetings';
-import { nextLead } from '../../engine/story/leads';
+import { leadOpen, nextLead } from '../../engine/story/leads';
+import { storyStage } from '../../engine/story/events';
 import { T } from '../../data/text.zh-TW';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import { materialUses } from '../../engine/forge/uses';
@@ -90,15 +91,17 @@ class PortalCards {
 
   /**
    * Someone sighted beyond this portal (6c Task 16), beside the portal's name so the card keeps its height: 「目擊・第三層」, or
-   * on the portal of the guild's lead 「線索・第三層」 in gold. A region shows whoever is still unmet there; the main road
-   * (always offered) only its lead, so it does not outshout the region's.
+   * on the portal of the guild's lead 「線索・第三層」 in gold. A region shows whoever is still unmet there, once the guild has
+   * word from the regions at all (`leadOpen`, lore ledger I-124: not in the prologue, final review M-3); the main road (always
+   * offered) only its lead, so it does not outshout the region's.
    */
   private sighting(region: RegionId): { lead: boolean; el: HTMLElement[] } {
     const s = this.ctx.game.state;
     const lead = nextLead(s);
     const isLead = lead?.region === region;
     const depths = Object.keys(rescuesFor(region, s.party.recruited)).map(Number);
-    const depth = isLead ? lead!.depth : region === 'mainline' || !depths.length ? null : Math.min(...depths);
+    const heard = leadOpen({ region }, storyStage(s));
+    const depth = isLead ? lead!.depth : region === 'mainline' || !heard || !depths.length ? null : Math.min(...depths);
     if (depth === null) return { lead: false, el: [] };
     const G = T.ui2.gate;
     const text = isLead ? G.leadAt(depth) : G.sighted(depth);

@@ -783,15 +783,25 @@ test.describe('starlantern', () => {
 
   test("the guild points the way: Selene's lead first, then the next one, marked at the gate and kept in the handbook (6c Task 16)", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
-    const dir = 'tmp/starlantern/t16-leads';
-    mkdirSync(dir, { recursive: true });
-    const shot = async (name: string) => { await page.waitForTimeout(700); await page.screenshot({ path: `${dir}/${name}.png` }); };
+    /** With SL_SHOTS=<dir> the run also leaves its screenshots there; otherwise this is a no-op (final review M-4). */
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => {
+      if (!shots) return;
+      await page.waitForTimeout(700);   // windows fade in: wait until they are fully drawn
+      await page.screenshot({ path: `${shots}/t16-${name}.png` });
+    };
     const w = await setup(page, 7);
     const said = page.locator('.slx-talk:not([hidden]) .slx-text');
+    /** Exactly one of `lines`, typed out in full. */
+    const oneOf = (lines: readonly string[]) => new RegExp('^(' + lines.map((l) => l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')$');
 
-    // A new game: Anna passes on Selene's lead, and the main road's portal carries it.
+    // A new game: Anna greets as usual, then passes on Selene's lead in a second box (final review M-2 ruling), and the main
+    // road's portal carries it.
     await w.choose('.slx-town', '冒險者公會');
     await expect(page.locator('.slx-guild')).toBeVisible();
+    await expect(said).toHaveText(oneOf(STORY.greet.guild.prologue));
+    await w.key('z');                                       // the greeting closes: the lead is the second box
     await expect(said).toHaveText(STORY.leads.selene);
     await shot('01-guild-lead-selene');
     await w.closeTalk();
@@ -829,20 +839,23 @@ test.describe('starlantern', () => {
     const rolled = await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.dungeon.portals);
     expect(rolled.map((p: { region: string }) => p.region)).toContain('frost');
     expect(rolled).toEqual(withLead(plain, 'frost', favoured));   // exactly the plain roll with the lead put in
-    // Back to a draw that is not a payoff line (a drawn debt line, I-96, would be said first and the lead the visit after).
+    // A known draw for the greetings: 0.99 draws act 1's second line.
     await page.evaluate(() => { (window as unknown as Dbg).__starlanternDebug.game.rng = () => 0.99; });
     await w.choose('.slx-town', '冒險者公會');
     await expect(page.locator('.slx-guild')).toBeVisible();
+    await expect(said).toHaveText(STORY.greet.guild.act1[1]);
+    await w.key('z');                                       // two confirms on the first visit of the stay: greeting, then lead
     await expect(said).toHaveText(STORY.leads.chizuru);
     await shot('02-guild-lead-chizuru');
     await w.closeTalk();
     await w.key('Escape');
     await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
-    // Once per arrival: a second visit in the same stay is Anna's usual greeting.
+    // Once per arrival: a second visit in the same stay is Anna's usual greeting, and nothing after it.
     await w.choose('.slx-town', '冒險者公會');
     await expect(page.locator('.slx-guild')).toBeVisible();
     await expect(said).toHaveText(STORY.greet.guild.act1[1]);   // the rng's 0.99 draws act 1's second line
-    await w.closeTalk();
+    await w.key('z');
+    await expect(page.locator('.slx-talk')).toBeHidden();
     await w.key('Escape');
     await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
     await w.choose('.slx-town', '傳送門廣場');

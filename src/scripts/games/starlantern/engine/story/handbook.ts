@@ -89,12 +89,14 @@ export function handbook(s: GameState): Handbook {
     sets: s.codex.filter((id) => Object.hasOwn(SETS, id)),
     monsters: Object.values(ENEMIES).filter((e) => !e.story).map((e) => ({ id: e.id, name: e.name, weak: s.revealed[e.id] ? [...s.revealed[e.id]] : null })),
   };
+  // An act's page opens once its scene has played as well (final review I-2): the depth alone can come a whole stay early,
+  // when Rin's reveal plays alone and holds the act for the next return.
   const open = (stage: Stage): boolean => {
     switch (stage) {
       case 'prologue': return true;
-      case 'act1': return s.story.act1Cleared;
+      case 'act1': return s.story.act1Cleared && seen.has(TRUTH_SCENE.act1);
       case 'after': return s.story.finaleCleared;
-      default: return s.story.nodes.includes(stage);
+      default: return s.story.nodes.includes(stage) && seen.has(TRUTH_SCENE[stage]);
     }
   };
   const truths = STAGES.map((stage): TruthPage => ({

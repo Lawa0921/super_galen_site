@@ -84,8 +84,10 @@ export class TownScene implements Scene {
       const stage = storyStage(game.state);
       const chose = !!game.state.party.roster.rin?.oath;
       const rinSays = game.state.party.recruited.includes('rin') ? (chose ? STORY.rinOath : STORY.rinLines[stage] ?? []) : [];
-      // The bellkeeper comes to town after her choice; once the finale is won he speaks of what came after.
-      const keeper = chose ? (game.state.story.finaleCleared ? STORY.bellkeeper.after : STORY.bellkeeper.oath) : [];
+      // The bellkeeper is in town once his arrival scene has played (her choice only queues it for the next return, final
+      // review I-1); once the finale is won he speaks of what came after.
+      const arrived = game.state.story.seen.includes('bellkeeper-arrives');
+      const keeper = arrived ? (game.state.story.finaleCleared ? STORY.bellkeeper.after : STORY.bellkeeper.oath) : [];
       const pool = [
         ...STORY.townLines[stage].map((text) => ({ who: t.place.split(' ').pop() ?? '', text })),
         ...rinSays.map((text) => ({ who: CHARACTERS.rin.name, text })),

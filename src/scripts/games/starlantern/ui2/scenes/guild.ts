@@ -19,11 +19,6 @@ import { MenuView, QtyView, confirmBox, win } from '../widgets';
 import { FacilityScene } from './facility';
 
 const name = (id: CharacterId) => CHARACTERS[id].name;
-/**
- * Anna's greetings that close a thread and must not be crowded out by a lead (6c Task 16 fix round 1): the debt crossed out
- * in act 1 (I-96, which closes I-84) and her thanks once her own fragment is back (`town.anna.after`).
- */
-const payoffs = (): Set<string> => new Set([STORY.greet.guild.act1[0], STORY.town.anna.after]);
 const GRADES: ShardGrade[] = ['dim', 'clear', 'vivid'];
 
 /** Guild: recalling companions met in the labyrinth; formation, equipment and the character sheet open their own screens. */
@@ -31,17 +26,17 @@ export class GuildScene extends FacilityScene {
   constructor(ctx: SceneCtx, cps?: number) { super(ctx, 'guild', cps); }
 
   /**
-   * While someone is still out there, Anna passes on the guild's lead once per arrival, in place of her greeting (6c Task 16;
-   * fix round 1): what another adventurer saw, and where. Later visits in the same stay get her usual greeting. The greeting
-   * is drawn all the same, so the rng stream after the guild does not move. A drawn line that pays off a story thread is
-   * never lost to the lead (`PAYOFFS`): it is said, and the lead waits for the next visit.
+   * While someone is still out there, Anna passes on the guild's lead on the first visit of each arrival (6c Task 16; lore
+   * ledger I-135): her drawn greeting first, whatever it is, then the lead in a second box (what another adventurer saw, and
+   * where). Later visits in the same stay get the greeting only. The lead draws nothing, so the rng stream after the guild
+   * does not move, and no greeting is ever crowded out by it (final review M-2).
    */
   protected greet(line: string): Promise<void> {
     const game = this.ctx.game;
     const lead = nextLead(game.state);
-    if (!lead || game.leadSaid || payoffs().has(line)) return this.say(line);
+    if (!lead || game.leadSaid) return this.say(line);
     game.leadSaid = true;
-    return this.say(STORY.leads[lead.id]);
+    return this.sayThen(line, STORY.leads[lead.id]);
   }
 
   /** Met, off the field and not the hero: who the guild can recall. */
