@@ -60,11 +60,12 @@ function pickBmp(pick: ItemId): Bmp {
   item.set(12, 24, w[1]); item.set(13, 24, w[1]); item.set(12, 23, w[2]); item.set(13, 23, w[1]);
   return item.outline(INK);
 }
-export function armBmp(look: DollLook, back: boolean, pick: ItemId | null, blade: ItemId | null): Bmp {
+/** 手臂 + 手上的劍 / 鎬（itemOnly = 只畫武器：舉過頭時另外疊在頭前面那張） */
+export function armBmp(look: DollLook, back: boolean, pick: ItemId | null, blade: ItemId | null, itemOnly = false): Bmp {
   const b = new Bmp(ARM_W, ARM_H);
   if (blade) b.blit(bladeBmp(blade), 0, ITEM_DY);
   if (pick) b.blit(pickBmp(pick), 0, ITEM_DY);
-  b.blit(avatarArm(look, back), 0, 0);
+  if (!itemOnly) b.blit(avatarArm(look, back), 0, 0);
   return b;
 }
 
@@ -527,15 +528,15 @@ export class Sprites {
   shoulder(back: boolean): { x: number; y: number } { return shoulderOf(this.look.app.body, back); }
 
   /** 旋轉後的手臂（含鎬 / 劍；袖子依紙娃娃的上衣）。回傳 canvas 與「軸心在 canvas 中的位置」 */
-  arm(back: boolean, pick: ItemId | null, deg: number, blade: ItemId | null = null): HeldDraw {
+  arm(back: boolean, pick: ItemId | null, deg: number, blade: ItemId | null = null, itemOnly = false): HeldDraw {
     const idx = angleIndex(deg, ARM_STEPS);
-    const pk = `${back ? 1 : 0}:${pick ?? ''}:${blade ?? ''}`;
+    const pk = `${back ? 1 : 0}:${pick ?? ''}:${blade ?? ''}${itemOnly ? ':item' : ''}`;
     const key = `${pk}:${idx}`;
     const size = 64;
     let c = this.armCache.get(key);
     if (!c) {
       let prep = this.armPrep.get(pk);
-      if (!prep) { prep = rotPrep(armBmp(this.look, back, pick, blade)); this.armPrep.set(pk, prep); }
+      if (!prep) { prep = rotPrep(armBmp(this.look, back, pick, blade, itemOnly)); this.armPrep.set(pk, prep); }
       const rad = -(idx / ARM_STEPS) * Math.PI * 2;
       c = toCanvas(rotate(prep, ARM_PIV.x, ARM_PIV.y, rad, size)) as HTMLCanvasElement;
       this.bakes.arms++;

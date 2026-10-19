@@ -64,7 +64,7 @@ export const SHEET_ANIMS: readonly SheetAnim[] = ['idle', 'blink', 'walk', 'jump
  * ox = 整格畫的時候往左右偏多少（爬繩：讓繩子對準碰撞框中心）
  */
 export interface FrameMeta { dx: number; dy: number; arms: boolean; ox?: number; }
-export interface AvatarFrame { body: Bmp; head: Bmp; meta: FrameMeta; }
+export interface AvatarFrame { body: Bmp; head: Bmp; meta: FrameMeta; /** 臉那一層（head 的子集；側面影格才有） */ face?: Bmp; }
 
 // ── 部位 → 畫法 ──────────────────────────────────────────
 /** 上衣 / 下身：基本服裝（外觀的配色）、時裝（服裝預設配色）或防具 */
@@ -431,10 +431,10 @@ function sideFrame(l: DollLook, p: SidePose, f: number, trace?: string[]): Avata
   const hipY = male ? HIP_Y - 1 : HIP_Y, legLen = male ? 5 : THIGH, up = male ? -1 : 0;
   const far = legBmp(p.far, CX - (male ? 2.5 : 1.5), hipY, st, true, legLen, male), near = legBmp(p.near, CX + (male ? 2 : 1), hipY, st, false, legLen, male);
   const dy = p.snap ? Math.round(ANKLE - Math.max(far.ankleY, near.ankleY)) : 0;
-  const body = new Bmp(AV_FW, AV_FH), head = new Bmp(AV_FW, AV_FH), hairBack = new Bmp(AV_FW, AV_FH);
+  const body = new Bmp(AV_FW, AV_FH), head = new Bmp(AV_FW, AV_FH), hairBack = new Bmp(AV_FW, AV_FH), face = new Bmp(AV_FW, AV_FH);
   const headTrace: string[] = [];
   if (!p.noHead) drawHead(hairBack, head, HEAD_X + p.headDx + p.bodyDx, HEAD_Y + dy + p.bodyDy + p.headDy + (male ? -2 : 0), {
-    app: l.app, expr: p.expr, motion: p.hair, gear: l.head, view: 'side', sweat: p.sweat, f, trace: headTrace,
+    app: l.app, expr: p.expr, motion: p.hair, gear: l.head, view: 'side', sweat: p.sweat, f, trace: headTrace, face,
   });
   // 背飾（身體後面）
   if (l.back) { backArt(body, l.back, 'side', p.flap * 0.5 + (p.flare ? 0.6 : 0), p.flare ? (p.hair.lift > 0.7 ? 1 : 0.4) : 0, p.bodyDx, dy + p.bodyDy, f); trace?.push('back'); }
@@ -454,7 +454,7 @@ function sideFrame(l: DollLook, p: SidePose, f: number, trace?: string[]): Avata
   chest.selOutline();
   body.blit(chest, 0, 0); trace?.push('chest');
   trace?.push(...headTrace);
-  return { body, head, meta: { dx: p.bodyDx, dy: dy + p.bodyDy, arms: true } };
+  return { body, head, face, meta: { dx: p.bodyDx, dy: dy + p.bodyDy, arms: true } };
 }
 
 const still = (expr: Expr = 'normal'): SidePose => ({
@@ -493,13 +493,13 @@ function deadFrame(l: DollLook): AvatarFrame {
   const r = rot90ccw(stand), bb = bbox(r);
   const out = new Bmp(AV_FW, AV_FH);
   // 貼地；鏡像之後脖子那一端接在頭的左邊（頭佔右邊 18 格）
-  out.blit(r, 19 - bb.x0, AV_FH - 1 - bb.y1);
+  out.blit(r, 21 - bb.x0, AV_FH - 1 - bb.y1);
   const flip = new Bmp(AV_FW, AV_FH);
   flip.blit(out, 0, 0, true);
   // 頭：正著畫在身體的右端（臉朝我們、× × 眼），下巴貼地——躺著也認得出是誰
   const hb = new Bmp(AV_FW, AV_FH), hf = new Bmp(AV_FW, AV_FH);
-  const hx = AV_FW - 21, hy = AV_FH - 1 - 18 - (l.app.body === 1 ? 1 : 0);
-  drawHead(hb, hf, hx, hy, { app: l.app, expr: 'dead', motion: { swing: 0.5, lift: -0.4 }, gear: l.head, view: 'side' });
+  const hx = AV_FW - 24, hy = AV_FH - 1 - 18 - 2 - (l.app.body === 1 ? 1 : 0);
+  drawHead(hb, hf, hx, hy, { app: l.app, expr: 'dead', motion: { swing: 0.4, lift: 0.9 }, gear: l.head, view: 'side' });
   flip.blit(hb, 0, 0);
   flip.blit(hf, 0, 0);
   // 頭上的暈眩小星星
@@ -565,7 +565,9 @@ function swimFrame(l: DollLook, f: number): AvatarFrame {
   const out = new Bmp(AV_FW, AV_FH);
   const w = bb.x1 - bb.x0 + 1, h = bb.y1 - bb.y0 + 1;
   // 水平置中、垂直中心在碰撞框中段（影格第 ~34 列），微微上下浮
-  out.blit(r, Math.round((AV_FW - w) / 2) - bb.x0, Math.round(34 - h / 2) - bb.y0 + Math.round(Math.sin(ph) * 0.8));
+  // 比影格寬（男生 / 刺蝟頭）時靠右對齊：頭（前面）完整、腳尖（後面）出界一點點
+  const x = w > AV_FW - 2 ? AV_FW - 1 - w : Math.round((AV_FW - w) / 2);
+  out.blit(r, x - bb.x0, Math.round(34 - h / 2) - bb.y0 + Math.round(Math.sin(ph) * 0.8));
   return { body: out, head: new Bmp(AV_FW, AV_FH), meta: { dx: 0, dy: 0, arms: false } };
 }
 
@@ -798,9 +800,9 @@ export function rimOf(flat: Bmp): Bmp {
   }
   return r;
 }
-/** 整張影格表：SHEET.total 格橫排、三列（第 0 列 = body、第 1 列 = head、第 2 列 = 暗處輪廓光） */
+/** 整張影格表：SHEET.total 格橫排、四列（第 0 列 = body、第 1 列 = head、第 2 列 = 暗處輪廓光、第 3 列 = 臉） */
 export function avatarSheet(l: DollLook): { b: Bmp; meta: FrameMeta[] } {
-  const b = new Bmp(AV_FW * SHEET.total, AV_FH * 3);
+  const b = new Bmp(AV_FW * SHEET.total, AV_FH * 4);
   const meta: FrameMeta[] = [];
   for (const k of SHEET_ANIMS) {
     const [s, n] = SHEET[k];
@@ -809,6 +811,7 @@ export function avatarSheet(l: DollLook): { b: Bmp; meta: FrameMeta[] } {
       b.blit(r.body, (s + f) * AV_FW, 0);
       b.blit(r.head, (s + f) * AV_FW, AV_FH);
       b.blit(rimOf(flatFrame(r)), (s + f) * AV_FW, AV_FH * 2);
+      if (r.face) b.blit(r.face, (s + f) * AV_FW, AV_FH * 3);
       meta[s + f] = r.meta;
     }
   }

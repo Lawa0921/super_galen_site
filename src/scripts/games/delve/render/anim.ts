@@ -71,6 +71,15 @@ export function armAngles(kind: PoseKind, frame: number, swing: number | null): 
   return { front, back };
 }
 
+/**
+ * 前手舉過頭 / 往後拉（150°–300°：揮劍的預備、揮鎬的起手）：大頭會把手上的武器整個擋住，
+ * 這時武器要另外疊在頭的前面（手臂本身還是在頭後面）。
+ */
+export function heldOverHead(deg: number): boolean {
+  const d = ((deg % 360) + 360) % 360;
+  return d >= 150 && d <= 300;
+}
+
 export function flameFrame(t: number, x: number, y: number): number {
   const off = ((Math.imul(x, 73856093) ^ Math.imul(y, 19349663)) >>> 0) % 97;
   return Math.floor(t * 9 + off * 0.37) % FLAME_FRAMES;

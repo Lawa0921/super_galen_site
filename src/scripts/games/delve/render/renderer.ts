@@ -8,7 +8,7 @@ import { TILE_SIZE, CHUNK, DAY_LENGTH } from '../engine/constants';
 import { buildAtlas, perpMask, type Atlas } from './textures';
 import { ChunkLRU, cameraFocus, chunksTouchRect, followCamera, nearRect, visibleChunks, type Cam, type TileRect } from './model';
 import { CORNER, EDGE, blendOverlay, decorStyle, edgeMask, innerCornerMask, type Neighbor } from './autotile';
-import { armAngles, carryArm, carryStyle, flameFrame, swingAngle, SWING_RATE, type PoseKind } from './anim';
+import { armAngles, carryArm, carryStyle, flameFrame, heldOverHead, swingAngle, SWING_RATE, type PoseKind } from './anim';
 import { FW, FH, Sprites } from './sprites';
 import { PlayerAnimator, blinkAt, type PlayerAnim } from './playerAnim';
 import { SHEET } from './avatarArt';
@@ -873,6 +873,13 @@ export class Renderer {
     if (grip) ctx.drawImage(grip.arms, ox - grip.pad, oy - grip.pad);
     else { const front = SP.arm(false, showPick, arms.front, blade); ctx.drawImage(front.canvas, ox + sf.x - front.ox, oy + sf.y + bodyDy - front.oy); }
     ctx.drawImage(sheet.canvas, fi * FW, FH, FW, FH, ox, oy, FW, FH);
+    // 舉過頭的劍 / 鎬（揮擊預備）：大頭會擋住，武器另外疊在頭前面（手臂還在頭後面）
+    if (!grip && (showPick || blade) && heldOverHead(arms.front)) {
+      const it = SP.arm(false, showPick, arms.front, blade, true);
+      ctx.drawImage(it.canvas, ox + sf.x - it.ox, oy + sf.y + bodyDy - it.oy);
+      // 臉那一層再蓋回去：武器在頭髮前面、臉後面（不會一刀劃過眼睛）
+      ctx.drawImage(sheet.canvas, fi * FW, FH * 3, FW, FH, ox, oy, FW, FH);
+    }
     // 手掌蓋在臉 / 頭髮上面：看得出抓住了邊緣
     if (grip) ctx.drawImage(grip.hands, ox - grip.pad, oy - grip.pad);
     if (heldOther && heldOther !== 'torch') {

@@ -27,6 +27,8 @@ export interface HeadOpts {
   trace?: string[];
   /** 額頭冒汗（攀爬 / 攀上邊緣） */
   sweat?: boolean;
+  /** 臉（沒被頭髮 / 帽子 / 飾品蓋住的膚色 + 眼睛）另外輸出一張：舉過頭的武器畫在頭髮前、臉後 */
+  face?: Bmp;
 }
 
 /** 頭的大小（區域座標） */
@@ -148,7 +150,7 @@ const EYES: Record<string, EyeDef> = {
   sharp: { y: 8, near: ['L....', 'pLLLL', '.LLLL', '.HHDD', 'wHDMD', '.DMBM', '..Bhl'], far: ['...L', 'LLLp', 'LLL.', 'HDD.', 'DMD.', 'MBl.', 'l...'] },
   // 女：下垂眼：睫毛往外下垂、眼皮蓋住一點瞳孔（溫柔）
   droopy: { y: 9, near: ['..LLL', '.LLLL', 'LwwDD', 'LHHDM', 'wHMBM', '.DBhB', '..ll.'], far: ['LLL.', 'LLLL', 'DwwL', 'HDML', 'MBM.', 'Bh..', 'l...'] },
-  blink: { y: 13, near: ['LLLLL', '.lll.'], far: ['LLLL', 'll..'] },
+  blink: { y: 12, near: ['L...L', '.LLL.'], far: ['L..L', '.LL.'] },
   happy: { y: 11, near: ['.LLL.', 'L...L'], far: ['LLL.', '...L'] },
   hurt: { y: 10, near: ['LL...', '..LLL', '.LL..', 'L....'], far: ['..LL', 'LL..', '.LL.', '...L'] },
   dead: { y: 10, near: ['L...L', '.L.L.', '..L..', '.L.L.', 'L...L'], far: ['L..L', '.LL.', '.LL.', 'L..L'] },
@@ -162,7 +164,7 @@ const EYES: Record<string, EyeDef> = {
   droopy_m: { y: 10, near: ['..LLL', '.LLLL', 'LHHDD', '.HDMB', '..ll.'], far: ['LL..', 'LLLL', 'HDD.', 'DMB.'] },
   up_m: { y: 9, near: ['.LLLL', 'LLLLL', 'LDHHD', 'WMBMW', '.WWW.'], far: ['LLL.', 'LLLL', 'DHHW', 'MBMW'] },
   effort_m: { y: 11, near: ['LLL..', '.LLLL', '..DHD'], far: ['.LLL', 'LLL.', 'DH..'] },
-  blink_m: { y: 13, near: ['LLLLL'], far: ['LLLL'] },
+  blink_m: { y: 12, near: ['L...L', '.LLL.'], far: ['L..L', '.LL.'] },
 };
 function eyeKind(a: Appearance, expr: Expr): string {
   const shape = (['round', 'sharp', 'droopy'][a.eyeShape] ?? 'round');
@@ -190,7 +192,7 @@ export function brows(b: Bmp, a: Appearance, expr: Expr, ox: number, oy: number)
 function face(b: Bmp, a: Appearance, expr: Expr, ox: number, oy: number): void {
   const e = eyeRamp(a.eyes), sk = skinRamp(a.skin), male = a.body === 1;
   const g = EYES[eyeKind(a, expr)];
-  const lash = expr === 'blink' || expr === 'happy' || expr === 'hurt' || expr === 'dead' ? sk[0] : hex('#1c1424');
+  const lash = hex('#1c1424');
   const pal: Record<string, RGB> = { L: lash, p: e[0], D: e[0], M: e[1], B: e[2], H: EYE_WHITE, h: EYE_WHITE, W: EYE_WHITE, w: hex('#b4b9c8'), l: sk[1] };
   grid(b, g.near, pal, ox + 8, oy + g.y);
   grid(b, g.far, pal, ox + 15, oy + g.y);
@@ -305,11 +307,11 @@ function sideHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): v
   }
   // 瀏海：一束一束蓋在額頭上（後面的先畫、前面的蓋上去：由左往右）
   const clump = (c: Clump, top: number): void => {
-    const [x0, x1, tx0, ty0, k] = c, tx = tx0 + sw * 0.4, ty = ty0 - lift;
+    const [x0, x1, tx0, ty0, k] = c, tx = tx0 + sw * 0.4, ty = (male && top < 0 ? Math.min(ty0, 9.6) : ty0) - lift;
     for (let x = x0; x <= x1; x++) {
       const bot = ty - Math.abs(x - tx) * k;
       for (let y = top; y <= Math.floor(bot); y++) {
-        if (y < 3 && !inCap(x, y, 1.02)) continue;
+        if (y < 3 ? !inCap(x, y, 1.02) : x > 19 && !inCap(x, y, 1.0) && !inRows(rows, x, y)) continue;
         const last = y > bot - 1;
         const c2 = y < 4 ? capShade(x, y, h) : last ? h[1] : x === x1 ? h[1] : x === x0 && y <= 6 && y < ty - 2 ? h[3] : h[2];
         hair.set(ox + x, oy + y, c2);
@@ -421,6 +423,7 @@ function sideHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): v
   sideAcc(front, a, st, acc, ox, oy);
   if (a.glasses) glasses(front, a, ox, oy);
   o.trace?.push('frontAcc');
+  if (o.face) for (let i = 0; i < skin.px.length; i++) { const v = skin.px[i]; if (v >>> 24 && front.px[i] === v) o.face.px[i] = v; }
   behind.selOutline();
   back.blit(behind, 0, 0);
 }

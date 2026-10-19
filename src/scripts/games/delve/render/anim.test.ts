@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   poseKind, advancePhase, walkFrame, WALK_FRAMES, STRIDE_PX, idleFrame, IDLE_FRAMES, IDLE_PERIOD,
-  swingAngle, SWING_FROM, SWING_TO, angleIndex, flameFrame, FLAME_FRAMES, armAngles, carryStyle, carryArm, CARRY_ARM,
+  swingAngle, SWING_FROM, SWING_TO, angleIndex, flameFrame, FLAME_FRAMES, armAngles, carryStyle, carryArm, CARRY_ARM, heldOverHead,
 } from './anim';
 
 describe('手持工具 / 武器（待機、走路時也拿在手上）', () => {
@@ -115,6 +115,14 @@ describe('armAngles', () => {
   it('揮動時前手用 swing 角度', () => {
     expect(armAngles('walk', 3, 120).front).toBe(120);
     expect(armAngles('jump', 0, null).front).toBeGreaterThan(90);
+  });
+});
+
+describe('heldOverHead', () => {
+  it('手舉過頭 / 往後拉（揮劍預備、揮鎬起手）時，手上的武器要畫在大頭前面；平舉 / 下垂時不用', () => {
+    for (const d of [160, 200, 222, 236, 260]) expect(heldOverHead(d)).toBe(true);
+    for (const d of [0, 40, 90, 130, -30, 330]) expect(heldOverHead(d)).toBe(false);
+    expect(heldOverHead(200 + 360)).toBe(true);
   });
 });
 

@@ -33,10 +33,10 @@ function clean(b: Bmp, what: string): void {
 const diff = (a: Bmp, b: Bmp): number => { let n = 0; for (let i = 0; i < a.px.length; i++) if (a.px[i] !== b.px[i]) n++; return n; };
 
 describe('紙娃娃影格', () => {
-  it('影格表：每個動畫都有，格數對得上；兩列（body / head）', () => {
+  it('影格表：每個動畫都有，格數對得上；四列（body / head / 暗處輪廓光 / 臉）', () => {
     const { b, meta } = avatarSheet(plainLook(DEF));
     expect(b.w).toBe(AV_FW * SHEET.total);
-    expect(b.h).toBe(AV_FH * 3);
+    expect(b.h).toBe(AV_FH * 4);
     expect(meta.length).toBe(SHEET.total);
     expect(SHEET.climb[1]).toBeGreaterThanOrEqual(4);
     expect(SHEET.hang[1]).toBeGreaterThanOrEqual(2);
@@ -93,6 +93,32 @@ describe('動作：呼吸 / 擺動', () => {
     const top = (b: Bmp): number => { for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) return y; return b.h; };
     const ys = new Set(Array.from({ length: SHEET.walk[1] }, (_, f) => top(flatFrame(avatarFrame(l, 'walk', f)))));
     expect(ys.size).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('臉的那一層（舉過頭的武器畫在頭髮前、臉後）', () => {
+  it('側面影格的 face：有內容、每一格都和 head 那張同位置同顏色（是 head 的子集）、有眼睛、不含頭髮那一大片', () => {
+    const l = plainLook(DEF), er = new Set(eyeRamp(DEF.eyes).map((c) => c.join()));
+    for (const [k, f] of [['idle', 0], ['walk', 3], ['jump', 0]] as const) {
+      const r = avatarFrame(l, k, f);
+      expect(r.face, k).toBeTruthy();
+      let n = 0, eye = 0;
+      for (let i = 0; i < r.face!.px.length; i++) {
+        const v = r.face!.px[i];
+        if (!(v >>> 24)) continue;
+        n++;
+        expect(v).toBe(r.head.px[i]);
+        if (er.has(Bmp.unpack(v).join())) eye++;
+      }
+      expect(n, k).toBeGreaterThan(60);
+      expect(n, k).toBeLessThan(opaque(r.head) * 0.75);
+      expect(eye, k).toBeGreaterThan(4);
+    }
+    // 影格表第四列就是 face
+    const { b } = avatarSheet(l);
+    let m = 0;
+    for (let y = AV_FH * 3; y < AV_FH * 4; y++) for (let x = 0; x < AV_FW; x++) if (b.on(x, y)) m++;
+    expect(m).toBeGreaterThan(60);
   });
 });
 
