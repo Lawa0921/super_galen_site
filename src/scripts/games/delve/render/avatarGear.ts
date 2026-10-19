@@ -125,7 +125,8 @@ export function helmetArt(head: Bmp, p: DollPiece, ox: number, oy: number, f: nu
   const brim = BRIM, side = view === 'side';
   for (let y = -3; y <= 14; y++) for (let x = -3; x <= 21; x++) {
     const dome = inCap(x, y, 1.07) && y <= brim;
-    const nape = side ? x <= 5 && y <= 13 && inCap(x, Math.min(y, 10), 1.07) : y <= 12 && inCap(x, Math.min(y, 9), 1.07);
+    // 後頸護片：只蓋後腦勺（耳朵後面），下緣往後收成圓角
+    const nape = side ? x <= 3 && y <= 12 - Math.max(0, 1 - x) && inCap(x, Math.min(y, 10), 1.07) : y <= 12 && inCap(x, Math.min(y, 9), 1.07);
     if (!dome && !nape) continue;
     const nx = (x + 0.5 - CAP.cx) / CAP.rx, ny = (y + 0.5 - CAP.cy) / CAP.ry;
     const v = -(nx * 0.55 + ny * 0.85);
@@ -138,7 +139,7 @@ export function helmetArt(head: Bmp, p: DollPiece, ox: number, oy: number, f: nu
   for (let x = -2; x <= (side ? 21 : 20); x++) { S(x, brim, rimC); if (x > -2 && x < 20) S(x, brim - 1, set === 'gold' ? r[5] : m[3]); }
   if (side) { S(20, brim + 1, m[0]); S(21, brim + 1, m[0]); }
   // 後頸護片下緣
-  if (side) for (let x = -2; x <= 4; x++) S(x, 13, m[1]);
+  if (side) for (let x = -2; x <= 3; x++) S(x, 12 - Math.max(0, 1 - x) + 1, m[1]);
   const cheek = set === 'copper' || set === 'iron' || set === 'molten';
   if (cheek) {
     // 護頰：耳朵前面一片（側面）／兩側（背面）

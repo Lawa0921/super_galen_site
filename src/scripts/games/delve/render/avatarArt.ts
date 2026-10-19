@@ -493,7 +493,7 @@ function deadFrame(l: DollLook): AvatarFrame {
   const r = rot90ccw(stand), bb = bbox(r);
   const out = new Bmp(AV_FW, AV_FH);
   // 貼地；鏡像之後脖子那一端接在頭的左邊（頭佔右邊 18 格）
-  out.blit(r, 15 - bb.x0, AV_FH - 1 - bb.y1);
+  out.blit(r, 19 - bb.x0, AV_FH - 1 - bb.y1);
   const flip = new Bmp(AV_FW, AV_FH);
   flip.blit(out, 0, 0, true);
   // 頭：正著畫在身體的右端（臉朝我們、× × 眼），下巴貼地——躺著也認得出是誰
