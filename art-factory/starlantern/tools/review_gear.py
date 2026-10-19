@@ -58,6 +58,43 @@ def names():
     return n
 
 
+def prices():
+    return {i: int(m.group(1)) for i, t in _objects(_read('equipment.ts')).items() if (m := re.search(r'\bprice: (\d+)', t))}
+
+
+# The questions each batch puts to the user (addendum §4), with links to the sections that answer them and the known
+# risks written out plainly (from the independent visual check), so the user decides with the problems in view.
+DECISIONS = {
+    'sample': [
+        ('裝備圖的畫風與大小比例', ['#s1', '#s3', '#s5'], [
+            '24px 小圖示下，焰紋之鎧與焰紋之手甲認不出是什麼。',
+            '雙月槍的細節太雜，縮小後糊成一團。',
+            '不破之盾只剩一條細長條，看不出是盾。',
+            '焰紋之刃和灼心之劍（傳說）長得很像，不容易分辨。']),
+        ('稀有度外框與傳說光暈', ['#s1', '#glow'], [
+            '魔法、稀有、套裝三種外框縮到 16px 後，幾乎只剩 1px 細線。',
+            '稀有（黃）、獨特（金）、傳說（橘）的色相很接近，不容易一眼分辨。',
+            '傳說光暈又重又不透明；它向格外延伸 3px，而背包格間距只有 2px，相鄰兩件傳說的光暈會連在一起（見「光暈重疊」）。']),
+        ('多蘭的外型', ['#s8'], [
+            '亮紅色頭髮：加上她，隊伍與城鎮裡就有三個紅髮角色。',
+            '皮圍裙的畫法和道具店老闆是同一套公式。',
+            '領口比其他 NPC 開得低。']),
+        ('是否把 15 件舊底材圖示全部換新', ['#s2'], [
+            '新圖示 26×26，舊的是 35×37：新的更小、線條更細。',
+            '本批只有鐵劍有新樣本，其餘 14 件要等量產批。']),
+    ],
+    'main-gear': [
+        ('60 件裝備逐件確認（含 24px 下的辨識度）', ['#s1', '#s3', '#s5'], ['每套 4 件是否一眼看得出同一套；24px 下有沒有兩件分不出來。']),
+        ('6 種地區素材與多蘭笑臉', ['#s6', '#s8'], []),
+    ],
+    'skills': [
+        ('78 個技能圖示和既有 27 個是否一致', ['#s7'], []),
+    ],
+}
+SECTION_NAME = {'#s1': '1. 裝備頁情境', '#s2': '2. 新舊對照', '#s3': '3. 大圖與小圖示', '#s5': '5. 清單情境', '#s6': '6. 素材',
+                '#s7': '7. 技能', '#s8': '8. 鍛造屋', '#glow': '光暈重疊'}
+
+
 def skill_owners():
     """Owner of every skill in skills.ts; the plan 5d skills are grouped by gear_art.SKILL_OWNERS, which drives the sheets."""
     own = {i: _field(t, 'owner') for i, t in _objects(_read('skills.ts')).items() if _field(t, 'owner')}
@@ -109,7 +146,7 @@ def qa_line(q):
     if not q: return ''
     bits = ['通過' if q.get('pass') else '未通過 ' + '、'.join(q.get('reasons', []))]
     if q.get('warnings'): bits.append('警告 ' + '、'.join(q['warnings']))
-    for k in ('size', 'subject', 'block', 'residue', 'semi', 'holes', 'center_clear', 'ring_closed', 'edge_repeat'):
+    for k in ('size', 'subject', 'block', 'residue', 'semi', 'holes', 'magenta_spill', 'center_clear', 'ring_closed', 'edge_repeat'):
         if k in q: bits.append(f'{k} {q[k]}')
     return '｜'.join(bits)
 
@@ -194,11 +231,23 @@ def main(batch='sample'):
     frames_row = ''.join(f'<figure>{img(frame.get(r), "px", "width:64px;height:64px")}<figcaption>ui-rarity-{r}</figcaption></figure>' for r in FRAMED)
     frames_row += f'<figure>{img(glow, "px", "width:80px;height:80px")}<figcaption>ui-glow-legendary</figcaption></figure>'
 
-    # 2. old base icons beside the new gear icons
-    olds = [(p, pg.pub(f'icon/{p}.png', f'old-icon-{p}.png')) for p in gear if p in G.GEAR_BASE]
-    old_rows = ''.join(f'<tr><th>{esc(nm.get(p, p))}<br><small>{p}</small></th><td class="dark">{img(o)}{img(o, "px", "zoom:3")}<br><small>舊 icon/{p}.png</small></td>'
-                       f'<td class="dark">{img(icon.get(p))}{img(icon.get(p), "px", "zoom:3")}<br><small>新 gear/{p}.png</small></td></tr>'
-                       for p, o in olds if o)
+    # Two legendaries side by side at the real bag gap (2px): the glow reaches 3px out, so it runs into the next slot.
+    legs = [p for p in gear if rarity_of(p) == 'legendary'][:2]
+    if len(legs) == 1: legs *= 2
+    glow_pair = ''.join(f'<figure><div class="glow-pair{z}">{"".join(cell(p, 28) for p in legs)}</div><figcaption>{t}</figcaption></figure>'
+                        for z, t in (('', '1 倍'), (' x4', '4 倍'))) if legs and glow else ''
+
+    # 2. all old base icons beside the new gear icons (only some have a new sample in a given batch)
+    old_bases = [b for b in G.GEAR_BASE if f'icon-{b}' in reg]
+    def old_icon(b):
+        return pg.pub(f'icon/{b}.png', f'old-icon-{b}.png') or pg.copy(reg[f'icon-{b}'].get('final'), f'old-icon-{b}.png')
+    with_new = [b for b in old_bases if b in gear]
+    old_note = (f'本批只有{"、".join(nm.get(b, b) for b in with_new)}有新樣本；其餘舊圖示列在這裡，是為了讓你決定要不要全部換新。'
+                if with_new else '本批沒有新的底材樣本。')
+    old_rows = ''.join(f'<tr data-old-icon="{b}"><th>{esc(nm.get(b, b))}<br><small>{b}</small></th>'
+                       f'<td class="dark">{img(o := old_icon(b))}{img(o, "px", "zoom:3")}<br><small>舊 icon/{b}.png</small></td>'
+                       f'<td class="dark">{(img(icon.get(b)) + img(icon.get(b), "px", "zoom:3") + "<br><small>新 gear/" + b + ".png</small>") if b in gear and icon.get(b) else "<small>本批沒有新樣本</small>"}</td></tr>'
+                       for b in old_bases)
 
     # 3. large and icon from the same cell
     def pair(p):
@@ -225,7 +274,8 @@ def main(batch='sample'):
     # 5. list rows: shop, forge, loot line
     def row(p, extra=''):
         return f'<div class="lrow">{img(icon.get(p), "px gi", alt=nm.get(p, p))}<span>{esc(nm.get(p, p))}</span>{extra}</div>'
-    shop = ''.join(row(p, '<span class="price">G</span>') for p in gear if p in G.GEAR_BASE)
+    price = prices()
+    shop = ''.join(row(p, f'<span class="price">{price[p]} G</span>') for p in gear if p in G.GEAR_BASE and p in price)
     forge = ''.join(row(p, f'<span class="tag">{RARITY_NAME[rarity_of(p)]}</span>') for p in gear if p not in G.GEAR_BASE)
     loot = ''.join(f'<p class="loot">獲得了 {img(icon.get(p), "px gi")}<span class="r-{rarity_of(p)}">{esc(nm.get(p, p))}</span>！</p>' for p in gear[:4])
 
@@ -257,6 +307,11 @@ def main(batch='sample'):
                       + (facility(sc, pg.final('npc-forge-happy'), '笑臉 npc-forge-happy') if pg.reg.get('npc-forge-happy', {}).get('final') else '')
                       + facility(pg.pub('scene/shop.png'), pg.pub('npc/shop.png'), '已發布的道具店（對照）'))
 
+    decisions = ''.join(
+        f'<li><b>{esc(q)}</b> <span class="links">看：{"、".join(f"<a href={chr(34)}{s}{chr(34)}>{SECTION_NAME[s]}</a>" for s in links)}</span>'
+        f'{"<ul class=risks>" + "".join(f"<li>{esc(r)}</li>" for r in risks) + "</ul>" if risks else ""}</li>'
+        for q, links, risks in DECISIONS[batch])
+
     page = f'''<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>裝備美術審核</title><style>
 :root{{color-scheme:dark}}
@@ -265,14 +320,16 @@ h1{{font-size:20px}} h2{{font-size:17px;margin:32px 0 8px;border-top:1px solid #
 .note{{color:#b9b4a6}} .px,.cell img,.rf,.rg{{image-rendering:pixelated}} figure{{margin:0}} figcaption{{color:#b9b4a6;font-size:12px}}
 .row{{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;padding:8px}} .row.top{{align-items:flex-start}} .dark{{background:#191b29}} .small,small{{font-size:12px;color:#b9b4a6}}
 table{{border-collapse:collapse}} td,th{{padding:6px 10px;border-bottom:1px solid #2b2b33;vertical-align:middle;text-align:left}} td img{{margin-right:10px;vertical-align:middle}}
-.screen{{display:flex;gap:24px;align-items:flex-start;background:#1b1d2a;border:2px solid #3a3f66;padding:10px;width:max-content}}
+.screen{{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;background:#1b1d2a;border:2px solid #3a3f66;padding:10px;width:max-content}}
 .bag-grid{{display:grid;grid-template-columns:repeat(10,28px);gap:2px}} .doll{{display:grid;grid-template-columns:repeat(3,38px);gap:4px;margin-top:10px}}
 .cell{{position:relative;background:#262840;border:1px solid #3d4068;display:flex;align-items:center;justify-content:center;box-sizing:border-box}}
 .cell .gi{{width:24px;height:24px;object-fit:none}} .cell .short{{font-size:9px;line-height:1;text-align:center}}
 .rf{{position:absolute;inset:0;pointer-events:none;border:5px solid transparent;border-image-slice:5;border-image-repeat:round}}
-.rf.big{{border-width:10px}} .rg{{position:absolute;inset:-3px;pointer-events:none;border:7px solid transparent;border-image-slice:7;border-image-repeat:round}}
+.rf.big{{border-width:10px}} .rg{{position:absolute;inset:-3px;z-index:2;pointer-events:none;border:7px solid transparent;border-image-slice:7;border-image-repeat:round}}
+.glow-pair{{display:grid;grid-template-columns:repeat(2,28px);gap:2px;padding:8px;background:#1b1d2a}} .glow-pair.x4{{zoom:4}}
+.decide h2{{border:0;margin:4px 0 8px;padding:0}} .decide{{background:#1d2238;border:2px solid #c9a35a;padding:8px 16px 12px;margin:12px 0}} .decide>ol>li{{margin:10px 0}} .decide a{{color:#9fc7ff}} .risks{{color:#f0c27a;margin:4px 0}} .links{{font-size:12px}}
 .detail{{display:flex;gap:10px;align-items:center}} .artbox{{position:relative;width:64px;height:64px;padding:10px;background:#262840}}
-.artbox .rf{{inset:0}} .zoom3{{zoom:3;width:max-content}}
+.artbox .rf{{inset:0}} .zoom3{{zoom:3}} .zoom3 .screen{{width:auto;max-width:440px}}
 .card{{display:inline-block;vertical-align:top;margin:0 16px 16px 0;background:#1b1d2a;border:3px solid #b08a3e;padding-bottom:6px}}
 .card .art{{display:block}} .card .cap{{padding:3px 8px;font-weight:600;color:#f1e3b8}} .lims{{padding:0 8px}}
 .lim{{display:flex;gap:12px;align-items:center;font-size:13px}} .lim .ttl{{min-width:6em}} .li{{zoom:2;vertical-align:middle}}
@@ -289,38 +346,44 @@ table{{border-collapse:collapse}} td,th{{padding:6px 10px;border-bottom:1px soli
 <h1>星燈迷宮 計畫 5d 美術候選・批次 {esc(batch)}（qa_passed，尚未核准、未發布）</h1>
 <p class="note">本頁所有像素圖以最近鄰放大顯示。格子、外框位置、名稱與價格是 HTML 示意，不在圖片裡。登錄狀態最多到 qa_passed；核准與發布要等你在這頁確認（補遺 S4）。登錄表批次：{esc(lab)}。</p>
 
-<h2>0. 本批清單（{checklist.count("data-part=")} 件）</h2>
+<section class="decide" id="decisions"><h2>請你決定的事</h2><ol>{decisions}</ol></section>
+
+<h2 id="s0">0. 本批清單（{checklist.count("data-part=")} 件）</h2>
 <table><tr><th>id</th><th>名稱</th><th>工作表</th><th>狀態</th><th>QA</th></tr>{checklist}</table>
 
-<h2>1. 裝備頁情境：背包格 28px（10×2）、人形 9 格 38px、詳情欄 64px 大圖，套上候選外框與傳說光暈</h2>
-<p class="note">小圖示 26×26 以 1:1 顯示（中央 24×24，不縮放）；外框只壓在格子外緣 5px（slice 5）。沒有圖的格子照遊戲現況只顯示名稱前四字。</p>
+<h2 id="s1">1. 裝備頁情境：背包格 28px（10×2）、人形 9 格 38px、詳情欄 64px 大圖，套上候選外框與傳說光暈</h2>
+<p class="note">小圖示 26×26 以 1:1 顯示（中央 24×24，不縮放）；外框只壓在格子外緣 5px（slice 5）。格間距照遊戲：背包 2px、人形 4px。沒有圖的格子照遊戲現況只顯示名稱前四字。3 倍版會自動換行，不超出畫面。</p>
 {eq}
 <h3>每種稀有度各一件</h3><div class="row dark">{rarity_row or "<small>本批沒有裝備。</small>"}</div>
 <h3>外框與光暈原圖（放大 4 倍）</h3><div class="row dark">{frames_row}</div>
+<h3 id="glow">光暈重疊：兩件傳說相鄰，照遊戲的背包間距 2px</h3>
+<p class="note">光暈向格外延伸 3px，比 2px 的間距多 1px，所以會疊進隔壁格；本頁讓光暈畫在最上層，重疊照實顯示，沒有藏起來。</p>
+<div class="row dark">{glow_pair or "<small>本批沒有傳說裝備。</small>"}</div>
 
-<h2>2. 新舊對照：舊底材圖示 icon/&lt;id&gt;.png 與新的 gear-&lt;id&gt;</h2>
-<table>{old_rows or "<tr><td>本批沒有要換掉的舊底材圖示。</td></tr>"}</table>
+<h2 id="s2">2. 新舊對照：全部 {len(old_bases)} 件舊底材圖示 icon/&lt;id&gt;.png 與新的 gear-&lt;id&gt;</h2>
+<p class="note">{esc(old_note)}</p>
+<table>{old_rows or "<tr><td>沒有舊底材圖示。</td></tr>"}</table>
 
-<h2>3. 大圖 64 與小圖示 24（1 倍與 3 倍），出自同一格原圖</h2>
+<h2 id="s3">3. 大圖 64 與小圖示 24（1 倍與 3 倍），出自同一格原圖</h2>
 <table><tr><th>物品</th><th>大圖 gear-&lt;id&gt;-large</th><th>小圖示 gear-&lt;id&gt;</th><th>source</th></tr>{pairs or "<tr><td>本批沒有裝備。</td></tr>"}</table>
 
-<h2>4. 傳送門卡片情境：已取得顯示圖示，未取得顯示剪影</h2>
+<h2 id="s4">4. 傳送門卡片情境：已取得顯示圖示，未取得顯示剪影</h2>
 <p class="note">剪影在本頁由候選小圖示即時轉出（墨色 #1d1a2e、輪廓光 #8f86b8），不寫入登錄表；核准之後才由 gear_art.py silhouettes 正式產生。</p>
 <div>{cards or "<p>本批沒有地區限定裝備。</p>"}</div>
 
-<h2>5. 清單情境：商店、鍛造、戰利品文字行</h2>
+<h2 id="s5">5. 清單情境：商店、鍛造、戰利品文字行</h2>
 <div class="row top"><div><h3>商店清單</h3>{shop or "<small>無</small>"}</div><div><h3>鍛造清單</h3>{forge or "<small>無</small>"}</div><div><h3>戰利品</h3>{loot or "<small>無</small>"}</div></div>
 
-<h2>6. 素材：深色面板上 32／64／128px，與舊素材圖示並排</h2>
+<h2 id="s6">6. 素材：深色面板上 32／64／128px，與舊素材圖示並排</h2>
 <table>{mat_new or "<tr><td>本批沒有素材。</td></tr>"}{mat_old}</table>
 
-<h2>7. 技能：同角色的新技能圖示與現有技能圖示並排</h2>
+<h2 id="s7">7. 技能：同角色的新技能圖示與現有技能圖示並排</h2>
 {skill_html or "<p>本批沒有技能圖示。</p>"}
 
-<h2>8. 鍛造屋：場景 418×235 放大到 960×540，疊上多蘭半身像</h2>
+<h2 id="s8">8. 鍛造屋：場景 418×235 放大到 960×540，疊上多蘭半身像</h2>
 <div class="row">{forge_html or "<p>本批沒有鍛造屋。</p>"}</div>
 
-<h2>9. 全部生成版本與淘汰原因</h2>
+<h2 id="s9">9. 全部生成版本與淘汰原因</h2>
 <p class="note">原圖為 codex 輸出（已把背景校正為純洋紅）；下方為該版後處理結果與機械 QA。</p>
 {gallery(pg, js)}
 </body></html>'''

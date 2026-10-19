@@ -6,12 +6,13 @@
   "semi": 0,
   "edge": 52,
   "holes": 0,
+  "magenta_spill": 0,
   "center_clear": true,
   "ring_closed": true,
   "edge_repeat": {
     "top": 0.389,
     "bottom": 0.045,
-    "left": 0.144,
+    "left": 0.056,
     "right": 0.222
   },
   "edge_steps": {
@@ -24,8 +25,8 @@
       "interior": 0.667
     },
     "left": {
-      "seam": 0.867,
-      "interior": 0.84
+      "seam": 0.333,
+      "interior": 0.68
     },
     "right": {
       "seam": 1.333,

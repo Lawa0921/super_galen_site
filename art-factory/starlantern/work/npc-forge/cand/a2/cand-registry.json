@@ -18,6 +18,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 4,
+        "magenta_spill": 0,
         "block": 8,
         "size": [
           133,

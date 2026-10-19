@@ -145,6 +145,31 @@ def test_pick_never_writes_runtime(factory):
     assert not any(k.startswith('icon-None') for k in reg.data['assets'])     # the discarded cell is not recorded
 
 
+def _spilled_sheet(path, cols=3, rows=2, cell=120, gap=40):
+    """Like _sheet, but every item's outline is a 4 px band blended into the magenta key."""
+    _sheet(path, cols, rows, cell, gap); arr = np.asarray(Image.open(path)).copy()
+    for r in range(rows):
+        for c in range(cols):
+            x, y = gap + c * (cell + gap) + 30, gap + r * (cell + gap) + 10
+            arr[y:y + 4, x:x + cell - 60] = (110, 20, 120); arr[y:y + cell - 20, x:x + 4] = (250, 42, 136)
+    Image.fromarray(arr, 'RGB').save(path); return path
+
+
+@pytest.mark.parametrize('sid', ['sheet-mat-1', 'sheet-gear-8', 'sheet-rarity-frames', 'npc-forge'])
+def test_every_plan5d_kind_despills_and_reports_magenta_spill(factory, sid):
+    job = by_id()[sid]
+    raw = factory / 'raw.png'
+    if job['kind'] == 'sprite':
+        arr = np.zeros((400, 300, 3), np.uint8); arr[:] = M; arr[60:400, 60:240] = (60, 50, 40)
+        arr[60:64, 60:240] = (110, 20, 120); arr[60:400, 60:64] = (250, 42, 136)
+        Image.fromarray(arr, 'RGB').save(raw)
+    else:
+        _spilled_sheet(raw, job['cols'], job['rows'])
+    res = G.process_attempt(A.Registry(factory / 'r.json'), job, raw, factory / 'w')
+    assert res and all('magenta_spill' in q and q['magenta_spill'] <= A.MAGENTA_SPILL_MAX for q in res.values()), res
+    assert all(A.magenta_spill_count(Image.open(factory / 'w' / f'{aid}.png')) <= A.MAGENTA_SPILL_MAX for aid in res)
+
+
 def test_note_records_why_an_attempt_was_not_chosen(factory):
     G.note(['--id', 'sheet-gear-1', '--attempt', '2', '--reason', 'swords too thin at 24 px'])
     assert A.Registry(factory / 'registry.json').get('sheet-gear-1')['rejected_attempts'] == {'a2': 'swords too thin at 24 px'}
@@ -484,6 +509,28 @@ def test_reapproving_the_sample_with_another_anchor_rebuilds_the_anchor(factory,
         for aid in (f'gear-{p}', f'gear-{p}-large'): reg.set(aid, chosen_attempt='a2')
     review.main('sample'); G.do_approve(_reg(), 'sample', 'user 2026-10-21: the a2 sheet')
     assert _reg().data['style_anchor']['attempt'] == 'a2' and Image.open(anchor).size == (a2[0] // 2, a2[1] // 2)
+
+
+def test_sample_review_page_opens_with_the_decisions_and_shows_honest_previews(factory, review, monkeypatch):
+    import re
+    real = json.loads((G.AF / 'registry.json').read_text(encoding='utf-8'))['assets']
+    reg = _fill(factory, 'sample')
+    for b in G.GEAR_BASE:                          # the 15 old base icons, as in the real registry
+        if f'icon-{b}' in real: reg.set(f'icon-{b}', **{k: real[f'icon-{b}'][k] for k in ('status', 'runtime', 'final') if k in real[f'icon-{b}']})
+    page = review.main('sample').read_text(encoding='utf-8')
+    head = page[page.index('id="decisions"'):page.index('id="s0"')]
+    for q in ('裝備圖的畫風與大小比例', '稀有度外框與傳說光暈', '多蘭的外型', '15 件舊底材圖示'):
+        assert q in head, q
+    for s in ('#s1', '#s2', '#s3', '#s8'):
+        assert f'href="{s}"' in head and f'id="{s[1:]}"' in page
+    for risk in ('焰紋之鎧', '雙月槍', '不破之盾', '1px', '色相', '3px', '紅髮', '圍裙', '35×37'):
+        assert risk in head, risk
+    olds = re.findall(r'data-old-icon="([a-z-]+)"', page)
+    assert len(olds) == 15 and len(set(olds)) == 15
+    assert '本批只有鐵劍有新樣本' in page
+    assert '>G<' not in page and '40 G' in page                                   # iron sword's real price
+    assert re.search(r'\.screen\{[^}]*flex-wrap:wrap', page) and re.search(r'\.zoom3 \.screen\{[^}]*max-width:440px', page)
+    assert re.search(r'\.rg\{[^}]*z-index:2', page) and 'class="glow-pair' in page   # the glow's overlap is shown, not hidden
 
 
 def test_skills_review_page_shows_all_78_icons_each_under_its_owner(factory, review):

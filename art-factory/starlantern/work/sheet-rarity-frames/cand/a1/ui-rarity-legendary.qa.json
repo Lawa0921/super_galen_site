@@ -6,6 +6,7 @@
   "semi": 0,
   "edge": 14,
   "holes": 0,
+  "magenta_spill": 0,
   "center_clear": true,
   "ring_closed": true,
   "edge_repeat": {

@@ -12,6 +12,7 @@
         "semi": 0,
         "edge": 16,
         "holes": 0,
+        "magenta_spill": 0,
         "center_clear": true,
         "ring_closed": true,
         "edge_repeat": {
@@ -65,6 +66,7 @@
         "semi": 0,
         "edge": 16,
         "holes": 0,
+        "magenta_spill": 0,
         "center_clear": true,
         "ring_closed": true,
         "edge_repeat": {
@@ -118,6 +120,7 @@
         "semi": 0,
         "edge": 18,
         "holes": 0,
+        "magenta_spill": 0,
         "center_clear": true,
         "ring_closed": true,
         "edge_repeat": {
@@ -171,6 +174,7 @@
         "semi": 0,
         "edge": 24,
         "holes": 0,
+        "magenta_spill": 0,
         "center_clear": true,
         "ring_closed": true,
         "edge_repeat": {
@@ -224,6 +228,7 @@
         "semi": 0,
         "edge": 20,
         "holes": 0,
+        "magenta_spill": 0,
         "center_clear": true,
         "ring_closed": true,
         "edge_repeat": {
@@ -277,6 +282,7 @@
         "semi": 0,
         "edge": 76,
         "holes": 0,
+        "magenta_spill": 0,
         "center_clear": true,
         "ring_closed": true,
         "edge_repeat": {

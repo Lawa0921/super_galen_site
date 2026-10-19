@@ -726,6 +726,77 @@ def test_nine_slice_fails_an_edge_that_does_not_repeat(tmp_path):
     assert q['edge_repeat']['top'] > A.SEAM_RATIO_MAX
 
 
+# --- magenta spill: dark or pink key blends left on the outline (plan 5d style-sample review) ---
+def test_magenta_spill_counts_pixels_whose_red_and_blue_stand_well_above_green():
+    rgba = np.zeros((4, 6, 4), np.uint8); rgba[..., 3] = 255
+    rgba[0, :] = [(137, 52, 136, 255), (48, 4, 56, 255), (250, 42, 136, 255), (65, 3, 93, 255), (20, 15, 25, 255), (200, 20, 40, 255)]
+    rgba[1, :] = [(90, 40, 140, 255), (60, 120, 200, 255), (255, 255, 255, 255), (30, 30, 30, 255), (140, 60, 140, 255), (0, 0, 0, 0)]
+    m = A.magenta_spill(np.asarray(rgba))
+    assert m[0].tolist() == [True, True, True, True, False, False]       # key blends with grey, black, red and dark violet
+    assert m[1].tolist() == [False, False, False, False, True, False]    # a real violet (hue 270), blue, white, grey stay out
+    assert A.magenta_spill_count(Image.fromarray(rgba, 'RGBA')) == 5
+
+
+def test_despill_pulls_the_key_out_of_outline_pixels_and_leaves_the_inside_alone():
+    rgba = np.zeros((20, 20, 4), np.uint8); rgba[3:17, 3:17] = (20, 15, 25, 255)
+    rgba[3, 5] = (48, 4, 56, 255); rgba[3, 8] = (250, 42, 136, 255); rgba[16, 9] = (137, 52, 136, 255)   # outline spill
+    rgba[4, 12] = (90, 40, 140, 255)                    # a real violet next to the edge: kept
+    rgba[10, 10] = (140, 60, 140, 255)                  # magenta inside the subject, far from the edge: kept
+    out = np.asarray(A.despill(Image.fromarray(rgba, 'RGBA')))
+    assert tuple(out[3, 5]) == (4, 4, 12, 255) and tuple(out[3, 8]) == (156, 42, 42, 255) and tuple(out[16, 9]) == (53, 52, 52, 255)
+    assert tuple(out[4, 12]) == (90, 40, 140, 255) and tuple(out[10, 10]) == (140, 60, 140, 255)
+    assert (out[..., 3] == rgba[..., 3]).all()
+    assert A.magenta_spill_count(Image.fromarray(out, 'RGBA')) == 1      # only the deliberate inside pixel is left
+
+
+def _spilled_cell(inside=False):
+    """A subject whose outline was anti-aliased into the magenta key (dark and pink blends survive cutout)."""
+    arr = np.asarray(blob(400, 400, (80, 100, 320, 300), (40, 120, 200))).copy()
+    arr[100:300, 80:84] = (120, 30, 125); arr[100:104, 80:320] = (110, 20, 120); arr[296:300, 80:320] = (250, 42, 136)   # 1 art px at block 4
+    if inside: arr[180:220, 180:220] = (140, 60, 140)
+    return Image.fromarray(arr, 'RGB')
+
+
+def test_gear_cell_despills_its_outline_and_reports_zero_spill(tmp_path):
+    out = A.process_gear_cell(A.Registry(tmp_path / 'r.json'), 'iron-sword', _spilled_cell(), tmp_path / 'w', tmp_path / 'raw.png')
+    for aid, q in out.items():
+        img = Image.open(tmp_path / 'w' / f'{aid}.png')
+        assert q['magenta_spill'] == 0 and A.magenta_spill_count(img) == 0 and q['pass'], (aid, q)
+
+
+def test_gear_cell_fails_magenta_left_inside_the_subject_unless_the_registry_allows_it(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A.process_gear_cell(reg, 'iron-sword', _spilled_cell(inside=True), tmp_path / 'w', tmp_path / 'raw.png')['gear-iron-sword-large']
+    assert not q['pass'] and 'magenta spill' in q['reasons'] and q['magenta_spill'] > 0
+    reg.set('gear-iron-sword-large', allow_magenta_spill=q['magenta_spill'])
+    assert A.process_gear_cell(reg, 'iron-sword', _spilled_cell(inside=True), tmp_path / 'w', tmp_path / 'raw.png')['gear-iron-sword-large']['pass']
+
+
+def test_finish_without_despill_keeps_its_old_behaviour(tmp_path):
+    q = A._finish(A.Registry(tmp_path / 'r.json'), 'enemy-x', _spilled_cell(), 'sprite', tmp_path / 'w', tmp_path / 'raw.png', block=4)
+    assert 'magenta_spill' not in q and A.magenta_spill_count(Image.open(tmp_path / 'w' / 'enemy-x.png')) > 0
+
+
+def test_nine_slice_despills_its_ring(tmp_path):
+    arr = np.asarray(_ring()).copy(); arr[8:12, 8:168] = (110, 20, 120)        # the outer row blended into the key
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-rare', Image.fromarray(arr, 'RGB'), tmp_path / 'w', tmp_path / 'raw.png', 16, 5)
+    assert q['magenta_spill'] == 0 and A.magenta_spill_count(Image.open(tmp_path / 'w' / 'ui-rarity-rare.png')) == 0
+
+
+A3_GEAR = Path('C:/Users/bag57/art-refs/starlantern/raw/sheet-gear-1/sheet-gear-1-a3.png')
+
+
+@pytest.mark.skipif(not A3_GEAR.exists(), reason='the plan 5d sample sheet lives outside the repo')
+def test_real_sample_iron_sword_cell_had_spill_and_now_has_none(tmp_path):
+    import portal as P
+    cell = P.sheet_cells(Image.open(A3_GEAR).convert('RGB'), 3, 3)[0]
+    A._finish(A.Registry(tmp_path / 'old.json'), 'x', cell, 'sprite', tmp_path / 'old', A3_GEAR, block=A.fit_side(cell, 60), canvas=64)
+    assert A.magenta_spill_count(Image.open(tmp_path / 'old' / 'x.png')) > 0                  # what the review found
+    out = A.process_gear_cell(A.Registry(tmp_path / 'r.json'), 'iron-sword', cell, tmp_path / 'w', A3_GEAR)
+    for aid, q in out.items():
+        assert q['magenta_spill'] == 0 and A.magenta_spill_count(Image.open(tmp_path / 'w' / f'{aid}.png')) == 0, aid
+
+
 def _jittered_ring(seed=0, jump=None):
     """A frame whose 1 art-px bar is one colour plus codec jitter of +-3 per art pixel (what codex frames look like after
     sampling). jump=(x0, x1, colour): a block of another colour on the top bar, so the repeated edge shows a joint."""

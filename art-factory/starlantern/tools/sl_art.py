@@ -351,6 +351,48 @@ def neutralize_key_tint(img, passes=4):
     return Image.fromarray(arr, 'RGBA')
 
 
+SPILL_STEP = 30          # magenta spill: red and blue both at least this far above green ...
+SPILL_HUE = (280, 345)   # ... with a hue between dark violet and hot pink (magenta is 300; violet 270 and below is art)
+SPILL_BAND = 2           # despill reaches this many pixels in from the transparent edge
+MAGENTA_SPILL_MAX = 2    # QA: at most this many spill pixels left anywhere (registry `allow_magenta_spill` overrides)
+
+
+def magenta_spill(arr, step=SPILL_STEP):
+    """Opaque pixels where red and blue stand well above green with a magenta-ward hue: what the #FF00FF key leaves when
+    it is anti-aliased into an outline (dark: (48,4,56); grey: (137,52,136); red: (250,42,136))."""
+    a = np.asarray(arr); c = a[..., :3].astype(np.float32); r, g, b = c[..., 0], c[..., 1], c[..., 2]
+    op = a[..., 3] == 255 if a.shape[-1] == 4 else np.ones(a.shape[:2], bool)
+    mx = np.maximum(r, b); d = np.maximum(mx - g, 1e-6)
+    hue = np.where(r >= b, (60 * (g - b) / d) % 360, 240 + 60 * (r - g) / d)
+    return op & (np.minimum(r, b) - g >= step) & (hue >= SPILL_HUE[0]) & (hue <= SPILL_HUE[1])
+
+
+def magenta_spill_count(img):
+    return int(magenta_spill(np.asarray(img.convert('RGBA'))).sum())
+
+
+def despill(img, band=SPILL_BAND):
+    """Deterministic: in the outer `band` pixels of the subject, take the magenta component out of spill pixels by
+    lowering red and blue by min(R, B) - G. A dark outline blend goes back to near-black, a red one back to red.
+    Alpha never changes; pixels deeper inside are left for the QA count (they may be real art)."""
+    arr = np.asarray(img.convert('RGBA')).copy(); h, w = arr.shape[:2]
+    clear = np.pad(arr[..., 3] == 0, band, constant_values=True); near = np.zeros((h, w), bool)
+    for dy in range(-band, band + 1):
+        for dx in range(-band, band + 1): near |= clear[band + dy:band + dy + h, band + dx:band + dx + w]
+    hit = near & magenta_spill(arr)
+    if hit.any():
+        c = arr[..., :3].astype(np.int16); m = np.minimum(c[..., 0], c[..., 2]) - c[..., 1]
+        c[..., 0] -= m; c[..., 2] -= m
+        arr[hit, :3] = np.clip(c, 0, 255).astype(np.uint8)[hit]
+    return Image.fromarray(arr, 'RGBA')
+
+
+def _spill_gate(qa, final, entry):
+    qa['magenta_spill'] = magenta_spill_count(final)
+    if qa['magenta_spill'] > entry.get('allow_magenta_spill', MAGENTA_SPILL_MAX):
+        qa['reasons'].append('magenta spill'); qa['pass'] = False
+
+
 def clear_edge_tint(img, passes=2):
     """Pinkish tint pixels that touch transparency are key fringe on effects: make them transparent."""
     arr = np.asarray(img.convert('RGBA')).copy()
@@ -546,8 +588,9 @@ def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None, b
     return {aid: _finish(reg, aid, img, kind, workdir, raw, block, height, fit=fit, canvas=canvas)}
 
 
-def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None, fit=None, canvas=None):
-    """fit=(w, h): opaque art sampled to exactly w x h. canvas=n: a sprite centred on an n x n transparent canvas."""
+def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None, fit=None, canvas=None, despill_=False):
+    """fit=(w, h): opaque art sampled to exactly w x h. canvas=n: a sprite centred on an n x n transparent canvas.
+    despill_=True (plan 5d): take key spill out of the outline and fail on spill left anywhere (`magenta spill`)."""
     if kind == 'opaque' and fit:
         final = fit_opaque(img.convert('RGB'), *fit).convert('RGBA')
         qa = {'pass': True, 'reasons': [], 'seam': seam_score(final),
@@ -577,10 +620,12 @@ def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None, fit=None
             # replaced by the neighbouring colour they were mixed from (same repair the fx-anim sheets use).
             if reg.data['assets'].get(aid, {}).get('deblend'): final = deblend(final)
             if reg.data['assets'].get(aid, {}).get('neutralize_tint'): final = neutralize_key_tint(final)
+            if despill_: final = despill(final)
             src = Image.new('RGB', pad.size, (255, 0, 255)); src.paste(img.crop(bbox), (block, block))
             hint = _near_magenta(np.asarray(to_art_pixels(src, block)), 30)
             entry = reg.data['assets'].get(aid, {})
             qa = alpha_qa(final, entry.get('allow_holes', 0), hint, entry.get('allow_residue', 0))
+            if despill_: _spill_gate(qa, final, entry)
             # The padded final can never touch its own edge, so check the raw canvas: a subject cut off by the
             # generator fails, except on sides the contract allows (bust portraits end at the bottom edge).
             sides = {'left': bbox[0] == 0, 'top': bbox[1] == 0, 'right': bbox[2] == img.width, 'bottom': bbox[3] == img.height}
@@ -626,7 +671,7 @@ def process_gear_cell(reg, gid, cell, workdir, raw, large=(60, 64), icon=(24, 26
     """
     out = {}
     for aid, (side, size) in ((f'gear-{gid}-large', large), (f'gear-{gid}', icon)):
-        out[aid] = _finish(reg, aid, cell, 'sprite', workdir, raw, block=fit_side(cell, side), canvas=size)
+        out[aid] = _finish(reg, aid, cell, 'sprite', workdir, raw, block=fit_side(cell, side), canvas=size, despill_=True)
         reg.set(aid, kind='gear-cell', source={'raw': str(raw), 'cell': gid})
     return out
 
@@ -662,13 +707,14 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_):
     if box is None:
         final = Image.new('RGBA', (size, size)); reasons.append('no foreground')
     else:
-        final = defringe(_sample(cut.crop(box), size, size), strong=entry.get('defringe') == 'strong')
+        final = despill(defringe(_sample(cut.crop(box), size, size), strong=entry.get('defringe') == 'strong'))
         if box[0] == 0 or box[1] == 0 or box[2] == cell.width or box[3] == cell.height:
             reasons.append('subject cut by the canvas edge')
     s = slice_
     # The frame's intended transparent centre is background, never a hole; a pocket inside the ring band still counts.
     centre = np.zeros((size, size), bool); centre[s:size - s, s:size - s] = True
     qa = alpha_qa(final, entry.get('allow_holes', 0), bg_hint=centre, allow_residue=entry.get('allow_residue', 0))
+    _spill_gate(qa, final, entry)
     reasons = [r for r in qa['reasons'] if r != 'touches edge'] + reasons
     op = np.asarray(final)[..., 3] == 255
     qa['center_clear'] = bool(not op[s:size - s, s:size - s].any())

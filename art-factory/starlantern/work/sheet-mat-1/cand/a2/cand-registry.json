@@ -11,6 +11,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "block": 11,
         "size": [
           23,
@@ -30,6 +31,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "block": 11,
         "size": [
           26,
@@ -49,6 +51,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "block": 11,
         "size": [
           31,
@@ -68,6 +71,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "block": 14,
         "size": [
           27,
@@ -87,6 +91,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "block": 12,
         "size": [
           23,
@@ -106,6 +111,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "block": 14,
         "size": [
           27,

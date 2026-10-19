@@ -161,6 +161,9 @@
   - 外框在登錄表標 `defringe: strong`（同其他 UI 框）。
 - 剪影（`kind: silhouette`）：只接受 `approved`／`published` 的 `gear-<id>`（否則 `PermissionError`）。不透明像素一律換成 `#1d1a2e`，外圍 8 鄰接的透明格塗成 `#8f86b8` 當輪廓光，畫布每邊多 1 px；只允許這兩色、沒有半透明、不透明像素數 ≥ 原圖。
 - 素材、技能、場景、NPC 沿用 `_finish`。
+- 洋紅溢色（magenta spill，計畫 5d 的透明素材都做）：key 色被抗鋸齒混進外框線，會留下 (48,4,56)、(137,52,136)、(250,42,136) 這類暗紫、灰紫、粉紅邊，原本的殘色檢查抓不到。定義：不透明像素的 R 與 B 都比 G 高至少 30，而且色相在 280–345 度之間（270 度以下的紫是美術本身）。
+  - `despill`（確定性）：主體外緣 2 px 內的溢色像素，R 與 B 各減掉 min(R, B) − G，暗紫變回黑框、粉紅變回紅；alpha 不變，更內側的像素不動。裝備格、九宮格外框、素材與技能圖示、NPC 都做。
+  - QA：處理後整張圖的溢色像素數記在 `magenta_spill`，超過 2 就失敗（`magenta spill`）；美術本身真的有洋紅時，在登錄表寫 `allow_magenta_spill: <數量>` 並記原因。
 
 ### Prompt 範本（完整句子在 `gear_art.py`）
 - 共通：`flat pure magenta #FF00FF gutters and margin`、`No text, no numbers, no frames, no badge or circle behind the item`、原創句 `The design must be original and not resemble any existing game item.`，句尾沿用 `portal.py` 的 `PIX` 與 `GEN`。prompt 不寫任何作品名或畫師名。

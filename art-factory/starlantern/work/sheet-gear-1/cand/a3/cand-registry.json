@@ -11,6 +11,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           50,
           50
@@ -39,6 +40,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           23,
           23
@@ -67,6 +69,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           54,
           56
@@ -95,6 +98,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           23,
           23
@@ -123,6 +127,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           60,
           43
@@ -151,6 +156,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           23,
           16
@@ -181,6 +187,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 4,
+        "magenta_spill": 0,
         "subject": [
           56,
           56
@@ -209,6 +216,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           24,
           24
@@ -237,6 +245,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 1,
         "subject": [
           52,
           54
@@ -265,6 +274,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           22,
           23
@@ -293,6 +303,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           29,
           55
@@ -321,6 +332,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           12,
           23
@@ -349,6 +361,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           54,
           56
@@ -377,6 +390,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           22,
           22
@@ -405,6 +419,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           58,
           56
@@ -433,6 +448,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           23,
           22
@@ -461,6 +477,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           56,
           53
@@ -489,6 +506,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
+        "magenta_spill": 0,
         "subject": [
           23,
           21

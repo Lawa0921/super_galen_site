@@ -513,7 +513,7 @@ def process_attempt(reg, job, raw, workdir, parts=None):
         return {job['id']: A._finish(reg, job['id'], img, 'opaque', workdir, raw, fit=SCENE_SIZE)}
     if job['kind'] == 'sprite':
         if 'allow_edge' not in reg.data['assets'].get(job['id'], {}): reg.set(job['id'], allow_edge=['bottom'])
-        return {job['id']: A._finish(reg, job['id'], img, 'sprite', workdir, raw, height=NPC_HEIGHT)}
+        return {job['id']: A._finish(reg, job['id'], img, 'sprite', workdir, raw, height=NPC_HEIGHT, despill_=True)}
     # sheet_cells pads every inner cell with key pixels, so `subject cut by the canvas edge` only fires when the sheet cut it.
     cells = P.sheet_cells(img, job['cols'], job['rows'])
     out = {}
@@ -522,7 +522,7 @@ def process_attempt(reg, job, raw, workdir, parts=None):
         if job['kind'] == 'gear-sheet':
             out.update(A.process_gear_cell(reg, part, cell, workdir, raw, large=LARGE, icon=ICON))
         elif job['kind'] == 'icon-sheet':
-            out[f'icon-{part}'] = A._finish(reg, f'icon-{part}', cell, 'sprite', workdir, raw, height=ICON_HEIGHT)
+            out[f'icon-{part}'] = A._finish(reg, f'icon-{part}', cell, 'sprite', workdir, raw, height=ICON_HEIGHT, despill_=True)
         else:
             aid = assets_of(job, part)[0]; size, sl = FRAME_SIZE.get(part, (16, 5))
             if 'defringe' not in reg.data['assets'].get(aid, {}): reg.set(aid, defringe='strong')   # UI frames (contract)
