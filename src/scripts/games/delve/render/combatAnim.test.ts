@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { aimArmDeg, attackArmDeg, spearThrust, enemyFrameIndex, FloatNumbers, digitRows } from './combatAnim';
 import { makeEnemy } from '../engine/enemies';
+import { heldOverHead } from './anim';
 
 describe('攻擊動畫', () => {
   it('瞄準角 → 手臂角（面向座標）：右 = 90、上 = 180、下 = 0；面向左時鏡像', () => {
@@ -40,6 +41,9 @@ describe('攻擊動畫', () => {
     const at = (p: number): number => attackArmDeg('broadsword', p, 90);
     expect(Math.max(...[0.05, 0.1, 0.15, 0.2].map(at))).toBeGreaterThan(at(0) + 10);
     expect(Math.min(...Array.from({ length: 101 }, (_, k) => at(k / 100)))).toBeLessThan(15);
+  });
+  it('大劍：預備舉在頭的前上方、不進「疊在頭前面」的角度（寬刀身疊上去會蓋住瀏海和遠側眼睛）', () => {
+    for (let i = 0; i <= 100; i++) expect(heldOverHead(attackArmDeg('broadsword', i / 100, 90)), `broadsword ${i}`).toBe(false);
   });
   it('弓 / 法杖 / 矛：手臂指向瞄準方向', () => {
     for (const k of ['bow', 'staff', 'spear'] as const) expect(attackArmDeg(k, 0.5, 123)).toBe(123);

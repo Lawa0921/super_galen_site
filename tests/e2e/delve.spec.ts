@@ -18,6 +18,21 @@ async function waitGame(page: Page): Promise<void> {
   await page.waitForFunction(() => Boolean(window.__delveDebug?.game), undefined, { timeout: 30000 });
 }
 
+/** 像素畫布的顯示尺寸：寬高比 = 畫布寬高比、縮放倍率是整數（不被壓扁、像素不糊） */
+async function expectCrisp(page: Page, sel: string): Promise<void> {
+  const m = await page.locator(sel).first().evaluate((el) => {
+    const c = el as HTMLCanvasElement, r = c.getBoundingClientRect(), cs = getComputedStyle(c);
+    const bx = parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth) + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    const by = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth) + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    return { cw: c.width, ch: c.height, dw: r.width - bx, dh: r.height - by };
+  });
+  expect(m.cw, `${sel} canvas width`).toBeGreaterThan(0);
+  const sx = m.dw / m.cw, sy = m.dh / m.ch;
+  expect(Math.abs(sx - sy), `${sel} aspect ${JSON.stringify(m)}`).toBeLessThan(0.01);
+  expect(Math.abs(sx - Math.round(sx)), `${sel} integer scale ${JSON.stringify(m)}`).toBeLessThan(0.01);
+  expect(Math.round(sx), `${sel} scale >= 1`).toBeGreaterThanOrEqual(1);
+}
+
 /** 世界 fg 的 FNV-1a 雜湊（整個世界） */
 function worldHash(page: Page): Promise<string> {
   return page.evaluate(() => {
@@ -2106,6 +2121,36 @@ test.describe('delve folk · villages, dwarves, encounters, quests', () => {
     await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.count('torch'))).toBe(t0 + 10);
     // 好感度不夠的商品是鎖著的
     await expect(page.locator('[data-testid=folk-shop] .is-locked').first()).toBeDisabled();
+  });
+
+  test('紙娃娃畫布不被壓扁：外觀 / 新世界 / 背包 / 說明框試穿 / 村民頭像都是整數倍、寬高比對', async ({ page }) => {
+    for (const vp of [{ width: 1280, height: 800 }, { width: 812, height: 375 }, { width: 390, height: 844 }]) {
+      await page.setViewportSize(vp);
+      await page.goto('/games/delve');
+      await pressStart(page);
+      await page.click('#delve-look');
+      await expect(page.locator('#delve-wr-doll')).toBeVisible();
+      await expectCrisp(page, '#delve-wr-doll');
+      await page.click('#delve-wr-done');
+      await page.click('#delve-new');
+      await expect(page.locator('#delve-new-doll')).toBeVisible();
+      await expectCrisp(page, '#delve-new-doll');
+    }
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => { window.__delveDebug!.game.give('witch_hat', 1); });
+    await page.keyboard.press('KeyE');
+    await expect(page.locator('#delve-doll-canvas')).toBeVisible();
+    await expectCrisp(page, '#delve-doll-canvas');
+    await page.locator('#delve-inv-grid .delve-slot[data-item="witch_hat"]').hover();
+    await expect(page.locator('#delve-tip [data-testid="tip-doll"]')).toBeVisible();
+    await expectCrisp(page, '#delve-tip [data-testid="tip-doll"]');
+    await page.keyboard.press('KeyE');
+    await expect(page.locator('#delve-inv')).toBeHidden();
+    await rclick(page, await nearFolk(page, 'v0:elder'));
+    await expect(page.locator('#delve-folk .delve-npc-face')).toBeVisible();
+    await expectCrisp(page, '#delve-folk .delve-npc-face');
   });
 
   test('矮人地廳：矮人的面板（礦石商）、委託板開村長的委託、地標只能領一次', async ({ page }) => {

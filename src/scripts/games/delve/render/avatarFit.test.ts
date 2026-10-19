@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { Bmp } from './pixel';
 import { HAIR_STYLES, OUTFITS, ACCESSORIES, bodyDefaults } from '../engine/appearance';
 import { plainLook, dollKey, type DollLook, type DollPiece } from '../engine/doll';
-import { AV_FH, AV_FW, SHEET, SHEET_ANIMS, avatarFrame, flatFrame, armsTo, shoulderOf, ROPE_TOP_HANDS } from './avatarArt';
+import { AV_FH, AV_FW, SHEET, SHEET_ANIMS, avatarFrame, flatFrame, armsTo, shoulderOf, ROPE_TOP_HANDS, mantleLean } from './avatarArt';
 import { dollPreview } from './dollPreview';
 import { folkFrames } from './folkDraw';
 import { folkLook, ROLES, type FolkRole } from '../engine/folkDefs';
@@ -104,6 +104,20 @@ describe('特殊姿勢', () => {
     const s = shoulderOf(0, false), target: [number, number] = [s.x + 11, s.y - 9];
     const r = armsTo(l, meta, target, [target[0] - 2, target[1]]);
     expect(r.hands.on(target[0] + 24, target[1] + 24)).toBe(true);
+  });
+  it('攀上邊緣：牆角在胸口以下（繩頂旁的台面）→ 手往前下撐、手掌正好落在牆角（不浮在牆角上方）', () => {
+    const meta = { dx: 1, dy: 0, arms: true };
+    const s = shoulderOf(0, false);
+    // 爬到繩頂、旁邊的台面和腳同高：牆角在影格 (51, 52) 附近
+    for (const t of [[51, 52], [53, 52], [46, 50], [s.x + 12, s.y + 12]] as [number, number][]) {
+      const lean = mantleLean(t[0], t[1], { x: s.x + meta.dx, y: s.y + meta.dy });
+      expect(lean, `lean ${t}`).toBeLessThanOrEqual(8);
+      const target: [number, number] = [t[0] - lean, t[1]];
+      const r = armsTo(l, meta, target, [target[0] - 2, target[1]]);
+      expect(r.hands.on(target[0] + 24, target[1] + 24), `hand at ${t}`).toBe(true);
+    }
+    // 搆得到的牆角：身體不用往前傾
+    expect(mantleLean(s.x + 11, s.y - 9, s)).toBe(0);
   });
   it('爬到繩頂：最後那幾格的手不高過繩頂（手在胸口以下）', () => {
     for (const y of ROPE_TOP_HANDS) expect(y).toBeGreaterThanOrEqual(shoulderOf(0, false).y - 2);

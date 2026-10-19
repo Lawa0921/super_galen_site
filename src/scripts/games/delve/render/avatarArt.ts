@@ -530,8 +530,8 @@ export function armsTo(l: DollLook, meta: FrameMeta, front: [number, number], ba
     let ex = tx + o, ey = ty + o;
     const U = 3.5, F = 3.5;
     const d0 = Math.hypot(ex - sx, ey - sy);
-    // 抓牆角時手可以伸長（往上 16、往下撐 14 格）：Q 版短手也搆得到台面的牆角
-    const reachMax = ey < sy + 2 ? 16 : 14;
+    // 抓牆角時手可以伸長（往上 16、往下撐 MANTLE_REACH_DOWN 格）：Q 版短手也搆得到台面的牆角
+    const reachMax = ey < sy + 2 ? 16 : MANTLE_REACH_DOWN;
     if (grip !== 'rope' && d0 > reachMax) { const k = reachMax / d0; ex = Math.round(sx + (ex - sx) * k); ey = Math.round(sy + (ey - sy) * k); }
     const d = Math.hypot(ex - sx, ey - sy);
     const sl = dark ? darker(sleeve) : sleeve, kk = dark ? darker(sk) : sk;
@@ -559,6 +559,20 @@ export function armsTo(l: DollLook, meta: FrameMeta, front: [number, number], ba
   return out;
 }
 /** 攀上邊緣的手臂：兩手都抓在牆角（前後差 2 格）；arms = 手臂（畫在頭後面）、hands = 手掌（畫在頭上面） */
+/** 攀上邊緣：手往前下撐時最長伸到幾格 */
+export const MANTLE_REACH_DOWN = 18;
+const MANTLE_LEAN_MAX = 8;
+/**
+ * 攀上邊緣：牆角在胸口以下、手伸到最長還搆不到（例：繩頂旁、和腳同高的台面）→ 整個人往牆那邊傾幾格（影格座標的 x，最多 8），
+ * 讓手掌正好撐在牆角上；搆得到就是 0。s = 前肩（含影格 dx）
+ */
+export function mantleLean(hx: number, hy: number, s: { x: number; y: number }): number {
+  if (hy < s.y + 2) return 0;
+  const dy = hy - s.y, dx = hx - s.x, R = MANTLE_REACH_DOWN - 0.5;
+  if (dx * dx + dy * dy <= R * R) return 0;
+  const need = dx - Math.sqrt(Math.max(0, R * R - dy * dy));
+  return Math.max(0, Math.min(MANTLE_LEAN_MAX, Math.ceil(need)));
+}
 export function mantleArms(l: DollLook, meta: FrameMeta, hx: number, hy: number): { arms: Bmp; hands: Bmp } {
   const r = armsTo(l, meta, [hx, hy], [hx - 2, hy]);
   r.back.blit(r.front, 0, 0);

@@ -11,7 +11,7 @@ import { CORNER, EDGE, blendOverlay, decorStyle, edgeMask, innerCornerMask, type
 import { armAngles, carryArm, carryStyle, flameFrame, heldCarryArm, heldOverFace, heldOverHead, swingAngle, SWING_RATE, type PoseKind } from './anim';
 import { FW, FH, Sprites } from './sprites';
 import { PlayerAnimator, atRopeTop, blinkAt, type PlayerAnim } from './playerAnim';
-import { MANTLE_KNEE_X, ROPE_HAND_HI, SHEET, type SheetAnim } from './avatarArt';
+import { MANTLE_KNEE_X, mantleLean, ROPE_HAND_HI, SHEET, type SheetAnim } from './avatarArt';
 import { previewArms } from './dollPreview';
 import { CombatLayer } from './combatDraw';
 import { LevelFx } from './levelFx';
@@ -839,11 +839,16 @@ export class Renderer {
     const special = an.anim === 'mantle' || an.anim === 'swim' || an.anim === 'hurt';
     if (special) { swing = null; blade = null; rot = null; throwMini = null; }
     const arms = special ? previewArms(an.anim as 'mantle' | 'swim' | 'hurt', an.frame) : armAngles(kind, local, swing);
-    // 攀上邊緣（最後一格「站起來」以外）：手抓在牆角上（台面往內 3 px），換算成影格座標
-    const grip = mt && an.frame < 3
+    // 攀上邊緣（最後一格「站起來」以外）：手掌撐在牆角那一格上（手掌 3 寬：從牆邊往內），換算成影格座標
+    // 牆角在胸口以下、手搆不到（繩頂旁的台面）→ 整個人往牆那邊傾幾格，手掌才落得到牆角上（不會浮在半空）
+    let lean = 0, grip: ReturnType<typeof SP.grip> | null = null;
+    if (mt && an.frame < 3) {
+      const gx = Math.round((mt.edgeX + mt.dir - cx) * this.facing - ox), gy = Math.round(mt.edgeY - 1 - bottom - oy);
+      const s0 = SP.shoulder(false);
+      lean = mantleLean(gx, gy, { x: s0.x + meta.dx, y: s0.y + meta.dy });
       // 膝蓋上台那格：身體已經越過牆角，手改撐在身前的台面上（不會往後拉長）
-      ? SP.grip(meta, fi, Math.max(an.frame === 2 ? MANTLE_KNEE_X : 0, Math.round((mt.edgeX + mt.dir * 3 - cx) * this.facing - ox)), Math.round(mt.edgeY - 1 - bottom - oy))
-      : null;
+      grip = SP.grip(meta, fi, Math.max(an.frame === 2 ? MANTLE_KNEE_X : 0, gx - lean), gy);
+    }
     // 待機 / 走路 / 跳躍時，手上的鎬 / 武器也拿著（往前斜舉）；挖掘時換成背包裡最好的鎬、攻擊時用攻擊動畫
     const carry = !st.mining && !atk && !special ? carryStyle(heldDef) : null;
     if (carry && carry !== 'mini') arms.front = carryArm(kind, arms.front);
@@ -860,7 +865,7 @@ export class Renderer {
 
     const bodyDy = meta.dy;
     ctx.save();
-    ctx.translate(cx, bottom);
+    ctx.translate(cx + lean * this.facing, bottom);
     ctx.scale(this.facing, 1);
     const sb0 = SP.shoulder(true), sf0 = SP.shoulder(false);
     const sb = { x: sb0.x + meta.dx, y: sb0.y }, sf = { x: sf0.x + meta.dx, y: sf0.y };

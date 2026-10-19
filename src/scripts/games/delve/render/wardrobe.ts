@@ -16,7 +16,7 @@ import type { SoundManager } from '../audio/SoundManager';
 const REEL: [SheetAnim, number][] = [['idle', 2], ['walk', 3], ['climb', 3], ['hang', 2], ['mantle', 2], ['blink', 1]];
 const FPS = 10;
 /** 預覽放大倍率（依 CSS 尺寸自動挑整數倍） */
-const ZOOM = 4;
+const ZOOM = 1;
 const PAD = 2;
 
 export interface WardrobeOpen {

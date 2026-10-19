@@ -206,16 +206,23 @@ export function hatArt(b: Bmp, id: string, ox: number, oy: number, _view: 'side'
     }
   } else if (id === 'witch') {
     const c = clothRamp(10), band = clothRamp(11);
-    for (let y = 6; y <= 9; y++) for (let x = -5; x <= 28; x++) {
-      const nx = (x + 0.5 - 11.6) / 16.5, ny = (y + 0.5 - 7.8) / 2.2;
+    for (let y = 6; y <= 9; y++) for (let x = -4; x <= 27; x++) {
+      const nx = (x + 0.5 - 11.6) / 15.5, ny = (y + 0.5 - 7.8) / 2.2;
       if (nx * nx + ny * ny <= 1) S(x, y, y <= 6 ? c[4] : y === 9 ? c[1] : nx < -0.4 ? c[4] : c[3]);
     }
-    // 尖頂：往後（左）上方彎
-    // 尖頂：矮一點、往後（左）彎倒（最高頭頂上 3 格）
-    for (let k = 0; k < 10; k++) {
-      const y = 6 - k, w = Math.max(0.6, 7.4 - k * 0.75), cx = 11.6 - (k > 4 ? (k - 4) ** 1.5 * (1.1 + sway * 0.25) : 0);
+    // 尖頂：圓錐收得窄、往後（左）彎，帽尖再往後垂下來（頂部被裁在頭上 3 格內：尖帽輪廓靠「往後折」留住，不會被壓成扁帽）
+    let tx = 0;
+    for (let k = 0; k < 9; k++) {
+      const y = 6 - k, w = Math.max(1, 6 - k * 0.66), cx = 11.6 - (k > 1 ? (k - 1) ** 1.4 * (0.8 + sway * 0.2) : 0);
       for (let x = Math.round(cx - w); x <= Math.round(cx + w); x++) S(x, y, x < cx - w + 1.5 ? c[4] : x > cx + w - 1.5 ? c[2] : c[3]);
+      tx = Math.round(cx - w);
     }
+    // 折下來的帽尖：從頂端往後（左）斜斜垂下，越往外越細
+    for (let i = 1; i <= 5; i++) {
+      const x = tx - i, y = -2 + Math.round(i * 0.7);
+      S(x, y, i < 4 ? c[4] : c[3]); S(x, y + 1, i < 4 ? c[3] : c[2]); if (i < 3) S(x, y + 2, c[2]);
+    }
+    S(tx - 6, -2 + Math.round(6 * 0.7) + 1, GOLD);
     for (let x = 5; x <= 18; x++) { S(x, 5, band[3]); S(x, 4, band[4]); }
     S(12, 5, GOLD); S(12, 4, hex('#fff4c0')); S(13, 5, GOLD);
   } else if (id === 'beret') {
@@ -269,10 +276,32 @@ export function backArt(b: Bmp, p: DollPiece, flap: number, lift: number, sx: nu
     }
     S(sx, sy, GOLD); S(sx + 1, sy, GOLD); S(sx, sy - 1, hex('#fff4c0'));
     upgrades(s, p, [], null, f, c);
-  } else if (id === 'wings' || id === 'feathers') {
+  } else if (id === 'feathers') {
+    // 羽毛護符：肩後兩側各插三根長羽毛（白羽軸 + 青綠羽片 + 橘色羽尖、下緣深一階），往外上方張開到頭的兩側；
+    // 和白色的羽翼分得出來，也不會被白上衣吃掉
+    const v = clothRamp(6), o = clothRamp(11), w = WHITE, sway = flap * 1.5;
+    for (const side of [-1, 1]) {
+      const rx = sx + side * (bw / 2 + (side < 0 ? 1 : 0)), ry = sy + 2;
+      for (let k = 0; k < 3; k++) {
+        const a = 0.3 + k * 0.45, len = (side < 0 ? 10 : 9) - k;
+        const ex = rx + side * Math.cos(a) * len - (side < 0 ? sway : sway * 0.4), ey = ry - Math.sin(a) * len;
+        const steps = Math.ceil(len * 2);
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps, x = Math.round(rx + (ex - rx) * t), y = Math.round(ry + (ey - ry) * t);
+          if (t < 0.2) { S(x, y, w[2]); continue; }
+          const tip = t > 0.78;
+          S(x, y, tip ? o[3] : k === 0 ? v[4] : v[3]);
+          if (t < 0.95) S(x, y + 1, tip ? o[2] : v[2]);
+          // 羽片中段寬一點（像一根羽毛，不像一條棍子）
+          if (t > 0.35 && t < 0.75) S(x - side, y, k === 0 ? v[4] : v[3]);
+        }
+      }
+    }
+    S(sx, sy + 1, GOLD);
+  } else if (id === 'wings') {
     // 羽翼：從兩肩後方往外上方張開（一根根羽毛：上面長、下面短），3/4 正面時兩邊都露得出來
-    const big = id === 'wings', w = WHITE, beat = Math.sin(f * 1.7) * (lift ? 1 : 0.35);
-    const n = big ? 6 : 4, L = big ? 12 : 7;
+    const big = true, w = WHITE, beat = Math.sin(f * 1.7) * (lift ? 1 : 0.35);
+    const n = 6, L = 12;
     for (const side of [-1, 1]) {
       const rx = sx + side * (bw / 2 - 1), ry = sy + 1;
       for (let k = 0; k < n; k++) {
@@ -287,10 +316,13 @@ export function backArt(b: Bmp, p: DollPiece, flap: number, lift: number, sx: nu
       }
     }
   } else if (id === 'bow') {
-    // 大蝴蝶結：綁在腰後、偏後側（左），從身體旁邊露出一大片
+    // 大蝴蝶結：綁在背後正中，兩個大圈從身體左右兩邊都露出來（3/4 正面：遠側那圈小一點），緞帶尾巴垂到腰
     const c = clothRamp(4);
-    const rows = ['bbb.....bbb', 'bBbbb.bbbBb', 'bbbbbkbbbbb', '.bbb.k.bbb.', '..b..k..b..', '....b.b....'];
-    rows.forEach((row, y) => { for (let x = 0; x < row.length; x++) { const ch = row[x]; if (ch !== '.') S(sx - bw / 2 - 6 + x, sy + 3 + y, ch === 'B' ? c[4] : ch === 'k' ? c[2] : x < 5 ? c[3] : c[2]); } });
+    const left = ['.bbbb..', 'bBbbbbb', 'bBbbbbb', 'bbbbbbb', '.bbbb..', '..bb...', '..b....', '.bb....'];
+    const right = ['..bbb.', 'bbbbBb', 'bbbbbb', 'bbbbbb', '..bbb.', '...bb.', '....b.', '....bb'];
+    const lx = Math.round(sx - bw / 2) - 6, rxx = Math.round(sx + bw / 2) - 1, y0 = sy + 2;
+    left.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (row[x] !== '.') S(lx + x, y0 + y, row[x] === 'B' ? c[4] : x < 2 || y > 4 ? c[3] : c[2]); });
+    right.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (row[x] !== '.') S(rxx + x, y0 + y, row[x] === 'B' ? c[4] : x > 3 || y > 4 ? c[2] : c[3]); });
     upgrades(s, p, [], null, f, c);
   } else if (id === 'buckler') {
     // 甲殼小盾：背在背上、偏後側（左）露出大半
