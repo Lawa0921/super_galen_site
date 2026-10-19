@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { castField, fieldCost, fieldSkills, fieldTargets, noDraw } from './field';
+import { castField, fieldCost, fieldSkills, fieldTargets, noDraw, packEquip, packUnequip } from './field';
 import { createBattle, fromMember, skillCost, skillFor } from './battle';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
 import { pctMod } from './progression';
@@ -11,11 +11,13 @@ import { activeIds, statsOf, STANDARD_LINEUP } from './party';
 import { newGame, type GameState } from './state';
 import { fullParty, plainItem } from './testing';
 import { mulberry32 } from './rng';
+import { BAG_SIZE } from './loot/bag';
 import { SKILLS } from '../data/skills';
+import { T } from '../data/text.zh-TW';
 import { MEMORY_KEYSTONES, MEMORY_KEYSTONE_VALUES } from '../data/talents';
 import { chainLength } from '../data/story/chains';
 import type { Combatant } from './combatant';
-import type { CharacterId, Member } from './types';
+import type { CharacterId, ItemInstance, Member } from './types';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -219,5 +221,117 @@ describe('field skills', () => {
     for (const f of ['sim.ts', 'battle.ts', ...balance]) {
       expect(readFileSync(join(HERE, f), 'utf8'), f).not.toContain("from './field'");
     }
+  });
+});
+
+describe('gear from the run pack', () => {
+  /** The uids a member wears and the pack holds, together: a change of gear never makes or loses a piece. */
+  const held = (s: GameState, id: CharacterId, pack: ItemInstance[]) =>
+    [...Object.values(member(s, id).equip).map((it) => it!.uid), ...pack.map((it) => it.uid)].sort((a, b) => a - b);
+
+  it('wearing from the pack swaps with what was worn', () => {
+    const s = game();
+    set(s, 'hero', { equip: { weapon: plainItem('iron-sword', 1) } });
+    const pack = [plainItem('iron-sword', 2), plainItem('leather-cap', 3)];
+    const before = structuredClone(s);
+    const r = packEquip(s, pack, 'hero', 2);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(member(r.state, 'hero').equip.weapon?.uid).toBe(2);
+    expect(r.pack.map((it) => it.uid).sort()).toEqual([1, 3]);
+    expect(r.pack).toHaveLength(pack.length);
+    expect(held(r.state, 'hero', r.pack)).toEqual(held(s, 'hero', pack));
+    // Nothing handed in is touched.
+    expect(s).toEqual(before);
+    expect(pack.map((it) => it.uid)).toEqual([2, 3]);
+    // An empty slot: the pack is one piece lighter.
+    const r2 = packEquip(r.state, r.pack, 'hero', 3);
+    expect(r2.ok).toBe(true);
+    if (!r2.ok) return;
+    expect(member(r2.state, 'hero').equip.head?.uid).toBe(3);
+    expect(r2.pack.map((it) => it.uid)).toEqual([1]);
+    expect(held(r2.state, 'hero', r2.pack)).toEqual(held(s, 'hero', pack));
+    // A piece not in the pack, or a slot it does not fit.
+    expect(packEquip(s, pack, 'hero', 99)).toEqual({ ok: false, reason: 'stock' });
+    expect(packEquip(s, pack, 'hero', 3, 'weapon')).toEqual({ ok: false, reason: 'invalid' });
+  });
+
+  it('a ring goes to the first empty ring slot like in town', () => {
+    const s = game();
+    const pack = [plainItem('copper-ring', 1), plainItem('copper-ring', 2), plainItem('copper-ring', 3)];
+    const a = packEquip(s, pack, 'noel', 1);
+    if (!a.ok) throw new Error(a.reason);
+    expect(member(a.state, 'noel').equip.ring1?.uid).toBe(1);
+    const b = packEquip(a.state, a.pack, 'noel', 2);
+    if (!b.ok) throw new Error(b.reason);
+    expect(member(b.state, 'noel').equip.ring2?.uid).toBe(2);
+    // Both full: ring1, and the ring it replaced goes to the pack.
+    const c = packEquip(b.state, b.pack, 'noel', 3);
+    if (!c.ok) throw new Error(c.reason);
+    expect([member(c.state, 'noel').equip.ring1?.uid, member(c.state, 'noel').equip.ring2?.uid]).toEqual([3, 2]);
+    expect(c.pack.map((it) => it.uid)).toEqual([1]);
+    // A chosen ring slot is honoured.
+    const d = packEquip(s, pack, 'noel', 1, 'ring2');
+    if (!d.ok) throw new Error(d.reason);
+    expect(member(d.state, 'noel').equip.ring2?.uid).toBe(1);
+  });
+
+  it('taking off puts the piece in the pack, unless the bag and the pack are full', () => {
+    const s = game();
+    set(s, 'hero', { equip: { weapon: plainItem('iron-sword', 1) } });
+    const pack = [plainItem('leather-cap', 2)];
+    s.bag = Array.from({ length: BAG_SIZE - pack.length - 1 }, (_, i) => plainItem('leather-cap', 100 + i));
+    const r = packUnequip(s, pack, 'hero', 'weapon');
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(member(r.state, 'hero').equip.weapon).toBeUndefined();
+    expect(r.pack.map((it) => it.uid)).toEqual([2, 1]);
+    expect(r.state.bag).toEqual(s.bag);
+    expect(held(r.state, 'hero', r.pack)).toEqual(held(s, 'hero', pack));
+    // One more in the bag: bag and pack hold BAG_SIZE, and the piece would be lost on the way home.
+    s.bag.push(plainItem('leather-cap', 999));
+    expect(s.bag.length + pack.length).toBe(BAG_SIZE);
+    const before = structuredClone(s);
+    expect(packUnequip(s, pack, 'hero', 'weapon')).toEqual({ ok: false, reason: 'full' });
+    expect(s).toEqual(before);
+    // Nothing in the slot.
+    expect(packUnequip(game(), [], 'hero', 'head')).toEqual({ ok: false, reason: 'invalid' });
+  });
+
+  it('wearing clamps HP and TP to the new maximum', () => {
+    const s = game();
+    set(s, 'hero', { equip: { neck: plainItem('moss-charm', 1), ring1: plainItem('gear-ring', 2) } });
+    const full = statsOf(member(s, 'hero'));
+    set(s, 'hero', { hp: full.hp, tp: full.tp });
+    // Swapping the HP charm for a speed earring lowers the max HP.
+    const a = packEquip(s, [plainItem('bat-earring', 3)], 'hero', 3);
+    if (!a.ok) throw new Error(a.reason);
+    const sheetA = statsOf(member(a.state, 'hero'));
+    expect(sheetA.hp).toBeLessThan(full.hp);
+    expect(member(a.state, 'hero').hp).toBe(sheetA.hp);
+    // Taking off the TP ring lowers the max TP.
+    const b = packUnequip(a.state, a.pack, 'hero', 'ring1');
+    if (!b.ok) throw new Error(b.reason);
+    const sheetB = statsOf(member(b.state, 'hero'));
+    expect(sheetB.tp).toBeLessThan(full.tp);
+    expect(member(b.state, 'hero').tp).toBe(sheetB.tp);
+    expect(member(b.state, 'hero').hp).toBeLessThanOrEqual(sheetB.hp);
+  });
+
+  it('every refusal of a field action or gear change has words for the player', () => {
+    for (const r of ['invalid', 'down', 'not-learned', 'tp', 'no-effect', 'stock', 'full', 'heavy', 'lineup', 'phase']) {
+      expect(T.reasons[r], r).toMatch(/\S/);
+    }
+    expect([T.reasons.heavy, T.reasons.lineup]).toEqual(['太重了，冒險背包裝不下', '迷宮裡只能調整站位，不能換人']);
+  });
+
+  it('a member on the bench cannot change gear in the field', () => {
+    const s = game(['hero', 'rin']);
+    expect(activeIds(s.party)).not.toContain('selene');
+    set(s, 'selene', { equip: { head: plainItem('leather-cap', 1) } });
+    const pack = [plainItem('leather-cap', 2)];
+    expect(packEquip(s, pack, 'selene', 2)).toEqual({ ok: false, reason: 'invalid' });
+    expect(packUnequip(s, pack, 'selene', 'head')).toEqual({ ok: false, reason: 'invalid' });
+    expect(packEquip(s, pack, 'nobody' as CharacterId, 2)).toEqual({ ok: false, reason: 'invalid' });
   });
 });

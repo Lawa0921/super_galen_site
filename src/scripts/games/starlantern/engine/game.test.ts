@@ -3164,3 +3164,133 @@ describe('casting in the field', () => {
     expect(g.state.party.roster.hero.hp).toBe(half);
   });
 });
+
+describe('gear and rows in the labyrinth (6f Task 3)', () => {
+  const wornUids = (g: Game) => Object.values(g.state.party.roster.hero.equip).map((it) => it!.uid);
+  /** Loses the next fight: the whole party falls and the game is back in town. */
+  const loseAFight = (g: Game) => {
+    g.encounter = 99;
+    expect(g.move('right')).toEqual({ kind: 'battle' });
+    for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+    expect(g.submitRound({})!.end!).toMatchObject({ outcome: 'lose' });
+    expect([g.phase, g.notice, g.run]).toEqual(['town', 'wipe', null]);
+  };
+
+  it('gear changes in the field are refused in town and when they make the pack heavier past the limit', () => {
+    const town = new Game(calm(), memoryStorage(), undefined, 0, HERO_LINEUP);
+    town.state.party.roster.hero.equip.body = plainItem('leather-vest', 500);
+    expect(town.equipFromPack('hero', 500)).toEqual({ ok: false, reason: 'phase' });
+    expect(town.unequipToPack('hero', 'body')).toEqual({ ok: false, reason: 'phase' });
+    expect(town.state.party.roster.hero.equip.body?.uid).toBe(500);
+
+    const g = inMap(1);
+    g.state.party.roster.hero.equip.body = plainItem('leather-vest', 501);
+    // Fill the run pack with moss until it weighs exactly the limit.
+    const room = capacity(g.state.party) - carried(g.state, g.run);
+    const moss = room / weightOf('moss');
+    expect(Number.isInteger(moss) && moss > 0).toBe(true);
+    g.run!.loot.items['moss'] = moss;
+    expect(carried(g.state, g.run)).toBe(capacity(g.state.party));
+    const state = structuredClone(g.state);
+    const pack = g.run!.loot.gear;
+    const packCopy = structuredClone(pack);
+    expect(g.unequipToPack('hero', 'body')).toEqual({ ok: false, reason: 'heavy' });
+    expect(g.state).toEqual(state);
+    expect(g.run!.loot.gear).toBe(pack);
+    expect(g.run!.loot.gear).toEqual(packCopy);
+
+    // Over the limit already: a piece worn into an empty slot makes the pack lighter, so it is allowed though still over.
+    g.run!.loot.items['moss'] = moss + 2;
+    g.run!.loot.gear = [plainItem('leather-cap', 502), plainItem('leather-vest', 503)];
+    const over = carried(g.state, g.run) - capacity(g.state.party);
+    expect(g.equipFromPack('hero', 502)).toEqual({ ok: true });
+    const after = carried(g.state, g.run) - capacity(g.state.party);
+    expect(after).toBeGreaterThan(0);
+    expect(after).toBeLessThan(over);
+    expect(g.state.party.roster.hero.equip.head?.uid).toBe(502);
+    // A swap that weighs the same is allowed too: it is not heavier.
+    expect(g.equipFromPack('hero', 503)).toEqual({ ok: true });
+    expect(carried(g.state, g.run) - capacity(g.state.party)).toBe(after);
+    expect(g.state.party.roster.hero.equip.body?.uid).toBe(503);
+    expect(g.run!.loot.gear.map((it) => it.uid)).toEqual([501]);
+  });
+
+  it('field gear changes draw nothing', () => {
+    let draws = 0;
+    const base = calm();
+    const spy = () => { draws++; return base(); };
+    const storage = memoryStorage();
+    const g = inMap(1, spy, storage);
+    g.state.party.roster.hero.equip.weapon = plainItem('iron-sword', 601);
+    g.run!.loot.gear = [plainItem('iron-sword', 602)];
+    const saved = new Map(storage.map);
+    const loot = g.run!.lootDraws, memory = g.run!.memoryDraws;
+    draws = 0;
+    expect(g.equipFromPack('hero', 602)).toEqual({ ok: true });
+    expect(g.unequipToPack('hero', 'weapon')).toEqual({ ok: true });
+    expect(g.run!.loot.gear.map((it) => it.uid).sort()).toEqual([601, 602]);
+    expect(wornUids(g)).toEqual([]);
+    expect(draws).toBe(0);
+    expect([g.run!.lootDraws, g.run!.memoryDraws]).toEqual([loot, memory]);
+    expect(storage.map).toEqual(saved);
+  });
+
+  it('a special worn from the pack enters the codex', () => {
+    const g = inMap(1, mulberry32(1));
+    const crown: ItemInstance = { ...plainItem('leather-cap', 77), rarity: 'legendary', special: 'lg-selene' };
+    g.state.codex = [];
+    g.run!.loot.gear = [crown];
+    expect(g.equipFromPack('selene', 77)).toEqual({ ok: true });
+    expect(g.state.codex).toEqual(['lg-selene']);
+    expect(g.run!.loot.gear).toEqual([]);
+    loseAFight(g);
+    expect(g.state.party.roster.selene.equip.head?.uid).toBe(77);
+    expect(g.state.codex).toEqual(['lg-selene']);
+    // Off and on again in the next run: still one entry.
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.unequipToPack('selene', 'head')).toEqual({ ok: true });
+    expect(g.equipFromPack('selene', 77)).toEqual({ ok: true });
+    expect(g.state.codex).toEqual(['lg-selene']);
+  });
+
+  it('a piece worn from the pack survives a wipe; the piece it replaced is lost with the pack', () => {
+    const g = inMap(1, mulberry32(1));
+    g.state.bag = [gearItem(800)];
+    g.state.party.roster.hero.equip.weapon = gearItem(600);
+    g.run!.loot.gear = [gearItem(601)];
+    expect(g.equipFromPack('hero', 601)).toEqual({ ok: true });
+    expect(g.run!.loot.gear.map((it) => it.uid)).toEqual([600]);
+    loseAFight(g);
+    expect(g.state.party.roster.hero.equip.weapon?.uid).toBe(601);
+    expect(g.state.bag.map((it) => it.uid)).toEqual([800]);
+    const everywhere = [...g.state.bag, ...Object.values(g.state.party.roster).flatMap((m) => Object.values(m.equip))].map((it) => it!.uid);
+    expect(everywhere).not.toContain(600);
+  });
+
+  it('in the labyrinth the formation can move people but not change who is out', () => {
+    const g = inMap(1);
+    g.state.party = meet(g.state.party, 'bobby', 1);
+    expect(activeIds(g.state.party)).not.toContain('bobby');
+    const grid = [...g.state.party.grid];
+    // Two people trade cells: fine.
+    const a = grid.indexOf('hero'), b = grid.indexOf('selene');
+    const swapped = [...grid];
+    swapped[a] = 'selene'; swapped[b] = 'hero';
+    expect(g.setFormation(swapped)).toEqual({ ok: true });
+    expect(g.state.party.grid).toEqual(swapped);
+    // The bench stays in town.
+    const benchIn = swapped.map((c) => (c === 'liz' ? 'bobby' : c));
+    expect(g.setFormation(benchIn)).toEqual({ ok: false, reason: 'lineup' });
+    // Nobody leaves the field either.
+    const out = swapped.map((c) => (c === 'liz' ? null : c));
+    expect(g.setFormation(out)).toEqual({ ok: false, reason: 'lineup' });
+    expect(g.state.party.grid).toEqual(swapped);
+
+    // In town the bench may come in as before.
+    const town = new Game(calm(), memoryStorage(), undefined, 0, HERO_LINEUP);
+    town.state.party = meet(town.state.party, 'bobby', 1);
+    const inTown = town.state.party.grid.map((c) => (c === 'liz' ? 'bobby' : c));
+    expect(town.setFormation(inTown)).toEqual({ ok: true });
+    expect(activeIds(town.state.party)).toContain('bobby');
+  });
+});

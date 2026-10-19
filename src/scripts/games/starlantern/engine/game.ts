@@ -34,9 +34,9 @@ import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeResult, RerollOpts } from './forge/cost';
 import { dismantle, enhance, fuse, reroll } from './forge/forge';
-import { castField } from './field';
+import { castField, packEquip, packUnequip } from './field';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
-import type { CharacterId, GearSlot, ItemInstance, Member, Pos } from './types';
+import type { CharacterId, GearSlot, ItemInstance, Member, Pos, Slot } from './types';
 
 export type Phase = 'town' | 'map' | 'battle' | 'clear';
 export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp' | 'banked';
@@ -728,10 +728,16 @@ export class Game {
 
   /**
    * A new formation (the rules: party `setFormation`, which keeps the hero on the field). Saved like `raiseNode`: at once
-   * in town; in the labyrinth it counts at once and is saved at the next town save.
+   * in town; in the labyrinth it counts at once and is saved at the next town save. In the labyrinth only the rows move:
+   * the bench is in town, so who is on the field must stay the same (`lineup`).
    */
-  setFormation(grid: (CharacterId | null)[]): { ok: true } | { ok: false; reason: SetFormationFail | 'invalid' } {
+  setFormation(grid: (CharacterId | null)[]): { ok: true } | { ok: false; reason: SetFormationFail | 'invalid' | 'lineup' } {
     if (this.phase !== 'town' && this.phase !== 'map') return { ok: false, reason: 'invalid' };
+    if (this.phase === 'map') {
+      const now = new Set(activeIds(this.state.party));
+      const next = new Set(grid.filter((id): id is CharacterId => id !== null));
+      if (next.size !== now.size || [...next].some((id) => !now.has(id))) return { ok: false, reason: 'lineup' };
+    }
     const r = setFormation(this.state.party, grid);
     if (!r.ok) return r;
     this.state = { ...this.state, party: r.party };
@@ -749,6 +755,47 @@ export class Game {
     const r = castField(this.state, { caster, skill, target, depth: this.floor });
     if (r.ok) this.state = r.state;
     return r;
+  }
+
+  /**
+   * Wears a piece from the run pack (the rules: field `packEquip`), on the map only; what the slot held goes back into the
+   * pack. A special worn this way enters the codex at once, as banking it would (it never passes through the bag). Not
+   * saved, like a cast in the field. Draws nothing.
+   */
+  equipFromPack(member: CharacterId, uid: number, slot?: Slot): { ok: true } | { ok: false; reason: 'phase' | 'invalid' | 'stock' | 'heavy' } {
+    if (this.phase !== 'map' || !this.run) return { ok: false, reason: 'phase' };
+    const r = packEquip(this.state, this.run.loot.gear, member, uid, slot);
+    if (!r.ok) return r;
+    if (this.packHeavier(r.state, r.pack)) return { ok: false, reason: 'heavy' };
+    const worn = this.run.loot.gear.find((it) => it.uid === uid)!;
+    this.state = r.state;
+    this.run.loot.gear = r.pack;
+    this.enterCodex(worn);
+    return { ok: true };
+  }
+
+  /** Takes off a piece into the run pack (the rules: field `packUnequip`), on the map only. Not saved. Draws nothing. */
+  unequipToPack(member: CharacterId, slot: Slot): { ok: true } | { ok: false; reason: 'phase' | 'invalid' | 'full' | 'heavy' } {
+    if (this.phase !== 'map' || !this.run) return { ok: false, reason: 'phase' };
+    const r = packUnequip(this.state, this.run.loot.gear, member, slot);
+    if (!r.ok) return r;
+    if (this.packHeavier(r.state, r.pack)) return { ok: false, reason: 'heavy' };
+    this.state = r.state;
+    this.run.loot.gear = r.pack;
+    return { ok: true };
+  }
+
+  /**
+   * Whether a gear change leaves the party over the weight limit and further over than before. Worn gear weighs nothing
+   * and the pack's does, and strength on gear moves the limit; being over only stops pick-ups, so a change that lightens
+   * the load is allowed even while still over.
+   */
+  private packHeavier(state: GameState, pack: ItemInstance[]): boolean {
+    const run = this.run!;
+    const over = (s: GameState, gear: ItemInstance[]) => carried(s, { ...run, loot: { ...run.loot, gear } }) - capacity(s.party);
+    const before = over(this.state, run.loot.gear);
+    const after = over(state, pack);
+    return after > 0 && after > before;
   }
 
   /**
@@ -945,10 +992,7 @@ export class Game {
       const room = Math.max(0, BAG_SIZE - this.state.bag.length);
       const gear = loot.gear.slice(0, room);
       this.state.bag.push(...gear);
-      for (const it of gear) {
-        const sp = it.special ? SPECIALS[it.special] : undefined;
-        for (const id of [sp?.id, sp?.set]) if (id && !this.state.codex.includes(id)) this.state.codex.push(id);
-      }
+      for (const it of gear) this.enterCodex(it);
       this.banked = { items: { ...loot.items }, gold: loot.gold, viaLamp, gear, overflow: loot.gear.slice(room) };
       this.notice = 'banked';
     }
@@ -959,6 +1003,12 @@ export class Game {
     this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited), nextLead(this.state)?.region);
     this.rerolled = false;
     this.arrive(afterFinale);
+  }
+
+  /** A special piece and its set enter the codex once: when banked, or when worn from the run pack. */
+  private enterCodex(it: ItemInstance): void {
+    const sp = it.special ? SPECIALS[it.special] : undefined;
+    for (const id of [sp?.id, sp?.set]) if (id && !this.state.codex.includes(id)) this.state.codex.push(id);
   }
 
   private revealHere(): void {

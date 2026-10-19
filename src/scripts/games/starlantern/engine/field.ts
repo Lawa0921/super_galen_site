@@ -3,18 +3,22 @@
  * battle's own path (fromMember, skillFor, skillCost, applyEffect), so it heals as much and costs as much TP as in a
  * fight. Only heal, revive and restore apply; none of them draws, and the rng handed to them throws if anything tries.
  * The simulation and battle never import this module (engine/field.test.ts guards it): the balance bands start every
- * fight full, which is as far as a field heal can push a member.
+ * fight full, which is as far as a field heal can push a member. Gear changes from the run pack live here too.
  */
 import { fromMember, skillCost, skillFor } from './battle';
 import type { Combatant } from './combatant';
-import { activeIds } from './party';
+import { BAG_SIZE } from './loot/bag';
+import { itemSlot } from './loot/item';
+import { activeIds, defaultSlotFor, slotsFor } from './party';
 import { learnedSkills, pctMod, skillRank } from './progression';
 import type { Rng } from './rng';
 import { abyssPct } from './scaling';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
 import type { GameState } from './state';
+import { clampToMax } from './town';
+import { EQUIPMENT } from '../data/equipment';
 import { SKILLS } from '../data/skills';
-import type { CharacterId, Effect, Member, Party } from './types';
+import type { CharacterId, Effect, ItemInstance, Member, Party, Slot } from './types';
 
 /** The rng every field action hands on: a field action never draws, so any call is a bug. */
 export const noDraw: Rng = () => { throw new Error('field actions never draw'); };
@@ -141,4 +145,49 @@ export function castField(
   self.tp -= cost;
   if (def.hpCost && !hpAfter.has(o.caster)) self.hp = caster.hp;
   return { ok: true, state, gains, cost };
+}
+
+/** A change of gear from the run pack: the new state and the new pack, or why not. */
+export type PackResult<F extends string> = { ok: true; state: GameState; pack: ItemInstance[] } | { ok: false; reason: F };
+
+/**
+ * Wears piece `uid` from the run pack, as town `equip` does from the bag: in `slot`, or where defaultSlotFor puts it.
+ * What the slot held goes back into the pack, so the pack keeps its count or loses one. Only a member on the field may
+ * (`invalid`); the bench is in town. Pure: `s` and `pack` are never touched. HP and TP are clamped to the new maximum.
+ */
+export function packEquip(
+  s: GameState, pack: ItemInstance[], member: CharacterId, uid: number, slot?: Slot,
+): PackResult<'invalid' | 'stock'> {
+  if (!activeIds(s.party).includes(member) || !s.party.roster[member]) return { ok: false, reason: 'invalid' };
+  const i = pack.findIndex((it) => it.uid === uid);
+  if (i < 0) return { ok: false, reason: 'stock' };
+  const it = pack[i];
+  if (!EQUIPMENT[it.base]) return { ok: false, reason: 'invalid' };
+  const target = slot ?? defaultSlotFor(s.party.roster[member], it);
+  if (!slotsFor(itemSlot(it)).includes(target)) return { ok: false, reason: 'invalid' };
+  const state = structuredClone(s);
+  const next = structuredClone(pack);
+  const m = state.party.roster[member];
+  const prev = m.equip[target];
+  const [wearing] = prev ? next.splice(i, 1, prev) : next.splice(i, 1);
+  m.equip[target] = wearing;
+  clampToMax(m);
+  return { ok: true, state, pack: next };
+}
+
+/**
+ * Takes off what a member on the field wears in `slot` and puts it in the run pack. The bag and the pack together never
+ * pass BAG_SIZE (`full`): a piece with no slot at home would be lost on the way back. HP and TP are clamped. Pure.
+ */
+export function packUnequip(
+  s: GameState, pack: ItemInstance[], member: CharacterId, slot: Slot,
+): PackResult<'invalid' | 'full'> {
+  if (!activeIds(s.party).includes(member) || !s.party.roster[member]?.equip[slot]) return { ok: false, reason: 'invalid' };
+  if (s.bag.length + pack.length + 1 > BAG_SIZE) return { ok: false, reason: 'full' };
+  const state = structuredClone(s);
+  const m = state.party.roster[member];
+  const it = m.equip[slot]!;
+  delete m.equip[slot];
+  clampToMax(m);
+  return { ok: true, state, pack: [...structuredClone(pack), it] };
 }
