@@ -111,3 +111,61 @@
 ## 審核狀態
 以 `registry.json` 為準；`python art-factory/starlantern/tools/sl_art.py status` 印出各狀態數量。
 - 去背邊緣清理：預設只清一層、門檻 90，保留真正的淡紫、紫與粉紅邊。視窗框、logo、游標與已核准的 NPC 半身像在登錄表標 `defringe: strong`（最多 3 層、門檻 120、加暗洋紅），因為它們的雜邊較厚。
+
+## 計畫 5d：裝備、素材、技能、稀有度外框與鍛造屋
+依據：`docs/superpowers/plans/2026-10-17-starlantern-plan5d-art.md`，以及對它有約束力的 `docs/superpowers/plans/2026-10-19-starlantern-plan5d-addendum.md`（數量、批次、核准關卡以補遺為準）。
+- 工具：`tools/gear_art.py`（工作表、描述表、`gen`／`cand`／`pick`／`note`／`approve`／`silhouettes`／`publish`／`plan-json`）；審核頁 `tools/review_gear.py <batch>` → `tmp/starlantern/review-gear/index.html`。後處理在 `tools/sl_art.py`（`process_gear_cell`、`nine_slice`、`silhouette`、`Registry.retire`）。
+- `art-factory/starlantern/gear-plan.json` 由 `gear_art.py plan-json` 產生並 commit，`render/gearArt.test.ts` 用它和遊戲資料交叉比對（名冊 `data/*.roster.ts` 的 id 不算，歸 5f）。
+
+| 類別 | 數量 | 登錄表 id | runtime（相對 `public`） | 規格 |
+|---|---|---|---|---|
+| 裝備小圖示（底材 25、特殊 44） | 69 | `gear-<id>` | `/assets/games/starlantern/gear/<id>.png` | 透明，長邊 24 美術像素，置中於 26×26 |
+| 裝備大圖 | 69 | `gear-<id>-large` | `/assets/games/starlantern/gear/<id>-large.png` | 透明，長邊 60，置中於 64×64；和小圖示同一格原圖（`source` 相同） |
+| 剪影（地區限定 12＋套裝 6） | 18 | `gear-<id>-silhouette` | `/assets/games/starlantern/gear/<id>-silhouette.png` | 由已核准的 `gear-<id>` 確定性轉出，每邊多 1 px（28×28）；套裝用第一件 |
+| 新素材圖示 | 12 | `icon-<matId>` | `/assets/games/starlantern/icon/<matId>.png` | 透明，高 32（`--height 32`） |
+| 技能樹技能圖示 | 78 | `icon-<skillId>` | `/assets/games/starlantern/icon/<skillId>.png` | 透明，高 32；夥伴樹 47＋凜 10＋洛恩 21 |
+| 稀有度外框 | 5 | `ui-rarity-<magic\|rare\|legendary\|unique\|set>` | `/assets/games/starlantern/ui/rarity-<r>.png` | 九宮格 16×16，slice 5，中央透明 |
+| 傳說光暈 | 1 | `ui-glow-legendary` | `/assets/games/starlantern/ui/glow-legendary.png` | 九宮格 20×20，slice 7，中央透明，硬邊階梯色 |
+| 鍛造屋場景 | 1 | `scene-forge` | `/assets/games/starlantern/scene/forge.png` | 不透明 418×235（`--fit 418x235`） |
+| 多蘭半身像 | 2 | `npc-forge`、`npc-forge-happy` | `/assets/games/starlantern/npc/forge.png`、`forge-happy.png` | 透明，高 180，`allow_edge: [bottom]` |
+
+- 15 件舊底材圖示（`icon-<base>`）沒有大圖，所以 25 件底材全部重畫在 `gear/`。`gear-<base>` 發布時，`publish` 對仍是 `published` 的 `icon-<base>` 執行 `retire`（原因 `replaced by gear-<base> (plan 5d)`）。
+- `retire`：只刪 `public/assets/games/starlantern/` 以下、而且 git 有追蹤的檔（可從 git 復原）；登錄項目保留歷史，`runtime` 移到 `retired_runtime`，狀態 `retired`，manifest 重寫。
+
+### 批次與核准（補遺 S3、S4）
+| 批次 | 工作表 | 件數 |
+|---|---|---|
+| `sample` | `sheet-gear-1`、`sheet-mat-1`、`sheet-rarity-frames`、`scene-forge`、`npc-forge` | 32（9×2＋6＋6＋1＋1），另 3 個剪影 |
+| `main-gear` | `sheet-gear-2`…`-8`、`sheet-mat-2`、`npc-forge-happy` | 127（60×2＋6＋1），另 15 個剪影 |
+| `skills` | `sheet-skill-scarlet` 與其餘 7 位夥伴各 1 張、`sheet-skill-rin-1`／`-2`、`sheet-skill-hero-1`…`-4`（共 14 張） | 78 |
+
+- 3×2 技能表放不滿時，空格畫 `plain empty stone slab`，切完丟棄：noel 1 格、rin-2 2 格、hero-4 3 格（照 sheet-icons-3 的先例）。
+- `pick` 寫 `chosen_attempt`、`source_id`、`batch`（`gear-5d-<batch>`），**不寫 `runtime`**；`runtime` 只由 `publish` 寫入，和 `artPaths.ts` 的 `NO_ICON_YET` 刪除放在同一個 commit。
+- **每一批**都要使用者在審核頁核准後，才可以 `approve --batch B --by "<使用者原話> <YYYY-MM-DD>"`（沒有日期會拒絕），再 `silhouettes`、`publish --batch B`。核准記在登錄表根部 `approved_batches`；`publish` 沒有該批的核准紀錄就拒絕。獨立代理的視覺檢查是交給使用者之前的前置步驟，不能取代使用者核准。
+- 樣本批核准時另寫 `style_approved`。沒有它，`gen` 拒絕生成 `main-gear` 與 `skills` 的任何工作表，`approve` 也拒絕這兩批。
+- 剪影只從 `approved`／`published` 的圖示產生；它是確定性轉換，QA 通過就直接標 `approved`（`approved_by: derived from gear-<id>`，`batch` 跟來源相同），失敗就停下回報。
+
+### QA 關卡（`sl_art.py`）
+- 裝備格（`kind: gear-cell`）：`fit_side` 以主體長邊決定 block（`ceil(長邊 ÷ 目標)`），大圖目標 60、畫布 64，小圖示目標 24、畫布 26；兩張都走 `_finish` 的透明 QA（magenta 殘留、半透明、被原圖畫布切到、16 px 以下的洞只列警告）與 `larger than the canvas`。
+- 九宮格（`kind: nine-slice`）：cutout → 主體 bbox → 最近鄰取樣成正好 N×N（不產生新顏色）→ 一般透明 QA（外框本來就貼齊畫布邊，所以不算 `touches edge`）＋三項檢查：
+  - `center_clear`：slice 以內的中央全透明，否則 `centre not clear`；
+  - `ring_closed`：上下邊帶的每一欄、左右邊帶的每一列，在 slice 深度內至少有 1 個不透明像素，否則 `ring not closed`；
+  - `edge_repeat`：四條邊帶的中段各自當成只左右重複的圖塊，用 `wrap_seam` 量接縫比值，須 ≤ 1.25，否則 `edge does not repeat`。
+  - 外框在登錄表標 `defringe: strong`（同其他 UI 框）。
+- 剪影（`kind: silhouette`）：只接受 `approved`／`published` 的 `gear-<id>`（否則 `PermissionError`）。不透明像素一律換成 `#1d1a2e`，外圍 8 鄰接的透明格塗成 `#8f86b8` 當輪廓光，畫布每邊多 1 px；只允許這兩色、沒有半透明、不透明像素數 ≥ 原圖。
+- 素材、技能、場景、NPC 沿用 `_finish`。
+
+### Prompt 範本（完整句子在 `gear_art.py`）
+- 共通：`flat pure magenta #FF00FF gutters and margin`、`No text, no numbers, no frames, no badge or circle behind the item`、原創句 `The design must be original and not resemble any existing game item.`，句尾沿用 `portal.py` 的 `PIX` 與 `GEN`。prompt 不寫任何作品名或畫師名。
+- 裝備表（`GEAR_SHEET`、每格 `GEAR_DESC`）：`each item drawn alone, about 64 by 64 art pixels, three-quarter item-icon view, long weapons on the diagonal with the hilt lower left and the tip upper right, light from the upper left, a bold readable silhouette that still reads at 24 pixels`。稀有度定語氣：底材樸素低飽和不發光；傳說以底材為骨架加角色或地區母題與橘色硬邊餘燼；獨特加金色細工與一個故事母題；套裝共用配色與徽記（`SET_STYLE`）。武器照資料的種類畫：晶刃是短刃（dagger）、星紋軍刀是彎刀（scimitar）。
+- 參考圖：樣本批附 `raw/portal-refs/icons-old-x8.png`；量產批另附 `raw/gear-refs/gear-anchor.png`（`gen` 由已核准的 sheet-gear-1 原圖縮半自動產生）；角色傳說附 `reference/crops/<cid>.png`；`set-blaze-ring`（sheet 6）附 sheet-gear-1 已核准的原圖。
+- 素材表（`MAT_DESC`）：`about 28 by 28 art pixels`；精華是同一顆結晶滴的四階（灰白、藍、黃、橘）；地區素材照 `portal.py` 的 `TRAITS` 配色。
+- 技能表（`SKILL_DESC`）：`about 28 by 28 art pixels, one bold emblem`，依角色配色；夥伴附 `reference/crops/<cid>.png`，洛恩與凜沒有 crop，改附已核准的 `char-hero-standee`、`char-rin-standee`（凜用誓約前的樣子）。
+- 外框表（`FRAME_DESC`）：`six square pixel-art item-slot frames, each a thin 2-pixel border with small ornamental corners, the inside of each frame perfectly flat magenta, straight edge segments designed to repeat`；第 6 格是寬 3 px 的橘色硬邊階梯光暈。
+- 鍛造屋：`UI_SCENES` 句型，附 `bg-f1` 已發布原圖；多蘭沿用 `UI_NPCS` 句型與 `JP` 前綴，附 `char-scarlet-standee`；笑臉附已核准的 `npc-forge`。
+
+### 交給 5f 的東西（補遺 §2）
+- `process_gear_cell` 接受任何 id，不寫死 69 件；
+- `sheet-gear-1` 的核准原圖（`gear-anchor.png`）是 5f 專屬獨特的風格錨點；
+- `ui-rarity-unique` 外框由 5f 的專屬獨特直接沿用；
+- 素材圖示規格同上表（`--height 32`），5f 的素材表附 5d 已核准的素材圖當參考。
