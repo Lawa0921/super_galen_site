@@ -141,7 +141,11 @@ describe('時裝的取得方式', () => {
     const { RECIPES } = await import('./crafting');
     const { LOOT_ONLY_FASHION, chestLoot } = await import('./loot');
     const crafted = new Set(RECIPES.map((r) => r.out.item));
-    for (const id of VANITY_ITEMS) expect(crafted.has(id) !== LOOT_ONLY_FASHION.includes(id), id).toBe(true);
+    // 礦工頭燈盔：只有矮人礦石商（摯友）賣，不在合成表也不在箱子裡
+    const SHOP_ONLY = new Set(['miner_helmet']);
+    for (const id of VANITY_ITEMS) if (!SHOP_ONLY.has(id)) expect(crafted.has(id) !== LOOT_ONLY_FASHION.includes(id), id).toBe(true);
+    const { ROLES } = await import('./folkDefs');
+    for (const id of SHOP_ONLY) expect(Object.values(ROLES).some((r) => r.shop.some((e) => e.item === id)), id).toBe(true);
     // 地城箱子：一百個箱子裡至少開得出幾件只能撿的時裝
     let n = 0;
     for (let i = 0; i < 100; i++) for (const s of chestLoot('fashion', i, 7, 'dungeon', 0.6)) if (s && LOOT_ONLY_FASHION.includes(s.item)) n++;

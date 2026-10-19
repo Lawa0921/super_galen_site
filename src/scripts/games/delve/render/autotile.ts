@@ -137,6 +137,9 @@ export function decorStyle(id: number, x: number, y: number, n: Neighbor): numbe
     case T.FIREPLACE_L: return h % 3;
     case T.FIREPLACE_R: return n(-1, 0) === T.FIREPLACE_L ? cellHash(x - 1, y) % 3 : h % 3;
     case T.TROPHY: return solid(0, 1) || n(0, 1) === T.TABLE ? 0 : 1;
+    // 旗桿：上面不是旗桿 → 桿頂（三角旗）；熔爐 / 火盆：火形依座標交錯
+    case T.FLAGPOLE: return n(0, -1) === T.FLAGPOLE ? 0 : 1;
+    case T.DWARF_FORGE: case T.BRAZIER: return h % 3;
     case T.ROPE: {
       // 0 中段、1 底端、2 頂端（繩結）、3 單格
       const up = n(0, -1) === T.ROPE, dn = n(0, 1) === T.ROPE;

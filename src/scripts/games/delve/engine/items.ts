@@ -61,7 +61,9 @@ export type ItemId =
   | 'sailor_top' | 'miko_robe' | 'maid_dress' | 'hoodie_top' | 'travel_coat' | 'explorer_vest'
   | 'sailor_skirt' | 'miko_hakama' | 'maid_skirt' | 'hoodie_shorts' | 'coat_trousers' | 'explorer_shorts'
   | 'straw_hat' | 'witch_hat' | 'beret' | 'maid_headdress' | 'flower_crown'
-  | 'travel_cape' | 'feather_wings' | 'ribbon_bow';
+  | 'travel_cape' | 'feather_wings' | 'ribbon_bow'
+  // ── NPC 聚落：建材 / 家具（村落、矮人地廳）、礦工頭盔（矮人信任後才賣） ──
+  | 'thatch' | 'timber' | 'dwarf_brick' | 'dwarf_wall' | 'rail' | 'brazier' | 'barrel' | 'miner_helmet';
 
 /**
  * 飾品效果。移動 / 戰鬥類（jump、run、night、magnet、nofall、stat）要裝在裝備欄的飾品槽才生效；
@@ -398,6 +400,15 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   travel_cape: vty('travel_cape', '旅人斗篷', 'Traveler Cape', 'back', 'back:cape'),
   feather_wings: vty('feather_wings', '白羽翅膀', 'Feather Wings', 'back', 'back:wings'),
   ribbon_bow: vty('ribbon_bow', '大蝴蝶結', 'Big Back Bow', 'back', 'back:bow'),
+  // ── NPC 聚落 ──
+  thatch: block('thatch', '茅草屋頂', 'Thatch', T.THATCH),
+  timber: block('timber', '木骨灰泥牆', 'Timber Frame', T.TIMBER),
+  dwarf_brick: block('dwarf_brick', '鑿石磚', 'Carved Stone', T.DWARF_BRICK),
+  dwarf_wall: wall('dwarf_wall', '鑿刻石牆', 'Carved Stone Wall', W.DWARF_WALL),
+  rail: block('rail', '礦車軌道', 'Rail Track', T.RAIL),
+  brazier: { ...block('brazier', '火盆', 'Brazier', T.BRAZIER), maxStack: 99 },
+  barrel: { ...block('barrel', '木桶', 'Barrel', T.BARREL), maxStack: 99 },
+  miner_helmet: vty('miner_helmet', '礦工頭燈盔', "Miner's Lamp Helm", 'head', 'hat:miner'),
 };
 
 /** 時裝道具（顯示順序） */

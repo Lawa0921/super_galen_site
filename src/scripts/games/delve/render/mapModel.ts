@@ -149,13 +149,14 @@ export function minimapSource(px: number, py: number, w: number, h: number, zoom
 
 // ── 地標圖示 ─────────────────────────────────────────────
 export const MAP_ICONS = ['cabin', 'mineshaft', 'ruin', 'sky_island', 'lake', 'cavern', 'chasm', 'mushroom_biome', 'crystal_cave',
-  'secret_room', 'dungeon', 'treasure', 'unknown', 'player', 'marker'] as const;
+  'secret_room', 'dungeon', 'treasure', 'unknown', 'player', 'marker', 'village', 'dwarf_hall', 'landmark'] as const;
 export type MapIcon = (typeof MAP_ICONS)[number];
 const ICON_OF: Record<string, MapIcon> = {
   cabin: 'cabin', mineshaft: 'mineshaft', ruin: 'ruin', sky_island: 'sky_island', frozen_lake: 'lake', lake_bed: 'lake',
   oasis: 'lake', underground_lake: 'lake', hive: 'cavern',
   cavern: 'cavern', chasm: 'chasm', ravine: 'chasm', sinkhole: 'chasm', mushroom_biome: 'mushroom_biome', crystal_cave: 'crystal_cave',
   secret_room: 'secret_room', dungeon: 'dungeon', dungeon_treasure: 'treasure',
+  village: 'village', dwarf_hall: 'dwarf_hall',
 };
 const IC: Record<string, RGB> = {
   w: hex('#f2e2b0'), b: hex('#966139'), d: hex('#623924'), r: hex('#a83a10'), o: hex('#e8701c'), y: hex('#ffd86a'),
@@ -178,6 +179,9 @@ const ICON_ART: Record<MapIcon, string[]> = {
   unknown: ['..www..', '.w...w.', '.....w.', '....w..', '...w...', '.......', '...w...'],
   player: ['...W...', '..WWW..', '.WWWWW.', 'WWWWWWW', '.WWWWW.', '..WWW..', '...W...'],
   marker: ['.rrrrr.', 'rroooor', 'rooyoor', 'rroooor', '.rrrrr.', '..rr...', '..r....'],
+  village: ['.d.....', '.drr...', '.dr.yy.', '.dyyyyy', 'yyyyyyy', '.wbwbw.', '.wbdbw.'],
+  dwarf_hall: ['.GGGGG.', 'G..d..G', '...d...', '...d...', '...d...', 'ooodooo', 'kkkkkkk'],
+  landmark: ['...y...', '...y...', 'yyyWyyy', '.yyyyy.', '..yyy..', '.yy.yy.', '.y...y.'],
 };
 export function mapIconBmp(kind: MapIcon): Bmp {
   const b = new Bmp(9, 9);
