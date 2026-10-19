@@ -502,12 +502,15 @@ export class DungeonScene implements Scene {
     }, 'slx-list', d.castWho);
   }
 
-  /** Casts and says what came of it: the cast, then one line per member healed or raised (as descend's level-ups). */
+  /**
+   * Casts and says what came of it: the cast, then one line per member healed or raised (as descend's level-ups). A refusal
+   * changes nothing, so the lists stay open under the reason: the player picks again from where they were.
+   */
   private cast(caster: CharacterId, skill: string, name: string, target?: CharacterId): void {
     const d = T.ui2.dungeon;
     const r = this.ctx.game.castInField(caster, skill, target);
-    this.popAll();
     if (!r.ok) { this.ctx.sfx.error(); this.say(T.reasons[r.reason] ?? T.reasons.invalid); return; }
+    this.popAll();
     this.ctx.sfx.heal?.();
     this.refresh();
     const lines = [d.cast(CHARACTERS[caster].name, name),

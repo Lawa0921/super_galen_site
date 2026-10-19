@@ -977,8 +977,12 @@ describe('DungeonScene field menu: skills, equipment and formation (6f Task 5)',
     t.pick(name('selene'));
     t.pick(SKILLS.rebirth.name);
     expect(labels(t.root)).toEqual([name('noel')]);
+    const tp = t.game.state.party.roster.selene.tp;
+    const cost = fieldCost(t.game.state.party.roster.selene, 'rebirth');
+    expect(cost).toBeGreaterThan(0);
     t.pick(name('noel'));
     expect(t.game.state.party.roster.noel.hp).toBeGreaterThan(0);
+    expect(t.game.state.party.roster.selene.tp).toBe(tp - cost);
     expect(t.text()).toBe([d.cast(name('selene'), SKILLS.rebirth.name), d.revived(name('noel'))].join('\n'));
   });
 
@@ -1006,18 +1010,102 @@ describe('DungeonScene field menu: skills, equipment and formation (6f Task 5)',
     expect(lines).toContain(d.healed(name('liz'), r.liz.hp - 1));
   });
 
-  it('a cast that helps nobody is refused with the reason and costs nothing', () => {
+  it('a cast that helps nobody is refused with the reason, costs nothing and keeps the skill list open', () => {
     const { game, s, root, sfx, text, pick } = setup(undefined, true, {}, seleneKnows('moonlight', 'moon-rain'));
     const tp = game.state.party.roster.selene.tp;
     s.onAction('menu');
     pick(d.skills);
     pick(name('selene'));
     pick(SKILLS['moon-rain'].name);
-    expect(root.querySelector('.slx-layer')).toBeNull();
     expect(sfx.error).toHaveBeenCalledTimes(1);
     expect(sfx.heal).not.toHaveBeenCalled();
     expect(text()).toBe(T.reasons['no-effect']);
     expect(game.state.party.roster.selene.tp).toBe(tp);
+    expect(root.querySelectorAll('.slx-layer')).toHaveLength(3);   // field menu, casters, skills: nothing was closed
+    s.onAction('confirm');   // close the line
+    expect(title(root)).toBe(d.castWhat(name('selene')));
+    expect(labels(root)).toEqual([SKILLS.moonlight.name, SKILLS['moon-rain'].name]);
+  });
+
+  it('a refused cast on one member keeps the target list open, so another can be chosen', () => {
+    const { game, s, root, sfx, text, pick } = setup(undefined, true, {}, (g) => { seleneKnows('moonlight')(g); g.state.party.roster.noel.hp = 1; });
+    const sel = game.state.party.roster.selene;
+    const tp = sel.tp;
+    const cost = fieldCost(sel, 'moonlight');
+    s.onAction('menu');
+    pick(d.skills);
+    pick(name('selene'));
+    pick(SKILLS.moonlight.name);
+    pick(name('scarlet'));   // at full HP: the heal would do nothing
+    expect(sfx.error).toHaveBeenCalledTimes(1);
+    expect(text()).toBe(T.reasons['no-effect']);
+    expect(game.state.party.roster.selene.tp).toBe(tp);
+    expect(root.querySelectorAll('.slx-layer')).toHaveLength(4);   // field menu, casters, skills, targets
+    s.onAction('confirm');   // close the line
+    expect(title(root)).toBe(d.castOn(SKILLS.moonlight.name));
+    pick(name('noel'));   // the same list: a member who needs it
+    expect(game.state.party.roster.noel.hp).toBeGreaterThan(1);
+    expect(game.state.party.roster.selene.tp).toBe(tp - cost);
+    expect(sfx.heal).toHaveBeenCalledTimes(1);
+    expect(root.querySelector('.slx-layer')).toBeNull();   // a cast that lands closes the menu
+  });
+
+  it('a cast refused for TP keeps the target list open and says why', () => {
+    const { game, s, root, sfx, text, pick } = setup(undefined, true, {}, (g) => { seleneKnows('moonlight')(g); g.state.party.roster.noel.hp = 1; });
+    s.onAction('menu');
+    pick(d.skills);
+    pick(name('selene'));
+    pick(SKILLS.moonlight.name);
+    game.state.party.roster.selene.tp = 0;   // spent while the list was open
+    pick(name('noel'));
+    expect(sfx.error).toHaveBeenCalledTimes(1);
+    expect(text()).toBe(T.reasons.tp);
+    expect(game.state.party.roster.noel.hp).toBe(1);
+    expect(root.querySelectorAll('.slx-layer')).toHaveLength(4);
+    s.onAction('confirm');   // close the line
+    expect(title(root)).toBe(d.castOn(SKILLS.moonlight.name));
+  });
+
+  it('the skill flow works by keyboard, and Esc backs out one layer at a time', () => {
+    const { game, s, root, sfx } = setup(undefined, true, {}, (g) => { seleneKnows('moonlight')(g); g.state.party.roster.noel.hp = 1; });
+    const p = game.state.party;
+    const selected = () => root.querySelector('.slx-layer:last-child [aria-selected=true] .slx-label')?.textContent;
+    s.onAction('menu');
+    expect(selected()).toBe(d.status);
+    s.onAction('down');
+    expect(selected()).toBe(d.skills);
+    s.onAction('confirm');
+    expect(title(root)).toBe(d.castWho);
+    expect(selected()).toBe(name('selene'));
+    s.onAction('confirm');
+    expect(title(root)).toBe(d.castWhat(name('selene')));
+    expect(selected()).toBe(SKILLS.moonlight.name);
+    s.onAction('confirm');
+    expect(title(root)).toBe(d.castOn(SKILLS.moonlight.name));
+    const targets = activeIds(p).filter((id) => p.roster[id].hp > 0);
+    expect(selected()).toBe(name(targets[0]));
+    s.onAction('down');
+    expect(selected()).toBe(name(targets[1]));
+    s.onAction('cancel');
+    expect(title(root)).toBe(d.castWhat(name('selene')));
+    s.onAction('cancel');
+    expect(title(root)).toBe(d.castWho);
+    s.onAction('cancel');
+    expect(root.querySelectorAll('.slx-layer')).toHaveLength(1);
+    expect(labels(root)).toContain(d.skills);   // back on the field menu
+    expect(sfx.cancel).toHaveBeenCalledTimes(3);
+    expect(p.roster.noel.hp).toBe(1);   // backing out cast nothing
+
+    // Then all the way to a cast with the keys: the field menu kept its cursor on 技能.
+    expect(selected()).toBe(d.skills);
+    s.onAction('confirm');
+    s.onAction('confirm');
+    s.onAction('confirm');
+    for (let i = 0; i < targets.indexOf('noel'); i++) s.onAction('down');
+    expect(selected()).toBe(name('noel'));
+    s.onAction('confirm');
+    expect(game.state.party.roster.noel.hp).toBeGreaterThan(1);
+    expect(root.querySelector('.slx-layer')).toBeNull();
   });
 
   it('equipment and formation open their screens and come back here', () => {
