@@ -13,6 +13,8 @@ import { BAG_SIZE } from '../../engine/loot/bag';
 import { step, type Dir } from '../../engine/map';
 import { rowOfCell } from '../../engine/formation';
 import { activeIds, statsOf } from '../../engine/party';
+import { fromMember, skillFor } from '../../engine/battle';
+import { fieldCost, fieldSkills, fieldTargets } from '../../engine/field';
 import { useFieldItem } from '../../engine/town';
 import type { CharacterId } from '../../engine/types';
 import { el } from '../../ui/dom';
@@ -439,7 +441,10 @@ export class DungeonScene implements Scene {
     const cond = g.run ? CONDITIONS[g.run.condition] : null;
     this.list([
       { id: 'status', label: d.status },
+      { id: 'skills', label: d.skills, disabled: this.casters().length === 0 },
       { id: 'items', label: d.items, disabled: this.usableItems().length === 0 },
+      { id: 'equip', label: d.equip },
+      { id: 'formation', label: d.formation },
       { id: 'lamp', label: d.lamp(lamps), disabled: lamps <= 0 },
       ...(cond ? [{ id: 'condition', label: d.conditionItem(cond.name) }] : []),
       { id: 'handbook', label: d.handbook },
@@ -451,9 +456,63 @@ export class DungeonScene implements Scene {
       if (it.id === 'lamp') { this.askLamp(); return; }
       if (it.id === 'settings') { this.popAll(); this.leaving = true; this.ctx.go('settings'); return; }
       if (it.id === 'handbook') { this.popAll(); this.leaving = true; this.ctx.go('handbook', 'dungeon'); return; }
+      // The labyrinth modes of the equipment and formation screens (they read the phase); closing them comes back here.
+      if (it.id === 'equip' || it.id === 'formation') { this.popAll(); this.leaving = true; this.ctx.go(it.id); return; }
+      if (it.id === 'skills') { this.skillList(); return; }
       if (it.id === 'items') { this.itemList(); return; }
       this.statusList();
     }, 'slx-list slx-field-menu');
+  }
+
+  /** Members on the field who can cast in the field: standing, with a field skill learned. */
+  private casters(): CharacterId[] {
+    const p = this.ctx.game.state.party;
+    return activeIds(p).filter((id) => p.roster[id].hp > 0 && fieldSkills(p.roster[id]).length > 0);
+  }
+
+  /**
+   * 技能: who casts, then which field skill (as they cast it, at the battle price: engine/field fieldCost), then on whom
+   * when the skill takes one target. A skill short of TP, or with nobody to choose, is greyed out.
+   */
+  private skillList(): void {
+    const d = T.ui2.dungeon;
+    const who = this.casters();
+    if (!who.length) { this.say(d.noSkills); return; }
+    const p = this.ctx.game.state.party;
+    this.list(who.map((id) => {
+      const m = p.roster[id];
+      return { id, label: CHARACTERS[id].name, right: `TP ${m.tp}/${statsOf(m).tp}` };
+    }), (c) => {
+      const caster = c.id as CharacterId;
+      const m = p.roster[caster];
+      const as = fromMember(m, Math.max(0, p.grid.indexOf(caster)));
+      const skills = fieldSkills(m).flatMap((sk) => {
+        const def = skillFor(as, sk);
+        if (!def) return [];
+        const cost = fieldCost(m, sk);
+        const choose = def.target === 'ally' || def.target === 'deadAlly';
+        return [{ id: sk, label: def.name, right: T.cmd.tp(cost), disabled: m.tp < cost || (choose && fieldTargets(p, caster, sk).length === 0) }];
+      });
+      this.list(skills, (sk) => {
+        const targets = fieldTargets(p, caster, sk.id);
+        if (!targets.length) { this.cast(caster, sk.id, sk.label); return; }   // the whole party, or the caster: nobody to choose
+        this.list(targets.map((id) => ({ id, label: CHARACTERS[id].name, right: `HP ${p.roster[id].hp}/${statsOf(p.roster[id]).hp}` })),
+          (t) => this.cast(caster, sk.id, sk.label, t.id as CharacterId), 'slx-list', d.castOn(sk.label));
+      }, 'slx-list', d.castWhat(c.label));
+    }, 'slx-list', d.castWho);
+  }
+
+  /** Casts and says what came of it: the cast, then one line per member healed or raised (as descend's level-ups). */
+  private cast(caster: CharacterId, skill: string, name: string, target?: CharacterId): void {
+    const d = T.ui2.dungeon;
+    const r = this.ctx.game.castInField(caster, skill, target);
+    this.popAll();
+    if (!r.ok) { this.ctx.sfx.error(); this.say(T.reasons[r.reason] ?? T.reasons.invalid); return; }
+    this.ctx.sfx.heal?.();
+    this.refresh();
+    const lines = [d.cast(CHARACTERS[caster].name, name),
+      ...r.gains.map((g) => (g.revived ? d.revived(CHARACTERS[g.id].name) : d.healed(CHARACTERS[g.id].name, g.hp)))];
+    this.say(lines.join('\n'));
   }
 
   private askLamp(): void {
@@ -488,7 +547,8 @@ export class DungeonScene implements Scene {
     this.list(items, (it) => {
       const p = this.ctx.game.state.party;
       const dead = ITEMS[it.id].target === 'deadAlly';
-      this.list(p.recruited.map((id) => ({
+      // Only who is on the field: the bench waits in town.
+      this.list(activeIds(p).map((id) => ({
         id, label: CHARACTERS[id].name, right: `${p.roster[id].hp}/${statsOf(p.roster[id]).hp}`, disabled: dead !== (p.roster[id].hp <= 0),
       })), (who) => {
         const r = this.ctx.game.apply(useFieldItem(this.ctx.game.state, it.id, who.id as CharacterId));

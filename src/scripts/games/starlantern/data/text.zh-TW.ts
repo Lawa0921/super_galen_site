@@ -347,7 +347,7 @@ export const T = {
       hint: '方向鍵 移動　Tab 切換　Enter 決定　C 選單　Q／E 換人　R／F 捲動說明　Esc 返回',
       hintTarget: 'Enter 穿上　選空格 卸下　Esc 取消目標',
       hintTargetFull: 'Enter 穿上　C 選單 卸下　Esc 取消目標',
-      hintField: '方向鍵 移動　Tab 切換　Enter 穿上／卸下　Q／E 換人　R／F 捲動說明　Esc 返回',
+      hintField: '方向鍵 移動　Tab 切換　Enter 穿上／卸下　C 選單　Q／E 換人　R／F 捲動說明　Esc 返回',
     },
     settings: {
       title: '設定', volume: '音效音量', speed: '文字速度', vibrate: '震動', story: '劇情播放', on: '開', off: '關', fullscreen: '全螢幕', keys: '按鍵說明', back: '返回',
@@ -493,6 +493,15 @@ export const T = {
       weight: (now: string, cap: string) => `重量 ${now}／${cap}`,
       bagRoom: (n: number) => `背包剩 ${n} 格，帶回的裝備放不下的會遺失。`,
       conditionItem: (name: string) => `本次狀況　${name}`, conditionLine: (name: string, desc: string) => `${name}：${desc}`,
+      /** The field menu's recovery skills (plan 6f): who casts, which skill, on whom, then one line per member helped. */
+      skills: '技能', equip: '裝備', formation: '隊形',
+      castWho: '誰要施放技能？',
+      castWhat: (name: string) => `${name}要施放哪個技能？`,
+      castOn: (skill: string) => `${skill}要對誰施放？`,
+      cast: (who: string, skill: string) => `${who}施放了${skill}。`,
+      healed: (name: string, n: number) => `${name}回復了 ${n} HP。`,
+      revived: (name: string) => `${name}站起來了！`,
+      noSkills: '沒有可以在迷宮中使用的技能。',
     },
     inn: {
       rest: (cost: number) => `休息（${cost} G）`, revive: '復活', ask: (cost: number) => `住一晚要 ${cost} G，要休息嗎？`,

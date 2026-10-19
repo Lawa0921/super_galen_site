@@ -12,7 +12,7 @@ import { capacity, carried, formatWeight as kg, weightOf } from '../../data/weig
 import { MATERIALS } from '../../data/materials';
 import { showPillar } from '../lootFx';
 import { DungeonScene } from './dungeon';
-import { LEGACY_LINEUP, meet } from '../../engine/party';
+import { LEGACY_LINEUP, activeIds, meet, statsOf } from '../../engine/party';
 import { floorOf } from '../../engine/dungeon/run';
 import { T } from '../../data/text.zh-TW';
 import { CHARACTERS } from '../../data/characters';
@@ -25,6 +25,9 @@ import { STORY } from '../../data/story.zh-TW';
 import { CHAINS } from '../../data/story/chains';
 import { FINALE_DEPTH } from '../../data/story/scenes';
 import type { ArtIndex } from '../../render/textures';
+import { CONDITIONS } from '../../data/conditions';
+import { SKILLS } from '../../data/skills';
+import { fieldCost } from '../../engine/field';
 
 /** The depth Selene's first piece opens at: a glimmer of hers holds a memory from there on. */
 const SELENE_FIRST = CHAINS.selene.pieces[0].minDepth;
@@ -34,7 +37,7 @@ function setup(portal: Portal = { region: 'mainline', condition: 'plain' }, fast
   game.state.dungeon.reached[portal.region] = Math.max(game.state.dungeon.reached[portal.region], start);   // so `start` can be departed to
   expect(game.depart(portal, start)).toEqual({ ok: true });
   prep?.(game);
-  const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), stairs: vi.fn(), chest: vi.fn(), encounter: vi.fn(), loot: vi.fn() };
+  const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), stairs: vi.fn(), chest: vi.fn(), encounter: vi.fn(), loot: vi.fn(), heal: vi.fn() };
   const go = vi.fn();
   const root = document.createElement('div');
   const s = new DungeonScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast, ...extra }, Infinity);
@@ -856,5 +859,191 @@ describe("DungeonScene: the finale waits for Rin's choice", () => {
     await flush();
     expect(game.finaleWaiting).toBe(false);
     expect(go).toHaveBeenCalledWith('battle');
+  });
+});
+
+describe('DungeonScene field menu: skills, equipment and formation (6f Task 5)', () => {
+  const d = T.ui2.dungeon;
+  const options = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('.slx-layer:last-child [role=option]')];
+  const labels = (root: HTMLElement) => options(root).map((o) => o.querySelector('.slx-label')!.textContent);
+  const row = (root: HTMLElement, label: string) => {
+    const o = options(root).find((x) => x.querySelector('.slx-label')!.textContent === label);
+    if (!o) throw new Error(`no row ${label}`);
+    return o;
+  };
+  const title = (root: HTMLElement) => root.querySelector('.slx-layer:last-child .slx-who')?.textContent;
+  const name = (id: CharacterId) => CHARACTERS[id].name;
+  /** Nobody on the roster knows any skill. */
+  const unlearn = (g: Game) => { for (const m of Object.values(g.state.party.roster)) m.tree = {}; };
+  /** Selene alone knows `skills` (rank 1 each): she is the only one who can cast in the field. */
+  const seleneKnows = (...skills: string[]) => (g: Game) => {
+    unlearn(g);
+    g.state.party.roster.selene.tree = Object.fromEntries(skills.map((sk) => [sk, 1]));
+  };
+  const hpBar = (root: HTMLElement, id: CharacterId) => root.querySelector(`.slx-pm[data-key=${id}] [role=meter]`)!.getAttribute('aria-valuenow');
+
+  it('the field menu lists skills, equipment and formation in order', () => {
+    const { game, s, root } = setup();
+    s.onAction('menu');
+    expect(options(root).map((o) => o.dataset.id)).toEqual(['status', 'skills', 'items', 'equip', 'formation', 'lamp', 'condition', 'handbook', 'settings', 'close']);
+    expect(labels(root)).toEqual([
+      d.status, '技能', d.items, '裝備', '隊形', d.lamp(game.state.inventory['return-lamp'] ?? 0),
+      d.conditionItem(CONDITIONS[game.run!.condition].name), d.handbook, T.ui2.title.settings, d.close,
+    ]);
+  });
+
+  it('skills is disabled while nobody has learned a field skill', () => {
+    const { s, root } = setup(undefined, true, {}, unlearn);
+    s.onAction('menu');
+    const skills = row(root, d.skills);
+    expect(skills.getAttribute('aria-disabled')).toBe('true');
+    skills.click();
+    expect(labels(root)).toContain(d.status);   // a disabled line picks nothing: still the field menu
+  });
+
+  it('skills stays disabled while the only member who knows one is down, and opens while she stands', () => {
+    const down = setup(undefined, true, {}, (g) => { seleneKnows('moonlight')(g); g.state.party.roster.selene.hp = 0; });
+    down.s.onAction('menu');
+    expect(row(down.root, d.skills).getAttribute('aria-disabled')).toBe('true');
+    const up = setup(undefined, true, {}, seleneKnows('moonlight'));
+    up.s.onAction('menu');
+    expect(row(up.root, d.skills).getAttribute('aria-disabled')).toBe('false');
+    up.pick(d.skills);
+    expect(title(up.root)).toBe(d.castWho);
+    expect(labels(up.root)).toEqual([name('selene')]);   // only who knows a field skill
+  });
+
+  it('casting a heal from the field menu heals and says so', () => {
+    const { game, s, root, sfx, text, pick } = setup(undefined, true, {}, (g) => {
+      const r = g.state.party.roster;
+      r.selene.tree = { ...r.selene.tree, moonlight: 1 };
+      r.noel.hp = 1;
+    });
+    const before = game.state.party;
+    const sel = before.roster.selene;
+    const tp = sel.tp;
+    const cost = fieldCost(sel, 'moonlight');
+    expect(cost).toBeGreaterThan(0);
+    s.onAction('menu');
+    pick(d.skills);
+    expect(title(root)).toBe(d.castWho);
+    expect(row(root, name('selene')).querySelector('.slx-right')!.textContent).toBe(`TP ${tp}/${statsOf(sel).tp}`);
+    pick(name('selene'));
+    expect(title(root)).toBe(d.castWhat(name('selene')));
+    expect(row(root, SKILLS.moonlight.name).querySelector('.slx-right')!.textContent).toBe(T.cmd.tp(cost));
+    pick(SKILLS.moonlight.name);
+    expect(title(root)).toBe(d.castOn(SKILLS.moonlight.name));
+    expect(labels(root)).toEqual(activeIds(before).filter((id) => before.roster[id].hp > 0).map(name));
+    expect(row(root, name('noel')).querySelector('.slx-right')!.textContent).toBe(`HP 1/${statsOf(before.roster.noel).hp}`);
+    pick(name('noel'));
+    const healed = game.state.party.roster.noel.hp;
+    expect(healed).toBeGreaterThan(1);
+    expect(game.state.party.roster.selene.tp).toBe(tp - cost);
+    expect(sfx.heal).toHaveBeenCalledTimes(1);
+    expect(sfx.error).not.toHaveBeenCalled();
+    expect(root.querySelector('.slx-layer')).toBeNull();
+    expect(text()).toBe([d.cast(name('selene'), SKILLS.moonlight.name), d.healed(name('noel'), healed - 1)].join('\n'));
+    expect(d.healed('諾艾兒', 7)).toBe('諾艾兒回復了 7 HP。');
+    expect(hpBar(root, 'noel')).toBe(String(healed));   // the party bar was refreshed
+  });
+
+  it('a skill short of TP is greyed out', () => {
+    const { game, s, root, pick } = setup(undefined, true, {}, (g) => {
+      seleneKnows('moonlight')(g);
+      g.state.party.roster.selene.tp = 0;
+      g.state.party.roster.noel.hp = 1;
+    });
+    s.onAction('menu');
+    pick(d.skills);
+    pick(name('selene'));
+    const moon = row(root, SKILLS.moonlight.name);
+    expect(moon.getAttribute('aria-disabled')).toBe('true');
+    moon.click();
+    expect(title(root)).toBe(d.castWhat(name('selene')));   // no target list opened
+    expect(game.state.party.roster.noel.hp).toBe(1);
+  });
+
+  it('a revive is greyed out while nobody is down; with someone down it lists only the fallen and raises them', () => {
+    const none = setup(undefined, true, {}, seleneKnows('moonlight', 'rebirth'));
+    none.s.onAction('menu');
+    none.pick(d.skills);
+    none.pick(name('selene'));
+    expect(row(none.root, SKILLS.rebirth.name).getAttribute('aria-disabled')).toBe('true');
+    expect(row(none.root, SKILLS.moonlight.name).getAttribute('aria-disabled')).toBe('false');
+
+    const t = setup(undefined, true, {}, (g) => { seleneKnows('moonlight', 'rebirth')(g); g.state.party.roster.noel.hp = 0; });
+    t.s.onAction('menu');
+    t.pick(d.skills);
+    t.pick(name('selene'));
+    t.pick(SKILLS.rebirth.name);
+    expect(labels(t.root)).toEqual([name('noel')]);
+    t.pick(name('noel'));
+    expect(t.game.state.party.roster.noel.hp).toBeGreaterThan(0);
+    expect(t.text()).toBe([d.cast(name('selene'), SKILLS.rebirth.name), d.revived(name('noel'))].join('\n'));
+  });
+
+  it('a whole-party heal casts without asking for a target', () => {
+    const { game, s, root, sfx, text, pick } = setup(undefined, true, {}, (g) => {
+      seleneKnows('moonlight', 'moon-rain')(g);
+      g.state.party.roster.noel.hp = 1;
+      g.state.party.roster.liz.hp = 1;
+    });
+    const tp = game.state.party.roster.selene.tp;
+    const cost = fieldCost(game.state.party.roster.selene, 'moon-rain');
+    s.onAction('menu');
+    pick(d.skills);
+    pick(name('selene'));
+    pick(SKILLS['moon-rain'].name);
+    expect(root.querySelector('.slx-layer')).toBeNull();
+    const r = game.state.party.roster;
+    expect(r.noel.hp).toBeGreaterThan(1);
+    expect(r.liz.hp).toBeGreaterThan(1);
+    expect(r.selene.tp).toBe(tp - cost);
+    expect(sfx.heal).toHaveBeenCalledTimes(1);
+    const lines = text().split('\n');
+    expect(lines[0]).toBe(d.cast(name('selene'), SKILLS['moon-rain'].name));
+    expect(lines).toContain(d.healed(name('noel'), r.noel.hp - 1));
+    expect(lines).toContain(d.healed(name('liz'), r.liz.hp - 1));
+  });
+
+  it('a cast that helps nobody is refused with the reason and costs nothing', () => {
+    const { game, s, root, sfx, text, pick } = setup(undefined, true, {}, seleneKnows('moonlight', 'moon-rain'));
+    const tp = game.state.party.roster.selene.tp;
+    s.onAction('menu');
+    pick(d.skills);
+    pick(name('selene'));
+    pick(SKILLS['moon-rain'].name);
+    expect(root.querySelector('.slx-layer')).toBeNull();
+    expect(sfx.error).toHaveBeenCalledTimes(1);
+    expect(sfx.heal).not.toHaveBeenCalled();
+    expect(text()).toBe(T.reasons['no-effect']);
+    expect(game.state.party.roster.selene.tp).toBe(tp);
+  });
+
+  it('equipment and formation open their screens and come back here', () => {
+    for (const [label, scene] of [['裝備', 'equip'], ['隊形', 'formation']] as const) {
+      const { s, go, root, pick } = setup();
+      s.onAction('menu');
+      pick(label);
+      expect(go.mock.calls).toEqual([[scene]]);
+      expect(root.querySelector('.slx-layer')).toBeNull();
+      s.onAction('menu');   // the scene is on its way out: no menu opens behind it
+      expect(root.querySelector('.slx-layer')).toBeNull();
+    }
+  });
+
+  it('items reach only the members on the field', () => {
+    const { game, s, root, pick } = setup(undefined, true, {}, (g) => {
+      g.state.party = meet(g.state.party, 'bobby', 1);
+      g.state.party.roster.bobby.hp = 1;
+    });
+    const p = game.state.party;
+    expect(p.recruited).toContain('bobby');
+    expect(activeIds(p)).not.toContain('bobby');   // met with five already on the field: on the bench, in town
+    s.onAction('menu');
+    pick(d.items);
+    pick('回復藥');
+    expect(labels(root)).toEqual(activeIds(p).map(name));
+    expect(labels(root)).not.toContain(name('bobby'));
   });
 });
