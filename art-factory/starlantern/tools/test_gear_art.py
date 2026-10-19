@@ -157,7 +157,7 @@ def _png(path, size=(26, 26)):
 
 def _fill(factory, batch, attempt=lambda aid: 'a1'):
     """Every part of a batch picked and qa_passed, each with a small final PNG of its own."""
-    reg = A.Registry(factory / 'registry.json')
+    reg = A.Registry(G.REG_PATH)
     for j in G.jobs():
         if j['batch'] != batch: continue
         for p in j['parts']:
@@ -217,11 +217,11 @@ def test_publish_requires_approval_and_writes_runtime_then_retires_replaced_base
 
 def _refused(factory, batch='sample'):
     """approve refuses and changes nothing: no approvals, no style flag, no batch record."""
-    before = (factory / 'registry.json').read_bytes()
+    before = G.REG_PATH.read_bytes()
     with pytest.raises(PermissionError):
-        G.do_approve(A.Registry(factory / 'registry.json'), batch, 'user 2026-10-20: ok')
-    reg = A.Registry(factory / 'registry.json')
-    assert (factory / 'registry.json').read_bytes() == before
+        G.do_approve(A.Registry(G.REG_PATH), batch, 'user 2026-10-20: ok')
+    reg = A.Registry(G.REG_PATH)
+    assert G.REG_PATH.read_bytes() == before
     assert 'style_approved' not in reg.data and 'approved_batches' not in reg.data and 'style_anchor' not in reg.data
 
 
@@ -346,6 +346,144 @@ def test_review_page_lists_every_part_of_the_batch_and_copies_only_existing_file
     assert shown['gear-iron-sword'] == G.sha256(factory / 'work/gear-iron-sword.png')
     assert (factory / 'registry.json').read_bytes() == before        # read-only for the registry
     assert 'gear-blaze-heart-sword-silhouette' not in A.Registry(factory / 'registry.json').data['assets']
+
+
+# --- fix round 2: nothing the user did not see can be published --------------------------------------------------------
+@pytest.fixture
+def rooted(factory, monkeypatch):
+    """sl_art's own CLI paths point into the temp factory: registry at ROOT/registry.json, public at ROOT/../../public."""
+    monkeypatch.setattr(A, 'ROOT', factory / 'af' / 'sl'); monkeypatch.setattr(G, 'REG_PATH', factory / 'af/sl/registry.json')
+    public = factory / 'public'; public.mkdir(parents=True, exist_ok=True)
+    subprocess.run(['git', 'init', '-q'], cwd=public, check=True)
+    return public
+
+
+def _reg():
+    return A.Registry(G.REG_PATH)
+
+
+def _track(public):
+    subprocess.run(['git', 'add', '-A'], cwd=public, check=True)
+
+
+def _approved_and_published(factory, review, public):
+    _fill(factory, 'sample'); review.main('sample')
+    G.do_approve(_reg(), 'sample', 'user 2026-10-20: ok'); G.do_publish(_reg(), 'sample', public); _track(public)
+
+
+def test_reopen_repick_then_old_approve_and_publish_cannot_ship_an_unseen_image(factory, review, rooted):
+    public = rooted; gear = public / 'assets/games/starlantern/gear/iron-sword.png'
+    _approved_and_published(factory, review, public)
+    assert gear.exists() and _reg().get('gear-iron-sword')['status'] == 'published'
+    _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a2.png')
+    G.pick(['--id', 'sheet-gear-1', '--attempt', '2', '--part', 'iron-sword', '--reopen'])     # 1 reopen, 2 re-pick
+    reg = _reg()
+    assert 'sample' not in reg.data.get('approved_batches', {})                                  # the batch approval is stale
+    assert reg.data['stale_approvals'][-1]['batch'] == 'sample' and not gear.exists()
+    with pytest.raises(PermissionError):
+        A.main(['approve', '--id', 'gear-iron-sword'])                                           # 3 the old per-id approve
+    reg.set('gear-iron-sword', status='approved')                                                # even if it got through
+    with pytest.raises(PermissionError):
+        A.main(['publish', '--approved'])                                                        # the old publish
+    with pytest.raises(PermissionError):
+        G.do_publish(_reg(), 'sample', public)                                                   # 4 no current approval
+    reg = _reg(); reg.data['approved_batches'] = {'sample': reg.data['stale_approvals'][-1]}; reg._save()
+    with pytest.raises(PermissionError):
+        G.do_publish(_reg(), 'sample', public)                                                   # an old approval: wrong hash
+    assert not gear.exists() and _reg().get('gear-iron-sword')['status'] != 'published'
+
+
+def test_publish_rehashes_every_file_and_refuses_the_whole_batch_on_a_mismatch(factory, review, rooted):
+    public = rooted
+    _fill(factory, 'sample'); review.main('sample'); G.do_approve(_reg(), 'sample', 'user 2026-10-20: ok')
+    _png(factory / 'work/sheet-gear-1/gear-leather-cap.png', (24, 24))          # changed after the user approved
+    before = G.REG_PATH.read_bytes()
+    with pytest.raises(PermissionError, match='gear-leather-cap'):
+        G.do_publish(_reg(), 'sample', public)
+    assert G.REG_PATH.read_bytes() == before and not (public / 'assets').exists()      # atomic: nothing went out
+    reg = _reg(); reg.data['approved_batches']['sample'].pop('shown'); reg._save()   # an approval without the image record
+    _png(factory / 'work/sheet-gear-1/gear-leather-cap.png')
+    with pytest.raises(PermissionError):
+        G.do_publish(_reg(), 'sample', public)
+    assert not (public / 'assets').exists()
+
+
+def test_publish_refuses_a_silhouette_not_derived_from_the_approved_icon(factory, review, rooted):
+    public = rooted
+    _fill(factory, 'sample'); review.main('sample'); G.do_approve(_reg(), 'sample', 'user 2026-10-20: ok')
+    assert 'gear-blaze-heart-sword-silhouette' in G.do_silhouettes(_reg())
+    sil = A._final_path(_reg().get('gear-blaze-heart-sword-silhouette')['final']); _png(sil, (28, 28))
+    with pytest.raises(PermissionError, match='silhouette'):
+        G.do_publish(_reg(), 'sample', public)
+    assert not (public / 'assets').exists()
+
+
+def test_old_sl_art_approve_and_publish_refuse_plan5d_parts(factory, rooted):
+    public = rooted; reg = _reg()
+    reg.set('gear-x', status='qa_passed', batch='gear-5d-sample', final=_png(factory / 'work/x.png'))
+    reg.set('gear-y', status='published', batch='gear-5d-sample', runtime='/assets/games/starlantern/gear/y.png')
+    for aid in ('gear-x', 'gear-y'):                         # qa_passed -> approved and published -> approved
+        with pytest.raises(PermissionError, match='gear_art.py'):
+            reg.approve(aid)
+    assert reg.get('gear-y')['status'] == 'published'
+    reg.set('bg-f9', status='approved', final=_png(factory / 'work/f9.png'), runtime='/assets/games/starlantern/bg/f9.png')
+    reg.set('gear-z', status='approved', batch='gear-5d-main-gear', final=_png(factory / 'work/z.png'))   # no runtime yet
+    with pytest.raises(PermissionError, match='gear_art.py'):
+        A.main(['publish', '--approved'])
+    assert not (public / 'assets/games/starlantern/bg/f9.png').exists() and _reg().get('bg-f9')['status'] == 'approved'
+    with pytest.raises(PermissionError):
+        _reg().publish('gear-z', public)
+    with pytest.raises(ValueError, match='runtime'):         # a clear error, not a KeyError
+        _reg().publish('gear-z', public, plan5d=True)
+
+
+def test_pick_reopen_validates_before_it_changes_anything(factory, rooted):
+    public = rooted
+    _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a1.png'); _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a2.png')
+    _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a3.png', cols=2, rows=2)          # a raw that does not slice 3x3
+    G.pick(['--id', 'sheet-gear-1', '--attempt', '1'])
+    rel = 'assets/games/starlantern/gear/iron-sword.png'; (public / rel).parent.mkdir(parents=True); Image.new('RGBA', (2, 2)).save(public / rel)
+    reg = _reg(); reg.set('gear-iron-sword', status='published', runtime='/' + rel)    # not tracked by git
+    reg.set('gear-iron-sword-large', status='approved'); reg.set('gear-leather-cap', status='approved')
+    reg.data['approved_batches'] = {'sample': {'by': 'user 2026-10-20', 'shown': {}}}; reg._save()
+    before = G.REG_PATH.read_bytes()
+    with pytest.raises(PermissionError, match='not tracked'):
+        G.pick(['--id', 'sheet-gear-1', '--attempt', '2', '--part', 'iron-sword', '--reopen'])
+    assert G.REG_PATH.read_bytes() == before and (public / rel).exists()
+    with pytest.raises(ValueError, match='expected 3x3'):
+        G.pick(['--id', 'sheet-gear-1', '--attempt', '3', '--part', 'leather-cap', '--reopen'])
+    assert G.REG_PATH.read_bytes() == before
+
+
+def test_reopening_a_published_base_gear_icon_brings_back_the_old_icon(factory, review, rooted):
+    public = rooted; old = public / 'assets/games/starlantern/icon/iron-sword.png'
+    old.parent.mkdir(parents=True); Image.new('RGBA', (4, 4), (9, 9, 9, 255)).save(old); _track(public)
+    _reg().set('icon-iron-sword', status='published', runtime='/assets/games/starlantern/icon/iron-sword.png',
+               final=_png(factory / 'work/sheet-icons-3/icon-iron-sword.png', (35, 37)))
+    _approved_and_published(factory, review, public)
+    assert _reg().get('icon-iron-sword')['status'] == 'retired' and not old.exists()
+    _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a2.png')
+    G.pick(['--id', 'sheet-gear-1', '--attempt', '2', '--part', 'iron-sword', '--reopen'])
+    e = _reg().get('icon-iron-sword')
+    assert e['status'] == 'published' and e['runtime'] == '/assets/games/starlantern/icon/iron-sword.png' and 'retired_runtime' not in e
+    assert old.exists() and e['history'][-1]['restored_because'] == 'gear-iron-sword reopened (plan 5d)'
+    urls = json.loads((public / 'assets/games/starlantern/manifest.json').read_text(encoding='utf-8'))['urls']
+    assert '/assets/games/starlantern/icon/iron-sword.png' in urls and '/assets/games/starlantern/gear/iron-sword.png' not in urls
+    assert '/assets/games/starlantern/gear/leather-cap.png' in urls                  # the rest of the batch stays out there
+
+
+def test_reapproving_the_sample_with_another_anchor_rebuilds_the_anchor(factory, review, monkeypatch):
+    anchor = factory / 'raw/gear-refs/gear-anchor.png'; monkeypatch.setattr(G, 'GEAR_ANCHOR', anchor)
+    _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a2.png', cell=60); _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a3.png')
+    a2, a3 = (Image.open(factory / f'raw/sheet-gear-1/sheet-gear-1-a{k}.png').size for k in (2, 3))
+    _fill(factory, 'sample', attempt=lambda aid: 'a3'); review.main('sample')
+    G.do_approve(_reg(), 'sample', 'user 2026-10-20: ok'); G.make_anchor(_reg())      # gen builds it from the record
+    assert Image.open(anchor).size == (a3[0] // 2, a3[1] // 2)
+    reg = _reg()
+    for p in G.GEAR_SHEETS['sheet-gear-1']:
+        for aid in (f'gear-{p}', f'gear-{p}-large'): reg.set(aid, chosen_attempt='a2')
+    review.main('sample'); G.do_approve(_reg(), 'sample', 'user 2026-10-21: the a2 sheet')
+    assert _reg().data['style_anchor']['attempt'] == 'a2' and Image.open(anchor).size == (a2[0] // 2, a2[1] // 2)
 
 
 def test_skills_review_page_shows_all_78_icons_each_under_its_owner(factory, review):

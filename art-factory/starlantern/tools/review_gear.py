@@ -80,7 +80,7 @@ class Page:
 
     def copy(self, src, name):
         if not src: return None
-        src = Path(src); src = src if src.is_absolute() else REPO / src
+        src = A._final_path(src)   # registry finals are relative to the repo root that sl_art writes them under
         if not src.is_file(): return None
         shutil.copyfile(src, self.img / name); return f'img/{name}'
 
@@ -95,7 +95,7 @@ class Page:
         """Preview only: the pure transform of the candidate icon (the registry gets silhouettes after approval)."""
         src = G.SET_FIRST.get(key, key); f = self.reg.get(f'gear-{src}', {}).get('final')
         if not f: return None
-        p = Path(f); p = p if p.is_absolute() else REPO / p
+        p = A._final_path(f)
         if not p.is_file(): return None
         from PIL import Image
         A.silhouette_image(Image.open(p)).save(self.img / f'sil-{key}.png'); return f'img/sil-{key}.png'

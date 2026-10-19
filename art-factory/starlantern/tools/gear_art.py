@@ -14,7 +14,7 @@ Batches (addendum S3): `sample` (the style: 32 parts), `main-gear` (127 parts), 
 user's approval on its review page before `approve` and `publish` (addendum S4); `gen` refuses the later batches until
 the sample is approved (`style_approved` at the registry root). Run from the repo root.
 """
-import datetime, json, re, subprocess, sys, time
+import datetime, json, re, shutil, subprocess, sys, time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -481,7 +481,7 @@ def gen(argv):
         deps = [chosen_raw(reg, d) for d in job['deps']]
         if any(d is None for d in deps):
             print(f'[skip] {job["id"]}: dependency {job["deps"]} is not approved', flush=True); continue
-        if GEAR_ANCHOR in job['images'] and not GEAR_ANCHOR.exists(): make_anchor(reg)
+        if GEAR_ANCHOR in job['images']: make_anchor(reg)   # always from the recorded anchor attempt, never a stale file
         missing = [str(p) for p in job['images'] if not Path(p).exists()]
         if missing:
             print(f'[skip] {job["id"]}: missing reference {missing}', flush=True); continue
@@ -547,15 +547,54 @@ def _arg(argv, name):
     return next((argv[i + 1] for i, a in enumerate(argv) if a == name and i + 1 < len(argv)), None)
 
 
+def _replaced_icon(reg, aid):
+    """`icon-<base>` that publishing this published `gear-<base>` retired, if any (it comes back when gear-<base> is reopened)."""
+    e = reg.data['assets'].get(aid, {})
+    if e.get('status') != 'published' or not aid.startswith('gear-') or aid.endswith(('-large', '-silhouette')): return None
+    base = aid[5:]; icon = reg.data['assets'].get(f'icon-{base}', {})
+    ok = icon.get('status') == 'retired' and icon.get('retired_reason') == f'replaced by gear-{base} (plan 5d)'
+    return f'icon-{base}' if ok else None
+
+
+def _reopen_checks(reg, aids, public):
+    """Everything `reopen` will do, checked first so a refusal leaves nothing half-reopened."""
+    base = (Path(public) / A.BASE.strip('/')).resolve()
+    for aid in aids:
+        if reg.data['assets'][aid].get('status') == 'published': reg.retire_target(aid, public)
+        icon = _replaced_icon(reg, aid)
+        if icon:
+            ie = reg.data['assets'][icon]; src = A._final_path(ie['final']) if ie.get('final') else None
+            dst = (Path(public) / ie['retired_runtime'].lstrip('/')).resolve()
+            if src is None or not src.is_file(): raise PermissionError(f'{icon} cannot be restored: its final file is missing')
+            if not dst.is_relative_to(base): raise PermissionError(f'{dst} is outside {base}')
+
+
 def reopen(reg, aid, public=None):
-    """Take an approved or published part back to the candidate stage so it can be re-picked: a published file is
-    retired (deleted from public/, url out of the manifest), approval is dropped, and the old state goes to `history`."""
+    """Take an approved or published part back to the candidate stage so it can be re-picked (call `_reopen_checks` first).
+
+    - A published file is retired (deleted from public/, url out of the manifest).
+    - A published gear-<base> brings back the old icon-<base> it replaced, so the game never lacks an icon.
+    - Approval is dropped, the old state goes to `history`, and the batch approval becomes stale: the batch has to be
+      shown and approved again before anything of it is published."""
+    public = Path(public or PUBLIC)
     e = reg.data['assets'][aid]; old = {k: e[k] for k in ('status', 'runtime', 'approved_by', 'chosen_attempt') if k in e}
+    today = datetime.date.today().isoformat(); icon = _replaced_icon(reg, aid)
     if e.get('status') == 'published':
-        reg.retire(aid, Path(public or PUBLIC), 'reopened for a re-pick (plan 5d)')
+        reg.retire(aid, public, 'reopened for a re-pick (plan 5d)')
+    if icon:
+        ie = reg.data['assets'][icon]; url = ie['retired_runtime']; dst = public / url.lstrip('/')
+        dst.parent.mkdir(parents=True, exist_ok=True); shutil.copyfile(A._final_path(ie['final']), dst)
+        ie.setdefault('history', []).append({'status': 'retired', 'retired_reason': ie.get('retired_reason'), 'restored_on': today,
+                                             'restored_because': f'{aid} reopened (plan 5d)'})
+        for k in ('retired_runtime', 'retired_reason', 'retired_on'): ie.pop(k, None)
+        ie['runtime'] = url; ie['status'] = 'published'
     for k in ('approved_by', 'retired_runtime', 'retired_reason', 'retired_on', 'runtime'): e.pop(k, None)
-    e.setdefault('history', []).append({**old, 'reopened_on': datetime.date.today().isoformat()})
-    e['status'] = 'reopened'; reg._save()
+    e.setdefault('history', []).append({**old, 'reopened_on': today})
+    e['status'] = 'reopened'
+    b = str(e.get('batch', ''))[len(A.PLAN5D_BATCH):]
+    rec = reg.data.get('approved_batches', {}).pop(b, None)
+    if rec: reg.data.setdefault('stale_approvals', []).append({**rec, 'batch': b, 'stale_on': today, 'because': f'{aid} reopened'})
+    reg._save(); reg.write_manifest(public)
 
 
 def pick(argv):
@@ -568,8 +607,16 @@ def pick(argv):
     locked = [a for a in targets if reg.data['assets'].get(a, {}).get('status') in ('approved', 'published')]
     if locked and '--reopen' not in argv:
         raise PermissionError(f'{locked} are already approved or published; pass --reopen to take them back (a published file is retired)')
-    for a in locked: reopen(reg, a)
-    res = process_attempt(reg, job, RAW / sid / f'{sid}-a{k}.png', WORK / sid, parts=[part] if part else None)
+    raw = RAW / sid / f'{sid}-a{k}.png'
+    if locked:
+        # Validate first, mutate after: a raw that cannot be processed, a file that cannot be retired or an icon that
+        # cannot be restored refuses before anything is reopened.
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            process_attempt(A.Registry(Path(td) / 'r.json'), job, raw, Path(td), parts=[part] if part else None)
+        _reopen_checks(reg, locked, PUBLIC)
+        for a in locked: reopen(reg, a, PUBLIC)
+    res = process_attempt(reg, job, raw, WORK / sid, parts=[part] if part else None)
     for aid in res:   # never `runtime`: that is written by publish, in the same commit as the artPaths change
         reg.set(aid, chosen_attempt=f'a{k}', source_id=sid, batch=label(job['batch']))
     print(json.dumps(res, ensure_ascii=False))
@@ -627,12 +674,17 @@ def do_approve(reg, batch, by):
         e = reg.data['assets'][aid]
         if e.get('status') == 'qa_passed': e['status'] = 'approved'; e['approved_by'] = by; done.append(aid)
     today = datetime.date.today().isoformat()
-    reg.data.setdefault('approved_batches', {})[batch] = {'by': by, 'date': today, 'shown': str(sp)}
+    # The hashes the user approved: publish re-hashes every file against these.
+    reg.data.setdefault('approved_batches', {})[batch] = {'by': by, 'date': today, 'record': str(sp), 'shown': {a: shown[a] for a in aids}}
     if batch == 'sample':
         k = anchor_attempt(reg)
         reg.data['style_anchor'] = {'sheet': 'sheet-gear-1', 'attempt': k, 'raw': str(RAW / 'sheet-gear-1' / f'sheet-gear-1-{k}.png')}
         reg.data['style_approved'] = today
     reg._save()
+    if batch == 'sample' and GEAR_ANCHOR.exists():
+        # A re-approved sample may anchor on another attempt: never leave the old anchor behind.
+        if Path(reg.data['style_anchor']['raw']).is_file(): make_anchor(reg)
+        else: GEAR_ANCHOR.unlink()
     return done
 
 
@@ -655,16 +707,37 @@ def do_silhouettes(reg, workdir=None):
 def do_publish(reg, batch, public=None):
     """Publish the approved parts of a batch: runtime, copy to public/, retire `icon-<base>` a gear icon replaces, manifest."""
     public = Path(public or PUBLIC); lab = label(batch)
-    if batch not in reg.data.get('approved_batches', {}):
-        raise PermissionError(f'batch {batch} has no recorded user approval; run approve after the user approves its review page')
-    done = []
-    for aid in sorted(a for a, e in reg.data['assets'].items() if e.get('batch') == lab and e.get('status') == 'approved'):
-        rt = runtime(aid)
-        if not rt: raise ValueError(f'{aid} has no plan 5d runtime path')
-        reg.set(aid, runtime=rt); reg.publish(aid, public); done.append(aid)
+    rec = reg.data.get('approved_batches', {}).get(batch)
+    if not rec:
+        raise PermissionError(f'batch {batch} has no current user approval; show its review page and run approve after the user approves it')
+    shown = rec.get('shown') if isinstance(rec.get('shown'), dict) else {}
+    todo = sorted(a for a, e in reg.data['assets'].items() if e.get('batch') == lab and e.get('status') == 'approved')
+    # Check everything first: every file about to go out must be exactly what the user approved.
+    problems, retire = {}, []
+    for aid in todo:
+        e = reg.data['assets'][aid]; f = A._final_path(e['final']) if e.get('final') else None
+        if not runtime(aid): problems.setdefault('no plan 5d runtime path', []).append(aid); continue
+        if f is None or not f.is_file(): problems.setdefault('final file missing', []).append(aid); continue
+        if aid.endswith('-silhouette'):
+            src = e.get('source', {}).get('from'); se = reg.data['assets'].get(src, {})
+            sf = A._final_path(se['final']) if se.get('final') else None
+            from PIL import Image
+            import numpy as np
+            if not src or sf is None or not sf.is_file() or shown.get(src) != sha256(sf):
+                problems.setdefault('silhouette source is not the approved image', []).append(aid)
+            elif not np.array_equal(np.asarray(A.silhouette_image(Image.open(sf))), np.asarray(Image.open(f).convert('RGBA'))):
+                problems.setdefault('silhouette is not derived from the approved image', []).append(aid)
+        elif shown.get(aid) != sha256(f):
+            problems.setdefault('changed since (or missing from) the approved review page', []).append(aid)
         base = aid[5:] if aid.startswith('gear-') and not aid.endswith(('-large', '-silhouette')) else None
         if base and reg.data['assets'].get(f'icon-{base}', {}).get('status') == 'published':
-            reg.retire(f'icon-{base}', public, f'replaced by gear-{base} (plan 5d)')
+            try: reg.retire_target(f'icon-{base}', public); retire.append(base)
+            except (PermissionError, ValueError) as err: problems.setdefault('old icon cannot be retired', []).append(f'icon-{base}: {err}')
+    if problems: raise PermissionError(f'refusing to publish {batch}; nothing was published: {problems}')
+    done = []
+    for aid in todo:
+        reg.set(aid, runtime=runtime(aid)); reg.publish(aid, public, plan5d=True); done.append(aid)
+    for base in retire: reg.retire(f'icon-{base}', public, f'replaced by gear-{base} (plan 5d)')
     reg.write_manifest(public)
     return done
 

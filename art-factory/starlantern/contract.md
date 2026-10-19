@@ -144,7 +144,12 @@
 - **每一批**都要使用者在審核頁核准後，才可以 `approve --batch B --by "<使用者原話> <YYYY-MM-DD>"`（沒有日期會拒絕），再 `silhouettes`、`publish --batch B`。核准記在登錄表根部 `approved_batches`；`publish` 沒有該批的核准紀錄就拒絕。獨立代理的視覺檢查是交給使用者之前的前置步驟，不能取代使用者核准。
 - 核准綁定使用者看到的圖：`review_gear.py <batch>` 把頁面上每張成品的 sha256 記在 `work/review/<batch>-shown.json`（清單欄也印出前 12 碼）。`approve` 在下列任一情況整批拒絕、什麼都不改：沒有這份紀錄、頁面什麼都沒顯示、有 part 未挑選或成品檔不見、有 part 不是 `qa_passed`（例如 `qa_failed`）、成品的 hash 和頁面紀錄不同（審核後又重挑）。重挑之後要重新產生審核頁、重新給使用者看。
 - 樣本批只有在 `approve` 成功時才寫 `style_approved`，同時記下風格錨點 `style_anchor`（sheet-gear-1 多數 part 出自的那一版）；`gear-anchor.png` 只由這個紀錄的版本產生。沒有 `style_approved`，`gen` 拒絕生成 `main-gear` 與 `skills` 的任何工作表，`approve` 也拒絕這兩批。
-- 已 `approved`／`published` 的 part 不能直接重挑：`pick` 拒絕，除非加 `--reopen`。`--reopen` 會把已發布的檔 `retire`（刪檔、移出 manifest），清掉 `runtime` 與 `approved_by`，舊狀態記進 `history`，由它轉出的剪影也一起重開；重挑後要重新核准。
+- 已 `approved`／`published` 的 part 不能直接重挑：`pick` 拒絕，除非加 `--reopen`。`--reopen` 先把所有動作檢查一遍（原圖能切格、要刪的檔在 git 追蹤之下、要還原的舊圖示檔還在），任一不通過就什麼都不改；通過後才把已發布的檔 `retire`（刪檔、移出 manifest），清掉 `runtime` 與 `approved_by`，舊狀態記進 `history`，由它轉出的剪影也一起重開。
+- 重開會讓該批的核准失效：`approved_batches[B]` 移到 `stale_approvals`，整批要重新產生審核頁、重新給使用者核准。
+- 重開一件已發布的 `gear-<base>` 時，它當初取代而退役的 `icon-<base>` 會從登錄表的 `final` 還原回 `public/`、狀態回到 `published`，遊戲不會缺圖示（`artPaths.ts` 要在同一個 commit 跟著改）。
+- `approve` 把核准當下每張圖的 hash 存進 `approved_batches[B].shown`。`publish` 發布前重新計算每個要發布的檔：hash 不符、不在紀錄裡、剪影不是由已核准的小圖示確定性轉出、或舊圖示無法退役，就整批拒絕、什麼都不發布。
+- 舊的 `sl_art.py approve --id` 與 `sl_art.py publish --approved` 一律拒絕屬於 `gear-5d-*` 批次的 part（訊息指向 `gear_art.py`）；`publish --approved` 在複製任何檔之前就拒絕。
+- 樣本重新核准而錨點換了另一版時，已存在的 `gear-anchor.png` 立即重做；`gen` 每次用到錨點也都從 `style_anchor` 重做。
 - 剪影只從 `approved`／`published` 的圖示產生；它是確定性轉換，QA 通過就直接標 `approved`（`approved_by: derived from gear-<id>`，`batch` 跟來源相同），失敗就停下回報。
 
 ### QA 關卡（`sl_art.py`）

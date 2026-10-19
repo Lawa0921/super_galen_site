@@ -442,6 +442,14 @@ def _process_fx_anim(reg, aid, raw, img, workdir, frames=4, height=None, block=N
     return qa
 
 
+PLAN5D_BATCH = 'gear-5d-'
+
+
+def _plan5d(entry):
+    """Plan 5d art is approved and published only through gear_art.py (approval tied to the review page)."""
+    return str(entry.get('batch', '')).startswith(PLAN5D_BATCH)
+
+
 class Registry:
     def __init__(self, path):
         self.path = Path(path)
@@ -460,6 +468,9 @@ class Registry:
         self.data['assets'].setdefault(aid, {}).update(fields); self._save()
 
     def approve(self, aid):
+        if _plan5d(self.get(aid)):
+            raise PermissionError(f'{aid} belongs to plan 5d batch {self.get(aid)["batch"]}: approve it with '
+                                  '`gear_art.py approve --batch B --by ...` after the user approves its review page')
         if self.get(aid).get('status') not in ('qa_passed', 'published'):
             raise PermissionError(f'{aid} has not passed QA')
         self.set(aid, status='approved')
@@ -467,11 +478,16 @@ class Registry:
     def _target(self, aid, public_root):
         return Path(public_root) / self.get(aid)['runtime'].lstrip('/')
 
-    def publish(self, aid, public_root):
-        if self.get(aid).get('status') != 'approved':
+    def publish(self, aid, public_root, plan5d=False):
+        """plan5d=True only from gear_art.py publish, which first checks the batch approval and the shown images."""
+        e = self.get(aid)
+        if _plan5d(e) and not plan5d:
+            raise PermissionError(f'{aid} belongs to plan 5d batch {e["batch"]}: publish it with `gear_art.py publish --batch B`')
+        if e.get('status') != 'approved':
             raise PermissionError(f'{aid} is not approved')
+        if not e.get('runtime'): raise ValueError(f'{aid} has no runtime path')
         dst = self._target(aid, public_root); dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(self.get(aid)['final'], dst); self.set(aid, status='published')
+        shutil.copyfile(_final_path(e['final']), dst); self.set(aid, status='published')
 
     def reject(self, aid, reason, public_root):
         if self.get(aid).get('runtime'):
@@ -485,14 +501,9 @@ class Registry:
         out = Path(public_root) / BASE.strip('/') / 'manifest.json'; out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps({'version': 1, 'urls': urls}, indent=2) + '\n', encoding='utf-8')
 
-    def retire(self, aid, public_root, reason):
-        """Take published art out of the game (plan 5d: an old base icon replaced by its gear art).
-
-        The runtime file is deleted only when it lies under public/assets/games/starlantern/ and git tracks it, so it
-        can always be restored from git. The entry keeps its history: `runtime` moves to `retired_runtime`, and the
-        final, raw, QA and approval fields stay. The manifest is rewritten without the url.
-        """
-        e = self.get(aid); url = e.get('runtime')
+    def retire_target(self, aid, public_root):
+        """The file `retire` would delete, after every check it makes (raises instead of deleting anything)."""
+        url = self.get(aid).get('runtime')
         if not url: raise ValueError(f'{aid} has no runtime to retire')
         base = (Path(public_root) / BASE.strip('/')).resolve(); dst = self._target(aid, public_root).resolve()
         if not dst.is_relative_to(base): raise PermissionError(f'{dst} is outside {base}; refusing to delete')
@@ -500,7 +511,17 @@ class Registry:
             tracked = subprocess.run(['git', 'ls-files', '--error-unmatch', dst.name], cwd=dst.parent, capture_output=True,
                                      **({'creationflags': subprocess.CREATE_NO_WINDOW} if sys.platform == 'win32' else {}))
             if tracked.returncode: raise PermissionError(f'{dst} is not tracked by git; refusing to delete it')
-            dst.unlink()
+        return dst
+
+    def retire(self, aid, public_root, reason):
+        """Take published art out of the game (plan 5d: an old base icon replaced by its gear art).
+
+        The runtime file is deleted only when it lies under public/assets/games/starlantern/ and git tracks it, so it
+        can always be restored from git. The entry keeps its history: `runtime` moves to `retired_runtime`, and the
+        final, raw, QA and approval fields stay. The manifest is rewritten without the url.
+        """
+        dst = self.retire_target(aid, public_root); e = self.get(aid); url = e['runtime']
+        if dst.exists(): dst.unlink()
         e.pop('runtime')
         self.set(aid, status='retired', retired_runtime=url, retired_reason=reason, retired_on=datetime.date.today().isoformat())
         self.write_manifest(public_root)
@@ -722,8 +743,11 @@ def main(argv=None):
     if args.cmd == 'reject': reg.reject(args.id, args.reason, public)
     if args.cmd == 'retire': reg.retire(args.id, public, args.reason)
     if args.cmd == 'publish':
-        for aid, a in reg.data['assets'].items():
-            if a.get('status') == 'approved': reg.publish(aid, public)
+        todo = [aid for aid, a in reg.data['assets'].items() if a.get('status') == 'approved']
+        own = [aid for aid in todo if _plan5d(reg.get(aid))]
+        if own:   # refused before anything is copied
+            raise PermissionError(f'{own} belong to plan 5d batches: publish them with `gear_art.py publish --batch B`; nothing was published')
+        for aid in todo: reg.publish(aid, public)
         reg.write_manifest(public)
     if args.cmd == 'status':
         counts = {}
