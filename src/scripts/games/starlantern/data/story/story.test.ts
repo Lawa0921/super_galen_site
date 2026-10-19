@@ -820,13 +820,16 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
       for (let n = 1; n <= CHAT_COUNT[c]; n++) {
         for (const full of [false, true]) {
           for (const oath of [false, true]) {
+           // V2 fix 1: also with only her met, so the stand-in lines a guest leaves behind (`if.notMet`) are read too
+           for (const met of [[...CHARACTER_IDS], ['hero', 'rin', c]] as CharacterId[][]) {
             const id = `chat:${c}:${n}` as SceneId;
-            const played = linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: full ? [c] : [], returned: [], oath });
+            const played = linesWhen(STORY.scenes[id].lines, { met, full: full ? [c] : [], returned: [], oath });
             const said = played.filter((l) => l.who === c).map((l) => l.text).join('');
             const heard = played.filter((l) => l.who === c || l.who === 'narrator').map((l) => l.text).join('');
-            const tag = `${id} full=${full}`;
+            const tag = `${id} full=${full} met=${met.length}`;
             for (const r of UNDONE.filter((x) => x.who === c)) if (full || r.piece < 5) expect(said, `${tag} ${r.re}`).not.toMatch(r.re);
             for (const r of REVEALED.filter((x) => x.who === c)) if (!full) expect(r.heard ? heard : said, `${tag} ${r.re}`).not.toMatch(r.re);
+           }
           }
         }
       }
@@ -1810,10 +1813,22 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
       expect(line.if?.met, `${id}: ${line.text}`).toBe(line.who);
       expect(line.text, `${id}: ${line.who}`).not.toMatch(GUEST_NEVER[line.who]);
     }
-    // and a guest line has a stand-in for the parties that have not met her, so no chat goes thin
-    for (const id of new Set(guests.map((g) => g.id))) {
+    // and a guest line has a stand-in for the parties that have not met her, so no chat goes thin (V2 fix 1: each one played)
+    for (const { id, owner, line } of guests) {
       const lines = STORY.scenes[id].lines;
-      expect(lines.some((l) => l.if?.notMet !== undefined), id).toBe(true);
+      const g = line.who as CharacterId;
+      for (const full of [[], [owner]] as CharacterId[][]) {
+        for (const oath of [false, true]) {
+          const withHer = linesWhen(lines, { met: [...CHARACTER_IDS], full, returned: [], oath });
+          const without = linesWhen(lines, { met: CHARACTER_IDS.filter((x) => x !== g), full, returned: [], oath });
+          const tag = `${id} without ${g} full=${full.length > 0}`;
+          expect(without.some((l) => l.who === g), tag).toBe(false);
+          expect(without.length, tag).toBe(withHer.length);
+          expect(without.some((l) => l.who === owner), tag).toBe(true);
+          expect(without.some((l) => l.if?.notMet === g), tag).toBe(true);
+          for (const l of without) if ((C as string[]).includes(l.who) && l.who !== owner) expect(l.if?.met, `${tag}: ${l.text}`).toBe(l.who);
+        }
+      }
     }
   });
 
@@ -1868,12 +1883,39 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
     expect(all('liz')).toContain('乾糧');
   });
 
-  it("a quiet beat keeps the last word: Liz's family line closes her meeting, with no joke after it in the line", () => {
-    const last = STORY.meet.liz.after[STORY.meet.liz.after.length - 1];
-    expect(last.who).toBe('liz');
-    expect(last.mood).toBe('hushed');
-    expect(last.text).toMatch(/臉/);
-    expect(last.text).toMatch(/[。」]$/);
-    expect(last.text).not.toMatch(/老大|成交|分紅|商量/);
+  it("a quiet beat keeps its own line: Liz's family line carries no joke, and her cover-up comes in the next box after a turn (bible §2.2)", () => {
+    // V2 fix 1 (controller ruling): the sample's cover-up stays, as its own box after a clear shift, never in the quiet line.
+    const after = STORY.meet.liz.after;
+    const i = after.findIndex((l) => l.who === 'liz' && l.mood === 'hushed' && /臉/.test(l.text));
+    expect(i).toBeGreaterThanOrEqual(0);
+    expect(after[i].text).not.toMatch(/老大|成交|分紅|商量|銅板|估/);
+    const next = after[i + 1];
+    if (next) {
+      const shift = next.who !== after[i].who || /^「?(好啦|再說|話說回來|算了|──)/.test(next.text);
+      expect(shift, next.text).toBe(true);
+      expect(next.text).toMatch(/老大|分紅|商量/);   // the cover-up itself (sample §5.6)
+    }
+    // the gate catches what it guards: the sample's one-line version
+    const sample = '「得把錢帶回家。……家人的臉，卻想不起來。老大，讓我跟著你們，分紅好商量。」';
+    expect(sample).toMatch(/老大|分紅|商量/);
+  });
+
+  it("Lorne's straight man has more than one move: one counting joke at most across V2's scenes", () => {
+    // V2 fix 1: 第三十支, 第三塊, 第三遍, 第七道 had become a template. Understatement, a literal reading, a deadpan question.
+    const COUNT = /第[一二三四五六七八九十]+[支塊遍道次口]|[一二三四五六七八九十]+遍了/;
+    const lorne = light().flatMap(({ played }) => played).filter((l) => l.who === 'hero');
+    const counting = new Set(lorne.filter((l) => COUNT.test(l.text)).map((l) => l.text));
+    expect([...counting].length, [...counting].join(' / ')).toBeLessThanOrEqual(1);
+    expect(COUNT.test('「那是第七道了。」') && COUNT.test('「第三遍了。」')).toBe(true);
+  });
+
+  it("Safira's own register: 唷 and 呀, not Bobby's 喔 or Liz's 啦, and 「跟上拍子囉」 is her one 囉", () => {
+    const hers = light().flatMap(({ played }) => played).filter((l) => l.who === 'safira').map((l) => l.text);
+    expect(hers.length).toBeGreaterThan(0);
+    for (const t of hers) {
+      expect(t, t).not.toMatch(/[喔啦嘛]/);
+      expect(t.replace(/跟上拍子囉/g, ''), t).not.toMatch(/囉/);
+    }
+    expect(hers.some((t) => /[唷呀]/.test(t))).toBe(true);
   });
 });
