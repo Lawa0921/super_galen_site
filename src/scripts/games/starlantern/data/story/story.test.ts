@@ -193,7 +193,7 @@ describe('story data', () => {
 
   it('placeholders are registered', () => {
     expect(PLACEHOLDERS.size).toBeGreaterThan(0);
-    expect(PLACEHOLDERS.has(STORY.absorb[0])).toBe(true);   // a key no task has written yet (the acts and the truths are written in Task 5)
+    expect(PLACEHOLDERS.has(STORY.endingTitle)).toBe(true);   // a key no task has written yet (the absorb lines are written in Task 13)
   });
 
   it("the finale's wait, Rin's oath lines, the bellkeeper and the merchant are story copy", () => {
@@ -265,6 +265,7 @@ const WRITTEN: string[] = [
   'scenes.prologue-inn.', 'scenes.first-return.',   // Task 10b: why the two of them go down together
   'scenes.town:', 'town.', 'merchant.', 'bellkeeper.',   // Task 11: the townsfolk, the merchant and the bellkeeper
   'townLines.', 'greet.',   // Task 12: the town's days, stage by stage
+  'absorb.',   // Task 13: strangers' memories
 ];
 const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
 const isWritten = (key: string): boolean => writtenBy(WRITTEN, key);
@@ -1413,5 +1414,23 @@ describe("Task 12: the town's days, stage by stage", () => {
         for (const n of names) expect(t, st).not.toContain(n);
       }
     }
+  });
+});
+
+describe("Task 13: strangers' memories", () => {
+  it('thirty strangers, no names', () => {
+    const lines = STORY.absorb;
+    expect(lines.length).toBeGreaterThanOrEqual(30);
+    expect(new Set(lines).size).toBe(lines.length);
+    const names = [...CHARACTER_IDS.map((c) => CHARACTERS[c].name), ...Object.values(NPC_NAMES)];
+    for (const t of lines) {
+      for (const n of names) expect(t, n).not.toContain(n);
+      expect(t.length, t).toBeLessThanOrEqual(MAX_LINE_CHARS);
+      expect(/\n/.test(t), t).toBe(false);
+    }
+  });
+
+  it("a stranger's memory says nothing of the lamp, the bell, the mist or the deep (spec §7.4: mood, not lore)", () => {
+    for (const t of STORY.absorb) expect(t).not.toMatch(/燈|鐘|鑰|霧|迷宮|深處|碎片|靜鐘會|守燈人|刺客|代號/);
   });
 });

@@ -192,3 +192,45 @@ describe('memory keystones', () => {
     });
   });
 });
+
+describe('memory keystone words (6c Task 13)', () => {
+  const M = MEMORY_KEYSTONE_VALUES;
+  /** Each memory keystone's numbers as its template writes them, with the unit after the number where there is one. */
+  const NUMBERS: Record<string, string[]> = {
+    'moon-promise': [`+${M.moonHealPct}%`],
+    'small-shrine': [`+${M.shrineDefPct}%`, `${M.shrineTurns} 回合`],
+    'troupe-step': [`${M.troupeTurns} 回合`],
+    'carried-out': [`+${M.fullHpPct}%`],
+    'teachers-gift': [`−${M.tpCostPct}%`],
+    blueprint: [`+${M.turretPct}%`],
+    'fathers-face': [`+${M.matFind}`],
+    'not-a-shield': [`−${M.friendGuardPct}%`],
+    'unrung-bell': [`+${M.bellAtkPct}%`, `${M.bellTurns} 回合`],
+  };
+
+  it('memory keystone texts keep every number', () => {
+    expect(Object.keys(NUMBERS).sort()).toEqual(Object.values(MEMORY_KEYSTONES).sort());
+    for (const [k, nums] of Object.entries(NUMBERS)) {
+      const { desc } = KEYSTONES[k as 'blueprint'];
+      for (const n of nums) expect(desc, k).toContain(n);
+    }
+    const names = Object.values(MEMORY_KEYSTONES).map((k) => KEYSTONES[k].name);
+    for (const n of names) expect(n.trim()).not.toBe('');
+    expect(new Set(names).size).toBe(names.length);
+    expect(KEYSTONES['unrung-bell'].name).toBe('不再鳴響的鐘');
+    expect(KEYSTONES['not-a-shield'].name).toBe('不是盾，是朋友');
+  });
+
+  it("each memory keystone says a word of her memory before its effect (6c Task 13)", () => {
+    const before: Record<string, string> = {
+      'moon-promise': '她施放的回復', 'small-shrine': '戰鬥開始時', 'troupe-step': '她施放的增益', 'carried-out': '對滿血目標',
+      'teachers-gift': '她的技能', blueprint: '砲台威力', 'fathers-face': '素材尋獲', 'not-a-shield': '挑釁中', 'unrung-bell': '洛恩倒下時',
+    };
+    for (const [k, effect] of Object.entries(before)) {
+      const { desc } = KEYSTONES[k as 'blueprint'];
+      expect(desc.indexOf(effect), k).toBeGreaterThan(0);
+      expect(desc.slice(0, desc.indexOf(effect)), k).toMatch(/。$/);
+    }
+  });
+});
+
