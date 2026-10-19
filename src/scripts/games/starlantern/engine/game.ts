@@ -34,6 +34,7 @@ import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeResult, RerollOpts } from './forge/cost';
 import { dismantle, enhance, fuse, reroll } from './forge/forge';
+import { castField } from './field';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
 import type { CharacterId, GearSlot, ItemInstance, Member, Pos } from './types';
 
@@ -736,6 +737,18 @@ export class Game {
     this.state = { ...this.state, party: r.party };
     if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return { ok: true };
+  }
+
+  /**
+   * A recovery skill cast outside battle (the rules: field `castField`): on the map only, at the battle's TP price, with
+   * no draw from any rng. Like a tree spend in the labyrinth it counts at once and is saved with the run's progress at the
+   * next town save.
+   */
+  castInField(caster: CharacterId, skill: string, target?: CharacterId): ReturnType<typeof castField> | { ok: false; reason: 'phase' } {
+    if (this.phase !== 'map' || !this.run) return { ok: false, reason: 'phase' };
+    const r = castField(this.state, { caster, skill, target, depth: this.floor });
+    if (r.ok) this.state = r.state;
+    return r;
   }
 
   /**

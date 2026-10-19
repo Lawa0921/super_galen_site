@@ -57,7 +57,7 @@ export const LIMIT_PER_HIT_SCALE = 40;
 
 const fresh = () => ({ poison: false, sleep: 0, buffs: [], taunt: 0, turret: null, defending: false, limit: 0, keystones: [] as KeystoneId[] });
 
-function fromMember(m: Member, cell: number): Combatant {
+export function fromMember(m: Member, cell: number): Combatant {
   const row: Row = rowOfCell(cell);
   const def = CHARACTERS[m.id];
   const sheet = sheetOf(m);
@@ -98,7 +98,7 @@ export function createBattle(o: {
   scale?: BattleScale;
   /** The depth of a fight that has no `scale` (the story boss of a dungeon's third floor); default `scale.depth`, else 1. */
   depth?: number;
-  /** The abyss bonus in percent, only to force it (simulations); default is `abyssPct(depth)`, computed here and nowhere else. */
+  /** The abyss bonus in percent, only to force it (simulations); default is `abyssPct(depth)`, computed here and in engine/field.ts for casts outside battle, from the same `abyssPct(depth)`. */
   abyss?: number;
   /** Run-long altar bonuses: percent added to the party's max stats for this whole battle (summed per stat). */
   altar?: { stat: BuffStat; pct: number }[];

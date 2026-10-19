@@ -14,7 +14,7 @@ import { ENEMIES } from '../data/enemies';
 import { CHARACTERS } from '../data/characters';
 import { handbook } from './story/handbook';
 import { SETS } from '../data/gear';
-import { activeIds, expToNext, gainExp, MAX_LEVEL, meet, newMember, rowOfCell, LEGACY_LINEUP, START_LINEUP } from './party';
+import { activeIds, expToNext, gainExp, MAX_LEVEL, meet, newMember, rowOfCell, statsOf, LEGACY_LINEUP, START_LINEUP } from './party';
 import { depthClearExp, empower, encounterGroup, groupCap } from './scaling';
 import { favouredRegions } from '../data/meetings';
 import { MAX_ACTIVE } from './formation';
@@ -32,6 +32,7 @@ import { fragmentItem } from './story/fragments';
 import { ACT_DEPTHS, FINALE_BOSS, FINALE_DEPTH, type SceneId } from '../data/story/scenes';
 import { STORY } from '../data/story.zh-TW';
 import { chainLength } from '../data/story/chains';
+import { SKILLS } from '../data/skills';
 
 vi.mock('./portals', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./portals')>();
@@ -3134,5 +3135,32 @@ describe('the depth-3 story boss after the finale branch', () => {
   it('a later kill does not queue it again, while it waits or once it was seen', () => {
     expect(kill(['act1-after']).state.story.queue.filter((id) => id === 'act1-after')).toHaveLength(1);
     expect(kill([], ['act1-after']).state.story.queue).not.toContain('act1-after');
+  });
+});
+
+describe('casting in the field', () => {
+  it('casting in the field works on the map only, draws nothing and is not saved', () => {
+    let draws = 0;
+    const base = calm();
+    const spy = () => { draws++; return base(); };
+    const storage = memoryStorage();
+    const g = inMap(1, spy, storage);
+    const half = Math.floor(statsOf(g.state.party.roster.hero).hp / 2);
+    g.state.party.roster.hero.hp = half;
+    const tp = g.state.party.roster.selene.tp;
+    const saved = new Map(storage.map);
+    const loot = g.run!.lootDraws, memory = g.run!.memoryDraws;
+    draws = 0;
+    const r = g.castInField('selene', 'moonlight', 'hero');
+    expect(r.ok).toBe(true);
+    expect(g.state.party.roster.hero.hp).toBeGreaterThan(half);
+    expect(g.state.party.roster.selene.tp).toBe(tp - SKILLS.moonlight.tp);
+    expect(draws).toBe(0);
+    expect([g.run!.lootDraws, g.run!.memoryDraws]).toEqual([loot, memory]);
+    expect(storage.map).toEqual(saved);
+    expect(g.returnToTown()).toBe(true);
+    g.state.party.roster.hero.hp = half;
+    expect(g.castInField('selene', 'moonlight', 'hero')).toEqual({ ok: false, reason: 'phase' });
+    expect(g.state.party.roster.hero.hp).toBe(half);
   });
 });
