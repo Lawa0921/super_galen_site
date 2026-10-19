@@ -1384,6 +1384,23 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
   },
 };
 
+/**
+ * The guild's lead for each companion still out there (6c Task 16; lore ledger I-124, I-126 to I-134): Anna passes on what
+ * other adventurers saw, in her registry's words. A sighting, never a call for help: the lost remember nothing (I-126).
+ * One box each: the region in words, the depth in numerals, what was seen and never who she is (her meeting, `MEET`, is
+ * where she says it). Each matches her meeting's opening picture (spec §6).
+ */
+const LEADS: Record<Meetable, string> = {
+  selene: '本道第二層的水晶洞窟裡，有人看見了月光。照不到天的洞裡，跪著一個人影。登記表上，還沒有這個人。',
+  chizuru: '霜凍之地回來的人登記了一件事：第三層的冰裡，封著一個握長槍的人，姿勢像在做什麼儀式。',
+  safira: '熾焰之地第三層的火海裡，有人一個人跳著劍舞。回來的冒險者說，那拍子像在等誰跟上。',
+  sylvie: '腐毒沼澤第四層，一直有弓弦的聲音，一響就有怪物倒下。……箭，總有用完的時候。',
+  noel: '雷鳴之地第四層的岩台上，雷整天亂劈。雷光裡有個小小的人影，連自己腳邊都劈。那樣撐不了多久。',
+  bobby: '本道第六層的星燈神殿，一直傳出扳手的聲音。倒下的古代機兵身上趴著一個人，怪物圍過來也不抬頭。',
+  liz: '暗影迴廊第六層，有間寶庫的鎖被撬開了。門縫裡有人在數金幣，數一數，就停了下來。',
+  scarlet: '鋼鐵要塞第八層，一位騎士舉著燃燒的劍，守在城門前。靠近的人，全被趕了回來。……去之前，把隊伍整好。',
+};
+
 export const STORY = {
   scenes: buildScenes(),
   /**
@@ -1535,6 +1552,8 @@ export const STORY = {
   endingTitle: '終幕　點燈',
   /** Rescue meetings: what is said before the fight (the found line is narration, then hers) and after it is won. */
   meet: Object.fromEntries(MEETINGS.map((m) => [m.id, written(MEET[m.id], `meet.${m.id}`)])) as Record<Meetable, { before: ScriptLine[]; after: ScriptLine[] }>,
+  /** The guild's lead for each companion not met yet: Anna says it in place of her greeting (engine/story/leads.ts). */
+  leads: LEADS,
   /**
    * Strangers' memories, one played when a shard is absorbed (Task 13; spec §3.1, §7.4; lore ledger I-102). Ordinary lives,
    * one voice each, in quotes: no named person, no lore, nothing of the lamp, the bell or the deep. The hollow adventurers

@@ -49,9 +49,10 @@ const meetAll = (g: Game, ids: CharacterId[], memories = 0) => {
 };
 
 describe('HandbookScene', () => {
-  it('the five tabs are there in order', () => {
+  it('the six tabs are there in order', () => {
     const { tabs, tab, s } = setup();
-    expect(tabs()).toEqual([H.tabs.memories, H.tabs.people, H.tabs.town, H.tabs.codex, H.tabs.truths]);
+    // 6c Task 16 adds 線索 after 人物: who is still out there sits beside who has been met.
+    expect(tabs()).toEqual([H.tabs.memories, H.tabs.people, H.tabs.leads, H.tabs.town, H.tabs.codex, H.tabs.truths]);
     expect(tab()).toBe(H.tabs.memories);
     s.onAction('next');
     expect(tab()).toBe(H.tabs.people);
@@ -197,5 +198,41 @@ describe('HandbookScene', () => {
     expect(t.labels()).toContain(CHARACTERS.noel.name);   // the first list again, not noel's pieces
     t.s.onAction('cancel');
     expect(t.go).toHaveBeenCalledWith('town');
+  });
+});
+
+describe('HandbookScene: the leads (6c Task 16)', () => {
+  const detail = (root: HTMLElement) => root.querySelector('.slx-hb-detail')!.textContent;
+
+  it("a new game: the lead's place, the rumour beside it, no face and nothing followed yet", () => {
+    const { goTab, labels, root, rows, sfx, pick } = setup();
+    goTab(H.tabs.leads);
+    expect(labels()).toEqual([H.leads.place('星燈迷宮・本道', 2)]);
+    expect(rows()[0].querySelector('.slx-label')!.classList.contains('slx-lead-now')).toBe(true);   // gold, and no right column to squeeze it
+    expect(detail(root)).toContain(H.leads.now);
+    expect(detail(root)).toContain(STORY.leads.selene);
+    expect(root.querySelector('.slx-status-art img')).toBeNull();   // the lead never shows who she is, not even as a silhouette
+    pick(H.leads.place('星燈迷宮・本道', 2));
+    expect(sfx.error).toHaveBeenCalled();
+  });
+
+  it('the leads followed stay, by name and place, under the one to follow now', () => {
+    const { goTab, labels, root, s } = setup(undefined, (g) => {
+      meetAll(g, ['selene', 'safira']);
+      g.state.dungeon.reached.mainline = 2;
+    });
+    goTab(H.tabs.leads);
+    expect(labels()).toEqual([H.leads.place('霜凍之地', 3), CHARACTERS.selene.name, CHARACTERS.safira.name]);
+    s.onAction('down');
+    expect(detail(root)).toContain(H.leads.found);
+    expect(detail(root)).toContain(H.leads.place('星燈迷宮・本道', 2));
+    expect(detail(root)).toContain(STORY.leads.selene);
+  });
+
+  it('everyone met: the page says so', () => {
+    const { goTab, labels } = setup(undefined, (g) => meetAll(g, CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin')));
+    goTab(H.tabs.leads);
+    expect(labels()[0]).toBe(H.leads.allFound);
+    expect(labels()).toHaveLength(9);
   });
 });

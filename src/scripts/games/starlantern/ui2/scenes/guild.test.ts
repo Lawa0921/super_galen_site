@@ -10,6 +10,7 @@ import { ABSORB_CAP, ABSORB_GAIN, PERKS, SHARD_IDS, SHARD_NAMES, SHARD_PRICE, TO
 import { STORY } from '../../data/story.zh-TW';
 import { linesOf } from '../story';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
+import { MEETINGS } from '../../data/meetings';
 
 const HERO_LINEUP = ['hero', 'chizuru', 'liz', 'noel', 'selene'] as const;
 /** Rin and the hero on the field, Bobby met and waiting. */
@@ -367,5 +368,49 @@ describe('GuildScene fragment exchange', () => {
     const stocked = setup(undefined, LEGACY_LINEUP, (g) => stock(g, { [SHARD_IDS.dim]: 1, 'tf-glen': 1 }));
     stocked.pick(T.ui2.exchange.title);
     for (const label of [T.ui2.exchange.sell, T.ui2.exchange.absorb, T.ui2.exchange.give]) expect(row(stocked.root, label).getAttribute('aria-disabled'), label).toBe('false');
+  });
+});
+
+describe("GuildScene: the guild's lead (6c Task 16)", () => {
+  /** The guild entered fresh from the town, with an rng that counts its draws. */
+  const enter = (prep?: (g: Game) => void) => {
+    const counter = { n: 0 };
+    const game = new Game(() => { counter.n++; return 0.5; }, memoryStorage(), undefined, 0, [...START_LINEUP]);
+    prep?.(game);
+    counter.n = 0;
+    const root = document.createElement('div');
+    const s = new GuildScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    return { game, root, s, counter, said: () => root.querySelector('.slx-talk .slx-text')!.textContent };
+  };
+
+  it("a new game: Anna passes on Selene's lead in place of her greeting, with the greeting's one draw", () => {
+    const { said, counter, root, s } = enter();
+    expect(said()).toBe(STORY.leads.selene);
+    expect(root.querySelector('.slx-talk .slx-name')!.textContent).toBe(T.ui2.facility.guild.npc);
+    expect(counter.n).toBe(1);   // the greeting's draw is still taken, so the stream after the guild is the same
+    s.onAction('confirm');
+    expect(root.querySelector<HTMLElement>('.slx-talk')!.hidden).toBe(true);   // one box: one confirm and the guild is free
+  });
+
+  it('the lead follows who is met: past the prologue with Selene met, the frost', () => {
+    const { said } = enter((g) => { g.state.party = meet(g.state.party, 'selene', 1); g.state.dungeon.reached.mainline = 2; });
+    expect(said()).toBe(STORY.leads.chizuru);
+  });
+
+  it('nobody left out there: the plain greeting of the stage', () => {
+    const { said, counter } = enter((g) => { for (const m of MEETINGS) g.state.party = meet(g.state.party, m.id, 1); });
+    expect(STORY.greet.guild.prologue).toContain(said());
+    expect(counter.n).toBe(1);
+  });
+
+  it('coming back from one of its own screens says nothing, lead or not', () => {
+    const counter = { n: 0 };
+    const game = new Game(() => { counter.n++; return 0.5; }, memoryStorage(), undefined, 0, [...START_LINEUP]);
+    counter.n = 0;
+    const root = document.createElement('div');
+    new GuildScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), from: 'formation' }, Infinity).enter(root);
+    expect(root.querySelector<HTMLElement>('.slx-talk')!.hidden).toBe(true);
+    expect(counter.n).toBe(0);
   });
 });

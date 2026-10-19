@@ -28,6 +28,7 @@ import { depthClearExp, depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
+import { nextLead } from './story/leads';
 import { afterWin, arrivalScenes, markRead, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
 import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
@@ -787,7 +788,7 @@ export class Game {
    */
   rerollPortals(): boolean {
     if (!this.canReroll()) return false;
-    this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited));
+    this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited), nextLead(this.state)?.region);
     this.rerolled = true;
     if (!(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return true;
@@ -935,7 +936,7 @@ export class Game {
     this.pending = [];
     this.encounter = 0;
     this.run = null;
-    this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited));
+    this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited), nextLead(this.state)?.region);
     this.rerolled = false;
     this.arrive();
   }
@@ -1059,7 +1060,7 @@ export class Game {
     this.run = null;
     this.encounter = 0;
     this.notice = 'wipe';
-    this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited));
+    this.state.dungeon.portals = rollPortals(this.rng, favouredRegions(this.state.party.recruited), nextLead(this.state)?.region);
     this.rerolled = false;
     this.arrive();
   }

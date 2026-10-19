@@ -364,6 +364,44 @@ describe('battles', () => {
     expect(h.phase).toBe('town');
     expect(h.state.dungeon.portals).toEqual(g.state.dungeon.portals);
   });
+  it("every roll offers the guild's lead region: lamp, entrance, wipe and Glen's reroll (6c Task 16)", () => {
+    // The hero's lineup has met Chizuru, Liz, Noel and Selene; past the prologue, the lead is Safira in the blaze.
+    const g = new Game(mulberry32(5), memoryStorage(), undefined, 0, HERO_LINEUP);
+    g.state.dungeon.reached.mainline = 3;
+    g.state.inventory['return-lamp'] = 40;
+    const regions = () => g.state.dungeon.portals.map((p) => p.region);
+    for (let i = 0; i < 20; i++) {
+      expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+      expect(g.useReturnLamp()).toBe(true);
+      expect(regions(), `return ${i}`).toContain('blaze');
+      expect(vi.mocked(rollPortals)).toHaveBeenLastCalledWith(g.rng, expect.any(Array), 'blaze');
+    }
+    g.depart(MAIN, 1);
+    expect(g.returnToTown()).toBe(true);
+    expect(regions()).toContain('blaze');
+    g.state.story.returned.push('glen');
+    expect(g.rerollPortals()).toBe(true);
+    expect(regions()).toContain('blaze');
+    // Safira met: the lead moves on to Sylvie in the mire, and the next roll offers it.
+    g.state.party = meet(g.state.party, 'safira', 1);
+    g.depart(MAIN, 1);
+    expect(g.useReturnLamp()).toBe(true);
+    expect(regions()).toContain('mire');
+  });
+  it('a save made before the leads loads exactly as saved, and its next roll offers the lead (6c Task 16)', () => {
+    // Loading never rewrites the save (the game in play is the stored save); the guarantee comes with the next roll.
+    const storage = memoryStorage();
+    const g = new Game(mulberry32(5), storage, undefined, 0, HERO_LINEUP);
+    g.state.dungeon.reached.mainline = 3;
+    g.state.inventory['return-lamp'] = 2;
+    g.state.dungeon.portals = [MAIN, { region: 'frost', condition: 'plain' }, { region: 'storm', condition: 'fog' }];
+    saveGame(storage, g.state);
+    const h = Game.boot(mulberry32(7), storage);
+    expect(h.state.dungeon.portals).toEqual(g.state.dungeon.portals);
+    expect(h.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(h.useReturnLamp()).toBe(true);
+    expect(h.state.dungeon.portals.map((p) => p.region)).toContain('blaze');
+  });
   it('a wipe rerolls the portals too', () => {
     const g = startBattle();
     const before = JSON.stringify(g.state.dungeon.portals);

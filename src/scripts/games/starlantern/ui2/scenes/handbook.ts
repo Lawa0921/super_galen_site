@@ -1,4 +1,5 @@
 import { CHARACTER_IDS, CHARACTERS } from '../../data/characters';
+import { REGIONS } from '../../data/regions';
 import { ENEMIES } from '../../data/enemies';
 import { SETS, SPECIALS, codexName } from '../../data/gear';
 import { chainLength } from '../../data/story/chains';
@@ -7,6 +8,7 @@ import type { SceneId } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { handbook, type Handbook, type SceneEntry } from '../../engine/story/handbook';
+import type { Lead } from '../../engine/story/leads';
 import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { artIdOf } from '../../ui/art';
@@ -19,7 +21,7 @@ import { playScene, storyCtx } from '../story';
 import { Dialogue, MenuView, backControl, win } from '../widgets';
 
 const H = T.ui2.handbook;
-const TABS = ['memories', 'people', 'town', 'codex', 'truths'] as const;
+const TABS = ['memories', 'people', 'leads', 'town', 'codex', 'truths'] as const;
 type Tab = (typeof TABS)[number];
 /** How many rows of a list are on screen at once. */
 const LIST_ROWS = 10;
@@ -154,6 +156,30 @@ export class HandbookScene implements Scene {
 
   private sceneRow = (e: SceneEntry): MenuItem => ({ id: e.scene, label: e.title, ...freshRight(e.fresh) });
 
+  /**
+   * The guild's leads (6c Task 16): the one to follow now (its place and the sighting, never a face), then the ones followed,
+   * by name. Nothing here replays.
+   */
+  private leads(h: Handbook): Level {
+    const L = H.leads;
+    const { current, followed, allMet } = h.leads;
+    const place = (l: Lead) => L.place(REGIONS[l.region].name, l.depth);
+    const rows: MenuItem[] = [
+      current ? { id: 'now', label: place(current), cls: 'slx-lead-now' } : { id: 'none', label: allMet ? L.allFound : L.none, disabled: true },
+      ...followed.map((l): MenuItem => ({ id: l.id, label: CHARACTERS[l.id].name, right: L.found })),
+    ];
+    const of = (id: string | undefined) => followed.find((l) => l.id === id);
+    return {
+      key: 'leads', rows, pick: () => this.ctx.sfx.error(),
+      detail: (id) => {
+        if (id === 'now' && current) return [el('h4', { text: place(current) }), el('p', { class: 'slx-dim', text: `${L.now}・${L.heard}` }), el('p', { text: STORY.leads[current.id] })];
+        const l = of(id);
+        return l ? [el('h4', { text: CHARACTERS[l.id].name }), el('p', { class: 'slx-dim', text: `${place(l)}　${L.found}` }), el('p', { text: STORY.leads[l.id] })] : [];
+      },
+      shown: (id) => (of(id) ? { id: id as CharacterId, met: true } : null),
+    };
+  }
+
   private town(h: Handbook): Level {
     const page = (id: string | undefined) => h.town.find((p) => p.id === id);
     const npc = (id: string) => TOWN_FRAGMENTS.find((f) => f.id === id)!.npc;
@@ -204,7 +230,7 @@ export class HandbookScene implements Scene {
     if (this.closed) return;
     const h = handbook(this.ctx.game.state);
     const tab = TABS[this.tab] as Tab;
-    this.level = { memories: () => this.memories(h), people: () => this.people(h), town: () => this.town(h), codex: () => this.codex(h), truths: () => this.truths(h) }[tab]();
+    this.level = { memories: () => this.memories(h), people: () => this.people(h), leads: () => this.leads(h), town: () => this.town(h), codex: () => this.codex(h), truths: () => this.truths(h) }[tab]();
     this.bodyEl.classList.toggle('slx-hb-solo', !!this.level.solo);
     this.tabsEl.replaceChildren(...TABS.map((t, i) => {
       const b = el('span', { class: i === this.tab ? 'slx-tab slx-tab-sel' : 'slx-tab', text: H.tabs[t], attrs: { role: 'tab', 'aria-selected': String(i === this.tab) } });

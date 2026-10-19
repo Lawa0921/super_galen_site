@@ -503,6 +503,7 @@ $slx-battle-left: 150px;
 .slx-hb-detail p { margin: 0 0 6px; }
 .slx-hb-detail .slx-dim { color: $slx-dim; }
 .slx-handbook .slx-fresh { color: $slx-gold; }
+.slx-handbook .slx-lead-now { color: $slx-gold; }
 .slx-handbook.slx-hb-playing .slx-status-panel, .slx-handbook.slx-hb-playing .slx-status-art, .slx-handbook.slx-hb-playing > .slx-back { visibility: hidden; }
 .slx-status-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; margin-bottom: 6px; }
 .slx-status-facts p { margin: 1px 0; }
@@ -975,6 +976,12 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-portal-iron .slx-portal-art { object-position: 50% -34px; }
 .slx-portal-name { font-size: 16px; line-height: 18px; color: $slx-ink; }
 .slx-portal-on .slx-portal-name { color: $slx-gold; }
+// 6c Task 16: someone was sighted beyond this portal: a small text marker on the name's line (no shape), so the card keeps
+// its height. The guild's lead is gold, and its card gets a gold edge.
+.slx-portal-head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; }
+.slx-portal-sighting { margin-left: auto; font-size: 10px; line-height: 12px; color: #a9d4ff; white-space: nowrap; }
+.slx-portal-lead-tag { color: $slx-gold; }
+.slx-portals .slx-portal-lead { border-color: rgba(232, 196, 106, 0.7); }
 .slx-portal-trait { display: flex; align-items: center; gap: 4px; }
 .slx-portal-icon { width: 16px; height: 16px; image-rendering: pixelated; }
 .slx-portal-affinity, .slx-portal-desc { color: $slx-dim; }

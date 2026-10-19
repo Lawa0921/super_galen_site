@@ -56,7 +56,12 @@ export abstract class FacilityScene implements Scene {
     ]));
     this.refresh();
     // Coming back from one of the guild's own screens (or settings) is not a new visit: no greeting.
-    if (!RETURNING.includes(this.ctx.from ?? 'town')) { const pool = this.greetings(); void this.say(pool[Math.floor(this.ctx.game.rng() * pool.length)]); }
+    if (!RETURNING.includes(this.ctx.from ?? 'town')) { const pool = this.greetings(); void this.greet(pool[Math.floor(this.ctx.game.rng() * pool.length)]); }
+  }
+
+  /** Says the greeting drawn for this visit; a facility with news of its own may say that instead (the draw is taken either way). */
+  protected greet(line: string): Promise<void> {
+    return this.say(line);
   }
 
   /** What the keeper says today: the lines for the story stage, and the thanks of a townsperson who got her memory back. */

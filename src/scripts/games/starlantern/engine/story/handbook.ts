@@ -10,6 +10,8 @@ import { T } from '../../data/text.zh-TW';
 import { memoriesOf } from '../progression';
 import type { GameState } from '../state';
 import type { CharacterId, Element } from '../types';
+import { MEETINGS } from '../../data/meetings';
+import { followedLeads, nextLead, type Lead } from './leads';
 
 /** `seen` is what makes a piece replayable: a found piece can still be waiting in the story queue. */
 export interface PiecePage { n: number; scene: SceneId; found: boolean; seen: boolean; fresh: boolean; hint: string }
@@ -20,7 +22,9 @@ export interface PersonPage { id: CharacterId; met: boolean; title: string; segm
 export interface TownPage { id: TownFragmentId; status: 'unknown' | 'held' | 'returned'; lines: string[]; scene: SceneEntry | null }
 export interface CodexPage { specials: string[]; sets: string[]; monsters: { id: string; name: string; weak: Element[] | null }[] }
 export interface TruthPage { stage: Stage; unlocked: boolean; text: string | null; scenes: SceneEntry[] }
-export interface Handbook { memories: MemoryPage[]; people: PersonPage[]; town: TownPage[]; codex: CodexPage; truths: TruthPage[] }
+/** The guild's leads (6c Task 16): the one to follow now, the ones already followed, and whether anyone is left at all. */
+export interface LeadsPage { current: Lead | null; followed: Lead[]; allMet: boolean }
+export interface Handbook { memories: MemoryPage[]; people: PersonPage[]; town: TownPage[]; codex: CodexPage; truths: TruthPage[]; leads: LeadsPage }
 
 /** The one major scene each truth page replays. */
 const TRUTH_SCENE: Record<Stage, SceneId> = {
@@ -96,5 +100,7 @@ export function handbook(s: GameState): Handbook {
   const truths = STAGES.map((stage): TruthPage => ({
     stage, unlocked: open(stage), text: open(stage) ? STORY.truths[stage] : null, scenes: entries([TRUTH_SCENE[stage]]),
   }));
-  return { memories, people, town, codex, truths };
+  const followed = followedLeads(s);
+  const leads: LeadsPage = { current: nextLead(s), followed, allMet: followed.length === MEETINGS.length };
+  return { memories, people, town, codex, truths, leads };
 }

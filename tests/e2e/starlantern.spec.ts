@@ -779,6 +779,75 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test("the guild points the way: Selene's lead first, then the next one, marked at the gate and kept in the handbook (6c Task 16)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const dir = 'tmp/starlantern/t16-leads';
+    mkdirSync(dir, { recursive: true });
+    const shot = async (name: string) => { await page.waitForTimeout(700); await page.screenshot({ path: `${dir}/${name}.png` }); };
+    const w = await setup(page, 7);
+    const said = page.locator('.slx-talk:not([hidden]) .slx-text');
+
+    // A new game: Anna passes on Selene's lead, and the main road's portal carries it.
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await expect(said).toHaveText(STORY.leads.selene);
+    await shot('01-guild-lead-selene');
+    await w.closeTalk();
+    await w.key('Escape');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-town', '傳送門廣場');
+    await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');                                   // 選擇傳送門
+    const main = page.locator('.slx-portal[data-region=mainline]');
+    await expect(main).toHaveClass(/slx-portal-lead/);
+    await expect(main.locator('.slx-portal-sighting-depth')).toHaveText(T.ui2.gate.leadAt(2));
+    await w.key('Escape'); await w.key('Escape');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    // Selene met on the main road's second floor: the next lead is the frost's, and the roll on the way home offers it.
+    await page.evaluate(() => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      s.party.recruited.push('selene');
+      s.dungeon.reached.mainline = 2;
+      s.inventory['return-lamp'] = 3;
+    });
+    await depart(page, w);
+    await lampHome(page, w);
+    await w.closeTalk();
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.dungeon.portals.map((p: { region: string }) => p.region))).toContain('frost');
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await expect(said).toHaveText(STORY.leads.chizuru);
+    await shot('02-guild-lead-chizuru');
+    await w.closeTalk();
+    await w.key('Escape');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-town', '傳送門廣場');
+    await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');                                   // 選擇傳送門
+    const frost = page.locator('.slx-portal[data-region=frost]');
+    await expect(frost).toHaveClass(/slx-portal-lead/);
+    await expect(frost.locator('.slx-portal-lead-tag')).toHaveAttribute('title', T.ui2.gate.lead);
+    await expect(frost.locator('.slx-portal-sighting-depth')).toHaveText(T.ui2.gate.leadAt(3));
+    await expect(main.locator('.slx-portal-sighting')).toHaveCount(0);
+    // the marker fits: no card is clipped by it
+    const clipped = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-portal')].map((c) => c.scrollHeight - c.clientHeight));
+    for (const c of clipped) expect(c).toBeLessThanOrEqual(1);
+    await shot('03-gate-lead-frost');
+    await w.key('Escape'); await w.key('Escape');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    // The handbook keeps it: the lead now, and Selene's, followed.
+    await page.locator('.slx-town [data-id=handbook]').click();
+    await expect(page.locator('.slx-handbook')).toBeVisible();
+    await page.locator('.slx-tabs .slx-tab').filter({ hasText: T.ui2.handbook.tabs.leads }).click();
+    const rows = page.locator('.slx-hb-list [role=option] .slx-label');
+    await expect(rows).toHaveText([T.ui2.handbook.leads.place('霜凍之地', 3), CHARACTERS.selene.name]);
+    await expect(page.locator('.slx-hb-detail')).toContainText(STORY.leads.chizuru);
+    await shot('04-handbook-leads');
+    expect(w.errors).toEqual([]);
+  });
+
   /** The parts of the game state the forge tests read, through the debug handle. */
   const forgeState = (page: Page) => page.evaluate(() => {
     const s = (window as unknown as Dbg).__starlanternDebug.game.state;

@@ -6,6 +6,10 @@ import { GateScene, portalArt } from './gate';
 import { generalLegendaries } from '../../data/gear';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import { BAG_SIZE } from '../../engine/loot/bag';
+import { MEETINGS } from '../../data/meetings';
+import { T } from '../../data/text.zh-TW';
+import { meet } from '../../engine/party';
+import { STORY } from '../../data/story.zh-TW';
 
 function setup(prep?: (g: Game) => void, art: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), null);
@@ -292,5 +296,47 @@ describe("GateScene: Glen's reroll", () => {
     s.onAction('confirm');
     expect(game.canReroll()).toBe(false);
     expect(labels()).toEqual(['選擇傳送門', '離開']);
+  });
+});
+
+describe('GateScene: the leads (6c Task 16)', () => {
+  const mark = (c: HTMLElement) => c.querySelector('.slx-portal-sighting')?.querySelector('.slx-portal-sighting-depth')?.textContent ?? null;
+  const isLead = (c: HTMLElement) => c.classList.contains('slx-portal-lead') && !!c.querySelector('.slx-portal-lead-tag');
+
+  it("a new game marks the main road as the guild's lead, and each region where someone was sighted", () => {
+    const { cards } = setup();
+    const [main, blaze, iron] = cards();
+    expect(isLead(main)).toBe(true);
+    expect(main.querySelector('.slx-portal-lead-tag')!.getAttribute('title')).toBe(T.ui2.gate.lead);
+    expect(mark(main)).toBe(T.ui2.gate.leadAt(2));
+    expect([T.ui2.gate.leadAt(2), T.ui2.gate.sighted(3)]).toEqual(['線索・第二層', '目擊・第三層']);
+    // beside the name, so the card is no taller than before
+    expect(main.querySelector('.slx-portal-head .slx-portal-sighting')).not.toBeNull();
+    expect([isLead(blaze), mark(blaze)]).toEqual([false, T.ui2.gate.sighted(3)]);   // Safira
+    expect([isLead(iron), mark(iron)]).toEqual([false, T.ui2.gate.sighted(8)]);     // Scarlet
+  });
+
+  it('a regional lead marks its own portal; the main road is marked only for a lead of its own', () => {
+    const { cards } = setup((g) => {
+      g.state.party = meet(g.state.party, 'selene', 1);
+      g.state.dungeon.reached.mainline = 2;
+      g.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }, { region: 'frost', condition: 'fog' }, { region: 'blaze', condition: 'calm' }];
+    });
+    const [main, frost, blaze] = cards();
+    expect([isLead(main), mark(main)]).toEqual([false, null]);   // Bobby is unmet there, but the lead is the frost's
+    expect([isLead(frost), mark(frost)]).toEqual([true, T.ui2.gate.leadAt(3)]);
+    expect([isLead(blaze), mark(blaze)]).toEqual([false, T.ui2.gate.sighted(3)]);
+  });
+
+  it('nobody left: no portal is marked', () => {
+    const { cards, root } = setup((g) => { for (const m of MEETINGS) g.state.party = meet(g.state.party, m.id, 1); });
+    expect(cards().map(mark)).toEqual([null, null, null]);
+    expect(root.querySelector('.slx-portal-lead')).toBeNull();
+  });
+
+  it('a lead is a sighting, never a call for help: the companions are lost and remember nothing (user ruling)', () => {
+    expect(T.ui2.rescue.waiting).toBe('這層好像還有別人。');
+    const texts = [T.ui2.rescue.waiting, T.ui2.gate.lead, T.ui2.gate.leadAt(3), T.ui2.gate.sighted(3), ...Object.values(STORY.leads)];
+    for (const t of texts) expect(t).not.toMatch(/求救|求助|呼救|訊號|救命/);
   });
 });

@@ -224,3 +224,26 @@ describe("the adventurer's handbook", () => {
     expect(c.sets).toEqual([piece.set]);
   });
 });
+
+describe("the handbook's leads (6c Task 16)", () => {
+  it('a new game holds the first lead and nothing followed yet', () => {
+    expect(handbook(fresh()).leads).toEqual({ current: { id: 'selene', region: 'mainline', depth: 2 }, followed: [], allMet: false });
+  });
+
+  it('keeps the leads followed, in lead order, and the next one', () => {
+    const s = withMemories(fresh(), 'selene', 0);
+    s.dungeon.reached.mainline = 2;
+    withMemories(s, 'safira', 0);
+    const { leads } = handbook(s);
+    expect(leads.current).toEqual({ id: 'chizuru', region: 'frost', depth: 3 });
+    expect(leads.followed.map((l) => l.id)).toEqual(['selene', 'safira']);
+    expect(leads.allMet).toBe(false);
+  });
+
+  it('once everyone is met there is no lead left', () => {
+    const { leads } = handbook(everything());
+    expect(leads.current).toBeNull();
+    expect(leads.followed).toHaveLength(8);
+    expect(leads.allMet).toBe(true);
+  });
+});

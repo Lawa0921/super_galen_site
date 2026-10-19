@@ -18,6 +18,8 @@ const SLOT: Record<Slot, string> = {
 };
 
 const RARITY: Record<Rarity, string> = { common: '普通', magic: '魔法', rare: '稀有', legendary: '傳說', unique: '獨特', set: '套裝' };
+/** A depth in Chinese numerals for the leads' markers (6c Task 16), matching the guild's words: 第三層, not 第 3 層. */
+const zhDepth = (n: number): string => (Number.isInteger(n) && n >= 1 && n <= 10 ? '一二三四五六七八九十'[n - 1] : String(n));
 /** Every stat's name: the seven base names come from STAT, so they are written once. */
 const STAT_NAME: Record<AnyStat, string> = {
   ...STAT,
@@ -166,7 +168,7 @@ export const T = {
       shard: (name: string) => `撿到了${name}。`,
       town: (name: string) => `撿到了${name}。`,
     },
-    rescue: { waiting: '這層還有人在求救。', found: rescueFound, joined: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍！`, benched: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍，在公會待命。` },
+    rescue: { waiting: '這層好像還有別人。', found: rescueFound, joined: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍！`, benched: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍，在公會待命。` },
     banner: { encounter: '遭遇！', boss: '頭目出現！', win: '勝利！' },
     hints: {
       title: '↑↓ 選擇　Enter 決定　滑鼠也可以操作',
@@ -354,7 +356,7 @@ export const T = {
     },
     handbook: {
       title: '冒險者手冊',
-      tabs: { memories: '記憶', people: '人物', town: '鎮民', codex: '圖鑑', truths: '真相' },
+      tabs: { memories: '記憶', people: '人物', leads: '線索', town: '鎮民', codex: '圖鑑', truths: '真相' },
       unknown: '？？？', fresh: '新', status: { unknown: '尚未找到', held: '持有中', returned: '已交還' },
       stages: { prologue: '序章', act1: '第一幕', act2: '第二幕', act3: '第三幕', act4: '第四幕', after: '終幕' },
       pieces: (found: number, total: number) => `${found}/${total}`,
@@ -363,6 +365,8 @@ export const T = {
       hint: '◀▶ 換分頁　確定：選取　取消：返回',
       hintReadonly: '◀▶ 換分頁　確定：重看　取消：回到迷宮',
       empty: '還沒有可以重看的場景。',
+      /** The guild's leads (6c Task 16): sightings, never a call for help (the lost remember nothing). */
+      leads: { now: '目前的線索', found: '已找到', heard: '公會聽來的目擊', place: (region: string, depth: number) => `${region}・第${zhDepth(depth)}層`, allFound: '目擊過的人影，都已經找到了。', none: '公會還沒有新的目擊消息。' },
     },
     town: {
       place: '邊境小鎮 露米亞',
@@ -487,6 +491,8 @@ export const T = {
     },
     gate: {
       reroll: '重抽傳送門',
+      /** The portal of the guild's lead, and where someone was sighted (6c Task 16): a sighting, never a distress call. */
+      lead: '公會的線索', leadAt: (depth: number) => `線索・第${zhDepth(depth)}層`, sighted: (depth: number) => `目擊・第${zhDepth(depth)}層`,
       choose: '選擇傳送門', floor: (n: number, name?: string) => (name ? `第 ${n} 層 ${name}` : `第 ${n} 層`),
       suggest: (lv: number) => `建議 Lv ${lv}`,
       heavy: (now: string, cap: string) => `超重！重量 ${now}／${cap}，出發後撿不了任何東西`,

@@ -4,6 +4,8 @@ import { FLOORS } from '../../data/floors';
 import { MATERIALS } from '../../data/materials';
 import { SETS, SPECIALS, codexName, generalLegendaries, regionSpecials } from '../../data/gear';
 import { REGIONS, type RegionId } from '../../data/regions';
+import { rescuesFor } from '../../data/meetings';
+import { nextLead } from '../../engine/story/leads';
 import { T } from '../../data/text.zh-TW';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import { materialUses } from '../../engine/forge/uses';
@@ -86,6 +88,26 @@ class PortalCards {
     return el('div', { class: 'slx-portal-drop-use', text: T.ui2.gate.dropUse(short), attrs: { title: T.forge.usedFor(uses.map(T.forge.use).join('、')) } });
   }
 
+  /**
+   * Someone sighted beyond this portal (6c Task 16), beside the portal's name so the card keeps its height: 「目擊・第三層」, or
+   * on the portal of the guild's lead 「線索・第三層」 in gold. A region shows whoever is still unmet there; the main road
+   * (always offered) only its lead, so it does not outshout the region's.
+   */
+  private sighting(region: RegionId): { lead: boolean; el: HTMLElement[] } {
+    const s = this.ctx.game.state;
+    const lead = nextLead(s);
+    const isLead = lead?.region === region;
+    const depths = Object.keys(rescuesFor(region, s.party.recruited)).map(Number);
+    const depth = isLead ? lead!.depth : region === 'mainline' || !depths.length ? null : Math.min(...depths);
+    if (depth === null) return { lead: false, el: [] };
+    const G = T.ui2.gate;
+    const text = isLead ? G.leadAt(depth) : G.sighted(depth);
+    const mark = el('span', { class: isLead ? 'slx-portal-sighting slx-portal-lead-tag' : 'slx-portal-sighting', attrs: isLead ? { title: G.lead } : {} }, [
+      el('span', { class: 'slx-portal-sighting-depth', text }),
+    ]);
+    return { lead: isLead, el: [mark] };
+  }
+
   private card(p: Portal, i: number): HTMLElement {
     const G = T.ui2.gate;
     const r = REGIONS[p.region];
@@ -100,9 +122,10 @@ class PortalCards {
     const firstOnly = startDepths(p.region, reached).every((d) => d < REGION_TRAITS_FROM);
     const resist = r.resist.length ? (firstOnly ? G.resistFrom(els(r.resist), REGION_TRAITS_FROM) : G.resist(els(r.resist))) : '';
     const affinity = [r.weak.length ? G.weak(els(r.weak)) : '', resist].filter(Boolean).join('　');
-    const c = win(`slx-portal slx-portal-${p.region}`, [
+    const seen = this.sighting(p.region);
+    const c = win(`slx-portal slx-portal-${p.region}${seen.lead ? ' slx-portal-lead' : ''}`, [
       ...(has(portalArt.card(p.region)) ? [el('img', { class: 'slx-portal-art', attrs: { src: portalArt.card(p.region), alt: '' } })] : []),
-      el('div', { class: 'slx-portal-name', text: r.name }),
+      el('div', { class: 'slx-portal-head' }, [el('div', { class: 'slx-portal-name', text: r.name }), ...seen.el]),
       el('div', { class: 'slx-portal-trait', attrs: { 'data-trait': icon ?? 'none' } }, [...traitIcon, el('span', { text: traitText })]),
       ...(affinity ? [el('div', { class: 'slx-portal-affinity', text: affinity })] : []),
       el('div', { class: 'slx-portal-monsters' }, [el('span', { class: 'slx-portal-label', text: G.monsters }), el('span', { text: monsterNames(p.region, reached).join('、') })]),

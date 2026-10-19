@@ -9,6 +9,7 @@ import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
 import type { CharacterId } from '../../engine/types';
 import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
 import { memoryPace } from '../../engine/story/expect';
+import { leadOpen } from '../../engine/story/leads';
 import type { StoryMood } from '../../render/artPaths';
 import { ACT_DEPTHS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage } from './scenes';
 
@@ -324,6 +325,11 @@ function position(key: string): Stage {
     case 'rinOath': return rinSeventh();
     case 'bellkeeper': return a === 'after' ? 'after' : a === 'oath' ? rinSeventh() : 'act3';   // the bellkeeper shows up after act 3 (spec §8.4)
     case 'meet': return metStage(a);
+    case 'leads': {   // the guild's lead for her: from the stage it opens at (engine/story/leads.ts, lore ledger I-124)
+      const m = MEETINGS.find((x) => x.id === a);
+      if (!m) throw new Error(`no meeting for ${key}`);
+      return STAGES.find((st) => leadOpen(m, st))!;
+    }
     case 'people': {
       if (a === 'hero' || a === 'rin') {
         const c = a as 'hero' | 'rin';
@@ -1638,3 +1644,23 @@ describe('continuity fixes (plan 6c Task 15 Step 6)', () => {
   });
 });
 
+describe("the guild's leads (6c Task 16)", () => {
+  it('every companion has one lead: the region in words and the depth in numerals, never her name', () => {
+    expect(Object.keys(STORY.leads).sort()).toEqual(MEETINGS.map((m) => m.id).sort());
+    for (const m of MEETINGS) {
+      const t = STORY.leads[m.id];
+      expect(typeof t, m.id).toBe('string');
+      expect(t, m.id).toContain(m.region === 'mainline' ? '本道' : REGIONS[m.region].name);
+      expect(t, m.id).toContain(`第${numeral(m.depth)}層`);
+      for (const id of CHARACTER_IDS) expect(t, `${m.id} names ${id}`).not.toContain(CHARACTERS[id].name);
+    }
+  });
+
+  it('a lead is placed where it can first be heard: the main road from the prologue, the regions from act 1', () => {
+    expect(position('leads.selene')).toBe('prologue');
+    expect(position('leads.bobby')).toBe('prologue');
+    expect(position('leads.chizuru')).toBe('act1');
+    expect(position('leads.scarlet')).toBe('act1');
+    expect(() => position('leads.nobody')).toThrow();
+  });
+});

@@ -7,6 +7,8 @@ import { T } from '../../data/text.zh-TW';
 import { MAX_ACTIVE } from '../../engine/formation';
 import { activeIds } from '../../engine/party';
 import { shardPrice } from '../../engine/story/fragments';
+import { nextLead } from '../../engine/story/leads';
+import { STORY } from '../../data/story.zh-TW';
 import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
@@ -22,6 +24,15 @@ const GRADES: ShardGrade[] = ['dim', 'clear', 'vivid'];
 /** Guild: recalling companions met in the labyrinth; formation, equipment and the character sheet open their own screens. */
 export class GuildScene extends FacilityScene {
   constructor(ctx: SceneCtx, cps?: number) { super(ctx, 'guild', cps); }
+
+  /**
+   * While someone is still out there, Anna passes on the guild's lead in place of her greeting (6c Task 16): what another
+   * adventurer saw, and where. The greeting is drawn all the same, so the rng stream after the guild does not move.
+   */
+  protected greet(line: string): Promise<void> {
+    const lead = nextLead(this.ctx.game.state);
+    return this.say(lead ? STORY.leads[lead.id] : line);
+  }
 
   /** Met, off the field and not the hero: who the guild can recall. */
   private waiting(): CharacterId[] {
