@@ -178,7 +178,7 @@ describe('種族欄位', () => {
     expect(bodyDefaults(1).race).toBe(0);
     const a = { ...DEFAULT_APPEARANCE, race: 4 };
     expect(stepAppearance(a, 'body', 1).race).toBe(4);
-    expect(stepAppearance({ ...bodyDefaults(0), race: 2 }, 'body', 1)).toMatchObject({ body: 1, race: 2 });
+    expect(stepAppearance({ ...bodyDefaults(0), race: 2 }, 'body', 1)).toMatchObject({ body: 1, race: 2, hair: bodyDefaults(1).hair, outfit: bodyDefaults(1).outfit });
   });
   it('隨機外觀的種族在範圍內，且五族都抽得到', () => {
     let s = 7; const rand = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 2 ** 32; };

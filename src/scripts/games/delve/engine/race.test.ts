@@ -1,8 +1,7 @@
 // race.test.ts — 種族被動表：逐字數值、壞索引退回人類
 import { describe, it, expect } from 'vitest';
 import { raceMods, RACE_BLURB } from './race';
-import { RACES, raceId } from './appearance';
-import { DEFAULT_APPEARANCE } from './appearance';
+import { RACES, raceId, DEFAULT_APPEARANCE } from './appearance';
 
 describe('種族被動表', () => {
   it('RACES 順序固定：人類 / 精靈 / 矮人 / 貓族 / 龍裔', () => {

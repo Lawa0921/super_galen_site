@@ -205,7 +205,7 @@ export function setAppearance(a: Appearance, key: AppearanceKey, value: number |
 /** 換體型：還是另一邊的預設（沒改過）→ 換成這一邊的預設；改過 → 只換體型，其他（含腮紅）保留。種族一律保留（兩邊預設都是人類，選了別族不該因換體型被洗掉）。 */
 function switchBody(a: Appearance, body: number): Appearance {
   if (body === a.body) return { ...a };
-  if (sameAppearance(a, bodyDefaults(a.body))) return { ...bodyDefaults(body), race: a.race };
+  if (sameAppearance({ ...a, race: 0 }, bodyDefaults(a.body))) return { ...bodyDefaults(body), race: a.race };
   // 改過的外觀：只換體型，腮紅等其他選擇都保留
   return { ...a, body };
 }

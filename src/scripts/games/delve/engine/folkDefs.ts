@@ -196,7 +196,7 @@ export function folkLook(role: FolkRole, rng: Rng): FolkLook {
     return { app, head: role === 'runesmith' ? undefined : 'hat:miner', dwarf: true, beard: body === 1 || role === 'dwarf_elder', neck: role === 'runesmith' ? 'magma' : undefined };
   }
   const app = A({
-    body, race: 0, blush: body === 0, hair: rng.int(0, 9), hairColor: rng.int(0, 12), ahoge: rng.chance(3), eyes: rng.int(0, 9), eyeShape: rng.int(0, 3), skin: rng.int(0, 5),
+    body, blush: body === 0, hair: rng.int(0, 9), hairColor: rng.int(0, 12), ahoge: rng.chance(3), eyes: rng.int(0, 9), eyeShape: rng.int(0, 3), skin: rng.int(0, 5),
     outfit: rng.int(0, 6), color1: rng.int(0, 12), color2: rng.int(0, 12), acc: 0, glasses: rng.chance(6),
   });
   switch (role) {
