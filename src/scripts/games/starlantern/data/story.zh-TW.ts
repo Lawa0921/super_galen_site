@@ -995,6 +995,80 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
 };
 
+/**
+ * Task 11: the townsfolk returns (spec §7.5, §3.3; lore ledger I-87 to I-93). Each owner gets back what she lost, changes,
+ * and says where the reward comes from. Orik's return reads two ways: Liz with her memories whole meets him at the shop
+ * door (`if.full: 'liz'`); otherwise he only tells Lorne of the daughter and the red hat, and the meeting waits for her
+ * last piece (mem:liz:5 with orik returned). Father and daughter meet once, in whichever comes second (I-75).
+ */
+const TOWN_SCENES: Record<TownFragmentId, Written> = {
+  orik: {
+    lines: [
+      N('道具店，打烊以後。歐里克把碎片捧在掌心。嗓門大了一輩子的人，半天說不出一句話。'),
+      { who: 'orik', text: '「……小兄弟，我想起來了。是我女兒的臉。一笑，眼睛就瞇成一條線，跟我一個樣。」' },
+      { who: 'orik', text: '「她是去替我還債的。……傻丫頭，帳哪有人要緊。」' },
+      { who: 'orik', text: '「往後店裡的東西，都算你便宜一成。冒險者平安回來，帳才有人付。這道理，我早該懂。」' },
+      { who: 'orik', text: '「她出門那天，把一頂紅帽子掛在門後，說回家再戴。那頂帽子，到今天還掛著。」' },
+      { who: 'narrator', text: '店門被推開了。莉茲站在門口，看著門後那頂紅帽子，一步也沒有動。', if: { full: 'liz' } },
+      { who: 'liz', mood: 'sad', text: '「……爸爸。我回來了。」', if: { full: 'liz' } },
+      { who: 'orik', text: '「……丫頭？是妳。爸爸認得這張臉。……帽子，還等著妳戴呢。」', if: { full: 'liz' } },
+    ],
+    summary: '歐里克想起了女兒的臉。女兒為了替家裡還債出了門，她掛在門後的紅帽子，到今天還在等她回來。',
+  },
+  marta: {
+    lines: [
+      N('月影旅館的廚房。瑪莎把碎片貼在胸口，爐上的湯咕嘟咕嘟地響。'),
+      { who: 'marta', text: '「……想起來了。他走的那天早上，我也在煮這鍋湯。」' },
+      { who: 'marta', text: '「他是冒險者。出門前說：『回來的時候，把今天的事說給我聽。』」' },
+      { who: 'marta', text: '「我一直怕，那天沒跟他說路上小心。……原來說了。追到門口，說了兩次。」' },
+      { who: 'marta', text: '「日記，原來是寫給他的。他回來的時候，我要說得出每一天。」' },
+      { who: 'hero', mood: 'normal', text: '「那，往後就不必寫了？」' },
+      { who: 'marta', text: '「還是會寫。現在想記住的事變多了。……你們的事，一件也不想漏。」' },
+      { who: 'marta', text: '「這兩根復活羽毛，是他留在家裡的，你們帶著。往後的飯菜，我多添一道。」' },
+    ],
+    summary: '瑪莎想起丈夫出門的那個早上，她說了路上小心。日記原本是寫給他的；往後她還是會寫，因為想記住的事變多了。',
+  },
+  anna: {
+    lines: [
+      N('冒險者公會，打烊以後。安娜從櫃子最底層，抽出一張發黃的失憶登記表。'),
+      { who: 'anna', text: '「這一張是我的。名字那一欄的『安娜』，是上一任公會長取的。『名字總要有一個』，是他說的。」' },
+      { who: 'anna', text: '「……緹雅。進迷宮之前，我叫這個名字。我也當過冒險者。」' },
+      { who: 'anna', text: '「我們四個人，提著同一盞燈下去。隊長總說，一起下去的，算同一盞燈。」' },
+      { who: 'anna', text: '「暮霧湧上來的時候，我鬆開了手。……醒來，已經躺在公會的床上。」' },
+      { who: 'hero', mood: 'serious', text: '「其他三個人呢？」' },
+      { who: 'anna', text: '「不知道。可是他們的名字，我想起來了。他們的登記表，我會一張一張找。」' },
+      { who: 'anna', text: '「碎片的收購價，我會調高。那是有人在下面，拚了命帶上來的東西。」' },
+    ],
+    summary: '安娜想起了進迷宮之前的名字。她也當過冒險者，在暮霧裡鬆開了同伴的手。她要找回同伴們的登記，也調高了碎片的收購價。',
+  },
+  glen: {
+    lines: [
+      N('傳送門廣場，天還沒亮。葛倫站在門前，盯著那三座門看了很久。'),
+      { who: 'glen', text: '「『這身灰，是深處才有的。』……小子，那天我怎麼知道的？因為我見過。」' },
+      { who: 'glen', text: '「那年我十七，剛當上守門的。天還沒亮，門自己亮了。」' },
+      { who: 'glen', text: '「走出來一個渾身是灰的男人，拖著一把劍。走了幾步，就倒在我腳邊。」' },
+      { who: 'glen', text: '「倒下之前，他還笑了一下：『門，還開著啊。』……那張臉，跟你很像。」' },
+      { who: 'hero', mood: 'distant', text: '「……後來呢？」' },
+      { who: 'glen', text: '「碎片裡只有那個早上。『門還開著』這句，我說了幾十年……原來是跟他學的。」' },
+      { who: 'glen', text: '「這一次，我記住了，洛恩。門的脾氣我熟，哪一扇不合意，說一聲，我替你換。」' },
+    ],
+    summary: '葛倫想起年輕時的一個早上：傳送門自己亮了，走出來一個渾身是灰、長得像洛恩的男人。這一次，他記住了洛恩的名字。',
+  },
+  doran: {
+    lines: [
+      N('鍛造屋。多蘭握著碎片站在爐前，風箱停了很久。'),
+      { who: 'doran', text: '「……師父的手法。我在鋼鐵要塞，把它弄丟了。」' },
+      { who: 'doran', text: '「年輕時下去找要塞的鐵。鐵扛回來了，手卻忘了怎麼打它。」' },
+      { who: 'doran', text: '「師父按著我的手說：『別看火，聽鐵。鐵唱起來的那一下，就是火候。』」' },
+      { who: 'hero', mood: 'serious', text: '「現在，聽得見嗎？」' },
+      N('多蘭拉起風箱。爐火一亮，燒紅的鐵塊發出一聲細細的鳴響。'),
+      { who: 'doran', text: '「……聽見了。差的那一點，原來在耳朵裡。」' },
+      { who: 'doran', text: '「洛恩。套裝的配方，往後少兩份料就打得成。師父的手法，該用在你們身上。」' },
+    ],
+    summary: '多蘭想起師父的鍛造手法：別看火，聽鐵。他第一次叫了洛恩的名字，套裝的配方也省下了素材。',
+  },
+};
+
 function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }> {
   const out = {} as Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }>;
   // A written scene takes its SCRIPT entry; the draft (and its placeholder strings) is only made for the rest.
@@ -1018,13 +1092,7 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
       }));
     }
   }
-  for (const f of TOWN_FRAGMENTS) {
-    out[`town:${f.id}`] = {
-      title: `${f.npc}的記憶`,
-      lines: [{ who: f.id, text: ph(`（${f.npc}取回了失去的記憶。）`) }],
-      summary: ph(`${f.npc}取回了記憶。`),
-    };
-  }
+  for (const f of TOWN_FRAGMENTS) out[`town:${f.id}`] = { title: `${f.npc}的記憶`, ...TOWN_SCENES[f.id] };
   return out;
 }
 
@@ -1240,15 +1308,29 @@ export const STORY = {
     '我現在會眨眼了。……看你的時候，也是。',
     '湯可以慢慢喝了。瑪莎說，明天還會有。',
   ],
-  /** The bellkeeper in the town: after Rin's choice, and once the finale is won. */
+  /**
+   * The bellkeeper in the town (Task 11; lore ledger I-94, I-95). `oath`: from Rin's choice to the finale, maybe before the
+   * hero's 9th piece and even before act 4: doctrine, fear and a first doubt, never the finale's truths, and he leaves her
+   * flattened bell to her (she hands it over in the finale, I-51). `after`: the society has ended; he says Lorne's name.
+   */
   bellkeeper: {
-    oath: [ph('鐘聲停了。我只是來看看，那孩子過得好不好。')],
-    after: [ph('鐘不響了，也沒有人再需要它了。')],
+    oath: [
+      '從深處走出來的人。鐘響了，吾等便來。世世代代，都是如此。',
+      '吾等不是來動手的。那孩子的選擇，吾等……還不知道該怎麼回答。',
+      '那孩子領口的鐘，被敲平了。要還，也得由她自己來還。吾等不去取。',
+      '這幾天，我在鎮上看著你。你替旅館劈柴，替孩子撿球。……迷宮的意志，會做這些事嗎？',
+      '怕？……是啊。吾等怕了很久。怕霧，怕深處，也怕自己弄錯。',
+    ],
+    after: [
+      '洛恩。最後那一聲鐘，是我敲的。靜鐘會散了，往後不必再有人等它響。',
+      '吾等弄錯了很多年。……不，是我弄錯了。剩下的日子，我想拿來記住，不是拿來守。',
+      '那孩子笑起來的樣子，我從來沒見過。……原來，她會笑。',
+    ],
   },
-  /** The wandering merchant's greeting: before Noel has all her memories, and after. */
+  /** The wandering merchant's greeting: before Noel has all her memories, and after (his recovered voice, I-68). */
   merchant: {
-    lost: ph('「旅途中缺什麼嗎？價錢跟城裡一樣。」'),
-    found: ph('「旅途中缺什麼嗎？……啊，我想起來了。價錢跟城裡一樣。」'),
+    lost: '「客人，旅途中缺什麼嗎？價錢跟城裡一樣。……從哪裡來？哈哈，這我可答不上來。」',
+    found: '「年輕人，諾艾兒沒給你們添麻煩吧？記住，回去的燈，要比藥先備好。」',
   },
   /** The finale's boss room when Rin has not made her choice yet: said once, and the party stays on the map. */
   finaleWait: [{ who: 'narrator' as const, text: ph('還少了什麼……現在還不是時候。') }] as ScriptLine[],
@@ -1282,5 +1364,31 @@ export const STORY = {
     act4: '地底的艾斯特拉，有人自願當燈芯，叫守燈人。霧變濃是因為燈芯快燒完，靜鐘會看反了。那塊碑，我讀得懂。',
     after: '燈點亮了，這一次不必有人燒盡自己。碎片的光回到了主人身上。現在我們下去，是為了把失去的東西找回來。',
   } as Record<Stage, string>,
-  town: Object.fromEntries(TOWN_FRAGMENTS.map((f) => [f.id, { lost: ph(`${f.npc}遺失了一段記憶。`), after: ph(`${f.npc}想起來了，謝謝你。`) }])) as Record<TownFragmentId, { lost: string; after: string }>,
+  /**
+   * The townsfolk in the handbook and at their counters (Task 11): `lost` is what the held fragment took from its owner;
+   * `after` joins that facility's greeting once it is returned. Unconditional: true before and after Liz's reunion, Rin's
+   * choice and the finale.
+   */
+  town: {
+    orik: {
+      lost: '歐里克失去了女兒的臉。他記得自己有個女兒，卻想不起她長什麼樣子。',
+      after: '小兄弟，往後都算你便宜一成！平安回來，比什麼都要緊。',
+    },
+    marta: {
+      lost: '瑪莎失去了丈夫離開的那一天。她每天寫日記，怕明天連今天也忘了。',
+      after: '今天多添了一道菜。吃飽了，身子才擋得住。……等一下，今天的事說給我聽。',
+    },
+    anna: {
+      lost: '安娜失去了進入迷宮之前的名字。她替每一個失憶的人建檔，自己那一張卻從來不提。',
+      after: '碎片的收購價調高了。……叫我安娜就好。兩個名字，我都留著。',
+    },
+    glen: {
+      lost: '葛倫失去了很久以前的一個黎明。那天在傳送門前發生的事，他一點也想不起來。',
+      after: '洛恩，哪一扇門不合意，跟我說。別逞強。',
+    },
+    doran: {
+      lost: '多蘭失去了師父的鍛造手法。火候總是差一點，差在哪裡，他說不上來。',
+      after: '洛恩，套裝的料備好了嗎？少兩份也打得成。',
+    },
+  } as Record<TownFragmentId, { lost: string; after: string }>,
 };
