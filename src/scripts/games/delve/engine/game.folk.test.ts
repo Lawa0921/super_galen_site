@@ -236,12 +236,12 @@ describe('地標', { timeout: 120_000 }, () => {
     const l = g.landmarks.find((q) => q.tile === T.RELIC_PACK)!;
     g.teleport(l.x + 1, l.y);
     g.drainEvents();
-    const coins = g.coins(), markers = g.markers.length;
+    const coins = g.coins(), markers = g.scoutMarks.length;
     expect(g.interact(l.x, l.y)).toBe(true);
     const e = g.drainEvents().find((q) => q.type === 'landmark');
     expect(e).toMatchObject({ type: 'landmark', first: true });
     expect(g.coins()).toBeGreaterThan(coins);
-    expect(g.markers.length).toBe(markers + 1);
+    expect(g.scoutMarks.length).toBe(markers + 1);
     expect(g.discovery.stats().landmarks.found).toBe(1);
     const c2 = g.coins();
     g.interact(l.x, l.y);
@@ -273,7 +273,7 @@ describe('存檔', { timeout: 120_000 }, () => {
     const t2 = h.folk.byKey(t.key)!;
     expect(t2.role).toBe('peddler');
     expect(h.folk.shop(t2)).toEqual(g.folk.shop(t));
-    expect(h.buff?.kind).toBe('ward');
+    expect(h.buffOn('ward')).toBe(true);
     expect(h.discovery.landmarks.has(h.world.idx(l.x, l.y))).toBe(true);
     expect(h.folk.npcs.filter((n) => n.site >= 0).length).toBe(g.folk.npcs.filter((n) => n.site >= 0).length);
   });

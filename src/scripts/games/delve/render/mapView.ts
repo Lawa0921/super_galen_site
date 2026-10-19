@@ -170,7 +170,7 @@ export class Minimap {
     if (!this.visible || !this.ctx) return;
     const g = this.game, t = g.playerTile(), w = g.world;
     const blink = ((this.frame >> 3) & 1) === 1;
-    const sig = `${this.cache.version}|${t.x}|${t.y}|${this.zoom}|${blink}|${g.markers.length}`;
+    const sig = `${this.cache.version}|${t.x}|${t.y}|${this.zoom}|${blink}|${g.markers.length}|${g.scoutMarks.length}`;
     if (sig === this.lastSig) return;
     this.lastSig = sig;
     const W = this.canvas.width, H = this.canvas.height, z = this.zoom;
@@ -180,11 +180,13 @@ export class Minimap {
     ctx.fillStyle = '#0c0a12';
     ctx.fillRect(0, 0, W, H);
     ctx.drawImage(this.cache.canvas, s.sx, s.sy, s.sw, s.sh, 0, 0, s.sw * z, s.sh * z);
-    for (const m of g.markers) {
-      const mx = (m.x - s.sx) * z, my = (m.y - s.sy) * z;
-      if (mx < -4 || my < -4 || mx > W + 4 || my > H + 8) continue;
-      ctx.fillStyle = '#0c0a12'; ctx.fillRect(mx - 1, my - 1, 3 + (z > 1 ? 1 : 0), 3 + (z > 1 ? 1 : 0));
-      ctx.fillStyle = '#e8701c'; ctx.fillRect(mx, my, 1 + (z > 1 ? 1 : 0), 1 + (z > 1 ? 1 : 0));
+    for (const [list, col] of [[g.markers, '#e8701c'], [g.scoutMarks, '#4aaeb0']] as const) {
+      for (const m of list) {
+        const mx = (m.x - s.sx) * z, my = (m.y - s.sy) * z;
+        if (mx < -4 || my < -4 || mx > W + 4 || my > H + 8) continue;
+        ctx.fillStyle = '#0c0a12'; ctx.fillRect(mx - 1, my - 1, 3 + (z > 1 ? 1 : 0), 3 + (z > 1 ? 1 : 0));
+        ctx.fillStyle = col; ctx.fillRect(mx, my, 1 + (z > 1 ? 1 : 0), 1 + (z > 1 ? 1 : 0));
+      }
     }
     // 玩家：白色十字 + 黑框（閃爍時中心換成橘色），不會整個消失
     const px = (t.x - s.sx) * z + (z >> 1), py = (t.y - s.sy) * z + (z >> 1);
@@ -364,6 +366,11 @@ export class FullMap {
       if (s.y < -40 || s.y > H + 40) continue;
       ctx.drawImage(lc, Math.round(s.x - (lc.width * lk) / 2), Math.round(s.y - (lc.height * lk) / 2), lc.width * lk, lc.height * lk);
     }
+    // 嚮導 / 地標線索 / 委託的標記（自己的清單，不佔玩家的 20 個）
+    for (const m of g.scoutMarks) {
+      const s = tileToScreenOnMap(v, W, H, m.x, m.y);
+      ctx.drawImage(iconCanvas('landmark'), Math.round(s.x - 4.5 * k), Math.round(s.y - 4.5 * k), 9 * k, 9 * k);
+    }
     for (const m of g.markers) {
       const s = tileToScreenOnMap(v, W, H, m.x, m.y);
       drawMarker(ctx, s.x, s.y, k);
@@ -371,7 +378,7 @@ export class FullMap {
     const t = g.playerTile(), ps = tileToScreenOnMap(v, W, H, t.x, t.y);
     drawPlayer(ctx, ps.x, ps.y, k, (blinkFrame & 3) === 3);
     const info = this.root.querySelector('#delve-map-info');
-    if (info) info.textContent = `標記 ${g.markers.length}/20 · 已探索 ${(100 * g.explored.count / (w.width * w.height)).toFixed(1)}%`;
+    if (info) info.textContent = `標記 ${g.markers.length}/20 · 嚮導與線索 ${g.scoutMarks.length} · 已探索 ${(100 * g.explored.count / (w.width * w.height)).toFixed(1)}%`;
   }
 
   destroy(): void { for (const f of this.offs) f(); this.close(); }

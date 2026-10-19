@@ -28,6 +28,7 @@ const lang: Language = defaultLang;
         <span class="delve-hp-text" id="delve-hp-text"></span>
         <canvas class="delve-mana" id="delve-mana" width="41" height="5" hidden aria-label="魔力"></canvas>
         <span class="delve-undying" id="delve-undying" hidden data-testid="undying"></span>
+        <span class="delve-buffs" id="delve-buffs" hidden data-testid="buffs"></span>
       </div>
       <div class="delve-boss" id="delve-boss" hidden>
         <span class="delve-boss-name" id="delve-boss-name"></span>
@@ -626,7 +627,7 @@ const lang: Language = defaultLang;
     top: calc(var(--px) * 22 + 92px);
     left: 10px;
     width: min(480px, calc(100vw - 20px));
-    max-height: calc(100vh - 120px);
+    max-height: calc(100vh - var(--px) * 22 - 102px);
     overflow-y: auto;
     padding: 12px;
   }
@@ -1854,6 +1855,8 @@ const lang: Language = defaultLang;
   .delve-room-tag.is-bad { color: #fff4c0; background: #8c2038; }
   .delve-say { color: #2a1810; background: #fff4c0; text-shadow: none; }
   .delve-say.is-help { color: #fff4c0; background: #8c2038; text-shadow: var(--text-outline); }
+  .delve-say.delve-talk-hint { color: #fff4c0; background: #2c4486; text-shadow: var(--text-outline); }
+  .delve-buffs { font-size: 16px; line-height: 1.3; color: #c2e478; text-shadow: var(--text-outline); }
   /* ── 世界 NPC 面板 / 委託清單 ── */
   .delve-panel--quests { left: auto; right: 10px; width: min(460px, calc(100vw - 20px)); }
   .delve-quests-body { display: grid; gap: 8px; margin-top: 8px; }
@@ -1883,6 +1886,27 @@ const lang: Language = defaultLang;
     .delve-chip--quests { display: none; }
   }
   .delve[data-fpanel='1'] .delve-touch { display: none; }
+  /* 桌機：右側的據點 / 居民 / NPC / 委託面板放在小地圖下面（不蓋小地圖），高度到畫面底部為止 */
+  @media (min-width: 641px) and (min-height: 521px) {
+    .delve-panel--settle,
+    .delve-panel--npc,
+    .delve-panel--quests { top: 256px; max-height: calc(100vh - 266px); }
+  }
+  /* 直立手機：面板開著時收起小地圖 / 時鐘 / 狀態列，面板從角落按鈕下面一直到生命值上面（不蓋生命） */
+  @media (max-width: 460px) {
+    .delve[data-touch='1'][data-fpanel='1'] .delve-minimap,
+    .delve[data-touch='1'][data-fpanel='1'] .delve-clock,
+    .delve[data-touch='1'][data-fpanel='1'] .delve-status,
+    .delve[data-touch='1'][data-fpanel='1'] .delve-held,
+    .delve[data-touch='1'][data-spanel='1'] .delve-minimap,
+    .delve[data-touch='1'][data-spanel='1'] .delve-clock,
+    .delve[data-touch='1'][data-spanel='1'] .delve-status,
+    .delve[data-touch='1'][data-spanel='1'] .delve-held { display: none; }
+    .delve[data-touch='1'][data-fpanel='1'] .delve-panel--folk,
+    .delve[data-touch='1'][data-fpanel='1'] .delve-panel--quests,
+    .delve[data-touch='1'][data-spanel='1'] .delve-panel--settle,
+    .delve[data-touch='1'][data-spanel='1'] .delve-panel--npc { top: 146px; max-height: calc(100vh - 371px); }
+  }
   .delve-j-npcs { display: flex; flex-wrap: wrap; gap: 8px; }
   .delve-j-npc { display: grid; justify-items: center; gap: 2px; width: calc(var(--px) * 46); font-size: 16px; color: #b07a4b; text-align: center; }
   .delve-j-npc.is-got { color: var(--gold); }
@@ -1928,9 +1952,12 @@ const lang: Language = defaultLang;
     .delve[data-touch='1'][data-panel-side] .delve-toast { left: 50%; bottom: 8px; width: max-content; max-width: calc(100vw - 24px); }
   }
   @media (max-height: 520px) and (orientation: landscape) {
+    /* 橫放手機：面板放在畫面中間的生命值右邊（不蓋生命），小地圖先收起來 */
     .delve[data-spanel='1'] .delve-panel--settle,
     .delve[data-spanel='1'] .delve-panel--npc,
     .delve[data-fpanel='1'] .delve-panel--folk,
-    .delve[data-fpanel='1'] .delve-panel--quests { top: 50px; bottom: 54px; max-height: none; z-index: 9; }
+    .delve[data-fpanel='1'] .delve-panel--quests { top: 50px; bottom: 54px; left: calc(50% + 64px); right: 6px; width: auto; max-height: none; z-index: 9; }
+    .delve[data-spanel='1'] .delve-minimap,
+    .delve[data-fpanel='1'] .delve-minimap { display: none; }
   }
 </style>

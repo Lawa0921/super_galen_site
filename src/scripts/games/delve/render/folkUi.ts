@@ -112,11 +112,13 @@ export class FolkUi {
     if (!n) { this.close(); return; }
     const def = ROLES[n.role], aff = g.folk.affinity(n.key), tier = affTier(aff), coins = g.coins();
     const offers = def.quests ? g.questOffers(n.key) : [];
+    const shop = g.folk.shop(n);
     const mine = g.quests.active.filter((q) => q.def.giver === n.key);
     const sellable = (Object.keys(def.buys ?? {}) as ItemId[]).filter((i) => g.inventory.count(i) > 0);
     const gearSig = n.role === 'runesmith' ? g.inventory.slots.map((s) => (s && gearSlot(s.item) ? `${s.item}${s.gear?.rarity ?? 0}` : '')).join() : '';
     const sig = [n.key, aff, coins, this.line, this.msg, n.following, n.safe, offers.map((q) => q.id).join(), mine.map((q) => `${q.def.id}${q.progress}`).join(),
-      sellable.map((i) => `${i}${g.inventory.count(i)}`).join(), g.inventory.slots.filter(Boolean).length, gearSig, g.buff?.kind, g.settle.invited.size, g.hp >= g.maxHp()].join('|');
+      sellable.map((i) => `${i}${g.inventory.count(i)}`).join(), g.inventory.slots.filter(Boolean).length, gearSig, g.activeBuffs().map((b) => b.kind).join(), g.settle.invited.size, g.hp >= g.maxHp(),
+      shop.map((_, i) => g.folk.stockLeft(n, i)).join(), n.waiting, n.hp].join('|');
     if (sig === this.sig) return;
     this.sig = sig;
     body.replaceChildren();
@@ -143,6 +145,7 @@ export class FolkUi {
       body.appendChild(a);
       body.appendChild(el('p', 'delve-hint', '交易（每天有上限）、每天打招呼、完成委託都會增加好感：價格更便宜、解鎖更好的商品與服務。'));
     }
+    if (!g.peaceful) body.appendChild(el('p', 'delve-hint', '（對話中：遊戲暫停，怪物不會趁機攻擊）'));
     if (this.msg) { const m = el('p', 'delve-folk-msg', this.msg); m.dataset.testid = 'folk-msg'; body.appendChild(m); }
     body.appendChild(el('p', 'delve-hint', `錢包：${coinText(coins)}`));
     // 救援 / 護送
@@ -150,20 +153,20 @@ export class FolkUi {
     // 委託
     if (def.quests) this.renderQuests(body, n, offers, mine);
     // 商店
-    const shop = g.folk.shop(n);
     if (shop.length) {
       body.appendChild(el('h3', 'delve-j-h', n.role === 'peddler' ? `行商的貨（這次遇見限定）` : '商店'));
       const ul = el('ul', 'delve-shop');
       ul.dataset.testid = 'folk-shop';
       shop.forEach((e, i) => {
-        const need = e.tier ?? 0, locked = need > tier, price = g.folkPrice(n.key, e.price);
+        const need = e.tier ?? 0, locked = need > tier, price = g.folkPrice(n.key, e.price), left = g.folk.stockLeft(n, i), out = left <= 0;
         const b = el('button', 'delve-recipe delve-shop-row');
         b.type = 'button'; b.dataset.buy = String(i);
-        if (!locked && coins >= price) b.classList.add('is-ready');
-        if (locked) b.classList.add('is-locked');
-        b.disabled = locked || coins < price;
+        if (!locked && !out && coins >= price) b.classList.add('is-ready');
+        if (locked || out) b.classList.add('is-locked');
+        b.disabled = locked || out || coins < price;
         b.appendChild(this.icon(e.item));
-        b.append(el('span', 'delve-recipe-name', `${ITEMS[e.item].name.zh}${e.n > 1 ? ` ×${e.n}` : ''}`),
+        const stock = Number.isFinite(left) ? (out ? ' · 賣完了' : ` · 剩 ${left} 件`) : '';
+        b.append(el('span', 'delve-recipe-name', `${ITEMS[e.item].name.zh}${e.n > 1 ? ` ×${e.n}` : ''}${stock}`),
           el('span', 'delve-recipe-need', locked ? `好感「${AFF_TIERS[need].zh}」解鎖` : coinText(price)));
         const li = el('li'); li.appendChild(b); ul.appendChild(li);
       });
@@ -173,7 +176,7 @@ export class FolkUi {
     if (def.buys) {
       body.appendChild(el('h3', 'delve-j-h', '收購（背包裡有的）'));
       const ul = el('ul', 'delve-shop');
-      if (!sellable.length) ul.appendChild(el('li', 'delve-hint', `背包裡沒有${n.race === 'dwarf' ? '他' : '對方'}收的東西（${(Object.keys(def.buys) as ItemId[]).slice(0, 5).map((i) => ITEMS[i].name.zh).join('、')}…）`));
+      if (!sellable.length) ul.appendChild(el('li', 'delve-hint', `背包裡沒有對方收的東西（${(Object.keys(def.buys) as ItemId[]).slice(0, 5).map((i) => ITEMS[i].name.zh).join('、')}…）`));
       for (const it of sellable) {
         const p = g.folkSellPrice(n.key, it), cnt = g.inventory.count(it);
         const li = el('li', 'delve-sell-row');
@@ -196,12 +199,13 @@ export class FolkUi {
         box.appendChild(b);
       }
       body.appendChild(box);
-      if (g.buff) body.appendChild(el('p', 'delve-hint', `目前的效果：${BUFFS[g.buff.kind].zh}（剩 ${Math.max(0, Math.ceil((g.buff.until - g.time) / 60))} 分鐘）`));
+      const bs = g.activeBuffs();
+      if (bs.length) body.appendChild(el('p', 'delve-hint', `目前的效果：${bs.map((b) => `${BUFFS[b.kind].zh}（剩 ${Math.max(1, Math.ceil(b.left / 60))} 分鐘）`).join('、')}（可以同時有好幾種）`));
     }
     if (n.role === 'runesmith') this.renderDeepforge(body, n, tier);
     if (n.role === 'herbalist') {
       const invited = g.settle.invited.has('healer') || Boolean(g.settle.npc('healer'));
-      const b = btn(invited ? '已經邀請過她了' : '邀請她到你的據點入住（成為據點的藥師）', { svc: 'invite' }, 'delve-btn');
+      const b = btn(invited ? '已經邀請過了' : `邀請${n.name}到你的據點入住（成為據點的藥師）`, { svc: 'invite' }, 'delve-btn');
       b.disabled = invited;
       body.append(el('h3', 'delve-j-h', '招募'), b, el('p', 'delve-hint', '據點的藥師：治療 / 祝福 / 守護，而且據點範圍內回血加倍。'));
     }
@@ -209,18 +213,23 @@ export class FolkUi {
   private renderStranded(body: HTMLElement, n: FolkNpc): void {
     const g = this.game, qid = `${n.key}#escort`, q = g.quests.get(qid);
     body.appendChild(el('h3', 'delve-j-h', '救援'));
-    if (!n.following && !n.safe) {
-      body.appendChild(btn('救援：帶他離開這裡（他會跟著你走）', { svc: 'rescue' }, 'delve-btn'));
-      body.appendChild(el('p', 'delve-hint', '帶到地表、村落或據點就安全了。走太遠他會自己跟上。'));
+    if (n.waiting) {
+      body.appendChild(btn(`繼續帶${n.name}走（生命 ${n.hp ?? 0}）`, { svc: 'rescue' }, 'delve-btn'));
+      body.appendChild(el('p', 'delve-hint', `你離開太遠（傳送 / 倒下）時，${n.name}會在原地等你回來。`));
       return;
     }
-    if (n.following) { body.appendChild(el('p', 'delve-hint', '他正跟著你。往地表、村落或據點走吧。')); return; }
+    if (!n.following && !n.safe) {
+      body.appendChild(btn(`救援：帶${n.name}離開這裡（會跟著你走）`, { svc: 'rescue' }, 'delve-btn'));
+      body.appendChild(el('p', 'delve-hint', '帶到地表、村落或據點就安全了。走太快的話會用自己的路跟上；被擋死才會直接跑到你身邊。'));
+      return;
+    }
+    if (n.following) { body.appendChild(el('p', 'delve-hint', `${n.name}正跟著你（生命 ${n.hp ?? 0}）。往地表、村落或據點走吧（小心怪物：探險者也會受傷）。`)); return; }
     if (q) body.appendChild(btn(`收下謝禮（經驗 ${q.def.reward.xp}、${coinText(q.def.reward.coins)}${q.def.reward.item ? `、${ITEMS[q.def.reward.item.item].name.zh} ×${q.def.reward.item.n}` : ''}）`, { turnin: qid }, 'delve-btn'));
     const done = g.settle.invited.has('guide') || Boolean(g.settle.npc('guide'));
     if (!done) {
-      body.append(btn('邀請他到你的據點入住（成為據點的嚮導）', { svc: 'invite' }, 'delve-btn'),
+      body.append(btn(`邀請${n.name}到你的據點入住（成為據點的嚮導）`, { svc: 'invite' }, 'delve-btn'),
         el('p', 'delve-hint', '據點的嚮導：告訴你下一步、把沒領過的地標標在地圖上。'));
-    } else if (!q) body.appendChild(el('p', 'delve-hint', '他向你揮揮手，自己往家的方向走了。'));
+    } else if (!q) body.appendChild(el('p', 'delve-hint', `${n.name}向你揮揮手，自己往家的方向走了。`));
   }
   private renderQuests(body: HTMLElement, n: FolkNpc, offers: ReturnType<DelveGame['questOffers']>, mine: QuestState[]): void {
     const g = this.game;
@@ -254,7 +263,7 @@ export class FolkUi {
   private renderDeepforge(body: HTMLElement, n: FolkNpc, tier: number): void {
     const g = this.game;
     body.appendChild(el('h3', 'delve-j-h', '深岩升階（用錠代替星塵）'));
-    if (tier < 1) { body.appendChild(el('p', 'delve-hint', '好感「熟識」之後她才肯幫你升階。')); return; }
+    if (tier < 1) { body.appendChild(el('p', 'delve-hint', `好感「熟識」之後${n.name}才肯幫你升階。`)); return; }
     const ul = el('ul', 'delve-shop');
     ul.dataset.testid = 'deepforge';
     g.inventory.slots.forEach((st, i) => {
@@ -281,7 +290,7 @@ export class FolkUi {
     } else if (d.sell) {
       if (g.folkSell(n.key, d.sell as ItemId, Number(d.n) || 1)) this.msg = `賣出 ${ITEMS[d.sell as ItemId].name.zh}`;
     } else if (d.svc) {
-      if (d.svc === 'forge') { this.o.onInventory(); this.msg = '在背包裡選一件裝備，按「鍛造」：在她身邊不用鐵砧，好感度越高越便宜。'; }
+      if (d.svc === 'forge') { this.o.onInventory(); this.msg = '在背包裡選一件裝備，按「鍛造」：在鐵匠身邊不用鐵砧，好感度越高越便宜。'; }
       else { const r = g.folkService(n.key, d.svc as never); this.msg = r.msg; if (r.ok && d.svc === 'invite') this.o.onToast(r.msg, 3200, TOAST_HIGH); }
     } else if (d.accept) {
       if (g.acceptQuest(n.key, d.accept)) this.msg = '接下了委託（L 打開委託清單）';
@@ -322,7 +331,7 @@ export class FolkUi {
       const giver = g.folk.byKey(d.giver);
       let where = '';
       if (d.kind === 'explore' && d.at && !ready) where = `目標：${dirText(d.at.x - pt.x, d.at.y - pt.y)}（地圖上有標記）`;
-      else if (d.kind === 'escort' && giver) where = giver.safe ? `${giver.name}安全了：去跟他說話收下謝禮` : '帶他到地表、村落或據點';
+      else if (d.kind === 'escort' && giver) where = giver.safe ? `${giver.name}安全了：去說話收下謝禮` : `帶${giver.name}到地表、村落或據點`;
       else if (giver) where = `${ready ? '回去交付' : '委託人'}：${giver.name}（${dirText(Math.floor(giver.body.x / S) - pt.x, Math.floor(giver.body.y / S) - pt.y)}）`;
       li.append(el('span', 'delve-quest-title', `【${questKindLabel(d.kind)}】${d.title}${ready ? ' · 可以交付' : ''}`), el('span', 'delve-quest-desc', d.desc),
         el('span', 'delve-quest-prog', `進度 ${q.progress} / ${d.n}`), segBar(q.progress / d.n), el('span', 'delve-quest-where', where));
@@ -346,14 +355,20 @@ export class FolkUi {
         if (e.role === 'stranded') toast(`遠處傳來呼救聲……（${dir}）`, 3600, TOAST_HIGH);
         else toast(`路邊有一位${d.title}「${e.name}」在休息（${dir}）`, 3200);
       } else if (e.phase === 'leave') toast(`${d.title}「${e.name}」收拾好行囊，上路了`, 2400, TOAST_LOW);
-      else if (e.phase === 'safe') toast(`${e.name}安全了！去跟他說話，收下謝禮`, 3200, TOAST_HIGH);
+      else if (e.phase === 'safe') toast(`${e.name}安全了！去說話，收下謝禮`, 3200, TOAST_HIGH);
       else if (e.phase === 'giveup') toast('沒等到救援的探險者，自己摸索著離開了', 2600, TOAST_LOW);
+      else if (e.phase === 'hurt') toast(`${e.name}被怪物打傷了！保護好對方`, 1600);
+      else if (e.phase === 'died') toast(`${e.name}倒下了……護送失敗`, 3200, TOAST_HIGH);
+      else if (e.phase === 'wait') toast(`${e.name}跟不上了，會在原地等你回來`, 2600);
     } else if (e.type === 'quest') {
       if (e.phase === 'progress') toast(`${e.title}：${e.progress} / ${e.n}`, 1400, TOAST_LOW);
       else if (e.phase === 'ready') toast(`委託達成：${e.title}（回去找委託人交付）`, 2800, TOAST_HIGH);
       else if (e.phase === 'done') toast(`委託完成：${e.title}`, 2600, TOAST_HIGH);
       else if (e.phase === 'accept') toast(`接下委託：${e.title}`, 2000);
+      else if (e.phase === 'failed') toast(`委託失敗：${e.title}`, 2600, TOAST_HIGH);
       this.qsig = '';
+    } else if (e.type === 'scoutmark') {
+      toast(`嚮導${e.by}幫你在地圖上標了「${e.name}」`, 2800);
     } else if (e.type === 'buff') {
       toast(e.on ? `得到「${BUFFS[e.kind].zh}」：${BUFFS[e.kind].desc}` : `「${BUFFS[e.kind].zh}」的效果結束了`, 2200, e.on ? TOAST_HIGH : TOAST_LOW);
     }
@@ -372,7 +387,17 @@ export class FolkUi {
     }
     const ds = this.root.dataset;
     if (this.isOpen || this.questsOpen) ds.fpanel = '1'; else delete ds.fpanel;
+    if ((this.frame & 7) === 0) this.updateBuffs();
     this.updateLabels();
+  }
+  /** HUD：生效中的 buff（名字 + 剩餘時間），可以同時好幾種 */
+  private updateBuffs(): void {
+    const box = this.q('#delve-buffs');
+    if (!box) return;
+    const bs = this.game.activeBuffs();
+    const txt = bs.map((b) => { const s = Math.ceil(b.left); return `${BUFFS[b.kind].zh} ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }).join(' · ');
+    if (box.textContent !== txt) box.textContent = txt;
+    box.hidden = !bs.length;
   }
   /** 對話泡泡（DOM，跟著鏡頭走） */
   private updateLabels(): void {
@@ -389,6 +414,19 @@ export class FolkUi {
       if (t.className !== cls) t.className = cls;
       if (t.textContent !== n.say) t.textContent = n.say;
       const p = this.renderer.worldToScreen(n.body.x + n.body.w / 2, n.body.y - 18);
+      t.style.setProperty('--x', `${Math.round(p.x)}px`);
+      t.style.setProperty('--y', `${Math.round(p.y)}px`);
+    }
+    // 鍵盤：靠近可以說話的人 → 頭上提示「T 對話」（觸控時不顯示；面板開著不顯示）
+    const near = this.root.dataset.touch === '1' || this.isOpen || this.root.dataset.spanel === '1' ? null : this.game.nearestTalkable();
+    if (near) {
+      const key = 'talkhint';
+      seen.add(key);
+      let t = this.tags.get(key);
+      if (!t) { t = el('span', 'delve-say delve-talk-hint'); t.dataset.testid = 'talk-hint'; this.tags.set(key, t); box.appendChild(t); }
+      const txt = `T 和${near.name}說話`;
+      if (t.textContent !== txt) t.textContent = txt;
+      const p = this.renderer.worldToScreen(near.x, near.y - 34);
       t.style.setProperty('--x', `${Math.round(p.x)}px`);
       t.style.setProperty('--y', `${Math.round(p.y)}px`);
     }

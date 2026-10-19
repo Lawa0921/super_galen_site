@@ -2149,7 +2149,8 @@ test.describe('delve folk · villages, dwarves, encounters, quests', () => {
     await page.locator('#delve-folk-body [data-svc=rescue]').click();
     await expect.poll(() => page.evaluate((k) => window.__delveDebug!.game.folk.byKey(k)!.following, key)).toBe(true);
     await page.keyboard.press('Escape');
-    await page.evaluate(() => { const d = window.__delveDebug!; d.game.teleport(d.game.spawn.x, d.game.spawn.y); d.handle.renderer.snapCamera(); });
+    // 一起回到地表（傳送太遠他會原地等：測試直接把兩人放到出生點旁）
+    await page.evaluate((k) => { const d = window.__delveDebug!, n = d.game.folk.byKey(k)!; d.game.teleport(d.game.spawn.x, d.game.spawn.y); n.body.x = d.game.player.x + 24; n.body.y = d.game.player.y + d.game.player.h - n.body.h; d.handle.renderer.snapCamera(); }, key);
     await expect.poll(() => page.evaluate((k) => { const n = window.__delveDebug!.game.folk.byKey(k)!; return { safe: Boolean(n.safe), following: Boolean(n.following) }; }, key), { timeout: 8000 })
       .toEqual({ safe: true, following: false });
     await rclick(page, await nearFolk(page, key));
@@ -2170,14 +2171,62 @@ test.describe('delve folk · villages, dwarves, encounters, quests', () => {
     expect(after).toEqual({ aff: 33, done: 1, invited: true });
   });
 
+  test('觸控：拿著鎬點 NPC 會打開面板（不會挖地）；鍵盤 T 和最近的人說話、靠近時有提示；buff 顯示在 HUD', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 812, height: 375 }, hasTouch: true, isMobile: true });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+    await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const p = await nearFolk(page, 'v0:trader');
+    const before = await page.evaluate(() => { const g = window.__delveDebug!.game; g.selectSlot(g.inventory.slots.findIndex((s) => s?.item === 'wood_pickaxe')); return Array.from(g.world.fg.subarray(0, 1)).length; });
+    void before;
+    const mined0 = await page.evaluate(() => window.__delveDebug!.game.world.modifiedChunks.size);
+    await page.touchscreen.tap(p.sx, p.sy);
+    await expect(page.locator('#delve-folk')).toBeVisible();
+    await expect(page.locator('#delve-folk-title')).toContainText('雜貨商');
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => window.__delveDebug!.game.world.modifiedChunks.size)).toBe(mined0);
+    await ctx.close();
+  });
+
+  test('鍵盤 T：靠近 NPC 有「T 對話」提示，按 T 打開面板；多重 buff 顯示在 HUD', async ({ page }) => {
+    await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await nearFolk(page, 'v0:elder');
+    await expect(page.locator('[data-testid=talk-hint]')).toContainText('T');
+    await page.keyboard.press('KeyT');
+    await expect(page.locator('#delve-folk')).toBeVisible();
+    await expect(page.locator('#delve-folk-title')).toContainText('村長');
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => { const g = window.__delveDebug!.game; g.giveBuff('bless'); g.giveBuff('minesong'); });
+    await expect(page.locator('[data-testid=buffs]')).toContainText('祝福');
+    await expect(page.locator('[data-testid=buffs]')).toContainText('礦工之歌');
+  });
+
+  test('非和平模式：NPC 面板開著時遊戲暫停，關掉後繼續', async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '0'); } catch { /* ignore */ } });
+    await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => { window.__delveDebug!.game.peaceful = false; });
+    await nearFolk(page, 'v0:elder');
+    await page.evaluate(() => window.__delveDebug!.game.debugTalk('v0:elder'));
+    await expect(page.locator('#delve-folk')).toBeVisible();
+    const t0 = await page.evaluate(() => window.__delveDebug!.game.tick);
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => window.__delveDebug!.game.tick)).toBe(t0);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+    expect(await page.evaluate(() => window.__delveDebug!.game.tick)).toBeGreaterThan(t0);
+  });
+
   test('手機直向 375 / 橫向：NPC 面板與委託清單在畫面內、不蓋住快捷欄', async ({ browser }) => {
-    for (const vp of [{ width: 375, height: 812 }, { width: 812, height: 375 }]) {
+    for (const vp of [{ width: 375, height: 667 }, { width: 375, height: 812 }, { width: 812, height: 375 }]) {
       const ctx = await browser.newContext({ viewport: vp, hasTouch: true, isMobile: true });
       const page = await ctx.newPage();
       await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
       await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');
       await waitGame(page);
-      await page.evaluate(() => { const d = window.__delveDebug!, n = d.game.folk.byKey('v0:elder')!; d.game.teleport(Math.floor(n.body.x / 16) + 2, Math.floor((n.body.y + n.body.h - 1) / 16)); d.game.debugTalk('v0:elder'); });
+      await page.evaluate(() => { const d = window.__delveDebug!, n = d.game.folk.byKey('v0:elder')!; document.querySelector<HTMLElement>('#delve-root')!.dataset.touch = '1'; d.game.teleport(Math.floor(n.body.x / 16) + 2, Math.floor((n.body.y + n.body.h - 1) / 16)); d.game.debugTalk('v0:elder'); });
       for (const sel of ['#delve-folk', '#delve-quests']) {
         if (sel === '#delve-quests') await page.evaluate(() => window.__delveDebug!.handle.folkUi.setQuests(true));
         await expect(page.locator(sel)).toBeVisible();
@@ -2187,6 +2236,12 @@ test.describe('delve folk · villages, dwarves, encounters, quests', () => {
         expect(b.y + Math.min(b.height, 40)).toBeLessThanOrEqual(vp.height);
         const ov = Math.min(b.x + b.width, hb.x + hb.width) - Math.max(b.x, hb.x) > 1 && Math.min(b.y + b.height, hb.y + hb.height) - Math.max(b.y, hb.y) > 1;
         expect(ov, `${sel} 蓋到快捷欄 ${vp.width}×${vp.height}`).toBe(false);
+        // 不蓋生命值（愛心）、高度夠用
+        const hearts = (await page.locator('#delve-hearts').boundingBox())!;
+        const ovH = Math.min(b.x + b.width, hearts.x + hearts.width) - Math.max(b.x, hearts.x) > 1 && Math.min(b.y + b.height, hearts.y + hearts.height) - Math.max(b.y, hearts.y) > 1;
+        expect(ovH, `${sel} 蓋到生命 ${vp.width}×${vp.height}`).toBe(false);
+        expect(await page.locator(sel).evaluate((e) => parseFloat(getComputedStyle(e).maxHeight) || e.getBoundingClientRect().height), `${sel} 可用高度 ${vp.width}×${vp.height}`).toBeGreaterThanOrEqual(260);
+        expect(b.y + b.height).toBeLessThanOrEqual(vp.height + 1);
       }
       await ctx.close();
     }

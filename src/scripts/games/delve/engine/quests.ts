@@ -105,7 +105,7 @@ export function makeQuest(seed: string, g: GiverInfo, n: number, ctx: QuestCtx, 
       n: cnt, enemy: tpl.enemy, reward: reward() };
   }
   const item = tpl.item ?? 'wood';
-  return { ...base, kind: 'collect', title: `收集：${ITEMS[item].name.zh} ×${cnt}`, desc: `${g.name}需要 ${cnt} 個${ITEMS[item].name.zh}。帶齊了回來交給他。`,
+  return { ...base, kind: 'collect', title: `收集：${ITEMS[item].name.zh} ×${cnt}`, desc: `${g.name}需要 ${cnt} 個${ITEMS[item].name.zh}。帶齊了回來交給${g.name}。`,
     n: cnt, item, reward: reward() };
 }
 

@@ -11,7 +11,7 @@ import type { World } from './world';
 import { T, isSolidTile } from './tiles';
 import { makeBody, moveBody, type Body, type SolidQuery } from './physics';
 import { TILE_SIZE as S, GRAVITY, MAX_FALL, JUMP_SPEED, DAY_LENGTH } from './constants';
-import { findStandSpot, standable } from './npcPath';
+import { findStandSpot, findPath, standable, type PathNode } from './npcPath';
 import { Rng } from './rng';
 import { HOUSE_WALLS } from './furniture';
 import type { VillageInfo, HallInfo } from './gen/settlements';
@@ -35,6 +35,13 @@ export const STRANDED_WAIT = DAY_LENGTH * 1.5;
 export const STRANDED_MAX = 3;
 /** 遇見出現的距離（格） */
 export const ENC_DIST = { min: 26, max: 46 };
+/** 受困探險者的血量；被怪物碰到後的無敵時間（秒） */
+export const STRANDED_HP = 60;
+export const FOLK_HURT_CD = 0.8;
+/** 跟隨：離玩家超過這麼遠（格）就停下來原地等（玩家傳送 / 死亡重生走掉了）；卡住超過 STUCK_TP 秒、而且在 TP_RANGE 格內才直接站到玩家身邊 */
+export const FOLLOW_LOST = 40;
+export const STUCK_TP = 5;
+export const TP_RANGE = 30;
 
 export interface FolkNpc {
   id: number;
@@ -62,14 +69,23 @@ export interface FolkNpc {
   /** 出現的時間 / 該離開的時間（遊戲秒） */
   since?: number; leaveAt?: number;
   leaving?: boolean;
-  /** 受困探險者：跟著玩家 / 已經安全了（護送完成） */
-  following?: boolean; safe?: boolean;
+  /** 受困探險者：跟著玩家 / 已經安全了（護送完成）/ 原地等玩家回來（玩家傳送或死亡後） */
+  following?: boolean; safe?: boolean; waiting?: boolean;
   helpT?: number;
+  /** 行商：每項商品剩幾件 */
+  left?: number[];
+  /** 受困探險者的血量 / 受傷冷卻 */
+  hp?: number; hurtCd?: number;
+  /** 跟隨用的 BFS 路（world.rev + 目標快取）、重算倒數、最近距離 / 沒進展的秒數 */
+  path?: { nodes: PathNode[]; rev: number; gx: number; gy: number } | null;
+  pathT?: number; best?: number; lost?: number;
 }
 
 export interface FolkTravellerJSON {
   key: string; role: FolkRole; x: number; y: number; visit?: number; since: number; leaveAt: number;
-  following?: boolean; safe?: boolean; leaving?: boolean;
+  following?: boolean; safe?: boolean; leaving?: boolean; waiting?: boolean;
+  /** 行商的剩餘庫存 / 探險者的血量 */
+  left?: number[]; hp?: number;
 }
 export interface FolkJSON {
   aff: Record<string, number>;
@@ -80,7 +96,7 @@ export interface FolkJSON {
 }
 
 export type FolkEvent =
-  | { type: 'folk'; phase: 'appear' | 'leave' | 'safe' | 'giveup'; key: string; role: FolkRole; name: string; x: number; y: number; dx: number; dy: number };
+  | { type: 'folk'; phase: 'appear' | 'leave' | 'safe' | 'giveup' | 'hurt' | 'died' | 'wait'; key: string; role: FolkRole; name: string; x: number; y: number; dx: number; dy: number };
 
 export interface FolkHost {
   world: World;
@@ -126,19 +142,25 @@ export class FolkWorld {
   /** 依世界生成的配置安排所有村民 / 矮人（建構後呼叫一次；讀檔不影響他們） */
   populate(w: World): void {
     this.npcs = this.npcs.filter((n) => n.site < 0);
-    const VROLES: FolkRole[][] = [['smith', 'healer'], ['healer', 'guide'], ['guide', 'smith'], ['smith', 'guide']];
+    // 第一座村子一定有嚮導（每個世界都找得到）；有兩座以上時鐵匠 / 醫者 / 嚮導都會出現
+    const VROLES: FolkRole[][] = [['guide', 'smith'], ['healer', 'guide'], ['smith', 'healer'], ['guide', 'healer']];
     this.villages.forEach((v, vi) => {
       const roles: FolkRole[] = ['elder', 'trader', ...VROLES[vi % VROLES.length]];
-      const plaza = v.board.x;
+      const zones = villageZones(v);
+      const used = new Map<VillageInfo['houses'][number], number>();
       roles.forEach((role, k) => {
-        const house = role === 'elder' ? v.houses.find((h) => h.role === 'elder')
-          : role === 'trader' ? v.houses.find((h) => h.role === 'shop')
-            : v.houses.find((h) => h.role === 'home') ?? v.houses[k % v.houses.length];
-        const hx = house ? (house.door === house.x0 ? house.x0 - 3 : house.x1 + 3) : plaza;
-        const zx = role === 'elder' ? plaza : hx;
-        const zone = { x0: Math.max(v.x0 + 3, zx - 5), x1: Math.min(v.x1 - 3, zx + 5) };
-        const inside = house ? { x: (house.x0 + house.x1) >> 1, y: house.floorY - 1 } : null;
-        this.add(w, `v${vi}:${role}`, role, 'village', vi, zone, v.ground - 1, inside);
+        const pref = role === 'elder' ? 'elder' : role === 'trader' ? 'shop' : 'home';
+        const house = v.houses.find((h) => h.role === pref && !used.has(h)) ?? v.houses.find((h) => h.role === pref)
+          ?? v.houses[k % v.houses.length];
+        // 晚上：同一棟屋裡的人各站一格（不疊在一起）
+        let inside: { x: number; y: number } | null = null;
+        if (house) {
+          const slot = used.get(house) ?? 0;
+          used.set(house, slot + 1);
+          const span = house.x1 - house.x0 - 3;
+          inside = { x: house.x0 + 2 + ((slot * 3) % Math.max(1, span)), y: house.floorY - 1 };
+        }
+        this.add(w, `v${vi}:${role}`, role, 'village', vi, zones[k], v.ground - 1, inside);
       });
     });
     this.halls.forEach((h, hi) => {
@@ -164,16 +186,41 @@ export class FolkWorld {
     return n;
   }
   byKey(key: string): FolkNpc | null { return this.npcs.find((n) => n.key === key) ?? null; }
-  /** 世界 px (x,y) 上的 NPC（點擊對話用） */
+  /** 世界 px (x,y) 上的 NPC（點擊對話用）：好幾位重疊時選身體中心離游標最近的那位 */
   atPx(x: number, y: number, pad = 4): FolkNpc | null {
+    let best: FolkNpc | null = null, bd = Infinity;
     for (const n of this.npcs) {
       const b = n.body;
-      if (x >= b.x - pad && x <= b.x + b.w + pad && y >= b.y - pad && y <= b.y + b.h + pad) return n;
+      if (!(x >= b.x - pad && x <= b.x + b.w + pad && y >= b.y - pad && y <= b.y + b.h + pad)) continue;
+      const d = Math.hypot(b.x + b.w / 2 - x, (b.y + b.h / 2 - y) * 0.5);
+      if (d < bd) { bd = d; best = n; }
     }
-    return null;
+    return best;
   }
   /** 商品（行商的貨依遇見次數） */
   shop(n: FolkNpc): readonly FolkShopEntry[] { return n.role === 'peddler' ? n.stock ?? [] : ROLES[n.role].shop; }
+  /** 第 i 項還剩幾件（行商有庫存，其他人無限） */
+  stockLeft(n: FolkNpc, i: number): number { return n.role === 'peddler' ? n.left?.[i] ?? 0 : Infinity; }
+  takeStock(n: FolkNpc, i: number): void { if (n.role === 'peddler' && n.left && n.left[i] > 0) n.left[i]--; }
+  /** 記下玩家位置（遇見提示的方向用；update 以外生出 NPC 時先呼叫） */
+  notePlayer(pt: { x: number; y: number }): void { this.pt = pt; }
+  /** 玩家死了：跟著的探險者停在原地等（不會跟著重生傳送、也不會算安全） */
+  playerDied(): void {
+    for (const n of this.npcs) if (n.following) { n.following = false; n.waiting = true; n.say = '等等我……我在這裡等你回來。'; n.sayT = 5; n.body.vx = 0; }
+  }
+  /** 探險者受傷（被怪物碰到）；死了 → 從世界移除、回傳 true（呼叫端讓護送失敗） */
+  hurt(n: FolkNpc, amount: number, w: World): boolean {
+    if ((n.hurtCd ?? 0) > 0 || amount <= 0) return false;
+    n.hp = Math.max(0, (n.hp ?? STRANDED_HP) - amount);
+    n.hurtCd = FOLK_HURT_CD;
+    n.body.vy = -160;
+    if (n.hp > 0) { this.emit('hurt', n, w, this.pt); n.say = '好痛！'; n.sayT = 1.5; return false; }
+    this.emit('died', n, w, this.pt);
+    this.npcs = this.npcs.filter((q) => q !== n);
+    // 可以再遇到下一位（冷卻照算）
+    this.enc.stranded = Math.max(0, this.enc.stranded - 1);
+    return true;
+  }
 
   // ── 好感度 ──
   affinity(key: string): number { return this.aff[key] ?? 0; }
@@ -364,7 +411,7 @@ export class FolkWorld {
     const n = this.add(w, `road:${role}`, role, 'road', -1, { x0: x - 3, x1: x + 3 }, y, null);
     this.npcs = this.npcs.filter((q) => q === n || q.key !== n.key);
     n.visit = visit;
-    if (role === 'peddler') n.stock = peddlerStock(this.seed, visit);
+    if (role === 'peddler') { n.stock = peddlerStock(this.seed, visit); n.left = peddlerLeft(this.seed, visit, n.stock.length); }
     n.since = now; n.leaveAt = now + TRAVELLER_STAY;
     this.enc.nextTraveller = now + TRAVELLER_CD;
     this.emit('appear', n, w, this.pt);
@@ -374,6 +421,7 @@ export class FolkWorld {
     const k = this.enc.stranded++;
     const n = this.add(w, `cave:stranded:${k}`, 'stranded', 'cave', -1, { x0: x, x1: x }, y, null);
     n.since = now; n.leaveAt = now + STRANDED_WAIT;
+    n.hp = STRANDED_HP;
     this.enc.nextStranded = now + STRANDED_CD;
     this.emit('appear', n, w, this.pt);
     return n;
@@ -383,10 +431,11 @@ export class FolkWorld {
     const fx = Math.floor((n.body.x + n.body.w / 2) / S), fy = Math.floor((n.body.y + n.body.h - 1) / S);
     this.events.push({ type: 'folk', phase, key: n.key, role: n.role, name: n.name, x: fx, y: fy, dx: pt ? fx - pt.x : 0, dy: pt ? fy - pt.y : 0 });
   }
-  /** 受困探險者：開始跟著玩家 */
+  /** 受困探險者：開始（或繼續）跟著玩家 */
   startFollow(n: FolkNpc): boolean {
     if (n.role !== 'stranded' || n.following || n.safe) return false;
-    n.following = true; n.leaveAt = undefined;
+    n.following = true; n.waiting = false; n.leaveAt = undefined;
+    n.path = null; n.best = undefined; n.lost = 0;
     return true;
   }
   /** 護送完成後 / 旅人要走了：往遠離玩家的方向走掉 */
@@ -404,7 +453,9 @@ export class FolkWorld {
       return;
     }
     if (n.role === 'stranded') {
+      if ((n.hurtCd ?? 0) > 0) n.hurtCd = Math.max(0, (n.hurtCd ?? 0) - dt);
       if (n.following) { this.stepFollow(n, dt, h); return; }
+      if (n.waiting) { if (!far) { n.body.vx = 0; this.physics(n, dt, w); } return; }
       if (!n.safe) {
         // 喊救命
         n.helpT = (n.helpT ?? 0) - dt;
@@ -422,22 +473,53 @@ export class FolkWorld {
     if (n.targetX === null && n.t > 3 + (n.id % 3)) { n.targetX = (n.zone.x0 + ((n.id + Math.floor(n.t)) % (n.zone.x1 - n.zone.x0 + 1)) + 0.5) * S; n.state = 'walk'; n.t = 0; }
     this.walkTo(n, n.targetX, dt, h);
   }
-  /** 跟著玩家：走到玩家背後；卡住 / 掉隊太遠 → 直接站到玩家身邊（「抓著你的衣角跟上來」）；到安全的地方 → 護送完成 */
+  /**
+   * 跟著玩家：沿 BFS 路（npcPath.findPath，世界有改 / 玩家走開才重算）走到玩家旁邊；
+   * 一直沒有進展（STUCK_TP 秒）而且玩家在 TP_RANGE 格內 → 才直接站到玩家身邊（真的被擋死）；
+   * 玩家跑太遠（傳送 / 死亡重生）→ 停下來原地等。到安全的地方（自己站的地方，而且玩家就在旁邊）→ 護送完成
+   */
   private stepFollow(n: FolkNpc, dt: number, h: FolkHost): void {
     const w = h.world, pt = h.playerTile(), b = n.body;
     const fx = Math.floor((b.x + b.w / 2) / S), fy = Math.floor((b.y + b.h - 1) / S);
     const dist = Math.max(Math.abs(fx - pt.x), Math.abs(fy - pt.y));
-    if (dist > 12 || (n.stuck > 1.2 && dist > 3)) {
-      const s = findStandSpot(w, pt.x, pt.y, 4);
-      if (s) { b.x = s.x * S + S / 2 - b.w / 2; b.y = (s.y + 1) * S - b.h; b.vx = 0; b.vy = 0; n.stuck = 0; }
+    if (dist > FOLLOW_LOST) {
+      n.following = false; n.waiting = true; n.state = 'idle'; b.vx = 0; n.path = null;
+      n.say = '等等我……我在這裡等你回來。'; n.sayT = 5;
+      this.emit('wait', n, w, pt);
+      return;
     }
-    const side = b.x / S < pt.x ? -1 : 1;
-    n.state = 'walk';
-    const tx = Math.abs(fx - pt.x) > 2 ? (pt.x + side * 1.5) * S : null;
-    if (tx === null) n.state = 'idle';
+    // 進展：離玩家的最近距離有變小就重置計時
+    if (n.best === undefined || dist < n.best) { n.best = dist; n.lost = 0; } else n.lost = (n.lost ?? 0) + dt;
+    if (dist <= 2) { n.best = dist; n.lost = 0; }
+    if ((n.lost ?? 0) > STUCK_TP && dist <= TP_RANGE && dist > 2) {
+      const s = findStandSpot(w, pt.x, pt.y, 4);
+      if (s) { b.x = s.x * S + S / 2 - b.w / 2; b.y = (s.y + 1) * S - b.h; b.vx = 0; b.vy = 0; n.path = null; }
+      n.lost = 0; n.best = undefined;
+    }
+    let tx: number | null = null, up = 0;
+    if (Math.abs(fx - pt.x) > 2 || Math.abs(fy - pt.y) > 2) {
+      n.pathT = (n.pathT ?? 0) - dt;
+      const p = n.path;
+      if (b.onGround && (!p || p.rev !== w.rev || Math.abs(p.gx - pt.x) > 1 || Math.abs(p.gy - pt.y) > 1 || (n.pathT ?? 0) <= 0)) {
+        const cols = [fx, Math.floor(b.x / S), Math.floor((b.x + b.w - 0.01) / S)];
+        const sx = cols.find((c) => standable(w, c, fy)) ?? fx;
+        const gy = standable(w, pt.x, pt.y) ? pt.y : (findStandSpot(w, pt.x, pt.y, 3)?.y ?? pt.y);
+        const bounds = { x0: Math.min(fx, pt.x) - 30, x1: Math.max(fx, pt.x) + 30, y0: Math.min(fy, pt.y) - 25, y1: Math.max(fy, pt.y) + 25 };
+        n.path = { nodes: findPath(w, sx, fy, pt.x, gy, 2500, bounds), rev: w.rev, gx: pt.x, gy: pt.y };
+        n.pathT = 0.7;
+      }
+      const nodes = n.path?.nodes ?? [];
+      const cols = [fx, Math.floor(b.x / S), Math.floor((b.x + b.w - 0.01) / S)];
+      let i = -1;
+      for (let k = nodes.length - 1; k >= 0; k--) if (cols.includes(nodes[k].x) && Math.abs(nodes[k].y - fy) <= (b.onGround ? 1 : 5)) { i = k; break; }
+      const next = nodes[i + 1];
+      if (next) { tx = (next.x + 0.5) * S; up = fy - next.y; } else tx = (pt.x + (b.x / S < pt.x ? -1.5 : 1.5)) * S;
+    }
+    n.state = tx === null ? 'idle' : 'walk';
+    if (up >= 1 && b.onGround) b.vy = -JUMP_SPEED;
     this.walkTo(n, tx, dt, h, FOLK_WALK * 2.2);
-    if (tx !== null) n.state = 'walk';
-    if (h.safeAt(fx, fy) || h.onSurface(fx, fy)) {
+    n.state = tx === null ? 'idle' : 'walk';
+    if (dist <= 8 && (h.safeAt(fx, fy) || h.onSurface(fx, fy))) {
       n.following = false; n.safe = true; n.state = 'idle'; b.vx = 0;
       n.say = ROLES.stranded.lines[2]; n.sayT = 4;
       this.emit('safe', n, w, pt);
@@ -456,6 +538,9 @@ export class FolkWorld {
         if (n.visit !== undefined) o.visit = n.visit;
         if (n.following) o.following = true;
         if (n.safe) o.safe = true;
+        if (n.waiting) o.waiting = true;
+        if (n.left) o.left = [...n.left];
+        if (n.hp !== undefined) o.hp = n.hp;
         return o;
       }),
     };
@@ -486,12 +571,42 @@ export class FolkWorld {
       const n = this.add(w, t.key, t.role, t.role === 'stranded' ? 'cave' : 'road', -1, { x0: tx - 3, x1: tx + 3 }, ty + 2, null);
       n.body.x = t.x; n.body.y = t.y;
       n.since = num(t.since) ? t.since : 0; n.leaveAt = num(t.leaveAt) ? t.leaveAt : 0;
-      if (t.role === 'peddler') { n.visit = int(t.visit) ? t.visit : 0; n.stock = peddlerStock(this.seed, n.visit); }
+      if (t.role === 'peddler') {
+        n.visit = int(t.visit) ? t.visit : 0; n.stock = peddlerStock(this.seed, n.visit);
+        const full = peddlerLeft(this.seed, n.visit, n.stock.length);
+        n.left = full.map((m, i) => (Array.isArray(t.left) && int(t.left[i]) ? Math.max(0, Math.min(m, t.left[i])) : m));
+      }
+      if (t.role === 'stranded') n.hp = num(t.hp) ? Math.max(1, Math.min(STRANDED_HP, t.hp)) : STRANDED_HP;
       if (t.following) n.following = true;
       if (t.safe) n.safe = true;
-      if (n.following || n.safe) n.leaveAt = undefined;
+      if (t.waiting && !n.following && !n.safe) n.waiting = true;
+      if (n.following || n.safe || n.waiting) n.leaveAt = undefined;
     }
   }
+}
+
+/** 行商每項貨的庫存（1～3 件，依種子 + 遇見次數） */
+export function peddlerLeft(seed: string, visit: number, n: number): number[] {
+  const rng = new Rng(`${seed}:peddler-left:${visit}`);
+  return Array.from({ length: n }, () => rng.int(1, 4));
+}
+/**
+ * 村裡四位 NPC 各自的白天活動範圍（互不重疊）：村長在廣場左半、雜貨商在廣場右半、
+ * 另外兩位在村子兩端（旗桿 / 圍欄那一段）；兩端太窄就退回廣場邊緣。
+ */
+export function villageZones(v: VillageInfo): { x0: number; x1: number }[] {
+  const bx = v.board.x;
+  const leftH = v.houses.filter((h) => h.x1 < bx), rightH = v.houses.filter((h) => h.x0 > bx);
+  const p0 = leftH.length ? Math.max(...leftH.map((h) => h.x1)) + 2 : bx - 6;
+  const p1 = rightH.length ? Math.min(...rightH.map((h) => h.x0)) - 2 : bx + 6;
+  const first = Math.min(...v.houses.map((h) => h.x0)), last = Math.max(...v.houses.map((h) => h.x1));
+  const zones = [
+    { x0: p0 + 1, x1: bx - 2 },
+    { x0: bx + 2, x1: p1 - 1 },
+    { x0: v.x0 + 3, x1: Math.max(v.x0 + 4, first - 2) },
+    { x0: Math.min(v.x1 - 4, last + 2), x1: v.x1 - 3 },
+  ];
+  return zones.map((z) => (z.x1 < z.x0 ? { x0: z.x1, x1: z.x0 } : z));
 }
 
 /** debug / 測試：站立列下面那格是不是實心 */

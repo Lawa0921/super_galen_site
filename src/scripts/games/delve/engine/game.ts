@@ -195,11 +195,13 @@ export type DelveEvent =
   /** 和村民 / 矮人 / 旅人交易 / 服務 */
   | { type: 'folktrade'; key: string; action: 'buy' | 'sell' | 'service'; item?: ItemId; n?: number; coins: number; service?: FolkService }
   /** 委託：接下 / 進度 / 條件達成 / 交付 */
-  | { type: 'quest'; phase: 'accept' | 'progress' | 'ready' | 'done'; id: string; title: string; progress?: number; n?: number }
+  | { type: 'quest'; phase: 'accept' | 'progress' | 'ready' | 'done' | 'failed'; id: string; title: string; progress?: number; n?: number }
   /** 地標：第一次領到（first）/ 已經領過 */
   | { type: 'landmark'; x: number; y: number; tile: number; first: boolean; title: string; text: string; clue: string | null; items: { item: ItemId; n: number }[]; coins: number }
   /** 得到 / 失去 buff */
   | { type: 'buff'; kind: BuffKind; on: boolean }
+  /** 據點的嚮導每天自動標出的地點 */
+  | { type: 'scoutmark'; by: string; name: string; x: number; y: number }
   // ── 等級 / 技能（engine/levels.ts、engine/skills.ts） ──
   /** 得到經驗（x, y = 飄字位置 px） */
   | { type: 'xp'; amount: number; src: XpSource; x: number; y: number }
@@ -430,6 +432,10 @@ const LEGEND_FISH = new Set<ItemId>(FISH.filter((f) => f.rarity === 'legendary')
 const LEVEL_EVENTS = new Set<DelveEvent['type']>(['kill', 'place', 'mine', 'chest', 'craft', 'discover', 'lore', 'treasure', 'codex', 'fish', 'rooms', 'settlement', 'npc']);
 /** 救援護送的獎勵 */
 const ESCORT_REWARD = { xp: 180, coins: 150, item: { item: 'gear_shard' as ItemId, n: 2 } };
+/** 和 NPC 交易 / 服務 / 接委託的距離（格） */
+export const FOLK_TALK_RANGE = 10;
+/** 嚮導 / 線索標記的上限 */
+export const SCOUT_MAX = 60;
 /** 裝備的位置：背包格號碼或裝備槽 */
 export type GearAt = number | EquipSlot;
 export type ForgeResult = { ok: true } | { ok: false; reason: 'none' | 'station' | 'cost' | 'max' | 'unique' | 'locked' };
@@ -495,11 +501,15 @@ export class DelveGame {
   readonly folk: FolkWorld;
   /** 委託（存檔內容） */
   readonly quests: QuestLog;
-  /** 目前的 buff（祝福 / 守護 / 礦工之歌；存檔內容） */
-  buff: { kind: BuffKind; until: number } | null = null;
+  /** 目前的 buff：每種各自計時、可以同時有好幾種（祝福 / 守護 / 礦工之歌；存檔內容） */
+  buffs: Partial<Record<BuffKind, number>> = {};
   private folkHost: FolkHost | null = null;
   /** 嚮導上次標出的地點（UI 顯示） */
   lastScout: { name: string; x: number; y: number } | null = null;
+  /** 嚮導 / 地標線索 / 探索委託標出的地點（和玩家自己的 20 個標記分開；存檔內容） */
+  scoutMarks: MapMarker[] = [];
+  /** 招募居民的每日好處：上次嚮導自動標點 / 藥師送祝福是哪一天（存檔內容） */
+  perkDays = { guide: -1, healer: -1 };
   /** 傳送石引導經過秒數；null = 沒在引導 */
   private recallT: number | null = null;
   /** 飾品快取（以背包裡的飾品簽名判斷是否要重算） */
@@ -676,6 +686,7 @@ export class DelveGame {
     // 開局一段時間內不會遇見（第一位旅人至少四分之一天後、第一位受困者半天後）
     this.folk.enc.nextTraveller = this.time + DAY_LENGTH * 0.25;
     this.folk.enc.nextStranded = this.time + DAY_LENGTH * 0.5;
+    this.perkDays = { guide: dayIndexOf(this.time), healer: -1 };
     this.quests = new QuestLog(this.seed);
     this.player = makeBody(0, 0);
     this.teleport(this.spawn.x, this.spawn.y);
@@ -1526,6 +1537,13 @@ export class DelveGame {
   syncDay(): void { this.lastDay = dayIndexOf(this.time); this.wxCache = null; }
   private onNewDay(day: number): void {
     this.lastDay = day;
+    // 據點的嚮導：每天自動在地圖上標一個新地點
+    const guide = this.settle.npc('guide');
+    if (guide && day > this.perkDays.guide) {
+      this.perkDays.guide = day;
+      const r = this.scout();
+      if (r) this.events.push({ type: 'scoutmark', by: NPCS.guide.name, name: r.name, x: r.x, y: r.y });
+    }
     updateFreeze(this.world, this.liquids, day, (x, y) => !this.dead && this.tileOverlapsPlayer(x, y), this.minedIce);
   }
   /** 天氣效果：雷雨打閃電、雨水補露天水池 */
@@ -2081,6 +2099,7 @@ export class DelveGame {
 
   private die(): void {
     const p = this.player, cx = p.x + p.w / 2, cy = p.y + p.h / 2;
+    this.folk.playerDied();
     this.dead = true; this.hp = 0; this.respawnT = RESPAWN_TIME;
     this.dashT = 0; this.slamming = false;
     // 等級：失去本級進度的一小部分（不會掉級）
@@ -2137,7 +2156,9 @@ export class DelveGame {
     const st = this.stats();
     const regen = (this.burning > 0 ? 0 : regenRate(this.sinceHit, st.regenMul) + st.gear.regen) + (this.honeyT > 0 ? HONEY_REGEN : 0)
       + (this.calm() ? CALM_REGEN * (this.healerHome() ? 2 : 1) : 0) + (this.buffOn('bless') ? BUFFS.bless.regen : 0);
-    if (this.buff && this.time >= this.buff.until) { this.events.push({ type: 'buff', kind: this.buff.kind, on: false }); this.buff = null; }
+    for (const k of Object.keys(this.buffs) as BuffKind[]) {
+      if (this.time >= (this.buffs[k] ?? 0)) { delete this.buffs[k]; this.events.push({ type: 'buff', kind: k, on: false }); }
+    }
     if (this.hp < max) this.hp = Math.min(max, this.hp + regen * dt);
     else if (this.hp > max) this.hp = max;
     if (this.manaDelay > 0) this.manaDelay -= dt;
@@ -2971,7 +2992,45 @@ export class DelveGame {
     const line = npcLine(n.kind, { night: this.isNight(), rain: wx.kind === 'rain' || wx.kind === 'storm', mood: n.mood, homeless: n.home === null }, n.talks++);
     n.say = line; n.sayT = 4;
     n.dir = this.playerCenter().x >= n.body.x + n.body.w / 2 ? 1 : -1;
+    // 據點的藥師：每天第一次說話送一次祝福
+    const day = dayIndexOf(this.time);
+    if (n.kind === 'healer' && this.perkDays.healer !== day) { this.perkDays.healer = day; this.giveBuff('bless'); }
     this.events.push({ type: 'talk', kind: n.kind, line });
+  }
+  /** debug / e2e：和某位居民說話（等同右鍵點他） */
+  residentTalk(kind: NpcKind): boolean { const n = this.settle.npc(kind); if (!n) return false; this.talkTo(n); return true; }
+  /** 對話鍵：離玩家 3.5 格內最近、可以說話的人（居民或世界 NPC） */
+  nearestTalkable(): { name: string; key: string; resident?: NpcKind; x: number; y: number } | null {
+    const pc = this.playerCenter();
+    let best: { name: string; key: string; resident?: NpcKind; x: number; y: number } | null = null, bd = 3.5 * TILE_SIZE;
+    for (const n of this.settle.npcs) {
+      const b = n.body, d = Math.hypot(b.x + b.w / 2 - pc.x, (b.y + b.h / 2 - pc.y) * 0.7);
+      if (d < bd && n.state !== 'sleep') { bd = d; best = { name: NPCS[n.kind].name, key: `res:${n.kind}`, resident: n.kind, x: b.x + b.w / 2, y: b.y }; }
+    }
+    for (const n of this.folk.npcs) {
+      const b = n.body, d = Math.hypot(b.x + b.w / 2 - pc.x, (b.y + b.h / 2 - pc.y) * 0.7);
+      if (d < bd && !n.leaving) { bd = d; best = { name: n.name, key: n.key, x: b.x + b.w / 2, y: b.y }; }
+    }
+    return best;
+  }
+  /** 點擊 / 觸控：(px,py) 上有人而且碰得到 → 立刻說話（回傳 true） */
+  talkAtPx(px: number, py: number): boolean {
+    const reach = (b: Body): boolean => this.canReach(Math.floor((b.x + b.w / 2) / TILE_SIZE), Math.floor((b.y + b.h / 2) / TILE_SIZE), this.reach() + 1);
+    const r = this.settle.npcAtPx(px, py);
+    if (r && reach(r.body)) { this.talkTo(r); return true; }
+    const f = this.folk.atPx(px, py);
+    if (f && reach(f.body)) { this.talkFolk(f); return true; }
+    return false;
+  }
+  /** 對話鍵：和最近的人說話；附近沒有人 → false */
+  talkNearest(): boolean {
+    const t = this.nearestTalkable();
+    if (!t) return false;
+    if (t.resident) return this.residentTalk(t.resident);
+    const n = this.folk.byKey(t.key);
+    if (!n) return false;
+    this.talkFolk(n);
+    return true;
   }
   /** 錢包（銅幣；1 銀幣 = 100） */
   coins(): number { return walletOf(this.inventory); }
@@ -3116,6 +3175,15 @@ export class DelveGame {
     const h = this.folkHost!;
     h.time = this.time; h.day = dayIndexOf(this.time);
     this.folk.update(dt, h);
+    // 救出來的探險者會被怪物碰傷；死了 → 護送失敗
+    for (const n of [...this.folk.npcs]) {
+      if (n.role !== 'stranded' || !(n.following || n.waiting) || this.dead) continue;
+      for (const e of this.enemies) {
+        if (!overlaps(e.body, n.body)) continue;
+        if (this.folk.hurt(n, Math.max(4, Math.round(ENEMIES[e.kind].damage * 0.6)), this.world)) this.refreshQuests();
+        break;
+      }
+    }
     for (const e of this.folk.drainEvents()) {
       this.events.push(e);
       if (e.phase === 'safe') this.refreshQuests();
@@ -3144,7 +3212,7 @@ export class DelveGame {
   }
   private talkFolk(n: FolkNpc): void {
     const lines = ROLES[n.role].lines;
-    const line = n.role === 'stranded' ? (n.safe ? '多虧了你，我終於回到安全的地方了！' : n.following ? '我跟著你，別走太快喔。' : lines[0]) : lines[n.talks++ % lines.length];
+    const line = n.role === 'stranded' ? (n.safe ? '多虧了你，我終於回到安全的地方了！' : n.following ? '我跟著你，別走太快喔。' : n.waiting ? '你回來了！我們繼續走吧。' : lines[0]) : lines[n.talks++ % lines.length];
     n.say = line; n.sayT = 4;
     n.dir = this.playerCenter().x >= n.body.x + n.body.w / 2 ? 1 : -1;
     this.folk.talkAff(n.key, dayIndexOf(this.time));
@@ -3173,13 +3241,14 @@ export class DelveGame {
   /** 向 NPC 買第 i 項（好感度不夠 / 錢不夠 / 背包滿 → false） */
   folkBuy(key: string, i: number): boolean {
     const n = this.folk.byKey(key), e = n ? this.folk.shop(n)[i] : undefined;
-    if (!n || !e) return false;
-    if ((e.tier ?? 0) > affTier(this.folk.affinity(key))) return false;
+    if (!n || !e || !this.nearFolk(n, FOLK_TALK_RANGE)) return false;
+    if ((e.tier ?? 0) > affTier(this.folk.affinity(key)) || this.folk.stockLeft(n, i) <= 0) return false;
     const price = this.folkPrice(key, e.price);
     if (this.coins() < price) { this.block('use', 'coins', 0, 0); return false; }
     const trial = Inventory.fromJSON(this.inventory.toJSON());
     if (!pay(trial, price) || trial.add(e.item, e.n) > 0) { this.block('use', 'bagfull', 0, 0); return false; }
     this.inventory.slots = trial.slots;
+    this.folk.takeStock(n, i);
     this.folk.tradeAff(key, dayIndexOf(this.time));
     this.events.push({ type: 'folktrade', key, action: 'buy', item: e.item, n: e.n, coins: price });
     return true;
@@ -3190,6 +3259,8 @@ export class DelveGame {
     return base ? Math.max(1, Math.round(base * (1 + affTier(this.folk.affinity(key)) * 0.08))) : 0;
   }
   folkSell(key: string, item: ItemId, k = 1): boolean {
+    const who = this.folk.byKey(key);
+    if (!who || !this.nearFolk(who, FOLK_TALK_RANGE)) return false;
     const price = this.folkSellPrice(key, item), n = Math.min(k, this.inventory.count(item));
     if (!price || n <= 0) return false;
     this.inventory.remove(item, n);
@@ -3199,11 +3270,18 @@ export class DelveGame {
     this.events.push({ type: 'folktrade', key, action: 'sell', item, n, coins: price * n });
     return true;
   }
-  buffOn(k: BuffKind): boolean { return this.buff !== null && this.buff.kind === k && this.time < this.buff.until; }
+  buffOn(k: BuffKind): boolean { const u = this.buffs[k]; return u !== undefined && this.time < u; }
+  /** 給 buff：同種的刷新時間、不同種的並存 */
   giveBuff(k: BuffKind): void {
-    this.buff = { kind: k, until: this.time + BUFFS[k].secs };
+    this.buffs[k] = Math.max(this.buffs[k] ?? 0, this.time + BUFFS[k].secs);
     this.events.push({ type: 'buff', kind: k, on: true });
   }
+  /** 生效中的 buff（剩餘秒數由少到多；HUD 顯示用） */
+  activeBuffs(): { kind: BuffKind; left: number }[] {
+    return (Object.keys(this.buffs) as BuffKind[]).filter((k) => this.buffOn(k)).map((k) => ({ kind: k, left: (this.buffs[k] ?? 0) - this.time })).sort((a, b) => a.left - b.left);
+  }
+  /** debug / 測試：設定探險者的受傷冷卻 */
+  iframesFolk(n: FolkNpc, t: number): void { n.hurtCd = t; }
   /** 藥師住在玩家所在的據點：據點回血加倍 */
   private healerHome(): boolean {
     const n = this.settle.npc('healer');
@@ -3255,6 +3333,7 @@ export class DelveGame {
     const n = this.folk.byKey(key);
     const def = n ? ROLES[n.role].services.find((s) => s.kind === kind) : undefined;
     if (!n || !def) return { ok: false, msg: '' };
+    if (!this.nearFolk(n, FOLK_TALK_RANGE)) return { ok: false, msg: '離太遠了，走近一點再說' };
     if ((def.tier ?? 0) > affTier(this.folk.affinity(key))) return { ok: false, msg: '還不夠熟，對方不願意幫這個忙' };
     if (kind === 'invite') return this.inviteFolk(n);
     if (kind === 'rescue') return this.rescue(n);
@@ -3265,6 +3344,7 @@ export class DelveGame {
   residentService(kind: NpcKind, action: FolkService): { ok: boolean; msg: string } {
     const n = this.settle.npc(kind), sv = NPCS[kind].service;
     if (!n || !sv) return { ok: false, msg: '' };
+    if (!this.nearNpc(kind, FOLK_TALK_RANGE)) return { ok: false, msg: '離太遠了，走近一點再說' };
     const base = sv.price ?? 0;
     const price = action === 'hint' ? 0 : action === 'bless' ? shopPrice(base * 3, n.mood) : action === 'ward' ? shopPrice(base * 5, n.mood) : shopPrice(base, n.mood);
     if (sv.kind === 'heal' && !['heal', 'bless', 'ward'].includes(action)) return { ok: false, msg: '' };
@@ -3274,25 +3354,28 @@ export class DelveGame {
   /** 旅行藥師 → 邀請她到據點（成為藥師居民）；探險者 → 嚮導 */
   private inviteFolk(n: FolkNpc): { ok: boolean; msg: string } {
     const kind: NpcKind = n.role === 'herbalist' ? 'healer' : 'guide';
-    if (n.role === 'stranded' && !n.safe) return { ok: false, msg: '先把他安全帶回去吧' };
+    if (n.role === 'stranded' && !n.safe) return { ok: false, msg: `先把${n.name}安全帶回去吧` };
+    // 護送還沒交付：先自動交付（不會因為先按邀請而卡死）
+    const esc = this.quests.get(`${n.key}#escort`);
+    if (esc && this.quests.ready(esc)) this.turnInQuest(esc.def.id);
     if (!this.settle.invite(kind)) return { ok: false, msg: this.settle.npc(kind) ? `據點已經有${NPCS[kind].title}了` : '已經邀請過了' };
     this.folk.addAff(n.key, 10);
     this.folk.dismiss(n);
     const has = this.settle.cores.length > 0;
     this.events.push({ type: 'folktrade', key: n.key, action: 'service', coins: 0, service: 'invite' });
-    return { ok: true, msg: has ? `${n.name}答應了！等據點有一間合格的空房（有床），白天就會搬過來。` : `${n.name}答應了！先做一個「據點爐心」、蓋好有床的房間，她就會搬過來。` };
+    return { ok: true, msg: has ? `${n.name}答應了！等據點有一間合格的空房（有床），白天就會搬過來。` : `${n.name}答應了！先做一個「據點爐心」、蓋好有床的房間，就會搬過來。` };
   }
   /** 救援受困探險者：開始跟著玩家 + 接下護送委託 */
   private rescue(n: FolkNpc): { ok: boolean; msg: string } {
     if (!this.folk.startFollow(n)) return { ok: false, msg: '' };
     const def: QuestDef = {
       id: `${n.key}#escort`, giver: n.key, giverName: n.name, kind: 'escort', n: 1, target: n.key,
-      title: `護送：${n.name}`, desc: `把受困的${n.name}帶到地表、村落或據點。他會跟著你走（太遠會自己跟上）。`, reward: { ...ESCORT_REWARD },
+      title: `護送：${n.name}`, desc: `把受困的${n.name}帶到地表、村落或據點。會跟著你走（被擋住會自己找路跟上）。`, reward: { ...ESCORT_REWARD },
     };
     if (this.quests.active.length >= 5) this.quests.active.push({ def, progress: 0 }); else this.quests.accept(def);
     this.folk.addAff(n.key, AFF_RESCUE);
     this.events.push({ type: 'quest', phase: 'accept', id: def.id, title: def.title });
-    return { ok: true, msg: `${n.name}抓住你的衣角：「我、我跟著你！」帶他到地表、村落或據點就安全了。` };
+    return { ok: true, msg: `${n.name}抓住你的衣角：「我、我跟著你！」把人帶到地表、村落或據點就安全了。` };
   }
   /** 深岩升階（矮人符文匠）：用金錠 / 熔岩錠 + 銅幣代替星塵，把裝備升一階 */
   deepforgeCost(at: GearAt, key: string): { bar: ItemId; n: number; coins: number } | null {
@@ -3324,7 +3407,7 @@ export class DelveGame {
   /** 嚮導 / 地標線索：把最近的、還沒去過的地點（或還沒領過的地標）標在地圖上 */
   scout(): { name: string; x: number; y: number } | null {
     const pt = this.playerTile();
-    const marked = (x: number, y: number): boolean => this.markers.some((m) => m.x === x && m.y === y);
+    const marked = (x: number, y: number): boolean => this.markers.some((m) => m.x === x && m.y === y) || this.scoutMarks.some((m) => m.x === x && m.y === y);
     const cand: { name: string; x: number; y: number; d: number }[] = [];
     for (const l of this.landmarks) {
       const i = this.world.idx(l.x, l.y);
@@ -3339,7 +3422,7 @@ export class DelveGame {
     const c = cand[0];
     if (!c) return null;
     this.explored.revealDisc(c.x, c.y, 10);
-    if (this.markers.length < 20) this.markers.push({ x: c.x, y: c.y });
+    this.addScoutMark(c.x, c.y);
     this.lastScout = { name: c.name, x: c.x, y: c.y };
     return this.lastScout;
   }
@@ -3353,7 +3436,7 @@ export class DelveGame {
     if (!this.settle.cores.length) return '做一個「據點爐心」（石頭 15、木材 5、火把 3）放在地上，蓋好有床的房間，就會有人搬來住。';
     const vi = this.villages.findIndex((v) => !this.regions.some((r) => r.kind === 'village' && r.contains(v.x0 + 3, v.ground - 2) && this.discovery.isFound(r.id)));
     if (vi >= 0) { const v = this.villages[vi]; return `${dir(v.x0, v.ground)}有一座村子「${this.siteName('village', vi)}」。村民會賣東西、幫你鍛造治療，村長那裡還有委託。`; }
-    if (!this.settle.invited.has('healer') && !this.settle.npc('healer')) return '白天在地表多走走：路邊偶爾會遇到旅行藥師，邀請她到據點，回血會快很多。';
+    if (!this.settle.invited.has('healer') && !this.settle.npc('healer')) return '白天在地表多走走：路邊偶爾會遇到旅行藥師，邀請這位藥師到據點，回血會快很多。';
     const hi = this.halls.findIndex((h) => !this.regions.some((r) => r.kind === 'dwarf_hall' && r.contains((h.x0 + h.x1) >> 1, h.floorY - 2) && this.discovery.isFound(r.id)));
     if (hi >= 0) { const h = this.halls[hi]; return `洞穴層深處住著矮人：${dir((h.x0 + h.x1) >> 1, h.floorY)}有「${this.siteName('hall', hi)}」。他們賣地表買不到的礦石，還能用錠幫你升階裝備。`; }
     if (this.dungeon && !this.regions.some((r) => r.kind === 'dungeon' && this.discovery.isFound(r.id))) return `${dir(this.dungeon.bbox.x, this.dungeon.bbox.y)}有一座地下城。帶夠藥水，裡面的鑰匙能打開金寶箱。`;
@@ -3385,13 +3468,21 @@ export class DelveGame {
     return n && ROLES[n.role].quests ? this.quests.offers(this.giverInfo(n), this.questCtx()) : [];
   }
   acceptQuest(key: string, id: string): boolean {
+    const who = this.folk.byKey(key);
+    if (!who || !this.nearFolk(who, FOLK_TALK_RANGE)) return false;
     const q = this.questOffers(key).find((d) => d.id === id);
     if (!q || !this.quests.accept(q)) return false;
-    if (q.at && this.markers.length < 20 && !this.markers.some((m) => m.x === q.at!.x && m.y === q.at!.y)) this.markers.push({ ...q.at });
+    if (q.at) this.addScoutMark(q.at.x, q.at.y);
     if (q.at) this.explored.revealDisc(q.at.x, q.at.y, 8);
     this.refreshQuests();
     this.events.push({ type: 'quest', phase: 'accept', id, title: q.title });
     return true;
+  }
+  /** 嚮導 / 線索標記：最多 SCOUT_MAX 個，滿了丟掉最舊的（已經去過 / 領過的優先丟） */
+  private addScoutMark(x: number, y: number): void {
+    if (this.scoutMarks.some((m) => m.x === x && m.y === y)) return;
+    if (this.scoutMarks.length >= SCOUT_MAX) this.scoutMarks.shift();
+    this.scoutMarks.push({ x, y });
   }
   /** 交付：要在委託人身邊（村長 / 長老 / 被護送的人） */
   turnInQuest(id: string): boolean {
@@ -3422,6 +3513,12 @@ export class DelveGame {
   /** 收集 / 探索 / 護送的進度；剛達成的發 ready 事件 */
   refreshQuests(): void {
     if (!this.quests.active.length) return;
+    // 護送的對象不見了（死掉 / 被移除）：自動結案（失敗，不給獎勵）
+    for (const q of [...this.quests.active]) {
+      if (q.def.kind !== 'escort' || !q.def.target || this.folk.byKey(q.def.target)) continue;
+      this.quests.active = this.quests.active.filter((a) => a !== q);
+      this.events.push({ type: 'quest', phase: 'failed', id: q.def.id, title: q.def.title });
+    }
     const before = new Map(this.quests.active.map((q) => [q.def.id, this.quests.ready(q)]));
     this.quests.refresh((it) => this.inventory.count(it), (r) => this.discovery.isFound(r), (k) => Boolean(this.folk.byKey(k)?.safe));
     for (const q of this.quests.active) if (this.quests.ready(q) && !before.get(q.def.id)) this.events.push({ type: 'quest', phase: 'ready', id: q.def.id, title: q.def.title });
@@ -3448,6 +3545,7 @@ export class DelveGame {
   debugEncounter(role: 'peddler' | 'herbalist' | 'stranded', dx = 4): FolkNpc | null {
     const t = this.playerTile(), s = findStandSpot(this.world, t.x + dx, t.y, 6);
     if (!s) return null;
+    this.folk.notePlayer(t);
     return role === 'stranded' ? this.folk.spawnStranded(this.world, s.x, s.y, this.time) : this.folk.spawnTraveller(this.world, role, s.x, s.y, this.time);
   }
   // ── 等級 / 技能（engine/levels.ts、engine/skills.ts） ──────

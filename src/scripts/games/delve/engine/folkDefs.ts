@@ -75,7 +75,7 @@ export const ROLES: Record<FolkRole, FolkRoleDef> = {
     services: [], lines: ['今天的貨剛到，看看吧！', '打怪帶回來的東西我都收，價錢公道。', '跟村裡的人混熟了，價錢自然好談。', '天黑前記得回村子裡。'],
   },
   smith: {
-    role: 'smith', race: 'human', title: '村鐵匠', intro: '村裡的鐵匠。在她身邊鍛造不用鐵砧，熟了之後還會算你便宜。',
+    role: 'smith', race: 'human', title: '村鐵匠', intro: '村裡的鐵匠。在鐵匠身邊鍛造不用鐵砧，熟了之後還會算你便宜。',
     shop: [
       { item: 'copper_bar', n: 1, price: 22 }, { item: 'iron_bar', n: 1, price: 45 }, { item: 'throwing_knife', n: 10, price: 50 },
       { item: 'iron_pickaxe', n: 1, price: 260, tier: 1 }, { item: 'silver_bar', n: 1, price: 80, tier: 1 }, { item: 'gear_shard', n: 3, price: 150, tier: 2 },
@@ -106,13 +106,13 @@ export const ROLES: Record<FolkRole, FolkRoleDef> = {
     lines: ['往深處走之前，先準備好繩子和火把。', '地圖上的空白，就是冒險的地方。', '我年輕的時候，也在洞裡迷路過三天。'],
   },
   elder: {
-    role: 'elder', race: 'human', title: '村長', intro: '村子的長者。村裡大小事都歸她管，委託板上的工作也是她貼的。',
+    role: 'elder', race: 'human', title: '村長', intro: '村子的長者。村裡大小事都歸村長管，委託板上的工作也是村長貼的。',
     shop: [{ item: 'candle', n: 3, price: 30 }, { item: 'painting', n: 1, price: 120, tier: 1 }, { item: 'banner', n: 1, price: 60 }],
     services: [], quests: true,
     lines: ['年輕人，有空幫村子一點忙嗎？', '委託板上的工作，做完了來找我領報酬。', '這個村子是靠大家互相幫忙撐起來的。'],
   },
   ore_trader: {
-    role: 'ore_trader', race: 'dwarf', title: '礦石商', intro: '在地廳做礦石買賣的矮人。地表的商人可拿不到他手上的深層貨。',
+    role: 'ore_trader', race: 'dwarf', title: '礦石商', intro: '在地廳做礦石買賣的矮人。地表的商人可拿不到這裡的深層貨。',
     shop: [
       { item: 'iron_ore', n: 10, price: 60 }, { item: 'silver_ore', n: 8, price: 110 }, { item: 'gold_ore', n: 6, price: 180 },
       { item: 'obsidian', n: 5, price: 160, tier: 1 }, { item: 'magma_rock', n: 6, price: 200, tier: 1 },
@@ -123,16 +123,16 @@ export const ROLES: Record<FolkRole, FolkRoleDef> = {
     lines: ['哈！地表人也敢下來這麼深？', '好礦石要用耳朵聽，敲下去的聲音會告訴你。', '熔岩那一帶的石頭，可是一等一的好貨。'],
   },
   runesmith: {
-    role: 'runesmith', race: 'dwarf', title: '符文匠', intro: '矮人的符文鍛造師。她的熔爐能用深層的錠取代星塵，把裝備升上一階。',
+    role: 'runesmith', race: 'dwarf', title: '符文匠', intro: '矮人的符文鍛造師。符文匠的熔爐能用深層的錠取代星塵，把裝備升上一階。',
     shop: [{ item: 'gold_bar', n: 1, price: 140 }, { item: 'molten_bar', n: 1, price: 280, tier: 1 }, { item: 'gear_shard', n: 5, price: 220, tier: 1 }, { item: 'dwarf_brick', n: 30, price: 80, tier: 1 }, { item: 'brazier', n: 1, price: 90 }, { item: 'rail', n: 20, price: 40 }],
     services: [
-      { kind: 'forge', zh: '鍛造裝備（她的熔爐就是鐵砧；好感度越高越便宜）' },
+      { kind: 'forge', zh: '鍛造裝備（符文匠的熔爐就是鐵砧；好感度越高越便宜）' },
       { kind: 'deepforge', zh: '深岩升階：用金錠 / 熔岩錠代替星塵，把裝備升一階', tier: 1 },
     ],
     lines: ['符文不是刻上去的，是敲進去的。', '星塵？那是地表人的玩意兒。我們用熔岩錠。', '你的裝備……嗯，還有成長的空間。'],
   },
   dwarf_elder: {
-    role: 'dwarf_elder', race: 'dwarf', title: '地廳長老', intro: '矮人地廳的長老，鬍子比年紀還長。地廳裡的委託都由他發派。',
+    role: 'dwarf_elder', race: 'dwarf', title: '地廳長老', intro: '矮人地廳的長老，鬍子比年紀還長。地廳裡的委託都由長老發派。',
     shop: [{ item: 'lantern', n: 1, price: 140 }, { item: 'barrel', n: 2, price: 50 }, { item: 'dwarf_wall', n: 30, price: 70, tier: 1 }],
     services: [], quests: true,
     lines: ['地底的事，就交給地底的人。不過……人手不夠的時候例外。', '深處的怪物越來越多了，礦工們都不敢下礦坑。', '幫地廳做事的人，矮人不會忘記。'],
@@ -144,18 +144,18 @@ export const ROLES: Record<FolkRole, FolkRoleDef> = {
     services: [], lines: ['旅途中碰面就是緣分，看看我的貨吧！', '這些可是從很遠的地方帶來的。', '天黑前我就要上路了，要買要快喔。'],
   },
   herbalist: {
-    role: 'herbalist', race: 'human', title: '旅行藥師', intro: '背著藥箱四處行醫的藥師。如果你有一個安穩的據點，她說不定願意留下來。',
+    role: 'herbalist', race: 'human', title: '旅行藥師', intro: '背著藥箱四處行醫的藥師。如果你有一個安穩的據點，這位藥師說不定願意留下來。',
     shop: [{ item: 'healing_potion', n: 1, price: 75 }, { item: 'mushroom', n: 3, price: 15 }, { item: 'glow_mushroom', n: 3, price: 30 }],
     services: [
       { kind: 'heal', zh: '治療（回滿生命）', price: 35 },
       { kind: 'bless', zh: '祝福：回血 +2／秒（4 分鐘）', price: 90 },
-      { kind: 'invite', zh: '邀請她到你的據點入住（成為據點的藥師）' },
+      { kind: 'invite', zh: '邀請這位藥師到你的據點入住（成為據點的藥師）' },
     ],
     lines: ['路上採的藥草，正好派上用場。', '一直漂泊也有點累了……', '如果有個能好好熬藥的房間就好了。'],
   },
   stranded: {
-    role: 'stranded', race: 'human', title: '受困的探險者', intro: '在洞穴深處迷路、受了傷的探險者。帶他回到地表、村子或據點，他會好好答謝你。',
-    shop: [], services: [{ kind: 'rescue', zh: '救援：讓他跟著你走（帶到地表 / 村子 / 據點）' }, { kind: 'invite', zh: '邀請他到你的據點入住（成為據點的嚮導）' }],
+    role: 'stranded', race: 'human', title: '受困的探險者', intro: '在洞穴深處迷路、受了傷的探險者。把這位探險者帶回地表、村子或據點，會得到好好的答謝。',
+    shop: [], services: [{ kind: 'rescue', zh: '救援：讓對方跟著你走（帶到地表 / 村子 / 據點）' }, { kind: 'invite', zh: '邀請這位探險者到你的據點入住（成為據點的嚮導）' }],
     lines: ['救、救命……有人嗎？', '火把快燒完了……', '謝謝你！我跟緊你。'],
   },
 };

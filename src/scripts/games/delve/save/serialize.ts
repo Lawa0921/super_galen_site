@@ -156,14 +156,24 @@ export interface SaveHeader {
   /** 世界 NPC（好感度 / 遇見的旅人 / 冷卻）+ 委託 + buff；沒有 = 都是初始值 */
   folk?: FolkSave;
 }
-export interface FolkSave { world: FolkJSON; quests: QuestLogJSON; buff: { kind: BuffKind; until: number } | null; }
+export interface FolkSave {
+  world: FolkJSON; quests: QuestLogJSON;
+  /** 每種 buff 的到期時間（遊戲秒） */
+  buffs: Partial<Record<BuffKind, number>>;
+  /** 嚮導 / 線索標記 */
+  scoutMarks: MapMarker[];
+  /** 招募居民的每日好處（上次觸發的天） */
+  perkDays: { guide: number; healer: number };
+}
 function validFolk(v: unknown): FolkSave | undefined {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
   const o = v as Partial<FolkSave>;
-  const b = o.buff as { kind?: unknown; until?: unknown } | null | undefined;
-  const buff = b && typeof b === 'object' && typeof b.kind === 'string' && b.kind in BUFFS && typeof b.until === 'number' && Number.isFinite(b.until)
-    ? { kind: b.kind as BuffKind, until: b.until } : null;
-  return { world: (o.world ?? {}) as FolkJSON, quests: (o.quests ?? {}) as QuestLogJSON, buff };
+  const buffs: Partial<Record<BuffKind, number>> = {};
+  if (o.buffs && typeof o.buffs === 'object') for (const [k, t] of Object.entries(o.buffs)) if (k in BUFFS && typeof t === 'number' && Number.isFinite(t)) buffs[k as BuffKind] = t;
+  const scoutMarks = Array.isArray(o.scoutMarks) ? o.scoutMarks.filter((m) => m && Number.isInteger(m.x) && Number.isInteger(m.y)).slice(0, 60).map((m) => ({ x: m.x, y: m.y })) : [];
+  const pd = o.perkDays as { guide?: unknown; healer?: unknown } | undefined;
+  const perkDays = { guide: pd && Number.isInteger(pd.guide) ? pd.guide as number : -1, healer: pd && Number.isInteger(pd.healer) ? pd.healer as number : -1 };
+  return { world: (o.world ?? {}) as FolkJSON, quests: (o.quests ?? {}) as QuestLogJSON, buffs, scoutMarks, perkDays };
 }
 /** 存檔裡的等級資料 → 正規化後的副本 */
 function validLevels(raw: unknown): LevelsJSON {
@@ -467,7 +477,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       settle: game.settle.toJSON(),
       halves: encodeFrozen(w.half),
       levels: game.levels.toJSON(),
-      folk: { world: game.folk.toJSON(), quests: game.quests.toJSON(), buff: game.buff ? { ...game.buff } : null },
+      folk: { world: game.folk.toJSON(), quests: game.quests.toJSON(), buffs: { ...game.buffs }, scoutMarks: game.scoutMarks.map((m) => ({ ...m })), perkDays: { ...game.perkDays } },
     },
     chunks,
   };
@@ -868,7 +878,9 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   game.settle.load(h.settle, w);
   game.folk.load(h.folk?.world, w);
   game.quests.load(h.folk?.quests);
-  game.buff = h.folk?.buff ? { ...h.folk.buff } : null;
+  game.buffs = h.folk ? { ...h.folk.buffs } : {};
+  game.scoutMarks = h.folk ? h.folk.scoutMarks.map((m) => ({ ...m })) : [];
+  if (h.folk) game.perkDays = { ...h.folk.perkDays };
   // 首領戰中存檔（怪物不存）：退還召喚道具，背包滿就掉在腳邊
   const refund = h.bossActive ? BOSS_SUMMON_ITEM[h.bossActive] : undefined;
   if (refund && !game.bossEnemy()) {

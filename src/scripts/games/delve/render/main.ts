@@ -112,6 +112,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
     onToast: (m) => hud.toast(m),
   });
   let paused = false;
+  /** NPC 面板開著而暫停（非和平模式） */
+  let talkPaused = false;
   // 等級系統：角色 / 技能面板開著時暫停（面板用方向鍵選技能）
   const levels = new LevelsUi({
     root, game, sound, hud,
@@ -203,6 +205,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
     onHousing: () => { if (!menuPaused && !fullmap.isOpen) settleUi.toggleHousing(); },
     onSettle: () => { if (!menuPaused && !fullmap.isOpen) { if (ui.journalOpen) ui.setJournal(false); settleUi.toggleSettle(); } },
     onQuests: () => { if (!menuPaused && !fullmap.isOpen) { if (ui.journalOpen) ui.setJournal(false); folkUi.toggleQuests(); } },
+    onTalk: () => { if (!menuPaused && !fullmap.isOpen && !game.talkNearest()) hud.toast('附近沒有可以說話的人（靠近 NPC 再按 T）', 1600); },
     onZoom: zoom,
     isBlocked: () => paused,
   });
@@ -215,10 +218,15 @@ export function startDelve(opts: StartOptions): DelveHandle {
     gaps[frames % WINDOW] = now - last;
     last = now;
     const t0 = performance.now();
+    // 和 NPC 對話（面板開著）時：非和平模式下暫停模擬（怪物不會趁你挑商品時打你）；UI 事件照常處理
+    const talking = !game.peaceful && (folkUi.isOpen || settleUi.npcOpen);
+    if (talking !== talkPaused) { talkPaused = talking; root.dataset.talkpause = talking ? '1' : ''; if (!talking) delete root.dataset.talkpause; if (talking) controls.releaseAll(); }
     if (!paused) {
-      controls.update();
-      const n = stepper.advance(dt);
-      for (let i = 0; i < n; i++) game.step(FIXED_DT);
+      if (!talking) {
+        controls.update();
+        const n = stepper.advance(dt);
+        for (let i = 0; i < n; i++) game.step(FIXED_DT);
+      }
       let invChanged = false;
       for (const e of game.drainEvents()) {
         renderer.onEvent(e);
@@ -324,7 +332,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'trade') { sound.pickup(); invChanged = true; }
         else if (e.type === 'folktalk') { if (ui.journalOpen) ui.setJournal(false); settleUi.closeNpc(); settleUi.closeSettle(); folkUi.open(e.key, e.line, e.board); sound.pickup(); }
         else if (e.type === 'folktrade') { sound.pickup(); invChanged = true; }
-        else if (e.type === 'folk' || e.type === 'quest' || e.type === 'buff') {
+        else if (e.type === 'folk' || e.type === 'quest' || e.type === 'buff' || e.type === 'scoutmark') {
           folkUi.onEvent(e);
           if (e.type === 'folk' && e.phase === 'appear') sound.discover();
           else if (e.type === 'quest' && e.phase === 'done') { sound.treasure(); invChanged = true; }
@@ -350,7 +358,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       }
       if (invChanged) hud.refresh();
     }
-    renderer.render(paused ? 0 : dt);
+    renderer.render(paused || talkPaused ? 0 : dt);
     hud.tick();
     levels.tick(dt);
     ui.tick(dt);

@@ -5,7 +5,7 @@ import type { Stack } from '../engine/inventory';
 import { HOTBAR_SIZE, TILE_SIZE } from '../engine/constants';
 
 export type KeyAction = 'left' | 'right' | 'jump' | 'up' | 'down' | 'inventory' | 'menu' | 'zoomIn' | 'zoomOut'
-  | 'map' | 'minimap' | 'journal' | 'housing' | 'settle' | 'quests';
+  | 'map' | 'minimap' | 'journal' | 'housing' | 'settle' | 'quests' | 'talk';
 
 const KEYS: Record<string, KeyAction> = {
   KeyA: 'left', ArrowLeft: 'left',
@@ -13,7 +13,7 @@ const KEYS: Record<string, KeyAction> = {
   Space: 'jump', KeyW: 'up', ArrowUp: 'up',
   KeyS: 'down', ArrowDown: 'down',
   KeyE: 'inventory',
-  KeyM: 'map', KeyN: 'minimap', KeyJ: 'journal', KeyH: 'housing', KeyB: 'settle', KeyL: 'quests',
+  KeyM: 'map', KeyN: 'minimap', KeyJ: 'journal', KeyH: 'housing', KeyB: 'settle', KeyL: 'quests', KeyT: 'talk',
   Escape: 'menu',
   Equal: 'zoomIn', NumpadAdd: 'zoomIn',
   Minus: 'zoomOut', NumpadSubtract: 'zoomOut',
