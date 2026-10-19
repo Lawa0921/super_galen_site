@@ -297,6 +297,27 @@ describe('圖層', () => {
       expect(above(at(0, cat), at(0, 0)), `human hair ${hair} body ${body}`).toBeGreaterThan(10);
     }
   });
+  it('貓族 / 龍裔 × 頭飾（兜帽除外）：貓耳 / 龍角在頭飾前面——人類沒有、種族才長出來的耳 / 角像素（頭頂附近），戴頭飾後一格都不被蓋掉', () => {
+    const ID = (id: string): number => RACES.findIndex((r) => r.id === id);
+    const accs = ACCESSORIES.map((a, i) => [a.id, i] as const).filter(([id]) => id !== 'none' && id !== 'hood');
+    const bad: string[] = [];
+    for (const race of [ID('catfolk'), ID('dragonkin')]) for (const body of [0, 1]) for (const hair of [0, 1, 2]) for (const [an, f] of [['idle', 0], ['walk', 2], ['jump', 0]] as const) {
+      const at = (r: number, acc: number): Bmp => flatFrame(avatarFrame(plainLook({ ...DEF, body, hair, acc, race: r, ahoge: false }), an, f));
+      const human = at(0, 0), bare = at(race, 0);
+      // 耳 / 角：人類那格透明、種族那格不透明；只看頭的區域第 3 列以上（尾巴在身體下面，不算）
+      const ears: number[] = [];
+      for (let y = 0; y < AV_HEAD.y + 3; y++) for (let x = 0; x < AV_FW; x++) if (!(human.raw(x, y) >>> 24) && bare.raw(x, y) >>> 24) ears.push(y * AV_FW + x);
+      expect(ears.length, `${RACES[race].id} body ${body} ${an}`).toBeGreaterThan(10);
+      for (const [id, acc] of accs) {
+        const b = at(race, acc);
+        const lost = ears.filter((i) => b.px[i] !== bare.px[i]).length;
+        if (lost) bad.push(`${RACES[race].id} × ${id} hair ${hair} body ${body} ${an}${f}: ${lost}`);
+        // 頭飾也不能整個躲到耳 / 角後面：和不戴相比至少差 8 格（皇冠 / 髮簪 / 小花 / 面具會換位置，見 avatarHead TOP_GAP）
+        if (diff(b, bare) < 8) bad.push(`${RACES[race].id} × ${id} hair ${hair} body ${body} ${an}${f}: hidden (${diff(b, bare)})`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
   it('每款髮型（含側分長瀏海）× 男女：兩隻眼睛都露出來（後眼完整、前眼最多被鬢髮 / 辮子蓋掉邊緣）', () => {
     const er = new Set(eyeRamp(3).slice(0, 2).map((c) => c.join()));
     const eyes = (body: number, hair: number): { back: number; front: number } => {

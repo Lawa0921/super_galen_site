@@ -415,9 +415,11 @@ function elfEars(p: Paint): void {
   }
   for (const [i, l] of lv) p.lvl[i] = l;
 }
-/** 貓耳（髮色）：後面那隻在後腦上方、前面那隻在臉的上方；尖端最高到 −4（含外框，不高過碰撞盒）；內耳粉色 */
+/** 貓耳（髮色）：後面那隻在後腦上方、前面那隻在臉的上方；尖端最高到 −4（含外框，不高過碰撞盒）；內耳粉色。
+ *  回傳耳朵佔的格子（區域座標；只算原本是空的、頭外面那幾格）：頭飾畫在這些格子後面 */
 const CAT_EARS: readonly Tri[] = [[[1.2, 3.4], [8.8, 0.4], [2.6, -4.6]], [[10.8, 0.2], [18, 2.6], [15.6, -4.6]]];
-function catEars(p: Paint): void {
+function catEars(p: Paint): Pt[] {
+  const cells: Pt[] = [];
   for (const t of CAT_EARS) {
     const cx = (t[0][0] + t[1][0] + t[2][0]) / 3, cy = (t[0][1] + t[1][1] + t[2][1]) / 3;
     // 內耳：同一個三角形往重心縮一半、往下挪一格
@@ -427,13 +429,15 @@ function catEars(p: Paint): void {
       if (p.m(x, y) !== NONE) return;
       // 外側（後緣）暗一階、前緣受光
       p.set(x, y, HAIR_M, x + 0.5 < t[2][0] ? 2 : 3);
+      cells.push([x, y]);
     });
     eachIn(inner, (x, y) => { if (p.m(x, y) === HAIR_M && y < 1) p.set(x, y, INNER_M, x + 0.5 < cx ? 0 : 1); });
   }
+  return cells;
 }
 /** 龍角：[根, 彎, 尖, 根部粗細]；後面那支往後（左）上方伸出後腦外、前面那支越過頭頂往後彎；尖端最高到 −3（外框 −4） */
 const HORNS: readonly [Pt, Pt, Pt, number][] = [[[4, 3], [-1.2, 2.4], [-1.8, -2.8], 4], [[15, 1.6], [13.2, -1.4], [10, -2.8], 3.4]];
-function horns(b: Bmp, ox: number, oy: number): void {
+function horns(b: Bmp, ox: number, oy: number): Bmp {
   const hp = new Paint();
   // 根部暗、上緣（受光）亮、下緣暗、兩道環紋；尖端最亮
   const shade = (t: number, s: number): number => (t < 0.22 ? (s < -0.3 ? 2 : 1) : (t > 0.36 && t < 0.44) || (t > 0.6 && t < 0.66) ? 1 : t > 0.84 ? 4 : s < -0.3 ? 3 : s > 0.35 ? 1 : 2);
@@ -442,6 +446,7 @@ function horns(b: Bmp, ox: number, oy: number): void {
   render(hp, layer, ox, oy, { [HORN_M]: HORN }, { [HORN_M]: HORN[0] });
   layer.selOutline();
   b.blit(layer, 0, 0);
+  return layer;
 }
 
 function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): void {
@@ -523,7 +528,10 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   const hideTop = cov.helmet || cov.hat !== null || acc === 'hood';
   // 兜帽從頭兩側包住：精靈耳收在兜帽裡（不從兜帽兩側戳出來）
   if (o.race === 'elf' && acc !== 'hood') elfEars(p);
-  if (o.race === 'catfolk' && !hideTop) catEars(p);
+  // 種族長在頭頂的貓耳 / 龍角（含外框）佔的格子：頭飾（皇冠 / 耳機 / 髮簪…）畫在它們後面，不蓋掉耳朵和角
+  const raceTop = new Uint8Array(front.w * front.h);
+  const markTop = (x: number, y: number): void => { if (x >= 0 && y >= 0 && x < front.w && y < front.h) raceTop[y * front.w + x] = 1; };
+  if (o.race === 'catfolk' && !hideTop) for (const [x, y] of catEars(p)) markTop(ox + x, oy + y);
   // 6. 打光 + 外框 + 頭頂的髮束分線 / 高光
   shadeHair(p, HAIR_M, true);
   backStrands(p, sw);
@@ -591,7 +599,10 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   if (st === 'lowpony') { const [x, y] = bez(lowTail, 0.3); tieBand(behind, ox + Math.round(x) - 1, oy + Math.round(y) - 1, tie); }
   if (st === 'braid') braid(head, a, ox, oy, sw, lift);
   if (st === 'odango' && !cov.top && acc !== 'hood') bun(head, ox + 4, oy + 0, h, ho, tie);
-  if (o.race === 'dragonkin' && !hideTop) horns(head, ox, oy);
+  if (o.race === 'dragonkin' && !hideTop) {
+    const hl = horns(head, ox, oy);
+    for (let i = 0; i < hl.px.length; i++) if (hl.px[i] >>> 24) raceTop[i] = 1;
+  }
 
   const gear = new Bmp(front.w, front.h);
   if (o.gear && armorSet(o.gear)) helmetArt(gear, o.gear, ox, oy, o.f ?? 0);
@@ -602,7 +613,10 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   front.blit(head, 0, 0);
   if (cov.hat) hatArt(front, cov.hat, ox, oy, 'side', m.swing);
   if (o.gear) o.trace?.push('headgear');
-  sideAcc(front, a, st, acc, ox, oy, o.race);
+  const accL = new Bmp(front.w, front.h);
+  sideAcc(accL, a, st, acc, ox, oy, o.race);
+  for (let i = 0; i < raceTop.length; i++) if (raceTop[i]) accL.px[i] = 0;
+  front.blit(accL, 0, 0);
   // 頭飾 / 帽子最高到頭的區域座標 −4（含外框）：不高過碰撞盒
   for (let yy = 0; yy < Math.min(front.h, oy - 4); yy++) for (let x = 0; x < front.w; x++) front.clear(x, yy);
   if (a.glasses) glasses(front, ox + look, oy);
@@ -672,13 +686,24 @@ function bow(b: Bmp, x: number, y: number, r: RGB[], big = false): void {
   b.blit(s, 0, 0);
 }
 
+/**
+ * 頭頂有貓耳 / 龍角的種族：頭頂中間只剩耳 / 角之間的一道縫（耳 / 角畫在頭飾前面，見 frontHead 的 raceTop）。
+ * gap = 縫的左緣（區域座標）：皇冠換成 5 格寬的小皇冠、頭頂的蝴蝶結換小的，都放進這道縫；
+ * low / back = 髮簪 / 綁在後腦的蝴蝶結往下 / 往後挪幾格（插在耳 / 角的根部下面，不被蓋住）；side = 側邊的小花 / 狐狸面具往下挪幾格（龍角根部很粗）
+ */
+const TOP_GAP: Partial<Record<RaceId, { gap: number; low: number; back: number; side: number }>> = {
+  catfolk: { gap: 7, low: 5, back: 0, side: 0 },
+  dragonkin: { gap: 5, low: 8, back: -1, side: 5 },
+};
 function sideAcc(b: Bmp, a: Appearance, st: string, acc: string, ox: number, oy: number, race: RaceId): void {
-  const r = clothRamp(a.color2);
+  const r = clothRamp(a.color2), tg = TOP_GAP[race];
   if (acc === 'ribbon') {
-    if (st === 'twintails') { bow(b, ox + 2, oy + 3, r); return; }
-    if (st === 'ponytail') { bow(b, ox + 1, oy + 2, r); return; }
+    const [bx, by] = tg ? [tg.back, tg.low] : [0, 0];
+    if (st === 'twintails') { bow(b, ox + 2 + bx, oy + 3 + by, r); return; }
+    if (st === 'ponytail') { bow(b, ox + 1 + bx, oy + 2 + by, r); return; }
     if (st === 'odango') { bow(b, ox + 8, oy + 0, r); return; }
-    bow(b, ox + 6, oy - 1, r, true);
+    if (tg) bow(b, ox + tg.gap + 2, oy - 1, r);
+    else bow(b, ox + 6, oy - 1, r, true);
   } else if (acc === 'catears') {
     // 貓耳髮箍：箍子順著頭頂、兩隻大耳朵（前面那隻在臉的上方、後面那隻在後腦）
     const s = new Bmp(b.w, b.h), c = clothRamp(a.color2), pink = hex('#ffc8dc');
@@ -697,13 +722,15 @@ function sideAcc(b: Bmp, a: Appearance, st: string, acc: string, ox: number, oy:
     b.blit(s, 0, 0);
   } else if (acc === 'flower') {
     const s = new Bmp(b.w, b.h), p = hex('#ffc8dc'), pd = hex('#e890b0'), c = GOLD, lf = CR.green;
-    grid(s, ['.pp.', 'pPcp', 'pccd', '.pd.', 'g..g'], { p, P: hex('#ffffff'), c, d: pd, g: lf[3] }, ox + 3, oy + 2);
+    grid(s, ['.pp.', 'pPcp', 'pccd', '.pd.', 'g..g'], { p, P: hex('#ffffff'), c, d: pd, g: lf[3] }, ox + 3, oy + 2 + (tg?.side ?? 0));
     s.softOutline();
     b.blit(s, 0, 0);
   } else if (acc === 'crown') {
     // 小皇冠：戴在頭頂正中、三個尖 + 中間一顆紅寶石、兩側藍寶石；左邊（受光）亮、右邊暗一階
-    const s = new Bmp(b.w, b.h);
-    grid(s, ['y...W...y', 'yy.yWy.yo', 'WyyyRyyyo', 'oBoooooBd'], { y: GOLD, W: hex('#fff4c0'), o: hex('#ffa93a'), d: hex('#e8701c'), R: hex('#c8344c'), B: hex('#3e74c4') }, ox + 6, oy - 3);
+    const s = new Bmp(b.w, b.h), pal = { y: GOLD, W: hex('#fff4c0'), o: hex('#ffa93a'), d: hex('#e8701c'), R: hex('#c8344c'), B: hex('#3e74c4') };
+    // 有耳 / 角的種族：5 格寬的小皇冠，坐在耳 / 角之間
+    if (tg) grid(s, ['y.W.y', 'yyWyo', 'WyRyo', 'oBooB'], pal, ox + tg.gap, oy - 3);
+    else grid(s, ['y...W...y', 'yy.yWy.yo', 'WyyyRyyyo', 'oBoooooBd'], pal, ox + 6, oy - 3);
     s.softOutline();
     b.blit(s, 0, 0);
   } else if (acc === 'headphones') {
@@ -723,16 +750,18 @@ function sideAcc(b: Bmp, a: Appearance, st: string, acc: string, ox: number, oy:
     const s = new Bmp(b.w, b.h), W = hex('#ffffff'), sh = hex('#cceaf8'), sd = hex('#b4b9c8'), r = hex('#c8344c'), k = hex('#8c2038');
     const rows = ['W.....W', 'Wr...rW', 'WWWWWWW', 'WkrWrkW', 'WWWWWWs', '.WWWWs.', '..dRd..'];
     // 往後歪：上面那幾列往前（右）偏、下巴往後（左）
-    rows.forEach((row, ry) => grid(s, [row], { W, s: sh, d: sd, r, k, R: r }, ox + Math.round((3 - ry) * 0.4), oy + 1 + ry));
+    rows.forEach((row, ry) => grid(s, [row], { W, s: sh, d: sd, r, k, R: r }, ox + Math.round((3 - ry) * 0.4), oy + 1 + ry + (tg?.side ?? 0)));
     s.softOutline();
     b.blit(s, 0, 0);
   } else if (acc === 'hairpin') {
     // 髮簪：一根金色的簪子斜插在後腦、外端一朵副色的花；花下面垂兩串細金鍊、鍊尾各一顆珠子（鍊子不描邊，保持細）
+    // 有耳 / 角的種族：整支往下（往後）挪到耳 / 角的根部下面
     const s = new Bmp(b.w, b.h), c = clothRamp(a.color2), g = GOLD, gd = hex('#e8701c');
-    for (let k = 0; k <= 6; k++) s.set(ox + 8 - k, oy + 3 - Math.round(k * 0.8), k < 2 ? gd : g);
-    grid(s, ['.pp.', 'pgPp', '.pd.'], { p: c[3], P: c[4], d: c[2], g }, ox, oy - 4);
+    const px = ox + (tg?.back ?? 0), py = oy + (tg?.low ?? 0);
+    for (let k = 0; k <= 6; k++) s.set(px + 8 - k, py + 3 - Math.round(k * 0.8), k < 2 ? gd : g);
+    grid(s, ['.pp.', 'pgPp', '.pd.'], { p: c[3], P: c[4], d: c[2], g }, px, py - 4);
     s.softOutline();
-    grid(s, ['g.g', 'd.d', 'g.b', 'b.B', 'B..'], { g, d: gd, b: c[3], B: c[2] }, ox, oy);
+    grid(s, ['g.g', 'd.d', 'g.b', 'b.B', 'B..'], { g, d: gd, b: c[3], B: c[2] }, px, py);
     b.blit(s, 0, 0);
   }
 }
