@@ -1664,3 +1664,71 @@ describe("the guild's leads (6c Task 16)", () => {
     expect(() => position('leads.nobody')).toThrow();
   });
 });
+
+describe('V1 voice pass: the two of them, livelier (style bible §2.2 to §2.5)', () => {
+  const ELLIPSIS = /……/g;
+  const dots = (t: string): number => (t.match(ELLIPSIS) ?? []).length;
+  const opensOnDots = (t: string): boolean => /^「?……/.test(t);
+  const readings = (id: SceneId): ScriptLine[][] => [false, true].map((oath) =>
+    linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: [], returned: [], oath }));
+  /** The light scenes V1 rewrote: one 「……」 per scene at most, for a real pause, and never as an opener. */
+  const LIGHT: SceneId[] = ['prologue-inn', 'first-return', 'chat:hero:1', 'chat:hero:3', 'chat:rin:1'];
+  /** Her shadow chats and his act chats keep their weight, with one 「……」 a line at most. */
+  const HEAVY: SceneId[] = ['chat:hero:2', 'chat:hero:4', 'chat:rin:2', 'chat:rin:3', 'chat:rin:4'];
+
+  it('a light scene spends one 「……」 at most, and no line opens on one', () => {
+    for (const id of LIGHT) {
+      for (const played of readings(id)) {
+        expect(dots(played.map((l) => l.text).join('')), id).toBeLessThanOrEqual(1);
+        for (const l of played) expect(opensOnDots(l.text), `${id}: ${l.text}`).toBe(false);
+      }
+    }
+    // the gate catches what it guards: the pre-V1 inn night spent three, two of them as openers
+    expect(dots('「……我什麼都不記得。」「……我也只剩下面了。」「……還有。」')).toBe(3);
+    expect(opensOnDots('「……還有。你走路的樣子。」')).toBe(true);
+    expect(opensOnDots('「吵是吵。……反正。」')).toBe(false);
+  });
+
+  it('a heavy chat keeps one 「……」 a line at most', () => {
+    for (const id of HEAVY) for (const l of STORY.scenes[id].lines) expect(dots(l.text), `${id}: ${l.text}`).toBeLessThanOrEqual(1);
+  });
+
+  it("Rin's town lines: act 2 is light, every line spends one 「……」 at most, and her oath lines none as an opener", () => {
+    const act2 = STORY.rinLines.act2!;
+    expect(dots(act2.join('')), 'act2').toBeLessThanOrEqual(1);
+    for (const [stage, lines] of Object.entries(STORY.rinLines)) {
+      for (const t of lines ?? []) {
+        expect(dots(t), `${stage}: ${t}`).toBeLessThanOrEqual(1);
+        expect(opensOnDots(t), `${stage}: ${t}`).toBe(false);
+      }
+    }
+    expect(dots(STORY.rinOath.join(''))).toBeLessThanOrEqual(1);
+    for (const t of STORY.rinOath) expect(opensOnDots(t), t).toBe(false);
+  });
+
+  it("Rin's lines in the meetings are deadpan: no 「……」, no face kept for either side of her oath", () => {
+    const rin = MEETINGS.flatMap((m) => [...STORY.meet[m.id].before, ...STORY.meet[m.id].after]).filter((l) => l.who === 'rin');
+    expect(rin.length).toBeGreaterThanOrEqual(3);
+    for (const l of rin) {
+      expect(dots(l.text), l.text).toBe(0);
+      expect(l.mood ?? 'normal', l.text).not.toMatch(/guarded|averted/);
+    }
+  });
+
+  it("a chat line of Rin's that plays on both sides of her oath wears neither guarded nor averted", () => {
+    for (const id of SCENE_IDS.filter((x) => /^chat:(hero|rin):/.test(x))) {
+      if (CHAT_GATE[id]?.oath === true) continue;
+      for (const l of STORY.scenes[id].lines) {
+        if (l.who === 'rin' && l.if?.oath === undefined) expect(l.mood ?? 'normal', `${id}: ${l.text}`).not.toMatch(/guarded|averted/);
+      }
+    }
+  });
+
+  it('before her choice Rin uses no sentence-final particle and no exclamation in her town lines and the opening', () => {
+    const PARTICLE = /[呢吧啦喔囉嘛耶]|！/;
+    for (const t of Object.values(STORY.rinLines).flat()) expect(t, t).not.toMatch(PARTICLE);
+    for (const id of ['prologue-inn', 'first-return', 'chat:rin:1'] as SceneId[]) {
+      for (const l of STORY.scenes[id].lines) if (l.who === 'rin') expect(l.text, `${id}: ${l.text}`).not.toMatch(PARTICLE);
+    }
+  });
+});
