@@ -447,31 +447,31 @@ describe('town banter', () => {
   it('one banter per return, after the chat, behind every light story scene a return can bring', () => {
     const s = meetAll(base(), ['noel', 'safira', 'sylvie', 'liz', 'scarlet']);
     s.party.roster.safira.memories = chainLength('safira');
-    s.story.queue = ['home:safira', 'town:orik', 'mem:noel:2', 'first-return', 'act1-after', 'mem:hero:7', 'prologue-inn'];
+    s.story.queue = ['home:safira', 'town:orik', 'first-return', 'act1-after', 'prologue-inn'];
     const order = arrivalScenes(s, { chat: true });
-    const story = ['prologue-inn', 'first-return', 'act1-after', 'mem:hero:7', 'town:orik', 'mem:noel:2', 'home:safira'];
-    expect(order.slice(0, 7)).toEqual(story);
-    expect(order[7]).toMatch(/^chat:/);
-    expect(order[8]).toMatch(/^banter:/);
-    expect(order).toHaveLength(9);
+    const story = ['prologue-inn', 'first-return', 'act1-after', 'town:orik', 'home:safira'];
+    expect(order.slice(0, 5)).toEqual(story);
+    expect(order[5]).toMatch(/^chat:/);
+    expect(order[6]).toMatch(/^banter:/);
+    expect(order).toHaveLength(7);
     expect(order.filter((id) => id.startsWith('banter:'))).toHaveLength(1);
     // with no chat due, the banter still comes last
     allChatsSeen(s);
     const quiet = arrivalScenes(s, { chat: true });
-    expect(quiet.slice(0, 7)).toEqual(story);
-    expect(quiet[7]).toMatch(/^banter:/);
-    expect(quiet).toHaveLength(8);
+    expect(quiet.slice(0, 5)).toEqual(story);
+    expect(quiet[5]).toMatch(/^banter:/);
+    expect(quiet).toHaveLength(6);
   });
 
-  it('no light banter after a heavy arrival: an act, the bellkeeper, her reveal or the finale return; it waits for the next return', () => {
-    expect([...HEAVY_ARRIVAL]).toEqual(expect.arrayContaining(['rin-reveal', 'bellkeeper-arrives', 'act2', 'act3', 'act4', 'ending:', 'romance:', 'epilogue']));
+  it('no light banter after a heavy arrival: an act, the bellkeeper, a memory piece, her reveal or the finale return; it waits for the next return', () => {
+    expect([...HEAVY_ARRIVAL]).toEqual(expect.arrayContaining(['rin-reveal', 'bellkeeper-arrives', 'act2', 'act3', 'act4', 'mem:', 'ending:', 'romance:', 'epilogue']));
     const s = meetAll(base(), ['noel']);
     s.story.seen.push('prologue-inn', 'rin-reveal');
     s.party.roster.rin.oath = true;
-    for (const heavy of ['act2', 'act3', 'act4', 'bellkeeper-arrives'] as SceneId[]) {
-      s.story.queue = ['first-return', heavy, 'mem:noel:2', 'home:safira'];
+    for (const heavy of ['act2', 'act3', 'act4', 'bellkeeper-arrives', 'mem:hero:7', 'mem:noel:2', 'mem:rin:1'] as SceneId[]) {
+      s.story.queue = ['first-return', heavy, 'town:orik', 'home:safira'];
       const order = arrivalScenes(s, { chat: true });
-      expect(order.slice(0, 4), heavy).toEqual(['first-return', heavy, 'mem:noel:2', 'home:safira']);   // already in rank order
+      expect(order.slice(0, 4), heavy).toEqual(['first-return', heavy, 'town:orik', 'home:safira']);   // already in rank order
       expect(order[4], heavy).toMatch(/^chat:/);   // the chat still comes
       expect(order.some((id) => id.startsWith('banter:')), heavy).toBe(false);
     }
@@ -481,8 +481,9 @@ describe('town banter', () => {
     // not lost: the next return with nothing heavy brings it
     expect(arrivalScenes(s, { chat: true }).at(-1)).toBe('banter:noel-rin:1');
     // the predicate: exact ids, and the prefixes 6d's scenes will use
-    for (const id of ['rin-reveal', 'bellkeeper-arrives', 'act3', 'epilogue', 'ending:noel', 'romance:rin']) expect(isHeavyArrival(id), id).toBe(true);
-    for (const id of ['first-return', 'act1-after', 'prologue-inn', 'home:safira', 'mem:noel:2', 'mem:hero:7', 'town:orik', 'chat:noel:1', 'banter:noel-rin:1']) expect(isHeavyArrival(id), id).toBe(false);
+    for (const id of ['rin-reveal', 'bellkeeper-arrives', 'act3', 'mem:noel:2', 'mem:hero:7', 'epilogue', 'ending:noel', 'romance:rin']) expect(isHeavyArrival(id), id).toBe(true);
+    // her homecoming stays light: her happy ending, and the warm line comes last
+    for (const id of ['first-return', 'act1-after', 'prologue-inn', 'home:safira', 'home:liz', 'town:orik', 'chat:noel:1', 'banter:noel-rin:1']) expect(isHeavyArrival(id), id).toBe(false);
   });
 
   it('no banter without a return, and none beside her reveal', () => {

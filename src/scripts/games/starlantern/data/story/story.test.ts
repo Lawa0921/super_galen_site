@@ -2085,8 +2085,9 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
               if (l.who === 'safira' && (/[喔啦嘛]/.test(l.text) || /囉/.test(l.text.replace(/跟上拍子囉/g, '')))) out.push(`${tag}: Safira in someone else's register: ${l.text}`);
               if (l.who === 'sylvie' && /[呢吧啦喔囉嘛耶唷呀～]/.test(l.text)) out.push(`${tag}: Sylvie uses a particle: ${l.text}`);
             }
-            // fix round 1: the chats' spoiler tables, for both of the two; the narration too, except for her forms of address
-            const narration = played.filter((l) => l.who === 'narrator').map((l) => l.text).join('');
+            // fix round 1: the chats' spoiler tables, for both of the two; the narration and Lorne's lines too (fix round 2),
+            // except for her forms of address (they may name anyone)
+            const narration = played.filter((l) => l.who === 'narrator' || l.who === 'hero').map((l) => l.text).join('');
             for (const c of two.filter((x) => x !== 'rin')) {
               const fullC = full.includes(c);
               const said = played.filter((l) => l.who === c).map((l) => l.text).join('');
@@ -2094,7 +2095,7 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
               for (const r of REVEALED.filter((x) => x.who === c)) {
                 if (fullC) continue;
                 if (r.re.test(said)) out.push(`${tag}: ${c} says what her pieces reveal: ${r.re}`);
-                if (!r.re.source.startsWith('洛恩') && r.re.test(narration)) out.push(`${tag}: the narration tells what ${c}'s pieces reveal: ${r.re}`);
+                if (!r.re.source.startsWith('洛恩') && r.re.test(narration)) out.push(`${tag}: the narration or Lorne tells what ${c}'s pieces reveal: ${r.re}`);
               }
             }
             if (spoken.filter((l) => l.who === 'hero').length > 1) out.push(`${tag}: Lorne says more than one line`);
@@ -2162,7 +2163,9 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
     // fix round 1: the spoiler tables, for both of the two and the narration
     const ls = 'banter:liz-scarlet:1' as SceneId;
     expect(banterBreaks(ls, [L('liz', '「歐里克那邊的貨，我去看過了。」'), L('scarlet', '「收到。」')]).join(' | ')).toMatch(/liz says what her pieces reveal/);
-    expect(banterBreaks(ls, [N('遠處傳來號角聲。'), L('liz', '「走吧。」'), L('scarlet', '「收到。」')]).join(' | ')).toMatch(/the narration tells what scarlet's pieces reveal/);
+    expect(banterBreaks(ls, [N('遠處傳來號角聲。'), L('liz', '「走吧。」'), L('scarlet', '「收到。」')]).join(' | ')).toMatch(/the narration or Lorne tells what scarlet's pieces reveal/);
+    expect(banterBreaks(ls, [L('liz', '「走吧。」'), L('hero', '「妳是歐里克的女兒吧。」'), L('scarlet', '「收到。」')]).join(' | ')).toMatch(/the narration or Lorne tells what liz's pieces reveal/);
+    expect(banterBreaks(ls, [L('liz', '「走吧。」'), L('hero', '「絲嘉蕾，莉茲，走吧。」'), L('scarlet', '「收到。」')])).toEqual([]);   // he may say anyone's name
     expect(breaks([L('noel', '「老師最小氣了。」'), L('rin', '「嗯。」')])).toMatch(/noel says what piece 4 undoes/);
     const sn = 'banter:noel-selene:1' as SceneId;   // a pair B2 may write: her plain 「洛恩」 waits for her last piece
     expect(banterBreaks(sn, [L('selene', '「洛恩，月亮好圓。」'), L('noel', '「喂！」')]).join(' | ')).toMatch(/selene says what her pieces reveal/);

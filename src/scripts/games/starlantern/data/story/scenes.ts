@@ -126,5 +126,6 @@ export const BANTER_GATE: Partial<Record<SceneId, BanterGate>> = {};
  * prefix (6d's `ending:<c>` and `romance:<c>`); any other is an exact id. Rin's reveal plays alone anyway; the return right
  * after the finale is heavy too (`arrivalScenes`' `afterFinale`). 6d adds its heavy scenes here.
  */
-export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'bellkeeper-arrives', ...ACT_NODES, 'finale', 'epilogue', 'ending:', 'romance:'];
+// Fix round 2: every memory piece is heavy (the bible's tone split); `home:*` stays light, her happy ending.
+export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'bellkeeper-arrives', ...ACT_NODES, 'mem:', 'finale', 'epilogue', 'ending:', 'romance:'];
 export const isHeavyArrival = (id: string): boolean => HEAVY_ARRIVAL.some((h) => (h.endsWith(':') ? id.startsWith(h) : id === h));
