@@ -218,6 +218,14 @@ describe('the hero never outdoes a specialist', () => {
     }
   });
 
+  it('no form says the sword is the lamp key: that waits for his tenth piece (story continuity fix 13)', () => {
+    // The name 「燈鑰」 is the spec's (§4.6); the description must not equate it with the sword before mem:hero:10.
+    for (const u of [...HERO_ULTIMATES, ...HERO_ULTIMATES.map(skyForm)]) {
+      expect(u.desc, u.id).not.toContain('燈鑰');
+      expect(u.name, u.id).toMatch(/^燈鑰・/);
+    }
+  });
+
   it("every Lantern Key form is below its companion's ultimate", () => {
     expect(HERO_ULTIMATES.map((u) => u.id)).toEqual(['ult-hero-sword', 'ult-hero-guard', 'ult-hero-star', 'ult-hero-light', 'ult-hero-chain']);
     const [sword, guard, star, light, chain] = HERO_ULTIMATES.map((u) => u.effects);

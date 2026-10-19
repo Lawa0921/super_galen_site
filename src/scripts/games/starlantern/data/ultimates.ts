@@ -35,15 +35,15 @@ export const RIN_DAWN: UltimateDef = {
  * picks the form of his deepest branch. Each form stays below the matching companion's ultimate.
  */
 export const HERO_ULTIMATES: UltimateDef[] = [
-  { id: 'ult-hero-sword', owner: 'hero', name: '燈鑰・斬', target: 'enemy', desc: '以燈鑰斬向一名敵人，物理單體大傷害',
+  { id: 'ult-hero-sword', owner: 'hero', name: '燈鑰・斬', target: 'enemy', desc: '劍上的紋路亮起，斬向一名敵人，物理單體大傷害',
     effects: [{ kind: 'damage', power: 340, element: 'phys', scale: 'atk', melee: true }] },
-  { id: 'ult-hero-guard', owner: 'hero', name: '燈鑰・守', target: 'allies', desc: '燈鑰的光護住全隊，防禦與魔防提升',
+  { id: 'ult-hero-guard', owner: 'hero', name: '燈鑰・守', target: 'allies', desc: '劍上紋路的光護住全隊，防禦與魔防提升',
     effects: [{ kind: 'buff', stat: 'def', pct: 30, turns: 4 }, { kind: 'buff', stat: 'res', pct: 30, turns: 4 }] },
-  { id: 'ult-hero-star', owner: 'hero', name: '燈鑰・星', target: 'enemies', desc: '燈鑰引下星雷，雷屬性全體傷害',
+  { id: 'ult-hero-star', owner: 'hero', name: '燈鑰・星', target: 'enemies', desc: '劍上的紋路引下星雷，雷屬性全體傷害',
     effects: [{ kind: 'damage', power: 190, element: 'thunder', scale: 'mag', melee: false }] },
-  { id: 'ult-hero-light', owner: 'hero', name: '燈鑰・光', target: 'allies', desc: '燈鑰照亮全隊，回復並解毒',
+  { id: 'ult-hero-light', owner: 'hero', name: '燈鑰・光', target: 'allies', desc: '劍上紋路的光照亮全隊，回復並解毒',
     effects: [{ kind: 'heal', power: 180 }, { kind: 'cure' }] },
-  { id: 'ult-hero-chain', owner: 'hero', name: '燈鑰・鎖', target: 'enemies', desc: '燈鑰鎖住全體敵人，攻擊與防禦下降',
+  { id: 'ult-hero-chain', owner: 'hero', name: '燈鑰・鎖', target: 'enemies', desc: '劍上紋路的光鎖住全體敵人，攻擊與防禦下降',
     effects: [{ kind: 'buff', stat: 'atk', pct: -25, turns: 4 }, { kind: 'buff', stat: 'def', pct: -25, turns: 4 }] },
 ];
 
