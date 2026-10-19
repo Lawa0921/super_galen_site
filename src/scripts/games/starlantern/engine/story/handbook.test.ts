@@ -5,7 +5,7 @@ import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { chainLength, CHAINS } from '../../data/story/chains';
 import { TOWN_FRAGMENTS } from '../../data/story/fragments';
-import { CHAT_COUNT, SCENE_IDS, STAGES, memScene, type SceneId } from '../../data/story/scenes';
+import { CHAT_COUNT, HOME_OWNERS, SCENE_IDS, STAGES, homeScene, memScene, type SceneId } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
@@ -71,6 +71,28 @@ describe("the adventurer's handbook", () => {
     const before = rin().title;
     s.party.roster.rin.oath = true;
     expect(rin().title).not.toBe(before);
+  });
+
+  it("Rin's page ends on her choice once she has made it, and on her mission until then (continuity fix 3)", () => {
+    const s = withMemories(fresh(), 'rin', chainLength('rin'));
+    const segs = () => handbook(s).people.find((p) => p.id === 'rin')!.segments;
+    expect(STORY.people.rin).toHaveLength(4);
+    expect(segs()).toEqual(STORY.people.rin.slice(0, 3));   // seven pieces, no choice yet
+    s.party.roster.rin.oath = true;
+    expect(segs()).toEqual(STORY.people.rin);
+    expect(segs()[3]).toMatch(/選擇不要/);
+    // the others keep three pages, whatever her oath
+    expect(handbook(withMemories(s, 'noel', chainLength('noel'))).people.find((p) => p.id === 'noel')!.segments).toHaveLength(3);
+  });
+
+  it('a homecoming is replayed from her own page', () => {
+    const s = everything();
+    for (const c of HOME_OWNERS) {
+      const page = handbook(s).people.find((p) => p.id === c)!;
+      expect(page.scenes.map((e) => e.scene).slice(-1), c).toEqual([homeScene(c)]);
+    }
+    s.story.seen = s.story.seen.filter((id) => id !== 'home:liz');
+    expect(handbook(s).people.find((p) => p.id === 'liz')!.scenes.map((e) => e.scene)).not.toContain('home:liz');
   });
 
   it('townsfolk pages follow the fragment', () => {
@@ -146,7 +168,7 @@ describe("the adventurer's handbook", () => {
     const rin = h.people.find((p) => p.id === 'rin')!;
     // Task 10b: the inn night and the first return are the two of them before her story; they sit on her page, in story order.
     expect(rin.scenes.map((e) => [e.scene, e.fresh])).toEqual([
-      ['prologue-inn', false], ['first-return', true], ['rin-reveal', true], ['chat:rin:1', false], ['chat:rin:2', true], ['chat:rin:3', false], ['chat:rin:4', false],
+      ['prologue-inn', false], ['first-return', true], ['rin-reveal', true], ['bellkeeper-arrives', false], ['chat:rin:1', false], ['chat:rin:2', true], ['chat:rin:3', false], ['chat:rin:4', false],
     ]);
     expect(h.town.find((t) => t.id === 'orik')!.scene!.fresh).toBe(true);
     expect(h.town.find((t) => t.id === 'marta')!.scene!.fresh).toBe(false);

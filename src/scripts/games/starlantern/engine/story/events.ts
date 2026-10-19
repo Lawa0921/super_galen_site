@@ -1,10 +1,8 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import { chainLength } from '../../data/story/chains';
-import { ACT_DEPTHS, CHAT_COUNT, CHAT_GATE, STAGES, type ActNode, type SceneId, type Stage } from '../../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, STAGES, homeScene, type SceneId, type Stage } from '../../data/story/scenes';
 import { memoriesOf } from '../progression';
 import type { GameState, StoryState } from '../state';
-
-const ACT_NODES = Object.keys(ACT_DEPTHS) as ActNode[];
 
 /** Where the story stands, from what the player has done (the handbook and the town lines follow it). */
 export function storyStage(s: GameState): Stage {
@@ -34,8 +32,9 @@ export function afterWin(story: StoryState, fighters: readonly string[]): StoryS
 }
 
 /**
- * What a return to town adds to the queue: each act whose depth was reached, and Rin's reveal once she holds every piece.
- * Pure: it returns the new story block and leaves the state alone. Nobody else's fragment count matters (spec §2).
+ * What a return to town adds to the queue: each act whose depth was reached, Rin's reveal once she holds every piece, and
+ * the homecoming of each companion whose ending the town holds, once her memories are whole (continuity fix 2).
+ * Pure: it returns the new story block and leaves the state alone. No act waits on anyone's fragment count (spec §2).
  */
 export function onReturn(s: GameState): StoryState {
   const story: StoryState = { ...s.story, queue: [...s.story.queue], nodes: [...s.story.nodes] };
@@ -47,13 +46,19 @@ export function onReturn(s: GameState): StoryState {
   }
   const rin = s.party.roster.rin;
   if (memoriesOf(rin) >= chainLength('rin') && !rin.oath && !story.seen.includes('rin-reveal') && !story.queue.includes('rin-reveal')) story.queue.push('rin-reveal');
+  for (const c of HOME_OWNERS) {
+    const id = homeScene(c);
+    if (!s.party.recruited.includes(c) || memoriesOf(s.party.roster[c]) < chainLength(c)) continue;
+    if (!story.seen.includes(id) && !story.queue.includes(id)) story.queue.push(id);
+  }
   return story;
 }
 
 /**
- * Play order for the queue: the prologue and its inn night, the first return, Act 1's close, the acts, the hero's late
- * memories by piece, then the rest as they came. The first return sits ahead of everything a return can bring, so it
- * never waits behind a chat (chats come after the whole queue) nor follows the "three days later" of Act 1.
+ * Play order for the queue: the prologue and its inn night, the first return, Act 1's close, the acts, the bellkeeper's
+ * arrival, the hero's late memories by piece, then the rest as they came, and the homecomings last (behind every story
+ * scene, a companion's own last piece included; ahead of the chat, which comes after the whole queue). The first return
+ * sits ahead of everything a return can bring, so it never waits behind a chat nor follows the "three days later" of Act 1.
  */
 const rank = (id: SceneId): number => {
   if (id === 'prologue') return -3;
@@ -63,7 +68,9 @@ const rank = (id: SceneId): number => {
   if (id === 'act2') return 1;
   if (id === 'act3') return 2;
   if (id === 'act4') return 3;
+  if (id === 'bellkeeper-arrives') return 3.5;
   if (id.startsWith('mem:hero:')) return 4 + Number(id.slice('mem:hero:'.length)) / 1000;
+  if (id.startsWith('home:')) return 6;
   return 5;
 };
 
@@ -131,9 +138,22 @@ export function sceneDone(s: GameState, id: SceneId, how: 'played' | 'skipped' |
   if (!story.seen.includes(id)) story.seen.push(id);
   if (how === 'auto' && !story.fresh.includes(id)) story.fresh.push(id);
   if (id !== 'rin-reveal') return { ...s, story };
-  // Her choice is made: the oath, and the reports that follow it (spec §5.3).
+  // Her choice is made: the oath, and the reports that follow it (spec §5.3). Her bell no longer answers the society's, so
+  // its keeper comes to town on the next arrival (continuity fix 4, spec §5.2), once.
+  if (!story.seen.includes('bellkeeper-arrives') && !story.queue.includes('bellkeeper-arrives')) story.queue.push('bellkeeper-arrives');
   const party = { ...s.party, roster: { ...s.party.roster, rin: { ...s.party.roster.rin, oath: true as const } } };
   return { ...s, story, party };
+}
+
+/**
+ * A save from before the bellkeeper's arrival scene (continuity fix 4), brought up to it without playing it late. Every game
+ * of this version queues the arrival the moment her choice is made, so a save past her choice without it anywhere is an
+ * old one: it counts as seen (the player has met him in the town's lines), not new. Any other save is returned as it is.
+ */
+export function settleBellkeeper(s: GameState): GameState {
+  const { story } = s;
+  if (!s.party.roster.rin?.oath || story.seen.includes('bellkeeper-arrives') || story.queue.includes('bellkeeper-arrives')) return s;
+  return { ...s, story: { ...story, seen: [...story.seen, 'bellkeeper-arrives'] } };
 }
 
 /** The handbook opened it: it is no longer new. */

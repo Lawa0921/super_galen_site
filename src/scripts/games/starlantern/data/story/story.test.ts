@@ -10,7 +10,7 @@ import type { CharacterId } from '../../engine/types';
 import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
 import { memoryPace } from '../../engine/story/expect';
 import type { StoryMood } from '../../render/artPaths';
-import { ACT_DEPTHS, CHAT_COUNT, CHAT_GATE, SCENE_IDS, STAGES, MAJOR_SCENES, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage } from './scenes';
+import { ACT_DEPTHS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
 
@@ -115,14 +115,17 @@ describe('story data', () => {
     const chats = CHARACTER_IDS.reduce((n, id) => n + CHAT_COUNT[id], 0);
     expect(SCENE_IDS.filter((s) => s.startsWith('chat:')).length).toBe(chats);
     expect(SCENE_IDS.filter((s) => s.startsWith('town:')).length).toBe(5);
-    for (const s of ['prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'finale'] as const) expect(SCENE_IDS).toContain(s);
+    // continuity fix 2: the four endings spec §6 places in the town; fix 4: the bellkeeper's arrival
+    expect(SCENE_IDS.filter((s) => s.startsWith('home:'))).toEqual(['home:chizuru', 'home:safira', 'home:sylvie', 'home:liz']);
+    expect(HOME_OWNERS.every((c) => sceneKind(homeScene(c)) === 'home')).toBe(true);
+    for (const s of ['prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'bellkeeper-arrives', 'finale'] as const) expect(SCENE_IDS).toContain(s);
     expect(new Set(SCENE_IDS).size).toBe(SCENE_IDS.length);
     expect(memScene('rin', 3)).toBe('mem:rin:3');
     expect(MAJOR_SCENES.every((s) => sceneKind(s) === 'major')).toBe(true);
   });
 
   it('isSceneId rejects what the catalogue lacks', () => {
-    for (const v of ['mem:hero:11', 'mem:rin:0', 'chat:noel:3', 'town:x', 'nope', 3, null]) expect(isSceneId(v)).toBe(false);
+    for (const v of ['mem:hero:11', 'mem:rin:0', 'chat:noel:3', 'town:x', 'home:selene', 'home:hero', 'nope', 3, null]) expect(isSceneId(v)).toBe(false);
     for (const s of SCENE_IDS) expect(isSceneId(s)).toBe(true);
   });
 
@@ -138,6 +141,8 @@ describe('story data', () => {
     expect(lineCap('prologue')).toBe(12);
     expect(lineCap('prologue-inn')).toBe(10);
     expect(lineCap('first-return')).toBe(10);
+    expect(lineCap('bellkeeper-arrives')).toBe(6);
+    for (const c of HOME_OWNERS) expect(lineCap(homeScene(c))).toBe(4);
     for (const id of SCENE_IDS) {
       const sc = STORY.scenes[id];
       expect(sc.title.trim()).not.toBe('');
@@ -173,7 +178,8 @@ describe('story data', () => {
       expect(STORY.truths[st].trim()).not.toBe('');
     }
     expect(STORY.absorb.length).toBeGreaterThanOrEqual(1);
-    for (const id of CHARACTER_IDS) expect(STORY.people[id].length).toBe(3);
+    // Rin's fourth page is her choice, opened by her oath (continuity fix 3); everyone else has three.
+    for (const id of CHARACTER_IDS) expect(STORY.people[id].length, id).toBe(id === 'rin' ? 4 : 3);
   });
 
   it('shards deepen with depth', () => {
@@ -291,10 +297,11 @@ function position(key: string): Stage {
       if (id === 'prologue' || id === 'prologue-inn' || id === 'first-return') return 'prologue';   // the first return can come before depth 2
       if (id === 'act1-after') return 'act1';
       if (id === 'act2' || id === 'act3' || id === 'act4') return id;
-      if (id === 'rin-reveal') return rinSeventh();
+      if (id === 'rin-reveal' || id === 'bellkeeper-arrives') return rinSeventh();   // the arrival follows her choice
       if (id === 'finale') return 'after';
       const [kind, c, n] = id.split(':');
       if (kind === 'town') return fragmentStage(c);
+      if (kind === 'home') return metStage(c);   // after her last piece; placed like the rest of her story (I-58)
       if (kind === 'mem') {
         if (c === 'hero' || c === 'rin') return stageOf(CHAINS[c].pieces[Number(n) - 1].minDepth);
         return metStage(c);
@@ -398,7 +405,7 @@ const sceneLines = (): { id: SceneId; line: ScriptLine; key: string }[] =>
 const ownerOf = (key: string): string | undefined => {
   const [top, a] = key.split('.');
   if (top === 'meet') return a;
-  if (top === 'scenes') { const [kind, c] = a.split(':'); return kind === 'mem' || kind === 'chat' ? c : undefined; }
+  if (top === 'scenes') { const [kind, c] = a.split(':'); return kind === 'mem' || kind === 'chat' || kind === 'home' ? c : undefined; }
   return undefined;
 };
 
@@ -618,9 +625,13 @@ describe('the script gates', () => {
     // Task 6 fix round 1 (lore ledger I-45, I-49): every round he carries the sword; a distant bell rings days or a season before the blade.
     const lines = (id: SceneId) => STORY.scenes[id].lines.map((l) => l.text);
     for (let n = 1; n <= 10; n++) for (const t of lines(memScene('hero', n))) expect(t, `mem:hero:${n}`).not.toMatch(/兩手空空|空著手/);
-    expect(lines('mem:hero:9').join('')).toMatch(/躺了好幾年|好幾年/);   // a death leaves decades before the next registry entry
+    // continuity fix 6: a death leaves decades in the dark, so the registry's entries stay decades apart (I-33, I-45)
+    expect(lines('mem:hero:9').join('')).toMatch(/躺了幾十年/);
+    expect(lines('mem:hero:9').join('')).not.toMatch(/好幾年/);
     expect(lines('mem:hero:5')[0]).toContain('鐘');
     expect(lines('mem:hero:5')[0]).not.toMatch(/刀|背後/);   // the bell rings first, alone
+    // continuity fix 7 (I-49): it rings while he climbs and stops as he steps out, so he hears its end as he comes out
+    expect(lines('mem:hero:5')[0]).toMatch(/走出迷宮|走上來/);
     expect(lines('mem:hero:7')[0]).toMatch(/一季|幾天|後/);
     // chat:hero:1 can play before mem:hero:1 (d3): it may not tell that he walked up toward the light.
     expect(lines('chat:hero:1').join('')).not.toMatch(/走出來|走上來/);
@@ -664,6 +675,7 @@ describe('the script gates', () => {
   it("Rin never says his name before her choice, and the reveal keeps the finale's truths", () => {
     // Style bible: before rin-reveal she calls him 「你」 or 「喂」; the reveal is the first 「洛恩」 (lore ledger I-20).
     const chosen = (key: string, line?: ScriptLine) => line?.if?.oath === true || key.startsWith('scenes.rin-reveal.')
+      || key.startsWith('scenes.bellkeeper-arrives.')   // it plays only after her choice (continuity fix 4)
       || key.startsWith('scenes.finale.') || (key.startsWith('scenes.chat:rin:') && CHAT_GATE[key.split('.')[1] as SceneId]?.oath === true);
     for (const { key, text, line } of storyTexts()) {
       if (key.startsWith('rinLines.')) expect(text, key).not.toContain('洛恩');
@@ -992,6 +1004,7 @@ describe('Task 10: Liz, Scarlet and the survive line', () => {
     // Reveal table: she is Orik's daughter only in the lines that know both halves are back (mem:liz:5 with orik returned).
     for (const t of storyTexts()) {
       if (!(ownerOf(t.key) === 'liz' || t.key.startsWith('people.liz.') || t.key === 'survived')) continue;
+      if (t.key.startsWith('scenes.home:liz.')) continue;   // after her last piece: its own test (continuity fix 2)
       expect(t.text, t.key).not.toContain('爸爸的店');
       if (/歐里克/.test(t.text)) expect(t.key.startsWith('scenes.mem:liz:5.') && t.line?.if?.returned === 'orik', t.key).toBe(true);
       if (t.line?.who === 'orik') expect(t.line.if?.returned, t.key).toBe('orik');
@@ -1515,3 +1528,104 @@ describe('Task 14: the finale', () => {
     }
   });
 });
+
+describe('continuity fixes (plan 6c Task 15 Step 6)', () => {
+  const linesOf = (id: SceneId) => STORY.scenes[id].lines;
+  const textOf = (lines: ScriptLine[]) => lines.map((l) => l.text).join('');
+  const reading = (id: SceneId, w: Partial<LineWhen>) =>
+    linesWhen(linesOf(id), { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: [], oath: true, ...w });
+
+  it("fix 2: each ending spec §6 puts in the town is played, in four lines at most, by its owner", () => {
+    const want: Record<string, RegExp[]> = {
+      chizuru: [/祠/, /鈴/],                 // 「在露米亞的鎮邊掛起這個鈴，蓋了一座小小的祠」
+      safira: [/廣場/, /鎮上的人/, /跳完/],   // 「在露米亞的廣場跳完舞團最後的那支舞，鎮上的人都來看」
+      sylvie: [/發芽/, /空地/],               // 「一顆種子，在露米亞的空地發芽」
+      liz: [/店門/, /紅帽子/],                // 「父女在店門口認出彼此」
+    };
+    for (const c of HOME_OWNERS) {
+      for (const returned of [[], ['orik']] as TownFragmentId[][]) {
+        const played = reading(homeScene(c), { returned });
+        expect(played.length, `${c} ${returned}`).toBeGreaterThanOrEqual(2);
+        expect(played.length, `${c} ${returned}`).toBeLessThanOrEqual(4);
+        expect(played.some((l) => l.who === c), c).toBe(true);
+        for (const re of want[c]) expect(textOf(played), `${c} ${returned} ${re}`).toMatch(re);
+        for (const l of played) expect(['narrator', 'hero', c, ...(c === 'liz' ? ['orik'] : [])], `${c}: ${l.who}`).toContain(l.who);
+      }
+    }
+    // the sprout is the homecoming's now: her chat no longer says it a second time
+    for (const full of [[], ['sylvie']] as CharacterId[][]) expect(textOf(reading('chat:sylvie:2', { full })), String(full)).not.toMatch(/發芽/);
+  });
+
+  it("fix 2: Liz at the shop door reads both ways, and the hat stays behind his door until he remembers", () => {
+    const without = reading('home:liz', { returned: [] });
+    const withOrik = reading('home:liz', { returned: ['orik'] });
+    expect(without).toHaveLength(4);
+    expect(withOrik).toHaveLength(4);
+    for (const l of linesOf('home:liz')) expect(Object.keys(l.if ?? {}).every((k) => k === 'returned' || k === 'notReturned'), l.text).toBe(true);
+    // Without his fragment: he cannot place her face, knows the hat belongs behind his door, and she hangs it back to wait.
+    const orik = textOf(without.filter((l) => l.who === 'orik'));
+    expect(orik).toMatch(/門後/);
+    expect(orik).toMatch(/想不起/);
+    expect(orik).not.toMatch(/丫頭|女兒|爸爸|認得/);
+    expect(textOf(without.filter((l) => l.who === 'liz'))).not.toMatch(/爸爸|歐里克/);
+    expect(without[without.length - 1].text).toMatch(/掛回門後/);   // town:orik's 「門後還掛著」 stays true for his return
+    // With it: the two know each other at the door, by the hat; not mem:liz:5's words again.
+    expect(textOf(withOrik.filter((l) => l.who === 'orik'))).toMatch(/丫頭/);
+    expect(textOf(withOrik)).toMatch(/紅帽子|帽子/);
+    const earlier = new Set([...linesOf('mem:liz:5'), ...linesOf('town:orik')].map((l) => l.text));
+    for (const l of withOrik) expect(earlier.has(l.text), l.text).toBe(false);
+    // and town:orik, for her full memories, finishes it: the hat she hung back is still behind his door, waiting for her
+    expect(textOf(linesOf('town:orik').filter((x) => x.if?.full === 'liz'))).toMatch(/門後那頂紅帽子/);
+    expect(textOf(linesOf('town:orik').filter((x) => x.if?.full === 'liz'))).toMatch(/等著妳戴/);
+  });
+
+  it("fix 4: the bellkeeper comes to town afraid, says how the society knew, and keeps the finale's truths", () => {
+    const lines = linesOf('bellkeeper-arrives');
+    expect(lines.length).toBeLessThanOrEqual(6);
+    for (const l of lines) expect(l.if, l.text).toBeUndefined();   // one reading: it always follows her choice
+    const his = textOf(lines.filter((l) => l.who === 'bellkeeper'));
+    expect(his).toMatch(/那孩子/);
+    expect(his).toMatch(/沒有應|不應/);   // her flattened bell no longer answers the society's: that is how they know
+    expect(his).toMatch(/從深處走出來的人/);
+    expect(his).not.toMatch(/洛恩/);
+    const all = textOf(lines) + STORY.scenes['bellkeeper-arrives'].summary;
+    expect(all).toMatch(/發抖|怕/);
+    expect(all).not.toMatch(/守燈人|燈鑰|殺的一直是|晚一次|解散|散了|殺了他/);
+    // Rin may name him now, and wear the face kept for the bellkeeper
+    expect(lines.some((l) => l.who === 'rin' && l.mood === 'guarded')).toBe(true);
+  });
+
+  it('fix 8: before her sixth piece Rin never knows the society by name', () => {
+    for (const t of storyTexts()) {
+      if (!t.key.startsWith('rinLines.') && t.line?.who !== 'rin') continue;
+      if (/^scenes\.(mem:rin:[67]|rin-reveal|bellkeeper-arrives|finale)\./.test(t.key) || t.line?.if?.oath === true) continue;
+      if (t.key.startsWith('scenes.chat:rin:') && CHAT_GATE[t.key.split('.')[1] as SceneId]?.oath === true) continue;
+      expect(t.text, t.key).not.toContain('靜鐘會');
+    }
+    expect(STORY.rinLines.act3!.some((x) => x.includes('鐘'))).toBe(true);   // she still hears a bell
+  });
+
+  it("fix 9: the inn night gives Lorne a reason of his own: why he walked out of the deep", () => {
+    const hero = linesOf('prologue-inn').filter((l) => l.who === 'hero').map((l) => l.text);
+    const own = hero.find((t) => t.includes('欠'))!;
+    expect(own).toMatch(/走出來/);
+    expect(own).toMatch(/怎麼會/);   // not 「為什麼」: that word is his question to her, answered by the lamp
+    expect(own).toMatch(/下面/);
+    expect(linesOf('prologue-inn').length).toBeLessThanOrEqual(10);
+  });
+
+  it('fix 10: the two share one room, so nothing in town gives him a room of his own', () => {
+    for (const t of storyTexts()) expect(t.text, t.key).not.toMatch(/你房裡|你的房間|他的房間|她的房間|凜的房間|各自的房/);
+  });
+
+  it('fix 11: Rin wears no face kept for before or after her oath in any meeting (they play unfiltered)', () => {
+    for (const m of MEETINGS) for (const l of [...STORY.meet[m.id].before, ...STORY.meet[m.id].after]) {
+      if (l.who === 'rin') expect(l.mood ?? 'normal', `${m.id}: ${l.text}`).not.toMatch(/guarded|averted/);
+    }
+  });
+
+  it("fix 15: no stranger's memory reads as Liz's home", () => {
+    for (const t of STORY.absorb) expect(t).not.toMatch(/麵包|焦/);
+  });
+});
+

@@ -12,7 +12,8 @@ import { Dialogue, MenuView, win } from '../widgets';
 
 /**
  * The card after a clear. Act 1's clear (the lantern-eater falls) shows its card and goes back to town, where 'act1-after'
- * waits. The finale (cleared === 'finale') first plays the hero's last memories and then itself (each one recorded as played,
+ * waits. The finale (cleared === 'finale') first plays the scenes it owes (any act still waiting, the bellkeeper's arrival, the
+ * hero's last memories: `Game.finale.pieces`) and then itself (each one recorded as played,
  * skipped or, with story none, auto), and only then shows the ending card.
  */
 export class ClearScene implements Scene {
@@ -46,7 +47,7 @@ export class ClearScene implements Scene {
     this.view?.onAction(a);
   }
 
-  /** The hero's memories the finale filled in, then the finale. A scene that fails is reported and skipped: the card still comes. */
+  /** The scenes the finale owes (acts, the bellkeeper's arrival, the hero's memories), then the finale. A scene that fails is reported and skipped: the card still comes. */
   private async playFinale(): Promise<void> {
     const ids: SceneId[] = [...(this.ctx.game.finale?.pieces ?? []), 'finale'];
     for (const id of ids) {

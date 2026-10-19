@@ -4,7 +4,7 @@ import { chainLength } from '../../data/story/chains';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
-import { arrivalScenes, chatOpen, markRead, nextChat, onReturn, sceneDone, settleOpening, storyStage, afterWin } from './events';
+import { arrivalScenes, chatOpen, markRead, nextChat, onReturn, sceneDone, settleBellkeeper, settleOpening, storyStage, afterWin } from './events';
 
 /** A new game with the prologue already behind it, so only what a test adds is waiting. */
 const base = (): GameState => {
@@ -57,7 +57,59 @@ describe('story triggers', () => {
     expect(back.story.queue).toEqual(['act2', 'rin-reveal']);
     expect(arrivalScenes(back, { chat: true })).toEqual(['rin-reveal']);
     const done = sceneDone(back, 'rin-reveal', 'played');
-    expect(arrivalScenes(returned(done), { chat: false })).toEqual(['act2']);
+    // continuity fix 4: the bellkeeper comes on the next return, after the act that waited
+    expect(arrivalScenes(returned(done), { chat: false })).toEqual(['act2', 'bellkeeper-arrives']);
+  });
+
+  it("her choice sends the bellkeeper to town on the next arrival, once, played, skipped or auto", () => {
+    for (const how of ['played', 'skipped', 'auto'] as const) {
+      const done = sceneDone(returned(withMemories(base(), 'rin', chainLength('rin'))), 'rin-reveal', how);
+      expect(done.story.queue, how).toEqual(['bellkeeper-arrives']);
+      expect(arrivalScenes(done, { chat: false }), how).toEqual(['bellkeeper-arrives']);   // the reload or the next return
+      const met = sceneDone(returned(done), 'bellkeeper-arrives', 'played');
+      expect(returned(met).story.queue, how).toEqual([]);
+      expect(sceneDone(met, 'rin-reveal', how).story.queue, how).toEqual([]);   // a replay from the handbook sends no one again
+    }
+    // he comes after the acts and before the hero's late memories
+    const s = base();
+    s.story.queue = ['mem:hero:9', 'bellkeeper-arrives', 'act4'];
+    expect(arrivalScenes(s, { chat: false })).toEqual(['act4', 'bellkeeper-arrives', 'mem:hero:9']);
+  });
+
+  it("an old save past her choice counts the bellkeeper's arrival as seen, not new; a save of this version is left alone", () => {
+    const old = withMemories(base(), 'rin', chainLength('rin'));
+    old.party.roster.rin.oath = true;
+    old.story.seen.push('rin-reveal');
+    const settled = settleBellkeeper(old);
+    expect(settled.story.seen).toContain('bellkeeper-arrives');
+    expect(settled.story.fresh).not.toContain('bellkeeper-arrives');
+    expect(returned(settled).story.queue).toEqual([]);
+    const before = withMemories(base(), 'rin', chainLength('rin'));
+    expect(settleBellkeeper(before)).toBe(before);   // no choice yet
+    const waiting = sceneDone(returned(withMemories(base(), 'rin', chainLength('rin'))), 'rin-reveal', 'played');
+    expect(settleBellkeeper(waiting)).toBe(waiting);   // queued: this version, untouched
+  });
+
+  it('a homecoming waits for her last piece and plays once, behind the story and ahead of the chat', () => {
+    const s = withMemories(base(), 'sylvie', chainLength('sylvie') - 1);
+    s.story.seen.push('chat:hero:1');
+    expect(onReturn(s).queue).toEqual([]);
+    s.party.roster.sylvie.memories = chainLength('sylvie');
+    s.story.queue = ['mem:sylvie:5', 'act3'];
+    const back = returned(s);
+    expect(back.story.queue).toEqual(['mem:sylvie:5', 'act3', 'home:sylvie']);
+    const order = arrivalScenes(back, { chat: true });
+    expect(order.slice(0, 3)).toEqual(['act3', 'mem:sylvie:5', 'home:sylvie']);
+    expect(order[3]).toMatch(/^chat:/);
+    expect(returned(back).story.queue.filter((x) => x === 'home:sylvie')).toHaveLength(1);   // waiting, not doubled
+    expect(onReturn(sceneDone(back, 'home:sylvie', 'played')).queue).not.toContain('home:sylvie');
+  });
+
+  it('only the endings the town holds have a homecoming', () => {
+    let s = base();
+    for (const id of ['selene', 'noel', 'bobby', 'scarlet', 'chizuru', 'safira', 'liz'] as CharacterId[]) s = withMemories(s, id, chainLength(id));
+    s = withMemories(s, 'hero', chainLength('hero'));
+    expect(onReturn(s).queue).toEqual(['home:chizuru', 'home:safira', 'home:liz']);
   });
 
   it('the reveal is not queued twice, nor once it has been seen or her oath is sworn', () => {
@@ -220,6 +272,15 @@ describe('chat gates', () => {
     expect(nextChat(s, {})).toBe('chat:hero:1');
     s.story.seen.push('chat:hero:1');
     expect(nextChat(s, {})).toBe('chat:rin:1');
+  });
+
+  it("Lorne's and Rin's last chats stay open after the finale: late, they are heard, never lost (continuity fix 12)", () => {
+    const s = met();
+    s.party.roster.rin.oath = true;
+    s.story.nodes = ['act2', 'act3', 'act4'];
+    s.story.finaleCleared = true;
+    expect(chatOpen(s, 'chat:hero:4')).toBe(true);
+    expect(chatOpen(s, 'chat:rin:4')).toBe(true);
   });
 
   it('no first chat is gated', () => {

@@ -7,7 +7,7 @@ import { STORY_FIGHT_ROUNDS, createBattle, planEnemies, resolveRound, rewards, w
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
-import { FINALE_BOSS, FINALE_DEPTH, memScene, type SceneId } from '../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, FINALE_BOSS, FINALE_DEPTH, memScene, type SceneId } from '../data/story/scenes';
 import { STORY } from '../data/story.zh-TW';
 import { PERKS, SHARD_IDS, isFragmentItem, shardGrade, type ShardGrade, type TownFragmentId } from '../data/story/fragments';
 import { absorb, fragmentItem, gainOf, hasPerk, lootFragments, returnFragment, sellShards, type AbsorbResult } from './story/fragments';
@@ -28,7 +28,7 @@ import { depthClearExp, depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
-import { afterWin, arrivalScenes, markRead, onReturn, sceneDone, settleOpening } from './story/events';
+import { afterWin, arrivalScenes, markRead, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
 import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeResult, RerollOpts } from './forge/cost';
@@ -116,7 +116,7 @@ export class Game {
   private rerolled = false;
   /** Which ending the clear screen is for; set on entering `clear`, dropped by restartAfterClear. */
   cleared: 'act1' | 'finale' | null = null;
-  /** The finale's own scenes, once it is won: the hero's memories it filled in, in piece order (not saved). `finale` follows them. */
+  /** The finale's own scenes, once it is won (not saved): any act still owed, the bellkeeper's arrival if it waits, then the hero's memories in piece order (`finalePieces`). `finale` follows them. */
   finale: { pieces: SceneId[] } | null = null;
   /** The party stepped onto the finale's boss before Rin made her choice: no fight, and the map says why (not saved). */
   finaleWaiting = false;
@@ -135,8 +135,9 @@ export class Game {
       return g;
     }
     const r = loadGame(storage);
-    // A save from before the opening scenes (Task 10b) is past them: they count as seen and never replay late.
-    const g = new Game(rng, storage, r.status === 'ok' ? settleOpening(r.state) : undefined, forgeSalt, START_LINEUP);
+    // A save from before the opening scenes (Task 10b) or the bellkeeper's arrival (continuity fix 4) is past them: they
+    // count as seen and never replay late.
+    const g = new Game(rng, storage, r.status === 'ok' ? settleBellkeeper(settleOpening(r.state)) : undefined, forgeSalt, START_LINEUP);
     if (r.status === 'corrupt' || r.status === 'version') g.notice = 'save-reset';
     g.rerolled = true;
     g.arrival = arrivalScenes(g.state, { chat: false });
@@ -884,16 +885,24 @@ export class Game {
   }
 
   /**
-   * The memories the finale plays: the hero pieces this fight filled in and any still waiting in the queue from an earlier
-   * floor (depth 25's top-up), in piece order. The queued ones leave the queue, so the town does not play them again.
+   * The scenes the finale plays before itself, in story order. First every act still owed (continuity fix 1): one held back
+   * by Rin's reveal, or one reached on this dive and never brought home; an act must never play after the ending. Then the
+   * bellkeeper's arrival if it still waits (the finale hands her bell to him; continuity fix 4). Then the hero pieces this
+   * fight filled in and any still waiting in the queue from an earlier floor (depth 25's top-up), in piece order. What is
+   * taken leaves the queue, so the town does not play it again.
    */
   private finalePieces(gained: FragmentGain[]): SceneId[] {
     const story = this.state.story;
+    const reached = this.state.dungeon.reached.mainline;
+    const acts = ACT_NODES.filter((node) => !story.seen.includes(node) && (story.queue.includes(node) || reached >= ACT_DEPTHS[node]));
+    for (const node of acts) if (!story.nodes.includes(node)) story.nodes.push(node);
+    const keeper: SceneId[] = story.queue.includes('bellkeeper-arrives') ? ['bellkeeper-arrives'] : [];
     const heroNo = (id: SceneId) => Number(id.slice('mem:hero:'.length));
     const queued = story.queue.filter((id) => id.startsWith('mem:hero:'));
-    story.queue = story.queue.filter((id) => !id.startsWith('mem:hero:'));
+    const taken = new Set<SceneId>([...acts, ...keeper]);
+    story.queue = story.queue.filter((id) => !id.startsWith('mem:hero:') && !taken.has(id));
     const filled = gained.flatMap((g) => (g.kind === 'piece' && g.id === 'hero' ? [memScene('hero', g.n)] : []));
-    return [...new Set([...queued, ...filled])].sort((a, b) => heroNo(a) - heroNo(b));
+    return [...acts, ...keeper, ...[...new Set([...queued, ...filled])].sort((a, b) => heroNo(a) - heroNo(b))];
   }
 
   /** The mainline's depth 3 holds the story boss: beating it ends Act 1. */

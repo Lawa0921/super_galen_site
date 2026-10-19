@@ -5,7 +5,7 @@ import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { MEETINGS, type Meetable } from './meetings';
 import { CHAINS } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
-import { CHAT_COUNT, MAJOR_SCENES, type MajorScene, memScene, type SceneId, type Stage } from './story/scenes';
+import { CHAT_COUNT, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
 
 export type NpcId = 'anna' | 'orik' | 'marta' | 'glen' | 'doran' | 'merchant' | 'bellkeeper';
 export const NPC_NAMES: Record<NpcId, string> = {
@@ -73,8 +73,10 @@ export const numeral = (n: number): string => {
 };
 
 const MAJOR_TITLES: Record<MajorScene, string> = {
-  prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', finale: '終幕',
+  prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', 'bellkeeper-arrives': '鐘守來到鎮上', finale: '終幕',
 };
+/** What each homecoming is called in the handbook, after her name (continuity fix 2). */
+const HOME_TITLES: Record<HomeOwner, string> = { chizuru: '鎮邊的小祠', safira: '廣場上的最後一支舞', sylvie: '窗外的新芽', liz: '店門口' };
 
 type Written = { lines: ScriptLine[]; summary: string };
 const N = (text: string, oath?: boolean): ScriptLine => (oath === undefined ? { who: 'narrator', text } : { who: 'narrator', text, if: { oath } });
@@ -107,7 +109,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('她的手腕上一圈發青的指痕。那幾根手指，葛倫怎麼掰也掰不開，直到洛恩昏了過去。'),
       { who: 'hero', mood: 'normal', text: '「妳是唯一和我一起出來的人。我以前是誰，也許妳看過。」' },
       { who: 'rin', mood: 'guarded', text: '「……我什麼都不記得。你是我唯一的線索。」' },
-      { who: 'hero', mood: 'serious', text: '「明天我要下去。欠公會的藥錢和房錢，只有下面的碎片還得起。」' },
+      { who: 'hero', mood: 'serious', text: '「明天我要下去。我怎麼會從下面走出來，只有下面知道。欠公會的帳，也只有碎片還得起。」' },
       { who: 'rin', mood: 'guarded', text: '「我跟你去。」' },
       { who: 'hero', mood: 'surprised', text: '「為什麼？」' },
       { who: 'rin', mood: 'serious', text: '「公會說，一起下去的，算同一盞燈。一個人下去，就沒有燈帶你回來。」' },
@@ -306,7 +308,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'mem:hero:5': {
     lines: [
-      N('那年秋天，遠方響過一次鐘。他回過頭，什麼也沒看見，日子照樣過。'),
+      N('那年秋天，他走出迷宮時，遠方的鐘正好響完最後一聲。他回過頭，什麼也沒看見。'),
       N('幾天後的夜裡，巷子裡背後一涼。他倒進暮霧裡，耳邊又響起那口鐘。'),
       { who: 'hero', mood: 'sad', text: '「……我死過。在那條巷子裡。」' },
       N('凜的手按住了領口的小銅鐘，按得很緊，像是怕它響。'),
@@ -349,7 +351,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('他什麼都不記得，朝頭頂的光往上走，倒在迷宮的入口。有人替他登記，替他取名字。'),
       N('有幾次，他在鎮上住了下來，交了朋友，學了本事。然後底下有什麼在拉他，他就走回深處。'),
       N('也有幾次，遠方的鐘響了。他在鎮上還住不滿一季，靜鐘會的刀就到了背後。'),
-      N('死了的那幾次，他在最底下的黑暗裡躺了好幾年。醒來時手裡只有那把劍，再從頭往上走。'),
+      N('死了的那幾次，他在最底下的黑暗裡躺了幾十年。醒來時手裡只有那把劍，再從頭往上走。'),
       { who: 'hero', mood: 'sad', text: '「……想起來了。我是守燈人。」' },
       { who: 'hero', mood: 'serious', text: '「我在上面活過的日子，就是下一次的燈芯。」' },
       { who: 'narrator', text: '凜站在光照不到的地方，手緊緊按著領口的小銅鐘。', if: { oath: false } },
@@ -429,6 +431,20 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'rin', mood: 'smile', text: '「『凜』是他們給的代號。……可是，這個名字是我自己決定要用的。」' },
     ],
     summary: '深夜，凜的刀尖停在洛恩的喉嚨上，最後收了回去。天亮後她說出一切，選擇不殺他。洛恩只說：明天也一起回來吧。',
+  },
+  // Continuity fix 4 (spec §5.2, §3.6; lore ledger I-119): the arrival after her choice. The society struck its bell and her
+  // flattened one did not answer: that is how they know. He is afraid, not cruel; the finale's truths stay the finale's.
+  // Rin's `guarded` belongs here after her oath (style bible §3: it is kept for the bellkeeper).
+  'bellkeeper-arrives': {
+    lines: [
+      N('傳送門廣場，天剛亮。一位穿長袍的老人站在門前，雙手捧著一口小小的鐘。'),
+      { who: 'bellkeeper', text: '「吾等敲了三回鐘。那孩子領口的鐘，一回也沒有應。」' },
+      { who: 'rin', mood: 'guarded', text: '「……那枚鐘，我敲平了。洛恩，站到我後面。」' },
+      { who: 'bellkeeper', text: '「鐘不應，吾等便知道了。……所以，我來了。」' },
+      N('老人捧著鐘的手在發抖。他看的不是凜，是站在她身後的洛恩。'),
+      { who: 'bellkeeper', text: '「從深處走出來的人。我不動手。……我只是，想看清楚你。」' },
+    ],
+    summary: '靜鐘會敲了三回鐘，凜領口那枚敲平的鐘沒有回應。鐘守來到鎮上，說他不動手，只想看清楚從深處走出來的人。',
   },
   // Task 7: Rin's chats. 2 waits for act 2, 3 for act 3 (she looks away only from her 4th piece), 4 for her choice.
   // 2 and 3 can be delayed past her choice (one chat per return): each reading has its own lines.
@@ -722,11 +738,12 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'chat:sylvie:2': {
     lines: [
       // Until her last piece she thinks she has no right to the bed; after it, her seed has sprouted in the clearing (I-58, I-66).
+      // The sprouting itself is `home:sylvie`'s (continuity fix 2): here she has seen it, and takes the bed.
       { who: 'narrator', text: '深夜的月影旅館。希爾薇的床鋪得整整齊齊，她卻抱著弓，靠在窗邊的牆上。', if: { notFull: 'sylvie' } },
-      { who: 'narrator', text: '深夜的月影旅館。希爾薇抱著弓靠在窗邊，看著樓下空地上冒出來的一點新綠。', if: { full: 'sylvie' } },
+      { who: 'narrator', text: '深夜的月影旅館。希爾薇抱著弓靠在窗邊，又看了一眼樓下空地上的新芽。', if: { full: 'sylvie' } },
       { who: 'hero', text: '「不睡？」' },
       { who: 'sylvie', mood: 'sad', text: '「床，留給該睡的人。……我在這裡就好。」', if: { notFull: 'sylvie' } },
-      { who: 'sylvie', mood: 'smile', text: '「……發芽了。再看一下，就去睡床。」', if: { full: 'sylvie' } },
+      { who: 'sylvie', mood: 'smile', text: '「……看過了。今晚，去睡床。」', if: { full: 'sylvie' } },
     ],
     summary: '深夜，希爾薇抱著弓，靠在旅館的窗邊。洛恩問她不睡嗎。',
   },
@@ -1113,6 +1130,56 @@ const TOWN_SCENES: Record<TownFragmentId, Written> = {
   },
 };
 
+/**
+ * Continuity fix 2: the homecomings (spec §6 「由最後一片回憶與鎮上的變化」; lore ledger I-118). Four lines at most, each
+ * played once, on the first return after her last piece. Chizuru's shrine, Safira's dance, Sylvie's sprout, and Liz at the
+ * shop door: with Orik's fragment back, the two know each other (after mem:liz:5 or town:orik, whichever brought them
+ * together); without it, she takes her red hat from behind his door, he cannot place her face, and she hangs it back to wait
+ * for him (town:orik's full-Liz lines finish it). The hat is behind his door until then, so town:orik stays true.
+ */
+const HOME: Record<HomeOwner, Written> = {
+  chizuru: {
+    lines: [
+      N('清晨的鎮邊。一座小小的祠立在路旁，屋簷下掛著那枚鈴。'),
+      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人。祠雖小，鈴一響，此處便是神社了。」' },
+      N('賣菜的老婆婆路過，停下來合了合掌。風一吹，鈴響了一聲。'),
+      { who: 'chizuru', mood: 'smile', text: '「春祭時，請務必來看。……這一回，我等得到了。」' },
+    ],
+    summary: '千鶴在露米亞的鎮邊蓋了一座小祠，掛上神主託付的鈴。鈴一響，這裡就是她為現在的人守著的神社。',
+  },
+  safira: {
+    lines: [
+      N('黃昏的廣場。莎菲拉赤著腳站在石板中央，腳踝上的銅環輕輕一響。'),
+      N('鎮上的人圍了過來。沒有鼓，也沒有笛，有人先拍起了手，替她打拍子。'),
+      { who: 'safira', mood: 'smile', text: '「這拍子，比鼓手還準呢。……團長，大家，看好囉。」' },
+      N('她跳完最後一步，深深鞠了一躬。拍手聲響了很久，很久都沒有停。'),
+    ],
+    summary: '莎菲拉在露米亞的廣場，跳完舞團最後的那支舞。鎮上的人都來看，替她打拍子。',
+  },
+  sylvie: {
+    lines: [
+      N('清晨的月影旅館。希爾薇站在窗邊，看著樓下那塊空地。'),
+      N('她種下的那顆種子，冒出了兩片小小的葉子，還沾著露水。'),
+      { who: 'sylvie', mood: 'surprised', text: '「……發芽了。」' },
+      { who: 'sylvie', mood: 'smile', text: '「洛恩。林子，從這裡再長。」' },
+    ],
+    summary: '希爾薇種在旅館窗外空地的種子發芽了。她說，林子要從這裡再長。',
+  },
+  liz: {
+    lines: [
+      { who: 'narrator', text: '傍晚的道具店。莉茲推開店門，取下門後那頂紅帽子，戴在頭上。', if: { notReturned: 'orik' } },
+      { who: 'orik', text: '「喂，那頂不賣！……它一直掛在門後。妳這張臉，老頭子我怎麼想不起來。」', if: { notReturned: 'orik' } },
+      { who: 'liz', mood: 'hushed', text: '「……沒關係。等你想起來，我再戴。」', if: { notReturned: 'orik' } },
+      { who: 'narrator', text: '她把帽子掛回門後，回頭笑了一下。櫃檯後面的人撓著頭，也跟著笑了。', if: { notReturned: 'orik' } },
+      { who: 'narrator', text: '傍晚的道具店門口。莉茲戴著那頂紅帽子，在門外深深吸了一口氣。', if: { returned: 'orik' } },
+      { who: 'liz', mood: 'smile', text: '「爸爸，我回來了！今天的帳，交給我來對！」', if: { returned: 'orik' } },
+      { who: 'orik', text: '「回來啦，丫頭！帽子戴歪了。過來，爸爸替妳扶正。」', if: { returned: 'orik' } },
+      { who: 'narrator', text: '櫃檯上擺著一枚舊銀幣。他笑著問：「丫頭，這個值多少？」', if: { returned: 'orik' } },
+    ],
+    summary: '莉茲回到道具店的門口。那頂紅帽子一直在門後等她；認得她的人，會笑著問她這個值多少。',
+  },
+};
+
 function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }> {
   const out = {} as Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }>;
   // Plan 6c wrote every scene (Task 14 removed the drafts): a scene without its SCRIPT entry is a bug, not a draft.
@@ -1124,12 +1191,13 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
     for (let n = 1; n <= CHAT_COUNT[id]; n++) scene(`chat:${id}:${n}`, `${name}・對話 ${n}`);
   }
   for (const f of TOWN_FRAGMENTS) out[`town:${f.id}`] = { title: `${f.npc}的記憶`, ...TOWN_SCENES[f.id] };
+  for (const c of HOME_OWNERS) out[homeScene(c)] = { title: `${nameOf(c)}・${HOME_TITLES[c]}`, ...HOME[c] };
   return out;
 }
 
 /**
  * The handbook's people pages that are written: met, half the memories, all of them (spec §7.6). Lorne's are his own notes.
- * Unconditional strings: they never tell Rin's choice.
+ * Unlocked by pieces, they never tell Rin's choice; Rin's fourth page alone unlocks with her oath (continuity fix 3).
  */
 const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   // Task 6
@@ -1143,6 +1211,8 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
     '凜。和我一起倒在傳送門廣場的女孩，刀柄上刻著這個字，她就用它當名字。話很少，常在我背後。',
     '她在鐘樓下長大，丟針是她小時候的遊戲。她戰鬥時從不眨眼。她的師父說，從深處走出來的，不是人。',
     '她的碎片裡，「凜」是靜鐘會給刺客的代號，銅鐘是信物。鐘響了三天，她走進迷宮，追那個從深處走出來的人。',
+    // Continuity fix 3: unlocks with her oath, so once she has chosen the page ends on her choice (lore ledger I-120).
+    '旅館那一夜之後，她把一切都告訴了我。她說，她是被派來的，現在選擇不要。銅鐘她自己敲平了，現在她叫我洛恩。',
   ],
   // Task 8: Lorne's notes on Selene, Chizuru and Safira. Each segment is placed at her meeting: no act content.
   selene: [
@@ -1203,7 +1273,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
       N(foundLine('selene')),
       N('水晶洞窟的石壁上，映著一輪天上沒有的月亮。她跪在那片月光裡，被怪物圍著，卻抬頭讀著月相。'),
       { who: 'selene', mood: 'foresee', text: '「……上弦的月。今晚，也許會有人經過吧。」' },
-      { who: 'rin', mood: 'guarded', text: '「……被圍住了，還在看月亮。」' },
+      { who: 'rin', text: '「……被圍住了，還在看月亮。」' },   // a meeting plays unfiltered and may come after her oath: no guarded face
     ],
     after: [
       { who: 'selene', mood: 'smile', text: '「謝謝各位。我是瑟蕾，讀月亮的人。」' },
@@ -1328,6 +1398,7 @@ export const STORY = {
       '井邊的婦人壓低聲音：「從深處走出來的？」看見洛恩走近，她又笑著聊起天氣。',
       '西邊高地上，星燈今晚也亮著。老人們說，它以前比現在亮得多。',
       '暮霧貼著石板流進巷子。鎮上的人關緊窗，說一句「今天霧大」，就不再提了。',
+      '老人們說，前幾天夜裡，遠方好像有鐘在響。是哪裡的鐘，誰也說不上來。',
     ],
     act1: [
       '公會的布告欄上，失憶登記又多了兩張。安娜把它們釘得整整齊齊，像這樣就不會再掉下來。',
@@ -1337,7 +1408,7 @@ export const STORY = {
     ],
     act2: [
       '公會的老人又在說：山上那道光，只是燈罩。說完，大家照樣舉杯，誰也沒有接話。',
-      '瑪莎收著碗：「凜那孩子，總要等你房裡的燈熄了才肯睡。……洛恩，你也知道吧。」',
+      '瑪莎收著碗：「凜那孩子，總要等你的燈熄了才肯睡。……洛恩，你也知道吧。」',
       '葛倫打著呵欠：「那丫頭走路沒聲音。小子，你倒是每回都知道，她就在你後面。」',
       '旅館的走廊。凜跟在洛恩身後一步，手按著領口的小銅鐘。他沒有回頭，只是放慢了腳步。',
     ],
@@ -1369,7 +1440,7 @@ export const STORY = {
    */
   rinLines: {
     act2: ['……沒什麼。', '喂，你走前面。……我習慣走在後面。', '……剛才，是不是有鐘在響？……沒事，聽錯了。'],
-    act3: ['……別一直看我。看路。', '靜鐘會……好像在哪裡聽過。想不起來。', '沒事。……問那麼多做什麼。'],
+    act3: ['……別一直看我。看路。', '……最近，夢裡一直有鐘聲。沒事。', '沒事。……問那麼多做什麼。'],
     act4: ['……今晚早點睡。門，記得鎖好。', '不要站在我背後。……也不要讓我站在你背後。', '……沒事。不要問。'],
   } as Partial<Record<Stage, string[]>>,
   /** Rin's lines in the town once she has made her choice; they replace `rinLines`. They read right before and after the finale. */
@@ -1494,7 +1565,7 @@ export const STORY = {
     '「那年的花開得特別早。我們說好了，明年也要一起來看。」',
     '「……阿公的手好大。揹著我過河的時候，一點都不晃。」',
     '「說好了喔。等我長大，換我揹你上山。」',
-    '「麵包烤焦了一點。他還是全吃完了，說焦的才香。」',
+    '「河邊烤的魚，刺多得要命。他一根一根挑乾淨，才遞給我。」',
     '「最後一塊肉乾留給你。……別讓媽知道，她會念。」',
     '「當學徒的第一天，我敲歪了十根釘子。老闆只是笑。」',
     '「出門前，妳替我把領子翻好。……那是最後一次嗎？」',

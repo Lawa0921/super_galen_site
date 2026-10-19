@@ -2548,6 +2548,25 @@ describe('the arrival queue', () => {
     expect(g.arrival).not.toContain('prologue-inn');
   });
 
+  it("a save from before the bellkeeper's arrival, past Rin's choice, never plays it late (continuity fix 4)", () => {
+    const storage = memoryStorage();
+    const s = newGame(undefined, 0, duo);
+    s.story.queue = [];
+    s.story.seen = ['prologue', 'prologue-inn', 'rin-reveal'];
+    Object.assign(s.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    saveGame(storage, s);
+    const g = Game.boot(calm(), storage);
+    expect(g.arrival).toEqual([]);
+    expect(g.state.story.seen).toContain('bellkeeper-arrives');
+    expect(g.state.story.fresh).not.toContain('bellkeeper-arrives');
+    // a save of this version, with the arrival still waiting, plays it on load
+    const waiting = memoryStorage();
+    s.story.seen = ['prologue', 'prologue-inn', 'rin-reveal'];
+    s.story.queue = ['bellkeeper-arrives'];
+    saveGame(waiting, s);
+    expect(Game.boot(calm(), waiting).arrival).toEqual(['bellkeeper-arrives']);
+  });
+
   it('a town action with no storage reports a failed save, as recall, forge and inn do', () => {
     const g = new Game(calm(), null, undefined, 0, START_LINEUP);
     const grid = [...g.state.party.grid];
@@ -2745,6 +2764,12 @@ describe('the finale', () => {
   const run = (depth: number, tweak: (g: Game) => void = () => {}, oath = true) => {
     const g = new Game(calm(), memoryStorage(), undefined, 0, duo);
     g.state.dungeon.reached.mainline = Math.max(3, depth);
+    // A game this deep has heard the acts it reached (continuity fix 1: an act still owed plays inside the finale).
+    for (const node of ['act2', 'act3', 'act4'] as const) {
+      if (g.state.dungeon.reached.mainline < ACT_DEPTHS[node]) continue;
+      g.state.story.nodes.push(node);
+      g.state.story.seen.push(node);
+    }
     if (oath) Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });   // a valid save: the oath needs every piece
     tweak(g);
     expect(g.depart(MAIN, depth)).toEqual({ ok: true });
@@ -2886,6 +2911,53 @@ describe('the finale', () => {
     expect(g.finale).toEqual({ pieces: heroPieces(6, 10) });
     expect(heroMemories(g)).toEqual([]);
     expect([g.phase, g.cleared]).toEqual(['clear', 'finale']);
+  });
+
+  // Continuity fix 1 (supersedes I-100's "one visit" ruling): no act node may play after the finale.
+  it('an act held back by Rin\'s reveal plays inside the finale, before the hero\'s memories', () => {
+    // The fast dive: depth 16 crossed in the same trip as her seventh piece, so the reveal played alone and act 4 waits.
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 8;
+      x.state.story.seen = x.state.story.seen.filter((id) => id !== 'act4');
+      x.state.story.queue.push('act4');
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).toEqual(['act4', 'mem:hero:9', 'mem:hero:10']);
+    expect(g.state.story.queue).not.toContain('act4');
+    for (const id of g.finale!.pieces) expect(g.sceneDone(id, 'played'), id).toBe(true);
+    expect(g.sceneDone('finale', 'played')).toBe(true);
+    g.restartAfterClear();
+    expect(g.arrival.filter((id) => id.startsWith('act'))).toEqual([]);   // the town never plays it after the ending
+  });
+
+  it('acts reached but never queued (no return since) are owed to the finale too, in act order', () => {
+    // A dive from depth 9 straight to 30 after the reveal: acts 3 and 4 were reached in this run, never queued.
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.story.nodes = ['act2'];
+      x.state.story.seen = x.state.story.seen.filter((id) => id !== 'act3' && id !== 'act4');
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces.slice(0, 3)).toEqual(['act3', 'act4', 'mem:hero:1']);
+    expect(g.state.story.nodes).toEqual(['act2', 'act3', 'act4']);   // their truth pages open with them
+    for (const id of g.finale!.pieces) g.sceneDone(id, 'auto');
+    g.sceneDone('finale', 'auto');
+    g.restartAfterClear();
+    expect(g.state.story.queue.filter((id) => id.startsWith('act'))).toEqual([]);
+  });
+
+  it("the bellkeeper's arrival still waiting plays inside the finale, after the acts and before the hero's memories", () => {
+    // Her reveal, then straight back down to the bottom: the finale hands her bell to a man the player must have met.
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 9;
+      x.state.story.seen = x.state.story.seen.filter((id) => id !== 'act4');
+      x.state.story.queue.push('bellkeeper-arrives', 'act4');
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).toEqual(['act4', 'bellkeeper-arrives', 'mem:hero:10']);
+    expect(g.state.story.queue).not.toContain('bellkeeper-arrives');
   });
 
   it('a queued piece of someone else stays queued', () => {

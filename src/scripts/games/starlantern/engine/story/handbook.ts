@@ -4,7 +4,7 @@ import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from '../../data/story/fragments';
-import { CHAT_COUNT, memScene, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
+import { CHAT_COUNT, HOME_OWNERS, homeScene, memScene, type HomeOwner, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { memoriesOf } from '../progression';
@@ -60,10 +60,14 @@ export function handbook(s: GameState): Handbook {
     const met = s.party.recruited.includes(id);
     const have = memoriesOf(m);
     const len = chainLength(id);
-    const k = !met ? 0 : have >= len ? 3 : have >= Math.ceil(len / 2) ? 2 : 1;
+    // Rin's fourth page tells her choice: it opens with her oath, not with a piece (continuity fix 3).
+    const k = !met ? 0 : id === 'rin' && m.oath ? 4 : have >= len ? 3 : have >= Math.ceil(len / 2) ? 2 : 1;
     const chats = Array.from({ length: CHAT_COUNT[id] }, (_, i): SceneId => `chat:${id}:${i + 1}`);
-    // Rin's page also replays the two of them before her story: the inn night and the first return (Task 10b).
-    return { id, met, title: titleOf(m), segments: STORY.people[id].slice(0, k), scenes: entries(id === 'rin' ? ['prologue-inn', 'first-return', 'rin-reveal', ...chats] : chats) };
+    const home: SceneId[] = (HOME_OWNERS as string[]).includes(id) ? [homeScene(id as HomeOwner)] : [];
+    // Rin's page also replays the two of them before her story (the inn night and the first return, Task 10b) and the
+    // bellkeeper's arrival after it (continuity fix 4); a homecoming sits last on its owner's page (continuity fix 2).
+    const own: SceneId[] = id === 'rin' ? ['prologue-inn', 'first-return', 'rin-reveal', 'bellkeeper-arrives', ...chats] : [...chats, ...home];
+    return { id, met, title: titleOf(m), segments: STORY.people[id].slice(0, k), scenes: entries(own) };
   });
   const town = TOWN_FRAGMENTS.map((f): TownPage => {
     const lines = STORY.town[f.id];
