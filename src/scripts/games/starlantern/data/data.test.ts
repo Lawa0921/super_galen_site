@@ -54,6 +54,28 @@ describe('data integrity', () => {
     for (const s of healers) expect(['selene', 'chizuru', 'bobby', 'hero']).toContain(s.owner);
   });
 
+  it('field skills are exactly the party heals and revives', () => {
+    for (const s of Object.values(SKILLS)) {
+      const recovers = !s.passive && !s.hpCost && ['ally', 'allies', 'deadAlly'].includes(s.target)
+        && s.effects.some((e) => e.kind === 'heal' || e.kind === 'revive');
+      expect(!!s.field, s.id).toBe(recovers);
+    }
+  });
+
+  it('the field list is the ten recovery skills', () => {
+    const field = Object.values(SKILLS).filter((s) => s.field).map((s) => s.id);
+    expect(new Set(field)).toEqual(new Set([
+      'hero-mend', 'hero-prayer', 'abyss-light',
+      'moonlight', 'moon-rain', 'full-moon', 'rebirth',
+      'sacred-sake',
+      'repair-kit', 'emergency-repair',
+    ]));
+  });
+
+  it('cure-only skills are not field skills', () => {
+    for (const id of ['cleanse', 'hero-purify', 'sanctuary']) expect(SKILLS[id].field, id).toBeUndefined();
+  });
+
   it('never reuses an id across items, materials and equipment', () => {
     const ids = [...Object.keys(ITEMS), ...Object.keys(MATERIALS), ...Object.keys(EQUIPMENT)];
     expect(new Set(ids).size).toBe(ids.length);

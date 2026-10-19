@@ -36,6 +36,8 @@ export interface SkillDef {
   target: Target; effects: Effect[]; passive?: Passive; desc: string;
   /** One of the hero's abyss capstone skills: grows with the depth of the fight (battle.ts). */
   abyss?: true;
+  /** Castable outside battle from the labyrinth's field menu (plan 6f): heals and revives only. */
+  field?: true;
 }
 export interface UltimateDef {
   id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string;
