@@ -174,6 +174,8 @@ export class EquipScene implements Scene {
   private get field(): boolean { return this.ctx.game.phase === 'map' && !!this.ctx.game.run; }
   /** The town bag, or in the labyrinth the run pack (it fits the same 60 cells: at most BAG_SIZE − bag.length pieces). */
   private get bag(): ItemInstance[] { return this.field ? this.ctx.game.run!.loot.gear : this.ctx.game.state.bag; }
+  /** How many pieces `bag` may hold: 60 in town; in the labyrinth what the bag at home has room for. */
+  private get room(): number { return this.field ? BAG_SIZE - this.ctx.game.state.bag.length : BAG_SIZE; }
   /** Who Q/E pass over: everyone recruited, or in the labyrinth the members on the field (the bench is in town). */
   private get members(): CharacterId[] { const p = this.ctx.game.state.party; return this.field ? activeIds(p) : p.recruited; }
 
@@ -312,7 +314,7 @@ export class EquipScene implements Scene {
       ? [worn ? { id: 'unequip', label: t.unequip(gearLabel(worn)) } : { id: 'townOnly', label: t.townOnly, disabled: true }]
       : this.townMenu(worn, it, shown);
     this.menuView = new MenuView(new Menu(items), { pick: (m) => this.menuPick(m.id), moved: () => this.ctx.sfx.cursor() });
-    this.menuWin = win('slx-bag-menu', [el('div', { class: 'slx-who', text: t.title }), this.menuView.el]);
+    this.menuWin = win('slx-bag-menu', [el('div', { class: 'slx-who', text: this.field ? t.titleField : t.title }), this.menuView.el]);
     this.sceneEl.append(this.menuWin);
     this.ctx.sfx.confirm();
     this.render();
@@ -405,8 +407,11 @@ export class EquipScene implements Scene {
       c.setAttribute('aria-selected', String(i === this.dollCur));
     });
 
-    // A full bag has no empty cell to pick, so the target hint names the menu route instead.
-    this.keyhint.textContent = !this.target ? (this.field ? T.ui2.equip.hintField : T.ui2.equip.hint) : this.bag.length >= BAG_SIZE ? T.ui2.equip.hintTargetFull : T.ui2.equip.hintTarget;
+    // A full bag has no empty cell to pick, so the target hint names the menu route instead. In the labyrinth the pack must
+    // fit in the bag at home: with no room left there, no route takes a piece off, and the hint says so.
+    const t = T.ui2.equip;
+    this.keyhint.textContent = !this.target ? (this.field ? t.hintField : t.hint)
+      : this.bag.length >= this.room ? (this.field ? t.hintTargetFullField : t.hintTargetFull) : t.hintTarget;
     this.renderDetail();
   }
 

@@ -333,6 +333,8 @@ export const T = {
       delta: (key: AnyStat, v: number) => `${signed(Math.round(v * 10) / 10)}${POINT_STATS.includes(key) ? '' : '%'}`,
       menu: {
         title: '背包選單',
+        /** In the labyrinth the grid is the run pack. */
+        titleField: '冒險背包選單',
         sort: { rarity: '排序：依稀有度', slot: '排序：依欄位', ilvl: '排序：依物品等級' },
         auto: { off: '自動標記：關閉', common: '自動標記：普通', magic: '自動標記：普通與魔法' },
         current: '使用中',
@@ -347,6 +349,8 @@ export const T = {
       hint: '方向鍵 移動　Tab 切換　Enter 決定　C 選單　Q／E 換人　R／F 捲動說明　Esc 返回',
       hintTarget: 'Enter 穿上　選空格 卸下　Esc 取消目標',
       hintTargetFull: 'Enter 穿上　C 選單 卸下　Esc 取消目標',
+      /** In the labyrinth with no room left at home (bag + pack fill the 60 slots): nothing can be taken off. */
+      hintTargetFullField: 'Enter 穿上　回城背包已滿，不能卸下　Esc 取消目標',
       hintField: '方向鍵 移動　Tab 切換　Enter 穿上／卸下　C 選單　Q／E 換人　R／F 捲動說明　Esc 返回',
     },
     settings: {

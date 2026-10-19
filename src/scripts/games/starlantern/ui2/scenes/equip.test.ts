@@ -717,6 +717,43 @@ describe('EquipScene in the labyrinth', () => {
     expect(game.state.party.roster.hero.equip.weapon!.uid).toBe(60);
   });
 
+  it('with no room left at home the target hint says taking off is closed, not to pick an empty cell', () => {
+    const hint = (root: HTMLElement) => root.querySelector('.slx-keyhint')!.textContent;
+    // Bag and pack together fill the 60 slots: the pack still shows empty cells, but none can take a piece.
+    const full = fieldSetup((g) => {
+      g.state.bag = Array.from({ length: 58 }, (_, i) => plainItem('leather-cap', 200 + i));
+      g.run!.loot.gear = [plainItem('leather-cap', 70), plainItem('leather-cap', 71)];
+    });
+    full.press('confirm');                                                              // the weapon slot is the target
+    expect(hint(full.root)).toBe(T.ui2.equip.hintTargetFullField);
+    expect(hint(full.root)).not.toContain('選空格');
+    expect(hint(full.root)).not.toBe(T.ui2.equip.hintTargetFull);                       // the menu route is closed too
+    full.cell(5).click();
+    expect(full.root.querySelector('.slx-equip-notice')!.textContent).toBe(T.ui2.equip.fullField);
+    // The town bag alone full, the pack empty: the same.
+    const bagOnly = fieldSetup((g) => { g.state.bag = Array.from({ length: 60 }, (_, i) => plainItem('leather-cap', 200 + i)); });
+    bagOnly.press('confirm');
+    expect(hint(bagOnly.root)).toBe(T.ui2.equip.hintTargetFullField);
+    // One slot left: an empty cell still takes the piece off.
+    const room = fieldSetup((g) => {
+      g.state.bag = Array.from({ length: 58 }, (_, i) => plainItem('leather-cap', 200 + i));
+      g.run!.loot.gear = [plainItem('leather-cap', 70)];
+    });
+    room.press('confirm');
+    expect(hint(room.root)).toBe(T.ui2.equip.hintTarget);
+  });
+
+  it('in the labyrinth the menu is titled for the run pack; in town for the bag', () => {
+    const title = (root: HTMLElement) => root.querySelector('.slx-bag-menu .slx-who')!.textContent;
+    const f = fieldSetup();
+    f.press('menu');
+    expect(title(f.root)).toBe(T.ui2.equip.menu.titleField);
+    expect(title(f.root)).toContain('冒險背包');
+    const t = setup();
+    t.press('menu');
+    expect(title(t.root)).toBe(T.ui2.equip.menu.title);
+  });
+
   it('cancel goes back to the labyrinth', () => {
     const { go, press } = fieldSetup();
     press('cancel');

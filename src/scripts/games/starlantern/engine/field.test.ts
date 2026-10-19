@@ -104,6 +104,22 @@ describe('field skills', () => {
     }
   });
 
+  it('the whole-party heal never reaches a wounded member on the bench', () => {
+    const s = game();
+    set(s, 'selene', { tree: { 'moon-rain': 1 } });
+    s.party.grid = s.party.grid.map((id) => (id === 'chizuru' ? null : id));   // Chizuru waits in town
+    expect(s.party.recruited).toContain('chizuru');
+    expect(activeIds(s.party)).not.toContain('chizuru');
+    set(s, 'chizuru', { hp: 1 });
+    set(s, 'noel', { hp: 1 });
+    const r = castField(s, { caster: 'selene', skill: 'moon-rain', depth: 1 });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(member(r.state, 'noel').hp).toBeGreaterThan(1);                  // the cast landed on the field
+    expect(member(r.state, 'chizuru').hp).toBe(1);
+    expect(r.gains.map((g) => g.id)).not.toContain('chizuru');
+  });
+
   it('a worn power that turns moonlight on the whole party is honoured', () => {
     const s = game();
     const crown = { ...plainItem('leather-cap', 77), rarity: 'legendary' as const, special: 'lg-selene' };
