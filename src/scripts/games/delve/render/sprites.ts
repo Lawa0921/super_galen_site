@@ -12,13 +12,17 @@ import { R as CR, WEAPON_METAL } from './combatArt';
 import { dollKey, plainLook, type DollLook } from '../engine/doll';
 import { DEFAULT_APPEARANCE } from '../engine/appearance';
 import {
-  ARMS_PAD, ARM_H, ARM_PIV, ARM_W, AV_FH, AV_FW, HAND_REACH, avatarArm, avatarSheet, mantleArms, shoulderOf, type FrameMeta,
+  ARMS_PAD, ARM_H, ARM_PIV, ARM_W, AV_FH, AV_FW, HAND_REACH, SHEET, avatarArm, avatarFrame, flatFrame, mantleArms, rimOf, sheetCell, shoulderOf, type FrameMeta,
 } from './avatarArt';
+import { BakeQueue } from './bakeQueue';
 
 export const FW = AV_FW;
 export const FH = AV_FH;
 /** 紙娃娃影格表（兩列：body / head）與每格資料 */
-export interface DollSheet { canvas: HTMLCanvasElement; meta: FrameMeta[]; key: string; }
+/** 紙娃娃影格表（四列：body / head / 暗處輪廓光 / 臉）；分幀烘焙：ready(i) = 第 i 格烘好了沒 */
+export interface DollSheet { canvas: HTMLCanvasElement; meta: FrameMeta[]; key: string; ready: (i: number) => boolean; complete: boolean; }
+/** 換裝之後每幀最多花多少 ms 烘剩下的格子（要用的那格另外立刻烘） */
+export const SHEET_BAKE_BUDGET_MS = 2;
 /** 快取幾組不同樣子的影格表（換裝備來回切時不必重烘） */
 const SHEET_CACHE = 6;
 
@@ -513,17 +517,48 @@ export class Sprites {
   }
   get dollKey(): string { return this.key; }
 
-  /** 目前樣子的影格表（第一次用到才烘；最多快取 SHEET_CACHE 組） */
-  dollSheet(): DollSheet {
+  /**
+   * 目前樣子的影格表（最多快取 SHEET_CACHE 組）。分幀烘焙：need = 這一幀要用的格子（沒烘過就立刻烘），
+   * 其餘的格子每次呼叫在 SHEET_BAKE_BUDGET_MS 內往下烘；不給 need = 一次烘完（測試 / 工具用）。
+   */
+  dollSheet(need?: number): DollSheet {
+    let fresh = false;
     let s = this.sheets.get(this.key);
-    if (s) { this.sheets.delete(this.key); this.sheets.set(this.key, s); return s; }
-    const r = avatarSheet(this.look);
-    s = { canvas: toCanvas(r.b) as HTMLCanvasElement, meta: r.meta, key: this.key };
-    this.bakes.sheets++;
-    this.sheets.set(this.key, s);
-    while (this.sheets.size > SHEET_CACHE) this.sheets.delete(this.sheets.keys().next().value as string);
+    if (s) { this.sheets.delete(this.key); this.sheets.set(this.key, s); }
+    if (!s) {
+      const look = this.look, key = this.key;
+      const canvas = document.createElement('canvas');
+      canvas.width = AV_FW * SHEET.total; canvas.height = AV_FH * 4;
+      const ctx = canvas.getContext('2d');
+      const meta: FrameMeta[] = [];
+      const q = new BakeQueue(SHEET.total, (i) => {
+        const [anim, f] = sheetCell(i), r = avatarFrame(look, anim, f), x = i * AV_FW;
+        meta[i] = r.meta;
+        if (!ctx) return;
+        // 紙娃娃本來就只用色票色（測試鎖住）：不必再逐像素吸附色票
+        toCanvas(r.body, { ctx, x, y: 0 }, true);
+        toCanvas(r.head, { ctx, x, y: AV_FH }, true);
+        toCanvas(rimOf(flatFrame(r)), { ctx, x, y: AV_FH * 2 }, true);
+        if (r.face) toCanvas(r.face, { ctx, x, y: AV_FH * 3 }, true);
+      });
+      const sheet: DollSheet = { canvas, meta, key, ready: (i) => q.has(i), complete: false };
+      this.queues.set(key, q);
+      this.bakes.sheets++;
+      this.sheets.set(key, sheet);
+      while (this.sheets.size > SHEET_CACHE) { const k = this.sheets.keys().next().value as string; this.sheets.delete(k); this.queues.delete(k); }
+      s = sheet;
+      fresh = true;
+    }
+    const q = this.queues.get(this.key);
+    if (q && !s.complete) {
+      if (need === undefined) { while (!q.done) q.pump(1e9); }
+      // 換裝那一幀只烘要用的那一格；之後每幀在預算內往下烘
+      else { q.need(need); if (!fresh) q.pump(SHEET_BAKE_BUDGET_MS); }
+      if (q.done) { s.complete = true; this.queues.delete(this.key); }
+    }
     return s;
   }
+  private queues = new Map<string, BakeQueue>();
 
   shoulder(back: boolean): { x: number; y: number } { return shoulderOf(this.look.app.body, back); }
 

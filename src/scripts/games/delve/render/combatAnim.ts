@@ -19,11 +19,13 @@ export function attackArmDeg(kind: WeaponKind, p: number, aimDeg: number): numbe
   const q = Math.max(0, Math.min(1, p));
   switch (kind) {
     // 劍：預備（往後上拉）→ 加速下劈、劈過頭 → 收招回彈一點
-    case 'sword': return swing3(q, 200, 222, 12, 30, 0.12, 0.58);
+    // （起手在頭的前上方：Q 版大頭，從頭後面起手會讓刀身穿過臉）
+    case 'sword': return swing3(q, 140, 166, 12, 30, 0.12, 0.58);
     // 大劍：預備更久更高、劈得更低、收得更慢
-    case 'broadsword': return swing3(q, 210, 236, 4, 22, 0.25, 0.64);
+    case 'broadsword': return swing3(q, 135, 170, 4, 22, 0.25, 0.64);
     case 'throw':
-    case 'boomerang': return q < 0.5 ? 175 - 230 * q : 60;
+    // 投擲：往後上拉 → 往前甩出去（手停在前下方）
+    case 'boomerang': return q < 0.2 ? 140 + 28 * easeOut(q / 0.2) : q < 0.45 ? 168 - 128 * ((q - 0.2) / 0.25) ** 1.5 : 40 + 15 * easeOut((q - 0.45) / 0.55);
     default: return aimDeg; // spear / bow / staff
   }
 }

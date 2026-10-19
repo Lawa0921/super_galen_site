@@ -36,7 +36,8 @@ export interface HeadOpts {
 /** 頭的大小（區域座標） */
 export const HEAD_W = 24, HEAD_H = 23;
 /** 眼睛的位置（區域座標）：近眼 / 遠眼的左上角 */
-export const EYE_Y = 12, EYE_NEAR = 9, EYE_FAR = 16;
+/** （3/4 側身：眼睛整組往面向的方向偏 1 格，走路 / 跳時再多偏） */
+export const EYE_Y = 12, EYE_NEAR = 10, EYE_FAR = 17;
 
 // ── 頭型（每列 [左, 右]）：圓圓的大頭、下巴小 ─────────────────
 const HEAD_ROWS: readonly [number, number][] = [
@@ -133,11 +134,16 @@ function grid(b: Bmp, rows: readonly string[], pal: Record<string, RGB>, ox: num
 // D 深（上半）、M 中（下半）、H 白高光、L 線（閉眼 / 表情）
 interface EyeDef { rows: string[]; dy: number; }
 const EYES: Record<string, EyeDef> = {
-  round: { rows: ['DD', 'HD', 'DM', 'MM'], dy: 0 },
+  // 女：2×4，上緣深、兩顆高光（左上白、右下淺色）
+  round: { rows: ['DD', 'HD', 'DM', 'Mh'], dy: 0 },
   // 上揚眼：上緣外側翹起來一格（外眼角在外側）
-  sharp: { rows: ['.D', 'DD', 'HD', 'MM'], dy: 0 },
+  sharp: { rows: ['.D', 'DD', 'HD', 'Mh'], dy: 0 },
   // 下垂眼：上半被眼皮蓋住、瞳孔在下半
-  droopy: { rows: ['DD', 'DD', 'HM', 'MM'], dy: 0 },
+  droopy: { rows: ['DD', 'DD', 'HM', 'Mh'], dy: 0 },
+  // 男：2×3 的方眼（矮一列、一顆高光）
+  round_m: { rows: ['DD', 'HD', 'MM'], dy: 1 },
+  sharp_m: { rows: ['.D', 'HD', 'MM'], dy: 1 },
+  droopy_m: { rows: ['DD', 'DD', 'HM'], dy: 1 },
   blink: { rows: ['..', '..', 'LL', '..'], dy: 0 },
   happy: { rows: ['..', 'LL', 'L.', '..'], dy: 0 },
   hurt: { rows: ['L.', '.L', 'L.', '..'], dy: 0 },
@@ -146,19 +152,30 @@ const EYES: Record<string, EyeDef> = {
   effort: { rows: ['..', 'LL', 'DD', '..'], dy: 0 },
 };
 function eyeKind(a: Appearance, expr: Expr): string {
-  return expr === 'normal' ? (['round', 'sharp', 'droopy'][a.eyeShape] ?? 'round') : expr;
+  const k = expr === 'normal' ? (['round', 'sharp', 'droopy'][a.eyeShape] ?? 'round') : expr;
+  return a.body === 1 && EYES[k + '_m'] ? k + '_m' : k;
 }
-/** 眉毛：Q 版沒有眉毛線；用力 / 受傷時露一點點皺眉（被瀏海蓋住的地方之後由瀏海蓋過去） */
-export function brows(b: Bmp, a: Appearance, expr: Expr, ox: number, oy: number): void {
-  if (expr !== 'effort' && expr !== 'hurt') return;
+/** 眉毛：男生一道粗眉（3 格、深髮色，瀏海停在眉毛上面）；女生沒有眉毛線，用力 / 受傷時露一點點皺眉 */
+export function brows(b: Bmp, a: Appearance, expr: Expr, ox: number, oy: number, look = 0): void {
+  if (expr === 'dead') return;
   const c = hairRamp(a.hairColor)[0];
-  b.set(ox + EYE_NEAR + 1, oy + EYE_Y - 1, c); b.set(ox + EYE_FAR, oy + EYE_Y - 1, c);
+  const angry = expr === 'effort' || expr === 'hurt';
+  if (a.body === 1) {
+    const y = oy + EYE_Y - 1;
+    for (const [x0, inner] of [[EYE_NEAR - 1, 1], [EYE_FAR, 0]] as [number, number][]) for (let k = 0; k < 3; k++) {
+      const x = ox + x0 + k + look, innerSide = inner ? k === 2 : k === 0;
+      b.set(x, y + (angry && innerSide ? 1 : 0), c);
+    }
+    return;
+  }
+  if (!angry) return;
+  b.set(ox + EYE_NEAR + 1 + look, oy + EYE_Y - 1, c); b.set(ox + EYE_FAR + look, oy + EYE_Y - 1, c);
 }
 
 function face(b: Bmp, a: Appearance, expr: Expr, ox: number, oy: number, look: number): void {
   const e = eyeRamp(a.eyes), sk = skinRamp(a.skin), male = a.body === 1;
   const g = EYES[eyeKind(a, expr)];
-  const pal: Record<string, RGB> = { D: e[0], M: e[1], H: EYE_WHITE, L: e[0] };
+  const pal: Record<string, RGB> = { D: e[0], M: e[1], H: EYE_WHITE, h: e[2] ?? EYE_WHITE, L: e[0] };
   const ex = (near: boolean): number => ox + (near ? EYE_NEAR : EYE_FAR) + look;
   for (const near of [true, false]) {
     const rows = near || g.rows[0].length < 3 ? g.rows : g.rows;
@@ -166,15 +183,19 @@ function face(b: Bmp, a: Appearance, expr: Expr, ox: number, oy: number, look: n
     const r2 = !near && expr === 'normal' && a.eyeShape === 1 ? rows.map((r) => r.split('').reverse().join('')) : rows;
     grid(b, r2, pal, ex(near) - (g.rows[0].length === 3 ? 1 : 0), oy + EYE_Y + g.dy);
   }
-  // 女生：外眼角多一格睫毛（近眼往左上、遠眼往右上）
-  if (!male && (expr === 'normal' || expr === 'up')) { b.set(ex(true) - 1, oy + EYE_Y + g.dy, e[0]); b.set(ex(false) + 2, oy + EYE_Y + g.dy, e[0]); }
+  // 女生：明顯的睫毛——上緣一道線、外眼角往外上翹一格（近眼往左、遠眼往右）
+  if (!male && (expr === 'normal' || expr === 'up')) {
+    const lash = hex('#2c2838'), y0 = oy + EYE_Y + g.dy;
+    b.set(ex(true) - 1, y0, lash); b.set(ex(true) - 2, y0 - 1, lash); b.set(ex(true), y0 - 1, lash); b.set(ex(true) + 1, y0 - 1, lash);
+    b.set(ex(false) + 2, y0, lash); b.set(ex(false) + 3, y0 - 1, lash); b.set(ex(false), y0 - 1, lash); b.set(ex(false) + 1, y0 - 1, lash);
+  }
   // 腮紅（每邊兩格）
   if ((a.blush || expr === 'happy' || expr === 'hurt') && expr !== 'dead') {
     const bl = BLUSH[a.skin] ?? BLUSH[1];
     for (const x of [EYE_NEAR - 2, EYE_NEAR - 1, EYE_FAR + 2, EYE_FAR + 3]) b.set(ox + x + look, oy + EYE_Y + 5, bl);
   }
   // 嘴：張開的紅嘴（開心、CQ 的招牌）；表情改形狀
-  const mx = ox + 13 + look, my = oy + EYE_Y + 6;
+  const mx = ox + 14 + look, my = oy + EYE_Y + 6;
   if (expr === 'dead') { b.set(mx - 1, my, sk[0]); b.set(mx, my + 1, sk[0]); b.set(mx + 1, my, sk[0]); return; }
   if (expr === 'blink' && male) { b.set(mx, my, sk[0]); b.set(mx + 1, my, sk[0]); return; }
   if (expr === 'hurt' || expr === 'effort') {
@@ -228,13 +249,14 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   for (let y = 0; y < rows.length; y++) {
     const [x0, x1] = rows[y];
     for (let x = x0; x <= x1; x++) {
-      const edge = (x >= x1 - 1 && y >= BROW) || y === chin || (y === chin - 1 && (x <= x0 || x >= x1 - 1));
+      // 3/4 側身：遠側臉頰（右邊三欄）暗一階，近側大片受光
+      const edge = (x >= x1 - 2 && y >= BROW) || y === chin || (y === chin - 1 && (x <= x0 || x >= x1 - 1));
       const hi = y === EYE_Y + 4 && x >= 5 && x <= 6;
       skin.set(ox + x, oy + y, edge ? sk[2] : hi ? sk[4] : sk[3]);
     }
   }
   face(skin, a, o.expr, ox, oy, look);
-  brows(skin, a, o.expr, ox, oy);
+  brows(skin, a, o.expr, ox, oy, look);
   o.trace?.push('face');
 
   // ── 頭髮 ──
@@ -256,10 +278,11 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
       }
     }
   };
-  for (const c of BANGS[def.bang]) clump(c, -2, 11.6);
+  // 瀏海尖端停在眼睛上面；男生停在粗眉上面
+  for (const c of BANGS[def.bang]) clump(c, -2, a.body === 1 ? 10.6 : 11.6);
   // 兩側鬢髮：近側（左）長、遠側（右）短（3/4 正面：兩邊都看得到）
-  clump([-1, 2, 0.5 - sw * 0.6, def.near, 0.9], 6, 99);
-  clump([21, 23, 22.5 - sw * 0.4, def.far, 0.9], 6, 99);
+  clump([-1, 3, 1 - sw * 0.6, def.near, 0.9], 6, 99);
+  clump([22, 23, 22.5 - sw * 0.4, def.far, 0.9], 6, 99);
   // 瀏海下緣在額頭投下的陰影（額頭上、髮尖正下方那格）
   for (let y = BROW; y <= EYE_Y; y++) for (let x = 2; x <= 22; x++) {
     if (!hair.on(ox + x, oy + y - 1) || hair.on(ox + x, oy + y)) continue;
@@ -293,13 +316,13 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   }
   if (st === 'ponytail') {
     // 高馬尾：綁在後腦勺（左上）、粗粗的一大束往後（左）甩下來
-    bigTail(behind, P(2, 2), P(-8 - sw * 1.5, 2 - lift * 2), P(-5 - sw * 3 - lift * 1.5, 26 - lift * 10), 8.4, h);
+    bigTail(behind, P(2, 2), P(-6 - sw * 1.2, 3 - lift * 2), P(-3 - sw * 2.4 - lift * 1.2, 26 - lift * 10), 7.6, h);
     strand(hair, P(2.2, 2.6), P(1.4, 3), P(1, 4.2), 4.2, 3, tie, (_t, s) => (s < 0 ? 4 : 2));
   }
   if (st === 'twintails') {
     // 雙馬尾：綁在頭頂兩側；近側（左）一大束在前面、遠側（右）較暗在後面
-    bigTail(behind, P(21, 3), P(27 - sw * 1.2, 4 - lift * 2), P(25 - sw * 2.4 - lift, 27 - lift * 9), 7, darker(h));
-    bigTail(behind, P(2, 3), P(-5 - sw * 1.2, 4 - lift * 2), P(-3 - sw * 2.4 - lift * 1.2, 29 - lift * 10), 8.4, h);
+    bigTail(behind, P(21, 3), P(25.5 - sw * 1, 5 - lift * 2), P(24 - sw * 2 - lift, 27 - lift * 9), 6.4, darker(h));
+    bigTail(behind, P(2, 3), P(-3.5 - sw * 1, 5 - lift * 2), P(-1.5 - sw * 2 - lift * 1.2, 29 - lift * 10), 7.6, h);
     strand(hair, P(2.4, 3.4), P(1.6, 3.6), P(1.2, 4.8), 4.2, 3, tie, (_t, s) => (s < 0 ? 4 : 2));
     strand(hair, P(21, 3.4), P(21.6, 3.6), P(22, 4.8), 3.6, 2.6, tie, (_t, s) => (s < 0 ? 3 : 2));
   }
@@ -319,8 +342,8 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
     hair.set(tx, ty + 1, h[2]); hair.set(tx - 1, ty + 1, h[3]); hair.set(tx, ty + 2, h[1]);
   }
   if (st === 'odango' && !cov.top) {
-    disc(hair, ox + 3.4, oy + 0.4, 4.4, h);
-    disc(behind, ox + 20.4, oy + 0.4, 4, darker(h));
+    disc(hair, ox + 3.6, oy + 1.4, 3.9, h);
+    disc(behind, ox + 20.2, oy + 1.4, 3.6, darker(h));
     hair.set(ox + 6, oy + 3, tie[3]); hair.set(ox + 7, oy + 2, tie[4]); hair.set(ox + 5, oy + 4, tie[2]);
   }
   if (st === 'hime') {
@@ -329,19 +352,24 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   }
   if (st === 'spiky') {
     // 刺蝟頭：五根粗刺往上 / 往後（左）
-    const sp: [Pt, Pt, number][] = [[[3, 2], [-4, -4], 6], [[8, -1], [6, -8], 5.6], [[14, -1], [16, -7], 5], [[19, 1], [25, -3], 4.4], [[1, 8], [-5, 7], 4.6]];
+    // 頭頂的刺往後（左）上方躺：最高不超過頭頂 2 格（不會插進天花板）
+    const sp: [Pt, Pt, number][] = [[[3, 2], [-4, -2], 6], [[8, 0], [3, -3], 5.6], [[14, 0], [12, -3], 5], [[19, 1], [24, -1.5], 4.4], [[1, 8], [-4, 8], 4.6]];
     for (const [s, t, w] of sp.filter(([q]) => !cov.top || q[1] >= 6)) strand(hair, P(s[0], s[1]), P((s[0] + t[0]) / 2, (s[1] + t[1]) / 2 - 0.5), P(t[0] - sw, t[1] - lift), w, 0.6, h, (tt, ss) => (tt > 0.75 ? 1 : ss < -0.25 ? 3 : ss > 0.45 ? 1 : 2));
   }
   if (st === 'messy') {
-    const sp: [Pt, Pt][] = [[[3, 1], [-1, -3]], [[11, -1], [11.5, -4.5]], [[20, 2], [24, -1]], [[0, 9], [-3, 9]]];
+    // 亂翹：頭頂兩撮往前後倒、兩側各一撮往外翹（都壓在頭頂以下，不會被切平）
+    const sp: [Pt, Pt][] = [[[8, 0], [5, -2.2]], [[15, 0], [17.5, -2]], [[2, 4], [-2.5, 3]], [[21, 5], [24.5, 4]], [[0, 11], [-3, 12]]];
     for (const [s, t] of sp.filter(([q]) => !cov.top || q[1] >= 5)) strand(hair, P(s[0], s[1]), P((s[0] + t[0]) / 2, (s[1] + t[1]) / 2), P(t[0] - sw * 0.5, t[1] - lift * 0.5), 4.2, 0.8, h, (tt, ss) => (tt > 0.65 ? 1 : ss < 0 ? 3 : 2));
   }
   // 呆毛
   if (a.ahoge && acc !== 'hood' && !cov.top) {
-    strand(hair, P(12, -1), P(11 + sw * 0.5, -7 - lift), P(16, -6.5 - lift), 2.4, 0.9, h, (t) => (t < 0.45 ? 3 : t > 0.85 ? 1 : 2));
+    // 呆毛：短短一撮往前彎（最高頭頂上 2 格）
+    strand(hair, P(12, 0), P(11.5 + sw * 0.5, -2.6 - lift * 0.3), P(15, -1.6), 2.2, 0.9, h, (t) => (t < 0.45 ? 3 : t > 0.85 ? 1 : 2));
   }
-  hair.softOutline();
-  skin.softOutline();
+  // 頭頂最高到區域座標 −3（描邊在 −4）：站著跳起來撞頭時呆毛 / 刺不會插進天花板
+  clipTop(hair, oy - 3); clipTop(behind, oy - 3);
+  hair.softOutline(0.42);
+  skin.softOutline(0.5);
   const head = new Bmp(front.w, front.h);
   head.blit(skin, 0, 0);
   head.blit(hair, 0, 0);
@@ -349,7 +377,8 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   const gear = new Bmp(front.w, front.h);
   if (o.gear && armorSet(o.gear)) helmetArt(gear, o.gear, ox, oy, o.f ?? 0);
   if (!o.gear && acc === 'hood') hood(gear, behind, a, ox, oy);
-  gear.softOutline();
+  clipTop(gear, oy - 3);
+  gear.softOutline(0.45);
   head.blit(gear, 0, 0);
   if (o.sweat) sweat(head, ox - 2, oy + 6);
   front.blit(head, 0, 0);
@@ -359,8 +388,13 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   if (a.glasses) glasses(front, ox + look, oy);
   o.trace?.push('frontAcc');
   if (o.face) for (let i = 0; i < skin.px.length; i++) { const v = skin.px[i]; if (v >>> 24 && front.px[i] === v) o.face.px[i] = v; }
-  behind.softOutline();
+  behind.softOutline(0.42);
   back.blit(behind, 0, 0);
+}
+
+/** 把 y 以上的像素清掉（美術高度收在碰撞盒裡） */
+function clipTop(b: Bmp, y: number): void {
+  for (let yy = 0; yy < Math.min(b.h, y); yy++) for (let x = 0; x < b.w; x++) b.clear(x, yy);
 }
 
 function sweat(b: Bmp, x: number, y: number): void {
@@ -395,8 +429,8 @@ function sideAcc(b: Bmp, a: Appearance, st: string, acc: string, ox: number, oy:
   } else if (acc === 'catears') {
     const s = new Bmp(b.w, b.h), c = clothRamp(a.color2), pink = hex('#ffc8dc');
     for (let x = 2; x <= 21; x++) s.set(ox + x, oy - 1 + (x < 5 || x > 18 ? 1 : 0), c[2]);
-    grid(s, ['..e.', '.ee.', 'epee', 'eppe', 'eEee'], { e: c[3], E: c[4], p: pink }, ox + 2, oy - 6);
-    grid(s, ['.e..', '.ee.', 'eepe', 'eppe', 'eeee'], { e: c[2], p: pink }, ox + 17, oy - 6);
+    grid(s, ['.e..', 'eee.', 'epee', 'eppe'], { e: c[3], E: c[4], p: pink }, ox + 2, oy - 2);
+    grid(s, ['..e.', '.eee', 'eepe', 'eppe'], { e: c[2], p: pink }, ox + 17, oy - 2);
     s.softOutline();
     b.blit(s, 0, 0);
   } else if (acc === 'clip') {
@@ -426,7 +460,7 @@ function hood(head: Bmp, behind: Bmp, a: Appearance, ox: number, oy: number): vo
     const v = -(nx * 0.55 + ny * 0.85);
     head.set(ox + x, oy + y, rim ? c[4] : v > 0.45 ? c[4] : v > -0.25 ? c[3] : v > -0.6 ? c[2] : c[1]);
   }
-  strand(behind, [ox - 2, oy + 8], [ox - 8, oy + 13], [ox - 6, oy + 21], 5, 1.6, c, (t, s) => (t > 0.8 ? 1 : s < -0.3 ? 3 : 2));
+  strand(behind, [ox - 1, oy + 8], [ox - 5, oy + 13], [ox - 4, oy + 21], 5, 1.6, c, (t, s) => (t > 0.8 ? 1 : s < -0.3 ? 3 : 2));
 }
 
 export function drawHead(back: Bmp, front: Bmp, ox: number, oy: number, o: HeadOpts): void {

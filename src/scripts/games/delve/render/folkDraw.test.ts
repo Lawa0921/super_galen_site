@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { folkFrames } from './folkDraw';
+import { folkFrames, folkFrame } from './folkDraw';
 import { folkLook, ROLES, type FolkRole } from '../engine/folkDefs';
 import { Rng } from '../engine/rng';
 import { inPalette } from './pixel';
@@ -27,6 +27,13 @@ describe('世界 NPC 的紙娃娃', () => {
         expect(n).toBeGreaterThan(100);
       }
     }
+  });
+  it('folkFrame：只烘要用的那一格（和整組烘出來的同一格一模一樣）', () => {
+    const l = folkLook('guide', new Rng('lazy'));
+    const all = folkFrames(l);
+    expect(folkFrame(l, 'walk', 3).px.join()).toBe(all.walk[3].px.join());
+    expect(folkFrame(l, 'idle', 1).px.join()).toBe(all.idle[1].px.join());
+    expect(folkFrame(l, 'blink', 0).px.join()).toBe(all.blink.px.join());
   });
   it('矮人一眼分得出來：比人類矮、戴頭燈盔', () => {
     const human = folkFrames(folkLook('trader', new Rng('h')));

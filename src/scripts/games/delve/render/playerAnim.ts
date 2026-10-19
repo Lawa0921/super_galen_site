@@ -128,3 +128,12 @@ export function blinkAt(t: number): boolean {
   if (m < 0.12) return true;
   return k % 3 === 2 && m >= 0.22 && m < 0.32;
 }
+
+/**
+ * 爬到繩頂：最上面那隻手（handTopY，世界 px）以上已經沒有繩子了（繩頂 ropeTopY 在手下面超過 2 px）
+ * → 換成「兩手抓在胸口」的繩頂影格，手不會抓在空氣上。
+ */
+export function atRopeTop(anim: string, handTopY: number, ropeTopY: number): boolean {
+  if (anim !== 'climb' && anim !== 'hang' && anim !== 'climbdown') return false;
+  return ropeTopY > handTopY + 2;
+}

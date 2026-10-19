@@ -10,7 +10,8 @@ export const IDLE_FRAMES = 4;
 export const IDLE_PERIOD = 2.4;
 /** 揮動：每秒幾下 */
 export const SWING_RATE = 2.6;
-export const SWING_FROM = 200;
+/** 揮鎬的起點：頭的前上方（Q 版大頭：從頭後面起手會讓鎬頭穿過臉） */
+export const SWING_FROM = 165;
 export const SWING_TO = 25;
 export const FLAME_FRAMES = 4;
 export const ARM_STEPS = 32;
@@ -79,6 +80,13 @@ export function heldOverHead(deg: number): boolean {
   const d = ((deg % 360) + 360) % 360;
   return d >= 150 && d <= 300;
 }
+
+/** 手上拿的東西的種類：carryStyle 的種類 + 火把 / 提燈 */
+export type HeldKind = CarryStyle | 'torch';
+/** 這種手持物要不要畫在頭（臉）的前面：火把 / 釣竿 / 方塊 / 弓杖矛 = 前面；鎬 / 劍 = 照常在頭後面 */
+export function heldOverFace(k: HeldKind): boolean { return k !== 'pick' && k !== 'blade'; }
+/** 拿著這種東西時前手的角度（度）：火把 / 方塊 = 往前平舉（手離開臉） */
+export function heldCarryArm(k: HeldKind): number { return k === 'torch' ? 85 : k === 'mini' ? 75 : CARRY_ARM; }
 
 export function flameFrame(t: number, x: number, y: number): number {
   const off = ((Math.imul(x, 73856093) ^ Math.imul(y, 19349663)) >>> 0) % 97;

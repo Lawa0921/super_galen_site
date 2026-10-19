@@ -123,7 +123,7 @@ export function helmetArt(head: Bmp, p: DollPiece, ox: number, oy: number, f: nu
   const set = armorSet(p)!;
   const r = ARMOR_RAMP[set], m = armor5(set);
   const S = (x: number, y: number, c: RGB): void => head.set(ox + x, oy + y, c);
-  for (let y = -4; y <= BRIM; y++) for (let x = -3; x <= 26; x++) {
+  for (let y = -3; y <= BRIM; y++) for (let x = -3; x <= 26; x++) {
     if (!inCap(x, y, 1.06)) continue;
     const nx = (x + 0.5 - CAP.cx) / CAP.rx, ny = (y + 0.5 - CAP.cy) / CAP.ry;
     const v = -(nx * 0.55 + ny * 0.85);
@@ -145,24 +145,25 @@ export function helmetArt(head: Bmp, p: DollPiece, ox: number, oy: number, f: nu
       for (const [x, y] of [[4, 3], [12, -1], [19, 3], [1, 6], [22, 6]] as Pt[]) { S(x, y, r[6]); S(x + 1, y + 1, m[1]); }
       break;
     case 'iron':
-      for (let y = -3; y <= BRIM; y++) S(12, y, y < 2 ? r[6] : m[4]);
+      for (let y = -2; y <= BRIM; y++) S(12, y, y < 2 ? r[6] : m[4]);
       for (let y = BRIM; y <= 12; y++) { S(13, y, m[4]); S(14, y, m[2]); }
       break;
     case 'gold': {
       const red = CR.red;
-      for (let x = 6; x <= 17; x++) { const hgt = x < 8 || x > 15 ? 1 : x < 10 || x > 13 ? 2 : 3; for (let k = 1; k <= hgt; k++) S(x, -2 - k, k === hgt ? m[4] : m[3]); }
-      S(11, -6, r[6]); S(12, BRIM - 1, red[4]); S(12, BRIM, red[3]);
-      for (let k = 0; k < 9; k++) { S(5 - k, -3 + Math.round(k * 0.7), red[k < 3 ? 5 : 4]); S(5 - k, -2 + Math.round(k * 0.7), red[3]); if (k > 2) S(5 - k, -1 + Math.round(k * 0.7), red[2]); }
+      // 扇形冠脊（壓低：最高頭頂上 2 格）+ 往後垂的紅羽
+      for (let x = 7; x <= 16; x++) { const hgt = x < 9 || x > 14 ? 1 : 2; for (let k = 1; k <= hgt; k++) S(x, -1 - k, k === hgt ? m[4] : m[3]); }
+      S(11, -3, r[6]); S(12, BRIM - 1, red[4]); S(12, BRIM, red[3]);
+      for (let k = 0; k < 9; k++) { S(6 - k, -1 + Math.round(k * 0.8), red[k < 3 ? 5 : 4]); S(6 - k, Math.round(k * 0.8), red[3]); if (k > 2) S(6 - k, 1 + Math.round(k * 0.8), red[2]); }
       break;
     }
     case 'bone': {
-      const horn: Pt[] = [[1, 2], [0, 1], [-1, 0], [-2, -1], [-2, -2], [-1, -3], [0, -4], [22, 2], [23, 1], [24, 0], [25, -1], [25, -2], [24, -3], [23, -4]];
+      const horn: Pt[] = [[1, 3], [0, 2], [-1, 1], [-2, 0], [-2, -1], [-1, -2], [0, -3], [22, 3], [23, 2], [24, 1], [25, 0], [25, -1], [24, -2], [23, -3]];
       horn.forEach(([x, y], i) => { S(x, y, i % 7 < 2 ? m[3] : m[4]); if (i % 7 === 6) S(x, y, hex('#ffffff')); });
       for (const [x, y] of [[9, 5], [15, 5], [12, 6]] as Pt[]) S(x, y, r[1]);
       break;
     }
     case 'molten':
-      for (const x of [6, 11, 16]) { S(x, -3, m[2]); S(x + 1, -3, m[1]); S(x, -4, m[2]); S(x + 1, -4, m[1]); S(x, -5, CR.lava[3]); S(x, -6, CR.lava[4]); }
+      for (const x of [6, 11, 16]) { S(x, -2, m[2]); S(x + 1, -2, m[1]); S(x, -3, CR.lava[3]); S(x + 1, -3, CR.lava[2]); }
       for (const [x, y, k] of [[8, 1, 3], [14, 2, 4], [18, 0, 2], [4, 5, 3]] as [number, number, number][]) S(x, y, CR.lava[k]);
       break;
   }
@@ -177,8 +178,8 @@ export const HAT_HIDES_TOP = new Set(['straw', 'witch', 'beret', 'miner']);
 const BRASS: RGB[] = [hex('#472819'), hex('#966139'), hex('#c99660'), hex('#d8ba76'), hex('#f2e2b0')];
 function minerHelm(S: (x: number, y: number, c: RGB) => void): void {
   const r = BRASS;
-  for (let y = -4; y <= 7; y++) for (let x = -2; x <= 25; x++) {
-    const nx = (x + 0.5 - 11.6) / 12.2, ny = (y + 0.5 - 7) / 10.4;
+  for (let y = -3; y <= 7; y++) for (let x = -2; x <= 25; x++) {
+    const nx = (x + 0.5 - 11.6) / 12.2, ny = (y + 0.5 - 7) / 9.6;
     if (nx * nx + ny * ny > 1) continue;
     S(x, y, nx + ny < -0.8 ? r[4] : nx + ny < -0.25 ? r[3] : nx > 0.55 || ny > 0.5 ? r[1] : r[2]);
   }
@@ -198,8 +199,8 @@ export function hatArt(b: Bmp, id: string, ox: number, oy: number, _view: 'side'
       if (nx * nx + ny * ny > 1) continue;
       S(x, y, y <= 6 ? st[4] : y === 9 ? st[1] : nx < -0.4 ? st[4] : (x & 1) && y === 8 ? st[2] : st[3]);
     }
-    for (let y = -3; y <= 6; y++) for (let x = 2; x <= 21; x++) {
-      const nx = (x + 0.5 - 11.6) / 9.6, ny = (y + 0.5 - 6) / 8.6;
+    for (let y = -2; y <= 6; y++) for (let x = 2; x <= 21; x++) {
+      const nx = (x + 0.5 - 11.6) / 9.6, ny = (y + 0.5 - 6) / 8;
       if (nx * nx + ny * ny > 1) continue;
       S(x, y, y >= 4 ? band[y === 4 ? 4 : 3] : ((x + y) & 3) === 0 ? st[2] : nx < -0.35 ? st[4] : nx > 0.5 ? st[2] : st[3]);
     }
@@ -210,20 +211,21 @@ export function hatArt(b: Bmp, id: string, ox: number, oy: number, _view: 'side'
       if (nx * nx + ny * ny <= 1) S(x, y, y <= 6 ? c[4] : y === 9 ? c[1] : nx < -0.4 ? c[4] : c[3]);
     }
     // 尖頂：往後（左）上方彎
-    for (let k = 0; k < 14; k++) {
-      const y = 6 - k, w = Math.max(0.6, 7.4 - k * 0.55), cx = 11.6 - (k > 6 ? (k - 6) ** 1.35 * (0.9 + sway * 0.25) : 0);
+    // 尖頂：矮一點、往後（左）彎倒（最高頭頂上 3 格）
+    for (let k = 0; k < 10; k++) {
+      const y = 6 - k, w = Math.max(0.6, 7.4 - k * 0.75), cx = 11.6 - (k > 4 ? (k - 4) ** 1.5 * (1.1 + sway * 0.25) : 0);
       for (let x = Math.round(cx - w); x <= Math.round(cx + w); x++) S(x, y, x < cx - w + 1.5 ? c[4] : x > cx + w - 1.5 ? c[2] : c[3]);
     }
     for (let x = 5; x <= 18; x++) { S(x, 5, band[3]); S(x, 4, band[4]); }
     S(12, 5, GOLD); S(12, 4, hex('#fff4c0')); S(13, 5, GOLD);
   } else if (id === 'beret') {
     const c = clothRamp(3);
-    for (let y = -3; y <= 5; y++) for (let x = -1; x <= 22; x++) {
-      const nx = (x + 0.5 - 9.6) / 11.6, ny = (y + 0.5 - 1.6) / 3.8;
+    for (let y = -2; y <= 5; y++) for (let x = -1; x <= 22; x++) {
+      const nx = (x + 0.5 - 9.6) / 11.6, ny = (y + 0.5 - 2) / 3.5;
       if (nx * nx + ny * ny <= 1) S(x, y, ny > 0.5 ? c[2] : nx < -0.35 && ny < 0.2 ? c[4] : c[3]);
     }
     for (let x = 1; x <= 20; x++) S(x, 5, c[1]);
-    S(10, -4, c[2]); S(10, -5, c[1]);
+    S(10, -3, c[2]);
   } else if (id === 'maid') {
     const w = WHITE, k = clothRamp(1);
     for (let x = 3; x <= 20; x++) { S(x, 3, (x & 1) ? w[3] : w[2]); S(x, 4, w[3]); S(x, 5, k[3]); if (!(x % 3)) S(x, 2, w[3]); }
@@ -237,7 +239,9 @@ export function hatArt(b: Bmp, id: string, ox: number, oy: number, _view: 'side'
       S(x, y, c); S(x - 1, y, c); S(x + 1, y, c); S(x, y - 1, c); S(x, y + 1, c); S(x, y, k % 2 ? GOLD : hex('#fff4c0'));
     }
   }
-  s.softOutline();
+  // 帽尖最高到頭的區域座標 −3（站著不會插進天花板）
+  for (let yy = 0; yy < Math.min(s.h, oy - 3); yy++) for (let x = 0; x < s.w; x++) s.clear(x, yy);
+  s.softOutline(0.45);
   b.blit(s, 0, 0);
 }
 
@@ -266,31 +270,39 @@ export function backArt(b: Bmp, p: DollPiece, flap: number, lift: number, sx: nu
     S(sx, sy, GOLD); S(sx + 1, sy, GOLD); S(sx, sy - 1, hex('#fff4c0'));
     upgrades(s, p, [], null, f, c);
   } else if (id === 'wings' || id === 'feathers') {
-    const big = id === 'wings', w = WHITE, beat = Math.sin(f * 1.7) * (lift ? 2 : 0.6);
-    const rows = big ? 8 : 5, len = big ? 9 : 5;
+    // 羽翼：從兩肩後方往外上方張開（一根根羽毛：上面長、下面短），3/4 正面時兩邊都露得出來
+    const big = id === 'wings', w = WHITE, beat = Math.sin(f * 1.7) * (lift ? 1 : 0.35);
+    const n = big ? 6 : 4, L = big ? 12 : 7;
     for (const side of [-1, 1]) {
-      const rootX = sx + side * (bw / 2 - 1), rootY = sy + 2;
-      for (let k = 0; k < rows; k++) {
-        const y = rootY - Math.round((big ? 4 : 2) - k) - Math.round(beat * (1 - k / rows)) + (lift ? -1 : 0);
-        const reach = Math.round(len * (1 - Math.abs(k - rows * 0.35) / rows)) - (side > 0 ? 1 : 0);
-        for (let i = 0; i <= reach; i++) S(rootX + side * i, y, i === reach ? w[1] : k === 0 ? w[4] : (i + k) % 3 === 0 ? w[2] : w[3]);
+      const rx = sx + side * (bw / 2 - 1), ry = sy + 1;
+      for (let k = 0; k < n; k++) {
+        const a = -0.95 + k * 0.32 - beat * 0.2 + (side > 0 ? 0.12 : 0), len = L - k * (big ? 1.4 : 1.1) - (side > 0 ? 1 : 0);
+        const ex = rx + side * Math.cos(a) * len, ey = ry + k * 0.7 + Math.sin(a) * len;
+        const steps = Math.ceil(len * 2);
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps, x = rx + (ex - rx) * t, y = ry + k * 0.7 + (ey - ry - k * 0.7) * t;
+          const c = t > 0.85 ? w[1] : k === 0 ? w[4] : (k & 1) ? w[2] : w[3];
+          S(Math.round(x), Math.round(y), c); if (big && t < 0.7) S(Math.round(x), Math.round(y) + 1, k === n - 1 ? w[1] : w[2]);
+        }
       }
     }
   } else if (id === 'bow') {
+    // 大蝴蝶結：綁在腰後、偏後側（左），從身體旁邊露出一大片
     const c = clothRamp(4);
-    const rows = ['bb.....bb', 'bBbb.bbBb', 'bbbbkbbbb', '.bb.k.bb.', '...b.b...'];
-    rows.forEach((row, y) => { for (let x = 0; x < row.length; x++) { const ch = row[x]; if (ch !== '.') S(sx - 4 + x - 4, sy + 6 + y, ch === 'B' ? c[4] : ch === 'k' ? c[2] : c[3]); } });
+    const rows = ['bbb.....bbb', 'bBbbb.bbbBb', 'bbbbbkbbbbb', '.bbb.k.bbb.', '..b..k..b..', '....b.b....'];
+    rows.forEach((row, y) => { for (let x = 0; x < row.length; x++) { const ch = row[x]; if (ch !== '.') S(sx - bw / 2 - 6 + x, sy + 3 + y, ch === 'B' ? c[4] : ch === 'k' ? c[2] : x < 5 ? c[3] : c[2]); } });
     upgrades(s, p, [], null, f, c);
   } else if (id === 'buckler') {
+    // 甲殼小盾：背在背上、偏後側（左）露出大半
     const r = CR.green, rim = LEATHER;
-    const cx = sx - bw / 2 - 1, cy = sy + 5;
-    for (let y = cy - 5; y <= cy + 5; y++) for (let x = Math.floor(cx - 5); x <= Math.ceil(cx + 5); x++) {
+    const cx = sx - bw / 2 - 2, cy = sy + 4;
+    for (let y = cy - 6; y <= cy + 6; y++) for (let x = Math.floor(cx - 6); x <= Math.ceil(cx + 6); x++) {
       const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
-      if (d > 4.4) continue;
-      S(x, y, d > 3.6 ? rim[3] : d < 1.4 ? r[5] : x < cx ? r[4] : r[3]);
+      if (d > 4.8) continue;
+      S(x, y, d > 4 ? rim[3] : d < 1.4 ? r[5] : x < cx ? r[4] : r[3]);
     }
   }
-  s.softOutline();
+  s.softOutline(0.45);
   b.blit(s, 0, 0);
 }
 

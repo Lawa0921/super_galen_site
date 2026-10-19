@@ -12,8 +12,9 @@ import type { Gear } from './gear';
 const gear = (rarity: number, plus = 0, affix?: string): Gear => ({ rarity, ilvl: 3, plus, affixes: affix ? [{ id: affix, tier: 1, value: 5 } as Gear['affixes'][number]] : [] });
 
 describe('圖層順序', () => {
-  it('背飾 → 後髮 → 身體 → 腿 → 胸 → 手臂 → 手持 → 臉 → 前髮 → 頭飾 → 前飾品', () => {
-    expect([...DOLL_LAYERS]).toEqual(['back', 'backHair', 'body', 'legs', 'chest', 'arms', 'held', 'face', 'frontHair', 'headgear', 'frontAcc']);
+  // 3/4 正面：背飾蓋在後髮上面（翅膀 / 披風 / 蝴蝶結才從身體兩側露得出來）
+  it('後髮 → 背飾 → 身體 → 腿 → 胸 → 手臂 → 手持 → 臉 → 前髮 → 頭飾 → 前飾品', () => {
+    expect([...DOLL_LAYERS]).toEqual(['backHair', 'back', 'body', 'legs', 'chest', 'arms', 'held', 'face', 'frontHair', 'headgear', 'frontAcc']);
   });
 });
 

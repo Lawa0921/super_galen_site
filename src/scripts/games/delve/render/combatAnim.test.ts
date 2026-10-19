@@ -10,9 +10,20 @@ describe('攻擊動畫', () => {
     expect(aimArmDeg(Math.PI / 2, 1)).toBeCloseTo(0);
     expect(aimArmDeg(Math.PI, -1)).toBeCloseTo(90);
   });
-  it('劍：預備動作往後拉（比起手更高）→ 一口氣往前下劈、劈過頭 → 收招回一點', () => {
+  it('揮擊弧線在頭的前上方：整段手臂角度都 ≤ 170°（Q 版大頭：舉到頭後面會讓刀身穿過臉）', () => {
+    for (const k of ['sword', 'broadsword', 'throw', 'boomerang'] as const) for (let i = 0; i <= 100; i++) expect(attackArmDeg(k, i / 100, 90), `${k} ${i}`).toBeLessThanOrEqual(170);
+  });
+  it('投擲（飛刀 / 迴力鏢）：先往後上拉、再往前甩出去（甩出去之後手在前下方）', () => {
+    for (const k of ['throw', 'boomerang'] as const) {
+      const at = (p: number): number => attackArmDeg(k, p, 90);
+      expect(Math.max(...[0.1, 0.15, 0.2].map(at))).toBeGreaterThan(at(0) + 10);
+      expect(at(0.6)).toBeLessThan(80);
+      expect(at(0.6)).toBeGreaterThan(20);
+    }
+  });
+  it('劍：預備動作往上拉（比起手更高）→ 一口氣往前下劈、劈過頭 → 收招回一點', () => {
     const at = (p: number): number => attackArmDeg('sword', p, 90);
-    expect(at(0)).toBeGreaterThan(170);
+    expect(at(0)).toBeGreaterThan(120);
     // 預備：前段角度先往上（往後）拉
     const wind = Math.max(...[0.04, 0.08, 0.12].map(at));
     expect(wind).toBeGreaterThan(at(0) + 8);

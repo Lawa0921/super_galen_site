@@ -160,7 +160,7 @@ describe('圖層', () => {
     expect(hairPx(bare, 0, 12)).toBeGreaterThan(5);
     expect(hairPx(helm, 0, 12)).toBe(0);
     // 瀏海（額頭那一帶）還在
-    expect(hairPx(helm, 19, 21)).toBeGreaterThan(3);
+    expect(hairPx(helm, 25, 27)).toBeGreaterThan(3);
   });
   it('外觀欄 / 時裝蓋過防具：穿鐵甲 vs 鐵甲 + 水手服外觀，畫出來的身體不同、而且和純水手服一樣', () => {
     const base = plainLook(DEF);
@@ -243,10 +243,11 @@ describe('體型（男 / 女）與爬繩', () => {
     const width = (b: Bmp, y: number): number => { let n = 0; for (let x = 0; x < b.w; x++) if (b.on(x, y)) n++; return n; };
     // 肩膀那一列（3/4 正面的小身體：軀幹第 3 列）
     expect(width(mb, 40)).toBeGreaterThan(width(fb, 40));
-    // 男生整體高 2 格（頭頂比較高）
+    // 男女同高（都收在碰撞盒 42 px 裡；男生靠肩寬 / 粗眉 / 方眼分辨）
     const topRow = (b: Bmp): number => { for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) return y; return b.h; };
     const ff = flatFrame(avatarFrame(plainLook({ ...female, ahoge: false }), 'idle', 0)), mf = flatFrame(avatarFrame(plainLook({ ...male, ahoge: false }), 'idle', 0));
-    expect(topRow(ff) - topRow(mf)).toBeGreaterThanOrEqual(2);
+    expect(Math.abs(topRow(ff) - topRow(mf))).toBeLessThanOrEqual(1);
+    expect(topRow(mf)).toBeGreaterThanOrEqual(AV_FH - 42);
     expect(diff(fb, mb)).toBeGreaterThan(20);
     for (const body of [0, 1]) {
       for (let o = 0; o < OUTFITS.length; o++) clean(avatarSheet(plainLook({ ...DEF, body, outfit: o })).b, `body ${body} outfit ${o}`);
