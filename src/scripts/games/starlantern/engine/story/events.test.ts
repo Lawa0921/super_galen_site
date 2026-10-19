@@ -406,8 +406,11 @@ describe('town banter', () => {
   };
 
   it('the pairs are sorted and never the hero; the three sample banters keep their ids and stay ungated (B2 adds the rest)', () => {
-    expect(BANTER_PAIRS).toEqual(expect.arrayContaining(['liz-scarlet', 'noel-rin', 'safira-sylvie']));
-    expect(BANTER_PAIRS).toEqual([...BANTER_PAIRS].sort());
+    // the shipped pairs, in their fixed tie-break order (B2): ids are frozen once shipped, so this list only ever grows
+    expect(BANTER_PAIRS).toEqual([
+      'bobby-chizuru', 'bobby-liz', 'bobby-noel', 'bobby-sylvie', 'chizuru-rin', 'chizuru-safira', 'chizuru-scarlet', 'liz-noel', 'liz-scarlet',
+      'liz-selene', 'noel-rin', 'noel-selene', 'rin-scarlet', 'rin-sylvie', 'safira-scarlet', 'safira-sylvie', 'scarlet-selene', 'selene-sylvie',
+    ]);
     for (const p of BANTER_PAIRS) {
       const [a, b] = p.split('-');
       expect(a < b, p).toBe(true);

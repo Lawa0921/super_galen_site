@@ -2063,7 +2063,8 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
     const returnedAll = TOWN_FRAGMENTS.map((f) => f.id);
     const metOf = (extra: CharacterId[]): CharacterId[] => [...new Set<CharacterId>(['hero', 'rin', ...two, ...extra])];
     for (const met of [[...CHARACTER_IDS], metOf([]), metOf(others.slice(0, 3))]) {
-      for (const full of [[], two, [...CHARACTER_IDS]] as CharacterId[][]) {
+      // B2 fix 1: with a `full` gate, also the reading where only she is full: her partner's memories may not be whole
+      for (const full of [[], ...(gate.full ? [[gate.full]] : []), two, [...CHARACTER_IDS]] as CharacterId[][]) {
         if (gate.full && !full.includes(gate.full)) continue;
         for (const returned of [[], returnedAll] as TownFragmentId[][]) {
           for (const oath of gate.oath ? [true] : [false, true]) {
@@ -2092,10 +2093,13 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
               const fullC = full.includes(c);
               const said = played.filter((l) => l.who === c).map((l) => l.text).join('');
               for (const r of UNDONE.filter((x) => x.who === c)) if ((fullC || r.piece < 5) && r.re.test(said)) out.push(`${tag}: ${c} says what piece ${r.piece} undoes: ${r.re}`);
+              // B2 fix 1: her partner may not tell her secrets either
+              const partner = played.filter((l) => l.who !== c && (two as string[]).includes(l.who)).map((l) => l.text).join('');
               for (const r of REVEALED.filter((x) => x.who === c)) {
                 if (fullC) continue;
                 if (r.re.test(said)) out.push(`${tag}: ${c} says what her pieces reveal: ${r.re}`);
                 if (!r.re.source.startsWith('洛恩') && r.re.test(narration)) out.push(`${tag}: the narration or Lorne tells what ${c}'s pieces reveal: ${r.re}`);
+                if (!r.re.source.startsWith('洛恩') && r.re.test(partner)) out.push(`${tag}: her partner tells what ${c}'s pieces reveal: ${r.re}`);
               }
             }
             if (spoken.filter((l) => l.who === 'hero').length > 1) out.push(`${tag}: Lorne says more than one line`);
@@ -2171,6 +2175,12 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
     expect(banterBreaks(sn, [L('selene', '「洛恩，月亮好圓。」'), L('noel', '「喂！」')]).join(' | ')).toMatch(/selene says what her pieces reveal/);
     expect(banterBreaks(sn, [L('selene', '「洛恩，月亮好圓。」', undefined, { full: 'selene' }), L('selene', '「月亮好圓呢。」', undefined, { notFull: 'selene' }), L('noel', '「喂！」')])).toEqual([]);
     expect(banterBreaks(ls, [N('洛恩看著兩人。'), L('liz', '「走吧。」'), L('scarlet', '「收到。」')])).toEqual([]);   // the narration may name him
+    // B2 fix 1: a banter gated on one's full memories is still read with her partner's not whole
+    expect(banterBreaks(ls, [L('liz', '「歐里克那邊的貨，我去看過了。」'), L('scarlet', '「收到。」')], { full: 'scarlet' }).join(' | ')).toMatch(/liz says what her pieces reveal/);
+    expect(banterBreaks(ls, [L('liz', '「走吧。」'), L('scarlet', '「收到。」')], { full: 'scarlet' })).toEqual([]);
+    // B2 fix 1: and her partner may not tell her secret (his name still may be said by anyone)
+    expect(banterBreaks(ls, [L('liz', '「走吧。」'), L('scarlet', '「莉茲小姐，妳父親在等妳吧。」')]).join(' | ')).toMatch(/her partner tells what liz's pieces reveal/);
+    expect(banterBreaks(id, [L('noel', '「喂。」'), L('rin', '「別去找那個商人。」')]).join(' | ')).toMatch(/her partner tells what noel's pieces reveal/);
     // fix round 1: Rin's faces and her eyes in a banter her oath does not gate
     expect(breaks([L('noel', '「喂。」'), L('rin', '「嗯。」', 'smile')])).toMatch(/Rin wears smile in a banter/);
     expect(breaks([L('noel', '「喂。」'), L('rin', '「嗯。」', 'serious')])).not.toMatch(/Rin wears/);
@@ -2265,6 +2275,19 @@ describe('B2: what they say to each other (the banter content)', () => {
     expect(new Set(all).size).toBe(all.length);
     const COUNT = /第[一二三四五六七八九十]+[支塊遍道次口個隻]|[一二三四五六七八九十]+遍了/;
     for (const id of ids()) for (const l of STORY.scenes[id].lines.filter((x) => x.who === 'hero')) expect(l.text, id).not.toMatch(COUNT);
+  });
+
+  it('no one runs on one bit (B2 fix 1): Scarlet\'s report in two banters at most, 「一下下」 is Bobby\'s, and Safira\'s 「小嘉」 is not 「小蕾」', () => {
+    const said = (id: SceneId, who: string): string => STORY.scenes[id].lines.filter((l) => l.who === who).map((l) => l.text).join('');
+    expect(ids().filter((id) => /回報/.test(said(id, 'scarlet'))).length).toBeLessThanOrEqual(2);
+    for (const id of ids()) {
+      for (const l of STORY.scenes[id].lines) if (l.who !== 'bobby') expect(l.text, id).not.toContain('一下下');
+      expect(said(id, 'safira'), id).not.toContain('小蕾');   // 小蕾 reads as Selene (瑟蕾)
+      expect(said(id, 'chizuru'), id).not.toContain('有靈附身');   // the bible's description, not her line
+    }
+    // Selene's first future said and kept is her full-gated banter: before it she hedges or blames the moon
+    for (const id of ids().filter((x) => twoOf(x).includes('selene') && BANTER_GATE[x]?.full !== 'selene')) expect(said(id, 'selene'), id).not.toMatch(/(?<!不)是我說的|不收回/);   // 「是月亮說的，不是我說的」 is her catchphrase
+    expect(said('banter:noel-selene:2', 'selene')).toContain('不收回');
   });
 
   it('each banter is two voices: both speak, and the last line is one of the two or the narration (a button, not Lorne)', () => {

@@ -2494,8 +2494,10 @@ describe('the arrival queue', () => {
     expect(g.phase).toBe('town');
   };
   /** The arrival without its banter (B1, B2): tests about the chat and the queue read this. */
-const talk = (g: Game): SceneId[] => g.arrival.filter((id) => !id.startsWith('banter:'));
-const townGame = (start = HERO_LINEUP, storage = memoryStorage()) => {
+  const talk = (g: Game): SceneId[] => g.arrival.filter((id) => !id.startsWith('banter:'));
+  /** HERO_LINEUP has met Liz and Selene: theirs is the first open banter in the pairs' order (B2), so it trails the chat. */
+  const LINEUP_BANTER: SceneId = 'banter:liz-selene:1';
+  const townGame = (start = HERO_LINEUP, storage = memoryStorage()) => {
     const g = new Game(calm(), storage, undefined, 0, start);
     g.state.dungeon.reached.mainline = 3;
     g.state.story.queue = [];
@@ -2628,9 +2630,9 @@ const townGame = (start = HERO_LINEUP, storage = memoryStorage()) => {
     const g = inRun(townGame());
     expect(g.arrival).toEqual([]);
     expect(g.returnToTown()).toBe(true);
-    // B2: the default lineup has met a banter pair, so one banter may follow the chat (B1); the chat count is the point here
+    // B2: the default lineup has met a banter pair, so its banter follows the one chat, last (B1)
     expect(talk(g)).toHaveLength(1);
-    expect(g.arrival.filter((id) => id.startsWith('banter:')).length).toBeLessThanOrEqual(1);
+    expect(g.arrival).toEqual(['chat:hero:1', LINEUP_BANTER]);
     expect(chatsOf(g)).toEqual(['chat:hero:1']);
     // Leaving by the return lamp is a return to town as well.
     const h = inRun(townGame());
@@ -2709,7 +2711,7 @@ const townGame = (start = HERO_LINEUP, storage = memoryStorage()) => {
     g.state.story.queue = ['act1-after'];
     g.phase = 'clear';
     g.restartAfterClear();
-    expect(talk(g)).toEqual(['act1-after', 'chat:hero:1']);   // B2: plus the lineup's banter, last (B1)
+    expect(g.arrival).toEqual(['act1-after', 'chat:hero:1', LINEUP_BANTER]);   // B2: the lineup's banter, last (B1)
   });
 
   it('the return right after the finale plays no banter; the next return brings it (B1 ruling)', () => {
@@ -2747,11 +2749,12 @@ const townGame = (start = HERO_LINEUP, storage = memoryStorage()) => {
     expect(g.arrival).toEqual(['chat:hero:1']);   // act 2 is heavy: no banter on that return (B1)
     inRun(g);
     g.returnToTown();
-    expect(talk(g)).toEqual(['chat:hero:1']);   // B2: the lineup's banter may follow it (B1)
+    expect(g.arrival).toEqual(['chat:hero:1', LINEUP_BANTER]);   // B2: the lineup's banter, last (B1)
     expect(g.sceneDone('chat:hero:1', 'played')).toBe(true);
     inRun(g);
     g.returnToTown();
     expect(talk(g)).toHaveLength(1);   // one chat, and not the one already heard
+    expect(g.arrival.at(-1)).toBe(LINEUP_BANTER);   // the banter was not played, so it is still the one due
     expect(g.arrival).not.toContain('chat:hero:1');
   });
 

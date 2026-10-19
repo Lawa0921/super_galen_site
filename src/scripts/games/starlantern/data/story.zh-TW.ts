@@ -1225,22 +1225,22 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'liz', mood: 'scheming', text: '「騎士大姊，剛才那個寶箱，我三兩下就搞定了。」' },
       { who: 'scarlet', mood: 'serious', text: '「『搞定』是指什麼？請完整回報：開鎖的手法、所花的時間、有無陷阱。」' },
-      { who: 'liz', mood: 'smile', text: '「手法，商業機密。時間，一下下。陷阱，拆了──零件還能賣兩枚銀幣。」' },
+      { who: 'liz', mood: 'smile', text: '「手法，商業機密。時間，一眨眼。陷阱，拆了──零件還能賣兩枚銀幣。」' },
       // B2: the knight wins the last word at the merchant's own game (and sets up liz-scarlet:2's 「公帳」).
       { who: 'scarlet', mood: 'serious', text: '「回報收到。……那兩枚銀幣，請列入隊伍的公帳。」' },
     ],
     summary: '莉茲說寶箱三兩下就搞定了，絲嘉蕾要她照規矩完整回報。拆下來的零件能賣兩枚銀幣，絲嘉蕾要她列入公帳。',
   },
   // ---- B2: what they say to each other (lore ledger I-158 to I-160). Pairs in BANTER_PAIRS order. ----
-  // Machines against a shrine's manners: Chizuru bows to a wind-up toy; Bobby says it only walks forward; that is the point.
+  // Chizuru out of her time (B2 fix 1): she asks which god drives the toy, takes 「彈簧」 for its name, and volunteers to tend it.
   'banter:bobby-chizuru:1': {
     lines: [
       N('鍛造屋門口。波比上緊發條，小木人便「喀、喀」地自己走了起來。'),
-      { who: 'chizuru', mood: 'bewildered', text: '「此物會走？莫非有靈附身。失禮了，容我先行一禮。」' },
-      { who: 'bobby', mood: 'grin', text: '「嘿嘿，裡面只有彈簧和齒輪喔！千鶴姊，妳拜它，它也只會往前走。」' },
-      { who: 'chizuru', mood: 'solemn', text: '「無妨。不論被誰拜，都只管往前走。我拜的，是這份定性。」' },
+      { who: 'chizuru', mood: 'bewildered', text: '「此物自己會走。波比姑娘，驅使它的，是何方神靈？」' },
+      { who: 'bobby', mood: 'grin', text: '「嘿嘿，是彈簧喔！上緊了就會走，鬆了就會停。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「彈簧大人，記下了。明日起，每日清晨由我替它上緊一回。」' },
     ],
-    summary: '波比的發條小木人自己走了起來，千鶴當場向它行禮。她說，她拜的是它只管往前走的那份定性。',
+    summary: '波比的發條小木人自己走了起來。千鶴問是哪一位神靈在驅使它，聽說是彈簧，便決定每天早上替「彈簧大人」上緊發條。',
   },
   // Liz's livelihood against Bobby's improvements; the flaw becomes the selling point.
   'banter:bobby-liz:1': {
@@ -1282,15 +1282,15 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     ],
     summary: '千鶴要和凜每天早上互道早安。凜只說了一個「早」，另外半句，她說明天再說。',
   },
-  // Safira drags Chizuru onto the square; the dance turns into a shrine dance (style bible pairing). Safira calls her 「小鶴」.
+  // Safira hands out nicknames (B2 fix 1, not a dance lesson): Chizuru takes 「小鶴」 for a rank and answers with a title of her own.
   'banter:chizuru-safira:1': {
     lines: [
-      N('莎菲拉拉著千鶴下場。說好是跳舞，千鶴卻一步一頓，跳得越來越莊嚴。'),
-      { who: 'safira', mood: 'laugh', text: '「小鶴，等一下，妳跳著跳著，怎麼好像有神明要下來了呀？」' },
-      { who: 'chizuru', mood: 'solemn', text: '「舞，本是獻給神明的。莫非莎菲拉姑娘的舞不是？」' },
-      { who: 'safira', mood: 'smile', text: '「我的舞是獻給看的人唷。──好吧，今晚兩種一起跳，神明和小洛都有份～」' },
+      { who: 'safira', mood: 'wink', text: '「小鶴，早呀～今天也站得端端正正，像一根槍唷。」' },
+      { who: 'chizuru', mood: 'bewildered', text: '「『小鶴』，此為何種稱號？莫非是我睡著的時候，此處封的官位？」' },
+      { who: 'safira', mood: 'laugh', text: '「哈哈，是我封的唷！小洛也有一個，他到現在都還不肯應呀～」' },
+      { who: 'chizuru', mood: 'solemn', text: '「承蒙賜封。禮尚往來──今後，便稱莎菲拉姑娘為『舞姬大人』。」' },
     ],
-    summary: '莎菲拉拉千鶴去跳舞，千鶴跳得越來越像祭神。莎菲拉說她的舞是給看的人的，那就兩種一起跳。',
+    summary: '莎菲拉叫千鶴「小鶴」，千鶴以為是一個官位。聽說是莎菲拉封的，她恭恭敬敬地回贈了一個：「舞姬大人」。',
   },
   // Two formal people bow to each other and cannot stop (style bible pairing); Lorne ends it by sitting down.
   'banter:chizuru-scarlet:1': {
@@ -1322,15 +1322,15 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     ],
     summary: '這一次，是絲嘉蕾說寶箱搞定了，回報得和莉茲當初一模一樣。莉茲嫌她賣便宜了，還是給了及格。',
   },
-  // Fortune-telling as a business: Liz bargains against herself; Selene turns her own catchphrase around.
+  // Fortune-telling as a business (B2 fix 1): Liz tries to cut the moon in; the moon, through Selene, out-bargains her.
   'banter:liz-selene:1': {
     lines: [
-      { who: 'liz', mood: 'scheming', text: '「瑟蕾，談筆生意。妳讀月亮，我來收錢。一次十枚銅板，分妳四成。」' },
-      { who: 'selene', mood: 'foresee', text: '「那，先替這筆生意讀一次吧。月亮說，它不會成呢。」' },
-      { who: 'liz', mood: 'scheming', text: '「五成！六成！好啦，七成，不能再多了。成交？」' },
-      { who: 'selene', mood: 'smile', text: '「月亮還是說不會呢。──這一句，不是月亮說的，是我說的。」' },
+      { who: 'liz', mood: 'scheming', text: '「瑟蕾，談筆生意。妳讀月亮，我來擺攤。一次十枚銅板，分妳四成。」' },
+      { who: 'selene', mood: 'foresee', text: '「月亮說，它不太想做生意呢。」' },
+      { who: 'liz', mood: 'scheming', text: '「那月亮的那一份，我另外算給它。它收銅板，還是收銀幣？」' },
+      { who: 'selene', mood: 'smile', text: '「月亮說，它要八成呢。──是月亮說的，不是我說的。」' },
     ],
-    summary: '莉茲想替瑟蕾開占卜攤，自己跟自己把分成加到七成。瑟蕾說不會成，而且這一次，不是月亮說的。',
+    summary: '莉茲想替瑟蕾擺占卜攤，連月亮的那一份都打算另外算。瑟蕾說，月亮要八成。',
   },
   // After her choice Rin teases back (ledger §5, oath gate): the rival she conceded to in noel-rin:1 finds she can lose.
   'banter:noel-rin:2': {
@@ -1342,15 +1342,15 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     ],
     summary: '諾艾兒又宣布自己贏了。這一次，凜說她不服，是跟諾艾兒學的，明天再比一次。',
   },
-  // Noel wants a prophecy about her lightning; Selene's moon gives a weather report.
+  // Noel wants a prophecy about her lightning; Selene hedges (也許, the bible pairing) and the moon gives a weather report.
   'banter:noel-selene:1': {
     lines: [
       { who: 'noel', mood: 'smug', text: '「瑟蕾，替本小姐讀一下月亮。明天，本小姐的雷會不會更響？」' },
-      { who: 'selene', mood: 'foresee', text: '「月亮說，明天會很響呢。響一整個晚上。」' },
+      { who: 'selene', mood: 'foresee', text: '「也許呢。月亮說，明天會有很響的東西。」' },
       { who: 'noel', mood: 'smug', text: '「哼，聽到沒？月亮也站在本小姐這邊！」' },
-      { who: 'selene', mood: 'smile', text: '「是雷雨的意思呢。剛才那句，請當作天氣預報吧──衣服記得收。」' },
+      { who: 'selene', mood: 'wistful', text: '「也許是雷雨呢。剛才那句，就當作天氣預報吧──衣服記得收。」' },
     ],
-    summary: '諾艾兒要瑟蕾預言她的雷明天會不會更響。月亮說會響一整晚，因為明天有雷雨。',
+    summary: '諾艾兒要瑟蕾預言她的雷明天會不會更響。瑟蕾只說也許，月亮說的很響的東西，也許是雷雨。',
   },
   // Gated on Selene's full memories (ledger §5): she says a future out loud and keeps it, and still finds the moon's loophole.
   'banter:noel-selene:2': {
@@ -1362,15 +1362,15 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     ],
     summary: '瑟蕾第一次把一個明天直接說出口，也不收回。只是她沒說，諾艾兒要和凜比的是什麼。',
   },
-  // Scarlet asks for a report and Rin gives the perfect one; then she adds the casualty Scarlet left out. Ungated.
+  // Scarlet's honour guarantee (B2 fix 1, not a report) against Rin's one-word verdict. Ungated: Rin keeps her rules from before her choice.
   'banter:rin-scarlet:1': {
     lines: [
-      { who: 'scarlet', mood: 'serious', text: '「凜小姐，請回報剛才那一戰。」' },
-      { who: 'rin', mood: 'normal', text: '「五隻。我兩隻，妳三隻。沒有人受傷。」' },
-      { who: 'scarlet', mood: 'smile', text: '「回報收到。簡潔、準確，沒有一個多餘的字。這才是回報。」' },
-      { who: 'rin', mood: 'serious', text: '「補一條。妳的盾，又多一道凹痕。拿去給多蘭。」' },
+      N('夜裡的旅館走廊。絲嘉蕾每走一步，鎧甲就「鏘」地響一聲。'),
+      { who: 'rin', mood: 'normal', text: '「吵。」' },
+      { who: 'scarlet', mood: 'serious', text: '「失禮了。以騎士的名譽保證，接下來的每一步，都會很輕。」' },
+      { who: 'rin', mood: 'normal', text: '「剛才那一步，鏘。名譽，也很吵。」' },
     ],
-    summary: '絲嘉蕾要凜回報戰況，凜的回報簡潔得讓她滿意。最後凜補了一條：絲嘉蕾的盾，又凹了。',
+    summary: '夜裡，絲嘉蕾的鎧甲在走廊上一步一響。她以騎士的名譽保證會走輕一點，凜說，名譽也很吵。',
   },
   // After her choice (oath gate): the two quiet ones (style bible pairing), and Rin asks him up.
   'banter:rin-sylvie:1': {
@@ -1382,45 +1382,45 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     ],
     summary: '凜和希爾薇蹲在屋頂上，很久都沒說話。洛恩以為她們吵架了，其實她們在看貓。',
   },
-  // Drill against dance (style bible pairing): Scarlet gives her own knees an order. Safira calls her 「小蕾」.
+  // Drill against dance (style bible pairing): Scarlet gives her own knees an order. Safira calls her 「小嘉」.
   'banter:safira-scarlet:1': {
     lines: [
       N('廣場上，莎菲拉數著拍子。絲嘉蕾跟在她身後，每一步都踩得像在閱兵。'),
-      { who: 'safira', mood: 'laugh', text: '「小蕾，跳舞要軟一點呀！妳這樣，怪物看了都想立正～」' },
+      { who: 'safira', mood: 'laugh', text: '「小嘉，跳舞要軟一點呀！妳這樣，怪物看了都想立正～」' },
       { who: 'scarlet', mood: 'serious', text: '「遵命。全身，放軟。──報告，膝蓋拒絕服從。」' },
       { who: 'safira', mood: 'wink', text: '「哈哈，好老實的膝蓋！算了，就照妳的跳。全場最準的拍子，是妳的唷～」' },
     ],
     summary: '莎菲拉教絲嘉蕾跳舞，絲嘉蕾跳得像在閱兵。她命令自己放軟，膝蓋不聽；莎菲拉說，全場最準的拍子是她的。',
   },
-  // Gated to act 3 (ledger §5): safira-sylvie:1's three ways out, after a long while together.
+  // Gated to act 3 (ledger §5): safira-sylvie:1's three ways out, now at Safira's one-woman show (B2 fix 1: her stage voice).
   'banter:safira-sylvie:2': {
     lines: [
-      { who: 'safira', mood: 'wink', text: '「小希，再來一次。右腳、左腳、轉──今天的退路，有幾條呀？」' },
-      { who: 'sylvie', mood: 'serious', text: '「一條。」' },
-      { who: 'safira', mood: 'surprised', text: '「咦，另外兩條呢？」' },
-      { who: 'sylvie', mood: 'smile', text: '「今天不找了。」' },
+      { who: 'safira', mood: 'wink', text: '「各位觀眾──好吧，只有小希一位。今晚的特別公演，門票全免唷～」' },
+      { who: 'sylvie', mood: 'serious', text: '「退路。一條。」' },
+      { who: 'safira', mood: 'surprised', text: '「咦，只找一條？另外兩條呢？」' },
+      { who: 'sylvie', mood: 'smile', text: '「今天不找了。坐著看。」' },
     ],
-    summary: '莎菲拉又拉希爾薇跳舞。這一次，希爾薇只找了一條退路，另外兩條，她說今天不找了。',
+    summary: '莎菲拉在旅館大廳辦了一場只有希爾薇一個觀眾的公演。希爾薇只找了一條退路，另外兩條，她說今天不找了。',
   },
   // Scarlet tries to command the moon; she puts it on the night watch, and Selene finds that kind.
   'banter:scarlet-selene:1': {
     lines: [
-      { who: 'scarlet', mood: 'serious', text: '「瑟蕾小姐。月亮若知道明天的事，請轉告它：情報應當提前回報。」' },
+      { who: 'scarlet', mood: 'serious', text: '「瑟蕾小姐。月亮若知道明天的事，請它先知會我一聲。」' },
       { who: 'selene', mood: 'smile', text: '「月亮不歸騎士管呢。它連我說的話，也不太聽。」' },
       { who: 'scarlet', mood: 'serious', text: '「既然不聽指揮，那就排進守夜表。月亮，第一班。」' },
-      { who: 'selene', mood: 'smile', text: '「排得真好呢。這樣一來，每一班守夜的人，都不是一個人了。」' },
+      { who: 'selene', mood: 'smile', text: '「排得真好呢。它每晚都醒著，正好給守夜的人作伴吧。」' },
     ],
-    summary: '絲嘉蕾要月亮提前回報明天的事。月亮不聽指揮，她就把月亮排進了守夜表。',
+    summary: '絲嘉蕾要月亮先知會她明天的事。月亮不聽指揮，她就把月亮排進了守夜表。',
   },
-  // Two weather readers: Selene's moon against Sylvie's swallows; Sylvie forgives the moon.
+  // Two ways of knowing (B2 fix 1, no weather): Selene will not say the dinner she has read; Sylvie smells it.
   'banter:selene-sylvie:1': {
     lines: [
-      { who: 'selene', mood: 'foresee', text: '「月亮說，明天也許是晴天呢。」' },
-      { who: 'sylvie', mood: 'alert', text: '「不會。風向變了。燕子飛得低。明早下雨。」' },
-      { who: 'selene', mood: 'wistful', text: '「剛才那句，請當作沒聽見吧。月亮，偶爾也會看錯呢。」' },
-      { who: 'sylvie', mood: 'smile', text: '「月亮在天上。看不見燕子。不怪它。」' },
+      { who: 'selene', mood: 'foresee', text: '「今晚的晚餐，我已經讀到了呢。可是說出口，就不靈了。」' },
+      { who: 'sylvie', mood: 'serious', text: '「南瓜湯。烤魚。魚，煎過頭了。」' },
+      { who: 'selene', mood: 'surprised', text: '「妳、妳也讀得到月亮？」' },
+      { who: 'sylvie', mood: 'smile', text: '「不用月亮。用鼻子。」' },
     ],
-    summary: '瑟蕾說月亮預報明天放晴，希爾薇看燕子說明早下雨。瑟蕾收回了，希爾薇說不怪月亮。',
+    summary: '瑟蕾讀到了今晚的晚餐，卻不肯說。希爾薇一口氣說了出來：她不用月亮，用鼻子。',
   },
 };
 
