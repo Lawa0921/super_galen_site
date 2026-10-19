@@ -50,6 +50,12 @@ describe('影格版面', () => {
       for (const b of [...fr.idle, ...fr.walk]) { const bb = bbox(b); expect(bb.x0, role).toBeGreaterThanOrEqual(1); expect(bb.x1, role).toBeLessThanOrEqual(AV_FW - 2); }
     }
   });
+  it('碰撞盒貼著角色的高度：沒戴帽子時頭頂離碰撞盒上緣最多 4 格（跳起來撞天花板時頭真的碰到）', () => {
+    for (const body of [0, 1]) for (let hair = 0; hair < HAIR_STYLES.length; hair++) {
+      const b = flatFrame(avatarFrame(plainLook({ ...bodyDefaults(body), hair, acc: 0, ahoge: false }), 'idle', 0));
+      expect(bbox(b).y0 - (AV_FH - PLAYER_H), `body ${body} hair ${hair}`).toBeLessThanOrEqual(4);
+    }
+  });
   it('站姿（待機 / 走 / 跳 / 落）的美術不高過碰撞盒（呆毛、帽尖不會插進天花板）', () => {
     for (const l of looks()) for (const a of ['idle', 'walk', 'jump', 'fall'] as const) for (let f = 0; f < SHEET[a][1]; f++) {
       expect(bbox(flatFrame(avatarFrame(l, a, f))).y0, `${dollKey(l)} ${a}${f}`).toBeGreaterThanOrEqual(AV_FH - PLAYER_H);
@@ -63,11 +69,11 @@ describe('男女一眼分得出', () => {
     const m = { ...f, body: 1, blush: false };
     const fb = flatFrame(avatarFrame(plainLook(f), 'idle', 0)), mb = flatFrame(avatarFrame(plainLook(m), 'idle', 0));
     let eyeDiff = 0;
-    for (let y = 31; y <= 39; y++) for (let x = 0; x < AV_FW; x++) if (fb.raw(x, y) !== mb.raw(x, y)) eyeDiff++;
+    for (let y = 30; y <= 38; y++) for (let x = 0; x < AV_FW; x++) if (fb.raw(x, y) !== mb.raw(x, y)) eyeDiff++;
     expect(eyeDiff).toBeGreaterThanOrEqual(14);
     const width = (b: Bmp, y: number): number => { let a = b.w, z = -1; for (let x = 0; x < b.w; x++) if (b.on(x, y)) { a = Math.min(a, x); z = Math.max(z, x); } return z - a + 1; };
-    // 後頸頭髮下面那列（只量到身體）
-    const sy = shoulderOf(0, false).y + 3;
+    // 肩膀下一列（軀幹第 3 列）
+    const sy = shoulderOf(0, false).y + 1;
     expect(width(mb, sy) - width(fb, sy)).toBeGreaterThanOrEqual(2);
   });
 });
@@ -170,5 +176,18 @@ describe('日系 Q 版的配色 / 臉', () => {
     expect(back.length).toBeLessThanOrEqual(2);
     expect(sum(front)).toBeGreaterThanOrEqual(sum(back) + 2);
     expect(white.n).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('髮型剪影', () => {
+  it('九款髮型的剪影一眼分得出：兩兩之間（只看外形、不看顏色）至少差 30 格', () => {
+    for (const body of [0, 1]) {
+      const sil = HAIR_STYLES.map((_, hair) => flatFrame(avatarFrame(plainLook({ ...bodyDefaults(body), hair, acc: 0, ahoge: false }), 'idle', 0)));
+      for (let i = 0; i < sil.length; i++) for (let j = i + 1; j < sil.length; j++) {
+        let n = 0;
+        for (let k = 0; k < sil[i].px.length; k++) if ((sil[i].px[k] >>> 24 ? 1 : 0) !== (sil[j].px[k] >>> 24 ? 1 : 0)) n++;
+        expect(n, `body ${body}: ${HAIR_STYLES[i].id} vs ${HAIR_STYLES[j].id}`).toBeGreaterThanOrEqual(30);
+      }
+    }
   });
 });

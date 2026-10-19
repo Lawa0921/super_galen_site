@@ -322,6 +322,8 @@ const BLOCK_REPEAT = 1.8;
 export const RECALL_TIME = 1.2;
 /** 磁石增加的伸手距離（格） */
 export const MAGNET_REACH = 3;
+/** 互動基準點：腳底往上幾 px（舊碰撞盒 42 px 的一半） */
+export const REACH_CENTER_Y = 21;
 /** 玩家周圍自動揭露的半徑（格） */
 export const REVEAL_RADIUS = 9;
 /** 畫面上光照 ≥ 此值的格算「看見了」 */
@@ -1438,9 +1440,12 @@ export class DelveGame {
   }
 
   // ── 查詢 ───────────────────────────────────────────────
-  /** 玩家中心（px） */
+  /**
+   * 玩家中心（px）：伸手 / 互動 / 瞄準的基準點。y 固定在腳底往上 REACH_CENTER_Y（= 舊的 42 px 碰撞盒的中心）：
+   * 碰撞盒改成貼著角色的高度之後，手搆得到的範圍、工作台 / 箱子的距離都和以前一樣
+   */
   playerCenter(): { x: number; y: number } {
-    return { x: this.player.x + this.player.w / 2, y: this.player.y + this.player.h / 2 };
+    return { x: this.player.x + this.player.w / 2, y: this.player.y + this.player.h - REACH_CENTER_Y };
   }
   /** 玩家中心所在 tile */
   playerTile(): { x: number; y: number } {
@@ -1836,7 +1841,7 @@ export class DelveGame {
   /** 肩膀位置（px）：揮砍 / 射擊的起點 */
   shoulder(): { x: number; y: number } {
     const p = this.player;
-    return { x: p.x + p.w / 2 + this.facing * 2, y: p.y + p.h - 26 };
+    return { x: p.x + p.w / 2 + this.facing * 2, y: p.y + p.h - 12 };
   }
   bossEnemy(): Enemy | null { return this.enemies.find((e) => ENEMIES[e.kind].boss) ?? null; }
 

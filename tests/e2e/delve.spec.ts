@@ -1610,7 +1610,9 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     const st = await page.evaluate(() => window.__delveDebug!.game.getState().player);
     expect(st.onGround).toBe(true);
     expect(st.climbing).toBe(false);
-    expect(st.y + 42).toBeLessThanOrEqual(at.top * 16 + 0.5);
+    // 腳底（y + 碰撞盒高）站在井口的地面上
+    const h = await page.evaluate(() => window.__delveDebug!.game.player.h);
+    expect(st.y + h).toBeLessThanOrEqual(at.top * 16 + 0.5);
   });
 
   test('效能：跑來跑去不重烘紙娃娃，換裝才烘一次', async ({ page }) => {
@@ -1632,8 +1634,8 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     const b2 = await bakes();
     expect(b2.sheets).toBe(b1.sheets + 1);
   });
-  test('武器不蓋臉：每種武器 × 前 / 斜上 / 上 / 斜下 × 揮擊每一段（加上拿著不揮），眼睛和嘴巴的像素都還在（左右都看）', async ({ page }) => {
-    test.setTimeout(120000);
+  test('手持物：7 種武器 × 前 / 斜上 / 上 / 斜下 × 揮擊每一段（加上拿著不揮）、火把 / 方塊 / 釣竿 / 迴旋鏢拿著，左右都看——(1) 手持物每一格都看得到（不被身體 / 頭 / 臉蓋掉）(2) 不蓋到眼睛和嘴', async ({ page }) => {
+    test.setTimeout(240000);
     // 紫眼（色票裡只有史詩紫用到，畫面上不會撞色）
     await page.addInitScript(() => { try { localStorage.setItem('delve.appearance', JSON.stringify({ body: 0, blush: true, hair: 1, hairColor: 7, ahoge: true, eyes: 3, eyeShape: 0, skin: 0, outfit: 1, color1: 2, color2: 3, acc: 1, glasses: false })); } catch { /* ignore */ } });
     await page.goto('/games/delve?seed=face-e2e&autostart=1&fresh=1');
@@ -1675,6 +1677,37 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
       }
       return { n, bad };
     });
+    // 手持物（renderer 記下的這一幀手上那幾張）每一個不透明像素，在畫面緩衝上是不是還是它自己的顏色（沒被後畫的東西蓋掉）
+    const held = (): Promise<{ n: number; hidden: number }> => page.evaluate(() => {
+      const r = window.__delveDebug!.handle.renderer as unknown as { playerDraw: { x: number; y: number; facing: number } | null; heldDraws: { c: HTMLCanvasElement; x: number; y: number }[]; drawCam: { x: number; y: number }; buf: HTMLCanvasElement };
+      const pd = r.playerDraw;
+      if (!pd) return { n: 0, hidden: -1 };
+      const bd = r.buf.getContext('2d')!.getImageData(0, 0, r.buf.width, r.buf.height), X = Math.round(pd.x - r.drawCam.x), Y = Math.round(pd.y - r.drawCam.y);
+      // 後畫的那幾張會蓋掉先畫的（同一隻手上的東西互相疊）：每個局部座標只看最後畫的那張
+      const top = new Map<string, number[]>();
+      for (const d of r.heldDraws) {
+        const t = document.createElement('canvas'); t.width = d.c.width; t.height = d.c.height;
+        const tc = t.getContext('2d')!; tc.drawImage(d.c, 0, 0);
+        const px = tc.getImageData(0, 0, t.width, t.height).data;
+        for (let j = 0; j < t.height; j++) for (let i = 0; i < t.width; i++) { const k = (j * t.width + i) * 4; if (px[k + 3] === 255) top.set(`${d.x + i},${d.y + j}`, [px[k], px[k + 1], px[k + 2]]); }
+      }
+      let n = 0, hidden = 0;
+      for (const [key, c] of top) {
+        const [lx, ly] = key.split(',').map(Number);
+        const bx = X + (pd.facing > 0 ? lx : -lx - 1), by = Y + ly;
+        if (bx < 0 || by < 0 || bx >= bd.width || by >= bd.height) continue;
+        n++;
+        const j = (by * bd.width + bx) * 4;
+        if (bd.data[j] !== c[0] || bd.data[j + 1] !== c[1] || bd.data[j + 2] !== c[2]) hidden++;
+      }
+      return { n, hidden };
+    });
+    const check = async (what: string): Promise<void> => {
+      const f = await face(), h = await held();
+      expect(f.bad, `${what}：蓋到眼睛 / 嘴`).toBe(0);
+      expect(h.hidden, `${what}：手持物被蓋掉（共 ${h.n} 格）`).toBe(0);
+      expect(h.n, `${what}：手持物有畫出來`).toBeGreaterThan(4);
+    };
     const base = await face();
     expect(base.n).toBeGreaterThan(8);
     expect(base.bad).toBe(0);
@@ -1690,8 +1723,7 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
         await facing(side);
         // 拿著不揮
         await page.waitForTimeout(120);
-        const c = await face();
-        expect(c.bad, `${item} ${side} 拿著`).toBe(0);
+        await check(`${item} ${side} 拿著`);
         const dir = side === 'KeyD' ? 1 : -1;
         for (const deg of [0, -45, -90, 45]) for (const p of [0, 0.1, 0.2, 0.3, 0.45, 0.6, 0.8, 0.95]) {
           // 揮擊定格：進度固定在 p（dur 拉很長）、瞄準角固定
@@ -1701,11 +1733,17 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
             g.attack = { item, kind, t: (p as number) * 1e7, dur: 1e7, angle: a, dir, id: -1, dmg: 0, kb: 0, fx: null };
           }, [item, KIND[item], deg, p, dir] as const);
           await page.waitForTimeout(50);
-          const r = await face();
-          expect(r.bad, `${item} ${side} ${deg}° p=${p}`).toBe(0);
+          // 飛刀 / 迴旋鏢丟出去之後手上就沒東西了（只檢查不蓋臉）
+          if ((KIND[item] === 'throw' || KIND[item] === 'boomerang') && p >= 0.5) { const f = await face(); expect(f.bad, `${item} ${side} ${deg}° p=${p}`).toBe(0); continue; }
+          await check(`${item} ${side} ${deg}° p=${p}`);
         }
         await page.evaluate(() => { (window.__delveDebug!.game as unknown as { attack: unknown }).attack = null; });
       }
+    }
+    // 不是武器的手持物：火把 / 方塊 / 釣竿
+    for (const item of ['torch', 'dirt', 'wood_rod']) {
+      await hold(item);
+      for (const side of ['KeyD', 'KeyA']) { await facing(side); await page.waitForTimeout(120); await check(`${item} ${side} 拿著`); }
     }
   });
 });

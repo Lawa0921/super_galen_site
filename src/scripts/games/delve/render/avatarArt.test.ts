@@ -108,17 +108,17 @@ describe('3/4 正面的朝向感', () => {
     expect(eyeX(idle, er)).toBeGreaterThan((x0 + x1) / 2);
     expect(eyeX(walk, er)).toBeGreaterThan(eyeX(idle, er) + 1);
   });
-  it('小人的大小：約 33–38 px 高、頭佔 6 成以上（身體 + 腿只有 12–14 列：Q 版小身體）', () => {
+  it('小人的大小：約 30–34 px 高（克魯賽德戰技的英雄約 31）、頭佔一半以上（身體 + 腿 12–14 列）', () => {
     for (const body of [0, 1]) {
       const r = avatarFrame(plainLook({ ...bodyDefaults(body), ahoge: false }), 'idle', 0), b = flatFrame(r);
       let top = b.h; for (let y = 0; y < b.h && top === b.h; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y)) { top = y; break; }
-      expect(AV_FH - top, `body ${body}`).toBeGreaterThanOrEqual(32);
-      expect(AV_FH - top, `body ${body}`).toBeLessThanOrEqual(40);
+      expect(AV_FH - top, `body ${body}`).toBeGreaterThanOrEqual(30);
+      expect(AV_FH - top, `body ${body}`).toBeLessThanOrEqual(34);
       // 頭（臉那張）的最下一列 = 下巴；下巴以下（身體 + 腿）12–14 列
       let chin = 0; for (let y = 0; y < r.face!.h; y++) for (let x = 0; x < r.face!.w; x++) if (r.face!.on(x, y)) chin = y;
       expect(AV_FH - 1 - chin, `body ${body}`).toBeGreaterThanOrEqual(11);
       expect(AV_FH - 1 - chin, `body ${body}`).toBeLessThanOrEqual(14);
-      expect((chin - top) / (AV_FH - top), `body ${body}`).toBeGreaterThanOrEqual(0.55);
+      expect((chin - top) / (AV_FH - top), `body ${body}`).toBeGreaterThanOrEqual(0.52);
     }
   });
   it('身體比頭窄很多：頭寬約是身寬的 2.5–3 倍（軀幹 7–10 寬）', () => {
@@ -175,8 +175,8 @@ describe('圖層', () => {
     const helm = avatarFrame({ ...plainLook(a), head: piece('armor:iron') }, 'idle', 0).head;
     const hr = new Set(hairRamp(a.hairColor).map((c) => c.join()));
     const hairPx = (b: Bmp, y0: number, y1: number): number => { let n = 0; for (let y = y0; y <= y1; y++) for (let x = 0; x < b.w; x++) if (b.on(x, y) && hr.has(b.get(x, y).join())) n++; return n; };
-    expect(hairPx(bare, 0, 21)).toBeGreaterThan(5);
-    expect(hairPx(helm, 0, 21)).toBe(0);
+    expect(hairPx(bare, 0, 22)).toBeGreaterThan(3);
+    expect(hairPx(helm, 0, 22)).toBe(0);
     // 瀏海（額頭那一帶）還在
     // （瀏海用鮑伯頭看：刺蝟頭的瀏海本來就短）
     const helmB = avatarFrame({ ...plainLook({ ...a, hair: 0 }), head: piece('armor:iron') }, 'idle', 0).head;

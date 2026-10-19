@@ -28,22 +28,22 @@ const CX = 26;
 /** 站立時腳踝的列（鞋子 3 列：腳踝..腳踝 + 2 = 最下一列） */
 const ANKLE = AV_FH - 2;
 /** 頭的區域原點：女 / 男（男生高 2 格） */
-const HEAD_X = 14;
-/** 男女同高（頭頂 + 毛尖 / 帽子都收在碰撞盒 42 px 裡）；男生靠肩寬 / 粗眉 / 方眼分辨 */
-const HEAD_Y = [22, 22];
+const HEAD_X = 15;
+/** 男女同高（頭頂 + 毛尖 / 帽子都收在碰撞盒裡）；男生靠肩寬 / 粗眉 / 方眼分辨 */
+const HEAD_Y = [23, 23];
 /** 站姿影格裡頭的區域原點（測試 / 圖示用） */
 export const AV_HEAD = { x: HEAD_X, y: HEAD_Y[0] };
 /** 體型的骨架：髖的列、大腿 / 小腿長、兩腳髖的 x、腿的半寬 */
 const BODY = [
-  { hip: 47, len: 2.5, legX: [CX - 2, CX + 2], legHalf: 1.05, top: 42 },
-  { hip: 47, len: 2.5, legX: [CX - 2.5, CX + 2.5], legHalf: 1.2, top: 42 },
+  { hip: 47, len: 2.5, legX: [CX - 2, CX + 2], legHalf: 1.05, top: 40 },
+  { hip: 47, len: 2.5, legX: [CX - 2.5, CX + 2.5], legHalf: 1.2, top: 40 },
 ];
 /** 肩膀軸心（影格座標，未加每格位移）：女（預設）/ 男 */
-export const AV_SHOULDER_FRONT = { x: 30, y: 43 };
-export const AV_SHOULDER_BACK = { x: 23, y: 43 };
+export const AV_SHOULDER_FRONT = { x: 30, y: 42 };
+export const AV_SHOULDER_BACK = { x: 23, y: 42 };
 const SHOULDERS = [
   { front: AV_SHOULDER_FRONT, back: AV_SHOULDER_BACK },
-  { front: { x: 31, y: 43 }, back: { x: 21, y: 43 } },
+  { front: { x: 31, y: 42 }, back: { x: 21, y: 42 } },
 ];
 export function shoulderOf(body: number, back: boolean): { x: number; y: number } {
   const s = SHOULDERS[body] ?? SHOULDERS[0];
@@ -57,7 +57,7 @@ export const MANTLE_KNEE_X = 35;
 export const ROPE_TOP_HANDS = [46, 49] as const;
 /** 手臂圖：26×34、軸心 (13,3)；手心距軸心 HAND_REACH px（Q 版的短手） */
 export const ARM_W = 26, ARM_H = 34, ARM_PIV = { x: 13, y: 3 };
-export const HAND_REACH = 4;
+export const HAND_REACH = 5;
 
 /** 影格表的排列：動畫 → [起始索引, 格數] */
 export const SHEET = (() => {
@@ -188,15 +188,11 @@ function torsoRows(body: number, wide: boolean): Rows {
   const out: Rows = {};
   const top = BODY[body]?.top ?? 38, male = body === 1;
   const w = wide ? 1 : 0;
-  // 小小的身體：女 7–9 寬、男 9–10 寬、6 列；靠前（右）的肩膀鼓一格、靠後的肩被身體擋住一點
-  for (let k = 0; k < 6; k++) {
-    let x0 = male ? 21 : 23, x1 = male ? 30 : 29;
-    if (k === 0) { x0 += 1; x1 -= 1; }
-    if (k === 1) x1 += 1;
-    if (!male && k === 3) { x0 += 1; x1 -= 1; }
-    if (k === 5) { x0 -= 1; }
-    out[top + k] = [x0 - w, x1 + w];
-  }
+  // 小小的身體：女 7–9 寬、男 9–11 寬、8 列（第 0 列是脖子 / 領口、被下巴擋一半）；
+  // 靠前（右）的肩膀鼓一格、靠後的肩被身體擋住一點；女生第 4 列收腰
+  const F: [number, number][] = [[24, 28], [23, 29], [22, 30], [23, 29], [24, 29], [23, 29], [23, 30], [22, 30]];
+  const M: [number, number][] = [[23, 29], [22, 30], [21, 31], [22, 30], [22, 30], [22, 30], [22, 30], [21, 31]];
+  (male ? M : F).forEach(([x0, x1], k) => { out[top + k] = [x0 - w, x1 + w]; });
   return out;
 }
 const shiftRows = (rows: Rows, dx: number, dy: number): Rows => {
@@ -335,11 +331,11 @@ export function avatarArm(l: DollLook, back: boolean, f = 0): Bmp {
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) arm.set(x, y, x === x0 ? r[4] : x === x1 ? r[2] : r[3]);
   };
   const hand = (): void => {
-    arm.rect(13, 5, 2, 2, sk[3]); arm.set(13, 5, sk[4]); arm.set(14, 6, sk[2]);
+    arm.rect(13, 6, 2, 2, sk[3]); arm.set(13, 6, sk[4]); arm.set(14, 7, sk[2]);
   };
   if (w.kind === 'armor') {
     const r = dk(armor5(w.set)), R = ARMOR_RAMP[w.set];
-    col(1, 4, r); hand();
+    col(1, 5, r); hand();
     // 護肩：比手臂寬一圈的圓殼、左上亮點、下緣暗
     for (let y = 0; y <= 4; y++) for (let x = 9; x <= 17; x++) {
       const d = Math.hypot(x + 0.5 - 13, (y + 0.5 - 2) * 1.2);
@@ -349,17 +345,18 @@ export function avatarArm(l: DollLook, back: boolean, f = 0): Bmp {
     if (!back) upgrades(arm, w.p, [[10, 3], [11, 4], [12, 4], [13, 4], [14, 4], [15, 3]], null, f, R);
   } else {
     const { o, c1, c2 } = w;
-    if (o === 'explorer') { col(1, 2, dk(c2)); col(3, 4, sk); hand(); }
-    else if (o === 'sailor') { col(1, 3, dk(WHITE)); col(4, 4, dk(c1)); hand(); }
-    else if (o === 'hoodie') { col(1, 4, dk(c1)); hand(); }
-    else if (o === 'coat') { col(1, 3, dk(c1)); col(4, 4, dk(c2)); hand(); }
-    else if (o === 'maid') { col(1, 2, dk(c1), X0 - 1, X1 + 1); col(3, 3, sk); col(4, 4, dk(WHITE)); hand(); }
+    // 袖子看得出來：袖身 + 袖口一列（換色 / 深一階），手臂露出來的地方是膚色
+    if (o === 'explorer') { col(1, 3, dk(c2)); col(4, 4, darker(dk(c2))); col(5, 5, sk); hand(); }
+    else if (o === 'sailor') { col(1, 4, dk(WHITE)); col(5, 5, dk(c1)); hand(); }
+    else if (o === 'hoodie') { col(1, 4, dk(c1)); col(5, 5, dk(c2)); hand(); }
+    else if (o === 'coat') { col(1, 4, dk(c1)); col(5, 5, dk(c2)); hand(); }
+    else if (o === 'maid') { col(1, 2, dk(c1), X0 - 1, X1 + 1); col(3, 4, sk); col(5, 5, dk(WHITE)); hand(); }
     else if (o === 'miko') {
       const wh = dk(WHITE), r = dk(c1);
-      col(1, 4, wh);
-      for (let y = 2; y <= 6; y++) for (let x = X1 + 1; x <= X1 + 3; x++) arm.set(x, y, y === 6 ? r[3] : x === X1 + 3 ? wh[2] : wh[3]);
+      col(1, 5, wh);
+      for (let y = 2; y <= 7; y++) for (let x = X1 + 1; x <= X1 + 3; x++) arm.set(x, y, y === 7 ? r[3] : x === X1 + 3 ? wh[2] : wh[3]);
       hand();
-    } else { col(1, 4, dk(c1)); hand(); }
+    } else { col(1, 4, dk(c1)); col(5, 5, darker(dk(c1))); hand(); }
   }
   arm.softOutline();
   return arm;

@@ -84,6 +84,14 @@ export const AVATAR_SKIN_HEX = [
   '#f08c98', '#d8707c', '#b0585e',
 ] as const;
 export const AVATAR_SKIN: RGB[] = AVATAR_SKIN_HEX.map(hex);
+/**
+ * 頭髮剪影的外框（每種髮色一色：最暗那階再壓暗到亮度約 2–3 成，偏暖棕 / 深紫，不是純黑）。
+ * 一樣只給紙娃娃用、不參與 snap；順序 = HAIR_COLORS。
+ */
+export const AVATAR_HAIR_OUT_HEX = [
+  '#3a2e48', '#4c2e20', '#523022', '#6a4426', '#3e3a56', '#2c3466', '#1c4450', '#5a2a4a', '#66223a', '#24442c', '#3e3068', '#5c2a16',
+] as const;
+export const AVATAR_HAIR_OUT: RGB[] = AVATAR_HAIR_OUT_HEX.map(hex);
 
 export function luma(c: RGB): number { return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]; }
 /** redmean 加權距離平方（比純 RGB 更接近人眼） */
@@ -92,7 +100,7 @@ function dist2(a: RGB, b: RGB): number {
   return (2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db;
 }
 const SNAP_CACHE = new Map<number, RGB>();
-const PAL_SET = new Set([...PALETTE, ...AVATAR_SKIN].map((c) => (c[0] << 16) | (c[1] << 8) | c[2]));
+const PAL_SET = new Set([...PALETTE, ...AVATAR_SKIN, ...AVATAR_HAIR_OUT].map((c) => (c[0] << 16) | (c[1] << 8) | c[2]));
 export function inPalette(c: RGB): boolean { return PAL_SET.has((c[0] << 16) | (c[1] << 8) | c[2]); }
 /** 最近的色票色 */
 export function snap(c: RGB): RGB {

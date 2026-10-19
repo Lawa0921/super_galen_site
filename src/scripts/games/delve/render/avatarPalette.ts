@@ -3,7 +3,7 @@
 //   布 5 階：[縫線 / 最暗, 深影, 陰影, 底色, 高光]
 //   膚 5 階：[嘴 / 最暗, 深影, 陰影, 底色, 高光]；腮紅另外一色
 //   瞳 3 階：[深, 中, 淺]（高光一律白）
-import { ramp, hex, type RGB } from './pixel';
+import { AVATAR_HAIR_OUT, ramp, hex, type RGB } from './pixel';
 
 export const HAIR_RAMPS: RGB[][] = [
   // 烏黑：帶藍的深灰（不是近黑；外框也讀得出來，暗處剪影不會消失）
@@ -74,6 +74,8 @@ export const SWEAT = ramp('#5c9ce0', '#94c8ee', '#ffffff');
 export const GLASSES = hex('#423f54');
 
 export const hairRamp = (i: number): RGB[] => HAIR_RAMPS[i] ?? HAIR_RAMPS[0];
+/** 頭髮剪影最外一圈的外框色（深棕 / 深紫，亮度約 2–3 成） */
+export const hairOutline = (i: number): RGB => AVATAR_HAIR_OUT[i] ?? AVATAR_HAIR_OUT[0];
 export const eyeRamp = (i: number): RGB[] => EYE_RAMPS[i] ?? EYE_RAMPS[0];
 export const skinRamp = (i: number): RGB[] => SKIN_RAMPS[i] ?? SKIN_RAMPS[1];
 export const clothRamp = (i: number): RGB[] => CLOTH_RAMPS[i] ?? CLOTH_RAMPS[0];

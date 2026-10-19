@@ -13,7 +13,8 @@ export const FIXED_DT = 1 / 60;
 
 // 玩家物理（px/s、px/s²）。每 tick 數值 ×60 換算後調整。
 export const PLAYER_W = 20;
-export const PLAYER_H = 42;
+/** 碰撞盒高度：貼著角色的實際高度（約 31–33 px + 帽尖），跳起來撞天花板時頭真的碰到；仍然 > 2 格（32 px），能走的通道和以前一樣 */
+export const PLAYER_H = 35;
 export const GRAVITY = 1440;
 export const MAX_FALL = 600;
 export const RUN_SPEED = 180;
