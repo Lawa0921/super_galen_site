@@ -1158,7 +1158,7 @@ test.describe('starlantern', () => {
     await shot('07-guild-recall-list');
     await page.locator('.slx-layer [data-id=selene]').click();
     await w.key('ArrowUp'); await w.key('Enter');   // 是
-    await expect(page.locator('.slx-talk .slx-text')).toContainText('歡迎回來');
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText(T.ui2.guild.welcomeBack(CHARACTERS.selene.name));
     expect(await cellOf('selene')).toBeGreaterThanOrEqual(0);
     await w.closeTalk();
 
@@ -1394,7 +1394,7 @@ test.describe('starlantern', () => {
     expect(homeArrival.slice(1).every((id: string) => id.startsWith('chat:'))).toBe(true);
     await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
     {
-      const trust = STORY.scenes['first-return'].lines.find((l) => l.who === 'rin' && l.text.includes('身體自己動的'))!.text;
+      const trust = STORY.scenes['first-return'].lines.filter((l) => l.who === 'rin').at(-1)!.text;   // Rin's last spoken line of the scene
       let heard = false;
       let faces = 0;
       for (let i = 0; i < 40 && !heard; i++) {
@@ -1402,7 +1402,7 @@ test.describe('starlantern', () => {
         else if (await page.locator('.slx-town .slx-talk').isVisible()) { if ((await faceFits(page)) !== null) faces++; await w.key('z'); await page.waitForTimeout(60); }
         else await page.waitForTimeout(60);
       }
-      expect(heard, 'the first return reaches 「身體自己動的。」').toBe(true);
+      expect(heard, "the first return reaches Rin's last spoken line").toBe(true);
       await expect(page.locator('.slx-town .slx-talk .slx-name')).toHaveText(CHARACTERS.rin.name);
       expect((await faceFits(page)) ?? faces, 'the first return shows a portrait that fits').toBeGreaterThan(0);
       await shot('07b-first-return');

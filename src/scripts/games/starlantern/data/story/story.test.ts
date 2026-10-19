@@ -192,7 +192,7 @@ describe('story data', () => {
   });
 
   it('no placeholder is left: plan 6c has written the whole script (Task 14)', () => {
-    expect([...PLACEHOLDERS]).toEqual([]);
+    expect(PLACEHOLDERS.size).toBe(0);
     expect(PLACEHOLDERS.has(STORY.endingTitle)).toBe(false);
   });
 
@@ -249,30 +249,7 @@ function storyTexts(): Text[] {
   return out;
 }
 
-/** The keys that are finished copy. Each entry is a prefix ending in "." or ":" (so `town.` never eats `townLines`) or one whole leaf key. */
-const WRITTEN: string[] = [
-  'scenes.prologue.', 'scenes.mem:rin:',   // Task 4: the sample
-  'scenes.act1-after.', 'scenes.act2.', 'scenes.act3.', 'scenes.act4.', 'act1Card.', 'truths.',   // Task 5: the acts and the truths
-  'scenes.mem:hero:', 'scenes.chat:hero:', 'people.hero.',   // Task 6: Lorne
-  'scenes.rin-reveal.', 'scenes.chat:rin:', 'people.rin.', 'rinLines.', 'rinOath.',   // Task 7: Rin
-  ...(['selene', 'chizuru', 'safira'] as const).flatMap((c) => [`scenes.mem:${c}:`, `scenes.chat:${c}:`, `people.${c}.`, `meet.${c}.`]),   // Task 8
-  ...(['sylvie', 'noel', 'bobby'] as const).flatMap((c) => [`scenes.mem:${c}:`, `scenes.chat:${c}:`, `people.${c}.`, `meet.${c}.`]),   // Task 9
-  ...(['liz', 'scarlet'] as const).flatMap((c) => [`scenes.mem:${c}:`, `scenes.chat:${c}:`, `people.${c}.`, `meet.${c}.`]), 'survived',   // Task 10
-  'scenes.prologue-inn.', 'scenes.first-return.',   // Task 10b: why the two of them go down together
-  'scenes.town:', 'town.', 'merchant.', 'bellkeeper.',   // Task 11: the townsfolk, the merchant and the bellkeeper
-  'townLines.', 'greet.',   // Task 12: the town's days, stage by stage
-  'absorb.',   // Task 13: strangers' memories
-  'scenes.finale.', 'endingTitle', 'finaleBossName', 'finaleWait.',   // Task 14: the finale
-];
 const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
-const isWritten = (key: string): boolean => writtenBy(WRITTEN, key);
-// The WRITTEN-only gates are pure functions of their arrays, so they can be tested with an injected list while WRITTEN is empty.
-/** Keys that are finished copy but still carry placeholder text. */
-const placeholdersIn = (texts: Text[], written: string[], placeholders: ReadonlySet<string>): string[] =>
-  texts.filter((t) => writtenBy(written, t.key) && placeholders.has(t.text)).map((t) => t.key);
-/** WRITTEN entries that match no key at all (a typo would leave its placeholder gate inert), and prefixes that do not end at a separator. */
-const strayEntries = (texts: Text[], written: string[]): string[] =>
-  written.filter((w) => (/[.:]$/.test(w) ? !texts.some((t) => t.key.startsWith(w)) : !texts.some((t) => t.key === w)));
 /** Spec quotes missing from a category that is entirely written (every key under the prefix, so narrower entries count too). */
 const missingQuotes = (texts: Text[], written: string[], quotes: [string, string][]): string[] =>
   quotes.filter(([prefix, quote]) => {
@@ -551,29 +528,13 @@ describe('the script gates', () => {
     }
   });
 
-  it('WRITTEN entries never reach into another category', () => {
-    expect(strayEntries(storyTexts(), WRITTEN)).toEqual([]);
-  });
-
-  it('written categories hold no placeholder', () => {
-    expect(placeholdersIn(storyTexts(), WRITTEN, PLACEHOLDERS)).toEqual([]);
-  });
-
   it('spec quotes appear verbatim', () => {
-    expect(missingQuotes(storyTexts(), WRITTEN, SPEC_QUOTES)).toEqual([]);
+    expect(missingQuotes(storyTexts(), storyTexts().map((t) => t.key), SPEC_QUOTES)).toEqual([]);
   });
 
-  it('the WRITTEN-only gates catch what they guard', () => {
+  it('the spec-quote gate catches what it guards', () => {
     const t = (key: string, text: string): Text => ({ key, text });
     const texts = [t('town.orik.lost', '甲'), t('townLines.act1.0', '乙'), t('scenes.mem:rin:1.lines.0.text', '丙'), t('scenes.mem:rin:2.lines.0.text', '丁'), t('survived', '戊')];
-    // a written key that still holds a placeholder is caught; an unwritten one is not
-    expect(placeholdersIn(texts, ['town.'], new Set(['甲']))).toEqual(['town.orik.lost']);
-    expect(placeholdersIn(texts, ['town.'], new Set(['乙']))).toEqual([]);   // `town.` does not eat `townLines`
-    expect(placeholdersIn(texts, ['survived'], new Set(['戊']))).toEqual(['survived']);
-    expect(placeholdersIn(texts, [], new Set(['甲', '乙', '戊']))).toEqual([]);
-    // an entry that matches nothing is caught
-    expect(strayEntries(texts, ['town.', 'scenes.mem:rin:1.', 'survived'])).toEqual([]);
-    expect(strayEntries(texts, ['scene.town:', 'town', 'surviv', 'scenes.mem:rin:9.'])).toEqual(['scene.town:', 'town', 'surviv', 'scenes.mem:rin:9.']);
     // a quote must be in a category once all of it is written, whether by one broad entry or by narrower ones
     const q: [string, string][] = [['scenes.mem:rin:', '我想看見']];
     expect(missingQuotes(texts, ['scenes.mem:rin:'], q)).toEqual(['scenes.mem:rin: lacks 「我想看見」']);
