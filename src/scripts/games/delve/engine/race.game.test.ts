@@ -3,7 +3,9 @@ import { describe, it, expect } from 'vitest';
 import { DelveGame } from './game';
 import { T, W } from './tiles';
 import { LIQ } from './world';
-import { FIXED_DT } from './constants';
+import { FIXED_DT, TILE_SIZE as S, PLAYER_H, PLAYER_W } from './constants';
+import { World } from './world';
+import { makeBody, stepPlayer, type MoveStats, type PlayerMotion } from './physics';
 
 const HUMAN = 0, ELF = 1, DWARF = 2, CATFOLK = 3, DRAGONKIN = 4;
 
@@ -72,6 +74,35 @@ describe('種族被動接進遊戲數值', () => {
     expect(xp(ELF)).toBe(100);
   });
 
+  it('人類 +10% 不被四捨五入吃掉：2 經驗拿十次 = 22；精靈 = 20', () => {
+    const tenTwos = (race: number): number => {
+      const g = arena(race); g.levels.locked = false;
+      const before = g.levels.xp;
+      for (let i = 0; i < 10; i++) g.addXp(2);
+      return g.levels.xp - before;
+    };
+    expect(tenTwos(HUMAN)).toBe(22);
+    expect(tenTwos(ELF)).toBe(20);
+  });
+
+  it('人類 3 經驗拿十次 = 33（小數累積正確、xp 事件總和一致）', () => {
+    const g = arena(HUMAN); g.levels.locked = false;
+    const before = g.levels.xp;
+    let sum = 0;
+    for (let i = 0; i < 10; i++) sum += g.addXp(3).amount;
+    expect(g.levels.xp - before).toBe(33);
+    expect(sum).toBe(33);
+  });
+
+  it('鎖住經驗時不累積種族小數（解鎖後不會突然多拿）', () => {
+    const g = arena(HUMAN);
+    for (let i = 0; i < 10; i++) g.addXp(2);
+    g.levels.locked = false;
+    const before = g.levels.xp;
+    g.addXp(2);
+    expect(g.levels.xp - before).toBe(2);
+  });
+
   it('精靈的夜光比人類亮（光源 +1）', () => {
     const lights = (race: number): number => {
       const g = arena(race);
@@ -80,9 +111,24 @@ describe('種族被動接進遊戲數值', () => {
     expect(lights(ELF)).toBeGreaterThan(lights(HUMAN));
   });
 
-  it('貓族跳得比人類高（moveStats.jumpMul ×1.08）', () => {
+  it('貓族跳得比人類高 +8%：初速 ×√1.08，實際跳躍高度 ≈ ×1.08', () => {
     const jump = (race: number): number => arena(race).moveStats().jumpMul ?? 1;
-    expect(jump(CATFOLK) / jump(HUMAN)).toBeCloseTo(1.08, 5);
+    expect(jump(CATFOLK) / jump(HUMAN)).toBeCloseTo(Math.sqrt(1.08), 5);
+    // 用真的物理量高度：40×60 空場，第 50 列以下石頭，按住跳 80 tick 取最高點
+    const peak = (stats: MoveStats): number => {
+      const w = new World(40, 60);
+      for (let x = 0; x < 40; x++) for (let y = 50; y < 60; y++) w.setFg(x, y, T.STONE);
+      const b = makeBody(20 * S + S / 2 - PLAYER_W / 2, 50 * S - PLAYER_H);
+      const m: PlayerMotion = { jumpTimer: 0, jumpWasHeld: false, climbing: false };
+      for (let i = 0; i < 5; i++) stepPlayer(w, b, m, { moveX: 0, jump: false }, FIXED_DT, stats);
+      const y0 = b.y;
+      let min = b.y;
+      for (let i = 0; i < 80; i++) { stepPlayer(w, b, m, { moveX: 0, jump: true }, FIXED_DT, stats); min = Math.min(min, b.y); }
+      return y0 - min;
+    };
+    const ratio = peak(arena(CATFOLK).moveStats()) / peak(arena(HUMAN).moveStats());
+    expect(ratio).toBeGreaterThan(1.05);
+    expect(ratio).toBeLessThan(1.11);
   });
 
   it('遊戲中途換種族：下一次 raceMods() 立即生效', () => {

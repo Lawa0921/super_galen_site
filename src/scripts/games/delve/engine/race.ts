@@ -11,7 +11,7 @@ export interface RaceMods {
   mineMul: number;
   /** 額外免傷摔落格數 */
   safeFall: number;
-  /** 跳躍力倍率 */
+  /** 跳躍「高度」倍率（遊戲端換成初速時開根號：高度 ∝ 初速²） */
   jumpMul: number;
   /** 燃燒傷害倍率 */
   burnMul: number;

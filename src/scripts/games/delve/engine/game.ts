@@ -636,6 +636,8 @@ export class DelveGame {
   levels = new Progression();
   /** events 裡已經換算過經驗的位置 */
   private lvScan = 0;
+  /** 種族經驗加成的小數尾數（不存檔）：+10% 對 2~4 點的經驗也要逐次累積，不被四捨五入吃掉 */
+  private raceXpCarry = 0;
   private skillCd: Record<ActiveSkill, number> = { dash: 0, slam: 0, pulse: 0 };
   private dashT = 0;
   private dashDir: 1 | -1 = 1;
@@ -1242,8 +1244,8 @@ export class DelveGame {
     const g = this.stats().gear;
     return {
       runMul: (this.hasAccessory('run') ? 1.45 : 1) * (1 + g.move / 100),
-      // 跳躍高度約與初速平方成正比：+X% 高度 ≈ 初速 × √(1 + X%)
-      jumpMul: (this.hasAccessory('jump') ? 1.25 : 1) * Math.sqrt(1 + g.jump / 100) * this.raceMods().jumpMul,
+      // 跳躍高度約與初速平方成正比：+X% 高度 ≈ 初速 × √(1 + X%)（種族 jumpMul 是高度倍率，同樣開根號）
+      jumpMul: (this.hasAccessory('jump') ? 1.25 : 1) * Math.sqrt(1 + g.jump / 100) * Math.sqrt(this.raceMods().jumpMul),
       // 凌雲（詞條）+ 雲步（技能）= 最多三段跳
       airJumps: (g.djump > 0 ? 1 : 0) + this.levels.totals().airJump,
     };
@@ -3605,9 +3607,16 @@ export class DelveGame {
       if (a && a.amount > 0) this.addXp(a.amount, a.src, a.x, a.y);
     }
   }
-  /** 加經驗（乘上博學）：發 xp 事件；跨級的每一級發 levelup */
+  /** 加經驗（種族加成 + 博學）：發 xp 事件；跨級的每一級發 levelup。
+   *  種族加成只把「整數部分」交給 levels.gain、小數留在 raceXpCarry 下次再加（博學仍由 gain 照舊乘、照舊四捨五入）。 */
   addXp(n: number, src: XpSource = 'debug', x?: number, y?: number): GainResult {
-    const r = this.levels.gain(n * (1 + this.raceMods().xpPct / 100));
+    let bonus = 0;
+    if (!this.levels.locked) {
+      const exact = Math.max(0, n) * this.raceMods().xpPct / 100 + this.raceXpCarry;
+      bonus = Math.floor(exact + 1e-9);
+      this.raceXpCarry = Math.max(0, exact - bonus);
+    }
+    const r = this.levels.gain(n + bonus);
     if (r.amount <= 0) return r;
     const p = this.player;
     this.events.push({ type: 'xp', amount: r.amount, src, x: x ?? p.x + p.w / 2, y: y ?? p.y - 4 });
