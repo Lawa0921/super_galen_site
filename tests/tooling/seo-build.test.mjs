@@ -290,8 +290,8 @@ describe('SEO build output', { skip }, () => {
       assert.equal(htmlFor(`/games/${game}/`), null, `${game} 不應再產出頁面`);
       assert.ok(!sitemapLocs.includes(`${ORIGIN}/games/${game}/`), `${game} 不應在 sitemap`);
     }
-    // 從原有 224 筆移除 Witch Run 與 Dungeon Defense。
-    assert.equal(sitemapLocs.length, 222);
+    // 從原有 224 筆移除 Witch Run 與 Dungeon Defense，再加入 Zeabur 關站文章。
+    assert.equal(sitemapLocs.length, 223);
   });
 
   test('首頁頁尾連到 /privacy/', () => {
