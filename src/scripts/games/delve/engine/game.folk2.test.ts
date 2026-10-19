@@ -110,11 +110,61 @@ describe('驗收回饋', { timeout: 180_000 }, () => {
       expect(seen.has(key), `重複：${key}`).toBe(false);
       seen.add(key);
     }
-    expect(paid).toBeGreaterThan(60);
+    expect(paid).toBeGreaterThan(20);
     expect(g.scoutMarks.length).toBeLessThanOrEqual(60);
     expect(g.scouted.size).toBe(paid);
     const r = restoreGame(serializeGame(g));
     expect(r.ok && r.game.scouted.size).toBe(paid);
+  });
+
+  it('救出來 / 路上遇到的人邀請入住後：據點居民就是同一個人（名字、外觀一致），存檔讀回也一樣', () => {
+    const g = fresh();
+    const n = rescueOne(g)!;
+    g.teleport(g.spawn.x, g.spawn.y);
+    n.body.x = g.player.x + 24; n.body.y = g.player.y + g.player.h - n.body.h;
+    steps(g, 60 * 3);
+    goTo(g, n.key);
+    expect(g.folkService(n.key, 'invite').ok).toBe(true);
+    const h = g.debugEncounter('herbalist', 4) ?? g.debugEncounter('herbalist', -4)!;
+    goTo(g, h.key);
+    expect(g.folkService(h.key, 'invite').ok).toBe(true);
+    const t = g.playerTile();
+    g.world.setFg(t.x + 2, t.y, T.HEARTH); g.settle.found(t.x + 2, t.y);
+    g.debugMoveIn('guide', true); g.debugMoveIn('healer', true);
+    for (const [kind, who] of [['guide', n], ['healer', h]] as const) {
+      const d = g.settle.def(kind);
+      expect(d.name).toBe(who.name);
+      expect(d.look.app).toEqual(who.look.app);
+      expect(d.look.head).toBe(who.look.head);
+    }
+    const r = restoreGame(serializeGame(g));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.game.settle.def('guide').name).toBe(n.name);
+    expect(r.game.settle.def('guide').look.app).toEqual(n.look.app);
+    expect(r.game.settle.def('healer').name).toBe(h.name);
+    // 沒有被邀請過的居民維持原本的設定
+    expect(g.settle.def('merchant').name).toBe('米拉');
+  });
+
+  it('嚮導標的地點彼此至少隔 24 格（地區與地標一起去重）；清單滿了優先丟掉已經去過 / 領過的標記', () => {
+    const g = fresh();
+    g.give('silver_coin', 900);
+    goTo(g, 'v0:guide');
+    const pts: { x: number; y: number }[] = [];
+    for (let i = 0; i < 25; i++) { if (!g.folkService('v0:guide', 'scout').ok) break; pts.push({ ...g.lastScout! }); }
+    expect(pts.length).toBeGreaterThan(10);
+    for (let i = 0; i < pts.length; i++) for (let j = 0; j < i; j++) {
+      expect(Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y), `${JSON.stringify(pts[i])} / ${JSON.stringify(pts[j])}`).toBeGreaterThanOrEqual(24);
+    }
+    // 淘汰：清單滿 60 個，第 10 個是已經領過的地標 → 新標記擠掉它（不是最舊的第 1 個）
+    const lm = g.landmarks[0];
+    g.scoutMarks = Array.from({ length: 60 }, (_, i) => (i === 9 ? { x: lm.x, y: lm.y } : { x: 5 + i, y: 3 }));
+    g.discovery.landmarks.add(g.world.idx(lm.x, lm.y));
+    (g as unknown as { addScoutMark(x: number, y: number): void }).addScoutMark(999, 999);
+    expect(g.scoutMarks.length).toBe(60);
+    expect(g.scoutMarks.some((m) => m.x === lm.x && m.y === lm.y)).toBe(false);
+    expect(g.scoutMarks[0]).toEqual({ x: 5, y: 3 });
   });
 
   it('買賣 / 服務 / 委託都要在 NPC 身邊才行', () => {

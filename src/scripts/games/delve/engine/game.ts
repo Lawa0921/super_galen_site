@@ -436,6 +436,8 @@ const ESCORT_REWARD = { xp: 180, coins: 150, item: { item: 'gear_shard' as ItemI
 export const FOLK_TALK_RANGE = 10;
 /** 嚮導 / 線索標記的上限 */
 export const SCOUT_MAX = 60;
+/** 嚮導標的地點彼此至少隔幾格（同一處的地區名牌和地標不會被當成兩個地點） */
+export const SCOUT_SPACING = 24;
 /** 裝備的位置：背包格號碼或裝備槽 */
 export type GearAt = number | EquipSlot;
 export type ForgeResult = { ok: true } | { ok: false; reason: 'none' | 'station' | 'cost' | 'max' | 'unique' | 'locked' };
@@ -1544,7 +1546,7 @@ export class DelveGame {
     if (guide && day > this.perkDays.guide) {
       this.perkDays.guide = day;
       const r = this.scout();
-      if (r) this.events.push({ type: 'scoutmark', by: NPCS.guide.name, name: r.name, x: r.x, y: r.y });
+      if (r) this.events.push({ type: 'scoutmark', by: this.settle.nameOf('guide'), name: r.name, x: r.x, y: r.y });
     }
     updateFreeze(this.world, this.liquids, day, (x, y) => !this.dead && this.tileOverlapsPlayer(x, y), this.minedIce);
   }
@@ -3007,7 +3009,7 @@ export class DelveGame {
     let best: { name: string; key: string; resident?: NpcKind; x: number; y: number } | null = null, bd = 3.5 * TILE_SIZE;
     for (const n of this.settle.npcs) {
       const b = n.body, d = Math.hypot(b.x + b.w / 2 - pc.x, (b.y + b.h / 2 - pc.y) * 0.7);
-      if (d < bd && n.state !== 'sleep') { bd = d; best = { name: NPCS[n.kind].name, key: `res:${n.kind}`, resident: n.kind, x: b.x + b.w / 2, y: b.y }; }
+      if (d < bd && n.state !== 'sleep') { bd = d; best = { name: this.settle.nameOf(n.kind), key: `res:${n.kind}`, resident: n.kind, x: b.x + b.w / 2, y: b.y }; }
     }
     for (const n of this.folk.npcs) {
       const b = n.body, d = Math.hypot(b.x + b.w / 2 - pc.x, (b.y + b.h / 2 - pc.y) * 0.7);
@@ -3360,7 +3362,10 @@ export class DelveGame {
     // 護送還沒交付：先自動交付（不會因為先按邀請而卡死）
     const esc = this.quests.get(`${n.key}#escort`);
     if (esc && this.quests.ready(esc)) this.turnInQuest(esc.def.id);
-    if (!this.settle.invite(kind)) return { ok: false, msg: this.settle.npc(kind) ? `據點已經有${NPCS[kind].title}了` : '已經邀請過了' };
+    const l = n.look;
+    const ident = { name: n.name, look: { app: { ...l.app }, ...(l.head ? { head: l.head } : {}), ...(l.body ? { body: l.body } : {}), ...(l.legs ? { legs: l.legs } : {}),
+      ...(l.back ? { back: l.back } : {}), ...(l.belt ? { belt: l.belt } : {}), ...(l.neck ? { neck: l.neck } : {}) } };
+    if (!this.settle.invite(kind, ident)) return { ok: false, msg: this.settle.npc(kind) ? `據點已經有${NPCS[kind].title}了` : '已經邀請過了' };
     this.folk.addAff(n.key, 10);
     this.folk.dismiss(n);
     const has = this.settle.cores.length > 0;
@@ -3409,7 +3414,11 @@ export class DelveGame {
   /** 嚮導 / 地標線索：把最近的、還沒去過的地點（或還沒領過的地標）標在地圖上 */
   scout(): { name: string; x: number; y: number } | null {
     const pt = this.playerTile();
-    const marked = (x: number, y: number): boolean => this.scouted.has(`${x},${y}`) || this.markers.some((m) => m.x === x && m.y === y);
+    // 標過的地點（嚮導 / 線索 / 委託）+ 玩家自己的標記：SCOUT_SPACING 格以內的候選都算「已經標過」（地區與地標一起去重）
+    const done: { x: number; y: number }[] = this.markers.map((m) => ({ x: m.x, y: m.y }));
+    for (const k of this.scouted) { const [x, y] = k.split(',').map(Number); done.push({ x, y }); }
+    const R2 = SCOUT_SPACING * SCOUT_SPACING;
+    const marked = (x: number, y: number): boolean => done.some((p) => (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y) < R2);
     const cand: { name: string; x: number; y: number; d: number }[] = [];
     for (const l of this.landmarks) {
       const i = this.world.idx(l.x, l.y);
@@ -3484,8 +3493,16 @@ export class DelveGame {
   private addScoutMark(x: number, y: number): void {
     this.scouted.add(`${x},${y}`);
     if (this.scoutMarks.some((m) => m.x === x && m.y === y)) return;
-    if (this.scoutMarks.length >= SCOUT_MAX) this.scoutMarks.shift();
+    if (this.scoutMarks.length >= SCOUT_MAX) {
+      const k = this.scoutMarks.findIndex((m) => this.markDone(m.x, m.y));
+      this.scoutMarks.splice(k >= 0 ? k : 0, 1);
+    }
     this.scoutMarks.push({ x, y });
+  }
+  /** 這個標記已經沒用了：那裡的地標領過了、或那個地點已經發現了 */
+  private markDone(x: number, y: number): boolean {
+    if (this.world.inBounds(x, y) && this.landmarkAt.has(this.world.idx(x, y))) return this.discovery.landmarks.has(this.world.idx(x, y));
+    return this.regions.some((r) => r.ax === x && r.ay === y && this.discovery.isFound(r.id));
   }
   /** 交付：要在委託人身邊（村長 / 長老 / 被護送的人） */
   turnInQuest(id: string): boolean {

@@ -195,6 +195,29 @@ export const NPCS: Record<NpcKind, NpcDef> = {
   },
 };
 
+/** 招募型居民的個人身分（邀請時從那位旅行藥師 / 探險者帶過來：名字 + 外觀） */
+export interface NpcIdent { name: string; look: NpcLook; }
+/** 套上個人身分後的居民設定（沒有身分 → 原本的設定）；介紹文字換成這個人的名字 */
+export function withIdent(kind: NpcKind, ident?: NpcIdent | null): NpcDef {
+  const d = NPCS[kind];
+  if (!ident) return d;
+  return { ...d, name: ident.name, look: ident.look, intro: d.intro.replace(d.name, ident.name) };
+}
+const LOOK_BELTS = new Set(['compass', 'depth', 'map', 'magnet']);
+const LOOK_NECKS = new Set(['night', 'fang', 'heart', 'magma']);
+/** 存檔讀回的身分：壞掉的欄位丟掉（名字 1～12 字、外觀正規化、部位只收字串） */
+export function validIdent(raw: unknown, normalize: (a: unknown) => Appearance): NpcIdent | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as { name?: unknown; look?: Record<string, unknown> };
+  if (typeof o.name !== 'string' || !o.name.length || o.name.length > 12 || !o.look || typeof o.look !== 'object') return null;
+  const s = (v: unknown): string | undefined => (typeof v === 'string' && /^[a-z]+:[a-z_]+$/.test(v) ? v : undefined);
+  const look: NpcLook = { app: normalize(o.look.app) };
+  for (const k of ['head', 'body', 'legs', 'back'] as const) { const v = s(o.look[k]); if (v) look[k] = v; }
+  if (typeof o.look.belt === 'string' && LOOK_BELTS.has(o.look.belt)) look.belt = o.look.belt as NpcLook['belt'];
+  if (typeof o.look.neck === 'string' && LOOK_NECKS.has(o.look.neck)) look.neck = o.look.neck as NpcLook['neck'];
+  return { name: o.name, look };
+}
+
 // ── 心情 ────────────────────────────────────────────────
 export interface MoodCtx {
   /** 自己房間的舒適度（沒有房間 = 0） */

@@ -272,10 +272,10 @@ export class ExploreUi {
       : '還沒有據點：做一個「據點爐心」放在地上，範圍內的合格房間會吸引居民搬來'));
     const ppl = el('div', 'delve-j-npcs');
     for (const k of NPC_KINDS) {
-      const n = st.npc(k), d = NPCS[k];
+      const n = st.npc(k), d = st.def(k);
       const cell = el('span', n ? 'delve-j-npc is-got' : 'delve-j-npc');
       cell.dataset.npc = k;
-      cell.appendChild(npcPortrait(k));
+      cell.appendChild(npcPortrait(k, d.look));
       cell.appendChild(el('span', '', n ? `${d.name}・${d.title}` : `？？？・${d.title}`));
       cell.title = n ? `${d.intro}（心情：${moodLabel(n.mood)}）` : `入住條件：${d.need.zh}`;
       ppl.appendChild(cell);
