@@ -879,7 +879,7 @@ export class Game {
     if (this.phase === 'town' && this.storage && !saveGame(this.storage, this.state)) this.notice = 'save-failed';
   }
 
-  /** What a return to town queues: acts reached, Rin's reveal; then the arrival, with one chat. */
+  /** What a return to town queues: acts reached, Rin's reveal; then the arrival, with one chat and one banter (B1). */
   private arrive(): void {
     this.state.story = onReturn(this.state);
     this.arrival = arrivalScenes(this.state, { chat: true });

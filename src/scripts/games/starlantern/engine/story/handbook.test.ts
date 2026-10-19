@@ -5,7 +5,7 @@ import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { chainLength, CHAINS } from '../../data/story/chains';
 import { TOWN_FRAGMENTS } from '../../data/story/fragments';
-import { CHAT_COUNT, HOME_OWNERS, SCENE_IDS, STAGES, homeScene, memScene, type SceneId } from '../../data/story/scenes';
+import { CHAT_COUNT, HOME_OWNERS, SCENE_IDS, STAGES, homeScene, memScene, sceneKind, type SceneId } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
@@ -200,6 +200,7 @@ describe("the adventurer's handbook", () => {
     // Task 10b: the inn night and the first return are the two of them before her story; they sit on her page, in story order.
     expect(rin.scenes.map((e) => [e.scene, e.fresh])).toEqual([
       ['prologue-inn', false], ['first-return', true], ['rin-reveal', true], ['bellkeeper-arrives', false], ['chat:rin:1', false], ['chat:rin:2', true], ['chat:rin:3', false], ['chat:rin:4', false],
+      ['banter:noel-rin:1', false],   // B1: her banters follow her chats
     ]);
     expect(h.town.find((t) => t.id === 'orik')!.scene!.fresh).toBe(true);
     expect(h.town.find((t) => t.id === 'marta')!.scene!.fresh).toBe(false);
@@ -213,11 +214,33 @@ describe("the adventurer's handbook", () => {
       ...h.people.flatMap((p) => p.scenes.map((e) => e.scene)),
       ...h.town.flatMap((t) => (t.scene ? [t.scene.scene] : [])),
     ];
-    expect(new Set(ids).size).toBe(ids.length);
-    expect([...ids].sort()).toEqual([...SCENE_IDS].sort());
+    // B1: a banter sits on the page of each of its two, and every other scene on exactly one page.
+    const banters = ids.filter((id) => sceneKind(id) === 'banter');
+    const rest = ids.filter((id) => sceneKind(id) !== 'banter');
+    expect(new Set(rest).size).toBe(rest.length);
+    for (const id of new Set(banters)) expect(banters.filter((b) => b === id), id).toHaveLength(2);
+    expect([...new Set(ids)].sort()).toEqual([...SCENE_IDS].sort());
     for (const id of CHARACTER_IDS) {
       expect(h.people.find((p) => p.id === id)!.scenes.filter((e) => e.scene.startsWith('chat:')).length).toBe(CHAT_COUNT[id]);
     }
+  });
+
+  it('a banter is replayable from the page of each of its two, once seen: after her chats, before her homecoming (B1)', () => {
+    const s = withMemories(withMemories(fresh(), 'safira', 0), 'sylvie', 0);
+    const id: SceneId = 'banter:safira-sylvie:1';
+    const scenesOf = (st: GameState, c: CharacterId) => handbook(st).people.find((p) => p.id === c)!.scenes.map((e) => e.scene);
+    expect(scenesOf(s, 'safira')).toEqual([]);   // not yet heard: not listed
+    s.story.seen.push('chat:safira:1', id, 'home:safira');
+    s.story.fresh.push(id);
+    expect(scenesOf(s, 'safira')).toEqual(['chat:safira:1', id, 'home:safira']);
+    expect(scenesOf(s, 'sylvie')).toEqual([id]);
+    const entry = handbook(s).people.find((p) => p.id === 'sylvie')!.scenes[0];
+    expect(entry).toEqual({ scene: id, title: STORY.scenes[id].title, fresh: true });
+    expect(scenesOf(s, 'noel')).toEqual([]);   // nobody else's page
+    // everyone's banters, in the fixed pair order
+    const all = everything();
+    expect(scenesOf(all, 'rin').filter((x) => x.startsWith('banter:'))).toEqual(['banter:noel-rin:1']);
+    expect(scenesOf(all, 'hero').filter((x) => x.startsWith('banter:'))).toEqual([]);   // Lorne listens
   });
 
   it('only seen scenes are listed', () => {

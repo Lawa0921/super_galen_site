@@ -128,6 +128,31 @@ describe('HandbookScene', () => {
     expect({ ...t.game.state.story, fresh: [] }).toEqual(before);
   });
 
+  it('a banter heard on a return is replayed from the people page of either of its two, and moves no progress (B1)', async () => {
+    const id: SceneId = 'banter:noel-rin:1';
+    const t = setup(undefined, (g) => {
+      meetAll(g, ['noel']);
+      g.state.story.seen = ['prologue', id];
+      g.state.story.fresh = [id];
+    });
+    const done = vi.spyOn(t.game, 'sceneDone');
+    const before = structuredClone({ ...t.game.state.story, fresh: [] });
+    t.goTab(H.tabs.people);
+    t.pick(CHARACTERS.noel.name);
+    expect(t.labels()).toEqual([STORY.scenes[id].title]);
+    expect(t.fresh(STORY.scenes[id].title)).toBe(true);
+    t.pick(STORY.scenes[id].title);
+    expect(t.root.querySelector('.slx-handbook')!.classList.contains('slx-hb-playing')).toBe(true);
+    await t.skipScene();
+    expect(t.fresh(STORY.scenes[id].title)).toBe(false);
+    t.s.onAction('cancel');
+    t.pick(CHARACTERS.rin.name);   // the same banter sits on Rin's page too
+    expect(t.labels()).toContain(STORY.scenes[id].title);
+    expect(done).not.toHaveBeenCalled();
+    expect(t.game.state.story.fresh).toEqual([]);
+    expect({ ...t.game.state.story, fresh: [] }).toEqual(before);
+  });
+
   it('a companion not yet met shows a silhouette and ？？？, never the real name or title, and no detail heading', () => {
     const lost = CHARACTER_IDS.find((id) => !new Game(constRng(0.5), null).state.party.recruited.includes(id))!;
     const t = setup(undefined, undefined, { has: (u) => u === art.standee(lost) });

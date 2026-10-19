@@ -1,6 +1,6 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import { chainLength } from '../../data/story/chains';
-import { ACT_DEPTHS, ACT_NODES, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, STAGES, homeScene, type SceneId, type Stage } from '../../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, STAGES, banterScene, banterTwo, homeScene, type BanterGate, type BanterPair, type SceneId, type Stage } from '../../data/story/scenes';
 import { memoriesOf } from '../progression';
 import type { GameState, StoryState } from '../state';
 
@@ -105,14 +105,54 @@ export function nextChat(s: GameState, gates = CHAT_GATE): SceneId | null {
 }
 
 /**
+ * Whether a banter may play (B1): both of its two met, and its gate holding, used like `chatOpen`: the stage reached, Rin's
+ * choice made, her memories whole. No gate opens a banter whose two are not both met.
+ */
+export function banterOpen(s: GameState, id: SceneId, gates: Partial<Record<SceneId, BanterGate>> = BANTER_GATE): boolean {
+  if (!banterTwo(id).every((c) => s.party.recruited.includes(c))) return false;
+  const g = gates[id];
+  if (!g) return true;
+  if (g.stage && STAGES.indexOf(storyStage(s)) < STAGES.indexOf(g.stage)) return false;
+  if (g.oath && !s.party.roster.rin?.oath) return false;
+  if (g.full && memoriesOf(s.party.roster[g.full]) < chainLength(g.full)) return false;
+  return true;
+}
+
+/**
+ * The banter for a return to town (B1), picked without any rng: the pair heard least among those with one ready, then the
+ * pairs' fixed order (`BANTER_PAIRS`). A pair offers its banters in order: one still gated holds back the ones after it,
+ * like a chat. A heard banter is never offered again (the handbook replays it), so none repeats before every open one has played.
+ */
+export function nextBanter(s: GameState, gates: Partial<Record<SceneId, BanterGate>> = BANTER_GATE, count: Partial<Record<BanterPair, number>> = BANTER_COUNT): SceneId | null {
+  const seen = new Set<SceneId>(s.story.seen);
+  const pairs = count === BANTER_COUNT ? BANTER_PAIRS : (Object.keys(count) as BanterPair[]).sort();
+  let best: { id: SceneId; heard: number } | null = null;
+  for (const pair of pairs) {
+    let heard = 0;
+    let next: SceneId | null = null;
+    for (let n = 1; n <= (count[pair] ?? 0); n++) {
+      const id = banterScene(pair, n);
+      if (seen.has(id)) { heard++; continue; }
+      if (!next && (n === 1 || seen.has(banterScene(pair, n - 1))) && banterOpen(s, id, gates)) next = id;
+    }
+    if (next && (!best || heard < best.heard)) best = { id: next, heard };
+  }
+  return best?.id ?? null;
+}
+
+/**
  * The scenes this arrival in town should play, in order. Rin's reveal plays alone (the rest wait for the next return).
- * `chat` is true only for a return to town: a new game or a reload never adds a chat.
+ * `chat` is true only for a return to town: a new game or a reload never adds a chat, nor a banter. On a return the queue
+ * plays first (the opening, the acts, the bellkeeper, the memories, the homecomings), then one chat, then one banter (B1):
+ * a banter never goes ahead of anything the story owes, and it plays even when no chat is due.
  */
 export function arrivalScenes(s: GameState, o: { chat: boolean }): SceneId[] {
   if (s.story.queue.includes('rin-reveal')) return ['rin-reveal'];
   const list = [...s.story.queue].sort((a, b) => rank(a) - rank(b));
-  const chat = o.chat ? nextChat(s) : null;
-  return chat ? [...list, chat] : list;
+  if (!o.chat) return list;
+  const chat = nextChat(s);
+  const banter = nextBanter(s);
+  return [...list, ...(chat ? [chat] : []), ...(banter ? [banter] : [])];
 }
 
 /**

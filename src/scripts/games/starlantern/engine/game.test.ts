@@ -2634,6 +2634,62 @@ describe('the arrival queue', () => {
     expect(chatsOf(h)).toEqual(['chat:hero:1']);
   });
 
+  it('a return to town adds one banter after the chat, and takes no draw from game.rng, lootRng or memoryRng (B1)', () => {
+    /** A counted rng that never rolls an early encounter, like calm(). */
+    const counted = () => { const r = { draws: 0, rng: () => { r.draws++; return 0.99; } }; return r; };
+    const trip = (allHeard: boolean) => {
+      const r = counted();
+      const g = new Game(r.rng, memoryStorage(), undefined, 0, duo);
+      g.state.dungeon.reached.mainline = 3;
+      g.state.story.queue = [];
+      g.state.story.seen = ['prologue', 'prologue-inn'];
+      g.state.party = meet(g.state.party, 'noel', 1);
+      if (allHeard) g.state.story.seen.push('banter:noel-rin:1');
+      inRun(g);
+      const run = g.run!;
+      const at = { draws: r.draws, loot: run.lootDraws, memory: run.memoryDraws };
+      expect(g.returnToTown()).toBe(true);
+      return { g, draws: r.draws - at.draws, loot: run.lootDraws - at.loot, memory: run.memoryDraws - at.memory };
+    };
+    const due = trip(false);
+    const none = trip(true);
+    expect(due.g.arrival.at(-1)).toBe('banter:noel-rin:1');
+    expect(due.g.arrival.filter((id) => id.startsWith('banter:'))).toHaveLength(1);
+    expect(chatsOf(due.g)).toHaveLength(1);
+    expect(due.g.arrival.indexOf(chatsOf(due.g)[0])).toBeLessThan(due.g.arrival.indexOf('banter:noel-rin:1'));
+    expect(none.g.arrival.filter((id) => id.startsWith('banter:'))).toEqual([]);
+    expect({ draws: due.draws, loot: due.loot, memory: due.memory }).toEqual({ draws: none.draws, loot: 0, memory: 0 });
+    expect(none.loot + none.memory).toBe(0);
+    // it is played and recorded like a chat, and saved at once in town
+    expect(due.g.sceneDone('banter:noel-rin:1', 'played')).toBe(true);
+    expect(due.g.state.story.seen).toContain('banter:noel-rin:1');
+    expect(due.g.state.story.queue).toEqual([]);
+  });
+
+  it('an old save loads as it is: no banter is replayed or queued, and the next return brings the first one (B1)', () => {
+    const storage = memoryStorage();
+    const s = townGame(duo, storage).state;
+    s.story.seen.push('prologue-inn', 'chat:hero:1', 'chat:rin:1');
+    s.party = meet(s.party, 'noel', 1);
+    s.party = meet(s.party, 'liz', 1);
+    s.party = meet(s.party, 'scarlet', 1);
+    saveGame(storage, s);   // nothing new in the format: a save from before B1 is exactly this
+    expect(SAVE_VERSION).toBe(8);
+    expect(loadGame(storage).status).toBe('ok');
+    const g = Game.boot(calm(), storage);
+    expect(g.notice).not.toBe('save-reset');
+    expect(g.arrival).toEqual([]);
+    expect(g.state.story.seen.filter((id) => id.startsWith('banter:'))).toEqual([]);
+    expect(g.state.story.queue).toEqual([]);
+    inRun(g);
+    g.returnToTown();
+    expect(g.arrival.filter((id) => id.startsWith('banter:'))).toEqual(['banter:liz-scarlet:1']);
+    // a save that holds a heard banter loads too
+    expect(g.sceneDone('banter:liz-scarlet:1', 'played')).toBe(true);
+    expect(loadGame(storage).status).toBe('ok');
+    expect(Game.boot(calm(), storage).state.story.seen).toContain('banter:liz-scarlet:1');
+  });
+
   it('a wipe enqueues like a safe return', () => {
     const g = inRun(townGame());
     g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;

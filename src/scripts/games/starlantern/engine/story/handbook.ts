@@ -4,7 +4,7 @@ import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from '../../data/story/fragments';
-import { CHAT_COUNT, HOME_OWNERS, homeScene, memScene, type HomeOwner, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
+import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, banterScene, homeScene, memScene, type HomeOwner, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { memoriesOf } from '../progression';
@@ -68,9 +68,12 @@ export function handbook(s: GameState): Handbook {
     const k = !met ? 0 : id === 'rin' && m.oath ? 4 : have >= len ? 3 : have >= Math.ceil(len / 2) ? 2 : 1;
     const chats = Array.from({ length: CHAT_COUNT[id] }, (_, i): SceneId => `chat:${id}:${i + 1}`);
     const home: SceneId[] = (HOME_OWNERS as string[]).includes(id) ? [homeScene(id as HomeOwner)] : [];
+    // B1: a banter sits on the page of each of its two, after her chats, in the pairs' fixed order.
+    const banters = BANTER_PAIRS.filter((p) => p.split('-').includes(id))
+      .flatMap((p) => Array.from({ length: BANTER_COUNT[p] ?? 0 }, (_, i) => banterScene(p, i + 1)));
     // Rin's page also replays the two of them before her story (the inn night and the first return, Task 10b) and the
     // bellkeeper's arrival after it (continuity fix 4); a homecoming sits last on its owner's page (continuity fix 2).
-    const own: SceneId[] = id === 'rin' ? ['prologue-inn', 'first-return', 'rin-reveal', 'bellkeeper-arrives', ...chats] : [...chats, ...home];
+    const own: SceneId[] = id === 'rin' ? ['prologue-inn', 'first-return', 'rin-reveal', 'bellkeeper-arrives', ...chats, ...banters] : [...chats, ...banters, ...home];
     return { id, met, title: titleOf(m), segments: STORY.people[id].slice(0, k), scenes: entries(own) };
   });
   const town = TOWN_FRAGMENTS.map((f): TownPage => {

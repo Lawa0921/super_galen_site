@@ -5,7 +5,7 @@ import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { MEETINGS, type Meetable } from './meetings';
 import { CHAINS } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
-import { CHAT_COUNT, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
+import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, banterScene, banterTwo, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
 
 export type NpcId = 'anna' | 'orik' | 'marta' | 'glen' | 'doran' | 'merchant' | 'bellkeeper';
 export const NPC_NAMES: Record<NpcId, string> = {
@@ -1193,6 +1193,45 @@ const HOME: Record<HomeOwner, Written> = {
   },
 };
 
+/**
+ * B1: town banter (voice-pass sample §6). Two companions talk among themselves on a return; Lorne listens (one line at most,
+ * or the narrator gives his reaction). Light scenes: one 「……」 at most. The gate (`BANTER_GATE`) guarantees both are met, so
+ * neither line needs `if.met`. A banter with no gate can play before or after Rin's choice and before either one's first
+ * piece: Rin keeps her rules from before her choice, and each keeps her own reveal rules (story.test, B1). B2 writes the rest.
+ */
+const BANTER: Partial<Record<SceneId, Written>> = {
+  // Safira's register (唷, 呀, ～) and her nickname for Sylvie, 「小希」 (sample §3, §7); Sylvie is terse and counts exits.
+  'banter:safira-sylvie:1': {
+    lines: [
+      N('黃昏的廣場。莎菲拉拉著希爾薇的手腕，硬是把她拖到石板中央。'),
+      { who: 'safira', mood: 'wink', text: '「來，小希，右腳、左腳、轉──妳的眼睛在看哪裡呀？」' },
+      { who: 'sylvie', mood: 'serious', text: '「退路。三條。」' },
+      { who: 'safira', mood: 'laugh', text: '「跳舞不用退路唷！欸，小洛你看，她真的從第三條溜走了～」' },
+    ],
+    summary: '莎菲拉硬把希爾薇拖到廣場上學跳舞。希爾薇只顧著找退路，最後從第三條溜走了。',
+  },
+  // Noel declares Rin her rival; Rin concedes at once, which is worse. Rin's two lines hold before and after her choice.
+  'banter:noel-rin:1': {
+    lines: [
+      { who: 'noel', mood: 'smug', text: '「喂，凜！今天本小姐打倒的，比妳多一隻。服不服？」' },
+      { who: 'rin', mood: 'normal', text: '「服。」' },
+      { who: 'noel', mood: 'pout', text: '「太、太乾脆了吧！至少不甘心一下啊！」' },
+      { who: 'rin', mood: 'normal', text: '「好。不甘心。」' },
+    ],
+    summary: '諾艾兒宣布凜是她的勁敵。凜乾脆認輸，反而把諾艾兒氣得跳腳。',
+  },
+  // Street talk against a knight's report. Scarlet says no 起誓, 轉身 or 逃; Liz no debt, home or hat: both hold before any piece.
+  'banter:liz-scarlet:1': {
+    lines: [
+      { who: 'liz', mood: 'scheming', text: '「騎士大姊，剛才那個寶箱，我三兩下就搞定了。」' },
+      { who: 'scarlet', mood: 'serious', text: '「『搞定』是指什麼？請完整回報：開鎖的手法、所花的時間、有無陷阱。」' },
+      { who: 'liz', mood: 'smile', text: '「手法，商業機密。時間，一下下。陷阱，拆了──零件還能賣兩枚銀幣。」' },
+      { who: 'scarlet', mood: 'serious', text: '「回報收到。……下一次，請先說陷阱。」' },
+    ],
+    summary: '莉茲說寶箱三兩下就搞定了，絲嘉蕾要她照規矩完整回報。陷阱的零件，莉茲已經算好要賣多少了。',
+  },
+};
+
 function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }> {
   const out = {} as Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }>;
   // Plan 6c wrote every scene (Task 14 removed the drafts): a scene without its SCRIPT entry is a bug, not a draft.
@@ -1205,6 +1244,13 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
   }
   for (const f of TOWN_FRAGMENTS) out[`town:${f.id}`] = { title: `${f.npc}的記憶`, ...TOWN_SCENES[f.id] };
   for (const c of HOME_OWNERS) out[homeScene(c)] = { title: `${nameOf(c)}・${HOME_TITLES[c]}`, ...HOME[c] };
+  for (const p of BANTER_PAIRS) {
+    for (let n = 1; n <= (BANTER_COUNT[p] ?? 0); n++) {
+      const id = banterScene(p, n);
+      const [a, b] = banterTwo(id);
+      out[id] = { title: `${nameOf(a)}與${nameOf(b)}・閒聊 ${n}`, ...written(BANTER[id], id) };
+    }
+  }
   return out;
 }
 

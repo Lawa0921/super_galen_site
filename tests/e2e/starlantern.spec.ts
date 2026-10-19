@@ -1319,6 +1319,58 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test('B1: on a return to town, Noel and Rin talk among themselves after the chat, and the town menu waits for them', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const w = await setup(page, 7, { story: 'all' });
+    const talkText = page.locator('.slx-town .slx-talk .slx-text');
+    const playOut = async () => {
+      for (let quiet = 0, i = 0; quiet < 4 && i < 400; i++) {
+        if (await page.locator('.slx-talk').first().isVisible()) { quiet = 0; await page.keyboard.press('z'); await page.waitForTimeout(30); }
+        else if ((await page.locator('.slx-cmd-hidden').count()) > 0) { quiet = 0; await page.waitForTimeout(60); }
+        else { quiet++; await page.waitForTimeout(60); }
+      }
+      await expect(page.locator('.slx-talk').first()).toBeHidden();
+    };
+    await playOut();   // the prologue and the inn night
+    // Noel joins (as a won rescue would leave her), so the two of them are met.
+    const party = await game((g) => JSON.parse(JSON.stringify(g.state.party)));
+    await game((g, p) => { g.state.party = p; }, meet(party, 'noel', 1));
+    const id = 'banter:noel-rin:1';
+    const banter = STORY.scenes[id];
+    await depart(page, w);
+    await game((g) => { g.state.inventory['return-lamp'] = 1; });
+    await lampHome(page, w);
+    // The arrival: the chat first (if one is due), then this one banter, last; nothing else is a banter.
+    const arrival = await game((g) => [...g.arrival]);
+    expect(arrival.at(-1)).toBe(id);
+    expect(arrival.filter((x: string) => x.startsWith('banter:'))).toEqual([id]);
+    expect(arrival.slice(0, -1).every((x: string) => x.startsWith('chat:'))).toBe(true);
+    await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+    // Its lines play in order on the town's dialogue box, under their speakers' names, while the menu stays hidden.
+    const spoken = banter.lines.filter((l) => l.who !== 'narrator');
+    let at = 0;
+    for (let i = 0; i < 80 && at < spoken.length; i++) {
+      const text = (await talkText.textContent()) ?? '';
+      if (text === spoken[at].text) {
+        await expect(page.locator('.slx-town .slx-talk .slx-name')).toHaveText(CHARACTERS[spoken[at].who as keyof typeof CHARACTERS].name);
+        await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+        at++;
+      }
+      if (at < spoken.length) { await w.key('z'); await page.waitForTimeout(60); }
+    }
+    expect(at, 'every spoken line of the banter showed, in order').toBe(spoken.length);
+    await playOut();
+    await expect(page.locator('.slx-town-menu')).not.toHaveClass(/slx-cmd-hidden/);
+    const after = await game((g) => ({ seen: g.state.story.seen, queue: g.state.story.queue, arrival: g.arrival }));
+    expect(after.seen).toContain(id);
+    expect(after.queue).toEqual([]);
+    expect(after.arrival).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
   test("prologue, Rin's first memory, Selene, recall, handbook, Rin's reveal and Scarlet's fight", async ({ page }) => {
     test.setTimeout(300_000);
     await page.setViewportSize({ width: 1280, height: 720 });
@@ -1496,7 +1548,7 @@ test.describe('starlantern', () => {
     await lampHome(page, w);
     const homeArrival = await game((g) => g.arrival);
     expect(homeArrival[0]).toBe('first-return');
-    expect(homeArrival.slice(1).every((id: string) => id.startsWith('chat:'))).toBe(true);
+    expect(homeArrival.slice(1).every((id: string) => /^(chat|banter):/.test(id))).toBe(true);   // B1: a banter may follow the chat
     await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
     {
       const trust = STORY.scenes['first-return'].lines.filter((l) => l.who === 'rin').at(-1)!.text;   // Rin's last spoken line of the scene
