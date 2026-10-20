@@ -4,18 +4,20 @@ import type { DelveGame } from '../engine/game';
 import { restoreGame } from './serialize';
 import { readLegacyFixture } from './legacyFixture';
 import { decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
+import type { CharacterMeta } from './storage';
+import { levelForXp } from '../engine/levels';
 import {
-  CHARACTER_CORRUPT_MSG, CHARACTER_MISSING_MSG, WORLD_CORRUPT_MSG, SplitSession, commitMigration, planContinue, saveSplit,
+  CHARACTER_CORRUPT_MSG, CHARACTER_MISSING_MSG, WORLD_CORRUPT_MSG, SplitSession, commitMigration, newWorldSlot, planContinue, saveSplit,
   type SlotRead, type SplitStore,
 } from './split';
 
 const fixtureGame = (): DelveGame => { const r = restoreGame(readLegacyFixture()); if (!r.ok) throw new Error(r.message); return r.game; };
 
-type MemStore = SplitStore & { log: string[]; slots: Record<string, SlotRead>; chars: Record<string, Uint8Array> };
+type MemStore = SplitStore & { log: string[]; slots: Record<string, SlotRead>; chars: Record<string, Uint8Array>; times: Record<string, number>; ctimes: Record<string, number> };
 function memStore(slots: Record<string, SlotRead>, o: { failPutOnce?: boolean } = {}): MemStore {
   let fail = o.failPutOnce ?? false;
   const st: MemStore = {
-    log: [], slots: { ...slots }, chars: {},
+    log: [], slots: { ...slots }, chars: {}, times: {}, ctimes: {},
     async getSlot(slot) { return st.slots[slot] ?? null; },
     async getCharacter(id) { return st.chars[id] ?? null; },
     async backupSlot(from, to) {
@@ -29,7 +31,22 @@ function memStore(slots: Record<string, SlotRead>, o: { failPutOnce?: boolean } 
       if (fail) { fail = false; throw new Error('tx aborted'); }
       st.slots[slot] = { bytes: world.bytes, charId: character.id };
       st.chars[character.id] = encodeCharacter(character);
-      return { slot, seed: world.seed, savedAt: 0, bytes: world.bytes.length, summary: world.summary };
+      st.times[slot] = character.savedAt; st.ctimes[character.id] = character.savedAt;
+      return { slot, seed: world.seed, savedAt: character.savedAt, bytes: world.bytes.length, summary: world.summary };
+    },
+    async putCharacter(c) { st.log.push(`putCharacter ${c.id}`); st.chars[c.id] = encodeCharacter(c); st.ctimes[c.id] = c.savedAt; },
+    async deleteWorld(slot) { st.log.push(`deleteWorld ${slot}`); delete st.slots[slot]; },
+    async deleteCharacter(id) { st.log.push(`deleteCharacter ${id}`); delete st.chars[id]; },
+    async listWorlds() {
+      return Object.keys(st.slots).filter((s) => !s.endsWith('.bak'))
+        .map((slot) => ({ slot, seed: 's', savedAt: st.times[slot] ?? 0, bytes: st.slots[slot].bytes.length }))
+        .sort((a, b) => b.savedAt - a.savedAt);
+    },
+    async listCharacters() {
+      return Object.keys(st.chars).map((id): CharacterMeta => {
+        const c = decodeCharacter(st.chars[id]);
+        return { id, nick: c.nick, savedAt: st.ctimes[id] ?? 0, rev: c.rev, level: levelForXp(c.levels.xp), appearance: c.appearance };
+      }).sort((a, b) => b.savedAt - a.savedAt);
     },
   };
   return st;
@@ -126,6 +143,25 @@ describe('split orchestration', () => {
     const st = memStore({});
     const s = await commitMigration(st, 'main', fixtureGame(), 5, { backup: false });
     expect(st.log).toEqual([`putSplit main ${s.charId}`]);
+  });
+  it('listWorlds excludes backups and sorts newest first', async () => {
+    const st = memStore({ a: { bytes: new Uint8Array(1) }, 'a.v9.bak': { bytes: new Uint8Array(1) }, b: { bytes: new Uint8Array(1) } });
+    st.times.a = 5; st.times.b = 9;
+    expect((await st.listWorlds()).map((m) => m.slot)).toEqual(['b', 'a']);
+  });
+  it('deleteCharacter removes only that character', async () => {
+    const st = memStore({});
+    const g = fixtureGame();
+    const s1 = SplitSession.fresh('x', 1); const s2 = SplitSession.fresh('y', 2);
+    await saveSplit(st, 'w1', s1, g, 10); await saveSplit(st, 'w2', s2, g, 20);
+    await st.deleteCharacter(s1.charId);
+    expect((await st.listCharacters()).map((c) => c.id)).toEqual([s2.charId]);
+    expect(Object.keys(st.slots).sort()).toEqual(['w1', 'w2']);
+  });
+  it('newWorldSlot is unique and prefixed', () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 100; i++) { const s = newWorldSlot(); expect(s).toMatch(/^w-[0-9a-f-]{36}$/); seen.add(s); }
+    expect(seen.size).toBe(100);
   });
   it('空槽 → none', async () => expect(await planContinue(memStore({}), 'main')).toEqual({ kind: 'none' }));
 });

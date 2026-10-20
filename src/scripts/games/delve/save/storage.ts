@@ -1,6 +1,8 @@
 // storage.ts — 薄封裝：gzip（CompressionStream，可用才用）+ IndexedDB + 自動存檔 + 匯出/匯入。
 // 純邏輯在 serialize.ts / split.ts（有單元測試）；本檔只做瀏覽器 I/O（IndexedDB 由 e2e 驗；只有 gzip 與自動存檔排程有單元測試）。
-import { encodeCharacter } from './character';
+import { decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
+import { levelForXp } from '../engine/levels';
+import type { Appearance } from '../engine/appearance';
 import { WORLD_FORMAT } from './worldSave';
 import type { SplitStore } from './split';
 
@@ -42,7 +44,17 @@ export interface SlotMeta {
 /** saves 記錄：data = compress(serializeGame 或 encodeWorld 的輸出) */
 interface SlotRecord extends SlotMeta { data: Uint8Array; }
 /** characters 記錄：data = compress(encodeCharacter) */
-export interface CharacterRecord { id: string; nick: string; savedAt: number; rev: number; data: Uint8Array }
+export interface CharacterRecord {
+  id: string; nick: string; savedAt: number; rev: number; data: Uint8Array;
+  /** 列表顯示用（存檔時算好；舊記錄沒有 → listCharacters 解碼 data 補） */
+  preview?: { level: number; appearance: Appearance };
+}
+/** 角色選單的一列 */
+export interface CharacterMeta { id: string; nick: string; savedAt: number; rev: number; level: number; appearance: Appearance }
+
+function previewOf(c: DelveCharacter): { level: number; appearance: Appearance } {
+  return { level: levelForXp(c.levels.xp), appearance: c.appearance };
+}
 
 export function hasCompression(): boolean {
   return typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined';
@@ -162,8 +174,8 @@ function asBytes(d: Uint8Array | ArrayBuffer): Uint8Array {
   return d instanceof Uint8Array ? d : new Uint8Array(d);
 }
 
-/** 可繼續的槽（備份記錄 `*.bak` 不列出），新到舊 */
-export async function listSlots(): Promise<SlotMeta[]> {
+/** 可繼續的世界（備份記錄 `*.bak` 不列出），新到舊 */
+export async function listWorlds(): Promise<SlotMeta[]> {
   const all = await tx<SlotRecord[]>('readonly', (s) => s.getAll() as IDBRequest<SlotRecord[]>);
   return all.filter((r) => !r.slot.endsWith('.bak'))
     .map(({ slot, seed, savedAt, bytes, summary, charId, format }) => ({
@@ -209,6 +221,36 @@ export const idbSplitStore: SplitStore = {
     });
   },
 
+  async listWorlds() { return listWorlds(); },
+
+  async listCharacters() {
+    const all = await tx<CharacterRecord[]>('readonly', (s) => s.getAll() as IDBRequest<CharacterRecord[]>, CHAR_STORE);
+    const out: CharacterMeta[] = [];
+    for (const r of all) {
+      let preview = r.preview;
+      if (!preview) {
+        try { preview = previewOf(decodeCharacter(await decompress(asBytes(r.data)))); } catch { continue; } // 壞掉的舊記錄不列出
+      }
+      out.push({ id: r.id, nick: r.nick, savedAt: r.savedAt, rev: r.rev, ...preview });
+    }
+    return out.sort((a, b) => b.savedAt - a.savedAt);
+  },
+
+  async deleteWorld(slot) {
+    await withTx(STORE, 'readwrite', (t) => { t.objectStore(STORE).delete(slot); return () => undefined; });
+  },
+
+  async deleteCharacter(id) {
+    await withTx(CHAR_STORE, 'readwrite', (t) => { t.objectStore(CHAR_STORE).delete(id); return () => undefined; });
+  },
+
+  /** 只寫角色記錄（同 id 覆蓋） */
+  async putCharacter(c) {
+    const data = await compress(encodeCharacter(c));
+    const rec: CharacterRecord = { id: c.id, nick: c.nick, savedAt: c.savedAt, rev: c.rev, data, preview: previewOf(c) };
+    await withTx(CHAR_STORE, 'readwrite', (t) => { t.objectStore(CHAR_STORE).put(rec); return () => undefined; });
+  },
+
   /** 先壓縮兩份，再在同一個 transaction 寫世界記錄（saves）與角色記錄（characters） */
   async putSplit(slot, world, character) {
     const [wdata, cdata] = await Promise.all([compress(world.bytes), compress(encodeCharacter(character))]);
@@ -218,7 +260,7 @@ export const idbSplitStore: SplitStore = {
       ...(world.summary ? { summary: world.summary } : {}), charId: character.id, format: WORLD_FORMAT,
     };
     const rec: SlotRecord = { ...meta, data: wdata };
-    const crec: CharacterRecord = { id: character.id, nick: character.nick, savedAt, rev: character.rev, data: cdata };
+    const crec: CharacterRecord = { id: character.id, nick: character.nick, savedAt, rev: character.rev, data: cdata, preview: previewOf(character) };
     await withTx([STORE, CHAR_STORE], 'readwrite', (t) => {
       t.objectStore(STORE).put(rec);
       t.objectStore(CHAR_STORE).put(crec);

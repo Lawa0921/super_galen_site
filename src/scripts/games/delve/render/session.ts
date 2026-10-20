@@ -5,7 +5,7 @@ import { generateWorldSteps, GEN_STAGE_COUNT, type GenResult } from '../engine/w
 import { GEN_VERSION } from '../engine/constants';
 import { restoreGame, COMPAT_GEN, type SaveData } from '../save/serialize';
 import {
-  listSlots, startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, idbSplitStore, DbBlockedError, type SlotMeta,
+  listWorlds, startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, idbSplitStore, DbBlockedError, type SlotMeta,
 } from '../save/storage';
 import { SplitSession, planContinue, saveSplit, commitMigration, type ContinuePlan } from '../save/split';
 import { decodeAnySave, encodeWorld, restoreSplit, type AnySave, type WorldData } from '../save/worldSave';
@@ -279,7 +279,7 @@ export function bootDelve(root: HTMLElement): Session {
   async function existingSlot(): Promise<SlotMeta | null> {
     if (!hasIndexedDB()) return null;
     try {
-      return (await listSlots()).find((m) => m.slot === SLOT) ?? null;
+      return (await listWorlds()).find((m) => m.slot === SLOT) ?? null;
     } catch (e) {
       if (e instanceof DbBlockedError) throw e;
       return null;

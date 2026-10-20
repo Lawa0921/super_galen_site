@@ -3,6 +3,9 @@
 import { SaveFormatError, isNum, validFishLog, validInventory, validLevels } from './serialize';
 import { normalizeAppearance, type Appearance } from '../engine/appearance';
 import { Vanity, type VanityJSON } from '../engine/vanity';
+import { DelveGame } from '../engine/game';
+import { snapshotGame } from './serialize';
+import { splitSnapshot } from './worldSave';
 import { Equipment, type EquipmentGearJSON, type EquipmentJSON } from '../engine/equipment';
 import type { LevelsJSON } from '../engine/levels';
 import { Codex, type CodexJSON } from '../engine/codex';
@@ -40,6 +43,12 @@ export function newIdentity(now: number): CharIdentity {
   return { id: newId(), nick: DEFAULT_NICK, createdAt: now, rev: 0 };
 }
 
+/** 暱稱正規化：去頭尾空白；空白或超過 MAX_NICK 字 → 旅人 */
+function cleanNick(raw: unknown): string {
+  const nick = typeof raw === 'string' ? raw.trim() : '';
+  return nick && [...nick].length <= MAX_NICK ? nick : DEFAULT_NICK;
+}
+
 const bad = (field: string): SaveFormatError => new SaveFormatError(`character: ${field}`);
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
@@ -56,7 +65,6 @@ export function validateCharacter(raw: unknown): DelveCharacter {
   if (!isObj(cb) || !isNum(cb.hp) || !isNum(cb.baseMaxHp) || !isNum(cb.mana)) throw bad('combat');
 
   const eq = Equipment.fromJSON(raw.equipment, raw.equipGear);
-  const nick = typeof raw.nick === 'string' ? raw.nick.trim() : '';
   const codex = new Codex();
   if (isObj(raw.codex)) codex.load(raw.codex);
   const buffsLeft: Partial<Record<BuffKind, number>> = {};
@@ -68,7 +76,7 @@ export function validateCharacter(raw: unknown): DelveCharacter {
   }
   return {
     cformat: 1, id: raw.id,
-    nick: nick && [...nick].length <= MAX_NICK ? nick : DEFAULT_NICK,
+    nick: cleanNick(raw.nick),
     createdAt: isNum(raw.createdAt) ? raw.createdAt : 0,
     savedAt: isNum(raw.savedAt) ? raw.savedAt : 0,
     rev: raw.rev,
@@ -83,6 +91,14 @@ export function validateCharacter(raw: unknown): DelveCharacter {
     undyingCd: isNum(raw.undyingCd) && raw.undyingCd >= 0 ? raw.undyingCd : 0,
     buffsLeft,
   };
+}
+
+/** 新角色：隨身狀態 = 全新 DelveGame 的玩家初始狀態（取最小世界的快照），換上自己的身分與外觀。暱稱超過 MAX_NICK 字先截斷。 */
+export function createCharacter(nick: string, appearance: Appearance, now: number): DelveCharacter {
+  const g = new DelveGame({ seed: 'new-character', width: 160, height: 100 });
+  const who: CharIdentity = { ...newIdentity(now), nick: cleanNick([...nick.trim()].slice(0, MAX_NICK).join('')) };
+  const c = splitSnapshot(snapshotGame(g, now), who, { worldId: 'x', worldName: 'x', visits: {} }, now).character;
+  return { ...c, appearance: normalizeAppearance(appearance), rev: 0 };
 }
 
 export function encodeCharacter(c: DelveCharacter): Uint8Array {

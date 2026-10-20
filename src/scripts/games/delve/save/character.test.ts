@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { decodeCharacter, encodeCharacter, newId, newIdentity, validateCharacter, type DelveCharacter } from './character';
+import { createCharacter, decodeCharacter, encodeCharacter, newId, newIdentity, validateCharacter, type DelveCharacter } from './character';
+import { DelveGame } from '../engine/game';
+import { snapshotGame } from './serialize';
+import { splitSnapshot } from './worldSave';
 import { SaveFormatError } from './serialize';
 import { normalizeAppearance } from '../engine/appearance';
 import { Vanity } from '../engine/vanity';
@@ -15,6 +18,24 @@ const good = (): DelveCharacter => ({ cformat: 1, id: 'abc-123', nick: '小明',
   undyingCd: 12, buffsLeft: { bless: 90 } });
 
 afterEach(() => { vi.unstubAllGlobals(); });
+
+describe('createCharacter', () => {
+  const look = normalizeAppearance({ race: 2 });
+  it("createCharacter matches a fresh game's player", () => {
+    const c = createCharacter('阿明', look, 1000);
+    const g = new DelveGame({ seed: 'ref', width: 160, height: 100 });
+    const ref = splitSnapshot(snapshotGame(g, 1000), newIdentity(1000), { worldId: 'w', worldName: 'ref', visits: {} }, 1000).character;
+    for (const k of ['inventory', 'equipment', 'equipGear', 'combat', 'levels', 'codex', 'fishLog', 'buffsLeft', 'undyingCd'] as const) {
+      expect(c[k]).toEqual(ref[k]);
+    }
+    expect(c.nick).toBe('阿明'); expect(c.appearance).toEqual(look); expect(c.rev).toBe(0);
+    expect(() => validateCharacter(c)).not.toThrow();
+  });
+  it('空白暱稱 → 旅人；17 字被截成 16 字', () => {
+    expect(createCharacter('   ', look, 0).nick).toBe('旅人');
+    expect(createCharacter('x'.repeat(17), look, 0).nick).toBe('x'.repeat(16));
+  });
+});
 
 describe('DelveCharacter', () => {
   it('encode → decode 往返完全相等', () => expect(decodeCharacter(encodeCharacter(good()))).toEqual(good()));

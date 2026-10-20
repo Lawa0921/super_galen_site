@@ -4,12 +4,15 @@ import { SaveFormatError, type SaveData } from './serialize';
 import { decodeCharacter, newId, newIdentity, type CharIdentity, type DelveCharacter } from './character';
 import { decodeAnySave, encodeWorld, saveSplitGame, type WorldData, type WorldHeader, type WorldIdentity } from './worldSave';
 import type { DelveGame } from '../engine/game';
-import type { SaveSummary, SlotMeta } from './storage';
+import type { CharacterMeta, SaveSummary, SlotMeta } from './storage';
 
 export const BACKUP_SUFFIX = '.v9.bak';
 export const CHARACTER_MISSING_MSG = '找不到這個世界的角色檔，沒有讀取也沒有修改任何存檔。';
 export const CHARACTER_CORRUPT_MSG = '角色檔已損毀，沒有讀取也沒有修改任何存檔。';
 export const WORLD_CORRUPT_MSG = '讀取失敗：這不是有效的 DELVE 存檔，或檔案已損毀 / 不完整。';
+
+/** 新世界的存檔槽名（多世界）；'main' 是舊的單一槽 */
+export function newWorldSlot(): string { return 'w-' + newId(); }
 
 export interface SlotRead { bytes: Uint8Array; charId?: string }
 export interface SplitStore {
@@ -21,6 +24,14 @@ export interface SplitStore {
   backupSlot(from: string, to: string): Promise<void>;
   /** 世界 + 角色在同一個 transaction 寫入 */
   putSplit(slot: string, world: { bytes: Uint8Array; seed: string; summary?: SaveSummary }, character: DelveCharacter): Promise<SlotMeta>;
+  /** 可繼續的世界（不含 *.bak），新到舊 */
+  listWorlds(): Promise<SlotMeta[]>;
+  /** 所有角色，新到舊 */
+  listCharacters(): Promise<CharacterMeta[]>;
+  deleteWorld(slot: string): Promise<void>;
+  deleteCharacter(id: string): Promise<void>;
+  /** 只寫角色檔（同 id 覆蓋） */
+  putCharacter(c: DelveCharacter): Promise<void>;
 }
 
 /** 一場遊戲的存檔身分：哪個角色、哪個世界、世界上各角色的 visit */
