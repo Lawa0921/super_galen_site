@@ -942,3 +942,108 @@ def test_retire_cli_calls_the_registry(monkeypatch):
     monkeypatch.setattr(A.Registry, 'retire', lambda self, aid, public, reason: calls.append((aid, reason)))
     assert A.main(['retire', '--id', 'icon-iron-sword', '--reason', 'replaced']) == 0
     assert calls == [('icon-iron-sword', 'replaced')]
+
+
+# --- plan 5d addendum 2, Task A: one long edge for every gear subject, size gate (short edge, mass, centre) ---
+OUTLINE, FILL = (30, 25, 40), (40, 120, 200)
+
+
+def _shape_cell(w, h, shape='rect', cell=400, width=12):
+    """A solid subject with a dark 6 px outline, centred on a magenta cell (what a codex gear cell looks like)."""
+    from PIL import ImageDraw
+    img = canvas(cell, cell); d = ImageDraw.Draw(img)
+    x0, y0 = (cell - w) // 2, (cell - h) // 2; x1, y1 = x0 + w - 1, y0 + h - 1
+    if shape == 'rect':
+        d.rectangle((x0, y0, x1, y1), fill=OUTLINE); d.rectangle((x0 + 6, y0 + 6, x1 - 6, y1 - 6), fill=FILL)
+    elif shape == 'ellipse':
+        d.ellipse((x0, y0, x1, y1), fill=OUTLINE); d.ellipse((x0 + 6, y0 + 6, x1 - 6, y1 - 6), fill=FILL)
+    else:   # a diagonal blade of length w, hilt lower left, tip upper right
+        k = round(w / 2 ** 0.5); c = cell // 2
+        d.line((c - k // 2, c + k // 2, c + k // 2, c - k // 2), fill=OUTLINE, width=width)
+        d.line((c - k // 2, c + k // 2, c + k // 2, c - k // 2), fill=FILL, width=max(1, width - 6))
+    return img
+
+
+def test_normalize_subject_sets_the_long_edge_exactly():
+    img, scale = A.normalize_subject(A.cutout(_shape_cell(300, 120)), 22)
+    box = img.getbbox()
+    assert (box[2] - box[0], box[3] - box[1]) == (22, 9)
+    assert img.size == (24, 11)                                   # one transparent art pixel on every side
+    assert scale == pytest.approx(300 / 22, rel=1e-3)
+    assert set(np.unique(np.asarray(img)[..., 3])) <= {0, 255}
+
+
+def test_normalize_subject_refuses_to_upsample():
+    with pytest.raises(ValueError, match='cell too small to sample'):
+        A.normalize_subject(A.cutout(_shape_cell(40, 30)), 56)
+
+
+@pytest.mark.parametrize('long', [180, 330])
+def test_gear_cell_icon_and_large_hit_their_targets_for_any_raw_size(tmp_path, long):
+    out = A.process_gear_cell(A.Registry(tmp_path / 'r.json'), 'x', _shape_cell(long, round(long * 0.9), 'ellipse'), tmp_path / 'w',
+                              tmp_path / 'raw.png', slot='body')
+    icon, large = out['gear-x'], out['gear-x-large']
+    assert icon['subject']['long'] == 22 and large['subject']['long'] == 56, (icon['subject'], large['subject'])
+    assert icon['subject']['centre_off'] <= 1 and large['subject']['centre_off'] <= 1
+    assert icon['size'] == [26, 26] and large['size'] == [64, 64]
+    assert icon['scale'] == pytest.approx(long / 22, rel=1e-2) and large['scale'] == pytest.approx(long / 56, rel=1e-2)
+
+
+def test_subject_gate_fails_a_sliver_shield(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json')
+    out = A.process_gear_cell(reg, 'shield', _shape_cell(300, 150), tmp_path / 'w', tmp_path / 'raw.png', slot='offhand')
+    q = out['gear-shield']
+    assert q['subject']['short'] == 11 and 'subject too narrow' in q['reasons'] and not q['pass'], q
+    assert reg.get('gear-shield')['status'] == 'qa_failed' and reg.get('gear-shield')['slot'] == 'offhand'
+    saved = json.loads((tmp_path / 'w' / 'gear-shield.qa.json').read_text(encoding='utf-8'))
+    assert 'subject too narrow' in saved['reasons'] and saved['subject'] == q['subject']
+
+
+def test_subject_gate_fails_a_thin_weapon_below_the_mass_floor(tmp_path):
+    out = A.process_gear_cell(A.Registry(tmp_path / 'r.json'), 'sword', _shape_cell(300, 0, 'line', width=12), tmp_path / 'w',
+                              tmp_path / 'raw.png', slot='weapon')
+    for q in out.values():
+        assert 'subject too light' in q['reasons'] and q['subject']['mass'] < A.MASS_BAND['long'][0] and not q['pass'], q
+
+
+def test_subject_gate_fails_too_heavy(tmp_path):
+    out = A.process_gear_cell(A.Registry(tmp_path / 'r.json'), 'sword', _shape_cell(300, 300), tmp_path / 'w', tmp_path / 'raw.png',
+                              slot='weapon')
+    assert all('subject too heavy' in q['reasons'] and not q['pass'] for q in out.values()), out
+
+
+def test_subject_gate_passes_a_chunky_breastplate(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json')
+    out = A.process_gear_cell(reg, 'plate', _shape_cell(300, 280, 'ellipse'), tmp_path / 'w', tmp_path / 'raw.png', slot='body')
+    for aid, q in out.items():
+        assert q['pass'] and q['reasons'] == [], (aid, q)
+        assert set(q['subject']) == {'long', 'short', 'mass', 'box', 'centre_off'}
+        assert reg.get(aid)['status'] == 'qa_passed'
+
+
+def test_gear_cell_without_slot_checks_only_the_long_edge(tmp_path):
+    out = A.process_gear_cell(A.Registry(tmp_path / 'r.json'), 'x', _shape_cell(300, 150), tmp_path / 'w', tmp_path / 'raw.png')
+    assert all(q['pass'] and q['subject']['long'] in (22, 56) for q in out.values()), out
+
+
+def test_normalize_never_upsamples(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json')
+    out = A.process_gear_cell(reg, 'x', _shape_cell(40, 36), tmp_path / 'w', tmp_path / 'raw.png', slot='body')
+    assert 'cell too small to sample' in out['gear-x-large']['reasons'] and not out['gear-x-large']['pass']
+    assert reg.get('gear-x-large')['status'] == 'qa_failed'
+    assert 'cell too small to sample' not in out['gear-x']['reasons']       # 40 / 22 >= 1: the icon is a real downsample
+
+
+def test_subject_gate_thresholds_follow_the_addendum():
+    assert A.SUBJECT_CLASS == {'weapon': 'long', 'offhand': 'broad', 'head': 'broad', 'body': 'broad', 'hands': 'broad',
+                               'feet': 'broad', 'neck': 'small', 'ring': 'small'}
+    assert A.MASS_BAND == {'long': (0.28, 0.65), 'broad': (0.50, 0.92), 'small': (0.35, 0.80)} and A.CENTRE_TOL == 1
+    floors = {s: A.short_floor(s, 22) for s in A.MIN_SHORT}
+    assert floors == {'weapon': 16, 'offhand': 17, 'head': 15, 'body': 18, 'hands': 16, 'feet': 16, 'neck': 14, 'ring': 14}
+
+
+def test_subject_gate_without_slot_checks_long_edge_and_centre_only():
+    m = {'long': 20, 'short': 3, 'mass': 0.05, 'box': [3, 3, 23, 6], 'centre_off': 1.5}
+    assert A.subject_gate(m, 22, None) == ['subject long edge off target', 'subject off centre']
+    assert A.subject_gate({**m, 'long': 21, 'centre_off': 0.5}, 22, None) == []
+    assert set(A.subject_gate({**m, 'long': 22, 'centre_off': 0}, 22, 'ring')) == {'subject too narrow', 'subject too light'}

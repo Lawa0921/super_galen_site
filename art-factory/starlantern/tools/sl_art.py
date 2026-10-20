@@ -588,9 +588,14 @@ def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None, b
     return {aid: _finish(reg, aid, img, kind, workdir, raw, block, height, fit=fit, canvas=canvas)}
 
 
-def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None, fit=None, canvas=None, despill_=False):
+def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None, fit=None, canvas=None, despill_=False, long_side=None):
     """fit=(w, h): opaque art sampled to exactly w x h. canvas=n: a sprite centred on an n x n transparent canvas.
-    despill_=True (plan 5d): take key spill out of the outline and fail on spill left anywhere (`magenta spill`)."""
+    despill_=True (plan 5d): take key spill out of the outline and fail on spill left anywhere (`magenta spill`).
+    long_side=n (plan 5d addendum 2, sprites): `normalize_subject` instead of the block downscale, so the subject's
+    longer side is exactly n; the magenta hint is sampled from the raw cell with the same scale. An upsample fails QA
+    with `cell too small to sample`."""
+    if long_side and kind != 'opaque':
+        return _finish_normalized(reg, aid, img, workdir, raw, long_side, canvas, despill_)
     if kind == 'opaque' and fit:
         final = fit_opaque(img.convert('RGB'), *fit).convert('RGBA')
         qa = {'pass': True, 'reasons': [], 'seam': seam_score(final),
@@ -615,31 +620,57 @@ def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None, fit=None
             subject = cut.crop(bbox)
             pad = Image.new('RGBA', (subject.width + 2 * block, subject.height + 2 * block))
             pad.paste(subject, (block, block))
-            final = defringe(to_art_pixels(pad, block), strong=reg.data['assets'].get(aid, {}).get('defringe') == 'strong')
-            # Opt-in (registry `deblend: true`) for art far from magenta: outline pixels mixed with the key are
-            # replaced by the neighbouring colour they were mixed from (same repair the fx-anim sheets use).
-            if reg.data['assets'].get(aid, {}).get('deblend'): final = deblend(final)
-            if reg.data['assets'].get(aid, {}).get('neutralize_tint'): final = neutralize_key_tint(final)
-            if despill_: final = despill(final)
             src = Image.new('RGB', pad.size, (255, 0, 255)); src.paste(img.crop(bbox), (block, block))
-            hint = _near_magenta(np.asarray(to_art_pixels(src, block)), 30)
-            entry = reg.data['assets'].get(aid, {})
-            qa = alpha_qa(final, entry.get('allow_holes', 0), hint, entry.get('allow_residue', 0))
-            if despill_: _spill_gate(qa, final, entry)
-            # The padded final can never touch its own edge, so check the raw canvas: a subject cut off by the
-            # generator fails, except on sides the contract allows (bust portraits end at the bottom edge).
-            sides = {'left': bbox[0] == 0, 'top': bbox[1] == 0, 'right': bbox[2] == img.width, 'bottom': bbox[3] == img.height}
-            if any(cut_side and side not in entry.get('allow_edge', []) for side, cut_side in sides.items()):
-                qa['reasons'].append('subject cut by the canvas edge'); qa['pass'] = False
-            if canvas:
-                # Map-cell overlay: the padded subject is centred on an n x n canvas and must fit inside it.
-                qa['subject'] = [final.width - 2, final.height - 2]
-                if final.width > canvas or final.height > canvas:
-                    qa['reasons'].append('larger than the canvas'); qa['pass'] = False
-                else:
-                    cell = Image.new('RGBA', (canvas, canvas))
-                    cell.paste(final, ((canvas - final.width) // 2, (canvas - final.height) // 2)); final = cell
+            final, qa = _sprite_tail(reg, aid, img, bbox, to_art_pixels(pad, block), to_art_pixels(src, block), canvas, despill_)
     qa.update(block=block, size=list(final.size))
+    return _save_final(reg, aid, final, qa, workdir, raw)
+
+
+def _sprite_tail(reg, aid, img, bbox, small, small_src, canvas, despill_):
+    """Shared sprite repair and QA after the downscale: `small` is the sampled subject (transparent pad), `small_src`
+    the raw pixels sampled the same way on magenta (the hint that tells real gaps from erased colour)."""
+    entry = reg.data['assets'].get(aid, {})
+    final = defringe(small, strong=entry.get('defringe') == 'strong')
+    # Opt-in (registry `deblend: true`) for art far from magenta: outline pixels mixed with the key are
+    # replaced by the neighbouring colour they were mixed from (same repair the fx-anim sheets use).
+    if entry.get('deblend'): final = deblend(final)
+    if entry.get('neutralize_tint'): final = neutralize_key_tint(final)
+    if despill_: final = despill(final)
+    hint = _near_magenta(np.asarray(small_src.convert('RGB')), 30)
+    qa = alpha_qa(final, entry.get('allow_holes', 0), hint, entry.get('allow_residue', 0))
+    if despill_: _spill_gate(qa, final, entry)
+    # The padded final can never touch its own edge, so check the raw canvas: a subject cut off by the
+    # generator fails, except on sides the contract allows (bust portraits end at the bottom edge).
+    sides = {'left': bbox[0] == 0, 'top': bbox[1] == 0, 'right': bbox[2] == img.width, 'bottom': bbox[3] == img.height}
+    if any(cut_side and side not in entry.get('allow_edge', []) for side, cut_side in sides.items()):
+        qa['reasons'].append('subject cut by the canvas edge'); qa['pass'] = False
+    if canvas:
+        # Map-cell overlay: the padded subject is centred on an n x n canvas and must fit inside it.
+        qa['subject'] = [final.width - 2, final.height - 2]
+        if final.width > canvas or final.height > canvas:
+            qa['reasons'].append('larger than the canvas'); qa['pass'] = False
+        else:
+            cell = Image.new('RGBA', (canvas, canvas))
+            cell.paste(final, ((canvas - final.width) // 2, (canvas - final.height) // 2)); final = cell
+    return final, qa
+
+
+def _finish_normalized(reg, aid, img, workdir, raw, long_side, canvas, despill_):
+    cut = cutout(img); bbox = cut.getbbox()
+    if bbox is None:
+        final, qa = cut, {'pass': False, 'reasons': ['no foreground']}; scale = None
+    else:
+        try:
+            w, h, scale = _subject_dims(bbox, long_side)
+        except ValueError as e:
+            final = Image.new('RGBA', (canvas, canvas) if canvas else cut.size)
+            qa = {'pass': False, 'reasons': [str(e)], 'warnings': []}; scale = round((max(bbox[2] - bbox[0], bbox[3] - bbox[1])) / long_side, 3)
+        else:
+            small = _sample_padded(cut.crop(bbox), w, h, (0, 0, 0, 0))
+            small_src = _sample_padded(img.convert('RGB').crop(bbox), w, h, (255, 0, 255))
+            final, qa = _sprite_tail(reg, aid, img, bbox, small, small_src, canvas, despill_)
+            scale = round(scale, 3)
+    qa.update(block=scale, scale=scale, size=list(final.size))
     return _save_final(reg, aid, final, qa, workdir, raw)
 
 
@@ -662,17 +693,90 @@ def fit_side(img, side):
     return max(1, math.ceil(max(box[2] - box[0], box[3] - box[1]) / side))
 
 
-def process_gear_cell(reg, gid, cell, workdir, raw, large=(60, 64), icon=(24, 26)):
-    """One sheet cell -> two transparent finals from the same pixels: `gear-<gid>-large` (longer side `large[0]`,
-    centred on a large[1] square canvas) and `gear-<gid>` (longer side `icon[0]` on an icon[1] canvas).
+# Plan 5d addendum 2 §1: every gear subject is sampled so its longer side is exactly the target (22 icon / 56 large),
+# then gated on the final PNG (alpha 255 only). Thresholds are constants; changing one needs a controller ruling.
+SUBJECT_CLASS = {'weapon': 'long', 'offhand': 'broad', 'head': 'broad', 'body': 'broad', 'hands': 'broad', 'feet': 'broad',
+                 'neck': 'small', 'ring': 'small'}
+MIN_SHORT = {'weapon': 0.70, 'offhand': 0.75, 'head': 0.65, 'body': 0.80, 'hands': 0.70, 'feet': 0.70, 'neck': 0.60, 'ring': 0.60}
+MASS_BAND = {'long': (0.28, 0.65), 'broad': (0.50, 0.92), 'small': (0.35, 0.80)}
+LONG_TOL = 1      # the long edge may miss the target by one art pixel (a thin tip the centre sample steps over)
+CENTRE_TOL = 1    # distance between the subject bbox centre and the canvas centre, in art pixels
 
-    Both run the usual `_finish` QA (residue, semi alpha, raw-canvas cut, holes warning, larger than the canvas) and
-    record the same `source` ({raw, cell}). Any id works (plan 5f reuses this for its own uniques).
+
+def short_floor(slot, target):
+    """Smallest allowed short edge for `slot` at `target`: ceil(MIN_SHORT[slot] x target)."""
+    return math.ceil(round(MIN_SHORT[slot] * target, 6))
+
+
+def _subject_dims(box, target):
+    """(w, h, scale) that bring the bbox's longer side to exactly `target` with one centre sample."""
+    bw, bh = box[2] - box[0], box[3] - box[1]; scale = max(bw, bh) / target
+    if scale < 1.0: raise ValueError('cell too small to sample')
+    return max(1, round(bw / scale)), max(1, round(bh / scale)), scale
+
+
+def _sample_padded(img, w, h, fill):
+    """Centre-sample `img` to w x h and add one art pixel of `fill` on every side."""
+    small = _sample(img, w, h); out = Image.new(img.mode, (w + 2, h + 2), fill); out.paste(small, (1, 1))
+    return out
+
+
+def normalize_subject(cut, target):
+    """A cut-out high-resolution cell -> (subject, scale): crop to the alpha bbox, one centre sample (no new colours)
+    so the longer side is exactly `target`, one transparent art pixel on every side. scale = raw long side / target.
+    Raises ValueError('cell too small to sample') when that would upsample (scale < 1)."""
+    cut = cut.convert('RGBA'); box = cut.getbbox()
+    if box is None: raise ValueError('no foreground')
+    w, h, scale = _subject_dims(box, target)
+    return _sample_padded(cut.crop(box), w, h, (0, 0, 0, 0)), scale
+
+
+def subject_metrics(final, target):
+    """Size of the subject on a final PNG (alpha 255 only): long and short bbox edges, mass = opaque / target²,
+    box [x0, y0, x1, y1] (x1, y1 exclusive) and the distance of the bbox centre from the canvas centre."""
+    op = np.asarray(final.convert('RGBA'))[..., 3] == 255; H, W = op.shape
+    if not op.any(): return {'long': 0, 'short': 0, 'mass': 0.0, 'box': [0, 0, 0, 0], 'centre_off': float(max(W, H))}
+    ys, xs = np.flatnonzero(op.any(axis=1)), np.flatnonzero(op.any(axis=0))
+    x0, y0, x1, y1 = int(xs[0]), int(ys[0]), int(xs[-1]) + 1, int(ys[-1]) + 1
+    bw, bh = x1 - x0, y1 - y0
+    off = math.hypot((x0 + x1) / 2 - W / 2, (y0 + y1) / 2 - H / 2)
+    return {'long': max(bw, bh), 'short': min(bw, bh), 'mass': round(float(op.sum()) / target ** 2, 3),
+            'box': [x0, y0, x1, y1], 'centre_off': round(off, 3)}
+
+
+def subject_gate(m, target, slot):
+    """Reasons a subject fails the size gate. slot None (plan 5f before it passes a slot): long edge and centre only."""
+    reasons = []
+    if abs(m['long'] - target) > LONG_TOL: reasons.append('subject long edge off target')
+    if m['centre_off'] > CENTRE_TOL: reasons.append('subject off centre')
+    if slot is not None:
+        lo, hi = MASS_BAND[SUBJECT_CLASS[slot]]
+        if m['short'] < short_floor(slot, target): reasons.append('subject too narrow')
+        if m['mass'] < lo: reasons.append('subject too light')
+        if m['mass'] > hi: reasons.append('subject too heavy')
+    return reasons
+
+
+def process_gear_cell(reg, gid, cell, workdir, raw, large=(56, 64), icon=(22, 26), slot=None):
+    """One sheet cell -> two transparent finals from the same pixels: `gear-<gid>-large` (longer side exactly
+    `large[0]`, centred on a large[1] square canvas) and `gear-<gid>` (longer side `icon[0]` on an icon[1] canvas).
+
+    Both are sampled once from the high-resolution cell (`normalize_subject`), run the usual `_finish` QA (residue, semi
+    alpha, raw-canvas cut, holes warning, larger than the canvas, magenta spill) and the size gate (`subject_gate`;
+    without a slot only the long edge and the centre). QA records `subject` (metrics) and `scale`; the registry records
+    the same `source` ({raw, cell}) and the slot. Any id works (plan 5f passes its own uniques with their slot).
     """
     out = {}
     for aid, (side, size) in ((f'gear-{gid}-large', large), (f'gear-{gid}', icon)):
-        out[aid] = _finish(reg, aid, cell, 'sprite', workdir, raw, block=fit_side(cell, side), canvas=size, despill_=True)
-        reg.set(aid, kind='gear-cell', source={'raw': str(raw), 'cell': gid})
+        qa = _finish(reg, aid, cell, 'sprite', workdir, raw, canvas=size, despill_=True, long_side=side)
+        final = Image.open(_final_path(reg.get(aid)['final'])).convert('RGBA')
+        qa['subject'] = subject_metrics(final, side)
+        if 'cell too small to sample' not in qa['reasons']:
+            qa['reasons'] += [r for r in subject_gate(qa['subject'], side, slot) if r not in qa['reasons']]
+        qa['pass'] = not qa['reasons']
+        _save_final(reg, aid, final, qa, workdir, raw)
+        reg.set(aid, kind='gear-cell', source={'raw': str(raw), 'cell': gid}, **({'slot': slot} if slot else {}))
+        out[aid] = qa
     return out
 
 
