@@ -8458,7 +8458,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8468,7 +8468,8 @@
       "weapon_kind": "staff",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-wooden-staff": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-wooden-staff.png",
@@ -8503,7 +8504,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8513,7 +8514,8 @@
       "weapon_kind": "staff",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-hunter-bow-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-hunter-bow-large.png",
@@ -8548,7 +8550,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8558,7 +8560,8 @@
       "weapon_kind": "bow",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-hunter-bow": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-hunter-bow.png",
@@ -8593,7 +8596,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8603,7 +8606,8 @@
       "weapon_kind": "bow",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-thorn-spear-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-thorn-spear-large.png",
@@ -8638,7 +8642,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8648,7 +8652,8 @@
       "weapon_kind": "spear",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-thorn-spear": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-thorn-spear.png",
@@ -8683,7 +8688,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8693,7 +8698,8 @@
       "weapon_kind": "spear",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-crystal-blade-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-crystal-blade-large.png",
@@ -8728,7 +8734,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8738,7 +8744,8 @@
       "weapon_kind": "dagger",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-crystal-blade": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-crystal-blade.png",
@@ -8773,7 +8780,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8783,7 +8790,8 @@
       "weapon_kind": "dagger",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-frost-staff-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-frost-staff-large.png",
@@ -8818,7 +8826,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a4.png",
@@ -8828,7 +8836,8 @@
       "weapon_kind": "staff",
       "chosen_attempt": "a4",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-frost-staff": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-frost-staff.png",
@@ -8863,7 +8872,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a4.png",
@@ -8873,7 +8882,8 @@
       "weapon_kind": "staff",
       "chosen_attempt": "a4",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-star-saber-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-star-saber-large.png",
@@ -8908,7 +8918,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8918,7 +8928,8 @@
       "weapon_kind": "scimitar",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-star-saber": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-star-saber.png",
@@ -8953,7 +8964,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8963,7 +8974,8 @@
       "weapon_kind": "scimitar",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-crystal-aegis-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-crystal-aegis-large.png",
@@ -8998,7 +9010,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -9007,7 +9019,8 @@
       "slot": "offhand",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-crystal-aegis": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-crystal-aegis.png",
@@ -9042,7 +9055,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -9051,7 +9064,8 @@
       "slot": "offhand",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-scale-helm-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-scale-helm-large.png",
@@ -9086,7 +9100,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -9095,7 +9109,8 @@
       "slot": "head",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-scale-helm": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-scale-helm.png",
@@ -9130,7 +9145,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -9139,7 +9154,8 @@
       "slot": "head",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-cloth-gloves-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-cloth-gloves-large.png",
@@ -9174,7 +9190,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -9183,7 +9199,8 @@
       "slot": "hands",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-cloth-gloves": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-cloth-gloves.png",
@@ -9218,7 +9235,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -9227,7 +9244,8 @@
       "slot": "hands",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-thorn-gauntlets-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-thorn-gauntlets-large.png",
@@ -9262,7 +9280,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9271,7 +9289,8 @@
       "slot": "hands",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-thorn-gauntlets": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-thorn-gauntlets.png",
@@ -9308,7 +9327,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9317,7 +9336,8 @@
       "slot": "hands",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-straw-sandals-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-straw-sandals-large.png",
@@ -9352,7 +9372,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9361,7 +9381,8 @@
       "slot": "feet",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-straw-sandals": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-straw-sandals.png",
@@ -9396,7 +9417,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9405,7 +9426,8 @@
       "slot": "feet",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-bat-boots-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-bat-boots-large.png",
@@ -9440,7 +9462,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9449,7 +9471,8 @@
       "slot": "feet",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-bat-boots": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-bat-boots.png",
@@ -9484,7 +9507,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9493,7 +9516,8 @@
       "slot": "feet",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-cloth-robe-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-cloth-robe-large.png",
@@ -9528,7 +9552,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9537,7 +9561,8 @@
       "slot": "body",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-cloth-robe": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-cloth-robe.png",
@@ -9572,7 +9597,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9581,7 +9606,8 @@
       "slot": "body",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-leather-vest-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-leather-vest-large.png",
@@ -9616,7 +9642,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9625,7 +9651,8 @@
       "slot": "body",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-leather-vest": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-leather-vest.png",
@@ -9660,7 +9687,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9669,7 +9696,8 @@
       "slot": "body",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-scale-mail-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-scale-mail-large.png",
@@ -9704,7 +9732,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9713,7 +9741,8 @@
       "slot": "body",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-scale-mail": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-scale-mail.png",
@@ -9748,7 +9777,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9757,7 +9786,8 @@
       "slot": "body",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-dusk-mantle-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-dusk-mantle-large.png",
@@ -9792,7 +9822,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9801,7 +9831,8 @@
       "slot": "body",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-dusk-mantle": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-dusk-mantle.png",
@@ -9836,7 +9867,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9845,7 +9876,8 @@
       "slot": "body",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-moss-charm-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-moss-charm-large.png",
@@ -9880,7 +9912,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
@@ -9889,7 +9921,8 @@
       "slot": "neck",
       "chosen_attempt": "a4",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-moss-charm": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-moss-charm.png",
@@ -9924,7 +9957,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
@@ -9933,7 +9966,8 @@
       "slot": "neck",
       "chosen_attempt": "a4",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-bat-earring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-bat-earring-large.png",
@@ -9970,7 +10004,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
@@ -9979,7 +10013,8 @@
       "slot": "neck",
       "chosen_attempt": "a4",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-bat-earring": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-bat-earring.png",
@@ -10014,7 +10049,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
@@ -10023,7 +10058,8 @@
       "slot": "neck",
       "chosen_attempt": "a4",
       "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-crystal-pendant-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-crystal-pendant-large.png",
@@ -10058,7 +10094,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
@@ -10067,7 +10103,8 @@
       "slot": "neck",
       "chosen_attempt": "a5",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-crystal-pendant": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-crystal-pendant.png",
@@ -10102,7 +10139,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
@@ -10111,7 +10148,8 @@
       "slot": "neck",
       "chosen_attempt": "a5",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-gear-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-gear-ring-large.png",
@@ -10146,7 +10184,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10155,7 +10193,8 @@
       "slot": "ring",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-gear-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-gear-ring.png",
@@ -10190,7 +10229,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10199,7 +10238,8 @@
       "slot": "ring",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-copper-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-copper-ring-large.png",
@@ -10234,7 +10274,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10243,7 +10283,8 @@
       "slot": "ring",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-copper-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-copper-ring.png",
@@ -10278,7 +10319,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10287,7 +10328,8 @@
       "slot": "ring",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-star-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-star-ring-large.png",
@@ -10324,7 +10366,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10333,7 +10375,8 @@
       "slot": "ring",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-star-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-star-ring.png",
@@ -10368,7 +10411,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10377,7 +10420,8 @@
       "slot": "ring",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-lg-liz-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-liz-large.png",
@@ -10412,7 +10456,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10422,7 +10466,8 @@
       "weapon_kind": "spear",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-lg-liz": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-liz.png",
@@ -10457,7 +10502,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10467,7 +10512,8 @@
       "weapon_kind": "spear",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-lg-scarlet-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-scarlet-large.png",
@@ -10504,7 +10550,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10513,7 +10559,8 @@
       "slot": "neck",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-lg-scarlet": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-scarlet.png",
@@ -10550,7 +10597,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10559,7 +10606,8 @@
       "slot": "neck",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-lg-selene-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-selene-large.png",
@@ -10596,7 +10644,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10605,7 +10653,8 @@
       "slot": "head",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-lg-selene": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-selene.png",
@@ -10640,7 +10689,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10649,7 +10698,8 @@
       "slot": "head",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-lg-safira-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-lg-safira-large.png",
@@ -10686,7 +10736,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -10695,7 +10745,8 @@
       "slot": "feet",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-lg-safira": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-lg-safira.png",
@@ -10732,7 +10783,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -10741,7 +10792,8 @@
       "slot": "feet",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-lg-bobby-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-lg-bobby-large.png",
@@ -10776,7 +10828,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -10785,7 +10837,8 @@
       "slot": "hands",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-lg-bobby": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-lg-bobby.png",
@@ -10820,7 +10873,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -10829,7 +10882,8 @@
       "slot": "hands",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-frost-bloom-neck-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-frost-bloom-neck-large.png",
@@ -10866,7 +10920,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -10875,7 +10929,8 @@
       "slot": "neck",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-frost-bloom-neck": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-frost-bloom-neck.png",
@@ -10910,7 +10965,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -10919,7 +10974,8 @@
       "slot": "neck",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-storm-thunder-bow-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-storm-thunder-bow-large.png",
@@ -10956,7 +11012,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -10966,7 +11022,8 @@
       "weapon_kind": "bow",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-storm-thunder-bow": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-storm-thunder-bow.png",
@@ -11001,7 +11058,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11011,7 +11068,8 @@
       "weapon_kind": "bow",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-mire-whisper-gloves-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-mire-whisper-gloves-large.png",
@@ -11046,7 +11104,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11055,7 +11113,8 @@
       "slot": "hands",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-mire-whisper-gloves": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-mire-whisper-gloves.png",
@@ -11090,7 +11149,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11099,7 +11158,8 @@
       "slot": "hands",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-shade-silent-blade-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-shade-silent-blade-large.png",
@@ -11134,7 +11194,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11144,7 +11204,8 @@
       "weapon_kind": "dagger",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-shade-silent-blade": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-shade-silent-blade.png",
@@ -11179,7 +11240,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11189,7 +11250,8 @@
       "weapon_kind": "dagger",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-iron-bulwark-plate-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-iron-bulwark-plate-large.png",
@@ -11224,7 +11286,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11233,7 +11295,8 @@
       "slot": "body",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-iron-bulwark-plate": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-iron-bulwark-plate.png",
@@ -11268,7 +11331,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11277,7 +11340,8 @@
       "slot": "body",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-blaze-ember-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-blaze-ember-ring-large.png",
@@ -11312,7 +11376,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11321,7 +11385,8 @@
       "slot": "ring",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-blaze-ember-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-blaze-ember-ring.png",
@@ -11356,7 +11421,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11365,7 +11430,8 @@
       "slot": "ring",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-frost-winter-staff-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-frost-winter-staff-large.png",
@@ -11400,7 +11466,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11410,7 +11476,8 @@
       "weapon_kind": "staff",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-frost-winter-staff": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-frost-winter-staff.png",
@@ -11445,7 +11512,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11455,7 +11522,8 @@
       "weapon_kind": "staff",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-blaze-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-blaze-ring-large.png",
@@ -11490,7 +11558,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11499,7 +11567,8 @@
       "slot": "ring",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-blaze-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-blaze-ring.png",
@@ -11534,7 +11603,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11543,7 +11612,8 @@
       "slot": "ring",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-frost-weapon-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-weapon-large.png",
@@ -11578,7 +11648,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11588,7 +11658,8 @@
       "weapon_kind": "sword",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-frost-weapon": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-weapon.png",
@@ -11623,7 +11694,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11633,7 +11704,8 @@
       "weapon_kind": "sword",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-frost-head-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-head-large.png",
@@ -11668,7 +11740,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11677,7 +11749,8 @@
       "slot": "head",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-frost-head": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-head.png",
@@ -11712,7 +11785,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11721,7 +11794,8 @@
       "slot": "head",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-frost-neck-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-neck-large.png",
@@ -11756,7 +11830,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11765,7 +11839,8 @@
       "slot": "neck",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-frost-neck": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-neck.png",
@@ -11800,7 +11875,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11809,7 +11884,8 @@
       "slot": "neck",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-frost-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-ring-large.png",
@@ -11844,7 +11920,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11853,7 +11929,8 @@
       "slot": "ring",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-frost-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-ring.png",
@@ -11888,7 +11965,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11897,7 +11974,8 @@
       "slot": "ring",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-storm-hands-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-hands-large.png",
@@ -11932,7 +12010,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11941,7 +12019,8 @@
       "slot": "hands",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-storm-hands": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-hands.png",
@@ -11976,7 +12055,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11985,7 +12064,8 @@
       "slot": "hands",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-storm-feet-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-feet-large.png",
@@ -12020,7 +12100,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -12029,7 +12109,8 @@
       "slot": "feet",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-storm-feet": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-feet.png",
@@ -12064,7 +12145,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -12073,7 +12154,8 @@
       "slot": "feet",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-storm-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-ring-large.png",
@@ -12108,7 +12190,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -12117,7 +12199,8 @@
       "slot": "ring",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-storm-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-ring.png",
@@ -12152,7 +12235,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -12161,7 +12244,8 @@
       "slot": "ring",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-mire-head-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-head-large.png",
@@ -12196,7 +12280,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12205,7 +12289,8 @@
       "slot": "head",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-mire-head": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-head.png",
@@ -12240,7 +12325,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12249,7 +12334,8 @@
       "slot": "head",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-mire-body-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-body-large.png",
@@ -12284,7 +12370,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12293,7 +12379,8 @@
       "slot": "body",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-mire-body": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-body.png",
@@ -12328,7 +12415,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12337,7 +12424,8 @@
       "slot": "body",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-mire-feet-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-feet-large.png",
@@ -12372,7 +12460,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12381,7 +12469,8 @@
       "slot": "feet",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-mire-feet": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-feet.png",
@@ -12416,7 +12505,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12425,7 +12514,8 @@
       "slot": "feet",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-mire-neck-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-neck-large.png",
@@ -12460,7 +12550,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12469,7 +12559,8 @@
       "slot": "neck",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-mire-neck": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-neck.png",
@@ -12504,7 +12595,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12513,7 +12604,8 @@
       "slot": "neck",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-shade-weapon-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-weapon-large.png",
@@ -12548,7 +12640,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12558,7 +12650,8 @@
       "weapon_kind": "sword",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-shade-weapon": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-weapon.png",
@@ -12593,7 +12686,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12603,7 +12696,8 @@
       "weapon_kind": "sword",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-shade-head-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-head-large.png",
@@ -12638,7 +12732,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12647,7 +12741,8 @@
       "slot": "head",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-shade-head": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-head.png",
@@ -12682,7 +12777,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12691,7 +12786,8 @@
       "slot": "head",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-shade-hands-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-hands-large.png",
@@ -12726,7 +12822,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12735,7 +12831,8 @@
       "slot": "hands",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-shade-hands": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-hands.png",
@@ -12770,7 +12867,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12779,7 +12876,8 @@
       "slot": "hands",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-shade-feet-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-feet-large.png",
@@ -12816,7 +12914,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12825,7 +12923,8 @@
       "slot": "feet",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-shade-feet": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-feet.png",
@@ -12862,7 +12961,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12871,7 +12970,8 @@
       "slot": "feet",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-storm-swift-boots-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-storm-swift-boots-large.png",
@@ -12908,7 +13008,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12917,7 +13017,8 @@
       "slot": "feet",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-storm-swift-boots": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-storm-swift-boots.png",
@@ -12952,7 +13053,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12961,7 +13062,8 @@
       "slot": "feet",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-iron-offhand-large": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-offhand-large.png",
@@ -12996,7 +13098,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13005,7 +13107,8 @@
       "slot": "offhand",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-iron-offhand": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-offhand.png",
@@ -13040,7 +13143,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13049,7 +13152,8 @@
       "slot": "offhand",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-iron-head-large": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-head-large.png",
@@ -13084,7 +13188,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13093,7 +13197,8 @@
       "slot": "head",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-iron-head": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-head.png",
@@ -13128,7 +13233,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13137,7 +13242,8 @@
       "slot": "head",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-iron-body-large": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-body-large.png",
@@ -13172,7 +13278,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13181,7 +13287,8 @@
       "slot": "body",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-iron-body": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-body.png",
@@ -13216,7 +13323,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13225,7 +13332,8 @@
       "slot": "body",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-iron-feet-large": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-feet-large.png",
@@ -13260,7 +13368,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13269,7 +13377,8 @@
       "slot": "feet",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-iron-feet": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-feet.png",
@@ -13304,7 +13413,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13313,7 +13422,8 @@
       "slot": "feet",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-mire-miasma-mask-large": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-mire-miasma-mask-large.png",
@@ -13348,7 +13458,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13357,7 +13467,8 @@
       "slot": "head",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-mire-miasma-mask": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-mire-miasma-mask.png",
@@ -13392,7 +13503,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13401,7 +13512,8 @@
       "slot": "head",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-shade-raven-cloak-large": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-shade-raven-cloak-large.png",
@@ -13436,7 +13548,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a3.png",
@@ -13445,7 +13557,8 @@
       "slot": "body",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-8",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-shade-raven-cloak": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-shade-raven-cloak.png",
@@ -13480,7 +13593,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a3.png",
@@ -13489,7 +13602,8 @@
       "slot": "body",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-8",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "icon-blaze-core": {
       "final": "art-factory/starlantern/work/sheet-mat-2/icon-blaze-core.png",
@@ -13509,10 +13623,11 @@
           35
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "sheet-mat-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "icon-frost-heart": {
       "final": "art-factory/starlantern/work/sheet-mat-2/icon-frost-heart.png",
@@ -13532,10 +13647,11 @@
           33
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "sheet-mat-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "icon-storm-stone": {
       "final": "art-factory/starlantern/work/sheet-mat-2/icon-storm-stone.png",
@@ -13555,10 +13671,11 @@
           34
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "sheet-mat-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "icon-shade-crystal": {
       "final": "art-factory/starlantern/work/sheet-mat-2/icon-shade-crystal.png",
@@ -13580,10 +13697,11 @@
           33
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "sheet-mat-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "icon-mire-gland": {
       "final": "art-factory/starlantern/work/sheet-mat-2/icon-mire-gland.png",
@@ -13603,10 +13721,11 @@
           34
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "sheet-mat-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "icon-iron-shard": {
       "final": "art-factory/starlantern/work/sheet-mat-2/icon-iron-shard.png",
@@ -13626,10 +13745,11 @@
           34
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a2",
       "source_id": "sheet-mat-2",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "npc-forge-happy": {
       "allow_edge": [
@@ -13654,14 +13774,15 @@
           180
         ]
       },
-      "status": "qa_passed",
+      "status": "approved",
       "chosen_attempt": "a1",
       "source_id": "npc-forge-happy",
       "batch": "gear-5d-main-gear",
       "rejected_attempts": {
         "a1": "採用：npc-forge-happy。",
         "a2": "未採用：npc-forge-happy：通過但他版較好或同套須同一版"
-      }
+      },
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "sheet-gear-3": {
       "rejected_attempts": {
@@ -13749,7 +13870,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -13758,7 +13879,8 @@
       "slot": "ring",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-lg-noel": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-noel.png",
@@ -13793,7 +13915,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -13802,7 +13924,8 @@
       "slot": "ring",
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-storm-weapon-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-weapon-large.png",
@@ -13837,7 +13960,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -13847,7 +13970,8 @@
       "weapon_kind": "sword",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-set-storm-weapon": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-weapon.png",
@@ -13882,7 +14006,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -13892,7 +14016,8 @@
       "weapon_kind": "sword",
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-lg-sylvie-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-sylvie-large.png",
@@ -13927,7 +14052,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
@@ -13936,7 +14061,8 @@
       "slot": "offhand",
       "chosen_attempt": "a5",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     },
     "gear-lg-sylvie": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-sylvie.png",
@@ -13971,7 +14097,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "qa_passed",
+      "status": "approved",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
@@ -13980,7 +14106,8 @@
       "slot": "offhand",
       "chosen_attempt": "a5",
       "source_id": "sheet-gear-4",
-      "batch": "gear-5d-main-gear"
+      "batch": "gear-5d-main-gear",
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
     }
   },
   "requa_log": [
@@ -14339,6 +14466,140 @@
         "ui-starlit": "3b676e4295992969b88ab58607252414434db3f8877c31422731c855cb6c5e15",
         "scene-forge": "f287b7ac1440a397fcf216ab589205b5666d95edc85400cd56703bfb830dea7c",
         "npc-forge": "143db4afd631c25eb4556d38e5f9fc132f382b7cfb2b074d7f87ff16388150fd"
+      }
+    },
+    "main-gear": {
+      "by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "date": "2026-10-20",
+      "record": "C:\\Users\\bag57\\.codex\\worktrees\\4182\\super_galen_site\\art-factory\\starlantern\\work\\review\\main-gear-shown.json",
+      "shown": {
+        "gear-wooden-staff-large": "528387221897887eaf573d20337b34d9375b570add42bc8293d3336d13e46c77",
+        "gear-wooden-staff": "639d9bc68b422ad15903ab7affbdb8453c83fa0ba439fe2f75f10c3500ce27d8",
+        "gear-hunter-bow-large": "9ecaaf0a65d36b0441cfc9debaf5aa9e2dd8b8b24fc2537d01ba36e17f021af1",
+        "gear-hunter-bow": "494badbd597c70aeb21ca201558891b5912572ca16eb92f6898b857395c71b5a",
+        "gear-thorn-spear-large": "ff75a7ddd3bef3b312232aa137b3bc00ba4c7a0f554041d1c9d32a2ab7755e42",
+        "gear-thorn-spear": "f45c1f422e09a3285eb951a080a3c34ecdb60fd78c67c8b5689385ff37ba74ad",
+        "gear-crystal-blade-large": "a05ad80c16d00cee2573e7eeddf152c2423f55624172a7db86dfe6b268d27eb3",
+        "gear-crystal-blade": "d23fa4a743e41293737f248ccce0a8f41e05b8ec0dea82315fbf947249e952a3",
+        "gear-frost-staff-large": "2f2df3dd8a44e93066e1dcc94c0264415ad35ad42bfc4dc943154682a80e644e",
+        "gear-frost-staff": "d8f3223757996488288d2c4516ddfccd5137317c70234c4ebff289382c4a1bc4",
+        "gear-star-saber-large": "f1d84e59db68ef7e3b52c6a85f8ac2d37646cda9cb7349c5abea99bc09538791",
+        "gear-star-saber": "a10f74367e0c637b56baf4e0b8eb6131fd276313c7880bea6d27b47a3e5a3309",
+        "gear-crystal-aegis-large": "c89e6068eaa8a248eef1aa7455f63d2c9ed7785105804320eb5a631aff77f040",
+        "gear-crystal-aegis": "c499c17ad4066760818dae3a1118ead55ef8e997e0d3af114eb2b9c6de945620",
+        "gear-scale-helm-large": "aea0977f0c10c6fb5d86f9c89456e89d933a5d7ffd89e36751a0c4aafcb56e2e",
+        "gear-scale-helm": "6e30d8b32a76cea3dab0134f6d20de1fc46fc1f38b875ac906b7ff01d5649986",
+        "gear-cloth-gloves-large": "e39bc0da745f12245d5dd1596261f109b2f93f419bd6a9bb265bcf3e14b06244",
+        "gear-cloth-gloves": "fd16665224e8ec8071e0b7e5d4598ebe76ddd23a983438c18eceb40cbef1aef8",
+        "gear-thorn-gauntlets-large": "be1ae150d768005f37c062670d7a0672d95e8266e60d7a8b55c0d621cebff878",
+        "gear-thorn-gauntlets": "f5f5c60fff55b886457e5c6b926fa59ba1a9a13b09058dc52134e947d55c5994",
+        "gear-straw-sandals-large": "04b9688989c5edb91ba159bae2d91ccb57ba960b6fc5e98d469e752c7fce9de4",
+        "gear-straw-sandals": "0661969cb8dd2a0e99533a8b07043e81544d4c4f354b81b182faeeb5627f6d5a",
+        "gear-bat-boots-large": "de05659ded4cbb27fa09c3c82d788d9b5c8dbe42b61da793b8e14cfe0e5a65bb",
+        "gear-bat-boots": "aee3274495112bab0461c78e64fcb45caf07943d06094cf1369d6d456101d095",
+        "gear-cloth-robe-large": "b2ba0c0529bb5f217eda88593ab7bbd014c187864e23a739827e4d349a1f6607",
+        "gear-cloth-robe": "7ed98b4e19ec9e8eedc272ce004f05870eb7a3de56ab7f93c0f47b43002c0eff",
+        "gear-leather-vest-large": "22a68387e3594091d9db1e47194a553f7e493f30de149957ad929c4a52653c82",
+        "gear-leather-vest": "9902dafa183f297e906ab9143eb18b07bdd0be397485e571a32530c2f11fc463",
+        "gear-scale-mail-large": "1e17ede9e032ce8e841df3ec6672f64310851085e549acb33b4385e1b0f12413",
+        "gear-scale-mail": "4c4e8e36360ac24ac16b8b1993ea087cf8ef7f0a6472162e21f28a8fa7ea2d73",
+        "gear-dusk-mantle-large": "10643016c5d728c6f1f6cf2eee827b66c930d10653d6d48752615af81fdb448d",
+        "gear-dusk-mantle": "23495e193d1cde2174bb8b96a2c8fa821f23234bb1e53d1b5c9fdd1ae36a56c0",
+        "gear-moss-charm-large": "d48f35b3c0a1f41ac90c18c48818ce68c6e3591b28213157c42b7681dce87e4b",
+        "gear-moss-charm": "16b054da2a30a17a8a56c50f5fd3a8203b89ec23951812804b01c671617cfc56",
+        "gear-bat-earring-large": "eb2ca9b7e1c704d314ac73a907a7b3c381f435c1c6e8b51fcec421b14f8fb1fb",
+        "gear-bat-earring": "58bd60e8c92d4de027d1dab887417cdb17c695533a8b95cfa54169d11751ca2a",
+        "gear-crystal-pendant-large": "85d83eed173baa7719a34cbe42c663b1bfcd07f72596cd2a2633892a00f949e3",
+        "gear-crystal-pendant": "3a8325422459593f820885a6c3e0d203a3212e146376f52beff70642dd3f2cb9",
+        "gear-gear-ring-large": "086210e6564565910609aa1f8a76477b001372438920febd827990603782825d",
+        "gear-gear-ring": "316d26f31f908bb2e67de1f92b2c2d1bb1b7e1c83c9c782deca44268823b02e0",
+        "gear-copper-ring-large": "2148f679891c06d10f5073c277356afaf16408b031003a7cbfff759c85576eb6",
+        "gear-copper-ring": "ec8399f2f85029ecb28e4c3a7149015e29a91a753f144e1c00c2d9b79e051895",
+        "gear-star-ring-large": "72a52d2de1a0ee9e6bf55da36bbcac1f783001bdd74867aaf3773564a981265c",
+        "gear-star-ring": "3c303c66b11845bcd700061a256038fa15c4eca79b50526987c733b4204b7f8d",
+        "gear-lg-noel-large": "95f97d1ae49df812cf664f011d327e5fbc5576965a516fa37e45ebb908d2bd19",
+        "gear-lg-noel": "447f076796ca3de0710abde5755f1db6a6aca82eed6773e6bf9760f310fcbf24",
+        "gear-lg-liz-large": "a269dcf96ebff6e9038ac4e04bfce276ef3834940f16998c11b9b241225b7a91",
+        "gear-lg-liz": "4ed97898bd4041ae9c81b87455ce7fb7c28e8f0f82720a86ea19d6f7686fb4c5",
+        "gear-lg-sylvie-large": "fb2d67837cdbc73c7d49749d0b3208b424ba6abd88086918885e41b3e332d07a",
+        "gear-lg-sylvie": "f4521c6c0073ad4af40d965ecc4142b8ef41e23c8bc35030b34cacabc6cd60d9",
+        "gear-lg-scarlet-large": "9ff6d7d0353ef9e0a591ddaf94e01e2137042276c29bea7f04b063cf13f9722f",
+        "gear-lg-scarlet": "725f17098c70b51237b703d2391f0fb2017dc3d82e4f29ed03829facd2fe46fe",
+        "gear-lg-selene-large": "e4f2937e3e7f11f8bdc7df53a67da0b1f51fc56f7cf64141c6de62cf1d75ded5",
+        "gear-lg-selene": "a739fe1632967502bc6d27fc0a89f7ed68051a96159b8bb2e5c72f21d82dec29",
+        "gear-lg-safira-large": "336cf0a3ffe9d350abceed4ee40161b4df4bec8e9c0d6c305739d4ad77f2f330",
+        "gear-lg-safira": "abec2f61d19101e1e03071182cac042c57a1416f2281c8baddb1ae1dff7ab083",
+        "gear-lg-bobby-large": "ba524ba10adf75d675ccd3de8c19eaf1e0690a04e3ee399bf349e36b2bff86d5",
+        "gear-lg-bobby": "0998eb7e82d0706a8cdf9ebe675a4eb9365d7655e13f5b63bb3f862dfa8b8434",
+        "gear-frost-bloom-neck-large": "b937dd10b4166404191a46c3f11ed737f0138543e91d38f0f136443c7dbae011",
+        "gear-frost-bloom-neck": "fcc5efaf859325a465eb887c3d8c99a6b0c9ecf2fa54be8f077e53ab7c03fa58",
+        "gear-storm-thunder-bow-large": "39485ac3f22cd893649f924e2213cbcd37e1af0eb0c001a9be6adbb1b768c361",
+        "gear-storm-thunder-bow": "4a0e738435e27b55f40b354b5ed53bb1a98fea6f28299c8ea1dde360c9ccfe75",
+        "gear-mire-whisper-gloves-large": "262b5867106cf48be9c617ca764c7b5f6b5933bd0cf6250d8ab0663944d872f4",
+        "gear-mire-whisper-gloves": "f1605f1f53b39f248c1612e5549dae7eca4d06247e231dc13eec2cf5f0f3902b",
+        "gear-shade-silent-blade-large": "671ffd55ec056e484cded8dbff6ec5ff77bba48f0984b53c849213b39bd15baa",
+        "gear-shade-silent-blade": "4b0c109949f5b826a1b144014c167a284f269de18e5505a06013c139577c506a",
+        "gear-iron-bulwark-plate-large": "db6f0e8b62ad41b66984e75160be5bf8b8d94b2ee864cc18f8d954b9eeb0a81d",
+        "gear-iron-bulwark-plate": "cbf92bea99c623523985d34ff3541b4671d26cf47c9a133e5f971063873819ba",
+        "gear-blaze-ember-ring-large": "d4838ef2cca9989eac11ad8c23b3d534909af7780c7474fc5125a9f7613ca666",
+        "gear-blaze-ember-ring": "c59acd81e6787849f2d99f1196040fa1914b8356cea9d549e2d082d437330859",
+        "gear-frost-winter-staff-large": "676214b4b7e692af96a81501af4c81a98cece42c79c087c53a9ebd487cc9a416",
+        "gear-frost-winter-staff": "60f7ba5c184ecf729ddb0b70bf372e09f18290c218605c8c66b653c496004588",
+        "gear-set-blaze-ring-large": "8766d5924203b02a99ebe9fa89539f8a7a010e22c6ce06411b098cf22a04ef7f",
+        "gear-set-blaze-ring": "fdefb265e0a97fb722cb7999606da4d2a98c527751688d0be03fd7c34a51fbb2",
+        "gear-set-frost-weapon-large": "a0e2d81d1852b9978b71151cac4f24020a0cf02ca934b0d946f8610de71f5b2b",
+        "gear-set-frost-weapon": "1ce971a7c39c615a70708a8d4622b32fe1f038f43d4456ec905f746e28a8cca6",
+        "gear-set-frost-head-large": "1880d23431d82c15fa559c308919f5fec17df4584f65792a93b35a24ceb0aec5",
+        "gear-set-frost-head": "978781f20c2251d65861ff2a40fc03d0daf7a267c14faabcbdf54aa160742934",
+        "gear-set-frost-neck-large": "287e6639ae359e909bc7831fb2daea044ea974d191207449990b978dc8444ec0",
+        "gear-set-frost-neck": "5b6d756ed1b26434ba9e3c16c000238c177fdc31ae7b1e461c06c63b3c7dcae4",
+        "gear-set-frost-ring-large": "1410ff7048179c68abe715094956691ca9b4cd2aa30cffb39728fe9e16bc44c5",
+        "gear-set-frost-ring": "c64aef4d3304e086a6ec2e4b0a19af3053c75df85ce5cc906a9bdcc6880cb4e9",
+        "gear-set-storm-weapon-large": "5ce9a8b585eb38987fe3e7e368c73e3a9999c732faf8bdcd758134b971a2d098",
+        "gear-set-storm-weapon": "ed1d5bfa3e53546c9d8dc41a4b7f10bb757c6dbcdc06cff6b9b1411125ffac51",
+        "gear-set-storm-hands-large": "5924c81aab069edc3b66c3b92159bc6aab3dece115810d6c6939860f248eeece",
+        "gear-set-storm-hands": "f153f86388a423c7eb70f80f65d7e51c7804701750984ab818e5be1a845d330c",
+        "gear-set-storm-feet-large": "bc89a183301520252c272782a90c0106a4eb54bdc6dd8cd52ee0b9bf0b79fd86",
+        "gear-set-storm-feet": "12bf7ac10cadc1feddafd393a798a1723b22846c45543c9339782c6b69c9d586",
+        "gear-set-storm-ring-large": "c35b02b2c750fbd55a8953f72d7987d37fe623a620becbfaa57263d57b7d4a9e",
+        "gear-set-storm-ring": "bf57eeec62578926445b37cb5c87871de655fd51615419458620642e5ebbb9c9",
+        "gear-set-mire-head-large": "61086af8c44811e41c25dd720bf229810f5f3bb6e1b1e4d268dc3a9fcc62b9fb",
+        "gear-set-mire-head": "e0388f86ffc0a52ea06528f3834c66bd4870510dd7d1494470b4e15b30d40cc9",
+        "gear-set-mire-body-large": "056902d7722c2626933a3ad96ab0c7b96e888b59da0c1a39ddc2ba3542e4c84a",
+        "gear-set-mire-body": "2ee1f64e637000935ba8b9bc5ae3ded01bcfac759bc643e30ed941623861340c",
+        "gear-set-mire-feet-large": "1ccbfedcd22628e3ef291c948f993967a78797022395786d26311fb668b2c352",
+        "gear-set-mire-feet": "128f926b3e6007b0460c6b6233b66ea679c898cc532662837a38e5e4d37608f3",
+        "gear-set-mire-neck-large": "1ab29a0e74705aecbbc2203655d14c1adf2c81869e8a4aeb7a2a89fa53087f6c",
+        "gear-set-mire-neck": "18d30c8c028a09211a7cbecd57e4ba65cb3b57695d90dcbfa1733e9ab4f591c7",
+        "gear-set-shade-weapon-large": "eacf1b873760c98b7b9267fae62e97bc0fe19577b585bb74ffdf097a2dde3151",
+        "gear-set-shade-weapon": "90b0387ac6d115810fca1fffa1a2afd32f75ba2c0279f2baf75318e2c31c99f6",
+        "gear-set-shade-head-large": "82df5299c0726d35ced60a7926b4327ac88f38b6e4b11ad6da9cf97214f93648",
+        "gear-set-shade-head": "b19c7ad4de9e3b4459732192d5e7cf8c4d88e4402099a28a988c9e006b976b53",
+        "gear-set-shade-hands-large": "c3c0d86479b2561b9e6a0ea6ed27a43baadd37a4ebce69faf74509e562c41710",
+        "gear-set-shade-hands": "4b9f0c3a88b0e6fb911fa2b584ea77faec115ed0ad792264de1c6c2fdaabe156",
+        "gear-set-shade-feet-large": "1a11487f2fea90aa15a9aa36ff1af52c60e32104680b12a3fbd4170f21e125c8",
+        "gear-set-shade-feet": "8e784dd8aea156ea910cb2cd4bb8cff53f4335e52ec3a4b0f64ad18812a56cd0",
+        "gear-storm-swift-boots-large": "dd666917839806aa72f9b84f8f0258c43ff75bbcd85ea21d41b3cc6f366cd092",
+        "gear-storm-swift-boots": "668e629d9103775835e65fae6a4d5718d83c0efc66b369a2747835fbed79e213",
+        "gear-set-iron-offhand-large": "23f8874ec6cb4b8dc9c83c477818c6a10bfad75eff39069e91b5f72386743863",
+        "gear-set-iron-offhand": "a4c753c628ba7d87e617967be47af13f8a1bfb34e8ed33deaf7a1ea019faad18",
+        "gear-set-iron-head-large": "67e5bd7f6f4c8e94164c2babac10bc572f4c5d59b69a98a2d9954b027eabb68b",
+        "gear-set-iron-head": "107255e2ad13cf3e9aa607164dcb15d322698824fd5031526d6e5313aec928de",
+        "gear-set-iron-body-large": "b4f6231b0afec051bd282c3d339bc7cde2dbe033472da4b9bd661528d33c8431",
+        "gear-set-iron-body": "2a55101432dfc794d83b9a0385662678b95d5ecb338c00d9616aff9621d38822",
+        "gear-set-iron-feet-large": "e7e645a00293d8534686bd6c0776d1b103f01f09411e15a9ec0a654526d17b9b",
+        "gear-set-iron-feet": "0fc15aba50feab0aef812b0005ec660c4715981eea5f2cb6d8a0709eed75a9db",
+        "gear-mire-miasma-mask-large": "ff06e931e16ee285df098e11a0c85a83bff2e82e0665270f4af7315a97c78d3c",
+        "gear-mire-miasma-mask": "356cb61fd07f3dce754b77ce622f7a7a1150705f0e67b289fefe8b95711a0453",
+        "gear-shade-raven-cloak-large": "c1d4e1affd2237d59441c97b3760a148f958e19d0b5f8cd6acfb682f88b5807f",
+        "gear-shade-raven-cloak": "dfe0e3670ba17a16bd4f3c0bdaa7e923f06c5d0a8609e0c251cb9ac9b5bf7059",
+        "icon-blaze-core": "8f94c479ca0737e343529688ccc20091d639f776dbc28db342d150f74ae0ed1c",
+        "icon-frost-heart": "1b69f9cb607a3b390a3abda4c66b9919376b3ecddd33e051c0b0fca5720688ae",
+        "icon-storm-stone": "8406dc475bceeaffe7726baac8d1faba0bc0db600dd3daf994804b5cf61264ab",
+        "icon-mire-gland": "ef35399ad6a387b29c81eb26cee3c25abaa60c4ad296d34577ed155968e0d7d0",
+        "icon-shade-crystal": "7abb71594e1c1293bb2056417635dbc72f84b0b79fa281e82666cdc7acf9c761",
+        "icon-iron-shard": "6e563a2811b10f5aa9427beaddf33379488383106879df445c55aadaffc6dd1d",
+        "npc-forge-happy": "284a7feac506ae9e7ec36204ebc2870606c76ad927759dbc5c10a72b8a46c10d"
       }
     }
   },
