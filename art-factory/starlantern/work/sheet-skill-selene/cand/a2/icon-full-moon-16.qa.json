@@ -12,15 +12,15 @@
   "key_tint_inside": 0,
   "subject": {
     "long": 12,
-    "short": 12,
-    "mass": 0.362,
+    "short": 10,
+    "mass": 0.367,
     "box": [
       2,
       2,
       14,
-      14
+      12
     ],
-    "centre_off": 0.0
+    "centre_off": 1.0
   },
   "block": 29.214,
   "scale": 29.214,
@@ -28,5 +28,5 @@
     16,
     16
   ],
-  "spec": "skill-cell:3b64a1fbd098"
+  "spec": "skill-cell:533a8c45dbc6"
 }

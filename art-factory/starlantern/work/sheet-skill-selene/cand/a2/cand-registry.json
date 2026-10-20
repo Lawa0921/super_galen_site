@@ -142,20 +142,20 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 2,
+        "holes": 3,
         "magenta_spill": 0,
         "key_tint_inside": 0,
         "subject": {
           "long": 14,
-          "short": 9,
-          "mass": 0.352,
+          "short": 8,
+          "mass": 0.367,
           "box": [
             4,
             1,
-            13,
+            12,
             15
           ],
-          "centre_off": 0.5
+          "centre_off": 0.0
         },
         "block": 29.643,
         "scale": 29.643,
@@ -163,7 +163,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -178,24 +178,26 @@
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [],
+        "warnings": [
+          "enclosed holes"
+        ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 0,
+        "holes": 1,
         "magenta_spill": 0,
         "key_tint_inside": 0,
         "subject": {
           "long": 12,
-          "short": 7,
-          "mass": 0.292,
+          "short": 8,
+          "mass": 0.312,
           "box": [
             3,
             1,
-            10,
+            11,
             13
           ],
-          "centre_off": 0.5
+          "centre_off": 0.0
         },
         "block": 34.583,
         "scale": 34.583,
@@ -203,7 +205,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -229,15 +231,15 @@
         "key_tint_inside": 0,
         "subject": {
           "long": 12,
-          "short": 12,
-          "mass": 0.362,
+          "short": 10,
+          "mass": 0.367,
           "box": [
             2,
             2,
             14,
-            14
+            12
           ],
-          "centre_off": 0.0
+          "centre_off": 1.0
         },
         "block": 29.214,
         "scale": 29.214,
@@ -245,7 +247,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_failed",
       "kind": "skill-cell",
@@ -270,16 +272,16 @@
         "magenta_spill": 0,
         "key_tint_inside": 0,
         "subject": {
-          "long": 10,
-          "short": 9,
-          "mass": 0.347,
+          "long": 8,
+          "short": 8,
+          "mass": 0.368,
           "box": [
-            2,
             3,
-            12,
-            12
+            3,
+            11,
+            11
           ],
-          "centre_off": 0.5
+          "centre_off": 0.0
         },
         "block": 34.083,
         "scale": 34.083,
@@ -287,7 +289,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_failed",
       "kind": "skill-cell",
@@ -312,7 +314,7 @@
         "subject": {
           "long": 14,
           "short": 14,
-          "mass": 0.362,
+          "mass": 0.418,
           "box": [
             1,
             1,
@@ -327,7 +329,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -351,13 +353,13 @@
         "key_tint_inside": 0,
         "subject": {
           "long": 12,
-          "short": 10,
-          "mass": 0.34,
+          "short": 12,
+          "mass": 0.431,
           "box": [
             1,
-            2,
+            1,
             13,
-            12
+            13
           ],
           "centre_off": 0.0
         },
@@ -367,7 +369,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -382,17 +384,19 @@
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [],
+        "warnings": [
+          "enclosed holes"
+        ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 0,
+        "holes": 2,
         "magenta_spill": 0,
         "key_tint_inside": 0,
         "subject": {
           "long": 14,
           "short": 13,
-          "mass": 0.362,
+          "mass": 0.408,
           "box": [
             1,
             1,
@@ -407,7 +411,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -432,7 +436,7 @@
         "subject": {
           "long": 12,
           "short": 11,
-          "mass": 0.389,
+          "mass": 0.444,
           "box": [
             1,
             1,
@@ -447,7 +451,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -460,28 +464,28 @@
       "final": "art-factory/starlantern/work/sheet-skill-selene/cand/a2/icon-moon-arrow-16.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
       "qa": {
-        "pass": true,
-        "reasons": [],
-        "warnings": [
-          "enclosed holes"
+        "pass": false,
+        "reasons": [
+          "subject long edge off target"
         ],
+        "warnings": [],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 1,
+        "holes": 0,
         "magenta_spill": 0,
         "key_tint_inside": 0,
         "subject": {
-          "long": 13,
+          "long": 12,
           "short": 10,
           "mass": 0.306,
           "box": [
-            2,
+            3,
             3,
             15,
             13
           ],
-          "centre_off": 0.5
+          "centre_off": 1.0
         },
         "block": 34.286,
         "scale": 34.286,
@@ -489,9 +493,9 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
-      "status": "qa_passed",
+      "status": "qa_failed",
       "kind": "skill-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
@@ -512,16 +516,16 @@
         "magenta_spill": 0,
         "key_tint_inside": 0,
         "subject": {
-          "long": 12,
+          "long": 11,
           "short": 9,
-          "mass": 0.333,
+          "mass": 0.319,
           "box": [
-            1,
+            2,
             2,
             13,
             11
           ],
-          "centre_off": 0.5
+          "centre_off": 0.707
         },
         "block": 40.0,
         "scale": 40.0,
@@ -529,7 +533,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -554,7 +558,7 @@
         "subject": {
           "long": 14,
           "short": 14,
-          "mass": 0.689,
+          "mass": 0.709,
           "box": [
             1,
             1,
@@ -569,7 +573,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -594,7 +598,7 @@
         "subject": {
           "long": 12,
           "short": 12,
-          "mass": 0.715,
+          "mass": 0.694,
           "box": [
             1,
             1,
@@ -609,7 +613,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",

@@ -1,28 +1,24 @@
 {
-  "pass": false,
-  "reasons": [
-    "subject off centre"
-  ],
-  "warnings": [
-    "enclosed holes"
-  ],
+  "pass": true,
+  "reasons": [],
+  "warnings": [],
   "residue": 0,
   "semi": 0,
   "edge": 0,
-  "holes": 1,
+  "holes": 0,
   "magenta_spill": 0,
   "key_tint_inside": 0,
   "subject": {
     "long": 13,
-    "short": 12,
+    "short": 13,
     "mass": 0.418,
     "box": [
       1,
       2,
-      13,
+      14,
       15
     ],
-    "centre_off": 1.118
+    "centre_off": 0.707
   },
   "block": 26.571,
   "scale": 26.571,
@@ -30,5 +26,5 @@
     16,
     16
   ],
-  "spec": "skill-cell:3b64a1fbd098"
+  "spec": "skill-cell:533a8c45dbc6"
 }

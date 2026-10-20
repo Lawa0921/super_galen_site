@@ -1,21 +1,23 @@
 {
   "pass": true,
   "reasons": [],
-  "warnings": [],
+  "warnings": [
+    "enclosed holes"
+  ],
   "residue": 0,
   "semi": 0,
   "edge": 0,
-  "holes": 0,
+  "holes": 1,
   "magenta_spill": 0,
   "key_tint_inside": 0,
   "subject": {
     "long": 12,
     "short": 9,
-    "mass": 0.382,
+    "mass": 0.41,
     "box": [
-      3,
+      2,
       1,
-      12,
+      11,
       13
     ],
     "centre_off": 0.5
@@ -26,5 +28,5 @@
     14,
     14
   ],
-  "spec": "skill-cell:3b64a1fbd098"
+  "spec": "skill-cell:533a8c45dbc6"
 }

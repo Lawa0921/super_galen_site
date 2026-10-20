@@ -1,26 +1,24 @@
 {
   "pass": true,
   "reasons": [],
-  "warnings": [
-    "enclosed holes"
-  ],
+  "warnings": [],
   "residue": 0,
   "semi": 0,
   "edge": 0,
-  "holes": 2,
+  "holes": 0,
   "magenta_spill": 0,
   "key_tint_inside": 0,
   "subject": {
-    "long": 13,
+    "long": 14,
     "short": 11,
-    "mass": 0.526,
+    "mass": 0.561,
     "box": [
-      2,
+      1,
       2,
       15,
       13
     ],
-    "centre_off": 0.707
+    "centre_off": 0.5
   },
   "block": 29.357,
   "scale": 29.357,
@@ -28,5 +26,5 @@
     16,
     16
   ],
-  "spec": "skill-cell:3b64a1fbd098"
+  "spec": "skill-cell:533a8c45dbc6"
 }

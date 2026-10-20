@@ -11,7 +11,7 @@
   "subject": {
     "long": 14,
     "short": 8,
-    "mass": 0.408,
+    "mass": 0.403,
     "box": [
       1,
       4,
@@ -26,5 +26,5 @@
     16,
     16
   ],
-  "spec": "skill-cell:3b64a1fbd098"
+  "spec": "skill-cell:533a8c45dbc6"
 }

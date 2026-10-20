@@ -1,9 +1,6 @@
 {
-  "pass": false,
-  "reasons": [
-    "subject long edge off target",
-    "subject off centre"
-  ],
+  "pass": true,
+  "reasons": [],
   "warnings": [],
   "residue": 0,
   "semi": 0,
@@ -12,16 +9,16 @@
   "magenta_spill": 0,
   "key_tint_inside": 0,
   "subject": {
-    "long": 9,
-    "short": 8,
-    "mass": 0.201,
+    "long": 12,
+    "short": 10,
+    "mass": 0.229,
     "box": [
-      3,
+      2,
       1,
       12,
-      9
+      13
     ],
-    "centre_off": 2.062
+    "centre_off": 0.0
   },
   "block": 30.083,
   "scale": 30.083,
@@ -29,5 +26,5 @@
     14,
     14
   ],
-  "spec": "skill-cell:3b64a1fbd098"
+  "spec": "skill-cell:533a8c45dbc6"
 }

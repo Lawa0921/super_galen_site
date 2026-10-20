@@ -146,7 +146,7 @@
         "subject": {
           "long": 14,
           "short": 8,
-          "mass": 0.408,
+          "mass": 0.403,
           "box": [
             1,
             4,
@@ -161,7 +161,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -185,15 +185,15 @@
         "key_tint_inside": 0,
         "subject": {
           "long": 12,
-          "short": 8,
-          "mass": 0.438,
+          "short": 7,
+          "mass": 0.417,
           "box": [
             1,
-            3,
+            4,
             13,
             11
           ],
-          "centre_off": 0.0
+          "centre_off": 0.5
         },
         "block": 37.75,
         "scale": 37.75,
@@ -201,7 +201,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -216,19 +216,17 @@
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [
-          "enclosed holes"
-        ],
+        "warnings": [],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 2,
+        "holes": 0,
         "magenta_spill": 0,
         "key_tint_inside": 0,
         "subject": {
           "long": 14,
           "short": 14,
-          "mass": 0.658,
+          "mass": 0.724,
           "box": [
             1,
             1,
@@ -243,7 +241,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -268,7 +266,7 @@
         "subject": {
           "long": 12,
           "short": 11,
-          "mass": 0.646,
+          "mass": 0.736,
           "box": [
             1,
             2,
@@ -283,7 +281,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -304,13 +302,13 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 3,
+        "holes": 5,
         "magenta_spill": 0,
         "key_tint_inside": 0,
         "subject": {
           "long": 14,
           "short": 13,
-          "mass": 0.597,
+          "mass": 0.607,
           "box": [
             1,
             1,
@@ -325,7 +323,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -340,19 +338,17 @@
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [
-          "enclosed holes"
-        ],
+        "warnings": [],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 2,
+        "holes": 0,
         "magenta_spill": 0,
         "key_tint_inside": 0,
         "subject": {
           "long": 12,
           "short": 11,
-          "mass": 0.562,
+          "mass": 0.653,
           "box": [
             1,
             1,
@@ -367,7 +363,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -392,7 +388,7 @@
         "subject": {
           "long": 14,
           "short": 14,
-          "mass": 0.546,
+          "mass": 0.602,
           "box": [
             1,
             1,
@@ -407,7 +403,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -432,7 +428,7 @@
         "subject": {
           "long": 12,
           "short": 12,
-          "mass": 0.569,
+          "mass": 0.583,
           "box": [
             1,
             1,
@@ -447,7 +443,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -471,13 +467,13 @@
         "key_tint_inside": 0,
         "subject": {
           "long": 13,
-          "short": 11,
-          "mass": 0.505,
+          "short": 13,
+          "mass": 0.561,
           "box": [
             2,
-            2,
+            1,
             15,
-            13
+            14
           ],
           "centre_off": 0.707
         },
@@ -487,7 +483,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -511,15 +507,15 @@
         "key_tint_inside": 0,
         "subject": {
           "long": 12,
-          "short": 11,
+          "short": 10,
           "mass": 0.542,
           "box": [
             1,
-            1,
+            2,
             13,
             12
           ],
-          "centre_off": 0.5
+          "centre_off": 0.0
         },
         "block": 35.083,
         "scale": 35.083,
@@ -527,7 +523,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -552,7 +548,7 @@
         "subject": {
           "long": 14,
           "short": 14,
-          "mass": 0.709,
+          "mass": 0.719,
           "box": [
             1,
             1,
@@ -567,7 +563,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -592,7 +588,7 @@
         "subject": {
           "long": 12,
           "short": 12,
-          "mass": 0.715,
+          "mass": 0.729,
           "box": [
             1,
             1,
@@ -607,7 +603,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",

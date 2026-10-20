@@ -11,16 +11,16 @@
   "magenta_spill": 0,
   "key_tint_inside": 0,
   "subject": {
-    "long": 10,
-    "short": 9,
-    "mass": 0.347,
+    "long": 8,
+    "short": 8,
+    "mass": 0.368,
     "box": [
-      2,
       3,
-      12,
-      12
+      3,
+      11,
+      11
     ],
-    "centre_off": 0.5
+    "centre_off": 0.0
   },
   "block": 34.083,
   "scale": 34.083,
@@ -28,5 +28,5 @@
     14,
     14
   ],
-  "spec": "skill-cell:3b64a1fbd098"
+  "spec": "skill-cell:533a8c45dbc6"
 }

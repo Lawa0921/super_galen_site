@@ -81,7 +81,7 @@
         "subject": {
           "long": 14,
           "short": 13,
-          "mass": 0.622,
+          "mass": 0.653,
           "box": [
             1,
             1,
@@ -96,7 +96,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -121,7 +121,7 @@
         "subject": {
           "long": 12,
           "short": 11,
-          "mass": 0.604,
+          "mass": 0.625,
           "box": [
             1,
             1,
@@ -136,7 +136,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -161,7 +161,7 @@
         "subject": {
           "long": 14,
           "short": 13,
-          "mass": 0.719,
+          "mass": 0.73,
           "box": [
             1,
             1,
@@ -176,7 +176,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -201,7 +201,7 @@
         "subject": {
           "long": 12,
           "short": 12,
-          "mass": 0.771,
+          "mass": 0.806,
           "box": [
             1,
             1,
@@ -216,7 +216,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -231,19 +231,17 @@
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [
-          "enclosed holes"
-        ],
+        "warnings": [],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 1,
+        "holes": 0,
         "magenta_spill": 0,
         "key_tint_inside": 0,
         "subject": {
           "long": 14,
           "short": 13,
-          "mass": 0.679,
+          "mass": 0.724,
           "box": [
             1,
             1,
@@ -258,7 +256,7 @@
           16,
           16
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",
@@ -283,7 +281,7 @@
         "subject": {
           "long": 12,
           "short": 11,
-          "mass": 0.674,
+          "mass": 0.694,
           "box": [
             1,
             1,
@@ -298,7 +296,7 @@
           14,
           14
         ],
-        "spec": "skill-cell:3b64a1fbd098"
+        "spec": "skill-cell:533a8c45dbc6"
       },
       "status": "qa_passed",
       "kind": "skill-cell",

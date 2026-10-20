@@ -7,13 +7,13 @@
   "residue": 0,
   "semi": 0,
   "edge": 0,
-  "holes": 1,
+  "holes": 3,
   "magenta_spill": 0,
   "key_tint_inside": 0,
   "subject": {
     "long": 12,
     "short": 12,
-    "mass": 0.521,
+    "mass": 0.528,
     "box": [
       1,
       1,
@@ -28,5 +28,5 @@
     14,
     14
   ],
-  "spec": "skill-cell:3b64a1fbd098"
+  "spec": "skill-cell:533a8c45dbc6"
 }
