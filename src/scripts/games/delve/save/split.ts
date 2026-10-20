@@ -1,10 +1,10 @@
 // split.ts — 世界檔 + 角色檔的存讀編排（純邏輯；IndexedDB 在 SplitStore 後面，Task 7 接）。
 // 規則：讀檔（planContinue / planPlay）永遠不寫；遷移 = 先備份、備份成功才 putSplit；每次存檔只有一次 putSplit（一個 transaction）。
 // 多世界 × 多角色：任何角色都能進任何世界（planPlay）；匯入一律開新槽（importWorld），不動既有世界。
-import { SaveFormatError, restoreGame, type RestoreError, type SaveData } from './serialize';
+import { SaveFormatError, applyCharacter, restoreBlocker, snapshotGame, type RestoreError, type SaveData } from './serialize';
 import { decodeCharacter, newId, newIdentity, type CharIdentity, type DelveCharacter } from './character';
 import {
-  decodeAnySave, encodeWorld, restoreSplit, saveSplitGame, type AnySave, type WorldData, type WorldHeader, type WorldIdentity,
+  characterState, decodeAnySave, encodeWorld, splitSnapshot, type AnySave, type WorldData, type WorldHeader, type WorldIdentity,
 } from './worldSave';
 import { GEN_VERSION } from '../engine/constants';
 import type { DelveGame } from '../engine/game';
@@ -62,8 +62,12 @@ export class SplitSession {
   get nick(): string { return this.who.nick; }
   /** rev + 1、更新 visits，回傳要寫的兩份資料 */
   snapshot(game: DelveGame, now: number): { world: WorldData; character: DelveCharacter } {
+    return this.snapshotData(snapshotGame(game, now), now);
+  }
+  /** 同 snapshot，但輸入是 format-9 形狀的完整存檔資料（遷移 / 匯入舊檔不必先建遊戲） */
+  snapshotData(data: SaveData, now: number): { world: WorldData; character: DelveCharacter } {
     const next = { ...this.who, rev: this.who.rev + 1 };
-    const out = saveSplitGame(game, next, this.where, now);
+    const out = splitSnapshot(data, next, this.where, now);
     this.who = next;
     this.where = { ...this.where, visits: out.world.header.visits };
     return out;
@@ -138,15 +142,15 @@ export async function planPlay(store: SplitStore, slot: string, charId: string):
 }
 
 /**
- * 剛生成的世界 + 既有角色 → 開局：拆出世界（全新 worldId、worldName = seed、新存檔槽），丟掉生成時附帶的角色與它的 visit，
- * 再用 character 以 freshVisit 重組（出生點、角色的背包 / 裝備 / 等級都帶進來）。還原會重新生成一次同 seed 的世界。
+ * 剛生成（還沒玩過）的世界 + 既有角色 → 開局：就地把角色隨身的狀態套到這個遊戲上（與 restoreGame 共用 applyCharacter，
+ * 不重新生成世界；玩家留在出生點 = freshVisit）。存檔身分 = 全新 worldId、worldName = seed、新存檔槽、沒有任何 visit
+ * （生成時的角色不留下 visit）。回傳的 game 就是傳入的那個。now 未用：visit 的 lastSeen 在第一次 saveSplit 時才寫。
  */
-export function planNewWorld(game: DelveGame, character: DelveCharacter, now: number): { game: DelveGame; session: SplitSession } {
-  const { world } = saveSplitGame(game, newIdentity(now), { worldId: newId(), worldName: game.seed, visits: {} }, now);
-  const bare: WorldData = { ...world, header: { ...world.header, visits: {} } };
-  const r = restoreSplit(bare, character);
-  if (!r.ok) throw new Error(r.message);
-  return { game: r.game, session: SplitSession.fromLoaded(r.world, character, newWorldSlot()) };
+export function planNewWorld(game: DelveGame, character: DelveCharacter, _now: number): { game: DelveGame; session: SplitSession } {
+  applyCharacter(game, characterState(character, game.time));
+  const { id, nick, createdAt, rev } = character;
+  const session = new SplitSession({ id, nick, createdAt, rev }, { worldId: newId(), worldName: game.seed, visits: {} }, newWorldSlot());
+  return { game, session };
 }
 
 /** restoreGame 的錯誤 → 給玩家看的訊息 */
@@ -157,7 +161,9 @@ export function restoreErrorMessage(r: { error: RestoreError; saveGenVersion?: n
 }
 
 /**
- * 匯入檔 → 新存檔槽（既有槽一律不動）。舊合併檔：還原後 commitMigration（不備份）；
+ * 匯入檔 → 新存檔槽（既有槽一律不動；不建遊戲、不生成世界）。寫入的角色 savedAt = now（存檔清單以匯入時間排序）。
+ * 舊合併檔：restoreBlocker 檢查後直接在資料層拆成世界 + 新角色（與 commitMigration 共用 migrateData，不備份）；
+ *   COMPAT_GEN 舊生成器的存檔照 restoreGame 的遷移規則改標成目前生成器。
  * 世界檔：要有內嵌角色（遊戲匯出的檔才有），世界存檔時拿掉內嵌角色；本機已有同 id 角色時，匯入的 rev 較大才覆蓋（否則保留本機角色）。
  */
 export async function importWorld(store: SplitStore, bytes: Uint8Array, now: number): Promise<{ slot: string } | { error: string }> {
@@ -165,9 +171,10 @@ export async function importWorld(store: SplitStore, bytes: Uint8Array, now: num
   try { any = decodeAnySave(bytes); } catch { return { error: WORLD_CORRUPT_MSG }; }
   const slot = newWorldSlot();
   if (any.kind === 'legacy') {
-    const r = restoreGame(any.data);
-    if (!r.ok) return { error: restoreErrorMessage(r) };
-    await commitMigration(store, slot, r.game, now, { backup: false });
+    const h = any.data.header;
+    const blocked = restoreBlocker(h);
+    if (blocked) return { error: restoreErrorMessage(blocked) };
+    await migrateData(store, slot, { ...any.data, header: { ...h, genVersion: GEN_VERSION, savedAt: now } }, now, { backup: false });
     return { slot };
   }
   const { character: imported, ...header } = any.data.header;
@@ -178,22 +185,30 @@ export async function importWorld(store: SplitStore, bytes: Uint8Array, now: num
   if (cb) {
     try { local = decodeCharacter(cb); } catch (e) { if (!(e instanceof SaveFormatError)) throw e; }
   }
-  const character = local && local.id === imported.id && local.rev >= imported.rev ? local : imported;
-  await store.putSplit(slot, { bytes: encodeWorld({ header, chunks: any.data.chunks }), seed: header.seed }, character);
+  const kept = local && local.id === imported.id && local.rev >= imported.rev ? local : imported;
+  await store.putSplit(slot, { bytes: encodeWorld({ header, chunks: any.data.chunks }), seed: header.seed }, { ...kept, savedAt: now });
   return { slot };
 }
 
-export function saveSplit(store: SplitStore, s: SplitSession, game: DelveGame, now: number, summary?: SaveSummary): Promise<SlotMeta> {
-  const { world, character } = s.snapshot(game, now);
+function putData(store: SplitStore, s: SplitSession, data: SaveData, now: number, summary?: SaveSummary): Promise<SlotMeta> {
+  const { world, character } = s.snapshotData(data, now);
   return store.putSplit(s.slot, { bytes: encodeWorld(world), seed: world.header.seed, summary }, character);
 }
 
-/** backup = true：先 backupSlot(slot, slot + BACKUP_SUFFIX) 成功後才 putSplit；任一步丟錯就整個丟出（舊存檔不動） */
-export async function commitMigration(
-  store: SplitStore, slot: string, game: DelveGame, now: number, o: { backup: boolean; summary?: SaveSummary },
-): Promise<SplitSession> {
+export function saveSplit(store: SplitStore, s: SplitSession, game: DelveGame, now: number, summary?: SaveSummary): Promise<SlotMeta> {
+  return putData(store, s, snapshotGame(game, now), now, summary);
+}
+
+type MigrateOpts = { backup: boolean; summary?: SaveSummary };
+/** 遷移核心（資料層）：backup = true 先 backupSlot(slot, slot + BACKUP_SUFFIX) 成功後才 putSplit；任一步丟錯就整個丟出（舊存檔不動） */
+async function migrateData(store: SplitStore, slot: string, data: SaveData, now: number, o: MigrateOpts): Promise<SplitSession> {
   if (o.backup) await store.backupSlot(slot, slot + BACKUP_SUFFIX);
-  const s = SplitSession.fresh(game.seed, now, slot);
-  await saveSplit(store, s, game, now, o.summary);
+  const s = SplitSession.fresh(data.header.seed, now, slot);
+  await putData(store, s, data, now, o.summary);
   return s;
+}
+
+/** 還原好的舊存檔遊戲 → 世界 + 新角色（見 migrateData） */
+export function commitMigration(store: SplitStore, slot: string, game: DelveGame, now: number, o: MigrateOpts): Promise<SplitSession> {
+  return migrateData(store, slot, snapshotGame(game, now), now, o);
 }

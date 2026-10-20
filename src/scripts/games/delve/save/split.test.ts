@@ -6,7 +6,8 @@ import { normalizeAppearance } from '../engine/appearance';
 import { restoreGame } from './serialize';
 import { readLegacyFixture } from './legacyFixture';
 import { createCharacter, decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
-import { decodeWorld, encodeWorld, restoreSplit, type WorldData } from './worldSave';
+import { decodeWorld, encodeWorld, restoreSplit, saveSplitGame, type WorldData } from './worldSave';
+import { expectSameGame } from './expectSameGame';
 import type { CharacterMeta } from './storage';
 import { levelForXp } from '../engine/levels';
 import {
@@ -296,5 +297,51 @@ describe('play any world with any character', () => {
     expect(await importWorld(st, exportFile(world), 5)).toEqual({ error: NO_CHARACTER_MSG });
     expect(await importWorld(st, new Uint8Array([1, 2, 3, 4]), 5)).toEqual({ error: WORLD_CORRUPT_MSG });
     expect(st.log).toEqual([]);
+  });
+});
+
+describe('fix round 1: no second world generation, import timestamps', () => {
+  /** 舊做法的參考：拆出世界、丟掉 visits，再用角色 restoreSplit（會重新生成） */
+  const viaRestore = (g: DelveGame, c: DelveCharacter): DelveGame => {
+    const { world } = saveSplitGame(g, { id: 'tmp', nick: 't', createdAt: 0, rev: 0 }, { worldId: 'x', worldName: g.seed, visits: {} }, 1);
+    const r = restoreSplit({ ...world, header: { ...world.header, visits: {} } }, c);
+    if (!r.ok) throw new Error(r.message);
+    return r.game;
+  };
+  it('planNewWorld applies the character in place (same game instance, no regeneration) = restoreSplit result', () => {
+    const rich = SplitSession.fresh('fixture-v9', 1, 'x').snapshot(fixtureGame(), 10).character;
+    const g = small('inplace');
+    const { game, session } = planNewWorld(g, rich, 20);
+    expect(game).toBe(g);
+    expect(session.charId).toBe(rich.id);
+    expectSameGame(viaRestore(small('inplace'), rich), game);
+  });
+  it('legacy importWorld = what commitMigration would write', async () => {
+    const a = memStore({});
+    const r = await importWorld(a, readLegacyFixture(), 50);
+    if ('error' in r) throw new Error(r.error);
+    expect(a.log).toEqual([`putSplit ${r.slot} ${a.slots[r.slot].charId}`]);
+    const b = memStore({});
+    await commitMigration(b, 'main', fixtureGame(), 50, { backup: false });
+    const pa = await planContinue(a, r.slot), pb = await planContinue(b, 'main');
+    if (pa.kind !== 'split' || pb.kind !== 'split') throw new Error(`${pa.kind} ${pb.kind}`);
+    expect({ ...pa.character, id: '' }).toEqual({ ...pb.character, id: '' });
+    expect(pa.world.header.worldName).toBe(pb.world.header.worldName);
+    const ga = restoreSplit(pa.world, pa.character), gb = restoreSplit(pb.world, pb.character);
+    if (!ga.ok || !gb.ok) throw new Error('restore');
+    expectSameGame(gb.game, ga.game);
+  });
+  it('imported world is stamped with the import time (sorts first, Continue picks it)', async () => {
+    const st = memStore({});
+    await saveSplit(st, SplitSession.fresh('old', 1, 'w-old'), small('old'), 100);
+    const { world, character } = SplitSession.fresh('imp', 1, 'tmp').snapshot(small('imp'), 10);
+    const r = await importWorld(st, exportFile(world, character), 200);
+    if ('error' in r) throw new Error(r.error);
+    expect((await st.listWorlds())[0].slot).toBe(r.slot);
+    const p = await planContinue(st);
+    expect(p.kind === 'split' && p.slot).toBe(r.slot);
+    const l = await importWorld(st, readLegacyFixture(), 300);
+    if ('error' in l) throw new Error(l.error);
+    expect((await st.listWorlds())[0].slot).toBe(l.slot);
   });
 });

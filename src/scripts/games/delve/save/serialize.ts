@@ -750,6 +750,62 @@ export function serializeGame(game: DelveGame, now?: number): Uint8Array {
   return encodeSave(snapshotGame(game, now));
 }
 
+/** 還原前的檢查（不必生成世界）：格式範圍、生成器版本（format ≤ 5 的 COMPAT_GEN 可遷移）、世界大小、chunk 範圍 */
+export function restoreBlocker(h: SaveHeader, opts: RestoreOptions = {}): Extract<RestoreResult, { ok: false }> | null {
+  if (!Number.isInteger(h.format) || h.format < 1 || h.format > SAVE_FORMAT) return { ok: false, error: 'format', message: `format ${h.format}` };
+  const migrate = h.genVersion !== GEN_VERSION && h.format <= 5 && COMPAT_GEN.includes(h.genVersion);
+  if (h.genVersion !== GEN_VERSION && !migrate && !opts.allowGenMismatch) {
+    return {
+      ok: false, error: 'gen_version', saveGenVersion: h.genVersion,
+      message: `save generated with v${h.genVersion}, current generator v${GEN_VERSION}`,
+    };
+  }
+  if (!validDims(h.width, h.height)) {
+    return { ok: false, error: 'size', message: `bad size ${h.width}x${h.height}` };
+  }
+  const total = Math.ceil(h.width / CHUNK) * Math.ceil(h.height / CHUNK);
+  for (const ci of h.chunks) if (ci >= total) return { ok: false, error: 'size', message: `chunk ${ci} out of range` };
+  return null;
+}
+
+/** 角色隨身的狀態（restoreGame 與 split.planNewWorld 共用 applyCharacter 套到遊戲上） */
+export interface CharacterState {
+  appearance?: Appearance;
+  inventory: InventoryJSON;
+  vanity?: VanityJSON;
+  levels?: LevelsJSON;
+  /** 沒有（format < 5）→ 裝備 / 血魔維持建構子的初始值 */
+  combat?: { maxHp: number; hp: number; mana: number; equipment: EquipmentJSON; equipGear?: EquipmentGearJSON };
+  /** 沒有（format < 7）→ 維持 0 */
+  undying?: number;
+  /** 沒有（舊格式沒有 extra）→ 釣魚紀錄 / 圖鑑維持初始值 */
+  extra?: { fishLog?: Partial<Record<ItemId, number>>; codex?: CodexJSON };
+  /** 絕對時間（到 game.time 為止有效）；呼叫端先設好 game.time */
+  buffs: Partial<Record<BuffKind, number>>;
+}
+
+/** 把角色隨身的狀態套到遊戲上（不動世界 / 位置 / 探索） */
+export function applyCharacter(game: DelveGame, s: CharacterState): void {
+  if (s.appearance) game.setAppearance(s.appearance);
+  game.inventory = Inventory.fromJSON(s.inventory);
+  game.vanity = Vanity.fromJSON(s.vanity);
+  game.levels.load(s.levels);
+  const c = s.combat;
+  if (c) {
+    game.baseMaxHp = Math.max(BASE_HP, Math.min(MAX_HP_CAP, Math.round(c.maxHp / 20) * 20));
+    game.equipment = Equipment.fromJSON(c.equipment, c.equipGear);
+    const max = game.maxHp();
+    game.hp = c.hp > 0 ? Math.min(max, c.hp) : max;
+    game.mana = Math.max(0, Math.min(game.maxMana(), c.mana));
+  }
+  if (s.undying !== undefined) game.undyingCd = Math.max(0, Math.min(999, s.undying));
+  if (s.extra) {
+    game.fishLog = { ...s.extra.fishLog };
+    game.codex.load(s.extra.codex);
+  }
+  game.buffs = { ...s.buffs };
+}
+
 /** 由存檔位元組（或已解碼資料）還原遊戲。永不丟例外，錯誤以結果回報。 */
 export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions = {}): RestoreResult {
   let data: SaveData;
@@ -780,22 +836,12 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
   }
   const h = data.header;
-  if (!Number.isInteger(h.format) || h.format < 1 || h.format > SAVE_FORMAT) return { ok: false, error: 'format', message: `format ${h.format}` };
-  const migrate = h.genVersion !== GEN_VERSION && h.format <= 5 && COMPAT_GEN.includes(h.genVersion);
-  if (h.genVersion !== GEN_VERSION && !migrate && !opts.allowGenMismatch) {
-    return {
-      ok: false, error: 'gen_version', saveGenVersion: h.genVersion,
-      message: `save generated with v${h.genVersion}, current generator v${GEN_VERSION}`,
-    };
-  }
-  if (!validDims(h.width, h.height)) {
-    return { ok: false, error: 'size', message: `bad size ${h.width}x${h.height}` };
-  }
+  const blocked = restoreBlocker(h, opts);
+  if (blocked) return blocked;
   const game = new DelveGame({ seed: h.seed, width: h.width, height: h.height, gen: opts.gen, appearance: h.appearance });
   const w = game.world;
   const total = w.chunksX * w.chunksY;
   for (const ci of h.chunks) {
-    if (ci >= total) return { ok: false, error: 'size', message: `chunk ${ci} out of range` };
     const c = data.chunks.get(ci);
     if (c) writeChunk(w, ci, c);
   }
@@ -844,9 +890,6 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     game.player.vx = h.player.vx;
     game.player.vy = h.player.vy;
   }
-  game.inventory = Inventory.fromJSON(h.inventory);
-  game.vanity = Vanity.fromJSON(h.vanity);
-  game.levels.load(h.levels);
   game.time = h.time;
   game.tick = h.tick;
   if (!opts.freshVisit) {
@@ -857,24 +900,26 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     else game.discovery.found.clear();
     game.bed = h.bed && w.inBounds(h.bed.x, h.bed.y) ? { ...h.bed } : null;
   }
-  // 戰鬥（format 5）；舊格式 = 裝備空、滿血、一般模式
+  // 戰鬥（format 5）的世界部分；舊格式 = 一般模式
   const c = h.combat;
   if (c) {
-    game.baseMaxHp = Math.max(BASE_HP, Math.min(MAX_HP_CAP, Math.round(c.maxHp / 20) * 20));
-    game.equipment = Equipment.fromJSON(c.equipment, c.equipGear);
     for (const b of c.bosses) game.bossesDefeated.add(b);
     game.kills = { ...c.kills };
     game.peaceful = c.peaceful;
-    const max = game.maxHp();
-    game.hp = c.hp > 0 ? Math.min(max, c.hp) : max;
-    game.mana = Math.max(0, Math.min(game.maxMana(), c.mana));
   }
+  // 角色隨身的狀態（背包 / 外觀 / 等級 / 裝備 / 血魔 / 不滅冷卻 / 釣魚紀錄 / 圖鑑 / buff）
+  applyCharacter(game, {
+    inventory: h.inventory, vanity: h.vanity, levels: h.levels,
+    combat: c ? { maxHp: c.maxHp, hp: c.hp, mana: c.mana, equipment: c.equipment, equipGear: c.equipGear } : undefined,
+    undying: h.vitals ? (h.vitals.undying ?? 0) : undefined,
+    extra: h.extra,
+    buffs: h.folk ? h.folk.buffs : {},
+  });
   // 呼吸 / 燃燒 / 蜂蜜（format 7）；舊格式 = 滿氣、沒著火
   if (h.vitals) {
     game.breath = Math.max(0, Math.min(MAX_BREATH, h.vitals.breath));
     game.burning = Math.max(0, Math.min(BURN_TIME, h.vitals.burning));
     game.honeyT = Math.max(0, Math.min(HONEY_TIME, h.vitals.honey));
-    game.undyingCd = Math.max(0, Math.min(999, h.vitals.undying ?? 0));
   }
   // 地上的掉落物（format 7）：放回原地、靜止
   for (const d of h.drops ?? []) {
@@ -893,9 +938,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     game.syncDay();
   } else game.refreshSeason();
   if (h.extra) {
-    game.fishLog = { ...h.extra.fishLog };
     for (const i of h.extra.minedIce ?? []) if (i < w.liquid.length) game.minedIce.add(i);
-    game.codex.load(h.extra.codex);
     if (h.extra.rng) game.setRngState(h.extra.rng);
   }
   // 半格方塊（只留在實心格）、據點 / 居民（核心那格要還是爐心）
@@ -909,7 +952,6 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   game.settle.load(h.settle, w);
   game.folk.load(h.folk?.world, w);
   game.quests.load(h.folk?.quests);
-  game.buffs = h.folk ? { ...h.folk.buffs } : {};
   game.scoutMarks = h.folk ? h.folk.scoutMarks.map((m) => ({ ...m })) : [];
   if (h.folk) game.perkDays = { ...h.folk.perkDays };
   game.scouted.clear();

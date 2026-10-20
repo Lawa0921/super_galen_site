@@ -15,7 +15,7 @@ import {
   validBed, validBossActive, validChests, validDiscovery, validDrops, validEnv, validExplored, validExtra, validFolk, validHalves,
   validKeysUsed, validLevels, validLiquids, validMarkers, validUnlocked, validVitals,
   type ChestSave, type ChunkPayload, type DropSave, type EnvSave, type FolkSave, type LiquidSave, type PlayerSave,
-  type RestoreOptions, type RestoreResult, type SaveData, type SaveHeader,
+  type CharacterState, type RestoreOptions, type RestoreResult, type SaveData, type SaveHeader,
 } from './serialize';
 import { CHARACTER_FORMAT, validateCharacter, type CharIdentity, type DelveCharacter } from './character';
 import { MAX_BREATH, type DelveGame } from '../engine/game';
@@ -128,12 +128,32 @@ export function splitSnapshot(data: SaveData, who: CharIdentity, where: WorldIde
   return { world: { header, chunks: data.chunks }, character };
 }
 
+/** 角色的 buff 剩餘秒數 → 這個世界的絕對到期時間 */
+function absoluteBuffs(character: DelveCharacter, time: number): Partial<Record<BuffKind, number>> {
+  const buffs: Partial<Record<BuffKind, number>> = {};
+  for (const [k, left] of Object.entries(character.buffsLeft) as [BuffKind, number][]) buffs[k] = time + left;
+  return buffs;
+}
+
+/** 角色 → applyCharacter 的輸入（time = 遊戲目前時間，buff 到期時間以此換算）；欄位對應同 joinSplit */
+export function characterState(character: DelveCharacter, time: number): CharacterState {
+  return {
+    appearance: character.appearance, inventory: character.inventory, vanity: character.vanity, levels: character.levels,
+    combat: {
+      maxHp: character.combat.baseMaxHp, hp: character.combat.hp, mana: character.combat.mana,
+      equipment: character.equipment, equipGear: character.equipGear,
+    },
+    undying: character.undyingCd,
+    extra: { fishLog: character.fishLog, codex: character.codex },
+    buffs: absoluteBuffs(character, time),
+  };
+}
+
 /** 世界 + 角色 → format-9 形狀的 SaveData（給 restoreGame）；這個世界沒有該角色的 visit → freshVisit（位置是佔位） */
 export function joinSplit(world: WorldData, character: DelveCharacter): { data: SaveData; freshVisit: boolean } {
   const w = world.header;
   const visit = own(w.visits, character.id) ? w.visits[character.id] : undefined;
-  const buffs: Partial<Record<BuffKind, number>> = {};
-  for (const [k, left] of Object.entries(character.buffsLeft) as [BuffKind, number][]) buffs[k] = w.time + left;
+  const buffs = absoluteBuffs(character, w.time);
   // 世界沒有 folk（舊存檔）→ 初始值（world / quests 的空物件由 load() 補成預設，同 validFolk）
   const folk: Omit<FolkSave, 'buffs'> = w.folk
     ?? { world: {} as FolkJSON, quests: {} as QuestLogJSON, scoutMarks: [], perkDays: { guide: -1, healer: -1 }, scouted: [] };
