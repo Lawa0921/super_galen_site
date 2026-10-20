@@ -3,6 +3,7 @@ import { addBuff, calcDamage, dealDamage, hitAmount, roll, rollHit, stat, MAX_BU
 import { applyEffect } from './skills';
 import { constRng, makeCombatant } from './testing';
 import { mulberry32 } from './rng';
+import { calcDamagePreSplit } from './__fixtures__/calcDamage.pre-split';
 import { KEYSTONE_VALUES as V } from '../data/talents';
 import type { Combatant } from './combatant';
 
@@ -295,7 +296,7 @@ describe('rollHit and hitAmount', () => {
     });
   };
 
-  it('calcDamage is rollHit then hitAmount, draw for draw', () => {
+  it('rollHit then hitAmount is the pre-split calcDamage, draw for draw', () => {
     let misses = 0, crits = 0;
     for (let i = 1; i <= 2000; i++) {
       const g = mulberry32(i);
@@ -308,10 +309,13 @@ describe('rollHit and hitAmount', () => {
         ...(g() < 0.2 ? { execute: Math.floor(g() * 100) } : {}),
         ...(g() < 0.2 ? { wounded: Math.floor(g() * 60) } : {}),
       };
-      const one = counting(i * 31), two = counting(i * 31);
-      const whole = calcDamage(a, t, spec, one.rng);
-      const r = rollHit(a, t, spec, two.rng);
-      expect(two.n, `draws, case ${i}`).toBe(one.n);
+      // The frozen reference (calcDamage as it stood before the split), the split, and today's calcDamage, each on its own copy of one stream.
+      const ref = counting(i * 31), split = counting(i * 31), now = counting(i * 31);
+      const whole = calcDamagePreSplit(a, t, spec, ref.rng);
+      const r = rollHit(a, t, spec, split.rng);
+      expect(split.n, `draws, case ${i}`).toBe(ref.n);
+      expect(calcDamage(a, t, spec, now.rng), `calcDamage, case ${i}`).toEqual(whole);
+      expect(now.n, `calcDamage draws, case ${i}`).toBe(ref.n);
       if (whole.miss) { misses++; expect(r, `case ${i}`).toBeNull(); continue; }
       expect(r, `case ${i}`).not.toBeNull();
       if (whole.crit) crits++;
