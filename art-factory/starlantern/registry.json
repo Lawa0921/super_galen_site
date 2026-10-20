@@ -6619,7 +6619,7 @@
           64,
           64
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6663,7 +6663,7 @@
           26,
           26
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6707,7 +6707,7 @@
           64,
           64
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6750,7 +6750,7 @@
           26,
           26
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6793,7 +6793,7 @@
           64,
           64
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6836,7 +6836,7 @@
           26,
           26
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6881,7 +6881,7 @@
           64,
           64
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6927,7 +6927,7 @@
           26,
           26
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6971,7 +6971,7 @@
           64,
           64
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7015,7 +7015,7 @@
           26,
           26
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7059,7 +7059,7 @@
           64,
           64
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7102,7 +7102,7 @@
           26,
           26
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7145,7 +7145,7 @@
           64,
           64
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7189,7 +7189,7 @@
           26,
           26
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7233,7 +7233,7 @@
           64,
           64
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7276,7 +7276,7 @@
           26,
           26
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7319,7 +7319,7 @@
           64,
           64
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7362,7 +7362,7 @@
           26,
           26
         ],
-        "spec": 2
+        "spec": "gear-cell:24a1866b9fff"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7628,7 +7628,7 @@
         "role": "frame",
         "pad": 0,
         "tier_hue": 220,
-        "spec": 2,
+        "spec": "nine-slice:9b502f4051d3",
         "block": 21.062
       },
       "status": "qa_passed",
@@ -7706,7 +7706,7 @@
         "role": "frame",
         "pad": 0,
         "tier_hue": 51,
-        "spec": 2,
+        "spec": "nine-slice:9b502f4051d3",
         "block": 20.0
       },
       "status": "qa_passed",
@@ -7784,7 +7784,7 @@
         "role": "frame",
         "pad": 0,
         "tier_hue": 26,
-        "spec": 2,
+        "spec": "nine-slice:9b502f4051d3",
         "block": 21.438
       },
       "status": "qa_passed",
@@ -7862,7 +7862,7 @@
         "role": "frame",
         "pad": 0,
         "tier_hue": 354,
-        "spec": 2,
+        "spec": "nine-slice:9b502f4051d3",
         "block": 20.188
       },
       "status": "qa_passed",
@@ -7940,7 +7940,7 @@
         "role": "frame",
         "pad": 0,
         "tier_hue": 131,
-        "spec": 2,
+        "spec": "nine-slice:9b502f4051d3",
         "block": 20.0
       },
       "status": "qa_passed",
@@ -8018,7 +8018,7 @@
         "role": "glow",
         "pad": 2,
         "tier_hue": 35,
-        "spec": 2,
+        "spec": "nine-slice:9b502f4051d3",
         "block": 25.417
       },
       "status": "qa_passed",
@@ -8123,7 +8123,7 @@
         "role": "frame",
         "pad": 0,
         "tier_hue": 257,
-        "spec": 2,
+        "spec": "nine-slice:9b502f4051d3",
         "block": 20.812
       },
       "status": "qa_passed",
@@ -8215,7 +8215,7 @@
         "role": "overlay",
         "pad": 0,
         "tier_hue": null,
-        "spec": 2,
+        "spec": "nine-slice:9b502f4051d3",
         "block": 19.562
       },
       "status": "qa_passed",
@@ -8239,5 +8239,40 @@
         "a5": "採用 starlit（四角實心四芒星＋各邊 2×2 點，執行時看得見）。未採用：unique edge does not repeat（left 1.70）；glow hue 49.6 偏黃（上限 50）；其餘通過但 a3 角飾在 1× 較清楚"
       }
     }
-  }
+  },
+  "requa_log": [
+    {
+      "on": "2026-10-20",
+      "batch": "sample",
+      "requa": [
+        "gear-iron-sword-large",
+        "gear-iron-sword",
+        "gear-wooden-buckler-large",
+        "gear-wooden-buckler",
+        "gear-leather-cap-large",
+        "gear-leather-cap",
+        "gear-lg-chizuru-large",
+        "gear-lg-chizuru",
+        "gear-blaze-heart-sword-large",
+        "gear-blaze-heart-sword",
+        "gear-iron-unbroken-shield-large",
+        "gear-iron-unbroken-shield",
+        "gear-set-blaze-weapon-large",
+        "gear-set-blaze-weapon",
+        "gear-set-blaze-body-large",
+        "gear-set-blaze-body",
+        "gear-set-blaze-hands-large",
+        "gear-set-blaze-hands",
+        "ui-rarity-magic",
+        "ui-rarity-rare",
+        "ui-rarity-epic",
+        "ui-rarity-legendary",
+        "ui-rarity-unique",
+        "ui-rarity-set",
+        "ui-glow-legendary",
+        "ui-starlit"
+      ],
+      "changed": {}
+    }
+  ]
 }
