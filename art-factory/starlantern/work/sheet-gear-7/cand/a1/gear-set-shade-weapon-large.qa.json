@@ -1,0 +1,33 @@
+{
+  "pass": false,
+  "reasons": [
+    "magenta spill"
+  ],
+  "warnings": [
+    "enclosed holes"
+  ],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 33,
+  "magenta_spill": 51,
+  "subject": {
+    "long": 56,
+    "short": 56,
+    "mass": 0.375,
+    "box": [
+      4,
+      4,
+      60,
+      60
+    ],
+    "centre_off": 0.0
+  },
+  "block": 5.911,
+  "scale": 5.911,
+  "size": [
+    64,
+    64
+  ],
+  "spec": "gear-cell:cba070036b9c"
+}

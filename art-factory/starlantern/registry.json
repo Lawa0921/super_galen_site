@@ -8413,6 +8413,14 @@
       "batch": "gear-5d-sample",
       "source_id": "gear-set-blaze-weapon",
       "runtime": "/assets/games/starlantern/gear/set-blaze-silhouette.png"
+    },
+    "sheet-gear-2": {
+      "rejected_attempts": {
+        "a2": "不可挑選：生成時風格錨點 gear-anchor.png 不在（一個測試的 approve 把真檔刪了，已修 95d0a90c），這一版沒有附錨點，畫風可能偏離 G1"
+      },
+      "plain_reasons": {
+        "a2": "這一版生成時少了風格參考圖，不採用"
+      }
     }
   },
   "requa_log": [
