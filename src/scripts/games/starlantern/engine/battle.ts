@@ -57,7 +57,11 @@ export interface BattleState {
 /** Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */
 export interface BattleScale { depth: number; region: RegionId; elite?: string; condition?: ConditionId }
 
-export type EnemyAction = { kind: 'attack'; target?: string } | { kind: 'enemy-skill'; index: number; target?: string };
+/**
+ * `target` is the drawn one, which the engine plays (a taunt, a challenge or a cover turns it when the blow falls).
+ * `shownTarget`, for the screen only: where a challenge or a cover will send it, as things stood when it was planned.
+ */
+export type EnemyAction = { kind: 'attack'; target?: string; shownTarget?: string } | { kind: 'enemy-skill'; index: number; target?: string; shownTarget?: string };
 
 /** Rounds Scarlet's story fight lasts. */
 export const STORY_FIGHT_ROUNDS = 3;
@@ -200,22 +204,24 @@ function pickTarget(list: Combatant[], key: string | undefined, rng: Rng): Comba
 
 /**
  * Enemies attacking the party are bound by the grid: melee reaches only the front-most standing row; a taunting member is
- * always reachable. A veiled member (Rin's veil) is passed over unless everyone in reach is veiled.
+ * always reachable, and so is `forced` (whom a challenge or a cover sends the blow to, wherever she stands). A veiled
+ * member (Rin's veil) is passed over unless everyone in reach is veiled.
  */
-function foePool(s: BattleState, actor: Combatant, melee: boolean): Combatant[] {
+function foePool(s: BattleState, actor: Combatant, melee: boolean, forced?: Combatant): Combatant[] {
   if (actor.side !== 'enemy') return s.enemies;
   const reach = reachable(s.party, melee);
   const seen = reach.filter((c) => !c.veil);
   const pool = seen.length ? seen : reach;
   const taunter = living(s.party).find((c) => c.taunt > 0);
-  return taunter && !pool.includes(taunter) ? [...pool, taunter] : pool;
+  const withTaunter = taunter && !pool.includes(taunter) ? [...pool, taunter] : pool;
+  return forced && forced.alive && !withTaunter.includes(forced) ? [...withTaunter, forced] : withTaunter;
 }
 
-function resolveTargets(s: BattleState, actor: Combatant, target: Target | null, chosen: string | undefined, rng: Rng, melee = false): Combatant[] {
+function resolveTargets(s: BattleState, actor: Combatant, target: Target | null, chosen: string | undefined, rng: Rng, melee = false, forced?: Combatant): Combatant[] {
   const allies = actor.side === 'party' ? s.party : s.enemies;
   const foes = actor.side === 'party' ? s.enemies : s.party;
   switch (target) {
-    case 'enemy': { const t = pickTarget(foePool(s, actor, melee), chosen, rng); return t ? [t] : []; }
+    case 'enemy': { const t = pickTarget(foePool(s, actor, melee, forced), chosen, rng); return t ? [t] : []; }
     case 'row': case 'column': case 'cross': {
       if (actor.side === 'party') return living(foes);   // enemies stand in one line: a shape covers them all
       const t = pickTarget(foePool(s, actor, melee), chosen, rng);
@@ -277,13 +283,14 @@ function chooseEnemyActions(s: BattleState, rng: Rng, round: number): Map<string
     const melee = index >= 0 ? skillIsMelee(skills[index].effects) : e.melee;
     const target = pickTarget(foePool(s, e, melee), undefined, rng)?.key;
     const act: EnemyAction = index >= 0 ? { kind: 'enemy-skill', index, target } : { kind: 'attack', target };
-    // Where a challenge or a cover will really send the blow (a taunt over them included), the intent shows it; the draws
-    // above are made all the same. A lone taunt leaves the drawn target, as it always has.
+    // Where a challenge or a cover (a taunt over them included) would send the blow, the screen shows it; the action keeps
+    // its drawn target and the redirect is made when the blow falls (forcedTarget in perform). A lone taunt is drawn as
+    // the target already, so a plain intent gains no field.
     const ch = e.challenged;
     const challenged = !!ch && ch.round === round && s.party.some((c) => c.key === ch.by && c.alive);
     const covered = living(s.party).some((c) => c.key !== target && c.cover?.ally === target);
     const forced = challenged || covered ? forcedTarget(s, e, act, round) : null;
-    out.set(e.key, forced ? { ...act, target: forced.to.key } : act);
+    out.set(e.key, forced && forced.to.key !== target ? { ...act, shownTarget: forced.to.key } : act);
   }
   return out;
 }
@@ -323,6 +330,7 @@ function checkOutcome(s: BattleState): boolean {
  */
 function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ctx: EffectContext, rng: Rng): CastDef | null {
   delete ctx.lastHit;   // burn and bleed ride only on a hit of this action
+  let sentTo: Combatant | undefined;   // a challenger or a cover is reached wherever she stands
   if (actor.side === 'enemy') {
     // A single blow goes where a taunt, a challenge or a cover sends it (forcedTarget); the ledger credits the one it
     // went to with what the others in `pool` would have lost (plan 8c rulings 8, 19). An area attack follows a taunt only,
@@ -332,13 +340,14 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     if (forced) {
       if (ctx.ledger) ctx.redirect = { pool: forced.pool };
       act = { ...act, target: forced.to.key } as EnemyAction;
+      sentTo = forced.to;
     } else if (taunter) act = { ...act, target: taunter.key } as EnemyAction;
   }
   const physical = (t: Combatant) =>
     applyEffect(actor, t, { kind: 'damage', power: 100, element: 'phys', scale: actor.attackScale ?? 'atk', melee: actor.melee }, ctx);
   switch (act.kind) {
     case 'attack': {
-      const t = pickTarget(foePool(s, actor, actor.melee), act.target, rng);
+      const t = pickTarget(foePool(s, actor, actor.melee, sentTo), act.target, rng);
       if (!t) return null;
       s.log.push({ type: 'act', actor: actor.key, label: '攻擊' });
       physical(t);
@@ -347,7 +356,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     case 'enemy-skill': {
       const sk = enemyDef(s, actor)!.skills[act.index];
       s.log.push({ type: 'act', actor: actor.key, label: sk.name });
-      for (const t of resolveTargets(s, actor, sk.target, act.target, rng, skillIsMelee(sk.effects))) for (const eff of sk.effects) applyEffect(actor, t, eff, ctx);
+      for (const t of resolveTargets(s, actor, sk.target, act.target, rng, skillIsMelee(sk.effects), sentTo)) for (const eff of sk.effects) applyEffect(actor, t, eff, ctx);
       return null;
     }
     case 'skill': {
@@ -577,7 +586,8 @@ export function intentLabel(s: BattleState, key: string): string {
   const name = a.kind === 'attack' ? '攻擊' : (def?.skills[a.index]?.name ?? '');
   const sk = a.kind === 'enemy-skill' ? def?.skills[a.index] : null;
   const single = a.kind === 'attack' || sk?.target === 'enemy' || sk?.target === 'row' || sk?.target === 'column' || sk?.target === 'cross';
-  const who = single && a.target ? s.party.find((c) => c.key === a.target)?.name : null;
+  const shown = a.shownTarget ?? a.target;
+  const who = single && shown ? s.party.find((c) => c.key === shown)?.name : null;
   const area = sk?.target === 'enemies' ? '（全體）' : sk?.target === 'row' ? '（整排）' : sk?.target === 'column' ? '（整列）' : sk?.target === 'cross' ? '（十字）' : '';
   return `${name}${area}${who ? ` → ${who}` : ''}`;
 }

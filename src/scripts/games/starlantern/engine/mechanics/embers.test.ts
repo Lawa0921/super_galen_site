@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { forcedTarget, planEnemies, resolveRound, type Action, type BattleState, type EnemyAction } from '../battle';
+import { forcedTarget, intentLabel, planEnemies, resolveRound, type Action, type BattleState, type EnemyAction } from '../battle';
 import { dealDamage, hitAmount, rollHit, type Combatant } from '../combatant';
 import { lossOf, newLedger } from '../ledger';
 import { constRng, makeBattle, makeCombatant } from '../testing';
@@ -16,6 +16,7 @@ const foe = (key = 'e0', over: Partial<Combatant> = {}) =>
   makeCombatant({ key, side: 'enemy', max: { hp: 99999, tp: 0, atk: 200, def: 20, mag: 20, res: 20, spd: 99 }, ...over });
 const embersOf = (c: Combatant) => (c.mech?.kind === 'embers' ? c.mech.embers : NaN);
 const round = (s: BattleState, acts: Record<string, Action> = {}, rng = constRng(0.5)) => resolveRound(s, acts, rng);
+const planEnemiesKeys = (s: BattleState) => { planEnemies(s, constRng(0.5)); return Object.keys(s.intents!.e0).sort(); };
 
 describe("Scarlet's embers", () => {
   it('half of what she takes is kept as embers, up to half her max HP', () => {
@@ -113,24 +114,53 @@ describe("Scarlet's embers", () => {
     expect(words(fallen, 'noel')).toEqual([]);
   });
 
-  it("the intent shows where the blow will land: a challenge, a taunt over a challenge, a cover, a taunt", () => {
+  it("the intent shows where the blow will land (a challenge, a taunt over a challenge, a cover) and keeps the drawn target", () => {
     // Noel stands in front, the others behind: a melee foe can only pick Noel.
     const party = (over: Partial<Combatant> = {}, noel: Partial<Combatant> = {}) =>
       [P('noel', noel), scarlet({ row: 'back', ...over }), P('selene', { row: 'back' })];
-    const planned = (s: BattleState) => { planEnemies(s, constRng(0.5)); return s.intents!.e0.target; };
-    expect(planned(makeBattle(party(), [foe()]))).toBe('noel');
-    // 盾擊 hit it this round: next round's intent is Scarlet.
-    expect(planned(makeBattle(party(), [foe('e0', { challenged: { by: 'scarlet', round: 2 } })], { round: 1 }))).toBe('scarlet');
-    // A taunt beats the challenge.
+    /** The planned intent's drawn target, and the one the screen shows. */
+    const planned = (s: BattleState) => { planEnemies(s, constRng(0.5)); const a = s.intents!.e0; return [a.target, a.shownTarget ?? a.target]; };
+    expect(planned(makeBattle(party(), [foe()]))).toEqual(['noel', 'noel']);
+    expect(planEnemiesKeys(makeBattle(party(), [foe()]))).toEqual(['kind', 'target']);   // nothing added on a plain intent
+    // 盾擊 hit it this round: next round's intent shows Scarlet.
+    expect(planned(makeBattle(party(), [foe('e0', { challenged: { by: 'scarlet', round: 2 } })], { round: 1 }))).toEqual(['noel', 'scarlet']);
+    // A taunt beats the challenge (the draw already picks the taunter).
     const both = makeBattle([P('noel'), scarlet({ row: 'back' }), P('selene', { row: 'back', taunt: 2 })], [foe('e0', { challenged: { by: 'scarlet', round: 2 } })], { round: 1 });
-    expect(planned(both)).toBe('selene');
+    expect(planned(both)).toEqual(['selene', 'selene']);
     // Scarlet covers Noel.
-    expect(planned(makeBattle(party({ cover: { ally: 'noel', turns: 2 } }), [foe()], { round: 1 }))).toBe('scarlet');
+    expect(planned(makeBattle(party({ cover: { ally: 'noel', turns: 2 } }), [foe()], { round: 1 }))).toEqual(['noel', 'scarlet']);
     // A lone taunt: the draw itself picks the taunter, as it always has.
-    expect(planned(makeBattle([P('noel'), scarlet({ row: 'back' }), P('selene', { row: 'back', taunt: 2 })], [foe()], { round: 1 }))).toBe('selene');
-    // The real round sends the challenged foe's blow to Scarlet, as shown.
-    const bashed = round(makeBattle(party(), [foe('e0', { max: { hp: 99999, tp: 0, atk: 200, def: 20, mag: 20, res: 20, spd: 1 } })]), { scarlet: { kind: 'skill', skill: 'shield-bash', target: 'e0' } });
-    expect(bashed.intents!.e0.target).toBe('scarlet');
+    expect(planned(makeBattle([P('noel'), scarlet({ row: 'back' }), P('selene', { row: 'back', taunt: 2 })], [foe()], { round: 1 }))).toEqual(['selene', 'selene']);
+    // After a real 盾擊 the next intent shows her, and the label names her.
+    const bashed = round(makeBattle(party(), [foe('e0', { max: { hp: 99999, tp: 0, atk: 30, def: 20, mag: 20, res: 20, spd: 1 } })]), { scarlet: { kind: 'skill', skill: 'shield-bash', target: 'e0' } });
+    expect([bashed.intents!.e0.target, bashed.intents!.e0.shownTarget]).toEqual(['noel', 'scarlet']);
+    expect(intentLabel(bashed, 'e0')).toBe('攻擊 → scarlet');
+  });
+
+  it('a planned intent under a cover: shown on Scarlet, credited to her, and back on its target if the cover ends first', () => {
+    const soft = (key = 'e0', spd = 99, atk = 60) => foe(key, { max: { hp: 99999, tp: 0, atk, def: 20, mag: 20, res: 20, spd } });
+    const sturdy = () => P('selene', { row: 'back', max: { ...MAX, def: 80 } });
+    // Noel in front (the only one a melee foe can draw), Scarlet behind covering her.
+    const s = makeBattle([P('noel'), scarlet({ row: 'back', cover: { ally: 'noel', turns: 2 } }), sturdy()], [soft()]);
+    planEnemies(s, constRng(0.5));
+    expect(s.intents!.e0).toEqual({ kind: 'attack', target: 'noel', shownTarget: 'scarlet' });
+    expect(intentLabel(s, 'e0')).toBe('攻擊 → scarlet');
+    const l = newLedger();
+    const r = resolveRound(s, {}, constRng(0.5), l);
+    expect(r.party[0].hp).toBe(200);
+    const taken = 200 - r.party[1].hp;
+    const spec = { power: 100, element: 'phys', scale: 'atk', melee: true } as const;
+    const noel = P('noel');
+    const would = lossOf(noel, hitAmount(soft(), noel, spec, rollHit(soft(), noel, spec, constRng(0.5))!).amount);
+    expect(would - taken).toBeGreaterThan(0);
+    expect(l.by.scarlet.prevented).toBe(would - taken);
+    // A fast foe fells Scarlet first: the cover ends with her, and the slow foe's planned blow lands on Noel.
+    const t = makeBattle([P('noel'), scarlet({ row: 'back', hp: 1, cover: { ally: 'noel', turns: 2 } }), sturdy()], [soft('e0', 1), soft('e1', 99)]);
+    planEnemies(t, constRng(0.5));
+    expect([t.intents!.e0.shownTarget, t.intents!.e1.shownTarget]).toEqual(['scarlet', 'scarlet']);
+    const u = resolveRound(t, {}, constRng(0.5));
+    expect(u.party[1].alive).toBe(false);
+    expect(u.party[0].hp).toBeLessThan(200);
   });
 
   it('cover turns no area attack, and ends after three round ends', () => {

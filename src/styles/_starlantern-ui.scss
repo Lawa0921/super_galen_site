@@ -434,7 +434,7 @@ $slx-ailment: (poison: #b48cff, sleep: #c4c8dc, burn: #ff8a4a, freeze: #8fe8ff, 
 .slx-pm-ail[hidden] { display: none; }
 .slx-ail, .slx-mech { flex: none; padding: 0 1px; font-size: 9px; line-height: 10px; border: 1px solid currentColor; white-space: nowrap; background: rgba($slx-win, 0.92); }
 // Character mechanics (plan 8c): the same word look as an ailment, in their own colours (render/mechStyle.ts MECH_FILL).
-$slx-mech: (heat: #ffb000, expose: #5cffa8, mark: #ff6fd8, veil: #9aa4c8, ward: #7fd4ff, purify: #d8ff7a, moon: #e4d4ff, coins: #ffd86b, aim: #ffa08a, embers: #ff3d2e, beat: #3fd8c4, plain: #f1ead8);
+$slx-mech: (heat: #ffb000, expose: #5cffa8, mark: #ff6fd8, veil: #9aa4c8, ward: #5aa8ff, purify: #d8ff7a, moon: #e4d4ff, coins: #e8b84a, aim: #ffa08a, embers: #ff3d2e, beat: #3fd8c4, plain: #f1ead8);
 @each $k, $c in $slx-mech {
   .slx-mech-#{$k} { color: $c; }
 }
