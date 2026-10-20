@@ -3,9 +3,11 @@ import { describe, it, expect } from 'vitest';
 import {
   formatPlayTime, summarizeGame, continueLines, rollWorldName, menuMove, readVolume, writeVolume, VOLUME_KEY,
   genStageLabel, genProgress, wipeThreshold, titleCamY, panX, zoomPrefLabel, savedAgo, realDate, descentY, focusFor,
-  worldLine, characterLine, continueSlot, importPlan,
+  worldLine, characterLine, continueSlot, importPlan, charPreview,
 } from './titleModel';
 import { DAY_LENGTH } from '../engine/constants';
+import { normalizeAppearance } from '../engine/appearance';
+import { plainLook, type DollLook } from '../engine/doll';
 
 function memStore(init: Record<string, string> = {}): Storage {
   const m = new Map(Object.entries(init));
@@ -266,5 +268,22 @@ describe('開場鏡頭', () => {
     expect(focusFor(1280, 720)).toEqual({ x: 0.68, y: 0.56 });
     expect(focusFor(390, 844)).toEqual({ x: 0.5, y: 0.52 });
     expect(focusFor(844, 390)).toEqual({ x: 0.5, y: 0.58 });
+  });
+});
+
+describe('charPreview（角色列表小人像）', () => {
+  const app = normalizeAppearance({ hair: 2, hairColor: 4 });
+  const plain = charPreview({ appearance: app });
+  it('沒有 look → 畫外觀；有正常的 look → 畫穿著（和只畫外觀不同）', () => {
+    expect(plain.px).toEqual(charPreview({ appearance: app, look: plainLook(app) }).px);
+    const dressed: DollLook = { ...plainLook(app), body: { look: 'outfit:gothic', rarity: 0, plus: 0, elem: null } };
+    expect(charPreview({ appearance: app, look: dressed }).px).not.toEqual(plain.px);
+  });
+  it('IndexedDB 裡壞掉的 look（形狀不對）→ 不丟例外，退回只畫外觀', () => {
+    const bad: unknown[] = [{}, 'garbage', 42, { app: null }, { ...plainLook(app), app: undefined }, { ...plainLook(app), body: { look: 7 } }];
+    for (const look of bad) {
+      expect(() => charPreview({ appearance: app, look: look as DollLook }), JSON.stringify(look)).not.toThrow();
+      expect(charPreview({ appearance: app, look: look as DollLook }).px, JSON.stringify(look)).toEqual(plain.px);
+    }
   });
 });

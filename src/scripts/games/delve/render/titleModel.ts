@@ -6,7 +6,10 @@ import type { CharacterMeta, SaveSummary, SlotMeta } from '../save/storage';
 import type { AnySave, WorldData } from '../save/worldSave';
 import type { SaveData } from '../save/serialize';
 import type { DelveCharacter } from '../save/character';
-import { plainLook, type DollLook } from '../engine/doll';
+import { dollKey, plainLook, type DollLook } from '../engine/doll';
+import { normalizeAppearance } from '../engine/appearance';
+import { dollPreview } from './dollPreview';
+import type { Bmp } from './pixel';
 
 export type { SaveSummary };
 
@@ -83,6 +86,26 @@ export function worldLine(m: SlotMeta, now: number): string {
 /** 角色列表小人像畫什麼：記錄有穿著（preview.look）就畫穿著；舊記錄沒有 → 只畫外觀 */
 export function charDollLook(c: { appearance: CharacterMeta['appearance']; look?: DollLook }): DollLook {
   return c.look ?? plainLook(c.appearance);
+}
+
+const LOOK_PIECES = ['head', 'body', 'legs', 'back', 'acc'] as const;
+/** preview.look 的形狀檢查（IndexedDB 讀回來的資料沒有經過角色檔的驗證） */
+function lookShapeOk(l: unknown): l is DollLook {
+  if (!l || typeof l !== 'object') return false;
+  const o = l as Record<string, unknown>;
+  if (!o.app || typeof o.app !== 'object') return false;
+  return LOOK_PIECES.every((k) => o[k] === null || (typeof o[k] === 'object' && typeof (o[k] as { look?: unknown }).look === 'string'));
+}
+/**
+ * 角色列表小人像（待機第一格）。preview.look 壞掉（形狀不對、或畫的時候丟例外）→ 退回只畫外觀：
+ * 一列壞掉的記錄不能讓整個角色列表畫不出來。
+ */
+export function charPreview(c: { appearance: CharacterMeta['appearance']; look?: DollLook }): Bmp {
+  const paint = (l: DollLook): Bmp => dollPreview(l, dollKey(l), 'idle', 0);
+  if (c.look === undefined || lookShapeOk(c.look)) {
+    try { return paint(charDollLook(c)); } catch { /* 退回只畫外觀 */ }
+  }
+  return paint(plainLook(normalizeAppearance(c.appearance)));
 }
 
 /** 角色列表的一行：暱稱 · Lv · 上次遊玩多久前（rev 0 = 建立後還沒進過任何世界 → 從未遊玩） */

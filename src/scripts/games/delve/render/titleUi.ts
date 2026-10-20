@@ -1,9 +1,9 @@
 // titleUi.ts — 標題畫面的 DOM 控制：像素字標（整數倍放大、火把 3 格動畫）、選單圖示 / 游標、
 // ↑↓ / Home / End 鍵盤移動、Terraria 式的面板層級（角色列表 → 新角色；角色列表 → 世界列表 → 新世界；設定），
 // Esc 逐層返回、Tab 鎖在面板裡、「繼續」的存檔摘要、選單音效。遊戲流程（開局 / 讀檔 / 轉場 / 存檔庫）在 session.ts。
-import { toCanvas } from './pixel';
+import { toCanvas, type Bmp } from './pixel';
 import { cursorBmp, iconBmp, logoBmp, logoShineBmp, logoTorchTip, type TitleIcon } from './titleArt';
-import { charDollLook, characterLine, continueLines, menuMove, readVolume, rollWorldName, worldLine, writeVolume, zoomPrefLabel } from './titleModel';
+import { charPreview, characterLine, continueLines, menuMove, readVolume, rollWorldName, worldLine, writeVolume, zoomPrefLabel } from './titleModel';
 import { parseZoomPref } from './lowres';
 import type { SoundManager } from '../audio/SoundManager';
 import type { CharacterMeta, SlotMeta } from '../save/storage';
@@ -63,13 +63,15 @@ const PANELS: Record<TitlePanel, { sel: string; parent: TitlePanel | null }> = {
   settings: { sel: '#delve-settings', parent: null },
 };
 
-/** 角色小人像（新角色面板的預覽、角色列表每一列共用）：待機第一格，畫布 = 一格紙娃娃大小 */
-export function paintLook(c: HTMLCanvasElement, l: DollLook): void {
+/** 把一格紙娃娃畫進畫布（畫布 = 一格紙娃娃大小） */
+function paintBmp(c: HTMLCanvasElement, b: Bmp): void {
   if (c.width !== AV_FW || c.height !== AV_FH) { c.width = AV_FW; c.height = AV_FH; }
   const ctx = c.getContext('2d');
   if (!ctx) return;
-  toCanvas(dollPreview(l, dollKey(l), 'idle', 0), { ctx, x: 0, y: 0 });
+  toCanvas(b, { ctx, x: 0, y: 0 });
 }
+/** 角色小人像（新角色面板的預覽）：待機第一格 */
+export function paintLook(c: HTMLCanvasElement, l: DollLook): void { paintBmp(c, dollPreview(l, dollKey(l), 'idle', 0)); }
 /** 只有外觀（什麼都沒穿）的小人像 */
 export function paintDoll(c: HTMLCanvasElement, a: Appearance): void { paintLook(c, plainLook(a)); }
 
@@ -505,7 +507,8 @@ export class TitleUi {
       const doll = document.createElement('canvas');
       doll.className = 'delve-char-doll';
       doll.setAttribute('aria-hidden', 'true');
-      paintLook(doll, charDollLook(c));
+      // 記錄裡的 look 壞掉時 charPreview 退回只畫外觀，不讓一列拖垮整個列表
+      paintBmp(doll, charPreview(c));
       const btns = document.createElement('span');
       btns.className = 'delve-trow-btns';
       btns.append(this.rowBtn('delve-char-del', '刪除', `刪除角色「${c.nick}」`, true));
