@@ -588,6 +588,7 @@ table{{border-collapse:collapse}} td,th{{padding:6px 10px;border-bottom:1px soli
 .screen{{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;background:#1b1d2a;border:2px solid #3a3f66;padding:10px;max-width:100%;box-sizing:border-box}}
 .scroll{{overflow-x:auto;max-width:100%}} .zoom3 .screen{{max-width:none}} details.tech{{font-size:12px;color:#8f8a7e;margin:4px 0}} .reply{{color:#9fd77f;font-weight:600}} .opts{{color:#9fc7ff;margin:4px 0}}
 td,th,figcaption,.note{{overflow-wrap:anywhere}}
+table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overflow-wrap:normal;word-break:normal}} table.checklist td:first-child{{white-space:nowrap}}
 .bag-grid{{display:grid;grid-template-columns:repeat(10,28px);gap:2px}} .doll{{display:grid;grid-template-columns:repeat(3,38px);gap:4px;margin-top:10px}}
 .cell{{position:relative;background:#262840;border:1px solid #3d4068;display:flex;align-items:center;justify-content:center;box-sizing:border-box}}
 .cell .gi{{width:26px;height:26px;object-fit:none;position:relative;z-index:1}} .cell .short{{font-size:9px;line-height:1;text-align:center}}
@@ -621,7 +622,8 @@ td,th,figcaption,.note{{overflow-wrap:anywhere}}
 <section class="decide" id="decisions"><h2>請你決定的事</h2>{reply}<ol>{decisions}</ol>{decided}{after}</section>
 
 <h2 id="s0">0. 本批清單（{checklist.count("data-part=")} 件）</h2>
-<div class="scroll"><table><tr><th>id</th><th>名稱</th><th>工作表</th><th>狀態</th><th>QA</th></tr>{checklist}</table></div>
+<p class="note">手機上這張表可以在框內左右捲動。</p>
+<div class="scroll"><table class="checklist"><tr><th>id</th><th>名稱</th><th>工作表</th><th>狀態</th><th>QA</th></tr>{checklist}</table></div>
 
 {size_html}
 

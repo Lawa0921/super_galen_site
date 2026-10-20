@@ -746,7 +746,8 @@ def test_despill_pulls_the_key_out_of_outline_pixels_and_leaves_the_inside_alone
     assert tuple(out[3, 5]) == (4, 4, 12, 255) and tuple(out[3, 8]) == (156, 42, 42, 255) and tuple(out[16, 9]) == (53, 52, 52, 255)
     assert tuple(out[4, 12]) == (90, 40, 140, 255) and tuple(out[10, 10]) == (140, 60, 140, 255)
     assert (out[..., 3] == rgba[..., 3]).all()
-    assert A.magenta_spill_count(Image.fromarray(out, 'RGBA')) == 1      # only the deliberate inside pixel is left
+    assert A.magenta_spill(out).sum() == 1                              # only the deliberate inside pixel is still spill-coloured ...
+    assert A.magenta_spill_count(Image.fromarray(out, 'RGBA')) == 0      # ... and the gate counts the outline band only (ruling, G2)
 
 
 def _spilled_cell(inside=False):
@@ -764,12 +765,12 @@ def test_gear_cell_despills_its_outline_and_reports_zero_spill(tmp_path):
         assert q['magenta_spill'] == 0 and A.magenta_spill_count(img) == 0 and q['pass'], (aid, q)
 
 
-def test_gear_cell_fails_magenta_left_inside_the_subject_unless_the_registry_allows_it(tmp_path):
+def test_gear_cell_keeps_violet_shading_inside_the_subject_as_art(tmp_path):
+    # Controller ruling 2026-10-20 (G2): spill is key colour mixed into the outline; interior grey-violet shading is art
+    # (it is far from the key, so the residue gate does not take it either).
     reg = A.Registry(tmp_path / 'r.json')
     q = A.process_gear_cell(reg, 'iron-sword', _spilled_cell(inside=True), tmp_path / 'w', tmp_path / 'raw.png')['gear-iron-sword-large']
-    assert not q['pass'] and 'magenta spill' in q['reasons'] and q['magenta_spill'] > 0
-    reg.set('gear-iron-sword-large', allow_magenta_spill=q['magenta_spill'])
-    assert A.process_gear_cell(reg, 'iron-sword', _spilled_cell(inside=True), tmp_path / 'w', tmp_path / 'raw.png')['gear-iron-sword-large']['pass']
+    assert q['pass'] and q['magenta_spill'] == 0, q
 
 
 def test_finish_without_despill_keeps_its_old_behaviour(tmp_path):
@@ -1467,7 +1468,7 @@ def test_a_bow_at_022_passes_where_a_sword_at_022_still_fails(tmp_path):
 
 def test_the_bow_ruling_moved_the_gear_cell_stamp():
     assert A.qa_spec('gear-cell') != 'gear-cell:6a8d64bae98b'           # the stamp before bows joined the thin class
-    assert A.qa_spec('nine-slice') == 'nine-slice:2ab30baae894'         # frames are untouched
+    # (the frames' stamp did not move for bows; it moved later, with the outline-only spill ruling)
 
 
 def test_no_test_can_write_the_real_prompts(tmp_path):
@@ -1477,3 +1478,41 @@ def test_no_test_can_write_the_real_prompts(tmp_path):
     for mod in (batch, gear_art, party, portal):
         assert Path(mod.PROMPTS).is_relative_to(tmp_path.parent.parent), (mod.__name__, mod.PROMPTS)
         assert 'art-factory' not in str(mod.PROMPTS), (mod.__name__, mod.PROMPTS)
+
+
+# --- controller ruling 2026-10-20 (G2): the spill gate counts the outline fringe only -------------------------------------------
+def _subject(px, colour):
+    """A 24 x 24 dark square on transparency (rows/cols 2..21); `px` pixels painted `colour`."""
+    arr = np.zeros((26, 26, 4), np.uint8); arr[2:22, 2:22] = (30, 25, 40, 255)
+    for y, x in px: arr[y, x, :3] = colour
+    return Image.fromarray(arr, 'RGBA')
+
+
+def test_spill_gate_still_fails_a_real_outline_fringe():
+    img = _subject([(2, 8), (2, 9), (2, 10)], (137, 52, 136))            # on the outline, touching transparency
+    q = {'reasons': [], 'pass': True}; A._spill_gate(q, img, {})
+    assert q['magenta_spill'] == 3 and 'magenta spill' in q['reasons'] and not q['pass']
+    q = {'reasons': [], 'pass': True}; A._spill_gate(q, _subject([(3, 8)], (110, 20, 120)), {})   # the 2nd pixel in: still the band
+    assert q['magenta_spill'] == 1
+    q = {'reasons': [], 'pass': True}; A._spill_gate(q, _subject([(4, 8)], (110, 20, 120)), {})   # the 3rd pixel in: shading
+    assert q['magenta_spill'] == 0
+
+
+def test_spill_gate_passes_interior_violet_and_maroon_shading():
+    img = _subject([(10, 10), (12, 14), (15, 9)], (117, 22, 63))          # the G2 storm / Noel shading tones, deep inside
+    img2 = _subject([(10, 10), (11, 11), (12, 12)], (37, 0, 52))
+    for im in (img, img2):
+        assert A.magenta_spill(np.asarray(im)).sum() == 3                  # the colours are spill-like ...
+        q = {'reasons': [], 'pass': True}; A._spill_gate(q, im, {})
+        assert q['magenta_spill'] == 0 and q['pass'], q                    # ... but not outline fringe
+
+
+def test_interior_key_leftover_is_still_caught_by_the_residue_gate():
+    img = _subject([(10, 10), (10, 11)], (225, 30, 225))                   # near-key pixels left inside the subject
+    q = {'reasons': [], 'pass': True}; A._spill_gate(q, img, {})
+    assert q['magenta_spill'] == 0                                         # not the spill gate's job ...
+    assert 'magenta residue' in A.alpha_qa(img)['reasons']                 # ... the residue gate takes it
+
+
+def test_the_spill_ruling_moved_both_stamps():
+    assert A.qa_spec('gear-cell') != 'gear-cell:cba070036b9c' and A.qa_spec('nine-slice') != 'nine-slice:2ab30baae894'

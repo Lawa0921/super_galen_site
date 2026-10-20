@@ -1230,3 +1230,16 @@ def test_stale_qa_counts_as_not_passed_but_published_parts_are_never_called_stal
     assert names['thorn-spear'] in pending and names['hunter-bow'] not in pending
     row = lambda p: page[page.index(f'data-part="{p}"'):][:page[page.index(f'data-part="{p}"'):].index('</tr>')]
     assert 'QA 過期' in row('thorn-spear') and 'QA 過期' not in row('hunter-bow')
+
+
+def test_checklist_table_stays_readable_on_a_phone(factory, review):
+    """Ruling 2026-10-20 (G2): on a 375-390 px phone the §0 table scrolls inside its own box with readable columns
+    instead of squeezing every cell to a character wide."""
+    import re
+    _fill(factory, 'main-gear')
+    page = review.main('main-gear').read_text(encoding='utf-8')
+    css = page[page.index('<style>'):page.index('</style>')]
+    s0 = page[page.index('id="s0"'):page.index('id="size"')]
+    assert '<div class="scroll"><table class="checklist">' in s0
+    assert re.search(r'table\.checklist\{[^}]*min-width:\s*\d{3}px', css)
+    assert re.search(r'table\.checklist (td|th)[^{]*\{[^}]*overflow-wrap:normal', css)

@@ -357,7 +357,7 @@ def neutralize_key_tint(img, passes=4):
 SPILL_STEP = 30          # magenta spill: red and blue both at least this far above green ...
 SPILL_HUE = (280, 345)   # ... with a hue between dark violet and hot pink (magenta is 300; violet 270 and below is art)
 SPILL_BAND = 2           # despill reaches this many pixels in from the transparent edge
-MAGENTA_SPILL_MAX = 2    # QA: at most this many spill pixels left anywhere (registry `allow_magenta_spill` overrides)
+MAGENTA_SPILL_MAX = 2    # QA: at most this many spill pixels left in the outline band (registry `allow_magenta_spill` overrides)
 
 
 def magenta_spill(arr, step=SPILL_STEP):
@@ -370,19 +370,27 @@ def magenta_spill(arr, step=SPILL_STEP):
     return op & (np.minimum(r, b) - g >= step) & (hue >= SPILL_HUE[0]) & (hue <= SPILL_HUE[1])
 
 
-def magenta_spill_count(img):
-    return int(magenta_spill(np.asarray(img.convert('RGBA'))).sum())
+def near_edge(alpha, band=SPILL_BAND):
+    """Pixels within `band` pixels (square neighbourhood) of a transparent pixel or the canvas edge: the outline band."""
+    h, w = alpha.shape; clear = np.pad(alpha == 0, band, constant_values=True); near = np.zeros((h, w), bool)
+    for dy in range(-band, band + 1):
+        for dx in range(-band, band + 1): near |= clear[band + dy:band + dy + h, band + dx:band + dx + w]
+    return near
+
+
+def magenta_spill_count(img, band=SPILL_BAND):
+    """Spill pixels in the outline band only (controller ruling 2026-10-20, G2): spill is the key colour mixed into the
+    outline. Spill-like colours deeper inside are the art's own shading; key colour left inside is the residue gate's."""
+    arr = np.asarray(img.convert('RGBA'))
+    return int((magenta_spill(arr) & near_edge(arr[..., 3], band)).sum())
 
 
 def despill(img, band=SPILL_BAND):
     """Deterministic: in the outer `band` pixels of the subject, take the magenta component out of spill pixels by
     lowering red and blue by min(R, B) - G. A dark outline blend goes back to near-black, a red one back to red.
     Alpha never changes; pixels deeper inside are left for the QA count (they may be real art)."""
-    arr = np.asarray(img.convert('RGBA')).copy(); h, w = arr.shape[:2]
-    clear = np.pad(arr[..., 3] == 0, band, constant_values=True); near = np.zeros((h, w), bool)
-    for dy in range(-band, band + 1):
-        for dx in range(-band, band + 1): near |= clear[band + dy:band + dy + h, band + dx:band + dx + w]
-    hit = near & magenta_spill(arr)
+    arr = np.asarray(img.convert('RGBA')).copy()
+    hit = near_edge(arr[..., 3], band) & magenta_spill(arr)
     if hit.any():
         c = arr[..., :3].astype(np.int16); m = np.minimum(c[..., 0], c[..., 2]) - c[..., 1]
         c[..., 0] -= m; c[..., 2] -= m
@@ -710,10 +718,11 @@ THIN_WEAPON_KINDS = ('spear', 'bow')
 # The rule logic each QA spec stamp covers, in words (qa_spec hashes it with the constants; edit it when a rule changes).
 GEAR_CELL_RULES = ('normalize to one long edge; long edge +-LONG_TOL, centre <= CENTRE_TOL; short floor by slot; mass band by '
                    'subject_class(slot, weapon kind): thin weapon kinds (polearms, bows) use the thin band; speckless bbox; '
-                   'magenta spill')
+                   'magenta spill counted in the outline band only (interior key colour is residue)')
 NINE_SLICE_RULES = ('cover_sample; centre clear; roles frame / glow / overlay / corners; band colour from the chromatic hue '
                     'cluster; seam ratio (frame, glow) or edge joint (overlay); corners: nothing outside the corners, a whole '
-                    'four-point star in each (four points beyond a white core, empty diagonal corners, off the tile edge)')
+                    'four-point star in each (four points beyond a white core, empty diagonal corners, off the tile edge); '
+                    'magenta spill counted in the outline band only')
 LONG_TOL = 1      # the long edge may miss the target by one art pixel (a thin tip the centre sample steps over)
 CENTRE_TOL = 1    # distance between the subject bbox centre and the canvas centre, in art pixels
 
