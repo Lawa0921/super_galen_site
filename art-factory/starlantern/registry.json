@@ -8418,7 +8418,8 @@
       "rejected_attempts": {
         "a2": "不可挑選：生成時風格錨點 gear-anchor.png 不在（一個測試的 approve 把真檔刪了，已修 95d0a90c），這一版沒有附錨點，畫風可能偏離 G1",
         "a1": "未採用：wooden-staff：wooden-staff-large subject too light (mass 0.222)；wooden-staff subject too light (mass 0.231) ｜ hunter-bow：通過但他版較好或同套須同一版 ｜ thorn-spear：通過但他版較好或同套須同一版 ｜ crystal-blade：通過但他版較好或同套須同一版 ｜ frost-staff：frost-staff-large subject too light (mass 0.237)；frost-staff subject too light (mass 0.242) ｜ star-saber：通過但他版較好或同套須同一版 ｜ crystal-aegis：通過但他版較好或同套須同一版 ｜ scale-helm：通過但他版較好或同套須同一版 ｜ cloth-gloves：通過但他版較好或同套須同一版",
-        "a3": "採用：wooden-staff、hunter-bow、thorn-spear、crystal-blade、frost-staff、star-saber、crystal-aegis、scale-helm、cloth-gloves。"
+        "a3": "採用：wooden-staff、hunter-bow、thorn-spear、crystal-blade、frost-staff、star-saber、crystal-aegis、scale-helm、cloth-gloves。",
+        "a4": "採用：frost-staff（1 倍下霜杖原本像槍，改成杖頭一大團冰晶，mass 0.33／0.34）。其餘 8 件維持 a3。"
       },
       "plain_reasons": {
         "a2": "這一版生成時少了風格參考圖，不採用"
@@ -8436,6 +8437,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 55,
@@ -8454,7 +8456,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -8480,6 +8482,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -8498,7 +8501,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -8524,6 +8527,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 54,
@@ -8542,7 +8546,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -8568,6 +8572,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 21,
@@ -8586,7 +8591,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -8612,6 +8617,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 56,
@@ -8630,7 +8636,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -8656,6 +8662,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -8674,7 +8681,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -8700,6 +8707,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 55,
@@ -8718,7 +8726,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -8744,6 +8752,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -8762,7 +8771,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -8778,7 +8787,7 @@
     },
     "gear-frost-staff-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-frost-staff-large.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a4.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -8788,10 +8797,11 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 53,
-          "mass": 0.298,
+          "mass": 0.327,
           "box": [
             5,
             4,
@@ -8800,29 +8810,29 @@
           ],
           "centre_off": 0.5
         },
-        "block": 6.161,
-        "scale": 6.161,
+        "block": 6.411,
+        "scale": 6.411,
         "size": [
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a4.png",
         "cell": "frost-staff"
       },
       "slot": "weapon",
       "weapon_kind": "staff",
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a4",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear"
     },
     "gear-frost-staff": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-frost-staff.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a4.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -8832,10 +8842,11 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 21,
-          "mass": 0.3,
+          "mass": 0.337,
           "box": [
             2,
             2,
@@ -8844,23 +8855,23 @@
           ],
           "centre_off": 0.5
         },
-        "block": 15.682,
-        "scale": 15.682,
+        "block": 16.318,
+        "scale": 16.318,
         "size": [
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a4.png",
         "cell": "frost-staff"
       },
       "slot": "weapon",
       "weapon_kind": "staff",
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a4",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear"
     },
@@ -8876,6 +8887,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 56,
@@ -8894,7 +8906,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -8920,6 +8932,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -8938,7 +8951,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -8964,6 +8977,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 48,
@@ -8982,7 +8996,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9007,6 +9021,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
@@ -9025,7 +9040,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9050,6 +9065,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 52,
@@ -9068,7 +9084,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9093,6 +9109,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 21,
@@ -9111,7 +9128,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9136,6 +9153,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 49,
@@ -9154,7 +9172,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9179,6 +9197,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
@@ -9197,7 +9216,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9222,6 +9241,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 49,
@@ -9240,7 +9260,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9267,6 +9287,7 @@
         "edge": 0,
         "holes": 1,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
@@ -9285,7 +9306,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9310,6 +9331,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 48,
@@ -9328,7 +9350,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9353,6 +9375,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
@@ -9371,7 +9394,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9396,6 +9419,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 41,
@@ -9414,7 +9438,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9439,6 +9463,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 16,
@@ -9457,7 +9482,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9482,6 +9507,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 55,
@@ -9500,7 +9526,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9525,6 +9551,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -9543,7 +9570,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9568,6 +9595,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 52,
@@ -9586,7 +9614,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9611,6 +9639,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 21,
@@ -9629,7 +9658,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9654,6 +9683,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 48,
@@ -9672,7 +9702,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9697,6 +9727,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
@@ -9715,7 +9746,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9740,6 +9771,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 55,
@@ -9758,7 +9790,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9783,6 +9815,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -9801,7 +9834,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -9816,7 +9849,95 @@
     },
     "gear-moss-charm-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-moss-charm-large.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 42,
+          "mass": 0.481,
+          "box": [
+            11,
+            4,
+            53,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 6.393,
+        "scale": 6.393,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
+        "cell": "moss-charm"
+      },
+      "slot": "neck",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-gear-3",
+      "batch": "gear-5d-main-gear"
+    },
+    "gear-moss-charm": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/gear-moss-charm.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 17,
+          "mass": 0.494,
+          "box": [
+            4,
+            2,
+            21,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 16.273,
+        "scale": 16.273,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
+        "cell": "moss-charm"
+      },
+      "slot": "neck",
+      "chosen_attempt": "a4",
+      "source_id": "sheet-gear-3",
+      "batch": "gear-5d-main-gear"
+    },
+    "gear-bat-earring-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/gear-bat-earring-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -9828,126 +9949,41 @@
         "edge": 0,
         "holes": 1,
         "magenta_spill": 0,
-        "subject": {
-          "long": 56,
-          "short": 47,
-          "mass": 0.513,
-          "box": [
-            8,
-            4,
-            55,
-            60
-          ],
-          "centre_off": 0.5
-        },
-        "block": 6.179,
-        "scale": 6.179,
-        "size": [
-          64,
-          64
-        ],
-        "spec": "gear-cell:9e868455a2f5"
-      },
-      "status": "qa_passed",
-      "kind": "gear-cell",
-      "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
-        "cell": "moss-charm"
-      },
-      "slot": "neck",
-      "chosen_attempt": "a3",
-      "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
-    },
-    "gear-moss-charm": {
-      "final": "art-factory/starlantern/work/sheet-gear-3/gear-moss-charm.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
-      "qa": {
-        "pass": true,
-        "reasons": [],
-        "warnings": [],
-        "residue": 0,
-        "semi": 0,
-        "edge": 0,
-        "holes": 0,
-        "magenta_spill": 0,
-        "subject": {
-          "long": 22,
-          "short": 18,
-          "mass": 0.496,
-          "box": [
-            4,
-            2,
-            22,
-            24
-          ],
-          "centre_off": 0.0
-        },
-        "block": 15.727,
-        "scale": 15.727,
-        "size": [
-          26,
-          26
-        ],
-        "spec": "gear-cell:9e868455a2f5"
-      },
-      "status": "qa_passed",
-      "kind": "gear-cell",
-      "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
-        "cell": "moss-charm"
-      },
-      "slot": "neck",
-      "chosen_attempt": "a3",
-      "source_id": "sheet-gear-3",
-      "batch": "gear-5d-main-gear"
-    },
-    "gear-bat-earring-large": {
-      "final": "art-factory/starlantern/work/sheet-gear-3/gear-bat-earring-large.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
-      "qa": {
-        "pass": true,
-        "reasons": [],
-        "warnings": [],
-        "residue": 0,
-        "semi": 0,
-        "edge": 0,
-        "holes": 0,
-        "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 48,
-          "mass": 0.444,
+          "mass": 0.406,
           "box": [
-            8,
             4,
-            56,
-            60
+            8,
+            60,
+            56
           ],
           "centre_off": 0.0
         },
-        "block": 6.0,
-        "scale": 6.0,
+        "block": 6.643,
+        "scale": 6.643,
         "size": [
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
         "cell": "bat-earring"
       },
       "slot": "neck",
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a4",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear"
     },
     "gear-bat-earring": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-bat-earring.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -9957,40 +9993,41 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
-          "mass": 0.448,
+          "mass": 0.405,
           "box": [
-            3,
             2,
-            22,
-            24
+            3,
+            24,
+            22
           ],
           "centre_off": 0.5
         },
-        "block": 15.273,
-        "scale": 15.273,
+        "block": 16.909,
+        "scale": 16.909,
         "size": [
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
         "cell": "bat-earring"
       },
       "slot": "neck",
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a4",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear"
     },
     "gear-crystal-pendant-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-crystal-pendant-large.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -10000,40 +10037,41 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
-          "short": 46,
-          "mass": 0.377,
+          "short": 38,
+          "mass": 0.393,
           "box": [
-            9,
+            13,
             4,
-            55,
+            51,
             60
           ],
           "centre_off": 0.0
         },
-        "block": 5.571,
-        "scale": 5.571,
+        "block": 5.911,
+        "scale": 5.911,
         "size": [
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
         "cell": "crystal-pendant"
       },
       "slot": "neck",
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a5",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear"
     },
     "gear-crystal-pendant": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-crystal-pendant.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -10043,34 +10081,35 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
-          "short": 18,
-          "mass": 0.372,
+          "short": 15,
+          "mass": 0.403,
           "box": [
-            4,
+            5,
             2,
-            22,
+            20,
             24
           ],
-          "centre_off": 0.0
+          "centre_off": 0.5
         },
-        "block": 14.182,
-        "scale": 14.182,
+        "block": 15.045,
+        "scale": 15.045,
         "size": [
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
         "cell": "crystal-pendant"
       },
       "slot": "neck",
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a5",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear"
     },
@@ -10086,6 +10125,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 56,
@@ -10104,7 +10144,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10129,6 +10169,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -10147,7 +10188,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10172,6 +10213,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 47,
@@ -10190,7 +10232,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10215,6 +10257,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
@@ -10233,7 +10276,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10260,6 +10303,7 @@
         "edge": 0,
         "holes": 4,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 38,
@@ -10278,7 +10322,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10303,6 +10347,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 15,
@@ -10321,7 +10366,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10346,6 +10391,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 54,
@@ -10364,7 +10410,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10390,6 +10436,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 21,
@@ -10408,7 +10455,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10436,6 +10483,7 @@
         "edge": 0,
         "holes": 2,
         "magenta_spill": 0,
+        "key_tint_inside": 1,
         "subject": {
           "long": 56,
           "short": 41,
@@ -10454,7 +10502,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10481,6 +10529,7 @@
         "edge": 0,
         "holes": 1,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 16,
@@ -10499,7 +10548,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10526,6 +10575,7 @@
         "edge": 0,
         "holes": 2,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 43,
@@ -10544,7 +10594,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10569,6 +10619,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 17,
@@ -10587,7 +10638,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10614,6 +10665,7 @@
         "edge": 0,
         "holes": 11,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 51,
@@ -10632,7 +10684,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10659,6 +10711,7 @@
         "edge": 0,
         "holes": 1,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 20,
@@ -10677,7 +10730,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10702,6 +10755,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 52,
@@ -10720,7 +10774,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10745,6 +10799,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 21,
@@ -10763,7 +10818,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10790,6 +10845,7 @@
         "edge": 0,
         "holes": 1,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 48,
@@ -10808,7 +10864,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10833,6 +10889,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
@@ -10851,7 +10908,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10878,6 +10935,7 @@
         "edge": 0,
         "holes": 8,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 55,
@@ -10896,7 +10954,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10922,6 +10980,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -10940,7 +10999,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -10966,6 +11025,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 54,
@@ -10984,7 +11044,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11009,6 +11069,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 21,
@@ -11027,7 +11088,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11052,6 +11113,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 54,
@@ -11070,7 +11132,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11096,6 +11158,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 21,
@@ -11114,7 +11177,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11140,6 +11203,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 56,
@@ -11158,7 +11222,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11183,6 +11247,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -11201,7 +11266,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11226,6 +11291,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 52,
@@ -11244,7 +11310,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11269,6 +11335,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 21,
@@ -11287,7 +11354,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11312,6 +11379,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 56,
@@ -11330,7 +11398,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11356,6 +11424,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -11374,7 +11443,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11400,6 +11469,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 50,
@@ -11418,7 +11488,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11443,6 +11513,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 20,
@@ -11461,7 +11532,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11486,6 +11557,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 56,
@@ -11504,7 +11576,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11530,6 +11602,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -11548,7 +11621,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11574,6 +11647,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 50,
@@ -11592,7 +11666,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11617,6 +11691,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 20,
@@ -11635,7 +11710,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11660,6 +11735,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 49,
@@ -11678,7 +11754,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11703,6 +11779,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
@@ -11721,7 +11798,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11746,6 +11823,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 48,
@@ -11764,7 +11842,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11789,6 +11867,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
@@ -11807,7 +11886,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11832,6 +11911,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 52,
@@ -11850,7 +11930,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11875,6 +11955,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 20,
@@ -11893,7 +11974,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11918,6 +11999,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 1,
         "subject": {
           "long": 56,
           "short": 49,
@@ -11936,7 +12018,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -11961,6 +12043,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
@@ -11979,7 +12062,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12004,6 +12087,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 50,
@@ -12022,7 +12106,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12047,6 +12131,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 20,
@@ -12065,7 +12150,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12090,6 +12175,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 51,
@@ -12108,7 +12194,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12133,6 +12219,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 20,
@@ -12151,7 +12238,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12176,6 +12263,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 47,
@@ -12194,7 +12282,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12219,6 +12307,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
@@ -12237,7 +12326,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12262,6 +12351,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 54,
@@ -12280,7 +12370,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12305,6 +12395,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 21,
@@ -12323,7 +12414,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12348,6 +12439,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 50,
@@ -12366,7 +12458,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12391,6 +12483,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 20,
@@ -12409,7 +12502,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12434,6 +12527,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 54,
@@ -12452,7 +12546,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12478,6 +12572,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 21,
@@ -12496,7 +12591,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12522,6 +12617,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 50,
@@ -12540,7 +12636,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12565,6 +12661,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 20,
@@ -12583,7 +12680,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12608,6 +12705,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 55,
@@ -12626,7 +12724,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12651,6 +12749,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -12669,7 +12768,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12696,6 +12795,7 @@
         "edge": 0,
         "holes": 2,
         "magenta_spill": 0,
+        "key_tint_inside": 1,
         "subject": {
           "long": 56,
           "short": 55,
@@ -12714,7 +12814,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12741,6 +12841,7 @@
         "edge": 0,
         "holes": 1,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -12759,7 +12860,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12786,6 +12887,7 @@
         "edge": 0,
         "holes": 2,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 46,
@@ -12804,7 +12906,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12829,6 +12931,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 18,
@@ -12847,7 +12950,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12872,6 +12975,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 48,
@@ -12890,7 +12994,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12915,6 +13019,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
@@ -12933,7 +13038,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -12958,6 +13063,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 45,
@@ -12976,7 +13082,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -13001,6 +13107,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 18,
@@ -13019,7 +13126,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -13044,6 +13151,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 49,
@@ -13062,7 +13170,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -13087,6 +13195,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 19,
@@ -13105,7 +13214,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -13130,6 +13239,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 53,
@@ -13148,7 +13258,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -13173,6 +13283,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 21,
@@ -13191,7 +13302,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -13216,6 +13327,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 55,
@@ -13234,7 +13346,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -13259,6 +13371,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -13277,7 +13390,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -13292,7 +13405,7 @@
     },
     "gear-shade-raven-cloak-large": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-shade-raven-cloak-large.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a3.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -13302,40 +13415,41 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
-          "short": 52,
-          "mass": 0.666,
+          "short": 50,
+          "mass": 0.658,
           "box": [
             4,
-            6,
+            7,
             60,
-            58
+            57
           ],
           "centre_off": 0.0
         },
-        "block": 8.161,
-        "scale": 8.161,
+        "block": 8.518,
+        "scale": 8.518,
         "size": [
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a3.png",
         "cell": "shade-raven-cloak"
       },
       "slot": "body",
-      "chosen_attempt": "a2",
+      "chosen_attempt": "a3",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear"
     },
     "gear-shade-raven-cloak": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-shade-raven-cloak.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a3.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -13345,10 +13459,11 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 20,
-          "mass": 0.645,
+          "mass": 0.665,
           "box": [
             2,
             3,
@@ -13357,22 +13472,22 @@
           ],
           "centre_off": 0.0
         },
-        "block": 20.773,
-        "scale": 20.773,
+        "block": 21.682,
+        "scale": 21.682,
         "size": [
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a3.png",
         "cell": "shade-raven-cloak"
       },
       "slot": "body",
-      "chosen_attempt": "a2",
+      "chosen_attempt": "a3",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear"
     },
@@ -13552,7 +13667,8 @@
       "rejected_attempts": {
         "a1": "未採用：thorn-gauntlets：通過但他版較好或同套須同一版 ｜ straw-sandals：通過但他版較好或同套須同一版 ｜ bat-boots：通過但他版較好或同套須同一版 ｜ cloth-robe：通過但他版較好或同套須同一版 ｜ leather-vest：通過但他版較好或同套須同一版 ｜ scale-mail：通過但他版較好或同套須同一版 ｜ dusk-mantle：通過但他版較好或同套須同一版 ｜ moss-charm：通過但他版較好或同套須同一版 ｜ bat-earring：bat-earring-large subject too light (mass 0.332)；bat-earring subject too light (mass 0.322)",
         "a2": "未採用：thorn-gauntlets：通過但他版較好或同套須同一版 ｜ straw-sandals：通過但他版較好或同套須同一版 ｜ bat-boots：通過但他版較好或同套須同一版 ｜ cloth-robe：通過但他版較好或同套須同一版 ｜ leather-vest：通過但他版較好或同套須同一版 ｜ scale-mail：通過但他版較好或同套須同一版 ｜ dusk-mantle：通過但他版較好或同套須同一版 ｜ moss-charm：通過但他版較好或同套須同一版 ｜ bat-earring：bat-earring-large subject too light (mass 0.249)；bat-earring subject too narrow；bat-earring subject too light (mass 0.242)",
-        "a3": "採用：thorn-gauntlets、straw-sandals、bat-boots、cloth-robe、leather-vest、scale-mail、dusk-mantle、moss-charm、bat-earring。"
+        "a3": "採用：thorn-gauntlets、straw-sandals、bat-boots、cloth-robe、leather-vest、scale-mail、dusk-mantle、moss-charm、bat-earring。",
+        "a4": "採用：bat-earring（原本灰色一團，改成紫色展翼蝙蝠耳飾）、moss-charm（原本像棕色布袋，改回發光的綠色苔球）。其餘 7 件維持 a3。"
       }
     },
     "sheet-gear-4": {
@@ -13560,7 +13676,8 @@
         "a1": "未採用：crystal-pendant：crystal-pendant-large subject too light (mass 0.326)；crystal-pendant subject too light (mass 0.333) ｜ gear-ring：通過但他版較好或同套須同一版 ｜ copper-ring：通過但他版較好或同套須同一版 ｜ star-ring：通過但他版較好或同套須同一版 ｜ lg-noel：lg-noel-large magenta spill ｜ lg-liz：通過但他版較好或同套須同一版 ｜ lg-sylvie：lg-sylvie-large subject too light (mass 0.459)；lg-sylvie subject too light (mass 0.469) ｜ lg-scarlet：通過但他版較好或同套須同一版 ｜ lg-selene：lg-selene-large subject too narrow；lg-selene-large subject too light (mass 0.363)；lg-selene subject too narrow；lg-selene subject too light (mass 0.353)",
         "a2": "未採用：crystal-pendant：crystal-pendant-large subject too light (mass 0.281)；crystal-pendant subject too light (mass 0.279) ｜ gear-ring：通過但他版較好或同套須同一版 ｜ copper-ring：通過但他版較好或同套須同一版 ｜ star-ring：通過但他版較好或同套須同一版 ｜ lg-noel：lg-noel-large magenta residue；lg-noel-large magenta spill ｜ lg-liz：通過但他版較好或同套須同一版 ｜ lg-sylvie：lg-sylvie-large subject too light (mass 0.472)；lg-sylvie subject too light (mass 0.475) ｜ lg-scarlet：通過但他版較好或同套須同一版 ｜ lg-selene：lg-selene-large subject too light (mass 0.438)；lg-selene subject too light (mass 0.428)",
         "a3": "採用：crystal-pendant、gear-ring、copper-ring、star-ring、lg-liz、lg-scarlet、lg-selene。未採用：lg-noel：lg-noel-large magenta spill ｜ lg-sylvie：lg-sylvie subject too light (mass 0.494)",
-        "a4": "採用：lg-sylvie（加寬的箭袋，份量 0.73／0.74）。未採用：其餘 8 件已從 a3 採用（a4 的 crystal-pendant subject too light，mass 0.344／0.345）"
+        "a4": "採用：lg-sylvie（加寬的箭袋，份量 0.73／0.74）。未採用：其餘 8 件已從 a3 採用（a4 的 crystal-pendant subject too light，mass 0.344／0.345）",
+        "a5": "採用（版數上限 a5）：crystal-pendant（原本小而淡，改成大而亮的水晶）、lg-sylvie（原本像綠色盾牌，改成斜放的箭袋、白色箭羽露出）。其餘 7 件維持 a3。"
       }
     },
     "sheet-gear-5": {
@@ -13586,7 +13703,11 @@
     "sheet-gear-8": {
       "rejected_attempts": {
         "a1": "未採用：set-iron-offhand：通過但他版較好或同套須同一版 ｜ set-iron-head：通過但他版較好或同套須同一版 ｜ set-iron-body：通過但他版較好或同套須同一版 ｜ set-iron-feet：通過但他版較好或同套須同一版 ｜ mire-miasma-mask：通過但他版較好或同套須同一版 ｜ shade-raven-cloak：通過但他版較好或同套須同一版",
-        "a2": "採用：set-iron-offhand、set-iron-head、set-iron-body、set-iron-feet、mire-miasma-mask、shade-raven-cloak。"
+        "a2": "採用：set-iron-offhand、set-iron-head、set-iron-body、set-iron-feet、mire-miasma-mask、shade-raven-cloak。",
+        "a3": "採用：shade-raven-cloak（原本在深色面板上看不見，加了灰藍羽緣與金色細紋；1 倍下比之前清楚，但仍偏暗）。鋼鐵套裝 4 件與瘴氣面具維持 a2。"
+      },
+      "plain_reasons": {
+        "a3": "鴉羽斗篷加了灰藍羽緣與金色細紋，1 倍下比之前看得出輪廓，但在深色面板上仍偏暗"
       }
     },
     "sheet-mat-2": {
@@ -13607,6 +13728,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 45,
@@ -13625,7 +13747,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -13650,6 +13772,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 18,
@@ -13668,7 +13791,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -13693,6 +13816,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
           "short": 55,
@@ -13711,7 +13835,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -13737,6 +13861,7 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
           "short": 22,
@@ -13755,7 +13880,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -13771,7 +13896,7 @@
     },
     "gear-lg-sylvie-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-sylvie-large.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -13781,40 +13906,41 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 56,
-          "short": 53,
-          "mass": 0.73,
+          "short": 56,
+          "mass": 0.504,
           "box": [
-            5,
             4,
-            58,
+            4,
+            60,
             60
           ],
-          "centre_off": 0.5
+          "centre_off": 0.0
         },
-        "block": 6.696,
-        "scale": 6.696,
+        "block": 6.304,
+        "scale": 6.304,
         "size": [
           64,
           64
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
         "cell": "lg-sylvie"
       },
       "slot": "offhand",
-      "chosen_attempt": "a4",
+      "chosen_attempt": "a5",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear"
     },
     "gear-lg-sylvie": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-sylvie.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -13824,34 +13950,35 @@
         "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
+        "key_tint_inside": 0,
         "subject": {
           "long": 22,
-          "short": 21,
-          "mass": 0.744,
+          "short": 22,
+          "mass": 0.508,
           "box": [
             2,
             2,
-            23,
+            24,
             24
           ],
-          "centre_off": 0.5
+          "centre_off": 0.0
         },
-        "block": 17.045,
-        "scale": 17.045,
+        "block": 16.045,
+        "scale": 16.045,
         "size": [
           26,
           26
         ],
-        "spec": "gear-cell:9e868455a2f5"
+        "spec": "gear-cell:03c3f55cc7d1"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
         "cell": "lg-sylvie"
       },
       "slot": "offhand",
-      "chosen_attempt": "a4",
+      "chosen_attempt": "a5",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear"
     }
@@ -14005,6 +14132,133 @@
         "gear-set-frost-neck",
         "gear-set-frost-ring-large",
         "gear-set-frost-ring",
+        "gear-set-storm-hands-large",
+        "gear-set-storm-hands",
+        "gear-set-storm-feet-large",
+        "gear-set-storm-feet",
+        "gear-set-storm-ring-large",
+        "gear-set-storm-ring",
+        "gear-set-mire-head-large",
+        "gear-set-mire-head",
+        "gear-set-mire-body-large",
+        "gear-set-mire-body",
+        "gear-set-mire-feet-large",
+        "gear-set-mire-feet",
+        "gear-set-mire-neck-large",
+        "gear-set-mire-neck",
+        "gear-set-shade-weapon-large",
+        "gear-set-shade-weapon",
+        "gear-set-shade-head-large",
+        "gear-set-shade-head",
+        "gear-set-shade-hands-large",
+        "gear-set-shade-hands",
+        "gear-set-shade-feet-large",
+        "gear-set-shade-feet",
+        "gear-storm-swift-boots-large",
+        "gear-storm-swift-boots",
+        "gear-set-iron-offhand-large",
+        "gear-set-iron-offhand",
+        "gear-set-iron-head-large",
+        "gear-set-iron-head",
+        "gear-set-iron-body-large",
+        "gear-set-iron-body",
+        "gear-set-iron-feet-large",
+        "gear-set-iron-feet",
+        "gear-mire-miasma-mask-large",
+        "gear-mire-miasma-mask",
+        "gear-shade-raven-cloak-large",
+        "gear-shade-raven-cloak"
+      ],
+      "changed": {}
+    },
+    {
+      "on": "2026-10-20",
+      "batch": "main-gear",
+      "requa": [
+        "gear-wooden-staff-large",
+        "gear-wooden-staff",
+        "gear-hunter-bow-large",
+        "gear-hunter-bow",
+        "gear-thorn-spear-large",
+        "gear-thorn-spear",
+        "gear-crystal-blade-large",
+        "gear-crystal-blade",
+        "gear-frost-staff-large",
+        "gear-frost-staff",
+        "gear-star-saber-large",
+        "gear-star-saber",
+        "gear-crystal-aegis-large",
+        "gear-crystal-aegis",
+        "gear-scale-helm-large",
+        "gear-scale-helm",
+        "gear-cloth-gloves-large",
+        "gear-cloth-gloves",
+        "gear-thorn-gauntlets-large",
+        "gear-thorn-gauntlets",
+        "gear-straw-sandals-large",
+        "gear-straw-sandals",
+        "gear-bat-boots-large",
+        "gear-bat-boots",
+        "gear-cloth-robe-large",
+        "gear-cloth-robe",
+        "gear-leather-vest-large",
+        "gear-leather-vest",
+        "gear-scale-mail-large",
+        "gear-scale-mail",
+        "gear-dusk-mantle-large",
+        "gear-dusk-mantle",
+        "gear-moss-charm-large",
+        "gear-moss-charm",
+        "gear-bat-earring-large",
+        "gear-bat-earring",
+        "gear-crystal-pendant-large",
+        "gear-crystal-pendant",
+        "gear-gear-ring-large",
+        "gear-gear-ring",
+        "gear-copper-ring-large",
+        "gear-copper-ring",
+        "gear-star-ring-large",
+        "gear-star-ring",
+        "gear-lg-noel-large",
+        "gear-lg-noel",
+        "gear-lg-liz-large",
+        "gear-lg-liz",
+        "gear-lg-sylvie-large",
+        "gear-lg-sylvie",
+        "gear-lg-scarlet-large",
+        "gear-lg-scarlet",
+        "gear-lg-selene-large",
+        "gear-lg-selene",
+        "gear-lg-safira-large",
+        "gear-lg-safira",
+        "gear-lg-bobby-large",
+        "gear-lg-bobby",
+        "gear-frost-bloom-neck-large",
+        "gear-frost-bloom-neck",
+        "gear-storm-thunder-bow-large",
+        "gear-storm-thunder-bow",
+        "gear-mire-whisper-gloves-large",
+        "gear-mire-whisper-gloves",
+        "gear-shade-silent-blade-large",
+        "gear-shade-silent-blade",
+        "gear-iron-bulwark-plate-large",
+        "gear-iron-bulwark-plate",
+        "gear-blaze-ember-ring-large",
+        "gear-blaze-ember-ring",
+        "gear-frost-winter-staff-large",
+        "gear-frost-winter-staff",
+        "gear-set-blaze-ring-large",
+        "gear-set-blaze-ring",
+        "gear-set-frost-weapon-large",
+        "gear-set-frost-weapon",
+        "gear-set-frost-head-large",
+        "gear-set-frost-head",
+        "gear-set-frost-neck-large",
+        "gear-set-frost-neck",
+        "gear-set-frost-ring-large",
+        "gear-set-frost-ring",
+        "gear-set-storm-weapon-large",
+        "gear-set-storm-weapon",
         "gear-set-storm-hands-large",
         "gear-set-storm-hands",
         "gear-set-storm-feet-large",

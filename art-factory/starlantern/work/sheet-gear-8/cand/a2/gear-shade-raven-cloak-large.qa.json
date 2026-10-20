@@ -7,6 +7,7 @@
   "edge": 0,
   "holes": 0,
   "magenta_spill": 0,
+  "key_tint_inside": 0,
   "subject": {
     "long": 56,
     "short": 52,
@@ -25,5 +26,5 @@
     64,
     64
   ],
-  "spec": "gear-cell:cba070036b9c"
+  "spec": "gear-cell:03c3f55cc7d1"
 }

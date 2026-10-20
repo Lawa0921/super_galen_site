@@ -7,23 +7,24 @@
   "edge": 0,
   "holes": 0,
   "magenta_spill": 0,
+  "key_tint_inside": 0,
   "subject": {
     "long": 22,
     "short": 19,
-    "mass": 0.448,
+    "mass": 0.405,
     "box": [
-      3,
       2,
-      22,
-      24
+      3,
+      24,
+      22
     ],
     "centre_off": 0.5
   },
-  "block": 15.273,
-  "scale": 15.273,
+  "block": 16.909,
+  "scale": 16.909,
   "size": [
     26,
     26
   ],
-  "spec": "gear-cell:9e868455a2f5"
+  "spec": "gear-cell:03c3f55cc7d1"
 }
