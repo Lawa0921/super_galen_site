@@ -15,7 +15,7 @@ import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemDef, type ItemId, typ
 import { bossRebirth, potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
 import { craft as craftRecipe, findRecipe, type CraftResult, type Station } from './crafting';
-import { makeBody, stepPlayer, onPlatform, type Body, type MoveStats, type PlayerMotion } from './physics';
+import { makeBody, stepPlayer, onPlatform, type Body, type MoveStats } from './physics';
 import { LightEngine, skyBrightness, type LightMap, type LightRect, type PointLight, type LightRGB } from './lighting';
 import { skyColor, isNight as skyIsNight } from './sky';
 import {
@@ -29,18 +29,18 @@ import {
 } from './fishing';
 import { ExploredMap, toggleMarker, type MapMarker } from './explore';
 import { Discovery, buildRegions, type Region, type RegionCat } from './discovery';
-import { Equipment, EQUIP_SLOTS, type EquipSlot } from './equipment';
+import { EQUIP_SLOTS, type EquipSlot } from './equipment';
 import {
-  BASE_HP, BASE_MANA, LIFE_CORE_HP, MAX_HP_CAP, SAFE_FALL_TILES, computeStats, damageTaken, enemyDamage, fallDamage,
+  BASE_MANA, LIFE_CORE_HP, MAX_HP_CAP, SAFE_FALL_TILES, computeStats, damageTaken, enemyDamage, fallDamage,
   knockbackScale, regenRate, rollCrit, type PlayerStats,
 } from './combat';
 import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type PhysEnv } from './entities';
 import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
-import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidContact } from './swim';
+import { liquidContact, liquidMedium, playerMedium } from './swim';
 import { normalizeAppearance, RACES, type Appearance } from './appearance';
 import { raceMods, type RaceMods } from './race';
-import { Vanity, VANITY_SLOTS, type HideSlot, type VanitySlot } from './vanity';
+import { VANITY_SLOTS, type HideSlot, type VanitySlot } from './vanity';
 import { buildDollLook, dollKey, pieceOf, type DollLook } from './doll';
 import { planWardrobeMigration } from './wardrobeMigration';
 import { defaultTint, tintChannels, validTint, type Tint } from './tint';
@@ -49,7 +49,7 @@ import {
   ascendCost, ascendGear, baseTier, gearSlot, ilvlForDepth, rerollAffix, rerollCost, rollDropItem, rollGear, rollRarity,
   salvageYield, upgradeCost, upgradeGear, weaponDamage, affixDef, pickSpeed, MAX_PLUS, STAT_CAPS, type AffixId, type Cost, type Gear, type GearTotals, type LootSource,
 } from './gear';
-import { Codex } from './codex';
+import { MAX_BREATH, PlayerActor, SOLO_PID, type GameMode, type Pid } from './actor';
 import { ENEMIES, makeEnemy, stepEnemy, type AiCtx, type Enemy, type EnemyKind } from './enemies';
 import {
   ACTIVE, BED_SAFE, DEFAULT_VIEW_HALF, DESPAWN, MAX_ENEMIES, NEAR_SPAWN_TILES, SPAWN_MAX, findSpot, habitatAt, homeNear, inHouse,
@@ -69,7 +69,7 @@ import type { LandmarkInfo } from './gen/landmarks';
 import { isLandmarkTile } from './tiles';
 import { WALL_ITEM } from './items';
 import {
-  Progression, levelDef, levelHp, lootIlvl, milestoneAt, respecCost, skillPointsAt, titleFor, xpForEvent, type GainResult, type XpCtx, type XpSource,
+  levelDef, levelHp, lootIlvl, milestoneAt, respecCost, skillPointsAt, titleFor, xpForEvent, type GainResult, type XpCtx, type XpSource,
 } from './levels';
 import {
   ACTIVE_NODE, DASH_CARRY, DASH_IFRAMES, DASH_SPEED, DASH_TIME, THIRD_JUMP_HOLD, FURY_BELOW, PULSE_MAX, PULSE_RADIUS, PULSE_TIME, SKILL_CD, SLAM_BASE, SLAM_DIVE,
@@ -358,7 +358,7 @@ export const MANA_REGEN = 7;
 export const DEATH_COIN_LOSS = 0.5;
 // ── 液體 ──
 /** 呼吸泡泡數；頭在水 / 蜂蜜下每 BREATH_STEP 秒少一顆，出水每秒補 BREATH_REFILL 顆 */
-export const MAX_BREATH = 10;
+export { MAX_BREATH };
 export const BREATH_STEP = 1.6;
 export const BREATH_REFILL = 4;
 /** 沒氣了：每 DROWN_EVERY 秒扣 DROWN_DMG（不看防禦、不給無敵時間） */
@@ -479,31 +479,174 @@ export class DelveGame {
   readonly springs: readonly SpringSpec[];
   /** 地區 / 地標（依種子命名） */
   readonly regions: readonly Region[];
-  /** 戰爭迷霧（存檔內容） */
-  explored: ExploredMap;
-  /** 發現 / 日誌（存檔內容） */
-  discovery: Discovery;
-  /** 使用者地圖標記（存檔內容） */
-  markers: MapMarker[] = [];
+  // ── 玩家（PlayerActor）──────────────────────────────────
+  /** 所有玩家角色（插入順序 = 處理順序；本地 actor 永遠第一個） */
+  readonly actors = new Map<Pid, PlayerActor>();
+  /** 本機玩家（solo / host = 'h'） */
+  localPid: Pid = SOLO_PID;
+  /** 單機 / 房主 / 客人（M-B1 只有 solo） */
+  mode: GameMode = 'solo';
+  /** 目前在處理的 actor：下面的相容 accessor 都讀寫它（M-B1 Task 1 恆等於 local） */
+  cur!: PlayerActor;
+  get local(): PlayerActor { return this.actors.get(this.localPid)!; }
+  // 相容 accessor：既有程式碼（game.ts 內部、render / save / 測試）照舊用 this.player / game.hp…，實際存在 cur 上
+  get explored(): PlayerActor['explored'] { return this.cur.explored; }
+  set explored(v: PlayerActor['explored']) { this.cur.explored = v; }
+  get discovery(): PlayerActor['discovery'] { return this.cur.discovery; }
+  set discovery(v: PlayerActor['discovery']) { this.cur.discovery = v; }
+  get markers(): PlayerActor['markers'] { return this.cur.markers; }
+  set markers(v: PlayerActor['markers']) { this.cur.markers = v; }
+  private get lastTile(): PlayerActor['lastTile'] { return this.cur.lastTile; }
+  private set lastTile(v: PlayerActor['lastTile']) { this.cur.lastTile = v; }
+  get player(): PlayerActor['player'] { return this.cur.player; }
+  set player(v: PlayerActor['player']) { this.cur.player = v; }
+  get inventory(): PlayerActor['inventory'] { return this.cur.inventory; }
+  set inventory(v: PlayerActor['inventory']) { this.cur.inventory = v; }
+  get appearance(): PlayerActor['appearance'] { return this.cur.appearance; }
+  set appearance(v: PlayerActor['appearance']) { this.cur.appearance = v; }
+  get vanity(): PlayerActor['vanity'] { return this.cur.vanity; }
+  set vanity(v: PlayerActor['vanity']) { this.cur.vanity = v; }
+  private get dollMemo(): PlayerActor['dollMemo'] { return this.cur.dollMemo; }
+  private set dollMemo(v: PlayerActor['dollMemo']) { this.cur.dollMemo = v; }
+  private get motion(): PlayerActor['motion'] { return this.cur.motion; }
+  private set motion(v: PlayerActor['motion']) { this.cur.motion = v; }
+  private get moveX(): PlayerActor['moveX'] { return this.cur.moveX; }
+  private set moveX(v: PlayerActor['moveX']) { this.cur.moveX = v; }
+  private get jump(): PlayerActor['jump'] { return this.cur.jump; }
+  private set jump(v: PlayerActor['jump']) { this.cur.jump = v; }
+  private get upHeld(): PlayerActor['upHeld'] { return this.cur.upHeld; }
+  private set upHeld(v: PlayerActor['upHeld']) { this.cur.upHeld = v; }
+  get bed(): PlayerActor['bed'] { return this.cur.bed; }
+  set bed(v: PlayerActor['bed']) { this.cur.bed = v; }
+  get buffs(): PlayerActor['buffs'] { return this.cur.buffs; }
+  set buffs(v: PlayerActor['buffs']) { this.cur.buffs = v; }
+  private get recallT(): PlayerActor['recallT'] { return this.cur.recallT; }
+  private set recallT(v: PlayerActor['recallT']) { this.cur.recallT = v; }
+  private get accSig(): PlayerActor['accSig'] { return this.cur.accSig; }
+  private set accSig(v: PlayerActor['accSig']) { this.cur.accSig = v; }
+  private get acc(): PlayerActor['acc'] { return this.cur.acc; }
+  private set acc(v: PlayerActor['acc']) { this.cur.acc = v; }
+  private get aim(): PlayerActor['aim'] { return this.cur.aim; }
+  private set aim(v: PlayerActor['aim']) { this.cur.aim = v; }
+  private get miningHeld(): PlayerActor['miningHeld'] { return this.cur.miningHeld; }
+  private set miningHeld(v: PlayerActor['miningHeld']) { this.cur.miningHeld = v; }
+  private get dropHeld(): PlayerActor['dropHeld'] { return this.cur.dropHeld; }
+  private set dropHeld(v: PlayerActor['dropHeld']) { this.cur.dropHeld = v; }
+  private get platformHinted(): PlayerActor['platformHinted'] { return this.cur.platformHinted; }
+  private set platformHinted(v: PlayerActor['platformHinted']) { this.cur.platformHinted = v; }
+  private get useHeld(): PlayerActor['useHeld'] { return this.cur.useHeld; }
+  private set useHeld(v: PlayerActor['useHeld']) { this.cur.useHeld = v; }
+  private get placeCooldown(): PlayerActor['placeCooldown'] { return this.cur.placeCooldown; }
+  private set placeCooldown(v: PlayerActor['placeCooldown']) { this.cur.placeCooldown = v; }
+  private get useConsumed(): PlayerActor['useConsumed'] { return this.cur.useConsumed; }
+  private set useConsumed(v: PlayerActor['useConsumed']) { this.cur.useConsumed = v; }
+  get openChest(): PlayerActor['openChest'] { return this.cur.openChest; }
+  set openChest(v: PlayerActor['openChest']) { this.cur.openChest = v; }
+  get openMirror(): PlayerActor['openMirror'] { return this.cur.openMirror; }
+  set openMirror(v: PlayerActor['openMirror']) { this.cur.openMirror = v; }
+  private get mining(): PlayerActor['mining'] { return this.cur.mining; }
+  private set mining(v: PlayerActor['mining']) { this.cur.mining = v; }
+  private get lastBlocked(): PlayerActor['lastBlocked'] { return this.cur.lastBlocked; }
+  private set lastBlocked(v: PlayerActor['lastBlocked']) { this.cur.lastBlocked = v; }
+  private get lastBlockedAt(): PlayerActor['lastBlockedAt'] { return this.cur.lastBlockedAt; }
+  private set lastBlockedAt(v: PlayerActor['lastBlockedAt']) { this.cur.lastBlockedAt = v; }
+  get equipment(): PlayerActor['equipment'] { return this.cur.equipment; }
+  set equipment(v: PlayerActor['equipment']) { this.cur.equipment = v; }
+  get hp(): PlayerActor['hp'] { return this.cur.hp; }
+  set hp(v: PlayerActor['hp']) { this.cur.hp = v; }
+  get baseMaxHp(): PlayerActor['baseMaxHp'] { return this.cur.baseMaxHp; }
+  set baseMaxHp(v: PlayerActor['baseMaxHp']) { this.cur.baseMaxHp = v; }
+  get mana(): PlayerActor['mana'] { return this.cur.mana; }
+  set mana(v: PlayerActor['mana']) { this.cur.mana = v; }
+  get dead(): PlayerActor['dead'] { return this.cur.dead; }
+  set dead(v: PlayerActor['dead']) { this.cur.dead = v; }
+  get respawnT(): PlayerActor['respawnT'] { return this.cur.respawnT; }
+  set respawnT(v: PlayerActor['respawnT']) { this.cur.respawnT = v; }
+  get autoAim(): PlayerActor['autoAim'] { return this.cur.autoAim; }
+  set autoAim(v: PlayerActor['autoAim']) { this.cur.autoAim = v; }
+  get facing(): PlayerActor['facing'] { return this.cur.facing; }
+  set facing(v: PlayerActor['facing']) { this.cur.facing = v; }
+  get attack(): PlayerActor['attack'] { return this.cur.attack; }
+  set attack(v: PlayerActor['attack']) { this.cur.attack = v; }
+  private get swingId(): PlayerActor['swingId'] { return this.cur.swingId; }
+  private set swingId(v: PlayerActor['swingId']) { this.cur.swingId = v; }
+  private get attackCd(): PlayerActor['attackCd'] { return this.cur.attackCd; }
+  private set attackCd(v: PlayerActor['attackCd']) { this.cur.attackCd = v; }
+  private get iframes(): PlayerActor['iframes'] { return this.cur.iframes; }
+  private set iframes(v: PlayerActor['iframes']) { this.cur.iframes = v; }
+  private get sinceHit(): PlayerActor['sinceHit'] { return this.cur.sinceHit; }
+  private set sinceHit(v: PlayerActor['sinceHit']) { this.cur.sinceHit = v; }
+  private get knockT(): PlayerActor['knockT'] { return this.cur.knockT; }
+  private set knockT(v: PlayerActor['knockT']) { this.cur.knockT = v; }
+  private get fallPeak(): PlayerActor['fallPeak'] { return this.cur.fallPeak; }
+  private set fallPeak(v: PlayerActor['fallPeak']) { this.cur.fallPeak = v; }
+  private get potionCd(): PlayerActor['potionCd'] { return this.cur.potionCd; }
+  private set potionCd(v: PlayerActor['potionCd']) { this.cur.potionCd = v; }
+  private get manaDelay(): PlayerActor['manaDelay'] { return this.cur.manaDelay; }
+  private set manaDelay(v: PlayerActor['manaDelay']) { this.cur.manaDelay = v; }
+  private get aimPx(): PlayerActor['aimPx'] { return this.cur.aimPx; }
+  private set aimPx(v: PlayerActor['aimPx']) { this.cur.aimPx = v; }
+  private get statsEq(): PlayerActor['statsEq'] { return this.cur.statsEq; }
+  private set statsEq(v: PlayerActor['statsEq']) { this.cur.statsEq = v; }
+  private get statsCache(): PlayerActor['statsCache'] { return this.cur.statsCache; }
+  private set statsCache(v: PlayerActor['statsCache']) { this.cur.statsCache = v; }
+  get contact(): PlayerActor['contact'] { return this.cur.contact; }
+  set contact(v: PlayerActor['contact']) { this.cur.contact = v; }
+  get breath(): PlayerActor['breath'] { return this.cur.breath; }
+  set breath(v: PlayerActor['breath']) { this.cur.breath = v; }
+  private get drownT(): PlayerActor['drownT'] { return this.cur.drownT; }
+  private set drownT(v: PlayerActor['drownT']) { this.cur.drownT = v; }
+  get burning(): PlayerActor['burning'] { return this.cur.burning; }
+  set burning(v: PlayerActor['burning']) { this.cur.burning = v; }
+  private get burnTick(): PlayerActor['burnTick'] { return this.cur.burnTick; }
+  private set burnTick(v: PlayerActor['burnTick']) { this.cur.burnTick = v; }
+  get honeyT(): PlayerActor['honeyT'] { return this.cur.honeyT; }
+  set honeyT(v: PlayerActor['honeyT']) { this.cur.honeyT = v; }
+  private get wasWet(): PlayerActor['wasWet'] { return this.cur.wasWet; }
+  private set wasWet(v: PlayerActor['wasWet']) { this.cur.wasWet = v; }
+  get fishing(): PlayerActor['fishing'] { return this.cur.fishing; }
+  set fishing(v: PlayerActor['fishing']) { this.cur.fishing = v; }
+  get fishLog(): PlayerActor['fishLog'] { return this.cur.fishLog; }
+  set fishLog(v: PlayerActor['fishLog']) { this.cur.fishLog = v; }
+  private get foodCd(): PlayerActor['foodCd'] { return this.cur.foodCd; }
+  private set foodCd(v: PlayerActor['foodCd']) { this.cur.foodCd = v; }
+  private get miningWas(): PlayerActor['miningWas'] { return this.cur.miningWas; }
+  private set miningWas(v: PlayerActor['miningWas']) { this.cur.miningWas = v; }
+  get codex(): PlayerActor['codex'] { return this.cur.codex; }
+  set codex(v: PlayerActor['codex']) { this.cur.codex = v; }
+  get undyingCd(): PlayerActor['undyingCd'] { return this.cur.undyingCd; }
+  set undyingCd(v: PlayerActor['undyingCd']) { this.cur.undyingCd = v; }
+  private get statsKey(): PlayerActor['statsKey'] { return this.cur.statsKey; }
+  private set statsKey(v: PlayerActor['statsKey']) { this.cur.statsKey = v; }
+  private get statsRefs(): PlayerActor['statsRefs'] { return this.cur.statsRefs; }
+  private set statsRefs(v: PlayerActor['statsRefs']) { this.cur.statsRefs = v; }
+  private get statsDirty(): PlayerActor['statsDirty'] { return this.cur.statsDirty; }
+  private set statsDirty(v: PlayerActor['statsDirty']) { this.cur.statsDirty = v; }
+  get levels(): PlayerActor['levels'] { return this.cur.levels; }
+  set levels(v: PlayerActor['levels']) { this.cur.levels = v; }
+  private get raceXpCarry(): PlayerActor['raceXpCarry'] { return this.cur.raceXpCarry; }
+  private set raceXpCarry(v: PlayerActor['raceXpCarry']) { this.cur.raceXpCarry = v; }
+  private get skillCd(): PlayerActor['skillCd'] { return this.cur.skillCd; }
+  private set skillCd(v: PlayerActor['skillCd']) { this.cur.skillCd = v; }
+  private get dashT(): PlayerActor['dashT'] { return this.cur.dashT; }
+  private set dashT(v: PlayerActor['dashT']) { this.cur.dashT = v; }
+  private get dashDir(): PlayerActor['dashDir'] { return this.cur.dashDir; }
+  private set dashDir(v: PlayerActor['dashDir']) { this.cur.dashDir = v; }
+  private get dashEnd(): PlayerActor['dashEnd'] { return this.cur.dashEnd; }
+  private set dashEnd(v: PlayerActor['dashEnd']) { this.cur.dashEnd = v; }
+  private get slamming(): PlayerActor['slamming'] { return this.cur.slamming; }
+  private set slamming(v: PlayerActor['slamming']) { this.cur.slamming = v; }
+  private get slamY(): PlayerActor['slamY'] { return this.cur.slamY; }
+  private set slamY(v: PlayerActor['slamY']) { this.cur.slamY = v; }
+  private get slamPre(): PlayerActor['slamPre'] { return this.cur.slamPre; }
+  private set slamPre(v: PlayerActor['slamPre']) { this.cur.slamPre = v; }
+  get orePulse(): PlayerActor['orePulse'] { return this.cur.orePulse; }
+  set orePulse(v: PlayerActor['orePulse']) { this.cur.orePulse = v; }
   private tabletAt = new Map<number, number>();
-  private lastTile = { x: -1, y: -1 };
-  player: Body;
-  inventory: Inventory;
-  /** 角色外觀（存檔內容；換外觀用 setAppearance，換成新物件 → 渲染器以參考判斷要不要重烘精靈） */
-  appearance: Readonly<Appearance>;
-  /** 外觀欄（時裝）+ 防具隱藏開關（存檔內容） */
-  vanity = new Vanity();
-  private dollMemo: { sig: string; look: DollLook; key: string } | null = null;
   /** 遊戲內經過秒數（日夜循環用） */
   time = START_TIME;
   tick = 0;
 
-  private motion: PlayerMotion = { jumpTimer: 0, jumpWasHeld: false, climbing: false };
-  private moveX = 0;
-  private jump = false;
-  private upHeld = false;
-  /** 床（重生點，床頭 tile）；存檔內容 */
-  bed: { x: number; y: number } | null = null;
   /** 據點與居民（存檔內容） */
   readonly settle = new Settlements();
   /** 地表村落 / 矮人地廳（世界生成） */
@@ -516,8 +659,6 @@ export class DelveGame {
   readonly folk: FolkWorld;
   /** 委託（存檔內容） */
   readonly quests: QuestLog;
-  /** 目前的 buff：每種各自計時、可以同時有好幾種（祝福 / 守護 / 礦工之歌；存檔內容） */
-  buffs: Partial<Record<BuffKind, number>> = {};
   private folkHost: FolkHost | null = null;
   /** 嚮導上次標出的地點（UI 顯示） */
   lastScout: { name: string; x: number; y: number } | null = null;
@@ -527,44 +668,12 @@ export class DelveGame {
   readonly scouted = new Set<string>();
   /** 招募居民的每日好處：上次嚮導自動標點 / 藥師送祝福是哪一天（存檔內容） */
   perkDays = { guide: -1, healer: -1 };
-  /** 傳送石引導經過秒數；null = 沒在引導 */
-  private recallT: number | null = null;
-  /** 飾品快取（以背包裡的飾品簽名判斷是否要重算） */
-  private accSig = '';
-  private acc = new Set<Accessory>();
-  private aim = { x: 0, y: 0 };
-  private miningHeld = false;
-  private dropHeld = false;
-  private platformHinted = false;
-  private useHeld = false;
-  private placeCooldown = 0;
-  /** 這次按住 use 已經用來開過箱子（按住不會一直重開 / 放置） */
-  private useConsumed = false;
-  /** 目前開著的箱子（tile 座標） */
-  openChest: { x: number; y: number } | null = null;
-  /** 目前在用的梳妝台（tile 座標）；比照箱子：走遠 / 被拆就關 */
-  openMirror: { x: number; y: number } | null = null;
-  private mining: MiningState | null = null;
   private events: DelveEvent[] = [];
-  private lastBlocked = '';
-  private lastBlockedAt = -Infinity;
   private readonly lightEngine = new LightEngine();
 
   // ── 戰鬥狀態 ───────────────────────────────────────────
-  /** 裝備欄（存檔內容） */
-  equipment = new Equipment();
-  /** 目前生命（浮點；顯示取整） */
-  hp = BASE_HP;
-  /** 生命上限（不含飾品）：100 + 生命晶核 × 20（存檔內容） */
-  baseMaxHp = BASE_HP;
-  mana = BASE_MANA;
-  dead = false;
-  /** 重生倒數（秒） */
-  respawnT = 0;
   /** 和平模式：不自然生成怪物（存檔內容；切到和平時清掉現有怪物） */
   private peacefulMode = false;
-  /** 自動瞄準最近的怪物（觸控用） */
-  autoAim = false;
   /** 已擊敗的首領（存檔內容） */
   readonly bossesDefeated = new Set<string>();
   /** 各種怪物擊殺數（存檔內容） */
@@ -574,38 +683,17 @@ export class DelveGame {
   enemies: Enemy[] = [];
   /** 渲染端告知的視野半寬 / 半高（格）：生成點要在畫面外 */
   viewHalf = { ...DEFAULT_VIEW_HALF };
-  facing: 1 | -1 = 1;
-  attack: AttackState | null = null;
   private nextEnemyId = 1;
-  private swingId = 0;
-  private attackCd = 0;
-  private iframes = 0;
-  private sinceHit = 99;
-  private knockT = 0;
-  private fallPeak: number | null = null;
-  private potionCd = 0;
-  private manaDelay = 0;
   private spawnT = SPAWN_GRACE;
   /** 距上次喘息（新世界 / 讀檔 / 重生）的秒數：生成間隔由慢漸快（spawn.spawnInterval） */
   private spawnCalm = 0;
   private readonly spawnRng: Rng;
   private readonly combatRng: Rng;
-  private aimPx = { x: 0, y: 0 };
-  private statsEq: Equipment | null = null;
-  private statsCache: PlayerStats = computeStats(new Equipment());
   // ── 液體 ───────────────────────────────────────────────
   /** 液體模擬（world.liquid / liquidType） */
   readonly liquids: LiquidSim;
   /** 實體物理環境：world 的碰撞 + 液體介質 / 接觸（掉落物、怪物用） */
   readonly env: PhysEnv;
-  /** 玩家這一刻和液體的接觸 */
-  contact: LiquidContact = NO_CONTACT;
-  breath = MAX_BREATH;
-  private drownT = 0;
-  burning = 0;
-  private burnTick = 0;
-  honeyT = 0;
-  private wasWet = 0;
   // ── 曆法 / 天氣 ───────────────────────────────────────
   /** 強制天氣（debug / e2e；存檔內容）：until = 到這個遊戲時間為止 */
   weatherOverride: { kind: WeatherKind; until: number } | null = null;
@@ -620,46 +708,22 @@ export class DelveGame {
   private readonly weatherRng: Rng;
   private wxCache: { tick: number; time: number; g: WeatherState; local: WeatherState } | null = null;
   // ── 釣魚 ───────────────────────────────────────────────
-  /** 進行中的釣魚（浮標）；null = 沒在釣 */
-  fishing: FishingState | null = null;
-  /** 釣魚紀錄：每種魚釣到幾條（存檔內容） */
-  fishLog: Partial<Record<ItemId, number>> = {};
   private readonly fishRng: Rng;
-  private foodCd = 0;
-  private miningWas = false;
   /** 玩家敲開的冰洞（tile index；存檔內容）：到那一欄融化的季節前不會再結冰 */
   readonly minedIce = new Set<number>();
   // ── 裝備詞條 ───────────────────────────────────────────
-  /** 裝備圖鑑（存檔內容） */
-  codex = new Codex();
   /** 掉寶 / 合成 / 鍛造的亂數 */
   private readonly lootRng: Rng;
-  /** 不滅冷卻（秒） */
-  undyingCd = 0;
   /** debug / e2e：怪物掉裝備的機率（null = 正常） */
   debugGearChance: number | null = null;
-  private statsKey = '';
-  private statsRefs: unknown[] = [];
-  private statsDirty = 0;
   // ── 等級 / 技能 ───────────────────────────────────────
-  /** 等級 / 經驗 / 技能樹 / 防刷紀錄（存檔內容） */
-  levels = new Progression();
   /** events 裡已經換算過經驗的位置 */
   private lvScan = 0;
-  /** 種族經驗加成的小數尾數（不存檔）：+10% 對 2~4 點的經驗也要逐次累積，不被四捨五入吃掉 */
-  private raceXpCarry = 0;
-  private skillCd: Record<ActiveSkill, number> = { dash: 0, slam: 0, pulse: 0 };
-  private dashT = 0;
-  private dashDir: 1 | -1 = 1;
-  /** 突進剛結束（下一刻把水平速度收回 DASH_CARRY） */
-  private dashEnd = false;
-  private slamming = false;
-  private slamY = 0;
-  private slamPre = 0;
-  /** 尋礦感知：t = 剩幾秒、max = 總秒數、x / y = 發動點（tile）、ores = 標到的礦（tile） */
-  orePulse: { t: number; max: number; x: number; y: number; ores: { x: number; y: number; tile: number }[] } | null = null;
 
   constructor(opts: DelveOptions = {}) {
+    const me = new PlayerActor(SOLO_PID);
+    this.actors.set(me.pid, me);
+    this.cur = me;
     this.seed = String(opts.seed ?? 'delve');
     this.appearance = normalizeAppearance(opts.appearance);
     // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）

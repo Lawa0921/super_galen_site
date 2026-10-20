@@ -146,4 +146,18 @@ describe('PlayerActor golden：單機逐 tick 不變', () => {
     if (GOLDEN.length === 0) console.log(JSON.stringify(got, null, 2));
     expect(got).toEqual(GOLDEN);
   });
+  it('單機只有一個 actor：local === cur、pid = h', () => {
+    const g = arena();
+    expect(g.actors.size).toBe(1);
+    expect(g.local).toBe(g.cur);
+    expect(g.local.pid).toBe('h');
+    expect(g.actors.get('h')).toBe(g.local);
+    expect(g.localPid).toBe('h');
+    expect(g.mode).toBe('solo');
+    // 相容 getter 指向同一個 actor 的欄位
+    expect(g.player).toBe(g.local.player);
+    expect(g.inventory).toBe(g.local.inventory);
+    g.hp = 42;
+    expect(g.local.hp).toBe(42);
+  });
 });
