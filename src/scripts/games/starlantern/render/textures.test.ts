@@ -97,3 +97,31 @@ describe('TextureBank late art (no placeholder)', () => {
     expect(bank.has('/a/slow.png')).toBe(true);
   });
 });
+
+describe('TextureBank retries (plan 8c)', () => {
+  it('asks again for a picture that failed, on the next wait that needs it, after a backoff that doubles', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let now = 0;
+    let fails = 2;
+    const load = vi.fn(async () => { if (fails-- > 0) throw new Error('blip'); return fakeTex(); });
+    const bank = new TextureBank(load, 1000, () => now);
+    await bank.preload(['/a/x.png']);
+    expect(bank.has('/a/x.png')).toBe(false);
+    await bank.whenReady(['/a/x.png'], 20);
+    expect(load).toHaveBeenCalledTimes(1);   // still inside the first backoff
+    now = 1000;
+    await bank.whenReady(['/a/x.png'], 20);
+    expect(load).toHaveBeenCalledTimes(2);   // asked again; it failed again
+    now = 2500;
+    await bank.whenReady(['/a/x.png'], 20);
+    expect(load).toHaveBeenCalledTimes(2);   // the backoff doubled: 2000 after the second failure
+    now = 3000;
+    await bank.whenReady(['/a/x.png'], 20);
+    expect(load).toHaveBeenCalledTimes(3);
+    expect(bank.has('/a/x.png')).toBe(true);
+    // A picture never asked for is still never requested.
+    await bank.whenReady(['/a/never.png'], 20);
+    expect(load).toHaveBeenCalledTimes(3);
+    warn.mockRestore();
+  });
+});

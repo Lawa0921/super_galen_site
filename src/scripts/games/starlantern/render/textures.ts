@@ -17,12 +17,20 @@ export class TextureBank implements ArtIndex {
   /** Each request once, kept until it settles: a picture that lands after the timeout is still taken. */
   private inflight = new Map<string, Promise<Texture | null>>();
   private listeners = new Set<(url: string) => void>();
+  /** Requests that failed: when, and how many times in a row. The next wait that needs one asks again after a backoff. */
+  private failed = new Map<string, { at: number; tries: number }>();
 
   constructor(
     private load: (url: string) => Promise<Texture> = (u) => Assets.load<Texture>(u),
     /** `preload` stops waiting for a request after this time; the request itself goes on and lands when it can. */
     private timeoutMs = 8000,
+    private now: () => number = () => Date.now(),
   ) {}
+
+  /** The wait before asking again after `tries` failures in a row: 1 s, doubling, at most 30 s. */
+  static retryMs(tries: number): number {
+    return Math.min(30_000, 1000 * 2 ** (tries - 1));
+  }
 
   private request(u: string): Promise<Texture | null> {
     let p = this.inflight.get(u);
@@ -30,10 +38,13 @@ export class TextureBank implements ArtIndex {
       p = this.load(u).then((t) => {
         t.source.scaleMode = 'nearest';
         this.textures.set(u, t);
+        this.failed.delete(u);
         for (const fn of this.listeners) fn(u);
         return t;
       }, (err: unknown) => {
-        console.warn('[starlantern] art failed to load; nothing is drawn in its place', u, err);
+        console.warn('[starlantern] art failed to load; nothing is drawn in its place (asked again later)', u, err);
+        this.failed.set(u, { at: this.now(), tries: (this.failed.get(u)?.tries ?? 0) + 1 });
+        this.inflight.delete(u);
         return null;
       });
       this.inflight.set(u, p);
@@ -53,10 +64,15 @@ export class TextureBank implements ArtIndex {
   }
 
   /**
-   * Waits for those of `urls` already requested to settle, `ms` at most. Starts no request: a picture the manifest does
-   * not list is never asked for, so it neither holds the wait nor costs a 404.
+   * Waits for those of `urls` already requested to settle, `ms` at most. A picture whose request failed is asked again
+   * once its backoff has passed (a network blip does not lose it for the session). Starts no other request: a picture
+   * the manifest does not list is never asked for, so it neither holds the wait nor costs a 404.
    */
   async whenReady(urls: readonly string[], ms: number): Promise<void> {
+    for (const u of urls) {
+      const f = this.failed.get(u);
+      if (f && !this.inflight.has(u) && this.now() - f.at >= TextureBank.retryMs(f.tries)) void this.request(u);
+    }
     const waits = urls.flatMap((u) => (this.textures.has(u) ? [] : this.inflight.get(u) ?? []));
     if (!waits.length) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
