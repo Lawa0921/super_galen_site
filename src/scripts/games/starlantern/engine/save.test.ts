@@ -571,3 +571,56 @@ describe('save v8 story', () => {
     expect(r.status === 'ok' && r.state.dungeon.reached.mainline).toBe(30);
   });
 });
+
+describe('save v8 epic and starlit gear (plan 5g)', () => {
+  const chizuru = (uid: number) => ({ ...plainItem('thorn-spear', uid), rarity: 'legendary' as const, ilvl: 20, special: 'lg-chizuru', affixes: [{ key: 'atk' as const, value: 11 }] });
+  const epic = (uid: number) => ({ ...plainItem('iron-sword', uid), rarity: 'epic' as const, ilvl: 15, affixes: [{ key: 'crit' as const, value: 3 }, { key: 'str' as const, value: 7 }, { key: 'atk' as const, value: 9 }, { key: 'hp' as const, value: 20 }] });
+  it('an old v8 save with no epic or starlit gear loads unchanged', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.bag = [plainItem('iron-sword', 1), chizuru(2)];
+    g.nextUid = 3;
+    expect(SAVE_VERSION).toBe(8);
+    expect(saveGame(st, g)).toBe(true);
+    expect(st.map.get(SAVE_KEY)).not.toContain('starlit');
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+  it('epic and starlit gear round-trip', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.bag = [
+      epic(1),
+      { ...chizuru(2), starlit: true },
+      { ...plainItem('copper-ring', 3), rarity: 'set', ilvl: 20, special: 'set-blaze-ring', affixes: [{ key: 'fireDmg', value: 9 }, { key: 'atk', value: 12 }], starlit: true },
+    ];
+    g.party.roster.liz.equip = {
+      ring1: { ...plainItem('copper-ring', 4), rarity: 'unique', ilvl: 20, special: 'blaze-ember-ring', affixes: [{ key: 'fireDmg', value: 9 }, { key: 'fireRes', value: 9 }, { key: 'atk', value: 9 }, { key: 'str', value: 9 }], starlit: true },
+    };
+    g.nextUid = 5;
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r).toEqual({ status: 'ok', state: g });
+    expect(r.status === 'ok' && r.state.bag.map((it) => it.starlit)).toEqual([undefined, true, true]);
+    expect(r.status === 'ok' && r.state.party.roster.liz.equip.ring1?.starlit).toBe(true);
+  });
+  it('a bad starlit flag makes the save corrupt', () => {
+    const cases: [string, Record<string, unknown>][] = [
+      ['starlit false', { ...chizuru(1), starlit: false }],
+      ["starlit 'yes'", { ...chizuru(1), starlit: 'yes' }],
+      ['starlit 1', { ...chizuru(1), starlit: 1 }],
+      ['a starlit rare', { ...plainItem('iron-sword', 1), rarity: 'rare', affixes: [{ key: 'crit', value: 3 }], starlit: true }],
+      ['a starlit epic', { ...epic(1), starlit: true }],
+      ['a starlit legendary with no special', { ...plainItem('iron-sword', 1), rarity: 'legendary', affixes: [{ key: 'atk', value: 3 }], starlit: true }],
+    ];
+    for (const [name, item] of cases) {
+      const g = newGame();
+      const raw = JSON.parse(JSON.stringify({ ...g, nextUid: 2 }));
+      raw.bag = [item];
+      expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) })).status, name).toBe('corrupt');
+    }
+    const g = newGame();
+    const ok = JSON.parse(JSON.stringify({ ...g, nextUid: 2 }));
+    ok.bag = [{ ...chizuru(1), starlit: true }];
+    expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(ok) })).status).toBe('ok');
+  });
+});

@@ -1,7 +1,7 @@
 import { CHARACTER_IDS } from '../data/characters';
 import { EQUIPMENT } from '../data/equipment';
 import { ENHANCE_MAX } from '../data/forge';
-import { AFFIXES, RARITIES, SETS, SPECIALS } from '../data/gear';
+import { AFFIXES, RARITIES, SETS, SPECIALS, STARLIT_RARITIES } from '../data/gear';
 import { REGIONS } from '../data/regions';
 import { validPortals } from './portals';
 import { GRID_SIZE, MAX_ACTIVE } from './formation';
@@ -65,6 +65,8 @@ function isItem(v: unknown): v is ItemInstance {
   if (!Number.isInteger(v.ilvl) || (v.ilvl as number) < 1 || (v.ilvl as number) > MAX_ILVL || !Number.isInteger(v.enhance) || (v.enhance as number) < 0 || (v.enhance as number) > ENHANCE_MAX) return false;
   if (v.special !== undefined && !has(SPECIALS, v.special)) return false;
   if (v.junk !== undefined && typeof v.junk !== 'boolean') return false;
+  // Plan 5g: a starlit flag is only ever true, and only on a legendary, unique or set special item.
+  if (v.starlit !== undefined && !(v.starlit === true && v.special !== undefined && STARLIT_RARITIES.includes(v.rarity as never))) return false;
   if (!Array.isArray(v.affixes)) return false;
   if (v.locked !== undefined && !(Number.isInteger(v.locked) && (v.locked as number) >= 0 && (v.locked as number) < v.affixes.length)) return false;
   return v.affixes.every((a) => isObj(a) && has(AFFIXES, a.key) && Number.isFinite(a.value) && Math.abs(a.value as number) <= MAX_AFFIX);
