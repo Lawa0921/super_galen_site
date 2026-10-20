@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatPlayTime, summarizeGame, continueLines, rollWorldName, menuMove, readVolume, writeVolume, VOLUME_KEY,
   genStageLabel, genProgress, wipeThreshold, titleCamY, panX, zoomPrefLabel, savedAgo, realDate, descentY, focusFor,
-  worldLine, characterLine, continueSlot,
+  worldLine, characterLine, continueSlot, importPlan,
 } from './titleModel';
 import { DAY_LENGTH } from '../engine/constants';
 
@@ -111,6 +111,24 @@ describe('continueSlot（「繼續冒險」指向哪個世界；同 planContinue
   it('沒有可玩的組合 → null', () => {
     expect(continueSlot([], [{ id: 'a' }])).toBeNull();
     expect(continueSlot([w('w-1', 1, 'gone')], [{ id: 'a' }])).toBeNull();
+  });
+});
+
+describe('importPlan（匯入檔怎麼處理：有 IndexedDB 另開存檔槽；沒有就直接開局）', () => {
+  const legacy = { kind: 'legacy', data: { header: { seed: 'old' } } } as never;
+  const character = { id: 'c1' } as never;
+  const world = { header: { seed: 'w', character }, chunks: [] } as never;
+  const bare = { header: { seed: 'w' }, chunks: [] } as never;
+  it('有 IndexedDB → 一律存成新世界（B4，不進遊戲）', () => {
+    expect(importPlan(true, legacy)).toEqual({ kind: 'store' });
+    expect(importPlan(true, { kind: 'world', data: bare })).toEqual({ kind: 'store' });
+  });
+  it('沒有 IndexedDB → 舊合併檔直接開局', () => {
+    expect(importPlan(false, legacy)).toEqual({ kind: 'legacy', data: { header: { seed: 'old' } } });
+  });
+  it('沒有 IndexedDB → 世界檔用內嵌角色直接開局；沒有內嵌角色 → nochar', () => {
+    expect(importPlan(false, { kind: 'world', data: world })).toEqual({ kind: 'world', world, character });
+    expect(importPlan(false, { kind: 'world', data: bare })).toEqual({ kind: 'nochar' });
   });
 });
 

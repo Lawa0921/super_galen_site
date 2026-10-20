@@ -10,9 +10,9 @@ import {
 } from '../save/storage';
 import {
   SplitSession, planContinue, planPlay, planNewWorld, importWorld, saveSplit, commitMigration, restoreErrorMessage,
-  CHARACTER_MISSING_MSG, type ContinuePlan,
+  newWorldSlot, CHARACTER_MISSING_MSG, NO_CHARACTER_MSG, type ContinuePlan,
 } from '../save/split';
-import { encodeWorld, restoreSplit, type WorldData } from '../save/worldSave';
+import { decodeAnySave, encodeWorld, restoreSplit, type AnySave, type WorldData } from '../save/worldSave';
 import { createCharacter, decodeCharacter, DEFAULT_NICK, type DelveCharacter } from '../save/character';
 import { levelForXp } from '../engine/levels';
 import { startDelve, type DelveHandle } from './main';
@@ -21,7 +21,7 @@ import { SoundManager } from '../audio/SoundManager';
 import { TitleScene } from './titleScene';
 import { TitleUi, PEACEFUL_KEY, publishVolume } from './titleUi';
 import { Wipe } from './wipe';
-import { continueSlot, genProgress, genStageLabel, GEN_STAGE_LABELS, readVolume, rollWorldName, summarizeGame } from './titleModel';
+import { continueSlot, importPlan, genProgress, genStageLabel, GEN_STAGE_LABELS, readVolume, rollWorldName, summarizeGame } from './titleModel';
 import { liveCounts, type LiveCounts } from './live';
 import { GEN_PHASES, GenSectionView, genPhaseLabel, genPhaseOf } from './genSection';
 import { Wardrobe } from './wardrobe';
@@ -686,11 +686,15 @@ export function bootDelve(root: HTMLElement): Session {
     await exportSlot(cont.slot);
   }
 
-  /** 匯入（B4）：一律另開新存檔槽，既有世界不動、不直接進遊戲；完成後重刷「繼續冒險」與列表並回報 */
+  /**
+   * 匯入（B4）：有 IndexedDB → 一律另開新存檔槽，既有世界不動、不直接進遊戲；完成後重刷「繼續冒險」與列表並回報。
+   * 沒有 IndexedDB（沒有列表可放）→ 照舊直接開局（存不了，但「匯出 → 匯入」仍能接著玩）。
+   */
   async function importFile(file: File, msgEl: HTMLElement | null): Promise<void> {
-    if (!hasIndexedDB()) { say(msgEl, '這個瀏覽器不能存檔，沒辦法匯入。'); return; }
     try {
-      const r = await importWorld(idbSplitStore, await importBlob(file), Date.now());
+      const bytes = await importBlob(file);
+      if (!hasIndexedDB()) { openImported(bytes, msgEl); return; }
+      const r = await importWorld(idbSplitStore, bytes, Date.now());
       if ('error' in r) { say(msgEl, r.error); return; }
       await refreshTitle();
       const name = worldList.find((m) => m.slot === r.slot)?.seed ?? '';
@@ -700,6 +704,20 @@ export function bootDelve(root: HTMLElement): Session {
     } catch (e) {
       say(msgEl, `匯入失敗：${errText(e)}`);
     }
+  }
+  /** 沒有 IndexedDB 的匯入：解碼 → 直接開局（新存檔槽名，存檔是無操作）；壞檔立即回報 */
+  function openImported(bytes: Uint8Array, msgEl: HTMLElement | null): void {
+    const from = msgEl === titleMsg ? 'title' : 'menu';
+    let any: AnySave;
+    try { any = decodeAnySave(bytes); } catch {
+      const r = restoreGame(bytes);
+      if (!r.ok) restoreError(r, msgEl);
+      return;
+    }
+    const plan = importPlan(false, any);
+    if (plan.kind === 'legacy') void openLegacy(plan.data, newWorldSlot(), msgEl, from);
+    else if (plan.kind === 'world') void openSplit(plan.world, plan.character, newWorldSlot(), msgEl, from);
+    else if (plan.kind === 'nochar') say(msgEl, NO_CHARACTER_MSG);
   }
   let importFrom: HTMLElement | null = titleMsg;
   on(fileInput, 'change', () => {

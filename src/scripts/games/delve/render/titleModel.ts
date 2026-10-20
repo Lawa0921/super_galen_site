@@ -3,6 +3,9 @@
 import { dateOf, SEASON_NAMES } from '../engine/calendar';
 import { bayer } from './pixel';
 import type { CharacterMeta, SaveSummary, SlotMeta } from '../save/storage';
+import type { AnySave, WorldData } from '../save/worldSave';
+import type { SaveData } from '../save/serialize';
+import type { DelveCharacter } from '../save/character';
 
 export type { SaveSummary };
 
@@ -88,6 +91,22 @@ export function characterLine(c: CharacterMeta, now: number): string {
 export function continueSlot(worlds: readonly SlotMeta[], chars: readonly { id: string }[]): SlotMeta | null {
   const ids = new Set(chars.map((c) => c.id));
   return worlds.find((m) => (m.charId ? ids.has(m.charId) : true)) ?? null;
+}
+
+export type ImportPlan =
+  | { kind: 'store' }
+  | { kind: 'legacy'; data: SaveData }
+  | { kind: 'world'; world: WorldData; character: DelveCharacter }
+  | { kind: 'nochar' };
+/**
+ * 匯入檔（已解碼）怎麼處理：有 IndexedDB → 另開新存檔槽、不進遊戲（B4，importWorld）；
+ * 沒有 IndexedDB（沒有列表可放）→ 直接開局：舊合併檔走舊存檔路徑，世界檔用內嵌角色（沒有 → nochar）。
+ */
+export function importPlan(hasIdb: boolean, decoded: AnySave): ImportPlan {
+  if (hasIdb) return { kind: 'store' };
+  if (decoded.kind === 'legacy') return { kind: 'legacy', data: decoded.data };
+  const character = decoded.data.header.character;
+  return character ? { kind: 'world', world: decoded.data, character } : { kind: 'nochar' };
 }
 
 // ── 世界名骰子：地名風的兩段組合（也是種子）──
