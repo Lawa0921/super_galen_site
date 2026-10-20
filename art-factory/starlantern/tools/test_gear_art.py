@@ -1380,6 +1380,7 @@ def test_skills_page_shows_in_game_sizes_beside_the_old_icons_and_skips_gear_sec
         assert set(new) <= set(cells), px                                           # every new icon at the in-game size
     assert re.search(r'\.ingame img\{[^}]*object-fit:contain[^}]*image-rendering:pixelated', page)
     refs = set(re.findall(r'src="(img/[^"]+)"', page)); assert len(refs) <= 480
+    assert {f'img/{f.name}' for f in (factory / 'review-g3/img').iterdir()} == refs       # sections not shown leave no files
     head = page[page.index('id="decisions"'):page.index('id="s0"')]
     asked = head[:head.index('已決定')]
     assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['78 個技能圖示和同角色既有圖示一致嗎', '洛恩與凜的技能圖示（沒有舊圖示可對照）']

@@ -767,6 +767,10 @@ table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overfl
 {gallery(pg, js)}
 </body></html>'''
     (out / 'index.html').write_text(page, encoding='utf-8', newline='\n')
+    # Keep only the images the page uses: builders for sections this batch does not show may have copied files.
+    used = set(re.findall(r'src="img/([^"]+)"', page))
+    for f in (out / 'img').iterdir():
+        if f.name not in used: f.unlink()
     # What this page showed: `approve` refuses any part whose final no longer has this hash (the user approves pictures).
     sp = G.shown_path(batch); sp.parent.mkdir(parents=True, exist_ok=True)
     record = {'batch': batch, 'generated': datetime.datetime.now().isoformat(timespec='seconds'), 'page': str(out / 'index.html'), 'parts': shown}
