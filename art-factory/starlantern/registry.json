@@ -8261,7 +8261,7 @@
         "a2": "未採用：magic／legendary edge does not repeat、set edge does not repeat＋hue off tier（114.5）；glow ring not closed；starlit not starlight colours（深藍描邊）；epic／rare／unique 通過，但角飾取樣成黑塊（cover_sample 取眾數＝描邊色），取 a3",
         "a3": "採用 rare、epic、legendary、unique、set、glow-legendary（角飾在 1× 最清楚；glow hue 35.6）。未採用：magic（與 epic ΔE 25.8，a4 為 32.1）；starlit edge does not repeat（edge_joint top/bottom＝1：邊中段首末欄同列有點，重複後連成 2px）",
         "a4": "採用 magic（與 epic a3 ΔE 32.1）。未採用：unique edge does not repeat（金線取樣後斷續，bottom 3.20／left 3.16）；starlit 通過但側邊點取樣後消失、角星只剩 2×4 白塊（執行時幾乎看不到）；其餘通過但 a3 角飾較清楚",
-        "a5": "採用 starlit（四角實心四芒星＋各邊 2×2 點，執行時看得見）。未採用：unique edge does not repeat（left 1.70）；glow hue 49.6 偏黃（上限 50）；其餘通過但 a3 角飾在 1× 較清楚"
+        "a5": "曾採用 starlit（四角實心四芒星＋各邊 2×2 點，執行時看得見），已由新版星輝（sheet-starlit-1）取代。未採用：unique edge does not repeat（left 1.70）；glow hue 49.6 偏黃（上限 50）；其餘通過但 a3 角飾在 1× 較清楚"
       }
     },
     "sheet-starlit-1": {
@@ -8269,6 +8269,10 @@
         "a1": "未採用：starlit star is not a four-point star（codex 畫成 5×5 菱形、對角也填青色，取樣後每角白心 3×3、只有 2 個尖端；看起來是圓形寶石）",
         "a2": "採用（目前唯一通過 QA 的角星）：四角 4×4、白心 2×2 的十字形。1 倍下讀起來是圓圓的亮點，不是尖的閃光；角星蓋住傳說／獨特／套裝外框的角飾。a3 十字星沒通過 QA，所以頁面只放這一版",
         "a3": "未採用（版數上限 a3）：starlit corner star cut or too small＋starlit star is not a four-point star。原圖的十字星形狀正確（3×3、白心 1 格、四個青白尖端），但整張畫成約 16.8 格寬而不是 14 格，取樣到 14 格時 60px 的尖端跨在兩格之間、覆蓋率不到 0.4 被丟掉，只剩 3 個像素"
+      },
+      "plain_reasons": {
+        "a1": "畫成了對角也填滿的菱形，看起來像圓形寶石，不是尖的角星",
+        "a3": "十字的形狀畫對了，但整張畫布畫成約 16.8 格寬（應該是 14 格），縮成 16 格時尖端掉在兩格之間被丟掉，只剩一點"
       }
     }
   },
