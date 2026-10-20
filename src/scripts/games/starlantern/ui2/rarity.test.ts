@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
+import { compile } from 'sass';
 import { describe, expect, it } from 'vitest';
 import { RARITIES } from '../data/gear';
 import { T } from '../data/text.zh-TW';
@@ -98,6 +99,30 @@ describe('rarity colours and words', () => {
       expect(body).not.toMatch(/border|box-shadow|background|content/);
     }
     expect(scss).toMatch(/\.slx-line-starlit \{ color: \$slx-starlit; \}/);
+  });
+
+  it('a detail name takes its rarity colour; only a name with no rarity stays gold', () => {
+    // The compiled stylesheet in the DOM, so the real cascade (order and specificity) decides the colour.
+    const style = document.createElement('style');
+    style.textContent = compile('src/styles/_starlantern-ui.scss').css;
+    document.head.append(style);
+    const name = (cls: string) => {
+      const d = document.createElement('div');
+      d.className = cls;
+      document.body.append(d);
+      const c = getComputedStyle(d).color;
+      d.remove();
+      return c;
+    };
+    try {
+      const hex = (r: string) => `#${colourOf(r).map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+      for (const r of RARITIES) expect(name(`slx-item-name slx-rarity-${r}`), r).toBe(hex(r));
+      expect(name('slx-name-line slx-rarity-epic')).toBe(hex('epic'));    // the forge detail's name line too
+      expect(name('slx-item-name slx-rarity-legendary slx-starlit')).toBe(hex('legendary'));
+      expect(name('slx-item-name')).toBe('#e8c46a');                     // the empty cell's name: $slx-gold
+    } finally {
+      style.remove();
+    }
   });
 
   it('only ui2/loot.ts builds a rarity class from a piece of gear', () => {

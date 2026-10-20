@@ -709,7 +709,9 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-stat-cell { display: flex; justify-content: space-between; }
 .slx-stat-cell.slx-up .slx-stat-now { color: $slx-up; }
 .slx-stat-cell.slx-down .slx-stat-now { color: $slx-down; }
-.slx-item-name { margin-bottom: 2px; line-height: 16px; color: $slx-gold; }
+.slx-item-name { margin-bottom: 2px; line-height: 16px; }
+// Gold only for a name with no rarity (an empty cell or slot); gear keeps its .slx-rarity-* colour.
+.slx-item-name:not([class*='slx-rarity-']) { color: $slx-gold; }
 .slx-item-meta { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 10px; line-height: 12px; color: $slx-dim; }
 .slx-item-junk { margin-top: 2px; font-size: 10px; line-height: 12px; color: $slx-down; }
 .slx-item-lines { margin: 4px 0; padding: 3px 0; border-top: 1px solid #2a2840; border-bottom: 1px solid #2a2840; }
