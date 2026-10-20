@@ -110,10 +110,11 @@ DECISIONS = {
     ],
     # Plan 5d G3 (skills): 〔...〕 are filled from the registry when the page is built.
     'skills': [
-        ('78 個技能圖示和同角色既有圖示一致嗎', ['#s7'], [
-            '〔未通過〕', '〔多版〕', '〔採用版備註〕', '〔未採用版〕', '〔容易搞混〕',
-            '遊戲裡技能列用 16px、技能樹用 14px 顯示，會把約 32px 的圖示縮小（不是整數倍），細節會變糊；請看 7. 技能 的「遊戲實際大小」那一列。'],
-         '每位夥伴的新技能圖示和他現有的技能圖示放在一起（放大 2 倍與遊戲實際的 16px、14px），配色、描邊、大小是不是一致。'),
+        ('技能圖示的大小與畫風一致嗎（新 78 個＋既有 27 個）', ['#s7', '#skill-size'], [
+            '〔未通過〕', '〔多版〕', '〔採用版備註〕', '〔未採用版〕', '〔容易搞混〕'],
+         '所有技能圖示都改成遊戲實際大小的原尺寸圖：技能列 16×16（圖案長邊 14）、技能樹 14×14（圖案長邊 12），一次從高解析原圖縮好，'
+         '遊戲不再自己縮放，所以不會糊、大小一致。既有的 27 個技能圖示用當初核准的原圖重新縮成同樣大小，沒有重畫。'
+         '核准後，遊戲裡的技能列與技能樹會換成這些原尺寸圖示。請看 7. 技能（遊戲實際大小 1 倍與放大 3 倍）與技能尺寸一致性格。'),
         ('洛恩與凜的技能圖示（沒有舊圖示可對照）', ['#s7'], ['凜的技能多是深色細刀，在深色面板上 16px、14px 偏暗，不容易看清楚。'],
          '洛恩 21 個、凜 10 個技能以前都沒有圖示，生成時參考他們已發布的立繪配色。請看是否像同一個角色的技能、彼此分得出來。'),
     ],
@@ -158,7 +159,7 @@ AFTER_APPROVAL = {
 }
 SECTION_NAME = {'#s1': '1. 裝備頁情境', '#s2': '2. 新舊對照', '#s3': '3. 大圖與小圖示', '#s4': '4. 傳送門卡片', '#s5': '5. 清單情境', '#s6': '6. 素材',
                 '#s7': '7. 技能', '#s8': '8. 鍛造屋', '#glow': '光暈改在格內', '#size': '尺寸一致性', '#frames': '七階外框與星輝',
-                '#starlit-alts': '星輝角星比較'}
+                '#starlit-alts': '星輝角星比較', '#skill-size': '技能尺寸一致性'}
 SHAPE_NAME = {'round': '圓點光', 'cross': '十字星'}
 GATE_NAME = {'sample': 'G1', 'main-gear': 'G2', 'skills': 'G3'}
 # Items the G2 visual check found easy to confuse at 1x (controller ruling 2026-10-20: shown to the user as risks, not redrawn).
@@ -407,6 +408,29 @@ def frames_section(pg, reg, frame, glow, starlit, icon, gear, nm, cell):
             f'<h3>外框、光暈、星輝原圖（放大 4 倍），色票與 QA</h3><div class="row dark">{raws}</div></section>')
 
 
+def skill_size_grid(pg, reg, ids, nm):
+    """Ruling 2026-10-20 (G3): every skill tab icon (16 x 16) at 1x and 3x with its subject bbox (`.bbox`) and the centred
+    14 x 14 target (`.target`), like the gear grid; cells that fail the size gate get `out`."""
+    from PIL import Image
+    target = A.SKILL_TAB[0]
+
+    def cell(s, z):
+        aid = f'icon-{s}-{A.SKILL_TAB[1]}'; e = reg.get(aid, {})
+        if not e.get('final') or not A._final_path(e['final']).is_file(): return ''
+        path = A._final_path(e['final']); src = pg.copy(e['final'], f'{aid}.png')
+        W, H = Image.open(path).size; m = _measured(path, e, target)
+        out = ' out' if _gate_failed(e, m, target, 'other') else ''
+        x0, y0, x1, y1 = m['box']; tx, ty = (W - target) // 2, (H - target) // 2
+        return (f'<figure class="sz{out}" data-skill-size-cell="{esc(s)}"><div class="szbox" style="width:{W * z}px;height:{H * z}px">'
+                f'{img(src, "px", f"width:{W * z}px;height:{H * z}px", nm.get(s, s))}'
+                f'<span class="bbox" style="left:{x0 * z}px;top:{y0 * z}px;width:{(x1 - x0) * z}px;height:{(y1 - y0) * z}px"></span>'
+                f'<span class="target" style="left:{tx * z}px;top:{ty * z}px;width:{target * z}px;height:{target * z}px"></span></div>'
+                f'<figcaption>{esc(nm.get(s, s))}<br>長 {m["long"]}／短 {m["short"]}</figcaption></figure>')
+    rows = ''.join(f'<h3>{z} 倍</h3><div class="szrow">{"".join(cell(s, z) for s in ids)}</div>' for z in (1, 3))
+    return (f'<section id="skill-size"><h3>技能尺寸一致性：全部 {len(ids)} 個技能列圖示（16×16）</h3>'
+            f'<p class="note">紅框是圖案實際佔的範圍，青色虛線是中央 {target}×{target} 的目標框；紅底的格子沒過尺寸檢查（長邊、置中）。</p>{rows}</section>')
+
+
 def starlit_alts_section(pg, alts, fails, icon, gear, nm, cell, notes=None, plain=None):
     """The starlit corner-star shapes side by side (controller ruling 2026-10-20): every passing sheet-starlit-1 candidate
     in the runtime 28 px bag slot and 38 px equip slot, over the legendary, unique and set frames, at 1x and 3x; failed
@@ -582,21 +606,26 @@ def main(batch='sample'):
     mat_old = ''.join(mat_row(p, pg.pub(f'icon/{p}.png', f'old-icon-{p}.png'), True) for p in OLD_MATERIALS) if mats else ''
 
     # 7. skills beside the character's existing icons
+    old_skills = [p for j in js if j['kind'] == 'skill-native' for p in j['parts'] if p]
+
+    def native_cells(s, z):
+        old = ' data-old' if s in old_skills else ''
+        tab, tree = pg.final(f'icon-{s}-{A.SKILL_TAB[1]}'), pg.final(f'icon-{s}-{A.SKILL_TREE[1]}')
+        return (f'<figure class="nat" data-native="16" data-zoom="{z}" data-skill="{s}"{old}><div class="tabrow">'
+                f'{img(tab, "px", "width:16px;height:16px")}<span>{esc(nm.get(s, s))}</span></div></figure>'
+                f'<figure class="nat" data-native="14" data-zoom="{z}" data-skill="{s}"{old}><div class="treerow">'
+                f'{img(tree, "px", "width:14px;height:14px")}<span>{esc(nm.get(s, s))}</span></div></figure>')
+
     def owner_block(o):
-        new = [p for p in skills if owners.get(p) == o]
-        if not new: return ''
-        old = [s for s, w in owners.items() if w == o and s not in G.SKILL_DESC]
-        cells = ''.join(f'<figure data-skill="{s}" data-owner="{o}">{img(pg.final(f"icon-{s}"), "px", "height:64px")}<figcaption>{esc(nm.get(s, s))}<br><small>新 {s}</small></figcaption></figure>' for s in new)
-        olds_ = ''.join(f'<figure>{img(pg.pub(f"icon/{s}.png", f"old-icon-{s}.png"), "px", "height:64px")}<figcaption>{esc(nm.get(s, s))}<br><small>現有 {s}</small></figcaption></figure>' for s in old)
-        def ingame(s, src, tag):
-            return ''.join(f'<figure class="ingame" data-ingame="{px}" data-skill="{s}" title="{esc(nm.get(s, s))}（{tag}）">'
-                           f'{img(src, "px", f"width:{px}px;height:{px}px")}</figure>' for px in (16, 14))
-        game = (''.join(ingame(s, pg.final(f'icon-{s}'), '新') for s in new) + '<span class="sep"></span>'
-                + ''.join(ingame(s, pg.pub(f'icon/{s}.png', f'old-icon-{s}.png'), '現有') for s in old))
-        return (f'<h3>{OWNER_NAME.get(o, o)}</h3><div class="row dark">{cells}</div><div class="row dark">{olds_ or "<small>這個角色還沒有現有技能圖示。</small>"}</div>'
-                f'<p class="note">遊戲實際大小（每個圖示依序是技能列 16px、技能樹 14px；分隔線左邊是新的，右邊是現有的）：</p>'
-                f'<div class="row dark ingames">{game}</div>')
+        new = [p for p in skills if owners.get(p) == o]; old = [p for p in old_skills if owners.get(p) == o]
+        if not new and not old: return ''
+        row = lambda z: ''.join(native_cells(s, z) for s in new) + ('<span class="sep"></span>' if new and old else '') + ''.join(native_cells(s, z) for s in old)
+        return (f'<h3>{OWNER_NAME.get(o, o)}</h3><p class="note">遊戲實際大小 1 倍：每個技能依序是技能列（16×16）與技能樹（14×14）。'
+                f'{"分隔線左邊是新的，右邊是既有的（同一張原圖重新縮成原尺寸）。" if new and old else ""}</p>'
+                f'<div class="row dark natives">{row(1)}</div><p class="note">放大 3 倍：</p>'
+                f'<div class="scroll"><div class="zoom3"><div class="row dark natives">{row(3)}</div></div></div>')
     skill_html = ''.join(owner_block(o) for o in G.SKILL_OWNERS)
+    skill_size_html = skill_size_grid(pg, reg, [s for o in G.SKILL_OWNERS for s in skills + old_skills if owners.get(s) == o], nm) if skills or old_skills else ''
 
     # 8. the forge with Doran, beside the published item shop
     def facility(scene, npc, label_):
@@ -745,8 +774,9 @@ table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overfl
 .fac .npc{{position:absolute;right:0;bottom:0;height:330px}} .missing{{background:#333;color:#999;display:flex;align-items:center;justify-content:center}}
 .gal .att{{display:inline-block;vertical-align:top;margin:0 16px 16px 0;max-width:min(460px,100%);box-sizing:border-box}} .gal h4{{margin:4px 0;font-size:13px;overflow-wrap:anywhere}}
 .gal .raw{{max-width:100%;max-height:300px;display:block;border:1px solid #333}} .ok{{color:#9fd77f}} .rej{{color:#e6a07a;margin:4px 0}}
-.ingame{{margin:0}} .ingame img{{object-fit:contain;image-rendering:pixelated;vertical-align:middle}} .ingames{{gap:6px;align-items:center}}
-.ingames .sep{{display:inline-block;width:2px;height:20px;background:#4a4f78;margin:0 6px}}
+.natives{{gap:6px 10px;align-items:center}} .nat{{margin:0}} .natives .sep{{display:inline-block;width:2px;height:20px;background:#4a4f78;margin:0 6px}}
+.tabrow,.treerow{{display:flex;align-items:center;gap:4px;padding:3px 4px;background:#262840;border-bottom:1px solid #2a2840;font-size:12px;line-height:16px;white-space:nowrap}}
+.treerow{{font-size:10px;line-height:14px;gap:2px}} .tabrow img,.treerow img{{image-rendering:pixelated;flex:none}}
 .finals{{margin:6px 0;padding-left:18px;font-size:12px;color:#b9b4a6}} .finals li{{margin:2px 0;overflow-wrap:anywhere}}
 </style></head><body>
 <h1>星燈迷宮 裝備美術審核・{esc(GATE_NAME.get(batch, batch))}（尚未核准、未發布）</h1>
@@ -760,7 +790,7 @@ table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overfl
 <div class="scroll"><table class="checklist"><tr><th>id</th><th>名稱</th><th>工作表</th><th>狀態</th><th>QA</th></tr>{checklist}</table></div>
 
 {gear_sections}
-{mats_section}{('<h2 id="s7">7. 技能：同角色的新技能圖示與現有技能圖示並排</h2>' + skill_html) if skills else ''}
+{mats_section}{('<h2 id="s7">7. 技能：同角色的新技能圖示與既有技能圖示，遊戲實際大小</h2>' + skill_html + skill_size_html) if (skills or old_skills) else ''}
 
 {forge_section}<h2 id="s9">9. 全部生成版本與淘汰原因</h2>
 <p class="note">原圖為 codex 輸出（已把背景校正為純洋紅）；下方為該版後處理結果與機械 QA。</p>

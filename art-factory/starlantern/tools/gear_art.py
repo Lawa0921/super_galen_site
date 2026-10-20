@@ -475,12 +475,32 @@ def jobs():
                             what='skill', shape='one bold emblem that reads instantly at small size', extra=f'Colour scheme for this character: {palette}. ',
                             listing=_listing(parts, SKILL_DESC), noun='emblem',
                             refs='The attached character picture shows only the colours and weapon to use; do not draw the character. ')))
+    # Controller ruling 2026-10-20 (G3): the 27 published skill icons get native tab / tree icons too, re-derived from the
+    # plan 4 sheets the user approved (same raw, same cell); never drawn again.
+    for sid, parts in OLD_SKILL_SHEETS.items():
+        out.append(dict(id=sid, kind='skill-native', cols=5, rows=4, parts=list(parts), batch='skills', images=[], deps=[],
+                        prompt='(re-derived from the approved plan 4 raw; never generated)'))
     return out
+
+
+# The plan 4 icon sheets the 27 published skill icons come from (registry `sheet-icons-<k>.parts`, cell order); the other cells
+# hold item and material icons, which keep their art.
+OLD_SKILL_SHEETS = {
+    'sheet-icons-1': ['fire-star', 'ice-star', 'hex', 'thunder-star', 'sweep', 'ward', 'pierce', 'twin-slash', 'stealth', 'treasure-sense',
+                      'triple-slash', 'aimed-shot', 'pin-shot', 'arrow-rain', 'provoke', 'flame-burst', 'iron-wall', 'moonlight', 'cleanse', 'dream'],
+    'sheet-icons-2': ['rebirth', 'blade-dance', 'war-dance', 'mirage', 'turret', 'tinker', 'barrier'] + [None] * 13,
+}
+
+
+def skill_native(job):
+    """Skill cells become native tab / tree icons (sl_art.process_skill_cell)."""
+    return job['kind'] == 'skill-native' or (job['kind'] == 'icon-sheet' and job['batch'] == 'skills')
 
 
 def assets_of(job, part):
     """Registry ids one part of a job produces."""
     if part is None: return []
+    if skill_native(job): return [f'icon-{part}-{A.SKILL_TAB[1]}', f'icon-{part}-{A.SKILL_TREE[1]}']
     if job['kind'] == 'gear-sheet': return [f'gear-{part}-large', f'gear-{part}']
     if job['kind'] == 'icon-sheet': return [f'icon-{part}']
     if job['kind'] == 'frame-sheet': return [FRAME_ASSET[part]]
@@ -566,6 +586,8 @@ def gen(argv):
     if later and not reg.data.get('style_approved'):
         raise PermissionError(f'the style sample is not approved yet (no style_approved in the registry); refusing {later}')
     for job in todo:
+        if job['kind'] == 'skill-native':
+            print(f'[skip] {job["id"]}: re-derived from its approved raw, never generated', flush=True); continue
         deps = [chosen_raw(reg, d) for d in job['deps']]
         if any(d is None for d in deps):
             print(f'[skip] {job["id"]}: dependency {job["deps"]} is not approved', flush=True); continue
@@ -614,6 +636,8 @@ def process_attempt(reg, job, raw, workdir, parts=None):
         if job['kind'] == 'gear-sheet':
             out.update(A.process_gear_cell(reg, part, cell, workdir, raw, large=LARGE, icon=ICON, slot=GEAR_SLOT[part],
                                            kind=GEAR_KIND.get(part)))
+        elif skill_native(job):
+            out.update(A.process_skill_cell(reg, part, cell, workdir, raw))
         elif job['kind'] == 'icon-sheet':
             out[f'icon-{part}'] = A._finish(reg, f'icon-{part}', cell, 'sprite', workdir, raw, height=ICON_HEIGHT, despill_=True)
         else:

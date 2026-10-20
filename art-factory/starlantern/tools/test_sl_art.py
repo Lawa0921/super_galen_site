@@ -1392,13 +1392,13 @@ def _constants_read(f, seen=None):
     return out
 
 
-@pytest.mark.parametrize('kind, gate', [('gear-cell', 'process_gear_cell'), ('nine-slice', 'nine_slice')])
+@pytest.mark.parametrize('kind, gate', [('gear-cell', 'process_gear_cell'), ('nine-slice', 'nine_slice'), ('skill-cell', 'process_skill_cell')])
 def test_every_constant_a_gate_reads_is_in_its_stamp(kind, gate):
     assert _constants_read(getattr(A, gate)) - NOT_THRESHOLDS <= set(A.SPEC_INPUTS[kind]), \
         _constants_read(getattr(A, gate)) - NOT_THRESHOLDS - set(A.SPEC_INPUTS[kind])
 
 
-@pytest.mark.parametrize('kind', ['gear-cell', 'nine-slice'])
+@pytest.mark.parametrize('kind', ['gear-cell', 'nine-slice', 'skill-cell'])
 def test_spec_stamp_is_a_readable_hash_that_moves_with_any_covered_constant(kind, monkeypatch):
     stamp = A.qa_spec(kind)
     assert re.fullmatch(rf'{kind}:[0-9a-f]{{12}}', stamp) and A.qa_spec(kind) == stamp       # deterministic
@@ -1536,3 +1536,23 @@ def test_interior_key_tint_is_counted_as_residue():
 
 def test_the_interior_key_tint_ruling_moved_both_stamps():
     assert A.qa_spec('gear-cell') != 'gear-cell:9e868455a2f5' and A.qa_spec('nine-slice') != 'nine-slice:0a2593886a43'
+
+
+# --- controller ruling 2026-10-20 (G3): skill icons are native-size assets like gear --------------------------------------------
+def test_skill_cell_makes_native_icons_for_the_tab_and_the_tree(tmp_path):
+    """The skill tab shows 16 x 16 and the tree 14 x 14 (statusTabs.ts, .slx-skill-ico): one centre sample each from the
+    high-resolution cell, subject long edge exactly 14 / 12 (a 1 px transparent margin), centred, gated."""
+    assert A.SKILL_TAB == (14, 16) and A.SKILL_TREE == (12, 14)
+    reg = A.Registry(tmp_path / 'r.json')
+    out = A.process_skill_cell(reg, 'flame-wave', _shape_cell(300, 210, 'ellipse'), tmp_path / 'w', tmp_path / 'raw.png')
+    assert set(out) == {'icon-flame-wave-16', 'icon-flame-wave-14'}
+    for aid, (side, size) in (('icon-flame-wave-16', A.SKILL_TAB), ('icon-flame-wave-14', A.SKILL_TREE)):
+        q = out[aid]
+        assert q['pass'] and q['size'] == [size, size] and q['subject']['long'] == side and q['subject']['centre_off'] <= 1, q
+        assert q['spec'] == A.qa_spec('skill-cell') and reg.get(aid)['kind'] == 'skill-cell' and not A.qa_stale(reg.get(aid))
+        assert Image.open(tmp_path / 'w' / f'{aid}.png').size == (size, size)
+
+
+def test_skill_cell_refuses_to_upsample_a_tiny_subject(tmp_path):
+    out = A.process_skill_cell(A.Registry(tmp_path / 'r.json'), 'x', _shape_cell(13, 13), tmp_path / 'w', tmp_path / 'raw.png')   # 13 < 14
+    assert 'cell too small to sample' in out['icon-x-16']['reasons'] and not out['icon-x-16']['pass']

@@ -28,11 +28,12 @@ def test_every_gear_part_appears_once_and_sheets_match_their_grid():
         assert len(j['parts']) == j['cols'] * j['rows'], j['id']
     # Discarded cells (drawn as a plain stone slab and thrown away), as sheet-icons-3 did.
     gaps = {j['id']: j['parts'].count(None) for j in jobs if None in j['parts']}
-    assert gaps == {'sheet-skill-noel': 1, 'sheet-skill-rin-2': 2, 'sheet-skill-hero-4': 3}
+    # sheet-icons-2 (plan 4) also holds 13 item and material icons that are not skills: they are not re-derived here
+    assert gaps == {'sheet-skill-noel': 1, 'sheet-skill-rin-2': 2, 'sheet-skill-hero-4': 3, 'sheet-icons-2': 13}
     mats = [p for j in jobs if j['id'].startswith('sheet-mat-') for p in j['parts']]
     skills = [p for j in jobs if j['id'].startswith('sheet-skill-') for p in j['parts'] if p]
     assert len(mats) == 12 and len(skills) == 78                   # addendum S2: 47 tree + 10 Rin + 21 hero
-    assert all(j['kind'] in ('gear-sheet', 'icon-sheet', 'frame-sheet', 'opaque', 'sprite') for j in jobs)
+    assert all(j['kind'] in ('gear-sheet', 'icon-sheet', 'frame-sheet', 'opaque', 'sprite', 'skill-native') for j in jobs)
     assert all(j['batch'] in G.BATCHES for j in jobs)
 
 
@@ -45,9 +46,9 @@ def test_sample_is_the_g1_redo_jobs():
     main = [j['id'] for j in G.jobs() if j['batch'] == 'main-gear']
     assert main == [f'sheet-gear-{k}' for k in range(2, 9)] + ['sheet-mat-2', 'npc-forge-happy']
     skills = [j['id'] for j in G.jobs() if j['batch'] == 'skills']
-    assert len(skills) == 14 and 'sheet-skill-scarlet' in skills
+    assert len(skills) == 16 and 'sheet-skill-scarlet' in skills and skills[-2:] == ['sheet-icons-1', 'sheet-icons-2']
     parts = {b: len(set(a for j in G.jobs() if j['batch'] == b for p in j['parts'] for a in G.assets_of(j, p))) for b in G.BATCHES}
-    assert parts == {'sample': 34, 'main-gear': 127, 'skills': 78}
+    assert parts == {'sample': 34, 'main-gear': 127, 'skills': 210}       # skills: 105 icons x (16 tab, 14 tree), ruling 2026-10-20
     assert len(G.batch_assets('sample')) == 34 == len(set(G.batch_assets('sample')))      # ui-starlit once, from either job
 
 
@@ -82,6 +83,7 @@ def test_set_pieces_share_a_sheet_except_blaze_ring_which_references_sheet_one()
 def test_prompts_carry_magenta_no_text_and_originality():
     banned = ['final fantasy', 'dragon quest', 'diablo', 'zelda', 'pokemon', 'octopath', 'chrono', 'ghibli', 'toriyama', 'amano']
     for j in G.jobs():
+        if j['kind'] == 'skill-native': continue                      # re-derived from an approved raw, never drawn
         assert '#FF00FF' in j['prompt'] and 'No text' in j['prompt'] and 'original' in j['prompt'], j['id']
         assert not any(b in j['prompt'].lower() for b in banned), j['id']
 
@@ -163,7 +165,8 @@ def test_pick_never_writes_runtime(factory):
     _sheet(factory / 'raw/sheet-skill-noel/sheet-skill-noel-a1.png', rows=2)
     G.pick(['--id', 'sheet-skill-noel', '--attempt', '1'])
     reg = A.Registry(factory / 'registry.json')
-    assert reg.get('icon-flame-wave')['batch'] == 'gear-5d-skills' and 'runtime' not in reg.get('icon-flame-wave')
+    for aid in ('icon-flame-wave-16', 'icon-flame-wave-14'):                    # native tab / tree icons (ruling 2026-10-20)
+        assert reg.get(aid)['batch'] == 'gear-5d-skills' and 'runtime' not in reg.get(aid)
     assert not any(k.startswith('icon-None') for k in reg.data['assets'])     # the discarded cell is not recorded
 
 
@@ -209,7 +212,7 @@ def _fill(factory, batch, attempt=lambda aid: 'a1'):
         if j['batch'] != batch: continue
         for p in j['parts']:
             for aid in G.assets_of(j, p):
-                size = (64, 64) if aid.endswith('-large') else (26, 26)
+                size = (64, 64) if aid.endswith('-large') else (16, 16) if aid.endswith('-16') else (14, 14) if aid.endswith('-14') else (26, 26)
                 reg.set(aid, status='qa_passed', batch=G.label(batch), chosen_attempt=attempt(aid), source_id=j['id'],
                         final=_png(factory / 'work' / j['id'] / f'{aid}.png', size))
     if batch == 'sample':   # the starlit pick the sample may be approved with: the corner-only redraw
@@ -560,21 +563,6 @@ def test_sample_review_page_opens_with_the_decisions_and_shows_honest_previews(f
     assert re.search(r'\.rf\{[^}]*border-image-repeat:repeat', page) and 'border-image-repeat:round' not in page
     cell = re.search(r'<div class="cell bag"[^>]*>(.*?)</div>', page[page.index('class="glow-pair'):], re.S).group(1)
     assert cell.index('class="rg"') < cell.index('class="px gi"') < cell.index('class="rf"')
-
-
-def test_skills_review_page_shows_all_78_icons_each_under_its_owner(factory, review):
-    import re
-    _fill(factory, 'skills')
-    page = review.main('skills').read_text(encoding='utf-8')
-    names = review.names()
-    figs = re.findall(r'<figure data-skill="([a-z0-9-]+)" data-owner="([a-z]+)"><img class="px" src="(img/[^"]+)"', page)
-    assert len(figs) == 78
-    want = {s: o for o, (_, ids) in G.SKILL_OWNERS.items() for s in ids}
-    assert {s: o for s, o, _ in figs} == want
-    for s in ('abyss-sword', 'abyss-guard', 'abyss-star', 'abyss-light', 'abyss-chain'):      # `abyss: true` comes before `name`
-        assert names[s] and want[s] == 'hero' and review.skill_owners()[s] == 'hero'
-    assert all(names.get(s) for s in want)
-    assert names['abyss-sword'] in page
 
 
 # --- plan 5d addendum 2, Task C: uniform gear prompt, slots, seven-tier frames, starlit -----------------------------------
@@ -1368,25 +1356,67 @@ def test_a_batch_page_stays_under_the_artifact_file_limit(factory, review):
 
 
 # --- G3 (skills): the page shows what the skill tab and tree show, and nothing of the gear batches ------------------------------
-def test_skills_page_shows_in_game_sizes_beside_the_old_icons_and_skips_gear_sections(factory, review):
+# --- controller ruling 2026-10-20 (G3): native-size skill icons, the old 27 re-derived from their approved raws --------------
+OLD_SKILLS = ['fire-star', 'ice-star', 'hex', 'thunder-star', 'sweep', 'ward', 'pierce', 'twin-slash', 'stealth', 'treasure-sense',
+              'triple-slash', 'aimed-shot', 'pin-shot', 'arrow-rain', 'provoke', 'flame-burst', 'iron-wall', 'moonlight', 'cleanse',
+              'dream', 'rebirth', 'blade-dance', 'war-dance', 'mirage', 'turret', 'tinker', 'barrier']
+
+
+def test_skill_jobs_make_native_icons_and_the_old_27_are_rederived_from_their_sheets():
+    jobs = {j['id']: j for j in G.jobs()}
+    for j in jobs.values():
+        if j['batch'] == 'skills':
+            assert all(G.assets_of(j, p) == [f'icon-{p}-16', f'icon-{p}-14'] for p in j['parts'] if p), j['id']
+    old = [jobs['sheet-icons-1'], jobs['sheet-icons-2']]
+    assert all((j['kind'], j['cols'], j['rows'], j['batch'], j['images'], j['deps']) == ('skill-native', 5, 4, 'skills', [], []) for j in old)
+    assert [p for j in old for p in j['parts'] if p] == OLD_SKILLS
+    real = json.loads((G.AF / 'registry.json').read_text(encoding='utf-8'))['assets']
+    for j in old:                                                     # the same cell positions as the approved plan 4 sheet
+        sheet = [x[5:] for x in real[j['id']]['parts']]
+        assert all(p is None or sheet[i] == p for i, p in enumerate(j['parts'])), j['id']
+    assert len(G.batch_assets('skills')) == 210
+
+
+def test_gen_never_draws_a_rederived_skill_sheet(factory, monkeypatch):
+    reg = A.Registry(G.REG_PATH); reg.data['style_approved'] = '2026-10-20'; reg._save()
+    monkeypatch.setattr(G.subprocess, 'run', lambda *a, **k: pytest.fail('codex must not run'))
+    G.gen(['--only=sheet-icons-'])
+    assert not (factory / 'raw').exists()
+
+
+def test_process_attempt_sends_skill_cells_to_native_icons(factory, monkeypatch):
+    seen = []
+    monkeypatch.setattr(A, 'process_skill_cell', lambda reg, sid, cell, workdir, raw: seen.append(sid) or {f'icon-{sid}-16': {'pass': True, 'reasons': []}})
+    monkeypatch.setattr(A, '_finish', lambda *a, **k: pytest.fail('a skill cell is not a plain sprite'))
+    G.process_attempt(A.Registry(factory / 'r.json'), by_id()['sheet-skill-noel'], _sheet(factory / 'raw.png', cols=3, rows=2), factory / 'w')
+    assert seen == [p for p in by_id()['sheet-skill-noel']['parts'] if p]
+
+
+def test_skills_page_shows_every_skill_icon_native_in_its_game_cell_and_a_size_grid(factory, review):
+    """Ruling 2026-10-20 (G3): all 105 skill icons (78 new, 27 re-derived) at native size 1:1 inside the skill tab row
+    (16) and the tree node (14), and at 3x; a size-consistency grid; the decision block says the game switches to them."""
     import re
     _fill(factory, 'skills')
     page = review.main('skills').read_text(encoding='utf-8')
-    assert page.index('<h2 id="s7"') and 'id="size"' not in page and 'id="s1"' not in page and 'id="s6"' not in page and 'id="s8"' not in page
+    assert 'id="size"' not in page and 'id="s1"' not in page and 'id="s6"' not in page and 'id="s8"' not in page
     s7 = page[page.index('id="s7"'):page.index('id="s9"')]
-    new = [s for o, (_, ids) in G.SKILL_OWNERS.items() for s in ids]
+    every = [s for o, (_, ids) in G.SKILL_OWNERS.items() for s in ids] + OLD_SKILLS
+    assert len(every) == 105
     for px in (16, 14):
-        cells = re.findall(rf'data-ingame="{px}" data-skill="([a-z0-9-]+)"', s7)
-        assert set(new) <= set(cells), px                                           # every new icon at the in-game size
-    assert re.search(r'\.ingame img\{[^}]*object-fit:contain[^}]*image-rendering:pixelated', page)
+        for z in (1, 3):
+            cells = set(re.findall(rf'data-native="{px}" data-zoom="{z}" data-skill="([a-z0-9-]+)"', s7))
+            assert cells == set(every), (px, z, set(every) - cells)
+    assert set(re.findall(r'data-native="16" data-zoom="1" data-skill="([a-z0-9-]+)" data-old', s7)) == set(OLD_SKILLS)
+    grid = page[page.index('id="skill-size"'):]; grid = grid[:grid.index('</section>')]
+    assert set(re.findall(r'data-skill-size-cell="([a-z0-9-]+)"', grid)) == set(every) and grid.count('class="target"') == 2 * 105
     refs = set(re.findall(r'src="(img/[^"]+)"', page)); assert len(refs) <= 480
-    assert {f'img/{f.name}' for f in (factory / 'review-g3/img').iterdir()} == refs       # sections not shown leave no files
+    assert {f'img/{f.name}' for f in (factory / 'review-g3/img').iterdir()} == refs
     head = page[page.index('id="decisions"'):page.index('id="s0"')]
     asked = head[:head.index('已決定')]
-    assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['78 個技能圖示和同角色既有圖示一致嗎', '洛恩與凜的技能圖示（沒有舊圖示可對照）']
-    assert '16px' in asked and '14px' in asked and '本批全部通過機械檢查' in asked
-    assert '直接回覆每題的選擇' in head and 'G1' in head[head.index('已決定'):]
+    assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['技能圖示的大小與畫風一致嗎（新 78 個＋既有 27 個）', '洛恩與凜的技能圖示（沒有舊圖示可對照）']
+    for s in ('16×16', '14×14', '沒有重畫', '核准後', '換成'):
+        assert s in asked, s
     names = review.names()
     for group in (('quickstep', 'phantom-step'), ('sand-cyclone', 'thousand-shadows', 'veil-dance', 'sirocco')):
-        assert '／'.join(names[s] for s in group) in asked, group                     # skill confusables, for the user to rule
-    assert '凜' in asked and '偏暗' in asked                                           # Rin's dark blades on the dark panel
+        assert '／'.join(names[s] for s in group) in asked, group
+    assert '直接回覆每題的選擇' in head and 'G1' in head[head.index('已決定'):]

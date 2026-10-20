@@ -234,6 +234,50 @@
       null,
       null,
       null
+    ],
+    "sheet-icons-1": [
+      "fire-star",
+      "ice-star",
+      "hex",
+      "thunder-star",
+      "sweep",
+      "ward",
+      "pierce",
+      "twin-slash",
+      "stealth",
+      "treasure-sense",
+      "triple-slash",
+      "aimed-shot",
+      "pin-shot",
+      "arrow-rain",
+      "provoke",
+      "flame-burst",
+      "iron-wall",
+      "moonlight",
+      "cleanse",
+      "dream"
+    ],
+    "sheet-icons-2": [
+      "rebirth",
+      "blade-dance",
+      "war-dance",
+      "mirage",
+      "turret",
+      "tinker",
+      "barrier",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
     ]
   },
   "batches": {
@@ -265,7 +309,9 @@
     "sheet-skill-hero-1": "skills",
     "sheet-skill-hero-2": "skills",
     "sheet-skill-hero-3": "skills",
-    "sheet-skill-hero-4": "skills"
+    "sheet-skill-hero-4": "skills",
+    "sheet-icons-1": "skills",
+    "sheet-icons-2": "skills"
   },
   "regionLimited": [
     "blaze-heart-sword",

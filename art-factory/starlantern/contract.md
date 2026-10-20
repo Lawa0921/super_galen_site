@@ -188,7 +188,8 @@
   - 七階之間的色差（`frames_distinct`）：六種外框的 `stroke_colour` 兩兩之間 CIE76 ΔE ≥ 25，太近的兩個都記 `too close to <aid> (ΔE n)` 並轉 `qa_failed`。每次處理外框（`cand`／`pick`，含 `--part`）後都對登錄表裡**整組**外框重算，與挑選順序無關：先挑的那一件也會一起失敗，不再成立的舊 `too close to` 會清掉；`approve` 前再對整組重算一次，有太近的就整批拒絕；審核頁的外框段也標出太近的組合（`data-close`）。
   - 外框在登錄表標 `defringe: strong`（同其他 UI 框）。例外：史詩 `#8A5CFF` 離洋紅最遠的一個通道只差 117，落在 strong defringe 的 120 範圍內，會被從外往內剝掉，所以 `ui-rarity-epic` 標 `defringe: default`（`gear_art.frame_defringe`，依色碼自動判斷，不是個別放寬）。
 - 剪影（`kind: silhouette`）：只接受 `approved`／`published` 的 `gear-<id>`（否則 `PermissionError`）。不透明像素一律換成 `#1d1a2e`，外圍 8 鄰接的透明格塗成 `#8f86b8` 當輪廓光，畫布每邊多 1 px；只允許這兩色、沒有半透明、不透明像素數 ≥ 原圖。
-- 素材、技能、場景、NPC 沿用 `_finish`。
+- 技能圖示（主控裁定 2026-10-20，G3）：遊戲只在兩個地方顯示技能圖示（`statusTabs.ts` 的 `.slx-skill-ico`）：技能列 16×16、技能樹 14×14。所以每個技能格產生兩張原尺寸圖：`icon-<id>-16`（圖案長邊正好 14，`sl_art.SKILL_TAB`）與 `icon-<id>-14`（長邊 12，`SKILL_TREE`），四周各留 1 px 透明，各自從高解析原圖格一次取樣（`process_skill_cell`，同裝備的 bbox 正規化，不放大），過長邊與置中檢查（不分部位）、溢色與殘色檢查；QA 戳記 `skill-cell`。既有 27 個技能圖示從當初核准的計畫 4 原圖（`sheet-icons-1`、`sheet-icons-2` a1，同一格）重新取樣（`gear_art.OLD_SKILL_SHEETS`，job kind `skill-native`，`gen` 一律跳過、不重畫），和新的 78 個一起在 G3 給使用者核准。核准後遊戲改用這兩種原尺寸圖（另一個任務）。
+- 素材、場景、NPC 沿用 `_finish`。
 - 洋紅溢色（magenta spill，計畫 5d 的透明素材都做）：key 色被抗鋸齒混進外框線，會留下 (48,4,56)、(137,52,136)、(250,42,136) 這類暗紫、灰紫、粉紅邊，原本的殘色檢查抓不到。定義：不透明像素的 R 與 B 都比 G 高至少 30，而且色相在 280–345 度之間（270 度以下的紫是美術本身）。
   - `despill`（確定性）：主體外緣 2 px 內的溢色像素，R 與 B 各減掉 min(R, B) − G，暗紫變回黑框、粉紅變回紅；alpha 不變，更內側的像素不動。裝備格、九宮格外框、素材與技能圖示、NPC 都做。
   - QA（主控裁定 2026-10-20，G2）：只數主體外緣 2 px（`SPILL_BAND`，`sl_art.near_edge`）內的溢色像素，記在 `magenta_spill`，超過 2 就失敗（`magenta spill`）；主體更內側的同色系像素是美術本身的陰影（例如暗紫、暗紅），不算溢色；留在主體內的 key 色由殘色檢查（`magenta residue`）負責：除了離洋紅 90 以內的殘色，外緣 2 px 以內以外的不透明像素若像暗色或亮色的洋紅混色（`_dark_magenta`、`_magenta_tint`），數量記在 `key_tint_inside`，超過 2（`KEY_TINT_INSIDE_MAX`）也算 `magenta residue`（主控裁定，G2 審查）；美術本身真的有洋紅時，在登錄表寫 `allow_magenta_spill: <數量>` 並記原因。

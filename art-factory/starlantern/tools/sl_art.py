@@ -725,6 +725,10 @@ SUBJECT_CLASS = {'weapon': 'long', 'offhand': 'broad', 'head': 'broad', 'body': 
 MIN_SHORT = {'weapon': 0.70, 'offhand': 0.75, 'head': 0.65, 'body': 0.80, 'hands': 0.70, 'feet': 0.70, 'neck': 0.60, 'ring': 0.60}
 MASS_BAND = {'long': (0.28, 0.65), 'thin': (0.20, 0.65), 'broad': (0.50, 0.92), 'small': (0.35, 0.80)}
 GEAR_LARGE, GEAR_ICON = (56, 64), (22, 26)   # (subject long edge exactly, canvas): the large image and the bag icon (§1)
+# Controller ruling 2026-10-20 (G3): skill icons are native size like gear. The game shows them in two boxes only
+# (statusTabs.ts, .slx-skill-ico): the skill tab at 16 x 16 and the tree at 14 x 14. One asset per box, the subject's long
+# edge one art pixel short of the box on each side (14 / 12), so neither view rescales.
+SKILL_TAB, SKILL_TREE = (14, 16), (12, 14)
 # Controller rulings 2026-10-20: the long floor 0.28 was calibrated on 24-px icons; thin weapons cannot carry it: a polearm
 # (a thin shaft with a head; after Task E) and a bow (a thin arc and a string; after G2, 0.22-0.27 over 4 attempts). They
 # are told by the game's WeaponKind (engine/types.ts), never by id. Staves keep the long floor (a big head passes).
@@ -733,6 +737,8 @@ THIN_WEAPON_KINDS = ('spear', 'bow')
 GEAR_CELL_RULES = ('normalize to one long edge; long edge +-LONG_TOL, centre <= CENTRE_TOL; short floor by slot; mass band by '
                    'subject_class(slot, weapon kind): thin weapon kinds (polearms, bows) use the thin band; speckless bbox; '
                    'magenta spill counted in the outline band only; key tint deeper inside counted as residue')
+SKILL_CELL_RULES = ('normalize to one long edge per box (tab, tree); long edge +-LONG_TOL, centre <= CENTRE_TOL; speckless bbox; '
+                    'magenta spill counted in the outline band only; key tint deeper inside counted as residue')
 NINE_SLICE_RULES = ('cover_sample; centre clear; roles frame / glow / overlay / corners; band colour from the chromatic hue '
                     'cluster; seam ratio (frame, glow) or edge joint (overlay); corners: nothing outside the corners, a whole '
                     'four-point star in each (four points beyond a white core, empty diagonal corners, off the tile edge); '
@@ -835,6 +841,9 @@ SPEC_INPUTS = {
     'gear-cell': ('SUBJECT_CLASS', 'MIN_SHORT', 'MASS_BAND', 'THIN_WEAPON_KINDS', 'LONG_TOL', 'CENTRE_TOL', 'SPECK_MAX',
                   'GEAR_LARGE', 'GEAR_ICON', 'MAGENTA', 'MAGENTA_SPILL_MAX', 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND',
                   'STRONG_DEFRINGE', '_SHIFTS', 'GEAR_CELL_RULES'),
+    'skill-cell': ('SKILL_TAB', 'SKILL_TREE', 'LONG_TOL', 'CENTRE_TOL', 'SPECK_MAX', 'SUBJECT_CLASS', 'MIN_SHORT', 'MASS_BAND',
+                   'THIN_WEAPON_KINDS', 'MAGENTA', 'MAGENTA_SPILL_MAX',
+                   'KEY_TINT_INSIDE_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS', 'SKILL_CELL_RULES'),
     'nine-slice': ('FRAME_STROKE', 'EDGE_REACH_MAX', 'CORNER_REACH_MAX', 'HUE_TOL', 'SAT_MIN', 'DISTINCT_DE', 'GLOW_HUE',
                    'GLOW_SAT_MIN', 'GLOW_STROKE', 'STARLIT_CORNER_MIN', 'STARLIT_EDGE_COVER_MAX', 'STAR_MIN_SIDE', 'CHROMA_S',
                    'CHROMA_V', 'HUE_BIN', 'CHROMA_SHARE_MIN', 'EDGE_FLAT', 'SEAM_RATIO_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX',
@@ -893,6 +902,26 @@ def process_gear_cell(reg, gid, cell, workdir, raw, large=GEAR_LARGE, icon=GEAR_
         _save_final(reg, aid, final, qa, workdir, raw)
         reg.set(aid, kind='gear-cell', source={'raw': str(raw), 'cell': gid}, **({'slot': slot} if slot else {}),
                 **({'weapon_kind': kind} if kind else {}))
+        out[aid] = qa
+    return out
+
+
+def process_skill_cell(reg, sid, cell, workdir, raw, tab=SKILL_TAB, tree=SKILL_TREE):
+    """One skill-sheet cell -> two native icons from the same pixels: `icon-<sid>-16` for the skill tab and
+    `icon-<sid>-14` for the tree (controller ruling 2026-10-20). Each is sampled once from the high-resolution cell
+    (`normalize_subject`, never an upsample), runs the `_finish` QA (residue, semi alpha, raw-canvas cut, spill, key
+    tint) and the size gate without a slot (long edge exact, centred). QA records `subject` and `scale` and is stamped
+    with qa_spec('skill-cell'); the registry records kind 'skill-cell' and the source {raw, cell}."""
+    out = {}
+    for aid, (side, size) in ((f'icon-{sid}-{tab[1]}', tab), (f'icon-{sid}-{tree[1]}', tree)):
+        qa = _finish(reg, aid, cell, 'sprite', workdir, raw, canvas=size, despill_=True, long_side=side)
+        final = Image.open(_final_path(reg.get(aid)['final'])).convert('RGBA')
+        qa['subject'] = subject_metrics(final, side)
+        if 'cell too small to sample' not in qa['reasons']:
+            qa['reasons'] += [r for r in subject_gate(qa['subject'], side, None) if r not in qa['reasons']]
+        qa['pass'] = not qa['reasons']; qa['spec'] = qa_spec('skill-cell')
+        _save_final(reg, aid, final, qa, workdir, raw)
+        reg.set(aid, kind='skill-cell', source={'raw': str(raw), 'cell': sid})
         out[aid] = qa
     return out
 
