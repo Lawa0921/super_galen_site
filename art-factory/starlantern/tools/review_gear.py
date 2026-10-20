@@ -108,11 +108,20 @@ DECISIONS = {
         ('套裝每套 4 件是否一眼看得出同一套', ['#s1', '#s4'], [], '五套新套裝（霜凍、雷鳴、腐毒、暗影、鋼鐵）各 4 件，熾焰套裝的戒指也在本批，和 G1 已核准的 3 件配成一套。'),
         ('6 種地區素材與多蘭笑臉', ['#s6', '#s8'], [], '地區素材和舊素材圖示並排；多蘭笑臉和 G1 已核准的多蘭是同一個人。'),
     ],
+    # Plan 5d G3 (skills): 〔...〕 are filled from the registry when the page is built.
     'skills': [
-        ('78 個技能圖示和既有 27 個是否一致', ['#s7'], [], ''),
+        ('78 個技能圖示和同角色既有圖示一致嗎', ['#s7'], [
+            '〔未通過〕', '〔多版〕', '〔採用版備註〕', '〔未採用版〕',
+            '遊戲裡技能列用 16px、技能樹用 14px 顯示，會把約 32px 的圖示縮小（不是整數倍），細節會變糊；請看 7. 技能 的「遊戲實際大小」那一列。'],
+         '每位夥伴的新技能圖示和他現有的技能圖示放在一起（放大 2 倍與遊戲實際的 16px、14px），配色、描邊、大小是不是一致。'),
+        ('洛恩與凜的技能圖示（沒有舊圖示可對照）', ['#s7'], [],
+         '洛恩 21 個、凜 10 個技能以前都沒有圖示，生成時參考他們已發布的立繪配色。請看是否像同一個角色的技能、彼此分得出來。'),
     ],
 }
 DECIDED = {   # addendum 2 §6: decided on 2026-10-20, not asked again
+    'skills': ('已決定（G1、G2，2026-10-20）', [
+        '畫風：G1 已核准；裝備 G2 已核准並發布。',
+        '技能圖示沿用既有 27 個技能圖示的大小（高約 32）與畫風，遊戲裡照現有的 16px、14px 顯示。']),
     'main-gear': ('已決定（G1，2026-10-20）', [
         '畫風、大小（主體長邊 22）、七階外框、星輝圓點光、格內光暈：G1 已核准，本批照同一套規則。',
         '15 件舊底材圖示全部換新：〔舊底材〕。']),
@@ -143,6 +152,7 @@ def live_text(s, reg):
             else '新版星輝尚未生成：頁面暫時顯示舊版（邊上的星點在遊戲裡會重複成虛線），新版生成並通過 QA 後會換上。')
     return s.replace('〔最接近〕', near).replace('〔星輝〕', star)
 AFTER_APPROVAL = {
+    'skills': '核准後的動作：執行 gear_art.py approve --batch skills --by "<你對這頁的原話> <YYYY-MM-DD>"，然後照 5d Task 10 的方式發布技能圖示。',
     'main-gear': '核准後的動作：執行 gear_art.py approve --batch main-gear --by "<你對這頁的原話> <YYYY-MM-DD>"、gear_art.py silhouettes，然後照 5d Task 10 發布。',
     'sample': '核准後的動作：執行 gear_art.py approve --batch sample --by "<你對這頁的原話> <YYYY-MM-DD>"，然後照 5d Task 8（已依補遺 2 §4 修改）發布。',
 }
@@ -575,7 +585,14 @@ def main(batch='sample'):
         old = [s for s, w in owners.items() if w == o and s not in G.SKILL_DESC]
         cells = ''.join(f'<figure data-skill="{s}" data-owner="{o}">{img(pg.final(f"icon-{s}"), "px", "height:64px")}<figcaption>{esc(nm.get(s, s))}<br><small>新 {s}</small></figcaption></figure>' for s in new)
         olds_ = ''.join(f'<figure>{img(pg.pub(f"icon/{s}.png", f"old-icon-{s}.png"), "px", "height:64px")}<figcaption>{esc(nm.get(s, s))}<br><small>現有 {s}</small></figcaption></figure>' for s in old)
-        return f'<h3>{OWNER_NAME.get(o, o)}</h3><div class="row dark">{cells}</div><div class="row dark">{olds_ or "<small>這個角色還沒有現有技能圖示。</small>"}</div>'
+        def ingame(s, src, tag):
+            return ''.join(f'<figure class="ingame" data-ingame="{px}" data-skill="{s}" title="{esc(nm.get(s, s))}（{tag}）">'
+                           f'{img(src, "px", f"width:{px}px;height:{px}px")}</figure>' for px in (16, 14))
+        game = (''.join(ingame(s, pg.final(f'icon-{s}'), '新') for s in new) + '<span class="sep"></span>'
+                + ''.join(ingame(s, pg.pub(f'icon/{s}.png', f'old-icon-{s}.png'), '現有') for s in old))
+        return (f'<h3>{OWNER_NAME.get(o, o)}</h3><div class="row dark">{cells}</div><div class="row dark">{olds_ or "<small>這個角色還沒有現有技能圖示。</small>"}</div>'
+                f'<p class="note">遊戲實際大小（每個圖示依序是技能列 16px、技能樹 14px；分隔線左邊是新的，右邊是現有的）：</p>'
+                f'<div class="row dark ingames">{game}</div>')
     skill_html = ''.join(owner_block(o) for o in G.SKILL_OWNERS)
 
     # 8. the forge with Doran, beside the published item shop
@@ -600,7 +617,7 @@ def main(batch='sample'):
         e = reg.get(a, {}); f = A._final_path(e['final']) if e.get('final') else None
         if not f or not f.is_file(): return 0
         arr = np.asarray(_Im.open(f).convert('RGBA')); return int((A.magenta_spill(arr) & ~A.near_edge(arr[..., 3])).sum())
-    edge_only = {p: max(inside_spill(a) for a in G.assets_of(j, p)) for j in js if j['kind'] == 'gear-sheet' for p in j['parts'] if p}
+    edge_only = {p: max(inside_spill(a) for a in G.assets_of(j, p)) for j in js if j['kind'] in ('gear-sheet', 'icon-sheet') for p in j['parts'] if p}
     edge_only = {p: n for p, n in edge_only.items() if n >= 3}
     lo, hi = (min(edge_only.values()), max(edge_only.values())) if edge_only else (0, 0)
     edge_text = (f'{"、".join(nm.get(p, p) for p in edge_only)} 只因新的「溢色只數外緣」規則才通過：主體內有 {lo if lo == hi else f"{lo}～{hi}"} '
@@ -613,7 +630,7 @@ def main(batch='sample'):
             d = G.WORK / j['id'] / 'cand' / f'a{n}'; qs = [d / f'{a}.qa.json' for a in G.assets_of(j, p)]
             if all(q.is_file() for q in qs) and not all(json.loads(q.read_text(encoding='utf-8')).get('pass') for q in qs): fails += 1
         return (fails, int(k[1:])) if fails >= 2 else None
-    many = [(p, r) for j in js if j['kind'] == 'gear-sheet' for p in j['parts'] if p and (r := tries(j, p))]
+    many = [(p, r) for j in js if j['kind'] in ('gear-sheet', 'icon-sheet') for p in j['parts'] if p and (r := tries(j, p))]
     many_text = '；'.join(f'{nm.get(p, p)}：試了 {k} 版才採用（其中 {f} 版沒過檢查）' for p, (f, k) in many)
     def picked_from(j, k):   # the parts of job j whose pick is attempt k of that job
         return [p for p in j['parts'] if p and all(reg.get(a, {}).get('chosen_attempt') == k and reg.get(a, {}).get('source_id', j['id']) == j['id']
@@ -651,6 +668,43 @@ def main(batch='sample'):
              if batch in AFTER_APPROVAL else '')
     rarity_css = ''.join(f'.r-{r}{{color:{c}}}' for r, c in G.RARITY_PALETTE.items())
 
+    # Sections show only what the batch has (the skills batch has no gear, materials or forge).
+    gear_sections = f'''{size_html}
+
+<h2 id="s1">1. 裝備頁情境：背包格 28px（10×2）、人形 9 格 38px、詳情欄 64px 大圖，套上候選外框與傳說光暈</h2>
+<p class="note">小圖示 26×26 以原尺寸顯示（主體長邊 22，不縮放）；外框只壓在格子最外圈，傳說光暈在外框內側、畫在圖示下層，星輝疊在外框之上。格間距照遊戲：背包 2px、人形 4px。沒有圖的格子照遊戲現況只顯示名稱前四字。3 倍版在手機上可以左右捲動。</p>
+<details class="tech"><summary>技術細節</summary>外框是 16×16 九宮格（slice 5，邊帶 2px），光暈在格內第 2px（inset 0）。</details>
+{eq}
+<h3>{esc(rarity_title)}</h3><div class="row dark">{rarity_row or "<small>本批沒有裝備。</small>"}</div>
+{frames_html}
+<h3 id="glow">光暈改在格內：兩件傳說相鄰，照遊戲的背包間距 2px</h3>
+<p class="note">光暈畫在圖示下層、外框內側，不再向格子外面延伸，所以兩格之間的 2px 間距保持乾淨。</p>
+<details class="tech"><summary>技術細節</summary>光暈是 16×16、slice 5 的九宮格，inset 0。</details>
+<div class="row dark">{glow_pair or "<small>本批沒有傳說裝備。</small>"}</div>
+
+<h2 id="s2">2. 新舊對照：{esc(s2_title)}</h2>
+<p class="note">{esc(old_note)}</p>
+<div class="scroll"><table>{old_rows or "<tr><td>沒有舊底材圖示。</td></tr>"}</table></div>
+
+<h2 id="s3">3. 大圖 64 與小圖示 26（1 倍與 3 倍），出自同一格原圖</h2>
+<div class="scroll"><table><tr><th>物品</th><th>大圖 64</th><th>小圖示 26</th><th>來源</th></tr>{pairs or "<tr><td>本批沒有裝備。</td></tr>"}</table></div>
+
+<h2 id="s4">4. 傳送門卡片情境：已取得顯示圖示，未取得顯示剪影</h2>
+<p class="note">剪影在本頁由候選小圖示即時轉出（墨色 #1d1a2e、輪廓光 #8f86b8），不寫入登錄表；核准之後才由 gear_art.py silhouettes 正式產生。</p>
+<div>{cards or "<p>本批沒有地區限定裝備。</p>"}</div>
+
+<h2 id="s5">5. 清單情境：商店、鍛造、戰利品文字行</h2>
+<div class="row top"><div><h3>商店清單</h3>{shop or "<small>無</small>"}</div><div><h3>鍛造清單</h3>{forge or "<small>無</small>"}</div><div><h3>戰利品</h3>{loot or "<small>無</small>"}</div></div>
+
+''' if gear else ''
+    mats_section = f'''<h2 id="s6">6. 素材：深色面板上 32／64／128px，與舊素材圖示並排</h2>
+<div class="scroll"><table>{mat_new or "<tr><td>本批沒有素材。</td></tr>"}{mat_old}</table></div>
+
+''' if mats else ''
+    forge_section = f'''<h2 id="s8">8. 鍛造屋：場景 418×235 放大到 960×540，疊上多蘭半身像</h2>
+<div class="row">{forge_html or "<p>本批沒有鍛造屋。</p>"}</div>
+
+''' if forge_html else ''
     page = f'''<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>裝備美術審核</title><style>
 :root{{color-scheme:dark}}
@@ -688,6 +742,8 @@ table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overfl
 .fac .npc{{position:absolute;right:0;bottom:0;height:330px}} .missing{{background:#333;color:#999;display:flex;align-items:center;justify-content:center}}
 .gal .att{{display:inline-block;vertical-align:top;margin:0 16px 16px 0;max-width:min(460px,100%);box-sizing:border-box}} .gal h4{{margin:4px 0;font-size:13px;overflow-wrap:anywhere}}
 .gal .raw{{max-width:100%;max-height:300px;display:block;border:1px solid #333}} .ok{{color:#9fd77f}} .rej{{color:#e6a07a;margin:4px 0}}
+.ingame{{margin:0}} .ingame img{{object-fit:contain;image-rendering:pixelated;vertical-align:middle}} .ingames{{gap:6px;align-items:center}}
+.ingames .sep{{display:inline-block;width:2px;height:20px;background:#4a4f78;margin:0 6px}}
 .finals{{margin:6px 0;padding-left:18px;font-size:12px;color:#b9b4a6}} .finals li{{margin:2px 0;overflow-wrap:anywhere}}
 </style></head><body>
 <h1>星燈迷宮 裝備美術審核・{esc(GATE_NAME.get(batch, batch))}（尚未核准、未發布）</h1>
@@ -700,42 +756,10 @@ table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overfl
 <p class="note">手機上這張表可以在框內左右捲動。</p>
 <div class="scroll"><table class="checklist"><tr><th>id</th><th>名稱</th><th>工作表</th><th>狀態</th><th>QA</th></tr>{checklist}</table></div>
 
-{size_html}
+{gear_sections}
+{mats_section}{('<h2 id="s7">7. 技能：同角色的新技能圖示與現有技能圖示並排</h2>' + skill_html) if skills else ''}
 
-<h2 id="s1">1. 裝備頁情境：背包格 28px（10×2）、人形 9 格 38px、詳情欄 64px 大圖，套上候選外框與傳說光暈</h2>
-<p class="note">小圖示 26×26 以原尺寸顯示（主體長邊 22，不縮放）；外框只壓在格子最外圈，傳說光暈在外框內側、畫在圖示下層，星輝疊在外框之上。格間距照遊戲：背包 2px、人形 4px。沒有圖的格子照遊戲現況只顯示名稱前四字。3 倍版在手機上可以左右捲動。</p>
-<details class="tech"><summary>技術細節</summary>外框是 16×16 九宮格（slice 5，邊帶 2px），光暈在格內第 2px（inset 0）。</details>
-{eq}
-<h3>{esc(rarity_title)}</h3><div class="row dark">{rarity_row or "<small>本批沒有裝備。</small>"}</div>
-{frames_html}
-<h3 id="glow">光暈改在格內：兩件傳說相鄰，照遊戲的背包間距 2px</h3>
-<p class="note">光暈畫在圖示下層、外框內側，不再向格子外面延伸，所以兩格之間的 2px 間距保持乾淨。</p>
-<details class="tech"><summary>技術細節</summary>光暈是 16×16、slice 5 的九宮格，inset 0。</details>
-<div class="row dark">{glow_pair or "<small>本批沒有傳說裝備。</small>"}</div>
-
-<h2 id="s2">2. 新舊對照：{esc(s2_title)}</h2>
-<p class="note">{esc(old_note)}</p>
-<div class="scroll"><table>{old_rows or "<tr><td>沒有舊底材圖示。</td></tr>"}</table></div>
-
-<h2 id="s3">3. 大圖 64 與小圖示 26（1 倍與 3 倍），出自同一格原圖</h2>
-<div class="scroll"><table><tr><th>物品</th><th>大圖 64</th><th>小圖示 26</th><th>來源</th></tr>{pairs or "<tr><td>本批沒有裝備。</td></tr>"}</table></div>
-
-<h2 id="s4">4. 傳送門卡片情境：已取得顯示圖示，未取得顯示剪影</h2>
-<p class="note">剪影在本頁由候選小圖示即時轉出（墨色 #1d1a2e、輪廓光 #8f86b8），不寫入登錄表；核准之後才由 gear_art.py silhouettes 正式產生。</p>
-<div>{cards or "<p>本批沒有地區限定裝備。</p>"}</div>
-
-<h2 id="s5">5. 清單情境：商店、鍛造、戰利品文字行</h2>
-<div class="row top"><div><h3>商店清單</h3>{shop or "<small>無</small>"}</div><div><h3>鍛造清單</h3>{forge or "<small>無</small>"}</div><div><h3>戰利品</h3>{loot or "<small>無</small>"}</div></div>
-
-<h2 id="s6">6. 素材：深色面板上 32／64／128px，與舊素材圖示並排</h2>
-<div class="scroll"><table>{mat_new or "<tr><td>本批沒有素材。</td></tr>"}{mat_old}</table></div>
-
-{('<h2 id="s7">7. 技能：同角色的新技能圖示與現有技能圖示並排</h2>' + skill_html) if skills else ''}
-
-<h2 id="s8">8. 鍛造屋：場景 418×235 放大到 960×540，疊上多蘭半身像</h2>
-<div class="row">{forge_html or "<p>本批沒有鍛造屋。</p>"}</div>
-
-<h2 id="s9">9. 全部生成版本與淘汰原因</h2>
+{forge_section}<h2 id="s9">9. 全部生成版本與淘汰原因</h2>
 <p class="note">原圖為 codex 輸出（已把背景校正為純洋紅）；下方為該版後處理結果與機械 QA。</p>
 {gallery(pg, js)}
 </body></html>'''

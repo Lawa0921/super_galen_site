@@ -1365,3 +1365,23 @@ def test_a_batch_page_stays_under_the_artifact_file_limit(factory, review):
     gal = page[page.index('id="s9"'):]
     assert 'img/cand-' not in gal and 'img/raw-sheet-gear-2-a1.png' in gal
     assert 'gear-wooden-staff' in gal and 'subject too light' in gal                              # the verdict and reason as text
+
+
+# --- G3 (skills): the page shows what the skill tab and tree show, and nothing of the gear batches ------------------------------
+def test_skills_page_shows_in_game_sizes_beside_the_old_icons_and_skips_gear_sections(factory, review):
+    import re
+    _fill(factory, 'skills')
+    page = review.main('skills').read_text(encoding='utf-8')
+    assert page.index('<h2 id="s7"') and 'id="size"' not in page and 'id="s1"' not in page and 'id="s6"' not in page and 'id="s8"' not in page
+    s7 = page[page.index('id="s7"'):page.index('id="s9"')]
+    new = [s for o, (_, ids) in G.SKILL_OWNERS.items() for s in ids]
+    for px in (16, 14):
+        cells = re.findall(rf'data-ingame="{px}" data-skill="([a-z0-9-]+)"', s7)
+        assert set(new) <= set(cells), px                                           # every new icon at the in-game size
+    assert re.search(r'\.ingame img\{[^}]*object-fit:contain[^}]*image-rendering:pixelated', page)
+    refs = set(re.findall(r'src="(img/[^"]+)"', page)); assert len(refs) <= 480
+    head = page[page.index('id="decisions"'):page.index('id="s0"')]
+    asked = head[:head.index('已決定')]
+    assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['78 個技能圖示和同角色既有圖示一致嗎', '洛恩與凜的技能圖示（沒有舊圖示可對照）']
+    assert '16px' in asked and '14px' in asked and '本批全部通過機械檢查' in asked
+    assert '直接回覆每題的選擇' in head and 'G1' in head[head.index('已決定'):]
