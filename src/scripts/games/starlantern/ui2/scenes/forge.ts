@@ -45,15 +45,21 @@ export interface ForgeHost {
 /**
  * Gear rows for a forge list: the bag first, then (when `worn`) what each recruited member wears, in recruit order and
  * slot order, its wearer named after the label. Each row is `g<uid>`, in its rarity colour, struck through when marked junk.
+ * A piece listed but out of reach is greyed out with `blocked`'s reason in place of `right`.
  */
-export function forgeRows(s: GameState, o: { worn: boolean; filter?: (it: ItemInstance) => boolean; right: (it: ItemInstance) => string }): MenuItem[] {
+export function forgeRows(s: GameState, o: {
+  worn: boolean; filter?: (it: ItemInstance) => boolean; right: (it: ItemInstance) => string; blocked?: (it: ItemInstance) => string | undefined;
+}): MenuItem[] {
   const keep = o.filter ?? (() => true);
-  const row = (it: ItemInstance, wearer?: string): MenuItem => ({
-    id: `g${it.uid}`,
-    label: wearer ? `${gearLabel(it)}${T.ui2.forge.wornBy(wearer)}` : gearLabel(it),
-    right: o.right(it),
-    cls: it.junk ? `${rarityClass(it)} slx-junk` : rarityClass(it),
-  });
+  const row = (it: ItemInstance, wearer?: string): MenuItem => {
+    const reason = o.blocked?.(it);
+    return {
+      id: `g${it.uid}`,
+      label: wearer ? `${gearLabel(it)}${T.ui2.forge.wornBy(wearer)}` : gearLabel(it),
+      cls: it.junk ? `${rarityClass(it)} slx-junk` : rarityClass(it),
+      ...(reason ? { disabled: true, right: reason, note: reason } : { right: o.right(it) }),
+    };
+  };
   const rows = s.bag.filter(keep).map((it) => row(it));
   if (o.worn) {
     for (const id of s.party.recruited) {
@@ -318,6 +324,8 @@ export function rerollPage(h: ForgeHost): void {
     worn: true,
     filter: (it) => it.affixes.length > 0,
     right: (it) => (it.locked !== undefined && it.affixes[it.locked] ? affixText(it.affixes[it.locked]) : F.unlocked),
+    // A starlit unique or set has no reroll at all: its values are at their maximum and its affixes cannot be swapped.
+    blocked: (it) => (it.starlit && (it.rarity === 'unique' || it.rarity === 'set') ? F.starlitMaxed : undefined),
   });
   if (!itemRows().length) { void h.say(F.nothingToReroll); return; }
 

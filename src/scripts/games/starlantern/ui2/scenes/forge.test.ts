@@ -621,20 +621,25 @@ describe('ForgeScene reroll page', () => {
     expect(a.rows()[1].getAttribute('aria-selected')).toBe('true');    // the cursor starts on it
     value.click();
     expect(a.confirmEl()).toBeNull();                                  // a disabled row cannot be picked
-    // A starlit unique has no swap either: its one row is disabled, and the preview says why instead of a range.
+    expect(a.game.state.bag[0].affixes).toEqual(spear.affixes);
+  });
+
+  it('a starlit unique or set is greyed out in the item list with the reason; a starlit legendary is not', () => {
     const ring = gear(2, 'star-ring', 'unique', {
       special: 'blaze-ember-ring', starlit: true, ilvl: 30, affixes: [{ key: 'fireDmg', value: 3 }, { key: 'fireRes', value: 3 }, { key: 'atk', value: 3 }],
     });
-    const b = open([ring]);
-    b.go('confirm', 'confirm');
-    expect(b.ids()).toEqual(['value']);
-    expect(b.rows()[0].getAttribute('aria-disabled')).toBe('true');
-    expect(b.info().textContent).toContain(F.starlitMaxed);
-    expect(b.info().textContent).not.toContain('可能的範圍');
-    expect(b.info().textContent).not.toContain(F.lockWarn);              // nothing to pay and nothing to lock
-    b.go('confirm');
-    expect(b.confirmEl()).toBeNull();
-    expect(b.game.state.bag[0].affixes).toEqual(ring.affixes);
+    const body = gear(4, 'leather-vest', 'set', { special: 'set-blaze-body', starlit: true, ilvl: 30, affixes: [{ key: 'fireDmg', value: 3 }] });
+    const spear = gear(1, 'thorn-spear', 'legendary', { special: 'lg-chizuru', starlit: true, ilvl: 30, affixes: [{ key: 'crit', value: 3 }] });
+    const { ids, rows, lists, info } = open([ring, spear, body, sword({ uid: 3 })]);
+    expect(ids()).toEqual(['g2', 'g1', 'g4', 'g3']);
+    expect(rows().map((r) => r.getAttribute('aria-disabled'))).toEqual(['true', 'false', 'true', 'false']);
+    expect(rows()[0].textContent).toContain(F.starlitMaxed);
+    expect(rows()[2].textContent).toContain(F.starlitMaxed);
+    expect(rows()[1].getAttribute('aria-selected')).toBe('true');      // the cursor starts on the first live row
+    expect(info().textContent).toContain('雙月槍・星輝傳說');
+    rows()[0].click();                      // a greyed row opens nothing
+    expect(lists()).toHaveLength(1);
+    expect(ids()).toEqual(['g2', 'g1', 'g4', 'g3']);
   });
 
   it('region-material rows list each region, and an empty pool is disabled with the reason', () => {
