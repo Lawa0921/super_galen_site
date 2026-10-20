@@ -609,6 +609,19 @@ describe('時裝物品重現外觀（服裝 / 飾品格 / 布衣）', () => {
       expect(same(f({ ...plainLook(bare), head: hat, acc: piece('acc:glasses') }), f({ ...plainLook(bare), head: hat })), hat.look).toBe(false);
     }
   });
+  it('飾品格的顏色只改飾品：tint 和外觀主副色不同時，耳機換色，但雙馬尾的髮圈（外觀副色）不變', () => {
+    // 雙馬尾後面那個髮圈畫在後髮（body 那張），耳機畫在 head 那張：body 那張要和沒戴飾品時一模一樣
+    const app = { ...DEF, hair: 1, color1: 6, color2: 10, acc: 0 };
+    const at = (t?: [number, number]) => avatarFrame(t ? { ...plainLook(app), acc: { ...piece('acc:headphones'), tint: t } } : plainLook(app), 'idle', 0);
+    const bare = at(), a = at([5, 5]), b = at([3, 3]);
+    expect(diff(a.head, b.head)).toBeGreaterThan(2);
+    expect(diff(a.body, bare.body)).toBe(0);
+    expect(diff(b.body, bare.body)).toBe(0);
+    // 對照：外觀副色一換，後面那個髮圈（body 那張）就跟著變
+    const tieOnly = (c2: number): Bmp => avatarFrame(plainLook({ ...app, outfit: OUTFITS.findIndex((o) => o.id === 'plain'), color1: 6, color2: c2 }), 'idle', 0).body;
+    const noLegs = (x: Bmp): Bmp => { const o = x.clone(); for (let y = 38; y < o.h; y++) for (let xx = 0; xx < o.w; xx++) o.clear(xx, y); return o; };
+    expect(diff(noLegs(tieOnly(10)), noLegs(tieOnly(3)))).toBeGreaterThan(0);
+  });
   it('新時裝的圖示都有內容、只用色票、彼此都不一樣；飾品圖示穿在格子裡的顏色跟著 tint', () => {
     const seen = new Map<string, string>();
     for (const id of VANITY_ITEMS) {
