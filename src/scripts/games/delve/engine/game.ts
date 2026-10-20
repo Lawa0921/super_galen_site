@@ -760,6 +760,8 @@ export class DelveGame {
     const me = new PlayerActor(SOLO_PID);
     this.actors.set(me.pid, me);
     this.cur = me;
+    // settle.spawnCore（存檔欄位）= 本地玩家的重生爐心；其他玩家的存在各自的 actor 上
+    this.settle.spawnLink = { get: () => this.local.spawnCore, set: (v) => { this.local.spawnCore = v; } };
     this.seed = String(opts.seed ?? 'delve');
     this.appearance = normalizeAppearance(opts.appearance);
     // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）
@@ -1234,7 +1236,13 @@ export class DelveGame {
       }
       if (tid === T.HEARTH) {
         const lost = this.settle.coreAt(tx, ty);
-        if (lost && this.settle.spawnCore === lost.id) this.emit({ type: 'spawn', set: false, x: this.spawn.x, y: this.spawn.y });
+        // 重生爐心是每個角色自己的：把它設成重生點的每個人都清掉，各自收到提示
+        if (lost) {
+          for (const a of this.actors.values()) {
+            if (a.spawnCore !== lost.id) continue;
+            this.withActor(a, () => { a.spawnCore = null; this.emit({ type: 'spawn', set: false, x: this.spawn.x, y: this.spawn.y }); });
+          }
+        }
         this.settle.remove(tx, ty);
       }
       const bug = this.baitDrop(tid);
@@ -1642,9 +1650,10 @@ export class DelveGame {
   }
 
   // ── 床 / 傳送石 ───────────────────────────────────────
-  /** 重生點（腳底 tile）：床還在 → 床頭那格；否則出生點 */
+  /** 目前玩家（cur）的重生點（腳底 tile）：自己選的據點爐心 > 自己的床（床頭那格）> 出生點 */
   respawnPoint(): { x: number; y: number } {
-    const hc = this.settle.spawnCore !== null ? this.settle.coreById(this.settle.spawnCore) : null;
+    const core = this.cur.spawnCore;
+    const hc = core !== null ? this.settle.coreById(core) : null;
     if (hc && this.world.getFg(hc.x, hc.y) === T.HEARTH) {
       // 爐心旁最近的空位（被方塊圍住 → 改用床 / 出生點）
       const spot = findStandSpot(this.world, hc.x + 1, hc.y);
@@ -1658,7 +1667,7 @@ export class DelveGame {
     const hx = this.world.getFg(x, y) === T.BED_FOOT ? x - 1 : x;
     if (this.world.getFg(hx, y) !== T.BED_HEAD) return false;
     this.bed = { x: hx, y };
-    this.settle.spawnCore = null;
+    this.cur.spawnCore = null;
     this.emit({ type: 'spawn', set: true, x: hx, y });
     if (this.isNight()) this.trySleep(hx, y);
     return true;
@@ -3576,7 +3585,7 @@ export class DelveGame {
   setSpawnCore(id: number): boolean {
     const c = this.settle.coreById(id);
     if (!c || (this.settle.evaluation(id, this.world)?.level ?? 0) < 1) return false;
-    this.settle.spawnCore = id;
+    this.cur.spawnCore = id;
     this.bed = null;
     this.emit({ type: 'spawn', set: true, x: c.x + 1, y: c.y });
     return true;

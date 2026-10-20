@@ -327,3 +327,86 @@ describe('step：死亡 / 活著的 actor 各跑各的', () => {
     expect(types(evH)).toContain('death');
   });
 });
+
+describe('重生點各自的（spawnCore / 床，spec §5.1）', () => {
+  /** 兩個據點爐心：c1 在 (44,59)、c2 在 (120,59) */
+  function cores(g: DelveGame): { c1: number; c2: number } {
+    const w = g.world;
+    w.setFg(44, FLOOR - 1, T.HEARTH); w.setFg(120, FLOOR - 1, T.HEARTH);
+    const c1 = g.settle.found(44, FLOOR - 1).id, c2 = g.settle.found(120, FLOOR - 1).id;
+    g.drainAll();
+    return { c1, c2 };
+  }
+  const respawnOf = (g: DelveGame, a: ReturnType<DelveGame['addActor']>) => g.withActor(a, () => g.respawnPoint());
+  /** 死掉後馬上重生，回傳重生後的腳底 tile */
+  function dieAndRespawn(g: DelveGame, a: ReturnType<DelveGame['addActor']>): { x: number; y: number } {
+    g.withActor(a, () => g.hurtPlayer(9999, 0));
+    expect(a.dead).toBe(true);
+    a.respawnT = FIXED_DT / 2;
+    steps(g, 1);
+    expect(a.dead).toBe(false);
+    return g.withActor(a, () => g.feetTile());
+  }
+
+  it('A、B 各選一個爐心 → 各自重生在自己的爐心旁', () => {
+    const g = arena();
+    const { c1, c2 } = cores(g);
+    const b = g.addActor('b', hero(), { x: 60, y: FLOOR - 1 });
+    g.settle.spawnCore = c1;
+    b.spawnCore = c2;
+    expect(g.local.spawnCore).toBe(c1);
+    expect(Math.abs(respawnOf(g, g.local).x - 44)).toBeLessThan(4);
+    expect(Math.abs(respawnOf(g, b).x - 120)).toBeLessThan(4);
+    expect(Math.abs(dieAndRespawn(g, b).x - 120)).toBeLessThan(4);
+    expect(Math.abs(dieAndRespawn(g, g.local).x - 44)).toBeLessThan(4);
+  });
+
+  it('B 躺床只換 B 的重生點：A 的爐心重生點不受影響', () => {
+    const g = arena();
+    const { c1 } = cores(g);
+    g.world.setFg(50, FLOOR - 1, T.BED_HEAD); g.world.setFg(51, FLOOR - 1, T.BED_FOOT);
+    const b = g.addActor('b', hero(), { x: 49, y: FLOOR - 1 });
+    g.settle.spawnCore = c1;
+    expect(g.withActor(b, () => g.interact(50, FLOOR - 1))).toBe(true);
+    expect(b.bed).toEqual({ x: 50, y: FLOOR - 1 });
+    expect(b.spawnCore).toBeNull();
+    expect(g.local.spawnCore).toBe(c1);
+    expect(g.settle.spawnCore).toBe(c1);
+    expect(respawnOf(g, b)).toEqual({ x: 50, y: FLOOR - 1 });
+    expect(Math.abs(respawnOf(g, g.local).x - 44)).toBeLessThan(4);
+  });
+
+  it('settle.spawnCore 是本地玩家的那份（存檔 / 讀檔照舊只看本地玩家）', () => {
+    const g = arena();
+    const { c1, c2 } = cores(g);
+    const b = g.addActor('b', hero(), { x: 60, y: FLOOR - 1 });
+    g.settle.spawnCore = c1;
+    b.spawnCore = c2;
+    expect(g.settle.toJSON().spawnCore).toBe(c1);
+    g.settle.load({ ...g.settle.toJSON(), spawnCore: c2 }, g.world);
+    expect(g.local.spawnCore).toBe(c2);
+    expect(g.settle.spawnCore).toBe(c2);
+    expect(b.spawnCore).toBe(c2);
+  });
+
+  it('A 拆掉 B 的重生爐心 → 只清 B 的重生點，spawn 事件給 b', () => {
+    const g = arena();
+    const w = g.world;
+    w.setFg(42, FLOOR - 1, T.HEARTH);
+    const near = g.settle.found(42, FLOOR - 1).id;
+    w.setFg(120, FLOOR - 1, T.HEARTH);
+    const far = g.settle.found(120, FLOOR - 1).id;
+    const b = g.addActor('b', hero(), { x: 60, y: FLOOR - 1 });
+    g.settle.spawnCore = far;
+    b.spawnCore = near;
+    g.drainAll();
+    g.setAim(42, FLOOR - 1); g.setMining(true);
+    for (let i = 0; i < 600 && w.getFg(42, FLOOR - 1) === T.HEARTH; i++) steps(g, 1);
+    g.setMining(false);
+    expect(w.getFg(42, FLOOR - 1)).not.toBe(T.HEARTH);
+    expect(b.spawnCore).toBeNull();
+    expect(g.local.spawnCore).toBe(far);
+    expect(g.drainEvents('b').some((e) => e.type === 'spawn' && !e.set && e.pid === 'b')).toBe(true);
+    expect(g.drainEvents('h').some((e) => e.type === 'spawn')).toBe(false);
+  });
+});

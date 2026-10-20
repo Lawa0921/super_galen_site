@@ -207,8 +207,14 @@ const isDoor = (id: number): boolean => id === T.DOOR_CLOSED || id === T.DOOR_OP
 export class Settlements {
   cores: Core[] = [];
   npcs: Npc[] = [];
-  /** 設為重生點的核心 id */
-  spawnCore: number | null = null;
+  /**
+   * 設為重生點的核心 id。重生點是每個角色自己的（spec §5.1）：DelveGame 用 spawnLink 把它接到本地玩家
+   * （PlayerActor.spawnCore），存檔 / 讀檔照舊讀寫這個欄位；沒接（單獨測 Settlements）就存在這裡。
+   */
+  get spawnCore(): number | null { return this.spawnLink ? this.spawnLink.get() : this.ownSpawnCore; }
+  set spawnCore(v: number | null) { if (this.spawnLink) this.spawnLink.set(v); else this.ownSpawnCore = v; }
+  spawnLink: { get(): number | null; set(v: number | null): void } | null = null;
+  private ownSpawnCore: number | null = null;
   nextId = 1;
   private evals = new Map<number, Evaluation>();
   private evalRev = -1;

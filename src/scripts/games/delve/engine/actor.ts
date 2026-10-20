@@ -78,6 +78,8 @@ export class PlayerActor {
   upHeld = false;
   /** 床（重生點，床頭 tile）；存檔內容 */
   bed: { x: number; y: number } | null = null;
+  /** 設為重生點的據點爐心 id（spec §5.1：每個角色自己的；和床互斥）。本地玩家的這份同時是 settle.spawnCore（存檔照舊） */
+  spawnCore: number | null = null;
   /** 目前的 buff：每種各自計時、可以同時有好幾種（祝福 / 守護 / 礦工之歌；存檔內容） */
   buffs: Partial<Record<BuffKind, number>> = {};
   /** 傳送石引導經過秒數；null = 沒在引導 @internal */
