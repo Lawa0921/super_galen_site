@@ -814,11 +814,18 @@ export interface CharacterState {
   cformat?: number;
 }
 
+/** 這份角色資料還沒做過時裝轉換（cformat 沒有 / < WARDROBE_CFORMAT） */
+export function needsWardrobeMigration(cformat: unknown): boolean {
+  return !(validCformat(cformat) && cformat >= WARDROBE_CFORMAT);
+}
+
 /**
  * 把角色隨身的狀態套到遊戲上（不動世界 / 位置 / 探索）。舊角色（cformat < WARDROBE_CFORMAT）最後做一次時裝轉換：
  * 這裡是唯一有活 game 的載入點（轉出來的東西背包放不下要掉在玩家腳邊，呼叫端要先放好玩家位置）。
+ * wardrobe = false：呼叫端自己晚點呼叫 game.migrateWardrobe()（restoreGame 要等世界存檔裡的掉落物放回去之後才轉換，
+ * 不然轉出來掉在腳邊的東西會被讀回來的掉落物依 MAX_DROPS 從最舊的擠掉）。
  */
-export function applyCharacter(game: DelveGame, s: CharacterState): void {
+export function applyCharacter(game: DelveGame, s: CharacterState, wardrobe = true): void {
   if (s.appearance) game.setAppearance(s.appearance);
   game.inventory = Inventory.fromJSON(s.inventory);
   game.vanity = Vanity.fromJSON(s.vanity);
@@ -837,7 +844,7 @@ export function applyCharacter(game: DelveGame, s: CharacterState): void {
     game.codex.load(s.extra.codex);
   }
   game.buffs = { ...s.buffs };
-  if (!(validCformat(s.cformat) && s.cformat >= WARDROBE_CFORMAT)) game.migrateWardrobe();
+  if (wardrobe && needsWardrobeMigration(s.cformat)) game.migrateWardrobe();
 }
 
 /** 由存檔位元組（或已解碼資料）還原遊戲。永不丟例外，錯誤以結果回報。 */
@@ -949,7 +956,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     extra: h.extra,
     buffs: h.folk ? h.folk.buffs : {},
     cformat: h.cformat,
-  });
+  }, false);
   // 呼吸 / 燃燒 / 蜂蜜（format 7）；舊格式 = 滿氣、沒著火
   if (h.vitals) {
     game.breath = Math.max(0, Math.min(MAX_BREATH, h.vitals.breath));
@@ -961,6 +968,9 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     if (d.x < 0 || d.y < 0 || d.x > w.width * TILE_SIZE || d.y > w.height * TILE_SIZE) continue;
     game.drops.spawn(d.item, d.count, d.x, d.y, 0, 0, 0, d.gear ? { ...d.gear, affixes: d.gear.affixes.map((a) => ({ ...a })) } : undefined, d.tint);
   }
+  // 舊角色的時裝轉換（spec C6）：放在掉落物讀回來之後（玩家位置已經放好），背包放不下而掉在腳邊的轉換物品
+  // 是最新的掉落物；掉落物總數超過 MAX_DROPS 時被擠掉的是最舊的存檔掉落物，不是轉換出來的東西
+  if (needsWardrobeMigration(h.cformat)) game.migrateWardrobe();
   // 曆法 / 天氣：結冰格（只留在還有水的格）、強制天氣；舊存檔沒有 → 依日期重算結冰
   if (h.env) {
     w.frozen.fill(0);

@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { DelveGame } from './game';
 import { T, W } from './tiles';
 import { FIXED_DT, INV_SIZE } from './constants';
+import { MAX_DROPS } from './entities';
 import { ACCESSORIES, OUTFITS, OUTFIT_PLAIN, normalizeAppearance, type Appearance } from './appearance';
 import { Vanity } from './vanity';
 import { plainLook, type DollLook } from './doll';
@@ -153,6 +154,23 @@ describe('讀舊角色時轉換（applyCharacter）：外觀逐像素不變', ()
     const pc = m.playerCenter();
     expect(Math.abs(d[0].body.x - pc.x)).toBeLessThan(48);
     expect(Math.abs(d[0].body.y - pc.y)).toBeLessThan(48);
+  });
+  it('世界裡已經有 MAX_DROPS 個掉落物 + 背包滿 → 轉出來的東西不會被讀回來的掉落物擠掉（上限只擠掉最舊的存檔掉落物）', () => {
+    const g = arena(GOTH);
+    g.give('iron_chestplate'); g.equipFromInventory(g.inventory.slots.findIndex((s) => s?.item === 'iron_chestplate'));
+    for (let i = 0; i < INV_SIZE; i++) if (!g.inventory.slots[i]) g.inventory.slots[i] = { item: 'dirt', count: 1 };
+    // 300 堆分散的石頭（彼此距離 > 合併距離，不會併成一堆）
+    for (let k = 0; k < MAX_DROPS; k++) g.drops.spawn('stone', 1, 40 + (k % 100) * 20, 200 + Math.floor(k / 100) * 40, 0, 0);
+    expect(g.drops.list).toHaveLength(MAX_DROPS);
+    const m = load(g);
+    const top = m.drops.list.filter((x) => x.item === 'gothic_top');
+    expect(top).toHaveLength(1);
+    expect(top[0].tint).toEqual([3, 7]);
+    // 總數仍守住上限；被擠掉的只有最舊的那一堆存檔掉落物
+    expect(m.drops.list).toHaveLength(MAX_DROPS);
+    expect(m.drops.list.filter((x) => x.item === 'stone')).toHaveLength(MAX_DROPS - 1);
+    const pc = m.playerCenter();
+    expect(Math.abs(top[0].body.x - pc.x)).toBeLessThan(48);
   });
   it('新世界 + 舊角色（planNewWorld）也轉換', () => {
     const { character } = oldCharacter(arena(GOTH));
