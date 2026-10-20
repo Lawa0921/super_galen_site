@@ -659,7 +659,7 @@ def _sprite_tail(reg, aid, img, bbox, small, small_src, canvas, despill_):
 
 
 def _finish_normalized(reg, aid, img, workdir, raw, long_side, canvas, despill_):
-    cut = cutout(img); bbox = cut.getbbox()
+    cut = cutout(img); bbox = _cut_box(cut)   # a stray speck in the cell neither shrinks nor shifts the subject
     if bbox is None:
         final, qa = cut, {'pass': False, 'reasons': ['no foreground']}; scale = None
     else:
@@ -706,6 +706,47 @@ LONG_TOL = 1      # the long edge may miss the target by one art pixel (a thin t
 CENTRE_TOL = 1    # distance between the subject bbox centre and the canvas centre, in art pixels
 
 
+SPECK_MAX = 4   # connected opaque components of at most this many pixels are specks: they never set a subject's bbox
+
+
+def _components(op):
+    """8-connected components of a boolean mask as (sizes, runs): runs[i] = (y, x0, x1, root); row runs joined with a
+    union-find, so a 400 x 400 cell costs a few thousand Python steps, not one per pixel."""
+    runs, parent = [], []
+    def find(i):
+        while parent[i] != i: parent[i] = parent[parent[i]]; i = parent[i]
+        return i
+    prev = []
+    for y in range(op.shape[0]):
+        e = np.flatnonzero(np.diff(np.r_[False, op[y], False]))
+        cur = []
+        for x0, x1 in e.reshape(-1, 2):
+            i = len(parent); parent.append(i); runs.append([y, int(x0), int(x1)]); cur.append(i)
+            for j in prev:   # 8-connected: the runs overlap once each is widened by one pixel
+                if runs[j][1] <= x1 and x0 <= runs[j][2]:
+                    a, b = find(i), find(j)
+                    if a != b: parent[a] = b
+        prev = cur
+    sizes = {}
+    for i, (y, x0, x1) in enumerate(runs):
+        r = find(i); sizes[r] = sizes.get(r, 0) + x1 - x0
+    return sizes, [(y, x0, x1, find(i)) for i, (y, x0, x1) in enumerate(runs)]
+
+
+def speckless_box(op, speck=SPECK_MAX):
+    """(x0, y0, x1, y1) bbox (exclusive ends) of a mask without its specks (components of <= `speck` pixels); when
+    everything is a speck, the plain bbox. None when the mask is empty."""
+    if not op.any(): return None
+    sizes, runs = _components(op)
+    keep = [(y, x0, x1) for y, x0, x1, r in runs if sizes[r] > speck] or [(y, x0, x1) for y, x0, x1, _ in runs]
+    ys = [y for y, _, _ in keep]
+    return min(x0 for _, x0, _ in keep), min(ys), max(x1 for _, _, x1 in keep), max(ys) + 1
+
+
+def _cut_box(cut):
+    return speckless_box(np.asarray(cut.convert('RGBA'))[..., 3] > 0)
+
+
 def short_floor(slot, target):
     """Smallest allowed short edge for `slot` at `target`: ceil(MIN_SHORT[slot] x target)."""
     return math.ceil(round(MIN_SHORT[slot] * target, 6))
@@ -728,7 +769,7 @@ def normalize_subject(cut, target):
     """A cut-out high-resolution cell -> (subject, scale): crop to the alpha bbox, one centre sample (no new colours)
     so the longer side is exactly `target`, one transparent art pixel on every side. scale = raw long side / target.
     Raises ValueError('cell too small to sample') when that would upsample (scale < 1)."""
-    cut = cut.convert('RGBA'); box = cut.getbbox()
+    cut = cut.convert('RGBA'); box = _cut_box(cut)
     if box is None: raise ValueError('no foreground')
     w, h, scale = _subject_dims(box, target)
     return _sample_padded(cut.crop(box), w, h, (0, 0, 0, 0)), scale
@@ -736,11 +777,11 @@ def normalize_subject(cut, target):
 
 def subject_metrics(final, target):
     """Size of the subject on a final PNG (alpha 255 only): long and short bbox edges, mass = opaque / target²,
-    box [x0, y0, x1, y1] (x1, y1 exclusive) and the distance of the bbox centre from the canvas centre."""
+    box [x0, y0, x1, y1] (x1, y1 exclusive; specks of <= SPECK_MAX pixels do not count) and the distance of the bbox
+    centre from the canvas centre."""
     op = np.asarray(final.convert('RGBA'))[..., 3] == 255; H, W = op.shape
     if not op.any(): return {'long': 0, 'short': 0, 'mass': 0.0, 'box': [0, 0, 0, 0], 'centre_off': float(max(W, H))}
-    ys, xs = np.flatnonzero(op.any(axis=1)), np.flatnonzero(op.any(axis=0))
-    x0, y0, x1, y1 = int(xs[0]), int(ys[0]), int(xs[-1]) + 1, int(ys[-1]) + 1
+    x0, y0, x1, y1 = speckless_box(op)
     bw, bh = x1 - x0, y1 - y0
     off = math.hypot((x0 + x1) / 2 - W / 2, (y0 + y1) / 2 - H / 2)
     return {'long': max(bw, bh), 'short': min(bw, bh), 'mass': round(float(op.sum()) / target ** 2, 3),
@@ -830,6 +871,11 @@ DISTINCT_DE = 25.0         # CIE76 between any two tier band colours
 GLOW_HUE, GLOW_SAT_MIN, GLOW_STROKE = 35, 0.30, (1, 2)   # legendary inner glow: soft warm light, 1-2 px thick
 STARLIT_CORNER_MIN = 3          # starlit: opaque pixels in each 5 x 5 corner
 STARLIT_EDGE_COVER_MAX = 0.35   # starlit: share of the outer 2 rows of an edge middle it may cover (the frame shows)
+# Band colour (controller ruling, fix round 1): measured on the chromatic pixels of the whole band span, so a dark outline
+# or a thin gold inner line never becomes "the colour".
+CHROMA_S, CHROMA_V = 0.25, 0.30   # a pixel counts as coloured at S >= 0.25 and V >= 0.30
+HUE_BIN = 30                      # degrees per circular hue bin; the fullest bin seeds the cluster (+- HUE_BIN / 2)
+CHROMA_SHARE_MIN = 0.3            # below this share of coloured pixels in the span: `band colour unreadable`
 
 
 def _hsv(rgb):
@@ -884,10 +930,28 @@ def _edge_middles(a, s, rows):
             'left': a[s:n - s, :rows].swapaxes(0, 1), 'right': a[s:n - s, n - rows:][:, ::-1].swapaxes(0, 1)}
 
 
+def band_colour(px):
+    """The band's own colour from the opaque RGB of its span: keep the chromatic pixels (S >= CHROMA_S, V >= CHROMA_V),
+    bin their hues into HUE_BIN-degree circular bins, seed on the fullest bin and keep the pixels within HUE_BIN / 2 of
+    its circular mean. Returns {hue (circular median), rgb (median), saturation (median), share (chromatic / all)};
+    hue, rgb and saturation are None when nothing is chromatic."""
+    px = np.asarray(px, np.uint8).reshape(-1, 3)
+    if not len(px): return {'hue': None, 'rgb': None, 'saturation': None, 'share': 0.0}
+    h, sat, v = _hsv(px); chroma = (sat >= CHROMA_S) & (v >= CHROMA_V); share = float(chroma.mean())
+    if not chroma.any(): return {'hue': None, 'rgb': None, 'saturation': None, 'share': round(share, 3)}
+    hc = h[chroma]; bins = np.floor(((hc + HUE_BIN / 2) % 360) / HUE_BIN).astype(int)
+    top = np.bincount(bins, minlength=360 // HUE_BIN).argmax(); ang = np.deg2rad(hc[bins == top])
+    seed = float(np.rad2deg(np.arctan2(np.sin(ang).mean(), np.cos(ang).mean())) % 360)
+    near = np.abs((hc - seed + 180) % 360 - 180) <= HUE_BIN / 2
+    cl = px[chroma][near]
+    return {'hue': band_hue(cl), 'rgb': [int(c) for c in np.median(cl, axis=0).round()],
+            'saturation': round(float(np.median(sat[chroma][near])), 3), 'share': round(share, 3)}
+
+
 def _band_measures(arr, s, pad):
     """stroke [min, max] (opaque pixels per edge-middle column inside the slice), reach {edge, corner} (deepest opaque
     pixel from the outer edge; in the corner squares a pixel's depth is min(depth x, depth y)) and the opaque RGB of
-    the outer two band rows (counted from `pad`)."""
+    the band span of the edge middles (rows `pad` to the edge reach)."""
     op = arr[..., 3] == 255; n = op.shape[0]
     bands = _edge_middles(op, s, s)
     cols = np.concatenate([b.sum(axis=0) for b in bands.values()])
@@ -895,7 +959,7 @@ def _band_measures(arr, s, pad):
     d = np.arange(n); dist = np.minimum(d, n - 1 - d) + 1; corner = np.minimum.outer(dist, dist)
     cmask = np.zeros_like(op); cmask[:s, :s] = cmask[:s, n - s:] = cmask[n - s:, :s] = cmask[n - s:, n - s:] = True
     reach = {'edge': max(depth, default=0), 'corner': int(corner[op & cmask].max()) if (op & cmask).any() else 0}
-    px = np.concatenate([b[pad:pad + 2].reshape(-1, 4) for b in _edge_middles(arr, s, s).values()])
+    px = np.concatenate([b[pad:max(reach['edge'], pad + 1)].reshape(-1, 4) for b in _edge_middles(arr, s, s).values()])
     return [int(cols.min()), int(cols.max())], reach, px[px[:, 3] == 255][:, :3]
 
 
@@ -914,7 +978,11 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_, role='frame', hue=Non
       'overlay' (starlit) no closed ring and no band thickness: every opaque pixel a starlight colour, at least
                 STARLIT_CORNER_MIN pixels in each 5 x 5 corner, at most STARLIT_EDGE_COVER_MAX of the outer 2 rows of
                 any edge middle covered (the frame under it must show).
-    QA records stroke [min, max], reach {edge, corner}, stroke_colour (median RGB of the outer two band rows) and hue.
+    QA records stroke [min, max], reach {edge, corner}, and from `band_colour` (the chromatic hue cluster of the band
+    span, so dark outlines and thin inner lines are left out) stroke_colour, hue, saturation and chroma_share; a band
+    with less than CHROMA_SHARE_MIN coloured pixels fails `band colour unreadable` (frame and glow).
+    The overlay's `edge_repeat` is `edge_joint` instead: sparse star dots only fail when the repeated edge middle puts
+    two of them side by side across the joint (a dot in both its first and its last column on the same row).
     """
     entry = reg.data['assets'].get(aid, {})
     cut = cutout(cell); box = cut.getbbox(); reasons = []
@@ -938,11 +1006,15 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_, role='frame', hue=Non
                              and io[:, :si].any(axis=1).all() and io[:, -si:].any(axis=1).all())
     qa['edge_repeat'], qa['edge_steps'] = edge_repeat(final, s, detail=True)
     qa['stroke'], qa['reach'], band_px = _band_measures(arr, s, pad)
-    qa['stroke_colour'] = [int(v) for v in np.median(band_px, axis=0).round()] if len(band_px) else None
-    qa['hue'] = band_hue(band_px) if len(band_px) else None
+    bc = band_colour(band_px)
+    qa.update(stroke_colour=bc['rgb'], hue=bc['hue'], saturation=bc['saturation'], chroma_share=bc['share'])
     if not qa['center_clear']: reasons.append('centre not clear')
     if role != 'overlay' and not qa['ring_closed']: reasons.append('ring not closed')
-    if any(v > SEAM_RATIO_MAX for v in qa['edge_repeat'].values()): reasons.append('edge does not repeat')
+    if role == 'overlay':
+        qa['edge_joint'] = {k: int((m[:, 0] & m[:, -1]).sum()) for k, m in _edge_middles(op, s, s).items()}
+        if any(qa['edge_joint'].values()): reasons.append('edge does not repeat')
+    elif any(v > SEAM_RATIO_MAX for v in qa['edge_repeat'].values()): reasons.append('edge does not repeat')
+    if role != 'overlay' and len(band_px) and bc['share'] < CHROMA_SHARE_MIN: reasons.append('band colour unreadable')
     deep = qa['reach']['corner'] > CORNER_REACH_MAX
     if role == 'frame':
         if qa['stroke'][0] < FRAME_STROKE[0]: reasons.append('band thinner than 2 px')
@@ -956,8 +1028,6 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_, role='frame', hue=Non
     if deep: reasons.append('band reaches into the icon')
     tier = GLOW_HUE if role == 'glow' and hue is None else hue
     if role != 'overlay' and tier is not None:
-        sat = _hsv(band_px)[1] if len(band_px) else np.zeros(0)
-        qa['saturation'] = round(float(np.median(sat)), 3) if sat.size else None
         if qa['hue'] is None or _hue_dist(qa['hue'], tier) > HUE_TOL or qa['saturation'] < (GLOW_SAT_MIN if role == 'glow' else SAT_MIN):
             reasons.append('hue off tier')
     if role == 'overlay':

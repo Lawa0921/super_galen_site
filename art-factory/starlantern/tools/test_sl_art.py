@@ -1191,3 +1191,69 @@ def test_starlit_overlay_needs_all_four_corner_stars(tmp_path):
     q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-starlit', _starlit(drop_corner=True), tmp_path / 'w', tmp_path / 'raw.png',
                      16, 5, role='overlay')
     assert 'starlit corners missing' in q['reasons'], q
+
+
+# --- addendum 2 fix round 1 -----------------------------------------------------------------------------------------------
+OUTLINE_DARK = (22, 16, 30)
+
+
+def _layered_frame(layers, box=160, margin=8):
+    """A square frame whose border is `layers` from the outside in: [(raw px, rgb), ...] (10 raw px = 1 art px at 16)."""
+    arr = np.asarray(canvas(box + 2 * margin, box + 2 * margin)).copy(); r = arr[margin:margin + box, margin:margin + box]
+    d = 0
+    for t, c in layers:
+        r[d:d + t, d:box - d] = c; r[box - d - t:box - d, d:box - d] = c
+        r[d:box - d, d:d + t] = c; r[d:box - d, box - d - t:box - d] = c
+        d += t
+    return Image.fromarray(arr, 'RGB')
+
+
+def test_band_colour_ignores_a_gold_inner_line_on_a_crimson_band(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-unique', _layered_frame([(20, (216, 40, 58)), (10, (232, 186, 52))]),
+                     tmp_path / 'w', tmp_path / 'raw.png', 16, 5, hue=354)
+    assert abs((q['hue'] - 354 + 180) % 360 - 180) <= 3 and q['stroke_colour'] == [216, 40, 58], q
+    assert 'hue off tier' not in q['reasons'] and q['pass'], q
+
+
+def test_band_colour_ignores_a_dark_outer_outline(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-magic', _layered_frame([(10, OUTLINE_DARK), (20, MAGIC_BLUE)]),
+                     tmp_path / 'w', tmp_path / 'raw.png', 16, 5, hue=220)
+    assert q['stroke_colour'] == list(MAGIC_BLUE) and abs(q['hue'] - 220) <= 1 and q['pass'], q
+
+
+def test_band_colour_unreadable_when_the_band_is_mostly_grey_or_dark(tmp_path):
+    for layers in ([(20, (150, 150, 165))], [(20, OUTLINE_DARK)]):
+        q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-magic', _layered_frame(layers), tmp_path / 'w', tmp_path / 'raw.png',
+                         16, 5, hue=220)
+        assert 'band colour unreadable' in q['reasons'] and 'hue off tier' in q['reasons'], (layers, q)
+
+
+def test_subject_bbox_ignores_stray_specks(tmp_path):
+    arr = np.asarray(_shape_cell(300, 280, 'ellipse')).copy()
+    arr[4:6, 4:6] = (40, 120, 200); arr[390:394, 395:396] = (30, 25, 40)        # a 2 x 2 and a 4 x 1 speck in the corners
+    out = A.process_gear_cell(A.Registry(tmp_path / 'r.json'), 'plate', Image.fromarray(arr, 'RGB'), tmp_path / 'w', tmp_path / 'raw.png',
+                              slot='body')
+    for aid, target in (('gear-plate', 22), ('gear-plate-large', 56)):
+        q = out[aid]
+        assert q['subject']['long'] == target and q['subject']['centre_off'] <= 1 and q['pass'], (aid, q)
+        assert q['scale'] == pytest.approx(300 / target, rel=1e-2)
+    final = np.asarray(Image.open(tmp_path / 'w' / 'gear-plate.png')).copy()
+    final[0, 0] = (255, 255, 255, 255)                                            # a speck on the final canvas
+    assert A.subject_metrics(Image.fromarray(final, 'RGBA'), 22)['box'] == out['gear-plate']['subject']['box']
+
+
+def test_speckless_box_keeps_everything_when_only_specks_exist():
+    op = np.zeros((10, 10), bool); op[1, 1] = op[8, 8] = True
+    assert A.speckless_box(op) == (1, 1, 9, 9)
+
+
+def test_starlit_edge_repeat_judges_the_joint_not_the_seam_ratio(tmp_path):
+    def star(dots):
+        img = np.asarray(_starlit()).copy()
+        for y, x in dots: img[8 + y * 10:18 + y * 10, 8 + x * 10:18 + x * 10] = STAR_CORE
+        return Image.fromarray(img, 'RGB')
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A.nine_slice(reg, 'ui-starlit', star([(0, 5)]), tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='overlay')
+    assert 'edge does not repeat' not in q['reasons'] and q['pass'], q             # a dot on the first column of the top edge
+    q = A.nine_slice(reg, 'ui-starlit', star([(0, 5), (0, 10)]), tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='overlay')
+    assert 'edge does not repeat' in q['reasons'] and q['edge_joint']['top'] == 1, q   # first and last: a 2 px dash at the joint
