@@ -613,14 +613,15 @@ def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None, b
     return {aid: _finish(reg, aid, img, kind, workdir, raw, block, height, fit=fit, canvas=canvas)}
 
 
-def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None, fit=None, canvas=None, despill_=False, long_side=None):
+def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None, fit=None, canvas=None, despill_=False, long_side=None,
+            sampler=None):
     """fit=(w, h): opaque art sampled to exactly w x h. canvas=n: a sprite centred on an n x n transparent canvas.
     despill_=True (plan 5d): take key spill out of the outline and fail on spill left anywhere (`magenta spill`).
     long_side=n (plan 5d addendum 2, sprites): `normalize_subject` instead of the block downscale, so the subject's
     longer side is exactly n; the magenta hint is sampled from the raw cell with the same scale. An upsample fails QA
     with `cell too small to sample`."""
     if long_side and kind != 'opaque':
-        return _finish_normalized(reg, aid, img, workdir, raw, long_side, canvas, despill_)
+        return _finish_normalized(reg, aid, img, workdir, raw, long_side, canvas, despill_, sampler)
     if kind == 'opaque' and fit:
         final = fit_opaque(img.convert('RGB'), *fit).convert('RGBA')
         qa = {'pass': True, 'reasons': [], 'seam': seam_score(final),
@@ -680,7 +681,7 @@ def _sprite_tail(reg, aid, img, bbox, small, small_src, canvas, despill_):
     return final, qa
 
 
-def _finish_normalized(reg, aid, img, workdir, raw, long_side, canvas, despill_):
+def _finish_normalized(reg, aid, img, workdir, raw, long_side, canvas, despill_, sampler=None):
     cut = cutout(img); bbox = _cut_box(cut)   # a stray speck in the cell neither shrinks nor shifts the subject
     if bbox is None:
         final, qa = cut, {'pass': False, 'reasons': ['no foreground']}; scale = None
@@ -691,7 +692,7 @@ def _finish_normalized(reg, aid, img, workdir, raw, long_side, canvas, despill_)
             final = Image.new('RGBA', (canvas, canvas) if canvas else cut.size)
             qa = {'pass': False, 'reasons': [str(e)], 'warnings': []}; scale = round((max(bbox[2] - bbox[0], bbox[3] - bbox[1])) / long_side, 3)
         else:
-            small = _sample_padded(cut.crop(bbox), w, h, (0, 0, 0, 0))
+            small = (sampler or _sample_padded)(cut.crop(bbox), w, h, (0, 0, 0, 0))   # gear: centre sample; skills: coverage
             small_src = _sample_padded(img.convert('RGB').crop(bbox), w, h, (255, 0, 255))
             final, qa = _sprite_tail(reg, aid, img, bbox, small, small_src, canvas, despill_)
             scale = round(scale, 3)
@@ -737,7 +738,7 @@ THIN_WEAPON_KINDS = ('spear', 'bow')
 GEAR_CELL_RULES = ('normalize to one long edge; long edge +-LONG_TOL, centre <= CENTRE_TOL; short floor by slot; mass band by '
                    'subject_class(slot, weapon kind): thin weapon kinds (polearms, bows) use the thin band; speckless bbox; '
                    'magenta spill counted in the outline band only; key tint deeper inside counted as residue')
-SKILL_CELL_RULES = ('normalize to one long edge per box (tab, tree); long edge +-LONG_TOL, centre <= CENTRE_TOL; speckless bbox; '
+SKILL_CELL_RULES = ('normalize to one long edge per box (tab, tree) by coverage sampling; long edge +-LONG_TOL, centre <= CENTRE_TOL; speckless bbox; '
                     'magenta spill counted in the outline band only; key tint deeper inside counted as residue')
 NINE_SLICE_RULES = ('cover_sample; centre clear; roles frame / glow / overlay / corners; band colour from the chromatic hue '
                     'cluster; seam ratio (frame, glow) or edge joint (overlay); corners: nothing outside the corners, a whole '
@@ -842,7 +843,7 @@ SPEC_INPUTS = {
                   'GEAR_LARGE', 'GEAR_ICON', 'MAGENTA', 'MAGENTA_SPILL_MAX', 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND',
                   'STRONG_DEFRINGE', '_SHIFTS', 'GEAR_CELL_RULES'),
     'skill-cell': ('SKILL_TAB', 'SKILL_TREE', 'LONG_TOL', 'CENTRE_TOL', 'SPECK_MAX', 'SUBJECT_CLASS', 'MIN_SHORT', 'MASS_BAND',
-                   'THIN_WEAPON_KINDS', 'MAGENTA', 'MAGENTA_SPILL_MAX',
+                   'THIN_WEAPON_KINDS', 'COVER_MIN', 'MAGENTA', 'MAGENTA_SPILL_MAX',
                    'KEY_TINT_INSIDE_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS', 'SKILL_CELL_RULES'),
     'nine-slice': ('FRAME_STROKE', 'EDGE_REACH_MAX', 'CORNER_REACH_MAX', 'HUE_TOL', 'SAT_MIN', 'DISTINCT_DE', 'GLOW_HUE',
                    'GLOW_SAT_MIN', 'GLOW_STROKE', 'STARLIT_CORNER_MIN', 'STARLIT_EDGE_COVER_MAX', 'STAR_MIN_SIDE', 'CHROMA_S',
@@ -906,15 +907,24 @@ def process_gear_cell(reg, gid, cell, workdir, raw, large=GEAR_LARGE, icon=GEAR_
     return out
 
 
+def _cover_padded(img, w, h, fill):
+    """Coverage-sample `img` to w x h (cover_sample: an output pixel is opaque when at least COVER_MIN of its block is, in
+    the block's most common colour; no new colours) and add one art pixel of `fill` on every side."""
+    small = cover_sample(img, w, h); out = Image.new(img.mode, (w + 2, h + 2), fill); out.paste(small, (1, 1))
+    return out
+
+
 def process_skill_cell(reg, sid, cell, workdir, raw, tab=SKILL_TAB, tree=SKILL_TREE):
     """One skill-sheet cell -> two native icons from the same pixels: `icon-<sid>-16` for the skill tab and
     `icon-<sid>-14` for the tree (controller ruling 2026-10-20). Each is sampled once from the high-resolution cell
-    (`normalize_subject`, never an upsample), runs the `_finish` QA (residue, semi alpha, raw-canvas cut, spill, key
+    (bbox normalization, never an upsample) by coverage (`_cover_padded`, ruling 2026-10-20 option a: a 14 / 12 px long
+    edge keeps about one of every 2 x 2 art pixels, and a centre sample would drop 1-art-px lines and sparkles), runs the
+    `_finish` QA (residue, semi alpha, raw-canvas cut, spill, key
     tint) and the size gate without a slot (long edge exact, centred). QA records `subject` and `scale` and is stamped
     with qa_spec('skill-cell'); the registry records kind 'skill-cell' and the source {raw, cell}."""
     out = {}
     for aid, (side, size) in ((f'icon-{sid}-{tab[1]}', tab), (f'icon-{sid}-{tree[1]}', tree)):
-        qa = _finish(reg, aid, cell, 'sprite', workdir, raw, canvas=size, despill_=True, long_side=side)
+        qa = _finish(reg, aid, cell, 'sprite', workdir, raw, canvas=size, despill_=True, long_side=side, sampler=_cover_padded)
         final = Image.open(_final_path(reg.get(aid)['final'])).convert('RGBA')
         qa['subject'] = subject_metrics(final, side)
         if 'cell too small to sample' not in qa['reasons']:

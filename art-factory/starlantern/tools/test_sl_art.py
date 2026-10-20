@@ -1556,3 +1556,28 @@ def test_skill_cell_makes_native_icons_for_the_tab_and_the_tree(tmp_path):
 def test_skill_cell_refuses_to_upsample_a_tiny_subject(tmp_path):
     out = A.process_skill_cell(A.Registry(tmp_path / 'r.json'), 'x', _shape_cell(13, 13), tmp_path / 'w', tmp_path / 'raw.png')   # 13 < 14
     assert 'cell too small to sample' in out['icon-x-16']['reasons'] and not out['icon-x-16']['pass']
+
+
+def _line_cell():
+    """A 28 x 28 art-px subject at 10 raw px per art px on magenta: a 4 art px vertical bar and one 1 art px horizontal line
+    across the whole width (raw rows 180-190, so block centres of a 14 or a 12 px sample step over it)."""
+    arr = np.asarray(canvas(360, 360)).copy()
+    arr[40:320, 160:200] = (40, 120, 200)          # the bar
+    arr[180:190, 40:320] = (40, 120, 200)          # the 1 px line
+    return Image.fromarray(arr, 'RGB')
+
+
+def test_skill_cell_keeps_a_one_pixel_line_at_both_native_sizes(tmp_path):
+    """Controller ruling 2026-10-20 (G3, option a): skill icons are sampled by coverage (cover_sample, as the rarity frames),
+    so a thin line that block centres step over still survives at 14 and 12."""
+    out = A.process_skill_cell(A.Registry(tmp_path / 'r.json'), 'needle', _line_cell(), tmp_path / 'w', tmp_path / 'raw.png')
+    for aid, (side, size) in (('icon-needle-16', A.SKILL_TAB), ('icon-needle-14', A.SKILL_TREE)):
+        op = np.asarray(Image.open(tmp_path / 'w' / f'{aid}.png').convert('RGBA'))[..., 3] == 255
+        assert op.sum(axis=1).max() >= side - 1, (aid, op.sum(axis=1))           # the line is a full row, not just the bar
+        assert out[aid]['pass'], out[aid]
+
+
+def test_the_coverage_ruling_moved_the_skill_stamp_only():
+    assert A.qa_spec('skill-cell') != 'skill-cell:3b64a1fbd098'
+    assert (A.qa_spec('gear-cell'), A.qa_spec('nine-slice')) == ('gear-cell:03c3f55cc7d1', 'nine-slice:eb0a6b65a905')       # gear and frames unchanged
+    assert 'COVER_MIN' in A.SPEC_INPUTS['skill-cell']
