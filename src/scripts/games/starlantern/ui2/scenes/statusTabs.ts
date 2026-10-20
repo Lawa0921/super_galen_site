@@ -374,6 +374,21 @@ function pressTree(ctx: SceneCtx, id: CharacterId, clicked?: string): void {
   treeView.msg = r === 'armed' ? T.ui2.tree.pending : r === 'raised' ? '' : r === 'failed' ? T.ui2.tree.failed : treeReason(r.refused, node);
 }
 
+/**
+ * What the next rank of an active node changes, by the engine's own rule (progression.rankMod), at rank `rank`: power or
+ * a buff's percent (「下一級：威力 100% → 110%」), or, for a skill with nothing to scale, its TP (「下一級：TP −1」) or its
+ * rounds (「下一級：持續 +1 回合」). Null when the next rank changes nothing.
+ */
+export function nextRankText(skill: string, rank: number): string | null {
+  const t = T.ui2.tree;
+  const now = rankMod({ [skill]: rank }, skill), next = rankMod({ [skill]: rank + 1 }, skill);
+  if (!next) return null;
+  if (next.powerPct !== undefined || next.buffPct !== undefined) return t.next(next.powerPct !== undefined ? 'power' : 'buff', ACTIVE_RANK_PCT[rank - 1], ACTIVE_RANK_PCT[rank]);
+  if (next.tpDelta !== undefined) return t.nextMod(t.mod({ tpDelta: next.tpDelta - (now?.tpDelta ?? 0) }));
+  if (next.turnsDelta !== undefined) return t.nextMod(t.mod({ turnsDelta: next.turnsDelta - (now?.turnsDelta ?? 0) }));
+  return null;
+}
+
 /** The notes under the tree for the cursor's node: what it does now and what its next rank changes. */
 function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
   const t = T.ui2.tree;
@@ -391,11 +406,9 @@ function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
       head.push(el('span', { class: 'slx-tree-use', text: s.passive ? T.ui2.status.passive : `${T.ui2.status.targets[s.target]}　${T.ui2.status.tp(skillCost(caster, n.skill))}` }));
       desc = s.desc;
     }
-    // What a further rank scales, by the engine's own rule; a skill with nothing to scale shows no line.
-    const scaled = rankMod({ [n.skill]: 2 }, n.skill);
-    if (rank > 0 && rank < n.maxRank && scaled) {
-      change.push(el('span', { class: 'slx-tree-next', text: t.next(scaled.powerPct !== undefined ? 'power' : 'buff', ACTIVE_RANK_PCT[rank - 1], ACTIVE_RANK_PCT[rank]) }));
-    }
+    // What a further rank changes, by the engine's own rule (power, a percent, TP or rounds).
+    const next = rank > 0 && rank < n.maxRank ? nextRankText(n.skill, rank) : null;
+    if (next) change.push(el('span', { class: 'slx-tree-next', text: next }));
   } else {
     change.push(el('span', { class: 'slx-tree-now', text: t.now(rank > 0 ? t.mod(n.mods![rank - 1]) : t.none) }));
     if (rank < n.maxRank) change.push(el('span', { class: 'slx-tree-next', text: t.nextMod(t.mod(n.mods![rank])) }));

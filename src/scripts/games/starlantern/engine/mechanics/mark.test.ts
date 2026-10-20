@@ -98,6 +98,24 @@ describe("Rin's mark and 還有。", () => {
     expect(hit.party[0].nextCrit).toBeUndefined();
   });
 
+  it('the veil ends with her first blow, which still crits', () => {
+    // Rin (fast) strikes from the veil; the foe (slow) then finds her: the veil is gone the moment she hits.
+    const attacker = foe('e0', { sleep: 0, max: { hp: 99999, tp: 0, atk: 300, def: 20, mag: 20, res: 20, spd: 1 } });
+    const intents = { e0: { kind: 'attack' as const, target: 'rin' } };
+    const struck = resolveRound(makeBattle([rin({ veil: 4, nextCrit: true }), P('scarlet', { max: { hp: 9999, tp: 20, atk: 20, def: 20, mag: 20, res: 20, spd: 1 } })], [attacker], { intents }),
+      { rin: { kind: 'attack', target: 'e0' } }, constRng(0.99));
+    expect(struck.log.find((e) => e.type === 'damage' && e.target === 'e0')).toMatchObject({ crit: true });
+    expect(struck.party[0].veil).toBeUndefined();
+    expect(struck.party[0].hp).toBeLessThan(200);
+    // A skill that hurts ends it too; one that does not (defending, marking) keeps it.
+    const needled = resolveRound(makeBattle([rin({ veil: 4 })], [foe('e0')]), { rin: { kind: 'skill', skill: 'rin-needle', target: 'e0' } }, constRng(0.5));
+    expect(needled.party[0].veil).toBeUndefined();
+    const kept = resolveRound(makeBattle([rin({ veil: 4 })], [foe('e0')]), { rin: { kind: 'skill', skill: 'rin-mark', target: 'e0' } }, constRng(0.5));
+    expect(kept.party[0].veil).toBe(3);
+    const waited = resolveRound(makeBattle([rin({ veil: 4 })], [foe('e0')]), { rin: { kind: 'defend' } }, constRng(0.5));
+    expect(waited.party[0].veil).toBe(3);
+  });
+
   it('when its owner or its target falls', () => {
     // Her mark's foe felled by someone else: the mark goes with it, and no 還有。 for a kill that was not hers.
     const s = makeBattle([rin({ mech: { kind: 'mark', marks: ['e0'], cap: 1 } }), P('noel', { max: { hp: 100, tp: 20, atk: 999, def: 20, mag: 20, res: 20, spd: 99 } })],
@@ -115,5 +133,14 @@ describe("Rin's mark and 還有。", () => {
     const down = resolveRound(makeBattle([rin({ alive: false, hp: 0 }), P('noel')], [foe('e0', { hp: 1 }), foe('e1')]),
       { noel: { kind: 'attack', target: 'e0' } }, constRng(0.5));
     expect(down.log.some((e) => e.type === 'mech' || (e.type === 'act' && e.actor === 'rin'))).toBe(false);
+  });
+});
+
+describe('mechanic cues', () => {
+  it("each mechanic colours its own moment; one nobody claims is plain", async () => {
+    const { cueWord } = await import('./index');
+    expect(cueWord('overload').tone).toBe('heat');
+    expect(cueWord('again').tone).toBe('mark');
+    expect(cueWord('nobody' as never)).toEqual({ tone: 'plain', text: 'nobody' });
   });
 });

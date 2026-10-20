@@ -241,6 +241,8 @@ describe('mechanic colours (plan 8c)', () => {
     const cue = rule('.slx-pm-cue');
     expect(cue).toMatch(/right:/);
     expect(cue).not.toMatch(/left:/);
+    // Over the panel's top edge, so it leaves the HP digits readable while it rises.
+    expect(Number(/top:\s*(-?\d+)px/.exec(cue)?.[1])).toBeLessThan(0);
     expect(z('.slx-pm-cue')).toBeGreaterThan(z('.slx-pm-fx'));
     expect(z('.slx-pm-cue')).toBeGreaterThan(z('.slx-pm-fxa'));
   });

@@ -431,7 +431,7 @@ $slx-ailment: (poison: #b48cff, sleep: #c4c8dc, burn: #ff8a4a, freeze: #8fe8ff, 
 .slx-pm-ail[hidden] { display: none; }
 .slx-ail, .slx-mech { flex: none; padding: 0 1px; font-size: 9px; line-height: 10px; border: 1px solid currentColor; white-space: nowrap; background: rgba($slx-win, 0.92); }
 // Character mechanics (plan 8c): the same word look as an ailment, in their own colours (render/mechStyle.ts MECH_FILL).
-$slx-mech: (heat: #ffb000, expose: #5cffa8, mark: #ff6fd8, veil: #9aa4c8);
+$slx-mech: (heat: #ffb000, expose: #5cffa8, mark: #ff6fd8, veil: #9aa4c8, plain: #f1ead8);
 @each $k, $c in $slx-mech {
   .slx-mech-#{$k} { color: $c; }
 }
@@ -832,9 +832,10 @@ $slx-framed: (magic, rare, epic, legendary, unique, set);
 }
 @keyframes slx-pm-miss { 0% { translate: -6px 0; opacity: 0; } 20% { translate: 0 0; opacity: 1; } 70% { opacity: 1; } 100% { translate: 0 -12px; opacity: 0; } }
 // A mechanic's moment (暴走！, 還有。): a word in its colour rising off the panel like MISS, with no shake; on the name
-// and HP side, over the hit effects (.slx-pm-fx, .slx-pm-fxa) so a blow landing at the same moment never hides it.
+// and HP side, over the panel's top edge (the HP digits stay readable) and over the hit effects (.slx-pm-fx, .slx-pm-fxa)
+// so a blow landing at the same moment never hides it.
 .slx-pm-cue {
-  position: absolute; right: 4px; top: 16px; z-index: 4; pointer-events: none; white-space: nowrap;
+  position: absolute; right: 4px; top: -10px; z-index: 4; pointer-events: none; white-space: nowrap;
   font-size: 14px; line-height: 14px; padding: 1px 3px; border: 1px solid currentColor; background: rgba($slx-win, 0.92);
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
   animation: slx-pm-cue 0.9s ease-out forwards;

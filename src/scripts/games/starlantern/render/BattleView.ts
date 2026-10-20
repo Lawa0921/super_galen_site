@@ -288,7 +288,7 @@ export class BattleView {
     onLine?: (index: number) => void,
   ): Promise<void> {
     for (const cue of battleCues(state.log, (k) => this.defIds.get(k) ?? null, (k) => this.weapons.get(k))) {
-      if (cue.kind === 'wait') { await (cue.keep ? new Promise<void>((r) => setTimeout(r, cue.ms)) : this.wait(cue.ms)); continue; }
+      if (cue.kind === 'wait') { await (cue.keep ? this.hold(cue.ms) : this.wait(cue.ms)); continue; }
       if (cue.kind === 'line') { onLine?.(cue.index); continue; }
       const slot = this.slots.get(cue.key);
       if (cue.kind === 'ultimate') { if (!slot) await onParty?.(cue.key, 'ultimate', cue.name); continue; }
@@ -661,6 +661,14 @@ export class BattleView {
   private later(ms: number, fn: () => void): void {
     const id = setTimeout(() => { this.timers.delete(id); fn(); }, this.fast ? 0 : ms);
     this.timers.add(id);
+  }
+
+  /** A wait kept even in fast mode (a mechanic's moment), on the view's tracked timers so a new fight clears it. */
+  private hold(ms: number): Promise<void> {
+    return new Promise((r) => {
+      const id = setTimeout(() => { this.timers.delete(id); r(); }, ms);
+      this.timers.add(id);
+    });
   }
 
   private wait(ms: number): Promise<void> {

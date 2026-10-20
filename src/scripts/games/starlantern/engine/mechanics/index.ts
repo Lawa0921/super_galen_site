@@ -15,7 +15,8 @@ import { heat } from './heat';
 import { mark } from './mark';
 
 /** A mechanic's colour on the battle screen (`$slx-mech` in the stylesheet, MECH_FILL for the Pixi picture). */
-export type MechTone = 'heat' | 'expose' | 'mark' | 'veil';
+/** `plain`: a moment no mechanic claims, in the ink colour. */
+export type MechTone = 'heat' | 'expose' | 'mark' | 'veil' | 'plain';
 /** A mechanic's word on the battle screen: 「熱度3」, 「暗記」. */
 export interface MechWord { tone: MechTone; text: string }
 /** A mechanic's moment, popped over the member and logged: Noel's overload, Rin's 還有。. */
@@ -126,5 +127,5 @@ export function cueWord(cue: MechCue): MechWord {
     const w = m.cue?.(cue);
     if (w) return w;
   }
-  return { tone: 'mark', text: cue };
+  return { tone: 'plain', text: cue };
 }

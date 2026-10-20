@@ -39,6 +39,10 @@ export const mark: MechModule = {
     if (ctx.battle) pruneMarks(ctx.battle.party, ctx.battle.enemies);
     else if (actor.mech?.kind === 'mark') actor.mech.marks = actor.mech.marks.filter((k) => k !== target.key);
   },
+  after(_s, c, act, def) {
+    // The veil ends with her first blow (a designer ruling on spec §8.9, which gives it no end): that blow keeps its crit.
+    if (c.veil && (act.kind === 'attack' || act.kind === 'ultimate' || !!def?.effects.some((e) => e.kind === 'damage'))) delete c.veil;
+  },
   watch(s, c) {
     // Her living marks as she acts: a felled foe leaves them at once, so they are read before.
     return c.mech?.kind === 'mark' ? c.mech.marks.filter((k) => s.enemies.some((e) => e.key === k && e.alive)) : [];

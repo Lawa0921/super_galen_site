@@ -431,4 +431,17 @@ describe('BattleView mechanic moments (plan 8c)', () => {
       expect(done).toBe(true);
     } finally { vi.useRealTimers(); }
   });
+
+  it("a held moment's timer is the view's own: a new fight clears it", async () => {
+    vi.useFakeTimers();
+    try {
+      const view = new BattleView(true, bank);
+      view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+      void view.play(battle([{ type: 'mech', actor: 'scarlet', cue: 'again' }]), sfx, vi.fn());
+      await vi.advanceTimersByTimeAsync(0);
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
+      view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally { vi.useRealTimers(); }
+  });
 });

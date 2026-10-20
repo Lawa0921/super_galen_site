@@ -171,7 +171,7 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'damage', power: 60, element: 'phys', scale: 'atk', melee: false, hits: 2 }] },
   { id: 'rin-backstab', name: '背刺', owner: 'rin', tp: 4, target: 'enemy', desc: '近身一刺，對受傷的敵人傷害更高',
     effects: [{ kind: 'damage', power: 120, element: 'phys', scale: 'atk', melee: true, wounded: 50 }] },
-  { id: 'rin-veil', name: '隱匿', owner: 'rin', tp: 4, target: 'self', desc: '藏起來。2 回合內，單體攻擊找不到我。下一擊，必定暴擊。',
+  { id: 'rin-veil', name: '隱匿', owner: 'rin', tp: 4, target: 'self', desc: '藏起來。2 回合內，單體攻擊找不到我。出手就現身，那一擊必定暴擊。',
     effects: [{ kind: 'veil', turns: 2 }] },
   { id: 'rin-shadowless', name: '無影', owner: 'rin', tp: 12, target: 'enemy', desc: '無影的一刺，對受傷的敵人傷害大增',
     effects: [{ kind: 'damage', power: 200, element: 'phys', scale: 'atk', melee: true, wounded: 80 }] },
