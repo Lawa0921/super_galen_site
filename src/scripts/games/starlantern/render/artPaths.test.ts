@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../data/enemies';
 import type { BattleEvent } from '../engine/combatant';
-import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, MOODS, MOODS_OF, PUBLISHED_FACES, SPECIAL_MOODS_OF, allArtUrls, art, effectFor, enemyArt, moodFor, parseManifest, tileKey } from './artPaths';
+import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, FRAMED_RARITIES, MOODS, MOODS_OF, PUBLISHED_FACES, SPECIAL_MOODS_OF, allArtUrls, art, effectFor, enemyArt, moodFor, parseManifest, tileKey } from './artPaths';
+import { RARITIES } from '../data/gear';
 
 describe('artPaths', () => {
   it('builds urls under the starlantern base', () => {
@@ -121,6 +122,25 @@ describe('artPaths', () => {
     expect(parseManifest(null).size).toBe(0);
     expect(parseManifest({ version: 2, urls: [art.enemy('slime')] }).size).toBe(0);
     expect(parseManifest({ version: 1, urls: 'nope' }).size).toBe(0);
+  });
+
+  it('epic frame and starlit overlay keys (plan 5g)', () => {
+    expect(art.rarityFrame('epic')).toBe('/assets/games/starlantern/ui/rarity-epic.png');
+    expect(art.rarityFrame('magic')).toBe('/assets/games/starlantern/ui/rarity-magic.png');
+    expect(art.rarityGlow).toBe('/assets/games/starlantern/ui/glow-legendary.png');
+    expect(art.starlitOverlay).toBe('/assets/games/starlantern/ui/starlit.png');
+    expect(FRAMED_RARITIES).toEqual(['magic', 'rare', 'epic', 'legendary', 'unique', 'set']);
+    expect(FRAMED_RARITIES).toEqual(RARITIES.filter((r) => r !== 'common'));
+    // The art contract names the same runtime paths for the same registry ids (ui-rarity-<r>, ui-starlit).
+    const contract = readFileSync('art-factory/starlantern/contract.md', 'utf8');
+    expect(contract).toContain('`ui-rarity-<magic\\|rare\\|epic\\|legendary\\|unique\\|set>` | `/assets/games/starlantern/ui/rarity-<r>.png`');
+    expect(contract).toContain(`\`ui-starlit\` | \`${art.starlitOverlay}\``);
+    expect(contract).toContain(`\`ui-glow-legendary\` | \`${art.rarityGlow}\``);
+  });
+
+  it('unpublished frames, the legend glow and the starlit overlay are never listed', () => {
+    const urls = allArtUrls();
+    for (const u of [...FRAMED_RARITIES.map((r) => art.rarityFrame(r)), art.rarityGlow, art.starlitOverlay]) expect(urls, u).not.toContain(u);
   });
 });
 

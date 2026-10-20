@@ -1,13 +1,14 @@
 import { CHARACTER_IDS } from '../data/characters';
 import { ENEMIES } from '../data/enemies';
 import { EQUIPMENT, WEAPON_KINDS } from '../data/equipment';
+import { RARITIES } from '../data/gear';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
 import { REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { BattleEvent } from '../engine/combatant';
 import type { Dir, Tile } from '../engine/map';
-import type { CharacterId, FxKey, WeaponKind } from '../engine/types';
+import type { CharacterId, FxKey, Rarity, WeaponKind } from '../engine/types';
 
 export const ART_BASE = '/assets/games/starlantern';
 export const MANIFEST_URL = `${ART_BASE}/manifest.json`;
@@ -88,7 +89,23 @@ export const art = {
   fog: `${ART_BASE}/map/fog.png`,
   /** Event marker art for the map (one cell, transparent). */
   eventTile: (k: EventTileKey) => `${ART_BASE}/tiles/event-${k}.png`,
+  /**
+   * Rarity frames (plan 5d Task 5; registry `ui-rarity-<r>`): nine-slice 16 x 16, slice 5, clear centre. Not in
+   * allArtUrls until the art plan publishes them, so nothing requests them before then.
+   */
+  rarityFrame: (r: FramedRarity) => `${ART_BASE}/ui/rarity-${r}.png`,
+  /** The legend tier's in-cell glow (registry `ui-glow-legendary`): 16 x 16, slice 5, under the icon. Unpublished. */
+  rarityGlow: `${ART_BASE}/ui/glow-legendary.png`,
+  /**
+   * The starlit overlay (plan 5g; registry `ui-starlit`): 16 x 16, slice 5, stars in the corners drawn inside the cell
+   * over the frame, only on starlit legendary, unique and set pieces. Unpublished.
+   */
+  starlitOverlay: `${ART_BASE}/ui/starlit.png`,
 };
+
+/** Every rarity but common has a frame (plan 5d Task 5); epic comes with plan 5g through RARITIES. */
+export type FramedRarity = Exclude<Rarity, 'common'>;
+export const FRAMED_RARITIES: FramedRarity[] = RARITIES.filter((r): r is FramedRarity => r !== 'common');
 
 /** Event tiles with art of their own in the art factory; a chest uses its terrain's chest tile instead. */
 export type EventTileKey = 'fountain' | 'merchant' | 'altar' | 'elite' | 'vault'
