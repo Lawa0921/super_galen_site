@@ -2469,8 +2469,7 @@
     },
     "icon-iron-sword": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/iron-sword.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-iron-sword.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2487,7 +2486,10 @@
           37
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/iron-sword.png",
+      "retired_reason": "replaced by gear-iron-sword (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-hunter-bow": {
       "kind": "sprite",
@@ -6621,7 +6623,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -6632,7 +6634,8 @@
       "batch": "gear-5d-sample",
       "slot": "weapon",
       "weapon_kind": "sword",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/iron-sword-large.png"
     },
     "gear-iron-sword": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-iron-sword.png",
@@ -6666,7 +6669,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -6677,7 +6680,8 @@
       "batch": "gear-5d-sample",
       "slot": "weapon",
       "weapon_kind": "sword",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/iron-sword.png"
     },
     "gear-wooden-buckler-large": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-wooden-buckler-large.png",
@@ -6711,7 +6715,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -6721,7 +6725,8 @@
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
       "slot": "offhand",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/wooden-buckler-large.png"
     },
     "gear-wooden-buckler": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-wooden-buckler.png",
@@ -6755,7 +6760,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -6765,7 +6770,8 @@
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
       "slot": "offhand",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/wooden-buckler.png"
     },
     "gear-leather-cap-large": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-leather-cap-large.png",
@@ -6799,7 +6805,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a5.png",
@@ -6809,7 +6815,8 @@
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
       "slot": "head",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/leather-cap-large.png"
     },
     "gear-leather-cap": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-leather-cap.png",
@@ -6843,7 +6850,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a5.png",
@@ -6853,7 +6860,8 @@
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
       "slot": "head",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/leather-cap.png"
     },
     "gear-lg-chizuru-large": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-lg-chizuru-large.png",
@@ -6887,7 +6895,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a5.png",
@@ -6898,7 +6906,8 @@
       "batch": "gear-5d-sample",
       "slot": "weapon",
       "weapon_kind": "spear",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-chizuru-large.png"
     },
     "gear-lg-chizuru": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-lg-chizuru.png",
@@ -6932,7 +6941,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a5.png",
@@ -6943,7 +6952,8 @@
       "batch": "gear-5d-sample",
       "slot": "weapon",
       "weapon_kind": "spear",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-chizuru.png"
     },
     "gear-blaze-heart-sword-large": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-blaze-heart-sword-large.png",
@@ -6977,7 +6987,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -6988,7 +6998,8 @@
       "batch": "gear-5d-sample",
       "slot": "weapon",
       "weapon_kind": "sword",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/blaze-heart-sword-large.png"
     },
     "gear-blaze-heart-sword": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-blaze-heart-sword.png",
@@ -7022,7 +7033,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -7033,7 +7044,8 @@
       "batch": "gear-5d-sample",
       "slot": "weapon",
       "weapon_kind": "sword",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/blaze-heart-sword.png"
     },
     "gear-iron-unbroken-shield-large": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-iron-unbroken-shield-large.png",
@@ -7067,7 +7079,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -7077,7 +7089,8 @@
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
       "slot": "offhand",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/iron-unbroken-shield-large.png"
     },
     "gear-iron-unbroken-shield": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-iron-unbroken-shield.png",
@@ -7111,7 +7124,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -7121,7 +7134,8 @@
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
       "slot": "offhand",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/iron-unbroken-shield.png"
     },
     "gear-set-blaze-weapon-large": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-set-blaze-weapon-large.png",
@@ -7155,7 +7169,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -7166,7 +7180,8 @@
       "batch": "gear-5d-sample",
       "slot": "weapon",
       "weapon_kind": "sword",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-blaze-weapon-large.png"
     },
     "gear-set-blaze-weapon": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-set-blaze-weapon.png",
@@ -7200,7 +7215,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -7211,7 +7226,8 @@
       "batch": "gear-5d-sample",
       "slot": "weapon",
       "weapon_kind": "sword",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-blaze-weapon.png"
     },
     "gear-set-blaze-body-large": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-set-blaze-body-large.png",
@@ -7245,7 +7261,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -7255,7 +7271,8 @@
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
       "slot": "body",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-blaze-body-large.png"
     },
     "gear-set-blaze-body": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-set-blaze-body.png",
@@ -7289,7 +7306,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -7299,7 +7316,8 @@
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
       "slot": "body",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-blaze-body.png"
     },
     "gear-set-blaze-hands-large": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-set-blaze-hands-large.png",
@@ -7333,7 +7351,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -7343,7 +7361,8 @@
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
       "slot": "hands",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-blaze-hands-large.png"
     },
     "gear-set-blaze-hands": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-set-blaze-hands.png",
@@ -7377,7 +7396,7 @@
         ],
         "spec": "gear-cell:6a8d64bae98b"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a9.png",
@@ -7387,7 +7406,8 @@
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
       "slot": "hands",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-blaze-hands.png"
     },
     "icon-essence-common": {
       "final": "art-factory/starlantern/work/sheet-mat-1/icon-essence-common.png",
@@ -7407,11 +7427,12 @@
           34
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a3",
       "source_id": "sheet-mat-1",
       "batch": "gear-5d-sample",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/icon/essence-common.png"
     },
     "icon-essence-magic": {
       "final": "art-factory/starlantern/work/sheet-mat-1/icon-essence-magic.png",
@@ -7431,11 +7452,12 @@
           34
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a3",
       "source_id": "sheet-mat-1",
       "batch": "gear-5d-sample",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/icon/essence-magic.png"
     },
     "icon-essence-rare": {
       "final": "art-factory/starlantern/work/sheet-mat-1/icon-essence-rare.png",
@@ -7455,11 +7477,12 @@
           34
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a3",
       "source_id": "sheet-mat-1",
       "batch": "gear-5d-sample",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/icon/essence-rare.png"
     },
     "icon-essence-legendary": {
       "final": "art-factory/starlantern/work/sheet-mat-1/icon-essence-legendary.png",
@@ -7479,11 +7502,12 @@
           34
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a3",
       "source_id": "sheet-mat-1",
       "batch": "gear-5d-sample",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/icon/essence-legendary.png"
     },
     "icon-star-tear": {
       "final": "art-factory/starlantern/work/sheet-mat-1/icon-star-tear.png",
@@ -7503,11 +7527,12 @@
           35
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a3",
       "source_id": "sheet-mat-1",
       "batch": "gear-5d-sample",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/icon/star-tear.png"
     },
     "icon-king-scale": {
       "final": "art-factory/starlantern/work/sheet-mat-1/icon-king-scale.png",
@@ -7527,11 +7552,12 @@
           35
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a2",
       "source_id": "sheet-mat-1",
       "batch": "gear-5d-sample",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/icon/king-scale.png"
     },
     "scene-forge": {
       "final": "art-factory/starlantern/work/scene-forge/scene-forge.png",
@@ -7546,14 +7572,15 @@
           235
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a2",
       "source_id": "scene-forge",
       "batch": "gear-5d-sample",
       "rejected_attempts": {
         "a1": "未採用：右側三分之一有窗、木桶、吊鏈，比 a2 雜；a2 右側是素面石牆，和道具店場景的人物站位留白一致"
       },
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/scene/forge.png"
     },
     "npc-forge": {
       "allow_edge": [
@@ -7578,14 +7605,15 @@
           180
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "npc-forge",
       "batch": "gear-5d-sample",
       "rejected_attempts": {
         "a2": "未採用：右手肘被畫布右緣切到（subject cut by the canvas edge）"
       },
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/npc/forge.png"
     },
     "ui-rarity-magic": {
       "defringe": "strong",
@@ -7653,7 +7681,7 @@
         "spec": "nine-slice:2ab30baae894",
         "block": 21.062
       },
-      "status": "approved",
+      "status": "published",
       "kind": "nine-slice",
       "slice": 5,
       "source": {
@@ -7664,7 +7692,8 @@
       "source_id": "sheet-rarity-frames-2",
       "batch": "gear-5d-sample",
       "role": "frame",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/ui/rarity-magic.png"
     },
     "ui-rarity-rare": {
       "defringe": "strong",
@@ -7732,7 +7761,7 @@
         "spec": "nine-slice:2ab30baae894",
         "block": 20.0
       },
-      "status": "approved",
+      "status": "published",
       "kind": "nine-slice",
       "slice": 5,
       "source": {
@@ -7743,7 +7772,8 @@
       "source_id": "sheet-rarity-frames-2",
       "batch": "gear-5d-sample",
       "role": "frame",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/ui/rarity-rare.png"
     },
     "ui-rarity-legendary": {
       "defringe": "strong",
@@ -7811,7 +7841,7 @@
         "spec": "nine-slice:2ab30baae894",
         "block": 21.438
       },
-      "status": "approved",
+      "status": "published",
       "kind": "nine-slice",
       "slice": 5,
       "source": {
@@ -7822,7 +7852,8 @@
       "source_id": "sheet-rarity-frames-2",
       "batch": "gear-5d-sample",
       "role": "frame",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/ui/rarity-legendary.png"
     },
     "ui-rarity-unique": {
       "defringe": "strong",
@@ -7890,7 +7921,7 @@
         "spec": "nine-slice:2ab30baae894",
         "block": 20.188
       },
-      "status": "approved",
+      "status": "published",
       "kind": "nine-slice",
       "slice": 5,
       "source": {
@@ -7901,7 +7932,8 @@
       "source_id": "sheet-rarity-frames-2",
       "batch": "gear-5d-sample",
       "role": "frame",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/ui/rarity-unique.png"
     },
     "ui-rarity-set": {
       "defringe": "strong",
@@ -7969,7 +8001,7 @@
         "spec": "nine-slice:2ab30baae894",
         "block": 20.0
       },
-      "status": "approved",
+      "status": "published",
       "kind": "nine-slice",
       "slice": 5,
       "source": {
@@ -7980,7 +8012,8 @@
       "source_id": "sheet-rarity-frames-2",
       "batch": "gear-5d-sample",
       "role": "frame",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/ui/rarity-set.png"
     },
     "ui-glow-legendary": {
       "defringe": "strong",
@@ -8048,7 +8081,7 @@
         "spec": "nine-slice:2ab30baae894",
         "block": 25.417
       },
-      "status": "approved",
+      "status": "published",
       "kind": "nine-slice",
       "slice": 5,
       "source": {
@@ -8059,7 +8092,8 @@
       "source_id": "sheet-rarity-frames-2",
       "batch": "gear-5d-sample",
       "role": "glow",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/ui/glow-legendary.png"
     },
     "sheet-gear-1": {
       "rejected_attempts": {
@@ -8154,7 +8188,7 @@
         "spec": "nine-slice:2ab30baae894",
         "block": 20.812
       },
-      "status": "approved",
+      "status": "published",
       "kind": "nine-slice",
       "slice": 5,
       "role": "frame",
@@ -8165,7 +8199,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-rarity-frames-2",
       "batch": "gear-5d-sample",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/ui/rarity-epic.png"
     },
     "ui-starlit": {
       "defringe": "strong",
@@ -8276,7 +8311,7 @@
         "spec": "nine-slice:2ab30baae894",
         "block": 72.143
       },
-      "status": "approved",
+      "status": "published",
       "kind": "nine-slice",
       "slice": 5,
       "role": "corners",
@@ -8287,7 +8322,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-starlit-1",
       "batch": "gear-5d-sample",
-      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20"
+      "approved_by": "可以 / 開始處理吧（G1 第二版：1 可以、2 可以、3 A 圓點光、4 可以）2026-10-20",
+      "runtime": "/assets/games/starlantern/ui/starlit.png"
     },
     "sheet-rarity-frames-2": {
       "rejected_attempts": {
@@ -8308,6 +8344,75 @@
         "a1": "畫成了對角也填滿的菱形，看起來像圓形寶石，不是尖的角星",
         "a3": "十字的形狀畫對了，但整張畫布畫成約 16.8 格寬（應該是 14 格），縮成 16 格時尖端掉在兩格之間被丟掉，只剩一點"
       }
+    },
+    "gear-blaze-heart-sword-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-blaze-heart-sword-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-1/gear-blaze-heart-sword.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 266,
+        "source_opaque": 158
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-blaze-heart-sword"
+      },
+      "approved_by": "derived from gear-blaze-heart-sword",
+      "batch": "gear-5d-sample",
+      "source_id": "gear-blaze-heart-sword",
+      "runtime": "/assets/games/starlantern/gear/blaze-heart-sword-silhouette.png"
+    },
+    "gear-iron-unbroken-shield-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-iron-unbroken-shield-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-1/gear-iron-unbroken-shield.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 371,
+        "source_opaque": 289
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-iron-unbroken-shield"
+      },
+      "approved_by": "derived from gear-iron-unbroken-shield",
+      "batch": "gear-5d-sample",
+      "source_id": "gear-iron-unbroken-shield",
+      "runtime": "/assets/games/starlantern/gear/iron-unbroken-shield-silhouette.png"
+    },
+    "gear-set-blaze-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-set-blaze-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-1/gear-set-blaze-weapon.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 268,
+        "source_opaque": 165
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-set-blaze-weapon"
+      },
+      "approved_by": "derived from gear-set-blaze-weapon",
+      "batch": "gear-5d-sample",
+      "source_id": "gear-set-blaze-weapon",
+      "runtime": "/assets/games/starlantern/gear/set-blaze-silhouette.png"
     }
   },
   "requa_log": [

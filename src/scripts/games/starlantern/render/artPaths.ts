@@ -125,12 +125,21 @@ const SILHOUETTE_IDS = (): string[] => [
   ...Object.keys(SETS),
 ];
 
+/** Gear with its art published (`gear/<id>.png` and `-large`): plan 5d's G1 sample, published in Task 8 (2026-10-20). */
+const PUBLISHED_GEAR: ReadonlySet<string> = new Set([
+  'iron-sword', 'wooden-buckler', 'leather-cap', 'lg-chizuru', 'blaze-heart-sword', 'iron-unbroken-shield',
+  'set-blaze-weapon', 'set-blaze-body', 'set-blaze-hands',
+]);
+/** Codex silhouettes published with them (made from the published icons; a set's from its first piece). */
+const PUBLISHED_SILHOUETTES: ReadonlySet<string> = new Set(['blaze-heart-sword', 'iron-unbroken-shield', 'set-blaze']);
+
 /**
- * The 15 bases whose old icon (`icon/<id>.png`, sheet-icons-3) is still published. Plan 5d redraws every base under
+ * The bases whose old icon (`icon/<id>.png`, sheet-icons-3) is still published. Plan 5d redraws every base under
  * `gear/`; each old icon stays listed until its new art is published and the old one retires (plan 5d Tasks 8 and 10).
+ * iron-sword retired with the G1 sample (Task 8).
  */
 export const RETIRING_ICONS: ReadonlySet<string> = new Set([
-  'wooden-staff', 'iron-sword', 'hunter-bow', 'thorn-spear', 'crystal-blade', 'frost-staff', 'star-saber',
+  'wooden-staff', 'hunter-bow', 'thorn-spear', 'crystal-blade', 'frost-staff', 'star-saber',
   'cloth-robe', 'leather-vest', 'scale-mail', 'dusk-mantle', 'moss-charm', 'bat-earring', 'crystal-pendant', 'gear-ring',
 ]);
 
@@ -193,18 +202,14 @@ export function allArtUrls(): string[] {
   const NO_ICON_YET = new Set<string | null>([
     ...Object.values(REGIONS).map((r) => r.material),
     // plan 5d: gear art (`gear/<id>.png` and `-large`) for every base and special waits for its art batch, and so does
-    // any piece merged into SPECIALS later (a roster unique) until its own batch publishes it. A publish takes its ids
-    // out of this spread (plan 5d Tasks 8 and 10). The bases no longer list `icon/<id>.png`: see RETIRING_ICONS.
-    ...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS),
-    // plan 5d: the gate codex's silhouettes (`silhouette:<id>`), the rarity frames (epic with plan 5g), the legend glow,
-    // the starlit overlay (plan 5g), the forge scene and Doran
-    ...SILHOUETTE_IDS().map((id) => `silhouette:${id}`),
-    ...FRAMED_RARITIES.map((r) => `ui:rarity-${r}`), 'ui:glow-legendary', 'ui:starlit',
-    'scene:forge', 'npc:forge', 'npc:forge-happy',
-    // plan 5a: rare materials have no icon yet
-    'star-tear', 'king-scale',
-    // plan 5c: the four essences have no icon yet
-    'essence-common', 'essence-magic', 'essence-rare', 'essence-legendary',
+    // any piece merged into SPECIALS later (a roster unique) until its own batch publishes it. A publish adds its ids to
+    // PUBLISHED_GEAR (plan 5d Tasks 8 and 10). The bases no longer list `icon/<id>.png`: see RETIRING_ICONS.
+    ...[...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)].filter((id) => !PUBLISHED_GEAR.has(id)),
+    // plan 5d: the gate codex's silhouettes (`silhouette:<id>`) not published yet, and Doran's smile (main batch). The
+    // frames, the legend glow, the starlit overlay, the forge, Doran, the essences, star-tear and king-scale were
+    // published with the G1 sample (Task 8).
+    ...SILHOUETTE_IDS().filter((id) => !PUBLISHED_SILHOUETTES.has(id)).map((id) => `silhouette:${id}`),
+    'npc:forge-happy',
     // plan 5b: the skill-tree skills have no icon yet
     'flame-wave', 'inferno', 'frost-bind', 'blizzard', 'judgement',
     'spiral-spear', 'thousand-spear', 'sacred-sake', 'great-barrier', 'thunder-thrust', 'heaven-spear',

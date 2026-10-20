@@ -16,7 +16,8 @@ describe('published starlantern art', () => {
 
   it('lists every asset the registry marks as published', () => {
     const published = Object.values(registry.assets).filter((a) => a.status === 'published' && a.runtime).map((a) => a.runtime!);
-    expect(published.length).toBeGreaterThanOrEqual(166);
+    // Plan 5d Task 8: 246 + the G1 sample (34 parts + 3 silhouettes - icon/iron-sword retired) = 282.
+    expect(published.length).toBeGreaterThanOrEqual(282);
     for (const u of published) expect(manifest.has(u), u).toBe(true);
   });
 });

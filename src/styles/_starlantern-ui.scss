@@ -1069,6 +1069,11 @@ $slx-starlit: #bff6ff;
 .slx-codex-silhouette, .slx-codex-icon { flex: none; align-self: center; image-rendering: pixelated; }
 .slx-codex-icon { width: 26px; height: 26px; }
 .slx-codex-silhouette { width: 28px; height: 28px; }
+// The pictures stand in one strip at the right of the 限定裝備 heading (gate.ts gearHead), in list order. With them there,
+// the names below read as notes (10px) so the 28px heading still leaves room for all three names in the card.
+.slx-portal-gear-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.slx-codex-pics { display: flex; gap: 2px; }
+.slx-portal-gear:has(.slx-codex-pics) .slx-codex-item { font-size: 10px; line-height: 12px; }
 .slx-portal-general { margin-top: 2px; color: #c9b8ff; }
 // A dim note like the others (10px), so the card keeps a few px of room under its gear list.
 .slx-portal-depth { margin-top: auto; padding-top: 1px; color: $slx-dim; font-size: 10px; line-height: 12px; text-align: right; }

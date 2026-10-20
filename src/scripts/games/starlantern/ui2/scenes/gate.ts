@@ -63,20 +63,38 @@ class PortalCards {
     this.render();
   }
 
-  /**
-   * One region-only item: its name until obtained is dimmed with 「（未取得）」; once in the codex it shows rarity and its
-   * first line. Its picture, once published: the gear icon when obtained (a set shows its first piece), else only its
-   * silhouette file, so the real icon is never requested before the piece is found.
-   */
-  private gearItem(id: string): HTMLElement {
-    const G = T.ui2.gate;
+  /** A region-only item's line: its name until obtained is dimmed with 「（未取得）」; once in the codex it shows rarity. */
+  private gearName(id: string): string {
     const rarity = SPECIALS[id]?.rarity ?? 'set';
     const known = this.ctx.game.state.codex.includes(id);
-    const src = known ? art.gear(codexArtId(id)) : art.gearSilhouette(id);
-    const pic = this.ctx.art.has(src) ? [el('img', { class: known ? 'slx-codex-icon' : 'slx-codex-silhouette', attrs: { src, alt: '' } })] : [];
-    const name = known && rarity !== 'set' ? `${codexName(id)}・${T.rarity[rarity]}` : known ? codexName(id) : G.unknownGear(codexName(id));
-    const body = [el('span', { class: 'slx-codex-name', text: name })];
-    return el('div', { class: `slx-codex-item slx-rarity-${rarity}${known ? '' : ' slx-codex-unknown'}`, attrs: { 'data-special': id } }, [...pic, ...body]);
+    return known && rarity !== 'set' ? `${codexName(id)}・${T.rarity[rarity]}` : known ? codexName(id) : T.ui2.gate.unknownGear(codexName(id));
+  }
+
+  private gearItem(id: string): HTMLElement {
+    const rarity = SPECIALS[id]?.rarity ?? 'set';
+    const known = this.ctx.game.state.codex.includes(id);
+    return el('div', { class: `slx-codex-item slx-rarity-${rarity}${known ? '' : ' slx-codex-unknown'}`, attrs: { 'data-special': id } },
+      [el('span', { class: 'slx-codex-name', text: this.gearName(id) })]);
+  }
+
+  /**
+   * The 限定裝備 heading with the pictures of the region's items in one strip, in list order, each named on hover. A
+   * picture once published: the gear icon when obtained (a set shows its first piece), else only its silhouette file, so
+   * the real icon is never requested before the piece is found. One strip, not a 28px picture on every name line, so all
+   * three names still fit the card.
+   */
+  private gearHead(ids: string[]): HTMLElement {
+    const known = (id: string) => this.ctx.game.state.codex.includes(id);
+    const pics = ids.flatMap((id) => {
+      const src = known(id) ? art.gear(codexArtId(id)) : art.gearSilhouette(id);
+      return this.ctx.art.has(src)
+        ? [el('img', { class: known(id) ? 'slx-codex-icon' : 'slx-codex-silhouette', attrs: { src, alt: '', title: this.gearName(id), 'data-special': id } })]
+        : [];
+    });
+    return el('div', { class: 'slx-portal-gear-head' }, [
+      el('div', { class: 'slx-portal-label', text: T.ui2.gate.gear }),
+      ...(pics.length ? [el('div', { class: 'slx-codex-pics' }, pics)] : []),
+    ]);
   }
 
   /** The mainline's summary: the general legendaries drop anywhere, so they are counted, not listed as this portal's own. */
@@ -141,7 +159,7 @@ class PortalCards {
       el('div', { class: 'slx-portal-drop', text: G.drop(r.material ? MATERIALS[r.material]?.name ?? r.material : G.commonDrop) }),
       ...(r.material ? [this.dropUse(r.material)] : []),
       ...(p.region === 'mainline' ? [this.generalLine()] : [
-        el('div', { class: 'slx-portal-gear' }, [el('div', { class: 'slx-portal-label', text: G.gear }), ...gearIds(p.region).map((id) => this.gearItem(id))]),
+        el('div', { class: 'slx-portal-gear' }, [this.gearHead(gearIds(p.region)), ...gearIds(p.region).map((id) => this.gearItem(id))]),
         el('div', { class: 'slx-codex-more', text: G.moreGear, attrs: { hidden: '' } }),
       ]),
       el('div', { class: 'slx-portal-depth', text: reached > 0 ? G.deepest(reached) : G.notYet }),

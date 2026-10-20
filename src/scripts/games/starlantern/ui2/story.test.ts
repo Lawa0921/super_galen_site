@@ -131,7 +131,8 @@ describe('speakerOf', () => {
     expect(speakerOf('bellkeeper', game.state, ART)).toEqual({ name: '鐘守' });
     expect(speakerOf('merchant', game.state, ART)).toEqual({ name: '流浪商人' });
     expect(speakerOf('narrator', game.state, ART)).toEqual({ name: '' });
-    expect(speakerOf('doran', game.state, ART).face).toBeUndefined();           // no published forge portrait
+    expect(speakerOf('doran', game.state, ART).face).toBe(art.npc('forge', 'normal'));   // published with plan 5d's G1 sample
+    expect(speakerOf('doran', game.state, { has: (u) => u !== art.npc('forge', 'normal') }).face).toBeUndefined();   // without it, a name
     expect(speakerOf('anna', game.state, ART).face).toBe(art.npc('guild', 'normal'));
     stage('chat:liz:1', [{ who: 'bellkeeper', text: '叮' }, { who: 'narrator', text: '靜' }]);
     const p = playScene(talk, 'chat:liz:1', ctx);

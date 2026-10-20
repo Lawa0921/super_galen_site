@@ -268,7 +268,9 @@ describe('GateScene: region-only gear on the portal cards', () => {
   });
 
   it('an unobtained piece loads only its silhouette file; an obtained one its gear icon', () => {
-    const pic = (r: ReturnType<typeof setup>, id: string) => r.root.querySelector<HTMLImageElement>(`[data-special="${id}"] img`);
+    // The pictures stand in one strip on the 限定裝備 heading line, in list order (a 28px picture on every name line would
+    // push the third name out of the card; the names stay below as text).
+    const pic = (r: ReturnType<typeof setup>, id: string) => r.root.querySelector<HTMLImageElement>(`.slx-portal-gear-head .slx-codex-pics img[data-special="${id}"]`);
     expect(setup().root.querySelector('.slx-codex-silhouette, .slx-codex-icon')).toBeNull();
     // Its real icon published, its silhouette not: no picture at all, so the unobtained piece is never shown early.
     const iconOnly = setup(undefined, { has: (u) => u === art.gear('blaze-ember-ring') || u === art.icon('blaze-ember-ring') });
@@ -282,9 +284,17 @@ describe('GateScene: region-only gear on the portal cards', () => {
     expect(pic(known, 'blaze-ember-ring')!.className).toBe('slx-codex-icon');
     expect(pic(known, 'blaze-ember-ring')!.getAttribute('src')).toBe(art.gear(codexArtId('blaze-ember-ring')));
     expect(pic(known, 'set-blaze')!.getAttribute('src')).toBe(art.gear('set-blaze-weapon'));
+    // Each picture names its piece on hover; the names list below is unchanged and carries no picture of its own.
+    expect(pic(unknown, 'set-blaze')!.getAttribute('title')).toBe(unknown.root.querySelector('[data-special="set-blaze"].slx-codex-item')!.textContent);
+    expect(unknown.root.querySelector('.slx-codex-item img')).toBeNull();
+    const blaze = unknown.root.querySelector('.slx-portal-blaze')!;
+    const order = [...blaze.querySelectorAll('.slx-codex-pics img')].map((i) => i.getAttribute('data-special'));
+    expect(order).toEqual([...blaze.querySelectorAll('.slx-codex-item')].map((i) => i.getAttribute('data-special')));
+    expect(blaze.querySelector('.slx-portal-gear-head > .slx-portal-label')!.textContent).toBe(T.ui2.gate.gear);
     // Obtained but its gear art not published: the name alone.
     const knownNoArt = setup((g) => { g.state.codex.push('blaze-ember-ring'); }, { has: (u) => u === art.gearSilhouette('blaze-ember-ring') });
     expect(pic(knownNoArt, 'blaze-ember-ring')).toBeNull();
+    expect(setup().root.querySelector('.slx-codex-pics')).toBeNull();          // no art at all: no empty strip
   });
 });
 

@@ -18,10 +18,13 @@ describe('artPaths', () => {
   it('lists one url per asset with no duplicates', () => {
     const urls = allArtUrls();
     // 237 + the hero's standee and 8 faces (plan 6a Task 5: he joins the roster with his art published) = 246
-    expect(urls).toHaveLength(246);
-    expect(new Set(urls).size).toBe(246);
+    // + plan 5d's G1 sample (Task 8): 34 parts (9 gear x 2, 6 materials, 6 frames, glow, starlit, forge, Doran)
+    //   + 3 silhouettes - 1 retired old icon (icon/iron-sword.png) = 246 + 36 = 282
+    expect(urls).toHaveLength(282);
+    expect(new Set(urls).size).toBe(282);
     expect(urls).toContain(art.fxAnim('thunder'));
     for (const id of ['blaze-core', 'frost-heart', 'storm-stone', 'mire-gland', 'shade-crystal', 'iron-shard']) expect(urls).not.toContain(art.icon(id));
+    for (const id of ['essence-common', 'essence-magic', 'essence-rare', 'essence-legendary', 'star-tear', 'king-scale']) expect(urls).toContain(art.icon(id));
     expect(urls).toContain(art.window);
     expect(urls).toContain(art.portalPlaza);
     expect(urls).toContain(art.portalCard('mainline'));
@@ -33,20 +36,28 @@ describe('artPaths', () => {
     for (const id of ['hero', 'rin', 'rin-oath']) for (const m of ['normal', 'attack', 'hit', 'dying', 'down', 'ultimate', 'smile', 'sad'] as const) expect(urls).toContain(art.portrait(id, m));
     expect(urls).toContain(art.standee('rin-oath'));
     for (const id of Object.keys(ENEMIES).filter((e) => !ENEMIES[e].look)) expect(urls).toContain(art.enemy(id));
-    // Plan 5d Task 5: the 15 old base icons stay listed until they retire; every new gear path waits behind NO_ICON_YET.
-    expect([...RETIRING_ICONS].sort()).toEqual(['wooden-staff', 'iron-sword', 'hunter-bow', 'thorn-spear', 'crystal-blade', 'frost-staff', 'star-saber',
+    // Plan 5d: the old base icons stay listed until they retire (iron-sword retired with the G1 sample, Task 8); a gear
+    // path is listed only once published: the sample's 9 pieces now, the other 60 after the main batch.
+    expect([...RETIRING_ICONS].sort()).toEqual(['wooden-staff', 'hunter-bow', 'thorn-spear', 'crystal-blade', 'frost-staff', 'star-saber',
       'cloth-robe', 'leather-vest', 'scale-mail', 'dusk-mantle', 'moss-charm', 'bat-earring', 'crystal-pendant', 'gear-ring'].sort());
     for (const id of RETIRING_ICONS) expect(urls).toContain(art.icon(id));
+    expect(urls).not.toContain(art.icon('iron-sword'));
     for (const id of Object.keys(EQUIPMENT).filter((e) => !RETIRING_ICONS.has(e))) expect(urls).not.toContain(art.icon(id));
+    const SAMPLE = ['iron-sword', 'wooden-buckler', 'leather-cap', 'lg-chizuru', 'blaze-heart-sword', 'iron-unbroken-shield',
+      'set-blaze-weapon', 'set-blaze-body', 'set-blaze-hands'];
     for (const id of [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)]) {
-      expect(urls).not.toContain(art.gear(id));
-      expect(urls).not.toContain(art.gearLarge(id));
+      const listed = SAMPLE.includes(id);
+      expect(urls.includes(art.gear(id)), id).toBe(listed);
+      expect(urls.includes(art.gearLarge(id)), id).toBe(listed);
       if (id in SPECIALS) expect(urls).not.toContain(art.icon(id));
     }
     const regionLimited = (Object.keys(REGIONS) as RegionId[]).flatMap((r) => regionSpecials(r).map((s) => s.id));
     expect(regionLimited.length + Object.keys(SETS).length).toBe(18);
-    for (const id of [...regionLimited, ...Object.keys(SETS)]) expect(urls).not.toContain(art.gearSilhouette(id));
-    for (const u of [art.scene('forge'), art.npc('forge', 'normal'), art.npc('forge', 'happy'), art.rarityGlow, art.starlitOverlay]) expect(urls).not.toContain(u);
+    const SILHOUETTES = ['blaze-heart-sword', 'iron-unbroken-shield', 'set-blaze'];
+    for (const id of [...regionLimited, ...Object.keys(SETS)]) expect(urls.includes(art.gearSilhouette(id)), id).toBe(SILHOUETTES.includes(id));
+    for (const u of [art.gear('iron-sword'), art.gearLarge('set-blaze-body'), art.gearSilhouette('set-blaze'), art.rarityFrame('set'),
+      art.scene('forge'), art.npc('forge', 'normal'), art.rarityGlow, art.starlitOverlay, ...FRAMED_RARITIES.map((r) => art.rarityFrame(r))]) expect(urls).toContain(u);
+    expect(urls).not.toContain(art.npc('forge', 'happy'));             // the main batch's
   });
 
   it('builds gear, large, silhouette and frame urls', () => {
@@ -181,9 +192,9 @@ describe('artPaths', () => {
     expect(readFileSync('art-factory/starlantern/tools/gear_art.py', 'utf8')).not.toMatch(/[Pp]rovisional art ids/);
   });
 
-  it('unpublished frames, the legend glow and the starlit overlay are never listed', () => {
+  it('the frames, the legend glow and the starlit overlay are listed once published (plan 5d Task 8)', () => {
     const urls = allArtUrls();
-    for (const u of [...FRAMED_RARITIES.map((r) => art.rarityFrame(r)), art.rarityGlow, art.starlitOverlay]) expect(urls, u).not.toContain(u);
+    for (const u of [...FRAMED_RARITIES.map((r) => art.rarityFrame(r)), art.rarityGlow, art.starlitOverlay]) expect(urls, u).toContain(u);
   });
 });
 

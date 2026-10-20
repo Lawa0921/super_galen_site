@@ -704,6 +704,15 @@ describe('EquipScene gear art (plan 5d Task 6)', () => {
     expect(kids(r.slot('head'))).toEqual(['slx-rglow', 'slx-gear-ico', 'slx-rframe slx-rframe-legendary']);
   });
 
+  it('a frame published alone, without the glow, still redraws a cached legendary cell', () => {
+    const loaded = new Set<string>([art.gear('blaze-heart-sword')]);
+    const r = setup((g) => { g.state.bag = [gear('iron-sword', 1, 'legendary', { special: 'blaze-heart-sword' })]; }, 'scarlet', { has: (u) => loaded.has(u) });
+    expect(kids(r.cell(0))).toEqual(['slx-gear-ico']);
+    loaded.add(art.rarityFrame('legendary'));                            // the frame only: the glow is still unpublished
+    r.press('right');
+    expect(kids(r.cell(0))).toEqual(['slx-gear-ico', 'slx-rframe slx-rframe-legendary']);
+  });
+
   it('no element carries a style attribute with art either', () => {
     const r = setup((g) => { g.state.bag = [gear('iron-sword', 1, 'legendary', { special: 'blaze-heart-sword', starlit: true })]; }, 'scarlet', ALL);
     r.press('swap');

@@ -549,13 +549,23 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
-  /** Plan 5g: the frame and overlay art is not published, so nothing may ask for it. */
-  const UNPUBLISHED_RARITY_ART = ['ui/rarity-epic.png', 'ui/starlit.png', 'ui/glow-starlit.png'];
+  /**
+   * Plan 5g named the overlay `glow-starlit` before it became `starlit.png`: nothing may ask for that old name. The epic
+   * frame and the starlit overlay were published with plan 5d's G1 sample (Task 8): asking for them must succeed.
+   */
+  const UNPUBLISHED_RARITY_ART = ['ui/glow-starlit.png'];
+  /** Every starlantern asset response, to check none failed. */
+  const assetResponses = (page: Page) => {
+    const seen: { url: string; status: number }[] = [];
+    page.on('response', (r) => { if (r.url().includes('/assets/games/starlantern/')) seen.push({ url: r.url(), status: r.status() }); });
+    return seen;
+  };
   const STARLIT_AFFIXES = (['atk', 'crit', 'str', 'hp'] as const).map((key) => ({ key, value: maxValue(key, 6) }));
 
   test('epic and starlit gear come home, read their words and survive a save', async ({ page }) => {
     const asked: string[] = [];
     page.on('request', (r) => asked.push(r.url()));
+    const answered = assetResponses(page);
     const w = await setup(page, 7);
     await depart(page, w);
     const uids: { epic: number; star: number } = await page.evaluate((starAffixes) => {
@@ -582,6 +592,11 @@ test.describe('starlantern', () => {
     await expect(star).toHaveClass(/slx-starlit/);
     await expect(epic).toHaveClass(/slx-rarity-epic/);
     await expect(epic).toHaveCSS('color', 'rgb(179, 107, 255)');
+    // Plan 5d Task 8: the epic frame and the star light are published; both pieces' gear art too (iron sword, 雙月槍).
+    await expect(epic.locator('.slx-rframe.slx-rframe-epic')).toHaveCount(1);
+    await expect(epic.locator('img.slx-gear-ico')).toHaveCount(1);
+    await expect(star.locator('.slx-rstarlit')).toHaveCount(1);
+    await expect(star.locator('.slx-rglow')).toHaveCount(1);
     await star.hover();
     await expect(page.locator('.slx-item-detail .slx-line-starlit')).toHaveText(T.gear.starlitLine);
     await epic.hover();
@@ -609,6 +624,8 @@ test.describe('starlantern', () => {
     }, uids);
     expect(kept).toEqual({ epic: 'epic', epicStarlit: undefined, star: 'legendary', starlit: true, affixes: STARLIT_AFFIXES });
     expect(asked.filter((u) => UNPUBLISHED_RARITY_ART.some((a) => u.endsWith(a)))).toEqual([]);
+    expect(answered.filter((a) => a.status >= 400)).toEqual([]);
+    expect(answered.some((a) => a.url.endsWith('ui/rarity-epic.png') && a.status === 200)).toBe(true);
     expect(w.errors).toEqual([]);
   });
 
@@ -1217,6 +1234,61 @@ test.describe('starlantern', () => {
     expect(filters.length).toBe(3);
     for (const f of filters) expect(f).toContain('brightness');
     expect(await page.evaluate(() => getComputedStyle(document.querySelector('.slx-qty')!).filter)).toBe('none');
+    expect(w.errors).toEqual([]);
+  });
+
+  test('every published art file loads, and nothing unpublished is asked for (plan 5d Task 8)', async ({ page }) => {
+    const answered = assetResponses(page);
+    const w = await setup(page, 7);
+    const manifest = await page.evaluate(async () => (await (await fetch('/assets/games/starlantern/manifest.json')).json()).urls as string[]);
+    expect(manifest.length).toBe(282);
+    // Every file the manifest lists answers 200.
+    for (const u of manifest) expect((await page.request.get(u)).status(), u).toBe(200);
+    // Walk the screens that show the new art (equipment, shop, forge, portal codex) with every sample piece in the bag.
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const piece = (base: string, rarity: string, extra = {}) => ({ uid: g.mintUid(), base, rarity, ilvl: 6, enhance: 0, affixes: [{ key: 'atk', value: 3 }], ...extra });
+      g.state.bag = [piece('iron-sword', 'epic'), piece('wooden-buckler', 'rare'), piece('leather-cap', 'magic'),
+        piece('iron-sword', 'legendary', { special: 'blaze-heart-sword' }), piece('thorn-spear', 'legendary', { special: 'lg-chizuru', starlit: true }),
+        piece('wooden-buckler', 'unique', { special: 'iron-unbroken-shield' }), piece('leather-vest', 'set', { special: 'set-blaze-body' }),
+        piece('hunter-bow', 'common')];
+      g.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }, { region: 'blaze', condition: 'plain' }, { region: 'iron', condition: 'plain' }];
+    });
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-cmd [data-id=equip]').click();
+    await expect(page.locator('.slx-equip-scene .slx-bag-cell img.slx-gear-ico')).toHaveCount(7);   // all but the bow (no art yet)
+    await expect(page.locator('.slx-bag-cell .slx-rframe-epic')).toHaveCount(1);
+    await expect(page.locator('.slx-bag-cell .slx-rstarlit')).toHaveCount(1);
+    await w.key('Tab'); await w.key('ArrowRight'); await w.key('ArrowRight'); await w.key('ArrowRight');   // the legendary sword
+    await expect(page.locator('.slx-item-art-box img.slx-gear-art')).toHaveAttribute('src', /gear\/blaze-heart-sword-large\.png$/);
+    await page.locator('.slx-back').click(); await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-town', '道具店');
+    await expect(page.locator('.slx-shop')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');
+    await expect(page.locator('.slx-shop-list [data-id="iron-sword"] img.slx-gear-ico')).toHaveCount(1);
+    await expect(page.locator('.slx-shop-list [data-id="hunter-bow"] img.slx-ico')).toHaveAttribute('src', /icon\/hunter-bow\.png$/);   // old icon until its gear art
+    await toTown(page, w);
+    await w.choose('.slx-town', '鍛造屋');
+    await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');                                   // 分解
+    await expect(page.locator('.slx-forge-list img.slx-gear-ico').first()).toBeVisible();
+    await toTown(page, w);
+    await w.choose('.slx-town', '傳送門廣場');
+    await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');
+    await expect(page.locator('.slx-portal-blaze .slx-codex-pics img.slx-codex-silhouette')).toHaveCount(2);   // blaze heart sword, the blaze set
+    await page.waitForFunction(() => [...document.querySelectorAll<HTMLImageElement>('img')].every((i) => i.complete));
+    // Every starlantern file asked for is listed (or is the manifest itself) and answered without error.
+    const known = new Set(manifest);
+    const unlisted = answered.map((a) => new URL(a.url).pathname).filter((p) => !known.has(p) && !p.endsWith('/manifest.json'));
+    expect(unlisted).toEqual([]);
+    expect(answered.filter((a) => a.status >= 400)).toEqual([]);
+    for (const p of ['/gear/iron-sword.png', '/ui/rarity-epic.png', '/ui/starlit.png', '/ui/glow-legendary.png', '/gear/set-blaze-silhouette.png']) {
+      expect(answered.some((a) => a.url.endsWith(p)), p).toBe(true);
+    }
+    expect(answered.some((a) => a.url.endsWith('/icon/iron-sword.png')), 'the retired old icon').toBe(false);
     expect(w.errors).toEqual([]);
   });
 
