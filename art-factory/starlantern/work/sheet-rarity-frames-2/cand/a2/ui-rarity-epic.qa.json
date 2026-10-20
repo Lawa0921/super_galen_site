@@ -1,0 +1,61 @@
+{
+  "pass": true,
+  "reasons": [],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 16,
+  "holes": 0,
+  "magenta_spill": 0,
+  "center_clear": true,
+  "ring_closed": true,
+  "edge_repeat": {
+    "top": 0.045,
+    "bottom": 0.022,
+    "left": 0.045,
+    "right": 0.011
+  },
+  "edge_steps": {
+    "top": {
+      "seam": 0.267,
+      "interior": 0.107
+    },
+    "bottom": {
+      "seam": 0.133,
+      "interior": 0.24
+    },
+    "left": {
+      "seam": 0.267,
+      "interior": 0.187
+    },
+    "right": {
+      "seam": 0.067,
+      "interior": 0.067
+    }
+  },
+  "stroke": [
+    2,
+    2
+  ],
+  "reach": {
+    "edge": 3,
+    "corner": 3
+  },
+  "stroke_colour": [
+    138,
+    88,
+    247
+  ],
+  "hue": 258.1,
+  "saturation": 0.644,
+  "chroma_share": 0.5,
+  "size": [
+    16,
+    16
+  ],
+  "slice": 5,
+  "role": "frame",
+  "pad": 0,
+  "tier_hue": 257,
+  "block": 21.938
+}

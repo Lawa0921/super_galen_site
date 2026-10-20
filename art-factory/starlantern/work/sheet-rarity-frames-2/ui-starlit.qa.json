@@ -1,0 +1,75 @@
+{
+  "pass": true,
+  "reasons": [],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 14,
+  "holes": 0,
+  "magenta_spill": 0,
+  "center_clear": true,
+  "ring_closed": false,
+  "edge_repeat": {
+    "top": 0.0,
+    "bottom": 0.0,
+    "left": 0.0,
+    "right": 0.0
+  },
+  "edge_steps": {
+    "top": {
+      "seam": 0.0,
+      "interior": 33.653
+    },
+    "bottom": {
+      "seam": 0.0,
+      "interior": 33.707
+    },
+    "left": {
+      "seam": 0.0,
+      "interior": 33.52
+    },
+    "right": {
+      "seam": 0.0,
+      "interior": 33.413
+    }
+  },
+  "stroke": [
+    0,
+    2
+  ],
+  "reach": {
+    "edge": 3,
+    "corner": 4
+  },
+  "stroke_colour": [
+    123,
+    250,
+    254
+  ],
+  "hue": 181.8,
+  "saturation": 0.516,
+  "chroma_share": 1.0,
+  "edge_joint": {
+    "top": 0,
+    "bottom": 0,
+    "left": 0,
+    "right": 0
+  },
+  "off_colour": 0,
+  "corner_px": [
+    13,
+    13,
+    13,
+    13
+  ],
+  "edge_cover": 0.333,
+  "size": [
+    16,
+    16
+  ],
+  "slice": 5,
+  "role": "overlay",
+  "pad": 0,
+  "tier_hue": null,
+  "block": 19.562
+}

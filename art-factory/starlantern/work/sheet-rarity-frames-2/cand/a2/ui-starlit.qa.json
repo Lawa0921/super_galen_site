@@ -1,0 +1,77 @@
+{
+  "pass": false,
+  "reasons": [
+    "not starlight colours"
+  ],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 4,
+  "holes": 0,
+  "magenta_spill": 0,
+  "center_clear": true,
+  "ring_closed": false,
+  "edge_repeat": {
+    "top": 0.0,
+    "bottom": 0.0,
+    "left": 0.153,
+    "right": 1.68
+  },
+  "edge_steps": {
+    "top": {
+      "seam": 0.0,
+      "interior": 3.013
+    },
+    "bottom": {
+      "seam": 0.0,
+      "interior": 20.213
+    },
+    "left": {
+      "seam": 3.2,
+      "interior": 20.96
+    },
+    "right": {
+      "seam": 50.867,
+      "interior": 30.28
+    }
+  },
+  "stroke": [
+    0,
+    1
+  ],
+  "reach": {
+    "edge": 2,
+    "corner": 3
+  },
+  "stroke_colour": [
+    9,
+    7,
+    97
+  ],
+  "hue": 241.3,
+  "saturation": 0.928,
+  "chroma_share": 0.143,
+  "edge_joint": {
+    "top": 0,
+    "bottom": 0,
+    "left": 0,
+    "right": 0
+  },
+  "off_colour": 14,
+  "corner_px": [
+    6,
+    6,
+    7,
+    7
+  ],
+  "edge_cover": 0.167,
+  "size": [
+    16,
+    16
+  ],
+  "slice": 5,
+  "role": "overlay",
+  "pad": 0,
+  "tier_hue": null,
+  "block": 22.625
+}

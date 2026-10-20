@@ -7,11 +7,20 @@
   "edge": 0,
   "holes": 0,
   "magenta_spill": 0,
-  "subject": [
-    53,
-    51
-  ],
-  "block": 7,
+  "subject": {
+    "long": 56,
+    "short": 54,
+    "mass": 0.678,
+    "box": [
+      4,
+      5,
+      60,
+      59
+    ],
+    "centre_off": 0.0
+  },
+  "block": 6.589,
+  "scale": 6.589,
   "size": [
     64,
     64
