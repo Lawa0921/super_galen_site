@@ -162,25 +162,6 @@ function asBytes(d: Uint8Array | ArrayBuffer): Uint8Array {
   return d instanceof Uint8Array ? d : new Uint8Array(d);
 }
 
-/** 存入一個槽（bytes 為 serializeGame 的輸出；此處會壓縮）。 */
-export async function saveSlot(slot: string, seed: string, raw: Uint8Array, savedAt = Date.now(), summary?: SaveSummary): Promise<SlotMeta> {
-  const data = await compress(raw);
-  const rec: SlotRecord = { slot, seed, savedAt, bytes: data.length, data, ...(summary ? { summary } : {}) };
-  await tx('readwrite', (s) => s.put(rec));
-  return { slot, seed, savedAt, bytes: data.length, summary };
-}
-
-/** 讀取槽，回傳解壓後的 serialize 位元組；沒有則 null。 */
-export async function loadSlot(slot: string): Promise<Uint8Array | null> {
-  const rec = await tx<SlotRecord | undefined>('readonly', (s) => s.get(slot) as IDBRequest<SlotRecord | undefined>);
-  if (!rec) return null;
-  return decompress(asBytes(rec.data));
-}
-
-export async function deleteSlot(slot: string): Promise<void> {
-  await tx('readwrite', (s) => s.delete(slot));
-}
-
 /** 可繼續的槽（備份記錄 `*.bak` 不列出），新到舊 */
 export async function listSlots(): Promise<SlotMeta[]> {
   const all = await tx<SlotRecord[]>('readonly', (s) => s.getAll() as IDBRequest<SlotRecord[]>);

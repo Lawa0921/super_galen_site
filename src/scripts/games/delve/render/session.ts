@@ -465,6 +465,8 @@ export function bootDelve(root: HTMLElement): Session {
       const gen = await generate(h.seed, { width: h.width, height: h.height });
       const r = restoreGame(data, { gen });
       if (!r.ok) { restoreError(r, msgEl); return null; }
+      // 沒有 IndexedDB（無痕 / 被停用）：不能存，但仍照舊版行為開局（saveNow 也是無操作）
+      if (!hasIndexedDB()) return { game: r.game, session: SplitSession.fresh(r.game.seed, Date.now()) };
       try {
         const session = await commitMigration(idbSplitStore, SLOT, r.game, Date.now(), { backup, summary: summarizeGame(r.game) });
         return { game: r.game, session };
@@ -549,7 +551,14 @@ export function bootDelve(root: HTMLElement): Session {
     try {
       const plan = await planContinue(idbSplitStore, SLOT);
       if (plan.kind === 'none') { say(titleMsg, '找不到存檔'); return; }
-      if (plan.kind === 'error') { say(titleMsg, `匯出失敗：${plan.message}`); return; }
+      if (plan.kind === 'error') {
+        // 存檔槽讀不了（角色遺失 / 損毀）：「開新世界」的覆蓋提示叫玩家先匯出，所以這裡把存檔槽的原始位元組照樣匯出（備份路徑不能斷）
+        const raw = await idbSplitStore.getSlot(SLOT);
+        if (!raw) { say(titleMsg, '找不到存檔'); return; }
+        download(await exportBlob(raw.bytes), 'delve-save.delve');
+        say(titleMsg, '已匯出存檔檔案（原始資料，存檔本身有問題）');
+        return;
+      }
       let bytes: Uint8Array | undefined, seed: string;
       if (plan.kind === 'split') { bytes = exportBytes(plan.world, plan.character); seed = plan.world.header.seed; }
       else { bytes = (await idbSplitStore.getSlot(SLOT))?.bytes; seed = plan.data.header.seed; }

@@ -416,6 +416,40 @@ test.describe('delve', () => {
     await ctx.close();
   });
 
+  test('存檔槽讀不了（角色記錄遺失）：「繼續」顯示錯誤，但標題「匯出存檔」仍能把槽的原始位元組匯出', async ({ page }) => {
+    await page.goto('/games/delve?seed=exporterr&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => window.__delveDebug!.save());
+    // 讀出世界記錄（gzip）並刪掉角色記錄
+    const worldRec = await page.evaluate(() => new Promise<number[]>((ok, bad) => {
+      const r = indexedDB.open('delve');
+      r.onsuccess = () => {
+        const d = r.result, t = d.transaction(['saves', 'characters'], 'readwrite');
+        const main = t.objectStore('saves').get('main');
+        t.objectStore('characters').clear();
+        t.oncomplete = () => { ok([...main.result.data]); d.close(); };
+        t.onerror = () => bad(t.error);
+      };
+    }));
+    expect(worldRec.slice(0, 2)).toEqual([0x1f, 0x8b]);
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-continue');
+    await expect(page.locator('#delve-title-msg')).not.toBeEmpty();
+    const errText = await page.locator('#delve-title-msg').innerText();
+    expect(errText).not.toContain('已匯出');
+    const dl = page.waitForEvent('download');
+    await page.click('#delve-export-title');
+    const file = readFileSync((await (await dl).path())!);
+    // 匯出檔 = 存檔槽的原始位元組（gzip 外層，與 IndexedDB 裡的世界記錄逐位元組相同）
+    expect([...file.subarray(0, 2)]).toEqual([0x1f, 0x8b]);
+    expect([...file]).toEqual(worldRec);
+    await expect(page.locator('#delve-title-msg')).toContainText('已匯出存檔檔案');
+    // 繼續仍然顯示錯誤（匯出沒有修改存檔槽）
+    await page.click('#delve-continue');
+    await expect(page.locator('#delve-title-msg')).toHaveText(errText);
+  });
+
   test('地城：debug 傳送進地城、右鍵開門、拿地城鑰匙右鍵開上鎖的門（存檔後仍是開的）', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
