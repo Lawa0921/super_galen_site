@@ -4,6 +4,7 @@ import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import type { MechState } from './mech';
+import type { MechCue } from './mechanics/index';
 import { credit, type Ledger } from './ledger';
 import { AILMENT, clearAilments, type AilmentShown, type Dot } from './ailments';
 
@@ -60,6 +61,12 @@ export interface Combatant {
   ward?: { def: number; res: number; src: string };
   /** A shield: damage it takes before HP (dealDamage), and who gave it (the ledger credits what it absorbs to them). */
   shield?: { amount: number; src: string };
+  /** Rounds fire, ice and thunder hit it as a weakness (Noel's hex; `isWeak`). */
+  exposed?: number;
+  /** Round ends a single enemy attack passes over this member (Rin's veil; battle.foePool). */
+  veil?: number;
+  /** The next landed hit is a critical one, drawing no crit roll; gone after it (Rin's veil). */
+  nextCrit?: true;
 }
 
 export type BattleEvent =
@@ -88,6 +95,8 @@ export type BattleEvent =
   | { type: 'dot-tick'; target: string; amount: number; status: 'burn' | 'bleed' }
   /** A shield took `amount` of a hit before HP did. */
   | { type: 'shield'; target: string; amount: number }
+  /** A character mechanic's moment (engine/mechanics): Noel's overload with its backlash, Rin's 還有。. */
+  | { type: 'mech'; actor: string; cue: MechCue; amount?: number }
   /** A frozen combatant's turn, lost (it thaws). */
   | { type: 'frozen'; actor: string }
   /** A survive fight lasted its rounds. */
@@ -119,8 +128,13 @@ export function addBuff(c: Combatant, b: Buff): void {
   c.buffs.push({ ...b });
 }
 
+/** A weakness of `t`: one of its own, or any element but physical while it is exposed (Noel's hex). */
+export function isWeak(t: Combatant, el: Element): boolean {
+  return t.weak.includes(el) || (!!t.exposed && el !== 'phys');
+}
+
 export function elementMult(t: Combatant, el: Element): number {
-  return t.weak.includes(el) ? 1.5 : t.resist.includes(el) ? 0.5 : 1;
+  return isWeak(t, el) ? 1.5 : t.resist.includes(el) ? 0.5 : 1;
 }
 
 export interface DamageSpec {
@@ -153,7 +167,9 @@ export function rollHit(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rng):
   const evade = t.side === 'party' ? evadeChance(tx('evasion'), a.level) : Math.min(EVADE_MAX, tx('evasion') / 100);
   if (roll(evade, rng)) return null;
   const variance = 0.9 + rng() * 0.2;
-  const crit = spec.crit === 'always' || roll(ax('crit') / 100, rng);
+  // Rin's hits on her mark, and a hit she readied under her veil, always crit and draw no crit roll.
+  const sure = spec.crit === 'always' || !!a.nextCrit || (a.mech?.kind === 'mark' && a.mech.marks.includes(t.key));
+  const crit = sure || roll(ax('crit') / 100, rng);
   const blocked = spec.element === 'phys' && roll(tx('block') / 100, rng);
   return { variance, crit, blocked };
 }
@@ -178,7 +194,7 @@ export function hitAmount(a: Combatant, t: Combatant, spec: DamageSpec, r: HitRo
   // A negative resistance is a weakness, held at -100 (double damage); above 100 it is held at 100 (no damage), so the factor
   // never goes negative: a hit never heals, and a negative bonus times an over-100 resistance never multiplies back up.
   if (hitEl !== 'phys') mult *= (1 + ax(`${hitEl}Dmg`) / 100) * (1 - Math.min(100, Math.max(-100, tx(`${hitEl}Res`))) / 100);
-  if (t.weak.includes(spec.element)) mult *= 1 + ax('vuln') / 100;
+  if (isWeak(t, spec.element)) mult *= 1 + ax('vuln') / 100;
   if (t.boss || t.tint === 'elite') mult *= 1 + ax('eliteDmg') / 100;
   if (spec.execute) mult *= 1 + (spec.execute / 100) * (1 - t.hp / t.max.hp);
   if (spec.wounded && t.hp < t.max.hp) mult *= 1 + spec.wounded / 100;
@@ -236,6 +252,9 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; led
     t.turret = null;
     delete t.shield;
     delete t.ward;
+    delete t.exposed;
+    delete t.veil;
+    delete t.nextCrit;
     clearAilments(t);
   }
   return lost;

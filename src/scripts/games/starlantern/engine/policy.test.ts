@@ -38,7 +38,13 @@ describe('per-character policies', () => {
     let seen = 0;
     for (const party of parties) {
       for (const [ids, boss] of [[encounterTable('mainline', 3)[0], false], [['lanterneater'], true]] as const) {
-        for (const st of rounds(party, [...ids], boss)) { expect(choose(st, party)).toEqual(choose(st, party, {})); seen++; }
+        // Plan 8c gives Noel and Rin mechanics: read without them, the rule still holds.
+        for (const st of rounds(party, [...ids], boss)) {
+          const bare = structuredClone(st);
+          for (const m of bare.party) delete m.mech;
+          expect(choose(bare, party)).toEqual(choose(bare, party, {}));
+          seen++;
+        }
       }
     }
     expect(seen).toBeGreaterThan(10);
@@ -85,6 +91,17 @@ describe('per-character policies', () => {
     expect(run(s, c, sk('rin-mark', 'rin-needle'), rule).action).toBeNull();
     ({ s, c } = rin(['e0'], false));
     expect(run(s, c, sk('rin-mark', 'rin-needle'), rule).action).toEqual({ kind: 'skill', skill: 'rin-mark', target: 'e1' });
+    // `big`: only a boss or an elite is worth it; `below`: only once it is under that share of its HP.
+    const big: PolicyRule[] = [{ kind: 'ensure-mark', skill: 'rin-mark', big: true, below: 50 }];
+    const foes = (e1: Partial<Combatant>) => {
+      const s2 = makeBattle([P('rin', { mech: { kind: 'mark', marks: [], cap: 1 } })], [E('e0'), E('e1', e1)]);
+      return run(s2, s2.party[0], sk('rin-mark', 'rin-needle'), big).action;
+    };
+    expect(foes({})).toBeNull();
+    expect(foes({ boss: true })).toBeNull();                       // a boss at full HP: not yet
+    expect(foes({ boss: true, hp: 49 })).toEqual({ kind: 'skill', skill: 'rin-mark', target: 'e1' });
+    expect(foes({ tint: 'elite', hp: 49 })).toEqual({ kind: 'skill', skill: 'rin-mark', target: 'e1' });
+    expect(foes({ boss: true, hp: 50 })).toBeNull();
   });
 
   it('alternate', () => {

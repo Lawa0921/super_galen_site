@@ -17,6 +17,13 @@ import { STORY } from '../../data/story.zh-TW';
 import { DEFAULT_SETTINGS } from '../settings';
 import type { SceneCtx } from '../scene';
 
+/** The TP a skill costs now, forced for one test (plan 8c: the menu shows what the mechanics make her pay). */
+const forced = vi.hoisted(() => ({ cost: null as number | null }));
+vi.mock('../../engine/mechanics/index', async (orig) => {
+  const m = await orig<typeof import('../../engine/mechanics/index')>();
+  return { ...m, castCost: (...a: Parameters<typeof m.castCost>) => forced.cost ?? m.castCost(...a) };
+});
+
 const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); await new Promise((r) => setTimeout(r, 0)); };
 
 function setup(prep?: (game: Game) => void, extra: Partial<SceneCtx> = {}) {
@@ -929,5 +936,50 @@ describe('BattleScene story', () => {
     expect(go).toHaveBeenCalledWith('dungeon');
     expect(err).toHaveBeenCalled();
     err.mockRestore();
+  });
+});
+
+describe('BattleScene mechanics (plan 8c)', () => {
+  const stageWith = (play = vi.fn()) => {
+    const showAilments = vi.fn();
+    return { showAilments, stage: { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null, showIntents: vi.fn(), syncHp: vi.fn(), showAilments, play } } };
+  };
+
+  it("the bar shows each member's mechanic, and each foe's words go to the picture", () => {
+    const { showAilments, stage } = stageWith();
+    const { root } = setup((g) => {
+      const noel = g.battle!.party.find((c) => c.key === 'noel')!;
+      noel.mech = { kind: 'heat', heat: 3 };
+      g.battle!.enemies[0].exposed = 2;
+    }, { stage: stage as never });
+    const row = root.querySelector('.slx-partybar [data-key=noel] .slx-pm-ail')!;
+    expect(row.querySelector('.slx-mech-heat')!.textContent).toBe('熱度3');
+    expect(root.querySelector('.slx-partybar [data-key=scarlet] .slx-pm-ail')!.textContent).toBe('');
+    expect(showAilments.mock.calls.at(-1)![1]).toMatchObject({ e0: [{ tone: 'expose', text: '弱點2' }] });
+  });
+
+  it('skill costs in the menu are the cost she pays now', () => {
+    const { s, root } = setup();
+    forced.cost = 1;
+    try {
+      s.onAction('down'); s.onAction('confirm');   // 技能
+      const rights = [...root.querySelectorAll('.slx-bsub [role=option] .slx-right')].map((e) => e.textContent);
+      expect(rights.length).toBeGreaterThan(0);
+      expect(new Set(rights)).toEqual(new Set([T.cmd.tp(1)]));
+    } finally { forced.cost = null; }
+  });
+
+  it('a mech event pops its word over the member', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const play = vi.fn(async (_s: unknown, _sfx: unknown, onParty: (k: string, cue: string, name?: string) => void) => { onParty('noel', 'mech', 'overload'); });
+    const { stage } = stageWith(play);
+    const { s, root } = setup(undefined, { stage: stage as never });
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }   // 防禦 ×5
+    await flush();
+    expect(play).toHaveBeenCalled();
+    const pop = root.querySelector('.slx-partybar [data-key=noel] .slx-pm-cue');
+    expect(pop?.textContent).toBe(T.mech.cue.overload);
+    expect(pop?.classList.contains('slx-mech-heat')).toBe(true);
+    vi.useRealTimers();
   });
 });

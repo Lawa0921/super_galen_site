@@ -31,7 +31,13 @@ export type Effect =
   | { kind: 'inflict'; status: AilmentId; chance: number }
   | { kind: 'buff'; stat: BuffStat; pct: number; turns: number }
   | { kind: 'taunt'; turns: number }
-  | { kind: 'turret'; power: number; turns: number };
+  | { kind: 'turret'; power: number; turns: number }
+  /** Fire, ice and thunder all strike the target as a weakness for `turns` rounds (Noel's hex, plan 8c). */
+  | { kind: 'expose'; turns: number }
+  /** The caster's mark moves onto the target (Rin's mark, engine/mechanics/mark.ts). */
+  | { kind: 'mark' }
+  /** The caster is passed over by single attacks for `turns` round ends, and her next landed hit crits (Rin's veil). */
+  | { kind: 'veil'; turns: number };
 
 export interface SkillDef {
   id: string; name: string; owner: CharacterId; tp: number; hpCost?: number;

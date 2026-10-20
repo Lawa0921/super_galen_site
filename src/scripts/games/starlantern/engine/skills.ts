@@ -1,4 +1,4 @@
-import { addBuff, dealDamage, hitAmount, roll, rollHit, stat, type BattleEvent, type Combatant } from './combatant';
+import { addBuff, dealDamage, hitAmount, isWeak, roll, rollHit, stat, type BattleEvent, type Combatant } from './combatant';
 import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
@@ -6,6 +6,7 @@ import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../dat
 import { credit, creditPrevented, lossOf, type Ledger } from './ledger';
 import { clearAilments, inflictAilment } from './ailments';
 import type { BattleState } from './battle';
+import { onLandedHit } from './mechanics/index';
 
 /**
  * `ledger`: the sim's contribution ledger (absent in the game); it reads the fight and never draws. `redirect`: set only
@@ -23,7 +24,7 @@ export interface EffectContext {
 }
 
 /** A power's percentage of a number, rounded half away from zero so a debuff (-37.5) rounds as deep as a buff (37.5). */
-const pctOf = (base: number, pct: number | undefined): number => {
+export const pctOf = (base: number, pct: number | undefined): number => {
   if (pct === undefined) return base;
   const v = (base * pct) / 100;
   return Math.sign(v) * Math.round(Math.abs(v)) || 0;   // `|| 0`: never -0
@@ -60,6 +61,8 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
       case 'buff': return { ...e, pct: pctOf(e.pct, mod.buffPct), turns: lasting(e.turns) };
       case 'turret': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns) };
       case 'taunt': return { ...e, turns: lasting(e.turns) };
+      case 'expose': return { ...e, turns: lasting(e.turns) };
+      case 'veil': return { ...e, turns: lasting(e.turns) };
       case 'inflict': return { ...e, chance: e.status === 'poison' ? mod.chance ?? e.chance : e.chance };
       default: return { ...e };
     }
@@ -122,9 +125,10 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         if (target.side === 'enemy') reveal(ctx.revealed, target.defId, eff.element);
         ctx.log.push({ type: 'damage', target: target.key, amount: lost, element: eff.element, mult, ...(crit ? { crit } : {}) });
         if (!target.alive) ctx.log.push({ type: 'ko', target: target.key });
+        onLandedHit(actor, target, ctx);
         // crit-tp, weak-tp and kill-tp settle on every hit; none of them draws.
         if (crit) keystoneTp(actor, 'crit-tp', KEYSTONE_VALUES.critTp, ctx);
-        if (target.weak.includes(eff.element)) keystoneTp(actor, 'weak-tp', KEYSTONE_VALUES.weakTp, ctx);
+        if (isWeak(target, eff.element)) keystoneTp(actor, 'weak-tp', KEYSTONE_VALUES.weakTp, ctx);
         if (!target.alive) keystoneTp(actor, 'kill-tp', KEYSTONE_VALUES.killTp, ctx);
       }
       return;
@@ -191,6 +195,24 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     case 'turret': {
       actor.turret = { power: eff.power, turns: eff.turns };
       ctx.log.push({ type: 'turret', target: actor.key });
+      return;
+    }
+    case 'expose': {
+      if (!target.alive) return;
+      target.exposed = Math.max(target.exposed ?? 0, eff.turns);
+      return;
+    }
+    case 'mark': {
+      // Her mark moves onto the target; with room for more (cap > 1) the oldest goes first.
+      const m = actor.mech;
+      if (m?.kind !== 'mark' || !target.alive) return;
+      m.marks = [...m.marks.filter((k) => k !== target.key), target.key].slice(-m.cap);
+      return;
+    }
+    case 'veil': {
+      if (target !== actor) return;   // on the caster alone (plan 8c ruling 6)
+      actor.veil = eff.turns;
+      actor.nextCrit = true;
       return;
     }
   }

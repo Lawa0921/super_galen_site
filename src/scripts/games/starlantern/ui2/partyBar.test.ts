@@ -221,3 +221,40 @@ describe('PartyBar after the oath', () => {
     expect([...row.children].map((c) => c.textContent)).toEqual(['凍結', '睡眠1', '冰緩2']);   // all fit: no +N
   });
 });
+
+describe('PartyBar mechanics (plan 8c)', () => {
+  it('shows mechanic words before the ailments', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('noel', 30, { mech: [{ tone: 'heat', text: '熱度3' }], ailments: [{ id: 'burn', turns: 2 }] }), m('rin')]);
+    const row = bar.el.querySelector<HTMLElement>('[data-key=noel] .slx-pm-ail')!;
+    expect(row.hidden).toBe(false);
+    expect([...row.children].map((c) => [c.className, c.textContent])).toEqual([['slx-mech slx-mech-heat', '熱度3'], ['slx-ail slx-ail-burn', '灼燒2']]);
+    const none = bar.el.querySelector<HTMLElement>('[data-key=rin] .slx-pm-ail')!;
+    expect(none.hidden).toBe(true);
+    bar.update([m('noel', 30, { mech: [{ tone: 'heat', text: '熱度0' }] }), m('rin', 30, { mech: [] })]);
+    expect([...row.children].map((c) => c.textContent)).toEqual(['熱度0']);
+    expect(row.hidden).toBe(false);
+    expect(none.hidden).toBe(true);
+    // The words take their room first; the ailments fold into +N in what is left of the one line.
+    const five = [{ id: 'poison' }, { id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 }, { id: 'shock', turns: 2 }, { id: 'chill', turns: 2 }] as const;
+    bar.update([m('noel', 30, { mech: [{ tone: 'heat', text: '熱度5' }], ailments: [...five] })]);
+    const texts = [...row.children].map((c) => c.textContent);
+    expect(texts[0]).toBe('熱度5');
+    expect(texts.at(-1)).toMatch(/^\+\d$/);
+    expect(texts.length - 2 + Number(texts.at(-1)!.slice(1))).toBe(5);
+  });
+
+  it('a cue rises over the member and goes', () => {
+    vi.useFakeTimers();
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('rin')]);
+    bar.cue('rin', { tone: 'mark', text: '還有。' });
+    const pop = bar.el.querySelector('[data-key=rin] .slx-pm-cue')!;
+    expect([pop.className, pop.textContent]).toEqual(['slx-pm-cue slx-mech-mark', '還有。']);
+    bar.cue('nobody', { tone: 'heat', text: '暴走！' });
+    expect(bar.el.querySelectorAll('.slx-pm-cue')).toHaveLength(1);
+    vi.advanceTimersByTime(1000);
+    expect(bar.el.querySelector('.slx-pm-cue')).toBeNull();
+    vi.useRealTimers();
+  });
+});

@@ -120,8 +120,8 @@ describe('patchSkill', () => {
       expect(patchSkill(base, p.mod), p.id).not.toEqual(base);
     }
     // The four whose skill is not a plain damage skill, checked by what they must do.
-    expect(patchSkill(SKILLS.hex, POWERS['mire-whisper-gloves'].mod).effects).toEqual([
-      { kind: 'buff', stat: 'atk', pct: -25, turns: 3 }, { kind: 'inflict', status: 'poison', chance: 1 },
+    expect(patchSkill(SKILLS['rin-venom-needle'], POWERS['mire-whisper-gloves'].mod).effects).toEqual([
+      { kind: 'damage', power: 70, element: 'phys', scale: 'atk', melee: false }, { kind: 'inflict', status: 'poison', chance: 1 },
     ]);
     const moon = patchSkill(SKILLS.moonlight, POWERS['lg-selene'].mod);
     expect([moon.target, moon.effects]).toEqual(['allies', [{ kind: 'heal', power: 72 }]]);

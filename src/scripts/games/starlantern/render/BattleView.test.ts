@@ -6,6 +6,7 @@ import { makeBattle, makeCombatant } from '../engine/testing';
 import { OutlineFilter } from 'pixi-filters';
 import { BattleView, TINT_COLORS, TINT_STYLE, ailLabelWidth } from './BattleView';
 import { AILMENT_FILL, AILMENT_MORE_FILL } from './ailmentStyle';
+import { MECH_FILL } from './mechStyle';
 import type { AilmentChip } from '../engine/ailments';
 import type { TextureBank } from './textures';
 import { T } from '../data/text.zh-TW';
@@ -391,5 +392,23 @@ describe('BattleView stat cues', () => {
     void view.play(battle([{ type: 'miss', target: 'e0' }]), sfx);
     const pop = enemyBox(view).children.find((c) => c instanceof Text && c.text === 'MISS') as Text;
     expect(pop.scale.x).toBe(1);
+  });
+});
+
+describe('BattleView mechanics (plan 8c)', () => {
+  it("marks come first in an enemy's row", () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments({ e0: [{ id: 'burn', turns: 3 }] }, { e0: [{ tone: 'mark', text: '暗記' }, { tone: 'expose', text: '弱點2' }] });
+    const words = view.ailmentTexts('e0');
+    expect(words.map((t) => t.text)).toEqual(['暗記', '弱點2', '灼燒3']);
+    expect(words.map((t) => t.style.fill)).toEqual([MECH_FILL.mark, MECH_FILL.expose, AILMENT_FILL.burn]);
+    expect(new Set(words.map((t) => t.y)).size).toBe(1);
+    expect(words.map((t) => t.style.fontSize)).toEqual([words[2].style.fontSize, words[2].style.fontSize, words[2].style.fontSize]);
+    // Without marks, the row is the ailments alone, as before.
+    view.showAilments({ e0: [{ id: 'burn', turns: 3 }] });
+    expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['灼燒3']);
+    view.showAilments({}, { e0: [{ tone: 'mark', text: '暗記' }] });
+    expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['暗記']);
   });
 });

@@ -8,7 +8,8 @@ import type { PolicyTable } from '../engine/policy';
 export const DEFAULT_POLICIES: PolicyTable = {
   chizuru: [{ kind: 'ensure-barrier', skills: ['ward'] }],
   bobby: [{ kind: 'ensure-device', skills: ['turret'] }],
-  rin: [{ kind: 'ensure-mark', skill: 'rin-mark' }],
+  // Rin marks a boss or an elite once it is under half its HP (plan 8c Task 2 tuning, retune.md).
+  rin: [{ kind: 'ensure-mark', skill: 'rin-mark', big: true, below: 50 }],
   safira: [{ kind: 'alternate' }],
   liz: [{ kind: 'spend-at', gauge: 'coins', min: 6, skill: 'fortune-strike' }],
   sylvie: [{ kind: 'spend-at', gauge: 'aim', min: 3, skill: 'starfall-arrow' }],

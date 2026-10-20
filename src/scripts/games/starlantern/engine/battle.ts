@@ -13,6 +13,7 @@ import { pick, type Rng } from './rng';
 import { abyssPct, bossPartyScale, deepPower, empower, enemyLevelAt, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
+import { afterAction, castCost, castDef, initMechs, mechRoundEnd, payMech } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
 import { credit, lossOf, type Ledger } from './ledger';
 import type { Barrier } from './mech';
@@ -165,6 +166,7 @@ export function createBattle(o: {
   }
   if (k !== 1) s.partyScale = k;
   s.abyss = o.abyss ?? abyssPct(depth);
+  initMechs(s);
   return s;
 }
 
@@ -190,10 +192,15 @@ function pickTarget(list: Combatant[], key: string | undefined, rng: Rng): Comba
   return alive.find((c) => c.taunt > 0) ?? pick(rng, alive);
 }
 
-/** Enemies attacking the party are bound by the grid: melee reaches only the front-most standing row; a taunting member is always reachable. */
+/**
+ * Enemies attacking the party are bound by the grid: melee reaches only the front-most standing row; a taunting member is
+ * always reachable. A veiled member (Rin's veil) is passed over unless everyone in reach is veiled.
+ */
 function foePool(s: BattleState, actor: Combatant, melee: boolean): Combatant[] {
   if (actor.side !== 'enemy') return s.enemies;
-  const pool = reachable(s.party, melee);
+  const reach = reachable(s.party, melee);
+  const seen = reach.filter((c) => !c.veil);
+  const pool = seen.length ? seen : reach;
   const taunter = living(s.party).find((c) => c.taunt > 0);
   return taunter && !pool.includes(taunter) ? [...pool, taunter] : pool;
 }
@@ -273,7 +280,8 @@ function checkOutcome(s: BattleState): boolean {
   return s.outcome !== 'ongoing';
 }
 
-function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ctx: EffectContext, rng: Rng): void {
+/** Carries out one action; returns the skill as cast (after its mechanics' rewrite) when a skill really was cast, else null. */
+function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ctx: EffectContext, rng: Rng): SkillDef | null {
   delete ctx.lastHit;   // burn and bleed ride only on a hit of this action
   if (actor.side === 'enemy') {
     const taunter = living(s.party).find((c) => c.taunt > 0);
@@ -294,51 +302,54 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
   switch (act.kind) {
     case 'attack': {
       const t = pickTarget(foePool(s, actor, actor.melee), act.target, rng);
-      if (!t) return;
+      if (!t) return null;
       s.log.push({ type: 'act', actor: actor.key, label: '攻擊' });
       physical(t);
-      return;
+      return null;
     }
     case 'enemy-skill': {
       const sk = enemyDef(s, actor)!.skills[act.index];
       s.log.push({ type: 'act', actor: actor.key, label: sk.name });
       for (const t of resolveTargets(s, actor, sk.target, act.target, rng, skillIsMelee(sk.effects))) for (const eff of sk.effects) applyEffect(actor, t, eff, ctx);
-      return;
+      return null;
     }
     case 'skill': {
       // A member casts only what their tree has learned (a whole rank of the skill's own node, read as progression reads
       // a tree); a combatant without ranks (tests) casts anything. The lost turn is logged, as one short of TP is.
-      if (actor.ranks && skillRank(actor.ranks, act.skill) === 0) { s.log.push({ type: 'no-skill', actor: actor.key }); return; }
+      if (actor.ranks && skillRank(actor.ranks, act.skill) === 0) { s.log.push({ type: 'no-skill', actor: actor.key }); return null; }
       let def = skillFor(actor, act.skill);
-      if (!def || def.passive) return;
+      if (!def || def.passive) return null;
       // The abyss capstones grow with the fight's depth, after the tree and the worn powers have had their say.
       const bonus = def.abyss && s.abyss ? pctMod(def.id, 100 + s.abyss) : undefined;
       if (bonus) def = patchSkill(def, bonus);
-      const cost = skillCost(actor, act.skill);
-      if (actor.tp < cost) { s.log.push({ type: 'no-tp', actor: actor.key }); return; }
+      // Then the caster's mechanic (Noel's heat): the skill as she casts it now, at the TP she pays now.
+      def = castDef(s, actor, def);
+      const cost = castCost(s, actor, act.skill);
+      if (actor.tp < cost) { s.log.push({ type: 'no-tp', actor: actor.key }); return null; }
       actor.tp -= cost;
       if (def.hpCost) actor.hp = Math.max(1, actor.hp - Math.floor(actor.max.hp * def.hpCost));
+      payMech(s, actor, def, ctx);
       s.log.push({ type: 'act', actor: actor.key, label: def.name });
       for (const t of resolveTargets(s, actor, def.target, act.target, rng)) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
-      return;
+      return def;
     }
     case 'item': {
       const def = ITEMS[act.item];
-      if (!def || !def.battle || (s.inventory[act.item] ?? 0) <= 0) return;
+      if (!def || !def.battle || (s.inventory[act.item] ?? 0) <= 0) return null;
       s.inventory[act.item] -= 1;
       s.log.push({ type: 'act', actor: actor.key, label: def.name });
       for (const t of resolveTargets(s, actor, def.target, act.target, rng)) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
-      return;
+      return null;
     }
     case 'defend':
       s.log.push({ type: 'act', actor: actor.key, label: '防禦' });
-      return;
+      return null;
     case 'escape':
-      return;
+      return null;
     case 'ultimate': {
       const u = ultimateFor(actor.defId as CharacterId, actor.ranks, actor);
-      if (!u) return;
-      if (actor.limit < LIMIT_MAX) { s.log.push({ type: 'no-limit', actor: actor.key }); return; }
+      if (!u) return null;
+      if (actor.limit < LIMIT_MAX) { s.log.push({ type: 'no-limit', actor: actor.key }); return null; }
       actor.limit = 0;
       s.log.push({ type: 'act', actor: actor.key, label: u.name, ultimate: u.id });
       const targets = resolveTargets(s, actor, u.target, act.target, rng);
@@ -348,12 +359,25 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
         const who = u.follow.who === 'hero' ? living(s.party).filter((c) => c.key === 'hero') : living(s.party);
         for (const t of who) for (const eff of u.follow.effects) applyEffect(actor, t, eff, ctx);
       }
-      return;
+      return null;
     }
   }
 }
 
+/**
+ * 還有。 (plan 8c ruling 14, as tuned in Task 2: her marked foe's fall): the command Rin repeats. The same target while it stands,
+ * else the first living foe; the same skill while she can pay for it, else (or after anything but an attack or a skill)
+ * a plain attack.
+ */
+function againAction(s: BattleState, c: Combatant, act: Action): Action {
+  const first = living(s.enemies)[0]?.key ?? '';
+  const meant = 'target' in act && act.target && s.enemies.some((e) => e.key === act.target && e.alive) ? act.target : first;
+  if (act.kind === 'skill' && castCost(s, c, act.skill) <= c.tp) return { kind: 'skill', skill: act.skill, target: meant };
+  return { kind: 'attack', target: act.kind === 'attack' || act.kind === 'skill' ? meant : first };
+}
+
 function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
+  mechRoundEnd(s, ctx, rng);
   for (const c of living(s.party)) {
     if (!c.turret) continue;
     const t = pickTarget(s.enemies, undefined, rng);
@@ -390,6 +414,8 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
     ageAilments(c);
     c.taunt = Math.max(0, c.taunt - 1);
     c.defending = false;
+    if (c.exposed) { if (c.exposed > 1) c.exposed -= 1; else delete c.exposed; }
+    if (c.veil) { if (c.veil > 1) c.veil -= 1; else delete c.veil; }
   }
 }
 
@@ -450,9 +476,25 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     const act = actor.side === 'party' ? actions[actor.key] : enemyActs.get(actor.key);
     const heroUp = s.party.some((c) => c.key === 'hero' && c.alive);
     if (act) {
-      perform(s, actor, act, ctx, rng);
+      // Her marks as she acts (a felled foe leaves them at once, so they are read before).
+      const marked = actor.mech?.kind === 'mark' ? s.enemies.filter((e) => e.alive && (actor.mech as { marks: string[] }).marks.includes(e.key)) : [];
+      const def = perform(s, actor, act, ctx, rng);
       delete ctx.redirect;
       if (actor.side === 'party' && actor.alive && act.kind !== 'ultimate' && act.kind !== 'escape') actor.limit = Math.min(LIMIT_MAX, actor.limit + gaugeGain(actor, LIMIT_PER_ACTION));
+      if (actor.side === 'party') {
+        const own = act as Action;
+        afterAction(s, actor, own, def, ctx);
+        // 還有。: she fells her mark on her own action, once a round, while a foe still stands; the repeat fills no gauge.
+        const m = actor.mech;
+        if (m?.kind === 'mark' && !m.again && actor.alive && marked.some((e) => !e.alive) && living(s.enemies).length > 0) {
+          m.again = true;
+          s.log.push({ type: 'mech', actor: actor.key, cue: 'again' });
+          const again = againAction(s, actor, own);
+          const def2 = perform(s, actor, again, ctx, rng);
+          delete ctx.redirect;
+          afterAction(s, actor, again, def2, ctx);
+        }
+      }
     }
     ringBell(s, heroUp, ctx);
     syncWards(s);

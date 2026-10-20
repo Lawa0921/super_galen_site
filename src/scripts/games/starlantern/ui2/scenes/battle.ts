@@ -5,9 +5,10 @@ import { ITEMS } from '../../data/items';
 import { T } from '../../data/text.zh-TW';
 import { STORY } from '../../data/story.zh-TW';
 import { CHARACTERS } from '../../data/characters';
-import { LIMIT_MAX, intentLabel, skillCost, skillFor, type Action, type BattleState } from '../../engine/battle';
+import { LIMIT_MAX, intentLabel, skillFor, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
 import { ailmentChips, type AilmentChip } from '../../engine/ailments';
+import { castCost, cueWord, foeWords, memberWords, type MechCue, type MechWord } from '../../engine/mechanics/index';
 import type { BattleEnd } from '../../engine/game';
 import { learnedSkills, ultimateFor } from '../../engine/progression';
 import type { CharacterId, Target } from '../../engine/types';
@@ -59,7 +60,7 @@ export class BattleScene implements Scene {
   private resultReady = false;
   /** Party values from before the round, shown until each member's own hit plays. */
   /** Each member as the round began (ailments too), shown until the playback reaches them. */
-  private before: Map<string, Pick<Combatant, 'hp' | 'tp' | 'limit' | 'alive'> & { ailments: AilmentChip[] }> | null = null;
+  private before: Map<string, Pick<Combatant, 'hp' | 'tp' | 'limit' | 'alive'> & { ailments: AilmentChip[]; mech: MechWord[] }> | null = null;
   private revealed = new Set<string>();
   private actLine = '';
   private cutins = 0;
@@ -126,8 +127,11 @@ export class BattleScene implements Scene {
       const was = this.revealed.has(c.key) ? undefined : this.before?.get(c.key);
       const v = was || c;
       // Ailments end with the fight (a new fight starts clean), so a finished one shows none.
-      const ailments = was ? was.ailments : this.state.outcome === 'ongoing' ? ailmentChips(c) : [];
-      return { key: c.key, name: c.name, hp: v.hp, maxHp: c.max.hp, tp: v.tp, maxTp: c.max.tp, limit: v.limit, alive: v.alive, row: c.row, ailments, ...(c.artId ? { artId: c.artId } : {}) };
+      const ongoing = this.state.outcome === 'ongoing';
+      const ailments = was ? was.ailments : ongoing ? ailmentChips(c) : [];
+      // Her mechanic's words, held like the ailments until the playback is over (plan 8c).
+      const mech = was ? was.mech : ongoing ? memberWords(this.state, c) : [];
+      return { key: c.key, name: c.name, hp: v.hp, maxHp: c.max.hp, tp: v.tp, maxTp: c.max.tp, limit: v.limit, alive: v.alive, row: c.row, ailments, mech, ...(c.artId ? { artId: c.artId } : {}) };
     }), active);
   }
 
@@ -181,7 +185,7 @@ export class BattleScene implements Scene {
   private showAilments(): void {
     const s = this.state;
     const live = s.outcome === 'ongoing' ? s.enemies.filter((e) => e.alive) : [];
-    this.ctx.stage?.battleView.showAilments?.(Object.fromEntries(live.map((e) => [e.key, ailmentChips(e)])));
+    this.ctx.stage?.battleView.showAilments?.(Object.fromEntries(live.map((e) => [e.key, ailmentChips(e)])), Object.fromEntries(live.map((e) => [e.key, foeWords(s, e)])));
   }
 
   /** 返回 shows only when cancel would do something: close a sub-list or go back to the previous member. */
@@ -219,11 +223,11 @@ export class BattleScene implements Scene {
   private skillItems(actor: Combatant): MenuItem[] {
     const m = this.ctx.game.state.party.roster[actor.key as CharacterId];
     return (m ? learnedSkills(m) : [])
-      // As this member casts them: a worn power may change the target, and tpCost lowers what each costs.
+      // As this member casts them: a worn power may change the target; tpCost and her mechanic set what each costs now.
       .flatMap((s) => skillFor(actor, s) ?? [])
       .filter((sk) => !sk.passive)
       .map((sk) => {
-        const cost = skillCost(actor, sk.id);
+        const cost = castCost(this.state, actor, sk.id);
         return { id: sk.id, label: sk.name, right: T.cmd.tp(cost), disabled: actor.tp < cost, note: sk.desc };
       });
   }
@@ -346,7 +350,7 @@ export class BattleScene implements Scene {
     this.cmd.hidden = true;
     this.ctx.stage?.battleView.showIntents?.({});
     this.view = null;
-    this.before = new Map(this.state.party.map((c) => [c.key, { hp: c.hp, tp: c.tp, limit: c.limit, alive: c.alive, ailments: ailmentChips(c) }]));
+    this.before = new Map(this.state.party.map((c) => [c.key, { hp: c.hp, tp: c.tp, limit: c.limit, alive: c.alive, ailments: ailmentChips(c), mech: memberWords(this.state, c) }]));
     this.revealed.clear();
     this.updateBar(null);
     const r = this.ctx.game.submitRound(this.actions);
@@ -443,6 +447,7 @@ export class BattleScene implements Scene {
       await playCutIn(this.cutin, { name: name ?? '', portrait, fast: !!this.ctx.fast });
       return;
     }
+    if (cue === 'mech') { this.bar.cue(key, cueWord(name as MechCue)); return; }
     const shown = this.before?.get(key);
     if (cue === 'tp' && shown && amount) {
       const max = this.state.party.find((c) => c.key === key)?.max.tp ?? shown.tp + amount;

@@ -1,6 +1,7 @@
 import type { BattleEvent } from '../engine/combatant';
 import { effectFor, type FxKey } from './artPaths';
 import type { WeaponKind } from '../engine/types';
+import type { MechCue } from '../engine/mechanics/index';
 
 /** `line` shows log entry `index` in the message window at the moment its picture plays. */
 export type Cue =
@@ -13,6 +14,8 @@ export type Cue =
   | { kind: 'miss'; key: string }
   /** End-of-round TP regen on a member: a quiet pop, no line and no pause. */
   | { kind: 'tp'; key: string; amount: number }
+  /** A character mechanic's moment (暴走！, 還有。): its word pops over the member. */
+  | { kind: 'mech'; key: string; cue: MechCue }
   | { kind: 'fx'; key: string; fx: FxKey; amount?: number }
   | { kind: 'ko'; key: string }
   | { kind: 'wait'; ms: number };
@@ -43,6 +46,7 @@ export function battleCues(log: BattleEvent[], defIdOf: (key: string) => string 
       });
     } else if (ev.type === 'miss') out.push({ kind: 'miss', key: ev.target });
     else if (ev.type === 'ko') out.push({ kind: 'ko', key: ev.target });
+    else if (ev.type === 'mech') out.push({ kind: 'mech', key: ev.actor, cue: ev.cue });
     else if ('target' in ev) {
       const fx = effectFor(ev, actor, weaponOf(actorKey));
       if (fx) out.push(ev.type === 'heal' ? { kind: 'fx', key: ev.target, fx, amount: ev.amount } : { kind: 'fx', key: ev.target, fx });

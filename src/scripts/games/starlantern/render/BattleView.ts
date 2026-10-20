@@ -10,6 +10,8 @@ import type { WeaponKind } from '../engine/types';
 import { art, enemyArt, type FxKey } from './artPaths';
 import { battleCues } from './battleCues';
 import { AILMENT_FILL, AILMENT_MORE_FILL, fitChips, textWidth } from './ailmentStyle';
+import { MECH_FILL } from './mechStyle';
+import type { MechCue, MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
 
 const PALETTE = [0x7fb069, 0x8e7dbe, 0xd1495b, 0x66a1d2, 0xe0a458, 0x5c946e, 0xb56576, 0x6d6875, 0xc44536];
@@ -118,7 +120,8 @@ const T_RESIST = { text: T.battle.pop.resist, fill: 0xc8d6e6, stroke: 0x1a2a3a }
 const HIT_STOP_MS = 80;
 /** How far an enemy drops in from when a battle opens. */
 const DROP_PX = 28;
-export type PartyCue = 'acting' | 'hit' | 'ultimate' | 'heal' | 'ko' | 'miss' | 'tp';
+/** `mech`: a mechanic's moment; its MechCue comes as the `name`. */
+export type PartyCue = 'acting' | 'hit' | 'ultimate' | 'heal' | 'ko' | 'miss' | 'tp' | 'mech';
 /** What the party bar needs to draw a hit: its effect, and whether it was a weak point, a crit or resisted. */
 export interface HitExtra { fx: FxKey | null; weak: boolean; crit?: boolean; resist?: boolean }
 
@@ -294,6 +297,7 @@ export class BattleView {
         continue;
       }
       if (cue.kind === 'tp') { if (!slot) void onParty?.(cue.key, 'tp', undefined, cue.amount); continue; }
+      if (cue.kind === 'mech') { if (!slot) void onParty?.(cue.key, 'mech', cue.cue satisfies MechCue); continue; }
       if (cue.kind === 'miss') {
         if (slot) this.popup(slot, T.battle.pop.miss, MISS_COLOR, { small: true }); else void onParty?.(cue.key, 'miss');
         continue;
@@ -413,16 +417,19 @@ export class BattleView {
 
   /**
    * Each enemy's ailments as coloured words above its head, centred on it, in one line inside its slot (「流血×3」「感電2」「+1」); a call replaces the whole
-   * row, and an enemy missing from `byKey` or with an empty list shows none.
+   * row, and an enemy missing from `byKey` or with an empty list shows none. `marks` are its mechanic words (「暗記」「弱點2」,
+   * plan 8c): first in the same row, in the same type, in their own colours.
    */
-  showAilments(byKey: Record<string, AilmentChip[]>): void {
+  showAilments(byKey: Record<string, AilmentChip[]>, marks: Record<string, MechWord[]> = {}): void {
     for (const [k, s] of this.slots) {
       if (s.ail.destroyed) continue;
       for (const c of s.ail.removeChildren()) c.destroy();
-      // One line inside its slot: the most severe first, the rest folded into +N.
-      const { shown, more } = fitChips(byKey[k] ?? [], this.ailMax, (t) => ailLabelWidth(t), AIL_GAP);
+      const mech = marks[k] ?? [];
+      const mechW = mech.reduce((w, x) => w + ailLabelWidth(x.text) + AIL_GAP, 0);
+      // One line inside its slot: the marks, then the most severe ailments, the rest folded into +N.
+      const { shown, more } = fitChips(byKey[k] ?? [], this.ailMax - mechW, (t) => ailLabelWidth(t), AIL_GAP);
       const word = (text: string, fill: number) => new Text({ text, style: { fill, fontSize: AIL_SIZE, stroke: { color: 0x000000, width: 3 } } });
-      const words = shown.map((chip) => word(T.ailmentChip(chip), AILMENT_FILL[chip.id]));
+      const words = [...mech.map((x) => word(x.text, MECH_FILL[x.tone])), ...shown.map((chip) => word(T.ailmentChip(chip), AILMENT_FILL[chip.id]))];
       if (more) words.push(word(T.ailmentMore(more), AILMENT_MORE_FILL));
       const widths = words.map((t) => ailLabelWidth(t.text));
       let x = -(widths.reduce((a, b) => a + b, 0) + AIL_GAP * Math.max(0, words.length - 1)) / 2;

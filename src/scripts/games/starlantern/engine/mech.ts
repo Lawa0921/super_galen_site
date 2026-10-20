@@ -28,7 +28,8 @@ export type MechState =
   | { kind: 'embers'; embers: number }
   | { kind: 'beat'; beat: number; last: string | null }
   | { kind: 'devices'; devices: Device[]; cap: number }
-  | { kind: 'mark'; marks: string[]; cap: number }
+  /** `again`: 還有。 has been spent this round (engine/mechanics/mark.ts). */
+  | { kind: 'mark'; marks: string[]; cap: number; again?: true }
   | { kind: 'barrier' };
 
 /** The value of gauge `g` on `c` (`aim` reads its stacks); undefined when `c` keeps no such gauge. */

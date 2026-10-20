@@ -56,7 +56,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
     { name: '雷咒', nodes: [
       A('hex', 3),
       A('thunder-star', 3),
-      M('noel-hex-up', '劇毒咒', 'hex', '提高衰弱咒的中毒機率', chance(0.6, 0.7, 0.8)),
+      M('noel-hex-up', '弱點延長', 'hex', '延長衰弱咒的弱點回合', turns(4, 5, 6)),
       M('noel-thunder-up', '雷星強化', 'thunder-star', '強化雷之星彈的威力', pct(115, 130, 150)),
       A('judgement', 1),
     ] },
@@ -234,12 +234,12 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('rin-backstab', 3),
       M('rin-backstab-up', '背刺強化', 'rin-backstab', '強化背刺的威力', pct(110, 120, 135)),
       A('rin-veil', 3),
-      M('rin-veil-up', '隱匿延長', 'rin-veil', '延長隱匿的持續回合', turns(4, 5, 6)),
+      M('rin-veil-up', '隱匿節流', 'rin-veil', '降低隱匿的 TP 消耗', tp(-1, -2, -3)),
       A('rin-shadowless', 1),
     ] },
     { name: '處決', nodes: [
       A('rin-mark', 3),
-      M('rin-mark-up', '標記加深', 'rin-mark', '加深標記的防禦削弱', buff(120, 140, 160)),
+      M('rin-mark-up', '暗記節流', 'rin-mark', '降低暗記的 TP 消耗', tp(-1, -2, -3)),
       A('rin-execute', 3),
       M('rin-execute-up', '處決強化', 'rin-execute', '強化處決的威力', pct(115, 130, 150)),
       A('rin-deathblow', 1),

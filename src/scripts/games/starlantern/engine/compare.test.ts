@@ -87,7 +87,7 @@ describe('itemLines', () => {
   it('shows the power and the lore of a legendary', () => {
     const lg = rollItem(mulberry32(3), { uid: 3, ilvl: 10, rarity: 'legendary', special: 'mire-whisper-gloves' });
     const lines = itemLines(lg);
-    expect(lines.find((l) => l.kind === 'power')!.text).toBe('衰弱咒必定使目標中毒（頭目減半）');
+    expect(lines.find((l) => l.kind === 'power')!.text).toBe('毒針必定使目標中毒（頭目減半）');
     expect(lines.at(-1)).toEqual({ kind: 'lore', text: SPECIALS['mire-whisper-gloves'].lore });
   });
 

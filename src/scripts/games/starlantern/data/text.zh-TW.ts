@@ -155,6 +155,14 @@ export const T = {
   ailmentChip: (c: AilmentChip) => `${AILMENT_NAME[c.id]}${c.stacks !== undefined ? `×${c.stacks}` : c.turns !== undefined ? c.turns : ''}`,
   /** The ailments a full row folds away, counted: 「+2」. */
   ailmentMore: (n: number) => `+${n}`,
+  /** Character mechanics on the battle screen (plan 8c): words under a member or over a foe, and the moments that pop. */
+  mech: {
+    heat: (n: number) => `熱度${n}`,
+    expose: (n: number) => `弱點${n}`,
+    mark: '暗記',
+    veil: '隱匿',
+    cue: { overload: '暴走！', again: '還有。' },
+  },
   log: {
     act: (who: string, label: string) => `${who}：${label}`,
     damage: (who: string, n: number, mult: number) => `${who} 受到 ${n} 傷害${mult > 1 ? '（弱點）' : mult < 1 ? '（抗性）' : ''}`,
@@ -176,6 +184,7 @@ export const T = {
     poison: (who: string, n: number) => `${who} 因毒受到 ${n} 傷害`,
     dot: (who: string, s: 'burn' | 'bleed', n: number) => `${who} 因${s === 'burn' ? '灼燒' : '流血'}受到 ${n} 傷害`,
     shield: (who: string, n: number) => `${who}的護盾擋下了 ${n} 傷害`,
+    mech: (who: string, cue: 'overload' | 'again', n?: number) => (cue === 'overload' ? `${who}的魔力暴走了！反噬 ${n ?? 0}` : `${who}：還有。`),
     frozen: (who: string) => `${who} 被凍住了，動彈不得`,
     miss: (who: string) => `${who} 閃過了攻擊`,
     crit: '（暴擊）',

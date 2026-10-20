@@ -3,6 +3,7 @@ import { el } from '../ui/dom';
 import { T } from '../data/text.zh-TW';
 import type { Row } from '../engine/types';
 import type { AilmentChip } from '../engine/ailments';
+import type { MechWord } from '../engine/mechanics/index';
 import { fitChips, textWidth } from '../render/ailmentStyle';
 import type { ArtIndex } from '../render/textures';
 
@@ -19,7 +20,9 @@ export interface BarMember { key: string; name: string; hp: number; maxHp: numbe
   /** The art id of the face when it is not `key` (Rin after her oath). */
   artId?: string;
   /** Ailments held, shown as coloured words with their rounds under the bars; none (or empty) shows nothing. */
-  ailments?: AilmentChip[] }
+  ailments?: AilmentChip[];
+  /** Her mechanic's words (「熱度3」「隱匿」), first in the same row as the ailments (plan 8c). */
+  mech?: MechWord[] }
 /** `miss` and `tp` only pop a word or number: no face, shake or glow. */
 export type PulseMood = 'attack' | 'hit' | 'heal' | 'ko' | 'miss' | 'tp';
 /**
@@ -128,6 +131,15 @@ export class PartyBar {
     setTimeout(() => { for (const x of extras) x.remove(); }, POP_MS);
   }
 
+  /** A mechanic's moment (暴走！, 還有。): its word in its colour rising off the panel, like MISS. */
+  cue(key: string, w: MechWord): void {
+    const p = this.panels.get(key);
+    if (!p) return;
+    const pop = el('span', { class: `slx-pm-cue slx-mech-${w.tone}`, text: w.text, attrs: { 'aria-hidden': 'true' } });
+    p.el.append(pop);
+    setTimeout(() => pop.remove(), POP_MS);
+  }
+
   /** MISS or a TP gain: a word or number rising off the panel and nothing else, so it never reads as a hit. */
   private quietPop(p: Panel, mood: 'miss' | 'tp', amount?: number): void {
     if (mood === 'tp' && !amount) return;
@@ -158,11 +170,14 @@ export class PartyBar {
         el('span', { class: 'slx-pm-tp' }), bar(0, 1, 'slx-bar-tp'), bar(0, 1, 'slx-bar-limit'), el('span', { class: 'slx-pm-ail' }));
     }
     const [name, num, hp, tpNum, tp, limit, ail] = [...p.body.children] as HTMLElement[];
-    // One line: the most severe first, the rest folded into +N.
-    const { shown, more } = fitChips(m.ailments ?? [], AIL_ROW_W, ailWordWidth, 1);
-    ail.replaceChildren(...shown.map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })),
+    // One line: her mechanic's words first, then the ailments, the most severe first, the rest folded into +N.
+    const mech = m.mech ?? [];
+    const mechW = mech.reduce((w, x) => w + ailWordWidth(x.text) + 1, 0);
+    const { shown, more } = fitChips(m.ailments ?? [], AIL_ROW_W - mechW, ailWordWidth, 1);
+    ail.replaceChildren(...mech.map((x) => el('span', { class: `slx-mech slx-mech-${x.tone}`, text: x.text })),
+      ...shown.map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })),
       ...(more ? [el('span', { class: 'slx-ail slx-ail-more', text: T.ailmentMore(more) })] : []));
-    ail.hidden = shown.length + more === 0;
+    ail.hidden = mech.length + shown.length + more === 0;
     tpNum.textContent = `TP ${m.tp}/${m.maxTp}`;
     name.replaceChildren(m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : []));
     num.textContent = `${m.hp}/${m.maxHp}`;

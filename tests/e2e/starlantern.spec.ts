@@ -1519,7 +1519,11 @@ test.describe('starlantern', () => {
     }
     await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
     await expect(page.locator('.slx-partybar .slx-pm-ail:not([hidden])')).toHaveCount(5);
-    for (const row of await page.locator('.slx-partybar .slx-pm-ail').all()) expect(await row.locator('.slx-ail').allTextContents()).toEqual(['流血×2', '灼燒2', '中毒', '+2']);
+    // Noel's heat (plan 8c) takes the first place in her row, and one more ailment folds into +N.
+    for (const row of await page.locator('.slx-partybar .slx-pm-ail').all()) {
+      const words = await row.locator('.slx-mech, .slx-ail').allTextContents();
+      expect(words).toEqual(words[0].startsWith('熱度') ? ['熱度0', '流血×2', '灼燒2', '+3'] : ['流血×2', '灼燒2', '中毒', '+2']);
+    }
     /** Every member word against every living enemy's HP bar (design px, mapped onto the canvas as drawn). */
     const overlaps = () => page.evaluate(() => {
       const view = (window as unknown as { __starlanternDebug: { stage: any } }).__starlanternDebug.stage.battleView;
@@ -1528,7 +1532,7 @@ test.describe('starlantern', () => {
       const keys: string[] = (window as unknown as { __starlanternDebug: { game: any } }).__starlanternDebug.game.battle.enemies.filter((e: any) => e.alive).map((e: any) => e.key);
       const bars = keys.map((key) => view.hpBarRect(key)).filter(Boolean)
         .map((r: { x: number; y: number; width: number; height: number }) => ({ left: canvas.left + r.x * k, top: canvas.top + r.y * k, right: canvas.left + (r.x + r.width) * k, bottom: canvas.top + (r.y + r.height) * k }));
-      const chips = [...document.querySelectorAll('.slx-partybar .slx-ail')].map((c) => c.getBoundingClientRect());
+      const chips = [...document.querySelectorAll('.slx-partybar .slx-ail, .slx-partybar .slx-mech')].map((c) => c.getBoundingClientRect());
       const hits: string[] = [];
       for (const c of chips) for (const b of bars) {
         if (c.left < b.right && b.left < c.right && c.top < b.bottom && b.top < c.bottom) hits.push(`${c.left},${c.top} x ${b.left},${b.top}`);
@@ -1612,6 +1616,84 @@ test.describe('starlantern', () => {
     const fit = await fits();
     expect(fit.scroll).toBeLessThanOrEqual(fit.client);
     if (process.env.SL_SHOTS) { await page.waitForTimeout(800); await page.screenshot({ path: `${process.env.SL_SHOTS}/ailments-390.png` }); }
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  test('heat and the mark show on the battle screen (plan 8c)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const w = await setup(page, 7);
+    // The standard five: Noel and Rin both fight.
+    await page.evaluate(() => {
+      const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+      p.recruited = ['hero', 'rin', 'chizuru', 'noel', 'selene'];
+      p.grid = ['hero', 'rin', 'chizuru', null, null, null, 'noel', null, 'selene'];
+    });
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    // Noel runs at heat 3; Rin has marked the first foe; the foes are made harmless and sturdy.
+    const foes: number = await game((g) => {
+      const noel = g.battle.party.find((c: any) => c.key === 'noel');
+      const rin = g.battle.party.find((c: any) => c.key === 'rin');
+      noel.mech = { kind: 'heat', heat: 3 };
+      const live = g.battle.enemies.filter((e: any) => e.alive);
+      for (const e of live) { e.max.hp = 999; e.hp = 999; e.max.atk = 1; e.max.mag = 1; }
+      rin.mech = { kind: 'mark', marks: [live[0].key], cap: 1 };
+      return live.length;
+    });
+    const round = () => game((g) => g.battle?.round ?? -1);
+    /** One round: Rin does `rin`, everyone else defends. */
+    const play = async (rin: '攻擊' | '防禦') => {
+      const at = await round();
+      for (let i = 0; i < 60 && (await round()) === at; i++) {
+        if (!(await page.locator('.slx-bcmd [role=option]').count())) { await page.waitForTimeout(50); continue; }
+        const who = (await page.locator('.slx-bcmd .slx-who').textContent()) ?? '';
+        await w.choose('.slx-bcmd', who.startsWith(CHARACTERS.rin.name) ? rin : '防禦');
+        if (await page.locator('.slx-btarget').isVisible()) await w.key('Enter');   // the first foe: her mark
+      }
+    };
+    await play('防禦');
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    const row = page.locator('.slx-partybar [data-key=noel] .slx-pm-ail');
+    await expect(row.locator('.slx-mech-heat')).toHaveText('熱度3');
+    // The mark rides on the foe's picture (Pixi), first in its row.
+    const marked = await page.evaluate(() => {
+      const view = (window as unknown as Dbg & { __starlanternDebug: { stage: any } }).__starlanternDebug.stage.battleView;
+      return view.ailmentTexts('e0').map((t: { text: string }) => t.text);
+    });
+    expect(marked[0]).toBe('暗記');
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/mech-1280.png` }); }
+    await page.setViewportSize({ width: 844, height: 390 });
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/mech-844.png` }); }
+    // On a phone held upright the row still fits its panel on one line.
+    await page.setViewportSize({ width: 390, height: 844 });
+    const fit = await row.evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
+    expect(fit.scroll).toBeLessThanOrEqual(fit.client);
+    // Rin fells her marked foe: 還有。 pops over her, and she strikes again while a foe stands.
+    await page.setViewportSize({ width: 1280, height: 720 });
+    if (foes > 1) {
+      await game((g) => { g.battle.enemies.find((e: any) => e.key === 'e0').hp = 1; });
+      const cue = page.locator('.slx-partybar [data-key=rin] .slx-pm-cue');
+      const seen = cue.first().waitFor({ state: 'attached', timeout: 10_000 }).then(async () => {
+        if (shots) await page.screenshot({ path: `${shots}/again-1280.png` });
+        return (await cue.first().textContent()) ?? '';
+      });
+      await play('攻擊');
+      expect(await seen).toBe('還有。');
+      expect(await game((g) => g.battle.log.some((e: any) => e.type === 'mech' && e.cue === 'again'))).toBe(true);
+    }
     expect(w.errors).toEqual([]);
     expect(missing).toEqual([]);
   });

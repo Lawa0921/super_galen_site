@@ -32,6 +32,7 @@ export function battleLines(log: BattleEvent[], nameOf: (key: string) => string)
       case 'poison-tick': return T.log.poison(nameOf(e.target), e.amount);
       case 'dot-tick': return T.log.dot(nameOf(e.target), e.status, e.amount);
       case 'shield': return T.log.shield(nameOf(e.target), e.amount);
+      case 'mech': return T.log.mech(nameOf(e.actor), e.cue, e.amount);
       case 'frozen': return T.log.frozen(nameOf(e.actor));
       case 'survived': return STORY.survived;
     }

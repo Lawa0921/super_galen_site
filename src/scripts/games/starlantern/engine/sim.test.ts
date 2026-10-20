@@ -181,3 +181,16 @@ describe('the memory expectation and armed casters (plan 6b Task 20a)', () => {
     expect(fight(2)).not.toEqual(fight(1));
   });
 });
+
+describe('the sim reads the mechanics (plan 8c)', () => {
+  it('castPower reads the cast as she would cast it now', async () => {
+    const { castPower } = await import('./sim');
+    const { makeBattle, makeCombatant } = await import('./testing');
+    const { SKILLS } = await import('../data/skills');
+    const { HEAT } = await import('./mechanics/heat');
+    const noel = (heat: number) => makeCombatant({ key: 'noel', side: 'party', defId: 'noel', mech: { kind: 'heat', heat } });
+    const s = makeBattle([noel(3)], []);
+    expect(castPower(s, noel(0), SKILLS['fire-star'])).toBe(140);
+    expect(castPower(s, noel(3), SKILLS['fire-star'])).toBe(Math.round((140 * (100 + 3 * HEAT.pctPer)) / 100));
+  });
+});

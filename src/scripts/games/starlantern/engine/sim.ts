@@ -6,7 +6,7 @@ import { REGIONS } from '../data/regions';
 import { depthLevel } from './levels';
 import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
-import { LIMIT_MAX, createBattle, resolveRound, skillCost, skillFor, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
+import { LIMIT_MAX, createBattle, resolveRound, skillFor, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
 import { MAX_LEVEL, SLOTS, expToNext, gainExp, newMember, partyWith, statsOf, STANDARD_LINEUP } from './party';
 import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills, memoriesOf } from './progression';
 import { HERO_BUILDS, type HeroBuild } from '../data/hero';
@@ -16,6 +16,7 @@ import { mulberry32 } from './rng';
 import type { Ledger } from './ledger';
 import type { Combatant } from './combatant';
 import { applyPolicy, type PolicyTable } from './policy';
+import { castCost, castDef } from './mechanics/index';
 import { DEFAULT_POLICIES } from '../data/policies';
 import { depthClearExp, encounterTable, scaleEnemy } from './scaling';
 import { genFloor } from './dungeon/gen';
@@ -131,9 +132,9 @@ export function choose(s: BattleState, party: Party, policies: PolicyTable = DEF
     const target = foes[0]?.key ?? '';
     const id = c.key as CharacterId;
     if (c.limit >= LIMIT_MAX) { out[c.key] = { kind: 'ultimate', target }; continue; }
-    // Each skill as this member casts it (worn powers) and at the TP they pay for it.
+    // Each skill as this member casts it (worn powers) and at the TP they pay for it now (her mechanic included).
     const skills = learnedSkills(party.roster[id]).flatMap((sk) => skillFor(c, sk) ?? [])
-      .filter((sk) => !sk.passive && skillCost(c, sk.id) <= c.tp);
+      .filter((sk) => !sk.passive && castCost(s, c, sk.id) <= c.tp);
     const power = (def: SkillDef) => castPower(s, c, def);
     const { action, hold } = applyPolicy(s, c, skills, policies[id] ?? [], power);
     if (action) { out[c.key] = action; continue; }
@@ -158,11 +159,11 @@ export function attackAll(s: BattleState): Record<string, Action> {
 export type SimAi = 'skill' | 'attack';
 
 /**
- * What `def` is worth as `c` casts it now, for ranking damage skills: today the damage effects' power x hits. Roster
- * plans let it read the caster's state (Liz's coins, Chizuru's barrier) so the sim never spends big at nothing.
+ * What `def` is worth as `c` casts it now, for ranking damage skills: the damage effects' power x hits of the skill as
+ * her mechanic would cast it (mechanics.castDef: Noel's heat), so the sim never spends big at nothing.
  */
 export function castPower(s: BattleState, c: Combatant, def: SkillDef): number {
-  return def.effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
+  return castDef(s, c, def).effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
 }
 
 /**

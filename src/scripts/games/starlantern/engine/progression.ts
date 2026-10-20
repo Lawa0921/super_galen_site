@@ -100,13 +100,14 @@ export function skillRank(ranks: unknown, skill: string): number {
 /**
  * The active node's own rank as a rewrite of the skill's primary effect, or undefined when it changes nothing (rank 0, or
  * 100%): a skill that deals damage, heals or sets a turret scales its power (`powerPct`; a debuff riding on it is left
- * alone); a pure buff or debuff skill scales its percent (`buffPct`). A skill with neither has nothing to scale.
+ * alone); a pure buff or debuff skill scales its percent (`buffPct`). A skill with neither costs 1 TP less a rank (`tpDelta`).
  */
 export function rankMod(ranks: Record<string, number>, skill: string): SkillMod | undefined {
   const rank = skillRank(ranks, skill);
   const pct = rank > 0 ? ACTIVE_RANK_PCT[rank - 1] : 100;
   if (pct === 100) return undefined;
-  return pctMod(skill, pct);
+  // A skill with nothing to scale (plan 8c: hex, veil, mark) costs 1 TP less for each rank above the first instead.
+  return pctMod(skill, pct) ?? ((SKILLS[skill]?.tp ?? 0) > 0 ? { tpDelta: 1 - rank } : undefined);
 }
 
 /**

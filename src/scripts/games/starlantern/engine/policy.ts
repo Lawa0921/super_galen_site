@@ -11,7 +11,8 @@ import type { CharacterId, SkillDef } from './types';
 export type PolicyRule =
   | { kind: 'ensure-barrier'; skills: string[] }
   | { kind: 'ensure-device'; skills: string[] }
-  | { kind: 'ensure-mark'; skill: string }
+  /** `big`: only a boss or an elite is worth a mark; `below`: only once its HP is under this percent of its max. */
+  | { kind: 'ensure-mark'; skill: string; big?: true; below?: number }
   | { kind: 'alternate' }
   | { kind: 'spend-at'; gauge: MechGauge; min: number; skill: string }
   | { kind: 'heal-below'; pct: number }
@@ -62,7 +63,7 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
         const m = c.mech;
         if (m?.kind !== 'mark' || !has(rule.skill)) break;
         const marked = m.marks.filter((k) => foes.some((e) => e.key === k));
-        const next = foes.find((e) => !m.marks.includes(e.key));
+        const next = foes.find((e) => !m.marks.includes(e.key) && (!rule.big || e.boss || e.tint === 'elite') && (rule.below === undefined || e.hp * 100 < e.max.hp * rule.below));
         if (marked.length < m.cap && next) return cast(rule.skill, next.key);
         break;
       }

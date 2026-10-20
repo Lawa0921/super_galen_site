@@ -138,10 +138,12 @@ describe('skill trees', () => {
     expect(checked).toBe(1);
   });
 
-  it('an active above rank 1 has an effect its rank scales (damage, heal or turret by powerPct; a pure buff by buffPct)', () => {
+  it('an active above rank 1 has an effect its rank scales (damage, heal or turret by powerPct; a pure buff by buffPct), or a TP cost its rank lowers', () => {
     for (const n of allNodes().filter((x) => x.kind === 'active' && x.maxRank > 1)) {
       const kinds = SKILLS[n.skill].effects.map((e) => e.kind);
-      expect(kinds.some((k) => ['damage', 'heal', 'buff', 'turret'].includes(k)), n.id).toBe(true);
+      // Plan 8c: a skill with nothing to scale (hex, veil, mark) costs 1 TP less a rank, so it needs TP to spare.
+      const scales = kinds.some((k) => ['damage', 'heal', 'buff', 'turret'].includes(k));
+      expect(scales || SKILLS[n.skill].tp > n.maxRank, n.id).toBe(true);
     }
   });
 

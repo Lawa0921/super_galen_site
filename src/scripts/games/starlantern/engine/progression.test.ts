@@ -754,3 +754,17 @@ describe('the Lantern Key and the dawn blade', () => {
     expect(ultimateFor('noel', {}, { memories: 10, oath: true })).toBe(ULTIMATES.noel);
   });
 });
+
+describe('ranks of a skill with nothing to scale (plan 8c)', () => {
+  it('each rank above the first costs 1 TP less', async () => {
+    const { skillFor } = await import('./battle');
+    const { SKILLS } = await import('../data/skills');
+    for (const id of ['hex', 'rin-veil', 'rin-mark']) {
+      const tp = (rank: number) => skillFor({ powers: [], ranks: { [id]: rank } }, id)!.tp;
+      expect([tp(1), tp(2), tp(3)], id).toEqual([SKILLS[id].tp, SKILLS[id].tp - 1, SKILLS[id].tp - 2]);
+      expect(skillFor({ powers: [], ranks: { [id]: 3 } }, id)!.effects, id).toEqual(SKILLS[id].effects);
+    }
+    // A skill that scales keeps its TP and scales instead.
+    expect(skillFor({ powers: [], ranks: { 'fire-star': 3 } }, 'fire-star')!.tp).toBe(SKILLS['fire-star'].tp);
+  });
+});

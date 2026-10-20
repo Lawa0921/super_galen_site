@@ -20,7 +20,7 @@ import { mulberry32 } from './rng';
 import { ABYSS } from '../data/hero';
 
 // Re-captured (CAPTURE=1) in plan 6a Task 19c for its ENEMY_POWER retune (amount 0.3, amount2 0.26, ramp 0.002). Task 20 then moved the ramp to 0.0012; the replays below did not change.
-const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",2,73142791],"0:2":["win",2,1205089542],"0:3":["win",2,158900800],"1:1":["win",2,2337184962],"1:2":["win",2,2966680078],"1:3":["win",3,1798866629],"2:1":["win",1,2064207589],"2:2":["win",1,2684440515],"2:3":["win",1,3423334806],"3:1":["win",2,2262475916],"3:2":["win",2,840362926],"3:3":["win",2,4234222871]};
+const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",2,3198065654],"0:2":["win",2,1205089542],"0:3":["win",2,158900800],"1:1":["win",2,2337184962],"1:2":["win",2,3136947989],"1:3":["win",3,661416264],"2:1":["win",1,2064207589],"2:2":["win",1,2684440515],"2:3":["win",1,3423334806],"3:1":["win",2,2262475916],"3:2":["win",2,840362926],"3:3":["win",2,2242520671]};
 const rng = constRng(0.5); // enemies never use skills (all chances < 0.5), variance 1.0
 const P = (key: string, over = {}) => makeCombatant({ key, side: 'party', ...over });
 const E = (key: string, over = {}) => makeCombatant({ key, side: 'enemy', ...over });
@@ -1068,5 +1068,20 @@ describe('ailments at round end and on their turn (plan 8b)', () => {
     expect(cured.poison).toBe(false);
     expect(cured.sleep).toBe(0);
     expect(cured.freezeGuard).toBe(1);
+  });
+});
+
+describe('character mechanics (plan 8c)', () => {
+  it('every fight starts from a fresh mechanic', () => {
+    const party = fullParty(['hero', 'noel', 'rin', 'chizuru', 'selene']);
+    const open = () => createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    const first = open();
+    const by = (s: ReturnType<typeof open>) => Object.fromEntries(s.party.map((c) => [c.key, c.mech]));
+    expect(by(first)).toEqual({ hero: undefined, noel: { kind: 'heat', heat: 0 }, rin: { kind: 'mark', marks: [], cap: 1 }, chizuru: undefined, selene: undefined });
+    // A fight that heats Noel up and marks a foe leaves nothing for the next one from the same party.
+    const after = resolveRound(first, { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' }, rin: { kind: 'skill', skill: 'rin-mark', target: 'e0' } }, mulberry32(1));
+    expect(after.party.find((c) => c.key === 'noel')?.mech).not.toEqual({ kind: 'heat', heat: 0 });
+    expect(by(open())).toEqual(by(first));
+    for (const c of first.enemies) expect(c.mech).toBeUndefined();
   });
 });

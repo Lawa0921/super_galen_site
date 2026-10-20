@@ -174,3 +174,14 @@ describe('specials', () => {
     expect(codexName('nope')).toBe('nope');
   });
 });
+
+describe('legendary powers follow the roster (plan 8c)', () => {
+  it("mire-whisper-gloves now poisons through rin's needle", async () => {
+    const { skillFor } = await import('../engine/battle');
+    const def = skillFor({ powers: ['mire-whisper-gloves'] }, 'rin-venom-needle');
+    expect(def?.effects.find((e) => e.kind === 'inflict')).toEqual({ kind: 'inflict', status: 'poison', chance: 1 });
+    expect(POWERS['mire-whisper-gloves'].skill).toBe('rin-venom-needle');
+    expect(Object.values(POWERS).some((p) => p.skill === 'hex')).toBe(false);
+    for (const p of Object.values(POWERS)) expect(SKILLS[p.skill], p.id).toBeDefined();
+  });
+});

@@ -212,3 +212,25 @@ describe('ailment colours and words (plan 8b)', () => {
     expect(Object.values(T.ui2.gate.traits)).not.toContain(T.ailment.burn);
   });
 });
+
+describe('mechanic colours (plan 8c)', () => {
+  const map = scss.match(/\$slx-mech: \(([^)]*)\);/)?.[1] ?? '';
+  const entries = [...map.matchAll(/([a-z]+): #([0-9a-f]{6})/g)].map((m) => [m[1], m[2]] as const);
+  const rgb = (h: string) => [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+
+  it('$slx-mech matches MECH_FILL, reads on the window, and no two tones look alike', async () => {
+    const { MECH_FILL } = await import('../render/mechStyle');
+    expect(entries.map(([k]) => k).sort()).toEqual(Object.keys(MECH_FILL).sort());
+    expect(entries.length).toBeGreaterThanOrEqual(4);
+    for (const [k, h] of entries) expect(parseInt(h, 16), k).toBe(MECH_FILL[k as keyof typeof MECH_FILL]);
+    const win = scssRgb('slx-win');
+    for (const [k, h] of entries) expect(contrast(rgb(h), win), k).toBeGreaterThanOrEqual(4.5);
+    for (const [a, ha] of entries) for (const [b, hb] of entries) {
+      if (a < b) expect(Math.hypot(...rgb(ha).map((v, i) => v - rgb(hb)[i])), `${a} ${b}`).toBeGreaterThan(40);
+    }
+    // Every tone has its class in the stylesheet, the words and the cue alike.
+    const css = compile(resolve(process.cwd(), 'src/styles/_starlantern-ui.scss')).css;
+    for (const [k] of entries) expect(css, k).toContain(`.slx-mech-${k}`);
+    expect(css).toContain('.slx-pm-cue');
+  });
+});

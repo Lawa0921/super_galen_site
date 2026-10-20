@@ -429,7 +429,12 @@ $slx-battle-left: 150px;
 $slx-ailment: (poison: #b48cff, sleep: #c4c8dc, burn: #ff8a4a, freeze: #8fe8ff, chill: #8fa8ff, shock: #ffe45c, bleed: #ff5a6e);
 .slx-pm-ail { position: absolute; left: 0; right: 0; bottom: 100%; z-index: 3; margin-bottom: 1px; display: flex; flex-wrap: nowrap; gap: 1px; overflow: hidden; pointer-events: none; }
 .slx-pm-ail[hidden] { display: none; }
-.slx-ail { flex: none; padding: 0 1px; font-size: 9px; line-height: 10px; border: 1px solid currentColor; white-space: nowrap; background: rgba($slx-win, 0.92); }
+.slx-ail, .slx-mech { flex: none; padding: 0 1px; font-size: 9px; line-height: 10px; border: 1px solid currentColor; white-space: nowrap; background: rgba($slx-win, 0.92); }
+// Character mechanics (plan 8c): the same word look as an ailment, in their own colours (render/mechStyle.ts MECH_FILL).
+$slx-mech: (heat: #ffb000, expose: #5cffa8, mark: #ff6fd8, veil: #9aa4c8);
+@each $k, $c in $slx-mech {
+  .slx-mech-#{$k} { color: $c; }
+}
 @each $k, $c in $slx-ailment {
   .slx-ail-#{$k} { color: $c; }
 }
@@ -826,9 +831,16 @@ $slx-framed: (magic, rare, epic, legendary, unique, set);
   animation: slx-pm-miss 0.9s ease-out forwards;
 }
 @keyframes slx-pm-miss { 0% { translate: -6px 0; opacity: 0; } 20% { translate: 0 0; opacity: 1; } 70% { opacity: 1; } 100% { translate: 0 -12px; opacity: 0; } }
+// A mechanic's moment (暴走！, 還有。): a word in its colour rising off the panel like MISS, with no shake.
+.slx-pm-cue {
+  position: absolute; left: 4px; top: 6px; z-index: 3; pointer-events: none; white-space: nowrap;
+  font-size: 14px; line-height: 14px;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  animation: slx-pm-miss 0.9s ease-out forwards;
+}
 .slx-pm-pop-tp { font-size: 12px; line-height: 12px; top: 14px; color: #8fb8ff; }
 @media (prefers-reduced-motion: reduce) {
-  .slx-pm-weak, .slx-pm-crit, .slx-pm-resist, .slx-pm-miss { animation: none; }
+  .slx-pm-weak, .slx-pm-crit, .slx-pm-resist, .slx-pm-miss, .slx-pm-cue { animation: none; }
 }
 // Gear in loot lines: the name in its rarity colour; the rarer pieces glow, and battle results slide each piece in.
 .slx-gear-drop.slx-rarity-legendary, .slx-gear-drop.slx-rarity-unique, .slx-gear-drop.slx-rarity-set,
