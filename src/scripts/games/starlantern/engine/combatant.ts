@@ -3,6 +3,7 @@ import type { Rng } from './rng';
 import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
+import type { MechState } from './mech';
 
 /** `src`: the combatant key of whoever cast it (the contribution ledger credits what it prevents to them). */
 export interface Buff { stat: BuffStat; pct: number; turns: number; src?: string }
@@ -43,6 +44,8 @@ export interface Combatant {
   artId?: string;
   /** Never drops below 1 HP (dealDamage): the party and Scarlet in a survive fight. */
   undying?: true;
+  /** A member's character mechanic in this fight (engine/mech.ts); the old roster has none. */
+  mech?: MechState;
 }
 
 export type BattleEvent =

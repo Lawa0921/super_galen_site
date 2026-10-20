@@ -14,6 +14,7 @@ import { abyssPct, bossPartyScale, deepPower, empower, enemyLevelAt, groupCap, h
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
 import { credit, lossOf, type Ledger } from './ledger';
+import type { Barrier } from './mech';
 import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
@@ -42,6 +43,8 @@ export interface BattleState {
   partyScale?: number;
   /** Rounds the party must last for a win (a story fight); absent in a plain fight. */
   survive?: number;
+  /** The barriers over the party (engine/mech.ts); the old roster raises none. */
+  barriers?: Barrier[];
 }
 
 /** Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */

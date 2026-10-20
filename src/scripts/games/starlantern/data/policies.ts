@@ -1,0 +1,15 @@
+import type { PolicyTable } from '../engine/policy';
+
+/**
+ * The sim player's default policies, one short list per character (spec §12.5's starting proposal; plan 8a Task 4).
+ * They belong to each character's "standard" build: when the suggested builds (spec §16) read their policies from build
+ * data, the standard ones must equal these. A roster plan that renames a skill changes it here.
+ */
+export const DEFAULT_POLICIES: PolicyTable = {
+  chizuru: [{ kind: 'ensure-barrier', skills: ['ward'] }],
+  bobby: [{ kind: 'ensure-device', skills: ['turret'] }],
+  rin: [{ kind: 'ensure-mark', skill: 'rin-mark' }],
+  safira: [{ kind: 'alternate' }],
+  liz: [{ kind: 'spend-at', gauge: 'coins', min: 6, skill: 'fortune-strike' }],
+  sylvie: [{ kind: 'spend-at', gauge: 'aim', min: 3, skill: 'starfall-arrow' }],
+};

@@ -14,6 +14,9 @@ import { EQUIPMENT, WEAPON_KINDS, weaponKindOf } from '../data/equipment';
 import { expectedMemories } from './story/expect';
 import { mulberry32 } from './rng';
 import type { Ledger } from './ledger';
+import type { Combatant } from './combatant';
+import { applyPolicy, type PolicyTable } from './policy';
+import { DEFAULT_POLICIES } from '../data/policies';
 import { depthClearExp, encounterTable, scaleEnemy } from './scaling';
 import { genFloor } from './dungeon/gen';
 import { terrainOf } from './dungeon/run';
@@ -48,8 +51,9 @@ export const ODD_LINEUPS: Record<'noHeal' | 'noTank' | 'allMagic' | 'allPhys', {
  * Who the simulation fields: the members (default the standard five), the hero's build, row and memories, and a forced
  * abyss bonus. `expect` gives every member the memory expectation of the fight's depth (`expectedMemories`); `memories`
  * still sets the hero's count over it. `armHero` gives a caster hero his build's own staff (plan 6b Task 20a, hand-off M9).
+ * `policies` replaces the sim player's default policies (data/policies.ts) for its fights.
  */
-export interface Lineup { ids?: CharacterId[]; heroBuild?: HeroBuild; heroRow?: Row; memories?: number; abyss?: number; expect?: boolean; armHero?: boolean }
+export interface Lineup { ids?: CharacterId[]; heroBuild?: HeroBuild; heroRow?: Row; memories?: number; abyss?: number; expect?: boolean; armHero?: boolean; policies?: PolicyTable }
 
 /**
  * A fresh party with everyone at `level`, held to the real level cap, each with the default tree and talents of that
@@ -113,8 +117,13 @@ export function kitParty(level: number, depth: number, seed: number, rarity?: Ra
   return p;
 }
 
-/** A plain player: ultimate when the gauge is full, heal when someone is under half HP, else the strongest affordable damage skill, else attack. */
-export function choose(s: BattleState, party: Party): Record<string, Action> {
+/**
+ * A plain player that follows each member's policy (spec §12.5, plan 8a Task 4): the ultimate when the gauge is full, then
+ * the member's policy rules (engine/policy.ts, which read only the new mechanics), then a heal when someone is under half
+ * HP, else the strongest affordable damage skill by `castPower`, else attack. A skill a `spend-at` rule holds back is left
+ * out of the heal and damage picks. It draws nothing.
+ */
+export function choose(s: BattleState, party: Party, policies: PolicyTable = DEFAULT_POLICIES): Record<string, Action> {
   const out: Record<string, Action> = {};
   const foes = s.enemies.filter((e) => e.alive);
   const hurt = s.party.filter((c) => c.alive && c.hp < c.max.hp / 2).sort((a, b) => a.hp - b.hp)[0];
@@ -125,9 +134,13 @@ export function choose(s: BattleState, party: Party): Record<string, Action> {
     // Each skill as this member casts it (worn powers) and at the TP they pay for it.
     const skills = learnedSkills(party.roster[id]).flatMap((sk) => skillFor(c, sk) ?? [])
       .filter((sk) => !sk.passive && skillCost(c, sk.id) <= c.tp);
-    const heal = skills.find((sk) => sk.effects.some((e) => e.kind === 'heal'));
+    const power = (def: SkillDef) => castPower(s, c, def);
+    const { action, hold } = applyPolicy(s, c, skills, policies[id] ?? [], power);
+    if (action) { out[c.key] = action; continue; }
+    const usable = hold.length ? skills.filter((sk) => !hold.includes(sk.id)) : skills;
+    const heal = usable.find((sk) => sk.effects.some((e) => e.kind === 'heal'));
     if (hurt && heal) { out[c.key] = { kind: 'skill', skill: heal.id, target: hurt.key }; continue; }
-    const dmg = skills
+    const dmg = usable
       .filter((sk) => sk.effects.some((e) => e.kind === 'damage'))
       .sort((a, b) => power(b) - power(a))[0];
     out[c.key] = dmg ? { kind: 'skill', skill: dmg.id, target } : { kind: 'attack', target };
@@ -144,7 +157,11 @@ export function attackAll(s: BattleState): Record<string, Action> {
 /** Who picks the party's actions in a simulated fight: `skill` is `choose`, `attack` is `attackAll`. */
 export type SimAi = 'skill' | 'attack';
 
-function power(def: SkillDef): number {
+/**
+ * What `def` is worth as `c` casts it now, for ranking damage skills: today the damage effects' power x hits. Roster
+ * plans let it read the caster's state (Liz's coins, Chizuru's barrier) so the sim never spends big at nothing.
+ */
+export function castPower(s: BattleState, c: Combatant, def: SkillDef): number {
   return def.effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
 }
 
@@ -162,8 +179,11 @@ let simTrace: SimTrace | null = null;
 /** Installs (or with `null` removes) the observer every later `simBattle` reports to (the sim gate, plan 8a Task 1). */
 export function setSimTrace(t: SimTrace | null): void { simTrace = t; }
 
-/** How a simulated fight is watched: `ledger` is credited with every member's contribution (spec §12.6); it draws nothing. */
-export interface SimOpts { ledger?: Ledger }
+/**
+ * How a simulated fight is watched and played: `ledger` is credited with every member's contribution (spec §12.6); it
+ * draws nothing. `policies` replaces the sim player's default policies.
+ */
+export interface SimOpts { ledger?: Ledger; policies?: PolicyTable }
 
 export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed: number, scale?: BattleScale, altar?: Altar, ai: SimAi = 'skill', abyss?: number, bossPower?: number, opts: SimOpts = {}): { outcome: Outcome; rounds: number; hpLoss: number } {
   const rng = mulberry32(seed);
@@ -171,7 +191,7 @@ export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed:
   const maxHp = s.party.reduce((n, c) => n + c.max.hp, 0);
   let rounds = 0;
   while (s.outcome === 'ongoing' && rounds < 60) {
-    const actions = ai === 'attack' ? attackAll(s) : choose(s, party);
+    const actions = ai === 'attack' ? attackAll(s) : choose(s, party, opts.policies);
     const before = s;
     s = resolveRound(s, actions, rng, opts.ledger);
     simTrace?.round(actions, before, s);
@@ -191,7 +211,7 @@ export function winRate(level: number, groups: string[][], boss: boolean, seeds 
   let wins = 0, loss = 0, n = 0;
   for (const g of groups) for (let k = 1; k <= seeds; k++) {
     const party = kitSeed === undefined ? partyAt(level, lineup, scale?.depth ?? 1) : kitParty(level, scale?.depth ?? 1, kitSeed, undefined, kitEnhance, lineup);
-    const r = simBattle(party, g, boss, k * 7919, scale, altar, ai, lineup.abyss);
+    const r = simBattle(party, g, boss, k * 7919, scale, altar, ai, lineup.abyss, undefined, { policies: lineup.policies });
     n++; loss += r.hpLoss; if (r.outcome === 'win') wins++;
   }
   return { rate: wins / n, hpLoss: loss / n };
