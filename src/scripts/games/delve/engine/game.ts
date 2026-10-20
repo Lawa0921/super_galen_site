@@ -691,8 +691,8 @@ export class DelveGame {
   private evBase = 0;
   /** 每個玩家 drainEvents 取到哪（絕對序號）；沒有 = 從 evBase 開始 */
   private readonly evRead = new Map<Pid, number>();
-  /** withActor 的巢狀深度：> 0 = 正在某個玩家的動作裡（emit 補 pid） */
-  private actorDepth = 0;
+  /** > 0 = 正在跑世界段（step 的世界前 / 後段、換日、液體、委託…）：emit 不補 pid（公開）。withActor 進去時歸零、出來還原 */
+  private worldDepth = 0;
   /** 揮擊編號（全域遞增：怪物用 lastSwing 判斷一次揮擊只打一下，多個玩家的編號不能撞） */
   private swingSeq = 0;
   private readonly lightEngine = new LightEngine();
@@ -828,13 +828,18 @@ export class DelveGame {
   // ── 多個玩家（actor）────────────────────────────────────
   /**
    * 暫時把 cur 切到 a 執行 fn（相容 accessor 都讀寫 a），結束（含丟例外）後還原。
-   * 在裡面 emit 的事件帶 a.pid（多 actor 時）。
+   * 在裡面 emit 的事件帶 a.pid（多 actor 時；就算是從世界段裡叫進來的也一樣）。
    */
   withActor<T>(a: PlayerActor, fn: () => T): T {
-    const prev = this.cur;
+    const prev = this.cur, world = this.worldDepth;
     this.cur = a;
-    this.actorDepth++;
-    try { return fn(); } finally { this.cur = prev; this.actorDepth--; }
+    this.worldDepth = 0;
+    try { return fn(); } finally { this.cur = prev; this.worldDepth = world; }
+  }
+  /** 世界段：裡面 emit 的事件不帶 pid（公開）；cur 不變 */
+  private inWorld<T>(fn: () => T): T {
+    this.worldDepth++;
+    try { return fn(); } finally { this.worldDepth--; }
   }
   /**
    * 加入一個玩家：套上角色檔（applyCharacter，同讀檔），站在 at（腳底 tile；省略 = respawnPoint 的規則：
@@ -919,9 +924,12 @@ export class DelveGame {
       if (this.inventory.selected !== before) this.emit({ type: 'select', slot: this.inventory.selected });
     });
   }
-  /** 推一個事件：在某個玩家的動作裡（withActor 內）而且不只一個玩家 → 補上 pid；否則（世界 / 單機）不帶 pid = 公開 */
+  /**
+   * 推一個事件。不只一個玩家時補上 pid = cur.pid：玩家段（withActor）裡是那個玩家；step 外的 UI / API 呼叫（合成、買賣、
+   * 技能樹、鍛造、委託、給 buff…）cur = 本地玩家 → 本地 pid。只有世界段（inWorld）推的不帶 pid = 公開。單機一律不帶。
+   */
   private emit(ev: DelveEvent): void {
-    if (this.actorDepth > 0 && this.actors.size > 1 && ev.pid === undefined) ev.pid = this.cur.pid;
+    if (this.worldDepth === 0 && this.actors.size > 1 && ev.pid === undefined) ev.pid = this.cur.pid;
     this.events.push(ev);
   }
 
@@ -943,7 +951,9 @@ export class DelveGame {
   selectSlot(i: number): void { this.selectOf(this.local, i); }
 
   // ── 模擬 ───────────────────────────────────────────────
-  step(dt: number = FIXED_DT): void {
+  /** 一個固定步長。整段是世界段（事件公開），玩家段 / 重生 / 換算經驗各自用 withActor 切回該玩家 */
+  step(dt: number = FIXED_DT): void { this.inWorld(() => this.stepWorld(dt)); }
+  private stepWorld(dt: number): void {
     this.flushLevels();
     this.tick++;
     this.time += dt;
@@ -1006,7 +1016,7 @@ export class DelveGame {
     this.updateLiquid(dt);
     this.updateVitals(dt);
     // 天氣特效（落雷 / 雨水補池）以本地玩家為中心，只跑一次（B5）
-    if (this.cur === this.local) this.updateWeatherFx(dt);
+    if (this.cur === this.local) this.inWorld(() => this.updateWeatherFx(dt));
     this.updateRecall(dt);
     this.updateExploration();
     if (!this.platformHinted && this.player.onGround && !this.dropHeld && onPlatform(this.world, this.player)) {
@@ -1812,7 +1822,9 @@ export class DelveGame {
   refreshSeason(): void { this.onNewDay(dayIndexOf(this.time)); }
   /** 讀檔還原：存檔已帶結冰狀態時只同步天數、不重算 */
   syncDay(): void { this.lastDay = dayIndexOf(this.time); this.wxCache = null; }
-  private onNewDay(day: number): void {
+  /** 換日（世界段：step 外的 setDate / refreshSeason 呼叫也一樣不帶 pid） */
+  private onNewDay(day: number): void { this.inWorld(() => this.newDay(day)); }
+  private newDay(day: number): void {
     this.lastDay = day;
     // 據點的嚮導：每天自動在地圖上標一個新地點
     const guide = this.settle.npc('guide');
@@ -2048,10 +2060,11 @@ export class DelveGame {
   }
 
   /**
-   * 取出 pid（預設本地玩家）上次取過之後的事件：公開事件 + 該 pid 的私人事件（PRIVATE_EVENTS）。
+   * 取出 pid（預設本地玩家；不是現有玩家 → []、不記游標）上次取過之後的事件：公開事件 + 該 pid 的私人事件（PRIVATE_EVENTS）。
    * 每個玩家各有各的游標，互不吃掉；所有玩家都取過的部分才從佇列丟掉。
    */
   drainEvents(pid: Pid = this.localPid): DelveEvent[] {
+    if (!this.actors.has(pid)) return [];
     this.flushLevels();
     const ev = this.events, end = this.evBase + ev.length;
     const from = Math.max(0, (this.evRead.get(pid) ?? this.evBase) - this.evBase);
@@ -3921,7 +3934,8 @@ export class DelveGame {
     let ctx: XpCtx | null = null;
     for (; this.lvScan < ev.length; this.lvScan++) {
       const e = ev[this.lvScan];
-      if (e.type === 'kill') this.questKill(e.kind);
+      // 委託是世界層級（大家共用一份）：進度事件公開
+      if (e.type === 'kill') this.inWorld(() => this.questKill(e.kind));
       if (!LEVEL_EVENTS.has(e.type)) continue;
       // 記給事件的 pid；沒有 pid（單機 / 世界事件，例如投射物擊殺、據點評等）→ 本地玩家。已離開的玩家 → 不記
       const who = e.pid === undefined ? this.local : this.actors.get(e.pid);

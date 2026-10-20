@@ -160,7 +160,8 @@ describe('事件 pid', () => {
     g.withActor(b, () => g.giveBuff('bless'));
     g.giveBuff('ward');
     const all = g.drainAll();
-    expect(all.map((e) => [e.type, e.pid])).toEqual([['buff', 'b'], ['buff', undefined]]);
+    // step 外的 UI / API 呼叫：cur = 本地 → 帶本地 pid（不是公開事件）
+    expect(all.map((e) => [e.type, e.pid])).toEqual([['buff', 'b'], ['buff', 'h']]);
     expect(g.drainEvents('h')).toEqual([]);
     expect(g.drainEvents('b')).toEqual([]);
     g.withActor(b, () => g.giveBuff('bless'));
@@ -168,6 +169,43 @@ describe('事件 pid', () => {
     expect(g.drainEvents('b').map((e) => e.pid)).toEqual(['b']);
     expect(g.drainEvents('h').map((e) => e.pid)).toEqual(['h']);
     expect(g.drainEvents('b')).toEqual([]);
+  });
+
+  it('本地 UI 呼叫（合成 / 技能樹 / 給 buff）推的私人事件只給本地，不會出現在 drainEvents(b)', () => {
+    const g = arena();
+    g.addActor('b', hero(), { x: 66, y: FLOOR - 1 });
+    g.drainAll();
+    g.give('planks', 10);
+    expect(g.craft('workbench').ok).toBe(true);
+    g.addXp(2200);
+    expect(g.learnSkill('b_vigor')).toBeNull();
+    g.giveBuff('bless');
+    const evH = g.drainEvents('h'), evB = g.drainEvents('b');
+    for (const t of ['craft', 'xp', 'levelup', 'learn', 'buff'] as const) {
+      expect(types(evH)).toContain(t);
+      expect(types(evB)).not.toContain(t);
+    }
+    expect(evH.filter((e) => PRIVATE_EVENTS.has(e.type)).every((e) => e.pid === 'h')).toBe(true);
+  });
+
+  it('removeActor 之後只剩一人：佇列裡 b 的私人事件不會漏給 h', () => {
+    const g = arena();
+    const b = g.addActor('b', hero(), { x: 66, y: FLOOR - 1 });
+    g.drainEvents('h');
+    g.withActor(b, () => g.giveBuff('bless'));
+    g.removeActor('b');
+    expect(g.actors.size).toBe(1);
+    expect(g.drainEvents('h').filter((e) => e.type === 'buff')).toEqual([]);
+  });
+
+  it('drainEvents(不存在的 pid) → []、不記游標（不會擋住佇列清空）', () => {
+    const g = arena();
+    g.giveBuff('bless');
+    expect(g.drainEvents('zz')).toEqual([]);
+    expect(types(g.drainEvents())).toContain('buff');
+    g.giveBuff('ward');
+    expect(types(g.drainEvents('zz'))).toEqual([]);
+    expect(types(g.drainEvents())).toEqual(['buff']);
   });
 
   it('world 段（actor 迴圈外）推的事件沒有 pid，即使 cur 剛好是 local', () => {
