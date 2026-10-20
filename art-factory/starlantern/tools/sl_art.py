@@ -701,7 +701,14 @@ def fit_side(img, side):
 SUBJECT_CLASS = {'weapon': 'long', 'offhand': 'broad', 'head': 'broad', 'body': 'broad', 'hands': 'broad', 'feet': 'broad',
                  'neck': 'small', 'ring': 'small'}
 MIN_SHORT = {'weapon': 0.70, 'offhand': 0.75, 'head': 0.65, 'body': 0.80, 'hands': 0.70, 'feet': 0.70, 'neck': 0.60, 'ring': 0.60}
-MASS_BAND = {'long': (0.28, 0.65), 'broad': (0.50, 0.92), 'small': (0.35, 0.80)}
+MASS_BAND = {'long': (0.28, 0.65), 'polearm': (0.20, 0.65), 'broad': (0.50, 0.92), 'small': (0.35, 0.80)}
+# Controller ruling 2026-10-20 (after Task E): the long floor 0.28 was calibrated on 24-px icons; a polearm (a thin shaft
+# with a head) cannot carry it. Polearm-shaped weapons are told by the game's WeaponKind (engine/types.ts), never by id.
+POLEARM_KINDS = ('spear',)
+# QA spec stamps: a QA record of a versioned kind made under another stamp is stale (approve refuses it; pick and
+# gear_art requa redo it). gear-cell 2: polearm floor; nine-slice 2: the corner-only starlit role. Kinds not listed here
+# (material icons, scenes, NPCs) have not changed since they were picked.
+QA_SPEC = {'gear-cell': 2, 'nine-slice': 2}
 LONG_TOL = 1      # the long edge may miss the target by one art pixel (a thin tip the centre sample steps over)
 CENTRE_TOL = 1    # distance between the subject bbox centre and the canvas centre, in art pixels
 
@@ -788,27 +795,40 @@ def subject_metrics(final, target):
             'box': [x0, y0, x1, y1], 'centre_off': round(off, 3)}
 
 
-def subject_gate(m, target, slot):
-    """Reasons a subject fails the size gate. slot None (plan 5f before it passes a slot): long edge and centre only."""
+def subject_class(slot, kind=None):
+    """The size class of a gear subject: a weapon of a polearm kind is `polearm`, otherwise SUBJECT_CLASS[slot]."""
+    return 'polearm' if slot == 'weapon' and kind in POLEARM_KINDS else SUBJECT_CLASS[slot]
+
+
+def qa_stale(entry):
+    """True when a registry entry's QA was recorded under another spec than the current QA_SPEC of its kind."""
+    q = entry.get('qa'); want = QA_SPEC.get(entry.get('kind'))
+    return bool(q) and want is not None and q.get('spec') != want
+
+
+def subject_gate(m, target, slot, kind=None):
+    """Reasons a subject fails the size gate. slot None (plan 5f before it passes a slot): long edge and centre only.
+    kind is the weapon kind (engine WeaponKind) of a weapon; polearm kinds use the polearm mass band."""
     reasons = []
     if abs(m['long'] - target) > LONG_TOL: reasons.append('subject long edge off target')
     if m['centre_off'] > CENTRE_TOL: reasons.append('subject off centre')
     if slot is not None:
-        lo, hi = MASS_BAND[SUBJECT_CLASS[slot]]
+        lo, hi = MASS_BAND[subject_class(slot, kind)]
         if m['short'] < short_floor(slot, target): reasons.append('subject too narrow')
         if m['mass'] < lo: reasons.append('subject too light')
         if m['mass'] > hi: reasons.append('subject too heavy')
     return reasons
 
 
-def process_gear_cell(reg, gid, cell, workdir, raw, large=(56, 64), icon=(22, 26), slot=None):
+def process_gear_cell(reg, gid, cell, workdir, raw, large=(56, 64), icon=(22, 26), slot=None, kind=None):
     """One sheet cell -> two transparent finals from the same pixels: `gear-<gid>-large` (longer side exactly
     `large[0]`, centred on a large[1] square canvas) and `gear-<gid>` (longer side `icon[0]` on an icon[1] canvas).
 
     Both are sampled once from the high-resolution cell (`normalize_subject`), run the usual `_finish` QA (residue, semi
     alpha, raw-canvas cut, holes warning, larger than the canvas, magenta spill) and the size gate (`subject_gate`;
     without a slot only the long edge and the centre). QA records `subject` (metrics) and `scale`; the registry records
-    the same `source` ({raw, cell}) and the slot. Any id works (plan 5f passes its own uniques with their slot).
+    the same `source` ({raw, cell}), the slot and the weapon kind (`weapon_kind`; polearm kinds have their own mass floor)
+    and stamps the QA with QA_SPEC['gear-cell']. Any id works (plan 5f passes its own uniques with their slot and kind).
     """
     out = {}
     for aid, (side, size) in ((f'gear-{gid}-large', large), (f'gear-{gid}', icon)):
@@ -816,10 +836,11 @@ def process_gear_cell(reg, gid, cell, workdir, raw, large=(56, 64), icon=(22, 26
         final = Image.open(_final_path(reg.get(aid)['final'])).convert('RGBA')
         qa['subject'] = subject_metrics(final, side)
         if 'cell too small to sample' not in qa['reasons']:
-            qa['reasons'] += [r for r in subject_gate(qa['subject'], side, slot) if r not in qa['reasons']]
-        qa['pass'] = not qa['reasons']
+            qa['reasons'] += [r for r in subject_gate(qa['subject'], side, slot, kind) if r not in qa['reasons']]
+        qa['pass'] = not qa['reasons']; qa['spec'] = QA_SPEC['gear-cell']
         _save_final(reg, aid, final, qa, workdir, raw)
-        reg.set(aid, kind='gear-cell', source={'raw': str(raw), 'cell': gid}, **({'slot': slot} if slot else {}))
+        reg.set(aid, kind='gear-cell', source={'raw': str(raw), 'cell': gid}, **({'slot': slot} if slot else {}),
+                **({'weapon_kind': kind} if kind else {}))
         out[aid] = qa
     return out
 
@@ -871,6 +892,7 @@ DISTINCT_DE = 25.0         # CIE76 between any two tier band colours
 GLOW_HUE, GLOW_SAT_MIN, GLOW_STROKE = 35, 0.30, (1, 2)   # legendary inner glow: soft warm light, 1-2 px thick
 STARLIT_CORNER_MIN = 3          # starlit: opaque pixels in each 5 x 5 corner
 STARLIT_EDGE_COVER_MAX = 0.35   # starlit: share of the outer 2 rows of an edge middle it may cover (the frame shows)
+STAR_MIN_SIDE = 3               # corner-only starlit: each corner star's bbox is at least 3 x 3 and square within 1 px
 # Band colour (controller ruling, fix round 1): measured on the chromatic pixels of the whole band span, so a dark outline
 # or a thin gold inner line never becomes "the colour".
 CHROMA_S, CHROMA_V = 0.25, 0.30   # a pixel counts as coloured at S >= 0.25 and V >= 0.30
@@ -983,6 +1005,12 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_, role='frame', hue=Non
     with less than CHROMA_SHARE_MIN coloured pixels fails `band colour unreadable` (frame and glow).
     The overlay's `edge_repeat` is `edge_joint` instead: sparse star dots only fail when the repeated edge middle puts
     two of them side by side across the joint (a dot in both its first and its last column on the same row).
+      'corners' (the redrawn starlit, controller ruling 2026-10-20) starlight colours only; nothing outside the four
+                slice x slice corners (`starlit outside its corners`: the edge middles and the centre stay fully
+                transparent, so nothing repeats into dashes); in each corner one whole star: at least STARLIT_CORNER_MIN
+                pixels (`starlit corners missing`), a bbox of at least STAR_MIN_SIDE square within 1 px (`starlit corner
+                star cut or too small`) and a white core (`starlit star too dim`). QA records `outside` and `stars`.
+    Every record is stamped with QA_SPEC['nine-slice'].
     """
     entry = reg.data['assets'].get(aid, {})
     cut = cutout(cell); box = cut.getbbox(); reasons = []
@@ -1009,12 +1037,13 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_, role='frame', hue=Non
     bc = band_colour(band_px)
     qa.update(stroke_colour=bc['rgb'], hue=bc['hue'], saturation=bc['saturation'], chroma_share=bc['share'])
     if not qa['center_clear']: reasons.append('centre not clear')
-    if role != 'overlay' and not qa['ring_closed']: reasons.append('ring not closed')
+    starry = role in ('overlay', 'corners')
+    if not starry and not qa['ring_closed']: reasons.append('ring not closed')
     if role == 'overlay':
         qa['edge_joint'] = {k: int((m[:, 0] & m[:, -1]).sum()) for k, m in _edge_middles(op, s, s).items()}
         if any(qa['edge_joint'].values()): reasons.append('edge does not repeat')
-    elif any(v > SEAM_RATIO_MAX for v in qa['edge_repeat'].values()): reasons.append('edge does not repeat')
-    if role != 'overlay' and len(band_px) and bc['share'] < CHROMA_SHARE_MIN: reasons.append('band colour unreadable')
+    elif role != 'corners' and any(v > SEAM_RATIO_MAX for v in qa['edge_repeat'].values()): reasons.append('edge does not repeat')
+    if not starry and len(band_px) and bc['share'] < CHROMA_SHARE_MIN: reasons.append('band colour unreadable')
     deep = qa['reach']['corner'] > CORNER_REACH_MAX
     if role == 'frame':
         if qa['stroke'][0] < FRAME_STROKE[0]: reasons.append('band thinner than 2 px')
@@ -1027,10 +1056,10 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_, role='frame', hue=Non
         deep = deep or qa['reach']['edge'] > EDGE_REACH_MAX
     if deep: reasons.append('band reaches into the icon')
     tier = GLOW_HUE if role == 'glow' and hue is None else hue
-    if role != 'overlay' and tier is not None:
+    if not starry and tier is not None:
         if qa['hue'] is None or _hue_dist(qa['hue'], tier) > HUE_TOL or qa['saturation'] < (GLOW_SAT_MIN if role == 'glow' else SAT_MIN):
             reasons.append('hue off tier')
-    if role == 'overlay':
+    if starry:
         h, sv, v = _hsv(arr[op][:, :3])
         star = ((h >= 170) & (h <= 215) & (sv >= 0.2) & (v >= 0.7)) | ((sv <= 0.15) & (v >= 0.85))
         qa['off_colour'] = int((~star).sum())
@@ -1038,8 +1067,22 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_, role='frame', hue=Non
         k = 5; qa['corner_px'] = [int(c.sum()) for c in (op[:k, :k], op[:k, size - k:], op[size - k:, :k], op[size - k:, size - k:])]
         if min(qa['corner_px']) < STARLIT_CORNER_MIN: reasons.append('starlit corners missing')
         qa['edge_cover'] = round(max(float(m.mean()) for m in _edge_middles(op, s, 2).values()), 3)
-        if qa['edge_cover'] > STARLIT_EDGE_COVER_MAX: reasons.append('overlay hides the frame')
-    qa.update(reasons=reasons, size=[size, size], slice=s, role=role, pad=pad, tier_hue=tier,
+        if role == 'overlay' and qa['edge_cover'] > STARLIT_EDGE_COVER_MAX: reasons.append('overlay hides the frame')
+    if role == 'corners':
+        corners = np.zeros_like(op); corners[:s, :s] = corners[:s, size - s:] = corners[size - s:, :s] = corners[size - s:, size - s:] = True
+        qa['outside'] = int((op & ~corners).sum())
+        if qa['outside']: reasons.append('starlit outside its corners')
+        _, wsat, wv = _hsv(arr[..., :3]); white = ((wsat <= 0.15) & (wv >= 0.85)).reshape(size, size) & op
+        qa['stars'] = []
+        for ys, xs in ((slice(0, s), slice(0, s)), (slice(0, s), slice(size - s, size)), (slice(size - s, size), slice(0, s)),
+                       (slice(size - s, size), slice(size - s, size))):
+            c = op[ys, xs]; yy, xx = np.nonzero(c)
+            w, hh = (int(xx.max() - xx.min() + 1), int(yy.max() - yy.min() + 1)) if c.any() else (0, 0)
+            qa['stars'].append({'px': int(c.sum()), 'w': w, 'h': hh, 'core': int(white[ys, xs].sum())})
+        if any(st['px'] >= STARLIT_CORNER_MIN and (min(st['w'], st['h']) < STAR_MIN_SIDE or abs(st['w'] - st['h']) > 1) for st in qa['stars']):
+            reasons.append('starlit corner star cut or too small')
+        if any(st['px'] >= STARLIT_CORNER_MIN and not st['core'] for st in qa['stars']): reasons.append('starlit star too dim')
+    qa.update(reasons=reasons, size=[size, size], slice=s, role=role, pad=pad, tier_hue=tier, spec=QA_SPEC['nine-slice'],
               block=round(max(box[2] - box[0], box[3] - box[1]) / (size - 2 * pad), 3) if box else None)
     qa['pass'] = not reasons
     out = _save_final(reg, aid, final, qa, workdir, raw)

@@ -36,7 +36,10 @@ ORIGINAL = 'The design must be original and not resemble any existing game item.
 
 BATCHES = ('sample', 'main-gear', 'skills')
 FRAME_SHEET_ID = 'sheet-rarity-frames-2'   # addendum 2: 4 x 2 (the six tier frames, the inner glow, the starlit overlay)
-SAMPLE = ('sheet-gear-1', 'sheet-mat-1', FRAME_SHEET_ID, 'scene-forge', 'npc-forge')
+STARLIT_SHEET_ID = 'sheet-starlit-1'          # controller ruling 2026-10-20: the starlit overlay redrawn as corner stars only
+SAMPLE = ('sheet-gear-1', 'sheet-mat-1', FRAME_SHEET_ID, STARLIT_SHEET_ID, 'scene-forge', 'npc-forge')
+# Most attempts a job may have (addendum 2: gear a5..a9 after the spec change, frames a1..a5; the starlit redo a1..a3).
+ATTEMPT_CAP = {'sheet-gear-1': 9, FRAME_SHEET_ID: 5, STARLIT_SHEET_ID: 3}
 LARGE, ICON = (56, 64), (22, 26)        # gear: (longer side exactly, canvas) for the large image and the bag icon (addendum 2 §1)
 ICON_HEIGHT = 32                        # materials and skills: the contract's icon row (--height 32)
 NPC_HEIGHT = 180
@@ -62,8 +65,9 @@ FRAME_ASSET = {**{r: f'ui-rarity-{r}' for r in FRAMED_RARITIES}, 'glow-legendary
 FRAME_ROLE = {'glow-legendary': ('glow', 16, 5, 2), 'starlit': ('overlay', 16, 5, 0)}
 
 
-def frame_role(part):
-    return FRAME_ROLE.get(part, ('frame', 16, 5, 0))
+def frame_role(part, job=None):
+    """(role, size, slice, pad) of a frame-sheet part; a job may override a part's role (the corner-only starlit)."""
+    return (job or {}).get('roles', {}).get(part) or FRAME_ROLE.get(part, ('frame', 16, 5, 0))
 
 
 def frame_defringe(part):
@@ -124,6 +128,14 @@ GEAR_SLOT = {
     'storm-thunder-bow': 'weapon', 'storm-swift-boots': 'feet', 'mire-miasma-mask': 'head', 'mire-whisper-gloves': 'hands',
     'shade-silent-blade': 'weapon', 'shade-raven-cloak': 'body', 'iron-unbroken-shield': 'offhand', 'iron-bulwark-plate': 'body',
     **{f'{sid}-{slot}': slot for sid, slots in SET_SLOTS.items() for slot in slots},
+}
+# The weapon kind of every weapon cell (engine/types.ts WeaponKind: data/equipment.ts EQUIPMENT and data/gear.ts SPECIALS;
+# gearArt.test.ts cross-checks gear-plan.json `kinds`). Polearm kinds get their own mass floor (sl_art.subject_class).
+GEAR_KIND = {
+    'wooden-staff': 'staff', 'iron-sword': 'sword', 'hunter-bow': 'bow', 'thorn-spear': 'spear', 'crystal-blade': 'dagger',
+    'frost-staff': 'staff', 'star-saber': 'scimitar', 'lg-chizuru': 'spear', 'lg-liz': 'spear', 'blaze-heart-sword': 'sword',
+    'frost-winter-staff': 'staff', 'storm-thunder-bow': 'bow', 'shade-silent-blade': 'dagger',
+    **{f'{sid}-weapon': 'sword' for sid, slots in SET_SLOTS.items() if 'weapon' in slots},   # set weapons are all swords
 }
 # data/gear.ts regionSpecials(): each region's legendary and unique (the portal card lists them; unowned ones show a silhouette).
 REGION_LIMITED = ('blaze-heart-sword', 'blaze-ember-ring', 'frost-winter-staff', 'frost-bloom-neck', 'storm-thunder-bow',
@@ -385,6 +397,15 @@ FRAME_SHEET = (   # addendum 2 §2; the closing style, no-text and originality s
     'the middle of every side is plain so it can repeat. Each frame uses one hue only, with a darker and a lighter tone of it. '
     'In this order: {listing}. '
     '16-bit JRPG menu frame style, ' + PIX + '. No text, no numbers, no items inside the frames, no background inside the frames. ' + ORIGINAL)
+STARLIT_SHEET = (   # controller ruling 2026-10-20: corner stars only, so nothing can repeat along a side into dashes
+    'One single square pixel art overlay piece for a 16-bit Japanese console RPG item slot, drawn as a true 16 by 16 grid of big pixels '
+    '(as if a 16-pixel sprite were enlarged about 50 times; every big pixel one large flat square), on a perfectly flat pure magenta '
+    '#FF00FF background with a wide magenta margin all round. The piece is four bright starlight stars and nothing else: in each of '
+    'the four corners one chunky four-pointed star that sits wholly inside that corner\'s 5 by 5 big-pixel square, made of a solid '
+    'white 3 by 3 centre with one pale cyan-white (#7FE6FF) big pixel sticking out in the middle of each of its four sides, the outer '
+    'points touching the outer edge of the 16 by 16 square. The middle of every side and the whole centre are fully transparent '
+    'magenta: nothing along the sides, no dots, no lines, no frame, no glow, no dark outline. Only white and pale cyan-white. '
+    + PIX + '. No text, no numbers. ' + ORIGINAL)
 FORGE_SCENE = (
     "Interior of a blacksmith's forge: a glowing furnace on the left, an anvil, racks of blades and shields, hanging tools, warm orange firelight and soot-dark beams, "
     'the right third of the picture kept fairly plain for a character to stand in front of. '
@@ -437,6 +458,8 @@ def jobs():
     frames = list(FRAME_DESC)
     out.append(dict(id=FRAME_SHEET_ID, kind='frame-sheet', cols=4, rows=2, parts=frames, batch='sample', images=[], deps=[],
                     prompt=FRAME_SHEET.format(listing=_listing(frames, FRAME_DESC))))
+    out.append(dict(id=STARLIT_SHEET_ID, kind='frame-sheet', cols=1, rows=1, parts=['starlit'], batch='sample', images=[], deps=[],
+                    prompt=STARLIT_SHEET, roles={'starlit': ('corners', 16, 5, 0)}))
     out.append(dict(id='scene-forge', kind='opaque', cols=1, rows=1, parts=['scene-forge'], batch='sample', images=[], deps=['bg-f1'],
                     prompt=FORGE_SCENE))
     out.append(dict(id='npc-forge', kind='sprite', cols=1, rows=1, parts=['npc-forge'], batch='sample', images=[], deps=['char-scarlet-standee'],
@@ -550,6 +573,9 @@ def gen(argv):
         if missing:
             print(f'[skip] {job["id"]}: missing reference {missing}', flush=True); continue
         while len(attempts(job['id'])) < n:
+            cap = ATTEMPT_CAP.get(job['id'])
+            if cap and len(attempts(job['id'])) >= cap:
+                raise PermissionError(f'{job["id"]} is at its attempt cap a{cap}; stop and report (never publish a substitute)')
             k = max([int(p.stem.rsplit('-a', 1)[1]) for p in attempts(job['id'])] + [0]) + 1
             PROMPTS.mkdir(exist_ok=True)
             (PROMPTS / f'{job["id"]}.txt').write_text(job['prompt'].strip() + ((' ' + extra) if extra else '') + ' ' + GEN + '\n', encoding='utf-8')
@@ -579,16 +605,18 @@ def process_attempt(reg, job, raw, workdir, parts=None):
         if 'allow_edge' not in reg.data['assets'].get(job['id'], {}): reg.set(job['id'], allow_edge=['bottom'])
         return {job['id']: A._finish(reg, job['id'], img, 'sprite', workdir, raw, height=NPC_HEIGHT, despill_=True)}
     # sheet_cells pads every inner cell with key pixels, so `subject cut by the canvas edge` only fires when the sheet cut it.
-    cells = P.sheet_cells(img, job['cols'], job['rows'])
+    # A one-piece job (the corner-only starlit: four separate stars) is its own cell; a sheet is cut on its magenta lanes.
+    cells = [img] if job['cols'] * job['rows'] == 1 and job['kind'] == 'frame-sheet' else P.sheet_cells(img, job['cols'], job['rows'])
     out = {}
     for cell, part in zip(cells, job['parts']):
         if part is None or (parts and part not in parts): continue
         if job['kind'] == 'gear-sheet':
-            out.update(A.process_gear_cell(reg, part, cell, workdir, raw, large=LARGE, icon=ICON, slot=GEAR_SLOT[part]))
+            out.update(A.process_gear_cell(reg, part, cell, workdir, raw, large=LARGE, icon=ICON, slot=GEAR_SLOT[part],
+                                           kind=GEAR_KIND.get(part)))
         elif job['kind'] == 'icon-sheet':
             out[f'icon-{part}'] = A._finish(reg, f'icon-{part}', cell, 'sprite', workdir, raw, height=ICON_HEIGHT, despill_=True)
         else:
-            aid = assets_of(job, part)[0]; role, size, sl, pad = frame_role(part)
+            aid = assets_of(job, part)[0]; role, size, sl, pad = frame_role(part, job)
             if 'defringe' not in reg.data['assets'].get(aid, {}): reg.set(aid, defringe=frame_defringe(part))   # UI frames (contract)
             out[aid] = A.nine_slice(reg, aid, cell, workdir, raw, size, sl, role=role, hue=FRAME_HUE.get(part), pad=pad)
     if job['kind'] == 'frame-sheet': _frames_distinct(reg, job, out, workdir)
@@ -696,13 +724,20 @@ def reopen(reg, aid, public=None):
 
 def pick(argv):
     sid, k, part = _arg(argv, '--id'), _arg(argv, '--attempt'), _arg(argv, '--part')
-    job = job_by_id(sid); reg = _registry()
+    res = do_pick(_registry(), sid, k, part, allow_reopen='--reopen' in argv)
+    print(json.dumps(res, ensure_ascii=False))
+    return res
+
+
+def do_pick(reg, sid, k, part=None, allow_reopen=False):
+    """Pick attempt a<k> of job `sid` (one part or all): QA runs again under the current spec, every time."""
+    job = job_by_id(sid)
     if part and part not in job['parts']: raise ValueError(f'{part} is not a part of {sid}')
     targets = [a for p in job['parts'] if p is not None and (not part or p == part) for a in assets_of(job, p)]
     # A silhouette made from a re-picked icon is stale too.
     targets += [f'gear-{key}-silhouette' for key in (*REGION_LIMITED, *SET_FIRST) if f'gear-{SET_FIRST.get(key, key)}' in targets]
     locked = [a for a in targets if reg.data['assets'].get(a, {}).get('status') in ('approved', 'published')]
-    if locked and '--reopen' not in argv:
+    if locked and not allow_reopen:
         raise PermissionError(f'{locked} are already approved or published; pass --reopen to take them back (a published file is retired)')
     raw = RAW / sid / f'{sid}-a{k}.png'
     if locked:
@@ -716,8 +751,30 @@ def pick(argv):
     res = process_attempt(reg, job, raw, WORK / sid, parts=[part] if part else None)
     for aid in res:   # never `runtime`: that is written by publish, in the same commit as the artPaths change
         reg.set(aid, chosen_attempt=f'a{k}', source_id=sid, batch=label(job['batch']))
-    print(json.dumps(res, ensure_ascii=False))
     return res
+
+
+def do_requa(reg, batch):
+    """Re-run QA, under the current spec, on every picked part of a batch whose QA record is stale (sl_art.qa_stale):
+    the same job and attempt are picked again, so the chosen art stays the chosen art. Approved or published parts are
+    never touched (refuses; reopen them first). Returns the registry ids that were re-QA'd."""
+    todo, locked = {}, []
+    for j in jobs():
+        if j['batch'] != batch: continue
+        for p in j['parts']:
+            for aid in assets_of(j, p):
+                e = reg.data['assets'].get(aid, {})
+                if not e.get('chosen_attempt') or not A.qa_stale(e) or e.get('source_id', j['id']) != j['id']: continue
+                if e.get('status') in ('approved', 'published'): locked.append(aid); continue
+                todo[(j['id'], e['chosen_attempt'], p)] = True
+    if locked: raise PermissionError(f'{sorted(locked)} are approved or published; reopen them before a re-QA')
+    done = []
+    for sid, k, p in todo: done += list(do_pick(reg, sid, k[1:], p))
+    return done
+
+
+def requa(argv):
+    print(json.dumps(do_requa(_registry(), _arg(argv, '--batch')), ensure_ascii=False))
 
 
 def note(argv):
@@ -729,8 +786,9 @@ def note(argv):
 # --- approval and publishing -------------------------------------------------------------------------------------------
 
 def batch_assets(batch):
-    """Every registry id a batch's sheets produce (silhouettes are derived later, not approved here)."""
-    return [a for j in jobs() if j['batch'] == batch for p in j['parts'] for a in assets_of(j, p)]
+    """Every registry id a batch's sheets produce, once each (two jobs may make the same id: ui-starlit); silhouettes
+    are derived later, not approved here."""
+    return list(dict.fromkeys(a for j in jobs() if j['batch'] == batch for p in j['parts'] for a in assets_of(j, p)))
 
 
 def shown_path(batch):
@@ -766,6 +824,7 @@ def do_approve(reg, batch, by):
         e = reg.data['assets'].get(aid, {}); f = A._final_path(e['final']) if e.get('final') else None
         if not e.get('chosen_attempt') or f is None or not f.is_file(): problems.setdefault('not picked', []).append(aid)
         elif e.get('status') not in ('qa_passed', 'approved', 'published'): problems.setdefault(f'status {e.get("status")}', []).append(aid)
+        elif A.qa_stale(e): problems.setdefault('QA recorded under an older spec (run gear_art.py requa)', []).append(aid)
         elif shown.get(aid) != sha256(f): problems.setdefault('changed since (or missing from) the review page', []).append(aid)
     if problems: raise PermissionError(f'refusing to approve {batch}: {problems}')
     done = []
@@ -856,7 +915,7 @@ def publish(argv):
 def plan_data():
     js = jobs()
     return {'sheets': {j['id']: j['parts'] for j in js}, 'batches': {j['id']: j['batch'] for j in js},
-            'regionLimited': list(REGION_LIMITED), 'setFirst': dict(SET_FIRST), 'slots': dict(GEAR_SLOT)}
+            'regionLimited': list(REGION_LIMITED), 'setFirst': dict(SET_FIRST), 'slots': dict(GEAR_SLOT), 'kinds': dict(GEAR_KIND)}
 
 
 def plan_json(argv):
@@ -866,5 +925,5 @@ def plan_json(argv):
 
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else ''
-    {'gen': gen, 'cand': cand, 'pick': pick, 'note': note, 'approve': approve, 'silhouettes': silhouettes, 'publish': publish,
+    {'gen': gen, 'cand': cand, 'pick': pick, 'requa': requa, 'note': note, 'approve': approve, 'silhouettes': silhouettes, 'publish': publish,
      'plan-json': plan_json}[cmd](sys.argv[2:])

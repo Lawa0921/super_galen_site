@@ -126,7 +126,7 @@
 | 技能樹技能圖示 | 78 | `icon-<skillId>` | `/assets/games/starlantern/icon/<skillId>.png` | 透明，高 32；夥伴樹 47＋凜 10＋洛恩 21 |
 | 稀有度外框 | 6 | `ui-rarity-<magic\|rare\|epic\|legendary\|unique\|set>` | `/assets/games/starlantern/ui/rarity-<r>.png` | 九宮格 16×16，slice 5，中央透明，2 px 邊帶（普通沒有外框） |
 | 傳說光暈 | 1 | `ui-glow-legendary` | `/assets/games/starlantern/ui/glow-legendary.png` | 格內光暈：原圖 12×12 的 1 px 淡橘環＋四角 2×2 火花，補 2 px 透明成 16×16，slice 5；疊在圖示下層，`inset: 0` |
-| 星輝疊層 | 1 | `ui-starlit` | `/assets/games/starlantern/ui/starlit.png` | 九宮格 16×16，slice 5：四角四芒星（≤5×5）＋邊上稀疏 1 px 星點；疊在外框之上，只給擲出星輝的傳說、獨特、套裝（暫定 id，5g 定案） |
+| 星輝疊層 | 1 | `ui-starlit` | `/assets/games/starlantern/ui/starlit.png` | 九宮格 16×16，slice 5：四角各一顆四芒星，完全在 5×5 角落內，邊中段與中央全透明（`sheet-starlit-1`，主控裁定 2026-10-20；舊版邊上的星點在 `repeat` 下會連成虛線）；疊在外框之上，只給擲出星輝的傳說、獨特、套裝（暫定 id，5g 定案） |
 | 鍛造屋場景 | 1 | `scene-forge` | `/assets/games/starlantern/scene/forge.png` | 不透明 418×235（`--fit 418x235`） |
 | 多蘭半身像 | 2 | `npc-forge`、`npc-forge-happy` | `/assets/games/starlantern/npc/forge.png`、`forge-happy.png` | 透明，高 180，`allow_edge: [bottom]` |
 
@@ -168,10 +168,13 @@
   |---|---|---|---|---|---|---|---|---|
   | `MIN_SHORT` | 0.70 | 0.75 | 0.65 | 0.80 | 0.70 | 0.70 | 0.60 | 0.60 |
   | 小圖示短邊下限 | 16 | 17 | 15 | 18 | 16 | 16 | 14 | 14 |
-  | `SUBJECT_CLASS`（`MASS_BAND`） | long（0.28–0.65） | broad（0.50–0.92） | broad | broad | broad | broad | small（0.35–0.80） | small |
+  | `SUBJECT_CLASS`（`MASS_BAND`） | long（0.28–0.65）；槍類 polearm（0.20–0.65） | broad（0.50–0.92） | broad | broad | broad | broad | small（0.35–0.80） | small |
+
+  長柄武器（主控裁定 2026-10-20）：0.28 是在 24 px 舊圖示上校的，細桿加槍頭的長柄武器達不到。武器的種類取自遊戲資料的 `WeaponKind`（`gear_art.GEAR_KIND` → `gear-plan.json` 的 `kinds`，`gearArt.test.ts` 與 `EQUIPMENT`／`SPECIALS` 的 `weaponKind` 交叉比對），種類屬於 `sl_art.POLEARM_KINDS`（目前只有 `spear`）的武器用 polearm 份量區間（下限 0.20），短邊下限仍照 weapon；不以 id 判斷。登錄表記 `weapon_kind`。
 
   主體 bbox（原圖格的裁切與最終 PNG 的量測）不計 4 px 以下（`SPECK_MAX`）的 8 連通小碎點，碎點不會讓主體縮小或偏移；整張都是碎點時才用全部像素。
   slot 來自 `gear_art.GEAR_SLOT`（`gear-plan.json` 的 `slots`，`gearArt.test.ts` 與遊戲資料交叉比對）。門檻是 `sl_art.py` 的常數，不可以在登錄表為個別件加放寬欄位；要改門檻須由主控在帳本記下裁定。`slot` 不給（None）時只檢查長邊與置中。
+- QA 規格戳記（主控裁定 2026-10-20）：`gear-cell` 與 `nine-slice` 的 QA 記錄帶 `spec`（`sl_art.QA_SPEC`；gear-cell 2 = 長柄下限，nine-slice 2 = 只在四角的星輝）。登錄表的 QA 若是舊規格（`sl_art.qa_stale`：沒有戳記或戳記不同），`approve` 整批拒絕（`QA recorded under an older spec`）；`pick` 每次都在現行規格下重跑 QA，`gear_art.py requa --batch <b>` 對整批過期的挑選照原本的 job 與版本重挑（已核准、已發布的不碰，要先 reopen）。素材、場景、NPC 的關卡沒變，沒有版本。
 - 九宮格（`kind: nine-slice`）：cutout → 主體 bbox → coverage 取樣（`cover_sample`：輸出像素對應的原圖區塊不透明比例 ≥ 0.4 才算不透明，顏色取區塊中最常見的不透明色，不產生新顏色；2 px 邊帶不會被取樣跳掉）成正好 (N − 2×pad)²，再補 `pad` 圈透明 → 一般透明 QA（外框本來就貼齊畫布邊，所以不算 `touches edge`；slice 以內的中央當成背景傳給 `bg_hint`，所以刻意透明的中央不算洞，外框帶內的小洞仍列警告）＋三項檢查：
   - `center_clear`：slice 以內的中央全透明，否則 `centre not clear`；
   - `ring_closed`：上下邊帶的每一欄、左右邊帶的每一列，在 slice 深度內至少有 1 個不透明像素，否則 `ring not closed`；
@@ -181,6 +184,7 @@
     - `frame`：邊中段的邊帶厚度 2–3（`band thinner than 2 px`）；邊中段從外緣往內最深 3、角落（每像素取 min(離兩外緣的深度)）最深 4，超過或邊帶厚於 3 都是 `band reaches into the icon`；邊帶色相與該階色相差 ≤ 15° 且飽和度 ≥ 0.45（`hue off tier`）。
     - `glow`（傳說光暈，pad 2）：邊中段第 0–1 列必須透明（`glow outside its ring`）；厚度 ≤ 2、往內最深 4；色相 35°±15、飽和度 ≥ 0.30。`ring_closed` 在 pad 以內檢查。
     - `overlay`（星輝）：不檢查 `ring_closed` 與邊帶厚度；`edge_repeat` 改為 `edge_joint`：稀疏星點只有在重複時於接縫處併成 2 px 短線（同一列在邊中段的第一欄與最後一欄都有點）才算 `edge does not repeat`；所有不透明像素都要是星光色（色相 170–215° 且 S ≥ 0.2 且 V ≥ 0.7，或 S ≤ 0.15 且 V ≥ 0.85，否則 `not starlight colours`）；四角 5×5 各至少 3 個不透明像素（`starlit corners missing`）；任一邊中段外 2 列的覆蓋率 ≤ 0.35（`overlay hides the frame`）。
+    - `corners`（改版星輝，`sheet-starlit-1`）：星光色同上；四個 slice×slice 角落以外不可有任何不透明像素（`starlit outside its corners`：邊中段與中央全透明，重複時不會變虛線）；每角一顆完整的星：至少 3 個像素（`starlit corners missing`）、bbox 至少 3×3 且長寬差 ≤ 1（`starlit corner star cut or too small`）、要有白色星心 S ≤ 0.15 且 V ≥ 0.85（`starlit star too dim`）。qa 另記 `outside` 與每角的 `stars`。
   - 七階之間的色差（`frames_distinct`）：六種外框的 `stroke_colour` 兩兩之間 CIE76 ΔE ≥ 25，太近的兩個都記 `too close to <aid> (ΔE n)` 並轉 `qa_failed`。每次處理外框（`cand`／`pick`，含 `--part`）後都對登錄表裡**整組**外框重算，與挑選順序無關：先挑的那一件也會一起失敗，不再成立的舊 `too close to` 會清掉；`approve` 前再對整組重算一次，有太近的就整批拒絕；審核頁的外框段也標出太近的組合（`data-close`）。
   - 外框在登錄表標 `defringe: strong`（同其他 UI 框）。例外：史詩 `#8A5CFF` 離洋紅最遠的一個通道只差 117，落在 strong defringe 的 120 範圍內，會被從外往內剝掉，所以 `ui-rarity-epic` 標 `defringe: default`（`gear_art.frame_defringe`，依色碼自動判斷，不是個別放寬）。
 - 剪影（`kind: silhouette`）：只接受 `approved`／`published` 的 `gear-<id>`（否則 `PermissionError`）。不透明像素一律換成 `#1d1a2e`，外圍 8 鄰接的透明格塗成 `#8f86b8` 當輪廓光，畫布每邊多 1 px；只允許這兩色、沒有半透明、不透明像素數 ≥ 原圖。
@@ -204,12 +208,13 @@
   | 稀有 rare | `#ffe03a` | 51° | 邊帶＋每角一顆 2×2 鉚釘 |
   | 史詩 epic | `#8a5cff` | 257°（只能在 250–272°，偏粉的紫會被洋紅去背吃掉） | 邊帶，四角切 45°，每角一顆小菱形寶石 |
   | 傳說 legendary | `#ff7a14` | 26° | 邊帶＋每角火舌角飾；另有格內光暈 |
-  | 獨特 unique | `#d8283a` | 354° | 邊帶＋1 px 金色內緣線與雕花角飾 |
+  | 獨特 unique | `#d8283a` | 354° | 邊帶＋1 px 金色內緣線與雕花角飾（實際挑選沒有金線：細金線縮到 16 格會斷成雜點，主控 2026-10-20 已接受只用緋紅邊帶＋雕花角飾） |
   | 套裝 set | `#3fd05a` | 131° | 邊帶＋每角一片葉形徽記 |
-  | 星輝疊層 | `#e8fbff`／`#7fe6ff` | 190° | 四角四芒星（≤5×5）＋邊上稀疏 1 px 星點；只疊在擲出星輝的傳說、獨特、套裝上 |
+  | 星輝疊層 | `#e8fbff`／`#7fe6ff` | 190° | 四角各一顆四芒星（完全在 5×5 角落內），邊與中間全透明（`sheet-starlit-1`）；只疊在擲出星輝的傳說、獨特、套裝上 |
   | 傳說光暈 | 色相 35°±15，S ≥ 0.30 | | 格內一圈 1 px 淡橘光，四角各一個 2×2 火花 |
 
   色盤在 `gear_art.RARITY_PALETTE`；六種外框兩兩 ΔE 最小 32.9（魔法對史詩），門檻 25。28 px 背包格的層次：外框邊帶第 0–1 px、光暈第 2 px、主體第 3–24 px；CSS `border-image-repeat: repeat`（不用 `round`，38 px 人形格才不會非整數縮放）。
+- 星輝改版（`sheet-starlit-1`，`STARLIT_SHEET`，主控裁定 2026-10-20）：單張 1×1，不切格（四顆分開的星會被當成好幾格），整張就是一格。16×16 大像素；四角各一顆白色 3×3 星心加四個淡青白尖端的四芒星，完全在 5×5 角落內、外側尖端碰到 16×16 的外緣；邊中段與中央全透明、沒有描邊；角色 `corners`。版數上限 a1–a3（`gear_art.ATTEMPT_CAP`：sheet-gear-1 到 a9、外框表到 a5，`gen` 到上限就拒絕）。外框表本身不變；新版通過之前，星輝沿用外框表 a5 的挑選。
 - 鍛造屋：`UI_SCENES` 句型，附 `bg-f1` 已發布原圖；多蘭沿用 `UI_NPCS` 句型與 `JP` 前綴，附 `char-scarlet-standee`；笑臉附已核准的 `npc-forge`。
 
 ### 交給 5f 的東西（補遺 §2）

@@ -1041,7 +1041,7 @@ def test_normalize_never_upsamples(tmp_path):
 def test_subject_gate_thresholds_follow_the_addendum():
     assert A.SUBJECT_CLASS == {'weapon': 'long', 'offhand': 'broad', 'head': 'broad', 'body': 'broad', 'hands': 'broad',
                                'feet': 'broad', 'neck': 'small', 'ring': 'small'}
-    assert A.MASS_BAND == {'long': (0.28, 0.65), 'broad': (0.50, 0.92), 'small': (0.35, 0.80)} and A.CENTRE_TOL == 1
+    assert A.MASS_BAND == {'long': (0.28, 0.65), 'polearm': (0.20, 0.65), 'broad': (0.50, 0.92), 'small': (0.35, 0.80)} and A.CENTRE_TOL == 1
     floors = {s: A.short_floor(s, 22) for s in A.MIN_SHORT}
     assert floors == {'weapon': 16, 'offhand': 17, 'head': 15, 'body': 18, 'hands': 16, 'feet': 16, 'neck': 14, 'ring': 14}
 
@@ -1161,14 +1161,14 @@ def test_glow_must_be_warm_light(tmp_path):
 STAR_CORE, STAR_ARM = (232, 251, 255), (127, 230, 255)
 
 
-def _starlit(colours=(STAR_CORE, STAR_ARM), solid=False, drop_corner=False):
-    """16 art px (10 raw px each): a 5 x 5 four-pointed star on every corner and one dot in each edge middle."""
+def _starlit(colours=(STAR_CORE, STAR_ARM), solid=False, drop_corner=False, dots=True):
+    """16 art px (10 raw px each): a 5 x 5 four-pointed star on every corner and (dots) one dot in each edge middle."""
     core, arm = colours; art = {}
     corners = [(2, 2), (2, 13), (13, 2), (13, 13)][:3 if drop_corner else 4]
     for cy, cx in corners:
         for d in (-2, -1, 1, 2): art[(cy + d, cx)] = arm; art[(cy, cx + d)] = arm
         art[(cy, cx)] = core
-    for y, x in ((1, 8), (14, 7), (8, 1), (7, 14)): art[(y, x)] = core
+    for y, x in ((1, 8), (14, 7), (8, 1), (7, 14))[:4 if dots else 0]: art[(y, x)] = core
     if solid:
         for i in range(16):
             for k in (0, 1, 14, 15): art[(k, i)] = core; art[(i, k)] = core
@@ -1257,3 +1257,62 @@ def test_starlit_edge_repeat_judges_the_joint_not_the_seam_ratio(tmp_path):
     assert 'edge does not repeat' not in q['reasons'] and q['pass'], q             # a dot on the first column of the top edge
     q = A.nine_slice(reg, 'ui-starlit', star([(0, 5), (0, 10)]), tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='overlay')
     assert 'edge does not repeat' in q['reasons'] and q['edge_joint']['top'] == 1, q   # first and last: a 2 px dash at the joint
+
+
+# --- controller rulings after Task E (2026-10-20): polearm mass floor, stale QA, corner-only starlit -----------------------------
+def test_polearm_class_comes_from_the_weapon_kind():
+    assert A.POLEARM_KINDS == ('spear',)                        # engine WeaponKind: the only polearm-shaped kind
+    assert A.subject_class('weapon', 'spear') == 'polearm' and A.subject_class('weapon', 'sword') == 'long'
+    assert A.subject_class('weapon', None) == 'long' and A.subject_class('offhand', 'spear') == 'broad'
+    m = {'long': 22, 'short': 20, 'mass': 0.22, 'box': [2, 2, 24, 22], 'centre_off': 0.0}
+    assert A.subject_gate(m, 22, 'weapon', 'spear') == []
+    assert A.subject_gate(m, 22, 'weapon', 'sword') == ['subject too light']
+    assert A.subject_gate(m, 22, 'weapon') == ['subject too light']
+    assert A.subject_gate({**m, 'mass': 0.19}, 22, 'weapon', 'spear') == ['subject too light']
+
+
+def test_a_spear_at_022_passes_where_a_sword_at_022_still_fails(tmp_path):
+    cell = _shape_cell(300, 0, 'line', width=44)                      # mass 0.20-0.23: above the polearm floor, below 0.28
+    spear = A.process_gear_cell(A.Registry(tmp_path / 'a.json'), 'p', cell, tmp_path / 'a', tmp_path / 'raw.png', slot='weapon', kind='spear')
+    sword = A.process_gear_cell(A.Registry(tmp_path / 'b.json'), 'p', cell, tmp_path / 'b', tmp_path / 'raw.png', slot='weapon', kind='sword')
+    for aid in spear:
+        assert 0.20 <= spear[aid]['subject']['mass'] < 0.28, spear[aid]['subject']          # the shape really is in the gap
+        assert spear[aid]['pass'], spear[aid]
+        assert 'subject too light' in sword[aid]['reasons'] and not sword[aid]['pass'], sword[aid]
+    reg = A.Registry(tmp_path / 'a.json')
+    assert reg.get('gear-p')['weapon_kind'] == 'spear' and reg.get('gear-p')['slot'] == 'weapon'
+
+
+def test_qa_records_its_spec_and_records_from_an_older_spec_are_stale(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json')
+    out = A.process_gear_cell(reg, 'plate', _shape_cell(300, 280, 'ellipse'), tmp_path / 'w', tmp_path / 'raw.png', slot='body')
+    assert all(q['spec'] == A.QA_SPEC['gear-cell'] for q in out.values())
+    assert json.loads((tmp_path / 'w' / 'gear-plate.qa.json').read_text(encoding='utf-8'))['spec'] == A.QA_SPEC['gear-cell']
+    assert not A.qa_stale(reg.get('gear-plate'))
+    q = A.nine_slice(reg, 'ui-starlit', _starlit(dots=False), tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='corners')
+    assert q['spec'] == A.QA_SPEC['nine-slice'] and not A.qa_stale(reg.get('ui-starlit'))
+    old = {k: v for k, v in reg.get('gear-plate')['qa'].items() if k != 'spec'}
+    assert A.qa_stale({'kind': 'gear-cell', 'qa': old})                                   # recorded before the stamp
+    assert A.qa_stale({'kind': 'nine-slice', 'qa': {**q, 'spec': 0}})
+    assert not A.qa_stale({'qa': {'pass': True, 'reasons': []}})                          # unversioned kinds (icons, scenes)
+    assert not A.qa_stale({'kind': 'gear-cell'})                                          # nothing recorded: not picked
+
+
+def test_corner_starlit_needs_a_star_in_each_corner_and_nothing_else(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json')
+    run = lambda img: A.nine_slice(reg, 'ui-starlit', img, tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='corners')
+    q = run(_starlit(dots=False))
+    assert q['pass'] and q['outside'] == 0 and len(q['stars']) == 4, q
+    assert 'starlit outside its corners' in run(_starlit())['reasons']                   # side dots repeat into dashes
+    assert 'starlit corners missing' in run(_starlit(dots=False, drop_corner=True))['reasons']
+    assert 'not starlight colours' in run(_starlit(((255, 170, 60), (255, 122, 20)), dots=False))['reasons']
+    # a4-like corner: a 2 x 4 blob instead of a whole star
+    arr = np.asarray(_starlit(dots=False)).copy(); px = lambda y, x: (slice(8 + y * 10, 18 + y * 10), slice(8 + x * 10, 18 + x * 10))
+    for y in range(5):
+        for x in range(5): arr[px(y, x)] = M
+    for y in range(1, 5):
+        for x in (1, 2): arr[px(y, x)] = STAR_CORE
+    assert 'starlit corner star cut or too small' in run(Image.fromarray(arr, 'RGB'))['reasons']
+    # a star without a bright white core (arm colour only) is too dim
+    dim = np.asarray(_starlit(colours=(STAR_ARM, STAR_ARM), dots=False))
+    assert 'starlit star too dim' in run(Image.fromarray(dim, 'RGB'))['reasons']

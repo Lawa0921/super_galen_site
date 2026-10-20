@@ -21,7 +21,9 @@ def test_every_gear_part_appears_once_and_sheets_match_their_grid():
     gear = [p for j in jobs if j['kind'] == 'gear-sheet' for p in j['parts']]
     assert len(gear) == 69 and len(set(gear)) == 69 and None not in gear
     every = [p for j in jobs for p in j['parts'] if p is not None]
-    assert len(every) == len(set(every))                          # no part is drawn twice anywhere
+    # No part is drawn twice anywhere, except the starlit overlay, which its own one-piece job redraws (ruling 2026-10-20).
+    assert sorted(p for p in set(every) if every.count(p) > 1) == ['starlit']
+    assert [j['id'] for j in jobs if 'starlit' in j['parts']] == [G.FRAME_SHEET_ID, G.STARLIT_SHEET_ID]
     for j in jobs:
         assert len(j['parts']) == j['cols'] * j['rows'], j['id']
     # Discarded cells (drawn as a plain stone slab and thrown away), as sheet-icons-3 did.
@@ -36,15 +38,17 @@ def test_every_gear_part_appears_once_and_sheets_match_their_grid():
 
 def test_sample_is_the_g1_redo_jobs():
     # Addendum S3: Scarlet's skill sheet moved to the skills batch. Addendum 2: the 4 x 2 frame sheet replaces the 3 x 2 one.
-    assert G.SAMPLE == ('sheet-gear-1', 'sheet-mat-1', 'sheet-rarity-frames-2', 'scene-forge', 'npc-forge')
+    # Controller ruling 2026-10-20 (after Task E): the starlit overlay is redrawn as its own one-piece job.
+    assert G.SAMPLE == ('sheet-gear-1', 'sheet-mat-1', 'sheet-rarity-frames-2', 'sheet-starlit-1', 'scene-forge', 'npc-forge')
     assert 'sheet-rarity-frames' not in [j['id'] for j in G.jobs()]
     assert tuple(j['id'] for j in G.jobs() if j['batch'] == 'sample') == G.SAMPLE
     main = [j['id'] for j in G.jobs() if j['batch'] == 'main-gear']
     assert main == [f'sheet-gear-{k}' for k in range(2, 9)] + ['sheet-mat-2', 'npc-forge-happy']
     skills = [j['id'] for j in G.jobs() if j['batch'] == 'skills']
     assert len(skills) == 14 and 'sheet-skill-scarlet' in skills
-    parts = {b: sum(len(G.assets_of(j, p)) for j in G.jobs() if j['batch'] == b for p in j['parts']) for b in G.BATCHES}
+    parts = {b: len(set(a for j in G.jobs() if j['batch'] == b for p in j['parts'] for a in G.assets_of(j, p))) for b in G.BATCHES}
     assert parts == {'sample': 34, 'main-gear': 127, 'skills': 78}
+    assert len(G.batch_assets('sample')) == 34 == len(set(G.batch_assets('sample')))      # ui-starlit once, from either job
 
 
 @pytest.mark.parametrize('batch', ['main-gear', 'skills'])
@@ -629,12 +633,13 @@ def test_palette_is_distinct_and_epic_stays_off_the_key():
 
 def test_process_attempt_gives_each_gear_cell_its_slot(factory, monkeypatch):
     seen = {}
-    def fake(reg, gid, cell, workdir, raw, large=None, icon=None, slot='missing'):
-        seen[gid] = (slot, large, icon); return {f'gear-{gid}': {'pass': True, 'reasons': []}}
+    def fake(reg, gid, cell, workdir, raw, large=None, icon=None, slot='missing', kind='missing'):
+        seen[gid] = (slot, kind, large, icon); return {f'gear-{gid}': {'pass': True, 'reasons': []}}
     monkeypatch.setattr(A, 'process_gear_cell', fake)
     raw = _sheet(factory / 'raw.png')
     G.process_attempt(A.Registry(factory / 'r.json'), by_id()['sheet-gear-1'], raw, factory / 'w')
-    assert seen == {p: (G.GEAR_SLOT[p], G.LARGE, G.ICON) for p in G.GEAR_SHEETS['sheet-gear-1']}
+    assert seen == {p: (G.GEAR_SLOT[p], G.GEAR_KIND.get(p), G.LARGE, G.ICON) for p in G.GEAR_SHEETS['sheet-gear-1']}
+    assert seen['lg-chizuru'][1] == 'spear' and seen['iron-sword'][1] == 'sword' and seen['leather-cap'][1] is None
 
 
 STAR_CORE, STAR_ARM = (232, 251, 255), (127, 230, 255)
@@ -778,7 +783,7 @@ def test_sample_decisions_are_the_g1_redo_questions(factory, review):
     asked = head[:head.index('已決定（2026-10-20）')]
     assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['圖示大小是否一致', '七階外框與星輝', '傳說光暈改在格內']
     decided = head[head.index('已決定（2026-10-20）'):]
-    assert len(re.findall(r'<li>', decided)) == 3
+    assert len(re.findall(r'<li>', decided)) == 4                  # + materials unchanged (controller ruling 2026-10-20)
     for s in ('#size', '#s1', '#frames', '#glow'):
         assert f'href="{s}"' in head and f'id="{s[1:]}"' in page, s
     assert 'gear_art.py approve --batch sample' in head
@@ -860,7 +865,126 @@ def test_committed_gear_plan_json_is_current(factory):
     fresh = json.loads((factory / 'gear-plan.json').read_text(encoding='utf-8'))
     committed = json.loads((Path(G.AF) / 'gear-plan.json').read_text(encoding='utf-8'))
     assert fresh == committed
-    assert set(fresh) == {'sheets', 'batches', 'regionLimited', 'setFirst', 'slots'}
-    assert fresh['slots'] == G.GEAR_SLOT
+    assert set(fresh) == {'sheets', 'batches', 'regionLimited', 'setFirst', 'slots', 'kinds'}
+    assert fresh['slots'] == G.GEAR_SLOT and fresh['kinds'] == G.GEAR_KIND
     assert fresh['sheets']['sheet-skill-noel'][-1] is None
     assert b'\r\n' not in (Path(G.AF) / 'gear-plan.json').read_bytes()
+
+
+# --- controller rulings after Task E (2026-10-20): polearm floor, stale QA, starlit redesign, decision block ---------------------
+WEAPON_KINDS = ('sword', 'spear', 'dagger', 'bow', 'staff', 'tome', 'scimitar', 'wrench')   # engine/types.ts WeaponKind
+
+
+def test_every_weapon_cell_has_a_weapon_kind_and_the_plan_carries_it():
+    weapons = {p for p, s in G.GEAR_SLOT.items() if s == 'weapon'}
+    assert set(G.GEAR_KIND) == weapons and set(G.GEAR_KIND.values()) <= set(WEAPON_KINDS)
+    assert G.plan_data()['kinds'] == G.GEAR_KIND                    # gearArt.test.ts checks every value against the game data
+    assert {p for p, k in G.GEAR_KIND.items() if A.subject_class('weapon', k) == 'polearm'} == {'thorn-spear', 'lg-chizuru', 'lg-liz'}
+
+
+def test_approve_refuses_a_pick_whose_qa_is_from_an_older_spec(factory, review):
+    reg = _fill(factory, 'sample')
+    reg.set('gear-lg-chizuru', kind='gear-cell', qa={'pass': True, 'reasons': []})          # picked before the spec stamp
+    review.main('sample'); _refused(factory)
+    reg = A.Registry(G.REG_PATH); q = reg.get('gear-lg-chizuru')['qa']
+    reg.set('gear-lg-chizuru', qa={**q, 'spec': A.QA_SPEC['gear-cell']})
+    review.main('sample')
+    assert G.do_approve(A.Registry(G.REG_PATH), 'sample', 'user 2026-10-21: ok')
+
+
+def test_pick_and_requa_record_qa_under_the_current_spec(factory):
+    _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a1.png'); _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a2.png')
+    G.pick(['--id', 'sheet-gear-1', '--attempt', '1']); G.pick(['--id', 'sheet-gear-1', '--attempt', '2', '--part', 'iron-sword'])
+    reg = A.Registry(G.REG_PATH)
+    assert all(not A.qa_stale(reg.get(a)) for p in G.GEAR_SHEETS['sheet-gear-1'] for a in (f'gear-{p}', f'gear-{p}-large'))
+    for a in ('gear-iron-sword', 'gear-leather-cap-large'):                                 # as if QA'd under an older spec
+        e = reg.get(a); reg.set(a, qa={k: v for k, v in e['qa'].items() if k != 'spec'})
+    before = {a: reg.get(a).get('final') for a in reg.data['assets']}
+    done = G.do_requa(A.Registry(G.REG_PATH), 'sample')
+    reg = A.Registry(G.REG_PATH)
+    assert set(done) == {'gear-iron-sword', 'gear-iron-sword-large', 'gear-leather-cap', 'gear-leather-cap-large'}
+    assert not any(A.qa_stale(e) for e in reg.data['assets'].values())
+    assert reg.get('gear-iron-sword')['chosen_attempt'] == 'a2' and reg.get('gear-leather-cap')['chosen_attempt'] == 'a1'
+    assert {a: reg.get(a).get('final') for a in reg.data['assets']} == before
+
+
+def test_requa_never_touches_approved_or_published_parts(factory):
+    _sheet(factory / 'raw/sheet-gear-1/sheet-gear-1-a1.png'); G.pick(['--id', 'sheet-gear-1', '--attempt', '1'])
+    reg = A.Registry(G.REG_PATH); e = reg.get('gear-iron-sword')
+    reg.set('gear-iron-sword', status='approved', qa={k: v for k, v in e['qa'].items() if k != 'spec'})
+    with pytest.raises(PermissionError, match='approved or published'):
+        G.do_requa(A.Registry(G.REG_PATH), 'sample')
+
+
+def _corner_stars(path, dots=False):
+    """A one-piece starlit raw: 16 art px at 40 raw px each on a 1024 magenta canvas; four plus-shaped corner stars."""
+    arr = np.zeros((1024, 1024, 3), np.uint8); arr[:] = M; o = 192
+    art = {}
+    for cy, cx in ((2, 2), (2, 13), (13, 2), (13, 13)):
+        for d in (-2, -1, 1, 2): art[(cy + d, cx)] = STAR_ARM; art[(cy, cx + d)] = STAR_ARM
+        art[(cy, cx)] = STAR_CORE
+    if dots:
+        for y, x in ((1, 8), (14, 7), (8, 1), (7, 14)): art[(y, x)] = STAR_CORE
+    for (y, x), c in art.items(): arr[o + y * 40:o + y * 40 + 40, o + x * 40:o + x * 40 + 40] = c
+    path.parent.mkdir(parents=True, exist_ok=True); Image.fromarray(arr, 'RGB').save(path); return path
+
+
+def test_starlit_job_is_one_piece_with_corner_stars_only_and_its_own_cap():
+    j = G.job_by_id('sheet-starlit-1')
+    assert (j['kind'], j['cols'], j['rows'], j['parts'], j['batch']) == ('frame-sheet', 1, 1, ['starlit'], 'sample')
+    assert G.assets_of(j, 'starlit') == ['ui-starlit'] and G.ATTEMPT_CAP['sheet-starlit-1'] == 3
+    assert G.frame_role('starlit', j) == ('corners', 16, 5, 0)
+    assert G.frame_role('starlit', G.job_by_id(G.FRAME_SHEET_ID)) == ('overlay', 16, 5, 0)     # the frames sheet is unchanged
+    assert G.ATTEMPT_CAP['sheet-gear-1'] == 9 and G.ATTEMPT_CAP[G.FRAME_SHEET_ID] == 5
+    pr = j['prompt']
+    for s in ('four-pointed star', '5 by 5', 'corner', 'fully transparent', 'nothing along the sides', '#FF00FF', 'No text', 'original'):
+        assert s in pr, s
+
+
+def test_starlit_job_pick_replaces_the_overlay_only_when_it_is_corner_stars(factory):
+    _corner_stars(factory / 'raw/sheet-starlit-1/sheet-starlit-1-a1.png')
+    _corner_stars(factory / 'raw/sheet-starlit-1/sheet-starlit-1-a2.png', dots=True)
+    res = G.pick(['--id', 'sheet-starlit-1', '--attempt', '1'])
+    q = res['ui-starlit']
+    assert q['pass'] and q['role'] == 'corners' and q['size'] == [16, 16], q
+    e = A.Registry(G.REG_PATH).get('ui-starlit')
+    assert e['source_id'] == 'sheet-starlit-1' and e['chosen_attempt'] == 'a1' and not A.qa_stale(e)
+    q = G.pick(['--id', 'sheet-starlit-1', '--attempt', '2'])['ui-starlit']
+    assert 'starlit outside its corners' in q['reasons'] and not q['pass']
+
+
+def test_gen_stops_at_the_attempt_cap(factory, monkeypatch):
+    monkeypatch.setattr(G.subprocess, 'run', lambda *a, **k: pytest.fail('codex must not run'))
+    for k in (1, 2, 3): _corner_stars(factory / f'raw/sheet-starlit-1/sheet-starlit-1-a{k}.png')
+    with pytest.raises(PermissionError, match='a3'):
+        G.gen(['--only=sheet-starlit-1', '--n=4'])
+    G.gen(['--only=sheet-starlit-1', '--n=3'])                                               # nothing to do, nothing run
+
+
+def test_sample_decisions_tell_the_real_state(factory, review):
+    import re
+    reg = _fill(factory, 'sample')
+    reg.set('ui-starlit', source_id=G.FRAME_SHEET_ID)                      # the old a5 overlay is still the pick
+    page = review.main('sample').read_text(encoding='utf-8')
+    head = page[page.index('id="decisions"'):page.index('id="s0"')]
+    asked = head[:head.index('已決定')]
+    assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['圖示大小是否一致', '七階外框與星輝', '傳說光暈改在格內']
+    for s in ('長柄', '0.20', '0.28',                         # the polearm floor, explained
+              '獨特沒有金色內緣線', '已接受',                  # unique without the gold line, plainly
+              '最接近的一對', 'ΔE',                           # the tightest pair, measured
+              '四角', '邊與中間全透明'):                       # the starlit redesign
+        assert s in asked, s
+    assert '新版星輝尚未生成' in asked                         # this registry's ui-starlit is not from sheet-starlit-1
+    decided = head[head.index('已決定'):]
+    for s in ('多蘭', '素材', '本批未重畫', '15 件舊底材圖示', '正式版'):
+        assert s in decided, s
+    reg = A.Registry(G.REG_PATH); reg.set('ui-starlit', source_id='sheet-starlit-1')
+    head = review.main('sample').read_text(encoding='utf-8')
+    assert '新版星輝尚未生成' not in head
+
+
+def test_review_page_flags_stale_qa_in_the_checklist(factory, review):
+    reg = _fill(factory, 'sample'); reg.set('gear-lg-chizuru', kind='gear-cell', qa={'pass': True, 'reasons': []})
+    page = review.main('sample').read_text(encoding='utf-8')
+    row = page[page.index('data-part="lg-chizuru"'):]; row = row[:row.index('</tr>')]
+    assert 'QA 過期' in row and 'QA 過期' not in page[page.index('data-part="iron-sword"'):][:400]

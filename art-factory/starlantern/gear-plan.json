@@ -111,6 +111,9 @@
       "glow-legendary",
       "starlit"
     ],
+    "sheet-starlit-1": [
+      "starlit"
+    ],
     "scene-forge": [
       "scene-forge"
     ],
@@ -245,6 +248,7 @@
     "sheet-mat-1": "sample",
     "sheet-mat-2": "main-gear",
     "sheet-rarity-frames-2": "sample",
+    "sheet-starlit-1": "sample",
     "scene-forge": "sample",
     "npc-forge": "sample",
     "npc-forge-happy": "main-gear",
@@ -355,5 +359,24 @@
     "set-iron-head": "head",
     "set-iron-body": "body",
     "set-iron-feet": "feet"
+  },
+  "kinds": {
+    "wooden-staff": "staff",
+    "iron-sword": "sword",
+    "hunter-bow": "bow",
+    "thorn-spear": "spear",
+    "crystal-blade": "dagger",
+    "frost-staff": "staff",
+    "star-saber": "scimitar",
+    "lg-chizuru": "spear",
+    "lg-liz": "spear",
+    "blaze-heart-sword": "sword",
+    "frost-winter-staff": "staff",
+    "storm-thunder-bow": "bow",
+    "shade-silent-blade": "dagger",
+    "set-blaze-weapon": "sword",
+    "set-frost-weapon": "sword",
+    "set-storm-weapon": "sword",
+    "set-shade-weapon": "sword"
   }
 }

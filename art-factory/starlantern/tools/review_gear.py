@@ -70,16 +70,23 @@ def prices():
 # risks written out plainly (from the independent visual check), so the user decides with the problems in view.
 # (question, links, known risks, explanation). The sample's block is plan 5d addendum 2 §6 (the G1 redo).
 DECISIONS = {
+    # Controller rulings 2026-10-20 (after Task E): the real state of the G1 redo. 〔最接近〕 and 〔星輝〕 are filled from the
+    # registry when the page is built (live_text), so the page never claims a pick it does not show.
     'sample': [
         ('圖示大小是否一致', ['#size', '#s1'], [
             '短刃與劍現在一樣長，靠「短寬刃、大握柄」的比例區分。',
-            '戒指、項鍊放大到和鎧甲同一份量後，看起來比以前大。'],
-         '所有圖示畫在同一個 26×26 畫布上，主體長邊統一是 22。盾、鎧甲、手甲另外要求要夠寬、夠飽滿，不合格的會被機械閘門擋下重畫。'),
+            '戒指、項鍊放大到和鎧甲同一份量後，看起來會比以前大（在 G2）。',
+            '長柄武器在格子裡看起來比劍細一點：這是它的份量下限放寬到 0.20 的結果。'],
+         '已經做到：所有裝備圖示畫在同一個 26×26 畫布上，主體長邊統一是 22（大圖 56），請看尺寸一致性格。盾、鎧甲、手甲另外要求夠寬、'
+         '夠飽滿，不合格的會被機械閘門擋下重畫。份量下限：一般武器 0.28；長柄武器（遊戲資料裡的槍類，例如本批的雙月槍）是一根細桿加'
+         '槍頭，份量天生較輕，下限放寬為 0.20，其他部位與武器不變。'),
         ('七階外框與星輝', ['#frames', '#s1'], [
             '獨特由金色改成緋紅（和稀有黃、傳說橘分開），遊戲內的文字色要一起改。',
             '史詩只能用偏藍的紫，不能用偏粉的紫，因為生成用的是洋紅去背。'],
-         '普通沒有外框。魔法藍、稀有黃、史詩藍紫、傳說橘、獨特緋紅、套裝綠。造型也逐階增加：素邊 → 鉚釘 → 切角寶石 → 火舌 → 金邊雕花 → 葉徽。'
-         '星輝是青白星光，只疊在擲出星輝的傳說、獨特、套裝上。'),
+         '普通沒有外框。魔法藍、稀有黃、史詩藍紫、傳說橘、獨特緋紅、套裝綠，造型逐階增加：素邊 → 鉚釘 → 切角寶石 → 火舌 → 雕花角飾 → 葉徽。'
+         '七階兩兩之間的色差都在門檻 25 以上，〔最接近〕。'
+         '獨特沒有金色內緣線：生成的細金線縮到 16 格後會斷成雜點，已接受只用緋紅邊帶加雕花角飾（緋紅和稀有黃、傳說橘的色差足夠）。'
+         '星輝改版：只在四角各一顆四芒星，邊與中間全透明，所以不會沿著邊重複成虛線；只疊在擲出星輝的傳說、獨特、套裝上。〔星輝〕'),
         ('傳說光暈改在格內', ['#glow'], [],
          '光暈改成外框內側一圈 1px 淡橘光，加四角火花，畫在圖示下層，不再伸進隔壁格。請看兩件傳說相鄰的示範。'),
     ],
@@ -94,9 +101,29 @@ DECISIONS = {
 DECIDED = {   # addendum 2 §6: decided on 2026-10-20, not asked again
     'sample': ('已決定（2026-10-20）', [
         '畫風與大小比例的方向：「可以」。',
-        '多蘭的外型：照目前的版本。',
-        '15 件舊底材圖示全部換新：本批只有鐵劍、木圓盾、皮帽，其餘在 G2。']),
+        '多蘭的外型：照目前的版本（本批未重畫，和上次看到的是同一張）。',
+        '素材 6 件：照上次的版本（本批未重畫）。',
+        '15 件舊底材圖示全部換新：正式版會換掉全部 15 件；本批只有鐵劍、木圓盾、皮帽，其餘在 G2。']),
 }
+
+
+def tightest_frames(reg):
+    """The closest pair of picked tier frames by band colour: (ΔE, tier a, tier b), or None when fewer than two are picked."""
+    tier = {G.FRAME_ASSET[r]: r for r in G.FRAMED_RARITIES}
+    cols = {a: tuple(e['qa']['stroke_colour']) for a in G.TIER_FRAMES if (e := reg.get(a)) and (e.get('qa') or {}).get('stroke_colour')
+            and e.get('status') not in ('rejected', 'retired')}
+    pairs = [(A.delta_e(cols[a], cols[b]), tier[a], tier[b]) for i, a in enumerate(cols) for b in list(cols)[i + 1:]]
+    return min(pairs) if pairs else None
+
+
+def live_text(s, reg):
+    """Fill the decision block's measured parts from the registry."""
+    tp = tightest_frames(reg)
+    near = (f'最接近的一對是{RARITY_NAME[tp[1]]}與{RARITY_NAME[tp[2]]}（ΔE {tp[0]:.1f}）' if tp
+            else '最接近的一對要等七階外框挑齊才算得出 ΔE')
+    star = ('頁面上的星輝是新版（sheet-starlit-1）。' if reg.get('ui-starlit', {}).get('source_id') == G.STARLIT_SHEET_ID
+            else '新版星輝尚未生成：頁面暫時顯示舊版（邊上的星點在遊戲裡會重複成虛線），新版生成並通過 QA 後會換上。')
+    return s.replace('〔最接近〕', near).replace('〔星輝〕', star)
 AFTER_APPROVAL = {
     'sample': '核准後的動作：執行 gear_art.py approve --batch sample --by "<你對這頁的原話> <YYYY-MM-DD>"，然後照 5d Task 8（已依補遺 2 §4 修改）發布。',
 }
@@ -195,11 +222,11 @@ def _measured(path, e, target):
     return A.subject_metrics(Image.open(path).convert('RGBA'), target)
 
 
-def _gate_failed(e, m, target, slot):
+def _gate_failed(e, m, target, slot, kind=None):
     q = e.get('qa') or {}
     if isinstance(q.get('subject'), dict):
         return any(r.startswith('subject ') or r == 'cell too small to sample' for r in q.get('reasons', []))
-    return bool(A.subject_gate(m, target, None if slot == 'other' else slot))
+    return bool(A.subject_gate(m, target, None if slot == 'other' else slot, kind))
 
 
 def size_grid(pg, reg):
@@ -218,7 +245,7 @@ def size_grid(pg, reg):
     def box_cell(attr, part, aid, target, z):
         e = reg[aid]; path = A._final_path(e['final']); src = pg.copy(e['final'], f'size-{aid}.png')
         W, H = Image.open(path).size; m = _measured(path, e, target)
-        out = ' out' if _gate_failed(e, m, target, G.GEAR_SLOT.get(part, 'other')) else ''
+        out = ' out' if _gate_failed(e, m, target, G.GEAR_SLOT.get(part, 'other'), G.GEAR_KIND.get(part)) else ''
         x0, y0, x1, y1 = m['box']; tx, ty = (W - target) // 2, (H - target) // 2
         return (f'<figure class="sz{out}" {attr}="{esc(part)}"><div class="szbox" style="width:{W * z}px;height:{H * z}px">'
                 f'{img(src, "px", f"width:{W * z}px;height:{H * z}px", nm.get(part, part))}'
@@ -317,8 +344,15 @@ def main(batch='sample'):
         st = '；'.join(f'{a}：{reg.get(a, {}).get("status", "未挑選")} {reg.get(a, {}).get("chosen_attempt", "")}'
                        f'{" sha " + shown[a][:12] if a in shown else ""}' for a in aids)
         qa = '；'.join(qa_line(reg.get(a, {}).get('qa')) for a in aids if reg.get(a, {}).get('qa'))
+        if any(A.qa_stale(reg.get(a, {})) for a in aids): st += '（QA 過期：在舊規格下量的，需重新 QA：gear_art.py requa）'
         return f'<tr data-part="{esc(p)}"><td>{esc(p)}</td><td>{esc(nm.get(p, ""))}</td><td>{esc(job["id"])}</td><td>{esc(st)}</td><td class="small">{esc(qa)}</td></tr>'
-    checklist = ''.join(status_row(j, p) for j in js for p in j['parts'] if p is not None)
+    listed = dict.fromkeys((j['id'], p) for j in js for p in j['parts'] if p is not None)
+    first = {}
+    for sid, p in listed: first.setdefault(p, sid)            # a part two jobs draw (ui-starlit) is listed once, by its pick
+    for p, sid in list(first.items()):
+        src = next((reg.get(a, {}).get('source_id') for a in G.assets_of(G.job_by_id(sid), p)), None)
+        if src in [j['id'] for j in js]: first[p] = src
+    checklist = ''.join(status_row(G.job_by_id(sid), p) for p, sid in first.items())
 
     # 1. equipment screen
     def cell(p, px, cls='bag', tier=None, star=False):
@@ -427,8 +461,8 @@ def main(batch='sample'):
 
     decisions = ''.join(
         f'<li><b>{esc(q)}</b> <span class="links">看：{"、".join(f"<a href={chr(34)}{s}{chr(34)}>{SECTION_NAME[s]}</a>" for s in links)}</span>'
-        f'{"<p class=why>" + esc(why) + "</p>" if why else ""}'
-        f'<p class="why">已知風險：</p><ul class="risks">{"".join(f"<li>{esc(r)}</li>" for r in risks) or "<li>無</li>"}</ul></li>'
+        f'{"<p class=why>" + esc(live_text(why, reg)) + "</p>" if why else ""}'
+        f'<p class="why">已知風險：</p><ul class="risks">{"".join(f"<li>{esc(live_text(r, reg))}</li>" for r in risks) or "<li>無</li>"}</ul></li>'
         for q, links, risks, why in DECISIONS[batch])
     decided = ''
     if batch in DECIDED:

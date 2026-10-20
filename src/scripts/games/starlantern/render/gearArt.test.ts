@@ -16,6 +16,8 @@ interface GearPlan {
   setFirst: Record<string, string>;
   /** Plan 5d addendum 2: the slot of every gear cell (the size gate's short-edge and mass limits follow it). */
   slots: Record<string, string>;
+  /** Controller ruling 2026-10-20: the weapon kind of every weapon cell (polearm kinds get their own mass floor). */
+  kinds: Record<string, string>;
 }
 const plan = JSON.parse(readFileSync('art-factory/starlantern/gear-plan.json', 'utf8')) as GearPlan;
 const registry = JSON.parse(readFileSync('art-factory/starlantern/registry.json', 'utf8')) as {
@@ -71,6 +73,13 @@ describe('plan 5d gear art plan (art-factory/starlantern/gear-plan.json)', () =>
     expect(new Set(Object.keys(plan.slots ?? {}))).toEqual(new Set(want));
     expect(Object.keys(plan.slots)).toHaveLength(69);
     for (const [id, slot] of Object.entries(plan.slots)) expect(slot, id).toBe((EQUIPMENT[id] ?? SPECIALS[id]).slot);
+  });
+
+  it('every weapon cell names the weapon kind of its item', () => {
+    const weapons = Object.entries(plan.slots).filter(([, slot]) => slot === 'weapon').map(([id]) => id);
+    expect(new Set(Object.keys(plan.kinds ?? {}))).toEqual(new Set(weapons));
+    for (const [id, kind] of Object.entries(plan.kinds)) expect(kind, id).toBe(EQUIPMENT[id]?.weaponKind ?? SPECIALS[id]?.weaponKind);
+    expect(Object.values(plan.kinds)).toContain('spear');
   });
 
   it('every material without art and every tree skill has exactly one icon cell', () => {
