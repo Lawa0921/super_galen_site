@@ -127,7 +127,11 @@ export const OUTFITS: readonly OutfitOption[] = [
   { id: 'idol', zh: '偶像舞台裝', colors: [C('pink'), C('sky')] },
   { id: 'priest', zh: '神官袍', colors: [C('white'), C('khaki')] },
   { id: 'gothic', zh: '哥德洋裝', colors: [C('black'), C('purple')] },
+  // 基本布衣：不是物品、永遠穿著（時裝欄空著時看到的就是它）。樸素的卡其短衫 + 棕色長褲
+  { id: 'plain', zh: '布衣', colors: [C('khaki'), C('brown')] },
 ];
+/** 基本布衣在 OUTFITS 的索引（排最後）；其他服裝都有對應的時裝物品（engine/items.ts OUTFIT_ITEMS） */
+export const OUTFIT_PLAIN = OUTFITS.findIndex((o) => o.id === 'plain');
 export const ACCESSORIES: readonly AppearanceOption[] = [
   { id: 'none', zh: '無' },
   { id: 'ribbon', zh: '蝴蝶結' },
@@ -239,7 +243,8 @@ export function randomAppearance(rand: () => number): Appearance {
   const typical = (ids: readonly string[], all: readonly AppearanceOption[]): number =>
     rand() < 0.65 ? Math.max(0, all.findIndex((o) => o.id === ids[pick(ids.length)])) : pick(all.length);
   const hair = typical(body === 1 ? ['messy', 'spiky', 'bob', 'ponytail'] : ['twintails', 'long', 'hime', 'bob', 'odango', 'braid', 'ponytail'], HAIR_STYLES);
-  const outfit = typical(body === 1 ? ['explorer', 'hoodie', 'coat'] : ['sailor', 'miko', 'maid', 'hoodie', 'explorer', 'coat'], OUTFITS);
+  // 不抽布衣（排最後，切掉它不影響其他服裝的索引與亂數序列）
+  const outfit = typical(body === 1 ? ['explorer', 'hoodie', 'coat'] : ['sailor', 'miko', 'maid', 'hoodie', 'explorer', 'coat'], OUTFITS.slice(0, OUTFIT_PLAIN));
   const own = rand() < 0.7;
   return {
     body, blush: rand() < (body === 0 ? 0.85 : 0.15),

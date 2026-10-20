@@ -14,7 +14,7 @@ import { Bmp, hex, rotPrep, rotate, softOutlineColor, type RGB } from './pixel';
 import { OUTFITS, raceId, type Appearance, type RaceId } from '../engine/appearance';
 import type { DollLook, DollPiece } from '../engine/doll';
 import type { ArmorSetId } from '../engine/items';
-import { drawHead, type Expr, type HairMotion } from './avatarHead';
+import { accArt, drawHead, type Expr, type HairMotion } from './avatarHead';
 import { CLOTH_RAMPS, DARK, GOLD, HORN, LEATHER, MAIL, WHITE, clothRamp, darker, hairRamp, skinRamp } from './avatarPalette';
 import { WAIST_ROW, beardRamp, dwarfify } from './folkArt';
 import {
@@ -178,6 +178,8 @@ function legStyle(l: DollLook, w: Wear): LegStyle {
       case 'idol': st = { parts: [[0.45, sk, 0], [1, c2, 0]], shoe: { kind: 'boot', r: WHITE }, greave: null }; break;
       case 'priest': st = { parts: [[1, darker(c1), 0]], shoe: { kind: 'loafer', r: LEATHER }, greave: null }; break;
       case 'gothic': st = { parts: [[1, c1, 0]], shoe: { kind: 'mary', r: DARK }, greave: null, pattern: { kind: 'stripe', r: c2 } }; break;
+      // 布衣：副色的素面長褲 + 深色便鞋
+      case 'plain': st = { parts: [[1, c2, 0]], shoe: { kind: 'loafer', r: DARK }, greave: null }; break;
       default: st = { parts: [[0.45, darker(c1), 0.2], [1, sk, 0]], shoe: { kind: 'boot', r: LEATHER }, greave: null };
     }
   }
@@ -520,6 +522,12 @@ function topFront(b: Bmp, l: DollLook, w: Wear, rows: Rows, lowerMiko: boolean, 
       run(y0 + 1, 0, 99, (x) => (x & 1 ? WHITE[3] : WHITE[2]));
       S(mid - 1, y0 + 2, c2[3]); S(mid, y0 + 2, c2[1]); S(mid + 1, y0 + 2, c2[2]);
       for (let y = y0 + 3; y <= yb; y++) { S(mid - 1, y, c1[4]); S(mid + ((y & 1) ? 0 : 1), y, c2[3]); S(mid + 2, y, c1[2]); }
+    } else if (o === 'plain') {
+      // 布衣：素面短衫、領口一道小開口（暗一階）、副色細腰繩打個結
+      S(mid, y0, c1[1]); S(mid, y0 + 1, c1[1]); S(mid + 1, y0 + 1, c1[2]);
+      const [ba, bz] = E(yb - 1);
+      run(yb - 1, ba, bz, (x) => (x === ba ? c2[3] : x >= bz - 1 ? c2[1] : c2[2]));
+      S(mid - 1, yb - 1, c2[4]); S(mid - 1, yb, c2[3]);
     }
   }
   if (l.neck) neckArt(b, l.neck, mid - 1, y0 + 1);
@@ -577,6 +585,7 @@ export function avatarArm(l: DollLook, back: boolean, f = 0): Bmp {
     else if (o === 'idol') { col(1, 2, dk(c1), X0 - 1, X1 + 1); col(3, 3, dk(WHITE), X0 - 1, X1 + 1); col(4, 4, sk); col(5, 5, dk(c2)); hand(); }
     else if (o === 'priest') { col(1, 3, dk(c1)); col(4, 4, dk(c1), X0 - 1, X1 + 1); col(5, 5, dk(c2), X0 - 1, X1 + 1); hand(); }
     else if (o === 'gothic') { col(1, 2, dk(c1), X0 - 1, X1 + 1); col(3, 4, dk(c1)); col(5, 5, dk(WHITE), X0 - 1, X1 + 1); hand(); }
+    else if (o === 'plain') { col(1, 3, dk(c1)); col(4, 5, sk); hand(); }
     else { col(1, 4, dk(c1)); col(5, 5, darker(dk(c1))); hand(); }
   }
   rampOutline(arm, used);
@@ -680,7 +689,7 @@ function standFrame(l: DollLook, p: Pose, f: number, trace?: string[]): AvatarFr
   const rows = shiftRows(torsoRows(bt, outfitOf(top) === 'hoodie'), p.bodyDx, dy + p.bodyDy);
   const ty = Math.min(...Object.keys(rows).map(Number)), [ra, rz] = rows[ty + 1];
   if (!p.noHead) drawHead(hairBack, head, HEAD_X + p.headDx + p.bodyDx, HEAD_Y[bt] + dy + p.bodyDy + p.headDy, {
-    app: l.app, race, expr: p.expr, motion: p.hair, gear: l.head, view: 'side', sweat: p.sweat, f, trace: headTrace, face, look: p.look,
+    app: l.app, race, expr: p.expr, motion: p.hair, gear: l.head, acc: l.acc, view: 'side', sweat: p.sweat, f, trace: headTrace, face, look: p.look,
   });
   body.blit(hairBack, 0, 0); trace?.push('backHair');
   // 尾巴：根部在腰後（軀幹倒數第二列、靠後緣）
@@ -811,7 +820,7 @@ function swimFrame(l: DollLook, f: number): AvatarFrame {
   // 頭在身體前端（往前 8、往下 4）：臉朝前進的方向
   const hx = Math.round(36 + nx - 13 + 8), hy = Math.round(36 + ny - 20 + 4);
   const race = raceId(l.app);
-  drawHead(hb, hf, hx, hy, { app: l.app, race, expr: 'normal', motion: { swing: 0.9 + 0.2 * Math.sin(ph), lift: 0.5 }, gear: l.head, view: 'side', f, look: 2 });
+  drawHead(hb, hf, hx, hy, { app: l.app, race, expr: 'normal', motion: { swing: 0.9 + 0.2 * Math.sin(ph), lift: 0.5 }, gear: l.head, acc: l.acc, view: 'side', f, look: 2 });
   // 矮人男游泳也有鬍子（游泳的身體不縮：轉過去之後看不出高矮）
   if (race === 'dwarf' && l.app.body === 1) hf = dwarfify(hf, beardRamp(l.app.hairColor), 0, l.app.skin, WAIST_ROW, true);
   const all = new Bmp(72, 72);
@@ -1075,7 +1084,7 @@ export const AV_WHITE = hex('#ffffff');
 export type { Appearance };
 
 /** 單一件穿戴物（不含身體）的點陣：時裝 / 防具圖示、說明框用。slot = 這件畫在哪 */
-export function pieceBmp(l: DollLook, slot: 'head' | 'body' | 'legs' | 'back'): Bmp {
+export function pieceBmp(l: DollLook, slot: 'head' | 'body' | 'legs' | 'back' | 'acc'): Bmp {
   const b = new Bmp(AV_FW, AV_FH);
   const pose: BodyPose = { dx: 0, dy: 0, flare: 0, flap: 0, f: 0 };
   const rows = torsoRows(0, false);
@@ -1095,7 +1104,7 @@ export function pieceBmp(l: DollLook, slot: 'head' | 'body' | 'legs' | 'back'): 
     if (armorSet(l.head)) { helmetHeadOnly(h, l.head); h.softOutline(); }
     else hatHeadOnly(h, lookId(l.head, 'hat:') ?? 'beret', l.head.tint);
     b.blit(h, 0, 0);
-  }
+  } else if (slot === 'acc' && l.acc) accArt(b, l.acc, 14, 14);
   void CR;
   return b;
 }

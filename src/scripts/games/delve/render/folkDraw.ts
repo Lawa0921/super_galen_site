@@ -14,7 +14,7 @@ import { dwarfify, beardRamp } from './folkArt';
 
 const piece = (look: string | undefined): DollPiece | null => (look ? { look, rarity: 0, plus: 0, elem: null } : null);
 export function folkDollLook(l: FolkLook): DollLook {
-  return { app: l.app, head: piece(l.head), body: piece(l.body), legs: piece(l.legs), back: piece(l.back), feet: null, neck: l.neck ?? null, belt: l.belt ?? null };
+  return { app: l.app, head: piece(l.head), body: piece(l.body), legs: piece(l.legs), back: piece(l.back), acc: null, feet: null, neck: l.neck ?? null, belt: l.belt ?? null };
 }
 export interface FolkFrames { idle: Bmp[]; walk: Bmp[]; blink: Bmp; portrait: Bmp; }
 const oneCache = new Map<string, Bmp>();

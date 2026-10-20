@@ -4,7 +4,7 @@ import { DelveGame } from './game';
 import { T, W } from './tiles';
 import { FIXED_DT } from './constants';
 import { VANITY_ITEMS, type ItemId } from './items';
-import { isTintable, validTint, defaultTint } from './tint';
+import { isTintable, validTint, defaultTint, accTintFromAppearance } from './tint';
 import { CLOTH_COLORS, OUTFITS } from './appearance';
 import { saveSplitGame, restoreSplit, encodeWorld, decodeWorld } from '../save/worldSave';
 import { encodeCharacter, decodeCharacter } from '../save/character';
@@ -45,6 +45,21 @@ describe('isTintable / validTint / defaultTint', () => {
   it('defaultTint：服裝 = 款式原色；不認得的 look = null', () => {
     expect(defaultTint('outfit:sailor')).toEqual(OUTFITS.find((o) => o.id === 'sailor')!.colors);
     expect(defaultTint('armor:iron')).toBeNull();
+  });
+  it('飾品：有布料的（蝴蝶結 / 貓耳 / 兜帽 / 耳機 / 髮簪）原色是單色 [c, c]；金屬 / 固定色的（髮夾 / 小花 / 皇冠 / 狐面 / 眼鏡）沒有 tint', () => {
+    for (const id of ['ribbon', 'catears', 'hood', 'headphones', 'hairpin']) {
+      const t = defaultTint(`acc:${id}`);
+      expect(t, id).not.toBeNull();
+      expect(t![0]).toBe(t![1]);
+      expect(validTint(t)).toEqual(t);
+    }
+    for (const id of ['clip', 'flower', 'crown', 'foxmask', 'glasses', 'none', 'nope']) expect(defaultTint(`acc:${id}`), id).toBeNull();
+  });
+  it('accTintFromAppearance：外觀上的頭飾畫出來用的那個布色 → 物品 tint（兜帽用主色、其他用副色；沒有布料 → null）', () => {
+    const a = { color1: 6, color2: 10 };
+    expect(accTintFromAppearance('hood', a)).toEqual([6, 6]);
+    for (const id of ['ribbon', 'catears', 'headphones', 'hairpin']) expect(accTintFromAppearance(id, a), id).toEqual([10, 10]);
+    for (const id of ['clip', 'flower', 'crown', 'foxmask', 'glasses', 'none']) expect(accTintFromAppearance(id, a), id).toBeNull();
   });
 });
 

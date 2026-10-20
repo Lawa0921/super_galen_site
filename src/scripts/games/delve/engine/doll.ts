@@ -1,5 +1,6 @@
 // doll.ts — 紙娃娃的「看得見的樣子」（純資料，無 DOM）：由角色外觀 + 裝備欄 + 外觀欄算出每個部位畫什麼。
 //   部位優先序：外觀欄（時裝或拿來當樣子的防具）> 防具（沒被隱藏）> null（= 客製化的基本服裝 / 髮飾）。
+//   飾品格（acc）：有東西時取代外觀上的頭飾與眼鏡（null = 照外觀的 acc / glasses 畫：NPC 與還沒轉換的舊角色）。
 //   每件看得見的裝備帶稀有度 / 強化 / 元素詞條 → 渲染時加滾邊、寶石、閃光、元素點綴。
 //   看得見的飾品：跳躍靴 / 疾行靴（換鞋）、輕羽墜（背上小翅膀）、甲殼小盾（背在背上）、墜飾（胸前）、腰間小物。
 //   dollKey = 精靈快取 key（只含看得見的東西：換數值不重烘）。
@@ -18,7 +19,7 @@ export type DollLayer = typeof DOLL_LAYERS[number];
 
 export type DollElem = 'fire' | 'ice' | 'poison' | 'light' | 'storm';
 export interface DollPiece {
-  /** 'armor:<套裝>' | 'outfit:<服裝>' | 'hat:<帽子>' | 'back:<背飾>' */
+  /** 'armor:<套裝>' | 'outfit:<服裝>' | 'hat:<帽子>' | 'back:<背飾>' | 'acc:<頭飾 id 或 glasses>' */
   look: string;
   rarity: number;
   plus: number;
@@ -35,6 +36,8 @@ export interface DollLook {
   body: DollPiece | null;
   legs: DollPiece | null;
   back: DollPiece | null;
+  /** 飾品格（頭飾 / 眼鏡）；null = 用外觀上的頭飾 / 眼鏡 */
+  acc: DollPiece | null;
   feet: DollFeet | null;
   neck: DollNeck | null;
   belt: DollBelt | null;
@@ -71,15 +74,17 @@ export function buildDollLook(app: Appearance, eq: Equipment, v: Vanity): DollLo
     belt ??= BELT[st.item] ?? null;
     if (!backAcc && BACK_ACC[st.item]) backAcc = pieceOf(st);
   }
-  return { app, head: part('head'), body: part('body'), legs: part('legs'), back: pieceOf(v.getStack('back')) ?? backAcc, feet, neck, belt };
+  return { app, head: part('head'), body: part('body'), legs: part('legs'), back: pieceOf(v.getStack('back')) ?? backAcc, acc: pieceOf(v.getStack('acc')), feet, neck, belt };
 }
 
-/** 沒有 tint 時 key 和以前一樣（快取不因為改版全部失效） */
+/** 沒有 tint 時 key 和以前一樣（快取不因為改版全部失效）；飾品格空著也一樣（有戴才多一段） */
 const pk = (p: DollPiece | null): string => (p ? `${p.look}/${p.rarity}/${p.plus}/${p.elem ?? ''}${p.tint ? `/${tintKey(p.tint)}` : ''}` : '-');
 export function dollKey(l: DollLook): string {
-  return [appearanceKey(l.app), pk(l.head), pk(l.body), pk(l.legs), pk(l.back), l.feet ?? '-', l.neck ?? '-', l.belt ?? '-'].join('|');
+  const k = [appearanceKey(l.app), pk(l.head), pk(l.body), pk(l.legs), pk(l.back), l.feet ?? '-', l.neck ?? '-', l.belt ?? '-'];
+  if (l.acc) k.push(pk(l.acc));
+  return k.join('|');
 }
 /** 只有外觀、什麼都沒穿 */
 export function plainLook(app: Appearance): DollLook {
-  return { app, head: null, body: null, legs: null, back: null, feet: null, neck: null, belt: null };
+  return { app, head: null, body: null, legs: null, back: null, acc: null, feet: null, neck: null, belt: null };
 }

@@ -32,7 +32,7 @@ const CRAFT_FAIL: Record<string, string> = {
   missing: '材料不足', station: '需要靠近合成站', full: '背包放不下', unknown: '未知配方',
 };
 const SLOT_LABEL: Record<EquipSlot, string> = { head: '頭', body: '身', legs: '腿', acc0: '飾', acc1: '飾', acc2: '飾', acc3: '飾', acc4: '飾' };
-const VANITY_LABEL: Record<VanitySlot, string> = { head: '頭', body: '身', legs: '腿', back: '背' };
+const VANITY_LABEL: Record<VanitySlot, string> = { head: '頭', body: '身', legs: '腿', back: '背', acc: '飾品' };
 const HIDE_LABEL: Record<HideSlot, string> = { head: '頭盔', body: '胸甲', legs: '護脛' };
 /** 背包紙娃娃預覽輪播：待機 → 走路 */
 const DOLL_REEL: [SheetAnim, number][] = [['idle', 3], ['walk', 2]];
@@ -51,12 +51,12 @@ function drawEye(c: HTMLCanvasElement, open: boolean): void {
     ctx.fillRect(x, y, 1, 1);
   } });
 }
-/** 這件道具穿在身上看得見嗎（防具 / 時裝 / 看得見的飾品） */
-function wearSlot(item: ItemId): 'head' | 'body' | 'legs' | 'back' | 'acc' | null {
+/** 這件道具穿在身上看得見嗎（防具 / 時裝 / 看得見的飾品）。trinket = 裝備欄的飾品槽（acc0..acc4）；時裝的 acc = 外觀欄的飾品格 */
+function wearSlot(item: ItemId): VanitySlot | 'trinket' | null {
   const d = ITEMS[item];
   if (d.vanity) return d.vanity.slot;
   if (d.armor) return d.armor.slot;
-  if (['jump_boots', 'swift_boots', 'feather_charm', 'chitin_buckler', 'night_amulet', 'fang_charm', 'warden_heart', 'magma_ward', 'compass', 'depth_meter', 'magnet', 'explorer_map'].includes(item)) return 'acc';
+  if (['jump_boots', 'swift_boots', 'feather_charm', 'chitin_buckler', 'night_amulet', 'fang_charm', 'warden_heart', 'magma_ward', 'compass', 'depth_meter', 'magnet', 'explorer_map'].includes(item)) return 'trinket';
   return null;
 }
 const FORGE_FAIL: Record<Exclude<ForgeResult, { ok: true }>['reason'], string> = {
@@ -633,7 +633,7 @@ export class Hud {
     if (!ws) return null;
     const g = this.game, cur = g.doll().look, d = ITEMS[st.item];
     const p = pieceOf(st);
-    if (ws === 'acc') {
+    if (ws === 'trinket') {
       const e = g.equipment.clone();
       const s = e.autoSlot(st.item) ?? 'acc4';
       e.set(s, st.item, st.gear);

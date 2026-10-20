@@ -22,7 +22,7 @@ const S = TILE_SIZE;
 const piece = (look: string | undefined): DollPiece | null => (look ? { look, rarity: 0, plus: 0, elem: null } : null);
 /** 居民的紙娃娃樣子（純資料） */
 export function npcLook(kind: NpcKind, l: NpcLook = NPCS[kind].look): DollLook {
-  return { app: l.app, head: piece(l.head), body: piece(l.body), legs: piece(l.legs), back: piece(l.back), feet: null, neck: l.neck ?? null, belt: l.belt ?? null };
+  return { app: l.app, head: piece(l.head), body: piece(l.body), legs: piece(l.legs), back: piece(l.back), acc: null, feet: null, neck: l.neck ?? null, belt: l.belt ?? null };
 }
 
 export interface NpcFrames { idle: Bmp[]; blink: Bmp; walk: Bmp[]; sleep: Bmp; portrait: Bmp; }

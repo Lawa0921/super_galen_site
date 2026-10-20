@@ -38,9 +38,9 @@ export function itemTooltip(item: ItemId): string[] {
   }
   if (d.ammo) out.push(`彈藥・傷害 +${d.ammo.damage}${d.ammo.flame ? '・點燃目標' : ''}`);
   if (d.vanity) {
-    const where = { head: '頭', body: '身', legs: '腿', back: '背' }[d.vanity.slot];
+    const where = { head: '頭', body: '身', legs: '腿', back: '背', acc: '飾品' }[d.vanity.slot];
     out.push(`時裝・外觀欄（${where}）`);
-    out.push('只改樣子、沒有數值；會蓋過同部位防具的樣子');
+    out.push(d.vanity.slot === 'acc' ? '只改樣子、沒有數值；戴帽子 / 頭盔時頭飾會收起來（眼鏡照戴）' : '只改樣子、沒有數值；會蓋過同部位防具的樣子');
   }
   if (d.armor) {
     const a = d.armor;

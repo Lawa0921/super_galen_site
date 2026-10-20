@@ -1,13 +1,14 @@
-// vanity.ts — 外觀欄（時裝）：頭 / 身 / 腿 / 背四格 + 三個防具的「隱藏」開關。純資料，不碰 DOM。
+// vanity.ts — 外觀欄（時裝）：頭 / 身 / 腿 / 背 / 飾品五格 + 三個防具的「隱藏」開關。純資料，不碰 DOM。
 //   外觀欄只改樣子（沒有任何數值，也不算進防禦 / 套裝）；頭 / 身 / 腿格也可以放同部位的防具（拿來當樣子用，詞條保留）。
-//   背格收背飾時裝（斗篷 / 翅膀 / 大蝴蝶結）。隱藏開關：該部位的防具不畫（外觀欄有東西時照樣畫外觀欄）。
+//   背格收背飾時裝（斗篷 / 翅膀 / 大蝴蝶結）；飾品格（acc）收頭飾 / 眼鏡（一次一件，取代外觀上的頭飾 / 眼鏡）。
+//   隱藏開關：該部位的防具不畫（外觀欄有東西時照樣畫外觀欄）。舊存檔只有前四格 → 飾品格空著。
 import { ITEMS, isItemId, type ItemId, type VanitySlot } from './items';
 import { type Inventory, type Stack } from './inventory';
 import { cloneGear, validGear, type Gear } from './gear';
 import { cloneTint, isTintable, validTint, type Tint } from './tint';
 
 export type { VanitySlot };
-export const VANITY_SLOTS: readonly VanitySlot[] = ['head', 'body', 'legs', 'back'];
+export const VANITY_SLOTS: readonly VanitySlot[] = ['head', 'body', 'legs', 'back', 'acc'];
 export type HideSlot = 'head' | 'body' | 'legs';
 /** tint = 每格時裝的顏色（null = 原色）；舊存檔沒有這欄 → 全部原色 */
 export interface VanityJSON {
@@ -17,12 +18,12 @@ export interface VanityJSON {
   hide: Record<HideSlot, boolean>;
 }
 
-/** 這件道具能不能放進外觀欄的 slot：同格的時裝，或（頭 / 身 / 腿）同部位的防具 */
+/** 這件道具能不能放進外觀欄的 slot：同格的時裝，或（頭 / 身 / 腿）同部位的防具；背 / 飾品格只收時裝 */
 export function fitsVanity(slot: VanitySlot, item: ItemId): boolean {
   const d = ITEMS[item];
   if (!d) return false;
   if (d.vanity) return d.vanity.slot === slot;
-  return slot !== 'back' && d.armor?.slot === slot;
+  return slot !== 'back' && slot !== 'acc' && d.armor?.slot === slot;
 }
 
 export class Vanity {

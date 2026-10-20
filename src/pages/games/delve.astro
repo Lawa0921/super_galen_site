@@ -1223,8 +1223,9 @@ const lang: Language = defaultLang;
     .delve .delve-hide-wrap { grid-area: hide; }
     .delve .delve-doll-row .delve-equip-h { display: none; }
     .delve .delve-equip-btn { grid-area: btn; }
-    .delve .delve-doll-row .delve-equip,
-    .delve .delve-vanity { grid-template-columns: repeat(4, 40px); gap: 2px; width: auto; }
+    .delve .delve-doll-row .delve-equip { grid-template-columns: repeat(4, 40px); gap: 2px; width: auto; }
+    /* 外觀欄 5 格（頭 / 身 / 腿 / 背 / 飾品）排成一列：高度和防具欄一樣、不用捲；間距 1px 才塞得進 360px 寬的手機 */
+    .delve .delve-vanity { grid-template-columns: repeat(5, 40px); gap: 1px; width: auto; }
     .delve .delve-doll-row .delve-equip .delve-slot,
     .delve .delve-vanity .delve-slot { width: 40px; height: 40px; min-height: 0; aspect-ratio: auto; }
     .delve .delve-vanity .delve-slot-icon,
@@ -1670,7 +1671,8 @@ const lang: Language = defaultLang;
   .delve-hide-wrap { flex-basis: 100%; display: grid; gap: 4px; }
   .delve-equip-col { display: grid; gap: 4px; }
   .delve-equip-h { margin: 0; font-size: 16px; font-weight: 400; color: #f2e2b0; }
-  .delve-vanity { display: grid; grid-template-columns: repeat(2, calc(var(--px) * 20)); gap: calc(var(--px) * 2); }
+  /* 外觀欄 5 格：3 欄 × 2 列（和左邊防具 · 飾品欄同高） */
+  .delve-vanity { display: grid; grid-template-columns: repeat(3, calc(var(--px) * 20)); gap: calc(var(--px) * 2); }
   .delve-vanity .delve-slot { width: calc(var(--px) * 20); height: calc(var(--px) * 20); --bv-bg: #2c2450; }
   .delve-vanity .delve-slot-label { color: #7a5a8c; }
   .delve-hide-row { display: flex; gap: calc(var(--px) * 2); }

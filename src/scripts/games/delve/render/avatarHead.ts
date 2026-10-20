@@ -9,14 +9,16 @@
 //   刺蝟頭、亂翹（頭頂和後腦四面亂翹）、側邊辮子、雙丸子、低馬尾（後頸綁起、貼背垂下）、狼尾（碎層次 + 後頸留長往後翹）、
 //   大波浪捲（後腦蓬、外緣一波一波、前面一束 S 形捲髮）、側分長瀏海（頭頂一個弧、瀏海往前斜掃、後髮半長）。
 //   頭飾（戴帽子 / 頭盔時不畫）：蝴蝶結、貓耳髮箍、星星髮夾、兜帽、小花、小皇冠、耳機、狐狸面具（斜掛在頭側）、髮簪（垂兩串金鍊）。
+//   頭飾 / 眼鏡來源：時裝欄的飾品格有東西 → 用那件（顏色 = 物品的 tint[0]，沒有 = 款式原色）；沒有 → 外觀上的 acc / glasses / 主副色。
 //   back 圖層：畫在身體後面的頭髮（後頸、長髮後片、馬尾、雙馬尾、遠側丸子、兜帽尖）；front 圖層：頭、臉、瀏海、鬢髮、前垂的長髮、飾品。
 //   種族：精靈耳（膚色，從頭兩側的頭髮下面戳出來，眼睛到臉頰的高度、不高過帽沿：戴帽子也留著，戴兜帽時收在兜帽裡）、
 //   貓耳（髮色 + 粉色內耳，頭頂兩隻）、龍角（象牙色，從頭頂往後彎）；貓耳 / 龍角戴帽子 / 頭盔 / 兜帽時收起來。
 //   座標：(ox, oy) = 區域原點在畫布上的位置。光從前上方（右上）來。
 import { Bmp, hex, type RGB } from './pixel';
 import type { Appearance, RaceId } from '../engine/appearance';
-import { HAIR_STYLES, ACCESSORIES } from '../engine/appearance';
+import { HAIR_STYLES, ACCESSORIES, DEFAULT_APPEARANCE } from '../engine/appearance';
 import type { DollPiece } from '../engine/doll';
+import { defaultTint } from '../engine/tint';
 import { R as CR } from './combatArt';
 import { BRIM, CAP, HAT_HIDES_TOP, armorSet, hatArt, helmetArt, inCap, lookId } from './avatarGear';
 import { BLUSH, EAR_PINK, EYE_WHITE, GLASSES, GOLD, HORN, LASH, MOUTH, MOUTH_RED, SWEAT, TONGUE, clothRamp, eyeRamp, hairOutline, hairRamp, skinRamp } from './avatarPalette';
@@ -31,6 +33,8 @@ export interface HeadOpts {
   race: RaceId;
   /** 頭上的裝備（頭盔 / 時裝帽）；null = 用外觀的髮飾 */
   gear: DollPiece | null; view: 'side' | 'back';
+  /** 時裝欄的飾品格（acc:<頭飾 id 或 glasses>）；null / 沒給 = 用外觀上的頭飾 / 眼鏡 */
+  acc?: DollPiece | null;
   /** 影格（傳說裝備的閃光位置） */
   f?: number;
   /** 合成順序紀錄（測試用） */
@@ -110,6 +114,16 @@ const HAIR: Record<string, HairDef> = {
 };
 const styleId = (a: Appearance): string => HAIR_STYLES[a.hair]?.id ?? 'bob';
 const accId = (a: Appearance): string => ACCESSORIES[a.acc]?.id ?? 'none';
+/**
+ * 這顆頭戴哪個頭飾、有沒有眼鏡、頭飾用什麼布色（app 只拿來給頭飾 / 兜帽取色；髮圈等其他東西照用外觀本身的顏色）。
+ * 飾品格有東西 → 取代外觀上的頭飾和眼鏡（一次一件）；頭飾只有一種布色 = tint[0]，兜帽讀 color1、其他讀 color2，所以兩個都設成它。
+ */
+function accPick(a: Appearance, p: DollPiece | null | undefined): { id: string; glasses: boolean; app: Appearance } {
+  const id = lookId(p ?? null, 'acc:');
+  if (id === null) return { id: accId(a), glasses: a.glasses, app: a };
+  const t = p?.tint ?? defaultTint(`acc:${id}`);
+  return { id: id === 'glasses' ? 'none' : id, glasses: id === 'glasses', app: t ? { ...a, color1: t[0], color2: t[0] } : a };
+}
 /** 頭頂的髮束分線（二次曲線三點；從頭頂往前下切開亮部） */
 const PARTINGS: readonly [Pt, Pt, Pt][] = [[[8, 0], [9.5, 3], [10, 6]], [[13.5, 0], [14.5, 3], [15, 5.5]]];
 /** 每束頭髮的高光短筆（2–3 格；區域座標） */
@@ -451,7 +465,8 @@ function horns(b: Bmp, ox: number, oy: number): Bmp {
 
 function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): void {
   const cov = headCover(o);
-  const a = o.app, h = hairRamp(a.hairColor), ho = hairOutline(a.hairColor), sk = skinRamp(a.skin), st = styleId(a), acc = o.gear ? 'none' : accId(a), m = o.motion;
+  const ap = accPick(o.app, o.acc);
+  const a = o.app, h = hairRamp(a.hairColor), ho = hairOutline(a.hairColor), sk = skinRamp(a.skin), st = styleId(a), acc = o.gear ? 'none' : ap.id, m = o.motion;
   const sw = m.swing, lift = m.lift, look = Math.round(o.look ?? 0);
   const def = HAIR[st] ?? HAIR.bob;
   const FACE = faceOf(a);
@@ -607,19 +622,19 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   const gear = new Bmp(front.w, front.h);
   if (o.gear && armorSet(o.gear)) helmetArt(gear, o.gear, ox, oy, o.f ?? 0);
   // 頭盔自己有內描邊（不再往外描一圈：外描會吃到前眼）；兜帽往外描
-  if (!o.gear && acc === 'hood') { hood(gear, behind, a, ox, oy); gear.softOutline(0.45); }
+  if (!o.gear && acc === 'hood') { hood(gear, behind, ap.app, ox, oy); gear.softOutline(0.45); }
   head.blit(gear, 0, 0);
   if (o.sweat) sweat(head, ox - 2, oy + 5);
   front.blit(head, 0, 0);
   if (cov.hat) hatArt(front, cov.hat, ox, oy, 'side', m.swing, o.gear?.tint);
   if (o.gear) o.trace?.push('headgear');
   const accL = new Bmp(front.w, front.h);
-  sideAcc(accL, a, st, acc, ox, oy, o.race);
+  sideAcc(accL, ap.app, st, acc, ox, oy, o.race);
   for (let i = 0; i < raceTop.length; i++) if (raceTop[i]) accL.px[i] = 0;
   front.blit(accL, 0, 0);
   // 頭飾 / 帽子最高到頭的區域座標 −4（含外框）：不高過碰撞盒
   for (let yy = 0; yy < Math.min(front.h, oy - 4); yy++) for (let x = 0; x < front.w; x++) front.clear(x, yy);
-  if (a.glasses) glasses(front, ox + look, oy);
+  if (ap.glasses) glasses(front, ox + look, oy);
   o.trace?.push('frontAcc');
   if (o.face) for (let y = 0; y < front.h; y++) for (let x = 0; x < front.w; x++) {
     if (p.m(x - ox, y - oy) !== SKIN_M) continue;
@@ -790,5 +805,16 @@ function hood(head: Bmp, behind: Bmp, a: Appearance, ox: number, oy: number): vo
 
 export function drawHead(back: Bmp, front: Bmp, ox: number, oy: number, o: HeadOpts): void {
   frontHead(back, front, o, ox, oy);
+}
+/** 飾品格那件單獨畫（圖示 / 說明框用）：頭飾或眼鏡本身，不含頭；位置 = 人類、鮑伯頭時戴的地方（區域原點 ox, oy） */
+export function accArt(b: Bmp, p: DollPiece, ox: number, oy: number): void {
+  const ap = accPick(DEFAULT_APPEARANCE, p);
+  if (ap.id === 'hood') {
+    const s = new Bmp(b.w, b.h);
+    hood(s, s, ap.app, ox, oy);
+    s.softOutline(0.45);
+    b.blit(s, 0, 0);
+  } else sideAcc(b, ap.app, 'bob', ap.id, ox, oy, 'human');
+  if (ap.glasses) glasses(b, ox, oy);
 }
 export { BRIM };

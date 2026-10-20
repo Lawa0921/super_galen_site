@@ -8,8 +8,8 @@ import { ARM_PIV, AV_FH, AV_FW, AV_HEAD, SHEET, SHEET_ANIMS, avatarArm, avatarFr
 import { BRIM, HAT_HIDES_TOP, hatArt, helmetArt } from './avatarGear';
 import { dollPreview, previewArms } from './dollPreview';
 import { fashionIcon } from './fashionIcon';
-import { ITEMS, VANITY_ITEMS, type ArmorSetId } from '../engine/items';
-import { defaultTint } from '../engine/tint';
+import { ACC_ITEMS, ITEMS, OUTFIT_ITEMS, VANITY_ITEMS, type ArmorSetId, type ItemId } from '../engine/items';
+import { accTintFromAppearance, defaultTint } from '../engine/tint';
 import { DelveGame } from '../engine/game';
 import { CLOTH_RAMPS, DARK, LEATHER, MAIL, SKIN_RAMPS, clothRamp, eyeRamp, hairRamp } from './avatarPalette';
 
@@ -471,5 +471,156 @@ describe('體型（男 / 女）與爬繩', () => {
     let n = 0;
     for (let y = AV_FH * 2; y < AV_FH * 3; y++) for (let x = 0; x < AV_FW; x++) if (b.on(x, y)) n++;
     expect(n).toBeGreaterThan(45);
+  });
+});
+
+describe('時裝物品重現外觀（服裝 / 飾品格 / 布衣）', () => {
+  const h = (b: Bmp): string => { let x = 0x811c9dc5; for (const v of b.px) { x ^= v; x = Math.imul(x, 0x01000193) >>> 0; } return x.toString(16); };
+  // Task 2 改飾品 / 服裝繪製之前（commit 5dc476ff）算出來的像素雜湊：沒戴飾品格、沒穿時裝時，畫出來和改版前一模一樣
+  const PINS: Record<string, string> = {
+    'acc:none:r0': 'adafd9bd/edb12567',
+    'acc:none:r3': '13bfa636/73e7341a',
+    'acc:ribbon:r0': '33371a29/4733ab2d',
+    'acc:ribbon:r3': '883cd5b0/6593b962',
+    'acc:catears:r0': '54d9aa11/58245783',
+    'acc:catears:r3': '5e94adb8/7730701c',
+    'acc:clip:r0': '4a423407/7acf5eb3',
+    'acc:clip:r3': '708d19f4/dfc2524e',
+    'acc:hood:r0': '6b7d95b0/9435e89a',
+    'acc:hood:r3': 'c1004827/14074209',
+    'acc:flower:r0': 'c844be89/8b04cc67',
+    'acc:flower:r3': 'ac2b46b0/bbe4b28c',
+    'acc:crown:r0': '22b6f94b/c7e727d',
+    'acc:crown:r3': '85e212ce/6aeee97e',
+    'acc:headphones:r0': 'ca45a423/8e0effcd',
+    'acc:headphones:r3': '55f93fb2/6fecb31e',
+    'acc:foxmask:r0': 'ba014af9/d94e61d9',
+    'acc:foxmask:r3': '77ca4b67/4b988167',
+    'acc:hairpin:r0': '6beb3ecf/a2661af5',
+    'acc:hairpin:r3': 'c583ecd3/78a230b5',
+    'glasses': 'e1354c6b',
+    'outfit:explorer:b0': '72bc946a/2fbe7594',
+    'outfit:explorer:b1': 'd35fbe8/dffe2239',
+    'outfit:sailor:b0': '24723e9f/e4eb890e',
+    'outfit:sailor:b1': 'b57c37d1/644ffa1c',
+    'outfit:miko:b0': '22a6502c/461b805b',
+    'outfit:miko:b1': '5289df6b/619fb10c',
+    'outfit:hoodie:b0': '96e23e91/a232e0bd',
+    'outfit:hoodie:b1': '21caa27f/cd33d4aa',
+    'outfit:coat:b0': 'da4e6a64/66da0281',
+    'outfit:coat:b1': 'c8456fdf/c6d9d2aa',
+    'outfit:maid:b0': '1d1b0d7b/5e044995',
+    'outfit:maid:b1': 'ead0e89a/6d22380a',
+    'outfit:ninja:b0': 'b8c13214/465da479',
+    'outfit:ninja:b1': '778f3417/bbaa6411',
+    'outfit:mage:b0': '640e0874/8505e1cf',
+    'outfit:mage:b1': 'ae515736/d1a9476d',
+    'outfit:knight:b0': '3c616160/9d0e8a97',
+    'outfit:knight:b1': 'c0e7c2e4/ff65afa7',
+    'outfit:qipao:b0': '483cc89b/2c7d4d21',
+    'outfit:qipao:b1': 'ce00808/94258798',
+    'outfit:pirate:b0': 'b6cee086/675cc2d0',
+    'outfit:pirate:b1': '991505ba/32ce937f',
+    'outfit:idol:b0': 'cc1ddd27/28332c5c',
+    'outfit:idol:b1': 'd4729978/a122abbc',
+    'outfit:priest:b0': '4386a673/252cf3fd',
+    'outfit:priest:b1': '5506a404/b1d8d1fd',
+    'outfit:gothic:b0': '1df0396d/ba9d6759',
+    'outfit:gothic:b1': 'c780b600/67417700',
+    'icon:sailor_top': 'c801a6c5',
+    'icon:miko_robe': '28de9b7b',
+    'icon:maid_dress': 'e4984463',
+    'icon:hoodie_top': '393e221b',
+    'icon:travel_coat': '52d68dac',
+    'icon:explorer_vest': '769aeae',
+    'icon:sailor_skirt': '78652b8',
+    'icon:miko_hakama': 'a56b8d4d',
+    'icon:maid_skirt': 'f566bec8',
+    'icon:hoodie_shorts': '2fabf5fc',
+    'icon:coat_trousers': 'da1225ce',
+    'icon:explorer_shorts': '1fc6cb41',
+    'icon:straw_hat': 'afee8d28',
+    'icon:witch_hat': '589b3f97',
+    'icon:beret': '145b6ccf',
+    'icon:maid_headdress': '1136c88e',
+    'icon:flower_crown': 'f99a44ae',
+    'icon:travel_cape': 'a3602d6c',
+    'icon:feather_wings': 'c7c5bf5b',
+    'icon:ribbon_bow': '140784f2',
+    'icon:miner_helmet': 'edf8e45d',
+  };
+  it('改版前的像素釘住：外觀直接設頭飾 / 眼鏡 / 服裝、舊時裝的圖示都沒變', () => {
+    const got: Record<string, string> = {};
+    for (let a = 0; a < ACCESSORIES.length; a++) for (const race of [0, 3]) {
+      const app = { ...DEF, acc: a, race, color1: 6, color2: 10 };
+      got[`acc:${ACCESSORIES[a].id}:r${race}`] = h(flatFrame(avatarFrame(plainLook(app), 'idle', 0))) + '/' + h(flatFrame(avatarFrame(plainLook(app), 'swim', 1)));
+    }
+    got.glasses = h(flatFrame(avatarFrame(plainLook({ ...DEF, glasses: true }), 'idle', 0)));
+    for (let o = 0; o < OUTFITS.length; o++) for (const body of [0, 1]) {
+      if (OUTFITS[o].id === 'plain') continue;
+      const l = plainLook({ ...DEF, body, outfit: o, color1: OUTFITS[o].colors[0], color2: OUTFITS[o].colors[1] });
+      got[`outfit:${OUTFITS[o].id}:b${body}`] = h(flatFrame(avatarFrame(l, 'walk', 1))) + '/' + h(avatarArm(l, false));
+    }
+    for (const k of Object.keys(PINS)) if (k.startsWith('icon:')) got[k] = h(fashionIcon(k.slice(5) as ItemId)!);
+    expect(got).toEqual(PINS);
+  });
+  const PLAIN = OUTFITS.findIndex((o) => o.id === 'plain');
+  const same = (a: Bmp, b: Bmp): boolean => a.px.length === b.px.length && a.px.every((v, i) => v === b.px[i]);
+  it('布衣 plain：畫得出來、只用色票、和其他服裝都不一樣（素面短衫 + 細腰繩 + 長褲）', () => {
+    expect(PLAIN).toBe(OUTFITS.length - 1);
+    for (const body of [0, 1]) clean(avatarSheet(plainLook({ ...DEF, body, outfit: PLAIN, color1: OUTFITS[PLAIN].colors[0], color2: OUTFITS[PLAIN].colors[1] })).b, `plain body ${body}`);
+  });
+  it('兩件服裝物品穿在布衣上 = 外觀直接選那套服裝 + 同色（整張影格表 + 兩隻手臂逐像素相同），原色和換色都一樣', { timeout: 120_000 }, () => {
+    for (const o of OUTFITS) {
+      if (o.id === 'plain') continue;
+      const [top, bottom] = OUTFIT_ITEMS[o.id];
+      for (const body of [0, 1]) for (const tint of [[o.colors[0], o.colors[1]], [3, 7]] as [number, number][]) {
+        const direct = plainLook({ ...DEF, body, outfit: OUTFITS.indexOf(o), color1: tint[0], color2: tint[1] });
+        const base = { ...DEF, body, outfit: PLAIN, color1: tint[0], color2: tint[1] };
+        const worn: DollLook = { ...plainLook(base), body: { ...piece(ITEMS[top].vanity!.look), tint }, legs: { ...piece(ITEMS[bottom].vanity!.look), tint } };
+        const what = `${o.id} body ${body} tint ${tint}`;
+        expect(same(avatarSheet(worn).b, avatarSheet(direct).b), what).toBe(true);
+        expect(same(avatarArm(worn, false), avatarArm(direct, false)), what).toBe(true);
+        expect(same(avatarArm(worn, true), avatarArm(direct, true)), what).toBe(true);
+      }
+    }
+  });
+  it('飾品格的頭飾 / 眼鏡 = 外觀直接設那個頭飾 / 眼鏡（顏色用 accTintFromAppearance 轉成物品 tint）；各種族都一樣', { timeout: 120_000 }, () => {
+    const ids = [...ACCESSORIES.filter((a) => a.id !== 'none').map((a) => a.id), 'glasses'];
+    for (const id of ids) for (const race of [0, 3, 4]) for (const hair of [0, 1]) {
+      const app = { ...DEF, race, hair, color1: 6, color2: 10 };
+      const direct = plainLook(id === 'glasses' ? { ...app, glasses: true } : { ...app, acc: ACCESSORIES.findIndex((a) => a.id === id) });
+      const t = accTintFromAppearance(id, app);
+      const accPiece: DollPiece = { ...piece(ITEMS[ACC_ITEMS[id]].vanity!.look), ...(t ? { tint: t } : {}) };
+      const worn: DollLook = { ...plainLook(app), acc: accPiece };
+      expect(same(avatarSheet(worn).b, avatarSheet(direct).b), `${id} race ${race} hair ${hair}`).toBe(true);
+    }
+  });
+  it('飾品格有東西時取代外觀的頭飾和眼鏡；戴帽子 / 頭盔照舊收起髮飾，但眼鏡照樣戴', () => {
+    const crown = ACCESSORIES.findIndex((a) => a.id === 'crown'), ribbon = ACCESSORIES.findIndex((a) => a.id === 'ribbon');
+    const cur = { ...DEF, acc: ribbon, glasses: true };
+    const f = (l: DollLook): Bmp => flatFrame(avatarFrame(l, 'idle', 0));
+    expect(same(f({ ...plainLook(cur), acc: piece('acc:crown') }), f(plainLook({ ...cur, acc: crown, glasses: false })))).toBe(true);
+    expect(same(f({ ...plainLook(cur), acc: piece('acc:glasses') }), f(plainLook({ ...cur, acc: 0, glasses: true })))).toBe(true);
+    for (const hat of [piece('hat:beret'), piece('armor:iron')]) {
+      const bare = { ...DEF, acc: 0, glasses: false };
+      expect(same(f({ ...plainLook(bare), head: hat, acc: piece('acc:crown') }), f({ ...plainLook(bare), head: hat })), hat.look).toBe(true);
+      expect(same(f({ ...plainLook(bare), head: hat, acc: piece('acc:glasses') }), f({ ...plainLook({ ...bare, glasses: true }), head: hat })), hat.look).toBe(true);
+      expect(same(f({ ...plainLook(bare), head: hat, acc: piece('acc:glasses') }), f({ ...plainLook(bare), head: hat })), hat.look).toBe(false);
+    }
+  });
+  it('新時裝的圖示都有內容、只用色票、彼此都不一樣；飾品圖示穿在格子裡的顏色跟著 tint', () => {
+    const seen = new Map<string, string>();
+    for (const id of VANITY_ITEMS) {
+      const k = fashionIcon(id)!.px.join();
+      expect(seen.get(k), `${id} 和 ${seen.get(k)} 的圖示一樣`).toBeUndefined();
+      seen.set(k, id);
+    }
+    for (const id of Object.values(ACC_ITEMS)) {
+      const b = fashionIcon(id)!;
+      expect(opaque(b), id).toBeGreaterThan(20);
+      clean(b, id);
+    }
+    expect(same(fashionIcon('acc_ribbon', [5, 5])!, fashionIcon('acc_ribbon')!)).toBe(false);
   });
 });

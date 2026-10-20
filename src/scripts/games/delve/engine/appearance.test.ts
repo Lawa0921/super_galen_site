@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   APPEARANCE_FIELDS, DEFAULT_APPEARANCE, BODY_TYPES, bodyDefaults, HAIR_STYLES, HAIR_COLORS, EYE_COLORS, EYE_SHAPES, SKIN_TONES, OUTFITS,
-  CLOTH_COLORS, ACCESSORIES, appearanceKey, normalizeAppearance, randomAppearance, stepAppearance,
+  CLOTH_COLORS, ACCESSORIES, OUTFIT_PLAIN, appearanceKey, normalizeAppearance, randomAppearance, stepAppearance,
   loadDefaultAppearance, saveDefaultAppearance, APPEARANCE_KEY, sameAppearance, type Appearance,
 } from './appearance';
 
@@ -51,6 +51,17 @@ describe('外觀選項', () => {
       expect(new Set(ids).size).toBe(ids.length);
       for (const o of f.options) expect(o.zh.length).toBeGreaterThan(0);
     }
+  });
+  it('基本布衣 plain：append 在服裝最後（舊的 14 套索引不變）、OUTFIT_PLAIN 指向它、預設色合法', () => {
+    expect(OUTFITS[OUTFITS.length - 1].id).toBe('plain');
+    expect(OUTFITS[OUTFITS.length - 1].zh).toBe('布衣');
+    expect(OUTFIT_PLAIN).toBe(OUTFITS.length - 1);
+    expect(OUTFITS.slice(0, 14).map((o) => o.id)).toEqual(['explorer', 'sailor', 'miko', 'hoodie', 'coat', 'maid', 'ninja', 'mage', 'knight', 'qipao', 'pirate', 'idol', 'priest', 'gothic']);
+    expect(normalizeAppearance({ ...DEFAULT_APPEARANCE, outfit: OUTFIT_PLAIN }).outfit).toBe(OUTFIT_PLAIN);
+  });
+  it('隨機外觀不會抽到布衣（NPC / 隨機的結果和加布衣之前一樣）', () => {
+    const r = lcg(77);
+    for (let i = 0; i < 2000; i++) expect(randomAppearance(r).outfit).not.toBe(OUTFIT_PLAIN);
   });
   it('每套服裝都有合法的預設主色 / 副色', () => {
     for (const o of OUTFITS) {

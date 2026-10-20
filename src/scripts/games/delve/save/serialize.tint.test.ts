@@ -39,7 +39,7 @@ describe('寬鬆還原（Inventory / Vanity fromJSON）', () => {
     v.set('head', 'witch_hat', undefined, [4, 0]);
     v.set('body', 'iron_chestplate');
     const j = JSON.parse(JSON.stringify(v.toJSON()));
-    expect(j.tint).toEqual({ head: [4, 0], body: null, legs: null, back: null });
+    expect(j.tint).toEqual({ head: [4, 0], body: null, legs: null, back: null, acc: null });
     const back = Vanity.fromJSON(j);
     expect(back.getStack('head')).toEqual({ item: 'witch_hat', count: 1, tint: [4, 0] });
     const old = Vanity.fromJSON({ slots: { head: 'witch_hat', body: null, legs: null, back: null }, gear: {}, hide: {} });
