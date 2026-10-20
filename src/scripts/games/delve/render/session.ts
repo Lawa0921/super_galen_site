@@ -7,7 +7,7 @@ import { restoreGame, COMPAT_GEN, type SaveData } from '../save/serialize';
 import {
   listWorlds, startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, idbSplitStore, DbBlockedError, type SlotMeta,
 } from '../save/storage';
-import { SplitSession, planContinue, saveSplit, commitMigration, type ContinuePlan } from '../save/split';
+import { SplitSession, planContinue, saveSplit, commitMigration, NO_CHARACTER_MSG, type ContinuePlan } from '../save/split';
 import { decodeAnySave, encodeWorld, restoreSplit, type AnySave, type WorldData } from '../save/worldSave';
 import type { DelveCharacter } from '../save/character';
 import { startDelve, type DelveHandle } from './main';
@@ -26,8 +26,6 @@ import { dollPreview } from './dollPreview';
 import { toCanvas } from './pixel';
 
 const SLOT = 'main';
-/** 匯入的世界檔沒有內嵌角色（不是從遊戲匯出的檔） */
-const NO_CHARACTER_MSG = '讀取失敗：這個存檔沒有角色資料。';
 /** 進度條格數 */
 const PROGRESS_CELLS = 20;
 /** 生成畫面的地層剖面大小（像素；4200×1200 的世界每像素 = 15×15 格） */
@@ -147,7 +145,7 @@ export function bootDelve(root: HTMLElement): Session {
    */
   let saveQueue: Promise<unknown> = Promise.resolve();
   function writeSave(game: DelveGame, s: SplitSession): Promise<SlotMeta> {
-    const run = (): Promise<SlotMeta> => saveSplit(idbSplitStore, SLOT, s, game, Date.now(), summarizeGame(game, s.nick));
+    const run = (): Promise<SlotMeta> => saveSplit(idbSplitStore, s, game, Date.now(), summarizeGame(game, s.nick));
     const p = saveQueue.then(run, run);
     saveQueue = p.catch(() => undefined);
     return p;
@@ -406,7 +404,7 @@ export function bootDelve(root: HTMLElement): Session {
     const s = seed.trim() || rollWorldName(Math.random);
     void transition('生成世界中…', async () => {
       const gen = await generate(s, {});
-      return { game: new DelveGame({ seed: s, peaceful, gen, appearance: defaultLook() }), session: SplitSession.fresh(s, Date.now()) };
+      return { game: new DelveGame({ seed: s, peaceful, gen, appearance: defaultLook() }), session: SplitSession.fresh(s, Date.now(), SLOT) };
     }, 'title');
   }
 
@@ -466,7 +464,7 @@ export function bootDelve(root: HTMLElement): Session {
       const r = restoreGame(data, { gen });
       if (!r.ok) { restoreError(r, msgEl); return null; }
       // 沒有 IndexedDB（無痕 / 被停用）：不能存，但仍照舊版行為開局（saveNow 也是無操作）
-      if (!hasIndexedDB()) return { game: r.game, session: SplitSession.fresh(r.game.seed, Date.now()) };
+      if (!hasIndexedDB()) return { game: r.game, session: SplitSession.fresh(r.game.seed, Date.now(), SLOT) };
       try {
         const session = await commitMigration(idbSplitStore, SLOT, r.game, Date.now(), { backup, summary: summarizeGame(r.game) });
         return { game: r.game, session };
@@ -489,7 +487,7 @@ export function bootDelve(root: HTMLElement): Session {
       const gen = await generate(h.seed, { width: h.width, height: h.height });
       const r = restoreSplit(world, character, { gen });
       if (!r.ok) { restoreError(r, msgEl); return null; }
-      return { game: r.game, session: SplitSession.fromLoaded(r.world, character) };
+      return { game: r.game, session: SplitSession.fromLoaded(r.world, character, SLOT) };
     }, from);
   }
 

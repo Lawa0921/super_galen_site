@@ -1,13 +1,17 @@
 // 存讀編排：備份順序、角色缺失 / 損毀、單一寫入。記憶體版 SplitStore 記錄每次呼叫的順序。
 import { describe, expect, it } from 'vitest';
-import type { DelveGame } from '../engine/game';
+import { DelveGame } from '../engine/game';
+import { Inventory } from '../engine/inventory';
+import { normalizeAppearance } from '../engine/appearance';
 import { restoreGame } from './serialize';
 import { readLegacyFixture } from './legacyFixture';
-import { decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
+import { createCharacter, decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
+import { decodeWorld, encodeWorld, restoreSplit, type WorldData } from './worldSave';
 import type { CharacterMeta } from './storage';
 import { levelForXp } from '../engine/levels';
 import {
-  CHARACTER_CORRUPT_MSG, CHARACTER_MISSING_MSG, WORLD_CORRUPT_MSG, SplitSession, commitMigration, newWorldSlot, planContinue, saveSplit,
+  CHARACTER_CORRUPT_MSG, CHARACTER_MISSING_MSG, NO_CHARACTER_MSG, WORLD_CORRUPT_MSG, SplitSession, commitMigration, importWorld, newWorldSlot,
+  planContinue, planNewWorld, planPlay, saveSplit,
   type SlotRead, type SplitStore,
 } from './split';
 
@@ -62,6 +66,7 @@ describe('split orchestration', () => {
     const st = memStore({ main: { bytes: readLegacyFixture() } });
     const plan = await planContinue(st, 'main'); expect(plan.kind).toBe('legacy');
     const s = await commitMigration(st, 'main', fixtureGame(), 5, { backup: true });
+    expect(s.slot).toBe('main');
     expect(st.log).toEqual(['backupSlot main main.v9.bak', `putSplit main ${s.charId}`]);
     expect(st.slots['main.v9.bak'].bytes).toEqual(readLegacyFixture());
     expect((await planContinue(st, 'main')).kind).toBe('split');
@@ -126,18 +131,20 @@ describe('split orchestration', () => {
   });
   it('saveSplit：每次只呼叫一次 putSplit，rev 遞增，visits 有自己的 lastSeen', async () => {
     const st = memStore({});
-    const s = SplitSession.fresh('fixture-v9', 1);
+    const s = SplitSession.fresh('fixture-v9', 1, 'main');
     const g = fixtureGame();
-    await saveSplit(st, 'main', s, g, 10);
+    await saveSplit(st, s, g, 10);
     expect(st.log).toEqual([`putSplit main ${s.charId}`]);
     expect(decodeCharacter(st.chars[s.charId]).rev).toBe(1);
-    await saveSplit(st, 'main', s, g, 20);
+    await saveSplit(st, s, g, 20);
     expect(st.log).toEqual([`putSplit main ${s.charId}`, `putSplit main ${s.charId}`]);
     expect(decodeCharacter(st.chars[s.charId]).rev).toBe(2);
     const plan = await planContinue(st, 'main');
     if (plan.kind !== 'split') throw new Error(plan.kind);
     expect(plan.world.header.visits[s.charId].lastSeen).toBe(20);
-    expect(SplitSession.fromLoaded(plan.world.header, plan.character).charId).toBe(s.charId);
+    expect(plan.slot).toBe('main');
+    const back = SplitSession.fromLoaded(plan.world.header, plan.character, 'main');
+    expect(back.charId).toBe(s.charId); expect(back.slot).toBe('main');
   });
   it('匯入舊檔（backup: false）：不寫備份', async () => {
     const st = memStore({});
@@ -152,8 +159,8 @@ describe('split orchestration', () => {
   it('deleteCharacter removes only that character', async () => {
     const st = memStore({});
     const g = fixtureGame();
-    const s1 = SplitSession.fresh('x', 1); const s2 = SplitSession.fresh('y', 2);
-    await saveSplit(st, 'w1', s1, g, 10); await saveSplit(st, 'w2', s2, g, 20);
+    const s1 = SplitSession.fresh('x', 1, 'w1'); const s2 = SplitSession.fresh('y', 2, 'w2');
+    await saveSplit(st, s1, g, 10); await saveSplit(st, s2, g, 20);
     await st.deleteCharacter(s1.charId);
     expect((await st.listCharacters()).map((c) => c.id)).toEqual([s2.charId]);
     expect(Object.keys(st.slots).sort()).toEqual(['w1', 'w2']);
@@ -164,4 +171,130 @@ describe('split orchestration', () => {
     expect(seen.size).toBe(100);
   });
   it('空槽 → none', async () => expect(await planContinue(memStore({}), 'main')).toEqual({ kind: 'none' }));
+});
+
+const small = (seed: string): DelveGame => new DelveGame({ seed, width: 200, height: 100 });
+const look = normalizeAppearance(undefined);
+/** 匯出檔 = 世界檔 + 內嵌角色 */
+const exportFile = (w: WorldData, c?: DelveCharacter): Uint8Array => encodeWorld({ ...w, header: { ...w.header, character: c } });
+
+describe('play any world with any character', () => {
+  it("planPlay uses the chosen character's visit", async () => {
+    const st = memStore({});
+    const g = small('play-w');
+    const sA = SplitSession.fresh('play-w', 1, 'W');
+    g.player.x = 500;
+    await saveSplit(st, sA, g, 10);
+    const B = createCharacter('B', look, 2); await st.putCharacter(B);
+    const pb = await planPlay(st, 'W', B.id);
+    if (pb.kind !== 'split') throw new Error(pb.kind);
+    expect(pb.slot).toBe('W'); expect(pb.character.id).toBe(B.id);
+    const rb = restoreSplit(pb.world, pb.character);
+    if (!rb.ok) throw new Error(rb.message);
+    expect(rb.freshVisit).toBe(true);
+    expect(rb.game.player.x).toBe(small('play-w').player.x);
+    const pa = await planPlay(st, 'W', sA.charId);
+    if (pa.kind !== 'split') throw new Error(pa.kind);
+    const ra = restoreSplit(pa.world, pa.character);
+    if (!ra.ok) throw new Error(ra.message);
+    expect(ra.freshVisit).toBe(false);
+    expect(ra.game.player.x).toBe(500);
+  });
+  it('planPlay with a missing character errors and writes nothing', async () => {
+    const st = memStore({});
+    await saveSplit(st, SplitSession.fresh('m', 1, 'W'), small('m'), 10);
+    const before = st.log.length;
+    expect(await planPlay(st, 'W', 'nobody')).toEqual({ kind: 'error', message: CHARACTER_MISSING_MSG });
+    expect(st.log.length).toBe(before);
+  });
+  it('planPlay: empty slot → none; legacy slot → legacy with slot', async () => {
+    const st = memStore({ main: { bytes: readLegacyFixture() } });
+    expect(await planPlay(st, 'nope', 'x')).toEqual({ kind: 'none' });
+    const p = await planPlay(st, 'main', 'x');
+    expect(p.kind).toBe('legacy'); if (p.kind === 'legacy') expect(p.slot).toBe('main');
+  });
+  it('planContinue skips worlds whose character was deleted', async () => {
+    const st = memStore({});
+    const g = small('c');
+    const sB = SplitSession.fresh('c', 1, 'W2'); const sA = SplitSession.fresh('c', 1, 'W1');
+    await saveSplit(st, sB, g, 10); await saveSplit(st, sA, g, 20);
+    const first = await planContinue(st);
+    if (first.kind !== 'split') throw new Error(first.kind);
+    expect(first.slot).toBe('W1'); expect(first.character.id).toBe(sA.charId);
+    await st.deleteCharacter(sA.charId);
+    const next = await planContinue(st);
+    if (next.kind !== 'split') throw new Error(next.kind);
+    expect(next.slot).toBe('W2'); expect(next.character.id).toBe(sB.charId);
+    await st.deleteCharacter(sB.charId);
+    expect(await planContinue(st)).toEqual({ kind: 'none' });
+  });
+  it('planContinue() with no slot returns a legacy main slot when it is the newest candidate', async () => {
+    const st = memStore({ main: { bytes: readLegacyFixture() } });
+    const p = await planContinue(st);
+    expect(p.kind).toBe('legacy'); if (p.kind === 'legacy') expect(p.slot).toBe('main');
+    expect(st.log).toEqual([]);
+    expect(await planContinue(memStore({}))).toEqual({ kind: 'none' });
+  });
+  it("planNewWorld keeps the character's inventory", async () => {
+    const st = memStore({});
+    await saveSplit(st, SplitSession.fresh('nw', 1, 'old'), small('nw'), 5);
+    const c0 = createCharacter('A', look, 1);
+    const inv = Inventory.fromJSON(c0.inventory); inv.add('lantern', 1);
+    const c: DelveCharacter = { ...c0, inventory: inv.toJSON() };
+    const { game, session } = planNewWorld(small('nw'), c, 10);
+    expect(game.inventory.count('lantern')).toBe(1);
+    expect(game.seed).toBe('nw');
+    expect(game.player.x).toBe(small('nw').player.x);
+    expect(session.charId).toBe(c.id);
+    expect(session.slot).toMatch(/^w-/);
+    await saveSplit(st, session, game, 20);
+    const w = decodeWorld(st.slots[session.slot].bytes).header;
+    expect(w.worldId).not.toBe(decodeWorld(st.slots.old.bytes).header.worldId);
+    expect(w.worldName).toBe('nw');
+    expect(Object.keys(w.visits)).toEqual([c.id]); // 生成時附帶的角色已丟棄
+    expect(st.slots[session.slot].charId).toBe(c.id);
+  });
+  it('same world name twice gives two slots', async () => {
+    const st = memStore({});
+    const c = createCharacter('A', look, 1);
+    for (const now of [10, 20]) {
+      const { game, session } = planNewWorld(small('twin'), c, now);
+      await saveSplit(st, session, game, now);
+    }
+    expect((await st.listWorlds()).length).toBe(2);
+  });
+  it('importWorld keeps newer local character', async () => {
+    const { world, character } = SplitSession.fresh('imp', 1, 'tmp').snapshot(small('imp'), 10);
+    for (const [local, imported, expected] of [[5, 3, 5], [5, 7, 7]]) {
+      const st = memStore({});
+      await st.putCharacter({ ...character, rev: local });
+      const r = await importWorld(st, exportFile(world, { ...character, rev: imported }), 20);
+      if ('error' in r) throw new Error(r.error);
+      expect(decodeCharacter(st.chars[character.id]).rev).toBe(expected);
+      expect(st.slots[r.slot].charId).toBe(character.id);
+      expect(decodeWorld(st.slots[r.slot].bytes).header.character).toBeUndefined();
+      expect((await planPlay(st, r.slot, character.id)).kind).toBe('split');
+    }
+  });
+  it('importWorld never touches existing slots', async () => {
+    const st = memStore({ main: { bytes: readLegacyFixture() } });
+    await saveSplit(st, SplitSession.fresh('e', 1, 'w1'), small('e'), 10);
+    const before = Object.fromEntries(Object.entries(st.slots).map(([k, v]) => [k, v.bytes.slice()]));
+    const { world, character } = SplitSession.fresh('imp', 1, 'tmp').snapshot(small('imp'), 10);
+    const a = await importWorld(st, exportFile(world, character), 30);
+    const b = await importWorld(st, readLegacyFixture(), 40);
+    if ('error' in a) throw new Error(a.error);
+    if ('error' in b) throw new Error(b.error);
+    expect(new Set([a.slot, b.slot, ...Object.keys(before)]).size).toBe(Object.keys(before).length + 2);
+    for (const [k, bytes] of Object.entries(before)) expect(st.slots[k].bytes).toEqual(bytes);
+    expect(st.log.some((l) => l.startsWith('backupSlot'))).toBe(false); // 舊檔匯入不備份
+    expect((await planContinue(st, b.slot)).kind).toBe('split');
+  });
+  it('importWorld rejects a world without character and corrupt bytes, writing nothing', async () => {
+    const st = memStore({});
+    const { world } = SplitSession.fresh('imp', 1, 'tmp').snapshot(small('imp'), 10);
+    expect(await importWorld(st, exportFile(world), 5)).toEqual({ error: NO_CHARACTER_MSG });
+    expect(await importWorld(st, new Uint8Array([1, 2, 3, 4]), 5)).toEqual({ error: WORLD_CORRUPT_MSG });
+    expect(st.log).toEqual([]);
+  });
 });
