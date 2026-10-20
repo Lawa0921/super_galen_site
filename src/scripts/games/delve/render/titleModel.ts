@@ -13,9 +13,13 @@ export interface SummarySource {
   levels?: { level: number };
 }
 
-export function summarizeGame(g: SummarySource): SaveSummary {
+/** nick = 角色暱稱（拆存檔之後才有；沒給就不放這個欄位） */
+export function summarizeGame(g: SummarySource, nick?: string): SaveSummary {
   const s = g.discovery.stats();
-  return { seed: g.seed, time: g.time, playSec: Math.floor(g.tick / 60), depth: s.depthRecord, completion: s.completion, peaceful: g.peaceful, ...(g.levels ? { level: g.levels.level } : {}) };
+  return {
+    seed: g.seed, time: g.time, playSec: Math.floor(g.tick / 60), depth: s.depthRecord, completion: s.completion, peaceful: g.peaceful,
+    ...(g.levels ? { level: g.levels.level } : {}), ...(nick !== undefined ? { nick } : {}),
+  };
 }
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -48,6 +52,7 @@ export function continueLines(meta: { seed: string; savedAt: number; summary?: S
   const d = dateOf(s.time);
   const facts = [`遊玩 ${formatPlayTime(s.playSec)}`];
   if (num(s.level) && s.level >= 1) facts.unshift(`等級 ${Math.floor(s.level)}`);
+  if (typeof s.nick === 'string' && s.nick.trim()) facts.unshift(s.nick.trim());
   if (s.depth > 0) facts.push(`最深 ${Math.floor(s.depth)} 格`);
   facts.push(`完成度 ${Math.round(Math.max(0, Math.min(1, s.completion)) * 100)}%`);
   if (s.peaceful) facts.push('和平');

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { test, expect, type Page } from '@playwright/test';
 
 /**
@@ -306,6 +307,113 @@ test.describe('delve', () => {
       req.onsuccess = () => { const names = Array.from(req.result.objectStoreNames); req.result.close(); res(names); };
     }));
     expect(stores).toEqual(['characters', 'saves']);
+  });
+
+  test('舊存檔（format 9、DB v1）自動遷移：角色 + 世界 + main.v9.bak，內容不變', async ({ page }) => {
+    const legacy = [...readFileSync('src/scripts/games/delve/save/__fixtures__/format9.delve')];
+    // 在遊戲頁開資料庫（會立刻升到 v2）之前，於同源的頁面做出一個真正的 v1 資料庫：
+    // 舊版程式的 saveSlot 寫的是 gzip(serializeGame) + bytes = 壓縮後長度 + 摘要（沒有 charId / format）
+    await page.goto('/no-such-page-delve-v9');
+    const stored = await page.evaluate((raw) => new Promise<number[]>((ok, bad) => {
+      const gz = new Response(new Blob([new Uint8Array(raw)]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
+      gz.then((buf) => {
+        const data = new Uint8Array(buf);
+        const req = indexedDB.open('delve', 1);
+        req.onupgradeneeded = () => { req.result.createObjectStore('saves', { keyPath: 'slot' }); };
+        req.onsuccess = () => {
+          const db = req.result, t = db.transaction('saves', 'readwrite');
+          t.objectStore('saves').put({ slot: 'main', seed: 'fixture-v9', savedAt: 1, bytes: data.length, data,
+            summary: { seed: 'fixture-v9', time: 0, playSec: 0, depth: 0, completion: 0, peaceful: true } });
+          t.oncomplete = () => { db.close(); ok([...data]); };
+          t.onerror = () => bad(t.error);
+        };
+        req.onerror = () => bad(req.error);
+      }, bad);
+    }), legacy);
+    expect(stored.slice(0, 2)).toEqual([0x1f, 0x8b]);
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-continue');
+    await waitGame(page);
+    const g1 = await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      return { seed: g.seed, sword: g.inventory.count('gold_sword'), torch: g.inventory.count('torch'), lv: g.levels.level,
+        door: g.world.getFg(49, 58), coins: g.world.chests.get(58 * 200 + 56)![0] };
+    });
+    expect(g1).toMatchObject({ seed: 'fixture-v9', sword: 1, door: 53 /* T.DOOR_CLOSED */, coins: { item: 'copper_coin', count: 37 } });
+    const db = await page.evaluate(() => new Promise((ok) => {
+      const r = indexedDB.open('delve');
+      r.onsuccess = () => {
+        const d = r.result, t = d.transaction(['saves', 'characters']);
+        const bak = t.objectStore('saves').get('main.v9.bak'), main = t.objectStore('saves').get('main'), n = t.objectStore('characters').count();
+        t.oncomplete = () => {
+          ok({ v: d.version, bak: bak.result ? [...bak.result.data] : null, fmt: main.result?.format, charId: main.result?.charId, chars: n.result });
+          d.close();
+        };
+      };
+    }));
+    // 備份 = 原封複製的舊記錄（壓縮後的 bytes 一個不差）
+    expect(db).toMatchObject({ v: 2, bak: stored, fmt: 10, chars: 1 });
+    expect(typeof (db as { charId: unknown }).charId).toBe('string');
+    // 再讀一次：走 split 路徑，內容一樣，標題顯示暱稱
+    await page.evaluate(() => window.__delveDebug!.save());
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await expect(page.locator('#delve-continue')).toContainText('旅人');
+    await page.click('#delve-continue');
+    await waitGame(page);
+    expect(await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      return { seed: g.seed, sword: g.inventory.count('gold_sword'), torch: g.inventory.count('torch'), lv: g.levels.level };
+    })).toEqual({ seed: g1.seed, sword: g1.sword, torch: g1.torch, lv: g1.lv });
+  });
+
+  test('匯出（世界 + 內嵌角色）→ 另一個瀏覽器匯入接著玩；沒有角色的世界檔被拒', async ({ page, browser }) => {
+    await page.goto('/games/delve?seed=exptest&autostart=1&fresh=1');
+    await waitGame(page);
+    const spot = await page.evaluate(async () => {
+      const d = window.__delveDebug!, g = d.game, t = g.playerTile();
+      g.give('torch', 17);
+      g.world.setFg(t.x + 3, t.y + 4, 7);
+      await d.save();
+      return { x: t.x + 3, y: t.y + 4, torch: g.inventory.count('torch') };
+    });
+    // 存檔槽裡的世界檔本身沒有角色（gzip，跟匯出檔同一種外層）
+    const worldOnly = await page.evaluate(() => new Promise<number[]>((ok) => {
+      const r = indexedDB.open('delve');
+      r.onsuccess = () => {
+        const d = r.result, q = d.transaction('saves').objectStore('saves').get('main');
+        q.onsuccess = () => { ok([...q.result.data]); d.close(); };
+      };
+    }));
+    await page.click('#delve-menu-btn');
+    const dl = page.waitForEvent('download');
+    await page.click('#delve-export');
+    const file = readFileSync((await (await dl).path())!);
+
+    const ctx = await browser.newContext();
+    await ctx.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+    const b = await ctx.newPage();
+    await b.goto('/games/delve');
+    await pressStart(b);
+    await b.locator('#delve-import-file').setInputFiles({ name: 'w.delve', mimeType: 'application/octet-stream', buffer: Buffer.from(worldOnly) });
+    await expect(b.locator('#delve-title-msg')).toContainText('這個存檔沒有角色資料');
+    await b.locator('#delve-import-file').setInputFiles({ name: 'exptest.delve', mimeType: 'application/octet-stream', buffer: file });
+    await waitGame(b);
+    expect(await b.evaluate(({ x, y }) => {
+      const g = window.__delveDebug!.game;
+      return { seed: g.seed, torch: g.inventory.count('torch'), fg: g.world.getFg(x, y) };
+    }, spot)).toEqual({ seed: 'exptest', torch: spot.torch, fg: 7 });
+    // 匯入後立刻存成世界 + 角色
+    await expect.poll(() => b.evaluate(() => new Promise((ok) => {
+      const r = indexedDB.open('delve');
+      r.onsuccess = () => {
+        const d = r.result, t = d.transaction(['saves', 'characters']);
+        const main = t.objectStore('saves').get('main'), n = t.objectStore('characters').count();
+        t.oncomplete = () => { ok({ fmt: main.result?.format, chars: n.result }); d.close(); };
+      };
+    }))).toEqual({ fmt: 10, chars: 1 });
+    await ctx.close();
   });
 
   test('地城：debug 傳送進地城、右鍵開門、拿地城鑰匙右鍵開上鎖的門（存檔後仍是開的）', async ({ page }) => {

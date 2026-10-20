@@ -53,6 +53,15 @@ describe('summarizeGame / continueLines', () => {
     const now = 1_000_000_000;
     expect(continueLines({ seed: 'old', savedAt: now - 3 * 60_000 }, now)).toEqual(['「old」', '上次存檔 3 分鐘前']);
   });
+  it('摘要帶暱稱 → 第二行最前面是暱稱', () => {
+    const l = continueLines({ seed: 'keepme', savedAt: 0, summary: summarizeGame({ ...g, levels: { level: 3 } }, '旅人') }, 0);
+    expect(l[1].startsWith('旅人 · 等級')).toBe(true);
+  });
+  it('沒給暱稱 → 摘要沒有 nick 欄位（舊測試的 toEqual 不受影響）', () => expect(summarizeGame(g)).not.toHaveProperty('nick'));
+  it('暱稱是空字串 → 不放進第二行', () => {
+    const l = continueLines({ seed: 'keepme', savedAt: 0, summary: { ...summarizeGame(g), nick: '' } }, 0);
+    expect(l[1].startsWith('遊玩')).toBe(true);
+  });
   it('摘要欄位壞掉（舊格式 / 被改）→ 當作沒有摘要', () => {
     const l = continueLines({ seed: 'bad', savedAt: 0, summary: { seed: 'bad' } as never }, 0);
     expect(l[0]).toBe('「bad」');

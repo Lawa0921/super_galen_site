@@ -3,10 +3,13 @@
 import { DelveGame } from '../engine/game';
 import { generateWorldSteps, GEN_STAGE_COUNT, type GenResult } from '../engine/worldgen';
 import { GEN_VERSION } from '../engine/constants';
-import { serializeGame, restoreGame, decodeSave, COMPAT_GEN, type SaveData } from '../save/serialize';
+import { restoreGame, COMPAT_GEN, type SaveData } from '../save/serialize';
 import {
-  saveSlot, loadSlot, listSlots, startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, DbBlockedError, type SlotMeta,
+  listSlots, startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, idbSplitStore, DbBlockedError, type SlotMeta,
 } from '../save/storage';
+import { SplitSession, planContinue, saveSplit, commitMigration, type ContinuePlan } from '../save/split';
+import { decodeAnySave, encodeWorld, restoreSplit, type AnySave, type WorldData } from '../save/worldSave';
+import type { DelveCharacter } from '../save/character';
 import { startDelve, type DelveHandle } from './main';
 import { autostartPlan, newWorldPlan, helpSeen, HELP_KEY } from './model';
 import { SoundManager } from '../audio/SoundManager';
@@ -23,6 +26,8 @@ import { dollPreview } from './dollPreview';
 import { toCanvas } from './pixel';
 
 const SLOT = 'main';
+/** 匯入的世界檔沒有內嵌角色（不是從遊戲匯出的檔） */
+const NO_CHARACTER_MSG = '讀取失敗：這個存檔沒有角色資料。';
 /** 進度條格數 */
 const PROGRESS_CELLS = 20;
 /** 生成畫面的地層剖面大小（像素；4200×1200 的世界每像素 = 15×15 格） */
@@ -86,6 +91,8 @@ export function bootDelve(root: HTMLElement): Session {
   publishVolume(readVolume(storage));
 
   let handle: DelveHandle | null = null;
+  /** 這場遊戲的存檔身分（角色 + 世界）；begin 設定，每次存檔都寫世界 + 角色兩份 */
+  let split: SplitSession | null = null;
   let stopAutosave: (() => void) | null = null;
   let persisted = false;
   let busy = false;
@@ -134,11 +141,24 @@ export function bootDelve(root: HTMLElement): Session {
     delete root.dataset.scene;
   }
 
-  async function saveNow(): Promise<void> {
-    if (!handle || !hasIndexedDB()) return;
-    const g = handle.game;
-    await saveSlot(SLOT, g.seed, serializeGame(g), Date.now(), summarizeGame(g));
+  /**
+   * 所有存檔路徑（自動存檔 / pagehide / 手動 / 回到標題 / 匯入後開局）都走這裡：世界 + 角色在同一個 transaction。
+   * 一次只寫一筆（排隊）：角色 rev 照順序落地，不會被晚到的舊快照蓋掉。
+   */
+  let saveQueue: Promise<unknown> = Promise.resolve();
+  function writeSave(game: DelveGame, s: SplitSession): Promise<SlotMeta> {
+    const run = (): Promise<SlotMeta> => saveSplit(idbSplitStore, SLOT, s, game, Date.now(), summarizeGame(game, s.nick));
+    const p = saveQueue.then(run, run);
+    saveQueue = p.catch(() => undefined);
+    return p;
+  }
+  function markPersisted(): void {
     if (!persisted) { persisted = true; void requestPersistence(); }
+  }
+  async function saveNow(): Promise<void> {
+    if (!handle || !split || !hasIndexedDB()) return;
+    await writeSave(handle.game, split);
+    markPersisted();
   }
 
   const peacefulBtn = $<HTMLButtonElement>('#delve-peaceful');
@@ -176,9 +196,10 @@ export function bootDelve(root: HTMLElement): Session {
     }
   }
 
-  function begin(game: DelveGame): void {
+  function begin(game: DelveGame, s: SplitSession): void {
     stopAutosave?.();
     handle?.destroy();
+    split = s;
     stopScene();
     ui.closePanel(false);
     title!.hidden = true;
@@ -190,8 +211,8 @@ export function bootDelve(root: HTMLElement): Session {
     if (!helpSeen(storage)) setHelp(true);
     if (hasIndexedDB()) {
       stopAutosave = startAutosave({
-        save: () => saveSlot(SLOT, game.seed, serializeGame(game), Date.now(), summarizeGame(game)),
-        onSaved: () => { if (!persisted) { persisted = true; void requestPersistence(); } },
+        save: () => writeSave(game, s),
+        onSaved: markPersisted,
         onError: (e) => console.warn('[delve] autosave failed', e),
       });
       void saveNow().catch((e: unknown) => console.warn('[delve] save failed', e));
@@ -231,6 +252,7 @@ export function bootDelve(root: HTMLElement): Session {
       stopAutosave = null;
       handle.destroy();
       handle = null;
+      split = null;
       delete window.__delveDebug;
       if (menu) menu.hidden = true;
       noSaveWarned = false;
@@ -343,22 +365,24 @@ export function bootDelve(root: HTMLElement): Session {
     });
   }
 
+  /** 轉場要開的局：遊戲 + 它的存檔身分 */
+  interface Opened { game: DelveGame; session: SplitSession }
   /** 蓋上轉場 → 生成 / 讀檔 → 開局 → 掀開；失敗時回到原畫面並回報 */
-  function transition(text: string, work: () => Promise<DelveGame | null>, from: 'title' | 'menu'): Promise<void> {
+  function transition(text: string, work: () => Promise<Opened | null>, from: 'title' | 'menu'): Promise<void> {
     if (busy) return inFlight;
     busy = true;
     inFlight = runTransition(text, work, from);
     return inFlight;
   }
-  async function runTransition(text: string, work: () => Promise<DelveGame | null>, from: 'title' | 'menu'): Promise<void> {
+  async function runTransition(text: string, work: () => Promise<Opened | null>, from: 'title' | 'menu'): Promise<void> {
     const prevPhase = root.dataset.phase ?? 'title';
     try {
       uiSound.uiDelve();
       await wipe?.cover();
       showLoading(text);
-      const game = await work();
-      if (game) {
-        begin(game);
+      const opened = await work();
+      if (opened) {
+        begin(opened.game, opened.session);
         hideLoading();
         await wipe?.reveal();
       } else {
@@ -382,7 +406,7 @@ export function bootDelve(root: HTMLElement): Session {
     const s = seed.trim() || rollWorldName(Math.random);
     void transition('生成世界中…', async () => {
       const gen = await generate(s, {});
-      return new DelveGame({ seed: s, peaceful, gen, appearance: defaultLook() });
+      return { game: new DelveGame({ seed: s, peaceful, gen, appearance: defaultLook() }), session: SplitSession.fresh(s, Date.now()) };
     }, 'title');
   }
 
@@ -422,17 +446,14 @@ export function bootDelve(root: HTMLElement): Session {
     else say(msgEl, '讀取失敗：這不是有效的 DELVE 存檔，或檔案已損毀 / 不完整。');
   }
 
+  const errText = (e: unknown): string => (e instanceof Error ? e.message : String(e));
+
   /**
-   * 存檔位元組 → 遊戲：先解出檔頭（壞檔 / 舊生成器立即回報，不必先生成世界），
-   * 再分段生成同一個世界（顯示進度）後還原。
+   * 舊合併存檔（format ≤ 9）→ 遊戲：先看檔頭（舊生成器立即回報，不必先生成世界），再分段生成同一個世界（顯示進度）後還原；
+   * 還原成功 → commitMigration 寫成世界 + 角色（backup = 先把舊記錄原封備份到 main.v9.bak），寫完才開局。
+   * 寫入失敗 → 回報、不開局；舊記錄沒動，下次「繼續」再試一次。
    */
-  function openSave(bytes: Uint8Array, msgEl: HTMLElement | null, from: 'title' | 'menu', after?: () => void): void {
-    let data: SaveData;
-    try { data = decodeSave(bytes); } catch {
-      const r = restoreGame(bytes);
-      if (!r.ok) restoreError(r, msgEl);
-      return;
-    }
+  function openLegacy(data: SaveData, msgEl: HTMLElement | null, from: 'title' | 'menu', backup: boolean): void {
     const h = data.header;
     const migrate = h.format <= 5 && COMPAT_GEN.includes(h.genVersion);
     if (h.genVersion !== GEN_VERSION && !migrate) {
@@ -444,20 +465,60 @@ export function bootDelve(root: HTMLElement): Session {
       const gen = await generate(h.seed, { width: h.width, height: h.height });
       const r = restoreGame(data, { gen });
       if (!r.ok) { restoreError(r, msgEl); return null; }
-      after?.();
-      return r.game;
+      try {
+        const session = await commitMigration(idbSplitStore, SLOT, r.game, Date.now(), { backup, summary: summarizeGame(r.game) });
+        return { game: r.game, session };
+      } catch (e) {
+        say(msgEl, `存檔轉換失敗，沒有開始遊戲（原本的存檔沒有改動）：${errText(e)}`);
+        return null;
+      }
     }, from);
+  }
+
+  /** 世界檔 + 角色 → 遊戲（角色第一次來這個世界 → 從出生點開始）；先看生成器版本，不對就不必先生成世界 */
+  function openSplit(world: WorldData, character: DelveCharacter, msgEl: HTMLElement | null, from: 'title' | 'menu'): void {
+    const h = world.header;
+    if (h.genVersion !== GEN_VERSION) {
+      const r = restoreSplit(world, character);
+      if (!r.ok) restoreError(r, msgEl);
+      return;
+    }
+    void transition('載入世界中…', async () => {
+      const gen = await generate(h.seed, { width: h.width, height: h.height });
+      const r = restoreSplit(world, character, { gen });
+      if (!r.ok) { restoreError(r, msgEl); return null; }
+      return { game: r.game, session: SplitSession.fromLoaded(r.world, character) };
+    }, from);
+  }
+
+  /**
+   * 匯入的檔案：壞檔立即回報；舊合併檔 → 轉成世界 + 角色（不備份：匯入本來就會換掉存檔槽）；
+   * 世界檔要有內嵌角色（遊戲匯出的檔才有）。開局時 begin 立刻存一次（世界 + 角色）。
+   */
+  function openImport(bytes: Uint8Array, msgEl: HTMLElement | null, from: 'title' | 'menu'): void {
+    let any: AnySave;
+    try { any = decodeAnySave(bytes); } catch {
+      const r = restoreGame(bytes);
+      if (!r.ok) restoreError(r, msgEl);
+      return;
+    }
+    if (any.kind === 'legacy') { openLegacy(any.data, msgEl, from, false); return; }
+    const character = any.data.header.character;
+    if (!character) { say(msgEl, NO_CHARACTER_MSG); return; }
+    openSplit(any.data, character, msgEl, from);
   }
 
   async function continueGame(): Promise<void> {
     if (busy) return;
-    try {
-      const bytes = await loadSlot(SLOT);
-      if (!bytes) { say(titleMsg, '找不到存檔'); return; }
-      openSave(bytes, titleMsg, 'title');
-    } catch (e) {
-      say(titleMsg, `讀取存檔失敗：${e instanceof Error ? e.message : String(e)}`);
+    let plan: ContinuePlan;
+    try { plan = await planContinue(idbSplitStore, SLOT); } catch (e) {
+      say(titleMsg, `讀取存檔失敗：${errText(e)}`);
+      return;
     }
+    if (plan.kind === 'none') say(titleMsg, '找不到存檔');
+    else if (plan.kind === 'error') say(titleMsg, plan.message);
+    else if (plan.kind === 'legacy') openLegacy(plan.data, titleMsg, 'title', true);
+    else openSplit(plan.world, plan.character, titleMsg, 'title');
   }
 
   function download(blob: Blob, name: string): void {
@@ -469,21 +530,34 @@ export function bootDelve(root: HTMLElement): Session {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   }
+  /** 匯出檔 = 世界檔 + 內嵌角色（D4）：一個檔案就能在別的瀏覽器接著玩 */
+  const exportBytes = (world: WorldData, character: DelveCharacter): Uint8Array =>
+    encodeWorld({ ...world, header: { ...world.header, character } });
   async function exportSave(): Promise<void> {
-    if (!handle) return;
+    if (!handle || !split) return;
     const g = handle.game;
-    download(await exportBlob(serializeGame(g)), `delve-${g.seed}.delve`);
-    say(menuMsg, '已匯出存檔檔案');
+    try {
+      const { world, character } = split.snapshot(g, Date.now());
+      download(await exportBlob(exportBytes(world, character)), `delve-${g.seed}.delve`);
+      say(menuMsg, '已匯出存檔檔案');
+    } catch (e) {
+      say(menuMsg, `匯出失敗：${errText(e)}`);
+    }
   }
-  /** 標題的「匯出存檔」：直接把存檔槽打包下載（不必先進遊戲） */
+  /** 標題的「匯出存檔」：直接把存檔槽打包下載（不必先進遊戲）；還沒轉換的舊存檔原樣匯出 */
   async function exportSlot(): Promise<void> {
     try {
-      const meta = await existingSlot(), bytes = await loadSlot(SLOT);
-      if (!meta || !bytes) { say(titleMsg, '找不到存檔'); return; }
-      download(await exportBlob(bytes), `delve-${meta.seed}.delve`);
+      const plan = await planContinue(idbSplitStore, SLOT);
+      if (plan.kind === 'none') { say(titleMsg, '找不到存檔'); return; }
+      if (plan.kind === 'error') { say(titleMsg, `匯出失敗：${plan.message}`); return; }
+      let bytes: Uint8Array | undefined, seed: string;
+      if (plan.kind === 'split') { bytes = exportBytes(plan.world, plan.character); seed = plan.world.header.seed; }
+      else { bytes = (await idbSplitStore.getSlot(SLOT))?.bytes; seed = plan.data.header.seed; }
+      if (!bytes) { say(titleMsg, '找不到存檔'); return; }
+      download(await exportBlob(bytes), `delve-${seed}.delve`);
       say(titleMsg, '已匯出存檔檔案');
     } catch (e) {
-      say(titleMsg, `匯出失敗：${e instanceof Error ? e.message : String(e)}`);
+      say(titleMsg, `匯出失敗：${errText(e)}`);
     }
   }
 
@@ -493,7 +567,7 @@ export function bootDelve(root: HTMLElement): Session {
     if (!f) return;
     const msgEl = importFrom;
     importBlob(f)
-      .then((bytes) => openSave(bytes, msgEl, msgEl === titleMsg ? 'title' : 'menu', () => { setTimeout(() => void saveNow(), 0); }))
+      .then((bytes) => openImport(bytes, msgEl, msgEl === titleMsg ? 'title' : 'menu'))
       .catch((e: unknown) => say(msgEl, `匯入失敗：${e instanceof Error ? e.message : String(e)}`))
       .finally(() => { if (fileInput) fileInput.value = ''; });
   });
