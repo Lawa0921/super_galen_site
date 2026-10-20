@@ -179,7 +179,7 @@ function validFolk(v: unknown): FolkSave | undefined {
   return { world: (o.world ?? {}) as FolkJSON, quests: (o.quests ?? {}) as QuestLogJSON, buffs, scoutMarks, perkDays, scouted };
 }
 /** 存檔裡的等級資料 → 正規化後的副本 */
-function validLevels(raw: unknown): LevelsJSON {
+export function validLevels(raw: unknown): LevelsJSON {
   const p = new Progression();
   p.load(raw);
   return p.toJSON();
@@ -374,13 +374,17 @@ function encodeFrozen(F: Uint8Array): number[] {
   for (let i = 0; i < F.length; i++) if (F[i]) { out.push(i - last); last = i; }
   return out;
 }
+export function validFishLog(v: unknown): Partial<Record<ItemId, number>> {
+  const fishLog: Partial<Record<ItemId, number>> = {};
+  if (v && typeof v === 'object') {
+    for (const [k, n] of Object.entries(v)) if (isItemId(k) && Number.isInteger(n) && (n as number) > 0) fishLog[k] = n as number;
+  }
+  return fishLog;
+}
 function validExtra(v: unknown): ExtraSave | undefined {
   if (v === undefined || v === null || typeof v !== 'object') return undefined;
   const o = v as Partial<ExtraSave>;
-  const fishLog: Partial<Record<ItemId, number>> = {};
-  if (o.fishLog && typeof o.fishLog === 'object') {
-    for (const [k, n] of Object.entries(o.fishLog)) if (isItemId(k) && Number.isInteger(n) && (n as number) > 0) fishLog[k] = n as number;
-  }
+  const fishLog = validFishLog(o.fishLog);
   const minedIce = Array.isArray(o.minedIce) ? o.minedIce.filter((i) => Number.isInteger(i) && i >= 0).slice(0, 100000) : [];
   const out: ExtraSave = { fishLog, minedIce };
   if (o.codex && typeof o.codex === 'object') out.codex = o.codex;
@@ -518,7 +522,7 @@ export function encodeSave(data: SaveData): Uint8Array {
   return out;
 }
 
-function isNum(v: unknown): v is number { return typeof v === 'number' && Number.isFinite(v); }
+export function isNum(v: unknown): v is number { return typeof v === 'number' && Number.isFinite(v); }
 
 /** chunk 內每格 fg / wall id 必須是已知 TILES / WALLS（variant 不存檔，由座標雜湊重算）。 */
 function validateChunk(ci: number, c: ChunkPayload): void {
@@ -537,7 +541,7 @@ function strictGear(item: ItemId, raw: unknown, where: string): Gear | undefined
   if (!g) throw new SaveFormatError(`${where}: gear`);
   return g;
 }
-function validStack(st: unknown, where: string): Stack | null {
+export function validStack(st: unknown, where: string): Stack | null {
   if (st === null) return null;
   const o = st as { item?: unknown; count?: unknown; gear?: unknown };
   if (!o || typeof o !== 'object' || !isItemId(o.item) || typeof o.count !== 'number'
@@ -628,7 +632,7 @@ function validChests(v: unknown): ChestSave[] {
 }
 
 /** 背包欄位驗證：每格為 null 或 { 已知道具, 1..maxStack 的整數 }；不合法即視為存檔損毀。 */
-function validInventory(v: unknown): InventoryJSON {
+export function validInventory(v: unknown): InventoryJSON {
   if (v === undefined) return { slots: [], selected: 0 };
   const o = v as { slots?: unknown; selected?: unknown } | null;
   if (!o || typeof o !== 'object' || !Array.isArray(o.slots) || o.slots.length > INV_SIZE) {
