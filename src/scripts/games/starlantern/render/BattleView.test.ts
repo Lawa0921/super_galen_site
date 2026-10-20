@@ -4,7 +4,8 @@ import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
 import { makeBattle, makeCombatant } from '../engine/testing';
 import { OutlineFilter } from 'pixi-filters';
-import { BattleView, TINT_COLORS, TINT_STYLE } from './BattleView';
+import { BattleView, TINT_COLORS, TINT_STYLE, ailLabelWidth } from './BattleView';
+import { AILMENT_FILL } from './ailmentStyle';
 import type { TextureBank } from './textures';
 
 const sfx = { hit: vi.fn(), weak: vi.fn(), heal: vi.fn(), ko: vi.fn() } as unknown as SoundManager;
@@ -140,6 +141,36 @@ describe('BattleView enemy status', () => {
     expect(view.intentText('e0')).toBe('▶ 攻擊 → 絲嘉蕾');
     view.showIntents({});
     expect(view.intentText('e0')).toBe('');
+  });
+
+  it('showAilments draws one coloured label per ailment at the feet, clear of the party bar, and replaces them', () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1);
+    view.showAilments({ e0: [{ id: 'shock', turns: 2 }, { id: 'bleed', stacks: 3, turns: 2 }] });
+    const labels = view.ailmentTexts('e0');
+    expect(labels.map((t) => t.text)).toEqual(['感電2', '流血×3']);
+    expect(labels.map((t) => t.style.fill)).toEqual([AILMENT_FILL.shock, AILMENT_FILL.bleed]);
+    expect(labels.every((t) => t instanceof Text && t.style.fontSize === 11)).toBe(true);
+    const box = enemyBox(view);
+    for (const t of labels) {
+      expect(t.parent?.parent).toBe(box);
+      // Between the feet and the name (the name's top is the feet, 0): never in the 28 px under the feet the party bar can cover.
+      expect(t.parent!.y + t.y).toBeLessThan(0);
+      expect(t.parent!.y + t.y + 14).toBeLessThanOrEqual(0);
+    }
+    // Side by side, centred on the enemy.
+    expect(labels[0].x).toBeLessThan(labels[1].x);
+    const left = labels[0].x - ailLabelWidth('感電2') / 2, right = labels[1].x + ailLabelWidth('流血×3') / 2;
+    expect(right - left).toBeCloseTo(ailLabelWidth('感電2') + ailLabelWidth('流血×3') + 4, 6);
+    expect(left + right).toBeCloseTo(0, 6);
+    expect(ailLabelWidth('感電2')).toBeCloseTo(11 * 2 + 6.6, 6);
+    view.showAilments({ e0: [{ id: 'poison' }] });
+    expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['中毒']);
+    expect(labels.every((t) => t.destroyed)).toBe(true);
+    view.showAilments({ e0: [] });
+    expect(view.ailmentTexts('e0')).toEqual([]);
+    view.showAilments({});
+    expect(view.ailmentTexts('e0')).toEqual([]);
   });
 });
 

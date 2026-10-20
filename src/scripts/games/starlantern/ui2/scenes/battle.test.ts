@@ -66,6 +66,30 @@ describe('BattleScene', () => {
     await flush();
   });
 
+  it('a frozen member is skipped when choosing commands', () => {
+    const { heading } = setup((g) => { g.battle!.party[0].frozen = true; });
+    expect(heading()).toBe('千鶴 的行動');
+  });
+
+  it("the bar shows each member's ailments", () => {
+    const { root } = setup((g) => { g.battle!.party[1].poison = true; g.battle!.party[1].burn = { tick: 4, turns: 2, src: 'e0' }; });
+    const row = root.querySelector('.slx-partybar [data-key=chizuru] .slx-pm-ail')!;
+    expect(row.textContent).toContain('中毒');
+    expect(row.textContent).toContain('灼燒2');
+    expect(root.querySelector('.slx-partybar [data-key=scarlet] .slx-pm-ail')!.textContent).toBe('');
+  });
+
+  it('the words leave the bar once the fight is over', async () => {
+    const { s, root, game } = setup((g) => { g.battle!.party[1].poison = true; });
+    const row = () => root.querySelector('.slx-partybar [data-key=chizuru] .slx-pm-ail')!;
+    expect(row().textContent).toContain('中毒');
+    for (const e of game.battle!.enemies) { e.hp = 0; e.alive = false; }
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }   // 防禦 ×5
+    await flush();
+    expect(root.querySelector('.slx-result')).not.toBeNull();
+    expect(row().textContent).toBe('');
+  });
+
   it('goes back to the previous member on cancel', () => {
     const { s, heading } = setup();
     s.onAction('down'); s.onAction('down'); s.onAction('confirm');

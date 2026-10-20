@@ -4,10 +4,12 @@ import { REGIONS, type RegionId } from '../data/regions';
 import { T } from '../data/text.zh-TW';
 import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
+import type { AilmentChip } from '../engine/ailments';
 import type { Combatant } from '../engine/combatant';
 import type { WeaponKind } from '../engine/types';
 import { art, enemyArt, type FxKey } from './artPaths';
 import { battleCues } from './battleCues';
+import { AILMENT_FILL } from './ailmentStyle';
 import type { TextureBank } from './textures';
 
 const PALETTE = [0x7fb069, 0x8e7dbe, 0xd1495b, 0x66a1d2, 0xe0a458, 0x5c946e, 0xb56576, 0x6d6875, 0xc44536];
@@ -64,15 +66,29 @@ function tintMatrix(color: number, k: number): ColorMatrix {
   return [r[0], r[1], r[2], r[3], r[4], g[0], g[1], g[2], g[3], g[4], b[0], b[1], b[2], b[3], b[4], 0, 0, 0, 1, 0];
 }
 
-/** One enemy in the picture: its sprite, an HP bar under its name, and its announced next move above its head. */
+/** One enemy in the picture: its sprite, an HP bar under its name, its ailments just above the name, and its announced next move above its head. */
 interface Slot {
   key: string; box: Container; body: Container; texture: Texture | null; hp: number; max: number; bar: Graphics; intent: Text;
   name: Text;
+  /** One coloured word per ailment, side by side at its feet, above the name (`showAilments`). */
+  ail: Container;
   /** Its regional colour and elite outline: always on; the hit flash and the target highlight are added on top. */
   base: Filter[];
   tint: { color: number | null; elite: boolean };
 }
 const BAR_W = 64;
+/**
+ * The ailment row's top, from the feet: just above the name. Under the HP bar (the plan's place) it would sit behind the
+ * party bar, which covers everything below the 28 px kept under the feet for the name and the bar.
+ */
+const AIL_Y = -15;
+const AIL_GAP = 4;
+const AIL_SIZE = 11;
+/**
+ * A label's width at the ailment font size, estimated without measuring (no canvas needed): a CJK character is a full
+ * em, anything else (digits, ×) a little over half. Only the row's centring depends on it.
+ */
+export const ailLabelWidth = (text: string): number => [...text].reduce((w, ch) => w + (ch.charCodeAt(0) > 0x2e80 ? AIL_SIZE : AIL_SIZE * 0.6), 0);
 /** Nothing in the picture may rise above the message window. */
 const TOP_CLEAR = 52;
 
@@ -171,7 +187,9 @@ export class BattleView {
       bar.y = 19;
       const intent = new Text({ text: '', style: { fill: 0xffe08a, fontSize: 12, stroke: { color: 0x000000, width: 3 } } });
       intent.anchor.set(0.5, 1);
-      box.addChild(body, label, bar, intent);
+      const ail = new Container();
+      ail.y = AIL_Y;
+      box.addChild(body, label, bar, ail, intent);
       box.x = left + slotW * (i + 1);
       box.y = ground;
       box.alpha = e.alive ? 1 : 0;
@@ -181,7 +199,7 @@ export class BattleView {
       const color = key ? TINT_COLORS[key] : null;
       const base = this.tintFor(key, elite);
       body.filters = base;
-      const slot: Slot = { key: e.key, box, body, texture: tex, hp: e.hp, max: e.max.hp, bar, intent, name: label, base, tint: { color, elite } };
+      const slot: Slot = { key: e.key, box, body, texture: tex, hp: e.hp, max: e.max.hp, bar, intent, name: label, ail, base, tint: { color, elite } };
       this.slots.set(e.key, slot);
       this.drawBar(slot);
     });
@@ -365,6 +383,34 @@ export class BattleView {
   /** What each enemy will do next ({} hides them all, e.g. while a round plays). */
   showIntents(byKey: Record<string, string>): void {
     for (const [k, s] of this.slots) if (!s.intent.destroyed) s.intent.text = byKey[k] ? `▶ ${byKey[k]}` : '';
+  }
+
+  /**
+   * Each enemy's ailments as coloured words at its feet, above its name, centred on it (「感電2」「流血×3」); a call replaces the whole
+   * row, and an enemy missing from `byKey` or with an empty list shows none.
+   */
+  showAilments(byKey: Record<string, AilmentChip[]>): void {
+    for (const [k, s] of this.slots) {
+      if (s.ail.destroyed) continue;
+      for (const c of s.ail.removeChildren()) c.destroy();
+      const words = (byKey[k] ?? []).map((chip) => new Text({
+        text: T.ailmentChip(chip), style: { fill: AILMENT_FILL[chip.id], fontSize: AIL_SIZE, stroke: { color: 0x000000, width: 3 } },
+      }));
+      const widths = words.map((t) => ailLabelWidth(t.text));
+      let x = -(widths.reduce((a, b) => a + b, 0) + AIL_GAP * Math.max(0, words.length - 1)) / 2;
+      words.forEach((t, i) => {
+        t.anchor.set(0.5, 0);
+        t.x = x + widths[i] / 2;
+        x += widths[i] + AIL_GAP;
+        s.ail.addChild(t);
+      });
+    }
+  }
+
+  /** The ailment words under an enemy's bar, in order (for tests). */
+  ailmentTexts(key: string): Text[] {
+    const s = this.slots.get(key);
+    return s && !s.ail.destroyed ? [...s.ail.children] as Text[] : [];
   }
 
   /** Set shown HP to the battle state's values (after a round). */

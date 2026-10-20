@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { RARITIES } from '../data/gear';
 import { T } from '../data/text.zh-TW';
 import { gearLabel, rarityClass } from './loot';
+import { AILMENT_FILL } from '../render/ailmentStyle';
+import type { AilmentShown } from '../engine/ailments';
 
 const scss = readFileSync(resolve(process.cwd(), 'src/styles/_starlantern-ui.scss'), 'utf-8');
 /** The `$slx-rarity` map is the one source of rarity colours; `@each` turns it into `.slx-rarity-*`. */
@@ -174,5 +176,39 @@ describe('rarity colours and words', () => {
     expect(gearLabel(it0)).toBe('皮背心・魔法');                     // +0 shows no "+0"
     expect(T.enhanced('鐵劍', 0)).toBe('鐵劍');
     expect(T.enhanced('鐵劍', 3)).toBe('鐵劍 +3');
+  });
+});
+
+describe('ailment colours and words (plan 8b)', () => {
+  /** The `$slx-ailment` map is the one source of ailment colours in the stylesheet; the Pixi labels use AILMENT_FILL. */
+  const ailmentMap = scss.match(/\$slx-ailment: \(([^)]*)\);/)?.[1] ?? '';
+  const entries = [...ailmentMap.matchAll(/([a-z]+): #([0-9a-f]{6})/g)].map((m) => [m[1], m[2]] as const);
+  const rgb = (h: string) => [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+
+  it('the stylesheet and the Pixi labels share seven colours, all apart and readable on the window', () => {
+    expect(entries.map(([k]) => k).sort()).toEqual(Object.keys(AILMENT_FILL).sort());
+    expect(entries).toHaveLength(7);
+    for (const [k, h] of entries) expect(parseInt(h, 16), k).toBe(AILMENT_FILL[k as AilmentShown]);
+    const win = scssRgb('slx-win');
+    expect(win).toEqual([10, 14, 34]);
+    for (const [k, h] of entries) expect(contrast(rgb(h), win), k).toBeGreaterThanOrEqual(4.5);
+    for (const [a, ha] of entries) for (const [b, hb] of entries) {
+      if (a < b) expect(Math.hypot(...rgb(ha).map((v, i) => v - rgb(hb)[i])), `${a} ${b}`).toBeGreaterThan(40);
+    }
+  });
+
+  it('each ailment is a short word with its turns; bleed counts its stacks; poison and freeze have no number', () => {
+    expect(T.ailment).toEqual({ poison: '中毒', sleep: '睡眠', burn: '灼燒', freeze: '凍結', chill: '冰緩', shock: '感電', bleed: '流血' });
+    expect(T.ailmentChip({ id: 'burn', turns: 3 })).toBe('灼燒3');
+    expect(T.ailmentChip({ id: 'sleep', turns: 2 })).toBe('睡眠2');
+    expect(T.ailmentChip({ id: 'bleed', stacks: 2, turns: 3 })).toBe('流血×2');
+    expect(T.ailmentChip({ id: 'poison' })).toBe('中毒');
+    expect(T.ailmentChip({ id: 'freeze' })).toBe('凍結');
+  });
+
+  it('the region trait burn reads 酷熱, apart from the ailment 灼燒', () => {
+    expect(T.ui2.gate.traits.burn).toBe('酷熱');
+    expect(T.ui2.gate.traits.burn).not.toBe(T.ailment.burn);
+    expect(Object.values(T.ui2.gate.traits)).not.toContain(T.ailment.burn);
   });
 });

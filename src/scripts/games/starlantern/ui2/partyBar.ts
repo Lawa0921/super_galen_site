@@ -2,6 +2,7 @@ import { portraitImg, showMood } from '../ui/art';
 import { el } from '../ui/dom';
 import { T } from '../data/text.zh-TW';
 import type { Row } from '../engine/types';
+import type { AilmentChip } from '../engine/ailments';
 import type { ArtIndex } from '../render/textures';
 
 const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' };
@@ -9,7 +10,9 @@ const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' 
 /** `row` shows a small 前／中／後 tag so the formation is visible during play. */
 export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean; row?: Row;
   /** The art id of the face when it is not `key` (Rin after her oath). */
-  artId?: string }
+  artId?: string;
+  /** Ailments held, shown as coloured words with their rounds under the bars; none (or empty) shows nothing. */
+  ailments?: AilmentChip[] }
 /** `miss` and `tp` only pop a word or number: no face, shake or glow. */
 export type PulseMood = 'attack' | 'hit' | 'heal' | 'ko' | 'miss' | 'tp';
 /**
@@ -145,9 +148,12 @@ export class PartyBar {
     const m = p.member;
     if (!p.body.firstChild) {
       p.body.append(el('span', { class: 'slx-pm-name' }), el('span', { class: 'slx-pm-num' }), bar(0, 1, 'slx-bar-hp'),
-        el('span', { class: 'slx-pm-tp' }), bar(0, 1, 'slx-bar-tp'), bar(0, 1, 'slx-bar-limit'));
+        el('span', { class: 'slx-pm-tp' }), bar(0, 1, 'slx-bar-tp'), bar(0, 1, 'slx-bar-limit'), el('span', { class: 'slx-pm-ail' }));
     }
-    const [name, num, hp, tpNum, tp, limit] = [...p.body.children] as HTMLElement[];
+    const [name, num, hp, tpNum, tp, limit, ail] = [...p.body.children] as HTMLElement[];
+    const chips = m.ailments ?? [];
+    ail.replaceChildren(...chips.map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })));
+    ail.hidden = chips.length === 0;
     tpNum.textContent = `TP ${m.tp}/${m.maxTp}`;
     name.replaceChildren(m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : []));
     num.textContent = `${m.hp}/${m.maxHp}`;

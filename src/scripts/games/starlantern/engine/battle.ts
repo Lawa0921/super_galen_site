@@ -460,6 +460,7 @@ export function intentLabel(s: BattleState, key: string): string {
   const a = s.intents?.[key];
   if (!a) return '';
   const e = s.enemies.find((x) => x.key === key);
+  if (e?.frozen) return '凍結中';   // it will lose this turn (its plan is still drawn, so the sequence holds)
   const def = e ? enemyDef(s, e) : undefined;
   const name = a.kind === 'attack' ? '攻擊' : (def?.skills[a.index]?.name ?? '');
   const sk = a.kind === 'enemy-skill' ? def?.skills[a.index] : null;

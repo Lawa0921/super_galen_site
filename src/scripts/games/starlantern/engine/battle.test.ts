@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { STORY_FIGHT_ROUNDS, LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, resolveRound, rewards, skillCost, skillFor, turnOrder, writeBack } from './battle';
+import { STORY_FIGHT_ROUNDS, LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, intentLabel, resolveRound, rewards, skillCost, skillFor, turnOrder, writeBack } from './battle';
 import { WEAPON_MASTERY_PCT } from '../data/equipment';
 import { RIN_DAWN, SKY_LANTERN, ULTIMATES, skyForm, HERO_ULTIMATES } from '../data/ultimates';
 import { ENEMIES } from '../data/enemies';
@@ -1048,6 +1048,12 @@ describe('ailments at round end and on their turn (plan 8b)', () => {
     const s = resolveRound(makeBattle([P('p', { turret: { power: 100, turns: 2 } })], [E('e0', { sleep: 3 })]), { p: { kind: 'defend' } }, rng);
     expect(s.log).toContainEqual({ type: 'act', actor: 'p', label: '砲台' });
     expect(s.enemies[0].sleep).toBe(0);
+  });
+
+  it('a frozen foe shows 凍結中 as its intent', () => {
+    const s = makeBattle([P('p')], [E('e0', { frozen: true }), E('e1')], { intents: { e0: { kind: 'attack', target: 'p' }, e1: { kind: 'attack', target: 'p' } } });
+    expect(intentLabel(s, 'e0')).toBe('凍結中');
+    expect(intentLabel(s, 'e1')).toBe('攻擊 → p');
   });
 
   it('death and cure clear every ailment', () => {

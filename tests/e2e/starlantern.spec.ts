@@ -1485,6 +1485,74 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test('ailments show as coloured words on the battle screen (plan 8b)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const w = await setup(page, 7);
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    const who: string = await game((g) => {
+      const m = g.battle.party[0];
+      m.poison = true; m.burn = { tick: 5, turns: 3, src: 'e0' };
+      m.bleed = [{ tick: 3, turns: 3, src: 'e0' }, { tick: 3, turns: 2, src: 'e0' }];
+      m.shock = 3; m.chill = 3;
+      m.hp = m.max.hp;
+      const e = g.battle.enemies[0];
+      e.shock = 3; e.bleed = [{ tick: 1, turns: 3, src: m.key }];
+      return m.key;
+    });
+    // Everyone defends through one round.
+    for (let i = 0; i < 40 && (await game((g) => g.battle?.round ?? -1)) === 0; i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    const row = page.locator(`.slx-partybar [data-key=${who}] .slx-pm-ail`);
+    await expect(row).toBeVisible();
+    expect(await row.locator('.slx-ail').allTextContents()).toEqual(['中毒', '灼燒2', '流血×2', '感電2', '冰緩2']);
+    expect(await page.locator('.slx-partybar .slx-ail img, .slx-partybar .slx-pm-ail img').count()).toBe(0);
+    if (process.env.SL_SHOTS) { mkdirSync(process.env.SL_SHOTS, { recursive: true }); await page.waitForTimeout(800); await page.screenshot({ path: `${process.env.SL_SHOTS}/ailments-1280.png` }); }
+    // At 1280 and on a phone: the words wrap within the panel's width just above it, on the screen; the panel keeps its height.
+    const fits = () => row.evaluate((r) => {
+      const panel = r.closest('.slx-pm')!.getBoundingClientRect(), box = r.getBoundingClientRect();
+      const screen = document.querySelector('#sl-screen')!.getBoundingClientRect();
+      const bar = r.closest('.slx-partybar')!.getBoundingClientRect();
+      return {
+        scroll: r.scrollWidth, client: r.clientWidth,
+        within: box.left >= panel.left - 0.5 && box.right <= panel.right + 0.5,
+        above: box.bottom <= panel.top + 0.5 && box.top >= screen.top - 0.5,
+        height: Math.abs(panel.height - bar.height) < 1,
+        // Nothing (the command window included) covers a word. The row ignores the pointer, so the probe lets it be hit for a moment.
+        seen: [...r.querySelectorAll<HTMLElement>('.slx-ail')].every((c) => {
+          const b = c.getBoundingClientRect();
+          r.style.pointerEvents = 'auto';
+          const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+          r.style.pointerEvents = '';
+          return c.contains(hit);
+        }),
+      };
+    });
+    // Polled: a hit's number or effect may pass over a word for a moment.
+    const settled = { within: true, above: true, height: true, seen: true };
+    await expect.poll(fits, { timeout: 3000 }).toMatchObject(settled);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(fits, { message: 'the ailment row wraps within its panel, above it, on the screen', timeout: 3000 }).toMatchObject(settled);
+    const fit = await fits();
+    expect(fit.scroll).toBeLessThanOrEqual(fit.client);
+    if (process.env.SL_SHOTS) { await page.waitForTimeout(800); await page.screenshot({ path: `${process.env.SL_SHOTS}/ailments-390.png` }); }
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
   test('walks into the forge from town and dismantles one magic item', async ({ page }) => {
     const w = await setup(page, 7);
     const uid = await page.evaluate(() => {

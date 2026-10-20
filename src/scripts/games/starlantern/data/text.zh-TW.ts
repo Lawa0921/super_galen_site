@@ -11,13 +11,14 @@ import { CHARACTERS } from './characters';
 import type { MaterialUse } from '../engine/forge/uses';
 import type { MaterialKind } from '../engine/types';
 import type { AnyStat, BuffStat, Rarity, Slot, StatKey, Target } from '../engine/types';
-import type { AilmentShown } from '../engine/ailments';
+import type { AilmentChip, AilmentShown } from '../engine/ailments';
 
 const STAT: Record<StatKey, string> = { hp: 'HP', tp: 'TP', atk: '攻擊', def: '防禦', mag: '魔力', res: '魔防', spd: '速度' };
 /** The battle log's line when an ailment takes hold (a boss's freeze reads as the chill it became). */
 const STATUS_LINE: Record<AilmentShown, string> = {
   poison: '中毒了', sleep: '睡著了', burn: '燒起來了', freeze: '被凍住了', chill: '的動作變慢了', shock: '觸電了', bleed: '開始流血了',
 };
+const AILMENT_NAME: Record<AilmentShown, string> = { poison: '中毒', sleep: '睡眠', burn: '灼燒', freeze: '凍結', chill: '冰緩', shock: '感電', bleed: '流血' };
 const SLOT: Record<Slot, string> = {
   weapon: '武器', offhand: '副手', head: '頭部', body: '身體', hands: '手部', feet: '腳部', neck: '項鍊', ring1: '戒指 1', ring2: '戒指 2',
 };
@@ -148,6 +149,10 @@ export const T = {
     gearLeft: (name: string) => `背包已滿，留下了 ${name}`,
   },
   element: { phys: '物理', fire: '火', ice: '冰', thunder: '雷' },
+  /** Ailment names on the battle screen (the region trait `burn` reads 酷熱, so the two never share a word). */
+  ailment: AILMENT_NAME,
+  /** One ailment as a short label: its name and rounds left (「灼燒3」), a bleed's stacks (「流血×2」); poison and freeze have no number. */
+  ailmentChip: (c: AilmentChip) => `${AILMENT_NAME[c.id]}${c.stacks !== undefined ? `×${c.stacks}` : c.turns !== undefined ? c.turns : ''}`,
   log: {
     act: (who: string, label: string) => `${who}：${label}`,
     damage: (who: string, n: number, mult: number) => `${who} 受到 ${n} 傷害${mult > 1 ? '（弱點）' : mult < 1 ? '（抗性）' : ''}`,
@@ -540,7 +545,7 @@ export const T = {
       bagLow: (free: number) => `背包只剩 ${free} 格空位，放不下的裝備只能先留在寶箱裡`,
       depthTitle: '起始深度', deepest: (n: number) => `最深 第 ${n} 層`, notYet: '尚未進入',
       element: (name: string | null) => (name ? `${name}屬性` : '無屬性'),
-      traits: { burn: '灼燒', chill: '降速', swift: '迅捷', poison: '劇毒', evasive: '閃避', armored: '堅甲' } as Record<string, string>,
+      traits: { burn: '酷熱', chill: '降速', swift: '迅捷', poison: '劇毒', evasive: '閃避', armored: '堅甲' } as Record<string, string>,
       noTrait: '無特性', weak: (els: string) => `弱 ${els}`, resist: (els: string) => `抗 ${els}`,
       /** A run that can only start at depth 1: the region resist is not there yet (scaling.REGION_TRAITS_FROM). */
       resistFrom: (els: string, depth: number) => `抗 ${els}（第 ${depth} 層起）`,

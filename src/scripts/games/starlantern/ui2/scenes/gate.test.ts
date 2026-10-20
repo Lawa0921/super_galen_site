@@ -40,7 +40,8 @@ describe('GateScene: the portal plaza', () => {
     expect(cards()[0].getAttribute('aria-selected')).toBe('true');
     const blaze = cards()[1];
     expect(blaze.querySelector('.slx-portal-trait')!.textContent).toContain('火');
-    expect(blaze.querySelector('.slx-portal-trait')!.textContent).toContain('灼燒');
+    expect(blaze.querySelector('.slx-portal-trait')!.textContent).toContain('酷熱');
+    expect(blaze.querySelector('.slx-portal-trait')!.textContent).not.toContain(T.ailment.burn);   // the ailment keeps 灼燒
     expect(blaze.querySelector('.slx-portal-monsters')!.textContent).toContain('苔蘚史萊姆');
     expect(blaze.querySelector('.slx-portal-cond')!.textContent).toContain('濃霧');
     expect(blaze.querySelector('.slx-portal-gear')!.textContent).toContain('限定裝備');

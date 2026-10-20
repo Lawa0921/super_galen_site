@@ -193,4 +193,20 @@ describe('PartyBar after the oath', () => {
     bar.update([m('hero'), m('rin', 30)]);
     expect(bar.el.querySelector('[data-key=rin] img')!.getAttribute('src')).toBe(art.portrait('rin', 'normal'));
   });
+
+  it('shows each ailment as a coloured word with its turns', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('scarlet', 30, { ailments: [{ id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 }] }), m('noel')]);
+    const row = bar.el.querySelector<HTMLElement>('[data-key=scarlet] .slx-pm-ail')!;
+    expect(row.hidden).toBe(false);
+    expect([...row.children].map((c) => [c.className, c.textContent])).toEqual([['slx-ail slx-ail-burn', '灼燒3'], ['slx-ail slx-ail-bleed', '流血×2']]);
+    const none = bar.el.querySelector<HTMLElement>('[data-key=noel] .slx-pm-ail')!;
+    expect(none.hidden).toBe(true);
+    expect(none.children).toHaveLength(0);
+    bar.update([m('scarlet', 30, { ailments: [] }), m('noel')]);
+    expect(row.children).toHaveLength(0);
+    expect(row.hidden).toBe(true);
+    expect(bar.el.querySelector('.slx-pm-ail img')).toBeNull();
+    expect(bar.el.querySelectorAll('img').length).toBe(0);   // NO_ART: no faces, and the words bring no picture
+  });
 });

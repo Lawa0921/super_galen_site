@@ -7,6 +7,7 @@ import { STORY } from '../../data/story.zh-TW';
 import { CHARACTERS } from '../../data/characters';
 import { LIMIT_MAX, intentLabel, skillCost, skillFor, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
+import { ailmentChips, type AilmentChip } from '../../engine/ailments';
 import type { BattleEnd } from '../../engine/game';
 import { learnedSkills, ultimateFor } from '../../engine/progression';
 import type { CharacterId, Target } from '../../engine/types';
@@ -57,7 +58,8 @@ export class BattleScene implements Scene {
   private result: MenuView | null = null;
   private resultReady = false;
   /** Party values from before the round, shown until each member's own hit plays. */
-  private before: Map<string, Pick<Combatant, 'hp' | 'tp' | 'limit' | 'alive'>> | null = null;
+  /** Each member as the round began (ailments too), shown until the playback reaches them. */
+  private before: Map<string, Pick<Combatant, 'hp' | 'tp' | 'limit' | 'alive'> & { ailments: AilmentChip[] }> | null = null;
   private revealed = new Set<string>();
   private actLine = '';
   private cutins = 0;
@@ -114,14 +116,18 @@ export class BattleScene implements Scene {
     this.view?.onAction(a);
   }
 
+  /** Who chooses a command this round: a sleeping or frozen member loses the turn and is skipped. */
   private actors(): Combatant[] {
-    return this.state.party.filter((c) => c.alive && c.sleep === 0);
+    return this.state.party.filter((c) => c.alive && c.sleep === 0 && !c.frozen);
   }
 
   private updateBar(active: string | null): void {
     this.bar.update(this.state.party.map((c) => {
-      const v = (!this.revealed.has(c.key) && this.before?.get(c.key)) || c;
-      return { key: c.key, name: c.name, hp: v.hp, maxHp: c.max.hp, tp: v.tp, maxTp: c.max.tp, limit: v.limit, alive: v.alive, row: c.row, ...(c.artId ? { artId: c.artId } : {}) };
+      const was = this.revealed.has(c.key) ? undefined : this.before?.get(c.key);
+      const v = was || c;
+      // Ailments end with the fight (a new fight starts clean), so a finished one shows none.
+      const ailments = was ? was.ailments : this.state.outcome === 'ongoing' ? ailmentChips(c) : [];
+      return { key: c.key, name: c.name, hp: v.hp, maxHp: c.max.hp, tp: v.tp, maxTp: c.max.tp, limit: v.limit, alive: v.alive, row: c.row, ailments, ...(c.artId ? { artId: c.artId } : {}) };
     }), active);
   }
 
@@ -168,6 +174,12 @@ export class BattleScene implements Scene {
   private showIntents(): void {
     const s = this.state;
     this.ctx.stage?.battleView.showIntents?.(Object.fromEntries(s.enemies.filter((e) => e.alive).map((e) => [e.key, intentLabel(s, e.key)])));
+    this.showAilments();
+  }
+
+  /** Each living enemy's ailments under its HP bar. */
+  private showAilments(): void {
+    this.ctx.stage?.battleView.showAilments?.(Object.fromEntries(this.state.enemies.filter((e) => e.alive).map((e) => [e.key, ailmentChips(e)])));
   }
 
   /** 返回 shows only when cancel would do something: close a sub-list or go back to the previous member. */
@@ -332,7 +344,7 @@ export class BattleScene implements Scene {
     this.cmd.hidden = true;
     this.ctx.stage?.battleView.showIntents?.({});
     this.view = null;
-    this.before = new Map(this.state.party.map((c) => [c.key, { hp: c.hp, tp: c.tp, limit: c.limit, alive: c.alive }]));
+    this.before = new Map(this.state.party.map((c) => [c.key, { hp: c.hp, tp: c.tp, limit: c.limit, alive: c.alive, ailments: ailmentChips(c) }]));
     this.revealed.clear();
     this.updateBar(null);
     const r = this.ctx.game.submitRound(this.actions);
@@ -351,6 +363,7 @@ export class BattleScene implements Scene {
     this.before = null;
     this.updateBar(null);
     this.ctx.stage?.battleView.syncHp?.(r.battle);
+    this.showAilments();
     this.busy = false;
     this.cmd.hidden = !!r.end;
     this.root.removeAttribute('inert');
