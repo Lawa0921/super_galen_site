@@ -32,7 +32,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_failed",
       "kind": "gear-cell",
@@ -74,7 +74,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_failed",
       "kind": "gear-cell",
@@ -114,7 +114,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -154,7 +154,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -194,7 +194,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -234,7 +234,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -257,7 +257,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 7,
-        "magenta_spill": 2,
+        "magenta_spill": 0,
         "subject": {
           "long": 56,
           "short": 50,
@@ -276,7 +276,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -299,7 +299,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 1,
-        "magenta_spill": 2,
+        "magenta_spill": 0,
         "subject": {
           "long": 22,
           "short": 20,
@@ -318,7 +318,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -334,8 +334,7 @@
       "qa": {
         "pass": false,
         "reasons": [
-          "magenta residue",
-          "magenta spill"
+          "magenta residue"
         ],
         "warnings": [
           "enclosed holes"
@@ -344,7 +343,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 2,
-        "magenta_spill": 12,
+        "magenta_spill": 0,
         "subject": {
           "long": 56,
           "short": 52,
@@ -363,7 +362,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_failed",
       "kind": "gear-cell",
@@ -403,7 +402,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -443,7 +442,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -484,7 +483,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -527,7 +526,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_failed",
       "kind": "gear-cell",
@@ -569,7 +568,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_failed",
       "kind": "gear-cell",
@@ -592,7 +591,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 2,
-        "magenta_spill": 1,
+        "magenta_spill": 0,
         "subject": {
           "long": 56,
           "short": 46,
@@ -611,7 +610,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -651,7 +650,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -693,7 +692,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_failed",
       "kind": "gear-cell",
@@ -735,7 +734,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_failed",
       "kind": "gear-cell",

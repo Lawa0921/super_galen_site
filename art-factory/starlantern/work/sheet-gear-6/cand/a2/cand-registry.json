@@ -30,7 +30,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -70,7 +70,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -110,7 +110,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -151,7 +151,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -192,7 +192,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -232,7 +232,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -272,7 +272,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -312,7 +312,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -352,7 +352,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -392,7 +392,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -406,16 +406,14 @@
       "final": "art-factory/starlantern/work/sheet-gear-6/cand/a2/gear-set-storm-weapon-large.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
       "qa": {
-        "pass": false,
-        "reasons": [
-          "magenta spill"
-        ],
+        "pass": true,
+        "reasons": [],
         "warnings": [],
         "residue": 0,
         "semi": 0,
         "edge": 0,
         "holes": 0,
-        "magenta_spill": 3,
+        "magenta_spill": 0,
         "subject": {
           "long": 56,
           "short": 55,
@@ -434,9 +432,9 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
-      "status": "qa_failed",
+      "status": "qa_passed",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -475,7 +473,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -497,7 +495,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
-        "magenta_spill": 1,
+        "magenta_spill": 0,
         "subject": {
           "long": 56,
           "short": 52,
@@ -516,7 +514,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -556,7 +554,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -577,7 +575,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
-        "magenta_spill": 1,
+        "magenta_spill": 0,
         "subject": {
           "long": 56,
           "short": 49,
@@ -596,7 +594,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -636,7 +634,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -657,7 +655,7 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
-        "magenta_spill": 2,
+        "magenta_spill": 0,
         "subject": {
           "long": 56,
           "short": 50,
@@ -676,7 +674,7 @@
           64,
           64
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -716,7 +714,7 @@
           26,
           26
         ],
-        "spec": "gear-cell:cba070036b9c"
+        "spec": "gear-cell:9e868455a2f5"
       },
       "status": "qa_passed",
       "kind": "gear-cell",

@@ -8,7 +8,7 @@
   "semi": 0,
   "edge": 0,
   "holes": 1,
-  "magenta_spill": 1,
+  "magenta_spill": 0,
   "subject": {
     "long": 22,
     "short": 21,
@@ -27,5 +27,5 @@
     26,
     26
   ],
-  "spec": "gear-cell:cba070036b9c"
+  "spec": "gear-cell:9e868455a2f5"
 }

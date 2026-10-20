@@ -1,8 +1,7 @@
 {
   "pass": false,
   "reasons": [
-    "magenta residue",
-    "magenta spill"
+    "magenta residue"
   ],
   "warnings": [
     "enclosed holes"
@@ -11,7 +10,7 @@
   "semi": 0,
   "edge": 0,
   "holes": 2,
-  "magenta_spill": 12,
+  "magenta_spill": 0,
   "subject": {
     "long": 56,
     "short": 52,
@@ -30,5 +29,5 @@
     64,
     64
   ],
-  "spec": "gear-cell:cba070036b9c"
+  "spec": "gear-cell:9e868455a2f5"
 }
