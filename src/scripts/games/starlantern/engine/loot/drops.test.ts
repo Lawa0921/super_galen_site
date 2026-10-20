@@ -108,6 +108,31 @@ describe('rarity weights', () => {
     }
   });
 
+  it('epic sits at the end of the rare band: the boundary is rare_end − share × rare', () => {
+    const at = (x: number): Rng => () => x;
+    for (const source of SOURCES) {
+      const w = rarityWeights(source, 10, 'plain');
+      const total = w.common + w.magic + w.rare + w.epic + w.legendaryTier;
+      const rareFull = w.rare + w.epic;
+      const rareStart = w.common + w.magic;
+      const rareEnd = rareStart + rareFull;
+      const boundary = rareEnd - EPIC_SHARE[source] * rareFull;
+      const merged = { ...w, rare: rareFull, epic: 0 };
+      const eps = 1e-9 * total;
+      const cases: [number, Tier, Tier][] = [
+        [rareStart + eps, 'rare', 'rare'],
+        [boundary - eps, 'rare', 'rare'],
+        [boundary + eps, 'epic', 'rare'],
+        [rareEnd - eps, 'epic', 'rare'],
+      ];
+      if (w.legendaryTier > 0) cases.push([rareEnd + eps, 'legendaryTier', 'legendaryTier']);
+      for (const [v, want, wantMerged] of cases) {
+        expect(rollTier(at(v / total), w), `${source} ${v}`).toBe(want);
+        expect(rollTier(at(v / total), merged), `${source} ${v} merged`).toBe(wantMerged);
+      }
+    }
+  });
+
   it('uses rarityMul from the condition', () => {
     expect(CONDITIONS.bounty.rarityMul).toBe(1.5);
     expect(CONDITIONS.fierce.rarityMul).toBe(1.25);
