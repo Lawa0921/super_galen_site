@@ -131,6 +131,13 @@ describe('per-character policies', () => {
     expect(run(s, c, sk('ward'), rule).action).toEqual({ kind: 'attack', target: 'e1' });
     ({ s, c } = dancer('fire-star'));
     expect(run(s, c, sk('fire-star'), rule).action).toEqual({ kind: 'attack', target: 'e1' });
+    // `repeat`: with one damage skill and it was the last move, cast it again rather than attack (the beat is missed).
+    const again: PolicyRule[] = [{ kind: 'alternate', repeat: true }];
+    ({ s, c } = dancer('fire-star'));
+    expect(run(s, c, sk('fire-star', 'ward'), again).action).toEqual({ kind: 'skill', skill: 'fire-star', target: 'e1' });
+    expect(run(s, c, sk('ward'), again).action).toEqual({ kind: 'attack', target: 'e1' });   // nothing to repeat
+    ({ s, c } = dancer('attack'));
+    expect(run(s, c, sk('fire-star'), again).action).toEqual({ kind: 'skill', skill: 'fire-star', target: 'e1' });
   });
 
   it('spend-at holds the skill below its threshold', () => {

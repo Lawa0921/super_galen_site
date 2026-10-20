@@ -52,12 +52,21 @@ export type Effect =
   /** The target acts last next round (Sylvie's 釘足箭). */
   | { kind: 'delay' }
   /** The caster's aim locks on the target at full stacks for `turns` round ends (Sylvie's 獵人標記). */
-  | { kind: 'aim-lock'; turns: number };
+  | { kind: 'aim-lock'; turns: number }
+  /** The caster takes the single attacks meant for the target ally for `turns` rounds (Scarlet's 代受). */
+  | { kind: 'cover'; turns: number }
+  /** For `turns` rounds each foe that lands a blow on the caster takes a fire counter of `power` (Scarlet's 贖火). */
+  | { kind: 'riposte'; power: number; turns: number }
+  /** The target's single attacks next round go to the caster (Scarlet's 盾擊). */
+  | { kind: 'challenge' }
+  /** The target's ultimate gauge grows by `amount` (Safira's 拍手). */
+  | { kind: 'gauge'; amount: number };
 /**
  * A skill's part in its owner's mechanic: `release` spends Chizuru's barrier for power; `coin-power` and `coin-hits` spend
- * Liz's coins for power or for hits; `consume-aim` spends Sylvie's aim for power.
+ * Liz's coins for power or for hits; `consume-aim` spends Sylvie's aim for power; `ember-power` spends Scarlet's embers
+ * left after the HP cost for power; `clap` adds a beat to Safira's; `cue-finale` sets her beat to four.
  */
-export type SkillMechTag = 'release' | 'coin-power' | 'coin-hits' | 'consume-aim';
+export type SkillMechTag = 'release' | 'coin-power' | 'coin-hits' | 'consume-aim' | 'ember-power' | 'clap' | 'cue-finale';
 
 export interface SkillDef {
   id: string; name: string; owner: CharacterId; tp: number; hpCost?: number;

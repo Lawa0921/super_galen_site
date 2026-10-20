@@ -11,7 +11,8 @@ export const DEFAULT_POLICIES: PolicyTable = {
   bobby: [{ kind: 'ensure-device', skills: ['turret'] }],
   // Rin marks a boss or an elite once it is under half its HP (plan 8c Task 2 tuning, retune.md).
   rin: [{ kind: 'ensure-mark', skill: 'rin-mark', big: true, below: 50 }],
-  safira: [{ kind: 'alternate' }],
+  // Safira keeps the beat, but with one damage skill she casts it again rather than attack (plan 8c Task 5 tuning, retune.md).
+  safira: [{ kind: 'alternate', repeat: true }],
   liz: [{ kind: 'spend-at', gauge: 'coins', min: 6, skill: 'jackpot' }, { kind: 'spend-at', gauge: 'coins', min: 6, skill: 'fortune-strike' }],
   sylvie: [{ kind: 'spend-at', gauge: 'aim', min: 3, skill: 'starfall-arrow' }],
 };

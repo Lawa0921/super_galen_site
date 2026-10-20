@@ -652,7 +652,8 @@ describe('old node ids (plan 8c)', () => {
       const { branch, tier } = NODES[id];
       const nodes = TREES[owner].branches[branch].nodes;
       for (let t = 0; t <= tier; t++) {
-        const below = () => nodes.slice(0, t).reduce((n, x) => n + (tree[x.id] ?? 0), 0);
+        // Branch 0's free first rank of its tier-0 node does not count toward a gate.
+        const below = () => nodes.slice(0, t).reduce((n, x) => n + (tree[x.id] ?? 0), 0) - (branch === 0 && t > 0 ? 1 : 0);
         for (let u = 0; u < t && below() < TIER_GATE[t]; u++) tree[nodes[u].id] = nodes[u].maxRank;
         tree[nodes[t].id] = Math.max(tree[nodes[t].id] ?? 0, 1);
       }
@@ -662,6 +663,13 @@ describe('old node ids (plan 8c)', () => {
 
   it('a save that holds old node ids loads with them renamed', () => {
     const g = newGame();
+    // Every rename plan 8c made, by name.
+    expect(LEGACY_NODE_IDS).toEqual({
+      'sacred-sake': 'purify-ward', 'thunder-thrust': 'exorcism-thrust', blessing: 'moon-recall', sanctuary: 'full-moon-night',
+      'triple-slash': 'pickpocket', 'shadow-flurry': 'jackpot', 'venom-edge': 'appraise',
+      'snare-shot': 'sunder-arrow', 'fire-arrow': 'scatter-shot', 'storm-volley': 'deluge-volley',
+      'guardian-roar': 'cover', fortress: 'atoning-flame', 'veil-dance': 'clap', sirocco: 'mirage-step',
+    });
     const pairs = Object.entries(LEGACY_NODE_IDS);
     const owners = [...new Set(pairs.map(([, now]) => NODES[now].owner))];
     for (const owner of owners) {

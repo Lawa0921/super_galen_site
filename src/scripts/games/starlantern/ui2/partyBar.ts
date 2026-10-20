@@ -170,10 +170,21 @@ export class PartyBar {
         el('span', { class: 'slx-pm-tp' }), bar(0, 1, 'slx-bar-tp'), bar(0, 1, 'slx-bar-limit'), el('span', { class: 'slx-pm-ail' }));
     }
     const [name, num, hp, tpNum, tp, limit, ail] = [...p.body.children] as HTMLElement[];
-    // One line: her mechanic's words first, then the ailments, the most severe first, the rest folded into +N.
-    const mech = m.mech ?? [];
-    const mechW = mech.reduce((w, x) => w + ailWordWidth(x.text) + 1, 0);
-    const { shown, more } = fitChips(m.ailments ?? [], AIL_ROW_W - mechW, ailWordWidth, 1);
+    // One line: her mechanic's words first, then the ailments, the most severe first, the rest folded into +N. Words
+    // that do not fit (Scarlet's three) fold into the +N too, with every ailment, after the first.
+    const all = m.mech ?? [];
+    const widthOf = (k: number) => all.slice(0, k).reduce((w, x) => w + ailWordWidth(x.text) + 1, 0);
+    let mech = all, shown: ReturnType<typeof fitChips>['shown'], more: number;
+    if (widthOf(all.length) - 1 <= AIL_ROW_W || all.length < 2) {
+      ({ shown, more } = fitChips(m.ailments ?? [], AIL_ROW_W - widthOf(all.length), ailWordWidth, 1));
+    } else {
+      const folded = (k: number) => all.length - k + (m.ailments?.length ?? 0);
+      let k = all.length - 1;
+      while (k > 1 && widthOf(k) + ailWordWidth(T.ailmentMore(folded(k))) > AIL_ROW_W) k--;
+      mech = all.slice(0, k);
+      shown = [];
+      more = folded(k);
+    }
     ail.replaceChildren(...mech.map((x) => el('span', { class: `slx-mech slx-mech-${x.tone}`, text: x.text })),
       ...shown.map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })),
       ...(more ? [el('span', { class: 'slx-ail slx-ail-more', text: T.ailmentMore(more) })] : []));

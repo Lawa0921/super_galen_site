@@ -278,11 +278,11 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
   });
 
   it("a rank scales the skill's primary effect: power, or a pure buff's percent; never a debuff riding on damage", () => {
-    const roar0 = SKILLS['guardian-roar'];
-    expect(skillFor(caster({ 'guardian-roar': 1 }), 'guardian-roar')).toBe(roar0);
+    const war0 = SKILLS['war-dance'];
+    expect(skillFor(caster({ 'war-dance': 1 }), 'war-dance')).toBe(war0);
     for (const r of [1, 2, 3]) {
-      expect(fx(caster({ 'guardian-roar': r }), 'guardian-roar'), `roar ${r}`)
-        .toEqual(roar0.effects.map((e) => (e.kind === 'buff' ? { ...e, pct: pw(e.pct, ACTIVE_RANK_PCT[r - 1]) } : e)));
+      expect(fx(caster({ 'war-dance': r }), 'war-dance'), `war dance ${r}`)
+        .toEqual(war0.effects.map((e) => (e.kind === 'buff' ? { ...e, pct: pw(e.pct, ACTIVE_RANK_PCT[r - 1]) } : e)));
     }
     const bind0 = SKILLS['frost-bind'].effects;
     for (const r of [1, 2, 3]) {
@@ -297,10 +297,9 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
     expect(smoke.pct).toBe(pw(smoke0.pct, mod('liz-smoke-up', 2).buffPct!));                                    // 「加深煙霧彈的攻擊削弱」
     const bash = fx(caster({ 'shield-bash': 1, 'scarlet-bash-up': 3 }), 'shield-bash');
     const bash0 = SKILLS['shield-bash'].effects;
-    expect(bash).toEqual([
-      { ...bash0[0], power: pw((bash0[0] as { power: number }).power, mod('scarlet-bash-up', 3).powerPct!) },
-      { ...bash0[1], pct: pw((bash0[1] as { pct: number }).pct, mod('scarlet-bash-up', 3).buffPct!) },   // 「並加深攻擊削弱」
-    ]);
+    // Plan 8c Task 5: the bash challenges instead of weakening, so its node scales the power alone.
+    expect(mod('scarlet-bash-up', 3).buffPct).toBeUndefined();
+    expect(bash).toEqual([{ ...bash0[0], power: pw((bash0[0] as { power: number }).power, mod('scarlet-bash-up', 3).powerPct!) }, { kind: 'challenge' }]);
   });
 
   it('skillFor casts exactly what treeMods describes, then the worn powers (one path)', () => {
@@ -340,7 +339,7 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
     expect(treeMods({ turret: 2, 'twin-turret': 1, 'bobby-turret-up': 1 }, 'turret'))
       .toEqual([{ powerPct: ACTIVE_RANK_PCT[1] }, stackMods([mod('bobby-turret-up', 1), mod('twin-turret', 1)])]);
     expect(treeMods({ turret: 1, 'twin-turret': 1 }, 'turret')).toEqual([mod('twin-turret', 1)]);
-    expect(treeMods({ 'guardian-roar': 2 }, 'guardian-roar')).toEqual([{ buffPct: ACTIVE_RANK_PCT[1] }]);
+    expect(treeMods({ 'war-dance': 2 }, 'war-dance')).toEqual([{ buffPct: ACTIVE_RANK_PCT[1] }]);
     expect(treeMods({ turret: 1 }, 'turret')).toEqual([]);
     expect(treeMods({}, 'no-such-skill')).toEqual([]);
   });

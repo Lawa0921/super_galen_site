@@ -503,20 +503,20 @@ describe('StatusScene', () => {
   });
 
   it('tree nodes and the skills tab show the skill icon when published', () => {
-    const has = (u: string) => u === art.icon('guardian-roar');
-    const { root, s } = setup('scarlet', { has }, (g) => { g.state.party.roster.scarlet.tree = { ...g.state.party.roster.scarlet.tree, 'guardian-roar': 1 }; });
+    const has = (u: string) => u === art.icon('blaze-ring');
+    const { root, s } = setup('scarlet', { has }, (g) => { g.state.party.roster.scarlet.tree = { ...g.state.party.roster.scarlet.tree, 'blaze-ring': 1 }; });
     s.onAction('right'); s.onAction('right');                          // 技能
     const icons = [...root.querySelectorAll<HTMLImageElement>('.slx-tab-skills img.slx-skill-ico')];
-    expect(icons.map((i) => i.closest('[data-skill]')!.getAttribute('data-skill'))).toEqual(['guardian-roar']);
-    expect(icons[0].getAttribute('src')).toBe(art.icon('guardian-roar'));
+    expect(icons.map((i) => i.closest('[data-skill]')!.getAttribute('data-skill'))).toEqual(['blaze-ring']);
+    expect(icons[0].getAttribute('src')).toBe(art.icon('blaze-ring'));
     expect(icons[0].getAttribute('alt')).toBe('');
     expect(icons[0].nextElementSibling!.classList.contains('slx-skill-head')).toBe(true);
     s.onAction('right');                                               // 技能樹
     const withIcon = [...root.querySelectorAll('.slx-tree-node')].filter((n) => n.querySelector('img.slx-skill-ico')).map((n) => n.getAttribute('data-node'));
     // The skill's own node, and the node that changes it (a mod node shows the skill it modifies).
-    expect(withIcon).toEqual(TREES.scarlet.branches.flatMap((b) => b.nodes).filter((n) => n.skill === 'guardian-roar').map((n) => n.id));
-    expect(withIcon).toContain('scarlet-roar-up');
-    expect(root.querySelector('.slx-tree-node[data-node=guardian-roar] img')!.getAttribute('src')).toBe(art.icon('guardian-roar'));
+    expect(withIcon).toEqual(TREES.scarlet.branches.flatMap((b) => b.nodes).filter((n) => n.skill === 'blaze-ring').map((n) => n.id));
+    expect(withIcon).toContain('scarlet-ring-up');
+    expect(root.querySelector('.slx-tree-node[data-node=blaze-ring] img')!.getAttribute('src')).toBe(art.icon('blaze-ring'));
   });
 
   it('without art no skill shows an icon', () => {

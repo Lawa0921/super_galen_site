@@ -142,7 +142,7 @@ describe('skill trees', () => {
     for (const n of allNodes().filter((x) => x.kind === 'active' && x.maxRank > 1)) {
       const kinds = SKILLS[n.skill].effects.map((e) => e.kind);
       // Plan 8c: a skill with nothing to scale costs 1 TP less a rank (so it needs TP to spare), or lasts longer a rank.
-      const scales = kinds.some((k) => ['damage', 'heal', 'buff', 'turret', 'barrier'].includes(k));
+      const scales = kinds.some((k) => ['damage', 'heal', 'buff', 'turret', 'barrier', 'gauge'].includes(k));
       expect(scales || SKILLS[n.skill].tp > n.maxRank || n.rank === 'turns', n.id).toBe(true);
     }
   });

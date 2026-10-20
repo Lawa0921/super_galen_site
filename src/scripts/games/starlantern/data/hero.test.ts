@@ -187,9 +187,13 @@ describe('the hero never outdoes a specialist', () => {
     expect(peak('hero', revives)).toBe(0);
   });
 
-  it("the hero's guard is at most HERO_PEAK_SHARE of Scarlet's, self and allies", () => {
+  it("the hero's guard is at most HERO_PEAK_SHARE of Scarlet's for himself, and of Chizuru's guard barrier for the party", () => {
     guarded(peak('hero', defBuff('self')), peak('scarlet', defBuff('self')), 'self guard');
-    guarded(peak('hero', defBuff('allies')), peak('scarlet', defBuff('allies')), 'team guard');
+    // Plan 8c Task 5: Scarlet guards the party by taking its blows (代受), with no team buff left; the party's defence is
+    // Chizuru's guard barrier now, the same percent on every member.
+    const guardBarrier: Measure = (s) => s.effects.flatMap((e) => (e.kind === 'barrier' && e.barrier === 'guard' ? [e.power] : []));
+    expect(peak('scarlet', defBuff('allies')), 'Scarlet has no team buff').toBe(0);
+    guarded(peak('hero', defBuff('allies')), peak('chizuru', guardBarrier), 'team guard');
   });
 
   it("the hero's spells are at most HERO_PEAK_SHARE of Noel's, single and all", () => {

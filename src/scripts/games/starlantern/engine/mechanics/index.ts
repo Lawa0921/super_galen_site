@@ -17,15 +17,17 @@ import { barrier } from './barrier';
 import { moon } from './moon';
 import { coins } from './coins';
 import { aim } from './aim';
+import { embers } from './embers';
+import { beat } from './beat';
 
 /** A mechanic's colour on the battle screen (`$slx-mech` in the stylesheet, MECH_FILL for the Pixi picture). */
 /** `plain`: a moment no mechanic claims, in the ink colour. */
-export type MechTone = 'heat' | 'expose' | 'mark' | 'veil' | 'ward' | 'purify' | 'moon' | 'coins' | 'aim' | 'plain';
+export type MechTone = 'heat' | 'expose' | 'mark' | 'veil' | 'ward' | 'purify' | 'moon' | 'coins' | 'aim' | 'embers' | 'beat' | 'plain';
 /** A mechanic's word on the battle screen: 「熱度3」, 「暗記」. */
 export interface MechWord { tone: MechTone; text: string }
 /** A mechanic's moment, popped over the member and logged: Noel's overload, Rin's 還有。. */
-/** `no-barrier`: the great barrier cast with no barrier up. */
-export type MechCue = 'overload' | 'again' | 'no-barrier';
+/** `no-barrier`: the great barrier cast with no barrier up; `counter`: Scarlet's 贖火; `misstep`, `finale`: Safira's beat. */
+export type MechCue = 'overload' | 'again' | 'no-barrier' | 'counter' | 'misstep' | 'finale';
 /** What an action cast: a skill (as its mechanics rewrote it) or an ultimate that fired. */
 export type CastDef = SkillDef | UltimateDef;
 
@@ -46,6 +48,8 @@ export interface MechModule {
   watch?(s: BattleState, c: Combatant): unknown;
   /** After a party member's action (and `after`): one more action now, or null. It logs its own moment. */
   extraAction?(s: BattleState, c: Combatant, act: Action, ctx: EffectContext, seen: unknown): Action | null;
+  /** After a foe's action; `from` is where its events start in the log (Scarlet's 贖火 answers a blow on her). */
+  afterFoe?(s: BattleState, foe: Combatant, ctx: EffectContext, from: number): void;
   /** At the round's end, before any tick (the purifying barrier heals and cures here). */
   beforeTicks?(s: BattleState, ctx: EffectContext, rng: Rng): void;
   /** At the round's end, after every tick: countdowns, clean-ups. */
@@ -62,7 +66,7 @@ export interface MechModule {
 
 /** In hook order. Read lazily: the modules and the engine import each other, so the list is built on first use. */
 let MODULES_CACHE: MechModule[] | null = null;
-const modules = (): MechModule[] => (MODULES_CACHE ??= [heat, mark, barrier, moon, coins, aim]);
+const modules = (): MechModule[] => (MODULES_CACHE ??= [heat, mark, barrier, moon, coins, aim, embers, beat]);
 
 /** Each character's mechanic as a fight opens it; a member without an entry has none. */
 export const MECH_OF: Partial<Record<CharacterId, () => MechState>> = {
@@ -71,6 +75,8 @@ export const MECH_OF: Partial<Record<CharacterId, () => MechState>> = {
   chizuru: () => ({ kind: 'barrier' }),
   liz: () => ({ kind: 'coins', coins: 0 }),
   sylvie: () => ({ kind: 'aim', target: null, stacks: 0 }),
+  scarlet: () => ({ kind: 'embers', embers: 0 }),
+  safira: () => ({ kind: 'beat', beat: 0, last: null }),
 };
 
 /** Every member with an entry in MECH_OF gets a fresh mechanic; nothing carries over from an earlier fight. */
@@ -125,6 +131,11 @@ export function whyNot(s: BattleState, c: Combatant, def: SkillDef): string | nu
     if (why) return why;
   }
   return null;
+}
+
+/** After each foe's action. */
+export function afterFoe(s: BattleState, foe: Combatant, ctx: EffectContext, from: number): void {
+  for (const m of modules()) m.afterFoe?.(s, foe, ctx, from);
 }
 
 /** At the start of endOfRound, before any tick. */

@@ -70,6 +70,9 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
       case 'veil': return { ...e, turns: lasting(e.turns) };
       case 'barrier': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns) };
       case 'aim-lock': return { ...e, turns: lasting(e.turns) };
+      case 'cover': return { ...e, turns: lasting(e.turns) };
+      case 'riposte': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns) };
+      case 'gauge': return { ...e, amount: pctOf(e.amount, power) };
       // The moon's hold counts as its rounds (moon-recall's ranks hold the phase it steps back to).
       case 'moon': return mod.turns !== undefined || mod.turnsDelta !== undefined ? { ...e, hold: lasting(e.hold ?? 0) } : { ...e };
       case 'inflict': return { ...e, chance: e.status === 'poison' ? mod.chance ?? e.chance : e.chance };
@@ -100,6 +103,7 @@ const NAMED_NUMBERS = (e: Effect): [string, (v: number) => string][] => {
   if (e.kind === 'barrier') out.push(['power', (v) => `${v}%`]);
   if (e.kind === 'inflict') out.push(['chance', (v) => `${Math.round(v * 100)}%`]);
   if (e.kind === 'damage') out.push(['hits', (v) => `${v} 段`], ['hits', (v) => `${v} 次`]);
+  if (e.kind === 'gauge') out.push(['amount', (v) => `+${v}`]);
   return out;
 };
 
@@ -278,6 +282,26 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     case 'aim-lock': {
       if (!target.alive || actor.mech?.kind !== 'aim') return;
       actor.mech = { kind: 'aim', target: target.key, stacks: AIM.cap, lock: eff.turns };
+      return;
+    }
+    case 'cover': {
+      if (!target.alive || target === actor) return;
+      actor.cover = { ally: target.key, turns: eff.turns };
+      return;
+    }
+    case 'riposte': {
+      if (target !== actor) return;
+      actor.riposte = { power: eff.power, turns: eff.turns };
+      return;
+    }
+    case 'challenge': {
+      if (!target.alive) return;
+      target.challenged = { by: actor.key, round: (ctx.battle?.round ?? 0) + 1 };
+      return;
+    }
+    case 'gauge': {
+      if (!target.alive || target.side !== 'party') return;
+      target.limit = Math.min(100, target.limit + eff.amount);
       return;
     }
     case 'moon': {

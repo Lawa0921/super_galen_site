@@ -14,7 +14,11 @@ export type PolicyRule =
   | { kind: 'ensure-device'; skills: string[] }
   /** `big`: only a boss or an elite is worth a mark; `below`: only once its HP is under this percent of its max. */
   | { kind: 'ensure-mark'; skill: string; big?: true; below?: number }
-  | { kind: 'alternate' }
+  /**
+   * Safira's beat: her strongest damage skill unlike her last move; failing that, with `repeat`, the strongest again (the
+   * beat is missed, but a skill still lands); else an attack.
+   */
+  | { kind: 'alternate'; repeat?: true }
   | { kind: 'spend-at'; gauge: MechGauge; min: number; skill: string }
   | { kind: 'heal-below'; pct: number }
   | { kind: 'strongest-damage' };
@@ -72,8 +76,11 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
       case 'alternate': {
         const m = c.mech;
         if (m?.kind !== 'beat') break;
-        const pick = byPower(usable, power).find((d) => d.id !== m.last);
-        return { action: pick ? { kind: 'skill', skill: pick.id, target: first } : { kind: 'attack', target: first }, hold };
+        const ranked = byPower(usable, power);
+        const pick = ranked.find((d) => d.id !== m.last);
+        if (pick) return cast(pick.id, first);
+        if (rule.repeat && ranked[0]) return cast(ranked[0].id, first);
+        return { action: { kind: 'attack', target: first }, hold };
       }
       case 'spend-at': {
         const g = mechGauge(c, rule.gauge);

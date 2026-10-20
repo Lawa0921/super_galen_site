@@ -140,14 +140,15 @@ export const NO_ICON_YET_IDS: ReadonlySet<string> = new Set([
   // plan 8c: skills that replaced others (their icons are step ⑨'s)
   'purify-ward', 'exorcism-thrust', 'moon-recall', 'full-moon-night',
   'pickpocket', 'jackpot', 'appraise', 'sunder-arrow', 'scatter-shot', 'deluge-volley',
+  'cover', 'atoning-flame', 'clap', 'mirage-step',
   // plan 5b: the skill-tree skills have no icon yet
   'flame-wave', 'inferno', 'frost-bind', 'blizzard', 'judgement',
   'spiral-spear', 'thousand-spear', 'great-barrier', 'heaven-spear',
   'smoke-bomb', 'fortune-strike', 'quickstep', 'phantom-step',
   'heart-shot', 'starfall-arrow', 'hunters-mark',
-  'guardian-roar', 'unbreakable', 'blaze-ring', 'crimson-end', 'shield-bash', 'fortress',
+  'unbreakable', 'blaze-ring', 'crimson-end', 'shield-bash',
   'moon-rain', 'full-moon', 'moon-arrow', 'lunar-eclipse',
-  'sand-cyclone', 'thousand-shadows', 'veil-dance', 'desert-festival', 'shadow-step', 'sirocco',
+  'sand-cyclone', 'thousand-shadows', 'desert-festival', 'shadow-step',
   'cannon', 'repair-kit', 'overclock', 'emergency-repair', 'shock-mine', 'tesla-coil',
   // plan 6a: Rin's skills have no icon yet
   'rin-needle', 'rin-fan', 'rin-venom-needle', 'rin-storm', 'rin-backstab', 'rin-veil', 'rin-shadowless', 'rin-mark', 'rin-execute', 'rin-deathblow',

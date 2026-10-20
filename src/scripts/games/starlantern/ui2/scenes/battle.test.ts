@@ -83,7 +83,8 @@ describe('BattleScene', () => {
     const row = root.querySelector('.slx-partybar [data-key=chizuru] .slx-pm-ail')!;
     expect(row.textContent).toContain('中毒');
     expect(row.textContent).toContain('灼燒2');
-    expect(root.querySelector('.slx-partybar [data-key=scarlet] .slx-pm-ail')!.textContent).toBe('');
+    // Scarlet's row holds her embers only: no ailment.
+    expect(root.querySelector('.slx-partybar [data-key=scarlet] .slx-pm-ail')!.textContent).toBe('餘燼0');
   });
 
   it('the words leave the bar once the fight is over', async () => {
@@ -954,7 +955,8 @@ describe('BattleScene mechanics (plan 8c)', () => {
     }, { stage: stage as never });
     const row = root.querySelector('.slx-partybar [data-key=noel] .slx-pm-ail')!;
     expect(row.querySelector('.slx-mech-heat')!.textContent).toBe('熱度3');
-    expect(root.querySelector('.slx-partybar [data-key=scarlet] .slx-pm-ail')!.textContent).toBe('');
+    expect(root.querySelector('.slx-partybar [data-key=scarlet] .slx-mech-embers')!.textContent).toBe('餘燼0');
+    expect(root.querySelector('.slx-partybar [data-key=selene] .slx-pm-ail')!.textContent).toBe('');
     expect(showAilments.mock.calls.at(-1)![1]).toMatchObject({ e0: [{ tone: 'expose', text: '弱點2' }] });
   });
 

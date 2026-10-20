@@ -13,6 +13,9 @@ import type { Combatant } from './combatant';
  */
 export const AIM = { cap: 3, dmgPct: 10, critPct: 0, consumePct: 50 } as const;
 
+/** Scarlet's embers (spec §8.5, engine/mechanics/embers.ts): the share of HP lost kept, and the cap, both in percent. */
+export const EMBER = { sharePct: 50, capPct: 50 } as const;
+
 /** The gauges a `spend-at` rule can read. */
 export type MechGauge = 'heat' | 'coins' | 'aim' | 'embers';
 

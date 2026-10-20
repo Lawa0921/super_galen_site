@@ -177,7 +177,12 @@ export const T = {
     /** Why a skill is greyed in the menu: its resource is empty. */
     noCoins: '沒有銅板',
     noBarrier: '沒有結界',
-    cue: { overload: '暴走！', again: '還有。', noBarrier: '沒有結界' },
+    /** Scarlet's embers, the ally she covers, her 贖火's rounds; Safira's beat (the fourth is the finale's). */
+    embers: (n: number) => `餘燼${n}`,
+    cover: (who: string) => `代受：${who}`,
+    riposte: (n: number) => `贖火${n}`,
+    beat: (n: number) => (n >= 4 ? `拍子${n}・終幕` : `拍子${n}`),
+    cue: { overload: '暴走！', again: '還有。', noBarrier: '沒有結界', counter: '贖火', misstep: '這一步踩空了呀。', finale: '終幕' },
   },
   log: {
     act: (who: string, label: string) => `${who}：${label}`,
@@ -200,7 +205,9 @@ export const T = {
     poison: (who: string, n: number) => `${who} 因毒受到 ${n} 傷害`,
     dot: (who: string, s: 'burn' | 'bleed', n: number) => `${who} 因${s === 'burn' ? '灼燒' : '流血'}受到 ${n} 傷害`,
     shield: (who: string, n: number) => `${who}的護盾擋下了 ${n} 傷害`,
-    mech: (who: string, cue: 'overload' | 'again' | 'no-barrier', n?: number) => (cue === 'overload' ? `${who}的魔力暴走了！${n ? `反噬 ${n}` : ''}` : cue === 'again' ? `${who}：還有。` : `${who}：沒有結界可以加強`),
+    mech: (who: string, cue: 'overload' | 'again' | 'no-barrier' | 'counter' | 'misstep' | 'finale', n?: number) => (cue === 'overload' ? `${who}的魔力暴走了！${n ? `反噬 ${n}` : ''}`
+      : cue === 'again' ? `${who}：還有。` : cue === 'no-barrier' ? `${who}：沒有結界可以加強` : cue === 'counter' ? `${who}以贖火反擊！`
+      : cue === 'misstep' ? `${who}：這一步踩空了呀。` : `${who}的終幕！`),
     frozen: (who: string) => `${who} 被凍住了，動彈不得`,
     miss: (who: string) => `${who} 閃過了攻擊`,
     crit: '（暴擊）',

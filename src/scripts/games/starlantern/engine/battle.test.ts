@@ -20,7 +20,8 @@ import { mulberry32 } from './rng';
 import { ABYSS } from '../data/hero';
 
 // Re-captured (CAPTURE=1) in plan 6a Task 19c for its ENEMY_POWER retune (amount 0.3, amount2 0.26, ramp 0.002). Task 20 then moved the ramp to 0.0012; the replays below did not change.
-const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",2,4209479467],"0:2":["win",2,353535899],"0:3":["win",2,2306201561],"1:1":["win",2,480227065],"1:2":["win",2,2849884578],"1:3":["win",3,661416264],"2:1":["win",1,2825205314],"2:2":["win",1,624891372],"2:3":["win",1,2519986409],"3:1":["win",2,2822226627],"3:2":["win",2,1607193675],"3:3":["win",2,3134430678]};
+// Re-captured in plan 8c Task 5 for Scarlet's mechanic (embers, cover, 贖火, 盾擊's challenge): 1:1, 1:2, 1:3 and 3:2 moved.
+const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",2,4209479467],"0:2":["win",2,353535899],"0:3":["win",2,2306201561],"1:1":["win",2,1458626261],"1:2":["win",2,359523701],"1:3":["win",2,50483140],"2:1":["win",1,2825205314],"2:2":["win",1,624891372],"2:3":["win",1,2519986409],"3:1":["win",2,2822226627],"3:2":["win",2,1809277650],"3:3":["win",2,3134430678]};
 const rng = constRng(0.5); // enemies never use skills (all chances < 0.5), variance 1.0
 const P = (key: string, over = {}) => makeCombatant({ key, side: 'party', ...over });
 const E = (key: string, over = {}) => makeCombatant({ key, side: 'enemy', ...over });
@@ -1097,5 +1098,11 @@ describe('character mechanics (plan 8c)', () => {
     resolveRound(t1, { liz: { kind: 'attack', target: 'e0' }, sylvie: { kind: 'attack', target: 'e0' } }, mulberry32(1));
     expect(Object.fromEntries(two().party.map((c) => [c.key, c.mech]))).toEqual(Object.fromEntries(t1.party.map((c) => [c.key, c.mech])));
     for (const c of t1.enemies) expect([c.appraised, c.delay]).toEqual([undefined, undefined]);
+    // Scarlet and Safira (Task 5): no embers, no beat, nothing standing in, at every fight's start.
+    const third = fullParty(['hero', 'scarlet', 'safira', 'chizuru', 'selene']);
+    const t3 = createBattle({ party: third, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    expect(t3.party.find((c) => c.key === 'scarlet')?.mech).toEqual({ kind: 'embers', embers: 0 });
+    expect(t3.party.find((c) => c.key === 'safira')?.mech).toEqual({ kind: 'beat', beat: 0, last: null });
+    for (const c of t3.party) expect([c.cover, c.riposte], c.key).toEqual([undefined, undefined]);
   });
 });

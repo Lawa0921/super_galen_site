@@ -13,12 +13,13 @@ import { pick, type Rng } from './rng';
 import { abyssPct, bossPartyScale, deepPower, empower, enemyLevelAt, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
-import { afterAction, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
+import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
 import { credit, lossOf, type Ledger } from './ledger';
 import type { Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
 import { COINS } from './mechanics/coins';
+import { payHp } from './mechanics/embers';
 import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
@@ -273,10 +274,36 @@ function chooseEnemyActions(s: BattleState, rng: Rng): Map<string, EnemyAction> 
     const skills = enemyDef(s, e)?.skills ?? [];
     const index = skills.findIndex((sk) => rng() < sk.chance);
     const melee = index >= 0 ? skillIsMelee(skills[index].effects) : e.melee;
-    const target = pickTarget(foePool(s, e, melee), undefined, rng)?.key;
+    let target = pickTarget(foePool(s, e, melee), undefined, rng)?.key;
+    // A foe 盾擊 challenged for the round being chosen shows her as its target (the draw above is made all the same).
+    const ch = e.challenged;
+    const single = index < 0 || skills[index].target === 'enemy';
+    if (single && ch && (ch.round === s.round || ch.round === s.round + 1) && s.party.some((c) => c.key === ch.by && c.alive)) target = ch.by;
     out.set(e.key, index >= 0 ? { kind: 'enemy-skill', index, target } : { kind: 'attack', target });
   }
   return out;
+}
+
+/**
+ * Where a foe's single blow must go instead of its target (spec §10.3, plan 8c ruling 19), and the others it could have
+ * hit instead (for the ledger): a taunt first (its pool: the others in reach), then a challenge (Scarlet's 盾擊, for this
+ * round, while the challenger stands; the same pool), then a cover (someone standing in for the target; the pool is the
+ * target). Null for an area attack, or when nothing turns the blow. Draws nothing.
+ */
+export function forcedTarget(s: BattleState, enemy: Combatant, act: EnemyAction): { to: Combatant; pool: Combatant[] } | null {
+  const sk = act.kind === 'enemy-skill' ? enemyDef(s, enemy)?.skills[act.index] : undefined;
+  if (!(act.kind === 'attack' || sk?.target === 'enemy')) return null;
+  const melee = act.kind === 'attack' ? enemy.melee : skillIsMelee(sk?.effects ?? []);
+  const others = (who: Combatant) => reachable(s.party, melee).filter((c) => c !== who);
+  const taunter = living(s.party).find((c) => c.taunt > 0);
+  if (taunter) return { to: taunter, pool: others(taunter) };
+  const ch = enemy.challenged;
+  const by = ch && ch.round === s.round ? s.party.find((c) => c.key === ch.by && c.alive) : undefined;
+  if (by) return { to: by, pool: others(by) };
+  const meant = s.party.find((c) => c.key === act.target && c.alive);
+  const cover = meant ? living(s.party).find((c) => c !== meant && c.cover?.ally === meant.key) : undefined;
+  if (meant && cover) return { to: cover, pool: [meant] };
+  return null;
 }
 
 function checkOutcome(s: BattleState): boolean {
@@ -292,18 +319,15 @@ function checkOutcome(s: BattleState): boolean {
 function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ctx: EffectContext, rng: Rng): CastDef | null {
   delete ctx.lastHit;   // burn and bleed ride only on a hit of this action
   if (actor.side === 'enemy') {
+    // A single blow goes where a taunt, a challenge or a cover sends it (forcedTarget); the ledger credits the one it
+    // went to with what the others in `pool` would have lost (plan 8c rulings 8, 19). An area attack follows a taunt only,
+    // centred on the taunter. Reading the grid draws nothing.
+    const forced = forcedTarget(s, actor, act as EnemyAction);
     const taunter = living(s.party).find((c) => c.taunt > 0);
-    if (taunter) {
-      // The ledger credits the taunter with the average loss over the others this foe could reach, for a single hit only
-      // and whatever the foe first meant (plan 8c ruling 8). Reading the grid draws nothing.
-      const sk = act.kind === 'enemy-skill' ? enemyDef(s, actor)?.skills[act.index] : undefined;
-      const single = act.kind === 'attack' || sk?.target === 'enemy';
-      if (ctx.ledger && single) {
-        const melee = act.kind === 'attack' ? actor.melee : skillIsMelee(sk?.effects ?? []);
-        ctx.redirect = { pool: reachable(s.party, melee).filter((c) => c !== taunter) };
-      }
-      act = { ...act, target: taunter.key } as EnemyAction;
-    }
+    if (forced) {
+      if (ctx.ledger) ctx.redirect = { pool: forced.pool };
+      act = { ...act, target: forced.to.key } as EnemyAction;
+    } else if (taunter) act = { ...act, target: taunter.key } as EnemyAction;
   }
   const physical = (t: Combatant) =>
     applyEffect(actor, t, { kind: 'damage', power: 100, element: 'phys', scale: actor.attackScale ?? 'atk', melee: actor.melee }, ctx);
@@ -335,7 +359,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       const cost = castCost(s, actor, act.skill);
       if (actor.tp < cost) { s.log.push({ type: 'no-tp', actor: actor.key }); return null; }
       actor.tp -= cost;
-      if (def.hpCost) actor.hp = Math.max(1, actor.hp - Math.floor(actor.max.hp * def.hpCost));
+      payHp(actor, def);
       payMech(s, actor, def, ctx);
       s.log.push({ type: 'act', actor: actor.key, label: def.name });
       ctx.cast = def.id;   // a barrier remembers the skill that raised it
@@ -499,8 +523,11 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     if (act) {
       // What the mechanics need to see before the action (Rin's living marks: a felled foe leaves them at once).
       const seen = actor.side === 'party' ? watchAction(s, actor) : [];
+      const from = s.log.length;
       const def = perform(s, actor, act, ctx, rng);
       delete ctx.redirect;
+      // What the foe's action set off on the party (Scarlet's 贖火 counter); that sets off nothing more.
+      if (actor.side === 'enemy') afterFoe(s, actor, ctx, from);
       if (actor.side === 'party' && actor.alive && act.kind !== 'ultimate' && act.kind !== 'escape') actor.limit = Math.min(LIMIT_MAX, actor.limit + gaugeGain(actor, LIMIT_PER_ACTION));
       if (actor.side === 'party') {
         const own = act as Action;

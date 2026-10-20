@@ -139,8 +139,8 @@ export const TREES: Record<CharacterId, TreeDef> = {
     { name: '守護', nodes: [
       A('provoke', 1),
       M('scarlet-provoke-up', '挑釁延長', 'provoke', '延長挑釁的持續回合', turns(4, 5, 6)),
-      A('guardian-roar', 3),
-      M('scarlet-roar-up', '咆哮強化', 'guardian-roar', '提高守護咆哮的防禦提升幅度', buff(120, 140, 160)),
+      A('cover', 3),
+      M('scarlet-roar-up', '代受延長', 'cover', '延長代受的持續回合', turns(4, 5, 6)),
       A('unbreakable', 1),
     ] },
     { name: '烈焰', nodes: [
@@ -154,8 +154,8 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('iron-wall', 3),
       M('scarlet-wall-up', '鐵壁延長', 'iron-wall', '延長鐵壁的持續回合', turns(4, 5, 6)),
       A('shield-bash', 3),
-      M('scarlet-bash-up', '盾擊強化', 'shield-bash', '強化盾擊的威力，並加深攻擊削弱', deepen(115, 130, 150)),
-      A('fortress', 1),
+      M('scarlet-bash-up', '盾擊強化', 'shield-bash', '強化盾擊的威力', pct(115, 130, 150)),
+      A('atoning-flame', 1),
     ] },
   ] },
   selene: { branches: [
@@ -192,8 +192,8 @@ export const TREES: Record<CharacterId, TreeDef> = {
     { name: '戰舞', nodes: [
       A('war-dance', 3),
       M('safira-war-up', '戰舞強化', 'war-dance', '提高戰舞的攻擊提升幅度', buff(115, 130, 150)),
-      A('veil-dance', 3),
-      M('safira-veil-up', '紗舞延長', 'veil-dance', '延長紗之舞的持續回合', turns(4, 5, 6)),
+      A('clap', 3),
+      M('safira-veil-up', '戰舞延長', 'war-dance', '延長戰舞的持續回合', turns(4, 5, 6)),
       A('desert-festival', 1),
     ] },
     { name: '幻步', nodes: [
@@ -201,7 +201,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
       M('safira-mirage-up', '幻步延長', 'mirage', '延長幻步的持續回合', turns(4, 5, 6)),
       A('shadow-step', 3),
       M('safira-shadow-up', '影步強化', 'shadow-step', '強化影步斬的威力', pct(115, 130, 150)),
-      A('sirocco', 1),
+      A('mirage-step', 1),
     ] },
   ] },
   bobby: { branches: [
@@ -308,6 +308,7 @@ export const LEGACY_NODE_IDS: Readonly<Record<string, string>> = {
   'sacred-sake': 'purify-ward', 'thunder-thrust': 'exorcism-thrust', blessing: 'moon-recall', sanctuary: 'full-moon-night',
   'triple-slash': 'pickpocket', 'shadow-flurry': 'jackpot', 'venom-edge': 'appraise',
   'snare-shot': 'sunder-arrow', 'fire-arrow': 'scatter-shot', 'storm-volley': 'deluge-volley',
+  'guardian-roar': 'cover', fortress: 'atoning-flame', 'veil-dance': 'clap', sirocco: 'mirage-step',
 };
 
 export const LEGACY_LEARN_LEVEL: Record<string, number> = {

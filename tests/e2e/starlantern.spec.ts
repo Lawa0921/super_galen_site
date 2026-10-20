@@ -1519,10 +1519,11 @@ test.describe('starlantern', () => {
     }
     await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
     await expect(page.locator('.slx-partybar .slx-pm-ail:not([hidden])')).toHaveCount(5);
-    // Noel's heat and Liz's coins (plan 8c) take the first place in their rows, and one more ailment folds into +N.
+    // A mechanic's word (plan 8c: Noel's heat, Liz's coins, Scarlet's embers, Safira's beat) takes the first place in
+    // its row, and one more ailment folds into +N.
     for (const row of await page.locator('.slx-partybar .slx-pm-ail').all()) {
       const words = await row.locator('.slx-mech, .slx-ail').allTextContents();
-      const mech = ['熱度0', '銅板0'].includes(words[0]) ? [words[0]] : [];
+      const mech = /^(熱度|銅板|餘燼|拍子)\d+$/.test(words[0]) ? [words[0]] : [];
       expect(words).toEqual(mech.length ? [...mech, '流血×2', '灼燒2', '+3'] : ['流血×2', '灼燒2', '中毒', '+2']);
     }
     /** Every member word against every living enemy's HP bar (design px, mapped onto the canvas as drawn). */
@@ -1879,6 +1880,65 @@ test.describe('starlantern', () => {
     const row = page.locator('.slx-partybar [data-key=liz] .slx-pm-ail');
     const fit = await row.evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
     expect(fit.scroll).toBeLessThanOrEqual(fit.client);
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  test('embers and the beat show on the battle screen (plan 8c)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+      p.recruited = ['hero', 'scarlet', 'safira', 'chizuru', 'selene'];
+      p.grid = ['scarlet', 'safira', null, 'hero', null, null, 'chizuru', null, 'selene'];
+    });
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    // Scarlet holds 30 embers, covers Safira and has 贖火 up; Safira is on her first beat after an attack; the foes are harmless.
+    await game((g) => {
+      const scarlet = g.battle.party.find((c: any) => c.key === 'scarlet');
+      const safira = g.battle.party.find((c: any) => c.key === 'safira');
+      for (const e of g.battle.enemies.filter((x: any) => x.alive)) { e.max.hp = 9999; e.hp = 9999; e.max.atk = 1; e.max.mag = 1; }
+      scarlet.mech = { kind: 'embers', embers: 30 };
+      scarlet.cover = { ally: 'safira', turns: 3 };
+      scarlet.riposte = { power: 80, turns: 3 };
+      safira.mech = { kind: 'beat', beat: 1, last: 'attack' };
+    });
+    const round = () => game((g) => g.battle?.round ?? -1);
+    // Everyone defends through one round: Safira's defend is a new move (the beat goes to 2); cover and 贖火 count down.
+    for (let i = 0; i < 60 && (await round()) === 0; i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    await expect(page.locator('.slx-partybar [data-key=safira] .slx-pm-ail .slx-mech-beat')).toHaveText('拍子2');
+    // Her row: embers, 贖火's rounds, then whom she covers, which folds into +1 when the three do not fit the line
+    // (a 贖火 counter's cue may still be rising over her panel, in the same colour: only the row is read).
+    const scarletRow = await page.locator('.slx-partybar [data-key=scarlet] .slx-pm-ail').locator('.slx-mech, .slx-ail').allTextContents();
+    expect(scarletRow[0]).toMatch(/^餘燼\d+$/);
+    expect(scarletRow[1]).toBe('贖火2');
+    expect(['代受：莎菲拉', '+1']).toContain(scarletRow[2]);
+    expect(scarletRow).toHaveLength(3);
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/embers-beat-1280.png` }); }
+    await page.setViewportSize({ width: 844, height: 390 });
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/embers-beat-844.png` }); }
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const key of ['scarlet', 'safira']) {
+      const fit = await page.locator(`.slx-partybar [data-key=${key}] .slx-pm-ail`).evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
+      expect(fit.scroll, key).toBeLessThanOrEqual(fit.client);
+    }
     expect(w.errors).toEqual([]);
     expect(missing).toEqual([]);
   });

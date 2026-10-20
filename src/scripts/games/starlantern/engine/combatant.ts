@@ -3,7 +3,7 @@ import type { Rng } from './rng';
 import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
-import { AIM, type MechState } from './mech';
+import { AIM, EMBER, type MechState } from './mech';
 import type { MechCue } from './mechanics/index';
 import { credit, type Ledger } from './ledger';
 import { AILMENT, clearAilments, type AilmentShown, type Dot } from './ailments';
@@ -71,6 +71,12 @@ export interface Combatant {
   appraised?: string;
   /** The round this foe acts last in (Sylvie's pin). */
   delay?: number;
+  /** The ally whose single attacks this member takes, and the rounds left (Scarlet's 代受). */
+  cover?: { ally: string; turns: number };
+  /** The counter this member answers each blow with, and the rounds left (Scarlet's 贖火). */
+  riposte?: { power: number; turns: number };
+  /** Who this foe must strike, and in which round (Scarlet's 盾擊). */
+  challenged?: { by: string; round: number };
 }
 
 /** The aim stacks `a` holds on `t` (Sylvie; 0 for anyone else or any other foe). */
@@ -249,6 +255,10 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; led
     else delete t.shield;
   }
   const lost = t.undying ? Math.max(0, Math.min(amount, t.hp - 1)) : amount;
+  // Scarlet keeps half of what she really loses as embers (ticks too), up to half her max HP.
+  if (t.mech?.kind === 'embers' && t.alive && lost > 0) {
+    t.mech.embers = Math.min(Math.floor((t.max.hp * EMBER.capPct) / 100), t.mech.embers + Math.floor((Math.min(lost, t.hp) * EMBER.sharePct) / 100));
+  }
   if (t.side === 'party' && t.alive && lost > 0) t.limit = Math.min(100, t.limit + gaugeGain(t, Math.max(1, Math.floor((lost / t.max.hp) * 40))));
   t.hp = Math.max(t.undying ? 1 : 0, t.hp - amount);
   if (!opts.dot) t.sleep = 0;
@@ -265,6 +275,9 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; led
     delete t.veil;
     delete t.nextCrit;
     delete t.delay;
+    delete t.cover;
+    delete t.riposte;
+    delete t.challenged;
     clearAilments(t);
   }
   return lost;
