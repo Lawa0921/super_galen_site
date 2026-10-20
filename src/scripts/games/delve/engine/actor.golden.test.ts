@@ -112,13 +112,24 @@ function compress(types: string[]): string {
   return out.join(' ');
 }
 
-function record(): { hash: string; events: string }[] {
+/** 第二段腳本：溺水 → 死亡 → 重生（走 step 的死亡分支），再給 buff、學突進、放技能（含冷卻中再按一次） */
+function script2(g: DelveGame, t: number): void {
+  if (t === 0) { g.teleport(77, FLOOR + 3); g.breath = 0.05; g.hp = 3; }
+  if (t === 420) { g.giveBuff('bless'); g.addXp(2200); for (const id of ['b_vigor', 'b_dash'] as const) g.learnSkill(id); }
+  if (t === 430) { g.setMoveX(1); g.useSkill('dash'); }
+  if (t === 470) g.setMoveX(0);
+  if (t === 500) g.useSkill('dash');
+  if (t === 520) { g.setMoveX(-1); g.setJump(true); }
+  if (t === 540) { g.setJump(false); g.setMoveX(0); }
+}
+
+function record(sc: (g: DelveGame, t: number) => void = script): { hash: string; events: string }[] {
   const g = arena();
   g.drainEvents();
   const out: { hash: string; events: string }[] = [];
   let types: string[] = [];
   for (let t = 0; t < 600; t++) {
-    script(g, t);
+    sc(g, t);
     g.step(FIXED_DT);
     for (const e of g.drainEvents()) { types.push(e.type); if (process.env.GOLDEN_DEBUG) console.log(t, JSON.stringify(e)); }
     if ((t + 1) % 60 === 0) { out.push({ hash: hashGame(g), events: compress(types) }); types = []; }
@@ -140,11 +151,30 @@ const GOLDEN: { hash: string; events: string }[] = [
   { hash: 'ac50ccf1', events: 'sleep' },
 ];
 
+/** 第二段（溺水死亡重生 + buff + 技能）：用 PlayerActor 重構後、多 actor 之前的 HEAD（39791710）錄下 */
+const GOLDEN2: { hash: string; events: string }[] = [
+  { hash: 'be6c3bc3', events: 'discover*2 xp levelup xp bubble hurt*2 xploss death' },
+  { hash: '49b4a369', events: '' },
+  { hash: '1984d770', events: '' },
+  { hash: 'ece0cfcf', events: '' },
+  { hash: 'b4873720', events: 'respawn' },
+  { hash: '22cc3db6', events: 'discover xp splash' },
+  { hash: '3127c064', events: '' },
+  { hash: '3f52bf7f', events: 'buff xp levelup*4 learn*2 skill bubble' },
+  { hash: 'cd025422', events: 'skill splash' },
+  { hash: '0ed2fef9', events: 'splash' },
+];
+
 describe('PlayerActor golden：單機逐 tick 不變', () => {
   it('600 tick 腳本：每 60 tick 的快照 hash 與事件序列和重構前一樣', () => {
     const got = record();
     if (GOLDEN.length === 0) console.log(JSON.stringify(got, null, 2));
     expect(got).toEqual(GOLDEN);
+  });
+  it('600 tick 腳本二（溺水 → 死亡 → 重生、buff、技能）：和多 actor 之前一樣', () => {
+    const got = record(script2);
+    if (GOLDEN2.length === 0) console.log(JSON.stringify(got, null, 2));
+    expect(got).toEqual(GOLDEN2);
   });
   it('單機只有一個 actor：local === cur、pid = h', () => {
     const g = arena();
