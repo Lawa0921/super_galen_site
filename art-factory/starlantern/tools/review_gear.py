@@ -10,6 +10,7 @@ Read-only for public/ and the registry. It records the sha256 of every final it 
 """
 import datetime, html, json, re, shutil, sys
 from pathlib import Path
+import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gear_art as G  # noqa: E402
@@ -100,9 +101,9 @@ DECISIONS = {
     # Plan 5d Task 9 (G2, addendum 1 gate table): 〔未通過〕 is filled from the registry when the page is built.
     'main-gear': [
         ('60 件裝備逐件確認', ['#size', '#s1', '#s3', '#s5'], [
-            '〔未通過〕',
-            '26×26 小圖示（主體長邊 22）下，有沒有兩件看起來分不出來（例如兩種杖、兩種戒指）。'],
-         '和 G1 同一套規則：同一畫布、主體長邊統一 22，盾與鎧甲夠寬；長柄武器與弓的份量下限 0.20（細桿、細弧天生較輕），杖照一般武器 0.28。'
+            '〔未通過〕', '〔只數外緣〕', '〔多版〕', '〔未採用版〕', '〔容易搞混〕',
+            '細長武器（槍、弓）允許看起來比較瘦：它們的份量下限是 0.20，其他武器 0.28。'],
+         '和 G1 同一套規則：同一個 26×26 畫布、主體長邊統一 22，盾與鎧甲夠寬；細長武器（槍、弓）允許看起來比較瘦，杖照一般武器。'
          '請在尺寸一致性格裡一起看 G1 的 9 件與本批 60 件，份量是不是一致。'),
         ('套裝每套 4 件是否一眼看得出同一套', ['#s1', '#s4'], [], '五套新套裝（霜凍、雷鳴、腐毒、暗影、鋼鐵）各 4 件，熾焰套裝的戒指也在本批，和 G1 已核准的 3 件配成一套。'),
         ('6 種地區素材與多蘭笑臉', ['#s6', '#s8'], [], '地區素材和舊素材圖示並排；多蘭笑臉和 G1 已核准的多蘭是同一個人。'),
@@ -149,6 +150,12 @@ SECTION_NAME = {'#s1': '1. 裝備頁情境', '#s2': '2. 新舊對照', '#s3': '3
                 '#s7': '7. 技能', '#s8': '8. 鍛造屋', '#glow': '光暈改在格內', '#size': '尺寸一致性', '#frames': '七階外框與星輝',
                 '#starlit-alts': '星輝角星比較'}
 SHAPE_NAME = {'round': '圓點光', 'cross': '十字星'}
+GATE_NAME = {'sample': 'G1', 'main-gear': 'G2', 'skills': 'G3'}
+# Items the G2 visual check found easy to confuse at 1x (controller ruling 2026-10-20: shown to the user as risks, not redrawn).
+CONFUSABLES = {'main-gear': [('set-shade-feet', 'set-storm-feet'), ('set-shade-hands', 'set-storm-hands'),
+                             ('set-frost-weapon', 'set-storm-weapon', 'set-shade-weapon', 'shade-silent-blade'),
+                             ('crystal-pendant', 'frost-bloom-neck', 'set-frost-neck'), ('set-frost-ring', 'star-ring'),
+                             ('copper-ring', 'blaze-ember-ring'), ('mire-miasma-mask', 'set-mire-head')]}
 
 
 SHAPE_RISK = {'round': '1 倍下看起來是一顆圓圓的亮點，不是尖的閃光。', 'cross': '十字星只有 5 個像素，1 倍下很小，像一個細細的十字。'}
@@ -203,6 +210,17 @@ class Page:
         if not src.is_file(): return None
         shutil.copyfile(src, self.img / name); return f'img/{name}'
 
+    def display(self, src, name, width=600, colours=128):
+        """A small display copy of a raw sheet for the page only (about `width` px wide, palette PNG); the raw itself is
+        only read."""
+        from PIL import Image
+        src = Path(src)
+        if not src.is_file(): return None
+        im = Image.open(src).convert('RGB')
+        if im.width > width: im = im.resize((width, round(im.height * width / im.width)), Image.LANCZOS)
+        im.quantize(colors=colours).save(self.img / name, optimize=True)
+        return f'img/{name}'
+
     def final(self, aid):
         e = self.reg.get(aid, {})
         return self.copy(e.get('final'), f'{aid}.png')
@@ -221,7 +239,7 @@ class Page:
 
 
 def img(src, cls='px', style='', alt=''):
-    return f'<img class="{cls}" src="{src}" alt="{esc(alt)}"{f" style={chr(34)}{style}{chr(34)}" if style else ""}>' if src else ''
+    return f'<img class="{cls}" src="{src}" alt="{esc(alt)}" loading="lazy"{f" style={chr(34)}{style}{chr(34)}" if style else ""}>' if src else ''
 
 
 def qa_line(q):
@@ -244,17 +262,21 @@ def gallery(pg, js):
         for raw in G.attempts(sid):
             k = 'a' + raw.stem.rsplit('-a', 1)[1]; wd = G.WORK / sid / 'cand' / k
             magenta = raw.parent / f'{raw.stem}-magenta.png'
-            thumb = pg.copy(magenta if magenta.exists() else raw, f'raw-{sid}-{k}.png')
+            thumb = pg.display(magenta if magenta.exists() else raw, f'raw-{sid}-{k}.png')
             used = [a for a, c in chosen.items() if c == k and pg.reg.get(a, {}).get('source_id', sid) == sid]
             finals = []
             for a in aids:
                 src = pg.copy(wd / f'{a}.png', f'cand-{sid}-{a}-{k}.png')
                 if not src: continue
                 qf = wd / f'{a}.qa.json'; q = json.loads(qf.read_text(encoding='utf-8')) if qf.exists() else {}
-                finals.append(f'<figure class="c">{img(src)}<figcaption>{esc(a)}<br>{esc(qa_line(q))}</figcaption></figure>')
-            reason = rej.get(k, '')
+                verdict = '通過' if q.get('pass') else '未通過：' + '、'.join(q.get('reasons', []))
+                finals.append(f'<figure class="c">{img(src)}<figcaption>{esc(a)}<br>{esc(verdict)}'
+                              f'<details class="tech"><summary>技術細節</summary>{esc(qa_line(q))}</details></figcaption></figure>')
+            reason = rej.get(k, ''); plain = pg.reg.get(sid, {}).get('plain_reasons', {}).get(k, '')
+            why = (f'<p class=rej>{esc(plain)}</p>' if plain else '') + (
+                f'<details class="tech"><summary>{"技術細節" if plain else "採用／未採用原因"}</summary>{esc(reason)}</details>' if reason else '')
             cells.append(f'<div class="att"><h4>{esc(sid)} {k} <span class="ok">{esc("採用：" + "、".join(used) if used else "")}</span></h4>'
-                         f'{img(thumb, "raw")}{"<p class=rej>淘汰／未採用原因：" + esc(reason) + "</p>" if reason else ""}'
+                         f'<details class="rawbox"><summary>原圖（縮小到 600px 寬）</summary>{img(thumb, "raw")}</details>{why}'
                          f'<div class="finals">{"".join(finals)}</div></div>')
         rows.append(f'<section class="gal"><h3>{esc(sid)}</h3>{"".join(cells) or "<p>尚未生成。</p>"}</section>')
     return ''.join(rows)
@@ -297,7 +319,7 @@ def size_grid(pg, reg):
                 f'{img(src, "px", f"width:{W * z}px;height:{H * z}px", nm.get(part, part))}'
                 f'<span class="bbox" style="left:{x0 * z}px;top:{y0 * z}px;width:{(x1 - x0) * z}px;height:{(y1 - y0) * z}px"></span>'
                 f'<span class="target" style="left:{tx * z}px;top:{ty * z}px;width:{target * z}px;height:{target * z}px"></span></div>'
-                f'<figcaption>{esc(nm.get(part, part))}<br>長 {m["long"]}／短 {m["short"]}／份量 {m["mass"]}</figcaption></figure>')
+                f'<figcaption>{esc(nm.get(part, part))}<br>長 {m["long"]}／短 {m["short"]}／份量 {m["mass"]:.2f}</figcaption></figure>')
 
     def rows(make):
         return ''.join(f'<div class="szrow"><span class="szlab">{SLOT_NAME.get(s, s)}</span>{"".join(make(p) for p in by_slot[s])}</div>'
@@ -421,12 +443,18 @@ def main(batch='sample'):
     # 0. checklist: every part of the batch exactly once
     def status_row(job, p):
         aids = G.assets_of(job, p)
-        st = '；'.join(f'{a}：{reg.get(a, {}).get("status", "未挑選")} {reg.get(a, {}).get("chosen_attempt", "")}'
-                       f'{" sha " + shown[a][:12] if a in shown else ""}' for a in aids)
-        qa = '；'.join(qa_line(reg.get(a, {}).get('qa')) for a in aids if reg.get(a, {}).get('qa'))
+        ks = sorted({reg.get(a, {}).get('chosen_attempt') for a in aids if reg.get(a, {}).get('chosen_attempt')})
+        st = '、'.join(f'已挑選第 {k[1:]} 版' for k in ks) or '未挑選'
+        st_tech = '；'.join(f'{a}：{reg.get(a, {}).get("status", "未挑選")} {reg.get(a, {}).get("chosen_attempt", "")}'
+                            f'{" sha " + shown[a][:12] if a in shown else ""}' for a in aids)
+        qs = [reg.get(a, {}).get('qa') for a in aids if reg.get(a, {}).get('qa')]
+        verdict = ('通過' if qs and all(q.get('pass') for q in qs) else '未通過：' + '、'.join(r for q in qs for r in q.get('reasons', []))) if qs else '未挑選'
+        qa = verdict
         if any(A.qa_stale(reg.get(a, {})) and reg.get(a, {}).get('status') not in ('approved', 'published') for a in aids):
             st += '（QA 過期：在舊規格下量的，需重新 QA：gear_art.py requa）'   # an approved or published part is final, never "stale"
-        return f'<tr data-part="{esc(p)}"><td>{esc(p)}</td><td>{esc(nm.get(p, ""))}</td><td>{esc(job["id"])}</td><td>{esc(st)}</td><td class="small">{esc(qa)}</td></tr>'
+        tech = '；'.join([st_tech] + [qa_line(q) for q in qs])
+        return (f'<tr data-part="{esc(p)}"><td>{esc(p)}</td><td>{esc(nm.get(p, ""))}</td><td>{esc(job["id"])}</td><td>{esc(st)}</td>'
+                f'<td class="small">{esc(qa)}{"<details class=tech><summary>技術細節</summary>" + esc(tech) + "</details>" if tech else ""}</td></tr>')
     listed = dict.fromkeys((j['id'], p) for j in js for p in j['parts'] if p is not None)
     first = {}
     for sid, p in listed: first.setdefault(p, sid)            # a part two jobs draw (ui-starlit) is listed once, by its pick
@@ -482,12 +510,23 @@ def main(batch='sample'):
     def old_icon(b):
         return pg.pub(f'icon/{b}.png', f'old-icon-{b}.png') or pg.copy(reg[f'icon-{b}'].get('final'), f'old-icon-{b}.png')
     with_new = [b for b in old_bases if b in gear]
-    old_note = (f'本批只有{"、".join(nm.get(b, b) for b in with_new)}有新樣本；其餘舊圖示列在這裡，是為了讓你決定要不要全部換新。'
-                if with_new else '本批沒有新的底材樣本。')
+    done = {b: GATE_NAME.get(str(reg.get(f'gear-{b}', {}).get('batch', ''))[len('gear-5d-'):], '先前')
+            for b in old_bases if b not in gear and reg.get(f'gear-{b}', {}).get('status') == 'published'}
+    left = [b for b in old_bases if b not in done]
+    done_text = '、'.join(f'{nm.get(b, b)} {g} 已換' for b, g in done.items())
+    old_note = ((f'本批換掉 {len(with_new)} 件舊底材圖示（左舊右新）。' if with_new else '本批沒有新的底材樣本。')
+                + (f'{done_text}，右欄是已經發布到遊戲裡的新圖示。' if done else ''))
+    def new_cell(b):
+        if b in gear and icon.get(b):
+            return img(icon.get(b)) + img(icon.get(b), 'px', 'zoom:3') + f'<br><small>新 gear/{b}.png</small>'
+        if b in done:
+            src = pg.pub(f'gear/{b}.png', f'pub-gear-{b}.png')
+            return (img(src) + img(src, 'px', 'zoom:3') if src else '') + f'<br><small>{done[b]} 已換上（已發布）</small>'
+        return '<small>本批沒有新樣本</small>'
     old_rows = ''.join(f'<tr data-old-icon="{b}"><th>{esc(nm.get(b, b))}<br><small>{b}</small></th>'
                        f'<td class="dark">{img(o := old_icon(b))}{img(o, "px", "zoom:3")}<br><small>舊 icon/{b}.png</small></td>'
-                       f'<td class="dark">{(img(icon.get(b)) + img(icon.get(b), "px", "zoom:3") + "<br><small>新 gear/" + b + ".png</small>") if b in gear and icon.get(b) else "<small>本批沒有新樣本</small>"}</td></tr>'
-                       for b in old_bases)
+                       f'<td class="dark">{new_cell(b)}</td></tr>' for b in old_bases)
+    s2_title = f'舊底材圖示 {len(left)} 件' + (f'（{done_text}）' if done else '')
 
     # 3. large and icon from the same cell
     def pair(p):
@@ -553,18 +592,45 @@ def main(batch='sample'):
     pending = [p for j in js for p in j['parts'] if p is not None and not all(passed(reg.get(a, {})) for a in G.assets_of(j, p))]
     pending_text = (f'還沒通過：{"、".join(nm.get(p, p) for p in pending)}（這些格的圖還沒過機械檢查，頁面上顯示的是目前的一版或空格）' if pending
                     else '本批全部通過機械檢查（尺寸、去背、溢色）。')
-    live = lambda s: live_text(s, reg).replace('〔未通過〕', pending_text)
+    from PIL import Image as _Im
+    def inside_spill(a):   # spill-coloured pixels deeper than the outline band: what the edge-only rule lets through
+        e = reg.get(a, {}); f = A._final_path(e['final']) if e.get('final') else None
+        if not f or not f.is_file(): return 0
+        arr = np.asarray(_Im.open(f).convert('RGBA')); return int((A.magenta_spill(arr) & ~A.near_edge(arr[..., 3])).sum())
+    edge_only = {p: max(inside_spill(a) for a in G.assets_of(j, p)) for j in js if j['kind'] == 'gear-sheet' for p in j['parts'] if p}
+    edge_only = {p: n for p, n in edge_only.items() if n >= 3}
+    edge_text = (f'{"、".join(nm.get(p, p) for p in edge_only)} 只因新的「溢色只數外緣」規則才通過：主體內有 {min(edge_only.values())}～'
+                 f'{max(edge_only.values())} 個暗紫或暗紅的陰影像素，舊規則會把它們當成洋紅溢色。請放大看看是不是陰影。') if edge_only else ''
+    def tries(j, p):
+        k = reg.get(G.assets_of(j, p)[0], {}).get('chosen_attempt')
+        if not k: return None
+        fails = 0
+        for n in range(1, int(k[1:])):
+            d = G.WORK / j['id'] / 'cand' / f'a{n}'; qs = [d / f'{a}.qa.json' for a in G.assets_of(j, p)]
+            if all(q.is_file() for q in qs) and not all(json.loads(q.read_text(encoding='utf-8')).get('pass') for q in qs): fails += 1
+        return (fails, int(k[1:])) if fails >= 2 else None
+    many = [(p, r) for j in js if j['kind'] == 'gear-sheet' for p in j['parts'] if p and (r := tries(j, p))]
+    many_text = '；'.join(f'{nm.get(p, p)}：前 {f} 版沒過檢查，第 {k} 版才通過' for p, (f, k) in many)
+    unused = [(j, k, v) for j in js for k, v in reg.get(j['id'], {}).get('plain_reasons', {}).items()]
+    unused_text = '；'.join(f'{nm.get(next(x for x in j["parts"] if x), j["id"])}那張表的第 {k[1:]} 版：{v}' for j, k, v in unused)
+    conf = [c for c in CONFUSABLES.get(batch, []) if all(x in gear for x in c)]
+    conf_text = ('1 倍下容易搞混，要不要重畫請你決定：' + '；'.join('／'.join(nm.get(x, x) for x in c) for c in conf)) if conf else ''
+    live = lambda s: (live_text(s, reg).replace('〔未通過〕', pending_text).replace('〔只數外緣〕', edge_text).replace('〔多版〕', many_text)
+                      .replace('〔未採用版〕', unused_text).replace('〔容易搞混〕', conf_text))
     decision_list = [tuple(d) + ([],) * (5 - len(d)) for d in DECISIONS[batch]]
     sq = starlit_question(alts, fails, plain) if batch == 'sample' else None
     if sq: decision_list.insert(2, sq)   # after the frames question, before the glow
     decisions = ''.join(
         f'<li><b>{esc(q)}</b> <span class="links">看：{"、".join(f"<a href={chr(34)}{s}{chr(34)}>{SECTION_NAME[s]}</a>" for s in links)}</span>'
         f'{"<p class=why>" + esc(live(why)) + "</p>" if why else ""}'
-        f'<p class="why">已知風險：</p><ul class="risks">{"".join(f"<li>{esc(live(r))}</li>" for r in risks) or "<li>無</li>"}</ul>'
+        f'<p class="why">已知風險：</p><ul class="risks">{"".join(f"<li>{esc(live(r))}</li>" for r in risks if live(r)) or "<li>無</li>"}</ul>'
         f'{"<p class=opts>選項：" + esc("／".join(opts)) + "</p>" if opts else ""}</li>'
         for q, links, risks, why, opts in decision_list)
     example = '、'.join(f'{i} {"A" if d[4] else "可以"}' for i, d in enumerate(decision_list, 1))
-    reply = f'<p class="reply">直接回覆每題的選擇，例如：{esc(example)}</p>'
+    no_names = [nm.get(x, x) for x in ('frost-staff', 'bat-earring') if x in gear] or [nm.get(x, x) for x in gear[:2]]
+    no_example = f'{min(2, len(decision_list))} 不行：{"、".join(no_names)}重畫' if no_names else ''
+    reply = (f'<p class="reply">直接回覆每題的選擇，例如：{esc(example)}。'
+             + (f'不行的話寫出哪幾件要重畫，例如：「{esc(no_example)}」。' if no_example else '') + '</p>')
     base_new = [p for p in gear if p in G.GEAR_BASE and p not in old_bases]
     old_fact = ((f'本批只有{nm.get(with_new[0], with_new[0])}是舊底材圖示的新版' if len(with_new) == 1 else
                  f'本批有 {len(with_new)} 件是舊底材圖示的新版（{"、".join(nm.get(b, b) for b in with_new)}）') if with_new else '本批沒有舊底材圖示的新版') + (
@@ -595,7 +661,7 @@ table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overfl
 .rf{{position:absolute;inset:0;z-index:2;pointer-events:none;border:5px solid transparent;border-image-slice:5;border-image-repeat:repeat}}
 .rf.big{{border-width:10px}} .rg{{position:absolute;inset:0;z-index:0;pointer-events:none;border:5px solid transparent;border-image-slice:5;border-image-repeat:repeat}}
 .rs{{position:absolute;inset:0;z-index:3;pointer-events:none;border:5px solid transparent;border-image-slice:5;border-image-repeat:repeat}}
-.szrow{{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;padding:6px 8px;background:#191b29;margin-bottom:4px}} .szlab{{width:3em;color:#b9b4a6;font-size:12px;align-self:center}}
+.szrow{{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;padding:6px 8px;background:#191b29;margin-bottom:4px}} .szlab{{width:3em;color:#b9b4a6;font-size:12px;align-self:center}}
 .sz figcaption{{font-size:11px;max-width:120px}} .szbox{{position:relative;background:#262840}} .sz.out .szbox{{background:#5a1f2a}} .sz.out figcaption{{color:#ff9a9a}}
 .bbox{{position:absolute;box-sizing:border-box;border:1px solid #ff5a5a;pointer-events:none}} .target{{position:absolute;box-sizing:border-box;border:1px dashed #7fe6ff;pointer-events:none}}
 .close img{{outline:2px solid #ff5a5a}} .bad{{color:#ff9a9a}} .sw{{display:inline-block;width:12px;height:12px;border:1px solid #000;vertical-align:middle;margin-right:4px}} .decided{{color:#b9b4a6}} .why{{margin:4px 0}}
@@ -616,8 +682,9 @@ table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overfl
 .gal .raw{{max-width:100%;max-height:300px;display:block;border:1px solid #333}} .ok{{color:#9fd77f}} .rej{{color:#e6a07a;margin:4px 0}}
 .finals{{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}} .finals .c img{{max-width:min(200px,100%);max-height:130px;min-height:32px;image-rendering:pixelated}} .finals figcaption{{max-width:200px}}
 </style></head><body>
-<h1>星燈迷宮 計畫 5d 美術候選・批次 {esc(batch)}（qa_passed，尚未核准、未發布）</h1>
-<p class="note">本頁所有像素圖以最近鄰放大顯示。格子、外框位置、名稱與價格是 HTML 示意，不在圖片裡。登錄狀態最多到 qa_passed；核准與發布要等你在這頁確認（補遺 S4）。登錄表批次：{esc(lab)}。</p>
+<h1>星燈迷宮 裝備美術審核・{esc(GATE_NAME.get(batch, batch))}（尚未核准、未發布）</h1>
+<p class="note">本頁所有像素圖以最近鄰放大顯示。格子、外框位置、名稱與價格是頁面上的示意，不在圖片裡。這些圖要等你在這頁確認之後，才會放進遊戲。</p>
+<details class="tech"><summary>技術細節</summary>登錄狀態最多到 qa_passed；核准與發布要等使用者在這頁確認（補遺 S4）。登錄表批次：{esc(lab)}。</details>
 
 <section class="decide" id="decisions"><h2>請你決定的事</h2>{reply}<ol>{decisions}</ol>{decided}{after}</section>
 
@@ -638,7 +705,7 @@ table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overfl
 <details class="tech"><summary>技術細節</summary>光暈是 16×16、slice 5 的九宮格，inset 0。</details>
 <div class="row dark">{glow_pair or "<small>本批沒有傳說裝備。</small>"}</div>
 
-<h2 id="s2">2. 新舊對照：全部 {len(old_bases)} 件舊底材圖示 icon/&lt;id&gt;.png 與新的 gear-&lt;id&gt;</h2>
+<h2 id="s2">2. 新舊對照：{esc(s2_title)}</h2>
 <p class="note">{esc(old_note)}</p>
 <div class="scroll"><table>{old_rows or "<tr><td>沒有舊底材圖示。</td></tr>"}</table></div>
 
@@ -655,8 +722,7 @@ table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overfl
 <h2 id="s6">6. 素材：深色面板上 32／64／128px，與舊素材圖示並排</h2>
 <div class="scroll"><table>{mat_new or "<tr><td>本批沒有素材。</td></tr>"}{mat_old}</table></div>
 
-<h2 id="s7">7. 技能：同角色的新技能圖示與現有技能圖示並排</h2>
-{skill_html or "<p>本批沒有技能圖示。</p>"}
+{('<h2 id="s7">7. 技能：同角色的新技能圖示與現有技能圖示並排</h2>' + skill_html) if skills else ''}
 
 <h2 id="s8">8. 鍛造屋：場景 418×235 放大到 960×540，疊上多蘭半身像</h2>
 <div class="row">{forge_html or "<p>本批沒有鍛造屋。</p>"}</div>

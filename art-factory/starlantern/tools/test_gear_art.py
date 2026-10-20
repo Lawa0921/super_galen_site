@@ -385,7 +385,7 @@ def test_review_page_lists_every_part_of_the_batch_and_copies_only_existing_file
             assert page.count(f'data-part="{p}"') == (1 if j['batch'] == 'sample' else 0), p
     srcs = re.findall(r'src="([^"]*)"', page)
     assert srcs and all(s.startswith('img/') and (factory / 'review' / s).is_file() for s in srcs), [s for s in srcs if not (factory / 'review' / s).is_file()]
-    assert 'qa_passed，尚未核准、未發布' in page
+    assert '尚未核准、未發布' in page and 'qa_passed，' not in page               # plain title (G2 visual check)
     assert 'img/sil-blaze-heart-sword.png' in page                  # silhouette preview made in the page, not the registry
     assert Image.open(factory / 'review/img/sil-blaze-heart-sword.png').size == (28, 28)
     assert re.search(r'\.li\{\{?zoom:2;', page) and not re.search(r'\.li\{[^}]*width', page)    # shown at 2x its native 28 px
@@ -552,7 +552,7 @@ def test_sample_review_page_opens_with_the_decisions_and_shows_honest_previews(f
         assert risk in head, risk
     olds = re.findall(r'data-old-icon="([a-z-]+)"', page)
     assert len(olds) == 15 and len(set(olds)) == 15
-    assert '本批只有鐵劍有新樣本' in page
+    assert '本批換掉 1 件舊底材圖示' in page                                          # plain §2 note (G2 visual check)
     assert '>G<' not in page and '40 G' in page                                   # iron sword's real price
     assert re.search(r'\.screen\{[^}]*flex-wrap:wrap', page) and '<div class="scroll"><div class="zoom3"><div class="screen">' in page   # 3x scrolls in its own box
     # Addendum 2: the glow sits inside the slot (inset 0) under the icon; the frame and the starlit overlay go over it.
@@ -1243,3 +1243,83 @@ def test_checklist_table_stays_readable_on_a_phone(factory, review):
     assert '<div class="scroll"><table class="checklist">' in s0
     assert re.search(r'table\.checklist\{[^}]*min-width:\s*\d{3}px', css)
     assert re.search(r'table\.checklist (td|th)[^{]*\{[^}]*overflow-wrap:normal', css)
+
+
+# --- G2 visual check (2026-10-20): honest risks, plain words, a slim page -------------------------------------------------------
+def _g2_page(factory, review, extra=None):
+    """A filled main-gear registry with the old base icons as in the real registry; extra(reg) adds a scenario."""
+    real = json.loads((G.AF / 'registry.json').read_text(encoding='utf-8'))['assets']
+    reg = _fill(factory, 'main-gear')
+    for b in G.GEAR_BASE:
+        if f'icon-{b}' in real: reg.set(f'icon-{b}', **{k: real[f'icon-{b}'][k] for k in ('status', 'runtime', 'final') if k in real[f'icon-{b}']})
+    if extra: extra(reg)
+    page = review.main('main-gear').read_text(encoding='utf-8')
+    return page, page[page.index('id="decisions"'):page.index('id="s0"')]
+
+
+def test_g2_decisions_state_the_real_risks_in_plain_words(factory, review):
+    import re
+    names = review.names()
+
+    def scenario(reg):
+        # lg-noel: its picked large image carries 3 dark violet shading pixels deep inside (passes only by the edge-only rule)
+        arr = np.zeros((64, 64, 4), np.uint8); arr[8:56, 8:56] = (30, 25, 40, 255)
+        for y, x in ((30, 30), (31, 33), (34, 29)): arr[y, x, :3] = (117, 22, 63)
+        f = factory / 'work/sheet-gear-4/gear-lg-noel-large.png'; Image.fromarray(arr, 'RGBA').save(f)
+        reg.set('gear-lg-noel-large', final=str(f))
+        # lg-sylvie: picked from a4 after three failed attempts
+        for k in ('a1', 'a2', 'a3', 'a4'):
+            d = factory / f'work/sheet-gear-4/cand/{k}'; d.mkdir(parents=True, exist_ok=True)
+            for a in ('gear-lg-sylvie', 'gear-lg-sylvie-large'):
+                (d / f'{a}.qa.json').write_text(json.dumps({'pass': k == 'a4', 'reasons': [] if k == 'a4' else ['subject too light']}), encoding='utf-8')
+        for a in ('gear-lg-sylvie', 'gear-lg-sylvie-large'): reg.set(a, chosen_attempt='a4')
+        # sheet-gear-2 a2 drawn without the style anchor, noted in plain words
+        reg.set('sheet-gear-2', rejected_attempts={'a2': 'anchor missing'}, plain_reasons={'a2': '這一版生成時少了風格參考圖，不採用'})
+    page, head = _g2_page(factory, review, scenario)
+    user = re.sub(r'<details.*?</details>', '', head, flags=re.S)
+    assert names['lg-noel'] in user and '只數外緣' in user                           # passes only by the edge-only spill rule
+    assert f'{names["lg-sylvie"]}：前 3 版沒過檢查，第 4 版才通過' in user
+    assert '這一版生成時少了風格參考圖，不採用' in user
+    assert '細長武器（槍、弓）允許看起來比較瘦' in user
+    for a, b in (('set-shade-feet', 'set-storm-feet'), ('copper-ring', 'blaze-ember-ring'), ('mire-miasma-mask', 'set-mire-head')):
+        assert names[a] in user and names[b] in user, (a, b)                         # the confusable pairs, for the user to rule
+    assert '2 不行：' in user and '重畫' in user                                       # how to say no
+    for term in ('qa_passed', '補遺 S4', 'gear-5d-', '95d0a90c'):
+        assert term not in re.sub(r'<details.*?</details>', '', page, flags=re.S), term
+
+
+def test_g2_old_icon_section_counts_what_is_left_and_shows_the_published_g1_icon(factory, review):
+    import re
+    def scenario(reg):
+        reg.set('icon-iron-sword', status='retired'); reg.set('gear-iron-sword', status='published', batch='gear-5d-sample')
+    page, _ = _g2_page(factory, review, scenario)
+    s2 = page[page.index('id="s2"'):page.index('id="s3"')]
+    assert '14 件（鐵劍 G1 已換）' in s2
+    row = s2[s2.index('data-old-icon="iron-sword"'):]; row = row[:row.index('</tr>')]
+    assert 'G1 已換上' in row and '本批沒有新樣本' not in row
+
+
+def test_g2_page_is_slim_and_lazy(factory, review):
+    import re
+    _fill(factory, 'main-gear')
+    raw = _sheet(factory / 'raw/sheet-gear-2/sheet-gear-2-a1.png', cell=400, gap=120)
+    before = raw.read_bytes()
+    page = review.main('main-gear').read_text(encoding='utf-8')
+    imgs = re.findall(r'<img [^>]*>', page)
+    assert imgs and all('loading="lazy"' in i for i in imgs)
+    gal = page[page.index('id="s9"'):]
+    assert re.search(r'<details[^>]*><summary>[^<]*原圖[^<]*</summary><img [^>]*src="img/raw-sheet-gear-2-a1\.png"', gal)
+    disp = Image.open(factory / 'review-g2/img/raw-sheet-gear-2-a1.png')
+    assert disp.width <= 600 and disp.mode == 'P'                                     # a small palette display copy
+    assert raw.read_bytes() == before                                                 # the raw itself is untouched
+
+
+def test_g2_page_layout_details(factory, review):
+    import re
+    page, _ = _g2_page(factory, review)
+    css = page[page.index('<style>'):page.index('</style>')]
+    assert re.search(r'\.szrow\{[^}]*align-items:flex-start', css)
+    assert not re.search(r'份量 0\.\d{3}', page)                                     # mass to two decimals
+    assert 'id="s7"' not in page                                                       # no skills in this batch
+    s0 = page[page.index('id="s0"'):page.index('id="size"')]
+    assert "'box'" not in re.sub(r'<details.*?</details>', '', s0, flags=re.S)         # raw QA dicts only in the details
