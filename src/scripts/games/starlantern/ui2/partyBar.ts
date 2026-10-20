@@ -173,12 +173,15 @@ export class PartyBar {
     // One line: her mechanic's words first, then the ailments, the most severe first, the rest folded into +N. Words
     // that do not fit the line fold into the +N too, with every ailment; the first always shows.
     const all = m.mech ?? [];
+    const ails = m.ailments ?? [];
     const widthOf = (k: number) => all.slice(0, k).reduce((w, x) => w + ailWordWidth(x.text) + 1, 0);
+    // Every word fits, with room left for at least the ailments' +N (or no ailments at all).
+    const allFit = widthOf(all.length) - 1 <= AIL_ROW_W && (!ails.length || widthOf(all.length) + ailWordWidth(T.ailmentMore(ails.length)) <= AIL_ROW_W);
     let mech = all, shown: ReturnType<typeof fitChips>['shown'], more: number;
-    if (widthOf(all.length) - 1 <= AIL_ROW_W || all.length < 2) {
-      ({ shown, more } = fitChips(m.ailments ?? [], AIL_ROW_W - widthOf(all.length), ailWordWidth, 1));
+    if (allFit || all.length < 2) {
+      ({ shown, more } = fitChips(ails, AIL_ROW_W - widthOf(all.length), ailWordWidth, 1));
     } else {
-      const folded = (k: number) => all.length - k + (m.ailments?.length ?? 0);
+      const folded = (k: number) => all.length - k + ails.length;
       let k = all.length - 1;
       while (k > 1 && widthOf(k) + ailWordWidth(T.ailmentMore(folded(k))) > AIL_ROW_W) k--;
       mech = all.slice(0, k);

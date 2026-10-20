@@ -112,11 +112,11 @@ describe('skill trees', () => {
     }
   });
 
-  it('every power mod node (powerPct or powerDelta) names a skill that deals damage, heals, sets a turret or raises a barrier', () => {
+  it('every power mod node (powerPct or powerDelta) names a skill that deals damage, heals, sets a device or raises a barrier', () => {
     const power = allNodes().filter((n) => n.kind === 'mod' && n.mods!.some((m) => m.powerPct !== undefined || m.powerDelta !== undefined));
     expect(power.map((n) => n.id)).toContain('twin-turret');
     for (const n of power) {
-      expect(SKILLS[n.skill].effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'turret' || e.kind === 'barrier'), n.id).toBe(true);
+      expect(SKILLS[n.skill].effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'device' || e.kind === 'barrier'), n.id).toBe(true);
     }
   });
 
@@ -142,7 +142,7 @@ describe('skill trees', () => {
     for (const n of allNodes().filter((x) => x.kind === 'active' && x.maxRank > 1)) {
       const kinds = SKILLS[n.skill].effects.map((e) => e.kind);
       // Plan 8c: a skill with nothing to scale costs 1 TP less a rank (so it needs TP to spare), or lasts longer a rank.
-      const scales = kinds.some((k) => ['damage', 'heal', 'buff', 'turret', 'barrier', 'gauge'].includes(k));
+      const scales = kinds.some((k) => ['damage', 'heal', 'buff', 'device', 'barrier', 'gauge'].includes(k));
       expect(scales || SKILLS[n.skill].tp > n.maxRank || n.rank === 'turns', n.id).toBe(true);
     }
   });

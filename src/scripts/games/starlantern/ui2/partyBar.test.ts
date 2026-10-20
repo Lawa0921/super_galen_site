@@ -252,6 +252,9 @@ describe('PartyBar mechanics (plan 8c)', () => {
     expect([...row.children].map((c) => [c.className, c.textContent])).toEqual([
       ['slx-mech slx-mech-embers', '餘燼500'], ['slx-mech slx-mech-beat', '拍子4・終幕'], ['slx-ail slx-ail-more', '+2'],
     ]);
+    // Words that fit, but leave no room for the ailments' +N: the last word folds in with them (plan 8c Task 6).
+    bar.update([m('scarlet', 30, { mech: [{ tone: 'devices', text: '砲台Lv1・2' }, { tone: 'devices', text: '護盾機Lv2・2' }], ailments: [{ id: 'poison' }] })]);
+    expect([...row.children].map((c) => c.textContent)).toEqual(['砲台Lv1・2', '+2']);
     // When they all fit, nothing folds.
     bar.update([m('scarlet', 30, { mech: [{ tone: 'embers', text: '餘燼0' }, { tone: 'embers', text: '贖火4' }] })]);
     expect([...row.children].map((c) => c.textContent)).toEqual(['餘燼0', '贖火4']);

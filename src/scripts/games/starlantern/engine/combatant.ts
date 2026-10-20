@@ -20,7 +20,7 @@ export interface Combatant {
   poison: boolean; sleep: number; buffs: Buff[]; taunt: number;
   /** Who poisoned it: the first to land the poison; kept while it lasts, cleared by a cure or a fall. */
   poisonSrc?: string;
-  turret: { power: number; turns: number } | null; defending: boolean;
+  defending: boolean;
   /** Ultimate gauge, 0–100; enemies keep 0. */
   limit: number;
   /** Battle-screen colouring of a regional variant (its region's element) or an elite. */
@@ -97,7 +97,6 @@ export type BattleEvent =
   | { type: 'resist'; target: string }
   | { type: 'buff'; target: string; stat: BuffStat; pct: number }
   | { type: 'taunt'; target: string }
-  | { type: 'turret'; target: string }
   | { type: 'asleep'; actor: string }
   | { type: 'no-tp'; actor: string }
   /** A member's turn spent on a skill their tree has not learned (no menu offers one; a stale or crafted action). */
@@ -270,7 +269,7 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; led
     delete t.poisonSrc;
     t.buffs = [];
     t.taunt = 0;
-    t.turret = null;
+    if (t.mech?.kind === 'devices') t.mech.devices = [];   // Bobby's devices go with him
     delete t.shield;
     delete t.ward;
     delete t.exposed;

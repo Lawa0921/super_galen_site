@@ -138,11 +138,11 @@ describe('resolveRound', () => {
   });
   it('expires buffs and fires turrets at round end', () => {
     const s = resolveRound(
-      makeBattle([P('p', { buffs: [{ stat: 'atk', pct: 50, turns: 1 }], turret: { power: 100, turns: 1 } })], [E('e0', { sleep: 3 })]),
+      makeBattle([P('p', { buffs: [{ stat: 'atk', pct: 50, turns: 1 }], mech: { kind: 'devices', devices: [{ skill: 'turret', kind: 'turret', power: 100, level: 1, turns: 1 }], cap: 2 } })], [E('e0', { sleep: 3 })]),
       { p: { kind: 'defend' } }, rng,
     );
     expect(s.party[0].buffs).toEqual([]);
-    expect(s.party[0].turret).toBeNull();
+    expect(s.party[0].mech).toEqual({ kind: 'devices', devices: [], cap: 2 });
     expect(s.enemies[0].hp).toBe(80);
   });
   it('consumes items and ignores empty stock', () => {
@@ -431,7 +431,7 @@ describe('keystones in battle', () => {
   });
 
   it("a holder's turret shot triggers the holder's TP keystones (the turret is the holder's skill)", () => {
-    const p = P('p', { tp: 0, keystones: ['crit-tp'], x: { crit: 100 }, turret: { power: 50, turns: 2 } });
+    const p = P('p', { tp: 0, keystones: ['crit-tp'], x: { crit: 100 }, mech: { kind: 'devices', devices: [{ skill: 'turret', kind: 'turret', power: 50, level: 1, turns: 2 }], cap: 2 } });
     const s = resolveRound(makeBattle([p], [E('e0', { sleep: 5, max: { hp: 9999 } as never })]), {}, rng);
     const shot = s.log.findIndex((e) => e.type === 'act' && e.label === '砲台');
     expect(shot).toBeGreaterThanOrEqual(0);
@@ -738,7 +738,7 @@ describe('memory keystones in battle', () => {
 
   it('blueprint turrets hit harder', () => {
     const shot = (keystones: KeystoneId[]) => {
-      const p = P('p', { keystones, max: { mag: 400 } as never, turret: { power: 100, turns: 2 } });
+      const p = P('p', { keystones, max: { mag: 400 } as never, mech: { kind: 'devices', devices: [{ skill: 'turret', kind: 'turret', power: 100, level: 1, turns: 2 }], cap: 2 } });
       const s = resolveRound(makeBattle([p], [E('e0', { sleep: 5, max: { hp: 99999 } as never })]), {}, rng);
       const d = s.log.find((e) => e.type === 'damage');
       return d && d.type === 'damage' ? d.amount : -1;
@@ -1047,7 +1047,7 @@ describe('ailments at round end and on their turn (plan 8b)', () => {
   });
 
   it('a turret hit still wakes a sleeper', () => {
-    const s = resolveRound(makeBattle([P('p', { turret: { power: 100, turns: 2 } })], [E('e0', { sleep: 3 })]), { p: { kind: 'defend' } }, rng);
+    const s = resolveRound(makeBattle([P('p', { mech: { kind: 'devices', devices: [{ skill: 'turret', kind: 'turret', power: 100, level: 1, turns: 2 }], cap: 2 } })], [E('e0', { sleep: 3 })]), { p: { kind: 'defend' } }, rng);
     expect(s.log).toContainEqual({ type: 'act', actor: 'p', label: '砲台' });
     expect(s.enemies[0].sleep).toBe(0);
   });
@@ -1104,5 +1104,16 @@ describe('character mechanics (plan 8c)', () => {
     expect(t3.party.find((c) => c.key === 'scarlet')?.mech).toEqual({ kind: 'embers', embers: 0 });
     expect(t3.party.find((c) => c.key === 'safira')?.mech).toEqual({ kind: 'beat', beat: 0, last: null });
     for (const c of t3.party) expect([c.cover, c.riposte], c.key).toEqual([undefined, undefined]);
+    // Bobby (Task 6): no devices; and no echo for the hero to repeat.
+    const fourth = fullParty(['hero', 'bobby', 'noel', 'chizuru', 'selene']);
+    const t4 = () => createBattle({ party: fourth, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    const f4 = t4();
+    expect(f4.party.find((c) => c.key === 'bobby')?.mech).toEqual({ kind: 'devices', devices: [], cap: 2 });
+    expect(f4.echo).toBeUndefined();
+    const played = resolveRound(f4, { bobby: { kind: 'skill', skill: 'turret' }, noel: { kind: 'skill', skill: 'fire-star', target: 'e0' } }, mulberry32(1));
+    expect(played.echo).toBeDefined();
+    expect(t4().party.find((c) => c.key === 'bobby')?.mech).toEqual({ kind: 'devices', devices: [], cap: 2 });
+    expect(t4().echo).toBeUndefined();
+    for (const c of f4.party) expect('turret' in c, c.key).toBe(false);
   });
 });

@@ -25,7 +25,7 @@ export type FieldFail = 'invalid' | 'down' | 'not-learned' | 'tp' | 'no-effect';
 /** One member a field cast helped: HP gained (the revived count from 0) and whether they were raised. */
 export interface FieldGain { id: CharacterId; hp: number; revived: boolean }
 
-/** The effects a field cast applies; every other kind (cure, buff, taunt, turret, damage, inflict) only means something in a fight. */
+/** The effects a field cast applies; every other kind (cure, buff, taunt, device, damage, inflict) only means something in a fight. */
 const FIELD_EFFECTS: ReadonlySet<Effect['kind']> = new Set(['heal', 'revive', 'restore']);
 
 /** The field skills a member has learned, in learnedSkills order. */

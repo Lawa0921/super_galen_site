@@ -282,7 +282,7 @@ describe('dealDamage', () => {
   it('knocks out at 0 and clears statuses', () => {
     const c = makeCombatant({ key: 'a', side: 'party', poison: true, taunt: 2, buffs: [{ stat: 'atk', pct: 10, turns: 2 }] });
     dealDamage(c, 500);
-    expect(c).toMatchObject({ hp: 0, alive: false, poison: false, taunt: 0, buffs: [], turret: null });
+    expect(c).toMatchObject({ hp: 0, alive: false, poison: false, taunt: 0, buffs: [] });
   });
 });
 

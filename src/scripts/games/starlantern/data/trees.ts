@@ -214,14 +214,14 @@ export const TREES: Record<CharacterId, TreeDef> = {
     ] },
     { name: '整備', nodes: [
       A('tinker', 1),
-      A('repair-kit', 3),
-      M('bobby-repair-up', '修理強化', 'repair-kit', '強化修理包的回復量', pct(115, 130, 150)),
+      A('repair-drone', 3),
+      M('bobby-repair-up', '無人機強化', 'repair-drone', '強化修理無人機的回復量', pct(115, 130, 150)),
       A('overclock', 3),
       A('emergency-repair', 1),
     ] },
     { name: '護盾', nodes: [
       A('barrier', 3),
-      M('bobby-barrier-up', '護盾延長', 'barrier', '延長護盾裝置的持續回合', turns(4, 5, 6)),
+      M('bobby-barrier-up', '護盾延長', 'barrier', '延長護盾產生器的持續回合', turns(4, 5, 6)),
       A('shock-mine', 3),
       M('bobby-mine-up', '地雷強化', 'shock-mine', '強化電擊地雷的威力', pct(115, 130, 150)),
       A('tesla-coil', 1),
@@ -309,6 +309,7 @@ export const LEGACY_NODE_IDS: Readonly<Record<string, string>> = {
   'triple-slash': 'pickpocket', 'shadow-flurry': 'jackpot', 'venom-edge': 'appraise',
   'snare-shot': 'sunder-arrow', 'fire-arrow': 'scatter-shot', 'storm-volley': 'deluge-volley',
   'guardian-roar': 'cover', fortress: 'atoning-flame', 'veil-dance': 'clap', sirocco: 'mirage-step',
+  'repair-kit': 'repair-drone',
 };
 
 export const LEGACY_LEARN_LEVEL: Record<string, number> = {

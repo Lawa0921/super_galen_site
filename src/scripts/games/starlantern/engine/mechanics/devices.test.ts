@@ -1,0 +1,120 @@
+import { describe, expect, it } from 'vitest';
+import { resolveRound, skillFor, type Action, type BattleState } from '../battle';
+import type { Combatant } from '../combatant';
+import { newLedger } from '../ledger';
+import type { Device } from '../mech';
+import { patchSkill } from '../skills';
+import { constRng, makeBattle, makeCombatant } from '../testing';
+import { SKILLS } from '../../data/skills';
+import { POWERS } from '../../data/gear';
+import { DEVICE, devicePower } from './devices';
+import { memberWords } from './index';
+
+const MAX = { hp: 200, tp: 99, atk: 40, def: 20, mag: 40, res: 20, spd: 1 };
+const bobby = (devices: Device[] = [], over: Partial<Combatant> = {}) =>
+  makeCombatant({ key: 'bobby', side: 'party', defId: 'bobby', mech: { kind: 'devices', devices, cap: DEVICE.cap }, max: MAX, ...over });
+const P = (key: string, over: Partial<Combatant> = {}) => makeCombatant({ key, side: 'party', defId: key, max: MAX, ...over });
+/** A foe that hits for next to nothing. */
+const foe = (key = 'e0', over: Partial<Combatant> = {}) =>
+  makeCombatant({ key, side: 'enemy', max: { hp: 99999, tp: 0, atk: 1, def: 20, mag: 1, res: 20, spd: 99 }, ...over });
+const dev = (kind: Device['kind'], over: Partial<Device> = {}): Device => ({ skill: kind, kind, power: 50, level: 1, turns: 3, ...over });
+const devicesOf = (s: BattleState) => { const m = s.party.find((c) => c.key === 'bobby')!.mech; return m?.kind === 'devices' ? m.devices : null; };
+const round = (s: BattleState, acts: Record<string, Action> = {}, rng = constRng(0.5)) => resolveRound(s, acts, rng);
+const acts = (s: BattleState, label: string) => s.log.filter((e) => e.type === 'act' && e.actor === 'bobby' && e.label === label).length;
+
+describe("Bobby's devices", () => {
+  it('a device runs at every round end, and a second of the same kind upgrades it', () => {
+    let s = round(makeBattle([bobby()], [foe()]), { bobby: { kind: 'skill', skill: 'turret' } });
+    const tp = (SKILLS.turret.effects[0] as { power: number }).power;
+    expect(devicesOf(s)).toEqual([{ skill: 'turret', kind: 'turret', power: tp, level: 1, turns: 2 }]);
+    expect(acts(s, '砲台')).toBe(1);
+    expect(s.log.some((e) => e.type === 'damage' && e.target === 'e0')).toBe(true);
+    s = round(s, { bobby: { kind: 'skill', skill: 'turret' } });
+    expect(devicesOf(s)).toEqual([{ skill: 'turret', kind: 'turret', power: tp, level: 2, turns: 2 }]);
+    expect(devicePower(s.party[0], devicesOf(s)![0])).toBe(Math.round(tp * 1.25));
+    s = round(s, { bobby: { kind: 'skill', skill: 'turret' } });
+    s = round(s, { bobby: { kind: 'skill', skill: 'turret' } });
+    expect(devicesOf(s)![0].level).toBe(DEVICE.maxLevel);
+  });
+
+  it('two at most; a third kind replaces the one closest to running out (the older on a tie)', () => {
+    const s = round(makeBattle([bobby([dev('turret', { turns: 3 }), dev('mine', { skill: 'shock-mine', turns: 1 })])], [foe()]), { bobby: { kind: 'skill', skill: 'barrier' } });
+    expect(devicesOf(s)!.map((d) => [d.kind, d.turns])).toEqual([['turret', 2], ['shield', 2]]);
+    const tie = round(makeBattle([bobby([dev('turret', { turns: 2 }), dev('mine', { skill: 'shock-mine', turns: 2 })])], [foe()]), { bobby: { kind: 'skill', skill: 'barrier' } });
+    expect(tie.log.filter((e) => e.type === 'act' && e.actor === 'bobby').map((e) => e.type === 'act' && e.label)).toEqual(['護盾產生器', '地雷', '護盾產生器']);
+    expect(devicesOf(tie)!.map((d) => d.kind)).toEqual(['mine', 'shield']);
+  });
+
+  it('the drone heals, the generator shields, the lowest first; the ledger credits Bobby', () => {
+    const l = newLedger();
+    const heal = (power: number, c: Combatant) => Math.floor((power / 100) * (c.max.mag * 2 + 10));
+    const s0 = makeBattle([bobby([dev('drone', { skill: 'repair-drone', power: 45 }), dev('shield', { skill: 'barrier', power: 40 })]), P('noel', { hp: 50 }), P('selene', { hp: 120 })], [foe('e0', { sleep: 9 })]);
+    const r = resolveRound(s0, {}, constRng(0.5), l);
+    const b = s0.party[0];
+    expect(r.party[1].hp).toBe(50 + heal(45, b));
+    expect(r.party[1].shield).toEqual({ amount: heal(40, b), src: 'bobby' });
+    expect(r.party[2].hp).toBe(120);
+    expect(l.by.bobby.healing).toBe(heal(45, b));
+    // On a shield already there the bigger amount stays, and Bobby's generator becomes its source (plan 8c Task 6).
+    const big = round(makeBattle([bobby([dev('shield', { skill: 'barrier', power: 40 })]), P('noel', { hp: 50, shield: { amount: 999, src: 'chizuru' } })], [foe('e0', { sleep: 9 })]));
+    expect(big.party[1].shield).toEqual({ amount: 999, src: 'bobby' });
+  });
+
+  it('the coil shocks at thirty percent (a boss at half)', () => {
+    const shocked = (v: number, boss = false) => {
+      const r = resolveRound(makeBattle([bobby([dev('coil', { skill: 'tesla-coil', power: 60 })])], [foe('e0', { sleep: 9, boss })]), {}, constRng(v));
+      return (r.enemies[0].shock ?? 0) > 0;
+    };
+    expect([shocked(0.29), shocked(0.31)]).toEqual([true, false]);
+    expect([shocked(0.14, true), shocked(0.16, true)]).toEqual([true, false]);
+    // The mine strikes every foe with thunder.
+    const r = round(makeBattle([bobby([dev('mine', { skill: 'shock-mine', power: 35 })])], [foe('e0', { sleep: 9 }), foe('e1', { sleep: 9 })]));
+    expect(r.log.filter((e) => e.type === 'damage' && e.element === 'thunder').map((e) => e.type === 'damage' && e.target)).toEqual(['e0', 'e1']);
+  });
+
+  it('overclock runs every device once more; the full overhaul raises them all and cures the party', () => {
+    const s = round(makeBattle([bobby([dev('turret', { turns: 3 }), dev('mine', { skill: 'shock-mine', turns: 3 })])], [foe('e0', { sleep: 9 })]), { bobby: { kind: 'skill', skill: 'overclock' } });
+    expect([acts(s, '砲台'), acts(s, '地雷')]).toEqual([2, 2]);
+    expect(devicesOf(s)!.map((d) => d.turns)).toEqual([2, 2]);
+    const t = round(makeBattle([bobby([dev('turret', { turns: 2, level: 3 }), dev('mine', { skill: 'shock-mine', turns: 1 })]), P('noel', { poison: true })], [foe('e0', { sleep: 9 })]),
+      { bobby: { kind: 'skill', skill: 'emergency-repair' } });
+    expect(devicesOf(t)!.map((d) => [d.level, d.turns])).toEqual([[3, 4], [2, 3]]);
+    expect(t.party[1].poison).toBe(false);
+  });
+
+  it('the memory blueprint is +30% to every device', () => {
+    expect(devicePower(bobby([], { keystones: ['blueprint'] }), dev('drone', { power: 45 }))).toBe(Math.round(45 * 1.3));
+    expect(devicePower(bobby([], { keystones: ['blueprint'] }), dev('turret', { power: 70, level: 2 }))).toBe(Math.round(70 * 1.25 * 1.3));
+  });
+
+  it('legendary and tree rewrites still reach the turret', () => {
+    const tp = (SKILLS.turret.effects[0] as { power: number }).power;
+    expect(patchSkill(SKILLS.turret, POWERS['lg-bobby'].mod).effects).toEqual([{ kind: 'device', device: 'turret', power: tp, turns: 5 }]);
+    // twin-turret's +60 points: 160% of the turret's power, and a round more.
+    expect(skillFor({ powers: [], ranks: { turret: 1, 'twin-turret': 1 } }, 'turret')!.effects).toEqual([{ kind: 'device', device: 'turret', power: Math.round(tp * 1.6), turns: 4 }]);
+  });
+
+  it('when Bobby falls his devices go, and nothing runs', () => {
+    const s0 = makeBattle([bobby([dev('turret')], { hp: 1 }), P('noel')], [foe('e0', { max: { hp: 99999, tp: 0, atk: 400, def: 20, mag: 1, res: 20, spd: 99 } })], { intents: { e0: { kind: 'attack', target: 'bobby' } } });
+    const r = round(s0);
+    expect(r.party[0].alive).toBe(false);
+    expect(devicesOf(r)).toEqual([]);
+    expect(acts(r, '砲台')).toBe(0);
+  });
+
+  it("Bobby's words: each device, its level and rounds; a shield's amount on whoever holds it", () => {
+    const s = makeBattle([bobby([dev('turret', { level: 2, turns: 3 }), dev('shield', { skill: 'barrier', turns: 1 })]), P('noel', { shield: { amount: 12, src: 'bobby' } })], [foe()]);
+    expect(memberWords(s, s.party[0])).toEqual([{ tone: 'devices', text: '砲台Lv2・3' }, { tone: 'devices', text: '護盾機Lv1・1' }]);
+    expect(memberWords(s, s.party[1])).toEqual([{ tone: 'devices', text: '護盾12' }]);
+  });
+
+  it('devices draw only what the old turret drew', () => {
+    const draws = (devices: Device[]) => {
+      let n = 0;
+      resolveRound(makeBattle([bobby(devices)], [foe('e0', { sleep: 9 }), foe('e1', { sleep: 9 })]), {}, () => { n++; return 0.5; });
+      return n;
+    };
+    // The drone and the shield draw nothing; the turret picks its target and rolls its hit as before.
+    expect(draws([dev('drone', { skill: 'repair-drone' }), dev('shield', { skill: 'barrier' })])).toBe(draws([]));
+  });
+});

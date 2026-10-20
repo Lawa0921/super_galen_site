@@ -1,4 +1,5 @@
 import type { AilmentId } from './ailments';
+import type { DeviceKind } from './mech';
 
 export type Element = 'phys' | 'fire' | 'ice' | 'thunder';
 export type StatKey = 'hp' | 'tp' | 'atk' | 'def' | 'mag' | 'res' | 'spd';
@@ -32,7 +33,12 @@ export type Effect =
   | { kind: 'inflict'; status: AilmentId; chance: number }
   | { kind: 'buff'; stat: BuffStat; pct: number; turns: number }
   | { kind: 'taunt'; turns: number }
-  | { kind: 'turret'; power: number; turns: number }
+  /** Bobby sets (or upgrades) a device that runs at every round's end for `turns` rounds (engine/mechanics/devices.ts). */
+  | { kind: 'device'; device: DeviceKind; power: number; turns: number }
+  /** Every device of the caster runs once more at once (超頻). */
+  | { kind: 'overclock' }
+  /** Every device of the caster gains `levels` and `turns` rounds (全面整備). */
+  | { kind: 'tune-up'; levels: number; turns: number }
   /** Fire, ice and thunder all strike the target as a weakness for `turns` rounds (Noel's hex, plan 8c). */
   | { kind: 'expose'; turns: number }
   /** The caster's mark moves onto the target (Rin's mark, engine/mechanics/mark.ts). */

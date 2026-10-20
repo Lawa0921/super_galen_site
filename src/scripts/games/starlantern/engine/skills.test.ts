@@ -70,11 +70,11 @@ describe('applyEffect', () => {
     expect(boss.poison).toBe(false);
     expect(c.log).toEqual([{ type: 'resist', target: 'e0' }]);
   });
-  it('puts taunt and turret on the actor', () => {
-    const a = party();
+  it('puts taunt and a device on the actor', () => {
+    const a = party({ mech: { kind: 'devices', devices: [], cap: 2 } });
     applyEffect(a, a, { kind: 'taunt', turns: 3 }, ctx());
-    applyEffect(a, a, { kind: 'turret', power: 70, turns: 3 }, ctx());
-    expect([a.taunt, a.turret]).toEqual([3, { power: 70, turns: 3 }]);
+    applyEffect(a, a, { kind: 'device', device: 'turret', power: 70, turns: 3 }, { ...ctx(), cast: 'turret' });
+    expect([a.taunt, a.mech]).toEqual([3, { kind: 'devices', devices: [{ skill: 'turret', kind: 'turret', power: 70, level: 1, turns: 3 }], cap: 2 }]);
   });
   it('applies buffs to the target', () => {
     const t = enemy();
@@ -92,7 +92,7 @@ describe('patchSkill', () => {
         { kind: 'heal', power: 120 },
         { kind: 'buff', stat: 'def', pct: 40, turns: 3 },
         { kind: 'inflict', status: 'poison', chance: 0.5 },
-        { kind: 'turret', power: 70, turns: 3 },
+        { kind: 'device', device: 'turret', power: 70, turns: 3 },
         { kind: 'taunt', turns: 3 },
       ],
     };
@@ -105,7 +105,7 @@ describe('patchSkill', () => {
       { kind: 'heal', power: 78 },
       { kind: 'buff', stat: 'def', pct: 60, turns: 5 },   // buffPct, never powerPct: round(40 * 150 / 100)
       { kind: 'inflict', status: 'poison', chance: 1 },
-      { kind: 'turret', power: 46, turns: 5 },
+      { kind: 'device', device: 'turret', power: 46, turns: 5 },
       { kind: 'taunt', turns: 5 },
       { kind: 'cure' },
     ]);
@@ -125,7 +125,7 @@ describe('patchSkill', () => {
     ]);
     const moon = patchSkill(SKILLS.moonlight, POWERS['lg-selene'].mod);
     expect([moon.target, moon.effects]).toEqual(['allies', [{ kind: 'heal', power: 72 }]]);
-    expect(patchSkill(SKILLS.turret, POWERS['lg-bobby'].mod).effects).toEqual([{ kind: 'turret', power: 70, turns: 5 }]);
+    expect(patchSkill(SKILLS.turret, POWERS['lg-bobby'].mod).effects).toEqual([{ kind: 'device', device: 'turret', power: (SKILLS.turret.effects[0] as { power: number }).power, turns: 5 }]);
     const wall = patchSkill(SKILLS['iron-wall'], POWERS['iron-bulwark-plate'].mod);
     expect([wall.target, wall.effects]).toEqual(['allies', [{ kind: 'buff', stat: 'def', pct: 20, turns: 3 }]]);
   });
@@ -239,11 +239,12 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
 
   const twin = mod('twin-turret', 1);
   const turretTurns = (SKILLS.turret.effects[0] as { turns: number }).turns;
+  const TURRET = (SKILLS.turret.effects[0] as { power: number }).power;
 
   it('hpCost and the turret capstone come through', () => {
     expect(skillFor(caster({ 'blaze-ring': 1, 'scarlet-ring-up': 3 }), 'blaze-ring')!.hpCost).toBe(mod('scarlet-ring-up', 3).hpCost);
     const turret = fx(caster({ turret: 1, 'twin-turret': 1 }), 'turret')[0] as { power: number; turns: number };
-    expect(turret.power).toBe(pw(70, 100 + twin.powerDelta!));
+    expect(turret.power).toBe(pw(TURRET, 100 + twin.powerDelta!));
     expect(turret.turns).toBe(turretTurns + twin.turnsDelta!);
   });
 
@@ -252,15 +253,15 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
     const ranks = { turret: 1, 'bobby-turret-up': 3, 'twin-turret': 1 };
     const up3 = mod('bobby-turret-up', 3);
     const plain = fx(caster(ranks), 'turret')[0] as { power: number; turns: number };
-    expect(plain.power).toBe(pw(70, up3.powerPct! + twin.powerDelta!));
+    expect(plain.power).toBe(pw(TURRET, up3.powerPct! + twin.powerDelta!));
     expect(plain.turns).toBe(turretTurns + twin.turnsDelta!);
     // lg-bobby comes last and its turns are absolute.
     const t = fx(caster(ranks, ['lg-bobby']), 'turret')[0] as { power: number; turns: number };
-    expect(t.power).toBe(pw(70, up3.powerPct! + twin.powerDelta!));
+    expect(t.power).toBe(pw(TURRET, up3.powerPct! + twin.powerDelta!));
     expect(t.turns).toBe(POWERS['lg-bobby'].mod.turns);
     // The active's own rank is a stage of its own, before the modifiers.
     const t3 = fx(caster({ ...ranks, turret: 3 }, ['lg-bobby']), 'turret')[0] as { power: number; turns: number };
-    expect(t3.power).toBe(pw(pw(70, ACTIVE_RANK_PCT[2]), up3.powerPct! + twin.powerDelta!));
+    expect(t3.power).toBe(pw(pw(TURRET, ACTIVE_RANK_PCT[2]), up3.powerPct! + twin.powerDelta!));
     // Relative values add, absolute values replace: the later absolute wins.
     expect(stackMods([{ powerPct: 110, tpDelta: -1 }, { powerPct: 120, powerDelta: 60, turnsDelta: 1, tpDelta: -2 }, { powerDelta: 5, turnsDelta: 1 }]))
       .toEqual({ powerPct: 120, powerDelta: 65, turnsDelta: 2, tpDelta: -3 });
@@ -269,9 +270,9 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
 
   it('patchSkill adds powerDelta points to powerPct and turnsDelta to every lasting effect', () => {
     const def: SkillDef = { id: 'x', name: 'x', owner: 'bobby', tp: 5, target: 'self', desc: '',
-      effects: [{ kind: 'turret', power: 70, turns: 3 }, { kind: 'buff', stat: 'def', pct: 20, turns: 3 }, { kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: false }] };
+      effects: [{ kind: 'device', device: 'turret', power: 70, turns: 3 }, { kind: 'buff', stat: 'def', pct: 20, turns: 3 }, { kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: false }] };
     expect(patchSkill(def, { powerPct: 135, powerDelta: 60, turnsDelta: 1 }).effects).toEqual([
-      { kind: 'turret', power: pw(70, 195), turns: 4 }, { kind: 'buff', stat: 'def', pct: 20, turns: 4 },
+      { kind: 'device', device: 'turret', power: pw(70, 195), turns: 4 }, { kind: 'buff', stat: 'def', pct: 20, turns: 4 },
       { kind: 'damage', power: 195, element: 'phys', scale: 'atk', melee: false },
     ]);
     expect((patchSkill(def, { powerDelta: 60 }).effects[0] as { power: number }).power).toBe(pw(70, 160));
@@ -312,9 +313,9 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
       const want = powers.map((p) => POWERS[p].mod).reduce((d, m) => patchSkill(d, m), tree);
       expect(skillFor(caster(ranks, powers), skill), skill).toEqual(want);
     }
-    // Pinned by hand, not through treeMods: 70 at rank 2 is 110% (77); the mod's 135% and the twin turret's +60 points
-    // stack into one 195% (77 x 1.95 = 150), then +1 turn, and lg-bobby fixes the turns at 5.
-    expect(skillFor(caster({ turret: 2, 'bobby-turret-up': 3, 'twin-turret': 1 }, ['lg-bobby']), 'turret')!.effects).toEqual([{ kind: 'turret', power: 150, turns: 5 }]);
+    // Pinned by hand, not through treeMods: 38 at rank 2 is 110% (42); the mod's 135% and the twin turret's +60 points
+    // stack into one 195% (42 x 1.95 = 82), then +1 turn, and lg-bobby fixes the turns at 5.
+    expect(skillFor(caster({ turret: 2, 'bobby-turret-up': 3, 'twin-turret': 1 }, ['lg-bobby']), 'turret')!.effects).toEqual([{ kind: 'device', device: 'turret', power: 82, turns: 5 }]);
   });
 
   it('a member casts only a skill whose own node holds a whole rank; a junk rank casts nothing', () => {

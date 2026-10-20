@@ -7,7 +7,7 @@
  */
 import { skillCost, type Action, type BattleState } from '../battle';
 import type { Combatant } from '../combatant';
-import type { MechState } from '../mech';
+import { DEVICE, type MechState } from '../mech';
 import type { Rng } from '../rng';
 import type { EffectContext } from '../skills';
 import type { CharacterId, SkillDef, UltimateDef } from '../types';
@@ -19,10 +19,12 @@ import { coins } from './coins';
 import { aim } from './aim';
 import { embers } from './embers';
 import { beat } from './beat';
+import { devices } from './devices';
+import { echo } from './echo';
 
 /** A mechanic's colour on the battle screen (`$slx-mech` in the stylesheet, MECH_FILL for the Pixi picture). */
 /** `plain`: a moment no mechanic claims, in the ink colour. */
-export type MechTone = 'heat' | 'expose' | 'mark' | 'veil' | 'ward' | 'purify' | 'moon' | 'coins' | 'aim' | 'embers' | 'beat' | 'plain';
+export type MechTone = 'heat' | 'expose' | 'mark' | 'veil' | 'ward' | 'purify' | 'moon' | 'coins' | 'aim' | 'embers' | 'beat' | 'devices' | 'plain';
 /** A mechanic's word on the battle screen: 「熱度3」, 「暗記」. */
 export interface MechWord { tone: MechTone; text: string }
 /** A mechanic's moment, popped over the member and logged: Noel's overload, Rin's 還有。. */
@@ -66,7 +68,7 @@ export interface MechModule {
 
 /** In hook order. Read lazily: the modules and the engine import each other, so the list is built on first use. */
 let MODULES_CACHE: MechModule[] | null = null;
-const modules = (): MechModule[] => (MODULES_CACHE ??= [heat, mark, barrier, moon, coins, aim, beat, embers]);
+const modules = (): MechModule[] => (MODULES_CACHE ??= [heat, mark, barrier, moon, coins, aim, beat, embers, devices, echo]);
 
 /** Each character's mechanic as a fight opens it; a member without an entry has none. */
 export const MECH_OF: Partial<Record<CharacterId, () => MechState>> = {
@@ -77,6 +79,7 @@ export const MECH_OF: Partial<Record<CharacterId, () => MechState>> = {
   sylvie: () => ({ kind: 'aim', target: null, stacks: 0 }),
   scarlet: () => ({ kind: 'embers', embers: 0 }),
   safira: () => ({ kind: 'beat', beat: 0, last: null }),
+  bobby: () => ({ kind: 'devices', devices: [], cap: DEVICE.cap }),
 };
 
 /** Every member with an entry in MECH_OF gets a fresh mechanic; nothing carries over from an earlier fight. */

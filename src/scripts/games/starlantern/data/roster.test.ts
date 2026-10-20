@@ -46,9 +46,10 @@ const KEPT: readonly string[] = [
 
 /**
  * A kept skill whose effects are rewritten in a mechanic's form (plan 8c ruling 4), by id: what they must be instead of
- * the recorded ones. Task 6 adds `turret: [{ kind: 'device', device: 'turret', power: 70, turns: 3 }]`.
+ * the recorded ones: the turret is a device now (Task 6), for the same rounds; its power 70 → 38 is Task 6's parity
+ * retune (controller ruling 1, retune.md).
  */
-const KEPT_EFFECT_EXCEPTIONS: Record<string, Effect[]> = {};
+const KEPT_EFFECT_EXCEPTIONS: Record<string, Effect[]> = { turret: [{ kind: 'device', device: 'turret', power: 38, turns: 3 }] };
 
 /** Every number read only for its sign: a kept skill may be retuned (controller ruling 1), never turned around. */
 const shape = (v: unknown): unknown =>

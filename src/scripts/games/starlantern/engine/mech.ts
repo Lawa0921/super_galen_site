@@ -25,8 +25,14 @@ export const EMBER = { sharePct: 50, capPct: 50 } as const;
 /** The gauges a `spend-at` rule can read. */
 export type MechGauge = 'heat' | 'coins' | 'aim' | 'embers';
 
-/** A device a member has set up: its skill, its upgrade level, the turns it has left. */
-export interface Device { skill: string; level: number; turns: number }
+/** Bobby's device kinds (engine/mechanics/devices.ts). */
+export type DeviceKind = 'turret' | 'drone' | 'shield' | 'mine' | 'coil';
+
+/** Bobby's devices (spec §8.8, plan 8c ruling 18): how many at once, the top level, +% a level, the coil's shock chance. */
+export const DEVICE = { cap: 2, maxLevel: 3, levelPct: 25, coilShock: 0.3 } as const;
+
+/** A device a member has set up: its skill and kind, its power, its upgrade level, the turns it has left. */
+export interface Device { skill: string; kind: DeviceKind; power: number; level: number; turns: number }
 
 /** The barriers Chizuru raises (spec §8.2): the guard (def and res for the party) and the purifying one. */
 export type BarrierKind = 'guard' | 'purify';

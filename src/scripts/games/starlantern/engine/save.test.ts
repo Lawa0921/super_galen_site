@@ -669,6 +669,7 @@ describe('old node ids (plan 8c)', () => {
       'triple-slash': 'pickpocket', 'shadow-flurry': 'jackpot', 'venom-edge': 'appraise',
       'snare-shot': 'sunder-arrow', 'fire-arrow': 'scatter-shot', 'storm-volley': 'deluge-volley',
       'guardian-roar': 'cover', fortress: 'atoning-flame', 'veil-dance': 'clap', sirocco: 'mirage-step',
+      'repair-kit': 'repair-drone',
     });
     const pairs = Object.entries(LEGACY_NODE_IDS);
     const owners = [...new Set(pairs.map(([, now]) => NODES[now].owner))];

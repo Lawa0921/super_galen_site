@@ -10,6 +10,7 @@ import { onLandedHit } from './mechanics/index';
 import { MOON } from './mechanics/moon';
 import { AIM } from './mech';
 import { COINS } from './mechanics/coins';
+import { overclock, placeDevice, tuneUp } from './mechanics/devices';
 
 /**
  * `ledger`: the sim's contribution ledger (absent in the game); it reads the fight and never draws. `redirect`: set only
@@ -25,6 +26,8 @@ export interface EffectContext {
   battle?: BattleState;
   /** The id of the skill being cast, while its effects resolve. */
   cast?: string;
+  /** The TP the current action paid for its skill (the hero's echo records it). */
+  paid?: number;
   lastHit?: { target: string; amount: number };
 }
 
@@ -64,7 +67,7 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
       };
       case 'heal': return { ...e, power: pctOf(e.power, power) };
       case 'buff': return { ...e, pct: pctOf(e.pct, mod.buffPct), turns: lasting(e.turns) };
-      case 'turret': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns) };
+      case 'device': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns) };
       case 'taunt': return { ...e, turns: lasting(e.turns) };
       case 'expose': return { ...e, turns: lasting(e.turns) };
       case 'veil': return { ...e, turns: lasting(e.turns) };
@@ -134,6 +137,16 @@ function keystoneTp(actor: Combatant, id: KeystoneId, n: number, ctx: EffectCont
   ctx.log.push({ type: 'tp', target: actor.key, amount: actor.tp - before });
 }
 
+/** What a heal of `power` by `actor` restores before the target's max (the shield generator gives as much). */
+export function healAmount(actor: Combatant, power: number, bonus?: number): number {
+  let k = bonus;
+  if (k === undefined) {
+    k = 1 + (actor.x.heal ?? 0) / 100;
+    if (actor.keystones.includes('moon-promise')) k *= 1 + MEMORY_KEYSTONE_VALUES.moonHealPct / 100;
+  }
+  return Math.floor((power / 100) * (stat(actor, 'mag') * 2 + 10) * k);
+}
+
 function gainHp(t: Combatant, amount: number): number {
   const before = t.hp;
   t.hp = Math.min(t.max.hp, t.hp + amount);
@@ -171,7 +184,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       // The healer's heal bonus multiplies the amount; without it the value is unchanged to the bit.
       let bonus = 1 + (actor.x.heal ?? 0) / 100;
       if (actor.keystones.includes('moon-promise')) bonus *= 1 + MEMORY_KEYSTONE_VALUES.moonHealPct / 100;
-      const amount = gainHp(target, Math.floor((eff.power / 100) * (stat(actor, 'mag') * 2 + 10) * bonus));
+      const amount = gainHp(target, healAmount(actor, eff.power, bonus));
       if (actor.side === 'party' && target.side === 'party') credit(ctx.ledger, actor.key, 'healing', amount);
       ctx.log.push({ type: 'heal', target: target.key, amount });
       return;
@@ -225,9 +238,17 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       ctx.log.push({ type: 'taunt', target: actor.key });
       return;
     }
-    case 'turret': {
-      actor.turret = { power: eff.power, turns: eff.turns };
-      ctx.log.push({ type: 'turret', target: actor.key });
+    case 'device': {
+      if (target !== actor) return;
+      placeDevice(actor, eff, ctx.cast ?? eff.device);
+      return;
+    }
+    case 'overclock': {
+      if (target === actor) overclock(actor, ctx);
+      return;
+    }
+    case 'tune-up': {
+      if (target === actor) tuneUp(actor, eff.levels, eff.turns);
       return;
     }
     case 'expose': {

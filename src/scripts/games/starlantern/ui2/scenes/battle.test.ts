@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import type { Combatant } from '../../engine/combatant';
-import type { ItemInstance } from '../../engine/types';
+import type { CharacterId, ItemInstance } from '../../engine/types';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { art } from '../../render/artPaths';
@@ -10,6 +10,7 @@ import { BattleScene } from './battle';
 import { STORY_FIGHT_ROUNDS } from '../../engine/battle';
 import { LEGACY_LINEUP, meet } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
+import { SKILLS } from '../../data/skills';
 import { CHARACTERS } from '../../data/characters';
 import { SHARD_NAMES } from '../../data/story/fragments';
 import { FINALE_DEPTH } from '../../data/story/scenes';
@@ -26,8 +27,8 @@ vi.mock('../../engine/mechanics/index', async (orig) => {
 
 const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); await new Promise((r) => setTimeout(r, 0)); };
 
-function setup(prep?: (game: Game) => void, extra: Partial<SceneCtx> = {}) {
-  const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
+function setup(prep?: (game: Game) => void, extra: Partial<SceneCtx> = {}, lineup = LEGACY_LINEUP) {
+  const game = new Game(constRng(0.99), null, undefined, 0, lineup);
   expect(game.depart({ region: 'mainline', condition: 'plain' }, 1)).toEqual({ ok: true });
   game.encounter = 99;
   expect(game.move('right').kind).toBe('battle');
@@ -188,6 +189,26 @@ describe('BattleScene', () => {
     s.onAction('confirm'); s.onAction('confirm'); s.onAction('confirm');   // 絲嘉蕾 uses it
     const item = [...root.querySelectorAll('.slx-bcmd [role=option]')].find((o) => o.textContent === '道具')!;
     expect(item.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it("the hero's echo command names what it repeats, greyed when there is nothing (plan 8c Task 6)", () => {
+    const lineup: CharacterId[] = ['hero', 'rin', 'chizuru', 'noel', 'selene'];
+    const options = (root: HTMLElement) => [...root.querySelectorAll('.slx-bcmd [role=option]')];
+    /** Everyone before `name` defends; then the command list of `name`. */
+    const listOf = (name: string, prep?: (g: Game) => void) => {
+      const { root, s, heading } = setup(prep, {}, lineup);
+      for (let i = 0; i < 5 && heading() !== T.cmd.choose(name); i++) {
+        for (let k = 0; k < 9 && root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'defend'; k++) s.onAction('down');
+        s.onAction('confirm');
+      }
+      expect(heading()).toBe(T.cmd.choose(name));
+      return options(root).map((o) => [o.querySelector('.slx-label')!.textContent, o.getAttribute('aria-disabled')]);
+    };
+    expect(listOf('洛恩')).toContainEqual(['殘響', 'true']);
+    const some = listOf('洛恩', (g) => { g.battle!.echo = { by: 'noel', round: g.battle!.round, def: SKILLS['fire-star'], cost: 5 }; });
+    expect(some).toContainEqual(['殘響：火之星彈', 'false']);
+    // Nobody else has the command.
+    for (const name of ['凜', '千鶴']) expect(listOf(name).some(([t]) => t?.startsWith('殘響')), name).toBe(false);
   });
 
   it('disables items when there are none to use in battle', () => {

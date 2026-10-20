@@ -62,12 +62,11 @@ describe('data integrity', () => {
     }
   });
 
-  it('the field list is the nine recovery skills (plan 8c: the purifying barrier is a battle skill)', () => {
+  it('the field list is the seven recovery skills (plan 8c: the purifying barrier is a battle skill; Bobby mends with devices)', () => {
     const field = Object.values(SKILLS).filter((s) => s.field).map((s) => s.id);
     expect(new Set(field)).toEqual(new Set([
       'hero-mend', 'hero-prayer', 'abyss-light',
       'moonlight', 'moon-rain', 'full-moon', 'rebirth',
-      'repair-kit', 'emergency-repair',
     ]));
   });
 

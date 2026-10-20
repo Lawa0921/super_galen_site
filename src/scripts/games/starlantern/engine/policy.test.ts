@@ -82,12 +82,18 @@ describe('per-character policies', () => {
     const bobby = (mech: MechState) => { const s = makeBattle([P('bobby', { mech })], [E('e0')]); return { s, c: s.party[0] }; };
     let { s, c } = bobby({ kind: 'devices', devices: [], cap: 1 });
     expect(run(s, c, sk('turret', 'cannon'), rule).action).toEqual({ kind: 'skill', skill: 'turret' });
-    ({ s, c } = bobby({ kind: 'devices', devices: [{ skill: 'turret', level: 1, turns: 1 }], cap: 1 }));
+    ({ s, c } = bobby({ kind: 'devices', devices: [{ skill: 'turret', kind: 'turret', power: 70, level: 1, turns: 1 }], cap: 1 }));
     expect(run(s, c, sk('turret', 'cannon'), rule).action).toEqual({ kind: 'skill', skill: 'turret' });
-    ({ s, c } = bobby({ kind: 'devices', devices: [{ skill: 'turret', level: 1, turns: 3 }], cap: 1 }));
+    ({ s, c } = bobby({ kind: 'devices', devices: [{ skill: 'turret', kind: 'turret', power: 70, level: 1, turns: 3 }], cap: 1 }));
     expect(run(s, c, sk('turret', 'cannon'), rule).action).toBeNull();
     ({ s, c } = bobby({ kind: 'devices', devices: [], cap: 1 }));
     expect(run(s, c, sk('cannon'), rule).action).toBeNull();
+    // `big`: only while a boss or an elite stands (plan 8c Task 6).
+    const big: PolicyRule[] = [{ kind: 'ensure-device', skills: ['turret'], big: true }];
+    const vs = (foe: Partial<Combatant>) => { const b = makeBattle([P('bobby', { mech: { kind: 'devices', devices: [], cap: 2 } })], [E('e0', foe)]); return run(b, b.party[0], sk('turret', 'cannon'), big).action; };
+    expect(vs({})).toBeNull();
+    expect(vs({ boss: true })).toEqual({ kind: 'skill', skill: 'turret' });
+    expect(vs({ tint: 'elite' })).toEqual({ kind: 'skill', skill: 'turret' });
   });
 
   it('ensure-mark', () => {
@@ -206,7 +212,7 @@ describe('per-character policies', () => {
     for (const [id, rules] of Object.entries(DEFAULT_POLICIES) as [CharacterId, PolicyRule[]][]) {
       for (const r of rules) for (const skill of named(r)) { n++; expect(SKILLS[skill]?.owner, `${id} ${skill}`).toBe(id); }
     }
-    expect(n).toBe(7);
+    expect(n).toBe(9);   // Bobby's three devices (plan 8c Task 6)
     expect(Object.keys(DEFAULT_POLICIES).sort()).toEqual(['bobby', 'chizuru', 'liz', 'rin', 'safira', 'sylvie']);
   });
 

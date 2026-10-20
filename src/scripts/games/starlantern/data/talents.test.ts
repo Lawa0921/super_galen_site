@@ -224,7 +224,7 @@ describe('memory keystone words (6c Task 13)', () => {
   it("each memory keystone says a word of her memory before its effect (6c Task 13)", () => {
     const before: Record<string, string> = {
       'moon-promise': '她施放的回復', 'small-shrine': '戰鬥開始時', 'troupe-step': '她施放的增益', 'carried-out': '對滿血目標',
-      'teachers-gift': '她的技能', blueprint: '砲台威力', 'fathers-face': '素材尋獲', 'not-a-shield': '挑釁中', 'unrung-bell': '洛恩倒下時',
+      'teachers-gift': '她的技能', blueprint: '裝置效果', 'fathers-face': '素材尋獲', 'not-a-shield': '挑釁中', 'unrung-bell': '洛恩倒下時',
     };
     for (const [k, effect] of Object.entries(before)) {
       const { desc } = KEYSTONES[k as 'blueprint'];

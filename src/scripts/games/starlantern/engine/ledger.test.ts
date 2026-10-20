@@ -68,7 +68,7 @@ describe('the contribution ledger', () => {
   it('poison ticks go to the first poisoner, turrets to their builder', () => {
     const l = newLedger();
     const foe = E('e0', { poison: true, poisonSrc: 'noel', sleep: 5, max: { hp: 100, tp: 0, atk: 1, def: 20, mag: 1, res: 20, spd: 1 } });
-    const bobby = P('bobby', { turret: { power: 100, turns: 2 } });
+    const bobby = P('bobby', { mech: { kind: 'devices', devices: [{ skill: 'turret', kind: 'turret', power: 100, level: 1, turns: 2 }], cap: 2 } });
     const s = resolveRound(makeBattle([P('noel'), bobby], [foe]), {}, constRng(0.5), l);
     const tick = s.log.find((e) => e.type === 'poison-tick');
     const shot = s.log.find((e) => e.type === 'damage');

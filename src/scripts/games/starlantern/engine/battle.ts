@@ -20,6 +20,8 @@ import type { Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
 import { COINS } from './mechanics/coins';
 import { payHp } from './mechanics/embers';
+import { echoDef, echoOf } from './mechanics/echo';
+import { T } from '../data/text.zh-TW';
 import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
@@ -31,7 +33,9 @@ export type Action =
   | { kind: 'defend' }
   | { kind: 'item'; item: string; target?: string }
   | { kind: 'escape' }
-  | { kind: 'ultimate'; target?: string };
+  | { kind: 'ultimate'; target?: string }
+  /** The hero repeats a companion's last skill (engine/mechanics/echo.ts). */
+  | { kind: 'echo'; target?: string };
 export type Outcome = 'ongoing' | 'win' | 'lose' | 'fled';
 
 export interface BattleState {
@@ -50,6 +54,8 @@ export interface BattleState {
   survive?: number;
   /** The barriers over the party (engine/mech.ts); the old roster raises none. */
   barriers?: Barrier[];
+  /** The last plain skill a companion cast, for the hero's echo (engine/mechanics/echo.ts): who, in which round, as cast, at what TP. */
+  echo?: { by: string; round: number; def: SkillDef; cost: number };
   /** The moon's phase while Selene fights (engine/mechanics/moon.ts), and the rounds a phase is held. */
   moon?: { phase: MoonPhase; hold?: { turns: number } };
 }
@@ -70,7 +76,7 @@ export const LIMIT_PER_ACTION = 12;
 /** Damage taken adds floor(damage / max HP * this), at least 1 (see dealDamage). */
 export const LIMIT_PER_HIT_SCALE = 40;
 
-const fresh = () => ({ poison: false, sleep: 0, buffs: [], taunt: 0, turret: null, defending: false, limit: 0, keystones: [] as KeystoneId[] });
+const fresh = () => ({ poison: false, sleep: 0, buffs: [], taunt: 0, defending: false, limit: 0, keystones: [] as KeystoneId[] });
 
 export function fromMember(m: Member, cell: number): Combatant {
   const row: Row = rowOfCell(cell);
@@ -330,6 +336,7 @@ function checkOutcome(s: BattleState): boolean {
  */
 function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ctx: EffectContext, rng: Rng): CastDef | null {
   delete ctx.lastHit;   // burn and bleed ride only on a hit of this action
+  delete ctx.paid;
   let sentTo: Combatant | undefined;   // a challenger or a cover is reached wherever she stands
   if (actor.side === 'enemy') {
     // A single blow goes where a taunt, a challenge or a cover sends it (forcedTarget); the ledger credits the one it
@@ -373,6 +380,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       const cost = castCost(s, actor, act.skill);
       if (actor.tp < cost) { s.log.push({ type: 'no-tp', actor: actor.key }); return null; }
       actor.tp -= cost;
+      ctx.paid = cost;
       payHp(actor, def);
       payMech(s, actor, def, ctx);
       s.log.push({ type: 'act', actor: actor.key, label: def.name });
@@ -393,6 +401,18 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     case 'defend':
       s.log.push({ type: 'act', actor: actor.key, label: '防禦' });
       return null;
+    case 'echo': {
+      // The hero only: a companion's last plain skill, this round's or the last's, at 70% for the TP she paid.
+      const rec = actor.defId === 'hero' ? echoOf(s) : null;
+      if (!rec) return null;
+      if (actor.tp < rec.cost) { s.log.push({ type: 'no-tp', actor: actor.key }); return null; }
+      actor.tp -= rec.cost;
+      const def = echoDef(rec);
+      s.log.push({ type: 'act', actor: actor.key, label: T.cmd.echoAct(def.name) });
+      if (def.effects.some((e) => e.kind === 'damage' && e.scatter)) scatterCast(s, actor, def, act.target, ctx, rng);
+      else for (const t of resolveTargets(s, actor, def.target, act.target, rng)) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
+      return null;
+    }
     case 'escape':
       return null;
     case 'ultimate': {
@@ -434,17 +454,8 @@ function scatterCast(s: BattleState, actor: Combatant, def: SkillDef, chosen: st
 
 function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
   // The mechanics open the round's end before any tick (the purifying barrier heals and cures first).
+  // (Bobby's devices run here too, as the old turret did: engine/mechanics/devices.ts.)
   mechBeforeTicks(s, ctx, rng);
-  for (const c of living(s.party)) {
-    if (!c.turret) continue;
-    const t = pickTarget(s.enemies, undefined, rng);
-    if (t) {
-      s.log.push({ type: 'act', actor: c.key, label: '砲台' });
-      const power = c.keystones.includes('blueprint') ? Math.round((c.turret.power * (100 + MEMORY_KEYSTONE_VALUES.turretPct)) / 100) : c.turret.power;
-      applyEffect(c, t, { kind: 'damage', power, element: 'phys', scale: 'mag', melee: false }, ctx);
-    }
-    c.turret = c.turret.turns > 1 ? { ...c.turret, turns: c.turret.turns - 1 } : null;
-  }
   for (const c of [...s.party, ...s.enemies]) {
     if (c.alive && c.poison) {
       const amount = shockTick(c, Math.max(1, Math.floor(c.max.hp * 0.1)));

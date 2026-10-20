@@ -1941,6 +1941,79 @@ test.describe('starlantern', () => {
     expect(missing).toEqual([]);
   });
 
+  test('devices and the echo command show on the battle screen (plan 8c)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+      p.recruited = ['hero', 'bobby', 'noel', 'chizuru', 'selene'];
+      p.grid = ['hero', 'noel', null, 'bobby', null, null, 'chizuru', null, 'selene'];
+    });
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    // Bobby has a turret up, and a shield generator; the foes are harmless and use no skill.
+    await game((g) => {
+      const bobby = g.battle.party.find((c: any) => c.key === 'bobby');
+      for (const e of g.battle.enemies.filter((x: any) => x.alive)) {
+        e.max.hp = 9999; e.hp = 9999; e.max.atk = 1; e.max.mag = 1;
+        if (g.battle.enemyDefs?.[e.key]) g.battle.enemyDefs[e.key] = { ...g.battle.enemyDefs[e.key], skills: [] };   // no acid, no ailment
+        g.battle.intents[e.key] = { kind: 'attack', target: g.battle.intents[e.key]?.target };
+      }
+      bobby.mech = { kind: 'devices', cap: 2, devices: [
+        { skill: 'turret', kind: 'turret', power: 38, level: 1, turns: 3 },
+        { skill: 'barrier', kind: 'shield', power: 40, level: 2, turns: 3 },
+      ] };
+    });
+    const round = () => game((g) => g.battle?.round ?? -1);
+    // Everyone defends through one round: the devices run and count down.
+    for (let i = 0; i < 60 && (await round()) === 0; i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    const words = page.locator('.slx-partybar [data-key=bobby] .slx-pm-ail .slx-mech-devices');
+    await expect(words).toHaveText(['砲台Lv1・2', '護盾機Lv2・2']);
+    // The hero's command list: 殘響, greyed with nothing to repeat; then named once Noel's skill is on record.
+    const heroTurn = async () => {
+      for (let i = 0; i < 6 && !((await page.locator('.slx-bcmd .slx-who').textContent()) ?? '').startsWith('洛恩'); i++) await w.choose('.slx-bcmd', '防禦');
+      await expect(page.locator('.slx-bcmd .slx-who')).toHaveText('洛恩 的行動');
+    };
+    await heroTurn();
+    const echo = page.locator('.slx-bcmd [role=option]', { hasText: '殘響' });
+    await expect(echo).toHaveAttribute('aria-disabled', 'true');
+    await expect(echo.locator('.slx-label')).toHaveText('殘響');
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/devices-echo-1280.png` }); }
+    await game((g) => {
+      const def = { id: 'fire-star', name: '火之星彈', owner: 'noel', tp: 5, target: 'enemy', desc: '', effects: [{ kind: 'damage', power: 140, element: 'fire', scale: 'mag', melee: false }] };
+      g.battle.echo = { by: 'noel', round: g.battle.round, def, cost: 5 };
+    });
+    await page.setViewportSize({ width: 844, height: 390 });
+    // On to the next member and back, so the hero's list is drawn again with the record.
+    await w.choose('.slx-bcmd', '防禦');
+    await w.key('Escape');
+    await heroTurn();
+    await expect(echo.locator('.slx-label')).toHaveText('殘響：火之星彈');
+    await expect(echo).toHaveAttribute('aria-disabled', 'false');
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/devices-echo-844.png` }); }
+    await page.setViewportSize({ width: 390, height: 844 });
+    const fit = await page.locator('.slx-partybar [data-key=bobby] .slx-pm-ail').evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
+    expect(fit.scroll).toBeLessThanOrEqual(fit.client);
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
   test('walks into the forge from town and dismantles one magic item', async ({ page }) => {
     const w = await setup(page, 7);
     const uid = await page.evaluate(() => {

@@ -130,6 +130,9 @@ export const T = {
     attack: '攻擊', skill: '技能', defend: '防禦', item: '道具', escape: '逃跑', auto: '全員攻擊', back: '返回',
     choose: (name: string) => `${name} 的行動`, target: '選擇目標', tp: (n: number) => `${n} TP`,
     ultimate: (name: string) => `絕技：${name}`, gauge: (n: number) => `絕技 ${n}%`,
+    /** The hero's echo: what it repeats (「殘響」 alone, greyed, when there is nothing); the act's name in the log. */
+    echo: (name?: string) => (name ? `殘響：${name}` : '殘響'),
+    echoAct: (name: string) => `殘響・${name}`,
   },
   battle: {
     win: '勝利！', lose: '全滅……', fled: '成功逃跑', cont: '繼續', poison: '毒', sleep: '睡眠',
@@ -181,6 +184,11 @@ export const T = {
     embers: (n: number) => `餘燼${n}`,
     cover: '代受',
     guarded: '受護',
+    /** Bobby's devices: their names (the act's label when one runs), the short ones in a word 「砲台Lv2・3」, a shield's 「護盾12」. */
+    device: { turret: '砲台', drone: '無人機', shield: '護盾產生器', mine: '地雷', coil: '線圈' },
+    deviceShort: { turret: '砲台', drone: '無人機', shield: '護盾機', mine: '地雷', coil: '線圈' },
+    deviceWord: (name: string, level: number, turns: number) => `${name}Lv${level}・${turns}`,
+    shield: (n: number) => `護盾${n}`,
     riposte: (n: number) => `贖火${n}`,
     beat: (n: number) => (n >= 4 ? `拍子${n}・終幕` : `拍子${n}`),
     cue: { overload: '暴走！', again: '還有。', noBarrier: '沒有結界', counter: '贖火', misstep: '這一步踩空了呀。', finale: '終幕' },
@@ -197,7 +205,6 @@ export const T = {
     resist: (who: string) => `${who} 沒有受到影響`,
     buff: (who: string, stat: BuffStat, pct: number) => `${who} 的${STAT[stat]}${pct > 0 ? '提升' : '下降'}了`,
     taunt: (who: string) => `${who} 吸引了敵人的注意`,
-    turret: (who: string) => `${who} 設置了砲台`,
     asleep: (who: string) => `${who} 正在睡覺`,
     noTp: (who: string) => `${who} 的 TP 不足`,
     noSkill: (who: string) => `${who} 還沒學會這個技能`,

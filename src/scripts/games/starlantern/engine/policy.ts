@@ -11,7 +11,8 @@ import type { CharacterId, SkillDef } from './types';
 export type PolicyRule =
   /** `big`: only while a boss or an elite stands; `below`: only once one of them is under this percent of its HP. */
   | { kind: 'ensure-barrier'; skills: string[]; big?: true; below?: number }
-  | { kind: 'ensure-device'; skills: string[] }
+  /** `big`: only while a boss or an elite stands. */
+  | { kind: 'ensure-device'; skills: string[]; big?: true }
   /** `big`: only a boss or an elite is worth a mark; `below`: only once its HP is under this percent of its max. */
   | { kind: 'ensure-mark'; skill: string; big?: true; below?: number }
   /**
@@ -57,6 +58,7 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
       case 'ensure-device': {
         const m = c.mech;
         if (m?.kind !== 'devices') break;
+        if (rule.big && !foes.some((e) => e.boss || e.tint === 'elite')) break;
         const expiring = m.devices.find((d) => d.turns <= 1 && has(d.skill));
         if (expiring) return cast(expiring.skill);
         if (m.devices.length < m.cap) {
