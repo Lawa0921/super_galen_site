@@ -151,7 +151,10 @@ const GOLDEN: { hash: string; events: string }[] = [
   { hash: 'ac50ccf1', events: 'sleep' },
 ];
 
-/** 第二段（溺水死亡重生 + buff + 技能）：用 PlayerActor 重構後、多 actor 之前的 HEAD（39791710）錄下 */
+/**
+ * 第二段（溺水死亡重生 + buff + 技能）：在 PlayerActor 重構後、多 actor 之前的 HEAD（39791710）錄下；
+ * 最終審查另對重構前的真正基準 22fe9e4b 跑過，期待值同樣通過（單機行為從計畫基準起就沒變）。
+ */
 const GOLDEN2: { hash: string; events: string }[] = [
   { hash: 'be6c3bc3', events: 'discover*2 xp levelup xp bubble hurt*2 xploss death' },
   { hash: '49b4a369', events: '' },

@@ -769,7 +769,7 @@ export class DelveGame {
     const gen = pre ?? generateWorld(this.seed, { width: opts.width, height: opts.height });
     this.world = gen.world;
     this.liquids = new LiquidSim(this.world);
-    // 液體不流進任何活著的玩家站的格子
+    // 液體反應（熔岩遇水 / 蜂蜜）不在任何活著的玩家站的格子凝成黑曜石 / 脆蜜塊（不把人封進方塊；液體本身照樣流過去）
     this.liquids.blocked = (x, y) => this.tileOverlapsPlayer(x, y, true);
     // 泉水瀑布（無限源 + 滲水石排水）
     this.springs = gen.springs;
@@ -998,7 +998,7 @@ export class DelveGame {
         else { this.stepActor(dt); alive.push(a); }
       });
     }
-    // 世界後段（M-B1 Task 2 仍以本地玩家為中心）
+    // 世界後段：怪物 / 投射物 / 掉落物 / 據點 / NPC 都看所有玩家（spec §5.2）
     this.updateEntities(dt);
     this.updateSettlements(dt);
     this.updateFolk(dt);

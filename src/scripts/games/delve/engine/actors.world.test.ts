@@ -235,7 +235,7 @@ describe('掉落物給最近的人', () => {
 });
 
 describe('液體 / 放置看任一玩家', () => {
-  it('liquids.blocked：B 站的格子擋住液體（B 死了就不擋）', () => {
+  it('liquids.blocked：B 站的格子不讓液體反應凝成方塊（B 死了就不擋）', () => {
     const g = arena();
     const b = g.addActor('b', hero(), { x: 60, y: FLOOR - 1 });
     steps(g, 3);
