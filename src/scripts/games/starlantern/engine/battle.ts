@@ -13,6 +13,7 @@ import { pick, type Rng } from './rng';
 import { abyssPct, bossPartyScale, deepPower, empower, enemyLevelAt, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
+import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
 import { credit, lossOf, type Ledger } from './ledger';
 import type { Barrier } from './mech';
 import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
@@ -362,11 +363,12 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
   }
   for (const c of [...s.party, ...s.enemies]) {
     if (c.alive && c.poison) {
-      const amount = Math.max(1, Math.floor(c.max.hp * 0.1));
+      const amount = shockTick(c, Math.max(1, Math.floor(c.max.hp * 0.1)));
       if (c.side === 'enemy') credit(ctx.ledger, c.poisonSrc, 'damage', lossOf(c, amount));
       s.log.push({ type: 'poison-tick', target: c.key, amount: dealDamage(c, amount) });
       if (!c.alive) s.log.push({ type: 'ko', target: c.key });
     }
+    if (c.alive) tickAilments(c, ctx);
     if (c.alive && c.keystones.includes('regen')) {
       const amount = Math.min(c.max.hp - c.hp, Math.floor((c.max.hp * KEYSTONE_VALUES.regenPct) / 100));
       if (amount > 0) {
@@ -382,6 +384,7 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
       s.log.push({ type: 'tp', target: c.key, amount: c.tp - before, regen: true });
     }
     c.buffs = c.buffs.map((b) => ({ ...b, turns: b.turns - 1 })).filter((b) => b.turns > 0);
+    ageAilments(c);
     c.taunt = Math.max(0, c.taunt - 1);
     c.defending = false;
   }
@@ -423,6 +426,8 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
   const enemyActs = new Map([...fresh].map(([k, a]) => [k, planned[k] ?? a]));
   for (const actor of turnOrder([...living(s.party), ...living(s.enemies)], rng)) {
     if (!actor.alive) continue;
+    // A frozen turn is lost before sleep is looked at (sleep keeps its rounds); it thaws and is guarded for a while.
+    if (actor.frozen) { delete actor.frozen; actor.freezeGuard = AILMENT.freezeGuard; s.log.push({ type: 'frozen', actor: actor.key }); continue; }
     if (actor.sleep > 0) { actor.sleep -= 1; s.log.push({ type: 'asleep', actor: actor.key }); continue; }
     const act = actor.side === 'party' ? actions[actor.key] : enemyActs.get(actor.key);
     const heroUp = s.party.some((c) => c.key === 'hero' && c.alive);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AILMENT, ailmentChance, inflictAilment } from './ailments';
+import { AILMENT, ailmentChance, ailmentChips, inflictAilment } from './ailments';
 import type { Combatant } from './combatant';
 import { mulberry32 } from './rng';
 import { applyEffect, type EffectContext } from './skills';
@@ -197,6 +197,20 @@ describe('inflicting the new ailments', () => {
       expect(t.poison).toBe(false);
       expect(t.sleep).toBe(0);
     }
+  });
+});
+
+describe('ailment chips', () => {
+  it('ailment chips in a fixed order', () => {
+    const c = E('e0', {
+      chill: 2, frozen: true, shock: 2, bleed: [{ tick: 3, turns: 1, src: 'p' }, { tick: 2, turns: 3, src: 'p' }],
+      burn: { tick: 5, turns: 3, src: 'p' }, sleep: 2, poison: true, freezeGuard: 2,
+    });
+    expect(ailmentChips(c)).toEqual([
+      { id: 'poison' }, { id: 'sleep', turns: 2 }, { id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 },
+      { id: 'shock', turns: 2 }, { id: 'freeze' }, { id: 'chill', turns: 2 },
+    ]);
+    expect(ailmentChips(E('e1'))).toEqual([]);
   });
 });
 

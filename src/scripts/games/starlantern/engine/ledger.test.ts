@@ -86,6 +86,24 @@ describe('the contribution ledger', () => {
     expect(of(l2, 'e0').damage).toBe(0);
   });
 
+  it('burn and bleed ticks go to who caused them', () => {
+    const l = newLedger();
+    const foe = E('e0', { hp: 50, burn: { tick: 7, turns: 2, src: 'noel' }, bleed: [{ tick: 4, turns: 2, src: 'liz' }, { tick: 3, turns: 2, src: 'rin' }] });
+    // A member's own burn credits no one (the ledger counts damage dealt to enemies only).
+    const s = resolveRound(makeBattle([P('noel', { burn: { tick: 5, turns: 2, src: 'e0' } }), P('liz'), P('rin')], [foe]), { noel: { kind: 'defend' }, liz: { kind: 'defend' }, rin: { kind: 'defend' } }, constRng(0.5), l);
+    expect(s.log.filter((e) => e.type === 'dot-tick' && e.target === 'e0')).toHaveLength(3);
+    expect(of(l, 'noel').damage).toBe(7);
+    expect(of(l, 'liz').damage).toBe(4);
+    expect(of(l, 'rin').damage).toBe(3);
+    expect(of(l, 'e0').damage).toBe(0);
+    expect(s.enemies[0].hp).toBe(36);
+    // Overkill is not credited: a 5 HP foe gives the burn's owner 5 and the bleed nothing.
+    const l2 = newLedger();
+    resolveRound(makeBattle([P('noel')], [E('e0', { hp: 5, burn: { tick: 7, turns: 2, src: 'noel' }, bleed: [{ tick: 4, turns: 2, src: 'liz' }] }), E('e1', { sleep: 3 })]), { noel: { kind: 'defend' } }, constRng(0.5), l2);
+    expect(of(l2, 'noel').damage).toBe(5);
+    expect(of(l2, 'liz').damage).toBe(0);
+  });
+
   it('each protective factor is credited on its own', () => {
     const run = (reverse: boolean) => {
       const l = newLedger();

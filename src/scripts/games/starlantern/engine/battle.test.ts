@@ -8,7 +8,9 @@ import { applyEffect } from './skills';
 import { BOSS_PARTY_SCALE, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, bossPartyScale, depthLevel, encounterTable, homeLevel, mul, partyScale } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { choose, partyAt } from './sim';
-import { dealDamage, type BattleEvent, type Combatant } from './combatant';
+import { dealDamage, stat, type BattleEvent, type Combatant } from './combatant';
+import { inflictAilment } from './ailments';
+import type { EffectContext } from './skills';
 import { constRng, makeBattle, makeCombatant, plainItem, fullParty } from './testing';
 import { KEYSTONE_GATE, KEYSTONE_VALUES as V, MAX_KEYSTONES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import { chainLength } from '../data/story/chains';
@@ -932,5 +934,120 @@ describe('names and boss power', () => {
   });
   it('a power of one and no names are the plain fight', () => {
     expect(fight({ bossPower: 1 }).enemies[0]).toEqual(fight().enemies[0]);
+  });
+});
+
+describe('ailments at round end and on their turn (plan 8b)', () => {
+  const counting = (v: number) => {
+    const f = Object.assign(() => { f.n += 1; return v; }, { n: 0 });
+    return f;
+  };
+  const fx = (r: () => number = constRng(0)): EffectContext => ({ rng: r, itemBoost: false, revealed: {}, log: [] });
+  const all = { poison: true, sleep: 2, burn: { tick: 5, turns: 3, src: 'p' }, bleed: [{ tick: 2, turns: 2, src: 'p' }], shock: 2, frozen: true as const, freezeGuard: 1, chill: 2 };
+
+  it('burn and bleed tick at round end, then wear off', () => {
+    let s = makeBattle([P('p')], [E('e0', { burn: { tick: 12, turns: 3, src: 'p' }, bleed: [{ tick: 5, turns: 1, src: 'p' }] })]);
+    s = resolveRound(s, { p: { kind: 'defend' } }, rng);
+    expect(s.enemies[0].hp).toBe(83);
+    expect(s.log.filter((e) => e.type === 'dot-tick')).toEqual([
+      { type: 'dot-tick', target: 'e0', amount: 12, status: 'burn' },
+      { type: 'dot-tick', target: 'e0', amount: 5, status: 'bleed' },
+    ]);
+    expect(s.enemies[0].bleed).toBeUndefined();
+    expect(s.enemies[0].burn).toEqual({ tick: 12, turns: 2, src: 'p' });
+    s = resolveRound(s, { p: { kind: 'defend' } }, rng);
+    s = resolveRound(s, { p: { kind: 'defend' } }, rng);
+    expect(s.enemies[0].hp).toBe(59);
+    expect(s.enemies[0].burn).toBeUndefined();
+  });
+
+  it('a tick that fells logs the fall and stops the rest', () => {
+    const s = resolveRound(makeBattle([P('p')], [E('e0', { hp: 3, burn: { tick: 12, turns: 3, src: 'p' }, bleed: [{ tick: 5, turns: 1, src: 'p' }] }), E('e1', { sleep: 3 })]), { p: { kind: 'defend' } }, rng);
+    expect(s.log.filter((e) => e.type === 'dot-tick' || e.type === 'ko')).toEqual([
+      { type: 'dot-tick', target: 'e0', amount: 12, status: 'burn' }, { type: 'ko', target: 'e0' },
+    ]);
+    expect(s.enemies[0].burn).toBeUndefined();
+  });
+
+  it('shock raises every hit and every tick by 20%', () => {
+    const hit = (shock?: number) => {
+      const t = E('e0', shock ? { shock } : {});
+      applyEffect(P('p'), t, { kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: true }, fx(constRng(0.5)));
+      return 100 - t.hp;
+    };
+    expect(hit()).toBe(20);
+    expect(hit(2)).toBe(24);   // Math.floor(20 x 1 x 1.2 x 1.0)
+    const poisoned = resolveRound(makeBattle([P('p', { poison: true, shock: 2 })], [E('e0', { sleep: 3 })]), { p: { kind: 'defend' } }, rng);
+    expect(poisoned.log).toContainEqual({ type: 'poison-tick', target: 'p', amount: 12 });
+    const burnt = resolveRound(makeBattle([P('p')], [E('e0', { shock: 2, burn: { tick: 12, turns: 3, src: 'p' }, bleed: [{ tick: 1, turns: 2, src: 'p' }] })]), { p: { kind: 'defend' } }, rng);
+    expect(burnt.log.filter((e) => e.type === 'dot-tick').map((e) => (e as { amount: number }).amount)).toEqual([14, 1]);
+    expect(burnt.enemies[0].shock).toBe(1);
+  });
+
+  it('a frozen foe loses its next action, then is guarded for two rounds', () => {
+    let s = makeBattle([P('p')], [E('e0', { frozen: true })]);
+    s = resolveRound(s, { p: { kind: 'defend' } }, rng);
+    expect(s.log).toContainEqual({ type: 'frozen', actor: 'e0' });
+    expect(s.log.some((e) => e.type === 'act' && e.actor === 'e0')).toBe(false);
+    expect(s.party[0].hp).toBe(100);
+    expect(s.enemies[0].frozen).toBeUndefined();
+    expect(s.enemies[0].freezeGuard).toBe(2);
+    for (const guard of [2, 1]) {
+      expect(s.enemies[0].freezeGuard).toBe(guard);
+      const r = counting(0);
+      inflictAilment(s.party[0], s.enemies[0], 'freeze', 1, fx(r));
+      expect(s.enemies[0].frozen).toBeUndefined();
+      expect(r.n).toBe(0);
+      s = resolveRound(s, { p: { kind: 'defend' } }, rng);
+    }
+    expect(s.enemies[0].freezeGuard).toBeUndefined();
+    inflictAilment(s.party[0], s.enemies[0], 'freeze', 1, fx());
+    expect(s.enemies[0].frozen).toBe(true);
+  });
+
+  it('the freeze takes the turn before sleep does', () => {
+    const s = resolveRound(makeBattle([P('p')], [E('e0', { frozen: true, sleep: 2 })]), { p: { kind: 'defend' } }, rng);
+    expect(s.log.filter((e) => e.type === 'frozen' || e.type === 'asleep')).toEqual([{ type: 'frozen', actor: 'e0' }]);
+    expect(s.enemies[0].sleep).toBe(2);
+  });
+
+  it('a frozen member loses the turn too', () => {
+    const s = resolveRound(makeBattle([P('p', { frozen: true })], [E('e0', { sleep: 3 })]), { p: { kind: 'attack', target: 'e0' } }, rng);
+    expect(s.log).toContainEqual({ type: 'frozen', actor: 'p' });
+    expect(s.enemies[0].hp).toBe(100);
+  });
+
+  it('chill slows a boss by 30%', () => {
+    const boss = E('b', { boss: true, chill: 2, max: { spd: 20 } as never });
+    expect(stat(boss, 'spd')).toBe(14);
+    let s = makeBattle([P('p')], [boss]);
+    s = resolveRound(s, { p: { kind: 'defend' } }, rng);
+    expect(s.enemies[0].chill).toBe(1);
+    s = resolveRound(s, { p: { kind: 'defend' } }, rng);
+    expect(s.enemies[0].chill).toBeUndefined();
+    expect(stat(s.enemies[0], 'spd')).toBe(20);
+  });
+
+  it('a frozen boss does not exist: its turn is never skipped', () => {
+    const s0 = makeBattle([P('p')], [E('b', { boss: true })]);
+    inflictAilment(s0.party[0], s0.enemies[0], 'freeze', 1, fx());
+    expect(s0.enemies[0].frozen).toBeUndefined();
+    const s = resolveRound(s0, { p: { kind: 'defend' } }, rng);
+    expect(s.log.some((e) => e.type === 'frozen')).toBe(false);
+    expect(s.log).toContainEqual({ type: 'act', actor: 'b', label: '攻擊' });
+  });
+
+  it('death and cure clear every ailment', () => {
+    const fallen = E('e0', { ...all, bleed: [...all.bleed] });
+    dealDamage(fallen, 999);
+    for (const k of ['burn', 'bleed', 'shock', 'frozen', 'freezeGuard', 'chill', 'poisonSrc'] as const) expect(fallen[k], k).toBeUndefined();
+    expect(fallen.poison).toBe(false);
+    expect(fallen.sleep).toBe(0);
+    const cured = P('q', { ...all, bleed: [...all.bleed], poisonSrc: 'e0' });
+    applyEffect(P('s'), cured, { kind: 'cure' }, fx());
+    for (const k of ['burn', 'bleed', 'shock', 'frozen', 'chill', 'poisonSrc'] as const) expect(cured[k], k).toBeUndefined();
+    expect(cured.poison).toBe(false);
+    expect(cured.sleep).toBe(0);
+    expect(cured.freezeGuard).toBe(1);
   });
 });

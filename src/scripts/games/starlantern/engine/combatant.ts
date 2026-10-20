@@ -4,7 +4,7 @@ import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import type { MechState } from './mech';
-import type { AilmentShown, Dot } from './ailments';
+import { AILMENT, clearAilments, type AilmentShown, type Dot } from './ailments';
 
 /** `src`: the combatant key of whoever cast it (the contribution ledger credits what it prevents to them). */
 export interface Buff { stat: BuffStat; pct: number; turns: number; src?: string }
@@ -79,6 +79,10 @@ export type BattleEvent =
   | { type: 'no-skill'; actor: string }
   | { type: 'escape'; success: boolean }
   | { type: 'poison-tick'; target: string; amount: number }
+  /** A burn or bleed stack's round-end damage. */
+  | { type: 'dot-tick'; target: string; amount: number; status: 'burn' | 'bleed' }
+  /** A frozen combatant's turn, lost (it thaws). */
+  | { type: 'frozen'; actor: string }
   /** A survive fight lasted its rounds. */
   | { type: 'survived' };
 
@@ -86,7 +90,8 @@ export const MAX_BUFFS = 3;
 export const SLEEP_TURNS = 3;
 
 export function stat(c: Combatant, s: BuffStat): number {
-  const pct = c.buffs.filter((b) => b.stat === s).reduce((sum, b) => sum + b.pct, 0);
+  // A chilled boss is slower, added to its buffs' percentages.
+  const pct = c.buffs.filter((b) => b.stat === s).reduce((sum, b) => sum + b.pct, 0) + (s === 'spd' && c.chill ? AILMENT.chillSpdPct : 0);
   return Math.max(1, Math.floor(c.max[s] * Math.max(0.25, 1 + pct / 100)));
 }
 
@@ -167,6 +172,7 @@ export function hitAmount(a: Combatant, t: Combatant, spec: DamageSpec, r: HitRo
   }
   mult *= 1 - tx(spec.melee ? 'meleeDR' : 'rangedDR') / 100;
   if (t.defending) mult *= 0.5;
+  if (t.shock) mult *= 1 + AILMENT.shockPct / 100;
   // Keystones (data/talents.ts): a factor only when held, and no draws, so a fight without them keeps its sequence.
   if (a.keystones.includes('last-stand') && a.hp < a.max.hp * KEYSTONE_VALUES.lastStandHp) mult *= 1 + KEYSTONE_VALUES.lastStandPct / 100;
   if (t.keystones.includes('taunt-guard') && t.taunt > 0) mult *= 1 - KEYSTONE_VALUES.tauntGuardPct / 100;
@@ -199,6 +205,7 @@ export function dealDamage(t: Combatant, amount: number): number {
     t.buffs = [];
     t.taunt = 0;
     t.turret = null;
+    clearAilments(t);
   }
   return lost;
 }

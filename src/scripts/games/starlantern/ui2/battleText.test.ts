@@ -39,4 +39,13 @@ describe('battleLines', () => {
       '史萊姆燒起來了', '史萊姆被凍住了', '史萊姆的動作變慢了', '史萊姆觸電了', '史萊姆開始流血了', '史萊姆中毒了', '史萊姆睡著了',
     ]);
   });
+
+  it('burn and bleed ticks and a frozen turn are worded', () => {
+    const log: BattleEvent[] = [
+      { type: 'dot-tick', target: 'e0', amount: 12, status: 'burn' },
+      { type: 'dot-tick', target: 'e0', amount: 5, status: 'bleed' },
+      { type: 'frozen', actor: 'e0' },
+    ];
+    expect(battleLines(log, () => '史萊姆')).toEqual(['史萊姆 因灼燒受到 12 傷害', '史萊姆 因流血受到 5 傷害', '史萊姆 被凍住了，動彈不得']);
+  });
 });

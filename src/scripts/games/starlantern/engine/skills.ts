@@ -4,7 +4,7 @@ import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import { credit, creditPrevented, lossOf, type Ledger } from './ledger';
-import { inflictAilment } from './ailments';
+import { clearAilments, inflictAilment } from './ailments';
 
 /**
  * `ledger`: the sim's contribution ledger (absent in the game); it reads the fight and never draws. `redirect`: set only
@@ -162,6 +162,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       target.poison = false;
       delete target.poisonSrc;
       target.sleep = 0;
+      clearAilments(target, { keepGuard: true });
       ctx.log.push({ type: 'cure', target: target.key });
       return;
     }
