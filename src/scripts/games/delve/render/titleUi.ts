@@ -6,7 +6,8 @@ import { cursorBmp, iconBmp, logoBmp, logoShineBmp, logoTorchTip, type TitleIcon
 import { continueLines, menuMove, readVolume, rollWorldName, writeVolume, zoomPrefLabel } from './titleModel';
 import { parseZoomPref } from './lowres';
 import type { SoundManager } from '../audio/SoundManager';
-import type { SlotMeta } from '../save/storage';
+import type { CharacterMeta, SlotMeta } from '../save/storage';
+import type { Appearance } from '../engine/appearance';
 
 export const PEACEFUL_KEY = 'delve.peaceful';
 export const ZOOM_KEY = 'delve.zoom';
@@ -15,10 +16,26 @@ export const AIM_KEY = 'delve.autoaim';
 const ZOOM_MIN = -3, ZOOM_MAX = 4;
 
 export interface TitleHandlers {
+  /** 繼續冒險：最近存檔的世界 + 它記錄的角色 */
   onContinue(): void;
+  /** 舊標題「新世界」面板：新的預設角色 + 新世界（Task 4 換成 onCreateWorld） */
   onCreate(seed: string, peaceful: boolean): void;
-  onImport(): void;
+  /** 匯入：沒給檔案 → 打開檔案選擇；給檔案 → 匯入成新的世界（不進遊戲） */
+  onImport(file?: File): void;
+  /** 舊標題「匯出存檔」：匯出「繼續冒險」指向的世界 */
   onExport(): void;
+  /** 開始遊戲（進角色列表前；舊存檔先轉換） */
+  onStart(): void;
+  onPickCharacter(id: string): void;
+  /** 建立並選定新角色；失敗 → null */
+  onCreateCharacter(nick: string, appearance: Appearance): Promise<CharacterMeta | null>;
+  onDeleteCharacter(id: string): void;
+  /** 用選定的角色進這個世界 */
+  onPickWorld(slot: string): void;
+  /** 用選定的角色建新世界 */
+  onCreateWorld(name: string, peaceful: boolean): void;
+  onDeleteWorld(slot: string): void;
+  onExportWorld(slot: string): void;
   onHelp(): void;
   /** 「按任意鍵開始」→ 選單滑進來（場景跳過開場下降） */
   onPressStart(): void;
@@ -375,6 +392,13 @@ export class TitleUi {
     ctx.clearRect(0, 0, c.width, c.height);
     ctx.drawImage(img, 0, 0);
   }
+
+  // ── 角色 / 世界列表（面板 DOM 在 Task 4；目前只記住最新的列表） ──
+  private chars: CharacterMeta[] = [];
+  private worlds: SlotMeta[] = [];
+  private worldsFor = '';
+  setCharacters(list: CharacterMeta[]): void { this.chars = list; }
+  setWorlds(list: SlotMeta[], forNick: string): void { this.worlds = list; this.worldsFor = forNick; }
 
   // ── 存檔摘要 ──
   setSave(meta: SlotMeta | null): void {

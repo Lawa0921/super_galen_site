@@ -2,7 +2,7 @@
 // 音量偏好（遊戲廳共用 arcade-sfx-vol）、世界生成進度標籤、像素抖動轉場門檻、背景鏡頭。
 import { dateOf, SEASON_NAMES } from '../engine/calendar';
 import { bayer } from './pixel';
-import type { SaveSummary } from '../save/storage';
+import type { CharacterMeta, SaveSummary, SlotMeta } from '../save/storage';
 
 export type { SaveSummary };
 
@@ -58,6 +58,36 @@ export function continueLines(meta: { seed: string; savedAt: number; summary?: S
   if (s.peaceful) facts.push('和平');
   // 每一項內部用不換行空白：窄畫面只會在「 · 」處換行（「完成度 1%」不會被拆開）
   return [`「${meta.seed}」 第${d.year}年 ${SEASON_NAMES[d.season]} ${d.dayOfSeason}日`, facts.map((f) => f.replace(/ /g, '\u00a0')).join(' · ')];
+}
+
+/** 一行摘要：每一項內部用不換行空白，窄畫面只會在「 · 」處換行 */
+const joinFacts = (facts: string[]): string => facts.map((f) => f.replace(/ /g, ' ')).join(' · ');
+
+/** 世界列表的一行：世界名 · 遊玩時間 · 最深 · 完成度 · 和平 · 上次遊玩多久前（沒有摘要的舊存檔只有名稱與時間） */
+export function worldLine(m: SlotMeta, now: number): string {
+  const s = m.summary, facts = [`「${m.seed}」`];
+  if (validSummary(s)) {
+    facts.push(`遊玩 ${formatPlayTime(s.playSec)}`);
+    if (s.depth > 0) facts.push(`最深 ${Math.floor(s.depth)} 格`);
+    facts.push(`完成度 ${Math.round(Math.max(0, Math.min(1, s.completion)) * 100)}%`);
+    if (s.peaceful) facts.push('和平');
+  }
+  facts.push(savedAgo(m.savedAt, now));
+  return joinFacts(facts);
+}
+
+/** 角色列表的一行：暱稱 · Lv · 上次遊玩多久前（rev 0 = 建立後還沒進過任何世界 → 從未遊玩） */
+export function characterLine(c: CharacterMeta, now: number): string {
+  return joinFacts([c.nick, `Lv ${Math.max(1, Math.floor(c.level))}`, c.rev > 0 ? savedAgo(c.savedAt, now) : '從未遊玩']);
+}
+
+/**
+ * 「繼續冒險」指向的世界：worlds 是 listWorlds 的結果（新到舊），取第一個「記錄的角色還在」的世界；
+ * 沒有 charId 的槽 = 還沒轉換的舊存檔（main），照樣算。挑法同 planContinue()（不帶 slot），但只看清單、不解碼存檔。
+ */
+export function continueSlot(worlds: readonly SlotMeta[], chars: readonly { id: string }[]): SlotMeta | null {
+  const ids = new Set(chars.map((c) => c.id));
+  return worlds.find((m) => (m.charId ? ids.has(m.charId) : true)) ?? null;
 }
 
 // ── 世界名骰子：地名風的兩段組合（也是種子）──

@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatPlayTime, summarizeGame, continueLines, rollWorldName, menuMove, readVolume, writeVolume, VOLUME_KEY,
   genStageLabel, genProgress, wipeThreshold, titleCamY, panX, zoomPrefLabel, savedAgo, realDate, descentY, focusFor,
+  worldLine, characterLine, continueSlot,
 } from './titleModel';
 import { DAY_LENGTH } from '../engine/constants';
 
@@ -65,6 +66,51 @@ describe('summarizeGame / continueLines', () => {
   it('摘要欄位壞掉（舊格式 / 被改）→ 當作沒有摘要', () => {
     const l = continueLines({ seed: 'bad', savedAt: 0, summary: { seed: 'bad' } as never }, 0);
     expect(l[0]).toBe('「bad」');
+  });
+});
+
+describe('worldLine / characterLine（角色 / 世界列表的一行摘要）', () => {
+  const sp = (s: string): string => s.replace(/ /g, ' ');
+  const now = 1_000_000_000;
+  const summary = { seed: '青苔深谷7', time: 0, playSec: 4500, depth: 212, completion: 0.0712, peaceful: false };
+  it('世界：名稱 · 遊玩時間 · 最深 · 完成度 · 上次遊玩多久前', () => {
+    const l = worldLine({ slot: 'w-1', seed: '青苔深谷7', savedAt: now - 3 * 60_000, bytes: 1, summary }, now);
+    expect(sp(l)).toBe('「青苔深谷7」 · 遊玩 1 小時 15 分 · 最深 212 格 · 完成度 7% · 3 分鐘前');
+  });
+  it('世界：和平模式加註、還沒下過地底不寫最深、剛剛存的寫「剛剛」', () => {
+    const l = worldLine({ slot: 'w-2', seed: 'x', savedAt: now - 1000, bytes: 1, summary: { ...summary, depth: 0, peaceful: true } }, now);
+    expect(sp(l)).toBe('「x」 · 遊玩 1 小時 15 分 · 完成度 7% · 和平 · 剛剛');
+  });
+  it('世界：沒有摘要（舊存檔）→ 名稱 · 上次遊玩多久前', () => {
+    expect(sp(worldLine({ slot: 'main', seed: 'old', savedAt: now - 2 * 3_600_000, bytes: 1 }, now))).toBe('「old」 · 2 小時前');
+  });
+  it('項目內部用不換行空白（只在 · 處換行）', () => {
+    const l = worldLine({ slot: 'w-1', seed: 'a b', savedAt: now, bytes: 1, summary }, now);
+    expect(l.split(' · ').every((part) => !part.includes(' '))).toBe(true);
+  });
+  const look = { body: 0, skin: 0, hair: 0, hairColor: 0, eyes: 0, shirt: 0, pants: 0, shoes: 0 } as never;
+  it('角色：暱稱 · Lv · 上次遊玩多久前', () => {
+    const l = characterLine({ id: 'a', nick: '阿明', savedAt: now - 5 * 60_000, rev: 4, level: 3, appearance: look }, now);
+    expect(sp(l)).toBe('阿明 · Lv 3 · 5 分鐘前');
+  });
+  it('角色：剛建立還沒進過世界（rev 0）→ 從未遊玩', () => {
+    const l = characterLine({ id: 'b', nick: '旅人', savedAt: now, rev: 0, level: 1, appearance: look }, now);
+    expect(sp(l)).toBe('旅人 · Lv 1 · 從未遊玩');
+  });
+});
+
+describe('continueSlot（「繼續冒險」指向哪個世界；同 planContinue 不帶 slot 的挑法，只看清單不解碼）', () => {
+  const w = (slot: string, savedAt: number, charId?: string) => ({ slot, seed: slot, savedAt, bytes: 1, ...(charId ? { charId } : {}) });
+  it('新到舊取第一個「角色還在」的世界', () => {
+    const worlds = [w('w-new', 3, 'gone'), w('w-mid', 2, 'b'), w('w-old', 1, 'a')];
+    expect(continueSlot(worlds, [{ id: 'a' }, { id: 'b' }])?.slot).toBe('w-mid');
+  });
+  it('沒有 charId 的舊存檔（main）照樣可以繼續', () => {
+    expect(continueSlot([w('w-1', 3, 'gone'), w('main', 1)], [])?.slot).toBe('main');
+  });
+  it('沒有可玩的組合 → null', () => {
+    expect(continueSlot([], [{ id: 'a' }])).toBeNull();
+    expect(continueSlot([w('w-1', 1, 'gone')], [{ id: 'a' }])).toBeNull();
   });
 });
 

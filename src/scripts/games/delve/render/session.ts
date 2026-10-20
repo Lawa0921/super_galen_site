@@ -1,22 +1,27 @@
 // session.ts — 頁面流程：標題畫面（即時背景場景、選單：繼續 / 新世界 / 匯入匯出 / 說明 / 設定）、
 // 像素抖動轉場 + 分段生成世界的進度、選單（存檔 / 匯出 / 匯入 / 回到標題）、自動存檔、debug 鉤。
+// 存檔身分 = 目前的存檔槽（多世界）＋ 目前的角色：標題選角色 → 選 / 建世界；新世界永遠另開存檔槽，匯入也是。
 import { DelveGame } from '../engine/game';
 import { generateWorldSteps, GEN_STAGE_COUNT, type GenResult } from '../engine/worldgen';
 import { GEN_VERSION } from '../engine/constants';
 import { restoreGame, COMPAT_GEN, type SaveData } from '../save/serialize';
 import {
-  listWorlds, startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, idbSplitStore, DbBlockedError, type SlotMeta,
+  startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, idbSplitStore, DbBlockedError, type CharacterMeta, type SlotMeta,
 } from '../save/storage';
-import { SplitSession, planContinue, saveSplit, commitMigration, NO_CHARACTER_MSG, type ContinuePlan } from '../save/split';
-import { decodeAnySave, encodeWorld, restoreSplit, type AnySave, type WorldData } from '../save/worldSave';
-import type { DelveCharacter } from '../save/character';
+import {
+  SplitSession, planContinue, planPlay, planNewWorld, importWorld, saveSplit, commitMigration, restoreErrorMessage,
+  CHARACTER_MISSING_MSG, type ContinuePlan,
+} from '../save/split';
+import { encodeWorld, restoreSplit, type WorldData } from '../save/worldSave';
+import { createCharacter, decodeCharacter, DEFAULT_NICK, type DelveCharacter } from '../save/character';
+import { levelForXp } from '../engine/levels';
 import { startDelve, type DelveHandle } from './main';
-import { autostartPlan, newWorldPlan, helpSeen, HELP_KEY } from './model';
+import { autostartPlan, helpSeen, HELP_KEY } from './model';
 import { SoundManager } from '../audio/SoundManager';
 import { TitleScene } from './titleScene';
 import { TitleUi, PEACEFUL_KEY, publishVolume } from './titleUi';
 import { Wipe } from './wipe';
-import { genProgress, genStageLabel, GEN_STAGE_LABELS, readVolume, rollWorldName, summarizeGame } from './titleModel';
+import { continueSlot, genProgress, genStageLabel, GEN_STAGE_LABELS, readVolume, rollWorldName, summarizeGame } from './titleModel';
 import { liveCounts, type LiveCounts } from './live';
 import { GEN_PHASES, GenSectionView, genPhaseLabel, genPhaseOf } from './genSection';
 import { Wardrobe } from './wardrobe';
@@ -25,7 +30,6 @@ import { dollKey, plainLook } from '../engine/doll';
 import { dollPreview } from './dollPreview';
 import { toCanvas } from './pixel';
 
-const SLOT = 'main';
 /** 進度條格數 */
 const PROGRESS_CELLS = 20;
 /** 生成畫面的地層剖面大小（像素；4200×1200 的世界每像素 = 15×15 格） */
@@ -66,6 +70,7 @@ export function bootDelve(root: HTMLElement): Session {
   const menuMsg = $('#delve-menu-msg');
   const fileInput = $<HTMLInputElement>('#delve-import-file');
   const confirmEl = $('#delve-confirm');
+  const confirmTitle = $('#delve-confirm-title');
   const confirmMsg = $('#delve-confirm-msg');
   const confirmOk = $<HTMLButtonElement>('#delve-confirm-ok');
   const confirmCancel = $<HTMLButtonElement>('#delve-confirm-cancel');
@@ -91,6 +96,13 @@ export function bootDelve(root: HTMLElement): Session {
   let handle: DelveHandle | null = null;
   /** 這場遊戲的存檔身分（角色 + 世界）；begin 設定，每次存檔都寫世界 + 角色兩份 */
   let split: SplitSession | null = null;
+  /** 標題選定的角色（角色列表 → 世界列表 → 進 / 建世界） */
+  let picked: string | null = null;
+  /** 最後一次讀到的角色 / 世界列表（世界列表標題的暱稱、刪除確認的名字） */
+  let charList: CharacterMeta[] = [];
+  let worldList: SlotMeta[] = [];
+  /** 沒有 IndexedDB 時建立的角色只活在記憶體（存不了，但照樣能開局） */
+  const memChars = new Map<string, DelveCharacter>();
   let stopAutosave: (() => void) | null = null;
   let persisted = false;
   let busy = false;
@@ -140,7 +152,7 @@ export function bootDelve(root: HTMLElement): Session {
   }
 
   /**
-   * 所有存檔路徑（自動存檔 / pagehide / 手動 / 回到標題 / 匯入後開局）都走這裡：世界 + 角色在同一個 transaction。
+   * 所有存檔路徑（自動存檔 / pagehide / 手動 / 回到標題 / 開局）都走這裡：寫到 s.slot，世界 + 角色在同一個 transaction。
    * 一次只寫一筆（排隊）：角色 rev 照順序落地，不會被晚到的舊快照蓋掉。
    */
   let saveQueue: Promise<unknown> = Promise.resolve();
@@ -261,7 +273,7 @@ export function bootDelve(root: HTMLElement): Session {
       root.dataset.phase = 'title';
       root.dataset.title = 'menu';
       say(titleMsg, '');
-      ui.setSave(await titleSlot());
+      await refreshTitle();
       startScene(true);
       ui.focusFirst(true);
       await wipe?.reveal();
@@ -273,24 +285,34 @@ export function bootDelve(root: HTMLElement): Session {
     }
   }
 
-  /** 目前存檔槽；沒有存檔 / 無 IndexedDB 時 null。資料庫被別的分頁擋住 → 丟 DbBlockedError（不能當成「沒有存檔」） */
-  async function existingSlot(): Promise<SlotMeta | null> {
-    if (!hasIndexedDB()) return null;
-    try {
-      return (await listWorlds()).find((m) => m.slot === SLOT) ?? null;
-    } catch (e) {
-      if (e instanceof DbBlockedError) throw e;
-      return null;
-    }
+  /**
+   * 讀角色 + 世界列表、算出「繼續冒險」指向的世界（continueSlot；同 planContinue() 的挑法）。無 IndexedDB → 只有記憶體裡的角色。
+   * 資料庫被別的分頁擋住 → 丟 DbBlockedError（不能當成「沒有存檔」）。
+   */
+  async function readLists(): Promise<{ chars: CharacterMeta[]; worlds: SlotMeta[]; cont: SlotMeta | null }> {
+    if (!hasIndexedDB()) return { chars: [...memChars.values()].map(metaOf), worlds: [], cont: null };
+    const [chars, worlds] = await Promise.all([idbSplitStore.listCharacters(), idbSplitStore.listWorlds()]);
+    return { chars, worlds, cont: continueSlot(worlds, chars) };
   }
-  /** 標題畫面用：被擋住時在標題訊息顯示原因，當作沒有存檔可繼續 */
-  async function titleSlot(): Promise<SlotMeta | null> {
-    try { return await existingSlot(); } catch (e) {
-      say(titleMsg, e instanceof Error ? e.message : String(e));
-      return null;
+  /** 標題上的「繼續冒險」摘要 + 角色 / 世界列表重讀一次（開頁 / 回到標題 / 刪除 / 匯入之後）；讀不到就在標題訊息顯示原因 */
+  async function refreshTitle(): Promise<void> {
+    let l: Awaited<ReturnType<typeof readLists>>;
+    try { l = await readLists(); } catch (e) {
+      say(titleMsg, e instanceof DbBlockedError ? e.message : `讀取存檔失敗：${errText(e)}`);
+      ui.setSave(null);
+      return;
     }
+    charList = l.chars;
+    worldList = l.worlds;
+    if (picked && !charList.some((c) => c.id === picked)) picked = null;
+    ui.setSave(l.cont);
+    ui.setCharacters(charList);
+    ui.setWorlds(worldList, pickedNick());
   }
-  async function existingSeed(): Promise<string | null> { return (await existingSlot())?.seed ?? null; }
+  const pickedNick = (): string => charList.find((c) => c.id === picked)?.nick ?? '';
+  function metaOf(c: DelveCharacter): CharacterMeta {
+    return { id: c.id, nick: c.nick, savedAt: c.savedAt, rev: c.rev, level: levelForXp(c.levels.xp), appearance: c.appearance };
+  }
 
   // ── 轉場 + 分段生成 ──
   const sectionCanvas = $<HTMLCanvasElement>('#delve-gen-map');
@@ -400,74 +422,96 @@ export function bootDelve(root: HTMLElement): Session {
     }
   }
 
-  function startFresh(seed: string, peaceful = defaultPeaceful()): void {
+  /**
+   * 生成新世界（進度畫面；只生成一次）→ 角色就地套上（planNewWorld）→ 新存檔槽開局。
+   * character = null → 新的預設角色（旅人、預設外觀），建立當下就寫進角色庫（B2）。
+   */
+  function newWorldWith(seed: string, peaceful: boolean, character: DelveCharacter | null): Promise<void> {
     const s = seed.trim() || rollWorldName(Math.random);
-    void transition('生成世界中…', async () => {
+    return transition('生成世界中…', async () => {
       const gen = await generate(s, {});
-      return { game: new DelveGame({ seed: s, peaceful, gen, appearance: defaultLook() }), session: SplitSession.fresh(s, Date.now(), SLOT) };
+      let c = character;
+      if (!c) {
+        c = createCharacter(DEFAULT_NICK, defaultLook(), Date.now());
+        await keepCharacter(c);
+      }
+      return planNewWorld(new DelveGame({ seed: s, peaceful, gen, appearance: c.appearance }), c, Date.now());
     }, 'title');
   }
+  /** 新角色寫進角色庫（沒有 IndexedDB → 記在記憶體） */
+  async function keepCharacter(c: DelveCharacter): Promise<void> {
+    if (hasIndexedDB()) await idbSplitStore.putCharacter(c); else memChars.set(c.id, c);
+  }
+  async function loadCharacter(id: string): Promise<DelveCharacter | null> {
+    const mem = memChars.get(id);
+    if (mem) return mem;
+    if (!hasIndexedDB()) return null;
+    const b = await idbSplitStore.getCharacter(id);
+    return b ? decodeCharacter(b) : null;
+  }
 
-  // ── 覆蓋確認對話框（頁內，不用 window.confirm） ──
-  let pending: { seed: string; peaceful: boolean } | null = null;
+  /** 新世界 + 新的預設角色（旅人、預設外觀）：autostart / ?fresh=1 與舊標題的「新世界」用。另開存檔槽，不覆蓋任何存檔 */
+  function startFresh(seed: string, peaceful = defaultPeaceful()): void {
+    void newWorldWith(seed, peaceful, null);
+  }
+
+  // ── 確認對話框（頁內，不用 window.confirm）：刪除角色 / 世界 ──
+  let confirmDone: ((ok: boolean) => void) | null = null;
   let lastFocus: HTMLElement | null = null;
-  function askOverwrite(existing: string, seed: string, peaceful: boolean): void {
-    if (!confirmEl) return;
-    pending = { seed, peaceful };
-    say(confirmMsg, `這個瀏覽器已有一個存檔（種子 ${existing}）。開新世界會覆蓋它，舊世界無法復原。要先備份的話請按取消，再從標題的「匯出存檔」下載。`);
+  /** 顯示確認框；按確認 → true，取消 / Esc → false */
+  function askConfirm(msg: string, okLabel: string, heading = '確定嗎？'): Promise<boolean> {
+    if (!confirmEl) return Promise.resolve(false);
+    confirmDone?.(false);
+    say(confirmTitle, heading);
+    say(confirmMsg, msg);
+    say(confirmOk, okLabel);
     lastFocus = document.activeElement as HTMLElement | null;
     confirmEl.hidden = false;
     root.dataset.confirm = '1';
     confirmCancel?.focus();
+    return new Promise((resolve) => { confirmDone = resolve; });
   }
-  function closeConfirm(): void {
+  function closeConfirm(ok: boolean): void {
     if (!confirmEl) return;
     confirmEl.hidden = true;
     delete root.dataset.confirm;
     lastFocus?.focus?.();
-  }
-
-  async function newWorld(seed: string, peaceful: boolean): Promise<void> {
-    if (busy) return;
-    let existing: string | null;
-    // 讀不到存檔槽（被別的分頁擋住）就不開新世界：之後擋住解除時，自動存檔會不經確認蓋掉舊存檔
-    try { existing = await existingSeed(); } catch (e) { say(titleMsg, e instanceof Error ? e.message : String(e)); return; }
-    if (newWorldPlan(existing, false) === 'confirm') askOverwrite(existing as string, seed, peaceful);
-    else startFresh(seed, peaceful);
+    const done = confirmDone;
+    confirmDone = null;
+    done?.(ok);
   }
 
   function restoreError(r: Extract<ReturnType<typeof restoreGame>, { ok: false }>, msgEl: HTMLElement | null): void {
     if (r.error === 'gen_version') {
-      say(msgEl, `這個存檔是舊版地圖產生器（v${r.saveGenVersion ?? '?'}）做的，新版地圖重做了洞穴、地層、生態區形狀並加入地城，舊世界無法繼續。可以先從選單匯出備份，再按下面的按鈕開一個新世界。`);
+      say(msgEl, `${restoreErrorMessage(r)}可以先從選單匯出備份，再按下面的按鈕開一個新世界。`);
       if (upgradeNew && msgEl === titleMsg) upgradeNew.hidden = false;
-    } else if (r.error === 'size') say(msgEl, '這個存檔的世界大小不正確，可能不是有效的 DELVE 存檔或已損毀。');
-    else say(msgEl, '讀取失敗：這不是有效的 DELVE 存檔，或檔案已損毀 / 不完整。');
+    } else say(msgEl, restoreErrorMessage(r));
   }
 
   const errText = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
   /**
-   * 舊合併存檔（format ≤ 9）→ 遊戲：先看檔頭（舊生成器立即回報，不必先生成世界），再分段生成同一個世界（顯示進度）後還原；
-   * 還原成功 → commitMigration 寫成世界 + 角色（backup = 先把舊記錄原封備份到 main.v9.bak），寫完才開局。
-   * 寫入失敗 → 回報、不開局；舊記錄沒動，下次「繼續」再試一次。
+   * 舊合併存檔（format ≤ 9，只會在 'main'）→ 世界 + 角色：先看檔頭（舊生成器立即回報，不必先生成世界），再分段生成同一個世界
+   * （顯示進度）後還原；還原成功 → commitMigration（先把舊記錄原封備份到 <slot>.v9.bak），寫完才開局。
+   * enter = false：只轉換、不開局（「開始遊戲」進角色列表前，B5），轉完回到標題。寫入失敗 → 回報；舊記錄沒動，下次再試。
    */
-  function openLegacy(data: SaveData, msgEl: HTMLElement | null, from: 'title' | 'menu', backup: boolean): void {
+  function openLegacy(data: SaveData, slot: string, msgEl: HTMLElement | null, from: 'title' | 'menu', enter = true): Promise<void> {
     const h = data.header;
     const migrate = h.format <= 5 && COMPAT_GEN.includes(h.genVersion);
     if (h.genVersion !== GEN_VERSION && !migrate) {
       const r = restoreGame(data);
       if (!r.ok) restoreError(r, msgEl);
-      return;
+      return Promise.resolve();
     }
-    void transition('載入世界中…', async () => {
+    return transition(enter ? '載入世界中…' : '轉換舊存檔中…', async () => {
       const gen = await generate(h.seed, { width: h.width, height: h.height });
       const r = restoreGame(data, { gen });
       if (!r.ok) { restoreError(r, msgEl); return null; }
       // 沒有 IndexedDB（無痕 / 被停用）：不能存，但仍照舊版行為開局（saveNow 也是無操作）
-      if (!hasIndexedDB()) return { game: r.game, session: SplitSession.fresh(r.game.seed, Date.now(), SLOT) };
+      if (!hasIndexedDB()) return enter ? { game: r.game, session: SplitSession.fresh(r.game.seed, Date.now(), slot) } : null;
       try {
-        const session = await commitMigration(idbSplitStore, SLOT, r.game, Date.now(), { backup, summary: summarizeGame(r.game) });
-        return { game: r.game, session };
+        const session = await commitMigration(idbSplitStore, slot, r.game, Date.now(), { backup: true, summary: summarizeGame(r.game) });
+        return enter ? { game: r.game, session } : null;
       } catch (e) {
         say(msgEl, `存檔轉換失敗，沒有開始遊戲（原本的存檔沒有改動）：${errText(e)}`);
         return null;
@@ -476,49 +520,116 @@ export function bootDelve(root: HTMLElement): Session {
   }
 
   /** 世界檔 + 角色 → 遊戲（角色第一次來這個世界 → 從出生點開始）；先看生成器版本，不對就不必先生成世界 */
-  function openSplit(world: WorldData, character: DelveCharacter, msgEl: HTMLElement | null, from: 'title' | 'menu'): void {
+  function openSplit(world: WorldData, character: DelveCharacter, slot: string, msgEl: HTMLElement | null, from: 'title' | 'menu'): Promise<void> {
     const h = world.header;
     if (h.genVersion !== GEN_VERSION) {
       const r = restoreSplit(world, character);
       if (!r.ok) restoreError(r, msgEl);
-      return;
+      return Promise.resolve();
     }
-    void transition('載入世界中…', async () => {
+    return transition('載入世界中…', async () => {
       const gen = await generate(h.seed, { width: h.width, height: h.height });
       const r = restoreSplit(world, character, { gen });
       if (!r.ok) { restoreError(r, msgEl); return null; }
-      return { game: r.game, session: SplitSession.fromLoaded(r.world, character, SLOT) };
+      return { game: r.game, session: SplitSession.fromLoaded(r.world, character, slot) };
     }, from);
   }
 
-  /**
-   * 匯入的檔案：壞檔立即回報；舊合併檔 → 轉成世界 + 角色（不備份：匯入本來就會換掉存檔槽）；
-   * 世界檔要有內嵌角色（遊戲匯出的檔才有）。開局時 begin 立刻存一次（世界 + 角色）。
-   */
-  function openImport(bytes: Uint8Array, msgEl: HTMLElement | null, from: 'title' | 'menu'): void {
-    let any: AnySave;
-    try { any = decodeAnySave(bytes); } catch {
-      const r = restoreGame(bytes);
-      if (!r.ok) restoreError(r, msgEl);
-      return;
-    }
-    if (any.kind === 'legacy') { openLegacy(any.data, msgEl, from, false); return; }
-    const character = any.data.header.character;
-    if (!character) { say(msgEl, NO_CHARACTER_MSG); return; }
-    openSplit(any.data, character, msgEl, from);
+  /** planContinue / planPlay 的結果 → 開局（舊存檔先轉換）或在標題回報 */
+  function openPlan(plan: ContinuePlan, noneMsg: string): Promise<void> {
+    if (plan.kind === 'none') say(titleMsg, noneMsg);
+    else if (plan.kind === 'error') say(titleMsg, plan.message);
+    else if (plan.kind === 'legacy') return openLegacy(plan.data, plan.slot, titleMsg, 'title');
+    else return openSplit(plan.world, plan.character, plan.slot, titleMsg, 'title');
+    return Promise.resolve();
   }
 
+  /** 「繼續冒險」（B1）：最近存檔的世界 + 該世界記錄的角色；'main' 還是舊存檔 → 先轉換（B5）再開局 */
   async function continueGame(): Promise<void> {
     if (busy) return;
     let plan: ContinuePlan;
-    try { plan = await planContinue(idbSplitStore, SLOT); } catch (e) {
+    try { plan = await planContinue(idbSplitStore); } catch (e) {
       say(titleMsg, `讀取存檔失敗：${errText(e)}`);
       return;
     }
-    if (plan.kind === 'none') say(titleMsg, '找不到存檔');
-    else if (plan.kind === 'error') say(titleMsg, plan.message);
-    else if (plan.kind === 'legacy') openLegacy(plan.data, titleMsg, 'title', true);
-    else openSplit(plan.world, plan.character, titleMsg, 'title');
+    await openPlan(plan, '找不到存檔');
+  }
+
+  /** 「開始遊戲」（進角色列表前，B5）：還沒轉換的舊存檔（沒有 charId 的槽）先轉換成世界 + 角色，列表永遠只有新格式 */
+  async function startPressed(): Promise<void> {
+    if (busy) return;
+    try {
+      if (hasIndexedDB()) {
+        for (const m of await idbSplitStore.listWorlds()) {
+          if (m.charId) continue;
+          const p = await planContinue(idbSplitStore, m.slot);
+          if (p.kind === 'legacy') { await openLegacy(p.data, p.slot, titleMsg, 'title', false); break; }
+        }
+      }
+    } catch (e) { say(titleMsg, `讀取存檔失敗：${errText(e)}`); }
+    await refreshTitle();
+  }
+
+  // ── 角色 / 世界（Task 4 的標題面板呼叫） ──
+  /** 選角色 → 世界列表（標題「以 <暱稱> 進入」） */
+  async function pickCharacter(id: string): Promise<void> {
+    picked = id;
+    try { if (hasIndexedDB()) worldList = await idbSplitStore.listWorlds(); } catch (e) { say(titleMsg, `讀取存檔失敗：${errText(e)}`); }
+    ui.setWorlds(worldList, pickedNick() || DEFAULT_NICK);
+  }
+  /** 新角色：建立當下就寫進角色庫（B2），並選定它；失敗 → null（標題訊息回報） */
+  async function newCharacter(nick: string, appearance: Appearance): Promise<CharacterMeta | null> {
+    const c = createCharacter(nick, appearance, Date.now());
+    try { await keepCharacter(c); } catch (e) {
+      say(titleMsg, `建立角色失敗：${errText(e)}`);
+      return null;
+    }
+    const meta = metaOf(c);
+    charList = [meta, ...charList.filter((m) => m.id !== meta.id)];
+    ui.setCharacters(charList);
+    await pickCharacter(c.id);
+    return meta;
+  }
+  /** 刪角色（B3）：先確認；只刪角色記錄，世界裡的 visit 留著 */
+  async function removeCharacter(id: string): Promise<void> {
+    const nick = charList.find((c) => c.id === id)?.nick ?? DEFAULT_NICK;
+    if (!(await askConfirm(`刪除角色「${nick}」？角色的背包、裝備、等級都會消失，無法復原。`, '刪除', '刪除角色？'))) return;
+    try {
+      memChars.delete(id);
+      if (hasIndexedDB()) await idbSplitStore.deleteCharacter(id);
+    } catch (e) { say(titleMsg, `刪除失敗：${errText(e)}`); return; }
+    if (picked === id) picked = null;
+    await refreshTitle();
+  }
+  /** 用選定的角色進世界（這個角色第一次來 → 出生點） */
+  async function pickWorld(slot: string): Promise<void> {
+    if (busy) return;
+    if (!picked) { say(titleMsg, '請先選擇角色'); return; }
+    let plan: ContinuePlan;
+    try { plan = await planPlay(idbSplitStore, slot, picked); } catch (e) {
+      say(titleMsg, `讀取存檔失敗：${errText(e)}`);
+      return;
+    }
+    await openPlan(plan, '找不到這個世界');
+  }
+  /** 用選定的角色建新世界（另開存檔槽；和平模式屬於世界，B7） */
+  async function createWorld(name: string, peaceful: boolean): Promise<void> {
+    if (busy) return;
+    if (!picked) { say(titleMsg, '請先選擇角色'); return; }
+    let c: DelveCharacter | null;
+    try { c = await loadCharacter(picked); } catch (e) {
+      say(titleMsg, `讀取角色失敗：${errText(e)}`);
+      return;
+    }
+    if (!c) { say(titleMsg, CHARACTER_MISSING_MSG); return; }
+    await newWorldWith(name, peaceful, c);
+  }
+  /** 刪世界（B3）：先確認；只刪這個槽，不碰 *.bak 備份 */
+  async function removeWorld(slot: string): Promise<void> {
+    const name = worldList.find((m) => m.slot === slot)?.seed ?? slot;
+    if (!(await askConfirm(`刪除世界「${name}」？世界裡的建築和箱子都會消失，無法復原。`, '刪除', '刪除世界？'))) return;
+    try { await idbSplitStore.deleteWorld(slot); } catch (e) { say(titleMsg, `刪除失敗：${errText(e)}`); return; }
+    await refreshTitle();
   }
 
   function download(blob: Blob, name: string): void {
@@ -544,14 +655,14 @@ export function bootDelve(root: HTMLElement): Session {
       say(menuMsg, `匯出失敗：${errText(e)}`);
     }
   }
-  /** 標題的「匯出存檔」：直接把存檔槽打包下載（不必先進遊戲）；還沒轉換的舊存檔原樣匯出 */
-  async function exportSlot(): Promise<void> {
+  /** 把一個存檔槽打包下載（不必先進遊戲）：世界檔 + 該世界最後進場的角色；還沒轉換的舊存檔原樣匯出 */
+  async function exportSlot(slot: string): Promise<void> {
     try {
-      const plan = await planContinue(idbSplitStore, SLOT);
+      const plan = await planContinue(idbSplitStore, slot);
       if (plan.kind === 'none') { say(titleMsg, '找不到存檔'); return; }
       if (plan.kind === 'error') {
-        // 存檔槽讀不了（角色遺失 / 損毀）：「開新世界」的覆蓋提示叫玩家先匯出，所以這裡把存檔槽的原始位元組照樣匯出（備份路徑不能斷）
-        const raw = await idbSplitStore.getSlot(SLOT);
+        // 存檔槽讀不了（角色遺失 / 損毀）：把存檔槽的原始位元組照樣匯出（備份路徑不能斷）
+        const raw = await idbSplitStore.getSlot(slot);
         if (!raw) { say(titleMsg, '找不到存檔'); return; }
         download(await exportBlob(raw.bytes), 'delve-save.delve');
         say(titleMsg, '已匯出存檔檔案（原始資料，存檔本身有問題）');
@@ -559,7 +670,7 @@ export function bootDelve(root: HTMLElement): Session {
       }
       let bytes: Uint8Array | undefined, seed: string;
       if (plan.kind === 'split') { bytes = exportBytes(plan.world, plan.character); seed = plan.world.header.seed; }
-      else { bytes = (await idbSplitStore.getSlot(SLOT))?.bytes; seed = plan.data.header.seed; }
+      else { bytes = (await idbSplitStore.getSlot(slot))?.bytes; seed = plan.data.header.seed; }
       if (!bytes) { say(titleMsg, '找不到存檔'); return; }
       download(await exportBlob(bytes), `delve-${seed}.delve`);
       say(titleMsg, '已匯出存檔檔案');
@@ -567,23 +678,54 @@ export function bootDelve(root: HTMLElement): Session {
       say(titleMsg, `匯出失敗：${errText(e)}`);
     }
   }
+  /** 標題的「匯出存檔」：匯出「繼續冒險」指向的世界 */
+  async function exportContinue(): Promise<void> {
+    let cont: SlotMeta | null;
+    try { cont = (await readLists()).cont; } catch (e) { say(titleMsg, `匯出失敗：${errText(e)}`); return; }
+    if (!cont) { say(titleMsg, '找不到存檔'); return; }
+    await exportSlot(cont.slot);
+  }
 
+  /** 匯入（B4）：一律另開新存檔槽，既有世界不動、不直接進遊戲；完成後重刷「繼續冒險」與列表並回報 */
+  async function importFile(file: File, msgEl: HTMLElement | null): Promise<void> {
+    if (!hasIndexedDB()) { say(msgEl, '這個瀏覽器不能存檔，沒辦法匯入。'); return; }
+    try {
+      const r = await importWorld(idbSplitStore, await importBlob(file), Date.now());
+      if ('error' in r) { say(msgEl, r.error); return; }
+      await refreshTitle();
+      const name = worldList.find((m) => m.slot === r.slot)?.seed ?? '';
+      say(msgEl, msgEl === titleMsg
+        ? `已匯入世界「${name}」：按「繼續冒險」就能進去`
+        : `已匯入世界「${name}」：回到標題後就能進去（目前的世界沒有改動）`);
+    } catch (e) {
+      say(msgEl, `匯入失敗：${errText(e)}`);
+    }
+  }
   let importFrom: HTMLElement | null = titleMsg;
   on(fileInput, 'change', () => {
     const f = fileInput?.files?.[0];
     if (!f) return;
-    const msgEl = importFrom;
-    importBlob(f)
-      .then((bytes) => openImport(bytes, msgEl, msgEl === titleMsg ? 'title' : 'menu'))
-      .catch((e: unknown) => say(msgEl, `匯入失敗：${e instanceof Error ? e.message : String(e)}`))
-      .finally(() => { if (fileInput) fileInput.value = ''; });
+    void importFile(f, importFrom).finally(() => { if (fileInput) fileInput.value = ''; });
   });
 
   const ui = new TitleUi(root, {
     onContinue: () => void continueGame(),
-    onCreate: (seed, peaceful) => void newWorld(seed, peaceful),
-    onImport: () => { importFrom = titleMsg; fileInput?.click(); },
-    onExport: () => void exportSlot(),
+    // 舊標題的「新世界」（Task 4 改成角色 → 世界面板）：新的預設角色 + 新存檔槽，不覆蓋任何存檔
+    onCreate: (seed, peaceful) => startFresh(seed, peaceful),
+    onImport: (file) => {
+      if (file) { void importFile(file, titleMsg); return; }
+      importFrom = titleMsg;
+      fileInput?.click();
+    },
+    onExport: () => void exportContinue(),
+    onStart: () => void startPressed(),
+    onPickCharacter: (id) => void pickCharacter(id),
+    onCreateCharacter: (nick, appearance) => newCharacter(nick, appearance),
+    onDeleteCharacter: (id) => void removeCharacter(id),
+    onPickWorld: (slot) => void pickWorld(slot),
+    onCreateWorld: (name, peaceful) => void createWorld(name, peaceful),
+    onDeleteWorld: (slot) => void removeWorld(slot),
+    onExportWorld: (slot) => void exportSlot(slot),
     onHelp: () => setHelp(true),
     onPressStart: () => scene?.skipIntro(),
     onLook: () => {
@@ -620,15 +762,10 @@ export function bootDelve(root: HTMLElement): Session {
   });
 
   on(upgradeNew, 'click', () => { if (upgradeNew) upgradeNew.hidden = true; ui.openPanel('#delve-newpanel', '#delve-seed'); });
-  on(confirmOk, 'click', () => {
-    closeConfirm();
-    const p = pending;
-    pending = null;
-    if (p) startFresh(p.seed, p.peaceful);
-  });
-  on(confirmCancel, 'click', () => { pending = null; closeConfirm(); });
+  on(confirmOk, 'click', () => closeConfirm(true));
+  on(confirmCancel, 'click', () => closeConfirm(false));
   on(confirmEl, 'keydown', (e) => {
-    if ((e as KeyboardEvent).key === 'Escape') { e.stopPropagation(); pending = null; closeConfirm(); }
+    if ((e as KeyboardEvent).key === 'Escape') { e.stopPropagation(); closeConfirm(false); }
   });
   on($('#delve-resume'), 'click', () => setMenu(false));
   on($('#delve-help-btn'), 'click', () => { setMenu(false); setHelp(true); });
@@ -656,27 +793,30 @@ export function bootDelve(root: HTMLElement): Session {
 
   window.__delveLive = () => liveCounts(performance.now());
   root.dataset.ready = '1';
-  // 有存檔才顯示「繼續」（附存檔摘要）與「匯出存檔」
+  // 有可繼續的世界才顯示「繼續」（附存檔摘要）與「匯出存檔」
   ui.setSave(null);
   if (hasIndexedDB()) {
-    void titleSlot().then((s) => {
-      ui.setSave(s);
-      if (root.dataset.phase === 'title') ui.focusFirst();
-    });
+    void refreshTitle().then(() => { if (root.dataset.phase === 'title') ui.focusFirst(); });
   }
   requestAnimationFrame(() => { if (root.dataset.phase === 'title') ui.focusFirst(); });
 
-  // e2e / 深連結：?seed=xxx&autostart=1[&fresh=1]。已有存檔時，沒有 fresh=1 不會直接覆蓋（改為詢問）。
+  // e2e / 深連結：?autostart=1[&seed=xxx][&fresh=1]。新世界另開存檔槽（不覆蓋）；只有 autostart=1 且有存檔 → 繼續冒險。
   if (new URLSearchParams(location.search).get('autostart') === '1') {
-    void existingSeed().then((existing) => {
-      const plan = autostartPlan(location.search, existing);
-      if (plan.kind === 'start') startFresh(plan.seed ?? '');
-      else if (plan.kind === 'confirm') askOverwrite(plan.existing, plan.seed ?? '', defaultPeaceful());
-    }).catch((e: unknown) => say(titleMsg, e instanceof Error ? e.message : String(e)));
+    void (async () => {
+      let hasSave = false;
+      if (autostartPlan(location.search, true).kind === 'continue') {
+        try { hasSave = (await readLists()).cont !== null; } catch (e) { say(titleMsg, errText(e)); return; }
+      }
+      const plan = autostartPlan(location.search, hasSave);
+      if (plan.kind === 'fresh') startFresh(plan.seed ?? '');
+      else if (plan.kind === 'continue') await continueGame();
+    })();
   }
 
   return {
     destroy(): void {
+      confirmDone?.(false);
+      confirmDone = null;
       stopAutosave?.();
       handle?.destroy();
       stopScene();
