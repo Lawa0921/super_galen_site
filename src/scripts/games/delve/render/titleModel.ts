@@ -6,6 +6,7 @@ import type { CharacterMeta, SaveSummary, SlotMeta } from '../save/storage';
 import type { AnySave, WorldData } from '../save/worldSave';
 import type { SaveData } from '../save/serialize';
 import type { DelveCharacter } from '../save/character';
+import { plainLook, type DollLook } from '../engine/doll';
 
 export type { SaveSummary };
 
@@ -77,6 +78,11 @@ export function worldLine(m: SlotMeta, now: number): string {
   }
   facts.push(savedAgo(m.savedAt, now));
   return joinFacts(facts);
+}
+
+/** 角色列表小人像畫什麼：記錄有穿著（preview.look）就畫穿著；舊記錄沒有 → 只畫外觀 */
+export function charDollLook(c: { appearance: CharacterMeta['appearance']; look?: DollLook }): DollLook {
+  return c.look ?? plainLook(c.appearance);
 }
 
 /** 角色列表的一行：暱稱 · Lv · 上次遊玩多久前（rev 0 = 建立後還沒進過任何世界 → 從未遊玩） */

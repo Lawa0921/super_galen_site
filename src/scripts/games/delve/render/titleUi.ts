@@ -3,12 +3,12 @@
 // Esc 逐層返回、Tab 鎖在面板裡、「繼續」的存檔摘要、選單音效。遊戲流程（開局 / 讀檔 / 轉場 / 存檔庫）在 session.ts。
 import { toCanvas } from './pixel';
 import { cursorBmp, iconBmp, logoBmp, logoShineBmp, logoTorchTip, type TitleIcon } from './titleArt';
-import { characterLine, continueLines, menuMove, readVolume, rollWorldName, worldLine, writeVolume, zoomPrefLabel } from './titleModel';
+import { charDollLook, characterLine, continueLines, menuMove, readVolume, rollWorldName, worldLine, writeVolume, zoomPrefLabel } from './titleModel';
 import { parseZoomPref } from './lowres';
 import type { SoundManager } from '../audio/SoundManager';
 import type { CharacterMeta, SlotMeta } from '../save/storage';
 import { createLook, type Appearance } from '../engine/appearance';
-import { dollKey, plainLook } from '../engine/doll';
+import { dollKey, plainLook, type DollLook } from '../engine/doll';
 import { dollPreview } from './dollPreview';
 import { AV_FH, AV_FW } from './avatarArt';
 
@@ -63,14 +63,15 @@ const PANELS: Record<TitlePanel, { sel: string; parent: TitlePanel | null }> = {
   settings: { sel: '#delve-settings', parent: null },
 };
 
-/** 角色小人像（新角色面板的預覽、角色列表每一列共用）：只有外觀、待機第一格，畫布 = 一格紙娃娃大小 */
-export function paintDoll(c: HTMLCanvasElement, a: Appearance): void {
+/** 角色小人像（新角色面板的預覽、角色列表每一列共用）：待機第一格，畫布 = 一格紙娃娃大小 */
+export function paintLook(c: HTMLCanvasElement, l: DollLook): void {
   if (c.width !== AV_FW || c.height !== AV_FH) { c.width = AV_FW; c.height = AV_FH; }
   const ctx = c.getContext('2d');
   if (!ctx) return;
-  const l = plainLook(a);
   toCanvas(dollPreview(l, dollKey(l), 'idle', 0), { ctx, x: 0, y: 0 });
 }
+/** 只有外觀（什麼都沒穿）的小人像 */
+export function paintDoll(c: HTMLCanvasElement, a: Appearance): void { paintLook(c, plainLook(a)); }
 
 /** 音量改變：寫進遊戲廳共用的 window.__arcadeAudio 並廣播（SoundManager 會即時跟著變） */
 export function publishVolume(sfxVolume: number): void {
@@ -504,7 +505,7 @@ export class TitleUi {
       const doll = document.createElement('canvas');
       doll.className = 'delve-char-doll';
       doll.setAttribute('aria-hidden', 'true');
-      paintDoll(doll, c.appearance);
+      paintLook(doll, charDollLook(c));
       const btns = document.createElement('span');
       btns.className = 'delve-trow-btns';
       btns.append(this.rowBtn('delve-char-del', '刪除', `刪除角色「${c.nick}」`, true));

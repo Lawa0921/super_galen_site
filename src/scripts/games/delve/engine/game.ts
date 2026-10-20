@@ -41,7 +41,8 @@ import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidConta
 import { normalizeAppearance, RACES, type Appearance } from './appearance';
 import { raceMods, type RaceMods } from './race';
 import { Vanity, VANITY_SLOTS, type HideSlot, type VanitySlot } from './vanity';
-import { buildDollLook, dollKey, type DollLook } from './doll';
+import { buildDollLook, dollKey, pieceOf, type DollLook } from './doll';
+import { planWardrobeMigration } from './wardrobeMigration';
 import { defaultTint, tintChannels, validTint, type Tint } from './tint';
 import { ProjList, type HitFx, type ProjKind, type Projectile } from './projectiles';
 import {
@@ -3845,6 +3846,24 @@ export class DelveGame {
   }
   /** 換角色外觀（存一份正規化後的新物件） */
   setAppearance(a: Appearance): void { this.appearance = normalizeAppearance(a); }
+  /**
+   * 舊角色（cformat 1）的時裝轉換（spec C6，engine/wardrobeMigration.ts）：外觀上的服裝 / 頭飾 / 眼鏡變成時裝物品，
+   * 能穿就穿上、否則進背包，背包滿就掉在腳邊（帶顏色、一件一個）；外觀改成布衣。看起來和轉換前一樣。
+   * 只由 applyCharacter 在讀到舊角色時呼叫一次（存檔寫回 cformat 2，之後不再轉換）。
+   */
+  migrateWardrobe(): void {
+    const v = this.vanity, e = this.equipment;
+    const shown = (s: HideSlot): boolean => !v.hide[s] && pieceOf(e.getStack(s)) !== null;
+    const plan = planWardrobeMigration(this.appearance, v.toJSON(), { head: shown('head'), body: shown('body'), legs: shown('legs') });
+    for (const { slot, stack } of plan.equip) v.set(slot, stack.item, undefined, stack.tint);
+    for (const st of plan.give) {
+      if (this.inventory.add(st.item, 1, undefined, st.tint) > 0) {
+        const pt = this.playerTile();
+        this.dropAtTile(st.item, 1, pt.x, pt.y, st.tint);
+      }
+    }
+    this.setAppearance(plan.appearance);
+  }
   /**
    * 梳妝台：只改身體特徵與布衣配色（主色 / 副色）。種族只能用轉生之藥換；服裝 / 頭飾 / 眼鏡欄位維持原值（那些靠時裝物品）。
    */

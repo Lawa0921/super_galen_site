@@ -6,7 +6,7 @@ import { generateWorldSteps, GEN_STAGE_COUNT, type GenResult } from '../engine/w
 import { GEN_VERSION } from '../engine/constants';
 import { restoreGame, COMPAT_GEN, type SaveData } from '../save/serialize';
 import {
-  startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, idbSplitStore, DbBlockedError, type CharacterMeta, type SlotMeta,
+  startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, idbSplitStore, DbBlockedError, previewOf, type CharacterMeta, type SlotMeta,
 } from '../save/storage';
 import {
   SplitSession, planContinue, planPlay, planNewWorld, importWorld, saveSplit, commitMigration, restoreErrorMessage,
@@ -14,7 +14,6 @@ import {
 } from '../save/split';
 import { decodeAnySave, encodeWorld, restoreSplit, type AnySave, type WorldData } from '../save/worldSave';
 import { createCharacter, decodeCharacter, DEFAULT_NICK, type DelveCharacter } from '../save/character';
-import { levelForXp } from '../engine/levels';
 import { startDelve, type DelveHandle } from './main';
 import { autostartPlan, helpSeen, HELP_KEY } from './model';
 import { SoundManager } from '../audio/SoundManager';
@@ -377,7 +376,7 @@ export function bootDelve(root: HTMLElement): Session {
   }
   const pickedNick = (): string => charList.find((c) => c.id === picked)?.nick ?? '';
   function metaOf(c: DelveCharacter): CharacterMeta {
-    return { id: c.id, nick: c.nick, savedAt: c.savedAt, rev: c.rev, level: levelForXp(c.levels.xp), appearance: c.appearance };
+    return { id: c.id, nick: c.nick, savedAt: c.savedAt, rev: c.rev, ...previewOf(c) };
   }
 
   // ── 轉場 + 分段生成 ──

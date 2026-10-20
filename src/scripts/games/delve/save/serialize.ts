@@ -35,6 +35,8 @@
 //   header.vanity.tint = 外觀欄各格的顏色。格子上的 tint 不合法或放在非時裝上 → 存檔損毀（比照 gear）；外觀欄的壞 tint 丟掉。
 // format 9 起：header.appearance = 角色外觀（engine/appearance.ts 的選項索引）。沒有 / 壞掉 → 預設外觀（各欄獨立退回，
 //   不算存檔損毀：外觀是裝飾，不該讓整個世界讀不到）。
+// header.cformat = 角色資料的版本（save/character.ts CHARACTER_FORMAT；不換存檔版號）：snapshotGame 一律寫目前的版本
+//   （活的遊戲已經轉換過）；沒有 = 舊資料。讀檔時 < WARDROBE_CFORMAT → applyCharacter 做一次舊角色的時裝轉換（spec C6）。
 // header.levels = 等級 / 經驗 / 技能樹 / 防刷紀錄（engine/levels.ts LevelsJSON）。沒有 / 壞掉 → 各欄位獨立退回預設
 //   （技能樹不合法 → 整棵重置、點數退回），不算存檔損毀。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
@@ -66,6 +68,8 @@ import { WEATHER_KINDS, type WeatherKind } from '../engine/weather';
 import { isRngState, type RngState } from '../engine/rng';
 import { normalizeAppearance, type Appearance } from '../engine/appearance';
 import { Vanity, type VanityJSON } from '../engine/vanity';
+import { WARDROBE_CFORMAT } from '../engine/wardrobeMigration';
+import { CHARACTER_FORMAT } from './character';
 import { cloneTint, isTintable, validTint, type Tint } from '../engine/tint';
 import type { SettlementJSON } from '../engine/settlement';
 import { Progression, type LevelsJSON } from '../engine/levels';
@@ -149,6 +153,8 @@ export interface SaveHeader {
   extra?: ExtraSave;
   /** 角色外觀；format 9 起（沒有 = 預設外觀） */
   appearance?: Appearance;
+  /** 角色資料的版本（沒有 = 舊資料，外觀上的服裝 / 頭飾 / 眼鏡還沒轉成時裝物品） */
+  cformat?: number;
   /** 外觀欄（時裝）+ 防具隱藏開關；format 9 起（沒有 = 空、都不隱藏） */
   vanity?: VanityJSON;
   /** 據點（爐心）與居民；沒有 = 沒有據點（壞欄位逐筆丟掉，不算損毀） */
@@ -491,6 +497,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeFrozen(w.frozen) },
       extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce], codex: game.codex.toJSON(), rng: game.rngState() },
       appearance: { ...game.appearance },
+      cformat: CHARACTER_FORMAT,
       vanity: game.vanity.toJSON(),
       settle: game.settle.toJSON(),
       halves: encodeFrozen(w.half),
@@ -699,6 +706,9 @@ export function validInventory(v: unknown): InventoryJSON {
   return { slots, selected };
 }
 
+/** 角色資料版本：正整數才算；其他 = 沒有（舊資料） */
+function validCformat(v: unknown): v is number { return Number.isInteger(v) && (v as number) >= 1; }
+
 export function decodeSave(bytes: Uint8Array): SaveData {
   const { raw, body } = readContainer(bytes);
   const h = raw as Partial<SaveHeader>;
@@ -729,6 +739,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     env: validEnv(h.env),
     extra: validExtra(h.extra),
     appearance: normalizeAppearance(h.appearance),
+    ...(validCformat(h.cformat) ? { cformat: h.cformat } : {}),
     vanity: Vanity.fromJSON(h.vanity).toJSON(),
     settle: h.settle && typeof h.settle === 'object' ? h.settle : undefined,
     halves: validHalves(h.halves),
@@ -799,9 +810,14 @@ export interface CharacterState {
   extra?: { fishLog?: Partial<Record<ItemId, number>>; codex?: CodexJSON };
   /** 絕對時間（到 game.time 為止有效）；呼叫端先設好 game.time */
   buffs: Partial<Record<BuffKind, number>>;
+  /** 角色資料的版本；沒有 / < WARDROBE_CFORMAT = 舊角色 → 套用後做一次時裝轉換 */
+  cformat?: number;
 }
 
-/** 把角色隨身的狀態套到遊戲上（不動世界 / 位置 / 探索） */
+/**
+ * 把角色隨身的狀態套到遊戲上（不動世界 / 位置 / 探索）。舊角色（cformat < WARDROBE_CFORMAT）最後做一次時裝轉換：
+ * 這裡是唯一有活 game 的載入點（轉出來的東西背包放不下要掉在玩家腳邊，呼叫端要先放好玩家位置）。
+ */
 export function applyCharacter(game: DelveGame, s: CharacterState): void {
   if (s.appearance) game.setAppearance(s.appearance);
   game.inventory = Inventory.fromJSON(s.inventory);
@@ -821,6 +837,7 @@ export function applyCharacter(game: DelveGame, s: CharacterState): void {
     game.codex.load(s.extra.codex);
   }
   game.buffs = { ...s.buffs };
+  if (!(validCformat(s.cformat) && s.cformat >= WARDROBE_CFORMAT)) game.migrateWardrobe();
 }
 
 /** 由存檔位元組（或已解碼資料）還原遊戲。永不丟例外，錯誤以結果回報。 */
@@ -931,6 +948,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     undying: h.vitals ? (h.vitals.undying ?? 0) : undefined,
     extra: h.extra,
     buffs: h.folk ? h.folk.buffs : {},
+    cformat: h.cformat,
   });
   // 呼吸 / 燃燒 / 蜂蜜（format 7）；舊格式 = 滿氣、沒著火
   if (h.vitals) {

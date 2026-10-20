@@ -1,12 +1,17 @@
 // 遷移驗收：凍結的 format-9 存檔 → 角色 + 世界 → 存 → 再讀，逐欄相等（§5.1 第 4 點、§6 M-A 第一條）。
 import { describe, expect, it } from 'vitest';
 import { readLegacyFixture } from './legacyFixture';
-import { restoreGame } from './serialize';
+import { decodeSave, restoreGame } from './serialize';
 import { newId, newIdentity, encodeCharacter, decodeCharacter } from './character';
 import { decodeAnySave, decodeWorld, encodeWorld, restoreSplit, saveSplitGame } from './worldSave';
 import { expectSameGame } from './expectSameGame';
 import { MAX_BREATH } from '../engine/game';
 import { T } from '../engine/tiles';
+import { OUTFIT_PLAIN } from '../engine/appearance';
+import { buildDollLook, type DollLook } from '../engine/doll';
+import { Equipment } from '../engine/equipment';
+import { Vanity } from '../engine/vanity';
+import { avatarArm, avatarSheet } from '../render/avatarArt';
 
 function legacyGame() {
   const old = restoreGame(readLegacyFixture());
@@ -85,5 +90,33 @@ describe('format 9 遷移', () => {
     if (!r.ok) expect(r.error).toBe('format');
     expect(decodeCharacter(charBytes)).toEqual(char);
     expect(char.inventory).toEqual(m.character.inventory);
+  });
+});
+
+describe('format 9 舊角色的時裝轉換（spec C6）', () => {
+  const same = (a: DollLook, b: DollLook): boolean => {
+    const eq = (x: { px: Uint32Array }, y: { px: Uint32Array }): boolean => x.px.length === y.px.length && x.px.every((v, i) => v === y.px[i]);
+    return eq(avatarSheet(a).b, avatarSheet(b).b) && eq(avatarArm(a, false), avatarArm(b, false)) && eq(avatarArm(a, true), avatarArm(b, true));
+  };
+  it('fixture（水手服 + 蝴蝶結、時裝欄身體有水手服上衣、露出鐵胸甲）走遷移後：外觀逐像素和 fixture 原本一樣', () => {
+    const h = decodeSave(readLegacyFixture()).header;
+    const original = buildDollLook(h.appearance!, Equipment.fromJSON(h.combat!.equipment, h.combat!.equipGear), Vanity.fromJSON(h.vanity));
+    const g = legacyGame();
+    expect(g.appearance.outfit).toBe(OUTFIT_PLAIN);
+    expect(g.appearance.acc).toBe(0);
+    expect([g.appearance.color1, g.appearance.color2]).toEqual([h.appearance!.color1, h.appearance!.color2]);
+    expect(g.vanity.getStack('acc')).toEqual({ item: 'acc_ribbon', count: 1, tint: [h.appearance!.color2, h.appearance!.color2] });
+    expect(g.vanity.getStack('legs')).toEqual({ item: 'sailor_skirt', count: 1, tint: [h.appearance!.color1, h.appearance!.color2] });
+    expect(g.inventory.slots.filter((s) => s?.item === 'sailor_top')).toEqual([{ item: 'sailor_top', count: 1, tint: [h.appearance!.color1, h.appearance!.color2] }]);
+    expect(same(g.doll().look, original)).toBe(true);
+  });
+  it('遷移成拆檔後角色檔是 cformat 2，再讀不會再發一次', () => {
+    const oldGame = legacyGame();
+    const m = saveSplitGame(oldGame, newIdentity(1), { worldId: newId(), worldName: oldGame.seed, visits: {} }, 2);
+    expect(m.character.cformat).toBe(2);
+    const r = restoreSplit(encodeWorld(m.world), decodeCharacter(encodeCharacter(m.character)));
+    if (!r.ok) throw new Error(r.message);
+    expect(r.game.inventory.toJSON()).toEqual(oldGame.inventory.toJSON());
+    expect(r.game.vanity.toJSON()).toEqual(oldGame.vanity.toJSON());
   });
 });

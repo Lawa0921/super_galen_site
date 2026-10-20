@@ -7,18 +7,20 @@ import { DelveGame } from '../engine/game';
 import { snapshotGame } from './serialize';
 import { splitSnapshot } from './worldSave';
 import { Equipment, type EquipmentGearJSON, type EquipmentJSON } from '../engine/equipment';
+import { buildDollLook, type DollLook } from '../engine/doll';
 import type { LevelsJSON } from '../engine/levels';
 import { Codex, type CodexJSON } from '../engine/codex';
 import { BUFFS, type BuffKind } from '../engine/folkDefs';
 import type { InventoryJSON } from '../engine/inventory';
 import type { ItemId } from '../engine/items';
 
-export const CHARACTER_FORMAT = 1;
+/** 角色檔版本：1 = co-op 拆檔時的第一版；2 = 外觀上的服裝 / 頭飾 / 眼鏡已轉成時裝物品（讀到 1 → 進遊戲時轉換一次，寫回一律 2） */
+export const CHARACTER_FORMAT = 2;
 export const DEFAULT_NICK = '旅人';
 export const MAX_NICK = 16;
 
 export interface DelveCharacter {
-  cformat: 1; id: string; nick: string; createdAt: number; savedAt: number; rev: number;
+  cformat: 1 | 2; id: string; nick: string; createdAt: number; savedAt: number; rev: number;
   appearance: Appearance; vanity: VanityJSON; inventory: InventoryJSON;
   equipment: EquipmentJSON; equipGear: EquipmentGearJSON;
   combat: { hp: number; baseMaxHp: number; mana: number };
@@ -54,7 +56,8 @@ const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 
 
 export function validateCharacter(raw: unknown): DelveCharacter {
   if (!isObj(raw)) throw bad('root');
-  if (raw.cformat !== CHARACTER_FORMAT) throw bad('cformat');
+  const cformat = raw.cformat;
+  if (cformat !== 1 && cformat !== CHARACTER_FORMAT) throw bad('cformat');
   if (typeof raw.id !== 'string' || !ID_RE.test(raw.id)) throw bad('id');
   if (typeof raw.rev !== 'number' || !Number.isInteger(raw.rev) || raw.rev < 0) throw bad('rev');
   let inventory: InventoryJSON;
@@ -75,7 +78,7 @@ export function validateCharacter(raw: unknown): DelveCharacter {
     }
   }
   return {
-    cformat: 1, id: raw.id,
+    cformat, id: raw.id,
     nick: cleanNick(raw.nick),
     createdAt: isNum(raw.createdAt) ? raw.createdAt : 0,
     savedAt: isNum(raw.savedAt) ? raw.savedAt : 0,
@@ -99,6 +102,11 @@ export function createCharacter(nick: string, appearance: Appearance, now: numbe
   const who: CharIdentity = { ...newIdentity(now), nick: cleanNick([...nick.trim()].slice(0, MAX_NICK).join('')) };
   const c = splitSnapshot(snapshotGame(g, now), who, { worldId: 'x', worldName: 'x', visits: {} }, now).character;
   return { ...c, appearance: normalizeAppearance(appearance), rev: 0 };
+}
+
+/** 角色現在看起來的樣子（外觀 + 裝備 + 時裝欄，同遊戲裡的紙娃娃）：角色列表的小人像用 */
+export function characterLook(c: DelveCharacter): DollLook {
+  return buildDollLook(c.appearance, Equipment.fromJSON(c.equipment, c.equipGear), Vanity.fromJSON(c.vanity));
 }
 
 export function encodeCharacter(c: DelveCharacter): Uint8Array {
