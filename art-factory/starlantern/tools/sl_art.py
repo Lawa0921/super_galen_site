@@ -798,20 +798,128 @@ def edge_repeat(final, slice_, detail=False):
     return (ratios, {k: {'seam': m['seam'], 'interior': m['interior']} for k, m in steps.items()}) if detail else ratios
 
 
-def nine_slice(reg, aid, cell, workdir, raw, size, slice_):
+def cover_sample(img, w, h, min_cover=0.4):
+    """Coverage sample to w x h art pixels: an output pixel is opaque when at least `min_cover` of its source block is
+    opaque, and takes the most common opaque colour of that block (no new colours). Unlike a centre sample, a band
+    that covers most of a block is never stepped over, so a 2-pixel frame band stays 2 pixels."""
+    a = np.asarray(img.convert('RGBA')); H, W = a.shape[:2]
+    ye = np.floor(np.arange(h + 1) * H / h).astype(int); xe = np.floor(np.arange(w + 1) * W / w).astype(int)
+    out = np.zeros((h, w, 4), np.uint8)
+    for i in range(h):
+        y0, y1 = ye[i], max(ye[i + 1], ye[i] + 1)
+        for j in range(w):
+            x0, x1 = xe[j], max(xe[j + 1], xe[j] + 1)
+            blk = a[y0:y1, x0:x1]; op = blk[..., 3] == 255
+            if not op.any() or op.mean() < min_cover: continue
+            c = blk[op][:, :3].astype(np.uint32); packed = (c[:, 0] << 16) | (c[:, 1] << 8) | c[:, 2]
+            vals, counts = np.unique(packed, return_counts=True); v = int(vals[counts.argmax()])
+            out[i, j] = (v >> 16, (v >> 8) & 255, v & 255, 255)
+    return Image.fromarray(out, 'RGBA')
+
+
+# Plan 5d addendum 2 §2: frame band, hue and distinctness gates (constants; changing one needs a controller ruling).
+FRAME_STROKE = (2, 3)      # band thickness in the edge middles (min, max)
+EDGE_REACH_MAX = 3         # deepest opaque pixel in an edge middle, counted from the outer edge
+CORNER_REACH_MAX = 4       # corner ornaments stay inside a 4 x 4 corner square
+HUE_TOL = 15               # band hue within the tier hue +- this many degrees
+SAT_MIN = 0.45             # ... and at least this saturated
+DISTINCT_DE = 25.0         # CIE76 between any two tier band colours
+GLOW_HUE, GLOW_SAT_MIN, GLOW_STROKE = 35, 0.30, (1, 2)   # legendary inner glow: soft warm light, 1-2 px thick
+STARLIT_CORNER_MIN = 3          # starlit: opaque pixels in each 5 x 5 corner
+STARLIT_EDGE_COVER_MAX = 0.35   # starlit: share of the outer 2 rows of an edge middle it may cover (the frame shows)
+
+
+def _hsv(rgb):
+    """(hue degrees, saturation, value) arrays for any (..., 3) RGB array, flattened."""
+    c = np.asarray(rgb, np.float32).reshape(-1, 3) / 255.0; r, g, b = c[:, 0], c[:, 1], c[:, 2]
+    mx, mn = c.max(axis=1), c.min(axis=1); d = mx - mn; dd = np.where(d == 0, 1, d)
+    h = np.where(mx == r, ((g - b) / dd) % 6, np.where(mx == g, (b - r) / dd + 2, (r - g) / dd + 4)) * 60
+    return np.where(d == 0, 0, h), np.where(mx == 0, 0, d / np.where(mx == 0, 1, mx)), mx
+
+
+def _hue_dist(a, b):
+    return float(abs((a - b + 180) % 360 - 180))
+
+
+def band_hue(rgb):
+    """Median HSV hue of the given pixels, around the circle (red 354 and 2 are 8 degrees apart, not 352)."""
+    h, _, _ = _hsv(rgb)
+    if not h.size: return None
+    ang = np.deg2rad(h); m = np.rad2deg(np.arctan2(np.sin(ang).mean(), np.cos(ang).mean()))
+    return round(float((np.median((h - m + 180) % 360 - 180) + m) % 360), 1)
+
+
+def _lab(rgb):
+    c = np.asarray(rgb, np.float64) / 255.0
+    c = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    xyz = np.array([[0.4124, 0.3576, 0.1805], [0.2126, 0.7152, 0.0722], [0.0193, 0.1192, 0.9505]]) @ c
+    t = xyz / np.array([0.95047, 1.0, 1.08883])
+    f = np.where(t > 0.008856, np.cbrt(t), 7.787 * t + 16 / 116)
+    return np.array([116 * f[1] - 16, 500 * (f[0] - f[1]), 200 * (f[1] - f[2])])
+
+
+def delta_e(c1, c2):
+    """CIE76 colour difference between two sRGB colours (D65)."""
+    return float(np.linalg.norm(_lab(c1) - _lab(c2)))
+
+
+def frames_distinct(colours, min_de=DISTINCT_DE):
+    """{aid: band RGB} -> {aid: reasons}; every pair closer than `min_de` (CIE76) fails both frames."""
+    out = {aid: [] for aid in colours}; ids = list(colours)
+    for i, a in enumerate(ids):
+        for b in ids[i + 1:]:
+            de = delta_e(colours[a], colours[b])
+            if de < min_de:
+                out[a].append(f'too close to {b} (ΔE {de:.1f})'); out[b].append(f'too close to {a} (ΔE {de:.1f})')
+    return out
+
+
+def _edge_middles(a, s, rows):
+    """The outer `rows` rows of the four edge middles (slice to size - slice), each turned so row 0 is the outer edge."""
+    n = a.shape[0]
+    return {'top': a[:rows, s:n - s], 'bottom': a[n - rows:, s:n - s][::-1],
+            'left': a[s:n - s, :rows].swapaxes(0, 1), 'right': a[s:n - s, n - rows:][:, ::-1].swapaxes(0, 1)}
+
+
+def _band_measures(arr, s, pad):
+    """stroke [min, max] (opaque pixels per edge-middle column inside the slice), reach {edge, corner} (deepest opaque
+    pixel from the outer edge; in the corner squares a pixel's depth is min(depth x, depth y)) and the opaque RGB of
+    the outer two band rows (counted from `pad`)."""
+    op = arr[..., 3] == 255; n = op.shape[0]
+    bands = _edge_middles(op, s, s)
+    cols = np.concatenate([b.sum(axis=0) for b in bands.values()])
+    depth = [int(np.flatnonzero(b.any(axis=1))[-1]) + 1 for b in bands.values() if b.any()]
+    d = np.arange(n); dist = np.minimum(d, n - 1 - d) + 1; corner = np.minimum.outer(dist, dist)
+    cmask = np.zeros_like(op); cmask[:s, :s] = cmask[:s, n - s:] = cmask[n - s:, :s] = cmask[n - s:, n - s:] = True
+    reach = {'edge': max(depth, default=0), 'corner': int(corner[op & cmask].max()) if (op & cmask).any() else 0}
+    px = np.concatenate([b[pad:pad + 2].reshape(-1, 4) for b in _edge_middles(arr, s, s).values()])
+    return [int(cols.min()), int(cols.max())], reach, px[px[:, 3] == 255][:, :3]
+
+
+def nine_slice(reg, aid, cell, workdir, raw, size, slice_, role='frame', hue=None, pad=0):
     """A frame drawn on magenta -> exactly size x size art pixels for CSS border-image (slice `slice_`).
 
-    Cutout, crop to the subject, nearest centre-sample (no new colours), then QA: the usual alpha checks (the ring
-    must reach the canvas edge, so `touches edge` is expected), `center_clear` (inside the slice fully transparent),
-    `ring_closed` (every column of the top and bottom bands and every row of the side bands has an opaque pixel) and
-    `edge_repeat` (seam ratio of each edge middle <= SEAM_RATIO_MAX).
+    Cutout, crop to the subject, coverage sample to size - 2*pad (`cover_sample`, no new colours), `pad` rings of
+    transparency, then QA: the usual alpha checks (the ring must reach the canvas edge, so `touches edge` is expected),
+    `center_clear` (inside the slice fully transparent), `ring_closed` (inside the pad, every column of the top and
+    bottom bands and every row of the side bands has an opaque pixel), `edge_repeat` (seam ratio of each edge middle
+    <= SEAM_RATIO_MAX) and, by role (plan 5d addendum 2 §2):
+      'frame'   band thickness FRAME_STROKE, reach EDGE_REACH_MAX / CORNER_REACH_MAX, and when `hue` is given the band
+                hue within HUE_TOL of it with saturation >= SAT_MIN;
+      'glow'    the outer 2 rows of the edge middles clear (`glow outside its ring`), thickness at most GLOW_STROKE[1],
+                hue GLOW_HUE (or `hue`) with saturation >= GLOW_SAT_MIN;
+      'overlay' (starlit) no closed ring and no band thickness: every opaque pixel a starlight colour, at least
+                STARLIT_CORNER_MIN pixels in each 5 x 5 corner, at most STARLIT_EDGE_COVER_MAX of the outer 2 rows of
+                any edge middle covered (the frame under it must show).
+    QA records stroke [min, max], reach {edge, corner}, stroke_colour (median RGB of the outer two band rows) and hue.
     """
     entry = reg.data['assets'].get(aid, {})
     cut = cutout(cell); box = cut.getbbox(); reasons = []
     if box is None:
         final = Image.new('RGBA', (size, size)); reasons.append('no foreground')
     else:
-        final = despill(defringe(_sample(cut.crop(box), size, size), strong=entry.get('defringe') == 'strong'))
+        inner = despill(defringe(cover_sample(cut.crop(box), size - 2 * pad, size - 2 * pad), strong=entry.get('defringe') == 'strong'))
+        final = Image.new('RGBA', (size, size)); final.paste(inner, (pad, pad))
         if box[0] == 0 or box[1] == 0 or box[2] == cell.width or box[3] == cell.height:
             reasons.append('subject cut by the canvas edge')
     s = slice_
@@ -820,18 +928,49 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_):
     qa = alpha_qa(final, entry.get('allow_holes', 0), bg_hint=centre, allow_residue=entry.get('allow_residue', 0))
     _spill_gate(qa, final, entry)
     reasons = [r for r in qa['reasons'] if r != 'touches edge'] + reasons
-    op = np.asarray(final)[..., 3] == 255
+    arr = np.asarray(final); op = arr[..., 3] == 255
     qa['center_clear'] = bool(not op[s:size - s, s:size - s].any())
-    qa['ring_closed'] = bool(op[:s].any(axis=0).all() and op[size - s:].any(axis=0).all()
-                             and op[:, :s].any(axis=1).all() and op[:, size - s:].any(axis=1).all())
+    io, si = op[pad:size - pad, pad:size - pad], s - pad
+    qa['ring_closed'] = bool(io[:si].any(axis=0).all() and io[-si:].any(axis=0).all()
+                             and io[:, :si].any(axis=1).all() and io[:, -si:].any(axis=1).all())
     qa['edge_repeat'], qa['edge_steps'] = edge_repeat(final, s, detail=True)
+    qa['stroke'], qa['reach'], band_px = _band_measures(arr, s, pad)
+    qa['stroke_colour'] = [int(v) for v in np.median(band_px, axis=0).round()] if len(band_px) else None
+    qa['hue'] = band_hue(band_px) if len(band_px) else None
     if not qa['center_clear']: reasons.append('centre not clear')
-    if not qa['ring_closed']: reasons.append('ring not closed')
+    if role != 'overlay' and not qa['ring_closed']: reasons.append('ring not closed')
     if any(v > SEAM_RATIO_MAX for v in qa['edge_repeat'].values()): reasons.append('edge does not repeat')
-    qa.update(reasons=reasons, size=[size, size], slice=s, block=round(max(box[2] - box[0], box[3] - box[1]) / size, 3) if box else None)
+    deep = qa['reach']['corner'] > CORNER_REACH_MAX
+    if role == 'frame':
+        if qa['stroke'][0] < FRAME_STROKE[0]: reasons.append('band thinner than 2 px')
+        deep = deep or qa['stroke'][1] > FRAME_STROKE[1] or qa['reach']['edge'] > EDGE_REACH_MAX
+    elif role == 'glow':
+        if any(m.any() for m in _edge_middles(op, s, 2).values()): reasons.append('glow outside its ring')
+        # The glow lies on the slot's third ring (inside the 2 px frame band), so it may reach one ring deeper.
+        deep = deep or qa['stroke'][1] > GLOW_STROKE[1] or qa['reach']['edge'] > 2 + GLOW_STROKE[1]
+    else:
+        deep = deep or qa['reach']['edge'] > EDGE_REACH_MAX
+    if deep: reasons.append('band reaches into the icon')
+    tier = GLOW_HUE if role == 'glow' and hue is None else hue
+    if role != 'overlay' and tier is not None:
+        sat = _hsv(band_px)[1] if len(band_px) else np.zeros(0)
+        qa['saturation'] = round(float(np.median(sat)), 3) if sat.size else None
+        if qa['hue'] is None or _hue_dist(qa['hue'], tier) > HUE_TOL or qa['saturation'] < (GLOW_SAT_MIN if role == 'glow' else SAT_MIN):
+            reasons.append('hue off tier')
+    if role == 'overlay':
+        h, sv, v = _hsv(arr[op][:, :3])
+        star = ((h >= 170) & (h <= 215) & (sv >= 0.2) & (v >= 0.7)) | ((sv <= 0.15) & (v >= 0.85))
+        qa['off_colour'] = int((~star).sum())
+        if qa['off_colour']: reasons.append('not starlight colours')
+        k = 5; qa['corner_px'] = [int(c.sum()) for c in (op[:k, :k], op[:k, size - k:], op[size - k:, :k], op[size - k:, size - k:])]
+        if min(qa['corner_px']) < STARLIT_CORNER_MIN: reasons.append('starlit corners missing')
+        qa['edge_cover'] = round(max(float(m.mean()) for m in _edge_middles(op, s, 2).values()), 3)
+        if qa['edge_cover'] > STARLIT_EDGE_COVER_MAX: reasons.append('overlay hides the frame')
+    qa.update(reasons=reasons, size=[size, size], slice=s, role=role, pad=pad, tier_hue=tier,
+              block=round(max(box[2] - box[0], box[3] - box[1]) / (size - 2 * pad), 3) if box else None)
     qa['pass'] = not reasons
     out = _save_final(reg, aid, final, qa, workdir, raw)
-    reg.set(aid, kind='nine-slice', slice=s, source={'raw': str(raw), 'cell': aid})
+    reg.set(aid, kind='nine-slice', slice=s, role=role, source={'raw': str(raw), 'cell': aid})
     return out
 
 

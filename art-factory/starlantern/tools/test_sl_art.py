@@ -798,14 +798,17 @@ def test_real_sample_iron_sword_cell_had_spill_and_now_has_none(tmp_path):
 
 
 def _jittered_ring(seed=0, jump=None):
-    """A frame whose 1 art-px bar is one colour plus codec jitter of +-3 per art pixel (what codex frames look like after
-    sampling). jump=(x0, x1, colour): a block of another colour on the top bar, so the repeated edge shows a joint."""
+    """A frame whose 2 art-px bar is one colour plus codec jitter of +-3 per art pixel (what codex frames look like after
+    sampling). jump=(x0, x1, colour): a block of another colour on the top bar, so the repeated edge shows a joint.
+    (Addendum 2: the bar is 2 art px, the thinnest band the frame gate accepts; it was 1 art px before.)"""
     rng = np.random.default_rng(seed); arr = np.asarray(canvas(176, 176)).copy(); r = arr[8:168, 8:168]
     jitter = lambda: np.clip(np.array((70, 110, 170)) + rng.integers(-3, 4, 3), 0, 255)
-    for i in range(16):                      # 16 art px of 10 raw px each; the bar is the outer art pixel
-        for sl in (np.s_[:10, i * 10:(i + 1) * 10], np.s_[-10:, i * 10:(i + 1) * 10], np.s_[i * 10:(i + 1) * 10, :10], np.s_[i * 10:(i + 1) * 10, -10:]):
-            r[sl] = jitter()
-    if jump: r[:10, jump[0]:jump[1]] = jump[2]
+    for i in range(16):                      # 16 art px of 10 raw px each; the bar is the outer two art pixels
+        for k in (0, 1):
+            a, b = k * 10, (k + 1) * 10; ia, ib = 160 - b, 160 - a
+            for sl in (np.s_[a:b, i * 10:(i + 1) * 10], np.s_[ia:ib, i * 10:(i + 1) * 10], np.s_[i * 10:(i + 1) * 10, a:b], np.s_[i * 10:(i + 1) * 10, ia:ib]):
+                r[sl] = jitter()
+    if jump: r[:20, jump[0]:jump[1]] = jump[2]
     return Image.fromarray(arr, 'RGB')
 
 
@@ -825,14 +828,14 @@ A3_FRAMES = Path('C:/Users/bag57/art-refs/starlantern/raw/sheet-rarity-frames/sh
 
 
 @pytest.mark.skipif(not A3_FRAMES.exists(), reason='the plan 5d a3 frame sheet lives outside the repo')
-def test_nine_slice_passes_the_edges_of_the_real_a3_frame_sheet(tmp_path):
+def test_real_a3_frames_the_user_saw_fail_the_two_pixel_band_gate(tmp_path):
+    """Addendum 2: the G1 a3 frames have a 1 art-px band (what the user found too thin); the band gate catches all five."""
     import portal as P
     cells = P.sheet_cells(Image.open(A3_FRAMES).convert('RGB'), 3, 2)
-    for cell, (aid, size, sl) in zip(cells, [('ui-rarity-magic', 16, 5), ('ui-rarity-rare', 16, 5), ('ui-rarity-legendary', 16, 5),
-                                             ('ui-rarity-unique', 16, 5), ('ui-rarity-set', 16, 5), ('ui-glow-legendary', 20, 7)]):
+    for cell, aid in zip(cells, ['ui-rarity-magic', 'ui-rarity-rare', 'ui-rarity-legendary', 'ui-rarity-unique', 'ui-rarity-set']):
         reg = A.Registry(tmp_path / f'{aid}.json'); reg.set(aid, defringe='strong')
-        q = A.nine_slice(reg, aid, cell, tmp_path / 'w', A3_FRAMES, size, sl)
-        assert 'edge does not repeat' not in q['reasons'], (aid, q['edge_repeat'], q['edge_steps'])
+        q = A.nine_slice(reg, aid, cell, tmp_path / 'w', A3_FRAMES, 16, 5)
+        assert 'band thinner than 2 px' in q['reasons'] and q['stroke'][0] == 1, (aid, q['stroke'])
 
 
 def _thick_ring(hole=False, colour=(180, 140, 60)):
@@ -845,7 +848,8 @@ def _thick_ring(hole=False, colour=(180, 140, 60)):
 
 def test_nine_slice_does_not_count_its_transparent_centre_as_a_hole(tmp_path):
     q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-rare', _thick_ring(), tmp_path / 'w', tmp_path / 'raw.png', 12, 4)
-    assert q['center_clear'] and q['pass'] and q['holes'] == 0 and q['warnings'] == [], q
+    assert q['center_clear'] and q['holes'] == 0 and q['warnings'] == [], q
+    assert q['reasons'] == ['band reaches into the icon'], q     # addendum 2: a 4 art-px band is now too deep
 
 
 def test_nine_slice_still_flags_a_hole_in_the_ring(tmp_path):
@@ -1047,3 +1051,143 @@ def test_subject_gate_without_slot_checks_long_edge_and_centre_only():
     assert A.subject_gate(m, 22, None) == ['subject long edge off target', 'subject off centre']
     assert A.subject_gate({**m, 'long': 21, 'centre_off': 0.5}, 22, None) == []
     assert set(A.subject_gate({**m, 'long': 22, 'centre_off': 0}, 22, 'ring')) == {'subject too narrow', 'subject too light'}
+
+
+# --- plan 5d addendum 2, Task B: coverage sampling keeps a 2 px band; band, hue and distinctness gates; inner glow; starlit ---
+MAGIC_BLUE, LEMON, ORANGE_GLOW = (63, 127, 255), (255, 224, 58), (255, 200, 120)
+
+
+def _band_frame(band, colour=MAGIC_BLUE, box=160, margin=8):
+    """A square frame `box` px wide whose border band is `band` px thick, on a magenta cell with a margin."""
+    arr = np.asarray(canvas(box + 2 * margin, box + 2 * margin)).copy(); r = arr[margin:margin + box, margin:margin + box]
+    r[:band, :] = colour; r[-band:, :] = colour; r[:, :band] = colour; r[:, -band:] = colour
+    return Image.fromarray(arr, 'RGB')
+
+
+def _alpha(path):
+    return np.asarray(Image.open(path).convert('RGBA'))[..., 3] == 255
+
+
+def test_cover_sample_keeps_majority_colour_and_drops_thin_coverage():
+    arr = np.zeros((20, 20, 4), np.uint8)
+    arr[:10, :10] = (200, 10, 10, 255); arr[:3, :10] = (10, 200, 10, 255)       # block 0,0: 70 red, 30 green -> red
+    arr[:10, 10:13] = (10, 10, 200, 255)                                        # block 0,1: 30 % opaque -> transparent
+    arr[10:20, 10:20] = (10, 10, 200, 255); arr[10:20, 0:4] = (90, 90, 90, 255) # 1,1 opaque blue; 1,0: 40 % grey -> opaque
+    out = np.asarray(A.cover_sample(Image.fromarray(arr, 'RGBA'), 2, 2))
+    assert tuple(out[0, 0]) == (200, 10, 10, 255) and out[0, 1, 3] == 0
+    assert tuple(out[1, 0]) == (90, 90, 90, 255) and tuple(out[1, 1]) == (10, 10, 200, 255)
+
+
+def test_cover_sample_keeps_a_two_pixel_band(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-magic', _band_frame(17), tmp_path / 'w', tmp_path / 'raw.png', 16, 5)
+    op = _alpha(tmp_path / 'w' / 'ui-rarity-magic.png')
+    assert op[:5, 5:11].sum(axis=0).tolist() == [2] * 6 and op[:2, 5:11].all()
+    assert q['stroke'] == [2, 2] and q['pass'], q
+
+
+def test_frame_gate_fails_a_one_pixel_band(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-magic', _band_frame(8), tmp_path / 'w', tmp_path / 'raw.png', 16, 5)
+    assert q['stroke'][0] == 1 and 'band thinner than 2 px' in q['reasons'] and not q['pass'], q
+
+
+def test_frame_gate_fails_a_band_reaching_into_the_icon(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-magic', _band_frame(45), tmp_path / 'w', tmp_path / 'raw.png', 16, 5)
+    assert q['reach']['edge'] > A.EDGE_REACH_MAX and 'band reaches into the icon' in q['reasons'] and not q['pass'], q
+
+
+def test_frame_gate_fails_an_ornament_reaching_past_the_corner_square(tmp_path):
+    arr = np.asarray(_band_frame(20)).copy(); arr[8 + 40:8 + 50, 8 + 40:8 + 50] = MAGIC_BLUE   # art pixel (4, 4): depth 5
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-magic', Image.fromarray(arr, 'RGB'), tmp_path / 'w', tmp_path / 'raw.png', 16, 5)
+    assert q['reach']['corner'] == 5 and 'band reaches into the icon' in q['reasons'], q
+
+
+def test_frame_gate_checks_the_tier_hue(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'a.json'), 'ui-rarity-legendary', _band_frame(20, LEMON), tmp_path / 'w', tmp_path / 'raw.png',
+                     16, 5, hue=26)
+    assert 'hue off tier' in q['reasons'] and not q['pass'], q
+    q = A.nine_slice(A.Registry(tmp_path / 'b.json'), 'ui-rarity-rare', _band_frame(20, LEMON), tmp_path / 'w', tmp_path / 'raw.png',
+                     16, 5, hue=51)
+    assert q['pass'] and abs(q['hue'] - 51) <= 1 and q['stroke_colour'] == list(LEMON), q
+
+
+def test_frame_gate_fails_a_grey_band_for_a_coloured_tier(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-rarity-magic', _band_frame(20, (150, 150, 165)), tmp_path / 'w',
+                     tmp_path / 'raw.png', 16, 5, hue=220)
+    assert 'hue off tier' in q['reasons'], q
+
+
+def test_band_hue_wraps_around_red():
+    rgb = np.array([[(216, 40, 58), (230, 30, 30), (200, 30, 60)]], np.uint8)     # 354, 0, 349 degrees
+    assert A.band_hue(rgb) == pytest.approx(354, abs=6)
+
+
+def test_frames_distinct_fails_two_close_tiers():
+    out = A.frames_distinct({'ui-rarity-rare': (0xff, 0xd8, 0x4a), 'ui-rarity-legendary': (0xff, 0xe0, 0x3a)})
+    assert any(r.startswith('too close to ui-rarity-legendary (ΔE ') for r in out['ui-rarity-rare'])
+    assert any(r.startswith('too close to ui-rarity-rare (ΔE ') for r in out['ui-rarity-legendary'])
+    assert not any(A.frames_distinct({'ui-rarity-magic': (0x3f, 0x7f, 0xff), 'ui-rarity-epic': (0x8a, 0x5c, 0xff)}).values())
+
+
+def test_delta_e_matches_cie76():
+    assert A.delta_e((255, 255, 255), (0, 0, 0)) == pytest.approx(100, abs=0.1)
+    assert A.delta_e((0x3f, 0x7f, 0xff), (0x8a, 0x5c, 0xff)) == pytest.approx(32.9, abs=0.5)
+
+
+def _glow(colour=ORANGE_GLOW):
+    """A 12 art-px ring of soft orange light 1 art px wide (10 raw px per art px)."""
+    return _band_frame(10, colour, box=120)
+
+
+def test_inner_glow_is_padded_inside_the_slot(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-glow-legendary', _glow(), tmp_path / 'w', tmp_path / 'raw.png', 16, 5,
+                     role='glow', pad=2)
+    op = _alpha(tmp_path / 'w' / 'ui-glow-legendary.png')
+    assert q['size'] == [16, 16] and not op[:2].any() and not op[:, :2].any() and op[2, 2:14].all()
+    assert q['pass'] and q['ring_closed'], q
+
+
+def test_glow_without_its_padding_sits_on_the_frame_band(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-glow-legendary', _glow(), tmp_path / 'w', tmp_path / 'raw.png', 16, 5,
+                     role='glow', pad=0)
+    assert 'glow outside its ring' in q['reasons'], q
+
+
+def test_glow_must_be_warm_light(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-glow-legendary', _glow(MAGIC_BLUE), tmp_path / 'w', tmp_path / 'raw.png', 16, 5,
+                     role='glow', pad=2)
+    assert 'hue off tier' in q['reasons'], q
+
+
+STAR_CORE, STAR_ARM = (232, 251, 255), (127, 230, 255)
+
+
+def _starlit(colours=(STAR_CORE, STAR_ARM), solid=False, drop_corner=False):
+    """16 art px (10 raw px each): a 5 x 5 four-pointed star on every corner and one dot in each edge middle."""
+    core, arm = colours; art = {}
+    corners = [(2, 2), (2, 13), (13, 2), (13, 13)][:3 if drop_corner else 4]
+    for cy, cx in corners:
+        for d in (-2, -1, 1, 2): art[(cy + d, cx)] = arm; art[(cy, cx + d)] = arm
+        art[(cy, cx)] = core
+    for y, x in ((1, 8), (14, 7), (8, 1), (7, 14)): art[(y, x)] = core
+    if solid:
+        for i in range(16):
+            for k in (0, 1, 14, 15): art[(k, i)] = core; art[(i, k)] = core
+    arr = np.asarray(canvas(176, 176)).copy()
+    for (y, x), c in art.items(): arr[8 + y * 10:18 + y * 10, 8 + x * 10:18 + x * 10] = c
+    return Image.fromarray(arr, 'RGB')
+
+
+def test_starlit_overlay_needs_corners_and_light_edges_but_not_a_closed_ring(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A.nine_slice(reg, 'ui-starlit', _starlit(), tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='overlay')
+    assert q['pass'] and not q['ring_closed'], q
+    q = A.nine_slice(reg, 'ui-starlit', _starlit(((255, 170, 60), (255, 122, 20))), tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='overlay')
+    assert 'not starlight colours' in q['reasons'], q
+    q = A.nine_slice(reg, 'ui-starlit', _starlit(solid=True), tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='overlay')
+    assert 'overlay hides the frame' in q['reasons'], q
+
+
+def test_starlit_overlay_needs_all_four_corner_stars(tmp_path):
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-starlit', _starlit(drop_corner=True), tmp_path / 'w', tmp_path / 'raw.png',
+                     16, 5, role='overlay')
+    assert 'starlit corners missing' in q['reasons'], q
