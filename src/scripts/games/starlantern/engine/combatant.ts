@@ -3,7 +3,7 @@ import type { Rng } from './rng';
 import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
-import { AIM, EMBER, type MechState } from './mech';
+import { AIM, BEAT, EMBER, type MechState } from './mech';
 import type { MechCue } from './mechanics/index';
 import { credit, type Ledger } from './ledger';
 import { AILMENT, clearAilments, type AilmentShown, type Dot } from './ailments';
@@ -214,6 +214,8 @@ export function hitAmount(a: Combatant, t: Combatant, spec: DamageSpec, r: HitRo
   if (r.crit) mult *= 1 + (a.side === 'enemy' ? ENEMY_CRIT_DMG : ax('critDmg')) / 100;
   const aim = aimOn(a, t);
   if (aim) mult *= 1 + (AIM.dmgPct * aim) / 100;
+  // Safira's beat: every hit of hers, her plain attack and her ultimate included.
+  if (a.mech?.kind === 'beat' && a.defId === 'safira' && a.mech.beat > 0) mult *= 1 + (BEAT.pctPer * a.mech.beat) / 100;
   if (hitEl === 'phys') {
     mult *= 1 - armorReduction(tx('armor'), a.level);
     if (r.blocked) mult *= 0.5;

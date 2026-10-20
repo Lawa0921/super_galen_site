@@ -177,9 +177,10 @@ export const T = {
     /** Why a skill is greyed in the menu: its resource is empty. */
     noCoins: '沒有銅板',
     noBarrier: '沒有結界',
-    /** Scarlet's embers, the ally she covers, her 贖火's rounds; Safira's beat (the fourth is the finale's). */
+    /** Scarlet's embers, her cover (受護 on the one she covers), her 贖火's rounds; Safira's beat (the fourth is the finale's). */
     embers: (n: number) => `餘燼${n}`,
-    cover: (who: string) => `代受：${who}`,
+    cover: '代受',
+    guarded: '受護',
     riposte: (n: number) => `贖火${n}`,
     beat: (n: number) => (n >= 4 ? `拍子${n}・終幕` : `拍子${n}`),
     cue: { overload: '暴走！', again: '還有。', noBarrier: '沒有結界', counter: '贖火', misstep: '這一步踩空了呀。', finale: '終幕' },

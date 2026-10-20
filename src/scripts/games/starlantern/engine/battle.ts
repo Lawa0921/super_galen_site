@@ -268,18 +268,22 @@ export function skillCost(c: Pick<Combatant, 'x' | 'powers' | 'ranks'>, id: stri
 
 const skillIsMelee = (effects: Effect[]) => effects.some((e) => e.kind === 'damage' && e.melee);
 
-function chooseEnemyActions(s: BattleState, rng: Rng): Map<string, EnemyAction> {
+/** Each living enemy's action for `round` (the one being played, or the next one when planned ahead). */
+function chooseEnemyActions(s: BattleState, rng: Rng, round: number): Map<string, EnemyAction> {
   const out = new Map<string, EnemyAction>();
   for (const e of living(s.enemies)) {
     const skills = enemyDef(s, e)?.skills ?? [];
     const index = skills.findIndex((sk) => rng() < sk.chance);
     const melee = index >= 0 ? skillIsMelee(skills[index].effects) : e.melee;
-    let target = pickTarget(foePool(s, e, melee), undefined, rng)?.key;
-    // A foe 盾擊 challenged for the round being chosen shows her as its target (the draw above is made all the same).
+    const target = pickTarget(foePool(s, e, melee), undefined, rng)?.key;
+    const act: EnemyAction = index >= 0 ? { kind: 'enemy-skill', index, target } : { kind: 'attack', target };
+    // Where a challenge or a cover will really send the blow (a taunt over them included), the intent shows it; the draws
+    // above are made all the same. A lone taunt leaves the drawn target, as it always has.
     const ch = e.challenged;
-    const single = index < 0 || skills[index].target === 'enemy';
-    if (single && ch && (ch.round === s.round || ch.round === s.round + 1) && s.party.some((c) => c.key === ch.by && c.alive)) target = ch.by;
-    out.set(e.key, index >= 0 ? { kind: 'enemy-skill', index, target } : { kind: 'attack', target });
+    const challenged = !!ch && ch.round === round && s.party.some((c) => c.key === ch.by && c.alive);
+    const covered = living(s.party).some((c) => c.key !== target && c.cover?.ally === target);
+    const forced = challenged || covered ? forcedTarget(s, e, act, round) : null;
+    out.set(e.key, forced ? { ...act, target: forced.to.key } : act);
   }
   return out;
 }
@@ -288,9 +292,10 @@ function chooseEnemyActions(s: BattleState, rng: Rng): Map<string, EnemyAction> 
  * Where a foe's single blow must go instead of its target (spec §10.3, plan 8c ruling 19), and the others it could have
  * hit instead (for the ledger): a taunt first (its pool: the others in reach), then a challenge (Scarlet's 盾擊, for this
  * round, while the challenger stands; the same pool), then a cover (someone standing in for the target; the pool is the
- * target). Null for an area attack, or when nothing turns the blow. Draws nothing.
+ * target). Null for an area attack, or when nothing turns the blow. `round` is the round the blow falls in (the next one
+ * for an intent planned ahead). Draws nothing.
  */
-export function forcedTarget(s: BattleState, enemy: Combatant, act: EnemyAction): { to: Combatant; pool: Combatant[] } | null {
+export function forcedTarget(s: BattleState, enemy: Combatant, act: EnemyAction, round = s.round): { to: Combatant; pool: Combatant[] } | null {
   const sk = act.kind === 'enemy-skill' ? enemyDef(s, enemy)?.skills[act.index] : undefined;
   if (!(act.kind === 'attack' || sk?.target === 'enemy')) return null;
   const melee = act.kind === 'attack' ? enemy.melee : skillIsMelee(sk?.effects ?? []);
@@ -298,7 +303,7 @@ export function forcedTarget(s: BattleState, enemy: Combatant, act: EnemyAction)
   const taunter = living(s.party).find((c) => c.taunt > 0);
   if (taunter) return { to: taunter, pool: others(taunter) };
   const ch = enemy.challenged;
-  const by = ch && ch.round === s.round ? s.party.find((c) => c.key === ch.by && c.alive) : undefined;
+  const by = ch && ch.round === round ? s.party.find((c) => c.key === ch.by && c.alive) : undefined;
   if (by) return { to: by, pool: others(by) };
   const meant = s.party.find((c) => c.key === act.target && c.alive);
   const cover = meant ? living(s.party).find((c) => c !== meant && c.cover?.ally === meant.key) : undefined;
@@ -511,7 +516,7 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
   }
   // Enemies do what they announced; one that has no plan (an older state, a fresh arrival) decides now.
   const planned = s.intents ?? {};
-  const fresh = chooseEnemyActions(s, rng);
+  const fresh = chooseEnemyActions(s, rng, s.round);
   const enemyActs = new Map([...fresh].map(([k, a]) => [k, planned[k] ?? a]));
   for (const actor of turnOrder([...living(s.party), ...living(s.enemies)], rng, s.round)) {
     if (!actor.alive) continue;
@@ -559,7 +564,7 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
 
 /** Decide every living enemy's next action now, so it can be shown before the player chooses. */
 export function planEnemies(s: BattleState, rng: Rng): void {
-  s.intents = Object.fromEntries(chooseEnemyActions(s, rng));
+  s.intents = Object.fromEntries(chooseEnemyActions(s, rng, s.round + 1));
 }
 
 /** "攻擊 → 千鶴" or a skill's name with its target, for the battle screen. */

@@ -171,7 +171,7 @@ export class PartyBar {
     }
     const [name, num, hp, tpNum, tp, limit, ail] = [...p.body.children] as HTMLElement[];
     // One line: her mechanic's words first, then the ailments, the most severe first, the rest folded into +N. Words
-    // that do not fit (Scarlet's three) fold into the +N too, with every ailment, after the first.
+    // that do not fit the line fold into the +N too, with every ailment; the first always shows.
     const all = m.mech ?? [];
     const widthOf = (k: number) => all.slice(0, k).reduce((w, x) => w + ailWordWidth(x.text) + 1, 0);
     let mech = all, shown: ReturnType<typeof fitChips>['shown'], more: number;

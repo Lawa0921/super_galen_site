@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createBattle, resolveRound, type Action, type BattleState } from '../battle';
-import type { BattleEvent, Combatant } from '../combatant';
+import { hitAmount, type BattleEvent, type Combatant } from '../combatant';
 import { mulberry32 } from '../rng';
 import { choose, partyAt } from '../sim';
 import { constRng, makeBattle, makeCombatant } from '../testing';
@@ -30,15 +30,38 @@ describe("Safira's beat", () => {
     expect(s.log).toContainEqual({ type: 'mech', actor: 'safira', cue: 'misstep' });
   });
 
-  it('each beat is 10% more power and more buff', () => {
-    const s = makeBattle([safira(2)], [foe()]);
-    const pct = (b: number) => (100 + BEAT.pctPer * b) / 100;
-    const dmg = castDef(s, s.party[0], SKILLS['blade-dance']).effects[0];
-    expect(dmg.kind === 'damage' && dmg.power).toBe(Math.round(50 * pct(2)));
-    const buff = castDef(s, s.party[0], SKILLS['war-dance']).effects[0];
-    expect(buff.kind === 'buff' && buff.pct).toBe(Math.round(25 * pct(2)));
+  it('each beat is 10% more on every hit of hers, her plain attack included, and 10% more buff', () => {
+    const big = { max: { hp: 200, tp: 99, atk: 4000, def: 20, mag: 20, res: 20, spd: 50 } };
+    const spec = { power: 100, element: 'phys', scale: 'atk', melee: true } as const;
+    const rolls = { variance: 1, crit: false, blocked: false };
+    const hit = (c: Combatant) => hitAmount(c, foe(), spec, rolls).amount;
+    expect(hit(safira(2, null, big)) / hit(safira(0, null, big))).toBeCloseTo(1 + (2 * BEAT.pctPer) / 100, 2);
     // Not hers: nothing.
-    expect(castDef(s, P('liz', { mech: { kind: 'beat', beat: 2, last: null } }), SKILLS['blade-dance'])).toBe(SKILLS['blade-dance']);
+    expect(hit(P('liz', { mech: { kind: 'beat', beat: 2, last: null }, ...big }))).toBe(hit(P('liz', big)));
+    // In a fight: her attack on the second beat lands 20% more than on none.
+    const attack = (beat: number) => {
+      const r = step(makeBattle([safira(beat, 'blade-dance', big)], [foe()]), { kind: 'attack', target: 'e0' });
+      return (r.log.find((e) => e.type === 'damage' && e.target === 'e0') as { amount: number }).amount;
+    };
+    expect(attack(2) / attack(0)).toBeCloseTo(1.2, 2);
+    // The hit carries the beat, so a skill's damage is not rewritten too (no double count); its buff is.
+    const s = makeBattle([safira(2)], [foe()]);
+    expect(castDef(s, s.party[0], SKILLS['blade-dance']).effects[0]).toMatchObject({ power: 50, hits: 3 });
+    const buff = castDef(s, s.party[0], SKILLS['war-dance']).effects[0];
+    expect(buff.kind === 'buff' && buff.pct).toBe(Math.round(25 * 1.2));
+  });
+
+  it('the finale waits for a skill she really casts: an attack, or a skill short of TP, keeps it', () => {
+    const s = step(makeBattle([safira(4, 'blade-dance')], [foe()]), { kind: 'attack', target: 'e0' });
+    expect(beatOf(s)).toEqual([4, 'attack']);
+    expect(s.log.filter((e) => e.type === 'mech')).toEqual([]);
+    const poor = step(makeBattle([safira(4, 'attack', { tp: 0 })], [foe()]), skill('blade-dance'));
+    expect(poor.log).toContainEqual({ type: 'no-tp', actor: 'safira' });
+    expect(beatOf(poor)).toEqual([4, 'attack']);
+    const r = step(s, skill('blade-dance'));
+    expect(r.log).toContainEqual({ type: 'mech', actor: 'safira', cue: 'finale' });
+    expect(r.log.filter((e) => e.type === 'damage' && e.target === 'e0')).toHaveLength(4);
+    expect(beatOf(r)).toEqual([1, 'blade-dance']);
   });
 
   it("the fourth beat's move is the finale: for the whole party, a round longer, a hit more; then back to one", () => {

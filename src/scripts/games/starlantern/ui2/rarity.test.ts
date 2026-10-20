@@ -228,6 +228,12 @@ describe('mechanic colours (plan 8c)', () => {
     for (const [a, ha] of entries) for (const [b, hb] of entries) {
       if (a < b) expect(Math.hypot(...rgb(ha).map((v, i) => v - rgb(hb)[i])), `${a} ${b}`).toBeGreaterThan(40);
     }
+    // Scarlet's and Safira's tones (plan 8c Task 5) stand apart from every ailment's too.
+    const ail = [...(/\$slx-ailment:\s*\(([^)]*)\)/.exec(scss)?.[1] ?? '').matchAll(/([a-z]+): #([0-9a-f]{6})/g)].map((m) => [m[1], m[2]] as const);
+    expect(ail.length).toBe(7);
+    for (const [k, h] of entries.filter(([k]) => k === 'embers' || k === 'beat')) for (const [a, ha] of ail) {
+      expect(Math.hypot(...rgb(h).map((v, i) => v - rgb(ha)[i])), `${k} ${a}`).toBeGreaterThan(40);
+    }
     // Every tone has its class in the stylesheet, the words and the cue alike.
     const css = compile(resolve(process.cwd(), 'src/styles/_starlantern-ui.scss')).css;
     for (const [k] of entries) expect(css, k).toContain(`.slx-mech-${k}`);

@@ -66,7 +66,7 @@ export interface MechModule {
 
 /** In hook order. Read lazily: the modules and the engine import each other, so the list is built on first use. */
 let MODULES_CACHE: MechModule[] | null = null;
-const modules = (): MechModule[] => (MODULES_CACHE ??= [heat, mark, barrier, moon, coins, aim, embers, beat]);
+const modules = (): MechModule[] => (MODULES_CACHE ??= [heat, mark, barrier, moon, coins, aim, beat, embers]);
 
 /** Each character's mechanic as a fight opens it; a member without an entry has none. */
 export const MECH_OF: Partial<Record<CharacterId, () => MechState>> = {

@@ -58,13 +58,11 @@ export const embers: MechModule = {
   },
   words(s, c) {
     const n = embersOf(c);
-    // The short words first: when all three are up the longest (the name) is the one the row folds into +N.
     const out: { tone: 'embers'; text: string }[] = n === null ? [] : [{ tone: 'embers', text: T.mech.embers(n) }];
     if (c.riposte) out.push({ tone: 'embers', text: T.mech.riposte(c.riposte.turns) });
-    if (c.cover) {
-      const ally = s.party.find((x) => x.key === c.cover!.ally);
-      if (ally) out.push({ tone: 'embers', text: T.mech.cover(ally.name) });
-    }
+    if (c.cover && c.alive) out.push({ tone: 'embers', text: T.mech.cover });
+    // The one she covers wears 受護 while she stands and the cover lasts.
+    if (c.alive && s.party.some((x) => x !== c && x.alive && x.cover?.ally === c.key)) out.push({ tone: 'embers', text: T.mech.guarded });
     return out;
   },
   cue(cue) {

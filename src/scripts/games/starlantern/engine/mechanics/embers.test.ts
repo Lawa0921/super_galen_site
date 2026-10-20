@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { forcedTarget, resolveRound, type Action, type BattleState, type EnemyAction } from '../battle';
+import { forcedTarget, planEnemies, resolveRound, type Action, type BattleState, type EnemyAction } from '../battle';
 import { dealDamage, hitAmount, rollHit, type Combatant } from '../combatant';
 import { lossOf, newLedger } from '../ledger';
 import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
 import { ENEMIES } from '../../data/enemies';
 import type { EnemyDef } from '../types';
-import { castDef } from './index';
+import { castDef, memberWords } from './index';
 import { EMBER } from './embers';
 
 const MAX = { hp: 200, tp: 99, atk: 40, def: 20, mag: 20, res: 20, spd: 1 };
@@ -84,9 +84,12 @@ describe("Scarlet's embers", () => {
   it('cover takes the single hit and credits what the ally was spared', () => {
     const l = newLedger();
     const soft = () => foe('e0', { max: { hp: 99999, tp: 0, atk: 60, def: 20, mag: 20, res: 20, spd: 99 } });   // neither falls
-    const s0 = makeBattle([scarlet({ cover: { ally: 'noel', turns: 2 } }), P('noel')], [soft()], { intents: { e0: { kind: 'attack', target: 'noel' } } });
+    // Selene (sturdier) stands in reach too: the pool is the covered ally alone, not everyone else the foe could hit.
+    const s0 = makeBattle([scarlet({ cover: { ally: 'noel', turns: 2 } }), P('noel'), P('selene', { max: { ...MAX, def: 80 } })], [soft()],
+      { intents: { e0: { kind: 'attack', target: 'noel' } } });
     const r = resolveRound(s0, {}, constRng(0.5), l);
     expect(r.party[1].hp).toBe(200);
+    expect(r.party[2].hp).toBe(200);
     const taken = 200 - r.party[0].hp;
     expect(taken).toBeGreaterThan(0);
     const noel = P('noel');
@@ -94,6 +97,40 @@ describe("Scarlet's embers", () => {
     const would = lossOf(noel, hitAmount(soft(), noel, spec, rollHit(soft(), noel, spec, constRng(0.5))!).amount);
     expect(would).toBeGreaterThan(taken);
     expect(l.by.scarlet.prevented).toBe(would - taken);
+  });
+
+  it('the words: 代受 on Scarlet, 受護 on the one she covers, gone when the cover ends or she falls', () => {
+    const s = makeBattle([scarlet({ cover: { ally: 'noel', turns: 1 } }), P('noel'), P('selene')], [foe('e0', { sleep: 9 })]);
+    const words = (b: BattleState, key: string) => memberWords(b, b.party.find((c) => c.key === key)!);
+    expect(words(s, 'scarlet')).toEqual([{ tone: 'embers', text: '餘燼0' }, { tone: 'embers', text: '代受' }]);
+    expect(words(s, 'noel')).toEqual([{ tone: 'embers', text: '受護' }]);
+    expect(words(s, 'selene')).toEqual([]);
+    const ended = round(s);
+    expect(words(ended, 'scarlet')).toEqual([{ tone: 'embers', text: '餘燼0' }]);
+    expect(words(ended, 'noel')).toEqual([]);
+    const fallen = structuredClone(s);
+    dealDamage(fallen.party[0], 999);
+    expect(words(fallen, 'noel')).toEqual([]);
+  });
+
+  it("the intent shows where the blow will land: a challenge, a taunt over a challenge, a cover, a taunt", () => {
+    // Noel stands in front, the others behind: a melee foe can only pick Noel.
+    const party = (over: Partial<Combatant> = {}, noel: Partial<Combatant> = {}) =>
+      [P('noel', noel), scarlet({ row: 'back', ...over }), P('selene', { row: 'back' })];
+    const planned = (s: BattleState) => { planEnemies(s, constRng(0.5)); return s.intents!.e0.target; };
+    expect(planned(makeBattle(party(), [foe()]))).toBe('noel');
+    // 盾擊 hit it this round: next round's intent is Scarlet.
+    expect(planned(makeBattle(party(), [foe('e0', { challenged: { by: 'scarlet', round: 2 } })], { round: 1 }))).toBe('scarlet');
+    // A taunt beats the challenge.
+    const both = makeBattle([P('noel'), scarlet({ row: 'back' }), P('selene', { row: 'back', taunt: 2 })], [foe('e0', { challenged: { by: 'scarlet', round: 2 } })], { round: 1 });
+    expect(planned(both)).toBe('selene');
+    // Scarlet covers Noel.
+    expect(planned(makeBattle(party({ cover: { ally: 'noel', turns: 2 } }), [foe()], { round: 1 }))).toBe('scarlet');
+    // A lone taunt: the draw itself picks the taunter, as it always has.
+    expect(planned(makeBattle([P('noel'), scarlet({ row: 'back' }), P('selene', { row: 'back', taunt: 2 })], [foe()], { round: 1 }))).toBe('selene');
+    // The real round sends the challenged foe's blow to Scarlet, as shown.
+    const bashed = round(makeBattle(party(), [foe('e0', { max: { hp: 99999, tp: 0, atk: 200, def: 20, mag: 20, res: 20, spd: 1 } })]), { scarlet: { kind: 'skill', skill: 'shield-bash', target: 'e0' } });
+    expect(bashed.intents!.e0.target).toBe('scarlet');
   });
 
   it('cover turns no area attack, and ends after three round ends', () => {

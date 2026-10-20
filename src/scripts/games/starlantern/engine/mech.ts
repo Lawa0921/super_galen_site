@@ -13,6 +13,12 @@ import type { Combatant } from './combatant';
  */
 export const AIM = { cap: 3, dmgPct: 10, critPct: 0, consumePct: 50 } as const;
 
+/**
+ * Safira's beat (spec §8.7, engine/mechanics/beat.ts): the most beats, and the percent each adds to every hit of hers and to
+ * her buffs. Kept here so combatant.ts reads it without the mechanics.
+ */
+export const BEAT = { max: 4, pctPer: 10 } as const;
+
 /** Scarlet's embers (spec §8.5, engine/mechanics/embers.ts): the share of HP lost kept, and the cap, both in percent. */
 export const EMBER = { sharePct: 50, capPct: 50 } as const;
 

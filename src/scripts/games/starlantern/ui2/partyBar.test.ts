@@ -246,11 +246,11 @@ describe('PartyBar mechanics (plan 8c)', () => {
 
   it('words that do not fit the line fold into +N too, after the ones that do (plan 8c Task 5)', () => {
     const bar = new PartyBar(NO_ART);
-    const words = [{ tone: 'embers', text: '餘燼500' }, { tone: 'embers', text: '代受：莎菲拉' }, { tone: 'embers', text: '贖火4' }] as const;
+    const words = [{ tone: 'embers', text: '餘燼500' }, { tone: 'beat', text: '拍子4・終幕' }, { tone: 'embers', text: '贖火4' }] as const;
     bar.update([m('scarlet', 30, { mech: [...words], ailments: [{ id: 'poison' }] })]);
     const row = bar.el.querySelector<HTMLElement>('[data-key=scarlet] .slx-pm-ail')!;
     expect([...row.children].map((c) => [c.className, c.textContent])).toEqual([
-      ['slx-mech slx-mech-embers', '餘燼500'], ['slx-mech slx-mech-embers', '代受：莎菲拉'], ['slx-ail slx-ail-more', '+2'],
+      ['slx-mech slx-mech-embers', '餘燼500'], ['slx-mech slx-mech-beat', '拍子4・終幕'], ['slx-ail slx-ail-more', '+2'],
     ]);
     // When they all fit, nothing folds.
     bar.update([m('scarlet', 30, { mech: [{ tone: 'embers', text: '餘燼0' }, { tone: 'embers', text: '贖火4' }] })]);

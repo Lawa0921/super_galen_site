@@ -1906,12 +1906,12 @@ test.describe('starlantern', () => {
       if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
     }
     await expect(page.locator('.slx-battle')).toBeVisible();
-    // Scarlet holds 30 embers, covers Safira and has 贖火 up; Safira is on her first beat after an attack; the foes are harmless.
+    // Scarlet holds 20 embers, covers Safira and has 贖火 up; Safira is on her first beat after an attack; the foes are harmless.
     await game((g) => {
       const scarlet = g.battle.party.find((c: any) => c.key === 'scarlet');
       const safira = g.battle.party.find((c: any) => c.key === 'safira');
       for (const e of g.battle.enemies.filter((x: any) => x.alive)) { e.max.hp = 9999; e.hp = 9999; e.max.atk = 1; e.max.mag = 1; }
-      scarlet.mech = { kind: 'embers', embers: 30 };
+      scarlet.mech = { kind: 'embers', embers: 20 };   // under her cap (half her max HP); a 1-damage blow keeps none
       scarlet.cover = { ally: 'safira', turns: 3 };
       scarlet.riposte = { power: 80, turns: 3 };
       safira.mech = { kind: 'beat', beat: 1, last: 'attack' };
@@ -1923,14 +1923,12 @@ test.describe('starlantern', () => {
       else await page.waitForTimeout(50);
     }
     await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
-    await expect(page.locator('.slx-partybar [data-key=safira] .slx-pm-ail .slx-mech-beat')).toHaveText('拍子2');
-    // Her row: embers, 贖火's rounds, then whom she covers, which folds into +1 when the three do not fit the line
-    // (a 贖火 counter's cue may still be rising over her panel, in the same colour: only the row is read).
-    const scarletRow = await page.locator('.slx-partybar [data-key=scarlet] .slx-pm-ail').locator('.slx-mech, .slx-ail').allTextContents();
-    expect(scarletRow[0]).toMatch(/^餘燼\d+$/);
-    expect(scarletRow[1]).toBe('贖火2');
-    expect(['代受：莎菲拉', '+1']).toContain(scarletRow[2]);
-    expect(scarletRow).toHaveLength(3);
+    // The rows only (a 贖火 counter's cue may still be rising over Scarlet's panel, in the same colour).
+    const row = (key: string) => page.locator(`.slx-partybar [data-key=${key}] .slx-pm-ail`).locator('.slx-mech, .slx-ail');
+    await expect(row('safira')).toHaveText(['拍子2', '受護']);
+    await expect(row('scarlet')).toHaveText(['餘燼20', '贖火2', '代受']);
+    await expect(page.locator('.slx-partybar [data-key=scarlet] .slx-pm-ail .slx-mech-embers')).toHaveCount(3);
+    await expect(page.locator('.slx-partybar [data-key=safira] .slx-pm-ail .slx-mech-embers')).toHaveText('受護');
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/embers-beat-1280.png` }); }
     await page.setViewportSize({ width: 844, height: 390 });
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/embers-beat-844.png` }); }

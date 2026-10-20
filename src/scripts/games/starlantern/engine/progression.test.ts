@@ -818,6 +818,7 @@ describe('skill words follow their numbers (plan 8c)', () => {
     ...(e.kind === 'barrier' ? [['power', (v: number) => `${v}%`] as [string, (v: number) => string]] : []),
     ...(e.kind === 'inflict' ? [['chance', (v: number) => `${Math.round(v * 100)}%`] as [string, (v: number) => string]] : []),
     ...(typeof e.hits === 'number' ? [['hits', (v: number) => `${v} 段`] as [string, (v: number) => string], ['hits', (v: number) => `${v} 次`] as [string, (v: number) => string]] : []),
+    ...(e.kind === 'gauge' ? [['amount', (v: number) => `+${v}`] as [string, (v: number) => string]] : []),
   ];
 
   it('every number a description names is the effective one, at every rank of every node', async () => {
@@ -848,6 +849,11 @@ describe('skill words follow their numbers (plan 8c)', () => {
     const depth = Math.abs((sunder.effects[1] as { pct: number }).pct);
     expect(depth).not.toBe(30);
     expect(sunder.desc).toContain(`${depth}%`);
+    // 拍手's gauge follows its rank.
+    const clap = skillFor({ powers: [], ranks: { clap: 3 } }, 'clap')!;
+    const amount = (clap.effects[0] as { amount: number }).amount;
+    expect(amount).toBeGreaterThan(10);
+    expect(clap.desc).toContain(`+${amount}`);
   });
 
   it('skill text calls a foe 牠', async () => {

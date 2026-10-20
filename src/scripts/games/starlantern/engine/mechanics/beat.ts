@@ -1,17 +1,20 @@
 /**
- * Safira's beat (spec §8.6, plan 8c Task 5): a move unlike the last one counts the beat up (to four), the same move twice
- * trips it back to none. Each beat is 10% more power and more buff on her skills. What she does on the fourth beat is the
- * finale: a buff of hers reaches the whole party and lasts a round longer, a strike of hers lands one more hit; then the
- * beat starts again from one. 拍手 adds one more beat; 蜃樓步 jumps to the fourth. A move is a skill's id, or `attack`,
- * `defend`, `item`, `ultimate`. Nothing here draws.
+ * Safira's beat (spec §8.7, plan 8c Task 5): a move unlike the last one counts the beat up (to four), the same move twice
+ * trips it back to none. Each beat is 10% more on every hit of hers (combatant.ts hitAmount: her plain attack too) and on
+ * her buffs. The first skill she really casts on the fourth beat is the finale: a buff of hers reaches the whole party and
+ * lasts a round longer, a strike of hers lands one more hit; then the beat starts again from one. An attack, a guard, an
+ * item or an ultimate on the fourth beat keeps the finale for later; a skill she could not cast changes nothing. 拍手 adds
+ * one more beat; 蜃樓步 jumps to the fourth. A move is a skill's id, or `attack`, `defend`, `item`, `ultimate`. Nothing here
+ * draws.
  */
 import type { Combatant } from '../combatant';
+import { BEAT } from '../mech';
 import { pctOf } from '../skills';
 import type { Effect, SkillDef } from '../types';
 import { T } from '../../data/text.zh-TW';
 import type { MechModule } from './index';
 
-export const BEAT = { max: 4, pctPer: 10 } as const;
+export { BEAT };
 
 const beatOf = (c: Combatant): number | null => (c.mech?.kind === 'beat' && c.defId === 'safira' ? c.mech.beat : null);
 
@@ -30,12 +33,9 @@ export const beat: MechModule = {
   castDef(_s, c, def) {
     const b = beatOf(c);
     if (b === null) return def;
+    // Her damage takes the beat on each hit (hitAmount); her buffs take it here.
     const pct = 100 + BEAT.pctPer * b;
-    const scaled: SkillDef = b === 0 ? def : {
-      ...def,
-      effects: def.effects.map((e) => (e.kind === 'damage' ? { ...e, power: pctOf(e.power, pct) }
-        : e.kind === 'buff' && e.pct > 0 ? { ...e, pct: pctOf(e.pct, pct) } : e)),
-    };
+    const scaled: SkillDef = b === 0 ? def : { ...def, effects: def.effects.map((e) => (e.kind === 'buff' && e.pct > 0 ? { ...e, pct: pctOf(e.pct, pct) } : e)) };
     return b >= BEAT.max ? finale(scaled) : scaled;
   },
   pay(_s, c, _def, ctx) {
@@ -44,8 +44,10 @@ export const beat: MechModule = {
   after(_s, c, act, def, ctx) {
     const m = c.mech;
     if (m?.kind !== 'beat' || beatOf(c) === null) return;
+    // A skill she could not cast (short of TP) is no move at all.
+    if (act.kind === 'skill' && !def) return;
     const code = act.kind === 'skill' ? act.skill : act.kind;
-    if (m.beat >= BEAT.max) m.beat = 1;
+    if (m.beat >= BEAT.max && act.kind === 'skill') m.beat = 1;   // the finale is spent
     else if (code !== m.last) m.beat = Math.min(BEAT.max, m.beat + 1);
     else { m.beat = 0; ctx.log.push({ type: 'mech', actor: c.key, cue: 'misstep' }); }
     const tag = def && 'mech' in def ? def.mech : undefined;
