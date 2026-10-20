@@ -159,7 +159,7 @@ describe('per-character policies', () => {
     // Through choose: a held skill is never picked even when it is the strongest; at the threshold it is.
     const party = partyAt(20, { ids: ['hero', 'liz', 'sylvie', 'safira', 'bobby'] });
     const table = { liz: [{ kind: 'spend-at', gauge: 'coins', min: 6, skill: 'pickpocket' }] as PolicyRule[] };
-    party.roster.liz.tree = { ...party.roster.liz.tree, 'liz-triple-up': 3 };   // pickpocket 120 x 150%: her strongest
+    party.roster.liz.tree = { ...party.roster.liz.tree, 'liz-triple-up': 3 };   // pickpocket 55 x 3 x 150%: her strongest
     const at = (coins: number) => {
       const st = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
       st.party.find((m) => m.key === 'liz')!.mech = { kind: 'coins', coins };

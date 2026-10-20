@@ -50,6 +50,9 @@ export const barrier: MechModule = {
       ? { tone: 'ward' as const, text: T.mech.ward(b.turns, (b.boost ?? 1) > 1) }
       : { tone: 'purify' as const, text: T.mech.purify(b.turns) });
   },
+  unusable(s, _c, def) {
+    return def.effects.some((e) => e.kind === 'barrier-boost') && !s.barriers?.length ? T.mech.noBarrier : null;
+  },
   cue(cue) {
     return cue === 'no-barrier' ? { tone: 'ward', text: T.mech.cue.noBarrier } : undefined;
   },

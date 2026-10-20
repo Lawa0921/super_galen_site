@@ -8,7 +8,8 @@ import { makeBattle, makeCombatant, memoryStorage, plainItem, fullParty } from '
 import { Game } from './game';
 import { defaultTalents, defaultTree, validBuild } from './progression';
 import { BOARDS } from '../data/talents';
-import { TREES } from '../data/trees';
+import { LEGACY_NODE_IDS, NODES, TIER_GATE, TREES } from '../data/trees';
+import type { CharacterId } from './types';
 import { ABSORB_CAP, ABSORB_GAIN } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
 
@@ -644,39 +645,50 @@ describe('battle state is never saved (plan 8b)', () => {
 });
 
 describe('old node ids (plan 8c)', () => {
+  /** A tree of `owner` at Lv 50 that holds every one of `ids`: each one's branch filled from the bottom as its tier needs. */
+  const holding = (owner: CharacterId, ids: string[]): Record<string, number> => {
+    const tree: Record<string, number> = { [TREES[owner].branches[0].nodes[0].id]: 1 };
+    for (const id of ids) {
+      const { branch, tier } = NODES[id];
+      const nodes = TREES[owner].branches[branch].nodes;
+      for (let t = 0; t <= tier; t++) {
+        const below = () => nodes.slice(0, t).reduce((n, x) => n + (tree[x.id] ?? 0), 0);
+        for (let u = 0; u < t && below() < TIER_GATE[t]; u++) tree[nodes[u].id] = nodes[u].maxRank;
+        tree[nodes[t].id] = Math.max(tree[nodes[t].id] ?? 0, 1);
+      }
+    }
+    return tree;
+  };
+
   it('a save that holds old node ids loads with them renamed', () => {
     const g = newGame();
-    const c = g.party.roster.chizuru, s = g.party.roster.selene;
-    c.level = 50; s.level = 50;
-    c.tree = { ...defaultTree('chizuru', 50) };
-    s.tree = { ...defaultTree('selene', 50) };
-    // As an 8b build wrote them: the old ids, with their ranks and a strengthening node on one.
-    const back = (t: Record<string, number>, old: string, now: string) => { t[old] = t[now]; delete t[now]; };
-    expect([c.tree['purify-ward'], c.tree['chizuru-sake-up']]).toEqual([2, 1]);   // the default Lv 50 build has them
-    s.tree['selene-arrow-up'] -= 1; s.tree['moon-recall'] = 1;                     // one point moved onto the old 祝福 node
-    const l = g.party.roster.liz;
-    l.level = 50; l.tree = { ...defaultTree('liz', 50) };
-    expect(l.tree.pickpocket).toBeGreaterThan(0);
-    const want = { c: { ...c.tree }, s: { ...s.tree }, l: { ...l.tree } };
+    const pairs = Object.entries(LEGACY_NODE_IDS);
+    const owners = [...new Set(pairs.map(([, now]) => NODES[now].owner))];
+    for (const owner of owners) {
+      const m = g.party.roster[owner];
+      m.level = 50;
+      m.tree = holding(owner, pairs.filter(([, now]) => NODES[now].owner === owner).map(([, now]) => now));
+      m.talents = {};
+      expect(validBuild(owner, 50, m.tree, m.talents), owner).toBe(true);
+    }
+    // As a build before plan 8c wrote it: every one of them under its old id, with its rank.
     const raw = JSON.parse(JSON.stringify(g));
-    back(raw.party.roster.liz.tree, 'triple-slash', 'pickpocket');
-    if (l.tree.jackpot) back(raw.party.roster.liz.tree, 'shadow-flurry', 'jackpot');
-    if (l.tree.appraise) back(raw.party.roster.liz.tree, 'venom-edge', 'appraise');
-    back(raw.party.roster.chizuru.tree, 'sacred-sake', 'purify-ward');
-    back(raw.party.roster.selene.tree, 'blessing', 'moon-recall');
-    expect(raw.party.roster.chizuru.tree['sacred-sake']).toBe(2);
+    for (const [old, now] of pairs) {
+      const t = raw.party.roster[NODES[now].owner].tree;
+      expect(t[now], now).toBeGreaterThan(0);
+      t[old] = t[now];
+      delete t[now];
+    }
     const r = loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) }));
     expect(r.status).toBe('ok');
     const st = (r as { state: typeof g }).state;
-    expect(st.party.roster.chizuru.tree['purify-ward']).toBe(2);
-    expect(st.party.roster.chizuru.tree).not.toHaveProperty('sacred-sake');
-    expect(st.party.roster.chizuru.tree['chizuru-sake-up']).toBe(1);
-    expect(st.party.roster.selene.tree['moon-recall']).toBe(1);
-    expect(st.party.roster.selene.tree).not.toHaveProperty('blessing');
-    expect(st.party.roster.chizuru.tree).toEqual(want.c);
-    expect(st.party.roster.selene.tree).toEqual(want.s);
-    expect(st.party.roster.liz.tree).toEqual(want.l);
-    expect(st.party.roster.liz.tree).not.toHaveProperty('triple-slash');
+    for (const [old, now] of pairs) {
+      const owner = NODES[now].owner;
+      expect(st.party.roster[owner].tree[now], `${old} -> ${now}`).toBe(g.party.roster[owner].tree[now]);
+      expect(st.party.roster[owner].tree, old).not.toHaveProperty(old);
+    }
+    for (const owner of owners) expect(st.party.roster[owner].tree, owner).toEqual(g.party.roster[owner].tree);
+    expect(pairs.length).toBeGreaterThanOrEqual(10);
     // Everything else exactly as it was.
     for (const k of ['gold', 'inventory', 'bag', 'story', 'affinity'] as const) expect(st[k as keyof typeof st], k).toEqual(g[k as keyof typeof g]);
     for (const id of Object.keys(g.party.roster) as (keyof typeof g.party.roster)[]) {

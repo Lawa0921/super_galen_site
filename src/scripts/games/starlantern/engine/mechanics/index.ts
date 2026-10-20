@@ -52,6 +52,8 @@ export interface MechModule {
   roundEnd?(s: BattleState, ctx: EffectContext, rng: Rng): void;
   /** The word a moment of this mechanic pops (its colour is the mechanic's). */
   cue?(cue: MechCue): MechWord | undefined;
+  /** Why `c` cannot cast `def` now (it would spend an empty resource for nothing), or null. */
+  unusable?(s: BattleState, c: Combatant, def: SkillDef): string | null;
   /** Words under a member, over a foe, and over the whole field. */
   words?(s: BattleState, c: Combatant): MechWord[];
   foeWords?(s: BattleState, e: Combatant): MechWord[];
@@ -112,6 +114,15 @@ export function extraAction(s: BattleState, c: Combatant, act: Action, ctx: Effe
   for (let i = 0; i < ms.length; i++) {
     const a = ms[i].extraAction?.(s, c, act, ctx, seen[i]);
     if (a) return a;
+  }
+  return null;
+}
+
+/** The first reason a mechanic gives why `c` cannot cast `def` now (the menu greys it, the sim skips it), or null. */
+export function whyNot(s: BattleState, c: Combatant, def: SkillDef): string | null {
+  for (const m of modules()) {
+    const why = m.unusable?.(s, c, def);
+    if (why) return why;
   }
   return null;
 }

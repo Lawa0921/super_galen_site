@@ -8,7 +8,7 @@ import { CHARACTERS } from '../../data/characters';
 import { LIMIT_MAX, intentLabel, skillFor, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
 import { ailmentChips, type AilmentChip } from '../../engine/ailments';
-import { castCost, cueWord, fieldWords, foeWords, memberWords, type MechCue, type MechWord } from '../../engine/mechanics/index';
+import { castCost, cueWord, fieldWords, foeWords, memberWords, whyNot, type MechCue, type MechWord } from '../../engine/mechanics/index';
 import type { BattleEnd } from '../../engine/game';
 import { learnedSkills, ultimateFor } from '../../engine/progression';
 import type { CharacterId, Target } from '../../engine/types';
@@ -247,7 +247,9 @@ export class BattleScene implements Scene {
       .filter((sk) => !sk.passive)
       .map((sk) => {
         const cost = castCost(this.state, actor, sk.id);
-        return { id: sk.id, label: sk.name, right: T.cmd.tp(cost), disabled: actor.tp < cost, note: sk.desc };
+        // A skill that would spend an empty resource (no coins, no barrier) is greyed, its reason in place of the TP.
+        const why = whyNot(this.state, actor, sk);
+        return { id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: sk.desc };
       });
   }
 

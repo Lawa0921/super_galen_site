@@ -311,7 +311,7 @@ describe('the sim player', () => {
     expect(choose(s, party).noel.kind).toBe('attack');                 // 火之星彈 costs 4
     noel.x.tpCost = 50;
     expect(choose(s, party).noel).toEqual({ kind: 'skill', skill: 'fire-star', target: 'e0' });
-    // 三叉刃 makes 雙刃 (60 x 3 = 180) outrank 順手牽羊 strengthened once (120 x 115% = 138) for 莉茲 at level 6.
+    // At level 6 順手牽羊 strengthened once (55 x 3 x 115%) is 莉茲's strongest; 三叉刃 makes 雙刃 (60 x 3 at its rank) outrank it.
     const lv6 = partyAt(6, { ids: LEGACY_LINEUP });
     lv6.roster.liz.tree = { ...lv6.roster.liz.tree, 'liz-triple-up': 1 };
     const s6 = createBattle({ party: lv6, enemyIds: ['slime'], inventory: {}, revealed: {} });

@@ -809,3 +809,49 @@ describe('every rank of every node counts (plan 8c fix round 1)', () => {
     expect(dead).toEqual([]);
   });
 });
+
+describe('skill words follow their numbers (plan 8c)', () => {
+  /** The ways a description names an effect's number, by field. */
+  const named = (e: Record<string, unknown>): [string, (v: number) => string][] => [
+    ...(typeof e.turns === 'number' ? [['turns', (v: number) => `${v} 回合`] as [string, (v: number) => string]] : []),
+    ...(e.kind === 'buff' && typeof e.pct === 'number' ? [['pct', (v: number) => `${Math.abs(v)}%`] as [string, (v: number) => string]] : []),
+    ...(e.kind === 'barrier' ? [['power', (v: number) => `${v}%`] as [string, (v: number) => string]] : []),
+    ...(e.kind === 'inflict' ? [['chance', (v: number) => `${Math.round(v * 100)}%`] as [string, (v: number) => string]] : []),
+    ...(typeof e.hits === 'number' ? [['hits', (v: number) => `${v} 段`] as [string, (v: number) => string], ['hits', (v: number) => `${v} 次`] as [string, (v: number) => string]] : []),
+  ];
+
+  it('every number a description names is the effective one, at every rank of every node', async () => {
+    const { skillFor } = await import('./battle');
+    const { SKILLS } = await import('../data/skills');
+    const { TREES } = await import('../data/trees');
+    const wrong: string[] = [];
+    for (const [owner, tree] of Object.entries(TREES)) {
+      const nodes = tree.branches.flatMap((b) => b.nodes);
+      for (const n of nodes) for (let r = 1; r <= n.maxRank; r++) {
+        const active = nodes.find((x) => x.kind === 'active' && x.skill === n.skill);
+        if (!active || !SKILLS[n.skill]) continue;
+        const ranks = { [active.id]: n.kind === 'active' ? r : 1, ...(n.kind === 'mod' ? { [n.id]: r } : {}) };
+        const base = SKILLS[n.skill], now = skillFor({ powers: [], ranks }, n.skill)!;
+        base.effects.forEach((e, i) => {
+          const p = now.effects[i] as unknown as Record<string, number>;
+          for (const [f, say] of named(e as unknown as Record<string, unknown>)) {
+            const was = (e as unknown as Record<string, number>)[f];
+            if (!base.desc.includes(say(was))) continue;
+            if (!now.desc.includes(say(p[f]))) wrong.push(`${owner} ${n.id} r${r} ${n.skill}.${f}: ${now.desc} lacks ${say(p[f])}`);
+          }
+        });
+      }
+    }
+    expect(wrong).toEqual([]);
+    // 破甲箭's depth follows its strengthening.
+    const sunder = skillFor({ powers: [], ranks: { 'sunder-arrow': 1, 'sylvie-snare-up': 3 } }, 'sunder-arrow')!;
+    const depth = Math.abs((sunder.effects[1] as { pct: number }).pct);
+    expect(depth).not.toBe(30);
+    expect(sunder.desc).toContain(`${depth}%`);
+  });
+
+  it('skill text calls a foe 牠', async () => {
+    const { SKILLS } = await import('../data/skills');
+    for (const s of Object.values(SKILLS)) expect(s.desc, s.id).not.toContain('它');
+  });
+});

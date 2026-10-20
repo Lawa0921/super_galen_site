@@ -174,6 +174,9 @@ export const T = {
     aim: (n: number) => `瞄準${n}`,
     aimLocked: (n: number) => `瞄準${n}・鎖定`,
     last: '最後行動',
+    /** Why a skill is greyed in the menu: its resource is empty. */
+    noCoins: '沒有銅板',
+    noBarrier: '沒有結界',
     cue: { overload: '暴走！', again: '還有。', noBarrier: '沒有結界' },
   },
   log: {

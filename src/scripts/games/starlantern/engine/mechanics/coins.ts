@@ -46,6 +46,9 @@ export const coins: MechModule = {
     // A foe a tick felled pays its appraisal too.
     for (const e of s.enemies) payAppraisal(s.party, e);
   },
+  unusable(_s, c, def) {
+    return def.mech === 'coin-hits' && coinsOf(c) === 0 ? T.mech.noCoins : null;
+  },
   words(_s, c) {
     const n = coinsOf(c);
     return n === null ? [] : [{ tone: 'coins', text: T.mech.coins(n) }];

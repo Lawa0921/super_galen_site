@@ -1035,3 +1035,39 @@ describe('BattleScene coins (plan 8c)', () => {
     expect(root.querySelector('.slx-result')!.textContent).toContain(T.battle.coinGold(12));
   });
 });
+
+describe('BattleScene empty resources (plan 8c)', () => {
+  it('a skill with nothing to spend is shown, greyed, with the reason in place of its TP', () => {
+    const { s, root, game } = setup((g) => {
+      for (const c of g.battle!.party) if (c.key !== 'liz' && c.key !== 'chizuru') c.frozen = true;
+      g.state.party.roster.liz.tree = { ...g.state.party.roster.liz.tree, jackpot: 1 };
+      g.state.party.roster.chizuru.tree = { ...g.state.party.roster.chizuru.tree, 'great-barrier': 1 };
+      for (const c of g.battle!.party) { c.ranks = { ...c.ranks, jackpot: 1, 'great-barrier': 1 }; c.tp = c.max.tp; }
+      g.battle!.party.find((c) => c.key === 'liz')!.mech = { kind: 'coins', coins: 0 };
+      delete g.battle!.barriers;
+    });
+    // The skill list as the menu builds it (a long list scrolls, so it is read whole).
+    const list = (key: string) => (s as unknown as { skillItems(a: Combatant): { label: string; right?: string; disabled?: boolean }[] })
+      .skillItems(game.battle!.party.find((c) => c.key === key)!);
+    const gb = list('chizuru').find((i) => i.label === '大結界')!;
+    expect([gb.disabled, gb.right]).toEqual([true, T.mech.noBarrier]);
+    const jp = list('liz').find((i) => i.label === '一擲千金')!;
+    expect([jp.disabled, jp.right]).toEqual([true, T.mech.noCoins]);
+    // With coins and a barrier, both are offered again at their TP.
+    game.battle!.party.find((c) => c.key === 'liz')!.mech = { kind: 'coins', coins: 3 };
+    game.battle!.barriers = [{ skill: 'ward', kind: 'guard', power: 30, turns: 3, src: 'chizuru' }];
+    expect(list('liz').find((i) => i.label === '一擲千金')!.disabled).toBe(false);
+    expect(list('chizuru').find((i) => i.label === '大結界')!.right).toBe(T.cmd.tp(12));
+    expect(root).toBeDefined();
+  });
+
+  it('the sim never casts one either', async () => {
+    const { choose, partyAt } = await import('../../engine/sim');
+    const { makeBattle, makeCombatant } = await import('../../engine/testing');
+    const party = partyAt(50, { ids: ['hero', 'rin', 'liz', 'chizuru', 'selene'] });
+    party.roster.liz.tree = { ...party.roster.liz.tree, jackpot: 1 };
+    const s = makeBattle([makeCombatant({ key: 'liz', side: 'party', defId: 'liz', mech: { kind: 'coins', coins: 0 }, ranks: { ...party.roster.liz.tree }, tp: 99, max: { hp: 100, tp: 99, atk: 20, def: 20, mag: 20, res: 20, spd: 10 } })],
+      [makeCombatant({ key: 'e0', side: 'enemy' })]);
+    expect(choose(s, party, { liz: [{ kind: 'spend-at', gauge: 'coins', min: 0, skill: 'jackpot' }] }).liz).not.toMatchObject({ skill: 'jackpot' });
+  });
+});

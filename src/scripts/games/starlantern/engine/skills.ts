@@ -77,18 +77,31 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
     }
   });
   const out: SkillDef = { ...def, effects: [...effects, ...(mod.extra ?? []).map((e) => ({ ...e }))] };
-  // The hex's, the veil's and the guard barrier's words name their rounds (and the barrier its percent; plan 8c): a mod
-  // that changes them changes the words too.
+  // The words follow the numbers (plan 8c): any number an effect's description names (its rounds, a buff's or debuff's
+  // percent, a barrier's percent, an ailment's chance, its hits) is rewritten to the effective one, effect by effect.
   def.effects.forEach((e, i) => {
-    const now = effects[i];
-    if ((e.kind === 'expose' || e.kind === 'veil' || e.kind === 'barrier') && now.kind === e.kind && now.turns !== e.turns) out.desc = out.desc.replace(`${e.turns} 回合`, `${now.turns} 回合`);
-    if (e.kind === 'barrier' && now.kind === 'barrier' && now.power !== e.power) out.desc = out.desc.replace(`${e.power}%`, `${now.power}%`);
+    const now = effects[i] as unknown as Record<string, unknown>;
+    for (const [f, say] of NAMED_NUMBERS(e)) {
+      const was = (e as unknown as Record<string, unknown>)[f], is = now[f];
+      if (typeof was === 'number' && typeof is === 'number' && was !== is) out.desc = out.desc.replace(say(was), say(is));
+    }
   });
   if (mod.target !== undefined) out.target = mod.target;
   if (mod.hpCost !== undefined) out.hpCost = mod.hpCost;
   if (mod.tpDelta !== undefined && def.tp > 0) out.tp = Math.max(1, def.tp + mod.tpDelta);
   return out;
 }
+
+/** The ways a description names an effect's number, by field (patchSkill keeps them true). */
+const NAMED_NUMBERS = (e: Effect): [string, (v: number) => string][] => {
+  const out: [string, (v: number) => string][] = [];
+  if ('turns' in e) out.push(['turns', (v) => `${v} 回合`]);
+  if (e.kind === 'buff') out.push(['pct', (v) => `${Math.abs(v)}%`]);
+  if (e.kind === 'barrier') out.push(['power', (v) => `${v}%`]);
+  if (e.kind === 'inflict') out.push(['chance', (v) => `${Math.round(v * 100)}%`]);
+  if (e.kind === 'damage') out.push(['hits', (v) => `${v} 段`], ['hits', (v) => `${v} 次`]);
+  return out;
+};
 
 /** Mod nodes of one skill folded into one mod: absolute values replace (the later node wins), deltas add, extra appends. */
 export function stackMods(mods: SkillMod[]): SkillMod {

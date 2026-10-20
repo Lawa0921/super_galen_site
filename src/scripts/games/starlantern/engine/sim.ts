@@ -16,7 +16,7 @@ import { mulberry32 } from './rng';
 import type { Ledger } from './ledger';
 import type { Combatant } from './combatant';
 import { applyPolicy, type PolicyTable } from './policy';
-import { castCost, castDef } from './mechanics/index';
+import { castCost, castDef, whyNot } from './mechanics/index';
 import { DEFAULT_POLICIES } from '../data/policies';
 import { depthClearExp, encounterTable, scaleEnemy } from './scaling';
 import { genFloor } from './dungeon/gen';
@@ -134,7 +134,7 @@ export function choose(s: BattleState, party: Party, policies: PolicyTable = DEF
     if (c.limit >= LIMIT_MAX) { out[c.key] = { kind: 'ultimate', target }; continue; }
     // Each skill as this member casts it (worn powers) and at the TP they pay for it now (her mechanic included).
     const skills = learnedSkills(party.roster[id]).flatMap((sk) => skillFor(c, sk) ?? [])
-      .filter((sk) => !sk.passive && castCost(s, c, sk.id) <= c.tp);
+      .filter((sk) => !sk.passive && castCost(s, c, sk.id) <= c.tp && !whyNot(s, c, sk));
     const power = (def: SkillDef) => castPower(s, c, def);
     const { action, hold } = applyPolicy(s, c, skills, policies[id] ?? [], power);
     if (action) { out[c.key] = action; continue; }
