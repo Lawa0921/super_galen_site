@@ -540,6 +540,16 @@ export class Hud {
       x.fillStyle = '#ffd86a'; x.fillRect(2 + Math.round((W - 4) / 2), 1, 1, H - 2);
     }
   }
+  /** 多人睡覺：有人躺好了、還在等其他人 → 「等待其他人 n/m」；其餘時候隱藏 */
+  private drawSleepWait(): void {
+    const el = this.root.querySelector<HTMLElement>('#delve-sleepwait');
+    if (!el) return;
+    const w = this.game.sleepWaiting();
+    el.hidden = !w;
+    if (!w) return;
+    const text = `等待其他人 ${w.ready}/${w.total}`;
+    if (el.textContent !== text) el.textContent = text;
+  }
   private drawDeath(): void {
     const st = this.game.getState();
     const el = this.root.querySelector<HTMLElement>('#delve-death');
@@ -684,6 +694,7 @@ export class Hud {
     this.drawVitals();
     if (this.frame % 6 === 0) this.drawUndying();
     this.drawBoss();
+    this.drawSleepWait();
     this.drawDeath();
     if (this.frame % 10 === 0) {
       const g = this.game, f = g.feetTile(), w = g.world;

@@ -269,6 +269,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'respawn') hud.toast('你甦醒了');
         else if (e.type === 'sleep') {
           if (e.phase === 'start') { sound.sleep(); hud.setInventory(false); }
+          else if (e.phase === 'wait') { /* 等待人數由 HUD 每幀讀 game.sleepWaiting() */ }
           else { sound.wake(); hud.toast(`早安——${game.dateText()}`, 2400); }
         }
         else if (e.type === 'lightning') sound.thunder(e.dist);

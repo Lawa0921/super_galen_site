@@ -179,6 +179,7 @@ type DelveEventBody =
   // ── 曆法 / 天氣 ──
   /** 睡覺：start = 開始淡出、wake = 天亮醒來（時間已跳到日出） */
   | { type: 'sleep'; phase: 'start' | 'wake' }
+  | { type: 'sleep'; phase: 'wait'; ready: number; total: number }
   /** 閃電（x, y = 打在地表的 tile；dist = 離玩家幾格，雷聲延遲用） */
   | { type: 'lightning'; x: number; y: number; dist: number }
   // ── 釣魚 ──
@@ -581,6 +582,8 @@ export class DelveGame {
   set dead(v: PlayerActor['dead']) { this.cur.dead = v; }
   get respawnT(): PlayerActor['respawnT'] { return this.cur.respawnT; }
   set respawnT(v: PlayerActor['respawnT']) { this.cur.respawnT = v; }
+  private get sleepReady(): boolean { return this.cur.sleepReady; }
+  private set sleepReady(v: boolean) { this.cur.sleepReady = v; }
   get autoAim(): PlayerActor['autoAim'] { return this.cur.autoAim; }
   set autoAim(v: PlayerActor['autoAim']) { this.cur.autoAim = v; }
   get facing(): PlayerActor['facing'] { return this.cur.facing; }
@@ -732,6 +735,8 @@ export class DelveGame {
   /** 睡覺經過秒數；null = 沒在睡 */
   private sleepT: number | null = null;
   private sleepSkipped = false;
+  /** 上一次公開的等待人數（ready*100+total；變了才推 wait 事件） */
+  private sleepWaitSig = 0;
   private boltT = 4;
   private flashT = 0;
   private rainT = 0;
@@ -975,6 +980,8 @@ export class DelveGame {
       this.updateSettlements(dt);
       return;
     }
+    // 全員（活著的）都上床 → 開始睡（有人離線 / 死亡 / 加入也要重算）
+    this.checkSleepStart();
     // 睡覺（世界層級）：活著的人不動、怪物不動；死掉的人照樣倒數重生
     if (this.sleepT !== null) {
       for (const a of actors) if (a.dead) this.withActor(a, () => this.updateDeath(dt));
@@ -998,6 +1005,7 @@ export class DelveGame {
 
   /** 玩家段（cur = 這個玩家）：移動、技能、摔落、液體、生命、探索、挖 / 打 / 釣 / 用 */
   private stepActor(dt: number): void {
+    if (this.sleepReady) this.holdSleepReady();
     const knocked = this.knockT > 0;
     this.contact = liquidContact(this.world, this.player);
     const air0 = this.motion.airUsed ?? 0, climb0 = Boolean(this.motion.climbing), mantle0 = this.motion.mantle ?? null;
@@ -1655,7 +1663,7 @@ export class DelveGame {
     if (this.isNight()) this.trySleep(hx, y);
     return true;
   }
-  /** 晚上躺上床：附近沒有怪 → 開始睡（淡出 → 跳到日出 → 淡入）；有怪 → 提示 */
+  /** 晚上躺上床：附近沒有怪 → 這個玩家 ready；活著的人都 ready 才開始睡（淡出 → 跳到日出 → 淡入）；有怪 → 提示 */
   private trySleep(x: number, y: number): void {
     if (this.sleepT !== null) return;
     const pc = this.playerCenter();
@@ -1666,12 +1674,53 @@ export class DelveGame {
       return !def.minion && Math.abs(b.x + b.w / 2 - pc.x) / TILE_SIZE < SLEEP_SAFE.x && Math.abs(b.y + b.h / 2 - pc.y) / TILE_SIZE < SLEEP_SAFE.y;
     });
     if (threat) { this.block('use', 'sleep', x, y); return; }
-    this.sleepT = 0; this.sleepSkipped = false;
+    this.sleepReady = true;
+    this.cur.sleepPos = { x: this.player.x, y: this.player.y };
+    this.settleSleeper();
+    this.checkSleepStart();
+    this.emitSleepWait();
+  }
+  /** ready 的人躺好不動：清掉挖 / 打 / 傳送、關箱子、站定 */
+  private settleSleeper(): void {
     this.mining = null; this.miningHeld = false; this.attack = null;
     this.recallT = null;
     this.closeChest();
     this.player.vx = 0;
+  }
+  /** ready 的玩家（玩家段開頭）：有移動輸入 / 床沒了 / 天亮了 / 離床太遠 → 取消；否則站定 */
+  private holdSleepReady(): void {
+    const b = this.bed, p = this.player;
+    const at = this.cur.sleepPos;
+    const away = !b || this.world.getFg(b.x, b.y) !== T.BED_HEAD || !at
+      || Math.abs(p.x - at.x) > TILE_SIZE * 1.5 || Math.abs(p.y - at.y) > TILE_SIZE * 1.5;
+    if (this.moveX !== 0 || this.jump || this.upHeld || !this.isNight() || away) { this.sleepReady = false; return; }
+    p.vx = 0;
+    this.mining = null; this.miningHeld = false; this.attack = null;
+  }
+  /** 沒在睡、至少一人 ready、活著的人全 ready → 開始睡 */
+  private checkSleepStart(): void {
+    if (this.sleepT !== null) return;
+    const all = [...this.actors.values()], alive = all.filter((a) => !a.dead);
+    if (alive.length === 0 || !alive.every((a) => a.sleepReady)) { this.emitSleepWait(); return; }
+    this.sleepT = 0; this.sleepSkipped = false;
+    for (const a of alive) this.withActor(a, () => this.settleSleeper());
+    for (const a of all) a.sleepReady = false;
+    this.sleepWaitSig = 0;
     this.emit({ type: 'sleep', phase: 'start' });
+  }
+  /** 等待中的人數（多人且至少一人 ready、還沒開始睡）；否則 null */
+  sleepWaiting(): { ready: number; total: number } | null {
+    if (this.actors.size < 2 || this.sleepT !== null) return null;
+    const alive = [...this.actors.values()].filter((a) => !a.dead);
+    const ready = alive.filter((a) => a.sleepReady).length;
+    return ready > 0 ? { ready, total: alive.length } : null;
+  }
+  private emitSleepWait(): void {
+    const w = this.sleepWaiting();
+    const sig = w ? w.ready * 100 + w.total : 0;
+    if (sig === this.sleepWaitSig) return;
+    this.sleepWaitSig = sig;
+    if (w) this.inWorld(() => this.emit({ type: 'sleep', phase: 'wait', ready: w.ready, total: w.total }));
   }
   private updateSleep(dt: number): void {
     if (this.sleepT === null) return;
@@ -1682,8 +1731,8 @@ export class DelveGame {
       this.wxCache = null;
       const day = dayIndexOf(this.time);
       if (day !== this.lastDay) this.onNewDay(day);
-      // 睡飽：回滿血、怪物生成重新從慢開始
-      this.hp = this.maxHp();
+      // 睡飽：每個活著的人回滿血、怪物生成重新從慢開始
+      for (const a of this.actors.values()) if (!a.dead) this.withActor(a, () => { this.hp = this.maxHp(); });
       this.spawnCalm = 0;
       this.spawnT = Math.max(this.spawnT, 4);
     }
@@ -2469,6 +2518,7 @@ export class DelveGame {
   private applyDamage(amount: number, fall: boolean, cause?: 'lava'): void {
     const p = this.player;
     this.hp -= amount;
+    this.sleepReady = false;
     this.iframes = fall ? 0.4 : IFRAMES;
     this.sinceHit = 0;
     this.emit({ type: 'hurt', x: p.x + p.w / 2, y: p.y, amount, fall, ...(cause ? { cause } : {}) });
@@ -2490,6 +2540,7 @@ export class DelveGame {
     // 跟著的探險者停下來等：只在所有人都倒下時（還有人活著 → 繼續跟最近的活人）
     if ([...this.actors.values()].every((a) => a === this.cur || a.dead)) this.folk.playerDied();
     this.dead = true; this.hp = 0; this.respawnT = RESPAWN_TIME;
+    this.sleepReady = false;
     this.dashT = 0; this.slamming = false;
     // 等級：失去本級進度的一小部分（不會掉級）
     const lost = this.levels.die();

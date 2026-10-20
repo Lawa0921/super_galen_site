@@ -120,6 +120,10 @@ export class PlayerActor {
   dead = false;
   /** 重生倒數（秒） */
   respawnT = 0;
+  /** 已經躺上床等大家（B7：全員 ready 才開始睡；移動 / 受傷 / 離床取消） */
+  sleepReady = false;
+  /** 躺下時的位置（被傳走 / 摔下去 → 取消 ready） @internal */
+  sleepPos: { x: number; y: number } | null = null;
   /** 自動瞄準最近的怪物（觸控用） */
   autoAim = false;
   facing: 1 | -1 = 1;
