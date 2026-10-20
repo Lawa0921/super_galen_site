@@ -213,8 +213,52 @@ describe('ailment colours and words (plan 8b)', () => {
   });
 });
 
-/** The least RGB distance between any two chip colours (ailments and mechanics alike). */
-const CHIP_GAP = 45;
+/** The least CIEDE2000 difference between any two chip colours (ailments and mechanics alike). */
+const CHIP_DE = 12;
+
+/** sRGB hex (no #) to CIELAB under D65. */
+function labOf(h: string): [number, number, number] {
+  const [r, g, b] = [0, 2, 4].map((i) => linear(parseInt(h.slice(i, i + 2), 16)));
+  const f = (t: number) => (t > 216 / 24389 ? Math.cbrt(t) : (24389 / 27 * t + 16) / 116);
+  const x = f((r * 0.4124564 + g * 0.3575761 + b * 0.1804375) / 0.95047);
+  const y = f(r * 0.2126729 + g * 0.7151522 + b * 0.072175);
+  const z = f((r * 0.0193339 + g * 0.119192 + b * 0.9503041) / 1.08883);
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+}
+
+/** CIEDE2000 (Sharma, Wu and Dalal 2005), kL = kC = kH = 1. */
+function deltaE2000(p: string, q: string): number {
+  const [L1, a1, b1] = labOf(p), [L2, a2, b2] = labOf(q);
+  const rad = Math.PI / 180, deg = 180 / Math.PI;
+  const Cb = (Math.hypot(a1, b1) + Math.hypot(a2, b2)) / 2;
+  const G = 0.5 * (1 - Math.sqrt(Cb ** 7 / (Cb ** 7 + 25 ** 7)));
+  const a1p = a1 * (1 + G), a2p = a2 * (1 + G);
+  const C1 = Math.hypot(a1p, b1), C2 = Math.hypot(a2p, b2);
+  const hue = (b: number, a: number) => (Math.atan2(b, a) * deg + 360) % 360;
+  const h1 = hue(b1, a1p), h2 = hue(b2, a2p);
+  let dh = C1 * C2 === 0 ? 0 : h2 - h1;
+  if (dh > 180) dh -= 360; else if (dh < -180) dh += 360;
+  const dL = L2 - L1, dC = C2 - C1, dH = 2 * Math.sqrt(C1 * C2) * Math.sin((dh / 2) * rad);
+  const Lb = (L1 + L2) / 2, Cbp = (C1 + C2) / 2;
+  const hb = C1 * C2 === 0 ? h1 + h2 : Math.abs(h1 - h2) <= 180 ? (h1 + h2) / 2 : h1 + h2 < 360 ? (h1 + h2 + 360) / 2 : (h1 + h2 - 360) / 2;
+  const T = 1 - 0.17 * Math.cos((hb - 30) * rad) + 0.24 * Math.cos(2 * hb * rad) + 0.32 * Math.cos((3 * hb + 6) * rad) - 0.2 * Math.cos((4 * hb - 63) * rad);
+  const dTh = 30 * Math.exp(-(((hb - 275) / 25) ** 2));
+  const RC = 2 * Math.sqrt(Cbp ** 7 / (Cbp ** 7 + 25 ** 7));
+  const SL = 1 + (0.015 * (Lb - 50) ** 2) / Math.sqrt(20 + (Lb - 50) ** 2), SC = 1 + 0.045 * Cbp, SH = 1 + 0.015 * Cbp * T;
+  const RT = -Math.sin(2 * dTh * rad) * RC;
+  return Math.sqrt((dL / SL) ** 2 + (dC / SC) ** 2 + (dH / SH) ** 2 + RT * (dC / SC) * (dH / SH));
+}
+
+describe('CIEDE2000', () => {
+  it('gives the known differences', () => {
+    // Fixed points, and two pairs measured with a separate implementation (python, the same constants): the old heat
+    // and coins, the old ward and chill.
+    expect(deltaE2000('ffb000', 'ffb000')).toBe(0);
+    expect(deltaE2000('ffb000', 'e8b84a')).toBeCloseTo(7.4, 1);
+    expect(deltaE2000('5aa8ff', '8fa8ff')).toBeCloseTo(9.4, 1);
+    expect(deltaE2000('000000', 'ffffff')).toBeCloseTo(100, 0);
+  });
+});
 
 describe('mechanic colours (plan 8c)', () => {
   const map = scss.match(/\$slx-mech: \(([^)]*)\);/)?.[1] ?? '';
@@ -236,7 +280,7 @@ describe('mechanic colours (plan 8c)', () => {
     expect(ail.length).toBe(7);
     const chips = [...entries.map(([k, h]) => [`mech ${k}`, h] as const), ...ail];
     for (const [a, ha] of chips) for (const [b, hb] of chips) {
-      if (a < b) expect(Math.hypot(...rgb(ha).map((v, i) => v - rgb(hb)[i])), `${a} ${b}`).toBeGreaterThan(CHIP_GAP);
+      if (a < b) expect(deltaE2000(ha, hb), `${a} ${b}`).toBeGreaterThanOrEqual(CHIP_DE);
     }
     // Every tone has its class in the stylesheet, the words and the cue alike.
     const css = compile(resolve(process.cwd(), 'src/styles/_starlantern-ui.scss')).css;

@@ -154,13 +154,17 @@ describe("Scarlet's embers", () => {
     const would = lossOf(noel, hitAmount(soft(), noel, spec, rollHit(soft(), noel, spec, constRng(0.5))!).amount);
     expect(would - taken).toBeGreaterThan(0);
     expect(l.by.scarlet.prevented).toBe(would - taken);
-    // A fast foe fells Scarlet first: the cover ends with her, and the slow foe's planned blow lands on Noel.
-    const t = makeBattle([P('noel'), scarlet({ row: 'back', hp: 1, cover: { ally: 'noel', turns: 2 } }), sturdy()], [soft('e0', 1), soft('e1', 99)]);
+    // Two ranged foes (anyone is in reach) both draw Noel. The fast one fells Scarlet first: the cover ends with her, and
+    // the slow one's planned blow lands on Noel, its drawn target. (Had the plan held Scarlet as its target, the blow
+    // would be drawn afresh among Noel and Selene: Selene, at this draw.)
+    const ranged = (key: string, spd: number) => foe(key, { melee: false, max: { hp: 99999, tp: 0, atk: 60, def: 20, mag: 20, res: 20, spd } });
+    const t = makeBattle([scarlet({ hp: 1, cover: { ally: 'noel', turns: 2 } }), P('noel'), sturdy()], [ranged('e0', 1), ranged('e1', 99)]);
     planEnemies(t, constRng(0.5));
-    expect([t.intents!.e0.shownTarget, t.intents!.e1.shownTarget]).toEqual(['scarlet', 'scarlet']);
+    expect([t.intents!.e0, t.intents!.e1]).toEqual([{ kind: 'attack', target: 'noel', shownTarget: 'scarlet' }, { kind: 'attack', target: 'noel', shownTarget: 'scarlet' }]);
     const u = resolveRound(t, {}, constRng(0.5));
-    expect(u.party[1].alive).toBe(false);
-    expect(u.party[0].hp).toBeLessThan(200);
+    expect(u.party[0].alive).toBe(false);
+    expect(u.party[1].hp).toBeLessThan(200);
+    expect(u.party[2].hp).toBe(200);
   });
 
   it('cover turns no area attack, and ends after three round ends', () => {
