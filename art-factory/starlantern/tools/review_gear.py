@@ -264,20 +264,20 @@ def gallery(pg, js):
             magenta = raw.parent / f'{raw.stem}-magenta.png'
             thumb = pg.display(magenta if magenta.exists() else raw, f'raw-{sid}-{k}.png')
             used = [a for a, c in chosen.items() if c == k and pg.reg.get(a, {}).get('source_id', sid) == sid]
-            finals = []
+            finals = []   # per-part verdicts as text: the artifact host keeps at most 511 files, so no crop image per part
             for a in aids:
-                src = pg.copy(wd / f'{a}.png', f'cand-{sid}-{a}-{k}.png')
-                if not src: continue
-                qf = wd / f'{a}.qa.json'; q = json.loads(qf.read_text(encoding='utf-8')) if qf.exists() else {}
+                qf = wd / f'{a}.qa.json'
+                if not qf.exists(): continue
+                q = json.loads(qf.read_text(encoding='utf-8'))
                 verdict = '通過' if q.get('pass') else '未通過：' + '、'.join(q.get('reasons', []))
-                finals.append(f'<figure class="c">{img(src)}<figcaption>{esc(a)}<br>{esc(verdict)}'
-                              f'<details class="tech"><summary>技術細節</summary>{esc(qa_line(q))}</details></figcaption></figure>')
+                finals.append(f'<li><b>{esc(a)}</b>：{esc(verdict)}'
+                              f'<details class="tech"><summary>技術細節</summary>{esc(qa_line(q))}</details></li>')
             reason = rej.get(k, ''); plain = pg.reg.get(sid, {}).get('plain_reasons', {}).get(k, '')
             why = (f'<p class=rej>{esc(plain)}</p>' if plain else '') + (
                 f'<details class="tech"><summary>{"技術細節" if plain else "採用／未採用原因"}</summary>{esc(reason)}</details>' if reason else '')
             cells.append(f'<div class="att"><h4>{esc(sid)} {k} <span class="ok">{esc("採用：" + "、".join(used) if used else "")}</span></h4>'
                          f'<details class="rawbox"><summary>原圖（縮小到 600px 寬）</summary>{img(thumb, "raw")}</details>{why}'
-                         f'<div class="finals">{"".join(finals)}</div></div>')
+                         f'<ul class="finals">{"".join(finals)}</ul></div>')
         rows.append(f'<section class="gal"><h3>{esc(sid)}</h3>{"".join(cells) or "<p>尚未生成。</p>"}</section>')
     return ''.join(rows)
 
@@ -424,8 +424,11 @@ def starlit_alts_section(pg, alts, fails, icon, gear, nm, cell, notes=None, plai
 def main(batch='sample'):
     lab = G.label(batch); out = out_dir(batch)
     reg = json.loads(G.REG_PATH.read_text(encoding='utf-8'))['assets'] if G.REG_PATH.exists() else {}
-    if out.exists(): shutil.rmtree(out)
-    (out / 'img').mkdir(parents=True)
+    # Empty the folder rather than delete it: a shell or viewer may hold the folder itself open (Windows refuses rmdir).
+    out.mkdir(parents=True, exist_ok=True)
+    for child in out.iterdir():
+        shutil.rmtree(child) if child.is_dir() else child.unlink()
+    (out / 'img').mkdir()
     pg = Page(out, reg); nm = names(); owners = skill_owners()
     js = [j for j in G.jobs() if j['batch'] == batch]
     gear = [p for j in js if j['kind'] == 'gear-sheet' for p in j['parts']]
@@ -685,7 +688,7 @@ table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overfl
 .fac .npc{{position:absolute;right:0;bottom:0;height:330px}} .missing{{background:#333;color:#999;display:flex;align-items:center;justify-content:center}}
 .gal .att{{display:inline-block;vertical-align:top;margin:0 16px 16px 0;max-width:min(460px,100%);box-sizing:border-box}} .gal h4{{margin:4px 0;font-size:13px;overflow-wrap:anywhere}}
 .gal .raw{{max-width:100%;max-height:300px;display:block;border:1px solid #333}} .ok{{color:#9fd77f}} .rej{{color:#e6a07a;margin:4px 0}}
-.finals{{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}} .finals .c img{{max-width:min(200px,100%);max-height:130px;min-height:32px;image-rendering:pixelated}} .finals figcaption{{max-width:200px}}
+.finals{{margin:6px 0;padding-left:18px;font-size:12px;color:#b9b4a6}} .finals li{{margin:2px 0;overflow-wrap:anywhere}}
 </style></head><body>
 <h1>星燈迷宮 裝備美術審核・{esc(GATE_NAME.get(batch, batch))}（尚未核准、未發布）</h1>
 <p class="note">本頁所有像素圖以最近鄰放大顯示。格子、外框位置、名稱與價格是頁面上的示意，不在圖片裡。這些圖要等你在這頁確認之後，才會放進遊戲。</p>

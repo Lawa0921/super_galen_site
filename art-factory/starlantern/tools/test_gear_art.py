@@ -1103,10 +1103,13 @@ def test_candidate_images_of_two_sheets_never_overwrite_each_other(factory, revi
     _starlit_attempts(factory, 'round')
     G.cand(['--only=sheet-rarity-frames-2'])
     page = review.main('sample').read_text(encoding='utf-8')
+    # §9 shows verdicts as text now (artifact file limit); each sheet's attempt lists its own ui-starlit verdict, never the other's
+    gal = page[page.index('id="s9"'):]
     for sid in (G.FRAME_SHEET_ID, G.STARLIT_SHEET_ID):
-        name = f'cand-{sid}-ui-starlit-a1.png'
-        assert f'img/{name}' in page, name
-        assert (factory / 'review/img' / name).read_bytes() == (factory / f'work/{sid}/cand/a1/ui-starlit.png').read_bytes()
+        att = gal[gal.index(f'<h4>{sid} a1'):]; att = att[:att.index('</ul>')]
+        q = json.loads((factory / f'work/{sid}/cand/a1/ui-starlit.qa.json').read_text(encoding='utf-8'))
+        assert '<b>ui-starlit</b>：' + ('通過' if q['pass'] else '未通過') in att, sid
+    assert 'img/cand-' not in page
 
 
 def test_used_label_matches_the_sheet_as_well_as_the_attempt(factory, review):
@@ -1344,3 +1347,21 @@ def test_g2_bag_grid_shows_every_item_framed_with_legendary_glow(factory, review
     assert all(names.get(p, p) in titles for p in gear if p.startswith(('lg-', 'set-')))
     legend = [p for p in gear if review.rarity_of(p) == 'legendary']
     assert legend and grid.count('class="rg"') == len(legend)
+
+
+def test_a_batch_page_stays_under_the_artifact_file_limit(factory, review):
+    """The artifact host keeps at most 511 files per version: a batch page references at most 480 distinct images, its img/
+    holds exactly those, and §9 lists every attempt's per-part verdicts as text instead of one crop image per part."""
+    import re
+    _fill(factory, 'main-gear')
+    stale = factory / 'review-g2/img/cand-old-crop.png'; stale.parent.mkdir(parents=True); _png(stale)   # left by an older build
+    _sheet(factory / 'raw/sheet-gear-2/sheet-gear-2-a1.png', cell=400, gap=120)
+    d = factory / 'work/sheet-gear-2/cand/a1'; d.mkdir(parents=True, exist_ok=True)
+    _png(d / 'gear-wooden-staff.png'); (d / 'gear-wooden-staff.qa.json').write_text(json.dumps({'pass': False, 'reasons': ['subject too light']}), encoding='utf-8')
+    page = review.main('main-gear').read_text(encoding='utf-8')
+    refs = set(re.findall(r'src="(img/[^"]+)"', page))
+    assert len(refs) <= 480
+    assert {f'img/{f.name}' for f in (factory / 'review-g2/img').iterdir()} == refs              # nothing stale, nothing missing
+    gal = page[page.index('id="s9"'):]
+    assert 'img/cand-' not in gal and 'img/raw-sheet-gear-2-a1.png' in gal
+    assert 'gear-wooden-staff' in gal and 'subject too light' in gal                              # the verdict and reason as text
