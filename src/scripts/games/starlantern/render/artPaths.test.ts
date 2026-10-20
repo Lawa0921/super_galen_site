@@ -172,6 +172,13 @@ describe('artPaths', () => {
     expect(contract).toContain('`ui-rarity-<magic\\|rare\\|epic\\|legendary\\|unique\\|set>` | `/assets/games/starlantern/ui/rarity-<r>.png`');
     expect(contract).toContain(`\`ui-starlit\` | \`${art.starlitOverlay}\``);
     expect(contract).toContain(`\`ui-glow-legendary\` | \`${art.rarityGlow}\``);
+    // Plan 5g's handoff: its own contract section names both ids as final; nothing calls them provisional any more.
+    const section = contract.slice(contract.indexOf('## 計畫 5g'));
+    expect(contract).toContain('## 計畫 5g');
+    expect(section).toContain(`\`ui-rarity-epic\` | \`${art.rarityFrame('epic')}\``);
+    expect(section).toContain(`\`ui-starlit\` | \`${art.starlitOverlay}\``);
+    expect(contract).not.toMatch(/暫定 id/);
+    expect(readFileSync('art-factory/starlantern/tools/gear_art.py', 'utf8')).not.toMatch(/[Pp]rovisional art ids/);
   });
 
   it('unpublished frames, the legend glow and the starlit overlay are never listed', () => {

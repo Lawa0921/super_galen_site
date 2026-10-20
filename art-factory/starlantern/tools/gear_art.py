@@ -58,7 +58,7 @@ def _hex_rgb(c):
 
 
 FRAME_HUE = {r: round(A.band_hue([_hex_rgb(RARITY_PALETTE[r])])) for r in FRAMED_RARITIES}
-# Provisional art ids (addendum 2 §3; plan 5g owns the final contract): a rename is this one table, and runtime()
+# Art ids (addendum 2 §3), final with plan 5g (contract.md 「計畫 5g」): a rename is this one table, and runtime()
 # derives the public path from the id (`ui-<x>` -> ui/<x>.png).
 FRAME_ASSET = {**{r: f'ui-rarity-{r}' for r in FRAMED_RARITIES}, 'glow-legendary': 'ui-glow-legendary', 'starlit': 'ui-starlit'}
 # (role, size, slice, pad) for nine_slice; the glow is a 12 x 12 ring padded to 16 x 16 so it sits inside the slot.

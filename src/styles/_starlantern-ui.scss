@@ -684,8 +684,12 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
   word-break: break-all;
   cursor: pointer;
   transition: opacity 0.12s linear;
+  // A stacking context per cell: its gear art layers never paint over a neighbour, so the cursor cell (.slx-cur, below)
+  // and its glow stay on top of every other cell.
+  z-index: 0;
 }
-.slx-bag-cell[class*='slx-rarity-'], .slx-doll-slot[class*='slx-rarity-'] {
+// Mixed from the rarity colour only while the cell has no frame art: with one, the frame is the rarity's look.
+.slx-bag-cell[class*='slx-rarity-']:not(:has(.slx-rframe)), .slx-doll-slot[class*='slx-rarity-']:not(:has(.slx-rframe)) {
   border-color: color-mix(in srgb, currentColor 55%, transparent);
   background: color-mix(in srgb, currentColor 10%, transparent);
 }
@@ -695,7 +699,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-doll-slot { align-content: center; }
 .slx-slot-tag { font-size: 10px; line-height: 10px; color: $slx-dim; text-shadow: none; }
 /* The enhance level, a corner mark apart from the name (the cell is too tight for "+n" after it). */
-.slx-enh { position: absolute; right: 0; bottom: 0; padding: 0 1px; font-size: 8px; line-height: 9px; color: $slx-gold; background: rgba(0, 0, 0, 0.7); text-shadow: none; }
+.slx-enh { position: absolute; z-index: 4; right: 0; bottom: 0; padding: 0 1px; font-size: 8px; line-height: 9px; color: $slx-gold; background: rgba(0, 0, 0, 0.7); text-shadow: none; }
 .slx-bag-cell:hover, .slx-doll-slot:hover { border-color: #c9a35a; }
 .slx-cur { z-index: 1; box-shadow: 0 0 0 1px rgba(232, 196, 106, 0.45); }
 .slx-area-on .slx-cur { box-shadow: 0 0 0 2px $slx-gold, 0 0 8px rgba(232, 196, 106, 0.6); animation: slx-cur-pulse 1.2s ease-in-out infinite; }
@@ -704,6 +708,35 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-bag-cell.slx-unfit { opacity: 0.28; }
 .slx-bag-cell.slx-junk { color: #8a8494; filter: grayscale(1); opacity: 0.55; text-decoration: line-through; }
 .slx-flash { animation: slx-cell-flash 0.45s ease-out; }
+// Gear art (plan 5d Task 6, ui2/gearArt.ts). Every layer is a published image; nothing here draws a frame or a glow.
+// - Icons show at their own 26 x 26 (the 28px bag cell's 1px border leaves exactly 26 inside; the 38px doll slot centres
+//   them), the large picture at its own 64 x 64. Never scaled, never cropped.
+// - The rarity layers are 16 x 16 nine-slices (slice 5) filling the cell. Their edges repeat rather than round, so no
+//   tile is ever stretched to a fraction of a pixel (a doll slot's 26px edge middle would round its 6px tiles to 6.5px).
+// - Paint order inside a cell: the legend glow, the icon, the frame, the star light, the enhance mark.
+.slx-gear-ico { position: relative; z-index: 1; display: block; width: 26px; height: 26px; image-rendering: pixelated; }
+.slx-gear-art { position: relative; z-index: 1; display: block; width: 64px; height: 64px; image-rendering: pixelated; }
+.slx-rglow, .slx-rframe, .slx-rstarlit {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+  border: 5px solid transparent;
+  border-image-slice: 5;
+  border-image-repeat: repeat;
+  image-rendering: pixelated;
+}
+.slx-rglow { z-index: 0; border-image-source: url('/assets/games/starlantern/ui/glow-legendary.png'); }
+.slx-rframe { z-index: 2; }
+// Every rarity with a frame (artPaths FRAMED_RARITIES): ui/rarity-<r>.png.
+$slx-framed: (magic, rare, epic, legendary, unique, set);
+@each $r in $slx-framed {
+  .slx-rframe-#{$r} { border-image-source: url('/assets/games/starlantern/ui/rarity-#{$r}.png'); }
+}
+.slx-rstarlit { z-index: 3; border-image-source: url('/assets/games/starlantern/ui/starlit.png'); }
+// The detail panel's picture: the large image in the same layers at twice the cell's size (10px = 2 x the 5px slice).
+.slx-item-art-box { position: relative; z-index: 0; width: 64px; height: 64px; margin: 0 auto 4px; }
+.slx-item-art-box > .slx-rglow, .slx-item-art-box > .slx-rframe, .slx-item-art-box > .slx-rstarlit { border-width: 10px; }
 @keyframes slx-cell-flash { from { background: rgba(232, 196, 106, 0.55); } }
 @media (prefers-reduced-motion: reduce) { .slx-area-on .slx-cur, .slx-flash { animation: none; } }
 .slx-stat-cell { display: flex; justify-content: space-between; }

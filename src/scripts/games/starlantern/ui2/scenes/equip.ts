@@ -8,8 +8,9 @@ import { activeIds, defaultSlotFor, slotsFor, statsOf } from '../../engine/party
 import { equip, setAutoJunk, sortBagIn, toggleJunk, unequip } from '../../engine/town';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import type { AnyStat, CharacterId, ItemInstance, Slot, Stats } from '../../engine/types';
-import { art } from '../../render/artPaths';
+import { art, gearArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
+import { framedGear } from '../gearArt';
 import type { UiAction } from '../input';
 import { gearLabel, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
@@ -32,7 +33,7 @@ type Area = 'doll' | 'bag';
 const DETAIL_STEP = 36;
 /** Pixels per wheel unit by deltaMode (pixels, lines, pages) for the detail panel; lists use widgets.ts's own. */
 const DETAIL_WHEEL_UNIT = [1, 12, DETAIL_STEP];
-/** Cells carry text only until gear art exists: the first four characters of the name. */
+/** A cell without published gear art carries text: the first four characters of the name. */
 const short = (s: string): string => [...s].slice(0, 4).join('');
 /** The enhance level as a small corner mark of its own: a 28px cell has no room for it after the name. Empty at +0. */
 const enhTag = (it: ItemInstance): HTMLElement[] => (it.enhance > 0 ? [el('span', { class: 'slx-enh', text: T.enhanceTag(it.enhance) })] : []);
@@ -76,6 +77,8 @@ export class EquipScene implements Scene {
   private headId: CharacterId | null = null;
   /** What each doll slot shows, so its children are rebuilt only when that changes. */
   private dollKeys: string[] = [];
+  /** What each bag cell shows, so its picture is rebuilt only when that changes. */
+  private bagKeys: string[] = [];
   private menuView: MenuView | null = null;
   private menuWin: HTMLElement | null = null;
   private sceneEl!: HTMLElement;
@@ -381,7 +384,15 @@ export class EquipScene implements Scene {
       if (i === this.bagCur) cls.push('slx-cur');
       if (this.flash?.index === i) cls.push('slx-flash');
       c.className = cls.join(' ');
-      c.replaceChildren(...(it ? [short(itemName(it)), ...enhTag(it)] : []));
+      // With its gear art a cell shows the picture in its rarity frame, and the name moves to the label and tooltip.
+      const key = it ? this.cellKey(it) : '';
+      if (this.bagKeys[i] !== key) {
+        this.bagKeys[i] = key;
+        const pic = it ? framedGear(this.ctx.art, it) : [];
+        c.replaceChildren(...(it ? [...(pic.length ? pic : [short(itemName(it))]), ...enhTag(it)] : []));
+        if (pic.length) c.setAttribute('title', gearLabel(it!));
+        else c.removeAttribute('title');
+      }
       c.setAttribute('aria-label', it ? gearLabel(it) : T.ui2.equip.emptyCell);
       c.setAttribute('aria-selected', String(i === this.bagCur));
     });
@@ -397,13 +408,19 @@ export class EquipScene implements Scene {
       if (this.flash?.slot === slot) cls.push('slx-flash');
       c.className = cls.join(' ');
       // A filled slot keeps a small slot label over the name: position alone does not say which slot is which.
-      const key = it ? `${slot}|${itemName(it)}|${it.enhance}` : slot;
+      // With its gear art the picture in its rarity frame takes the slot; the label and tooltip name the slot and the piece.
+      const key = it ? `${slot}|${this.cellKey(it)}` : slot;
+      const label = it ? T.ui2.equip.worn(T.slot[slot], gearLabel(it)) : T.slot[slot];
       if (this.dollKeys[i] !== key) {
         this.dollKeys[i] = key;
-        if (it) c.replaceChildren(el('span', { class: 'slx-slot-tag', text: T.slot[slot] }), el('span', { class: 'slx-slot-name', text: short(itemName(it)) }), ...enhTag(it));
+        const pic = it ? framedGear(this.ctx.art, it) : [];
+        if (pic.length) c.replaceChildren(...pic, ...enhTag(it!));
+        else if (it) c.replaceChildren(el('span', { class: 'slx-slot-tag', text: T.slot[slot] }), el('span', { class: 'slx-slot-name', text: short(itemName(it)) }), ...enhTag(it));
         else c.textContent = T.slot[slot];
+        if (pic.length) c.setAttribute('title', label);
+        else c.removeAttribute('title');
       }
-      c.setAttribute('aria-label', it ? T.ui2.equip.worn(T.slot[slot], gearLabel(it)) : T.slot[slot]);
+      c.setAttribute('aria-label', label);
       c.setAttribute('aria-selected', String(i === this.dollCur));
     });
 
@@ -413,6 +430,11 @@ export class EquipScene implements Scene {
     this.keyhint.textContent = !this.target ? (this.field ? t.hintField : t.hint)
       : this.bag.length >= this.room ? (this.field ? t.hintTargetFullField : t.hintTargetFull) : t.hintTarget;
     this.renderDetail();
+  }
+
+  /** Everything a cell draws from its piece: a change to any of it redraws the cell. */
+  private cellKey(it: ItemInstance): string {
+    return `${it.uid}|${gearArtId(it)}|${itemName(it)}|${it.rarity}|${it.starlit ? 1 : 0}|${it.enhance}`;
   }
 
   /** The bag line: `背包 n／60`, or in the labyrinth the pack's count and the load, red at the limit as on the map. */
@@ -449,6 +471,9 @@ export class EquipScene implements Scene {
       if (!onBag) out.push(el('p', { class: 'slx-desc', text: T.ui2.status.none }), el('p', { class: 'slx-hint', text: T.ui2.equip.pickSlot }));
       else if (this.target && m.equip[this.target]) out.push(el('p', { class: 'slx-hint', text: T.ui2.equip.takeOff(T.slot[this.target]) }));
     } else {
+      // The 64px picture in its rarity frame (twice the cell's) heads the panel when its large art is published.
+      const big = framedGear(this.ctx.art, it, true);
+      if (big.length) out.push(el('div', { class: 'slx-item-art-box' }, big));
       out.push(
         el('div', { class: `slx-item-name ${rarityClass(it)}`, text: gearLabel(it) }),
         el('div', { class: 'slx-item-meta' }, [

@@ -5,7 +5,8 @@ import { Game } from '../../engine/game';
 import { itemWeight } from '../../engine/loot/item';
 import { constRng, plainItem } from '../../engine/testing';
 import type { ItemInstance, Rarity } from '../../engine/types';
-import { NO_ART } from '../../render/textures';
+import { NO_ART, type ArtIndex } from '../../render/textures';
+import { art } from '../../render/artPaths';
 import { EquipScene } from './equip';
 import { LEGACY_LINEUP, meet } from '../../engine/party';
 import { capacity, carried, formatWeight as kg, weightOf } from '../../data/weights';
@@ -16,20 +17,20 @@ const gear = (base: string, uid: number, rarity: Rarity = 'common', extra: Parti
   ({ ...plainItem(base, uid), rarity, ...extra });
 
 /** `prep` runs on the fresh game before the scene opens (bag, worn gear). */
-function setup(prep?: (g: Game) => void, arg = 'scarlet') {
+function setup(prep?: (g: Game) => void, arg = 'scarlet', artIdx: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), null, undefined, 0, LEGACY_LINEUP);
   game.state.bag = [plainItem('iron-sword', 1)];
   game.state.nextUid = 100;
   prep?.(game);
-  return open(game, 'guild', arg);
+  return open(game, 'guild', arg, artIdx);
 }
 
 /** The scene on `game`, opened from `from`, with the helpers every test uses. */
-function open(game: Game, from: SceneName, arg?: string) {
+function open(game: Game, from: SceneName, arg?: string, artIdx: ArtIndex = NO_ART) {
   const go = vi.fn();
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
   const root = document.createElement('div');
-  const s = new EquipScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), from, arg });
+  const s = new EquipScene({ game, art: artIdx, sfx, go, hasSave: () => false, newGame: vi.fn(), from, arg });
   s.enter(root);
   const slot = (k: string) => root.querySelector<HTMLElement>(`.slx-doll-slot[data-slot=${k}]`)!;
   const cell = (i: number) => root.querySelector<HTMLElement>(`.slx-bag-cell[data-index="${i}"]`)!;
@@ -582,6 +583,124 @@ describe('EquipScene detail panel', () => {
   });
 });
 
+describe('EquipScene gear art (plan 5d Task 6)', () => {
+  const ALL: ArtIndex = { has: () => true };
+  const only = (...urls: string[]): ArtIndex => ({ has: (u) => urls.includes(u) });
+  /** The class of each child of a cell, in DOM order. */
+  const kids = (c: Element) => [...c.children].map((e) => e.className);
+
+  it('bag and doll cells show the gear icon under a rarity frame when the art exists', () => {
+    const r = setup((g) => {
+      g.state.bag = [gear('iron-sword', 1, 'rare', { enhance: 2 })];
+      g.state.party.roster.scarlet.equip = { head: gear('leather-cap', 9, 'magic') };
+    }, 'scarlet', only(art.gear('iron-sword'), art.gear('leather-cap'), art.rarityFrame('rare'), art.rarityFrame('magic')));
+    const c0 = r.cell(0);
+    expect(kids(c0)).toEqual(['slx-gear-ico', 'slx-rframe slx-rframe-rare', 'slx-enh']);
+    expect(c0.querySelector('img')!.getAttribute('src')).toBe(art.gear('iron-sword'));
+    expect(c0.textContent).toBe('+2');                                  // the name is no longer cut into the cell
+    expect(c0.getAttribute('aria-label')).toBe('鐵劍 +2・稀有');
+    expect(c0.getAttribute('title')).toBe('鐵劍 +2・稀有');
+    const head = r.slot('head');
+    expect(kids(head)).toEqual(['slx-gear-ico', 'slx-rframe slx-rframe-magic']);
+    expect(head.querySelector('img')!.getAttribute('src')).toBe(art.gear('leather-cap'));
+    expect(head.textContent).toBe('');
+    expect(head.getAttribute('aria-label')).toBe(T.ui2.equip.worn('頭部', '皮帽・魔法'));
+    expect(head.getAttribute('title')).toBe(T.ui2.equip.worn('頭部', '皮帽・魔法'));
+    expect(r.slot('neck').textContent).toBe('項鍊');                     // an empty slot still names itself
+    expect(r.cell(1).getAttribute('title')).toBeNull();                 // an empty cell needs no tooltip
+  });
+
+  it('without art the cells keep the short name as today', () => {
+    const r = setup((g) => {
+      g.state.bag = [gear('cloth-gloves', 1, 'legendary', { special: 'lg-bobby' })];
+      g.state.party.roster.scarlet.equip = { head: plainItem('leather-cap', 9) };
+    });
+    expect(r.cell(0).textContent).toBe('長效齒輪');
+    expect(r.root.querySelector('.slx-gear-ico, .slx-rframe, .slx-rglow, .slx-rstarlit, .slx-gear-art, .slx-item-art-box')).toBeNull();
+    expect(r.slot('head').querySelector('.slx-slot-name')!.textContent).toBe('皮帽');
+    expect(r.cell(0).getAttribute('title')).toBeNull();
+  });
+
+  it('a special without its own art keeps its text, never the base icon', () => {
+    const r = setup((g) => { g.state.bag = [gear('iron-sword', 1, 'legendary', { special: 'blaze-heart-sword' })]; },
+      'scarlet', only(art.gear('iron-sword'), art.gearLarge('iron-sword'), art.rarityFrame('legendary'), art.rarityGlow));
+    expect(r.cell(0).querySelector('img')).toBeNull();
+    expect(r.cell(0).textContent).toBe('灼心之劍');
+    expect(r.root.querySelector(`img[src="${art.gear('iron-sword')}"]`)).toBeNull();
+    expect(r.cell(0).querySelector('.slx-rframe')).toBeNull();           // no icon: the cell stays as it is today
+  });
+
+  it('glow sits under the icon and the frame over it; a starlit piece adds its overlay on top', () => {
+    const r = setup((g) => {
+      g.state.bag = [gear('iron-sword', 1, 'legendary', { special: 'blaze-heart-sword' }),
+        gear('thorn-spear', 2, 'legendary', { special: 'lg-chizuru', starlit: true })];
+    }, 'scarlet', ALL);
+    expect(kids(r.cell(0))).toEqual(['slx-rglow', 'slx-gear-ico', 'slx-rframe slx-rframe-legendary']);
+    expect(kids(r.cell(1))).toEqual(['slx-rglow', 'slx-gear-ico', 'slx-rframe slx-rframe-legendary', 'slx-rstarlit']);
+    expect(r.cell(1).querySelector('img')!.getAttribute('src')).toBe(art.gear('lg-chizuru'));
+  });
+
+  it('epic gets its own frame; common has none', () => {
+    const r = setup((g) => { g.state.bag = [gear('iron-sword', 1, 'epic'), gear('iron-sword', 2, 'common')]; }, 'scarlet', ALL);
+    expect(kids(r.cell(0))).toEqual(['slx-gear-ico', 'slx-rframe slx-rframe-epic']);
+    expect(kids(r.cell(1))).toEqual(['slx-gear-ico']);
+  });
+
+  it('the detail shows the 64px large image of the special in a framed box before the name', () => {
+    const r = setup((g) => { g.state.bag = [gear('iron-sword', 1, 'legendary', { special: 'blaze-heart-sword', starlit: true })]; }, 'scarlet', ALL);
+    r.press('swap');
+    const body = r.detail().querySelector<HTMLElement>('.slx-item-detail-body')!;
+    const big = body.querySelector<HTMLImageElement>('.slx-item-detail-body img.slx-gear-art')!;
+    expect(big.getAttribute('src')).toBe(art.gearLarge('blaze-heart-sword'));
+    const box = body.firstElementChild!;
+    expect(box.className).toBe('slx-item-art-box');
+    expect(kids(box)).toEqual(['slx-rglow', 'slx-gear-art', 'slx-rframe slx-rframe-legendary', 'slx-rstarlit']);
+    expect(box.nextElementSibling!.classList.contains('slx-item-name')).toBe(true);
+    expect(body.querySelector('.slx-gear-ico')).toBeNull();               // only the large image in the detail
+  });
+
+  it('the detail has no art box without the large image, even when the frame is published', () => {
+    const r = setup((g) => { g.state.bag = [gear('iron-sword', 1, 'rare')]; }, 'scarlet', only(art.gear('iron-sword'), art.rarityFrame('rare')));
+    r.press('swap');
+    expect(r.detail().querySelector('.slx-item-art-box')).toBeNull();
+    expect(r.detail().querySelector('.slx-item-detail-body')!.firstElementChild!.classList.contains('slx-item-name')).toBe(true);
+  });
+
+  it('junk and unfit cells grey the icon and the frame together', () => {
+    const r = setup((g) => { g.state.bag = [gear('iron-sword', 1, 'rare', { junk: true }), gear('leather-vest', 2, 'magic')]; }, 'scarlet', ALL);
+    const junk = r.cell(0);
+    expect(junk.classList.contains('slx-junk')).toBe(true);
+    expect(kids(junk)).toEqual(['slx-gear-ico', 'slx-rframe slx-rframe-rare']);
+    r.press('confirm');                                                 // target the weapon slot: the vest does not fit
+    const unfit = r.cell(1);
+    expect(unfit.classList.contains('slx-unfit')).toBe(true);
+    expect(kids(unfit)).toEqual(['slx-gear-ico', 'slx-rframe slx-rframe-magic']);
+  });
+
+  it('a doll slot redraws when only the rarity or starlit mark of its piece changes', () => {
+    const r = setup((g) => { g.state.party.roster.scarlet.equip = { weapon: gear('iron-sword', 9, 'rare') }; }, 'scarlet', ALL);
+    expect(r.slot('weapon').querySelector('.slx-rframe-rare')).not.toBeNull();
+    r.worn().weapon = gear('iron-sword', 9, 'legendary', { special: 'lg-noel', starlit: true });
+    r.press('right');
+    expect(r.slot('weapon').querySelector('.slx-rframe-legendary')).not.toBeNull();
+    expect(r.slot('weapon').querySelector('.slx-rstarlit')).not.toBeNull();
+  });
+
+  it('no element carries a style attribute with art either', () => {
+    const r = setup((g) => { g.state.bag = [gear('iron-sword', 1, 'legendary', { special: 'blaze-heart-sword', starlit: true })]; }, 'scarlet', ALL);
+    r.press('swap');
+    expect(r.root.querySelectorAll('[style]')).toHaveLength(0);
+  });
+});
+
+describe('EquipScene gear art in the labyrinth', () => {
+  it('the run pack cells show the gear icon too', () => {
+    const { cell } = fieldSetup((g) => { g.run!.loot.gear = [gear('iron-sword', 70, 'rare')]; }, undefined, { has: () => true });
+    expect(cell(0).querySelector('.slx-gear-ico')!.getAttribute('src')).toBe(art.gear('iron-sword'));
+    expect(cell(0).querySelector('.slx-rframe-rare')).not.toBeNull();
+  });
+});
+
 describe('EquipScene touch', () => {
   const tap = (node: HTMLElement, pointerType: string) => {
     node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType }));
@@ -637,7 +756,7 @@ describe('EquipScene, the hero leads', () => {
  * Out in the labyrinth (departed as dungeon.test.ts does) with the opening pair, the hero and Rin, plus Selene on the
  * bench; the hero wears an iron sword. What changes hands is the run pack, never the town bag.
  */
-function fieldSetup(prep?: (g: Game) => void, arg?: string) {
+function fieldSetup(prep?: (g: Game) => void, arg?: string, artIdx: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.99), null);
   game.state.party = meet(game.state.party, 'selene', 1);
   game.state.party.grid = game.state.party.grid.map((c) => (c === 'selene' ? null : c));   // she waits in town
@@ -645,7 +764,7 @@ function fieldSetup(prep?: (g: Game) => void, arg?: string) {
   game.state.party.roster.hero.equip.weapon = plainItem('iron-sword', 60);
   game.state.nextUid = 100;
   prep?.(game);
-  return { ...open(game, 'dungeon', arg), run: game.run! };
+  return { ...open(game, 'dungeon', arg, artIdx), run: game.run! };
 }
 
 describe('EquipScene in the labyrinth', () => {

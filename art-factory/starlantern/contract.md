@@ -126,7 +126,7 @@
 | 技能樹技能圖示 | 78 | `icon-<skillId>` | `/assets/games/starlantern/icon/<skillId>.png` | 透明，高 32；夥伴樹 47＋凜 10＋洛恩 21 |
 | 稀有度外框 | 6 | `ui-rarity-<magic\|rare\|epic\|legendary\|unique\|set>` | `/assets/games/starlantern/ui/rarity-<r>.png` | 九宮格 16×16，slice 5，中央透明，2 px 邊帶（普通沒有外框） |
 | 傳說光暈 | 1 | `ui-glow-legendary` | `/assets/games/starlantern/ui/glow-legendary.png` | 格內光暈：原圖 12×12 的 1 px 淡橘環＋四角 2×2 火花，補 2 px 透明成 16×16，slice 5；疊在圖示下層，`inset: 0` |
-| 星輝疊層 | 1 | `ui-starlit` | `/assets/games/starlantern/ui/starlit.png` | 九宮格 16×16，slice 5：四角各一顆四芒星，完全在 5×5 角落內，邊中段與中央全透明（`sheet-starlit-1`，主控裁定 2026-10-20；舊版邊上的星點在 `repeat` 下會連成虛線）；疊在外框之上，只給擲出星輝的傳說、獨特、套裝（暫定 id，5g 定案） |
+| 星輝疊層 | 1 | `ui-starlit` | `/assets/games/starlantern/ui/starlit.png` | 九宮格 16×16，slice 5：四角各一顆四芒星，完全在 5×5 角落內，邊中段與中央全透明（`sheet-starlit-1`，主控裁定 2026-10-20；舊版邊上的星點在 `repeat` 下會連成虛線）；疊在外框之上，只給擲出星輝的傳說、獨特、套裝（id 已由計畫 5g 定案，見「計畫 5g」一節） |
 | 鍛造屋場景 | 1 | `scene-forge` | `/assets/games/starlantern/scene/forge.png` | 不透明 418×235（`--fit 418x235`） |
 | 多蘭半身像 | 2 | `npc-forge`、`npc-forge-happy` | `/assets/games/starlantern/npc/forge.png`、`forge-happy.png` | 透明，高 180，`allow_edge: [bottom]` |
 
@@ -222,3 +222,18 @@
 - `sheet-gear-1` 的核准原圖（`gear-anchor.png`）是 5f 專屬獨特的風格錨點；
 - `ui-rarity-unique` 外框由 5f 的專屬獨特直接沿用；
 - 素材圖示規格同上表（`--height 32`），5f 的素材表附 5d 已核准的素材圖當參考。
+
+## 計畫 5g：史詩外框與星輝疊層（定案）
+依據：`docs/superpowers/plans/2026-10-20-starlantern-plan5g-rarity.md` 的「控制者裁定」與「交接」，幾何以補遺 2 為準。G1 樣本由使用者 2026-10-20 核准（「可以 / 開始處理吧」；星輝選 a2 圓點光）。下面兩個 id 與 runtime 路徑是**定案**，不再是暫定；`gear_art.FRAME_ASSET` 是 Python 端唯一的對照表。
+
+| 類別 | 數量 | 登錄表 id | runtime（相對 `public`） | 規格 |
+|---|---|---|---|---|
+| 史詩外框 | 1 | `ui-rarity-epic` | `/assets/games/starlantern/ui/rarity-epic.png` | 同其他外框：九宮格 16×16，slice 5，中央透明；藍紫 `#8a5cff`（遊戲文字色另用 `#b36bff`，兩者並存） |
+| 星輝疊層 | 1 | `ui-starlit` | `/assets/games/starlantern/ui/starlit.png` | 見上表「星輝疊層」：16×16，slice 5，格內、疊在外框之上；不是外框，不在 `FRAMED_RARITIES` 裡 |
+
+- 執行期：`art.rarityFrame('epic')`、`art.starlitOverlay`（`render/artPaths.ts`）；`ui2/gearArt.ts` 的 `rarityFrame(art, rarity, starlit)` 產生 `.slx-rframe.slx-rframe-epic` 與 `.slx-rstarlit`（另有傳說的 `.slx-rglow`）。三層都是 `border: 5px`、`border-image-slice: 5`、`border-image-repeat: repeat`，`inset: 0` 畫在格內；詳情欄的大圖用 `border-width: 10px`。順序：光暈（圖示下層）→ 圖示 → 外框 → 星輝。星輝只給 `ItemInstance.starlit === true` 的傳說、獨特、套裝。
+- 退回規則（圖還沒發布時）：
+  - 不請求任何未發布的圖：`allArtUrls()` 由 `NO_ICON_YET` 的 `ui:rarity-epic`、`ui:starlit` 擋住，對應的層不產生，CSS 的 `border-image` 也就不會載入；
+  - 史詩格沿用稀有度顏色混色的邊框（`.slx-rarity-epic`），沒有外框圖時才套用；
+  - 星輝只剩文字的青白光暈（`.slx-starlit`）與它本身稀有度的外觀，不用 CSS 畫星星或光。
+- 發布（5d Task 8，使用者已核准樣本之後）：`gear_art.py publish --batch sample` 寫入 `runtime`，同一個 commit 從 `NO_ICON_YET` 刪掉 `ui:rarity-epic`、`ui:starlit` 與其他樣本鍵，並重算 `artPaths.test.ts` 的總數。
