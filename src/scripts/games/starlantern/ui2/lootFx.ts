@@ -69,11 +69,6 @@ export function bestDrop<T extends { rarity: Rarity; starlit?: true }>(items: re
   return best;
 }
 
-/** The rarity of a drop's best piece, or null for none. */
-export function bestRarity(items: readonly { rarity: Rarity; starlit?: true }[]): Rarity | null {
-  return bestDrop(items)?.rarity ?? null;
-}
-
 /**
  * One drop, one moment: the best piece raises the pillar and plays its chime once, LOOT_DELAY_MS after the cue that
  * came with the drop. Common-only drops stay quiet. A starlit best piece passes the starlit flag to both.

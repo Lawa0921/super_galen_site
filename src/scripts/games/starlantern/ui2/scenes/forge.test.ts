@@ -559,6 +559,20 @@ describe('ForgeScene reroll page', () => {
     expect(t.line()).toBe(F.nothingToReroll);
   });
 
+  it('with only starlit uniques and sets to show it says there is nothing to reroll', () => {
+    const game = new Game(constRng(0.5), memoryStorage());
+    game.state.bag = [
+      gear(1, 'star-ring', 'unique', { special: 'blaze-ember-ring', starlit: true, affixes: [{ key: 'fireDmg', value: 3 }] }),
+      gear(2, 'leather-vest', 'set', { special: 'set-blaze-body', starlit: true, affixes: [{ key: 'fireDmg', value: 3 }] }),
+      gear(3, 'iron-sword', 'common'),
+    ];
+    for (const m of Object.values(game.state.party.roster)) m.equip = {};
+    const t = setup(game);
+    t.s.onAction('confirm'); t.s.onAction('down'); t.s.onAction('down'); t.s.onAction('confirm');
+    expect(t.line()).toBe(F.nothingToReroll);
+    expect(t.root.querySelectorAll('.slx-reroll-list, .slx-forge-list [aria-disabled=true]')).toHaveLength(0);
+  });
+
   it('the first reroll warns about the lock; afterwards only that affix is selectable', () => {
     const a = open([sword()]);
     a.go('confirm');                        // item -> affixes

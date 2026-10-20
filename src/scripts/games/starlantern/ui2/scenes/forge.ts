@@ -327,7 +327,8 @@ export function rerollPage(h: ForgeHost): void {
     // A starlit unique or set has no reroll at all: its values are at their maximum and its affixes cannot be swapped.
     blocked: (it) => (it.starlit && (it.rarity === 'unique' || it.rarity === 'set') ? F.starlitMaxed : undefined),
   });
-  if (!itemRows().length) { void h.say(F.nothingToReroll); return; }
+  // Greyed rows (starlit uniques and sets) cannot be rerolled, so they alone are nothing to reroll.
+  if (!itemRows().some((r) => !r.disabled)) { void h.say(F.nothingToReroll); return; }
 
   /** Replace a list's rows in place, keeping the cursor on a live row. */
   const sync = (view: MenuView, next: MenuItem[]) => {

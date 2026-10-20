@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Rarity } from '../engine/types';
-import { LEGEND_MS, LOOT_DELAY_MS, PILLAR_MS, bestDrop, bestRarity, clearPillars, dropMoment, showPillar, skipPillar } from './lootFx';
+import { LEGEND_MS, LOOT_DELAY_MS, PILLAR_MS, bestDrop, clearPillars, dropMoment, showPillar, skipPillar } from './lootFx';
 
 afterEach(() => { vi.useRealTimers(); });
 
@@ -99,8 +99,8 @@ describe('lootFx', () => {
   });
 
   it('the best piece of a drop picks the pillar and the chime, once', () => {
-    expect(bestRarity([])).toBeNull();
-    expect(bestRarity([{ rarity: 'magic' }, { rarity: 'legendary' }, { rarity: 'rare' }])).toBe('legendary');
+    expect(bestDrop([])).toBeNull();
+    expect(bestDrop([{ rarity: 'magic' }, { rarity: 'legendary' }, { rarity: 'rare' }])?.rarity).toBe('legendary');
     const host = document.createElement('div');
     const loot = vi.fn();
     const sfx = { loot };
@@ -148,8 +148,6 @@ describe('lootFx', () => {
     const sUnique = { rarity: 'unique' as const, starlit: true as const }, sSet = { rarity: 'set' as const, starlit: true as const };
     expect(bestDrop([sUnique, sSet])).toBe(sSet);                    // between starlit pieces, the rarer one
     expect(bestDrop([])).toBeNull();
-    expect(bestRarity([{ rarity: 'set' }, st])).toBe('legendary');  // the starlit piece is the drop's rarity
-    expect(bestRarity([epic, { rarity: 'rare' }])).toBe('epic');
   });
 
   it('a starlit drop chimes once with the starlit flag', () => {
