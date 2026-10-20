@@ -273,6 +273,7 @@ function checkOutcome(s: BattleState): boolean {
 }
 
 function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ctx: EffectContext, rng: Rng): void {
+  delete ctx.lastHit;   // burn and bleed ride only on a hit of this action
   if (actor.side === 'enemy') {
     const taunter = living(s.party).find((c) => c.taunt > 0);
     if (taunter) {

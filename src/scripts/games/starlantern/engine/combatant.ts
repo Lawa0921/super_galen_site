@@ -4,6 +4,7 @@ import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import type { MechState } from './mech';
+import type { AilmentShown, Dot } from './ailments';
 
 /** `src`: the combatant key of whoever cast it (the contribution ledger credits what it prevents to them). */
 export interface Buff { stat: BuffStat; pct: number; turns: number; src?: string }
@@ -46,6 +47,14 @@ export interface Combatant {
   undying?: true;
   /** A member's character mechanic in this fight (engine/mech.ts); the old roster has none. */
   mech?: MechState;
+  /** Ailments (engine/ailments.ts), each absent when not held: one burn, up to three bleed stacks, the rounds of shock and
+   *  chill left, frozen until its next turn, and the rounds a thawed foe cannot be frozen again. */
+  burn?: Dot;
+  bleed?: Dot[];
+  shock?: number;
+  frozen?: true;
+  freezeGuard?: number;
+  chill?: number;
 }
 
 export type BattleEvent =
@@ -59,7 +68,7 @@ export type BattleEvent =
   | { type: 'tp'; target: string; amount: number; regen?: boolean }
   | { type: 'revive'; target: string }
   | { type: 'cure'; target: string }
-  | { type: 'status'; target: string; status: 'poison' | 'sleep' }
+  | { type: 'status'; target: string; status: AilmentShown }
   | { type: 'resist'; target: string }
   | { type: 'buff'; target: string; stat: BuffStat; pct: number }
   | { type: 'taunt'; target: string }

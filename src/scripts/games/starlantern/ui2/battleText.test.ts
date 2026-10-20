@@ -32,4 +32,11 @@ describe('battleLines', () => {
     const log: BattleEvent[] = [{ type: 'tp', target: 'p', amount: 3, regen: true }, { type: 'tp', target: 'p', amount: 20 }];
     expect(battleLines(log, () => '絲嘉蕾')).toEqual(['', '絲嘉蕾 回復 20 TP']);
   });
+
+  it('each new ailment has its own line; poison and sleep keep theirs', () => {
+    const log: BattleEvent[] = (['burn', 'freeze', 'chill', 'shock', 'bleed', 'poison', 'sleep'] as const).map((status) => ({ type: 'status', target: 'e0', status }));
+    expect(battleLines(log, () => '史萊姆')).toEqual([
+      '史萊姆燒起來了', '史萊姆被凍住了', '史萊姆的動作變慢了', '史萊姆觸電了', '史萊姆開始流血了', '史萊姆中毒了', '史萊姆睡著了',
+    ]);
+  });
 });

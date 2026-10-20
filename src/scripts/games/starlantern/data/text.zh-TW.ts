@@ -11,8 +11,13 @@ import { CHARACTERS } from './characters';
 import type { MaterialUse } from '../engine/forge/uses';
 import type { MaterialKind } from '../engine/types';
 import type { AnyStat, BuffStat, Rarity, Slot, StatKey, Target } from '../engine/types';
+import type { AilmentShown } from '../engine/ailments';
 
 const STAT: Record<StatKey, string> = { hp: 'HP', tp: 'TP', atk: '攻擊', def: '防禦', mag: '魔力', res: '魔防', spd: '速度' };
+/** The battle log's line when an ailment takes hold (a boss's freeze reads as the chill it became). */
+const STATUS_LINE: Record<AilmentShown, string> = {
+  poison: '中毒了', sleep: '睡著了', burn: '燒起來了', freeze: '被凍住了', chill: '的動作變慢了', shock: '觸電了', bleed: '開始流血了',
+};
 const SLOT: Record<Slot, string> = {
   weapon: '武器', offhand: '副手', head: '頭部', body: '身體', hands: '手部', feet: '腳部', neck: '項鍊', ring1: '戒指 1', ring2: '戒指 2',
 };
@@ -151,7 +156,7 @@ export const T = {
     tp: (who: string, n: number) => `${who} 回復 ${n} TP`,
     revive: (who: string) => `${who} 復活了`,
     cure: (who: string) => `${who} 的異常狀態解除了`,
-    status: (who: string, s: 'poison' | 'sleep') => `${who}${s === 'poison' ? '中毒了' : '睡著了'}`,
+    status: (who: string, s: AilmentShown) => `${who}${STATUS_LINE[s]}`,
     resist: (who: string) => `${who} 沒有受到影響`,
     buff: (who: string, stat: BuffStat, pct: number) => `${who} 的${STAT[stat]}${pct > 0 ? '提升' : '下降'}了`,
     taunt: (who: string) => `${who} 吸引了敵人的注意`,

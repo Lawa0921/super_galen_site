@@ -1,3 +1,5 @@
+import type { AilmentId } from './ailments';
+
 export type Element = 'phys' | 'fire' | 'ice' | 'thunder';
 export type StatKey = 'hp' | 'tp' | 'atk' | 'def' | 'mag' | 'res' | 'spd';
 export type BuffStat = Exclude<StatKey, 'hp' | 'tp'>;
@@ -26,7 +28,7 @@ export type Effect =
   | { kind: 'restore'; hp?: number; tp?: number }
   | { kind: 'revive'; hpPct: number }
   | { kind: 'cure' }
-  | { kind: 'inflict'; status: 'poison' | 'sleep'; chance: number }
+  | { kind: 'inflict'; status: AilmentId; chance: number }
   | { kind: 'buff'; stat: BuffStat; pct: number; turns: number }
   | { kind: 'taunt'; turns: number }
   | { kind: 'turret'; power: number; turns: number };

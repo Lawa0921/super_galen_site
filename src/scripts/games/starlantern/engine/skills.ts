@@ -1,18 +1,21 @@
-import { addBuff, dealDamage, hitAmount, roll, rollHit, stat, SLEEP_TURNS, type BattleEvent, type Combatant } from './combatant';
+import { addBuff, dealDamage, hitAmount, roll, rollHit, stat, type BattleEvent, type Combatant } from './combatant';
 import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import { credit, creditPrevented, lossOf, type Ledger } from './ledger';
+import { inflictAilment } from './ailments';
 
 /**
  * `ledger`: the sim's contribution ledger (absent in the game); it reads the fight and never draws. `redirect`: set only
- * while an enemy's single hit a taunt turned resolves, with the member it first meant to hit.
+ * while an enemy's single hit a taunt turned resolves, with the member it first meant to hit. `lastHit`: the HP the
+ * current action's latest landed hit took, and from whom (burn and bleed are a share of it); each action starts without.
  */
 export interface EffectContext {
   rng: Rng; itemBoost: boolean; revealed: Record<string, Element[]>; log: BattleEvent[];
   ledger?: Ledger;
   redirect?: { from: Combatant };
+  lastHit?: { target: string; amount: number };
 }
 
 /** A power's percentage of a number, rounded half away from zero so a debuff (-37.5) rounds as deep as a buff (37.5). */
@@ -111,6 +114,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
           else if (actor.side === 'enemy' && target.side === 'party') creditPrevented(ctx.ledger, actor, target, eff, rolls, amount, ctx.redirect?.from);
         }
         const lost = dealDamage(target, amount);
+        ctx.lastHit = { target: target.key, amount: lost };
         if (target.side === 'enemy') reveal(ctx.revealed, target.defId, eff.element);
         ctx.log.push({ type: 'damage', target: target.key, amount: lost, element: eff.element, mult, ...(crit ? { crit } : {}) });
         if (!target.alive) ctx.log.push({ type: 'ko', target: target.key });
@@ -163,17 +167,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'inflict': {
       if (!target.alive) return;
-      const res = (eff.status === 'poison' ? target.x.poisonRes : target.x.sleepRes) ?? 0;
-      if (ctx.rng() < eff.chance * (target.boss ? 0.5 : 1) * (1 - res / 100)) {
-        if (eff.status === 'poison') {
-          // The first poisoner keeps the credit while the poison lasts (the contribution ledger).
-          if (!target.poison) target.poisonSrc = actor.key;
-          target.poison = true;
-        } else target.sleep = SLEEP_TURNS;
-        ctx.log.push({ type: 'status', target: target.key, status: eff.status });
-      } else {
-        ctx.log.push({ type: 'resist', target: target.key });
-      }
+      inflictAilment(actor, target, eff.status, eff.chance, ctx);
       return;
     }
     case 'buff': {

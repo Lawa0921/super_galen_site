@@ -4,7 +4,8 @@ import { SAVE_VERSION, newGame } from './state';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { mulberry32 } from './rng';
-import { memoryStorage, plainItem, fullParty } from './testing';
+import { makeBattle, makeCombatant, memoryStorage, plainItem, fullParty } from './testing';
+import { Game } from './game';
 import { defaultTalents, defaultTree, validBuild } from './progression';
 import { BOARDS } from '../data/talents';
 import { TREES } from '../data/trees';
@@ -622,5 +623,22 @@ describe('save v8 epic and starlit gear (plan 5g)', () => {
     const ok = JSON.parse(JSON.stringify({ ...g, nextUid: 2 }));
     ok.bag = [{ ...chizuru(1), starlit: true }];
     expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(ok) })).status).toBe('ok');
+  });
+});
+
+describe('battle state is never saved (plan 8b)', () => {
+  it('a fight with burning and frozen foes saves only the game, and loads back', () => {
+    const st = memoryStorage();
+    const g = new Game(mulberry32(3), st);
+    g.battle = makeBattle(
+      [makeCombatant({ key: 'hero', side: 'party', shock: 2 })],
+      [makeCombatant({ key: 'e0', side: 'enemy', burn: { tick: 5, turns: 3, src: 'hero' }, frozen: true, bleed: [{ tick: 2, turns: 1, src: 'hero' }] })],
+    );
+    expect(saveGame(st, g.state)).toBe(true);
+    const raw = st.getItem(SAVE_KEY)!;
+    expect(Object.keys(JSON.parse(raw))).not.toContain('battle');
+    // As keys: a region trait may well be the word "burn" as a value.
+    for (const k of ['burn', 'frozen', 'bleed', 'shock']) expect(raw).not.toContain(`"${k}":`);
+    expect(loadGame(st).status).toBe('ok');
   });
 });
