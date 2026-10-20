@@ -1,0 +1,142 @@
+{
+  "assets": {
+    "icon-sand-cyclone": {
+      "final": "art-factory/starlantern/work/sheet-skill-safira/cand/a1/icon-sand-cyclone.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-safira\\sheet-skill-safira-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 26,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          35,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-thousand-shadows": {
+      "final": "art-factory/starlantern/work/sheet-skill-safira/cand/a1/icon-thousand-shadows.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-safira\\sheet-skill-safira-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 23,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-veil-dance": {
+      "final": "art-factory/starlantern/work/sheet-skill-safira/cand/a1/icon-veil-dance.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-safira\\sheet-skill-safira-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          35,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-desert-festival": {
+      "final": "art-factory/starlantern/work/sheet-skill-safira/cand/a1/icon-desert-festival.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-safira\\sheet-skill-safira-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-shadow-step": {
+      "final": "art-factory/starlantern/work/sheet-skill-safira/cand/a1/icon-shadow-step.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-safira\\sheet-skill-safira-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          31,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-sirocco": {
+      "final": "art-factory/starlantern/work/sheet-skill-safira/cand/a1/icon-sirocco.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-safira\\sheet-skill-safira-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 16,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          33,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

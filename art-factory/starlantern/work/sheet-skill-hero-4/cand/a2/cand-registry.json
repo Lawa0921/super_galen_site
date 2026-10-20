@@ -1,0 +1,67 @@
+{
+  "assets": {
+    "icon-hero-expose": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-4/cand/a2/icon-hero-expose.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-4\\sheet-skill-hero-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          31,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-hero-sleep": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-4/cand/a2/icon-hero-sleep.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-4\\sheet-skill-hero-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          32,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-abyss-chain": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-4/cand/a2/icon-abyss-chain.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-4\\sheet-skill-hero-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

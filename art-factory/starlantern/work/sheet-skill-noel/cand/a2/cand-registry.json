@@ -1,0 +1,117 @@
+{
+  "assets": {
+    "icon-flame-wave": {
+      "final": "art-factory/starlantern/work/sheet-skill-noel/cand/a2/icon-flame-wave.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-noel\\sheet-skill-noel-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          36,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-inferno": {
+      "final": "art-factory/starlantern/work/sheet-skill-noel/cand/a2/icon-inferno.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-noel\\sheet-skill-noel-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 15,
+        "size": [
+          30,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-frost-bind": {
+      "final": "art-factory/starlantern/work/sheet-skill-noel/cand/a2/icon-frost-bind.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-noel\\sheet-skill-noel-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          35,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-blizzard": {
+      "final": "art-factory/starlantern/work/sheet-skill-noel/cand/a2/icon-blizzard.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-noel\\sheet-skill-noel-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 28,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          35,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-judgement": {
+      "final": "art-factory/starlantern/work/sheet-skill-noel/cand/a2/icon-judgement.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-noel\\sheet-skill-noel-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 12,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 15,
+        "size": [
+          28,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

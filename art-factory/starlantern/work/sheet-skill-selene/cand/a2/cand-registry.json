@@ -1,0 +1,134 @@
+{
+  "assets": {
+    "icon-moon-rain": {
+      "final": "art-factory/starlantern/work/sheet-skill-selene/cand/a2/icon-moon-rain.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          24,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-full-moon": {
+      "final": "art-factory/starlantern/work/sheet-skill-selene/cand/a2/icon-full-moon.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          33,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-blessing": {
+      "final": "art-factory/starlantern/work/sheet-skill-selene/cand/a2/icon-blessing.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-sanctuary": {
+      "final": "art-factory/starlantern/work/sheet-skill-selene/cand/a2/icon-sanctuary.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          38,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-moon-arrow": {
+      "final": "art-factory/starlantern/work/sheet-skill-selene/cand/a2/icon-moon-arrow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          46,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-lunar-eclipse": {
+      "final": "art-factory/starlantern/work/sheet-skill-selene/cand/a2/icon-lunar-eclipse.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

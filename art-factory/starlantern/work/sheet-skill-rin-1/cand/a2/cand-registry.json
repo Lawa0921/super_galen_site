@@ -1,0 +1,136 @@
+{
+  "assets": {
+    "icon-rin-needle": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-1/cand/a2/icon-rin-needle.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-1\\sheet-skill-rin-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          51,
+          36
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-rin-fan": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-1/cand/a2/icon-rin-fan.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-1\\sheet-skill-rin-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          39,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-rin-venom-needle": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-1/cand/a2/icon-rin-venom-needle.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-1\\sheet-skill-rin-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          28,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-rin-storm": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-1/cand/a2/icon-rin-storm.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-1\\sheet-skill-rin-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          35,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-rin-backstab": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-1/cand/a2/icon-rin-backstab.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-1\\sheet-skill-rin-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-rin-veil": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-1/cand/a2/icon-rin-veil.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-1\\sheet-skill-rin-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          36,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

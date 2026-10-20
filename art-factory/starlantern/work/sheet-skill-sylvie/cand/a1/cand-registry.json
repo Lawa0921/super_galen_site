@@ -1,0 +1,136 @@
+{
+  "assets": {
+    "icon-heart-shot": {
+      "final": "art-factory/starlantern/work/sheet-skill-sylvie/cand/a1/icon-heart-shot.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-sylvie\\sheet-skill-sylvie-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          36,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-starfall-arrow": {
+      "final": "art-factory/starlantern/work/sheet-skill-sylvie/cand/a1/icon-starfall-arrow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-sylvie\\sheet-skill-sylvie-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          31,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-snare-shot": {
+      "final": "art-factory/starlantern/work/sheet-skill-sylvie/cand/a1/icon-snare-shot.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-sylvie\\sheet-skill-sylvie-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 10,
+        "size": [
+          44,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-hunters-mark": {
+      "final": "art-factory/starlantern/work/sheet-skill-sylvie/cand/a1/icon-hunters-mark.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-sylvie\\sheet-skill-sylvie-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          33,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-fire-arrow": {
+      "final": "art-factory/starlantern/work/sheet-skill-sylvie/cand/a1/icon-fire-arrow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-sylvie\\sheet-skill-sylvie-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-storm-volley": {
+      "final": "art-factory/starlantern/work/sheet-skill-sylvie/cand/a1/icon-storm-volley.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-sylvie\\sheet-skill-sylvie-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          35,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "assets": {
+    "icon-rin-shadowless": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/cand/a1/icon-rin-shadowless.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          36,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-rin-mark": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/cand/a1/icon-rin-mark.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          38,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-rin-execute": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/cand/a1/icon-rin-execute.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          23,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-rin-deathblow": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/cand/a1/icon-rin-deathblow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          32,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

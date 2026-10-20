@@ -1,0 +1,134 @@
+{
+  "assets": {
+    "icon-hero-rally": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-2/cand/a2/icon-hero-rally.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-2\\sheet-skill-hero-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          36,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-abyss-guard": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-2/cand/a2/icon-abyss-guard.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-2\\sheet-skill-hero-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          32,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-hero-flare": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-2/cand/a2/icon-hero-flare.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-2\\sheet-skill-hero-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          33,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-hero-frost": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-2/cand/a2/icon-hero-frost.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-2\\sheet-skill-hero-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          29,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-hero-spark": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-2/cand/a2/icon-hero-spark.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-2\\sheet-skill-hero-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          32,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-abyss-star": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-2/cand/a2/icon-abyss-star.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-2\\sheet-skill-hero-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "block": 13,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

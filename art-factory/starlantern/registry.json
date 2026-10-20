@@ -14608,6 +14608,2048 @@
       "batch": "gear-5d-main-gear",
       "source_id": "gear-set-iron-offhand",
       "runtime": "/assets/games/starlantern/gear/set-iron-silhouette.png"
+    },
+    "icon-flame-wave": {
+      "final": "art-factory/starlantern/work/sheet-skill-noel/icon-flame-wave.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-noel\\sheet-skill-noel-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          36,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-noel",
+      "batch": "gear-5d-skills"
+    },
+    "icon-inferno": {
+      "final": "art-factory/starlantern/work/sheet-skill-noel/icon-inferno.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-noel\\sheet-skill-noel-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 15,
+        "size": [
+          30,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-noel",
+      "batch": "gear-5d-skills"
+    },
+    "icon-frost-bind": {
+      "final": "art-factory/starlantern/work/sheet-skill-noel/icon-frost-bind.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-noel\\sheet-skill-noel-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          35,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-noel",
+      "batch": "gear-5d-skills"
+    },
+    "icon-blizzard": {
+      "final": "art-factory/starlantern/work/sheet-skill-noel/icon-blizzard.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-noel\\sheet-skill-noel-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 28,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          35,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-noel",
+      "batch": "gear-5d-skills"
+    },
+    "icon-judgement": {
+      "final": "art-factory/starlantern/work/sheet-skill-noel/icon-judgement.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-noel\\sheet-skill-noel-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 12,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 15,
+        "size": [
+          28,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-noel",
+      "batch": "gear-5d-skills"
+    },
+    "icon-spiral-spear": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/icon-spiral-spear.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          35,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-chizuru",
+      "batch": "gear-5d-skills"
+    },
+    "icon-thousand-spear": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/icon-thousand-spear.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          38,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-chizuru",
+      "batch": "gear-5d-skills"
+    },
+    "icon-sacred-sake": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/icon-sacred-sake.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          27,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-chizuru",
+      "batch": "gear-5d-skills"
+    },
+    "icon-great-barrier": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/icon-great-barrier.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          36,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-chizuru",
+      "batch": "gear-5d-skills"
+    },
+    "icon-thunder-thrust": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/icon-thunder-thrust.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          35,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-chizuru",
+      "batch": "gear-5d-skills"
+    },
+    "icon-heaven-spear": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/icon-heaven-spear.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-chizuru",
+      "batch": "gear-5d-skills"
+    },
+    "icon-shadow-flurry": {
+      "final": "art-factory/starlantern/work/sheet-skill-liz/icon-shadow-flurry.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-liz\\sheet-skill-liz-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          38,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-liz",
+      "batch": "gear-5d-skills"
+    },
+    "icon-smoke-bomb": {
+      "final": "art-factory/starlantern/work/sheet-skill-liz/icon-smoke-bomb.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-liz\\sheet-skill-liz-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          35,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-liz",
+      "batch": "gear-5d-skills"
+    },
+    "icon-fortune-strike": {
+      "final": "art-factory/starlantern/work/sheet-skill-liz/icon-fortune-strike.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-liz\\sheet-skill-liz-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-liz",
+      "batch": "gear-5d-skills"
+    },
+    "icon-quickstep": {
+      "final": "art-factory/starlantern/work/sheet-skill-liz/icon-quickstep.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-liz\\sheet-skill-liz-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          36,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-liz",
+      "batch": "gear-5d-skills"
+    },
+    "icon-venom-edge": {
+      "final": "art-factory/starlantern/work/sheet-skill-liz/icon-venom-edge.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-liz\\sheet-skill-liz-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          29,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-liz",
+      "batch": "gear-5d-skills"
+    },
+    "icon-phantom-step": {
+      "final": "art-factory/starlantern/work/sheet-skill-liz/icon-phantom-step.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-liz\\sheet-skill-liz-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 9,
+        "size": [
+          53,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-liz",
+      "batch": "gear-5d-skills"
+    },
+    "icon-heart-shot": {
+      "final": "art-factory/starlantern/work/sheet-skill-sylvie/icon-heart-shot.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-sylvie\\sheet-skill-sylvie-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          36,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-sylvie",
+      "batch": "gear-5d-skills"
+    },
+    "icon-starfall-arrow": {
+      "final": "art-factory/starlantern/work/sheet-skill-sylvie/icon-starfall-arrow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-sylvie\\sheet-skill-sylvie-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          31,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-sylvie",
+      "batch": "gear-5d-skills"
+    },
+    "icon-snare-shot": {
+      "final": "art-factory/starlantern/work/sheet-skill-sylvie/icon-snare-shot.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-sylvie\\sheet-skill-sylvie-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 10,
+        "size": [
+          44,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-sylvie",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hunters-mark": {
+      "final": "art-factory/starlantern/work/sheet-skill-sylvie/icon-hunters-mark.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-sylvie\\sheet-skill-sylvie-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          33,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-sylvie",
+      "batch": "gear-5d-skills"
+    },
+    "icon-fire-arrow": {
+      "final": "art-factory/starlantern/work/sheet-skill-sylvie/icon-fire-arrow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-sylvie\\sheet-skill-sylvie-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-sylvie",
+      "batch": "gear-5d-skills"
+    },
+    "icon-storm-volley": {
+      "final": "art-factory/starlantern/work/sheet-skill-sylvie/icon-storm-volley.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-sylvie\\sheet-skill-sylvie-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          35,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-sylvie",
+      "batch": "gear-5d-skills"
+    },
+    "icon-guardian-roar": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/icon-guardian-roar.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 9,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 10,
+        "size": [
+          48,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-scarlet",
+      "batch": "gear-5d-skills"
+    },
+    "icon-unbreakable": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/icon-unbreakable.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          35,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-scarlet",
+      "batch": "gear-5d-skills"
+    },
+    "icon-blaze-ring": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/icon-blaze-ring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          36,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-scarlet",
+      "batch": "gear-5d-skills"
+    },
+    "icon-crimson-end": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/icon-crimson-end.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          35,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-scarlet",
+      "batch": "gear-5d-skills"
+    },
+    "icon-shield-bash": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/icon-shield-bash.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          33,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-scarlet",
+      "batch": "gear-5d-skills"
+    },
+    "icon-fortress": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/icon-fortress.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          38,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-scarlet",
+      "batch": "gear-5d-skills"
+    },
+    "icon-moon-rain": {
+      "final": "art-factory/starlantern/work/sheet-skill-selene/icon-moon-rain.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          24,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-selene",
+      "batch": "gear-5d-skills"
+    },
+    "icon-full-moon": {
+      "final": "art-factory/starlantern/work/sheet-skill-selene/icon-full-moon.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          33,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-selene",
+      "batch": "gear-5d-skills"
+    },
+    "icon-blessing": {
+      "final": "art-factory/starlantern/work/sheet-skill-selene/icon-blessing.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-selene",
+      "batch": "gear-5d-skills"
+    },
+    "icon-sanctuary": {
+      "final": "art-factory/starlantern/work/sheet-skill-selene/icon-sanctuary.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          38,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-selene",
+      "batch": "gear-5d-skills"
+    },
+    "icon-moon-arrow": {
+      "final": "art-factory/starlantern/work/sheet-skill-selene/icon-moon-arrow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          46,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-selene",
+      "batch": "gear-5d-skills"
+    },
+    "icon-lunar-eclipse": {
+      "final": "art-factory/starlantern/work/sheet-skill-selene/icon-lunar-eclipse.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-selene\\sheet-skill-selene-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-selene",
+      "batch": "gear-5d-skills"
+    },
+    "icon-sand-cyclone": {
+      "final": "art-factory/starlantern/work/sheet-skill-safira/icon-sand-cyclone.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-safira\\sheet-skill-safira-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 26,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          35,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-safira",
+      "batch": "gear-5d-skills"
+    },
+    "icon-thousand-shadows": {
+      "final": "art-factory/starlantern/work/sheet-skill-safira/icon-thousand-shadows.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-safira\\sheet-skill-safira-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 23,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-safira",
+      "batch": "gear-5d-skills"
+    },
+    "icon-veil-dance": {
+      "final": "art-factory/starlantern/work/sheet-skill-safira/icon-veil-dance.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-safira\\sheet-skill-safira-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          35,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-safira",
+      "batch": "gear-5d-skills"
+    },
+    "icon-desert-festival": {
+      "final": "art-factory/starlantern/work/sheet-skill-safira/icon-desert-festival.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-safira\\sheet-skill-safira-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-safira",
+      "batch": "gear-5d-skills"
+    },
+    "icon-shadow-step": {
+      "final": "art-factory/starlantern/work/sheet-skill-safira/icon-shadow-step.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-safira\\sheet-skill-safira-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          31,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-safira",
+      "batch": "gear-5d-skills"
+    },
+    "icon-sirocco": {
+      "final": "art-factory/starlantern/work/sheet-skill-safira/icon-sirocco.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-safira\\sheet-skill-safira-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 16,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          33,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-safira",
+      "batch": "gear-5d-skills"
+    },
+    "icon-cannon": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/icon-cannon.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          40,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-bobby",
+      "batch": "gear-5d-skills"
+    },
+    "icon-repair-kit": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/icon-repair-kit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-bobby",
+      "batch": "gear-5d-skills"
+    },
+    "icon-overclock": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/icon-overclock.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "block": 10,
+        "size": [
+          45,
+          36
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-bobby",
+      "batch": "gear-5d-skills"
+    },
+    "icon-emergency-repair": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/icon-emergency-repair.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-bobby",
+      "batch": "gear-5d-skills"
+    },
+    "icon-shock-mine": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/icon-shock-mine.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-bobby",
+      "batch": "gear-5d-skills"
+    },
+    "icon-tesla-coil": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/icon-tesla-coil.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-bobby",
+      "batch": "gear-5d-skills"
+    },
+    "icon-rin-needle": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-1/icon-rin-needle.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-1\\sheet-skill-rin-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          51,
+          36
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-rin-1",
+      "batch": "gear-5d-skills"
+    },
+    "icon-rin-fan": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-1/icon-rin-fan.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-1\\sheet-skill-rin-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          39,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-rin-1",
+      "batch": "gear-5d-skills"
+    },
+    "icon-rin-venom-needle": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-1/icon-rin-venom-needle.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-1\\sheet-skill-rin-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          28,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-rin-1",
+      "batch": "gear-5d-skills"
+    },
+    "icon-rin-storm": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-1/icon-rin-storm.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-1\\sheet-skill-rin-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          35,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-rin-1",
+      "batch": "gear-5d-skills"
+    },
+    "icon-rin-backstab": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-1/icon-rin-backstab.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-1\\sheet-skill-rin-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-rin-1",
+      "batch": "gear-5d-skills"
+    },
+    "icon-rin-veil": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-1/icon-rin-veil.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-1\\sheet-skill-rin-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          36,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-rin-1",
+      "batch": "gear-5d-skills"
+    },
+    "icon-rin-shadowless": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/icon-rin-shadowless.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          35,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-rin-2",
+      "batch": "gear-5d-skills"
+    },
+    "icon-rin-mark": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/icon-rin-mark.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          31,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-rin-2",
+      "batch": "gear-5d-skills"
+    },
+    "icon-rin-execute": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/icon-rin-execute.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-rin-2",
+      "batch": "gear-5d-skills"
+    },
+    "icon-rin-deathblow": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/icon-rin-deathblow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          36,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-rin-2",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-slash": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-1/icon-hero-slash.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-1\\sheet-skill-hero-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          36,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-1",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-cleave": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-1/icon-hero-cleave.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-1\\sheet-skill-hero-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          31,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-1",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-sunder": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-1/icon-hero-sunder.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-1\\sheet-skill-hero-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "block": 12,
+        "size": [
+          31,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-1",
+      "batch": "gear-5d-skills"
+    },
+    "icon-abyss-sword": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-1/icon-abyss-sword.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-1\\sheet-skill-hero-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-1",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-guard": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-1/icon-hero-guard.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-1\\sheet-skill-hero-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          30,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-1",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-aegis": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-1/icon-hero-aegis.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-1\\sheet-skill-hero-1-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 17,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "block": 12,
+        "size": [
+          36,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-1",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-rally": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-2/icon-hero-rally.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-2\\sheet-skill-hero-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          36,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-2",
+      "batch": "gear-5d-skills"
+    },
+    "icon-abyss-guard": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-2/icon-abyss-guard.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-2\\sheet-skill-hero-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          32,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-2",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-flare": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-2/icon-hero-flare.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-2\\sheet-skill-hero-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          33,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-2",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-frost": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-2/icon-hero-frost.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-2\\sheet-skill-hero-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          29,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-2",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-spark": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-2/icon-hero-spark.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-2\\sheet-skill-hero-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          32,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-2",
+      "batch": "gear-5d-skills"
+    },
+    "icon-abyss-star": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-2/icon-abyss-star.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-2\\sheet-skill-hero-2-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "block": 13,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-2",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-mend": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-3/icon-hero-mend.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-3\\sheet-skill-hero-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          32,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-hero-3",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-prayer": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-3/icon-hero-prayer.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-3\\sheet-skill-hero-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          32,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-hero-3",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-purify": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-3/icon-hero-purify.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-3\\sheet-skill-hero-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 10,
+        "size": [
+          37,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-hero-3",
+      "batch": "gear-5d-skills"
+    },
+    "icon-abyss-light": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-3/icon-abyss-light.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-3\\sheet-skill-hero-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          33,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-hero-3",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-shackle": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-3/icon-hero-shackle.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-3\\sheet-skill-hero-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "block": 11,
+        "size": [
+          35,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-hero-3",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-slow": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-3/icon-hero-slow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-3\\sheet-skill-hero-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 11,
+        "size": [
+          29,
+          35
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a1",
+      "source_id": "sheet-skill-hero-3",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-expose": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-4/icon-hero-expose.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-4\\sheet-skill-hero-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          31,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-4",
+      "batch": "gear-5d-skills"
+    },
+    "icon-hero-sleep": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-4/icon-hero-sleep.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-4\\sheet-skill-hero-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          32,
+          33
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-4",
+      "batch": "gear-5d-skills"
+    },
+    "icon-abyss-chain": {
+      "final": "art-factory/starlantern/work/sheet-skill-hero-4/icon-abyss-chain.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-hero-4\\sheet-skill-hero-4-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-skill-hero-4",
+      "batch": "gear-5d-skills"
+    },
+    "sheet-skill-noel": {
+      "rejected_attempts": {
+        "a1": "未採用：flame-wave、judgement 各有 1 個洋紅殘色像素（magenta residue 1）",
+        "a2": "採用：整張表（同一位角色的技能圖示同一版，風格一致）"
+      }
+    },
+    "sheet-skill-chizuru": {
+      "rejected_attempts": {
+        "a1": "採用：整張表（同一位角色的技能圖示同一版，風格一致）",
+        "a2": "未採用：兩版都通過時挑了 1 倍下較清楚的一版"
+      }
+    },
+    "sheet-skill-liz": {
+      "rejected_attempts": {
+        "a1": "未採用：兩版都通過時挑了 1 倍下較清楚的一版",
+        "a2": "採用：整張表（同一位角色的技能圖示同一版，風格一致）"
+      }
+    },
+    "sheet-skill-sylvie": {
+      "rejected_attempts": {
+        "a1": "採用：整張表（同一位角色的技能圖示同一版，風格一致）",
+        "a2": "未採用：兩版都通過時挑了 1 倍下較清楚的一版"
+      }
+    },
+    "sheet-skill-scarlet": {
+      "rejected_attempts": {
+        "a1": "採用：整張表（同一位角色的技能圖示同一版，風格一致）",
+        "a2": "未採用：兩版都通過時挑了 1 倍下較清楚的一版"
+      }
+    },
+    "sheet-skill-selene": {
+      "rejected_attempts": {
+        "a1": "未採用：兩版都通過時挑了 1 倍下較清楚的一版",
+        "a2": "採用：整張表（同一位角色的技能圖示同一版，風格一致）"
+      }
+    },
+    "sheet-skill-safira": {
+      "rejected_attempts": {
+        "a1": "採用：整張表（同一位角色的技能圖示同一版，風格一致）",
+        "a2": "未採用：兩版都通過時挑了 1 倍下較清楚的一版"
+      }
+    },
+    "sheet-skill-bobby": {
+      "rejected_attempts": {
+        "a1": "未採用：兩版都通過時挑了 1 倍下較清楚的一版",
+        "a2": "採用：整張表（同一位角色的技能圖示同一版，風格一致）"
+      }
+    },
+    "sheet-skill-rin-1": {
+      "rejected_attempts": {
+        "a1": "未採用：切格失敗（這版畫成了不是 3×2 的格子）",
+        "a2": "採用：整張表（同一位角色的技能圖示同一版，風格一致）"
+      }
+    },
+    "sheet-skill-rin-2": {
+      "rejected_attempts": {
+        "a1": "未採用：兩版都通過時挑了 1 倍下較清楚的一版",
+        "a2": "採用：整張表（同一位角色的技能圖示同一版，風格一致）"
+      }
+    },
+    "sheet-skill-hero-1": {
+      "rejected_attempts": {
+        "a1": "未採用：切格失敗（這版畫成了不是 3×2 的格子）",
+        "a2": "採用：整張表（同一位角色的技能圖示同一版，風格一致）"
+      }
+    },
+    "sheet-skill-hero-2": {
+      "rejected_attempts": {
+        "a1": "未採用：兩版都通過時挑了 1 倍下較清楚的一版",
+        "a2": "採用：整張表（同一位角色的技能圖示同一版，風格一致）"
+      }
+    },
+    "sheet-skill-hero-3": {
+      "rejected_attempts": {
+        "a1": "採用：整張表（同一位角色的技能圖示同一版，風格一致）",
+        "a2": "未採用：切格失敗（這版畫成了不是 3×2 的格子）"
+      }
+    },
+    "sheet-skill-hero-4": {
+      "rejected_attempts": {
+        "a1": "未採用：兩版都通過時挑了 1 倍下較清楚的一版",
+        "a2": "採用：整張表（同一位角色的技能圖示同一版，風格一致）"
+      }
     }
   },
   "requa_log": [
