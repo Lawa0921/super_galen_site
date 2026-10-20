@@ -1,0 +1,126 @@
+{
+  "assets": {
+    "icon-blaze-core": {
+      "final": "art-factory/starlantern/work/sheet-mat-2/cand/a1/icon-blaze-core.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-mat-2\\sheet-mat-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "block": 12,
+        "size": [
+          33,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-frost-heart": {
+      "final": "art-factory/starlantern/work/sheet-mat-2/cand/a1/icon-frost-heart.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-mat-2\\sheet-mat-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "block": 12,
+        "size": [
+          36,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-storm-stone": {
+      "final": "art-factory/starlantern/work/sheet-mat-2/cand/a1/icon-storm-stone.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-mat-2\\sheet-mat-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "block": 13,
+        "size": [
+          29,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-mire-gland": {
+      "final": "art-factory/starlantern/work/sheet-mat-2/cand/a1/icon-mire-gland.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-mat-2\\sheet-mat-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "block": 13,
+        "size": [
+          29,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-shade-crystal": {
+      "final": "art-factory/starlantern/work/sheet-mat-2/cand/a1/icon-shade-crystal.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-mat-2\\sheet-mat-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 15,
+        "magenta_spill": 0,
+        "block": 14,
+        "size": [
+          27,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-iron-shard": {
+      "final": "art-factory/starlantern/work/sheet-mat-2/cand/a1/icon-iron-shard.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-mat-2\\sheet-mat-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "block": 13,
+        "size": [
+          32,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}
