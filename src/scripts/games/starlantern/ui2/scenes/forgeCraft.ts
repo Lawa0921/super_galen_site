@@ -9,7 +9,9 @@ import { BAG_SIZE } from '../../engine/loot/bag';
 import type { GameState } from '../../engine/state';
 import { priceOf } from '../../engine/town';
 import type { GearSlot } from '../../engine/types';
+import { codexArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
+import { gearIconUrl } from '../gearArt';
 import { fillRich, gearPart } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import { MenuView, QtyView, confirmBox, richNodes, win, type Rich } from '../widgets';
@@ -45,6 +47,11 @@ const costLine = (s: GameState, c: Cost) => el('p', {}, richNodes([T.ui2.forge.c
 export function openCraft(h: ForgeHost): void {
   const game = h.ctx.game;
   const F = T.ui2.forge;
+  /** A set row shows its first piece's gear icon, a piece row its own, once published. */
+  const gearIcon = (id: string): Pick<MenuItem, 'icon' | 'iconCls'> => {
+    const icon = gearIconUrl(h.ctx.art, codexArtId(id));
+    return icon ? { icon, iconCls: 'slx-gear-ico' } : {};
+  };
 
   /** One list layer sharing the page's detail window; the detail follows the cursor, Esc pops and runs `back`. */
   function layer(info: HTMLElement, o: {
@@ -157,14 +164,14 @@ export function openCraft(h: ForgeHost): void {
   const sets = () => {
     const info = newInfo();
     const setsLayer = layer(info, {
-      rows: () => Object.values(SETS).map((set): MenuItem => ({ id: set.id, label: codexName(set.id), right: REGIONS[set.region].name })),
+      rows: () => Object.values(SETS).map((set): MenuItem => ({ id: set.id, label: codexName(set.id), right: REGIONS[set.region].name, ...gearIcon(set.id) })),
       detail: (id) => [
         el('p', { class: 'slx-name-line', text: codexName(id) }),
         ...specialLines(id).map((l) => el('p', { class: l.kind === 'lore' ? 'slx-desc' : '', text: l.text })),
       ],
       pick: (setRow) => {
         layer(info, {
-          rows: () => SETS[setRow.id].pieces.map((id) => recipeRow(game.state, { id, label: codexName(id), cost: setCost(game.state, id)!, cls: 'slx-rarity-set' })),
+          rows: () => SETS[setRow.id].pieces.map((id) => ({ ...recipeRow(game.state, { id, label: codexName(id), cost: setCost(game.state, id)!, cls: 'slx-rarity-set' }), ...gearIcon(id) })),
           detail: (id) => [
             el('p', { class: 'slx-name-line slx-rarity-set', text: codexName(id) }),
             ...specialLines(id).map((l) => el('p', { class: l.kind === 'lore' ? 'slx-desc' : '', text: l.text })),

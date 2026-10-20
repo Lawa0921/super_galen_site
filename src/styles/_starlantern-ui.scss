@@ -128,6 +128,10 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 
 .slx-list { left: 150px; top: 56px; min-width: 170px; max-height: 240px; overflow: hidden; }
 .slx-list .slx-ico { width: 16px; height: 16px; }
+// Gear art in a list row or a loot line (plan 5d Task 7) keeps its own 26 x 26, never scaled like an item icon; its row
+// grows to fit it.
+.slx-ico.slx-gear-ico { display: inline-block; flex: none; width: 26px; height: 26px; vertical-align: middle; image-rendering: pixelated; }
+.slx-list .slx-opt:has(.slx-gear-ico) { min-height: 26px; }
 .slx-info { left: 340px; top: 56px; width: 180px; }
 .slx-info img { display: block; height: 120px; margin: 0 auto 4px; }
 .slx-desc { color: $slx-dim; margin: 2px 0; }
@@ -547,6 +551,9 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 }
 .slx-skill { padding: 3px 0; border-bottom: 1px solid #2a2840; }
 .slx-skill-head { display: flex; gap: 10px; }
+// A skill's icon sits left of its head line (the head and the lines beside it make room for it).
+.slx-skill-ico { float: left; width: 16px; height: 16px; margin-right: 4px; object-fit: contain; image-rendering: pixelated; }
+.slx-tree-node .slx-skill-ico { width: 14px; height: 14px; margin-right: 2px; }
 .slx-skill-name { flex: 1; color: $slx-ink; }
 .slx-skill-cost { color: #6fa7ff; }
 .slx-skill-rank { color: $slx-dim; min-width: 40px; text-align: right; }
@@ -1055,8 +1062,10 @@ $slx-starlit: #bff6ff;
 // Unobtained names are dimmed.
 .slx-codex-unknown { color: $slx-dim; }
 .slx-codex-more { margin: 0; text-align: right; font-size: 10px; line-height: 12px; color: $slx-gold; }
-.slx-codex-silhouette, .slx-codex-icon { width: 14px; height: 14px; align-self: center; image-rendering: pixelated; }
-.slx-codex-silhouette { filter: brightness(0); }
+// The gear icon (26 x 26) once obtained, else its silhouette art (28 x 28, made from the icon): each at its own size.
+.slx-codex-silhouette, .slx-codex-icon { flex: none; align-self: center; image-rendering: pixelated; }
+.slx-codex-icon { width: 26px; height: 26px; }
+.slx-codex-silhouette { width: 28px; height: 28px; }
 .slx-portal-general { margin-top: 2px; color: #c9b8ff; }
 // A dim note like the others (10px), so the card keeps a few px of room under its gear list.
 .slx-portal-depth { margin-top: auto; padding-top: 1px; color: $slx-dim; font-size: 10px; line-height: 12px; text-align: right; }

@@ -4,7 +4,8 @@ import { plainItem } from '../engine/testing';
 import type { ItemInstance, Rarity } from '../engine/types';
 import { art, FRAMED_RARITIES } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
-import { gearIcon, rarityFrame } from './gearArt';
+import { gearIcon, gearIconUrl, rarityFrame } from './gearArt';
+import { gearPart } from './loot';
 
 const only = (...urls: string[]): ArtIndex => ({ has: (u) => urls.includes(u) });
 const ALL: ArtIndex = { has: () => true };
@@ -32,6 +33,23 @@ describe('gearIcon', () => {
     expect(big.getAttribute('src')).toBe(art.gearLarge('blaze-heart-sword'));
     expect(gearIcon(only(), gear('iron-sword', 'common'))).toEqual([]);
     expect(gearIcon(only(art.gear('iron-sword')), gear('iron-sword', 'common'))[0].getAttribute('src')).toBe(art.gear('iron-sword'));
+  });
+});
+
+describe('gear icons in lists and lines (plan 5d Task 7)', () => {
+  it('gearIconUrl is the published gear art of the piece or of the id, never its base or old icon', () => {
+    const special = gear('iron-sword', 'legendary', { special: 'blaze-heart-sword' });
+    expect(gearIconUrl(only(art.gear('iron-sword'), art.icon('iron-sword')), special)).toBeUndefined();
+    expect(gearIconUrl(only(art.gear('blaze-heart-sword')), special)).toBe(art.gear('blaze-heart-sword'));
+    expect(gearIconUrl(only(art.gear('set-blaze-weapon')), 'set-blaze-weapon')).toBe(art.gear('set-blaze-weapon'));
+    expect(gearIconUrl(only(art.icon('iron-sword')), 'iron-sword')).toBeUndefined();
+  });
+
+  it('gearPart carries an icon only when given one', () => {
+    const it0 = gear('iron-sword', 'rare');
+    expect(gearPart(it0)).toEqual({ text: '鐵劍・稀有', cls: 'slx-gear-drop slx-rarity-rare' });
+    expect(gearPart(it0, undefined)).toEqual({ text: '鐵劍・稀有', cls: 'slx-gear-drop slx-rarity-rare' });
+    expect(gearPart(it0, art.gear('iron-sword'))).toEqual({ text: '鐵劍・稀有', cls: 'slx-gear-drop slx-rarity-rare', icon: art.gear('iron-sword') });
   });
 });
 
@@ -125,6 +143,20 @@ describe('gear art styles (src/styles/_starlantern-ui.scss)', () => {
     const mixed = rules.filter((r) => r.decls['border-color']?.includes('color-mix') && r.sels.some((s) => s.startsWith('.slx-bag-cell')));
     expect(mixed).toHaveLength(1);
     for (const s of mixed[0].sels) expect(s).toMatch(/:not\(:has\(\.slx-rframe\)\)$/);
+  });
+
+  it('a gear icon in a list or a line keeps its own 26 x 26, and its row grows to fit it', () => {
+    // .slx-list .slx-ico (16px) and .slx-ico (12px) are for item icons; a gear icon there stays at its own size.
+    expect(declsFor('.slx-ico.slx-gear-ico')).toMatchObject({ width: '26px', height: '26px' });
+    expect(css.indexOf('.slx-ico.slx-gear-ico {')).toBeGreaterThan(css.indexOf('.slx-list .slx-ico {'));
+    expect(Number.parseInt(declsFor('.slx-list .slx-opt:has(.slx-gear-ico)')['min-height'], 10)).toBeGreaterThanOrEqual(26);
+  });
+
+  it('codex pictures show at their own size: the icon 26 x 26, the silhouette art 28 x 28 with no filter', () => {
+    expect(declsFor('.slx-codex-icon')).toMatchObject({ width: '26px', height: '26px', 'image-rendering': 'pixelated' });
+    expect(declsFor('.slx-codex-silhouette')).toMatchObject({ width: '28px', height: '28px', 'image-rendering': 'pixelated' });
+    expect(declsFor('.slx-codex-silhouette').filter).toBeUndefined();
+    expect(declsFor('.slx-skill-ico')).toMatchObject({ 'image-rendering': 'pixelated' });
   });
 
   it('no layer is drawn by a pseudo-element', () => {

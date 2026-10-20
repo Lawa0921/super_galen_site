@@ -3,10 +3,13 @@ import type { SceneId } from '../../data/story/scenes';
 import { NPC_NAMES, STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { art } from '../../render/artPaths';
+import type { ArtIndex } from '../../render/textures';
 import type { Game } from '../../engine/game';
+import type { ItemInstance } from '../../engine/types';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { storyStage } from '../../engine/story/events';
 import { el, itemName } from '../../ui/dom';
+import { gearIconUrl } from '../gearArt';
 import { fillRich, gearPart, joinParts } from '../loot';
 import type { UiAction } from '../input';
 import { Menu } from '../menu';
@@ -19,14 +22,16 @@ const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'forge', 'handbook', 'settin
 
 /**
  * 「平安回城。帶回了：回復藥 ×2、鐵劍、120 G。」 — the lamp's own words replace 平安回城 when it brought the party home.
- * Gear is named in its rarity colour; gear the full bag could not take is named once more as lost.
+ * Gear is named in its rarity colour (after its gear icon, given `idx` and the published art); gear the full bag could
+ * not take is named once more as lost.
  */
-export function bankedLine(b: NonNullable<Game['banked']>): Rich {
+export function bankedLine(b: NonNullable<Game['banked']>, idx?: ArtIndex): Rich {
+  const piece = (it: ItemInstance) => gearPart(it, idx && gearIconUrl(idx, it));
   const parts: RichPart[] = Object.entries(b.items).filter(([, n]) => n > 0).map(([id, n]) => `${itemName(id)} ×${n}`);
-  parts.push(...b.gear.map(gearPart));
+  parts.push(...b.gear.map(piece));
   if (b.gold > 0) parts.push(T.gold(b.gold));
   const line: Rich = parts.length ? fillRich((list) => T.ui2.banked(b.viaLamp, list), joinParts(parts)) : [T.ui2.home(b.viaLamp)];
-  if (b.overflow.length) line.push(...fillRich((list) => T.ui2.bankedLost(BAG_SIZE, list), joinParts(b.overflow.map(gearPart))));
+  if (b.overflow.length) line.push(...fillRich((list) => T.ui2.bankedLost(BAG_SIZE, list), joinParts(b.overflow.map(piece))));
   return line;
 }
 
@@ -77,7 +82,7 @@ export class TownScene implements Scene {
     game.notice = null;
     game.banked = null;
     // A safe return (walking home, or the lamp, whose notice replaces 'banked') says what came home.
-    if (banked && (notice === 'banked' || notice === 'lamp')) void this.speak('', bankedLine(banked));
+    if (banked && (notice === 'banked' || notice === 'lamp')) void this.speak('', bankedLine(banked, this.ctx.art));
     else if (notice) void this.speak('', T.notices[notice]);
     else {
       // The day's line: the town's own, and from act 2 Rin's foreshadowing once she has joined.

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Menu } from './menu';
-import { Dialogue, MenuView, QtyView, backControl, confirmBox } from './widgets';
+import { Dialogue, MenuView, QtyView, backControl, confirmBox, richNodes, richText, type Rich } from './widgets';
 
 const mk = () => new Menu([{ id: 'a', label: '冒險者公會' }, { id: 'b', label: '道具店', disabled: true }, { id: 'c', label: '旅館' }]);
 
@@ -250,6 +250,44 @@ describe('Dialogue rich lines', () => {
     d.onAction('confirm');
     expect(text.textContent).toBe('打開寶箱：鐵劍。');
     expect(text.querySelector('.slx-rarity-rare')!.textContent).toBe('鐵劍');
+  });
+});
+
+describe('rich parts with an icon (plan 5d Task 7)', () => {
+  const SRC = '/assets/games/starlantern/gear/iron-sword.png';
+  const line: Rich = ['拾到', { text: '鐵劍', cls: 'slx-gear-drop slx-rarity-rare', icon: SRC }, '。'];
+  const typed = (n: number) => { const p = document.createElement('p'); p.append(...richNodes(line, n)); return p; };
+
+  it('a rich part with an icon shows it once its first character is typed', () => {
+    expect(typed(0).querySelectorAll('img')).toHaveLength(0);
+    expect(typed(2).querySelectorAll('img')).toHaveLength(0);                 // only the words before it so far
+    const one = typed(3);
+    expect(one.querySelectorAll('img')).toHaveLength(1);
+    expect(one.textContent).toBe('拾到鐵');
+    const img = one.querySelector('img')!;
+    expect(img.className).toBe('slx-ico slx-gear-ico');
+    expect(img.getAttribute('src')).toBe(SRC);
+    expect(img.getAttribute('alt')).toBe('');
+    expect(img.nextElementSibling!.className).toBe('slx-gear-drop slx-rarity-rare');
+    expect(typed(Infinity).querySelectorAll('img')).toHaveLength(1);
+    expect(richText(line)).toBe('拾到鐵劍。');                                  // the icon adds no text
+  });
+
+  it('a dialogue line types its icon in with the part', async () => {
+    vi.useFakeTimers();
+    try {
+      const d = new Dialogue(20);
+      void d.say('', [{ text: '鐵劍', cls: 'slx-rarity-rare', icon: SRC }]);
+      const text = d.el.querySelector('.slx-text')!;
+      d.onAction('confirm');
+      expect(text.querySelectorAll('img.slx-gear-ico')).toHaveLength(1);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("a menu row's icon class is added to its icon", () => {
+    const v = new MenuView(new Menu([{ id: 'a', label: '鐵劍', icon: SRC, iconCls: 'slx-gear-ico' }, { id: 'b', label: '回復藥', icon: '/x.png' }]), { pick: () => {} });
+    const imgs = [...v.el.querySelectorAll('img')];
+    expect(imgs.map((i) => i.className)).toEqual(['slx-ico slx-gear-ico', 'slx-ico']);
   });
 });
 

@@ -14,7 +14,9 @@ import { SLOTS } from '../../engine/party';
 import type { GameState } from '../../engine/state';
 import type { AnyStat, GearSlot, ItemInstance, Rarity } from '../../engine/types';
 import { art } from '../../render/artPaths';
+import type { ArtIndex } from '../../render/textures';
 import { el } from '../../ui/dom';
+import { gearIconUrl } from '../gearArt';
 import { fillRich, gearLabel, gearPart, invested, joinParts, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
@@ -45,18 +47,22 @@ export interface ForgeHost {
 /**
  * Gear rows for a forge list: the bag first, then (when `worn`) what each recruited member wears, in recruit order and
  * slot order, its wearer named after the label. Each row is `g<uid>`, in its rarity colour, struck through when marked junk.
- * A piece listed but out of reach is greyed out with `blocked`'s reason in place of `right`.
+ * A piece listed but out of reach is greyed out with `blocked`'s reason in place of `right`. With `art`, a row carries
+ * the piece's gear icon once it is published (a special's own art only, never its base's).
  */
 export function forgeRows(s: GameState, o: {
   worn: boolean; filter?: (it: ItemInstance) => boolean; right: (it: ItemInstance) => string; blocked?: (it: ItemInstance) => string | undefined;
+  art?: ArtIndex;
 }): MenuItem[] {
   const keep = o.filter ?? (() => true);
   const row = (it: ItemInstance, wearer?: string): MenuItem => {
     const reason = o.blocked?.(it);
+    const icon = o.art ? gearIconUrl(o.art, it) : undefined;
     return {
       id: `g${it.uid}`,
       label: wearer ? `${gearLabel(it)}${T.ui2.forge.wornBy(wearer)}` : gearLabel(it),
       cls: it.junk ? `${rarityClass(it)} slx-junk` : rarityClass(it),
+      ...(icon ? { icon, iconCls: 'slx-gear-ico' } : {}),
       ...(reason ? { disabled: true, right: reason, note: reason } : { right: o.right(it) }),
     };
   };
@@ -159,7 +165,7 @@ export function dismantlePage(h: ForgeHost): void {
   const rows = (): MenuItem[] => {
     const s = game.state;
     const marked = s.bag.filter((it) => it.junk).length;
-    const list = forgeRows(s, { worn: false, right: (it) => T.ui2.forge.yields(dismantleYield([it])) });
+    const list = forgeRows(s, { worn: false, art: h.ctx.art, right: (it) => T.ui2.forge.yields(dismantleYield([it])) });
     return marked ? [{ id: 'marked', label: T.ui2.forge.dismantleMarked(marked) }, ...list] : list;
   };
   if (!game.state.bag.length) { void h.say(T.ui2.forge.nothingToDismantle); return; }
@@ -263,7 +269,7 @@ function enhanceDetail(s: GameState, it: ItemInstance): HTMLElement[] {
  */
 export function enhancePage(h: ForgeHost): void {
   const game = h.ctx.game;
-  const rows = (): MenuItem[] => forgeRows(game.state, { worn: true, right: (it) => (it.enhance >= ENHANCE_MAX ? T.ui2.forge.maxed : `+${it.enhance}`) });
+  const rows = (): MenuItem[] => forgeRows(game.state, { worn: true, art: h.ctx.art, right: (it) => (it.enhance >= ENHANCE_MAX ? T.ui2.forge.maxed : `+${it.enhance}`) });
   if (!rows().length) { void h.say(T.ui2.forge.nothingToEnhance); return; }
   const info = win('slx-info');
   const find = (id?: string) => (id ? findItem(game.state, Number(id.slice(1)))?.it ?? null : null);
@@ -322,6 +328,7 @@ export function rerollPage(h: ForgeHost): void {
   const affixText = (a: { key: AnyStat; value: number }) => T.gear.affix(a.key, a.value);
   const itemRows = (): MenuItem[] => forgeRows(game.state, {
     worn: true,
+    art: h.ctx.art,
     filter: (it) => it.affixes.length > 0,
     right: (it) => (it.locked !== undefined && it.affixes[it.locked] ? affixText(it.affixes[it.locked]) : F.unlocked),
     // A starlit unique or set has no reroll at all: its values are at their maximum and its affixes cannot be swapped.
@@ -388,7 +395,13 @@ export function rerollPage(h: ForgeHost): void {
       const methods = (): MenuItem[] => {
         const it = find(itemUid);
         if (!it) return [];
+        // A region material's row carries that material's icon once it is published.
         const row = (id: string, label: string): MenuItem => {
+          const mat = how(id).mat;
+          const icon = mat && h.ctx.art.has(art.icon(mat)) ? art.icon(mat) : undefined;
+          return { ...plainRow(id, label), ...(icon ? { icon } : {}) };
+        };
+        const plainRow = (id: string, label: string): MenuItem => {
           const o = how(id);
           // A starlit piece's affixes are at their maximum: its value reroll is greyed out and says so (the engine refuses it).
           if (!o.swap && it.starlit) return { id, label, disabled: true, right: F.starlitMaxed, note: F.starlitMaxed };
@@ -504,7 +517,7 @@ export function fusePage(h: ForgeHost): void {
     const picked = new Set<number>();
     const rows = (): MenuItem[] => [
       { id: 'go', label: F.fuseGo(picked.size), disabled: picked.size !== 3 },
-      ...forgeRows(game.state, { worn: false, filter: (it) => it.rarity === from, right: (it) => (picked.has(it.uid) ? F.picked : '') }),
+      ...forgeRows(game.state, { worn: false, art: h.ctx.art, filter: (it) => it.rarity === from, right: (it) => (picked.has(it.uid) ? F.picked : '') }),
     ];
     const v: MenuView = new MenuView(new Menu(rows()), {
       pick: (row) => {

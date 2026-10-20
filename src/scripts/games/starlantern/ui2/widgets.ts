@@ -2,8 +2,11 @@ import { el } from '../ui/dom';
 import type { UiAction } from './input';
 import { Menu, type MenuItem } from './menu';
 
-/** A line with coloured parts: plain text, or `{ text, cls }` drawn in a span of that class (a rarity colour, say). */
-export type RichPart = string | { text: string; cls: string };
+/**
+ * A line with coloured parts: plain text, or `{ text, cls }` drawn in a span of that class (a rarity colour, say). A part
+ * with an `icon` (a piece's published gear art) shows it just before its span, from the part's first typed character.
+ */
+export type RichPart = string | { text: string; cls: string; icon?: string };
 export type Rich = RichPart[];
 
 const partText = (p: RichPart): string => (typeof p === 'string' ? p : p.text);
@@ -18,7 +21,11 @@ export function richNodes(r: Rich, n = Infinity): Node[] {
     const chars = [...partText(p)];
     const shown = chars.slice(0, left).join('');
     left -= chars.length;
-    out.push(typeof p === 'string' ? document.createTextNode(shown) : el('span', { class: p.cls, text: shown }));
+    if (typeof p === 'string') out.push(document.createTextNode(shown));
+    else {
+      if (p.icon && shown) out.push(el('img', { class: 'slx-ico slx-gear-ico', attrs: { src: p.icon, alt: '' } }));
+      out.push(el('span', { class: p.cls, text: shown }));
+    }
   }
   return out;
 }
@@ -98,7 +105,7 @@ export class MenuView {
       const li = el('li', { class: i === this.menu.cursor ? 'slx-opt slx-sel' : 'slx-opt', attrs: {
         role: 'option', 'aria-selected': String(i === this.menu.cursor), 'aria-disabled': String(!!item.disabled), 'data-id': item.id,
       } }, [
-        ...(item.icon ? [el('img', { class: 'slx-ico', attrs: { src: item.icon, alt: '' } })] : []),
+        ...(item.icon ? [el('img', { class: item.iconCls ? `slx-ico ${item.iconCls}` : 'slx-ico', attrs: { src: item.icon, alt: '' } })] : []),
         el('span', { class: item.cls ? `slx-label ${item.cls}` : 'slx-label', text: item.label }),
         ...(item.right !== undefined ? [el('span', { class: item.rightClass ? `slx-right ${item.rightClass}` : 'slx-right', text: item.right })] : []),
       ]);

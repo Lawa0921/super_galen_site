@@ -488,6 +488,31 @@ describe('StatusScene', () => {
     expect(root.querySelector('[data-skill=flame-wave] .slx-skill-cost')!.textContent).toBe(T.ui2.status.tp(want));
   });
 
+  it('tree nodes and the skills tab show the skill icon when published', () => {
+    const has = (u: string) => u === art.icon('guardian-roar');
+    const { root, s } = setup('scarlet', { has }, (g) => { g.state.party.roster.scarlet.tree = { ...g.state.party.roster.scarlet.tree, 'guardian-roar': 1 }; });
+    s.onAction('right'); s.onAction('right');                          // 技能
+    const icons = [...root.querySelectorAll<HTMLImageElement>('.slx-tab-skills img.slx-skill-ico')];
+    expect(icons.map((i) => i.closest('[data-skill]')!.getAttribute('data-skill'))).toEqual(['guardian-roar']);
+    expect(icons[0].getAttribute('src')).toBe(art.icon('guardian-roar'));
+    expect(icons[0].getAttribute('alt')).toBe('');
+    expect(icons[0].nextElementSibling!.classList.contains('slx-skill-head')).toBe(true);
+    s.onAction('right');                                               // 技能樹
+    const withIcon = [...root.querySelectorAll('.slx-tree-node')].filter((n) => n.querySelector('img.slx-skill-ico')).map((n) => n.getAttribute('data-node'));
+    // The skill's own node, and the node that changes it (a mod node shows the skill it modifies).
+    expect(withIcon).toEqual(TREES.scarlet.branches.flatMap((b) => b.nodes).filter((n) => n.skill === 'guardian-roar').map((n) => n.id));
+    expect(withIcon).toContain('scarlet-roar-up');
+    expect(root.querySelector('.slx-tree-node[data-node=guardian-roar] img')!.getAttribute('src')).toBe(art.icon('guardian-roar'));
+  });
+
+  it('without art no skill shows an icon', () => {
+    const { root, s } = setup('scarlet');
+    s.onAction('right'); s.onAction('right');
+    expect(root.querySelector('.slx-skill-ico')).toBeNull();
+    s.onAction('right');
+    expect(root.querySelector('.slx-skill-ico')).toBeNull();
+  });
+
   it('the skills tab marks the skills usable in the labyrinth', () => {
     const { root, s } = setup('selene', NO_ART, (g) => { g.state.party.roster.selene.tree = { moonlight: 1, dream: 1 }; });
     s.onAction('right'); s.onAction('right');

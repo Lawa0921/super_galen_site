@@ -7,7 +7,8 @@ import { Game } from '../../engine/game';
 import { DELTA, tileAt, type Dir, type Tile } from '../../engine/map';
 import { statsOf, LEGACY_LINEUP } from '../../engine/party';
 import { constRng } from '../../engine/testing';
-import { NO_ART } from '../../render/textures';
+import { NO_ART, type ArtIndex } from '../../render/textures';
+import { art } from '../../render/artPaths';
 import { ITEMS } from '../../data/items';
 import { capacity, carried, weightOf } from '../../data/weights';
 import type { ItemInstance } from '../../engine/types';
@@ -17,13 +18,13 @@ import { chainLength } from '../../data/story/chains';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 
-function setup() {
+function setup(artIdx: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);   // 0.99: no encounter roll, and a trap is always poison
   expect(game.depart({ region: 'mainline', condition: 'plain' }, 1)).toEqual({ ok: true });
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), chest: vi.fn(), encounter: vi.fn(), heal: vi.fn(), hit: vi.fn(), loot: vi.fn() };
   const go = vi.fn();
   const root = document.createElement('div');
-  const s = new DungeonScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: true }, Infinity);
+  const s = new DungeonScene({ game, art: artIdx, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: true }, Infinity);
   s.enter(root);
   const text = () => root.querySelector('.slx-talk .slx-text')?.textContent ?? '';
   const talking = () => !root.querySelector('.slx-talk')!.hasAttribute('hidden') && !(root.querySelector('.slx-talk') as HTMLElement).hidden;
@@ -367,6 +368,18 @@ describe('gear from chests and the vault', () => {
     expect(text()).toContain('打開寶庫');
     expect(text()).toContain('獵弓・獨特');
     expect(root.querySelector('.slx-talk .slx-text .slx-rarity-unique')!.textContent).toBe('獵弓・獨特');
+  });
+
+  it('the vault names its gear with the gear icon when published', () => {
+    const { game, s, root, pick, plant } = setup({ has: (u) => u === art.gear('hunter-bow') });
+    game.run!.keys.add(game.floor);
+    const { dir, at } = plant('vault');
+    game.run!.gearRolls[`vault:${game.floor}:${at.x},${at.y}`] = gearOf(55, 'hunter-bow', 'unique');
+    s.onAction(dir);
+    pick('開啟');
+    const img = root.querySelector('.slx-talk .slx-text img.slx-gear-ico')!;
+    expect(img.getAttribute('src')).toBe(art.gear('hunter-bow'));
+    expect(img.nextElementSibling!.textContent).toBe('獵弓・獨特');
   });
 
   it('the best drop raises one pillar and plays loot once', () => {

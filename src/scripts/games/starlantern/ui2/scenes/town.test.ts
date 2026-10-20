@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { constRng } from '../../engine/testing';
-import { NO_ART } from '../../render/textures';
+import { NO_ART, type ArtIndex } from '../../render/textures';
+import { art } from '../../render/artPaths';
 import type { ItemInstance } from '../../engine/types';
 import { TownScene } from './town';
 import { CHARACTERS } from '../../data/characters';
@@ -130,9 +131,9 @@ describe('TownScene notices', () => {
 
 describe('TownScene banked gear', () => {
   const gearOf = (uid: number, base: string, rarity: ItemInstance['rarity']): ItemInstance => ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0 });
-  const enter = (game: Game) => {
+  const enter = (game: Game, artIdx: ArtIndex = NO_ART) => {
     const root = document.createElement('div');
-    new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity).enter(root);
+    new TownScene({ game, art: artIdx, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity).enter(root);
     return root;
   };
 
@@ -143,6 +144,16 @@ describe('TownScene banked gear', () => {
     const root = enter(game);
     expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('平安回城。帶回了：鐵劍・稀有、40 G。');
     expect(root.querySelector('.slx-talk .slx-text .slx-rarity-rare')!.textContent).toBe('鐵劍・稀有');
+  });
+
+  it('the gear that came home and the gear lost show their gear icon when published', () => {
+    const game = new Game(constRng(0.5), null);
+    game.notice = 'banked';
+    game.banked = { items: {}, gold: 0, viaLamp: false, gear: [gearOf(1, 'iron-sword', 'rare'), gearOf(4, 'leather-vest', 'magic')], overflow: [gearOf(2, 'hunter-bow', 'magic')] };
+    const root = enter(game, { has: (u) => u === art.gear('iron-sword') || u === art.gear('hunter-bow') });
+    const text = root.querySelector('.slx-talk .slx-text')!;
+    expect([...text.querySelectorAll('img.slx-gear-ico')].map((i) => i.getAttribute('src'))).toEqual([art.gear('iron-sword'), art.gear('hunter-bow')]);
+    expect(text.querySelector('img')!.nextElementSibling!.textContent).toBe('鐵劍・稀有');
   });
 
   it('says plainly which gear was lost because the bag was full', () => {

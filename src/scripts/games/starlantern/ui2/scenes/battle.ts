@@ -15,6 +15,7 @@ import { el, itemName } from '../../ui/dom';
 import { playCutIn } from '../../ui/cutin';
 import { battleLines, fragmentLines, levelUpLines } from '../battleText';
 import { fragmentItem } from '../../engine/story/fragments';
+import { gearIconUrl } from '../gearArt';
 import { fillRich, gearLabel, gearPart, rarityClass } from '../loot';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
@@ -517,10 +518,14 @@ export class BattleScene implements Scene {
       });
       for (const l of fragmentLines(found)) lines.push({ text: l });
       lines.push({ text: T.battle.exp(end.exp) }, { text: T.battle.gold(end.gold) });
-      for (const it of end.gear) lines.push({ text: gearLabel(it), cls: `slx-loot-gear ${rarityClass(it)}` });
+      // Won gear reads after its gear icon once that is published (the line keeps its rarity colour either way).
+      for (const it of end.gear) {
+        const icon = gearIconUrl(this.ctx.art, it);
+        lines.push({ text: icon ? [{ text: gearLabel(it), cls: 'slx-loot-name', icon }] : gearLabel(it), cls: `slx-loot-gear ${rarityClass(it)}` });
+      }
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
       for (const [id, n] of Object.entries(end.left)) lines.push({ text: T.battle.leftBehind(itemName(id), n) });
-      for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it)]), cls: 'slx-loot-left' });
+      for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it, gearIconUrl(this.ctx.art, it))]), cls: 'slx-loot-left' });
       lines.push(...levelUpLines(end.levelUps, this.ctx.game.state.party));
       if (end.met) {
         // Each line says who speaks; narration stands alone.

@@ -642,6 +642,25 @@ describe('BattleScene loot and stat cues', () => {
     expect(root.querySelector('.slx-result-lines .slx-rarity-magic')!.textContent).toBe('獵弓・魔法');
   });
 
+  it('won gear and gear left behind show their gear icon when published', async () => {
+    const published = [art.gear('iron-sword'), art.gear('hunter-bow')];
+    const { game, s, root } = setup(undefined, { art: { has: (u) => published.includes(u) } });
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {},
+      gear: [gearOf(1, 'iron-sword', 'rare'), gearOf(2, 'cloth-robe', 'common')], gearLeft: [gearOf(3, 'hunter-bow', 'magic')] };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    const line = (t: string) => [...root.querySelectorAll('.slx-result-lines p')].find((p) => p.textContent!.includes(t))!;
+    const sword = line('鐵劍');
+    expect(sword.querySelector('img.slx-gear-ico')!.getAttribute('src')).toBe(art.gear('iron-sword'));
+    expect(sword.classList.contains('slx-rarity-rare')).toBe(true);
+    expect(sword.textContent).toBe('鐵劍・稀有');
+    expect(line('布袍').querySelector('img')).toBeNull();                       // no art: the name alone
+    expect(line('獵弓').querySelector('img.slx-gear-ico')!.getAttribute('src')).toBe(art.gear('hunter-bow'));
+    expect(line('獵弓').textContent).toBe('背包已滿，留下了 獵弓・魔法');
+  });
+
   it('the best drop raises one pillar and plays loot once', async () => {
     const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');

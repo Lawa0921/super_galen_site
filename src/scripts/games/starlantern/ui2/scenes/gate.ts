@@ -13,7 +13,7 @@ import { materialUses } from '../../engine/forge/uses';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { startDepths, terrainOf, type Portal } from '../../engine/dungeon/run';
 import { REGION_TRAITS_FROM, depthLevel, encounterTable } from '../../engine/scaling';
-import { ART_BASE, art } from '../../render/artPaths';
+import { ART_BASE, art, codexArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
@@ -63,13 +63,17 @@ class PortalCards {
     this.render();
   }
 
-  /** One region-only item: its name until obtained is dimmed with 「（未取得）」; once in the codex it shows rarity and its first line. */
+  /**
+   * One region-only item: its name until obtained is dimmed with 「（未取得）」; once in the codex it shows rarity and its
+   * first line. Its picture, once published: the gear icon when obtained (a set shows its first piece), else only its
+   * silhouette file, so the real icon is never requested before the piece is found.
+   */
   private gearItem(id: string): HTMLElement {
     const G = T.ui2.gate;
     const rarity = SPECIALS[id]?.rarity ?? 'set';
     const known = this.ctx.game.state.codex.includes(id);
-    const icon = art.icon(id);
-    const pic = this.ctx.art.has(icon) ? [el('img', { class: known ? 'slx-codex-icon' : 'slx-codex-silhouette', attrs: { src: icon, alt: '' } })] : [];
+    const src = known ? art.gear(codexArtId(id)) : art.gearSilhouette(id);
+    const pic = this.ctx.art.has(src) ? [el('img', { class: known ? 'slx-codex-icon' : 'slx-codex-silhouette', attrs: { src, alt: '' } })] : [];
     const name = known && rarity !== 'set' ? `${codexName(id)}・${T.rarity[rarity]}` : known ? codexName(id) : G.unknownGear(codexName(id));
     const body = [el('span', { class: 'slx-codex-name', text: name })];
     return el('div', { class: `slx-codex-item slx-rarity-${rarity}${known ? '' : ' slx-codex-unknown'}`, attrs: { 'data-special': id } }, [...pic, ...body]);

@@ -5,7 +5,8 @@ import { Game } from '../../engine/game';
 import type { ForgeResult } from '../../engine/forge/cost';
 import { constRng, memoryStorage } from '../../engine/testing';
 import type { ItemInstance, Rarity } from '../../engine/types';
-import { NO_ART } from '../../render/textures';
+import { NO_ART, type ArtIndex } from '../../render/textures';
+import { art } from '../../render/artPaths';
 import { CHARACTERS } from '../../data/characters';
 import { ENHANCE_COST, ENHANCE_MAX, ENHANCE_STEP, ENHANCE_SUCCESS, REGION_AFFIX_GROUP } from '../../data/forge';
 import { EQUIPMENT } from '../../data/equipment';
@@ -22,11 +23,11 @@ import { ForgeScene, costText, forgeRows, type ForgeHost } from './forge';
 const gear = (uid: number, base: string, rarity: Rarity, extra: Partial<ItemInstance> = {}): ItemInstance =>
   ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0, ...extra });
 
-function setup(game = new Game(constRng(0.5), memoryStorage())) {
+function setup(game = new Game(constRng(0.5), memoryStorage()), artIdx: ArtIndex = NO_ART) {
   const root = document.createElement('div');
   const go = vi.fn();
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
-  const s = new ForgeScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
+  const s = new ForgeScene({ game, art: artIdx, sfx, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
   s.enter(root);
   const line = () => root.querySelector('.slx-talk .slx-text')!.textContent;
   const talking = () => !root.querySelector('.slx-talk')!.hasAttribute('hidden');
@@ -55,6 +56,19 @@ describe('forgeRows', () => {
     s.party.roster[s.party.recruited[0]].equip = { weapon: gear(3, 'iron-sword', 'rare') };
     expect(forgeRows(s, { worn: false, right: () => '' }).map((r) => r.id)).toEqual(['g1', 'g2']);
     expect(forgeRows(s, { worn: true, filter: (it) => it.rarity === 'rare', right: () => '' }).map((r) => r.id)).toEqual(['g1', 'g3']);
+  });
+
+  it('forge rows carry the gear icon of the special', () => {
+    const game = new Game(constRng(0.5), null);
+    const s = game.state;
+    s.bag = [gear(1, 'iron-sword', 'legendary', { special: 'blaze-heart-sword' }), gear(2, 'hunter-bow', 'magic'), gear(3, 'iron-sword', 'rare'),
+      gear(4, 'iron-sword', 'unique', { special: 'blaze-ember-ring' })];
+    const published = [art.gear('blaze-heart-sword'), art.gear('iron-sword'), art.icon('hunter-bow')];
+    const rows = forgeRows(s, { worn: false, right: () => '', art: { has: (u) => published.includes(u) } });
+    // A special with no art of its own never borrows its base's icon; an old base icon is not gear art.
+    expect(rows.map((r) => r.icon)).toEqual([art.gear('blaze-heart-sword'), undefined, art.gear('iron-sword'), undefined]);
+    expect(rows.map((r) => r.iconCls)).toEqual(['slx-gear-ico', undefined, 'slx-gear-ico', undefined]);
+    expect(forgeRows(s, { worn: false, right: () => '' }).every((r) => r.icon === undefined)).toBe(true);   // no art index: text rows
   });
 });
 
@@ -521,13 +535,13 @@ describe('ForgeScene reroll page', () => {
   });
   const RICH = { 'essence-rare': 5, 'essence-legendary': 5, 'star-tear': 3, 'blaze-core': 2, 'frost-heart': 2, 'shade-crystal': 1 };
 
-  function open(bag: ItemInstance[], prep: (g: Game) => void = () => {}, storage = memoryStorage()) {
+  function open(bag: ItemInstance[], prep: (g: Game) => void = () => {}, storage = memoryStorage(), artIdx: ArtIndex = NO_ART) {
     const game = new Game(constRng(0.5), storage);
     game.state.bag = bag;
     game.state.gold = 1000;
     game.state.inventory = { ...RICH };
     prep(game);
-    const t = setup(game);
+    const t = setup(game, artIdx);
     t.s.onAction('confirm');                // greeting
     t.s.onAction('down'); t.s.onAction('down');
     t.s.onAction('confirm');                // 重鑄
@@ -654,6 +668,22 @@ describe('ForgeScene reroll page', () => {
     rows()[0].click();                      // a greyed row opens nothing
     expect(lists()).toHaveLength(1);
     expect(ids()).toEqual(['g2', 'g1', 'g4', 'g3']);
+  });
+
+  it('reroll material rows carry the material icon; the item rows carry the gear icon', () => {
+    const published = [art.icon('blaze-core'), art.gear('iron-sword')];
+    const { go, rows } = open([sword()], undefined, undefined, { has: (u) => published.includes(u) });
+    const ico = rows()[0].querySelector('img')!;
+    expect(ico.getAttribute('src')).toBe(art.gear('iron-sword'));
+    expect(ico.className).toBe('slx-ico slx-gear-ico');
+    go('confirm', 'confirm');
+    const byId = (id: string) => rows().find((r) => r.getAttribute('data-id') === id)!;
+    const mat = byId('mat:blaze-core').querySelector('img')!;
+    expect(mat.getAttribute('src')).toBe(art.icon('blaze-core'));
+    expect(mat.className).toBe('slx-ico');
+    expect(byId('mat:frost-heart').querySelector('img')).toBeNull();     // not published yet: the name alone
+    expect(byId('value').querySelector('img')).toBeNull();
+    expect(byId('swap').querySelector('img')).toBeNull();
   });
 
   it('region-material rows list each region, and an empty pool is disabled with the reason', () => {
@@ -1037,12 +1067,12 @@ describe('ForgeScene fuse page', () => {
 describe('ForgeScene craft page', () => {
   const F = T.ui2.forge;
   type Act = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'cancel';
-  function open(prep: (g: Game) => void = () => {}, storage = memoryStorage()) {
+  function open(prep: (g: Game) => void = () => {}, storage = memoryStorage(), artIdx: ArtIndex = NO_ART) {
     const game = new Game(constRng(0.5), storage);
     game.state.gold = 1000;
     game.state.inventory = {};
     prep(game);
-    const t = setup(game);
+    const t = setup(game, artIdx);
     const loot = vi.fn();
     (t.sfx as Record<string, unknown>).loot = loot;
     t.s.onAction('confirm');                // greeting
@@ -1169,6 +1199,20 @@ describe('ForgeScene craft page', () => {
     expect(sfx.error).toHaveBeenCalled();
     expect(line()).toBe(T.reasons.full);
     expect(game.state.inventory['thorn-fang']).toBe(3);
+  });
+
+  it('set rows carry the gear icon: a set shows its first piece, each piece its own', () => {
+    const published = [art.gear('set-blaze-weapon'), art.gear('set-blaze-body')];
+    const { row, go } = open(() => {}, memoryStorage(), { has: (u) => published.includes(u) });
+    row('set').click();
+    const set = row('set-blaze').querySelector('img')!;
+    expect(set.getAttribute('src')).toBe(art.gear('set-blaze-weapon'));
+    expect(set.className).toBe('slx-ico slx-gear-ico');
+    expect(row('set-frost').querySelector('img')).toBeNull();
+    go('confirm');
+    expect(row('set-blaze-weapon').querySelector('img')!.getAttribute('src')).toBe(art.gear('set-blaze-weapon'));
+    expect(row('set-blaze-body').querySelector('img')!.getAttribute('src')).toBe(art.gear('set-blaze-body'));
+    expect(row('set-blaze-hands').querySelector('img')).toBeNull();
   });
 
   it('a set piece crafts after a yes and is named in green', () => {

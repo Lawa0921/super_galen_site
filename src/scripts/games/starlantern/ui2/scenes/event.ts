@@ -14,10 +14,12 @@ import { fragmentLines } from '../battleText';
 import type { FullResult, MoveResult } from '../../engine/game';
 import type { ItemInstance, Pos } from '../../engine/types';
 import { ART_BASE } from '../../render/artPaths';
+import type { ArtIndex } from '../../render/textures';
 import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
+import { gearIconUrl } from '../gearArt';
 import { fillRich, gearLabel, gearPart, joinParts, rarityClass } from '../loot';
 import { MenuView, confirmBox, richNodes, win, type Rich, type RichPart } from '../widgets';
 
@@ -74,8 +76,11 @@ const richLine = (r: Rich, cls = 'slx-event-text') => el('p', { class: cls }, ri
 export type ChestResult = Extract<MoveResult, { kind: 'chest' }>;
 
 /** 「打開寶箱：發光苔 ×2、鐵劍」 — the gear, when the chest held any, in its rarity colour. */
-export function chestLine(r: ChestResult): Rich {
-  return [T.map.chest(itemName(r.item), r.qty), ...(r.gear ? ['、', gearPart(r.gear)] : []), ...(r.fragments ?? []).flatMap((g) => ['、', fragmentName(fragmentItem(g) ?? '') ?? ''])];
+/** A piece as part of a line, after its gear icon once that is published. */
+const gearOf = (host: EventHost, it: ItemInstance): RichPart => gearPart(it, gearIconUrl(host.ctx.art, it));
+
+export function chestLine(r: ChestResult, idx?: ArtIndex): Rich {
+  return [T.map.chest(itemName(r.item), r.qty), ...(r.gear ? ['、', gearPart(r.gear, idx && gearIconUrl(idx, r.gear))] : []), ...(r.fragments ?? []).flatMap((g) => ['、', fragmentName(fragmentItem(g) ?? '') ?? ''])];
 }
 const leaveItem = (): MenuItem => ({ id: 'leave', label: T.ui2.event.leave });
 
@@ -162,8 +167,8 @@ export function showPickUp(host: EventHost, r: MoveResult | null, vault = false)
     ctx.sfx.chest?.();
     host.refresh();
     const said = r.kind === 'vault'
-      ? fillRich(T.ui2.event.vault.opened, joinParts([...Object.entries(r.loot).map(([id, n]) => `${itemName(id)} ×${n}`), ...r.gear.map(gearPart)]))
-      : chestLine(r);
+      ? fillRich(T.ui2.event.vault.opened, joinParts([...Object.entries(r.loot).map(([id, n]) => `${itemName(id)} ×${n}`), ...r.gear.map((it) => gearOf(host, it))]))
+      : chestLine(r, ctx.art);
     if (r.waiting) { full(r.waiting, said); return; }
     host.say(said);
     host.drop(r.kind === 'vault' ? r.gear : r.gear ? [r.gear] : []);
@@ -178,7 +183,7 @@ export function showPickUp(host: EventHost, r: MoveResult | null, vault = false)
   if (r?.kind === 'pickup') {
     ctx.sfx.chest?.();
     host.refresh();
-    host.say(fillRich(T.ui2.event.pickedUp, [gearPart(r.gear)]));
+    host.say(fillRich(T.ui2.event.pickedUp, [gearOf(host, r.gear)]));
     host.drop([r.gear]);
     return;
   }
@@ -211,9 +216,9 @@ export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, op
   const gear = g.run?.loot.gear ?? [];
   const stuck = !!r.bag && gear.length === 0;   // no slot can be freed from here
   const body: HTMLElement[] = opened ? [richLine(opened)] : [];
-  if (r.bag && r.gear) body.push(richLine(fillRich(F.bagDesc, [gearPart(r.gear)])));
+  if (r.bag && r.gear) body.push(richLine(fillRich(F.bagDesc, [gearOf(host, r.gear)])));
   if (r.need > 0 && r.item) body.push(line(F.desc(itemName(r.item), r.qty ?? 1, Number(fmtWeight(r.need)))));
-  else if (r.need > 0 && r.gear) body.push(richLine(fillRich((name) => F.gearHeavy(name, Number(fmtWeight(r.need))), [gearPart(r.gear)])));
+  else if (r.need > 0 && r.gear) body.push(richLine(fillRich((name) => F.gearHeavy(name, Number(fmtWeight(r.need))), [gearOf(host, r.gear)])));
   if (r.fragments?.length) body.push(line(F.fragments(r.fragments.map(itemName).join('、'))));
   body.push(line(stuck ? F.noGear : r.bag ? F.whichGear : F.which, 'slx-event-ask'));
   const held = r.need > 0 && !stuck ? carriedItems(host) : {};
@@ -226,7 +231,7 @@ export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, op
   return eventWindow(host, 'full', r.bag ? F.bagTitle(BAG_SIZE) : F.title, body, items, (id) => {
     const piece = gear.find((it) => `gear:${it.uid}` === id);
     const n = piece ? 1 : Math.min(held[id], Math.ceil(r.need / weightOf(id)));
-    const ask = piece ? fillRich(F.askGear, [gearPart(piece)]) : F.ask(itemName(id), n);
+    const ask = piece ? fillRich(F.askGear, [gearOf(host, piece)]) : F.ask(itemName(id), n);
     const box = confirmBox(ask, (yes) => {
       host.pop();
       if (!yes) return;

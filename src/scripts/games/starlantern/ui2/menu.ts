@@ -1,5 +1,8 @@
-/** `cls` is added to the label (a rarity colour, say); `rightClass` to the right-hand text (`slx-lack`, say). */
-export interface MenuItem { id: string; label: string; disabled?: boolean; note?: string; icon?: string; right?: string; rightClass?: string; cls?: string }
+/**
+ * `cls` is added to the label (a rarity colour, say); `rightClass` to the right-hand text (`slx-lack`, say); `iconCls` to
+ * the icon (`slx-gear-ico` for gear art, which keeps its own size).
+ */
+export interface MenuItem { id: string; label: string; disabled?: boolean; note?: string; icon?: string; iconCls?: string; right?: string; rightClass?: string; cls?: string }
 
 /** Cursor over a list: skips disabled items, wraps at both ends, never loops when nothing is selectable. */
 export class Menu {

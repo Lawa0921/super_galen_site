@@ -24,8 +24,9 @@ export const rarityClass = (it: Pick<ItemInstance, 'rarity' | 'starlit'>): strin
 /** Gear the player has put work into that a sale, fusion or dismantle throws away: enhanced, or with a reroll-locked affix. */
 export const invested = (it: ItemInstance): boolean => it.enhance > 0 || it.locked !== undefined;
 
-/** A piece of gear as part of a line: its label in its rarity colour. */
-export const gearPart = (it: ItemInstance): RichPart => ({ text: gearLabel(it), cls: `slx-gear-drop ${rarityClass(it)}` });
+/** A piece of gear as part of a line: its label in its rarity colour, after its gear icon when given one (ui2/gearArt.ts gearIconUrl). */
+export const gearPart = (it: ItemInstance, icon?: string): RichPart =>
+  ({ text: gearLabel(it), cls: `slx-gear-drop ${rarityClass(it)}`, ...(icon ? { icon } : {}) });
 
 /** Parts joined with 、 (the list separator of every loot line). */
 export function joinParts(parts: RichPart[], sep = '、'): Rich {

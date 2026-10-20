@@ -16,6 +16,7 @@ import { SLOTS, expToNext, powersOf, sheetOf, statSources, statsOf } from '../..
 import { STAT_CATEGORIES, type StatCategory } from '../../engine/stats';
 import { chainLength } from '../../data/story/chains';
 import type { AnyStat, CharacterId, Member, Slot, StatKey, Stats } from '../../engine/types';
+import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { gearLabel, rarityClass } from '../loot';
@@ -23,6 +24,10 @@ import type { SceneCtx } from '../scene';
 import { cancelSpend, clickSpend, pressSpend, type SpendState } from '../spendPress';
 
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
+
+/** A skill's icon (`icon/<skill>.png`) before its head line, once published; nothing before then. */
+const skillIco = (ctx: SceneCtx, skill: string): HTMLElement[] =>
+  (ctx.art.has(art.icon(skill)) ? [el('img', { class: 'slx-skill-ico', attrs: { src: art.icon(skill), alt: '' } })] : []);
 export const SLOT_ORDER: Slot[] = SLOTS;
 
 /**
@@ -245,6 +250,7 @@ const skills: StatusTab = {
       if (!s) return [];
       const changed = powers.map((p) => POWERS[p]).filter((p) => p && p.skill === sk);
       return el('div', { class: 'slx-skill', attrs: { 'data-skill': sk } }, [
+        ...skillIco(ctx, sk),
         el('div', { class: 'slx-skill-head' }, [
           el('span', { class: 'slx-skill-name', text: s.name }),
           // A recovery skill that can also be cast from the labyrinth's field menu (SkillDef.field).
@@ -428,6 +434,8 @@ const tree: StatusTab = {
             // Hover alone shows why a shut node is shut (the tooltip), for a pointer that has not clicked it.
             attrs: { 'data-node': n.id, role: 'button', ...(rank === 0 && why ? { title: treeReason(why, n.id) } : {}) },
           }, [
+            // A modifier node shows the icon of the skill it changes.
+            ...skillIco(ctx, n.skill),
             el('div', { class: 'slx-skill-head' }, [
               el('span', { class: 'slx-skill-name', text: nodeName(n) }),
               el('span', { class: 'slx-skill-rank', text: T.ui2.status.rank(rank, n.maxRank) }),

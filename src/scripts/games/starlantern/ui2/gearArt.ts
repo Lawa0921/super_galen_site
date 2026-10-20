@@ -22,6 +22,16 @@ export function gearIcon(idx: ArtIndex, it: Pick<ItemInstance, 'base' | 'special
 }
 
 /**
+ * The url of a piece's published gear art (or of a gear id's: a base, a special, a set piece), else undefined. For list
+ * rows and loot lines, which draw it as `<img class="slx-ico slx-gear-ico">`. Never the base's art for a special, and
+ * never an old `icon/` path.
+ */
+export function gearIconUrl(idx: ArtIndex, it: Pick<ItemInstance, 'base' | 'special'> | string): string | undefined {
+  const src = art.gear(typeof it === 'string' ? it : gearArtId(it));
+  return idx.has(src) ? src : undefined;
+}
+
+/**
  * The rarity layers around a piece's picture, each a nine-slice image on a span that fills its cell:
  * - `under` (goes before the icon): the legend tier's in-cell glow, `.slx-rglow`;
  * - `over` (goes after it): the frame `.slx-rframe.slx-rframe-<r>` (none for common), then on a starlit legendary,

@@ -9,19 +9,20 @@ import { T } from '../../data/text.zh-TW';
 import { sellPrice } from '../../engine/loot/item';
 import { activeIds, defaultSlotFor } from '../../engine/party';
 import { constRng, plainItem } from '../../engine/testing';
-import { NO_ART } from '../../render/textures';
+import { NO_ART, type ArtIndex } from '../../render/textures';
+import { art } from '../../render/artPaths';
 import { priceOf } from '../../engine/town';
 import { ShopScene } from './shop';
 
 /** The topmost open window of the facility (layers stack in document order). */
 const topLayer = (root: HTMLElement): Element | undefined => [...root.querySelectorAll('.slx-layer')].pop();
 
-function setup(gold = 100) {
+function setup(gold = 100, artIdx: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), null);
   game.state.gold = gold;
   const root = document.createElement('div');
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
-  const s = new ShopScene({ game, art: NO_ART, sfx, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+  const s = new ShopScene({ game, art: artIdx, sfx, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
   s.enter(root);
   s.onAction('confirm');
   const pick = (label: string) => {
@@ -34,6 +35,20 @@ function setup(gold = 100) {
 }
 
 describe('ShopScene', () => {
+  it('gear goods use the gear icon, not the old icon path', () => {
+    const published = [art.gear('iron-sword'), art.icon('hunter-bow'), art.icon('potion')];
+    const { pick, root } = setup(100, { has: (u) => published.includes(u) });
+    pick('購買');
+    const row = (id: string) => root.querySelector<HTMLElement>(`.slx-layer [role=option][data-id="${id}"]`)!;
+    const sword = row('iron-sword').querySelector('img')!;
+    expect(sword.getAttribute('src')).toBe(art.gear('iron-sword'));
+    expect(sword.className).toBe('slx-ico slx-gear-ico');
+    expect(row('hunter-bow').querySelector('img')).toBeNull();      // its old icon is published, its gear art is not: text only
+    const potion = row('potion').querySelector('img')!;              // items keep their icon
+    expect(potion.getAttribute('src')).toBe(art.icon('potion'));
+    expect(potion.className).toBe('slx-ico');
+  });
+
   it('buys a chosen quantity, capped by what the party can afford', () => {
     const { game, pick, s } = setup(100);
     pick('購買');

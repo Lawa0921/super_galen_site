@@ -3,6 +3,7 @@ import { Game } from '../../engine/game';
 import { constRng } from '../../engine/testing';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { GateScene, portalArt } from './gate';
+import { art, codexArtId } from '../../render/artPaths';
 import { generalLegendaries } from '../../data/gear';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import { BAG_SIZE } from '../../engine/loot/bag';
@@ -266,11 +267,24 @@ describe('GateScene: region-only gear on the portal cards', () => {
     } finally { sh.mockRestore(); ch.mockRestore(); }
   });
 
-  it('no silhouette image without art, and one when the icon is published', () => {
-    const { root } = setup();
-    expect(root.querySelector('.slx-codex-silhouette')).toBeNull();
-    const withArt = setup(undefined, { has: (u: string) => u.endsWith('/icon/blaze-ember-ring.png') } as unknown as ArtIndex);
-    expect(withArt.root.querySelectorAll('.slx-codex-silhouette')).toHaveLength(1);
+  it('an unobtained piece loads only its silhouette file; an obtained one its gear icon', () => {
+    const pic = (r: ReturnType<typeof setup>, id: string) => r.root.querySelector<HTMLImageElement>(`[data-special="${id}"] img`);
+    expect(setup().root.querySelector('.slx-codex-silhouette, .slx-codex-icon')).toBeNull();
+    // Its real icon published, its silhouette not: no picture at all, so the unobtained piece is never shown early.
+    const iconOnly = setup(undefined, { has: (u) => u === art.gear('blaze-ember-ring') || u === art.icon('blaze-ember-ring') });
+    expect(pic(iconOnly, 'blaze-ember-ring')).toBeNull();
+    const ALL: ArtIndex = { has: () => true };
+    const unknown = setup(undefined, ALL);
+    expect(pic(unknown, 'blaze-ember-ring')!.className).toBe('slx-codex-silhouette');
+    expect(pic(unknown, 'blaze-ember-ring')!.getAttribute('src')).toBe(art.gearSilhouette('blaze-ember-ring'));
+    expect(pic(unknown, 'set-blaze')!.getAttribute('src')).toBe(art.gearSilhouette('set-blaze'));
+    const known = setup((g) => { g.state.codex.push('blaze-ember-ring', 'set-blaze'); }, ALL);
+    expect(pic(known, 'blaze-ember-ring')!.className).toBe('slx-codex-icon');
+    expect(pic(known, 'blaze-ember-ring')!.getAttribute('src')).toBe(art.gear(codexArtId('blaze-ember-ring')));
+    expect(pic(known, 'set-blaze')!.getAttribute('src')).toBe(art.gear('set-blaze-weapon'));
+    // Obtained but its gear art not published: the name alone.
+    const knownNoArt = setup((g) => { g.state.codex.push('blaze-ember-ring'); }, { has: (u) => u === art.gearSilhouette('blaze-ember-ring') });
+    expect(pic(knownNoArt, 'blaze-ember-ring')).toBeNull();
   });
 });
 

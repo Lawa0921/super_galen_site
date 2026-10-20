@@ -13,6 +13,7 @@ import { buy, isUnlocked, priceOf, junkTotals, sell, sellGear, sellJunk } from '
 import type { AnyStat } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
+import { gearIconUrl } from '../gearArt';
 import { gearLabel, invested, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
@@ -35,6 +36,12 @@ export class ShopScene extends FacilityScene {
     return this.ctx.art.has(art.icon(id)) ? art.icon(id) : undefined;
   }
 
+  /** A base's row icon: its gear art at its own size (plan 5d), never the old icon path; none until it is published. */
+  private gearIcon(id: string): Pick<MenuItem, 'icon' | 'iconCls'> {
+    const icon = gearIconUrl(this.ctx.art, id);
+    return icon ? { icon, iconCls: 'slx-gear-ico' } : {};
+  }
+
   private goods(): MenuItem[] {
     const s = this.ctx.game.state;
     return [...Object.values(ITEMS), ...Object.values(EQUIPMENT)].map((g) => {
@@ -42,7 +49,7 @@ export class ShopScene extends FacilityScene {
       const needs = locked ? (g.unlock ?? []).map((u) => `${MATERIALS[u.mat].name}×${u.qty}`).join('、') : '';
       // Every base is a plain (common) piece, which the shared label names without a rarity word; the colour class marks it.
       const gear = 'slot' in g ? { label: gearLabel(rollItem(mulberry32(0), { uid: 0, ilvl: g.ilvl, rarity: 'common', base: g.id })), cls: 'slx-rarity-common' } : { label: g.name };
-      return { id: g.id, ...gear, icon: this.icon(g.id), disabled: locked, right: locked ? T.ui2.shop.needs(needs) : `${priceOf(s, g.id)} G  ${T.ui2.shop.owned('slot' in g ? s.bag.filter((x) => x.base === g.id).length : (s.inventory[g.id] ?? 0))}` };
+      return { id: g.id, ...gear, ...('slot' in g ? this.gearIcon(g.id) : { icon: this.icon(g.id) }), disabled: locked, right: locked ? T.ui2.shop.needs(needs) : `${priceOf(s, g.id)} G  ${T.ui2.shop.owned('slot' in g ? s.bag.filter((x) => x.base === g.id).length : (s.inventory[g.id] ?? 0))}` };
     });
   }
 
