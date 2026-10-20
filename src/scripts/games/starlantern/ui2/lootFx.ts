@@ -29,13 +29,15 @@ function removePillar(p: Element): void {
  * A column of light in the rarity's colour rising from where the loot is (gradients and CSS animation only,
  * `_starlantern-ui.scss`). The host places it: the labyrinth screen stands it on the party's tile, the battle result
  * window on its own top edge. Common gear raises none. A newer drop replaces the last pillar. In fast mode nothing is
- * timed: the pillar stays until its animation ends, the next drop, a skip, or the scene goes.
+ * timed: the pillar stays until its animation ends, the next drop, a skip, or the scene goes. A `starlit` piece (plan 5g)
+ * raises a legend pillar in star-light (`slx-pillar-starlit`).
  */
-export function showPillar(host: HTMLElement, rarity: Rarity, fast: boolean): HTMLElement | null {
+export function showPillar(host: HTMLElement, rarity: Rarity, fast: boolean, starlit = false): HTMLElement | null {
   if (rarity === 'common') return null;
   clearPillars(host);
-  const legend = LEGEND.has(rarity);
-  const p = el('div', { class: `slx-pillar slx-rarity-${rarity}${legend ? ' slx-pillar-legend' : ''}`, attrs: { 'aria-hidden': 'true' } },
+  const legend = starlit || LEGEND.has(rarity);
+  const cls = `slx-pillar slx-rarity-${rarity}${legend ? ' slx-pillar-legend' : ''}${starlit ? ' slx-pillar-starlit' : ''}`;
+  const p = el('div', { class: cls, attrs: { 'aria-hidden': 'true' } },
     legend ? [el('span', { class: 'slx-pillar-burst' })] : []);
   p.addEventListener('animationend', (e) => { if (e.target === p && LAST.has(e.animationName)) removePillar(p); });
   // First child: behind the host's own contents (the windows of the labyrinth, the lines of the results).
@@ -57,20 +59,30 @@ export function skipPillar(host: HTMLElement, a: UiAction): boolean {
   return !!p;
 }
 
-/** The rarest of a drop, or null for none. */
-export function bestRarity(items: readonly { rarity: Rarity }[]): Rarity | null {
-  let best: Rarity | null = null;
-  for (const it of items) if (!best || RARITIES.indexOf(it.rarity) > RARITIES.indexOf(best)) best = it.rarity;
+/** A piece's place in a drop: any starlit piece above every plain one, then RARITIES order. */
+const dropRank = (it: { rarity: Rarity; starlit?: true }): number => (it.starlit ? RARITIES.length : 0) + RARITIES.indexOf(it.rarity);
+
+/** The best piece of a drop (a starlit one first, then the rarest; a tie keeps the first), or null for none. */
+export function bestDrop<T extends { rarity: Rarity; starlit?: true }>(items: readonly T[]): T | null {
+  let best: T | null = null;
+  for (const it of items) if (!best || dropRank(it) > dropRank(best)) best = it;
   return best;
+}
+
+/** The rarity of a drop's best piece, or null for none. */
+export function bestRarity(items: readonly { rarity: Rarity; starlit?: true }[]): Rarity | null {
+  return bestDrop(items)?.rarity ?? null;
 }
 
 /**
  * One drop, one moment: the best piece raises the pillar and plays its chime once, LOOT_DELAY_MS after the cue that
- * came with the drop. Common-only drops stay quiet.
+ * came with the drop. Common-only drops stay quiet. A starlit best piece passes the starlit flag to both.
  */
-export function dropMoment(ctx: Pick<SceneCtx, 'sfx' | 'fast'>, host: HTMLElement, items: readonly { rarity: Rarity }[]): HTMLElement | null {
-  const best = bestRarity(items);
-  if (!best || best === 'common') return null;
-  ctx.sfx.loot?.(best, LOOT_DELAY_MS);
-  return showPillar(host, best, !!ctx.fast);
+export function dropMoment(ctx: Pick<SceneCtx, 'sfx' | 'fast'>, host: HTMLElement, items: readonly { rarity: Rarity; starlit?: true }[]): HTMLElement | null {
+  const best = bestDrop(items);
+  if (!best || best.rarity === 'common') return null;
+  const starlit = best.starlit === true;
+  if (starlit) ctx.sfx.loot?.(best.rarity, LOOT_DELAY_MS, true);
+  else ctx.sfx.loot?.(best.rarity, LOOT_DELAY_MS);
+  return showPillar(host, best.rarity, !!ctx.fast, starlit);
 }

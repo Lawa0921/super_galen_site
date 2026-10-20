@@ -117,22 +117,32 @@ export class SoundManager {
   lose(): void { this.blip(220, 500, 'triangle', 0.12, 55); }
 
   /**
-   * A gear drop's chime by rarity: magic one note, rare a second one after it, the legend tier (legendary, unique, set) a
-   * C-major triad (523/784/1047 Hz) rolled upward with a high shimmer of noise. Common has none. At an effective volume of
-   * 0 (the game's setting or the site-wide sound slider) nothing is built: no AudioContext, no node. `delayMs` holds the
-   * whole chime back (lootFx: after the chest, vault or win cue).
+   * A gear drop's chime by rarity: magic one note, rare a second one after it, epic a third rising note (660/990/1320 Hz,
+   * no shimmer), the legend tier (legendary, unique, set) a C-major triad (523/784/1047 Hz) rolled upward with a high
+   * shimmer of noise. A `starlit` legend (plan 5g) adds a high C sparkle (2093 Hz) and a second shimmer. Common has none.
+   * At an effective volume of 0 (the game's setting or the site-wide sound slider) nothing is built: no AudioContext, no
+   * node. `delayMs` holds the whole chime back (lootFx: after the chest, vault or win cue).
    */
-  loot(rarity: Rarity, delayMs = 0): void {
+  loot(rarity: Rarity, delayMs = 0, starlit = false): void {
     if (this.sfxVolume * this.playerVolume <= 0) return;
     const d = delayMs;
     switch (rarity) {
       case 'magic': this.blip(660, 160, 'sine', 0.1, undefined, d); break;
       case 'rare': this.blip(660, 120, 'sine', 0.1, undefined, d); this.blip(990, 220, 'sine', 0.09, undefined, d + 110); break;
+      case 'epic':
+        this.blip(660, 120, 'sine', 0.1, undefined, d);
+        this.blip(990, 160, 'sine', 0.09, undefined, d + 110);
+        this.blip(1320, 280, 'sine', 0.08, undefined, d + 220);
+        break;
       case 'legendary': case 'unique': case 'set':
         this.blip(523, 520, 'triangle', 0.1, undefined, d);
         this.blip(784, 480, 'triangle', 0.09, undefined, d + 70);
         this.blip(1047, 560, 'sine', 0.09, undefined, d + 140);
         this.noise(600, 0.05, 'highpass', 6000, 9000, d + 140);
+        if (starlit) {
+          this.blip(2093, 640, 'sine', 0.07, undefined, d + 210);
+          this.noise(700, 0.04, 'highpass', 7000, 11000, d + 260);
+        }
         break;
       default: break;
     }

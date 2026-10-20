@@ -785,6 +785,7 @@ $slx-starlit: #bff6ff;
   animation: slx-pillar-life 1.2s linear forwards;
 }
 .slx-pillar.slx-rarity-rare { --slx-pillar-w: 48px; --slx-pillar-h: 136px; }
+.slx-pillar.slx-rarity-epic { --slx-pillar-w: 60px; --slx-pillar-h: 168px; }
 // Labyrinth: on the party's tile. MapView keeps the party's 48 px cell in the middle of the 640 x 296 map view and draws
 // the party standing at 95% of its cell, so the feet are at 296 / 2 + 48 * 0.45 = 170 px.
 .slx-dungeon > .slx-pillar { left: 50%; top: 170px; }
@@ -813,6 +814,8 @@ $slx-starlit: #bff6ff;
 // light bursting from its foot, all over within 1.1 s; confirm or cancel ends it sooner (lootFx.skipPillar).
 .slx-pillar-legend { --slx-pillar-w: 72px; --slx-pillar-h: 200px; animation-duration: 1.1s; }
 .slx-pillar-legend::before { animation: slx-pillar-rise 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) both, slx-pillar-throb 0.35s ease-in-out 0.4s 2 alternate; }
+// A starlit piece's pillar (plan 5g): the legend pillar in star-light; two classes beat the .slx-rarity-* colour.
+.slx-pillar.slx-pillar-starlit { color: $slx-starlit; }
 .slx-pillar-burst {
   position: absolute; left: -150px; top: -150px; width: 300px; height: 300px;
   background:

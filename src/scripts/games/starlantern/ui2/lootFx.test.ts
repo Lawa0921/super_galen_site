@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Rarity } from '../engine/types';
-import { LEGEND_MS, LOOT_DELAY_MS, PILLAR_MS, bestRarity, clearPillars, dropMoment, showPillar, skipPillar } from './lootFx';
+import { LEGEND_MS, LOOT_DELAY_MS, PILLAR_MS, bestDrop, bestRarity, clearPillars, dropMoment, showPillar, skipPillar } from './lootFx';
 
 afterEach(() => { vi.useRealTimers(); });
 
@@ -9,7 +11,7 @@ describe('lootFx', () => {
     const host = document.createElement('div');
     expect(showPillar(host, 'common', true)).toBeNull();
     expect(host.children.length).toBe(0);
-    const cases: [Rarity, boolean][] = [['magic', false], ['rare', false], ['legendary', true], ['unique', true], ['set', true]];
+    const cases: [Rarity, boolean][] = [['magic', false], ['rare', false], ['epic', false], ['legendary', true], ['unique', true], ['set', true]];
     for (const [r, legend] of cases) {
       const p = showPillar(host, r, true)!;
       expect(p.classList.contains('slx-pillar')).toBe(true);
@@ -41,7 +43,8 @@ describe('lootFx', () => {
   it('fast mode leaves no timers', () => {
     vi.useFakeTimers();
     const host = document.createElement('div');
-    for (const r of ['magic', 'rare', 'legendary', 'unique', 'set'] as const) showPillar(host, r, true);
+    for (const r of ['magic', 'rare', 'epic', 'legendary', 'unique', 'set'] as const) showPillar(host, r, true);
+    showPillar(host, 'set', true, true);
     expect(vi.getTimerCount()).toBe(0);
   });
 
@@ -110,5 +113,64 @@ describe('lootFx', () => {
     dropMoment({ sfx: sfx as never, fast: true }, host, [{ rarity: 'common' }]);
     dropMoment({ sfx: sfx as never, fast: true }, host, []);
     expect(loot).toHaveBeenCalledTimes(1);
+  });
+
+  it('a starlit pillar is a legend pillar in star-light', () => {
+    vi.useFakeTimers();
+    const host = document.createElement('div');
+    const p = showPillar(host, 'unique', false, true)!;
+    expect(p.classList.contains('slx-rarity-unique')).toBe(true);
+    expect(p.classList.contains('slx-pillar-legend')).toBe(true);
+    expect(p.classList.contains('slx-pillar-starlit')).toBe(true);
+    expect(p.querySelector('.slx-pillar-burst')).not.toBeNull();
+    expect(p.getAttribute('style')).toBeNull();
+    vi.advanceTimersByTime(LEGEND_MS - 1);
+    expect(host.contains(p)).toBe(true);
+    vi.advanceTimersByTime(1);
+    expect(host.contains(p)).toBe(false);
+    showPillar(host, 'legendary', false, true);
+    expect(skipPillar(host, 'confirm')).toBe(true);
+    expect(host.querySelector('.slx-pillar')).toBeNull();
+    expect(vi.getTimerCount()).toBe(0);
+    // Without the flag no pillar is starlit.
+    expect(showPillar(host, 'legendary', true)!.classList.contains('slx-pillar-starlit')).toBe(false);
+  });
+
+  it('bestDrop prefers a starlit piece over any plain one', () => {
+    const st = { rarity: 'legendary' as const, starlit: true as const };
+    expect(bestDrop([{ rarity: 'set' }, st, { rarity: 'epic' }])).toBe(st);
+    const epic = { rarity: 'epic' as const };
+    expect(bestDrop([{ rarity: 'rare' }, epic, { rarity: 'magic' }])).toBe(epic);
+    const set = { rarity: 'set' as const };
+    expect(bestDrop([epic, set])).toBe(set);
+    const first = { rarity: 'rare' as const };
+    expect(bestDrop([first, { rarity: 'rare' }])).toBe(first);     // a tie: the first one
+    const sUnique = { rarity: 'unique' as const, starlit: true as const }, sSet = { rarity: 'set' as const, starlit: true as const };
+    expect(bestDrop([sUnique, sSet])).toBe(sSet);                    // between starlit pieces, the rarer one
+    expect(bestDrop([])).toBeNull();
+    expect(bestRarity([{ rarity: 'set' }, st])).toBe('legendary');  // the starlit piece is the drop's rarity
+    expect(bestRarity([epic, { rarity: 'rare' }])).toBe('epic');
+  });
+
+  it('a starlit drop chimes once with the starlit flag', () => {
+    const host = document.createElement('div');
+    const loot = vi.fn();
+    dropMoment({ sfx: { loot } as never, fast: true }, host, [{ rarity: 'set' }, { rarity: 'legendary', starlit: true }, { rarity: 'rare' }]);
+    expect(loot).toHaveBeenCalledTimes(1);
+    expect(loot).toHaveBeenCalledWith('legendary', LOOT_DELAY_MS, true);
+    expect(host.querySelectorAll('.slx-pillar.slx-pillar-starlit.slx-rarity-legendary').length).toBe(1);
+    // An epic drop: its own chime and pillar, two arguments as before.
+    dropMoment({ sfx: { loot } as never, fast: true }, host, [{ rarity: 'epic' }, { rarity: 'rare' }]);
+    expect(loot).toHaveBeenLastCalledWith('epic', LOOT_DELAY_MS);
+    expect(loot.mock.calls.at(-1)).toHaveLength(2);
+    expect(host.querySelector('.slx-pillar.slx-rarity-epic:not(.slx-pillar-starlit)')).not.toBeNull();
+  });
+
+  it('the epic pillar sits between rare and legend in size, and the starlit pillar takes the star-light colour', () => {
+    const scss = readFileSync(resolve(process.cwd(), 'src/styles/_starlantern-ui.scss'), 'utf-8');
+    expect(scss).toMatch(/\.slx-pillar\.slx-rarity-epic \{ --slx-pillar-w: 60px; --slx-pillar-h: 168px; \}/);
+    expect(scss).toMatch(/\.slx-pillar\.slx-pillar-starlit \{ color: \$slx-starlit; \}/);
+    // Declared after the variable it uses.
+    expect(scss.indexOf('.slx-pillar.slx-pillar-starlit')).toBeGreaterThan(scss.indexOf('$slx-starlit:'));
   });
 });
