@@ -7984,7 +7984,12 @@
         "a1": "未採用：切格失敗（expected 3x3 cells, found 2x3），薙刀與胸甲的範圍在欄投影上重疊，無法逐格挑選；a3 起加了「magenta 走道」修正句",
         "a2": "未採用：切格失敗（expected 3x3 cells, found 2x2），長兵器斜放跨進相鄰欄列；千鶴薙刀畫成雙刃斧形，讀起來不像薙刀",
         "a3": "採用 iron-sword、wooden-buckler、leather-cap、lg-chizuru、blaze-heart-sword（24px 下劍身較長、木盾直紋與帽形較清楚、薙刀新月刃較像長柄、熾心劍的餘燼核心在劍身中央最好認）；未採用 iron-unbroken-shield（長方形白盾在 24px 像一塊白色長條）與套裝 3 件（a4 的套裝徽記較大、三件紅金配色較一致）",
-        "a4": "採用 iron-unbroken-shield（鳶形盾輪廓在 24px 仍認得出是盾）與 set-blaze 武器／胸甲／護手（同一版三件，紅黑金與火焰徽記一致）；未採用 iron-sword（與 a3 幾乎相同，a3 劍身較清楚）、wooden-buckler、leather-cap（24px 有雜點）、lg-chizuru（流蘇變紅白、刃形像斧，新月刃上方帶粉色光暈有 key 色風險）、blaze-heart-sword（劍身長條光與散落火星在 24px 變成雜點，心形核心不明顯）"
+        "a4": "採用 iron-unbroken-shield（鳶形盾輪廓在 24px 仍認得出是盾）與 set-blaze 武器／胸甲／護手（同一版三件，紅黑金與火焰徽記一致）；未採用 iron-sword（與 a3 幾乎相同，a3 劍身較清楚）、wooden-buckler、leather-cap（24px 有雜點）、lg-chizuru（流蘇變紅白、刃形像斧，新月刃上方帶粉色光暈有 key 色風險）、blaze-heart-sword（劍身長條光與散落火星在 24px 變成雜點，心形核心不明顯）",
+        "a5": "補遺2：採用 leather-cap（圓頂皮帽 1× 較好認；短邊 18、mass 0.66）。未採用：iron-sword subject too light（icon mass 0.279／large 0.271 < 0.28）、lg-chizuru subject too light（0.277／0.266）、blaze-heart-sword-large subject too light（0.279）；buckler／shield／set 三件雖通過，但 a9 劍身較粗、焰紋三件在 1× 較好認，一律取 a9",
+        "a6": "補遺2 未採用：切格失敗 expected 3x3 cells, found 2x3（帽緣與手甲擠進欄間通道）",
+        "a7": "補遺2 未採用：切格失敗 expected 3x3 cells, found 2x1（火花與加粗的武器伸進通道）",
+        "a8": "補遺2 未採用：切格失敗 expected 3x3 cells, found 2x3（薙刀刀頭與下排劍尖距鄰格約 24px，欄間通道不連續）",
+        "a9": "補遺2：採用 iron-sword、wooden-buckler、blaze-heart-sword、iron-unbroken-shield、set-blaze 三件（同一版）。未採用：lg-chizuru subject too light（icon mass 0.223／large 0.233 < 0.28）；leather-cap 改用 a5（a9 短邊 16、mass 0.53 較扁）。lg-chizuru 到 a9 上限仍無通過版，維持舊 a3 挑選，待主控裁定"
       }
     },
     "sheet-mat-1": {
@@ -8168,6 +8173,15 @@
       "chosen_attempt": "a5",
       "source_id": "sheet-rarity-frames-2",
       "batch": "gear-5d-sample"
+    },
+    "sheet-rarity-frames-2": {
+      "rejected_attempts": {
+        "a1": "未採用：magic／rare／epic／legendary／unique edge does not repeat（原圖約 64 格細格，取樣後邊帶色階沿邊不連續，例 magic 上邊 seam 38.1 vs interior 11.6）；glow ring not closed＋hue off tier（1 格亮線取樣後消失）；starlit not starlight colours（深色描邊 7px）；set 通過但取 a3 與其他階同版",
+        "a2": "未採用：magic／legendary edge does not repeat、set edge does not repeat＋hue off tier（114.5）；glow ring not closed；starlit not starlight colours（深藍描邊）；epic／rare／unique 通過，但角飾取樣成黑塊（cover_sample 取眾數＝描邊色），取 a3",
+        "a3": "採用 rare、epic、legendary、unique、set、glow-legendary（角飾在 1× 最清楚；glow hue 35.6）。未採用：magic（與 epic ΔE 25.8，a4 為 32.1）；starlit edge does not repeat（edge_joint top/bottom＝1：邊中段首末欄同列有點，重複後連成 2px）",
+        "a4": "採用 magic（與 epic a3 ΔE 32.1）。未採用：unique edge does not repeat（金線取樣後斷續，bottom 3.20／left 3.16）；starlit 通過但側邊點取樣後消失、角星只剩 2×4 白塊（執行時幾乎看不到）；其餘通過但 a3 角飾較清楚",
+        "a5": "採用 starlit（四角實心四芒星＋各邊 2×2 點，執行時看得見）。未採用：unique edge does not repeat（left 1.70）；glow hue 49.6 偏黃（上限 50）；其餘通過但 a3 角飾在 1× 較清楚"
+      }
     }
   }
 }
