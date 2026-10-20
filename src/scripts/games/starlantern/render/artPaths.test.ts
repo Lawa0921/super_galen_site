@@ -2,10 +2,12 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../data/enemies';
 import type { BattleEvent } from '../engine/combatant';
-import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, FRAMED_RARITIES, MOODS, MOODS_OF, PUBLISHED_FACES, RETIRING_ICONS, SPECIAL_MOODS_OF, allArtUrls, art, codexArtId, effectFor, enemyArt, gearArtId, moodFor, parseManifest, tileKey } from './artPaths';
+import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, FRAMED_RARITIES, MOODS, MOODS_OF, NO_ICON_YET_IDS, PUBLISHED_FACES, SPECIAL_MOODS_OF, allArtUrls, art, codexArtId, effectFor, enemyArt, gearArtId, moodFor, parseManifest, tileKey } from './artPaths';
 import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { EQUIPMENT } from '../data/equipment';
 import { REGIONS, type RegionId } from '../data/regions';
+import { MATERIALS } from '../data/materials';
+import { SKILLS } from '../data/skills';
 
 describe('artPaths', () => {
   it('builds urls under the starlantern base', () => {
@@ -20,10 +22,12 @@ describe('artPaths', () => {
     // 237 + the hero's standee and 8 faces (plan 6a Task 5: he joins the roster with his art published) = 246
     // + plan 5d's G1 sample (Task 8): 34 parts (9 gear x 2, 6 materials, 6 frames, glow, starlit, forge, Doran)
     //   + 3 silhouettes - 1 retired old icon (icon/iron-sword.png) = 246 + 36 = 282
-    expect(urls).toHaveLength(282);
-    expect(new Set(urls).size).toBe(282);
+    // + plan 5d's main-gear batch (Task 10): 127 parts (60 gear x 2, 6 region materials, Doran's smile)
+    //   + 15 silhouettes - 14 retired old base icons = 282 + 128 = 410
+    expect(urls).toHaveLength(410);
+    expect(new Set(urls).size).toBe(410);
     expect(urls).toContain(art.fxAnim('thunder'));
-    for (const id of ['blaze-core', 'frost-heart', 'storm-stone', 'mire-gland', 'shade-crystal', 'iron-shard']) expect(urls).not.toContain(art.icon(id));
+    for (const id of ['blaze-core', 'frost-heart', 'storm-stone', 'mire-gland', 'shade-crystal', 'iron-shard']) expect(urls).toContain(art.icon(id));
     for (const id of ['essence-common', 'essence-magic', 'essence-rare', 'essence-legendary', 'star-tear', 'king-scale']) expect(urls).toContain(art.icon(id));
     expect(urls).toContain(art.window);
     expect(urls).toContain(art.portalPlaza);
@@ -36,28 +40,34 @@ describe('artPaths', () => {
     for (const id of ['hero', 'rin', 'rin-oath']) for (const m of ['normal', 'attack', 'hit', 'dying', 'down', 'ultimate', 'smile', 'sad'] as const) expect(urls).toContain(art.portrait(id, m));
     expect(urls).toContain(art.standee('rin-oath'));
     for (const id of Object.keys(ENEMIES).filter((e) => !ENEMIES[e].look)) expect(urls).toContain(art.enemy(id));
-    // Plan 5d: the old base icons stay listed until they retire (iron-sword retired with the G1 sample, Task 8); a gear
-    // path is listed only once published: the sample's 9 pieces now, the other 60 after the main batch.
-    expect([...RETIRING_ICONS].sort()).toEqual(['wooden-staff', 'hunter-bow', 'thorn-spear', 'crystal-blade', 'frost-staff', 'star-saber',
-      'cloth-robe', 'leather-vest', 'scale-mail', 'dusk-mantle', 'moss-charm', 'bat-earring', 'crystal-pendant', 'gear-ring'].sort());
-    for (const id of RETIRING_ICONS) expect(urls).toContain(art.icon(id));
-    expect(urls).not.toContain(art.icon('iron-sword'));
-    for (const id of Object.keys(EQUIPMENT).filter((e) => !RETIRING_ICONS.has(e))) expect(urls).not.toContain(art.icon(id));
-    const SAMPLE = ['iron-sword', 'wooden-buckler', 'leather-cap', 'lg-chizuru', 'blaze-heart-sword', 'iron-unbroken-shield',
-      'set-blaze-weapon', 'set-blaze-body', 'set-blaze-hands'];
+    // Plan 5d (Tasks 8 and 10): every base and special has its gear art, small and large, and every region piece and set
+    // its silhouette; specials never had an icon/ path.
     for (const id of [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)]) {
-      const listed = SAMPLE.includes(id);
-      expect(urls.includes(art.gear(id)), id).toBe(listed);
-      expect(urls.includes(art.gearLarge(id)), id).toBe(listed);
+      expect(urls, id).toContain(art.gear(id));
+      expect(urls, id).toContain(art.gearLarge(id));
       if (id in SPECIALS) expect(urls).not.toContain(art.icon(id));
     }
     const regionLimited = (Object.keys(REGIONS) as RegionId[]).flatMap((r) => regionSpecials(r).map((s) => s.id));
     expect(regionLimited.length + Object.keys(SETS).length).toBe(18);
-    const SILHOUETTES = ['blaze-heart-sword', 'iron-unbroken-shield', 'set-blaze'];
-    for (const id of [...regionLimited, ...Object.keys(SETS)]) expect(urls.includes(art.gearSilhouette(id)), id).toBe(SILHOUETTES.includes(id));
-    for (const u of [art.gear('iron-sword'), art.gearLarge('set-blaze-body'), art.gearSilhouette('set-blaze'), art.rarityFrame('set'),
-      art.scene('forge'), art.npc('forge', 'normal'), art.rarityGlow, art.starlitOverlay, ...FRAMED_RARITIES.map((r) => art.rarityFrame(r))]) expect(urls).toContain(u);
-    expect(urls).not.toContain(art.npc('forge', 'happy'));             // the main batch's
+    for (const id of [...regionLimited, ...Object.keys(SETS)]) expect(urls, id).toContain(art.gearSilhouette(id));
+    for (const u of [art.rarityFrame('set'), art.scene('forge'), art.npc('forge', 'normal'), art.npc('forge', 'happy'), art.rarityGlow,
+      art.starlitOverlay, ...FRAMED_RARITIES.map((r) => art.rarityFrame(r))]) expect(urls).toContain(u);
+  });
+
+  it('no old base icon url remains (all 15 retired by plan 5d)', () => {
+    const urls = allArtUrls();
+    for (const id of Object.keys(EQUIPMENT)) expect(urls, id).not.toContain(art.icon(id));
+  });
+
+  it('every gear and material id has art; only the tree skills of the skills batch (G3) still wait', () => {
+    const urls = new Set(allArtUrls());
+    for (const id of Object.keys(MATERIALS)) expect(urls.has(art.icon(id)), id).toBe(true);
+    // What still waits is skill ids only, each a real skill without its icon: no gear, silhouette, frame, scene or NPC key.
+    expect(NO_ICON_YET_IDS.size).toBeGreaterThan(0);
+    for (const id of NO_ICON_YET_IDS) {
+      expect(SKILLS[id], id).toBeDefined();
+      expect(urls.has(art.icon(id)), id).toBe(false);
+    }
   });
 
   it('builds gear, large, silhouette and frame urls', () => {

@@ -125,22 +125,25 @@ const SILHOUETTE_IDS = (): string[] => [
   ...Object.keys(SETS),
 ];
 
-/** Gear with its art published (`gear/<id>.png` and `-large`): plan 5d's G1 sample, published in Task 8 (2026-10-20). */
-const PUBLISHED_GEAR: ReadonlySet<string> = new Set([
-  'iron-sword', 'wooden-buckler', 'leather-cap', 'lg-chizuru', 'blaze-heart-sword', 'iron-unbroken-shield',
-  'set-blaze-weapon', 'set-blaze-body', 'set-blaze-hands',
-]);
-/** Codex silhouettes published with them (made from the published icons; a set's from its first piece). */
-const PUBLISHED_SILHOUETTES: ReadonlySet<string> = new Set(['blaze-heart-sword', 'iron-unbroken-shield', 'set-blaze']);
-
 /**
- * The bases whose old icon (`icon/<id>.png`, sheet-icons-3) is still published. Plan 5d redraws every base under
- * `gear/`; each old icon stays listed until its new art is published and the old one retires (plan 5d Tasks 8 and 10).
- * iron-sword retired with the G1 sample (Task 8).
+ * Icons not on disk yet; allArtUrls leaves them out. Only the tree skills of plan 5d's skills batch (G3) remain: every
+ * gear piece (small and large), codex silhouette, rarity layer, material, the forge and both of Doran's faces are
+ * published (plan 5d Tasks 8 and 10), and every old base icon is retired. The skills publish takes its ids out.
  */
-export const RETIRING_ICONS: ReadonlySet<string> = new Set([
-  'wooden-staff', 'hunter-bow', 'thorn-spear', 'crystal-blade', 'frost-staff', 'star-saber',
-  'cloth-robe', 'leather-vest', 'scale-mail', 'dusk-mantle', 'moss-charm', 'bat-earring', 'crystal-pendant', 'gear-ring',
+export const NO_ICON_YET_IDS: ReadonlySet<string> = new Set([
+  // plan 5b: the skill-tree skills have no icon yet
+  'flame-wave', 'inferno', 'frost-bind', 'blizzard', 'judgement',
+  'spiral-spear', 'thousand-spear', 'sacred-sake', 'great-barrier', 'thunder-thrust', 'heaven-spear',
+  'shadow-flurry', 'smoke-bomb', 'fortune-strike', 'quickstep', 'venom-edge', 'phantom-step',
+  'heart-shot', 'starfall-arrow', 'snare-shot', 'hunters-mark', 'fire-arrow', 'storm-volley',
+  'guardian-roar', 'unbreakable', 'blaze-ring', 'crimson-end', 'shield-bash', 'fortress',
+  'moon-rain', 'full-moon', 'blessing', 'sanctuary', 'moon-arrow', 'lunar-eclipse',
+  'sand-cyclone', 'thousand-shadows', 'veil-dance', 'desert-festival', 'shadow-step', 'sirocco',
+  'cannon', 'repair-kit', 'overclock', 'emergency-repair', 'shock-mine', 'tesla-coil',
+  // plan 6a: Rin's skills have no icon yet
+  'rin-needle', 'rin-fan', 'rin-venom-needle', 'rin-storm', 'rin-backstab', 'rin-veil', 'rin-shadowless', 'rin-mark', 'rin-execute', 'rin-deathblow',
+  // plan 6a: the hero's skills have no icon yet
+  ...Object.values(SKILLS).filter((s) => s.owner === 'hero').map((s) => s.id),
 ]);
 
 /** Event tiles with art of their own in the art factory; a chest uses its terrain's chest tile instead. */
@@ -198,46 +201,16 @@ export function allArtUrls(): string[] {
   for (const k of PORTAL_CARD_KEYS) urls.push(art.portalCard(k));
   for (const k of TRAIT_ICON_KEYS) urls.push(art.traitIcon(k));
   for (const k of EVENT_TILE_KEYS) urls.push(art.eventTile(k));
-  // Region material icons come with the art batch; until then they are not expected on disk.
-  const NO_ICON_YET = new Set<string | null>([
-    ...Object.values(REGIONS).map((r) => r.material),
-    // plan 5d: gear art (`gear/<id>.png` and `-large`) for every base and special waits for its art batch, and so does
-    // any piece merged into SPECIALS later (a roster unique) until its own batch publishes it. A publish adds its ids to
-    // PUBLISHED_GEAR (plan 5d Tasks 8 and 10). The bases no longer list `icon/<id>.png`: see RETIRING_ICONS.
-    ...[...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)].filter((id) => !PUBLISHED_GEAR.has(id)),
-    // plan 5d: the gate codex's silhouettes (`silhouette:<id>`) not published yet, and Doran's smile (main batch). The
-    // frames, the legend glow, the starlit overlay, the forge, Doran, the essences, star-tear and king-scale were
-    // published with the G1 sample (Task 8).
-    ...SILHOUETTE_IDS().filter((id) => !PUBLISHED_SILHOUETTES.has(id)).map((id) => `silhouette:${id}`),
-    'npc:forge-happy',
-    // plan 5b: the skill-tree skills have no icon yet
-    'flame-wave', 'inferno', 'frost-bind', 'blizzard', 'judgement',
-    'spiral-spear', 'thousand-spear', 'sacred-sake', 'great-barrier', 'thunder-thrust', 'heaven-spear',
-    'shadow-flurry', 'smoke-bomb', 'fortune-strike', 'quickstep', 'venom-edge', 'phantom-step',
-    'heart-shot', 'starfall-arrow', 'snare-shot', 'hunters-mark', 'fire-arrow', 'storm-volley',
-    'guardian-roar', 'unbreakable', 'blaze-ring', 'crimson-end', 'shield-bash', 'fortress',
-    'moon-rain', 'full-moon', 'blessing', 'sanctuary', 'moon-arrow', 'lunar-eclipse',
-    'sand-cyclone', 'thousand-shadows', 'veil-dance', 'desert-festival', 'shadow-step', 'sirocco',
-    'cannon', 'repair-kit', 'overclock', 'emergency-repair', 'shock-mine', 'tesla-coil',
-    // plan 6a: Rin's skills have no icon yet
-    'rin-needle', 'rin-fan', 'rin-venom-needle', 'rin-storm', 'rin-backstab', 'rin-veil', 'rin-shadowless', 'rin-mark', 'rin-execute', 'rin-deathblow',
-    // plan 6a: the hero's skills have no icon yet
-    ...Object.values(SKILLS).filter((s) => s.owner === 'hero').map((s) => s.id),
-  ]);
   for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.keys(MATERIALS)]) {
-    if (!NO_ICON_YET.has(id)) urls.push(art.icon(id));
+    if (!NO_ICON_YET_IDS.has(id)) urls.push(art.icon(id));
   }
-  for (const id of RETIRING_ICONS) urls.push(art.icon(id));
-  for (const id of [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)]) {
-    if (!NO_ICON_YET.has(id)) urls.push(art.gear(id), art.gearLarge(id));
-  }
-  for (const id of SILHOUETTE_IDS()) if (!NO_ICON_YET.has(`silhouette:${id}`)) urls.push(art.gearSilhouette(id));
-  for (const r of FRAMED_RARITIES) if (!NO_ICON_YET.has(`ui:rarity-${r}`)) urls.push(art.rarityFrame(r));
-  if (!NO_ICON_YET.has('ui:glow-legendary')) urls.push(art.rarityGlow);
-  if (!NO_ICON_YET.has('ui:starlit')) urls.push(art.starlitOverlay);
-  if (!NO_ICON_YET.has('scene:forge')) urls.push(art.scene('forge'));
-  if (!NO_ICON_YET.has('npc:forge')) urls.push(art.npc('forge', 'normal'));
-  if (!NO_ICON_YET.has('npc:forge-happy')) urls.push(art.npc('forge', 'happy'));
+  // Plan 5d: the gear art of every base and special (small and large; a base no longer lists an icon/ path), the codex
+  // silhouettes, the rarity layers, the forge and Doran. A piece merged into SPECIALS later (a roster unique) comes with
+  // its own art batch, which must list it here.
+  for (const id of [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)]) urls.push(art.gear(id), art.gearLarge(id));
+  for (const id of SILHOUETTE_IDS()) urls.push(art.gearSilhouette(id));
+  for (const r of FRAMED_RARITIES) urls.push(art.rarityFrame(r));
+  urls.push(art.rarityGlow, art.starlitOverlay, art.scene('forge'), art.npc('forge', 'normal'), art.npc('forge', 'happy'));
   return urls;
 }
 

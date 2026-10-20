@@ -34,6 +34,13 @@ export function win(cls: string, children: Node[] = []): HTMLElement {
   return el('div', { class: `slx-win ${cls}` }, children);
 }
 
+/**
+ * Rows on screen for a list of gear with its 26px icons (shop goods, forge pieces, set crafting): a taller row than a text
+ * row, so fewer fit in the same window (plan 5d Task 10; 8 x 26px rows, the ▲/▼ cues and the frame stay inside the
+ * forge list's 260px and the screen).
+ */
+export const GEAR_ROWS = 8;
+
 /** Wheel travel, in pixels, that scrolls a list by one row: about one mouse-wheel notch. */
 const WHEEL_STEP = 100;
 /** Pixels per wheel unit by deltaMode: pixels, lines (three lines make a notch), pages (one row each). */

@@ -2447,8 +2447,7 @@
     },
     "icon-wooden-staff": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/wooden-staff.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-wooden-staff.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2465,7 +2464,10 @@
           34
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/wooden-staff.png",
+      "retired_reason": "replaced by gear-wooden-staff (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-iron-sword": {
       "kind": "sprite",
@@ -2493,8 +2495,7 @@
     },
     "icon-hunter-bow": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/hunter-bow.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-hunter-bow.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2511,12 +2512,14 @@
           33
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/hunter-bow.png",
+      "retired_reason": "replaced by gear-hunter-bow (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-thorn-spear": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/thorn-spear.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-thorn-spear.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2533,12 +2536,14 @@
           32
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/thorn-spear.png",
+      "retired_reason": "replaced by gear-thorn-spear (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-crystal-blade": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/crystal-blade.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-crystal-blade.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2555,12 +2560,14 @@
           32
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/crystal-blade.png",
+      "retired_reason": "replaced by gear-crystal-blade (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-frost-staff": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/frost-staff.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-frost-staff.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2577,12 +2584,14 @@
           33
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/frost-staff.png",
+      "retired_reason": "replaced by gear-frost-staff (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-star-saber": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/star-saber.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-star-saber.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2599,12 +2608,14 @@
           35
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/star-saber.png",
+      "retired_reason": "replaced by gear-star-saber (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-cloth-robe": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/cloth-robe.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-cloth-robe.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2621,12 +2632,14 @@
           32
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/cloth-robe.png",
+      "retired_reason": "replaced by gear-cloth-robe (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-leather-vest": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/leather-vest.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-leather-vest.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2643,12 +2656,14 @@
           33
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/leather-vest.png",
+      "retired_reason": "replaced by gear-leather-vest (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-scale-mail": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/scale-mail.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-scale-mail.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2665,12 +2680,14 @@
           32
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/scale-mail.png",
+      "retired_reason": "replaced by gear-scale-mail (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-dusk-mantle": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/dusk-mantle.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-dusk-mantle.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2689,12 +2706,14 @@
           34
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/dusk-mantle.png",
+      "retired_reason": "replaced by gear-dusk-mantle (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-moss-charm": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/moss-charm.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-moss-charm.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2711,12 +2730,14 @@
           33
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/moss-charm.png",
+      "retired_reason": "replaced by gear-moss-charm (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-bat-earring": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/bat-earring.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-bat-earring.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2735,12 +2756,14 @@
           36
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/bat-earring.png",
+      "retired_reason": "replaced by gear-bat-earring (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-crystal-pendant": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/crystal-pendant.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-crystal-pendant.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2757,12 +2780,14 @@
           33
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/crystal-pendant.png",
+      "retired_reason": "replaced by gear-crystal-pendant (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "icon-gear-ring": {
       "kind": "sprite",
-      "status": "published",
-      "runtime": "/assets/games/starlantern/icon/gear-ring.png",
+      "status": "retired",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-gear-ring.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
       "qa": {
@@ -2781,7 +2806,10 @@
           31
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "retired_runtime": "/assets/games/starlantern/icon/gear-ring.png",
+      "retired_reason": "replaced by gear-gear-ring (plan 5d)",
+      "retired_on": "2026-10-20"
     },
     "sheet-icons-1": {
       "kind": "icon-sheet",
@@ -8458,7 +8486,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8469,7 +8497,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/wooden-staff-large.png"
     },
     "gear-wooden-staff": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-wooden-staff.png",
@@ -8504,7 +8533,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8515,7 +8544,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/wooden-staff.png"
     },
     "gear-hunter-bow-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-hunter-bow-large.png",
@@ -8550,7 +8580,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8561,7 +8591,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/hunter-bow-large.png"
     },
     "gear-hunter-bow": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-hunter-bow.png",
@@ -8596,7 +8627,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8607,7 +8638,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/hunter-bow.png"
     },
     "gear-thorn-spear-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-thorn-spear-large.png",
@@ -8642,7 +8674,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8653,7 +8685,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/thorn-spear-large.png"
     },
     "gear-thorn-spear": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-thorn-spear.png",
@@ -8688,7 +8721,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8699,7 +8732,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/thorn-spear.png"
     },
     "gear-crystal-blade-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-crystal-blade-large.png",
@@ -8734,7 +8768,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8745,7 +8779,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/crystal-blade-large.png"
     },
     "gear-crystal-blade": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-crystal-blade.png",
@@ -8780,7 +8815,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8791,7 +8826,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/crystal-blade.png"
     },
     "gear-frost-staff-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-frost-staff-large.png",
@@ -8826,7 +8862,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a4.png",
@@ -8837,7 +8873,8 @@
       "chosen_attempt": "a4",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/frost-staff-large.png"
     },
     "gear-frost-staff": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-frost-staff.png",
@@ -8872,7 +8909,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a4.png",
@@ -8883,7 +8920,8 @@
       "chosen_attempt": "a4",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/frost-staff.png"
     },
     "gear-star-saber-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-star-saber-large.png",
@@ -8918,7 +8956,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8929,7 +8967,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/star-saber-large.png"
     },
     "gear-star-saber": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-star-saber.png",
@@ -8964,7 +9003,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -8975,7 +9014,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/star-saber.png"
     },
     "gear-crystal-aegis-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-crystal-aegis-large.png",
@@ -9010,7 +9050,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -9020,7 +9060,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/crystal-aegis-large.png"
     },
     "gear-crystal-aegis": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-crystal-aegis.png",
@@ -9055,7 +9096,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -9065,7 +9106,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/crystal-aegis.png"
     },
     "gear-scale-helm-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-scale-helm-large.png",
@@ -9100,7 +9142,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -9110,7 +9152,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/scale-helm-large.png"
     },
     "gear-scale-helm": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-scale-helm.png",
@@ -9145,7 +9188,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -9155,7 +9198,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/scale-helm.png"
     },
     "gear-cloth-gloves-large": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-cloth-gloves-large.png",
@@ -9190,7 +9234,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -9200,7 +9244,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/cloth-gloves-large.png"
     },
     "gear-cloth-gloves": {
       "final": "art-factory/starlantern/work/sheet-gear-2/gear-cloth-gloves.png",
@@ -9235,7 +9280,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-2\\sheet-gear-2-a3.png",
@@ -9245,7 +9290,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/cloth-gloves.png"
     },
     "gear-thorn-gauntlets-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-thorn-gauntlets-large.png",
@@ -9280,7 +9326,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9290,7 +9336,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/thorn-gauntlets-large.png"
     },
     "gear-thorn-gauntlets": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-thorn-gauntlets.png",
@@ -9327,7 +9374,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9337,7 +9384,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/thorn-gauntlets.png"
     },
     "gear-straw-sandals-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-straw-sandals-large.png",
@@ -9372,7 +9420,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9382,7 +9430,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/straw-sandals-large.png"
     },
     "gear-straw-sandals": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-straw-sandals.png",
@@ -9417,7 +9466,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9427,7 +9476,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/straw-sandals.png"
     },
     "gear-bat-boots-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-bat-boots-large.png",
@@ -9462,7 +9512,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9472,7 +9522,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/bat-boots-large.png"
     },
     "gear-bat-boots": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-bat-boots.png",
@@ -9507,7 +9558,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9517,7 +9568,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/bat-boots.png"
     },
     "gear-cloth-robe-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-cloth-robe-large.png",
@@ -9552,7 +9604,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9562,7 +9614,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/cloth-robe-large.png"
     },
     "gear-cloth-robe": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-cloth-robe.png",
@@ -9597,7 +9650,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9607,7 +9660,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/cloth-robe.png"
     },
     "gear-leather-vest-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-leather-vest-large.png",
@@ -9642,7 +9696,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9652,7 +9706,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/leather-vest-large.png"
     },
     "gear-leather-vest": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-leather-vest.png",
@@ -9687,7 +9742,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9697,7 +9752,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/leather-vest.png"
     },
     "gear-scale-mail-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-scale-mail-large.png",
@@ -9732,7 +9788,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9742,7 +9798,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/scale-mail-large.png"
     },
     "gear-scale-mail": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-scale-mail.png",
@@ -9777,7 +9834,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9787,7 +9844,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/scale-mail.png"
     },
     "gear-dusk-mantle-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-dusk-mantle-large.png",
@@ -9822,7 +9880,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9832,7 +9890,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/dusk-mantle-large.png"
     },
     "gear-dusk-mantle": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-dusk-mantle.png",
@@ -9867,7 +9926,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
@@ -9877,7 +9936,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/dusk-mantle.png"
     },
     "gear-moss-charm-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-moss-charm-large.png",
@@ -9912,7 +9972,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
@@ -9922,7 +9982,8 @@
       "chosen_attempt": "a4",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/moss-charm-large.png"
     },
     "gear-moss-charm": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-moss-charm.png",
@@ -9957,7 +10018,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
@@ -9967,7 +10028,8 @@
       "chosen_attempt": "a4",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/moss-charm.png"
     },
     "gear-bat-earring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-bat-earring-large.png",
@@ -10004,7 +10066,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
@@ -10014,7 +10076,8 @@
       "chosen_attempt": "a4",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/bat-earring-large.png"
     },
     "gear-bat-earring": {
       "final": "art-factory/starlantern/work/sheet-gear-3/gear-bat-earring.png",
@@ -10049,7 +10112,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a4.png",
@@ -10059,7 +10122,8 @@
       "chosen_attempt": "a4",
       "source_id": "sheet-gear-3",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/bat-earring.png"
     },
     "gear-crystal-pendant-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-crystal-pendant-large.png",
@@ -10094,7 +10158,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
@@ -10104,7 +10168,8 @@
       "chosen_attempt": "a5",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/crystal-pendant-large.png"
     },
     "gear-crystal-pendant": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-crystal-pendant.png",
@@ -10139,7 +10204,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
@@ -10149,7 +10214,8 @@
       "chosen_attempt": "a5",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/crystal-pendant.png"
     },
     "gear-gear-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-gear-ring-large.png",
@@ -10184,7 +10250,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10194,7 +10260,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/gear-ring-large.png"
     },
     "gear-gear-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-gear-ring.png",
@@ -10229,7 +10296,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10239,7 +10306,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/gear-ring.png"
     },
     "gear-copper-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-copper-ring-large.png",
@@ -10274,7 +10342,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10284,7 +10352,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/copper-ring-large.png"
     },
     "gear-copper-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-copper-ring.png",
@@ -10319,7 +10388,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10329,7 +10398,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/copper-ring.png"
     },
     "gear-star-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-star-ring-large.png",
@@ -10366,7 +10436,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10376,7 +10446,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/star-ring-large.png"
     },
     "gear-star-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-star-ring.png",
@@ -10411,7 +10482,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10421,7 +10492,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/star-ring.png"
     },
     "gear-lg-liz-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-liz-large.png",
@@ -10456,7 +10528,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10467,7 +10539,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-liz-large.png"
     },
     "gear-lg-liz": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-liz.png",
@@ -10502,7 +10575,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10513,7 +10586,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-liz.png"
     },
     "gear-lg-scarlet-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-scarlet-large.png",
@@ -10550,7 +10624,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10560,7 +10634,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-scarlet-large.png"
     },
     "gear-lg-scarlet": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-scarlet.png",
@@ -10597,7 +10672,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10607,7 +10682,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-scarlet.png"
     },
     "gear-lg-selene-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-selene-large.png",
@@ -10644,7 +10720,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10654,7 +10730,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-selene-large.png"
     },
     "gear-lg-selene": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-selene.png",
@@ -10689,7 +10766,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -10699,7 +10776,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-selene.png"
     },
     "gear-lg-safira-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-lg-safira-large.png",
@@ -10736,7 +10814,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -10746,7 +10824,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-safira-large.png"
     },
     "gear-lg-safira": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-lg-safira.png",
@@ -10783,7 +10862,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -10793,7 +10872,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-safira.png"
     },
     "gear-lg-bobby-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-lg-bobby-large.png",
@@ -10828,7 +10908,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -10838,7 +10918,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-bobby-large.png"
     },
     "gear-lg-bobby": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-lg-bobby.png",
@@ -10873,7 +10954,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -10883,7 +10964,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-bobby.png"
     },
     "gear-frost-bloom-neck-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-frost-bloom-neck-large.png",
@@ -10920,7 +11002,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -10930,7 +11012,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/frost-bloom-neck-large.png"
     },
     "gear-frost-bloom-neck": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-frost-bloom-neck.png",
@@ -10965,7 +11048,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -10975,7 +11058,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/frost-bloom-neck.png"
     },
     "gear-storm-thunder-bow-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-storm-thunder-bow-large.png",
@@ -11012,7 +11096,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11023,7 +11107,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/storm-thunder-bow-large.png"
     },
     "gear-storm-thunder-bow": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-storm-thunder-bow.png",
@@ -11058,7 +11143,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11069,7 +11154,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/storm-thunder-bow.png"
     },
     "gear-mire-whisper-gloves-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-mire-whisper-gloves-large.png",
@@ -11104,7 +11190,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11114,7 +11200,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/mire-whisper-gloves-large.png"
     },
     "gear-mire-whisper-gloves": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-mire-whisper-gloves.png",
@@ -11149,7 +11236,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11159,7 +11246,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/mire-whisper-gloves.png"
     },
     "gear-shade-silent-blade-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-shade-silent-blade-large.png",
@@ -11194,7 +11282,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11205,7 +11293,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/shade-silent-blade-large.png"
     },
     "gear-shade-silent-blade": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-shade-silent-blade.png",
@@ -11240,7 +11329,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11251,7 +11340,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/shade-silent-blade.png"
     },
     "gear-iron-bulwark-plate-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-iron-bulwark-plate-large.png",
@@ -11286,7 +11376,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11296,7 +11386,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/iron-bulwark-plate-large.png"
     },
     "gear-iron-bulwark-plate": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-iron-bulwark-plate.png",
@@ -11331,7 +11422,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11341,7 +11432,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/iron-bulwark-plate.png"
     },
     "gear-blaze-ember-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-blaze-ember-ring-large.png",
@@ -11376,7 +11468,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11386,7 +11478,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/blaze-ember-ring-large.png"
     },
     "gear-blaze-ember-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-blaze-ember-ring.png",
@@ -11421,7 +11514,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11431,7 +11524,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/blaze-ember-ring.png"
     },
     "gear-frost-winter-staff-large": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-frost-winter-staff-large.png",
@@ -11466,7 +11560,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11477,7 +11571,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/frost-winter-staff-large.png"
     },
     "gear-frost-winter-staff": {
       "final": "art-factory/starlantern/work/sheet-gear-5/gear-frost-winter-staff.png",
@@ -11512,7 +11607,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
@@ -11523,7 +11618,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-5",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/frost-winter-staff.png"
     },
     "gear-set-blaze-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-blaze-ring-large.png",
@@ -11558,7 +11654,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11568,7 +11664,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-blaze-ring-large.png"
     },
     "gear-set-blaze-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-blaze-ring.png",
@@ -11603,7 +11700,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11613,7 +11710,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-blaze-ring.png"
     },
     "gear-set-frost-weapon-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-weapon-large.png",
@@ -11648,7 +11746,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11659,7 +11757,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-frost-weapon-large.png"
     },
     "gear-set-frost-weapon": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-weapon.png",
@@ -11694,7 +11793,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11705,7 +11804,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-frost-weapon.png"
     },
     "gear-set-frost-head-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-head-large.png",
@@ -11740,7 +11840,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11750,7 +11850,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-frost-head-large.png"
     },
     "gear-set-frost-head": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-head.png",
@@ -11785,7 +11886,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11795,7 +11896,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-frost-head.png"
     },
     "gear-set-frost-neck-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-neck-large.png",
@@ -11830,7 +11932,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11840,7 +11942,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-frost-neck-large.png"
     },
     "gear-set-frost-neck": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-neck.png",
@@ -11875,7 +11978,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11885,7 +11988,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-frost-neck.png"
     },
     "gear-set-frost-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-ring-large.png",
@@ -11920,7 +12024,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11930,7 +12034,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-frost-ring-large.png"
     },
     "gear-set-frost-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-ring.png",
@@ -11965,7 +12070,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -11975,7 +12080,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-frost-ring.png"
     },
     "gear-set-storm-hands-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-hands-large.png",
@@ -12010,7 +12116,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -12020,7 +12126,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-storm-hands-large.png"
     },
     "gear-set-storm-hands": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-hands.png",
@@ -12055,7 +12162,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -12065,7 +12172,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-storm-hands.png"
     },
     "gear-set-storm-feet-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-feet-large.png",
@@ -12100,7 +12208,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -12110,7 +12218,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-storm-feet-large.png"
     },
     "gear-set-storm-feet": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-feet.png",
@@ -12145,7 +12254,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -12155,7 +12264,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-storm-feet.png"
     },
     "gear-set-storm-ring-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-ring-large.png",
@@ -12190,7 +12300,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -12200,7 +12310,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-storm-ring-large.png"
     },
     "gear-set-storm-ring": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-ring.png",
@@ -12235,7 +12346,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -12245,7 +12356,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-storm-ring.png"
     },
     "gear-set-mire-head-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-head-large.png",
@@ -12280,7 +12392,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12290,7 +12402,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-mire-head-large.png"
     },
     "gear-set-mire-head": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-head.png",
@@ -12325,7 +12438,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12335,7 +12448,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-mire-head.png"
     },
     "gear-set-mire-body-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-body-large.png",
@@ -12370,7 +12484,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12380,7 +12494,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-mire-body-large.png"
     },
     "gear-set-mire-body": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-body.png",
@@ -12415,7 +12530,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12425,7 +12540,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-mire-body.png"
     },
     "gear-set-mire-feet-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-feet-large.png",
@@ -12460,7 +12576,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12470,7 +12586,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-mire-feet-large.png"
     },
     "gear-set-mire-feet": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-feet.png",
@@ -12505,7 +12622,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12515,7 +12632,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-mire-feet.png"
     },
     "gear-set-mire-neck-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-neck-large.png",
@@ -12550,7 +12668,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12560,7 +12678,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-mire-neck-large.png"
     },
     "gear-set-mire-neck": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-neck.png",
@@ -12595,7 +12714,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12605,7 +12724,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-mire-neck.png"
     },
     "gear-set-shade-weapon-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-weapon-large.png",
@@ -12640,7 +12760,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12651,7 +12771,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-shade-weapon-large.png"
     },
     "gear-set-shade-weapon": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-weapon.png",
@@ -12686,7 +12807,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12697,7 +12818,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-shade-weapon.png"
     },
     "gear-set-shade-head-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-head-large.png",
@@ -12732,7 +12854,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12742,7 +12864,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-shade-head-large.png"
     },
     "gear-set-shade-head": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-head.png",
@@ -12777,7 +12900,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12787,7 +12910,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-shade-head.png"
     },
     "gear-set-shade-hands-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-hands-large.png",
@@ -12822,7 +12946,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12832,7 +12956,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-shade-hands-large.png"
     },
     "gear-set-shade-hands": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-hands.png",
@@ -12867,7 +12992,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12877,7 +13002,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-shade-hands.png"
     },
     "gear-set-shade-feet-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-feet-large.png",
@@ -12914,7 +13040,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12924,7 +13050,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-shade-feet-large.png"
     },
     "gear-set-shade-feet": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-feet.png",
@@ -12961,7 +13088,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -12971,7 +13098,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-shade-feet.png"
     },
     "gear-storm-swift-boots-large": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-storm-swift-boots-large.png",
@@ -13008,7 +13136,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -13018,7 +13146,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/storm-swift-boots-large.png"
     },
     "gear-storm-swift-boots": {
       "final": "art-factory/starlantern/work/sheet-gear-7/gear-storm-swift-boots.png",
@@ -13053,7 +13182,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-7\\sheet-gear-7-a3.png",
@@ -13063,7 +13192,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-7",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/storm-swift-boots.png"
     },
     "gear-set-iron-offhand-large": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-offhand-large.png",
@@ -13098,7 +13228,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13108,7 +13238,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-iron-offhand-large.png"
     },
     "gear-set-iron-offhand": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-offhand.png",
@@ -13143,7 +13274,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13153,7 +13284,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-iron-offhand.png"
     },
     "gear-set-iron-head-large": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-head-large.png",
@@ -13188,7 +13320,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13198,7 +13330,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-iron-head-large.png"
     },
     "gear-set-iron-head": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-head.png",
@@ -13233,7 +13366,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13243,7 +13376,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-iron-head.png"
     },
     "gear-set-iron-body-large": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-body-large.png",
@@ -13278,7 +13412,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13288,7 +13422,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-iron-body-large.png"
     },
     "gear-set-iron-body": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-body.png",
@@ -13323,7 +13458,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13333,7 +13468,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-iron-body.png"
     },
     "gear-set-iron-feet-large": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-feet-large.png",
@@ -13368,7 +13504,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13378,7 +13514,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-iron-feet-large.png"
     },
     "gear-set-iron-feet": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-feet.png",
@@ -13413,7 +13550,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13423,7 +13560,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-iron-feet.png"
     },
     "gear-mire-miasma-mask-large": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-mire-miasma-mask-large.png",
@@ -13458,7 +13596,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13468,7 +13606,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/mire-miasma-mask-large.png"
     },
     "gear-mire-miasma-mask": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-mire-miasma-mask.png",
@@ -13503,7 +13642,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
@@ -13513,7 +13652,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/mire-miasma-mask.png"
     },
     "gear-shade-raven-cloak-large": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-shade-raven-cloak-large.png",
@@ -13548,7 +13688,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a3.png",
@@ -13558,7 +13698,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/shade-raven-cloak-large.png"
     },
     "gear-shade-raven-cloak": {
       "final": "art-factory/starlantern/work/sheet-gear-8/gear-shade-raven-cloak.png",
@@ -13593,7 +13734,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a3.png",
@@ -13603,7 +13744,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-8",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/shade-raven-cloak.png"
     },
     "icon-blaze-core": {
       "final": "art-factory/starlantern/work/sheet-mat-2/icon-blaze-core.png",
@@ -13623,11 +13765,12 @@
           35
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "sheet-mat-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/icon/blaze-core.png"
     },
     "icon-frost-heart": {
       "final": "art-factory/starlantern/work/sheet-mat-2/icon-frost-heart.png",
@@ -13647,11 +13790,12 @@
           33
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "sheet-mat-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/icon/frost-heart.png"
     },
     "icon-storm-stone": {
       "final": "art-factory/starlantern/work/sheet-mat-2/icon-storm-stone.png",
@@ -13671,11 +13815,12 @@
           34
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "sheet-mat-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/icon/storm-stone.png"
     },
     "icon-shade-crystal": {
       "final": "art-factory/starlantern/work/sheet-mat-2/icon-shade-crystal.png",
@@ -13697,11 +13842,12 @@
           33
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "sheet-mat-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/icon/shade-crystal.png"
     },
     "icon-mire-gland": {
       "final": "art-factory/starlantern/work/sheet-mat-2/icon-mire-gland.png",
@@ -13721,11 +13867,12 @@
           34
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a2",
       "source_id": "sheet-mat-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/icon/mire-gland.png"
     },
     "icon-iron-shard": {
       "final": "art-factory/starlantern/work/sheet-mat-2/icon-iron-shard.png",
@@ -13745,11 +13892,12 @@
           34
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a2",
       "source_id": "sheet-mat-2",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/icon/iron-shard.png"
     },
     "npc-forge-happy": {
       "allow_edge": [
@@ -13774,7 +13922,7 @@
           180
         ]
       },
-      "status": "approved",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "npc-forge-happy",
       "batch": "gear-5d-main-gear",
@@ -13782,7 +13930,8 @@
         "a1": "採用：npc-forge-happy。",
         "a2": "未採用：npc-forge-happy：通過但他版較好或同套須同一版"
       },
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/npc/forge-happy.png"
     },
     "sheet-gear-3": {
       "rejected_attempts": {
@@ -13870,7 +14019,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -13880,7 +14029,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-noel-large.png"
     },
     "gear-lg-noel": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-noel.png",
@@ -13915,7 +14065,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a3.png",
@@ -13925,7 +14075,8 @@
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-noel.png"
     },
     "gear-set-storm-weapon-large": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-weapon-large.png",
@@ -13960,7 +14111,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -13971,7 +14122,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-storm-weapon-large.png"
     },
     "gear-set-storm-weapon": {
       "final": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-weapon.png",
@@ -14006,7 +14158,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-6\\sheet-gear-6-a2.png",
@@ -14017,7 +14169,8 @@
       "chosen_attempt": "a2",
       "source_id": "sheet-gear-6",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/set-storm-weapon.png"
     },
     "gear-lg-sylvie-large": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-sylvie-large.png",
@@ -14052,7 +14205,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
@@ -14062,7 +14215,8 @@
       "chosen_attempt": "a5",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-sylvie-large.png"
     },
     "gear-lg-sylvie": {
       "final": "art-factory/starlantern/work/sheet-gear-4/gear-lg-sylvie.png",
@@ -14097,7 +14251,7 @@
         ],
         "spec": "gear-cell:03c3f55cc7d1"
       },
-      "status": "approved",
+      "status": "published",
       "kind": "gear-cell",
       "source": {
         "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a5.png",
@@ -14107,7 +14261,353 @@
       "chosen_attempt": "a5",
       "source_id": "sheet-gear-4",
       "batch": "gear-5d-main-gear",
-      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20"
+      "approved_by": "1 可以 / 2 可以 / 3 可以（G2 main-gear）2026-10-20",
+      "runtime": "/assets/games/starlantern/gear/lg-sylvie.png"
+    },
+    "gear-blaze-ember-ring-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-blaze-ember-ring-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-5/gear-blaze-ember-ring.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 429,
+        "source_opaque": 309
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-blaze-ember-ring"
+      },
+      "approved_by": "derived from gear-blaze-ember-ring",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-blaze-ember-ring",
+      "runtime": "/assets/games/starlantern/gear/blaze-ember-ring-silhouette.png"
+    },
+    "gear-frost-winter-staff-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-frost-winter-staff-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-5/gear-frost-winter-staff.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 272,
+        "source_opaque": 158
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-frost-winter-staff"
+      },
+      "approved_by": "derived from gear-frost-winter-staff",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-frost-winter-staff",
+      "runtime": "/assets/games/starlantern/gear/frost-winter-staff-silhouette.png"
+    },
+    "gear-frost-bloom-neck-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-frost-bloom-neck-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-5/gear-frost-bloom-neck.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 370,
+        "source_opaque": 227
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-frost-bloom-neck"
+      },
+      "approved_by": "derived from gear-frost-bloom-neck",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-frost-bloom-neck",
+      "runtime": "/assets/games/starlantern/gear/frost-bloom-neck-silhouette.png"
+    },
+    "gear-storm-thunder-bow-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-storm-thunder-bow-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-5/gear-storm-thunder-bow.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 265,
+        "source_opaque": 127
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-storm-thunder-bow"
+      },
+      "approved_by": "derived from gear-storm-thunder-bow",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-storm-thunder-bow",
+      "runtime": "/assets/games/starlantern/gear/storm-thunder-bow-silhouette.png"
+    },
+    "gear-storm-swift-boots-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-storm-swift-boots-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-7/gear-storm-swift-boots.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 384,
+        "source_opaque": 282
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-storm-swift-boots"
+      },
+      "approved_by": "derived from gear-storm-swift-boots",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-storm-swift-boots",
+      "runtime": "/assets/games/starlantern/gear/storm-swift-boots-silhouette.png"
+    },
+    "gear-mire-miasma-mask-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-mire-miasma-mask-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-8/gear-mire-miasma-mask.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 440,
+        "source_opaque": 346
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-mire-miasma-mask"
+      },
+      "approved_by": "derived from gear-mire-miasma-mask",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-mire-miasma-mask",
+      "runtime": "/assets/games/starlantern/gear/mire-miasma-mask-silhouette.png"
+    },
+    "gear-mire-whisper-gloves-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-mire-whisper-gloves-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-5/gear-mire-whisper-gloves.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 470,
+        "source_opaque": 366
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-mire-whisper-gloves"
+      },
+      "approved_by": "derived from gear-mire-whisper-gloves",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-mire-whisper-gloves",
+      "runtime": "/assets/games/starlantern/gear/mire-whisper-gloves-silhouette.png"
+    },
+    "gear-shade-silent-blade-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-shade-silent-blade-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-5/gear-shade-silent-blade.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 299,
+        "source_opaque": 201
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-shade-silent-blade"
+      },
+      "approved_by": "derived from gear-shade-silent-blade",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-shade-silent-blade",
+      "runtime": "/assets/games/starlantern/gear/shade-silent-blade-silhouette.png"
+    },
+    "gear-shade-raven-cloak-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-shade-raven-cloak-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-8/gear-shade-raven-cloak.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 420,
+        "source_opaque": 322
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-shade-raven-cloak"
+      },
+      "approved_by": "derived from gear-shade-raven-cloak",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-shade-raven-cloak",
+      "runtime": "/assets/games/starlantern/gear/shade-raven-cloak-silhouette.png"
+    },
+    "gear-iron-bulwark-plate-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-iron-bulwark-plate-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-5/gear-iron-bulwark-plate.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 503,
+        "source_opaque": 402
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-iron-bulwark-plate"
+      },
+      "approved_by": "derived from gear-iron-bulwark-plate",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-iron-bulwark-plate",
+      "runtime": "/assets/games/starlantern/gear/iron-bulwark-plate-silhouette.png"
+    },
+    "gear-set-frost-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-set-frost-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-6/gear-set-frost-weapon.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 270,
+        "source_opaque": 162
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-set-frost-weapon"
+      },
+      "approved_by": "derived from gear-set-frost-weapon",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-set-frost-weapon",
+      "runtime": "/assets/games/starlantern/gear/set-frost-silhouette.png"
+    },
+    "gear-set-storm-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-set-storm-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-6/gear-set-storm-weapon.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 278,
+        "source_opaque": 171
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-set-storm-weapon"
+      },
+      "approved_by": "derived from gear-set-storm-weapon",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-set-storm-weapon",
+      "runtime": "/assets/games/starlantern/gear/set-storm-silhouette.png"
+    },
+    "gear-set-mire-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-set-mire-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-7/gear-set-mire-head.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 396,
+        "source_opaque": 303
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-set-mire-head"
+      },
+      "approved_by": "derived from gear-set-mire-head",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-set-mire-head",
+      "runtime": "/assets/games/starlantern/gear/set-mire-silhouette.png"
+    },
+    "gear-set-shade-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-set-shade-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-7/gear-set-shade-weapon.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 275,
+        "source_opaque": 166
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-set-shade-weapon"
+      },
+      "approved_by": "derived from gear-set-shade-weapon",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-set-shade-weapon",
+      "runtime": "/assets/games/starlantern/gear/set-shade-silhouette.png"
+    },
+    "gear-set-iron-silhouette": {
+      "final": "art-factory/starlantern/work/gear-silhouettes/gear-set-iron-silhouette.png",
+      "raw": "art-factory/starlantern/work/sheet-gear-8/gear-set-iron-offhand.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "size": [
+          28,
+          28
+        ],
+        "opaque": 400,
+        "source_opaque": 308
+      },
+      "status": "published",
+      "kind": "silhouette",
+      "source": {
+        "from": "gear-set-iron-offhand"
+      },
+      "approved_by": "derived from gear-set-iron-offhand",
+      "batch": "gear-5d-main-gear",
+      "source_id": "gear-set-iron-offhand",
+      "runtime": "/assets/games/starlantern/gear/set-iron-silhouette.png"
     }
   },
   "requa_log": [

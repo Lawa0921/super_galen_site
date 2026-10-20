@@ -14,7 +14,7 @@ import { el } from '../../ui/dom';
 import { gearIconUrl } from '../gearArt';
 import { fillRich, gearPart } from '../loot';
 import { Menu, type MenuItem } from '../menu';
-import { MenuView, QtyView, confirmBox, richNodes, win, type Rich } from '../widgets';
+import { GEAR_ROWS, MenuView, QtyView, confirmBox, richNodes, win, type Rich } from '../widgets';
 import { costText, lackingNames, type ForgeHost } from './forge';
 
 /** The most of one consumable a single craft makes, as in the shop. */
@@ -53,9 +53,12 @@ export function openCraft(h: ForgeHost): void {
     return icon ? { icon, iconCls: 'slx-gear-ico' } : {};
   };
 
-  /** One list layer sharing the page's detail window; the detail follows the cursor, Esc pops and runs `back`. */
+  /**
+   * One list layer sharing the page's detail window; the detail follows the cursor, Esc pops and runs `back`. `shown` is how
+   * many rows are on screen (fewer for gear with its icons).
+   */
   function layer(info: HTMLElement, o: {
-    rows(): MenuItem[]; detail(id: string): HTMLElement[]; pick(it: MenuItem, refresh: () => void): void; back(): void;
+    rows(): MenuItem[]; detail(id: string): HTMLElement[]; pick(it: MenuItem, refresh: () => void): void; back(): void; shown?: number;
   }): { show(): void } {
     const show = () => { const c = v.menu.current(); info.replaceChildren(...(c ? o.detail(c.id) : [])); };
     const refresh = () => {
@@ -68,7 +71,7 @@ export function openCraft(h: ForgeHost): void {
       pick: (it) => o.pick(it, refresh),
       moved: () => { h.ctx.sfx.cursor(); show(); },
       cancel: () => { h.pop(); o.back(); },
-    }, 12);
+    }, o.shown ?? 12);
     show();
     h.push({ el: win('slx-list slx-forge-list slx-craft-list', [v.el]), onAction: (a) => v.onAction(a) });
     return { show };
@@ -164,6 +167,7 @@ export function openCraft(h: ForgeHost): void {
   const sets = () => {
     const info = newInfo();
     const setsLayer = layer(info, {
+      shown: GEAR_ROWS,
       rows: () => Object.values(SETS).map((set): MenuItem => ({ id: set.id, label: codexName(set.id), right: REGIONS[set.region].name, ...gearIcon(set.id) })),
       detail: (id) => [
         el('p', { class: 'slx-name-line', text: codexName(id) }),
@@ -171,6 +175,7 @@ export function openCraft(h: ForgeHost): void {
       ],
       pick: (setRow) => {
         layer(info, {
+          shown: GEAR_ROWS,
           rows: () => SETS[setRow.id].pieces.map((id) => ({ ...recipeRow(game.state, { id, label: codexName(id), cost: setCost(game.state, id)!, cls: 'slx-rarity-set' }), ...gearIcon(id) })),
           detail: (id) => [
             el('p', { class: 'slx-name-line slx-rarity-set', text: codexName(id) }),

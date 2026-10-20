@@ -131,7 +131,7 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 // Gear art in a list row or a loot line (plan 5d Task 7) keeps its own 26 x 26, never scaled like an item icon; its row
 // grows to fit it.
 .slx-ico.slx-gear-ico { display: inline-block; flex: none; width: 26px; height: 26px; vertical-align: middle; image-rendering: pixelated; }
-.slx-list .slx-opt:has(.slx-gear-ico) { min-height: 26px; }
+.slx-list .slx-opt:has(.slx-gear-ico) { min-height: 26px; padding-top: 0; padding-bottom: 0; }
 .slx-info { left: 340px; top: 56px; width: 180px; }
 .slx-info img { display: block; height: 120px; margin: 0 auto 4px; }
 .slx-desc { color: $slx-dim; margin: 2px 0; }

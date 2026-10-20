@@ -630,8 +630,7 @@ test.describe('starlantern', () => {
   });
 
   test('a starlit chest drop raises a star-light pillar', async ({ page }) => {
-    const asked: string[] = [];
-    page.on('request', (r) => asked.push(r.url()));
+    const answered = assetResponses(page);
     const w = await setup(page, 7);
     await depart(page, w);
     // As in the rare chest test, but every chest's gear is a starlit legendary.
@@ -651,6 +650,7 @@ test.describe('starlantern', () => {
     const pillar = page.locator('.slx-pillar.slx-pillar-starlit.slx-pillar-legend');
     const tried: string[] = [];
     let raised = false;
+    let lineIcon = false;
     for (let c = 0; c < chests && !raised; c++) {
       const route = await pathTo(page, 'chest', tried);
       if (!route) break;
@@ -660,11 +660,18 @@ test.describe('starlantern', () => {
         await page.keyboard.press(k);
       }
       raised = (await pillar.count()) > 0;
+      if (raised) {
+        lineIcon = await page.locator('.slx-talk .slx-text img.slx-gear-ico[src$="/gear/lg-chizuru.png"]').evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth === 26)
+          .catch(() => false);
+      }
       await w.closeTalk();
     }
     expect(raised).toBe(true);
     expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.run.loot.gear.map((it: any) => it.starlit === true))).toContain(true);
-    expect(asked.filter((u) => UNPUBLISHED_RARITY_ART.some((a) => u.endsWith(a)))).toEqual([]);
+    // The chest line names the piece after its published gear icon, which loaded; the spear's art answered 200.
+    expect(answered.some((a) => a.url.endsWith('/gear/lg-chizuru.png') && a.status === 200)).toBe(true);
+    expect(answered.filter((a) => a.status >= 400)).toEqual([]);
+    expect(lineIcon).toBe(true);
     expect(w.errors).toEqual([]);
   });
 
@@ -1237,11 +1244,11 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
-  test('every published art file loads, and nothing unpublished is asked for (plan 5d Task 8)', async ({ page }) => {
+  test('every published art file loads, and nothing unpublished is asked for (plan 5d Tasks 8 and 10)', async ({ page }) => {
     const answered = assetResponses(page);
     const w = await setup(page, 7);
     const manifest = await page.evaluate(async () => (await (await fetch('/assets/games/starlantern/manifest.json')).json()).urls as string[]);
-    expect(manifest.length).toBe(282);
+    expect(manifest.length).toBe(410);
     // Every file the manifest lists answers 200.
     for (const u of manifest) expect((await page.request.get(u)).status(), u).toBe(200);
     // Walk the screens that show the new art (equipment, shop, forge, portal codex) with every sample piece in the bag.
@@ -1257,7 +1264,7 @@ test.describe('starlantern', () => {
     await w.choose('.slx-town', '冒險者公會');
     await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
     await page.locator('.slx-cmd [data-id=equip]').click();
-    await expect(page.locator('.slx-equip-scene .slx-bag-cell img.slx-gear-ico')).toHaveCount(7);   // all but the bow (no art yet)
+    await expect(page.locator('.slx-equip-scene .slx-bag-cell img.slx-gear-ico')).toHaveCount(8);   // every piece has its art
     await expect(page.locator('.slx-bag-cell .slx-rframe-epic')).toHaveCount(1);
     await expect(page.locator('.slx-bag-cell .slx-rstarlit')).toHaveCount(1);
     await w.key('Tab'); await w.key('ArrowRight'); await w.key('ArrowRight'); await w.key('ArrowRight');   // the legendary sword
@@ -1268,7 +1275,7 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-shop')).toBeVisible(); await w.closeTalk();
     await w.key('Enter');
     await expect(page.locator('.slx-shop-list [data-id="iron-sword"] img.slx-gear-ico')).toHaveCount(1);
-    await expect(page.locator('.slx-shop-list [data-id="hunter-bow"] img.slx-ico')).toHaveAttribute('src', /icon\/hunter-bow\.png$/);   // old icon until its gear art
+    await expect(page.locator('.slx-shop-list [data-id="hunter-bow"] img.slx-gear-ico')).toHaveAttribute('src', /gear\/hunter-bow\.png$/);
     await toTown(page, w);
     await w.choose('.slx-town', '鍛造屋');
     await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
@@ -1278,7 +1285,7 @@ test.describe('starlantern', () => {
     await w.choose('.slx-town', '傳送門廣場');
     await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
     await w.key('Enter');
-    await expect(page.locator('.slx-portal-blaze .slx-codex-pics img.slx-codex-silhouette')).toHaveCount(2);   // blaze heart sword, the blaze set
+    await expect(page.locator('.slx-portal-blaze .slx-codex-pics img.slx-codex-silhouette')).toHaveCount(3);   // every blaze piece and the set: none obtained yet
     await page.waitForFunction(() => [...document.querySelectorAll<HTMLImageElement>('img')].every((i) => i.complete));
     // Every starlantern file asked for is listed (or is the manifest itself) and answered without error.
     const known = new Set(manifest);
@@ -1288,7 +1295,52 @@ test.describe('starlantern', () => {
     for (const p of ['/gear/iron-sword.png', '/ui/rarity-epic.png', '/ui/starlit.png', '/ui/glow-legendary.png', '/gear/set-blaze-silhouette.png']) {
       expect(answered.some((a) => a.url.endsWith(p)), p).toBe(true);
     }
-    expect(answered.some((a) => a.url.endsWith('/icon/iron-sword.png')), 'the retired old icon').toBe(false);
+    for (const id of Object.keys(EQUIPMENT)) expect(answered.some((a) => a.url.endsWith(`/icon/${id}.png`)), `the retired old icon of ${id}`).toBe(false);
+    expect(answered.some((a) => a.url.endsWith('/npc/forge-happy.png') && a.status === 200), "Doran's smile").toBe(true);
+    expect(w.errors).toEqual([]);
+  });
+
+  test('lists of gear with icons show every row they list inside their window and the screen (plan 5d Task 10)', async ({ page }) => {
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const bases = ['wooden-staff', 'iron-sword', 'hunter-bow', 'thorn-spear', 'crystal-blade', 'frost-staff', 'star-saber', 'cloth-robe',
+        'leather-vest', 'scale-mail', 'dusk-mantle', 'moss-charm', 'bat-earring', 'crystal-pendant', 'gear-ring', 'wooden-buckler'];
+      g.state.bag = bases.map((base) => ({ uid: g.mintUid(), base, rarity: 'magic', ilvl: 6, enhance: 0, affixes: [{ key: 'atk', value: 3 }] }));
+      g.state.gold = 5000;
+    });
+    /** Every listed row of the top list lies inside that list's window, and the window inside the screen. */
+    const rowsInside = async (list: string) => page.evaluate((sel) => {
+      const win = [...document.querySelectorAll<HTMLElement>(sel)].pop()!;
+      const scr = document.querySelector('#sl-screen')!.getBoundingClientRect();
+      const box = win.getBoundingClientRect();
+      const rows = [...win.querySelectorAll<HTMLElement>('[role=option]')].map((r) => r.getBoundingClientRect());
+      return {
+        rows: rows.length,
+        outside: rows.filter((r) => r.top < box.top - 0.5 || r.bottom > box.bottom + 0.5).length,
+        offScreen: box.bottom > scr.bottom + 0.5 || box.top < scr.top - 0.5,
+        cursorShown: (() => { const c = win.querySelector('[aria-selected=true]')?.getBoundingClientRect(); return !!c && c.top >= box.top - 0.5 && c.bottom <= box.bottom + 0.5; })(),
+      };
+    }, list);
+    await w.choose('.slx-town', '道具店');
+    await expect(page.locator('.slx-shop')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');                                   // 購買
+    await expect(page.locator('.slx-shop-list img.slx-gear-ico').first()).toBeVisible();
+    for (let i = 0; i < 3; i++) {                           // the top, then scrolled down by the wheel through the locked bases
+      const r = await rowsInside('.slx-shop-list');
+      expect(r.rows, `shop ${i}`).toBeGreaterThan(0);
+      expect(r, `shop ${i}`).toEqual({ rows: r.rows, outside: 0, offScreen: false, cursorShown: r.cursorShown });
+      for (let k = 0; k < 6; k++) await page.locator('.slx-shop-list .slx-menu').dispatchEvent('wheel', { deltaY: 100 });
+    }
+    await toTown(page, w);
+    await w.choose('.slx-town', '鍛造屋');
+    await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
+    await w.key('ArrowDown'); await w.key('Enter');         // 強化: the bag and what everyone wears
+    for (let i = 0; i < 20; i++) {
+      const r = await rowsInside('.slx-forge-list');
+      expect(r, `forge row ${i}`).toEqual({ rows: r.rows, outside: 0, offScreen: false, cursorShown: true });
+      await w.key('ArrowDown');
+    }
     expect(w.errors).toEqual([]);
   });
 

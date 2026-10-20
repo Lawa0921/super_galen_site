@@ -19,6 +19,7 @@ import { baseCost, craftLevel, setCost } from '../../engine/forge/craft';
 import { specialLines } from '../../engine/compare';
 import { priceOf } from '../../engine/town';
 import { ForgeScene, costText, forgeRows, type ForgeHost } from './forge';
+import { GEAR_ROWS } from '../widgets';
 
 const gear = (uid: number, base: string, rarity: Rarity, extra: Partial<ItemInstance> = {}): ItemInstance =>
   ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0, ...extra });
@@ -312,7 +313,7 @@ describe('ForgeScene dismantle page', () => {
 
   it('a bag of 15 shows the ▼ scroll cue, and the cue and the wheel scroll', () => {
     const { s, root, rows } = open(Array.from({ length: 15 }, (_, i) => gear(i + 1, 'iron-sword', 'common')));
-    expect(rows().length).toBe(12);
+    expect(rows().length).toBe(GEAR_ROWS);                       // gear rows with their icons: fewer on screen (plan 5d Task 10)
     const down = root.querySelector('.slx-forge-list .slx-more-down') as HTMLElement;
     expect(down).not.toBeNull();
     down.click();
@@ -322,7 +323,7 @@ describe('ForgeScene dismantle page', () => {
     expect(root.querySelector('.slx-forge-list .slx-more-down')).toBeNull();
     // The wheel scrolls back up.
     root.querySelector('.slx-forge-list .slx-menu')!.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, cancelable: true }));
-    expect(rows()[0].getAttribute('data-id')).toBe('g3');
+    expect(rows()[0].getAttribute('data-id')).toBe(`g${15 - GEAR_ROWS}`);
   });
 
   it('a click on a row and on 是 dismantles too', () => {

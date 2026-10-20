@@ -11,13 +11,13 @@ import { activeIds, defaultSlotFor, statsOf } from '../../engine/party';
 import { mulberry32 } from '../../engine/rng';
 import { buy, isUnlocked, priceOf, junkTotals, sell, sellGear, sellJunk } from '../../engine/town';
 import type { AnyStat } from '../../engine/types';
-import { RETIRING_ICONS, art } from '../../render/artPaths';
+import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import { gearIconUrl } from '../gearArt';
 import { gearLabel, invested, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { MenuView, QtyView, confirmBox, win } from '../widgets';
+import { GEAR_ROWS, MenuView, QtyView, confirmBox, win } from '../widgets';
 import { FacilityScene } from './facility';
 
 export class ShopScene extends FacilityScene {
@@ -36,14 +36,10 @@ export class ShopScene extends FacilityScene {
     return this.ctx.art.has(art.icon(id)) ? art.icon(id) : undefined;
   }
 
-  /**
-   * A base's row icon: its gear art at its own size (plan 5d) once published. Until then a base whose old icon is still
-   * published (RETIRING_ICONS; plan 5d Tasks 8 and 10 retire them) keeps that old icon at the item-icon size.
-   */
+  /** A base's row icon: its gear art at its own size (plan 5d); the old icon/ paths are all retired. */
   private gearIcon(id: string): Pick<MenuItem, 'icon' | 'iconCls'> {
     const icon = gearIconUrl(this.ctx.art, id);
-    if (icon) return { icon, iconCls: 'slx-gear-ico' };
-    return RETIRING_ICONS.has(id) && this.ctx.art.has(art.icon(id)) ? { icon: art.icon(id) } : {};
+    return icon ? { icon, iconCls: 'slx-gear-ico' } : {};
   }
 
   private goods(): MenuItem[] {
@@ -83,7 +79,7 @@ export class ShopScene extends FacilityScene {
       pick: (it) => this.askQty(it.id, () => { v.menu.items.splice(0, v.menu.items.length, ...this.goods()); if (v.menu.cursor >= v.menu.items.length) v.menu.setCursor(0); v.render(); }),
       moved: () => { this.ctx.sfx.cursor(); show(); },
       cancel: () => { info.remove(); this.pop(); },
-    }, 12);
+    }, GEAR_ROWS);
     show();
     this.stage.append(info);
     this.push({ el: win('slx-list slx-shop-list', [v.el]), onAction: (a) => v.onAction(a) });

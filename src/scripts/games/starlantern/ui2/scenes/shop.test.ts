@@ -13,6 +13,13 @@ import { NO_ART, type ArtIndex } from '../../render/textures';
 import { art } from '../../render/artPaths';
 import { priceOf } from '../../engine/town';
 import { ShopScene } from './shop';
+import { GEAR_ROWS } from '../widgets';
+
+/** Scroll the goods list down by `n` rows with the wheel (locked rows cannot take the cursor). */
+const scrollGoods = (root: HTMLElement, n: number) => {
+  const list = root.querySelector('.slx-shop-list .slx-menu')!;
+  for (let i = 0; i < n; i++) list.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true }));
+};
 
 /** The topmost open window of the facility (layers stack in document order). */
 const topLayer = (root: HTMLElement): Element | undefined => [...root.querySelectorAll('.slx-layer')].pop();
@@ -35,7 +42,7 @@ function setup(gold = 100, artIdx: ArtIndex = NO_ART) {
 }
 
 describe('ShopScene', () => {
-  it('gear goods use the gear icon; a retiring base keeps its old icon until its gear art is published', () => {
+  it('gear goods use the gear icon and never an old icon/ path (all retired by plan 5d)', () => {
     const published = [art.gear('iron-sword'), art.icon('iron-sword'), art.icon('hunter-bow'), art.icon('potion'), art.icon('leather-cap')];
     const { pick, root } = setup(100, { has: (u) => published.includes(u) });
     pick('購買');
@@ -43,20 +50,25 @@ describe('ShopScene', () => {
     const sword = row('iron-sword').querySelector('img')!;
     expect(sword.getAttribute('src')).toBe(art.gear('iron-sword'));
     expect(sword.className).toBe('slx-ico slx-gear-ico');
-    // Its gear art is not published but its old icon still is: the old icon, at the item-icon size.
-    const bow = row('hunter-bow').querySelector('img')!;
-    expect(bow.getAttribute('src')).toBe(art.icon('hunter-bow'));
-    expect(bow.className).toBe('slx-ico');
-    expect(row('hunter-bow').querySelectorAll('img')).toHaveLength(1);
-    // Neither art published: the name alone.
-    expect(row('thorn-spear').querySelector('img')).toBeNull();
+    // Even with a file listed at the old path, a base without its gear art shows the name alone.
+    expect(row('hunter-bow').querySelector('img')).toBeNull();
     const potion = row('potion').querySelector('img')!;              // items keep their icon
     expect(potion.getAttribute('src')).toBe(art.icon('potion'));
     expect(potion.className).toBe('slx-ico');
-    // A base that was never in the old icon set gets no old icon, even if a file by that name were listed.
     const list = root.querySelector('.slx-shop-list .slx-menu')!;   // locked rows: the wheel scrolls past them
+    // Neither art published: the name alone.
+    for (let i = 0; i < 60 && !row('thorn-spear'); i++) list.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true }));
+    expect(row('thorn-spear').querySelector('img')).toBeNull();
+    // The same for a base that was never in the old icon set.
     for (let i = 0; i < 60 && !row('leather-cap'); i++) list.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true }));
     expect(row('leather-cap').querySelector('img')).toBeNull();
+  });
+
+  it('the goods list shows GEAR_ROWS rows at a time: gear rows are taller with their icons', () => {
+    const { pick, root } = setup();
+    pick('購買');
+    expect(root.querySelectorAll('.slx-shop-list [role=option]')).toHaveLength(GEAR_ROWS);
+    expect(GEAR_ROWS).toBeLessThan(12);
   });
 
   it('buys a chosen quantity, capped by what the party can afford', () => {
@@ -82,6 +94,7 @@ describe('ShopScene', () => {
   it('shows locked equipment as disabled with what it needs', () => {
     const { pick, root } = setup();
     pick('購買');
+    scrollGoods(root, 3);                                             // past the items, to the first locked bases
     const locked = [...root.querySelectorAll('.slx-layer [role=option]')].find((o) => o.getAttribute('aria-disabled') === 'true')!;
     expect(locked.querySelector('.slx-right')!.textContent).toContain('×');
   });
@@ -160,9 +173,10 @@ describe('ShopScene', () => {
   it('every base in the buy list carries the common colour (the shared label adds no word), and keeps its need text when locked', () => {
     const { pick, root } = setup();
     pick('購買');
+    scrollGoods(root, 3);                                             // past the items, to the first locked bases
     const rows = [...root.querySelectorAll('.slx-layer [role=option]')];
     const gear = rows.filter((o) => o.querySelector('.slx-label')!.classList.contains('slx-rarity-common'));
-    expect(gear.length).toBeGreaterThan(0);       // the window shows 12 rows; the rest scroll in
+    expect(gear.length).toBeGreaterThan(0);       // the window shows GEAR_ROWS rows; the rest scroll in
     expect(gear.map((o) => o.getAttribute('data-id'))).toEqual(Object.keys(EQUIPMENT).slice(0, gear.length));
     for (const o of gear) expect(o.querySelector('.slx-label')!.textContent).not.toContain('普通');
     const locked = rows.find((o) => o.getAttribute('aria-disabled') === 'true')!;

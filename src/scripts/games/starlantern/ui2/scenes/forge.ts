@@ -20,7 +20,7 @@ import { gearIconUrl } from '../gearArt';
 import { fillRich, gearLabel, gearPart, invested, joinParts, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { MenuView, confirmBox, richNodes, richText, win, type Rich, type RichPart } from '../widgets';
+import { GEAR_ROWS, MenuView, confirmBox, richNodes, richText, win, type Rich, type RichPart } from '../widgets';
 import { FacilityScene, type Layer } from './facility';
 import { openCraft } from './forgeCraft';
 
@@ -202,7 +202,7 @@ ${T.ui2.forge.warnPrecious}`] : ask, (yes) => {
     },
     moved: () => h.ctx.sfx.cursor(),
     cancel: () => h.pop(),
-  }, 12);
+  }, GEAR_ROWS);
   h.push({ el: win('slx-list slx-forge-list slx-forge-pick', [v.el]), onAction: (a) => v.onAction(a) });
 }
 
@@ -300,7 +300,7 @@ export function enhancePage(h: ForgeHost): void {
     },
     moved: () => { h.ctx.sfx.cursor(); show(); },
     cancel: () => { info.remove(); h.pop(); },
-  }, 12);
+  }, GEAR_ROWS);
   show();
   h.layerRoot.append(info);
   h.push({ el: win('slx-list slx-forge-list', [v.el]), onAction: (a) => v.onAction(a) });
@@ -359,7 +359,7 @@ export function rerollPage(h: ForgeHost): void {
     pick: (row) => { const it = find(Number(row.id.slice(1))); if (it) openAffixes(it.uid); },
     moved: () => { h.ctx.sfx.cursor(); show(); },
     cancel: () => { info.remove(); h.pop(); },
-  }, 12);
+  }, GEAR_ROWS);
   shows.push(() => {
     const it = find(Number(itemsView.menu.current()?.id.slice(1)));
     info.replaceChildren(...(it ? [itemLine(it), ...affixLines(it)] : []));
@@ -530,7 +530,7 @@ export function fusePage(h: ForgeHost): void {
       },
       moved: () => h.ctx.sfx.cursor(),
       cancel: () => h.pop(),
-    }, 12);
+    }, GEAR_ROWS);
     h.push({ el: win('slx-list slx-forge-list slx-forge-pick', [v.el]), onAction: (a) => v.onAction(a) });
   }
 
