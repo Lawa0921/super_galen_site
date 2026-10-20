@@ -1,0 +1,30 @@
+{
+  "pass": true,
+  "reasons": [],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 0,
+  "magenta_spill": 0,
+  "key_tint_inside": 0,
+  "subject": {
+    "long": 13,
+    "short": 13,
+    "mass": 0.439,
+    "box": [
+      2,
+      1,
+      15,
+      14
+    ],
+    "centre_off": 0.707
+  },
+  "block": 26.071,
+  "scale": 26.071,
+  "size": [
+    16,
+    16
+  ],
+  "spec": "skill-cell:3b64a1fbd098"
+}

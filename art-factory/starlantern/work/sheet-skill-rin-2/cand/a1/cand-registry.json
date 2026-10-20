@@ -87,6 +87,326 @@
         ]
       },
       "status": "qa_passed"
+    },
+    "icon-rin-shadowless-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/cand/a1/icon-rin-shadowless-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 13,
+          "mass": 0.423,
+          "box": [
+            1,
+            1,
+            15,
+            14
+          ],
+          "centre_off": 0.5
+        },
+        "block": 26.786,
+        "scale": 26.786,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:3b64a1fbd098"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+        "cell": "rin-shadowless"
+      }
+    },
+    "icon-rin-shadowless-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/cand/a1/icon-rin-shadowless-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 11,
+          "mass": 0.403,
+          "box": [
+            1,
+            1,
+            13,
+            12
+          ],
+          "centre_off": 0.5
+        },
+        "block": 31.25,
+        "scale": 31.25,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:3b64a1fbd098"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+        "cell": "rin-shadowless"
+      }
+    },
+    "icon-rin-mark-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/cand/a1/icon-rin-mark-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 11,
+          "mass": 0.27,
+          "box": [
+            1,
+            2,
+            15,
+            13
+          ],
+          "centre_off": 0.5
+        },
+        "block": 27.929,
+        "scale": 27.929,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:3b64a1fbd098"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+        "cell": "rin-mark"
+      }
+    },
+    "icon-rin-mark-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/cand/a1/icon-rin-mark-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 10,
+          "mass": 0.243,
+          "box": [
+            1,
+            1,
+            13,
+            11
+          ],
+          "centre_off": 1.0
+        },
+        "block": 32.583,
+        "scale": 32.583,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:3b64a1fbd098"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+        "cell": "rin-mark"
+      }
+    },
+    "icon-rin-execute-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/cand/a1/icon-rin-execute-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 9,
+          "mass": 0.286,
+          "box": [
+            3,
+            1,
+            12,
+            15
+          ],
+          "centre_off": 0.5
+        },
+        "block": 27.286,
+        "scale": 27.286,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:3b64a1fbd098"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+        "cell": "rin-execute"
+      }
+    },
+    "icon-rin-execute-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/cand/a1/icon-rin-execute-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 11,
+          "short": 8,
+          "mass": 0.306,
+          "box": [
+            3,
+            1,
+            11,
+            12
+          ],
+          "centre_off": 0.5
+        },
+        "block": 31.833,
+        "scale": 31.833,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:3b64a1fbd098"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+        "cell": "rin-execute"
+      }
+    },
+    "icon-rin-deathblow-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/cand/a1/icon-rin-deathblow-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 13,
+          "mass": 0.526,
+          "box": [
+            1,
+            1,
+            14,
+            15
+          ],
+          "centre_off": 0.5
+        },
+        "block": 28.286,
+        "scale": 28.286,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:3b64a1fbd098"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+        "cell": "rin-deathblow"
+      }
+    },
+    "icon-rin-deathblow-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-rin-2/cand/a1/icon-rin-deathblow-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 11,
+          "mass": 0.556,
+          "box": [
+            1,
+            1,
+            12,
+            13
+          ],
+          "centre_off": 0.5
+        },
+        "block": 33.0,
+        "scale": 33.0,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:3b64a1fbd098"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-rin-2\\sheet-skill-rin-2-a1.png",
+        "cell": "rin-deathblow"
+      }
     }
   }
 }
