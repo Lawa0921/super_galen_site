@@ -95,9 +95,18 @@ export function stat(c: Combatant, s: BuffStat): number {
   return Math.max(1, Math.floor(c.max[s] * Math.max(0.25, 1 + pct / 100)));
 }
 
+/**
+ * One buff per stat and direction, the strongest kept (spec §9): a stronger one (larger |pct|; a deeper debuff) replaces
+ * the held one with its own source, a weaker or equal one leaves it; either way it lasts the longer of the two. A new
+ * stat or direction takes a slot (at most MAX_BUFFS, the oldest dropped).
+ */
 export function addBuff(c: Combatant, b: Buff): void {
   const i = c.buffs.findIndex((x) => x.stat === b.stat && Math.sign(x.pct) === Math.sign(b.pct));
-  if (i >= 0) { c.buffs[i] = { ...b }; return; }
+  if (i >= 0) {
+    const old = c.buffs[i];
+    c.buffs[i] = { ...(Math.abs(b.pct) > Math.abs(old.pct) ? b : old), turns: Math.max(old.turns, b.turns) };
+    return;
+  }
   if (c.buffs.length >= MAX_BUFFS) c.buffs.shift();
   c.buffs.push({ ...b });
 }

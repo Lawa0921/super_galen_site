@@ -231,6 +231,41 @@ describe('buffs', () => {
     for (const s of ['atk', 'def', 'spd', 'res'] as const) addBuff(c, { stat: s, pct: 10, turns: 3 });
     expect(c.buffs.map((b) => b.stat)).toEqual(['def', 'spd', 'res']);
   });
+  it('a weaker buff keeps the stronger one and lengthens it', () => {
+    const c = makeCombatant({ key: 'a', side: 'party' });
+    addBuff(c, { stat: 'atk', pct: 30, turns: 1, src: 'a' });
+    addBuff(c, { stat: 'atk', pct: 20, turns: 3, src: 'b' });
+    expect(c.buffs).toEqual([{ stat: 'atk', pct: 30, turns: 3, src: 'a' }]);
+  });
+  it('a stronger buff replaces the weaker one and keeps the longer time', () => {
+    const c = makeCombatant({ key: 'a', side: 'party' });
+    addBuff(c, { stat: 'atk', pct: 20, turns: 3, src: 'a' });
+    addBuff(c, { stat: 'atk', pct: 30, turns: 1, src: 'b' });
+    expect(c.buffs).toEqual([{ stat: 'atk', pct: 30, turns: 3, src: 'b' }]);
+  });
+  it('the deeper debuff wins', () => {
+    const c = makeCombatant({ key: 'a', side: 'enemy' });
+    addBuff(c, { stat: 'def', pct: -20, turns: 3, src: 'a' });
+    addBuff(c, { stat: 'def', pct: -40, turns: 2, src: 'b' });
+    expect(c.buffs).toEqual([{ stat: 'def', pct: -40, turns: 3, src: 'b' }]);
+    const d = makeCombatant({ key: 'b', side: 'enemy' });
+    addBuff(d, { stat: 'def', pct: -40, turns: 2, src: 'a' });
+    addBuff(d, { stat: 'def', pct: -20, turns: 3, src: 'b' });
+    expect(d.buffs).toEqual([{ stat: 'def', pct: -40, turns: 3, src: 'a' }]);
+  });
+  it('a buff and a debuff of one stat still sit side by side', () => {
+    const c = makeCombatant({ key: 'a', side: 'party' });
+    addBuff(c, { stat: 'atk', pct: 20, turns: 3 });
+    addBuff(c, { stat: 'atk', pct: -25, turns: 2 });
+    expect(c.buffs).toEqual([{ stat: 'atk', pct: 20, turns: 3 }, { stat: 'atk', pct: -25, turns: 2 }]);
+  });
+  it('the kept buff stays where it was in the list', () => {
+    const c = makeCombatant({ key: 'a', side: 'party' });
+    addBuff(c, { stat: 'atk', pct: 30, turns: 1 });
+    addBuff(c, { stat: 'def', pct: 10, turns: 2 });
+    addBuff(c, { stat: 'atk', pct: 40, turns: 2 });
+    expect(c.buffs).toEqual([{ stat: 'atk', pct: 40, turns: 2 }, { stat: 'def', pct: 10, turns: 2 }]);
+  });
 });
 
 describe('dealDamage', () => {
