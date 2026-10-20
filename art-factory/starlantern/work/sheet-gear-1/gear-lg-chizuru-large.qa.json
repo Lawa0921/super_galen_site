@@ -1,18 +1,16 @@
 {
   "pass": true,
   "reasons": [],
-  "warnings": [
-    "enclosed holes"
-  ],
+  "warnings": [],
   "residue": 0,
   "semi": 0,
   "edge": 0,
-  "holes": 2,
+  "holes": 0,
   "magenta_spill": 0,
   "subject": {
     "long": 56,
     "short": 56,
-    "mass": 0.276,
+    "mass": 0.266,
     "box": [
       4,
       4,
@@ -21,8 +19,8 @@
     ],
     "centre_off": 0.0
   },
-  "block": 5.982,
-  "scale": 5.982,
+  "block": 6.821,
+  "scale": 6.821,
   "size": [
     64,
     64

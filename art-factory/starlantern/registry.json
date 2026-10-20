@@ -6851,22 +6851,20 @@
     },
     "gear-lg-chizuru-large": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-lg-chizuru-large.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a5.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [
-          "enclosed holes"
-        ],
+        "warnings": [],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 2,
+        "holes": 0,
         "magenta_spill": 0,
         "subject": {
           "long": 56,
           "short": 56,
-          "mass": 0.276,
+          "mass": 0.266,
           "box": [
             4,
             4,
@@ -6875,8 +6873,8 @@
           ],
           "centre_off": 0.0
         },
-        "block": 5.982,
-        "scale": 5.982,
+        "block": 6.821,
+        "scale": 6.821,
         "size": [
           64,
           64
@@ -6886,10 +6884,10 @@
       "status": "qa_passed",
       "kind": "gear-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a3.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a5.png",
         "cell": "lg-chizuru"
       },
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a5",
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
       "slot": "weapon",
@@ -6897,22 +6895,20 @@
     },
     "gear-lg-chizuru": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-lg-chizuru.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a5.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [
-          "enclosed holes"
-        ],
+        "warnings": [],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 1,
+        "holes": 0,
         "magenta_spill": 0,
         "subject": {
           "long": 22,
           "short": 22,
-          "mass": 0.269,
+          "mass": 0.277,
           "box": [
             2,
             2,
@@ -6921,8 +6917,8 @@
           ],
           "centre_off": 0.0
         },
-        "block": 15.227,
-        "scale": 15.227,
+        "block": 17.364,
+        "scale": 17.364,
         "size": [
           26,
           26
@@ -6932,10 +6928,10 @@
       "status": "qa_passed",
       "kind": "gear-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a3.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-1\\sheet-gear-1-a5.png",
         "cell": "lg-chizuru"
       },
-      "chosen_attempt": "a3",
+      "chosen_attempt": "a5",
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
       "slot": "weapon",
@@ -8037,7 +8033,7 @@
       "rejected_attempts": {
         "a1": "未採用：切格失敗（expected 3x3 cells, found 2x3），薙刀與胸甲的範圍在欄投影上重疊，無法逐格挑選；a3 起加了「magenta 走道」修正句",
         "a2": "未採用：切格失敗（expected 3x3 cells, found 2x2），長兵器斜放跨進相鄰欄列；千鶴薙刀畫成雙刃斧形，讀起來不像薙刀",
-        "a3": "採用 iron-sword、wooden-buckler、leather-cap、lg-chizuru、blaze-heart-sword（24px 下劍身較長、木盾直紋與帽形較清楚、薙刀新月刃較像長柄、熾心劍的餘燼核心在劍身中央最好認）；未採用 iron-unbroken-shield（長方形白盾在 24px 像一塊白色長條）與套裝 3 件（a4 的套裝徽記較大、三件紅金配色較一致）",
+        "a3": "採用 iron-sword、wooden-buckler、leather-cap、lg-chizuru、blaze-heart-sword（24px 下劍身較長、木盾直紋與帽形較清楚、薙刀新月刃較像長柄、熾心劍的餘燼核心在劍身中央最好認）；未採用 iron-unbroken-shield（長方形白盾在 24px 像一塊白色長條）與套裝 3 件（a4 的套裝徽記較大、三件紅金配色較一致）｜補遺2 前的舊 prompt 版：lg-chizuru 曾在此版（requa 後 mass 0.269／0.276 在長柄下限內通過），主控 2026-10-20 裁定改挑 a5（新 prompt、份量較重）",
         "a4": "採用 iron-unbroken-shield（鳶形盾輪廓在 24px 仍認得出是盾）與 set-blaze 武器／胸甲／護手（同一版三件，紅黑金與火焰徽記一致）；未採用 iron-sword（與 a3 幾乎相同，a3 劍身較清楚）、wooden-buckler、leather-cap（24px 有雜點）、lg-chizuru（流蘇變紅白、刃形像斧，新月刃上方帶粉色光暈有 key 色風險）、blaze-heart-sword（劍身長條光與散落火星在 24px 變成雜點，心形核心不明顯）",
         "a5": "補遺2：採用 leather-cap（圓頂皮帽 1× 較好認；短邊 18、mass 0.66）。未採用：iron-sword subject too light（icon mass 0.279／large 0.271 < 0.28）、lg-chizuru subject too light（0.277／0.266）、blaze-heart-sword-large subject too light（0.279）；buckler／shield／set 三件雖通過，但 a9 劍身較粗、焰紋三件在 1× 較好認，一律取 a9",
         "a6": "補遺2 未採用：切格失敗 expected 3x3 cells, found 2x3（帽緣與手甲擠進欄間通道）",
@@ -8237,6 +8233,12 @@
         "a3": "採用 rare、epic、legendary、unique、set、glow-legendary（角飾在 1× 最清楚；glow hue 35.6）。未採用：magic（與 epic ΔE 25.8，a4 為 32.1）；starlit edge does not repeat（edge_joint top/bottom＝1：邊中段首末欄同列有點，重複後連成 2px）",
         "a4": "採用 magic（與 epic a3 ΔE 32.1）。未採用：unique edge does not repeat（金線取樣後斷續，bottom 3.20／left 3.16）；starlit 通過但側邊點取樣後消失、角星只剩 2×4 白塊（執行時幾乎看不到）；其餘通過但 a3 角飾較清楚",
         "a5": "採用 starlit（四角實心四芒星＋各邊 2×2 點，執行時看得見）。未採用：unique edge does not repeat（left 1.70）；glow hue 49.6 偏黃（上限 50）；其餘通過但 a3 角飾在 1× 較清楚"
+      }
+    },
+    "sheet-starlit-1": {
+      "rejected_attempts": {
+        "a1": "未採用：starlit star is not a four-point star（codex 畫成 5×5 菱形、對角也填青色，取樣後每角白心 3×3、只有 2 個尖端；看起來是圓形寶石）",
+        "a2": "QA 通過（四角各一顆 4×4 十字星，白心 2×2，邊與中間全透明），但未挑選：在 28px 執行時情境 1 倍下讀起來是圓點而不是閃光（4×4 去角就是像素圓），也蓋住傳說／獨特／套裝外框的角飾；4×4／2×2 的造型本身就會是圓點，所以不再用 a3 重畫同一造型，等主控裁定星形"
       }
     }
   },
