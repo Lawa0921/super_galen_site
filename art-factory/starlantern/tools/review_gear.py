@@ -111,10 +111,10 @@ DECISIONS = {
     # Plan 5d G3 (skills): 〔...〕 are filled from the registry when the page is built.
     'skills': [
         ('78 個技能圖示和同角色既有圖示一致嗎', ['#s7'], [
-            '〔未通過〕', '〔多版〕', '〔採用版備註〕', '〔未採用版〕',
+            '〔未通過〕', '〔多版〕', '〔採用版備註〕', '〔未採用版〕', '〔容易搞混〕',
             '遊戲裡技能列用 16px、技能樹用 14px 顯示，會把約 32px 的圖示縮小（不是整數倍），細節會變糊；請看 7. 技能 的「遊戲實際大小」那一列。'],
          '每位夥伴的新技能圖示和他現有的技能圖示放在一起（放大 2 倍與遊戲實際的 16px、14px），配色、描邊、大小是不是一致。'),
-        ('洛恩與凜的技能圖示（沒有舊圖示可對照）', ['#s7'], [],
+        ('洛恩與凜的技能圖示（沒有舊圖示可對照）', ['#s7'], ['凜的技能多是深色細刀，在深色面板上 16px、14px 偏暗，不容易看清楚。'],
          '洛恩 21 個、凜 10 個技能以前都沒有圖示，生成時參考他們已發布的立繪配色。請看是否像同一個角色的技能、彼此分得出來。'),
     ],
 }
@@ -165,7 +165,10 @@ GATE_NAME = {'sample': 'G1', 'main-gear': 'G2', 'skills': 'G3'}
 CONFUSABLES = {'main-gear': [('set-shade-feet', 'set-storm-feet'), ('set-shade-hands', 'set-storm-hands'),
                              ('set-frost-weapon', 'set-storm-weapon', 'set-shade-weapon', 'shade-silent-blade'),
                              ('crystal-pendant', 'frost-bloom-neck', 'set-frost-neck'), ('set-frost-ring', 'star-ring'),
-                             ('copper-ring', 'blaze-ember-ring'), ('mire-miasma-mask', 'set-mire-head')]}
+                             ('copper-ring', 'blaze-ember-ring'), ('mire-miasma-mask', 'set-mire-head')],
+               # G3 (skills): found at the in-game 16 / 14 px by the art agent's 1x check
+               'skills': [('quickstep', 'phantom-step'), ('sand-cyclone', 'thousand-shadows', 'veil-dance', 'sirocco'),
+                          ('hero-flare', 'hero-frost', 'hero-spark')]}
 
 
 SHAPE_RISK = {'round': '1 倍下看起來是一顆圓圓的亮點，不是尖的閃光。', 'cross': '十字星只有 5 個像素，1 倍下很小，像一個細細的十字。'}
@@ -638,7 +641,7 @@ def main(batch='sample'):
     notes = [(j, k, v) for j in js for k, v in reg.get(j['id'], {}).get('plain_reasons', {}).items()]
     unused_text = '；'.join(f'{nm.get(next(x for x in j["parts"] if x), j["id"])}那張表的第 {k[1:]} 版：{v}' for j, k, v in notes if not picked_from(j, k))
     picked_text = '；'.join(f'{"、".join(nm.get(p, p) for p in picked_from(j, k))}：{v}（這是採用的版本）' for j, k, v in notes if picked_from(j, k))
-    conf = [c for c in CONFUSABLES.get(batch, []) if all(x in gear for x in c)]
+    conf = [c for c in CONFUSABLES.get(batch, []) if all(x in gear or x in skills for x in c)]
     conf_text = ('1 倍下容易搞混，要不要重畫請你決定：' + '；'.join('／'.join(nm.get(x, x) for x in c) for c in conf)) if conf else ''
     live = lambda s: (live_text(s, reg).replace('〔未通過〕', pending_text).replace('〔只數外緣〕', edge_text).replace('〔多版〕', many_text)
                       .replace('〔採用版備註〕', picked_text).replace('〔未採用版〕', unused_text).replace('〔容易搞混〕', conf_text))

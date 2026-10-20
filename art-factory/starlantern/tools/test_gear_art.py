@@ -1385,3 +1385,7 @@ def test_skills_page_shows_in_game_sizes_beside_the_old_icons_and_skips_gear_sec
     assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['78 個技能圖示和同角色既有圖示一致嗎', '洛恩與凜的技能圖示（沒有舊圖示可對照）']
     assert '16px' in asked and '14px' in asked and '本批全部通過機械檢查' in asked
     assert '直接回覆每題的選擇' in head and 'G1' in head[head.index('已決定'):]
+    names = review.names()
+    for group in (('quickstep', 'phantom-step'), ('sand-cyclone', 'thousand-shadows', 'veil-dance', 'sirocco')):
+        assert '／'.join(names[s] for s in group) in asked, group                     # skill confusables, for the user to rule
+    assert '凜' in asked and '偏暗' in asked                                           # Rin's dark blades on the dark panel
