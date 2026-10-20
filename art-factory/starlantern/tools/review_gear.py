@@ -137,17 +137,17 @@ SHAPE_NAME = {'round': '圓點光', 'cross': '十字星'}
 def starlit_question(alts, fails):
     """The G1 question on the starlit corner-star shape (controller ruling 2026-10-20), from the passing candidates."""
     if not alts: return None
+    risk = ['角星蓋在外框四角，會蓋掉傳說火舌、獨特雕花、套裝葉徽這些角飾（邊上的顏色不受影響）。']
     names = [f'{SHAPE_NAME[v["shape"]]}（{k}）' for k, v in alts.items()]
     failed = '；'.join(f'{k} 沒通過 QA：{"、".join(r)}' for k, r in fails.items())
     if len(alts) == 1:
         k = next(iter(alts))
-        return (f'星輝角星：{names[0]}', ['#starlit-alts'], [],
+        return (f'星輝角星：{names[0]}', ['#starlit-alts'], risk,
                 f'只有 {k} 通過 QA，所以只放這一版。{failed}。' if failed else f'只有 {k} 通過 QA，所以只放這一版。')
     why = ('兩種角星造型並排在 28px 背包格與 38px 人形格裡（疊在傳說、獨特、套裝外框上，1 倍與 3 倍）：'
            '圓點光是 4×4、白心 2×2，1 倍下像一顆圓圓的亮點；十字星是 3×3、白心 1 格加四個青白尖端，1 倍下像一顆尖尖的閃光。'
            '你選哪一版，就挑那一版（gear_art.py pick），兩版都已記在審核紀錄裡。' + (failed + '。' if failed else ''))
-    return ('星輝角星：' + '或'.join(names) + '？', ['#starlit-alts'],
-            ['角星蓋在外框四角，會蓋掉傳說火舌、獨特雕花、套裝葉徽這些角飾（邊上的顏色不受影響）。'], why)
+    return ('星輝角星：' + '或'.join(names) + '？', ['#starlit-alts'], risk, why)
 
 
 def skill_owners():
@@ -338,10 +338,10 @@ def frames_section(pg, reg, frame, glow, starlit, icon, gear, nm, cell):
             f'<h3>外框、光暈、星輝原圖（放大 4 倍），色票與 QA</h3><div class="row dark">{raws}</div></section>')
 
 
-def starlit_alts_section(pg, alts, fails, icon, gear, nm, cell):
+def starlit_alts_section(pg, alts, fails, icon, gear, nm, cell, notes=None):
     """The starlit corner-star shapes side by side (controller ruling 2026-10-20): every passing sheet-starlit-1 candidate
     in the runtime 28 px bag slot and 38 px equip slot, over the legendary, unique and set frames, at 1x and 3x; failed
-    candidates are listed with their QA reasons."""
+    candidates are listed with their QA reasons and, when one was recorded (gear_art note), why in plain words."""
     demo = lambda r: next((p for p in gear if rarity_of(p) == r and icon.get(p)), next((p for p in gear if icon.get(p)), None))
     groups = ''
     for k, v in alts.items():
@@ -353,7 +353,8 @@ def starlit_alts_section(pg, alts, fails, icon, gear, nm, cell):
         groups += (f'<div class="alt"><h3>{k}：{SHAPE_NAME[v["shape"]]}</h3><p class="note">每角 {stars[0].get("w")}×{stars[0].get("h")}、'
                    f'白心 {stars[0].get("core")} 格、{stars[0].get("arms")} 個尖端；QA 通過；挑選：gear_art.py pick --id {G.STARLIT_SHEET_ID} '
                    f'--attempt {k[1:]}</p><div class="row dark">{figs}</div>{img(src, "px", "width:64px;height:64px")}</div>')
-    failed = ''.join(f'<p class="note">{k} 沒通過 QA，不列入：{esc("、".join(r))}</p>' for k, r in fails.items())
+    failed = ''.join(f'<p class="note">{k} 沒通過 QA，不列入：{esc("、".join(r))}'
+                     f'{"<br>" + esc((notes or {})[k]) if (notes or {}).get(k) else ""}</p>' for k, r in fails.items())
     return (f'<section id="starlit-alts"><h2>星輝角星比較</h2><p class="note">遊戲裡的實際格子（28px 背包格、38px 人形格），'
             f'外框與星輝都是 border-image（slice 5、repeat），1 倍與 3 倍。</p>{groups or "<p>還沒有通過 QA 的角星候選。</p>"}{failed}</section>')
 
@@ -422,7 +423,8 @@ def main(batch='sample'):
                          for r in RARITY_NAME for p in [next((q for q in gear if rarity_of(q) == r), None)] if p)
     frames_html = frames_section(pg, reg, frame, glow, starlit, icon, gear, nm, cell) if batch == 'sample' or gear else ''
     alts, fails = (G.starlit_alternatives(), G.starlit_failures()) if batch == 'sample' else ({}, {})
-    frames_html += starlit_alts_section(pg, alts, fails, icon, gear, nm, cell) if batch == 'sample' else ''
+    notes = reg.get(G.STARLIT_SHEET_ID, {}).get('rejected_attempts', {})
+    frames_html += starlit_alts_section(pg, alts, fails, icon, gear, nm, cell, notes) if batch == 'sample' else ''
     size_html = size_grid(pg, reg)
 
     # Two legendaries side by side at the real bag gap (2px): the glow now stays inside each slot (inset 0, under the icon).

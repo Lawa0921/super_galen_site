@@ -1074,3 +1074,8 @@ def test_only_one_passing_starlit_is_shown_alone_with_why_the_other_failed(facto
     head = page[page.index('id="decisions"'):page.index('id="s0"')]
     q = re.findall(r'<li><b>(星輝角星[^<]+)</b>', head)
     assert q == ['星輝角星：圓點光（a1）'] and '只有 a1 通過 QA' in head and 'a2' in head and 'starlit outside its corners' in head
+    assert '蓋掉傳說火舌' in head[head.index('星輝角星'):]                                  # the risk holds for one shape too
+    G.note(['--id', 'sheet-starlit-1', '--attempt', '2', '--reason', '邊上多畫了星點'])           # the plain-words why, from the registry
+    page = review.main('sample').read_text(encoding='utf-8')
+    sec = page[page.index('id="starlit-alts"'):]; sec = sec[:sec.index('</section>')]
+    assert '邊上多畫了星點' in sec and 'starlit outside its corners' in sec
