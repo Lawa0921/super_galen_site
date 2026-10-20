@@ -34,16 +34,17 @@ def test_every_gear_part_appears_once_and_sheets_match_their_grid():
     assert all(j['batch'] in G.BATCHES for j in jobs)
 
 
-def test_sample_batch_is_the_five_style_jobs():
-    # Addendum S3: Scarlet's skill sheet moved to the skills batch.
-    assert G.SAMPLE == ('sheet-gear-1', 'sheet-mat-1', 'sheet-rarity-frames', 'scene-forge', 'npc-forge')
+def test_sample_is_the_g1_redo_jobs():
+    # Addendum S3: Scarlet's skill sheet moved to the skills batch. Addendum 2: the 4 x 2 frame sheet replaces the 3 x 2 one.
+    assert G.SAMPLE == ('sheet-gear-1', 'sheet-mat-1', 'sheet-rarity-frames-2', 'scene-forge', 'npc-forge')
+    assert 'sheet-rarity-frames' not in [j['id'] for j in G.jobs()]
     assert tuple(j['id'] for j in G.jobs() if j['batch'] == 'sample') == G.SAMPLE
     main = [j['id'] for j in G.jobs() if j['batch'] == 'main-gear']
     assert main == [f'sheet-gear-{k}' for k in range(2, 9)] + ['sheet-mat-2', 'npc-forge-happy']
     skills = [j['id'] for j in G.jobs() if j['batch'] == 'skills']
     assert len(skills) == 14 and 'sheet-skill-scarlet' in skills
     parts = {b: sum(len(G.assets_of(j, p)) for j in G.jobs() if j['batch'] == b for p in j['parts']) for b in G.BATCHES}
-    assert parts == {'sample': 32, 'main-gear': 127, 'skills': 78}
+    assert parts == {'sample': 34, 'main-gear': 127, 'skills': 78}
 
 
 @pytest.mark.parametrize('batch', ['main-gear', 'skills'])
@@ -85,9 +86,13 @@ def test_descriptions_cover_every_part_and_weapons_follow_their_kind():
     assert set(G.GEAR_DESC) == set(gear)
     assert set(G.MAT_DESC) == {p for j in G.jobs() if j['id'].startswith('sheet-mat-') for p in j['parts']}
     assert set(G.SKILL_DESC) == {p for j in G.jobs() if j['id'].startswith('sheet-skill-') for p in j['parts'] if p}
-    assert set(G.FRAME_DESC) == {'magic', 'rare', 'legendary', 'unique', 'set', 'glow-legendary'}
-    # Addendum S5: 晶刃 is a dagger and 星紋軍刀 a scimitar (the hero's weapon mastery reads them at 24 px).
-    assert 'dagger' in G.GEAR_DESC['crystal-blade'] and 'sword' not in G.GEAR_DESC['crystal-blade']
+    assert set(G.FRAME_DESC) == {'magic', 'rare', 'epic', 'legendary', 'unique', 'set', 'glow-legendary', 'starlit'}
+    # Addendum S5: 晶刃 is a dagger and 星紋軍刀 a scimitar (the hero's weapon mastery reads them at 24 px). Addendum 2: every
+    # item has the same long edge, so the short blades are told apart by proportion; "sword" appears only as the comparison.
+    for d in ('crystal-blade', 'shade-silent-blade'):
+        desc = G.GEAR_DESC[d]
+        assert 'a stubby dagger: a short broad blade and a large hilt, clearly stubbier in proportion than a sword' in desc, d
+        assert 'half the length' not in desc and 'sword' not in desc.replace('than a sword', ''), d
     assert 'scimitar' in G.GEAR_DESC['star-saber']
     hero = by_id()['sheet-skill-hero-1']
     assert hero['deps'] == ['char-hero-standee'] and by_id()['sheet-skill-rin-1']['deps'] == ['char-rin-standee']
@@ -100,21 +105,30 @@ def test_runtime_paths_follow_the_contract():
     assert G.runtime('gear-set-blaze-silhouette') == b + 'gear/set-blaze-silhouette.png'
     assert G.runtime('ui-rarity-set') == b + 'ui/rarity-set.png'
     assert G.runtime('ui-glow-legendary') == b + 'ui/glow-legendary.png'
+    assert G.runtime('ui-rarity-epic') == b + 'ui/rarity-epic.png'
+    assert G.runtime('ui-starlit') == b + 'ui/starlit.png'
     assert G.runtime('icon-essence-rare') == b + 'icon/essence-rare.png'
     assert G.runtime('scene-forge') == b + 'scene/forge.png'
     assert G.runtime('npc-forge-happy') == b + 'npc/forge-happy.png'
     assert G.runtime('char-noel-standee') is None
 
 
-def _sheet(path, cols=3, rows=3, cell=120, gap=40):
-    """A synthetic codex sheet: one coloured item per cell on flat magenta gutters."""
+def _sheet(path, cols=3, rows=3, cell=120, gap=40, item='octagon'):
+    """A synthetic codex sheet: one coloured item per cell on flat magenta gutters. item='octagon' (default) is a chunky
+    shape that passes the addendum 2 size gate for every slot (short edge 0.9 of the long one, mass about 0.58);
+    item='rect' is the old 60 x 100 bar (too narrow for most slots)."""
+    from PIL import ImageDraw
     w, h = gap + cols * (cell + gap), gap + rows * (cell + gap)
-    arr = np.zeros((h, w, 3), np.uint8); arr[:] = M
+    img = Image.new('RGB', (w, h), M); d = ImageDraw.Draw(img)
     for r in range(rows):
         for c in range(cols):
-            x, y = gap + c * (cell + gap), gap + r * (cell + gap)
-            arr[y + 10:y + cell - 10, x + 30:x + cell - 30] = (40 + 20 * c, 90, 60 + 40 * r)
-    path.parent.mkdir(parents=True, exist_ok=True); Image.fromarray(arr, 'RGB').save(path); return path
+            x, y = gap + c * (cell + gap), gap + r * (cell + gap); col = (40 + 20 * c, 90, 60 + 40 * r)
+            if item == 'rect':
+                d.rectangle((x + 30, y + 10, x + cell - 31, y + cell - 11), fill=col); continue
+            L = cell - 20; W = round(L * 0.9); k = round(L * 0.4); x0, y0 = x + (cell - W) // 2, y + 10
+            d.polygon([(x0 + k, y0), (x0 + W - 1 - k, y0), (x0 + W - 1, y0 + k), (x0 + W - 1, y0 + L - 1 - k), (x0 + W - 1 - k, y0 + L - 1),
+                       (x0 + k, y0 + L - 1), (x0, y0 + L - 1 - k), (x0, y0 + k)], fill=col)
+    path.parent.mkdir(parents=True, exist_ok=True); img.save(path); return path
 
 
 @pytest.fixture
@@ -146,8 +160,8 @@ def test_pick_never_writes_runtime(factory):
 
 
 def _spilled_sheet(path, cols=3, rows=2, cell=120, gap=40):
-    """Like _sheet, but every item's outline is a 4 px band blended into the magenta key."""
-    _sheet(path, cols, rows, cell, gap); arr = np.asarray(Image.open(path)).copy()
+    """Like _sheet (the old rectangles), but every item's outline is a 4 px band blended into the magenta key."""
+    _sheet(path, cols, rows, cell, gap, item='rect'); arr = np.asarray(Image.open(path)).copy()
     for r in range(rows):
         for c in range(cols):
             x, y = gap + c * (cell + gap) + 30, gap + r * (cell + gap) + 10
@@ -155,7 +169,7 @@ def _spilled_sheet(path, cols=3, rows=2, cell=120, gap=40):
     Image.fromarray(arr, 'RGB').save(path); return path
 
 
-@pytest.mark.parametrize('sid', ['sheet-mat-1', 'sheet-gear-8', 'sheet-rarity-frames', 'npc-forge'])
+@pytest.mark.parametrize('sid', ['sheet-mat-1', 'sheet-gear-8', 'sheet-rarity-frames-2', 'npc-forge'])
 def test_every_plan5d_kind_despills_and_reports_magenta_spill(factory, sid):
     job = by_id()[sid]
     raw = factory / 'raw.png'
@@ -219,7 +233,7 @@ def test_publish_requires_approval_and_writes_runtime_then_retires_replaced_base
         G.do_approve(A.Registry(factory / 'registry.json'), 'skills', 'user 2026-10-20: ok')   # style first
 
     done = G.do_approve(A.Registry(factory / 'registry.json'), 'sample', 'user 2026-10-20: 可以')
-    assert len(done) == 32
+    assert len(done) == 34
     reg = A.Registry(factory / 'registry.json')
     assert reg.data['style_approved'] and reg.data['approved_batches']['sample']['by'] == 'user 2026-10-20: 可以'
     assert reg.get('gear-iron-sword')['status'] == 'approved' and reg.get('gear-iron-sword')['approved_by'] == 'user 2026-10-20: 可以'
@@ -548,11 +562,148 @@ def test_skills_review_page_shows_all_78_icons_each_under_its_owner(factory, rev
     assert names['abyss-sword'] in page
 
 
+# --- plan 5d addendum 2, Task C: uniform gear prompt, slots, seven-tier frames, starlit -----------------------------------
+def test_frame_sheet_is_four_by_two_with_epic_and_starlit():
+    job = by_id()[G.FRAME_SHEET_ID]
+    assert G.FRAME_SHEET_ID == 'sheet-rarity-frames-2' and (job['cols'], job['rows']) == (4, 2) and job['batch'] == 'sample'
+    assert job['parts'] == ['magic', 'rare', 'epic', 'legendary', 'unique', 'set', 'glow-legendary', 'starlit']
+    ids = [a for p in job['parts'] for a in G.assets_of(job, p)]
+    assert ids == ['ui-rarity-magic', 'ui-rarity-rare', 'ui-rarity-epic', 'ui-rarity-legendary', 'ui-rarity-unique', 'ui-rarity-set',
+                   'ui-glow-legendary', 'ui-starlit']
+    assert len(G.batch_assets('sample')) == 34
+    assert G.FRAME_ROLE == {'glow-legendary': ('glow', 16, 5, 2), 'starlit': ('overlay', 16, 5, 0)}
+    assert all(G.frame_role(p) == ('frame', 16, 5, 0) for p in job['parts'][:6])
+    assert G.LARGE == (56, 64) and G.ICON == (22, 26)
+
+
+def test_every_gear_part_has_a_slot():
+    gear = {p for j in G.jobs() if j['kind'] == 'gear-sheet' for p in j['parts']}
+    assert set(G.GEAR_SLOT) == gear and len(gear) == 69
+    for sid, slots in G.SET_SLOTS.items():
+        for slot in slots:
+            assert G.GEAR_SLOT[f'{sid}-{slot}'] == slot
+    assert set(G.GEAR_SLOT.values()) <= set(A.SUBJECT_CLASS)
+    assert G.GEAR_SLOT['lg-sylvie'] == 'offhand' and G.GEAR_SLOT['iron-unbroken-shield'] == 'offhand'   # a quiver; a shield
+    assert G.plan_data()['slots'] == G.GEAR_SLOT
+
+
+def test_gear_prompt_asks_for_uniform_chunky_items():
+    for j in G.jobs():
+        if j['kind'] != 'gear-sheet': continue
+        for phrase in ('same scale', 'nine tenths', '2-pixel dark outline', 'magenta lanes', 'at least three quarters as wide as it is tall'):
+            assert phrase in j['prompt'], (j['id'], phrase)
+        assert 'reads at 24 pixels' not in j['prompt'] and 'about 64 by 64 art pixels each' in j['prompt']
+    assert G.SET_NOUN['body'] == 'a chunky front-facing breastplate' and G.SET_NOUN['hands'] == 'a pair of chunky gauntlets side by side'
+
+
+def test_frame_prompt_names_each_tier_colour_and_ornament():
+    prompt = by_id()[G.FRAME_SHEET_ID]['prompt']
+    for r in ('magic', 'rare', 'epic', 'legendary', 'unique', 'set'):
+        assert G.RARITY_PALETTE[r].upper() in prompt, r
+    assert 'never magenta' in prompt and '16 by 16 big pixels' in prompt and 'A 4 by 2 grid of eight' in prompt
+    assert 'four-pointed cyan-white star' in prompt and '12 by 12 big-pixel square ring' in prompt
+    assert prompt.index('#3F7FFF') < prompt.index('#FFE03A') < prompt.index('#8A5CFF') < prompt.index('#FF7A14') < prompt.index('#D8283A')
+
+
+def _rgb(hexc):
+    return tuple(int(hexc[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def test_palette_is_distinct_and_epic_stays_off_the_key():
+    assert list(G.RARITY_PALETTE) == ['common', 'magic', 'rare', 'epic', 'legendary', 'unique', 'set']
+    framed = {r: _rgb(c) for r, c in G.RARITY_PALETTE.items() if r != 'common'}
+    assert not any(A.frames_distinct(framed).values())
+    des = sorted(A.delta_e(framed[a], framed[b]) for i, a in enumerate(framed) for b in list(framed)[i + 1:])
+    assert des[0] >= A.DISTINCT_DE and des[0] == pytest.approx(32.9, abs=0.5)
+    assert 250 <= A.band_hue(np.array([framed['epic']], np.uint8)) <= 272
+    rgba = np.array([[(*_rgb(c), 255) for c in [*G.RARITY_PALETTE.values(), *G.STARLIT]]], np.uint8)
+    assert not A._magenta_tint(rgba[..., :3]).any() and not A.magenta_spill(rgba).any()
+    assert {r: round(A.band_hue(np.array([c], np.uint8))) for r, c in framed.items()} == G.FRAME_HUE
+    assert G.FRAME_HUE == {'magic': 220, 'rare': 51, 'epic': 257, 'legendary': 26, 'unique': 354, 'set': 131} and G.GLOW_HUE == 35
+
+
+def test_process_attempt_gives_each_gear_cell_its_slot(factory, monkeypatch):
+    seen = {}
+    def fake(reg, gid, cell, workdir, raw, large=None, icon=None, slot='missing'):
+        seen[gid] = (slot, large, icon); return {f'gear-{gid}': {'pass': True, 'reasons': []}}
+    monkeypatch.setattr(A, 'process_gear_cell', fake)
+    raw = _sheet(factory / 'raw.png')
+    G.process_attempt(A.Registry(factory / 'r.json'), by_id()['sheet-gear-1'], raw, factory / 'w')
+    assert seen == {p: (G.GEAR_SLOT[p], G.LARGE, G.ICON) for p in G.GEAR_SHEETS['sheet-gear-1']}
+
+
+STAR_CORE, STAR_ARM = (232, 251, 255), (127, 230, 255)
+
+
+def _frame_art(part, colour):
+    """Art-pixel map {(y, x): rgb} of one frame-sheet cell (10 raw px per art px)."""
+    art = {}
+    if part == 'glow-legendary':
+        for i in range(12):
+            for k in (0, 11): art[(k, i)] = colour; art[(i, k)] = colour
+    elif part == 'starlit':
+        for cy, cx in ((2, 2), (2, 13), (13, 2), (13, 13)):
+            for d in (-2, -1, 1, 2): art[(cy + d, cx)] = STAR_ARM; art[(cy, cx + d)] = STAR_ARM
+            art[(cy, cx)] = STAR_CORE
+        for y, x in ((1, 8), (14, 7), (8, 1), (7, 14)): art[(y, x)] = STAR_CORE
+    else:
+        for i in range(16):
+            for k in (0, 1, 14, 15): art[(k, i)] = colour; art[(i, k)] = colour
+    return art
+
+
+def _frame_sheet(path, colours):
+    """A synthetic 4 x 2 frame sheet: each cell drawn on a 200 px pitch, 10 raw px per art pixel, magenta gutters."""
+    arr = np.zeros((40 + 2 * 200, 40 + 4 * 200, 3), np.uint8); arr[:] = M
+    for k, part in enumerate(G.job_by_id(G.FRAME_SHEET_ID)['parts']):
+        oy, ox = 40 + (k // 4) * 200, 40 + (k % 4) * 200
+        for (y, x), c in _frame_art(part, colours.get(part, (255, 200, 120))).items():
+            arr[oy + y * 10:oy + y * 10 + 10, ox + x * 10:ox + x * 10 + 10] = c
+    path.parent.mkdir(parents=True, exist_ok=True); Image.fromarray(arr, 'RGB').save(path); return path
+
+
+def test_frame_sheet_passes_seven_tiers_glow_and_starlit_with_their_roles(factory):
+    colours = {r: _rgb(c) for r, c in G.RARITY_PALETTE.items()}
+    res = G.process_attempt(A.Registry(factory / 'r.json'), by_id()[G.FRAME_SHEET_ID], _frame_sheet(factory / 'raw.png', colours), factory / 'w')
+    assert set(res) == {'ui-rarity-magic', 'ui-rarity-rare', 'ui-rarity-epic', 'ui-rarity-legendary', 'ui-rarity-unique', 'ui-rarity-set',
+                        'ui-glow-legendary', 'ui-starlit'}
+    assert all(q['pass'] for q in res.values()), {a: q['reasons'] for a, q in res.items()}
+    assert res['ui-glow-legendary']['role'] == 'glow' and res['ui-glow-legendary']['pad'] == 2 and res['ui-starlit']['role'] == 'overlay'
+    assert res['ui-rarity-epic']['tier_hue'] == 257 and res['ui-rarity-legendary']['tier_hue'] == 26
+
+
+def test_frames_the_strong_defringe_would_peel_use_the_default_one(factory):
+    # #8A5CFF is 117 from the key on its worst channel: the strong UI defringe (near-magenta 120, 3 passes) would eat the
+    # 2 px epic band from the outside in. Every other tier colour is far from the key and keeps the strong defringe.
+    assert {p: G.frame_defringe(p) for p in G.job_by_id(G.FRAME_SHEET_ID)['parts']} == {
+        'magic': 'strong', 'rare': 'strong', 'epic': 'default', 'legendary': 'strong', 'unique': 'strong', 'set': 'strong',
+        'glow-legendary': 'strong', 'starlit': 'strong'}
+    colours = {r: _rgb(c) for r, c in G.RARITY_PALETTE.items()}
+    reg = A.Registry(factory / 'r.json')
+    G.process_attempt(reg, by_id()[G.FRAME_SHEET_ID], _frame_sheet(factory / 'raw.png', colours), factory / 'w')
+    assert reg.get('ui-rarity-epic')['defringe'] == 'default' and reg.get('ui-rarity-magic')['defringe'] == 'strong'
+    assert reg.get('ui-rarity-epic')['qa']['stroke'] == [2, 2]
+
+
+def test_frame_sheet_marks_two_close_frames_failed(factory):
+    colours = {r: _rgb(c) for r, c in G.RARITY_PALETTE.items()}
+    colours.update(rare=(255, 170, 30), legendary=(255, 175, 40))     # both inside their own hue window, nearly the same colour
+    reg = A.Registry(factory / 'r.json')
+    res = G.process_attempt(reg, by_id()[G.FRAME_SHEET_ID], _frame_sheet(factory / 'raw.png', colours), factory / 'w')
+    for aid, other in (('ui-rarity-rare', 'ui-rarity-legendary'), ('ui-rarity-legendary', 'ui-rarity-rare')):
+        assert any(r.startswith(f'too close to {other} (ΔE ') for r in res[aid]['reasons']) and not res[aid]['pass'], res[aid]
+        assert reg.get(aid)['status'] == 'qa_failed'
+        saved = json.loads((factory / 'w' / f'{aid}.qa.json').read_text(encoding='utf-8'))
+        assert saved['reasons'] == res[aid]['reasons'] and not saved['pass']
+    assert res['ui-rarity-magic']['pass'] and reg.get('ui-rarity-magic')['status'] == 'qa_passed'
+
+
 def test_committed_gear_plan_json_is_current(factory):
     G.plan_json([])
     fresh = json.loads((factory / 'gear-plan.json').read_text(encoding='utf-8'))
     committed = json.loads((Path(G.AF) / 'gear-plan.json').read_text(encoding='utf-8'))
     assert fresh == committed
-    assert set(fresh) == {'sheets', 'batches', 'regionLimited', 'setFirst'}
+    assert set(fresh) == {'sheets', 'batches', 'regionLimited', 'setFirst', 'slots'}
+    assert fresh['slots'] == G.GEAR_SLOT
     assert fresh['sheets']['sheet-skill-noel'][-1] is None
     assert b'\r\n' not in (Path(G.AF) / 'gear-plan.json').read_bytes()

@@ -113,19 +113,20 @@
 - 去背邊緣清理：預設只清一層、門檻 90，保留真正的淡紫、紫與粉紅邊。視窗框、logo、游標與已核准的 NPC 半身像在登錄表標 `defringe: strong`（最多 3 層、門檻 120、加暗洋紅），因為它們的雜邊較厚。
 
 ## 計畫 5d：裝備、素材、技能、稀有度外框與鍛造屋
-依據：`docs/superpowers/plans/2026-10-17-starlantern-plan5d-art.md`，以及對它有約束力的 `docs/superpowers/plans/2026-10-19-starlantern-plan5d-addendum.md`（數量、批次、核准關卡以補遺為準）。
+依據：`docs/superpowers/plans/2026-10-17-starlantern-plan5d-art.md`，以及對它有約束力的 `docs/superpowers/plans/2026-10-19-starlantern-plan5d-addendum.md`（數量、批次、核准關卡以補遺為準）與 `docs/superpowers/plans/2026-10-20-starlantern-plan5d-addendum2.md`（圖示大小一致、七階外框＋星輝；三者衝突時補遺 2 優先）。
 - 工具：`tools/gear_art.py`（工作表、描述表、`gen`／`cand`／`pick`／`note`／`approve`／`silhouettes`／`publish`／`plan-json`）；審核頁 `tools/review_gear.py <batch>` → `tmp/starlantern/review-gear/index.html`。後處理在 `tools/sl_art.py`（`process_gear_cell`、`nine_slice`、`silhouette`、`Registry.retire`）。
 - `art-factory/starlantern/gear-plan.json` 由 `gear_art.py plan-json` 產生並 commit，`render/gearArt.test.ts` 用它和遊戲資料交叉比對（名冊 `data/*.roster.ts` 的 id 不算，歸 5f）。
 
 | 類別 | 數量 | 登錄表 id | runtime（相對 `public`） | 規格 |
 |---|---|---|---|---|
-| 裝備小圖示（底材 25、特殊 44） | 69 | `gear-<id>` | `/assets/games/starlantern/gear/<id>.png` | 透明，長邊 24 美術像素，置中於 26×26 |
-| 裝備大圖 | 69 | `gear-<id>-large` | `/assets/games/starlantern/gear/<id>-large.png` | 透明，長邊 60，置中於 64×64；和小圖示同一格原圖（`source` 相同） |
+| 裝備小圖示（底材 25、特殊 44） | 69 | `gear-<id>` | `/assets/games/starlantern/gear/<id>.png` | 透明，主體長邊正好 22 美術像素（容差 ±1），置中於 26×26 |
+| 裝備大圖 | 69 | `gear-<id>-large` | `/assets/games/starlantern/gear/<id>-large.png` | 透明，主體長邊正好 56（容差 ±1），置中於 64×64；和小圖示同一格原圖（`source` 相同） |
 | 剪影（地區限定 12＋套裝 6） | 18 | `gear-<id>-silhouette` | `/assets/games/starlantern/gear/<id>-silhouette.png` | 由已核准的 `gear-<id>` 確定性轉出，每邊多 1 px（28×28）；套裝用第一件 |
 | 新素材圖示 | 12 | `icon-<matId>` | `/assets/games/starlantern/icon/<matId>.png` | 透明，高 32（`--height 32`） |
 | 技能樹技能圖示 | 78 | `icon-<skillId>` | `/assets/games/starlantern/icon/<skillId>.png` | 透明，高 32；夥伴樹 47＋凜 10＋洛恩 21 |
-| 稀有度外框 | 5 | `ui-rarity-<magic\|rare\|legendary\|unique\|set>` | `/assets/games/starlantern/ui/rarity-<r>.png` | 九宮格 16×16，slice 5，中央透明 |
-| 傳說光暈 | 1 | `ui-glow-legendary` | `/assets/games/starlantern/ui/glow-legendary.png` | 九宮格 20×20，slice 7，中央透明，硬邊階梯色 |
+| 稀有度外框 | 6 | `ui-rarity-<magic\|rare\|epic\|legendary\|unique\|set>` | `/assets/games/starlantern/ui/rarity-<r>.png` | 九宮格 16×16，slice 5，中央透明，2 px 邊帶（普通沒有外框） |
+| 傳說光暈 | 1 | `ui-glow-legendary` | `/assets/games/starlantern/ui/glow-legendary.png` | 格內光暈：原圖 12×12 的 1 px 淡橘環＋四角 2×2 火花，補 2 px 透明成 16×16，slice 5；疊在圖示下層，`inset: 0` |
+| 星輝疊層 | 1 | `ui-starlit` | `/assets/games/starlantern/ui/starlit.png` | 九宮格 16×16，slice 5：四角四芒星（≤5×5）＋邊上稀疏 1 px 星點；疊在外框之上，只給擲出星輝的傳說、獨特、套裝（暫定 id，5g 定案） |
 | 鍛造屋場景 | 1 | `scene-forge` | `/assets/games/starlantern/scene/forge.png` | 不透明 418×235（`--fit 418x235`） |
 | 多蘭半身像 | 2 | `npc-forge`、`npc-forge-happy` | `/assets/games/starlantern/npc/forge.png`、`forge-happy.png` | 透明，高 180，`allow_edge: [bottom]` |
 
@@ -135,7 +136,7 @@
 ### 批次與核准（補遺 S3、S4）
 | 批次 | 工作表 | 件數 |
 |---|---|---|
-| `sample` | `sheet-gear-1`、`sheet-mat-1`、`sheet-rarity-frames`、`scene-forge`、`npc-forge` | 32（9×2＋6＋6＋1＋1），另 3 個剪影 |
+| `sample` | `sheet-gear-1`、`sheet-mat-1`、`sheet-rarity-frames-2`、`scene-forge`、`npc-forge` | 34（9×2＋6＋8＋1＋1），另 3 個剪影（補遺 2：外框表改 4×2，舊的 `sheet-rarity-frames` 不再是工作） |
 | `main-gear` | `sheet-gear-2`…`-8`、`sheet-mat-2`、`npc-forge-happy` | 127（60×2＋6＋1），另 15 個剪影 |
 | `skills` | `sheet-skill-scarlet` 與其餘 7 位夥伴各 1 張、`sheet-skill-rin-1`／`-2`、`sheet-skill-hero-1`…`-4`（共 14 張） | 78 |
 
@@ -153,12 +154,33 @@
 - 剪影只從 `approved`／`published` 的圖示產生；它是確定性轉換，QA 通過就直接標 `approved`（`approved_by: derived from gear-<id>`，`batch` 跟來源相同），失敗就停下回報。
 
 ### QA 關卡（`sl_art.py`）
-- 裝備格（`kind: gear-cell`）：`fit_side` 以主體長邊決定 block（`ceil(長邊 ÷ 目標)`），大圖目標 60、畫布 64，小圖示目標 24、畫布 26；兩張都走 `_finish` 的透明 QA（magenta 殘留、半透明、被原圖畫布切到、16 px 以下的洞只列警告）與 `larger than the canvas`。
-- 九宮格（`kind: nine-slice`）：cutout → 主體 bbox → 最近鄰取樣成正好 N×N（不產生新顏色）→ 一般透明 QA（外框本來就貼齊畫布邊，所以不算 `touches edge`；slice 以內的中央當成背景傳給 `bg_hint`，所以刻意透明的中央不算洞，外框帶內的小洞仍列警告）＋三項檢查：
+- 裝備格（`kind: gear-cell`，補遺 2 §1）：在高解析度格上 cutout、裁到 alpha bbox，只做一次 centre-sample（`normalize_subject`，不產生新顏色）讓主體長邊**正好**等於目標（大圖 56、畫布 64；小圖示 22、畫布 26），四周補 1 px 透明再置中；`scale = 原圖長邊 ÷ 目標` 小於 1 會變成放大，直接失敗（`cell too small to sample`）。洋紅 hint 用同一個倍率從原圖取樣。兩張都走 `_finish` 的透明 QA（magenta 殘留、半透明、被原圖畫布切到、16 px 以下的洞只列警告）、`larger than the canvas` 與尺寸閘門 `subject_gate`。`fit_side` 保留但裝備格不再用。
+- 尺寸閘門（在最終 PNG 上只算 alpha = 255；qa 記 `subject: {long, short, mass, box, centre_off}` 與 `scale`）：
+
+  | 量測 | 小圖示 `gear-<id>` | 大圖 `gear-<id>-large` | reason |
+  |---|---|---|---|
+  | 主體長邊 | 22±1 | 56±1 | `subject long edge off target` |
+  | bbox 中心與畫布中心的距離 | ≤1 | ≤1 | `subject off centre` |
+  | 短邊下限 | `ceil(MIN_SHORT[slot] × 22)` | `ceil(MIN_SHORT[slot] × 56)` | `subject too narrow` |
+  | 份量 `mass = 不透明像素 ÷ 目標²` | `MASS_BAND[SUBJECT_CLASS[slot]]` | 同左 | `subject too light`／`subject too heavy` |
+
+  | slot | weapon | offhand | head | body | hands | feet | neck | ring |
+  |---|---|---|---|---|---|---|---|---|
+  | `MIN_SHORT` | 0.70 | 0.75 | 0.65 | 0.80 | 0.70 | 0.70 | 0.60 | 0.60 |
+  | 小圖示短邊下限 | 16 | 17 | 15 | 18 | 16 | 16 | 14 | 14 |
+  | `SUBJECT_CLASS`（`MASS_BAND`） | long（0.28–0.65） | broad（0.50–0.92） | broad | broad | broad | broad | small（0.35–0.80） | small |
+
+  slot 來自 `gear_art.GEAR_SLOT`（`gear-plan.json` 的 `slots`，`gearArt.test.ts` 與遊戲資料交叉比對）。門檻是 `sl_art.py` 的常數，不可以在登錄表為個別件加放寬欄位；要改門檻須由主控在帳本記下裁定。`slot` 不給（None）時只檢查長邊與置中。
+- 九宮格（`kind: nine-slice`）：cutout → 主體 bbox → coverage 取樣（`cover_sample`：輸出像素對應的原圖區塊不透明比例 ≥ 0.4 才算不透明，顏色取區塊中最常見的不透明色，不產生新顏色；2 px 邊帶不會被取樣跳掉）成正好 (N − 2×pad)²，再補 `pad` 圈透明 → 一般透明 QA（外框本來就貼齊畫布邊，所以不算 `touches edge`；slice 以內的中央當成背景傳給 `bg_hint`，所以刻意透明的中央不算洞，外框帶內的小洞仍列警告）＋三項檢查：
   - `center_clear`：slice 以內的中央全透明，否則 `centre not clear`；
   - `ring_closed`：上下邊帶的每一欄、左右邊帶的每一列，在 slice 深度內至少有 1 個不透明像素，否則 `ring not closed`；
   - `edge_repeat`：四條邊帶的中段各自當成只左右重複的圖塊，用 `wrap_seam` 量接縫差（seam）與帶內相鄰差（interior），比值 `seam ÷ max(interior, 6)` 須 ≤ 1.25，否則 `edge does not repeat`。分母下限 6（0–255）是因為單色細邊的帶內差只有編碼雜訊（約 ±3），直接相除會讓同一條均勻邊的比值在 0–3.3 之間亂跳；有下限時均勻邊通過，接縫處真正的色差仍然失敗。qa.json 另記 `edge_steps`（每邊的 seam 與 interior）。
-  - 外框在登錄表標 `defringe: strong`（同其他 UI 框）。
+  - 依 `role` 的檢查（補遺 2 §2；qa 另記 `stroke: [min, max]`、`reach: {edge, corner}`、`stroke_colour`（邊中段外 2 列不透明像素的中位 RGB）、`hue`（中位色相，處理 0°／360° 環繞））：
+    - `frame`：邊中段的邊帶厚度 2–3（`band thinner than 2 px`）；邊中段從外緣往內最深 3、角落（每像素取 min(離兩外緣的深度)）最深 4，超過或邊帶厚於 3 都是 `band reaches into the icon`；邊帶色相與該階色相差 ≤ 15° 且飽和度 ≥ 0.45（`hue off tier`）。
+    - `glow`（傳說光暈，pad 2）：邊中段第 0–1 列必須透明（`glow outside its ring`）；厚度 ≤ 2、往內最深 4；色相 35°±15、飽和度 ≥ 0.30。`ring_closed` 在 pad 以內檢查。
+    - `overlay`（星輝）：不檢查 `ring_closed` 與邊帶厚度；所有不透明像素都要是星光色（色相 170–215° 且 S ≥ 0.2 且 V ≥ 0.7，或 S ≤ 0.15 且 V ≥ 0.85，否則 `not starlight colours`）；四角 5×5 各至少 3 個不透明像素（`starlit corners missing`）；任一邊中段外 2 列的覆蓋率 ≤ 0.35（`overlay hides the frame`）。
+  - 七階之間的色差（`frames_distinct`，整張外框表處理完才跑）：六種外框的 `stroke_colour` 兩兩之間 CIE76 ΔE ≥ 25，太近的兩個都記 `too close to <aid> (ΔE n)` 並轉 `qa_failed`。
+  - 外框在登錄表標 `defringe: strong`（同其他 UI 框）。例外：史詩 `#8A5CFF` 離洋紅最遠的一個通道只差 117，落在 strong defringe 的 120 範圍內，會被從外往內剝掉，所以 `ui-rarity-epic` 標 `defringe: default`（`gear_art.frame_defringe`，依色碼自動判斷，不是個別放寬）。
 - 剪影（`kind: silhouette`）：只接受 `approved`／`published` 的 `gear-<id>`（否則 `PermissionError`）。不透明像素一律換成 `#1d1a2e`，外圍 8 鄰接的透明格塗成 `#8f86b8` 當輪廓光，畫布每邊多 1 px；只允許這兩色、沒有半透明、不透明像素數 ≥ 原圖。
 - 素材、技能、場景、NPC 沿用 `_finish`。
 - 洋紅溢色（magenta spill，計畫 5d 的透明素材都做）：key 色被抗鋸齒混進外框線，會留下 (48,4,56)、(137,52,136)、(250,42,136) 這類暗紫、灰紫、粉紅邊，原本的殘色檢查抓不到。定義：不透明像素的 R 與 B 都比 G 高至少 30，而且色相在 280–345 度之間（270 度以下的紫是美術本身）。
@@ -167,15 +189,29 @@
 
 ### Prompt 範本（完整句子在 `gear_art.py`）
 - 共通：`flat pure magenta #FF00FF gutters and margin`、`No text, no numbers, no frames, no badge or circle behind the item`、原創句 `The design must be original and not resemble any existing game item.`，句尾沿用 `portal.py` 的 `PIX` 與 `GEN`。prompt 不寫任何作品名或畫師名。
-- 裝備表（`GEAR_SHEET`、每格 `GEAR_DESC`）：`each item drawn alone, about 64 by 64 art pixels, three-quarter item-icon view, long weapons on the diagonal with the hilt lower left and the tip upper right, light from the upper left, a bold readable silhouette that still reads at 24 pixels`。稀有度定語氣：底材樸素低飽和不發光；傳說以底材為骨架加角色或地區母題與橘色硬邊餘燼；獨特加金色細工與一個故事母題；套裝共用配色與徽記（`SET_STYLE`）。武器照資料的種類畫：晶刃是短刃（dagger）、星紋軍刀是彎刀（scimitar）。
+- 裝備表（`GEAR_SHEET`、每格 `GEAR_DESC`，補遺 2）：每件置中、長向填滿格子約九成、`all items at the same scale so they look equally big`；長兵器斜放、刃與柄至少 6 美術像素寬；盾、鎧、盔、手套、靴正面、粗壯、兩個方向都填滿（盾寬至少是高的四分之三；成對的手套、靴並排重疊）；戒指與項鍊一樣畫大；為 24 px 設計（2 px 深色描邊、每種材質最多三階平塗、一個大徽記、沒有小於 3 美術像素的細節）；格與格之間至少 60 px 的洋紅通道。稀有度定語氣：底材樸素低飽和不發光；傳說以底材為骨架加角色或地區母題與橘色硬邊餘燼；獨特加金色細工與一個故事母題；套裝共用配色與徽記（`SET_STYLE`；套裝的鎧與手甲是 `a chunky front-facing breastplate`、`a pair of chunky gauntlets side by side`）。武器照資料的種類畫：星紋軍刀是彎刀（scimitar）；晶刃與無聲之刃是短刃，因為長邊統一，改靠比例區分（`a stubby dagger: a short broad blade and a large hilt, clearly stubbier in proportion than a sword`）。
 - 參考圖：樣本批附 `raw/portal-refs/icons-old-x8.png`；量產批另附 `raw/gear-refs/gear-anchor.png`（`gen` 由已核准的 sheet-gear-1 原圖縮半自動產生）；角色傳說附 `reference/crops/<cid>.png`；`set-blaze-ring`（sheet 6）附 sheet-gear-1 已核准的原圖。
 - 素材表（`MAT_DESC`）：`about 28 by 28 art pixels`；精華是同一顆結晶滴的四階（灰白、藍、黃、橘）；地區素材照 `portal.py` 的 `TRAITS` 配色。
 - 技能表（`SKILL_DESC`）：`about 28 by 28 art pixels, one bold emblem`，依角色配色；夥伴附 `reference/crops/<cid>.png`，洛恩與凜沒有 crop，改附已核准的 `char-hero-standee`、`char-rin-standee`（凜用誓約前的樣子）。
-- 外框表（`FRAME_DESC`）：`six square pixel-art item-slot frames, each a thin 2-pixel border with small ornamental corners, the inside of each frame perfectly flat magenta, straight edge segments designed to repeat`，寫明每個外框約 16×16 美術像素、光暈約 20×20，句尾用 `PIX`；第 6 格是寬 3 px 的橘色硬邊階梯光暈。
+- 外框表（`sheet-rarity-frames-2`，`FRAME_SHEET`／`FRAME_DESC`，補遺 2）：4×2 共 8 格，依序魔法、稀有、史詩、傳說、獨特、套裝、傳說光暈、星輝。六個外框各正好 16×16 大像素、中央平塗洋紅、單一 2 大像素寬的邊帶、角飾限在 4×4 角落內、邊中段素面可重複、每框只用一個色相（深淺兩階）；色碼與角飾逐階往上加（見下表）；光暈是 12×12 的 1 大像素淡橘環加四角火花；星輝是四角四芒星加稀疏星點。句尾用 `PIX`、`No text` 與原創句。
+
+  | 階 | 主色 | 色相 | 外框造型 |
+  |---|---|---|---|
+  | 普通 common | `#c9c9d4` | — | 沒有外框 |
+  | 魔法 magic | `#3f7fff` | 220° | 2 px 實心邊帶，直角，沒有角飾 |
+  | 稀有 rare | `#ffe03a` | 51° | 邊帶＋每角一顆 2×2 鉚釘 |
+  | 史詩 epic | `#8a5cff` | 257°（只能在 250–272°，偏粉的紫會被洋紅去背吃掉） | 邊帶，四角切 45°，每角一顆小菱形寶石 |
+  | 傳說 legendary | `#ff7a14` | 26° | 邊帶＋每角火舌角飾；另有格內光暈 |
+  | 獨特 unique | `#d8283a` | 354° | 邊帶＋1 px 金色內緣線與雕花角飾 |
+  | 套裝 set | `#3fd05a` | 131° | 邊帶＋每角一片葉形徽記 |
+  | 星輝疊層 | `#e8fbff`／`#7fe6ff` | 190° | 四角四芒星（≤5×5）＋邊上稀疏 1 px 星點；只疊在擲出星輝的傳說、獨特、套裝上 |
+  | 傳說光暈 | 色相 35°±15，S ≥ 0.30 | | 格內一圈 1 px 淡橘光，四角各一個 2×2 火花 |
+
+  色盤在 `gear_art.RARITY_PALETTE`；六種外框兩兩 ΔE 最小 32.9（魔法對史詩），門檻 25。28 px 背包格的層次：外框邊帶第 0–1 px、光暈第 2 px、主體第 3–24 px；CSS `border-image-repeat: repeat`（不用 `round`，38 px 人形格才不會非整數縮放）。
 - 鍛造屋：`UI_SCENES` 句型，附 `bg-f1` 已發布原圖；多蘭沿用 `UI_NPCS` 句型與 `JP` 前綴，附 `char-scarlet-standee`；笑臉附已核准的 `npc-forge`。
 
 ### 交給 5f 的東西（補遺 §2）
-- `process_gear_cell` 接受任何 id，不寫死 69 件；
+- `process_gear_cell` 接受任何 id，不寫死 69 件；`slot` 參數預設 None（只檢查長邊與置中），5f 的專屬獨特要傳入自己的 slot，才會套用同一套尺寸閘門（補遺 2 §7-10）；
 - `sheet-gear-1` 的核准原圖（`gear-anchor.png`）是 5f 專屬獨特的風格錨點；
 - `ui-rarity-unique` 外框由 5f 的專屬獨特直接沿用；
 - 素材圖示規格同上表（`--height 32`），5f 的素材表附 5d 已核准的素材圖當參考。

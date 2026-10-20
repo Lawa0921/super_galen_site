@@ -42,6 +42,9 @@ def _dark_magenta(rgb):
     return (g <= 25) & (r >= 100) & (b >= 90) & (np.abs(r - b) <= 60)
 
 
+STRONG_DEFRINGE = 120   # defringe(strong=True): near-magenta reach (colours this close to the key are peeled at the edge)
+
+
 def defringe(img, strong=False):
     """Make magenta fringe that touches transparency transparent.
 
@@ -54,7 +57,7 @@ def defringe(img, strong=False):
         clear = arr[..., 3] == 0
         touch = np.zeros_like(clear)
         touch[1:] |= clear[:-1]; touch[:-1] |= clear[1:]; touch[:, 1:] |= clear[:, :-1]; touch[:, :-1] |= clear[:, 1:]
-        bad = (_near_magenta(arr[..., :3], 120) | _dark_magenta(arr[..., :3])) if strong else _near_magenta(arr[..., :3], 90)
+        bad = (_near_magenta(arr[..., :3], STRONG_DEFRINGE) | _dark_magenta(arr[..., :3])) if strong else _near_magenta(arr[..., :3], 90)
         hit = touch & ~clear & bad
         if not hit.any(): break
         arr[hit] = 0

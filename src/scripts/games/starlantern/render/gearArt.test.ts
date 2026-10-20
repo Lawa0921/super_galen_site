@@ -13,6 +13,8 @@ interface GearPlan {
   batches: Record<string, string>;
   regionLimited: string[];
   setFirst: Record<string, string>;
+  /** Plan 5d addendum 2: the slot of every gear cell (the size gate's short-edge and mass limits follow it). */
+  slots: Record<string, string>;
 }
 const plan = JSON.parse(readFileSync('art-factory/starlantern/gear-plan.json', 'utf8')) as GearPlan;
 const registry = JSON.parse(readFileSync('art-factory/starlantern/registry.json', 'utf8')) as {
@@ -61,6 +63,13 @@ describe('plan 5d gear art plan (art-factory/starlantern/gear-plan.json)', () =>
     const want = [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)].filter((id) => !ROSTER.has(id));
     expect(new Set(cells)).toEqual(new Set(want));
     expect(want).toHaveLength(69);   // 25 bases + 44 specials
+  });
+
+  it('every gear cell names the slot of its item', () => {
+    const want = [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)].filter((id) => !ROSTER.has(id));
+    expect(new Set(Object.keys(plan.slots ?? {}))).toEqual(new Set(want));
+    expect(Object.keys(plan.slots)).toHaveLength(69);
+    for (const [id, slot] of Object.entries(plan.slots)) expect(slot, id).toBe((EQUIPMENT[id] ?? SPECIALS[id]).slot);
   });
 
   it('every material without art and every tree skill has exactly one icon cell', () => {

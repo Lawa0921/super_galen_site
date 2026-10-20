@@ -10,7 +10,7 @@
   publish --batch B                      write runtime, copy to public/, retire replaced base icons, rewrite the manifest
   plan-json                              write art-factory/starlantern/gear-plan.json (cross-checked by gearArt.test.ts)
 
-Batches (addendum S3): `sample` (the style: 32 parts), `main-gear` (127 parts), `skills` (78 icons). Every batch needs the
+Batches (addendum S3): `sample` (the style: 34 parts since addendum 2), `main-gear` (127 parts), `skills` (78 icons). Every batch needs the
 user's approval on its review page before `approve` and `publish` (addendum S4); `gen` refuses the later batches until
 the sample is approved (`style_approved` at the registry root). Run from the repo root.
 """
@@ -35,12 +35,43 @@ GEN, PIX = P.GEN, P.PIX
 ORIGINAL = 'The design must be original and not resemble any existing game item.'
 
 BATCHES = ('sample', 'main-gear', 'skills')
-SAMPLE = ('sheet-gear-1', 'sheet-mat-1', 'sheet-rarity-frames', 'scene-forge', 'npc-forge')
-LARGE, ICON = (60, 64), (24, 26)        # gear: (longer side, canvas) for the large image and the bag icon
+FRAME_SHEET_ID = 'sheet-rarity-frames-2'   # addendum 2: 4 x 2 (the six tier frames, the inner glow, the starlit overlay)
+SAMPLE = ('sheet-gear-1', 'sheet-mat-1', FRAME_SHEET_ID, 'scene-forge', 'npc-forge')
+LARGE, ICON = (56, 64), (22, 26)        # gear: (longer side exactly, canvas) for the large image and the bag icon (addendum 2 §1)
 ICON_HEIGHT = 32                        # materials and skills: the contract's icon row (--height 32)
 NPC_HEIGHT = 180
 SCENE_SIZE = P.SCENE_SIZE
-FRAME_SIZE = {'glow-legendary': (20, 7)}   # (size, slice); every rarity frame is (16, 5)
+
+# Addendum 2 §2: the tier colours (frame hue QA; the game's text colours follow plan 5g) and the starlit light.
+RARITY_PALETTE = {'common': '#c9c9d4', 'magic': '#3f7fff', 'rare': '#ffe03a', 'epic': '#8a5cff', 'legendary': '#ff7a14',
+                  'unique': '#d8283a', 'set': '#3fd05a'}
+STARLIT = ('#e8fbff', '#7fe6ff')
+GLOW_HUE = A.GLOW_HUE                   # 35: soft pale yellow-orange light
+FRAMED_RARITIES = [r for r in RARITY_PALETTE if r != 'common']   # common has no frame
+
+
+def _hex_rgb(c):
+    return tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
+
+
+FRAME_HUE = {r: round(A.band_hue([_hex_rgb(RARITY_PALETTE[r])])) for r in FRAMED_RARITIES}
+# Provisional art ids (addendum 2 §3; plan 5g owns the final contract): a rename is this one table, and runtime()
+# derives the public path from the id (`ui-<x>` -> ui/<x>.png).
+FRAME_ASSET = {**{r: f'ui-rarity-{r}' for r in FRAMED_RARITIES}, 'glow-legendary': 'ui-glow-legendary', 'starlit': 'ui-starlit'}
+# (role, size, slice, pad) for nine_slice; the glow is a 12 x 12 ring padded to 16 x 16 so it sits inside the slot.
+FRAME_ROLE = {'glow-legendary': ('glow', 16, 5, 2), 'starlit': ('overlay', 16, 5, 0)}
+
+
+def frame_role(part):
+    return FRAME_ROLE.get(part, ('frame', 16, 5, 0))
+
+
+def frame_defringe(part):
+    # UI frames use the strong defringe (contract), except a tier whose own colour lies within its reach of the key:
+    # epic #8A5CFF is 117 from magenta, so the strong pass would peel the 2 px band from the outside in.
+    c = RARITY_PALETTE.get(part)
+    near = c is not None and bool(A._near_magenta(A.np.array([_hex_rgb(c)]), A.STRONG_DEFRINGE).any())
+    return 'default' if near else 'strong'
 
 
 def ref(rel):
@@ -79,6 +110,21 @@ SET_SLOTS = {
     'set-shade': ['weapon', 'head', 'hands', 'feet'], 'set-iron': ['offhand', 'head', 'body', 'feet'],
 }
 SET_FIRST = {sid: f'{sid}-{slots[0]}' for sid, slots in SET_SLOTS.items()}
+# The slot of every gear cell (data/equipment.ts and data/gear.ts; gearArt.test.ts cross-checks gear-plan.json `slots`):
+# the size gate's short-edge floor and mass band follow it (sl_art.SUBJECT_CLASS).
+GEAR_SLOT = {
+    'wooden-staff': 'weapon', 'iron-sword': 'weapon', 'hunter-bow': 'weapon', 'thorn-spear': 'weapon', 'crystal-blade': 'weapon',
+    'frost-staff': 'weapon', 'star-saber': 'weapon', 'cloth-robe': 'body', 'leather-vest': 'body', 'scale-mail': 'body',
+    'dusk-mantle': 'body', 'moss-charm': 'neck', 'bat-earring': 'neck', 'crystal-pendant': 'neck', 'gear-ring': 'ring',
+    'wooden-buckler': 'offhand', 'crystal-aegis': 'offhand', 'leather-cap': 'head', 'scale-helm': 'head', 'cloth-gloves': 'hands',
+    'thorn-gauntlets': 'hands', 'straw-sandals': 'feet', 'bat-boots': 'feet', 'copper-ring': 'ring', 'star-ring': 'ring',
+    'lg-noel': 'ring', 'lg-chizuru': 'weapon', 'lg-liz': 'weapon', 'lg-sylvie': 'offhand', 'lg-scarlet': 'neck', 'lg-selene': 'head',
+    'lg-safira': 'feet', 'lg-bobby': 'hands',
+    'blaze-heart-sword': 'weapon', 'blaze-ember-ring': 'ring', 'frost-winter-staff': 'weapon', 'frost-bloom-neck': 'neck',
+    'storm-thunder-bow': 'weapon', 'storm-swift-boots': 'feet', 'mire-miasma-mask': 'head', 'mire-whisper-gloves': 'hands',
+    'shade-silent-blade': 'weapon', 'shade-raven-cloak': 'body', 'iron-unbroken-shield': 'offhand', 'iron-bulwark-plate': 'body',
+    **{f'{sid}-{slot}': slot for sid, slots in SET_SLOTS.items() for slot in slots},
+}
 # data/gear.ts regionSpecials(): each region's legendary and unique (the portal card lists them; unowned ones show a silhouette).
 REGION_LIMITED = ('blaze-heart-sword', 'blaze-ember-ring', 'frost-winter-staff', 'frost-bloom-neck', 'storm-thunder-bow',
                   'storm-swift-boots', 'mire-miasma-mask', 'mire-whisper-gloves', 'shade-silent-blade', 'shade-raven-cloak',
@@ -86,6 +132,8 @@ REGION_LIMITED = ('blaze-heart-sword', 'blaze-ember-ring', 'frost-winter-staff',
 
 # --- descriptions ------------------------------------------------------------------------------------------------------
 BASE_TONE = 'plain everyday materials, low saturation, no glow'
+# Addendum 2: every subject gets the same long edge, so a short blade is told apart by proportion, not by length.
+STUBBY_DAGGER = 'a stubby dagger: a short broad blade and a large hilt, clearly stubbier in proportion than a sword'
 LEGEND_TONE = 'a few small hard-edged bright orange ember highlights'
 UNIQUE_TONE = 'fine gold filigree'
 GEAR_BASE = {
@@ -94,7 +142,7 @@ GEAR_BASE = {
     'hunter-bow': 'a plain wooden hunting bow with a taut string and a leather grip',
     'thorn-spear': 'a long spear with a wooden shaft wrapped in dark green thorny vines and an iron leaf-shaped head',
     # Addendum S5: the hero's weapon mastery follows these kinds, so they must read as a dagger and a scimitar at 24 px.
-    'crystal-blade': 'a short dagger, clearly half the length of a normal blade, with a pale blue crystal blade and a plain iron hilt',
+    'crystal-blade': f'{STUBBY_DAGGER}, with a pale blue crystal blade and a plain iron hilt',
     'frost-staff': 'a wooden staff topped with a pale ice-crystal shard bound in iron wire',
     'star-saber': 'a scimitar with a strongly curved single-edged steel blade etched with a faint star pattern and a brass guard',
     'cloth-robe': 'a plain undyed cloth robe with wide sleeves and a rope belt',
@@ -130,7 +178,7 @@ GEAR_LEGEND = {   # character legendaries: base skeleton + the owner's motif and
     'frost-bloom-neck': 'a silver necklace with an ice-flower pendant blooming with pale cyan crystal petals',
     'storm-thunder-bow': 'a dark indigo recurve bow whose string is a crackling bright yellow lightning line',
     'mire-whisper-gloves': 'a pair of dark olive gloves with toxic green rune stitching on the fingertips',
-    'shade-silent-blade': 'a slim black dagger, half the length of a sword, with a deep indigo edge and a cloth-wrapped hilt',
+    'shade-silent-blade': f'{STUBBY_DAGGER}, all black with a deep indigo edge and a cloth-wrapped hilt',
     'iron-bulwark-plate': 'a heavy gunmetal breastplate with a broad wall-like front plate and rows of rivets',
 }
 GEAR_UNIQUE = {   # gold filigree and one story motif
@@ -146,7 +194,8 @@ SET_STYLE = {
     'set-storm': 'indigo and bright yellow with a lightning crest', 'set-mire': 'olive green and bronze with a leaf-vein crest',
     'set-shade': 'deep purple and black with a crescent-moon crest', 'set-iron': 'gunmetal grey and rust red with a riveted gear crest',
 }
-SET_NOUN = {'weapon': 'a straight sword', 'offhand': 'a shield', 'head': 'a helm', 'body': 'a breastplate', 'hands': 'a pair of gauntlets',
+SET_NOUN = {'weapon': 'a straight sword', 'offhand': 'a shield', 'head': 'a helm', 'body': 'a chunky front-facing breastplate',
+            'hands': 'a pair of chunky gauntlets side by side',
             'feet': 'a pair of boots', 'neck': 'a necklace', 'ring': 'a ring'}
 GEAR_DESC = {
     **{k: f'{v} ({BASE_TONE})' for k, v in GEAR_BASE.items()},
@@ -279,22 +328,35 @@ SKILL_OWNERS = {   # owner -> (skills in skills.ts order, colour scheme, referen
 SKILL_REF_DEP = {'hero': 'char-hero-standee', 'rin': 'char-rin-standee'}
 EMPTY_CELL = 'plain empty stone slab'
 
-FRAME_DESC = {
-    'magic': 'magic: a steel-blue frame',
-    'rare': 'rare: a bright yellow frame',
-    'legendary': 'legendary: an orange frame with small flame-tongue corner ornaments',
-    'unique': 'unique: a gold frame with carved filigree corner ornaments',
-    'set': 'set: a green frame with a small leaf-shaped set emblem in each of the four corners',
-    'glow-legendary': ('legendary glow: a square ring of orange glow 3 pixels wide, drawn as two or three hard-edged stepped colour bands '
-                       '(bright yellow-orange inside, deep orange outside), never a soft gradient'),
+FRAME_DESC = {   # addendum 2 §2: one hue per tier and an ornament ladder that grows tier by tier
+    'magic': 'royal blue #3F7FFF, a plain band with square corners, no ornament',
+    'rare': 'bright lemon yellow #FFE03A, the band plus one 2 by 2 rivet in each corner',
+    'epic': ('blue-violet #8A5CFF (a cool violet leaning to blue, never pink, never magenta), the band with each corner cut at 45 degrees '
+             'and a small diamond gem in each corner'),
+    'legendary': 'vivid orange #FF7A14, the band plus a small flame-tongue ornament in each corner',
+    'unique': 'deep crimson red #D8283A, the band with a thin gold inner edge line and a carved filigree ornament in each corner',
+    'set': 'leaf green #3FD05A, the band plus a small leaf emblem in each corner',
+    'glow-legendary': ('a 12 by 12 big-pixel square ring of soft pale yellow-orange light only 1 big pixel wide with a 2 by 2 spark at each '
+                       'corner, no other ornament'),
+    'starlit': ('a 16 by 16 big-pixel starlight overlay: a small four-pointed cyan-white star (at most 5 by 5) sitting on each of the four '
+                'corners, and only a few single-pixel cyan-white star dots spaced along each side, everything else magenta'),
 }
 
 # --- prompt templates (plan 5d "Prompt 策略") -----------------------------------------------------------------------------
 GEAR_SHEET = (
     'A {cols} by {rows} grid of {n} pixel art RPG equipment item icons for a 16-bit Japanese console RPG, with flat pure magenta #FF00FF gutters and margin: '
     'thick magenta gutters between the items and a wide magenta margin around the grid; nothing touches the image edges. '
-    'Each item drawn alone, about 64 by 64 art pixels, three-quarter item-icon view, long weapons on the diagonal with the hilt lower left and the tip upper right, '
-    'light from the upper left, a bold readable silhouette that still reads at 24 pixels. '
+    # Addendum 2: one size for every item (the size gate normalises the long edge; the prompt asks for full, chunky shapes).
+    'Every item is drawn alone, centred in its own square cell and filling about nine tenths of the cell in its longest direction; '
+    'all items at the same scale so they look equally big, about 64 by 64 art pixels each. '
+    'Long weapons lie on the diagonal with the hilt lower left and the tip upper right, with thick chunky blades and shafts at least 6 art pixels wide. '
+    'Shields, armour, helms, gloves and boots are drawn front-facing as broad, chunky, simple shapes that fill the cell in both directions: '
+    'a shield is at least three quarters as wide as it is tall; a pair of gloves or boots stands side by side, overlapping. '
+    'Rings and necklaces are drawn large, filling the cell like any other item. '
+    'Design for the 24-pixel icon: a 2-pixel dark outline, big flat colour areas with at most three tones per material, one large crest instead of patterns, '
+    'and no detail smaller than 3 art pixels. '
+    'Keep every item inside its own cell with straight magenta lanes at least 60 pixels wide between columns and rows; nothing crosses a lane. '
+    'Light from the upper left. '
     'Rarity sets the tone: plain base items use plain materials (wood, iron, leather, cloth, scale), low saturation and no glow, and items of the same kind have clearly different outlines; '
     'legendary items keep a base-item shape and add a character or region motif with small hard-edged orange ember highlights; '
     'unique items have fine gold filigree and one story motif; set items share their set colours and crest. '
@@ -315,11 +377,13 @@ ICON_SHEET = (
     'Match the pixel density, outline, shading and saturation of the attached existing icons from the same game (shown enlarged). {refs}'
     '16-bit JRPG item icon style, ' + PIX + '. No text, no numbers, no frames, no badge or circle behind the {noun}. ' + ORIGINAL)
 ESSENCES = ('The four essences are one crystal droplet shape in four grades (pale grey-white, blue, yellow, orange), each grade a little more ornate. ')
-FRAME_SHEET = (
-    'A 3 by 2 grid of six square pixel art item-slot frames for a 16-bit Japanese console RPG, with flat pure magenta #FF00FF gutters and margin. '
-    'Six square pixel-art item-slot frames, each a thin 2-pixel border with small ornamental corners, the inside of each frame perfectly flat magenta, '
-    'straight edge segments designed to repeat; each of the five item-slot frames about 16 by 16 art pixels and the glow ring about 20 by 20 art pixels. '
-    'In this order, left to right, top to bottom: {listing}. '
+FRAME_SHEET = (   # addendum 2 §2; the closing style, no-text and originality sentences are the plan's global constraints
+    'A 4 by 2 grid of eight square pixel art item-slot frame pieces for a 16-bit Japanese console RPG, with flat pure magenta #FF00FF gutters and margin '
+    'and straight magenta lanes at least 60 pixels wide between them. Draw each big pixel as a solid square. '
+    "The six frames are each exactly 16 by 16 big pixels with a perfectly flat magenta inside; each frame's border is one solid band exactly 2 big pixels thick "
+    "(one eighth of the frame's width) running straight along all four sides; corner ornaments stay inside a 4 by 4 big-pixel corner square; "
+    'the middle of every side is plain so it can repeat. Each frame uses one hue only, with a darker and a lighter tone of it. '
+    'In this order: {listing}. '
     '16-bit JRPG menu frame style, ' + PIX + '. No text, no numbers, no items inside the frames, no background inside the frames. ' + ORIGINAL)
 FORGE_SCENE = (
     "Interior of a blacksmith's forge: a glowing furnace on the left, an anvil, racks of blades and shields, hanging tools, warm orange firelight and soot-dark beams, "
@@ -371,7 +435,7 @@ def jobs():
                             what='crafting material', shape='one bold readable object', extra=ESSENCES if sample else '',
                             listing=_listing(parts, MAT_DESC), refs='' if sample else REFS_MAIN, noun='item')))
     frames = list(FRAME_DESC)
-    out.append(dict(id='sheet-rarity-frames', kind='frame-sheet', cols=3, rows=2, parts=frames, batch='sample', images=[], deps=[],
+    out.append(dict(id=FRAME_SHEET_ID, kind='frame-sheet', cols=4, rows=2, parts=frames, batch='sample', images=[], deps=[],
                     prompt=FRAME_SHEET.format(listing=_listing(frames, FRAME_DESC))))
     out.append(dict(id='scene-forge', kind='opaque', cols=1, rows=1, parts=['scene-forge'], batch='sample', images=[], deps=['bg-f1'],
                     prompt=FORGE_SCENE))
@@ -395,7 +459,7 @@ def assets_of(job, part):
     if part is None: return []
     if job['kind'] == 'gear-sheet': return [f'gear-{part}-large', f'gear-{part}']
     if job['kind'] == 'icon-sheet': return [f'icon-{part}']
-    if job['kind'] == 'frame-sheet': return ['ui-glow-legendary' if part == 'glow-legendary' else f'ui-rarity-{part}']
+    if job['kind'] == 'frame-sheet': return [FRAME_ASSET[part]]
     return [part]
 
 
@@ -408,7 +472,7 @@ def runtime(aid):
     b = A.BASE
     if aid.startswith('gear-'): return f'{b}gear/{aid[5:]}.png'
     if aid.startswith('icon-'): return f'{b}icon/{aid[5:]}.png'
-    if aid.startswith('ui-rarity-') or aid == 'ui-glow-legendary': return f'{b}ui/{aid[3:]}.png'
+    if aid in FRAME_ASSET.values(): return f'{b}ui/{aid[3:]}.png'
     if aid == 'scene-forge': return f'{b}scene/forge.png'
     if aid in ('npc-forge', 'npc-forge-happy'): return f'{b}npc/{aid[4:]}.png'
     return None
@@ -520,14 +584,31 @@ def process_attempt(reg, job, raw, workdir, parts=None):
     for cell, part in zip(cells, job['parts']):
         if part is None or (parts and part not in parts): continue
         if job['kind'] == 'gear-sheet':
-            out.update(A.process_gear_cell(reg, part, cell, workdir, raw, large=LARGE, icon=ICON))
+            out.update(A.process_gear_cell(reg, part, cell, workdir, raw, large=LARGE, icon=ICON, slot=GEAR_SLOT[part]))
         elif job['kind'] == 'icon-sheet':
             out[f'icon-{part}'] = A._finish(reg, f'icon-{part}', cell, 'sprite', workdir, raw, height=ICON_HEIGHT, despill_=True)
         else:
-            aid = assets_of(job, part)[0]; size, sl = FRAME_SIZE.get(part, (16, 5))
-            if 'defringe' not in reg.data['assets'].get(aid, {}): reg.set(aid, defringe='strong')   # UI frames (contract)
-            out[aid] = A.nine_slice(reg, aid, cell, workdir, raw, size, sl)
+            aid = assets_of(job, part)[0]; role, size, sl, pad = frame_role(part)
+            if 'defringe' not in reg.data['assets'].get(aid, {}): reg.set(aid, defringe=frame_defringe(part))   # UI frames (contract)
+            out[aid] = A.nine_slice(reg, aid, cell, workdir, raw, size, sl, role=role, hue=FRAME_HUE.get(part), pad=pad)
+    if job['kind'] == 'frame-sheet': _frames_distinct(reg, job, out, workdir)
     return out
+
+
+def _frames_distinct(reg, job, out, workdir):
+    """Addendum 2 §2: the tier frames must stay apart (CIE76 >= A.DISTINCT_DE between band colours). The frames processed
+    now are compared with each other and with the sheet's other frames already in the registry; a processed frame that is
+    too close to another gets `too close to <aid> (ΔE n)` and qa_failed (its qa.json is rewritten)."""
+    tiers = [FRAME_ASSET[p] for p in job['parts'] if frame_role(p)[0] == 'frame']
+    colours = {}
+    for aid in tiers:
+        q = out[aid] if aid in out else reg.data['assets'].get(aid, {}).get('qa', {})
+        if q.get('stroke_colour'): colours[aid] = tuple(q['stroke_colour'])
+    for aid, reasons in A.frames_distinct(colours).items():
+        if aid not in out or not reasons: continue
+        q = out[aid]; q['reasons'] = q['reasons'] + [r for r in reasons if r not in q['reasons']]; q['pass'] = False
+        (Path(workdir) / f'{aid}.qa.json').write_text(json.dumps(q, indent=2), encoding='utf-8')
+        reg.set(aid, qa=q, status='qa_failed')
 
 
 def cand(argv):
@@ -757,7 +838,7 @@ def publish(argv):
 def plan_data():
     js = jobs()
     return {'sheets': {j['id']: j['parts'] for j in js}, 'batches': {j['id']: j['batch'] for j in js},
-            'regionLimited': list(REGION_LIMITED), 'setFirst': dict(SET_FIRST)}
+            'regionLimited': list(REGION_LIMITED), 'setFirst': dict(SET_FIRST), 'slots': dict(GEAR_SLOT)}
 
 
 def plan_json(argv):
