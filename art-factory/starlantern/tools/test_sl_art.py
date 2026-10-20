@@ -1301,7 +1301,8 @@ def test_qa_records_its_spec_and_records_from_an_older_spec_are_stale(tmp_path):
 def _corner_art(shape='star', colours=(STAR_CORE, STAR_ARM), dots=False, drop_corner=False):
     """The redrawn starlit as codex should draw it: 14 x 14 art px (10 raw px each; nine_slice pads 1 to 16), a 4 x 4
     four-point star in each corner (2 x 2 white core, a 2 px point on each side, empty diagonal corners).
-    shape='square': a solid 3 x 3 square instead; 'cut': the top-left star has no north point."""
+    shape='square': a solid 3 x 3 square instead; 'cut': the top-left star has no north point; 'filled': every star
+    also has its four bbox corner cells filled (a 4 x 4 block with a white centre)."""
     core, arm = colours; art = {}
     offsets = [(0, 0), (0, 10), (10, 0), (10, 10)][:3 if drop_corner else 4]
     for k, (oy, ox) in enumerate(offsets):
@@ -1314,6 +1315,10 @@ def _corner_art(shape='star', colours=(STAR_CORE, STAR_ARM), dots=False, drop_co
         for side, cells in points.items():
             if shape == 'cut' and k == 0 and side == 'n': continue
             for y, x in cells: art[(oy + y, ox + x)] = arm
+        if shape == 'filled':
+            for y, x in ((0, 0), (0, 3), (3, 0), (3, 3)): art[(oy + y, ox + x)] = arm
+        if shape == 'filled-outer':   # only the corner cell nearest the tile corner: shallow, so no reach reason
+            art[(oy + (0 if oy == 0 else 3), ox + (0 if ox == 0 else 3))] = arm
     if dots:
         for y, x in ((0, 7), (13, 6), (7, 0), (6, 13)): art[(y, x)] = core
     arr = np.asarray(canvas(160, 160)).copy()
@@ -1350,12 +1355,22 @@ def test_corner_starlit_is_a_four_point_star_not_a_square_or_a_cut_star(tmp_path
 NOT_THRESHOLDS = {'G', 'ROOT', 'SPEC_INPUTS'}     # module handles and the stamp machinery itself, not gate values
 
 
+def _default_names(f):
+    """Upper-case module names used as default argument values of f (positional and keyword-only). A default is
+    evaluated when the function is defined, so it never shows up in co_names; read it from the source."""
+    import ast, inspect, textwrap
+    node = ast.parse(textwrap.dedent(inspect.getsource(f))).body[0]
+    defaults = list(node.args.defaults) + [d for d in node.args.kw_defaults if d is not None]
+    return {n.id for d in defaults for n in ast.walk(d) if isinstance(n, ast.Name) and n.id.lstrip('_').isupper()}
+
+
 def _constants_read(f, seen=None):
-    """Upper-case module names a gate function reads, following the sl_art functions it calls."""
+    """Upper-case module names a gate function reads, in its body or as a default argument, following the sl_art
+    functions it calls."""
     import types
     seen = set() if seen is None else seen; out = set()
     if f in seen: return out
-    seen.add(f)
+    seen.add(f); out |= _default_names(f)
     codes = [f.__code__] + [c for c in f.__code__.co_consts if isinstance(c, types.CodeType)]
     for code in codes:
         for n in code.co_names:
@@ -1382,4 +1397,39 @@ def test_spec_stamp_is_a_readable_hash_that_moves_with_any_covered_constant(kind
             m.setattr(A, name, ('changed', repr(getattr(A, name))))
             assert A.qa_spec(kind) != stamp and A.qa_stale(entry), name
     assert A.qa_spec(kind) == stamp
-    assert 'SPECK_MAX' in A.SPEC_INPUTS['gear-cell'] and 'DISTINCT_DE' in A.SPEC_INPUTS['nine-slice']   # read outside the gate code
+    assert 'DISTINCT_DE' in A.SPEC_INPUTS['nine-slice']                     # read by gear_art.frames_too_close, outside sl_art
+
+
+def test_the_walker_reads_default_arguments():
+    """Review fix round 2: thresholds bound as default arguments (despill's band, the spill step, the speck size, the
+    coverage floor, the gear targets) are found by the walker itself, so leaving one out of SPEC_INPUTS fails."""
+    gear, nine = _constants_read(A.process_gear_cell), _constants_read(A.nine_slice)
+    assert {'SPILL_STEP', 'SPILL_BAND', 'SPECK_MAX', 'GEAR_LARGE', 'GEAR_ICON'} <= gear, gear
+    assert {'SPILL_STEP', 'SPILL_BAND', 'COVER_MIN'} <= nine, nine
+    assert {'STAR_WHITE_S_MAX', 'STAR_WHITE_V_MIN', 'STARLIGHT_HUE', 'STARLIGHT_S_MIN', 'STARLIGHT_V_MIN', 'STAR_CORNER',
+            'EDGE_OUTER_ROWS'} <= nine, nine
+
+
+def test_spill_band_and_the_white_core_floor_move_the_stamps(monkeypatch):
+    gear, nine = A.qa_spec('gear-cell'), A.qa_spec('nine-slice')
+    with monkeypatch.context() as m:
+        m.setattr(A, 'SPILL_BAND', A.SPILL_BAND + 1)
+        assert A.qa_spec('gear-cell') != gear and A.qa_spec('nine-slice') != nine
+    with monkeypatch.context() as m:
+        m.setattr(A, 'STAR_WHITE_V_MIN', 0.80)
+        assert A.qa_spec('nine-slice') != nine and A.qa_spec('gear-cell') == gear
+    assert (A.qa_spec('gear-cell'), A.qa_spec('nine-slice')) == (gear, nine)
+    assert (A.STAR_WHITE_S_MAX, A.STAR_WHITE_V_MIN, A.STARLIGHT_HUE, A.STARLIGHT_S_MIN, A.STARLIGHT_V_MIN, A.STAR_CORNER,
+            A.COVER_MIN, A.EDGE_OUTER_ROWS, A.GEAR_LARGE, A.GEAR_ICON) == (0.15, 0.85, (170, 215), 0.2, 0.7, 5, 0.4, 2, (56, 64), (22, 26))
+
+
+def test_corner_star_with_filled_bbox_corners_fails_the_diagonal_rule(tmp_path):
+    """A 4 x 4 block: white 2 x 2 centre, all four points, and the four corner cells filled cyan. It has every point, so
+    only the empty-diagonal rule can reject it."""
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A.nine_slice(reg, 'ui-starlit', _corner_art('filled'), tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='corners', pad=1)
+    assert all(s['arms'] == 4 and s['diagonal'] and not s['edge'] for s in q['stars']), q['stars']
+    assert 'starlit star is not a four-point star' in q['reasons'] and not q['pass'], q['reasons']   # its inner corner also reaches too deep
+    q = A.nine_slice(reg, 'ui-starlit', _corner_art('filled-outer'), tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='corners', pad=1)
+    assert all(s['arms'] == 4 and s['diagonal'] for s in q['stars']), q['stars']
+    assert q['reasons'] == ['starlit star is not a four-point star'], q['reasons']                # the diagonal rule alone

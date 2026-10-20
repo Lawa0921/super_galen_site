@@ -40,7 +40,7 @@ STARLIT_SHEET_ID = 'sheet-starlit-1'          # controller ruling 2026-10-20: th
 SAMPLE = ('sheet-gear-1', 'sheet-mat-1', FRAME_SHEET_ID, STARLIT_SHEET_ID, 'scene-forge', 'npc-forge')
 # Most attempts a job may have (addendum 2: gear a5..a9 after the spec change, frames a1..a5; the starlit redo a1..a3).
 ATTEMPT_CAP = {'sheet-gear-1': 9, FRAME_SHEET_ID: 5, STARLIT_SHEET_ID: 3}
-LARGE, ICON = (56, 64), (22, 26)        # gear: (longer side exactly, canvas) for the large image and the bag icon (addendum 2 §1)
+LARGE, ICON = A.GEAR_LARGE, A.GEAR_ICON        # gear: (longer side exactly, canvas) for the large image and the bag icon (addendum 2 §1)
 ICON_HEIGHT = 32                        # materials and skills: the contract's icon row (--height 32)
 NPC_HEIGHT = 180
 SCENE_SIZE = P.SCENE_SIZE

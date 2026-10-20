@@ -702,6 +702,7 @@ SUBJECT_CLASS = {'weapon': 'long', 'offhand': 'broad', 'head': 'broad', 'body': 
                  'neck': 'small', 'ring': 'small'}
 MIN_SHORT = {'weapon': 0.70, 'offhand': 0.75, 'head': 0.65, 'body': 0.80, 'hands': 0.70, 'feet': 0.70, 'neck': 0.60, 'ring': 0.60}
 MASS_BAND = {'long': (0.28, 0.65), 'polearm': (0.20, 0.65), 'broad': (0.50, 0.92), 'small': (0.35, 0.80)}
+GEAR_LARGE, GEAR_ICON = (56, 64), (22, 26)   # (subject long edge exactly, canvas): the large image and the bag icon (§1)
 # Controller ruling 2026-10-20 (after Task E): the long floor 0.28 was calibrated on 24-px icons; a polearm (a thin shaft
 # with a head) cannot carry it. Polearm-shaped weapons are told by the game's WeaponKind (engine/types.ts), never by id.
 POLEARM_KINDS = ('spear',)
@@ -803,15 +804,18 @@ def subject_class(slot, kind=None):
 
 
 # Every threshold and rule a QA kind depends on (review round 2: the stamp is derived, never bumped by hand; a test checks
-# that every upper-case constant the gate code reads is listed here). Kinds not listed here (material icons, scenes,
+# that every upper-case constant the gate code reads, in a body or as a default argument, is listed here). Kinds not listed here (material icons, scenes,
 # NPCs) are not versioned.
 SPEC_INPUTS = {
     'gear-cell': ('SUBJECT_CLASS', 'MIN_SHORT', 'MASS_BAND', 'POLEARM_KINDS', 'LONG_TOL', 'CENTRE_TOL', 'SPECK_MAX',
-                  'MAGENTA', 'MAGENTA_SPILL_MAX', 'SPILL_HUE', 'STRONG_DEFRINGE', '_SHIFTS', 'GEAR_CELL_RULES'),
+                  'GEAR_LARGE', 'GEAR_ICON', 'MAGENTA', 'MAGENTA_SPILL_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND',
+                  'STRONG_DEFRINGE', '_SHIFTS', 'GEAR_CELL_RULES'),
     'nine-slice': ('FRAME_STROKE', 'EDGE_REACH_MAX', 'CORNER_REACH_MAX', 'HUE_TOL', 'SAT_MIN', 'DISTINCT_DE', 'GLOW_HUE',
                    'GLOW_SAT_MIN', 'GLOW_STROKE', 'STARLIT_CORNER_MIN', 'STARLIT_EDGE_COVER_MAX', 'STAR_MIN_SIDE', 'CHROMA_S',
                    'CHROMA_V', 'HUE_BIN', 'CHROMA_SHARE_MIN', 'EDGE_FLAT', 'SEAM_RATIO_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX',
-                   'SPILL_HUE', 'STRONG_DEFRINGE', 'NINE_SLICE_RULES'),
+                   'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', 'COVER_MIN', 'STARLIGHT_HUE', 'STARLIGHT_S_MIN',
+                   'STARLIGHT_V_MIN', 'STAR_WHITE_S_MAX', 'STAR_WHITE_V_MIN', 'STAR_CORNER', 'EDGE_OUTER_ROWS',
+                   'NINE_SLICE_RULES'),
 }
 
 
@@ -843,7 +847,7 @@ def subject_gate(m, target, slot, kind=None):
     return reasons
 
 
-def process_gear_cell(reg, gid, cell, workdir, raw, large=(56, 64), icon=(22, 26), slot=None, kind=None):
+def process_gear_cell(reg, gid, cell, workdir, raw, large=GEAR_LARGE, icon=GEAR_ICON, slot=None, kind=None):
     """One sheet cell -> two transparent finals from the same pixels: `gear-<gid>-large` (longer side exactly
     `large[0]`, centred on a large[1] square canvas) and `gear-<gid>` (longer side `icon[0]` on an icon[1] canvas).
 
@@ -886,7 +890,10 @@ def edge_repeat(final, slice_, detail=False):
     return (ratios, {k: {'seam': m['seam'], 'interior': m['interior']} for k, m in steps.items()}) if detail else ratios
 
 
-def cover_sample(img, w, h, min_cover=0.4):
+COVER_MIN = 0.4   # cover_sample: an output pixel is opaque when at least this share of its source block is
+
+
+def cover_sample(img, w, h, min_cover=COVER_MIN):
     """Coverage sample to w x h art pixels: an output pixel is opaque when at least `min_cover` of its source block is
     opaque, and takes the most common opaque colour of that block (no new colours). Unlike a centre sample, a band
     that covers most of a block is never stepped over, so a 2-pixel frame band stays 2 pixels."""
@@ -916,6 +923,10 @@ GLOW_HUE, GLOW_SAT_MIN, GLOW_STROKE = 35, 0.30, (1, 2)   # legendary inner glow:
 STARLIT_CORNER_MIN = 3          # starlit: opaque pixels in each 5 x 5 corner
 STARLIT_EDGE_COVER_MAX = 0.35   # starlit: share of the outer 2 rows of an edge middle it may cover (the frame shows)
 STAR_MIN_SIDE = 3               # corner-only starlit: each corner star's bbox is at least 3 x 3 and square within 1 px
+STARLIGHT_HUE, STARLIGHT_S_MIN, STARLIGHT_V_MIN = (170, 215), 0.2, 0.7   # a starlit pixel: cyan light (hue range, S, V) ...
+STAR_WHITE_S_MAX, STAR_WHITE_V_MIN = 0.15, 0.85                         # ... or white (S at most, V at least): the star core
+STAR_CORNER = 5        # starlit: the corner square the stars are counted in (corner_px)
+EDGE_OUTER_ROWS = 2    # the outer rows of an edge middle: the glow keeps them clear; the overlay's edge_cover is measured there
 # Band colour (controller ruling, fix round 1): measured on the chromatic pixels of the whole band span, so a dark outline
 # or a thin gold inner line never becomes "the colour".
 CHROMA_S, CHROMA_V = 0.25, 0.30   # a pixel counts as coloured at S >= 0.25 and V >= 0.30
@@ -1076,7 +1087,7 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_, role='frame', hue=Non
         if qa['stroke'][0] < FRAME_STROKE[0]: reasons.append('band thinner than 2 px')
         deep = deep or qa['stroke'][1] > FRAME_STROKE[1] or qa['reach']['edge'] > EDGE_REACH_MAX
     elif role == 'glow':
-        if any(m.any() for m in _edge_middles(op, s, 2).values()): reasons.append('glow outside its ring')
+        if any(m.any() for m in _edge_middles(op, s, EDGE_OUTER_ROWS).values()): reasons.append('glow outside its ring')
         # The glow lies on the slot's third ring (inside the 2 px frame band), so it may reach one ring deeper.
         deep = deep or qa['stroke'][1] > GLOW_STROKE[1] or qa['reach']['edge'] > 2 + GLOW_STROKE[1]
     else:
@@ -1088,18 +1099,19 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_, role='frame', hue=Non
             reasons.append('hue off tier')
     if starry:
         h, sv, v = _hsv(arr[op][:, :3])
-        star = ((h >= 170) & (h <= 215) & (sv >= 0.2) & (v >= 0.7)) | ((sv <= 0.15) & (v >= 0.85))
+        star = (((h >= STARLIGHT_HUE[0]) & (h <= STARLIGHT_HUE[1]) & (sv >= STARLIGHT_S_MIN) & (v >= STARLIGHT_V_MIN))
+                | ((sv <= STAR_WHITE_S_MAX) & (v >= STAR_WHITE_V_MIN)))
         qa['off_colour'] = int((~star).sum())
         if qa['off_colour']: reasons.append('not starlight colours')
-        k = 5; qa['corner_px'] = [int(c.sum()) for c in (op[:k, :k], op[:k, size - k:], op[size - k:, :k], op[size - k:, size - k:])]
+        k = STAR_CORNER; qa['corner_px'] = [int(c.sum()) for c in (op[:k, :k], op[:k, size - k:], op[size - k:, :k], op[size - k:, size - k:])]
         if min(qa['corner_px']) < STARLIT_CORNER_MIN: reasons.append('starlit corners missing')
-        qa['edge_cover'] = round(max(float(m.mean()) for m in _edge_middles(op, s, 2).values()), 3)
+        qa['edge_cover'] = round(max(float(m.mean()) for m in _edge_middles(op, s, EDGE_OUTER_ROWS).values()), 3)
         if role == 'overlay' and qa['edge_cover'] > STARLIT_EDGE_COVER_MAX: reasons.append('overlay hides the frame')
     if role == 'corners':
         corners = np.zeros_like(op); corners[:s, :s] = corners[:s, size - s:] = corners[size - s:, :s] = corners[size - s:, size - s:] = True
         qa['outside'] = int((op & ~corners).sum())
         if qa['outside']: reasons.append('starlit outside its corners')
-        _, wsat, wv = _hsv(arr[..., :3]); white = ((wsat <= 0.15) & (wv >= 0.85)).reshape(size, size) & op
+        _, wsat, wv = _hsv(arr[..., :3]); white = ((wsat <= STAR_WHITE_S_MAX) & (wv >= STAR_WHITE_V_MIN)).reshape(size, size) & op
         rim = np.zeros_like(op); rim[0, :] = rim[-1, :] = rim[:, 0] = rim[:, -1] = True
         qa['stars'] = []
         for ys, xs in ((slice(0, s), slice(0, s)), (slice(0, s), slice(size - s, size)), (slice(size - s, size), slice(0, s)),
