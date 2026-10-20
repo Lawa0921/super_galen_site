@@ -277,11 +277,11 @@ const lang: Language = defaultLang;
 
     <section class="delve-confirm" id="delve-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="delve-confirm-title" aria-describedby="delve-confirm-msg">
       <div class="delve-menu-box">
-        <h2 id="delve-confirm-title">覆蓋存檔？</h2>
+        <h2 id="delve-confirm-title">確定嗎？</h2>
         <p class="delve-confirm-msg" id="delve-confirm-msg"></p>
         <div class="delve-confirm-btns">
           <button class="delve-btn" id="delve-confirm-cancel" type="button">取消</button>
-          <button class="delve-btn delve-btn--danger" id="delve-confirm-ok" type="button">覆蓋</button>
+          <button class="delve-btn delve-btn--danger" id="delve-confirm-ok" type="button">確定</button>
         </div>
       </div>
     </section>
@@ -324,12 +324,8 @@ const lang: Language = defaultLang;
           <button class="delve-ti delve-ti--continue" id="delve-continue" type="button" hidden data-icon="continue">
             <span class="delve-ti-text"><span class="delve-ti-label">繼續冒險</span><span class="delve-ti-sub" id="delve-continue-sub"></span></span>
           </button>
-          <button class="delve-ti delve-ti--new" id="delve-new" type="button" data-icon="new"><span class="delve-ti-text"><span class="delve-ti-label">新世界</span></span></button>
-          <button class="delve-ti" id="delve-look" type="button" data-icon="look"><span class="delve-ti-text"><span class="delve-ti-label">角色外觀</span></span></button>
-          <div class="delve-ti-row">
-            <button class="delve-ti" id="delve-import" type="button" data-icon="import"><span class="delve-ti-text"><span class="delve-ti-label">匯入存檔</span></span></button>
-            <button class="delve-ti" id="delve-export-title" type="button" data-icon="export" hidden><span class="delve-ti-text"><span class="delve-ti-label">匯出存檔</span></span></button>
-          </div>
+          <button class="delve-ti delve-ti--new" id="delve-start" type="button" data-icon="new"><span class="delve-ti-text"><span class="delve-ti-label">開始遊戲</span></span></button>
+          <button class="delve-ti" id="delve-import" type="button" data-icon="import"><span class="delve-ti-text"><span class="delve-ti-label">匯入存檔</span></span></button>
           <div class="delve-ti-row delve-ti-row--two">
             <button class="delve-ti" id="delve-help-open" type="button" data-icon="help"><span class="delve-ti-text"><span class="delve-ti-label">操作說明</span></span></button>
             <button class="delve-ti" id="delve-settings-btn" type="button" data-icon="settings"><span class="delve-ti-text"><span class="delve-ti-label">設定</span></span></button>
@@ -347,7 +343,52 @@ const lang: Language = defaultLang;
         </footer>
       </div>
 
-      <section class="delve-tpanel" id="delve-newpanel" hidden role="dialog" aria-modal="true" aria-labelledby="delve-newpanel-h">
+      <section class="delve-tpanel" id="delve-charpanel" data-tpanel="chars" hidden role="dialog" aria-modal="true" aria-labelledby="delve-charpanel-h">
+        <div class="delve-tpanel-box delve-tpanel-box--list">
+          <h2 class="delve-tpanel-h" id="delve-charpanel-h"><span class="delve-tpanel-icon" data-icon="look"></span>選擇角色</h2>
+          <div class="delve-tlist" id="delve-charlist" aria-label="角色列表"></div>
+          <div class="delve-tpanel-btns">
+            <button class="delve-btn" id="delve-chars-back" type="button" data-nav>返回</button>
+            <button class="delve-btn delve-btn--main" id="delve-newchar-open" type="button" data-nav>新角色</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="delve-tpanel" id="delve-newchar" data-tpanel="newchar" hidden role="dialog" aria-modal="true" aria-labelledby="delve-newchar-h">
+        <div class="delve-tpanel-box">
+          <h2 class="delve-tpanel-h" id="delve-newchar-h"><span class="delve-tpanel-icon" data-icon="look"></span>新角色</h2>
+          <label class="delve-field" for="delve-nick">
+            <span class="delve-field-label">暱稱</span>
+          </label>
+          <input class="delve-input" id="delve-nick" type="text" maxlength="16" placeholder="旅人" autocomplete="off" spellcheck="false" />
+          <span class="delve-field-label" id="delve-body-h">體型</span>
+          <div class="delve-seg2" id="delve-body" role="radiogroup" aria-labelledby="delve-body-h">
+            <button class="delve-seg2-btn" id="delve-body-f" type="button" role="radio" aria-checked="true" data-body="0">女</button>
+            <button class="delve-seg2-btn" id="delve-body-m" type="button" role="radio" aria-checked="false" data-body="1">男</button>
+          </div>
+          <div class="delve-newlook">
+            <canvas class="delve-newlook-doll" id="delve-new-doll" width="52" height="54" aria-hidden="true"></canvas>
+            <button class="delve-btn" id="delve-new-look" type="button">更換外觀</button>
+          </div>
+          <div class="delve-tpanel-btns">
+            <button class="delve-btn" id="delve-newchar-cancel" type="button">返回</button>
+            <button class="delve-btn delve-btn--main" id="delve-newchar-create" type="button">建立</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="delve-tpanel" id="delve-worldpanel" data-tpanel="worlds" hidden role="dialog" aria-modal="true" aria-labelledby="delve-worldpanel-h">
+        <div class="delve-tpanel-box delve-tpanel-box--list">
+          <h2 class="delve-tpanel-h" id="delve-worldpanel-h"><span class="delve-tpanel-icon" data-icon="new"></span><span id="delve-world-who">選擇世界</span></h2>
+          <div class="delve-tlist" id="delve-worldlist" aria-label="世界列表"></div>
+          <div class="delve-tpanel-btns">
+            <button class="delve-btn" id="delve-worlds-back" type="button" data-nav>回角色列表</button>
+            <button class="delve-btn delve-btn--main" id="delve-new" type="button" data-nav>新世界</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="delve-tpanel" id="delve-newpanel" data-tpanel="newworld" hidden role="dialog" aria-modal="true" aria-labelledby="delve-newpanel-h">
         <div class="delve-tpanel-box">
           <h2 class="delve-tpanel-h" id="delve-newpanel-h"><span class="delve-tpanel-icon" data-icon="new"></span>新世界</h2>
           <label class="delve-field" for="delve-seed">
@@ -364,15 +405,6 @@ const lang: Language = defaultLang;
             <button class="delve-seg2-btn" id="delve-diff-peaceful" type="button" role="radio" aria-checked="false">和平</button>
           </div>
           <p class="delve-field-hint" id="delve-diff-hint"></p>
-          <span class="delve-field-label" id="delve-body-h">角色（體型）</span>
-          <div class="delve-seg2" id="delve-body" role="radiogroup" aria-labelledby="delve-body-h">
-            <button class="delve-seg2-btn" id="delve-body-f" type="button" role="radio" aria-checked="true" data-body="0">女</button>
-            <button class="delve-seg2-btn" id="delve-body-m" type="button" role="radio" aria-checked="false" data-body="1">男</button>
-          </div>
-          <div class="delve-newlook">
-            <canvas class="delve-newlook-doll" id="delve-new-doll" width="52" height="54" aria-hidden="true"></canvas>
-            <button class="delve-btn" id="delve-new-look" type="button">更換外觀</button>
-          </div>
           <div class="delve-tpanel-btns">
             <button class="delve-btn" id="delve-new-cancel" type="button">返回</button>
             <button class="delve-btn delve-btn--main" id="delve-create" type="button">開始冒險</button>
@@ -380,7 +412,7 @@ const lang: Language = defaultLang;
         </div>
       </section>
 
-      <section class="delve-tpanel" id="delve-settings" hidden role="dialog" aria-modal="true" aria-labelledby="delve-settings-h">
+      <section class="delve-tpanel" id="delve-settings" data-tpanel="settings" hidden role="dialog" aria-modal="true" aria-labelledby="delve-settings-h">
         <div class="delve-tpanel-box">
           <h2 class="delve-tpanel-h" id="delve-settings-h"><span class="delve-tpanel-icon" data-icon="settings"></span>設定</h2>
           <div class="delve-set">
@@ -970,7 +1002,6 @@ const lang: Language = defaultLang;
   .delve-ti--continue .delve-ti-icon { width: 36px; height: 36px; }
   .delve-ti--ghost { --bv-hi: #423f54; --bv-lo: #0c0a12; --bv-bg: #1c1424; color: #b4b9c8; }
   .delve-ti-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .delve[data-save='0'] .delve-ti-row:not(.delve-ti-row--two) { grid-template-columns: 1fr; }
   .delve-tt-msg { max-width: 420px; margin: 0; text-shadow: var(--text-outline); }
   .delve-tt-msg:empty { display: none; }
   .delve-tt-foot { display: grid; gap: 2px; max-width: 640px; }
@@ -994,7 +1025,7 @@ const lang: Language = defaultLang;
   .delve[data-touch='1'] .delve-tt-keys { display: none; }
   @media (pointer: coarse) { .delve-tt-keys { display: none; } }
 
-  /* 面板（新世界 / 設定）：2 px 棋盤抖動的暗幕 + 像素框 */
+  /* 面板（角色 / 新角色 / 世界 / 新世界 / 設定）：2 px 棋盤抖動的暗幕 + 像素框 */
   .delve-tpanel {
     position: absolute;
     inset: 0;
@@ -1087,6 +1118,50 @@ const lang: Language = defaultLang;
   .delve-newlook { display: flex; gap: 10px; align-items: center; }
   .delve-newlook-doll { width: 108px; height: 112px; image-rendering: pixelated; border: 2px solid; border-color: #1c1424 #966139 #966139 #1c1424; background: #18204a; }
   .delve-newlook .delve-btn { flex: 1; min-height: 44px; }
+  /* ── 角色 / 世界列表：列表在面板裡捲動（底部按鈕固定看得到）；每列是可聚焦的像素框（同選單項），右邊是匯出 / 刪除小鈕 ── */
+  .delve-tpanel-box--list { width: min(520px, 100%); display: flex; flex-direction: column; overflow: hidden; }
+  .delve-tpanel-box--list > .delve-tpanel-h,
+  .delve-tpanel-box--list > .delve-tpanel-btns { flex: none; }
+  .delve-tlist { flex: 0 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; display: grid; grid-auto-rows: max-content; align-content: start; gap: 10px; margin: 0 -6px; padding: 4px 6px 6px; }
+  .delve-tlist-empty { margin: 0; padding: 14px 4px; font-size: 16px; line-height: 1.45; color: #c99660; text-align: center; }
+  .delve-trow {
+    --bv-hi: #966139;
+    --bv-lo: #2a1810;
+    --bv-bg: #472819;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: 48px;
+    padding: 4px 6px 4px 10px;
+    border: 2px solid;
+    border-color: var(--bv-hi) var(--bv-lo) var(--bv-lo) var(--bv-hi);
+    background: var(--bv-bg);
+    box-shadow: 0 0 0 2px var(--outline);
+    font-size: 16px;
+    color: var(--ink);
+    text-align: left;
+    text-shadow: var(--text-outline);
+    cursor: pointer;
+  }
+  .delve-trow:hover,
+  .delve-trow:focus-visible { --bv-hi: #fff4c0; --bv-lo: #a83a10; --bv-bg: #623924; color: #fff4c0; outline: none; }
+  .delve-char-row { grid-template-columns: auto minmax(0, 1fr) auto; padding-left: 6px; }
+  /* 小人像：畫布 52×54、1 倍（含 2 px 邊框） */
+  .delve-char-doll { display: block; width: 56px; height: 58px; image-rendering: pixelated; border: 2px solid; border-color: #1c1424 #966139 #966139 #1c1424; background: #18204a; }
+  /* 只在「 · 」之間換行（每一項本身不拆開）；超長的世界名才逐字斷 */
+  .delve-trow-line { min-width: 0; line-height: 1.35; word-break: keep-all; overflow-wrap: anywhere; }
+  .delve-trow-btns { display: flex; gap: 8px; }
+  .delve-trow-btn { min-width: 56px; min-height: 40px; padding: 4px 8px; text-shadow: var(--text-outline); }
+  /* 窄螢幕：世界列的匯出 / 刪除移到第二行靠右（世界資訊有整行可以換行） */
+  @media (max-width: 520px) {
+    .delve-world-row { grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 6px 6px 6px 10px; }
+    .delve-world-row .delve-trow-btns { justify-content: flex-end; }
+  }
+  /* 面板開著時，標題訊息（錯誤 / 匯出完成）浮在畫面上緣（不蓋住底部按鈕），不會被暗幕蓋住 */
+  .delve[data-tpanel] .delve-tt-msg { position: absolute; z-index: 6; left: 16px; right: 16px; top: 8px; max-width: 488px; margin: 0 auto; padding: 8px 12px; background: #1c1424; box-shadow: 0 0 0 2px var(--outline); }
   /* ── 角色外觀（客製化）── */
   .delve-wr { z-index: 45; }
   .delve-wr-box { width: min(760px, 100%); }
