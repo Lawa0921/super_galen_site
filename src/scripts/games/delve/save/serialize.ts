@@ -217,6 +217,9 @@ export interface RestoreOptions {
   allowGenMismatch?: boolean;
   /** 預先生成好的世界（同 seed / 大小；標題畫面分段生成、顯示進度用） */
   gen?: GenResult;
+  /** 角色第一次來這個世界（save/worldSave.ts restoreSplit）：不套用存檔的位置 / 探索 / 標記 / 發現 / 床，
+   *  保留建構子給的出生點狀態（出生點、只揭露出生點周圍、只發現出生地區） */
+  freshVisit?: boolean;
 }
 
 // ── chunk 讀寫 ─────────────────────────────────────────────
@@ -834,21 +837,26 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   for (const i of h.unlocked ?? []) if (i < w.fg.length && w.fg[i] === T.LOCKED_CHEST) w.unlocked.add(i);
   w.keysUsed = h.keysUsed ?? 0;
   w.markAllDirty();
-  game.player.x = h.player.x;
-  game.player.y = h.player.y;
-  game.player.vx = h.player.vx;
-  game.player.vy = h.player.vy;
+  // 第一次來這個世界（freshVisit）：位置 / 探索 / 標記 / 發現 / 床維持建構子的出生點狀態
+  if (!opts.freshVisit) {
+    game.player.x = h.player.x;
+    game.player.y = h.player.y;
+    game.player.vx = h.player.vx;
+    game.player.vy = h.player.vy;
+  }
   game.inventory = Inventory.fromJSON(h.inventory);
   game.vanity = Vanity.fromJSON(h.vanity);
   game.levels.load(h.levels);
   game.time = h.time;
   game.tick = h.tick;
-  // 探索（format 4）；舊格式 = 什麼都沒探索
-  const explored = h.explored ? ExploredMap.decode(fromBase64(h.explored), w.width, w.height) : new ExploredMap(w.width, w.height);
-  game.setExploration(explored, (h.markers ?? []).map((m) => ({ ...m })));
-  if (h.discovery) game.discovery.load(h.discovery);
-  else game.discovery.found.clear();
-  game.bed = h.bed && w.inBounds(h.bed.x, h.bed.y) ? { ...h.bed } : null;
+  if (!opts.freshVisit) {
+    // 探索（format 4）；舊格式 = 什麼都沒探索
+    const explored = h.explored ? ExploredMap.decode(fromBase64(h.explored), w.width, w.height) : new ExploredMap(w.width, w.height);
+    game.setExploration(explored, (h.markers ?? []).map((m) => ({ ...m })));
+    if (h.discovery) game.discovery.load(h.discovery);
+    else game.discovery.found.clear();
+    game.bed = h.bed && w.inBounds(h.bed.x, h.bed.y) ? { ...h.bed } : null;
+  }
   // 戰鬥（format 5）；舊格式 = 裝備空、滿血、一般模式
   const c = h.combat;
   if (c) {

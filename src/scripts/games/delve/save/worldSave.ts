@@ -1,6 +1,7 @@
 // worldSave.ts — 世界檔 format 10（co-op M-A）：純資料，不碰 IndexedDB / DOM。
 // 存檔 = snapshotGame()（format 9 的完整 header）→ splitSnapshot() 切成「世界 + 角色」；
-// 讀檔 = joinSplit() 拼回 format-9 形狀的 SaveData → 交給現行 restoreGame()。
+// 讀檔 = joinSplit() 拼回 format-9 形狀的 SaveData → 交給現行 restoreGame()（restoreSplit 包好這兩步；存檔用 saveSplitGame）。
+//   角色第一次來這個世界（沒有 visit）→ restoreGame 的 freshVisit：出生點、只揭露出生點周圍、沒有標記 / 床 / 重生核心。
 // 世界 header 不再有玩家欄位：每個來過的角色各有一筆 visits[charId]（位置 / 床 / 重生核心 / 探索 / 標記 / 發現 /
 //   呼吸燃燒蜂蜜 / lastSeen），最多 MAX_VISITS 筆，超過以 lastSeen 最舊者淘汰（LRU）。settle.spawnCore 在世界一律 null。
 // 角色隨身的東西（背包 / 裝備 / 等級 / 圖鑑 / 釣魚紀錄 / 不滅冷卻 / buff 剩餘秒數）在 character.ts 的 DelveCharacter。
@@ -10,14 +11,14 @@
 //   visits 不是物件 = 損毀，但單筆 visit 不合法只丟那一筆（該角色在這個世界從出生點重來）；
 //   匯出檔才有的內嵌 character 有值時過 validateCharacter。
 import {
-  SAVE_FORMAT, SaveFormatError, decodeSave, encodeContainer, isNum, readChunks, readContainer, validBed, validBossActive, validChests,
-  validDiscovery, validDrops, validEnv, validExplored, validExtra, validFolk, validHalves, validKeysUsed, validLevels,
-  validLiquids, validMarkers, validUnlocked, validVitals,
+  SAVE_FORMAT, SaveFormatError, decodeSave, encodeContainer, isNum, readChunks, readContainer, restoreGame, snapshotGame,
+  validBed, validBossActive, validChests, validDiscovery, validDrops, validEnv, validExplored, validExtra, validFolk, validHalves,
+  validKeysUsed, validLevels, validLiquids, validMarkers, validUnlocked, validVitals,
   type ChestSave, type ChunkPayload, type DropSave, type EnvSave, type FolkSave, type LiquidSave, type PlayerSave,
-  type SaveData, type SaveHeader,
+  type RestoreOptions, type RestoreResult, type SaveData, type SaveHeader,
 } from './serialize';
 import { CHARACTER_FORMAT, validateCharacter, type CharIdentity, type DelveCharacter } from './character';
-import { MAX_BREATH } from '../engine/game';
+import { MAX_BREATH, type DelveGame } from '../engine/game';
 import { BASE_HP, BASE_MANA } from '../engine/combat';
 import { Codex } from '../engine/codex';
 import { Equipment } from '../engine/equipment';
@@ -59,6 +60,9 @@ export interface WorldHeader {
 export interface WorldData { header: WorldHeader; chunks: Map<number, ChunkPayload> }
 export interface WorldIdentity { worldId: string; worldName: string; visits: VisitMap }
 export type AnySave = { kind: 'legacy'; data: SaveData } | { kind: 'world'; data: WorldData };
+export type SplitRestoreResult =
+  | { ok: true; game: DelveGame; world: WorldHeader; freshVisit: boolean }
+  | Extract<RestoreResult, { ok: false }>;
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const own = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
@@ -158,6 +162,25 @@ export function joinSplit(world: WorldData, character: DelveCharacter): { data: 
     folk: { ...folk, buffs },
   };
   return { data: { header, chunks: world.chunks }, freshVisit: !visit };
+}
+
+/** 遊戲 → 世界 + 角色（where.visits 放進 / 更新這個角色的 visit） */
+export function saveSplitGame(game: DelveGame, who: CharIdentity, where: WorldIdentity, now: number): { world: WorldData; character: DelveCharacter } {
+  return splitSnapshot(snapshotGame(game, now), who, where, now);
+}
+
+/** 世界檔（bytes 或已解碼）+ 角色 → 遊戲。永不丟例外（同 restoreGame）；角色第一次來這個世界 → freshVisit（出生點、只揭露出生點周圍） */
+export function restoreSplit(world: Uint8Array | WorldData, character: DelveCharacter, opts: RestoreOptions = {}): SplitRestoreResult {
+  let wd: WorldData, joined: { data: SaveData; freshVisit: boolean };
+  try {
+    wd = world instanceof Uint8Array ? decodeWorld(world) : world;
+    joined = joinSplit(wd, character);
+  } catch (e) {
+    return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
+  }
+  const r = restoreGame(joined.data, { ...opts, freshVisit: joined.freshVisit });
+  if (!r.ok) return r;
+  return { ok: true, game: r.game, world: wd.header, freshVisit: joined.freshVisit };
 }
 
 export function encodeWorld(w: WorldData): Uint8Array {
