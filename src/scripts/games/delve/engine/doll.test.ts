@@ -135,6 +135,32 @@ describe('Vanity（外觀欄）', () => {
     expect(bad.hide).toEqual({ head: false, body: true, legs: false });
     expect(Vanity.fromJSON(null).toJSON()).toEqual(new Vanity().toJSON());
   });
+  it('dollKey differs by tint：同款不同顏色換 key；沒顏色 = 原本的 key', () => {
+    const e = new Equipment(), v = new Vanity();
+    v.set('body', 'sailor_top');
+    const k0 = dollKey(buildDollLook(DEFAULT_APPEARANCE, e, v));
+    expect(k0).toContain('outfit:sailor/0/0/|');
+    v.set('body', 'sailor_top', undefined, [3, 7]);
+    const l1 = buildDollLook(DEFAULT_APPEARANCE, e, v);
+    expect(l1.body).toEqual({ look: 'outfit:sailor', rarity: 0, plus: 0, elem: null, tint: [3, 7] });
+    const k1 = dollKey(l1);
+    v.set('body', 'sailor_top', undefined, [3, 8]);
+    const k2 = dollKey(buildDollLook(DEFAULT_APPEARANCE, e, v));
+    expect(new Set([k0, k1, k2]).size).toBe(3);
+    expect(pieceOf({ item: 'beret', count: 1, tint: [1, 2] })!.tint).toEqual([1, 2]);
+    expect(pieceOf({ item: 'beret', count: 1 })!.tint).toBeUndefined();
+  });
+  it('換時裝欄裡那件的顏色（交換同款不同色）：equipFrom / unequipTo 帶著 tint', () => {
+    const inv = new Inventory(), v = new Vanity();
+    inv.slots[0] = { item: 'beret', count: 1, tint: [1, 2] };
+    inv.slots[1] = { item: 'beret', count: 1, tint: [4, 5] };
+    expect(v.equipFrom(inv, 0, 'head')).toBe(true);
+    expect(v.equipFrom(inv, 1, 'head')).toBe(true);
+    expect(v.getStack('head')!.tint).toEqual([4, 5]);
+    expect(inv.slots[1]).toEqual({ item: 'beret', count: 1, tint: [1, 2] });
+    expect(v.unequipTo(inv, 'head')).toBe(true);
+    expect(inv.slots[0]).toEqual({ item: 'beret', count: 1, tint: [4, 5] });
+  });
 });
 
 describe('時裝的取得方式', () => {

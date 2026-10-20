@@ -611,7 +611,7 @@ function frontHead(back: Bmp, front: Bmp, o: HeadOpts, ox: number, oy: number): 
   head.blit(gear, 0, 0);
   if (o.sweat) sweat(head, ox - 2, oy + 5);
   front.blit(head, 0, 0);
-  if (cov.hat) hatArt(front, cov.hat, ox, oy, 'side', m.swing);
+  if (cov.hat) hatArt(front, cov.hat, ox, oy, 'side', m.swing, o.gear?.tint);
   if (o.gear) o.trace?.push('headgear');
   const accL = new Bmp(front.w, front.h);
   sideAcc(accL, a, st, acc, ox, oy, o.race);

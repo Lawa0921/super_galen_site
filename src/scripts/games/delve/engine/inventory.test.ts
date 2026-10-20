@@ -1,6 +1,6 @@
 // inventory.test.ts
 import { describe, it, expect } from 'vitest';
-import { Inventory, starterInventory } from './inventory';
+import { Inventory, cloneStack, starterInventory } from './inventory';
 import { RECIPES, canCraft, craft, availableRecipes, findRecipe } from './crafting';
 import { INV_SIZE, HOTBAR_SIZE, MAX_STACK } from './constants';
 
@@ -22,6 +22,20 @@ describe('Inventory', () => {
     expect(inv.slots[0]?.count).toBe(MAX_STACK);
     expect(inv.slots[2]).toEqual({ item: 'dirt', count: 8 });
     expect(inv.count('dirt')).toBe(MAX_STACK + 8);
+  });
+  it('時裝的顏色（tint）：add / addStack / cloneStack / toJSON / fromJSON 都保留，canAddAll 模擬不弄丟', () => {
+    const inv = new Inventory();
+    expect(inv.add('sailor_top', 1, undefined, [3, 7])).toBe(0);
+    expect(inv.slots[0]).toEqual({ item: 'sailor_top', count: 1, tint: [3, 7] });
+    expect(inv.addStack({ item: 'beret', count: 1, tint: [2, 2] })).toBe(0);
+    expect(inv.slots[1]).toEqual({ item: 'beret', count: 1, tint: [2, 2] });
+    const c = cloneStack(inv.slots[0]!);
+    expect(c).toEqual({ item: 'sailor_top', count: 1, tint: [3, 7] });
+    expect(c.tint).not.toBe(inv.slots[0]!.tint);
+    const back = Inventory.fromJSON(JSON.parse(JSON.stringify(inv.toJSON())));
+    expect(back.slots.slice(0, 2)).toEqual(inv.slots.slice(0, 2));
+    expect(inv.canAddAll(new Map([['dirt', 5]]))).toBe(true);
+    expect(inv.slots[0]!.tint).toEqual([3, 7]);
   });
   it('工具不可堆疊', () => {
     const inv = new Inventory();

@@ -31,6 +31,8 @@
 //   尺寸上限：寬 ≤ MAX_WORLD_W、高 ≤ MAX_WORLD_H、面積 ≤ MAX_WORLD_AREA（生成器實際支援的範圍）；
 //   液體 chunk 清單長度先和世界 chunk 總數比對，再配置 RLE 解碼緩衝。
 // format 9 起：header.vanity = 外觀欄（頭 / 身 / 腿 / 背的時裝或當樣子用的防具 + 詞條）與防具隱藏開關（壞資料各自丟掉）。
+// 時裝顏色（不換版號，舊檔沒有 = 原色）：背包 / 箱子 / 掉落物的時裝格可帶 tint = [主色, 副色]（CLOTH_COLORS index）；
+//   header.vanity.tint = 外觀欄各格的顏色。格子上的 tint 不合法或放在非時裝上 → 存檔損毀（比照 gear）；外觀欄的壞 tint 丟掉。
 // format 9 起：header.appearance = 角色外觀（engine/appearance.ts 的選項索引）。沒有 / 壞掉 → 預設外觀（各欄獨立退回，
 //   不算存檔損毀：外觀是裝飾，不該讓整個世界讀不到）。
 // header.levels = 等級 / 經驗 / 技能樹 / 防刷紀錄（engine/levels.ts LevelsJSON）。沒有 / 壞掉 → 各欄位獨立退回預設
@@ -64,6 +66,7 @@ import { WEATHER_KINDS, type WeatherKind } from '../engine/weather';
 import { isRngState, type RngState } from '../engine/rng';
 import { normalizeAppearance, type Appearance } from '../engine/appearance';
 import { Vanity, type VanityJSON } from '../engine/vanity';
+import { cloneTint, isTintable, validTint, type Tint } from '../engine/tint';
 import type { SettlementJSON } from '../engine/settlement';
 import { Progression, type LevelsJSON } from '../engine/levels';
 import type { FolkJSON } from '../engine/folk';
@@ -102,7 +105,7 @@ const MAX_CHUNKS = chunkTotal(MAX_WORLD_W, MAX_WORLD_H);
 export interface PlayerSave { x: number; y: number; vx: number; vy: number; }
 /** undying = 不滅（傳奇詞條）冷卻剩餘秒數；format 8 起 */
 export interface VitalsSave { breath: number; burning: number; honey: number; undying?: number; }
-export interface DropSave { item: ItemId; count: number; x: number; y: number; gear?: Gear; }
+export interface DropSave { item: ItemId; count: number; x: number; y: number; gear?: Gear; tint?: Tint; }
 export interface SaveHeader {
   format: number;
   genVersion: number;
@@ -356,8 +359,11 @@ export function validDrops(v: unknown): DropSave[] | undefined {
     const o = d as Partial<DropSave> | null;
     if (!o || typeof o !== 'object' || !isItemId(o.item) || !Number.isInteger(o.count) || (o.count as number) < 1
       || (o.count as number) > ITEMS[o.item].maxStack || !isNum(o.x) || !isNum(o.y)) throw new SaveFormatError(`drop ${k}`);
-    const gear = strictGear(o.item, o.gear, `drop ${k}`);
-    return gear ? { item: o.item, count: o.count as number, x: o.x, y: o.y, gear } : { item: o.item, count: o.count as number, x: o.x, y: o.y };
+    const gear = strictGear(o.item, o.gear, `drop ${k}`), tint = strictTint(o.item, o.tint, `drop ${k}`);
+    const out: DropSave = { item: o.item, count: o.count as number, x: o.x, y: o.y };
+    if (gear) out.gear = gear;
+    if (tint) out.tint = tint;
+    return out;
   });
 }
 export function validEnv(v: unknown): EnvSave | undefined {
@@ -478,6 +484,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       drops: game.drops.list.map((d) => {
         const o: DropSave = { item: d.item, count: d.count, x: r2(d.body.x + d.body.w / 2), y: r2(d.body.y + d.body.h / 2) };
         if (d.gear) o.gear = { ...d.gear, affixes: d.gear.affixes.map((a) => ({ ...a })) };
+        if (d.tint) o.tint = cloneTint(d.tint);
         return o;
       }),
       bossActive: boss && boss.state !== 'leave' ? boss.kind : null,
@@ -580,15 +587,25 @@ function strictGear(item: ItemId, raw: unknown, where: string): Gear | undefined
   if (!g) throw new SaveFormatError(`${where}: gear`);
   return g;
 }
+/** 格子上的 tint：沒有 → undefined；有但不合法（或不是時裝）→ 存檔損毀 */
+function strictTint(item: ItemId, raw: unknown, where: string): Tint | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  const t = isTintable(item) ? validTint(raw) : null;
+  if (!t) throw new SaveFormatError(`${where}: tint`);
+  return t;
+}
 export function validStack(st: unknown, where: string): Stack | null {
   if (st === null) return null;
-  const o = st as { item?: unknown; count?: unknown; gear?: unknown };
+  const o = st as { item?: unknown; count?: unknown; gear?: unknown; tint?: unknown };
   if (!o || typeof o !== 'object' || !isItemId(o.item) || typeof o.count !== 'number'
     || !Number.isInteger(o.count) || o.count < 1 || o.count > ITEMS[o.item].maxStack) {
     throw new SaveFormatError(where);
   }
-  const gear = strictGear(o.item, o.gear, where);
-  return gear ? { item: o.item, count: o.count, gear } : { item: o.item, count: o.count };
+  const gear = strictGear(o.item, o.gear, where), tint = strictTint(o.item, o.tint, where);
+  const out: Stack = { item: o.item, count: o.count };
+  if (gear) out.gear = gear;
+  if (tint) out.tint = tint;
+  return out;
 }
 
 export function validUnlocked(v: unknown): number[] {
@@ -924,7 +941,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   // 地上的掉落物（format 7）：放回原地、靜止
   for (const d of h.drops ?? []) {
     if (d.x < 0 || d.y < 0 || d.x > w.width * TILE_SIZE || d.y > w.height * TILE_SIZE) continue;
-    game.drops.spawn(d.item, d.count, d.x, d.y, 0, 0, 0, d.gear ? { ...d.gear, affixes: d.gear.affixes.map((a) => ({ ...a })) } : undefined);
+    game.drops.spawn(d.item, d.count, d.x, d.y, 0, 0, 0, d.gear ? { ...d.gear, affixes: d.gear.affixes.map((a) => ({ ...a })) } : undefined, d.tint);
   }
   // 曆法 / 天氣：結冰格（只留在還有水的格）、強制天氣；舊存檔沒有 → 依日期重算結冰
   if (h.env) {

@@ -42,6 +42,7 @@ import { normalizeAppearance, type Appearance } from './appearance';
 import { raceMods, type RaceMods } from './race';
 import { Vanity, type HideSlot, type VanitySlot } from './vanity';
 import { buildDollLook, dollKey, type DollLook } from './doll';
+import type { Tint } from './tint';
 import { ProjList, type HitFx, type ProjKind, type Projectile } from './projectiles';
 import {
   ascendCost, ascendGear, baseTier, gearSlot, ilvlForDepth, rerollAffix, rerollCost, rollDropItem, rollGear, rollRarity,
@@ -1006,11 +1007,13 @@ export class DelveGame {
     return true;
   }
 
-  /** 在 tile (tx,ty) 中心丟出掉落物（彈出方向由座標雜湊決定，確定性） */
-  private dropAtTile(item: ItemId, n: number, tx: number, ty: number): void {
+  /** 在 tile (tx,ty) 中心丟出掉落物（彈出方向由座標雜湊決定，確定性）；tint = 帶顏色的時裝（一件一個） */
+  dropAtTile(item: ItemId, n: number, tx: number, ty: number, tint?: Tint): void {
     const h = ((Math.imul(tx, 73856093) ^ Math.imul(ty, 19349663)) >>> 0) % 1000;
     const v = popVelocity(h / 1000, ((h * 7) % 1000) / 1000);
-    this.drops.spawn(item, n, (tx + 0.5) * TILE_SIZE, (ty + 0.5) * TILE_SIZE, v.vx, v.vy * 0.7);
+    const x = (tx + 0.5) * TILE_SIZE, y = (ty + 0.5) * TILE_SIZE;
+    if (!tint) { this.drops.spawn(item, n, x, y, v.vx, v.vy * 0.7); return; }
+    for (let k = 0; k < n; k++) this.drops.spawn(item, 1, x, y, v.vx, v.vy * 0.7, 0, undefined, tint);
   }
 
   /** 樹幹被砍：連帶收集上方相連的樹幹與樹葉（4 鄰、不往下、水平 ±4 格） */
@@ -1694,7 +1697,7 @@ export class DelveGame {
       const ilvl = Math.max(baseTier(st.item), ilvlForDepth(depth));
       st.gear = rollGear(st.item, r, { rarity: rollRarity(r, 'dungeon', depth, this.stats().gear.luck, ITEMS[st.item].unique ? 2 : 0), ilvl });
     }
-    const left = this.inventory.add(st.item, st.count, st.gear);
+    const left = this.inventory.add(st.item, st.count, st.gear, st.tint);
     if (left === st.count) { this.block('mine', 'full', c.x, c.y); return false; }
     if (left > 0) st.count = left; else slots[i] = null;
     this.world.markModified(c.x, c.y);
@@ -1719,7 +1722,7 @@ export class DelveGame {
     const slots = this.chestSlots(), c = this.openChest;
     const st = this.inventory.slots[invSlot];
     if (!slots || !c || !st) return false;
-    if (st.gear) {
+    if (st.gear || st.tint) {
       const k = slots.indexOf(null);
       if (k < 0) return false;
       slots[k] = st;
@@ -2473,7 +2476,7 @@ export class DelveGame {
     const got = this.drops.step(this.env, {
       player: p, magnetPx: this.magnetRadius() * S, activePx: ACTIVE.x * S, canPickup: !this.dead,
       room: (item, n) => (inv.canAdd(item, n) ? n : inv.canAdd(item, 1) ? 1 : 0),
-      take: (item, n, gear) => n - inv.add(item, n, gear),
+      take: (item, n, gear, tint) => n - inv.add(item, n, gear, tint),
     }, dt);
     for (const [item, n, gear] of got) this.events.push(gear ? { type: 'pickup', item, n, rarity: gear.rarity } : { type: 'pickup', item, n });
   }
@@ -2738,12 +2741,16 @@ export class DelveGame {
     this.drops.spawn(item, 1, x, y, v.vx, v.vy, 0, gear);
     this.events.push({ type: 'loot', item, rarity: gear.rarity, x, y });
   }
-  /** 放進背包；放不下掉在腳邊 */
-  private giveOrDrop(item: ItemId, gear: Gear): void {
-    if (this.inventory.add(item, 1, gear) > 0) {
+  /** 一件放進背包；放不下掉在腳邊（gear = 帶詞條的裝備；tint = 帶顏色的時裝） */
+  giveOrDrop(item: ItemId, gear?: Gear, tint?: Tint): void {
+    if (this.inventory.add(item, 1, gear, tint) > 0) {
       const c = this.playerCenter();
-      this.spawnGearDrop(item, gear, c.x, c.y);
-    } else this.events.push({ type: 'pickup', item, n: 1, rarity: gear.rarity });
+      if (gear) this.spawnGearDrop(item, gear, c.x, c.y);
+      else {
+        const v = popVelocity(this.lootRng.next(), this.lootRng.next());
+        this.drops.spawn(item, 1, c.x, c.y, v.vx, v.vy, 0, undefined, tint);
+      }
+    } else this.events.push(gear ? { type: 'pickup', item, n: 1, rarity: gear.rarity } : { type: 'pickup', item, n: 1 });
   }
   /** 把背包 / 裝備欄的裝備收進圖鑑；新詞條發 codex 事件 */
   observeGear(): void {

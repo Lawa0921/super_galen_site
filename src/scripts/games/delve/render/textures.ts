@@ -882,5 +882,15 @@ export function drawIcon(atlas: Atlas, ctx: CanvasRenderingContext2D, item: Item
   const d = S * k, o = Math.floor((size - d) / 2);
   ctx.drawImage(atlas.canvas, sx, sy, S, S, o, o, d, d);
 }
+/** 不在圖集裡的圖示（例如帶自己顏色的時裝）畫進格子：縮放規則同 drawIcon */
+export function drawBmpIcon(ctx: CanvasRenderingContext2D, b: Bmp, size: number): void {
+  ctx.clearRect(0, 0, size, size);
+  const c = toCanvas(b);
+  if (!c) return;
+  ctx.imageSmoothingEnabled = false;
+  const k = Math.max(1, Math.floor(size / S));
+  const d = S * k, o = Math.floor((size - d) / 2);
+  ctx.drawImage(c, 0, 0, b.w, b.h, o, o, d, d);
+}
 
 export { mix, hex, shade };

@@ -8,7 +8,8 @@ import { ARM_PIV, AV_FH, AV_FW, AV_HEAD, SHEET, SHEET_ANIMS, avatarArm, avatarFr
 import { BRIM, HAT_HIDES_TOP, hatArt, helmetArt } from './avatarGear';
 import { dollPreview, previewArms } from './dollPreview';
 import { fashionIcon } from './fashionIcon';
-import { VANITY_ITEMS, type ArmorSetId } from '../engine/items';
+import { ITEMS, VANITY_ITEMS, type ArmorSetId } from '../engine/items';
+import { defaultTint } from '../engine/tint';
 import { DelveGame } from '../engine/game';
 import { CLOTH_RAMPS, DARK, LEATHER, MAIL, SKIN_RAMPS, clothRamp, eyeRamp, hairRamp } from './avatarPalette';
 
@@ -387,6 +388,24 @@ describe('預覽 / 圖示 / 快取', () => {
       clean(b, id);
     }
     expect(opaque(pieceBmp({ ...plainLook(DEF), head: piece('armor:bone', 4) }, 'head'))).toBeGreaterThan(40);
+  });
+  it('wearOf uses tint over outfit defaults：同款不同 tint 像素不同；沒 tint = 款式原色', () => {
+    const same = (a: Bmp, b: Bmp): boolean => a.px.every((v, i) => v === b.px[i]);
+    for (const id of VANITY_ITEMS) {
+      const v = ITEMS[id].vanity!, def = defaultTint(v.look);
+      if (!def) continue;
+      const at = (tint?: [number, number]): Bmp => pieceBmp({ ...plainLook(DEF), [v.slot]: { ...piece(v.look), ...(tint ? { tint } : {}) } }, v.slot);
+      const base = at();
+      expect(same(at([def[0], def[1]]), base), `${id} 原色`).toBe(true);
+      const other: [number, number] = [(def[0] + 3) % CLOTH_RAMPS.length, (def[1] + 5) % CLOTH_RAMPS.length];
+      const tinted = at(other);
+      expect(same(tinted, base), `${id} 換色`).toBe(false);
+      clean(tinted, id);
+    }
+    // 穿在身上的整格也一樣（不只圖示）
+    const look = (tint?: [number, number]): DollLook => ({ ...plainLook(DEF), body: { ...piece('outfit:maid'), ...(tint ? { tint } : {}) } });
+    expect(same(avatarFrame(look(), 'idle', 0).body, avatarFrame(look(OUTFITS[5].colors as [number, number]), 'idle', 0).body)).toBe(true);
+    expect(same(avatarFrame(look(), 'idle', 0).body, avatarFrame(look([3, 7]), 'idle', 0).body)).toBe(false);
   });
   it('game.doll()：沒變就回傳同一份（不重算），換裝 / 外觀欄 / 隱藏 / 外觀才換 key', () => {
     const g = new DelveGame({ seed: 'doll', width: 96, height: 96, peaceful: true });

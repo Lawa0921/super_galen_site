@@ -9,6 +9,7 @@ import type { Vanity } from './vanity';
 import { ITEMS, type ItemId } from './items';
 import type { Stack } from './inventory';
 import type { AffixId } from './gear';
+import { cloneTint, tintKey, type Tint } from './tint';
 
 /** 合成順序（由後往前）。渲染：背飾 / 後髮 / 身體 / 腿 / 胸 在第一張，手臂 + 手持由渲染器畫，臉 / 前髮 / 頭飾 / 前飾品在第二張 */
 /** 3/4 正面：背飾（翅膀 / 披風 / 蝴蝶結）蓋在後髮上面，才從身體兩側露得出來 */
@@ -22,6 +23,8 @@ export interface DollPiece {
   rarity: number;
   plus: number;
   elem: DollElem | null;
+  /** 時裝的主色 / 副色（CLOTH_COLORS index）；沒有 = 款式原色 */
+  tint?: Tint;
 }
 export type DollFeet = 'jump' | 'swift';
 export type DollNeck = 'night' | 'fang' | 'heart' | 'magma';
@@ -52,7 +55,9 @@ export function pieceOf(st: Stack | null | undefined): DollPiece | null {
   const g = st.gear;
   let elem: DollElem | null = null;
   for (const a of g?.affixes ?? []) { const e = ELEM_OF[a.id]; if (e) { elem = e; break; } }
-  return { look, rarity: g?.rarity ?? 0, plus: g?.plus ?? 0, elem };
+  const p: DollPiece = { look, rarity: g?.rarity ?? 0, plus: g?.plus ?? 0, elem };
+  if (st.tint) p.tint = cloneTint(st.tint);
+  return p;
 }
 
 export function buildDollLook(app: Appearance, eq: Equipment, v: Vanity): DollLook {
@@ -69,7 +74,8 @@ export function buildDollLook(app: Appearance, eq: Equipment, v: Vanity): DollLo
   return { app, head: part('head'), body: part('body'), legs: part('legs'), back: pieceOf(v.getStack('back')) ?? backAcc, feet, neck, belt };
 }
 
-const pk = (p: DollPiece | null): string => (p ? `${p.look}/${p.rarity}/${p.plus}/${p.elem ?? ''}` : '-');
+/** 沒有 tint 時 key 和以前一樣（快取不因為改版全部失效） */
+const pk = (p: DollPiece | null): string => (p ? `${p.look}/${p.rarity}/${p.plus}/${p.elem ?? ''}${p.tint ? `/${tintKey(p.tint)}` : ''}` : '-');
 export function dollKey(l: DollLook): string {
   return [appearanceKey(l.app), pk(l.head), pk(l.body), pk(l.legs), pk(l.back), l.feet ?? '-', l.neck ?? '-', l.belt ?? '-'].join('|');
 }

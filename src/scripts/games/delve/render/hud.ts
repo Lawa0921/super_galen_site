@@ -6,7 +6,9 @@ import { EQUIP_SLOTS, isAccSlot, type EquipSlot } from '../engine/equipment';
 import { STATION_NAME } from '../engine/crafting';
 import { SET_BONUS } from '../engine/combat';
 import { ENEMIES } from '../engine/enemies';
-import { drawIcon, type Atlas } from './textures';
+import { drawBmpIcon, drawIcon, type Atlas } from './textures';
+import { fashionIcon } from './fashionIcon';
+import { tintKey } from '../engine/tint';
 import { countLabel, recipeRows, statusText } from './model';
 import { CHEST_SLOTS } from '../engine/loot';
 import { heartFills } from './tooltip';
@@ -247,12 +249,17 @@ export class Hud {
     this.paintStack(s, from[i] ?? null, i);
     s.btn.classList.toggle('is-selected', selected);
   }
-  private paintStack(s: SlotEl, st: Stack | null, i: number): void {
+  /** tinted = 用這件的實際顏色畫（外觀欄的格子）；其他格子用圖集的原色圖示 */
+  private paintStack(s: SlotEl, st: Stack | null, i: number, tinted = false): void {
     const g = st?.gear;
-    const sig = st ? `${st.item}:${st.count}:${g ? `${g.rarity}.${g.plus}.${g.locked ? 1 : 0}.${g.affixes.map((a) => a.id + a.value).join(',')}` : ''}` : '';
+    const sig = st ? `${st.item}:${st.count}:${g ? `${g.rarity}.${g.plus}.${g.locked ? 1 : 0}.${g.affixes.map((a) => a.id + a.value).join(',')}` : ''}:${tintKey(st.tint)}` : '';
     if (sig === s.sig) return;
     s.sig = sig;
-    if (s.ctx) drawIcon(this.atlas, s.ctx, st ? st.item : null, ICON_PX);
+    if (s.ctx) {
+      const tintIcon = tinted && st?.tint ? fashionIcon(st.item, st.tint) : null;
+      if (tintIcon) drawBmpIcon(s.ctx, tintIcon, ICON_PX);
+      else drawIcon(this.atlas, s.ctx, st ? st.item : null, ICON_PX);
+    }
     s.count.textContent = g?.plus ? `+${g.plus}` : countLabel(st);
     if (st) s.btn.dataset.item = st.item; else delete s.btn.dataset.item;
     // 稀有度外框（只有裝備才有；沒有詞條資料 = 普通）
@@ -408,7 +415,7 @@ export class Hud {
       this.paintStack(this.equip[k], it ? { item: it, count: 1 } : null, k);
     });
     const v = this.game.vanity;
-    VANITY_SLOTS.forEach((slot, k) => { if (this.vanity[k]) this.paintStack(this.vanity[k], v.getStack(slot), k); });
+    VANITY_SLOTS.forEach((slot, k) => { if (this.vanity[k]) this.paintStack(this.vanity[k], v.getStack(slot), k, true); });
     for (const h of this.hideBtns) {
       const on = v.hide[h.slot];
       h.btn.setAttribute('aria-pressed', on ? 'true' : 'false');

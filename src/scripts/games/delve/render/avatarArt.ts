@@ -93,8 +93,9 @@ function wearOf(l: DollLook, p: DollPiece | null): Wear {
   if (set && p) return { kind: 'armor', set, p };
   const vo = lookId(p, 'outfit:');
   if (vo) {
-    const def = OUTFITS.find((o) => o.id === vo) ?? OUTFITS[0];
-    return { kind: 'outfit', o: def.id, c1: clothRamp(def.colors[0]), c2: clothRamp(def.colors[1]) };
+    // 時裝的顏色跟著物品（tint）；沒有 = 款式原色
+    const def = OUTFITS.find((o) => o.id === vo) ?? OUTFITS[0], [m, s] = p?.tint ?? def.colors;
+    return { kind: 'outfit', o: def.id, c1: clothRamp(m), c2: clothRamp(s) };
   }
   return { kind: 'outfit', o: OUTFITS[l.app.outfit]?.id ?? 'explorer', c1: clothRamp(l.app.color1), c2: clothRamp(l.app.color2) };
 }
@@ -700,7 +701,7 @@ function standFrame(l: DollLook, p: Pose, f: number, trace?: string[]): AvatarFr
   topFront(chest, l, top, rows, lowerMiko, bp);
   chest.softOutline();
   body.blit(chest, 0, 0);
-  if (l.back && l.back.look === 'back:cape') capeShoulders(body, ra, rz, ty);
+  if (l.back && l.back.look === 'back:cape') capeShoulders(body, ra, rz, ty, l.back.tint);
   trace?.push('chest');
   trace?.push(...headTrace);
   const meta: FrameMeta = { dx: p.bodyDx, dy: dy + p.bodyDy, arms: true };
@@ -1092,7 +1093,7 @@ export function pieceBmp(l: DollLook, slot: 'head' | 'body' | 'legs' | 'back'): 
   else if (slot === 'head' && l.head) {
     const h = new Bmp(AV_FW, AV_FH);
     if (armorSet(l.head)) { helmetHeadOnly(h, l.head); h.softOutline(); }
-    else hatHeadOnly(h, lookId(l.head, 'hat:') ?? 'beret');
+    else hatHeadOnly(h, lookId(l.head, 'hat:') ?? 'beret', l.head.tint);
     b.blit(h, 0, 0);
   }
   void CR;

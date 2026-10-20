@@ -6,6 +6,7 @@
 import { moveBody, type Body, type MoveResult, type SolidQuery } from './physics';
 import { ITEMS, type ItemId } from './items';
 import type { Gear } from './gear';
+import { cloneTint, type Tint } from './tint';
 import { TILE_SIZE as S } from './constants';
 
 // ── 介質 ───────────────────────────────────────────────
@@ -61,7 +62,8 @@ export function centerOf(b: { x: number; y: number; w: number; h: number }): { x
 }
 
 // ── 掉落物 ─────────────────────────────────────────────
-export interface DroppedItem { id: number; item: ItemId; count: number; body: Body; age: number; pickDelay: number; grabbed: boolean; gear?: Gear; }
+/** gear = 帶詞條的裝備；tint = 帶顏色的時裝（兩者都一件一個、不合併） */
+export interface DroppedItem { id: number; item: ItemId; count: number; body: Body; age: number; pickDelay: number; grabbed: boolean; gear?: Gear; tint?: Tint; }
 export const ITEM_SIZE = 10;
 /** 玩家 AABB 往外擴張多少 px 算「碰到」 */
 export const PICKUP_GRAB_PX = 14;
@@ -77,8 +79,8 @@ export interface PickupHost {
   player: Body;
   /** 能收下的數量（0 = 背包滿） */
   room(item: ItemId, n: number): number;
-  /** 收進背包，回傳實際收下的數量（gear = 帶詞條的裝備） */
-  take(item: ItemId, n: number, gear?: Gear): number;
+  /** 收進背包，回傳實際收下的數量（gear = 帶詞條的裝備；tint = 帶顏色的時裝） */
+  take(item: ItemId, n: number, gear?: Gear, tint?: Tint): number;
   /** 吸取半徑（px） */
   magnetPx: number;
   /** 活動範圍（px）：離玩家更遠的掉落物不更新（凍結） */
@@ -91,21 +93,23 @@ export class DropList {
   readonly list: DroppedItem[] = [];
   private nextId = 1;
 
-  /** 在 (x,y)（px，中心）丟出一堆道具；同種靜止的堆就近合併（帶詞條的裝備不合併、一件一個） */
-  spawn(item: ItemId, count: number, x: number, y: number, vx = 0, vy = -120, pickDelay = 0, gear?: Gear): DroppedItem | null {
+  /** 在 (x,y)（px，中心）丟出一堆道具；同種靜止的堆就近合併（帶詞條的裝備 / 帶顏色的時裝不合併、一件一個） */
+  spawn(item: ItemId, count: number, x: number, y: number, vx = 0, vy = -120, pickDelay = 0, gear?: Gear, tint?: Tint): DroppedItem | null {
     if (count <= 0) return null;
     const max = ITEMS[item].maxStack;
-    if (gear) {
+    if (gear || tint) {
       const d: DroppedItem = {
-        id: this.nextId++, item, count: 1, age: 0, pickDelay, grabbed: false, gear,
+        id: this.nextId++, item, count: 1, age: 0, pickDelay, grabbed: false,
         body: { x: x - ITEM_SIZE / 2, y: y - ITEM_SIZE / 2, w: ITEM_SIZE, h: ITEM_SIZE, vx, vy, onGround: false, gfxOffY: 0 },
       };
+      if (gear) d.gear = gear;
+      if (tint) d.tint = cloneTint(tint);
       this.list.push(d);
       while (this.list.length > MAX_DROPS) this.list.shift();
       return d;
     }
     for (const d of this.list) {
-      if (d.item !== item || d.count >= max || d.grabbed || d.gear) continue;
+      if (d.item !== item || d.count >= max || d.grabbed || d.gear || d.tint) continue;
       const c = centerOf(d.body);
       if (Math.abs(c.x - x) < MERGE_PX && Math.abs(c.y - y) < MERGE_PX) {
         const k = Math.min(count, max - d.count);
@@ -127,9 +131,9 @@ export class DropList {
     return last;
   }
 
-  /** 每步：物理（彈跳）→ 吸取 → 撿起。回傳這步撿到的 [item, n, gear]。 */
-  step(q: PhysEnv, host: PickupHost, dt: number): [ItemId, number, Gear | undefined][] {
-    const got: [ItemId, number, Gear | undefined][] = [];
+  /** 每步：物理（彈跳）→ 吸取 → 撿起。回傳這步撿到的 [item, n, gear, tint]。 */
+  step(q: PhysEnv, host: PickupHost, dt: number): [ItemId, number, Gear | undefined, Tint | undefined][] {
+    const got: [ItemId, number, Gear | undefined, Tint | undefined][] = [];
     const p = host.player, pcx = p.x + p.w / 2, pcy = p.y + p.h / 2;
     const grab = { x: p.x - PICKUP_GRAB_PX, y: p.y - PICKUP_GRAB_PX, w: p.w + PICKUP_GRAB_PX * 2, h: p.h + PICKUP_GRAB_PX * 2 };
     const ap2 = host.activePx * host.activePx, m2 = host.magnetPx * host.magnetPx;
@@ -141,9 +145,9 @@ export class DropList {
       if (d.pickDelay > 0) d.pickDelay -= dt;
       const ready = host.canPickup && d.pickDelay <= 0 && host.room(d.item, 1) > 0;
       if (ready && overlaps(b, grab)) {
-        const n = host.take(d.item, d.count, d.gear);
+        const n = host.take(d.item, d.count, d.gear, d.tint);
         if (n > 0) {
-          got.push([d.item, n, d.gear]);
+          got.push([d.item, n, d.gear, d.tint]);
           d.count -= n;
           if (d.count <= 0) { this.list.splice(i, 1); continue; }
         }
