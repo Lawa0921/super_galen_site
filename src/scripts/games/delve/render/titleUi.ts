@@ -7,7 +7,7 @@ import { characterLine, continueLines, menuMove, readVolume, rollWorldName, worl
 import { parseZoomPref } from './lowres';
 import type { SoundManager } from '../audio/SoundManager';
 import type { CharacterMeta, SlotMeta } from '../save/storage';
-import type { Appearance } from '../engine/appearance';
+import { createLook, type Appearance } from '../engine/appearance';
 import { dollKey, plainLook } from '../engine/doll';
 import { dollPreview } from './dollPreview';
 import { AV_FH, AV_FW } from './avatarArt';
@@ -606,8 +606,9 @@ export class TitleUi {
     if (ab) { ab.setAttribute('aria-checked', aim ? 'true' : 'false'); ab.textContent = aim ? '開' : '關'; }
   }
 
-  /** 新角色面板的外觀：小預覽（同角色列表的小人像）+ 體型按鈕；建立角色時用這個外觀 */
-  setLookPreview(a: Appearance): void {
+  /** 新角色面板的外觀：小預覽（同角色列表的小人像）+ 體型按鈕；建立角色時用這個外觀（只留身體、穿基本布衣） */
+  setLookPreview(look: Appearance): void {
+    const a = createLook(look);
     this.newLook = a;
     const c = this.$<HTMLCanvasElement>('#delve-new-doll');
     if (c) paintDoll(c, a);

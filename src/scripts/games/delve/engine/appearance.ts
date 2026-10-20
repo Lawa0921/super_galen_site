@@ -229,8 +229,20 @@ export function setAppearance(a: Appearance, key: AppearanceKey, value: number |
 function switchBody(a: Appearance, body: number): Appearance {
   if (body === a.body) return { ...a };
   if (sameAppearance({ ...a, race: 0 }, bodyDefaults(a.body))) return { ...bodyDefaults(body), race: a.race };
+  // 建角外觀（穿布衣）的預設也一樣：換成另一邊預設的建角外觀
+  if (sameAppearance({ ...a, race: 0 }, createLook(bodyDefaults(a.body)))) return { ...createLook(bodyDefaults(body)), race: a.race };
   // 改過的外觀：只換體型，腮紅等其他選擇都保留
   return { ...a, body };
+}
+
+/**
+ * 建角外觀：只留身體特徵與種族，穿基本布衣、不戴頭飾 / 眼鏡（衣服與飾品要在遊戲裡收集）。
+ * 原本穿別的衣服 → 配色換成布衣的預設（那是別套衣服的顏色）；已經是布衣 → 保留自己調的配色。冪等。
+ */
+export function createLook(a: Appearance): Appearance {
+  const out: Appearance = { ...a, outfit: OUTFIT_PLAIN, acc: 0, glasses: false };
+  if (a.outfit !== OUTFIT_PLAIN) { out.color1 = OUTFITS[OUTFIT_PLAIN].colors[0]; out.color2 = OUTFITS[OUTFIT_PLAIN].colors[1]; }
+  return out;
 }
 
 /**

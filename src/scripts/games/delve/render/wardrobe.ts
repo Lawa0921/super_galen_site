@@ -1,11 +1,14 @@
 // wardrobe.ts — 「角色外觀」客製化畫面（DOM）：左邊放大的即時預覽（待機 → 走路 → 跳躍 → 爬繩 → 掛著 → 攀上邊緣輪播），
 // 右邊一列列選項（髮型 / 髮色 / 呆毛 / 瞳色 / 眼型 / 膚色 / 眼鏡 / 服裝 / 主色 / 副色 / 頭飾）＋ 隨機 / 取消 / 完成。
 // 鍵盤：↑↓ 換列、←→ 換選項、Enter 完成、Esc 取消；Tab 只在面板裡循環。手機：預覽在上、選項在下捲動。
-// 標題畫面（主選單「角色外觀」、新世界面板）與遊戲中選單共用同一個面板。
+// 模式決定列出哪些欄位（APPEARANCE_FIELDS 不刪列，只在這裡藏）：'create' = 新角色（身體特徵 + 種族 + 布衣配色）、
+// 'mirror' = 梳妝台、'full' = 全部欄位（舊行為，只留給內部 / 測試）。
 import { toCanvas } from './pixel';
 import {
-  APPEARANCE_FIELDS, normalizeAppearance, randomAppearance, raceId, stepAppearance, type Appearance, type AppearanceField,
+  APPEARANCE_FIELDS, OUTFIT_PLAIN, createLook, normalizeAppearance, randomAppearance, raceId, stepAppearance,
+  type Appearance, type AppearanceField, type AppearanceKey,
 } from '../engine/appearance';
+import type { VanitySlot } from '../engine/items';
 import { dollKey, plainLook, type DollLook } from '../engine/doll';
 import { RACE_BLURB } from '../engine/race';
 import { dollPreview } from './dollPreview';
@@ -22,16 +25,40 @@ const UNISEX_NOTE = '男女都能穿任何髮型、服裝與裝備。';
 const ZOOM = 1;
 const PAD = 2;
 
+/** 衣櫥模式：'create' = 建角、'mirror' = 梳妝台、'full' = 全部欄位（舊行為，不對玩家開放） */
+export type WardrobeMode = 'create' | 'mirror' | 'full';
+/** 建角可選的欄位（P6）：身體特徵 + 種族 + 主色 / 副色（染基本布衣）；沒有服裝 / 頭飾 / 眼鏡 */
+const CREATE_KEYS: readonly AppearanceKey[] = ['body', 'race', 'hair', 'hairColor', 'ahoge', 'eyes', 'eyeShape', 'skin', 'blush', 'color1', 'color2'];
+/** 各模式列出的欄位（null = 全部）。梳妝台不能改種族；每件時裝的配色列由梳妝台另外加 */
+const MODE_KEYS: Record<WardrobeMode, readonly AppearanceKey[] | null> = {
+  create: CREATE_KEYS,
+  mirror: CREATE_KEYS.filter((k) => k !== 'race'),
+  full: null,
+};
+/** 某模式要列出的欄位（照 APPEARANCE_FIELDS 的順序） */
+export function wardrobeFields(mode: WardrobeMode): readonly AppearanceField[] {
+  const keys = MODE_KEYS[mode];
+  return keys ? APPEARANCE_FIELDS.filter((f) => keys.includes(f.key)) : APPEARANCE_FIELDS;
+}
+
 export interface WardrobeOpen {
+  /** 列出哪些欄位（預設 'full'：舊行為） */
+  mode?: WardrobeMode;
+  /** 梳妝台：身上每件時裝目前的主色 / 副色（CLOTH_COLORS 索引） */
+  tints?: { slot: VanitySlot; tint: [number, number] }[];
   /** 套上外觀之後畫成什麼樣子（遊戲中 = 身上的裝備 + 新外觀；標題 = 只有外觀） */
   look?: (a: Appearance) => DollLook;
   onDone(a: Appearance): void;
+  /** 梳妝台：完成時回報每件時裝的新配色 */
+  onTints?(t: { slot: VanitySlot; tint: [number, number] }[]): void;
   onClose?(): void;
 }
 
 export class Wardrobe {
   private a: Appearance = normalizeAppearance(null);
   private opts: WardrobeOpen | null = null;
+  /** 目前建好的列是哪個模式（換模式才重建） */
+  private mode: WardrobeMode = 'full';
   private timer = 0;
   private tick = 0;
   /** 預覽面向左？（dollPreview 只產出面向右的格子；面向左 = 整張畫布水平鏡像，整數像素、不糊） */
@@ -49,10 +76,10 @@ export class Wardrobe {
     // 四周留 2 美術像素：走路時抬起的腳 / 飄起的頭髮不會被裁掉
     this.canvas.width = (AV_FW + PAD * 2) * ZOOM; this.canvas.height = (AV_FH + PAD * 2) * ZOOM;
     this.cap = panel.querySelector('#delve-wr-cap');
-    this.build();
+    this.build('full');
     const on = (el: EventTarget | null, t: string, fn: EventListener): void => { if (!el) return; el.addEventListener(t, fn); this.offs.push(() => el.removeEventListener(t, fn)); };
     on(panel.querySelector('#delve-wr-turn'), 'click', () => { this.sound.ensure(); this.sound.uiMove(); this.faceLeft = !this.faceLeft; this.draw(); });
-    on(panel.querySelector('#delve-wr-random'), 'click', () => { this.sound.ensure(); this.sound.uiDice(); this.set(randomAppearance(Math.random)); });
+    on(panel.querySelector('#delve-wr-random'), 'click', () => { this.sound.ensure(); this.sound.uiDice(); this.set(this.random()); });
     on(panel.querySelector('#delve-wr-cancel'), 'click', () => { this.sound.uiBack(); this.close(); });
     on(panel.querySelector('#delve-wr-done'), 'click', () => this.done());
     on(panel, 'keydown', (e) => this.onKey(e as KeyboardEvent));
@@ -63,6 +90,8 @@ export class Wardrobe {
 
   open(initial: Appearance, o: WardrobeOpen): void {
     this.opts = o;
+    const mode = o.mode ?? 'full';
+    if (mode !== this.mode) this.build(mode);
     this.returnFocus = document.activeElement as HTMLElement | null;
     this.panel.hidden = false;
     this.root.dataset.wardrobe = '1';
@@ -92,15 +121,20 @@ export class Wardrobe {
   }
 
   // ── 選項列 ──
-  private build(): void {
+  private build(mode: WardrobeMode): void {
+    this.mode = mode;
+    this.rows.length = 0;
+    this.blurb = null;
     const list = this.panel.querySelector<HTMLElement>('#delve-wr-rows');
     if (!list) return;
     list.replaceChildren();
+    const fields = wardrobeFields(mode);
     let group = '';
-    const GROUP: Record<string, string> = { body: '體型', hair: '頭髮', face: '臉', outfit: '服裝' };
+    // 建角時服裝組只剩主色 / 副色，染的是基本布衣
+    const GROUP: Record<string, string> = { body: '體型', hair: '頭髮', face: '臉', outfit: mode === 'create' ? '布衣' : '服裝' };
     const fill = (): void => {
-      // 兩欄排版時，這一組是奇數列：最後補一格說明，右邊不會空一格
-      const n = APPEARANCE_FIELDS.filter((x) => x.group === group).length;
+      // 兩欄排版時，這一組是奇數列：最後補一格說明，右邊不會空一格（只算這個模式列出的欄位）
+      const n = fields.filter((x) => x.group === group).length;
       if (group && n % 2 === 1) {
         const note = document.createElement('p');
         note.className = 'delve-wr-note';
@@ -108,7 +142,7 @@ export class Wardrobe {
         list.appendChild(note);
       }
     };
-    for (const f of APPEARANCE_FIELDS) {
+    for (const f of fields) {
       if (f.group !== group) {
         fill();
         group = f.group;
@@ -173,7 +207,14 @@ export class Wardrobe {
     this.sound.ensure(); this.sound.uiMove();
     this.set(stepAppearance(this.a, f.key, dir));
   }
-  private set(a: Appearance): void {
+  /** 隨機：建角時只抽身體特徵，配色沿用抽到那套衣服的配色、穿在布衣上 */
+  private random(): Appearance {
+    const r = randomAppearance(Math.random);
+    return this.mode === 'create' ? { ...r, outfit: OUTFIT_PLAIN } : r;
+  }
+  private set(next: Appearance): void {
+    // 建角：不管從哪來（舊的預設外觀、隨機、換體型）一律只留身體、穿布衣
+    const a = this.mode === 'create' ? createLook(next) : next;
     this.a = a;
     for (const r of this.rows) {
       const v = a[r.f.key];
