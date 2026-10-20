@@ -365,6 +365,20 @@ describe('StatusScene', () => {
       expect(bodyEl(root).scrollTop).toBe(0);
     });
 
+    it('moving down to the last stop brings the end of the page into view, so no ▼ is left over the margin below it', () => {
+      const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(900);
+      try {
+        const { root, s } = setup('scarlet');
+        for (let i = 0; i < 80; i++) s.onAction('down');
+        expect(cur(root)).toBe(head(root, STAT_CATEGORIES.at(-1)!.id));      // the last heading (folded by default)
+        expect(bodyEl(root).scrollTop).toBe(900);
+        s.onAction('up');                                                    // one row up: back to bringing just the row into view
+        bodyEl(root).scrollTop = 120;
+        s.onAction('up');
+        expect(bodyEl(root).scrollTop).toBe(120);
+      } finally { sh.mockRestore(); }
+    });
+
     it('up/down move the row cursor across headers and rows and keep it in view', () => {
       const { root, s } = setup('scarlet');
       expect(cur(root)).toBe(head(root, 'primary'));
@@ -881,6 +895,53 @@ describe('StatusScene', () => {
         expect(cols(root).scrollTop).toBe(200);
         expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([false, true]);
       });
+    });
+  });
+
+  describe("the page's scroll cues (no native scrollbar: ▲/▼ as the tree columns' and the talent board's)", () => {
+    const cue = (root: HTMLElement, d: 'up' | 'down') => root.querySelector<HTMLElement>(`.slx-status-frame > .slx-more-${d}`)!;
+    const bodyEl = (root: HTMLElement) => root.querySelector<HTMLElement>('.slx-status-body')!;
+    const cues = (root: HTMLElement) => [cue(root, 'up').hidden, cue(root, 'down').hidden];
+    let sh: ReturnType<typeof vi.spyOn>;
+    let ch: ReturnType<typeof vi.spyOn>;
+    beforeEach(() => {
+      sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get');
+      ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get');
+    });
+    afterEach(() => { sh.mockRestore(); ch.mockRestore(); });
+
+    it('the page sits in a frame with its cues, and a page that fits shows none', () => {
+      sh.mockReturnValue(80); ch.mockReturnValue(100);
+      const { root } = setup('scarlet');
+      expect(bodyEl(root).parentElement!.classList.contains('slx-status-frame')).toBe(true);
+      expect([cue(root, 'up').textContent, cue(root, 'down').textContent]).toEqual(['▲', '▼']);
+      expect(cues(root)).toEqual([true, true]);
+    });
+
+    it('a page taller than the sheet shows ▼ at the top and ▲ at the bottom; a click on a cue scrolls it', () => {
+      sh.mockReturnValue(300); ch.mockReturnValue(100);
+      const { root, s } = setup('scarlet');
+      s.onAction('right');                                                  // the gear page
+      expect(cues(root)).toEqual([true, false]);
+      for (let i = 0; i < 20; i++) cue(root, 'down').click();
+      expect(bodyEl(root).scrollTop).toBe(200);
+      expect(cues(root)).toEqual([false, true]);
+      cue(root, 'up').click();
+      expect(cues(root)).toEqual([false, false]);
+    });
+
+    it('the keys, the wheel or a touch move the page and the cues follow; a new tab starts at the top with ▼ only', () => {
+      sh.mockReturnValue(300); ch.mockReturnValue(100);
+      const { root, s } = setup('scarlet');
+      s.onAction('right'); s.onAction('right');                             // the skills page
+      s.onAction('down');
+      expect(bodyEl(root).scrollTop).toBe(32);
+      expect(cues(root)).toEqual([false, false]);
+      bodyEl(root).scrollTop = 200;                                         // a wheel or a touch
+      bodyEl(root).dispatchEvent(new Event('scroll'));
+      expect(cues(root)).toEqual([false, true]);
+      s.onAction('left');
+      expect(cues(root)).toEqual([true, false]);
     });
   });
 

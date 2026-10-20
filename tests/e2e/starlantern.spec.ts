@@ -11,6 +11,8 @@ import { memScene } from '../../src/scripts/games/starlantern/data/story/scenes'
 import { favouredRegions } from '../../src/scripts/games/starlantern/data/meetings';
 import { rollPortals, withLead } from '../../src/scripts/games/starlantern/engine/portals';
 import { SKILLS } from '../../src/scripts/games/starlantern/data/skills';
+import { TREES } from '../../src/scripts/games/starlantern/data/trees';
+import { STAT_CATEGORIES } from '../../src/scripts/games/starlantern/engine/stats';
 import { maxValue } from '../../src/scripts/games/starlantern/engine/loot/item';
 import { mkdirSync } from 'node:fs';
 
@@ -750,6 +752,145 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
     // The cut-off check sees a clipped bonus: the first one stretched past its cell is reported.
     expect((await page.evaluate(measure, true)).cut).toEqual([expect.stringMatching(/^noel-t00 /)]);
+  });
+
+  test.describe('the status sheet', () => {
+    test('shows no native scrollbar on any page, and every row is reachable by the ▲/▼ cues, the keys and the wheel', async ({ playwright }, info) => {
+      test.setTimeout(180000);
+      // Headless Chromium hides scrollbars; in this browser they show, so a native one takes room and is measured as the
+      // player sees it. (A launch option cannot be set for one group, so this test opens its own browser.)
+      const browser = await playwright.chromium.launch({ args: ['--mute-audio'], ignoreDefaultArgs: ['--hide-scrollbars'] });
+      const context = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: { width: 1280, height: 720 } });
+      const page = await context.newPage();
+      try {
+        const w = await setup(page, 7);
+        await page.locator('.slx-town [data-id=guild]').click();
+        await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+        // The fullest sheets: everyone recruited at the top level with every tree node at its top rank, each slot wearing a
+        // +10 named piece (one with a power where the slot has one) with four affixes at their top values.
+        const gear = Object.fromEntries(['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring'].map((slot) => {
+          const named = Object.values(SPECIALS).filter((s) => s.slot === slot)
+            .sort((a, b) => Number(!!b.power) - Number(!!a.power) || b.name.length - a.name.length)[0];
+          const keys = (Object.keys(AFFIXES) as (keyof typeof AFFIXES)[]).filter((k) => AFFIXES[k].slots.includes(slot as never)).slice(0, 4);
+          return [slot, {
+            base: Object.values(EQUIPMENT).find((e) => e.slot === slot)!.id, rarity: named?.rarity ?? 'rare', special: named?.id,
+            affixes: keys.map((key) => ({ key, value: maxValue(key, 60) })),
+          }];
+        }));
+        const trees = Object.fromEntries(Object.entries(TREES).map(([id, t]) => [id, Object.fromEntries(t.branches.flatMap((b) => b.nodes.map((n) => [n.id, n.maxRank])))]));
+        await page.evaluate(({ gear, trees }) => {
+          const g = (window as unknown as Dbg).__starlanternDebug.game;
+          const p = g.state.party;
+          p.recruited = Object.keys(p.roster);
+          for (const id of p.recruited) {
+            const m = p.roster[id];
+            m.level = 50;
+            m.tree = trees[id];
+            for (const slot of ['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring1', 'ring2']) {
+              const d = gear[slot.startsWith('ring') ? 'ring' : slot];
+              m.equip[slot] = { uid: g.mintUid(), base: d.base, rarity: d.rarity, ...(d.special ? { special: d.special } : {}), ilvl: 60, enhance: 10, affixes: d.affixes };
+            }
+          }
+        }, { gear, trees });
+        await page.locator('.slx-guild [data-id=status]').click();
+        await expect(page.locator('.slx-status-scene')).toBeVisible();
+
+        /**
+         * Every box in the sheet that can scroll: none draws a native scrollbar or hides anything sideways, and one taller
+         * than its room sits in a cue frame whose ▼/▲ step it from end to end, every row of it whole on screen on the way.
+         */
+        const audit = () => page.evaluate(() => {
+          const scene = document.querySelector<HTMLElement>('.slx-status-scene')!;
+          const scrolls = [scene, ...scene.querySelectorAll<HTMLElement>('*')].filter((e) => /auto|scroll/.test(getComputedStyle(e).overflowY + getComputedStyle(e).overflowX));
+          const name = (e: HTMLElement) => `.${[...e.classList].join('.')}`;
+          const bars = scrolls.flatMap((e) => {
+            const cs = getComputedStyle(e);
+            const side = e.offsetWidth - e.clientWidth - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
+            const under = e.offsetHeight - e.clientHeight - parseFloat(cs.borderTopWidth) - parseFloat(cs.borderBottomWidth);
+            return side > 0.5 || under > 0.5 ? [`${name(e)} bar ${side}/${under}`] : [];
+          });
+          const sideways = scrolls.filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => `${name(e)} ${e.scrollWidth}>${e.clientWidth}`);
+          const ROWS = '.slx-status-facts p, .slx-stat-cat-head, .slx-stat-table tr, .slx-gear-row, .slx-tab-skills > .slx-skill, .slx-tree-node, .slx-talent-node, .slx-tab-ultimate > *';
+          const unreachable = scrolls.filter((pane) => pane.scrollHeight > pane.clientHeight + 1).flatMap((pane) => {
+            const up = pane.parentElement!.querySelector<HTMLElement>(':scope > .slx-more-up');
+            const down = pane.parentElement!.querySelector<HTMLElement>(':scope > .slx-more-down');
+            if (!up || !down) return [`${name(pane)} has no cues`];
+            const rows = [...pane.querySelectorAll<HTMLElement>(ROWS)].filter((r) => r.parentElement!.closest('.slx-status-body, .slx-tree-cols, .slx-talent-board') === pane);
+            const seen = new Set<HTMLElement>();
+            const look = () => {
+              const box = pane.getBoundingClientRect();
+              for (const r of rows) { const b = r.getBoundingClientRect(); if (b.top >= box.top - 0.5 && b.bottom <= box.bottom + 0.5) seen.add(r); }
+            };
+            pane.scrollTop = 0;
+            pane.dispatchEvent(new Event('scroll'));
+            const out: string[] = [];
+            if (down.hidden) out.push(`${name(pane)} hides ▼ with rows below`);
+            look();
+            for (let i = 0; i < 200 && !down.hidden; i++) { down.click(); look(); }
+            if (pane.scrollTop < pane.scrollHeight - pane.clientHeight - 1) out.push(`${name(pane)} ▼ stops short`);
+            if (up.hidden) out.push(`${name(pane)} hides ▲ at the bottom`);
+            for (let i = 0; i < 200 && !up.hidden; i++) up.click();
+            if (pane.scrollTop !== 0) out.push(`${name(pane)} ▲ stops short`);
+            const missed = rows.filter((r) => !seen.has(r)).map((r) => (r.textContent ?? '').slice(0, 12));
+            return missed.length ? [...out, `${name(pane)} never shows: ${missed.join(' | ')}`] : out;
+          });
+          return { bars, sideways, unreachable };
+        });
+        const flipToId = async (id: string) => {
+          const art = page.locator('.slx-status-art');
+          for (let i = 0; i < 12 && !((await art.getAttribute('class')) ?? '').includes(`slx-aura-${id} `) && !((await art.getAttribute('class')) ?? '').endsWith(`slx-aura-${id}`); i++) await page.locator('.slx-status-next').click();
+          await expect(page.locator('.slx-status-name b')).toHaveText(CHARACTERS[id as keyof typeof CHARACTERS].name);
+        };
+        const longest = Object.values(CHARACTERS).filter((c) => c.id !== 'hero' && c.id !== 'rin').sort((a, b) => b.name.length - a.name.length)[0].id;
+        for (const id of ['hero', 'rin', longest, 'safira']) {
+          await flipToId(id);
+          for (const tab of ['stats', 'gear', 'skills', 'tree', 'talent', 'ultimate']) {
+            await page.locator(`[data-tab=${tab}]`).click();
+            // Every category open: the longest the stats page gets (the fold state is kept, so once is enough).
+            const closed = page.locator('.slx-stat-cat-head[aria-expanded=false]');
+            for (let i = 0; tab === 'stats' && i < 10 && (await closed.count()); i++) await closed.first().click();
+            expect(await audit(), `${id} ${tab}`).toEqual({ bars: [], sideways: [], unreachable: [] });
+          }
+        }
+
+        // The keys: ↓ on the hero's skills page goes all the way down, and the cues follow.
+        await flipToId('hero');
+        await page.locator('[data-tab=skills]').click();
+        const body = page.locator('.slx-status-body');
+        const frame = (d: 'up' | 'down') => page.locator(`.slx-status-frame > .slx-more-${d}`);
+        await expect(frame('down')).toBeVisible();
+        await expect(frame('up')).toBeHidden();
+        for (let i = 0; i < 80 && (await frame('down').isVisible()); i++) await w.key('ArrowDown');
+        await expect(frame('down')).toBeHidden();
+        await expect(frame('up')).toBeVisible();
+        expect(await body.evaluate((b) => b.scrollHeight - b.clientHeight - b.scrollTop)).toBeLessThanOrEqual(1);
+        // The wheel: over the gear page it scrolls the page, and ▲ comes up.
+        await page.locator('[data-tab=gear]').click();
+        await expect(frame('up')).toBeHidden();
+        const at = (await body.boundingBox())!;
+        await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+        await page.mouse.wheel(0, 200);
+        await expect.poll(() => body.evaluate((b) => b.scrollTop)).toBeGreaterThan(0);
+        await expect(frame('up')).toBeVisible();
+        // The stats page's row cursor: ↓ to the last row brings it into view, with nothing left below.
+        await page.locator('[data-tab=stats]').click();
+        const last = STAT_CATEGORIES[STAT_CATEGORIES.length - 1].keys.at(-1)!;
+        const cur = page.locator('.slx-tab-stats .slx-row-cur');
+        for (let i = 0; i < 120 && (await cur.getAttribute('data-stat')) !== last; i++) await w.key('ArrowDown');
+        await expect(cur).toHaveAttribute('data-stat', last);
+        await expect(frame('down')).toBeHidden();
+        await expect(frame('up')).toBeVisible();
+        const curInView = await page.evaluate(() => {
+          const b = document.querySelector('.slx-status-body')!.getBoundingClientRect();
+          const c = document.querySelector('.slx-tab-stats .slx-row-cur')!.getBoundingClientRect();
+          return c.top >= b.top - 0.5 && c.bottom <= b.bottom + 0.5;
+        });
+        expect(curInView).toBe(true);
+        expect(w.errors).toEqual([]);
+      } finally {
+        await browser.close();
+      }
+    });
   });
 
   test('spends skill and talent points, then resets them at the inn', async ({ page }) => {

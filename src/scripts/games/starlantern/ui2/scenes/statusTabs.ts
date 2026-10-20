@@ -204,8 +204,11 @@ const stats: StatusTab = {
   shown(body) {
     if (!view.reveal) return;
     view.reveal = false;
-    // The first heading also brings the facts above it back into view.
-    if (view.cur === stops()[0]) body.scrollTop = 0;
+    // The first heading also brings the facts above it back into view; the last stop the end of the page (the margin
+    // under it), so the ▼ cue does not stay up over nothing.
+    const list = stops();
+    if (view.cur === list[0]) body.scrollTop = 0;
+    else if (view.cur === list[list.length - 1]) body.scrollTop = body.scrollHeight;
     else body.querySelector('.slx-row-cur')?.scrollIntoView?.({ block: 'nearest' });
   },
 };
@@ -277,11 +280,12 @@ function scrollCues(pane: HTMLElement, up: HTMLElement, down: HTMLElement): void
 }
 
 /**
- * `pane` (the tree columns or the talent board, which scroll on their own above the fixed notes) in a frame with the
- * ▲/▼ cues: they show while more is hidden that way, and a click (or tap) on one scrolls it. `keep` hears every new
- * scroll position, so a redraw can put the pane back where it was (the tab's `shown` then calls `scrollCues`).
+ * `pane` (the sheet's page, or the tree columns or the talent board, which scroll on their own above the fixed notes) in
+ * a frame with the ▲/▼ cues, which stand in for a native scrollbar (the sheet shows none): they show while more is
+ * hidden that way, and a click (or tap) on one scrolls it. `keep` hears every new scroll position, so a redraw can put
+ * the pane back where it was (the redraw then calls `updateCues`).
  */
-function cueFrame(cls: string, pane: HTMLElement, keep: (top: number) => void): HTMLElement {
+export function cueFrame(cls: string, pane: HTMLElement, keep: (top: number) => void): HTMLElement {
   const cue = (c: string, text: string, d: 1 | -1) => {
     const b = el('span', { class: `slx-more ${c}`, text, attrs: { 'aria-hidden': 'true', hidden: '' } });
     b.addEventListener('click', () => {
@@ -302,7 +306,7 @@ function cueFrame(cls: string, pane: HTMLElement, keep: (top: number) => void): 
 }
 
 /** The cues of the cue frame around `pane`, brought up to date after a redraw has set its scroll position. */
-function updateCues(pane: HTMLElement): void {
+export function updateCues(pane: HTMLElement): void {
   const frame = pane.parentElement;
   const up = frame?.querySelector<HTMLElement>(':scope > .slx-more-up');
   const down = frame?.querySelector<HTMLElement>(':scope > .slx-more-down');

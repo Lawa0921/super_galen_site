@@ -8,7 +8,7 @@ import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import type { Scene, SceneCtx } from '../scene';
 import { backControl, win } from '../widgets';
-import { STATUS_TABS } from './statusTabs';
+import { STATUS_TABS, cueFrame, updateCues } from './statusTabs';
 
 /** Character sheet: a large standee on the left, tabbed pages on the right; Q/E (or the arrows) page through the members. */
 export class StatusScene implements Scene {
@@ -48,7 +48,8 @@ export class StatusScene implements Scene {
     root.append(el('div', { class: 'slx-scene slx-status-scene' }, [
       this.standee,
       win('slx-status-plate', [arrow('slx-status-prev', '◀', 'prev'), this.nameEl, arrow('slx-status-next', '▶', 'next')]),
-      win('slx-status-panel', [this.tabsEl, this.bodyEl, this.hintEl]),
+      // The page pages with ▲/▼ cues, never a native scrollbar; the sheet keeps its place itself (render), so `keep` is idle.
+      win('slx-status-panel', [this.tabsEl, cueFrame('slx-status-frame', this.bodyEl, () => {}), this.hintEl]),
       backControl(() => this.onAction('cancel')),
     ]));
     this.render();
@@ -64,7 +65,11 @@ export class StatusScene implements Scene {
     if (a !== 'prev' && a !== 'next' && a !== 'cancel' && STATUS_TABS[this.tab].onAction?.(a, this.ctx, this.id)) { this.render(); return; }
     if (a === 'left' || a === 'right') { this.tab = (this.tab + (a === 'right' ? 1 : n - 1)) % n; this.ctx.sfx.cursor(); this.render(); return; }
     if (a === 'prev' || a === 'next') { this.page(a === 'next' ? 1 : -1); return; }
-    if (a === 'up' || a === 'down') { this.bodyEl.scrollTop = Math.max(0, this.bodyEl.scrollTop + (a === 'down' ? 32 : -32)); return; }
+    if (a === 'up' || a === 'down') {
+      this.bodyEl.scrollTop = Math.max(0, this.bodyEl.scrollTop + (a === 'down' ? 32 : -32));
+      updateCues(this.bodyEl);
+      return;
+    }
     if (a === 'cancel') { this.ctx.sfx.cancel(); this.ctx.go(this.ctx.from ?? 'guild'); }
   }
 
@@ -113,5 +118,6 @@ export class StatusScene implements Scene {
     this.bodyEl.scrollTop = same ? top : 0;
     this.drawn = { tab: this.tab, id: this.id };
     tab.shown?.(this.bodyEl);
+    updateCues(this.bodyEl);
   }
 }

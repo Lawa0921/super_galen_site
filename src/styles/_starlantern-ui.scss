@@ -499,7 +499,12 @@ $slx-battle-left: 150px;
 .slx-tab { padding: 2px 10px; cursor: pointer; color: $slx-dim; border-bottom: 2px solid transparent; }
 .slx-tab:hover { color: $slx-ink; }
 .slx-tab-sel { color: $slx-gold; border-bottom-color: $slx-gold; }
-.slx-status-body { flex: 1; overflow-y: auto; }
+.slx-status-body { flex: 1; min-height: 0; overflow-y: auto; }
+/* The page's ▲ sits at the right end of the tab row; its ▼ (the cue frame's) just under the page, beside the hint. */
+.slx-status-frame > .slx-more-up { top: -12px; }
+/* No native scrollbar anywhere on the sheet: every box that scrolls pages by the ▲/▼ cues, the keys, the wheel and touch. */
+.slx-status-body, .slx-tree-cols, .slx-talent-board { scrollbar-width: none; }
+.slx-status-body::-webkit-scrollbar, .slx-tree-cols::-webkit-scrollbar, .slx-talent-board::-webkit-scrollbar { display: none; }
 
 // Adventurer's handbook: the status sheet's frame, a list beside its detail
 .slx-silhouette { filter: brightness(0); }
@@ -523,7 +528,9 @@ $slx-battle-left: 150px;
 .slx-stat-affinity { margin: 0; padding: 2px 6px 2px 18px; color: $slx-dim; }
 .slx-row-cur { background: linear-gradient(90deg, rgba(232, 196, 106, 0.22), transparent); box-shadow: inset 2px 0 0 $slx-gold; }
 .slx-stat-cat-head.slx-row-cur, .slx-stat-table .slx-row-cur th { color: #fff; }
-.slx-stat-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 4px; }
+/* Auto layout: each column as wide as its widest number, so the source columns fit the page without spilling sideways;
+   a long row name wraps rather than push the table past the page's edge. */
+.slx-stat-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
 .slx-stat-table th:first-child { width: 22%; }
 .slx-stat-table thead th { white-space: nowrap; font-size: 10px; }
 .slx-stat-table tbody tr { cursor: pointer; }
@@ -534,7 +541,7 @@ $slx-battle-left: 150px;
 .slx-stat-table .slx-talent { color: #c99bff; }
 .slx-stat-table .slx-memory { color: #ffd27a; }
 .slx-stat-table .slx-capped, .slx-stat-table .slx-cap { color: #ffb36b; }
-.slx-stat-table th, .slx-stat-table td { padding: 1px 6px; text-align: right; font-weight: normal; }
+.slx-stat-table th, .slx-stat-table td { padding: 1px 2px; text-align: right; font-weight: normal; }
 .slx-stat-table thead th { color: $slx-dim; border-bottom: 1px solid #3a3550; }
 .slx-stat-table tbody th { text-align: left; color: $slx-gold; }
 .slx-stat-table .slx-total { color: #fff; }
@@ -617,7 +624,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-talent-left { color: $slx-gold; }
 .slx-talent-count { color: $slx-ink; }
 .slx-talent-gate { flex-basis: 100%; color: $slx-dim; }
-.slx-talent-board { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6e5a2e transparent; }
+.slx-talent-board { flex: 1; min-height: 0; overflow-y: auto; }
 .slx-talent-row { display: grid; grid-template-columns: 12px repeat(4, minmax(0, 1fr)); border-bottom: 1px solid #2a2840; }
 /* The tier label reads top to bottom beside the row's three text lines. */
 .slx-talent-wide .slx-talent-row { grid-template-columns: 12px repeat(6, minmax(0, 1fr)); }
