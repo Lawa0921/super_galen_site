@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { installSimGate } from './simGate';
 import { kitParty, simBattle, winRate, ODD_LINEUPS, type Lineup } from './sim';
 import { STANDARD_LINEUP } from './party';
 import { depthLevel, encounterTable } from './scaling';
@@ -42,6 +43,8 @@ const matrix = (): Cell[] => {
   return cells;
 };
 const label = (c: Cell) => `${c.lineup} ${c.build} depth ${c.depth} ${c.region}`;
+
+installSimGate('lineups');
 
 describe('balance 18: any lineup works with the right hero build', () => {
   it('18a fill. every lopsided lineup with its fill build wins >= .85 and loses 10-45% HP', () => {

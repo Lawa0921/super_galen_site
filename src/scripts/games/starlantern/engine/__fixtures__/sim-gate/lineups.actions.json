@@ -1,0 +1,12 @@
+{
+  "18a fill. every lopsided lineup with its fill build wins >= .85 and loses 10-45% HP": {
+    "battles": 7600,
+    "rounds": 29529,
+    "hash": "2e3e880c"
+  },
+  "18e no one-round boss. the standard five with every build, ten memories and the abyss at its cap": {
+    "battles": 400,
+    "rounds": 1990,
+    "hash": "7e8ea1cc"
+  }
+}

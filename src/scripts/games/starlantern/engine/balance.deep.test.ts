@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { installSimGate } from './simGate';
 import { expectedEnhance } from '../data/forge';
 import { FINALE_BOSS } from '../data/story/scenes';
 import { MAX_LEVEL } from './party';
@@ -23,6 +24,8 @@ const say = (label: string, m: { rate?: number; hpLoss?: number; rounds?: number
 };
 
 const levelAt = (d: number) => Math.min(MAX_LEVEL, depthLevel(d));
+
+installSimGate('deep');
 
 describe('balance 19: the deep road and the finale', () => {
   it('19a the deep road. the expected party wins >= .85 and loses 10-45% HP at depths 15, 20 and 25', () => {

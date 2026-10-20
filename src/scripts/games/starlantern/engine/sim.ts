@@ -147,14 +147,29 @@ function power(def: SkillDef): number {
   return def.effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
 }
 
+/** A test-only observer of `simBattle`: each round's actions before they resolve, then the fight's result. It reads, never draws. */
+export interface SimTrace { round(actions: Record<string, Action>): void; end(r: { outcome: Outcome; rounds: number; hpLoss: number }): void }
+
+let simTrace: SimTrace | null = null;
+
+/** Installs (or with `null` removes) the observer every later `simBattle` reports to (the sim gate, plan 8a Task 1). */
+export function setSimTrace(t: SimTrace | null): void { simTrace = t; }
+
 export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed: number, scale?: BattleScale, altar?: Altar, ai: SimAi = 'skill', abyss?: number, bossPower?: number): { outcome: Outcome; rounds: number; hpLoss: number } {
   const rng = mulberry32(seed);
   let s = createBattle({ party, enemyIds, boss, inventory: {}, revealed: {}, scale, altar, abyss, bossPower });
   const maxHp = s.party.reduce((n, c) => n + c.max.hp, 0);
   let rounds = 0;
-  while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, ai === 'attack' ? attackAll(s) : choose(s, party), rng); rounds++; }
+  while (s.outcome === 'ongoing' && rounds < 60) {
+    const actions = ai === 'attack' ? attackAll(s) : choose(s, party);
+    simTrace?.round(actions);
+    s = resolveRound(s, actions, rng);
+    rounds++;
+  }
   const left = s.party.reduce((n, c) => n + Math.max(0, c.hp), 0);
-  return { outcome: s.outcome, rounds, hpLoss: 1 - left / maxHp };
+  const result = { outcome: s.outcome, rounds, hpLoss: 1 - left / maxHp };
+  simTrace?.end(result);
+  return result;
 }
 
 /**

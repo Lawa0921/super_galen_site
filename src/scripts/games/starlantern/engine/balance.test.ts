@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { installSimGate } from './simGate';
 import { FLOORS } from '../data/floors';
 import { SLOTS, expToNext } from './party';
 import { avgExp, depthPace, fightsToLevel, groupExp, kitParty, simBattle, winRate, KIT_ORDER, type Lineup } from './sim';
@@ -37,6 +38,8 @@ const say = (label: string, m: { rate?: number; hpLoss?: number; rounds?: number
   const f = (k: string, v: number | undefined, d: number) => (v === undefined ? '' : ` ${k}=${v.toFixed(d)}`);
   console.info(`[balance] ${label}${f('rate', m.rate, 3)}${f('hpLoss', m.hpLoss, 3)}${f('rounds', m.rounds, 2)}${f('n', m.n, 0)}`);
 };
+
+installSimGate('balance');
 
 describe('balance', () => {
   it('1. no floor-1 fight levels anyone up on its own', () => {
