@@ -23,11 +23,34 @@ export type Pid = string;
 export const SOLO_PID: Pid = 'h';
 export type GameMode = 'solo' | 'host' | 'replica';
 
+/** 一個 actor 的輸入（DelveGame.input(pid)；房主餵遠端輸入用）。寫入立即生效，語意同 setMoveX / setAim / setMining… */
+export interface ActorInput {
+  /** −1 / 0 / 1（超出範圍會被夾住） */
+  moveX: number;
+  jump: boolean;
+  /** 按住「上」（繩索往上爬，否則等同跳躍） */
+  up: boolean;
+  /** 按住「下」（穿過單向平台） */
+  drop: boolean;
+  /** 游標所指 tile 座標（可帶小數 = 精確瞄準點，同 setAim）；讀回的是整數 tile */
+  aim: { x: number; y: number };
+  mining: boolean;
+  use: boolean;
+  /** 快捷欄選中格 */
+  selected: number;
+}
+
+/** 角色檔身分（addActor 帶進來；removeActor 拍角色快照時沿用） */
+export interface ActorIdentity { id: string; nick: string; createdAt: number; rev: number }
+
 /** 呼吸泡泡數；頭在水 / 蜂蜜下每 BREATH_STEP 秒少一顆，出水每秒補 BREATH_REFILL 顆 */
 export const MAX_BREATH = 10;
 
 export class PlayerActor {
   constructor(readonly pid: Pid) {}
+
+  /** 角色檔身分；本地 actor（建構子建的）為 null */
+  who: ActorIdentity | null = null;
 
   /** 戰爭迷霧（存檔內容） */
   explored!: ExploredMap;
@@ -102,8 +125,6 @@ export class PlayerActor {
   facing: 1 | -1 = 1;
   attack: AttackState | null = null;
   /** @internal */
-  swingId = 0;
-  /** @internal */
   attackCd = 0;
   /** @internal */
   iframes = 0;
@@ -172,4 +193,6 @@ export class PlayerActor {
   slamPre = 0;
   /** 尋礦感知：t = 剩幾秒、max = 總秒數、x / y = 發動點（tile）、ores = 標到的礦（tile） */
   orePulse: { t: number; max: number; x: number; y: number; ores: { x: number; y: number; tile: number }[] } | null = null;
+  /** 製圖師上次替這個玩家打聽到的地點（UI 顯示；付錢的人自己的地圖標記 / 迷霧，所以跟著 actor） */
+  lastReveal: { name: string; x: number; y: number } | null = null;
 }
