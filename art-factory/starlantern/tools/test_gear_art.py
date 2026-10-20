@@ -1,5 +1,5 @@
 """Plan 5d (with the 10-19 addendum): gear, material, skill and frame jobs; pick, approve, publish, silhouettes."""
-import json, subprocess
+import json, re, subprocess
 from pathlib import Path
 
 import numpy as np
@@ -208,6 +208,8 @@ def _fill(factory, batch, attempt=lambda aid: 'a1'):
                 size = (64, 64) if aid.endswith('-large') else (26, 26)
                 reg.set(aid, status='qa_passed', batch=G.label(batch), chosen_attempt=attempt(aid), source_id=j['id'],
                         final=_png(factory / 'work' / j['id'] / f'{aid}.png', size))
+    if batch == 'sample':   # the starlit pick the sample may be approved with: the corner-only redraw
+        reg.set('ui-starlit', source_id=G.STARLIT_SHEET_ID, qa={'pass': True, 'reasons': [], 'role': 'corners'})
     return reg
 
 
@@ -887,7 +889,7 @@ def test_approve_refuses_a_pick_whose_qa_is_from_an_older_spec(factory, review):
     reg.set('gear-lg-chizuru', kind='gear-cell', qa={'pass': True, 'reasons': []})          # picked before the spec stamp
     review.main('sample'); _refused(factory)
     reg = A.Registry(G.REG_PATH); q = reg.get('gear-lg-chizuru')['qa']
-    reg.set('gear-lg-chizuru', qa={**q, 'spec': A.QA_SPEC['gear-cell']})
+    reg.set('gear-lg-chizuru', qa={**q, 'spec': A.qa_spec('gear-cell')})
     review.main('sample')
     assert G.do_approve(A.Registry(G.REG_PATH), 'sample', 'user 2026-10-21: ok')
 
@@ -900,9 +902,16 @@ def test_pick_and_requa_record_qa_under_the_current_spec(factory):
     for a in ('gear-iron-sword', 'gear-leather-cap-large'):                                 # as if QA'd under an older spec
         e = reg.get(a); reg.set(a, qa={k: v for k, v in e['qa'].items() if k != 'spec'})
     before = {a: reg.get(a).get('final') for a in reg.data['assets']}
-    done = G.do_requa(A.Registry(G.REG_PATH), 'sample')
+    _png(factory / 'work/sheet-gear-1/gear-leather-cap-large.png', (64, 64))              # its final drifted from its QA
+    old_sha = G.sha256(factory / 'work/sheet-gear-1/gear-leather-cap-large.png')
+    out = G.do_requa(A.Registry(G.REG_PATH), 'sample')
     reg = A.Registry(G.REG_PATH)
+    done = out['requa']
     assert set(done) == {'gear-iron-sword', 'gear-iron-sword-large', 'gear-leather-cap', 'gear-leather-cap-large'}
+    new_sha = G.sha256(factory / 'work/sheet-gear-1/gear-leather-cap-large.png')
+    assert out['changed'] == {'gear-leather-cap-large': {'old': old_sha, 'new': new_sha}} and old_sha != new_sha
+    log = reg.data['requa_log'][-1]
+    assert log['batch'] == 'sample' and log['requa'] == done and log['changed'] == out['changed'] and re.fullmatch(r'\d{4}-\d{2}-\d{2}', log['on'])
     assert not any(A.qa_stale(e) for e in reg.data['assets'].values())
     assert reg.get('gear-iron-sword')['chosen_attempt'] == 'a2' and reg.get('gear-leather-cap')['chosen_attempt'] == 'a1'
     assert {a: reg.get(a).get('final') for a in reg.data['assets']} == before
@@ -917,14 +926,15 @@ def test_requa_never_touches_approved_or_published_parts(factory):
 
 
 def _corner_stars(path, dots=False):
-    """A one-piece starlit raw: 16 art px at 40 raw px each on a 1024 magenta canvas; four plus-shaped corner stars."""
-    arr = np.zeros((1024, 1024, 3), np.uint8); arr[:] = M; o = 192
+    """A one-piece starlit raw as the prompt asks: 14 x 14 art px at 40 raw px each on a 1024 magenta canvas, a 4 x 4
+    four-point star in each corner (2 x 2 white core, 2 px points); dots=True adds side dots (must fail)."""
+    arr = np.zeros((1024, 1024, 3), np.uint8); arr[:] = M; o = 232
     art = {}
-    for cy, cx in ((2, 2), (2, 13), (13, 2), (13, 13)):
-        for d in (-2, -1, 1, 2): art[(cy + d, cx)] = STAR_ARM; art[(cy, cx + d)] = STAR_ARM
-        art[(cy, cx)] = STAR_CORE
+    for oy, ox in ((0, 0), (0, 10), (10, 0), (10, 10)):
+        for y, x in ((1, 1), (1, 2), (2, 1), (2, 2)): art[(oy + y, ox + x)] = STAR_CORE
+        for y, x in ((0, 1), (0, 2), (3, 1), (3, 2), (1, 0), (2, 0), (1, 3), (2, 3)): art[(oy + y, ox + x)] = STAR_ARM
     if dots:
-        for y, x in ((1, 8), (14, 7), (8, 1), (7, 14)): art[(y, x)] = STAR_CORE
+        for y, x in ((0, 7), (13, 6), (7, 0), (6, 13)): art[(y, x)] = STAR_CORE
     for (y, x), c in art.items(): arr[o + y * 40:o + y * 40 + 40, o + x * 40:o + x * 40 + 40] = c
     path.parent.mkdir(parents=True, exist_ok=True); Image.fromarray(arr, 'RGB').save(path); return path
 
@@ -933,11 +943,12 @@ def test_starlit_job_is_one_piece_with_corner_stars_only_and_its_own_cap():
     j = G.job_by_id('sheet-starlit-1')
     assert (j['kind'], j['cols'], j['rows'], j['parts'], j['batch']) == ('frame-sheet', 1, 1, ['starlit'], 'sample')
     assert G.assets_of(j, 'starlit') == ['ui-starlit'] and G.ATTEMPT_CAP['sheet-starlit-1'] == 3
-    assert G.frame_role('starlit', j) == ('corners', 16, 5, 0)
+    assert G.frame_role('starlit', j) == ('corners', 16, 5, 1)          # drawn 14 x 14, padded 1: stars stay off the tile edge
     assert G.frame_role('starlit', G.job_by_id(G.FRAME_SHEET_ID)) == ('overlay', 16, 5, 0)     # the frames sheet is unchanged
     assert G.ATTEMPT_CAP['sheet-gear-1'] == 9 and G.ATTEMPT_CAP[G.FRAME_SHEET_ID] == 5
     pr = j['prompt']
-    for s in ('four-pointed star', '5 by 5', 'corner', 'fully transparent', 'nothing along the sides', '#FF00FF', 'No text', 'original'):
+    for s in ('four-pointed star', '14 by 14', '4 by 4', 'corner', 'fully transparent', 'nothing along the sides', '#FF00FF', 'No text',
+              'original'):
         assert s in pr, s
 
 
@@ -970,6 +981,7 @@ def test_sample_decisions_tell_the_real_state(factory, review):
     asked = head[:head.index('已決定')]
     assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['圖示大小是否一致', '七階外框與星輝', '傳說光暈改在格內']
     for s in ('長柄', '0.20', '0.28',                         # the polearm floor, explained
+              '有外框的六階', '15 組',                         # six framed tiers (common has none), 15 pairs
               '獨特沒有金色內緣線', '已接受',                  # unique without the gold line, plainly
               '最接近的一對', 'ΔE',                           # the tightest pair, measured
               '四角', '邊與中間全透明'):                       # the starlit redesign
@@ -988,3 +1000,14 @@ def test_review_page_flags_stale_qa_in_the_checklist(factory, review):
     page = review.main('sample').read_text(encoding='utf-8')
     row = page[page.index('data-part="lg-chizuru"'):]; row = row[:row.index('</tr>')]
     assert 'QA 過期' in row and 'QA 過期' not in page[page.index('data-part="iron-sword"'):][:400]
+
+
+def test_approve_refuses_unless_the_starlit_is_the_corner_redraw(factory, review):
+    reg = _fill(factory, 'sample')
+    reg.set('ui-starlit', source_id=G.FRAME_SHEET_ID, qa={'pass': True, 'reasons': [], 'role': 'overlay'})   # the dashed a5 overlay
+    review.main('sample'); _refused(factory)
+    reg = A.Registry(G.REG_PATH); reg.set('ui-starlit', source_id=G.STARLIT_SHEET_ID, qa={'pass': True, 'reasons': [], 'role': 'overlay'})
+    review.main('sample'); _refused(factory)                                              # right job, wrong role
+    reg = A.Registry(G.REG_PATH); reg.set('ui-starlit', qa={'pass': True, 'reasons': [], 'role': 'corners'})
+    review.main('sample')
+    assert G.do_approve(A.Registry(G.REG_PATH), 'sample', 'user 2026-10-21: ok')

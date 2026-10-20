@@ -397,15 +397,15 @@ FRAME_SHEET = (   # addendum 2 §2; the closing style, no-text and originality s
     'the middle of every side is plain so it can repeat. Each frame uses one hue only, with a darker and a lighter tone of it. '
     'In this order: {listing}. '
     '16-bit JRPG menu frame style, ' + PIX + '. No text, no numbers, no items inside the frames, no background inside the frames. ' + ORIGINAL)
-STARLIT_SHEET = (   # controller ruling 2026-10-20: corner stars only, so nothing can repeat along a side into dashes
-    'One single square pixel art overlay piece for a 16-bit Japanese console RPG item slot, drawn as a true 16 by 16 grid of big pixels '
-    '(as if a 16-pixel sprite were enlarged about 50 times; every big pixel one large flat square), on a perfectly flat pure magenta '
+STARLIT_SHEET = (   # controller ruling 2026-10-20 (+ review round 2): corner stars only, off the tile edge, nothing along the sides
+    'One single square pixel art overlay piece for a 16-bit Japanese console RPG item slot, drawn as a true 14 by 14 grid of big pixels '
+    '(as if a 14-pixel sprite were enlarged about 50 times; every big pixel one large flat square), on a perfectly flat pure magenta '
     '#FF00FF background with a wide magenta margin all round. The piece is four bright starlight stars and nothing else: in each of '
-    'the four corners one chunky four-pointed star that sits wholly inside that corner\'s 5 by 5 big-pixel square, made of a solid '
-    'white 3 by 3 centre with one pale cyan-white (#7FE6FF) big pixel sticking out in the middle of each of its four sides, the outer '
-    'points touching the outer edge of the 16 by 16 square. The middle of every side and the whole centre are fully transparent '
-    'magenta: nothing along the sides, no dots, no lines, no frame, no glow, no dark outline. Only white and pale cyan-white. '
-    + PIX + '. No text, no numbers. ' + ORIGINAL)
+    'the four corners one chunky four-pointed star exactly 4 by 4 big pixels, sitting in that corner with its outer points on the '
+    'outer edge of the 14 by 14 square: a solid white 2 by 2 centre, and on each of its four sides a point of two pale cyan-white '
+    '(#7FE6FF) big pixels; the four corner pixels of each 4 by 4 star stay magenta, so it reads as a plus-shaped twinkle, not a '
+    'square. The middle of every side and the whole centre are fully transparent magenta: nothing along the sides, no dots, no '
+    'lines, no frame, no glow, no dark outline. Only white and pale cyan-white. ' + PIX + '. No text, no numbers. ' + ORIGINAL)
 FORGE_SCENE = (
     "Interior of a blacksmith's forge: a glowing furnace on the left, an anvil, racks of blades and shields, hanging tools, warm orange firelight and soot-dark beams, "
     'the right third of the picture kept fairly plain for a character to stand in front of. '
@@ -459,7 +459,7 @@ def jobs():
     out.append(dict(id=FRAME_SHEET_ID, kind='frame-sheet', cols=4, rows=2, parts=frames, batch='sample', images=[], deps=[],
                     prompt=FRAME_SHEET.format(listing=_listing(frames, FRAME_DESC))))
     out.append(dict(id=STARLIT_SHEET_ID, kind='frame-sheet', cols=1, rows=1, parts=['starlit'], batch='sample', images=[], deps=[],
-                    prompt=STARLIT_SHEET, roles={'starlit': ('corners', 16, 5, 0)}))
+                    prompt=STARLIT_SHEET, roles={'starlit': ('corners', 16, 5, 1)}))   # 14 drawn + 1 transparent ring
     out.append(dict(id='scene-forge', kind='opaque', cols=1, rows=1, parts=['scene-forge'], batch='sample', images=[], deps=['bg-f1'],
                     prompt=FORGE_SCENE))
     out.append(dict(id='npc-forge', kind='sprite', cols=1, rows=1, parts=['npc-forge'], batch='sample', images=[], deps=['char-scarlet-standee'],
@@ -755,9 +755,12 @@ def do_pick(reg, sid, k, part=None, allow_reopen=False):
 
 
 def do_requa(reg, batch):
-    """Re-run QA, under the current spec, on every picked part of a batch whose QA record is stale (sl_art.qa_stale):
-    the same job and attempt are picked again, so the chosen art stays the chosen art. Approved or published parts are
-    never touched (refuses; reopen them first). Returns the registry ids that were re-QA'd."""
+    """Re-run QA, under the current spec, on every picked part of a batch whose QA record is stale (sl_art.qa_stale), by
+    picking the same job and attempt again. The pick is the same, but its final is re-made by the current tools, so its
+    bytes may change (for example a final sampled before the 22 / 56 normalisation): every final whose sha256 changed is
+    reported and logged in the registry (`requa_log`: date, batch, re-QA'd ids, {id: {old, new}}); a changed final also
+    changes what the review page must show. Approved or published parts are never touched (refuses; reopen them first).
+    Returns {'requa': [ids], 'changed': {id: {old, new}}}."""
     todo, locked = {}, []
     for j in jobs():
         if j['batch'] != batch: continue
@@ -768,9 +771,18 @@ def do_requa(reg, batch):
                 if e.get('status') in ('approved', 'published'): locked.append(aid); continue
                 todo[(j['id'], e['chosen_attempt'], p)] = True
     if locked: raise PermissionError(f'{sorted(locked)} are approved or published; reopen them before a re-QA')
-    done = []
-    for sid, k, p in todo: done += list(do_pick(reg, sid, k[1:], p))
-    return done
+    def digest(aid):
+        f = reg.data['assets'].get(aid, {}).get('final'); path = A._final_path(f) if f else None
+        return sha256(path) if path and path.is_file() else None
+    done, changed = [], {}
+    for sid, k, p in todo:
+        aids = [a for a in assets_of(job_by_id(sid), p)]
+        old = {a: digest(a) for a in aids}
+        done += list(do_pick(reg, sid, k[1:], p))
+        changed.update({a: {'old': old[a], 'new': digest(a)} for a in aids if digest(a) != old[a]})
+    reg.data.setdefault('requa_log', []).append({'on': datetime.date.today().isoformat(), 'batch': batch, 'requa': done, 'changed': changed})
+    reg._save()
+    return {'requa': done, 'changed': changed}
 
 
 def requa(argv):
@@ -826,6 +838,10 @@ def do_approve(reg, batch, by):
         elif e.get('status') not in ('qa_passed', 'approved', 'published'): problems.setdefault(f'status {e.get("status")}', []).append(aid)
         elif A.qa_stale(e): problems.setdefault('QA recorded under an older spec (run gear_art.py requa)', []).append(aid)
         elif shown.get(aid) != sha256(f): problems.setdefault('changed since (or missing from) the review page', []).append(aid)
+    if 'ui-starlit' in aids:   # controller ruling 2026-10-20: only the corner-only redraw may be approved, never the dashed overlay
+        e = reg.data['assets'].get('ui-starlit', {})
+        if e.get('source_id') != STARLIT_SHEET_ID or (e.get('qa') or {}).get('role') != 'corners':
+            problems['starlit is not the corner-only redraw (pick it from sheet-starlit-1)'] = ['ui-starlit']
     if problems: raise PermissionError(f'refusing to approve {batch}: {problems}')
     done = []
     for aid in aids:

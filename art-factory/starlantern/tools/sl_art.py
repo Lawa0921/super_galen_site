@@ -705,10 +705,12 @@ MASS_BAND = {'long': (0.28, 0.65), 'polearm': (0.20, 0.65), 'broad': (0.50, 0.92
 # Controller ruling 2026-10-20 (after Task E): the long floor 0.28 was calibrated on 24-px icons; a polearm (a thin shaft
 # with a head) cannot carry it. Polearm-shaped weapons are told by the game's WeaponKind (engine/types.ts), never by id.
 POLEARM_KINDS = ('spear',)
-# QA spec stamps: a QA record of a versioned kind made under another stamp is stale (approve refuses it; pick and
-# gear_art requa redo it). gear-cell 2: polearm floor; nine-slice 2: the corner-only starlit role. Kinds not listed here
-# (material icons, scenes, NPCs) have not changed since they were picked.
-QA_SPEC = {'gear-cell': 2, 'nine-slice': 2}
+# The rule logic each QA spec stamp covers, in words (qa_spec hashes it with the constants; edit it when a rule changes).
+GEAR_CELL_RULES = ('normalize to one long edge; long edge +-LONG_TOL, centre <= CENTRE_TOL; short floor by slot; mass band by '
+                   'subject_class(slot, weapon kind): polearm kinds use the polearm band; speckless bbox; magenta spill')
+NINE_SLICE_RULES = ('cover_sample; centre clear; roles frame / glow / overlay / corners; band colour from the chromatic hue '
+                    'cluster; seam ratio (frame, glow) or edge joint (overlay); corners: nothing outside the corners, a whole '
+                    'four-point star in each (four points beyond a white core, empty diagonal corners, off the tile edge)')
 LONG_TOL = 1      # the long edge may miss the target by one art pixel (a thin tip the centre sample steps over)
 CENTRE_TOL = 1    # distance between the subject bbox centre and the canvas centre, in art pixels
 
@@ -800,10 +802,31 @@ def subject_class(slot, kind=None):
     return 'polearm' if slot == 'weapon' and kind in POLEARM_KINDS else SUBJECT_CLASS[slot]
 
 
+# Every threshold and rule a QA kind depends on (review round 2: the stamp is derived, never bumped by hand; a test checks
+# that every upper-case constant the gate code reads is listed here). Kinds not listed here (material icons, scenes,
+# NPCs) are not versioned.
+SPEC_INPUTS = {
+    'gear-cell': ('SUBJECT_CLASS', 'MIN_SHORT', 'MASS_BAND', 'POLEARM_KINDS', 'LONG_TOL', 'CENTRE_TOL', 'SPECK_MAX',
+                  'MAGENTA', 'MAGENTA_SPILL_MAX', 'SPILL_HUE', 'STRONG_DEFRINGE', '_SHIFTS', 'GEAR_CELL_RULES'),
+    'nine-slice': ('FRAME_STROKE', 'EDGE_REACH_MAX', 'CORNER_REACH_MAX', 'HUE_TOL', 'SAT_MIN', 'DISTINCT_DE', 'GLOW_HUE',
+                   'GLOW_SAT_MIN', 'GLOW_STROKE', 'STARLIT_CORNER_MIN', 'STARLIT_EDGE_COVER_MAX', 'STAR_MIN_SIDE', 'CHROMA_S',
+                   'CHROMA_V', 'HUE_BIN', 'CHROMA_SHARE_MIN', 'EDGE_FLAT', 'SEAM_RATIO_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX',
+                   'SPILL_HUE', 'STRONG_DEFRINGE', 'NINE_SLICE_RULES'),
+}
+
+
+def qa_spec(kind):
+    """The QA spec stamp of a versioned kind: '<kind>:<first 12 hex of sha256>' over the current values of
+    SPEC_INPUTS[kind] (sorted JSON), so changing any covered threshold or rule text moves the stamp by itself."""
+    import hashlib
+    g = globals(); blob = json.dumps({n: g[n] for n in SPEC_INPUTS[kind]}, sort_keys=True, default=repr)
+    return f'{kind}:{hashlib.sha256(blob.encode()).hexdigest()[:12]}'
+
+
 def qa_stale(entry):
-    """True when a registry entry's QA was recorded under another spec than the current QA_SPEC of its kind."""
-    q = entry.get('qa'); want = QA_SPEC.get(entry.get('kind'))
-    return bool(q) and want is not None and q.get('spec') != want
+    """True when a registry entry's QA was recorded under another spec than the current qa_spec of its kind."""
+    q = entry.get('qa'); kind = entry.get('kind')
+    return bool(q) and kind in SPEC_INPUTS and q.get('spec') != qa_spec(kind)
 
 
 def subject_gate(m, target, slot, kind=None):
@@ -828,7 +851,7 @@ def process_gear_cell(reg, gid, cell, workdir, raw, large=(56, 64), icon=(22, 26
     alpha, raw-canvas cut, holes warning, larger than the canvas, magenta spill) and the size gate (`subject_gate`;
     without a slot only the long edge and the centre). QA records `subject` (metrics) and `scale`; the registry records
     the same `source` ({raw, cell}), the slot and the weapon kind (`weapon_kind`; polearm kinds have their own mass floor)
-    and stamps the QA with QA_SPEC['gear-cell']. Any id works (plan 5f passes its own uniques with their slot and kind).
+    and stamps the QA with qa_spec('gear-cell'). Any id works (plan 5f passes its own uniques with their slot and kind).
     """
     out = {}
     for aid, (side, size) in ((f'gear-{gid}-large', large), (f'gear-{gid}', icon)):
@@ -837,7 +860,7 @@ def process_gear_cell(reg, gid, cell, workdir, raw, large=(56, 64), icon=(22, 26
         qa['subject'] = subject_metrics(final, side)
         if 'cell too small to sample' not in qa['reasons']:
             qa['reasons'] += [r for r in subject_gate(qa['subject'], side, slot, kind) if r not in qa['reasons']]
-        qa['pass'] = not qa['reasons']; qa['spec'] = QA_SPEC['gear-cell']
+        qa['pass'] = not qa['reasons']; qa['spec'] = qa_spec('gear-cell')
         _save_final(reg, aid, final, qa, workdir, raw)
         reg.set(aid, kind='gear-cell', source={'raw': str(raw), 'cell': gid}, **({'slot': slot} if slot else {}),
                 **({'weapon_kind': kind} if kind else {}))
@@ -1009,8 +1032,12 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_, role='frame', hue=Non
                 slice x slice corners (`starlit outside its corners`: the edge middles and the centre stay fully
                 transparent, so nothing repeats into dashes); in each corner one whole star: at least STARLIT_CORNER_MIN
                 pixels (`starlit corners missing`), a bbox of at least STAR_MIN_SIDE square within 1 px (`starlit corner
-                star cut or too small`) and a white core (`starlit star too dim`). QA records `outside` and `stars`.
-    Every record is stamped with QA_SPEC['nine-slice'].
+                star cut or too small`), a white core (`starlit star too dim`), a four-point shape (a point beyond the core
+                to the north, south, west and east, and the four corners of its bbox empty: `starlit star is not a
+                four-point star`) and nothing on the tile's outer edge (`starlit star touches the tile edge`; the job
+                pads 1, so a drawn star never sits on the edge). QA records `outside` and per corner `stars`
+                ({px, w, h, core, arms, diagonal, edge}).
+    Every record is stamped with qa_spec('nine-slice').
     """
     entry = reg.data['assets'].get(aid, {})
     cut = cutout(cell); box = cut.getbbox(); reasons = []
@@ -1073,16 +1100,27 @@ def nine_slice(reg, aid, cell, workdir, raw, size, slice_, role='frame', hue=Non
         qa['outside'] = int((op & ~corners).sum())
         if qa['outside']: reasons.append('starlit outside its corners')
         _, wsat, wv = _hsv(arr[..., :3]); white = ((wsat <= 0.15) & (wv >= 0.85)).reshape(size, size) & op
+        rim = np.zeros_like(op); rim[0, :] = rim[-1, :] = rim[:, 0] = rim[:, -1] = True
         qa['stars'] = []
         for ys, xs in ((slice(0, s), slice(0, s)), (slice(0, s), slice(size - s, size)), (slice(size - s, size), slice(0, s)),
                        (slice(size - s, size), slice(size - s, size))):
-            c = op[ys, xs]; yy, xx = np.nonzero(c)
+            c = op[ys, xs]; yy, xx = np.nonzero(c); core = white[ys, xs]
             w, hh = (int(xx.max() - xx.min() + 1), int(yy.max() - yy.min() + 1)) if c.any() else (0, 0)
-            qa['stars'].append({'px': int(c.sum()), 'w': w, 'h': hh, 'core': int(white[ys, xs].sum())})
+            arms, diagonal = 0, False
+            if core.any():
+                cy, cx = np.nonzero(core); y0, y1, x0, x1 = cy.min(), cy.max(), cx.min(), cx.max()
+                arms = int(c[:y0, x0:x1 + 1].any()) + int(c[y1 + 1:, x0:x1 + 1].any()) + int(c[y0:y1 + 1, :x0].any()) + int(c[y0:y1 + 1, x1 + 1:].any())
+                by0, by1, bx0, bx1 = yy.min(), yy.max(), xx.min(), xx.max()
+                diagonal = bool(c[by0, bx0] or c[by0, bx1] or c[by1, bx0] or c[by1, bx1])
+            qa['stars'].append({'px': int(c.sum()), 'w': w, 'h': hh, 'core': int(core.sum()), 'arms': arms, 'diagonal': diagonal,
+                                'edge': bool((op & rim)[ys, xs].any())})
         if any(st['px'] >= STARLIT_CORNER_MIN and (min(st['w'], st['h']) < STAR_MIN_SIDE or abs(st['w'] - st['h']) > 1) for st in qa['stars']):
             reasons.append('starlit corner star cut or too small')
         if any(st['px'] >= STARLIT_CORNER_MIN and not st['core'] for st in qa['stars']): reasons.append('starlit star too dim')
-    qa.update(reasons=reasons, size=[size, size], slice=s, role=role, pad=pad, tier_hue=tier, spec=QA_SPEC['nine-slice'],
+        if any(st['px'] >= STARLIT_CORNER_MIN and st['core'] and (st['arms'] < 4 or st['diagonal']) for st in qa['stars']):
+            reasons.append('starlit star is not a four-point star')
+        if any(st['edge'] for st in qa['stars']): reasons.append('starlit star touches the tile edge')
+    qa.update(reasons=reasons, size=[size, size], slice=s, role=role, pad=pad, tier_hue=tier, spec=qa_spec('nine-slice'),
               block=round(max(box[2] - box[0], box[3] - box[1]) / (size - 2 * pad), 3) if box else None)
     qa['pass'] = not reasons
     out = _save_final(reg, aid, final, qa, workdir, raw)

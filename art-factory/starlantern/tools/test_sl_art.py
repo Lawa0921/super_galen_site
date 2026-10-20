@@ -1,4 +1,4 @@
-import json, sys
+import json, re, sys
 from pathlib import Path
 import numpy as np
 import pytest
@@ -1286,11 +1286,11 @@ def test_a_spear_at_022_passes_where_a_sword_at_022_still_fails(tmp_path):
 def test_qa_records_its_spec_and_records_from_an_older_spec_are_stale(tmp_path):
     reg = A.Registry(tmp_path / 'r.json')
     out = A.process_gear_cell(reg, 'plate', _shape_cell(300, 280, 'ellipse'), tmp_path / 'w', tmp_path / 'raw.png', slot='body')
-    assert all(q['spec'] == A.QA_SPEC['gear-cell'] for q in out.values())
-    assert json.loads((tmp_path / 'w' / 'gear-plate.qa.json').read_text(encoding='utf-8'))['spec'] == A.QA_SPEC['gear-cell']
+    assert all(q['spec'] == A.qa_spec('gear-cell') for q in out.values())
+    assert json.loads((tmp_path / 'w' / 'gear-plate.qa.json').read_text(encoding='utf-8'))['spec'] == A.qa_spec('gear-cell')
     assert not A.qa_stale(reg.get('gear-plate'))
-    q = A.nine_slice(reg, 'ui-starlit', _starlit(dots=False), tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='corners')
-    assert q['spec'] == A.QA_SPEC['nine-slice'] and not A.qa_stale(reg.get('ui-starlit'))
+    q = A.nine_slice(reg, 'ui-starlit', _corner_art(), tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='corners', pad=1)
+    assert q['pass'] and q['spec'] == A.qa_spec('nine-slice') and not A.qa_stale(reg.get('ui-starlit'))
     old = {k: v for k, v in reg.get('gear-plate')['qa'].items() if k != 'spec'}
     assert A.qa_stale({'kind': 'gear-cell', 'qa': old})                                   # recorded before the stamp
     assert A.qa_stale({'kind': 'nine-slice', 'qa': {**q, 'spec': 0}})
@@ -1298,21 +1298,88 @@ def test_qa_records_its_spec_and_records_from_an_older_spec_are_stale(tmp_path):
     assert not A.qa_stale({'kind': 'gear-cell'})                                          # nothing recorded: not picked
 
 
+def _corner_art(shape='star', colours=(STAR_CORE, STAR_ARM), dots=False, drop_corner=False):
+    """The redrawn starlit as codex should draw it: 14 x 14 art px (10 raw px each; nine_slice pads 1 to 16), a 4 x 4
+    four-point star in each corner (2 x 2 white core, a 2 px point on each side, empty diagonal corners).
+    shape='square': a solid 3 x 3 square instead; 'cut': the top-left star has no north point."""
+    core, arm = colours; art = {}
+    offsets = [(0, 0), (0, 10), (10, 0), (10, 10)][:3 if drop_corner else 4]
+    for k, (oy, ox) in enumerate(offsets):
+        if shape == 'square':
+            for y in range(3):
+                for x in range(3): art[(oy + y + (1 if oy else 0), ox + x + (1 if ox else 0))] = core
+            continue
+        for y, x in ((1, 1), (1, 2), (2, 1), (2, 2)): art[(oy + y, ox + x)] = core
+        points = {'n': ((0, 1), (0, 2)), 's': ((3, 1), (3, 2)), 'w': ((1, 0), (2, 0)), 'e': ((1, 3), (2, 3))}
+        for side, cells in points.items():
+            if shape == 'cut' and k == 0 and side == 'n': continue
+            for y, x in cells: art[(oy + y, ox + x)] = arm
+    if dots:
+        for y, x in ((0, 7), (13, 6), (7, 0), (6, 13)): art[(y, x)] = core
+    arr = np.asarray(canvas(160, 160)).copy()
+    for (y, x), c in art.items(): arr[10 + y * 10:20 + y * 10, 10 + x * 10:20 + x * 10] = c
+    return Image.fromarray(arr, 'RGB')
+
+
 def test_corner_starlit_needs_a_star_in_each_corner_and_nothing_else(tmp_path):
     reg = A.Registry(tmp_path / 'r.json')
-    run = lambda img: A.nine_slice(reg, 'ui-starlit', img, tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='corners')
-    q = run(_starlit(dots=False))
+    run = lambda img, pad=1: A.nine_slice(reg, 'ui-starlit', img, tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='corners', pad=pad)
+    q = run(_corner_art())
     assert q['pass'] and q['outside'] == 0 and len(q['stars']) == 4, q
-    assert 'starlit outside its corners' in run(_starlit())['reasons']                   # side dots repeat into dashes
-    assert 'starlit corners missing' in run(_starlit(dots=False, drop_corner=True))['reasons']
-    assert 'not starlight colours' in run(_starlit(((255, 170, 60), (255, 122, 20)), dots=False))['reasons']
-    # a4-like corner: a 2 x 4 blob instead of a whole star
-    arr = np.asarray(_starlit(dots=False)).copy(); px = lambda y, x: (slice(8 + y * 10, 18 + y * 10), slice(8 + x * 10, 18 + x * 10))
-    for y in range(5):
-        for x in range(5): arr[px(y, x)] = M
-    for y in range(1, 5):
-        for x in (1, 2): arr[px(y, x)] = STAR_CORE
-    assert 'starlit corner star cut or too small' in run(Image.fromarray(arr, 'RGB'))['reasons']
-    # a star without a bright white core (arm colour only) is too dim
-    dim = np.asarray(_starlit(colours=(STAR_ARM, STAR_ARM), dots=False))
-    assert 'starlit star too dim' in run(Image.fromarray(dim, 'RGB'))['reasons']
+    assert all(s['arms'] == 4 and not s['edge'] and not s['diagonal'] for s in q['stars']), q['stars']
+    assert 'starlit outside its corners' in run(_corner_art(dots=True))['reasons']        # side dots repeat into dashes
+    assert 'starlit corners missing' in run(_corner_art(drop_corner=True))['reasons']
+    assert 'not starlight colours' in run(_corner_art(colours=((255, 170, 60), (255, 122, 20))))['reasons']
+    assert 'starlit star too dim' in run(_corner_art(colours=(STAR_ARM, STAR_ARM)))['reasons']   # no white core
+
+
+def test_corner_starlit_is_a_four_point_star_not_a_square_or_a_cut_star(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json')
+    run = lambda img, pad=1: A.nine_slice(reg, 'ui-starlit', img, tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='corners', pad=pad)
+    sq = run(_corner_art('square'))
+    assert 'starlit star is not a four-point star' in sq['reasons'] and not sq['pass'], sq
+    cut = run(_corner_art('cut'))
+    assert 'starlit star is not a four-point star' in cut['reasons'] and cut['stars'][0]['arms'] == 3, cut['stars']
+    edge = run(_starlit(dots=False), pad=0)                                                # 5 x 5 stars on the tile's outer edge
+    assert 'starlit star touches the tile edge' in edge['reasons'], edge
+    blob = run(_corner_art('cut'))                                                        # the a4 case: half a star
+    assert not blob['pass']
+
+
+# --- the QA spec stamp is derived from the constants it covers (review round 2) ----------------------------------------------
+NOT_THRESHOLDS = {'G', 'ROOT', 'SPEC_INPUTS'}     # module handles and the stamp machinery itself, not gate values
+
+
+def _constants_read(f, seen=None):
+    """Upper-case module names a gate function reads, following the sl_art functions it calls."""
+    import types
+    seen = set() if seen is None else seen; out = set()
+    if f in seen: return out
+    seen.add(f)
+    codes = [f.__code__] + [c for c in f.__code__.co_consts if isinstance(c, types.CodeType)]
+    for code in codes:
+        for n in code.co_names:
+            v = getattr(A, n, None)
+            if n.lstrip('_').isupper(): out.add(n)
+            elif isinstance(v, types.FunctionType) and v.__module__ == 'sl_art': out |= _constants_read(v, seen)
+    return out
+
+
+@pytest.mark.parametrize('kind, gate', [('gear-cell', 'process_gear_cell'), ('nine-slice', 'nine_slice')])
+def test_every_constant_a_gate_reads_is_in_its_stamp(kind, gate):
+    assert _constants_read(getattr(A, gate)) - NOT_THRESHOLDS <= set(A.SPEC_INPUTS[kind]), \
+        _constants_read(getattr(A, gate)) - NOT_THRESHOLDS - set(A.SPEC_INPUTS[kind])
+
+
+@pytest.mark.parametrize('kind', ['gear-cell', 'nine-slice'])
+def test_spec_stamp_is_a_readable_hash_that_moves_with_any_covered_constant(kind, monkeypatch):
+    stamp = A.qa_spec(kind)
+    assert re.fullmatch(rf'{kind}:[0-9a-f]{{12}}', stamp) and A.qa_spec(kind) == stamp       # deterministic
+    entry = {'kind': kind, 'qa': {'pass': True, 'reasons': [], 'spec': stamp}}
+    assert not A.qa_stale(entry)
+    for name in A.SPEC_INPUTS[kind]:
+        with monkeypatch.context() as m:
+            m.setattr(A, name, ('changed', repr(getattr(A, name))))
+            assert A.qa_spec(kind) != stamp and A.qa_stale(entry), name
+    assert A.qa_spec(kind) == stamp
+    assert 'SPECK_MAX' in A.SPEC_INPUTS['gear-cell'] and 'DISTINCT_DE' in A.SPEC_INPUTS['nine-slice']   # read outside the gate code
