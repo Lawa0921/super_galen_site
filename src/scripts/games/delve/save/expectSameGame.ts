@@ -1,10 +1,15 @@
 // expectSameGame.ts — 測試輔助：逐欄比較兩個 DelveGame 的存檔內容（角色 + 世界 + 這個角色在這個世界的 visit）。
 // visit: false → 跳過 visit 組（位置 / 床 / 重生核心 / 探索 / 標記 / 發現 / 呼吸燃燒蜂蜜），用在同一個角色換世界時。
 // settle.spawnCore 屬於 visit 組：世界組比較據點時把它抹成 null。
+// 比較範圍 = snapshotGame 存的每一個欄位，除了 savedAt（不是遊戲狀態）與 bossActive（怪物不存，讀檔改成退還召喚道具）。
+// 掉落物位置以存檔精度（0.01 px，同 snapshotGame 的 r2）比較。
 import { expect } from 'vitest';
 import type { DelveGame } from '../engine/game';
 
-const dropsOf = (g: DelveGame) => g.drops.list.map((d) => ({ item: d.item, count: d.count, gear: d.gear }));
+const r2 = (v: number): number => Math.round(v * 100) / 100;
+const dropsOf = (g: DelveGame) => g.drops.list.map((d) => ({
+  item: d.item, count: d.count, gear: d.gear, x: r2(d.body.x + d.body.w / 2), y: r2(d.body.y + d.body.h / 2),
+}));
 const settleOf = (g: DelveGame) => ({ ...g.settle.toJSON(), spawnCore: null });
 
 export function expectSameGame(a: DelveGame, b: DelveGame, o: { visit?: boolean } = {}): void {
@@ -27,11 +32,15 @@ export function expectSameGame(a: DelveGame, b: DelveGame, o: { visit?: boolean 
   bb.forEach((x, i) => expect(x.left).toBeCloseTo(ba[i].left, 6));
   // 世界
   const wa = a.world, wb = b.world;
+  expect(b.seed).toBe(a.seed);
+  expect([wb.width, wb.height]).toEqual([wa.width, wa.height]);
   expect(wb.fg).toEqual(wa.fg);
   expect(wb.wall).toEqual(wa.wall);
   expect(wb.half).toEqual(wa.half);
   expect(wb.liquid).toEqual(wa.liquid);
   expect(wb.liquidType).toEqual(wa.liquidType);
+  expect(wb.frozen).toEqual(wa.frozen);
+  expect(b.weatherOverride).toEqual(a.weatherOverride);
   expect([...wb.chests]).toEqual([...wa.chests]);
   expect(wb.unlocked).toEqual(wa.unlocked);
   expect(wb.keysUsed).toBe(wa.keysUsed);
@@ -53,6 +62,8 @@ export function expectSameGame(a: DelveGame, b: DelveGame, o: { visit?: boolean 
   // visit
   expect(b.player.x).toBe(a.player.x);
   expect(b.player.y).toBe(a.player.y);
+  expect(b.player.vx).toBe(a.player.vx);
+  expect(b.player.vy).toBe(a.player.vy);
   expect(b.bed).toEqual(a.bed);
   expect(b.settle.spawnCore).toBe(a.settle.spawnCore);
   expect(b.explored.encode()).toEqual(a.explored.encode());
