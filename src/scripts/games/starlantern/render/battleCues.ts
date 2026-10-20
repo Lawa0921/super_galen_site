@@ -18,7 +18,8 @@ export type Cue =
   | { kind: 'mech'; key: string; cue: MechCue }
   | { kind: 'fx'; key: string; fx: FxKey; amount?: number }
   | { kind: 'ko'; key: string }
-  | { kind: 'wait'; ms: number };
+  /** `keep`: held even in fast mode (a mechanic's moment must be readable). */
+  | { kind: 'wait'; ms: number; keep?: true };
 
 /** Time to read an action line, and each result line, before the next one replaces it. */
 const ACT_MS = 420;
@@ -46,7 +47,7 @@ export function battleCues(log: BattleEvent[], defIdOf: (key: string) => string 
       });
     } else if (ev.type === 'miss') out.push({ kind: 'miss', key: ev.target });
     else if (ev.type === 'ko') out.push({ kind: 'ko', key: ev.target });
-    else if (ev.type === 'mech') out.push({ kind: 'mech', key: ev.actor, cue: ev.cue });
+    else if (ev.type === 'mech') { out.push({ kind: 'mech', key: ev.actor, cue: ev.cue }, { kind: 'wait', ms: EVENT_MS, keep: true }); return; }
     else if ('target' in ev) {
       const fx = effectFor(ev, actor, weaponOf(actorKey));
       if (fx) out.push(ev.type === 'heal' ? { kind: 'fx', key: ev.target, fx, amount: ev.amount } : { kind: 'fx', key: ev.target, fx });

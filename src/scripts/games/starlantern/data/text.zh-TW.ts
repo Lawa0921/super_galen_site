@@ -184,7 +184,7 @@ export const T = {
     poison: (who: string, n: number) => `${who} 因毒受到 ${n} 傷害`,
     dot: (who: string, s: 'burn' | 'bleed', n: number) => `${who} 因${s === 'burn' ? '灼燒' : '流血'}受到 ${n} 傷害`,
     shield: (who: string, n: number) => `${who}的護盾擋下了 ${n} 傷害`,
-    mech: (who: string, cue: 'overload' | 'again', n?: number) => (cue === 'overload' ? `${who}的魔力暴走了！反噬 ${n ?? 0}` : `${who}：還有。`),
+    mech: (who: string, cue: 'overload' | 'again', n?: number) => (cue === 'overload' ? `${who}的魔力暴走了！${n ? `反噬 ${n}` : ''}` : `${who}：還有。`),
     frozen: (who: string) => `${who} 被凍住了，動彈不得`,
     miss: (who: string) => `${who} 閃過了攻擊`,
     crit: '（暴擊）',

@@ -756,15 +756,48 @@ describe('the Lantern Key and the dawn blade', () => {
 });
 
 describe('ranks of a skill with nothing to scale (plan 8c)', () => {
-  it('each rank above the first costs 1 TP less', async () => {
+  it('hex and mark cost 1 TP less a rank; the veil lasts a round longer a rank', async () => {
     const { skillFor } = await import('./battle');
     const { SKILLS } = await import('../data/skills');
-    for (const id of ['hex', 'rin-veil', 'rin-mark']) {
+    for (const id of ['hex', 'rin-mark']) {
       const tp = (rank: number) => skillFor({ powers: [], ranks: { [id]: rank } }, id)!.tp;
       expect([tp(1), tp(2), tp(3)], id).toEqual([SKILLS[id].tp, SKILLS[id].tp - 1, SKILLS[id].tp - 2]);
       expect(skillFor({ powers: [], ranks: { [id]: 3 } }, id)!.effects, id).toEqual(SKILLS[id].effects);
     }
+    const veil = (rank: number) => skillFor({ powers: [], ranks: { 'rin-veil': rank } }, 'rin-veil')!;
+    expect([1, 2, 3].map((r) => veil(r).effects)).toEqual([2, 3, 4].map((turns) => [{ kind: 'veil', turns }]));
+    expect([1, 2, 3].map((r) => veil(r).tp)).toEqual([SKILLS['rin-veil'].tp, SKILLS['rin-veil'].tp, SKILLS['rin-veil'].tp]);
     // A skill that scales keeps its TP and scales instead.
     expect(skillFor({ powers: [], ranks: { 'fire-star': 3 } }, 'fire-star')!.tp).toBe(SKILLS['fire-star'].tp);
+  });
+
+  it("the hex's and the veil's words follow their rounds", async () => {
+    const { skillFor } = await import('./battle');
+    const { SKILLS } = await import('../data/skills');
+    expect(SKILLS.hex.desc).toContain('3 回合');
+    const hex = skillFor({ powers: [], ranks: { hex: 1, 'noel-hex-up': 2 } }, 'hex')!;
+    expect(hex.effects).toEqual([{ kind: 'expose', turns: 5 }]);
+    expect(hex.desc).toContain('5 回合');
+    expect(hex.desc).not.toContain('3 回合');
+    expect(SKILLS['rin-veil'].desc).toContain('2 回合');
+    expect(skillFor({ powers: [], ranks: { 'rin-veil': 3 } }, 'rin-veil')!.desc).toContain('4 回合');
+  });
+});
+
+describe('every rank of every node counts (plan 8c fix round 1)', () => {
+  it('each rank of each node changes its skill, even with every other node of that skill at its max', async () => {
+    const { skillFor } = await import('./battle');
+    const { TREES } = await import('../data/trees');
+    const dead: string[] = [];
+    for (const tree of Object.values(TREES)) {
+      const nodes = tree.branches.flatMap((b) => b.nodes);
+      for (const n of nodes) {
+        const others = Object.fromEntries(nodes.filter((x) => x.skill === n.skill && x.id !== n.id).map((x) => [x.id, x.maxRank]));
+        const lo = n.kind === 'active' ? 1 : 0;
+        const at = (r: number) => skillFor({ powers: [], ranks: { ...others, [n.id]: r } }, n.skill);
+        for (let r = lo + 1; r <= n.maxRank; r++) if (JSON.stringify(at(r)) === JSON.stringify(at(r - 1))) dead.push(`${n.id} rank ${r}`);
+      }
+    }
+    expect(dead).toEqual([]);
   });
 });

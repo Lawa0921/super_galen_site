@@ -86,3 +86,10 @@ describe('ultimate cue', () => {
     ]);
   });
 });
+
+describe('battleCues mechanics (plan 8c)', () => {
+  it('a mechanic moment pops and holds the screen long enough to read, even in fast mode', () => {
+    const log: BattleEvent[] = [{ type: 'mech', actor: 'rin', cue: 'again' }];
+    expect(battleCues(log, defIdOf)).toEqual([{ kind: 'line', index: 0 }, { kind: 'mech', key: 'rin', cue: 'again' }, { kind: 'wait', ms: 320, keep: true }]);
+  });
+});

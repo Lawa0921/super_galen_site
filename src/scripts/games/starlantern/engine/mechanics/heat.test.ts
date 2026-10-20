@@ -7,6 +7,7 @@ import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
 import { castDef } from './index';
 import { HEAT } from './heat';
+import { T } from '../../data/text.zh-TW';
 
 const noel = (heat: number, over: Partial<Combatant> = {}) => makeCombatant({
   key: 'noel', side: 'party', defId: 'noel', mech: { kind: 'heat', heat },
@@ -68,6 +69,11 @@ describe("Noel's heat", () => {
     expect(low.party[0].hp).toBe(1);
     expect(low.party[0].alive).toBe(true);
     expect(low.log).toContainEqual({ type: 'mech', actor: 'noel', cue: 'overload', amount: 4 });
+    // At 1 HP nothing is lost: the overload still shows, with no backlash to tell.
+    const none = resolveRound(makeBattle([noel(HEAT.max, { hp: 1 })], [foe({ frozen: true })]), cast('fire-star'), constRng(0.5));
+    expect(none.log.filter((e) => e.type === 'mech')).toEqual([{ type: 'mech', actor: 'noel', cue: 'overload' }]);
+    expect(T.log.mech('諾艾兒', 'overload')).not.toContain('反噬');
+    expect(T.log.mech('諾艾兒', 'overload', 30)).toContain('反噬 30');
   });
 
   it('hex makes fire, ice and thunder weak points for three rounds', () => {

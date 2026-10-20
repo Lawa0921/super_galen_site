@@ -32,7 +32,8 @@ export const heat: MechModule = {
       m.heat = 0;
       const before = c.hp;
       c.hp = Math.max(1, c.hp - Math.floor((c.max.hp * HEAT.backlashPct) / 100));
-      ctx.log.push({ type: 'mech', actor: c.key, cue: 'overload', amount: before - c.hp });
+      const lost = before - c.hp;   // nothing at 1 HP: the overload shows, with no backlash to tell
+      ctx.log.push({ type: 'mech', actor: c.key, cue: 'overload', ...(lost > 0 ? { amount: lost } : {}) });
       return;
     }
     const step = dmg.element === 'fire' || dmg.element === 'thunder' ? 1 : dmg.element === 'ice' ? -HEAT.iceCool : 0;
@@ -44,5 +45,12 @@ export const heat: MechModule = {
   },
   foeWords(_s, e) {
     return e.exposed ? [{ tone: 'expose', text: T.mech.expose(e.exposed) }] : [];
+  },
+  roundEnd(s) {
+    // The hex's weak points count down with the round (a fallen one has already lost them).
+    for (const c of [...s.party, ...s.enemies]) if (c.exposed) { if (c.exposed > 1) c.exposed -= 1; else delete c.exposed; }
+  },
+  cue(cue) {
+    return cue === 'overload' ? { tone: 'heat', text: T.mech.cue.overload } : undefined;
   },
 };

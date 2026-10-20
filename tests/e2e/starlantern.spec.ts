@@ -1683,17 +1683,29 @@ test.describe('starlantern', () => {
     expect(fit.scroll).toBeLessThanOrEqual(fit.client);
     // Rin fells her marked foe: 還有。 pops over her, and she strikes again while a foe stands.
     await page.setViewportSize({ width: 1280, height: 720 });
-    if (foes > 1) {
-      await game((g) => { g.battle.enemies.find((e: any) => e.key === 'e0').hp = 1; });
-      const cue = page.locator('.slx-partybar [data-key=rin] .slx-pm-cue');
-      const seen = cue.first().waitFor({ state: 'attached', timeout: 10_000 }).then(async () => {
-        if (shots) await page.screenshot({ path: `${shots}/again-1280.png` });
-        return (await cue.first().textContent()) ?? '';
+    // Seed 7's first fight is two moss slimes: one to fell, one left standing for 還有。.
+    expect(foes).toBeGreaterThanOrEqual(2);
+    await game((g) => { g.battle.enemies.find((e: any) => e.key === 'e0').hp = 1; });
+    const cue = page.locator('.slx-partybar [data-key=rin] .slx-pm-cue');
+    // In fast mode too, the word holds, on the name and HP side of her panel, on top of whatever else is drawn there.
+    const seen = cue.first().waitFor({ state: 'attached', timeout: 10_000 }).then(async () => {
+      const shown = await cue.first().evaluate((c) => {
+        const b = c.getBoundingClientRect(), panel = c.closest('.slx-pm')!.getBoundingClientRect();
+        // The word ignores the pointer and the screen is inert while a round plays, so the probe lifts both for a moment.
+        const inert = c.closest('[inert]');
+        inert?.removeAttribute('inert');
+        (c as HTMLElement).style.pointerEvents = 'auto';
+        const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+        (c as HTMLElement).style.pointerEvents = '';
+        inert?.setAttribute('inert', '');
+        return { text: c.textContent, right: b.left >= panel.left + panel.width / 2 - 0.5 && b.right <= panel.right + 0.5, onTop: c.contains(top) };
       });
-      await play('攻擊');
-      expect(await seen).toBe('還有。');
-      expect(await game((g) => g.battle.log.some((e: any) => e.type === 'mech' && e.cue === 'again'))).toBe(true);
-    }
+      if (shots) await page.screenshot({ path: `${shots}/again-1280.png` });
+      return shown;
+    });
+    await play('攻擊');
+    expect(await seen).toEqual({ text: '還有。', right: true, onTop: true });
+    expect(await game((g) => g.battle.log.some((e: any) => e.type === 'mech' && e.cue === 'again'))).toBe(true);
     expect(w.errors).toEqual([]);
     expect(missing).toEqual([]);
   });

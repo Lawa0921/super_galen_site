@@ -412,3 +412,23 @@ describe('BattleView mechanics (plan 8c)', () => {
     expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['暗記']);
   });
 });
+
+describe('BattleView mechanic moments (plan 8c)', () => {
+  it('fast mode still holds a mechanic moment for its wait', async () => {
+    vi.useFakeTimers();
+    try {
+      const view = new BattleView(true, bank);
+      view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+      const onParty = vi.fn();
+      let done = false;
+      const p = view.play(battle([{ type: 'mech', actor: 'scarlet', cue: 'again' }]), sfx, onParty).then(() => { done = true; });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(onParty).toHaveBeenCalledWith('scarlet', 'mech', 'again');
+      await vi.advanceTimersByTimeAsync(250);
+      expect(done).toBe(false);
+      await vi.advanceTimersByTimeAsync(100);
+      await p;
+      expect(done).toBe(true);
+    } finally { vi.useRealTimers(); }
+  });
+});

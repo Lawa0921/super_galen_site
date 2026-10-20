@@ -11,7 +11,6 @@ import type { MechState } from '../mech';
 import type { Rng } from '../rng';
 import type { EffectContext } from '../skills';
 import type { CharacterId, SkillDef } from '../types';
-import { T } from '../../data/text.zh-TW';
 import { heat } from './heat';
 import { mark } from './mark';
 
@@ -35,8 +34,14 @@ export interface MechModule {
   onHit?(actor: Combatant, target: Combatant, ctx: EffectContext): void;
   /** After each party action in resolveRound; `def` is the skill as cast (castDef), null for anything else. */
   after?(s: BattleState, c: Combatant, act: Action, def: SkillDef | null, ctx: EffectContext): void;
-  /** At the very start of the round's end. */
+  /** Before a party member's action: what `extraAction` will need to compare against. */
+  watch?(s: BattleState, c: Combatant): unknown;
+  /** After a party member's action (and `after`): one more action now, or null. It logs its own moment. */
+  extraAction?(s: BattleState, c: Combatant, act: Action, ctx: EffectContext, seen: unknown): Action | null;
+  /** At the round's end, after every tick: countdowns, clean-ups. */
   roundEnd?(s: BattleState, ctx: EffectContext, rng: Rng): void;
+  /** The word a moment of this mechanic pops (its colour is the mechanic's). */
+  cue?(cue: MechCue): MechWord | undefined;
   /** Words under a member, over a foe, and over the whole field. */
   words?(s: BattleState, c: Combatant): MechWord[];
   foeWords?(s: BattleState, e: Combatant): MechWord[];
@@ -83,6 +88,22 @@ export function afterAction(s: BattleState, c: Combatant, act: Action, def: Skil
   for (const m of modules()) m.after?.(s, c, act, def, ctx);
 }
 
+/** Each module's look before a party member's action, in module order, for `extraAction`. */
+export function watchAction(s: BattleState, c: Combatant): unknown[] {
+  return modules().map((m) => m.watch?.(s, c));
+}
+
+/** The first extra action a module grants after `c`'s action, or null. */
+export function extraAction(s: BattleState, c: Combatant, act: Action, ctx: EffectContext, seen: unknown[]): Action | null {
+  const ms = modules();
+  for (let i = 0; i < ms.length; i++) {
+    const a = ms[i].extraAction?.(s, c, act, ctx, seen[i]);
+    if (a) return a;
+  }
+  return null;
+}
+
+/** At the end of endOfRound, after every tick. */
 export function mechRoundEnd(s: BattleState, ctx: EffectContext, rng: Rng): void {
   for (const m of modules()) m.roundEnd?.(s, ctx, rng);
 }
@@ -99,7 +120,11 @@ export function fieldWords(s: BattleState): MechWord[] {
   return modules().flatMap((m) => m.fieldWords?.(s) ?? []);
 }
 
-/** The word a cue pops over its member. */
+/** The word a cue pops over its member, from the mechanic it belongs to. */
 export function cueWord(cue: MechCue): MechWord {
-  return cue === 'overload' ? { tone: 'heat', text: T.mech.cue.overload } : { tone: 'mark', text: T.mech.cue.again };
+  for (const m of modules()) {
+    const w = m.cue?.(cue);
+    if (w) return w;
+  }
+  return { tone: 'mark', text: cue };
 }

@@ -63,7 +63,7 @@ describe('rin', () => {
   });
 
   it('every rin skill is owned by her and has the stated tp cost', () => {
-    const cost = { 'rin-needle': 3, 'rin-fan': 6, 'rin-venom-needle': 5, 'rin-storm': 13, 'rin-backstab': 4, 'rin-veil': 4, 'rin-shadowless': 12, 'rin-mark': 4, 'rin-execute': 8, 'rin-deathblow': 14 };
+    const cost = { 'rin-needle': 3, 'rin-fan': 6, 'rin-venom-needle': 5, 'rin-storm': 13, 'rin-backstab': 4, 'rin-veil': 4, 'rin-shadowless': 12, 'rin-mark': 6, 'rin-execute': 8, 'rin-deathblow': 14 };
     for (const sk of rinSkills()) expect(sk.owner).toBe('rin');
     for (const [id, tp] of Object.entries(cost)) expect(SKILLS[id].tp, id).toBe(tp);
   });

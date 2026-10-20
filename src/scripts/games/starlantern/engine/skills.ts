@@ -68,6 +68,11 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
     }
   });
   const out: SkillDef = { ...def, effects: [...effects, ...(mod.extra ?? []).map((e) => ({ ...e }))] };
+  // The hex's and the veil's words name their rounds (plan 8c): a mod that changes them changes the words too.
+  def.effects.forEach((e, i) => {
+    const now = effects[i];
+    if ((e.kind === 'expose' || e.kind === 'veil') && now.kind === e.kind && now.turns !== e.turns) out.desc = out.desc.replace(`${e.turns} 回合`, `${now.turns} 回合`);
+  });
   if (mod.target !== undefined) out.target = mod.target;
   if (mod.hpCost !== undefined) out.hpCost = mod.hpCost;
   if (mod.tpDelta !== undefined && def.tp > 0) out.tp = Math.max(1, def.tp + mod.tpDelta);

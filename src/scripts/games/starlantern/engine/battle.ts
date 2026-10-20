@@ -13,7 +13,7 @@ import { pick, type Rng } from './rng';
 import { abyssPct, bossPartyScale, deepPower, empower, enemyLevelAt, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
-import { afterAction, castCost, castDef, initMechs, mechRoundEnd, payMech } from './mechanics/index';
+import { afterAction, castCost, castDef, extraAction, initMechs, mechRoundEnd, payMech, watchAction } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
 import { credit, lossOf, type Ledger } from './ledger';
 import type { Barrier } from './mech';
@@ -364,20 +364,8 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
   }
 }
 
-/**
- * 還有。 (plan 8c ruling 14, as tuned in Task 2: her marked foe's fall): the command Rin repeats. The same target while it stands,
- * else the first living foe; the same skill while she can pay for it, else (or after anything but an attack or a skill)
- * a plain attack.
- */
-function againAction(s: BattleState, c: Combatant, act: Action): Action {
-  const first = living(s.enemies)[0]?.key ?? '';
-  const meant = 'target' in act && act.target && s.enemies.some((e) => e.key === act.target && e.alive) ? act.target : first;
-  if (act.kind === 'skill' && castCost(s, c, act.skill) <= c.tp) return { kind: 'skill', skill: act.skill, target: meant };
-  return { kind: 'attack', target: act.kind === 'attack' || act.kind === 'skill' ? meant : first };
-}
 
 function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
-  mechRoundEnd(s, ctx, rng);
   for (const c of living(s.party)) {
     if (!c.turret) continue;
     const t = pickTarget(s.enemies, undefined, rng);
@@ -414,9 +402,9 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
     ageAilments(c);
     c.taunt = Math.max(0, c.taunt - 1);
     c.defending = false;
-    if (c.exposed) { if (c.exposed > 1) c.exposed -= 1; else delete c.exposed; }
-    if (c.veil) { if (c.veil > 1) c.veil -= 1; else delete c.veil; }
   }
+  // The mechanics close the round last, after every tick (a foe a tick felled has already lost its mark).
+  mechRoundEnd(s, ctx, rng);
 }
 
 /**
@@ -476,20 +464,17 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     const act = actor.side === 'party' ? actions[actor.key] : enemyActs.get(actor.key);
     const heroUp = s.party.some((c) => c.key === 'hero' && c.alive);
     if (act) {
-      // Her marks as she acts (a felled foe leaves them at once, so they are read before).
-      const marked = actor.mech?.kind === 'mark' ? s.enemies.filter((e) => e.alive && (actor.mech as { marks: string[] }).marks.includes(e.key)) : [];
+      // What the mechanics need to see before the action (Rin's living marks: a felled foe leaves them at once).
+      const seen = actor.side === 'party' ? watchAction(s, actor) : [];
       const def = perform(s, actor, act, ctx, rng);
       delete ctx.redirect;
       if (actor.side === 'party' && actor.alive && act.kind !== 'ultimate' && act.kind !== 'escape') actor.limit = Math.min(LIMIT_MAX, actor.limit + gaugeGain(actor, LIMIT_PER_ACTION));
       if (actor.side === 'party') {
         const own = act as Action;
         afterAction(s, actor, own, def, ctx);
-        // 還有。: she fells her mark on her own action, once a round, while a foe still stands; the repeat fills no gauge.
-        const m = actor.mech;
-        if (m?.kind === 'mark' && !m.again && actor.alive && marked.some((e) => !e.alive) && living(s.enemies).length > 0) {
-          m.again = true;
-          s.log.push({ type: 'mech', actor: actor.key, cue: 'again' });
-          const again = againAction(s, actor, own);
+        // A mechanic may grant one more action at once (Rin's 還有。); it fills no gauge.
+        const again = extraAction(s, actor, own, ctx, seen);
+        if (again) {
           const def2 = perform(s, actor, again, ctx, rng);
           delete ctx.redirect;
           afterAction(s, actor, again, def2, ctx);

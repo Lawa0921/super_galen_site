@@ -288,7 +288,7 @@ export class BattleView {
     onLine?: (index: number) => void,
   ): Promise<void> {
     for (const cue of battleCues(state.log, (k) => this.defIds.get(k) ?? null, (k) => this.weapons.get(k))) {
-      if (cue.kind === 'wait') { await this.wait(cue.ms); continue; }
+      if (cue.kind === 'wait') { await (cue.keep ? new Promise<void>((r) => setTimeout(r, cue.ms)) : this.wait(cue.ms)); continue; }
       if (cue.kind === 'line') { onLine?.(cue.index); continue; }
       const slot = this.slots.get(cue.key);
       if (cue.kind === 'ultimate') { if (!slot) await onParty?.(cue.key, 'ultimate', cue.name); continue; }

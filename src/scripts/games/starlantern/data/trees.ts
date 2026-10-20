@@ -13,6 +13,11 @@ import { SKILLS } from './skills';
  */
 export interface TreeNode {
   id: string; kind: 'active' | 'mod'; skill: string; maxRank: 1 | 2 | 3 | 4 | 5; name?: string; desc?: string; mods?: SkillMod[];
+  /**
+   * How the ranks of an active with nothing to scale count (plan 8c): absent, each rank above the first costs 1 TP less;
+   * 'turns', each lasts a round longer (for a skill whose TP a mod node of its own already cuts).
+   */
+  rank?: 'turns';
 }
 export interface TreeBranch { name: string; nodes: TreeNode[] }
 export interface TreeDef { branches: TreeBranch[] }
@@ -233,7 +238,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
     { name: '背刺', nodes: [
       A('rin-backstab', 3),
       M('rin-backstab-up', '背刺強化', 'rin-backstab', '強化背刺的威力', pct(110, 120, 135)),
-      A('rin-veil', 3),
+      { ...A('rin-veil', 3), rank: 'turns' },
       M('rin-veil-up', '隱匿節流', 'rin-veil', '降低隱匿的 TP 消耗', tp(-1, -2, -3)),
       A('rin-shadowless', 1),
     ] },

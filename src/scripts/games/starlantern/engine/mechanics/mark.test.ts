@@ -106,6 +106,11 @@ describe("Rin's mark and 還有。", () => {
     expect(r.enemies[0].alive).toBe(false);
     expect(marksOf(r.party[0])).toEqual([]);
     expect(r.log.some((e) => e.type === 'mech')).toBe(false);
+    // A foe that falls to a round-end tick loses her mark that same round.
+    const ticked = resolveRound(makeBattle([rin({ mech: { kind: 'mark', marks: ['e0'], cap: 1 } })], [foe('e0', { hp: 3, burn: { tick: 5, turns: 2, src: 'rin' } }), foe('e1')]),
+      { rin: { kind: 'defend' } }, constRng(0.5));
+    expect(ticked.enemies[0].alive).toBe(false);
+    expect(marksOf(ticked.party[0])).toEqual([]);
     // A fallen Rin acts no more, again or otherwise.
     const down = resolveRound(makeBattle([rin({ alive: false, hp: 0 }), P('noel')], [foe('e0', { hp: 1 }), foe('e1')]),
       { noel: { kind: 'attack', target: 'e0' } }, constRng(0.5));

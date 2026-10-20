@@ -831,13 +831,16 @@ $slx-framed: (magic, rare, epic, legendary, unique, set);
   animation: slx-pm-miss 0.9s ease-out forwards;
 }
 @keyframes slx-pm-miss { 0% { translate: -6px 0; opacity: 0; } 20% { translate: 0 0; opacity: 1; } 70% { opacity: 1; } 100% { translate: 0 -12px; opacity: 0; } }
-// A mechanic's moment (暴走！, 還有。): a word in its colour rising off the panel like MISS, with no shake.
+// A mechanic's moment (暴走！, 還有。): a word in its colour rising off the panel like MISS, with no shake; on the name
+// and HP side, over the hit effects (.slx-pm-fx, .slx-pm-fxa) so a blow landing at the same moment never hides it.
 .slx-pm-cue {
-  position: absolute; left: 4px; top: 6px; z-index: 3; pointer-events: none; white-space: nowrap;
-  font-size: 14px; line-height: 14px;
+  position: absolute; right: 4px; top: 16px; z-index: 4; pointer-events: none; white-space: nowrap;
+  font-size: 14px; line-height: 14px; padding: 1px 3px; border: 1px solid currentColor; background: rgba($slx-win, 0.92);
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
-  animation: slx-pm-miss 0.9s ease-out forwards;
+  animation: slx-pm-cue 0.9s ease-out forwards;
 }
+// Readable from its first frame (fast mode holds it only a moment), then it rises and fades.
+@keyframes slx-pm-cue { 0% { translate: 0 2px; opacity: 1; } 70% { translate: 0 -4px; opacity: 1; } 100% { translate: 0 -12px; opacity: 0; } }
 .slx-pm-pop-tp { font-size: 12px; line-height: 12px; top: 14px; color: #8fb8ff; }
 @media (prefers-reduced-motion: reduce) {
   .slx-pm-weak, .slx-pm-crit, .slx-pm-resist, .slx-pm-miss, .slx-pm-cue { animation: none; }

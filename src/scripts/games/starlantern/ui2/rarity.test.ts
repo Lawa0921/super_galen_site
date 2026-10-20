@@ -233,4 +233,15 @@ describe('mechanic colours (plan 8c)', () => {
     for (const [k] of entries) expect(css, k).toContain(`.slx-mech-${k}`);
     expect(css).toContain('.slx-pm-cue');
   });
+
+  it('a cue stands at the top right of its panel, over the hit effects', () => {
+    const css = compile(resolve(process.cwd(), 'src/styles/_starlantern-ui.scss')).css;
+    const rule = (sel: string) => [...css.matchAll(new RegExp(`(?:^|\\n|\\})\\s*${sel.replace('.', '\\.')}\\s*\\{([^}]*)\\}`, 'g'))].map((m) => m[1]).join(';');
+    const z = (sel: string) => Number(/z-index:\s*(\d+)/.exec(rule(sel))?.[1] ?? NaN);
+    const cue = rule('.slx-pm-cue');
+    expect(cue).toMatch(/right:/);
+    expect(cue).not.toMatch(/left:/);
+    expect(z('.slx-pm-cue')).toBeGreaterThan(z('.slx-pm-fx'));
+    expect(z('.slx-pm-cue')).toBeGreaterThan(z('.slx-pm-fxa'));
+  });
 });
