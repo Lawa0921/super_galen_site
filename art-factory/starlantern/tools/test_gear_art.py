@@ -52,14 +52,15 @@ def test_sample_is_the_g1_redo_jobs():
 
 
 @pytest.mark.parametrize('batch', ['main-gear', 'skills'])
-def test_gen_refuses_later_batches_before_the_style_is_approved(tmp_path, monkeypatch, batch):
-    reg = A.Registry(tmp_path / 'registry.json'); reg.set('x', status='todo')
-    monkeypatch.setattr(G, 'REG_PATH', tmp_path / 'registry.json')
+def test_gen_refuses_later_batches_before_the_style_is_approved(factory, monkeypatch, batch):
+    # Review minor (c): isolated paths, and the specific refusal (not any PermissionError).
+    A.Registry(G.REG_PATH).set('x', status='todo')
     monkeypatch.setattr(G.subprocess, 'run', lambda *a, **k: pytest.fail('codex must not run'))
-    with pytest.raises(PermissionError):
+    with pytest.raises(PermissionError, match='style sample is not approved'):
         G.gen([f'--batch={batch}'])
-    with pytest.raises(PermissionError):                         # naming a later sheet directly is gated too
+    with pytest.raises(PermissionError, match=r"style sample is not approved.*sheet-gear-2"):   # naming a later sheet is gated too
         G.gen(['--only=sheet-gear-2'])
+    assert not (factory / 'raw').exists() and not G.PROMPTS.exists()             # nothing was drawn or written
 
 
 def test_set_pieces_share_a_sheet_except_blaze_ring_which_references_sheet_one():
@@ -141,7 +142,7 @@ def factory(tmp_path, monkeypatch):
     # it, and the real one is attached to every production sheet codex draws.
     for name, p in {'REG_PATH': tmp_path / 'registry.json', 'RAW': tmp_path / 'raw', 'WORK': tmp_path / 'work',
                     'PUBLIC': tmp_path / 'public', 'PLAN_PATH': tmp_path / 'gear-plan.json',
-                    'GEAR_ANCHOR': tmp_path / 'raw/gear-refs/gear-anchor.png'}.items():
+                    'GEAR_ANCHOR': tmp_path / 'raw/gear-refs/gear-anchor.png', 'PROMPTS': tmp_path / 'prompts'}.items():
         monkeypatch.setattr(G, name, p)
     return tmp_path
 
@@ -1212,5 +1213,20 @@ def test_g2_decisions_are_honest_about_what_did_not_pass(factory, review):
 
 def test_the_factory_never_points_at_real_reference_files(factory):
     """An approve inside a test once removed the real raw/gear-refs/gear-anchor.png while codex was drawing G2."""
-    for name in ('REG_PATH', 'RAW', 'WORK', 'PUBLIC', 'PLAN_PATH', 'GEAR_ANCHOR'):
+    for name in ('REG_PATH', 'RAW', 'WORK', 'PUBLIC', 'PLAN_PATH', 'GEAR_ANCHOR', 'PROMPTS'):
         assert Path(getattr(G, name)).is_relative_to(factory), name
+
+
+def test_stale_qa_counts_as_not_passed_but_published_parts_are_never_called_stale(factory, review):
+    """Review minor (d): a qa_passed pick whose QA is from an older spec is not passed yet; a published part is final
+    and never labelled QA 過期."""
+    names = review.names()
+    reg = _fill(factory, 'main-gear')
+    reg.set('gear-thorn-spear', kind='gear-cell', qa={'pass': True, 'reasons': []})                       # stale, not yet approved
+    reg.set('gear-hunter-bow', kind='gear-cell', qa={'pass': True, 'reasons': []}, status='published')    # stale stamp, but published
+    page = review.main('main-gear').read_text(encoding='utf-8')
+    head = page[page.index('id="decisions"'):page.index('id="s0"')]
+    pending = head[head.index('還沒通過：'):]; pending = pending[:pending.index('</li>')]
+    assert names['thorn-spear'] in pending and names['hunter-bow'] not in pending
+    row = lambda p: page[page.index(f'data-part="{p}"'):][:page[page.index(f'data-part="{p}"'):].index('</tr>')]
+    assert 'QA 過期' in row('thorn-spear') and 'QA 過期' not in row('hunter-bow')

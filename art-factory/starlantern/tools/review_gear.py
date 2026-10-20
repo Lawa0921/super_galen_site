@@ -424,7 +424,8 @@ def main(batch='sample'):
         st = '；'.join(f'{a}：{reg.get(a, {}).get("status", "未挑選")} {reg.get(a, {}).get("chosen_attempt", "")}'
                        f'{" sha " + shown[a][:12] if a in shown else ""}' for a in aids)
         qa = '；'.join(qa_line(reg.get(a, {}).get('qa')) for a in aids if reg.get(a, {}).get('qa'))
-        if any(A.qa_stale(reg.get(a, {})) for a in aids): st += '（QA 過期：在舊規格下量的，需重新 QA：gear_art.py requa）'
+        if any(A.qa_stale(reg.get(a, {})) and reg.get(a, {}).get('status') not in ('approved', 'published') for a in aids):
+            st += '（QA 過期：在舊規格下量的，需重新 QA：gear_art.py requa）'   # an approved or published part is final, never "stale"
         return f'<tr data-part="{esc(p)}"><td>{esc(p)}</td><td>{esc(nm.get(p, ""))}</td><td>{esc(job["id"])}</td><td>{esc(st)}</td><td class="small">{esc(qa)}</td></tr>'
     listed = dict.fromkeys((j['id'], p) for j in js for p in j['parts'] if p is not None)
     first = {}
@@ -547,8 +548,9 @@ def main(batch='sample'):
                       + facility(pg.pub('scene/shop.png'), pg.pub('npc/shop.png'), '已發布的道具店（對照）'))
 
     ok = ('qa_passed', 'approved', 'published')
-    pending = [p for j in js for p in j['parts'] if p is not None
-               and any(reg.get(a, {}).get('status') not in ok or not reg.get(a, {}).get('final') for a in G.assets_of(j, p))]
+    def passed(e):   # picked, passed and (unless already approved / published) measured under the current spec
+        return e.get('status') in ok and e.get('final') and (e.get('status') != 'qa_passed' or not A.qa_stale(e))
+    pending = [p for j in js for p in j['parts'] if p is not None and not all(passed(reg.get(a, {})) for a in G.assets_of(j, p))]
     pending_text = (f'還沒通過：{"、".join(nm.get(p, p) for p in pending)}（這些格的圖還沒過機械檢查，頁面上顯示的是目前的一版或空格）' if pending
                     else '本批全部通過機械檢查（尺寸、去背、溢色）。')
     live = lambda s: live_text(s, reg).replace('〔未通過〕', pending_text)

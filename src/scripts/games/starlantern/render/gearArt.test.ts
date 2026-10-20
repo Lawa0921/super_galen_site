@@ -16,7 +16,7 @@ interface GearPlan {
   setFirst: Record<string, string>;
   /** Plan 5d addendum 2: the slot of every gear cell (the size gate's short-edge and mass limits follow it). */
   slots: Record<string, string>;
-  /** Controller ruling 2026-10-20: the weapon kind of every weapon cell (polearm kinds get their own mass floor). */
+  /** Controller ruling 2026-10-20: the weapon kind of every weapon cell (thin kinds, spear and bow, get their own mass floor). */
   kinds: Record<string, string>;
 }
 const plan = JSON.parse(readFileSync('art-factory/starlantern/gear-plan.json', 'utf8')) as GearPlan;

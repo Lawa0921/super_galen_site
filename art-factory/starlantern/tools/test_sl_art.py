@@ -941,11 +941,15 @@ def test_retire_refuses_a_path_outside_the_starlantern_assets(tmp_path):
     assert f.exists()
 
 
-def test_retire_cli_calls_the_registry(monkeypatch):
+def test_retire_cli_calls_the_registry(monkeypatch, tmp_path):
+    # Review minor (b): the CLI runs on a temp ROOT, never on the real registry.json or public/.
+    root = tmp_path / 'af' / 'sl'; root.mkdir(parents=True); monkeypatch.setattr(A, 'ROOT', root)
     calls = []
-    monkeypatch.setattr(A.Registry, 'retire', lambda self, aid, public, reason: calls.append((aid, reason)))
+    monkeypatch.setattr(A.Registry, 'retire', lambda self, aid, public, reason: calls.append((aid, reason, self.path, public)))
     assert A.main(['retire', '--id', 'icon-iron-sword', '--reason', 'replaced']) == 0
-    assert calls == [('icon-iron-sword', 'replaced')]
+    (aid, reason, reg_path, public), = calls
+    assert (aid, reason) == ('icon-iron-sword', 'replaced')
+    assert Path(reg_path).is_relative_to(tmp_path) and Path(public).is_relative_to(tmp_path)
 
 
 # --- plan 5d addendum 2, Task A: one long edge for every gear subject, size gate (short edge, mass, centre) ---
@@ -1464,3 +1468,12 @@ def test_a_bow_at_022_passes_where_a_sword_at_022_still_fails(tmp_path):
 def test_the_bow_ruling_moved_the_gear_cell_stamp():
     assert A.qa_spec('gear-cell') != 'gear-cell:6a8d64bae98b'           # the stamp before bows joined the thin class
     assert A.qa_spec('nine-slice') == 'nine-slice:2ab30baae894'         # frames are untouched
+
+
+def test_no_test_can_write_the_real_prompts(tmp_path):
+    """Review minor (a): batch.jobs() (and every other job builder) writes prompt files; conftest points them all at a
+    temp folder for every test, so the real art-factory/starlantern/prompts/ is never rewritten by the suite."""
+    import batch, gear_art, party, portal
+    for mod in (batch, gear_art, party, portal):
+        assert Path(mod.PROMPTS).is_relative_to(tmp_path.parent.parent), (mod.__name__, mod.PROMPTS)
+        assert 'art-factory' not in str(mod.PROMPTS), (mod.__name__, mod.PROMPTS)
