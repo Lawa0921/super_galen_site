@@ -693,10 +693,20 @@ describe('memory keystones in battle', () => {
 
   it('small-shrine guards the party at the start', () => {
     const s = start(awake('chizuru'));
-    for (const c of s.party) expect(c.buffs, c.key).toEqual([{ stat: 'def', pct: MV.shrineDefPct, turns: MV.shrineTurns }]);
+    for (const c of s.party) expect(c.buffs, c.key).toEqual([{ stat: 'def', pct: MV.shrineDefPct, turns: MV.shrineTurns, src: 'chizuru' }]);
     expect(s.enemies.every((e) => e.buffs.length === 0)).toBe(true);
     expect(start(fullParty(LEGACY_LINEUP)).party.every((c) => c.buffs.length === 0)).toBe(true);
     expect(s.party.find((c) => c.key === 'chizuru')!.keystones).toContain('small-shrine');
+  });
+
+  it('small-shrine and the unrung bell credit their holder', () => {
+    const s = start(awake('chizuru'));
+    for (const c of s.party) expect(c.buffs.map((b) => b.src), c.key).toEqual(['chizuru']);
+    const hero = P('hero', { hp: 1 });
+    const rin = P('rin', { keystones: ['unrung-bell'] });
+    const foe = E('e0', { max: { atk: 999, spd: 99, hp: 99999 } as never });
+    const rang = resolveRound(makeBattle([hero, rin], [foe], { intents: { e0: { kind: 'attack', target: 'hero' } } }), {}, rng);
+    expect(rang.party.find((c) => c.key === 'rin')!.buffs).toContainEqual(expect.objectContaining({ stat: 'atk', pct: MV.bellAtkPct, src: 'rin' }));
   });
 
   it('teachers-gift costs less TP', () => {

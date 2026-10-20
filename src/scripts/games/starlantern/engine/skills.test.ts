@@ -9,7 +9,7 @@ import { LEGACY_LINEUP } from './party';
 import { constRng, makeBattle, makeCombatant, plainItem, fullParty } from './testing';
 import type { SkillDef } from './types';
 import { KEYSTONE_VALUES as V, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
-import { stat, type Combatant } from './combatant';
+import { dealDamage, stat, type Combatant } from './combatant';
 import type { Element } from './types';
 
 const ctx = (over: Partial<EffectContext> = {}): EffectContext => ({ rng: constRng(0.5), itemBoost: false, revealed: {}, log: [], ...over });
@@ -79,7 +79,7 @@ describe('applyEffect', () => {
   it('applies buffs to the target', () => {
     const t = enemy();
     applyEffect(party(), t, { kind: 'buff', stat: 'spd', pct: -30, turns: 3 }, ctx());
-    expect(t.buffs).toEqual([{ stat: 'spd', pct: -30, turns: 3 }]);
+    expect(t.buffs).toEqual([{ stat: 'spd', pct: -30, turns: 3, src: 'p' }]);
   });
 });
 
@@ -462,5 +462,34 @@ describe('memory keystones', () => {
     expect(held).toBeLessThan(base);
     // Not taunting: no difference.
     expect(hit(['not-a-shield'], 0)).toBe(hit([], 0));
+  });
+});
+
+describe('effect sources', () => {
+  it('a buff remembers who cast it', () => {
+    const chizuru = makeCombatant({ key: 'chizuru', side: 'party' });
+    const friend = makeCombatant({ key: 'selene', side: 'party' });
+    applyEffect(chizuru, friend, SKILLS.ward.effects[0], ctx());
+    expect(friend.buffs).toEqual([{ stat: 'def', pct: 30, turns: 3, src: 'chizuru' }]);
+  });
+
+  it('poison remembers its first poisoner until it ends', () => {
+    const A = makeCombatant({ key: 'A', side: 'party' }), B = makeCombatant({ key: 'B', side: 'party' });
+    const foe = enemy();
+    const poison = { kind: 'inflict', status: 'poison', chance: 1 } as const;
+    applyEffect(A, foe, poison, ctx({ rng: constRng(0) }));
+    expect([foe.poison, foe.poisonSrc]).toEqual([true, 'A']);
+    applyEffect(B, foe, poison, ctx({ rng: constRng(0) }));
+    expect(foe.poisonSrc).toBe('A');
+    // A resisted poison changes nothing.
+    const clean = enemy();
+    applyEffect(B, clean, { ...poison, chance: 0.5 }, ctx({ rng: constRng(0.99) }));
+    expect([clean.poison, clean.poisonSrc]).toEqual([false, undefined]);
+    applyEffect(B, foe, { kind: 'cure' }, ctx());
+    expect([foe.poison, foe.poisonSrc]).toEqual([false, undefined]);
+    applyEffect(B, foe, poison, ctx({ rng: constRng(0) }));
+    expect(foe.poisonSrc).toBe('B');
+    dealDamage(foe, foe.hp);
+    expect([foe.alive, foe.poison, foe.poisonSrc]).toEqual([false, false, undefined]);
   });
 });

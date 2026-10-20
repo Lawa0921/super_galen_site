@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { addBuff, calcDamage, dealDamage, roll, stat, MAX_BUFFS, type BattleEvent } from './combatant';
+import { addBuff, calcDamage, dealDamage, hitAmount, roll, rollHit, stat, MAX_BUFFS, type BattleEvent, type DamageSpec, type HitRolls } from './combatant';
 import { applyEffect } from './skills';
 import { constRng, makeCombatant } from './testing';
+import { mulberry32 } from './rng';
 import { KEYSTONE_VALUES as V } from '../data/talents';
 import type { Combatant } from './combatant';
 
@@ -258,5 +259,78 @@ describe('keystones in calcDamage', () => {
     expect(calcDamage(foe, m({ taunt: 2, keystones: ['taunt-guard'] }), phys, rng).amount).toBe(Math.floor(20 * (1 - V.tauntGuardPct / 100)));
     expect(calcDamage(foe, m({ keystones: ['taunt-guard'] }), phys, rng).amount).toBe(20);   // not taunting
     expect(calcDamage(foe, m({ taunt: 2 }), phys, rng).amount).toBe(20);                      // no keystone
+  });
+});
+
+describe('rollHit and hitAmount', () => {
+  /** A seeded rng that counts its draws. */
+  const counting = (seed: number) => {
+    const r = mulberry32(seed);
+    const c = { n: 0, rng: () => { c.n++; return r(); } };
+    return c;
+  };
+  /** A random fighter of `side` from `g`: stats, secondaries, buffs, stance and keystones that touch the formula. */
+  const fighter = (g: () => number, key: string, side: Combatant['side']): Combatant => {
+    const n = (lo: number, hi: number) => lo + Math.floor(g() * (hi - lo + 1));
+    const maybe = (p: number) => g() < p;
+    const hp = n(20, 500);
+    const keystones = (['last-stand', 'carried-out', 'taunt-guard', 'not-a-shield'] as const).filter(() => maybe(0.3));
+    const buffs = [
+      ...(maybe(0.5) ? [{ stat: 'def' as const, pct: n(-40, 40), turns: 2 }] : []),
+      ...(maybe(0.5) ? [{ stat: 'atk' as const, pct: n(-40, 40), turns: 2 }] : []),
+      ...(maybe(0.4) ? [{ stat: 'res' as const, pct: n(-40, 40), turns: 2 }] : []),
+      ...(maybe(0.4) ? [{ stat: 'mag' as const, pct: n(-40, 40), turns: 2 }] : []),
+    ];
+    return makeCombatant({
+      key, side, level: n(1, 50), row: (['front', 'middle', 'back'] as const)[n(0, 2)],
+      max: { hp, tp: 20, atk: n(5, 300), def: n(5, 300), mag: n(5, 300), res: n(5, 300), spd: 10 },
+      hp: n(1, hp), boss: maybe(0.2), tint: maybe(0.2) ? 'elite' : undefined,
+      weak: maybe(0.3) ? ['fire'] : [], resist: maybe(0.2) ? ['fire'] : [],
+      defending: maybe(0.3), taunt: maybe(0.4) ? n(1, 3) : 0, keystones, buffs,
+      x: {
+        crit: maybe(0.6) ? n(0, 60) : 0, critDmg: n(0, 150), block: maybe(0.5) ? n(0, 50) : 0, armor: maybe(0.6) ? n(0, 400) : 0,
+        evasion: maybe(0.5) ? n(0, 300) : 0, meleeDR: n(0, 30), rangedDR: n(0, 30), fireRes: n(-150, 150), fireDmg: n(0, 60),
+        vuln: n(0, 40), eliteDmg: n(0, 40),
+      },
+    });
+  };
+
+  it('calcDamage is rollHit then hitAmount, draw for draw', () => {
+    let misses = 0, crits = 0;
+    for (let i = 1; i <= 2000; i++) {
+      const g = mulberry32(i);
+      const aSide = g() < 0.5 ? 'party' : 'enemy';
+      const a = fighter(g, 'a', aSide);
+      const t = fighter(g, 't', aSide === 'party' ? 'enemy' : 'party');
+      const spec: DamageSpec = {
+        power: 30 + Math.floor(g() * 300), element: g() < 0.5 ? 'phys' : 'fire', scale: g() < 0.5 ? 'atk' : 'mag', melee: g() < 0.5,
+        ...(g() < 0.15 ? { crit: 'always' as const } : {}),
+        ...(g() < 0.2 ? { execute: Math.floor(g() * 100) } : {}),
+        ...(g() < 0.2 ? { wounded: Math.floor(g() * 60) } : {}),
+      };
+      const one = counting(i * 31), two = counting(i * 31);
+      const whole = calcDamage(a, t, spec, one.rng);
+      const r = rollHit(a, t, spec, two.rng);
+      expect(two.n, `draws, case ${i}`).toBe(one.n);
+      if (whole.miss) { misses++; expect(r, `case ${i}`).toBeNull(); continue; }
+      expect(r, `case ${i}`).not.toBeNull();
+      if (whole.crit) crits++;
+      expect({ ...hitAmount(a, t, spec, r!), miss: false }, `case ${i}`).toEqual(whole);
+    }
+    // The cases reach every branch that draws.
+    expect(misses).toBeGreaterThan(50);
+    expect(crits).toBeGreaterThan(50);
+  });
+
+  it('hitAmount draws nothing', () => {
+    const a = makeCombatant({ key: 'a', side: 'party', x: { crit: 50, critDmg: 80 } });
+    const t = makeCombatant({ key: 't', side: 'enemy', x: { block: 50, armor: 100 } });
+    // No rng goes in: the signature has none.
+    expect(hitAmount.length).toBe(4);
+    const r: HitRolls = { variance: 1.05, crit: true, blocked: true };
+    const first = hitAmount(a, t, phys, r);
+    expect(hitAmount(a, t, phys, r)).toEqual(first);
+    expect(first.crit).toBe(true);
+    expect(hitAmount(a, t, phys, { ...r, blocked: false }).amount).toBeGreaterThan(first.amount);
   });
 });

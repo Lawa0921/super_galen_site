@@ -119,8 +119,9 @@ export function createBattle(o: {
   // opening-gauge is a floor, not a gain: the gauge carries over between fights, so adding would stack fight after fight.
   for (const c of party) if (c.keystones.includes('opening-gauge')) c.limit = Math.min(LIMIT_MAX, Math.max(c.limit, KEYSTONE_VALUES.openingGauge));
   // small-shrine: one holder guards the whole party for the first turns of the fight.
-  if (party.some((c) => c.keystones.includes('small-shrine'))) {
-    for (const c of party) addBuff(c, { stat: 'def', pct: MEMORY_KEYSTONE_VALUES.shrineDefPct, turns: MEMORY_KEYSTONE_VALUES.shrineTurns });
+  const shrine = party.find((c) => c.keystones.includes('small-shrine'));
+  if (shrine) {
+    for (const c of party) addBuff(c, { stat: 'def', pct: MEMORY_KEYSTONE_VALUES.shrineDefPct, turns: MEMORY_KEYSTONE_VALUES.shrineTurns, src: shrine.key });
   }
   const depth = o.depth ?? o.scale?.depth ?? 1;
   const size = activeIds(o.party).length;
@@ -380,7 +381,7 @@ function ringBell(s: BattleState, heroWasUp: boolean, ctx: EffectContext): void 
   if (!rin?.alive || !rin.keystones.includes('unrung-bell')) return;
   const foe = living(s.enemies)[0];
   if (!foe) return;
-  addBuff(rin, { stat: 'atk', pct: MEMORY_KEYSTONE_VALUES.bellAtkPct, turns: MEMORY_KEYSTONE_VALUES.bellTurns });
+  addBuff(rin, { stat: 'atk', pct: MEMORY_KEYSTONE_VALUES.bellAtkPct, turns: MEMORY_KEYSTONE_VALUES.bellTurns, src: rin.key });
   s.log.push({ type: 'buff', target: rin.key, stat: 'atk', pct: MEMORY_KEYSTONE_VALUES.bellAtkPct });
   s.log.push({ type: 'act', actor: rin.key, label: '攻擊' });
   applyEffect(rin, foe, { kind: 'damage', power: 100, element: 'phys', scale: rin.attackScale ?? 'atk', melee: rin.melee }, ctx);

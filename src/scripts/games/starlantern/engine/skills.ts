@@ -1,4 +1,4 @@
-import { addBuff, calcDamage, dealDamage, roll, stat, SLEEP_TURNS, type BattleEvent, type Combatant } from './combatant';
+import { addBuff, dealDamage, hitAmount, roll, rollHit, stat, SLEEP_TURNS, type BattleEvent, type Combatant } from './combatant';
 import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
@@ -94,8 +94,9 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       // Multistrike adds one hit, only to a single-hit effect; a chance of 0 draws nothing (the one rule, combatant.roll).
       const extra = (eff.hits ?? 1) === 1 && roll((actor.x.multi ?? 0) / 100, ctx.rng) ? 1 : 0;
       for (let i = 0; i < (eff.hits ?? 1) + extra && target.alive; i++) {
-        const { amount, mult, crit, miss } = calcDamage(actor, target, eff, ctx.rng);
-        if (miss) { ctx.log.push({ type: 'miss', target: target.key }); continue; }
+        const rolls = rollHit(actor, target, eff, ctx.rng);
+        if (!rolls) { ctx.log.push({ type: 'miss', target: target.key }); continue; }
+        const { amount, mult, crit } = hitAmount(actor, target, eff, rolls);
         const lost = dealDamage(target, amount);
         if (target.side === 'enemy') reveal(ctx.revealed, target.defId, eff.element);
         ctx.log.push({ type: 'damage', target: target.key, amount: lost, element: eff.element, mult, ...(crit ? { crit } : {}) });
@@ -137,6 +138,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     case 'cure': {
       if (!target.alive) return;
       target.poison = false;
+      delete target.poisonSrc;
       target.sleep = 0;
       ctx.log.push({ type: 'cure', target: target.key });
       return;
@@ -145,8 +147,11 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       if (!target.alive) return;
       const res = (eff.status === 'poison' ? target.x.poisonRes : target.x.sleepRes) ?? 0;
       if (ctx.rng() < eff.chance * (target.boss ? 0.5 : 1) * (1 - res / 100)) {
-        if (eff.status === 'poison') target.poison = true;
-        else target.sleep = SLEEP_TURNS;
+        if (eff.status === 'poison') {
+          // The first poisoner keeps the credit while the poison lasts (the contribution ledger).
+          if (!target.poison) target.poisonSrc = actor.key;
+          target.poison = true;
+        } else target.sleep = SLEEP_TURNS;
         ctx.log.push({ type: 'status', target: target.key, status: eff.status });
       } else {
         ctx.log.push({ type: 'resist', target: target.key });
@@ -157,7 +162,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       if (!target.alive) return;
       // troupe-step: her buffs on her own side last longer (a debuff on a foe does not).
       const more = actor.keystones.includes('troupe-step') && target.side === actor.side ? MEMORY_KEYSTONE_VALUES.troupeTurns : 0;
-      addBuff(target, { stat: eff.stat, pct: eff.pct, turns: eff.turns + more });
+      addBuff(target, { stat: eff.stat, pct: eff.pct, turns: eff.turns + more, src: actor.key });
       ctx.log.push({ type: 'buff', target: target.key, stat: eff.stat, pct: eff.pct });
       return;
     }

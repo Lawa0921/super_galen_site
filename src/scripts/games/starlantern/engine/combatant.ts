@@ -4,7 +4,8 @@ import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 
-export interface Buff { stat: BuffStat; pct: number; turns: number }
+/** `src`: the combatant key of whoever cast it (the contribution ledger credits what it prevents to them). */
+export interface Buff { stat: BuffStat; pct: number; turns: number; src?: string }
 
 export interface Combatant {
   key: string; side: 'party' | 'enemy'; defId: string; name: string;
@@ -13,6 +14,8 @@ export interface Combatant {
   cell?: number;
   weak: Element[]; resist: Element[]; boss: boolean; alive: boolean;
   poison: boolean; sleep: number; buffs: Buff[]; taunt: number;
+  /** Who poisoned it: the first to land the poison; kept while it lasts, cleared by a cure or a fall. */
+  poisonSrc?: string;
   turret: { power: number; turns: number } | null; defending: boolean;
   /** Ultimate gauge, 0–100; enemies keep 0. */
   limit: number;
@@ -102,25 +105,40 @@ export const ENEMY_CRIT_DMG = 50;
 /** True with chance `p`; a chance of 0 or less draws nothing, so fights without these stats keep their random sequence. */
 export const roll = (p: number, rng: Rng): boolean => p > 0 && rng() < p;
 
+/** The random part of one landed hit: the variance factor, whether it crit, whether it was blocked. */
+export interface HitRolls { variance: number; crit: boolean; blocked: boolean }
+
 /**
- * One hit: evasion, then the base formula with weakness and row, element bonus and resistance, vuln (weakness hits
- * only), eliteDmg (elites and bosses), crit, armor and block (physical only), melee / ranged reduction, defending.
- * Only the variance always draws; every other roll draws only when its chance is above 0.
+ * One hit's draws, in calcDamage's order: evasion (null when it lands), the variance (always drawn), the crit (none for
+ * 'always'), the block (physical only). Every roll but the variance draws only when its chance is above 0.
  */
-export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rng): { amount: number; mult: number; crit: boolean; miss: boolean } {
+export function rollHit(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rng): HitRolls | null {
+  const ax = (k: SecondaryKey): number => a.x[k] ?? 0;
+  const tx = (k: SecondaryKey): number => t.x[k] ?? 0;
+  // An enemy's evasion is a plain percentage, held at the same 50% as a member's rated evasion.
+  const evade = t.side === 'party' ? evadeChance(tx('evasion'), a.level) : Math.min(EVADE_MAX, tx('evasion') / 100);
+  if (roll(evade, rng)) return null;
+  const variance = 0.9 + rng() * 0.2;
+  const crit = spec.crit === 'always' || roll(ax('crit') / 100, rng);
+  const blocked = spec.element === 'phys' && roll(tx('block') / 100, rng);
+  return { variance, crit, blocked };
+}
+
+/**
+ * One landed hit's amount from its rolls, drawing nothing: the base formula with weakness and row, element bonus and
+ * resistance, vuln (weakness hits only), eliteDmg (elites and bosses), crit, armor and block (physical only), melee /
+ * ranged reduction, defending, keystones. `mult` is the element multiplier the log shows.
+ */
+export function hitAmount(a: Combatant, t: Combatant, spec: DamageSpec, r: HitRolls): { amount: number; mult: number; crit: boolean } {
   const ax = (k: SecondaryKey): number => a.x[k] ?? 0;
   const tx = (k: SecondaryKey): number => t.x[k] ?? 0;
   const el = elementMult(t, spec.element);
-  // An enemy's evasion is a plain percentage, held at the same 50% as a member's rated evasion.
-  const evade = t.side === 'party' ? evadeChance(tx('evasion'), a.level) : Math.min(EVADE_MAX, tx('evasion') / 100);
-  if (roll(evade, rng)) return { amount: 0, mult: 1, crit: false, miss: true };   // nothing landed: no element multiplier
   const atk = stat(a, spec.scale);
   const def = stat(t, spec.scale === 'atk' ? 'def' : 'res');
   let mult = el;
   // Melee weakens with the attacker's distance; the defender's row protects by reach (formation.reachable), not by halving.
   if (spec.melee) mult *= ROW_MELEE[a.row];
   const base = ((atk * spec.power) / 100) * (60 / (40 + def));
-  const variance = 0.9 + rng() * 0.2;
   // Every factor below is exactly 1 when its stat is absent, so such a hit keeps its old value to the bit.
   const hitEl = spec.element;
   // A negative resistance is a weakness, held at -100 (double damage); above 100 it is held at 100 (no damage), so the factor
@@ -130,11 +148,10 @@ export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rn
   if (t.boss || t.tint === 'elite') mult *= 1 + ax('eliteDmg') / 100;
   if (spec.execute) mult *= 1 + (spec.execute / 100) * (1 - t.hp / t.max.hp);
   if (spec.wounded && t.hp < t.max.hp) mult *= 1 + spec.wounded / 100;
-  const crit = spec.crit === 'always' || roll(ax('crit') / 100, rng);
-  if (crit) mult *= 1 + (a.side === 'enemy' ? ENEMY_CRIT_DMG : ax('critDmg')) / 100;
+  if (r.crit) mult *= 1 + (a.side === 'enemy' ? ENEMY_CRIT_DMG : ax('critDmg')) / 100;
   if (hitEl === 'phys') {
     mult *= 1 - armorReduction(tx('armor'), a.level);
-    if (roll(tx('block') / 100, rng)) mult *= 0.5;
+    if (r.blocked) mult *= 0.5;
   }
   mult *= 1 - tx(spec.melee ? 'meleeDR' : 'rangedDR') / 100;
   if (t.defending) mult *= 0.5;
@@ -144,7 +161,14 @@ export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rn
   // Memory keystones: the same rule, a factor only when held and no draws.
   if (a.keystones.includes('carried-out') && t.hp >= t.max.hp) mult *= 1 + MEMORY_KEYSTONE_VALUES.fullHpPct / 100;
   if (t.keystones.includes('not-a-shield') && t.taunt > 0) mult *= 1 - MEMORY_KEYSTONE_VALUES.friendGuardPct / 100;
-  return { amount: Math.max(1, Math.floor(base * mult * variance)), mult: el, crit, miss: false };
+  return { amount: Math.max(1, Math.floor(base * mult * r.variance)), mult: el, crit: r.crit };
+}
+
+/** One hit: `rollHit`, then `hitAmount` when it landed. Only the variance always draws. */
+export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rng): { amount: number; mult: number; crit: boolean; miss: boolean } {
+  const r = rollHit(a, t, spec, rng);
+  if (!r) return { amount: 0, mult: 1, crit: false, miss: true };   // nothing landed: no element multiplier
+  return { ...hitAmount(a, t, spec, r), miss: false };
 }
 
 /** One gain of the ultimate gauge, raised by the member's gauge bonus and rounded down. */
@@ -159,6 +183,7 @@ export function dealDamage(t: Combatant, amount: number): number {
   if (t.hp === 0) {
     t.alive = false;
     t.poison = false;
+    delete t.poisonSrc;
     t.buffs = [];
     t.taunt = 0;
     t.turret = null;
