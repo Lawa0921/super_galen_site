@@ -2,8 +2,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   APPEARANCE_FIELDS, DEFAULT_APPEARANCE, BODY_TYPES, bodyDefaults, HAIR_STYLES, HAIR_COLORS, EYE_COLORS, EYE_SHAPES, SKIN_TONES, OUTFITS,
-  CLOTH_COLORS, ACCESSORIES, appearanceKey, normalizeAppearance, randomAppearance, stepAppearance,
-  loadDefaultAppearance, saveDefaultAppearance, APPEARANCE_KEY, sameAppearance, type Appearance,
+  CLOTH_COLORS, ACCESSORIES, OUTFIT_PLAIN, appearanceKey, normalizeAppearance, randomAppearance, stepAppearance,
+  loadDefaultAppearance, saveDefaultAppearance, APPEARANCE_KEY, sameAppearance, createLook, type Appearance,
 } from './appearance';
 
 function memStore(): Storage {
@@ -51,6 +51,17 @@ describe('外觀選項', () => {
       expect(new Set(ids).size).toBe(ids.length);
       for (const o of f.options) expect(o.zh.length).toBeGreaterThan(0);
     }
+  });
+  it('基本布衣 plain：append 在服裝最後（舊的 14 套索引不變）、OUTFIT_PLAIN 指向它、預設色合法', () => {
+    expect(OUTFITS[OUTFITS.length - 1].id).toBe('plain');
+    expect(OUTFITS[OUTFITS.length - 1].zh).toBe('布衣');
+    expect(OUTFIT_PLAIN).toBe(OUTFITS.length - 1);
+    expect(OUTFITS.slice(0, 14).map((o) => o.id)).toEqual(['explorer', 'sailor', 'miko', 'hoodie', 'coat', 'maid', 'ninja', 'mage', 'knight', 'qipao', 'pirate', 'idol', 'priest', 'gothic']);
+    expect(normalizeAppearance({ ...DEFAULT_APPEARANCE, outfit: OUTFIT_PLAIN }).outfit).toBe(OUTFIT_PLAIN);
+  });
+  it('隨機外觀不會抽到布衣（NPC / 隨機的結果和加布衣之前一樣）', () => {
+    const r = lcg(77);
+    for (let i = 0; i < 2000; i++) expect(randomAppearance(r).outfit).not.toBe(OUTFIT_PLAIN);
   });
   it('每套服裝都有合法的預設主色 / 副色', () => {
     for (const o of OUTFITS) {
@@ -192,5 +203,35 @@ describe('種族欄位', () => {
     const seen = new Set<number>();
     for (let i = 0; i < 200; i++) seen.add(randomAppearance(rand).race);
     expect([...seen].sort()).toEqual([0, 1, 2, 3, 4]);
+  });
+});
+
+describe('createLook（建角外觀：只留身體，穿基本布衣）', () => {
+  it('outfit = 布衣、沒有頭飾、沒有眼鏡；身體欄位與種族照舊', () => {
+    const a: Appearance = { ...bodyDefaults(0), race: 3, hair: 4, hairColor: 2, glasses: true, acc: 2 };
+    const c = createLook(a);
+    expect(c.outfit).toBe(OUTFIT_PLAIN);
+    expect(c.acc).toBe(0);
+    expect(c.glasses).toBe(false);
+    for (const k of ['body', 'race', 'blush', 'hair', 'hairColor', 'ahoge', 'eyes', 'eyeShape', 'skin'] as const) expect(c[k]).toBe(a[k]);
+    // 不改到原物件
+    expect(a.outfit).not.toBe(OUTFIT_PLAIN);
+  });
+  it('原本穿別的衣服 → 配色換成布衣的預設；已經是布衣 → 自己調的配色保留', () => {
+    expect(createLook(bodyDefaults(0))).toMatchObject({ color1: OUTFITS[OUTFIT_PLAIN].colors[0], color2: OUTFITS[OUTFIT_PLAIN].colors[1] });
+    const p = { ...createLook(bodyDefaults(1)), color1: 3, color2: 10 };
+    expect(createLook(p)).toEqual(p);
+  });
+  it('冪等', () => {
+    const rand = lcg(11);
+    for (let i = 0; i < 30; i++) { const c = createLook(randomAppearance(rand)); expect(createLook(c)).toEqual(c); }
+  });
+  it('建角外觀換體型：還是預設（沒改過）→ 換成另一邊預設的建角外觀；種族保留', () => {
+    const f = { ...createLook(bodyDefaults(0)), race: 2 };
+    expect(stepAppearance(f, 'body', 1)).toEqual({ ...createLook(bodyDefaults(1)), race: 2 });
+    expect(stepAppearance(createLook(bodyDefaults(1)), 'body', 1)).toEqual(createLook(bodyDefaults(0)));
+    // 改過 → 只換體型，仍是布衣
+    const m = { ...createLook(bodyDefaults(0)), hair: 7 };
+    expect(stepAppearance(m, 'body', 1)).toEqual({ ...m, body: 1 });
   });
 });

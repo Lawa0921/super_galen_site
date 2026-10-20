@@ -79,6 +79,10 @@ export interface StartOptions {
   canvas: HTMLCanvasElement;
   game: DelveGame;
   onMenu: () => void;
+  /** 梳妝台開 / 關（衣櫥在 session 手上：由它開 'mirror' 模式；關 = 走遠 / 被拆，開著就關掉） */
+  onMirror?: (open: boolean) => void;
+  /** 用了轉生之藥：開種族選單（確定換族才呼叫 game.rebirth 消耗） */
+  onRebirth?: () => void;
 }
 
 const WINDOW = 120;
@@ -235,6 +239,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
           const m = blockedMessage(e.reason);
           if (m) hud.toast(m);
         } else if (e.type === 'chest') hud.setChest(e.open);
+        else if (e.type === 'mirror') opts.onMirror?.(e.open);
+        else if (e.type === 'rebirth') opts.onRebirth?.();
         else if (e.type === 'lore') { ui.showLore(e.id, e.first); sound.lore(e.first); }
         else if (e.type === 'discover') { ui.discover(e.region.name, e.region.cat); sound.discover(); }
         else if (e.type === 'treasure') { hud.toast(`獲得珍寶：${ITEMS[e.item].name.zh}`, 2400); sound.treasure(); invChanged = true; }

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createCharacter, decodeCharacter, encodeCharacter, newId, newIdentity, validateCharacter, type DelveCharacter } from './character';
+import { CHARACTER_FORMAT, createCharacter, decodeCharacter, encodeCharacter, newId, newIdentity, validateCharacter, type DelveCharacter } from './character';
 import { DelveGame } from '../engine/game';
 import { snapshotGame } from './serialize';
 import { splitSnapshot } from './worldSave';
@@ -40,10 +40,19 @@ describe('createCharacter', () => {
 describe('DelveCharacter', () => {
   it('encode → decode 往返完全相等', () => expect(decodeCharacter(encodeCharacter(good()))).toEqual(good()));
   it.each([
-    ['cformat 2', { cformat: 2 }], ['沒有 id', { id: '' }], ['壞背包', { inventory: { slots: [{ item: 'nope', count: 1 }] } }],
+    ['cformat 3', { cformat: 3 }], ['cformat 0', { cformat: 0 }], ['沒有 cformat', { cformat: undefined }], ['沒有 id', { id: '' }], ['壞背包', { inventory: { slots: [{ item: 'nope', count: 1 }] } }],
     ['背包 gear 不合法', { inventory: { slots: [{ item: 'torch', count: 1, gear: { rarity: 9 } }] } }],
     ['hp 是字串', { combat: { hp: '80', baseMaxHp: 120, mana: 20 } }], ['rev 負數', { rev: -1 }],
   ])('壞角色檔被拒：%s', (_, patch) => expect(() => validateCharacter({ ...good(), ...patch })).toThrow(SaveFormatError));
+  it('cformat 1（還沒轉換時裝的舊角色）與 2 都讀得進來，版本原樣保留（applyCharacter 依它決定要不要轉換）', () => {
+    expect(validateCharacter({ ...good(), cformat: 1 }).cformat).toBe(1);
+    expect(validateCharacter({ ...good(), cformat: 2 }).cformat).toBe(2);
+    expect(decodeCharacter(encodeCharacter({ ...good(), cformat: 2 }))).toEqual({ ...good(), cformat: 2 });
+  });
+  it('新角色 / 存檔寫出的角色一律是目前的格式（2）', () => {
+    expect(CHARACTER_FORMAT).toBe(2);
+    expect(createCharacter('新', normalizeAppearance(undefined), 0).cformat).toBe(2);
+  });
   it('不是 JSON → SaveFormatError', () => expect(() => decodeCharacter(new Uint8Array([1, 2, 3]))).toThrow(SaveFormatError));
   it('暱稱空白或太長 → 旅人；未知 buff 丟掉', () => {
     const c = validateCharacter({ ...good(), nick: '   ', buffsLeft: { bless: 5, nope: 3, ward: -1 } });

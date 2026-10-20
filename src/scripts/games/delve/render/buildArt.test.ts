@@ -54,6 +54,13 @@ describe('build art', () => {
     expect(decorStyle(T.FENCE, 0, 0, n({ '-1,0': T.STONE }))).toBe(1);
     expect(decorStyle(T.FENCE, 0, 0, n({}))).toBe(0);
   });
+  it('vanity table: drawn as a placed decor tile and has an icon', () => {
+    expect(BUILD_DECOR_STYLES[T.VANITY_TABLE]).toBe(1);
+    expect(BUILD_ICONS).toContain('vanity_table');
+    const b = buildDecorBmp(T.VANITY_TABLE, 0)!;
+    expect(clean(b)).toBe(true);
+    expect(opaque(b)).toBeGreaterThan(60);
+  });
   it('every new item has a clean icon', () => {
     for (const it of BUILD_ICONS) { const b = buildIcon(it)!; expect(b).not.toBeNull(); expect(clean(b)).toBe(true); expect(opaque(b)).toBeGreaterThan(10); }
   });

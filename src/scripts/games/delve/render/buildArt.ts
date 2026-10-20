@@ -1,7 +1,7 @@
 // buildArt.ts — 建築 / 據點的像素圖（純 Bmp，無 DOM）：
 //   · 新的實心方塊（深色 / 淺色木板、紅磚、紅 / 青屋瓦、玻璃）：texture 給 textures.ts 的 frameTile 自動接邊
 //   · 人造背景牆（深色 / 淺色木板牆、石磚牆、紅磚牆、玻璃窗、灰泥牆）
-//   · 家具 / 裝飾（圍欄 4 種接法、沙發 / 壁爐左右半、層架、吊燈、檯燈、地毯、盆栽、長椅、據點爐心）
+//   · 家具 / 裝飾（圍欄 4 種接法、沙發 / 壁爐左右半、層架、吊燈、檯燈、地毯、盆栽、長椅、據點爐心、梳妝台）
 //   · 這些道具的 16×16 圖示 + 建築木槌
 //   全部色票色、不透明（透明 = 完全不畫）；光從左上，1px 描邊（INK）。
 import { Bmp, INK, h01, ramp, type RGB } from './pixel';
@@ -301,6 +301,28 @@ function bench(): Bmp {
   for (const x of [2, 12]) { b.rect(x, 13, 2, 3, w[3]); b.set(x, 13, w[5]); }
   return outline(b);
 }
+/** 梳妝台：木桌（抽屜 + 金把手）上立著橢圓木框鏡（鏡面斜向反光），桌角一瓶香水、一把梳子 */
+function vanityTable(): Bmp {
+  const b = new Bmp(S, S), w = WOOD;
+  // 鏡子：外圈木框（受光的左上亮）、裡面鏡面（兩道斜反光）
+  for (let y = 0; y < 9; y++) for (let x = 3; x < 13; x++) {
+    const nx = (x + 0.5 - 8) / 4.6, ny = (y + 0.5 - 4.4) / 4.4, d = nx * nx + ny * ny;
+    if (d > 1) continue;
+    if (d > 0.6) { b.set(x, y, ny < -0.2 || nx < -0.4 ? w[5] : w[3]); continue; }
+    const g = x - y;
+    b.set(x, y, g === 2 || g === 3 ? GLASS[6] : g === 5 ? GLASS[5] : y < 4 ? GLASS[4] : GLASS[3]);
+  }
+  b.rect(7, 8, 2, 1, w[2]); // 鏡座
+  // 桌面、桌身、抽屜（金把手）、桌腳
+  b.rect(0, 9, 16, 2, w[4]); b.rect(0, 9, 16, 1, w[6]);
+  b.rect(1, 11, 14, 3, w[3]); b.rect(1, 13, 14, 1, w[1]);
+  b.rect(4, 11, 8, 2, w[4]); b.rect(4, 11, 8, 1, w[5]); b.set(7, 12, GOLD[4]); b.set(8, 12, GOLD[3]);
+  for (const x of [1, 13]) { b.rect(x, 14, 2, 2, w[2]); b.set(x, 14, w[4]); }
+  // 香水瓶（左）、梳子（右）
+  b.rect(0, 7, 2, 2, ROSE[3]); b.set(0, 7, ROSE[4]); b.set(1, 6, GOLD[4]);
+  b.rect(13, 8, 3, 1, CREAM[2]); b.set(13, 8, CREAM[3]);
+  return outline(b);
+}
 /** 據點爐心：石砌火盆（金色符紋）上燃著大火，flick 換火形 */
 function hearth(flick: number): Bmp {
   const b = new Bmp(S, S), s = STONE, f = FIRE;
@@ -339,13 +361,14 @@ export function buildDecorBmp(id: number, style: number): Bmp | null {
     case T.POTTED_PLANT: return pottedPlant(style);
     case T.BENCH: return bench();
     case T.HEARTH: return hearth(style % 3);
+    case T.VANITY_TABLE: return vanityTable();
     default: return siteDecorBmp(id, style);
   }
 }
 /** 每種新裝飾在圖集裡的欄數 */
 export const BUILD_DECOR_STYLES: Record<number, number> = {
   [T.FENCE]: 4, [T.SOFA_L]: 1, [T.SOFA_R]: 1, [T.FIREPLACE_L]: 3, [T.FIREPLACE_R]: 3, [T.SHELF]: 2, [T.CHANDELIER]: 1,
-  [T.TABLE_LAMP]: 1, [T.RUG]: 2, [T.POTTED_PLANT]: 3, [T.BENCH]: 1, [T.HEARTH]: 3,
+  [T.TABLE_LAMP]: 1, [T.RUG]: 2, [T.POTTED_PLANT]: 3, [T.BENCH]: 1, [T.HEARTH]: 3, [T.VANITY_TABLE]: 1,
   ...SITE_DECOR_STYLES,
 };
 
@@ -420,6 +443,7 @@ export function buildIcon(item: ItemId): Bmp | null {
     case 'potted_plant': return pottedPlant(0);
     case 'bench': return bench();
     case 'hearth': return hearth(0);
+    case 'vanity_table': return vanityTable();
     case 'builder_hammer': return hammerIcon();
     case 'thatch': return tileIcon(T.THATCH);
     case 'timber': return tileIcon(T.TIMBER);
@@ -431,6 +455,6 @@ export function buildIcon(item: ItemId): Bmp | null {
 export const BUILD_ICONS: readonly ItemId[] = [
   'dark_planks', 'pale_planks', 'red_brick', 'roof_red', 'roof_slate', 'glass', 'fence', 'wood_beam',
   'dark_plank_wall', 'pale_plank_wall', 'stone_brick_wall', 'red_brick_wall', 'glass_wall', 'plaster_wall',
-  'sofa', 'fireplace', 'shelf', 'chandelier', 'table_lamp', 'rug', 'potted_plant', 'bench', 'hearth', 'builder_hammer',
+  'sofa', 'fireplace', 'shelf', 'chandelier', 'table_lamp', 'rug', 'potted_plant', 'bench', 'hearth', 'builder_hammer', 'vanity_table',
   ...SITE_ICONS,
 ];

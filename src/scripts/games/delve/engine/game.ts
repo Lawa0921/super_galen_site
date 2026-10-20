@@ -12,7 +12,7 @@ import type { DungeonInfo } from './gen/dungeon';
 type GenRelic = { x: number; y: number; item: ItemId; where: string };
 import { T, W, TIER_UNBREAKABLE, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
 import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemDef, type ItemId, type PickStats, type WeaponDef, type WeaponKind } from './items';
-import { potLoot, type Drop } from './loot';
+import { bossRebirth, potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
 import { craft as craftRecipe, findRecipe, type CraftResult, type Station } from './crafting';
 import { makeBody, stepPlayer, onPlatform, type Body, type MoveStats, type PlayerMotion } from './physics';
@@ -38,10 +38,12 @@ import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type Ph
 import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidContact } from './swim';
-import { normalizeAppearance, type Appearance } from './appearance';
+import { normalizeAppearance, RACES, type Appearance } from './appearance';
 import { raceMods, type RaceMods } from './race';
-import { Vanity, type HideSlot, type VanitySlot } from './vanity';
-import { buildDollLook, dollKey, type DollLook } from './doll';
+import { Vanity, VANITY_SLOTS, type HideSlot, type VanitySlot } from './vanity';
+import { buildDollLook, dollKey, pieceOf, type DollLook } from './doll';
+import { planWardrobeMigration } from './wardrobeMigration';
+import { defaultTint, tintChannels, validTint, type Tint } from './tint';
 import { ProjList, type HitFx, type ProjKind, type Projectile } from './projectiles';
 import {
   ascendCost, ascendGear, baseTier, gearSlot, ilvlForDepth, rerollAffix, rerollCost, rollDropItem, rollGear, rollRarity,
@@ -107,6 +109,10 @@ export type DelveEvent =
   | { type: 'blocked'; action: 'mine' | 'place' | 'use'; reason: BlockReason; x: number; y: number }
   | { type: 'select'; slot: number }
   | { type: 'chest'; open: boolean; x: number; y: number }
+  /** 梳妝台：開啟（UI 開衣櫥 'mirror' 模式）/ 關閉（走遠、被拆、UI 關掉） */
+  | { type: 'mirror'; open: boolean; x: number; y: number }
+  /** 轉生之藥：UI 開種族選單（確定後呼叫 game.rebirth） */
+  | { type: 'rebirth' }
   | { type: 'door'; open: boolean; x: number; y: number; unlocked: boolean }
   | { type: 'unlock'; x: number; y: number; item: ItemId }
   /** 讀古碑；first = 第一次讀到（收進日誌） */
@@ -411,6 +417,8 @@ export const BOSS_DROPS: { item: ItemId; n: number }[] = [
   { item: 'lumen_blade', n: 1 }, { item: 'warden_heart', n: 1 }, { item: 'warden_trophy', n: 1 },
   { item: 'healing_potion', n: 5 }, { item: 'silver_coin', n: 12 },
 ];
+/** 首領：每次擊敗另外掉一件時裝（從這些款式裡抽一件；高稀有款） */
+export const BOSS_FASHION: readonly ItemId[] = ['idol_top', 'idol_bottom', 'gothic_top', 'gothic_bottom', 'acc_crown'];
 /** 首領 → 召喚它用掉的道具（首領戰中存檔讀檔時退還） */
 export const BOSS_SUMMON_ITEM: Partial<Record<EnemyKind, ItemId>> = { lantern_warden: 'wick_offering' };
 // ── 裝備詞條 ──
@@ -534,6 +542,8 @@ export class DelveGame {
   private useConsumed = false;
   /** 目前開著的箱子（tile 座標） */
   openChest: { x: number; y: number } | null = null;
+  /** 目前在用的梳妝台（tile 座標）；比照箱子：走遠 / 被拆就關 */
+  openMirror: { x: number; y: number } | null = null;
   private mining: MiningState | null = null;
   private events: DelveEvent[] = [];
   private lastBlocked = '';
@@ -836,7 +846,11 @@ export class DelveGame {
         if (this.useLiquidTool(use, x, y)) this.placeCooldown = LIQUID_TOOL_CD;
       } else if (use) {
         if (!this.useConsumed) { this.useConsumed = true; this.consume(use); }
-      } else if (!this.useConsumed && this.tryPlace(x, y)) this.placeCooldown = PLACE_COOLDOWN;
+      } else if (!this.useConsumed && this.tryPlace(x, y)) {
+        this.placeCooldown = PLACE_COOLDOWN;
+        // 剛放下的梳妝台：這次按住不接著打開它（衣櫥會蓋住畫面），放開再按才用
+        if (this.world.getFg(x, y) === T.VANITY_TABLE) this.useConsumed = true;
+      }
     }
     this.updateEntities(dt);
     this.updateSettlements(dt);
@@ -844,6 +858,10 @@ export class DelveGame {
     if (this.openChest) {
       const { x, y } = this.openChest;
       if (!isChestTile(this.world.getFg(x, y)) || !this.canReach(x, y, this.reach() + 1.5)) this.closeChest();
+    }
+    if (this.openMirror) {
+      const { x, y } = this.openMirror;
+      if (this.world.getFg(x, y) !== T.VANITY_TABLE || !this.canReach(x, y, this.reach() + 1.5)) this.closeMirror();
     }
   }
 
@@ -1006,11 +1024,13 @@ export class DelveGame {
     return true;
   }
 
-  /** 在 tile (tx,ty) 中心丟出掉落物（彈出方向由座標雜湊決定，確定性） */
-  private dropAtTile(item: ItemId, n: number, tx: number, ty: number): void {
+  /** 在 tile (tx,ty) 中心丟出掉落物（彈出方向由座標雜湊決定，確定性）；tint = 帶顏色的時裝（一件一個） */
+  dropAtTile(item: ItemId, n: number, tx: number, ty: number, tint?: Tint): void {
     const h = ((Math.imul(tx, 73856093) ^ Math.imul(ty, 19349663)) >>> 0) % 1000;
     const v = popVelocity(h / 1000, ((h * 7) % 1000) / 1000);
-    this.drops.spawn(item, n, (tx + 0.5) * TILE_SIZE, (ty + 0.5) * TILE_SIZE, v.vx, v.vy * 0.7);
+    const x = (tx + 0.5) * TILE_SIZE, y = (ty + 0.5) * TILE_SIZE;
+    if (!tint) { this.drops.spawn(item, n, x, y, v.vx, v.vy * 0.7); return; }
+    for (let k = 0; k < n; k++) this.drops.spawn(item, 1, x, y, v.vx, v.vy * 0.7, 0, undefined, tint);
   }
 
   /** 樹幹被砍：連帶收集上方相連的樹幹與樹葉（4 鄰、不往下、水平 ±4 格） */
@@ -1298,6 +1318,37 @@ export class DelveGame {
     return s ? this.vanity.equipFrom(this.inventory, i, s) : false;
   }
   unequipVanity(slot: VanitySlot): boolean { return this.vanity.unequipTo(this.inventory, slot); }
+  /**
+   * 梳妝台：身上每件換色看得出來的時裝（外觀欄順序）——目前的顏色（沒有 tint = 款式原色）與幾個顏色（tintChannels）。
+   * 固定配色的（礦工盔、花冠、羽翼、髮夾…）不列。
+   */
+  mirrorTints(): { slot: VanitySlot; item: ItemId; tint: Tint; channels: 1 | 2 }[] {
+    const out: { slot: VanitySlot; item: ItemId; tint: Tint; channels: 1 | 2 }[] = [];
+    for (const slot of VANITY_SLOTS) {
+      const st = this.vanity.getStack(slot), look = st ? ITEMS[st.item].vanity?.look : undefined;
+      if (!st || !look) continue;
+      const channels = tintChannels(look), tint = st.tint ?? defaultTint(look);
+      if (channels === 0 || !tint) continue;
+      out.push({ slot, item: st.item, tint: [tint[0], tint[1]], channels });
+    }
+    return out;
+  }
+  /**
+   * 梳妝台：替外觀欄 slot 上正穿著的時裝換顏色（免費）。那格沒東西 / 不是看得出顏色的時裝 / 顏色不合法 → false。
+   * 只有主色的款式：副色跟著主色。改的是那件物品本身（脫下來、放箱子都帶著）；紙娃娃靠 vanity.version 重畫。
+   */
+  recolorWorn(slot: VanitySlot, tint: [number, number]): boolean {
+    const st = this.vanity.getStack(slot), look = st ? ITEMS[st.item].vanity?.look : undefined;
+    const t = validTint(tint);
+    if (!st || !look || !t) return false;
+    const ch = tintChannels(look);
+    if (ch === 0) return false;
+    if (ch === 1) t[1] = t[0];
+    if (st.tint && st.tint[0] === t[0] && st.tint[1] === t[1]) return true;
+    st.tint = t;
+    this.vanity.touch();
+    return true;
+  }
   setHideArmor(slot: HideSlot, hide: boolean): void { this.vanity.setHide(slot, hide); }
   /** 紙娃娃現在的樣子（外觀 / 裝備 / 外觀欄沒變就回傳同一個物件）與快取 key */
   doll(): { look: DollLook; key: string } {
@@ -1653,6 +1704,14 @@ export class DelveGame {
       return true;
     }
     if (isLandmarkTile(id)) return this.claimLandmark(x, y);
+    if (id === T.VANITY_TABLE) {
+      if (this.openMirror && this.openMirror.x === x && this.openMirror.y === y) return true;
+      if (this.openMirror) this.closeMirror();
+      if (this.openChest) this.closeChest();
+      this.openMirror = { x, y };
+      this.events.push({ type: 'mirror', open: true, x, y });
+      return true;
+    }
     if (id === T.LORE_TABLET) {
       const lid = this.tabletId(x, y);
       this.events.push({ type: 'lore', id: lid, x, y, first: this.discovery.readLore(lid) });
@@ -1678,6 +1737,13 @@ export class DelveGame {
     this.openChest = null;
     this.events.push({ type: 'chest', open: false, x, y });
   }
+  /** 不用梳妝台了（UI 關掉衣櫥 / 走遠 / 被拆）：推關閉事件，只推一次 */
+  closeMirror(): void {
+    if (!this.openMirror) return;
+    const { x, y } = this.openMirror;
+    this.openMirror = null;
+    this.events.push({ type: 'mirror', open: false, x, y });
+  }
   /** 開著的箱子內容（直接參照，請用下列方法修改） */
   chestSlots(): (Stack | null)[] | null {
     if (!this.openChest) return null;
@@ -1694,7 +1760,7 @@ export class DelveGame {
       const ilvl = Math.max(baseTier(st.item), ilvlForDepth(depth));
       st.gear = rollGear(st.item, r, { rarity: rollRarity(r, 'dungeon', depth, this.stats().gear.luck, ITEMS[st.item].unique ? 2 : 0), ilvl });
     }
-    const left = this.inventory.add(st.item, st.count, st.gear);
+    const left = this.inventory.add(st.item, st.count, st.gear, st.tint);
     if (left === st.count) { this.block('mine', 'full', c.x, c.y); return false; }
     if (left > 0) st.count = left; else slots[i] = null;
     this.world.markModified(c.x, c.y);
@@ -1719,7 +1785,7 @@ export class DelveGame {
     const slots = this.chestSlots(), c = this.openChest;
     const st = this.inventory.slots[invSlot];
     if (!slots || !c || !st) return false;
-    if (st.gear) {
+    if (st.gear || st.tint) {
       const k = slots.indexOf(null);
       if (k < 0) return false;
       slots[k] = st;
@@ -2074,6 +2140,9 @@ export class DelveGame {
         else drop(it.item, it.n);
       }
       for (let k = 0; k < BOSS_GEAR; k++) { const item = rollDropItem(this.lootRng, 5); this.spawnGearDrop(item, this.rollFor(item, 'boss', 1, 5), cx, cy); }
+      drop(BOSS_FASHION[Math.floor(this.lootRng.next() * BOSS_FASHION.length) % BOSS_FASHION.length], 1);
+      // 轉生之藥：這個角色第一次擊敗這隻首領必掉，之後 15%（levels.bosses 在這時還是擊殺前的狀態）
+      if (bossRebirth(this.seed, e.kind, this.kills[e.kind] ?? 0, !this.levels.bosses.has(e.kind))) drop('rebirth_potion', 1);
       this.bossesDefeated.add(e.kind);
       this.enemies = this.enemies.filter((q) => !ENEMIES[q.kind].minion);
       for (const p of this.projectiles.list) if (p.hostile) p.life = 0;
@@ -2346,6 +2415,8 @@ export class DelveGame {
       this.baseMaxHp = Math.min(MAX_HP_CAP, this.baseMaxHp + LIFE_CORE_HP);
       this.hp = Math.min(this.maxHp(), this.hp + LIFE_CORE_HP);
       this.events.push({ type: 'lifeup', maxHp: this.maxHp() });
+    } else if (use === 'rebirth') {
+      this.events.push({ type: 'rebirth' }); // 不在這裡消耗：選了別的種族按確定才扣（rebirth()）
     } else if (use === 'heal') {
       if (this.potionCd > 0 || this.hp >= this.maxHp()) { this.block('use', 'potion', x, y); return; }
       this.inventory.takeFromSlot(this.inventory.selected, 1);
@@ -2473,7 +2544,7 @@ export class DelveGame {
     const got = this.drops.step(this.env, {
       player: p, magnetPx: this.magnetRadius() * S, activePx: ACTIVE.x * S, canPickup: !this.dead,
       room: (item, n) => (inv.canAdd(item, n) ? n : inv.canAdd(item, 1) ? 1 : 0),
-      take: (item, n, gear) => n - inv.add(item, n, gear),
+      take: (item, n, gear, tint) => n - inv.add(item, n, gear, tint),
     }, dt);
     for (const [item, n, gear] of got) this.events.push(gear ? { type: 'pickup', item, n, rarity: gear.rarity } : { type: 'pickup', item, n });
   }
@@ -2738,12 +2809,16 @@ export class DelveGame {
     this.drops.spawn(item, 1, x, y, v.vx, v.vy, 0, gear);
     this.events.push({ type: 'loot', item, rarity: gear.rarity, x, y });
   }
-  /** 放進背包；放不下掉在腳邊 */
-  private giveOrDrop(item: ItemId, gear: Gear): void {
-    if (this.inventory.add(item, 1, gear) > 0) {
+  /** 一件放進背包；放不下掉在腳邊（gear = 帶詞條的裝備；tint = 帶顏色的時裝） */
+  giveOrDrop(item: ItemId, gear?: Gear, tint?: Tint): void {
+    if (this.inventory.add(item, 1, gear, tint) > 0) {
       const c = this.playerCenter();
-      this.spawnGearDrop(item, gear, c.x, c.y);
-    } else this.events.push({ type: 'pickup', item, n: 1, rarity: gear.rarity });
+      if (gear) this.spawnGearDrop(item, gear, c.x, c.y);
+      else {
+        const v = popVelocity(this.lootRng.next(), this.lootRng.next());
+        this.drops.spawn(item, 1, c.x, c.y, v.vx, v.vy, 0, undefined, tint);
+      }
+    } else this.events.push(gear ? { type: 'pickup', item, n: 1, rarity: gear.rarity } : { type: 'pickup', item, n: 1 });
   }
   /** 把背包 / 裝備欄的裝備收進圖鑑；新詞條發 codex 事件 */
   observeGear(): void {
@@ -3758,8 +3833,44 @@ export class DelveGame {
   }
 
   // ── debug / e2e / 存檔還原 ─────────────────────────────
+  /**
+   * 轉生之藥：換成指定種族。同族或背包裡沒有藥 → false、什麼都不動；換成功才消耗 1 瓶（從背包找，不看選取格）。
+   * 種族只能從這裡改（梳妝台 / 建角之後都不行）。
+   */
+  rebirth(race: number): boolean {
+    const cur = this.appearance;
+    if (!Number.isInteger(race) || race < 0 || race >= RACES.length || race === cur.race) return false;
+    if (!this.inventory.remove('rebirth_potion', 1)) return false;
+    this.appearance = normalizeAppearance({ ...cur, race });
+    return true;
+  }
   /** 換角色外觀（存一份正規化後的新物件） */
   setAppearance(a: Appearance): void { this.appearance = normalizeAppearance(a); }
+  /**
+   * 舊角色（cformat 1）的時裝轉換（spec C6，engine/wardrobeMigration.ts）：外觀上的服裝 / 頭飾 / 眼鏡變成時裝物品，
+   * 能穿就穿上、否則進背包，背包滿就掉在腳邊（帶顏色、一件一個）；外觀改成布衣。看起來和轉換前一樣。
+   * 只由 applyCharacter 在讀到舊角色時呼叫一次（存檔寫回 cformat 2，之後不再轉換）。
+   */
+  migrateWardrobe(): void {
+    const v = this.vanity, e = this.equipment;
+    const shown = (s: HideSlot): boolean => !v.hide[s] && pieceOf(e.getStack(s)) !== null;
+    const plan = planWardrobeMigration(this.appearance, v.toJSON(), { head: shown('head'), body: shown('body'), legs: shown('legs') });
+    for (const { slot, stack } of plan.equip) v.set(slot, stack.item, undefined, stack.tint);
+    for (const st of plan.give) {
+      if (this.inventory.add(st.item, 1, undefined, st.tint) > 0) {
+        const pt = this.playerTile();
+        this.dropAtTile(st.item, 1, pt.x, pt.y, st.tint);
+      }
+    }
+    this.setAppearance(plan.appearance);
+  }
+  /**
+   * 梳妝台：只改身體特徵與布衣配色（主色 / 副色）。種族只能用轉生之藥換；服裝 / 頭飾 / 眼鏡欄位維持原值（那些靠時裝物品）。
+   */
+  setBodyLook(a: Appearance): void {
+    const cur = this.appearance;
+    this.appearance = normalizeAppearance({ ...a, race: cur.race, outfit: cur.outfit, acc: cur.acc, glasses: cur.glasses });
+  }
 
   /** 把玩家腳底放到 tile (tx, ty)（身體底 = (ty+1)*16），水平置中。 */
   teleport(tx: number, ty: number): void {

@@ -27,6 +27,30 @@ export function iconGearShard(): Bmp {
   return b.outline(INK);
 }
 
+/** 轉生之藥：圓肚小瓶，裡面是粉紫色的藥水，瓶口塞著木塞，肩上飄著一顆金色火花 */
+export function iconRebirth(): Bmp {
+  const b = new Bmp(S, S);
+  b.grid([
+    '...........y....',
+    '.....kk...yWy...',
+    '.....kk....y....',
+    '......gg........',
+    '......gg........',
+    '.....gGGg.......',
+    '....gGGGGg......',
+    '...gGppppGg.....',
+    '...gGpqqpGg.....',
+    '...gGpqrpGg.....',
+    '...gGpppppGg....',
+    '....gGpppGg.....',
+    '.....gGGGg......',
+    '......ggg.......',
+    '................',
+    '................',
+  ], { g: hex('#4aaeb0'), G: hex('#cceaf8'), p: hex('#7a5a8c'), q: hex('#b8788e'), r: hex('#f2b888'), k: hex('#7c4c2e'), y: hex('#ffd86a'), W: hex('#fff4c0') }, 0, 1);
+  return b.outline(INK);
+}
+
 /** 星塵：一小堆紫色星砂，上面閃著金色星光 */
 export function iconStardust(): Bmp {
   const b = new Bmp(S, S);

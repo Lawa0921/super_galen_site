@@ -37,7 +37,7 @@ export type ItemId =
   | 'bone_helmet' | 'bone_chestplate' | 'bone_greaves'
   | 'molten_helmet' | 'molten_chestplate' | 'molten_greaves'
   // ── 消耗品 / 戰鬥飾品 / 首領 ──
-  | 'life_core' | 'healing_potion' | 'wick_offering'
+  | 'life_core' | 'healing_potion' | 'wick_offering' | 'rebirth_potion'
   | 'chitin_buckler' | 'fang_charm' | 'feather_charm' | 'warden_heart' | 'warden_trophy'
   // ── 液體：蜂巢 / 酥蜜塊、水桶、吸水海綿、熔殼護符 ──
   | 'hive' | 'crispy_honey' | 'bucket' | 'water_bucket' | 'lava_bucket' | 'honey_bucket' | 'sponge' | 'magma_ward'
@@ -57,13 +57,19 @@ export type ItemId =
   | 'sofa' | 'fireplace' | 'shelf' | 'chandelier' | 'table_lamp' | 'rug' | 'potted_plant' | 'bench' | 'hearth' | 'builder_hammer'
   // ── 裝備分解材料：碎晶（洗煉 / 強化）、星塵（史詩以上分解；高階強化 / 升階） ──
   | 'gear_shard' | 'stardust'
-  // ── 外觀（時裝）：只改樣子、沒有數值；裝在外觀欄（頭 / 身 / 腿 / 背） ──
+  // ── 外觀（時裝）：只改樣子、沒有數值；裝在外觀欄（頭 / 身 / 腿 / 背 / 飾品） ──
   | 'sailor_top' | 'miko_robe' | 'maid_dress' | 'hoodie_top' | 'travel_coat' | 'explorer_vest'
   | 'sailor_skirt' | 'miko_hakama' | 'maid_skirt' | 'hoodie_shorts' | 'coat_trousers' | 'explorer_shorts'
   | 'straw_hat' | 'witch_hat' | 'beret' | 'maid_headdress' | 'flower_crown'
   | 'travel_cape' | 'feather_wings' | 'ribbon_bow'
+  // 其他 8 套服裝的上身 / 下身、飾品格的 9 個頭飾 + 眼鏡
+  | 'ninja_top' | 'ninja_bottom' | 'mage_top' | 'mage_bottom' | 'knight_top' | 'knight_bottom' | 'qipao_top' | 'qipao_bottom'
+  | 'pirate_top' | 'pirate_bottom' | 'idol_top' | 'idol_bottom' | 'priest_top' | 'priest_bottom' | 'gothic_top' | 'gothic_bottom'
+  | 'acc_ribbon' | 'acc_catears' | 'acc_clip' | 'acc_hood' | 'acc_flower' | 'acc_crown' | 'acc_headphones' | 'acc_foxmask' | 'acc_hairpin' | 'acc_glasses'
   // ── NPC 聚落：建材 / 家具（村落、矮人地廳）、礦工頭盔（矮人信任後才賣） ──
-  | 'thatch' | 'timber' | 'dwarf_brick' | 'dwarf_wall' | 'rail' | 'brazier' | 'barrel' | 'miner_helmet';
+  | 'thatch' | 'timber' | 'dwarf_brick' | 'dwarf_wall' | 'rail' | 'brazier' | 'barrel' | 'miner_helmet'
+  // ── 梳妝台（家具：改身體特徵與時裝配色） ──
+  | 'vanity_table';
 
 /**
  * 飾品效果。移動 / 戰鬥類（jump、run、night、magnet、nofall、stat）要裝在裝備欄的飾品槽才生效；
@@ -127,6 +133,8 @@ export interface ItemDef {
   use?: 'recall' | 'life' | 'heal' | 'summon' | 'scoop' | 'pour' | 'sponge'
     /** 釣竿：拋竿 / 收竿；料理：吃（回血）；木箱：打開 */
     | 'fish' | 'eat' | 'crate'
+    /** 轉生之藥：開種族選單，確定換族才消耗 */
+    | 'rebirth'
     /** 建築木槌：方塊整格 ⇄ 半格 */
     | 'hammer';
   /** 釣竿：釣力、能不能在熔岩裡釣 */
@@ -146,7 +154,8 @@ export interface ItemDef {
   /** 時裝：裝在外觀欄的哪一格、畫成什麼樣子（engine/doll.ts 的 look 字串） */
   vanity?: VanityDef;
 }
-export type VanitySlot = 'head' | 'body' | 'legs' | 'back';
+/** 外觀欄的格：頭 / 身 / 腿 / 背 / 飾品（acc = 頭飾或眼鏡，和裝備欄的飾品槽 acc0..acc4 無關） */
+export type VanitySlot = 'head' | 'body' | 'legs' | 'back' | 'acc';
 export interface VanityDef { slot: VanitySlot; look: string; }
 
 const block = (id: ItemId, zh: string, en: string, place: number): ItemDef =>
@@ -284,6 +293,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   // ── 消耗品 ──
   life_core: { ...mat('life_core', '生命晶核', 'Vital Core'), maxStack: 99, use: 'life' },
   healing_potion: { ...mat('healing_potion', '治療藥水', 'Healing Draught'), maxStack: 99, use: 'heal' },
+  rebirth_potion: { ...mat('rebirth_potion', '轉生之藥', 'Potion of Rebirth'), maxStack: 9, use: 'rebirth' },
   wick_offering: { ...mat('wick_offering', '燈芯祭品', 'Wick Offering'), maxStack: 20, use: 'summon' },
   // ── 戰鬥飾品 ──
   chitin_buckler: acc('chitin_buckler', '甲殼小盾', 'Chitin Buckler', 'stat', { defense: 3 }),
@@ -400,6 +410,34 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   travel_cape: vty('travel_cape', '旅人斗篷', 'Traveler Cape', 'back', 'back:cape'),
   feather_wings: vty('feather_wings', '白羽翅膀', 'Feather Wings', 'back', 'back:wings'),
   ribbon_bow: vty('ribbon_bow', '大蝴蝶結', 'Big Back Bow', 'back', 'back:bow'),
+  // 其他 8 套服裝：上身（身體格）+ 下身（腿格），兩件一起穿 = 外觀直接選那套服裝
+  ninja_top: vty('ninja_top', '忍者上衣', 'Ninja Garb', 'body', 'outfit:ninja'),
+  ninja_bottom: vty('ninja_bottom', '忍者褲', 'Ninja Trousers', 'legs', 'outfit:ninja'),
+  mage_top: vty('mage_top', '魔導長袍', 'Mage Robe', 'body', 'outfit:mage'),
+  mage_bottom: vty('mage_bottom', '魔導袍下襬', 'Mage Robe Hem', 'legs', 'outfit:mage'),
+  knight_top: vty('knight_top', '騎士罩袍', 'Knight Tabard', 'body', 'outfit:knight'),
+  knight_bottom: vty('knight_bottom', '騎士鎖甲褲', 'Knight Mail Leggings', 'legs', 'outfit:knight'),
+  qipao_top: vty('qipao_top', '旗袍上身', 'Qipao Bodice', 'body', 'outfit:qipao'),
+  qipao_bottom: vty('qipao_bottom', '旗袍開衩裙', 'Qipao Slit Skirt', 'legs', 'outfit:qipao'),
+  pirate_top: vty('pirate_top', '海盜外套', 'Pirate Coat', 'body', 'outfit:pirate'),
+  pirate_bottom: vty('pirate_bottom', '海盜馬褲長靴', 'Pirate Breeches & Boots', 'legs', 'outfit:pirate'),
+  idol_top: vty('idol_top', '偶像舞台上衣', 'Idol Stage Top', 'body', 'outfit:idol'),
+  idol_bottom: vty('idol_bottom', '偶像蓬蓬裙', 'Idol Puff Skirt', 'legs', 'outfit:idol'),
+  priest_top: vty('priest_top', '神官袍', 'Priest Vestment', 'body', 'outfit:priest'),
+  priest_bottom: vty('priest_bottom', '神官袍下襬', 'Priest Robe Hem', 'legs', 'outfit:priest'),
+  gothic_top: vty('gothic_top', '哥德洋裝', 'Gothic Dress', 'body', 'outfit:gothic'),
+  gothic_bottom: vty('gothic_bottom', '哥德多層裙', 'Gothic Tiered Skirt', 'legs', 'outfit:gothic'),
+  // 飾品格：頭飾（look = acc:<ACCESSORIES id>）與眼鏡；戴帽子 / 頭盔時頭飾收起來，眼鏡照戴
+  acc_ribbon: vty('acc_ribbon', '蝴蝶結', 'Hair Ribbon', 'acc', 'acc:ribbon'),
+  acc_catears: vty('acc_catears', '貓耳髮箍', 'Cat Ear Headband', 'acc', 'acc:catears'),
+  acc_clip: vty('acc_clip', '星星髮夾', 'Star Hair Clip', 'acc', 'acc:clip'),
+  acc_hood: vty('acc_hood', '兜帽', 'Hood', 'acc', 'acc:hood'),
+  acc_flower: vty('acc_flower', '小花', 'Hair Flower', 'acc', 'acc:flower'),
+  acc_crown: vty('acc_crown', '小皇冠', 'Little Crown', 'acc', 'acc:crown'),
+  acc_headphones: vty('acc_headphones', '耳機', 'Headphones', 'acc', 'acc:headphones'),
+  acc_foxmask: vty('acc_foxmask', '狐狸面具', 'Fox Mask', 'acc', 'acc:foxmask'),
+  acc_hairpin: vty('acc_hairpin', '髮簪', 'Ornate Hairpin', 'acc', 'acc:hairpin'),
+  acc_glasses: vty('acc_glasses', '眼鏡', 'Glasses', 'acc', 'acc:glasses'),
   // ── NPC 聚落 ──
   thatch: block('thatch', '茅草屋頂', 'Thatch', T.THATCH),
   timber: block('timber', '木骨灰泥牆', 'Timber Frame', T.TIMBER),
@@ -409,10 +447,35 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   brazier: { ...block('brazier', '火盆', 'Brazier', T.BRAZIER), maxStack: 99 },
   barrel: { ...block('barrel', '木桶', 'Barrel', T.BARREL), maxStack: 99 },
   miner_helmet: vty('miner_helmet', '礦工頭燈盔', "Miner's Lamp Helm", 'head', 'hat:miner'),
+  // ── 梳妝台：放在地上，靠近按使用 → 改髮型 / 臉 / 膚色、替身上的時裝重新配色（免費） ──
+  vanity_table: { ...block('vanity_table', '梳妝台', 'Vanity Table', T.VANITY_TABLE), maxStack: 99 },
 };
 
 /** 時裝道具（顯示順序） */
 export const VANITY_ITEMS: readonly ItemId[] = (Object.keys(ITEMS) as ItemId[]).filter((id) => ITEMS[id].vanity);
+
+/** 服裝（engine/appearance.ts OUTFITS 的 id）→ [身體那件, 腿那件]；兩件一起穿 = 外觀直接選那套。基本布衣（plain）不是物品、不在這裡 */
+export const OUTFIT_ITEMS: Readonly<Record<string, readonly [ItemId, ItemId]>> = {
+  explorer: ['explorer_vest', 'explorer_shorts'],
+  sailor: ['sailor_top', 'sailor_skirt'],
+  miko: ['miko_robe', 'miko_hakama'],
+  hoodie: ['hoodie_top', 'hoodie_shorts'],
+  coat: ['travel_coat', 'coat_trousers'],
+  maid: ['maid_dress', 'maid_skirt'],
+  ninja: ['ninja_top', 'ninja_bottom'],
+  mage: ['mage_top', 'mage_bottom'],
+  knight: ['knight_top', 'knight_bottom'],
+  qipao: ['qipao_top', 'qipao_bottom'],
+  pirate: ['pirate_top', 'pirate_bottom'],
+  idol: ['idol_top', 'idol_bottom'],
+  priest: ['priest_top', 'priest_bottom'],
+  gothic: ['gothic_top', 'gothic_bottom'],
+};
+/** 頭飾（ACCESSORIES 的 id，不含 none）與 'glasses' → 飾品格的那件物品 */
+export const ACC_ITEMS: Readonly<Record<string, ItemId>> = {
+  ribbon: 'acc_ribbon', catears: 'acc_catears', clip: 'acc_clip', hood: 'acc_hood', flower: 'acc_flower',
+  crown: 'acc_crown', headphones: 'acc_headphones', foxmask: 'acc_foxmask', hairpin: 'acc_hairpin', glasses: 'acc_glasses',
+};
 
 /** 套裝組成（頭 / 身 / 腿），順序 = 等級 */
 export const ARMOR_SETS: Record<ArmorSetId, readonly [ItemId, ItemId, ItemId]> = {

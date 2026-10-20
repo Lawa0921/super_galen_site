@@ -1,8 +1,9 @@
 // storage.ts — 薄封裝：gzip（CompressionStream，可用才用）+ IndexedDB + 自動存檔 + 匯出/匯入。
 // 純邏輯在 serialize.ts / split.ts（有單元測試）；本檔只做瀏覽器 I/O（IndexedDB 由 e2e 驗；只有 gzip 與自動存檔排程有單元測試）。
-import { decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
+import { characterLook, decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
 import { levelForXp } from '../engine/levels';
 import type { Appearance } from '../engine/appearance';
+import type { DollLook } from '../engine/doll';
 import { WORLD_FORMAT } from './worldSave';
 import type { SplitStore } from './split';
 
@@ -47,13 +48,18 @@ interface SlotRecord extends SlotMeta { data: Uint8Array; }
 export interface CharacterRecord {
   id: string; nick: string; savedAt: number; rev: number; data: Uint8Array;
   /** 列表顯示用（存檔時算好；舊記錄沒有 → listCharacters 解碼 data 補） */
-  preview?: { level: number; appearance: Appearance };
+  preview?: CharacterPreview;
 }
+/**
+ * 角色列表的小人像資料。look = 穿著（時裝欄 / 護甲 + 顏色，同遊戲裡的紙娃娃）；
+ * 有 look 之前存的舊記錄沒有 → 只畫外觀（那些角色還沒轉換時裝，外觀上就是原本的衣服）。
+ */
+export interface CharacterPreview { level: number; appearance: Appearance; look?: DollLook }
 /** 角色選單的一列 */
-export interface CharacterMeta { id: string; nick: string; savedAt: number; rev: number; level: number; appearance: Appearance }
+export interface CharacterMeta { id: string; nick: string; savedAt: number; rev: number; level: number; appearance: Appearance; look?: DollLook }
 
-function previewOf(c: DelveCharacter): { level: number; appearance: Appearance } {
-  return { level: levelForXp(c.levels.xp), appearance: c.appearance };
+export function previewOf(c: DelveCharacter): CharacterPreview {
+  return { level: levelForXp(c.levels.xp), appearance: c.appearance, look: characterLook(c) };
 }
 
 export function hasCompression(): boolean {

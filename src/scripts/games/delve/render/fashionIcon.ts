@@ -2,7 +2,8 @@
 import { Bmp } from './pixel';
 import { ITEMS, type ItemId } from '../engine/items';
 import { DEFAULT_APPEARANCE } from '../engine/appearance';
-import { plainLook, type DollLook } from '../engine/doll';
+import { plainLook, type DollLook, type DollPiece } from '../engine/doll';
+import type { Tint } from '../engine/tint';
 import { pieceBmp } from './avatarArt';
 
 /** 把內容的外框裁出來、置中放進 size×size（放不下就每 2 格取 1 格） */
@@ -23,11 +24,12 @@ export function fitIcon(src: Bmp, size = 16): Bmp {
   return out;
 }
 
-/** 時裝道具的圖示；不是時裝 → null */
-export function fashionIcon(item: ItemId): Bmp | null {
+/** 時裝道具的圖示；不是時裝 → null。tint = 這件的顏色（圖集裡烘的是原色；外觀欄的格子用實際顏色） */
+export function fashionIcon(item: ItemId, tint?: Tint): Bmp | null {
   const v = ITEMS[item]?.vanity;
   if (!v) return null;
-  const piece = { look: v.look, rarity: 0, plus: 0, elem: null };
+  const piece: DollPiece = { look: v.look, rarity: 0, plus: 0, elem: null };
+  if (tint) piece.tint = tint;
   const l: DollLook = { ...plainLook(DEFAULT_APPEARANCE), [v.slot]: piece };
   return fitIcon(pieceBmp(l, v.slot));
 }

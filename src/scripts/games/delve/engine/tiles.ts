@@ -46,6 +46,8 @@ export const T = {
   CAIRN: 109, RELIC_PACK: 110, GUARDIAN_STATUE: 111, GEODE: 112, SPORE_TOTEM: 113, HONEY_JAR: 114,
   // ── 村落旗桿：3×3 的大村旗（布，不擋路）、桿頂的燈（夜裡遠遠看得到） ──
   FLAG_CLOTH: 115, FLAG_LAMP: 116,
+  // ── 梳妝台（靠近按使用：改髮型 / 臉 / 膚色、替身上的時裝重新配色） ──
+  VANITY_TABLE: 117,
 } as const;
 export type TileId = (typeof T)[keyof typeof T];
 
@@ -254,6 +256,8 @@ export const TILES: readonly TileDef[] = [
   decor(T.HONEY_JAR, 'honey_jar', n('蜂王蜜罐', "Queen's Honeypot"), 'floor', null, '#ffa93a', { hardness: 1, minTier: TIER_UNBREAKABLE, light: 0.45 }),
   decor(T.FLAG_CLOTH, 'flag_cloth', n('村旗', 'Village Flag'), 'none', null, '#c8344c', { hardness: 1, minTier: TIER_UNBREAKABLE }),
   decor(T.FLAG_LAMP, 'flag_lamp', n('旗桿燈', 'Flagpole Lamp'), 'floor', null, '#ffd86a', { hardness: 1, minTier: TIER_UNBREAKABLE, light: 1 }),
+  // ── 梳妝台 ──
+  decor(T.VANITY_TABLE, 'vanity_table', n('梳妝台', 'Vanity Table'), 'floor', 'vanity_table', '#c99660', { hardness: 0.4 }),
 ];
 
 export const WALLS: readonly WallDef[] = [
@@ -357,7 +361,7 @@ export function isDungeonBrick(id: number): boolean { return id >= T.DUNGEON_BRI
 export const LANDMARK_TILES: ReadonlySet<number> = new Set<number>([T.CAIRN, T.RELIC_PACK, T.GUARDIAN_STATUE, T.GEODE, T.SPORE_TOTEM, T.HONEY_JAR, T.ORE_CART]);
 export function isLandmarkTile(id: number): boolean { return LANDMARK_TILES.has(id); }
 export function isInteractive(id: number): boolean {
-  return isChestTile(id) || isDoorTile(id) || id === T.LORE_TABLET || isBedTile(id) || id === T.HEARTH || id === T.QUEST_BOARD || LANDMARK_TILES.has(id);
+  return isChestTile(id) || isDoorTile(id) || id === T.LORE_TABLET || isBedTile(id) || id === T.HEARTH || id === T.QUEST_BOARD || id === T.VANITY_TABLE || LANDMARK_TILES.has(id);
 }
 export function isBedTile(id: number): boolean { return id === T.BED_HEAD || id === T.BED_FOOT; }
 /** 繩索掛得住：正上方實心 / 繩索 / 平台，或左右貼著實心 */

@@ -1,12 +1,12 @@
 // doll.test.ts — 紙娃娃：外觀欄（時裝）蓋過防具的樣子、防具隱藏開關、稀有度 / 強化 / 元素詞條進到外觀、
 // 看得見的飾品（靴子 / 翅膀 / 小盾 / 墜飾 / 腰間小物）、快取 key、圖層順序、外觀欄的裝卸與 JSON 往返。
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_APPEARANCE } from './appearance';
+import { ACCESSORIES, DEFAULT_APPEARANCE, OUTFITS } from './appearance';
 import { Equipment } from './equipment';
 import { Inventory } from './inventory';
 import { Vanity, fitsVanity, VANITY_SLOTS } from './vanity';
-import { buildDollLook, dollKey, DOLL_LAYERS, pieceOf } from './doll';
-import { ITEMS, VANITY_ITEMS } from './items';
+import { buildDollLook, dollKey, DOLL_LAYERS, pieceOf, plainLook, restyledLook } from './doll';
+import { ACC_ITEMS, ITEMS, OUTFIT_ITEMS, VANITY_ITEMS } from './items';
 import type { Gear } from './gear';
 
 const gear = (rarity: number, plus = 0, affix?: string): Gear => ({ rarity, ilvl: 3, plus, affixes: affix ? [{ id: affix, tier: 1, value: 5 } as Gear['affixes'][number]] : [] });
@@ -135,21 +135,144 @@ describe('Vanity（外觀欄）', () => {
     expect(bad.hide).toEqual({ head: false, body: true, legs: false });
     expect(Vanity.fromJSON(null).toJSON()).toEqual(new Vanity().toJSON());
   });
+  it('dollKey differs by tint：同款不同顏色換 key；沒顏色 = 原本的 key', () => {
+    const e = new Equipment(), v = new Vanity();
+    v.set('body', 'sailor_top');
+    const k0 = dollKey(buildDollLook(DEFAULT_APPEARANCE, e, v));
+    expect(k0).toContain('outfit:sailor/0/0/|');
+    v.set('body', 'sailor_top', undefined, [3, 7]);
+    const l1 = buildDollLook(DEFAULT_APPEARANCE, e, v);
+    expect(l1.body).toEqual({ look: 'outfit:sailor', rarity: 0, plus: 0, elem: null, tint: [3, 7] });
+    const k1 = dollKey(l1);
+    v.set('body', 'sailor_top', undefined, [3, 8]);
+    const k2 = dollKey(buildDollLook(DEFAULT_APPEARANCE, e, v));
+    expect(new Set([k0, k1, k2]).size).toBe(3);
+    expect(pieceOf({ item: 'beret', count: 1, tint: [1, 2] })!.tint).toEqual([1, 2]);
+    expect(pieceOf({ item: 'beret', count: 1 })!.tint).toBeUndefined();
+  });
+  it('換時裝欄裡那件的顏色（交換同款不同色）：equipFrom / unequipTo 帶著 tint', () => {
+    const inv = new Inventory(), v = new Vanity();
+    inv.slots[0] = { item: 'beret', count: 1, tint: [1, 2] };
+    inv.slots[1] = { item: 'beret', count: 1, tint: [4, 5] };
+    expect(v.equipFrom(inv, 0, 'head')).toBe(true);
+    expect(v.equipFrom(inv, 1, 'head')).toBe(true);
+    expect(v.getStack('head')!.tint).toEqual([4, 5]);
+    expect(inv.slots[1]).toEqual({ item: 'beret', count: 1, tint: [1, 2] });
+    expect(v.unequipTo(inv, 'head')).toBe(true);
+    expect(inv.slots[0]).toEqual({ item: 'beret', count: 1, tint: [4, 5] });
+  });
+});
+
+describe('每套服裝 / 每個頭飾 / 眼鏡都有對應的時裝物品', () => {
+  it('OUTFIT_ITEMS：每套服裝（布衣除外）= 身體 + 腿兩件，look 都是 outfit:<id>；現有 6 套沿用原本的物品', () => {
+    for (const o of OUTFITS) {
+      if (o.id === 'plain') { expect(OUTFIT_ITEMS[o.id], 'plain 不是物品').toBeUndefined(); continue; }
+      const pair = OUTFIT_ITEMS[o.id];
+      expect(pair, o.id).toBeDefined();
+      const [top, bottom] = pair;
+      expect(ITEMS[top].vanity, top).toEqual({ slot: 'body', look: `outfit:${o.id}` });
+      expect(ITEMS[bottom].vanity, bottom).toEqual({ slot: 'legs', look: `outfit:${o.id}` });
+      expect(ITEMS[top].maxStack).toBe(1);
+      expect(ITEMS[bottom].maxStack).toBe(1);
+    }
+    expect(OUTFIT_ITEMS.sailor).toEqual(['sailor_top', 'sailor_skirt']);
+    expect(OUTFIT_ITEMS.miko).toEqual(['miko_robe', 'miko_hakama']);
+    expect(OUTFIT_ITEMS.maid).toEqual(['maid_dress', 'maid_skirt']);
+    expect(OUTFIT_ITEMS.hoodie).toEqual(['hoodie_top', 'hoodie_shorts']);
+    expect(OUTFIT_ITEMS.coat).toEqual(['travel_coat', 'coat_trousers']);
+    expect(OUTFIT_ITEMS.explorer).toEqual(['explorer_vest', 'explorer_shorts']);
+    for (const id of ['ninja', 'mage', 'knight', 'qipao', 'pirate', 'idol', 'priest', 'gothic']) expect(OUTFIT_ITEMS[id]).toEqual([`${id}_top`, `${id}_bottom`]);
+    expect(ITEMS.ninja_top.name.zh).toBe('忍者上衣');
+    expect(ITEMS.ninja_bottom.name.zh).toBe('忍者褲');
+  });
+  it('ACC_ITEMS：9 個頭飾 + 眼鏡 = 飾品格的 10 件新物品（acc_<id>、look acc:<id>、名稱比照頭飾標籤）', () => {
+    const ids = [...ACCESSORIES.filter((a) => a.id !== 'none').map((a) => a.id), 'glasses'];
+    expect(Object.keys(ACC_ITEMS).sort()).toEqual([...ids].sort());
+    for (const id of ids) {
+      const it = ACC_ITEMS[id];
+      expect(it).toBe(`acc_${id}`);
+      expect(ITEMS[it].vanity, it).toEqual({ slot: 'acc', look: `acc:${id}` });
+      expect(ITEMS[it].maxStack).toBe(1);
+      expect(ITEMS[it].name.zh).toBe(id === 'glasses' ? '眼鏡' : ACCESSORIES.find((a) => a.id === id)!.zh);
+    }
+  });
+});
+
+describe('第 5 格：飾品（acc）', () => {
+  it('VANITY_SLOTS 多一格 acc（排最後）；飾品格只收飾品物品、防具和其他時裝都不收', () => {
+    expect([...VANITY_SLOTS]).toEqual(['head', 'body', 'legs', 'back', 'acc']);
+    expect(fitsVanity('acc', 'acc_ribbon')).toBe(true);
+    expect(fitsVanity('acc', 'acc_glasses')).toBe(true);
+    expect(fitsVanity('head', 'acc_ribbon')).toBe(false);
+    expect(fitsVanity('acc', 'beret')).toBe(false);
+    expect(fitsVanity('acc', 'iron_helmet')).toBe(false);
+    expect(fitsVanity('acc', 'compass')).toBe(false);
+  });
+  it('Vanity.fromJSON 讀舊的 4 格 JSON：不丟錯、acc = null；新 JSON 帶 acc（含顏色）往返', () => {
+    const old = { slots: { head: 'beret', body: 'sailor_top', legs: null, back: 'travel_cape' }, gear: { head: null, body: null, legs: null, back: null }, tint: { head: [1, 2], body: null, legs: null, back: null }, hide: { head: false, body: true, legs: false } };
+    let v: Vanity | null = null;
+    expect(() => { v = Vanity.fromJSON(old); }).not.toThrow();
+    expect(v!.get('acc')).toBeNull();
+    expect(v!.get('head')).toBe('beret');
+    expect(v!.toJSON().slots.acc).toBeNull();
+    expect(v!.toJSON().tint.acc).toBeNull();
+    const w = new Vanity();
+    expect(w.set('acc', 'acc_hood', undefined, [2, 2])).toBe(true);
+    const back = Vanity.fromJSON(JSON.parse(JSON.stringify(w.toJSON())));
+    expect(back.getStack('acc')).toEqual({ item: 'acc_hood', count: 1, tint: [2, 2] });
+    // 放錯格的道具丟掉
+    expect(Vanity.fromJSON({ slots: { acc: 'beret' } }).get('acc')).toBeNull();
+  });
+  it('buildDollLook：飾品格 → DollLook.acc（acc:<id>，帶顏色）；沒戴 = null；dollKey 跟著變、沒戴時 key 和以前一樣', () => {
+    const e = new Equipment(), v = new Vanity();
+    const l0 = buildDollLook(DEFAULT_APPEARANCE, e, v);
+    expect(l0.acc).toBeNull();
+    expect(plainLook(DEFAULT_APPEARANCE).acc).toBeNull();
+    const k0 = dollKey(l0);
+    expect(k0.split('|').length).toBe(8);
+    v.set('acc', 'acc_crown');
+    const l1 = buildDollLook(DEFAULT_APPEARANCE, e, v);
+    expect(l1.acc).toEqual({ look: 'acc:crown', rarity: 0, plus: 0, elem: null });
+    const k1 = dollKey(l1);
+    v.set('acc', 'acc_crown', undefined, [3, 3]);
+    const k2 = dollKey(buildDollLook(DEFAULT_APPEARANCE, e, v));
+    v.set('acc', 'acc_glasses');
+    const k3 = dollKey(buildDollLook(DEFAULT_APPEARANCE, e, v));
+    expect(new Set([k0, k1, k2, k3]).size).toBe(4);
+  });
 });
 
 describe('時裝的取得方式', () => {
-  it('工作台做得出大部分時裝；女僕裝 / 魔女帽 / 羽翼 / 大蝴蝶結只在箱子裡（合成表沒有）', async () => {
-    const { RECIPES } = await import('./crafting');
+  // 每件時裝的來源規則（每件都有來源、和平模式拿得到、現有來源不減少…）在 cosmeticSources.test.ts
+  it('礦工頭燈盔只有商店賣；地城箱子開得出只能撿的時裝', async () => {
+    const { cosmeticSources } = await import('./cosmeticSources');
     const { LOOT_ONLY_FASHION, chestLoot } = await import('./loot');
-    const crafted = new Set(RECIPES.map((r) => r.out.item));
-    // 礦工頭燈盔：只有矮人礦石商（摯友）賣，不在合成表也不在箱子裡
-    const SHOP_ONLY = new Set(['miner_helmet']);
-    for (const id of VANITY_ITEMS) if (!SHOP_ONLY.has(id)) expect(crafted.has(id) !== LOOT_ONLY_FASHION.includes(id), id).toBe(true);
     const { ROLES } = await import('./folkDefs');
-    for (const id of SHOP_ONLY) expect(Object.values(ROLES).some((r) => r.shop.some((e) => e.item === id)), id).toBe(true);
+    // 礦工頭燈盔：只有矮人礦石商（摯友）賣，不在合成表也不在箱子裡
+    expect(cosmeticSources('miner_helmet')).toEqual(['shop']);
+    expect(ROLES.ore_trader.shop.some((e) => e.item === 'miner_helmet')).toBe(true);
+    // 女僕裝 / 魔女帽 / 羽翼 / 大蝴蝶結仍然做不出來
+    for (const id of LOOT_ONLY_FASHION) expect(cosmeticSources(id), id).not.toContain('craft');
     // 地城箱子：一百個箱子裡至少開得出幾件只能撿的時裝
     let n = 0;
     for (let i = 0; i < 100; i++) for (const s of chestLoot('fashion', i, 7, 'dungeon', 0.6)) if (s && LOOT_ONLY_FASHION.includes(s.item)) n++;
     expect(n).toBeGreaterThan(10);
+  });
+});
+
+describe('restyledLook（梳妝台預覽）', () => {
+  it('換外觀 + 替外觀欄那幾件換顏色；沒穿的格不會憑空多一件；原本的 look 不被改', () => {
+    const v = new Vanity();
+    v.set('body', 'sailor_top');
+    v.set('acc', 'acc_ribbon');
+    const base = buildDollLook(DEFAULT_APPEARANCE, new Equipment(), v);
+    const app = { ...DEFAULT_APPEARANCE, hair: DEFAULT_APPEARANCE.hair + 1 };
+    const l = restyledLook(base, app, [{ slot: 'body', tint: [1, 2] }, { slot: 'acc', tint: [5, 5] }, { slot: 'legs', tint: [3, 3] }]);
+    expect(l.app).toBe(app);
+    expect(l.body!.tint).toEqual([1, 2]);
+    expect(l.acc!.tint).toEqual([5, 5]);
+    expect(l.legs).toBeNull();
+    expect(base.body!.tint).toBeUndefined();
+    expect(dollKey(l)).not.toBe(dollKey({ ...base, app }));
   });
 });

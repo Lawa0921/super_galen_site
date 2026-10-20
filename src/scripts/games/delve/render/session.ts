@@ -6,7 +6,7 @@ import { generateWorldSteps, GEN_STAGE_COUNT, type GenResult } from '../engine/w
 import { GEN_VERSION } from '../engine/constants';
 import { restoreGame, COMPAT_GEN, type SaveData } from '../save/serialize';
 import {
-  startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, idbSplitStore, DbBlockedError, type CharacterMeta, type SlotMeta,
+  startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, idbSplitStore, DbBlockedError, previewOf, type CharacterMeta, type SlotMeta,
 } from '../save/storage';
 import {
   SplitSession, planContinue, planPlay, planNewWorld, importWorld, saveSplit, commitMigration, restoreErrorMessage,
@@ -14,7 +14,6 @@ import {
 } from '../save/split';
 import { decodeAnySave, encodeWorld, restoreSplit, type AnySave, type WorldData } from '../save/worldSave';
 import { createCharacter, decodeCharacter, DEFAULT_NICK, type DelveCharacter } from '../save/character';
-import { levelForXp } from '../engine/levels';
 import { startDelve, type DelveHandle } from './main';
 import { autostartPlan, helpSeen, HELP_KEY } from './model';
 import { SoundManager } from '../audio/SoundManager';
@@ -25,7 +24,9 @@ import { continueSlot, importPlan, genProgress, genStageLabel, GEN_STAGE_LABELS,
 import { liveCounts, type LiveCounts } from './live';
 import { GEN_PHASES, GenSectionView, genPhaseLabel, genPhaseOf } from './genSection';
 import { Wardrobe } from './wardrobe';
-import { loadDefaultAppearance, saveDefaultAppearance, setAppearance, type Appearance } from '../engine/appearance';
+import { RACES, createLook, loadDefaultAppearance, saveDefaultAppearance, setAppearance, type Appearance } from '../engine/appearance';
+import { ITEMS } from '../engine/items';
+import { restyledLook } from '../engine/doll';
 import { PlayLocks, PLAY_LOCKED_MSG, browserLocks, charLock, heldElsewhere, worldLock } from './playLock';
 
 /** 進度條格數 */
@@ -138,8 +139,8 @@ export function bootDelve(root: HTMLElement): Session {
   const wipe = wipeCanvas ? new Wipe(wipeCanvas, reduced) : null;
   const wardrobeEl = $('#delve-wardrobe');
   const wardrobe = wardrobeEl ? new Wardrobe(root, wardrobeEl, uiSound) : null;
-  /** 新世界用的預設外觀（localStorage） */
-  const defaultLook = (): Appearance => loadDefaultAppearance(storage);
+  /** 新角色用的預設外觀（localStorage）：只留身體部分、穿基本布衣（舊版存的可能還穿著別的衣服 / 頭飾 / 眼鏡） */
+  const defaultLook = (): Appearance => createLook(loadDefaultAppearance(storage));
 
   // ── 標題背景：第一次繪製之後才生成小世界（不擋住標題畫面出現） ──
   let scene: TitleScene | null = null;
@@ -221,6 +222,50 @@ export function bootDelve(root: HTMLElement): Session {
     }
   }
 
+  /** 衣櫥現在是梳妝台開的（走遠 / 被拆的關閉事件只關它，不關別的用途） */
+  let mirrorOpen = false;
+  /**
+   * 梳妝台（遊戲裡按使用）：開衣櫥 'mirror' 模式——身體特徵（沒有種族）+ 身上每件時裝的主色 / 副色 + 布衣配色，免費。
+   * 開著時暫停模擬（比照舊的「角色外觀」）；完成 → setBodyLook + 每件 recolorWorn；關掉一律通知遊戲 closeMirror。
+   * 改的是這台機器上的玩家自己（連線時別人用房主的梳妝台，也是改他自己的角色）。
+   */
+  function setMirror(game: DelveGame, open: boolean): void {
+    if (!open) { if (mirrorOpen) wardrobe?.close(); return; }
+    if (!wardrobe || wardrobe.isOpen || handle?.game !== game) { game.closeMirror(); return; }
+    mirrorOpen = true;
+    handle.setPaused(true);
+    wardrobe.open(game.appearance, {
+      mode: 'mirror',
+      tints: game.mirrorTints().map((t) => ({ slot: t.slot, tint: t.tint, name: ITEMS[t.item].name.zh, channels: t.channels })),
+      look: (a, tints) => restyledLook(game.doll().look, a, tints),
+      onDone: (a) => game.setBodyLook(a),
+      onTints: (ts) => { for (const t of ts) game.recolorWorn(t.slot, t.tint); if (handle?.game === game) handle.hud.refresh(); },
+      onClose: () => {
+        mirrorOpen = false;
+        game.closeMirror();
+        if (handle?.game === game) handle.setPaused(!menu!.hidden);
+      },
+    });
+  }
+
+  /**
+   * 轉生之藥（手持按使用）：開衣櫥 'race' 模式——只有種族一列，OK 才換；暫停模擬。
+   * 取消、或選回同一族 → 不消耗（game.rebirth 回 false 就什麼都不動）。
+   */
+  function setRebirth(game: DelveGame): void {
+    if (!wardrobe || wardrobe.isOpen || handle?.game !== game) return;
+    handle.setPaused(true);
+    wardrobe.open(game.appearance, {
+      mode: 'race',
+      look: (a) => restyledLook(game.doll().look, a, []),
+      onDone: (a) => {
+        if (game.rebirth(a.race)) { handle?.hud.refresh(); handle?.hud.toast(`轉生成${RACES[a.race]?.zh ?? ''}`, 2400); }
+        else handle?.hud.toast('種族沒有改變，轉生之藥沒有用掉');
+      },
+      onClose: () => { if (handle?.game === game) handle.setPaused(!menu!.hidden); },
+    });
+  }
+
   function begin(game: DelveGame, s: SplitSession, locks: PlayLocks): void {
     stopAutosave?.();
     handle?.destroy();
@@ -233,7 +278,7 @@ export function bootDelve(root: HTMLElement): Session {
     hudEl!.hidden = false;
     root.dataset.phase = 'playing';
     setMenu(false);
-    handle = startDelve({ root, canvas: canvas!, game, onMenu: () => setMenu(menu!.hidden) });
+    handle = startDelve({ root, canvas: canvas!, game, onMenu: () => setMenu(menu!.hidden), onMirror: (open) => setMirror(game, open), onRebirth: () => setRebirth(game) });
     window.__delveDebug = { game, handle, save: saveNow };
     if (!helpSeen(storage)) setHelp(true);
     if (hasIndexedDB()) {
@@ -331,7 +376,7 @@ export function bootDelve(root: HTMLElement): Session {
   }
   const pickedNick = (): string => charList.find((c) => c.id === picked)?.nick ?? '';
   function metaOf(c: DelveCharacter): CharacterMeta {
-    return { id: c.id, nick: c.nick, savedAt: c.savedAt, rev: c.rev, level: levelForXp(c.levels.xp), appearance: c.appearance };
+    return { id: c.id, nick: c.nick, savedAt: c.savedAt, rev: c.rev, ...previewOf(c) };
   }
 
   // ── 轉場 + 分段生成 ──
@@ -656,7 +701,8 @@ export function bootDelve(root: HTMLElement): Session {
   /** 新角色：建立當下就寫進角色庫（B2），選定它並打開世界列表；失敗 → null（標題訊息回報） */
   function newCharacter(nick: string, appearance: Appearance): Promise<CharacterMeta | null> {
     return exclusive<CharacterMeta | null>(null, async () => {
-      const c = createCharacter(nick, appearance, Date.now());
+      // 建角只決定身體：衣服 / 頭飾 / 眼鏡要在遊戲裡收集
+      const c = createCharacter(nick, createLook(appearance), Date.now());
       try { await keepCharacter(c); } catch (e) {
         say(titleMsg, `建立角色失敗：${errText(e)}`);
         return null;
@@ -852,6 +898,7 @@ export function bootDelve(root: HTMLElement): Session {
     onPressStart: () => scene?.skipIntro(),
     onLook: () => {
       wardrobe?.open(defaultLook(), {
+        mode: 'create',
         onDone: (a) => { saveDefaultAppearance(storage, a); scene?.game.setAppearance(a); syncLookPreview(); },
       });
     },
@@ -868,18 +915,6 @@ export function bootDelve(root: HTMLElement): Session {
     ui.setLookPreview(defaultLook());
   }
   syncLookPreview();
-  // 遊戲中選單「角色外觀」：換的是這個世界的角色（身上的裝備照樣穿著），也記成新世界的預設
-  on($('#delve-look-menu'), 'click', () => {
-    const g = handle?.game;
-    if (!g || !wardrobe || !menu) return;
-    menu.hidden = true;
-    handle?.setPaused(true);
-    wardrobe.open(g.appearance, {
-      look: (a) => ({ ...g.doll().look, app: a }),
-      onDone: (a) => { g.setAppearance(a); saveDefaultAppearance(storage, a); },
-      onClose: () => { if (handle) { menu.hidden = false; handle.setPaused(true); $('#delve-look-menu')?.focus(); } },
-    });
-  });
 
   // 「開始新世界」（舊生成器的存檔打不開時）：有選定的角色 → 直接新世界面板；沒有 → 先選角色
   on(upgradeNew, 'click', () => {

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { DelveGame } from '../engine/game';
 import { Inventory } from '../engine/inventory';
-import { normalizeAppearance } from '../engine/appearance';
+import { OUTFIT_PLAIN, normalizeAppearance } from '../engine/appearance';
 import { restoreGame } from './serialize';
 import { readLegacyFixture } from './legacyFixture';
 import { createCharacter, decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
@@ -362,11 +362,33 @@ describe('fix round 1: no second world generation, import timestamps', () => {
     await commitMigration(b, 'main', fixtureGame(), 50, { backup: false });
     const pa = await planContinue(a, r.slot), pb = await planContinue(b, 'main');
     if (pa.kind !== 'split' || pb.kind !== 'split') throw new Error(`${pa.kind} ${pb.kind}`);
-    expect({ ...pa.character, id: '' }).toEqual({ ...pb.character, id: '' });
+    // 匯入（資料層、沒有建遊戲）還沒做時裝轉換 → 角色檔維持 cformat 1；commitMigration 從活的遊戲存 → 已轉換（2）
+    expect(pa.character.cformat).toBe(1);
+    expect(pb.character.cformat).toBe(2);
+    const sameExcept = ({ id: _i, cformat: _c, appearance: _a, vanity: _v, inventory: _n, ...rest }: DelveCharacter) => rest;
+    expect(sameExcept(pa.character)).toEqual(sameExcept(pb.character));
     expect(pa.world.header.worldName).toBe(pb.world.header.worldName);
+    // 第一次進去玩就轉換：兩邊玩起來完全一樣
     const ga = restoreSplit(pa.world, pa.character), gb = restoreSplit(pb.world, pb.character);
     if (!ga.ok || !gb.ok) throw new Error('restore');
     expectSameGame(gb.game, ga.game);
+    expect(ga.game.vanity.get('acc')).toBe('acc_ribbon');
+  });
+  it('匯入的舊檔角色（cformat 1）第一次玩就轉換，存檔後變 cformat 2', async () => {
+    const st = memStore({});
+    const r = await importWorld(st, readLegacyFixture(), 50);
+    if ('error' in r) throw new Error(r.error);
+    const p = await planContinue(st, r.slot);
+    if (p.kind !== 'split') throw new Error(p.kind);
+    expect(p.character.cformat).toBe(1);
+    const g = restoreSplit(p.world, p.character);
+    if (!g.ok) throw new Error(g.message);
+    expect(g.game.appearance.outfit).toBe(OUTFIT_PLAIN);
+    expect(g.game.vanity.get('legs')).toBe('sailor_skirt');
+    await saveSplit(st, SplitSession.fromLoaded(g.world, p.character, r.slot), g.game, 60);
+    const p2 = await planContinue(st, r.slot);
+    if (p2.kind !== 'split') throw new Error(p2.kind);
+    expect(p2.character.cformat).toBe(2);
   });
   it('imported world is stamped with the import time (sorts first, Continue picks it)', async () => {
     const st = memStore({});

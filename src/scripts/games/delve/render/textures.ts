@@ -8,7 +8,7 @@ import { VANITY_ITEMS, type ItemId } from '../engine/items';
 import { fashionIcon } from './fashionIcon';
 import { TILE_SIZE } from '../engine/constants';
 import { EDGE, FRAME_COLS, MAT, VARIANTS, DECOR_STYLES, frameColumn, type Mat } from './autotile';
-import { iconGearShard, iconStardust } from './lootArt';
+import { iconGearShard, iconRebirth, iconStardust } from './lootArt';
 import { MATERIAL_PAL, PAL2, chestBmp, decorBmp, iconCactus, iconCoins, iconShard, texMaterial, texWall2 } from './decor';
 import { Bmp, INK, bayer, css, h01, hex, mix, ramp, shade, toCanvas, type RGB } from './pixel';
 import { RUNE_METAL, iconDoor, iconKey, iconLantern, iconMap, iconPlatform } from './dungeonArt';
@@ -682,7 +682,7 @@ const ICON_ORDER: ItemId[] = [
   // 家具
   ...FURNITURE_ICONS,
   // 裝備材料
-  'gear_shard', 'stardust',
+  'gear_shard', 'stardust', 'rebirth_potion',
   // 時裝（圖示 = 紙娃娃上的那一件）
   ...VANITY_ITEMS,
 ];
@@ -713,6 +713,7 @@ export function paintIcon(item: ItemId): Bmp {
     case 'honey_bucket': return iconBucket(LIQ.HONEY);
     case 'gear_shard': return iconGearShard();
     case 'stardust': return iconStardust();
+    case 'rebirth_potion': return iconRebirth();
     case 'sponge': return iconSponge();
     case 'magma_ward': return iconMagmaWard();
     case 'platform': return iconPlatform();
@@ -881,6 +882,16 @@ export function drawIcon(atlas: Atlas, ctx: CanvasRenderingContext2D, item: Item
   const k = Math.max(1, Math.floor(size / S));
   const d = S * k, o = Math.floor((size - d) / 2);
   ctx.drawImage(atlas.canvas, sx, sy, S, S, o, o, d, d);
+}
+/** 不在圖集裡的圖示（例如帶自己顏色的時裝）畫進格子：縮放規則同 drawIcon */
+export function drawBmpIcon(ctx: CanvasRenderingContext2D, b: Bmp, size: number): void {
+  ctx.clearRect(0, 0, size, size);
+  const c = toCanvas(b);
+  if (!c) return;
+  ctx.imageSmoothingEnabled = false;
+  const k = Math.max(1, Math.floor(size / S));
+  const d = S * k, o = Math.floor((size - d) / 2);
+  ctx.drawImage(c, 0, 0, b.w, b.h, o, o, d, d);
 }
 
 export { mix, hex, shade };

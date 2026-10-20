@@ -31,8 +31,12 @@
 //   尺寸上限：寬 ≤ MAX_WORLD_W、高 ≤ MAX_WORLD_H、面積 ≤ MAX_WORLD_AREA（生成器實際支援的範圍）；
 //   液體 chunk 清單長度先和世界 chunk 總數比對，再配置 RLE 解碼緩衝。
 // format 9 起：header.vanity = 外觀欄（頭 / 身 / 腿 / 背的時裝或當樣子用的防具 + 詞條）與防具隱藏開關（壞資料各自丟掉）。
+// 時裝顏色（不換版號，舊檔沒有 = 原色）：背包 / 箱子 / 掉落物的時裝格可帶 tint = [主色, 副色]（CLOTH_COLORS index）；
+//   header.vanity.tint = 外觀欄各格的顏色。格子上的 tint 不合法或放在非時裝上 → 存檔損毀（比照 gear）；外觀欄的壞 tint 丟掉。
 // format 9 起：header.appearance = 角色外觀（engine/appearance.ts 的選項索引）。沒有 / 壞掉 → 預設外觀（各欄獨立退回，
 //   不算存檔損毀：外觀是裝飾，不該讓整個世界讀不到）。
+// header.cformat = 角色資料的版本（save/character.ts CHARACTER_FORMAT；不換存檔版號）：snapshotGame 一律寫目前的版本
+//   （活的遊戲已經轉換過）；沒有 = 舊資料。讀檔時 < WARDROBE_CFORMAT → applyCharacter 做一次舊角色的時裝轉換（spec C6）。
 // header.levels = 等級 / 經驗 / 技能樹 / 防刷紀錄（engine/levels.ts LevelsJSON）。沒有 / 壞掉 → 各欄位獨立退回預設
 //   （技能樹不合法 → 整棵重置、點數退回），不算存檔損毀。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
@@ -64,6 +68,9 @@ import { WEATHER_KINDS, type WeatherKind } from '../engine/weather';
 import { isRngState, type RngState } from '../engine/rng';
 import { normalizeAppearance, type Appearance } from '../engine/appearance';
 import { Vanity, type VanityJSON } from '../engine/vanity';
+import { WARDROBE_CFORMAT } from '../engine/wardrobeMigration';
+import { CHARACTER_FORMAT } from './character';
+import { cloneTint, isTintable, validTint, type Tint } from '../engine/tint';
 import type { SettlementJSON } from '../engine/settlement';
 import { Progression, type LevelsJSON } from '../engine/levels';
 import type { FolkJSON } from '../engine/folk';
@@ -102,7 +109,7 @@ const MAX_CHUNKS = chunkTotal(MAX_WORLD_W, MAX_WORLD_H);
 export interface PlayerSave { x: number; y: number; vx: number; vy: number; }
 /** undying = 不滅（傳奇詞條）冷卻剩餘秒數；format 8 起 */
 export interface VitalsSave { breath: number; burning: number; honey: number; undying?: number; }
-export interface DropSave { item: ItemId; count: number; x: number; y: number; gear?: Gear; }
+export interface DropSave { item: ItemId; count: number; x: number; y: number; gear?: Gear; tint?: Tint; }
 export interface SaveHeader {
   format: number;
   genVersion: number;
@@ -146,6 +153,8 @@ export interface SaveHeader {
   extra?: ExtraSave;
   /** 角色外觀；format 9 起（沒有 = 預設外觀） */
   appearance?: Appearance;
+  /** 角色資料的版本（沒有 = 舊資料，外觀上的服裝 / 頭飾 / 眼鏡還沒轉成時裝物品） */
+  cformat?: number;
   /** 外觀欄（時裝）+ 防具隱藏開關；format 9 起（沒有 = 空、都不隱藏） */
   vanity?: VanityJSON;
   /** 據點（爐心）與居民；沒有 = 沒有據點（壞欄位逐筆丟掉，不算損毀） */
@@ -356,8 +365,11 @@ export function validDrops(v: unknown): DropSave[] | undefined {
     const o = d as Partial<DropSave> | null;
     if (!o || typeof o !== 'object' || !isItemId(o.item) || !Number.isInteger(o.count) || (o.count as number) < 1
       || (o.count as number) > ITEMS[o.item].maxStack || !isNum(o.x) || !isNum(o.y)) throw new SaveFormatError(`drop ${k}`);
-    const gear = strictGear(o.item, o.gear, `drop ${k}`);
-    return gear ? { item: o.item, count: o.count as number, x: o.x, y: o.y, gear } : { item: o.item, count: o.count as number, x: o.x, y: o.y };
+    const gear = strictGear(o.item, o.gear, `drop ${k}`), tint = strictTint(o.item, o.tint, `drop ${k}`);
+    const out: DropSave = { item: o.item, count: o.count as number, x: o.x, y: o.y };
+    if (gear) out.gear = gear;
+    if (tint) out.tint = tint;
+    return out;
   });
 }
 export function validEnv(v: unknown): EnvSave | undefined {
@@ -478,12 +490,14 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       drops: game.drops.list.map((d) => {
         const o: DropSave = { item: d.item, count: d.count, x: r2(d.body.x + d.body.w / 2), y: r2(d.body.y + d.body.h / 2) };
         if (d.gear) o.gear = { ...d.gear, affixes: d.gear.affixes.map((a) => ({ ...a })) };
+        if (d.tint) o.tint = cloneTint(d.tint);
         return o;
       }),
       bossActive: boss && boss.state !== 'leave' ? boss.kind : null,
       env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeFrozen(w.frozen) },
       extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce], codex: game.codex.toJSON(), rng: game.rngState() },
       appearance: { ...game.appearance },
+      cformat: CHARACTER_FORMAT,
       vanity: game.vanity.toJSON(),
       settle: game.settle.toJSON(),
       halves: encodeFrozen(w.half),
@@ -580,15 +594,25 @@ function strictGear(item: ItemId, raw: unknown, where: string): Gear | undefined
   if (!g) throw new SaveFormatError(`${where}: gear`);
   return g;
 }
+/** 格子上的 tint：沒有 → undefined；有但不合法（或不是時裝）→ 存檔損毀 */
+function strictTint(item: ItemId, raw: unknown, where: string): Tint | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  const t = isTintable(item) ? validTint(raw) : null;
+  if (!t) throw new SaveFormatError(`${where}: tint`);
+  return t;
+}
 export function validStack(st: unknown, where: string): Stack | null {
   if (st === null) return null;
-  const o = st as { item?: unknown; count?: unknown; gear?: unknown };
+  const o = st as { item?: unknown; count?: unknown; gear?: unknown; tint?: unknown };
   if (!o || typeof o !== 'object' || !isItemId(o.item) || typeof o.count !== 'number'
     || !Number.isInteger(o.count) || o.count < 1 || o.count > ITEMS[o.item].maxStack) {
     throw new SaveFormatError(where);
   }
-  const gear = strictGear(o.item, o.gear, where);
-  return gear ? { item: o.item, count: o.count, gear } : { item: o.item, count: o.count };
+  const gear = strictGear(o.item, o.gear, where), tint = strictTint(o.item, o.tint, where);
+  const out: Stack = { item: o.item, count: o.count };
+  if (gear) out.gear = gear;
+  if (tint) out.tint = tint;
+  return out;
 }
 
 export function validUnlocked(v: unknown): number[] {
@@ -682,6 +706,9 @@ export function validInventory(v: unknown): InventoryJSON {
   return { slots, selected };
 }
 
+/** 角色資料版本：正整數才算；其他 = 沒有（舊資料） */
+function validCformat(v: unknown): v is number { return Number.isInteger(v) && (v as number) >= 1; }
+
 export function decodeSave(bytes: Uint8Array): SaveData {
   const { raw, body } = readContainer(bytes);
   const h = raw as Partial<SaveHeader>;
@@ -712,6 +739,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     env: validEnv(h.env),
     extra: validExtra(h.extra),
     appearance: normalizeAppearance(h.appearance),
+    ...(validCformat(h.cformat) ? { cformat: h.cformat } : {}),
     vanity: Vanity.fromJSON(h.vanity).toJSON(),
     settle: h.settle && typeof h.settle === 'object' ? h.settle : undefined,
     halves: validHalves(h.halves),
@@ -782,10 +810,22 @@ export interface CharacterState {
   extra?: { fishLog?: Partial<Record<ItemId, number>>; codex?: CodexJSON };
   /** 絕對時間（到 game.time 為止有效）；呼叫端先設好 game.time */
   buffs: Partial<Record<BuffKind, number>>;
+  /** 角色資料的版本；沒有 / < WARDROBE_CFORMAT = 舊角色 → 套用後做一次時裝轉換 */
+  cformat?: number;
 }
 
-/** 把角色隨身的狀態套到遊戲上（不動世界 / 位置 / 探索） */
-export function applyCharacter(game: DelveGame, s: CharacterState): void {
+/** 這份角色資料還沒做過時裝轉換（cformat 沒有 / < WARDROBE_CFORMAT） */
+export function needsWardrobeMigration(cformat: unknown): boolean {
+  return !(validCformat(cformat) && cformat >= WARDROBE_CFORMAT);
+}
+
+/**
+ * 把角色隨身的狀態套到遊戲上（不動世界 / 位置 / 探索）。舊角色（cformat < WARDROBE_CFORMAT）最後做一次時裝轉換：
+ * 這裡是唯一有活 game 的載入點（轉出來的東西背包放不下要掉在玩家腳邊，呼叫端要先放好玩家位置）。
+ * wardrobe = false：呼叫端自己晚點呼叫 game.migrateWardrobe()（restoreGame 要等世界存檔裡的掉落物放回去之後才轉換，
+ * 不然轉出來掉在腳邊的東西會被讀回來的掉落物依 MAX_DROPS 從最舊的擠掉）。
+ */
+export function applyCharacter(game: DelveGame, s: CharacterState, wardrobe = true): void {
   if (s.appearance) game.setAppearance(s.appearance);
   game.inventory = Inventory.fromJSON(s.inventory);
   game.vanity = Vanity.fromJSON(s.vanity);
@@ -804,6 +844,7 @@ export function applyCharacter(game: DelveGame, s: CharacterState): void {
     game.codex.load(s.extra.codex);
   }
   game.buffs = { ...s.buffs };
+  if (wardrobe && needsWardrobeMigration(s.cformat)) game.migrateWardrobe();
 }
 
 /** 由存檔位元組（或已解碼資料）還原遊戲。永不丟例外，錯誤以結果回報。 */
@@ -914,7 +955,8 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     undying: h.vitals ? (h.vitals.undying ?? 0) : undefined,
     extra: h.extra,
     buffs: h.folk ? h.folk.buffs : {},
-  });
+    cformat: h.cformat,
+  }, false);
   // 呼吸 / 燃燒 / 蜂蜜（format 7）；舊格式 = 滿氣、沒著火
   if (h.vitals) {
     game.breath = Math.max(0, Math.min(MAX_BREATH, h.vitals.breath));
@@ -924,8 +966,11 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   // 地上的掉落物（format 7）：放回原地、靜止
   for (const d of h.drops ?? []) {
     if (d.x < 0 || d.y < 0 || d.x > w.width * TILE_SIZE || d.y > w.height * TILE_SIZE) continue;
-    game.drops.spawn(d.item, d.count, d.x, d.y, 0, 0, 0, d.gear ? { ...d.gear, affixes: d.gear.affixes.map((a) => ({ ...a })) } : undefined);
+    game.drops.spawn(d.item, d.count, d.x, d.y, 0, 0, 0, d.gear ? { ...d.gear, affixes: d.gear.affixes.map((a) => ({ ...a })) } : undefined, d.tint);
   }
+  // 舊角色的時裝轉換（spec C6）：放在掉落物讀回來之後（玩家位置已經放好），背包放不下而掉在腳邊的轉換物品
+  // 是最新的掉落物；掉落物總數超過 MAX_DROPS 時被擠掉的是最舊的存檔掉落物，不是轉換出來的東西
+  if (needsWardrobeMigration(h.cformat)) game.migrateWardrobe();
   // 曆法 / 天氣：結冰格（只留在還有水的格）、強制天氣；舊存檔沒有 → 依日期重算結冰
   if (h.env) {
     w.frozen.fill(0);

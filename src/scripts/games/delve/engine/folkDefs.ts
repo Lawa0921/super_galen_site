@@ -1,7 +1,7 @@
 // folkDefs.ts — 世界上的 NPC（村民 / 矮人 / 旅人 / 受困探險者）的純資料：職能、商店、服務、好感度分級、名字、台詞、外觀產生器。
 //   和 npcs.ts（據點居民）分開：居民靠「心情」調價，這些人靠「好感度」（交易 / 委託 / 救援累積）調價、解鎖商品與服務。
 import type { Appearance } from './appearance';
-import { HAIR_STYLES, OUTFITS } from './appearance';
+import { HAIR_STYLES, OUTFIT_PLAIN } from './appearance';
 import type { ItemId } from './items';
 import { Rng } from './rng';
 
@@ -198,7 +198,8 @@ export function folkLook(role: FolkRole, rng: Rng): FolkLook {
   }
   const app = A({
     body, blush: body === 0, hair: rng.int(0, HAIR_STYLES.length), hairColor: rng.int(0, 12), ahoge: rng.chance(3), eyes: rng.int(0, 9), eyeShape: rng.int(0, 3), skin: rng.int(0, 5),
-    outfit: rng.int(0, OUTFITS.length), color1: rng.int(0, 12), color2: rng.int(0, 12), acc: 0, glasses: rng.chance(6),
+    // 服裝只從基本布衣之前抽（布衣排最後；範圍固定 = 加布衣之前的 14 套，同一個種子的樣子不變）
+    outfit: rng.int(0, OUTFIT_PLAIN), color1: rng.int(0, 12), color2: rng.int(0, 12), acc: 0, glasses: rng.chance(6),
   });
   switch (role) {
     case 'trader': return { app: { ...app, outfit: 4, color1: 9, color2: 11 }, head: 'hat:beret' };
@@ -214,7 +215,7 @@ export function folkLook(role: FolkRole, rng: Rng): FolkLook {
 }
 
 /** 行商的貨（每次遇見換一批：種子 + 第幾次遇見；都是平常很難買到的東西） */
-const PEDDLER_POOL: readonly FolkShopEntry[] = [
+export const PEDDLER_POOL: readonly FolkShopEntry[] = [
   { item: 'gear_shard', n: 4, price: 160 }, { item: 'stardust', n: 1, price: 380 }, { item: 'recall_stone', n: 1, price: 320 },
   { item: 'life_core', n: 1, price: 950 }, { item: 'golden_crate', n: 1, price: 600 }, { item: 'iron_crate', n: 1, price: 220 },
   { item: 'flaming_arrow', n: 30, price: 120 }, { item: 'sunbeetle', n: 3, price: 150 }, { item: 'firefly', n: 5, price: 90 },

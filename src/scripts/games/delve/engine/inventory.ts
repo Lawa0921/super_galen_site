@@ -1,13 +1,18 @@
-// inventory.ts — 40 格背包，前 10 格為快捷欄。裝備（武器 / 防具 / 飾品 / 鎬）每件可帶自己的詞條資料（gear）。
+// inventory.ts — 40 格背包，前 10 格為快捷欄。裝備（武器 / 防具 / 飾品 / 鎬）每件可帶自己的詞條資料（gear）；
+//   時裝每件可帶自己的顏色（tint）。兩者都是「單件實例資料」：帶著的那格不和別格合併。
 import { INV_SIZE, HOTBAR_SIZE } from './constants';
 import { ITEMS, isItemId, type ItemId, type PickStats } from './items';
 import { cloneGear, pickSpeed, validGear, type Gear } from './gear';
+import { cloneTint, isTintable, validTint, type Tint } from './tint';
 
-/** gear = 這件裝備的詞條 / 稀有度 / 強化（沒有 = 普通、無詞條） */
-export interface Stack { item: ItemId; count: number; gear?: Gear; }
-/** 複製一格（gear 深複製） */
+/** gear = 這件裝備的詞條 / 稀有度 / 強化（沒有 = 普通、無詞條）；tint = 時裝的主色 / 副色（沒有 = 款式原色） */
+export interface Stack { item: ItemId; count: number; gear?: Gear; tint?: Tint; }
+/** 複製一格（gear / tint 深複製） */
 export function cloneStack(s: Stack): Stack {
-  return s.gear ? { item: s.item, count: s.count, gear: cloneGear(s.gear) } : { item: s.item, count: s.count };
+  const o: Stack = { item: s.item, count: s.count };
+  if (s.gear) o.gear = cloneGear(s.gear);
+  if (s.tint) o.tint = cloneTint(s.tint);
+  return o;
 }
 export interface InventoryJSON { slots: (Stack | null)[]; selected: number; }
 
@@ -15,14 +20,17 @@ export class Inventory {
   slots: (Stack | null)[] = new Array<Stack | null>(INV_SIZE).fill(null);
   selected = 0;
 
-  /** 加入道具，回傳放不下的數量。先補既有堆，再用第一個空格。gear = 帶詞條的單件裝備（放進第一個空格）。 */
-  add(item: ItemId, n: number, gear?: Gear): number {
+  /** 加入道具，回傳放不下的數量。先補既有堆，再用第一個空格。gear / tint = 帶詞條的單件裝備 / 帶顏色的時裝（放進第一個空格）。 */
+  add(item: ItemId, n: number, gear?: Gear, tint?: Tint): number {
     const max = ITEMS[item].maxStack;
     let left = Math.max(0, Math.floor(n));
-    if (gear && left > 0) {
+    if ((gear || tint) && left > 0) {
       const i = this.slots.indexOf(null);
       if (i < 0) return left;
-      this.slots[i] = { item, count: 1, gear };
+      const st: Stack = { item, count: 1 };
+      if (gear) st.gear = gear;
+      if (tint) st.tint = cloneTint(tint);
+      this.slots[i] = st;
       left--;
       if (left <= 0) return 0;
     }
@@ -53,16 +61,16 @@ export class Inventory {
     return room >= n;
   }
 
-  /** 放進一整格（保留 gear），回傳放不下的數量 */
+  /** 放進一整格（保留 gear / tint），回傳放不下的數量 */
   addStack(st: Stack): number {
-    // 帶詞條的單件：放進同一個物件（介面 / 鍛造台追蹤的是物件）
-    if (st.gear && st.count === 1) {
+    // 帶詞條 / 顏色的單件：放進同一個物件（介面 / 鍛造台追蹤的是物件）
+    if ((st.gear || st.tint) && st.count === 1) {
       const i = this.slots.indexOf(null);
       if (i < 0) return 1;
       this.slots[i] = st;
       return 0;
     }
-    return this.add(st.item, st.count, st.gear);
+    return this.add(st.item, st.count, st.gear, st.tint);
   }
 
   /** 一組道具是否能全部放進背包（模擬依序加入，彼此會搶空格）。 */
@@ -160,6 +168,8 @@ export class Inventory {
         const st: Stack = { item: s.item, count: Math.min(s.count, ITEMS[s.item].maxStack) };
         const g = validGear(s.item, (s as { gear?: unknown }).gear);
         if (g) st.gear = g;
+        const t = isTintable(s.item) ? validTint((s as { tint?: unknown }).tint) : null;
+        if (t) st.tint = t;
         inv.slots[i] = st;
       }
     }

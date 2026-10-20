@@ -8,7 +8,7 @@ import type { DelveGame } from '../engine/game';
 
 const r2 = (v: number): number => Math.round(v * 100) / 100;
 const dropsOf = (g: DelveGame) => g.drops.list.map((d) => ({
-  item: d.item, count: d.count, gear: d.gear, x: r2(d.body.x + d.body.w / 2), y: r2(d.body.y + d.body.h / 2),
+  item: d.item, count: d.count, gear: d.gear, tint: d.tint, x: r2(d.body.x + d.body.w / 2), y: r2(d.body.y + d.body.h / 2),
 }));
 const settleOf = (g: DelveGame) => ({ ...g.settle.toJSON(), spawnCore: null });
 

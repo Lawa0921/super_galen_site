@@ -1,14 +1,16 @@
 // doll.ts — 紙娃娃的「看得見的樣子」（純資料，無 DOM）：由角色外觀 + 裝備欄 + 外觀欄算出每個部位畫什麼。
 //   部位優先序：外觀欄（時裝或拿來當樣子的防具）> 防具（沒被隱藏）> null（= 客製化的基本服裝 / 髮飾）。
+//   飾品格（acc）：有東西時取代外觀上的頭飾與眼鏡（null = 照外觀的 acc / glasses 畫：NPC 與還沒轉換的舊角色）。
 //   每件看得見的裝備帶稀有度 / 強化 / 元素詞條 → 渲染時加滾邊、寶石、閃光、元素點綴。
 //   看得見的飾品：跳躍靴 / 疾行靴（換鞋）、輕羽墜（背上小翅膀）、甲殼小盾（背在背上）、墜飾（胸前）、腰間小物。
 //   dollKey = 精靈快取 key（只含看得見的東西：換數值不重烘）。
 import { appearanceKey, type Appearance } from './appearance';
 import type { Equipment } from './equipment';
-import type { Vanity } from './vanity';
+import type { Vanity, VanitySlot } from './vanity';
 import { ITEMS, type ItemId } from './items';
 import type { Stack } from './inventory';
 import type { AffixId } from './gear';
+import { cloneTint, tintKey, type Tint } from './tint';
 
 /** 合成順序（由後往前）。渲染：背飾 / 後髮 / 身體 / 腿 / 胸 在第一張，手臂 + 手持由渲染器畫，臉 / 前髮 / 頭飾 / 前飾品在第二張 */
 /** 3/4 正面：背飾（翅膀 / 披風 / 蝴蝶結）蓋在後髮上面，才從身體兩側露得出來 */
@@ -17,11 +19,13 @@ export type DollLayer = typeof DOLL_LAYERS[number];
 
 export type DollElem = 'fire' | 'ice' | 'poison' | 'light' | 'storm';
 export interface DollPiece {
-  /** 'armor:<套裝>' | 'outfit:<服裝>' | 'hat:<帽子>' | 'back:<背飾>' */
+  /** 'armor:<套裝>' | 'outfit:<服裝>' | 'hat:<帽子>' | 'back:<背飾>' | 'acc:<頭飾 id 或 glasses>' */
   look: string;
   rarity: number;
   plus: number;
   elem: DollElem | null;
+  /** 時裝的主色 / 副色（CLOTH_COLORS index）；沒有 = 款式原色 */
+  tint?: Tint;
 }
 export type DollFeet = 'jump' | 'swift';
 export type DollNeck = 'night' | 'fang' | 'heart' | 'magma';
@@ -32,6 +36,8 @@ export interface DollLook {
   body: DollPiece | null;
   legs: DollPiece | null;
   back: DollPiece | null;
+  /** 飾品格（頭飾 / 眼鏡）；null = 用外觀上的頭飾 / 眼鏡 */
+  acc: DollPiece | null;
   feet: DollFeet | null;
   neck: DollNeck | null;
   belt: DollBelt | null;
@@ -52,7 +58,9 @@ export function pieceOf(st: Stack | null | undefined): DollPiece | null {
   const g = st.gear;
   let elem: DollElem | null = null;
   for (const a of g?.affixes ?? []) { const e = ELEM_OF[a.id]; if (e) { elem = e; break; } }
-  return { look, rarity: g?.rarity ?? 0, plus: g?.plus ?? 0, elem };
+  const p: DollPiece = { look, rarity: g?.rarity ?? 0, plus: g?.plus ?? 0, elem };
+  if (st.tint) p.tint = cloneTint(st.tint);
+  return p;
 }
 
 export function buildDollLook(app: Appearance, eq: Equipment, v: Vanity): DollLook {
@@ -66,14 +74,29 @@ export function buildDollLook(app: Appearance, eq: Equipment, v: Vanity): DollLo
     belt ??= BELT[st.item] ?? null;
     if (!backAcc && BACK_ACC[st.item]) backAcc = pieceOf(st);
   }
-  return { app, head: part('head'), body: part('body'), legs: part('legs'), back: pieceOf(v.getStack('back')) ?? backAcc, feet, neck, belt };
+  return { app, head: part('head'), body: part('body'), legs: part('legs'), back: pieceOf(v.getStack('back')) ?? backAcc, acc: pieceOf(v.getStack('acc')), feet, neck, belt };
 }
 
-const pk = (p: DollPiece | null): string => (p ? `${p.look}/${p.rarity}/${p.plus}/${p.elem ?? ''}` : '-');
+/** 沒有 tint 時 key 和以前一樣（快取不因為改版全部失效）；飾品格空著也一樣（有戴才多一段） */
+const pk = (p: DollPiece | null): string => (p ? `${p.look}/${p.rarity}/${p.plus}/${p.elem ?? ''}${p.tint ? `/${tintKey(p.tint)}` : ''}` : '-');
 export function dollKey(l: DollLook): string {
-  return [appearanceKey(l.app), pk(l.head), pk(l.body), pk(l.legs), pk(l.back), l.feet ?? '-', l.neck ?? '-', l.belt ?? '-'].join('|');
+  const k = [appearanceKey(l.app), pk(l.head), pk(l.body), pk(l.legs), pk(l.back), l.feet ?? '-', l.neck ?? '-', l.belt ?? '-'];
+  if (l.acc) k.push(pk(l.acc));
+  return k.join('|');
+}
+/**
+ * 梳妝台預覽：look 換上新外觀，外觀欄 slot 上那件改用新配色（新物件，不改原本的 look）。
+ * 外觀欄有東西時一定是那格看得見的樣子（優先於防具），所以 slot 名直接對到 DollLook 的同名部位；那格沒穿東西就略過。
+ */
+export function restyledLook(look: DollLook, app: Appearance, tints: readonly { slot: VanitySlot; tint: Tint }[]): DollLook {
+  const out: DollLook = { ...look, app };
+  for (const { slot, tint } of tints) {
+    const p = out[slot];
+    if (p) out[slot] = { ...p, tint: cloneTint(tint) };
+  }
+  return out;
 }
 /** 只有外觀、什麼都沒穿 */
 export function plainLook(app: Appearance): DollLook {
-  return { app, head: null, body: null, legs: null, back: null, feet: null, neck: null, belt: null };
+  return { app, head: null, body: null, legs: null, back: null, acc: null, feet: null, neck: null, belt: null };
 }

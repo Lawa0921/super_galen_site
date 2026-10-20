@@ -9,6 +9,10 @@ import { RARITIES } from '../engine/gear';
 import type { DollElem, DollPiece } from '../engine/doll';
 import { ARMOR_RAMP, R as CR } from './combatArt';
 import { GOLD, LEATHER, WHITE, clothRamp } from './avatarPalette';
+import { defaultTint, type Tint } from '../engine/tint';
+
+/** 時裝的顏色（物品上的 tint；沒有 = 款式原色，engine/tint.ts 的原色表 = 這裡原本寫死的色） */
+const tintOf = (look: string, tint: Tint | undefined): Tint => tint ?? defaultTint(look) ?? [0, 0];
 
 export const armorSet = (p: DollPiece | null): ArmorSetId | null => (p && p.look.startsWith('armor:') ? (p.look.slice(6) as ArmorSetId) : null);
 export const lookId = (p: DollPiece | null, prefix: string): string | null => (p && p.look.startsWith(prefix) ? p.look.slice(prefix.length) : null);
@@ -223,8 +227,10 @@ function minerHelm(S: (x: number, y: number, c: RGB) => void): void {
   const k = hex('#2c2838');
   for (let y = 0; y <= 4; y++) for (let x = 14; x <= 18; x++) S(x, y, x === 14 || x === 18 || y === 0 || y === 4 ? k : y === 1 && x < 17 ? hex('#ffffff') : y < 2 ? hex('#fff4c0') : y < 3 ? hex('#ffd86a') : hex('#ffa93a'));
 }
-export function hatArt(b: Bmp, id: string, ox: number, oy: number, _view: 'side' | 'back' = 'side', sway = 0): void {
+export function hatArt(b: Bmp, id: string, ox: number, oy: number, _view: 'side' | 'back' = 'side', sway = 0, tint?: Tint): void {
   const s = new Bmp(b.w, b.h);
+  // 主色 / 副色（礦工盔 / 花冠沒有布料：不換色）
+  const [c1, c2] = tintOf(`hat:${id}`, tint);
   // 帽子的設計座標比頭的區域座標大一格（帽沿伸出頭外）：整頂往左上偏一格
   const S = (x: number, y: number, c: RGB): void => s.set(ox + x - 1, oy + y - 1, c);
   const M = (x: number, y: number, c: RGB): void => s.set(ox + x, oy + y, c);
@@ -237,7 +243,7 @@ export function hatArt(b: Bmp, id: string, ox: number, oy: number, _view: 'side'
     }
   };
   if (id === 'straw') {
-    const st = clothRamp(8), band = clothRamp(3);
+    const st = clothRamp(c1), band = clothRamp(c2);
     brim(12.5, 16, 6.6, st, st[4], st[1]);
     for (let y = -3; y <= 5; y++) for (let x = 2; x <= 21; x++) {
       const nx = (x + 0.5 - 11.2) / 9.4, ny = (y + 0.5 - 5.2) / 8;
@@ -245,7 +251,7 @@ export function hatArt(b: Bmp, id: string, ox: number, oy: number, _view: 'side'
       S(x, y, y >= 3 ? band[y === 3 ? 4 : 3] : ((x + y) & 3) === 0 ? st[2] : nx > 0.35 && ny < -0.2 ? st[4] : nx < -0.5 ? st[2] : st[3]);
     }
   } else if (id === 'witch') {
-    const c = clothRamp(10), band = clothRamp(11);
+    const c = clothRamp(c1), band = clothRamp(c2);
     brim(12.5, 14.5, 6.6, c, c[4], c[1]);
     // 尖頂：圓錐收得窄、往後（左）彎，帽尖再往後垂下來（頂部被裁在頭上 4 格內：尖帽輪廓靠「往後折」留住）
     let tx = 0;
@@ -264,7 +270,7 @@ export function hatArt(b: Bmp, id: string, ox: number, oy: number, _view: 'side'
     S(16, 4, GOLD); S(16, 3, hex('#fff4c0')); S(17, 4, GOLD);
   } else if (id === 'beret') {
     // 貝雷帽：往後（左）斜戴、前面露出瀏海
-    const c = clothRamp(3);
+    const c = clothRamp(c1);
     for (let y = -4; y <= 4; y++) for (let x = -2; x <= 21; x++) {
       const nx = (x + 0.5 - 8.6) / 11.6, ny = (y + 0.5 - 0.6 + nx * 0.8) / 3.6;
       if (nx * nx + ny * ny <= 1) S(x, y, ny > 0.5 ? c[2] : nx > 0.3 && ny < 0.1 ? c[4] : c[3]);
@@ -273,7 +279,7 @@ export function hatArt(b: Bmp, id: string, ox: number, oy: number, _view: 'side'
     S(9, -5, c[2]); S(10, -5, c[3]);
   } else if (id === 'maid') {
     // 女僕頭飾：一圈白色荷葉邊（3/4：前面那段寬、後面窄）+ 黑色緞帶
-    const w = WHITE, k = clothRamp(1);
+    const w = clothRamp(c1), k = clothRamp(c2);
     for (let x = 6; x <= 21; x++) { const y = 2 - (x > 13 ? 1 : 0); S(x, y, (x & 1) ? w[3] : w[2]); S(x, y + 1, w[3]); S(x, y + 2, k[3]); if (!(x % 3)) S(x, y - 1, w[3]); }
   } else if (id === 'miner') {
     minerHelm(M);
@@ -302,9 +308,11 @@ export function backArt(b: Bmp, p: DollPiece, flap: number, lift: number, sx: nu
   const id = p.look.slice(5);
   const s = new Bmp(b.w, b.h);
   const S = (x: number, y: number, c: RGB): void => s.set(x, y, c);
+  // 主色 / 副色（羽翼 / 甲殼小盾沒有布料：不換色）
+  const [c1, c2] = tintOf(p.look, p.tint);
   if (id === 'cape') {
     // 紅披風（外）+ 金色內裡：從兩肩垂下、往後（左）飄；下襬左右兩角翻起來露出內裡
-    const c = clothRamp(3), lin = clothRamp(8), len = 15;
+    const c = clothRamp(c1), lin = clothRamp(c2), len = 15;
     for (let k = 0; k <= len; k++) {
       const t = k / len, trail = Math.round(t * t * (2 + flap * 3 + lift * 2));
       const half = bw / 2 + 2 + t * 4;
@@ -320,7 +328,7 @@ export function backArt(b: Bmp, p: DollPiece, flap: number, lift: number, sx: nu
   } else if (id === 'feathers') {
     // 羽毛護符：肩後兩側各插三根長羽毛（白羽軸 + 青綠羽片 + 橘色羽尖、下緣深一階），往外上方張開到頭的兩側；
     // 和白色的羽翼分得出來，也不會被白上衣吃掉
-    const v = clothRamp(6), o = clothRamp(11), w = WHITE, sway = flap * 1.5;
+    const v = clothRamp(c1), o = clothRamp(c2), w = WHITE, sway = flap * 1.5;
     for (const side of [-1, 1]) {
       const rx = sx + side * (bw / 2 + (side < 0 ? 1 : 0)), ry = sy + 2;
       for (let k = 0; k < 3; k++) {
@@ -358,8 +366,8 @@ export function backArt(b: Bmp, p: DollPiece, flap: number, lift: number, sx: nu
     }
   } else if (id === 'bow') {
     // 大蝴蝶結：綁在背後正中，兩個大圈從身體左右兩邊都露出來（3/4 正面：遠側那圈小一點），緞帶尾巴垂到腰
-    const c = clothRamp(4);
-    const left = ['.bbbb..', 'bBbbbbb', 'bBbbbbb', 'bbbbbbb', '.bbbb..', '..bb...', '..b....', '.bb....'];
+    const c = clothRamp(c1);
+    const left =['.bbbb..', 'bBbbbbb', 'bBbbbbb', 'bbbbbbb', '.bbbb..', '..bb...', '..b....', '.bb....'];
     const right = ['..bbb.', 'bbbbBb', 'bbbbbb', 'bbbbbb', '..bbb.', '...bb.', '....b.', '....bb'];
     const lx = Math.round(sx - bw / 2) - 6, rxx = Math.round(sx + bw / 2) - 1, y0 = sy + 2;
     left.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (row[x] !== '.') S(lx + x, y0 + y, row[x] === 'B' ? c[4] : x < 2 || y > 4 ? c[3] : c[2]); });
@@ -382,8 +390,8 @@ export function backArt(b: Bmp, p: DollPiece, flap: number, lift: number, sx: nu
 // ── 鞋子 / 墜飾 / 腰間 ───────────────────────────────────
 /** 飾品鞋：跳躍靴（綠色 + 彈簧）、疾行靴（白色 + 小翅膀） */
 /** 披風在肩上的那一片（畫在上衣上面）：紅色披肩蓋住兩肩 + 領口金扣；(x0..x1, y) = 肩線 */
-export function capeShoulders(b: Bmp, x0: number, x1: number, y: number): void {
-  const c = clothRamp(3), s = new Bmp(b.w, b.h);
+export function capeShoulders(b: Bmp, x0: number, x1: number, y: number, tint?: Tint): void {
+  const c = clothRamp(tintOf('back:cape', tint)[0]), s = new Bmp(b.w, b.h);
   for (let x = x0 - 1; x <= x1 + 1; x++) { s.set(x, y, x < x0 + 2 ? c[4] : c[3]); if (x <= x0 + 1 || x >= x1 - 1) s.set(x, y + 1, x <= x0 ? c[4] : c[2]); }
   const m = Math.round((x0 + x1) / 2) + 1;
   s.set(m, y, GOLD); s.set(m - 1, y, hex('#fff4c0'));
@@ -416,4 +424,4 @@ export function beltArt(b: Bmp, kind: string, x: number, y: number): void {
 
 /** 圖示用：只有頭盔 / 帽子（不畫頭） */
 export function helmetOnly(b: Bmp, p: DollPiece): void { helmetArt(b, p, 10, 14, 0); }
-export function hatOnly(b: Bmp, id: string): void { hatArt(b, id, 10, 14); }
+export function hatOnly(b: Bmp, id: string, tint?: Tint): void { hatArt(b, id, 10, 14, 'side', 0, tint); }

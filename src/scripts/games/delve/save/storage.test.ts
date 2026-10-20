@@ -1,8 +1,15 @@
 // storage.test.ts — gzip 解壓的錯誤對應（截斷 / 損毀 → 友善訊息）、解壓上限（node 有 CompressionStream）、自動存檔排程
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
-  compress, decompress, importBlob, startAutosave, SaveFileError, CORRUPT_MSG, MAX_DECOMPRESSED, type SlotMeta,
+  compress, decompress, importBlob, startAutosave, previewOf, SaveFileError, CORRUPT_MSG, MAX_DECOMPRESSED, type SlotMeta,
 } from './storage';
+import { DelveGame } from '../engine/game';
+import { OUTFITS, normalizeAppearance } from '../engine/appearance';
+import { plainLook, type DollLook } from '../engine/doll';
+import { avatarSheet } from '../render/avatarArt';
+import { charDollLook } from '../render/titleModel';
+import { decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
+import { restoreSplit, saveSplitGame } from './worldSave';
 
 describe('decompress', () => {
   it('壓縮 / 解壓往返；不是 gzip 的原樣回傳', async () => {
@@ -96,5 +103,26 @@ describe('startAutosave', () => {
     await vi.advanceTimersByTimeAsync(5000);
     globalThis.dispatchEvent(new Event('pagehide'));
     expect(save).not.toHaveBeenCalled();
+  });
+});
+
+describe('角色列表預覽（preview.look）', () => {
+  const sheet = (l: DollLook): string => avatarSheet(l).b.px.join();
+  it('轉換後的角色：預覽畫的是穿著原本衣服的樣子（不是布衣）；舊記錄沒有 look → 只畫外觀', () => {
+    const app = normalizeAppearance({ outfit: OUTFITS.findIndex((o) => o.id === 'gothic'), color1: 3, color2: 7, acc: 1 });
+    const g = new DelveGame({ seed: 'preview', width: 160, height: 100, appearance: app });
+    g.give('iron_helmet'); g.equipFromInventory(g.inventory.slots.findIndex((x) => x?.item === 'iron_helmet'));
+    const before = g.doll().look;
+    const who = { id: 'p-1', nick: 'p', createdAt: 0, rev: 0 }, where = { worldId: 'w', worldName: 'preview', visits: {} };
+    const old = { ...saveSplitGame(g, who, where, 1).character, cformat: 1 } as DelveCharacter;
+    const r = restoreSplit(saveSplitGame(g, who, where, 1).world, decodeCharacter(encodeCharacter(old)));
+    if (!r.ok) throw new Error(r.message);
+    const c = saveSplitGame(r.game, { ...who, rev: 1 }, where, 2).character;
+    expect(c.cformat).toBe(2);
+    const p = previewOf(c);
+    expect(p.look).toBeDefined();
+    expect(sheet(charDollLook(p))).toBe(sheet(before)); // 衣服 + 頭飾 + 頭盔都在
+    expect(sheet(charDollLook({ appearance: c.appearance }))).toBe(sheet(plainLook(c.appearance)));
+    expect(sheet(charDollLook({ appearance: c.appearance }))).not.toBe(sheet(before));
   });
 });

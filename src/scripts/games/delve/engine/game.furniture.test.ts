@@ -57,7 +57,7 @@ describe('首領戰利品', () => {
 describe('家具', () => {
   it('桌子 / 椅子 / 書架 / 旗幟 / 燈柱 / 蠟燭都做得出來、放得下；蠟燭與戰利品可以放桌上', () => {
     const g = arena();
-    for (const id of ['table', 'chair', 'bookshelf', 'banner', 'lantern_post', 'candle', 'plank_wall'] as ItemId[]) {
+    for (const id of ['table', 'chair', 'bookshelf', 'banner', 'lantern_post', 'candle', 'plank_wall', 'vanity_table'] as ItemId[]) {
       expect(findRecipe(id), id).toBeDefined();
       expect(ITEMS[id].place ?? ITEMS[id].placeWall, id).toBeDefined();
     }
@@ -66,6 +66,10 @@ describe('家具', () => {
     expect(place(g, 'candle', 52, 58)).toBe(true);
     expect(place(g, 'bookshelf', 55, 59)).toBe(true);
     expect(place(g, 'lantern_post', 48, 59)).toBe(true);
+    // 梳妝台要放在地上（懸空放不下）
+    expect(place(g, 'vanity_table', 47, 55)).toBe(false);
+    expect(place(g, 'vanity_table', 46, 59)).toBe(true);
+    expect(g.world.getFg(46, 59)).toBe(T.VANITY_TABLE);
     expect(tileDef(T.LANTERN_POST).light).toBeGreaterThan(0.5);
     g.world.setFg(51, 55, T.STONE);
     expect(place(g, 'banner', 51, 56)).toBe(true);

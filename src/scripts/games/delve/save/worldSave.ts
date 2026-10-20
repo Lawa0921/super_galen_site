@@ -24,6 +24,7 @@ import { Codex } from '../engine/codex';
 import { Equipment } from '../engine/equipment';
 import { Vanity } from '../engine/vanity';
 import { normalizeAppearance } from '../engine/appearance';
+import { WARDROBE_CFORMAT } from '../engine/wardrobeMigration';
 import { ENEMIES, type EnemyKind } from '../engine/enemies';
 import type { MapMarker } from '../engine/explore';
 import type { DiscoveryJSON } from '../engine/discovery';
@@ -93,7 +94,8 @@ export function splitSnapshot(data: SaveData, who: CharIdentity, where: WorldIde
     if (left > 0) buffsLeft[k] = left;
   }
   const character: DelveCharacter = {
-    cformat: CHARACTER_FORMAT, id: who.id, nick: who.nick, createdAt: who.createdAt, savedAt: now, rev: who.rev,
+    // 從活的遊戲存出來的（header.cformat 是目前版本）一律寫目前版本；資料層直接拆的舊合併檔（匯入舊檔）還沒做時裝轉換 → 1，第一次進遊戲時轉換
+    cformat: h.cformat !== undefined && h.cformat >= WARDROBE_CFORMAT ? CHARACTER_FORMAT : 1, id: who.id, nick: who.nick, createdAt: who.createdAt, savedAt: now, rev: who.rev,
     appearance: h.appearance ?? normalizeAppearance(undefined),
     vanity: h.vanity ?? Vanity.fromJSON(undefined).toJSON(),
     inventory: h.inventory,
@@ -146,6 +148,7 @@ export function characterState(character: DelveCharacter, time: number): Charact
     undying: character.undyingCd,
     extra: { fishLog: character.fishLog, codex: character.codex },
     buffs: absoluteBuffs(character, time),
+    cformat: character.cformat,
   };
 }
 
@@ -176,7 +179,8 @@ export function joinSplit(world: WorldData, character: DelveCharacter): { data: 
     extra: rng
       ? { fishLog: character.fishLog, minedIce: w.extra.minedIce, codex: character.codex, rng }
       : { fishLog: character.fishLog, minedIce: w.extra.minedIce, codex: character.codex },
-    appearance: character.appearance, vanity: character.vanity,
+    // 角色版本：舊角色（1）= 舊合併檔那樣不寫（拆了再拼回和原本的 header 一樣），讀檔時照樣轉換
+    appearance: character.appearance, ...(character.cformat >= WARDROBE_CFORMAT ? { cformat: character.cformat } : {}), vanity: character.vanity,
     settle: w.settle ? { ...w.settle, spawnCore: visit?.spawnCore ?? null } : undefined,
     halves: w.halves, levels: character.levels,
     folk: { ...folk, buffs },

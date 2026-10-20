@@ -44,6 +44,7 @@ export const FURNITURE: readonly FurnitureDef[] = [
   f(T.RUG, 'rug', 'decor', 2, '鋪在地上'),
   f(T.POTTED_PLANT, 'potted_plant', 'decor', 2, '可以放在桌上 / 平台上'),
   f(T.TROPHY, 'warden_trophy', 'decor', 4, '首領戰利品，炫耀用'),
+  f(T.VANITY_TABLE, 'vanity_table', 'decor', 2, '靠近按使用：改髮型、臉和衣服的顏色'),
   f(T.CHEST, 'chest', 'storage', 1, '收納'),
   f(T.FURNACE, 'furnace', 'station', 0, '合成站'),
   f(T.ANVIL, 'anvil', 'station', 0, '合成站'),
