@@ -7,10 +7,15 @@ import { mulberry32, pick, type Rng } from '../rng';
 import type { ItemInstance, Pos } from '../types';
 import { itemLevel, rollItem, type DropSource } from './item';
 
-export type Tier = 'common' | 'magic' | 'rare' | 'legendaryTier';
+export type Tier = 'common' | 'magic' | 'rare' | 'epic' | 'legendaryTier';
 
 export const GEAR_CHANCE = { monster: 0.08, chest: 0.35 };
 export const BOSS_LEGENDARY = { first: 0.2, repeat: 0.1 };
+/**
+ * Plan 5g: the share of the rare weight that rolls epic instead; tuned against balance band 10 (only `monster` reaches the sim).
+ * Carved from the end of the rare band in the same rollTier draw, so no other tier's odds move.
+ */
+export const EPIC_SHARE: Record<DropSource, number> = { monster: 0.15, chest: 0.15, elite: 0.3, vault: 0.3, boss: 0.3 };
 export const RARE_MATERIALS = ['star-tear', 'ancient-gear', 'king-scale'];
 
 export interface DropCtx {
@@ -19,27 +24,33 @@ export interface DropCtx {
   ilvl?: number;
 }
 
-/** Relative weights of the four rarity tiers; `depthLv` is the depth's level (not the depth). */
+/** Relative weights of the five rarity tiers; `depthLv` is the depth's level (not the depth). Epic is cut from rare last. */
 export function rarityWeights(source: DropSource, depthLv: number, cond: ConditionId, bossRepeat = false): Record<Tier, number> {
+  const carveEpic = (w: Record<Tier, number>): Record<Tier, number> => {
+    w.epic = w.rare * EPIC_SHARE[source];
+    w.rare -= w.epic;
+    return w;
+  };
   if (source === 'boss') {
     const p = bossRepeat ? BOSS_LEGENDARY.repeat : BOSS_LEGENDARY.first;
-    return { common: 0, magic: 0, rare: 1 - p, legendaryTier: p };
+    return carveEpic({ common: 0, magic: 0, rare: 1 - p, epic: 0, legendaryTier: p });
   }
   const c = CONDITIONS[cond].rarityMul;
   const w: Record<Tier, number> = {
     common: 70,
     magic: 24 * (1 + depthLv / 40),
     rare: 5.5 * (1 + depthLv / 20) * c,
+    epic: 0,
     legendaryTier: 0.5 * (1 + depthLv / 20) * c,
   };
   if (source === 'chest') { w.rare *= 1.5; w.legendaryTier *= 1.5; }
   if (source === 'elite') { w.common = 0; w.rare *= 3; w.legendaryTier *= 3; }
   if (source === 'vault') { w.common = 0; w.magic = 0; w.legendaryTier *= 3; }
-  return w;
+  return carveEpic(w);
 }
 
 export function rollTier(rng: Rng, w: Record<Tier, number>): Tier {
-  const tiers = ['common', 'magic', 'rare', 'legendaryTier'] as const;
+  const tiers = ['common', 'magic', 'rare', 'epic', 'legendaryTier'] as const;
   const total = tiers.reduce((s, t) => s + w[t], 0);
   let r = rng() * total;
   for (const t of tiers) {
