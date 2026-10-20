@@ -2,11 +2,13 @@ import type { AnyStat, Effect, GearSlot, Rarity, Sheet, Target, Element, WeaponK
 import type { RegionId } from './regions';
 
 export const GEAR_SLOTS: GearSlot[] = ['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring'];
-export const RARITIES: Rarity[] = ['common', 'magic', 'rare', 'legendary', 'unique', 'set'];
-export const RARITY_RANK: Record<Rarity, number> = { common: 0, magic: 1, rare: 2, legendary: 3, unique: 4, set: 5 };
-export const AFFIX_COUNT = { magic: [1, 2], rare: [3, 4], legendary: [3, 3] } as const;
+export const RARITIES: Rarity[] = ['common', 'magic', 'rare', 'epic', 'legendary', 'unique', 'set'];
+export const RARITY_RANK: Record<Rarity, number> = { common: 0, magic: 1, rare: 2, epic: 3, legendary: 4, unique: 5, set: 6 };
+/** Plan 5g: the rarities a starlit drop can have (a legendary-tier special; ItemInstance.starlit). */
+export const STARLIT_RARITIES: readonly Rarity[] = ['legendary', 'unique', 'set'];
+export const AFFIX_COUNT = { magic: [1, 2], rare: [3, 4], epic: [4, 5], legendary: [3, 3] } as const;
 /** Lowest share of an affix's range a roll of this rarity can land on. */
-export const ROLL_FLOOR: Record<Rarity, number> = { common: 0, magic: 0, rare: 0.25, legendary: 0.5, unique: 0.9, set: 0.75 };
+export const ROLL_FLOOR: Record<Rarity, number> = { common: 0, magic: 0, rare: 0.25, epic: 0.5, legendary: 0.5, unique: 0.9, set: 0.75 };
 /**
  * The two loot balance knobs, tuned against engine/balance.test.ts tests 10–11 (a party in random gear keeps the bands;
  * a full rare kit does not one-round a boss). Change them only with those tests.

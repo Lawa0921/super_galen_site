@@ -17,7 +17,7 @@ const SLOT: Record<Slot, string> = {
   weapon: '武器', offhand: '副手', head: '頭部', body: '身體', hands: '手部', feet: '腳部', neck: '項鍊', ring1: '戒指 1', ring2: '戒指 2',
 };
 
-const RARITY: Record<Rarity, string> = { common: '普通', magic: '魔法', rare: '稀有', legendary: '傳說', unique: '獨特', set: '套裝' };
+const RARITY: Record<Rarity, string> = { common: '普通', magic: '魔法', rare: '稀有', epic: '史詩', legendary: '傳說', unique: '獨特', set: '套裝' };
 /** Every stat's name: the seven base names come from STAT, so they are written once. */
 const STAT_NAME: Record<AnyStat, string> = {
   ...STAT,

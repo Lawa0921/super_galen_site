@@ -9,7 +9,7 @@ export type DropSource = 'monster' | 'chest' | 'elite' | 'vault' | 'boss';
 
 const SOURCE_BONUS: Record<DropSource, number> = { monster: 0, chest: 0, elite: 2, vault: 2, boss: 4 };
 /** Gold multiplier by rarity: sell price = round((10 + 2 x ilvl) x m). */
-const SELL_MUL: Record<Rarity, number> = { common: 1, magic: 2, rare: 4, legendary: 10, unique: 10, set: 8 };
+const SELL_MUL: Record<Rarity, number> = { common: 1, magic: 2, rare: 4, epic: 6, legendary: 10, unique: 10, set: 8 };
 
 /** Capped at MAX_ILVL so a very deep drop can never make a save the loader rejects. */
 export const itemLevel = (depth: number, source: DropSource): number => Math.min(MAX_ILVL, depthLevel(depth) + SOURCE_BONUS[source]);

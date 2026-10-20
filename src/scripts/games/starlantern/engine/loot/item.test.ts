@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { mulberry32 } from '../rng';
-import { AFFIXES, AFFIX_COUNT, GEAR_SLOTS, IMPLICIT_PER_ILVL, ROLL_FLOOR, SPECIALS, affixRange } from '../../data/gear';
+import { AFFIXES, AFFIX_COUNT, GEAR_SLOTS, IMPLICIT_PER_ILVL, RARITIES, ROLL_FLOOR, SPECIALS, affixRange } from '../../data/gear';
 import { EQUIPMENT } from '../../data/equipment';
 import { ENHANCE_MAX, ENHANCE_STEP } from '../../data/forge';
 import type { GearSlot, Rarity } from '../types';
@@ -8,7 +8,7 @@ import { newMember, sheetOf, statsOf } from '../party';
 import { baseFor, implicitStats, itemLevel, itemName, itemSlot, itemStats, itemWeight, rollItem, rollValue, sellPrice } from './item';
 import { depthLevel } from '../levels';
 
-const rarities: Rarity[] = ['common', 'magic', 'rare', 'legendary'];
+const rarities: Rarity[] = ['common', 'magic', 'rare', 'epic', 'legendary'];
 
 describe('rollItem', () => {
   it('same seed, same item', () => {
@@ -23,7 +23,7 @@ describe('rollItem', () => {
     for (const rarity of rarities) {
       for (let seed = 1; seed <= 500; seed++) {
         const it = rollItem(mulberry32(seed), { uid: seed, ilvl: 25, rarity });
-        const range = rarity === 'common' ? [0, 0] : AFFIX_COUNT[rarity as 'magic' | 'rare' | 'legendary'];
+        const range = rarity === 'common' ? [0, 0] : AFFIX_COUNT[rarity as keyof typeof AFFIX_COUNT];
         expect(it.affixes.length, `${rarity}#${seed}`).toBeGreaterThanOrEqual(range[0]);
         expect(it.affixes.length, `${rarity}#${seed}`).toBeLessThanOrEqual(range[1]);
         expect(it.rarity).toBe(rarity);
@@ -34,7 +34,7 @@ describe('rollItem', () => {
 
   it('random affixes stay in their slot pool and never repeat', () => {
     for (let seed = 1; seed <= 2000; seed++) {
-      const rarity = rarities[seed % 4];
+      const rarity = rarities[seed % rarities.length];
       const it = rollItem(mulberry32(seed), { uid: seed, ilvl: 1 + (seed % 60), rarity });
       const slot = itemSlot(it);
       const keys = it.affixes.map((a) => a.key);
@@ -154,6 +154,21 @@ describe('item numbers', () => {
     expect(sellPrice(mk('legendary'))).toBe(300);
     expect(sellPrice(mk('unique'))).toBe(300);
     expect(sellPrice(mk('set'))).toBe(240);
+  });
+
+  it('every rarity has a sell price, and an epic sells between rare and legendary', () => {
+    const special: Partial<Record<Rarity, string>> = { unique: Object.values(SPECIALS).find((s) => s.rarity === 'unique')!.id, set: 'set-blaze-ring' };
+    const mk = (rarity: Rarity, ilvl = 10) => ({ uid: 1, base: 'star-saber', rarity, ilvl, affixes: [], enhance: 0, special: special[rarity] });
+    for (const r of RARITIES) {
+      const p = sellPrice(mk(r));
+      expect(Number.isInteger(p), r).toBe(true);
+      expect(p, r).toBeGreaterThan(0);
+    }
+    for (const ilvl of [1, 10, 30, 50]) {
+      expect(sellPrice(mk('rare', ilvl))).toBeLessThan(sellPrice(mk('epic', ilvl)));
+      expect(sellPrice(mk('epic', ilvl))).toBeLessThan(sellPrice(mk('legendary', ilvl)));
+    }
+    expect(sellPrice(mk('epic'))).toBe(Math.round(30 * 6));
   });
 
   it('itemLevel adds the source bonus', () => {

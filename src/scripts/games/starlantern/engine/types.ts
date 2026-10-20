@@ -74,7 +74,7 @@ export interface ItemDef {
 }
 /** Where a member wears gear: one place per gear slot, except rings, which have two. */
 export type Slot = 'weapon' | 'offhand' | 'head' | 'body' | 'hands' | 'feet' | 'neck' | 'ring1' | 'ring2';
-export type Rarity = 'common' | 'magic' | 'rare' | 'legendary' | 'unique' | 'set';
+export type Rarity = 'common' | 'magic' | 'rare' | 'epic' | 'legendary' | 'unique' | 'set';
 export type GearSlot = 'weapon' | 'offhand' | 'head' | 'body' | 'hands' | 'feet' | 'neck' | 'ring';
 /** The hit and heal effects the art factory publishes (render/artPaths re-exports it). */
 export type FxKey = 'slash' | 'pierce' | 'strike' | 'fire' | 'ice' | 'thunder' | 'heal' | 'buff';
@@ -85,6 +85,8 @@ export interface EquipDef { id: string; name: string; slot: GearSlot; ilvl: numb
 export interface ItemInstance {
   uid: number; base: string; rarity: Rarity; ilvl: number; affixes: { key: AnyStat; value: number }[];
   special?: string; enhance: number; locked?: number; junk?: boolean;
+  /** Plan 5g: a legendary-tier drop with every affix at its maximum and one more (engine/loot/drops.ts applyStarlit). */
+  starlit?: true;
 }
 export type MaterialKind = 'essence' | 'monster' | 'region' | 'rare' | 'junk';
 export interface MaterialDef { id: string; name: string; price: number; kind: MaterialKind }

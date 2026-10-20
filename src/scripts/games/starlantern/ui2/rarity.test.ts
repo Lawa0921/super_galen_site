@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { RARITIES } from '../data/gear';
 import { T } from '../data/text.zh-TW';
 import { gearLabel } from './loot';
 
@@ -33,14 +34,31 @@ describe('rarity colours and words', () => {
   });
 
   it('colours come from one $slx-rarity map with the plan values, emitted by @each', () => {
-    expect(['common', 'magic', 'rare', 'legendary', 'unique', 'set'].map((r) => colourOf(r).map((v) => v.toString(16).padStart(2, '0')).join('')))
-      .toEqual(['e8e8e8', '6f9cff', 'ffd84a', 'ff9a3c', 'd4af37', '5fd068']);
+    expect(['common', 'magic', 'rare', 'epic', 'legendary', 'unique', 'set'].map((r) => colourOf(r).map((v) => v.toString(16).padStart(2, '0')).join('')))
+      .toEqual(['e8e8e8', '6f9cff', 'ffd84a', 'b36bff', 'ff9a3c', 'd4af37', '5fd068']);
     expect(scss).toMatch(/@each \$k, \$c in \$slx-rarity \{\s*\.slx-rarity-#\{\$k\} \{ color: \$c; \}/);
     expect(scss).not.toMatch(/\.slx-rarity-[a-z]+ \{ color: #/);           // no second, hand-written copy
   });
 
+  it('epic is a purple clearly apart from magic blue', () => {
+    const dist = (a: number[], b: number[]) => Math.hypot(...a.map((v, i) => v - b[i]));
+    const epic = colourOf('epic');
+    expect(hue(epic)).toBeGreaterThanOrEqual(260);
+    expect(hue(epic)).toBeLessThanOrEqual(290);
+    expect(dist(epic, colourOf('magic'))).toBeGreaterThan(60);
+    expect(dist(epic, colourOf('rare'))).toBeGreaterThan(60);
+    expect(dist(epic, colourOf('legendary'))).toBeGreaterThan(60);
+  });
+
+  it('every rarity has a word and a colour', () => {
+    for (const r of RARITIES) {
+      expect(T.rarity[r], r).toBeTruthy();
+      expect(() => colourOf(r), r).not.toThrow();
+    }
+  });
+
   it('names every rarity but common after the gear name', () => {
-    expect(T.rarity).toEqual({ common: '普通', magic: '魔法', rare: '稀有', legendary: '傳說', unique: '獨特', set: '套裝' });
+    expect(T.rarity).toEqual({ common: '普通', magic: '魔法', rare: '稀有', epic: '史詩', legendary: '傳說', unique: '獨特', set: '套裝' });
     const it0 = { uid: 1, base: 'leather-vest', rarity: 'magic' as const, ilvl: 1, affixes: [], enhance: 0 };
     expect(gearLabel(it0)).toBe('皮背心・魔法');
     expect(gearLabel({ ...it0, rarity: 'common' })).toBe('皮背心');

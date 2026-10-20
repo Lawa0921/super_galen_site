@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   AFFIXES, AFFIX_COUNT, AFFIX_SCALE, GEAR_SLOTS, IMPLICIT_PER_ILVL, POWERS, RARITIES, RARITY_RANK, ROLL_FLOOR, SETS, SLOT_WEIGHT, SPECIALS,
+  STARLIT_RARITIES,
   affixRange, codexName, generalLegendaries, regionSpecials,
 } from './gear';
 import { REGIONS } from './regions';
@@ -74,10 +75,11 @@ describe('affix pool', () => {
 describe('rarity and weight tables', () => {
   it('matches the spec constants', () => {
     expect(GEAR_SLOTS).toEqual(['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring']);
-    expect(RARITIES).toEqual(['common', 'magic', 'rare', 'legendary', 'unique', 'set']);
-    expect(RARITY_RANK).toEqual({ common: 0, magic: 1, rare: 2, legendary: 3, unique: 4, set: 5 });
-    expect(AFFIX_COUNT).toEqual({ magic: [1, 2], rare: [3, 4], legendary: [3, 3] });
-    expect(ROLL_FLOOR).toEqual({ common: 0, magic: 0, rare: 0.25, legendary: 0.5, unique: 0.9, set: 0.75 });
+    expect(RARITIES).toEqual(['common', 'magic', 'rare', 'epic', 'legendary', 'unique', 'set']);
+    expect(RARITY_RANK).toEqual({ common: 0, magic: 1, rare: 2, epic: 3, legendary: 4, unique: 5, set: 6 });
+    expect(AFFIX_COUNT).toEqual({ magic: [1, 2], rare: [3, 4], epic: [4, 5], legendary: [3, 3] });
+    expect(ROLL_FLOOR).toEqual({ common: 0, magic: 0, rare: 0.25, epic: 0.5, legendary: 0.5, unique: 0.9, set: 0.75 });
+    expect(STARLIT_RARITIES).toEqual(['legendary', 'unique', 'set']);
     // The two loot knobs, tuned against engine/balance.test.ts tests 10–11: their values are not pinned here.
     expect(AFFIX_SCALE).toBeGreaterThan(0);
     expect(IMPLICIT_PER_ILVL).toBeGreaterThan(0);

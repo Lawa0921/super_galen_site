@@ -4,7 +4,7 @@ export interface Cost { gold: number; mats: Record<string, number> }
 
 export const ESSENCE_IDS = ['essence-common', 'essence-magic', 'essence-rare', 'essence-legendary'];
 export const ESSENCE_OF: Record<Rarity, string> = {
-  common: 'essence-common', magic: 'essence-magic', rare: 'essence-rare',
+  common: 'essence-common', magic: 'essence-magic', rare: 'essence-rare', epic: 'essence-rare',
   legendary: 'essence-legendary', unique: 'essence-legendary', set: 'essence-legendary',
 };
 
@@ -13,6 +13,7 @@ export const DISMANTLE: Record<Rarity, Record<string, number>> = {
   common: { 'essence-common': 1 },
   magic: { 'essence-magic': 1, 'essence-common': 1 },
   rare: { 'essence-rare': 1, 'essence-magic': 1 },
+  epic: { 'essence-rare': 2 },
   legendary: { 'essence-legendary': 1, 'essence-rare': 1 },
   unique: { 'essence-legendary': 1, 'essence-rare': 1 },
   set: { 'essence-legendary': 1, 'essence-rare': 1 },

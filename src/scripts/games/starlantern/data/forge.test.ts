@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GEAR_SLOTS } from './gear';
+import { GEAR_SLOTS, RARITIES } from './gear';
 import {
   BASE_RECIPES, CONSUMABLE_RECIPES, DISMANTLE, ENHANCE_COST, ENHANCE_MAX, ENHANCE_SUCCESS, ESSENCE_IDS, ESSENCE_OF,
   expectedEnhance, FUSE_SLOT_COST, REGION_AFFIX_GROUP, REROLL, SET_RECIPE,
@@ -8,9 +8,7 @@ import { EQUIPMENT } from './equipment';
 import { ITEMS } from './items';
 import { MATERIALS } from './materials';
 import { REGIONS } from './regions';
-import type { Rarity } from '../engine/types';
 
-const RARITIES: Rarity[] = ['common', 'magic', 'rare', 'legendary', 'unique', 'set'];
 const top = (t: number) => Math.max(...Object.keys(ENHANCE_COST[t - 1].mats).filter((m) => ESSENCE_IDS.includes(m)).map((m) => ESSENCE_IDS.indexOf(m)));
 const essenceMix = (t: number) => Object.keys(ENHANCE_COST[t - 1].mats).filter((m) => ESSENCE_IDS.includes(m)).sort().join(',');
 const tiers = Array.from({ length: ENHANCE_MAX }, (_, i) => i + 1);
@@ -27,6 +25,11 @@ describe('forge tables', () => {
       }
     }
     for (const id of ESSENCE_IDS) expect(MATERIALS[id].kind).toBe('essence');
+  });
+
+  it('an epic dismantles into two rare essences and rerolls with a rare essence', () => {
+    expect(DISMANTLE.epic).toEqual({ 'essence-rare': 2 });
+    expect(ESSENCE_OF.epic).toBe('essence-rare');
   });
 
   it('enhance tables have ENHANCE_MAX rows; success is 1 up to +5, below 1 from +6, never rising', () => {
