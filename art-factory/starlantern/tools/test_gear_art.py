@@ -550,7 +550,7 @@ def test_sample_review_page_opens_with_the_decisions_and_shows_honest_previews(f
     assert len(olds) == 15 and len(set(olds)) == 15
     assert '本批只有鐵劍有新樣本' in page
     assert '>G<' not in page and '40 G' in page                                   # iron sword's real price
-    assert re.search(r'\.screen\{[^}]*flex-wrap:wrap', page) and re.search(r'\.zoom3 \.screen\{[^}]*max-width:440px', page)
+    assert re.search(r'\.screen\{[^}]*flex-wrap:wrap', page) and '<div class="scroll"><div class="zoom3"><div class="screen">' in page   # 3x scrolls in its own box
     # Addendum 2: the glow sits inside the slot (inset 0) under the icon; the frame and the starlit overlay go over it.
     assert re.search(r'\.rg\{[^}]*inset:0', page) and 'inset:-3px' not in page and 'class="glow-pair' in page
     assert re.search(r'\.rf\{[^}]*border-image-repeat:repeat', page) and 'border-image-repeat:round' not in page
@@ -1042,6 +1042,9 @@ def test_review_page_offers_both_starlit_shapes_and_either_may_be_approved(facto
     head = page[page.index('id="decisions"'):page.index('id="s0"')]
     asked = head[:head.index('已決定')]
     assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['圖示大小是否一致', '七階外框與星輝', '星輝角星：圓點光（a2）或十字星（a3）？', '傳說光暈改在格內']
+    for opt in ('A 用 a2 圓點光', 'B 用 a3 十字星', 'C 先不要星輝角星圖（只用文字光）'):
+        assert opt in asked, opt
+    assert '直接回覆每題的選擇，例如：1 可以、2 可以、3 A、4 可以' in head
     assert 'href="#starlit-alts"' in asked
     shown = json.loads(G.shown_path('sample').read_text(encoding='utf-8'))
     assert shown['alternatives']['ui-starlit'] == {k: v['sha'] for k, v in alts.items()}
@@ -1073,9 +1076,103 @@ def test_only_one_passing_starlit_is_shown_alone_with_why_the_other_failed(facto
     page = review.main('sample').read_text(encoding='utf-8')
     head = page[page.index('id="decisions"'):page.index('id="s0"')]
     q = re.findall(r'<li><b>(星輝角星[^<]+)</b>', head)
-    assert q == ['星輝角星：圓點光（a1）'] and '只有 a1 通過 QA' in head and 'a2' in head and 'starlit outside its corners' in head
-    assert '蓋掉傳說火舌' in head[head.index('星輝角星'):]                                  # the risk holds for one shape too
-    G.note(['--id', 'sheet-starlit-1', '--attempt', '2', '--reason', '邊上多畫了星點'])           # the plain-words why, from the registry
+    assert q == ['星輝角星：只有圓點光（a1）通過，要用嗎？'] and '只有 a1 通過 QA' in head and 'a2' in head
+    star_q = head[head.index('星輝角星'):]; star_q = star_q[:star_q.index('傳說光暈改在格內')]
+    assert '圓圓的亮點' in star_q and '蓋掉傳說火舌' in star_q                     # 1x reads as a round glint; covers the ornaments
+    for opt in ('A 接受 a1 圓點光', 'B 先不要星輝角星圖（只用文字光）', 'C 另開新版重畫十字星（需要再給嘗試次數）'):
+        assert opt in star_q, opt
+    G.note(['--id', 'sheet-starlit-1', '--attempt', '2', '--reason', 'raw reason', '--plain', '邊上多畫了星點，遊戲裡會連成虛線'])
     page = review.main('sample').read_text(encoding='utf-8')
+    head = page[page.index('id="decisions"'):page.index('id="s0"')]
+    star_q = head[head.index('星輝角星'):]; star_q = star_q[:star_q.index('傳說光暈改在格內')]
+    assert '邊上多畫了星點，遊戲裡會連成虛線' in star_q and 'starlit outside its corners' not in star_q    # plain words, not QA strings
     sec = page[page.index('id="starlit-alts"'):]; sec = sec[:sec.index('</section>')]
-    assert '邊上多畫了星點' in sec and 'starlit outside its corners' in sec
+    assert '邊上多畫了星點' in sec and 'starlit outside its corners' in sec                          # the technical note keeps both
+
+
+# --- visual check round (2026-10-20): the page must be honest and readable on a phone -----------------------------------------
+def test_candidate_images_of_two_sheets_never_overwrite_each_other(factory, review):
+    _fill(factory, 'sample')
+    colours = {r: _rgb(c) for r, c in G.RARITY_PALETTE.items()}
+    _frame_sheet(factory / 'raw/sheet-rarity-frames-2/sheet-rarity-frames-2-a1.png', colours)
+    _starlit_attempts(factory, 'round')
+    G.cand(['--only=sheet-rarity-frames-2'])
+    page = review.main('sample').read_text(encoding='utf-8')
+    for sid in (G.FRAME_SHEET_ID, G.STARLIT_SHEET_ID):
+        name = f'cand-{sid}-ui-starlit-a1.png'
+        assert f'img/{name}' in page, name
+        assert (factory / 'review/img' / name).read_bytes() == (factory / f'work/{sid}/cand/a1/ui-starlit.png').read_bytes()
+
+
+def test_used_label_matches_the_sheet_as_well_as_the_attempt(factory, review):
+    _fill(factory, 'sample')                                               # ui-starlit: a1 of sheet-starlit-1, not of the frames sheet
+    colours = {r: _rgb(c) for r, c in G.RARITY_PALETTE.items()}
+    _frame_sheet(factory / 'raw/sheet-rarity-frames-2/sheet-rarity-frames-2-a1.png', colours)
+    _starlit_attempts(factory, 'round')
+    page = review.main('sample').read_text(encoding='utf-8')
+    head = lambda sid: page[page.index(f'<h4>{sid} a1'):][:400]
+    assert '採用：' in head(G.FRAME_SHEET_ID) and 'ui-starlit' not in head(G.FRAME_SHEET_ID).split('</h4>')[0]
+    assert 'ui-starlit' in head(G.STARLIT_SHEET_ID).split('</h4>')[0]
+
+
+def test_note_records_a_plain_reason_beside_the_technical_one(factory):
+    A.Registry(G.REG_PATH).set('x', status='todo')
+    G.note(['--id', 'sheet-starlit-1', '--attempt', '3', '--reason', 'starlit corner star cut or too small', '--plain', '整張畫太寬，尖端在縮小時不見了'])
+    e = A.Registry(G.REG_PATH).get('sheet-starlit-1')
+    assert e['rejected_attempts']['a3'] == 'starlit corner star cut or too small' and e['plain_reasons']['a3'] == '整張畫太寬，尖端在縮小時不見了'
+
+
+def test_decisions_speak_plainly_and_consistently(factory, review):
+    import re
+    real = json.loads((G.AF / 'registry.json').read_text(encoding='utf-8'))['assets']
+    reg = _fill(factory, 'sample')
+    for b in G.GEAR_BASE:
+        if f'icon-{b}' in real: reg.set(f'icon-{b}', **{k: real[f'icon-{b}'][k] for k in ('status', 'runtime', 'final') if k in real[f'icon-{b}']})
+    page = review.main('sample').read_text(encoding='utf-8')
+    head = page[page.index('id="decisions"'):page.index('id="s0"')]
+    user = re.sub(r'<details.*?</details>', '', head, flags=re.S)           # what the user reads, without the technical note
+    assert '四芒星' not in user                                             # the shape is the corner star the next question names
+    for term in ('gear_art.py', 'sheet-starlit-1', 'slice', 'inset', 'border-image'):
+        assert term not in user, term
+    decided = head[head.index('已決定'):]
+    assert '本批只有鐵劍是舊底材圖示的新版；木圓盾、皮帽是以前沒有圖示的裝備' in decided
+    assert '<details' in head and 'gear_art.py approve --batch sample' in head    # the controller's command, tucked away
+
+
+def test_page_fits_a_phone_width(factory, review):
+    import re
+    _fill(factory, 'sample')
+    page = review.main('sample').read_text(encoding='utf-8')
+    css = page[page.index('<style>'):page.index('</style>')]
+    assert not re.search(r'\.screen\{[^}]*width:max-content', css) and not re.search(r'\.fac\{[^}]*width:960px', css)
+    assert re.search(r'\.scroll\{[^}]*overflow-x:auto', css)
+    assert re.search(r'figure\{[^}]*max-width:100%[^}]*min-width:0', css)          # a flex item never grows to its wide content
+    body = page[page.index('<body>'):]
+    tables = [m.start() for m in re.finditer(r'<table', body)]
+    assert tables and all(body.rfind('<div class="scroll">', 0, i) > body.rfind('</div>', 0, i) for i in tables)   # every table scrolls inside
+    assert body.count('<div class="zoom3">') and body.count('<div class="scroll"><div class="zoom3">') == body.count('<div class="zoom3">')
+    assert body.count('<div class="fac">') == body.count('<div class="scroll"><div class="fac">')
+
+
+def test_size_section_concludes_old_versus_new_in_measured_numbers(factory, review):
+    import re
+    real = json.loads((G.AF / 'registry.json').read_text(encoding='utf-8'))['assets']
+    reg = _fill(factory, 'sample')
+    for b in G.GEAR_BASE:
+        if f'icon-{b}' in real: reg.set(f'icon-{b}', **{k: real[f'icon-{b}'][k] for k in ('status', 'runtime', 'final') if k in real[f'icon-{b}']})
+    page = review.main('sample').read_text(encoding='utf-8')
+    sec = page[page.index('id="size"'):page.index('id="s1"')]
+    m = re.search(r'舊圖示主體長邊 (\d+)～(\d+) px 不等，新圖示統一 22', sec)
+    assert m and int(m.group(1)) < int(m.group(2)), sec[-600:]
+    assert 'mass' not in re.sub(r'<details.*?</details>', '', sec, flags=re.S) and '份量' in sec
+
+
+def test_page_wording_and_extras(factory, review):
+    _fill(factory, 'sample'); _starlit_attempts(factory, 'round')
+    page = review.main('sample').read_text(encoding='utf-8')
+    assert '每種稀有度各一件' not in page and '本批有的稀有度各舉一件' in page
+    assert '小圖示 26' in page[page.index('id="s3"'):page.index('id="s4"')]
+    frames = page[page.index('id="frames"'):page.index('</section>', page.index('id="frames"'))]
+    assert 'data-tiers-zoom="3"' in frames                                # the seven tiers again at 3x, starlit and plain side by side
+    alts = page[page.index('id="starlit-alts"'):]; alts = alts[:alts.index('</section>')]
+    assert '原圖 16×16，放大 4 倍' in alts

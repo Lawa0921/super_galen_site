@@ -86,7 +86,8 @@ DECISIONS = {
          '普通沒有外框。魔法藍、稀有黃、史詩藍紫、傳說橘、獨特緋紅、套裝綠，造型逐階增加：素邊 → 鉚釘 → 切角寶石 → 火舌 → 雕花角飾 → 葉徽。'
          '有外框的六階（普通沒有外框）兩兩之間的 15 組色差都在門檻 25 以上，〔最接近〕。'
          '獨特沒有金色內緣線：生成的細金線縮到 16 格後會斷成雜點，已接受只用緋紅邊帶加雕花角飾（緋紅和稀有黃、傳說橘的色差足夠）。'
-         '星輝改版：只在四角各一顆四芒星，邊與中間全透明，所以不會沿著邊重複成虛線；只疊在擲出星輝的傳說、獨特、套裝上。〔星輝〕'),
+         '星輝改版：只在外框四角各放一顆小角星，邊與中間全透明，所以不會沿著邊連成虛線；只疊在擲出星輝的傳說、獨特、套裝上。'
+         '角星的造型請看下一題。〔星輝〕'),
         ('傳說光暈改在格內', ['#glow'], [],
          '光暈改成外框內側一圈 1px 淡橘光，加四角火花，畫在圖示下層，不再伸進隔壁格。請看兩件傳說相鄰的示範。'),
     ],
@@ -103,7 +104,7 @@ DECIDED = {   # addendum 2 §6: decided on 2026-10-20, not asked again
         '畫風與大小比例的方向：「可以」。',
         '多蘭的外型：照目前的版本（本批未重畫，和上次看到的是同一張）。',
         '素材 6 件：照上次的版本（本批未重畫）。',
-        '15 件舊底材圖示全部換新：正式版會換掉全部 15 件；本批只有鐵劍、木圓盾、皮帽，其餘在 G2。']),
+        '15 件舊底材圖示全部換新：正式版會換掉全部 15 件；〔舊底材〕，其餘在 G2。']),
 }
 
 
@@ -122,7 +123,7 @@ def live_text(s, reg):
     near = (f'最接近的一對是{RARITY_NAME[tp[1]]}與{RARITY_NAME[tp[2]]}（ΔE {tp[0]:.1f}）' if tp
             else '最接近的一對要等七階外框挑齊才算得出 ΔE')
     e = reg.get('ui-starlit', {})
-    star = (f'頁面上的星輝是新版（sheet-starlit-1 {e.get("chosen_attempt", "")}）；角星造型請看「星輝角星比較」。' if e.get('source_id') == G.STARLIT_SHEET_ID
+    star = (f'頁面上的星輝是新版角星（第 {e.get("chosen_attempt", "")[1:]} 版）。' if e.get('source_id') == G.STARLIT_SHEET_ID
             else '新版星輝尚未生成：頁面暫時顯示舊版（邊上的星點在遊戲裡會重複成虛線），新版生成並通過 QA 後會換上。')
     return s.replace('〔最接近〕', near).replace('〔星輝〕', star)
 AFTER_APPROVAL = {
@@ -134,20 +135,30 @@ SECTION_NAME = {'#s1': '1. 裝備頁情境', '#s2': '2. 新舊對照', '#s3': '3
 SHAPE_NAME = {'round': '圓點光', 'cross': '十字星'}
 
 
-def starlit_question(alts, fails):
-    """The G1 question on the starlit corner-star shape (controller ruling 2026-10-20), from the passing candidates."""
+SHAPE_RISK = {'round': '1 倍下看起來是一顆圓圓的亮點，不是尖的閃光。', 'cross': '十字星只有 5 個像素，1 倍下很小，像一個細細的十字。'}
+ORNAMENT_RISK = '角星蓋在外框四角，會蓋掉傳說火舌、獨特雕花、套裝葉徽這些角飾（邊上的顏色不受影響）。'
+
+
+def starlit_question(alts, fails, plain=None):
+    """The G1 question on the starlit corner-star shape (controller rulings 2026-10-20), from the passing candidates:
+    (question, links, risks, explanation, options). Failed candidates are explained with their plain-words note
+    (gear_art note --plain), never with raw QA strings."""
     if not alts: return None
-    risk = ['角星蓋在外框四角，會蓋掉傳說火舌、獨特雕花、套裝葉徽這些角飾（邊上的顏色不受影響）。']
-    names = [f'{SHAPE_NAME[v["shape"]]}（{k}）' for k, v in alts.items()]
-    failed = '；'.join(f'{k} 沒通過 QA：{"、".join(r)}' for k, r in fails.items())
+    plain = plain or {}
+    names = {k: SHAPE_NAME[v['shape']] for k, v in alts.items()}
+    failed = '；'.join(f'{k} 沒通過：{plain.get(k) or "機械檢查沒通過（細節在「星輝角星比較」的技術細節）"}' for k in fails)
+    risks = [SHAPE_RISK[v['shape']] for v in {v['shape']: v for v in alts.values()}.values()] + [ORNAMENT_RISK]
     if len(alts) == 1:
-        k = next(iter(alts))
-        return (f'星輝角星：{names[0]}', ['#starlit-alts'], risk,
-                f'只有 {k} 通過 QA，所以只放這一版。{failed}。' if failed else f'只有 {k} 通過 QA，所以只放這一版。')
+        k = next(iter(alts)); other = SHAPE_NAME['cross' if alts[k]['shape'] == 'round' else 'round']
+        return (f'星輝角星：只有{names[k]}（{k}）通過，要用嗎？', ['#starlit-alts'], risks,
+                f'只有 {k} 通過 QA，所以只放這一版。' + (failed + '。' if failed else ''),
+                [f'A 接受 {k} {names[k]}', 'B 先不要星輝角星圖（只用文字光）', f'C 另開新版重畫{other}（需要再給嘗試次數）'])
+    letters = 'ABCDEFG'
+    opts = [f'{letters[i]} 用 {k} {names[k]}' for i, k in enumerate(alts)] + [f'{letters[len(alts)]} 先不要星輝角星圖（只用文字光）']
     why = ('兩種角星造型並排在 28px 背包格與 38px 人形格裡（疊在傳說、獨特、套裝外框上，1 倍與 3 倍）：'
            '圓點光是 4×4、白心 2×2，1 倍下像一顆圓圓的亮點；十字星是 3×3、白心 1 格加四個青白尖端，1 倍下像一顆尖尖的閃光。'
-           '你選哪一版，就挑那一版（gear_art.py pick），兩版都已記在審核紀錄裡。' + (failed + '。' if failed else ''))
-    return ('星輝角星：' + '或'.join(names) + '？', ['#starlit-alts'], risk, why)
+           '你選哪一版就用哪一版，兩版都已記在審核紀錄裡。' + (failed + '。' if failed else ''))
+    return ('星輝角星：' + '或'.join(f'{names[k]}（{k}）' for k in alts) + '？', ['#starlit-alts'], risks, why, opts)
 
 
 def skill_owners():
@@ -218,10 +229,10 @@ def gallery(pg, js):
             k = 'a' + raw.stem.rsplit('-a', 1)[1]; wd = G.WORK / sid / 'cand' / k
             magenta = raw.parent / f'{raw.stem}-magenta.png'
             thumb = pg.copy(magenta if magenta.exists() else raw, f'raw-{sid}-{k}.png')
-            used = [a for a, c in chosen.items() if c == k]
+            used = [a for a, c in chosen.items() if c == k and pg.reg.get(a, {}).get('source_id', sid) == sid]
             finals = []
             for a in aids:
-                src = pg.copy(wd / f'{a}.png', f'cand-{a}-{k}.png')
+                src = pg.copy(wd / f'{a}.png', f'cand-{sid}-{a}-{k}.png')
                 if not src: continue
                 qf = wd / f'{a}.qa.json'; q = json.loads(qf.read_text(encoding='utf-8')) if qf.exists() else {}
                 finals.append(f'<figure class="c">{img(src)}<figcaption>{esc(a)}<br>{esc(qa_line(q))}</figcaption></figure>')
@@ -270,7 +281,7 @@ def size_grid(pg, reg):
                 f'{img(src, "px", f"width:{W * z}px;height:{H * z}px", nm.get(part, part))}'
                 f'<span class="bbox" style="left:{x0 * z}px;top:{y0 * z}px;width:{(x1 - x0) * z}px;height:{(y1 - y0) * z}px"></span>'
                 f'<span class="target" style="left:{tx * z}px;top:{ty * z}px;width:{target * z}px;height:{target * z}px"></span></div>'
-                f'<figcaption>{esc(nm.get(part, part))}<br>長 {m["long"]}／短 {m["short"]}／mass {m["mass"]}</figcaption></figure>')
+                f'<figcaption>{esc(nm.get(part, part))}<br>長 {m["long"]}／短 {m["short"]}／份量 {m["mass"]}</figcaption></figure>')
 
     def rows(make):
         return ''.join(f'<div class="szrow"><span class="szlab">{SLOT_NAME.get(s, s)}</span>{"".join(make(p) for p in by_slot[s])}</div>'
@@ -285,21 +296,26 @@ def size_grid(pg, reg):
         return f'<figure class="sz" data-size-sil="{esc(p)}">{img(f"img/{name}", "px")}<figcaption>{esc(nm.get(p, p))}</figcaption></figure>'
     sils = rows(sil)
 
+    old_long = []
+
     def old(b):
         e = reg[f'icon-{b}']
         src = pg.pub(f'icon/{b}.png', f'size-old-icon-{b}.png') or pg.copy(e.get('final'), f'size-old-icon-{b}.png')
         if not src: return ''
         w, h = Image.open(pg.img / src[4:]).size
+        old_long.append(A.subject_metrics(Image.open(pg.img / src[4:]).convert('RGBA'), icon_target)['long'])
         return (f'<figure class="sz old" data-old="{esc(b)}">{img(src, "px")}{img(src, "px", f"width:{w * 3}px;height:{h * 3}px")}'
                 f'<figcaption>舊 {esc(nm.get(b, b))} {w}×{h}</figcaption></figure>')
     olds = ''.join(old(b) for b in G.GEAR_BASE if f'icon-{b}' in reg)
+    verdict = (f'<p class="note"><b>結論：舊圖示主體長邊 {min(old_long)}～{max(old_long)} px 不等，新圖示統一 {icon_target}。</b></p>'
+               if old_long else '')
     return (f'<section id="size"><h2>尺寸一致性：全部 {len(parts)} 件裝備小圖示（不分批次），依部位排列</h2>'
-            f'<p class="note">每格是 26×26 原圖（1 倍）或整數倍放大；紅框是主體 bbox（QA 量測，只算不透明像素），青色虛線是中央 {icon_target}×{icon_target} 的目標框。'
-            f'紅底的格子沒過尺寸閘門（長邊、置中、短邊下限、份量）。框線是審核頁的標示，不在圖片裡。</p>'
+            f'<p class="note">每格是 26×26 原圖（1 倍）或整數倍放大；紅框是物品實際佔的範圍，青色虛線是中央 {icon_target}×{icon_target} 的目標框。'
+            f'紅底的格子沒過尺寸檢查（長邊、置中、夠不夠寬、份量）。「份量」是物品佔滿目標框的比例。框線是審核頁的標示，不在圖片裡。</p>'
             f'{grids or "<p>登錄表還沒有裝備小圖示。</p>"}'
             f'<h3>大圖 64（目標框 {large_target}）</h3>{large or "<p>沒有大圖。</p>"}'
             f'<h3>剪影預覽 28（由小圖示即時轉出，不寫入登錄表）</h3>{sils or "<p>沒有小圖示。</p>"}'
-            f'<h3>舊底材圖示對照（不計入閘門）</h3><div class="szrow">{olds or "<small>沒有舊底材圖示。</small>"}</div></section>')
+            f'<h3>舊底材圖示對照（不計入檢查）</h3>{verdict}<div class="szrow">{olds or "<small>沒有舊底材圖示。</small>"}</div></section>')
 
 
 def frames_section(pg, reg, frame, glow, starlit, icon, gear, nm, cell):
@@ -335,10 +351,12 @@ def frames_section(pg, reg, frame, glow, starlit, icon, gear, nm, cell):
     return (f'<section id="frames"><h2>七階外框與星輝</h2>'
             f'<p class="note">人形格 38px，1 倍。普通沒有外框；魔法到套裝各一格；傳說、獨特、套裝再各放一格帶星輝的（星輝疊在外框之上）。</p>'
             f'<div class="row dark">{tiers}</div><div class="row dark">{stars}</div>'
+            f'<h3>同上，放大 3 倍（有星輝與沒有星輝並排）</h3><div class="scroll"><div class="zoom3"><div class="row dark" data-tiers-zoom="3">'
+            f'{tiers.replace(" data-tier=", " data-tier3=")}{stars.replace(" data-starlit=", " data-starlit3=")}</div></div></div>'
             f'<h3>外框、光暈、星輝原圖（放大 4 倍），色票與 QA</h3><div class="row dark">{raws}</div></section>')
 
 
-def starlit_alts_section(pg, alts, fails, icon, gear, nm, cell, notes=None):
+def starlit_alts_section(pg, alts, fails, icon, gear, nm, cell, notes=None, plain=None):
     """The starlit corner-star shapes side by side (controller ruling 2026-10-20): every passing sheet-starlit-1 candidate
     in the runtime 28 px bag slot and 38 px equip slot, over the legendary, unique and set frames, at 1x and 3x; failed
     candidates are listed with their QA reasons and, when one was recorded (gear_art note), why in plain words."""
@@ -346,17 +364,23 @@ def starlit_alts_section(pg, alts, fails, icon, gear, nm, cell, notes=None):
     groups = ''
     for k, v in alts.items():
         src = pg.copy(str(v['path']), f'starlit-alt-{k}.png')
-        figs = ''.join(f'<figure data-starlit-alt="{k}" data-size="{size}" data-zoom="{z}" data-tier="{r}"><div class="zoom{z}">'
-                       f'{cell(demo(r), size, "bag" if size == 28 else "dollc", tier=r, star=True, starlit_src=src)}</div></figure>'
+        def wrap(z, inner):
+            return f'<div class="scroll"><div class="zoom3">{inner}</div></div>' if z == 3 else f'<div>{inner}</div>'
+        figs = ''.join(f'<figure data-starlit-alt="{k}" data-size="{size}" data-zoom="{z}" data-tier="{r}">'
+                       f'{wrap(z, cell(demo(r), size, "bag" if size == 28 else "dollc", tier=r, star=True, starlit_src=src))}</figure>'
                        for z in (1, 3) for size in (28, 38) for r in STARLIT_ON)
         stars = v['qa'].get('stars', [{}])
         groups += (f'<div class="alt"><h3>{k}：{SHAPE_NAME[v["shape"]]}</h3><p class="note">每角 {stars[0].get("w")}×{stars[0].get("h")}、'
-                   f'白心 {stars[0].get("core")} 格、{stars[0].get("arms")} 個尖端；QA 通過；挑選：gear_art.py pick --id {G.STARLIT_SHEET_ID} '
-                   f'--attempt {k[1:]}</p><div class="row dark">{figs}</div>{img(src, "px", "width:64px;height:64px")}</div>')
-    failed = ''.join(f'<p class="note">{k} 沒通過 QA，不列入：{esc("、".join(r))}'
-                     f'{"<br>" + esc((notes or {})[k]) if (notes or {}).get(k) else ""}</p>' for k, r in fails.items())
+                   f'白心 {stars[0].get("core")} 格、{stars[0].get("arms")} 個尖端；通過檢查。</p><div class="row dark">{figs}</div>'
+                   f'<figure class="raw16">{img(src, "px", "width:64px;height:64px")}<figcaption>原圖 16×16，放大 4 倍</figcaption></figure>'
+                   f'<details class="tech"><summary>技術細節</summary>挑選：gear_art.py pick --id {G.STARLIT_SHEET_ID} --attempt {k[1:]}</details></div>')
+    plain = plain or {}
+    failed = ''.join(f'<p class="note">{k} 沒通過，不列入：{esc(plain.get(k) or "機械檢查沒通過")}'
+                     f'<details class="tech"><summary>技術細節</summary>{esc("、".join(r))}'
+                     f'{"<br>" + esc((notes or {})[k]) if (notes or {}).get(k) else ""}</details></p>' for k, r in fails.items())
     return (f'<section id="starlit-alts"><h2>星輝角星比較</h2><p class="note">遊戲裡的實際格子（28px 背包格、38px 人形格），'
-            f'外框與星輝都是 border-image（slice 5、repeat），1 倍與 3 倍。</p>{groups or "<p>還沒有通過 QA 的角星候選。</p>"}{failed}</section>')
+            f'1 倍與 3 倍，疊在傳說、獨特、套裝外框上。</p>{groups or "<p>還沒有通過 QA 的角星候選。</p>"}{failed}'
+            f'<details class="tech"><summary>技術細節</summary>外框與星輝都是 border-image（slice 5、repeat）。</details></section>')
 
 
 def main(batch='sample'):
@@ -418,13 +442,16 @@ def main(batch='sample'):
                    f'<div><b>{esc(nm.get(pick, pick))}</b><br><small>{RARITY_NAME[r]}・詳情欄 64px 大圖</small></div></div>')
         return (f'<div class="screen"><div><div class="bag-grid">{"".join(cell(p, 28) for p in bag)}</div>'
                 f'<div class="doll">{"".join(cell(p, 38, "dollc") for p in doll)}</div></div>{det}</div>')
-    eq = (f'<h3>1 倍</h3>{equip_screen()}<h3>3 倍</h3><div class="zoom3">{equip_screen()}</div>' if gear else '<p>本批沒有裝備。</p>')
+    eq = (f'<h3>1 倍</h3><div class="scroll">{equip_screen()}</div><h3>3 倍</h3><div class="scroll"><div class="zoom3">{equip_screen()}</div></div>'
+          if gear else '<p>本批沒有裝備。</p>')
+    present = [r for r in RARITY_NAME if any(rarity_of(q) == r for q in gear)]
     rarity_row = ''.join(f'<figure>{cell(p, 28)}<figcaption>{RARITY_NAME[r]}<br>{esc(nm.get(p, p))}</figcaption></figure>'
-                         for r in RARITY_NAME for p in [next((q for q in gear if rarity_of(q) == r), None)] if p)
+                         for r in present for p in [next(q for q in gear if rarity_of(q) == r)])
+    rarity_title = f'本批有的稀有度各舉一件（{"、".join(RARITY_NAME[r] for r in present)}；七階外框全部請看下一段）'
     frames_html = frames_section(pg, reg, frame, glow, starlit, icon, gear, nm, cell) if batch == 'sample' or gear else ''
     alts, fails = (G.starlit_alternatives(), G.starlit_failures()) if batch == 'sample' else ({}, {})
-    notes = reg.get(G.STARLIT_SHEET_ID, {}).get('rejected_attempts', {})
-    frames_html += starlit_alts_section(pg, alts, fails, icon, gear, nm, cell, notes) if batch == 'sample' else ''
+    notes = reg.get(G.STARLIT_SHEET_ID, {}).get('rejected_attempts', {}); plain = reg.get(G.STARLIT_SHEET_ID, {}).get('plain_reasons', {})
+    frames_html += starlit_alts_section(pg, alts, fails, icon, gear, nm, cell, notes, plain) if batch == 'sample' else ''
     size_html = size_grid(pg, reg)
 
     # Two legendaries side by side at the real bag gap (2px): the glow now stays inside each slot (inset 0, under the icon).
@@ -495,7 +522,7 @@ def main(batch='sample'):
     # 8. the forge with Doran, beside the published item shop
     def facility(scene, npc, label_):
         bg = img(scene, 'px', 'width:960px;height:540px') or '<div class="missing" style="width:960px;height:540px">場景未產生</div>'
-        return f'<figure><div class="fac">{bg}{img(npc, "px npc")}</div><figcaption>{label_}</figcaption></figure>'
+        return f'<figure><div class="scroll"><div class="fac">{bg}{img(npc, "px npc")}</div></div><figcaption>{label_}</figcaption></figure>'
     forge_html = ''
     if 'scene-forge' in [j['id'] for j in js] or 'npc-forge-happy' in [j['id'] for j in js]:
         sc = pg.final('scene-forge') or pg.pub('scene/forge.png')
@@ -503,19 +530,26 @@ def main(batch='sample'):
                       + (facility(sc, pg.final('npc-forge-happy'), '笑臉 npc-forge-happy') if pg.reg.get('npc-forge-happy', {}).get('final') else '')
                       + facility(pg.pub('scene/shop.png'), pg.pub('npc/shop.png'), '已發布的道具店（對照）'))
 
-    decision_list = list(DECISIONS[batch])
-    sq = starlit_question(alts, fails) if batch == 'sample' else None
+    decision_list = [tuple(d) + ([],) * (5 - len(d)) for d in DECISIONS[batch]]
+    sq = starlit_question(alts, fails, plain) if batch == 'sample' else None
     if sq: decision_list.insert(2, sq)   # after the frames question, before the glow
     decisions = ''.join(
         f'<li><b>{esc(q)}</b> <span class="links">看：{"、".join(f"<a href={chr(34)}{s}{chr(34)}>{SECTION_NAME[s]}</a>" for s in links)}</span>'
         f'{"<p class=why>" + esc(live_text(why, reg)) + "</p>" if why else ""}'
-        f'<p class="why">已知風險：</p><ul class="risks">{"".join(f"<li>{esc(live_text(r, reg))}</li>" for r in risks) or "<li>無</li>"}</ul></li>'
-        for q, links, risks, why in decision_list)
+        f'<p class="why">已知風險：</p><ul class="risks">{"".join(f"<li>{esc(live_text(r, reg))}</li>" for r in risks) or "<li>無</li>"}</ul>'
+        f'{"<p class=opts>選項：" + esc("／".join(opts)) + "</p>" if opts else ""}</li>'
+        for q, links, risks, why, opts in decision_list)
+    example = '、'.join(f'{i} {"A" if d[4] else "可以"}' for i, d in enumerate(decision_list, 1))
+    reply = f'<p class="reply">直接回覆每題的選擇，例如：{esc(example)}</p>'
+    base_new = [p for p in gear if p in G.GEAR_BASE and p not in old_bases]
+    old_fact = (f'本批只有{"、".join(nm.get(b, b) for b in with_new)}是舊底材圖示的新版' if with_new else '本批沒有舊底材圖示的新版') + (
+        f'；{"、".join(nm.get(b, b) for b in base_new)}是以前沒有圖示的裝備' if base_new else '')
     decided = ''
     if batch in DECIDED:
         title, items = DECIDED[batch]
-        decided = f'<div class="decided"><h3>{esc(title)}</h3><ul>{"".join(f"<li>{esc(i)}</li>" for i in items)}</ul></div>'
-    after = f'<p class="after">{esc(AFTER_APPROVAL[batch])}</p>' if batch in AFTER_APPROVAL else ''
+        decided = f'<div class="decided"><h3>{esc(title)}</h3><ul>{"".join(f"<li>{esc(i.replace(chr(12308) + "舊底材" + chr(12309), old_fact))}</li>" for i in items)}</ul></div>'
+    after = (f'<details class="tech after"><summary>技術細節（給主控）</summary>{esc(AFTER_APPROVAL[batch])}</details>'
+             if batch in AFTER_APPROVAL else '')
     rarity_css = ''.join(f'.r-{r}{{color:{c}}}' for r, c in G.RARITY_PALETTE.items())
 
     page = f'''<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -523,10 +557,12 @@ def main(batch='sample'):
 :root{{color-scheme:dark}}
 body{{margin:0;padding:16px;background:#121318;color:#e8e6df;font:14px/1.6 system-ui,"Noto Sans TC",sans-serif}}
 h1{{font-size:20px}} h2{{font-size:17px;margin:32px 0 8px;border-top:1px solid #333;padding-top:12px}} h3{{font-size:15px;margin:18px 0 6px}}
-.note{{color:#b9b4a6}} .px,.cell img,.rf,.rg,.rs{{image-rendering:pixelated}} figure{{margin:0}} figcaption{{color:#b9b4a6;font-size:12px}}
+.note{{color:#b9b4a6}} .px,.cell img,.rf,.rg,.rs{{image-rendering:pixelated}} figure{{margin:0;max-width:100%;min-width:0}} figcaption{{color:#b9b4a6;font-size:12px}}
 .row{{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;padding:8px}} .row.top{{align-items:flex-start}} .dark{{background:#191b29}} .small,small{{font-size:12px;color:#b9b4a6}}
 table{{border-collapse:collapse}} td,th{{padding:6px 10px;border-bottom:1px solid #2b2b33;vertical-align:middle;text-align:left}} td img{{margin-right:10px;vertical-align:middle}}
-.screen{{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;background:#1b1d2a;border:2px solid #3a3f66;padding:10px;width:max-content}}
+.screen{{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;background:#1b1d2a;border:2px solid #3a3f66;padding:10px;max-width:100%;box-sizing:border-box}}
+.scroll{{overflow-x:auto;max-width:100%}} .zoom3 .screen{{max-width:none}} details.tech{{font-size:12px;color:#8f8a7e;margin:4px 0}} .reply{{color:#9fd77f;font-weight:600}} .opts{{color:#9fc7ff;margin:4px 0}}
+td,th,figcaption,.note{{overflow-wrap:anywhere}}
 .bag-grid{{display:grid;grid-template-columns:repeat(10,28px);gap:2px}} .doll{{display:grid;grid-template-columns:repeat(3,38px);gap:4px;margin-top:10px}}
 .cell{{position:relative;background:#262840;border:1px solid #3d4068;display:flex;align-items:center;justify-content:center;box-sizing:border-box}}
 .cell .gi{{width:26px;height:26px;object-fit:none;position:relative;z-index:1}} .cell .short{{font-size:9px;line-height:1;text-align:center}}
@@ -540,45 +576,47 @@ table{{border-collapse:collapse}} td,th{{padding:6px 10px;border-bottom:1px soli
 .glow-pair{{display:grid;grid-template-columns:repeat(2,28px);gap:2px;padding:8px;background:#1b1d2a}} .glow-pair.x4{{zoom:4}}
 .decide h2{{border:0;margin:4px 0 8px;padding:0}} .decide{{background:#1d2238;border:2px solid #c9a35a;padding:8px 16px 12px;margin:12px 0}} .decide>ol>li{{margin:10px 0}} .decide a{{color:#9fc7ff}} .risks{{color:#f0c27a;margin:4px 0}} .links{{font-size:12px}}
 .detail{{display:flex;gap:10px;align-items:center}} .artbox{{position:relative;width:64px;height:64px;padding:10px;background:#262840}}
-.artbox .rf{{inset:0}} .zoom3{{zoom:3}} .zoom3 .screen{{width:auto;max-width:440px}}
+.artbox .rf{{inset:0}} .zoom3{{zoom:3}}
 .card{{display:inline-block;vertical-align:top;margin:0 16px 16px 0;background:#1b1d2a;border:3px solid #b08a3e;padding-bottom:6px}}
 .card .art{{display:block}} .card .cap{{padding:3px 8px;font-weight:600;color:#f1e3b8}} .lims{{padding:0 8px}}
 .lim{{display:flex;gap:12px;align-items:center;font-size:13px}} .lim .ttl{{min-width:6em}} .li{{zoom:2;vertical-align:middle}}
 .lrow{{display:flex;align-items:center;gap:6px;min-height:24px;padding:2px 8px;border-bottom:1px solid #2b2b33;width:320px;background:#1b1d2a}}
 .lrow .gi,.loot .gi{{width:26px;height:26px;object-fit:none;vertical-align:middle}} .price,.tag{{margin-left:auto;color:#d9c27a;font-size:12px}}
-.loot{{background:#10111a;border:2px solid #3a3f66;padding:6px 10px;width:max-content}}
+.loot{{background:#10111a;border:2px solid #3a3f66;padding:6px 10px;max-width:100%;box-sizing:border-box}} .lrow{{max-width:100%;box-sizing:border-box}}
 {rarity_css}
-.fac{{position:relative;width:960px;height:540px;overflow:hidden;border:2px solid #3a3424}} .fac>img:first-child{{display:block}}
+.fac{{position:relative;width:max-content;overflow:hidden;border:2px solid #3a3424}} .fac>img:first-child{{display:block}}
 .fac .npc{{position:absolute;right:0;bottom:0;height:330px}} .missing{{background:#333;color:#999;display:flex;align-items:center;justify-content:center}}
-.gal .att{{display:inline-block;vertical-align:top;margin:0 16px 16px 0;max-width:460px}} .gal h4{{margin:4px 0;font-size:13px}}
-.gal .raw{{max-width:440px;max-height:300px;display:block;border:1px solid #333}} .ok{{color:#9fd77f}} .rej{{color:#e6a07a;margin:4px 0}}
-.finals{{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}} .finals .c img{{max-width:200px;max-height:130px;min-height:32px;image-rendering:pixelated}} .finals figcaption{{max-width:200px}}
+.gal .att{{display:inline-block;vertical-align:top;margin:0 16px 16px 0;max-width:min(460px,100%);box-sizing:border-box}} .gal h4{{margin:4px 0;font-size:13px;overflow-wrap:anywhere}}
+.gal .raw{{max-width:100%;max-height:300px;display:block;border:1px solid #333}} .ok{{color:#9fd77f}} .rej{{color:#e6a07a;margin:4px 0}}
+.finals{{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}} .finals .c img{{max-width:min(200px,100%);max-height:130px;min-height:32px;image-rendering:pixelated}} .finals figcaption{{max-width:200px}}
 </style></head><body>
 <h1>星燈迷宮 計畫 5d 美術候選・批次 {esc(batch)}（qa_passed，尚未核准、未發布）</h1>
 <p class="note">本頁所有像素圖以最近鄰放大顯示。格子、外框位置、名稱與價格是 HTML 示意，不在圖片裡。登錄狀態最多到 qa_passed；核准與發布要等你在這頁確認（補遺 S4）。登錄表批次：{esc(lab)}。</p>
 
-<section class="decide" id="decisions"><h2>請你決定的事</h2><ol>{decisions}</ol>{decided}{after}</section>
+<section class="decide" id="decisions"><h2>請你決定的事</h2>{reply}<ol>{decisions}</ol>{decided}{after}</section>
 
 <h2 id="s0">0. 本批清單（{checklist.count("data-part=")} 件）</h2>
-<table><tr><th>id</th><th>名稱</th><th>工作表</th><th>狀態</th><th>QA</th></tr>{checklist}</table>
+<div class="scroll"><table><tr><th>id</th><th>名稱</th><th>工作表</th><th>狀態</th><th>QA</th></tr>{checklist}</table></div>
 
 {size_html}
 
 <h2 id="s1">1. 裝備頁情境：背包格 28px（10×2）、人形 9 格 38px、詳情欄 64px 大圖，套上候選外框與傳說光暈</h2>
-<p class="note">小圖示 26×26 以 1:1 顯示（主體長邊 22，不縮放）；外框只壓在格子外緣 5px（slice 5，邊帶 2px），傳說光暈在格內第 2px、畫在圖示下層，星輝疊在外框之上。格間距照遊戲：背包 2px、人形 4px。沒有圖的格子照遊戲現況只顯示名稱前四字。3 倍版會自動換行，不超出畫面。</p>
+<p class="note">小圖示 26×26 以原尺寸顯示（主體長邊 22，不縮放）；外框只壓在格子最外圈，傳說光暈在外框內側、畫在圖示下層，星輝疊在外框之上。格間距照遊戲：背包 2px、人形 4px。沒有圖的格子照遊戲現況只顯示名稱前四字。3 倍版在手機上可以左右捲動。</p>
+<details class="tech"><summary>技術細節</summary>外框是 16×16 九宮格（slice 5，邊帶 2px），光暈在格內第 2px（inset 0）。</details>
 {eq}
-<h3>每種稀有度各一件</h3><div class="row dark">{rarity_row or "<small>本批沒有裝備。</small>"}</div>
+<h3>{esc(rarity_title)}</h3><div class="row dark">{rarity_row or "<small>本批沒有裝備。</small>"}</div>
 {frames_html}
 <h3 id="glow">光暈改在格內：兩件傳說相鄰，照遊戲的背包間距 2px</h3>
-<p class="note">光暈是 16×16、slice 5 的九宮格，`inset: 0` 畫在圖示下層、外框內側第 2px，不再向格外延伸，所以兩格之間的 2px 間距保持乾淨。</p>
+<p class="note">光暈畫在圖示下層、外框內側，不再向格子外面延伸，所以兩格之間的 2px 間距保持乾淨。</p>
+<details class="tech"><summary>技術細節</summary>光暈是 16×16、slice 5 的九宮格，inset 0。</details>
 <div class="row dark">{glow_pair or "<small>本批沒有傳說裝備。</small>"}</div>
 
 <h2 id="s2">2. 新舊對照：全部 {len(old_bases)} 件舊底材圖示 icon/&lt;id&gt;.png 與新的 gear-&lt;id&gt;</h2>
 <p class="note">{esc(old_note)}</p>
-<table>{old_rows or "<tr><td>沒有舊底材圖示。</td></tr>"}</table>
+<div class="scroll"><table>{old_rows or "<tr><td>沒有舊底材圖示。</td></tr>"}</table></div>
 
-<h2 id="s3">3. 大圖 64 與小圖示 24（1 倍與 3 倍），出自同一格原圖</h2>
-<table><tr><th>物品</th><th>大圖 gear-&lt;id&gt;-large</th><th>小圖示 gear-&lt;id&gt;</th><th>source</th></tr>{pairs or "<tr><td>本批沒有裝備。</td></tr>"}</table>
+<h2 id="s3">3. 大圖 64 與小圖示 26（1 倍與 3 倍），出自同一格原圖</h2>
+<div class="scroll"><table><tr><th>物品</th><th>大圖 64</th><th>小圖示 26</th><th>來源</th></tr>{pairs or "<tr><td>本批沒有裝備。</td></tr>"}</table></div>
 
 <h2 id="s4">4. 傳送門卡片情境：已取得顯示圖示，未取得顯示剪影</h2>
 <p class="note">剪影在本頁由候選小圖示即時轉出（墨色 #1d1a2e、輪廓光 #8f86b8），不寫入登錄表；核准之後才由 gear_art.py silhouettes 正式產生。</p>
@@ -588,7 +626,7 @@ table{{border-collapse:collapse}} td,th{{padding:6px 10px;border-bottom:1px soli
 <div class="row top"><div><h3>商店清單</h3>{shop or "<small>無</small>"}</div><div><h3>鍛造清單</h3>{forge or "<small>無</small>"}</div><div><h3>戰利品</h3>{loot or "<small>無</small>"}</div></div>
 
 <h2 id="s6">6. 素材：深色面板上 32／64／128px，與舊素材圖示並排</h2>
-<table>{mat_new or "<tr><td>本批沒有素材。</td></tr>"}{mat_old}</table>
+<div class="scroll"><table>{mat_new or "<tr><td>本批沒有素材。</td></tr>"}{mat_old}</table></div>
 
 <h2 id="s7">7. 技能：同角色的新技能圖示與現有技能圖示並排</h2>
 {skill_html or "<p>本批沒有技能圖示。</p>"}

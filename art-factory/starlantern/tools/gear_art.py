@@ -791,9 +791,13 @@ def requa(argv):
 
 
 def note(argv):
-    sid, k, reason = _arg(argv, '--id'), _arg(argv, '--attempt'), _arg(argv, '--reason')
+    """Record why attempt a<k> of a job was or was not used: --reason (technical, gate names and values) and optionally
+    --plain (the same in plain words, for the user-facing review page)."""
+    sid, k, reason, plain = _arg(argv, '--id'), _arg(argv, '--attempt'), _arg(argv, '--reason'), _arg(argv, '--plain')
     reg = _registry(); e = reg.data['assets'].setdefault(sid, {}); rej = e.get('rejected_attempts', {}); rej[f'a{k}'] = reason
     reg.set(sid, rejected_attempts=rej)
+    if plain:
+        pr = e.get('plain_reasons', {}); pr[f'a{k}'] = plain; reg.set(sid, plain_reasons=pr)
 
 
 # --- approval and publishing -------------------------------------------------------------------------------------------
