@@ -430,6 +430,7 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
   s.log = [];
   if (s.outcome !== 'ongoing' || checkOutcome(s)) return s;
   s.round += 1;
+  syncWards(s);   // a state built or loaded with barriers meets its first hit with the wards on
   const ctx: EffectContext = { rng, itemBoost: s.itemBoost, revealed: s.revealed, log: s.log, battle: s, ...(ledger ? { ledger } : {}) };
   for (const c of s.party) c.defending = c.alive && actions[c.key]?.kind === 'defend';
   if (s.party.some((c) => c.alive && actions[c.key]?.kind === 'escape')) {

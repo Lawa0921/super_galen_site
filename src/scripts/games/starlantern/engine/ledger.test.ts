@@ -247,6 +247,14 @@ describe('the contribution ledger', () => {
       expect(r.party.map((c) => c.ward)).toEqual([ward, ward]);
     });
 
+    it('a round starts with the wards in step, so the first hit already meets them', () => {
+      const l = newLedger();
+      const s = makeBattle([P('chizuru', { max: { hp: 1000, tp: 20, atk: 20, def: 20, mag: 20, res: 20, spd: 1 } })], [foe()],
+        { intents: { e0: { kind: 'attack', target: 'chizuru' } }, barriers: [{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru' }] });
+      resolveRound(s, {}, constRng(0.5), l);
+      expect(of(l, 'chizuru').prevented).toBeGreaterThan(0);
+    });
+
     it('a shield takes the hit first and is credited to who gave it', () => {
       const l = newLedger();
       const log: BattleEvent[] = [];
