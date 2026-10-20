@@ -23,7 +23,8 @@ export type Passive = 'encounterDown' | 'dropBoost' | 'itemBoost';
 export interface Pos { x: number; y: number }
 
 export type Effect =
-  | { kind: 'damage'; power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean; hits?: number; crit?: 'always'; execute?: number; wounded?: number }
+  /** `scatter`: each of its hits picks a living foe at random (battle.perform), whatever the skill's target. */
+  | { kind: 'damage'; power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean; hits?: number; crit?: 'always'; execute?: number; wounded?: number; scatter?: true }
   | { kind: 'heal'; power: number }
   | { kind: 'restore'; hp?: number; tp?: number }
   | { kind: 'revive'; hpPct: number }
@@ -43,9 +44,20 @@ export type Effect =
   /** The barrier up now is boosted `mul` times and lasts `turns` rounds longer; none up, nothing happens. */
   | { kind: 'barrier-boost'; mul: number; turns: number }
   /** Selene's moon: one phase back (`step`), or else to the full moon; then that phase is held `hold` round ends. */
-  | { kind: 'moon'; step?: -1; hold?: number };
-/** A skill's part in its owner's mechanic: `release` spends Chizuru's barrier for power. */
-export type SkillMechTag = 'release';
+  | { kind: 'moon'; step?: -1; hold?: number }
+  /** The caster's coins grow by `amount` (Liz, engine/mechanics/coins.ts). */
+  | { kind: 'coins'; amount: number }
+  /** The target's weak points are told, and its fall doubles the caster's coins (Liz's 估價). */
+  | { kind: 'appraise' }
+  /** The target acts last next round (Sylvie's 釘足箭). */
+  | { kind: 'delay' }
+  /** The caster's aim locks on the target at full stacks for `turns` round ends (Sylvie's 獵人標記). */
+  | { kind: 'aim-lock'; turns: number };
+/**
+ * A skill's part in its owner's mechanic: `release` spends Chizuru's barrier for power; `coin-power` and `coin-hits` spend
+ * Liz's coins for power or for hits; `consume-aim` spends Sylvie's aim for power.
+ */
+export type SkillMechTag = 'release' | 'coin-power' | 'coin-hits' | 'consume-aim';
 
 export interface SkillDef {
   id: string; name: string; owner: CharacterId; tp: number; hpCost?: number;

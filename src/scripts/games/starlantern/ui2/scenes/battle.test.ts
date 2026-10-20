@@ -1021,3 +1021,17 @@ describe('BattleScene field bar (plan 8c)', () => {
     expect(none.children).toHaveLength(0);
   });
 });
+
+describe('BattleScene coins (plan 8c)', () => {
+  it("Liz's left-over coins are a line under the gold", async () => {
+    const { s, root } = setup((g) => {
+      const liz = g.battle!.party.find((c) => c.key === 'liz')!;
+      liz.mech = { kind: 'coins', coins: 6 };
+      for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
+    });
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }   // 防禦 ×5
+    await flush();
+    expect(root.querySelector('.slx-result')).not.toBeNull();
+    expect(root.querySelector('.slx-result')!.textContent).toContain(T.battle.coinGold(12));
+  });
+});

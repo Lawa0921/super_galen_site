@@ -158,16 +158,17 @@ describe('per-character policies', () => {
 
     // Through choose: a held skill is never picked even when it is the strongest; at the threshold it is.
     const party = partyAt(20, { ids: ['hero', 'liz', 'sylvie', 'safira', 'bobby'] });
-    const table = { liz: [{ kind: 'spend-at', gauge: 'coins', min: 6, skill: 'triple-slash' }] as PolicyRule[] };
+    const table = { liz: [{ kind: 'spend-at', gauge: 'coins', min: 6, skill: 'pickpocket' }] as PolicyRule[] };
+    party.roster.liz.tree = { ...party.roster.liz.tree, 'liz-triple-up': 3 };   // pickpocket 120 x 150%: her strongest
     const at = (coins: number) => {
       const st = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
       st.party.find((m) => m.key === 'liz')!.mech = { kind: 'coins', coins };
       return choose(st, party, table).liz;
     };
     const st0 = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
-    expect(choose(st0, party).liz).toEqual({ kind: 'skill', skill: 'triple-slash', target: 'e0' });   // the strongest, unheld
+    expect(choose(st0, party, {}).liz).toEqual({ kind: 'skill', skill: 'pickpocket', target: 'e0' });   // the strongest, unheld
     expect(at(3)).toEqual({ kind: 'skill', skill: 'twin-slash', target: 'e0' });
-    expect(at(6)).toEqual({ kind: 'skill', skill: 'triple-slash', target: 'e0' });
+    expect(at(6)).toEqual({ kind: 'skill', skill: 'pickpocket', target: 'e0' });
   });
 
   it('heal-below and strongest-damage', () => {
@@ -198,7 +199,7 @@ describe('per-character policies', () => {
     for (const [id, rules] of Object.entries(DEFAULT_POLICIES) as [CharacterId, PolicyRule[]][]) {
       for (const r of rules) for (const skill of named(r)) { n++; expect(SKILLS[skill]?.owner, `${id} ${skill}`).toBe(id); }
     }
-    expect(n).toBe(6);
+    expect(n).toBe(7);
     expect(Object.keys(DEFAULT_POLICIES).sort()).toEqual(['bobby', 'chizuru', 'liz', 'rin', 'safira', 'sylvie']);
   });
 

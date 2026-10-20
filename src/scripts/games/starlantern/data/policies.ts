@@ -12,6 +12,6 @@ export const DEFAULT_POLICIES: PolicyTable = {
   // Rin marks a boss or an elite once it is under half its HP (plan 8c Task 2 tuning, retune.md).
   rin: [{ kind: 'ensure-mark', skill: 'rin-mark', big: true, below: 50 }],
   safira: [{ kind: 'alternate' }],
-  liz: [{ kind: 'spend-at', gauge: 'coins', min: 6, skill: 'fortune-strike' }],
+  liz: [{ kind: 'spend-at', gauge: 'coins', min: 6, skill: 'jackpot' }, { kind: 'spend-at', gauge: 'coins', min: 6, skill: 'fortune-strike' }],
   sylvie: [{ kind: 'spend-at', gauge: 'aim', min: 3, skill: 'starfall-arrow' }],
 };

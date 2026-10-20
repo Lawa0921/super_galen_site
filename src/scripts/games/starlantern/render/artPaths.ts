@@ -130,14 +130,21 @@ const SILHOUETTE_IDS = (): string[] => [
  * gear piece (small and large), codex silhouette, rarity layer, material, the forge and both of Doran's faces are
  * published (plan 5d Tasks 8 and 10), and every old base icon is retired. The skills publish takes its ids out.
  */
+/**
+ * Skills a roster change replaced whose published icon stays on disk and in the registry until step ⑨'s G3 batch retires
+ * it (plan 8c ruling 2: deleting art is not this plan's), but is no longer requested.
+ */
+export const RETIRED_ICON_IDS: readonly string[] = ['triple-slash'];
+
 export const NO_ICON_YET_IDS: ReadonlySet<string> = new Set([
   // plan 8c: skills that replaced others (their icons are step ⑨'s)
   'purify-ward', 'exorcism-thrust', 'moon-recall', 'full-moon-night',
+  'pickpocket', 'jackpot', 'appraise', 'sunder-arrow', 'scatter-shot', 'deluge-volley',
   // plan 5b: the skill-tree skills have no icon yet
   'flame-wave', 'inferno', 'frost-bind', 'blizzard', 'judgement',
   'spiral-spear', 'thousand-spear', 'great-barrier', 'heaven-spear',
-  'shadow-flurry', 'smoke-bomb', 'fortune-strike', 'quickstep', 'venom-edge', 'phantom-step',
-  'heart-shot', 'starfall-arrow', 'snare-shot', 'hunters-mark', 'fire-arrow', 'storm-volley',
+  'smoke-bomb', 'fortune-strike', 'quickstep', 'phantom-step',
+  'heart-shot', 'starfall-arrow', 'hunters-mark',
   'guardian-roar', 'unbreakable', 'blaze-ring', 'crimson-end', 'shield-bash', 'fortress',
   'moon-rain', 'full-moon', 'moon-arrow', 'lunar-eclipse',
   'sand-cyclone', 'thousand-shadows', 'veil-dance', 'desert-festival', 'shadow-step', 'sirocco',

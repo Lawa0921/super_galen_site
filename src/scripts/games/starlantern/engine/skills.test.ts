@@ -147,7 +147,7 @@ describe('patchSkill', () => {
 
   it('stacks two powers on one skill; an added effect is never rescaled by the other power', () => {
     const want = [
-      { kind: 'damage', power: 204, element: 'thunder', scale: 'atk', melee: false },
+      { kind: 'damage', power: 192, element: 'thunder', scale: 'atk', melee: false },   // 瞄準射擊 160 (plan 8c Task 4) x 120%
       { kind: 'buff', stat: 'def', pct: -20, turns: 3 },
     ];
     expect(skillFor(party({ powers: ['lg-sylvie', 'storm-thunder-bow'] }), 'aimed-shot')!.effects).toEqual(want);

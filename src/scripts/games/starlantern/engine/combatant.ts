@@ -3,7 +3,7 @@ import type { Rng } from './rng';
 import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
-import type { MechState } from './mech';
+import { AIM, type MechState } from './mech';
 import type { MechCue } from './mechanics/index';
 import { credit, type Ledger } from './ledger';
 import { AILMENT, clearAilments, type AilmentShown, type Dot } from './ailments';
@@ -67,7 +67,14 @@ export interface Combatant {
   veil?: number;
   /** The next landed hit is a critical one, drawing no crit roll; gone after it (Rin's veil). */
   nextCrit?: true;
+  /** Who appraised this foe (Liz): its fall doubles their coins. */
+  appraised?: string;
+  /** The round this foe acts last in (Sylvie's pin). */
+  delay?: number;
 }
+
+/** The aim stacks `a` holds on `t` (Sylvie; 0 for anyone else or any other foe). */
+const aimOn = (a: Combatant, t: Combatant): number => (a.mech?.kind === 'aim' && a.mech.target === t.key ? a.mech.stacks : 0);
 
 export type BattleEvent =
   | { type: 'act'; actor: string; label: string; ultimate?: string }
@@ -169,7 +176,7 @@ export function rollHit(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rng):
   const variance = 0.9 + rng() * 0.2;
   // Rin's hits on her mark, and a hit she readied under her veil, always crit and draw no crit roll.
   const sure = spec.crit === 'always' || !!a.nextCrit || (a.mech?.kind === 'mark' && a.mech.marks.includes(t.key));
-  const crit = sure || roll(ax('crit') / 100, rng);
+  const crit = sure || roll((ax('crit') + AIM.critPct * aimOn(a, t)) / 100, rng);
   const blocked = spec.element === 'phys' && roll(tx('block') / 100, rng);
   return { variance, crit, blocked };
 }
@@ -199,6 +206,8 @@ export function hitAmount(a: Combatant, t: Combatant, spec: DamageSpec, r: HitRo
   if (spec.execute) mult *= 1 + (spec.execute / 100) * (1 - t.hp / t.max.hp);
   if (spec.wounded && t.hp < t.max.hp) mult *= 1 + spec.wounded / 100;
   if (r.crit) mult *= 1 + (a.side === 'enemy' ? ENEMY_CRIT_DMG : ax('critDmg')) / 100;
+  const aim = aimOn(a, t);
+  if (aim) mult *= 1 + (AIM.dmgPct * aim) / 100;
   if (hitEl === 'phys') {
     mult *= 1 - armorReduction(tx('armor'), a.level);
     if (r.blocked) mult *= 0.5;
@@ -255,6 +264,7 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; led
     delete t.exposed;
     delete t.veil;
     delete t.nextCrit;
+    delete t.delay;
     clearAilments(t);
   }
   return lost;

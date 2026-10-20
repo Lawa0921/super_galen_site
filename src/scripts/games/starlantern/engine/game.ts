@@ -84,6 +84,8 @@ export interface BattleEnd {
   met?: { id: Meetable; level: number; benched: boolean };
   /** Memory pieces a boss or elite paid, in order; absent when it paid none. */
   fragments?: FragmentGain[];
+  /** The part of `gold` that was Liz's left-over coins (plan 8c); absent or 0 when none. */
+  coinGold?: number;
 }
 
 /** Turn a floor's boss tile into stairs down. */

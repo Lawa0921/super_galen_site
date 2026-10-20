@@ -133,7 +133,9 @@ export const T = {
   },
   battle: {
     win: '勝利！', lose: '全滅……', fled: '成功逃跑', cont: '繼續', poison: '毒', sleep: '睡眠',
-    exp: (n: number) => `經驗值 +${n}`, gold: (n: number) => `金錢 +${n}`, drop: (name: string, n: number) => `${name} ×${n}`,
+    exp: (n: number) => `經驗值 +${n}`, gold: (n: number) => `金錢 +${n}`,
+    /** Liz's coins left at a won fight's end, already counted in the gold line. */
+    coinGold: (n: number) => `（其中莉茲的銅板換了 ${n}）`, drop: (name: string, n: number) => `${name} ×${n}`,
     leftBehind: (name: string, n: number) => `背包已滿，留下了 ${name} ×${n}`,
     /** A line spoken after a meeting fight, with the name of who says it. */
     saidBy: (name: string, text: string) => `${name}：${text}`,
@@ -166,6 +168,12 @@ export const T = {
     purify: (n: number) => `淨之結界${n}`,
     moon: (now: string, next: string) => `月相：${now}→${next}`,
     phase: { first: '上弦', full: '滿月', waning: '下弦', new: '新月' },
+    /** Liz's coins; a foe she appraised. Sylvie's aim on a foe (locked by the hunter's mark); a pinned foe. */
+    coins: (n: number) => `銅板${n}`,
+    appraised: '估價',
+    aim: (n: number) => `瞄準${n}`,
+    aimLocked: (n: number) => `瞄準${n}・鎖定`,
+    last: '最後行動',
     cue: { overload: '暴走！', again: '還有。', noBarrier: '沒有結界' },
   },
   log: {

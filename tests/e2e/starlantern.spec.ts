@@ -1519,10 +1519,11 @@ test.describe('starlantern', () => {
     }
     await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
     await expect(page.locator('.slx-partybar .slx-pm-ail:not([hidden])')).toHaveCount(5);
-    // Noel's heat (plan 8c) takes the first place in her row, and one more ailment folds into +N.
+    // Noel's heat and Liz's coins (plan 8c) take the first place in their rows, and one more ailment folds into +N.
     for (const row of await page.locator('.slx-partybar .slx-pm-ail').all()) {
       const words = await row.locator('.slx-mech, .slx-ail').allTextContents();
-      expect(words).toEqual(words[0].startsWith('熱度') ? ['熱度0', '流血×2', '灼燒2', '+3'] : ['流血×2', '灼燒2', '中毒', '+2']);
+      const mech = ['熱度0', '銅板0'].includes(words[0]) ? [words[0]] : [];
+      expect(words).toEqual(mech.length ? [...mech, '流血×2', '灼燒2', '+3'] : ['流血×2', '灼燒2', '中毒', '+2']);
     }
     /** Every member word against every living enemy's HP bar (design px, mapped onto the canvas as drawn). */
     const overlaps = () => page.evaluate(() => {
@@ -1823,6 +1824,61 @@ test.describe('starlantern', () => {
     await expect(bar).toContainText('月相');
     await page.setViewportSize({ width: 844, height: 390 });
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/release-844.png` }); }
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  test('coins and aim show on the battle screen (plan 8c)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+      p.recruited = ['hero', 'rin', 'liz', 'sylvie', 'selene'];
+      p.grid = ['hero', 'liz', null, null, 'rin', null, 'sylvie', null, 'selene'];
+    });
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    // Liz holds seven coins; Sylvie has two stacks on the first foe and Liz has appraised it; the foes are harmless.
+    await game((g) => {
+      const liz = g.battle.party.find((c: any) => c.key === 'liz');
+      const sylvie = g.battle.party.find((c: any) => c.key === 'sylvie');
+      const live = g.battle.enemies.filter((e: any) => e.alive);
+      for (const e of live) { e.max.hp = 9999; e.hp = 9999; e.max.atk = 1; e.max.mag = 1; }
+      liz.mech = { kind: 'coins', coins: 7 };
+      sylvie.mech = { kind: 'aim', target: live[0].key, stacks: 2 };
+      live[0].appraised = 'liz';
+    });
+    const round = () => game((g) => g.battle?.round ?? -1);
+    for (let i = 0; i < 60 && (await round()) === 0; i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    await expect(page.locator('.slx-partybar [data-key=liz] .slx-mech-coins')).toHaveText('銅板7');
+    const words = await page.evaluate(() => {
+      const d = (window as unknown as { __starlanternDebug: { game: any; stage: any } }).__starlanternDebug;
+      return d.stage.battleView.ailmentTexts(d.game.battle.enemies.find((e: any) => e.alive).key).map((t: { text: string }) => t.text);
+    });
+    expect(words.slice(0, 2)).toEqual(['估價', '瞄準2']);
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/coins-aim-1280.png` }); }
+    await page.setViewportSize({ width: 844, height: 390 });
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/coins-aim-844.png` }); }
+    await page.setViewportSize({ width: 390, height: 844 });
+    const row = page.locator('.slx-partybar [data-key=liz] .slx-pm-ail');
+    const fit = await row.evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
+    expect(fit.scroll).toBeLessThanOrEqual(fit.client);
     expect(w.errors).toEqual([]);
     expect(missing).toEqual([]);
   });

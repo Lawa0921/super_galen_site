@@ -175,7 +175,7 @@ describe('skill trees', () => {
 
   it('indexes nodes by owner, branch and tier', () => {
     expect(NODES['flame-wave']).toMatchObject({ owner: 'noel', branch: 0, tier: 2 });
-    expect(NODES['triple-slash']).toMatchObject({ owner: 'liz', branch: 0, tier: 1 });
+    expect(NODES.pickpocket).toMatchObject({ owner: 'liz', branch: 0, tier: 1 });
     expect(nodeName('sweep')).toBe(SKILLS.sweep.name);
     expect(nodeName('noel-fire-up')).toBe('火星強化');
     expect(nodeDesc('noel-fire-up')).toBeTruthy();

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../data/enemies';
 import type { BattleEvent } from '../engine/combatant';
-import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, FRAMED_RARITIES, MOODS, MOODS_OF, NO_ICON_YET_IDS, PUBLISHED_FACES, SPECIAL_MOODS_OF, allArtUrls, art, codexArtId, effectFor, enemyArt, gearArtId, moodFor, parseManifest, tileKey } from './artPaths';
+import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, FRAMED_RARITIES, MOODS, MOODS_OF, NO_ICON_YET_IDS, PUBLISHED_FACES, RETIRED_ICON_IDS, SPECIAL_MOODS_OF, allArtUrls, art, codexArtId, effectFor, enemyArt, gearArtId, moodFor, parseManifest, tileKey } from './artPaths';
 import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { EQUIPMENT } from '../data/equipment';
 import { REGIONS, type RegionId } from '../data/regions';
@@ -24,8 +24,10 @@ describe('artPaths', () => {
     //   + 3 silhouettes - 1 retired old icon (icon/iron-sword.png) = 246 + 36 = 282
     // + plan 5d's main-gear batch (Task 10): 127 parts (60 gear x 2, 6 region materials, Doran's smile)
     //   + 15 silhouettes - 14 retired old base icons = 282 + 128 = 410
-    expect(urls).toHaveLength(410);
-    expect(new Set(urls).size).toBe(410);
+    // - plan 8c's 三連刃 icon (its skill replaced by 順手牽羊; the file stays until step ⑨) = 409
+    expect(urls).toHaveLength(409);
+    expect(new Set(urls).size).toBe(409);
+    for (const id of RETIRED_ICON_IDS) expect(urls).not.toContain(art.icon(id));
     expect(urls).toContain(art.fxAnim('thunder'));
     for (const id of ['blaze-core', 'frost-heart', 'storm-stone', 'mire-gland', 'shade-crystal', 'iron-shard']) expect(urls).toContain(art.icon(id));
     for (const id of ['essence-common', 'essence-magic', 'essence-rare', 'essence-legendary', 'star-tear', 'king-scale']) expect(urls).toContain(art.icon(id));
@@ -93,7 +95,8 @@ describe('artPaths', () => {
   it('matches the art registry runtime paths exactly', () => {
     const reg = JSON.parse(readFileSync('art-factory/starlantern/registry.json', 'utf8')) as { assets: Record<string, { runtime?: string }> };
     const runtime = Object.values(reg.assets).flatMap((a) => (a.runtime ? [a.runtime] : [])).sort();
-    expect(runtime).toEqual([...allArtUrls()].sort());
+    // Plus the retired icons plan 8c leaves in the registry for step ⑨ to retire.
+    expect(runtime).toEqual([...allArtUrls(), ...RETIRED_ICON_IDS.map((id) => art.icon(id))].sort());
   });
 
   it('everyone has at least eight talking faces, the core six first', () => {

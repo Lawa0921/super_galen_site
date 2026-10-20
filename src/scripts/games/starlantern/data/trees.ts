@@ -92,10 +92,10 @@ export const TREES: Record<CharacterId, TreeDef> = {
   liz: { branches: [
     { name: '雙刃', nodes: [
       A('twin-slash', 3),
-      A('triple-slash', 3),
+      A('pickpocket', 3),
       M('liz-twin-up', '雙刃強化', 'twin-slash', '強化雙刃的威力', pct(110, 120, 135)),
-      M('liz-triple-up', '三連刃強化', 'triple-slash', '強化三連刃的威力', pct(115, 130, 150)),
-      A('shadow-flurry', 1),
+      M('liz-triple-up', '順手強化', 'pickpocket', '強化順手牽羊的威力', pct(115, 130, 150)),
+      A('jackpot', 1),
     ] },
     { name: '尋寶', nodes: [
       A('stealth', 1),
@@ -107,8 +107,8 @@ export const TREES: Record<CharacterId, TreeDef> = {
     { name: '身法', nodes: [
       A('quickstep', 3),
       M('liz-quick-up', '疾步延長', 'quickstep', '延長疾步的持續回合', turns(4, 5, 6)),
-      A('venom-edge', 3),
-      M('liz-venom-up', '劇毒刃', 'venom-edge', '提高毒刃的中毒機率', chance(0.6, 0.75, 0.9)),
+      A('appraise', 3),
+      M('liz-venom-up', '估價節流', 'appraise', '降低估價的 TP 消耗', tp(-1, -2, -3)),
       A('phantom-step', 1),
     ] },
   ] },
@@ -122,17 +122,17 @@ export const TREES: Record<CharacterId, TreeDef> = {
     ] },
     { name: '牽制', nodes: [
       A('pin-shot', 3),
-      M('sylvie-pin-up', '釘足延長', 'pin-shot', '延長釘足箭的減速回合', turns(4, 5, 6)),
-      A('snare-shot', 3),
-      M('sylvie-snare-up', '絆索強化', 'snare-shot', '強化絆索箭的威力，並加深攻擊削弱', deepen(115, 130, 150)),
+      M('sylvie-pin-up', '釘足強化', 'pin-shot', '強化釘足箭的威力', pct(110, 120, 135)),
+      A('sunder-arrow', 3),
+      M('sylvie-snare-up', '破甲強化', 'sunder-arrow', '強化破甲箭的威力，並加深防禦削弱', deepen(115, 130, 150)),
       A('hunters-mark', 1),
     ] },
     { name: '箭雨', nodes: [
       A('arrow-rain', 3),
       M('sylvie-rain-up', '箭雨強化', 'arrow-rain', '強化箭雨的威力', pct(110, 120, 135)),
-      A('fire-arrow', 3),
-      M('sylvie-fire-up', '火矢強化', 'fire-arrow', '強化火矢雨的威力', pct(115, 130, 150)),
-      A('storm-volley', 1),
+      A('scatter-shot', 3),
+      M('sylvie-fire-up', '散射強化', 'scatter-shot', '強化散射的威力', pct(115, 130, 150)),
+      A('deluge-volley', 1),
     ] },
   ] },
   scarlet: { branches: [
@@ -306,12 +306,14 @@ for (const [owner, tree] of Object.entries(TREES) as [CharacterId, TreeDef][]) {
  */
 export const LEGACY_NODE_IDS: Readonly<Record<string, string>> = {
   'sacred-sake': 'purify-ward', 'thunder-thrust': 'exorcism-thrust', blessing: 'moon-recall', sanctuary: 'full-moon-night',
+  'triple-slash': 'pickpocket', 'shadow-flurry': 'jackpot', 'venom-edge': 'appraise',
+  'snare-shot': 'sunder-arrow', 'fire-arrow': 'scatter-shot', 'storm-volley': 'deluge-volley',
 };
 
 export const LEGACY_LEARN_LEVEL: Record<string, number> = {
   'fire-star': 1, 'ice-star': 2, hex: 4, 'thunder-star': 6,
   sweep: 1, ward: 3, pierce: 5,
-  'twin-slash': 1, stealth: 2, 'treasure-sense': 4, 'triple-slash': 6,
+  'twin-slash': 1, stealth: 2, 'treasure-sense': 4, pickpocket: 6,
   'aimed-shot': 1, 'pin-shot': 3, 'arrow-rain': 6,
   provoke: 1, 'flame-burst': 3, 'iron-wall': 5,
   moonlight: 1, cleanse: 2, dream: 4, rebirth: 6,

@@ -18,6 +18,7 @@ import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
 import { credit, lossOf, type Ledger } from './ledger';
 import type { Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
+import { COINS } from './mechanics/coins';
 import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
@@ -173,10 +174,11 @@ export function createBattle(o: {
   return s;
 }
 
-export function turnOrder(cs: Combatant[], rng: Rng): Combatant[] {
+/** By speed, a little shuffled; a foe pinned for `round` (Sylvie's pin) goes last. One draw per combatant either way. */
+export function turnOrder(cs: Combatant[], rng: Rng, round = 0): Combatant[] {
   return cs
-    .map((c, i) => ({ c, i, k: stat(c, 'spd') * (1 + rng() * 0.25) }))
-    .sort((a, b) => b.k - a.k || a.i - b.i)
+    .map((c, i) => ({ c, i, k: stat(c, 'spd') * (1 + rng() * 0.25), last: round > 0 && c.delay === round }))
+    .sort((a, b) => Number(a.last) - Number(b.last) || b.k - a.k || a.i - b.i)
     .map((x) => x.c);
 }
 
@@ -337,7 +339,8 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       payMech(s, actor, def, ctx);
       s.log.push({ type: 'act', actor: actor.key, label: def.name });
       ctx.cast = def.id;   // a barrier remembers the skill that raised it
-      for (const t of resolveTargets(s, actor, def.target, act.target, rng)) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
+      if (def.effects.some((e) => e.kind === 'damage' && e.scatter)) scatterCast(s, actor, def, act.target, ctx, rng);
+      else for (const t of resolveTargets(s, actor, def.target, act.target, rng)) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
       delete ctx.cast;
       return def;
     }
@@ -372,6 +375,24 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
   }
 }
 
+
+/**
+ * A skill with a scatter hit (散射, 一擲千金): its effects in order; a scatter damage effect throws each of its hits at a
+ * living foe the fight's `pick` chooses (stopping when none stands), any other effect goes to the skill's own targets.
+ */
+function scatterCast(s: BattleState, actor: Combatant, def: SkillDef, chosen: string | undefined, ctx: EffectContext, rng: Rng): void {
+  const targets = def.effects.some((e) => !(e.kind === 'damage' && e.scatter)) ? resolveTargets(s, actor, def.target, chosen, rng) : [];
+  for (const eff of def.effects) {
+    if (eff.kind === 'damage' && eff.scatter) {
+      for (let i = 0; i < (eff.hits ?? 1); i++) {
+        const foes = living(actor.side === 'party' ? s.enemies : s.party);
+        if (!foes.length) break;
+        const { scatter: _drop, ...one } = eff;
+        applyEffect(actor, pick(rng, foes), { ...one, hits: 1 }, ctx);
+      }
+    } else for (const t of targets) applyEffect(actor, t, eff, ctx);
+  }
+}
 
 function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
   // The mechanics open the round's end before any tick (the purifying barrier heals and cures first).
@@ -468,7 +489,7 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
   const planned = s.intents ?? {};
   const fresh = chooseEnemyActions(s, rng);
   const enemyActs = new Map([...fresh].map(([k, a]) => [k, planned[k] ?? a]));
-  for (const actor of turnOrder([...living(s.party), ...living(s.enemies)], rng)) {
+  for (const actor of turnOrder([...living(s.party), ...living(s.enemies)], rng, s.round)) {
     if (!actor.alive) continue;
     // A frozen turn is lost before sleep is looked at (sleep keeps its rounds); it thaws and is guarded for a while.
     if (actor.frozen) { delete actor.frozen; actor.freezeGuard = AILMENT.freezeGuard; s.log.push({ type: 'frozen', actor: actor.key }); continue; }
@@ -535,7 +556,7 @@ export function intentLabel(s: BattleState, key: string): string {
  * The living party's goldFind, matFind and expBonus are each summed and held to 100: gold and exp are raised by their
  * sum and rounded, every drop chance by matFind's.
  */
-export function rewards(s: BattleState, rng: Rng, dropBoost: boolean, dropMul = 1): { exp: number; gold: number; drops: Record<string, number> } {
+export function rewards(s: BattleState, rng: Rng, dropBoost: boolean, dropMul = 1): { exp: number; gold: number; drops: Record<string, number>; coinGold: number } {
   let exp = 0, gold = 0;
   const drops: Record<string, number> = {};
   const find = (k: SecondaryKey) => Math.min(100, living(s.party).reduce((n, c) => n + (c.x[k] ?? 0), 0));
@@ -552,7 +573,9 @@ export function rewards(s: BattleState, rng: Rng, dropBoost: boolean, dropMul = 
       if (n > 0) drops[drop.mat] = (drops[drop.mat] ?? 0) + n;
     }
   }
-  return { exp: Math.round(exp * (1 + find('expBonus') / 100)), gold: Math.round(gold * (1 + find('goldFind') / 100)), drops };
+  // Liz's coins left at a won fight's end become gold (plan 8c ruling 21); no draw.
+  const coinGold = s.outcome === 'win' ? s.party.reduce((n, c) => n + (c.mech?.kind === 'coins' ? c.mech.coins * COINS.gold : 0), 0) : 0;
+  return { exp: Math.round(exp * (1 + find('expBonus') / 100)), gold: Math.round(gold * (1 + find('goldFind') / 100)) + coinGold, drops, coinGold };
 }
 
 export function writeBack(p: Party, s: BattleState): Party {

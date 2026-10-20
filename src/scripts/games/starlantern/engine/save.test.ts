@@ -654,8 +654,14 @@ describe('old node ids (plan 8c)', () => {
     const back = (t: Record<string, number>, old: string, now: string) => { t[old] = t[now]; delete t[now]; };
     expect([c.tree['purify-ward'], c.tree['chizuru-sake-up']]).toEqual([2, 1]);   // the default Lv 50 build has them
     s.tree['selene-arrow-up'] -= 1; s.tree['moon-recall'] = 1;                     // one point moved onto the old 祝福 node
-    const want = { c: { ...c.tree }, s: { ...s.tree } };
+    const l = g.party.roster.liz;
+    l.level = 50; l.tree = { ...defaultTree('liz', 50) };
+    expect(l.tree.pickpocket).toBeGreaterThan(0);
+    const want = { c: { ...c.tree }, s: { ...s.tree }, l: { ...l.tree } };
     const raw = JSON.parse(JSON.stringify(g));
+    back(raw.party.roster.liz.tree, 'triple-slash', 'pickpocket');
+    if (l.tree.jackpot) back(raw.party.roster.liz.tree, 'shadow-flurry', 'jackpot');
+    if (l.tree.appraise) back(raw.party.roster.liz.tree, 'venom-edge', 'appraise');
     back(raw.party.roster.chizuru.tree, 'sacred-sake', 'purify-ward');
     back(raw.party.roster.selene.tree, 'blessing', 'moon-recall');
     expect(raw.party.roster.chizuru.tree['sacred-sake']).toBe(2);
@@ -669,6 +675,8 @@ describe('old node ids (plan 8c)', () => {
     expect(st.party.roster.selene.tree).not.toHaveProperty('blessing');
     expect(st.party.roster.chizuru.tree).toEqual(want.c);
     expect(st.party.roster.selene.tree).toEqual(want.s);
+    expect(st.party.roster.liz.tree).toEqual(want.l);
+    expect(st.party.roster.liz.tree).not.toHaveProperty('triple-slash');
     // Everything else exactly as it was.
     for (const k of ['gold', 'inventory', 'bag', 'story', 'affinity'] as const) expect(st[k as keyof typeof st], k).toEqual(g[k as keyof typeof g]);
     for (const id of Object.keys(g.party.roster) as (keyof typeof g.party.roster)[]) {

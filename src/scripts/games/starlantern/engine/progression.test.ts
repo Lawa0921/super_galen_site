@@ -267,7 +267,7 @@ describe('progression', () => {
     const table: Record<string, number> = {
       'ice-star': 2, hex: 4, 'thunder-star': 5,
       ward: 3, pierce: 5,
-      stealth: 2, 'treasure-sense': 4, 'triple-slash': 5,
+      stealth: 2, 'treasure-sense': 4, pickpocket: 5,
       'pin-shot': 3, 'arrow-rain': 5,
       'flame-burst': 3, 'iron-wall': 5,
       cleanse: 2, dream: 4, rebirth: 5,
@@ -781,6 +781,14 @@ describe('ranks of a skill with nothing to scale (plan 8c)', () => {
     expect(hex.desc).not.toContain('3 回合');
     expect(SKILLS['rin-veil'].desc).toContain('2 回合');
     expect(skillFor({ powers: [], ranks: { 'rin-veil': 3 } }, 'rin-veil')!.desc).toContain('4 回合');
+    // The guard barrier's words name its percent and rounds as her ranks and nodes make them.
+    expect(SKILLS.ward.desc).toContain('30%');
+    const ward = skillFor({ powers: [], ranks: { ward: 3, 'chizuru-ward-up': 2 } }, 'ward')!;
+    expect(ward.effects).toEqual([{ kind: 'barrier', barrier: 'guard', power: 36, turns: 5 }]);
+    expect(ward.desc).toContain('36%');
+    expect(ward.desc).toContain('5 回合');
+    expect(ward.desc).not.toContain('30%');
+    expect(SKILLS['heaven-spear'].desc.endsWith('。')).toBe(true);
   });
 });
 

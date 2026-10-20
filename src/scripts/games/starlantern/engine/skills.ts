@@ -8,6 +8,8 @@ import { clearAilments, inflictAilment } from './ailments';
 import type { BattleState } from './battle';
 import { onLandedHit } from './mechanics/index';
 import { MOON } from './mechanics/moon';
+import { AIM } from './mech';
+import { COINS } from './mechanics/coins';
 
 /**
  * `ledger`: the sim's contribution ledger (absent in the game); it reads the fight and never draws. `redirect`: set only
@@ -67,6 +69,7 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
       case 'expose': return { ...e, turns: lasting(e.turns) };
       case 'veil': return { ...e, turns: lasting(e.turns) };
       case 'barrier': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns) };
+      case 'aim-lock': return { ...e, turns: lasting(e.turns) };
       // The moon's hold counts as its rounds (moon-recall's ranks hold the phase it steps back to).
       case 'moon': return mod.turns !== undefined || mod.turnsDelta !== undefined ? { ...e, hold: lasting(e.hold ?? 0) } : { ...e };
       case 'inflict': return { ...e, chance: e.status === 'poison' ? mod.chance ?? e.chance : e.chance };
@@ -74,10 +77,12 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
     }
   });
   const out: SkillDef = { ...def, effects: [...effects, ...(mod.extra ?? []).map((e) => ({ ...e }))] };
-  // The hex's and the veil's words name their rounds (plan 8c): a mod that changes them changes the words too.
+  // The hex's, the veil's and the guard barrier's words name their rounds (and the barrier its percent; plan 8c): a mod
+  // that changes them changes the words too.
   def.effects.forEach((e, i) => {
     const now = effects[i];
-    if ((e.kind === 'expose' || e.kind === 'veil') && now.kind === e.kind && now.turns !== e.turns) out.desc = out.desc.replace(`${e.turns} 回合`, `${now.turns} 回合`);
+    if ((e.kind === 'expose' || e.kind === 'veil' || e.kind === 'barrier') && now.kind === e.kind && now.turns !== e.turns) out.desc = out.desc.replace(`${e.turns} 回合`, `${now.turns} 回合`);
+    if (e.kind === 'barrier' && now.kind === 'barrier' && now.power !== e.power) out.desc = out.desc.replace(`${e.power}%`, `${now.power}%`);
   });
   if (mod.target !== undefined) out.target = mod.target;
   if (mod.hpCost !== undefined) out.hpCost = mod.hpCost;
@@ -239,6 +244,27 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       const b = s.barriers?.[0];
       if (!b) { ctx.log.push({ type: 'mech', actor: actor.key, cue: 'no-barrier' }); return; }
       s.barriers = [{ ...b, boost: eff.mul, turns: b.turns + eff.turns }];
+      return;
+    }
+    case 'coins': {
+      const m = actor.mech;
+      if (m?.kind === 'coins') m.coins = Math.min(COINS.cap, m.coins + eff.amount);
+      return;
+    }
+    case 'appraise': {
+      if (!target.alive) return;
+      target.appraised = actor.key;
+      for (const el of target.weak) reveal(ctx.revealed, target.defId, el);
+      return;
+    }
+    case 'delay': {
+      if (!target.alive) return;
+      target.delay = (ctx.battle?.round ?? 0) + 1;
+      return;
+    }
+    case 'aim-lock': {
+      if (!target.alive || actor.mech?.kind !== 'aim') return;
+      actor.mech = { kind: 'aim', target: target.key, stacks: AIM.cap, lock: eff.turns };
       return;
     }
     case 'moon': {

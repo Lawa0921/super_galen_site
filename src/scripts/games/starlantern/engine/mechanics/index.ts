@@ -15,10 +15,12 @@ import { heat } from './heat';
 import { mark } from './mark';
 import { barrier } from './barrier';
 import { moon } from './moon';
+import { coins } from './coins';
+import { aim } from './aim';
 
 /** A mechanic's colour on the battle screen (`$slx-mech` in the stylesheet, MECH_FILL for the Pixi picture). */
 /** `plain`: a moment no mechanic claims, in the ink colour. */
-export type MechTone = 'heat' | 'expose' | 'mark' | 'veil' | 'ward' | 'purify' | 'moon' | 'plain';
+export type MechTone = 'heat' | 'expose' | 'mark' | 'veil' | 'ward' | 'purify' | 'moon' | 'coins' | 'aim' | 'plain';
 /** A mechanic's word on the battle screen: 「熱度3」, 「暗記」. */
 export interface MechWord { tone: MechTone; text: string }
 /** A mechanic's moment, popped over the member and logged: Noel's overload, Rin's 還有。. */
@@ -58,13 +60,15 @@ export interface MechModule {
 
 /** In hook order. Read lazily: the modules and the engine import each other, so the list is built on first use. */
 let MODULES_CACHE: MechModule[] | null = null;
-const modules = (): MechModule[] => (MODULES_CACHE ??= [heat, mark, barrier, moon]);
+const modules = (): MechModule[] => (MODULES_CACHE ??= [heat, mark, barrier, moon, coins, aim]);
 
 /** Each character's mechanic as a fight opens it; a member without an entry has none. */
 export const MECH_OF: Partial<Record<CharacterId, () => MechState>> = {
   noel: () => ({ kind: 'heat', heat: 0 }),
   rin: () => ({ kind: 'mark', marks: [], cap: 1 }),
   chizuru: () => ({ kind: 'barrier' }),
+  liz: () => ({ kind: 'coins', coins: 0 }),
+  sylvie: () => ({ kind: 'aim', target: null, stacks: 0 }),
 };
 
 /** Every member with an entry in MECH_OF gets a fresh mechanic; nothing carries over from an earlier fight. */

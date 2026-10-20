@@ -20,7 +20,7 @@ import { mulberry32 } from './rng';
 import { ABYSS } from '../data/hero';
 
 // Re-captured (CAPTURE=1) in plan 6a Task 19c for its ENEMY_POWER retune (amount 0.3, amount2 0.26, ramp 0.002). Task 20 then moved the ramp to 0.0012; the replays below did not change.
-const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",2,3198065654],"0:2":["win",2,1205089542],"0:3":["win",2,158900800],"1:1":["win",2,2337184962],"1:2":["win",2,3136947989],"1:3":["win",3,661416264],"2:1":["win",1,2064207589],"2:2":["win",1,2684440515],"2:3":["win",1,3423334806],"3:1":["win",2,2262475916],"3:2":["win",2,840362926],"3:3":["win",2,2242520671]};
+const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",2,4209479467],"0:2":["win",2,353535899],"0:3":["win",2,2306201561],"1:1":["win",2,480227065],"1:2":["win",2,2849884578],"1:3":["win",3,661416264],"2:1":["win",1,2825205314],"2:2":["win",1,624891372],"2:3":["win",1,2519986409],"3:1":["win",2,2822226627],"3:2":["win",2,1607193675],"3:3":["win",2,3134430678]};
 const rng = constRng(0.5); // enemies never use skills (all chances < 0.5), variance 1.0
 const P = (key: string, over = {}) => makeCombatant({ key, side: 'party', ...over });
 const E = (key: string, over = {}) => makeCombatant({ key, side: 'enemy', ...over });
@@ -179,7 +179,7 @@ describe('after battle', () => {
   const seq = (vs: number[]) => { let i = 0; return () => vs[i++ % vs.length]; };
   it('sums rewards and rolls drops, doubled by dropBoost', () => {
     const s = makeBattle([P('p')], [E('e0', { defId: 'slime' }), E('e1', { defId: 'bat' })]);
-    expect(rewards(s, constRng(0), false)).toEqual({ exp: 9, gold: 9, drops: { moss: 1, 'bat-wing': 1 } });
+    expect(rewards(s, constRng(0), false)).toEqual({ exp: 9, gold: 9, drops: { moss: 1, 'bat-wing': 1 }, coinGold: 0 });
     expect(rewards(s, constRng(0.99), false).drops).toEqual({});
     expect(rewards(s, constRng(0.7), false).drops).toEqual({});
     expect(rewards(s, constRng(0.7), true).drops).toEqual({ moss: 1, 'bat-wing': 1 });
@@ -277,7 +277,7 @@ describe('resource hooks', () => {
     // matFind raises each drop chance: 0.7 misses both (0.6, 0.5) until doubled.
     expect(rewards(makeBattle([P('p', { x: { matFind: 100 } })], foes), constRng(0.7), false).drops).toEqual({ moss: 1, 'bat-wing': 1 });
     expect(rewards(makeBattle([P('p', { x: { matFind: 30 } })], foes), constRng(0.7), false).drops).toEqual({ moss: 1 });   // 0.78 and 0.65
-    expect(rewards(makeBattle([P('p')], foes), constRng(0), false)).toEqual({ exp: 9, gold: 9, drops: { moss: 1, 'bat-wing': 1 } });
+    expect(rewards(makeBattle([P('p')], foes), constRng(0), false)).toEqual({ exp: 9, gold: 9, drops: { moss: 1, 'bat-wing': 1 }, coinGold: 0 });
   });
 
   it('sleep resistance lowers the chance', () => {
@@ -311,10 +311,11 @@ describe('the sim player', () => {
     expect(choose(s, party).noel.kind).toBe('attack');                 // 火之星彈 costs 4
     noel.x.tpCost = 50;
     expect(choose(s, party).noel).toEqual({ kind: 'skill', skill: 'fire-star', target: 'e0' });
-    // 三叉刃 makes 雙刃 (60 x 3 = 180) outrank 三連刃 (55 x 3 = 165) for 莉茲 at level 6.
+    // 三叉刃 makes 雙刃 (60 x 3 = 180) outrank 順手牽羊 strengthened once (120 x 115% = 138) for 莉茲 at level 6.
     const lv6 = partyAt(6, { ids: LEGACY_LINEUP });
+    lv6.roster.liz.tree = { ...lv6.roster.liz.tree, 'liz-triple-up': 1 };
     const s6 = createBattle({ party: lv6, enemyIds: ['slime'], inventory: {}, revealed: {} });
-    expect(choose(s6, lv6).liz).toMatchObject({ kind: 'skill', skill: 'triple-slash' });
+    expect(choose(s6, lv6).liz).toMatchObject({ kind: 'skill', skill: 'pickpocket' });
     s6.party.find((c) => c.key === 'liz')!.powers = ['lg-liz'];
     expect(choose(s6, lv6).liz).toMatchObject({ kind: 'skill', skill: 'twin-slash' });
   });
@@ -1087,5 +1088,14 @@ describe('character mechanics (plan 8c)', () => {
     expect(open().moon).toEqual({ phase: 'first' });
     expect(open().barriers).toBeUndefined();
     for (const c of first.enemies) expect(c.mech).toBeUndefined();
+    // Liz and Sylvie (plan 8c Task 4): no coins, no aim, at every fight's start.
+    const other = fullParty(['hero', 'liz', 'sylvie', 'chizuru', 'selene']);
+    const two = () => createBattle({ party: other, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    const t1 = two();
+    expect(t1.party.find((c) => c.key === 'liz')?.mech).toEqual({ kind: 'coins', coins: 0 });
+    expect(t1.party.find((c) => c.key === 'sylvie')?.mech).toEqual({ kind: 'aim', target: null, stacks: 0 });
+    resolveRound(t1, { liz: { kind: 'attack', target: 'e0' }, sylvie: { kind: 'attack', target: 'e0' } }, mulberry32(1));
+    expect(Object.fromEntries(two().party.map((c) => [c.key, c.mech]))).toEqual(Object.fromEntries(t1.party.map((c) => [c.key, c.mech])));
+    for (const c of t1.enemies) expect([c.appraised, c.delay]).toEqual([undefined, undefined]);
   });
 });

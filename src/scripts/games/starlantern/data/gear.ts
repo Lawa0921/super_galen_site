@@ -100,7 +100,7 @@ const POWER_LIST: PowerDef[] = [
   { id: 'frost-bloom-neck', skill: 'ice-star', text: '冰之星彈改為打全體，威力 70%', mod: { target: 'enemies', powerPct: 70 } },
   { id: 'storm-thunder-bow', skill: 'aimed-shot', text: '瞄準射擊改為雷屬性，威力 120%', mod: { element: 'thunder', powerPct: 120 } },
   { id: 'mire-whisper-gloves', skill: 'rin-venom-needle', text: '毒針必定使目標中毒（頭目減半）', mod: { chance: 1 } },
-  { id: 'shade-silent-blade', skill: 'triple-slash', text: '三連刃改為 4 段', mod: { hits: 4 } },
+  { id: 'shade-silent-blade', skill: 'rin-needle', text: '飛針改為 3 段', mod: { hits: 3 } },
   { id: 'iron-bulwark-plate', skill: 'iron-wall', text: '鐵壁改為作用全體，威力 50%', mod: { target: 'allies', buffPct: 50 } },
 ];
 export const POWERS: Record<string, PowerDef> = Object.fromEntries(POWER_LIST.map((p) => [p.id, p]));

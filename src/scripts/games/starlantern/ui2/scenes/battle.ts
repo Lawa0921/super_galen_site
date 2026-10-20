@@ -557,6 +557,7 @@ export class BattleScene implements Scene {
       });
       for (const l of fragmentLines(found)) lines.push({ text: l });
       lines.push({ text: T.battle.exp(end.exp) }, { text: T.battle.gold(end.gold) });
+      if (end.coinGold) lines.push({ text: T.battle.coinGold(end.coinGold) });
       // Won gear reads after its gear icon once that is published (the line keeps its rarity colour either way).
       for (const it of end.gear) {
         const icon = gearIconUrl(this.ctx.art, it);

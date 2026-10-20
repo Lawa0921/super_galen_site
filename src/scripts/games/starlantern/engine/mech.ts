@@ -5,6 +5,14 @@
  */
 import type { Combatant } from './combatant';
 
+/**
+ * Sylvie's aim (spec §8.4, plan 8c ruling 17; engine/mechanics/aim.ts): the stack cap, damage and crit points per stack on
+ * the aimed foe, and what starfall makes of each stack. Kept here so combatant.ts reads it without the mechanics.
+ * Task 4 tuning (retune.md): damage 15 → 10 a stack; crit 10 → 0 (any crit chance on a crit-less archer adds a draw to
+ * every shot, and that alone moved her Lv 5 share by 12–20%).
+ */
+export const AIM = { cap: 3, dmgPct: 10, critPct: 0, consumePct: 50 } as const;
+
 /** The gauges a `spend-at` rule can read. */
 export type MechGauge = 'heat' | 'coins' | 'aim' | 'embers';
 
@@ -24,7 +32,8 @@ export interface Barrier { skill: string; kind: BarrierKind; power: number; turn
 export type MechState =
   | { kind: 'heat'; heat: number }
   | { kind: 'coins'; coins: number }
-  | { kind: 'aim'; target: string | null; stacks: number }
+  /** `lock`: round ends the hunter's mark still holds the aim on its target. */
+  | { kind: 'aim'; target: string | null; stacks: number; lock?: number }
   | { kind: 'embers'; embers: number }
   | { kind: 'beat'; beat: number; last: string | null }
   | { kind: 'devices'; devices: Device[]; cap: number }

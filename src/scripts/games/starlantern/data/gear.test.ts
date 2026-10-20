@@ -185,3 +185,12 @@ describe('legendary powers follow the roster (plan 8c)', () => {
     for (const p of Object.values(POWERS)) expect(SKILLS[p.skill], p.id).toBeDefined();
   });
 });
+
+describe('legendary powers follow the roster (plan 8c Task 4)', () => {
+  it("the silent blade now gives rin's needle three hits", async () => {
+    const { skillFor } = await import('../engine/battle');
+    expect(POWERS['shade-silent-blade'].skill).toBe('rin-needle');
+    expect(skillFor({ powers: ['shade-silent-blade'] }, 'rin-needle')?.effects[0]).toMatchObject({ kind: 'damage', hits: 3 });
+    for (const p of Object.values(POWERS)) expect(SKILLS[p.skill], p.id).toBeDefined();
+  });
+});
