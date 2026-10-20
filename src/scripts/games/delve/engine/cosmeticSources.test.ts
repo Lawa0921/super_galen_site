@@ -1,14 +1,33 @@
 // cosmeticSources.test.ts — 每件外觀（時裝道具）從哪裡拿得到：spec C8 的來源規則。
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { cosmeticSources, type CosmeticSource } from './cosmeticSources';
 import { ACC_ITEMS, OUTFIT_ITEMS, VANITY_ITEMS, type ItemId } from './items';
 import { RECIPES } from './crafting';
 import { ENEMIES } from './enemies';
-import { CHEST_FASHION, CHEST_FASHION_CHANCE, chestLoot, type ChestKind } from './loot';
+import { CHEST_FASHION, CHEST_FASHION_CHANCE, GENERATED_CHEST_KINDS, chestLoot, type ChestKind } from './loot';
 import { BOSS_FASHION } from './game';
 
 /** 開局附近就拿得到的材料（spec C8：新角色 10 分鐘內做得出來） */
-const STARTER = new Set<ItemId>(['wood', 'planks', 'gel', 'dirt', 'stone', 'mushroom', 'feather']);
+// 羽毛只有夜裡的暗羽梟會掉，不算開局材料
+const STARTER = new Set<ItemId>(['wood', 'planks', 'gel', 'dirt', 'stone', 'mushroom']);
+/** 世界生成真的會放的箱子種類：直接掃 worldgen.ts / gen/*.ts 裡每個 addChest(…, '<kind>') 呼叫 */
+function placedChestKinds(): Set<string> {
+  const dir = resolve(process.cwd(), 'src/scripts/games/delve/engine');
+  const kinds = new Set<string>();
+  for (const f of ['worldgen.ts', 'gen/dungeon.ts']) {
+    const src = readFileSync(resolve(dir, f), 'utf8');
+    const calls = [...src.matchAll(/addChest\(([^;]*?)\)[;,]/g)].map((m) => m[1]).filter((a) => !/:\s*number/.test(a));
+    expect(calls.length, f).toBeGreaterThan(0);
+    for (const a of calls) {
+      const lit = a.match(/'([a-z]+)'/);
+      expect(lit, `${f}: addChest(${a}) 的種類要寫成字面值`).not.toBeNull();
+      kinds.add(lit![1]);
+    }
+  }
+  return kinds;
+}
 /** Task 2 新增的 26 件（8 套服裝 × 2 + 9 個頭飾 + 眼鏡） */
 const OLD_OUTFITS = ['explorer', 'sailor', 'miko', 'hoodie', 'coat', 'maid'];
 const NEW_ITEMS: ItemId[] = [
@@ -27,6 +46,7 @@ const BEFORE: Record<string, CosmeticSource[]> = {
 };
 const starterCraftable = (id: ItemId): boolean => RECIPES.some((r) => r.out.item === id
   && (r.station === 'workbench' || r.station === null) && r.inputs.every((a) => STARTER.has(a.item)));
+const kindsOf = (o: object): ChestKind[] => Object.keys(o) as ChestKind[];
 
 describe('時裝的取得來源（spec C8）', () => {
   it('every cosmetic has a source', () => {
@@ -46,7 +66,10 @@ describe('時裝的取得來源（spec C8）', () => {
     }
   });
 
-  it('at least one cosmetic craftable from starter materials（含至少一件新物品）', () => {
+  it('at least one cosmetic craftable from starter materials（含至少一件新物品；工作台本身也只用開局材料）', () => {
+    const bench = RECIPES.find((r) => r.out.item === 'workbench')!;
+    expect(bench.station).toBeNull();
+    for (const a of bench.inputs) expect(STARTER.has(a.item), a.item).toBe(true);
     expect(VANITY_ITEMS.some(starterCraftable)).toBe(true);
     expect(NEW_ITEMS.filter(starterCraftable).length).toBeGreaterThan(0);
   });
@@ -80,7 +103,7 @@ describe('時裝的取得來源（spec C8）', () => {
   it('高稀有款（小皇冠 / 偶像舞台裝 / 哥德洋裝）：首領 + 寶藏室或珍寶箱', () => {
     for (const id of ['acc_crown', 'idol_top', 'idol_bottom', 'gothic_top', 'gothic_bottom'] as ItemId[]) {
       expect(BOSS_FASHION, id).toContain(id);
-      expect(CHEST_FASHION.treasure.includes(id) || CHEST_FASHION.relic.includes(id), id).toBe(true);
+      expect(CHEST_FASHION.treasure!.includes(id) || CHEST_FASHION.relic!.includes(id), id).toBe(true);
       expect(cosmeticSources(id), id).not.toContain('craft');
     }
   });
@@ -93,19 +116,32 @@ describe('時裝的取得來源（spec C8）', () => {
         const ct = e.drops.find((d) => d.item === top)?.chance, cb = e.drops.find((d) => d.item === bottom)?.chance;
         expect(cb, `${e.kind} ${o}`).toBe(ct);
       }
-      for (const k of Object.keys(CHEST_FASHION) as ChestKind[]) expect(CHEST_FASHION[k].includes(bottom), `${k} ${o}`).toBe(CHEST_FASHION[k].includes(top));
+      for (const k of kindsOf(CHEST_FASHION)) expect(CHEST_FASHION[k]!.includes(bottom), `${k} ${o}`).toBe(CHEST_FASHION[k]!.includes(top));
+    }
+  });
+
+  it('箱子時裝只放在世界生成真的會放的箱子種類（表上有、世界沒有 = 拿不到）', () => {
+    const placed = placedChestKinds();
+    expect([...placed].sort()).toEqual([...GENERATED_CHEST_KINDS].sort());
+    for (const k of kindsOf(CHEST_FASHION)) expect(placed.has(k), `CHEST_FASHION.${k} 不會生成`).toBe(true);
+    for (const k of kindsOf(CHEST_FASHION_CHANCE)) expect(placed.has(k), `CHEST_FASHION_CHANCE.${k} 不會生成`).toBe(true);
+    // cosmeticSources 的 chest 只算會生成的箱子
+    for (const id of VANITY_ITEMS) {
+      const live = GENERATED_CHEST_KINDS.some((k) => (CHEST_FASHION_CHANCE[k] ?? 0) > 0 && (CHEST_FASHION[k] ?? []).includes(id));
+      expect(cosmeticSources(id).includes('chest'), id).toBe(live);
     }
   });
 
   it('箱子池子裡的每件都真的開得出來；原本的箱子時裝留在原本的箱子種類', () => {
     const seen = new Set<ItemId>();
-    for (const k of Object.keys(CHEST_FASHION) as ChestKind[]) {
+    for (const k of kindsOf(CHEST_FASHION)) {
       expect(CHEST_FASHION_CHANCE[k], k).toBeGreaterThan(0);
+      expect(CHEST_FASHION[k]!.length, k).toBeGreaterThan(0);
       for (let i = 0; i < 400; i++) for (const s of chestLoot('src', i, 3, k, 0.6)) if (s && VANITY_ITEMS.includes(s.item)) seen.add(s.item);
     }
-    for (const k of Object.keys(CHEST_FASHION) as ChestKind[]) for (const id of CHEST_FASHION[k]) expect(seen.has(id), id).toBe(true);
+    for (const k of kindsOf(CHEST_FASHION)) for (const id of CHEST_FASHION[k]!) expect(seen.has(id), id).toBe(true);
     const deep: ChestKind[] = ['dungeon', 'treasure', 'secret', 'relic'];
     for (const k of deep) for (const id of ['maid_dress', 'maid_skirt', 'maid_headdress', 'witch_hat', 'feather_wings', 'ribbon_bow'] as ItemId[]) expect(CHEST_FASHION[k], k).toContain(id);
-    for (const k of ['cabin', 'mineshaft', 'ruin', 'cavern', 'sky'] as ChestKind[]) for (const id of ['straw_hat', 'beret', 'explorer_vest', 'flower_crown'] as ItemId[]) expect(CHEST_FASHION[k], k).toContain(id);
+    for (const k of ['cabin', 'mineshaft', 'ruin', 'sky'] as ChestKind[]) for (const id of ['straw_hat', 'beret', 'explorer_vest', 'flower_crown'] as ItemId[]) expect(CHEST_FASHION[k], k).toContain(id);
   });
 });
