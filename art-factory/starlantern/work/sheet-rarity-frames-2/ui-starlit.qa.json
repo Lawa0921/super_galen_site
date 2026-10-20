@@ -71,5 +71,6 @@
   "role": "overlay",
   "pad": 0,
   "tier_hue": null,
+  "spec": 2,
   "block": 19.562
 }

@@ -57,5 +57,6 @@
   "role": "glow",
   "pad": 2,
   "tier_hue": 35,
+  "spec": 2,
   "block": 25.417
 }

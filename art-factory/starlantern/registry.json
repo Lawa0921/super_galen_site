@@ -6618,7 +6618,8 @@
         "size": [
           64,
           64
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6629,7 +6630,8 @@
       "chosen_attempt": "a9",
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
-      "slot": "weapon"
+      "slot": "weapon",
+      "weapon_kind": "sword"
     },
     "gear-iron-sword": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-iron-sword.png",
@@ -6660,7 +6662,8 @@
         "size": [
           26,
           26
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6671,7 +6674,8 @@
       "chosen_attempt": "a9",
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
-      "slot": "weapon"
+      "slot": "weapon",
+      "weapon_kind": "sword"
     },
     "gear-wooden-buckler-large": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-wooden-buckler-large.png",
@@ -6702,7 +6706,8 @@
         "size": [
           64,
           64
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6744,7 +6749,8 @@
         "size": [
           26,
           26
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6786,7 +6792,8 @@
         "size": [
           64,
           64
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6828,7 +6835,8 @@
         "size": [
           26,
           26
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6853,17 +6861,27 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 4,
+        "holes": 2,
         "magenta_spill": 0,
-        "subject": [
-          56,
-          56
-        ],
-        "block": 6,
+        "subject": {
+          "long": 56,
+          "short": 56,
+          "mass": 0.276,
+          "box": [
+            4,
+            4,
+            60,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 5.982,
+        "scale": 5.982,
         "size": [
           64,
           64
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6873,7 +6891,9 @@
       },
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-1",
-      "batch": "gear-5d-sample"
+      "batch": "gear-5d-sample",
+      "slot": "weapon",
+      "weapon_kind": "spear"
     },
     "gear-lg-chizuru": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-lg-chizuru.png",
@@ -6881,21 +6901,33 @@
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [],
+        "warnings": [
+          "enclosed holes"
+        ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 0,
+        "holes": 1,
         "magenta_spill": 0,
-        "subject": [
-          24,
-          24
-        ],
-        "block": 14,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.269,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 15.227,
+        "scale": 15.227,
         "size": [
           26,
           26
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6905,7 +6937,9 @@
       },
       "chosen_attempt": "a3",
       "source_id": "sheet-gear-1",
-      "batch": "gear-5d-sample"
+      "batch": "gear-5d-sample",
+      "slot": "weapon",
+      "weapon_kind": "spear"
     },
     "gear-blaze-heart-sword-large": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-blaze-heart-sword-large.png",
@@ -6936,7 +6970,8 @@
         "size": [
           64,
           64
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6947,7 +6982,8 @@
       "chosen_attempt": "a9",
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
-      "slot": "weapon"
+      "slot": "weapon",
+      "weapon_kind": "sword"
     },
     "gear-blaze-heart-sword": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-blaze-heart-sword.png",
@@ -6978,7 +7014,8 @@
         "size": [
           26,
           26
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -6989,7 +7026,8 @@
       "chosen_attempt": "a9",
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
-      "slot": "weapon"
+      "slot": "weapon",
+      "weapon_kind": "sword"
     },
     "gear-iron-unbroken-shield-large": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-iron-unbroken-shield-large.png",
@@ -7020,7 +7058,8 @@
         "size": [
           64,
           64
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7062,7 +7101,8 @@
         "size": [
           26,
           26
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7104,7 +7144,8 @@
         "size": [
           64,
           64
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7115,7 +7156,8 @@
       "chosen_attempt": "a9",
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
-      "slot": "weapon"
+      "slot": "weapon",
+      "weapon_kind": "sword"
     },
     "gear-set-blaze-weapon": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-set-blaze-weapon.png",
@@ -7146,7 +7188,8 @@
         "size": [
           26,
           26
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7157,7 +7200,8 @@
       "chosen_attempt": "a9",
       "source_id": "sheet-gear-1",
       "batch": "gear-5d-sample",
-      "slot": "weapon"
+      "slot": "weapon",
+      "weapon_kind": "sword"
     },
     "gear-set-blaze-body-large": {
       "final": "art-factory/starlantern/work/sheet-gear-1/gear-set-blaze-body-large.png",
@@ -7188,7 +7232,8 @@
         "size": [
           64,
           64
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7230,7 +7275,8 @@
         "size": [
           26,
           26
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7272,7 +7318,8 @@
         "size": [
           64,
           64
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7314,7 +7361,8 @@
         "size": [
           26,
           26
-        ]
+        ],
+        "spec": 2
       },
       "status": "qa_passed",
       "kind": "gear-cell",
@@ -7580,6 +7628,7 @@
         "role": "frame",
         "pad": 0,
         "tier_hue": 220,
+        "spec": 2,
         "block": 21.062
       },
       "status": "qa_passed",
@@ -7657,6 +7706,7 @@
         "role": "frame",
         "pad": 0,
         "tier_hue": 51,
+        "spec": 2,
         "block": 20.0
       },
       "status": "qa_passed",
@@ -7734,6 +7784,7 @@
         "role": "frame",
         "pad": 0,
         "tier_hue": 26,
+        "spec": 2,
         "block": 21.438
       },
       "status": "qa_passed",
@@ -7811,6 +7862,7 @@
         "role": "frame",
         "pad": 0,
         "tier_hue": 354,
+        "spec": 2,
         "block": 20.188
       },
       "status": "qa_passed",
@@ -7888,6 +7940,7 @@
         "role": "frame",
         "pad": 0,
         "tier_hue": 131,
+        "spec": 2,
         "block": 20.0
       },
       "status": "qa_passed",
@@ -7965,6 +8018,7 @@
         "role": "glow",
         "pad": 2,
         "tier_hue": 35,
+        "spec": 2,
         "block": 25.417
       },
       "status": "qa_passed",
@@ -8069,6 +8123,7 @@
         "role": "frame",
         "pad": 0,
         "tier_hue": 257,
+        "spec": 2,
         "block": 20.812
       },
       "status": "qa_passed",
@@ -8160,6 +8215,7 @@
         "role": "overlay",
         "pad": 0,
         "tier_hue": null,
+        "spec": 2,
         "block": 19.562
       },
       "status": "qa_passed",
