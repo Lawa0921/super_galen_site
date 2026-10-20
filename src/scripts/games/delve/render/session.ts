@@ -5,7 +5,7 @@ import { generateWorldSteps, GEN_STAGE_COUNT, type GenResult } from '../engine/w
 import { GEN_VERSION } from '../engine/constants';
 import { serializeGame, restoreGame, decodeSave, COMPAT_GEN, type SaveData } from '../save/serialize';
 import {
-  saveSlot, loadSlot, listSlots, startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, type SlotMeta,
+  saveSlot, loadSlot, listSlots, startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, DbBlockedError, type SlotMeta,
 } from '../save/storage';
 import { startDelve, type DelveHandle } from './main';
 import { autostartPlan, newWorldPlan, helpSeen, HELP_KEY } from './model';
@@ -241,7 +241,7 @@ export function bootDelve(root: HTMLElement): Session {
       root.dataset.phase = 'title';
       root.dataset.title = 'menu';
       say(titleMsg, '');
-      ui.setSave(await existingSlot());
+      ui.setSave(await titleSlot());
       startScene(true);
       ui.focusFirst(true);
       await wipe?.reveal();
@@ -253,12 +253,20 @@ export function bootDelve(root: HTMLElement): Session {
     }
   }
 
-  /** 目前存檔槽；沒有存檔 / 無 IndexedDB 時 null */
+  /** 目前存檔槽；沒有存檔 / 無 IndexedDB 時 null。資料庫被別的分頁擋住 → 丟 DbBlockedError（不能當成「沒有存檔」） */
   async function existingSlot(): Promise<SlotMeta | null> {
     if (!hasIndexedDB()) return null;
     try {
       return (await listSlots()).find((m) => m.slot === SLOT) ?? null;
-    } catch {
+    } catch (e) {
+      if (e instanceof DbBlockedError) throw e;
+      return null;
+    }
+  }
+  /** 標題畫面用：被擋住時在標題訊息顯示原因，當作沒有存檔可繼續 */
+  async function titleSlot(): Promise<SlotMeta | null> {
+    try { return await existingSlot(); } catch (e) {
+      say(titleMsg, e instanceof Error ? e.message : String(e));
       return null;
     }
   }
@@ -399,7 +407,9 @@ export function bootDelve(root: HTMLElement): Session {
 
   async function newWorld(seed: string, peaceful: boolean): Promise<void> {
     if (busy) return;
-    const existing = await existingSeed();
+    let existing: string | null;
+    // 讀不到存檔槽（被別的分頁擋住）就不開新世界：之後擋住解除時，自動存檔會不經確認蓋掉舊存檔
+    try { existing = await existingSeed(); } catch (e) { say(titleMsg, e instanceof Error ? e.message : String(e)); return; }
     if (newWorldPlan(existing, false) === 'confirm') askOverwrite(existing as string, seed, peaceful);
     else startFresh(seed, peaceful);
   }
@@ -568,10 +578,10 @@ export function bootDelve(root: HTMLElement): Session {
   // 有存檔才顯示「繼續」（附存檔摘要）與「匯出存檔」
   ui.setSave(null);
   if (hasIndexedDB()) {
-    existingSlot().then((s) => {
+    void titleSlot().then((s) => {
       ui.setSave(s);
       if (root.dataset.phase === 'title') ui.focusFirst();
-    }).catch(() => { /* 私密模式等：沒有存檔功能 */ });
+    });
   }
   requestAnimationFrame(() => { if (root.dataset.phase === 'title') ui.focusFirst(); });
 
@@ -581,7 +591,7 @@ export function bootDelve(root: HTMLElement): Session {
       const plan = autostartPlan(location.search, existing);
       if (plan.kind === 'start') startFresh(plan.seed ?? '');
       else if (plan.kind === 'confirm') askOverwrite(plan.existing, plan.seed ?? '', defaultPeaceful());
-    });
+    }).catch((e: unknown) => say(titleMsg, e instanceof Error ? e.message : String(e)));
   }
 
   return {

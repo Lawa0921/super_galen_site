@@ -103,24 +103,37 @@ let dbPromise: Promise<IDBDatabase> | null = null;
 
 export function hasIndexedDB(): boolean { return typeof indexedDB !== 'undefined'; }
 
+export const DB_BLOCKED_MSG = '請關閉其他開著 DELVE 的分頁後重新整理。';
+/** 升級資料庫版本被別的分頁（舊版程式、不肯讓出連線）擋住：message 是給玩家看的中文 */
+export class DbBlockedError extends Error {
+  constructor() { super(DB_BLOCKED_MSG); this.name = 'DbBlockedError'; }
+}
+
 function openDb(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
-  dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
+  const p: Promise<IDBDatabase> = new Promise<IDBDatabase>((resolve, reject) => {
+    /** 被擋住後已放棄這個請求：之後才開成的連線要立刻關掉 */
+    let abandoned = false;
+    const forget = (): void => { if (dbPromise === p) dbPromise = null; };
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'slot' });
       if (!db.objectStoreNames.contains(CHAR_STORE)) db.createObjectStore(CHAR_STORE, { keyPath: 'id' });
     };
+    // 別的分頁還開著舊版連線、不肯關：不要一直等（每個存讀都會卡住），回報讓玩家關掉分頁；下次呼叫重試
+    req.onblocked = () => { abandoned = true; forget(); reject(new DbBlockedError()); };
     req.onsuccess = () => {
       const db = req.result;
+      if (abandoned) { db.close(); return; }
       // 別的分頁要升級版本：讓出連線（否則它的升級會卡住）；下次存讀再重開
-      db.onversionchange = () => { db.close(); dbPromise = null; };
+      db.onversionchange = () => { db.close(); forget(); };
       resolve(db);
     };
-    req.onerror = () => { dbPromise = null; reject(req.error ?? new Error('indexedDB open failed')); };
+    req.onerror = () => { forget(); reject(req.error ?? new Error('indexedDB open failed')); };
   });
-  return dbPromise;
+  dbPromise = p;
+  return p;
 }
 
 /**

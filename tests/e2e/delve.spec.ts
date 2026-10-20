@@ -272,6 +272,42 @@ test.describe('delve', () => {
     await expect(page.locator('#delve-upgrade-new')).toBeVisible();
   });
 
+  test('資料庫升級被別的分頁擋住（舊版程式開著 v1 連線不讓）：標題顯示原因、不會卡住；關掉那個分頁再重新整理 → 正常，存檔還在', async ({ page, context }) => {
+    // 分頁 A：在遊戲頁開資料庫之前，用 v1 開著連線（有一筆存檔）且不處理 versionchange（= 舊版程式）
+    const a = await context.newPage();
+    await a.goto('/no-such-page-delve-blocked');
+    await a.evaluate(() => new Promise<void>((res, rej) => {
+      const req = indexedDB.open('delve', 1);
+      req.onupgradeneeded = () => { req.result.createObjectStore('saves', { keyPath: 'slot' }); };
+      req.onsuccess = () => {
+        const db = req.result;
+        (window as unknown as { heldDb: IDBDatabase }).heldDb = db;
+        const tx = db.transaction('saves', 'readwrite');
+        const data = new Uint8Array([0x44, 0x4c, 0x56, 0x53, 0, 0, 0, 0]);
+        tx.objectStore('saves').put({ slot: 'main', seed: 'held', savedAt: 1, bytes: data.length, data });
+        tx.oncomplete = () => res();
+        tx.onerror = () => rej(tx.error);
+      };
+      req.onerror = () => rej(req.error);
+    }));
+    // 分頁 B：遊戲頁要升級到 v2 → 被擋住
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await expect(page.locator('#delve-title-msg')).toContainText('請關閉其他開著 DELVE 的分頁後重新整理', { timeout: 10000 });
+    await expect(page.locator('#delve-continue')).toBeHidden();
+    // 關掉 A → 重新整理 B：升級完成、看得到原本的存檔
+    await a.close();
+    await page.reload();
+    await pressStart(page);
+    await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#delve-title-msg')).not.toContainText('請關閉其他開著 DELVE 的分頁');
+    const stores = await page.evaluate(() => new Promise<string[]>((res) => {
+      const req = indexedDB.open('delve');
+      req.onsuccess = () => { const names = Array.from(req.result.objectStoreNames); req.result.close(); res(names); };
+    }));
+    expect(stores).toEqual(['characters', 'saves']);
+  });
+
   test('地城：debug 傳送進地城、右鍵開門、拿地城鑰匙右鍵開上鎖的門（存檔後仍是開的）', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));

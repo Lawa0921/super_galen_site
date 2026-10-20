@@ -48,9 +48,18 @@ describe('startAutosave', () => {
     const stop = startAutosave({ save, intervalMs: 1000, onSaved });
     vi.advanceTimersByTime(1000); expect(save).toHaveBeenCalledTimes(1);
     globalThis.dispatchEvent(new Event('pagehide')); expect(save).toHaveBeenCalledTimes(1); // busy
-    release(); await vi.runOnlyPendingTimersAsync();
-    expect(onSaved).toHaveBeenCalledWith(meta);
-    globalThis.dispatchEvent(new Event('pagehide')); expect(save).toHaveBeenCalledTimes(2);
+    release(); await vi.advanceTimersByTimeAsync(0); // 只沖 microtask，不推時間（interval 不會跑）
+    expect(onSaved).toHaveBeenCalledWith(meta); expect(save).toHaveBeenCalledTimes(1);
+    globalThis.dispatchEvent(new Event('pagehide')); expect(save).toHaveBeenCalledTimes(2); // 只有 pagehide 觸發
+    stop();
+  });
+
+  it('閒置時 pagehide 立刻存一次（不用等 interval）', () => {
+    vi.useFakeTimers();
+    const save = vi.fn(async () => meta);
+    const stop = startAutosave({ save, intervalMs: 60_000 });
+    globalThis.dispatchEvent(new Event('pagehide'));
+    expect(save).toHaveBeenCalledTimes(1);
     stop();
   });
 
