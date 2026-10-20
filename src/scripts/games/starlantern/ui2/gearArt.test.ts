@@ -126,12 +126,22 @@ describe('gear art styles (src/styles/_starlantern-ui.scss)', () => {
 
   it('paint order: glow under the icon, frame over it, star light over the frame; the cursor cell over every other cell', () => {
     const z = (sel: string) => Number(declsFor(sel)['z-index']);
-    expect(z('.slx-rglow')).toBeLessThan(z('.slx-gear-ico'));
-    expect(z('.slx-gear-ico')).toBeLessThan(z('.slx-rframe'));
+    // Only a picture inside a layered cell (bag cell, doll slot, the detail's art box) is lifted over the glow.
+    const ICO = '.slx-bag-cell > .slx-gear-ico';
+    expect(z('.slx-rglow')).toBeLessThan(z(ICO));
+    expect(z(ICO)).toBeLessThan(z('.slx-rframe'));
+    expect(z('.slx-doll-slot > .slx-gear-ico')).toBe(z(ICO));
+    expect(declsFor(ICO).position).toBe('relative');
+    expect(declsFor('.slx-doll-slot > .slx-gear-ico').position).toBe('relative');
+    expect(z('.slx-item-art-box > .slx-gear-art')).toBe(z(ICO));
+    expect(declsFor('.slx-item-art-box > .slx-gear-art').position).toBe('relative');
+    // The base rules carry no positioning: a gear icon in a list row or a loot line is an ordinary inline picture.
+    for (const sel of ['.slx-gear-ico', '.slx-gear-art', '.slx-ico.slx-gear-ico']) {
+      expect(declsFor(sel).position, sel).toBeUndefined();
+      expect(declsFor(sel)['z-index'], sel).toBeUndefined();
+    }
     expect(z('.slx-rframe')).toBeLessThan(z('.slx-rstarlit'));
     expect(z('.slx-rstarlit')).toBeLessThan(z('.slx-enh'));
-    expect(z('.slx-gear-art')).toBe(z('.slx-gear-ico'));
-    expect(declsFor('.slx-gear-ico').position).toBe('relative');
     // Each cell is a stacking context of its own, so no neighbour's frame can cover the cursor's glow around its cell.
     expect(declsFor('.slx-bag-cell')['z-index']).toBe('0');
     expect(declsFor('.slx-doll-slot')['z-index']).toBe('0');

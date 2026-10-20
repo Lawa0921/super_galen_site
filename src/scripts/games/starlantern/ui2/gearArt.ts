@@ -1,6 +1,6 @@
 import { STARLIT_RARITIES } from '../data/gear';
 import type { ItemInstance, Rarity } from '../engine/types';
-import { art, gearArtId } from '../render/artPaths';
+import { art, gearArtId, type FramedRarity } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { el } from '../ui/dom';
 
@@ -47,6 +47,15 @@ export function rarityFrame(idx: ArtIndex, rarity: Rarity, starlit = false): { u
   if (idx.has(art.rarityFrame(rarity))) over.push(layer(`slx-rframe slx-rframe-${rarity}`));
   if (starlit && STARLIT_RARITIES.includes(rarity) && idx.has(art.starlitOverlay)) over.push(layer('slx-rstarlit'));
   return { under, over };
+}
+
+/**
+ * Which of a piece's picture layers are published (its icon, its frame, the legend glow, the star light), as a short key.
+ * A cell that caches its drawing adds it to its key, so art that arrives after the first draw is picked up.
+ */
+export function gearArtKey(idx: ArtIndex, it: Pick<ItemInstance, 'base' | 'special' | 'rarity'>): string {
+  const framed = it.rarity !== 'common' && idx.has(art.rarityFrame(it.rarity as FramedRarity));
+  return [idx.has(art.gear(gearArtId(it))), framed, idx.has(art.rarityGlow), idx.has(art.starlitOverlay)].map((b) => (b ? 1 : 0)).join('');
 }
 
 /** A piece's picture with its rarity layers in paint order, or `[]` when its picture is not published. */

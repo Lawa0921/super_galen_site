@@ -544,8 +544,9 @@ $slx-battle-left: 150px;
 .slx-gear-bonus { color: #8fe08f; font-size: 10px; }
 .slx-gear-power { grid-column: 2; color: #ff9a3c; font-size: 10px; }
 .slx-gear-power.slx-line-off { color: $slx-dim; }
-// Rarity colours, the one source. Unique is 獨特（金） in spec §4: a deeper, warmer gold than rare's yellow.
-$slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, legendary: #ff9a3c, unique: #d4af37, set: #5fd068);
+// Rarity colours, the one source. Unique is crimson like its frame art (#d8283a; user-approved G1, 2026-10-20), a
+// lighter tint for small text: 6.98:1 on the window, ΔE 20 from the cannot-afford red $slx-down (ui2/rarity.test.ts).
+$slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, legendary: #ff9a3c, unique: #ff6b81, set: #5fd068);
 @each $k, $c in $slx-rarity {
   .slx-rarity-#{$k} { color: $c; }
 }
@@ -721,8 +722,10 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 // - The rarity layers are 16 x 16 nine-slices (slice 5) filling the cell. Their edges repeat rather than round, so no
 //   tile is ever stretched to a fraction of a pixel (a doll slot's 26px edge middle would round its 6px tiles to 6.5px).
 // - Paint order inside a cell: the legend glow, the icon, the frame, the star light, the enhance mark.
-.slx-gear-ico { position: relative; z-index: 1; display: block; width: 26px; height: 26px; image-rendering: pixelated; }
-.slx-gear-art { position: relative; z-index: 1; display: block; width: 64px; height: 64px; image-rendering: pixelated; }
+.slx-gear-ico { width: 26px; height: 26px; image-rendering: pixelated; }
+.slx-gear-art { display: block; width: 64px; height: 64px; image-rendering: pixelated; }
+// Lifted over the glow only where the rarity layers are stacked: a bag cell, a doll slot, the detail's art box.
+.slx-bag-cell > .slx-gear-ico, .slx-doll-slot > .slx-gear-ico, .slx-item-art-box > .slx-gear-art { position: relative; z-index: 1; display: block; }
 .slx-rglow, .slx-rframe, .slx-rstarlit {
   position: absolute;
   inset: 0;

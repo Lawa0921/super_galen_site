@@ -686,6 +686,24 @@ describe('EquipScene gear art (plan 5d Task 6)', () => {
     expect(r.slot('weapon').querySelector('.slx-rstarlit')).not.toBeNull();
   });
 
+  it('cells drawn before the art loaded pick it up on the next redraw', () => {
+    const loaded = new Set<string>();
+    const r = setup((g) => {
+      g.state.bag = [gear('iron-sword', 1, 'rare')];
+      g.state.party.roster.scarlet.equip = { head: gear('leather-cap', 9, 'legendary', { special: 'lg-scarlet' }) };
+    }, 'scarlet', { has: (u) => loaded.has(u) });
+    expect(r.cell(0).textContent).toBe('鐵劍');
+    expect(r.slot('head').querySelector('img')).toBeNull();
+    for (const u of [art.gear('iron-sword'), art.gear('lg-scarlet')]) loaded.add(u);
+    r.press('right');                                                    // any redraw
+    expect(kids(r.cell(0))).toEqual(['slx-gear-ico']);
+    expect(kids(r.slot('head'))).toEqual(['slx-gear-ico']);
+    for (const u of [art.rarityFrame('rare'), art.rarityFrame('legendary'), art.rarityGlow]) loaded.add(u);
+    r.press('left');                                                     // a frame published later is picked up too
+    expect(kids(r.cell(0))).toEqual(['slx-gear-ico', 'slx-rframe slx-rframe-rare']);
+    expect(kids(r.slot('head'))).toEqual(['slx-rglow', 'slx-gear-ico', 'slx-rframe slx-rframe-legendary']);
+  });
+
   it('no element carries a style attribute with art either', () => {
     const r = setup((g) => { g.state.bag = [gear('iron-sword', 1, 'legendary', { special: 'blaze-heart-sword', starlit: true })]; }, 'scarlet', ALL);
     r.press('swap');

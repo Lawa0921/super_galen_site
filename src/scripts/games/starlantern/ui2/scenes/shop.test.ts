@@ -35,18 +35,28 @@ function setup(gold = 100, artIdx: ArtIndex = NO_ART) {
 }
 
 describe('ShopScene', () => {
-  it('gear goods use the gear icon, not the old icon path', () => {
-    const published = [art.gear('iron-sword'), art.icon('hunter-bow'), art.icon('potion')];
+  it('gear goods use the gear icon; a retiring base keeps its old icon until its gear art is published', () => {
+    const published = [art.gear('iron-sword'), art.icon('iron-sword'), art.icon('hunter-bow'), art.icon('potion'), art.icon('leather-cap')];
     const { pick, root } = setup(100, { has: (u) => published.includes(u) });
     pick('購買');
     const row = (id: string) => root.querySelector<HTMLElement>(`.slx-layer [role=option][data-id="${id}"]`)!;
     const sword = row('iron-sword').querySelector('img')!;
     expect(sword.getAttribute('src')).toBe(art.gear('iron-sword'));
     expect(sword.className).toBe('slx-ico slx-gear-ico');
-    expect(row('hunter-bow').querySelector('img')).toBeNull();      // its old icon is published, its gear art is not: text only
+    // Its gear art is not published but its old icon still is: the old icon, at the item-icon size.
+    const bow = row('hunter-bow').querySelector('img')!;
+    expect(bow.getAttribute('src')).toBe(art.icon('hunter-bow'));
+    expect(bow.className).toBe('slx-ico');
+    expect(row('hunter-bow').querySelectorAll('img')).toHaveLength(1);
+    // Neither art published: the name alone.
+    expect(row('thorn-spear').querySelector('img')).toBeNull();
     const potion = row('potion').querySelector('img')!;              // items keep their icon
     expect(potion.getAttribute('src')).toBe(art.icon('potion'));
     expect(potion.className).toBe('slx-ico');
+    // A base that was never in the old icon set gets no old icon, even if a file by that name were listed.
+    const list = root.querySelector('.slx-shop-list .slx-menu')!;   // locked rows: the wheel scrolls past them
+    for (let i = 0; i < 60 && !row('leather-cap'); i++) list.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true }));
+    expect(row('leather-cap').querySelector('img')).toBeNull();
   });
 
   it('buys a chosen quantity, capped by what the party can afford', () => {

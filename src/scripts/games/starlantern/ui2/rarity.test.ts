@@ -22,21 +22,52 @@ const hue = ([r, g, b]: number[]) => {
   return (h * 60 + 360) % 360;
 };
 
+const scssVar = (name: string) => scss.match(new RegExp(`\\$${name}: (#[0-9a-f]{6});`))?.[1] ?? '';
+const scssRgb = (name: string) => (scss.match(new RegExp(`\\$${name}: rgb\\((\\d+), (\\d+), (\\d+)\\);`)) ?? []).slice(1, 4).map(Number);
+const hexOf = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+/** `fg` at opacity `a` over `bg`, rounded as a browser paints it. */
+const over = (fg: number[], a: number, bg: number[]) => fg.map((v, i) => Math.round(v * a + bg[i] * (1 - a)));
+const linear = (v: number) => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+const luminance = ([r, g, b]: number[]) => 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+const contrast = (a: number[], b: number[]) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+/** CIE76 ΔE between two sRGB colours (D65). */
+const deltaE = (a: number[], b: number[]) => {
+  const lab = (c: number[]) => {
+    const [r, g, bl] = c.map(linear);
+    const f = (t: number) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+    const x = f((0.4124 * r + 0.3576 * g + 0.1805 * bl) / 0.95047), y = f(0.2126 * r + 0.7152 * g + 0.0722 * bl), z = f((0.0193 * r + 0.1192 * g + 0.9505 * bl) / 1.08883);
+    return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+  };
+  const [p, q] = [lab(a), lab(b)];
+  return Math.hypot(...p.map((v, i) => v - q[i]));
+};
+
 describe('rarity colours and words', () => {
-  it('unique is a deep warm gold (spec §4 獨特（金）), clearly apart from rare yellow and legendary orange', () => {
+  it('unique is crimson like its frame art (G1, user 2026-10-20): a lighter tint, readable on every panel, apart from the cannot-afford red', () => {
     const unique = colourOf('unique'), rare = colourOf('rare'), legendary = colourOf('legendary');
-    expect(hue(unique)).toBeGreaterThanOrEqual(36);
-    expect(hue(unique)).toBeLessThanOrEqual(46);         // gold, not purple
-    const dist = (a: number[], b: number[]) => Math.hypot(...a.map((v, i) => v - b[i]));
-    expect(dist(unique, rare)).toBeGreaterThan(60);        // deeper than rare's yellow
-    expect(dist(unique, legendary)).toBeGreaterThan(40);
-    const luma = ([r, g, b]: number[]) => 0.299 * r + 0.587 * g + 0.114 * b;
-    expect(luma(unique)).toBeLessThan(luma(rare) - 30);
+    const FRAME = [0xd8, 0x28, 0x3a];                                   // ui-rarity-unique's band colour
+    expect(hue(unique)).toBeGreaterThanOrEqual(350);
+    expect(hue(unique)).toBeLessThanOrEqual(358);
+    expect(luminance(unique)).toBeGreaterThan(luminance(FRAME));       // lighter than the frame, for small text
+    // WCAG contrast at least 4.5:1 on each background rarity text sits on: the window, a rarity-tinted bag cell (3%
+    // white then 10% of its own colour over the window), and a selected list row at its brightest (20% gold).
+    const win = scssRgb('slx-win'), gold = hexOf(scssVar('slx-gold'));
+    const cell = over(unique, 0.1, over([255, 255, 255], 0.03, win));
+    for (const [name, bg] of [['window', win], ['bag cell', cell], ['selected row', over(gold, 0.2, win)]] as const) {
+      expect(contrast(unique, bg), name).toBeGreaterThanOrEqual(4.5);
+    }
+    // Clearly not the red of a cost the party cannot pay (.slx-lack, $slx-down), nor legendary orange or rare yellow.
+    expect(deltaE(unique, hexOf(scssVar('slx-down')))).toBeGreaterThanOrEqual(15);
+    expect(deltaE(unique, legendary)).toBeGreaterThanOrEqual(40);
+    expect(deltaE(unique, rare)).toBeGreaterThanOrEqual(60);
   });
 
   it('colours come from one $slx-rarity map with the plan values, emitted by @each', () => {
     expect(['common', 'magic', 'rare', 'epic', 'legendary', 'unique', 'set'].map((r) => colourOf(r).map((v) => v.toString(16).padStart(2, '0')).join('')))
-      .toEqual(['e8e8e8', '6f9cff', 'ffd84a', 'b36bff', 'ff9a3c', 'd4af37', '5fd068']);
+      .toEqual(['e8e8e8', '6f9cff', 'ffd84a', 'b36bff', 'ff9a3c', 'ff6b81', '5fd068']);
     expect(scss).toMatch(/@each \$k, \$c in \$slx-rarity \{\s*\.slx-rarity-#\{\$k\} \{ color: \$c; \}/);
     expect(scss).not.toMatch(/\.slx-rarity-[a-z]+ \{ color: #/);           // no second, hand-written copy
   });

@@ -11,7 +11,7 @@ import { activeIds, defaultSlotFor, statsOf } from '../../engine/party';
 import { mulberry32 } from '../../engine/rng';
 import { buy, isUnlocked, priceOf, junkTotals, sell, sellGear, sellJunk } from '../../engine/town';
 import type { AnyStat } from '../../engine/types';
-import { art } from '../../render/artPaths';
+import { RETIRING_ICONS, art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import { gearIconUrl } from '../gearArt';
 import { gearLabel, invested, rarityClass } from '../loot';
@@ -36,10 +36,14 @@ export class ShopScene extends FacilityScene {
     return this.ctx.art.has(art.icon(id)) ? art.icon(id) : undefined;
   }
 
-  /** A base's row icon: its gear art at its own size (plan 5d), never the old icon path; none until it is published. */
+  /**
+   * A base's row icon: its gear art at its own size (plan 5d) once published. Until then a base whose old icon is still
+   * published (RETIRING_ICONS; plan 5d Tasks 8 and 10 retire them) keeps that old icon at the item-icon size.
+   */
   private gearIcon(id: string): Pick<MenuItem, 'icon' | 'iconCls'> {
     const icon = gearIconUrl(this.ctx.art, id);
-    return icon ? { icon, iconCls: 'slx-gear-ico' } : {};
+    if (icon) return { icon, iconCls: 'slx-gear-ico' };
+    return RETIRING_ICONS.has(id) && this.ctx.art.has(art.icon(id)) ? { icon: art.icon(id) } : {};
   }
 
   private goods(): MenuItem[] {

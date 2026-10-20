@@ -10,7 +10,7 @@ import { capacity, carried, formatWeight } from '../../data/weights';
 import type { AnyStat, CharacterId, ItemInstance, Slot, Stats } from '../../engine/types';
 import { art, gearArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
-import { framedGear } from '../gearArt';
+import { framedGear, gearArtKey } from '../gearArt';
 import type { UiAction } from '../input';
 import { gearLabel, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
@@ -432,9 +432,9 @@ export class EquipScene implements Scene {
     this.renderDetail();
   }
 
-  /** Everything a cell draws from its piece: a change to any of it redraws the cell. */
+  /** Everything a cell draws from its piece, and which of its art is published: a change to any of it redraws the cell. */
   private cellKey(it: ItemInstance): string {
-    return `${it.uid}|${gearArtId(it)}|${itemName(it)}|${it.rarity}|${it.starlit ? 1 : 0}|${it.enhance}`;
+    return `${it.uid}|${gearArtId(it)}|${itemName(it)}|${it.rarity}|${it.starlit ? 1 : 0}|${it.enhance}|${gearArtKey(this.ctx.art, it)}`;
   }
 
   /** The bag line: `背包 n／60`, or in the labyrinth the pack's count and the load, red at the limit as on the map. */
