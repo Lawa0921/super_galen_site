@@ -18,12 +18,13 @@ import {
 
 const fixtureGame = (): DelveGame => { const r = restoreGame(readLegacyFixture()); if (!r.ok) throw new Error(r.message); return r.game; };
 
-type MemStore = SplitStore & { log: string[]; slots: Record<string, SlotRead>; chars: Record<string, Uint8Array>; times: Record<string, number>; ctimes: Record<string, number> };
+type MemStore = SplitStore & { log: string[]; reads: string[]; slots: Record<string, SlotRead>; chars: Record<string, Uint8Array>; times: Record<string, number>; ctimes: Record<string, number> };
 function memStore(slots: Record<string, SlotRead>, o: { failPutOnce?: boolean } = {}): MemStore {
   let fail = o.failPutOnce ?? false;
   const st: MemStore = {
-    log: [], slots: { ...slots }, chars: {}, times: {}, ctimes: {},
-    async getSlot(slot) { return st.slots[slot] ?? null; },
+    log: [], reads: [], slots: { ...slots }, chars: {}, times: {}, ctimes: {},
+    /** reads 記下每次讀（= 解壓）了哪個槽 */
+    async getSlot(slot) { st.reads.push(slot); return st.slots[slot] ?? null; },
     async getCharacter(id) { return st.chars[id] ?? null; },
     async backupSlot(from, to) {
       st.log.push(`backupSlot ${from} ${to}`);
@@ -44,7 +45,10 @@ function memStore(slots: Record<string, SlotRead>, o: { failPutOnce?: boolean } 
     async deleteCharacter(id) { st.log.push(`deleteCharacter ${id}`); delete st.chars[id]; },
     async listWorlds() {
       return Object.keys(st.slots).filter((s) => !s.endsWith('.bak'))
-        .map((slot) => ({ slot, seed: 's', savedAt: st.times[slot] ?? 0, bytes: st.slots[slot].bytes.length }))
+        .map((slot) => {
+          const charId = st.slots[slot].charId; // 同 idbSplitStore：清單的 metadata 就帶著 charId（不必解開世界）
+          return { slot, seed: 's', savedAt: st.times[slot] ?? 0, bytes: st.slots[slot].bytes.length, ...(charId ? { charId } : {}) };
+        })
         .sort((a, b) => b.savedAt - a.savedAt);
     },
     async listCharacters() {
@@ -235,6 +239,39 @@ describe('play any world with any character', () => {
     expect(p.kind).toBe('legacy'); if (p.kind === 'legacy') expect(p.slot).toBe('main');
     expect(st.log).toEqual([]);
     expect(await planContinue(memStore({}))).toEqual({ kind: 'none' });
+  });
+  it('planContinue() checks the character from list metadata first: worlds whose character is missing are skipped without reading their bytes', async () => {
+    const st = memStore({});
+    const g = small('c');
+    const sOld = SplitSession.fresh('c', 1, 'W-old'), sGone = SplitSession.fresh('c', 1, 'W-gone'), sGone2 = SplitSession.fresh('c', 1, 'W-gone2');
+    await saveSplit(st, sOld, g, 10); await saveSplit(st, sGone, g, 20); await saveSplit(st, sGone2, g, 30);
+    await st.deleteCharacter(sGone.charId); await st.deleteCharacter(sGone2.charId);
+    st.reads.length = 0;
+    const p = await planContinue(st);
+    if (p.kind !== 'split') throw new Error(p.kind);
+    expect(p.slot).toBe('W-old'); expect(p.character.id).toBe(sOld.charId);
+    expect(st.reads).toEqual(['W-old']); // 只解開選中的那個世界
+    await st.deleteCharacter(sOld.charId);
+    st.reads.length = 0;
+    expect(await planContinue(st)).toEqual({ kind: 'none' });
+    expect(st.reads).toEqual([]);
+  });
+  it('planContinue() skips a world whose character record cannot be decoded (same pick as continueSlot / listCharacters)', async () => {
+    const st = memStore({});
+    const g = small('c');
+    const sOk = SplitSession.fresh('c', 1, 'W-ok'), sBad = SplitSession.fresh('c', 1, 'W-bad');
+    await saveSplit(st, sOk, g, 10); await saveSplit(st, sBad, g, 20);
+    st.chars[sBad.charId] = new TextEncoder().encode('{"cformat":1,"id":"x","inventory":7}');
+    st.reads.length = 0;
+    const p = await planContinue(st);
+    if (p.kind !== 'split') throw new Error(p.kind);
+    expect(p.slot).toBe('W-ok'); expect(p.character.id).toBe(sOk.charId);
+    expect(st.reads).toEqual(['W-ok']);
+    // id 不符也算解不開
+    st.chars[sOk.charId] = encodeCharacter({ ...decodeCharacter(st.chars[sOk.charId]), id: 'someone-else' });
+    expect(await planContinue(st)).toEqual({ kind: 'none' });
+    // 指定 slot 的形式照舊回報損毀（世界列表 / 匯出用）
+    expect(await planContinue(st, 'W-bad')).toEqual({ kind: 'error', message: CHARACTER_CORRUPT_MSG });
   });
   it("planNewWorld keeps the character's inventory", async () => {
     const st = memStore({});

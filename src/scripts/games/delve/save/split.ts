@@ -110,9 +110,23 @@ async function planRecord(store: SplitStore, slot: string, rec: SlotRead): Promi
   return withCharacter(p.world, slot, rec.charId, await store.getCharacter(rec.charId));
 }
 
+/** 角色檔 bytes → 角色；不見 / 解不開 / id 不符 → null（「繼續冒險」挑世界時跳過，同 continueSlot / listCharacters） */
+async function usableCharacter(store: SplitStore, charId: string): Promise<DelveCharacter | null> {
+  const cb = await store.getCharacter(charId);
+  if (!cb) return null;
+  try {
+    const c = decodeCharacter(cb);
+    return c.id === charId ? c : null;
+  } catch (e) {
+    if (e instanceof SaveFormatError) return null;
+    throw e;
+  }
+}
+
 /**
  * 只讀不寫：槽 → 該怎麼繼續（用世界記錄上的 charId）。legacy 由呼叫端還原成功後再 commitMigration。
- * 不給 slot：依 listWorlds 新到舊，取第一個「有 charId 且角色檔還在」的世界；沒有 charId 的槽只有解得開的舊合併檔算數。
+ * 不給 slot：依 listWorlds 新到舊，取第一個「清單上有 charId 且角色檔還在、解得開」的世界（先看清單與角色檔，
+ * 只解開選中的那個世界）；清單上沒有 charId 的槽只有解得開的舊合併檔算數（要讀它的 bytes 才知道）。
  */
 export async function planContinue(store: SplitStore, slot?: string): Promise<ContinuePlan> {
   if (slot !== undefined) {
@@ -120,10 +134,18 @@ export async function planContinue(store: SplitStore, slot?: string): Promise<Co
     return rec ? planRecord(store, slot, rec) : { kind: 'none' };
   }
   for (const m of await store.listWorlds()) {
+    if (m.charId) {
+      const character = await usableCharacter(store, m.charId);
+      if (!character) continue;
+      const rec = await store.getSlot(m.slot);
+      if (!rec) continue;
+      const p = readRecord(rec, m.slot);
+      return p.kind === 'world' ? { kind: 'split', world: p.world, character, slot: m.slot } : p;
+    }
     const rec = await store.getSlot(m.slot);
     if (!rec) continue;
     if (rec.charId) {
-      if (await store.getCharacter(rec.charId)) return planRecord(store, m.slot, rec);
+      if (await usableCharacter(store, rec.charId)) return planRecord(store, m.slot, rec);
       continue;
     }
     const p = readRecord(rec, m.slot);
