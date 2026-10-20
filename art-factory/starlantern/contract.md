@@ -170,16 +170,18 @@
   | 小圖示短邊下限 | 16 | 17 | 15 | 18 | 16 | 16 | 14 | 14 |
   | `SUBJECT_CLASS`（`MASS_BAND`） | long（0.28–0.65） | broad（0.50–0.92） | broad | broad | broad | broad | small（0.35–0.80） | small |
 
+  主體 bbox（原圖格的裁切與最終 PNG 的量測）不計 4 px 以下（`SPECK_MAX`）的 8 連通小碎點，碎點不會讓主體縮小或偏移；整張都是碎點時才用全部像素。
   slot 來自 `gear_art.GEAR_SLOT`（`gear-plan.json` 的 `slots`，`gearArt.test.ts` 與遊戲資料交叉比對）。門檻是 `sl_art.py` 的常數，不可以在登錄表為個別件加放寬欄位；要改門檻須由主控在帳本記下裁定。`slot` 不給（None）時只檢查長邊與置中。
 - 九宮格（`kind: nine-slice`）：cutout → 主體 bbox → coverage 取樣（`cover_sample`：輸出像素對應的原圖區塊不透明比例 ≥ 0.4 才算不透明，顏色取區塊中最常見的不透明色，不產生新顏色；2 px 邊帶不會被取樣跳掉）成正好 (N − 2×pad)²，再補 `pad` 圈透明 → 一般透明 QA（外框本來就貼齊畫布邊，所以不算 `touches edge`；slice 以內的中央當成背景傳給 `bg_hint`，所以刻意透明的中央不算洞，外框帶內的小洞仍列警告）＋三項檢查：
   - `center_clear`：slice 以內的中央全透明，否則 `centre not clear`；
   - `ring_closed`：上下邊帶的每一欄、左右邊帶的每一列，在 slice 深度內至少有 1 個不透明像素，否則 `ring not closed`；
   - `edge_repeat`：四條邊帶的中段各自當成只左右重複的圖塊，用 `wrap_seam` 量接縫差（seam）與帶內相鄰差（interior），比值 `seam ÷ max(interior, 6)` 須 ≤ 1.25，否則 `edge does not repeat`。分母下限 6（0–255）是因為單色細邊的帶內差只有編碼雜訊（約 ±3），直接相除會讓同一條均勻邊的比值在 0–3.3 之間亂跳；有下限時均勻邊通過，接縫處真正的色差仍然失敗。qa.json 另記 `edge_steps`（每邊的 seam 與 interior）。
-  - 依 `role` 的檢查（補遺 2 §2；qa 另記 `stroke: [min, max]`、`reach: {edge, corner}`、`stroke_colour`（邊中段外 2 列不透明像素的中位 RGB）、`hue`（中位色相，處理 0°／360° 環繞））：
+  - 邊帶顏色（修正第 1 輪，主控裁定；門檻不變）：取四條邊中段從 pad 到邊帶最深處的全部不透明像素，只留有彩像素（S ≥ 0.25 且 V ≥ 0.30），色相分成 30° 的環狀區間，以最多像素的區間為種子，保留距種子 ±15° 的像素；`hue`（環狀中位數）、`stroke_colour`（中位 RGB）、`saturation` 都只由這群像素算。所以外側的深色描邊、內側的金色細線都不會變成「邊帶顏色」。有彩像素占比 `chroma_share` < 0.3 時（外框與光暈）記 `band colour unreadable`。
+  - 依 `role` 的檢查（補遺 2 §2；qa 另記 `stroke: [min, max]`、`reach: {edge, corner}`、`stroke_colour`、`hue`、`saturation`、`chroma_share`）：
     - `frame`：邊中段的邊帶厚度 2–3（`band thinner than 2 px`）；邊中段從外緣往內最深 3、角落（每像素取 min(離兩外緣的深度)）最深 4，超過或邊帶厚於 3 都是 `band reaches into the icon`；邊帶色相與該階色相差 ≤ 15° 且飽和度 ≥ 0.45（`hue off tier`）。
     - `glow`（傳說光暈，pad 2）：邊中段第 0–1 列必須透明（`glow outside its ring`）；厚度 ≤ 2、往內最深 4；色相 35°±15、飽和度 ≥ 0.30。`ring_closed` 在 pad 以內檢查。
-    - `overlay`（星輝）：不檢查 `ring_closed` 與邊帶厚度；所有不透明像素都要是星光色（色相 170–215° 且 S ≥ 0.2 且 V ≥ 0.7，或 S ≤ 0.15 且 V ≥ 0.85，否則 `not starlight colours`）；四角 5×5 各至少 3 個不透明像素（`starlit corners missing`）；任一邊中段外 2 列的覆蓋率 ≤ 0.35（`overlay hides the frame`）。
-  - 七階之間的色差（`frames_distinct`，整張外框表處理完才跑）：六種外框的 `stroke_colour` 兩兩之間 CIE76 ΔE ≥ 25，太近的兩個都記 `too close to <aid> (ΔE n)` 並轉 `qa_failed`。
+    - `overlay`（星輝）：不檢查 `ring_closed` 與邊帶厚度；`edge_repeat` 改為 `edge_joint`：稀疏星點只有在重複時於接縫處併成 2 px 短線（同一列在邊中段的第一欄與最後一欄都有點）才算 `edge does not repeat`；所有不透明像素都要是星光色（色相 170–215° 且 S ≥ 0.2 且 V ≥ 0.7，或 S ≤ 0.15 且 V ≥ 0.85，否則 `not starlight colours`）；四角 5×5 各至少 3 個不透明像素（`starlit corners missing`）；任一邊中段外 2 列的覆蓋率 ≤ 0.35（`overlay hides the frame`）。
+  - 七階之間的色差（`frames_distinct`）：六種外框的 `stroke_colour` 兩兩之間 CIE76 ΔE ≥ 25，太近的兩個都記 `too close to <aid> (ΔE n)` 並轉 `qa_failed`。每次處理外框（`cand`／`pick`，含 `--part`）後都對登錄表裡**整組**外框重算，與挑選順序無關：先挑的那一件也會一起失敗，不再成立的舊 `too close to` 會清掉；`approve` 前再對整組重算一次，有太近的就整批拒絕；審核頁的外框段也標出太近的組合（`data-close`）。
   - 外框在登錄表標 `defringe: strong`（同其他 UI 框）。例外：史詩 `#8A5CFF` 離洋紅最遠的一個通道只差 117，落在 strong defringe 的 120 範圍內，會被從外往內剝掉，所以 `ui-rarity-epic` 標 `defringe: default`（`gear_art.frame_defringe`，依色碼自動判斷，不是個別放寬）。
 - 剪影（`kind: silhouette`）：只接受 `approved`／`published` 的 `gear-<id>`（否則 `PermissionError`）。不透明像素一律換成 `#1d1a2e`，外圍 8 鄰接的透明格塗成 `#8f86b8` 當輪廓光，畫布每邊多 1 px；只允許這兩色、沒有半透明、不透明像素數 ≥ 原圖。
 - 素材、技能、場景、NPC 沿用 `_finish`。

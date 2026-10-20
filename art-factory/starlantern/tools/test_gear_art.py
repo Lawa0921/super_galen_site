@@ -784,6 +784,77 @@ def test_sample_decisions_are_the_g1_redo_questions(factory, review):
     assert 'gear_art.py approve --batch sample' in head
 
 
+# --- addendum 2 fix round 1 -----------------------------------------------------------------------------------------------
+def _outlined_frame(colour, layers, box=160, margin=8):
+    arr = np.zeros((box + 2 * margin, box + 2 * margin, 3), np.uint8); arr[:] = M; r = arr[margin:margin + box, margin:margin + box]
+    d = 0
+    for t, c in layers + [(20, colour)]:
+        r[d:d + t, d:box - d] = c; r[box - d - t:box - d, d:box - d] = c; r[d:box - d, d:d + t] = c; r[d:box - d, box - d - t:box - d] = c
+        d += t
+    return Image.fromarray(arr, 'RGB')
+
+
+@pytest.mark.parametrize('outline', [(22, 16, 30), (8, 6, 12)])
+def test_every_tier_with_a_dark_outer_outline_passes_hue_and_distinctness(tmp_path, outline):
+    """Fix round 1: a 1 art-px near-black outline outside the 2 px tier band must not become the measured colour."""
+    colours = {}
+    for r in G.FRAMED_RARITIES:
+        aid = G.FRAME_ASSET[r]; reg = A.Registry(tmp_path / f'{r}.json'); reg.set(aid, defringe=G.frame_defringe(r))
+        q = A.nine_slice(reg, aid, _outlined_frame(_rgb(G.RARITY_PALETTE[r]), [(10, outline)]), tmp_path / 'w', tmp_path / 'raw.png',
+                         16, 5, hue=G.FRAME_HUE[r])
+        assert q['pass'] and q['stroke'] == [3, 3] and q['stroke_colour'] == list(_rgb(G.RARITY_PALETTE[r])), (r, q['reasons'], q['stroke_colour'])
+        colours[aid] = tuple(q['stroke_colour'])
+    assert not any(A.frames_distinct(colours).values())
+
+
+def _frames_raw(factory, k, **override):
+    colours = {r: _rgb(c) for r, c in G.RARITY_PALETTE.items()}; colours.update(override)
+    return _frame_sheet(factory / f'raw/{G.FRAME_SHEET_ID}/{G.FRAME_SHEET_ID}-a{k}.png', colours)
+
+
+def test_distinctness_covers_the_whole_frame_set_whatever_the_pick_order(factory):
+    _frames_raw(factory, 1); _frames_raw(factory, 2, legendary=(255, 214, 66))     # a2's legendary is almost the a1 rare
+    G.pick(['--id', G.FRAME_SHEET_ID, '--attempt', '1'])
+    assert all(A.Registry(G.REG_PATH).get(G.FRAME_ASSET[r])['status'] == 'qa_passed' for r in G.FRAMED_RARITIES)
+    G.pick(['--id', G.FRAME_SHEET_ID, '--attempt', '2', '--part', 'legendary'])
+    reg = A.Registry(G.REG_PATH)
+    for aid, other in (('ui-rarity-rare', 'ui-rarity-legendary'), ('ui-rarity-legendary', 'ui-rarity-rare')):
+        e = reg.get(aid)
+        assert e['status'] == 'qa_failed' and any(r.startswith(f'too close to {other}') for r in e['qa']['reasons']), (aid, e['qa']['reasons'])
+        saved = json.loads(A._final_path(e['final']).with_suffix('.qa.json').read_text(encoding='utf-8'))
+        assert saved['reasons'] == e['qa']['reasons']
+    assert reg.get('ui-rarity-rare')['chosen_attempt'] == 'a1'                       # the earlier pick failed too, not re-picked
+    G.pick(['--id', G.FRAME_SHEET_ID, '--attempt', '1', '--part', 'legendary'])      # back to a distinct legendary
+    reg = A.Registry(G.REG_PATH)
+    for r in G.FRAMED_RARITIES:
+        e = reg.get(G.FRAME_ASSET[r])
+        assert e['status'] == 'qa_passed' and not any(x.startswith('too close to') for x in e['qa']['reasons']), (r, e['qa'])
+
+
+def _close_frames(reg):
+    """Every tier frame passed QA on its own, but legendary's band colour is almost the rare yellow."""
+    for r in G.FRAMED_RARITIES:
+        reg.set(G.FRAME_ASSET[r], qa={'pass': True, 'reasons': [], 'stroke_colour': list(_rgb(G.RARITY_PALETTE[r]))})
+    reg.set('ui-rarity-legendary', qa={'pass': True, 'reasons': [], 'stroke_colour': [255, 220, 62]})
+
+
+def test_approve_rechecks_distinctness_over_the_whole_frame_set(factory, review):
+    reg = _fill(factory, 'sample'); _close_frames(reg)
+    review.main('sample')
+    with pytest.raises(PermissionError, match='too close'):
+        G.do_approve(A.Registry(G.REG_PATH), 'sample', 'user 2026-10-21: ok')
+    assert 'approved_batches' not in A.Registry(G.REG_PATH).data
+
+
+def test_review_page_flags_close_frames(factory, review):
+    import re
+    reg = _fill(factory, 'sample'); _close_frames(reg)
+    page = review.main('sample').read_text(encoding='utf-8')
+    sec = page[page.index('<section id="frames">'):]; sec = sec[:sec.index('</section>')]
+    assert sorted(re.findall(r'data-close="([a-z-]+)"', sec)) == ['ui-rarity-legendary', 'ui-rarity-rare']
+    assert 'too close to ui-rarity-rare' in sec and 'too close to ui-rarity-legendary' in sec
+
+
 def test_committed_gear_plan_json_is_current(factory):
     G.plan_json([])
     fresh = json.loads((factory / 'gear-plan.json').read_text(encoding='utf-8'))

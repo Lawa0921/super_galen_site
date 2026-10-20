@@ -595,20 +595,36 @@ def process_attempt(reg, job, raw, workdir, parts=None):
     return out
 
 
+TIER_FRAMES = [FRAME_ASSET[r] for r in FRAMED_RARITIES]
+CLOSE = 'too close to '
+
+
+def frames_too_close(assets):
+    """Addendum 2 §2 over the whole tier-frame set in a registry (`assets`: {aid: entry}): {aid: reasons} for every
+    frame in a pair whose band colours (qa.stroke_colour) are closer than A.DISTINCT_DE. Rejected and retired frames
+    are not part of the set."""
+    colours = {a: tuple(e['qa']['stroke_colour']) for a in TIER_FRAMES if (e := assets.get(a)) and (e.get('qa') or {}).get('stroke_colour')
+               and e.get('status') not in ('rejected', 'retired')}
+    return {a: r for a, r in A.frames_distinct(colours).items() if r}
+
+
 def _frames_distinct(reg, job, out, workdir):
-    """Addendum 2 §2: the tier frames must stay apart (CIE76 >= A.DISTINCT_DE between band colours). The frames processed
-    now are compared with each other and with the sheet's other frames already in the registry; a processed frame that is
-    too close to another gets `too close to <aid> (ΔE n)` and qa_failed (its qa.json is rewritten)."""
-    tiers = [FRAME_ASSET[p] for p in job['parts'] if frame_role(p)[0] == 'frame']
-    colours = {}
-    for aid in tiers:
-        q = out[aid] if aid in out else reg.data['assets'].get(aid, {}).get('qa', {})
-        if q.get('stroke_colour'): colours[aid] = tuple(q['stroke_colour'])
-    for aid, reasons in A.frames_distinct(colours).items():
-        if aid not in out or not reasons: continue
-        q = out[aid]; q['reasons'] = q['reasons'] + [r for r in reasons if r not in q['reasons']]; q['pass'] = False
-        (Path(workdir) / f'{aid}.qa.json').write_text(json.dumps(q, indent=2), encoding='utf-8')
-        reg.set(aid, qa=q, status='qa_failed')
+    """Re-run distinctness over the whole tier-frame set after any frame is (re)processed, whatever the pick order: every
+    frame of a too-close pair gets `too close to <aid> (ΔE n)` and qa_failed, earlier picks included; an old
+    `too close to` that no longer holds is cleared (and the frame goes back to qa_passed when nothing else failed).
+    approved / published frames are never changed here. Each changed qa.json beside its final is rewritten."""
+    assets = {a: ({**reg.data['assets'].get(a, {}), 'qa': out[a]} if a in out else reg.data['assets'].get(a, {})) for a in TIER_FRAMES}
+    close = frames_too_close(assets)
+    for aid in TIER_FRAMES:
+        e = assets.get(aid) or {}; q = e.get('qa')
+        if not q or (aid not in out and e.get('status') not in ('qa_passed', 'qa_failed')): continue
+        reasons = [r for r in q.get('reasons', []) if not r.startswith(CLOSE)] + close.get(aid, [])
+        if reasons == q.get('reasons', []) and aid not in close: continue
+        q = {**q, 'reasons': reasons, 'pass': not reasons}
+        if aid in out: out[aid].update(q)
+        qf = Path(workdir) / f'{aid}.qa.json' if aid in out else (A._final_path(e['final']).with_suffix('.qa.json') if e.get('final') else None)
+        if qf: qf.write_text(json.dumps(q, indent=2), encoding='utf-8')
+        reg.set(aid, qa=q, status='qa_passed' if q['pass'] else 'qa_failed')
 
 
 def cand(argv):
@@ -744,6 +760,8 @@ def do_approve(reg, batch, by):
     shown = json.loads(sp.read_text(encoding='utf-8')).get('parts', {})
     aids = batch_assets(batch); problems = {}
     if not shown: problems['nothing was shown'] = [batch]
+    close = frames_too_close(reg.data['assets']) if any(a in TIER_FRAMES for a in aids) else {}
+    if close: problems['frames too close (addendum 2 distinctness over the whole set)'] = [f'{a}: {"; ".join(r)}' for a, r in close.items()]
     for aid in aids:
         e = reg.data['assets'].get(aid, {}); f = A._final_path(e['final']) if e.get('final') else None
         if not e.get('chosen_attempt') or f is None or not f.is_file(): problems.setdefault('not picked', []).append(aid)

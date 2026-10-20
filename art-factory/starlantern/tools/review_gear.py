@@ -271,9 +271,16 @@ def frames_section(pg, reg, frame, glow, starlit, icon, gear, nm, cell):
         if r not in cols: return '—'
         de = [(A.delta_e(cols[r], c), o) for o, c in cols.items() if o != r]
         return f'{min(de)[0]:.1f}（{RARITY_NAME[min(de)[1]]}）' if de else '—'
-    raws = ''.join(f'<figure>{img(frame.get(r), "px", "width:64px;height:64px")}<figcaption>{G.FRAME_ASSET[r]}<br>'
-                   f'<span class="sw" style="background:{G.RARITY_PALETTE[r]}"></span>{G.RARITY_PALETTE[r]}<br>'
-                   f'stroke {qa[r].get("stroke", "—")}｜hue {qa[r].get("hue", "—")}｜ΔE {nearest(r)}</figcaption></figure>' for r in FRAMED)
+    close = G.frames_too_close(reg)   # the whole tier-frame set, whatever order the frames were picked in
+
+    def raw_fig(r):
+        aid = G.FRAME_ASSET[r]; bad = close.get(aid)
+        return (f'<figure{f" class={chr(34)}close{chr(34)} data-close={chr(34)}{aid}{chr(34)}" if bad else ""}>'
+                f'{img(frame.get(r), "px", "width:64px;height:64px")}<figcaption>{aid}<br>'
+                f'<span class="sw" style="background:{G.RARITY_PALETTE[r]}"></span>{G.RARITY_PALETTE[r]}<br>'
+                f'stroke {qa[r].get("stroke", "—")}｜hue {qa[r].get("hue", "—")}｜ΔE {nearest(r)}'
+                f'{"<br><b class=bad>" + esc("；".join(bad)) + "</b>" if bad else ""}</figcaption></figure>')
+    raws = ''.join(raw_fig(r) for r in FRAMED)
     for key, src in (('glow-legendary', glow), ('starlit', starlit)):
         q = reg.get(G.FRAME_ASSET[key], {}).get('qa') or {}
         sw = ''.join(f'<span class="sw" style="background:{c}"></span>{c} ' for c in (G.STARLIT if key == 'starlit' else ()))
@@ -448,7 +455,7 @@ table{{border-collapse:collapse}} td,th{{padding:6px 10px;border-bottom:1px soli
 .szrow{{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;padding:6px 8px;background:#191b29;margin-bottom:4px}} .szlab{{width:3em;color:#b9b4a6;font-size:12px;align-self:center}}
 .sz figcaption{{font-size:11px;max-width:120px}} .szbox{{position:relative;background:#262840}} .sz.out .szbox{{background:#5a1f2a}} .sz.out figcaption{{color:#ff9a9a}}
 .bbox{{position:absolute;box-sizing:border-box;border:1px solid #ff5a5a;pointer-events:none}} .target{{position:absolute;box-sizing:border-box;border:1px dashed #7fe6ff;pointer-events:none}}
-.sw{{display:inline-block;width:12px;height:12px;border:1px solid #000;vertical-align:middle;margin-right:4px}} .decided{{color:#b9b4a6}} .why{{margin:4px 0}}
+.close img{{outline:2px solid #ff5a5a}} .bad{{color:#ff9a9a}} .sw{{display:inline-block;width:12px;height:12px;border:1px solid #000;vertical-align:middle;margin-right:4px}} .decided{{color:#b9b4a6}} .why{{margin:4px 0}}
 .glow-pair{{display:grid;grid-template-columns:repeat(2,28px);gap:2px;padding:8px;background:#1b1d2a}} .glow-pair.x4{{zoom:4}}
 .decide h2{{border:0;margin:4px 0 8px;padding:0}} .decide{{background:#1d2238;border:2px solid #c9a35a;padding:8px 16px 12px;margin:12px 0}} .decide>ol>li{{margin:10px 0}} .decide a{{color:#9fc7ff}} .risks{{color:#f0c27a;margin:4px 0}} .links{{font-size:12px}}
 .detail{{display:flex;gap:10px;align-items:center}} .artbox{{position:relative;width:64px;height:64px;padding:10px;background:#262840}}
