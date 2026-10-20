@@ -8136,15 +8136,15 @@
     },
     "ui-starlit": {
       "defringe": "strong",
-      "final": "art-factory/starlantern/work/sheet-rarity-frames-2/ui-starlit.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames-2\\sheet-rarity-frames-2-a5.png",
+      "final": "art-factory/starlantern/work/sheet-starlit-1/ui-starlit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-starlit-1\\sheet-starlit-1-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
         "warnings": [],
         "residue": 0,
         "semi": 0,
-        "edge": 14,
+        "edge": 0,
         "holes": 0,
         "magenta_spill": 0,
         "center_clear": true,
@@ -8158,72 +8158,101 @@
         "edge_steps": {
           "top": {
             "seam": 0.0,
-            "interior": 33.653
+            "interior": 0.0
           },
           "bottom": {
             "seam": 0.0,
-            "interior": 33.707
+            "interior": 0.0
           },
           "left": {
             "seam": 0.0,
-            "interior": 33.52
+            "interior": 0.0
           },
           "right": {
             "seam": 0.0,
-            "interior": 33.413
+            "interior": 0.0
           }
         },
         "stroke": [
           0,
-          2
+          0
         ],
         "reach": {
-          "edge": 3,
+          "edge": 0,
           "corner": 4
         },
-        "stroke_colour": [
-          123,
-          250,
-          254
-        ],
-        "hue": 181.8,
-        "saturation": 0.516,
-        "chroma_share": 1.0,
-        "edge_joint": {
-          "top": 0,
-          "bottom": 0,
-          "left": 0,
-          "right": 0
-        },
+        "stroke_colour": null,
+        "hue": null,
+        "saturation": null,
+        "chroma_share": 0.0,
         "off_colour": 0,
         "corner_px": [
-          13,
-          13,
-          13,
-          13
+          12,
+          12,
+          12,
+          12
         ],
-        "edge_cover": 0.333,
+        "edge_cover": 0.0,
+        "outside": 0,
+        "stars": [
+          {
+            "px": 12,
+            "w": 4,
+            "h": 4,
+            "core": 4,
+            "arms": 4,
+            "diagonal": false,
+            "edge": false
+          },
+          {
+            "px": 12,
+            "w": 4,
+            "h": 4,
+            "core": 4,
+            "arms": 4,
+            "diagonal": false,
+            "edge": false
+          },
+          {
+            "px": 12,
+            "w": 4,
+            "h": 4,
+            "core": 4,
+            "arms": 4,
+            "diagonal": false,
+            "edge": false
+          },
+          {
+            "px": 12,
+            "w": 4,
+            "h": 4,
+            "core": 4,
+            "arms": 4,
+            "diagonal": false,
+            "edge": false
+          }
+        ],
         "size": [
           16,
           16
         ],
         "slice": 5,
-        "role": "overlay",
-        "pad": 0,
+        "role": "corners",
+        "pad": 1,
         "tier_hue": null,
         "spec": "nine-slice:2ab30baae894",
-        "block": 19.562
+        "block": 72.143
       },
       "status": "qa_passed",
       "kind": "nine-slice",
       "slice": 5,
-      "role": "overlay",
+      "role": "corners",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rarity-frames-2\\sheet-rarity-frames-2-a5.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-starlit-1\\sheet-starlit-1-a2.png",
         "cell": "ui-starlit"
       },
-      "chosen_attempt": "a5",
-      "source_id": "sheet-rarity-frames-2",
+      "chosen_attempt": "a2",
+      "source_id": "sheet-starlit-1",
       "batch": "gear-5d-sample"
     },
     "sheet-rarity-frames-2": {
@@ -8238,7 +8267,8 @@
     "sheet-starlit-1": {
       "rejected_attempts": {
         "a1": "未採用：starlit star is not a four-point star（codex 畫成 5×5 菱形、對角也填青色，取樣後每角白心 3×3、只有 2 個尖端；看起來是圓形寶石）",
-        "a2": "QA 通過（四角各一顆 4×4 十字星，白心 2×2，邊與中間全透明），但未挑選：在 28px 執行時情境 1 倍下讀起來是圓點而不是閃光（4×4 去角就是像素圓），也蓋住傳說／獨特／套裝外框的角飾；4×4／2×2 的造型本身就會是圓點，所以不再用 a3 重畫同一造型，等主控裁定星形"
+        "a2": "採用（目前唯一通過 QA 的角星）：四角 4×4、白心 2×2 的十字形。1 倍下讀起來是圓圓的亮點，不是尖的閃光；角星蓋住傳說／獨特／套裝外框的角飾。a3 十字星沒通過 QA，所以頁面只放這一版",
+        "a3": "未採用（版數上限 a3）：starlit corner star cut or too small＋starlit star is not a four-point star。原圖的十字星形狀正確（3×3、白心 1 格、四個青白尖端），但整張畫成約 16.8 格寬而不是 14 格，取樣到 14 格時 60px 的尖端跨在兩格之間、覆蓋率不到 0.4 被丟掉，只剩 3 個像素"
       }
     }
   },

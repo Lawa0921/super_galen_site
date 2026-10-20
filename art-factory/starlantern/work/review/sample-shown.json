@@ -1,6 +1,6 @@
 {
   "batch": "sample",
-  "generated": "2026-10-20T11:44:42",
+  "generated": "2026-10-20T11:53:45",
   "page": "C:\\Users\\bag57\\.codex\\worktrees\\4182\\super_galen_site\\tmp\\starlantern\\review-gear\\index.html",
   "parts": {
     "gear-iron-sword-large": "fbc929abbf850e84bd1fb254989e84539819e1c1e84a10e34efa189ed747b9bb",
@@ -34,8 +34,13 @@
     "ui-rarity-unique": "ad10b17078b5cc05256de8280507a7f3e52bcda0cf152e15ab7c7857cd97aab8",
     "ui-rarity-set": "c5e20607c4a34f0a1910529d1afcdc966460232b0d600a6aea5d0fc25749f3d9",
     "ui-glow-legendary": "dfc260ccf7432bf24eeeabcead86b85a2f3b15ee2e68726cf99f7b003d7bd857",
-    "ui-starlit": "2078203803c30275683a24a3c137a12dcef2ab59b06872e1c040e4632fb14c14",
+    "ui-starlit": "3b676e4295992969b88ab58607252414434db3f8877c31422731c855cb6c5e15",
     "scene-forge": "f287b7ac1440a397fcf216ab589205b5666d95edc85400cd56703bfb830dea7c",
     "npc-forge": "143db4afd631c25eb4556d38e5f9fc132f382b7cfb2b074d7f87ff16388150fd"
+  },
+  "alternatives": {
+    "ui-starlit": {
+      "a2": "3b676e4295992969b88ab58607252414434db3f8877c31422731c855cb6c5e15"
+    }
   }
 }
