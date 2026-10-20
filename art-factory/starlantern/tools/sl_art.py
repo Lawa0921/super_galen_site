@@ -358,6 +358,7 @@ SPILL_STEP = 30          # magenta spill: red and blue both at least this far ab
 SPILL_HUE = (280, 345)   # ... with a hue between dark violet and hot pink (magenta is 300; violet 270 and below is art)
 SPILL_BAND = 2           # despill reaches this many pixels in from the transparent edge
 MAGENTA_SPILL_MAX = 2    # QA: at most this many spill pixels left in the outline band (registry `allow_magenta_spill` overrides)
+KEY_TINT_INSIDE_MAX = 2  # QA: at most this many key-tinted pixels (_dark_magenta | _magenta_tint) deeper than the outline band
 
 
 def magenta_spill(arr, step=SPILL_STEP):
@@ -385,6 +386,15 @@ def magenta_spill_count(img, band=SPILL_BAND):
     return int((magenta_spill(arr) & near_edge(arr[..., 3], band)).sum())
 
 
+def key_tint_inside_count(img, band=SPILL_BAND):
+    """Opaque pixels deeper than the outline band that look like the key blended dark (_dark_magenta) or bright
+    (_magenta_tint): key colour left inside the subject (controller ruling after the G2 review; the residue gate's
+    distance 90 does not reach these). The art's own dark violet / maroon shading matches neither."""
+    arr = np.asarray(img.convert('RGBA')); rgb = arr[..., :3]
+    inside = (arr[..., 3] == 255) & ~near_edge(arr[..., 3], band)
+    return int((inside & (_dark_magenta(rgb) | _magenta_tint(rgb))).sum())
+
+
 def despill(img, band=SPILL_BAND):
     """Deterministic: in the outer `band` pixels of the subject, take the magenta component out of spill pixels by
     lowering red and blue by min(R, B) - G. A dark outline blend goes back to near-black, a red one back to red.
@@ -402,6 +412,10 @@ def _spill_gate(qa, final, entry):
     qa['magenta_spill'] = magenta_spill_count(final)
     if qa['magenta_spill'] > entry.get('allow_magenta_spill', MAGENTA_SPILL_MAX):
         qa['reasons'].append('magenta spill'); qa['pass'] = False
+    qa['key_tint_inside'] = key_tint_inside_count(final)
+    if qa['key_tint_inside'] > KEY_TINT_INSIDE_MAX:
+        if 'magenta residue' not in qa['reasons']: qa['reasons'].append('magenta residue')
+        qa['pass'] = False
 
 
 def clear_edge_tint(img, passes=2):
@@ -718,11 +732,11 @@ THIN_WEAPON_KINDS = ('spear', 'bow')
 # The rule logic each QA spec stamp covers, in words (qa_spec hashes it with the constants; edit it when a rule changes).
 GEAR_CELL_RULES = ('normalize to one long edge; long edge +-LONG_TOL, centre <= CENTRE_TOL; short floor by slot; mass band by '
                    'subject_class(slot, weapon kind): thin weapon kinds (polearms, bows) use the thin band; speckless bbox; '
-                   'magenta spill counted in the outline band only (interior key colour is residue)')
+                   'magenta spill counted in the outline band only; key tint deeper inside counted as residue')
 NINE_SLICE_RULES = ('cover_sample; centre clear; roles frame / glow / overlay / corners; band colour from the chromatic hue '
                     'cluster; seam ratio (frame, glow) or edge joint (overlay); corners: nothing outside the corners, a whole '
                     'four-point star in each (four points beyond a white core, empty diagonal corners, off the tile edge); '
-                    'magenta spill counted in the outline band only')
+                    'magenta spill counted in the outline band only; key tint deeper inside counted as residue')
 LONG_TOL = 1      # the long edge may miss the target by one art pixel (a thin tip the centre sample steps over)
 CENTRE_TOL = 1    # distance between the subject bbox centre and the canvas centre, in art pixels
 
@@ -819,12 +833,12 @@ def subject_class(slot, kind=None):
 # NPCs) are not versioned.
 SPEC_INPUTS = {
     'gear-cell': ('SUBJECT_CLASS', 'MIN_SHORT', 'MASS_BAND', 'THIN_WEAPON_KINDS', 'LONG_TOL', 'CENTRE_TOL', 'SPECK_MAX',
-                  'GEAR_LARGE', 'GEAR_ICON', 'MAGENTA', 'MAGENTA_SPILL_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND',
+                  'GEAR_LARGE', 'GEAR_ICON', 'MAGENTA', 'MAGENTA_SPILL_MAX', 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND',
                   'STRONG_DEFRINGE', '_SHIFTS', 'GEAR_CELL_RULES'),
     'nine-slice': ('FRAME_STROKE', 'EDGE_REACH_MAX', 'CORNER_REACH_MAX', 'HUE_TOL', 'SAT_MIN', 'DISTINCT_DE', 'GLOW_HUE',
                    'GLOW_SAT_MIN', 'GLOW_STROKE', 'STARLIT_CORNER_MIN', 'STARLIT_EDGE_COVER_MAX', 'STAR_MIN_SIDE', 'CHROMA_S',
                    'CHROMA_V', 'HUE_BIN', 'CHROMA_SHARE_MIN', 'EDGE_FLAT', 'SEAM_RATIO_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX',
-                   'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', 'COVER_MIN', 'STARLIGHT_HUE', 'STARLIGHT_S_MIN',
+                   'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND', 'KEY_TINT_INSIDE_MAX', 'STRONG_DEFRINGE', 'COVER_MIN', 'STARLIGHT_HUE', 'STARLIGHT_S_MIN',
                    'STARLIGHT_V_MIN', 'STAR_WHITE_S_MAX', 'STAR_WHITE_V_MIN', 'STAR_CORNER', 'EDGE_OUTER_ROWS',
                    'NINE_SLICE_RULES'),
 }

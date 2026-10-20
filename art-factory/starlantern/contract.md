@@ -191,7 +191,7 @@
 - 素材、技能、場景、NPC 沿用 `_finish`。
 - 洋紅溢色（magenta spill，計畫 5d 的透明素材都做）：key 色被抗鋸齒混進外框線，會留下 (48,4,56)、(137,52,136)、(250,42,136) 這類暗紫、灰紫、粉紅邊，原本的殘色檢查抓不到。定義：不透明像素的 R 與 B 都比 G 高至少 30，而且色相在 280–345 度之間（270 度以下的紫是美術本身）。
   - `despill`（確定性）：主體外緣 2 px 內的溢色像素，R 與 B 各減掉 min(R, B) − G，暗紫變回黑框、粉紅變回紅；alpha 不變，更內側的像素不動。裝備格、九宮格外框、素材與技能圖示、NPC 都做。
-  - QA（主控裁定 2026-10-20，G2）：只數主體外緣 2 px（`SPILL_BAND`，`sl_art.near_edge`）內的溢色像素，記在 `magenta_spill`，超過 2 就失敗（`magenta spill`）；主體更內側的同色系像素是美術本身的陰影（例如暗紫、暗紅），不算溢色；留在主體內的 key 色由殘色檢查（`magenta residue`）負責；美術本身真的有洋紅時，在登錄表寫 `allow_magenta_spill: <數量>` 並記原因。
+  - QA（主控裁定 2026-10-20，G2）：只數主體外緣 2 px（`SPILL_BAND`，`sl_art.near_edge`）內的溢色像素，記在 `magenta_spill`，超過 2 就失敗（`magenta spill`）；主體更內側的同色系像素是美術本身的陰影（例如暗紫、暗紅），不算溢色；留在主體內的 key 色由殘色檢查（`magenta residue`）負責：除了離洋紅 90 以內的殘色，外緣 2 px 以內以外的不透明像素若像暗色或亮色的洋紅混色（`_dark_magenta`、`_magenta_tint`），數量記在 `key_tint_inside`，超過 2（`KEY_TINT_INSIDE_MAX`）也算 `magenta residue`（主控裁定，G2 審查）；美術本身真的有洋紅時，在登錄表寫 `allow_magenta_spill: <數量>` 並記原因。
 
 ### Prompt 範本（完整句子在 `gear_art.py`）
 - 共通：`flat pure magenta #FF00FF gutters and margin`、`No text, no numbers, no frames, no badge or circle behind the item`、原創句 `The design must be original and not resemble any existing game item.`，句尾沿用 `portal.py` 的 `PIX` 與 `GEN`。prompt 不寫任何作品名或畫師名。

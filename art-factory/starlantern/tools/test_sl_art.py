@@ -1516,3 +1516,23 @@ def test_interior_key_leftover_is_still_caught_by_the_residue_gate():
 
 def test_the_spill_ruling_moved_both_stamps():
     assert A.qa_spec('gear-cell') != 'gear-cell:cba070036b9c' and A.qa_spec('nine-slice') != 'nine-slice:2ab30baae894'
+
+
+# --- controller ruling after the G2 tooling review: key-tinted pixels left inside the subject --------------------------------
+def test_interior_key_tint_is_counted_as_residue():
+    """Opaque pixels more than 2 px from the edge that look like the key blended dark or bright (_dark_magenta,
+    _magenta_tint) are residue: more than KEY_TINT_INSIDE_MAX fails, and the count is recorded."""
+    q = {'reasons': [], 'pass': True}; A._spill_gate(q, _subject([(10, 10), (12, 13), (15, 9)], (142, 12, 147)), {})
+    assert q['key_tint_inside'] == 3 and 'magenta residue' in q['reasons'] and not q['pass'], q
+    q = {'reasons': [], 'pass': True}; A._spill_gate(q, _subject([(10, 10), (12, 13)], (142, 12, 147)), {})
+    assert q['key_tint_inside'] == 2 and q['pass'], q                                  # at the limit
+    for shade in ((117, 22, 63), (37, 0, 52)):                                         # the art's own dark shading
+        q = {'reasons': [], 'pass': True}; A._spill_gate(q, _subject([(10, 10), (12, 13), (15, 9)], shade), {})
+        assert q['key_tint_inside'] == 0 and q['pass'], (shade, q)
+    q = {'reasons': [], 'pass': True}; A._spill_gate(q, _subject([(2, 8), (2, 9), (2, 10)], (142, 12, 147)), {})
+    assert q['key_tint_inside'] == 0                                                   # on the outline it is spill, not this
+    assert A.KEY_TINT_INSIDE_MAX == 2 and 'KEY_TINT_INSIDE_MAX' in A.SPEC_INPUTS['gear-cell'] and 'KEY_TINT_INSIDE_MAX' in A.SPEC_INPUTS['nine-slice']
+
+
+def test_the_interior_key_tint_ruling_moved_both_stamps():
+    assert A.qa_spec('gear-cell') != 'gear-cell:9e868455a2f5' and A.qa_spec('nine-slice') != 'nine-slice:0a2593886a43'
