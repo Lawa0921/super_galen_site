@@ -1,6 +1,7 @@
 // projectiles.ts — 投射物（箭 / 飛刀 / 迴旋木刃 / 法術 / 光刃 / 怪物的刺與火球）。碰撞傷害由 game 結算，這裡只管移動與撞牆。
 import { overlapsSolid, type Body } from './physics';
 import type { PhysEnv } from './entities';
+import type { Pid } from './actor';
 
 export type ProjKind = 'arrow' | 'knife' | 'boomerang' | 'bolt' | 'wave' | 'stinger' | 'fireball' | 'ember' | 'wisp';
 export interface Projectile {
@@ -8,6 +9,8 @@ export interface Projectile {
   kind: ProjKind;
   /** true = 怪物射的（打玩家）；false = 玩家的（打怪物） */
   hostile: boolean;
+  /** 射出的玩家（玩家投射物）：迴旋木刃回到他身上、命中 / 擊殺記給他 */
+  owner?: Pid;
   body: Body;
   damage: number;
   knockback: number;
@@ -59,10 +62,10 @@ export class ProjList {
   }
 
   /**
-   * 移動所有投射物。target = 迴旋木刃回收點（玩家中心）。回傳這步撞牆的投射物（render 火花用）。
-   * 迴旋木刃：飛出 0.42 秒或撞牆就回頭，回程穿牆、碰到玩家由 game 回收。
+   * 移動所有投射物。target(p) = 迴旋木刃 p 的回收點（owner 的中心）。回傳這步撞牆的投射物（render 火花用）。
+   * 迴旋木刃：飛出 0.42 秒或撞牆就回頭，回程穿牆、碰到 owner 由 game 回收。
    */
-  step(q: PhysEnv, dt: number, target: { x: number; y: number }): Projectile[] {
+  step(q: PhysEnv, dt: number, target: (p: Projectile) => { x: number; y: number }): Projectile[] {
     const walls: Projectile[] = [];
     for (let i = this.list.length - 1; i >= 0; i--) {
       const p = this.list[i], b = p.body;
@@ -72,7 +75,8 @@ export class ProjList {
       if (p.kind === 'boomerang') {
         if (!p.returning && p.t > 0.42) p.returning = true;
         if (p.returning) {
-          const dx = target.x - (b.x + b.w / 2), dy = target.y - (b.y + b.h / 2), r = Math.hypot(dx, dy) || 1;
+          const t = target(p);
+          const dx = t.x - (b.x + b.w / 2), dy = t.y - (b.y + b.h / 2), r = Math.hypot(dx, dy) || 1;
           const sp = 520;
           b.vx += ((dx / r) * sp - b.vx) * Math.min(1, dt * 9);
           b.vy += ((dy / r) * sp - b.vy) * Math.min(1, dt * 9);

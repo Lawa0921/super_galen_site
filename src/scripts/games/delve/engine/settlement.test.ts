@@ -24,7 +24,7 @@ function host(w: World, o: { night?: boolean; d?: number; px?: number; py?: numb
     isNight: () => Boolean(o.night),
     sun: () => sunTimes(0),
     dayFrac: () => o.d ?? 0.5,
-    playerTile: () => ({ x: o.px ?? 40, y: o.py ?? 28 }),
+    playerTiles: () => [{ x: o.px ?? 40, y: o.py ?? 28 }],
     playerOverlaps: () => false,
   };
 }

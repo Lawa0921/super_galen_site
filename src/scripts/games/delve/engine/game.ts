@@ -34,7 +34,7 @@ import {
   BASE_MANA, LIFE_CORE_HP, MAX_HP_CAP, SAFE_FALL_TILES, computeStats, damageTaken, enemyDamage, fallDamage,
   knockbackScale, regenRate, rollCrit, type PlayerStats,
 } from './combat';
-import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type PhysEnv } from './entities';
+import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type PhysEnv, type Picker } from './entities';
 import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { liquidContact, liquidMedium, playerMedium } from './swim';
@@ -460,6 +460,8 @@ export const PRIVATE_EVENTS: ReadonlySet<DelveEvent['type']> = new Set<DelveEven
 ]);
 /** 有人一直不取事件時，佇列最多留幾筆（取得最慢的那個人會漏掉最舊的） */
 const EVENT_BACKLOG = 4096;
+/** 世界系統看到的一個玩家（players() 的內部版：多帶 actor 本身） */
+interface PlayerView { pid: Pid; cx: number; cy: number; dead: boolean; wet: boolean; a: PlayerActor }
 /** 救援護送的獎勵 */
 const ESCORT_REWARD = { xp: 180, coins: 150, item: { item: 'gear_shard' as ItemId, n: 2 } };
 /** 和 NPC 交易 / 服務 / 接委託的距離（格） */
@@ -711,6 +713,8 @@ export class DelveGame {
   viewHalf = { ...DEFAULT_VIEW_HALF };
   private nextEnemyId = 1;
   private spawnT = SPAWN_GRACE;
+  /** 生成輪到第幾個活著的玩家當中心 */
+  private spawnTurn = 0;
   /** 距上次喘息（新世界 / 讀檔 / 重生）的秒數：生成間隔由慢漸快（spawn.spawnInterval） */
   private spawnCalm = 0;
   private readonly spawnRng: Rng;
@@ -758,7 +762,8 @@ export class DelveGame {
     const gen = pre ?? generateWorld(this.seed, { width: opts.width, height: opts.height });
     this.world = gen.world;
     this.liquids = new LiquidSim(this.world);
-    this.liquids.blocked = (x, y) => !this.dead && this.tileOverlapsPlayer(x, y);
+    // 液體不流進任何活著的玩家站的格子
+    this.liquids.blocked = (x, y) => this.tileOverlapsPlayer(x, y, true);
     // 泉水瀑布（無限源 + 滲水石排水）
     this.springs = gen.springs;
     this.liquids.setSprings(gen.springs);
@@ -1423,9 +1428,15 @@ export class DelveGame {
     return true;
   }
 
-  private tileOverlapsPlayer(x: number, y: number): boolean {
-    const p = this.player, S = TILE_SIZE;
-    return p.x < (x + 1) * S && p.x + p.w > x * S && p.y < (y + 1) * S && p.y + p.h > y * S;
+  /** 有玩家（任一 actor，不只自己；aliveOnly = 只算活著的）的身體碰到 tile (x,y)：放方塊 / 關門 / NPC 關門 / 液體都不能夾到人 */
+  private tileOverlapsPlayer(x: number, y: number, aliveOnly = false): boolean {
+    const S = TILE_SIZE;
+    for (const a of this.actors.values()) {
+      if (aliveOnly && a.dead) continue;
+      const p = a.player;
+      if (p.x < (x + 1) * S && p.x + p.w > x * S && p.y < (y + 1) * S && p.y + p.h > y * S) return true;
+    }
+    return false;
   }
 
   private block(action: 'mine' | 'place' | 'use', reason: BlockReason, x: number, y: number): void {
@@ -1724,6 +1735,41 @@ export class DelveGame {
     const c = this.playerCenter();
     return { x: Math.floor(c.x / TILE_SIZE), y: Math.floor(c.y / TILE_SIZE) };
   }
+  /** 所有玩家（插入順序，本地第一個）：中心 px（同 playerCenter）、死活、在不在水裡（水生怪只追水裡的人） */
+  players(): { pid: Pid; cx: number; cy: number; dead: boolean; wet: boolean }[] {
+    return this.views().map(({ pid, cx, cy, dead, wet }) => ({ pid, cx, cy, dead, wet }));
+  }
+  private views(): PlayerView[] {
+    const out: PlayerView[] = [];
+    for (const a of this.actors.values()) {
+      const p = a.player;
+      out.push({
+        pid: a.pid, cx: p.x + p.w / 2, cy: p.y + p.h - REACH_CENTER_Y, dead: a.dead,
+        wet: !a.dead && a.contact.type === LIQ.WATER && a.contact.frac > 0.2, a,
+      });
+    }
+    return out;
+  }
+  /** 離 (x,y) px 最近的活著的玩家；全員死亡 → 最近的屍體。距離相同取插入順序在前的 */
+  private nearestView(vs: readonly PlayerView[], x: number, y: number): PlayerView {
+    const anyAlive = vs.some((v) => !v.dead);
+    let best = vs[0], bd = Infinity;
+    for (const v of vs) {
+      if (anyAlive && v.dead) continue;
+      const dx = v.cx - x, dy = v.cy - y, d = dx * dx + dy * dy;
+      if (d < bd) { bd = d; best = v; }
+    }
+    return best;
+  }
+  /** 給 NPC 系統（據點 / 世界 NPC）：活著的玩家站的 tile（插入順序；全員死亡 → 所有人的，單機死亡時就是屍體那格） */
+  private playerTiles(): { x: number; y: number }[] {
+    const vs = this.views(), alive = vs.filter((v) => !v.dead);
+    return (alive.length ? alive : vs).map((v) => ({ x: Math.floor(v.cx / TILE_SIZE), y: Math.floor(v.cy / TILE_SIZE) }));
+  }
+  private allDead(): boolean {
+    for (const a of this.actors.values()) if (!a.dead) return false;
+    return true;
+  }
   /** 玩家腳底所在 tile（x 取中心欄；站在地面上時 y+1 為地面） */
   feetTile(): { x: number; y: number } {
     const p = this.player;
@@ -1833,7 +1879,7 @@ export class DelveGame {
       const r = this.scout();
       if (r) this.emit({ type: 'scoutmark', by: this.settle.nameOf('guide'), name: r.name, x: r.x, y: r.y });
     }
-    updateFreeze(this.world, this.liquids, day, (x, y) => !this.dead && this.tileOverlapsPlayer(x, y), this.minedIce);
+    updateFreeze(this.world, this.liquids, day, (x, y) => this.tileOverlapsPlayer(x, y, true), this.minedIce);
   }
   /** 天氣效果：雷雨打閃電、雨水補露天水池 */
   private updateWeatherFx(dt: number): void {
@@ -2215,6 +2261,7 @@ export class DelveGame {
     const st = this.stats();
     const dmg = (base: number): number => base * (st.damageMul + this.furyBonus());
     const crit = w.crit + st.crit;
+    const owner = this.cur.pid;
     switch (w.kind) {
       case 'bow': {
         const ammo = this.findAmmo();
@@ -2223,20 +2270,21 @@ export class DelveGame {
         const ad = ITEMS[ammo].ammo!;
         const sp = w.speed ?? 500;
         this.projectiles.spawn('arrow', false, ox, oy, ux * sp, uy * sp, {
-          damage: dmg(w.damage + ad.damage), knockback: w.knockback, crit, life: 3, gravity: 420, pierce: 1, flame: ad.flame, item: ammo, fx,
+          damage: dmg(w.damage + ad.damage), knockback: w.knockback, crit, life: 3, gravity: 420, pierce: 1, flame: ad.flame, item: ammo, fx, owner,
         });
         break;
       }
       case 'throw': {
         this.inventory.takeFromSlot(this.inventory.selected, 1);
         const sp = w.speed ?? 500;
-        this.projectiles.spawn('knife', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 2.5, gravity: 520, pierce: 1, item, fx });
+        this.projectiles.spawn('knife', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 2.5, gravity: 520, pierce: 1, item, fx, owner });
         break;
       }
       case 'boomerang': {
-        if (this.projectiles.list.some((p) => p.kind === 'boomerang' && !p.hostile)) return;
+        // 一人一把：自己的迴旋木刃還在飛就不能再丟（別人的不算）
+        if (this.projectiles.list.some((p) => p.kind === 'boomerang' && !p.hostile && (p.owner ?? this.localPid) === owner)) return;
         const sp = w.speed ?? 440;
-        this.projectiles.spawn('boomerang', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 4, pierce: 99, item, fx });
+        this.projectiles.spawn('boomerang', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 4, pierce: 99, item, fx, owner });
         break;
       }
       case 'staff': {
@@ -2244,13 +2292,13 @@ export class DelveGame {
         if (this.mana < cost) { this.block('use', 'mana', this.aim.x, this.aim.y); this.attackCd = 0.3; return; }
         this.mana -= cost; this.manaDelay = 0.9;
         const sp = w.speed ?? 480;
-        this.projectiles.spawn('bolt', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 1.4, pierce: 1, item, fx });
+        this.projectiles.spawn('bolt', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage), knockback: w.knockback, crit, life: 1.4, pierce: 1, item, fx, owner });
         break;
       }
       default:
         if (w.wave) {
           const sp = w.speed ?? 420;
-          this.projectiles.spawn('wave', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage * 0.6), knockback: w.knockback * 0.5, crit, life: 0.55, pierce: 3, item, fx });
+          this.projectiles.spawn('wave', false, ox, oy, ux * sp, uy * sp, { damage: dmg(w.damage * 0.6), knockback: w.knockback * 0.5, crit, life: 0.55, pierce: 3, item, fx, owner });
         }
     }
     this.swingSeq++;
@@ -2439,7 +2487,8 @@ export class DelveGame {
 
   private die(): void {
     const p = this.player, cx = p.x + p.w / 2, cy = p.y + p.h / 2;
-    this.folk.playerDied();
+    // 跟著的探險者停下來等：只在所有人都倒下時（還有人活著 → 繼續跟最近的活人）
+    if ([...this.actors.values()].every((a) => a === this.cur || a.dead)) this.folk.playerDied();
     this.dead = true; this.hp = 0; this.respawnT = RESPAWN_TIME;
     this.dashT = 0; this.slamming = false;
     // 等級：失去本級進度的一小部分（不會掉級）
@@ -2703,7 +2752,7 @@ export class DelveGame {
   /** 在 (cx px, bottom px) 生一隻怪 */
   private addEnemy(kind: EnemyKind, cx: number, bottom: number): Enemy {
     const e = makeEnemy(this.nextEnemyId++, kind, cx, bottom);
-    e.dir = cx < this.playerCenter().x ? 1 : -1;
+    e.dir = cx < this.nearestView(this.views(), cx, bottom).cx ? 1 : -1;
     this.enemies.push(e);
     return e;
   }
@@ -2713,34 +2762,47 @@ export class DelveGame {
   }
 
   // ── 實體更新（生成 / AI / 投射物 / 掉落物） ─────────────
+  /**
+   * 世界的實體（看所有玩家，spec §5.2）：生成輪流以活著的玩家為中心；每隻怪鎖定最近的活著的玩家（全員死亡 = 最近的屍體）；
+   * 任一玩家在 ACTIVE 內就活躍、離所有玩家都超過 DESPAWN 才消失；接觸傷害 / 敵方投射物打到誰就在誰的 cur 下 hurtPlayer；
+   * 玩家投射物在 owner 的 cur 下結算；掉落物給最近的、收得下的活人。
+   * 單機（一個 actor）時每個 RNG 呼叫 / 受傷 / 撿取的順序都和以前一樣（actor.golden.test）。
+   */
   private updateEntities(dt: number): void {
-    const pc = this.playerCenter();
+    const vs = this.views();
     const S = TILE_SIZE;
-    // 生成
-    if (!this.peacefulMode && !this.dead) {
+    // 生成：有人活著才生
+    if (!this.peacefulMode && vs.some((v) => !v.dead)) {
       this.spawnT -= dt;
       this.spawnCalm += dt;
-      if (this.spawnT <= 0) { this.spawnT = spawnInterval(this.spawnCalm); this.trySpawn(); }
+      if (this.spawnT <= 0) { this.spawnT = spawnInterval(this.spawnCalm); this.trySpawn(vs); }
     }
-    // 怪物
+    // 怪物：ctx 的玩家欄位每隻怪換成牠的目標
     const night = this.isNight();
     const ctx: AiCtx = {
-      q: this.env, px: pc.x, py: pc.y, playerDead: this.dead, rng: this.combatRng, night,
-      playerWet: !this.dead && this.contact.type === LIQ.WATER && this.contact.frac > 0.2,
+      q: this.env, px: 0, py: 0, playerDead: false, rng: this.combatRng, night, playerWet: false,
       shoot: (kind, x, y, vx, vy, damage, noclip) => {
         this.projectiles.spawn(kind, true, x, y, vx, vy, { damage, knockback: 160, life: kind === 'stinger' ? 2.2 : 3, solidHit: !noclip });
         this.emit({ type: 'shot', kind, hostile: true });
       },
-      teleportSpot: (e) => this.impSpot(e),
+      teleportSpot: (e) => this.impSpot(e, ctx.px, ctx.py),
       summon: (kind, x, y) => { if (this.enemies.filter((q) => q.kind === kind).length < 6) this.addEnemy(kind, x, y); },
       bossEvent: (phase) => this.emit({ type: 'boss', phase, kind: 'lantern_warden' }),
     };
-    const p = this.player;
     for (const e of [...this.enemies]) {
       const def = ENEMIES[e.kind], b = e.body;
-      const dx = Math.abs(b.x + b.w / 2 - pc.x) / S, dy = Math.abs(b.y + b.h / 2 - pc.y) / S;
-      if (!def.boss && !def.minion && (dx > DESPAWN.x || dy > DESPAWN.y || this.dayDespawn(e, dx, dy))) { this.removeEnemy(e); continue; }
-      if (!def.boss && (dx > ACTIVE.x || dy > ACTIVE.y)) continue;
+      const ex = b.x + b.w / 2, ey = b.y + b.h / 2;
+      // 死掉的玩家也算（單機死亡時怪物照樣在屍體附近活動、不消失）
+      let keep = false, active = false;
+      for (const v of vs) {
+        const dx = Math.abs(ex - v.cx) / S, dy = Math.abs(ey - v.cy) / S;
+        if (!(dx > DESPAWN.x || dy > DESPAWN.y || this.dayDespawn(e, dx, dy))) keep = true;
+        if (!(dx > ACTIVE.x || dy > ACTIVE.y)) active = true;
+      }
+      if (!def.boss && !def.minion && !keep) { this.removeEnemy(e); continue; }
+      if (!def.boss && !active) continue;
+      const t = this.nearestView(vs, ex, ey);
+      ctx.px = t.cx; ctx.py = t.cy; ctx.playerDead = t.dead; ctx.playerWet = t.wet;
       // 冰凍：整隻怪的動作（移動 / 冷卻 / 動畫）變慢
       if (e.frost > 0) e.frost = Math.max(0, e.frost - dt);
       if (!stepEnemy(e, ctx, e.frost > 0 ? dt * FROST_SLOW : dt)) { this.removeEnemy(e); continue; }
@@ -2764,48 +2826,66 @@ export class DelveGame {
           if (e.hp <= 0) { this.killEnemy(e); continue; }
         }
       }
-      if (!this.dead && e.state !== 'leave' && overlaps(b, p)) {
-        const mul = def.boss && e.phase === 2 ? 1.25 : 1;
-        // 荊棘：被碰到時反傷（受傷 / 反傷都算被碰到的玩家的：M-B1 Task 2 仍只有本地玩家）
-        const thorns = this.stats().gear.thorns;
-        const killed = this.withActor(this.local, () => {
+      if (e.state === 'leave') continue;
+      // 接觸傷害：依序檢查每個活著的玩家；荊棘反傷算被碰到的那個人的（受傷 / 反傷都在他的 cur 下）
+      const mul = def.boss && e.phase === 2 ? 1.25 : 1;
+      for (const v of vs) {
+        const a = v.a, p = a.player;
+        if (a.dead || !overlaps(b, p)) continue;
+        const killed = this.withActor(a, () => {
+          const thorns = this.stats().gear.thorns;
           if (this.hurtPlayer(def.damage * mul, b.x + b.w / 2) && thorns > 0 && e.hp > 0) {
             this.damageEnemy(e, thorns, 80, 0, b.x + b.w / 2 >= p.x + p.w / 2 ? 1 : -1);
             if (e.hp <= 0) return true;
           }
           return false;
         });
-        if (killed) continue;
+        if (killed) break;
       }
     }
-    // 投射物
-    for (const w of this.projectiles.step(this.world, dt, pc)) {
+    // 投射物：迴旋木刃回到 owner（沒有 owner / owner 走了 → 本地玩家）
+    const local = vs.find((v) => v.a === this.local)!;
+    const ownerOf = (pr: Projectile): PlayerView => (pr.owner === undefined ? undefined : vs.find((v) => v.pid === pr.owner)) ?? local;
+    for (const w of this.projectiles.step(this.world, dt, (pr) => { const o = ownerOf(pr); return { x: o.cx, y: o.cy }; })) {
       this.emit({ type: 'impact', kind: w.kind, x: w.body.x + w.body.w / 2, y: w.body.y + w.body.h / 2 });
     }
     for (const pr of this.projectiles.list) {
       if (pr.life <= 0 || pr.pierce < 1 || pr.stuck) continue;
       if (pr.hostile) {
-        if (!this.dead && overlaps(pr.body, p) && this.withActor(this.local, () => this.hurtPlayer(pr.damage, pr.body.x + pr.body.w / 2))) pr.life = 0;
+        // 敵方投射物：打到誰就在誰的 cur 下受傷（hurt 事件帶他的 pid）
+        for (const v of vs) {
+          const a = v.a;
+          if (!a.dead && overlaps(pr.body, a.player) && this.withActor(a, () => this.hurtPlayer(pr.damage, pr.body.x + pr.body.w / 2))) { pr.life = 0; break; }
+        }
         continue;
       }
-      if (pr.kind === 'boomerang' && pr.returning && overlaps(pr.body, p)) { pr.life = 0; continue; }
-      for (const e of this.enemies) {
-        if (pr.hit.has(e.id) || !overlaps(pr.body, e.body)) continue;
-        if (!this.damageEnemy(e, pr.damage, pr.knockback, pr.crit, pr.body.vx >= 0 ? 1 : -1, pr.flame, pr.fx)) continue;
-        pr.hit.add(e.id);
-        pr.pierce--;
-        if (pr.kind === 'boomerang') pr.returning = true;
-        if (pr.pierce < 1) { pr.life = 0; break; }
-      }
+      const owner = ownerOf(pr);
+      if (pr.kind === 'boomerang' && pr.returning && overlaps(pr.body, owner.a.player)) { pr.life = 0; continue; }
+      const hitEnemies = (): void => {
+        for (const e of this.enemies) {
+          if (pr.hit.has(e.id) || !overlaps(pr.body, e.body)) continue;
+          if (!this.damageEnemy(e, pr.damage, pr.knockback, pr.crit, pr.body.vx >= 0 ? 1 : -1, pr.flame, pr.fx)) continue;
+          pr.hit.add(e.id);
+          pr.pierce--;
+          if (pr.kind === 'boomerang') pr.returning = true;
+          if (pr.pierce < 1) { pr.life = 0; break; }
+        }
+      };
+      // 命中 / 擊殺在 owner 的 cur 下結算：事件帶他的 pid、吸血 / 噬魂回到他身上、掉寶看他的幸運（owner 已離開 → 世界段，記給本地）
+      if (owner.pid === pr.owner) this.withActor(owner.a, hitEnemies);
+      else hitEnemies();
     }
-    // 掉落物
-    const inv = this.inventory;
-    const got = this.drops.step(this.env, {
-      player: p, magnetPx: this.magnetRadius() * S, activePx: ACTIVE.x * S, canPickup: !this.dead,
-      room: (item, n) => (inv.canAdd(item, n) ? n : inv.canAdd(item, 1) ? 1 : 0),
-      take: (item, n, gear, tint) => n - inv.add(item, n, gear, tint),
-    }, dt);
-    if (got.length) this.withActor(this.local, () => { for (const [item, n, gear] of got) this.emit(gear ? { type: 'pickup', item, n, rarity: gear.rarity } : { type: 'pickup', item, n }); });
+    // 掉落物：每個掉落物給最近的、活著、收得下的玩家
+    const pickers: Picker[] = vs.map(({ a }) => {
+      const inv = a.inventory;
+      return {
+        body: a.player, magnetPx: this.withActor(a, () => this.magnetRadius()) * S, canPickup: !a.dead,
+        room: (item, n) => (inv.canAdd(item, n) ? n : inv.canAdd(item, 1) ? 1 : 0),
+        take: (item, n, gear, tint) => n - inv.add(item, n, gear, tint),
+      };
+    });
+    const got = this.drops.step(this.env, { pickers, activePx: ACTIVE.x * S }, dt);
+    for (const [item, n, gear, , k] of got) this.withActor(vs[k].a, () => this.emit(gear ? { type: 'pickup', item, n, rarity: gear.rarity } : { type: 'pickup', item, n }));
   }
   private removeEnemy(e: Enemy): void { this.enemies = this.enemies.filter((q) => q !== e); }
   /** 夜行怪在白天、離開畫面就消失 */
@@ -2814,10 +2894,18 @@ export class DelveGame {
     return !this.isNight() && (dx > this.viewHalf.w + 2 || dy > this.viewHalf.h + 2);
   }
 
-  private trySpawn(): void {
+  /**
+   * 生成一次：每次輪流以一個活著的玩家為中心（單機 = 永遠是自己，spawnRng 的呼叫和以前一樣）。
+   * 床的安全範圍、「生成點要在畫面外」對每個玩家都檢查（每個玩家都當成一個用同一個 viewHalf 的觀看者）。
+   */
+  private trySpawn(vs: readonly PlayerView[]): void {
     const w = this.world, r = this.spawnRng, S = TILE_SIZE;
     if (this.enemies.length >= MAX_ENEMIES) return;
-    const pt = this.playerTile();
+    const alive = vs.filter((v) => !v.dead);
+    if (!alive.length) return;
+    const c = alive[this.spawnTurn++ % alive.length];
+    const pt = { x: Math.floor(c.cx / S), y: Math.floor(c.cy / S) };
+    const tileOf = (v: PlayerView): { x: number; y: number } => ({ x: Math.floor(v.cx / S), y: Math.floor(v.cy / S) });
     const vw = this.viewHalf.w + 2, vh = this.viewHalf.h + 2;
     let dx: number, dy: number;
     if (r.next() < 0.7) {
@@ -2831,7 +2919,7 @@ export class DelveGame {
     if (!w.inBounds(tx, ty)) return;
     const hab = habitatAt({ world: w, layers: this.layers, night: this.isNight() }, tx, ty);
     hab.season = this.season();
-    hab.weather = this.localWeatherState().kind;
+    hab.weather = this.withActor(c.a, () => this.localWeatherState()).kind;
     let near = 0;
     for (const e of this.enemies) {
       const b = e.body;
@@ -2839,22 +2927,22 @@ export class DelveGame {
     }
     const pressure: SpawnPressure = { firstNight: isFirstNight(this.time), nearSpawn: Math.abs(tx - this.spawn.x) < NEAR_SPAWN_TILES };
     if (near >= spawnCap(hab, pressure) || r.next() >= spawnChance(hab, pressure)) return;
-    if (this.bed && Math.hypot(tx - this.bed.x, ty - this.bed.y) < BED_SAFE) return;
+    if (vs.some(({ a }) => a.bed && Math.hypot(tx - a.bed.x, ty - a.bed.y) < BED_SAFE)) return;
     if (inHouse(w, tx, ty) || homeNear(w, tx, ty)) return;
     if (this.settle.cores.length && this.settle.hasPerk(tx, ty, w, 'ward')) return;
     const entry = pickEntry(spawnTable(hab), r);
     if (!entry) return;
     const spot = findSpot(w, entry.kind, tx, ty);
     if (!spot) return;
-    // 生成點仍要在畫面外
-    if (Math.abs(spot.x / S - pt.x) <= vw && Math.abs(spot.y / S - pt.y) <= vh) return;
+    // 生成點仍要在每個人的畫面外
+    if (vs.some((v) => { const t = tileOf(v); return Math.abs(spot.x / S - t.x) <= vw && Math.abs(spot.y / S - t.y) <= vh; })) return;
     const n = entry.group ? r.int(entry.group[0], entry.group[1] + 1) : 1;
     for (let k = 0; k < n && this.enemies.length < MAX_ENEMIES; k++) this.addEnemy(entry.kind, spot.x + k * 10, spot.y - k * 6);
   }
 
-  /** 燼角魔瞬移點：玩家左右 4–9 格、站得住的地方 */
-  private impSpot(e: Enemy): { x: number; y: number } | null {
-    const pt = this.playerTile(), r = this.combatRng;
+  /** 燼角魔瞬移點：牠的目標玩家（中心 px = (px, py)）左右 4–9 格、站得住的地方 */
+  private impSpot(e: Enemy, px: number, py: number): { x: number; y: number } | null {
+    const pt = { x: Math.floor(px / TILE_SIZE), y: Math.floor(py / TILE_SIZE) }, r = this.combatRng;
     for (let k = 0; k < 8; k++) {
       const tx = pt.x + (r.next() < 0.5 ? -1 : 1) * r.int(4, 10), ty = pt.y + r.int(-3, 4);
       const s = findSpot(this.world, e.kind, tx, ty);
@@ -3235,7 +3323,7 @@ export class DelveGame {
     this.settleHost ??= {
       world: this.world, time: 0,
       isNight: () => this.isNight(), sun: () => this.sun(), dayFrac: () => this.date().frac,
-      playerTile: () => this.playerTile(), playerOverlaps: (x, y) => this.tileOverlapsPlayer(x, y),
+      playerTiles: () => this.playerTiles(), playerOverlaps: (x, y) => this.tileOverlapsPlayer(x, y),
     };
     this.settleHost.time = this.time;
     this.settle.update(dt, this.settleHost);
@@ -3508,7 +3596,7 @@ export class DelveGame {
     this.folkHost ??= {
       world: this.world, time: 0, day: 0,
       get viewHalf() { return self.viewHalf; },
-      isNight: () => this.isNight(), playerTile: () => this.playerTile(),
+      isNight: () => this.isNight(), playerTiles: () => this.playerTiles(),
       underground: (x, y) => {
         const cx = Math.max(0, Math.min(this.world.width - 1, x));
         const b = this.dungeon?.bbox;
@@ -3527,7 +3615,7 @@ export class DelveGame {
     this.folk.update(dt, h);
     // 救出來的探險者會被怪物碰傷；死了 → 護送失敗
     for (const n of [...this.folk.npcs]) {
-      if (n.role !== 'stranded' || !(n.following || n.waiting) || this.dead) continue;
+      if (n.role !== 'stranded' || !(n.following || n.waiting) || this.allDead()) continue;
       for (const e of this.enemies) {
         if (!overlaps(e.body, n.body)) continue;
         if (this.folk.hurt(n, Math.max(4, Math.round(ENEMIES[e.kind].damage * 0.6)), this.world)) this.refreshQuests();

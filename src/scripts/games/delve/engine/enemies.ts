@@ -132,8 +132,9 @@ export function makeEnemy(id: number, kind: EnemyKind, cx: number, bottom: numbe
 
 export interface AiCtx {
   q: PhysEnv;
-  /** 玩家中心（px） */
+  /** 這隻怪的目標玩家中心（px）：最近的活著的玩家；全員死亡 = 最近的屍體（game 每隻怪換一次） */
   px: number; py: number;
+  /** 目標玩家已死（= 全員死亡）：不追 */
   playerDead: boolean;
   rng: Rng;
   night: boolean;
@@ -144,7 +145,7 @@ export interface AiCtx {
   summon(kind: EnemyKind, x: number, y: number): void;
   /** 首領事件（phase2 / leave） */
   bossEvent(phase: 'phase2' | 'leave'): void;
-  /** 玩家在水裡（水生怪只追水裡的人）；省略 = false */
+  /** 目標玩家在水裡（水生怪只追水裡的人）；省略 = false */
   playerWet?: boolean;
 }
 
