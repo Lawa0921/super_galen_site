@@ -1420,3 +1420,6 @@ def test_skills_page_shows_every_skill_icon_native_in_its_game_cell_and_a_size_g
     for group in (('quickstep', 'phantom-step'), ('sand-cyclone', 'thousand-shadows', 'veil-dance', 'sirocco')):
         assert '／'.join(names[s] for s in group) in asked, group
     assert '直接回覆每題的選擇' in head and 'G1' in head[head.index('已決定'):]
+    decided = head[head.index('已決定'):]
+    assert '高約 32' not in decided and '原尺寸' in decided                           # the native-size ruling, not the old size
+    assert '原尺寸下' in asked and '凜' in asked                                       # Rin's contrast reassessed at native size
