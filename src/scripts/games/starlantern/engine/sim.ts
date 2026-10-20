@@ -13,6 +13,7 @@ import { HERO_BUILDS, type HeroBuild } from '../data/hero';
 import { EQUIPMENT, WEAPON_KINDS, weaponKindOf } from '../data/equipment';
 import { expectedMemories } from './story/expect';
 import { mulberry32 } from './rng';
+import type { Ledger } from './ledger';
 import { depthClearExp, encounterTable, scaleEnemy } from './scaling';
 import { genFloor } from './dungeon/gen';
 import { terrainOf } from './dungeon/run';
@@ -161,7 +162,10 @@ let simTrace: SimTrace | null = null;
 /** Installs (or with `null` removes) the observer every later `simBattle` reports to (the sim gate, plan 8a Task 1). */
 export function setSimTrace(t: SimTrace | null): void { simTrace = t; }
 
-export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed: number, scale?: BattleScale, altar?: Altar, ai: SimAi = 'skill', abyss?: number, bossPower?: number): { outcome: Outcome; rounds: number; hpLoss: number } {
+/** How a simulated fight is watched: `ledger` is credited with every member's contribution (spec §12.6); it draws nothing. */
+export interface SimOpts { ledger?: Ledger }
+
+export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed: number, scale?: BattleScale, altar?: Altar, ai: SimAi = 'skill', abyss?: number, bossPower?: number, opts: SimOpts = {}): { outcome: Outcome; rounds: number; hpLoss: number } {
   const rng = mulberry32(seed);
   let s = createBattle({ party, enemyIds, boss, inventory: {}, revealed: {}, scale, altar, abyss, bossPower });
   const maxHp = s.party.reduce((n, c) => n + c.max.hp, 0);
@@ -169,7 +173,7 @@ export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed:
   while (s.outcome === 'ongoing' && rounds < 60) {
     const actions = ai === 'attack' ? attackAll(s) : choose(s, party);
     const before = s;
-    s = resolveRound(s, actions, rng);
+    s = resolveRound(s, actions, rng, opts.ledger);
     simTrace?.round(actions, before, s);
     rounds++;
   }

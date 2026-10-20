@@ -13,6 +13,7 @@ import { pick, type Rng } from './rng';
 import { abyssPct, bossPartyScale, deepPower, empower, enemyLevelAt, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
+import { credit, lossOf, type Ledger } from './ledger';
 import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
@@ -271,7 +272,14 @@ function checkOutcome(s: BattleState): boolean {
 function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ctx: EffectContext, rng: Rng): void {
   if (actor.side === 'enemy') {
     const taunter = living(s.party).find((c) => c.taunt > 0);
-    if (taunter) act = { ...act, target: taunter.key } as EnemyAction;
+    if (taunter) {
+      // The ledger credits the taunter with what the first target was spared, for a single hit the taunt turned only.
+      const meant = (act as EnemyAction).target;
+      const single = act.kind === 'attack' || (act.kind === 'enemy-skill' && enemyDef(s, actor)?.skills[act.index]?.target === 'enemy');
+      const from = ctx.ledger && single && meant !== taunter.key ? s.party.find((c) => c.key === meant) : undefined;
+      if (from) ctx.redirect = { from };
+      act = { ...act, target: taunter.key } as EnemyAction;
+    }
   }
   const physical = (t: Combatant) =>
     applyEffect(actor, t, { kind: 'damage', power: 100, element: 'phys', scale: actor.attackScale ?? 'atk', melee: actor.melee }, ctx);
@@ -351,12 +359,17 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
   for (const c of [...s.party, ...s.enemies]) {
     if (c.alive && c.poison) {
       const amount = Math.max(1, Math.floor(c.max.hp * 0.1));
+      if (c.side === 'enemy') credit(ctx.ledger, c.poisonSrc, 'damage', lossOf(c, amount));
       s.log.push({ type: 'poison-tick', target: c.key, amount: dealDamage(c, amount) });
       if (!c.alive) s.log.push({ type: 'ko', target: c.key });
     }
     if (c.alive && c.keystones.includes('regen')) {
       const amount = Math.min(c.max.hp - c.hp, Math.floor((c.max.hp * KEYSTONE_VALUES.regenPct) / 100));
-      if (amount > 0) { c.hp += amount; s.log.push({ type: 'heal', target: c.key, amount }); }
+      if (amount > 0) {
+        c.hp += amount;
+        if (c.side === 'party') credit(ctx.ledger, c.key, 'healing', amount);
+        s.log.push({ type: 'heal', target: c.key, amount });
+      }
     }
     const regen = Math.floor(c.x.tpRegen ?? 0);
     if (c.alive && regen > 0 && c.tp < c.max.tp) {
@@ -387,12 +400,13 @@ function ringBell(s: BattleState, heroWasUp: boolean, ctx: EffectContext): void 
   applyEffect(rin, foe, { kind: 'damage', power: 100, element: 'phys', scale: rin.attackScale ?? 'atk', melee: rin.melee }, ctx);
 }
 
-export function resolveRound(prev: BattleState, actions: Record<string, Action>, rng: Rng): BattleState {
+/** `ledger` (the sim's, spec §12.6) is credited as the round resolves; it changes nothing and draws nothing. */
+export function resolveRound(prev: BattleState, actions: Record<string, Action>, rng: Rng, ledger?: Ledger): BattleState {
   const s = structuredClone(prev);
   s.log = [];
   if (s.outcome !== 'ongoing' || checkOutcome(s)) return s;
   s.round += 1;
-  const ctx: EffectContext = { rng, itemBoost: s.itemBoost, revealed: s.revealed, log: s.log };
+  const ctx: EffectContext = { rng, itemBoost: s.itemBoost, revealed: s.revealed, log: s.log, ...(ledger ? { ledger } : {}) };
   for (const c of s.party) c.defending = c.alive && actions[c.key]?.kind === 'defend';
   if (s.party.some((c) => c.alive && actions[c.key]?.kind === 'escape')) {
     const success = !s.boss && rng() < escapeChance(s);
@@ -410,6 +424,7 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     const heroUp = s.party.some((c) => c.key === 'hero' && c.alive);
     if (act) {
       perform(s, actor, act, ctx, rng);
+      delete ctx.redirect;
       if (actor.side === 'party' && actor.alive && act.kind !== 'ultimate' && act.kind !== 'escape') actor.limit = Math.min(LIMIT_MAX, actor.limit + gaugeGain(actor, LIMIT_PER_ACTION));
     }
     ringBell(s, heroUp, ctx);

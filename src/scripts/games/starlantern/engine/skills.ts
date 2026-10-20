@@ -3,8 +3,17 @@ import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
+import { credit, creditPrevented, lossOf, type Ledger } from './ledger';
 
-export interface EffectContext { rng: Rng; itemBoost: boolean; revealed: Record<string, Element[]>; log: BattleEvent[] }
+/**
+ * `ledger`: the sim's contribution ledger (absent in the game); it reads the fight and never draws. `redirect`: set only
+ * while an enemy's single hit a taunt turned resolves, with the member it first meant to hit.
+ */
+export interface EffectContext {
+  rng: Rng; itemBoost: boolean; revealed: Record<string, Element[]>; log: BattleEvent[];
+  ledger?: Ledger;
+  redirect?: { from: Combatant };
+}
 
 /** A power's percentage of a number, rounded half away from zero so a debuff (-37.5) rounds as deep as a buff (37.5). */
 const pctOf = (base: number, pct: number | undefined): number => {
@@ -97,6 +106,10 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         const rolls = rollHit(actor, target, eff, ctx.rng);
         if (!rolls) { ctx.log.push({ type: 'miss', target: target.key }); continue; }
         const { amount, mult, crit } = hitAmount(actor, target, eff, rolls);
+        if (ctx.ledger) {
+          if (actor.side === 'party' && target.side === 'enemy') credit(ctx.ledger, actor.key, 'damage', lossOf(target, amount));
+          else if (actor.side === 'enemy' && target.side === 'party') creditPrevented(ctx.ledger, actor, target, eff, rolls, amount, ctx.redirect?.from);
+        }
         const lost = dealDamage(target, amount);
         if (target.side === 'enemy') reveal(ctx.revealed, target.defId, eff.element);
         ctx.log.push({ type: 'damage', target: target.key, amount: lost, element: eff.element, mult, ...(crit ? { crit } : {}) });
@@ -114,13 +127,18 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       let bonus = 1 + (actor.x.heal ?? 0) / 100;
       if (actor.keystones.includes('moon-promise')) bonus *= 1 + MEMORY_KEYSTONE_VALUES.moonHealPct / 100;
       const amount = gainHp(target, Math.floor((eff.power / 100) * (stat(actor, 'mag') * 2 + 10) * bonus));
+      if (actor.side === 'party' && target.side === 'party') credit(ctx.ledger, actor.key, 'healing', amount);
       ctx.log.push({ type: 'heal', target: target.key, amount });
       return;
     }
     case 'restore': {
       if (!target.alive) return;
       const k = ctx.itemBoost ? 2 : 1;
-      if (eff.hp) ctx.log.push({ type: 'heal', target: target.key, amount: gainHp(target, eff.hp * k) });
+      if (eff.hp) {
+        const amount = gainHp(target, eff.hp * k);
+        if (actor.side === 'party' && target.side === 'party') credit(ctx.ledger, actor.key, 'healing', amount);
+        ctx.log.push({ type: 'heal', target: target.key, amount });
+      }
       if (eff.tp) {
         const before = target.tp;
         target.tp = Math.min(target.max.tp, target.tp + eff.tp * k);
