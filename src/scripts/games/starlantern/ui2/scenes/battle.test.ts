@@ -90,6 +90,25 @@ describe('BattleScene', () => {
     expect(row().textContent).toBe('');
   });
 
+  it("a lost fight clears the enemies' ailment words", async () => {
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
+    game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
+    for (const e of game.battle!.enemies) { e.max.atk = 9999; e.max.spd = 99; e.poison = true; e.max.hp = 9999; e.hp = 9999; }
+    for (const m of game.battle!.party) { m.hp = 1; m.poison = true; }   // the round-end tick fells everyone left
+    const showAilments = vi.fn();
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null, showIntents: vi.fn(), syncHp: vi.fn(), showAilments, play: vi.fn() } };
+    const root = document.createElement('div');
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true });
+    s.enter(root);
+    expect(showAilments.mock.calls.at(-1)![0]).toMatchObject({ e0: [{ id: 'poison' }] });
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }   // 防禦 ×5
+    await flush();
+    expect(game.battle?.outcome ?? 'lose').toBe('lose');
+    expect(root.querySelector('.slx-result')).not.toBeNull();
+    const last = showAilments.mock.calls.at(-1)![0] as Record<string, unknown[]>;
+    expect(Object.values(last).flat()).toEqual([]);
+  });
+
   it('goes back to the previous member on cancel', () => {
     const { s, heading } = setup();
     s.onAction('down'); s.onAction('down'); s.onAction('confirm');

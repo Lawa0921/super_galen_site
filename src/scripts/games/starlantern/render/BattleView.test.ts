@@ -1,4 +1,4 @@
-import { ColorMatrixFilter, Container, Sprite, Text, Texture } from 'pixi.js';
+import { ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
@@ -72,6 +72,31 @@ describe('BattleView bottom inset', () => {
     const box = enemyBox(view);
     expect(box.y + 18).toBeLessThanOrEqual(360 - 66);
     expect(view.anchor('e0')!.y).toBeGreaterThan(60);   // below the message line
+  });
+
+  it("gives each enemy HP bar's box with its rim, in design px", () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    const box = enemyBox(view);
+    const bar = box.children.find((c) => c instanceof Graphics)!;
+    expect(view.hpBarRect('e0')).toEqual({ x: box.x - 33, y: box.y + bar.y - 1, width: 66, height: 6 });
+    expect(view.hpBarRect('nobody')).toBeNull();
+  });
+
+  it("keeps each HP bar clear of two rows of the party's ailment words above the party bar", () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    // The party bar's top is 360 - 2 - 62 = 296; a row of words is 12 px (10 + rim) with 1 px gaps and a 1 px margin.
+    const wordsTop = 296 - 1 - 12 - 1 - 12;
+    const r = view.hpBarRect('e0')!;
+    expect(r.y + r.height).toBeLessThan(wordsTop);
+    // The name stays above the bar and the enemy's ailment words above the name.
+    const box = enemyBox(view);
+    const name = box.children.find((c) => c instanceof Text && c.text === 'e0')!;
+    expect(name.y + 18).toBeLessThanOrEqual(r.y - box.y + 1);
+    view.showAilments({ e0: [{ id: 'poison' }] });
+    const t = view.ailmentTexts('e0')[0];
+    expect(t.parent!.y + t.y + 14).toBeLessThanOrEqual(name.y);
   });
 });
 

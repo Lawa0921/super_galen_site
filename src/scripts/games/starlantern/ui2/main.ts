@@ -85,7 +85,7 @@ export async function mountNext(): Promise<void> {
   await bank.preload(menuArt);
   void bank.preload(urls.filter((u) => !menuArt.includes(u)));
   document.getElementById('sl-screen')?.classList.toggle('slx-skinned', bank.has(art.window) && bank.has(art.cursor));
-  (window as unknown as { __starlanternDebug?: unknown }).__starlanternDebug = { get game() { return game; } };
+  (window as unknown as { __starlanternDebug?: unknown }).__starlanternDebug = { get game() { return game; }, stage };
   ui.dataset.ready = 'true';
   await router.go('title');
 }

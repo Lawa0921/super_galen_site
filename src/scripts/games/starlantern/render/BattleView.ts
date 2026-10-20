@@ -78,8 +78,13 @@ interface Slot {
 }
 const BAR_W = 64;
 /**
- * The ailment row's top, from the feet: just above the name. Under the HP bar (the plan's place) it would sit behind the
- * party bar, which covers everything below the 28 px kept under the feet for the name and the bar.
+ * With a party bar below (`bottom` > 0), the name and the HP bar are raised this far over the feet, so the bar stays clear
+ * of two rows of the party's ailment words standing on the party bar (12 px each, 1 px gap and margin: 26 px above it).
+ */
+const NAME_LIFT = 21;
+/**
+ * The ailment row's top, from the name's top: just above the name. Under the HP bar (the plan's place) it would sit
+ * behind the party bar or the party's own ailment words.
  */
 const AIL_Y = -15;
 const AIL_GAP = 4;
@@ -183,12 +188,14 @@ export class BattleView {
       const name = elite && !e.name.startsWith('★') ? `★${e.name}` : e.name;
       const label = new Text({ text: name, style: { fill: 0xffffff, fontSize: 14, stroke: { color: 0x000000, width: 3 } } });
       label.anchor.set(0.5, 0);
+      const lift = bottom > 0 ? NAME_LIFT : 0;
+      label.y = -lift;
       const bar = new Graphics();
-      bar.y = 19;
+      bar.y = 19 - lift;
       const intent = new Text({ text: '', style: { fill: 0xffe08a, fontSize: 12, stroke: { color: 0x000000, width: 3 } } });
       intent.anchor.set(0.5, 1);
       const ail = new Container();
-      ail.y = AIL_Y;
+      ail.y = AIL_Y - lift;
       box.addChild(body, label, bar, ail, intent);
       box.x = left + slotW * (i + 1);
       box.y = ground;
@@ -250,6 +257,13 @@ export class BattleView {
     const slot = this.slots.get(key);
     if (!slot || slot.box.destroyed) return null;
     return { x: slot.box.x, y: slot.box.y - slot.body.height };
+  }
+
+  /** An enemy's HP bar with its black rim, in design px at rest (for layout checks). */
+  hpBarRect(key: string): { x: number; y: number; width: number; height: number } | null {
+    const s = this.slots.get(key);
+    if (!s || s.box.destroyed) return null;
+    return { x: s.box.x - BAR_W / 2 - 1, y: s.box.y + s.bar.y - 1, width: BAR_W + 2, height: 6 };
   }
 
   /** Party members are drawn by the DOM party bar; these cues tell it what to show. */

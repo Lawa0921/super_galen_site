@@ -1485,6 +1485,64 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test('five members with five ailments each never cover an enemy HP bar, at 1280x720 or 844x390', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const w = await setup(page, 7);
+    await legacyRoster(page);
+    await depart(page, w);
+    await expect(page.locator('.slx-partybar .slx-pm')).toHaveCount(5);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    await game((g) => {
+      for (const m of g.battle.party) {
+        m.poison = true; m.burn = { tick: 1, turns: 3, src: 'e0' };
+        m.bleed = [{ tick: 1, turns: 3, src: 'e0' }, { tick: 1, turns: 3, src: 'e0' }];
+        m.shock = 3; m.chill = 3;
+        m.hp = m.max.hp;
+      }
+    });
+    // Everyone defends through one round, so every panel is redrawn with its words.
+    for (let i = 0; i < 60 && (await game((g) => g.battle?.round ?? -1)) === 0; i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    await expect(page.locator('.slx-partybar .slx-pm-ail:not([hidden])')).toHaveCount(5);
+    for (const row of await page.locator('.slx-partybar .slx-pm-ail').all()) expect(await row.locator('.slx-ail').count()).toBe(5);
+    /** Every member word against every living enemy's HP bar (design px, mapped onto the canvas as drawn). */
+    const overlaps = () => page.evaluate(() => {
+      const view = (window as unknown as { __starlanternDebug: { stage: any } }).__starlanternDebug.stage.battleView;
+      const canvas = document.querySelector('#sl-canvas')!.getBoundingClientRect();
+      const k = canvas.width / 640;
+      const keys: string[] = (window as unknown as { __starlanternDebug: { game: any } }).__starlanternDebug.game.battle.enemies.filter((e: any) => e.alive).map((e: any) => e.key);
+      const bars = keys.map((key) => view.hpBarRect(key)).filter(Boolean)
+        .map((r: { x: number; y: number; width: number; height: number }) => ({ left: canvas.left + r.x * k, top: canvas.top + r.y * k, right: canvas.left + (r.x + r.width) * k, bottom: canvas.top + (r.y + r.height) * k }));
+      const chips = [...document.querySelectorAll('.slx-partybar .slx-ail')].map((c) => c.getBoundingClientRect());
+      const hits: string[] = [];
+      for (const c of chips) for (const b of bars) {
+        if (c.left < b.right && b.left < c.right && c.top < b.bottom && b.top < c.bottom) hits.push(`${c.left},${c.top} x ${b.left},${b.top}`);
+      }
+      return { bars: bars.length, chips: chips.length, hits };
+    });
+    for (const size of [{ width: 1280, height: 720 }, { width: 844, height: 390 }]) {
+      await page.setViewportSize(size);
+      await page.waitForTimeout(300);
+      const r = await overlaps();
+      expect(r.bars, `${size.width}x${size.height}`).toBeGreaterThan(0);
+      expect(r.chips, `${size.width}x${size.height}`).toBe(25);
+      expect(r.hits, `${size.width}x${size.height}`).toEqual([]);
+      if (process.env.SL_SHOTS) { mkdirSync(process.env.SL_SHOTS, { recursive: true }); await page.screenshot({ path: `${process.env.SL_SHOTS}/five-by-five-${size.width}.png` }); }
+    }
+    expect(w.errors).toEqual([]);
+  });
+
   test('ailments show as coloured words on the battle screen (plan 8b)', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     const missing: string[] = [];

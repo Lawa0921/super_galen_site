@@ -177,9 +177,11 @@ export class BattleScene implements Scene {
     this.showAilments();
   }
 
-  /** Each living enemy's ailments under its HP bar. */
+  /** Each living enemy's ailments by its name; none once the fight is over (won, lost or fled). */
   private showAilments(): void {
-    this.ctx.stage?.battleView.showAilments?.(Object.fromEntries(this.state.enemies.filter((e) => e.alive).map((e) => [e.key, ailmentChips(e)])));
+    const s = this.state;
+    const live = s.outcome === 'ongoing' ? s.enemies.filter((e) => e.alive) : [];
+    this.ctx.stage?.battleView.showAilments?.(Object.fromEntries(live.map((e) => [e.key, ailmentChips(e)])));
   }
 
   /** 返回 shows only when cancel would do something: close a sub-list or go back to the previous member. */
