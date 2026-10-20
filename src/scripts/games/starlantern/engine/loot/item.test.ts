@@ -3,9 +3,9 @@ import { mulberry32 } from '../rng';
 import { AFFIXES, AFFIX_COUNT, GEAR_SLOTS, IMPLICIT_PER_ILVL, RARITIES, ROLL_FLOOR, SPECIALS, affixRange } from '../../data/gear';
 import { EQUIPMENT } from '../../data/equipment';
 import { ENHANCE_MAX, ENHANCE_STEP } from '../../data/forge';
-import type { GearSlot, Rarity } from '../types';
+import type { AnyStat, GearSlot, Rarity } from '../types';
 import { newMember, sheetOf, statsOf } from '../party';
-import { baseFor, implicitStats, itemLevel, itemName, itemSlot, itemStats, itemWeight, rollItem, rollValue, sellPrice } from './item';
+import { STARLIT_SELL_MUL, baseFor, implicitStats, itemLevel, itemName, itemSlot, itemStats, itemWeight, maxValue, rollItem, rollValue, sellPrice, starlitItem } from './item';
 import { depthLevel } from '../levels';
 
 const rarities: Rarity[] = ['common', 'magic', 'rare', 'epic', 'legendary'];
@@ -237,5 +237,58 @@ describe('enhancement', () => {
     const v = rollValue(mulberry32(3), 'atk', 20, 'rare');
     expect(Number.isInteger(v)).toBe(true);
     expect(v).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('starlit (plan 5g)', () => {
+  it('maxValue is the top of the roll range', () => {
+    for (const key of Object.keys(AFFIXES) as AnyStat[]) {
+      for (const ilvl of [1, 25, 50]) {
+        const top = maxValue(key, ilvl);
+        expect(top, `${key} ${ilvl}`).toBe(rollValue(() => 0.999999, key, ilvl, 'legendary'));
+        expect(top, `${key} ${ilvl}`).toBe(Math.max(1, Math.round(affixRange(key, ilvl)[1])));
+        for (let seed = 1; seed <= 40; seed++) expect(top).toBeGreaterThanOrEqual(rollValue(mulberry32(seed), key, ilvl, 'rare'));
+      }
+    }
+  });
+
+  it('a starlit item has every affix at max and one more', () => {
+    let grew = 0;
+    for (const sp of Object.values(SPECIALS)) {
+      const it = rollItem(mulberry32(5), { uid: 41, ilvl: 30, rarity: sp.rarity, special: sp.id });
+      const st = starlitItem(it, mulberry32(9));
+      const slot = itemSlot(it);
+      const cand = (Object.keys(AFFIXES) as AnyStat[]).filter((k) => AFFIXES[k].slots.includes(slot) && !it.affixes.some((a) => a.key === k));
+      expect(st.affixes, sp.id).toHaveLength(it.affixes.length + (cand.length > 0 ? 1 : 0));
+      if (cand.length > 0) grew++;
+      expect(st.affixes.slice(0, it.affixes.length).map((a) => a.key), sp.id).toEqual(it.affixes.map((a) => a.key));
+      for (const a of st.affixes) expect(a.value, `${sp.id} ${a.key}`).toBe(maxValue(a.key, 30));
+      // A special's fixed affixes are its own; only the added one must be legal for the slot.
+      if (cand.length > 0) expect(cand, sp.id).toContain(st.affixes.at(-1)!.key);
+      expect(new Set(st.affixes.map((a) => a.key)).size, sp.id).toBe(st.affixes.length);
+      expect(st.starlit).toBe(true);
+      expect({ uid: st.uid, base: st.base, rarity: st.rarity, ilvl: st.ilvl, special: st.special, enhance: st.enhance })
+        .toEqual({ uid: it.uid, base: it.base, rarity: it.rarity, ilvl: it.ilvl, special: it.special, enhance: it.enhance });
+    }
+    expect(grew).toBeGreaterThan(0);
+  });
+
+  it('starlitItem leaves its input alone and is deterministic', () => {
+    const it = rollItem(mulberry32(3), { uid: 7, ilvl: 20, rarity: 'legendary', special: 'lg-noel' });
+    const copy = structuredClone(it);
+    const a = starlitItem(it, mulberry32(11));
+    const b = starlitItem(it, mulberry32(11));
+    expect(it).toEqual(copy);
+    expect('starlit' in it).toBe(false);
+    expect(a).toEqual(b);
+    expect(a).not.toBe(it);
+  });
+
+  it('a starlit piece sells for twice its rarity', () => {
+    expect(STARLIT_SELL_MUL).toBe(2);
+    for (const id of ['lg-noel', 'set-blaze-ring']) {
+      const it = rollItem(mulberry32(2), { uid: 1, ilvl: 15, rarity: SPECIALS[id].rarity, special: id });
+      expect(sellPrice({ ...it, starlit: true })).toBe(2 * sellPrice(it));
+    }
   });
 });

@@ -22,7 +22,7 @@ import { ABYSS, ABYSS_UNLOCK } from '../data/hero';
 import { CONDITIONS } from '../data/conditions';
 import { BAG_SIZE } from './loot/bag';
 import { MAX_ILVL, MAX_REACHED } from './levels';
-import { chestHasGear, GEAR_CHANCE, RARE_MATERIALS, rollBossGear } from './loot/drops';
+import { BOSS_LEGENDARY, chestHasGear, GEAR_CHANCE, RARE_MATERIALS, rollBossGear, STARLIT_CHANCE } from './loot/drops';
 import { itemLevel, itemWeight, rollItem } from './loot/item';
 import { MATERIALS } from '../data/materials';
 import { buy, unequip } from './town';
@@ -882,6 +882,48 @@ describe('dungeon gear', () => {
     beat();
     expect(spy.mock.calls[1][1]).toMatchObject({ bossRepeat: true });
     expect(g.state.dungeon.bossKills['iron:5']).toBe(2);
+  });
+
+  it('labyrinth drops carry the run seed for the starlit stream', () => {
+    const spy = vi.mocked(rollBossGear);
+    spy.mockClear();
+    const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
+    g.state.dungeon.reached.iron = 5;
+    expect(g.depart({ region: 'iron', condition: 'plain' }, 5)).toEqual({ ok: true });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(typeof g.run!.seed).toBe('number');
+    expect(spy.mock.calls.at(-1)![1]).toMatchObject({ seed: g.run!.seed });
+  });
+
+  it('a starlit boss drop takes no draw from game.rng, lootRng or memoryRng', () => {
+    const counted = () => { const r = { draws: 0, rng: () => { r.draws++; return 0.99; } }; return r; };
+    const fight = (starlit: boolean) => {
+      const saved = { first: BOSS_LEGENDARY.first, boss: { ...STARLIT_CHANCE.boss } };
+      try {
+        BOSS_LEGENDARY.first = 1;
+        STARLIT_CHANCE.boss = starlit ? { base: 1, perDepth: 0, cap: 1 } : { base: 0, perDepth: 0, cap: 0 };
+        const r = counted();
+        const g = new Game(r.rng, null, undefined, 0, LEGACY_LINEUP);
+        g.state.dungeon.reached.iron = 5;
+        expect(g.depart({ region: 'iron', condition: 'plain' }, 5)).toEqual({ ok: true });
+        const run = g.run!;
+        const at = { draws: r.draws, loot: run.lootDraws, memory: run.memoryDraws };
+        stepOnto(g, g.map().boss!);
+        const end = killAll(g);
+        return { end, draws: r.draws - at.draws, loot: run.lootDraws - at.loot, memory: run.memoryDraws - at.memory };
+      } finally {
+        BOSS_LEGENDARY.first = saved.first;
+        STARLIT_CHANCE.boss = saved.boss;
+      }
+    };
+    const lit = fight(true);
+    const plain = fight(false);
+    expect(lit.end.gear[0].starlit).toBe(true);
+    expect(plain.end.gear[0].starlit).toBeUndefined();
+    expect(lit.end.gear[0].special).toBe(plain.end.gear[0].special);
+    expect({ draws: lit.draws, loot: lit.loot, memory: lit.memory }).toEqual({ draws: plain.draws, loot: plain.loot, memory: plain.memory });
+    expect(lit.loot).toBeGreaterThan(0);
   });
 
   it('the mainline story boss counts as a boss kill and drops boss gear', () => {

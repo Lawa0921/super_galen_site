@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { mulberry32, type Rng } from '../rng';
 import { ROLL_FLOOR, SPECIALS, affixRange } from '../../data/gear';
@@ -5,8 +6,8 @@ import { MATERIALS } from '../../data/materials';
 import { CONDITIONS } from '../../data/conditions';
 import { MAX_ILVL, MAX_REACHED, depthLevel } from '../levels';
 import type { ItemInstance, Rarity } from '../types';
-import { itemLevel, type DropSource } from './item';
-import { BOSS_LEGENDARY, EPIC_SHARE, GEAR_CHANCE, RARE_MATERIALS, rarityWeights, rollBossGear, rollGear, rollRareMaterial, rollTier, type DropCtx, type Tier } from './drops';
+import { itemLevel, rollItem, type DropSource } from './item';
+import { BOSS_LEGENDARY, EPIC_SHARE, GEAR_CHANCE, RARE_MATERIALS, STARLIT_CHANCE, STARLIT_SALT, applyStarlit, rarityWeights, rollBossGear, rollGear, rollRareMaterial, rollTier, starlitChance, type DropCtx, type Tier } from './drops';
 
 const N = 20000;
 const tierOf = (r: Rarity): Tier => (r === 'common' || r === 'magic' || r === 'rare' || r === 'epic' ? r : 'legendaryTier');
@@ -309,5 +310,98 @@ describe('deep drops stay within the save cap', () => {
       expect(itemLevel(100000, source), source).toBe(MAX_ILVL);
     }
     expect(itemLevel(1, 'boss')).toBe(depthLevel(1) + 4);
+  });
+});
+
+describe('starlit drops (plan 5g)', () => {
+  const withChance = <T>(over: Partial<typeof STARLIT_CHANCE>, fn: () => T): T => {
+    const saved = { drop: { ...STARLIT_CHANCE.drop }, elite: { ...STARLIT_CHANCE.elite }, boss: { ...STARLIT_CHANCE.boss } };
+    try {
+      Object.assign(STARLIT_CHANCE, over);
+      return fn();
+    } finally {
+      Object.assign(STARLIT_CHANCE, saved);
+    }
+  };
+  const legendary = (uid: number): ItemInstance => rollItem(mulberry32(uid), { uid, ilvl: 20, rarity: 'legendary', special: 'lg-noel' });
+
+  it('the starlit chance table', () => {
+    expect(STARLIT_SALT).toBe(0xa54ff53a);
+    expect(starlitChance('monster', 1)).toBe(0.03);
+    expect(starlitChance('chest', 10)).toBeCloseTo(0.048);
+    expect(starlitChance('monster', 40)).toBe(0.08);
+    expect(starlitChance('vault', 1)).toBe(0.05);
+    expect(starlitChance('elite', 10)).toBeCloseTo(0.077);
+    expect(starlitChance('boss', 1)).toBe(0.08);
+    expect(starlitChance('boss', 10)).toBeCloseTo(0.116);
+    expect(starlitChance('boss', 30)).toBe(0.16);
+    for (const source of SOURCES) expect(starlitChance(source, 0), source).toBe(starlitChance(source, 1));
+  });
+
+  it('applyStarlit is keyed by seed and uid only', () => {
+    for (let uid = 1; uid <= 300; uid++) {
+      const it = legendary(uid);
+      const ctx = { seed: 4242, source: 'boss' as const, depth: 10 };
+      expect(applyStarlit(it, ctx)).toEqual(applyStarlit(legendary(uid), ctx));
+      expect(applyStarlit(it, { source: 'boss', depth: 10 })).toBe(it);
+    }
+    const always = { base: 1, perDepth: 0, cap: 1 };
+    withChance({ drop: always, elite: always, boss: always }, () => {
+      for (const rarity of ['magic', 'rare', 'epic'] as Rarity[]) {
+        const it = rollItem(mulberry32(3), { uid: 9, ilvl: 20, rarity });
+        expect(applyStarlit(it, { seed: 1, source: 'boss', depth: 10 }), rarity).toBe(it);
+      }
+      expect(applyStarlit(legendary(9), { seed: 1, source: 'boss', depth: 10 }).starlit).toBe(true);
+    });
+  });
+
+  it('applyStarlit hits its chance', () => {
+    const n = 20000;
+    let hits = 0;
+    const it = legendary(1);
+    for (let uid = 1; uid <= n; uid++) if (applyStarlit({ ...it, uid }, { seed: 12345, source: 'boss', depth: 10 }).starlit) hits++;
+    const p = starlitChance('boss', 10);
+    expect(Math.abs(hits / n - p)).toBeLessThan(tol(p, n));
+  });
+
+  it('the starlit stream takes no draw from the loot rng', () => {
+    withChance({ boss: { base: 0.5, perDepth: 0, cap: 0.5 } }, () => {
+      let starlit = 0;
+      for (let s = 1; s <= 2000; s++) {
+        const a = mulberry32(s), b = mulberry32(s);
+        const x = rollGear(a, ctxFor({ source: 'boss', seed: 777 }));
+        const y = rollGear(b, ctxFor({ source: 'boss' }));
+        expect(a(), `#${s}`).toBe(b());
+        const { affixes: _xa, starlit: xs, ...xr } = x;
+        const { affixes: _ya, starlit: ys, ...yr } = y;
+        expect(xr, `#${s}`).toEqual(yr);
+        expect(ys).toBeUndefined();
+        if (xs) starlit++;
+      }
+      expect(starlit).toBeGreaterThan(0);
+    });
+  });
+
+  it('only labyrinth drops are starlit: rollItem alone never is', () => {
+    for (const sp of Object.values(SPECIALS)) {
+      for (let seed = 1; seed <= 5; seed++) {
+        expect('starlit' in rollItem(mulberry32(seed), { uid: seed, ilvl: 30, rarity: sp.rarity, special: sp.id }), sp.id).toBe(false);
+      }
+    }
+  });
+
+  it('only the legendary tier of rollGear is ever starlit', () => {
+    const always = { base: 1, perDepth: 0, cap: 1 };
+    withChance({ drop: always, elite: always, boss: always }, () => {
+      const xs = sample(ctxFor({ source: 'elite', depth: 10, seed: 5 }), 61, 3000);
+      for (const it of xs) expect(it.starlit === true, it.rarity).toBe(tierOf(it.rarity) === 'legendaryTier');
+      expect(xs.some((it) => it.starlit)).toBe(true);
+    });
+  });
+
+  it('the sim never reaches the starlit stream', () => {
+    const src = readFileSync('src/scripts/games/starlantern/engine/sim.ts', 'utf8');
+    expect(src.length).toBeGreaterThan(1000);
+    for (const word of ['applyStarlit', 'rollGear', 'STARLIT', 'starlit']) expect(src, word).not.toContain(word);
   });
 });

@@ -36,6 +36,26 @@ export function rollValue(rng: Rng, key: AnyStat, ilvl: number, rarity: Rarity):
   return Math.max(1, Math.round(lo + (hi - lo) * f));
 }
 
+/** The highest value an affix can roll at this item level: the top of rollValue's range (and of rerollRange's). */
+export function maxValue(key: AnyStat, ilvl: number): number {
+  return Math.max(1, Math.round(affixRange(key, ilvl)[1]));
+}
+
+/**
+ * Plan 5g: the starlit form of a piece (a new object): every affix at its maximum, plus one more affix legal for the
+ * slot and not yet on it (picked from `rng`, candidates in AFFIXES order), also at its maximum. Nothing else changes.
+ */
+export function starlitItem(it: ItemInstance, rng: Rng): ItemInstance {
+  const slot = itemSlot(it);
+  const affixes = it.affixes.map((a) => ({ key: a.key, value: maxValue(a.key, it.ilvl) }));
+  const cand = (Object.keys(AFFIXES) as AnyStat[]).filter((k) => AFFIXES[k].slots.includes(slot) && !affixes.some((a) => a.key === k));
+  if (cand.length > 0) {
+    const key = pick(rng, cand);
+    affixes.push({ key, value: maxValue(key, it.ilvl) });
+  }
+  return { ...it, affixes, starlit: true };
+}
+
 /** Rolls one piece of gear. A special item takes its own rarity, slot and (for uniques and sets) its fixed affixes. */
 export function rollItem(rng: Rng, o: RollOpts): ItemInstance {
   const sp = o.special ? SPECIALS[o.special] : undefined;
@@ -85,4 +105,7 @@ export function itemStats(it: ItemInstance): Partial<Sheet> {
 export const itemName = (it: ItemInstance): string => (it.special ? SPECIALS[it.special].name : EQUIPMENT[it.base].name);
 export const itemSlot = (it: ItemInstance): GearSlot => EQUIPMENT[it.base].slot;
 export const itemWeight = (it: ItemInstance): number => SLOT_WEIGHT[itemSlot(it)];
-export const sellPrice = (it: ItemInstance): number => Math.round((10 + 2 * it.ilvl) * SELL_MUL[it.rarity]);
+/** Plan 5g: a starlit piece sells for this many times its rarity's price. */
+export const STARLIT_SELL_MUL = 2;
+export const sellPrice = (it: ItemInstance): number =>
+  Math.round((10 + 2 * it.ilvl) * SELL_MUL[it.rarity]) * (it.starlit ? STARLIT_SELL_MUL : 1);

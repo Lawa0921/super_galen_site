@@ -689,7 +689,7 @@ export class Game {
 
   private dropCtx(source: DropSource): DropCtx {
     const run = this.run!;
-    return { uid: () => mintUid(this.state), depth: this.floor, region: run.region, condition: run.condition, source };
+    return { uid: () => mintUid(this.state), depth: this.floor, region: run.region, condition: run.condition, source, seed: run.seed };
   }
 
   /** The inn: town only, so a run can never rest (or save) mid-labyrinth. */
