@@ -192,12 +192,15 @@ export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rn
 /** One gain of the ultimate gauge, raised by the member's gauge bonus and rounded down. */
 export const gaugeGain = (c: Combatant, n: number): number => Math.floor(n * (1 + (c.x.gauge ?? 0) / 100));
 
-/** Hurts a combatant and returns the HP it really lost: an undying target stops at 1, so the log and the gauge see only what was taken. */
-export function dealDamage(t: Combatant, amount: number): number {
+/**
+ * Hurts a combatant and returns the HP it really lost: an undying target stops at 1, so the log and the gauge see only what
+ * was taken. A hit wakes a sleeper; damage over time (`dot`: poison, burn, bleed) does not.
+ */
+export function dealDamage(t: Combatant, amount: number, opts: { dot?: true } = {}): number {
   const lost = t.undying ? Math.max(0, Math.min(amount, t.hp - 1)) : amount;
   if (t.side === 'party' && t.alive && lost > 0) t.limit = Math.min(100, t.limit + gaugeGain(t, Math.max(1, Math.floor((lost / t.max.hp) * 40))));
   t.hp = Math.max(t.undying ? 1 : 0, t.hp - amount);
-  t.sleep = 0;
+  if (!opts.dot) t.sleep = 0;
   if (t.hp === 0) {
     t.alive = false;
     t.poison = false;

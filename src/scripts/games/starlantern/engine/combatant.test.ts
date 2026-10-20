@@ -239,6 +239,11 @@ describe('dealDamage', () => {
     dealDamage(c, 5);
     expect([c.hp, c.sleep, c.alive]).toEqual([95, 0, true]);
   });
+  it('a tick does not wake a sleeper', () => {
+    const c = makeCombatant({ key: 'a', side: 'party', sleep: 2 });
+    expect(dealDamage(c, 5, { dot: true })).toBe(5);
+    expect([c.hp, c.sleep, c.alive]).toEqual([95, 2, true]);
+  });
   it('knocks out at 0 and clears statuses', () => {
     const c = makeCombatant({ key: 'a', side: 'party', poison: true, taunt: 2, buffs: [{ stat: 'atk', pct: 10, turns: 2 }] });
     dealDamage(c, 500);

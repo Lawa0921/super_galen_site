@@ -1037,6 +1037,19 @@ describe('ailments at round end and on their turn (plan 8b)', () => {
     expect(s.log).toContainEqual({ type: 'act', actor: 'b', label: '攻擊' });
   });
 
+  it('a sleeper keeps sleeping through every tick', () => {
+    const s = resolveRound(makeBattle([P('p')], [E('e0', { sleep: 3, poison: true, burn: { tick: 4, turns: 3, src: 'p' }, bleed: [{ tick: 2, turns: 3, src: 'p' }] })]), { p: { kind: 'defend' } }, rng);
+    expect(s.log.filter((e) => e.type === 'poison-tick' || e.type === 'dot-tick').map((e) => e.type)).toEqual(['poison-tick', 'dot-tick', 'dot-tick']);
+    expect(s.enemies[0].hp).toBe(100 - 10 - 4 - 2);
+    expect(s.enemies[0].sleep).toBe(2);   // only its own slept turn took a round off
+  });
+
+  it('a turret hit still wakes a sleeper', () => {
+    const s = resolveRound(makeBattle([P('p', { turret: { power: 100, turns: 2 } })], [E('e0', { sleep: 3 })]), { p: { kind: 'defend' } }, rng);
+    expect(s.log).toContainEqual({ type: 'act', actor: 'p', label: '砲台' });
+    expect(s.enemies[0].sleep).toBe(0);
+  });
+
   it('death and cure clear every ailment', () => {
     const fallen = E('e0', { ...all, bleed: [...all.bleed] });
     dealDamage(fallen, 999);

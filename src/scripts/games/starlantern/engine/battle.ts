@@ -365,7 +365,7 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
     if (c.alive && c.poison) {
       const amount = shockTick(c, Math.max(1, Math.floor(c.max.hp * 0.1)));
       if (c.side === 'enemy') credit(ctx.ledger, c.poisonSrc, 'damage', lossOf(c, amount));
-      s.log.push({ type: 'poison-tick', target: c.key, amount: dealDamage(c, amount) });
+      s.log.push({ type: 'poison-tick', target: c.key, amount: dealDamage(c, amount, { dot: true }) });
       if (!c.alive) s.log.push({ type: 'ko', target: c.key });
     }
     if (c.alive) tickAilments(c, ctx);
