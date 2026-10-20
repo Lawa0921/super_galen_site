@@ -72,20 +72,23 @@ export const GENERATED_CHEST_KINDS: readonly ChestKind[] = ['cabin', 'mineshaft'
 /**
  * 各種箱子開得出的時裝（每件來源見 docs/superpowers/plans/2026-10-20-delve-cosmetic-collection.md 的 Source table）。
  * 只能放 GENERATED_CHEST_KINDS 裡的種類，不然那件時裝等於拿不到（cosmeticSources.test.ts 會擋）。
+ * 和平模式（不生怪）做不出來的時裝主要放在每個世界數量多的箱子：小屋（平均 16 個）收頭飾、地城（平均 11.5 個）收服裝；
+ * 每件每個新世界期望至少 0.33 件（cosmeticSources.peaceful.test.ts 生成真的世界量箱子數來擋）。
  */
 export const CHEST_FASHION: Readonly<Partial<Record<ChestKind, readonly ItemId[]>>> = {
-  cabin: [...COMMON_FASHION, 'acc_catears'],
+  cabin: [...COMMON_FASHION, 'acc_catears', 'acc_headphones', 'acc_foxmask', 'acc_clip', 'acc_hairpin'],
   mineshaft: [...COMMON_FASHION, 'acc_headphones'],
   ruin: [...COMMON_FASHION, 'pirate_top', 'pirate_bottom', 'acc_foxmask', 'acc_hairpin'],
   sky: [...COMMON_FASHION, 'priest_top', 'priest_bottom', 'acc_clip'],
-  dungeon: [...LOOT_ONLY_FASHION, 'gothic_top', 'gothic_bottom'],
+  dungeon: [...LOOT_ONLY_FASHION, 'gothic_top', 'gothic_bottom', 'idol_top', 'idol_bottom', 'acc_crown',
+    'mage_top', 'mage_bottom', 'qipao_top', 'qipao_bottom', 'pirate_top', 'pirate_bottom', 'priest_top', 'priest_bottom'],
   treasure: [...LOOT_ONLY_FASHION, 'idol_top', 'idol_bottom', 'gothic_top', 'gothic_bottom', 'acc_crown'],
   secret: [...LOOT_ONLY_FASHION, 'qipao_top', 'qipao_bottom', 'mage_top', 'mage_bottom', 'acc_hairpin'],
   relic: [...LOOT_ONLY_FASHION, 'idol_top', 'idol_bottom', 'qipao_top', 'qipao_bottom', 'gothic_top', 'gothic_bottom', 'acc_crown'],
 };
 /** 箱子開出一件時裝的機率 */
 export const CHEST_FASHION_CHANCE: Readonly<Partial<Record<ChestKind, number>>> = {
-  cabin: 0.1, mineshaft: 0.1, ruin: 0.1, sky: 0.1, dungeon: 0.3, treasure: 0.8, secret: 0.3, relic: 0.3,
+  cabin: 0.25, mineshaft: 0.1, ruin: 0.1, sky: 0.1, dungeon: 0.6, treasure: 0.8, secret: 0.3, relic: 0.3,
 };
 /**
  * 箱子裡的時裝（獨立亂數流 seed:chestfashion:x:y，不影響原本的戰利品）：依箱子種類從 CHEST_FASHION 抽一件。

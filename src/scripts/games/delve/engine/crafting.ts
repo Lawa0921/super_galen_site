@@ -163,14 +163,20 @@ export const RECIPES: readonly Recipe[] = [
   r('beret', 'beret', 1, 'workbench', ['banner', 1], ['gel', 1]),
   r('flower_crown', 'flower_crown', 1, 'workbench', ['mushroom', 2], ['glow_mushroom', 2]),
   r('travel_cape', 'travel_cape', 1, 'workbench', ['banner', 3], ['feather', 2]),
-  // 其他服裝與飾品（來源總表見 plan 的 Source table）：忍者 = 布 + 獠牙；騎士 = 布 + 鐵錠（鐵砧）；小花只要蘑菇和凝膠（開局就做得出來）
-  r('ninja_top', 'ninja_top', 1, 'workbench', ['banner', 2], ['fang', 2]),
-  r('ninja_bottom', 'ninja_bottom', 1, 'workbench', ['banner', 1], ['fang', 2]),
+  // 上面用怪物素材（餘燼 / 羽毛 / 甲殼）的四件另有不打怪的做法（和平模式不生怪；原本的配方保留）
+  r('miko_hakama_alt', 'miko_hakama', 1, 'workbench', ['banner', 4]),
+  r('hoodie_top_alt', 'hoodie_top', 1, 'workbench', ['banner', 3], ['gel', 2]),
+  r('coat_trousers_alt', 'coat_trousers', 1, 'workbench', ['banner', 2], ['copper_bar', 1]),
+  r('travel_cape_alt', 'travel_cape', 1, 'workbench', ['banner', 3], ['rope', 3]),
+  // 其他服裝與飾品（來源總表見 plan 的 Source table）：都不用怪物素材（和平模式也做得出來）。
+  // 忍者 = 布 + 繩索；騎士 = 布 + 鐵錠（鐵砧）；小花只要蘑菇和凝膠（開局就做得出來）
+  r('ninja_top', 'ninja_top', 1, 'workbench', ['banner', 2], ['rope', 6]),
+  r('ninja_bottom', 'ninja_bottom', 1, 'workbench', ['banner', 1], ['rope', 4]),
   r('knight_top', 'knight_top', 1, 'anvil', ['banner', 2], ['iron_bar', 4]),
   r('knight_bottom', 'knight_bottom', 1, 'anvil', ['banner', 1], ['iron_bar', 3]),
   r('acc_flower', 'acc_flower', 1, 'workbench', ['mushroom', 2], ['gel', 1]),
   r('acc_ribbon', 'acc_ribbon', 1, 'workbench', ['banner', 1], ['gel', 2]),
-  r('acc_hood', 'acc_hood', 1, 'workbench', ['banner', 2], ['feather', 1]),
+  r('acc_hood', 'acc_hood', 1, 'workbench', ['banner', 2], ['gel', 1]),
   r('acc_glasses', 'acc_glasses', 1, 'workbench', ['glass', 2], ['copper_bar', 1]),
 ];
 

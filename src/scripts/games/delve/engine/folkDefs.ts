@@ -70,7 +70,7 @@ export const ROLES: Record<FolkRole, FolkRoleDef> = {
       { item: 'torch', n: 10, price: 25 }, { item: 'rope', n: 20, price: 25 }, { item: 'wood', n: 30, price: 40 },
       { item: 'grilled_fish', n: 1, price: 25 }, { item: 'worm', n: 5, price: 20 }, { item: 'bed', n: 1, price: 90 },
       { item: 'bucket', n: 1, price: 220, tier: 1 }, { item: 'recall_stone', n: 1, price: 360, tier: 2 },
-      { item: 'thatch', n: 20, price: 40, tier: 1 }, { item: 'timber', n: 20, price: 60, tier: 1 }, { item: 'acc_catears', n: 1, price: 240, tier: 1 },
+      { item: 'thatch', n: 20, price: 40, tier: 1 }, { item: 'timber', n: 20, price: 60, tier: 1 },
     ],
     buys: { gel: 2, bone: 3, feather: 3, fang: 6, chitin: 6, stinger: 6, spore: 4, pumpkin: 8, mushroom: 3, cactus: 2, soggy_boot: 5 },
     services: [], lines: ['今天的貨剛到，看看吧！', '打怪帶回來的東西我都收，價錢公道。', '跟村裡的人混熟了，價錢自然好談。', '天黑前記得回村子裡。'],
