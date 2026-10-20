@@ -983,3 +983,23 @@ describe('BattleScene mechanics (plan 8c)', () => {
     vi.useRealTimers();
   });
 });
+
+describe('BattleScene art (no placeholder)', () => {
+  it("waits, up to the cap, for this fight's enemy pictures and backdrop before drawing it", async () => {
+    const { BATTLE_ART_WAIT_MS } = await import('./battle');
+    const { enemyArt, art: paths } = await import('../../render/artPaths');
+    const whenReady = vi.fn(async () => {});
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
+    game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null, showIntents: vi.fn(), syncHp: vi.fn(), showAilments: vi.fn(), play: vi.fn() } };
+    const s = new BattleScene({ game, art: { has: () => false, whenReady }, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true });
+    await s.prepare!();
+    expect(BATTLE_ART_WAIT_MS).toBe(1500);
+    const urls = [...new Set(game.battle!.enemies.map((e) => enemyArt(e.defId))), paths.bg(game.terrain())];
+    expect(whenReady).toHaveBeenCalledWith(urls, BATTLE_ART_WAIT_MS);
+    // Without a picture layer there is nothing to wait for.
+    const bare = new BattleScene({ game, art: { has: () => false, whenReady }, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: null, fast: true });
+    await bare.prepare!();
+    expect(whenReady).toHaveBeenCalledTimes(1);
+  });
+});

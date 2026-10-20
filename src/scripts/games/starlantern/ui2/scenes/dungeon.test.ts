@@ -1135,3 +1135,21 @@ describe('DungeonScene field menu: skills, equipment and formation (6f Task 5)',
     expect(labels(root)).not.toContain(name('bobby'));
   });
 });
+
+describe('DungeonScene art (no placeholder)', () => {
+  it("waits, up to the cap, for this floor's map art before drawing it", async () => {
+    const { MAP_ART_WAIT_MS } = await import('./dungeon');
+    const { mapArtUrls } = await import('../../render/artPaths');
+    const whenReady = vi.fn(async () => {});
+    const stage = { show: vi.fn(), mapView: { draw: vi.fn() } };
+    const { game } = setup();
+    const s = new DungeonScene({ game, art: { has: () => false, whenReady }, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true }, Infinity);
+    await s.prepare!();
+    expect(MAP_ART_WAIT_MS).toBe(1500);
+    expect(whenReady).toHaveBeenCalledWith(mapArtUrls(game.terrain()), MAP_ART_WAIT_MS);
+    const urls = mapArtUrls(1);
+    expect(urls).toContain('/assets/games/starlantern/map/fog.png');
+    expect(urls.some((u) => u.includes('/tiles/f1-floor'))).toBe(true);
+    expect(urls.some((u) => u.includes('/map/party-'))).toBe(true);
+  });
+});

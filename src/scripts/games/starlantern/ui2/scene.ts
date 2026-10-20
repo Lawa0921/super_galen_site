@@ -7,7 +7,8 @@ import type { Stage } from './stage';
 
 export type SceneName = 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate' | 'forge' | 'dungeon' | 'battle' | 'clear' | 'settings'
   | 'formation' | 'status' | 'equip' | 'handbook';
-export interface Scene { enter(root: HTMLElement): void; exit(): void; onAction(a: UiAction): void }
+/** `prepare`: awaited before `enter`, behind the fade with input locked (a battle waits a moment for its pictures). */
+export interface Scene { enter(root: HTMLElement): void; exit(): void; onAction(a: UiAction): void; prepare?(): Promise<void> }
 export interface SceneCtx {
   game: Game; art: ArtIndex;
   /** Menu cues are required; game cues are optional so menu-only tests can pass a small fake. */
@@ -50,6 +51,7 @@ export class Router {
     this.root.replaceChildren();
     this.scene = this.make(name, { ...this.ctx, from: this.name ?? undefined, arg, go: (n, a) => { void this.go(n, a); } });
     this.name = name;
+    await this.scene.prepare?.();
     this.scene.enter(this.root);
     // Input is dropped only while the old scene fades out; once the new one is on screen it responds during its fade-in.
     this.root.classList.remove('slx-fade');

@@ -9,6 +9,7 @@ import { AILMENT_FILL, AILMENT_MORE_FILL } from './ailmentStyle';
 import { MECH_FILL } from './mechStyle';
 import type { AilmentChip } from '../engine/ailments';
 import type { TextureBank } from './textures';
+import { enemyArt } from './artPaths';
 import { T } from '../data/text.zh-TW';
 
 const sfx = { hit: vi.fn(), weak: vi.fn(), heal: vi.fn(), ko: vi.fn() } as unknown as SoundManager;
@@ -443,5 +444,36 @@ describe('BattleView mechanic moments (plan 8c)', () => {
       view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
       expect(vi.getTimerCount()).toBe(0);
     } finally { vi.useRealTimers(); }
+  });
+});
+
+describe('BattleView without enemy art (no placeholder)', () => {
+  it('draws no body at all for a foe whose picture has not loaded: just its name and bar', () => {
+    const none = { get: () => null, has: () => false } as unknown as TextureBank;
+    const view = new BattleView(true, none);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    const box = view.enemyBoxOf('e0')!;
+    const body = box.children[0] as Container;
+    expect(body.children).toHaveLength(0);
+    expect(box.children.some((c) => c instanceof Text && c.text === 'e0')).toBe(true);
+    expect(view.hpBarRect('e0')).not.toBeNull();
+  });
+
+  it('a picture that lands later fills the empty body and lifts the words above it', async () => {
+    const { TextureBank: Bank } = await import('./textures');
+    let resolve!: (t: Texture) => void;
+    const bank = new Bank(() => new Promise<Texture>((r) => { resolve = r; }), 10_000);
+    void bank.preload([enemyArt('slime')]);
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    const body = view.enemyBoxOf('e0')!.children[0] as Container;
+    expect(body.children).toHaveLength(0);
+    const before = view.intentRect('e0')!.y;
+    resolve(new Texture({ source: new TextureSource({ width: 120, height: 120 }) }));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(body.children).toHaveLength(1);
+    expect(body.children[0]).toBeInstanceOf(Sprite);
+    expect(view.intentRect('e0')!.y).toBeLessThan(before);
+    expect(view.intentRect('e0')!.y + view.intentRect('e0')!.height).toBeLessThanOrEqual(-body.height + 1);
   });
 });

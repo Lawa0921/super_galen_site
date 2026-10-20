@@ -30,6 +30,7 @@ import { playAndRecord, speakerOf, storyCtx } from '../story';
 import { STORY } from '../../data/story.zh-TW';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import { eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
+import { mapArtUrls } from '../../render/artPaths';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 const ENCOUNTER_MS = 520;
@@ -40,6 +41,9 @@ const HEAVY_SHARE = 0.8;
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 
 /** Labyrinth: map on the Pixi stage, party bar, floor name, encounter lamp, events as dialogue, a field menu. */
+/** How long the labyrinth waits for its floor's map art before it is drawn. */
+export const MAP_ART_WAIT_MS = 1500;
+
 export class DungeonScene implements Scene {
   private root!: HTMLElement;
   private body!: HTMLElement;
@@ -66,6 +70,12 @@ export class DungeonScene implements Scene {
   constructor(private ctx: SceneCtx, cps = textCps(ctx)) {
     this.bar = new PartyBar(ctx.art);
     this.talk = new Dialogue(cps, () => this.syncInert());
+  }
+
+  /** Behind the fade: this floor's map art gets a moment to land (a late tile is drawn when it lands, nothing before). */
+  async prepare(): Promise<void> {
+    if (!this.ctx.stage) return;
+    await this.ctx.art.whenReady?.(mapArtUrls(this.ctx.game.terrain()), MAP_ART_WAIT_MS);
   }
 
   enter(root: HTMLElement): void {

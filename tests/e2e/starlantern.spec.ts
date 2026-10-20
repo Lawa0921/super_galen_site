@@ -1620,6 +1620,49 @@ test.describe('starlantern', () => {
     expect(missing).toEqual([]);
   });
 
+  test('slow enemy and backdrop art never shows a stand-in block, and lands when it arrives', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // Every enemy picture and backdrop is held back (a slow network) until the fight is on screen, then lands 3 s later.
+    let release!: () => void;
+    const held = new Promise<void>((r) => { release = r; });
+    await page.route(/\/assets\/games\/starlantern\/(enemy\/.*|bg\/.*|char\/[a-z-]+-standee)\.png/, async (route) => { await held; await route.continue(); });
+    const w = await setup(page, 7);
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    /** What each living foe's body holds: Sprite, Graphics or nothing. */
+    const bodies = () => page.evaluate(() => {
+      const d = (window as unknown as { __starlanternDebug: { game: any; stage: any } }).__starlanternDebug;
+      return d.game.battle.enemies.filter((e: any) => e.alive).map((e: any) => {
+        const box = d.stage.battleView.enemyBoxOf(e.key);
+        return box ? box.children[0].children.map((c: any) => ('texture' in c && !('context' in c) ? 'sprite' : 'other')) : [];
+      });
+    });
+    const seen: string[][][] = [await bodies()];
+    // The fight waited its moment and drew no stand-in: every foe is a name and a bar for now.
+    expect(seen[0].length).toBeGreaterThan(0);
+    expect(seen[0].every((x: string[]) => x.length === 0)).toBe(true);
+    if (process.env.SL_SHOTS) { mkdirSync(process.env.SL_SHOTS, { recursive: true }); await page.screenshot({ path: `${process.env.SL_SHOTS}/slow-art-held.png` }); }
+    await page.waitForTimeout(3000);
+    release();
+    for (let i = 0; i < 40; i++) {
+      const b = await bodies();
+      seen.push(b);
+      if (b.length && b.every((x: string[]) => x.length === 1 && x[0] === 'sprite')) break;
+      await page.waitForTimeout(250);
+    }
+    // Never anything but a sprite (or, while it is on its way, nothing at all); and in the end every foe has its picture.
+    for (const b of seen) for (const x of b) expect(x.every((k) => k === 'sprite')).toBe(true);
+    expect(seen.at(-1)!.every((x) => x.length === 1)).toBe(true);
+    if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/slow-art-landed.png` });
+    expect(w.errors).toEqual([]);
+  });
+
   test('heat and the mark show on the battle screen (plan 8c)', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     const missing: string[] = [];

@@ -185,6 +185,12 @@ export function enemyArt(id: string): string {
   return look ? art.standee(look) : art.enemy(id);
 }
 
+/** The map art of a floor's terrain: its tiles, walls, event tiles, the party marker and the fog. */
+export function mapArtUrls(floor: number): string[] {
+  return [...TILE_KEYS.map((k) => art.tile(floor, k)), art.wallTop(floor), art.wallFace(floor), ...EVENT_TILE_KEYS.map((k) => art.eventTile(k)),
+    ...(['up', 'down', 'left', 'right'] as const).map((d) => art.party(d)), art.fog];
+}
+
 export function allArtUrls(): string[] {
   const urls: string[] = [];
   for (const id of [...ART_CHARACTER_IDS, ...ART_VARIANT_IDS]) urls.push(art.standee(id), ...MOODS.map((m) => art.portrait(id, m)));

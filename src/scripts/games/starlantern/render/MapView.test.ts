@@ -1,4 +1,4 @@
-import { Text, Texture, TilingSprite } from 'pixi.js';
+import { Container, Graphics, Text, Texture, TilingSprite } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { Game } from '../engine/game';
 import { DELTA, tileAt } from '../engine/map';
@@ -6,7 +6,7 @@ import { mulberry32 } from '../engine/rng';
 import { floorOf } from '../engine/dungeon/run';
 import { constRng } from '../engine/testing';
 import { fogState } from './fog';
-import { MAP_CELL, MapView, tileColor } from './MapView';
+import { MAP_CELL, MapView } from './MapView';
 import { MARKER_GLYPH, markersOf } from './markers';
 import { chestHasGear } from '../engine/loot/drops';
 import type { TextureBank } from './textures';
@@ -121,13 +121,28 @@ describe('MapView wall autotiling', () => {
   });
 });
 
-describe('MapView tile colours', () => {
-  it('draws the floor under tile kinds that have no art or colour of their own', () => {
-    for (const t of ['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key', 'rescue', 'glimmer'] as const) {
-      expect(tileColor(t, false), t).toBe(tileColor('floor', false));
-    }
-    expect(tileColor('chest', true)).toBe(tileColor('floor', false));
-    expect(tileColor('boss', false)).not.toBe(tileColor('floor', false));
+describe('MapView without art (no placeholder)', () => {
+  /** Every Graphics under the view but the fog's own plain layer. */
+  const graphics = (c: Container): Graphics[] => c.children.flatMap((x) => [...(x instanceof Graphics && x.label !== 'fog' ? [x] : []), ...graphics(x as Container)]);
+
+  it('draws no colour square for a tile and no dot for the party while their art has not loaded, then streams it in', () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(MAIN, 1);
+    const listeners: ((u: string) => void)[] = [];
+    let loaded = false;
+    const late = {
+      get: (u: string) => (loaded || u.includes('/map/fog') ? Texture.WHITE : null), has: () => loaded,
+      onLoad: (fn: (u: string) => void) => { listeners.push(fn); return () => {}; },
+    } as unknown as TextureBank;
+    const view = new MapView(late);
+    view.draw(game, { width: 640, height: 296 });
+    expect(graphics(view.root)).toEqual([]);
+    expect(view.countByLabel('floor')).toBe(0);
+    // The art lands: the view redraws itself with it, no step needed.
+    loaded = true;
+    for (const fn of listeners) fn(art.tile(game.terrain(), 'floor'));
+    expect(view.countByLabel('floor')).toBeGreaterThan(0);
+    expect(graphics(view.root)).toEqual([]);
   });
 });
 

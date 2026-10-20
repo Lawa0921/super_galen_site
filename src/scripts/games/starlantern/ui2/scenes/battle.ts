@@ -12,7 +12,7 @@ import { castCost, cueWord, foeWords, memberWords, type MechCue, type MechWord }
 import type { BattleEnd } from '../../engine/game';
 import { learnedSkills, ultimateFor } from '../../engine/progression';
 import type { CharacterId, Target } from '../../engine/types';
-import { art } from '../../render/artPaths';
+import { art, enemyArt } from '../../render/artPaths';
 import { el, itemName } from '../../ui/dom';
 import { playCutIn } from '../../ui/cutin';
 import { battleLines, fragmentLines, levelUpLines } from '../battleText';
@@ -31,6 +31,8 @@ import { memScene, type SceneId } from '../../data/story/scenes';
 
 /** Width kept clear for the command window; must match $slx-battle-left in _starlantern-ui.scss. */
 export const BATTLE_LEFT = 150;
+/** How long a battle waits for its foes' pictures and its backdrop before it is drawn (a late one is drawn when it lands). */
+export const BATTLE_ART_WAIT_MS = 1500;
 const BANNER_MS = 1100;
 const WIN_MS = 1000;
 /** Height kept clear for the party bar; must match the .slx-partybar box in _starlantern-ui.scss. */
@@ -73,6 +75,13 @@ export class BattleScene implements Scene {
   constructor(private ctx: SceneCtx, cps = textCps(ctx)) {
     this.bar = new PartyBar(ctx.art);
     this.talk = new Dialogue(cps);
+  }
+
+  /** Behind the fade: this fight's enemy pictures and backdrop get a moment to land, so no foe is drawn without its body. */
+  async prepare(): Promise<void> {
+    const g = this.ctx.game, b = g.battle;
+    if (!this.ctx.stage || !b) return;
+    await this.ctx.art.whenReady?.([...new Set(b.enemies.map((e) => enemyArt(e.defId))), art.bg(g.terrain())], BATTLE_ART_WAIT_MS);
   }
 
   enter(root: HTMLElement): void {

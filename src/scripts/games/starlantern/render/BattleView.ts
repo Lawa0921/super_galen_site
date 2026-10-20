@@ -14,13 +14,6 @@ import { MECH_FILL } from './mechStyle';
 import type { MechCue, MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
 
-const PALETTE = [0x7fb069, 0x8e7dbe, 0xd1495b, 0x66a1d2, 0xe0a458, 0x5c946e, 0xb56576, 0x6d6875, 0xc44536];
-
-function colorFor(defId: string): number {
-  let h = 0;
-  for (const ch of defId) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return PALETTE[h % PALETTE.length];
-}
 
 /** Colours of regional variants: the element's for fire, ice and thunder; by region for the element-less ones. */
 export const TINT_COLORS = {
@@ -77,6 +70,8 @@ interface Slot {
   /** Its regional colour and elite outline: always on; the hit flash and the target highlight are added on top. */
   base: Filter[];
   tint: { color: number | null; elite: boolean };
+  /** A picture not loaded at setup: drawn when it lands (no placeholder body meanwhile), at the size it would have had. */
+  want?: { url: string; maxH: number; slotW: number; ground: number };
 }
 const BAR_W = 64;
 /**
@@ -147,6 +142,47 @@ export class BattleView {
   /** `calm`: the player prefers reduced motion; no shake, push-in, lunges, flashes or breathing. */
   constructor(private fast = false, private bank: TextureBank | null = null, private calm = false) {
     this.root.addChild(this.scene);
+    // A picture that lands late (a slow network) is drawn then; nothing stands in for it meanwhile.
+    this.bank?.onLoad?.((u) => this.arrived(u));
+  }
+
+  /** The backdrop's url while it has not loaded, and the size it is drawn at. */
+  private bgWant: { url: string; size: { width: number; height: number } } | null = null;
+
+  private arrived(url: string): void {
+    const tex = this.bank?.get(url);
+    if (!tex) return;
+    if (this.bgWant?.url === url && !this.scene.destroyed) {
+      const old = this.scene.children.find((c) => c.label === 'bg-plain');
+      const s = this.backdrop(tex, this.bgWant.size);
+      this.scene.addChildAt(s, 0);
+      if (old) { this.scene.removeChild(old); old.destroy(); }
+      this.bgWant = null;
+    }
+    for (const slot of this.slots.values()) {
+      if (slot.want?.url !== url || slot.texture || slot.box.destroyed) continue;
+      this.placeBody(slot, tex, slot.want.maxH, slot.want.slotW, slot.want.ground);
+    }
+  }
+
+  private backdrop(bg: Texture, size: { width: number; height: number }): Sprite {
+    const s = new Sprite(bg);
+    const k = Math.max(size.width / bg.width, size.height / bg.height);
+    s.scale.set(k);
+    s.x = (size.width - bg.width * k) / 2; s.y = (size.height - bg.height * k) / 2;
+    return s;
+  }
+
+  /** An enemy's picture in its body, fitted to its slot; its intent and ailment row stand above it. */
+  private placeBody(slot: Slot, tex: Texture, maxH: number, slotW: number, ground: number): void {
+    const s = new Sprite(tex);
+    const k = Math.min(maxH / tex.height, (slotW * 0.9) / tex.width);
+    s.scale.set(k); s.anchor.set(0.5, 1);
+    slot.body.addChild(s);
+    slot.texture = tex;
+    delete slot.want;
+    slot.intent.y = Math.max(TOP_CLEAR - ground, -slot.body.height - 30);
+    slot.ail.y = slot.intent.y + AIL_UNDER_INTENT;
   }
 
   /**
@@ -171,14 +207,15 @@ export class BattleView {
     this.weapons.clear();
     for (const c of [...state.party, ...state.enemies]) { this.defIds.set(c.key, c.defId); if (c.weaponKind) this.weapons.set(c.key, c.weaponKind); }
     const bg = this.bank?.get(art.bg(floor)) ?? null;
+    this.bgWant = null;
     if (bg) {
-      const s = new Sprite(bg);
-      const k = Math.max(size.width / bg.width, size.height / bg.height);
-      s.scale.set(k);
-      s.x = (size.width - bg.width * k) / 2; s.y = (size.height - bg.height * k) / 2;
-      this.scene.addChild(s);
+      this.scene.addChild(this.backdrop(bg, size));
     } else {
-      this.scene.addChild(new Graphics().rect(0, 0, size.width, size.height).fill(0x141826));
+      // The window's own dark until the backdrop lands (a plain ground, not a stand-in picture).
+      const plain = new Graphics().rect(0, 0, size.width, size.height).fill(0x141826);
+      plain.label = 'bg-plain';
+      this.scene.addChild(plain);
+      this.bgWant = { url: art.bg(floor), size };
     }
     const n = state.enemies.length;
     const slotW = (size.width - left) / (n + 1);
@@ -190,15 +227,6 @@ export class BattleView {
       const body = new Container();
       const tex = this.bank?.get(enemyArt(e.defId)) ?? null;
       const maxH = (bottom > 0 ? usable : size.height) * (e.boss ? (bottom > 0 ? 0.62 : 0.7) : 0.45);
-      if (tex) {
-        const s = new Sprite(tex);
-        const k = Math.min(maxH / tex.height, (slotW * 0.9) / tex.width);
-        s.scale.set(k); s.anchor.set(0.5, 1);
-        body.addChild(s);
-      } else {
-        const w = Math.min(160, slotW), h = w * 1.2;
-        body.addChild(new Graphics().roundRect(-w / 2, -h, w, h, 12).fill(colorFor(e.defId)));
-      }
       const elite = e.tint === 'elite';
       const name = elite && !e.name.startsWith('★') ? `★${e.name}` : e.name;
       const label = new Text({ text: name, style: { fill: 0xffffff, fontSize: 14, stroke: { color: 0x000000, width: 3 } } });
@@ -214,14 +242,19 @@ export class BattleView {
       box.x = left + slotW * (i + 1);
       box.y = ground;
       box.alpha = e.alive ? 1 : 0;
-      intent.y = Math.max(TOP_CLEAR - ground, -body.height - 30);
-      ail.y = intent.y + AIL_UNDER_INTENT;
       this.scene.addChild(box);
       const key = tintKey(e.tint, region);
       const color = key ? TINT_COLORS[key] : null;
       const base = this.tintFor(key, elite);
       body.filters = base;
-      const slot: Slot = { key: e.key, box, body, texture: tex, hp: e.hp, max: e.max.hp, bar, intent, name: label, ail, base, tint: { color, elite } };
+      const slot: Slot = { key: e.key, box, body, texture: null, hp: e.hp, max: e.max.hp, bar, intent, name: label, ail, base, tint: { color, elite } };
+      // Its picture, or, until it lands, no body at all: just its name and bar (no placeholder art).
+      if (tex) this.placeBody(slot, tex, maxH, slotW, ground);
+      else {
+        slot.want = { url: enemyArt(e.defId), maxH, slotW, ground };
+        intent.y = Math.max(TOP_CLEAR - ground, -30);
+        ail.y = intent.y + AIL_UNDER_INTENT;
+      }
       this.slots.set(e.key, slot);
       this.drawBar(slot);
     });
