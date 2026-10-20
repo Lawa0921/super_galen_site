@@ -48,4 +48,8 @@ describe('battleLines', () => {
     ];
     expect(battleLines(log, () => '史萊姆')).toEqual(['史萊姆 因灼燒受到 12 傷害', '史萊姆 因流血受到 5 傷害', '史萊姆 被凍住了，動彈不得']);
   });
+
+  it('what a shield took is worded', () => {
+    expect(battleLines([{ type: 'shield', target: 'noel', amount: 30 }], () => '諾艾兒')).toEqual(['諾艾兒的護盾擋下了 30 傷害']);
+  });
 });

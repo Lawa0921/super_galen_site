@@ -11,8 +11,14 @@ export type MechGauge = 'heat' | 'coins' | 'aim' | 'embers';
 /** A device a member has set up: its skill, its upgrade level, the turns it has left. */
 export interface Device { skill: string; level: number; turns: number }
 
-/** A barrier over the party: the skill that raised it, the turns it has left, who raised it. */
-export interface Barrier { skill: string; turns: number; src: string }
+/** The barriers Chizuru raises (spec §8.2): the guard (def and res for the party) and the purifying one. */
+export type BarrierKind = 'guard' | 'purify';
+
+/**
+ * A barrier over the party: the skill that raised it, its kind and power (a guard's percent), the turns it has left, who
+ * raised it (the ledger credits what it prevents to them) and its boost (the great barrier's multiplier; absent reads 1).
+ */
+export interface Barrier { skill: string; kind: BarrierKind; power: number; turns: number; src: string; boost?: number }
 
 /** `beat.last` is the previous round's skill id, `'attack'`, `'defend'` or `'ultimate'`. */
 export type MechState =

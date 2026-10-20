@@ -278,11 +278,14 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
   if (actor.side === 'enemy') {
     const taunter = living(s.party).find((c) => c.taunt > 0);
     if (taunter) {
-      // The ledger credits the taunter with what the first target was spared, for a single hit the taunt turned only.
-      const meant = (act as EnemyAction).target;
-      const single = act.kind === 'attack' || (act.kind === 'enemy-skill' && enemyDef(s, actor)?.skills[act.index]?.target === 'enemy');
-      const from = ctx.ledger && single && meant !== taunter.key ? s.party.find((c) => c.key === meant) : undefined;
-      if (from) ctx.redirect = { from };
+      // The ledger credits the taunter with the average loss over the others this foe could reach, for a single hit only
+      // and whatever the foe first meant (plan 8c ruling 8). Reading the grid draws nothing.
+      const sk = act.kind === 'enemy-skill' ? enemyDef(s, actor)?.skills[act.index] : undefined;
+      const single = act.kind === 'attack' || sk?.target === 'enemy';
+      if (ctx.ledger && single) {
+        const melee = act.kind === 'attack' ? actor.melee : skillIsMelee(sk?.effects ?? []);
+        ctx.redirect = { pool: reachable(s.party, melee).filter((c) => c !== taunter) };
+      }
       act = { ...act, target: taunter.key } as EnemyAction;
     }
   }
@@ -365,7 +368,7 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
     if (c.alive && c.poison) {
       const amount = shockTick(c, Math.max(1, Math.floor(c.max.hp * 0.1)));
       if (c.side === 'enemy') credit(ctx.ledger, c.poisonSrc, 'damage', lossOf(c, amount));
-      s.log.push({ type: 'poison-tick', target: c.key, amount: dealDamage(c, amount, { dot: true }) });
+      s.log.push({ type: 'poison-tick', target: c.key, amount: dealDamage(c, amount, { dot: true, ledger: ctx.ledger, log: s.log }) });
       if (!c.alive) s.log.push({ type: 'ko', target: c.key });
     }
     if (c.alive) tickAilments(c, ctx);
@@ -407,13 +410,27 @@ function ringBell(s: BattleState, heroWasUp: boolean, ctx: EffectContext): void 
   applyEffect(rin, foe, { kind: 'damage', power: 100, element: 'phys', scale: rin.attackScale ?? 'atk', melee: rin.melee }, ctx);
 }
 
+/**
+ * The guard barrier on the party, mirrored as each living member's `ward` (plan 8c ruling 9): its percent, power x boost,
+ * to def and res, with who raised it; the fallen and a party without a guard barrier carry none. Not a buff: it takes no
+ * buff slot and never meets the strongest-kept rule. Draws nothing.
+ */
+export function syncWards(s: BattleState): void {
+  const guard = (s.barriers ?? []).find((b) => b.kind === 'guard');
+  const pct = guard ? guard.power * (guard.boost ?? 1) : 0;
+  for (const c of s.party) {
+    if (guard && c.alive) c.ward = { def: pct, res: pct, src: guard.src };
+    else delete c.ward;
+  }
+}
+
 /** `ledger` (the sim's, spec §12.6) is credited as the round resolves; it changes nothing and draws nothing. */
 export function resolveRound(prev: BattleState, actions: Record<string, Action>, rng: Rng, ledger?: Ledger): BattleState {
   const s = structuredClone(prev);
   s.log = [];
   if (s.outcome !== 'ongoing' || checkOutcome(s)) return s;
   s.round += 1;
-  const ctx: EffectContext = { rng, itemBoost: s.itemBoost, revealed: s.revealed, log: s.log, ...(ledger ? { ledger } : {}) };
+  const ctx: EffectContext = { rng, itemBoost: s.itemBoost, revealed: s.revealed, log: s.log, battle: s, ...(ledger ? { ledger } : {}) };
   for (const c of s.party) c.defending = c.alive && actions[c.key]?.kind === 'defend';
   if (s.party.some((c) => c.alive && actions[c.key]?.kind === 'escape')) {
     const success = !s.boss && rng() < escapeChance(s);
@@ -437,11 +454,13 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
       if (actor.side === 'party' && actor.alive && act.kind !== 'ultimate' && act.kind !== 'escape') actor.limit = Math.min(LIMIT_MAX, actor.limit + gaugeGain(actor, LIMIT_PER_ACTION));
     }
     ringBell(s, heroUp, ctx);
+    syncWards(s);
     if (checkOutcome(s)) return s;
   }
   const heroUp = s.party.some((c) => c.key === 'hero' && c.alive);
   endOfRound(s, ctx, rng);
   ringBell(s, heroUp, ctx);
+  syncWards(s);
   if (!checkOutcome(s) && s.survive && s.round >= s.survive) {
     s.outcome = 'win';
     s.log.push({ type: 'survived' });

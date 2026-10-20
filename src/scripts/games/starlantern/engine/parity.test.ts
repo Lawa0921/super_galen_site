@@ -5,11 +5,11 @@ import { describe, expect, it } from 'vitest';
 import { totalOf } from './ledger';
 import { STANDARD_LINEUP } from './party';
 import {
-  PARITY_LEVELS, PARITY_MEMBER_PCT, PARITY_PARTY_PCT, PARITY_SEEDS, checkParity, measureParity, parityDepth, parityLineups,
-  type ParityCell, type ParityTable,
+  PARITY_FLOOR_PCT, PARITY_LEVELS, PARITY_MEMBER_PCT, PARITY_PARTY_PCT, PARITY_SEEDS, PARITY_SUM_PCT, checkParity, measureParity,
+  parityDepth, parityLineups, type ParityCell, type ParityRow, type ParityTable,
 } from './parity';
 
-const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'sim-gate', 'contribution.json');
+const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'sim-gate', 'contribution.8b.json');
 const TIMEOUT = 300_000;
 
 let measured: ParityTable | undefined;
@@ -23,7 +23,7 @@ const cell = (over: Partial<ParityCell>): ParityCell =>
 describe('parity: the old roster baseline', () => {
   it('parity scenarios', () => {
     expect(PARITY_LEVELS.map(parityDepth)).toEqual([1, 3, 5, 9, 13]);
-    expect([PARITY_SEEDS, PARITY_MEMBER_PCT, PARITY_PARTY_PCT]).toEqual([20, 10, 5]);
+    expect([PARITY_SEEDS, PARITY_MEMBER_PCT, PARITY_FLOOR_PCT, PARITY_SUM_PCT, PARITY_PARTY_PCT]).toEqual([20, 10, 2, 10, 5]);
     const lineups = parityLineups();
     expect(lineups).toHaveLength(6);
     expect(lineups[0]).toEqual({ measured: STANDARD_LINEUP, ids: STANDARD_LINEUP });
@@ -32,33 +32,51 @@ describe('parity: the old roster baseline', () => {
   });
 
   it('checkParity bands', () => {
-    // Liz is measured alone; the party is the five. Base: Liz 100 a round, the others 100 each (party 500).
-    const others = { hero: C(1000), rin: C(1000), chizuru: C(600, 0, 400), selene: C(200, 800) };
-    const base: ParityTable = { cells: [cell({ by: { liz: C(1000), ...others } })] };
-    const withLiz = (liz: number, extra = 0) => ({ cells: [cell({ by: { liz: C(liz), ...others, hero: C(1000 + extra) } })] });
-    const lizRow = (t: ParityTable) => checkParity(t, base).rows.find((r) => r.who === 'liz')!;
-    expect(checkParity(withLiz(1090), base).ok).toBe(true);
-    expect(lizRow(withLiz(1090))).toEqual({ level: 5, ids: 'hero,rin,liz,chizuru,selene', who: 'liz', base: 100, now: 109, pct: 9 });
-    expect(checkParity(withLiz(1110), base).ok).toBe(false);
-    expect(lizRow(withLiz(1110)).pct).toBe(11);
-    expect(checkParity(withLiz(900), base).ok).toBe(true);
-    expect(lizRow(withLiz(900)).pct).toBe(-10);
-    // The party: +6% fails, +5% passes (Liz's own share stays inside her band either way).
-    const party = (t: ParityTable) => checkParity(t, base).rows.find((r) => r.who === 'party')!;
-    expect(checkParity(withLiz(1000, 300), base).ok).toBe(false);
-    expect(party(withLiz(1000, 300))).toEqual({ level: 5, ids: 'hero,rin,liz,chizuru,selene', who: 'party', base: 500, now: 530, pct: 6 });
-    expect(checkParity(withLiz(1000, 250), base).ok).toBe(true);
-    expect(party(withLiz(1000, 250)).pct).toBe(5);
+    // Liz is measured alone; the party is the five. One round a cell, so a total is a round's worth.
+    const one = (level: number, liz: number, hero: number): ParityCell =>
+      cell({ level, rounds: 1, by: { liz: C(liz), hero: C(hero), rin: C(0), chizuru: C(0), selene: C(0) } });
+    const table = (cells: ParityCell[]): ParityTable => ({ cells });
+    const rowOf = (now: ParityTable, base: ParityTable, who: string, rule: ParityRow['rule'], level?: number) =>
+      checkParity(now, base).rows.find((r) => r.who === who && r.rule === rule && (level === undefined || r.level === level))!;
+    const within = (r: ParityRow) => Math.abs(r.now - r.base) <= r.allowed;
+
+    // A small share: the party's 2% (20 of 1000) is the band, wider than her own 10% (2 of 20).
+    const small = table([one(5, 20, 980)]);
+    const s1 = rowOf(table([one(5, 39.9, 980)]), small, 'liz', 'cell');
+    expect([s1.base, s1.now, s1.allowed, within(s1)]).toEqual([20, 39.9, 20, true]);
+    expect(within(rowOf(table([one(5, 40.1, 980)]), small, 'liz', 'cell'))).toBe(false);
+    expect(checkParity(table([one(5, 40.1, 980)]), small).ok).toBe(false);
+    // A large share: her own 10% (50 of 500) is the band.
+    const large = table([one(5, 500, 500)]);
+    expect(rowOf(table([one(5, 549, 500)]), large, 'liz', 'cell').allowed).toBe(50);
+    expect(within(rowOf(table([one(5, 549, 500)]), large, 'liz', 'cell'))).toBe(true);
+    expect(checkParity(table([one(5, 549, 500)]), large).ok).toBe(true);
+    expect(within(rowOf(table([one(5, 551, 500)]), large, 'liz', 'cell'))).toBe(false);
+    expect(checkParity(table([one(5, 551, 500)]), large).ok).toBe(false);
+    // Her five levels summed: strict 10%, no floor, edge included. +18 on a sum of 100 fails though every cell passes.
+    const five = (liz: number[]) => table(PARITY_LEVELS.map((lv, i) => one(lv, liz[i], 980)));
+    const base5 = five([20, 20, 20, 20, 20]);
+    const r18 = checkParity(five([38, 20, 20, 20, 20]), base5);
+    expect(r18.rows.filter((r) => r.rule === 'cell').every(within)).toBe(true);
+    const sum18 = r18.rows.find((r) => r.rule === 'sum')!;
+    expect(sum18).toEqual({ level: 0, ids: 'hero,rin,liz,chizuru,selene', who: 'liz', base: 100, now: 118, pct: 18, rule: 'sum', allowed: 10 });
+    expect(r18.ok).toBe(false);
+    expect(checkParity(five([30, 20, 20, 20, 20]), base5).ok).toBe(true);
+    expect(checkParity(five([20, 20, 20, 20, 9.9]), base5).ok).toBe(false);
+    // The party: 5% of 1000, edge included, no floor.
+    const p50 = rowOf(table([one(5, 500, 550)]), large, 'party', 'party');
+    expect([p50.base, p50.now, p50.allowed, p50.pct]).toEqual([1000, 1050, 50, 5]);
+    expect(checkParity(table([one(5, 500, 550)]), large).ok).toBe(true);
+    expect(within(rowOf(table([one(5, 500, 551)]), large, 'party', 'party'))).toBe(false);
+    expect(checkParity(table([one(5, 500, 551)]), large).ok).toBe(false);
     // Rounds count: the same totals over twice the rounds is half a round's worth.
-    expect(lizRow({ cells: [cell({ rounds: 20, by: { liz: C(1000), ...others } })] }).pct).toBe(-50);
-    // A missing cell fails; a zero baseline must stay zero.
-    expect(checkParity({ cells: [] }, base).ok).toBe(false);
-    const zero: ParityTable = { cells: [cell({ by: { liz: C(0), ...others } })] };
-    expect(checkParity(zero, zero).ok).toBe(true);
-    expect(checkParity(withLiz(10), zero).ok).toBe(false);
+    expect(rowOf(table([{ ...one(5, 500, 500), rounds: 2 }]), large, 'liz', 'cell').pct).toBe(-50);
+    // A missing cell fails.
+    expect(checkParity({ cells: [] }, large).ok).toBe(false);
+    expect(checkParity(table([one(10, 500, 500)]), large).ok).toBe(false);
   });
 
-  it('every character holds ±10% and every party ±5% of the old roster', () => {
+  it('every character holds parity with the 8b roster', () => {
     const now = measure();
     if (process.env.SIM_GATE_OUT) {
       mkdirSync(process.env.SIM_GATE_OUT, { recursive: true });
@@ -67,7 +85,7 @@ describe('parity: the old roster baseline', () => {
     expect(existsSync(FIXTURE), `${FIXTURE} is recorded by scripts/starlantern-sim-gate.sh`).toBe(true);
     const base = JSON.parse(readFileSync(FIXTURE, 'utf8')) as ParityTable;
     const { ok, rows } = checkParity(now, base);
-    const bad = rows.filter((r) => !(Math.abs(r.pct) <= (r.who === 'party' ? PARITY_PARTY_PCT : PARITY_MEMBER_PCT)));
+    const bad = rows.filter((r) => !(Math.abs(r.now - r.base) <= r.allowed));
     expect(ok, JSON.stringify(bad, null, 1)).toBe(true);
   }, TIMEOUT);
 

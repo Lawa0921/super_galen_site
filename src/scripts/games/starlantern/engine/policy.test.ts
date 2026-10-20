@@ -52,9 +52,9 @@ describe('per-character policies', () => {
     };
     let { s, c } = chizuru();
     expect(run(s, c, sk('ward', 'pierce'), rule)).toEqual({ action: { kind: 'skill', skill: 'ward' }, hold: [] });
-    ({ s, c } = chizuru([{ skill: 'ward', turns: 2, src: 'chizuru' }]));
+    ({ s, c } = chizuru([{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru' }]));
     expect(run(s, c, sk('ward', 'pierce'), rule).action).toBeNull();
-    ({ s, c } = chizuru([{ skill: 'ward', turns: 1, src: 'chizuru' }]));
+    ({ s, c } = chizuru([{ skill: 'ward', kind: 'guard', power: 30, turns: 1, src: 'chizuru' }]));
     expect(run(s, c, sk('ward', 'pierce'), rule).action).toEqual({ kind: 'skill', skill: 'ward' });
     ({ s, c } = chizuru());
     expect(run(s, c, sk('pierce'), rule).action).toBeNull();   // ward not castable: short of TP

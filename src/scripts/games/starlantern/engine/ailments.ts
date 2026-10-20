@@ -111,7 +111,7 @@ export function tickAilments(c: Combatant, ctx: EffectContext): void {
     if (!c.alive) return;
     const amount = shockTick(c, d.tick);
     if (c.side === 'enemy') credit(ctx.ledger, d.src, 'damage', lossOf(c, amount));
-    ctx.log.push({ type: 'dot-tick', target: c.key, amount: dealDamage(c, amount, { dot: true }), status });
+    ctx.log.push({ type: 'dot-tick', target: c.key, amount: dealDamage(c, amount, { dot: true, ledger: ctx.ledger, log: ctx.log }), status });
     if (!c.alive) ctx.log.push({ type: 'ko', target: c.key });
   }
 }

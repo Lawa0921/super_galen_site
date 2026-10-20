@@ -175,6 +175,7 @@ export const T = {
     escape: (ok: boolean) => (ok ? '成功逃跑了' : '逃跑失敗'),
     poison: (who: string, n: number) => `${who} 因毒受到 ${n} 傷害`,
     dot: (who: string, s: 'burn' | 'bleed', n: number) => `${who} 因${s === 'burn' ? '灼燒' : '流血'}受到 ${n} 傷害`,
+    shield: (who: string, n: number) => `${who}的護盾擋下了 ${n} 傷害`,
     frozen: (who: string) => `${who} 被凍住了，動彈不得`,
     miss: (who: string) => `${who} 閃過了攻擊`,
     crit: '（暴擊）',

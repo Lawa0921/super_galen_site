@@ -30,11 +30,13 @@ export function lossOf(t: Combatant, amount: number): number {
 /**
  * Damage prevented on one landed enemy hit on a member, credited factor by factor: each one taken away alone, the hit
  * recomputed with the same rolls (`hitAmount`), and what more the target would have lost goes to whoever set the factor.
- * The factors: the target's def / res buffs (by the hit's scale), the attacker's matching debuff, the target's defending,
- * taunt-guard and not-a-shield while taunting; and, for a single hit a taunt turned (`redirectFrom`), what the first
- * target would have lost, to the taunter. Call it before the damage lands.
+ * The factors: the target's def / res buffs (by the hit's scale), the guard barrier's ward on it (to the barrier's
+ * raiser), the attacker's matching debuff, the target's defending, taunt-guard and not-a-shield while taunting; and, for
+ * a single hit a taunt (or a cover) turned onto it (`redirect`), the average of what each other living member in `pool`
+ * would have lost, rounded down to whole HP, to the target. An empty pool credits nothing. A shield is not a factor: it
+ * is credited apart, by what it absorbs (combatant.dealDamage). Call it before the damage lands.
  */
-export function creditPrevented(l: Ledger, a: Combatant, t: Combatant, spec: DamageSpec, r: HitRolls, amount: number, redirectFrom?: Combatant): void {
+export function creditPrevented(l: Ledger, a: Combatant, t: Combatant, spec: DamageSpec, r: HitRolls, amount: number, redirect?: { pool: Combatant[] }): void {
   const actual = lossOf(t, amount);
   const spared = (who: Combatant, alt: Combatant, attacker: Combatant = a): number =>
     Math.max(0, lossOf(who, hitAmount(attacker, alt, spec, r).amount) - actual);
@@ -42,6 +44,7 @@ export function creditPrevented(l: Ledger, a: Combatant, t: Combatant, spec: Dam
   t.buffs.forEach((b, i) => {
     if (b.stat === guard && b.pct > 0) credit(l, b.src, 'prevented', spared(t, { ...t, buffs: t.buffs.filter((_, j) => j !== i) }));
   });
+  if (t.ward && t.ward[guard] > 0) credit(l, t.ward.src, 'prevented', spared(t, { ...t, ward: undefined }));
   a.buffs.forEach((b, i) => {
     if (b.stat === spec.scale && b.pct < 0) credit(l, b.src, 'prevented', spared(t, t, { ...a, buffs: a.buffs.filter((_, j) => j !== i) }));
   });
@@ -51,5 +54,9 @@ export function creditPrevented(l: Ledger, a: Combatant, t: Combatant, spec: Dam
       if (t.keystones.includes(k)) credit(l, t.key, 'prevented', spared(t, { ...t, keystones: t.keystones.filter((x) => x !== k) }));
     }
   }
-  if (redirectFrom && redirectFrom !== t && redirectFrom.alive) credit(l, t.key, 'prevented', spared(redirectFrom, redirectFrom));
+  const pool = (redirect?.pool ?? []).filter((c) => c !== t && c.alive);
+  if (pool.length) {
+    const would = pool.reduce((n, c) => n + lossOf(c, hitAmount(a, c, spec, r).amount), 0);
+    credit(l, t.key, 'prevented', Math.max(0, Math.floor(would / pool.length) - actual));
+  }
 }

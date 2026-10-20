@@ -4,6 +4,7 @@ import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import type { MechState } from './mech';
+import { credit, type Ledger } from './ledger';
 import { AILMENT, clearAilments, type AilmentShown, type Dot } from './ailments';
 
 /** `src`: the combatant key of whoever cast it (the contribution ledger credits what it prevents to them). */
@@ -55,6 +56,10 @@ export interface Combatant {
   frozen?: true;
   freezeGuard?: number;
   chill?: number;
+  /** The guard barrier over the party, as it stands on this member (battle.syncWards): def and res percent, who raised it. */
+  ward?: { def: number; res: number; src: string };
+  /** A shield: damage it takes before HP (dealDamage), and who gave it (the ledger credits what it absorbs to them). */
+  shield?: { amount: number; src: string };
 }
 
 export type BattleEvent =
@@ -81,6 +86,8 @@ export type BattleEvent =
   | { type: 'poison-tick'; target: string; amount: number }
   /** A burn or bleed stack's round-end damage. */
   | { type: 'dot-tick'; target: string; amount: number; status: 'burn' | 'bleed' }
+  /** A shield took `amount` of a hit before HP did. */
+  | { type: 'shield'; target: string; amount: number }
   /** A frozen combatant's turn, lost (it thaws). */
   | { type: 'frozen'; actor: string }
   /** A survive fight lasted its rounds. */
@@ -90,8 +97,9 @@ export const MAX_BUFFS = 3;
 export const SLEEP_TURNS = 3;
 
 export function stat(c: Combatant, s: BuffStat): number {
-  // A chilled boss is slower, added to its buffs' percentages.
-  const pct = c.buffs.filter((b) => b.stat === s).reduce((sum, b) => sum + b.pct, 0) + (s === 'spd' && c.chill ? AILMENT.chillSpdPct : 0);
+  // A chilled boss is slower, and a guard barrier's ward guards: both added to the buffs' percentages.
+  const pct = c.buffs.filter((b) => b.stat === s).reduce((sum, b) => sum + b.pct, 0) + (s === 'spd' && c.chill ? AILMENT.chillSpdPct : 0)
+    + (c.ward ? (s === 'def' ? c.ward.def : s === 'res' ? c.ward.res : 0) : 0);
   return Math.max(1, Math.floor(c.max[s] * Math.max(0.25, 1 + pct / 100)));
 }
 
@@ -203,9 +211,18 @@ export const gaugeGain = (c: Combatant, n: number): number => Math.floor(n * (1 
 
 /**
  * Hurts a combatant and returns the HP it really lost: an undying target stops at 1, so the log and the gauge see only what
- * was taken. A hit wakes a sleeper; damage over time (`dot`: poison, burn, bleed) does not.
+ * was taken. A shield takes the damage first (logged to `log`, credited to its giver in `ledger`); what it leaves goes to
+ * HP. A hit wakes a sleeper, even one the shield took whole; damage over time (`dot`: poison, burn, bleed) does not.
  */
-export function dealDamage(t: Combatant, amount: number, opts: { dot?: true } = {}): number {
+export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; ledger?: Ledger; log?: BattleEvent[] } = {}): number {
+  if (t.shield) {
+    const absorbed = Math.min(t.shield.amount, amount);
+    credit(opts.ledger, t.shield.src, 'shield', absorbed);
+    opts.log?.push({ type: 'shield', target: t.key, amount: absorbed });
+    amount -= absorbed;
+    if (t.shield.amount > absorbed) t.shield = { ...t.shield, amount: t.shield.amount - absorbed };
+    else delete t.shield;
+  }
   const lost = t.undying ? Math.max(0, Math.min(amount, t.hp - 1)) : amount;
   if (t.side === 'party' && t.alive && lost > 0) t.limit = Math.min(100, t.limit + gaugeGain(t, Math.max(1, Math.floor((lost / t.max.hp) * 40))));
   t.hp = Math.max(t.undying ? 1 : 0, t.hp - amount);
@@ -217,6 +234,8 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true } = 
     t.buffs = [];
     t.taunt = 0;
     t.turret = null;
+    delete t.shield;
+    delete t.ward;
     clearAilments(t);
   }
   return lost;

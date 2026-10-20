@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createBattle, resolveRound, type BattleState } from './battle';
-import { hitAmount, type Combatant, type DamageSpec, type HitRolls } from './combatant';
+import { createBattle, resolveRound, syncWards, type BattleState } from './battle';
+import { dealDamage, hitAmount, rollHit, stat, type BattleEvent, type Combatant, type DamageSpec, type HitRolls } from './combatant';
 import { credit, lossOf, newLedger, totalOf, type Ledger } from './ledger';
 import { mulberry32 } from './rng';
 import { encounterTable } from './scaling';
@@ -146,35 +146,145 @@ describe('the contribution ledger', () => {
   });
 
   describe('a hit turned by a taunt', () => {
+    const spec = (melee: boolean) => phys({ melee });
     const party = () => [
       P('scarlet', { taunt: 2, max: { hp: 1000, tp: 20, atk: 20, def: 200, mag: 20, res: 20, spd: 1 } }),
-      P('selene', { row: 'back', max: { hp: 1000, tp: 20, atk: 20, def: 10, mag: 20, res: 20, spd: 1 } }),
+      P('noel', { max: { hp: 1000, tp: 20, atk: 20, def: 10, mag: 20, res: 20, spd: 1 } }),
+      P('selene', { row: 'back', max: { hp: 1000, tp: 20, atk: 20, def: 35, mag: 20, res: 20, spd: 1 } }),
     ];
-    const foe = (over: Partial<Combatant> = {}) => E('e0', { max: { hp: 9999, tp: 0, atk: 300, def: 20, mag: 20, res: 20, spd: 99 }, ...over });
+    const foe = (melee = true) => E('e0', { melee, max: { hp: 9999, tp: 0, atk: 300, def: 20, mag: 20, res: 20, spd: 99 } });
     const fight = (s: BattleState) => { const l = newLedger(); return { l, s: resolveRound(s, {}, constRng(0.5), l) }; };
+    /** What `who` would have lost to the same hit, with the rolls the hit drew. */
+    const would = (melee: boolean, who: Combatant) => {
+      const r = rollHit(foe(melee), who, spec(melee), constRng(0.5))!;
+      return lossOf(who, hitAmount(foe(melee), who, spec(melee), r).amount);
+    };
+    const taken = (s: BattleState) => party()[0].hp - s.party[0].hp;
 
-    it('credits the taunter with what the first target was spared', () => {
-      const { l, s } = fight(makeBattle(party(), [foe()], { intents: { e0: { kind: 'attack', target: 'selene' } } }));
-      const scarlet = s.party[0], selene0 = party()[1], scarlet0 = party()[0];
-      const actual = scarlet0.hp - scarlet.hp;
-      expect(actual).toBeGreaterThan(0);
-      expect(s.party[1].hp).toBe(selene0.hp);   // the hit really was turned
-      const would = lossOf(selene0, hitAmount(foe(), selene0, phys(), MID).amount);
-      expect(would).toBeGreaterThan(actual);
-      expect(of(l, 'scarlet').prevented).toBe(Math.max(0, would - actual));
+    it('a taunt is credited with the average loss over the others the foe could reach', () => {
+      // Melee: the front row only, so the pool is Noel.
+      const melee = fight(makeBattle(party(), [foe()], { intents: { e0: { kind: 'attack', target: 'noel' } } }));
+      expect(taken(melee.s)).toBeGreaterThan(0);
+      expect(melee.s.party[1].hp).toBe(1000);   // the hit really was turned
+      expect(of(melee.l, 'scarlet').prevented).toBe(Math.max(0, would(true, party()[1]) - taken(melee.s)));
+      expect(of(melee.l, 'scarlet').prevented).toBeGreaterThan(0);
+      // Ranged: everyone standing, so the pool is Noel and Selene (whole HP: the average is rounded down).
+      const ranged = fight(makeBattle(party(), [foe(false)], { intents: { e0: { kind: 'attack', target: 'noel' } } }));
+      const avg = Math.floor((would(false, party()[1]) + would(false, party()[2])) / 2);
+      expect(would(false, party()[1])).not.toBe(would(false, party()[2]));
+      expect(of(ranged.l, 'scarlet').prevented).toBe(Math.max(0, avg - taken(ranged.s)));
+      expect(of(ranged.l, 'scarlet').prevented).toBeGreaterThan(0);
     });
 
-    it('credits nothing when the taunt was already there when the foe chose', () => {
-      const { l, s } = fight(makeBattle(party(), [foe()], { intents: { e0: { kind: 'attack', target: 'scarlet' } } }));
-      expect(s.party[0].hp).toBeLessThan(1000);
-      expect(of(l, 'scarlet').prevented).toBe(0);
+    it('a taunt already in place when the foe planned still earns its credit', () => {
+      const turned = fight(makeBattle(party(), [foe()], { intents: { e0: { kind: 'attack', target: 'noel' } } }));
+      const meant = fight(makeBattle(party(), [foe()], { intents: { e0: { kind: 'attack', target: 'scarlet' } } }));
+      expect(of(meant.l, 'scarlet').prevented).toBeGreaterThan(0);
+      expect(of(meant.l, 'scarlet').prevented).toBe(of(turned.l, 'scarlet').prevented);
     });
 
-    it('credits nothing for an area skill turned by a taunt', () => {
+    it('an area hit or a lone taunter credits nothing', () => {
       const def: EnemyDef = { ...ENEMIES.slime, skills: [{ name: '橫掃', chance: 1, target: 'row', effects: [{ kind: 'damage', ...phys() }] }] };
-      const { l, s } = fight(makeBattle(party(), [foe()], { intents: { e0: { kind: 'enemy-skill', index: 0, target: 'selene' } }, enemyDefs: { e0: def } }));
-      expect(s.party[0].hp).toBeLessThan(1000);
-      expect(of(l, 'scarlet').prevented).toBe(0);
+      const area = fight(makeBattle(party(), [foe()], { intents: { e0: { kind: 'enemy-skill', index: 0, target: 'noel' } }, enemyDefs: { e0: def } }));
+      expect(taken(area.s)).toBeGreaterThan(0);
+      expect(of(area.l, 'scarlet').prevented).toBe(0);
+      // A melee foe reaches only the front row, and Scarlet stands there alone: nobody else it could have hit.
+      const alone = fight(makeBattle([party()[0], party()[2]], [foe()], { intents: { e0: { kind: 'attack', target: 'scarlet' } } }));
+      expect(taken(alone.s)).toBeGreaterThan(0);
+      expect(of(alone.l, 'scarlet').prevented).toBe(0);
+    });
+  });
+
+  describe('barriers and shields', () => {
+    const foe = () => E('e0', { max: { hp: 9999, tp: 0, atk: 300, def: 20, mag: 300, res: 20, spd: 99 } });
+    const ward = { def: 30, res: 30, src: 'chizuru' };
+    const credited = (spec: DamageSpec, t: Combatant) => {
+      const l = newLedger();
+      const before: Combatant = structuredClone(t);
+      applyEffect(foe(), t, { kind: 'damage', ...spec }, ctx(l));
+      return { l, before, actual: before.hp - t.hp };
+    };
+
+    it("a guard barrier's share goes to whoever raised it", () => {
+      const t = P('selene', { max: { hp: 1000, tp: 20, atk: 20, def: 20, mag: 20, res: 20, spd: 10 }, ward });
+      expect(stat(t, 'def')).toBe(Math.floor(20 * 1.3));
+      expect(stat(t, 'res')).toBe(Math.floor(20 * 1.3));
+      expect(stat(t, 'atk')).toBe(20);
+      for (const spec of [phys(), phys({ element: 'ice', scale: 'mag', melee: false })]) {
+        const { l, before, actual } = credited(spec, structuredClone(t));
+        const want = lossOf(before, hitAmount(foe(), { ...before, ward: undefined }, spec, MID).amount) - actual;
+        expect(want).toBeGreaterThan(0);
+        expect(of(l, 'chizuru').prevented).toBe(want);
+      }
+      // A ward and a def buff together: each recomputed with only itself taken away.
+      const both = P('selene', { max: t.max, ward, buffs: [{ stat: 'def', pct: 30, turns: 2, src: 'hero' }] });
+      const { l, before, actual } = credited(phys(), both);
+      expect(of(l, 'chizuru').prevented).toBe(lossOf(before, hitAmount(foe(), { ...before, ward: undefined }, phys(), MID).amount) - actual);
+      expect(of(l, 'hero').prevented).toBe(lossOf(before, hitAmount(foe(), { ...before, buffs: [] }, phys(), MID).amount) - actual);
+      expect(of(l, 'hero').prevented).toBeGreaterThan(0);
+      expect(of(l, 'hero').prevented).toBe(of(l, 'chizuru').prevented);
+    });
+
+    it('syncWards mirrors the guard barrier on every living member', () => {
+      const s = makeBattle([P('chizuru'), P('noel'), P('selene', { alive: false, hp: 0 })], [E('e0')],
+        { barriers: [{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru' }] });
+      syncWards(s);
+      expect(s.party.map((c) => c.ward)).toEqual([ward, ward, undefined]);
+      s.barriers = [{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru', boost: 2 }];
+      syncWards(s);
+      expect(s.party[0].ward).toEqual({ def: 60, res: 60, src: 'chizuru' });
+      s.barriers = [{ skill: 'purify-ward', kind: 'purify', power: 30, turns: 2, src: 'chizuru' }];
+      syncWards(s);
+      expect(s.party.some((c) => 'ward' in c)).toBe(false);
+      s.barriers = [{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru' }];
+      syncWards(s);
+      s.barriers = [];
+      syncWards(s);
+      expect(s.party.some((c) => 'ward' in c)).toBe(false);
+      // A round keeps them in step: the ward is on the members after it.
+      const r = resolveRound(makeBattle([P('chizuru'), P('noel')], [E('e0', { sleep: 3 })],
+        { barriers: [{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru' }] }), {}, constRng(0.5));
+      expect(r.party.map((c) => c.ward)).toEqual([ward, ward]);
+    });
+
+    it('a shield takes the hit first and is credited to who gave it', () => {
+      const l = newLedger();
+      const log: BattleEvent[] = [];
+      const t = P('noel', { shield: { amount: 30, src: 'bobby' } });
+      expect(dealDamage(t, 50, { ledger: l, log })).toBe(20);
+      expect(t.hp).toBe(80);
+      expect('shield' in t).toBe(false);
+      expect(of(l, 'bobby').shield).toBe(30);
+      expect(log).toEqual([{ type: 'shield', target: 'noel', amount: 30 }]);
+      // A hit the shield takes whole: no HP lost, the rest of the shield kept.
+      const u = P('noel', { shield: { amount: 30, src: 'bobby' }, sleep: 2 });
+      expect(dealDamage(u, 10, { ledger: l, log })).toBe(0);
+      expect(u.hp).toBe(100);
+      expect(u.shield).toEqual({ amount: 20, src: 'bobby' });
+      expect(of(l, 'bobby').shield).toBe(40);
+      expect(u.sleep).toBe(0);   // still a hit: it wakes her
+      const v = P('noel', { shield: { amount: 30, src: 'bobby' }, sleep: 2 });
+      expect(dealDamage(v, 10, { dot: true })).toBe(0);
+      expect(v.sleep).toBe(2);   // a tick does not
+      expect(v.shield).toEqual({ amount: 20, src: 'bobby' });
+      // A fall clears the shield and the ward.
+      const w = P('noel', { hp: 5, shield: { amount: 3, src: 'bobby' }, ward });
+      dealDamage(w, 50);
+      expect(w.alive).toBe(false);
+      expect('shield' in w || 'ward' in w).toBe(false);
+    });
+
+    it('in a fight the shield takes hits and ticks alike, credited to its giver', () => {
+      const l = newLedger();
+      const t = P('noel', { shield: { amount: 1000, src: 'bobby' }, poison: true, poisonSrc: 'e0', burn: { tick: 5, turns: 2, src: 'e0' } });
+      const s = resolveRound(makeBattle([t], [foe()], { intents: { e0: { kind: 'attack', target: 'noel' } } }), {}, constRng(0.5), l);
+      expect(s.party[0].hp).toBe(100);
+      const soaked = s.log.flatMap((e) => (e.type === 'shield' ? [e.amount] : []));
+      expect(soaked).toHaveLength(3);   // the hit, the poison tick, the burn tick
+      expect(soaked.slice(1)).toEqual([10, 5]);
+      expect(of(l, 'bobby').shield).toBe(soaked.reduce((n, a) => n + a, 0));
+      expect(of(l, 'bobby').shield).toBe(1000 - s.party[0].shield!.amount);
+      expect(s.log).toContainEqual({ type: 'damage', target: 'noel', amount: 0, element: 'phys', mult: 1 });
     });
   });
 

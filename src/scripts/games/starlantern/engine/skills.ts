@@ -5,16 +5,20 @@ import type { Effect, Element, SkillDef } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import { credit, creditPrevented, lossOf, type Ledger } from './ledger';
 import { clearAilments, inflictAilment } from './ailments';
+import type { BattleState } from './battle';
 
 /**
  * `ledger`: the sim's contribution ledger (absent in the game); it reads the fight and never draws. `redirect`: set only
- * while an enemy's single hit a taunt turned resolves, with the member it first meant to hit. `lastHit`: the HP the
- * current action's latest landed hit took, and from whom (burn and bleed are a share of it); each action starts without.
+ * while the ledger watches an enemy's single hit a taunt turned, with the other members it could have hit instead
+ * (ledger.creditPrevented). `lastHit`: the HP the current action's latest landed hit took, and from whom (burn and bleed
+ * are a share of it); each action starts without. `battle`: the fight being resolved (resolveRound sets it); an effect
+ * that needs it does nothing without it (a bare test context, a cast outside battle).
  */
 export interface EffectContext {
   rng: Rng; itemBoost: boolean; revealed: Record<string, Element[]>; log: BattleEvent[];
   ledger?: Ledger;
-  redirect?: { from: Combatant };
+  redirect?: { pool: Combatant[] };
+  battle?: BattleState;
   lastHit?: { target: string; amount: number };
 }
 
@@ -111,9 +115,9 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         const { amount, mult, crit } = hitAmount(actor, target, eff, rolls);
         if (ctx.ledger) {
           if (actor.side === 'party' && target.side === 'enemy') credit(ctx.ledger, actor.key, 'damage', lossOf(target, amount));
-          else if (actor.side === 'enemy' && target.side === 'party') creditPrevented(ctx.ledger, actor, target, eff, rolls, amount, ctx.redirect?.from);
+          else if (actor.side === 'enemy' && target.side === 'party') creditPrevented(ctx.ledger, actor, target, eff, rolls, amount, ctx.redirect);
         }
-        const lost = dealDamage(target, amount);
+        const lost = dealDamage(target, amount, { ledger: ctx.ledger, log: ctx.log });
         ctx.lastHit = { target: target.key, amount: lost };
         if (target.side === 'enemy') reveal(ctx.revealed, target.defId, eff.element);
         ctx.log.push({ type: 'damage', target: target.key, amount: lost, element: eff.element, mult, ...(crit ? { crit } : {}) });

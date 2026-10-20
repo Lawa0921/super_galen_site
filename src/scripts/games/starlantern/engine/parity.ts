@@ -1,8 +1,8 @@
 /**
  * Power parity (spec §12.6, plan 8a Task 5): each character's effective contribution per round — damage, healing,
  * damage prevented, shield — measured with the contribution ledger and the sim player's default policies, so a roster
- * change can be held to ±10% per character and ±5% per party against the old roster's baseline
- * (engine/__fixtures__/sim-gate/contribution.json).
+ * change can be held to the old roster's baseline (engine/__fixtures__/sim-gate/contribution.8b.json, the 8b rules) by
+ * the rule `checkParity` states.
  */
 import { CHARACTER_IDS } from '../data/characters';
 import { expectedEnhance } from '../data/forge';
@@ -15,8 +15,12 @@ import type { CharacterId } from './types';
 
 export const PARITY_LEVELS = [5, 10, 20, 35, 50] as const;
 export const PARITY_SEEDS = 20;
-/** A measured member's contribution per round may move this many percent either way. */
+/** A measured member's contribution per round in one cell may move this many percent of her own baseline either way... */
 export const PARITY_MEMBER_PCT = 10;
+/** ...or, when it is more, this many percent of the whole party's baseline in that cell (a small share's floor). */
+export const PARITY_FLOOR_PCT = 2;
+/** A measured member's contributions per round over the five levels of her lineup, summed, may move this many percent. */
+export const PARITY_SUM_PCT = 10;
 /** A whole party's contribution per round may move this many percent either way. */
 export const PARITY_PARTY_PCT = 5;
 
@@ -75,7 +79,14 @@ export function measureParity(policies?: PolicyTable): ParityTable {
   return { cells };
 }
 
-export interface ParityRow { level: number; ids: string; who: CharacterId | 'party'; base: number; now: number; pct: number }
+/**
+ * One check: `rule` 'cell' (a measured member in one cell), 'sum' (a measured member over her lineup's levels; `level` 0)
+ * or 'party' (a whole party in one cell); `allowed` is the absolute difference it may have, edge included.
+ */
+export interface ParityRow {
+  level: number; ids: string; who: CharacterId | 'party'; base: number; now: number; pct: number;
+  rule: 'cell' | 'sum' | 'party'; allowed: number;
+}
 
 const perRound = (c: ParityCell, ids: CharacterId[]): number =>
   ids.reduce((n, id) => n + totalOf(c.by[id] ?? { damage: 0, healing: 0, prevented: 0, shield: 0 }), 0) / c.rounds;
@@ -84,28 +95,33 @@ const perRound = (c: ParityCell, ids: CharacterId[]): number =>
 const change = (base: number, now: number): number => base === 0 ? (now === 0 ? 0 : Infinity) : ((now - base) * 100) / base;
 
 /**
- * `now` against `base`, cell by cell (matched on level and ids): every measured member's contribution per round within
- * ±PARITY_MEMBER_PCT, the whole party's within ±PARITY_PARTY_PCT. A cell of `base` missing from `now` fails.
+ * `now` against `base` (plan 8c ruling 11), cells matched on level and ids; every difference is absolute, per round:
+ * - each measured member in each cell within max(PARITY_MEMBER_PCT of her own baseline, PARITY_FLOOR_PCT of the cell's
+ *   party baseline), so a small share is not held to a band narrower than the noise of the party around it;
+ * - each measured member's cells of one lineup, summed over its levels, within PARITY_SUM_PCT of the summed baseline,
+ *   with no floor;
+ * - each whole party in each cell within PARITY_PARTY_PCT, with no floor.
+ * Edges pass. A cell of `base` missing from `now` fails, and so does every sum it belongs to.
  */
 export function checkParity(now: ParityTable, base: ParityTable): { ok: boolean; rows: ParityRow[] } {
   const rows: ParityRow[] = [];
-  let ok = true;
+  const sums = new Map<string, { ids: string; who: CharacterId; base: number; now: number }>();
+  const push = (r: Omit<ParityRow, 'pct'>) => rows.push({ ...r, pct: change(r.base, r.now) });
   for (const b of base.cells) {
     const ids = b.ids.join(',');
     const n = now.cells.find((c) => c.level === b.level && c.ids.join(',') === ids);
-    if (!n) {
-      ok = false;
-      rows.push({ level: b.level, ids, who: 'party', base: perRound(b, b.ids), now: NaN, pct: NaN });
-      continue;
+    const party = perRound(b, b.ids);
+    for (const id of b.measured) {
+      const before = perRound(b, [id]), after = n ? perRound(n, [id]) : NaN;
+      push({ level: b.level, ids, who: id, base: before, now: after, rule: 'cell',
+        allowed: Math.max((PARITY_MEMBER_PCT * before) / 100, (PARITY_FLOOR_PCT * party) / 100) });
+      const key = `${ids}|${id}`;
+      const sum = sums.get(key) ?? sums.set(key, { ids, who: id, base: 0, now: 0 }).get(key)!;
+      sum.base += before;
+      sum.now += after;
     }
-    const row = (who: CharacterId | 'party', members: CharacterId[], band: number) => {
-      const before = perRound(b, members), after = perRound(n, members);
-      const pct = change(before, after);
-      if (!(Math.abs(pct) <= band)) ok = false;
-      rows.push({ level: b.level, ids, who, base: before, now: after, pct });
-    };
-    for (const id of b.measured) row(id, [id], PARITY_MEMBER_PCT);
-    row('party', b.ids, PARITY_PARTY_PCT);
+    push({ level: b.level, ids, who: 'party', base: party, now: n ? perRound(n, b.ids) : NaN, rule: 'party', allowed: (PARITY_PARTY_PCT * party) / 100 });
   }
-  return { ok, rows };
+  for (const s of sums.values()) push({ level: 0, ...s, rule: 'sum', allowed: (PARITY_SUM_PCT * s.base) / 100 });
+  return { ok: rows.every((r) => Math.abs(r.now - r.base) <= r.allowed), rows };
 }
