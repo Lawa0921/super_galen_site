@@ -88,6 +88,19 @@ const AIL_GAP = 4;
 const AIL_SIZE = 11;
 /** Room kept between two enemies' ailment rows: each row fits its slot less this. */
 const AIL_SLOT_MARGIN = 6;
+/** An ailment row's height (11 px words with their stroke); an intent's (12 px text with its stroke). */
+const AIL_ROW_H = 14;
+const INTENT_H = 15;
+/** A hit's tags (暴擊！ 弱點！ 抗性) stand side by side in one row of this height just over the number. */
+const TAG_SIZE = 14;
+const TAG_ROW_H = 16;
+const TAG_GAP = 4;
+/** A hit number drifts up this far while it shows; it and its tags keep this much more clear of the ailment row. */
+const POP_RISE = 4;
+const POP_CLEAR = 3;
+type Box = { x: number; y: number; width: number; height: number };
+type PopOpts = { weak?: boolean; crit?: boolean; resist?: boolean; small?: boolean };
+const popSize = (o: PopOpts): number => (o.crit ? 36 : o.weak ? 32 : o.small || o.resist ? 22 : 26);
 /** A label's width at the ailment font size, estimated without measuring (render/ailmentStyle.ts `textWidth`). */
 export const ailLabelWidth = (text: string): number => textWidth(text, AIL_SIZE);
 /** Nothing in the picture may rise above the message window. */
@@ -428,6 +441,41 @@ export class BattleView {
     return s && !s.box.destroyed ? s.box : null;
   }
 
+  /** Where an enemy's ailment row stands (its slot's width, one line high), in its box's px. */
+  ailmentRowRect(key: string): Box | null {
+    const s = this.slots.get(key);
+    return s && !s.box.destroyed ? { x: -this.ailMax / 2, y: s.ail.y, width: this.ailMax, height: AIL_ROW_H } : null;
+  }
+
+  /** Where an enemy's intent line stands (anchored at its bottom), in its box's px; at least the row's width. */
+  intentRect(key: string): Box | null {
+    const s = this.slots.get(key);
+    if (!s || s.box.destroyed) return null;
+    const width = Math.max(this.ailMax, textWidth(s.intent.text, 12) + 6);
+    return { x: -width / 2, y: s.intent.y - INTENT_H, width, height: INTENT_H };
+  }
+
+  /**
+   * Where a hit's number and its tags stand on an enemy, in its box's px: the number at the body's middle, readable on a
+   * small sprite, and the tags side by side in one row just over it; pushed down only as far as it takes to keep them
+   * (and the number's drift) clear of the ailment row and the intent above the head.
+   */
+  popupLayout(key: string, text: string, o: PopOpts): { number: Box; tags: Box[] } | null {
+    const s = this.slots.get(key);
+    if (!s || s.box.destroyed) return null;
+    const size = popSize(o);
+    const tags = [o.crit && T_CRIT, o.weak && T_WEAK, o.resist && T_RESIST].filter((x): x is typeof T_CRIT => !!x);
+    const tagRow = tags.length ? TAG_ROW_H : 0;
+    const clear = s.ail.y + AIL_ROW_H + POP_CLEAR + POP_RISE + tagRow + size / 2;
+    const mid = Math.max(-s.body.height / 2, clear);
+    const w = textWidth(text, size);
+    const number = { x: -w / 2, y: mid - size / 2, width: w, height: size };
+    const widths = tags.map((g) => textWidth(g.text, TAG_SIZE));
+    let x = -(widths.reduce((a, b) => a + b, 0) + TAG_GAP * Math.max(0, widths.length - 1)) / 2;
+    const boxes = widths.map((tw) => { const b = { x, y: number.y - TAG_ROW_H, width: tw, height: TAG_ROW_H }; x += tw + TAG_GAP; return b; });
+    return { number, tags: boxes };
+  }
+
   /** The ailment words above an enemy's head, in order (for tests). */
   ailmentTexts(key: string): Text[] {
     const s = this.slots.get(key);
@@ -574,19 +622,23 @@ export class BattleView {
    * The number (or MISS) over an enemy, with small tags above it: 弱點！ for a weak point, 暴擊！ for a crit, 抗性 for a
    * resisted element. A crit's number is the biggest. Reduced motion keeps everything still; the words carry it.
    */
-  private popup(slot: Slot, text: string, color: number, o: { weak?: boolean; crit?: boolean; resist?: boolean; small?: boolean } = {}): void {
-    const size = o.crit ? 36 : o.weak ? 32 : o.small || o.resist ? 22 : 26;
+  private popup(slot: Slot, text: string, color: number, o: PopOpts = {}): void {
+    const size = popSize(o);
+    // On the body, clear of the ailment row and the intent above the head (popupLayout).
+    const at = this.popupLayout(slot.key, text, o)!;
     const t = new Text({ text, style: { fill: color, fontSize: size, fontWeight: 'bold', stroke: { color: 0x000000, width: 5 } } });
     t.anchor.set(0.5);
-    t.y = -slot.body.height - 12;
+    t.y = at.number.y + at.number.height / 2;
     t.scale.set(this.calm ? 1 : o.crit ? 1.9 : 1.6);
     slot.box.addChild(t);
     const parts: Text[] = [t];
     const tags = [o.crit && T_CRIT, o.weak && T_WEAK, o.resist && T_RESIST].filter((x): x is typeof T_CRIT => !!x);
     tags.forEach((g, i) => {
-      const tag = new Text({ text: g.text, style: { fill: g.fill, fontSize: 14, fontWeight: 'bold', stroke: { color: g.stroke, width: 4 } } });
+      const tag = new Text({ text: g.text, style: { fill: g.fill, fontSize: TAG_SIZE, fontWeight: 'bold', stroke: { color: g.stroke, width: 4 } } });
       tag.anchor.set(0.5);
-      tag.y = t.y - size + 6 - i * 16;
+      const r = at.tags[i];
+      tag.x = r.x + r.width / 2;
+      tag.y = r.y + r.height / 2;
       slot.box.addChild(tag);
       parts.push(tag);
     });
@@ -594,7 +646,7 @@ export class BattleView {
     if (!this.calm) {
       this.later(40, () => { if (!t.destroyed) t.scale.set(1.2); });
       this.later(80, () => { if (!t.destroyed) t.scale.set(1); });
-      this.later(200, () => { if (!t.destroyed) t.y -= 4; });
+      this.later(200, () => { if (!t.destroyed) t.y -= POP_RISE; });
     }
     this.later(600, () => { for (const x of parts) if (!x.destroyed) { slot.box.removeChild(x); x.destroy(); } });
   }

@@ -8,6 +8,7 @@ import { BattleView, TINT_COLORS, TINT_STYLE, ailLabelWidth } from './BattleView
 import { AILMENT_FILL, AILMENT_MORE_FILL } from './ailmentStyle';
 import type { AilmentChip } from '../engine/ailments';
 import type { TextureBank } from './textures';
+import { T } from '../data/text.zh-TW';
 
 const sfx = { hit: vi.fn(), weak: vi.fn(), heal: vi.fn(), ko: vi.fn() } as unknown as SoundManager;
 /** Five ailments, as the battle hands them over (the fixed chip order). */
@@ -97,6 +98,53 @@ describe('BattleView bottom inset', () => {
     const box = enemyBox(view);
     const name = box.children.find((c) => c instanceof Text && c.text === 'e0')!;
     expect(name.y + 18).toBeLessThanOrEqual(r.y - box.y + 1);
+  });
+
+  it("an enemy's hit number and its tags stand on its body, clear of its ailment row and its intent (the bat and a boss)", () => {
+    type R = { x: number; y: number; width: number; height: number };
+    const meets = (a: R, b: R) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+    const cases: [string, Texture, boolean, number][] = [
+      ['bat, four of them', new Texture({ source: new TextureSource({ width: 119, height: 65 }) }), false, 4],
+      ['bat, alone', new Texture({ source: new TextureSource({ width: 119, height: 65 }) }), false, 1],
+      ['boss', new Texture({ source: new TextureSource({ width: 220, height: 300 }) }), true, 1],
+    ];
+    for (const [name, tex, boss, n] of cases) {
+      const view = new BattleView(true, { get: () => tex, has: () => true } as unknown as TextureBank);
+      const foes = Array.from({ length: n }, (_, i) => makeCombatant({ key: `e${i}`, side: 'enemy', defId: boss ? 'golem' : 'bat', boss }));
+      view.setup(makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], foes), { width: 640, height: 360 }, 1, 150, 66);
+      view.showIntents({ e0: '攻擊 → 絲嘉蕾' });
+      view.showAilments({ e0: [{ id: 'poison' }, { id: 'burn', turns: 3 }] });
+      const row = view.ailmentRowRect('e0')!, intent = view.intentRect('e0')!;
+      const body = (view.enemyBoxOf('e0')!.children[0] as Container).height;
+      for (const opts of [{}, { resist: true }, { weak: true }, { crit: true }, { crit: true, weak: true }, { crit: true, resist: true }]) {
+        for (const text of ['7', '1234', 'MISS']) {
+          const p = view.popupLayout('e0', text, opts)!;
+          for (const r of [p.number, ...p.tags]) {
+            expect(meets(r, row), `${name} ${text} ${JSON.stringify(opts)} vs the ailment row`).toBe(false);
+            expect(meets(r, intent), `${name} ${text} ${JSON.stringify(opts)} vs the intent`).toBe(false);
+          }
+          // Readable on a small sprite: the number stands on the body.
+          const mid = p.number.y + p.number.height / 2;
+          expect(mid, `${name} ${text}`).toBeGreaterThanOrEqual(-body);
+          expect(mid, `${name} ${text}`).toBeLessThanOrEqual(0);
+        }
+      }
+    }
+  });
+
+  it('a hit draws its number and tags where popupLayout puts them', async () => {
+    const view = new BattleView(true, bank, true);   // calm: no scale animation
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    const box = view.enemyBoxOf('e0')!;
+    const added: { text: string; x: number; y: number }[] = [];
+    const add = box.addChild.bind(box);
+    vi.spyOn(box, 'addChild').mockImplementation(((...c: Text[]) => { added.push(...c.filter((x) => x instanceof Text).map((x) => ({ text: x.text, x: x.x, y: x.y }))); return add(...c); }) as never);
+    await view.play(battle([{ type: 'damage', target: 'e0', amount: 30, element: 'fire', mult: 1.5, crit: true }]), sfx);
+    const p = view.popupLayout('e0', '30', { weak: true, crit: true })!;
+    expect(added.map((t) => t.text)).toEqual(['30', T.battle.pop.crit, T.battle.pop.weak]);
+    expect(added[0].y).toBeCloseTo(p.number.y + p.number.height / 2, 6);
+    expect(added.slice(1).map((t) => t.y)).toEqual(p.tags.map((r) => r.y + r.height / 2));
+    expect(added.slice(1).map((t) => t.x)).toEqual(p.tags.map((r) => r.x + r.width / 2));
   });
 
   it('a small sprite (the bat) keeps at least 30 px visible above its name, its ailment words above its head', () => {
