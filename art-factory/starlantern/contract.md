@@ -168,9 +168,9 @@
   |---|---|---|---|---|---|---|---|---|
   | `MIN_SHORT` | 0.70 | 0.75 | 0.65 | 0.80 | 0.70 | 0.70 | 0.60 | 0.60 |
   | 小圖示短邊下限 | 16 | 17 | 15 | 18 | 16 | 16 | 14 | 14 |
-  | `SUBJECT_CLASS`（`MASS_BAND`） | long（0.28–0.65）；槍類 polearm（0.20–0.65） | broad（0.50–0.92） | broad | broad | broad | broad | small（0.35–0.80） | small |
+  | `SUBJECT_CLASS`（`MASS_BAND`） | long（0.28–0.65）；槍類與弓 thin（0.20–0.65） | broad（0.50–0.92） | broad | broad | broad | broad | small（0.35–0.80） | small |
 
-  長柄武器（主控裁定 2026-10-20）：0.28 是在 24 px 舊圖示上校的，細桿加槍頭的長柄武器達不到。武器的種類取自遊戲資料的 `WeaponKind`（`gear_art.GEAR_KIND` → `gear-plan.json` 的 `kinds`，`gearArt.test.ts` 與 `EQUIPMENT`／`SPECIALS` 的 `weaponKind` 交叉比對），種類屬於 `sl_art.POLEARM_KINDS`（目前只有 `spear`）的武器用 polearm 份量區間（下限 0.20），短邊下限仍照 weapon；不以 id 判斷。登錄表記 `weapon_kind`。
+  細武器（主控裁定 2026-10-20）：0.28 是在 24 px 舊圖示上校的，細桿加槍頭的長柄武器、一道細弧加一條弦的弓都達不到（弓在 G2 四版量到 0.22–0.27）。武器的種類取自遊戲資料的 `WeaponKind`（`gear_art.GEAR_KIND` → `gear-plan.json` 的 `kinds`，`gearArt.test.ts` 與 `EQUIPMENT`／`SPECIALS` 的 `weaponKind` 交叉比對），種類屬於 `sl_art.THIN_WEAPON_KINDS`（`spear`、`bow`）的武器用 thin 份量區間（下限 0.20），短邊下限仍照 weapon；杖維持 0.28（頭大的杖會過）；不以 id 判斷。登錄表記 `weapon_kind`。
 
   主體 bbox（原圖格的裁切與最終 PNG 的量測）不計 4 px 以下（`SPECK_MAX`）的 8 連通小碎點，碎點不會讓主體縮小或偏移；整張都是碎點時才用全部像素。
   slot 來自 `gear_art.GEAR_SLOT`（`gear-plan.json` 的 `slots`，`gearArt.test.ts` 與遊戲資料交叉比對）。門檻是 `sl_art.py` 的常數，不可以在登錄表為個別件加放寬欄位；要改門檻須由主控在帳本記下裁定。`slot` 不給（None）時只檢查長邊與置中。

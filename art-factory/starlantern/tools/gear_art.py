@@ -130,7 +130,7 @@ GEAR_SLOT = {
     **{f'{sid}-{slot}': slot for sid, slots in SET_SLOTS.items() for slot in slots},
 }
 # The weapon kind of every weapon cell (engine/types.ts WeaponKind: data/equipment.ts EQUIPMENT and data/gear.ts SPECIALS;
-# gearArt.test.ts cross-checks gear-plan.json `kinds`). Polearm kinds get their own mass floor (sl_art.subject_class).
+# gearArt.test.ts cross-checks gear-plan.json `kinds`). Thin kinds (spear, bow) get their own mass floor (sl_art.subject_class).
 GEAR_KIND = {
     'wooden-staff': 'staff', 'iron-sword': 'sword', 'hunter-bow': 'bow', 'thorn-spear': 'spear', 'crystal-blade': 'dagger',
     'frost-staff': 'staff', 'star-saber': 'scimitar', 'lg-chizuru': 'spear', 'lg-liz': 'spear', 'blaze-heart-sword': 'sword',

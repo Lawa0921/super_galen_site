@@ -701,14 +701,16 @@ def fit_side(img, side):
 SUBJECT_CLASS = {'weapon': 'long', 'offhand': 'broad', 'head': 'broad', 'body': 'broad', 'hands': 'broad', 'feet': 'broad',
                  'neck': 'small', 'ring': 'small'}
 MIN_SHORT = {'weapon': 0.70, 'offhand': 0.75, 'head': 0.65, 'body': 0.80, 'hands': 0.70, 'feet': 0.70, 'neck': 0.60, 'ring': 0.60}
-MASS_BAND = {'long': (0.28, 0.65), 'polearm': (0.20, 0.65), 'broad': (0.50, 0.92), 'small': (0.35, 0.80)}
+MASS_BAND = {'long': (0.28, 0.65), 'thin': (0.20, 0.65), 'broad': (0.50, 0.92), 'small': (0.35, 0.80)}
 GEAR_LARGE, GEAR_ICON = (56, 64), (22, 26)   # (subject long edge exactly, canvas): the large image and the bag icon (§1)
-# Controller ruling 2026-10-20 (after Task E): the long floor 0.28 was calibrated on 24-px icons; a polearm (a thin shaft
-# with a head) cannot carry it. Polearm-shaped weapons are told by the game's WeaponKind (engine/types.ts), never by id.
-POLEARM_KINDS = ('spear',)
+# Controller rulings 2026-10-20: the long floor 0.28 was calibrated on 24-px icons; thin weapons cannot carry it: a polearm
+# (a thin shaft with a head; after Task E) and a bow (a thin arc and a string; after G2, 0.22-0.27 over 4 attempts). They
+# are told by the game's WeaponKind (engine/types.ts), never by id. Staves keep the long floor (a big head passes).
+THIN_WEAPON_KINDS = ('spear', 'bow')
 # The rule logic each QA spec stamp covers, in words (qa_spec hashes it with the constants; edit it when a rule changes).
 GEAR_CELL_RULES = ('normalize to one long edge; long edge +-LONG_TOL, centre <= CENTRE_TOL; short floor by slot; mass band by '
-                   'subject_class(slot, weapon kind): polearm kinds use the polearm band; speckless bbox; magenta spill')
+                   'subject_class(slot, weapon kind): thin weapon kinds (polearms, bows) use the thin band; speckless bbox; '
+                   'magenta spill')
 NINE_SLICE_RULES = ('cover_sample; centre clear; roles frame / glow / overlay / corners; band colour from the chromatic hue '
                     'cluster; seam ratio (frame, glow) or edge joint (overlay); corners: nothing outside the corners, a whole '
                     'four-point star in each (four points beyond a white core, empty diagonal corners, off the tile edge)')
@@ -799,15 +801,15 @@ def subject_metrics(final, target):
 
 
 def subject_class(slot, kind=None):
-    """The size class of a gear subject: a weapon of a polearm kind is `polearm`, otherwise SUBJECT_CLASS[slot]."""
-    return 'polearm' if slot == 'weapon' and kind in POLEARM_KINDS else SUBJECT_CLASS[slot]
+    """The size class of a gear subject: a weapon of a thin kind (THIN_WEAPON_KINDS) is `thin`, otherwise SUBJECT_CLASS[slot]."""
+    return 'thin' if slot == 'weapon' and kind in THIN_WEAPON_KINDS else SUBJECT_CLASS[slot]
 
 
 # Every threshold and rule a QA kind depends on (review round 2: the stamp is derived, never bumped by hand; a test checks
 # that every upper-case constant the gate code reads, in a body or as a default argument, is listed here). Kinds not listed here (material icons, scenes,
 # NPCs) are not versioned.
 SPEC_INPUTS = {
-    'gear-cell': ('SUBJECT_CLASS', 'MIN_SHORT', 'MASS_BAND', 'POLEARM_KINDS', 'LONG_TOL', 'CENTRE_TOL', 'SPECK_MAX',
+    'gear-cell': ('SUBJECT_CLASS', 'MIN_SHORT', 'MASS_BAND', 'THIN_WEAPON_KINDS', 'LONG_TOL', 'CENTRE_TOL', 'SPECK_MAX',
                   'GEAR_LARGE', 'GEAR_ICON', 'MAGENTA', 'MAGENTA_SPILL_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND',
                   'STRONG_DEFRINGE', '_SHIFTS', 'GEAR_CELL_RULES'),
     'nine-slice': ('FRAME_STROKE', 'EDGE_REACH_MAX', 'CORNER_REACH_MAX', 'HUE_TOL', 'SAT_MIN', 'DISTINCT_DE', 'GLOW_HUE',
@@ -835,7 +837,7 @@ def qa_stale(entry):
 
 def subject_gate(m, target, slot, kind=None):
     """Reasons a subject fails the size gate. slot None (plan 5f before it passes a slot): long edge and centre only.
-    kind is the weapon kind (engine WeaponKind) of a weapon; polearm kinds use the polearm mass band."""
+    kind is the weapon kind (engine WeaponKind) of a weapon; thin kinds (polearms, bows) use the thin mass band."""
     reasons = []
     if abs(m['long'] - target) > LONG_TOL: reasons.append('subject long edge off target')
     if m['centre_off'] > CENTRE_TOL: reasons.append('subject off centre')
@@ -854,7 +856,7 @@ def process_gear_cell(reg, gid, cell, workdir, raw, large=GEAR_LARGE, icon=GEAR_
     Both are sampled once from the high-resolution cell (`normalize_subject`), run the usual `_finish` QA (residue, semi
     alpha, raw-canvas cut, holes warning, larger than the canvas, magenta spill) and the size gate (`subject_gate`;
     without a slot only the long edge and the centre). QA records `subject` (metrics) and `scale`; the registry records
-    the same `source` ({raw, cell}), the slot and the weapon kind (`weapon_kind`; polearm kinds have their own mass floor)
+    the same `source` ({raw, cell}), the slot and the weapon kind (`weapon_kind`; thin kinds have their own mass floor)
     and stamps the QA with qa_spec('gear-cell'). Any id works (plan 5f passes its own uniques with their slot and kind).
     """
     out = {}

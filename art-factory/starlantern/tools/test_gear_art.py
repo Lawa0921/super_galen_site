@@ -884,7 +884,8 @@ def test_every_weapon_cell_has_a_weapon_kind_and_the_plan_carries_it():
     weapons = {p for p, s in G.GEAR_SLOT.items() if s == 'weapon'}
     assert set(G.GEAR_KIND) == weapons and set(G.GEAR_KIND.values()) <= set(WEAPON_KINDS)
     assert G.plan_data()['kinds'] == G.GEAR_KIND                    # gearArt.test.ts checks every value against the game data
-    assert {p for p, k in G.GEAR_KIND.items() if A.subject_class('weapon', k) == 'polearm'} == {'thorn-spear', 'lg-chizuru', 'lg-liz'}
+    assert {p for p, k in G.GEAR_KIND.items() if A.subject_class('weapon', k) == 'thin'} == {'thorn-spear', 'lg-chizuru', 'lg-liz',
+                                                                                            'hunter-bow', 'storm-thunder-bow'}
 
 
 def test_approve_refuses_a_pick_whose_qa_is_from_an_older_spec(factory, review):
@@ -989,7 +990,7 @@ def test_sample_decisions_tell_the_real_state(factory, review):
     head = page[page.index('id="decisions"'):page.index('id="s0"')]
     asked = head[:head.index('已決定')]
     assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['圖示大小是否一致', '七階外框與星輝', '傳說光暈改在格內']
-    for s in ('長柄', '0.20', '0.28',                         # the polearm floor, explained
+    for s in ('長柄', '弓', '0.20', '0.28',                   # the thin-weapon floor (polearms and bows), explained
               '有外框的六階', '15 組',                         # six framed tiers (common has none), 15 pairs
               '獨特沒有金色內緣線', '已接受',                  # unique without the gold line, plainly
               '最接近的一對', 'ΔE',                           # the tightest pair, measured

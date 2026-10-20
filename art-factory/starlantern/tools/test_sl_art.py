@@ -1041,7 +1041,7 @@ def test_normalize_never_upsamples(tmp_path):
 def test_subject_gate_thresholds_follow_the_addendum():
     assert A.SUBJECT_CLASS == {'weapon': 'long', 'offhand': 'broad', 'head': 'broad', 'body': 'broad', 'hands': 'broad',
                                'feet': 'broad', 'neck': 'small', 'ring': 'small'}
-    assert A.MASS_BAND == {'long': (0.28, 0.65), 'polearm': (0.20, 0.65), 'broad': (0.50, 0.92), 'small': (0.35, 0.80)} and A.CENTRE_TOL == 1
+    assert A.MASS_BAND == {'long': (0.28, 0.65), 'thin': (0.20, 0.65), 'broad': (0.50, 0.92), 'small': (0.35, 0.80)} and A.CENTRE_TOL == 1
     floors = {s: A.short_floor(s, 22) for s in A.MIN_SHORT}
     assert floors == {'weapon': 16, 'offhand': 17, 'head': 15, 'body': 18, 'hands': 16, 'feet': 16, 'neck': 14, 'ring': 14}
 
@@ -1260,9 +1260,11 @@ def test_starlit_edge_repeat_judges_the_joint_not_the_seam_ratio(tmp_path):
 
 
 # --- controller rulings after Task E (2026-10-20): polearm mass floor, stale QA, corner-only starlit -----------------------------
-def test_polearm_class_comes_from_the_weapon_kind():
-    assert A.POLEARM_KINDS == ('spear',)                        # engine WeaponKind: the only polearm-shaped kind
-    assert A.subject_class('weapon', 'spear') == 'polearm' and A.subject_class('weapon', 'sword') == 'long'
+def test_thin_class_comes_from_the_weapon_kind():
+    # Controller rulings 2026-10-20: polearms (spear) and, after G2, bows (a thin arc and a string) share the thin floor.
+    assert A.THIN_WEAPON_KINDS == ('spear', 'bow') and not hasattr(A, 'POLEARM_KINDS')
+    assert A.subject_class('weapon', 'spear') == 'thin' and A.subject_class('weapon', 'bow') == 'thin'
+    assert A.subject_class('weapon', 'sword') == 'long' and A.subject_class('weapon', 'staff') == 'long'   # staves keep 0.28
     assert A.subject_class('weapon', None) == 'long' and A.subject_class('offhand', 'spear') == 'broad'
     m = {'long': 22, 'short': 20, 'mass': 0.22, 'box': [2, 2, 24, 22], 'centre_off': 0.0}
     assert A.subject_gate(m, 22, 'weapon', 'spear') == []
@@ -1272,7 +1274,7 @@ def test_polearm_class_comes_from_the_weapon_kind():
 
 
 def test_a_spear_at_022_passes_where_a_sword_at_022_still_fails(tmp_path):
-    cell = _shape_cell(300, 0, 'line', width=44)                      # mass 0.20-0.23: above the polearm floor, below 0.28
+    cell = _shape_cell(300, 0, 'line', width=44)                      # mass 0.20-0.23: above the thin floor, below 0.28
     spear = A.process_gear_cell(A.Registry(tmp_path / 'a.json'), 'p', cell, tmp_path / 'a', tmp_path / 'raw.png', slot='weapon', kind='spear')
     sword = A.process_gear_cell(A.Registry(tmp_path / 'b.json'), 'p', cell, tmp_path / 'b', tmp_path / 'raw.png', slot='weapon', kind='sword')
     for aid in spear:
@@ -1447,3 +1449,18 @@ def test_a_three_by_three_cross_is_a_valid_corner_star(tmp_path):
                      role='corners', pad=1)
     assert q['pass'], q['reasons']
     assert all(s['core'] == 1 and s['arms'] == 4 and not s['diagonal'] and (s['w'], s['h']) == (3, 3) and not s['edge'] for s in q['stars'])
+
+
+def test_a_bow_at_022_passes_where_a_sword_at_022_still_fails(tmp_path):
+    m = {'long': 22, 'short': 21, 'mass': 0.22, 'box': [2, 2, 24, 23], 'centre_off': 0.0}
+    assert A.subject_gate(m, 22, 'weapon', 'bow') == [] and A.subject_gate(m, 22, 'weapon', 'sword') == ['subject too light']
+    cell = _shape_cell(300, 0, 'line', width=44)
+    bow = A.process_gear_cell(A.Registry(tmp_path / 'a.json'), 'b', cell, tmp_path / 'a', tmp_path / 'raw.png', slot='weapon', kind='bow')
+    staff = A.process_gear_cell(A.Registry(tmp_path / 'b.json'), 'b', cell, tmp_path / 'b', tmp_path / 'raw.png', slot='weapon', kind='staff')
+    for aid in bow:
+        assert bow[aid]['pass'] and 'subject too light' in staff[aid]['reasons'], (bow[aid], staff[aid])
+
+
+def test_the_bow_ruling_moved_the_gear_cell_stamp():
+    assert A.qa_spec('gear-cell') != 'gear-cell:6a8d64bae98b'           # the stamp before bows joined the thin class
+    assert A.qa_spec('nine-slice') == 'nine-slice:2ab30baae894'         # frames are untouched
