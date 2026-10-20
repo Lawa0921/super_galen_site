@@ -40,8 +40,11 @@ export const mark: MechModule = {
     else if (actor.mech?.kind === 'mark') actor.mech.marks = actor.mech.marks.filter((k) => k !== target.key);
   },
   after(_s, c, act, def) {
-    // The veil ends with her first blow (a designer ruling on spec §8.9, which gives it no end): that blow keeps its crit.
-    if (c.veil && (act.kind === 'attack' || act.kind === 'ultimate' || !!def?.effects.some((e) => e.kind === 'damage'))) delete c.veil;
+    // The veil ends with her first blow (a designer ruling on spec §8.9, which gives it no end): an attack, or a skill or
+    // an ultimate that fired with a damage effect. That blow kept its sure crit if it landed; if it missed, the crit goes
+    // with the veil. An ultimate her gauge could not pay is no blow (`def` is null then).
+    if (!c.veil) return;
+    if (act.kind === 'attack' || !!def?.effects.some((e) => e.kind === 'damage')) { delete c.veil; delete c.nextCrit; }
   },
   watch(s, c) {
     // Her living marks as she acts: a felled foe leaves them at once, so they are read before.

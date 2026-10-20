@@ -7,6 +7,7 @@ import { credit, creditPrevented, lossOf, type Ledger } from './ledger';
 import { clearAilments, inflictAilment } from './ailments';
 import type { BattleState } from './battle';
 import { onLandedHit } from './mechanics/index';
+import { MOON } from './mechanics/moon';
 
 /**
  * `ledger`: the sim's contribution ledger (absent in the game); it reads the fight and never draws. `redirect`: set only
@@ -20,6 +21,8 @@ export interface EffectContext {
   ledger?: Ledger;
   redirect?: { pool: Combatant[] };
   battle?: BattleState;
+  /** The id of the skill being cast, while its effects resolve. */
+  cast?: string;
   lastHit?: { target: string; amount: number };
 }
 
@@ -63,6 +66,9 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
       case 'taunt': return { ...e, turns: lasting(e.turns) };
       case 'expose': return { ...e, turns: lasting(e.turns) };
       case 'veil': return { ...e, turns: lasting(e.turns) };
+      case 'barrier': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns) };
+      // The moon's hold counts as its rounds (moon-recall's ranks hold the phase it steps back to).
+      case 'moon': return mod.turns !== undefined || mod.turnsDelta !== undefined ? { ...e, hold: lasting(e.hold ?? 0) } : { ...e };
       case 'inflict': return { ...e, chance: e.status === 'poison' ? mod.chance ?? e.chance : e.chance };
       default: return { ...e };
     }
@@ -218,6 +224,30 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       if (target !== actor) return;   // on the caster alone (plan 8c ruling 6)
       actor.veil = eff.turns;
       actor.nextCrit = true;
+      return;
+    }
+    case 'barrier': {
+      // Over the whole party, once (ruling 6), and only in a fight (ruling 7): it replaces any barrier up.
+      const s = ctx.battle;
+      if (target !== actor || !s) return;
+      s.barriers = [{ skill: ctx.cast ?? '', kind: eff.barrier, power: eff.power, turns: eff.turns, src: actor.key }];
+      return;
+    }
+    case 'barrier-boost': {
+      const s = ctx.battle;
+      if (target !== actor || !s) return;
+      const b = s.barriers?.[0];
+      if (!b) { ctx.log.push({ type: 'mech', actor: actor.key, cue: 'no-barrier' }); return; }
+      s.barriers = [{ ...b, boost: eff.mul, turns: b.turns + eff.turns }];
+      return;
+    }
+    case 'moon': {
+      const m = ctx.battle?.moon;
+      if (target !== actor || !m) return;
+      const order = MOON.order;
+      m.phase = eff.step === -1 ? order[(order.indexOf(m.phase) + order.length - 1) % order.length] : 'full';
+      if (eff.hold) m.hold = { turns: eff.hold };
+      else delete m.hold;
       return;
     }
   }

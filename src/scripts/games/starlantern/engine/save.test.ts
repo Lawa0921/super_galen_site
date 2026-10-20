@@ -642,3 +642,37 @@ describe('battle state is never saved (plan 8b)', () => {
     expect(loadGame(st).status).toBe('ok');
   });
 });
+
+describe('old node ids (plan 8c)', () => {
+  it('a save that holds old node ids loads with them renamed', () => {
+    const g = newGame();
+    const c = g.party.roster.chizuru, s = g.party.roster.selene;
+    c.level = 50; s.level = 50;
+    c.tree = { ...defaultTree('chizuru', 50) };
+    s.tree = { ...defaultTree('selene', 50) };
+    // As an 8b build wrote them: the old ids, with their ranks and a strengthening node on one.
+    const back = (t: Record<string, number>, old: string, now: string) => { t[old] = t[now]; delete t[now]; };
+    expect([c.tree['purify-ward'], c.tree['chizuru-sake-up']]).toEqual([2, 1]);   // the default Lv 50 build has them
+    s.tree['selene-arrow-up'] -= 1; s.tree['moon-recall'] = 1;                     // one point moved onto the old 祝福 node
+    const want = { c: { ...c.tree }, s: { ...s.tree } };
+    const raw = JSON.parse(JSON.stringify(g));
+    back(raw.party.roster.chizuru.tree, 'sacred-sake', 'purify-ward');
+    back(raw.party.roster.selene.tree, 'blessing', 'moon-recall');
+    expect(raw.party.roster.chizuru.tree['sacred-sake']).toBe(2);
+    const r = loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) }));
+    expect(r.status).toBe('ok');
+    const st = (r as { state: typeof g }).state;
+    expect(st.party.roster.chizuru.tree['purify-ward']).toBe(2);
+    expect(st.party.roster.chizuru.tree).not.toHaveProperty('sacred-sake');
+    expect(st.party.roster.chizuru.tree['chizuru-sake-up']).toBe(1);
+    expect(st.party.roster.selene.tree['moon-recall']).toBe(1);
+    expect(st.party.roster.selene.tree).not.toHaveProperty('blessing');
+    expect(st.party.roster.chizuru.tree).toEqual(want.c);
+    expect(st.party.roster.selene.tree).toEqual(want.s);
+    // Everything else exactly as it was.
+    for (const k of ['gold', 'inventory', 'bag', 'story', 'affinity'] as const) expect(st[k as keyof typeof st], k).toEqual(g[k as keyof typeof g]);
+    for (const id of Object.keys(g.party.roster) as (keyof typeof g.party.roster)[]) {
+      expect({ ...st.party.roster[id], tree: undefined }, id).toEqual({ ...g.party.roster[id], tree: undefined });
+    }
+  });
+});

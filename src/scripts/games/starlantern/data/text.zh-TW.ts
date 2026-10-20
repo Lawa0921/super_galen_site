@@ -161,7 +161,12 @@ export const T = {
     expose: (n: number) => `弱點${n}`,
     mark: '暗記',
     veil: '隱匿',
-    cue: { overload: '暴走！', again: '還有。' },
+    /** The field bar (plan 8c Task 3): the barrier up, with its rounds; the moon now and next. */
+    ward: (n: number, boosted: boolean) => `守之結界${boosted ? '・加倍' : ''}${n}`,
+    purify: (n: number) => `淨之結界${n}`,
+    moon: (now: string, next: string) => `月相：${now}→${next}`,
+    phase: { first: '上弦', full: '滿月', waning: '下弦', new: '新月' },
+    cue: { overload: '暴走！', again: '還有。', noBarrier: '沒有結界' },
   },
   log: {
     act: (who: string, label: string) => `${who}：${label}`,
@@ -184,7 +189,7 @@ export const T = {
     poison: (who: string, n: number) => `${who} 因毒受到 ${n} 傷害`,
     dot: (who: string, s: 'burn' | 'bleed', n: number) => `${who} 因${s === 'burn' ? '灼燒' : '流血'}受到 ${n} 傷害`,
     shield: (who: string, n: number) => `${who}的護盾擋下了 ${n} 傷害`,
-    mech: (who: string, cue: 'overload' | 'again', n?: number) => (cue === 'overload' ? `${who}的魔力暴走了！${n ? `反噬 ${n}` : ''}` : `${who}：還有。`),
+    mech: (who: string, cue: 'overload' | 'again' | 'no-barrier', n?: number) => (cue === 'overload' ? `${who}的魔力暴走了！${n ? `反噬 ${n}` : ''}` : cue === 'again' ? `${who}：還有。` : `${who}：沒有結界可以加強`),
     frozen: (who: string) => `${who} 被凍住了，動彈不得`,
     miss: (who: string) => `${who} 閃過了攻擊`,
     crit: '（暴擊）',

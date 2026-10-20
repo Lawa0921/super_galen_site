@@ -6,7 +6,8 @@ import type { PolicyTable } from '../engine/policy';
  * data, the standard ones must equal these. A roster plan that renames a skill changes it here.
  */
 export const DEFAULT_POLICIES: PolicyTable = {
-  chizuru: [{ kind: 'ensure-barrier', skills: ['ward'] }],
+  // Chizuru raises a barrier once a boss or an elite is under 30% HP (plan 8c Task 3 tuning, retune.md).
+  chizuru: [{ kind: 'ensure-barrier', skills: ['ward', 'purify-ward'], big: true, below: 30 }],
   bobby: [{ kind: 'ensure-device', skills: ['turret'] }],
   // Rin marks a boss or an elite once it is under half its HP (plan 8c Task 2 tuning, retune.md).
   rin: [{ kind: 'ensure-mark', skill: 'rin-mark', big: true, below: 50 }],

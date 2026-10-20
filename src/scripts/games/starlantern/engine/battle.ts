@@ -13,10 +13,11 @@ import { pick, type Rng } from './rng';
 import { abyssPct, bossPartyScale, deepPower, empower, enemyLevelAt, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
-import { afterAction, castCost, castDef, extraAction, initMechs, mechRoundEnd, payMech, watchAction } from './mechanics/index';
+import { afterAction, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
 import { credit, lossOf, type Ledger } from './ledger';
 import type { Barrier } from './mech';
+import type { MoonPhase } from './mechanics/moon';
 import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
@@ -47,6 +48,8 @@ export interface BattleState {
   survive?: number;
   /** The barriers over the party (engine/mech.ts); the old roster raises none. */
   barriers?: Barrier[];
+  /** The moon's phase while Selene fights (engine/mechanics/moon.ts), and the rounds a phase is held. */
+  moon?: { phase: MoonPhase; hold?: { turns: number } };
 }
 
 /** Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */
@@ -280,8 +283,11 @@ function checkOutcome(s: BattleState): boolean {
   return s.outcome !== 'ongoing';
 }
 
-/** Carries out one action; returns the skill as cast (after its mechanics' rewrite) when a skill really was cast, else null. */
-function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ctx: EffectContext, rng: Rng): SkillDef | null {
+/**
+ * Carries out one action; returns what it cast: the skill as its mechanics rewrote it, or the ultimate, when one really was
+ * cast; null for anything else (an attack, defending, an item, a turn lost to TP or the gauge).
+ */
+function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ctx: EffectContext, rng: Rng): CastDef | null {
   delete ctx.lastHit;   // burn and bleed ride only on a hit of this action
   if (actor.side === 'enemy') {
     const taunter = living(s.party).find((c) => c.taunt > 0);
@@ -330,7 +336,9 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       if (def.hpCost) actor.hp = Math.max(1, actor.hp - Math.floor(actor.max.hp * def.hpCost));
       payMech(s, actor, def, ctx);
       s.log.push({ type: 'act', actor: actor.key, label: def.name });
+      ctx.cast = def.id;   // a barrier remembers the skill that raised it
       for (const t of resolveTargets(s, actor, def.target, act.target, rng)) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
+      delete ctx.cast;
       return def;
     }
     case 'item': {
@@ -359,13 +367,15 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
         const who = u.follow.who === 'hero' ? living(s.party).filter((c) => c.key === 'hero') : living(s.party);
         for (const t of who) for (const eff of u.follow.effects) applyEffect(actor, t, eff, ctx);
       }
-      return null;
+      return u;
     }
   }
 }
 
 
 function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
+  // The mechanics open the round's end before any tick (the purifying barrier heals and cures first).
+  mechBeforeTicks(s, ctx, rng);
   for (const c of living(s.party)) {
     if (!c.turret) continue;
     const t = pickTarget(s.enemies, undefined, rng);
@@ -422,6 +432,8 @@ function ringBell(s: BattleState, heroWasUp: boolean, ctx: EffectContext): void 
   s.log.push({ type: 'buff', target: rin.key, stat: 'atk', pct: MEMORY_KEYSTONE_VALUES.bellAtkPct });
   s.log.push({ type: 'act', actor: rin.key, label: '攻擊' });
   applyEffect(rin, foe, { kind: 'damage', power: 100, element: 'phys', scale: rin.attackScale ?? 'atk', melee: rin.melee }, ctx);
+  // An action like any other for the mechanics (her veil ends with it).
+  if (ctx.battle) afterAction(ctx.battle, rin, { kind: 'attack', target: foe.key }, null, ctx);
 }
 
 /**

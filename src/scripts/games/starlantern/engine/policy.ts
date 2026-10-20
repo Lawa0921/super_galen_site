@@ -9,7 +9,8 @@ import { mechGauge, type MechGauge } from './mech';
 import type { CharacterId, SkillDef } from './types';
 
 export type PolicyRule =
-  | { kind: 'ensure-barrier'; skills: string[] }
+  /** `big`: only while a boss or an elite stands; `below`: only once one of them is under this percent of its HP. */
+  | { kind: 'ensure-barrier'; skills: string[]; big?: true; below?: number }
   | { kind: 'ensure-device'; skills: string[] }
   /** `big`: only a boss or an elite is worth a mark; `below`: only once its HP is under this percent of its max. */
   | { kind: 'ensure-mark'; skill: string; big?: true; below?: number }
@@ -44,6 +45,7 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
     switch (rule.kind) {
       case 'ensure-barrier': {
         if (c.mech?.kind !== 'barrier' || (s.barriers ?? []).some((b) => b.turns > 1)) break;
+        if (rule.big && !foes.some((e) => (e.boss || e.tint === 'elite') && (rule.below === undefined || e.hp * 100 < e.max.hp * rule.below))) break;
         const skill = rule.skills.find(has);
         if (skill) return cast(skill);
         break;

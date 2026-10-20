@@ -8,7 +8,7 @@ import { CHARACTERS } from '../../data/characters';
 import { LIMIT_MAX, intentLabel, skillFor, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
 import { ailmentChips, type AilmentChip } from '../../engine/ailments';
-import { castCost, cueWord, foeWords, memberWords, type MechCue, type MechWord } from '../../engine/mechanics/index';
+import { castCost, cueWord, fieldWords, foeWords, memberWords, type MechCue, type MechWord } from '../../engine/mechanics/index';
 import type { BattleEnd } from '../../engine/game';
 import { learnedSkills, ultimateFor } from '../../engine/progression';
 import type { CharacterId, Target } from '../../engine/types';
@@ -48,6 +48,8 @@ export class BattleScene implements Scene {
   private msg!: HTMLElement;
   private cmd!: HTMLElement;
   private marker!: HTMLElement;
+  /** The field bar: the barrier up and the moon (plan 8c). */
+  private field = el('div', { class: 'slx-fieldbar', attrs: { role: 'status', hidden: '' } });
   private cutin!: HTMLElement;
   private backEl!: HTMLElement;
   private note: HTMLElement | null = null;
@@ -92,7 +94,7 @@ export class BattleScene implements Scene {
     this.marker = el('div', { class: 'slx-target', text: '▼', attrs: { hidden: '', 'aria-hidden': 'true' } });
     this.cutin = el('div', { class: 'sl-cutin', attrs: { hidden: '', 'aria-hidden': 'true' } });
     this.backEl = backControl(() => this.onAction('cancel'));
-    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.msg, this.marker, this.bar.el, this.cmd, this.backEl, this.cutin, this.talk.el]);
+    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.msg, this.field, this.marker, this.bar.el, this.cmd, this.backEl, this.cutin, this.talk.el]);
     root.append(this.body);
     if (this.ctx.stage) {
       this.ctx.stage.show('battle');
@@ -190,8 +192,16 @@ export class BattleScene implements Scene {
     this.showAilments();
   }
 
-  /** Each living enemy's ailments by its name; none once the fight is over (won, lost or fled). */
+  /** The field bar (plan 8c): the barrier up and the moon, as words in their colours; hidden when there are none. */
+  private showField(): void {
+    const words = this.state.outcome === 'ongoing' ? fieldWords(this.state) : [];
+    this.field.replaceChildren(...words.map((w) => el('span', { class: `slx-mech slx-mech-${w.tone}`, text: w.text })));
+    this.field.hidden = words.length === 0;
+  }
+
+  /** Each living enemy's ailments by its name; none once the fight is over (won, lost or fled). The field bar with them. */
   private showAilments(): void {
+    this.showField();
     const s = this.state;
     const live = s.outcome === 'ongoing' ? s.enemies.filter((e) => e.alive) : [];
     this.ctx.stage?.battleView.showAilments?.(Object.fromEntries(live.map((e) => [e.key, ailmentChips(e)])), Object.fromEntries(live.map((e) => [e.key, foeWords(s, e)])));

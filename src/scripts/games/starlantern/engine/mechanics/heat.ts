@@ -26,7 +26,7 @@ export const heat: MechModule = {
   after(_s, c, act, def, ctx) {
     const m = c.mech;
     if (m?.kind !== 'heat' || act.kind !== 'skill' || !def) return;
-    const dmg = firstDamage(def);
+    const dmg = firstDamage(def as SkillDef);
     if (!dmg) return;
     if (m.heat >= HEAT.max) {
       m.heat = 0;

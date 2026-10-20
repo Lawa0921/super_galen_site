@@ -122,7 +122,7 @@ export function rankMod(ranks: Record<string, number>, skill: string): SkillMod 
 export function pctMod(skill: string, pct: number): SkillMod | undefined {
   if (pct === 100) return undefined;
   const kinds = SKILLS[skill]?.effects.map((e) => e.kind) ?? [];
-  if (kinds.some((k) => k === 'damage' || k === 'heal' || k === 'turret')) return { powerPct: pct };
+  if (kinds.some((k) => k === 'damage' || k === 'heal' || k === 'turret' || k === 'barrier')) return { powerPct: pct };
   return kinds.includes('buff') ? { buffPct: pct } : undefined;
 }
 

@@ -14,6 +14,7 @@ import { SAVE_VERSION, type GameState } from './state';
 import { isSceneId } from '../data/story/scenes';
 import { ABSORB_CAP, ABSORB_GAIN, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
+import { LEGACY_NODE_IDS } from '../data/trees';
 import type { CharacterId, ItemInstance, Member, Slot } from './types';
 
 export const SAVE_KEY = 'starlantern-save';
@@ -163,6 +164,22 @@ function dropUnknownBanters(data: Record<string, unknown>): void {
   if (isObj(story.heard)) for (const k of Object.keys(story.heard)) if (unknown(k)) delete story.heard[k];
 }
 
+/**
+ * Plan 8c ruling 1: a node a roster change replaced is renamed to its successor in every member's tree, ranks kept (only
+ * when the new id is not there already; both present is left for validation). Anything but an object is left alone.
+ */
+export function upgradeTreeIds(data: Record<string, unknown>): void {
+  const party = data.party;
+  if (!isObj(party) || !isObj(party.roster)) return;
+  for (const m of Object.values(party.roster)) {
+    if (!isObj(m) || !isObj(m.tree)) continue;
+    const tree = m.tree;
+    for (const [old, now] of Object.entries(LEGACY_NODE_IDS)) {
+      if (has(tree, old) && !has(tree, now)) { tree[now] = tree[old]; delete tree[old]; }
+    }
+  }
+}
+
 export function loadGame(storage: SaveStorage): LoadResult {
   let raw: string | null;
   try { raw = storage.getItem(SAVE_KEY); } catch { return { status: 'empty' }; }
@@ -172,6 +189,7 @@ export function loadGame(storage: SaveStorage): LoadResult {
   if (!isObj(data)) { backup(storage, raw); return { status: 'corrupt' }; }
   if (data.version !== SAVE_VERSION) { backup(storage, raw); return { status: 'version' }; }
   dropUnknownBanters(data);
+  upgradeTreeIds(data);
   if (!isValid(data)) { backup(storage, raw); return { status: 'corrupt' }; }
   const state = data as unknown as GameState;
   // The game never writes a codex id twice; a hand-edited save that does is tidied rather than refused.

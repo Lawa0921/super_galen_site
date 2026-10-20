@@ -1741,14 +1741,88 @@ test.describe('starlantern', () => {
         const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
         (c as HTMLElement).style.pointerEvents = '';
         inert?.setAttribute('inert', '');
-        return { text: c.textContent, right: b.left >= panel.left + panel.width / 2 - 0.5 && b.right <= panel.right + 0.5, onTop: c.contains(top) };
+        // Off the HP digits and off the ailment row above the panel.
+        const meets = (r: DOMRect | undefined) => !!r && b.left < r.right && r.left < b.right && b.top < r.bottom && r.top < b.bottom;
+        const pm = c.closest('.slx-pm')!;
+        const clear = !meets(pm.querySelector('.slx-pm-num')?.getBoundingClientRect()) && !meets(pm.querySelector('.slx-pm-ail:not([hidden])')?.getBoundingClientRect());
+        return { text: c.textContent, right: b.left >= panel.left + panel.width / 2 - 0.5 && b.right <= panel.right + 0.5, onTop: c.contains(top), clear };
       });
       if (shots) await page.screenshot({ path: `${shots}/again-1280.png` });
       return shown;
     });
     await play('攻擊');
-    expect(await seen).toEqual({ text: '還有。', right: true, onTop: true });
+    expect(await seen).toEqual({ text: '還有。', right: true, onTop: true, clear: true });
     expect(await game((g) => g.battle.log.some((e: any) => e.type === 'mech' && e.cue === 'again'))).toBe(true);
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  test('the barrier and the moon show above the battle, and release spends the barrier (plan 8c)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+      p.recruited = ['hero', 'rin', 'chizuru', 'noel', 'selene'];
+      p.grid = ['hero', 'rin', 'chizuru', null, null, null, 'noel', null, 'selene'];
+    });
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    // A guard barrier with three rounds left, the moon at the full; Chizuru knows the release thrust; the foes are harmless.
+    await game((g) => {
+      g.battle.barriers = [{ skill: 'ward', kind: 'guard', power: 30, turns: 3, src: 'chizuru' }];
+      g.battle.moon = { phase: 'full' };
+      const c = g.battle.party.find((m: any) => m.key === 'chizuru');
+      c.ranks = { ...c.ranks, 'exorcism-thrust': 1 }; c.tp = c.max.tp;
+      g.state.party.roster.chizuru.tree = { ...g.state.party.roster.chizuru.tree, 'exorcism-thrust': 1 };
+      for (const e of g.battle.enemies) { e.max.hp = 9999; e.hp = 9999; e.max.atk = 1; e.max.mag = 1; }
+    });
+    const round = () => game((g) => g.battle?.round ?? -1);
+    /** One round: Chizuru does `chizuru` (a label path), everyone else defends. */
+    const play = async (chizuru: string[]) => {
+      const at = await round();
+      for (let i = 0; i < 80 && (await round()) === at; i++) {
+        if (!(await page.locator('.slx-bcmd [role=option]').count())) { await page.waitForTimeout(50); continue; }
+        const who = (await page.locator('.slx-bcmd .slx-who').textContent()) ?? '';
+        if (!who.startsWith(CHARACTERS.chizuru.name)) { await w.choose('.slx-bcmd', '防禦'); continue; }
+        for (const label of chizuru) {
+          await w.choose(label === chizuru[0] ? '.slx-bcmd' : '.slx-bsub', label);
+        }
+        if (await page.locator('.slx-btarget').isVisible()) await w.key('Enter');
+      }
+    };
+    await play(['防禦']);
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    const bar = page.locator('.slx-fieldbar');
+    await expect(bar).toBeVisible();
+    await expect(bar).toContainText('守之結界2');
+    await expect(bar).toContainText('月相：下弦→新月');
+    await expect(page.locator('.slx-fieldbar .slx-mech-ward')).toHaveCount(1);
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/field-1280.png` }); }
+    await page.setViewportSize({ width: 844, height: 390 });
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/field-844.png` }); }
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // Release: 破邪突 spends the barrier (two rounds left: 120% power); the bar loses its barrier word.
+    await play(['技能', SKILLS['exorcism-thrust'].name]);
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    expect(await game((g) => g.battle.log.some((e: any) => e.type === 'act' && e.actor === 'chizuru' && e.label === '破邪突'))).toBe(true);
+    expect(await game((g) => g.battle.barriers ?? [])).toEqual([]);
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/release-1280.png` }); }
+    await expect(page.locator('.slx-fieldbar .slx-mech-ward')).toHaveCount(0);
+    await expect(bar).toContainText('月相');
+    await page.setViewportSize({ width: 844, height: 390 });
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/release-844.png` }); }
     expect(w.errors).toEqual([]);
     expect(missing).toEqual([]);
   });

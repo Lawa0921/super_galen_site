@@ -1077,11 +1077,15 @@ describe('character mechanics (plan 8c)', () => {
     const open = () => createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
     const first = open();
     const by = (s: ReturnType<typeof open>) => Object.fromEntries(s.party.map((c) => [c.key, c.mech]));
-    expect(by(first)).toEqual({ hero: undefined, noel: { kind: 'heat', heat: 0 }, rin: { kind: 'mark', marks: [], cap: 1 }, chizuru: undefined, selene: undefined });
+    expect(by(first)).toEqual({ hero: undefined, noel: { kind: 'heat', heat: 0 }, rin: { kind: 'mark', marks: [], cap: 1 }, chizuru: { kind: 'barrier' }, selene: undefined });
+    expect(first.barriers).toBeUndefined();
+    expect(first.moon).toEqual({ phase: 'first' });
     // A fight that heats Noel up and marks a foe leaves nothing for the next one from the same party.
     const after = resolveRound(first, { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' }, rin: { kind: 'skill', skill: 'rin-mark', target: 'e0' } }, mulberry32(1));
     expect(after.party.find((c) => c.key === 'noel')?.mech).not.toEqual({ kind: 'heat', heat: 0 });
     expect(by(open())).toEqual(by(first));
+    expect(open().moon).toEqual({ phase: 'first' });
+    expect(open().barriers).toBeUndefined();
     for (const c of first.enemies) expect(c.mech).toBeUndefined();
   });
 });

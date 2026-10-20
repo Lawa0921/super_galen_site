@@ -282,6 +282,9 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 // Battle
 .slx-battle { background: transparent; }
 .slx-msg { left: 8px; right: 8px; top: 6px; min-height: 36px; white-space: pre-line; }
+// The field bar (plan 8c): the barrier up and the moon, as words under the message window's right end.
+.slx-fieldbar { position: absolute; right: 10px; top: 70px; z-index: 2; display: flex; gap: 2px; pointer-events: none; }
+.slx-fieldbar[hidden] { display: none; }
 .slx-bcmd { left: 6px; bottom: 70px; min-width: 132px; }
 .slx-who { color: $slx-gold; margin-bottom: 2px; }
 .slx-bsub { right: 6px; top: 64px; min-width: 200px; }
@@ -431,7 +434,7 @@ $slx-ailment: (poison: #b48cff, sleep: #c4c8dc, burn: #ff8a4a, freeze: #8fe8ff, 
 .slx-pm-ail[hidden] { display: none; }
 .slx-ail, .slx-mech { flex: none; padding: 0 1px; font-size: 9px; line-height: 10px; border: 1px solid currentColor; white-space: nowrap; background: rgba($slx-win, 0.92); }
 // Character mechanics (plan 8c): the same word look as an ailment, in their own colours (render/mechStyle.ts MECH_FILL).
-$slx-mech: (heat: #ffb000, expose: #5cffa8, mark: #ff6fd8, veil: #9aa4c8, plain: #f1ead8);
+$slx-mech: (heat: #ffb000, expose: #5cffa8, mark: #ff6fd8, veil: #9aa4c8, ward: #7fd4ff, purify: #d8ff7a, moon: #e4d4ff, plain: #f1ead8);
 @each $k, $c in $slx-mech {
   .slx-mech-#{$k} { color: $c; }
 }
@@ -831,12 +834,12 @@ $slx-framed: (magic, rare, epic, legendary, unique, set);
   animation: slx-pm-miss 0.9s ease-out forwards;
 }
 @keyframes slx-pm-miss { 0% { translate: -6px 0; opacity: 0; } 20% { translate: 0 0; opacity: 1; } 70% { opacity: 1; } 100% { translate: 0 -12px; opacity: 0; } }
-// A mechanic's moment (暴走！, 還有。): a word in its colour rising off the panel like MISS, with no shake; on the name
-// and HP side, over the panel's top edge (the HP digits stay readable) and over the hit effects (.slx-pm-fx, .slx-pm-fxa)
-// so a blow landing at the same moment never hides it.
+// A mechanic's moment (暴走！, 還有。): a word in its colour rising off the panel like MISS, with no shake; from the
+// panel's bottom right, over the bars, so it covers neither the HP digits nor the ailment row above the panel, and over
+// the hit effects (.slx-pm-fx, .slx-pm-fxa) so a blow landing at the same moment never hides it.
 .slx-pm-cue {
-  position: absolute; right: 4px; top: -10px; z-index: 4; pointer-events: none; white-space: nowrap;
-  font-size: 14px; line-height: 14px; padding: 1px 3px; border: 1px solid currentColor; background: rgba($slx-win, 0.92);
+  position: absolute; right: 4px; bottom: 2px; z-index: 4; pointer-events: none; white-space: nowrap;
+  font-size: 12px; line-height: 12px; padding: 1px 3px; border: 1px solid currentColor; background: rgba($slx-win, 0.92);
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
   animation: slx-pm-cue 0.9s ease-out forwards;
 }

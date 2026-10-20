@@ -131,13 +131,15 @@ const SILHOUETTE_IDS = (): string[] => [
  * published (plan 5d Tasks 8 and 10), and every old base icon is retired. The skills publish takes its ids out.
  */
 export const NO_ICON_YET_IDS: ReadonlySet<string> = new Set([
+  // plan 8c: skills that replaced others (their icons are step ⑨'s)
+  'purify-ward', 'exorcism-thrust', 'moon-recall', 'full-moon-night',
   // plan 5b: the skill-tree skills have no icon yet
   'flame-wave', 'inferno', 'frost-bind', 'blizzard', 'judgement',
-  'spiral-spear', 'thousand-spear', 'sacred-sake', 'great-barrier', 'thunder-thrust', 'heaven-spear',
+  'spiral-spear', 'thousand-spear', 'great-barrier', 'heaven-spear',
   'shadow-flurry', 'smoke-bomb', 'fortune-strike', 'quickstep', 'venom-edge', 'phantom-step',
   'heart-shot', 'starfall-arrow', 'snare-shot', 'hunters-mark', 'fire-arrow', 'storm-volley',
   'guardian-roar', 'unbreakable', 'blaze-ring', 'crimson-end', 'shield-bash', 'fortress',
-  'moon-rain', 'full-moon', 'blessing', 'sanctuary', 'moon-arrow', 'lunar-eclipse',
+  'moon-rain', 'full-moon', 'moon-arrow', 'lunar-eclipse',
   'sand-cyclone', 'thousand-shadows', 'veil-dance', 'desert-festival', 'shadow-step', 'sirocco',
   'cannon', 'repair-kit', 'overclock', 'emergency-repair', 'shock-mine', 'tesla-coil',
   // plan 6a: Rin's skills have no icon yet

@@ -1003,3 +1003,21 @@ describe('BattleScene art (no placeholder)', () => {
     expect(whenReady).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('BattleScene field bar (plan 8c)', () => {
+  it('the field bar shows the barrier and the moon', () => {
+    const { root, s } = setup((g) => {
+      g.battle!.barriers = [{ skill: 'ward', kind: 'guard', power: 30, turns: 3, src: 'chizuru' }];
+      g.battle!.moon = { phase: 'full' };
+    });
+    const bar = root.querySelector<HTMLElement>('.slx-fieldbar')!;
+    expect(bar.getAttribute('role')).toBe('status');
+    expect(bar.hidden).toBe(false);
+    expect([...bar.children].map((c) => [c.className, c.textContent])).toEqual([['slx-mech slx-mech-ward', '守之結界3'], ['slx-mech slx-mech-moon', '月相：滿月→下弦']]);
+    s.exit?.();
+    const plain = setup((g) => { delete g.battle!.barriers; delete g.battle!.moon; });
+    const none = plain.root.querySelector<HTMLElement>('.slx-fieldbar')!;
+    expect(none.hidden).toBe(true);
+    expect(none.children).toHaveLength(0);
+  });
+});

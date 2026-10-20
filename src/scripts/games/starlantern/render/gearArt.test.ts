@@ -6,6 +6,7 @@ import { SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { MATERIALS } from '../data/materials';
 import { REGIONS, type RegionId } from '../data/regions';
 import { SKILLS } from '../data/skills';
+import { LEGACY_NODE_IDS } from '../data/trees';
 import { allArtUrls, art } from './artPaths';
 
 /** Written by `python art-factory/starlantern/tools/gear_art.py plan-json` (plan 5d); null is a discarded cell. */
@@ -90,8 +91,10 @@ describe('plan 5d gear art plan (art-factory/starlantern/gear-plan.json)', () =>
     // Addendum S2: the skills with no icon in allArtUrls(); once plan 5d publishes one, its registry batch still names it.
     const urls = new Set(allArtUrls());
     const fromPlan5d = (id: string) => registry.assets[`icon-${id}`]?.batch?.startsWith('gear-5d-') ?? false;
-    const skills = Object.keys(SKILLS).filter((id) => !urls.has(art.icon(id)) || fromPlan5d(id));
-    expect(new Set(cells)).toEqual(new Set([...mats, ...skills]));
+    // Plan 8c ruling 2: a replaced skill keeps its cell (its icon is retired in step ⑨), and its successor waits for G3.
+    const replaced = new Set(Object.keys(LEGACY_NODE_IDS)), successors = new Set(Object.values(LEGACY_NODE_IDS));
+    const skills = Object.keys(SKILLS).filter((id) => (!urls.has(art.icon(id)) || fromPlan5d(id)) && !successors.has(id));
+    expect(new Set(cells.filter((id) => !replaced.has(id)))).toEqual(new Set([...mats, ...skills]));
   });
 
   it('silhouette sources match regionSpecials and the first piece of each set', () => {

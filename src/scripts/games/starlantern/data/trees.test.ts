@@ -112,11 +112,11 @@ describe('skill trees', () => {
     }
   });
 
-  it('every power mod node (powerPct or powerDelta) names a skill that deals damage, heals or sets a turret', () => {
+  it('every power mod node (powerPct or powerDelta) names a skill that deals damage, heals, sets a turret or raises a barrier', () => {
     const power = allNodes().filter((n) => n.kind === 'mod' && n.mods!.some((m) => m.powerPct !== undefined || m.powerDelta !== undefined));
     expect(power.map((n) => n.id)).toContain('twin-turret');
     for (const n of power) {
-      expect(SKILLS[n.skill].effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'turret'), n.id).toBe(true);
+      expect(SKILLS[n.skill].effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'turret' || e.kind === 'barrier'), n.id).toBe(true);
     }
   });
 
@@ -141,9 +141,9 @@ describe('skill trees', () => {
   it('an active above rank 1 has an effect its rank scales (damage, heal or turret by powerPct; a pure buff by buffPct), or a TP cost its rank lowers', () => {
     for (const n of allNodes().filter((x) => x.kind === 'active' && x.maxRank > 1)) {
       const kinds = SKILLS[n.skill].effects.map((e) => e.kind);
-      // Plan 8c: a skill with nothing to scale (hex, veil, mark) costs 1 TP less a rank, so it needs TP to spare.
-      const scales = kinds.some((k) => ['damage', 'heal', 'buff', 'turret'].includes(k));
-      expect(scales || SKILLS[n.skill].tp > n.maxRank, n.id).toBe(true);
+      // Plan 8c: a skill with nothing to scale costs 1 TP less a rank (so it needs TP to spare), or lasts longer a rank.
+      const scales = kinds.some((k) => ['damage', 'heal', 'buff', 'turret', 'barrier'].includes(k));
+      expect(scales || SKILLS[n.skill].tp > n.maxRank || n.rank === 'turns', n.id).toBe(true);
     }
   });
 

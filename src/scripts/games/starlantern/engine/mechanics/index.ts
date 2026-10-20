@@ -10,17 +10,22 @@ import type { Combatant } from '../combatant';
 import type { MechState } from '../mech';
 import type { Rng } from '../rng';
 import type { EffectContext } from '../skills';
-import type { CharacterId, SkillDef } from '../types';
+import type { CharacterId, SkillDef, UltimateDef } from '../types';
 import { heat } from './heat';
 import { mark } from './mark';
+import { barrier } from './barrier';
+import { moon } from './moon';
 
 /** A mechanic's colour on the battle screen (`$slx-mech` in the stylesheet, MECH_FILL for the Pixi picture). */
 /** `plain`: a moment no mechanic claims, in the ink colour. */
-export type MechTone = 'heat' | 'expose' | 'mark' | 'veil' | 'plain';
+export type MechTone = 'heat' | 'expose' | 'mark' | 'veil' | 'ward' | 'purify' | 'moon' | 'plain';
 /** A mechanic's word on the battle screen: 「熱度3」, 「暗記」. */
 export interface MechWord { tone: MechTone; text: string }
 /** A mechanic's moment, popped over the member and logged: Noel's overload, Rin's 還有。. */
-export type MechCue = 'overload' | 'again';
+/** `no-barrier`: the great barrier cast with no barrier up. */
+export type MechCue = 'overload' | 'again' | 'no-barrier';
+/** What an action cast: a skill (as its mechanics rewrote it) or an ultimate that fired. */
+export type CastDef = SkillDef | UltimateDef;
 
 export interface MechModule {
   /** At createBattle, for each member (after MECH_OF has given her her state). */
@@ -34,11 +39,13 @@ export interface MechModule {
   /** After every landed hit of `applyEffect`. */
   onHit?(actor: Combatant, target: Combatant, ctx: EffectContext): void;
   /** After each party action in resolveRound; `def` is the skill as cast (castDef), null for anything else. */
-  after?(s: BattleState, c: Combatant, act: Action, def: SkillDef | null, ctx: EffectContext): void;
+  after?(s: BattleState, c: Combatant, act: Action, def: CastDef | null, ctx: EffectContext): void;
   /** Before a party member's action: what `extraAction` will need to compare against. */
   watch?(s: BattleState, c: Combatant): unknown;
   /** After a party member's action (and `after`): one more action now, or null. It logs its own moment. */
   extraAction?(s: BattleState, c: Combatant, act: Action, ctx: EffectContext, seen: unknown): Action | null;
+  /** At the round's end, before any tick (the purifying barrier heals and cures here). */
+  beforeTicks?(s: BattleState, ctx: EffectContext, rng: Rng): void;
   /** At the round's end, after every tick: countdowns, clean-ups. */
   roundEnd?(s: BattleState, ctx: EffectContext, rng: Rng): void;
   /** The word a moment of this mechanic pops (its colour is the mechanic's). */
@@ -51,12 +58,13 @@ export interface MechModule {
 
 /** In hook order. Read lazily: the modules and the engine import each other, so the list is built on first use. */
 let MODULES_CACHE: MechModule[] | null = null;
-const modules = (): MechModule[] => (MODULES_CACHE ??= [heat, mark]);
+const modules = (): MechModule[] => (MODULES_CACHE ??= [heat, mark, barrier, moon]);
 
 /** Each character's mechanic as a fight opens it; a member without an entry has none. */
 export const MECH_OF: Partial<Record<CharacterId, () => MechState>> = {
   noel: () => ({ kind: 'heat', heat: 0 }),
   rin: () => ({ kind: 'mark', marks: [], cap: 1 }),
+  chizuru: () => ({ kind: 'barrier' }),
 };
 
 /** Every member with an entry in MECH_OF gets a fresh mechanic; nothing carries over from an earlier fight. */
@@ -85,7 +93,7 @@ export function onLandedHit(actor: Combatant, target: Combatant, ctx: EffectCont
   for (const m of modules()) m.onHit?.(actor, target, ctx);
 }
 
-export function afterAction(s: BattleState, c: Combatant, act: Action, def: SkillDef | null, ctx: EffectContext): void {
+export function afterAction(s: BattleState, c: Combatant, act: Action, def: CastDef | null, ctx: EffectContext): void {
   for (const m of modules()) m.after?.(s, c, act, def, ctx);
 }
 
@@ -102,6 +110,11 @@ export function extraAction(s: BattleState, c: Combatant, act: Action, ctx: Effe
     if (a) return a;
   }
   return null;
+}
+
+/** At the start of endOfRound, before any tick. */
+export function mechBeforeTicks(s: BattleState, ctx: EffectContext, rng: Rng): void {
+  for (const m of modules()) m.beforeTicks?.(s, ctx, rng);
 }
 
 /** At the end of endOfRound, after every tick. */

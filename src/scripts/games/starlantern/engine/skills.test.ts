@@ -465,11 +465,14 @@ describe('memory keystones', () => {
   });
 });
 
+/** The party def buff 結界 cast before plan 8c made it a barrier: still the strongest-kept rule's example. */
+const OLD_WARD = { kind: 'buff', stat: 'def', pct: 30, turns: 3 } as const;
+
 describe('buffs keep the strongest (plan 8b)', () => {
   it('casting a weaker buff over a stronger one keeps the stronger', () => {
     const chizuru = makeCombatant({ key: 'chizuru', side: 'party' });
     const t = makeCombatant({ key: 'hero', side: 'party', max: { def: 40 } as never });
-    for (const e of SKILLS.ward.effects) applyEffect(chizuru, t, e, ctx());
+    applyEffect(chizuru, t, OLD_WARD, ctx());
     expect(stat(t, 'def')).toBe(52);
     const guard = SKILLS['hero-guard'].effects.find((e) => e.kind === 'buff')!;
     expect(guard).toMatchObject({ stat: 'def', pct: 25 });
@@ -483,7 +486,7 @@ describe('effect sources', () => {
   it('a buff remembers who cast it', () => {
     const chizuru = makeCombatant({ key: 'chizuru', side: 'party' });
     const friend = makeCombatant({ key: 'selene', side: 'party' });
-    applyEffect(chizuru, friend, SKILLS.ward.effects[0], ctx());
+    applyEffect(chizuru, friend, OLD_WARD, ctx());
     expect(friend.buffs).toEqual([{ stat: 'def', pct: 30, turns: 3, src: 'chizuru' }]);
   });
 

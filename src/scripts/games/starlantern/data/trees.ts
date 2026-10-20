@@ -76,16 +76,16 @@ export const TREES: Record<CharacterId, TreeDef> = {
     ] },
     { name: '結界', nodes: [
       A('ward', 3),
-      M('chizuru-ward-up', '結界延長', 'ward', '延長結界的持續回合', turns(4, 5, 6)),
-      A('sacred-sake', 3),
-      M('chizuru-sake-up', '神酒強化', 'sacred-sake', '強化御神酒的回復量', pct(115, 130, 150)),
+      M('chizuru-ward-up', '結界延長', 'ward', '延長守之結界的持續回合', turns(4, 5, 6)),
+      A('purify-ward', 3),
+      M('chizuru-sake-up', '淨結強化', 'purify-ward', '強化淨之結界的回復量', pct(115, 130, 150)),
       A('great-barrier', 1),
     ] },
     { name: '突刺', nodes: [
       A('pierce', 3),
       M('chizuru-pierce-up', '貫槍強化', 'pierce', '強化貫槍的威力', pct(110, 120, 135)),
-      A('thunder-thrust', 3),
-      M('chizuru-thrust-up', '雷突強化', 'thunder-thrust', '強化雷神突的威力', pct(115, 130, 150)),
+      A('exorcism-thrust', 3),
+      M('chizuru-thrust-up', '破邪強化', 'exorcism-thrust', '強化破邪突的威力', pct(115, 130, 150)),
       A('heaven-spear', 1),
     ] },
   ] },
@@ -170,8 +170,8 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('cleanse', 1),
       A('rebirth', 1),
       M('selene-rebirth-up', '再生節流', 'rebirth', '降低月之再生的 TP 消耗', tp(-2, -4, -5)),
-      A('blessing', 3),
-      A('sanctuary', 1),
+      { ...A('moon-recall', 3), rank: 'turns' },
+      A('full-moon-night', 1),
     ] },
     { name: '夢境', nodes: [
       A('dream', 1),
@@ -300,6 +300,14 @@ for (const [owner, tree] of Object.entries(TREES) as [CharacterId, TreeDef][]) {
 }
 
 /** The old kit's learn levels, recorded here when the skills' own `learnLevel` field was removed. */
+/**
+ * Node ids a roster change replaced (plan 8c ruling 1), old → new: a save that holds an old one loads with it renamed
+ * (engine/save.ts `upgradeTreeIds`). The new node keeps the old one's place and maxRank, so every point stays valid.
+ */
+export const LEGACY_NODE_IDS: Readonly<Record<string, string>> = {
+  'sacred-sake': 'purify-ward', 'thunder-thrust': 'exorcism-thrust', blessing: 'moon-recall', sanctuary: 'full-moon-night',
+};
+
 export const LEGACY_LEARN_LEVEL: Record<string, number> = {
   'fire-star': 1, 'ice-star': 2, hex: 4, 'thunder-star': 6,
   sweep: 1, ward: 3, pierce: 5,

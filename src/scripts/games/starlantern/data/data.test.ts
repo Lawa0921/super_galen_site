@@ -62,18 +62,17 @@ describe('data integrity', () => {
     }
   });
 
-  it('the field list is the ten recovery skills', () => {
+  it('the field list is the nine recovery skills (plan 8c: the purifying barrier is a battle skill)', () => {
     const field = Object.values(SKILLS).filter((s) => s.field).map((s) => s.id);
     expect(new Set(field)).toEqual(new Set([
       'hero-mend', 'hero-prayer', 'abyss-light',
       'moonlight', 'moon-rain', 'full-moon', 'rebirth',
-      'sacred-sake',
       'repair-kit', 'emergency-repair',
     ]));
   });
 
   it('cure-only skills are not field skills', () => {
-    for (const id of ['cleanse', 'hero-purify', 'sanctuary']) expect(SKILLS[id].field, id).toBeUndefined();
+    for (const id of ['cleanse', 'hero-purify', 'purify-ward']) expect(SKILLS[id].field, id).toBeUndefined();
   });
 
   it('never reuses an id across items, materials and equipment', () => {

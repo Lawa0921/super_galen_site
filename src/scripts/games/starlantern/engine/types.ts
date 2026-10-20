@@ -37,7 +37,15 @@ export type Effect =
   /** The caster's mark moves onto the target (Rin's mark, engine/mechanics/mark.ts). */
   | { kind: 'mark' }
   /** The caster is passed over by single attacks for `turns` round ends, and her next landed hit crits (Rin's veil). */
-  | { kind: 'veil'; turns: number };
+  | { kind: 'veil'; turns: number }
+  /** A barrier over the party, replacing any other (Chizuru, engine/mechanics/barrier.ts): a guard's percent, or a purifying heal's power. */
+  | { kind: 'barrier'; barrier: 'guard' | 'purify'; power: number; turns: number }
+  /** The barrier up now is boosted `mul` times and lasts `turns` rounds longer; none up, nothing happens. */
+  | { kind: 'barrier-boost'; mul: number; turns: number }
+  /** Selene's moon: one phase back (`step`), or else to the full moon; then that phase is held `hold` round ends. */
+  | { kind: 'moon'; step?: -1; hold?: number };
+/** A skill's part in its owner's mechanic: `release` spends Chizuru's barrier for power. */
+export type SkillMechTag = 'release';
 
 export interface SkillDef {
   id: string; name: string; owner: CharacterId; tp: number; hpCost?: number;
@@ -46,6 +54,8 @@ export interface SkillDef {
   abyss?: true;
   /** Castable outside battle from the labyrinth's field menu (plan 6f): heals and revives only. */
   field?: true;
+  /** Its part in its owner's mechanic (plan 8c). */
+  mech?: SkillMechTag;
 }
 export interface UltimateDef {
   id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string;

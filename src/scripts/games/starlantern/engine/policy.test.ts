@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createBattle, resolveRound, type BattleState } from './battle';
 import type { Combatant } from './combatant';
 import { mechGauge, type MechState } from './mech';
@@ -64,6 +64,17 @@ describe('per-character policies', () => {
     expect(run(s, c, sk('ward', 'pierce'), rule).action).toEqual({ kind: 'skill', skill: 'ward' });
     ({ s, c } = chizuru());
     expect(run(s, c, sk('pierce'), rule).action).toBeNull();   // ward not castable: short of TP
+    // `big` and `below`: only once a boss or an elite is under that share of its HP.
+    const late: PolicyRule[] = [{ kind: 'ensure-barrier', skills: ['ward'], big: true, below: 30 }];
+    const facing = (foe: Partial<Combatant>) => {
+      const s2 = makeBattle([P('chizuru', { mech: { kind: 'barrier' } })], [E('e0', foe)]);
+      return run(s2, s2.party[0], sk('ward', 'pierce'), late).action;
+    };
+    expect(facing({})).toBeNull();
+    expect(facing({ boss: true })).toBeNull();
+    expect(facing({ boss: true, hp: 29 })).toEqual({ kind: 'skill', skill: 'ward' });
+    expect(facing({ tint: 'elite', hp: 29 })).toEqual({ kind: 'skill', skill: 'ward' });
+    expect(facing({ boss: true, hp: 30 })).toBeNull();
   });
 
   it('ensure-device', () => {
@@ -187,23 +198,27 @@ describe('per-character policies', () => {
     for (const [id, rules] of Object.entries(DEFAULT_POLICIES) as [CharacterId, PolicyRule[]][]) {
       for (const r of rules) for (const skill of named(r)) { n++; expect(SKILLS[skill]?.owner, `${id} ${skill}`).toBe(id); }
     }
-    expect(n).toBe(5);
+    expect(n).toBe(6);
     expect(Object.keys(DEFAULT_POLICIES).sort()).toEqual(['bobby', 'chizuru', 'liz', 'rin', 'safira', 'sylvie']);
   });
 
   it('rules draw nothing', () => {
     expect(applyPolicy.length).toBe(5);   // no rng goes in
     const party = partyAt(10);
-    const count = (policies?: Record<string, never>) => {
-      const base = mulberry32(7919);
-      let draws = 0;
-      const rng = () => { draws++; return base(); };
-      let s = createBattle({ party, enemyIds: encounterTable('mainline', 3)[0], boss: false, inventory: {}, revealed: {}, scale: { depth: 3, region: 'mainline' } });
-      for (let r = 0; r < 60 && s.outcome === 'ongoing'; r++) s = resolveRound(s, policies ? choose(s, party, policies) : choose(s, party), rng);
-      return { draws, s: JSON.stringify(s) };
-    };
-    const a = count(), b = count({});
-    expect(a).toEqual(b);
-    expect(a.draws).toBeGreaterThan(0);
+    // Plan 8c gives the standard five mechanics, so the policies now change the fight; what must hold is that choosing
+    // never draws: no Math.random while the policies choose, through a whole fight.
+    const random = vi.spyOn(Math, 'random');
+    let s = createBattle({ party, enemyIds: encounterTable('mainline', 3)[0], boss: false, inventory: {}, revealed: {}, scale: { depth: 3, region: 'mainline' } });
+    const rng = mulberry32(7919);
+    let chose = 0;
+    for (let r = 0; r < 60 && s.outcome === 'ongoing'; r++) {
+      const calls = random.mock.calls.length;
+      const acts = choose(s, party);
+      expect(random.mock.calls.length).toBe(calls);
+      chose++;
+      s = resolveRound(s, acts, rng);
+    }
+    random.mockRestore();
+    expect(chose).toBeGreaterThan(1);
   });
 });

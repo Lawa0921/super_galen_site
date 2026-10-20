@@ -114,6 +114,25 @@ describe("Rin's mark and 還有。", () => {
     expect(kept.party[0].veil).toBe(3);
     const waited = resolveRound(makeBattle([rin({ veil: 4 })], [foe('e0')]), { rin: { kind: 'defend' } }, constRng(0.5));
     expect(waited.party[0].veil).toBe(3);
+    // A blow that misses still shows her: the veil and its crit both go.
+    const missed = resolveRound(makeBattle([rin({ veil: 4, nextCrit: true })], [foe('e0', { x: { evasion: 100 } })]), { rin: { kind: 'attack', target: 'e0' } }, constRng(0));
+    expect(missed.log.some((e) => e.type === 'miss')).toBe(true);
+    expect([missed.party[0].veil, missed.party[0].nextCrit]).toEqual([undefined, undefined]);
+    // An ultimate she could not fire (her gauge short) is no blow.
+    const unfired = resolveRound(makeBattle([rin({ veil: 4, limit: 10 })], [foe('e0')]), { rin: { kind: 'ultimate', target: 'e0' } }, constRng(0.5));
+    expect(unfired.log.some((e) => e.type === 'no-limit')).toBe(true);
+    expect(unfired.party[0].veil).toBe(3);
+  });
+
+  it("the bell's blow shows her too (it goes through the mechanics like any action)", () => {
+    // The hero falls; Rin, holding unrung-bell, strikes at once, from her veil.
+    const hero = P('hero', { hp: 1, max: { hp: 100, tp: 20, atk: 20, def: 1, mag: 20, res: 20, spd: 99 } });
+    const attacker = foe('e0', { sleep: 0, max: { hp: 99999, tp: 0, atk: 300, def: 20, mag: 20, res: 20, spd: 60 } });
+    const s = resolveRound(makeBattle([hero, rin({ veil: 4, keystones: ['unrung-bell'] })], [attacker], { intents: { e0: { kind: 'attack', target: 'hero' } } }),
+      { rin: { kind: 'defend' } }, constRng(0.5));
+    expect(s.party[0].alive).toBe(false);
+    expect(s.log.filter((e) => e.type === 'act' && e.actor === 'rin').length).toBeGreaterThan(0);
+    expect(s.party[1].veil).toBeUndefined();
   });
 
   it('when its owner or its target falls', () => {
