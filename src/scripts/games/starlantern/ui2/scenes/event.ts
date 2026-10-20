@@ -18,7 +18,7 @@ import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { fillRich, gearLabel, gearPart, joinParts } from '../loot';
+import { fillRich, gearLabel, gearPart, joinParts, rarityClass } from '../loot';
 import { MenuView, confirmBox, richNodes, win, type Rich, type RichPart } from '../widgets';
 
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
@@ -218,7 +218,7 @@ export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, op
   body.push(line(stuck ? F.noGear : r.bag ? F.whichGear : F.which, 'slx-event-ask'));
   const held = r.need > 0 && !stuck ? carriedItems(host) : {};
   const items: MenuItem[] = [
-    ...(stuck || !(r.bag || r.need > 0) ? [] : gear).map((it) => ({ id: `gear:${it.uid}`, label: gearLabel(it), cls: `slx-rarity-${it.rarity}` })),
+    ...(stuck || !(r.bag || r.need > 0) ? [] : gear).map((it) => ({ id: `gear:${it.uid}`, label: gearLabel(it), cls: rarityClass(it) })),
     ...Object.entries(held).map(([id, n]) => ({ id, label: itemName(id), right: `×${n}` })),
     { id: 'leave', label: F.keep },   // leaving it destroys nothing: it stays in the chest, the vault or on the ground
   ];

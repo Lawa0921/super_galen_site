@@ -15,7 +15,7 @@ import type { GameState } from '../../engine/state';
 import type { AnyStat, GearSlot, ItemInstance, Rarity } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
-import { fillRich, gearLabel, gearPart, invested, joinParts } from '../loot';
+import { fillRich, gearLabel, gearPart, invested, joinParts, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { MenuView, confirmBox, richNodes, richText, win, type Rich, type RichPart } from '../widgets';
@@ -52,7 +52,7 @@ export function forgeRows(s: GameState, o: { worn: boolean; filter?: (it: ItemIn
     id: `g${it.uid}`,
     label: wearer ? `${gearLabel(it)}${T.ui2.forge.wornBy(wearer)}` : gearLabel(it),
     right: o.right(it),
-    cls: it.junk ? `slx-rarity-${it.rarity} slx-junk` : `slx-rarity-${it.rarity}`,
+    cls: it.junk ? `${rarityClass(it)} slx-junk` : rarityClass(it),
   });
   const rows = s.bag.filter(keep).map((it) => row(it));
   if (o.worn) {
@@ -116,15 +116,19 @@ export class ForgeScene extends FacilityScene {
   }
 }
 
-/** Gear whose loss cannot be undone: a named rarity, or anything invested in (enhanced, or with a reroll-locked affix). */
-const precious = (it: ItemInstance): boolean => it.rarity === 'legendary' || it.rarity === 'unique' || it.rarity === 'set' || invested(it);
+/**
+ * Gear whose loss cannot be undone: epic and up (a starlit piece is always legendary, unique or set), or anything invested
+ * in (enhanced, or with a reroll-locked affix).
+ */
+const precious = (it: ItemInstance): boolean =>
+  it.rarity === 'epic' || it.rarity === 'legendary' || it.rarity === 'unique' || it.rarity === 'set' || invested(it);
 /** A single piece asks first from rare up (or when invested in); a plain common or magic piece goes at once. */
 const asksFirst = (it: ItemInstance): boolean => it.rarity !== 'common' && it.rarity !== 'magic' || invested(it);
 
 /** A detail window's name line: the label, and the wearer when worn (a long row label is cut short, so the detail says it in full). */
 function nameLine(s: GameState, it: ItemInstance): HTMLElement {
   const member = findItem(s, it.uid)?.member;
-  return el('p', { class: `slx-name-line slx-rarity-${it.rarity}`, text: member ? `${gearLabel(it)}${T.ui2.forge.wornBy(CHARACTERS[member].name)}` : gearLabel(it) });
+  return el('p', { class: `slx-name-line ${rarityClass(it)}`, text: member ? `${gearLabel(it)}${T.ui2.forge.wornBy(CHARACTERS[member].name)}` : gearLabel(it) });
 }
 
 /** An essence tally as rich parts, each essence in the colour of its rarity. */
@@ -377,6 +381,8 @@ export function rerollPage(h: ForgeHost): void {
         if (!it) return [];
         const row = (id: string, label: string): MenuItem => {
           const o = how(id);
+          // A starlit piece's affixes are at their maximum: its value reroll is greyed out and says so (the engine refuses it).
+          if (!o.swap && it.starlit) return { id, label, disabled: true, right: F.starlitMaxed, note: F.starlitMaxed };
           const empty = o.swap && swapPool(it, index, o.mat).length === 0;
           return empty
             ? { id, label, disabled: true, right: T.reasons.none, note: T.reasons.none }
@@ -417,9 +423,11 @@ export function rerollPage(h: ForgeHost): void {
         const o = how(cur?.id ?? 'value');
         const lines = [itemLine(it), el('p', { text: F.rerollNow(affixText(it.affixes[index])) })];
         if (o.swap) lines.push(el('p', { text: F.rerollPool(swapPool(it, index, o.mat).map((k) => T.gear.statName[k]).join('、')) }));
+        else if (it.starlit) lines.push(el('p', { class: 'slx-desc', text: F.starlitMaxed }));
         else { const r = rerollRange(it, index); if (r) lines.push(el('p', { text: F.rerollRange(it.affixes[index].key, r[0], r[1]) })); }
-        lines.push(el('p', {}, richNodes(costText(game.state, rerollCost(it, o)))));
-        if (it.locked === undefined) lines.push(el('p', { class: 'slx-desc', text: F.lockWarn }));
+        const refused = !o.swap && it.starlit;
+        if (!refused) lines.push(el('p', {}, richNodes(costText(game.state, rerollCost(it, o)))));
+        if (it.locked === undefined && !refused) lines.push(el('p', { class: 'slx-desc', text: F.lockWarn }));
         info.replaceChildren(...lines);
       });
       show();

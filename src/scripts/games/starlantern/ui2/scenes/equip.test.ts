@@ -440,6 +440,39 @@ describe('EquipScene detail panel', () => {
     expect(locked[0].textContent).toBe(`${T.gear.affix('crit', 2)}${T.gear.lockedAffix}`);
   });
 
+  it('a starlit bag cell carries its rarity class and slx-starlit; the detail shows the starlit line', () => {
+    const spear = (uid: number) => gear('thorn-spear', uid, 'legendary', { special: 'lg-chizuru', starlit: true, affixes: [{ key: 'crit', value: 5 }] });
+    const r = setup((g) => {
+      g.state.bag = [spear(1), gear('iron-sword', 2, 'legendary', { special: 'lg-noel' })];
+      g.state.party.roster.scarlet.equip = { weapon: spear(9) };
+    });
+    const c0 = r.cell(0);
+    expect(c0.getAttribute('aria-label')).toBe('雙月槍・星輝傳說');
+    expect(c0.classList.contains('slx-rarity-legendary')).toBe(true);
+    expect(c0.classList.contains('slx-starlit')).toBe(true);
+    expect(r.cell(1).classList.contains('slx-starlit')).toBe(false);
+    expect(r.slot('weapon').classList.contains('slx-starlit')).toBe(true);
+    r.press('swap');                                                    // onto the bag: the starlit spear is under the cursor
+    const d = r.detail();
+    const name = d.querySelector('.slx-item-name')!;
+    expect(name.textContent).toBe('雙月槍・星輝傳說');
+    expect(name.classList.contains('slx-starlit')).toBe(true);
+    expect(d.querySelector('.slx-cmp-head .slx-rarity-legendary')!.classList.contains('slx-starlit')).toBe(true);
+    expect(d.querySelector('.slx-line-starlit')!.textContent).toBe(T.gear.starlitLine);
+    r.press('right');                                                   // a plain legendary: no starlit line
+    expect(r.detail().querySelector('.slx-line-starlit')).toBeNull();
+  });
+
+  it('an epic cell carries slx-rarity-epic and reads 史詩 in its label', () => {
+    const r = setup((g) => { g.state.bag = [gear('iron-sword', 1, 'epic', { affixes: [{ key: 'crit', value: 5 }] })]; });
+    expect(r.cell(0).getAttribute('aria-label')).toBe('鐵劍・史詩');
+    expect(r.cell(0).classList.contains('slx-rarity-epic')).toBe(true);
+    expect(r.cell(0).classList.contains('slx-starlit')).toBe(false);
+    r.press('swap');
+    expect(r.detail().querySelector('.slx-item-name')!.textContent).toBe('鐵劍・史詩');
+    expect(r.detail().querySelector('.slx-item-name')!.classList.contains('slx-rarity-epic')).toBe(true);
+  });
+
   it('the compare heading is short: the worn piece by name, or the slot marked empty', () => {
     const r = onBag();
     expect(r.detail().querySelector('.slx-cmp-head')!.textContent).toBe('比較：鐵劍');

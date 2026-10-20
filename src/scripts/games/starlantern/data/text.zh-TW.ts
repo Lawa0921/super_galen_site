@@ -68,6 +68,8 @@ export const T = {
   /** Rarity words (spec §4). Loot lines show the word after a gear name; common gear leaves it out. */
   rarity: RARITY,
   gearLabel: (name: string, rarity: string) => `${name}・${rarity}`,
+  /** The rarity word of a starlit piece (plan 5g): 「雙月槍・星輝傳說」. */
+  starlitWord: (word: string) => `星輝${word}`,
   /** A gear name with its enhance level: 「鐵劍 +3」; +0 shows nothing extra. */
   enhanced: (name: string, n: number) => (n > 0 ? `${name} +${n}` : name),
   /** The bare 「+3」 for cells too tight for the name and the level together; empty at +0. */
@@ -88,6 +90,8 @@ export const T = {
     setFour: '（同時擁有 2 件效果）',
     junk: '已標為垃圾',
     weight: (w: number) => `重量 ${w}`,
+    /** The detail line of a starlit piece (plan 5g), after its affixes. */
+    starlitLine: '星輝：所有詞綴皆為最大值，另多一條詞綴',
   },
   tabs: { guild: '公會', shop: '商店', inn: '旅館', depart: '出發' },
   shop: {
@@ -413,7 +417,7 @@ export const T = {
 會得到：${yields}`,
       askMarked: (n: number, yields: string) => `要分解已標記的 ${n} 件裝備嗎？
 會得到：${yields}`,
-      warnPrecious: '裡面有傳說、獨特、套裝、已強化或有重鑄鎖定詞綴的裝備，分解後無法復原。',
+      warnPrecious: '裡面有史詩、傳說、獨特、套裝、已強化或有重鑄鎖定詞綴的裝備，分解後無法復原。',
       dismantled: (yields: string) => `分解完成，得到了${yields}。`,
       maxed: '已達上限',
       nothingToEnhance: '沒有可以強化的裝備。',
@@ -447,6 +451,8 @@ export const T = {
       /** The state of every other affix, short enough for a greyed row. */
       lockedShort: '不可重鑄',
       rerollValue: '重抽數值',
+      /** Why a starlit piece's 重抽數值 row is greyed out: its affixes are at their maximum already. */
+      starlitMaxed: '星輝詞綴已是最大值',
       rerollSwap: '換成其他詞綴',
       /** A swap pinned to a region material: 「火焰核（火焰系）」. */
       rerollWith: (mat: string, group: string) => `換：${mat}（${group}）`,

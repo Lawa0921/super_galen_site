@@ -11,7 +11,7 @@ import type { AnyStat, CharacterId, ItemInstance, Slot, Stats } from '../../engi
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
-import { gearLabel } from '../loot';
+import { gearLabel, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { MenuView, backControl, win } from '../widgets';
@@ -375,7 +375,7 @@ export class EquipScene implements Scene {
     this.bagCells.forEach((c, i) => {
       const it = this.bag[i];
       const cls = ['slx-bag-cell'];
-      if (it) cls.push(`slx-rarity-${it.rarity}`);
+      if (it) cls.push(rarityClass(it));
       if (it?.junk) cls.push('slx-junk');
       if (it && this.target && !fits(it, this.target)) cls.push('slx-unfit');
       if (i === this.bagCur) cls.push('slx-cur');
@@ -391,7 +391,7 @@ export class EquipScene implements Scene {
     this.dollCells.forEach((c, i) => {
       const slot = DOLL[i];
       const it = m.equip[slot];
-      const cls = ['slx-doll-slot', it ? `slx-rarity-${it.rarity}` : 'slx-slot-empty'];
+      const cls = ['slx-doll-slot', it ? rarityClass(it) : 'slx-slot-empty'];
       if (slot === this.target) cls.push('slx-doll-target');
       if (i === this.dollCur) cls.push('slx-cur');
       if (this.flash?.slot === slot) cls.push('slx-flash');
@@ -450,7 +450,7 @@ export class EquipScene implements Scene {
       else if (this.target && m.equip[this.target]) out.push(el('p', { class: 'slx-hint', text: T.ui2.equip.takeOff(T.slot[this.target]) }));
     } else {
       out.push(
-        el('div', { class: `slx-item-name slx-rarity-${it.rarity}`, text: gearLabel(it) }),
+        el('div', { class: `slx-item-name ${rarityClass(it)}`, text: gearLabel(it) }),
         el('div', { class: 'slx-item-meta' }, [
           el('span', { text: T.slotKind[itemSlot(it)] }), el('span', { text: T.gear.ilvl(it.ilvl) }), el('span', { text: T.gear.weight(itemWeight(it)) }),
         ]),
@@ -471,7 +471,7 @@ export class EquipScene implements Scene {
         out.push(el('div', { class: 'slx-cmp' }, [
           // The worn piece by name in its rarity colour (the word itself would push the heading onto a second line).
           worn
-            ? el('div', { class: 'slx-cmp-head' }, [T.ui2.equip.versusLabel, el('span', { class: `slx-rarity-${worn.rarity}`, text: T.enhanced(itemName(worn), worn.enhance) })])
+            ? el('div', { class: 'slx-cmp-head' }, [T.ui2.equip.versusLabel, el('span', { class: rarityClass(worn), text: T.enhanced(itemName(worn), worn.enhance) })])
             : el('div', { class: 'slx-cmp-head', text: T.ui2.equip.versusEmpty(T.slot[slot]) }),
           ...(rows.length ? rows : [el('p', { class: 'slx-desc', text: T.ui2.equip.noChange })]),
         ]));

@@ -766,6 +766,11 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 // Gear in loot lines: the name in its rarity colour; the rarer pieces glow, and battle results slide each piece in.
 .slx-gear-drop.slx-rarity-legendary, .slx-gear-drop.slx-rarity-unique, .slx-gear-drop.slx-rarity-set,
 .slx-loot-gear.slx-rarity-legendary, .slx-loot-gear.slx-rarity-unique, .slx-loot-gear.slx-rarity-set { text-shadow: 0 0 6px currentColor; }
+// A starlit piece (plan 5g; ui2/loot.ts rarityClass) keeps its rarity colour and glows cyan-white instead of the legend glow.
+// Text styling only: no frame, halo or pseudo-element drawing (the ui-starlit overlay art is the drawn look, once published).
+$slx-starlit: #bff6ff;
+.slx-starlit, .slx-bag-cell.slx-starlit, .slx-doll-slot.slx-starlit, .slx-gear-drop.slx-starlit, .slx-loot-gear.slx-starlit { text-shadow: 0 0 3px $slx-starlit, 0 0 6px rgba(191, 246, 255, 0.55); }
+.slx-line-starlit { color: $slx-starlit; }
 .slx-result .slx-loot-gear { animation: slx-loot-in 0.35s ease-out both; }
 .slx-result .slx-loot-left { color: $slx-dim; }
 @keyframes slx-loot-in { from { translate: -8px 0; opacity: 0; } to { translate: 0 0; opacity: 1; } }

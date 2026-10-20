@@ -13,7 +13,7 @@ import { buy, isUnlocked, priceOf, junkTotals, sell, sellGear, sellJunk } from '
 import type { AnyStat } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
-import { gearLabel, invested } from '../loot';
+import { gearLabel, invested, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { MenuView, QtyView, confirmBox, win } from '../widgets';
@@ -206,7 +206,7 @@ export class ShopScene extends FacilityScene {
     return [
       { id: 'sell-marked', label: T.ui2.shop.sellMarked(marked), disabled: marked === 0 },
       ...bag.map((it) => ({
-        id: `g${it.uid}`, label: gearLabel(it), cls: `slx-rarity-${it.rarity}`,
+        id: `g${it.uid}`, label: gearLabel(it), cls: rarityClass(it),
         right: `${it.junk ? `${T.ui2.shop.marked}  ` : ''}${sellPrice(it)} G`,
       })),
     ];

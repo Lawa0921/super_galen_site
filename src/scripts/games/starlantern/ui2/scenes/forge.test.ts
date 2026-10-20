@@ -252,6 +252,20 @@ describe('ForgeScene dismantle page', () => {
     expect(a.game.state.bag).toHaveLength(1);
   });
 
+  it('dismantling an epic asks first and warns it is precious; so does a starlit piece', () => {
+    expect(T.ui2.forge.warnPrecious).toBe('裡面有史詩、傳說、獨特、套裝、已強化或有重鑄鎖定詞綴的裝備，分解後無法復原。');
+    const a = open([gear(1, 'iron-sword', 'epic', { affixes: [{ key: 'crit', value: 3 }] })]);
+    a.s.onAction('confirm');
+    expect(a.confirmEl()).not.toBeNull();
+    expect(a.confirmEl()!.textContent).toContain(T.ui2.forge.warnPrecious);
+    expect(a.confirmEl()!.querySelector('.slx-rarity-epic')!.textContent).toBe('鐵劍・史詩');
+    expect(a.game.state.bag).toHaveLength(1);
+    const b = open([gear(1, 'thorn-spear', 'legendary', { special: 'lg-chizuru', starlit: true, affixes: [{ key: 'crit', value: 3 }] })]);
+    b.s.onAction('confirm');
+    expect(b.confirmEl()!.textContent).toContain(T.ui2.forge.warnPrecious);
+    expect(b.confirmEl()!.querySelector('.slx-rarity-legendary.slx-starlit')!.textContent).toBe('雙月槍・星輝傳說');
+  });
+
   it('has no 分解全部已標記 row without marked gear, and never lists worn gear', () => {
     const game = new Game(constRng(0.5), memoryStorage());
     game.state.bag = [gear(1, 'iron-sword', 'rare')];
@@ -590,6 +604,37 @@ describe('ForgeScene reroll page', () => {
     expect(info().textContent).toContain('稀有精華 5／2');
     // The right-hand column is the cost summary of each row.
     expect(rows()[1].querySelector('.slx-right')!.textContent).toBe(`${rerollCost(it, { swap: true }).gold} G`);
+  });
+
+  it("a starlit item's value reroll row is disabled with the starlit note", () => {
+    expect(F.starlitMaxed).toBe('星輝詞綴已是最大值');
+    const spear = gear(1, 'thorn-spear', 'legendary', {
+      special: 'lg-chizuru', starlit: true, ilvl: 30, affixes: [{ key: 'crit', value: 3 }, { key: 'atk', value: 12 }],
+    });
+    const a = open([spear]);
+    a.go('confirm', 'confirm');             // item -> affix -> how
+    expect(a.ids().slice(0, 2)).toEqual(['value', 'swap']);
+    const value = a.rows()[0];
+    expect(value.getAttribute('aria-disabled')).toBe('true');
+    expect(value.textContent).toContain(F.starlitMaxed);
+    expect(a.rows()[1].getAttribute('aria-disabled')).toBe('false');   // a swap still works
+    expect(a.rows()[1].getAttribute('aria-selected')).toBe('true');    // the cursor starts on it
+    value.click();
+    expect(a.confirmEl()).toBeNull();                                  // a disabled row cannot be picked
+    // A starlit unique has no swap either: its one row is disabled, and the preview says why instead of a range.
+    const ring = gear(2, 'star-ring', 'unique', {
+      special: 'blaze-ember-ring', starlit: true, ilvl: 30, affixes: [{ key: 'fireDmg', value: 3 }, { key: 'fireRes', value: 3 }, { key: 'atk', value: 3 }],
+    });
+    const b = open([ring]);
+    b.go('confirm', 'confirm');
+    expect(b.ids()).toEqual(['value']);
+    expect(b.rows()[0].getAttribute('aria-disabled')).toBe('true');
+    expect(b.info().textContent).toContain(F.starlitMaxed);
+    expect(b.info().textContent).not.toContain('可能的範圍');
+    expect(b.info().textContent).not.toContain(F.lockWarn);              // nothing to pay and nothing to lock
+    b.go('confirm');
+    expect(b.confirmEl()).toBeNull();
+    expect(b.game.state.bag[0].affixes).toEqual(ring.affixes);
   });
 
   it('region-material rows list each region, and an empty pool is disabled with the reason', () => {
