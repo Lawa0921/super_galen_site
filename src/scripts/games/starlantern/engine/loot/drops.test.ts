@@ -355,6 +355,17 @@ describe('starlit drops (plan 5g)', () => {
     });
   });
 
+  it('different run seeds give different starlit outcomes for the same uid', () => {
+    const it = legendary(1);
+    let differ = 0;
+    for (let uid = 1; uid <= 2000; uid++) {
+      const a = applyStarlit({ ...it, uid }, { seed: 1, source: 'boss', depth: 10 }).starlit === true;
+      const b = applyStarlit({ ...it, uid }, { seed: 2, source: 'boss', depth: 10 }).starlit === true;
+      if (a !== b) differ++;
+    }
+    expect(differ).toBeGreaterThan(0);
+  });
+
   it('applyStarlit hits its chance', () => {
     const n = 20000;
     let hits = 0;

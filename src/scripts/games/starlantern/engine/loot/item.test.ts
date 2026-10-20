@@ -273,6 +273,20 @@ describe('starlit (plan 5g)', () => {
     expect(grew).toBeGreaterThan(0);
   });
 
+  it('a starlit item whose slot pool is exhausted gains no affix but is still all max', () => {
+    const base = rollItem(mulberry32(3), { uid: 7, ilvl: 20, rarity: 'legendary', special: 'lg-noel' });
+    const slot = itemSlot(base);
+    const pool = (Object.keys(AFFIXES) as AnyStat[]).filter((k) => AFFIXES[k].slots.includes(slot));
+    expect(pool.length).toBeGreaterThan(0);
+    const full = { ...base, affixes: pool.map((key) => ({ key, value: 1 })) };
+    let draws = 0;
+    const st = starlitItem(full, () => { draws++; return 0.5; });
+    expect(st.affixes.map((a) => a.key)).toEqual(pool);
+    for (const a of st.affixes) expect(a.value, a.key).toBe(maxValue(a.key, 20));
+    expect(st.starlit).toBe(true);
+    expect(draws).toBe(0);
+  });
+
   it('starlitItem leaves its input alone and is deterministic', () => {
     const it = rollItem(mulberry32(3), { uid: 7, ilvl: 20, rarity: 'legendary', special: 'lg-noel' });
     const copy = structuredClone(it);
