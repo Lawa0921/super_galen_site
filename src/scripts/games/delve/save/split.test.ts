@@ -20,6 +20,7 @@ function memStore(slots: Record<string, SlotRead>, o: { failPutOnce?: boolean } 
     async getCharacter(id) { return st.chars[id] ?? null; },
     async backupSlot(from, to) {
       st.log.push(`backupSlot ${from} ${to}`);
+      if (st.slots[to]) return; // 備份只寫一次（同 idbSplitStore）：第二個分頁再遷移不會蓋掉原始舊檔
       const r = st.slots[from]; if (!r) throw new Error('no such slot');
       st.slots[to] = { bytes: r.bytes.slice(), charId: r.charId };
     },
@@ -55,6 +56,15 @@ describe('split orchestration', () => {
     await commitMigration(st, 'main', fixtureGame(), 6, { backup: true });
     expect(st.slots['main.v9.bak'].bytes).toEqual(readLegacyFixture());
     expect((await planContinue(st, 'main')).kind).toBe('split');
+  });
+  it('備份已存在 → 第二次 backupSlot 不覆寫（兩個分頁都遷移時，原始舊檔 bytes 保住）', async () => {
+    const st = await migratedStore();
+    expect(st.slots.main.charId).toBeDefined(); // main 已是 format 10
+    await st.backupSlot('main', 'main.v9.bak');
+    expect(st.slots['main.v9.bak'].bytes).toEqual(readLegacyFixture());
+    await commitMigration(st, 'main', fixtureGame(), 7, { backup: true });
+    expect(st.slots['main.v9.bak'].bytes).toEqual(readLegacyFixture());
+    expect(st.slots['main.v9.bak'].charId).toBeUndefined();
   });
   it('備份失敗 → 不寫新格式', async () => {
     const st = memStore({});

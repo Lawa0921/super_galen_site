@@ -252,7 +252,8 @@ test.describe('delve', () => {
       new DataView(bytes.buffer).setUint32(4, json.length, true);
       bytes.set(json, 8);
       await new Promise<void>((res, rej) => {
-        const req = indexedDB.open('delve', 1);
+        // 不指定版本：頁面已用目前版本（v2）開過資料庫，指定 1 會 VersionError
+        const req = indexedDB.open('delve');
         req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains('saves')) req.result.createObjectStore('saves', { keyPath: 'slot' }); };
         req.onsuccess = () => {
           const tx = req.result.transaction('saves', 'readwrite');

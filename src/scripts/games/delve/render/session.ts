@@ -190,7 +190,7 @@ export function bootDelve(root: HTMLElement): Session {
     if (!helpSeen(storage)) setHelp(true);
     if (hasIndexedDB()) {
       stopAutosave = startAutosave({
-        slot: SLOT, seed: game.seed, getBytes: () => serializeGame(game), getSummary: () => summarizeGame(game),
+        save: () => saveSlot(SLOT, game.seed, serializeGame(game), Date.now(), summarizeGame(game)),
         onSaved: () => { if (!persisted) { persisted = true; void requestPersistence(); } },
         onError: (e) => console.warn('[delve] autosave failed', e),
       });
