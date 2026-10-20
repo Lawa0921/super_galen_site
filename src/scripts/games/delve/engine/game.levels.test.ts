@@ -14,6 +14,7 @@ const SMALL = { width: 160, height: 100 };
 function arena(opts: { px?: number; floorY?: number; seed?: string } = {}): DelveGame {
   const { px = 60, floorY = 60, seed = 'levels' } = opts;
   const g = new DelveGame({ seed, ...SMALL, peaceful: true });
+  g.setAppearance({ ...g.appearance, race: 1 }); // 精靈：沒有經驗加成（人類 +10% 會讓精確經驗數字對不上）
   const w = g.world;
   for (let y = 0; y < w.height; y++) for (let x = 30; x < 100; x++) { w.setFg(x, y, y >= floorY ? T.STONE : T.AIR); w.setWall(x, y, W.NONE); w.setLiquid(x, y, 0, 0); }
   g.teleport(px, floorY - 1);

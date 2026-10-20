@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { folkFrames, folkFrame } from './folkDraw';
 import { folkLook, ROLES, type FolkRole } from '../engine/folkDefs';
 import { Rng } from '../engine/rng';
+import { HAIR_STYLES } from '../engine/appearance';
 import { inPalette } from './pixel';
 import { eyeRamp, MOUTH, MOUTH_RED, TONGUE } from './avatarPalette';
 
@@ -47,6 +48,11 @@ describe('世界 NPC 的紙娃娃', () => {
         expect(mo, `${role} ${s} ${k} 嘴巴`).toBeGreaterThanOrEqual(2);
       }
     }
+  });
+  it('人類 NPC 的髮型從全部髮型抽（新加的髮型也抽得到）', () => {
+    const hairs = new Set<number>();
+    for (let s = 0; s < 400; s++) hairs.add(folkLook('trader', new Rng(`hs:${s}`)).app.hair);
+    for (let h = 0; h < HAIR_STYLES.length; h++) expect(hairs.has(h), `hair ${HAIR_STYLES[h].id}`).toBe(true);
   });
   it('folkFrame：只烘要用的那一格（和整組烘出來的同一格一模一樣）', () => {
     const l = folkLook('guide', new Rng('lazy'));

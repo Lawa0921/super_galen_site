@@ -39,6 +39,7 @@ import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidContact } from './swim';
 import { normalizeAppearance, type Appearance } from './appearance';
+import { raceMods, type RaceMods } from './race';
 import { Vanity, type HideSlot, type VanitySlot } from './vanity';
 import { buildDollLook, dollKey, type DollLook } from './doll';
 import { ProjList, type HitFx, type ProjKind, type Projectile } from './projectiles';
@@ -361,6 +362,8 @@ export const DROWN_EVERY = 0.5;
 export const LAVA_DMG = 30;
 export const BURN_TIME = 7;
 export const BURN_DMG = 2;
+/** 種族「光源 +1」：每點在身邊加的柔光強度（0..1；比夜視護符 0.78 暗） */
+const RACE_LIGHT_GLOW = 0.3;
 /** 蜂蜜：泡過之後 HONEY_TIME 秒內每秒多回 HONEY_REGEN */
 export const HONEY_TIME = 10;
 export const HONEY_REGEN = 2;
@@ -633,6 +636,8 @@ export class DelveGame {
   levels = new Progression();
   /** events 裡已經換算過經驗的位置 */
   private lvScan = 0;
+  /** 種族經驗加成的小數尾數（不存檔）：+10% 對 2~4 點的經驗也要逐次累積，不被四捨五入吃掉 */
+  private raceXpCarry = 0;
   private skillCd: Record<ActiveSkill, number> = { dash: 0, slam: 0, pulse: 0 };
   private dashT = 0;
   private dashDir: 1 | -1 = 1;
@@ -1208,7 +1213,7 @@ export class DelveGame {
   }
   private currentPick(): PickStats {
     const st = this.activePick();
-    const k = (1 + this.levels.totals().mineSpd / 100) * (this.buffOn('minesong') ? BUFFS.minesong.mine : 1);
+    const k = (1 + this.levels.totals().mineSpd / 100) * (this.buffOn('minesong') ? BUFFS.minesong.mine : 1) * this.raceMods().mineMul;
     return st ? { speed: pickSpeed(st.item, st.gear) * k, tier: ITEMS[st.item].pick!.tier } : { ...HAND, speed: HAND.speed * k };
   }
 
@@ -1233,12 +1238,14 @@ export class DelveGame {
     }
     return this.acc.has(a);
   }
+  /** 當前種族被動（每次即時算、不快取：中途換種族立即生效；加在技能上限之外） */
+  raceMods(): RaceMods { return raceMods(this.appearance.race); }
   moveStats(): MoveStats {
     const g = this.stats().gear;
     return {
       runMul: (this.hasAccessory('run') ? 1.45 : 1) * (1 + g.move / 100),
-      // 跳躍高度約與初速平方成正比：+X% 高度 ≈ 初速 × √(1 + X%)
-      jumpMul: (this.hasAccessory('jump') ? 1.25 : 1) * Math.sqrt(1 + g.jump / 100),
+      // 跳躍高度約與初速平方成正比：+X% 高度 ≈ 初速 × √(1 + X%)（種族 jumpMul 是高度倍率，同樣開根號）
+      jumpMul: (this.hasAccessory('jump') ? 1.25 : 1) * Math.sqrt(1 + g.jump / 100) * Math.sqrt(this.raceMods().jumpMul),
       // 凌雲（詞條）+ 雲步（技能）= 最多三段跳
       airJumps: (g.djump > 0 ? 1 : 0) + this.levels.totals().airJump,
     };
@@ -1742,7 +1749,7 @@ export class DelveGame {
     const v = held ? (held.item === 'torch' ? 0.85 : ITEMS[held.item].heldLight ?? 0) : 0;
     const c = held ? HELD_HUE[held.item] : undefined;
     // 夜視護符：身邊一圈柔和的微光（比火把暗、不需要拿在手上）；螢光詞條也算
-    const night = Math.max(this.hasAccessory('night') ? 0.78 : 0, Math.min(1, this.stats().gear.light / 100));
+    const night = Math.max(this.hasAccessory('night') ? 0.78 : 0, Math.min(1, this.stats().gear.light / 100 + this.raceMods().light * RACE_LIGHT_GLOW));
     // 空手時不再有實體光（會穿牆照出密室）；玩家身邊的輪廓微光改由 render 的 ambientReach 處理
     const out: PointLight[] = [];
     if (v > 0) out.push({ x: pt.x, y: pt.y, v, c });
@@ -2151,7 +2158,7 @@ export class DelveGame {
       this.fallPeak = null;
       if (this.hasAccessory('nofall')) return;
       const sk = this.levels.totals();
-      const dmg = Math.round(fallDamage(tiles, SAFE_FALL_TILES + (this.hasAccessory('jump') ? 8 : 0) + sk.fallSafe) * (1 - sk.fallRed / 100));
+      const dmg = Math.round(fallDamage(tiles, SAFE_FALL_TILES + (this.hasAccessory('jump') ? 8 : 0) + sk.fallSafe + this.raceMods().safeFall) * (1 - sk.fallRed / 100));
       if (dmg > 0) this.applyDamage(dmg, true);
     }
   }
@@ -2206,7 +2213,7 @@ export class DelveGame {
     if (c.type === LIQ.LAVA && c.frac > 0 && !ward) {
       this.burning = BURN_TIME;
       if (this.iframes <= 0) {
-        this.applyDamage(damageTaken(LAVA_DMG, this.stats().defense), false, 'lava');
+        this.applyDamage(Math.max(1, Math.round(damageTaken(LAVA_DMG, this.stats().defense) * this.raceMods().lavaMul)), false, 'lava');
         if (this.dead) return;
         p.vy = Math.min(p.vy, -280); p.onGround = false;
         this.motion.jumpTimer = 0; this.motion.climbing = false; this.motion.mantle = null;
@@ -2216,7 +2223,7 @@ export class DelveGame {
     if (this.burning > 0) {
       this.burning -= dt;
       this.burnTick -= dt;
-      if (this.burnTick <= 0) { this.burnTick = 0.5; this.tickDamage(BURN_DMG, 'burn'); if (this.dead) return; }
+      if (this.burnTick <= 0) { this.burnTick = 0.5; this.tickDamage(Math.max(1, Math.round(BURN_DMG * this.raceMods().burnMul)), 'burn'); if (this.dead) return; }
     } else { this.burning = 0; this.burnTick = 0; }
     // 蜂蜜：泡過之後一段時間多回血
     if (c.type === LIQ.HONEY && c.frac > 0) this.honeyT = HONEY_TIME;
@@ -3600,9 +3607,16 @@ export class DelveGame {
       if (a && a.amount > 0) this.addXp(a.amount, a.src, a.x, a.y);
     }
   }
-  /** 加經驗（乘上博學）：發 xp 事件；跨級的每一級發 levelup */
+  /** 加經驗（種族加成 + 博學）：發 xp 事件；跨級的每一級發 levelup。
+   *  種族加成只把「整數部分」交給 levels.gain、小數留在 raceXpCarry 下次再加（博學仍由 gain 照舊乘、照舊四捨五入）。 */
   addXp(n: number, src: XpSource = 'debug', x?: number, y?: number): GainResult {
-    const r = this.levels.gain(n);
+    let bonus = 0;
+    if (!this.levels.locked) {
+      const exact = Math.max(0, n) * this.raceMods().xpPct / 100 + this.raceXpCarry;
+      bonus = Math.floor(exact + 1e-9);
+      this.raceXpCarry = Math.max(0, exact - bonus);
+    }
+    const r = this.levels.gain(n + bonus);
     if (r.amount <= 0) return r;
     const p = this.player;
     this.events.push({ type: 'xp', amount: r.amount, src, x: x ?? p.x + p.w / 2, y: y ?? p.y - 4 });

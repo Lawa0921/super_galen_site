@@ -21,6 +21,7 @@ export interface Rect { x0: number; y0: number; x1: number; y1: number; }
 /**
  * 臉上不能被手持物蓋到的那一塊（影格座標）：後眼的後緣 − 1 到前眼睫毛 + 1、眼睛上一列到嘴下面一列；
  * (dx, dy) = 這一格身體的位移（頭跟著動，走路 / 呼吸時頭再差 1 格：外擴一格）。
+ * 種族讓頭往下移的格數（avatarArt.raceHeadDy，例如矮人）已經折進影格表的 meta.dy：直接傳 faceGuard(meta.dx, meta.dy)，不另外加。
  */
 export function faceGuard(dx = 0, dy = 0): Rect {
   return {

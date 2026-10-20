@@ -104,6 +104,7 @@ const PAL_SET = new Set([...PALETTE, ...AVATAR_SKIN, ...AVATAR_HAIR_OUT].map((c)
 export function inPalette(c: RGB): boolean { return PAL_SET.has((c[0] << 16) | (c[1] << 8) | c[2]); }
 /** 最近的色票色 */
 export function snap(c: RGB): RGB {
+  if (inPalette(c)) return c; // 色票外但合法的 avatar 專用色（膚色 / 髮外框）原樣保留
   const key = (c[0] << 16) | (c[1] << 8) | c[2];
   let r = SNAP_CACHE.get(key);
   if (!r) {

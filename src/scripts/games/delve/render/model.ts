@@ -229,26 +229,19 @@ const LORE: readonly string[] = [
 export function loreText(id: number): string { return LORE[((id % LORE.length) + LORE.length) % LORE.length]; }
 const HINTS: Record<string, string> = { platform: '站在平台上：按 S / ↓ 可以穿過平台往下掉' };
 export function hintText(id: string): string { return HINTS[id] ?? ''; }
-// ── 新世界 / 存檔覆蓋流程（單一存檔槽） ──────────────────
-/** 已有存檔時新世界要先確認；force（使用者已確認 / fresh=1）直接開始。 */
-export function newWorldPlan(existingSeed: string | null, force: boolean): 'start' | 'confirm' {
-  return existingSeed !== null && !force ? 'confirm' : 'start';
-}
-
+// ── ?autostart=1 深連結（多存檔槽：新世界永遠另開存檔槽，不會覆蓋） ──────────────────
 export type AutostartPlan =
   | { kind: 'none' }
-  | { kind: 'start'; seed: string | undefined }
-  | { kind: 'confirm'; seed: string | undefined; existing: string };
+  | { kind: 'fresh'; seed: string | undefined }
+  | { kind: 'continue' };
 
-/** ?autostart=1[&seed=x][&fresh=1]：有存檔且沒有 fresh=1 時不得直接覆蓋。 */
-export function autostartPlan(search: string, existingSeed: string | null): AutostartPlan {
+/** ?autostart=1[&seed=x][&fresh=1]：fresh=1 或指定 seed → 開新世界；都沒有 → 有存檔就繼續冒險，沒有就開新世界。 */
+export function autostartPlan(search: string, hasSave: boolean): AutostartPlan {
   const qs = new URLSearchParams(search);
   if (qs.get('autostart') !== '1') return { kind: 'none' };
   const seed = qs.get('seed') ?? undefined;
-  if (newWorldPlan(existingSeed, qs.get('fresh') === '1') === 'confirm') {
-    return { kind: 'confirm', seed, existing: existingSeed as string };
-  }
-  return { kind: 'start', seed };
+  if (hasSave && seed === undefined && qs.get('fresh') !== '1') return { kind: 'continue' };
+  return { kind: 'fresh', seed };
 }
 
 const BIOME_NAMES = ['森林', '沙漠', '雪原', '叢林'];

@@ -24,17 +24,24 @@ function lcg(seed: number): () => number {
 }
 
 describe('外觀選項', () => {
-  it('數量符合需求：髮型 ≥ 8、髮色 ≥ 10、瞳色 ≥ 6、膚色 ≥ 5、服裝 ≥ 6、飾品含緞帶 / 貓耳 / 髮夾 / 兜帽', () => {
-    expect(HAIR_STYLES.length).toBeGreaterThanOrEqual(8);
+  it('數量符合需求：髮型 ≥ 13、髮色 ≥ 10、瞳色 ≥ 6、膚色 ≥ 5、服裝 ≥ 14、頭飾 ≥ 10（含緞帶 / 貓耳 / 髮夾 / 兜帽 / 皇冠 / 耳機 / 狐面 / 髮簪）', () => {
+    expect(HAIR_STYLES.length).toBeGreaterThanOrEqual(13);
+    expect(ACCESSORIES.length).toBeGreaterThanOrEqual(10);
     expect(HAIR_COLORS.length).toBeGreaterThanOrEqual(10);
     expect(EYE_COLORS.length).toBeGreaterThanOrEqual(6);
     expect(EYE_SHAPES.length).toBeGreaterThanOrEqual(2);
     expect(SKIN_TONES.length).toBeGreaterThanOrEqual(5);
-    expect(OUTFITS.length).toBeGreaterThanOrEqual(6);
+    expect(OUTFITS.length).toBeGreaterThanOrEqual(14);
+    for (const id of ['ninja', 'mage', 'knight', 'qipao', 'pirate', 'idol', 'priest', 'gothic']) expect(OUTFITS.map((o) => o.id)).toContain(id);
     expect(CLOTH_COLORS.length).toBeGreaterThanOrEqual(8);
-    for (const id of ['ribbon', 'catears', 'clip', 'hood']) expect(ACCESSORIES.map((a) => a.id)).toContain(id);
-    for (const id of ['twintails', 'ponytail', 'bob', 'long', 'spiky', 'messy', 'braid', 'odango']) expect(HAIR_STYLES.map((h) => h.id)).toContain(id);
+    for (const id of ['ribbon', 'catears', 'clip', 'hood', 'crown', 'headphones', 'foxmask', 'hairpin']) expect(ACCESSORIES.map((a) => a.id)).toContain(id);
+    for (const id of ['twintails', 'ponytail', 'bob', 'long', 'spiky', 'messy', 'braid', 'odango', 'lowpony', 'wolf', 'wavy', 'sidepart']) expect(HAIR_STYLES.map((h) => h.id)).toContain(id);
     for (const id of ['pink', 'blue', 'silver', 'green']) expect(HAIR_COLORS.map((h) => h.id)).toContain(id);
+  });
+  it('新髮型 / 頭飾 / 服裝只加在末尾：舊存檔的索引不變', () => {
+    expect(HAIR_STYLES.slice(0, 9).map((h) => h.id)).toEqual(['bob', 'twintails', 'ponytail', 'long', 'hime', 'spiky', 'messy', 'braid', 'odango']);
+    expect(ACCESSORIES.slice(0, 6).map((a) => a.id)).toEqual(['none', 'ribbon', 'catears', 'clip', 'hood', 'flower']);
+    expect(OUTFITS.slice(0, 6).map((o) => o.id)).toEqual(['explorer', 'sailor', 'miko', 'hoodie', 'coat', 'maid']);
   });
   it('每個欄位都有中文名稱，id 不重複', () => {
     for (const f of APPEARANCE_FIELDS) {
@@ -159,5 +166,31 @@ describe('預設外觀（localStorage，新世界用）', () => {
     const bad = { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } } as unknown as Storage;
     expect(loadDefaultAppearance(bad)).toEqual(DEFAULT_APPEARANCE);
     expect(() => saveDefaultAppearance(bad, DEFAULT_APPEARANCE)).not.toThrow();
+  });
+});
+
+describe('種族欄位', () => {
+  it('舊外觀沒有 race → 0，其他欄位不變；壞值 → 0；合法值保留', () => {
+    const old: Record<string, unknown> = { ...DEFAULT_APPEARANCE, hair: 5, hairColor: 3 };
+    delete old.race;
+    expect(normalizeAppearance(old)).toEqual({ ...DEFAULT_APPEARANCE, hair: 5, hairColor: 3, race: 0 });
+    expect(normalizeAppearance({ ...old, race: 7 }).race).toBe(0);
+    expect(normalizeAppearance({ ...old, race: 3 }).race).toBe(3);
+  });
+  it('只改 race，appearanceKey 不同', () => {
+    expect(appearanceKey({ ...DEFAULT_APPEARANCE, race: 1 })).not.toBe(appearanceKey(DEFAULT_APPEARANCE));
+  });
+  it('換體型保留目前種族；兩種預設都是人類', () => {
+    expect(bodyDefaults(0).race).toBe(0);
+    expect(bodyDefaults(1).race).toBe(0);
+    const a = { ...DEFAULT_APPEARANCE, race: 4 };
+    expect(stepAppearance(a, 'body', 1).race).toBe(4);
+    expect(stepAppearance({ ...bodyDefaults(0), race: 2 }, 'body', 1)).toMatchObject({ body: 1, race: 2, hair: bodyDefaults(1).hair, outfit: bodyDefaults(1).outfit });
+  });
+  it('隨機外觀的種族在範圍內，且五族都抽得到', () => {
+    let s = 7; const rand = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 2 ** 32; };
+    const seen = new Set<number>();
+    for (let i = 0; i < 200; i++) seen.add(randomAppearance(rand).race);
+    expect([...seen].sort()).toEqual([0, 1, 2, 3, 4]);
   });
 });

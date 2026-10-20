@@ -1,6 +1,8 @@
 // anim.ts — 動畫時序的純邏輯（無 DOM）：姿勢判定、走路相位、idle 呼吸、揮動弧、角度量化、火焰影格。
 // 角度單位：度；0 = 手臂自然下垂，正值 = 往面向方向抬（90 = 平舉向前、180 = 舉過頭）。
 
+import type { SheetAnim } from './avatarArt';
+
 export type PoseKind = 'idle' | 'walk' | 'jump' | 'fall';
 
 export const WALK_FRAMES = 8;
@@ -70,6 +72,19 @@ export function armAngles(kind: PoseKind, frame: number, swing: number | null): 
   }
   if (swing !== null) front = swing;
   return { front, back };
+}
+
+/** 預覽影格的手臂角度（度；0 = 下垂、正 = 往前抬） */
+export function previewArms(anim: SheetAnim, f: number): { front: number; back: number } {
+  switch (anim) {
+    case 'walk': return armAngles('walk', f, null);
+    case 'jump': return armAngles('jump', 0, null);
+    case 'fall': return armAngles('fall', 0, null);
+    case 'swim': { const s = Math.sin((f / 6) * Math.PI * 2); return { front: 95 + s * 55, back: 95 - s * 55 }; }
+    case 'hurt': return { front: 130, back: -50 };
+    case 'mantle': return { front: 30, back: 20 };
+    default: return armAngles('idle', f % 4, null);
+  }
 }
 
 /**

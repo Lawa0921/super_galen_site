@@ -63,6 +63,8 @@ export const LEATHER = ramp('#1c1424', '#2a1810', '#472819', '#623924', '#7c4c2e
 /** 深色鞋 / 襪 */
 export const DARK = ramp('#0c0a12', '#0c0a12', '#1c1424', '#2c2838', '#423f54');
 export const WHITE = CLOTH_RAMPS[0];
+/** 鎖子甲 / 鐵灰（騎士罩袍的肩、袖、護腿） */
+export const MAIL = ramp('#2c2838', '#423f54', '#5e5e74', '#858aa0', '#b4b9c8');
 export const GOLD = hex('#ffd86a');
 export const EYE_WHITE = hex('#ffffff');
 export const MOUTH = hex('#8c2038');
@@ -72,6 +74,10 @@ export const LASH = hex('#472819');
 export const TONGUE = hex('#e890b0');
 export const SWEAT = ramp('#5c9ce0', '#94c8ee', '#ffffff');
 export const GLASSES = hex('#423f54');
+/** 龍角（象牙 / 骨色 5 階：[最暗, 陰影, 底色, 亮部, 高光]） */
+export const HORN = ramp('#7c4c2e', '#c99660', '#d8ba76', '#f2e2b0', '#fff4c0');
+/** 貓耳內側（粉：[陰影, 底色]） */
+export const EAR_PINK = ramp('#e890b0', '#ffc8dc');
 
 export const hairRamp = (i: number): RGB[] => HAIR_RAMPS[i] ?? HAIR_RAMPS[0];
 /** 頭髮剪影最外一圈的外框色（深棕 / 深紫，亮度約 2–3 成） */

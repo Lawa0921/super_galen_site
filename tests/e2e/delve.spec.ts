@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { test, expect, type Page } from '@playwright/test';
 
 /**
@@ -16,6 +17,122 @@ async function pressStart(page: Page): Promise<void> {
 
 async function waitGame(page: Page): Promise<void> {
   await page.waitForFunction(() => Boolean(window.__delveDebug?.game), undefined, { timeout: 30000 });
+}
+
+/**
+ * 標題選單 →「開始遊戲」→ 角色（newChar：新角色 → 暱稱 → 建立；否則選第一個角色）→ 世界列表「新世界」→ 世界名 → 開始冒險。
+ * 呼叫前選單要開著；之後自己 waitGame。
+ */
+async function newWorldVia(page: Page, seed: string, o: { nick?: string; newChar?: boolean } = {}): Promise<void> {
+  await page.click('#delve-start');
+  await expect(page.locator('#delve-charpanel')).toBeVisible({ timeout: 15000 });
+  if (o.newChar ?? true) {
+    await page.click('#delve-newchar-open');
+    await expect(page.locator('#delve-newchar')).toBeVisible();
+    await page.fill('#delve-nick', o.nick ?? '');
+    await page.click('#delve-newchar-create');
+  } else {
+    await page.locator('#delve-charlist .delve-char-row .delve-char-line').first().click();
+  }
+  await expect(page.locator('#delve-worldpanel')).toBeVisible();
+  await page.click('#delve-new');
+  await expect(page.locator('#delve-newpanel')).toBeVisible();
+  await page.fill('#delve-seed', seed);
+  await page.click('#delve-create');
+}
+
+/** 標題選單 →「開始遊戲」→ 新角色 →「更換外觀」：衣櫥打開 */
+async function openNewLook(page: Page): Promise<void> {
+  await page.click('#delve-start');
+  await expect(page.locator('#delve-charpanel')).toBeVisible({ timeout: 15000 });
+  await page.click('#delve-newchar-open');
+  await expect(page.locator('#delve-newchar')).toBeVisible();
+  await page.click('#delve-new-look');
+  await expect(page.locator('#delve-wardrobe')).toBeVisible();
+}
+
+/** 世界列表裡世界名是 name 的列（點「列的文字」才是選世界；列裡還有匯出 / 刪除鈕） */
+const worldRow = (page: Page, name: string) =>
+  page.locator('#delve-worldlist .delve-world-row', { has: page.locator('.delve-world-line', { hasText: `「${name}」` }) });
+/** 角色列表裡暱稱是 nick 的列 */
+const charRow = (page: Page, nick: string) =>
+  page.locator('#delve-charlist .delve-char-row', { has: page.locator('.delve-char-line', { hasText: nick }) });
+
+/**
+ * 在遊戲頁開資料庫（會立刻升到 v2）之前，於同源的頁面做出一個真正的 v1 資料庫：'main' 槽是 format 9 舊合併存檔。
+ * 舊版程式的 saveSlot 寫的是 gzip(serializeGame) + bytes = 壓縮後長度 + 摘要（沒有 charId / format）。回傳存進去的位元組。
+ */
+async function seedLegacyV9(page: Page): Promise<number[]> {
+  const legacy = [...readFileSync('src/scripts/games/delve/save/__fixtures__/format9.delve')];
+  await page.goto('/no-such-page-delve-v9');
+  const stored = await page.evaluate((raw) => new Promise<number[]>((ok, bad) => {
+    const gz = new Response(new Blob([new Uint8Array(raw)]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
+    gz.then((buf) => {
+      const data = new Uint8Array(buf);
+      const req = indexedDB.open('delve', 1);
+      req.onupgradeneeded = () => { req.result.createObjectStore('saves', { keyPath: 'slot' }); };
+      req.onsuccess = () => {
+        const db = req.result, t = db.transaction('saves', 'readwrite');
+        t.objectStore('saves').put({ slot: 'main', seed: 'fixture-v9', savedAt: 1, bytes: data.length, data,
+          summary: { seed: 'fixture-v9', time: 0, playSec: 0, depth: 0, completion: 0, peaceful: true } });
+        t.oncomplete = () => { db.close(); ok([...data]); };
+        t.onerror = () => bad(t.error);
+      };
+      req.onerror = () => bad(req.error);
+    }, bad);
+  }), legacy);
+  expect(stored.slice(0, 2)).toEqual([0x1f, 0x8b]);
+  return stored;
+}
+
+/**
+ * 遊戲頁已經開過資料庫（v2）之後，直接把舊合併存檔寫進 'main'（= 還沒轉換的舊存檔出現在世界列表裡）。
+ * header = 給了就寫一個手工的舊檔頭（沒有 chunk、不壓縮），否則寫 format9 fixture（gzip）。回傳存進去的位元組。
+ */
+async function injectLegacyMain(page: Page, header?: Record<string, unknown>): Promise<number[]> {
+  const raw = header ? null : [...readFileSync('src/scripts/games/delve/save/__fixtures__/format9.delve')];
+  return page.evaluate(({ raw, header }) => new Promise<number[]>((ok, bad) => {
+    let bytes: Promise<Uint8Array>;
+    if (raw) {
+      bytes = new Response(new Blob([new Uint8Array(raw)]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer().then((b) => new Uint8Array(b));
+    } else {
+      const json = new TextEncoder().encode(JSON.stringify(header));
+      const b = new Uint8Array(8 + json.length);
+      b.set([0x44, 0x4c, 0x56, 0x53]);
+      new DataView(b.buffer).setUint32(4, json.length, true);
+      b.set(json, 8);
+      bytes = Promise.resolve(b);
+    }
+    bytes.then((data) => {
+      const seed = String((header as { seed?: string } | null)?.seed ?? 'fixture-v9');
+      const req = indexedDB.open('delve');
+      req.onsuccess = () => {
+        const db = req.result, t = db.transaction('saves', 'readwrite');
+        t.objectStore('saves').put({ slot: 'main', seed, savedAt: Date.now(), bytes: data.length, data });
+        t.oncomplete = () => { db.close(); ok([...data]); };
+        t.onerror = () => bad(t.error);
+      };
+      req.onerror = () => bad(req.error);
+    }, bad);
+  }), { raw, header: header ?? null });
+}
+
+/** IndexedDB 'saves' 裡世界名是 seed 的世界記錄（不含 *.bak 備份）：{ slot, format, charId, data } */
+function worldRecords(page: Page, seed: string): Promise<{ slot: string; format?: number; charId?: string; data: number[] }[]> {
+  return page.evaluate((seed) => new Promise((ok, bad) => {
+    const r = indexedDB.open('delve');
+    r.onsuccess = () => {
+      const d = r.result, q = d.transaction('saves').objectStore('saves').getAll();
+      q.onsuccess = () => {
+        ok((q.result as { slot: string; seed: string; format?: number; charId?: string; data: Uint8Array }[])
+          .filter((x) => x.seed === seed && !x.slot.endsWith('.bak'))
+          .map((x) => ({ slot: x.slot, format: x.format, charId: x.charId, data: [...x.data] })));
+        d.close();
+      };
+      q.onerror = () => bad(q.error);
+    };
+    r.onerror = () => bad(r.error);
+  }), seed);
 }
 
 /** 像素畫布的顯示尺寸：寬高比 = 畫布寬高比、縮放倍率是整數（不被壓扁、像素不糊） */
@@ -59,10 +176,7 @@ test.describe('delve', () => {
     await expect(page.locator('#delve-press')).toBeVisible();
     await expect(page.locator('#delve-tmenu')).toBeHidden();
     await pressStart(page);
-    await page.click('#delve-new');
-    await expect(page.locator('#delve-newpanel')).toBeVisible();
-    await page.fill('#delve-seed', 'title-test');
-    await page.click('#delve-create');
+    await newWorldVia(page, 'title-test');
     await expect(page.locator('#delve-title')).toBeHidden({ timeout: 15000 });
     await waitGame(page);
     await expect(page.locator('#delve-hotbar .delve-slot')).toHaveCount(10);
@@ -136,30 +250,35 @@ test.describe('delve', () => {
     expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('savetest');
   });
 
-  test('已有存檔時新世界先詢問覆蓋（取消保留、覆蓋才換世界）；autostart 沒 fresh=1 不覆蓋', async ({ page }) => {
+  test('已有存檔時新世界另開存檔槽（不再詢問覆蓋）：舊世界仍在列表；autostart 只給 seed 也是新世界、什麼都不給才繼續', async ({ page }) => {
     await page.goto('/games/delve?seed=keepme&autostart=1&fresh=1');
     await waitGame(page);
     await page.evaluate(() => window.__delveDebug!.save());
-    // autostart 沒 fresh=1：跳出確認，不直接開局
+    // autostart + seed（沒 fresh=1）：直接開新世界，不詢問、不覆蓋
     await page.goto('/games/delve?seed=other&autostart=1');
-    await expect(page.locator('#delve-confirm')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('#delve-confirm-msg')).toContainText('keepme');
-    await page.click('#delve-confirm-cancel');
+    await waitGame(page);
     await expect(page.locator('#delve-confirm')).toBeHidden();
-    await expect(page.locator('#delve-title')).toBeVisible();
-    expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
-    // 標題「新世界」面板 → 開始 → 詢問 → 取消 → 存檔還在（「繼續」的摘要寫著種子）
+    expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('other');
+    await page.evaluate(() => window.__delveDebug!.save());
+    // 標題：用既有角色建新世界 → 直接開局（沒有覆蓋確認）
+    await page.goto('/games/delve');
     await pressStart(page);
-    await expect(page.locator('#delve-continue')).toContainText('keepme', { timeout: 10000 });
-    await page.click('#delve-new');
-    await page.fill('#delve-seed', 'brandnew');
-    await page.click('#delve-create');
-    await expect(page.locator('#delve-confirm')).toBeVisible();
-    await page.click('#delve-confirm-cancel');
-    await expect(page.locator('#delve-continue')).toContainText('keepme');
-    // 再按一次 → 覆蓋
-    await page.click('#delve-create');
-    await page.click('#delve-confirm-ok');
+    await expect(page.locator('#delve-continue')).toContainText('other', { timeout: 10000 });
+    await newWorldVia(page, 'brandnew', { newChar: false });
+    await waitGame(page);
+    await expect(page.locator('#delve-confirm')).toBeHidden();
+    expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('brandnew');
+    await page.evaluate(() => window.__delveDebug!.save());
+    // 舊世界都還在列表（三個世界各自的存檔槽）
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-start');
+    await page.locator('#delve-charlist .delve-char-row .delve-char-line').first().click();
+    await expect(page.locator('#delve-worldpanel')).toBeVisible();
+    await expect(page.locator('#delve-worldlist .delve-world-row')).toHaveCount(3);
+    for (const name of ['keepme', 'other', 'brandnew']) await expect(worldRow(page, name)).toHaveCount(1);
+    // autostart 沒 seed、沒 fresh=1：繼續最近存檔的世界
+    await page.goto('/games/delve?autostart=1');
     await waitGame(page);
     expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('brandnew');
   });
@@ -252,7 +371,8 @@ test.describe('delve', () => {
       new DataView(bytes.buffer).setUint32(4, json.length, true);
       bytes.set(json, 8);
       await new Promise<void>((res, rej) => {
-        const req = indexedDB.open('delve', 1);
+        // 不指定版本：頁面已用目前版本（v2）開過資料庫，指定 1 會 VersionError
+        const req = indexedDB.open('delve');
         req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains('saves')) req.result.createObjectStore('saves', { keyPath: 'slot' }); };
         req.onsuccess = () => {
           const tx = req.result.transaction('saves', 'readwrite');
@@ -269,6 +389,169 @@ test.describe('delve', () => {
     await page.click('#delve-continue');
     await expect(page.locator('#delve-title-msg')).toContainText('舊版地圖產生器');
     await expect(page.locator('#delve-upgrade-new')).toBeVisible();
+  });
+
+  test('資料庫升級被別的分頁擋住（舊版程式開著 v1 連線不讓）：標題顯示原因、不會卡住；關掉那個分頁再重新整理 → 正常，存檔還在', async ({ page, context }) => {
+    // 分頁 A：在遊戲頁開資料庫之前，用 v1 開著連線（有一筆存檔）且不處理 versionchange（= 舊版程式）
+    const a = await context.newPage();
+    await a.goto('/no-such-page-delve-blocked');
+    await a.evaluate(() => new Promise<void>((res, rej) => {
+      const req = indexedDB.open('delve', 1);
+      req.onupgradeneeded = () => { req.result.createObjectStore('saves', { keyPath: 'slot' }); };
+      req.onsuccess = () => {
+        const db = req.result;
+        (window as unknown as { heldDb: IDBDatabase }).heldDb = db;
+        const tx = db.transaction('saves', 'readwrite');
+        const data = new Uint8Array([0x44, 0x4c, 0x56, 0x53, 0, 0, 0, 0]);
+        tx.objectStore('saves').put({ slot: 'main', seed: 'held', savedAt: 1, bytes: data.length, data });
+        tx.oncomplete = () => res();
+        tx.onerror = () => rej(tx.error);
+      };
+      req.onerror = () => rej(req.error);
+    }));
+    // 分頁 B：遊戲頁要升級到 v2 → 被擋住
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await expect(page.locator('#delve-title-msg')).toContainText('請關閉其他開著 DELVE 的分頁後重新整理', { timeout: 10000 });
+    await expect(page.locator('#delve-continue')).toBeHidden();
+    // 關掉 A → 重新整理 B：升級完成、看得到原本的存檔
+    await a.close();
+    await page.reload();
+    await pressStart(page);
+    await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#delve-title-msg')).not.toContainText('請關閉其他開著 DELVE 的分頁');
+    const stores = await page.evaluate(() => new Promise<string[]>((res) => {
+      const req = indexedDB.open('delve');
+      req.onsuccess = () => { const names = Array.from(req.result.objectStoreNames); req.result.close(); res(names); };
+    }));
+    expect(stores).toEqual(['characters', 'saves']);
+  });
+
+  test('舊存檔（format 9、DB v1）自動遷移：角色 + 世界 + main.v9.bak，內容不變', async ({ page }) => {
+    const stored = await seedLegacyV9(page);
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-continue');
+    await waitGame(page);
+    const g1 = await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      return { seed: g.seed, sword: g.inventory.count('gold_sword'), torch: g.inventory.count('torch'), lv: g.levels.level,
+        door: g.world.getFg(49, 58), coins: g.world.chests.get(58 * 200 + 56)![0] };
+    });
+    expect(g1).toMatchObject({ seed: 'fixture-v9', sword: 1, door: 53 /* T.DOOR_CLOSED */, coins: { item: 'copper_coin', count: 37 } });
+    const db = await page.evaluate(() => new Promise((ok) => {
+      const r = indexedDB.open('delve');
+      r.onsuccess = () => {
+        const d = r.result, t = d.transaction(['saves', 'characters']);
+        const bak = t.objectStore('saves').get('main.v9.bak'), main = t.objectStore('saves').get('main'), n = t.objectStore('characters').count();
+        t.oncomplete = () => {
+          ok({ v: d.version, bak: bak.result ? [...bak.result.data] : null, fmt: main.result?.format, charId: main.result?.charId, chars: n.result });
+          d.close();
+        };
+      };
+    }));
+    // 備份 = 原封複製的舊記錄（壓縮後的 bytes 一個不差）
+    expect(db).toMatchObject({ v: 2, bak: stored, fmt: 10, chars: 1 });
+    expect(typeof (db as { charId: unknown }).charId).toBe('string');
+    // 再讀一次：走 split 路徑，內容一樣，標題顯示暱稱
+    await page.evaluate(() => window.__delveDebug!.save());
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await expect(page.locator('#delve-continue')).toContainText('旅人');
+    await page.click('#delve-continue');
+    await waitGame(page);
+    expect(await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      return { seed: g.seed, sword: g.inventory.count('gold_sword'), torch: g.inventory.count('torch'), lv: g.levels.level };
+    })).toEqual({ seed: g1.seed, sword: g1.sword, torch: g1.torch, lv: g1.lv });
+  });
+
+  test('匯出（世界 + 內嵌角色）→ 另一個瀏覽器匯入接著玩；沒有角色的世界檔被拒', async ({ page, browser }) => {
+    await page.goto('/games/delve?seed=exptest&autostart=1&fresh=1');
+    await waitGame(page);
+    const spot = await page.evaluate(async () => {
+      const d = window.__delveDebug!, g = d.game, t = g.playerTile();
+      g.give('torch', 17);
+      g.world.setFg(t.x + 3, t.y + 4, 7);
+      await d.save();
+      return { x: t.x + 3, y: t.y + 4, torch: g.inventory.count('torch') };
+    });
+    // 存檔槽裡的世界檔本身沒有角色（gzip，跟匯出檔同一種外層）；新世界在自己的 w-<uuid> 槽
+    const recs = await worldRecords(page, 'exptest');
+    expect(recs.map((r) => r.slot)).toEqual([expect.stringMatching(/^w-/)]);
+    const worldOnly = recs[0].data;
+    await page.click('#delve-menu-btn');
+    const dl = page.waitForEvent('download');
+    await page.click('#delve-export');
+    const file = readFileSync((await (await dl).path())!);
+
+    const ctx = await browser.newContext();
+    await ctx.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+    const b = await ctx.newPage();
+    await b.goto('/games/delve');
+    await pressStart(b);
+    await b.locator('#delve-import-file').setInputFiles({ name: 'w.delve', mimeType: 'application/octet-stream', buffer: Buffer.from(worldOnly) });
+    await expect(b.locator('#delve-title-msg')).toContainText('這個存檔沒有角色資料');
+    await b.locator('#delve-import-file').setInputFiles({ name: 'exptest.delve', mimeType: 'application/octet-stream', buffer: file });
+    // 有 IndexedDB：匯入成新的世界、留在標題（不直接進遊戲），按「繼續冒險」進去
+    await expect(b.locator('#delve-title-msg')).toContainText('已匯入世界「exptest」');
+    expect(await b.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
+    // 匯入當下就存成世界 + 角色
+    const imported = await worldRecords(b, 'exptest');
+    expect(imported).toHaveLength(1);
+    expect(imported[0]).toMatchObject({ slot: expect.stringMatching(/^w-/), format: 10, charId: expect.any(String) });
+    expect(await b.evaluate(() => new Promise((ok) => {
+      const r = indexedDB.open('delve');
+      r.onsuccess = () => { const d = r.result, q = d.transaction('characters').objectStore('characters').count(); q.onsuccess = () => { ok(q.result); d.close(); }; };
+    }))).toBe(1);
+    await expect(b.locator('#delve-continue-sub')).toContainText('exptest');
+    await b.click('#delve-continue');
+    await waitGame(b);
+    expect(await b.evaluate(({ x, y }) => {
+      const g = window.__delveDebug!.game;
+      return { seed: g.seed, torch: g.inventory.count('torch'), fg: g.world.getFg(x, y) };
+    }, spot)).toEqual({ seed: 'exptest', torch: spot.torch, fg: 7 });
+    await ctx.close();
+  });
+
+  test('存檔槽讀不了（角色記錄遺失）：「繼續冒險」不指向它，世界列表的「匯出」仍能把槽的原始位元組匯出', async ({ page }) => {
+    await page.goto('/games/delve?seed=exporterr&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => window.__delveDebug!.save());
+    // 讀出世界記錄（gzip）並刪掉角色記錄
+    const [rec] = await worldRecords(page, 'exporterr');
+    const worldRec = rec.data;
+    await page.evaluate(() => new Promise<void>((ok, bad) => {
+      const r = indexedDB.open('delve');
+      r.onsuccess = () => {
+        const d = r.result, t = d.transaction('characters', 'readwrite');
+        t.objectStore('characters').clear();
+        t.oncomplete = () => { ok(); d.close(); };
+        t.onerror = () => bad(t.error);
+      };
+    }));
+    expect(worldRec.slice(0, 2)).toEqual([0x1f, 0x8b]);
+    await page.goto('/games/delve');
+    await pressStart(page);
+    // 記錄的角色不在了：沒有可繼續的組合 → 「繼續冒險」隱藏
+    await expect(page.locator('#delve-start')).toBeFocused();
+    await expect(page.locator('#delve-continue')).toBeHidden();
+    // 世界列表要先有角色：建一個新角色 → 世界列表看得到這個世界
+    await page.click('#delve-start');
+    await page.click('#delve-newchar-open');
+    await page.fill('#delve-nick', '救援');
+    await page.click('#delve-newchar-create');
+    await expect(page.locator('#delve-world-who')).toHaveText('選擇世界 — 以 救援 進入');
+    const dl = page.waitForEvent('download');
+    await worldRow(page, 'exporterr').locator('.delve-world-export').click();
+    const file = readFileSync((await (await dl).path())!);
+    // 匯出檔 = 存檔槽的原始位元組（gzip 外層，與 IndexedDB 裡的世界記錄逐位元組相同）
+    expect([...file.subarray(0, 2)]).toEqual([0x1f, 0x8b]);
+    expect([...file]).toEqual(worldRec);
+    await expect(page.locator('#delve-title-msg')).toContainText('已匯出存檔檔案');
+    // 匯出沒有修改存檔槽、沒有進遊戲
+    expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
+    expect((await worldRecords(page, 'exporterr')).map((r) => r.data)).toEqual([worldRec]);
   });
 
   test('地城：debug 傳送進地城、右鍵開門、拿地城鑰匙右鍵開上鎖的門（存檔後仍是開的）', async ({ page }) => {
@@ -573,7 +856,7 @@ test.describe('delve', () => {
     await link.click();
     await expect(page).toHaveURL(/\/games\/delve\/?$/);
     await pressStart(page);
-    await expect(page.locator('#delve-new')).toBeVisible();
+    await expect(page.locator('#delve-start')).toBeVisible();
   });
 });
 
@@ -1049,16 +1332,19 @@ test.describe('delve title', () => {
     expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
     await page.keyboard.press('Enter');
     await expect(page.locator('#delve-tmenu')).toBeVisible();
-    await expect(page.locator('#delve-new')).toBeFocused();
-    // 新世界 → 角色外觀 → 匯入存檔
-    await page.keyboard.press('ArrowDown');
-    await expect(page.locator('#delve-look')).toBeFocused();
-    await page.keyboard.press('ArrowDown');
-    await expect(page.locator('#delve-import')).toBeFocused();
+    // 沒有存檔：「繼續冒險」藏起來，焦點從「開始遊戲」開始；順序 開始遊戲 → 匯入存檔 → 操作說明 → 設定 → 返回遊戲廳 → 繞回
+    await expect(page.locator('#delve-continue')).toBeHidden();
+    await expect(page.locator('#delve-start')).toBeFocused();
+    for (const id of ['#delve-import', '#delve-help-open', '#delve-settings-btn', '#delve-back', '#delve-start']) {
+      await page.keyboard.press('ArrowDown');
+      await expect(page.locator(id)).toBeFocused();
+    }
+    await page.keyboard.press('ArrowUp');
+    await expect(page.locator('#delve-back')).toBeFocused();
+    await page.keyboard.press('Home');
+    await expect(page.locator('#delve-start')).toBeFocused();
     await page.keyboard.press('End');
     await expect(page.locator('#delve-back')).toBeFocused();
-    await page.keyboard.press('ArrowDown');
-    await expect(page.locator('#delve-new')).toBeFocused();
     // 設定
     await page.click('#delve-settings-btn');
     await expect(page.locator('#delve-settings')).toBeVisible();
@@ -1069,7 +1355,11 @@ test.describe('delve title', () => {
     expect(st).toEqual({ v: '0.3', z: '1', a: '1', pub: 0.3 });
     await page.keyboard.press('Escape');
     await expect(page.locator('#delve-settings')).toBeHidden();
-    // 新世界面板：骰子給名字、難度切換記住
+    // 開始遊戲 → 新角色（暱稱留空 = 旅人）→ 世界列表 → 新世界面板：骰子給名字、難度切換記住
+    await page.click('#delve-start');
+    await page.click('#delve-newchar-open');
+    await page.click('#delve-newchar-create');
+    await expect(page.locator('#delve-world-who')).toHaveText('選擇世界 — 以 旅人 進入');
     await page.click('#delve-new');
     await page.click('#delve-dice');
     expect((await page.locator('#delve-seed').inputValue()).length).toBeGreaterThan(2);
@@ -1080,6 +1370,19 @@ test.describe('delve title', () => {
     await page.click('#delve-create');
     await waitGame(page);
     expect(await page.evaluate(() => ({ s: window.__delveDebug!.game.seed, p: window.__delveDebug!.game.peaceful, aim: window.__delveDebug!.game.autoAim, title: Boolean(window.__delveTitle) }))).toEqual({ s: 'title-flow', p: true, aim: true, title: false });
+    await page.evaluate(() => window.__delveDebug!.save());
+    // 有存檔：「繼續冒險」排第一、拿到焦點，往下是「開始遊戲」
+    await page.goto('/games/delve');
+    await page.waitForFunction(() => (window.__delveTitle?.perf.frames ?? 0) > 10, undefined, { timeout: 15000 });
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#delve-continue')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('#delve-start')).toBeFocused();
+    await page.keyboard.press('ArrowUp');
+    await expect(page.locator('#delve-continue')).toBeFocused();
+    await page.keyboard.press('ArrowUp');
+    await expect(page.locator('#delve-back')).toBeFocused();
     expect(errors).toEqual([]);
   });
 
@@ -1116,7 +1419,8 @@ test.describe('delve title', () => {
     await expect(sub).toContainText('遊玩 1 小時 1 分');
     await expect(sub).toContainText('最深 88 格');
     await expect(sub).toContainText('完成度');
-    await expect(page.locator('#delve-export-title')).toBeVisible();
+    // 拆存檔之後摘要也寫著角色暱稱（autostart 的新角色 = 旅人）
+    await expect(sub).toContainText('旅人');
   });
 
   test('手機直式：沒有橫向捲動、選單按鈕至少 40px 高', async ({ browser }) => {
@@ -1333,9 +1637,7 @@ test.describe('delve 標題流程（生成畫面 / 回到標題）', () => {
   test('生成畫面：地層剖面跟著生成器真的取樣、六個階段依序完成', async ({ page }) => {
     await page.goto('/games/delve');
     await pressStart(page);
-    await page.click('#delve-new');
-    await page.fill('#delve-seed', 'gen-screen');
-    await page.click('#delve-create');
+    await newWorldVia(page, 'gen-screen');
     await expect(page.locator('#delve-gen-phases .delve-gen-phase')).toHaveCount(6);
     await waitGame(page);
     // 生成結束：六個階段都打勾；剖面不是空的（有天空色 #3e74c4 / #5c9ce0 與至少 6 種顏色）
@@ -1418,31 +1720,330 @@ test.describe('delve 標題流程（生成畫面 / 回到標題）', () => {
     expect(errors).toEqual([]);
   });
 
-  test('遊戲 → 回到標題 → 新世界（覆蓋確認）→ 換成新種子，沒有重複的迴圈', async ({ page }) => {
+  test('遊戲 → 回到標題 → 新世界（不覆蓋，舊世界仍在列表）→ 換成新種子，沒有重複的迴圈', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/games/delve?seed=rt-old&autostart=1&fresh=1');
     await waitGame(page);
     await backToTitle(page);
     await expect(page.locator('#delve-continue-sub')).toContainText('rt-old');
-    await page.click('#delve-new');
-    await expect(page.locator('#delve-newpanel')).toBeVisible();
-    await page.fill('#delve-seed', 'rt-new');
-    await page.click('#delve-create');
-    await expect(page.locator('#delve-confirm')).toBeVisible();
-    await expect(page.locator('#delve-confirm-msg')).toContainText('rt-old');
-    await page.click('#delve-confirm-ok');
+    await newWorldVia(page, 'rt-new', { newChar: false });
     await page.waitForFunction(() => window.__delveDebug?.game.seed === 'rt-new', undefined, { timeout: 30000 });
+    await expect(page.locator('#delve-confirm')).toBeHidden();
     await expect(page.locator('#delve-title')).toBeHidden({ timeout: 15000 });
     await expect(page.locator('#delve-hotbar .delve-slot')).toHaveCount(10);
     await expect.poll(() => live(page)).toMatchObject({ handles: 1, scenes: 0, sounds: 2, loops: 1 });
     const a = await page.evaluate(() => window.__delveDebug!.game.tick);
     await page.waitForTimeout(300);
     expect(await page.evaluate(() => window.__delveDebug!.game.tick)).toBeGreaterThan(a);
-    // 新世界的存檔蓋掉舊的
+    // 「繼續冒險」改指向新世界；舊世界沒被蓋掉，兩個都在世界列表
     await backToTitle(page);
     await expect(page.locator('#delve-continue-sub')).toContainText('rt-new');
+    await page.click('#delve-start');
+    await page.locator('#delve-charlist .delve-char-row .delve-char-line').first().click();
+    await expect(page.locator('#delve-worldlist .delve-world-row')).toHaveCount(2);
+    await expect(worldRow(page, 'rt-old')).toHaveCount(1);
+    await expect(worldRow(page, 'rt-new')).toHaveCount(1);
     expect(errors).toEqual([]);
+  });
+
+  test('carries gear between worlds：同一個角色換世界背包跟著走；放的方塊留在原本的世界', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await newWorldVia(page, '甲', { nick: '阿甲' });
+    await waitGame(page);
+    expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('甲');
+    // 背包給一把金劍（新角色沒有）、玩家旁邊放一塊木板
+    const spot = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, t = g.playerTile();
+      const before = g.inventory.count('gold_sword');
+      g.give('gold_sword', 1);
+      const x = t.x + 3, y = t.y + 4;
+      g.world.setFg(x, y, 7); // planks
+      return { x, y, before };
+    });
+    expect(spot.before).toBe(0);
+    await backToTitle(page);
+    // 阿甲 建世界「乙」：金劍帶過來；同一個位置不是玩家放的木板（新世界）
+    await newWorldVia(page, '乙', { newChar: false });
+    await waitGame(page);
+    expect(await page.evaluate(({ x, y }) => {
+      const g = window.__delveDebug!.game;
+      return { seed: g.seed, sword: g.inventory.count('gold_sword'), planks: g.world.getFg(x, y) === 7 };
+    }, spot)).toEqual({ seed: '乙', sword: 1, planks: false });
+    await backToTitle(page);
+    // 再選 阿甲 +「甲」：木板還在、金劍也還在
+    await page.click('#delve-start');
+    await charRow(page, '阿甲').locator('.delve-char-line').click();
+    await expect(page.locator('#delve-world-who')).toHaveText('選擇世界 — 以 阿甲 進入');
+    await expect(page.locator('#delve-worldlist .delve-world-row')).toHaveCount(2);
+    await worldRow(page, '甲').locator('.delve-world-line').click();
+    await waitGame(page);
+    expect(await page.evaluate(({ x, y }) => {
+      const g = window.__delveDebug!.game;
+      return { seed: g.seed, sword: g.inventory.count('gold_sword'), fg: g.world.getFg(x, y) };
+    }, spot)).toEqual({ seed: '甲', sword: 1, fg: 7 });
+    expect(errors).toEqual([]);
+  });
+
+  test('second character starts fresh in a shared world：B 進 A 的世界 → 背包沒有 A 的東西、站在出生點，世界是同一個', async ({ page }) => {
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await newWorldVia(page, '甲', { nick: 'A' });
+    await waitGame(page);
+    // A：背包放金劍、放一塊木板、走到離出生點很遠的地方
+    const a = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, t = g.playerTile();
+      g.give('gold_sword', 1);
+      const x = t.x + 3, y = t.y + 4;
+      g.world.setFg(x, y, 7);
+      g.teleport(g.spawn.x + 30, g.spawn.y - 20);
+      return { x, y, spawn: { x: g.spawn.x, y: g.spawn.y } };
+    });
+    await page.waitForTimeout(300);
+    expect(Math.abs(await page.evaluate(() => window.__delveDebug!.game.playerTile().x) - a.spawn.x)).toBeGreaterThan(20);
+    await backToTitle(page);
+    // 新角色 B → 世界列表選「甲」
+    await page.click('#delve-start');
+    await page.click('#delve-newchar-open');
+    await page.fill('#delve-nick', 'B');
+    await page.click('#delve-newchar-create');
+    await expect(page.locator('#delve-world-who')).toHaveText('選擇世界 — 以 B 進入');
+    await worldRow(page, '甲').locator('.delve-world-line').click();
+    await waitGame(page);
+    const b = await page.evaluate(({ x, y }) => {
+      const g = window.__delveDebug!.game, t = g.playerTile();
+      return { seed: g.seed, sword: g.inventory.count('gold_sword'), fg: g.world.getFg(x, y), dx: Math.abs(t.x - g.spawn.x), spawn: { x: g.spawn.x, y: g.spawn.y } };
+    }, a);
+    expect(b).toMatchObject({ seed: '甲', sword: 0, fg: 7, spawn: a.spawn });
+    expect(b.dx).toBeLessThanOrEqual(1);
+  });
+
+  test('delete world and character with confirm：取消不刪、確認才刪；刪掉「繼續冒險」的角色 → 改指向剩下的組合，都沒了就隱藏', async ({ page }) => {
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await newWorldVia(page, 'del-a', { nick: '甲角' });
+    await waitGame(page);
+    await backToTitle(page);
+    await newWorldVia(page, 'del-b', { nick: '乙角' });
+    await waitGame(page);
+    await backToTitle(page);
+    const cont = page.locator('#delve-continue-sub');
+    await expect(cont).toContainText('del-b');
+    await expect(cont).toContainText('乙角');
+    const chars = page.locator('#delve-charlist .delve-char-row'), worlds = page.locator('#delve-worldlist .delve-world-row');
+    // 刪角色 乙角（「繼續冒險」指向它）：取消 → 還在
+    await page.click('#delve-start');
+    await expect(chars).toHaveCount(2);
+    await charRow(page, '乙角').locator('.delve-char-del').click();
+    await expect(page.locator('#delve-confirm')).toBeVisible();
+    await expect(page.locator('#delve-confirm-msg')).toContainText('乙角');
+    await expect(page.locator('#delve-confirm-ok')).toHaveText('刪除');
+    await page.click('#delve-confirm-cancel');
+    await expect(page.locator('#delve-confirm')).toBeHidden();
+    await expect(chars).toHaveCount(2);
+    await expect(cont).toContainText('del-b');
+    // 確認 → 刪掉；「繼續冒險」改指向 甲角 +「del-a」
+    await charRow(page, '乙角').locator('.delve-char-del').click();
+    await page.click('#delve-confirm-ok');
+    await expect(page.locator('#delve-confirm')).toBeHidden();
+    await expect(chars).toHaveCount(1);
+    await expect(charRow(page, '甲角')).toHaveCount(1);
+    await expect(cont).toContainText('del-a');
+    await expect(cont).toContainText('甲角');
+    // 刪世界「del-a」：取消不刪、確認才刪（「del-b」還在，只是它的角色沒了）
+    await charRow(page, '甲角').locator('.delve-char-line').click();
+    await expect(worlds).toHaveCount(2);
+    await worldRow(page, 'del-a').locator('.delve-world-del').click();
+    await expect(page.locator('#delve-confirm')).toBeVisible();
+    await expect(page.locator('#delve-confirm-msg')).toContainText('del-a');
+    await expect(page.locator('#delve-confirm-ok')).toHaveText('刪除');
+    await page.click('#delve-confirm-cancel');
+    await expect(worlds).toHaveCount(2);
+    await expect(cont).toContainText('del-a');
+    await worldRow(page, 'del-a').locator('.delve-world-del').click();
+    await page.click('#delve-confirm-ok');
+    await expect(worlds).toHaveCount(1);
+    await expect(worldRow(page, 'del-b')).toHaveCount(1);
+    expect(await worldRecords(page, 'del-a')).toEqual([]);
+    // 剩下的「del-b」記錄的角色已經刪了 → 沒有可繼續的組合：回到主選單「繼續冒險」藏起來
+    await page.click('#delve-worlds-back');
+    await page.click('#delve-chars-back');
+    await expect(page.locator('#delve-tmenu')).toBeVisible();
+    await expect(page.locator('#delve-continue')).toBeHidden();
+    await expect(page.locator('#delve-start')).toBeVisible();
+  });
+
+  test('same name twice：兩個同名世界各有自己的存檔槽，都在列表', async ({ page }) => {
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await newWorldVia(page, 'twin', { nick: '雙' });
+    await waitGame(page);
+    await backToTitle(page);
+    await newWorldVia(page, 'twin', { newChar: false });
+    await waitGame(page);
+    await backToTitle(page);
+    await page.click('#delve-start');
+    await charRow(page, '雙').locator('.delve-char-line').click();
+    await expect(page.locator('#delve-worldlist .delve-world-row')).toHaveCount(2);
+    await expect(worldRow(page, 'twin')).toHaveCount(2);
+    const slots = await worldRow(page, 'twin').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.slot));
+    expect(new Set(slots).size).toBe(2);
+    expect((await worldRecords(page, 'twin')).map((r) => r.slot).sort()).toEqual([...slots].sort());
+  });
+
+  test('migrates legacy main before listing：舊存檔在「開始遊戲」時先轉換 → 角色列表有 旅人、世界列表有該世界、main.v9.bak 存在', async ({ page }) => {
+    const stored = await seedLegacyV9(page);
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-start');
+    await expect(page.locator('#delve-charpanel')).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('#delve-charlist .delve-char-row')).toHaveCount(1);
+    await expect(page.locator('#delve-charlist .delve-char-line')).toContainText('旅人');
+    await page.locator('#delve-charlist .delve-char-line').first().click();
+    await expect(page.locator('#delve-world-who')).toHaveText('選擇世界 — 以 旅人 進入');
+    await expect(page.locator('#delve-worldlist .delve-world-row')).toHaveCount(1);
+    await expect(worldRow(page, 'fixture-v9')).toHaveCount(1);
+    // 只轉換、沒有進遊戲
+    expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
+    // 備份 = 原封複製的舊記錄；'main' 已是 format 10 + 角色
+    const db = await page.evaluate(() => new Promise((ok) => {
+      const r = indexedDB.open('delve');
+      r.onsuccess = () => {
+        const d = r.result, t = d.transaction('saves');
+        const bak = t.objectStore('saves').get('main.v9.bak'), main = t.objectStore('saves').get('main');
+        t.oncomplete = () => { ok({ bak: bak.result ? [...bak.result.data] : null, fmt: main.result?.format, char: typeof main.result?.charId }); d.close(); };
+      };
+    }));
+    expect(db).toEqual({ bak: stored, fmt: 10, char: 'string' });
+  });
+
+  test('legacy main row picked with another character：先轉換（含 main.v9.bak）再用選定的角色進去，不是轉換出來的 旅人', async ({ page }) => {
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-start');
+    await page.click('#delve-newchar-open');
+    await page.fill('#delve-nick', '甲');
+    await page.click('#delve-newchar-create');
+    await expect(page.locator('#delve-world-who')).toHaveText('選擇世界 — 以 甲 進入');
+    // 角色選好之後，'main' 才出現還沒轉換的舊存檔（例如「開始遊戲」時轉換失敗）：世界列表看得到它
+    const stored = await injectLegacyMain(page);
+    await page.click('#delve-worlds-back');
+    await charRow(page, '甲').locator('.delve-char-line').click();
+    await worldRow(page, 'fixture-v9').locator('.delve-world-line').click();
+    await waitGame(page);
+    const g = await page.evaluate(async () => {
+      const d = window.__delveDebug!;
+      await d.save();
+      return { seed: d.game.seed, sword: d.game.inventory.count('gold_sword') };
+    });
+    // 甲 是新角色：沒有舊存檔玩家的金劍
+    expect(g).toEqual({ seed: 'fixture-v9', sword: 0 });
+    const db = await page.evaluate(() => new Promise<{ bak: number[] | null; fmt?: number; charId?: string; nicks: Record<string, string> }>((ok) => {
+      const r = indexedDB.open('delve');
+      r.onsuccess = () => {
+        const d = r.result, t = d.transaction(['saves', 'characters']);
+        const bak = t.objectStore('saves').get('main.v9.bak'), main = t.objectStore('saves').get('main'), cs = t.objectStore('characters').getAll();
+        t.oncomplete = () => {
+          const nicks: Record<string, string> = {};
+          for (const c of cs.result as { id: string; nick: string }[]) nicks[c.id] = c.nick;
+          ok({ bak: bak.result ? [...bak.result.data] : null, fmt: main.result?.format, charId: main.result?.charId, nicks });
+          d.close();
+        };
+      };
+    }));
+    expect(db.bak).toEqual(stored);
+    expect(db.fmt).toBe(10);
+    // 'main' 最後進場的是 甲（轉換出來的 旅人 照 B5 留在角色庫）
+    expect(db.nicks[db.charId!]).toBe('甲');
+    expect(Object.values(db.nicks).sort()).toEqual(['旅人', '甲'].sort());
+  });
+
+  test('legacy main row from an old generator：提示指向世界列表的「新世界」、留在世界列表、沒有開局', async ({ page }) => {
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await page.click('#delve-start');
+    await page.click('#delve-newchar-open');
+    await page.fill('#delve-nick', '乙');
+    await page.click('#delve-newchar-create');
+    await expect(page.locator('#delve-world-who')).toHaveText('選擇世界 — 以 乙 進入');
+    await injectLegacyMain(page, { format: 1, genVersion: 1, seed: 'old-gen', width: 1600, height: 500, time: 0, tick: 0, savedAt: 1, player: { x: 0, y: 0, vx: 0, vy: 0 }, inventory: { slots: [], selected: 0 }, chunks: [] });
+    await page.click('#delve-worlds-back');
+    await charRow(page, '乙').locator('.delve-char-line').click();
+    await worldRow(page, 'old-gen').locator('.delve-world-line').click();
+    const msg = page.locator('#delve-title-msg');
+    await expect(msg).toContainText('舊版地圖產生器');
+    await expect(msg).toContainText('「新世界」');
+    await expect(msg).not.toContainText('下面的按鈕');
+    await expect(page.locator('#delve-worldpanel')).toBeVisible();
+    await expect(page.locator('#delve-upgrade-new')).toBeHidden();
+    expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
+  });
+
+  test('one tab per character / world：A 在玩 → B 的繼續、選同一個角色或世界、刪除都被擋下；A 回到標題後 B 進得去', async ({ page, context }) => {
+    await page.goto('/games/delve?seed=lock-w&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => window.__delveDebug!.save());
+    const b = await context.newPage();
+    await b.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+    await b.goto('/games/delve');
+    await pressStart(b);
+    const msg = b.locator('#delve-title-msg');
+    const busy = '這個角色或世界正在另一個分頁中遊玩，請先關掉那個分頁。';
+    const notPlaying = async (): Promise<void> => {
+      await expect(b.locator('#delve-root')).toHaveAttribute('data-phase', 'title');
+      expect(await b.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
+    };
+    // 繼續冒險 → A 正在玩的那個組合：擋下
+    await expect(b.locator('#delve-continue-sub')).toContainText('lock-w');
+    await b.click('#delve-continue');
+    await expect(msg).toHaveText(busy);
+    await notPlaying();
+    // 同一個角色：刪除擋下、進同一個世界擋下、開新世界也擋下
+    await b.click('#delve-start');
+    await expect(msg).toHaveText('');
+    await charRow(b, '旅人').locator('.delve-char-del').click();
+    await expect(msg).toHaveText(busy);
+    await expect(b.locator('#delve-confirm')).toBeHidden();
+    await charRow(b, '旅人').locator('.delve-char-line').click();
+    await worldRow(b, 'lock-w').locator('.delve-world-line').click();
+    await expect(msg).toHaveText(busy);
+    await notPlaying();
+    await b.click('#delve-new');
+    await b.fill('#delve-seed', 'lock-other');
+    await b.click('#delve-create');
+    await expect(msg).toHaveText(busy);
+    await notPlaying();
+    await b.click('#delve-new-cancel');
+    // 刪 A 的世界：擋下、記錄還在；另一個角色進 A 的世界：擋下
+    await b.click('#delve-worlds-back');
+    await b.click('#delve-newchar-open');
+    await b.fill('#delve-nick', '乙');
+    await b.click('#delve-newchar-create');
+    await expect(b.locator('#delve-world-who')).toHaveText('選擇世界 — 以 乙 進入');
+    await expect(msg).toHaveText('');
+    await worldRow(b, 'lock-w').locator('.delve-world-del').click();
+    await expect(msg).toHaveText(busy);
+    await expect(b.locator('#delve-confirm')).toBeHidden();
+    expect(await worldRecords(b, 'lock-w')).toHaveLength(1);
+    await worldRow(b, 'lock-w').locator('.delve-world-line').click();
+    await expect(msg).toHaveText(busy);
+    await notPlaying();
+    // A 回到標題（放掉鎖）→ B 的「繼續冒險」進得去
+    await page.bringToFront();
+    await backToTitle(page);
+    await b.bringToFront();
+    await b.click('#delve-worlds-back');
+    await b.click('#delve-chars-back');
+    await b.click('#delve-continue');
+    await waitGame(b);
+    expect(await b.evaluate(() => window.__delveDebug!.game.seed)).toBe('lock-w');
+    // 現在換 A 被擋
+    await page.click('#delve-continue');
+    await expect(page.locator('#delve-title-msg')).toHaveText(busy);
+    expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
   });
 });
 
@@ -1452,14 +2053,13 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
   });
 
-  test('標題「角色外觀」→ 換髮型 → 完成；新世界用這個外觀，存檔 → 重新整理 → 繼續後還在', async ({ page }) => {
+  test('新角色「更換外觀」→ 換髮型 → 完成；新角色 + 新世界用這個外觀，存檔 → 重新整理 → 繼續後還在', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/games/delve');
     await pressStart(page);
-    await page.click('#delve-look');
+    await openNewLook(page);
     const wr = page.locator('#delve-wardrobe');
-    await expect(wr).toBeVisible();
     // 第一列是體型
     await expect(wr.locator('.delve-wr-row').first()).toHaveAttribute('data-key', 'body');
     await expect(wr.locator('.delve-wr-row').first()).toBeFocused();
@@ -1473,19 +2073,27 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     expect(hair).not.toBe(before);
     await wr.locator('.delve-wr-row[data-key="hairColor"] [data-dir="1"]').click();
     const hairColor = Number(await wr.locator('.delve-wr-row[data-key="hairColor"]').getAttribute('data-value'));
+    const doll0 = await page.locator('#delve-new-doll').evaluate((c) => (c as HTMLCanvasElement).toDataURL());
     await page.click('#delve-wr-done');
     await expect(wr).toBeHidden();
+    // 回到新角色面板，小預覽跟著換
+    await expect(page.locator('#delve-newchar')).toBeVisible();
+    expect(await page.locator('#delve-new-doll').evaluate((c) => (c as HTMLCanvasElement).toDataURL())).not.toBe(doll0);
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('delve.appearance') ?? '{}'));
     expect(saved.hair).toBe(hair);
     // 標題背景的主角也換了
     await page.waitForFunction(() => Boolean(window.__delveTitle));
     expect(await page.evaluate(() => window.__delveTitle!.game.appearance.hair)).toBe(hair);
-    // 新世界：面板裡選「男」→ 預設外觀換成男生體型、標題主角也換
-    await page.click('#delve-new');
+    // 新角色面板選「男」→ 預設外觀換成男生體型、標題主角也換
     await page.click('#delve-body-m');
     await expect(page.locator('#delve-body-m')).toHaveAttribute('aria-checked', 'true');
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('delve.appearance') ?? '{}').body)).toBe(1);
     expect(await page.evaluate(() => window.__delveTitle!.game.appearance.body)).toBe(1);
+    // 建立角色 → 世界列表 → 新世界
+    await page.fill('#delve-nick', '換裝');
+    await page.click('#delve-newchar-create');
+    await expect(page.locator('#delve-worldpanel')).toBeVisible();
+    await page.click('#delve-new');
     await page.fill('#delve-seed', 'look-e2e');
     await page.click('#delve-create');
     await waitGame(page);
@@ -1503,6 +2111,69 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     expect(look.hairColor).toBe(hairColor);
     expect(look.body).toBe(1);
     expect(errors).toEqual([]);
+  });
+
+  test('wardrobe race row：種族列在體型之後、右鍵三次 → 3（貓族）、說明跟著換、完成後存進 localStorage', async ({ page }) => {
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await openNewLook(page);
+    const wr = page.locator('#delve-wardrobe');
+    const keys = await wr.locator('.delve-wr-row').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.key));
+    expect(keys.indexOf('race')).toBeGreaterThan(keys.indexOf('body'));
+    const row = wr.locator('.delve-wr-row[data-key="race"]');
+    const blurb = wr.locator('.delve-wr-blurb');
+    const b0 = await blurb.textContent();
+    expect((b0 ?? '').length).toBeGreaterThan(0);
+    // 體型組是偶數列、沒有補位說明：「男女都能穿…」改成種族說明的第二句（換種族也一直在）
+    expect(b0).toContain('男女都能穿任何髮型、服裝與裝備。');
+    await expect(wr.locator('.delve-wr-note', { hasText: '男女都能穿' })).toHaveCount(0);
+    for (let i = 0; i < 3; i++) await row.locator('[data-dir="1"]').click();
+    await expect(row).toHaveAttribute('data-value', '3');
+    expect(await blurb.textContent()).not.toBe(b0);
+    await expect(blurb).toContainText('貓族');
+    await expect(blurb).toContainText('男女都能穿任何髮型、服裝與裝備。');
+    await page.click('#delve-wr-done');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('delve.appearance') ?? '{}'));
+    expect(saved.race).toBe(3);
+  });
+
+  test('wardrobe preview turns：#delve-wr-turn 切換面向、畫布內容改變；桌面 6 倍 = 336 寬', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await openNewLook(page);
+    const doll = page.locator('#delve-wr-doll');
+    await expect(doll).toBeVisible();
+    expect(await doll.evaluate((el) => (el as HTMLCanvasElement).clientWidth)).toBe(336);
+    // 輪播會自己變：點擊前後在同一個 JS 任務內取圖（click 會同步重畫）
+    let differs = false;
+    for (let i = 0; i < 6 && !differs; i++) {
+      const [a, b] = await doll.evaluate(async (el) => {
+        const c = el as HTMLCanvasElement;
+        const before = c.toDataURL();
+        (document.querySelector('#delve-wr-turn') as HTMLButtonElement).click();
+        return [before, c.toDataURL()];
+      });
+      differs = a !== b;
+      await page.waitForTimeout(150);
+    }
+    expect(differs).toBe(true);
+  });
+
+  test('wardrobe preview 手機尺寸：600 寬 3 倍（168）、700 寬 4 倍（224）、選項列捲得到', async ({ page }) => {
+    for (const [width, cw] of [[600, 168], [700, 224]] as const) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/games/delve');
+      await pressStart(page);
+      await openNewLook(page);
+      const doll = page.locator('#delve-wr-doll');
+      await expect(doll).toBeVisible();
+      expect(await doll.evaluate((el) => (el as HTMLCanvasElement).clientWidth), `viewport ${width}`).toBe(cw);
+      await expectCrisp(page, '#delve-wr-doll');
+      const last = page.locator('#delve-wardrobe .delve-wr-row').last();
+      await last.scrollIntoViewIfNeeded();
+      await expect(last).toBeVisible();
+    }
   });
 
   test('遊戲中選單「角色外觀」：Esc 關掉回到選單；隨機 → 完成 → 紙娃娃 key 換了', async ({ page }) => {
@@ -2237,18 +2908,23 @@ test.describe('delve folk · villages, dwarves, encounters, quests', () => {
     await expect(page.locator('[data-testid=folk-shop] .is-locked').first()).toBeDisabled();
   });
 
-  test('紙娃娃畫布不被壓扁：外觀 / 新世界 / 背包 / 說明框試穿 / 村民頭像都是整數倍、寬高比對', async ({ page }) => {
+  test('紙娃娃畫布不被壓扁：外觀 / 新角色 / 角色列表 / 背包 / 說明框試穿 / 村民頭像都是整數倍、寬高比對', async ({ page }) => {
     for (const vp of [{ width: 1280, height: 800 }, { width: 812, height: 375 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(vp);
       await page.goto('/games/delve');
       await pressStart(page);
-      await page.click('#delve-look');
+      await openNewLook(page);
       await expect(page.locator('#delve-wr-doll')).toBeVisible();
       await expectCrisp(page, '#delve-wr-doll');
       await page.click('#delve-wr-done');
-      await page.click('#delve-new');
       await expect(page.locator('#delve-new-doll')).toBeVisible();
       await expectCrisp(page, '#delve-new-doll');
+      // 建立角色後，角色列表那一列的小人像也一樣
+      await page.click('#delve-newchar-create');
+      await expect(page.locator('#delve-worldpanel')).toBeVisible();
+      await page.click('#delve-worlds-back');
+      await expect(page.locator('#delve-charlist .delve-char-doll').first()).toBeVisible();
+      await expectCrisp(page, '#delve-charlist .delve-char-doll');
     }
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');

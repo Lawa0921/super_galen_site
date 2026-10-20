@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   clampCamera, followCamera, FixedStepper, visibleChunks, ChunkLRU,
-  formatClock, depthLabel, blockedMessage, recipeRows, countLabel, cameraFocus, newWorldPlan, autostartPlan, biomeLabel, regionLabel } from './model';
+  formatClock, depthLabel, blockedMessage, recipeRows, countLabel, cameraFocus, autostartPlan, biomeLabel, regionLabel } from './model';
 import { Inventory } from '../engine/inventory';
 import { DAY_LENGTH } from '../engine/constants';
 
@@ -175,18 +175,22 @@ describe('cameraFocus（直式螢幕讓玩家在中間偏下、多看地面）',
   });
 });
 
-describe('新世界 / autostart 覆蓋判斷', () => {
-  it('沒有存檔直接開始；有存檔要確認；force 直接開始', () => {
-    expect(newWorldPlan(null, false)).toBe('start');
-    expect(newWorldPlan('old', false)).toBe('confirm');
-    expect(newWorldPlan('old', true)).toBe('start');
+describe('autostart（?autostart=1 深連結；新世界永遠開新存檔槽，不再覆蓋確認）', () => {
+  it('沒有 autostart=1 不動作', () => {
+    expect(autostartPlan('', false)).toEqual({ kind: 'none' });
+    expect(autostartPlan('?seed=abc', true)).toEqual({ kind: 'none' });
   });
-  it('autostart：沒參數不動作；有存檔且無 fresh=1 要確認', () => {
-    expect(autostartPlan('', null)).toEqual({ kind: 'none' });
-    expect(autostartPlan('?seed=abc&autostart=1', null)).toEqual({ kind: 'start', seed: 'abc' });
-    expect(autostartPlan('?autostart=1', null)).toEqual({ kind: 'start', seed: undefined });
-    expect(autostartPlan('?seed=abc&autostart=1', 'old')).toEqual({ kind: 'confirm', seed: 'abc', existing: 'old' });
-    expect(autostartPlan('?seed=abc&autostart=1&fresh=1', 'old')).toEqual({ kind: 'start', seed: 'abc' });
+  it('沒有存檔 → 開新世界（有 seed 就用）', () => {
+    expect(autostartPlan('?seed=abc&autostart=1', false)).toEqual({ kind: 'fresh', seed: 'abc' });
+    expect(autostartPlan('?autostart=1', false)).toEqual({ kind: 'fresh', seed: undefined });
+  });
+  it('fresh=1 或指定 seed → 開新世界（另開存檔槽，舊存檔不動）', () => {
+    expect(autostartPlan('?seed=abc&autostart=1&fresh=1', true)).toEqual({ kind: 'fresh', seed: 'abc' });
+    expect(autostartPlan('?autostart=1&fresh=1', true)).toEqual({ kind: 'fresh', seed: undefined });
+    expect(autostartPlan('?seed=abc&autostart=1', true)).toEqual({ kind: 'fresh', seed: 'abc' });
+  });
+  it('有存檔、沒有 seed / fresh=1 → 繼續冒險', () => {
+    expect(autostartPlan('?autostart=1', true)).toEqual({ kind: 'continue' });
   });
 });
 

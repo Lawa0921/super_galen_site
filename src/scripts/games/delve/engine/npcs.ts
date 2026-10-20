@@ -51,7 +51,7 @@ export interface NpcDef {
 }
 
 const A = (o: Partial<Appearance>): Appearance => ({
-  body: 0, blush: true, hair: 0, hairColor: 2, ahoge: false, eyes: 0, eyeShape: 0, skin: 1, outfit: 0, color1: 8, color2: 6, acc: 0, glasses: false, ...o,
+  body: 0, race: 0, blush: true, hair: 0, hairColor: 2, ahoge: false, eyes: 0, eyeShape: 0, skin: 1, outfit: 0, color1: 8, color2: 6, acc: 0, glasses: false, ...o,
 });
 
 export const NPCS: Record<NpcKind, NpcDef> = {

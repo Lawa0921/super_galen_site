@@ -1,20 +1,23 @@
-// wardrobe.ts — 「角色外觀」客製化畫面（DOM）：左邊放大的即時預覽（待機 → 走路 → 爬繩 → 掛著 → 攀上邊緣輪播），
+// wardrobe.ts — 「角色外觀」客製化畫面（DOM）：左邊放大的即時預覽（待機 → 走路 → 跳躍 → 爬繩 → 掛著 → 攀上邊緣輪播），
 // 右邊一列列選項（髮型 / 髮色 / 呆毛 / 瞳色 / 眼型 / 膚色 / 眼鏡 / 服裝 / 主色 / 副色 / 頭飾）＋ 隨機 / 取消 / 完成。
 // 鍵盤：↑↓ 換列、←→ 換選項、Enter 完成、Esc 取消；Tab 只在面板裡循環。手機：預覽在上、選項在下捲動。
 // 標題畫面（主選單「角色外觀」、新世界面板）與遊戲中選單共用同一個面板。
 import { toCanvas } from './pixel';
 import {
-  APPEARANCE_FIELDS, normalizeAppearance, randomAppearance, stepAppearance, type Appearance, type AppearanceField,
+  APPEARANCE_FIELDS, normalizeAppearance, randomAppearance, raceId, stepAppearance, type Appearance, type AppearanceField,
 } from '../engine/appearance';
 import { dollKey, plainLook, type DollLook } from '../engine/doll';
+import { RACE_BLURB } from '../engine/race';
 import { dollPreview } from './dollPreview';
 import { AV_FH, AV_FW, SHEET, type SheetAnim } from './avatarArt';
 import { CLOTH_RAMPS, EYE_RAMPS, HAIR_RAMPS, SKIN_RAMPS } from './avatarPalette';
 import type { SoundManager } from '../audio/SoundManager';
 
 /** 預覽輪播：每段 [動畫, 播幾輪] */
-const REEL: [SheetAnim, number][] = [['idle', 2], ['walk', 3], ['climb', 3], ['hang', 2], ['mantle', 2], ['blink', 1]];
+const REEL: [SheetAnim, number][] = [['idle', 2], ['walk', 3], ['jump', 2], ['climb', 3], ['hang', 2], ['mantle', 2], ['blink', 1]];
 const FPS = 10;
+/** 種族說明的第二句：體型不綁髮型 / 服裝 / 裝備 */
+const UNISEX_NOTE = '男女都能穿任何髮型、服裝與裝備。';
 /** 預覽放大倍率（依 CSS 尺寸自動挑整數倍） */
 const ZOOM = 1;
 const PAD = 2;
@@ -31,12 +34,15 @@ export class Wardrobe {
   private opts: WardrobeOpen | null = null;
   private timer = 0;
   private tick = 0;
+  /** 預覽面向左？（dollPreview 只產出面向右的格子；面向左 = 整張畫布水平鏡像，整數像素、不糊） */
+  private faceLeft = false;
   private frames = new Map<string, HTMLCanvasElement[]>();
   private returnFocus: HTMLElement | null = null;
   private readonly rows: { f: AppearanceField; el: HTMLElement; val: HTMLElement; sw: HTMLCanvasElement | null }[] = [];
   private readonly offs: (() => void)[] = [];
   private readonly canvas: HTMLCanvasElement;
   private readonly cap: HTMLElement | null;
+  private blurb: HTMLElement | null = null;
 
   constructor(private readonly root: HTMLElement, private readonly panel: HTMLElement, private readonly sound: SoundManager) {
     this.canvas = panel.querySelector<HTMLCanvasElement>('#delve-wr-doll')!;
@@ -45,6 +51,7 @@ export class Wardrobe {
     this.cap = panel.querySelector('#delve-wr-cap');
     this.build();
     const on = (el: EventTarget | null, t: string, fn: EventListener): void => { if (!el) return; el.addEventListener(t, fn); this.offs.push(() => el.removeEventListener(t, fn)); };
+    on(panel.querySelector('#delve-wr-turn'), 'click', () => { this.sound.ensure(); this.sound.uiMove(); this.faceLeft = !this.faceLeft; this.draw(); });
     on(panel.querySelector('#delve-wr-random'), 'click', () => { this.sound.ensure(); this.sound.uiDice(); this.set(randomAppearance(Math.random)); });
     on(panel.querySelector('#delve-wr-cancel'), 'click', () => { this.sound.uiBack(); this.close(); });
     on(panel.querySelector('#delve-wr-done'), 'click', () => this.done());
@@ -61,6 +68,7 @@ export class Wardrobe {
     this.root.dataset.wardrobe = '1';
     this.set(normalizeAppearance(initial));
     this.tick = 0;
+    this.faceLeft = false;
     clearInterval(this.timer);
     this.timer = window.setInterval(() => { this.tick++; this.draw(); }, 1000 / FPS);
     this.rows[0]?.el.focus();
@@ -96,7 +104,7 @@ export class Wardrobe {
       if (group && n % 2 === 1) {
         const note = document.createElement('p');
         note.className = 'delve-wr-note';
-        note.textContent = group === 'outfit' ? '換服裝時主色 / 副色會換成那套的預設，之後可以再調。' : group === 'body' ? '男女都能穿任何髮型、服裝與裝備。' : '左右鍵切換選項。';
+        note.textContent = group === 'outfit' ? '換服裝時主色 / 副色會換成那套的預設，之後可以再調。' : '左右鍵切換選項。';
         list.appendChild(note);
       }
     };
@@ -139,6 +147,14 @@ export class Wardrobe {
       row.append(lab, prev, val, next);
       list.appendChild(row);
       this.rows.push({ f, el: row, val: name, sw });
+      if (f.key === 'race') {
+        // 種族說明：跟著目前選的種族換（體型 + 種族兩列之後，整排寬）；第二句是不分男女的穿搭說明（體型組是偶數列，沒有補位說明可放）
+        const b = document.createElement('p');
+        b.className = 'delve-wr-blurb';
+        b.setAttribute('aria-live', 'polite');
+        list.appendChild(b);
+        this.blurb = b;
+      }
     }
     fill();
   }
@@ -175,6 +191,7 @@ export class Wardrobe {
         }
       }
     }
+    if (this.blurb) this.blurb.textContent = `${RACE_BLURB[raceId(a)]}　${UNISEX_NOTE}`;
     this.panel.dataset.look = dollKey(plainLook(a));
     this.draw();
   }
@@ -208,7 +225,10 @@ export class Wardrobe {
     if (!ctx) return;
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.save();
+    if (this.faceLeft) { ctx.translate(this.canvas.width, 0); ctx.scale(-1, 1); }
     ctx.drawImage(fr[r.f] ?? fr[0], PAD * ZOOM, PAD * ZOOM, AV_FW * ZOOM, AV_FH * ZOOM);
+    ctx.restore();
     if (this.cap && this.cap.textContent !== r.label) this.cap.textContent = r.label;
   }
 
@@ -247,4 +267,4 @@ export class Wardrobe {
   }
 }
 
-const LABEL: Partial<Record<SheetAnim, string>> = { idle: '待機', blink: '眨眼', walk: '走路', climb: '爬繩', hang: '掛著', mantle: '攀上邊緣' };
+const LABEL: Partial<Record<SheetAnim, string>> = { idle: '待機', blink: '眨眼', walk: '走路', jump: '跳躍', climb: '爬繩', hang: '掛著', mantle: '攀上邊緣' };

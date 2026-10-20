@@ -1,16 +1,16 @@
 // avatarArt.test.ts — 紙娃娃精靈（純 Bmp）：只用統一色票、沒有半透明、每個動畫每格都畫得出來；
 // 圖層順序、頭盔收起頭頂的頭髮、外觀欄蓋過防具、稀有度 / 元素 / 強化看得出來、背面爬繩把手臂畫進影格。
 import { describe, it, expect } from 'vitest';
-import { Bmp, inPalette } from './pixel';
-import { DEFAULT_APPEARANCE, HAIR_STYLES, OUTFITS, bodyDefaults, randomAppearance } from '../engine/appearance';
+import { Bmp, INK, inPalette, rotPrep, rotate } from './pixel';
+import { ACCESSORIES, DEFAULT_APPEARANCE, HAIR_STYLES, OUTFITS, RACES, bodyDefaults, randomAppearance } from '../engine/appearance';
 import { DOLL_LAYERS, dollKey, plainLook, type DollLook, type DollPiece } from '../engine/doll';
-import { AV_FH, AV_FW, AV_HEAD, SHEET, SHEET_ANIMS, avatarFrame, avatarSheet, flatFrame, pieceBmp } from './avatarArt';
+import { ARM_PIV, AV_FH, AV_FW, AV_HEAD, SHEET, SHEET_ANIMS, avatarArm, avatarFrame, avatarSheet, flatFrame, pieceBmp, shoulderOf } from './avatarArt';
 import { BRIM, HAT_HIDES_TOP, hatArt, helmetArt } from './avatarGear';
-import { dollPreview } from './dollPreview';
+import { dollPreview, previewArms } from './dollPreview';
 import { fashionIcon } from './fashionIcon';
 import { VANITY_ITEMS, type ArmorSetId } from '../engine/items';
 import { DelveGame } from '../engine/game';
-import { eyeRamp, hairRamp } from './avatarPalette';
+import { CLOTH_RAMPS, DARK, LEATHER, MAIL, SKIN_RAMPS, clothRamp, eyeRamp, hairRamp } from './avatarPalette';
 
 /** 測試用的中性外觀（探險家、栗色髮、沒有頭飾）：預設外觀是粉髮水手服，粉髮的高光是白色、水手服的領巾 / 長袖會和被測的東西重疊 */
 const DEF = { ...DEFAULT_APPEARANCE, hair: 0, hairColor: 2, outfit: 0, color1: OUTFITS[0].colors[0], color2: OUTFITS[0].colors[1], acc: 0 };
@@ -70,6 +70,61 @@ describe('紙娃娃影格', () => {
     const outfits = new Set<string>();
     for (let o = 0; o < OUTFITS.length; o++) outfits.add(flatFrame(avatarFrame(plainLook({ ...DEF, outfit: o }), 'idle', 0)).px.join());
     expect(outfits.size).toBe(OUTFITS.length);
+  });
+  // 軀幹區域：待機第 0 格、面向右、只看 body 那張（手臂由渲染器另外畫、不在裡面），
+  //   列 = 肩膀那列（AV_SHOULDER y 42）到髖（47）、欄 = 中心 26 ± 5（男生最寬的那列 21..31）。
+  //   髮色用嫩綠（色階和這些服裝的布色不重疊）、鮑伯頭、沒有頭飾。全部 14 套服裝。
+  const SHADED_OUTFITS = OUTFITS.map((o) => o.id);
+  it('每套服裝的軀幹至少用到主色 / 副色色階裡 3 種不同的色（亮 / 底 / 影三階）', () => {
+    for (const id of SHADED_OUTFITS) for (const body of [0, 1]) {
+      const o = OUTFITS.findIndex((x) => x.id === id);
+      expect(o, id).toBeGreaterThanOrEqual(0);
+      const [c1, c2] = OUTFITS[o].colors;
+      const cloth = new Set([...clothRamp(c1), ...clothRamp(c2)].map((c) => c.join()));
+      const b = avatarFrame(plainLook({ ...DEF, body, hairColor: 9, outfit: o, color1: c1, color2: c2 }), 'idle', 0).body;
+      const seen = new Set<string>();
+      for (let y = 42; y <= 47; y++) for (let x = 21; x <= 31; x++) if (b.on(x, y) && cloth.has(b.get(x, y).join())) seen.add(b.get(x, y).join());
+      expect(seen.size, `${id} body ${body}`).toBeGreaterThanOrEqual(3);
+    }
+  });
+  // 前手：照 dollPreview 的合成（後手 → body → 前手 → head）把待機第 0 格的前手轉好放上去，
+  //   前手的像素（沒被頭蓋住）和身體那張的像素（沒被前手 / 頭蓋住）四鄰相接的每一對，至少一邊是外框色。
+  it('前手和軀幹分得開：待機第 0 格，前手和身體相鄰處至少一邊是外框色（布色階 [0] / 膚色階 [0] / INK）', () => {
+    const OUT = new Set([...CLOTH_RAMPS, ...SKIN_RAMPS, LEATHER, DARK, MAIL].map((r) => r[0].join()).concat(INK.join()));
+    const bad: string[] = [];
+    for (let o = 0; o < OUTFITS.length; o++) for (const body of [0, 1]) {
+      const l = plainLook({ ...DEF, body, outfit: o, color1: OUTFITS[o].colors[0], color2: OUTFITS[o].colors[1] });
+      const fr = avatarFrame(l, 'idle', 0), full = dollPreview(l, dollKey(l), 'idle', 0);
+      const s = shoulderOf(body, false), deg = previewArms('idle', 0).front;
+      const arm = rotate(rotPrep(avatarArm(l, false)), ARM_PIV.x, ARM_PIV.y, -(deg * Math.PI) / 180, 64);
+      const ax = s.x + fr.meta.dx - 32, ay = s.y + fr.meta.dy - 32;
+      const isArm = (x: number, y: number): boolean => arm.on(x - ax, y - ay) && !fr.head.on(x, y);
+      const isBody = (x: number, y: number): boolean => fr.body.on(x, y) && !arm.on(x - ax, y - ay) && !fr.head.on(x, y);
+      const isOut = (x: number, y: number): boolean => OUT.has(full.get(x, y).join());
+      let pairs = 0, blend = 0;
+      for (let y = 0; y < AV_FH; y++) for (let x = 0; x < AV_FW; x++) {
+        if (!isArm(x, y)) continue;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          if (!isBody(x + dx, y + dy)) continue;
+          pairs++;
+          if (!isOut(x, y) && !isOut(x + dx, y + dy)) blend++;
+        }
+      }
+      expect(pairs, `${OUTFITS[o].id} body ${body}: arm touches the body`).toBeGreaterThan(3);
+      if (blend) bad.push(`${OUTFITS[o].id} body ${body}: ${blend}/${pairs}`);
+    }
+    expect(bad).toEqual([]);
+  });
+  it('每款髮型的前髮（瀏海那一帶）至少用到髮色色階裡 3 階（亮 / 底 / 影）', () => {
+    const bad: string[] = [];
+    for (let hair = 0; hair < HAIR_STYLES.length; hair++) for (const body of [0, 1]) for (const hairColor of [0, 2, 3, 5, 7, 9]) {
+      const head = avatarFrame(plainLook({ ...DEF, body, hair, hairColor, ahoge: false }), 'idle', 0).head;
+      const hr = new Set(hairRamp(hairColor).map((c) => c.join())), seen = new Set<string>();
+      // 瀏海：區域第 8–21 欄、第 3–7 列（眼睛 / 男生的眉毛在第 8 列以下）
+      for (let y = AV_HEAD.y + 3; y <= AV_HEAD.y + 7; y++) for (let x = AV_HEAD.x + 8; x <= AV_HEAD.x + 21; x++) if (head.on(x, y) && hr.has(head.get(x, y).join())) seen.add(head.get(x, y).join());
+      if (seen.size < 3) bad.push(`${HAIR_STYLES[hair].id} body ${body} color ${hairColor}: ${seen.size}`);
+    }
+    expect(bad).toEqual([]);
   });
   it('爬繩的影格依序不同（手交替），掛著的影格會晃', () => {
     const l = plainLook(DEF);
@@ -182,7 +237,7 @@ describe('圖層', () => {
     const helmB = avatarFrame({ ...plainLook({ ...a, hair: 0 }), head: piece('armor:iron') }, 'idle', 0).head;
     expect(hairPx(helmB, 29, 32)).toBeGreaterThan(1);
   });
-  it('戴帽子 / 頭盔：九款髮型 × 男女 × 待機 / 走路，帽沿以上露不出一格頭髮（魔女帽圓錐蓋不到的前半部頭頂也是）', () => {
+  it('戴帽子 / 頭盔：九款髮型 × 男女 × 五個種族 × 待機 / 走路，帽沿以上露不出一格頭髮（魔女帽圓錐蓋不到的前半部頭頂也是；貓耳是髮色）', { timeout: 60_000 }, () => {
     const covers = [...SETS.map((s) => `armor:${s}`), ...[...HAT_HIDES_TOP].map((h) => `hat:${h}`)];
     for (const look of covers) {
       // 只認這頂帽子 / 頭盔本身沒用到的髮色
@@ -190,24 +245,99 @@ describe('圖層', () => {
       if (look.startsWith('armor:')) helmetArt(g, piece(look), AV_HEAD.x, AV_HEAD.y, 0); else hatArt(g, look.slice(4), AV_HEAD.x, AV_HEAD.y);
       const gc = new Set<string>(); for (let i = 0; i < g.px.length; i++) if (g.px[i] >>> 24) gc.add(Bmp.unpack(g.px[i]).join());
       for (let hair = 0; hair < HAIR_STYLES.length; hair++) for (const body of [0, 1]) for (const [an, f] of [['idle', 0], ['walk', 2], ['jump', 0]] as const) {
-        for (const hc of [2, 7, 9]) {
+        for (const hc of [2, 7, 9]) for (let race = 0; race < RACES.length; race++) {
           const hr = new Set(hairRamp(hc).map((c) => c.join()).filter((c) => !gc.has(c)));
-          const b = flatFrame(avatarFrame({ ...plainLook({ ...DEF, body, hair, hairColor: hc, ahoge: true }), head: piece(look) }, an, f));
+          const b = flatFrame(avatarFrame({ ...plainLook({ ...DEF, body, hair, hairColor: hc, ahoge: true, race }), head: piece(look) }, an, f));
           let n = 0;
           for (let y = 0; y < AV_HEAD.y + BRIM - 1 + (an === 'walk' ? 1 : 0); y++) for (let x = 0; x < AV_FW; x++) if (b.on(x, y) && hr.has(b.get(x, y).join())) n++;
-          expect(n, `${look} hair ${hair} body ${body} ${an} color ${hc}`).toBe(0);
+          expect(n, `${look} hair ${hair} body ${body} ${an} color ${hc} race ${race}`).toBe(0);
         }
       }
     }
   });
-  it('帽子 / 頭盔不會蓋到眼睛和嘴（護頰、鼻樑護條、帽沿都在臉的外面 / 上面）', () => {
+  it('帽子 / 頭盔不會蓋到眼睛和嘴（護頰、鼻樑護條、帽沿都在臉的外面 / 上面；五個種族都是）', () => {
     const covers = [...SETS.map((s) => `armor:${s}`), ...['straw', 'witch', 'beret', 'maid', 'miner', 'flower'].map((h) => `hat:${h}`)];
-    for (const body of [0, 1]) {
-      const a = { ...DEF, body, eyes: 3 }, er = new Set([...eyeRamp(3).slice(0, 2), [140, 32, 56], [200, 52, 76]].map((c) => c.join()));
+    for (const body of [0, 1]) for (let race = 0; race < RACES.length; race++) {
+      const a = { ...DEF, body, eyes: 3, race }, er = new Set([...eyeRamp(3).slice(0, 2), [140, 32, 56], [200, 52, 76]].map((c) => c.join()));
       const count = (b: Bmp): number => { let n = 0; for (let i = 0; i < b.px.length; i++) if (b.px[i] >>> 24 && er.has(Bmp.unpack(b.px[i]).join())) n++; return n; };
       const bare = count(avatarFrame(plainLook(a), 'idle', 0).face!);
-      for (const look of covers) expect(count(avatarFrame({ ...plainLook(a), head: piece(look) }, 'idle', 0).face!), `${look} body ${body}`).toBe(bare);
+      for (const look of covers) expect(count(avatarFrame({ ...plainLook(a), head: piece(look) }, 'idle', 0).face!), `${look} body ${body} race ${race}`).toBe(bare);
     }
+  });
+  it('戴任何帽子 / 頭盔：貓耳、龍角收起來，精靈耳留著但不高過帽沿（和人類比，多出來的像素都在帽沿以下）', () => {
+    const covers = [...SETS.map((s) => `armor:${s}`), ...['straw', 'witch', 'beret', 'maid', 'miner', 'flower'].map((h) => `hat:${h}`)];
+    const ID = (id: string): number => RACES.findIndex((r) => r.id === id);
+    for (const look of covers) for (const body of [0, 1]) for (let hair = 0; hair < HAIR_STYLES.length; hair++) for (const [an, f] of [['idle', 0], ['walk', 2], ['jump', 0]] as const) {
+      const at = (race: number): Bmp => flatFrame(avatarFrame({ ...plainLook({ ...DEF, body, hair, ahoge: true, race }), head: piece(look) }, an, f));
+      const human = at(0), brim = AV_HEAD.y + BRIM + (an === 'walk' ? 1 : 0);
+      for (const race of [ID('elf'), ID('catfolk'), ID('dragonkin')]) {
+        const b = at(race);
+        let above = 0, extra = 0;
+        for (let y = 0; y < AV_FH; y++) for (let x = 0; x < AV_FW; x++) if (b.raw(x, y) !== human.raw(x, y)) { extra++; if (y < brim) above++; }
+        expect(above, `${look} hair ${hair} body ${body} ${an} ${RACES[race].id}`).toBe(0);
+        // 精靈戴帽子耳朵還在
+        if (race === ID('elf')) expect(extra, `${look} hair ${hair} body ${body} ${an} elf ears`).toBeGreaterThan(6);
+      }
+    }
+  });
+  it('兜帽蓋住精靈耳：精靈戴兜帽和人類戴兜帽畫出來一模一樣（耳朵不會從兜帽兩側戳出來）', () => {
+    const hood = ACCESSORIES.findIndex((a) => a.id === 'hood'), elf = RACES.findIndex((r) => r.id === 'elf');
+    for (const body of [0, 1]) for (let hair = 0; hair < HAIR_STYLES.length; hair++) for (const [an, f] of [['idle', 0], ['walk', 2], ['jump', 0]] as const) {
+      const at = (race: number): Bmp => flatFrame(avatarFrame(plainLook({ ...DEF, body, hair, acc: hood, race }), an, f));
+      expect(diff(at(elf), at(0)), `hair ${hair} body ${body} ${an}`).toBe(0);
+    }
+  });
+  it('貓族戴貓耳髮箍：不會有四隻耳朵（髮箍的耳朵不畫，頭頂上方和不戴一樣；人類戴髮箍則有耳朵）', () => {
+    const cat = ACCESSORIES.findIndex((a) => a.id === 'catears'), catfolk = RACES.findIndex((r) => r.id === 'catfolk');
+    // 頭頂上方（區域第 −2 列以上）只有髮箍的耳朵會畫到；箍子本身（含描邊）在第 −2 列以下
+    const above = (a: Bmp, b: Bmp): number => { let n = 0; for (let y = 0; y < AV_HEAD.y - 2; y++) for (let x = 0; x < AV_FW; x++) if (a.raw(x, y) !== b.raw(x, y)) n++; return n; };
+    for (const body of [0, 1]) for (const hair of [0, 1, 2]) {
+      const at = (race: number, acc: number): Bmp => flatFrame(avatarFrame(plainLook({ ...DEF, body, hair, acc, race, ahoge: false }), 'idle', 0));
+      expect(above(at(catfolk, cat), at(catfolk, 0)), `catfolk hair ${hair} body ${body}`).toBe(0);
+      expect(above(at(0, cat), at(0, 0)), `human hair ${hair} body ${body}`).toBeGreaterThan(10);
+    }
+  });
+  it('貓族 / 龍裔 × 頭飾（兜帽除外）：貓耳 / 龍角在頭飾前面——人類沒有、種族才長出來的耳 / 角像素（頭頂附近），戴頭飾後一格都不被蓋掉', () => {
+    const ID = (id: string): number => RACES.findIndex((r) => r.id === id);
+    const accs = ACCESSORIES.map((a, i) => [a.id, i] as const).filter(([id]) => id !== 'none' && id !== 'hood');
+    const bad: string[] = [];
+    for (const race of [ID('catfolk'), ID('dragonkin')]) for (const body of [0, 1]) for (const hair of [0, 1, 2]) for (const [an, f] of [['idle', 0], ['walk', 2], ['jump', 0]] as const) {
+      const at = (r: number, acc: number): Bmp => flatFrame(avatarFrame(plainLook({ ...DEF, body, hair, acc, race: r, ahoge: false }), an, f));
+      const human = at(0, 0), bare = at(race, 0);
+      // 耳 / 角：人類那格透明、種族那格不透明；只看頭的區域第 3 列以上（尾巴在身體下面，不算）
+      const ears: number[] = [];
+      for (let y = 0; y < AV_HEAD.y + 3; y++) for (let x = 0; x < AV_FW; x++) if (!(human.raw(x, y) >>> 24) && bare.raw(x, y) >>> 24) ears.push(y * AV_FW + x);
+      expect(ears.length, `${RACES[race].id} body ${body} ${an}`).toBeGreaterThan(10);
+      for (const [id, acc] of accs) {
+        const b = at(race, acc);
+        const lost = ears.filter((i) => b.px[i] !== bare.px[i]).length;
+        if (lost) bad.push(`${RACES[race].id} × ${id} hair ${hair} body ${body} ${an}${f}: ${lost}`);
+        // 頭飾也不能整個躲到耳 / 角後面：和不戴相比至少差 8 格（皇冠 / 髮簪 / 小花 / 面具會換位置，見 avatarHead TOP_GAP）
+        if (diff(b, bare) < 8) bad.push(`${RACES[race].id} × ${id} hair ${hair} body ${body} ${an}${f}: hidden (${diff(b, bare)})`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+  it('每款髮型（含側分長瀏海）× 男女：兩隻眼睛都露出來（後眼完整、前眼最多被鬢髮 / 辮子蓋掉邊緣）', () => {
+    const er = new Set(eyeRamp(3).slice(0, 2).map((c) => c.join()));
+    const eyes = (body: number, hair: number): { back: number; front: number } => {
+      const fc = avatarFrame(plainLook({ ...DEF, body, hair, eyes: 3, ahoge: true }), 'idle', 0).face!;
+      // 後眼在頭的區域第 11–12 欄、前眼在第 17–19 欄：以第 15 欄分開
+      const n = { back: 0, front: 0 };
+      for (let y = 0; y < fc.h; y++) for (let x = 0; x < fc.w; x++) if (fc.on(x, y) && er.has(fc.get(x, y).join())) n[x < AV_HEAD.x + 15 ? 'back' : 'front']++;
+      return n;
+    };
+    for (const body of [0, 1]) {
+      const bob = eyes(body, 0);
+      for (let hair = 0; hair < HAIR_STYLES.length; hair++) {
+        const e = eyes(body, hair), id = HAIR_STYLES[hair].id;
+        expect(e.back, `${id} body ${body} back eye`).toBe(bob.back);
+        expect(e.front, `${id} body ${body} front eye`).toBeGreaterThanOrEqual(id === 'sidepart' ? bob.front : 2);
+      }
+    }
+  });
+  it('五個種族 × 男女：整張影格表只用色票、沒有半透明', () => {
+    for (let race = 0; race < RACES.length; race++) for (const body of [0, 1]) clean(avatarSheet(plainLook({ ...DEF, body, race })).b, `race ${race} body ${body}`);
   });
   it('外觀欄 / 時裝蓋過防具：穿鐵甲 vs 鐵甲 + 水手服外觀，畫出來的身體不同、而且和純水手服一樣', () => {
     const base = plainLook(DEF);

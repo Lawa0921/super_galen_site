@@ -1,9 +1,16 @@
 // storage.ts — 薄封裝：gzip（CompressionStream，可用才用）+ IndexedDB + 自動存檔 + 匯出/匯入。
-// 純邏輯在 serialize.ts（有單元測試）；本檔只做瀏覽器 I/O，不做單元測試。
+// 純邏輯在 serialize.ts / split.ts（有單元測試）；本檔只做瀏覽器 I/O（IndexedDB 由 e2e 驗；只有 gzip 與自動存檔排程有單元測試）。
+import { decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
+import { levelForXp } from '../engine/levels';
+import type { Appearance } from '../engine/appearance';
+import { WORLD_FORMAT } from './worldSave';
+import type { SplitStore } from './split';
 
 const DB_NAME = 'delve';
-const DB_VERSION = 1;
+/** v1：saves（keyPath slot）。v2：另加 characters（keyPath id），saves 與其記錄原封不動。 */
+const DB_VERSION = 2;
 const STORE = 'saves';
+const CHAR_STORE = 'characters';
 export const AUTOSAVE_INTERVAL_MS = 30_000;
 export const EXPORT_MIME = 'application/x-delve-save';
 
@@ -21,9 +28,33 @@ export interface SaveSummary {
   peaceful: boolean;
   /** 角色等級（等級系統；舊摘要沒有） */
   level?: number;
+  /** 角色暱稱（co-op 拆檔後；舊摘要沒有） */
+  nick?: string;
 }
-export interface SlotMeta { slot: string; seed: string; savedAt: number; bytes: number; summary?: SaveSummary; }
+export interface SlotMeta {
+  slot: string; seed: string; savedAt: number;
+  /** 壓縮後 data 的長度 */
+  bytes: number;
+  summary?: SaveSummary;
+  /** 拆檔存檔（format 10）對應的角色 id；舊存檔沒有 */
+  charId?: string;
+  /** 拆檔存檔的世界格式；舊存檔沒有 */
+  format?: number;
+}
+/** saves 記錄：data = compress(serializeGame 或 encodeWorld 的輸出) */
 interface SlotRecord extends SlotMeta { data: Uint8Array; }
+/** characters 記錄：data = compress(encodeCharacter) */
+export interface CharacterRecord {
+  id: string; nick: string; savedAt: number; rev: number; data: Uint8Array;
+  /** 列表顯示用（存檔時算好；舊記錄沒有 → listCharacters 解碼 data 補） */
+  preview?: { level: number; appearance: Appearance };
+}
+/** 角色選單的一列 */
+export interface CharacterMeta { id: string; nick: string; savedAt: number; rev: number; level: number; appearance: Appearance }
+
+function previewOf(c: DelveCharacter): { level: number; appearance: Appearance } {
+  return { level: levelForXp(c.levels.xp), appearance: c.appearance };
+}
 
 export function hasCompression(): boolean {
   return typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined';
@@ -84,54 +115,160 @@ let dbPromise: Promise<IDBDatabase> | null = null;
 
 export function hasIndexedDB(): boolean { return typeof indexedDB !== 'undefined'; }
 
+export const DB_BLOCKED_MSG = '請關閉其他開著 DELVE 的分頁後重新整理。';
+/** 升級資料庫版本被別的分頁（舊版程式、不肯讓出連線）擋住：message 是給玩家看的中文 */
+export class DbBlockedError extends Error {
+  constructor() { super(DB_BLOCKED_MSG); this.name = 'DbBlockedError'; }
+}
+
 function openDb(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
-  dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
+  const p: Promise<IDBDatabase> = new Promise<IDBDatabase>((resolve, reject) => {
+    /** 被擋住後已放棄這個請求：之後才開成的連線要立刻關掉 */
+    let abandoned = false;
+    const forget = (): void => { if (dbPromise === p) dbPromise = null; };
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'slot' });
+      if (!db.objectStoreNames.contains(CHAR_STORE)) db.createObjectStore(CHAR_STORE, { keyPath: 'id' });
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => { dbPromise = null; reject(req.error ?? new Error('indexedDB open failed')); };
+    // 別的分頁還開著舊版連線、不肯關：不要一直等（每個存讀都會卡住），回報讓玩家關掉分頁；下次呼叫重試
+    req.onblocked = () => { abandoned = true; forget(); reject(new DbBlockedError()); };
+    req.onsuccess = () => {
+      const db = req.result;
+      if (abandoned) { db.close(); return; }
+      // 別的分頁要升級版本：讓出連線（否則它的升級會卡住）；下次存讀再重開
+      db.onversionchange = () => { db.close(); forget(); };
+      resolve(db);
+    };
+    req.onerror = () => { forget(); reject(req.error ?? new Error('indexedDB open failed')); };
   });
-  return dbPromise;
+  dbPromise = p;
+  return p;
 }
 
-function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+/**
+ * 開一個 transaction：fn 排好請求、回傳「完成後取結果」的函式；transaction complete 才 resolve。
+ * fn 可呼叫 abort(err) 中止整個 transaction（reject 該 err）。
+ */
+function withTx<T>(
+  stores: string | string[], mode: IDBTransactionMode,
+  fn: (t: IDBTransaction, abort: (err: Error) => void) => () => T,
+): Promise<T> {
   return openDb().then((db) => new Promise<T>((resolve, reject) => {
-    const t = db.transaction(STORE, mode);
-    const req = fn(t.objectStore(STORE));
-    t.oncomplete = () => resolve(req.result);
-    t.onerror = () => reject(t.error ?? req.error ?? new Error('indexedDB tx failed'));
-    t.onabort = () => reject(t.error ?? new Error('indexedDB tx aborted'));
+    const t = db.transaction(stores, mode);
+    let failure: Error | null = null;
+    const result = fn(t, (err) => { failure = err; t.abort(); });
+    t.oncomplete = () => resolve(result());
+    t.onerror = () => reject(failure ?? t.error ?? new Error('indexedDB tx failed'));
+    t.onabort = () => reject(failure ?? t.error ?? new Error('indexedDB tx aborted'));
   }));
 }
 
-/** 存入一個槽（bytes 為 serializeGame 的輸出；此處會壓縮）。 */
-export async function saveSlot(slot: string, seed: string, raw: Uint8Array, savedAt = Date.now(), summary?: SaveSummary): Promise<SlotMeta> {
-  const data = await compress(raw);
-  const rec: SlotRecord = { slot, seed, savedAt, bytes: data.length, data, ...(summary ? { summary } : {}) };
-  await tx('readwrite', (s) => s.put(rec));
-  return { slot, seed, savedAt, bytes: data.length, summary };
+function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>, store: string = STORE): Promise<T> {
+  return withTx(store, mode, (t) => { const req = fn(t.objectStore(store)); return () => req.result; });
 }
 
-/** 讀取槽，回傳解壓後的 serialize 位元組；沒有則 null。 */
-export async function loadSlot(slot: string): Promise<Uint8Array | null> {
-  const rec = await tx<SlotRecord | undefined>('readonly', (s) => s.get(slot) as IDBRequest<SlotRecord | undefined>);
-  if (!rec) return null;
-  return decompress(rec.data instanceof Uint8Array ? rec.data : new Uint8Array(rec.data as ArrayBuffer));
+function asBytes(d: Uint8Array | ArrayBuffer): Uint8Array {
+  return d instanceof Uint8Array ? d : new Uint8Array(d);
 }
 
-export async function deleteSlot(slot: string): Promise<void> {
-  await tx('readwrite', (s) => s.delete(slot));
-}
-
-export async function listSlots(): Promise<SlotMeta[]> {
+/** 可繼續的世界（備份記錄 `*.bak` 不列出），新到舊 */
+export async function listWorlds(): Promise<SlotMeta[]> {
   const all = await tx<SlotRecord[]>('readonly', (s) => s.getAll() as IDBRequest<SlotRecord[]>);
-  return all.map(({ slot, seed, savedAt, bytes, summary }) => ({ slot, seed, savedAt, bytes, summary }))
+  return all.filter((r) => !r.slot.endsWith('.bak'))
+    .map(({ slot, seed, savedAt, bytes, summary, charId, format }) => ({
+      slot, seed, savedAt, bytes, summary, ...(charId ? { charId } : {}), ...(format !== undefined ? { format } : {}),
+    }))
     .sort((a, b) => b.savedAt - a.savedAt);
 }
+
+// ── 拆檔存檔（世界 + 角色）的 IndexedDB 實作 ──────────────────
+export const idbSplitStore: SplitStore = {
+  async getSlot(slot) {
+    const rec = await tx<SlotRecord | undefined>('readonly', (s) => s.get(slot) as IDBRequest<SlotRecord | undefined>);
+    if (!rec) return null;
+    const bytes = await decompress(asBytes(rec.data));
+    return rec.charId ? { bytes, charId: rec.charId } : { bytes };
+  },
+
+  async getCharacter(id) {
+    const rec = await tx<CharacterRecord | undefined>(
+      'readonly', (s) => s.get(id) as IDBRequest<CharacterRecord | undefined>, CHAR_STORE,
+    );
+    return rec ? decompress(asBytes(rec.data)) : null;
+  },
+
+  /**
+   * 同一個 readwrite transaction：to 已有記錄 → 什麼都不做（備份只寫一次：兩個分頁都遷移時，第二次不會用 format 10 蓋掉原始舊檔）；
+   * 否則把 from 整筆原封複製成 { ...rec, slot: to }（data 不解壓、不重壓）。from 沒有記錄 → 丟錯。
+   */
+  async backupSlot(from, to) {
+    await withTx(STORE, 'readwrite', (t, abort) => {
+      const s = t.objectStore(STORE);
+      const existing = s.count(to);
+      existing.onsuccess = () => {
+        if (existing.result > 0) return;
+        const src = s.get(from) as IDBRequest<SlotRecord | undefined>;
+        src.onsuccess = () => {
+          const rec = src.result;
+          if (!rec) { abort(new Error(`no save in slot ${from}`)); return; }
+          s.put({ ...rec, slot: to });
+        };
+      };
+      return () => undefined;
+    });
+  },
+
+  async listWorlds() { return listWorlds(); },
+
+  async listCharacters() {
+    const all = await tx<CharacterRecord[]>('readonly', (s) => s.getAll() as IDBRequest<CharacterRecord[]>, CHAR_STORE);
+    const out: CharacterMeta[] = [];
+    for (const r of all) {
+      let preview = r.preview;
+      if (!preview) {
+        try { preview = previewOf(decodeCharacter(await decompress(asBytes(r.data)))); } catch { continue; } // 壞掉的舊記錄不列出
+      }
+      out.push({ id: r.id, nick: r.nick, savedAt: r.savedAt, rev: r.rev, ...preview });
+    }
+    return out.sort((a, b) => b.savedAt - a.savedAt);
+  },
+
+  async deleteWorld(slot) {
+    await withTx(STORE, 'readwrite', (t) => { t.objectStore(STORE).delete(slot); return () => undefined; });
+  },
+
+  async deleteCharacter(id) {
+    await withTx(CHAR_STORE, 'readwrite', (t) => { t.objectStore(CHAR_STORE).delete(id); return () => undefined; });
+  },
+
+  /** 只寫角色記錄（同 id 覆蓋） */
+  async putCharacter(c) {
+    const data = await compress(encodeCharacter(c));
+    const rec: CharacterRecord = { id: c.id, nick: c.nick, savedAt: c.savedAt, rev: c.rev, data, preview: previewOf(c) };
+    await withTx(CHAR_STORE, 'readwrite', (t) => { t.objectStore(CHAR_STORE).put(rec); return () => undefined; });
+  },
+
+  /** 先壓縮兩份，再在同一個 transaction 寫世界記錄（saves）與角色記錄（characters） */
+  async putSplit(slot, world, character) {
+    const [wdata, cdata] = await Promise.all([compress(world.bytes), compress(encodeCharacter(character))]);
+    const savedAt = character.savedAt;
+    const meta: SlotMeta = {
+      slot, seed: world.seed, savedAt, bytes: wdata.length,
+      ...(world.summary ? { summary: world.summary } : {}), charId: character.id, format: WORLD_FORMAT,
+    };
+    const rec: SlotRecord = { ...meta, data: wdata };
+    const crec: CharacterRecord = { id: character.id, nick: character.nick, savedAt, rev: character.rev, data: cdata, preview: previewOf(character) };
+    await withTx([STORE, CHAR_STORE], 'readwrite', (t) => {
+      t.objectStore(STORE).put(rec);
+      t.objectStore(CHAR_STORE).put(crec);
+      return () => undefined;
+    });
+    return meta;
+  },
+};
 
 /** 請求持久化儲存（降低被瀏覽器清除的風險）。不支援時回 false。 */
 export async function requestPersistence(): Promise<boolean> {
@@ -159,12 +296,8 @@ export async function importBlob(file: Blob): Promise<Uint8Array> {
 
 // ── 自動存檔 ─────────────────────────────────────────────
 export interface AutosaveOptions {
-  slot: string;
-  seed: string;
-  /** 回傳當下存檔位元組（通常是 () => serializeGame(game)） */
-  getBytes: () => Uint8Array;
-  /** 存檔摘要（標題畫面「繼續」用） */
-  getSummary?: () => SaveSummary;
+  /** 存一次檔（序列化 + 寫入都在裡面）；回傳寫入的槽資訊 */
+  save: () => Promise<SlotMeta>;
   intervalMs?: number;
   onSaved?: (meta: SlotMeta) => void;
   onError?: (err: unknown) => void;
@@ -176,9 +309,9 @@ export function startAutosave(opts: AutosaveOptions): () => void {
   const run = (): void => {
     if (busy) return;
     busy = true;
-    let bytes: Uint8Array, summary: SaveSummary | undefined;
-    try { bytes = opts.getBytes(); summary = opts.getSummary?.(); } catch (e) { busy = false; opts.onError?.(e); return; }
-    saveSlot(opts.slot, opts.seed, bytes, Date.now(), summary)
+    let pending: Promise<SlotMeta>;
+    try { pending = opts.save(); } catch (e) { busy = false; opts.onError?.(e); return; }
+    pending
       .then((m) => opts.onSaved?.(m))
       .catch((e: unknown) => opts.onError?.(e))
       .finally(() => { busy = false; });

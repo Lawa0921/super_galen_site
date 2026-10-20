@@ -87,4 +87,15 @@ describe('存檔：外觀欄（時裝）與防具隱藏', { timeout: 60_000 }, (
     expect(b.ok && b.game.vanity.get('head')).toBeNull();
     expect(b.ok && b.game.vanity.get('body')).toBe('miko_robe');
   });
+
+  it('沒有 race 的舊 header.appearance 讀回人類；存了種族則讀回一樣', () => {
+    const g = new DelveGame({ seed: 'look-race', ...SMALL, peaceful: true, appearance: { ...DEFAULT_APPEARANCE, hair: 5, race: 2 } });
+    const data = snapshotGame(g);
+    const { race: _drop, ...noRace } = data.header.appearance as Appearance;
+    (data.header as { appearance?: unknown }).appearance = noRace;
+    const a = restoreGame(encodeSave(data));
+    expect(a.ok && a.game.appearance).toEqual({ ...DEFAULT_APPEARANCE, hair: 5, race: 0 });
+    const b = restoreGame(encodeSave(snapshotGame(g)));
+    expect(b.ok && b.game.appearance.race).toBe(2);
+  });
 });
