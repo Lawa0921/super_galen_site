@@ -34,6 +34,7 @@ const lang: Language = defaultLang;
         <span class="delve-boss-name" id="delve-boss-name"></span>
         <canvas class="delve-boss-bar" id="delve-boss-bar" width="160" height="8"></canvas>
       </div>
+      <p class="delve-sleepwait" id="delve-sleepwait" hidden role="status" aria-live="polite" data-testid="sleepwait"></p>
       <div class="delve-death" id="delve-death" hidden role="status" aria-live="assertive">
         <p class="delve-death-title">你倒下了</p>
         <p class="delve-death-msg" id="delve-death-msg"></p>
@@ -534,6 +535,7 @@ const lang: Language = defaultLang;
   .delve-x,
   .delve-recipe,
   .delve-toast,
+  .delve-sleepwait,
   .delve-menu-box,
   .delve-btn {
     border: var(--px) solid;
@@ -548,6 +550,7 @@ const lang: Language = defaultLang;
   .delve-hud { position: absolute; inset: 0; pointer-events: none; }
   .delve-hud > * { pointer-events: auto; }
   .delve-hud > .delve-toast,
+  .delve-hud > .delve-sleepwait,
   .delve-hud > .delve-held,
   .delve-hud > .delve-status { pointer-events: none; }
 
@@ -1617,6 +1620,18 @@ const lang: Language = defaultLang;
     justify-items: center;
     gap: 4px;
     pointer-events: none;
+  }
+  .delve-sleepwait {
+    position: absolute;
+    left: 50%;
+    bottom: 110px;
+    transform: translateX(-50%);
+    margin: 0;
+    padding: 8px 12px;
+    font-size: 16px;
+    color: #fff4c0;
+    text-shadow: var(--text-outline);
+    white-space: nowrap;
   }
   .delve-boss-name { font-size: 16px; color: #cceaf8; text-shadow: var(--text-outline); }
   .delve-boss-bar { width: calc(var(--px) * 160); height: calc(var(--px) * 8); image-rendering: pixelated; }

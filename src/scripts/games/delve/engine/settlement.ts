@@ -195,8 +195,9 @@ export interface SettleHost {
   isNight(): boolean;
   sun(): SunTimes;
   dayFrac(): number;
-  playerTile(): { x: number; y: number };
-  /** 玩家身體（關門前確認沒夾到玩家） */
+  /** 活著的玩家站的 tile（插入順序；全員死亡 → 所有人的） */
+  playerTiles(): { x: number; y: number }[];
+  /** 有任何玩家的身體碰到 tile（關門前確認沒夾到人） */
   playerOverlaps(x: number, y: number): boolean;
   /** 已知的生態區（居民入住時取名用；可省略） */
 }
@@ -206,8 +207,14 @@ const isDoor = (id: number): boolean => id === T.DOOR_CLOSED || id === T.DOOR_OP
 export class Settlements {
   cores: Core[] = [];
   npcs: Npc[] = [];
-  /** 設為重生點的核心 id */
-  spawnCore: number | null = null;
+  /**
+   * 設為重生點的核心 id。重生點是每個角色自己的（spec §5.1）：DelveGame 用 spawnLink 把它接到本地玩家
+   * （PlayerActor.spawnCore），存檔 / 讀檔照舊讀寫這個欄位；沒接（單獨測 Settlements）就存在這裡。
+   */
+  get spawnCore(): number | null { return this.spawnLink ? this.spawnLink.get() : this.ownSpawnCore; }
+  set spawnCore(v: number | null) { if (this.spawnLink) this.spawnLink.set(v); else this.ownSpawnCore = v; }
+  spawnLink: { get(): number | null; set(v: number | null): void } | null = null;
+  private ownSpawnCore: number | null = null;
   nextId = 1;
   private evals = new Map<number, Evaluation>();
   private evalRev = -1;
@@ -406,12 +413,13 @@ export class Settlements {
       this.moveInT = MOVE_IN_EVERY;
       if (!h.isNight()) this.tryMoveIn(w, h.time);
     }
-    const night = h.isNight(), sun = h.sun(), d = h.dayFrac(), pt = h.playerTile();
+    const night = h.isNight(), sun = h.sun(), d = h.dayFrac(), tiles = h.playerTiles();
     for (const n of this.npcs) {
       if (n.sayT > 0) { n.sayT -= dt; if (n.sayT <= 0) n.say = null; }
       const act = npcActivity(d, sun, night, n.bed !== null);
       if (act !== n.act) { n.act = act; n.targetX = null; n.t = 0; n.stuck = 0; if (n.state === 'sleep' && act !== 'sleep') this.wake(n, w); }
-      const far = Math.abs(n.body.x / S - pt.x) > NPC_ACTIVE.x || Math.abs(n.body.y / S - pt.y) > NPC_ACTIVE.y;
+      // 離每個玩家都超過活動範圍才凍結
+      const far = tiles.every((pt) => Math.abs(n.body.x / S - pt.x) > NPC_ACTIVE.x || Math.abs(n.body.y / S - pt.y) > NPC_ACTIVE.y);
       if (far) { this.freeze(n, w); continue; }
       this.stepNpc(n, dt, w, h);
       this.homeFallback(n, dt, w);

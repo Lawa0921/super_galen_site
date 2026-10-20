@@ -63,7 +63,7 @@ describe('npc pathfinding', () => {
     const s = new Settlements();
     s.found(40, 31);
     s.refresh(w, true);
-    const h: SettleHost = { world: w, time: 0, isNight: () => false, sun: () => sunTimes(0), dayFrac: () => 0.5, playerTile: () => ({ x: 30, y: 30 }), playerOverlaps: () => false };
+    const h: SettleHost = { world: w, time: 0, isNight: () => false, sun: () => sunTimes(0), dayFrac: () => 0.5, playerTiles: () => [{ x: 30, y: 30 }], playerOverlaps: () => false };
     const n = s.moveIn('merchant', s.cores[0].id, w, true)!;
     n.body.x = 15 * S; n.body.y = 26 * S - n.body.h;
     for (let i = 0; i < 60 * 15; i++) {

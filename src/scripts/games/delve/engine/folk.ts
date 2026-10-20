@@ -103,7 +103,8 @@ export interface FolkHost {
   time: number;
   day: number;
   isNight(): boolean;
-  playerTile(): { x: number; y: number };
+  /** 活著的玩家站的 tile（插入順序，第一個 = 本地 / 最先加入的；全員死亡 → 所有人的）；呼叫端取最近者 */
+  playerTiles(): { x: number; y: number }[];
   /** 畫面半寬 / 半高（格）：遇見要在畫面外出現 */
   viewHalf: { w: number; h: number };
   /** 地底（岩層以下）而且不在地城 */
@@ -112,12 +113,21 @@ export interface FolkHost {
   onSurface(x: number, y: number): boolean;
   /** 在據點範圍 / 村落 / 地廳裡（安全的地方：旅人不在這裡出現；護送到這裡算完成） */
   safeAt(x: number, y: number): boolean;
+  /** 有任何玩家的身體碰到 tile（關門前確認沒夾到人） */
   playerOverlaps(x: number, y: number): boolean;
   /** 健康的據點 / 治療師居民已經有了 → 旅人只會是行商 */
   wantHerbalist(): boolean;
 }
 
 const isDoor = (id: number): boolean => id === T.DOOR_CLOSED || id === T.DOOR_OPEN;
+/** 離 (x, y)（tile）最近的玩家 tile（距離相同取前面的） */
+function nearestTile(tiles: readonly { x: number; y: number }[], x: number, y: number): { x: number; y: number } {
+  let best = tiles[0], bd = Infinity;
+  for (const t of tiles) { const d = (t.x - x) ** 2 + (t.y - y) ** 2; if (d < bd) { bd = d; best = t; } }
+  return best;
+}
+/** NPC 所在 tile（中心欄、腳底列） */
+const npcTile = (n: FolkNpc): { x: number; y: number } => ({ x: Math.floor((n.body.x + n.body.w / 2) / S), y: Math.floor((n.body.y + n.body.h - 1) / S) });
 
 export class FolkWorld {
   npcs: FolkNpc[] = [];
@@ -249,11 +259,13 @@ export class FolkWorld {
 
   // ── 每刻 ──
   update(dt: number, h: FolkHost): void {
-    const w = h.world, pt = h.playerTile(), night = h.isNight();
-    this.pt = pt;
+    const w = h.world, tiles = h.playerTiles(), night = h.isNight();
+    // 遇見提示的方向以第一個（活著的）玩家為準
+    this.pt = tiles[0];
     for (const n of this.npcs) {
       if (n.sayT > 0) { n.sayT -= dt; if (n.sayT <= 0) n.say = null; }
-      const far = Math.abs(n.body.x / S - pt.x) > FOLK_ACTIVE.x || Math.abs(n.body.y / S - pt.y) > FOLK_ACTIVE.y;
+      // 離每個玩家都超過活動範圍才算遠
+      const far = tiles.every((pt) => Math.abs(n.body.x / S - pt.x) > FOLK_ACTIVE.x || Math.abs(n.body.y / S - pt.y) > FOLK_ACTIVE.y);
       if (n.site < 0) { this.stepEncounter(n, dt, h, far); continue; }
       if (far) { this.freeze(n, night, w); continue; }
       this.stepSettled(n, dt, night, h);
@@ -262,9 +274,13 @@ export class FolkWorld {
     this.encT -= dt;
     if (this.encT <= 0) { this.encT = ENCOUNTER_EVERY; this.tryEncounters(h); }
   }
+  /** 在每個玩家的畫面外 */
   private offscreen(n: FolkNpc, h: FolkHost, extra = 0): boolean {
-    const pt = h.playerTile();
-    return Math.abs(n.body.x / S - pt.x) > h.viewHalf.w + extra || Math.abs(n.body.y / S - pt.y) > h.viewHalf.h + extra;
+    return h.playerTiles().every((pt) => Math.abs(n.body.x / S - pt.x) > h.viewHalf.w + extra || Math.abs(n.body.y / S - pt.y) > h.viewHalf.h + extra);
+  }
+  /** (x, y) 在某個玩家的畫面內 */
+  private onScreen(h: FolkHost, x: number, y: number): boolean {
+    return h.playerTiles().some((pt) => Math.abs(x - pt.x) <= h.viewHalf.w && Math.abs(y - pt.y) <= h.viewHalf.h);
   }
   private freeze(n: FolkNpc, night: boolean, w: World): void {
     // 遠處：晚上直接在屋裡、白天回到活動範圍
@@ -350,8 +366,9 @@ export class FolkWorld {
 
   // ── 遇見 ──
   travellers(): FolkNpc[] { return this.npcs.filter((n) => n.site < 0); }
+  /** 遇見：以第一個（活著的）玩家為中心（多人時輪流 / 各自的遇見留給之後調整） */
   private tryEncounters(h: FolkHost): void {
-    const now = h.time, pt = h.playerTile();
+    const now = h.time, pt = h.playerTiles()[0];
     const chance = (p: number): boolean => this.rng.next() < (this.chanceOverride ?? p);
     const enc = this.travellers();
     if (!h.isNight() && now >= this.enc.nextTraveller && !enc.some((n) => n.origin === 'road') && h.onSurface(pt.x, pt.y) && !h.safeAt(pt.x, pt.y) && chance(TRAVELLER_CHANCE)) {
@@ -370,7 +387,7 @@ export class FolkWorld {
   }
   /** 地表路邊：玩家左右 ENC_DIST 格、畫面外、5 欄平坦、上面是天空、沒有水、不在村落 / 據點 */
   roadSpot(h: FolkHost): { x: number; y: number } | null {
-    const w = h.world, pt = h.playerTile();
+    const w = h.world, pt = h.playerTiles()[0];
     const order = this.rng.chance(2) ? [1, -1] : [-1, 1];
     for (const dir of order) {
       for (let d = Math.max(ENC_DIST.min, h.viewHalf.w + 3); d <= Math.max(ENC_DIST.max, h.viewHalf.w + 18); d += 2) {
@@ -381,6 +398,7 @@ export class FolkWorld {
         let flat = true;
         for (let k = -2; k <= 2 && flat; k++) { const gk = this.groundAt(w, x + k, g); if (gk === null || Math.abs(gk - g) > 1) flat = false; }
         if (!flat || w.getLiquid(x, g) || w.getLiquid(x, g + 1)) continue;
+        if (this.onScreen(h, x, g)) continue;
         return { x, y: g };
       }
     }
@@ -393,13 +411,13 @@ export class FolkWorld {
   }
   /** 洞穴地板：玩家周圍、畫面外、天然背景（不是房子 / 地城）、沒有水、地底 */
   caveSpot(h: FolkHost): { x: number; y: number } | null {
-    const w = h.world, pt = h.playerTile();
+    const w = h.world, pt = h.playerTiles()[0];
     for (let t = 0; t < 40; t++) {
       const dx = (this.rng.chance(2) ? 1 : -1) * this.rng.int(Math.max(ENC_DIST.min, h.viewHalf.w + 2), Math.max(ENC_DIST.max, h.viewHalf.w + 16));
       const dy = this.rng.int(-12, 20);
       const s = findStandSpot(w, pt.x + dx, pt.y + dy, 6);
       if (!s || !h.underground(s.x, s.y) || h.safeAt(s.x, s.y)) continue;
-      if (Math.abs(s.x - pt.x) <= h.viewHalf.w && Math.abs(s.y - pt.y) <= h.viewHalf.h) continue;
+      if (this.onScreen(h, s.x, s.y)) continue;
       const i = w.idx(s.x, s.y);
       if (HOUSE_WALLS.has(w.wall[i]) || w.wall[i] >= 10 && w.wall[i] <= 12 || w.liquid[i] || w.getLiquid(s.x, s.y - 1)) continue;
       return s;
@@ -442,7 +460,7 @@ export class FolkWorld {
   dismiss(n: FolkNpc): void { n.leaving = true; n.following = false; n.targetX = null; n.state = 'walk'; n.t = 0; }
 
   private stepEncounter(n: FolkNpc, dt: number, h: FolkHost, far: boolean): void {
-    const w = h.world, now = h.time, pt = h.playerTile();
+    const t = npcTile(n), w = h.world, now = h.time, pt = nearestTile(h.playerTiles(), t.x, t.y);
     n.t += dt;
     if (n.leaving) {
       if (far) { n.state = 'idle'; n.t = 99; return; }
@@ -479,8 +497,10 @@ export class FolkWorld {
    * 玩家跑太遠（傳送 / 死亡重生）→ 停下來原地等。到安全的地方（自己站的地方，而且玩家就在旁邊）→ 護送完成
    */
   private stepFollow(n: FolkNpc, dt: number, h: FolkHost): void {
-    const w = h.world, pt = h.playerTile(), b = n.body;
+    const w = h.world, b = n.body;
     const fx = Math.floor((b.x + b.w / 2) / S), fy = Math.floor((b.y + b.h - 1) / S);
+    // 跟著最近的（活著的）玩家
+    const pt = nearestTile(h.playerTiles(), fx, fy);
     const dist = Math.max(Math.abs(fx - pt.x), Math.abs(fy - pt.y));
     if (dist > FOLLOW_LOST) {
       n.following = false; n.waiting = true; n.state = 'idle'; b.vx = 0; n.path = null;

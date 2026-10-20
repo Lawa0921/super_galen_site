@@ -74,19 +74,25 @@ export const MAX_DROPS = 300;
 /** 同種掉落物在這個距離內（px）合併成一堆 */
 const MERGE_PX = 14;
 
-export interface PickupHost {
+/** 一個能撿東西的玩家 */
+export interface Picker {
   /** 玩家 AABB */
-  player: Body;
+  body: Body;
   /** 能收下的數量（0 = 背包滿） */
   room(item: ItemId, n: number): number;
   /** 收進背包，回傳實際收下的數量（gear = 帶詞條的裝備；tint = 帶顏色的時裝） */
   take(item: ItemId, n: number, gear?: Gear, tint?: Tint): number;
   /** 吸取半徑（px） */
   magnetPx: number;
-  /** 活動範圍（px）：離玩家更遠的掉落物不更新（凍結） */
-  activePx: number;
   /** 玩家死亡時不撿 */
   canPickup: boolean;
+}
+
+export interface PickupHost {
+  /** 所有玩家（順序 = 距離相同時的優先順序） */
+  pickers: Picker[];
+  /** 活動範圍（px）：離每個玩家都更遠的掉落物不更新（凍結） */
+  activePx: number;
 }
 
 export class DropList {
@@ -131,28 +137,50 @@ export class DropList {
     return last;
   }
 
-  /** 每步：物理（彈跳）→ 吸取 → 撿起。回傳這步撿到的 [item, n, gear, tint]。 */
-  step(q: PhysEnv, host: PickupHost, dt: number): [ItemId, number, Gear | undefined, Tint | undefined][] {
-    const got: [ItemId, number, Gear | undefined, Tint | undefined][] = [];
-    const p = host.player, pcx = p.x + p.w / 2, pcy = p.y + p.h / 2;
-    const grab = { x: p.x - PICKUP_GRAB_PX, y: p.y - PICKUP_GRAB_PX, w: p.w + PICKUP_GRAB_PX * 2, h: p.h + PICKUP_GRAB_PX * 2 };
-    const ap2 = host.activePx * host.activePx, m2 = host.magnetPx * host.magnetPx;
+  /**
+   * 每步：物理（彈跳）→ 吸取 → 撿起。每個掉落物只歸一個人：距離最近、活著、背包收得下的那個玩家吸 / 撿
+   * （距離相同取 pickers 順序在前的）。回傳這步撿到的 [item, n, gear, tint, picker 的索引]。
+   */
+  step(q: PhysEnv, host: PickupHost, dt: number): [ItemId, number, Gear | undefined, Tint | undefined, number][] {
+    const got: [ItemId, number, Gear | undefined, Tint | undefined, number][] = [];
+    const ps = host.pickers.map((pk) => {
+      const p = pk.body;
+      return {
+        pk, cx: p.x + p.w / 2, cy: p.y + p.h / 2, m2: pk.magnetPx * pk.magnetPx,
+        grab: { x: p.x - PICKUP_GRAB_PX, y: p.y - PICKUP_GRAB_PX, w: p.w + PICKUP_GRAB_PX * 2, h: p.h + PICKUP_GRAB_PX * 2 },
+      };
+    });
+    const ap2 = host.activePx * host.activePx;
     for (let i = this.list.length - 1; i >= 0; i--) {
       const d = this.list[i], b = d.body;
-      const dx = pcx - (b.x + b.w / 2), dy = pcy - (b.y + b.h / 2), r2 = dx * dx + dy * dy;
-      if (r2 > ap2) continue;
+      const bx = b.x + b.w / 2, by = b.y + b.h / 2;
+      // 離每個玩家都超過活動範圍 → 凍結
+      let near = false;
+      for (const p of ps) { const dx = p.cx - bx, dy = p.cy - by; if (dx * dx + dy * dy <= ap2) { near = true; break; } }
+      if (!near) continue;
       d.age += dt;
       if (d.pickDelay > 0) d.pickDelay -= dt;
-      const ready = host.canPickup && d.pickDelay <= 0 && host.room(d.item, 1) > 0;
-      if (ready && overlaps(b, grab)) {
-        const n = host.take(d.item, d.count, d.gear, d.tint);
+      // 歸誰：最近的、可以撿的人
+      let k = -1, r2 = Infinity, dx = 0, dy = 0;
+      if (d.pickDelay <= 0) {
+        for (let j = 0; j < ps.length; j++) {
+          const p = ps[j];
+          if (!p.pk.canPickup) continue;
+          const ex = p.cx - bx, ey = p.cy - by, e2 = ex * ex + ey * ey;
+          if (e2 >= r2 || p.pk.room(d.item, 1) <= 0) continue;
+          k = j; r2 = e2; dx = ex; dy = ey;
+        }
+      }
+      const ready = k >= 0;
+      if (ready && overlaps(b, ps[k].grab)) {
+        const n = ps[k].pk.take(d.item, d.count, d.gear, d.tint);
         if (n > 0) {
-          got.push([d.item, n, d.gear, d.tint]);
+          got.push([d.item, n, d.gear, d.tint, k]);
           d.count -= n;
           if (d.count <= 0) { this.list.splice(i, 1); continue; }
         }
       }
-      if (ready && r2 < m2) {
+      if (ready && r2 < ps[k].m2) {
         // 被吸過去：穿牆直線飛向玩家，越近越快
         d.grabbed = true;
         const r = Math.sqrt(r2) || 1, sp = Math.min(520, 180 + d.age * 260);
