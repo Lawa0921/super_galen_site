@@ -1278,7 +1278,8 @@ def test_g2_decisions_state_the_real_risks_in_plain_words(factory, review):
     page, head = _g2_page(factory, review, scenario)
     user = re.sub(r'<details.*?</details>', '', head, flags=re.S)
     assert names['lg-noel'] in user and '只數外緣' in user                           # passes only by the edge-only spill rule
-    assert f'{names["lg-sylvie"]}：前 3 版沒過檢查，第 4 版才通過' in user
+    assert '有 3 個暗紫或暗紅' in user and '3～3' not in user                           # one count, not a range of one
+    assert f'{names["lg-sylvie"]}：試了 4 版才採用（其中 3 版沒過檢查）' in user
     assert '這一版生成時少了風格參考圖，不採用' in user
     assert '細長武器（槍、弓）允許看起來比較瘦' in user
     for a, b in (('set-shade-feet', 'set-storm-feet'), ('copper-ring', 'blaze-ember-ring'), ('mire-miasma-mask', 'set-mire-head')):

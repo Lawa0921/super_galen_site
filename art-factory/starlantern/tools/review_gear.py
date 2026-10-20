@@ -599,8 +599,9 @@ def main(batch='sample'):
         arr = np.asarray(_Im.open(f).convert('RGBA')); return int((A.magenta_spill(arr) & ~A.near_edge(arr[..., 3])).sum())
     edge_only = {p: max(inside_spill(a) for a in G.assets_of(j, p)) for j in js if j['kind'] == 'gear-sheet' for p in j['parts'] if p}
     edge_only = {p: n for p, n in edge_only.items() if n >= 3}
-    edge_text = (f'{"、".join(nm.get(p, p) for p in edge_only)} 只因新的「溢色只數外緣」規則才通過：主體內有 {min(edge_only.values())}～'
-                 f'{max(edge_only.values())} 個暗紫或暗紅的陰影像素，舊規則會把它們當成洋紅溢色。請放大看看是不是陰影。') if edge_only else ''
+    lo, hi = (min(edge_only.values()), max(edge_only.values())) if edge_only else (0, 0)
+    edge_text = (f'{"、".join(nm.get(p, p) for p in edge_only)} 只因新的「溢色只數外緣」規則才通過：主體內有 {lo if lo == hi else f"{lo}～{hi}"} '
+                 f'個暗紫或暗紅的陰影像素，舊規則會把它們當成洋紅溢色。請放大看看是不是陰影。') if edge_only else ''
     def tries(j, p):
         k = reg.get(G.assets_of(j, p)[0], {}).get('chosen_attempt')
         if not k: return None
@@ -610,7 +611,7 @@ def main(batch='sample'):
             if all(q.is_file() for q in qs) and not all(json.loads(q.read_text(encoding='utf-8')).get('pass') for q in qs): fails += 1
         return (fails, int(k[1:])) if fails >= 2 else None
     many = [(p, r) for j in js if j['kind'] == 'gear-sheet' for p in j['parts'] if p and (r := tries(j, p))]
-    many_text = '；'.join(f'{nm.get(p, p)}：前 {f} 版沒過檢查，第 {k} 版才通過' for p, (f, k) in many)
+    many_text = '；'.join(f'{nm.get(p, p)}：試了 {k} 版才採用（其中 {f} 版沒過檢查）' for p, (f, k) in many)
     unused = [(j, k, v) for j in js for k, v in reg.get(j['id'], {}).get('plain_reasons', {}).items()]
     unused_text = '；'.join(f'{nm.get(next(x for x in j["parts"] if x), j["id"])}那張表的第 {k[1:]} 版：{v}' for j, k, v in unused)
     conf = [c for c in CONFUSABLES.get(batch, []) if all(x in gear for x in c)]
