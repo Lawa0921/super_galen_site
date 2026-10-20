@@ -18,6 +18,12 @@ import sl_art as A  # noqa: E402
 REPO = G.REPO
 PUB = REPO / 'public/assets/games/starlantern'
 OUT = REPO / 'tmp/starlantern/review-gear'
+
+
+def out_dir(batch):
+    """The review folder of a batch: the sample (G1) keeps OUT; main-gear (G2) and skills (G3) get their own, so building
+    one batch's page never overwrites another batch's published page."""
+    return OUT if batch == 'sample' else OUT.with_name(OUT.name + {'main-gear': '-g2', 'skills': '-g3'}[batch])
 DATA = REPO / 'src/scripts/games/starlantern/data'
 RARITY_NAME = {'common': '普通', 'magic': '魔法', 'rare': '稀有', 'epic': '史詩', 'legendary': '傳說', 'unique': '獨特', 'set': '套裝'}
 FRAMED = G.FRAMED_RARITIES                  # addendum 2: six frames (common has none)
@@ -91,15 +97,23 @@ DECISIONS = {
         ('傳說光暈改在格內', ['#glow'], [],
          '光暈改成外框內側一圈 1px 淡橘光，加四角火花，畫在圖示下層，不再伸進隔壁格。請看兩件傳說相鄰的示範。'),
     ],
+    # Plan 5d Task 9 (G2, addendum 1 gate table): 〔未通過〕 is filled from the registry when the page is built.
     'main-gear': [
-        ('60 件裝備逐件確認（含 24px 下的辨識度）', ['#s1', '#s3', '#s5', '#size'], ['每套 4 件是否一眼看得出同一套；24px 下有沒有兩件分不出來。'], ''),
-        ('6 種地區素材與多蘭笑臉', ['#s6', '#s8'], [], ''),
+        ('60 件裝備逐件確認', ['#size', '#s1', '#s3', '#s5'], [
+            '〔未通過〕',
+            '26×26 小圖示（主體長邊 22）下，有沒有兩件看起來分不出來（例如兩種杖、兩種戒指）。'],
+         '和 G1 同一套規則：同一畫布、主體長邊統一 22，盾與鎧甲夠寬、長柄武器份量下限 0.20。請在尺寸一致性格裡一起看 G1 的 9 件與本批 60 件，份量是不是一致。'),
+        ('套裝每套 4 件是否一眼看得出同一套', ['#s1', '#s4'], [], '五套新套裝（霜凍、雷鳴、腐毒、暗影、鋼鐵）各 4 件，熾焰套裝的戒指也在本批，和 G1 已核准的 3 件配成一套。'),
+        ('6 種地區素材與多蘭笑臉', ['#s6', '#s8'], [], '地區素材和舊素材圖示並排；多蘭笑臉和 G1 已核准的多蘭是同一個人。'),
     ],
     'skills': [
         ('78 個技能圖示和既有 27 個是否一致', ['#s7'], [], ''),
     ],
 }
 DECIDED = {   # addendum 2 §6: decided on 2026-10-20, not asked again
+    'main-gear': ('已決定（G1，2026-10-20）', [
+        '畫風、大小（主體長邊 22）、七階外框、星輝圓點光、格內光暈：G1 已核准，本批照同一套規則。',
+        '15 件舊底材圖示全部換新：〔舊底材〕。']),
     'sample': ('已決定（2026-10-20）', [
         '畫風與大小比例的方向：「可以」。',
         '多蘭的外型：照目前的版本（本批未重畫，和上次看到的是同一張）。',
@@ -127,9 +141,10 @@ def live_text(s, reg):
             else '新版星輝尚未生成：頁面暫時顯示舊版（邊上的星點在遊戲裡會重複成虛線），新版生成並通過 QA 後會換上。')
     return s.replace('〔最接近〕', near).replace('〔星輝〕', star)
 AFTER_APPROVAL = {
+    'main-gear': '核准後的動作：執行 gear_art.py approve --batch main-gear --by "<你對這頁的原話> <YYYY-MM-DD>"、gear_art.py silhouettes，然後照 5d Task 10 發布。',
     'sample': '核准後的動作：執行 gear_art.py approve --batch sample --by "<你對這頁的原話> <YYYY-MM-DD>"，然後照 5d Task 8（已依補遺 2 §4 修改）發布。',
 }
-SECTION_NAME = {'#s1': '1. 裝備頁情境', '#s2': '2. 新舊對照', '#s3': '3. 大圖與小圖示', '#s5': '5. 清單情境', '#s6': '6. 素材',
+SECTION_NAME = {'#s1': '1. 裝備頁情境', '#s2': '2. 新舊對照', '#s3': '3. 大圖與小圖示', '#s4': '4. 傳送門卡片', '#s5': '5. 清單情境', '#s6': '6. 素材',
                 '#s7': '7. 技能', '#s8': '8. 鍛造屋', '#glow': '光暈改在格內', '#size': '尺寸一致性', '#frames': '七階外框與星輝',
                 '#starlit-alts': '星輝角星比較'}
 SHAPE_NAME = {'round': '圓點光', 'cross': '十字星'}
@@ -384,11 +399,11 @@ def starlit_alts_section(pg, alts, fails, icon, gear, nm, cell, notes=None, plai
 
 
 def main(batch='sample'):
-    lab = G.label(batch)
+    lab = G.label(batch); out = out_dir(batch)
     reg = json.loads(G.REG_PATH.read_text(encoding='utf-8'))['assets'] if G.REG_PATH.exists() else {}
-    if OUT.exists(): shutil.rmtree(OUT)
-    (OUT / 'img').mkdir(parents=True)
-    pg = Page(OUT, reg); nm = names(); owners = skill_owners()
+    if out.exists(): shutil.rmtree(out)
+    (out / 'img').mkdir(parents=True)
+    pg = Page(out, reg); nm = names(); owners = skill_owners()
     js = [j for j in G.jobs() if j['batch'] == batch]
     gear = [p for j in js if j['kind'] == 'gear-sheet' for p in j['parts']]
     mats = [p for j in js if j['id'].startswith('sheet-mat-') for p in j['parts']]
@@ -530,19 +545,26 @@ def main(batch='sample'):
                       + (facility(sc, pg.final('npc-forge-happy'), '笑臉 npc-forge-happy') if pg.reg.get('npc-forge-happy', {}).get('final') else '')
                       + facility(pg.pub('scene/shop.png'), pg.pub('npc/shop.png'), '已發布的道具店（對照）'))
 
+    ok = ('qa_passed', 'approved', 'published')
+    pending = [p for j in js for p in j['parts'] if p is not None
+               and any(reg.get(a, {}).get('status') not in ok or not reg.get(a, {}).get('final') for a in G.assets_of(j, p))]
+    pending_text = (f'還沒通過：{"、".join(nm.get(p, p) for p in pending)}（這些格的圖還沒過機械檢查，頁面上顯示的是目前的一版或空格）' if pending
+                    else '本批全部通過機械檢查（尺寸、去背、溢色）。')
+    live = lambda s: live_text(s, reg).replace('〔未通過〕', pending_text)
     decision_list = [tuple(d) + ([],) * (5 - len(d)) for d in DECISIONS[batch]]
     sq = starlit_question(alts, fails, plain) if batch == 'sample' else None
     if sq: decision_list.insert(2, sq)   # after the frames question, before the glow
     decisions = ''.join(
         f'<li><b>{esc(q)}</b> <span class="links">看：{"、".join(f"<a href={chr(34)}{s}{chr(34)}>{SECTION_NAME[s]}</a>" for s in links)}</span>'
-        f'{"<p class=why>" + esc(live_text(why, reg)) + "</p>" if why else ""}'
-        f'<p class="why">已知風險：</p><ul class="risks">{"".join(f"<li>{esc(live_text(r, reg))}</li>" for r in risks) or "<li>無</li>"}</ul>'
+        f'{"<p class=why>" + esc(live(why)) + "</p>" if why else ""}'
+        f'<p class="why">已知風險：</p><ul class="risks">{"".join(f"<li>{esc(live(r))}</li>" for r in risks) or "<li>無</li>"}</ul>'
         f'{"<p class=opts>選項：" + esc("／".join(opts)) + "</p>" if opts else ""}</li>'
         for q, links, risks, why, opts in decision_list)
     example = '、'.join(f'{i} {"A" if d[4] else "可以"}' for i, d in enumerate(decision_list, 1))
     reply = f'<p class="reply">直接回覆每題的選擇，例如：{esc(example)}</p>'
     base_new = [p for p in gear if p in G.GEAR_BASE and p not in old_bases]
-    old_fact = (f'本批只有{"、".join(nm.get(b, b) for b in with_new)}是舊底材圖示的新版' if with_new else '本批沒有舊底材圖示的新版') + (
+    old_fact = ((f'本批只有{nm.get(with_new[0], with_new[0])}是舊底材圖示的新版' if len(with_new) == 1 else
+                 f'本批有 {len(with_new)} 件是舊底材圖示的新版（{"、".join(nm.get(b, b) for b in with_new)}）') if with_new else '本批沒有舊底材圖示的新版') + (
         f'；{"、".join(nm.get(b, b) for b in base_new)}是以前沒有圖示的裝備' if base_new else '')
     decided = ''
     if batch in DECIDED:
@@ -638,14 +660,14 @@ td,th,figcaption,.note{{overflow-wrap:anywhere}}
 <p class="note">原圖為 codex 輸出（已把背景校正為純洋紅）；下方為該版後處理結果與機械 QA。</p>
 {gallery(pg, js)}
 </body></html>'''
-    (OUT / 'index.html').write_text(page, encoding='utf-8', newline='\n')
+    (out / 'index.html').write_text(page, encoding='utf-8', newline='\n')
     # What this page showed: `approve` refuses any part whose final no longer has this hash (the user approves pictures).
     sp = G.shown_path(batch); sp.parent.mkdir(parents=True, exist_ok=True)
-    record = {'batch': batch, 'generated': datetime.datetime.now().isoformat(timespec='seconds'), 'page': str(OUT / 'index.html'), 'parts': shown}
+    record = {'batch': batch, 'generated': datetime.datetime.now().isoformat(timespec='seconds'), 'page': str(out / 'index.html'), 'parts': shown}
     if alts: record['alternatives'] = {'ui-starlit': {k: v['sha'] for k, v in alts.items()}}   # every starlit shape the page showed
     sp.write_text(json.dumps(record, indent=2, ensure_ascii=False) + '\n', encoding='utf-8', newline='\n')
-    print(OUT / 'index.html')
-    return OUT / 'index.html'
+    print(out / 'index.html')
+    return out / 'index.html'
 
 
 if __name__ == '__main__':

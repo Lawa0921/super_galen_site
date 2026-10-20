@@ -137,8 +137,11 @@ def _sheet(path, cols=3, rows=3, cell=120, gap=40, item='octagon'):
 
 @pytest.fixture
 def factory(tmp_path, monkeypatch):
+    # Every path a test can write or delete points into tmp_path, the style anchor included: approve re-makes or removes
+    # it, and the real one is attached to every production sheet codex draws.
     for name, p in {'REG_PATH': tmp_path / 'registry.json', 'RAW': tmp_path / 'raw', 'WORK': tmp_path / 'work',
-                    'PUBLIC': tmp_path / 'public', 'PLAN_PATH': tmp_path / 'gear-plan.json'}.items():
+                    'PUBLIC': tmp_path / 'public', 'PLAN_PATH': tmp_path / 'gear-plan.json',
+                    'GEAR_ANCHOR': tmp_path / 'raw/gear-refs/gear-anchor.png'}.items():
         monkeypatch.setattr(G, name, p)
     return tmp_path
 
@@ -1176,3 +1179,37 @@ def test_page_wording_and_extras(factory, review):
     assert 'data-tiers-zoom="3"' in frames                                # the seven tiers again at 3x, starlit and plain side by side
     alts = page[page.index('id="starlit-alts"'):]; alts = alts[:alts.index('</section>')]
     assert '原圖 16×16，放大 4 倍' in alts
+
+
+# --- plan 5d Task 9 (G2): its own review folder and an honest decision block ----------------------------------------------------
+def test_each_batch_writes_its_own_review_folder(factory, review):
+    _fill(factory, 'sample'); _fill(factory, 'main-gear')
+    g1 = review.main('sample'); before = g1.read_bytes()
+    g2 = review.main('main-gear')
+    assert g1 == factory / 'review/index.html' and g2 == factory / 'review-g2/index.html'
+    assert g1.read_bytes() == before and (factory / 'review/img').is_dir() and (factory / 'review-g2/img').is_dir()
+    assert json.loads(G.shown_path('main-gear').read_text(encoding='utf-8'))['page'] == str(g2)
+
+
+def test_g2_decisions_are_honest_about_what_did_not_pass(factory, review):
+    import re
+    real = json.loads((G.AF / 'registry.json').read_text(encoding='utf-8'))['assets']
+    reg = _fill(factory, 'main-gear')
+    for b in G.GEAR_BASE:                                   # the old base icons, as in the real registry
+        if f'icon-{b}' in real: reg.set(f'icon-{b}', **{k: real[f'icon-{b}'][k] for k in ('status', 'runtime', 'final') if k in real[f'icon-{b}']})
+    reg.set('gear-thorn-spear', status='qa_failed'); reg.data['assets'].pop('icon-iron-shard'); reg._save()
+    page = review.main('main-gear').read_text(encoding='utf-8')
+    head = page[page.index('id="decisions"'):page.index('id="s0"')]
+    asked = head[:head.index('已決定')]
+    assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['60 件裝備逐件確認', '套裝每套 4 件是否一眼看得出同一套', '6 種地區素材與多蘭笑臉']
+    assert '24px' not in asked and '26' in asked
+    names = review.names()
+    assert f'還沒通過：{names["thorn-spear"]}' in asked and names['iron-shard'] in asked          # the real state, not a promise
+    assert '直接回覆每題的選擇' in head and 'G1' in head[head.index('已決定'):]
+    assert '件是舊底材圖示的新版' in head[head.index('已決定'):]
+
+
+def test_the_factory_never_points_at_real_reference_files(factory):
+    """An approve inside a test once removed the real raw/gear-refs/gear-anchor.png while codex was drawing G2."""
+    for name in ('REG_PATH', 'RAW', 'WORK', 'PUBLIC', 'PLAN_PATH', 'GEAR_ANCHOR'):
+        assert Path(getattr(G, name)).is_relative_to(factory), name
