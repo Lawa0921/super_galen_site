@@ -1275,12 +1275,16 @@ def test_g2_decisions_state_the_real_risks_in_plain_words(factory, review):
         for a in ('gear-lg-sylvie', 'gear-lg-sylvie-large'): reg.set(a, chosen_attempt='a4')
         # sheet-gear-2 a2 drawn without the style anchor, noted in plain words
         reg.set('sheet-gear-2', rejected_attempts={'a2': 'anchor missing'}, plain_reasons={'a2': '這一版生成時少了風格參考圖，不採用'})
+        # sheet-gear-8 a3 IS the raven cloak's pick; its plain note is a risk about the picked version, not an unused attempt
+        reg.set('sheet-gear-8', rejected_attempts={'a3': 'picked'}, plain_reasons={'a3': '1 倍下仍偏暗'})
+        for a in ('gear-shade-raven-cloak', 'gear-shade-raven-cloak-large'): reg.set(a, chosen_attempt='a3')
     page, head = _g2_page(factory, review, scenario)
     user = re.sub(r'<details.*?</details>', '', head, flags=re.S)
     assert names['lg-noel'] in user and '只數外緣' in user                           # passes only by the edge-only spill rule
     assert '有 3 個暗紫或暗紅' in user and '3～3' not in user                           # one count, not a range of one
     assert f'{names["lg-sylvie"]}：試了 4 版才採用（其中 3 版沒過檢查）' in user
     assert '這一版生成時少了風格參考圖，不採用' in user
+    assert f'{names["shade-raven-cloak"]}：1 倍下仍偏暗（這是採用的版本）' in user and '那張表的第 3 版' not in user
     assert '細長武器（槍、弓）允許看起來比較瘦' in user
     for a, b in (('set-shade-feet', 'set-storm-feet'), ('copper-ring', 'blaze-ember-ring'), ('mire-miasma-mask', 'set-mire-head')):
         assert names[a] in user and names[b] in user, (a, b)                         # the confusable pairs, for the user to rule
@@ -1324,3 +1328,19 @@ def test_g2_page_layout_details(factory, review):
     assert 'id="s7"' not in page                                                       # no skills in this batch
     s0 = page[page.index('id="s0"'):page.index('id="size"')]
     assert "'box'" not in re.sub(r'<details.*?</details>', '', s0, flags=re.S)         # raw QA dicts only in the details
+
+
+def test_g2_bag_grid_shows_every_item_framed_with_legendary_glow(factory, review):
+    """Ruling 2026-10-20: §1's 28 px bag grid holds every gear item of the batch (all 60 in G2, rows of 10) in a cell with
+    its rarity frame, legendaries with the in-cell glow, so all can be judged at 1x."""
+    import re
+    page, _ = _g2_page(factory, review)
+    names = review.names()
+    gear = [p for j in G.jobs() if j['batch'] == 'main-gear' and j['kind'] == 'gear-sheet' for p in j['parts']]
+    s1 = page[page.index('id="s1"'):]
+    grid = s1[s1.index('<div class="bag-grid">'):]; grid = grid[:grid.index('<div class="doll">')]
+    titles = re.findall(r'class="cell bag" title="([^"（]+)（', grid)
+    assert len(gear) == 60 and set(titles) == {names.get(p, p) for p in gear}
+    assert all(names.get(p, p) in titles for p in gear if p.startswith(('lg-', 'set-')))
+    legend = [p for p in gear if review.rarity_of(p) == 'legendary']
+    assert legend and grid.count('class="rg"') == len(legend)

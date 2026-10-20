@@ -101,7 +101,7 @@ DECISIONS = {
     # Plan 5d Task 9 (G2, addendum 1 gate table): 〔未通過〕 is filled from the registry when the page is built.
     'main-gear': [
         ('60 件裝備逐件確認', ['#size', '#s1', '#s3', '#s5'], [
-            '〔未通過〕', '〔只數外緣〕', '〔多版〕', '〔未採用版〕', '〔容易搞混〕',
+            '〔未通過〕', '〔只數外緣〕', '〔多版〕', '〔採用版備註〕', '〔未採用版〕', '〔容易搞混〕',
             '細長武器（槍、弓）允許看起來比較瘦：它們的份量下限是 0.20，其他武器 0.28。'],
          '和 G1 同一套規則：同一個 26×26 畫布、主體長邊統一 22，盾與鎧甲夠寬；細長武器（槍、弓）允許看起來比較瘦，杖照一般武器。'
          '請在尺寸一致性格裡一起看 G1 的 9 件與本批 60 件，份量是不是一致。'),
@@ -476,7 +476,7 @@ def main(batch='sample'):
         return f'<div class="cell {cls}" title="{esc(nm.get(p, p))}（{RARITY_NAME[r]}）" style="width:{px}px;height:{px}px">{g}{ico}{f}{st}</div>'
 
     def equip_screen():
-        bag = (gear + [None] * 20)[:20]
+        bag = gear + [None] * (max(20, -(-len(gear) // 10) * 10) - len(gear))   # every item, rows of 10 (ruling 2026-10-20)
         doll = (gear + [None] * 9)[:9]
         pick = next((p for p in gear if rarity_of(p) == 'legendary'), gear[0] if gear else None)
         det = ''
@@ -612,12 +612,16 @@ def main(batch='sample'):
         return (fails, int(k[1:])) if fails >= 2 else None
     many = [(p, r) for j in js if j['kind'] == 'gear-sheet' for p in j['parts'] if p and (r := tries(j, p))]
     many_text = '；'.join(f'{nm.get(p, p)}：試了 {k} 版才採用（其中 {f} 版沒過檢查）' for p, (f, k) in many)
-    unused = [(j, k, v) for j in js for k, v in reg.get(j['id'], {}).get('plain_reasons', {}).items()]
-    unused_text = '；'.join(f'{nm.get(next(x for x in j["parts"] if x), j["id"])}那張表的第 {k[1:]} 版：{v}' for j, k, v in unused)
+    def picked_from(j, k):   # the parts of job j whose pick is attempt k of that job
+        return [p for p in j['parts'] if p and all(reg.get(a, {}).get('chosen_attempt') == k and reg.get(a, {}).get('source_id', j['id']) == j['id']
+                                                   for a in G.assets_of(j, p))]
+    notes = [(j, k, v) for j in js for k, v in reg.get(j['id'], {}).get('plain_reasons', {}).items()]
+    unused_text = '；'.join(f'{nm.get(next(x for x in j["parts"] if x), j["id"])}那張表的第 {k[1:]} 版：{v}' for j, k, v in notes if not picked_from(j, k))
+    picked_text = '；'.join(f'{"、".join(nm.get(p, p) for p in picked_from(j, k))}：{v}（這是採用的版本）' for j, k, v in notes if picked_from(j, k))
     conf = [c for c in CONFUSABLES.get(batch, []) if all(x in gear for x in c)]
     conf_text = ('1 倍下容易搞混，要不要重畫請你決定：' + '；'.join('／'.join(nm.get(x, x) for x in c) for c in conf)) if conf else ''
     live = lambda s: (live_text(s, reg).replace('〔未通過〕', pending_text).replace('〔只數外緣〕', edge_text).replace('〔多版〕', many_text)
-                      .replace('〔未採用版〕', unused_text).replace('〔容易搞混〕', conf_text))
+                      .replace('〔採用版備註〕', picked_text).replace('〔未採用版〕', unused_text).replace('〔容易搞混〕', conf_text))
     decision_list = [tuple(d) + ([],) * (5 - len(d)) for d in DECISIONS[batch]]
     sq = starlit_question(alts, fails, plain) if batch == 'sample' else None
     if sq: decision_list.insert(2, sq)   # after the frames question, before the glow
