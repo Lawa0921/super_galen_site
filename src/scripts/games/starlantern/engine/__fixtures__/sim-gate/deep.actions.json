@@ -2,11 +2,11 @@
   "19a the deep road. the expected party wins >= .85 and loses 10-45% HP at depths 15, 20 and 25": {
     "battles": 440,
     "rounds": 2016,
-    "hash": "83d387ab"
+    "hash": "afdecc35"
   },
   "19b the finale is a real fight. the expected party wins .30-.85 at depth 30, never in under three rounds": {
     "battles": 40,
     "rounds": 1135,
-    "hash": "31ba380b"
+    "hash": "838d8f1b"
   }
 }

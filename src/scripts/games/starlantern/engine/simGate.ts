@@ -1,10 +1,12 @@
 /**
- * The sim gate (plan 8a Task 1), test-only: a hash chain of every simulated round's actions and every fight's result,
- * per balance test, so a refactor of the sim can prove it moved nothing. Installed only when `SIM_GATE_OUT` is set.
+ * The sim gate (plan 8a Task 1), test-only: a hash chain of every simulated round (the party's actions, the enemies'
+ * intents going in, the round's log) and every fight's result, per balance test, so a refactor of the sim can prove it
+ * moved nothing on either side. Installed only when `SIM_GATE_OUT` is set.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
+import type { Action, BattleState } from './battle';
 import { setSimTrace } from './sim';
 
 const encoder = new TextEncoder();
@@ -16,6 +18,17 @@ export function fnv1a(s: string, h = 0x811c9dc5): number {
     h = Math.imul(h, 0x01000193) >>> 0;
   }
   return h >>> 0;
+}
+
+/**
+ * One round into the chain: the party's actions, the enemies' announced intents going in (none in a fight's first round,
+ * when they decide inside resolveRound), and the round's log — every act in turn order, the enemies' included, with
+ * whom each touched and how. Together they pin both sides' moves.
+ */
+export function roundHash(h: number, actions: Record<string, Action>, before: BattleState, after: BattleState): number {
+  h = fnv1a(JSON.stringify(actions), h);
+  h = fnv1a(JSON.stringify(before.intents ?? null), h);
+  return fnv1a(JSON.stringify(after.log), h);
 }
 
 interface GateEntry { battles: number; rounds: number; hash: number }
@@ -34,7 +47,7 @@ export function installSimGate(tag: 'balance' | 'lineups' | 'deep'): void {
     return e;
   };
   const install = () => setSimTrace({
-    round(actions) { const e = entry(); e.hash = fnv1a(JSON.stringify(actions), e.hash); },
+    round(actions, before, after) { const e = entry(); e.hash = roundHash(e.hash, actions, before, after); },
     end(r) {
       const e = entry();
       e.battles++;

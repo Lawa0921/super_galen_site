@@ -147,8 +147,14 @@ function power(def: SkillDef): number {
   return def.effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
 }
 
-/** A test-only observer of `simBattle`: each round's actions before they resolve, then the fight's result. It reads, never draws. */
-export interface SimTrace { round(actions: Record<string, Action>): void; end(r: { outcome: Outcome; rounds: number; hpLoss: number }): void }
+/**
+ * A test-only observer of `simBattle`: each round's party actions with the state going in and the state coming out (the
+ * enemies' intents, their moves in the round's log, and their next intents), then the fight's result. It reads, never draws.
+ */
+export interface SimTrace {
+  round(actions: Record<string, Action>, before: BattleState, after: BattleState): void;
+  end(r: { outcome: Outcome; rounds: number; hpLoss: number }): void;
+}
 
 let simTrace: SimTrace | null = null;
 
@@ -162,8 +168,9 @@ export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed:
   let rounds = 0;
   while (s.outcome === 'ongoing' && rounds < 60) {
     const actions = ai === 'attack' ? attackAll(s) : choose(s, party);
-    simTrace?.round(actions);
+    const before = s;
     s = resolveRound(s, actions, rng);
+    simTrace?.round(actions, before, s);
     rounds++;
   }
   const left = s.party.reduce((n, c) => n + Math.max(0, c.hp), 0);
