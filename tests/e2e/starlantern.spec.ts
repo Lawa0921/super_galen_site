@@ -11,6 +11,7 @@ import { memScene } from '../../src/scripts/games/starlantern/data/story/scenes'
 import { favouredRegions } from '../../src/scripts/games/starlantern/data/meetings';
 import { rollPortals, withLead } from '../../src/scripts/games/starlantern/engine/portals';
 import { SKILLS } from '../../src/scripts/games/starlantern/data/skills';
+import { maxValue } from '../../src/scripts/games/starlantern/engine/loot/item';
 import { mkdirSync } from 'node:fs';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
@@ -545,6 +546,108 @@ test.describe('starlantern', () => {
     }
     expect(raised).toBe(true);
     expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.run.loot.gear.map((it: any) => it.rarity))).toContain('rare');
+    expect(w.errors).toEqual([]);
+  });
+
+  /** Plan 5g: the frame and overlay art is not published, so nothing may ask for it. */
+  const UNPUBLISHED_RARITY_ART = ['ui/rarity-epic.png', 'ui/starlit.png', 'ui/glow-starlit.png'];
+  const STARLIT_AFFIXES = (['atk', 'crit', 'str', 'hp'] as const).map((key) => ({ key, value: maxValue(key, 6) }));
+
+  test('epic and starlit gear come home, read their words and survive a save', async ({ page }) => {
+    const asked: string[] = [];
+    page.on('request', (r) => asked.push(r.url()));
+    const w = await setup(page, 7);
+    await depart(page, w);
+    const uids: { epic: number; star: number } = await page.evaluate((starAffixes) => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const epic = g.mintUid(), star = g.mintUid();
+      g.run.loot.gear.push(
+        { uid: epic, base: 'iron-sword', rarity: 'epic', ilvl: 6, enhance: 0,
+          affixes: [{ key: 'atk', value: 5 }, { key: 'crit', value: 3 }, { key: 'hp', value: 12 }, { key: 'str', value: 3 }] },
+        { uid: star, base: 'thorn-spear', rarity: 'legendary', ilvl: 6, enhance: 0, special: 'lg-chizuru', starlit: true, affixes: starAffixes },
+      );
+      return { epic, star };
+    }, STARLIT_AFFIXES);
+    await lampHome(page, w);
+    await expect(page.locator('.slx-town .slx-talk')).toContainText('鐵劍・史詩');
+    await expect(page.locator('.slx-town .slx-talk')).toContainText('雙月槍・星輝傳說');
+    await w.closeTalk();
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-cmd [data-id=equip]').click();
+    await expect(page.locator('.slx-equip-scene')).toBeVisible();
+    const star = page.locator('.slx-bag-cell[aria-label="雙月槍・星輝傳說"]');
+    const epic = page.locator('.slx-bag-cell[aria-label="鐵劍・史詩"]');
+    await expect(star).toHaveClass(/slx-rarity-legendary/);
+    await expect(star).toHaveClass(/slx-starlit/);
+    await expect(epic).toHaveClass(/slx-rarity-epic/);
+    await expect(epic).toHaveCSS('color', 'rgb(179, 107, 255)');
+    await star.hover();
+    await expect(page.locator('.slx-item-detail .slx-line-starlit')).toHaveText(T.gear.starlitLine);
+    await epic.hover();
+    // The detail name takes the epic colour (it was gold whatever the rarity before plan 5g).
+    await expect(page.locator('.slx-item-detail .slx-item-name')).toHaveText('鐵劍・史詩');
+    await expect(page.locator('.slx-item-detail .slx-item-name')).toHaveCSS('color', 'rgb(179, 107, 255)');
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-town', '旅館');
+    await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter'); await w.key('ArrowUp'); await w.key('Enter');
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText('已存檔。', { timeout: 5000 });
+    await page.reload();
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('繼續');
+    await w.key('Enter');
+    await expect(page.locator('.slx-town')).toBeVisible();
+    await expectSaveLoaded(page);
+    const kept = await page.evaluate((u) => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      const all = [...s.bag, ...Object.values(s.party.roster).flatMap((m: any) => Object.values(m.equip))] as any[];
+      const e = all.find((it) => it.uid === u.epic), st = all.find((it) => it.uid === u.star);
+      return { epic: e?.rarity, epicStarlit: e?.starlit, star: st?.rarity, starlit: st?.starlit, affixes: st?.affixes };
+    }, uids);
+    expect(kept).toEqual({ epic: 'epic', epicStarlit: undefined, star: 'legendary', starlit: true, affixes: STARLIT_AFFIXES });
+    expect(asked.filter((u) => UNPUBLISHED_RARITY_ART.some((a) => u.endsWith(a)))).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test('a starlit chest drop raises a star-light pillar', async ({ page }) => {
+    const asked: string[] = [];
+    page.on('request', (r) => asked.push(r.url()));
+    const w = await setup(page, 7);
+    await depart(page, w);
+    // As in the rare chest test, but every chest's gear is a starlit legendary.
+    const chests: number = await page.evaluate((starAffixes) => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      let n = 0;
+      g.map().tiles.forEach((row: string[], y: number) => row.forEach((t, x) => {
+        if (t !== 'chest') return;
+        g.run.gearRolls[`chest:${g.floor}:${x},${y}`] = {
+          uid: g.mintUid(), base: 'thorn-spear', rarity: 'legendary', ilvl: 6, enhance: 0, special: 'lg-chizuru', starlit: true, affixes: starAffixes,
+        };
+        n++;
+      }));
+      return n;
+    }, STARLIT_AFFIXES);
+    expect(chests).toBeGreaterThan(0);
+    const pillar = page.locator('.slx-pillar.slx-pillar-starlit.slx-pillar-legend');
+    const tried: string[] = [];
+    let raised = false;
+    for (let c = 0; c < chests && !raised; c++) {
+      const route = await pathTo(page, 'chest', tried);
+      if (!route) break;
+      tried.push(route.at);
+      for (const k of route.keys) {
+        await page.evaluate(() => { (window as unknown as Dbg).__starlanternDebug.game.encounter = 0; });
+        await page.keyboard.press(k);
+      }
+      raised = (await pillar.count()) > 0;
+      await w.closeTalk();
+    }
+    expect(raised).toBe(true);
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.run.loot.gear.map((it: any) => it.starlit === true))).toContain(true);
+    expect(asked.filter((u) => UNPUBLISHED_RARITY_ART.some((a) => u.endsWith(a)))).toEqual([]);
     expect(w.errors).toEqual([]);
   });
 
