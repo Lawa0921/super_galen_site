@@ -25,14 +25,15 @@ const UNISEX_NOTE = '男女都能穿任何髮型、服裝與裝備。';
 const ZOOM = 1;
 const PAD = 2;
 
-/** 衣櫥模式：'create' = 建角、'mirror' = 梳妝台、'full' = 全部欄位（舊行為，不對玩家開放） */
-export type WardrobeMode = 'create' | 'mirror' | 'full';
+/** 衣櫥模式：'create' = 建角、'mirror' = 梳妝台、'race' = 轉生之藥（只有種族一列）、'full' = 全部欄位（舊行為，不對玩家開放） */
+export type WardrobeMode = 'create' | 'mirror' | 'race' | 'full';
 /** 建角可選的欄位（P6）：身體特徵 + 種族 + 主色 / 副色（染基本布衣）；沒有服裝 / 頭飾 / 眼鏡 */
 const CREATE_KEYS: readonly AppearanceKey[] = ['body', 'race', 'hair', 'hairColor', 'ahoge', 'eyes', 'eyeShape', 'skin', 'blush', 'color1', 'color2'];
 /** 各模式列出的欄位（null = 全部）。梳妝台不能改種族；每件時裝的配色列由梳妝台另外加 */
 const MODE_KEYS: Record<WardrobeMode, readonly AppearanceKey[] | null> = {
   create: CREATE_KEYS,
   mirror: CREATE_KEYS.filter((k) => k !== 'race'),
+  race: ['race'],
   full: null,
 };
 /** 某模式要列出的欄位（照 APPEARANCE_FIELDS 的順序） */
@@ -111,11 +112,11 @@ export class Wardrobe {
     this.opts = o;
     const mode = o.mode ?? 'full';
     this.tints = mode === 'mirror' ? (o.tints ?? []).map((t) => ({ ...t, tint: [t.tint[0], t.tint[1]] })) : [];
-    this.base = mode === 'mirror' ? normalizeAppearance(initial) : null;
+    this.base = mode === 'mirror' || mode === 'race' ? normalizeAppearance(initial) : null;
     // 梳妝台的列跟著身上穿什麼變：每次都重建
     if (mode !== this.mode || mode === 'mirror') this.build(mode);
     const title = this.panel.querySelector('#delve-wr-title');
-    if (title) title.textContent = mode === 'mirror' ? '梳妝台' : '角色外觀';
+    if (title) title.textContent = mode === 'mirror' ? '梳妝台' : mode === 'race' ? '轉生之藥' : '角色外觀';
     this.returnFocus = document.activeElement as HTMLElement | null;
     this.panel.hidden = false;
     this.root.dataset.wardrobe = '1';
@@ -263,6 +264,7 @@ export class Wardrobe {
     // 梳妝台：種族 / 服裝 / 頭飾 / 眼鏡固定是打開時的（只改身體特徵與布衣配色；隨機 / 換體型也一樣）
     const b = this.base;
     const a = this.mode === 'create' ? createLook(next)
+      : this.mode === 'race' && b ? { ...b, race: next.race }
       : this.mode === 'mirror' && b ? { ...next, race: b.race, outfit: b.outfit, acc: b.acc, glasses: b.glasses } : next;
     this.a = a;
     for (const r of this.rows) {

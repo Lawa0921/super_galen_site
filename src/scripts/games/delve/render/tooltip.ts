@@ -72,6 +72,7 @@ export function itemTooltip(item: ItemId): string[] {
     case 'sponge': out.push('使用：吸掉瞄準格附近的水 / 蜂蜜（按住連續吸）'); break;
     case 'fish': out.push('使用：拋竿 / 收竿；浮標沉下去時再按一次把魚拉起來'); break;
     case 'eat': out.push(`使用：吃掉，回復 ${d.food ?? 0} 生命`); break;
+    case 'rebirth': out.push('使用：選一個新的種族並換上（被動數值跟著變）；換族才會消耗，取消或選同一族不消耗'); break;
     case 'crate': out.push('使用：打開木箱'); break;
     default: break;
   }

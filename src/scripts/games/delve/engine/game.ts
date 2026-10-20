@@ -12,7 +12,7 @@ import type { DungeonInfo } from './gen/dungeon';
 type GenRelic = { x: number; y: number; item: ItemId; where: string };
 import { T, W, TIER_UNBREAKABLE, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
 import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemDef, type ItemId, type PickStats, type WeaponDef, type WeaponKind } from './items';
-import { potLoot, type Drop } from './loot';
+import { bossRebirth, potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
 import { craft as craftRecipe, findRecipe, type CraftResult, type Station } from './crafting';
 import { makeBody, stepPlayer, onPlatform, type Body, type MoveStats, type PlayerMotion } from './physics';
@@ -38,7 +38,7 @@ import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type Ph
 import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidContact } from './swim';
-import { normalizeAppearance, type Appearance } from './appearance';
+import { normalizeAppearance, RACES, type Appearance } from './appearance';
 import { raceMods, type RaceMods } from './race';
 import { Vanity, VANITY_SLOTS, type HideSlot, type VanitySlot } from './vanity';
 import { buildDollLook, dollKey, type DollLook } from './doll';
@@ -110,6 +110,8 @@ export type DelveEvent =
   | { type: 'chest'; open: boolean; x: number; y: number }
   /** 梳妝台：開啟（UI 開衣櫥 'mirror' 模式）/ 關閉（走遠、被拆、UI 關掉） */
   | { type: 'mirror'; open: boolean; x: number; y: number }
+  /** 轉生之藥：UI 開種族選單（確定後呼叫 game.rebirth） */
+  | { type: 'rebirth' }
   | { type: 'door'; open: boolean; x: number; y: number; unlocked: boolean }
   | { type: 'unlock'; x: number; y: number; item: ItemId }
   /** 讀古碑；first = 第一次讀到（收進日誌） */
@@ -2138,6 +2140,8 @@ export class DelveGame {
       }
       for (let k = 0; k < BOSS_GEAR; k++) { const item = rollDropItem(this.lootRng, 5); this.spawnGearDrop(item, this.rollFor(item, 'boss', 1, 5), cx, cy); }
       drop(BOSS_FASHION[Math.floor(this.lootRng.next() * BOSS_FASHION.length) % BOSS_FASHION.length], 1);
+      // 轉生之藥：這個角色第一次擊敗這隻首領必掉，之後 15%（levels.bosses 在這時還是擊殺前的狀態）
+      if (bossRebirth(this.seed, e.kind, this.kills[e.kind] ?? 0, !this.levels.bosses.has(e.kind))) drop('rebirth_potion', 1);
       this.bossesDefeated.add(e.kind);
       this.enemies = this.enemies.filter((q) => !ENEMIES[q.kind].minion);
       for (const p of this.projectiles.list) if (p.hostile) p.life = 0;
@@ -2410,6 +2414,8 @@ export class DelveGame {
       this.baseMaxHp = Math.min(MAX_HP_CAP, this.baseMaxHp + LIFE_CORE_HP);
       this.hp = Math.min(this.maxHp(), this.hp + LIFE_CORE_HP);
       this.events.push({ type: 'lifeup', maxHp: this.maxHp() });
+    } else if (use === 'rebirth') {
+      this.events.push({ type: 'rebirth' }); // 不在這裡消耗：選了別的種族按確定才扣（rebirth()）
     } else if (use === 'heal') {
       if (this.potionCd > 0 || this.hp >= this.maxHp()) { this.block('use', 'potion', x, y); return; }
       this.inventory.takeFromSlot(this.inventory.selected, 1);
@@ -3826,6 +3832,17 @@ export class DelveGame {
   }
 
   // ── debug / e2e / 存檔還原 ─────────────────────────────
+  /**
+   * 轉生之藥：換成指定種族。同族或背包裡沒有藥 → false、什麼都不動；換成功才消耗 1 瓶（從背包找，不看選取格）。
+   * 種族只能從這裡改（梳妝台 / 建角之後都不行）。
+   */
+  rebirth(race: number): boolean {
+    const cur = this.appearance;
+    if (!Number.isInteger(race) || race < 0 || race >= RACES.length || race === cur.race) return false;
+    if (!this.inventory.remove('rebirth_potion', 1)) return false;
+    this.appearance = normalizeAppearance({ ...cur, race });
+    return true;
+  }
   /** 換角色外觀（存一份正規化後的新物件） */
   setAppearance(a: Appearance): void { this.appearance = normalizeAppearance(a); }
   /**

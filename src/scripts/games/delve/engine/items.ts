@@ -37,7 +37,7 @@ export type ItemId =
   | 'bone_helmet' | 'bone_chestplate' | 'bone_greaves'
   | 'molten_helmet' | 'molten_chestplate' | 'molten_greaves'
   // ── 消耗品 / 戰鬥飾品 / 首領 ──
-  | 'life_core' | 'healing_potion' | 'wick_offering'
+  | 'life_core' | 'healing_potion' | 'wick_offering' | 'rebirth_potion'
   | 'chitin_buckler' | 'fang_charm' | 'feather_charm' | 'warden_heart' | 'warden_trophy'
   // ── 液體：蜂巢 / 酥蜜塊、水桶、吸水海綿、熔殼護符 ──
   | 'hive' | 'crispy_honey' | 'bucket' | 'water_bucket' | 'lava_bucket' | 'honey_bucket' | 'sponge' | 'magma_ward'
@@ -133,6 +133,8 @@ export interface ItemDef {
   use?: 'recall' | 'life' | 'heal' | 'summon' | 'scoop' | 'pour' | 'sponge'
     /** 釣竿：拋竿 / 收竿；料理：吃（回血）；木箱：打開 */
     | 'fish' | 'eat' | 'crate'
+    /** 轉生之藥：開種族選單，確定換族才消耗 */
+    | 'rebirth'
     /** 建築木槌：方塊整格 ⇄ 半格 */
     | 'hammer';
   /** 釣竿：釣力、能不能在熔岩裡釣 */
@@ -291,6 +293,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   // ── 消耗品 ──
   life_core: { ...mat('life_core', '生命晶核', 'Vital Core'), maxStack: 99, use: 'life' },
   healing_potion: { ...mat('healing_potion', '治療藥水', 'Healing Draught'), maxStack: 99, use: 'heal' },
+  rebirth_potion: { ...mat('rebirth_potion', '轉生之藥', 'Potion of Rebirth'), maxStack: 9, use: 'rebirth' },
   wick_offering: { ...mat('wick_offering', '燈芯祭品', 'Wick Offering'), maxStack: 20, use: 'summon' },
   // ── 戰鬥飾品 ──
   chitin_buckler: acc('chitin_buckler', '甲殼小盾', 'Chitin Buckler', 'stat', { defense: 3 }),

@@ -55,7 +55,7 @@ export function chestGear(seed: string, x: number, y: number, kind: ChestKind, d
 /** 箱子內容（CHEST_SLOTS 格，前面幾格有東西；最後接上 chestGear 的裝備） */
 export function chestLoot(seed: string, x: number, y: number, kind: ChestKind, depth: number): (Stack | null)[] {
   const slots = baseChestLoot(seed, x, y, kind, depth);
-  for (const g of [...chestGear(seed, x, y, kind, depth), ...chestFashion(seed, x, y, kind)]) {
+  for (const g of [...chestGear(seed, x, y, kind, depth), ...chestFashion(seed, x, y, kind), ...chestRebirth(seed, x, y, kind)]) {
     const i = slots.indexOf(null);
     if (i < 0) break;
     slots[i] = g;
@@ -97,6 +97,18 @@ export function chestFashion(seed: string, x: number, y: number, kind: ChestKind
   const r = new Rng(`${seed}:chestfashion:${x}:${y}`);
   if (r.next() >= (CHEST_FASHION_CHANCE[kind] ?? 0)) return [];
   return [{ item: pool[Math.floor(r.next() * pool.length) % pool.length], count: 1 }];
+}
+
+/** 轉生之藥：珍寶箱 / 寶藏室各 4%（獨立亂數流，不影響其他戰利品） */
+export const REBIRTH_CHEST_CHANCE = 0.04;
+export function chestRebirth(seed: string, x: number, y: number, kind: ChestKind): Stack[] {
+  if (kind !== 'relic' && kind !== 'treasure') return [];
+  return new Rng(`${seed}:chestrebirth:${x}:${y}`).next() < REBIRTH_CHEST_CHANCE ? [{ item: 'rebirth_potion', count: 1 }] : [];
+}
+/** 首領掉轉生之藥：對這個角色首殺必掉，之後 15%（獨立亂數流，用第幾次擊殺當種子） */
+export const REBIRTH_BOSS_CHANCE = 0.15;
+export function bossRebirth(seed: string, kind: string, kills: number, first: boolean): boolean {
+  return first || new Rng(`${seed}:bossrebirth:${kind}:${kills}`).next() < REBIRTH_BOSS_CHANCE;
 }
 
 function baseChestLoot(seed: string, x: number, y: number, kind: ChestKind, depth: number): (Stack | null)[] {

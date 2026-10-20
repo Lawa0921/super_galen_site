@@ -25,7 +25,7 @@ import { continueSlot, importPlan, genProgress, genStageLabel, GEN_STAGE_LABELS,
 import { liveCounts, type LiveCounts } from './live';
 import { GEN_PHASES, GenSectionView, genPhaseLabel, genPhaseOf } from './genSection';
 import { Wardrobe } from './wardrobe';
-import { createLook, loadDefaultAppearance, saveDefaultAppearance, setAppearance, type Appearance } from '../engine/appearance';
+import { RACES, createLook, loadDefaultAppearance, saveDefaultAppearance, setAppearance, type Appearance } from '../engine/appearance';
 import { ITEMS } from '../engine/items';
 import { restyledLook } from '../engine/doll';
 import { PlayLocks, PLAY_LOCKED_MSG, browserLocks, charLock, heldElsewhere, worldLock } from './playLock';
@@ -249,6 +249,24 @@ export function bootDelve(root: HTMLElement): Session {
     });
   }
 
+  /**
+   * 轉生之藥（手持按使用）：開衣櫥 'race' 模式——只有種族一列，OK 才換；暫停模擬。
+   * 取消、或選回同一族 → 不消耗（game.rebirth 回 false 就什麼都不動）。
+   */
+  function setRebirth(game: DelveGame): void {
+    if (!wardrobe || wardrobe.isOpen || handle?.game !== game) return;
+    handle.setPaused(true);
+    wardrobe.open(game.appearance, {
+      mode: 'race',
+      look: (a) => restyledLook(game.doll().look, a, []),
+      onDone: (a) => {
+        if (game.rebirth(a.race)) { handle?.hud.refresh(); handle?.hud.toast(`轉生成${RACES[a.race]?.zh ?? ''}`, 2400); }
+        else handle?.hud.toast('種族沒有改變，轉生之藥沒有用掉');
+      },
+      onClose: () => { if (handle?.game === game) handle.setPaused(!menu!.hidden); },
+    });
+  }
+
   function begin(game: DelveGame, s: SplitSession, locks: PlayLocks): void {
     stopAutosave?.();
     handle?.destroy();
@@ -261,7 +279,7 @@ export function bootDelve(root: HTMLElement): Session {
     hudEl!.hidden = false;
     root.dataset.phase = 'playing';
     setMenu(false);
-    handle = startDelve({ root, canvas: canvas!, game, onMenu: () => setMenu(menu!.hidden), onMirror: (open) => setMirror(game, open) });
+    handle = startDelve({ root, canvas: canvas!, game, onMenu: () => setMenu(menu!.hidden), onMirror: (open) => setMirror(game, open), onRebirth: () => setRebirth(game) });
     window.__delveDebug = { game, handle, save: saveNow };
     if (!helpSeen(storage)) setHelp(true);
     if (hasIndexedDB()) {
