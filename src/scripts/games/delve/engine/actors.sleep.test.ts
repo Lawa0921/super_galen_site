@@ -90,6 +90,16 @@ describe('全員上床才睡', () => {
     expect(g.local.sleepReady).toBe(false);
   });
 
+  it('A 等待中燒傷 / 溺水（持續傷害）→ 也取消 ready', () => {
+    const { g } = room();
+    sleepA(g);
+    expect(g.local.sleepReady).toBe(true);
+    g.local.burning = 2; g.local.burnTick = 0;
+    run(g, FIXED_DT);
+    expect(g.local.sleepReady).toBe(false);
+    expect(g.local.hp).toBeLessThan(g.maxHp());
+  });
+
   it('A 等待中床被拆 / 被傳走 → 取消 ready', () => {
     const { g } = room();
     sleepA(g);

@@ -2658,6 +2658,7 @@ export class DelveGame {
   private tickDamage(amount: number, cause: 'drown' | 'burn'): void {
     const p = this.player;
     this.hp -= amount;
+    this.sleepReady = false;
     this.sinceHit = 0;
     this.emit({ type: 'hurt', x: p.x + p.w / 2, y: p.y, amount, fall: false, cause });
     if (this.hp <= 0 && !this.tryUndying()) this.die();
