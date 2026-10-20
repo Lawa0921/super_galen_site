@@ -65,15 +65,32 @@ export function chestLoot(seed: string, x: number, y: number, kind: ChestKind, d
 
 /** 只在箱子裡找得到的時裝（收集目標） */
 export const LOOT_ONLY_FASHION: readonly ItemId[] = ['maid_dress', 'maid_skirt', 'maid_headdress', 'witch_hat', 'feather_wings', 'ribbon_bow'];
+/** 一般箱子的時裝：工作台做得出來的那幾件 */
+const COMMON_FASHION: readonly ItemId[] = ['straw_hat', 'beret', 'explorer_vest', 'flower_crown'];
+/** 各種箱子開得出的時裝（每件來源見 docs/superpowers/plans/2026-10-20-delve-cosmetic-collection.md 的 Source table） */
+export const CHEST_FASHION: Readonly<Record<ChestKind, readonly ItemId[]>> = {
+  cabin: [...COMMON_FASHION, 'acc_catears'],
+  mineshaft: [...COMMON_FASHION, 'acc_headphones'],
+  ruin: [...COMMON_FASHION, 'pirate_top', 'pirate_bottom', 'acc_foxmask', 'acc_hairpin'],
+  cavern: [...COMMON_FASHION, 'mage_top', 'mage_bottom', 'pirate_top', 'pirate_bottom'],
+  sky: [...COMMON_FASHION, 'priest_top', 'priest_bottom', 'acc_clip'],
+  dungeon: [...LOOT_ONLY_FASHION, 'gothic_top', 'gothic_bottom'],
+  treasure: [...LOOT_ONLY_FASHION, 'idol_top', 'idol_bottom', 'gothic_top', 'gothic_bottom', 'acc_crown'],
+  secret: [...LOOT_ONLY_FASHION, 'qipao_top', 'qipao_bottom', 'acc_hairpin'],
+  relic: [...LOOT_ONLY_FASHION, 'idol_top', 'idol_bottom', 'qipao_top', 'qipao_bottom', 'gothic_top', 'gothic_bottom', 'acc_crown'],
+};
+/** 箱子開出一件時裝的機率 */
+export const CHEST_FASHION_CHANCE: Readonly<Record<ChestKind, number>> = {
+  cabin: 0.1, mineshaft: 0.1, ruin: 0.1, cavern: 0.1, sky: 0.1, dungeon: 0.3, treasure: 0.8, secret: 0.3, relic: 0.3,
+};
 /**
- * 箱子裡的時裝（獨立亂數流 seed:chestfashion:x:y，不影響原本的戰利品）：地城 / 寶藏室 / 密室 / 珍寶箱
- * 有機會開出一件只能撿到的時裝；一般箱子很少、只開得出工作台做得出來的那幾件。
+ * 箱子裡的時裝（獨立亂數流 seed:chestfashion:x:y，不影響原本的戰利品）：依箱子種類從 CHEST_FASHION 抽一件。
+ * 地城 / 寶藏室 / 密室 / 珍寶箱機率高、開得出只能撿到的款式；一般箱子很少。
  */
 export function chestFashion(seed: string, x: number, y: number, kind: ChestKind): Stack[] {
   const r = new Rng(`${seed}:chestfashion:${x}:${y}`);
-  const deep = kind === 'dungeon' || kind === 'treasure' || kind === 'secret' || kind === 'relic';
-  if (r.next() >= (kind === 'treasure' ? 0.8 : deep ? 0.3 : 0.06)) return [];
-  const pool: readonly ItemId[] = deep ? LOOT_ONLY_FASHION : ['straw_hat', 'beret', 'explorer_vest', 'flower_crown'];
+  if (r.next() >= CHEST_FASHION_CHANCE[kind]) return [];
+  const pool = CHEST_FASHION[kind];
   return [{ item: pool[Math.floor(r.next() * pool.length) % pool.length], count: 1 }];
 }
 

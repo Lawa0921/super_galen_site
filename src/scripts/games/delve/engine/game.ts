@@ -412,6 +412,8 @@ export const BOSS_DROPS: { item: ItemId; n: number }[] = [
   { item: 'lumen_blade', n: 1 }, { item: 'warden_heart', n: 1 }, { item: 'warden_trophy', n: 1 },
   { item: 'healing_potion', n: 5 }, { item: 'silver_coin', n: 12 },
 ];
+/** 首領：每次擊敗另外掉一件時裝（從這些款式裡抽一件；高稀有款） */
+export const BOSS_FASHION: readonly ItemId[] = ['idol_top', 'idol_bottom', 'gothic_top', 'gothic_bottom', 'acc_crown'];
 /** 首領 → 召喚它用掉的道具（首領戰中存檔讀檔時退還） */
 export const BOSS_SUMMON_ITEM: Partial<Record<EnemyKind, ItemId>> = { lantern_warden: 'wick_offering' };
 // ── 裝備詞條 ──
@@ -2077,6 +2079,7 @@ export class DelveGame {
         else drop(it.item, it.n);
       }
       for (let k = 0; k < BOSS_GEAR; k++) { const item = rollDropItem(this.lootRng, 5); this.spawnGearDrop(item, this.rollFor(item, 'boss', 1, 5), cx, cy); }
+      drop(BOSS_FASHION[Math.floor(this.lootRng.next() * BOSS_FASHION.length) % BOSS_FASHION.length], 1);
       this.bossesDefeated.add(e.kind);
       this.enemies = this.enemies.filter((q) => !ENEMIES[q.kind].minion);
       for (const p of this.projectiles.list) if (p.hostile) p.life = 0;

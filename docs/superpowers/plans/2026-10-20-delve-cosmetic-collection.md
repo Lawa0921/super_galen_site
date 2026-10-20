@@ -136,4 +136,62 @@
 
 ## Source table
 
-（Task 3 填寫：每件外觀物品 → 來源與機率 / 配方。）
+Task 3 定案（`engine/cosmeticSources.ts` 彙整、`engine/cosmeticSources.test.ts` 鎖規則）。讀法：
+
+- 配方 `材料 n @合成站`；怪物 `怪物 id 百分比`（每件獨立擲，未計幸運加成，幸運 × (1 + luck%)）。
+- 箱子 `種類 百分比` = 該種箱子開出這一件的機率 = 箱子開出時裝的機率（一般 cabin / mineshaft / ruin / cavern / sky 10%、dungeon / secret / relic 30%、treasure 80%）÷ 該種箱子池子件數。箱子內容在建世界時就生成，新池子只影響**新世界**。
+- 首領：燈脈守望者每次擊敗必掉一件時裝，從 `BOSS_FASHION` 五件裡抽（每件 20%）。和平模式也能召喚，但規則「和平模式拿得到」不把它算進去。
+- **一套服裝的上身與下身來源完全相同**（同一隻怪、同機率、同幾種箱子；配方材料下身較少），兩件各自擲。
+- 新物品 26 件中可製作 8 件（≈31%）；全部 47 件中 22 件可製作。開局材料就做得出：草帽（舊）、小花（新）。
+
+| item id | 名稱 | 來源 |
+|---|---|---|
+| sailor_top | 水手服上衣 | 配方 banner 2 + gel 4 @workbench |
+| sailor_skirt | 百褶裙 | 配方 banner 2 + gel 2 @workbench |
+| miko_robe | 巫女白衣 | 配方 banner 3 @workbench |
+| miko_hakama | 緋袴 | 配方 banner 2 + ember 2 @workbench |
+| hoodie_top | 寬鬆連帽衫 | 配方 banner 2 + gel 2 + feather 2 @workbench |
+| hoodie_shorts | 短褲與褲襪 | 配方 banner 1 + gel 2 @workbench |
+| travel_coat | 旅人大衣 | 配方 banner 3 + chitin 2 @workbench；商店 行商（輪替貨，280） |
+| coat_trousers | 長褲與長靴 | 配方 banner 2 + chitin 1 @workbench |
+| explorer_vest | 探險背心 | 配方 banner 1 + planks 4 @workbench；箱子 cabin / mineshaft 2%、ruin / cavern 1.25%、sky 1.43% |
+| explorer_shorts | 探險短褲 | 配方 banner 1 + planks 2 @workbench |
+| maid_dress | 女僕洋裝 | 箱子 dungeon 3.75%、treasure 7.27%、secret 3.33%、relic 2.31% |
+| maid_skirt | 荷葉圍裙裙 | 箱子 dungeon 3.75%、treasure 7.27%、secret 3.33%、relic 2.31% |
+| maid_headdress | 女僕頭飾 | 箱子 dungeon 3.75%、treasure 7.27%、secret 3.33%、relic 2.31% |
+| straw_hat | 草帽 | 配方 wood 6 @workbench（開局材料）；箱子 cabin / mineshaft 2%、ruin / cavern 1.25%、sky 1.43% |
+| witch_hat | 魔女帽 | 箱子 dungeon 3.75%、treasure 7.27%、secret 3.33%、relic 2.31%；商店 行商（260） |
+| beret | 貝雷帽 | 配方 banner 1 + gel 1 @workbench；箱子 cabin / mineshaft 2%、ruin / cavern 1.25%、sky 1.43% |
+| flower_crown | 花冠 | 配方 mushroom 2 + glow_mushroom 2 @workbench；箱子 cabin / mineshaft 2%、ruin / cavern 1.25%、sky 1.43%；商店 園丁（150） |
+| travel_cape | 旅人斗篷 | 配方 banner 3 + feather 2 @workbench |
+| feather_wings | 白羽翅膀 | 箱子 dungeon 3.75%、treasure 7.27%、secret 3.33%、relic 2.31%；商店 行商（700） |
+| ribbon_bow | 大蝴蝶結 | 箱子 dungeon 3.75%、treasure 7.27%、secret 3.33%、relic 2.31% |
+| miner_helmet | 礦工頭燈盔 | 商店 矮人礦石商（摯友，600）——只在商店 |
+| ninja_top | 忍者上衣 | 配方 banner 2 + fang 2 @workbench |
+| ninja_bottom | 忍者褲 | 配方 banner 1 + fang 2 @workbench |
+| mage_top | 魔導長袍 | 怪物 spore_walker 3%；箱子 cavern 1.25% |
+| mage_bottom | 魔導袍下襬 | 怪物 spore_walker 3%；箱子 cavern 1.25% |
+| knight_top | 騎士罩袍 | 配方 banner 2 + iron_bar 4 @anvil；怪物 bone_knight 3% |
+| knight_bottom | 騎士鎖甲褲 | 配方 banner 1 + iron_bar 3 @anvil；怪物 bone_knight 3% |
+| qipao_top | 旗袍上身 | 怪物 ember_imp 3%；箱子 secret 3.33%、relic 2.31% |
+| qipao_bottom | 旗袍開衩裙 | 怪物 ember_imp 3%；箱子 secret 3.33%、relic 2.31% |
+| pirate_top | 海盜外套 | 怪物 razor_fin 3%；箱子 ruin 1.25%、cavern 1.25% |
+| pirate_bottom | 海盜馬褲長靴 | 怪物 razor_fin 3%；箱子 ruin 1.25%、cavern 1.25% |
+| idol_top | 偶像舞台上衣 | 首領 lantern_warden 20%；箱子 treasure 7.27%、relic 2.31% |
+| idol_bottom | 偶像蓬蓬裙 | 首領 lantern_warden 20%；箱子 treasure 7.27%、relic 2.31% |
+| priest_top | 神官袍 | 怪物 night_walker 3%；箱子 sky 1.43% |
+| priest_bottom | 神官袍下襬 | 怪物 night_walker 3%；箱子 sky 1.43% |
+| gothic_top | 哥德洋裝 | 怪物 cursed_skull 2%；箱子 dungeon 3.75%、treasure 7.27%、relic 2.31%；首領 lantern_warden 20% |
+| gothic_bottom | 哥德多層裙 | 怪物 cursed_skull 2%；箱子 dungeon 3.75%、treasure 7.27%、relic 2.31%；首領 lantern_warden 20% |
+| acc_ribbon | 蝴蝶結 | 配方 banner 1 + gel 2 @workbench |
+| acc_catears | 貓耳髮箍 | 箱子 cabin 2%；商店 村落雜貨商（好感 1，240） |
+| acc_clip | 星星髮夾 | 怪物 dusk_owl 4%；箱子 sky 1.43% |
+| acc_hood | 兜帽 | 配方 banner 2 + feather 1 @workbench |
+| acc_flower | 小花 | 配方 mushroom 2 + gel 1 @workbench（開局材料） |
+| acc_crown | 小皇冠 | 首領 lantern_warden 20%；箱子 treasure 7.27%、relic 2.31% |
+| acc_headphones | 耳機 | 怪物 cave_bat 3%；箱子 mineshaft 2% |
+| acc_foxmask | 狐狸面具 | 怪物 frost_wolf 4%；箱子 ruin 1.25% |
+| acc_hairpin | 髮簪 | 怪物 thorn_hornet 4%；箱子 ruin 1.25%、secret 3.33% |
+| acc_glasses | 眼鏡 | 配方 glass 2 + copper_bar 1 @workbench |
+
+已知缺口：**舊世界 + 和平模式**（箱子已生成、不生怪）拿不到只靠「怪物 + 新箱子池」的 12 件：mage ×2、qipao ×2、pirate ×2、priest ×2、acc_clip、acc_headphones、acc_foxmask、acc_hairpin；開新世界即可從箱子拿到。新物品中沒有「只在箱子」的款式。

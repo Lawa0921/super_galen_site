@@ -9,9 +9,6 @@ import { buildDollLook, dollKey, DOLL_LAYERS, pieceOf, plainLook } from './doll'
 import { ACC_ITEMS, ITEMS, OUTFIT_ITEMS, VANITY_ITEMS } from './items';
 import type { Gear } from './gear';
 
-/** Task 2 之前就有物品的 6 套服裝 */
-const OLD_OUTFITS = ['explorer', 'sailor', 'miko', 'hoodie', 'coat', 'maid'];
-
 const gear = (rarity: number, plus = 0, affix?: string): Gear => ({ rarity, ilvl: 3, plus, affixes: affix ? [{ id: affix, tier: 1, value: 5 } as Gear['affixes'][number]] : [] });
 
 describe('圖層順序', () => {
@@ -246,20 +243,16 @@ describe('第 5 格：飾品（acc）', () => {
 });
 
 describe('時裝的取得方式', () => {
-  it('工作台做得出大部分時裝；女僕裝 / 魔女帽 / 羽翼 / 大蝴蝶結只在箱子裡（合成表沒有）', async () => {
-    const { RECIPES } = await import('./crafting');
+  // 每件時裝的來源規則（每件都有來源、和平模式拿得到、現有來源不減少…）在 cosmeticSources.test.ts
+  it('礦工頭燈盔只有商店賣；地城箱子開得出只能撿的時裝', async () => {
+    const { cosmeticSources } = await import('./cosmeticSources');
     const { LOOT_ONLY_FASHION, chestLoot } = await import('./loot');
-    const crafted = new Set(RECIPES.map((r) => r.out.item));
-    // 礦工頭燈盔：只有矮人礦石商（摯友）賣，不在合成表也不在箱子裡
-    const SHOP_ONLY = new Set(['miner_helmet']);
-    // TODO(Task 3 取得來源表)：Task 2 新增的 26 件時裝（8 套服裝 × 2 + 10 件飾品）還沒有來源；Task 3 指派來源時刪掉這個排除名單
-    const NO_SOURCE_YET = new Set<string>([...Object.entries(OUTFIT_ITEMS).filter(([o]) => !OLD_OUTFITS.includes(o)).flatMap(([, p]) => p), ...Object.values(ACC_ITEMS)]);
-    expect(NO_SOURCE_YET.size).toBe(26);
-    for (const id of VANITY_ITEMS) if (!SHOP_ONLY.has(id) && !NO_SOURCE_YET.has(id)) expect(crafted.has(id) !== LOOT_ONLY_FASHION.includes(id), id).toBe(true);
-    // 現有 21 件照舊每件都有規則（排除名單不能吃到舊物品）
-    expect(VANITY_ITEMS.filter((id) => !NO_SOURCE_YET.has(id)).length).toBe(21);
     const { ROLES } = await import('./folkDefs');
-    for (const id of SHOP_ONLY) expect(Object.values(ROLES).some((r) => r.shop.some((e) => e.item === id)), id).toBe(true);
+    // 礦工頭燈盔：只有矮人礦石商（摯友）賣，不在合成表也不在箱子裡
+    expect(cosmeticSources('miner_helmet')).toEqual(['shop']);
+    expect(ROLES.ore_trader.shop.some((e) => e.item === 'miner_helmet')).toBe(true);
+    // 女僕裝 / 魔女帽 / 羽翼 / 大蝴蝶結仍然做不出來
+    for (const id of LOOT_ONLY_FASHION) expect(cosmeticSources(id), id).not.toContain('craft');
     // 地城箱子：一百個箱子裡至少開得出幾件只能撿的時裝
     let n = 0;
     for (let i = 0; i < 100; i++) for (const s of chestLoot('fashion', i, 7, 'dungeon', 0.6)) if (s && LOOT_ONLY_FASHION.includes(s.item)) n++;

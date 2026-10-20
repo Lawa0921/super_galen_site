@@ -1,6 +1,6 @@
 // game.combat.test.ts — 掉落物、生命 / 受傷 / 摔落 / 死亡重生、裝備飾品、武器（劍 / 矛 / 弓 / 法杖 / 迴旋）、生成規則、首領
 import { describe, it, expect } from 'vitest';
-import { DelveGame, RESPAWN_TIME, SPAWN_GRACE, IFRAMES, type DelveEvent } from './game';
+import { DelveGame, RESPAWN_TIME, SPAWN_GRACE, IFRAMES, BOSS_FASHION, type DelveEvent } from './game';
 import { T, W } from './tiles';
 import { FIXED_DT, TILE_SIZE as S, DAY_LENGTH } from './constants';
 import { ENEMIES } from './enemies';
@@ -345,6 +345,8 @@ describe('首領：燈脈守望者', () => {
     expect(g.getState().bossesDefeated).toEqual(['lantern_warden']);
     const items = g.drops.list.map((d) => d.item);
     for (const it of ['lumen_blade', 'warden_heart', 'warden_trophy'] as const) expect(items).toContain(it);
+    // 另外掉一件高稀有時裝（偶像 / 哥德 / 小皇冠其中一件）
+    expect(items.filter((it) => BOSS_FASHION.includes(it))).toHaveLength(1);
   });
   it('第一階段會射火球、召喚燈靈；玩家死亡後首領離開', () => {
     const g = arena();
