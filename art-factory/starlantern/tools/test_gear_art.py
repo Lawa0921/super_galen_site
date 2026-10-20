@@ -925,12 +925,17 @@ def test_requa_never_touches_approved_or_published_parts(factory):
         G.do_requa(A.Registry(G.REG_PATH), 'sample')
 
 
-def _corner_stars(path, dots=False):
-    """A one-piece starlit raw as the prompt asks: 14 x 14 art px at 40 raw px each on a 1024 magenta canvas, a 4 x 4
-    four-point star in each corner (2 x 2 white core, 2 px points); dots=True adds side dots (must fail)."""
+def _corner_stars(path, dots=False, cross=False):
+    """A one-piece starlit raw: 14 x 14 art px at 40 raw px each on a 1024 magenta canvas, a 4 x 4 four-point star in
+    each corner (2 x 2 white core, 2 px points: the round glint, a2) or, cross=True, a 3 x 3 cross (one white core pixel,
+    four cyan arms: the sharp cross, a3); dots=True adds side dots (must fail)."""
     arr = np.zeros((1024, 1024, 3), np.uint8); arr[:] = M; o = 232
     art = {}
     for oy, ox in ((0, 0), (0, 10), (10, 0), (10, 10)):
+        if cross:
+            cy, cx = oy + (1 if oy == 0 else 2), ox + (1 if ox == 0 else 2); art[(cy, cx)] = STAR_CORE
+            for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)): art[(cy + dy, cx + dx)] = STAR_ARM
+            continue
         for y, x in ((1, 1), (1, 2), (2, 1), (2, 2)): art[(oy + y, ox + x)] = STAR_CORE
         for y, x in ((0, 1), (0, 2), (3, 1), (3, 2), (1, 0), (2, 0), (1, 3), (2, 3)): art[(oy + y, ox + x)] = STAR_ARM
     if dots:
@@ -947,8 +952,9 @@ def test_starlit_job_is_one_piece_with_corner_stars_only_and_its_own_cap():
     assert G.frame_role('starlit', G.job_by_id(G.FRAME_SHEET_ID)) == ('overlay', 16, 5, 0)     # the frames sheet is unchanged
     assert G.ATTEMPT_CAP['sheet-gear-1'] == 9 and G.ATTEMPT_CAP[G.FRAME_SHEET_ID] == 5
     pr = j['prompt']
-    for s in ('four-pointed star', '14 by 14', '4 by 4', 'corner', 'fully transparent', 'nothing along the sides', '#FF00FF', 'No text',
-              'original'):
+    # Controller ruling 2026-10-20: the a3 redraw is a 3 x 3 cross (one white core pixel, four cyan arms, empty diagonals).
+    for s in ('four-pointed star', '14 by 14', '3 by 3', 'one white', 'four corner squares', 'corner', 'fully transparent',
+              'nothing along the sides', '#FF00FF', 'No text', 'original'):
         assert s in pr, s
 
 
@@ -1011,3 +1017,60 @@ def test_approve_refuses_unless_the_starlit_is_the_corner_redraw(factory, review
     reg = A.Registry(G.REG_PATH); reg.set('ui-starlit', qa={'pass': True, 'reasons': [], 'role': 'corners'})
     review.main('sample')
     assert G.do_approve(A.Registry(G.REG_PATH), 'sample', 'user 2026-10-21: ok')
+
+
+def _starlit_attempts(factory, *kinds):
+    """Raws a1.. of sheet-starlit-1 ('round' 4 x 4 glint, 'cross' 3 x 3, 'dots' fails QA) and their candidates."""
+    for k, kind in enumerate(kinds, 1):
+        _corner_stars(factory / f'raw/sheet-starlit-1/sheet-starlit-1-a{k}.png', dots=kind == 'dots', cross=kind == 'cross')
+    G.cand(['--only=sheet-starlit-1'])
+
+
+def test_review_page_offers_both_starlit_shapes_and_either_may_be_approved(factory, review):
+    import re
+    _fill(factory, 'sample')
+    _starlit_attempts(factory, 'dots', 'round', 'cross')
+    alts = G.starlit_alternatives()
+    assert list(alts) == ['a2', 'a3'] and {k: v['shape'] for k, v in alts.items()} == {'a2': 'round', 'a3': 'cross'}
+    G.pick(['--id', 'sheet-starlit-1', '--attempt', '3'])
+    page = review.main('sample').read_text(encoding='utf-8')
+    sec = page[page.index('id="starlit-alts"'):]; sec = sec[:sec.index('</section>')]
+    for k in ('a2', 'a3'):
+        fig = re.findall(rf'data-starlit-alt="{k}"[^>]*data-size="(\d+)"[^>]*data-zoom="(\d)"[^>]*data-tier="([a-z]+)"', sec)
+        assert sorted(fig) == sorted((s, z, r) for s in ('28', '38') for z in ('1', '3') for r in ('legendary', 'unique', 'set')), (k, fig)
+    assert 'data-starlit-alt="a1"' not in sec and 'starlit outside its corners' in sec        # a1 failed and says why
+    head = page[page.index('id="decisions"'):page.index('id="s0"')]
+    asked = head[:head.index('已決定')]
+    assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['圖示大小是否一致', '七階外框與星輝', '星輝角星：圓點光（a2）或十字星（a3）？', '傳說光暈改在格內']
+    assert 'href="#starlit-alts"' in asked
+    shown = json.loads(G.shown_path('sample').read_text(encoding='utf-8'))
+    assert shown['alternatives']['ui-starlit'] == {k: v['sha'] for k, v in alts.items()}
+    assert G.do_approve(A.Registry(G.REG_PATH), 'sample', 'user 2026-10-21: 十字星')
+    reg = A.Registry(G.REG_PATH)
+    assert reg.data['approved_batches']['sample']['shown']['ui-starlit'] == alts['a3']['sha']
+
+
+def test_the_other_shown_starlit_may_be_picked_after_the_page_without_a_rebuild(factory, review):
+    _fill(factory, 'sample'); _starlit_attempts(factory, 'round', 'cross')
+    G.pick(['--id', 'sheet-starlit-1', '--attempt', '2']); review.main('sample')
+    G.pick(['--id', 'sheet-starlit-1', '--attempt', '1'])                                 # the user chose the round glint
+    assert G.do_approve(A.Registry(G.REG_PATH), 'sample', 'user 2026-10-21: 圓點光')
+    assert A.Registry(G.REG_PATH).data['approved_batches']['sample']['shown']['ui-starlit'] == G.starlit_alternatives()['a1']['sha']
+
+
+def test_an_unshown_starlit_is_still_refused(factory, review):
+    _fill(factory, 'sample'); _starlit_attempts(factory, 'round')
+    G.pick(['--id', 'sheet-starlit-1', '--attempt', '1']); review.main('sample')
+    _corner_stars(factory / 'raw/sheet-starlit-1/sheet-starlit-1-a2.png', cross=True)      # made after the page
+    G.pick(['--id', 'sheet-starlit-1', '--attempt', '2'])
+    _refused(factory)
+
+
+def test_only_one_passing_starlit_is_shown_alone_with_why_the_other_failed(factory, review):
+    import re
+    _fill(factory, 'sample'); _starlit_attempts(factory, 'round', 'dots')
+    G.pick(['--id', 'sheet-starlit-1', '--attempt', '1'])
+    page = review.main('sample').read_text(encoding='utf-8')
+    head = page[page.index('id="decisions"'):page.index('id="s0"')]
+    q = re.findall(r'<li><b>(星輝角星[^<]+)</b>', head)
+    assert q == ['星輝角星：圓點光（a1）'] and '只有 a1 通過 QA' in head and 'a2' in head and 'starlit outside its corners' in head

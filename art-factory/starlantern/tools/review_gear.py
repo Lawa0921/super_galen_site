@@ -121,14 +121,33 @@ def live_text(s, reg):
     tp = tightest_frames(reg)
     near = (f'最接近的一對是{RARITY_NAME[tp[1]]}與{RARITY_NAME[tp[2]]}（ΔE {tp[0]:.1f}）' if tp
             else '最接近的一對要等七階外框挑齊才算得出 ΔE')
-    star = ('頁面上的星輝是新版（sheet-starlit-1）。' if reg.get('ui-starlit', {}).get('source_id') == G.STARLIT_SHEET_ID
+    e = reg.get('ui-starlit', {})
+    star = (f'頁面上的星輝是新版（sheet-starlit-1 {e.get("chosen_attempt", "")}）；角星造型請看「星輝角星比較」。' if e.get('source_id') == G.STARLIT_SHEET_ID
             else '新版星輝尚未生成：頁面暫時顯示舊版（邊上的星點在遊戲裡會重複成虛線），新版生成並通過 QA 後會換上。')
     return s.replace('〔最接近〕', near).replace('〔星輝〕', star)
 AFTER_APPROVAL = {
     'sample': '核准後的動作：執行 gear_art.py approve --batch sample --by "<你對這頁的原話> <YYYY-MM-DD>"，然後照 5d Task 8（已依補遺 2 §4 修改）發布。',
 }
 SECTION_NAME = {'#s1': '1. 裝備頁情境', '#s2': '2. 新舊對照', '#s3': '3. 大圖與小圖示', '#s5': '5. 清單情境', '#s6': '6. 素材',
-                '#s7': '7. 技能', '#s8': '8. 鍛造屋', '#glow': '光暈改在格內', '#size': '尺寸一致性', '#frames': '七階外框與星輝'}
+                '#s7': '7. 技能', '#s8': '8. 鍛造屋', '#glow': '光暈改在格內', '#size': '尺寸一致性', '#frames': '七階外框與星輝',
+                '#starlit-alts': '星輝角星比較'}
+SHAPE_NAME = {'round': '圓點光', 'cross': '十字星'}
+
+
+def starlit_question(alts, fails):
+    """The G1 question on the starlit corner-star shape (controller ruling 2026-10-20), from the passing candidates."""
+    if not alts: return None
+    names = [f'{SHAPE_NAME[v["shape"]]}（{k}）' for k, v in alts.items()]
+    failed = '；'.join(f'{k} 沒通過 QA：{"、".join(r)}' for k, r in fails.items())
+    if len(alts) == 1:
+        k = next(iter(alts))
+        return (f'星輝角星：{names[0]}', ['#starlit-alts'], [],
+                f'只有 {k} 通過 QA，所以只放這一版。{failed}。' if failed else f'只有 {k} 通過 QA，所以只放這一版。')
+    why = ('兩種角星造型並排在 28px 背包格與 38px 人形格裡（疊在傳說、獨特、套裝外框上，1 倍與 3 倍）：'
+           '圓點光是 4×4、白心 2×2，1 倍下像一顆圓圓的亮點；十字星是 3×3、白心 1 格加四個青白尖端，1 倍下像一顆尖尖的閃光。'
+           '你選哪一版，就挑那一版（gear_art.py pick），兩版都已記在審核紀錄裡。' + (failed + '。' if failed else ''))
+    return ('星輝角星：' + '或'.join(names) + '？', ['#starlit-alts'],
+            ['角星蓋在外框四角，會蓋掉傳說火舌、獨特雕花、套裝葉徽這些角飾（邊上的顏色不受影響）。'], why)
 
 
 def skill_owners():
@@ -319,6 +338,26 @@ def frames_section(pg, reg, frame, glow, starlit, icon, gear, nm, cell):
             f'<h3>外框、光暈、星輝原圖（放大 4 倍），色票與 QA</h3><div class="row dark">{raws}</div></section>')
 
 
+def starlit_alts_section(pg, alts, fails, icon, gear, nm, cell):
+    """The starlit corner-star shapes side by side (controller ruling 2026-10-20): every passing sheet-starlit-1 candidate
+    in the runtime 28 px bag slot and 38 px equip slot, over the legendary, unique and set frames, at 1x and 3x; failed
+    candidates are listed with their QA reasons."""
+    demo = lambda r: next((p for p in gear if rarity_of(p) == r and icon.get(p)), next((p for p in gear if icon.get(p)), None))
+    groups = ''
+    for k, v in alts.items():
+        src = pg.copy(str(v['path']), f'starlit-alt-{k}.png')
+        figs = ''.join(f'<figure data-starlit-alt="{k}" data-size="{size}" data-zoom="{z}" data-tier="{r}"><div class="zoom{z}">'
+                       f'{cell(demo(r), size, "bag" if size == 28 else "dollc", tier=r, star=True, starlit_src=src)}</div></figure>'
+                       for z in (1, 3) for size in (28, 38) for r in STARLIT_ON)
+        stars = v['qa'].get('stars', [{}])
+        groups += (f'<div class="alt"><h3>{k}：{SHAPE_NAME[v["shape"]]}</h3><p class="note">每角 {stars[0].get("w")}×{stars[0].get("h")}、'
+                   f'白心 {stars[0].get("core")} 格、{stars[0].get("arms")} 個尖端；QA 通過；挑選：gear_art.py pick --id {G.STARLIT_SHEET_ID} '
+                   f'--attempt {k[1:]}</p><div class="row dark">{figs}</div>{img(src, "px", "width:64px;height:64px")}</div>')
+    failed = ''.join(f'<p class="note">{k} 沒通過 QA，不列入：{esc("、".join(r))}</p>' for k, r in fails.items())
+    return (f'<section id="starlit-alts"><h2>星輝角星比較</h2><p class="note">遊戲裡的實際格子（28px 背包格、38px 人形格），'
+            f'外框與星輝都是 border-image（slice 5、repeat），1 倍與 3 倍。</p>{groups or "<p>還沒有通過 QA 的角星候選。</p>"}{failed}</section>')
+
+
 def main(batch='sample'):
     lab = G.label(batch)
     reg = json.loads(G.REG_PATH.read_text(encoding='utf-8'))['assets'] if G.REG_PATH.exists() else {}
@@ -355,14 +394,15 @@ def main(batch='sample'):
     checklist = ''.join(status_row(G.job_by_id(sid), p) for p, sid in first.items())
 
     # 1. equipment screen
-    def cell(p, px, cls='bag', tier=None, star=False):
+    def cell(p, px, cls='bag', tier=None, star=False, starlit_src=None):
         # Addendum 2 / task-6: [glow under the icon, icon, frame over it, starlit over the frame].
         if p is None: return f'<div class="cell {cls}" style="width:{px}px;height:{px}px"></div>'
         r = tier or rarity_of(p); fr = frame.get(r) if r != 'common' else None
         ico = img(icon.get(p), 'px gi', alt=nm.get(p, p)) or f'<span class="short">{esc(nm.get(p, p)[:4])}</span>'
         g = f'<span class="rg" style="border-image-source:url({glow})"></span>' if r == 'legendary' and glow else ''
         f = f'<span class="rf" style="border-image-source:url({fr})"></span>' if fr else ''
-        st = f'<span class="rs" style="border-image-source:url({starlit})"></span>' if star and r in STARLIT_ON and starlit else ''
+        st_src = starlit_src or starlit
+        st = f'<span class="rs" style="border-image-source:url({st_src})"></span>' if star and r in STARLIT_ON and st_src else ''
         return f'<div class="cell {cls}" title="{esc(nm.get(p, p))}（{RARITY_NAME[r]}）" style="width:{px}px;height:{px}px">{g}{ico}{f}{st}</div>'
 
     def equip_screen():
@@ -381,6 +421,8 @@ def main(batch='sample'):
     rarity_row = ''.join(f'<figure>{cell(p, 28)}<figcaption>{RARITY_NAME[r]}<br>{esc(nm.get(p, p))}</figcaption></figure>'
                          for r in RARITY_NAME for p in [next((q for q in gear if rarity_of(q) == r), None)] if p)
     frames_html = frames_section(pg, reg, frame, glow, starlit, icon, gear, nm, cell) if batch == 'sample' or gear else ''
+    alts, fails = (G.starlit_alternatives(), G.starlit_failures()) if batch == 'sample' else ({}, {})
+    frames_html += starlit_alts_section(pg, alts, fails, icon, gear, nm, cell) if batch == 'sample' else ''
     size_html = size_grid(pg, reg)
 
     # Two legendaries side by side at the real bag gap (2px): the glow now stays inside each slot (inset 0, under the icon).
@@ -459,11 +501,14 @@ def main(batch='sample'):
                       + (facility(sc, pg.final('npc-forge-happy'), '笑臉 npc-forge-happy') if pg.reg.get('npc-forge-happy', {}).get('final') else '')
                       + facility(pg.pub('scene/shop.png'), pg.pub('npc/shop.png'), '已發布的道具店（對照）'))
 
+    decision_list = list(DECISIONS[batch])
+    sq = starlit_question(alts, fails) if batch == 'sample' else None
+    if sq: decision_list.insert(2, sq)   # after the frames question, before the glow
     decisions = ''.join(
         f'<li><b>{esc(q)}</b> <span class="links">看：{"、".join(f"<a href={chr(34)}{s}{chr(34)}>{SECTION_NAME[s]}</a>" for s in links)}</span>'
         f'{"<p class=why>" + esc(live_text(why, reg)) + "</p>" if why else ""}'
         f'<p class="why">已知風險：</p><ul class="risks">{"".join(f"<li>{esc(live_text(r, reg))}</li>" for r in risks) or "<li>無</li>"}</ul></li>'
-        for q, links, risks, why in DECISIONS[batch])
+        for q, links, risks, why in decision_list)
     decided = ''
     if batch in DECIDED:
         title, items = DECIDED[batch]
@@ -556,8 +601,9 @@ table{{border-collapse:collapse}} td,th{{padding:6px 10px;border-bottom:1px soli
     (OUT / 'index.html').write_text(page, encoding='utf-8', newline='\n')
     # What this page showed: `approve` refuses any part whose final no longer has this hash (the user approves pictures).
     sp = G.shown_path(batch); sp.parent.mkdir(parents=True, exist_ok=True)
-    sp.write_text(json.dumps({'batch': batch, 'generated': datetime.datetime.now().isoformat(timespec='seconds'), 'page': str(OUT / 'index.html'),
-                              'parts': shown}, indent=2, ensure_ascii=False) + '\n', encoding='utf-8', newline='\n')
+    record = {'batch': batch, 'generated': datetime.datetime.now().isoformat(timespec='seconds'), 'page': str(OUT / 'index.html'), 'parts': shown}
+    if alts: record['alternatives'] = {'ui-starlit': {k: v['sha'] for k, v in alts.items()}}   # every starlit shape the page showed
+    sp.write_text(json.dumps(record, indent=2, ensure_ascii=False) + '\n', encoding='utf-8', newline='\n')
     print(OUT / 'index.html')
     return OUT / 'index.html'
 

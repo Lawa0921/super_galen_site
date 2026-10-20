@@ -397,15 +397,16 @@ FRAME_SHEET = (   # addendum 2 §2; the closing style, no-text and originality s
     'the middle of every side is plain so it can repeat. Each frame uses one hue only, with a darker and a lighter tone of it. '
     'In this order: {listing}. '
     '16-bit JRPG menu frame style, ' + PIX + '. No text, no numbers, no items inside the frames, no background inside the frames. ' + ORIGINAL)
-STARLIT_SHEET = (   # controller ruling 2026-10-20 (+ review round 2): corner stars only, off the tile edge, nothing along the sides
+STARLIT_SHEET = (   # controller rulings 2026-10-20: corner stars only, off the tile edge, nothing along the sides; a 3 x 3 cross
     'One single square pixel art overlay piece for a 16-bit Japanese console RPG item slot, drawn as a true 14 by 14 grid of big pixels '
     '(as if a 14-pixel sprite were enlarged about 50 times; every big pixel one large flat square), on a perfectly flat pure magenta '
-    '#FF00FF background with a wide magenta margin all round. The piece is four bright starlight stars and nothing else: in each of '
-    'the four corners one chunky four-pointed star exactly 4 by 4 big pixels, sitting in that corner with its outer points on the '
-    'outer edge of the 14 by 14 square: a solid white 2 by 2 centre, and on each of its four sides a point of two pale cyan-white '
-    '(#7FE6FF) big pixels; the four corner pixels of each 4 by 4 star stay magenta, so it reads as a plus-shaped twinkle, not a '
-    'square. The middle of every side and the whole centre are fully transparent magenta: nothing along the sides, no dots, no '
-    'lines, no frame, no glow, no dark outline. Only white and pale cyan-white. ' + PIX + '. No text, no numbers. ' + ORIGINAL)
+    '#FF00FF background with a wide magenta margin all round. The piece is four sharp starlight twinkles and nothing else: in each of '
+    'the four corners one tiny four-pointed star exactly 3 by 3 big pixels, a plus-shaped cross made of one white centre square with '
+    'one pale cyan-white (#7FE6FF) square directly above, below, left and right of it; the four corner squares of each 3 by 3 star '
+    'stay magenta (nothing on the diagonals). Each star sits in its corner with its outer two points on the outer edges of the 14 by '
+    '14 square, so between two neighbouring stars there are exactly 8 empty magenta squares. The middle of every side and the whole '
+    'centre are fully transparent magenta: nothing along the sides, no dots, no lines, no frame, no glow, no dark outline. Only white '
+    'and pale cyan-white. ' + PIX + '. No text, no numbers. ' + ORIGINAL)
 FORGE_SCENE = (
     "Interior of a blacksmith's forge: a glowing furnace on the left, an anvil, racks of blades and shields, hanging tools, warm orange firelight and soot-dark beams, "
     'the right third of the picture kept fairly plain for a character to stand in front of. '
@@ -813,6 +814,31 @@ def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def _starlit_cands():
+    """(attempt, png, qa) of every postprocessed sheet-starlit-1 candidate (cand/aN), in attempt order."""
+    for raw in attempts(STARLIT_SHEET_ID):
+        k = 'a' + raw.stem.rsplit('-a', 1)[1]; d = WORK / STARLIT_SHEET_ID / 'cand' / k
+        png, qf = d / 'ui-starlit.png', d / 'ui-starlit.qa.json'
+        if png.is_file() and qf.is_file(): yield k, png, json.loads(qf.read_text(encoding='utf-8'))
+
+
+def starlit_alternatives():
+    """The starlit shapes the user chooses between at G1 (controller ruling 2026-10-20): every sheet-starlit-1 candidate
+    that passed the corner QA under the current spec, {aN: {path, qa, sha, shape}} in attempt order. shape is 'cross'
+    when every corner star has a one-pixel white core (the sharp 3 x 3 cross), else 'round' (the 4 x 4 glint).
+    The review page shows them all and records their hashes; approve accepts whichever of them is picked."""
+    out = {}
+    for k, png, q in _starlit_cands():
+        if not q.get('pass') or q.get('role') != 'corners' or q.get('spec') != A.qa_spec('nine-slice'): continue
+        out[k] = {'path': png, 'qa': q, 'sha': sha256(png), 'shape': 'cross' if all(s.get('core') == 1 for s in q.get('stars', [])) else 'round'}
+    return out
+
+
+def starlit_failures():
+    """{aN: reasons} of the sheet-starlit-1 candidates that failed QA (the review page says why they are not offered)."""
+    return {k: q.get('reasons', []) for k, png, q in _starlit_cands() if not q.get('pass')}
+
+
 def do_approve(reg, batch, by):
     """Record the USER's approval of a batch (their words and the date in `by`).
 
@@ -827,7 +853,8 @@ def do_approve(reg, batch, by):
         raise PermissionError('the style sample is not approved yet')
     sp = shown_path(batch)
     if not sp.exists(): raise PermissionError(f'no review page record for {batch} ({sp}); build and show the review page first')
-    shown = json.loads(sp.read_text(encoding='utf-8')).get('parts', {})
+    rec = json.loads(sp.read_text(encoding='utf-8')); shown = rec.get('parts', {})
+    alts = rec.get('alternatives', {})   # {aid: {attempt: sha}}: shapes shown side by side, any one of them may be picked
     aids = batch_assets(batch); problems = {}
     if not shown: problems['nothing was shown'] = [batch]
     close = frames_too_close(reg.data['assets']) if any(a in TIER_FRAMES for a in aids) else {}
@@ -837,7 +864,8 @@ def do_approve(reg, batch, by):
         if not e.get('chosen_attempt') or f is None or not f.is_file(): problems.setdefault('not picked', []).append(aid)
         elif e.get('status') not in ('qa_passed', 'approved', 'published'): problems.setdefault(f'status {e.get("status")}', []).append(aid)
         elif A.qa_stale(e): problems.setdefault('QA recorded under an older spec (run gear_art.py requa)', []).append(aid)
-        elif shown.get(aid) != sha256(f): problems.setdefault('changed since (or missing from) the review page', []).append(aid)
+        elif sha256(f) != shown.get(aid) and sha256(f) not in alts.get(aid, {}).values():
+            problems.setdefault('changed since (or missing from) the review page', []).append(aid)
     if 'ui-starlit' in aids:   # controller ruling 2026-10-20: only the corner-only redraw may be approved, never the dashed overlay
         e = reg.data['assets'].get('ui-starlit', {})
         if e.get('source_id') != STARLIT_SHEET_ID or (e.get('qa') or {}).get('role') != 'corners':
@@ -849,7 +877,9 @@ def do_approve(reg, batch, by):
         if e.get('status') == 'qa_passed': e['status'] = 'approved'; e['approved_by'] = by; done.append(aid)
     today = datetime.date.today().isoformat()
     # The hashes the user approved: publish re-hashes every file against these.
-    reg.data.setdefault('approved_batches', {})[batch] = {'by': by, 'date': today, 'record': str(sp), 'shown': {a: shown[a] for a in aids}}
+    # Every final matched what the page showed (its own record or a shown alternative): these are the approved bytes.
+    approved = {a: sha256(A._final_path(reg.data['assets'][a]['final'])) for a in aids}
+    reg.data.setdefault('approved_batches', {})[batch] = {'by': by, 'date': today, 'record': str(sp), 'shown': approved}
     if batch == 'sample':
         k = anchor_attempt(reg)
         reg.data['style_anchor'] = {'sheet': 'sheet-gear-1', 'attempt': k, 'raw': str(RAW / 'sheet-gear-1' / f'sheet-gear-1-{k}.png')}

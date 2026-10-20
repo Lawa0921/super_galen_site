@@ -1319,6 +1319,11 @@ def _corner_art(shape='star', colours=(STAR_CORE, STAR_ARM), dots=False, drop_co
             for y, x in ((0, 0), (0, 3), (3, 0), (3, 3)): art[(oy + y, ox + x)] = arm
         if shape == 'filled-outer':   # only the corner cell nearest the tile corner: shallow, so no reach reason
             art[(oy + (0 if oy == 0 else 3), ox + (0 if ox == 0 else 3))] = arm
+        if shape == 'plus3':          # the controller's 3 x 3 cross: one white core pixel and four cyan arms
+            for cell in [c for c in art if oy <= c[0] < oy + 4 and ox <= c[1] < ox + 4]: del art[cell]
+            cy, cx = oy + (1 if oy == 0 else 2), ox + (1 if ox == 0 else 2)
+            art[(cy, cx)] = core
+            for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)): art[(cy + dy, cx + dx)] = arm
     if dots:
         for y, x in ((0, 7), (13, 6), (7, 0), (6, 13)): art[(y, x)] = core
     arr = np.asarray(canvas(160, 160)).copy()
@@ -1433,3 +1438,12 @@ def test_corner_star_with_filled_bbox_corners_fails_the_diagonal_rule(tmp_path):
     q = A.nine_slice(reg, 'ui-starlit', _corner_art('filled-outer'), tmp_path / 'w', tmp_path / 'raw.png', 16, 5, role='corners', pad=1)
     assert all(s['arms'] == 4 and s['diagonal'] for s in q['stars']), q['stars']
     assert q['reasons'] == ['starlit star is not a four-point star'], q['reasons']                # the diagonal rule alone
+
+
+def test_a_three_by_three_cross_is_a_valid_corner_star(tmp_path):
+    """Controller ruling 2026-10-20: the sharp cross (one white core pixel, four cyan arms, empty diagonals) passes the
+    corner-star QA as it stands."""
+    q = A.nine_slice(A.Registry(tmp_path / 'r.json'), 'ui-starlit', _corner_art('plus3'), tmp_path / 'w', tmp_path / 'raw.png', 16, 5,
+                     role='corners', pad=1)
+    assert q['pass'], q['reasons']
+    assert all(s['core'] == 1 and s['arms'] == 4 and not s['diagonal'] and (s['w'], s['h']) == (3, 3) and not s['edge'] for s in q['stars'])
