@@ -19,8 +19,12 @@ REPO = G.REPO
 PUB = REPO / 'public/assets/games/starlantern'
 OUT = REPO / 'tmp/starlantern/review-gear'
 DATA = REPO / 'src/scripts/games/starlantern/data'
-RARITY_NAME = {'common': '普通', 'magic': '魔法', 'rare': '稀有', 'legendary': '傳說', 'unique': '獨特', 'set': '套裝'}
-FRAMED = ['magic', 'rare', 'legendary', 'unique', 'set']
+RARITY_NAME = {'common': '普通', 'magic': '魔法', 'rare': '稀有', 'epic': '史詩', 'legendary': '傳說', 'unique': '獨特', 'set': '套裝'}
+FRAMED = G.FRAMED_RARITIES                  # addendum 2: six frames (common has none)
+STARLIT_ON = ['legendary', 'unique', 'set']   # the tiers a starlit drop can have (plan 5g STARLIT_RARITIES)
+SLOT_ORDER = list(A.SUBJECT_CLASS) + ['other']
+SLOT_NAME = {'weapon': '武器', 'offhand': '副手', 'head': '頭', 'body': '身體', 'hands': '手', 'feet': '腳', 'neck': '頸', 'ring': '戒指',
+             'other': '其他'}
 REGION_NAME = {'blaze': '熾焰之地', 'frost': '霜凍之地', 'storm': '雷鳴之地', 'mire': '腐毒沼澤', 'shade': '暗影迴廊', 'iron': '鋼鐵要塞'}
 OLD_MATERIALS = ['moss', 'bat-wing', 'thorn-fang', 'crystal-shell', 'ice-crystal', 'lizard-scale', 'star-stone', 'dusk-cloth', 'old-coin', 'ancient-gear']
 OWNER_NAME = {'noel': '諾艾兒', 'chizuru': '千鶴', 'liz': '莉茲', 'sylvie': '希爾薇', 'scarlet': '絲嘉蕾', 'selene': '瑟蕾',
@@ -64,35 +68,40 @@ def prices():
 
 # The questions each batch puts to the user (addendum §4), with links to the sections that answer them and the known
 # risks written out plainly (from the independent visual check), so the user decides with the problems in view.
+# (question, links, known risks, explanation). The sample's block is plan 5d addendum 2 §6 (the G1 redo).
 DECISIONS = {
     'sample': [
-        ('裝備圖的畫風與大小比例', ['#s1', '#s3', '#s5'], [
-            '24px 小圖示下，焰紋之鎧與焰紋之手甲認不出是什麼。',
-            '雙月槍的細節太雜，縮小後糊成一團。',
-            '不破之盾只剩一條細長條，看不出是盾。',
-            '焰紋之刃和灼心之劍（傳說）長得很像，不容易分辨。']),
-        ('稀有度外框與傳說光暈', ['#s1', '#glow'], [
-            '魔法、稀有、套裝三種外框縮到 16px 後，幾乎只剩 1px 細線。',
-            '稀有（黃）、獨特（金）、傳說（橘）的色相很接近，不容易一眼分辨。',
-            '傳說光暈又重又不透明；它向格外延伸 3px，而背包格間距只有 2px，相鄰兩件傳說的光暈會連在一起（見「光暈重疊」）。']),
-        ('多蘭的外型', ['#s8'], [
-            '亮紅色頭髮：加上她，隊伍與城鎮裡就有三個紅髮角色。',
-            '皮圍裙的畫法和道具店老闆是同一套公式。',
-            '領口比其他 NPC 開得低。']),
-        ('是否把 15 件舊底材圖示全部換新', ['#s2'], [
-            '新圖示 26×26，舊的是 35×37：新的更小、線條更細。',
-            '本批只有鐵劍有新樣本，其餘 14 件要等量產批。']),
+        ('圖示大小是否一致', ['#size', '#s1'], [
+            '短刃與劍現在一樣長，靠「短寬刃、大握柄」的比例區分。',
+            '戒指、項鍊放大到和鎧甲同一份量後，看起來比以前大。'],
+         '所有圖示畫在同一個 26×26 畫布上，主體長邊統一是 22。盾、鎧甲、手甲另外要求要夠寬、夠飽滿，不合格的會被機械閘門擋下重畫。'),
+        ('七階外框與星輝', ['#frames', '#s1'], [
+            '獨特由金色改成緋紅（和稀有黃、傳說橘分開），遊戲內的文字色要一起改。',
+            '史詩只能用偏藍的紫，不能用偏粉的紫，因為生成用的是洋紅去背。'],
+         '普通沒有外框。魔法藍、稀有黃、史詩藍紫、傳說橘、獨特緋紅、套裝綠。造型也逐階增加：素邊 → 鉚釘 → 切角寶石 → 火舌 → 金邊雕花 → 葉徽。'
+         '星輝是青白星光，只疊在擲出星輝的傳說、獨特、套裝上。'),
+        ('傳說光暈改在格內', ['#glow'], [],
+         '光暈改成外框內側一圈 1px 淡橘光，加四角火花，畫在圖示下層，不再伸進隔壁格。請看兩件傳說相鄰的示範。'),
     ],
     'main-gear': [
-        ('60 件裝備逐件確認（含 24px 下的辨識度）', ['#s1', '#s3', '#s5'], ['每套 4 件是否一眼看得出同一套；24px 下有沒有兩件分不出來。']),
-        ('6 種地區素材與多蘭笑臉', ['#s6', '#s8'], []),
+        ('60 件裝備逐件確認（含 24px 下的辨識度）', ['#s1', '#s3', '#s5', '#size'], ['每套 4 件是否一眼看得出同一套；24px 下有沒有兩件分不出來。'], ''),
+        ('6 種地區素材與多蘭笑臉', ['#s6', '#s8'], [], ''),
     ],
     'skills': [
-        ('78 個技能圖示和既有 27 個是否一致', ['#s7'], []),
+        ('78 個技能圖示和既有 27 個是否一致', ['#s7'], [], ''),
     ],
 }
+DECIDED = {   # addendum 2 §6: decided on 2026-10-20, not asked again
+    'sample': ('已決定（2026-10-20）', [
+        '畫風與大小比例的方向：「可以」。',
+        '多蘭的外型：照目前的版本。',
+        '15 件舊底材圖示全部換新：本批只有鐵劍、木圓盾、皮帽，其餘在 G2。']),
+}
+AFTER_APPROVAL = {
+    'sample': '核准後的動作：執行 gear_art.py approve --batch sample --by "<你對這頁的原話> <YYYY-MM-DD>"，然後照 5d Task 8（已依補遺 2 §4 修改）發布。',
+}
 SECTION_NAME = {'#s1': '1. 裝備頁情境', '#s2': '2. 新舊對照', '#s3': '3. 大圖與小圖示', '#s5': '5. 清單情境', '#s6': '6. 素材',
-                '#s7': '7. 技能', '#s8': '8. 鍛造屋', '#glow': '光暈重疊'}
+                '#s7': '7. 技能', '#s8': '8. 鍛造屋', '#glow': '光暈改在格內', '#size': '尺寸一致性', '#frames': '七階外框與星輝'}
 
 
 def skill_owners():
@@ -106,7 +115,7 @@ def rarity_of(part):
     if part in G.GEAR_LEGEND: return 'legendary'
     if part in G.GEAR_UNIQUE: return 'unique'
     if part.startswith('set-'): return 'set'
-    return ['common', 'magic', 'rare'][list(G.GEAR_BASE).index(part) % 3]
+    return ['common', 'magic', 'rare', 'epic'][list(G.GEAR_BASE).index(part) % 4]   # base items show each lower tier
 
 
 class Page:
@@ -146,7 +155,8 @@ def qa_line(q):
     if not q: return ''
     bits = ['通過' if q.get('pass') else '未通過 ' + '、'.join(q.get('reasons', []))]
     if q.get('warnings'): bits.append('警告 ' + '、'.join(q['warnings']))
-    for k in ('size', 'subject', 'block', 'residue', 'semi', 'holes', 'magenta_spill', 'center_clear', 'ring_closed', 'edge_repeat'):
+    for k in ('size', 'subject', 'scale', 'block', 'residue', 'semi', 'holes', 'magenta_spill', 'center_clear', 'ring_closed', 'edge_repeat',
+              'stroke', 'reach', 'hue'):
         if k in q: bits.append(f'{k} {q[k]}')
     return '｜'.join(bits)
 
@@ -177,6 +187,104 @@ def gallery(pg, js):
     return ''.join(rows)
 
 
+def _measured(path, e, target):
+    """Size metrics of a final: the QA record when it has them, else measured on the file (older finals)."""
+    from PIL import Image
+    q = e.get('qa') or {}
+    if isinstance(q.get('subject'), dict): return q['subject']
+    return A.subject_metrics(Image.open(path).convert('RGBA'), target)
+
+
+def _gate_failed(e, m, target, slot):
+    q = e.get('qa') or {}
+    if isinstance(q.get('subject'), dict):
+        return any(r.startswith('subject ') or r == 'cell too small to sample' for r in q.get('reasons', []))
+    return bool(A.subject_gate(m, target, None if slot == 'other' else slot))
+
+
+def size_grid(pg, reg):
+    """Addendum 2 §1: every gear icon in the registry (any batch, with a final, not rejected or retired) on one grid,
+    one row per slot, at 1x and 3x, each with its subject bbox (`.bbox`, from qa.subject.box) and the centred 22 x 22
+    target (`.target`); cells that fail the size gate get `out`. Then the large images (target 56), the silhouettes
+    (28) and the old base icons (`data-old`, not gated). The boxes are review-page markup, not game art."""
+    from PIL import Image
+    icon_target, large_target = G.ICON[0], G.LARGE[0]
+    live = lambda e: e.get('final') and e.get('status') not in ('rejected', 'retired') and A._final_path(e['final']).is_file()
+    parts = [a[5:] for a, e in reg.items() if a.startswith('gear-') and not a.endswith(('-large', '-silhouette')) and live(e)]
+    by_slot = {}
+    for p in parts: by_slot.setdefault(G.GEAR_SLOT.get(p, 'other'), []).append(p)
+    nm = names()
+
+    def box_cell(attr, part, aid, target, z):
+        e = reg[aid]; path = A._final_path(e['final']); src = pg.copy(e['final'], f'size-{aid}.png')
+        W, H = Image.open(path).size; m = _measured(path, e, target)
+        out = ' out' if _gate_failed(e, m, target, G.GEAR_SLOT.get(part, 'other')) else ''
+        x0, y0, x1, y1 = m['box']; tx, ty = (W - target) // 2, (H - target) // 2
+        return (f'<figure class="sz{out}" {attr}="{esc(part)}"><div class="szbox" style="width:{W * z}px;height:{H * z}px">'
+                f'{img(src, "px", f"width:{W * z}px;height:{H * z}px", nm.get(part, part))}'
+                f'<span class="bbox" style="left:{x0 * z}px;top:{y0 * z}px;width:{(x1 - x0) * z}px;height:{(y1 - y0) * z}px"></span>'
+                f'<span class="target" style="left:{tx * z}px;top:{ty * z}px;width:{target * z}px;height:{target * z}px"></span></div>'
+                f'<figcaption>{esc(nm.get(part, part))}<br>長 {m["long"]}／短 {m["short"]}／mass {m["mass"]}</figcaption></figure>')
+
+    def rows(make):
+        return ''.join(f'<div class="szrow"><span class="szlab">{SLOT_NAME.get(s, s)}</span>{"".join(make(p) for p in by_slot[s])}</div>'
+                       for s in SLOT_ORDER if s in by_slot)
+    grids = ''.join(f'<h3>{z} 倍</h3>' + rows(lambda p, z=z: box_cell('data-size-cell', p, f'gear-{p}', icon_target, z)) for z in (1, 3))
+    large = rows(lambda p: box_cell('data-size-large', p, f'gear-{p}-large', large_target, 1)
+                 if f'gear-{p}-large' in reg and live(reg[f'gear-{p}-large']) else '')
+
+    def sil(p):
+        name = f'size-sil-{p}.png'
+        A.silhouette_image(Image.open(A._final_path(reg[f'gear-{p}']['final']))).save(pg.img / name)
+        return f'<figure class="sz" data-size-sil="{esc(p)}">{img(f"img/{name}", "px")}<figcaption>{esc(nm.get(p, p))}</figcaption></figure>'
+    sils = rows(sil)
+
+    def old(b):
+        e = reg[f'icon-{b}']
+        src = pg.pub(f'icon/{b}.png', f'size-old-icon-{b}.png') or pg.copy(e.get('final'), f'size-old-icon-{b}.png')
+        if not src: return ''
+        w, h = Image.open(pg.img / src[4:]).size
+        return (f'<figure class="sz old" data-old="{esc(b)}">{img(src, "px")}{img(src, "px", f"width:{w * 3}px;height:{h * 3}px")}'
+                f'<figcaption>舊 {esc(nm.get(b, b))} {w}×{h}</figcaption></figure>')
+    olds = ''.join(old(b) for b in G.GEAR_BASE if f'icon-{b}' in reg)
+    return (f'<section id="size"><h2>尺寸一致性：全部 {len(parts)} 件裝備小圖示（不分批次），依部位排列</h2>'
+            f'<p class="note">每格是 26×26 原圖（1 倍）或整數倍放大；紅框是主體 bbox（QA 量測，只算不透明像素），青色虛線是中央 {icon_target}×{icon_target} 的目標框。'
+            f'紅底的格子沒過尺寸閘門（長邊、置中、短邊下限、份量）。框線是審核頁的標示，不在圖片裡。</p>'
+            f'{grids or "<p>登錄表還沒有裝備小圖示。</p>"}'
+            f'<h3>大圖 64（目標框 {large_target}）</h3>{large or "<p>沒有大圖。</p>"}'
+            f'<h3>剪影預覽 28（由小圖示即時轉出，不寫入登錄表）</h3>{sils or "<p>沒有小圖示。</p>"}'
+            f'<h3>舊底材圖示對照（不計入閘門）</h3><div class="szrow">{olds or "<small>沒有舊底材圖示。</small>"}</div></section>')
+
+
+def frames_section(pg, reg, frame, glow, starlit, icon, gear, nm, cell):
+    """Addendum 2 §2: one demo slot per tier (common has no frame), legendary / unique / set again with the starlit
+    overlay, then each frame image at 4x with its palette swatch and QA (stroke, hue, nearest ΔE)."""
+    demo = lambda r: next((p for p in gear if rarity_of(p) == r and icon.get(p)), next((p for p in gear if icon.get(p)), None))
+    tiers = ''.join(f'<figure data-tier="{r}">{cell(demo(r), 38, "dollc", tier=r)}<figcaption>{RARITY_NAME[r]}<br>{G.RARITY_PALETTE[r]}</figcaption></figure>'
+                    for r in RARITY_NAME)
+    stars = ''.join(f'<figure data-starlit="{r}">{cell(demo(r), 38, "dollc", tier=r, star=True)}<figcaption>{RARITY_NAME[r]}＋星輝</figcaption></figure>'
+                    for r in STARLIT_ON)
+    qa = {r: (reg.get(G.FRAME_ASSET[r], {}).get('qa') or {}) for r in FRAMED}
+    cols = {r: tuple(q['stroke_colour']) for r, q in qa.items() if q.get('stroke_colour')}
+
+    def nearest(r):
+        if r not in cols: return '—'
+        de = [(A.delta_e(cols[r], c), o) for o, c in cols.items() if o != r]
+        return f'{min(de)[0]:.1f}（{RARITY_NAME[min(de)[1]]}）' if de else '—'
+    raws = ''.join(f'<figure>{img(frame.get(r), "px", "width:64px;height:64px")}<figcaption>{G.FRAME_ASSET[r]}<br>'
+                   f'<span class="sw" style="background:{G.RARITY_PALETTE[r]}"></span>{G.RARITY_PALETTE[r]}<br>'
+                   f'stroke {qa[r].get("stroke", "—")}｜hue {qa[r].get("hue", "—")}｜ΔE {nearest(r)}</figcaption></figure>' for r in FRAMED)
+    for key, src in (('glow-legendary', glow), ('starlit', starlit)):
+        q = reg.get(G.FRAME_ASSET[key], {}).get('qa') or {}
+        sw = ''.join(f'<span class="sw" style="background:{c}"></span>{c} ' for c in (G.STARLIT if key == 'starlit' else ()))
+        raws += (f'<figure>{img(src, "px", "width:64px;height:64px")}<figcaption>{G.FRAME_ASSET[key]}<br>{sw}'
+                 f'hue {q.get("hue", "—")}｜{"通過" if q.get("pass") else "、".join(q.get("reasons", [])) or "未產生"}</figcaption></figure>')
+    return (f'<section id="frames"><h2>七階外框與星輝</h2>'
+            f'<p class="note">人形格 38px，1 倍。普通沒有外框；魔法到套裝各一格；傳說、獨特、套裝再各放一格帶星輝的（星輝疊在外框之上）。</p>'
+            f'<div class="row dark">{tiers}</div><div class="row dark">{stars}</div>'
+            f'<h3>外框、光暈、星輝原圖（放大 4 倍），色票與 QA</h3><div class="row dark">{raws}</div></section>')
+
+
 def main(batch='sample'):
     lab = G.label(batch)
     reg = json.loads(G.REG_PATH.read_text(encoding='utf-8'))['assets'] if G.REG_PATH.exists() else {}
@@ -192,8 +300,9 @@ def main(batch='sample'):
         f = reg.get(a, {}).get('final'); fp = A._final_path(f) if f else None
         if fp and fp.is_file(): shown[a] = G.sha256(fp)
     icon = {p: pg.final(f'gear-{p}') for p in gear}; large = {p: pg.final(f'gear-{p}-large') for p in gear}
-    frame = {r: pg.final(f'ui-rarity-{r}') or pg.pub(f'ui/rarity-{r}.png') for r in FRAMED}
-    glow = pg.final('ui-glow-legendary') or pg.pub('ui/glow-legendary.png')
+    frame = {r: pg.final(G.FRAME_ASSET[r]) or pg.pub(f'ui/rarity-{r}.png') for r in FRAMED}
+    glow = pg.final(G.FRAME_ASSET['glow-legendary']) or pg.pub('ui/glow-legendary.png')
+    starlit = pg.final(G.FRAME_ASSET['starlit']) or pg.pub('ui/starlit.png')
 
     # 0. checklist: every part of the batch exactly once
     def status_row(job, p):
@@ -205,13 +314,15 @@ def main(batch='sample'):
     checklist = ''.join(status_row(j, p) for j in js for p in j['parts'] if p is not None)
 
     # 1. equipment screen
-    def cell(p, px, cls='bag'):
+    def cell(p, px, cls='bag', tier=None, star=False):
+        # Addendum 2 / task-6: [glow under the icon, icon, frame over it, starlit over the frame].
         if p is None: return f'<div class="cell {cls}" style="width:{px}px;height:{px}px"></div>'
-        r = rarity_of(p); fr = frame.get(r) if r != 'common' else None
+        r = tier or rarity_of(p); fr = frame.get(r) if r != 'common' else None
         ico = img(icon.get(p), 'px gi', alt=nm.get(p, p)) or f'<span class="short">{esc(nm.get(p, p)[:4])}</span>'
         g = f'<span class="rg" style="border-image-source:url({glow})"></span>' if r == 'legendary' and glow else ''
         f = f'<span class="rf" style="border-image-source:url({fr})"></span>' if fr else ''
-        return f'<div class="cell {cls}" title="{esc(nm.get(p, p))}（{RARITY_NAME[r]}）" style="width:{px}px;height:{px}px">{g}{ico}{f}</div>'
+        st = f'<span class="rs" style="border-image-source:url({starlit})"></span>' if star and r in STARLIT_ON and starlit else ''
+        return f'<div class="cell {cls}" title="{esc(nm.get(p, p))}（{RARITY_NAME[r]}）" style="width:{px}px;height:{px}px">{g}{ico}{f}{st}</div>'
 
     def equip_screen():
         bag = (gear + [None] * 20)[:20]
@@ -227,11 +338,11 @@ def main(batch='sample'):
                 f'<div class="doll">{"".join(cell(p, 38, "dollc") for p in doll)}</div></div>{det}</div>')
     eq = (f'<h3>1 倍</h3>{equip_screen()}<h3>3 倍</h3><div class="zoom3">{equip_screen()}</div>' if gear else '<p>本批沒有裝備。</p>')
     rarity_row = ''.join(f'<figure>{cell(p, 28)}<figcaption>{RARITY_NAME[r]}<br>{esc(nm.get(p, p))}</figcaption></figure>'
-                         for r in ['common', 'magic', 'rare', 'legendary', 'unique', 'set'] for p in [next((q for q in gear if rarity_of(q) == r), None)] if p)
-    frames_row = ''.join(f'<figure>{img(frame.get(r), "px", "width:64px;height:64px")}<figcaption>ui-rarity-{r}</figcaption></figure>' for r in FRAMED)
-    frames_row += f'<figure>{img(glow, "px", "width:80px;height:80px")}<figcaption>ui-glow-legendary</figcaption></figure>'
+                         for r in RARITY_NAME for p in [next((q for q in gear if rarity_of(q) == r), None)] if p)
+    frames_html = frames_section(pg, reg, frame, glow, starlit, icon, gear, nm, cell) if batch == 'sample' or gear else ''
+    size_html = size_grid(pg, reg)
 
-    # Two legendaries side by side at the real bag gap (2px): the glow reaches 3px out, so it runs into the next slot.
+    # Two legendaries side by side at the real bag gap (2px): the glow now stays inside each slot (inset 0, under the icon).
     legs = [p for p in gear if rarity_of(p) == 'legendary'][:2]
     if len(legs) == 1: legs *= 2
     glow_pair = ''.join(f'<figure><div class="glow-pair{z}">{"".join(cell(p, 28) for p in legs)}</div><figcaption>{t}</figcaption></figure>'
@@ -309,23 +420,35 @@ def main(batch='sample'):
 
     decisions = ''.join(
         f'<li><b>{esc(q)}</b> <span class="links">看：{"、".join(f"<a href={chr(34)}{s}{chr(34)}>{SECTION_NAME[s]}</a>" for s in links)}</span>'
-        f'{"<ul class=risks>" + "".join(f"<li>{esc(r)}</li>" for r in risks) + "</ul>" if risks else ""}</li>'
-        for q, links, risks in DECISIONS[batch])
+        f'{"<p class=why>" + esc(why) + "</p>" if why else ""}'
+        f'<p class="why">已知風險：</p><ul class="risks">{"".join(f"<li>{esc(r)}</li>" for r in risks) or "<li>無</li>"}</ul></li>'
+        for q, links, risks, why in DECISIONS[batch])
+    decided = ''
+    if batch in DECIDED:
+        title, items = DECIDED[batch]
+        decided = f'<div class="decided"><h3>{esc(title)}</h3><ul>{"".join(f"<li>{esc(i)}</li>" for i in items)}</ul></div>'
+    after = f'<p class="after">{esc(AFTER_APPROVAL[batch])}</p>' if batch in AFTER_APPROVAL else ''
+    rarity_css = ''.join(f'.r-{r}{{color:{c}}}' for r, c in G.RARITY_PALETTE.items())
 
     page = f'''<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>裝備美術審核</title><style>
 :root{{color-scheme:dark}}
 body{{margin:0;padding:16px;background:#121318;color:#e8e6df;font:14px/1.6 system-ui,"Noto Sans TC",sans-serif}}
 h1{{font-size:20px}} h2{{font-size:17px;margin:32px 0 8px;border-top:1px solid #333;padding-top:12px}} h3{{font-size:15px;margin:18px 0 6px}}
-.note{{color:#b9b4a6}} .px,.cell img,.rf,.rg{{image-rendering:pixelated}} figure{{margin:0}} figcaption{{color:#b9b4a6;font-size:12px}}
+.note{{color:#b9b4a6}} .px,.cell img,.rf,.rg,.rs{{image-rendering:pixelated}} figure{{margin:0}} figcaption{{color:#b9b4a6;font-size:12px}}
 .row{{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;padding:8px}} .row.top{{align-items:flex-start}} .dark{{background:#191b29}} .small,small{{font-size:12px;color:#b9b4a6}}
 table{{border-collapse:collapse}} td,th{{padding:6px 10px;border-bottom:1px solid #2b2b33;vertical-align:middle;text-align:left}} td img{{margin-right:10px;vertical-align:middle}}
 .screen{{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;background:#1b1d2a;border:2px solid #3a3f66;padding:10px;width:max-content}}
 .bag-grid{{display:grid;grid-template-columns:repeat(10,28px);gap:2px}} .doll{{display:grid;grid-template-columns:repeat(3,38px);gap:4px;margin-top:10px}}
 .cell{{position:relative;background:#262840;border:1px solid #3d4068;display:flex;align-items:center;justify-content:center;box-sizing:border-box}}
-.cell .gi{{width:24px;height:24px;object-fit:none}} .cell .short{{font-size:9px;line-height:1;text-align:center}}
-.rf{{position:absolute;inset:0;pointer-events:none;border:5px solid transparent;border-image-slice:5;border-image-repeat:round}}
-.rf.big{{border-width:10px}} .rg{{position:absolute;inset:-3px;z-index:2;pointer-events:none;border:7px solid transparent;border-image-slice:7;border-image-repeat:round}}
+.cell .gi{{width:26px;height:26px;object-fit:none;position:relative;z-index:1}} .cell .short{{font-size:9px;line-height:1;text-align:center}}
+.rf{{position:absolute;inset:0;z-index:2;pointer-events:none;border:5px solid transparent;border-image-slice:5;border-image-repeat:repeat}}
+.rf.big{{border-width:10px}} .rg{{position:absolute;inset:0;z-index:0;pointer-events:none;border:5px solid transparent;border-image-slice:5;border-image-repeat:repeat}}
+.rs{{position:absolute;inset:0;z-index:3;pointer-events:none;border:5px solid transparent;border-image-slice:5;border-image-repeat:repeat}}
+.szrow{{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;padding:6px 8px;background:#191b29;margin-bottom:4px}} .szlab{{width:3em;color:#b9b4a6;font-size:12px;align-self:center}}
+.sz figcaption{{font-size:11px;max-width:120px}} .szbox{{position:relative;background:#262840}} .sz.out .szbox{{background:#5a1f2a}} .sz.out figcaption{{color:#ff9a9a}}
+.bbox{{position:absolute;box-sizing:border-box;border:1px solid #ff5a5a;pointer-events:none}} .target{{position:absolute;box-sizing:border-box;border:1px dashed #7fe6ff;pointer-events:none}}
+.sw{{display:inline-block;width:12px;height:12px;border:1px solid #000;vertical-align:middle;margin-right:4px}} .decided{{color:#b9b4a6}} .why{{margin:4px 0}}
 .glow-pair{{display:grid;grid-template-columns:repeat(2,28px);gap:2px;padding:8px;background:#1b1d2a}} .glow-pair.x4{{zoom:4}}
 .decide h2{{border:0;margin:4px 0 8px;padding:0}} .decide{{background:#1d2238;border:2px solid #c9a35a;padding:8px 16px 12px;margin:12px 0}} .decide>ol>li{{margin:10px 0}} .decide a{{color:#9fc7ff}} .risks{{color:#f0c27a;margin:4px 0}} .links{{font-size:12px}}
 .detail{{display:flex;gap:10px;align-items:center}} .artbox{{position:relative;width:64px;height:64px;padding:10px;background:#262840}}
@@ -334,9 +457,9 @@ table{{border-collapse:collapse}} td,th{{padding:6px 10px;border-bottom:1px soli
 .card .art{{display:block}} .card .cap{{padding:3px 8px;font-weight:600;color:#f1e3b8}} .lims{{padding:0 8px}}
 .lim{{display:flex;gap:12px;align-items:center;font-size:13px}} .lim .ttl{{min-width:6em}} .li{{zoom:2;vertical-align:middle}}
 .lrow{{display:flex;align-items:center;gap:6px;min-height:24px;padding:2px 8px;border-bottom:1px solid #2b2b33;width:320px;background:#1b1d2a}}
-.lrow .gi,.loot .gi{{width:24px;height:24px;object-fit:none;vertical-align:middle}} .price,.tag{{margin-left:auto;color:#d9c27a;font-size:12px}}
+.lrow .gi,.loot .gi{{width:26px;height:26px;object-fit:none;vertical-align:middle}} .price,.tag{{margin-left:auto;color:#d9c27a;font-size:12px}}
 .loot{{background:#10111a;border:2px solid #3a3f66;padding:6px 10px;width:max-content}}
-.r-legendary{{color:#ff9d3c}} .r-unique{{color:#e6c35c}} .r-set{{color:#6fd26f}} .r-magic{{color:#7fa8ff}} .r-rare{{color:#ffe14d}}
+{rarity_css}
 .fac{{position:relative;width:960px;height:540px;overflow:hidden;border:2px solid #3a3424}} .fac>img:first-child{{display:block}}
 .fac .npc{{position:absolute;right:0;bottom:0;height:330px}} .missing{{background:#333;color:#999;display:flex;align-items:center;justify-content:center}}
 .gal .att{{display:inline-block;vertical-align:top;margin:0 16px 16px 0;max-width:460px}} .gal h4{{margin:4px 0;font-size:13px}}
@@ -346,18 +469,20 @@ table{{border-collapse:collapse}} td,th{{padding:6px 10px;border-bottom:1px soli
 <h1>星燈迷宮 計畫 5d 美術候選・批次 {esc(batch)}（qa_passed，尚未核准、未發布）</h1>
 <p class="note">本頁所有像素圖以最近鄰放大顯示。格子、外框位置、名稱與價格是 HTML 示意，不在圖片裡。登錄狀態最多到 qa_passed；核准與發布要等你在這頁確認（補遺 S4）。登錄表批次：{esc(lab)}。</p>
 
-<section class="decide" id="decisions"><h2>請你決定的事</h2><ol>{decisions}</ol></section>
+<section class="decide" id="decisions"><h2>請你決定的事</h2><ol>{decisions}</ol>{decided}{after}</section>
 
 <h2 id="s0">0. 本批清單（{checklist.count("data-part=")} 件）</h2>
 <table><tr><th>id</th><th>名稱</th><th>工作表</th><th>狀態</th><th>QA</th></tr>{checklist}</table>
 
+{size_html}
+
 <h2 id="s1">1. 裝備頁情境：背包格 28px（10×2）、人形 9 格 38px、詳情欄 64px 大圖，套上候選外框與傳說光暈</h2>
-<p class="note">小圖示 26×26 以 1:1 顯示（中央 24×24，不縮放）；外框只壓在格子外緣 5px（slice 5）。格間距照遊戲：背包 2px、人形 4px。沒有圖的格子照遊戲現況只顯示名稱前四字。3 倍版會自動換行，不超出畫面。</p>
+<p class="note">小圖示 26×26 以 1:1 顯示（主體長邊 22，不縮放）；外框只壓在格子外緣 5px（slice 5，邊帶 2px），傳說光暈在格內第 2px、畫在圖示下層，星輝疊在外框之上。格間距照遊戲：背包 2px、人形 4px。沒有圖的格子照遊戲現況只顯示名稱前四字。3 倍版會自動換行，不超出畫面。</p>
 {eq}
 <h3>每種稀有度各一件</h3><div class="row dark">{rarity_row or "<small>本批沒有裝備。</small>"}</div>
-<h3>外框與光暈原圖（放大 4 倍）</h3><div class="row dark">{frames_row}</div>
-<h3 id="glow">光暈重疊：兩件傳說相鄰，照遊戲的背包間距 2px</h3>
-<p class="note">光暈向格外延伸 3px，比 2px 的間距多 1px，所以會疊進隔壁格；本頁讓光暈畫在最上層，重疊照實顯示，沒有藏起來。</p>
+{frames_html}
+<h3 id="glow">光暈改在格內：兩件傳說相鄰，照遊戲的背包間距 2px</h3>
+<p class="note">光暈是 16×16、slice 5 的九宮格，`inset: 0` 畫在圖示下層、外框內側第 2px，不再向格外延伸，所以兩格之間的 2px 間距保持乾淨。</p>
 <div class="row dark">{glow_pair or "<small>本批沒有傳說裝備。</small>"}</div>
 
 <h2 id="s2">2. 新舊對照：全部 {len(old_bases)} 件舊底材圖示 icon/&lt;id&gt;.png 與新的 gear-&lt;id&gt;</h2>

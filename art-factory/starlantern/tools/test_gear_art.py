@@ -533,18 +533,23 @@ def test_sample_review_page_opens_with_the_decisions_and_shows_honest_previews(f
         if f'icon-{b}' in real: reg.set(f'icon-{b}', **{k: real[f'icon-{b}'][k] for k in ('status', 'runtime', 'final') if k in real[f'icon-{b}']})
     page = review.main('sample').read_text(encoding='utf-8')
     head = page[page.index('id="decisions"'):page.index('id="s0"')]
-    for q in ('裝備圖的畫風與大小比例', '稀有度外框與傳說光暈', '多蘭的外型', '15 件舊底材圖示'):
+    # Addendum 2 §6: the G1 redo asks three questions; style, Doran and the 15 old icons were decided on 2026-10-20.
+    for q in ('圖示大小是否一致', '七階外框與星輝', '傳說光暈改在格內', '已決定（2026-10-20）', '多蘭的外型', '15 件舊底材圖示全部換新'):
         assert q in head, q
-    for s in ('#s1', '#s2', '#s3', '#s8'):
+    for s in ('#size', '#s1', '#frames', '#glow'):
         assert f'href="{s}"' in head and f'id="{s[1:]}"' in page
-    for risk in ('焰紋之鎧', '雙月槍', '不破之盾', '1px', '色相', '3px', '紅髮', '圍裙', '35×37'):
+    for risk in ('短寬刃、大握柄', '戒指、項鍊', '緋紅', '偏粉的紫', '不再伸進隔壁格'):
         assert risk in head, risk
     olds = re.findall(r'data-old-icon="([a-z-]+)"', page)
     assert len(olds) == 15 and len(set(olds)) == 15
     assert '本批只有鐵劍有新樣本' in page
     assert '>G<' not in page and '40 G' in page                                   # iron sword's real price
     assert re.search(r'\.screen\{[^}]*flex-wrap:wrap', page) and re.search(r'\.zoom3 \.screen\{[^}]*max-width:440px', page)
-    assert re.search(r'\.rg\{[^}]*z-index:2', page) and 'class="glow-pair' in page   # the glow's overlap is shown, not hidden
+    # Addendum 2: the glow sits inside the slot (inset 0) under the icon; the frame and the starlit overlay go over it.
+    assert re.search(r'\.rg\{[^}]*inset:0', page) and 'inset:-3px' not in page and 'class="glow-pair' in page
+    assert re.search(r'\.rf\{[^}]*border-image-repeat:repeat', page) and 'border-image-repeat:round' not in page
+    cell = re.search(r'<div class="cell bag"[^>]*>(.*?)</div>', page[page.index('class="glow-pair'):], re.S).group(1)
+    assert cell.index('class="rg"') < cell.index('class="px gi"') < cell.index('class="rf"')
 
 
 def test_skills_review_page_shows_all_78_icons_each_under_its_owner(factory, review):
@@ -696,6 +701,87 @@ def test_frame_sheet_marks_two_close_frames_failed(factory):
         saved = json.loads((factory / 'w' / f'{aid}.qa.json').read_text(encoding='utf-8'))
         assert saved['reasons'] == res[aid]['reasons'] and not saved['pass']
     assert res['ui-rarity-magic']['pass'] and reg.get('ui-rarity-magic')['status'] == 'qa_passed'
+
+
+# --- plan 5d addendum 2, Task D: size-consistency grid, seven-tier frames, contained glow ---------------------------------
+def _icon_entry(factory, part, batch='gear-5d-sample', status='qa_passed', reasons=(), box=(2, 4, 24, 22)):
+    long_, short = max(box[2] - box[0], box[3] - box[1]), min(box[2] - box[0], box[3] - box[1])
+    qa = {'pass': not reasons, 'reasons': list(reasons), 'size': [26, 26], 'scale': 9.1,
+          'subject': {'long': long_, 'short': short, 'mass': 0.61, 'box': list(box), 'centre_off': 0.0}}
+    return dict(status=status, batch=batch, final=_png(factory / f'work/gear-{part}.png'), qa=qa, chosen_attempt='a5')
+
+
+def _size_page(factory, reg_assets):
+    import review_gear as R
+    out = factory / 'review'; (out / 'img').mkdir(parents=True, exist_ok=True)
+    return R.size_grid(R.Page(out, reg_assets), reg_assets)
+
+
+def _size_cells(page):
+    import re
+    return re.findall(r'<figure class="([^"]*)" data-size-cell="([a-z0-9-]+)">(.*?)</figure>', page, re.S)
+
+
+def test_size_grid_boxes_every_gear_icon_at_1x_and_3x(factory):
+    reg = {'gear-iron-sword': _icon_entry(factory, 'iron-sword'), 'gear-leather-cap': _icon_entry(factory, 'leather-cap'),
+           'gear-iron-unbroken-shield': _icon_entry(factory, 'iron-unbroken-shield', status='qa_failed', reasons=['subject too narrow'],
+                                                    box=(7, 2, 18, 24)),
+           'gear-iron-sword-large': {**_icon_entry(factory, 'iron-sword-large'), 'final': _png(factory / 'work/gear-iron-sword-large.png', (64, 64))}}
+    page = _size_page(factory, reg)
+    assert page.startswith('<section id="size">')
+    cells = _size_cells(page)
+    for p in ('iron-sword', 'leather-cap', 'iron-unbroken-shield'):
+        mine = [c for c in cells if c[1] == p]
+        assert len(mine) == 2 and all('class="bbox"' in body and 'class="target"' in body for _, _, body in mine), p
+    assert {c[1] for c in cells} == {'iron-sword', 'leather-cap', 'iron-unbroken-shield'}      # the large image is its own row
+    assert all('out' in cls.split() for cls, p, _ in cells if p == 'iron-unbroken-shield')
+    assert not any('out' in cls.split() for cls, p, _ in cells if p != 'iron-unbroken-shield')
+    assert 'left:7px;top:2px;width:11px;height:22px' in page and 'left:21px;top:6px;width:33px;height:66px' in page   # 1x and 3x
+    assert 'data-size-large="iron-sword"' in page and 'data-size-sil="iron-sword"' in page
+    shield = next(body for cls, p, body in cells if p == 'iron-unbroken-shield')
+    assert '22' in shield and '11' in shield and '0.61' in shield
+
+
+def test_size_grid_includes_other_batches_and_old_icons(factory):
+    reg = {'gear-iron-sword': _icon_entry(factory, 'iron-sword'),
+           'gear-thorn-spear': _icon_entry(factory, 'thorn-spear', batch='gear-5d-main-gear'),
+           'gear-star-ring': _icon_entry(factory, 'star-ring', batch='gear-5d-main-gear', status='retired'),
+           'gear-moss-charm': _icon_entry(factory, 'moss-charm', batch='gear-5d-main-gear', status='rejected'),
+           'icon-iron-sword': {'status': 'published', 'runtime': '/assets/games/starlantern/icon/iron-sword.png',
+                               'final': _png(factory / 'work/sheet-icons-3/icon-iron-sword.png', (35, 37))}}
+    page = _size_page(factory, reg)
+    parts = {p for _, p, _ in _size_cells(page)}
+    assert parts == {'iron-sword', 'thorn-spear'}
+    assert 'data-old="iron-sword"' in page and page.count('data-old=') == 1
+
+
+def test_frames_section_shows_seven_tiers_and_starlit_on_three(factory, review):
+    import re
+    _fill(factory, 'sample')
+    page = review.main('sample').read_text(encoding='utf-8')
+    sec = page[page.index('<section id="frames">'):]
+    sec = sec[:sec.index('</section>')]
+    assert re.findall(r'data-tier="([a-z]+)"', sec) == ['common', 'magic', 'rare', 'epic', 'legendary', 'unique', 'set']
+    assert re.findall(r'data-starlit="([a-z]+)"', sec) == ['legendary', 'unique', 'set']
+    for r in ('magic', 'rare', 'epic', 'legendary', 'unique', 'set'):
+        assert G.RARITY_PALETTE[r] in sec, r
+    assert 'class="rs"' in sec and 'img/ui-starlit.png' in sec
+    common = re.search(r'data-tier="common".*?</figure>', sec, re.S).group(0)
+    assert 'class="rf' not in common                                       # common has no frame
+
+
+def test_sample_decisions_are_the_g1_redo_questions(factory, review):
+    import re
+    _fill(factory, 'sample')
+    page = review.main('sample').read_text(encoding='utf-8')
+    head = page[page.index('id="decisions"'):page.index('id="s0"')]
+    asked = head[:head.index('已決定（2026-10-20）')]
+    assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['圖示大小是否一致', '七階外框與星輝', '傳說光暈改在格內']
+    decided = head[head.index('已決定（2026-10-20）'):]
+    assert len(re.findall(r'<li>', decided)) == 3
+    for s in ('#size', '#s1', '#frames', '#glow'):
+        assert f'href="{s}"' in head and f'id="{s[1:]}"' in page, s
+    assert 'gear_art.py approve --batch sample' in head
 
 
 def test_committed_gear_plan_json_is_current(factory):
