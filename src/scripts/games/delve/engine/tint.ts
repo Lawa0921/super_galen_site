@@ -46,6 +46,17 @@ export function defaultTint(look: string): Tint | null {
   return t ? cloneTint(t) : null;
 }
 
+/** 只用主色畫的款式（render/avatarGear.ts：貝雷帽、大蝴蝶結只讀 c1）；飾品格頭飾一律只有一個布色 */
+const ONE_COLOR = new Set(['hat:beret', 'back:bow']);
+/**
+ * 這個 look 換色看得出幾個顏色：2 = 主色 + 副色、1 = 只有主色（副色跟著主色）、0 = 固定配色（換了也看不出來）。
+ * 梳妝台只替看得出顏色的時裝列配色列。
+ */
+export function tintChannels(look: string): 0 | 1 | 2 {
+  if (!defaultTint(look)) return 0;
+  return look.startsWith('acc:') || ONE_COLOR.has(look) ? 1 : 2;
+}
+
 /** 外觀（主色 / 副色）上的頭飾 accId → 同樣顏色的飾品格物品 tint（[c, c]）；沒有布料（含眼鏡）→ null */
 export function accTintFromAppearance(accId: string, a: { color1: number; color2: number }): Tint | null {
   const k = Object.prototype.hasOwnProperty.call(ACC_USES, accId) ? ACC_USES[accId] : undefined;

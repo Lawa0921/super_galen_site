@@ -67,7 +67,9 @@ export type ItemId =
   | 'pirate_top' | 'pirate_bottom' | 'idol_top' | 'idol_bottom' | 'priest_top' | 'priest_bottom' | 'gothic_top' | 'gothic_bottom'
   | 'acc_ribbon' | 'acc_catears' | 'acc_clip' | 'acc_hood' | 'acc_flower' | 'acc_crown' | 'acc_headphones' | 'acc_foxmask' | 'acc_hairpin' | 'acc_glasses'
   // ── NPC 聚落：建材 / 家具（村落、矮人地廳）、礦工頭盔（矮人信任後才賣） ──
-  | 'thatch' | 'timber' | 'dwarf_brick' | 'dwarf_wall' | 'rail' | 'brazier' | 'barrel' | 'miner_helmet';
+  | 'thatch' | 'timber' | 'dwarf_brick' | 'dwarf_wall' | 'rail' | 'brazier' | 'barrel' | 'miner_helmet'
+  // ── 梳妝台（家具：改身體特徵與時裝配色） ──
+  | 'vanity_table';
 
 /**
  * 飾品效果。移動 / 戰鬥類（jump、run、night、magnet、nofall、stat）要裝在裝備欄的飾品槽才生效；
@@ -442,6 +444,8 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   brazier: { ...block('brazier', '火盆', 'Brazier', T.BRAZIER), maxStack: 99 },
   barrel: { ...block('barrel', '木桶', 'Barrel', T.BARREL), maxStack: 99 },
   miner_helmet: vty('miner_helmet', '礦工頭燈盔', "Miner's Lamp Helm", 'head', 'hat:miner'),
+  // ── 梳妝台：放在地上，靠近按使用 → 改髮型 / 臉 / 膚色、替身上的時裝重新配色（免費） ──
+  vanity_table: { ...block('vanity_table', '梳妝台', 'Vanity Table', T.VANITY_TABLE), maxStack: 99 },
 };
 
 /** 時裝道具（顯示順序） */

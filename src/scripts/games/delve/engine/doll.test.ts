@@ -5,7 +5,7 @@ import { ACCESSORIES, DEFAULT_APPEARANCE, OUTFITS } from './appearance';
 import { Equipment } from './equipment';
 import { Inventory } from './inventory';
 import { Vanity, fitsVanity, VANITY_SLOTS } from './vanity';
-import { buildDollLook, dollKey, DOLL_LAYERS, pieceOf, plainLook } from './doll';
+import { buildDollLook, dollKey, DOLL_LAYERS, pieceOf, plainLook, restyledLook } from './doll';
 import { ACC_ITEMS, ITEMS, OUTFIT_ITEMS, VANITY_ITEMS } from './items';
 import type { Gear } from './gear';
 
@@ -257,5 +257,22 @@ describe('時裝的取得方式', () => {
     let n = 0;
     for (let i = 0; i < 100; i++) for (const s of chestLoot('fashion', i, 7, 'dungeon', 0.6)) if (s && LOOT_ONLY_FASHION.includes(s.item)) n++;
     expect(n).toBeGreaterThan(10);
+  });
+});
+
+describe('restyledLook（梳妝台預覽）', () => {
+  it('換外觀 + 替外觀欄那幾件換顏色；沒穿的格不會憑空多一件；原本的 look 不被改', () => {
+    const v = new Vanity();
+    v.set('body', 'sailor_top');
+    v.set('acc', 'acc_ribbon');
+    const base = buildDollLook(DEFAULT_APPEARANCE, new Equipment(), v);
+    const app = { ...DEFAULT_APPEARANCE, hair: DEFAULT_APPEARANCE.hair + 1 };
+    const l = restyledLook(base, app, [{ slot: 'body', tint: [1, 2] }, { slot: 'acc', tint: [5, 5] }, { slot: 'legs', tint: [3, 3] }]);
+    expect(l.app).toBe(app);
+    expect(l.body!.tint).toEqual([1, 2]);
+    expect(l.acc!.tint).toEqual([5, 5]);
+    expect(l.legs).toBeNull();
+    expect(base.body!.tint).toBeUndefined();
+    expect(dollKey(l)).not.toBe(dollKey({ ...base, app }));
   });
 });

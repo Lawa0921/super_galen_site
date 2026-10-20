@@ -40,9 +40,9 @@ import { LIQ, LIQ_MAX } from './liquidKind';
 import { NO_CONTACT, liquidContact, liquidMedium, playerMedium, type LiquidContact } from './swim';
 import { normalizeAppearance, type Appearance } from './appearance';
 import { raceMods, type RaceMods } from './race';
-import { Vanity, type HideSlot, type VanitySlot } from './vanity';
+import { Vanity, VANITY_SLOTS, type HideSlot, type VanitySlot } from './vanity';
 import { buildDollLook, dollKey, type DollLook } from './doll';
-import type { Tint } from './tint';
+import { defaultTint, tintChannels, validTint, type Tint } from './tint';
 import { ProjList, type HitFx, type ProjKind, type Projectile } from './projectiles';
 import {
   ascendCost, ascendGear, baseTier, gearSlot, ilvlForDepth, rerollAffix, rerollCost, rollDropItem, rollGear, rollRarity,
@@ -108,6 +108,8 @@ export type DelveEvent =
   | { type: 'blocked'; action: 'mine' | 'place' | 'use'; reason: BlockReason; x: number; y: number }
   | { type: 'select'; slot: number }
   | { type: 'chest'; open: boolean; x: number; y: number }
+  /** 梳妝台：開啟（UI 開衣櫥 'mirror' 模式）/ 關閉（走遠、被拆、UI 關掉） */
+  | { type: 'mirror'; open: boolean; x: number; y: number }
   | { type: 'door'; open: boolean; x: number; y: number; unlocked: boolean }
   | { type: 'unlock'; x: number; y: number; item: ItemId }
   /** 讀古碑；first = 第一次讀到（收進日誌） */
@@ -537,6 +539,8 @@ export class DelveGame {
   private useConsumed = false;
   /** 目前開著的箱子（tile 座標） */
   openChest: { x: number; y: number } | null = null;
+  /** 目前在用的梳妝台（tile 座標）；比照箱子：走遠 / 被拆就關 */
+  openMirror: { x: number; y: number } | null = null;
   private mining: MiningState | null = null;
   private events: DelveEvent[] = [];
   private lastBlocked = '';
@@ -839,7 +843,11 @@ export class DelveGame {
         if (this.useLiquidTool(use, x, y)) this.placeCooldown = LIQUID_TOOL_CD;
       } else if (use) {
         if (!this.useConsumed) { this.useConsumed = true; this.consume(use); }
-      } else if (!this.useConsumed && this.tryPlace(x, y)) this.placeCooldown = PLACE_COOLDOWN;
+      } else if (!this.useConsumed && this.tryPlace(x, y)) {
+        this.placeCooldown = PLACE_COOLDOWN;
+        // 剛放下的梳妝台：這次按住不接著打開它（衣櫥會蓋住畫面），放開再按才用
+        if (this.world.getFg(x, y) === T.VANITY_TABLE) this.useConsumed = true;
+      }
     }
     this.updateEntities(dt);
     this.updateSettlements(dt);
@@ -847,6 +855,10 @@ export class DelveGame {
     if (this.openChest) {
       const { x, y } = this.openChest;
       if (!isChestTile(this.world.getFg(x, y)) || !this.canReach(x, y, this.reach() + 1.5)) this.closeChest();
+    }
+    if (this.openMirror) {
+      const { x, y } = this.openMirror;
+      if (this.world.getFg(x, y) !== T.VANITY_TABLE || !this.canReach(x, y, this.reach() + 1.5)) this.closeMirror();
     }
   }
 
@@ -1303,6 +1315,37 @@ export class DelveGame {
     return s ? this.vanity.equipFrom(this.inventory, i, s) : false;
   }
   unequipVanity(slot: VanitySlot): boolean { return this.vanity.unequipTo(this.inventory, slot); }
+  /**
+   * 梳妝台：身上每件換色看得出來的時裝（外觀欄順序）——目前的顏色（沒有 tint = 款式原色）與幾個顏色（tintChannels）。
+   * 固定配色的（礦工盔、花冠、羽翼、髮夾…）不列。
+   */
+  mirrorTints(): { slot: VanitySlot; item: ItemId; tint: Tint; channels: 1 | 2 }[] {
+    const out: { slot: VanitySlot; item: ItemId; tint: Tint; channels: 1 | 2 }[] = [];
+    for (const slot of VANITY_SLOTS) {
+      const st = this.vanity.getStack(slot), look = st ? ITEMS[st.item].vanity?.look : undefined;
+      if (!st || !look) continue;
+      const channels = tintChannels(look), tint = st.tint ?? defaultTint(look);
+      if (channels === 0 || !tint) continue;
+      out.push({ slot, item: st.item, tint: [tint[0], tint[1]], channels });
+    }
+    return out;
+  }
+  /**
+   * 梳妝台：替外觀欄 slot 上正穿著的時裝換顏色（免費）。那格沒東西 / 不是看得出顏色的時裝 / 顏色不合法 → false。
+   * 只有主色的款式：副色跟著主色。改的是那件物品本身（脫下來、放箱子都帶著）；紙娃娃靠 vanity.version 重畫。
+   */
+  recolorWorn(slot: VanitySlot, tint: [number, number]): boolean {
+    const st = this.vanity.getStack(slot), look = st ? ITEMS[st.item].vanity?.look : undefined;
+    const t = validTint(tint);
+    if (!st || !look || !t) return false;
+    const ch = tintChannels(look);
+    if (ch === 0) return false;
+    if (ch === 1) t[1] = t[0];
+    if (st.tint && st.tint[0] === t[0] && st.tint[1] === t[1]) return true;
+    st.tint = t;
+    this.vanity.touch();
+    return true;
+  }
   setHideArmor(slot: HideSlot, hide: boolean): void { this.vanity.setHide(slot, hide); }
   /** 紙娃娃現在的樣子（外觀 / 裝備 / 外觀欄沒變就回傳同一個物件）與快取 key */
   doll(): { look: DollLook; key: string } {
@@ -1658,6 +1701,14 @@ export class DelveGame {
       return true;
     }
     if (isLandmarkTile(id)) return this.claimLandmark(x, y);
+    if (id === T.VANITY_TABLE) {
+      if (this.openMirror && this.openMirror.x === x && this.openMirror.y === y) return true;
+      if (this.openMirror) this.closeMirror();
+      if (this.openChest) this.closeChest();
+      this.openMirror = { x, y };
+      this.events.push({ type: 'mirror', open: true, x, y });
+      return true;
+    }
     if (id === T.LORE_TABLET) {
       const lid = this.tabletId(x, y);
       this.events.push({ type: 'lore', id: lid, x, y, first: this.discovery.readLore(lid) });
@@ -1682,6 +1733,13 @@ export class DelveGame {
     const { x, y } = this.openChest;
     this.openChest = null;
     this.events.push({ type: 'chest', open: false, x, y });
+  }
+  /** 不用梳妝台了（UI 關掉衣櫥 / 走遠 / 被拆）：推關閉事件，只推一次 */
+  closeMirror(): void {
+    if (!this.openMirror) return;
+    const { x, y } = this.openMirror;
+    this.openMirror = null;
+    this.events.push({ type: 'mirror', open: false, x, y });
   }
   /** 開著的箱子內容（直接參照，請用下列方法修改） */
   chestSlots(): (Stack | null)[] | null {
@@ -3770,6 +3828,13 @@ export class DelveGame {
   // ── debug / e2e / 存檔還原 ─────────────────────────────
   /** 換角色外觀（存一份正規化後的新物件） */
   setAppearance(a: Appearance): void { this.appearance = normalizeAppearance(a); }
+  /**
+   * 梳妝台：只改身體特徵與布衣配色（主色 / 副色）。種族只能用轉生之藥換；服裝 / 頭飾 / 眼鏡欄位維持原值（那些靠時裝物品）。
+   */
+  setBodyLook(a: Appearance): void {
+    const cur = this.appearance;
+    this.appearance = normalizeAppearance({ ...a, race: cur.race, outfit: cur.outfit, acc: cur.acc, glasses: cur.glasses });
+  }
 
   /** 把玩家腳底放到 tile (tx, ty)（身體底 = (ty+1)*16），水平置中。 */
   teleport(tx: number, ty: number): void {

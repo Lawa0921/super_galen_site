@@ -26,6 +26,8 @@ import { liveCounts, type LiveCounts } from './live';
 import { GEN_PHASES, GenSectionView, genPhaseLabel, genPhaseOf } from './genSection';
 import { Wardrobe } from './wardrobe';
 import { createLook, loadDefaultAppearance, saveDefaultAppearance, setAppearance, type Appearance } from '../engine/appearance';
+import { ITEMS } from '../engine/items';
+import { restyledLook } from '../engine/doll';
 import { PlayLocks, PLAY_LOCKED_MSG, browserLocks, charLock, heldElsewhere, worldLock } from './playLock';
 
 /** 進度條格數 */
@@ -221,6 +223,32 @@ export function bootDelve(root: HTMLElement): Session {
     }
   }
 
+  /** 衣櫥現在是梳妝台開的（走遠 / 被拆的關閉事件只關它，不關別的用途） */
+  let mirrorOpen = false;
+  /**
+   * 梳妝台（遊戲裡按使用）：開衣櫥 'mirror' 模式——身體特徵（沒有種族）+ 身上每件時裝的主色 / 副色 + 布衣配色，免費。
+   * 開著時暫停模擬（比照舊的「角色外觀」）；完成 → setBodyLook + 每件 recolorWorn；關掉一律通知遊戲 closeMirror。
+   * 改的是這台機器上的玩家自己（連線時別人用房主的梳妝台，也是改他自己的角色）。
+   */
+  function setMirror(game: DelveGame, open: boolean): void {
+    if (!open) { if (mirrorOpen) wardrobe?.close(); return; }
+    if (!wardrobe || wardrobe.isOpen || handle?.game !== game) { game.closeMirror(); return; }
+    mirrorOpen = true;
+    handle.setPaused(true);
+    wardrobe.open(game.appearance, {
+      mode: 'mirror',
+      tints: game.mirrorTints().map((t) => ({ slot: t.slot, tint: t.tint, name: ITEMS[t.item].name.zh, channels: t.channels })),
+      look: (a, tints) => restyledLook(game.doll().look, a, tints),
+      onDone: (a) => game.setBodyLook(a),
+      onTints: (ts) => { for (const t of ts) game.recolorWorn(t.slot, t.tint); if (handle?.game === game) handle.hud.refresh(); },
+      onClose: () => {
+        mirrorOpen = false;
+        game.closeMirror();
+        if (handle?.game === game) handle.setPaused(!menu!.hidden);
+      },
+    });
+  }
+
   function begin(game: DelveGame, s: SplitSession, locks: PlayLocks): void {
     stopAutosave?.();
     handle?.destroy();
@@ -233,7 +261,7 @@ export function bootDelve(root: HTMLElement): Session {
     hudEl!.hidden = false;
     root.dataset.phase = 'playing';
     setMenu(false);
-    handle = startDelve({ root, canvas: canvas!, game, onMenu: () => setMenu(menu!.hidden) });
+    handle = startDelve({ root, canvas: canvas!, game, onMenu: () => setMenu(menu!.hidden), onMirror: (open) => setMirror(game, open) });
     window.__delveDebug = { game, handle, save: saveNow };
     if (!helpSeen(storage)) setHelp(true);
     if (hasIndexedDB()) {

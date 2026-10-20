@@ -143,6 +143,8 @@ export const RECIPES: readonly Recipe[] = [
   r('rug', 'rug', 1, 'workbench', ['banner', 1], ['gel', 1]),
   r('potted_plant', 'potted_plant', 1, 'workbench', ['clay', 2], ['dirt', 2]),
   r('bench', 'bench', 1, 'workbench', ['planks', 6]),
+  // 梳妝台：鏡子 = 玻璃（熔爐燒沙，開局就做得到；和平模式也拿得到，不靠打怪的凝膠）
+  r('vanity_table', 'vanity_table', 1, 'workbench', ['planks', 6], ['glass', 2]),
   // ── 據點：爐心（宣告據點範圍）、建築木槌 ──
   r('hearth', 'hearth', 1, null, ['stone', 15], ['wood', 5], ['torch', 3]),
   r('builder_hammer', 'builder_hammer', 1, 'workbench', ['wood', 6], ['stone', 4]),

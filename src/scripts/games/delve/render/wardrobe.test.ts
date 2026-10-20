@@ -14,6 +14,7 @@ function mount(): { root: HTMLElement; panel: HTMLElement; w: Wardrobe } {
   document.body.innerHTML = `
     <main id="delve-root">
       <section id="delve-wardrobe" hidden>
+        <h2 id="delve-wr-h"><span id="delve-wr-title">角色外觀</span></h2>
         <canvas id="delve-wr-doll"></canvas><p id="delve-wr-cap"></p>
         <button id="delve-wr-turn" type="button"></button>
         <div id="delve-wr-rows"></div>
@@ -77,6 +78,61 @@ describe('Wardrobe 模式', () => {
     expect(a).toMatchObject({ outfit: OUTFIT_PLAIN, acc: 0, glasses: false });
     const c = createCharacter('阿明', a, 0);
     expect(c.appearance).toMatchObject({ outfit: OUTFIT_PLAIN, acc: 0, glasses: false, color1: a.color1 });
+  });
+  it("'mirror'：身體列（沒有種族）＋ 每件身上時裝的主色 / 副色列（單色的只有主色）＋ 布衣兩列", () => {
+    m.w.open(bodyDefaults(0), {
+      mode: 'mirror',
+      tints: [
+        { slot: 'body', tint: [3, 8], name: '水手服上衣', channels: 2 },
+        { slot: 'acc', tint: [4, 4], name: '蝴蝶結', channels: 1 },
+      ],
+      onDone: () => {},
+    });
+    expect(rowKeys(m.panel)).toEqual(['body', 'hair', 'hairColor', 'ahoge', 'eyes', 'eyeShape', 'skin', 'blush', 'body.color1', 'body.color2', 'acc.color1', 'color1', 'color2']);
+    const groups = [...m.panel.querySelectorAll('.delve-wr-group')].map((el) => el.textContent);
+    expect(groups).toEqual(['頭髮', '臉', '水手服上衣', '蝴蝶結', '布衣']);
+    expect(m.panel.querySelector('.delve-wr-blurb')).toBeNull();
+    // 每組標題後面都有列
+    const kids = [...m.panel.querySelector('#delve-wr-rows')!.children] as HTMLElement[];
+    kids.forEach((el, i) => { if (el.classList.contains('delve-wr-group')) expect(kids[i + 1]?.classList.contains('delve-wr-row')).toBe(true); });
+    const row = m.panel.querySelector<HTMLElement>('.delve-wr-row[data-key="body.color2"]')!;
+    expect(row.getAttribute('aria-label')).toBe('水手服上衣 副色');
+    expect(row.dataset.value).toBe('8');
+    // 標題換成梳妝台；之後用建角模式打開換回角色外觀
+    expect(m.panel.querySelector('#delve-wr-title')!.textContent).toBe('梳妝台');
+    m.w.close();
+    m.w.open(bodyDefaults(0), { mode: 'create', onDone: () => {} });
+    expect(m.panel.querySelector('#delve-wr-title')!.textContent).toBe('角色外觀');
+  });
+  it("'mirror'：調時裝顏色 → 預覽用新顏色、完成時回報；種族 / 服裝 / 頭飾 / 眼鏡不會被換體型 / 隨機改掉", () => {
+    const start: Appearance = { ...bodyDefaults(0), race: 3, outfit: OUTFIT_PLAIN, acc: 2, glasses: true };
+    let got: Appearance | null = null;
+    let tints: { slot: string; tint: [number, number] }[] | null = null;
+    const seen: [number, number][] = [];
+    m.w.open(start, {
+      mode: 'mirror',
+      tints: [{ slot: 'body', tint: [3, 8], name: '水手服上衣', channels: 2 }],
+      look: (a, t) => { const b = t.find((x) => x.slot === 'body'); if (b) seen.push([...b.tint]); return { app: a, head: null, body: null, legs: null, back: null, acc: null, feet: null, neck: null, belt: null }; },
+      onDone: (a) => { got = a; },
+      onTints: (t) => { tints = t; },
+    });
+    m.panel.querySelector<HTMLElement>('.delve-wr-row[data-key="body.color1"] .delve-wr-arrow[data-dir="1"]')!.click();
+    m.panel.querySelector<HTMLElement>('.delve-wr-row[data-key="body.color2"] .delve-wr-arrow[data-dir="-1"]')!.click();
+    expect(m.panel.querySelector<HTMLElement>('.delve-wr-row[data-key="body.color1"]')!.dataset.value).toBe('4');
+    expect(seen.at(-1)).toEqual([4, 7]);
+    for (let i = 0; i < 10; i++) click(m.panel, '#delve-wr-random');
+    m.panel.querySelector<HTMLElement>('.delve-wr-row[data-key="body"] .delve-wr-arrow[data-dir="1"]')!.click();
+    expect(m.w.appearance).toMatchObject({ race: 3, outfit: OUTFIT_PLAIN, acc: 2, glasses: true });
+    click(m.panel, '#delve-wr-done');
+    expect(got).toMatchObject({ race: 3, outfit: OUTFIT_PLAIN, acc: 2, glasses: true });
+    expect(tints).toEqual([{ slot: 'body', tint: [4, 7] }]);
+  });
+  it("'mirror' 取消：不回報", () => {
+    let called = false;
+    m.w.open(bodyDefaults(0), { mode: 'mirror', tints: [], onDone: () => { called = true; }, onTints: () => { called = true; } });
+    click(m.panel, '#delve-wr-cancel');
+    expect(called).toBe(false);
+    expect(m.w.isOpen).toBe(false);
   });
   it("'create' 隨機 / 換體型之後仍是布衣、沒頭飾、沒眼鏡", () => {
     m.w.open(bodyDefaults(0), { mode: 'create', onDone: () => {} });

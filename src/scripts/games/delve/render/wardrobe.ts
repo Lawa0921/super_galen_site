@@ -2,11 +2,11 @@
 // 右邊一列列選項（髮型 / 髮色 / 呆毛 / 瞳色 / 眼型 / 膚色 / 眼鏡 / 服裝 / 主色 / 副色 / 頭飾）＋ 隨機 / 取消 / 完成。
 // 鍵盤：↑↓ 換列、←→ 換選項、Enter 完成、Esc 取消；Tab 只在面板裡循環。手機：預覽在上、選項在下捲動。
 // 模式決定列出哪些欄位（APPEARANCE_FIELDS 不刪列，只在這裡藏）：'create' = 新角色（身體特徵 + 種族 + 布衣配色）、
-// 'mirror' = 梳妝台、'full' = 全部欄位（舊行為，只留給內部 / 測試）。
+// 'mirror' = 梳妝台（身體特徵、沒有種族 + 身上每件時裝的主色 / 副色 + 布衣配色）、'full' = 全部欄位（舊行為，只留給內部 / 測試）。
 import { toCanvas } from './pixel';
 import {
-  APPEARANCE_FIELDS, OUTFIT_PLAIN, createLook, normalizeAppearance, randomAppearance, raceId, stepAppearance,
-  type Appearance, type AppearanceField, type AppearanceKey,
+  APPEARANCE_FIELDS, CLOTH_COLORS, OUTFIT_PLAIN, createLook, normalizeAppearance, randomAppearance, raceId, stepAppearance,
+  type Appearance, type AppearanceField, type AppearanceKey, type AppearanceOption,
 } from '../engine/appearance';
 import type { VanitySlot } from '../engine/items';
 import { dollKey, plainLook, type DollLook } from '../engine/doll';
@@ -41,17 +41,32 @@ export function wardrobeFields(mode: WardrobeMode): readonly AppearanceField[] {
   return keys ? APPEARANCE_FIELDS.filter((f) => keys.includes(f.key)) : APPEARANCE_FIELDS;
 }
 
+/** 一件時裝的配色（CLOTH_COLORS 索引的主色 / 副色） */
+export interface SlotTint { slot: VanitySlot; tint: [number, number]; }
+/** 梳妝台上一件身上時裝的配色列：name = 列組標題（物品名）、channels = 1 只列主色、2 主色 + 副色 */
+export interface WardrobeTint extends SlotTint { name: string; channels: 1 | 2; }
+
 export interface WardrobeOpen {
   /** 列出哪些欄位（預設 'full'：舊行為） */
   mode?: WardrobeMode;
-  /** 梳妝台：身上每件時裝目前的主色 / 副色（CLOTH_COLORS 索引） */
-  tints?: { slot: VanitySlot; tint: [number, number] }[];
-  /** 套上外觀之後畫成什麼樣子（遊戲中 = 身上的裝備 + 新外觀；標題 = 只有外觀） */
-  look?: (a: Appearance) => DollLook;
+  /** 梳妝台：身上每件看得出顏色的時裝（外觀欄順序），每件一組配色列 */
+  tints?: readonly WardrobeTint[];
+  /** 套上外觀（與梳妝台調的時裝配色）之後畫成什麼樣子（遊戲中 = 身上的裝備 + 新外觀；標題 = 只有外觀） */
+  look?: (a: Appearance, tints: readonly SlotTint[]) => DollLook;
   onDone(a: Appearance): void;
-  /** 梳妝台：完成時回報每件時裝的新配色 */
-  onTints?(t: { slot: VanitySlot; tint: [number, number] }[]): void;
+  /** 梳妝台：完成時回報每件時裝的新配色（在 onDone 之後） */
+  onTints?(t: SlotTint[]): void;
   onClose?(): void;
+}
+
+/** 一列：外觀欄位（f）或梳妝台的時裝配色（tint：第 i 件的主色 0 / 副色 1） */
+interface Row {
+  f: AppearanceField | null;
+  tint: { i: number; ch: 0 | 1 } | null;
+  options: readonly AppearanceOption[];
+  el: HTMLElement;
+  val: HTMLElement;
+  sw: HTMLCanvasElement | null;
 }
 
 export class Wardrobe {
@@ -65,7 +80,11 @@ export class Wardrobe {
   private faceLeft = false;
   private frames = new Map<string, HTMLCanvasElement[]>();
   private returnFocus: HTMLElement | null = null;
-  private readonly rows: { f: AppearanceField; el: HTMLElement; val: HTMLElement; sw: HTMLCanvasElement | null }[] = [];
+  private readonly rows: Row[] = [];
+  /** 梳妝台：每件身上時裝正在調的配色（open 時複製一份；完成才回報） */
+  private tints: WardrobeTint[] = [];
+  /** 梳妝台：打開時的外觀（種族 / 服裝 / 頭飾 / 眼鏡固定用它的，換體型 / 隨機都不會改到） */
+  private base: Appearance | null = null;
   private readonly offs: (() => void)[] = [];
   private readonly canvas: HTMLCanvasElement;
   private readonly cap: HTMLElement | null;
@@ -91,7 +110,12 @@ export class Wardrobe {
   open(initial: Appearance, o: WardrobeOpen): void {
     this.opts = o;
     const mode = o.mode ?? 'full';
-    if (mode !== this.mode) this.build(mode);
+    this.tints = mode === 'mirror' ? (o.tints ?? []).map((t) => ({ ...t, tint: [t.tint[0], t.tint[1]] })) : [];
+    this.base = mode === 'mirror' ? normalizeAppearance(initial) : null;
+    // 梳妝台的列跟著身上穿什麼變：每次都重建
+    if (mode !== this.mode || mode === 'mirror') this.build(mode);
+    const title = this.panel.querySelector('#delve-wr-title');
+    if (title) title.textContent = mode === 'mirror' ? '梳妝台' : '角色外觀';
     this.returnFocus = document.activeElement as HTMLElement | null;
     this.panel.hidden = false;
     this.root.dataset.wardrobe = '1';
@@ -117,6 +141,7 @@ export class Wardrobe {
     this.sound.ensure(); this.sound.uiConfirm();
     const a = this.appearance, o = this.opts;
     o?.onDone(a);
+    if (this.mode === 'mirror') o?.onTints?.(this.slotTints());
     this.close();
   }
 
@@ -130,45 +155,46 @@ export class Wardrobe {
     list.replaceChildren();
     const fields = wardrobeFields(mode);
     let group = '';
-    // 建角時服裝組只剩主色 / 副色，染的是基本布衣
-    const GROUP: Record<string, string> = { body: '體型', hair: '頭髮', face: '臉', outfit: mode === 'create' ? '布衣' : '服裝' };
+    // 建角 / 梳妝台的服裝組只剩主色 / 副色，染的是基本布衣
+    const GROUP: Record<string, string> = { body: '體型', hair: '頭髮', face: '臉', outfit: mode === 'full' ? '服裝' : '布衣' };
+    /** 目前這一組（標題下）放了幾列 */
+    let inGroup = 0;
     const fill = (): void => {
-      // 兩欄排版時，這一組是奇數列：最後補一格說明，右邊不會空一格（只算這個模式列出的欄位）
-      const n = fields.filter((x) => x.group === group).length;
-      if (group && n % 2 === 1) {
+      // 兩欄排版時，這一組是奇數列：最後補一格說明，右邊不會空一格（只算這個模式列出的列）
+      if (group && inGroup % 2 === 1) {
         const note = document.createElement('p');
         note.className = 'delve-wr-note';
-        note.textContent = group === 'outfit' ? '換服裝時主色 / 副色會換成那套的預設，之後可以再調。' : '左右鍵切換選項。';
+        note.textContent = group === 'outfit' ? '換服裝時主色 / 副色會換成那套的預設，之後可以再調。'
+          : group.startsWith('tint:') ? '這件只有一個顏色。' : '左右鍵切換選項。';
         list.appendChild(note);
       }
     };
-    for (const f of fields) {
-      if (f.group !== group) {
-        fill();
-        group = f.group;
-        // 體型只有一列、列名就寫著「體型」：不另外加標題
-        if (group !== 'body') {
-          const h = document.createElement('p');
-          h.className = 'delve-wr-group';
-          h.textContent = GROUP[group];
-          list.appendChild(h);
-        }
-      }
+    /** 開新的一組；text = null 不加標題（體型只有一列、列名就寫著「體型」） */
+    const heading = (g: string, text: string | null): void => {
+      fill();
+      group = g;
+      inGroup = 0;
+      if (text === null) return;
+      const h = document.createElement('p');
+      h.className = 'delve-wr-group';
+      h.textContent = text;
+      list.appendChild(h);
+    };
+    const add = (key: string, label: string, aria: string, color: boolean, options: readonly AppearanceOption[], f: AppearanceField | null, tint: Row['tint']): void => {
       const row = document.createElement('div');
       row.className = 'delve-wr-row';
       row.tabIndex = 0;
       row.setAttribute('role', 'group');
-      row.dataset.key = f.key;
-      row.setAttribute('aria-label', f.label);
+      row.dataset.key = key;
+      row.setAttribute('aria-label', aria);
       const lab = document.createElement('span');
       lab.className = 'delve-wr-label';
-      lab.textContent = f.label;
-      const prev = this.arrowBtn(-1, f), next = this.arrowBtn(1, f);
+      lab.textContent = label;
       const val = document.createElement('span');
       val.className = 'delve-wr-val';
       val.setAttribute('aria-live', 'polite');
       let sw: HTMLCanvasElement | null = null;
-      if (f.kind === 'color') {
+      if (color) {
         sw = document.createElement('canvas');
         sw.width = 4; sw.height = 4;
         sw.className = 'delve-wr-swatch';
@@ -178,9 +204,15 @@ export class Wardrobe {
       name.className = 'delve-wr-name';
       if (sw) val.append(sw);
       val.append(name);
-      row.append(lab, prev, val, next);
+      const r: Row = { f, tint, options, el: row, val: name, sw };
+      row.append(lab, this.arrowBtn(-1, aria, r), val, this.arrowBtn(1, aria, r));
       list.appendChild(row);
-      this.rows.push({ f, el: row, val: name, sw });
+      this.rows.push(r);
+      inGroup++;
+    };
+    const addField = (f: AppearanceField): void => {
+      if (f.group !== group) heading(f.group, f.group === 'body' ? null : GROUP[f.group]);
+      add(f.key, f.label, f.label, f.kind === 'color', f.options, f, null);
       if (f.key === 'race') {
         // 種族說明：跟著目前選的種族換（體型 + 種族兩列之後，整排寬）；第二句是不分男女的穿搭說明（體型組是偶數列，沒有補位說明可放）
         const b = document.createElement('p');
@@ -189,24 +221,38 @@ export class Wardrobe {
         list.appendChild(b);
         this.blurb = b;
       }
-    }
+    };
+    for (const f of fields) if (f.group !== 'outfit') addField(f);
+    // 梳妝台：身上每件時裝一組（標題 = 物品名；單色的只有主色），放在布衣配色前面
+    this.tints.forEach((t, i) => {
+      heading(`tint:${i}`, t.name);
+      add(`${t.slot}.color1`, '主色', `${t.name} 主色`, true, CLOTH_COLORS, null, { i, ch: 0 });
+      if (t.channels === 2) add(`${t.slot}.color2`, '副色', `${t.name} 副色`, true, CLOTH_COLORS, null, { i, ch: 1 });
+    });
+    for (const f of fields) if (f.group === 'outfit') addField(f);
     fill();
   }
-  private arrowBtn(dir: -1 | 1, f: AppearanceField): HTMLButtonElement {
+  private arrowBtn(dir: -1 | 1, label: string, r: Row): HTMLButtonElement {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'delve-ibtn delve-wr-arrow';
     b.tabIndex = -1;
     b.dataset.dir = String(dir);
-    b.setAttribute('aria-label', `${dir < 0 ? '上一個' : '下一個'}${f.label}`);
+    b.setAttribute('aria-label', `${dir < 0 ? '上一個' : '下一個'}${label}`);
     b.textContent = dir < 0 ? '◀' : '▶';
-    b.addEventListener('click', () => this.step(f, dir));
+    b.addEventListener('click', () => this.step(r, dir));
     return b;
   }
-  private step(f: AppearanceField, dir: number): void {
+  private step(r: Row, dir: number): void {
     this.sound.ensure(); this.sound.uiMove();
-    this.set(stepAppearance(this.a, f.key, dir));
+    if (r.tint) {
+      const t = this.tints[r.tint.i].tint, n = CLOTH_COLORS.length;
+      t[r.tint.ch] = (((t[r.tint.ch] + (dir < 0 ? -1 : 1)) % n) + n) % n;
+      this.set(this.a);
+    } else if (r.f) this.set(stepAppearance(this.a, r.f.key, dir));
   }
+  /** 梳妝台調好的配色（回報 / 預覽用的副本） */
+  private slotTints(): SlotTint[] { return this.tints.map((t) => ({ slot: t.slot, tint: [t.tint[0], t.tint[1]] })); }
   /** 隨機：建角時只抽身體特徵，配色沿用抽到那套衣服的配色、穿在布衣上 */
   private random(): Appearance {
     const r = randomAppearance(Math.random);
@@ -214,15 +260,19 @@ export class Wardrobe {
   }
   private set(next: Appearance): void {
     // 建角：不管從哪來（舊的預設外觀、隨機、換體型）一律只留身體、穿布衣
-    const a = this.mode === 'create' ? createLook(next) : next;
+    // 梳妝台：種族 / 服裝 / 頭飾 / 眼鏡固定是打開時的（只改身體特徵與布衣配色；隨機 / 換體型也一樣）
+    const b = this.base;
+    const a = this.mode === 'create' ? createLook(next)
+      : this.mode === 'mirror' && b ? { ...next, race: b.race, outfit: b.outfit, acc: b.acc, glasses: b.glasses } : next;
     this.a = a;
     for (const r of this.rows) {
-      const v = a[r.f.key];
+      const v = r.tint ? this.tints[r.tint.i].tint[r.tint.ch] : r.f ? a[r.f.key] : 0;
       const idx = typeof v === 'boolean' ? (v ? 1 : 0) : v;
-      r.val.textContent = r.f.options[idx]?.zh ?? '';
+      const key = r.f?.key;
+      r.val.textContent = r.options[idx]?.zh ?? '';
       r.el.dataset.value = String(idx);
       if (r.sw) {
-        const ramp = r.f.key === 'hairColor' ? HAIR_RAMPS[idx] : r.f.key === 'eyes' ? EYE_RAMPS[idx] : r.f.key === 'skin' ? SKIN_RAMPS[idx] : CLOTH_RAMPS[idx];
+        const ramp = key === 'hairColor' ? HAIR_RAMPS[idx] : key === 'eyes' ? EYE_RAMPS[idx] : key === 'skin' ? SKIN_RAMPS[idx] : CLOTH_RAMPS[idx];
         const ctx = r.sw.getContext('2d');
         if (ctx && ramp) {
           const c = (i: number): string => `rgb(${ramp[Math.min(ramp.length - 1, i)].join(',')})`;
@@ -250,7 +300,7 @@ export class Wardrobe {
   }
   private draw(): void {
     if (!this.isOpen) return;
-    const look = this.opts?.look?.(this.a) ?? plainLook(this.a);
+    const look = this.opts?.look?.(this.a, this.slotTints()) ?? plainLook(this.a);
     const key = dollKey(look);
     // 慢動作：每 2 個 tick 換一格（10 fps → 5 fps 的格子速度，看得清楚）
     const r = this.reelAt(Math.floor(this.tick / 2));
@@ -286,7 +336,7 @@ export class Wardrobe {
       this.sound.ensure(); this.sound.uiMove();
       return;
     }
-    if ((k === 'ArrowLeft' || k === 'ArrowRight') && i >= 0) { e.preventDefault(); e.stopPropagation(); this.step(this.rows[i].f, k === 'ArrowLeft' ? -1 : 1); return; }
+    if ((k === 'ArrowLeft' || k === 'ArrowRight') && i >= 0) { e.preventDefault(); e.stopPropagation(); this.step(this.rows[i], k === 'ArrowLeft' ? -1 : 1); return; }
     if (k === 'Enter' && i >= 0) { e.preventDefault(); e.stopPropagation(); this.done(); return; }
     if (k === 'Tab') {
       const f = [...this.panel.querySelectorAll<HTMLElement>('button:not([tabindex="-1"]), [tabindex="0"]')].filter((el) => !el.hidden);

@@ -6,7 +6,7 @@
 //   dollKey = 精靈快取 key（只含看得見的東西：換數值不重烘）。
 import { appearanceKey, type Appearance } from './appearance';
 import type { Equipment } from './equipment';
-import type { Vanity } from './vanity';
+import type { Vanity, VanitySlot } from './vanity';
 import { ITEMS, type ItemId } from './items';
 import type { Stack } from './inventory';
 import type { AffixId } from './gear';
@@ -83,6 +83,18 @@ export function dollKey(l: DollLook): string {
   const k = [appearanceKey(l.app), pk(l.head), pk(l.body), pk(l.legs), pk(l.back), l.feet ?? '-', l.neck ?? '-', l.belt ?? '-'];
   if (l.acc) k.push(pk(l.acc));
   return k.join('|');
+}
+/**
+ * 梳妝台預覽：look 換上新外觀，外觀欄 slot 上那件改用新配色（新物件，不改原本的 look）。
+ * 外觀欄有東西時一定是那格看得見的樣子（優先於防具），所以 slot 名直接對到 DollLook 的同名部位；那格沒穿東西就略過。
+ */
+export function restyledLook(look: DollLook, app: Appearance, tints: readonly { slot: VanitySlot; tint: Tint }[]): DollLook {
+  const out: DollLook = { ...look, app };
+  for (const { slot, tint } of tints) {
+    const p = out[slot];
+    if (p) out[slot] = { ...p, tint: cloneTint(tint) };
+  }
+  return out;
 }
 /** 只有外觀、什麼都沒穿 */
 export function plainLook(app: Appearance): DollLook {
