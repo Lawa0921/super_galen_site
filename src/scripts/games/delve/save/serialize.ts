@@ -42,6 +42,7 @@
 //   [4..8)  u32 header JSON 長度 N
 //   [8..8+N) header JSON（UTF-8）
 //   之後依 header.chunks 順序，每個 chunk：fg CHUNK*CHUNK bytes + wall CHUNK*CHUNK bytes（越界格補 0）
+// 世界檔 format 10（co-op，save/worldSave.ts）用同一個容器（encodeContainer / readContainer / readChunks）。
 import { DelveGame, BOSS_SUMMON_ITEM, MAX_BREATH, BURN_TIME, HONEY_TIME } from '../engine/game';
 import type { World } from '../engine/world';
 import { Inventory, cloneStack, type InventoryJSON, type Stack } from '../engine/inventory';
@@ -167,7 +168,7 @@ export interface FolkSave {
   /** 標過的所有地點（"x,y"） */
   scouted?: string[];
 }
-function validFolk(v: unknown): FolkSave | undefined {
+export function validFolk(v: unknown): FolkSave | undefined {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
   const o = v as Partial<FolkSave>;
   const buffs: Partial<Record<BuffKind, number>> = {};
@@ -321,7 +322,7 @@ function readLiquids(world: World, chunks: readonly number[]): { amount: Uint8Ar
   return { amount, type };
 }
 /** 液體欄位：先驗 chunk 清單（長度 ≤ 世界 chunk 總數、index 在範圍內、不重複），再配置 RLE 解碼緩衝 */
-function validLiquids(v: unknown, width: number, height: number): LiquidSave | undefined {
+export function validLiquids(v: unknown, width: number, height: number): LiquidSave | undefined {
   if (v === undefined) return undefined;
   const o = v as Partial<LiquidSave> | null;
   const dimsOk = validDims(width, height);
@@ -337,7 +338,7 @@ function validLiquids(v: unknown, width: number, height: number): LiquidSave | u
   }
   return { chunks: [...o.chunks], data: o.data };
 }
-function validVitals(v: unknown): VitalsSave | undefined {
+export function validVitals(v: unknown): VitalsSave | undefined {
   if (v === undefined) return undefined;
   const o = v as Partial<VitalsSave> | null;
   if (!o || typeof o !== 'object' || !isNum(o.breath) || !isNum(o.burning) || !isNum(o.honey)) throw new SaveFormatError('vitals');
@@ -345,7 +346,7 @@ function validVitals(v: unknown): VitalsSave | undefined {
   if (isNum(o.undying) && o.undying > 0) out.undying = o.undying;
   return out;
 }
-function validDrops(v: unknown): DropSave[] | undefined {
+export function validDrops(v: unknown): DropSave[] | undefined {
   if (v === undefined) return undefined;
   if (!Array.isArray(v) || v.length > MAX_DROPS) throw new SaveFormatError('drops');
   return v.map((d, k) => {
@@ -356,7 +357,7 @@ function validDrops(v: unknown): DropSave[] | undefined {
     return gear ? { item: o.item, count: o.count as number, x: o.x, y: o.y, gear } : { item: o.item, count: o.count as number, x: o.x, y: o.y };
   });
 }
-function validEnv(v: unknown): EnvSave | undefined {
+export function validEnv(v: unknown): EnvSave | undefined {
   if (v === undefined) return undefined;
   const o = v as Partial<EnvSave> | null;
   if (!o || typeof o !== 'object' || !Array.isArray(o.frozen) || !o.frozen.every((d) => Number.isInteger(d) && d >= 0)) throw new SaveFormatError('env');
@@ -364,7 +365,7 @@ function validEnv(v: unknown): EnvSave | undefined {
   const weather = wx && typeof wx === 'object' && WEATHER_KINDS.includes(wx.kind) && isNum(wx.until) ? { kind: wx.kind, until: wx.until } : null;
   return { weather, frozen: [...o.frozen] };
 }
-function validHalves(v: unknown): number[] | undefined {
+export function validHalves(v: unknown): number[] | undefined {
   if (!Array.isArray(v)) return undefined;
   return v.filter((d) => Number.isInteger(d) && d >= 0).slice(0, 2_000_000);
 }
@@ -381,7 +382,7 @@ export function validFishLog(v: unknown): Partial<Record<ItemId, number>> {
   }
   return fishLog;
 }
-function validExtra(v: unknown): ExtraSave | undefined {
+export function validExtra(v: unknown): ExtraSave | undefined {
   if (v === undefined || v === null || typeof v !== 'object') return undefined;
   const o = v as Partial<ExtraSave>;
   const fishLog = validFishLog(o.fishLog);
@@ -397,7 +398,7 @@ function validExtra(v: unknown): ExtraSave | undefined {
   }
   return out;
 }
-function validBossActive(v: unknown): EnemyKind | null {
+export function validBossActive(v: unknown): EnemyKind | null {
   if (v === undefined || v === null) return null;
   if (typeof v !== 'string') throw new SaveFormatError('bossActive');
   // 未知 / 不是首領的 kind：寬鬆忽略
@@ -491,30 +492,30 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
 }
 
 // ── base64（瀏覽器與 Node 都有 btoa / atob） ───────────────
-function toBase64(b: Uint8Array): string {
+export function toBase64(b: Uint8Array): string {
   let s = '';
   for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000));
   return btoa(s);
 }
-function fromBase64(s: string): Uint8Array {
+export function fromBase64(s: string): Uint8Array {
   const bin = atob(s);
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 }
 
-export function encodeSave(data: SaveData): Uint8Array {
-  const json = new TextEncoder().encode(JSON.stringify(data.header));
-  const n = data.header.chunks.length;
-  const out = new Uint8Array(8 + json.length + n * CHUNK_BYTES);
+/** 容器（magic + header JSON + 依 order 的 chunk payload）；舊合併檔與世界檔共用 */
+export function encodeContainer(headerJson: unknown, order: readonly number[], chunks: Map<number, ChunkPayload>): Uint8Array {
+  const json = new TextEncoder().encode(JSON.stringify(headerJson));
+  const out = new Uint8Array(8 + json.length + order.length * CHUNK_BYTES);
   out.set(MAGIC, 0);
   new DataView(out.buffer).setUint32(4, json.length, true);
   out.set(json, 8);
   let off = 8 + json.length;
   const half = CHUNK * CHUNK;
-  for (const ci of data.header.chunks) {
-    const c = data.chunks.get(ci);
-    if (!c) throw new Error(`encodeSave: missing chunk ${ci}`);
+  for (const ci of order) {
+    const c = chunks.get(ci);
+    if (!c) throw new Error(`encodeContainer: missing chunk ${ci}`);
     out.set(c.fg.subarray(0, half), off);
     out.set(c.wall.subarray(0, half), off + half);
     off += CHUNK_BYTES;
@@ -522,10 +523,45 @@ export function encodeSave(data: SaveData): Uint8Array {
   return out;
 }
 
+export function encodeSave(data: SaveData): Uint8Array {
+  return encodeContainer(data.header, data.header.chunks, data.chunks);
+}
+
+/** 容器前半：magic / 長度 / header JSON → 未驗證的 header 與 chunk payload 起點 */
+export function readContainer(bytes: Uint8Array): { raw: unknown; body: number } {
+  if (bytes.length < 8) throw new SaveFormatError('too short');
+  for (let i = 0; i < 4; i++) if (bytes[i] !== MAGIC[i]) throw new SaveFormatError('bad magic');
+  const len = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(4, true);
+  if (8 + len > bytes.length) throw new SaveFormatError('header truncated');
+  let raw: unknown;
+  try {
+    raw = JSON.parse(new TextDecoder().decode(bytes.subarray(8, 8 + len)));
+  } catch {
+    throw new SaveFormatError('header json');
+  }
+  return { raw, body: 8 + len };
+}
+
+/** 容器後半：總長要剛好、依 order 切出每個 chunk 並驗證 tile / wall id */
+export function readChunks(bytes: Uint8Array, body: number, order: readonly number[]): Map<number, ChunkPayload> {
+  const need = body + order.length * CHUNK_BYTES;
+  if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
+  const chunks = new Map<number, ChunkPayload>();
+  const half = CHUNK * CHUNK;
+  let off = body;
+  for (const ci of order) {
+    const c = { fg: bytes.slice(off, off + half), wall: bytes.slice(off + half, off + CHUNK_BYTES) };
+    validateChunk(ci, c);
+    chunks.set(ci, c);
+    off += CHUNK_BYTES;
+  }
+  return chunks;
+}
+
 export function isNum(v: unknown): v is number { return typeof v === 'number' && Number.isFinite(v); }
 
 /** chunk 內每格 fg / wall id 必須是已知 TILES / WALLS（variant 不存檔，由座標雜湊重算）。 */
-function validateChunk(ci: number, c: ChunkPayload): void {
+export function validateChunk(ci: number, c: ChunkPayload): void {
   const half = CHUNK * CHUNK;
   if (c.fg.length < half || c.wall.length < half) throw new SaveFormatError(`chunk ${ci}: short payload`);
   for (let i = 0; i < half; i++) {
@@ -552,19 +588,19 @@ export function validStack(st: unknown, where: string): Stack | null {
   return gear ? { item: o.item, count: o.count, gear } : { item: o.item, count: o.count };
 }
 
-function validUnlocked(v: unknown): number[] {
+export function validUnlocked(v: unknown): number[] {
   if (v === undefined) return [];
   if (!Array.isArray(v) || !v.every((i) => Number.isInteger(i) && i >= 0)) throw new SaveFormatError('unlocked');
   return [...(v as number[])].sort((a, b) => a - b);
 }
-function validKeysUsed(v: unknown): number {
+export function validKeysUsed(v: unknown): number {
   if (v === undefined) return 0;
   if (typeof v !== 'number' || !Number.isInteger(v) || v < 0) throw new SaveFormatError('keysUsed');
   return v;
 }
 
 /** 迷霧：base64 → RLE → 長度要剛好 width*height（否則損毀）；回傳原字串 */
-function validExplored(v: unknown, width: number, height: number): string | undefined {
+export function validExplored(v: unknown, width: number, height: number): string | undefined {
   if (v === undefined) return undefined;
   if (typeof v !== 'string') throw new SaveFormatError('explored');
   // 尺寸本身不合法時交給 restoreGame 的 size 檢查
@@ -576,7 +612,7 @@ function validExplored(v: unknown, width: number, height: number): string | unde
   }
   return v;
 }
-function validMarkers(v: unknown): MapMarker[] {
+export function validMarkers(v: unknown): MapMarker[] {
   if (v === undefined) return [];
   if (!Array.isArray(v) || v.length > MAX_MARKERS) throw new SaveFormatError('markers');
   return v.map((m) => {
@@ -585,14 +621,14 @@ function validMarkers(v: unknown): MapMarker[] {
     return { x: o.x as number, y: o.y as number };
   });
 }
-function validBed(v: unknown): { x: number; y: number } | null {
+export function validBed(v: unknown): { x: number; y: number } | null {
   if (v === undefined || v === null) return null;
   const o = v as { x?: unknown; y?: unknown };
   if (typeof o !== 'object' || !Number.isInteger(o.x) || !Number.isInteger(o.y)) throw new SaveFormatError('bed');
   return { x: o.x as number, y: o.y as number };
 }
 /** 戰鬥欄位：型別錯 → 損毀；數值範圍與未知裝備在還原時寬鬆處理 */
-function validCombat(v: unknown): CombatSave | undefined {
+export function validCombat(v: unknown): CombatSave | undefined {
   if (v === undefined) return undefined;
   const o = v as Partial<CombatSave> | null;
   if (!o || typeof o !== 'object' || !isNum(o.hp) || !isNum(o.maxHp) || !isNum(o.mana)
@@ -614,13 +650,13 @@ function validCombat(v: unknown): CombatSave | undefined {
     kills, peaceful: Boolean(o.peaceful),
   };
 }
-function validDiscovery(v: unknown): DiscoveryJSON | undefined {
+export function validDiscovery(v: unknown): DiscoveryJSON | undefined {
   if (v === undefined) return undefined;
   if (!v || typeof v !== 'object' || Array.isArray(v)) throw new SaveFormatError('discovery');
   return v as DiscoveryJSON;
 }
 
-function validChests(v: unknown): ChestSave[] {
+export function validChests(v: unknown): ChestSave[] {
   if (v === undefined) return [];
   if (!Array.isArray(v)) throw new SaveFormatError('chests');
   return v.map((c, k) => {
@@ -644,16 +680,7 @@ export function validInventory(v: unknown): InventoryJSON {
 }
 
 export function decodeSave(bytes: Uint8Array): SaveData {
-  if (bytes.length < 8) throw new SaveFormatError('too short');
-  for (let i = 0; i < 4; i++) if (bytes[i] !== MAGIC[i]) throw new SaveFormatError('bad magic');
-  const len = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(4, true);
-  if (8 + len > bytes.length) throw new SaveFormatError('header truncated');
-  let raw: unknown;
-  try {
-    raw = JSON.parse(new TextDecoder().decode(bytes.subarray(8, 8 + len)));
-  } catch {
-    throw new SaveFormatError('header json');
-  }
+  const { raw, body } = readContainer(bytes);
   const h = raw as Partial<SaveHeader>;
   if (!h || typeof h !== 'object' || !isNum(h.format) || !isNum(h.genVersion) || typeof h.seed !== 'string'
     || !isNum(h.width) || !isNum(h.height) || !isNum(h.time) || !isNum(h.tick)
@@ -688,18 +715,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     levels: validLevels(h.levels),
     folk: validFolk(h.folk),
   };
-  const need = 8 + len + header.chunks.length * CHUNK_BYTES;
-  if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
-  const chunks = new Map<number, ChunkPayload>();
-  const half = CHUNK * CHUNK;
-  let off = 8 + len;
-  for (const ci of header.chunks) {
-    const c = { fg: bytes.slice(off, off + half), wall: bytes.slice(off + half, off + CHUNK_BYTES) };
-    validateChunk(ci, c);
-    chunks.set(ci, c);
-    off += CHUNK_BYTES;
-  }
-  return { header, chunks };
+  return { header, chunks: readChunks(bytes, body, header.chunks) };
 }
 
 /** 被修改 chunk 裡：丟掉世界生成的箱子，依 tile 重建空箱，再套用存檔內容。 */
