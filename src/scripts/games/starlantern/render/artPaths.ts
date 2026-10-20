@@ -1,14 +1,14 @@
 import { CHARACTER_IDS } from '../data/characters';
 import { ENEMIES } from '../data/enemies';
 import { EQUIPMENT, WEAPON_KINDS } from '../data/equipment';
-import { RARITIES } from '../data/gear';
+import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
-import { REGIONS } from '../data/regions';
+import { REGIONS, type RegionId } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { BattleEvent } from '../engine/combatant';
 import type { Dir, Tile } from '../engine/map';
-import type { CharacterId, FxKey, Rarity, WeaponKind } from '../engine/types';
+import type { CharacterId, FxKey, ItemInstance, Rarity, WeaponKind } from '../engine/types';
 
 export const ART_BASE = '/assets/games/starlantern';
 export const MANIFEST_URL = `${ART_BASE}/manifest.json`;
@@ -77,6 +77,12 @@ export const art = {
   portrait: (cid: string, mood: Mood | StoryMood) => `${ART_BASE}/char/${cid}-portrait${mood === 'normal' ? '' : `-${mood}`}.png`,
   standee: (cid: string) => `${ART_BASE}/char/${cid}-standee.png`,
   icon: (id: string) => `${ART_BASE}/icon/${id}.png`,
+  /** Gear art (plan 5d; registry `gear-<id>`): 26 x 26, the subject's long side 22, shown at its own size. Use gearArtId. */
+  gear: (id: string) => `${ART_BASE}/gear/${id}.png`,
+  /** The same piece large (registry `gear-<id>-large`): 64 x 64, for the item detail. */
+  gearLarge: (id: string) => `${ART_BASE}/gear/${id}-large.png`,
+  /** An unobtained region piece or set on the gate's codex (registry `gear-<id>-silhouette`): 28 x 28, made from the icon. */
+  gearSilhouette: (id: string) => `${ART_BASE}/gear/${id}-silhouette.png`,
   frame: `${ART_BASE}/ui/frame.png`,
   scene: (id: 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate' | 'forge') => `${ART_BASE}/scene/${id}.png`,
   npc: (id: 'guild' | 'shop' | 'inn' | 'gate' | 'forge', mood: 'normal' | 'happy') => `${ART_BASE}/npc/${id}${mood === 'happy' ? '-happy' : ''}.png`,
@@ -106,6 +112,27 @@ export const art = {
 /** Every rarity but common has a frame (plan 5d Task 5); epic comes with plan 5g through RARITIES. */
 export type FramedRarity = Exclude<Rarity, 'common'>;
 export const FRAMED_RARITIES: FramedRarity[] = RARITIES.filter((r): r is FramedRarity => r !== 'common');
+
+/** The art of a piece: a special (legendary, unique, set piece) has its own and never borrows its base's. */
+export const gearArtId = (it: Pick<ItemInstance, 'base' | 'special'>): string => it.special ?? it.base;
+
+/** The art of a codex entry: a set shows its first piece; anything else is its own id. */
+export const codexArtId = (id: string): string => SETS[id]?.pieces[0] ?? id;
+
+/** Region-limited pieces and sets: the gate's codex shows a silhouette of each until it is obtained. */
+const SILHOUETTE_IDS = (): string[] => [
+  ...(Object.keys(REGIONS) as RegionId[]).flatMap((r) => regionSpecials(r).map((s) => s.id)),
+  ...Object.keys(SETS),
+];
+
+/**
+ * The 15 bases whose old icon (`icon/<id>.png`, sheet-icons-3) is still published. Plan 5d redraws every base under
+ * `gear/`; each old icon stays listed until its new art is published and the old one retires (plan 5d Tasks 8 and 10).
+ */
+export const RETIRING_ICONS: ReadonlySet<string> = new Set([
+  'wooden-staff', 'iron-sword', 'hunter-bow', 'thorn-spear', 'crystal-blade', 'frost-staff', 'star-saber',
+  'cloth-robe', 'leather-vest', 'scale-mail', 'dusk-mantle', 'moss-charm', 'bat-earring', 'crystal-pendant', 'gear-ring',
+]);
 
 /** Event tiles with art of their own in the art factory; a chest uses its terrain's chest tile instead. */
 export type EventTileKey = 'fountain' | 'merchant' | 'altar' | 'elite' | 'vault'
@@ -165,9 +192,15 @@ export function allArtUrls(): string[] {
   // Region material icons come with the art batch; until then they are not expected on disk.
   const NO_ICON_YET = new Set<string | null>([
     ...Object.values(REGIONS).map((r) => r.material),
-    // plan 5a transition: the ten new bases have no icon yet
-    'wooden-buckler', 'crystal-aegis', 'leather-cap', 'scale-helm', 'cloth-gloves',
-    'thorn-gauntlets', 'straw-sandals', 'bat-boots', 'copper-ring', 'star-ring',
+    // plan 5d: gear art (`gear/<id>.png` and `-large`) for every base and special waits for its art batch, and so does
+    // any piece merged into SPECIALS later (a roster unique) until its own batch publishes it. A publish takes its ids
+    // out of this spread (plan 5d Tasks 8 and 10). The bases no longer list `icon/<id>.png`: see RETIRING_ICONS.
+    ...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS),
+    // plan 5d: the gate codex's silhouettes (`silhouette:<id>`), the rarity frames (epic with plan 5g), the legend glow,
+    // the starlit overlay (plan 5g), the forge scene and Doran
+    ...SILHOUETTE_IDS().map((id) => `silhouette:${id}`),
+    ...FRAMED_RARITIES.map((r) => `ui:rarity-${r}`), 'ui:glow-legendary', 'ui:starlit',
+    'scene:forge', 'npc:forge', 'npc:forge-happy',
     // plan 5a: rare materials have no icon yet
     'star-tear', 'king-scale',
     // plan 5c: the four essences have no icon yet
@@ -186,9 +219,20 @@ export function allArtUrls(): string[] {
     // plan 6a: the hero's skills have no icon yet
     ...Object.values(SKILLS).filter((s) => s.owner === 'hero').map((s) => s.id),
   ]);
-  for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.keys(MATERIALS), ...Object.keys(EQUIPMENT)]) {
+  for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.keys(MATERIALS)]) {
     if (!NO_ICON_YET.has(id)) urls.push(art.icon(id));
   }
+  for (const id of RETIRING_ICONS) urls.push(art.icon(id));
+  for (const id of [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)]) {
+    if (!NO_ICON_YET.has(id)) urls.push(art.gear(id), art.gearLarge(id));
+  }
+  for (const id of SILHOUETTE_IDS()) if (!NO_ICON_YET.has(`silhouette:${id}`)) urls.push(art.gearSilhouette(id));
+  for (const r of FRAMED_RARITIES) if (!NO_ICON_YET.has(`ui:rarity-${r}`)) urls.push(art.rarityFrame(r));
+  if (!NO_ICON_YET.has('ui:glow-legendary')) urls.push(art.rarityGlow);
+  if (!NO_ICON_YET.has('ui:starlit')) urls.push(art.starlitOverlay);
+  if (!NO_ICON_YET.has('scene:forge')) urls.push(art.scene('forge'));
+  if (!NO_ICON_YET.has('npc:forge')) urls.push(art.npc('forge', 'normal'));
+  if (!NO_ICON_YET.has('npc:forge-happy')) urls.push(art.npc('forge', 'happy'));
   return urls;
 }
 

@@ -2,8 +2,10 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../data/enemies';
 import type { BattleEvent } from '../engine/combatant';
-import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, FRAMED_RARITIES, MOODS, MOODS_OF, PUBLISHED_FACES, SPECIAL_MOODS_OF, allArtUrls, art, effectFor, enemyArt, moodFor, parseManifest, tileKey } from './artPaths';
-import { RARITIES } from '../data/gear';
+import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, FRAMED_RARITIES, MOODS, MOODS_OF, PUBLISHED_FACES, RETIRING_ICONS, SPECIAL_MOODS_OF, allArtUrls, art, codexArtId, effectFor, enemyArt, gearArtId, moodFor, parseManifest, tileKey } from './artPaths';
+import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
+import { EQUIPMENT } from '../data/equipment';
+import { REGIONS, type RegionId } from '../data/regions';
 
 describe('artPaths', () => {
   it('builds urls under the starlantern base', () => {
@@ -31,6 +33,40 @@ describe('artPaths', () => {
     for (const id of ['hero', 'rin', 'rin-oath']) for (const m of ['normal', 'attack', 'hit', 'dying', 'down', 'ultimate', 'smile', 'sad'] as const) expect(urls).toContain(art.portrait(id, m));
     expect(urls).toContain(art.standee('rin-oath'));
     for (const id of Object.keys(ENEMIES).filter((e) => !ENEMIES[e].look)) expect(urls).toContain(art.enemy(id));
+    // Plan 5d Task 5: the 15 old base icons stay listed until they retire; every new gear path waits behind NO_ICON_YET.
+    expect([...RETIRING_ICONS].sort()).toEqual(['wooden-staff', 'iron-sword', 'hunter-bow', 'thorn-spear', 'crystal-blade', 'frost-staff', 'star-saber',
+      'cloth-robe', 'leather-vest', 'scale-mail', 'dusk-mantle', 'moss-charm', 'bat-earring', 'crystal-pendant', 'gear-ring'].sort());
+    for (const id of RETIRING_ICONS) expect(urls).toContain(art.icon(id));
+    for (const id of Object.keys(EQUIPMENT).filter((e) => !RETIRING_ICONS.has(e))) expect(urls).not.toContain(art.icon(id));
+    for (const id of [...Object.keys(EQUIPMENT), ...Object.keys(SPECIALS)]) {
+      expect(urls).not.toContain(art.gear(id));
+      expect(urls).not.toContain(art.gearLarge(id));
+      if (id in SPECIALS) expect(urls).not.toContain(art.icon(id));
+    }
+    const regionLimited = (Object.keys(REGIONS) as RegionId[]).flatMap((r) => regionSpecials(r).map((s) => s.id));
+    expect(regionLimited.length + Object.keys(SETS).length).toBe(18);
+    for (const id of [...regionLimited, ...Object.keys(SETS)]) expect(urls).not.toContain(art.gearSilhouette(id));
+    for (const u of [art.scene('forge'), art.npc('forge', 'normal'), art.npc('forge', 'happy'), art.rarityGlow, art.starlitOverlay]) expect(urls).not.toContain(u);
+  });
+
+  it('builds gear, large, silhouette and frame urls', () => {
+    expect(art.gear('iron-sword')).toBe('/assets/games/starlantern/gear/iron-sword.png');
+    expect(art.gearLarge('blaze-heart-sword')).toBe('/assets/games/starlantern/gear/blaze-heart-sword-large.png');
+    expect(art.gearSilhouette('set-blaze')).toBe('/assets/games/starlantern/gear/set-blaze-silhouette.png');
+    expect(art.rarityFrame('set')).toBe('/assets/games/starlantern/ui/rarity-set.png');
+    expect(art.rarityFrame('epic')).toBe('/assets/games/starlantern/ui/rarity-epic.png');
+    expect(art.starlitOverlay).toBe('/assets/games/starlantern/ui/starlit.png');
+  });
+
+  it('gearArtId prefers the special', () => {
+    expect(gearArtId({ base: 'iron-sword', special: 'blaze-heart-sword' })).toBe('blaze-heart-sword');
+    expect(gearArtId({ base: 'iron-sword' })).toBe('iron-sword');
+  });
+
+  it('codexArtId maps a set to its first piece', () => {
+    expect(codexArtId('set-blaze')).toBe('set-blaze-weapon');
+    expect(codexArtId('blaze-ember-ring')).toBe('blaze-ember-ring');
+    for (const s of Object.values(SETS)) expect(codexArtId(s.id)).toBe(s.pieces[0]);
   });
 
   it('matches the art registry runtime paths exactly', () => {
