@@ -109,6 +109,26 @@ describe('BattleScene', () => {
     expect(Object.values(last).flat()).toEqual([]);
   });
 
+  it("a fled fight clears the enemies' ailment words", async () => {
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
+    game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
+    for (const e of game.battle!.enemies) e.poison = true;
+    (game as unknown as { rng: () => number }).rng = constRng(0.01);   // the escape roll succeeds
+    const showAilments = vi.fn();
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null, showIntents: vi.fn(), syncHp: vi.fn(), showAilments, play: vi.fn() } };
+    const root = document.createElement('div');
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true });
+    s.enter(root);
+    expect(showAilments.mock.calls.at(-1)![0]).toMatchObject({ e0: [{ id: 'poison' }] });
+    for (let i = 0; i < 4; i++) s.onAction('down');
+    s.onAction('confirm');   // 逃跑
+    for (let i = 0; i < 4; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }   // the rest defend
+    await flush();
+    const last = showAilments.mock.calls.at(-1)![0] as Record<string, unknown[]>;
+    expect(Object.values(last).flat()).toEqual([]);
+    expect(showAilments.mock.calls.length).toBeGreaterThan(1);
+  });
+
   it('goes back to the previous member on cancel', () => {
     const { s, heading } = setup();
     s.onAction('down'); s.onAction('down'); s.onAction('confirm');

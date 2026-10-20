@@ -199,7 +199,7 @@ describe('PartyBar after the oath', () => {
     bar.update([m('scarlet', 30, { ailments: [{ id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 }] }), m('noel')]);
     const row = bar.el.querySelector<HTMLElement>('[data-key=scarlet] .slx-pm-ail')!;
     expect(row.hidden).toBe(false);
-    expect([...row.children].map((c) => [c.className, c.textContent])).toEqual([['slx-ail slx-ail-burn', '灼燒3'], ['slx-ail slx-ail-bleed', '流血×2']]);
+    expect([...row.children].map((c) => [c.className, c.textContent])).toEqual([['slx-ail slx-ail-bleed', '流血×2'], ['slx-ail slx-ail-burn', '灼燒3']]);
     const none = bar.el.querySelector<HTMLElement>('[data-key=noel] .slx-pm-ail')!;
     expect(none.hidden).toBe(true);
     expect(none.children).toHaveLength(0);
@@ -208,5 +208,16 @@ describe('PartyBar after the oath', () => {
     expect(row.hidden).toBe(true);
     expect(bar.el.querySelector('.slx-pm-ail img')).toBeNull();
     expect(bar.el.querySelectorAll('img').length).toBe(0);   // NO_ART: no faces, and the words bring no picture
+  });
+
+  it('one line: the most severe first, and what does not fit folds into +N', () => {
+    const bar = new PartyBar(NO_ART);
+    const five = [{ id: 'poison' }, { id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 }, { id: 'shock', turns: 2 }, { id: 'chill', turns: 2 }] as const;
+    bar.update([m('scarlet', 30, { ailments: [...five] })]);
+    const row = bar.el.querySelector<HTMLElement>('[data-key=scarlet] .slx-pm-ail')!;
+    const words = [...row.children].map((c) => [c.className, c.textContent]);
+    expect(words).toEqual([['slx-ail slx-ail-bleed', '流血×2'], ['slx-ail slx-ail-burn', '灼燒3'], ['slx-ail slx-ail-poison', '中毒'], ['slx-ail slx-ail-more', '+2']]);
+    bar.update([m('scarlet', 30, { ailments: [{ id: 'chill', turns: 2 }, { id: 'freeze' }, { id: 'sleep', turns: 1 }] })]);
+    expect([...row.children].map((c) => c.textContent)).toEqual(['凍結', '睡眠1', '冰緩2']);   // all fit: no +N
   });
 });

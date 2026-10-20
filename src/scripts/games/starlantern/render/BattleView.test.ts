@@ -1,14 +1,17 @@
-import { ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import { ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture, TextureSource } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
 import { makeBattle, makeCombatant } from '../engine/testing';
 import { OutlineFilter } from 'pixi-filters';
 import { BattleView, TINT_COLORS, TINT_STYLE, ailLabelWidth } from './BattleView';
-import { AILMENT_FILL } from './ailmentStyle';
+import { AILMENT_FILL, AILMENT_MORE_FILL } from './ailmentStyle';
+import type { AilmentChip } from '../engine/ailments';
 import type { TextureBank } from './textures';
 
 const sfx = { hit: vi.fn(), weak: vi.fn(), heal: vi.fn(), ko: vi.fn() } as unknown as SoundManager;
+/** Five ailments, as the battle hands them over (the fixed chip order). */
+const FIVE: AilmentChip[] = [{ id: 'poison' }, { id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 }, { id: 'shock', turns: 2 }, { id: 'chill', turns: 2 }];
 const bank = { get: () => Texture.WHITE, has: () => true } as unknown as TextureBank;
 const battle = (log: BattleState['log']): BattleState =>
   makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], [makeCombatant({ key: 'e0', side: 'enemy' })], { log });
@@ -83,20 +86,60 @@ describe('BattleView bottom inset', () => {
     expect(view.hpBarRect('nobody')).toBeNull();
   });
 
-  it("keeps each HP bar clear of two rows of the party's ailment words above the party bar", () => {
+  it("keeps each HP bar clear of the party's one row of ailment words, lifted no more than that needs", () => {
     const view = new BattleView(true, bank);
     view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
-    // The party bar's top is 360 - 2 - 62 = 296; a row of words is 12 px (10 + rim) with 1 px gaps and a 1 px margin.
-    const wordsTop = 296 - 1 - 12 - 1 - 12;
+    // The party bar's top is 360 - 2 - 62 = 296; the row of words is 12 px (10 + rim) with a 1 px margin.
+    const wordsTop = 296 - 1 - 12;
     const r = view.hpBarRect('e0')!;
-    expect(r.y + r.height).toBeLessThan(wordsTop);
-    // The name stays above the bar and the enemy's ailment words above the name.
+    expect(r.y + r.height).toBeLessThanOrEqual(wordsTop - 1);
+    expect(r.y + r.height).toBeGreaterThanOrEqual(wordsTop - 2);   // the minimum lift, no more
     const box = enemyBox(view);
     const name = box.children.find((c) => c instanceof Text && c.text === 'e0')!;
     expect(name.y + 18).toBeLessThanOrEqual(r.y - box.y + 1);
-    view.showAilments({ e0: [{ id: 'poison' }] });
-    const t = view.ailmentTexts('e0')[0];
-    expect(t.parent!.y + t.y + 14).toBeLessThanOrEqual(name.y);
+  });
+
+  it('a small sprite (the bat) keeps at least 30 px visible above its name, its ailment words above its head', () => {
+    const bat = new Texture({ source: new TextureSource({ width: 119, height: 65 }) });
+    const batBank = { get: () => bat, has: () => true } as unknown as TextureBank;
+    const view = new BattleView(true, batBank);
+    const four = makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], ['e0', 'e1', 'e2', 'e3'].map((key) => makeCombatant({ key, side: 'enemy', defId: 'bat' })));
+    view.setup(four, { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments(Object.fromEntries(['e0', 'e1', 'e2', 'e3'].map((k) => [k, FIVE])));
+    for (const key of ['e0', 'e1', 'e2', 'e3']) {
+      const box = view.enemyBoxOf(key)!;
+      const body = box.children[0] as Container;
+      const name = box.children.find((c) => c instanceof Text && c.text === key)!;
+      const spriteTop = -body.height;
+      expect(name.y - spriteTop, key).toBeGreaterThanOrEqual(30);
+      const words = view.ailmentTexts(key);
+      expect(words.length).toBeGreaterThan(0);
+      for (const t of words) expect(t.parent!.y + t.y + 14, key).toBeLessThanOrEqual(spriteTop);
+    }
+  });
+
+  it('with four enemies of five ailments each, every row is one line inside its own slot and no two overlap', () => {
+    const view = new BattleView(true, bank);
+    const four = makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], ['e0', 'e1', 'e2', 'e3'].map((key) => makeCombatant({ key, side: 'enemy' })));
+    view.setup(four, { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments(Object.fromEntries(['e0', 'e1', 'e2', 'e3'].map((k) => [k, FIVE])));
+    const slotW = (640 - 150) / 5;
+    const rows = ['e0', 'e1', 'e2', 'e3'].map((key) => {
+      const box = view.enemyBoxOf(key)!;
+      const words = view.ailmentTexts(key);
+      expect(new Set(words.map((t) => t.y)).size, key).toBe(1);   // one line
+      const left = box.x + words[0].x - ailLabelWidth(words[0].text) / 2;
+      const right = box.x + words.at(-1)!.x + ailLabelWidth(words.at(-1)!.text) / 2;
+      expect(right - left, key).toBeLessThanOrEqual(slotW - 6);
+      return { key, left, right, texts: words.map((t) => t.text) };
+    });
+    for (let i = 1; i < rows.length; i++) expect(rows[i].left, `${rows[i - 1].key} / ${rows[i].key}`).toBeGreaterThan(rows[i - 1].right);
+    // The most severe first; what does not fit folds into +N in the ink colour.
+    expect(rows[0].texts[0]).toBe('流血×2');
+    expect(rows[0].texts.at(-1)).toMatch(/^\+\d$/);
+    const shown = rows[0].texts.length - 1, folded = Number(rows[0].texts.at(-1)!.slice(1));
+    expect(shown + folded).toBe(5);
+    expect(view.ailmentTexts('e0').at(-1)!.style.fill).toBe(AILMENT_MORE_FILL);
   });
 });
 
@@ -168,24 +211,23 @@ describe('BattleView enemy status', () => {
     expect(view.intentText('e0')).toBe('');
   });
 
-  it('showAilments draws one coloured label per ailment at the feet, clear of the party bar, and replaces them', () => {
+  it('showAilments draws one coloured label per ailment above the head, most severe first, and replaces them', () => {
     const view = new BattleView(true, bank);
     view.setup(battle([]), { width: 640, height: 360 }, 1);
     view.showAilments({ e0: [{ id: 'shock', turns: 2 }, { id: 'bleed', stacks: 3, turns: 2 }] });
     const labels = view.ailmentTexts('e0');
-    expect(labels.map((t) => t.text)).toEqual(['感電2', '流血×3']);
-    expect(labels.map((t) => t.style.fill)).toEqual([AILMENT_FILL.shock, AILMENT_FILL.bleed]);
+    expect(labels.map((t) => t.text)).toEqual(['流血×3', '感電2']);
+    expect(labels.map((t) => t.style.fill)).toEqual([AILMENT_FILL.bleed, AILMENT_FILL.shock]);
     expect(labels.every((t) => t instanceof Text && t.style.fontSize === 11)).toBe(true);
     const box = enemyBox(view);
     for (const t of labels) {
       expect(t.parent?.parent).toBe(box);
-      // Between the feet and the name (the name's top is the feet, 0): never in the 28 px under the feet the party bar can cover.
-      expect(t.parent!.y + t.y).toBeLessThan(0);
-      expect(t.parent!.y + t.y + 14).toBeLessThanOrEqual(0);
+      // Above the head (the body's top), never over the sprite, the name or the bar.
+      expect(t.parent!.y + t.y + 14).toBeLessThanOrEqual(-(box.children[0] as Container).height);
     }
     // Side by side, centred on the enemy.
     expect(labels[0].x).toBeLessThan(labels[1].x);
-    const left = labels[0].x - ailLabelWidth('感電2') / 2, right = labels[1].x + ailLabelWidth('流血×3') / 2;
+    const left = labels[0].x - ailLabelWidth('流血×3') / 2, right = labels[1].x + ailLabelWidth('感電2') / 2;
     expect(right - left).toBeCloseTo(ailLabelWidth('感電2') + ailLabelWidth('流血×3') + 4, 6);
     expect(left + right).toBeCloseTo(0, 6);
     expect(ailLabelWidth('感電2')).toBeCloseTo(11 * 2 + 6.6, 6);

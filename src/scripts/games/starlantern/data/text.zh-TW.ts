@@ -153,6 +153,8 @@ export const T = {
   ailment: AILMENT_NAME,
   /** One ailment as a short label: its name and rounds left (「灼燒3」), a bleed's stacks (「流血×2」); poison and freeze have no number. */
   ailmentChip: (c: AilmentChip) => `${AILMENT_NAME[c.id]}${c.stacks !== undefined ? `×${c.stacks}` : c.turns !== undefined ? c.turns : ''}`,
+  /** The ailments a full row folds away, counted: 「+2」. */
+  ailmentMore: (n: number) => `+${n}`,
   log: {
     act: (who: string, label: string) => `${who}：${label}`,
     damage: (who: string, n: number, mult: number) => `${who} 受到 ${n} 傷害${mult > 1 ? '（弱點）' : mult < 1 ? '（抗性）' : ''}`,

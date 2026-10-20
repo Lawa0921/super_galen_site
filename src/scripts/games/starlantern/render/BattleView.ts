@@ -9,7 +9,7 @@ import type { Combatant } from '../engine/combatant';
 import type { WeaponKind } from '../engine/types';
 import { art, enemyArt, type FxKey } from './artPaths';
 import { battleCues } from './battleCues';
-import { AILMENT_FILL } from './ailmentStyle';
+import { AILMENT_FILL, AILMENT_MORE_FILL, fitChips, textWidth } from './ailmentStyle';
 import type { TextureBank } from './textures';
 
 const PALETTE = [0x7fb069, 0x8e7dbe, 0xd1495b, 0x66a1d2, 0xe0a458, 0x5c946e, 0xb56576, 0x6d6875, 0xc44536];
@@ -66,11 +66,11 @@ function tintMatrix(color: number, k: number): ColorMatrix {
   return [r[0], r[1], r[2], r[3], r[4], g[0], g[1], g[2], g[3], g[4], b[0], b[1], b[2], b[3], b[4], 0, 0, 0, 1, 0];
 }
 
-/** One enemy in the picture: its sprite, an HP bar under its name, its ailments just above the name, and its announced next move above its head. */
+/** One enemy in the picture: its sprite, an HP bar under its name, and above its head its announced next move with its ailments just under it. */
 interface Slot {
   key: string; box: Container; body: Container; texture: Texture | null; hp: number; max: number; bar: Graphics; intent: Text;
   name: Text;
-  /** One coloured word per ailment, side by side at its feet, above the name (`showAilments`). */
+  /** One coloured word per ailment, side by side above its head (`showAilments`). */
   ail: Container;
   /** Its regional colour and elite outline: always on; the hit flash and the target highlight are added on top. */
   base: Filter[];
@@ -78,22 +78,18 @@ interface Slot {
 }
 const BAR_W = 64;
 /**
- * With a party bar below (`bottom` > 0), the name and the HP bar are raised this far over the feet, so the bar stays clear
- * of two rows of the party's ailment words standing on the party bar (12 px each, 1 px gap and margin: 26 px above it).
+ * With a party bar below (`bottom` > 0), the name and the HP bar are raised this far over the feet: the least that keeps
+ * the bar clear of the party's one row of ailment words standing on the party bar (12 px and a 1 px margin above it).
  */
-const NAME_LIFT = 21;
-/**
- * The ailment row's top, from the name's top: just above the name. Under the HP bar (the plan's place) it would sit
- * behind the party bar or the party's own ailment words.
- */
-const AIL_Y = -15;
+const NAME_LIFT = 8;
+/** An enemy's ailment row: one line above its head, just under its intent, so it never covers a small sprite. */
+const AIL_UNDER_INTENT = 2;
 const AIL_GAP = 4;
 const AIL_SIZE = 11;
-/**
- * A label's width at the ailment font size, estimated without measuring (no canvas needed): a CJK character is a full
- * em, anything else (digits, ×) a little over half. Only the row's centring depends on it.
- */
-export const ailLabelWidth = (text: string): number => [...text].reduce((w, ch) => w + (ch.charCodeAt(0) > 0x2e80 ? AIL_SIZE : AIL_SIZE * 0.6), 0);
+/** Room kept between two enemies' ailment rows: each row fits its slot less this. */
+const AIL_SLOT_MARGIN = 6;
+/** A label's width at the ailment font size, estimated without measuring (render/ailmentStyle.ts `textWidth`). */
+export const ailLabelWidth = (text: string): number => textWidth(text, AIL_SIZE);
 /** Nothing in the picture may rise above the message window. */
 const TOP_CLEAR = 52;
 
@@ -123,6 +119,8 @@ export class BattleView {
   private frames = new Set<number>();
   private shattering: Promise<void>[] = [];
   private size = { width: 640, height: 360 };
+  /** How wide one enemy's ailment row may be: its slot, less a margin. */
+  private ailMax = Infinity;
   private lit = new Map<string, ColorMatrixFilter>();
   /** Tint, glow and outline filters of the current battle, destroyed on the next setup. */
   private tintFilters: Filter[] = [];
@@ -168,6 +166,7 @@ export class BattleView {
     }
     const n = state.enemies.length;
     const slotW = (size.width - left) / (n + 1);
+    this.ailMax = slotW - AIL_SLOT_MARGIN;
     const usable = size.height - bottom;
     const ground = bottom > 0 ? usable - 28 : size.height * 0.85;   // 28 px under the feet for the name and the HP bar
     state.enemies.forEach((e, i) => {
@@ -195,12 +194,12 @@ export class BattleView {
       const intent = new Text({ text: '', style: { fill: 0xffe08a, fontSize: 12, stroke: { color: 0x000000, width: 3 } } });
       intent.anchor.set(0.5, 1);
       const ail = new Container();
-      ail.y = AIL_Y - lift;
       box.addChild(body, label, bar, ail, intent);
       box.x = left + slotW * (i + 1);
       box.y = ground;
       box.alpha = e.alive ? 1 : 0;
       intent.y = Math.max(TOP_CLEAR - ground, -body.height - 30);
+      ail.y = intent.y + AIL_UNDER_INTENT;
       this.scene.addChild(box);
       const key = tintKey(e.tint, region);
       const color = key ? TINT_COLORS[key] : null;
@@ -400,16 +399,18 @@ export class BattleView {
   }
 
   /**
-   * Each enemy's ailments as coloured words at its feet, above its name, centred on it (「感電2」「流血×3」); a call replaces the whole
+   * Each enemy's ailments as coloured words above its head, centred on it, in one line inside its slot (「流血×3」「感電2」「+1」); a call replaces the whole
    * row, and an enemy missing from `byKey` or with an empty list shows none.
    */
   showAilments(byKey: Record<string, AilmentChip[]>): void {
     for (const [k, s] of this.slots) {
       if (s.ail.destroyed) continue;
       for (const c of s.ail.removeChildren()) c.destroy();
-      const words = (byKey[k] ?? []).map((chip) => new Text({
-        text: T.ailmentChip(chip), style: { fill: AILMENT_FILL[chip.id], fontSize: AIL_SIZE, stroke: { color: 0x000000, width: 3 } },
-      }));
+      // One line inside its slot: the most severe first, the rest folded into +N.
+      const { shown, more } = fitChips(byKey[k] ?? [], this.ailMax, (t) => ailLabelWidth(t), AIL_GAP);
+      const word = (text: string, fill: number) => new Text({ text, style: { fill, fontSize: AIL_SIZE, stroke: { color: 0x000000, width: 3 } } });
+      const words = shown.map((chip) => word(T.ailmentChip(chip), AILMENT_FILL[chip.id]));
+      if (more) words.push(word(T.ailmentMore(more), AILMENT_MORE_FILL));
       const widths = words.map((t) => ailLabelWidth(t.text));
       let x = -(widths.reduce((a, b) => a + b, 0) + AIL_GAP * Math.max(0, words.length - 1)) / 2;
       words.forEach((t, i) => {
@@ -421,7 +422,13 @@ export class BattleView {
     }
   }
 
-  /** The ailment words under an enemy's bar, in order (for tests). */
+  /** An enemy's whole picture (sprite, name, bar, words), for layout tests. */
+  enemyBoxOf(key: string): Container | null {
+    const s = this.slots.get(key);
+    return s && !s.box.destroyed ? s.box : null;
+  }
+
+  /** The ailment words above an enemy's head, in order (for tests). */
   ailmentTexts(key: string): Text[] {
     const s = this.slots.get(key);
     return s && !s.ail.destroyed ? [...s.ail.children] as Text[] : [];

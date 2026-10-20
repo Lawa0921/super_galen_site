@@ -1485,7 +1485,7 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
-  test('five members with five ailments each never cover an enemy HP bar, at 1280x720 or 844x390', async ({ page }) => {
+  test('five members with five ailments each never cover an enemy HP bar, at 1280x720 or 844x390 (one line each)', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
       page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
@@ -1507,6 +1507,10 @@ test.describe('starlantern', () => {
         m.shock = 3; m.chill = 3;
         m.hp = m.max.hp;
       }
+      for (const e of g.battle.enemies) {
+        e.poison = true; e.burn = { tick: 1, turns: 3, src: 'hero' }; e.bleed = [{ tick: 1, turns: 3, src: 'hero' }];
+        e.shock = 3; e.chill = 3; e.max.hp = 999; e.hp = 999;
+      }
     });
     // Everyone defends through one round, so every panel is redrawn with its words.
     for (let i = 0; i < 60 && (await game((g) => g.battle?.round ?? -1)) === 0; i++) {
@@ -1515,7 +1519,7 @@ test.describe('starlantern', () => {
     }
     await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
     await expect(page.locator('.slx-partybar .slx-pm-ail:not([hidden])')).toHaveCount(5);
-    for (const row of await page.locator('.slx-partybar .slx-pm-ail').all()) expect(await row.locator('.slx-ail').count()).toBe(5);
+    for (const row of await page.locator('.slx-partybar .slx-pm-ail').all()) expect(await row.locator('.slx-ail').allTextContents()).toEqual(['流血×2', '灼燒2', '中毒', '+2']);
     /** Every member word against every living enemy's HP bar (design px, mapped onto the canvas as drawn). */
     const overlaps = () => page.evaluate(() => {
       const view = (window as unknown as { __starlanternDebug: { stage: any } }).__starlanternDebug.stage.battleView;
@@ -1536,7 +1540,7 @@ test.describe('starlantern', () => {
       await page.waitForTimeout(300);
       const r = await overlaps();
       expect(r.bars, `${size.width}x${size.height}`).toBeGreaterThan(0);
-      expect(r.chips, `${size.width}x${size.height}`).toBe(25);
+      expect(r.chips, `${size.width}x${size.height}`).toBe(20);
       expect(r.hits, `${size.width}x${size.height}`).toEqual([]);
       if (process.env.SL_SHOTS) { mkdirSync(process.env.SL_SHOTS, { recursive: true }); await page.screenshot({ path: `${process.env.SL_SHOTS}/five-by-five-${size.width}.png` }); }
     }
@@ -1576,7 +1580,8 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
     const row = page.locator(`.slx-partybar [data-key=${who}] .slx-pm-ail`);
     await expect(row).toBeVisible();
-    expect(await row.locator('.slx-ail').allTextContents()).toEqual(['中毒', '灼燒2', '流血×2', '感電2', '冰緩2']);
+    // One line, the most severe first; what does not fit is counted in +N.
+    expect(await row.locator('.slx-ail').allTextContents()).toEqual(['流血×2', '灼燒2', '中毒', '+2']);
     expect(await page.locator('.slx-partybar .slx-ail img, .slx-partybar .slx-pm-ail img').count()).toBe(0);
     if (process.env.SL_SHOTS) { mkdirSync(process.env.SL_SHOTS, { recursive: true }); await page.waitForTimeout(800); await page.screenshot({ path: `${process.env.SL_SHOTS}/ailments-1280.png` }); }
     // At 1280 and on a phone: the words wrap within the panel's width just above it, on the screen; the panel keeps its height.

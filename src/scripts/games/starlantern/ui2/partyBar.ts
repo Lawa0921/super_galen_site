@@ -3,9 +3,16 @@ import { el } from '../ui/dom';
 import { T } from '../data/text.zh-TW';
 import type { Row } from '../engine/types';
 import type { AilmentChip } from '../engine/ailments';
+import { fitChips, textWidth } from '../render/ailmentStyle';
 import type { ArtIndex } from '../render/textures';
 
 const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' };
+/**
+ * A panel's ailment row in design px: the party bar is 632 wide in five columns with 4 px gaps (123.2 each), less the
+ * panel's 1 px borders, less 2 px to spare. A word is its text at 9 px plus 1 px padding and a 1 px rim each side.
+ */
+const AIL_ROW_W = 119;
+const ailWordWidth = (text: string): number => textWidth(text, 9) + 4;
 
 /** `row` shows a small 前／中／後 tag so the formation is visible during play. */
 export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean; row?: Row;
@@ -151,9 +158,11 @@ export class PartyBar {
         el('span', { class: 'slx-pm-tp' }), bar(0, 1, 'slx-bar-tp'), bar(0, 1, 'slx-bar-limit'), el('span', { class: 'slx-pm-ail' }));
     }
     const [name, num, hp, tpNum, tp, limit, ail] = [...p.body.children] as HTMLElement[];
-    const chips = m.ailments ?? [];
-    ail.replaceChildren(...chips.map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })));
-    ail.hidden = chips.length === 0;
+    // One line: the most severe first, the rest folded into +N.
+    const { shown, more } = fitChips(m.ailments ?? [], AIL_ROW_W, ailWordWidth, 1);
+    ail.replaceChildren(...shown.map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })),
+      ...(more ? [el('span', { class: 'slx-ail slx-ail-more', text: T.ailmentMore(more) })] : []));
+    ail.hidden = shown.length + more === 0;
     tpNum.textContent = `TP ${m.tp}/${m.maxTp}`;
     name.replaceChildren(m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : []));
     num.textContent = `${m.hp}/${m.maxHp}`;
