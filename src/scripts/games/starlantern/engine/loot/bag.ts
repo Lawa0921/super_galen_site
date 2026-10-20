@@ -23,10 +23,13 @@ export function addGear(s: GameState, id: string): void {
 
 const JUNK_AT: Record<AutoJunk, Rarity[]> = { off: [], common: ['common'], magic: ['common', 'magic'] };
 
-/** A sorted copy of the bag: rarity and item level high to low, slot in GEAR_SLOTS order; ties keep their order. */
+/**
+ * A sorted copy of the bag: rarity and item level high to low, slot in GEAR_SLOTS order; ties keep their order.
+ * By rarity, a starlit piece leads the others of its rarity (plan 5g).
+ */
 export function sortBag(bag: ItemInstance[], by: 'rarity' | 'slot' | 'ilvl'): ItemInstance[] {
   const key = (it: ItemInstance): number =>
-    by === 'rarity' ? -RARITY_RANK[it.rarity] : by === 'ilvl' ? -it.ilvl : GEAR_SLOTS.indexOf(itemSlot(it));
+    by === 'rarity' ? -(RARITY_RANK[it.rarity] * 2 + (it.starlit ? 1 : 0)) : by === 'ilvl' ? -it.ilvl : GEAR_SLOTS.indexOf(itemSlot(it));
   return bag.map((it, i) => ({ it, i, k: key(it) })).sort((a, b) => a.k - b.k || a.i - b.i).map((x) => x.it);
 }
 

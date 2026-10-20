@@ -73,4 +73,16 @@ describe('material uses', () => {
   it('every use has words', () => {
     for (const m of Object.keys(MATERIALS)) for (const u of materialUses(m)) expect(words(u), JSON.stringify(u)).not.toBeNull();
   });
+
+  it('the rare essence rerolls rare and epic gear', () => {
+    const u = materialUses('essence-rare');
+    const rare = u.findIndex((v) => v.kind === 'reroll' && v.tier === 'rare');
+    const epic = u.findIndex((v) => v.kind === 'reroll' && v.tier === 'epic');
+    expect(rare).toBeGreaterThanOrEqual(0);
+    expect(epic).toBe(rare + 1);
+    expect(T.forge.use({ kind: 'reroll', tier: 'epic' })).toBe('重鑄史詩裝備');
+    for (const m of Object.values(MATERIALS)) {
+      for (const v of materialUses(m.id)) if (v.kind === 'fuseSlot') expect(v.target, m.id).not.toBe('epic');
+    }
+  });
 });

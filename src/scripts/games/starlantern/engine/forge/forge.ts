@@ -3,7 +3,7 @@ import { generalLegendaries } from '../../data/gear';
 import { mintUid } from '../loot/bag';
 import { addItem, clampToMax } from '../town';
 import { mulberry32, pick } from '../rng';
-import { rollItem, rollValue } from '../loot/item';
+import { maxValue, rollItem, rollValue } from '../loot/item';
 import type { GameState } from '../state';
 import type { AnyStat, GearSlot, ItemInstance } from '../types';
 import type { Rng } from '../rng';
@@ -49,7 +49,9 @@ export function enhance(s: GameState, uid: number, rng?: Rng): ForgeResult<{ suc
 
 /**
  * Rerolls one affix: its value, or (swap) its key too. The first reroll locks that index for good.
- * Refusals, in order: stock, invalid (plain / bad index), affixLocked, invalid (swap on unique/set), invalid (bad mat), none (empty pool), gold/mats.
+ * A starlit piece (plan 5g) keeps every affix at its maximum: its value reroll is refused, and its swap draws only the key.
+ * Refusals, in order: stock, invalid (plain / bad index), affixLocked, invalid (value reroll on starlit), invalid (swap on unique/set),
+ * invalid (bad mat), none (empty pool), gold/mats.
  */
 export function reroll(
   s: GameState, uid: number, index: number, o: RerollOpts, rng?: Rng,
@@ -59,6 +61,7 @@ export function reroll(
   const it = found.it;
   if (it.rarity === 'common' || !Number.isInteger(index) || index < 0 || index >= it.affixes.length) return { ok: false, reason: 'invalid' };
   if (it.locked !== undefined && it.locked !== index) return { ok: false, reason: 'affixLocked' };
+  if (it.starlit && !o.swap) return { ok: false, reason: 'invalid' };
   if (o.swap && (it.rarity === 'unique' || it.rarity === 'set')) return { ok: false, reason: 'invalid' };
   if (o.mat !== undefined && (!o.swap || !Object.prototype.hasOwnProperty.call(REGION_AFFIX_GROUP, o.mat))) return { ok: false, reason: 'invalid' };
   const pool = o.swap ? swapPool(it, index, o.mat) : [];
@@ -73,7 +76,7 @@ export function reroll(
   const draw = rng ?? forgeRng(n);
   const before = { ...target.it.affixes[index] };
   const key = o.swap ? pick(draw, pool) : before.key;
-  const after = { key, value: rollValue(draw, key, target.it.ilvl, target.it.rarity) };
+  const after = { key, value: target.it.starlit ? maxValue(key, target.it.ilvl) : rollValue(draw, key, target.it.ilvl, target.it.rarity) };
   target.it.affixes[index] = after;
   target.it.locked = index;
   if (target.member) clampToMax(n.party.roster[target.member]);
