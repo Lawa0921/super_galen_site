@@ -7,6 +7,7 @@ import type { Rng } from './rng';
 import { stepFalling, stepFlying, stepNoClip, type PhysEnv } from './entities';
 import { LIQ } from './liquidKind';
 import type { ProjKind } from './projectiles';
+import type { Pid } from './actor';
 import { TILE_SIZE as S } from './constants';
 
 export type EnemyKind =
@@ -119,6 +120,8 @@ export interface Enemy {
   frost: number;
   poison: number;
   poisonTick: number;
+  /** 最後打中牠的玩家（擊殺歸屬：燒死 / 毒死 / 掉進液體死掉也算他的）；沒人打過 = undefined（不存檔） */
+  lastHitBy?: Pid;
 }
 
 export function makeEnemy(id: number, kind: EnemyKind, cx: number, bottom: number): Enemy {

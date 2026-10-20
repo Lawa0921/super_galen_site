@@ -2413,6 +2413,8 @@ export class DelveGame {
   private damageEnemy(e: Enemy, raw: number, kb: number, critChance: number, dir: 1 | -1, flame = false, fx?: HitFx): boolean {
     const def = ENEMIES[e.kind];
     if (e.state === 'shatter' || e.hp <= 0) return false;
+    // 擊殺歸屬：在玩家的 cur 下打中（近戰 / 技能 / 荊棘 / owner 還在的投射物）→ 記住是誰；世界段（owner 已離開的投射物）→ 沒有人
+    e.lastHitBy = this.worldDepth === 0 ? this.cur.pid : undefined;
     const crit = rollCrit(critChance, this.combatRng);
     const amount = enemyDamage(raw * (crit ? 2 : 1), Math.max(0, def.defense - (fx?.pen ?? 0)));
     e.hp -= amount;
@@ -2473,7 +2475,17 @@ export class DelveGame {
     return true;
   }
 
+  /**
+   * 擊殺：在最後打中牠的玩家（lastHitBy，還在遊戲裡）的 cur 下結算——kill 事件帶他的 pid（經驗給他）、掉寶看他的幸運 / 等級、
+   * 首領的轉生之藥看他的首殺紀錄；燒死 / 毒死 / 掉進液體死掉（世界段）也一樣。沒人打過 / 那人已離開 → 照舊（世界段 = 本地玩家）。
+   * 單機只是多包一層 withActor(本地)：RNG 呼叫與事件都不變。
+   */
   private killEnemy(e: Enemy): void {
+    const by = e.lastHitBy === undefined ? undefined : this.actors.get(e.lastHitBy);
+    if (by && (by !== this.cur || this.worldDepth > 0)) this.withActor(by, () => this.settleKill(e));
+    else this.settleKill(e);
+  }
+  private settleKill(e: Enemy): void {
     const def = ENEMIES[e.kind], b = e.body;
     this.enemies = this.enemies.filter((q) => q !== e);
     const cx = b.x + b.w / 2, cy = b.y + b.h / 2;

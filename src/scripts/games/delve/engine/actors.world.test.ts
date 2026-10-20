@@ -303,3 +303,129 @@ describe('單機不變', () => {
     expect(ev).toEqual([]);
   });
 });
+
+describe('擊殺歸屬：最後打中的人（持續傷害 / 液體擊殺也算他的）', () => {
+  const NO_FX = { burn: 0, frost: 0, poison: 0, leech: 0, chain: 0, soul: 0, pen: 0 };
+  /** 這段事件裡有沒有給 pid 的擊殺經驗（單機時事件不帶 pid = 本地玩家） */
+  const xpTo = (ev: DelveEvent[], pid: string, src: 'kill' | 'boss' = 'kill') => ev.some((e) => e.type === 'xp' && e.src === src && (e.pid ?? 'h') === pid);
+  /** B 的投射物在怪物身上打一下（不打死） */
+  function bHits(g: DelveGame, e: ReturnType<DelveGame['spawnEnemy']>, o: { flame?: boolean; fx?: typeof NO_FX } = {}): void {
+    e.hp = 1000;
+    const ec = { x: e.body.x + e.body.w / 2, y: e.body.y + e.body.h / 2 };
+    g.projectiles.spawn('arrow', false, ec.x, ec.y, 0, 0, { damage: 1, knockback: 0, life: 1, owner: 'b', ...o });
+    steps(g, 1);
+    expect(g.enemies).toContain(e);
+  }
+  /** 跑到怪物死掉，回傳這段的所有事件（drainAll 會先換算經驗：xp 事件也在裡面） */
+  function untilDead(g: DelveGame, e: ReturnType<DelveGame['spawnEnemy']>): DelveEvent[] {
+    const ev: DelveEvent[] = [];
+    for (let i = 0; i < 240 && g.enemies.includes(e); i++) { steps(g, 1); ev.push(...g.drainAll()); }
+    expect(g.enemies).not.toContain(e);
+    return ev;
+  }
+
+  it('B 點燃的怪物燒死 → kill 事件帶 b、經驗給 B', () => {
+    const g = arena();
+    g.addActor('b', hero(), { x: 66, y: FLOOR - 1 });
+    const e = g.spawnEnemy('gel_blob', 52, FLOOR - 1);
+    bHits(g, e, { flame: true });
+    expect(e.burn).toBeGreaterThan(0);
+    e.hp = 1;
+    g.drainAll();
+    const ev = untilDead(g, e), kill = ev.find((x) => x.type === 'kill' && x.id === e.id);
+    expect(kill?.pid).toBe('b');
+    expect(xpTo(ev, 'b')).toBe(true);
+    expect(xpTo(ev, 'h')).toBe(false);
+  });
+
+  it('B 讓怪物中毒、毒死 → 經驗給 B', () => {
+    const g = arena();
+    g.addActor('b', hero(), { x: 66, y: FLOOR - 1 });
+    const e = g.spawnEnemy('gel_blob', 52, FLOOR - 1);
+    bHits(g, e, { fx: { ...NO_FX, poison: 100 } });
+    expect(e.poison).toBeGreaterThan(0);
+    e.hp = 1;
+    const ev = untilDead(g, e), kill = ev.find((x) => x.type === 'kill' && x.id === e.id);
+    expect(kill?.pid).toBe('b');
+    expect(xpTo(ev, 'b')).toBe(true);
+    expect(xpTo(ev, 'h')).toBe(false);
+  });
+
+  /** 地上一格熔岩（x），怪物站在上面 */
+  function lavaAt(g: DelveGame, x: number): void {
+    g.world.setLiquid(x, FLOOR - 1, 255, LIQ.LAVA);
+  }
+  it('沒人打過、掉進熔岩死掉 → 世界擊殺，照舊記給本地玩家', () => {
+    const g = arena();
+    g.addActor('b', hero(), { x: 66, y: FLOOR - 1 });
+    const e = g.spawnEnemy('gel_blob', 55, FLOOR - 1);
+    e.hp = 1;
+    lavaAt(g, 55);
+    const ev = untilDead(g, e), kill = ev.find((x) => x.type === 'kill' && x.id === e.id);
+    expect(kill).toBeDefined();
+    expect(kill?.pid).toBeUndefined();
+    expect(xpTo(ev, 'h')).toBe(true);
+    expect(xpTo(ev, 'b')).toBe(false);
+  });
+
+  it('B 打過、之後掉進熔岩死掉 → 記給 B', () => {
+    const g = arena();
+    g.addActor('b', hero(), { x: 66, y: FLOOR - 1 });
+    const e = g.spawnEnemy('gel_blob', 55, FLOOR - 1);
+    bHits(g, e);
+    e.hp = 1;
+    lavaAt(g, 55);
+    const ev = untilDead(g, e), kill = ev.find((x) => x.type === 'kill' && x.id === e.id);
+    expect(kill?.pid).toBe('b');
+    expect(xpTo(ev, 'b')).toBe(true);
+    expect(xpTo(ev, 'h')).toBe(false);
+  });
+
+  it('打過的人已經離開 → 退回本地玩家', () => {
+    const g = arena();
+    g.addActor('b', hero(), { x: 66, y: FLOOR - 1 });
+    const e = g.spawnEnemy('gel_blob', 52, FLOOR - 1);
+    bHits(g, e, { flame: true });
+    g.removeActor('b');
+    e.hp = 1;
+    g.drainAll();
+    expect(xpTo(untilDead(g, e), 'h')).toBe(true);
+  });
+
+  /** 首領的轉生之藥：B 第一次擊敗必掉（A 打過不影響 B 的首殺） */
+  const potions = (g: DelveGame, b: PlayerActor) => g.drops.list.filter((d) => d.item === 'rebirth_potion').reduce((n, d) => n + d.count, 0)
+    + g.local.inventory.count('rebirth_potion') + b.inventory.count('rebirth_potion');
+  it('B 的箭射死首領 → 轉生之藥看 B 的首殺紀錄', () => {
+    const g = arena();
+    const b = g.addActor('b', hero(), { x: 66, y: FLOOR - 1 });
+    g.local.levels.bosses.add('lantern_warden');
+    const e = g.spawnEnemy('lantern_warden', 56, FLOOR - 1);
+    e.phase = 2; // 第二階段：血量低也不會進碎籠（無敵）
+    e.hp = 1;
+    const ec = { x: e.body.x + e.body.w / 2, y: e.body.y + e.body.h / 2 };
+    g.projectiles.spawn('arrow', false, ec.x, ec.y, 0, 0, { damage: 50, life: 1, owner: 'b' });
+    steps(g, 1);
+    expect(g.enemies).not.toContain(e);
+    expect(potions(g, b)).toBe(1);
+    g.drainAll();
+    expect(b.levels.bosses.has('lantern_warden')).toBe(true);
+  });
+
+  it('B 的火焰箭點燃首領、首領燒死 → 轉生之藥看 B 的首殺紀錄、首殺經驗給 B', () => {
+    const g = arena();
+    const b = g.addActor('b', hero(), { x: 66, y: FLOOR - 1 });
+    g.local.levels.bosses.add('lantern_warden');
+    const e = g.spawnEnemy('lantern_warden', 56, FLOOR - 1);
+    e.phase = 2; // 第二階段：血量低也不會進碎籠（無敵）
+    bHits(g, e, { flame: true });
+    expect(e.burn).toBeGreaterThan(0);
+    e.hp = 1;
+    g.drainAll();
+    const ev = untilDead(g, e), kill = ev.find((x) => x.type === 'kill' && x.id === e.id);
+    expect(kill?.pid).toBe('b');
+    expect(potions(g, b)).toBe(1);
+    expect(xpTo(ev, 'b', 'boss')).toBe(true);
+    expect(xpTo(ev, 'h', 'boss')).toBe(false);
+    expect(b.levels.bosses.has('lantern_warden')).toBe(true);
+  });
+});
