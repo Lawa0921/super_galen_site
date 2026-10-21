@@ -460,7 +460,7 @@ describe('save v5 skill trees and talents', () => {
     expect(status((g) => { g.party.roster.liz.level = 2.5; })).toBe('corrupt');
     expect(BOARDS.liz.filter((n) => n.keystone).length).toBeGreaterThanOrEqual(2);
   });
-  const capTree = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5, 'abyss-sword': 1 };
+  const capTree = { 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5, 'abyss-sword': 1 };
   const withHero = (extra: Record<string, unknown>) => {
     const g = newGame();
     g.party.roster.hero = { ...g.party.roster.hero, level: 50, tree: capTree, ...extra } as typeof g.party.roster.hero;
@@ -508,7 +508,7 @@ describe('save v5 skill trees and talents', () => {
     expect(withMember('rin', { absorbed: 'x' })).toBe('corrupt');
   });
   it('a hero capstone without memories is corrupt', () => {
-    const tree = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5, 'abyss-sword': 1 };
+    const tree = { 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5, 'abyss-sword': 1 };
     const g = newGame();
     g.party.roster.hero = { ...g.party.roster.hero, level: 50, tree };
     expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status).toBe('corrupt');

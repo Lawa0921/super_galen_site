@@ -58,7 +58,7 @@ export const pctOf = (base: number, pct: number | undefined): number => {
  *    damage, heal or device skill, buffPct for a pure buff or debuff skill; a debuff riding on damage never scales;
  * 3. tree variants: every variant node of the skill the member holds, folded into one mod by `stackMods` in tree order:
  *    absolute values (powerPct, buffPct, turns, chance, hpCost, hits, element, target) replace the earlier node's,
- *    relative values (tpDelta, powerDelta, turnsDelta; e.g. twin-turret's +60 points and +1 turn) add;
+ *    relative values (tpDelta, powerDelta, turnsDelta) add; rules merge key by key;
  * 4. legendary powers last, one after another in the order worn;
  * 5. every `extra` (from the tree or a power) appended at the very end, so no powerPct or buffPct ever rescales it.
  */
@@ -73,10 +73,19 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
         // 一擊 (plan 8d ruling 7): the aim stacks count for more on this skill's hits.
         ...(mod.rules?.aimPct !== undefined ? { aimPct: mod.rules.aimPct } : {}),
       };
-      case 'heal': return { ...e, power: pctOf(e.power, power) };
+      // 滿溢 (plan 8d ruling 7): the heal's spill becomes a shield.
+      case 'heal': return { ...e, power: pctOf(e.power, power), ...(mod.rules?.overflowPct !== undefined ? { overflowPct: mod.rules.overflowPct } : {}) };
       case 'buff': return { ...e, pct: pctOf(e.pct, mod.buffPct), turns: lasting(e.turns) };
-      case 'device': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns) };
-      case 'taunt': return { ...e, turns: lasting(e.turns) };
+      // Bobby's device rules (plan 8d ruling 7): 雙管's shots, 雙砲台's second turret, 急救's cures, 連鎖's shock.
+      case 'device': return {
+        ...e, power: pctOf(e.power, power), turns: lasting(e.turns),
+        ...(mod.rules?.deviceHits !== undefined ? { hits: mod.rules.deviceHits } : {}),
+        ...(mod.rules?.deviceTwin ? { twin: true as const } : {}),
+        ...(mod.rules?.deviceCures !== undefined ? { cures: [...mod.rules.deviceCures] } : {}),
+        ...(mod.rules?.deviceShock !== undefined ? { shock: mod.rules.deviceShock } : {}),
+      };
+      // 不動 (plan 8d ruling 7): never crit while the taunt lasts.
+      case 'taunt': return { ...e, turns: lasting(e.turns), ...(mod.rules?.steady ? { steady: true as const } : {}) };
       case 'expose': return { ...e, turns: lasting(e.turns) };
       case 'veil': return { ...e, turns: lasting(e.turns) };
       // 祓 (plan 8d ruling 7): the purifying barrier it raises also wakes the party.
@@ -235,9 +244,15 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       // The healer's heal bonus multiplies the amount; without it the value is unchanged to the bit.
       let bonus = 1 + (actor.x.heal ?? 0) / 100;
       if (actor.keystones.includes('moon-promise')) bonus *= 1 + MEMORY_KEYSTONE_VALUES.moonHealPct / 100;
-      const amount = gainHp(target, healAmount(actor, eff.power, bonus));
+      const full = healAmount(actor, eff.power, bonus);
+      const amount = gainHp(target, full);
       if (actor.side === 'party' && target.side === 'party') credit(ctx.ledger, actor.key, 'healing', amount);
       ctx.log.push({ type: 'heal', target: target.key, amount });
+      // 滿溢 (plan 8d): the spill shields, up to the cap, as the shield generator does (the bigger shield stays, now theirs).
+      if (eff.overflowPct !== undefined && full > amount) {
+        const shield = Math.min(full - amount, Math.floor((target.max.hp * eff.overflowPct) / 100));
+        if (shield > 0) target.shield = { amount: Math.max(shield, target.shield?.amount ?? 0), src: actor.key };
+      }
       return;
     }
     case 'restore': {
@@ -286,6 +301,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'taunt': {
       actor.taunt = eff.turns;
+      if (eff.steady) actor.steady = true; else delete actor.steady;
       ctx.log.push({ type: 'taunt', target: actor.key });
       return;
     }

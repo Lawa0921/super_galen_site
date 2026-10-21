@@ -3,6 +3,7 @@
  * and the party's barriers on `BattleState.barriers`. The old roster has neither, so nothing here acts on it yet. Roster
  * plans may add fields to these types; they never rename one or change what it means.
  */
+import type { AilmentId } from './ailments';
 import type { Combatant } from './combatant';
 
 /**
@@ -56,8 +57,12 @@ export type DeviceKind = 'turret' | 'drone' | 'shield' | 'mine' | 'coil';
 /** Bobby's devices (spec §8.8, plan 8c ruling 18): how many at once, the top level, +% a level, the coil's shock chance. */
 export const DEVICE = { cap: 2, maxLevel: 3, levelPct: 25, coilShock: 0.3 } as const;
 
-/** A device a member has set up: its skill and kind, its power, its upgrade level, the turns it has left. */
-export interface Device { skill: string; kind: DeviceKind; power: number; level: number; turns: number }
+/**
+ * A device a member has set up: its skill and kind, its power, its upgrade level, the turns it has left. Plan 8d, from the
+ * skill as cast: `hits`, a turret's shots a run (雙管); `cures`, what a drone also cures (急救); `shock`, a mine's chance to
+ * shock each foe it hits (連鎖).
+ */
+export interface Device { skill: string; kind: DeviceKind; power: number; level: number; turns: number; hits?: number; cures?: AilmentId[]; shock?: number }
 
 /** The barriers Chizuru raises (spec §8.2): the guard (def and res for the party) and the purifying one. */
 export type BarrierKind = 'guard' | 'purify';

@@ -115,16 +115,21 @@ describe('hero', () => {
     }
   });
 
-  it('the mastery nodes rewrite their skill by the stated percents', () => {
-    const mods = (id: string) => heroNodes().find((n) => n.id === id)!;
-    expect(mods('hero-sword-up')).toMatchObject({ skill: 'hero-slash', maxRank: 5 });
-    expect(mods('hero-sword-up').mods!.map((m) => m.powerPct)).toEqual([104, 108, 112, 116, 120]);
-    expect(mods('hero-guard-up')).toMatchObject({ skill: 'hero-guard', maxRank: 5 });
-    expect(mods('hero-guard-up').mods!.map((m) => m.buffPct)).toEqual([104, 108, 112, 116, 120]);
-    expect(mods('hero-star-up')).toMatchObject({ skill: 'hero-frost', maxRank: 5 });
-    expect(mods('hero-star-up').mods!.map((m) => m.powerPct)).toEqual([104, 108, 112, 116, 120]);
-    expect(mods('hero-light-up')).toMatchObject({ skill: 'hero-mend', maxRank: 5 });
-    expect(mods('hero-light-up').mods!.map((m) => m.powerPct)).toEqual([103, 106, 109, 112, 115]);
+  it('the mastery cells are variants (plan 8d Task 8), five ranks each, by the stated numbers', () => {
+    const node = (id: string) => heroNodes().find((n) => n.id === id)!;
+    const at = (id: string) => node(id).mods!;
+    expect(node('hero-slash-twin')).toMatchObject({ kind: 'variant', skill: 'hero-slash', label: '連斬', maxRank: 5 });
+    expect(at('hero-slash-twin').map((m) => [m.hits, m.powerPct])).toEqual([[2, 50], [2, 52], [2, 54], [2, 56], [2, 58]]);
+    expect(node('hero-guard-steady')).toMatchObject({ kind: 'variant', skill: 'hero-guard', label: '不動', maxRank: 5 });
+    expect(at('hero-guard-steady').map((m) => [m.rules?.steady, m.buffPct])).toEqual([[true, 104], [true, 108], [true, 112], [true, 116], [true, 120]]);
+    expect(node('hero-frost-chill')).toMatchObject({ kind: 'variant', skill: 'hero-frost', label: '凍原', maxRank: 5 });
+    expect(at('hero-frost-chill').map((m) => m.extra)).toEqual([0.1, 0.12, 0.14, 0.16, 0.18].map((chance) => [{ kind: 'inflict', status: 'freeze', chance }]));
+    expect(node('hero-mend-overflow')).toMatchObject({ kind: 'variant', skill: 'hero-mend', label: '滿溢', maxRank: 5 });
+    expect(at('hero-mend-overflow').map((m) => m.rules?.overflowPct)).toEqual([6, 8, 10, 12, 14]);
+    // The old mastery nodes are gone, each cell's place in the tree kept.
+    for (const id of ['hero-sword-up', 'hero-guard-up', 'hero-star-up', 'hero-light-up']) expect(heroNodes().some((n) => n.id === id), id).toBe(false);
+    expect([TREES.hero.branches[0].nodes[1].id, TREES.hero.branches[1].nodes[1].id, TREES.hero.branches[2].nodes[2].id, TREES.hero.branches[3].nodes[1].id])
+      .toEqual(['hero-slash-twin', 'hero-guard-steady', 'hero-frost-chill', 'hero-mend-overflow']);
   });
 
   it('no hero skill revives, always crits, executes or backstabs', () => {

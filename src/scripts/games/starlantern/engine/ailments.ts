@@ -137,6 +137,26 @@ export function clearAilments(c: Combatant, opts: { keepGuard?: boolean } = {}):
   if (!opts.keepGuard) delete c.freezeGuard;
 }
 
+/** Every ailment, in the order the words list them (Bobby's 急救 cures the first of them by rank). */
+export const AILMENT_IDS: readonly AilmentId[] = ['poison', 'burn', 'bleed', 'shock', 'freeze', 'sleep'];
+
+/**
+ * Takes off the listed ailments only (Bobby's 急救, plan 8d): a freeze takes its chill with it and leaves the freeze guard,
+ * as a cure does. Draws nothing.
+ */
+export function cureAilments(c: Combatant, ids: readonly AilmentId[]): void {
+  for (const id of ids) {
+    switch (id) {
+      case 'poison': c.poison = false; delete c.poisonSrc; break;
+      case 'sleep': c.sleep = 0; break;
+      case 'burn': delete c.burn; break;
+      case 'bleed': delete c.bleed; break;
+      case 'shock': delete c.shock; break;
+      case 'freeze': delete c.frozen; delete c.chill; break;
+    }
+  }
+}
+
 /** One ailment as the screen shows it: its rounds left (none for poison and freeze), the bleed's stack count. */
 export interface AilmentChip { id: AilmentShown; turns?: number; stacks?: number }
 

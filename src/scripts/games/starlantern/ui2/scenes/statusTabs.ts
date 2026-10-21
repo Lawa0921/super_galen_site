@@ -255,7 +255,8 @@ const skills: StatusTab = {
       return el('div', { class: 'slx-skill', attrs: { 'data-skill': sk } }, [
         ...skillIco(ctx, sk),
         el('div', { class: 'slx-skill-head' }, [
-          el('span', { class: 'slx-skill-name', text: s.name }),
+          // A name with two variants on it (設置砲台・雙管・雙砲台, plan 8d Task 8) is set a size smaller, so it stays whole.
+          el('span', { class: s.name.length >= LONG_SKILL_NAME ? 'slx-skill-name slx-skill-name-long' : 'slx-skill-name', text: s.name }),
           // A recovery skill that can also be cast from the labyrinth's field menu (SkillDef.field).
           ...(SKILLS[sk]?.field ? [el('span', { class: 'slx-field-tag', text: t.fieldTag })] : []),
           ...(s.passive ? [] : [el('span', { class: 'slx-skill-target', text: t.targets[s.target] })]),
@@ -269,6 +270,9 @@ const skills: StatusTab = {
     }));
   },
 };
+
+/** A skill name this long or longer (two variants on one skill) is set a size smaller on the skills page. */
+const LONG_SKILL_NAME = 9;
 
 /** How far one click on a ▲/▼ cue scrolls the tree columns or the talent board: about one row of nodes. */
 const CUE_STEP = 40;
@@ -497,7 +501,8 @@ const tree: StatusTab = {
           // A name of five characters or more (護盾產生器) is set a size smaller, so it stays whole on its node. A variant's
           // (火之星彈・連星) may break onto a second line between its skill and its label, never inside either.
           n.kind === 'variant' && n.label !== undefined
-            ? el('span', { class: 'slx-skill-name slx-skill-name-long slx-skill-name-variant' }, [
+            // Eight characters or more (修理無人機・急救, 設置砲台・雙砲台; plan 8d Task 8) a size smaller again, so they stay on one line.
+            ? el('span', { class: `slx-skill-name slx-skill-name-long slx-skill-name-variant${nodeName(n).length >= 8 ? ' slx-skill-name-xlong' : ''}` }, [
               el('span', { text: SKILLS[n.skill!]?.name ?? n.skill! }), el('span', { text: `・${n.label}` }),
             ])
             : el('span', { class: nodeName(n).length >= 5 ? 'slx-skill-name slx-skill-name-long' : 'slx-skill-name', text: nodeName(n) }),

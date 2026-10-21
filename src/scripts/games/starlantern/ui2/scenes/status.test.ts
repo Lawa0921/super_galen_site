@@ -514,6 +514,27 @@ describe('StatusScene', () => {
     expect(root.querySelector('[data-skill=twin-slash] .slx-skill-cost')!.textContent).toBe(T.ui2.status.tp(want));
   });
 
+  it('a turret with both variants keeps its name whole (plan 8d Task 8)', () => {
+    const { root, s, game } = setup('bobby', NO_ART, (g) => { g.state.party.recruited.push('bobby'); });
+    game.state.party.roster.bobby.level = 50;
+    game.state.party.roster.bobby.tree = { turret: 1, 'bobby-turret-twin': 1, cannon: 1, 'bobby-mass': 3, 'bobby-turret-pair': 1 };
+    s.onAction('right'); s.onAction('right');
+    const name = root.querySelector('.slx-tab-skills [data-skill=turret] .slx-skill-name')!;
+    expect(name.textContent).toBe('設置砲台・雙管・雙砲台');
+    expect(name.classList.contains('slx-skill-name-long')).toBe(true);
+    // A short name keeps the plain size.
+    expect(root.querySelector('.slx-tab-skills [data-skill=cannon] .slx-skill-name')!.classList.contains('slx-skill-name-long')).toBe(false);
+  });
+
+  it("a variant name of eight characters or more is set smaller on the tree (修理無人機・急救, plan 8d Task 8)", () => {
+    const { root, s } = setup('bobby', NO_ART, (g) => { g.state.party.recruited.push('bobby'); });
+    s.onAction('right'); s.onAction('right'); s.onAction('right');
+    const cls = (id: string) => root.querySelector(`.slx-tree-node[data-node=${id}] .slx-skill-name`)!.classList;
+    expect(cls('bobby-drone-aid').contains('slx-skill-name-xlong')).toBe(true);
+    expect(cls('bobby-turret-pair').contains('slx-skill-name-xlong')).toBe(true);
+    expect(cls('bobby-turret-twin').contains('slx-skill-name-xlong')).toBe(false);
+  });
+
   it('tree nodes and the skills tab show the skill icon when published', () => {
     const has = (u: string) => u === art.icon('blaze-ring');
     const { root, s } = setup('scarlet', { has }, (g) => { g.state.party.roster.scarlet.tree = { ...g.state.party.roster.scarlet.tree, 'blaze-ring': 1 }; });
@@ -1600,7 +1621,7 @@ describe('StatusScene', () => {
       const open = (memories: number) => {
         const { root, game, tabTo } = heroSetup();
         const hero = game.state.party.roster.hero;
-        game.state.party.roster.hero = { ...hero, level: 50, memories, tree: { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5 } };
+        game.state.party.roster.hero = { ...hero, level: 50, memories, tree: { 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5 } };
         tabTo(3);
         return root.querySelector('.slx-tree-node[data-node="abyss-sword"]')!.textContent!;
       };

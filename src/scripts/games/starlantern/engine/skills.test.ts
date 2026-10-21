@@ -226,9 +226,9 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
   });
 
   it('a modifier node rewrites its skill at its rank', () => {
-    // A plan 8c strengthening node still standing (劍技精通), and a plan 8d variant that cuts TP (殺價).
+    // The hero's 連斬 at rank 2 (a five-rank variant, plan 8d Task 8), and a plan 8d variant that cuts TP (殺價).
     const slash = (SKILLS['hero-slash'].effects[0] as { power: number }).power;
-    expect(dmg(caster({ 'hero-slash': 1, 'hero-sword-up': 2 }), 'hero-slash')).toBe(pw(slash, mod('hero-sword-up', 2).powerPct!));
+    expect(dmg(caster({ 'hero-slash': 1, 'hero-slash-twin': 2 }), 'hero-slash')).toBe(pw(slash, mod('hero-slash-twin', 2).powerPct!));
     expect(skillCost(caster({ 'twin-slash': 1, 'liz-twin-haggle': 3 }), 'twin-slash'))
       .toBe(Math.max(1, SKILLS['twin-slash'].tp + mod('liz-twin-haggle', 3).tpDelta!));
   });
@@ -239,7 +239,6 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
     expect(skillFor(c, 'fire-star')!.target).toBe('enemies');
   });
 
-  const twin = mod('twin-turret', 1);
   const turretTurns = (SKILLS.turret.effects[0] as { turns: number }).turns;
   const TURRET = (SKILLS.turret.effects[0] as { power: number }).power;
 
@@ -247,25 +246,24 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
     // No tree node lowers an HP cost since plan 8d Task 7; patchSkill still carries one (0 kept: no HP cost at all).
     expect(patchSkill(SKILLS['blaze-ring'], { hpCost: 0.04 }).hpCost).toBe(0.04);
     expect(patchSkill(SKILLS['blaze-ring'], { hpCost: 0 }).hpCost).toBe(0);
-    const turret = fx(caster({ turret: 1, 'twin-turret': 1 }), 'turret')[0] as { power: number; turns: number };
-    expect(turret.power).toBe(pw(TURRET, 100 + twin.powerDelta!));
-    expect(turret.turns).toBe(turretTurns + twin.turnsDelta!);
+    // 雙砲台 (plan 8d Task 8): a second turret, and the old capstone's power points and rounds (retune.md).
+    const pair = mod('bobby-turret-pair', 1);
+    const turret = fx(caster({ turret: 1, 'bobby-turret-pair': 1 }), 'turret')[0] as { power: number; turns: number; twin?: true };
+    expect([turret.power, turret.turns, turret.twin]).toEqual([pw(TURRET, 100 + pair.powerDelta!), turretTurns + pair.turnsDelta!, true]);
   });
 
-  it('stacking: rank, then modifiers (absolute replaces, relative adds), then the legendary power last', () => {
-    // twin-turret is relative (+powerPct points, +turns): it stacks on bobby-turret-up's absolute powerPct.
-    const ranks = { turret: 1, 'bobby-turret-up': 3, 'twin-turret': 1 };
-    const up3 = mod('bobby-turret-up', 3);
-    const plain = fx(caster(ranks), 'turret')[0] as { power: number; turns: number };
-    expect(plain.power).toBe(pw(TURRET, up3.powerPct! + twin.powerDelta!));
-    expect(plain.turns).toBe(turretTurns + twin.turnsDelta!);
-    // lg-bobby comes last and its turns are absolute.
-    const t = fx(caster(ranks, ['lg-bobby']), 'turret')[0] as { power: number; turns: number };
-    expect(t.power).toBe(pw(TURRET, up3.powerPct! + twin.powerDelta!));
-    expect(t.turns).toBe(POWERS['lg-bobby'].mod.turns);
+  it('stacking: rank, then modifiers (absolute replaces, rules merge), then the legendary power last', () => {
+    // 雙管 (absolute power, hits) and 雙砲台 (relative power points and rounds, a rule) on one turret: all apply.
+    const ranks = { turret: 1, 'bobby-turret-twin': 3, 'bobby-turret-pair': 1 };
+    const twin3 = mod('bobby-turret-twin', 3), pair = mod('bobby-turret-pair', 1);
+    const plain = fx(caster(ranks), 'turret')[0] as { power: number; turns: number; hits?: number; twin?: true };
+    expect([plain.power, plain.turns, plain.hits, plain.twin]).toEqual([pw(TURRET, twin3.powerPct! + pair.powerDelta!), turretTurns + pair.turnsDelta!, 2, true]);
+    // lg-bobby comes last and its turns are absolute; the variant's rules stay.
+    const t = fx(caster(ranks, ['lg-bobby']), 'turret')[0] as { power: number; turns: number; hits?: number; twin?: true };
+    expect([t.power, t.turns, t.hits, t.twin]).toEqual([pw(TURRET, twin3.powerPct! + pair.powerDelta!), POWERS['lg-bobby'].mod.turns, 2, true]);
     // The active's own rank is a stage of its own, before the modifiers.
     const t3 = fx(caster({ ...ranks, turret: 3 }, ['lg-bobby']), 'turret')[0] as { power: number; turns: number };
-    expect(t3.power).toBe(pw(pw(TURRET, ACTIVE_RANK_PCT[2]), up3.powerPct! + twin.powerDelta!));
+    expect(t3.power).toBe(pw(pw(TURRET, ACTIVE_RANK_PCT[2]), twin3.powerPct! + pair.powerDelta!));
     // Relative values add, absolute values replace: the later absolute wins.
     expect(stackMods([{ powerPct: 110, tpDelta: -1 }, { powerPct: 120, powerDelta: 60, turnsDelta: 1, tpDelta: -2 }, { powerDelta: 5, turnsDelta: 1 }]))
       .toEqual({ powerPct: 120, powerDelta: 65, turnsDelta: 2, tpDelta: -3 });
@@ -306,7 +304,7 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
 
   it('skillFor casts exactly what treeMods describes, then the worn powers (one path)', () => {
     for (const [skill, ranks, powers] of [
-      ['turret', { turret: 2, 'bobby-turret-up': 3, 'twin-turret': 1 }, ['lg-bobby']],
+      ['turret', { turret: 2, 'bobby-turret-twin': 3, 'bobby-turret-pair': 1 }, ['lg-bobby']],
       ['blaze-ring', { 'blaze-ring': 3, 'scarlet-ring-blaze': 2 }, []],
       ['fire-star', { 'fire-star': 3, 'noel-star-twin': 1 }, ['lg-noel']],
     ] as [string, Record<string, number>, string[]][]) {
@@ -314,9 +312,9 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
       const want = powers.map((p) => POWERS[p].mod).reduce((d, m) => patchSkill(d, m), tree);
       expect(skillFor(caster(ranks, powers), skill), skill).toEqual(want);
     }
-    // Pinned by hand, not through treeMods: 38 at rank 2 is 110% (42); the mod's 135% and the twin turret's +60 points
-    // stack into one 195% (42 x 1.95 = 82), then +1 turn, and lg-bobby fixes the turns at 5.
-    expect(skillFor(caster({ turret: 2, 'bobby-turret-up': 3, 'twin-turret': 1 }, ['lg-bobby']), 'turret')!.effects).toEqual([{ kind: 'device', device: 'turret', power: 82, turns: 5 }]);
+    // Pinned by hand, not through treeMods: 38 at rank 2 is 110% (42); 雙管 rank 3 (64%) and 雙砲台's +80 points make each
+    // of two barrels 144% of it (60); 雙砲台 adds its rule, and lg-bobby fixes the turns at 5 (over its +2).
+    expect(skillFor(caster({ turret: 2, 'bobby-turret-twin': 3, 'bobby-turret-pair': 1 }, ['lg-bobby']), 'turret')!.effects).toEqual([{ kind: 'device', device: 'turret', power: 60, turns: 5, hits: 2, twin: true }]);
   });
 
   it('a member casts only a skill whose own node holds a whole rank; a junk rank casts nothing', () => {
@@ -338,9 +336,9 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
   });
 
   it('treeMods gives the two tree stages: the active rank, then the modifier nodes stacked into one in tree order', () => {
-    expect(treeMods({ turret: 2, 'twin-turret': 1, 'bobby-turret-up': 1 }, 'turret'))
-      .toEqual([{ powerPct: ACTIVE_RANK_PCT[1] }, stackMods([mod('bobby-turret-up', 1), mod('twin-turret', 1)])]);
-    expect(treeMods({ turret: 1, 'twin-turret': 1 }, 'turret')).toEqual([mod('twin-turret', 1)]);
+    expect(treeMods({ turret: 2, 'bobby-turret-pair': 1, 'bobby-turret-twin': 1 }, 'turret'))
+      .toEqual([{ powerPct: ACTIVE_RANK_PCT[1] }, stackMods([mod('bobby-turret-twin', 1), mod('bobby-turret-pair', 1)])]);
+    expect(treeMods({ turret: 1, 'bobby-turret-pair': 1 }, 'turret')).toEqual([mod('bobby-turret-pair', 1)]);
     expect(treeMods({ 'war-dance': 2 }, 'war-dance')).toEqual([{ buffPct: ACTIVE_RANK_PCT[1] }]);
     expect(treeMods({ turret: 1 }, 'turret')).toEqual([]);
     expect(treeMods({}, 'no-such-skill')).toEqual([]);
@@ -534,5 +532,60 @@ describe('variant notes and rules (plan 8d Task 1)', () => {
     const ruled = patchSkill({ ...SKILLS['fire-star'], rules: R({ x: 1, y: 2 }) }, { rules: R({ y: 3, z: 4 }) });
     expect(ruled.rules).toEqual({ x: 1, y: 3, z: 4 });
     expect(patchSkill(SKILLS['fire-star'], { powerPct: 110 }).rules).toBeUndefined();
+  });
+});
+
+describe("the hero's variants (plan 8d Task 8)", () => {
+  /** A hero who acts first (guard up before the foe swings) and a foe that always crits when it may roll. */
+  const steadyRound = (ranks: Record<string, number>) => {
+    let draws = 0;
+    const hero = makeCombatant({ key: 'hero', side: 'party', defId: 'hero', ranks, max: { hp: 500, tp: 50, atk: 20, def: 20, mag: 20, res: 20, spd: 99 } });
+    const foe = makeCombatant({ key: 'e0', side: 'enemy', x: { crit: 100 }, max: { hp: 999, tp: 0, atk: 30, def: 20, mag: 1, res: 20, spd: 1 } });
+    const r = resolveRound(makeBattle([hero], [foe], { intents: { e0: { kind: 'attack', target: 'hero' } } }), { hero: { kind: 'skill', skill: 'hero-guard' } }, () => { draws++; return 0.5; });
+    const blow = r.log.find((e) => e.type === 'damage' && e.target === 'hero');
+    return { draws, crit: !!(blow && blow.type === 'damage' && blow.crit) };
+  };
+
+  it('a steady guard is never crit, and its blow draws no crit roll', () => {
+    const plain = steadyRound({ 'hero-guard': 1 });
+    const steady = steadyRound({ 'hero-guard': 1, 'hero-guard-steady': 1 });
+    expect(plain.crit).toBe(true);
+    expect(steady.crit).toBe(false);
+    expect(plain.draws - steady.draws).toBe(1);
+    // The guard keeps its defence, deepened by the rank's percent.
+    const guard = skillFor({ powers: [], ranks: { 'hero-guard': 1, 'hero-guard-steady': 2 } }, 'hero-guard')!;
+    expect(guard.effects).toEqual([{ kind: 'taunt', turns: 3, steady: true }, { kind: 'buff', stat: 'def', pct: Math.round((25 * 108) / 100), turns: 3 }]);
+  });
+
+  it('overflow becomes a shield up to the cap', () => {
+    // A heal of 50 on a member 10 short of 200: 40 spills over, and rank 1 keeps 6% of 200 = 12 of it as a shield.
+    const healer = party({ key: 'hero', max: { hp: 100, tp: 20, atk: 20, def: 20, mag: 20, res: 20, spd: 10 } });
+    const t = party({ key: 'noel', hp: 190, max: { hp: 200, tp: 20, atk: 20, def: 20, mag: 20, res: 20, spd: 10 } });
+    applyEffect(healer, t, { kind: 'heal', power: 100, overflowPct: 6 }, ctx());
+    expect([t.hp, t.shield]).toEqual([200, { amount: 12, src: 'hero' }]);
+    // A small spill shields only what spilled; a bigger shield already there stays (the generator's rule).
+    const u = party({ key: 'noel', hp: 195, max: { hp: 200, tp: 20, atk: 20, def: 20, mag: 20, res: 20, spd: 10 } });
+    applyEffect(healer, u, { kind: 'heal', power: 100, overflowPct: 6 }, ctx());
+    expect(u.shield).toEqual({ amount: 12, src: 'hero' });
+    const v = party({ key: 'noel', hp: 160, max: { hp: 200, tp: 20, atk: 20, def: 20, mag: 20, res: 20, spd: 10 } });
+    applyEffect(healer, v, { kind: 'heal', power: 100, overflowPct: 6 }, ctx());
+    expect(v.shield).toEqual({ amount: 10, src: 'hero' });
+    const w = party({ key: 'noel', hp: 190, shield: { amount: 30, src: 'bobby' }, max: { hp: 200, tp: 20, atk: 20, def: 20, mag: 20, res: 20, spd: 10 } });
+    applyEffect(healer, w, { kind: 'heal', power: 100, overflowPct: 6 }, ctx());
+    expect(w.shield).toEqual({ amount: 30, src: 'hero' });
+    // No overflow, no shield; without the rule a full heal shields nothing.
+    const x = party({ key: 'noel', hp: 190, max: { hp: 200, tp: 20, atk: 20, def: 20, mag: 20, res: 20, spd: 10 } });
+    applyEffect(healer, x, { kind: 'heal', power: 100 }, ctx());
+    expect(x.shield).toBeUndefined();
+    // The node writes the rule on 治癒's heal.
+    expect(skillFor({ powers: [], ranks: { 'hero-mend': 1, 'hero-mend-overflow': 1 } }, 'hero-mend')!.effects).toEqual([{ kind: 'heal', power: 90, overflowPct: 6 }]);
+  });
+
+  it('連斬 cuts twice; 凍原 may freeze', () => {
+    const slash = skillFor({ powers: [], ranks: { 'hero-slash': 1, 'hero-slash-twin': 2 } }, 'hero-slash')!;
+    expect(slash.name).toBe('斬擊・連斬');
+    expect(slash.effects).toEqual([{ kind: 'damage', power: Math.round((120 * 52) / 100), element: 'phys', scale: 'atk', melee: true, hits: 2 }]);
+    const frost = skillFor({ powers: [], ranks: { 'hero-frost': 1, 'hero-frost-chill': 3 } }, 'hero-frost')!;
+    expect(frost.effects).toEqual([...SKILLS['hero-frost'].effects, { kind: 'inflict', status: 'freeze', chance: 0.14 }]);
   });
 });

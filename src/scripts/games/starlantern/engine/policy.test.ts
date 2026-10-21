@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createBattle, resolveRound, type BattleState } from './battle';
+import { createBattle, resolveRound, skillFor, type BattleState } from './battle';
 import type { Combatant } from './combatant';
 import { mechGauge, type MechState } from './mech';
 import { applyPolicy, type PolicyRule } from './policy';
@@ -94,6 +94,21 @@ describe('per-character policies', () => {
     expect(vs({})).toBeNull();
     expect(vs({ boss: true })).toEqual({ kind: 'skill', skill: 'turret' });
     expect(vs({ tint: 'elite' })).toEqual({ kind: 'skill', skill: 'turret' });
+  });
+
+  it('ensure-device keeps two turrets out once the turret sets a twin (雙砲台, plan 8d Task 8)', () => {
+    const rule: PolicyRule[] = [{ kind: 'ensure-device', skills: ['turret', 'shock-mine'] }];
+    const turret = { skill: 'turret', kind: 'turret' as const, power: 38, level: 1, turns: 3 };
+    const twin = skillFor({ powers: [], ranks: { turret: 1, 'bobby-turret-pair': 1 } }, 'turret')!;
+    const at = (devices: (typeof turret)[], castable: SkillDef[]) => {
+      const s = makeBattle([P('bobby', { mech: { kind: 'devices', devices, cap: 3 } })], [E('e0')]);
+      return run(s, s.party[0], castable, rule).action;
+    };
+    // One turret out: the twin turret is cast again for the second; a plain turret goes on to the mine.
+    expect(at([turret], [twin, SKILLS['shock-mine']])).toEqual({ kind: 'skill', skill: 'turret' });
+    expect(at([turret], sk('turret', 'shock-mine'))).toEqual({ kind: 'skill', skill: 'shock-mine' });
+    // Two out: the mine next.
+    expect(at([turret, { ...turret }], [twin, SKILLS['shock-mine']])).toEqual({ kind: 'skill', skill: 'shock-mine' });
   });
 
   it('ensure-mark', () => {

@@ -62,7 +62,9 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
         const expiring = m.devices.find((d) => d.turns <= 1 && has(d.skill));
         if (expiring) return cast(expiring.skill);
         if (m.devices.length < m.cap) {
-          const skill = rule.skills.find((id) => has(id) && !m.devices.some((d) => d.skill === id));
+          // 雙砲台 (plan 8d Task 8): a skill that sets a twin keeps two of its device out.
+          const wanted = (id: string) => (usable.find((d) => d.id === id)?.effects.some((e) => e.kind === 'device' && e.twin) ? 2 : 1);
+          const skill = rule.skills.find((id) => has(id) && m.devices.filter((d) => d.skill === id).length < wanted(id));
           if (skill) return cast(skill);
         }
         break;

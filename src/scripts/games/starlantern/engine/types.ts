@@ -29,16 +29,22 @@ export type Effect =
    * of Sylvie's aim stacks on its foe adds this percent instead of AIM.dmgPct (her 一擊, plan 8d).
    */
   | { kind: 'damage'; power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean; hits?: number; crit?: 'always'; execute?: number; wounded?: number; scatter?: true; aimPct?: number }
-  | { kind: 'heal'; power: number }
+  /** `overflowPct`: what the heal spills past max HP becomes a shield, up to this percent of max HP (the hero's 滿溢, plan 8d). */
+  | { kind: 'heal'; power: number; overflowPct?: number }
   | { kind: 'restore'; hp?: number; tp?: number }
   | { kind: 'revive'; hpPct: number }
   | { kind: 'cure' }
   /** `turns`: a sleep's rounds when a variant sets them (Selene's 深眠, plan 8d); absent, the ailment's own. */
   | { kind: 'inflict'; status: AilmentId; chance: number; turns?: number }
   | { kind: 'buff'; stat: BuffStat; pct: number; turns: number }
-  | { kind: 'taunt'; turns: number }
-  /** Bobby sets (or upgrades) a device that runs at every round's end for `turns` rounds (engine/mechanics/devices.ts). */
-  | { kind: 'device'; device: DeviceKind; power: number; turns: number }
+  /** `steady`: while it lasts the caster is never crit and no crit is rolled on him (the hero's 不動, plan 8d). */
+  | { kind: 'taunt'; turns: number; steady?: true }
+  /**
+   * Bobby sets (or upgrades) a device that runs at every round's end for `turns` rounds (engine/mechanics/devices.ts).
+   * Plan 8d: `hits`, a turret's shots a run (雙管); `twin`, a second turret beside the first (雙砲台); `cures`, the
+   * ailments a drone also cures (急救); `shock`, the chance a mine shocks each foe it hits (連鎖).
+   */
+  | { kind: 'device'; device: DeviceKind; power: number; turns: number; hits?: number; twin?: true; cures?: AilmentId[]; shock?: number }
   /** Every device of the caster runs once more at once (超頻). */
   | { kind: 'overclock' }
   /** Every device of the caster gains `levels` and `turns` rounds (全面整備). */
@@ -134,6 +140,15 @@ export interface SkillRules {
   keep?: true;
   /** Beats this skill adds, in place of 1 (Safira's 切分音). */
   beats?: number;
+  /** Copied onto the skill's device effect as `hits` / `twin` / `cures` / `shock` (Bobby's 雙管, 雙砲台, 急救, 連鎖). */
+  deviceHits?: number;
+  deviceTwin?: true;
+  deviceCures?: AilmentId[];
+  deviceShock?: number;
+  /** Copied onto the skill's taunt effect: never crit while it lasts (the hero's 不動). */
+  steady?: true;
+  /** Copied onto the skill's heal effect: the spill becomes a shield up to this percent of max HP (the hero's 滿溢). */
+  overflowPct?: number;
 }
 export interface UltimateDef {
   id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string;

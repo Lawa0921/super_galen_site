@@ -1281,6 +1281,113 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test("bobby's and the hero's trees show their new nodes; a turret with both variants fits the battle menu (plan 8d Task 8)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => { if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${name}.png` }); } };
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const p = g.state.party;
+      p.recruited = ['hero', 'bobby', 'noel', 'chizuru', 'selene'];
+      p.grid = ['hero', 'noel', null, 'bobby', null, null, 'chizuru', null, 'selene'];
+      p.roster.bobby.level = 50;
+      p.roster.bobby.tree = { turret: 3, 'bobby-turret-twin': 2, cannon: 3, 'bobby-mass': 3, 'bobby-turret-pair': 1, tinker: 1, 'repair-drone': 1, 'bobby-drone-aid': 1, barrier: 1, 'bobby-bench': 1, 'shock-mine': 1, 'bobby-mine-chain': 1 };
+      p.roster.hero.level = 35;
+      p.roster.hero.tree = { 'hero-slash': 2, 'hero-slash-twin': 2, 'hero-guard': 1, 'hero-guard-steady': 1, 'hero-flare': 1, 'hero-frost': 1, 'hero-frost-chill': 1, 'hero-mend': 1, 'hero-mend-overflow': 1 };
+    });
+    /** No node row, name or pair tag of the tree spills out of its own width, and no name wraps. */
+    const spills = async () => [...await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node, .slx-tree-pair, .slx-tree-pair > *, .slx-tree-node .slx-skill-name')]
+      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className)), ...await treeNameFaults(page)];
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+
+    await flipTo(page, CHARACTERS.bobby.name);
+    await expect(page.locator('.slx-tree-node[data-node=bobby-turret-twin]')).toContainText('設置砲台・雙管');
+    await expect(page.locator('.slx-tree-node[data-node=bobby-turret-pair]')).toContainText('設置砲台・雙砲台');
+    await expect(page.locator('.slx-tree-node[data-node=bobby-drone-aid]')).toContainText('修理無人機・急救');
+    await expect(page.locator('.slx-tree-node[data-node=bobby-mine-chain]')).toContainText('電擊地雷・連鎖');
+    const bench = page.locator('.slx-tree-node[data-node=bobby-bench]');
+    await expect(bench).toContainText('工作檯');
+    await expect(bench).toContainText(T.ui2.tree.kind.mech);
+    await expect(bench.locator('img')).toHaveCount(0);
+    await bench.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('裝置最多同時 3 個。'));
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.nextMod('裝置最多同時 4 個。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('bobby-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('bobby-tree-844');
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // Both turret variants ride on one name on the skills page, whole at 390.
+    await page.locator('[data-tab=skills]').click();
+    const turretName = page.locator('.slx-tab-skills [data-skill=turret] .slx-skill-name');
+    await expect(turretName).toHaveText('設置砲台・雙管・雙砲台');
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await turretName.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5)).toBe(true);
+    await shot('bobby-skills-390');
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.locator('[data-tab=tree]').click();
+
+    await flipTo(page, CHARACTERS.hero.name);
+    await expect(page.locator('.slx-tree-node[data-node=hero-slash-twin]')).toContainText('斬擊・連斬');
+    await expect(page.locator('.slx-tree-node[data-node=hero-guard-steady]')).toContainText('守勢・不動');
+    await expect(page.locator('.slx-tree-node[data-node=hero-frost-chill]')).toContainText('星霜・凍原');
+    const overflow = page.locator('.slx-tree-node[data-node=hero-mend-overflow]');
+    await expect(overflow).toContainText('治癒・滿溢');
+    await overflow.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('溢出的回復變成護盾，最多最大 HP 的 6%。'));
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.nextMod('溢出的回復變成護盾，最多最大 HP 的 8%。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('hero-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('hero-tree-844');
+
+    // The battle menu: Bobby's turret, both variants on its name, stays inside its row at 1280 and 390.
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      for (const e of g.battle.enemies) { e.max.hp = 999; e.hp = 999; e.max.atk = 1; e.max.mag = 1; }
+    });
+    for (let i = 0; i < 80; i++) {
+      if (!(await page.locator('.slx-bcmd [role=option]').count())) { await page.waitForTimeout(50); continue; }
+      const who = (await page.locator('.slx-bcmd .slx-who').textContent()) ?? '';
+      if (who.startsWith(CHARACTERS.bobby.name)) break;
+      await w.choose('.slx-bcmd', '防禦');
+    }
+    await expect(page.locator('.slx-bcmd .slx-who')).toContainText(CHARACTERS.bobby.name);
+    await w.choose('.slx-bcmd', '技能');
+    const item = page.locator('.slx-bsub [role=option]').filter({ hasText: '設置砲台・雙管・雙砲台' });
+    await expect(item).toHaveCount(1);
+    for (const [vw, vh, name] of [[1280, 720, 'bobby-battle-1280'], [390, 844, 'bobby-battle-390']] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      expect(await item.locator('.slx-label').evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), name).toBe(true);
+      await shot(name);
+    }
+    expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
   test("no tree node's name wraps or spills, on any member's tree, at 1280 or 844 (8d Task 6 review)", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     const w = await setup(page, 7);

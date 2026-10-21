@@ -497,8 +497,8 @@ describe('validBuild', () => {
 });
 
 describe("the hero's abyss capstones", () => {
-  const ALL = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5,
-    'hero-guard': 5, 'hero-guard-up': 5, 'hero-aegis': 5, 'hero-rally': 5 };
+  const ALL = { 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5,
+    'hero-guard': 5, 'hero-guard-steady': 5, 'hero-aegis': 5, 'hero-rally': 5 };
   const hero = (tree: Record<string, number>): Member => ({ ...newMember('hero'), level: 50, tree });
   const up2 = (m: Member, node: string): Member => {
     const r = raiseNode(m, node, 10);
@@ -506,7 +506,7 @@ describe("the hero's abyss capstones", () => {
     return r.member;
   };
   it('an abyss node waits for its memories', () => {
-    const m = hero({ 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5 });
+    const m = hero({ 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5 });
     expect(canRaiseNode(m, 'abyss-sword', ABYSS_UNLOCK[0] - 1)).toBe('abyss');
     expect(canRaiseNode(m, 'abyss-sword', ABYSS_UNLOCK[0])).toBeNull();
     expect(canRaiseNode(m, 'abyss-sword')).toBe('abyss');
@@ -521,7 +521,7 @@ describe("the hero's abyss capstones", () => {
     }
   });
   it("the hero's own memories open his abyss node", () => {
-    const tree = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5 };
+    const tree = { 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5 };
     const m = hero(tree);
     expect(canRaiseNode({ ...m, memories: ABYSS_UNLOCK[0] }, 'abyss-sword')).toBeNull();
     expect(canRaiseNode({ ...m, memories: ABYSS_UNLOCK[0] - 1 }, 'abyss-sword')).toBe('abyss');
@@ -529,7 +529,7 @@ describe("the hero's abyss capstones", () => {
     expect(raiseNode({ ...m, memories: ABYSS_UNLOCK[0] }, 'abyss-sword').ok).toBe(true);
   });
   it('an explicit memory count that is not a count keeps the abyss shut, and only Infinity opens it', () => {
-    const tree = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5 };
+    const tree = { 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5 };
     const m = hero(tree);
     for (const bad of [NaN, -1, 1.5, undefined as unknown as number]) expect(canRaiseNode(m, 'abyss-sword', bad), String(bad)).toBe('abyss');
     expect(canRaiseNode(m, 'abyss-sword', Infinity)).toBeNull();
@@ -553,7 +553,7 @@ describe("the hero's abyss capstones", () => {
     let m = hero(ALL);
     m = up2(m, 'abyss-sword');
     m = up2(m, 'abyss-guard');
-    m = { ...m, tree: { ...m.tree, 'hero-flare': 5, 'hero-star-up': 5, 'hero-frost': 5, 'hero-spark': 5 } };
+    m = { ...m, tree: { ...m.tree, 'hero-flare': 5, 'hero-frost-chill': 5, 'hero-frost': 5, 'hero-spark': 5 } };
     expect(canRaiseNode(m, 'abyss-star', 10)).toBe('capstone');
   });
   it('a companion still holds one', () => {
@@ -1083,6 +1083,33 @@ describe("Scarlet's and Safira's trees (plan 8d Task 7)", () => {
     const mechs = (id: 'scarlet' | 'safira') => TREES[id].branches.flatMap((b) => branchNodes(b)).filter((x) => x.node.kind === 'mech').map((x) => x.node.id);
     expect(mechs('scarlet')).toEqual(['scarlet-ardent', 'scarlet-thanks']);
     expect(mechs('safira')).toEqual(['safira-improv', 'safira-duet']);
+  });
+
+  it('bobby and the hero hold no 8c node; the standard builds take no B side', () => {
+    for (const L of [5, 10, 20, 35, 50]) {
+      const trees: [CharacterId, Record<string, number>][] = [['bobby', defaultTree('bobby', L)], ...(Object.keys(HERO_BUILDS) as HeroBuild[]).map((b): [CharacterId, Record<string, number>] => ['hero', heroTree(L, b, 10)])];
+      for (const [id, tree] of trees) for (const k of Object.keys(tree)) {
+        const { node, branch, tier } = NODES[k];
+        expect(TREES[id].branches[branch].nodes[tier], `${id} Lv${L} ${k}`).toBe(node);
+        expect(k, `${id} Lv${L}`).not.toMatch(/-up$/);
+      }
+    }
+    for (const id of ['bobby', 'hero'] as const) {
+      for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) expect(node.id, id).not.toMatch(/-up$|^twin-turret$/);
+    }
+    // Two mechanic nodes for Bobby (spec §7): 量產 and 工作檯; none for the hero (his cells are variants).
+    const mechs = (id: CharacterId) => TREES[id].branches.flatMap((b) => branchNodes(b)).filter((x) => x.node.kind === 'mech').map((x) => x.node.id);
+    expect(mechs('bobby')).toEqual(['bobby-mass', 'bobby-bench']);
+    expect(mechs('hero')).toEqual([]);
+  });
+
+  it('every V0 is gone: each variant has a label and its words', () => {
+    for (const id of Object.keys(TREES) as CharacterId[]) for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) {
+      if (node.kind !== 'variant') continue;
+      expect(node.label, node.id).toBeTruthy();
+      expect(node.say, node.id).toBeDefined();
+      expect(node.name ?? node.desc, node.id).toBeUndefined();
+    }
   });
 
   it("the tuned numbers of Scarlet's and Safira's nodes, and 爆炎斬's power and HP cost (8d Task 7, retune.md)", () => {

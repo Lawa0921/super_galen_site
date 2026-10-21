@@ -196,7 +196,7 @@ describe('skill trees', () => {
 
   it('every power mod node (powerPct or powerDelta) names a skill that deals damage, heals, sets a device, raises a barrier or fills a gauge', () => {
     const power = allNodes().filter((n) => n.kind === 'variant' && n.mods!.some((m) => m.powerPct !== undefined || m.powerDelta !== undefined));
-    expect(power.map((n) => n.id)).toContain('twin-turret');
+    expect(power.map((n) => n.id)).toContain('bobby-turret-twin');
     expect(power.map((n) => n.id)).toContain('safira-clap-encore');   // 拍手・安可: its power is the gauge it fills (plan 8d Task 7)
     for (const n of power) {
       expect(SKILLS[n.skill!].effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'device' || e.kind === 'barrier' || e.kind === 'gauge'), n.id).toBe(true);
@@ -209,12 +209,14 @@ describe('skill trees', () => {
     expect(SKILLS['blaze-ring'].desc).not.toMatch(/\d+\s*%/);
   });
 
-  it("a power with absolute turns names each tree node whose turn bonus it overrides (lg-bobby and twin-turret)", () => {
+  it("a power with absolute turns names each tree node whose turn bonus it overrides (lg-bobby and 雙砲台)", () => {
     let checked = 0;
     for (const p of Object.values(POWERS).filter((x) => x.mod.turns !== undefined)) {
       expect(p.text, p.id).toContain(String(p.mod.turns));
       for (const n of allNodes().filter((x) => x.skill === p.skill && x.mods?.some((m) => m.turnsDelta !== undefined))) {
-        expect(p.text, `${p.id} vs ${n.id}`).toContain(n.name!);
+        expect(p.text, `${p.id} vs ${n.id}`).toContain(n.label ?? n.name!);
+        // ... and says the bonus it overrides.
+        expect(p.text, `${p.id} vs ${n.id}`).toContain(`+${n.mods!.find((m) => m.turnsDelta !== undefined)!.turnsDelta} 回合`);
         checked++;
       }
     }
@@ -260,8 +262,8 @@ describe('skill trees', () => {
     expect(NODES['flame-wave']).toMatchObject({ owner: 'noel', branch: 0, tier: 2 });
     expect(NODES.pickpocket).toMatchObject({ owner: 'liz', branch: 0, tier: 1 });
     expect(nodeName('sweep')).toBe(SKILLS.sweep.name);
-    expect(nodeName('bobby-turret-up')).toBe('砲台強化');   // a plan 8c node still standing (V0)
-    expect(nodeDesc('bobby-turret-up')).toBeTruthy();
+    expect(nodeName('bobby-turret-twin')).toBe('設置砲台・雙管');
+    expect(nodeName('bobby-bench')).toBe('工作檯');
     expect(nodeName('noel-star-twin')).toBe('火之星彈・連星');
     expect(nodeName('noel-calm')).toBe('冷靜');
     expect(NODES['noel-star-heavy']).toMatchObject({ owner: 'noel', branch: 0, tier: 1, pair: 'noel-star-twin' });
@@ -309,7 +311,7 @@ describe('node words (plan 8d)', () => {
   };
 
   it('node words name their own numbers', () => {
-    const owners = ['noel', 'rin', 'chizuru', 'selene', 'liz', 'sylvie', 'scarlet', 'safira'] as const;   // Task 9 widens this to every tree
+    const owners = ['noel', 'rin', 'chizuru', 'selene', 'liz', 'sylvie', 'scarlet', 'safira', 'bobby', 'hero'] as const;   // every tree since plan 8d Task 8
     let checked = 0;
     for (const id of owners) for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) {
       if (node.kind === 'active') continue;

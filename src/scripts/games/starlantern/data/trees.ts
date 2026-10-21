@@ -1,7 +1,9 @@
 import type { CharacterId, Effect } from '../engine/types';
+import { AILMENT_IDS, type AilmentId } from '../engine/ailments';
 import { MOON } from '../engine/mech';
 import type { SkillMod } from './gear';
 import { SKILLS } from './skills';
+import { T } from './text.zh-TW';
 
 /**
  * Skill trees. A branch holds five cells and the array index is the tier (0-4; tier 4 is the ultimate cell). A cell is one
@@ -73,7 +75,6 @@ export const P = (a: TreeNode, b: TreeNode): TreeNode => ({ ...a, pair: b });
 export const V0 = (id: string, name: string, skill: string, desc: string, mods: SkillMod[]): TreeNode =>
   ({ id, kind: 'variant', skill, maxRank: mods.length as Rank, name, desc, mods });
 const pct = (...v: number[]): SkillMod[] => v.map((powerPct) => ({ powerPct }));
-const buff = (...v: number[]): SkillMod[] => v.map((buffPct) => ({ buffPct }));
 /** Power and the debuff riding on it, by the same percent. */
 const deepen = (...v: number[]): SkillMod[] => v.map((p) => ({ powerPct: p, buffPct: p }));
 const turns = (...v: number[]): SkillMod[] => v.map((t) => ({ turns: t }));
@@ -83,6 +84,11 @@ const tp = (...v: number[]): SkillMod[] => v.map((tpDelta) => ({ tpDelta }));
 /** One ailment a variant adds to its skill's hits, at each rank's chance. */
 const inflicting = (status: 'burn' | 'freeze' | 'bleed', ...chances: number[]): SkillMod[] =>
   chances.map((chance): SkillMod => ({ extra: [{ kind: 'inflict', status, chance } as Effect] }));
+/** 急救's cures by rank: poison; poison, burn and bleed; every ailment. */
+const DRONE_CURES: AilmentId[][] = [['poison'], ['poison', 'burn', 'bleed'], [...AILMENT_IDS]];
+/** The ailments a cure lists, as its words say them: 「所有異常」 for all of them. */
+const curesSaid = (ids: readonly AilmentId[]): string =>
+  (AILMENT_IDS.every((id) => ids.includes(id)) ? '所有異常' : ids.map((id) => T.ailment[id]).join('、'));
 /** The chance of a variant's added ailment, as its words say it (30 for 0.3). */
 const chanceOf = (m: SkillMod): number => Math.round(((m.extra![0] as { chance: number }).chance) * 100);
 
@@ -284,23 +290,28 @@ export const TREES: Record<CharacterId, TreeDef> = {
   bobby: { branches: [
     { name: '砲台', nodes: [
       A('turret', 3),
-      V0('bobby-turret-up', '砲台強化', 'turret', '強化砲台的威力', pct(110, 120, 135)),
+      V('bobby-turret-twin', 'turret', '雙管', [55, 60, 64].map((powerPct): SkillMod => ({ powerPct, rules: { deviceHits: 2 } })),
+        (m) => `砲台每次打 ${m.rules!.deviceHits} 下，每下威力 ${m.powerPct}%。`),
       A('cannon', 3),
-      V0('bobby-cannon-up', '加農強化', 'cannon', '強化加農砲的威力', pct(115, 130, 150)),
-      V0('twin-turret', '雙砲台', 'turret', '砲台威力再 +60%，持續回合 +1', [{ powerDelta: 60, turnsDelta: 1 }]),
+      K('bobby-mass', '量產', 'deviceLevelCap', [4, 5, 6], (v) => `裝置最多改良到 ${v} 級。`),
+      // The ultimate cell: a second turret beside the first, and the old capstone's power points and rounds, raised to keep
+      // his Lv50 in parity once 加農強化 was gone (plan 8d Task 8, retune.md).
+      V('bobby-turret-pair', 'turret', '雙砲台', [{ powerDelta: 80, turnsDelta: 2, rules: { deviceTwin: true } }],
+        (m) => `可以同時架兩座砲台（第二座不算改良）；砲台威力 +${m.powerDelta}%，多撐 ${m.turnsDelta} 回合。`),
     ] },
     { name: '整備', nodes: [
       A('tinker', 1),
       A('repair-drone', 3),
-      V0('bobby-repair-up', '無人機強化', 'repair-drone', '強化修理無人機的回復量', pct(115, 130, 150)),
+      V('bobby-drone-aid', 'repair-drone', '急救', DRONE_CURES.map((deviceCures): SkillMod => ({ rules: { deviceCures } })), (m) => `也解除${curesSaid(m.rules!.deviceCures!)}。`),
       A('overclock', 3),
       A('emergency-repair', 1),
     ] },
     { name: '護盾', nodes: [
       A('barrier', 3),
-      V0('bobby-barrier-up', '護盾延長', 'barrier', '延長護盾產生器的持續回合', turns(4, 5, 6)),
+      K('bobby-bench', '工作檯', 'deviceCap', [3, 4, 5], (v) => `裝置最多同時 ${v} 個。`),
       A('shock-mine', 3),
-      V0('bobby-mine-up', '地雷強化', 'shock-mine', '強化電擊地雷的威力', pct(115, 130, 150)),
+      V('bobby-mine-chain', 'shock-mine', '連鎖', [0.2, 0.3, 0.4].map((deviceShock): SkillMod => ({ rules: { deviceShock } })),
+        (m) => `地雷每次電擊，有 ${Math.round(m.rules!.deviceShock! * 100)}% 使敵人感電。`),
       A('tesla-coil', 1),
     ] },
   ] },
@@ -334,14 +345,15 @@ export const TREES: Record<CharacterId, TreeDef> = {
   hero: { branches: [
     { name: '劍技', nodes: [
       A('hero-slash', 5),
-      V0('hero-sword-up', '劍技精通', 'hero-slash', '強化斬擊的威力', pct(104, 108, 112, 116, 120)),
+      V('hero-slash-twin', 'hero-slash', '連斬', [50, 52, 54, 56, 58].map((powerPct) => ({ hits: 2, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
       A('hero-cleave', 5),
       A('hero-sunder', 5),
       A('abyss-sword', 1),
     ] },
     { name: '守護', nodes: [
       A('hero-guard', 5),
-      V0('hero-guard-up', '堅守精通', 'hero-guard', '提高守勢的防禦提升幅度', buff(104, 108, 112, 116, 120)),
+      V('hero-guard-steady', 'hero-guard', '不動', [104, 108, 112, 116, 120].map((buffPct): SkillMod => ({ buffPct, rules: { steady: true } })),
+        (m) => `守勢期間不會被暴擊，防禦提升幅度 ${m.buffPct}%。`),
       A('hero-aegis', 5),
       A('hero-rally', 5),
       A('abyss-guard', 1),
@@ -349,13 +361,14 @@ export const TREES: Record<CharacterId, TreeDef> = {
     { name: '星術', nodes: [
       A('hero-flare', 5),
       A('hero-frost', 5),
-      V0('hero-star-up', '星術精通', 'hero-frost', '強化星霜的威力', pct(104, 108, 112, 116, 120)),
+      V('hero-frost-chill', 'hero-frost', '凍原', inflicting('freeze', 0.1, 0.12, 0.14, 0.16, 0.18), (m) => `命中時 ${chanceOf(m)}% 使目標凍結（頭目改冰緩）。`),
       A('hero-spark', 5),
       A('abyss-star', 1),
     ] },
     { name: '祈光', nodes: [
       A('hero-mend', 5),
-      V0('hero-light-up', '祈光精通', 'hero-mend', '強化治癒的回復量', pct(103, 106, 109, 112, 115)),
+      V('hero-mend-overflow', 'hero-mend', '滿溢', [6, 8, 10, 12, 14].map((overflowPct): SkillMod => ({ rules: { overflowPct } })),
+        (m) => `溢出的回復變成護盾，最多最大 HP 的 ${m.rules!.overflowPct}%。`),
       A('hero-prayer', 5),
       A('hero-purify', 1),
       A('abyss-light', 1),

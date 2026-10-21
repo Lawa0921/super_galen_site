@@ -1479,7 +1479,7 @@ describe('spending a skill point', () => {
   it("raiseNode reads the hero's memories and the save loads back", () => {
     const storage = memoryStorage();
     const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
-    const tree = { 'hero-slash': 5, 'hero-sword-up': 5, 'hero-cleave': 5, 'hero-sunder': 5 };
+    const tree = { 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5 };
     g.state.party.roster.hero = { ...g.state.party.roster.hero, level: 50, memories: ABYSS_UNLOCK[0] - 1, tree };
     expect(g.raiseNode('hero', 'abyss-sword')).toEqual({ ok: false, reason: 'abyss' });
     g.state.party.roster.hero = { ...g.state.party.roster.hero, memories: ABYSS_UNLOCK[0] };

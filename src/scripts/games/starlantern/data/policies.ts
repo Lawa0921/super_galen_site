@@ -9,6 +9,7 @@ export const DEFAULT_POLICIES: PolicyTable = {
   // Chizuru raises a barrier once a boss or an elite is under 30% HP (plan 8c Task 3 tuning, retune.md).
   chizuru: [{ kind: 'ensure-barrier', skills: ['ward', 'purify-ward'], big: true, below: 30 }],
   // Bobby keeps his devices up while a boss or an elite stands; the shield generator is left to the player (plan 8c Task 6 tuning, retune.md).
+  // With 雙砲台 he keeps two turrets out (engine/policy.ts, plan 8d Task 8).
   bobby: [{ kind: 'ensure-device', skills: ['turret', 'shock-mine', 'repair-drone'], big: true }],
   // Rin marks a boss or an elite once it is under half its HP (plan 8c Task 2 tuning, retune.md).
   // 8d Task 3 ruling 1: her mark is innate, and she marks a boss or an elite from the first round.

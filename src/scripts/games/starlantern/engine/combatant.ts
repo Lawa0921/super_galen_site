@@ -67,6 +67,8 @@ export interface Combatant {
   veil?: number;
   /** The next landed hit is a critical one, drawing no crit roll; gone after it (Rin's veil). */
   nextCrit?: true;
+  /** While its taunt lasts, no hit on it crits and none rolls a crit (the hero's 不動, plan 8d). */
+  steady?: true;
   /** Who appraised this foe (Liz): its fall doubles their coins. */
   appraised?: string;
   /** The round this foe acts last in (Sylvie's pin). */
@@ -185,7 +187,9 @@ export function rollHit(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rng):
   const variance = 0.9 + rng() * 0.2;
   // Rin's hits on her mark, and a hit she readied under her veil, always crit and draw no crit roll.
   const sure = spec.crit === 'always' || !!a.nextCrit || (a.mech?.kind === 'mark' && a.mech.marks.includes(t.key));
-  const crit = sure || roll((ax('crit') + AIM.critPct * aimOn(a, t)) / 100, rng);
+  // The hero's 不動 (plan 8d): a steady guard is never crit, and nothing is rolled for it.
+  const steady = !!t.steady && t.taunt > 0;
+  const crit = !steady && (sure || roll((ax('crit') + AIM.critPct * aimOn(a, t)) / 100, rng));
   const blocked = spec.element === 'phys' && roll(tx('block') / 100, rng);
   return { variance, crit, blocked };
 }
