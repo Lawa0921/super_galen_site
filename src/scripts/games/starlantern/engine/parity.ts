@@ -14,7 +14,8 @@ import { kitParty, simBattle } from './sim';
 import type { CharacterId } from './types';
 
 export const PARITY_LEVELS = [5, 10, 20, 35, 50] as const;
-export const PARITY_SEEDS = 20;
+/** Seeds a fight is measured over, k x 7919 for k = 1..160 (8d ruling: 20 seeds left 5 of 6 rows to noise). */
+export const PARITY_SEEDS = 160;
 /** A measured member's contribution per round in one cell may move this many percent of her own baseline either way... */
 export const PARITY_MEMBER_PCT = 10;
 /** ...or, when it is more, this many percent of the whole party's baseline in that cell (a small share's floor). */
@@ -86,7 +87,17 @@ export function measureParity(policies?: PolicyTable): ParityTable {
 export interface ParityRow {
   level: number; ids: string; who: CharacterId | 'party'; base: number; now: number; pct: number;
   rule: 'cell' | 'sum' | 'party'; allowed: number;
+  /** 'prev': this member row is held to the previous accepted gate, not to 8b (ParityOptions). */
+  against?: 'prev';
 }
+
+/**
+ * What a task's parity check compares with (8d ruling on parity measurement): `prev`, the previous accepted gate's table
+ * (the same seeds), and `changed`, the characters whose kit this task changes. Every party row and the changed
+ * characters' member rows are held to the 8b baseline; the other members' rows to `prev`, so drift an earlier task left
+ * is not charged to this one. Without `prev` (the plan's close-out) every row is held to the 8b baseline.
+ */
+export interface ParityOptions { prev?: ParityTable; changed?: readonly CharacterId[] }
 
 const perRound = (c: ParityCell, ids: CharacterId[]): number =>
   ids.reduce((n, id) => n + totalOf(c.by[id] ?? { damage: 0, healing: 0, prevented: 0, shield: 0 }), 0) / c.rounds;
@@ -102,21 +113,28 @@ const change = (base: number, now: number): number => base === 0 ? (now === 0 ? 
  *   with no floor;
  * - each whole party in each cell within PARITY_PARTY_PCT, with no floor.
  * Edges pass. A cell of `base` missing from `now` fails, and so does every sum it belongs to.
+ * With `opts.prev`, the members `opts.changed` leaves out are held to `prev` instead of `base` (ParityOptions).
  */
-export function checkParity(now: ParityTable, base: ParityTable): { ok: boolean; rows: ParityRow[] } {
+export function checkParity(now: ParityTable, base: ParityTable, opts: ParityOptions = {}): { ok: boolean; rows: ParityRow[] } {
   const rows: ParityRow[] = [];
-  const sums = new Map<string, { ids: string; who: CharacterId; base: number; now: number }>();
+  const sums = new Map<string, { ids: string; who: CharacterId; base: number; now: number; against?: 'prev' }>();
   const push = (r: Omit<ParityRow, 'pct'>) => rows.push({ ...r, pct: change(r.base, r.now) });
+  const find = (t: ParityTable, level: number, ids: string) => t.cells.find((c) => c.level === level && c.ids.join(',') === ids);
   for (const b of base.cells) {
     const ids = b.ids.join(',');
-    const n = now.cells.find((c) => c.level === b.level && c.ids.join(',') === ids);
+    const n = find(now, b.level, ids);
     const party = perRound(b, b.ids);
     for (const id of b.measured) {
-      const before = perRound(b, [id]), after = n ? perRound(n, [id]) : NaN;
+      // Held to the previous gate when this task leaves her kit alone and there is one; a missing cell there fails.
+      const toPrev = opts.prev !== undefined && !(opts.changed ?? []).includes(id);
+      const ref = toPrev ? find(opts.prev!, b.level, ids) : b;
+      const before = ref ? perRound(ref, [id]) : NaN, after = n ? perRound(n, [id]) : NaN;
+      const refParty = ref ? perRound(ref, ref.ids) : NaN;
+      const against = toPrev ? { against: 'prev' as const } : {};
       push({ level: b.level, ids, who: id, base: before, now: after, rule: 'cell',
-        allowed: Math.max((PARITY_MEMBER_PCT * before) / 100, (PARITY_FLOOR_PCT * party) / 100) });
+        allowed: Math.max((PARITY_MEMBER_PCT * before) / 100, (PARITY_FLOOR_PCT * refParty) / 100), ...against });
       const key = `${ids}|${id}`;
-      const sum = sums.get(key) ?? sums.set(key, { ids, who: id, base: 0, now: 0 }).get(key)!;
+      const sum = sums.get(key) ?? sums.set(key, { ids, who: id, base: 0, now: 0, ...against }).get(key)!;
       sum.base += before;
       sum.now += after;
     }

@@ -2,6 +2,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { CHARACTER_IDS } from '../data/characters';
+import type { CharacterId } from './types';
 import { totalOf } from './ledger';
 import { STANDARD_LINEUP } from './party';
 import {
@@ -9,8 +11,18 @@ import {
   parityDepth, parityLineups, type ParityCell, type ParityRow, type ParityTable,
 } from './parity';
 
-const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'sim-gate', 'contribution.8b.json');
-const TIMEOUT = 300_000;
+const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'sim-gate');
+/** The 8b baseline at PARITY_SEEDS (recorded with the code at e43e7641; the 20-seed contribution.8b.json stays). */
+const FIXTURE = join(FIXTURES, 'contribution.8b.160.json');
+/**
+ * The task under measurement (8d ruling on parity measurement), set by each task: the characters whose kit it changes
+ * (held to 8b with every party) and the previous accepted gate it starts from (everyone else is held to that).
+ * `PARITY_CLOSEOUT=1` holds every row to 8b instead: the plan's last task runs it.
+ */
+const PARITY_TASK: { name: string; changed: CharacterId[]; prev: string } = {
+  name: '8d Task 3', changed: ['noel', 'rin'], prev: 'contribution.8d-2.160.json',
+};
+const TIMEOUT = 3_000_000;
 
 let measured: ParityTable | undefined;
 /** One measurement per file run: the slow part, shared by the tests and the gate's dump. */
@@ -23,7 +35,7 @@ const cell = (over: Partial<ParityCell>): ParityCell =>
 describe('parity: the old roster baseline', () => {
   it('parity scenarios', () => {
     expect(PARITY_LEVELS.map(parityDepth)).toEqual([1, 3, 5, 9, 13]);
-    expect([PARITY_SEEDS, PARITY_MEMBER_PCT, PARITY_FLOOR_PCT, PARITY_SUM_PCT, PARITY_PARTY_PCT]).toEqual([20, 10, 2, 10, 5]);
+    expect([PARITY_SEEDS, PARITY_MEMBER_PCT, PARITY_FLOOR_PCT, PARITY_SUM_PCT, PARITY_PARTY_PCT]).toEqual([160, 10, 2, 10, 5]);
     const lineups = parityLineups();
     expect(lineups).toHaveLength(6);
     expect(lineups[0]).toEqual({ measured: STANDARD_LINEUP, ids: STANDARD_LINEUP });
@@ -76,6 +88,42 @@ describe('parity: the old roster baseline', () => {
     expect(checkParity(table([one(10, 500, 500)]), large).ok).toBe(false);
   });
 
+  it('a task holds its changed characters and every party to 8b, and the others to the previous gate; a close-out holds all to 8b', () => {
+    // A party of 100 a round: Liz is measured, the hero is the rest.
+    const one = (level: number, liz: number, hero: number): ParityCell =>
+      cell({ level, rounds: 1, by: { liz: C(liz), hero: C(hero), rin: C(0), chizuru: C(0), selene: C(0) } });
+    const table = (cells: ParityCell[]): ParityTable => ({ cells });
+    const base = table([one(5, 20, 80)]);      // 8b
+    const prev = table([one(5, 30, 70)]);      // the gate this task starts from: earlier drift moved Liz to 30
+    const now = table([one(5, 31, 69)]);
+    const row = (r: { rows: ParityRow[] }, who: string, rule: ParityRow['rule']) => r.rows.find((x) => x.who === who && x.rule === rule)!;
+    // Liz unchanged by this task: compared with the previous gate (30 → 31, band 3), and passes.
+    const task = checkParity(now, base, { prev, changed: ['noel', 'rin'] });
+    expect([row(task, 'liz', 'cell').base, row(task, 'liz', 'cell').against]).toEqual([30, 'prev']);
+    expect(row(task, 'liz', 'sum').against).toBe('prev');
+    expect(task.ok).toBe(true);
+    // Liz changed by this task: compared with 8b (20 → 31, band 2), and fails.
+    const mine = checkParity(now, base, { prev, changed: ['liz'] });
+    expect([row(mine, 'liz', 'cell').base, row(mine, 'liz', 'cell').against]).toEqual([20, undefined]);
+    expect(mine.ok).toBe(false);
+    // The close-out: no previous gate, every row against 8b.
+    expect(checkParity(now, base).ok).toBe(false);
+    expect(checkParity(now, base, { changed: [] }).ok).toBe(false);
+    // The party is always held to 8b, whatever the previous gate says.
+    const party = checkParity(table([one(5, 30, 76)]), base, { prev: table([one(5, 30, 76)]), changed: [] });
+    expect([row(party, 'party', 'party').base, row(party, 'party', 'party').now]).toEqual([100, 106]);
+    expect(party.ok).toBe(false);
+    // An unchanged member whose cell the previous gate lacks fails rather than passing unmeasured.
+    expect(checkParity(now, base, { prev: table([]), changed: [] }).ok).toBe(false);
+  });
+
+  it('the task under measurement names real characters and a recorded previous gate', () => {
+    expect(PARITY_TASK.changed.length).toBeGreaterThan(0);
+    for (const id of PARITY_TASK.changed) expect(CHARACTER_IDS, id).toContain(id);
+    expect(existsSync(join(FIXTURES, PARITY_TASK.prev)), PARITY_TASK.prev).toBe(true);
+    expect(existsSync(FIXTURE), FIXTURE).toBe(true);
+  });
+
   it('every character holds parity with the 8b roster', () => {
     const now = measure();
     if (process.env.SIM_GATE_OUT) {
@@ -84,7 +132,10 @@ describe('parity: the old roster baseline', () => {
     }
     expect(existsSync(FIXTURE), `${FIXTURE} is recorded by scripts/starlantern-sim-gate.sh`).toBe(true);
     const base = JSON.parse(readFileSync(FIXTURE, 'utf8')) as ParityTable;
-    const { ok, rows } = checkParity(now, base);
+    // A task's check, or with PARITY_CLOSEOUT=1 the plan's close-out (every row against 8b).
+    const closeout = process.env.PARITY_CLOSEOUT === '1';
+    const prev = closeout ? undefined : JSON.parse(readFileSync(join(FIXTURES, PARITY_TASK.prev), 'utf8')) as ParityTable;
+    const { ok, rows } = checkParity(now, base, closeout ? {} : { prev, changed: PARITY_TASK.changed });
     const bad = rows.filter((r) => !(Math.abs(r.now - r.base) <= r.allowed));
     expect(ok, JSON.stringify(bad, null, 1)).toBe(true);
   }, TIMEOUT);
