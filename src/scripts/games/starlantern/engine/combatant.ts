@@ -157,6 +157,8 @@ export interface DamageSpec {
   execute?: number;
   /** Percent: damage times 1 + wounded / 100 against a target below full HP. */
   wounded?: number;
+  /** Percent a stack of Sylvie's aim adds on this hit, in place of AIM.dmgPct (her 一擊, plan 8d). */
+  aimPct?: number;
 }
 
 /** Enemies crit for a flat 50% more, whatever critDmg they carry. */
@@ -216,7 +218,7 @@ export function hitAmount(a: Combatant, t: Combatant, spec: DamageSpec, r: HitRo
   // Rin's 不眨眼 (plan 8d): a crit on her marked foe hits harder still.
   if (r.crit && a.mech?.kind === 'mark' && a.mech.crit && a.mech.marks.includes(t.key)) mult *= 1 + a.mech.crit / 100;
   const aim = aimOn(a, t);
-  if (aim) mult *= 1 + (AIM.dmgPct * aim) / 100;
+  if (aim) mult *= 1 + ((spec.aimPct ?? AIM.dmgPct) * aim) / 100;
   // Safira's beat: every hit of hers, her plain attack and her ultimate included.
   if (a.mech?.kind === 'beat' && a.defId === 'safira' && a.mech.beat > 0) mult *= 1 + (BEAT.pctPer * a.mech.beat) / 100;
   if (hitEl === 'phys') {

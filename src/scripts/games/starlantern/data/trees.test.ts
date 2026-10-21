@@ -189,12 +189,10 @@ describe('skill trees', () => {
     }
   });
 
-  it('the snare-shot upgrade deepens the debuff along with the power, and says so', () => {
-    for (const id of ['sylvie-snare-up']) {
-      const n = NODES[id].node;
-      expect(n.desc, id).toMatch(/削弱/);
-      expect(n.mods!.map((m) => m.buffPct), id).toEqual(n.mods!.map((m) => m.powerPct));
-    }
+  it('深鑿 (破甲強化 until plan 8d Task 6) lengthens the debuff, and says so', () => {
+    const n = NODES['sylvie-sunder-deep'].node;
+    expect(n.mods!.map((m) => m.turns)).toEqual([5, 6, 7]);
+    for (let r = 1; r <= 3; r++) expect(nodeText(n.id, r)).toContain(`${n.mods![r - 1].turns} 回合`);
   });
 
   it('every power mod node (powerPct or powerDelta) names a skill that deals damage, heals, sets a device or raises a barrier', () => {
@@ -262,8 +260,8 @@ describe('skill trees', () => {
     expect(NODES['flame-wave']).toMatchObject({ owner: 'noel', branch: 0, tier: 2 });
     expect(NODES.pickpocket).toMatchObject({ owner: 'liz', branch: 0, tier: 1 });
     expect(nodeName('sweep')).toBe(SKILLS.sweep.name);
-    expect(nodeName('liz-twin-up')).toBe('雙刃強化');
-    expect(nodeDesc('liz-twin-up')).toBeTruthy();
+    expect(nodeName('scarlet-burst-up')).toBe('爆炎強化');
+    expect(nodeDesc('scarlet-burst-up')).toBeTruthy();
     expect(nodeName('noel-star-twin')).toBe('火之星彈・連星');
     expect(nodeName('noel-calm')).toBe('冷靜');
     expect(NODES['noel-star-heavy']).toMatchObject({ owner: 'noel', branch: 0, tier: 1, pair: 'noel-star-twin' });
@@ -311,7 +309,7 @@ describe('node words (plan 8d)', () => {
   };
 
   it('node words name their own numbers', () => {
-    const owners = ['noel', 'rin', 'chizuru', 'selene'] as const;   // Task 9 widens this to every tree
+    const owners = ['noel', 'rin', 'chizuru', 'selene', 'liz', 'sylvie'] as const;   // Task 9 widens this to every tree
     let checked = 0;
     for (const id of owners) for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) {
       if (node.kind === 'active') continue;

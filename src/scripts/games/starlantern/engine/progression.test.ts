@@ -859,11 +859,11 @@ describe('skill words follow their numbers (plan 8c)', () => {
       }
     }
     expect(wrong).toEqual([]);
-    // 破甲箭's depth follows its strengthening.
-    const sunder = skillFor({ powers: [], ranks: { 'sunder-arrow': 1, 'sylvie-snare-up': 3 } }, 'sunder-arrow')!;
-    const depth = Math.abs((sunder.effects[1] as { pct: number }).pct);
-    expect(depth).not.toBe(30);
-    expect(sunder.desc).toContain(`${depth}%`);
+    // 破甲箭's rounds follow 深鑿 (plan 8d Task 6).
+    const sunder = skillFor({ powers: [], ranks: { 'sunder-arrow': 1, 'sylvie-sunder-deep': 3 } }, 'sunder-arrow')!;
+    expect((sunder.effects[1] as { turns: number }).turns).toBe(7);
+    expect(sunder.desc).toContain('7 回合');
+    expect(sunder.desc).not.toContain('3 回合');
     // 拍手's gauge follows its rank.
     const clap = skillFor({ powers: [], ranks: { clap: 3 } }, 'clap')!;
     const amount = (clap.effects[0] as { amount: number }).amount;
@@ -957,16 +957,13 @@ describe('pairs, mechanic knobs and the first-learned list (plan 8d Task 1)', ()
     try {
       for (let L = 2; L <= 50; L++) expect(defaultTree('noel', L)['test-star-b'], `Lv${L}`).toBeUndefined();
     } finally { restore(); }
-    // Liz: Lv2's point goes to stealth (an old skill due at Lv2), Lv3's to quickstep (first). It is learned, not raised:
-    // Lv5's point is an upgrade by the usual order.
-    expect(defaultTree('liz', 3).quickstep).toBeUndefined();
-    DEFAULT_FIRST.liz = ['quickstep'];
-    try {
-      expect(defaultTree('liz', 2)).toEqual({ 'twin-slash': 1, stealth: 1 });
-      expect(defaultTree('liz', 3)).toEqual({ 'twin-slash': 1, stealth: 1, quickstep: 1 });
-      expect(defaultTree('liz', 5).quickstep).toBe(1);
-      expect(validBuild('liz', 30, defaultTree('liz', 30), {})).toBe(true);
-    } finally { delete DEFAULT_FIRST.liz; }
+    // Liz (plan 8d Task 6): Lv2's point goes to stealth (an old skill due at Lv2), Lv3's to fortune-strike (first). It is
+    // learned, not raised: Lv5's point is an upgrade by the usual order.
+    expect(DEFAULT_FIRST.liz).toEqual(['fortune-strike']);
+    expect(defaultTree('liz', 2)).toEqual({ 'twin-slash': 1, stealth: 1 });
+    expect(defaultTree('liz', 3)).toEqual({ 'twin-slash': 1, stealth: 1, 'fortune-strike': 1 });
+    expect(defaultTree('liz', 5)['fortune-strike']).toBe(1);
+    expect(validBuild('liz', 30, defaultTree('liz', 30), {})).toBe(true);
     // Rin has no old skills: her first point goes to the list.
     DEFAULT_FIRST.rin = ['rin-backstab'];
     try {
@@ -985,7 +982,7 @@ describe("Noel's and Rin's trees (plan 8d Task 3)", () => {
     expect(treeSkills('rin')[0]).toBe('rin-mark');
     for (const L of [1, 2, 5, 10, 20, 35, 50]) expect(defaultTree('rin', L), `Lv${L}`).not.toHaveProperty('rin-mark');
     expect(skillPointsLeft({ ...rin, level: 5 })).toBe(skillPoints(5));
-    expect(DEFAULT_FIRST).toEqual({});
+    expect(DEFAULT_FIRST.rin).toBeUndefined();
     expect(canRaiseNode(at('rin', 10), 'rin-mark')).toBe('unknown');
     // Her tree's variants of the mark still rewrite it.
     expect(skillFor({ powers: [], ranks: { 'rin-mark-hone': 1, 'rin-mark-steady': 2 } }, 'rin-mark')!.effects)
@@ -1012,6 +1009,61 @@ describe("Noel's and Rin's trees (plan 8d Task 3)", () => {
     for (const id of ['noel', 'rin'] as const) {
       for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) expect(node.id, id).not.toMatch(/-up$/);
     }
+  });
+});
+
+describe("Liz's and Sylvie's trees (plan 8d Task 6)", () => {
+  it('the standard build learns fortune-strike by Lv3', () => {
+    expect(DEFAULT_FIRST.liz).toEqual(['fortune-strike']);
+    expect(defaultTree('liz', 2)).toEqual({ 'twin-slash': 1, stealth: 1 });
+    expect(defaultTree('liz', 3)['fortune-strike']).toBe(1);
+    for (const L of [5, 10, 20, 35, 50]) expect(defaultTree('liz', L)['fortune-strike'], `Lv${L}`).toBeGreaterThanOrEqual(1);
+  });
+
+  it("liz's tree keeps its capacity with fortune-strike at the foot of 花錢", () => {
+    const b = TREES.liz.branches;
+    expect(b.map((x) => x.name)).toEqual(['雙刃', '尋寶', '花錢']);
+    expect(b[0].nodes.map((n) => n.id)).toEqual(['twin-slash', 'pickpocket', 'liz-twin-quick', 'liz-change', 'jackpot']);
+    expect(b[0].nodes[2].pair?.id).toBe('liz-twin-haggle');
+    expect(b[1].nodes.map((n) => n.id)).toEqual(['stealth', 'treasure-sense', 'smoke-bomb', 'liz-smoke-choke', 'phantom-step']);
+    expect(b[2].nodes.map((n) => [n.id, n.maxRank])).toEqual([
+      ['fortune-strike', 3], ['liz-fortune-split', 3], ['quickstep', 3], ['liz-vault', 3], ['appraise', 1]]);
+    expect(DEFAULT_CAPSTONE.liz).toBe(0);
+  });
+
+  it("the tuned numbers of Liz's and Sylvie's kits (8d Task 6, retune.md)", async () => {
+    const { DEFAULT_POLICIES } = await import('../data/policies');
+    const { COINS, AIM } = await import('./mech');
+    const mods = (id: string) => NODES[id].node.mods!;
+    // 大手筆 from Lv3 put Liz's Lv5 at +27% of 8b: its power 200 -> 160 and the coin's 15% -> 5%, with 分期 carrying her
+    // later levels (14/24/26%), and she spends from four coins instead of six.
+    expect(SKILLS['fortune-strike'].effects[0]).toMatchObject({ kind: 'damage', power: 160 });
+    expect(COINS.coinPowerPct).toBe(5);
+    expect(mods('liz-fortune-split').map((m) => [m.rules!.coinSpendPct, m.rules!.coinPowerPct])).toEqual([[50, 14], [50, 24], [50, 26]]);
+    expect(DEFAULT_POLICIES.liz).toEqual([{ kind: 'spend-at', gauge: 'coins', min: 6, skill: 'jackpot' }, { kind: 'spend-at', gauge: 'coins', min: 4, skill: 'fortune-strike' }]);
+    expect(mods('liz-twin-quick').map((m) => [m.hits, m.powerPct])).toEqual([[3, 75], [3, 80], [3, 87]]);
+    expect(NODES['liz-change'].node.values).toEqual([2, 3, 4]);
+    expect(NODES['liz-vault'].node.values).toEqual([12, 14, 16]);
+    // Sylvie: 一擊 18/25/30 (the plan's 20 put her Lv5 at +9.5%), 穿心箭 210 -> 220 (her Lv35 lost 釘足 and 箭雨強化).
+    expect(mods('sylvie-aim-one').map((m) => m.rules!.aimPct)).toEqual([18, 25, 30]);
+    expect(SKILLS['heart-shot'].effects[0]).toMatchObject({ kind: 'damage', power: 220 });
+    expect(AIM.dmgPct).toBe(10);
+    expect(NODES['sylvie-patience'].node.values).toEqual([4, 5, 6]);
+    expect(NODES['sylvie-shift'].node.values).toEqual([1, 2, 3]);
+  });
+
+  it('liz and sylvie hold no B side and no 8c node', () => {
+    for (const id of ['liz', 'sylvie'] as const) for (const L of [5, 10, 20, 35, 50]) {
+      for (const k of Object.keys(defaultTree(id, L))) {
+        const { node, branch, tier } = NODES[k];
+        expect(TREES[id].branches[branch].nodes[tier], `${id} Lv${L} ${k}`).toBe(node);   // an A side
+        expect(k, `${id} Lv${L}`).not.toMatch(/-up$/);
+      }
+    }
+    for (const id of ['liz', 'sylvie'] as const) {
+      for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) expect(node.id, id).not.toMatch(/-up$/);
+    }
+    expect([TREES.sylvie.branches[0].nodes[1].id, TREES.sylvie.branches[0].nodes[1].pair?.id]).toEqual(['sylvie-aim-one', 'sylvie-aim-rapid']);
   });
 });
 

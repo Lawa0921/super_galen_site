@@ -25,8 +25,11 @@ export const MARK = { critSharePct: 30 } as const;
  */
 export const BEAT = { max: 4, pctPer: 10 } as const;
 
-/** Liz's coins (spec §8.3, engine/mechanics/coins.ts): the most she holds, +% power a coin, gold a coin left on a win. */
-export const COINS = { cap: 10, coinPowerPct: 15, gold: 2 } as const;
+/**
+ * Liz's coins (spec §8.3, engine/mechanics/coins.ts): the most she holds, +% power a coin, gold a coin left on a win.
+ * Plan 8d Task 6: +% a coin 15 -> 5, once 大手筆 came at Lv3 (her Lv5 was +27% of 8b); 分期 carries her later levels.
+ */
+export const COINS = { cap: 10, coinPowerPct: 5, gold: 2 } as const;
 
 /** Chizuru's barriers (spec §8.2, engine/mechanics/barrier.ts): +% power a release gains for each round the barrier had left. */
 export const BARRIER = { releasePct: 10 } as const;

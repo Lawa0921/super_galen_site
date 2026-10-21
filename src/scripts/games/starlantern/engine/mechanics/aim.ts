@@ -3,11 +3,14 @@
  * a scatter) at her aimed foe adds a stack (up to three), at any other foe moves the aim there at one; the foe's fall
  * clears it. Each stack is more damage and more crit on that foe (combatant.hitAmount, rollHit), counted as it stood
  * before the shot. 星墜一矢 spends the stacks for power; the hunter's mark locks the aim at three on its foe for a while,
- * and shots elsewhere leave it be. Her pin (釘足箭) makes a foe act last next round (battle.turnOrder). Nothing here draws.
+ * and shots elsewhere leave it be. Her pin (釘足箭) makes a foe act last next round (battle.turnOrder). Plan 8d: her 獵人的耐心
+ * raises the cap; 轉移 keeps some stacks when she moves her aim or her foe falls (the next foe starts from them, +1); 一擊's
+ * stacks count for more on its own hit (combatant.hitAmount); 覆蓋 adds stacks (skills.ts `aim-add`). Nothing here draws.
  */
 import type { BattleState } from '../battle';
 import type { Combatant } from '../combatant';
 import { AIM } from '../mech';
+import { knobOf } from '../progression';
 import { pctOf } from '../skills';
 import type { SkillDef } from '../types';
 import { T } from '../../data/text.zh-TW';
@@ -15,11 +18,17 @@ import type { MechModule } from './index';
 
 export { AIM };
 
-/** Every aim on a foe that is down goes back to nothing. */
+/** The most aim stacks `c` holds: AIM.cap, or her 獵人的耐心's. */
+export const aimCapOf = (c: Combatant): number => knobOf(c, 'aimCap') ?? AIM.cap;
+
+/** The stacks `c` carries over when her aim leaves a foe (轉移): none, or up to her node's number. */
+const kept = (c: Combatant, stacks: number): number => Math.min(stacks, knobOf(c, 'aimKeep') ?? 0);
+
+/** Every aim on a foe that is down goes back to nothing, but for what 轉移 keeps. */
 function clearFallen(s: { party: Combatant[]; enemies: Combatant[] }): void {
   for (const c of s.party) {
     const m = c.mech;
-    if (m?.kind === 'aim' && m.target !== null && !s.enemies.some((e) => e.key === m.target && e.alive)) c.mech = { kind: 'aim', target: null, stacks: 0 };
+    if (m?.kind === 'aim' && m.target !== null && !s.enemies.some((e) => e.key === m.target && e.alive)) c.mech = { kind: 'aim', target: null, stacks: kept(c, m.stacks) };
   }
 }
 
@@ -41,8 +50,8 @@ export const aim: MechModule = {
     const t = ctx.lastHit?.target ?? ('target' in act ? act.target : undefined);
     if (!t || !s.enemies.some((e) => e.key === t)) return;
     if (m.lock && t !== m.target) return;   // the hunter's mark holds the aim where it is
-    if (t === m.target) m.stacks = Math.min(AIM.cap, m.stacks + 1);
-    else c.mech = { kind: 'aim', target: t, stacks: 1 };
+    if (t === m.target) m.stacks = Math.min(aimCapOf(c), m.stacks + 1);
+    else c.mech = { kind: 'aim', target: t, stacks: Math.min(aimCapOf(c), kept(c, m.stacks) + 1) };
     clearFallen(s);
   },
   onHit(_actor, target, ctx) {

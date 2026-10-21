@@ -89,7 +89,7 @@ const LIST: SkillDef[] = [
   { id: 'smoke-bomb', name: '煙霧彈', owner: 'liz', tp: 6, target: 'enemies', desc: '降低全體敵人攻擊',
     effects: [{ kind: 'buff', stat: 'atk', pct: -20, turns: 3 }] },
   { id: 'fortune-strike', name: '大手筆', owner: 'liz', tp: 10, target: 'enemy', mech: 'coin-power', desc: `這一下花光所有銅板，每枚威力多 ${COINS.coinPowerPct}%。很貴，但值得。`,
-    effects: [{ kind: 'damage', power: 200, element: 'phys', scale: 'atk', melee: true }] },
+    effects: [{ kind: 'damage', power: 160, element: 'phys', scale: 'atk', melee: true }] },
   { id: 'quickstep', name: '疾步', owner: 'liz', tp: 3, target: 'self', desc: '自身速度提升',
     effects: [{ kind: 'buff', stat: 'spd', pct: 30, turns: 3 }] },
   { id: 'appraise', name: '估價', owner: 'liz', tp: 6, target: 'enemy', desc: '這個值多少？看穿牠的弱點；牠倒下時，銅板翻倍。',
@@ -98,7 +98,7 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'buff', stat: 'spd', pct: 60, turns: 4 }, { kind: 'buff', stat: 'atk', pct: 30, turns: 4 }] },
 
   { id: 'heart-shot', name: '穿心箭', owner: 'sylvie', tp: 8, target: 'enemy', desc: '單體強力射擊',
-    effects: [{ kind: 'damage', power: 210, element: 'phys', scale: 'atk', melee: false }] },
+    effects: [{ kind: 'damage', power: 220, element: 'phys', scale: 'atk', melee: false }] },
   { id: 'starfall-arrow', name: '星墜一矢', owner: 'sylvie', tp: 13, target: 'enemy', mech: 'consume-aim', desc: `把瞄準全部放進這一箭：每層瞄準，威力多 ${AIM.consumePct}%。`,
     effects: [{ kind: 'damage', power: 260, element: 'phys', scale: 'atk', melee: false }] },
   { id: 'sunder-arrow', name: '破甲箭', owner: 'sylvie', tp: 5, target: 'enemy', desc: '找到盔甲的縫。3 回合內，牠的防禦降低 {e1.pct}%。',

@@ -147,49 +147,60 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('heaven-spear', 1),
     ] },
   ] },
+  // Liz's tree, reordered (plan 8d ruling 6): her spender 大手筆 heads a branch of its own (花錢), so the standard build
+  // learns it at Lv3 (DEFAULT_FIRST) and her coins are spent from then on; 幻影步 and 估價 hold the ultimate cells of 尋寶 and 花錢.
   liz: { branches: [
     { name: '雙刃', nodes: [
       A('twin-slash', 3),
       A('pickpocket', 3),
-      V0('liz-twin-up', '雙刃強化', 'twin-slash', '強化雙刃的威力', pct(110, 120, 135)),
-      V0('liz-triple-up', '順手強化', 'pickpocket', '強化順手牽羊的威力', pct(115, 130, 150)),
+      P(
+        V('liz-twin-quick', 'twin-slash', '快手', [75, 80, 87].map((powerPct) => ({ hits: 3, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
+        V('liz-twin-haggle', 'twin-slash', '殺價', [85, 90, 95].map((powerPct) => ({ tpDelta: -2, powerPct })), (m) => `TP −${-m.tpDelta!}，威力 ${m.powerPct}%。`),
+      ),
+      K('liz-change', '找零', 'coinRefund', [2, 3, 4], (v) => `用掉銅板的招之後，退還 ${v} 枚。`),
       A('jackpot', 1),
     ] },
     { name: '尋寶', nodes: [
       A('stealth', 1),
       A('treasure-sense', 1),
       A('smoke-bomb', 3),
-      V0('liz-smoke-up', '濃煙', 'smoke-bomb', '加深煙霧彈的攻擊削弱', buff(120, 140, 160)),
-      A('fortune-strike', 1),
-    ] },
-    { name: '身法', nodes: [
-      A('quickstep', 3),
-      V0('liz-quick-up', '疾步延長', 'quickstep', '延長疾步的持續回合', turns(4, 5, 6)),
-      A('appraise', 3),
-      V0('liz-venom-up', '估價節流', 'appraise', '降低估價的 TP 消耗', tp(-1, -2, -3)),
+      V('liz-smoke-choke', 'smoke-bomb', '嗆鼻', [15, 20, 25].map((v): SkillMod => ({ extra: [{ kind: 'buff', stat: 'spd', pct: -v, turns: 3 }] })),
+        (m) => { const b = m.extra![0] as { pct: number; turns: number }; return `另使敵人速度降低 ${-b.pct}%，${b.turns} 回合。`; }),
       A('phantom-step', 1),
+    ] },
+    { name: '花錢', nodes: [
+      A('fortune-strike', 3),
+      V('liz-fortune-split', 'fortune-strike', '分期', [14, 24, 26].map((coinPowerPct): SkillMod => ({ rules: { coinSpendPct: 50, coinPowerPct } })),
+        (m) => `只花 ${m.rules!.coinSpendPct}% 的銅板（進位），每枚威力多 ${m.rules!.coinPowerPct}%。`),
+      A('quickstep', 3),
+      K('liz-vault', '金庫', 'coinCap', [12, 14, 16], (v) => `銅板上限 ${v} 枚。`),
+      A('appraise', 1),
     ] },
   ] },
   sylvie: { branches: [
     { name: '狙擊', nodes: [
       A('aimed-shot', 3),
-      V0('sylvie-aim-up', '瞄準強化', 'aimed-shot', '強化瞄準射擊的威力', pct(110, 120, 135)),
+      P(
+        V('sylvie-aim-one', 'aimed-shot', '一擊', [18, 25, 30].map((aimPct): SkillMod => ({ rules: { aimPct } })), (m) => `這一箭的瞄準每層 +${m.rules!.aimPct}%。`),
+        V('sylvie-aim-rapid', 'aimed-shot', '速射', [90, 95, 100].map((powerPct) => ({ tpDelta: -2, powerPct })), (m) => `TP −${-m.tpDelta!}，威力 ${m.powerPct}%。`),
+      ),
       A('heart-shot', 3),
-      V0('sylvie-heart-up', '穿心節流', 'heart-shot', '降低穿心箭的 TP 消耗', tp(-1, -2, -3)),
+      K('sylvie-patience', '獵人的耐心', 'aimCap', [4, 5, 6], (v) => `瞄準上限 ${v} 層。`),
       A('starfall-arrow', 1),
     ] },
     { name: '牽制', nodes: [
       A('pin-shot', 3),
-      V0('sylvie-pin-up', '釘足強化', 'pin-shot', '強化釘足箭的威力', pct(110, 120, 135)),
+      K('sylvie-shift', '轉移', 'aimKeep', [1, 2, 3], (v) => `換目標時保留 ${v} 層瞄準。`),
       A('sunder-arrow', 3),
-      V0('sylvie-snare-up', '破甲強化', 'sunder-arrow', '強化破甲箭的威力，並加深防禦削弱', deepen(115, 130, 150)),
+      V('sylvie-sunder-deep', 'sunder-arrow', '深鑿', turns(5, 6, 7), (m) => `降防持續 ${m.turns} 回合。`),
       A('hunters-mark', 1),
     ] },
     { name: '箭雨', nodes: [
       A('arrow-rain', 3),
-      V0('sylvie-rain-up', '箭雨強化', 'arrow-rain', '強化箭雨的威力', pct(110, 120, 135)),
+      V('sylvie-rain-cover', 'arrow-rain', '覆蓋', [1, 2, 3].map((n): SkillMod => ({ extra: [{ kind: 'aim-add', n }] })),
+        (m) => `命中後，她瞄準的目標瞄準 +${(m.extra![0] as { n: number }).n} 層。`),
       A('scatter-shot', 3),
-      V0('sylvie-fire-up', '散射強化', 'scatter-shot', '強化散射的威力', pct(115, 130, 150)),
+      V('sylvie-scatter-more', 'scatter-shot', '多矢', [4, 5, 6].map((hits) => ({ hits })), (m) => `改為 ${m.hits} 支箭。`),
       A('deluge-volley', 1),
     ] },
   ] },
@@ -374,7 +385,7 @@ export const branchNodes = (b: TreeBranch): { node: TreeNode; tier: number }[] =
  * The standard build's first-learned nodes (plan 8d ruling 5), per character: after the old skills that are due and before
  * any other upgrade, the build learns the first of these it can (rank 0 to 1; later ranks come as upgrades).
  */
-export const DEFAULT_FIRST: Partial<Record<CharacterId, string[]>> = {};
+export const DEFAULT_FIRST: Partial<Record<CharacterId, string[]>> = { liz: ['fortune-strike'] };
 
 /**
  * Skills a character knows from Lv1 outside her tree, for no point (8d Task 3 ruling 1): a core mechanic's entry skill

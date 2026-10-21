@@ -226,11 +226,11 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
   });
 
   it('a modifier node rewrites its skill at its rank', () => {
-    // Plan 8c strengthening nodes still standing (Chizuru's gave way to her variants in plan 8d Task 5).
-    const aimed = (SKILLS['aimed-shot'].effects[0] as { power: number }).power;
-    expect(dmg(caster({ 'aimed-shot': 1, 'sylvie-aim-up': 2 }), 'aimed-shot')).toBe(pw(aimed, mod('sylvie-aim-up', 2).powerPct!));
-    expect(skillCost(caster({ 'heart-shot': 1, 'sylvie-heart-up': 3 }), 'heart-shot'))
-      .toBe(Math.max(1, SKILLS['heart-shot'].tp + mod('sylvie-heart-up', 3).tpDelta!));
+    // A plan 8c strengthening node still standing, and a plan 8d variant that cuts TP (殺價).
+    const burst = (SKILLS['flame-burst'].effects[0] as { power: number }).power;
+    expect(dmg(caster({ 'flame-burst': 1, 'scarlet-burst-up': 2 }), 'flame-burst')).toBe(pw(burst, mod('scarlet-burst-up', 2).powerPct!));
+    expect(skillCost(caster({ 'twin-slash': 1, 'liz-twin-haggle': 3 }), 'twin-slash'))
+      .toBe(Math.max(1, SKILLS['twin-slash'].tp + mod('liz-twin-haggle', 3).tpDelta!));
   });
 
   it('the tree applies before worn powers', () => {
@@ -292,12 +292,12 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
       expect(fx(caster({ 'frost-bind': r }), 'frost-bind'), `bind ${r}`)
         .toEqual(bind0.map((e) => (e.kind === 'damage' ? { ...e, power: pw(e.power, ACTIVE_RANK_PCT[r - 1]) } : e)));
     }
-    const baseDebuff = SKILLS['sunder-arrow'].effects.find((e) => e.kind === 'buff') as { pct: number };
-    expect(fx(caster({ 'sunder-arrow': 1, 'sylvie-snare-up': 3 }), 'sunder-arrow').find((e) => e.kind === 'buff'))
-      .toEqual({ ...baseDebuff, pct: pw(baseDebuff.pct, 150) });   // 「並加深防禦削弱」: x 150%
-    const smoke = fx(caster({ 'smoke-bomb': 1, 'liz-smoke-up': 2 }), 'smoke-bomb')[0] as { pct: number };
-    const smoke0 = SKILLS['smoke-bomb'].effects[0] as { pct: number };
-    expect(smoke.pct).toBe(pw(smoke0.pct, mod('liz-smoke-up', 2).buffPct!));                                    // 「加深煙霧彈的攻擊削弱」
+    // Plan 8d Task 6: 深鑿 lengthens 破甲箭's debuff; 嗆鼻 adds a speed debuff to 煙霧彈 and leaves its attack debuff as it is.
+    const baseDebuff = SKILLS['sunder-arrow'].effects.find((e) => e.kind === 'buff') as { pct: number; turns: number };
+    expect(fx(caster({ 'sunder-arrow': 1, 'sylvie-sunder-deep': 3 }), 'sunder-arrow').find((e) => e.kind === 'buff'))
+      .toEqual({ ...baseDebuff, turns: 7 });
+    const smoke = fx(caster({ 'smoke-bomb': 1, 'liz-smoke-choke': 2 }), 'smoke-bomb');
+    expect(smoke).toEqual([...SKILLS['smoke-bomb'].effects, { kind: 'buff', stat: 'spd', pct: -20, turns: 3 }]);
     const bash = fx(caster({ 'shield-bash': 1, 'scarlet-bash-up': 3 }), 'shield-bash');
     const bash0 = SKILLS['shield-bash'].effects;
     // Plan 8c Task 5: the bash challenges instead of weakening, so its node scales the power alone.

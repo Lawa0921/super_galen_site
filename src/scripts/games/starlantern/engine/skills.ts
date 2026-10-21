@@ -9,7 +9,8 @@ import type { BattleState } from './battle';
 import { onLandedHit } from './mechanics/index';
 import { MOON } from './mechanics/moon';
 import { AIM } from './mech';
-import { COINS } from './mechanics/coins';
+import { COINS, coinCapOf } from './mechanics/coins';
+import { aimCapOf } from './mechanics/aim';
 import { T } from '../data/text.zh-TW';
 import { overclock, placeDevice, tuneUp } from './mechanics/devices';
 import { raiseBarrier } from './mechanics/barrier';
@@ -66,6 +67,8 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
       case 'damage': return {
         ...e, power: pctOf(e.power, power),
         ...(mod.element !== undefined ? { element: mod.element } : {}), ...(mod.hits !== undefined ? { hits: mod.hits } : {}),
+        // 一擊 (plan 8d ruling 7): the aim stacks count for more on this skill's hits.
+        ...(mod.rules?.aimPct !== undefined ? { aimPct: mod.rules.aimPct } : {}),
       };
       case 'heal': return { ...e, power: pctOf(e.power, power) };
       case 'buff': return { ...e, pct: pctOf(e.pct, mod.buffPct), turns: lasting(e.turns) };
@@ -113,6 +116,10 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
     const held = (now as { hold?: number }).hold ?? 0;
     if (e.kind === 'moon' && e.step === -1 && held > (e.hold ?? 0)) out.desc += T.mech.recallHold(held);
   });
+  // 分期 (plan 8d): a coin spender's words name the power a coin as the variant makes it.
+  if (mod.rules?.coinPowerPct !== undefined) {
+    out.desc = out.desc.replace(T.mech.coinPower(def.rules?.coinPowerPct ?? COINS.coinPowerPct), T.mech.coinPower(mod.rules.coinPowerPct));
+  }
   if (mod.target !== undefined) out.target = mod.target;
   if (mod.hpCost !== undefined) out.hpCost = mod.hpCost;
   if (mod.tpDelta !== undefined && def.tp > 0) out.tp = Math.max(1, def.tp + mod.tpDelta);
@@ -326,7 +333,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'coins': {
       const m = actor.mech;
-      if (m?.kind === 'coins') m.coins = Math.min(COINS.cap, m.coins + eff.amount);
+      if (m?.kind === 'coins') m.coins = Math.min(coinCapOf(actor), m.coins + eff.amount);
       return;
     }
     case 'appraise': {
@@ -340,9 +347,17 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       target.delay = (ctx.battle?.round ?? 0) + 1;
       return;
     }
+    case 'aim-add': {
+      // Her aimed foe gains stacks; with no aim yet, the first living foe it reaches becomes it. Draws nothing.
+      const m = actor.mech;
+      if (m?.kind !== 'aim' || !target.alive || target.side === actor.side) return;
+      if (m.target === null) m.target = target.key;
+      if (m.target === target.key) m.stacks = Math.min(aimCapOf(actor), m.stacks + eff.n);
+      return;
+    }
     case 'aim-lock': {
       if (!target.alive || actor.mech?.kind !== 'aim') return;
-      actor.mech = { kind: 'aim', target: target.key, stacks: AIM.cap, lock: eff.turns };
+      actor.mech = { kind: 'aim', target: target.key, stacks: aimCapOf(actor), lock: eff.turns };
       return;
     }
     case 'cover': {

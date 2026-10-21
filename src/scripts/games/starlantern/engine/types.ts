@@ -24,8 +24,11 @@ export type Passive = 'encounterDown' | 'dropBoost' | 'itemBoost';
 export interface Pos { x: number; y: number }
 
 export type Effect =
-  /** `scatter`: each of its hits picks a living foe at random (battle.perform), whatever the skill's target. */
-  | { kind: 'damage'; power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean; hits?: number; crit?: 'always'; execute?: number; wounded?: number; scatter?: true }
+  /**
+   * `scatter`: each of its hits picks a living foe at random (battle.perform), whatever the skill's target. `aimPct`: each
+   * of Sylvie's aim stacks on its foe adds this percent instead of AIM.dmgPct (her 一擊, plan 8d).
+   */
+  | { kind: 'damage'; power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean; hits?: number; crit?: 'always'; execute?: number; wounded?: number; scatter?: true; aimPct?: number }
   | { kind: 'heal'; power: number }
   | { kind: 'restore'; hp?: number; tp?: number }
   | { kind: 'revive'; hpPct: number }
@@ -67,6 +70,8 @@ export type Effect =
   | { kind: 'delay' }
   /** The caster's aim locks on the target at full stacks for `turns` round ends (Sylvie's 獵人標記). */
   | { kind: 'aim-lock'; turns: number }
+  /** The caster's aimed foe (none yet: the first foe it reaches) gains `n` stacks, up to her cap; draws nothing (Sylvie's 覆蓋). */
+  | { kind: 'aim-add'; n: number }
   /** The caster takes the single attacks meant for the target ally for `turns` rounds (Scarlet's 代受). */
   | { kind: 'cover'; turns: number }
   /** For `turns` rounds each foe that lands a blow on the caster takes a fire counter of `power` (Scarlet's 贖火). */
@@ -112,6 +117,12 @@ export interface SkillRules {
   wake?: true;
   /** Copied onto the skill's moon effect: the night holds the new moon instead (Selene's 新月之夜). */
   phase?: 'new';
+  /** A coin spender spends this percent of her coins, rounded up (Liz's 分期); absent, all of them. */
+  coinSpendPct?: number;
+  /** +% power a coin spent, in place of COINS.coinPowerPct (Liz's 分期). */
+  coinPowerPct?: number;
+  /** Copied onto the skill's damage effects: each aim stack adds this percent (Sylvie's 一擊). */
+  aimPct?: number;
 }
 export interface UltimateDef {
   id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string;

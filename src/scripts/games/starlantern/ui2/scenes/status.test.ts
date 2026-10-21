@@ -505,13 +505,13 @@ describe('StatusScene', () => {
   });
 
   it('the skills tab prices a skill as the tree rewrites it: a modifier node lowers its TP', () => {
-    // A plan 8c TP cut still standing (Chizuru's 旋槍節流 gave way to her 雷之結界 in plan 8d Task 5).
-    const { root, s, game } = setup('sylvie', NO_ART, (g) => { g.state.party.recruited.push('sylvie'); });
-    game.state.party.roster.sylvie.tree = { 'aimed-shot': 1, 'heart-shot': 1, 'sylvie-heart-up': 3 };
+    // A variant that cuts TP (Liz's 殺價, plan 8d Task 6; the plan 8c TP cuts are all gone).
+    const { root, s, game } = setup('liz', NO_ART, (g) => { g.state.party.recruited.push('liz'); });
+    game.state.party.roster.liz.tree = { 'twin-slash': 1, pickpocket: 1, 'liz-twin-haggle': 1 };
     s.onAction('right'); s.onAction('right');
-    const want = Math.max(1, SKILLS['heart-shot'].tp + NODES['sylvie-heart-up'].node.mods![2].tpDelta!);
-    expect(want).toBeLessThan(SKILLS['heart-shot'].tp);
-    expect(root.querySelector('[data-skill=heart-shot] .slx-skill-cost')!.textContent).toBe(T.ui2.status.tp(want));
+    const want = Math.max(1, SKILLS['twin-slash'].tp + NODES['liz-twin-haggle'].node.mods![0].tpDelta!);
+    expect(want).toBeLessThan(SKILLS['twin-slash'].tp);
+    expect(root.querySelector('[data-skill=twin-slash] .slx-skill-cost')!.textContent).toBe(T.ui2.status.tp(want));
   });
 
   it('tree nodes and the skills tab show the skill icon when published', () => {

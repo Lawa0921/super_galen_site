@@ -1136,6 +1136,70 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test("liz's and sylvie's trees show their pairs and new nodes; 大手筆 heads 花錢 (plan 8d Task 6)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => { if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${name}.png` }); } };
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const p = g.state.party;
+      for (const id of ['liz', 'sylvie'] as const) if (!p.recruited.includes(id)) p.recruited.push(id);
+      p.roster.liz.level = 35;
+      p.roster.liz.tree = { 'twin-slash': 3, pickpocket: 2, 'liz-twin-quick': 2, 'liz-change': 1, stealth: 1, 'fortune-strike': 2, 'liz-fortune-split': 1, quickstep: 1 };
+      p.roster.sylvie.level = 35;
+      p.roster.sylvie.tree = { 'aimed-shot': 3, 'sylvie-aim-one': 2, 'heart-shot': 1, 'sylvie-patience': 1, 'pin-shot': 1, 'sylvie-shift': 1, 'arrow-rain': 1, 'sylvie-rain-cover': 1 };
+    });
+    /** No node row, name or pair tag of the tree spills out of its own width. */
+    const spills = () => page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node, .slx-tree-pair, .slx-tree-pair > *, .slx-tree-node .slx-skill-name')]
+      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className));
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+
+    await flipTo(page, CHARACTERS.liz.name);
+    await expect(page.locator('.slx-tree-branch[data-branch="2"] .slx-tree-branch-name')).toContainText('花錢');
+    await expect(page.locator('.slx-tree-branch[data-branch="2"] .slx-tree-node').first()).toHaveAttribute('data-node', 'fortune-strike');
+    await expect(page.locator('.slx-tree-node[data-node=liz-twin-quick]')).toContainText('雙刃・快手');
+    await expect(page.locator('.slx-tree-node[data-node=liz-twin-haggle]')).toHaveClass(/slx-node-swap/);
+    await expect(page.locator('.slx-tree-branch[data-branch="0"] .slx-tree-pair-tag')).toHaveText(T.ui2.tree.pairTag);
+    const change = page.locator('.slx-tree-node[data-node=liz-change]');
+    await expect(change).toContainText(T.ui2.tree.kind.mech);
+    await expect(change.locator('img')).toHaveCount(0);
+    await change.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('用掉銅板的招之後，退還 2 枚。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('liz-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('liz-tree-844');
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // 分期's number goes into 大手筆's own words on the skills page.
+    await page.locator('[data-tab=skills]').click();
+    await expect(page.locator('.slx-tab-skills [data-skill=fortune-strike] .slx-skill-name')).toHaveText('大手筆・分期');
+    await expect(page.locator('.slx-tab-skills [data-skill=fortune-strike] .slx-desc')).toContainText('每枚威力多 14%');
+    await page.locator('[data-tab=tree]').click();
+
+    await flipTo(page, CHARACTERS.sylvie.name);
+    await expect(page.locator('.slx-tree-node[data-node=sylvie-aim-one]')).toContainText('瞄準射擊・一擊');
+    await expect(page.locator('.slx-tree-node[data-node=sylvie-aim-rapid]')).toHaveClass(/slx-node-swap/);
+    const patience = page.locator('.slx-tree-node[data-node=sylvie-patience]');
+    await patience.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('瞄準上限 4 層。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('sylvie-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('sylvie-tree-844');
+    expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
   test("rin's innate mark and her 熟記 show on the status pages (plan 8d Task 3)", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     const missing: string[] = [];

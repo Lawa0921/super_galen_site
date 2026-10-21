@@ -177,6 +177,8 @@ export const T = {
     phase: { first: '上弦', full: '滿月', waning: '下弦', new: '新月' },
     /** Liz's coins; a foe she appraised. Sylvie's aim on a foe (locked by the hunter's mark); a pinned foe. */
     coins: (n: number) => `銅板${n}`,
+    /** 大手筆's words for the power a coin adds (data/skills.ts; 分期 rewrites the number, plan 8d). */
+    coinPower: (n: number) => `每枚威力多 ${n}%`,
     appraised: '估價',
     aim: (n: number) => `瞄準${n}`,
     aimLocked: (n: number) => `瞄準${n}・鎖定`,

@@ -4,6 +4,7 @@ import { dealDamage, hitAmount, rollHit, type Combatant, type HitRolls } from '.
 import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
 import { castDef, foeWords } from './index';
+import { skillFor } from '../battle';
 
 const sylvie = (aim: { target: string | null; stacks: number; lock?: number } = { target: null, stacks: 0 }, over: Partial<Combatant> = {}) => makeCombatant({
   key: 'sylvie', side: 'party', defId: 'sylvie', melee: false, mech: { kind: 'aim', ...aim },
@@ -102,5 +103,53 @@ describe("Sylvie's aim", () => {
       .filter((e) => e.type === 'damage' && e.target !== 'sylvie');
     expect(hits).toHaveLength(3);
     expect(aimOf(round(s, act({ kind: 'skill', skill: 'scatter-shot' })))).toEqual({ target: null, stacks: 0 });
+  });
+});
+
+describe("Sylvie's aim nodes (plan 8d Task 6)", () => {
+  it('patience raises the cap', () => {
+    let s = makeBattle([sylvie({ target: 'e0', stacks: 3 }, { ranks: { 'sylvie-patience': 1 } })], [foe('e0')]);
+    s = round(s, act({ kind: 'attack', target: 'e0' }));
+    expect(aimOf(s)).toEqual({ target: 'e0', stacks: 4 });
+    s = round(s, act({ kind: 'attack', target: 'e0' }));
+    expect(aimOf(s)).toEqual({ target: 'e0', stacks: 4 });
+    expect(aimOf(round(makeBattle([sylvie({ target: 'e0', stacks: 3 })], [foe('e0')]), act({ kind: 'attack', target: 'e0' })))).toEqual({ target: 'e0', stacks: 3 });
+  });
+
+  it('shift keeps stacks across a switch, and across a fall', () => {
+    const shift = { ranks: { 'sylvie-shift': 2 } };
+    const s = round(makeBattle([sylvie({ target: 'e0', stacks: 3 }, shift)], [foe('e0'), foe('e1')]), act({ kind: 'attack', target: 'e1' }));
+    expect(aimOf(s)).toEqual({ target: 'e1', stacks: 3 });                // min(3, 2) kept, then +1
+    expect(aimOf(round(makeBattle([sylvie({ target: 'e0', stacks: 3 })], [foe('e0'), foe('e1')]), act({ kind: 'attack', target: 'e1' })))).toEqual({ target: 'e1', stacks: 1 });
+    // Her foe falls: the next single shot starts from what she keeps.
+    let f = makeBattle([sylvie({ target: 'e0', stacks: 3 }, shift)], [foe('e0', { hp: 1 }), foe('e1')]);
+    f = round(f, act({ kind: 'attack', target: 'e0' }));
+    expect(aimOf(f)?.target).toBeNull();
+    f = round(f, act({ kind: 'attack', target: 'e1' }));
+    expect(aimOf(f)).toEqual({ target: 'e1', stacks: 3 });
+  });
+
+  it('one shot makes each stack count double', () => {
+    const t = foe('e0');
+    const one = sylvie({ target: 'e0', stacks: 3 }, { ranks: { 'aimed-shot': 1, 'sylvie-aim-one': 1 } });
+    const spec = skillFor(one, 'aimed-shot')!.effects[0] as { power: number; element: 'phys'; scale: 'atk'; melee: boolean; aimPct?: number };
+    expect(spec.aimPct).toBe(18);                                          // tuned from the plan's 20 (8d Task 6)
+    const base = hitAmount(sylvie({ target: 'e0', stacks: 0 }), t, spec, R).amount;
+    expect(hitAmount(one, t, spec, R).amount).toBe(Math.max(1, Math.floor(base * 1.54)));   // 18% a stack, three stacks
+    expect(hitAmount(one, t, { ...spec, aimPct: undefined }, R).amount).toBe(Math.max(1, Math.floor(base * 1.3)));   // the plain 10%
+  });
+
+  it('cover adds stacks to her aimed foe without a draw', () => {
+    const cover = { ranks: { 'arrow-rain': 1, 'sylvie-rain-cover': 2 } };
+    const s = round(makeBattle([sylvie({ target: 'e1', stacks: 1 }, cover)], [foe('e0'), foe('e1')]), act({ kind: 'skill', skill: 'arrow-rain' }));
+    expect(aimOf(s)).toEqual({ target: 'e1', stacks: 3 });
+    // No aim yet: the first foe it strikes.
+    expect(aimOf(round(makeBattle([sylvie({ target: null, stacks: 0 }, cover)], [foe('e0'), foe('e1')]), act({ kind: 'skill', skill: 'arrow-rain' })))).toEqual({ target: 'e0', stacks: 2 });
+    const draws = (ranks: Record<string, number>) => {
+      let n = 0;
+      resolveRound(makeBattle([sylvie({ target: 'e1', stacks: 1 }, { ranks })], [foe('e0'), foe('e1')]), act({ kind: 'skill', skill: 'arrow-rain' }), () => { n++; return 0.5; });
+      return n;
+    };
+    expect(draws(cover.ranks)).toBe(draws({ 'arrow-rain': 1 }));
   });
 });

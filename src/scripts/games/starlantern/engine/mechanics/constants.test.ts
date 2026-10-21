@@ -16,7 +16,7 @@ describe('the mechanics numbers (plan 8c)', () => {
   it('stand as tuned', () => {
     expect(HEAT).toEqual({ max: 5, pctPer: 8, overloadPct: 200, backlashPct: 15, iceCool: 2 });
     expect(AIM).toEqual({ cap: 3, dmgPct: 10, critPct: 0, consumePct: 50 });
-    expect(COINS).toEqual({ cap: 10, coinPowerPct: 15, gold: 2 });
+    expect(COINS).toEqual({ cap: 10, coinPowerPct: 5, gold: 2 });   // 15 -> 5 in plan 8d Task 6
     expect(BARRIER).toEqual({ releasePct: 10 });
     expect({ ...MOON, order: [...MOON.order] }).toEqual({ order: ['first', 'full', 'waning', 'new'], pct: 30 });
     expect(EMBER).toEqual({ sharePct: 50, capPct: 50 });
@@ -38,7 +38,7 @@ describe('skill words take their percentages from the numbers (plan 8c final)', 
 
   it('every description is filled in, with the numbers it names', () => {
     for (const d of Object.values(SKILLS)) expect(d.desc, d.id).not.toMatch(/[{}]/);
-    expect(SKILLS['fortune-strike'].desc).toContain('每枚威力多 15%');
+    expect(SKILLS['fortune-strike'].desc).toContain('每枚威力多 5%');
     expect(SKILLS['starfall-arrow'].desc).toContain('威力多 50%');
     expect(SKILLS['exorcism-thrust'].desc).toContain('威力多 10%');
     expect(SKILLS['heaven-spear'].desc).toContain('威力多 10%');

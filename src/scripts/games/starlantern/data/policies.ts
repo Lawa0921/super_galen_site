@@ -15,6 +15,7 @@ export const DEFAULT_POLICIES: PolicyTable = {
   rin: [{ kind: 'ensure-mark', skill: 'rin-mark', big: true }],
   // Safira keeps the beat, but with one damage skill she casts it again rather than attack (plan 8c Task 5 tuning, retune.md).
   safira: [{ kind: 'alternate', repeat: true }],
-  liz: [{ kind: 'spend-at', gauge: 'coins', min: 6, skill: 'jackpot' }, { kind: 'spend-at', gauge: 'coins', min: 6, skill: 'fortune-strike' }],
+  // Liz spends 大手筆 from four coins (plan 8d Task 6 tuning, retune.md: more, smaller spends kept her lineups in parity).
+  liz: [{ kind: 'spend-at', gauge: 'coins', min: 6, skill: 'jackpot' }, { kind: 'spend-at', gauge: 'coins', min: 4, skill: 'fortune-strike' }],
   sylvie: [{ kind: 'spend-at', gauge: 'aim', min: 3, skill: 'starfall-arrow' }],
 };
