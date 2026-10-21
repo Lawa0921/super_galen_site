@@ -1,13 +1,14 @@
 // 世界檔 format 11：外圍 chunk 鍵、外圍迷霧（exploredOuter）、bounds / outerGen、補零規則、停放的欄、format 10 一次遷移（先備份）。
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DelveGame } from '../engine/game';
 import { li, type Column, type ColumnLayers, type ColumnSource } from '../engine/column';
 import { chunkKey, chunkOfX, tileKey } from '../engine/coords';
 import { CHUNK } from '../engine/constants';
 import { LIQ } from '../engine/liquidKind';
 import { T } from '../engine/tiles';
-import { restoreBlocker, snapshotGame, validChunkKeys, validTileKey } from './serialize';
+import { FarChunks, decodeSave, encodeSave, restoreBlocker, snapshotGame, validChunkKeys, validTileKey } from './serialize';
+import type { ChunkData } from '../engine/world';
 import { V10_BACKUP_SUFFIX, WORLD_FORMAT, decodeWorld, encodeWorld, joinSplit, restoreSplit, saveSplitGame } from './worldSave';
 import { SplitSession, saveSplit, type SplitStore } from './split';
 import { FIXTURE_NOW, buildLegacyFixtureGame } from './legacyFixture';
@@ -240,5 +241,124 @@ describe('format 10 一次遷移：先備份', () => {
     const st2 = memStore();
     await saveSplit(st2, s11, r.game, 100);
     expect(st2.log).toEqual([`putSplit w2 ${ch.id}`]);
+  });
+});
+
+describe('寫出的東西一定讀得回來（無限世界的清單長度）', () => {
+  const mk = (): DelveGame => new DelveGame({ seed: 'inf-big', width: 200, height: 100, peaceful: true, bounds: 'infinite', columnSource: new StoneSource() });
+  // 舊上限：中央 chunk 數 + chunkTotal(8400, 2400)
+  const OLD_CAP = 7 * 4 + 263 * 75;
+
+  it('外圍迷霧 N 塊 + 液體 N 塊（N > 舊上限）→ 合併檔 / 世界檔都讀得回來、角色的 visit 沒被丟掉', () => {
+    const g = mk(), w = g.world;
+    const COLS = 5000, N = COLS * w.chunksY;
+    expect(N).toBeGreaterThan(OLD_CAP);
+    // 所有停放 chunk 共用同一份六層（只讀）：左上角一格水
+    const K = CHUNK * CHUNK, z = (): Uint8Array => new Uint8Array(K);
+    const d: ChunkData = { fg: z(), wall: z(), liquid: z(), liquidType: z(), frozen: z(), half: z() };
+    d.liquid[0] = 77; d.liquidType[0] = LIQ.WATER;
+    // 玩家附近的欄常駐（parkChunk 會拒絕）→ 從 cx −20 往西
+    const C0 = -20 - COLS;
+    for (let cx = C0; cx < C0 + COLS; cx++) {
+      for (let cy = 0; cy < w.chunksY; cy++) {
+        expect(w.parkChunk(cx, cy, d)).toBe(true);
+        w.liquidModified.add(w.chunkIndex(cx, cy));
+        g.explored.reveal(cx * CHUNK + 1, cy * CHUNK + 1);
+      }
+    }
+    const snap = snapshotGame(g, 1);
+    expect(snap.header.liquids!.chunks.length).toBe(N);
+    expect(snap.header.exploredOuter!.chunks.length).toBe(N);
+    // 合併檔
+    const back = decodeSave(encodeSave(snap));
+    expect(back.header.liquids!.chunks.length).toBe(N);
+    expect(back.header.exploredOuter!.chunks.length).toBe(N);
+    // 世界檔
+    const { world, character } = saveSplitGame(g, who, where, 7);
+    const bytes = encodeWorld(world);
+    const wd = decodeWorld(bytes);
+    expect(wd.header.visits[who.id]).toBeDefined();
+    expect(wd.header.visits[who.id].exploredOuter!.chunks.length).toBe(N);
+    expect(wd.header.liquids!.chunks.length).toBe(N);
+    const r = restoreSplit(bytes, character, { source: new StoneSource() });
+    if (!r.ok) throw new Error(r.message);
+    const h = r.game;
+    expect(h.explored.has(C0 * CHUNK + 1, 1)).toBe(true);
+    expect(h.explored.has(-21 * CHUNK + 1, 3 * CHUNK + 1)).toBe(true);
+    expect(h.explored.has(-21 * CHUNK + 2, 3 * CHUNK + 1)).toBe(false);
+    expect(h.explored.count).toBe(g.explored.count);
+    const far = chunkOfX(-4000 * CHUNK);
+    expect(h.world.isResident(far)).toBe(false);
+    h.world.ensureColumn(far);
+    expect(h.world.getLiquid(far * CHUNK, 2 * CHUNK)).toBe(77);
+    expect(h.world.getLiquidType(far * CHUNK, 2 * CHUNK)).toBe(LIQ.WATER);
+    expect(h.world.getLiquid(far * CHUNK + 1, 2 * CHUNK)).toBe(0);
+  });
+
+  it('有界世界的上限照舊：chunk 鍵清單比 chunk 總數長 → 損毀', () => {
+    const h = { width: 200, height: 100 };
+    expect(() => validChunkKeys(Array.from({ length: 29 }, (_, i) => i), h)).toThrow();
+  });
+});
+
+describe('讀存檔時不默默丟資料', () => {
+  const mk = (): DelveGame => new DelveGame({ seed: 'inf-loud', width: 200, height: 100, peaceful: true, bounds: 'infinite', columnSource: new StoneSource() });
+  afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
+
+  it('FarChunks.park：那一欄在讀檔途中變成常駐（parkChunk 回 false）→ 直接寫進常駐欄；修改標記照存檔內容', () => {
+    const g = mk(), w = g.world, cx = chunkOfX(-3000);
+    const both = w.chunkIndex(cx, 2), liqOnly = w.chunkIndex(cx, 1);
+    const far = new FarChunks(w, new Set([both]), new Set([both, liqOnly]));
+    expect(far.isFar(cx)).toBe(true);
+    const a = far.get(both);
+    a.fg.fill(T.STONE); a.fg[(3 << 5) | 4] = T.AIR;
+    a.liquid[(3 << 5) | 4] = 90; a.liquidType[(3 << 5) | 4] = LIQ.WATER;
+    w.modifiedChunks.add(both); w.liquidModified.add(both);
+    const b = far.get(liqOnly);
+    expect(b.fg[(5 << 5) | 6]).toBe(T.STONE);
+    b.fg[(5 << 5) | 6] = T.AIR; b.liquid[(5 << 5) | 6] = 40; b.liquidType[(5 << 5) | 6] = LIQ.WATER;
+    w.liquidModified.add(liqOnly);
+    w.ensureColumn(cx);
+    expect(far.park()).toEqual([both, liqOnly].sort((p, q) => p - q));
+    const x0 = cx * CHUNK;
+    expect(w.getFg(x0 + 4, 2 * CHUNK + 3)).toBe(T.AIR);
+    expect(w.getLiquid(x0 + 4, 2 * CHUNK + 3)).toBe(90);
+    expect(w.getFg(x0 + 5, 2 * CHUNK + 3)).toBe(T.STONE);
+    expect(w.getFg(x0 + 6, CHUNK + 5)).toBe(T.AIR);
+    expect(w.getLiquid(x0 + 6, CHUNK + 5)).toBe(40);
+    expect(w.parkedChunks()).toEqual([]);
+    expect(w.modifiedChunks.has(both)).toBe(true);
+    expect(w.modifiedChunks.has(liqOnly)).toBe(false);
+    expect(w.liquidModified.has(liqOnly)).toBe(true);
+  });
+
+  it('FarChunks.park：一般情況（欄沒常駐）→ 停放，回傳空清單', () => {
+    const g = mk(), w = g.world, cx = chunkOfX(-3000), ci = w.chunkIndex(cx, 2);
+    const far = new FarChunks(w, new Set([ci]), new Set([ci]));
+    far.get(ci);
+    w.modifiedChunks.add(ci); w.liquidModified.add(ci);
+    expect(far.park()).toEqual([]);
+    expect(w.parkedChunks()).toEqual([ci]);
+    expect(w.isResident(cx)).toBe(false);
+  });
+
+  it('snapshotGame：有改過的 chunk 既不常駐也沒停放 → 測試環境丟例外', () => {
+    const g = mk(), w = g.world, ci = w.chunkIndex(chunkOfX(-3000), 1);
+    w.modifiedChunks.add(ci);
+    expect(() => snapshotGame(g, 1)).toThrow(/neither resident nor parked/);
+    const g2 = mk();
+    g2.world.liquidModified.add(g2.world.chunkIndex(chunkOfX(4000), 0));
+    expect(() => snapshotGame(g2, 1)).toThrow(/neither resident nor parked/);
+  });
+
+  it('snapshotGame：正式環境 → console.error、照樣存（那個 chunk 不寫）', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const g = mk(), w = g.world, ci = w.chunkIndex(chunkOfX(-3000), 1);
+    w.modifiedChunks.add(ci);
+    const snap = snapshotGame(g, 1);
+    expect(snap.header.chunks).not.toContain(ci);
+    expect(err).toHaveBeenCalledTimes(1);
+    expect(String(err.mock.calls[0][0])).toMatch(/neither resident nor parked/);
   });
 });

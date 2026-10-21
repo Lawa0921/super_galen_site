@@ -115,10 +115,17 @@ export function validDims(width: unknown, height: unknown): boolean {
   return w >= CHUNK && h >= CHUNK && w <= MAX_WORLD_W && h <= MAX_WORLD_H && w * h <= MAX_WORLD_AREA;
 }
 function chunkTotal(width: number, height: number): number { return Math.ceil(width / CHUNK) * Math.ceil(height / CHUNK); }
-/** 尺寸不合法時的 chunk 清單長度上限（只用來擋超大清單；尺寸本身交給 restoreGame 的 size 檢查）；無限世界外圍 chunk 清單也以此為上限 */
+/** 尺寸不合法時的 chunk 清單長度上限（只用來擋超大清單；尺寸本身交給 restoreGame 的 size 檢查） */
 const MAX_CHUNKS = chunkTotal(MAX_WORLD_W, MAX_WORLD_H);
 /** 外圍欄號範圍（X_LIMIT 內） */
 const CX_MIN = chunkOfX(-X_LIMIT), CX_MAX = chunkOfX(X_LIMIT - 1);
+/**
+ * chunk 鍵清單的長度上限 = 合法鍵的總數（清單不重複，所以寫出來的清單一定在這之內）：
+ * 有界世界 = 中央 chunk 數；無限世界 = 硬邊界內的所有欄 × 每欄 chunk 數（走得再遠，存檔也讀得回來）
+ */
+function maxChunkKeys(width: number, height: number, bounds: 'infinite' | undefined): number {
+  return bounds === 'infinite' ? (CX_MAX - CX_MIN + 1) * Math.ceil(height / CHUNK) : chunkTotal(width, height);
+}
 /** 鍵合法性要看的 header 欄位 */
 type KeyDims = Pick<SaveHeader, 'width' | 'height' | 'bounds'>;
 /** chunk 鍵是否合法：中央鍵 < 中央 chunk 數；外圍鍵只在 bounds 有值時合法（cx 在 X_LIMIT 內、不是中央欄、cy 在範圍內） */
@@ -132,7 +139,7 @@ function chunkKeyOk(k: unknown, h: KeyDims): boolean {
 }
 /** chunk 鍵清單：每個都要合法（見 chunkKeyOk）、不重複，否則存檔損毀；回傳副本 */
 export function validChunkKeys(keys: unknown, h: KeyDims): number[] {
-  if (!Array.isArray(keys) || keys.length > chunkTotal(h.width, h.height) + (h.bounds === 'infinite' ? MAX_CHUNKS : 0)) throw new SaveFormatError('chunk keys');
+  if (!Array.isArray(keys) || keys.length > maxChunkKeys(h.width, h.height, h.bounds)) throw new SaveFormatError('chunk keys');
   for (const k of keys) if (!chunkKeyOk(k, h)) throw new SaveFormatError(`chunk key ${String(k)}`);
   if (new Set(keys).size !== keys.length) throw new SaveFormatError('chunk keys: duplicate');
   return [...keys] as number[];
@@ -352,12 +359,12 @@ function readLiquids(world: World, chunks: readonly number[]): { amount: Uint8Ar
   });
   return { amount, type };
 }
-/** 液體欄位：先驗 chunk 清單（長度 ≤ 世界 chunk 總數、鍵合法（外圍鍵只在 bounds 有值時）、不重複），再配置 RLE 解碼緩衝 */
+/** 液體欄位：先驗 chunk 清單（長度 ≤ 合法鍵總數（maxChunkKeys）、鍵合法（外圍鍵只在 bounds 有值時）、不重複），再配置 RLE 解碼緩衝 */
 export function validLiquids(v: unknown, width: number, height: number, bounds?: 'infinite'): LiquidSave | undefined {
   if (v === undefined) return undefined;
   const o = v as Partial<LiquidSave> | null;
   const dimsOk = validDims(width, height);
-  const total = dimsOk ? chunkTotal(width, height) + (bounds === 'infinite' ? MAX_CHUNKS : 0) : MAX_CHUNKS;
+  const total = dimsOk ? maxChunkKeys(width, height, bounds) : MAX_CHUNKS;
   const keyOk = dimsOk ? (c: unknown): boolean => chunkKeyOk(c, { width, height, bounds }) : (c: unknown): boolean => Number.isInteger(c) && (c as number) >= 0 && (c as number) < total;
   if (!o || typeof o !== 'object' || !Array.isArray(o.chunks) || typeof o.data !== 'string' || o.chunks.length > total
     || !o.chunks.every(keyOk)) throw new SaveFormatError('liquids');
@@ -457,12 +464,23 @@ function encodeExplored(m: ExploredMap): { b64: string; outer: OuterBitsSave | u
 }
 
 // ── snapshot / encode / decode ────────────────────────────
+/** 不該發生的狀態：測試環境丟例外（抓出來）；正式環境 console.error、照常繼續（不讓存檔失敗） */
+function invariantBroken(msg: string): void {
+  // vitest 會設 NODE_ENV = 'test'；瀏覽器裡沒有 process → 一律走 console.error
+  if ((globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.NODE_ENV === 'test') throw new Error(msg);
+  console.error(`[delve] ${msg}`);
+}
 export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveData {
   const w = game.world;
   // 只存常駐 + 停放的已修改 chunk（readChunkPayload 對兩者都不是的外圍 chunk 回 0，不能當資料寫出）；數字升冪 → 外圍鍵在中央之後
   const parked = new Set(w.parkedChunks());
-  const stored = (k: number): boolean => parked.has(k) || w.isResident(w.chunkCoords(k).cx);
-  const list = [...w.modifiedChunks].filter(stored).sort((p, q) => p - q);
+  const stored = new Set<number>(), lost: number[] = [];
+  for (const k of new Set([...w.modifiedChunks, ...w.liquidModified])) {
+    if (parked.has(k) || w.isResident(w.chunkCoords(k).cx)) stored.add(k); else lost.push(k);
+  }
+  // 不該發生：改過的 chunk 卸載時一定停放。內容已經不在記憶體，寫出來只會是 0 → 不寫，但要大聲說
+  if (lost.length) invariantBroken(`snapshotGame: modified chunks ${lost.sort((p, q) => p - q).join(',')} are neither resident nor parked (dropped from save)`);
+  const list = [...w.modifiedChunks].filter((k) => stored.has(k)).sort((p, q) => p - q);
   const chunks = new Map<number, ChunkPayload>();
   for (const ci of list) chunks.set(ci, readChunk(w, ci));
   const p = game.player;
@@ -473,7 +491,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
     chests.push({ i, slots: slots.map((st) => (st ? cloneStack(st) : null)) });
   }
   chests.sort((a, b) => a.i - b.i);
-  const liqChunks = [...new Set([...w.modifiedChunks, ...w.liquidModified])].filter(stored).sort((p, q) => p - q);
+  const liqChunks = [...stored].sort((p, q) => p - q);
   const lq = readLiquids(w, liqChunks);
   // 死亡中：存成重生後的狀態（重生點、滿血滿魔），避免讀檔後在死亡地點（例如熔岩裡）復活
   let player: PlayerSave = { x: p.x, y: p.y, vx: p.vx, vy: p.vy };
@@ -860,7 +878,7 @@ const CK = CHUNK * CHUNK;
  * 不生成、不常駐 → 讀檔時間不隨走過的距離增加（B8）。fg / wall 用存檔 payload、液體用存檔的液體；
  * 只有缺層的 chunk（只有液體被改過、或沒有液體紀錄）才暫時生成那一欄（peekColumn）補上。
  */
-class FarChunks {
+export class FarChunks {
   readonly map = new Map<number, ChunkData>();
   private readonly peeked = new Map<number, ChunkData[]>();
   constructor(private readonly w: World, private readonly payload: ReadonlySet<number>, private readonly liquid: ReadonlySet<number>) {}
@@ -901,12 +919,23 @@ class FarChunks {
     const a = this.at(x, y);
     return a ? a.d.fg[a.i] : this.w.getFg(x, y);
   }
-  /** 全部停放（之後走近時 ensureColumn 生成那一欄再蓋上） */
-  park(): void {
+  /**
+   * 全部停放（之後走近時 ensureColumn 生成那一欄再蓋上）。停放被拒絕（那一欄在讀檔途中變成常駐）→ 不能默默丟掉：
+   * 六層直接寫進常駐欄，修改標記維持存檔內容（writeChunk 會兩種都標）。回傳改走寫入的 chunk 鍵（升冪；呼叫端喚醒液體）
+   */
+  park(): number[] {
+    const wrote: number[] = [];
+    const w = this.w;
     for (const [ci, d] of this.map) {
-      const { cx, cy } = this.w.chunkCoords(ci);
-      this.w.parkChunk(cx, cy, d);
+      const { cx, cy } = w.chunkCoords(ci);
+      if (w.parkChunk(cx, cy, d)) continue;
+      const mod = w.modifiedChunks.has(ci), liq = w.liquidModified.has(ci);
+      w.writeChunk(cx, cy, d);
+      if (!mod) w.modifiedChunks.delete(ci);
+      if (!liq) w.liquidModified.delete(ci);
+      wrote.push(ci);
     }
+    return wrote.sort((p, q) => p - q);
   }
 }
 
@@ -1173,8 +1202,11 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       if (w.inBounds(x, y) && w.isSolid(x, y)) w.setFlag('half', x, y, true);
     }
   }
-  // 遠方的存檔 chunk 停放（據點核心那幾欄接著由 settle.load 載入、蓋回來）
-  far.park();
+  // 遠方的存檔 chunk 停放（據點核心那幾欄接著由 settle.load 載入、蓋回來）；途中變成常駐的欄改成直接寫入 → 喚醒液體
+  for (const ci of far.park()) {
+    const { cx, cy } = w.chunkCoords(ci);
+    game.liquids.wakeRect(cx * CHUNK - 1, cy * CHUNK - 1, (cx + 1) * CHUNK + 1, (cy + 1) * CHUNK + 1);
+  }
   game.settle.load(h.settle, w);
   game.folk.load(h.folk?.world, w);
   game.quests.load(h.folk?.quests);
