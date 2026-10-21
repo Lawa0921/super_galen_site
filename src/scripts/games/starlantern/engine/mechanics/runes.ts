@@ -202,7 +202,9 @@ export function applyLasting(s: BattleState): void {
     const reserve = battleReservePct(c);
     if (reserve > 0) {
       const tp = Math.floor((c.max.tp * (100 - reserve)) / 100);
-      c.reservedTp = c.max.tp - tp;
+      // What the cap cut from her TP on entry, and nothing more, is what writeBack gives back (controller ruling).
+      const cut = Math.max(0, c.tp - tp);
+      if (cut > 0) c.reservedTp = cut;
       c.max = { ...c.max, tp };
       c.tp = Math.min(c.tp, c.max.tp);
     }

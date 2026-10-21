@@ -565,4 +565,28 @@ describe('lasting runes: review fixes (plan 8e Task 7 review)', () => {
     plain.party.find((c) => c.key === 'safira')!.tp = full - 5;
     expect(writeBack(fullParty(['hero', 'safira', 'noel']), plain).roster.safira.tp).toBe(full - 5);
   });
+
+  it('only the TP the cap cut comes back: one entering below the fight max gets nothing back', () => {
+    // Entering at 5 TP, under the fight's max: the cap cut nothing, so nothing returns.
+    const party = fullParty(['hero', 'safira', 'noel']);
+    party.roster.safira = { ...party.roster.safira, tp: 5, sockets: { 'war-dance': [lasting] } };
+    const fight = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    const sf = fight.party.find((c) => c.key === 'safira')!;
+    expect(sf.max.tp).toBeGreaterThan(5);
+    expect(sf.tp).toBe(5);
+    sf.tp = 2;   // she spent 3
+    expect(writeBack(party, fight).roster.safira.tp).toBe(2);
+    // Entering a little above it: just the part cut comes back.
+    const over = fullParty(['hero', 'safira', 'noel']);
+    const full = over.roster.safira.tp;
+    const capped = createBattle({ party: { ...over, roster: { ...over.roster, safira: { ...over.roster.safira, sockets: { 'war-dance': [lasting] } } } }, enemyIds: ['slime'], inventory: {}, revealed: {} })
+      .party.find((c) => c.key === 'safira')!.max.tp;
+    over.roster.safira = { ...over.roster.safira, tp: capped + 2, sockets: { 'war-dance': [lasting] } };
+    expect(capped + 2).toBeLessThan(full);
+    const f2 = createBattle({ party: over, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    const s2 = f2.party.find((c) => c.key === 'safira')!;
+    expect(s2.tp).toBe(capped);
+    s2.tp = capped - 4;
+    expect(writeBack(over, f2).roster.safira.tp).toBe(capped - 4 + 2);
+  });
 });
