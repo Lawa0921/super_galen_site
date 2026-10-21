@@ -214,6 +214,25 @@ describe('BattleScene', () => {
       for (let k = 0; k < 9 && root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'echo'; k++) s.onAction('down');
       expect(root.querySelector('.slx-bnote')?.textContent).toContain('70%');
     }
+    // Chosen, it submits the record the menu showed: a later cast that round (a faster companion's) is not what he repeats.
+    {
+      const { game, root, s, heading } = setup((g) => { g.battle!.echo = { by: 'noel', round: g.battle!.round, def: SKILLS['fire-star'], cost: 5 }; }, {}, lineup);
+      const submit = vi.spyOn(game, 'submitRound');
+      expect(heading()).toBe(T.cmd.choose('洛恩'));
+      for (let k = 0; k < 9 && root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'echo'; k++) s.onAction('down');
+      s.onAction('confirm');
+      if (root.querySelector('.slx-btarget')) s.onAction('confirm');
+      game.battle!.echo = { by: 'selene', round: game.battle!.round + 1, def: SKILLS.moonlight, cost: 5 };
+      for (let i = 0; i < 6 && submit.mock.calls.length === 0; i++) {
+        for (let k = 0; k < 9 && root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'defend'; k++) s.onAction('down');
+        s.onAction('confirm');
+      }
+      expect(submit).toHaveBeenCalled();
+      const hero = submit.mock.calls[0][0].hero as { kind: string; rec?: { def: { id: string } } };
+      expect(hero.kind).toBe('echo');
+      expect(hero.rec?.def.id).toBe('fire-star');
+      expect(game.battle!.log).toContainEqual({ type: 'act', actor: 'hero', label: '殘響・火之星彈' });
+    }
     // Short of the TP Noel paid: greyed.
     const poor = listOf('洛恩', (g) => {
       g.battle!.echo = { by: 'noel', round: g.battle!.round, def: SKILLS['fire-star'], cost: 5 };

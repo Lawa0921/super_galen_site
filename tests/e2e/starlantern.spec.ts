@@ -1666,6 +1666,7 @@ test.describe('starlantern', () => {
     }
     // Never anything but a sprite (or, while it is on its way, nothing at all); and in the end every foe has its picture.
     for (const b of seen) for (const x of b) expect(x.every((k) => k === 'sprite')).toBe(true);
+    expect(seen.at(-1)!.length).toBeGreaterThan(0);   // foes there to have their pictures (an empty list would pass)
     expect(seen.at(-1)!.every((x) => x.length === 1)).toBe(true);
     if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/slow-art-landed.png` });
     expect(w.errors).toEqual([]);

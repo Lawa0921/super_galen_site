@@ -265,6 +265,23 @@ describe('PartyBar mechanics (plan 8c)', () => {
     expect([...row.children].map((c) => c.textContent)).toEqual(['餘燼0', '贖火4']);
   });
 
+  it('on a row too narrow even for them, freeze and sleep still stand, the rest folded (measured widths, plan 8c final)', () => {
+    // A laid-out page: every word 30 px, the row 50 px.
+    // jsdom's layout getters live somewhere up the chain: spy on the prototype that owns each.
+    const owner = (p: object, k: string): object => (Object.getOwnPropertyDescriptor(p, k) ? p : owner(Object.getPrototypeOf(p), k));
+    const offset = vi.spyOn(owner(HTMLElement.prototype, 'offsetWidth') as HTMLElement, 'offsetWidth', 'get').mockReturnValue(30);
+    const client = vi.spyOn(owner(HTMLElement.prototype, 'clientWidth') as HTMLElement, 'clientWidth', 'get').mockReturnValue(50);
+    try {
+      const bar = new PartyBar(NO_ART);
+      bar.update([m('noel', 30, { mech: [{ tone: 'heat', text: '熱度5' }, { tone: 'heat', text: '熱度5' }], ailments: [{ id: 'poison' }, { id: 'sleep', turns: 3 }, { id: 'freeze' }] })]);
+      const row = bar.el.querySelector<HTMLElement>('[data-key=noel] .slx-pm-ail')!;
+      expect([...row.children].map((c) => c.textContent)).toEqual(['凍結', '睡眠3', '+3']);
+    } finally {
+      offset.mockRestore();
+      client.mockRestore();
+    }
+  });
+
   it('a cue rises over the member and goes', () => {
     vi.useFakeTimers();
     const bar = new PartyBar(NO_ART);
