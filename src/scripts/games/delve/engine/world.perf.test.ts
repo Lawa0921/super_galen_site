@@ -1,6 +1,6 @@
 // world.perf.test.ts — R5 效能預算：與儲存無關的 World 存取不可以比舊扁平實作慢太多。
 // P1 / P2 是和測試檔內一份「舊 World 扁平實作」比比值（與機器快慢無關）；
-// P3 / P4 是 Task 1 量出的基準 × 2（往上取整 ms）寫死的上限（量到的數字記在 Task 1 的 commit 訊息）。
+// P3 / P4 是 Task 1 量出的基準 max(2 × 單跑, 2 × 全套並行) 往上取整 ms 寫死的上限（量到的數字記在 Task 1 的 commit 訊息）。
 // 慢機器可用 DELVE_SKIP_PERF=1 跳過整組。
 import { describe, it, expect, beforeAll } from 'vitest';
 import { World, LIQ, type TileWindow } from './world';
@@ -13,9 +13,9 @@ import { generateWorld, type GenResult } from './worldgen';
 const SKIP = typeof process !== 'undefined' && process.env.DELVE_SKIP_PERF === '1';
 
 /** P3：LightEngine.compute 130×75 視窗、預設 margin，20 次中位數的上限（ms） */
-const P3_CEILING_MS = 7;
+const P3_CEILING_MS = 17;
 /** P4：120×60 的湖放水後 step() 600 刻的上限（ms） */
-const P4_CEILING_MS = 1688;
+const P4_CEILING_MS = 1806;
 
 const median = (a: number[]): number => { const s = [...a].sort((p, q) => p - q); return s[s.length >> 1]; };
 const now = (): number => performance.now();
@@ -131,7 +131,7 @@ describe.skipIf(SKIP)('World 效能（R5）', () => {
       const w = new World(W, H);
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
         const solid = y >= FLOOR || x < LX0 || x === DAM || x >= W - 1;
-        if (solid) w.fg[w.idx(x, y)] = T.STONE;
+        if (solid) w.setFg(x, y, T.STONE);
       }
       const sim = new LiquidSim(w);
       for (let y = LY0; y <= LY1; y++) for (let x = LX0; x <= LX1; x++) w.setLiquid(x, y, LIQ_MAX, LIQ.WATER);

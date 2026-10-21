@@ -1,7 +1,7 @@
 // world.ts — 固定大小 tile 世界。每層一個 typed array（row-major：i = y*width + x）。
 // 呼叫端請走與儲存無關的 API（getter / window / forEachChunk / tileXY…）：之後儲存會換成區塊欄（engine/coords.ts 的鍵）。
 import { CHUNK } from './constants';
-import { tileKey, tileXY as keyToXY, chunkKey, chunkXY } from './coords';
+import { tileKey, tileXY as keyToXY, chunkKey, chunkXY, chunkOfX, localX } from './coords';
 import type { GenLayers } from './worldgen';
 import { SOLID_LUT, PLATFORM_LUT, CLIMB_LUT, T } from './tiles';
 import type { Stack } from './inventory';
@@ -274,7 +274,7 @@ export class World {
   /** (x,y) 的液體已直接改寫：標記液體 dirty / 已修改 chunk */
   touchLiquidAt(x: number, y: number): void {
     if (!this.inBounds(x, y)) return;
-    const ci = this.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK));
+    const ci = this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK));
     this.liquidDirty.add(ci);
     this.liquidModified.add(ci);
   }
@@ -294,7 +294,7 @@ export class World {
   /** (x,y) 的 chunk 標為已修改（箱子內容變動等不改 tile 的修改；不需重畫） */
   markModified(x: number, y: number): void {
     if (!this.inBounds(x, y)) return;
-    this.modifiedChunks.add(this.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK)));
+    this.modifiedChunks.add(this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK)));
   }
   /** 第 x 欄地表的生態區 */
   biomeAt(x: number): number {
@@ -331,12 +331,12 @@ export class World {
 
   private touch(x: number, y: number): void {
     this.rev++;
-    const cx = Math.floor(x / CHUNK), cy = Math.floor(y / CHUNK);
+    const cx = chunkOfX(x), cy = Math.floor(y / CHUNK);
     const ci = this.chunkIndex(cx, cy);
     this.modifiedChunks.add(ci);
     this.dirty.add(ci);
     // 接邊依賴 4 鄰：邊緣格變動也要讓鄰 chunk 重畫
-    const lx = x - cx * CHUNK, ly = y - cy * CHUNK;
+    const lx = localX(x), ly = y - cy * CHUNK;
     if (lx === 0 && cx > 0) this.dirty.add(ci - 1);
     if (lx === CHUNK - 1 && cx < this.chunksX - 1) this.dirty.add(ci + 1);
     if (ly === 0 && cy > 0) this.dirty.add(ci - this.chunksX);

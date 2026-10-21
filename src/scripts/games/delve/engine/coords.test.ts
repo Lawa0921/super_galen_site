@@ -1,7 +1,7 @@
 // coords.test.ts — 座標鍵：中央沿用舊 tile / chunk index，外圍落在 T_BASE / C_BASE 以上，雙射。
 import { describe, it, expect } from 'vitest';
 import {
-  X_LIMIT, T_BASE, C_BASE, tileKey, tileXY, chunkKey, chunkXY, isOuterChunkKey, defaultBounds,
+  X_LIMIT, T_BASE, C_BASE, tileKey, tileXY, chunkKey, chunkXY, isOuterChunkKey, defaultBounds, chunkOfX, localX,
 } from './coords';
 
 const W = 4200, CX = Math.ceil(W / 32);
@@ -72,15 +72,16 @@ describe('chunkKey / chunkXY', () => {
     }
     expect(seen.size).toBeGreaterThan(5000);
   });
-  it('負數座標的 chunk 是 x >> 5、局部座標是 x & 31', () => {
-    expect(-1 >> 5).toBe(-1);
-    expect(-1 & 31).toBe(31);
-    expect(-32 >> 5).toBe(-1);
-    expect(-33 >> 5).toBe(-2);
-    expect(-33 & 31).toBe(31);
-    // 與 tileKey 往返一致：chunk -1 的局部 31 就是 x = -1
-    const { x } = tileXY(W, tileKey(W, -1, 0));
-    expect((x >> 5) * 32 + (x & 31)).toBe(-1);
+  it('chunkOfX / localX：負數向下取整（−1 → chunk −1、local 31），邊界值正確', () => {
+    const cases: [number, number, number][] = [
+      [-1, -1, 31], [-32, -1, 0], [-33, -2, 31], [0, 0, 0], [31, 0, 31], [32, 1, 0],
+      [4199, 131, 7], [4200, 131, 8], [4223, 131, 31], [4224, 132, 0],
+      [-X_LIMIT, -31250, 0], [X_LIMIT - 1, 31249, 31], [X_LIMIT, 31250, 0],
+    ];
+    for (const [x, c, l] of cases) {
+      expect([x, chunkOfX(x), localX(x)]).toEqual([x, c, l]);
+      expect(chunkOfX(x) * 32 + localX(x)).toBe(x);
+    }
   });
 });
 

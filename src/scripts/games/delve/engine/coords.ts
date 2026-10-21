@@ -25,6 +25,11 @@ export function tileXY(width: number, k: number): { x: number; y: number } {
   return { x: (r - y) / T_Y - T_OFF, y };
 }
 
+/** x 所在的 chunk 欄（CHUNK = 32；負數向下取整：−1 → −1） */
+export function chunkOfX(x: number): number { return x >> 5; }
+/** x 在 chunk 內的局部座標 0..31（−1 → 31） */
+export function localX(x: number): number { return x & 31; }
+
 export function chunkKey(chunksX: number, cx: number, cy: number): number {
   if (cx >= 0 && cx < chunksX) return cy * chunksX + cx;
   return C_BASE + (cx + C_OFF) * C_Y + cy;
