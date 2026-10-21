@@ -199,7 +199,8 @@ export function applyRunes(core: SkillDef, extra: Effect[], refs: readonly RuneR
   const was = new Set(damages.map((e) => e.hits ?? 1)), now = new Set(out.effects.filter((e): e is Damage => e.kind === 'damage').map((e) => e.hits ?? 1));
   if (hits && was.size === 1 && now.size === 1) {
     const [a] = was, [b] = now;
-    HIT_WORDS(a).forEach((w, i) => { out.desc = out.desc.replace(w, HIT_WORDS(b)[i]); });
+    // A whole number only: 「2 次」 never matches inside 「12 次」.
+    HIT_WORDS(a).forEach((w, i) => { out.desc = out.desc.replace(new RegExp(`(?<![0-9])${w}`), HIT_WORDS(b)[i]); });
   }
 
   // An ailment the skill (or its extra) already has is folded into the rune's of the same ailment, highest chance.

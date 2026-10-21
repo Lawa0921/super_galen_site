@@ -496,6 +496,19 @@ describe('StatusScene', () => {
     expect(root.querySelector('[data-skill=noel-star-twin]')).toBeNull();   // a variant is not a skill of its own
   });
 
+  it('the skills tab and the tree notes show a skill with its runes: its target and TP after them (plan 8e Task 3 review)', () => {
+    // 擴散 makes 火之星彈 strike every foe; 蓄力 adds 60% TP: 4 → 6.
+    const sockets = { 'fire-star': [{ id: 'spread', tier: 'magic' }, { id: 'charge', tier: 'magic' }] } as const;
+    const { root, s } = setup('noel', NO_ART, (g) => { g.state.party.roster.noel.sockets = { 'fire-star': [...sockets['fire-star']] }; });
+    s.onAction('right'); s.onAction('right');
+    const fire = root.querySelector('[data-skill=fire-star]')!;
+    expect(fire.querySelector('.slx-skill-target')!.textContent).toBe('敵方全體');
+    expect(fire.querySelector('.slx-skill-cost')!.textContent).toBe('TP 6');
+    s.onAction('right');
+    root.querySelector<HTMLElement>('.slx-tree-node[data-node=fire-star]')!.click();
+    expect(root.querySelector('.slx-tree-use')!.textContent).toBe('敵方全體　TP 6');
+  });
+
   it("the skills tab lists rin's innate mark first, as innate rather than a rank", () => {
     const { root } = setup('rin', NO_ART, (g) => { g.state.party.recruited.push('rin'); });
     for (let i = 0; i < 2; i++) root.querySelector<HTMLElement>('[data-tab=skills]')?.click();

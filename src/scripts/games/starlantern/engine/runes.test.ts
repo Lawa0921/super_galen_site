@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { SKILLS } from '../data/skills';
 import { skillFor } from './battle';
 import { applyRunes, runeFits, runeStates, runeWhy, skillTags } from './runes';
-import { RUNES, tiersOf, type RuneId, type RuneRef } from '../data/runes';
+import { RUNES, RUNE_STACK, tiersOf, type RuneId, type RuneRef } from '../data/runes';
 import { CHARACTER_IDS } from '../data/characters';
-import { defaultTree } from './progression';
+import { INNATE, NODES, TREES } from '../data/trees';
+import { rulesOf } from '../data/characters';
+import { defaultTree, treeSkills } from './progression';
 import { pctOf } from './skills';
-import type { Effect, SkillDef } from './types';
+import type { CharacterId, Effect, SkillDef } from './types';
 
 /** How many sets of three runes the slot-order test finds (see that test). */
 const SETS_COUNT = 6218;
@@ -229,5 +231,57 @@ describe('runes rewrite the skill (plan 8e Task 3)', () => {
         expect(skillFor({ powers: [], ranks, runes: { [sk]: [] } }, sk), sk).toEqual(skillFor({ powers: [], ranks }, sk));
       }
     }
+  });
+});
+
+describe('rune follow-ups (plan 8e Task 3 review)', () => {
+  const m = (id: RuneId): RuneRef => ({ id, tier: tiersOf(id).includes('magic') ? 'magic' : 'legendary' });
+  const orders = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+
+  it('the order of the slots never matters when one rune fails, and the failing one changes nothing', () => {
+    const on = (refs: RuneRef[]) => skillFor({ powers: [], runes: { 'fire-star': refs } }, 'fire-star')!;
+    // 撕裂 needs a physical skill: it fails on 火之星彈 and the skill is as if only 擴散 and 吸血 were there.
+    const torn = [m('spread'), m('tear'), m('drain')];
+    expect(runeStates(SKILLS['fire-star'], torn).map((x) => x.miss?.kind ?? null)).toEqual([null, 'needs', null]);
+    for (const p of orders) expect(on(p.map((i) => torn[i]))).toEqual(on([m('spread'), m('drain')]));
+    // 擴散 and 集中 hold each other's group: both fail, and only 吸血 counts.
+    const both = [m('spread'), m('focus'), m('drain')];
+    for (const p of orders) expect(on(p.map((i) => both[i]))).toEqual(on([m('drain')]));
+  });
+
+  it("the hit count's words change whole numbers only", () => {
+    const def = { ...SKILLS['twin-slash'], desc: '練了 12 次，連砍 2 次' };
+    expect(applyRunes(def, [], [m('multistrike')]).desc).toBe('練了 12 次，連砍 3 次');
+    expect(applyRunes({ ...SKILLS['twin-slash'] }, [], [m('heavy')]).desc).toBe(SKILLS['twin-slash'].desc.replace('2 次', '1 次'));
+  });
+
+  it("延長 fits no skill with a sleep's rounds or the moon's hold (its rounds go to buffs, debuffs and devices)", () => {
+    const flagged: string[] = [];
+    const check = (label: string, def: SkillDef) => {
+      if (runeFits(def, 'extend', [], def) !== null) return;
+      if (def.effects.some((e) => (e.kind === 'inflict' && e.status === 'sleep') || e.kind === 'moon')) flagged.push(label);
+    };
+    for (const [id, def] of Object.entries(SKILLS)) check(id, def);
+    // Every variant at its top rank, on its own skill.
+    for (const [id, { node }] of Object.entries(NODES)) {
+      if (node.kind !== 'variant') continue;
+      check(id, skillFor({ powers: [], ranks: { [node.skill!]: 1, [id]: node.maxRank } }, node.skill!)!);
+    }
+    expect(flagged).toEqual([]);
+  });
+
+  it('the skills one roster could ever hold runes on are fewer than a rune stack', () => {
+    // So slots never hold more than RUNE_STACK of one rune (one of a rune a skill), and the save repair only trims the bag.
+    // A bound no legal build passes: her innate skills, every active below the capstone tier, and the capstone actives of
+    // only as many branches as she may hold capstones in (the largest ones), passives left out.
+    const bound = (id: CharacterId): number => {
+      const actives = Object.values(NODES).filter((x) => x.owner === id && x.node.kind === 'active' && !SKILLS[x.node.skill!].passive);
+      const caps = TREES[id].branches.map((_, b) => actives.filter((x) => x.tier === 4 && x.branch === b).length).sort((a, b) => b - a);
+      return (INNATE[id] ?? []).length + actives.filter((x) => x.tier < 4).length + caps.slice(0, rulesOf(id).capstones).reduce((a, n) => a + n, 0);
+    };
+    const total = CHARACTER_IDS.reduce((a, id) => a + bound(id), 0);
+    expect(total).toBeLessThan(RUNE_STACK);
+    // Every skill of every tree, capstones and all, would be more: the capstone rule is what keeps it under.
+    expect(CHARACTER_IDS.reduce((a, id) => a + treeSkills(id).filter((sk) => !SKILLS[sk].passive).length, 0)).toBeGreaterThan(total);
   });
 });

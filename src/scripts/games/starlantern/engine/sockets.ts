@@ -177,7 +177,7 @@ export function validRuneFields(d: Record<string, unknown>): boolean {
  * `validRuneFields(d)` holds after; fields that keep the rules are not touched at all. A bag or sockets field that is no
  * object goes; bag keys that are unknown or not whole counts go; a slot that is no rune is emptied; a rune in the wrong
  * place (a skill she does not know or a passive, past her slots, a second of its id or group, a 常駐 past the cap in
- * learned order) goes back to the bag; past RUNE_STACK of one rune, the bag gives way first, then the last slots.
+ * learned order) goes back to the bag; past RUNE_STACK of one rune, the bag gives way.
  */
 export function repairRuneFields(d: Record<string, unknown>): void {
   if (d.runes !== undefined && !isObj(d.runes)) delete d.runes;
@@ -219,24 +219,12 @@ export function repairRuneFields(d: Record<string, unknown>): void {
     }
     if (touched.size && !Object.keys(raw).length) delete m.sockets;
   }
-  // Past RUNE_STACK of one rune: the bag gives way, then the slots from the last member and skill back.
+  // Past RUNE_STACK of one rune the bag gives way. The slots alone never pass it: one of a rune a skill, and a roster
+  // can hold fewer skills than RUNE_STACK (guarded in engine/runes.test.ts).
   for (const [k, n] of totals(d, members)) {
-    let over = n - RUNE_STACK;
-    if (over <= 0) continue;
-    const b = isObj(d.runes) ? (d.runes as Record<string, number>) : {};
-    const cut = Math.min(over, b[k] ?? 0);
-    if (cut) { b[k] -= cut; over -= cut; if (b[k] === 0) delete b[k]; }
-    for (const m of [...members].reverse()) {
-      for (const skill of Object.keys(m.sockets ?? {}).reverse()) {
-        if (over <= 0) break;
-        const cells = m.sockets![skill];
-        let cleared = false;
-        for (let i = cells.length - 1; i >= 0 && over > 0; i--) if (cells[i] && runeKey(cells[i]!) === k) { cells[i] = null; over--; cleared = true; }
-        if (!cleared) continue;
-        const left = trimmed(cells);
-        if (left.length) m.sockets![skill] = left; else delete m.sockets![skill];
-        if (!Object.keys(m.sockets!).length) delete m.sockets;
-      }
-    }
+    const b = d.runes as Record<string, number> | undefined;
+    if (n <= RUNE_STACK || !b?.[k]) continue;
+    b[k] -= Math.min(n - RUNE_STACK, b[k]);
+    if (b[k] === 0) delete b[k];
   }
 }

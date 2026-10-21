@@ -4,7 +4,7 @@ import { SKILLS } from '../../data/skills';
 import { BOARDS, BOARD_ROWS, KEYSTONES, MEMORY_KEYSTONES, TALENT_PER, TALENT_SCALE, boardPoints, rankOf, type TalentNode } from '../../data/talents';
 import { ACTIVE_RANK_PCT, NODES, TREES, branchNodes, nodeName as treeNodeName, nodeText, tierNodes, type TreeBranch, type TreeNode } from '../../data/trees';
 import { T } from '../../data/text.zh-TW';
-import { skillCost, skillFor } from '../../engine/battle';
+import { fromMember, skillCost, skillFor } from '../../engine/battle';
 import { itemLines } from '../../engine/compare';
 import { ROW_MELEE, rowOfCell } from '../../engine/formation';
 import {
@@ -243,10 +243,10 @@ const skills: StatusTab = {
   render(ctx, id) {
     const t = T.ui2.status;
     const m = ctx.game.state.party.roster[id];
-    // The skill as this member casts it: tree ranks and mod nodes, then worn powers rewrite it; tpCost lowers its price
-    // (the battle rules: engine/battle.ts skillFor and skillCost).
+    // The skill as this member casts it: tree ranks and mod nodes, worn powers, her weapon and her runes rewrite it; tpCost
+    // lowers its price (the battle rules: engine/battle.ts fromMember, skillFor and skillCost).
     const powers = powersOf(m);
-    const caster = { powers, ranks: { ...m.tree }, x: { tpCost: sheetOf(m).tpCost } };
+    const caster = fromMember(m, 0);
     // Only what the member has learned, each with its rank in the tree.
     return el('div', { class: 'slx-tab-skills' }, learnedSkills(m).flatMap((sk) => {
       const s = skillFor(caster, sk);
@@ -432,8 +432,8 @@ function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
   let desc = '';
   const change: HTMLElement[] = [];
   if (n.kind === 'active') {
-    // The skill as this member casts it: tree ranks and worn powers, at the TP they pay (as on the skills page).
-    const caster = { powers: powersOf(m), ranks: { ...m.tree }, x: { tpCost: sheetOf(m).tpCost } };
+    // The skill as this member casts it, at the TP she pays (as on the skills page: fromMember, so runes count too).
+    const caster = fromMember(m, 0);
     const s = skillFor(caster, n.skill!);
     if (s) {
       head.push(el('span', { class: 'slx-tree-use', text: s.passive ? T.ui2.status.passive : `${T.ui2.status.targets[s.target]}　${T.ui2.status.tp(skillCost(caster, n.skill!))}` }));

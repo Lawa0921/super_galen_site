@@ -305,7 +305,7 @@ function knobWords(c: Pick<Combatant, 'ranks'>, def: SkillDef): SkillDef {
 }
 
 /** TP this combatant pays for a skill: ceil(tp x (1 - tpCost / 100)), at least 1 for a skill that costs TP at all. */
-export function skillCost(c: Pick<Combatant, 'x' | 'powers' | 'ranks'>, id: string): number {
+export function skillCost(c: Pick<Combatant, 'x' | 'powers' | 'ranks' | 'runes' | 'weaponKind'>, id: string): number {
   const tp = skillFor(c, id)?.tp ?? 0;
   if (tp <= 0) return 0;
   // The epsilon keeps a float product such as 9.000000000000002 from costing a point more.
