@@ -1,5 +1,8 @@
 // world.ts — 固定大小 tile 世界。每層一個 typed array（row-major：i = y*width + x）。
+// 呼叫端請走與儲存無關的 API（getter / window / forEachChunk / tileXY…）：之後儲存會換成區塊欄（engine/coords.ts 的鍵）。
 import { CHUNK } from './constants';
+import { tileKey, tileXY as keyToXY, chunkKey, chunkXY } from './coords';
+import type { GenLayers } from './worldgen';
 import { SOLID_LUT, PLATFORM_LUT, CLIMB_LUT, T } from './tiles';
 import type { Stack } from './inventory';
 import { CHEST_SLOTS, type Drop } from './loot';
@@ -11,9 +14,34 @@ export type ChestSlots = (Stack | null)[];
 export const BIOME = { FOREST: 0, DESERT: 1, SNOW: 2, JUNGLE: 3 } as const;
 export type BiomeId = (typeof BIOME)[keyof typeof BIOME];
 
+/** 矩形批次讀取的扁平暫存（world.window）：索引 (y-y0)*w + (x-x0)；各層長度 ≥ w*h（重用時可能更長） */
+export interface TileWindow {
+  x0: number; y0: number; w: number; h: number;
+  fg: Uint8Array; wall: Uint8Array; liquid: Uint8Array; liquidType: Uint8Array;
+  frozen: Uint8Array; half: Uint8Array; variant: Uint8Array;
+}
+
+/** 材質變體 0..2（座標雜湊；任何座標都有值，包括世界外） */
+export function variantHash(x: number, y: number): number {
+  let h = Math.imul(x, 374761393) + Math.imul(y, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) % 3;
+}
+
+function allocWindow(n: number): TileWindow {
+  return {
+    x0: 0, y0: 0, w: 0, h: 0,
+    fg: new Uint8Array(n), wall: new Uint8Array(n), liquid: new Uint8Array(n), liquidType: new Uint8Array(n),
+    frozen: new Uint8Array(n), half: new Uint8Array(n), variant: new Uint8Array(n),
+  };
+}
+
 export class World {
   readonly width: number;
   readonly height: number;
+  /** 水平邊界（xMax 不含）；扁平世界恆為 0 / width */
+  readonly xMin: number;
+  readonly xMax: number;
   readonly fg: Uint8Array;
   readonly wall: Uint8Array;
   /** 每格液體量 0..255（0 = 沒有液體） */
@@ -40,6 +68,8 @@ export class World {
   moltenY = 0;
   /** 每欄地表的生態區（BIOME） */
   readonly biome: Uint8Array;
+  /** 每欄的深度層線（生成器填；沒有時 layersAt 用 rockY / cavernY / moltenY） */
+  layers: GenLayers | null = null;
   /** 箱子內容：key = tile index（y*width+x） */
   readonly chests = new Map<number, ChestSlots>();
   /** 生成時指定的陶罐額外掉落（地城鑰匙），key = tile index；由 seed 重算、不存檔 */
@@ -64,6 +94,8 @@ export class World {
   constructor(width: number, height: number) {
     this.width = width;
     this.height = height;
+    this.xMin = 0;
+    this.xMax = width;
     const n = width * height;
     this.fg = new Uint8Array(n);
     this.wall = new Uint8Array(n);
@@ -75,11 +107,7 @@ export class World {
     this.surface = new Int16Array(width);
     this.biome = new Uint8Array(width);
     for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        let h = Math.imul(x, 374761393) + Math.imul(y, 668265263);
-        h = Math.imul(h ^ (h >>> 13), 1274126177);
-        this.variant[y * width + x] = ((h ^ (h >>> 16)) >>> 0) % 3;
-      }
+      for (let x = 0; x < width; x++) this.variant[y * width + x] = variantHash(x, y);
     }
     this.chunksX = Math.ceil(width / CHUNK);
     this.chunksY = Math.ceil(height / CHUNK);
@@ -88,7 +116,10 @@ export class World {
   inBounds(x: number, y: number): boolean {
     return x >= 0 && y >= 0 && x < this.width && y < this.height;
   }
-  idx(x: number, y: number): number { return y * this.width + x; }
+  /** (x,y) 的 tile 鍵（中央 = y*width + x；見 coords.ts） */
+  idx(x: number, y: number): number { return tileKey(this.width, x, y); }
+  /** tile 鍵 → 座標 */
+  tileXY(k: number): { x: number; y: number } { return keyToXY(this.width, k); }
   /** 第 x 欄的地表高度（越界夾到邊欄）。 */
   surfaceAt(x: number): number {
     if (this.width === 0) return this.surfaceY;
@@ -126,6 +157,56 @@ export class World {
     this.half[i] = v;
     this.touch(x, y);
     return true;
+  }
+
+  /** 是否結冰（越界 false） */
+  isFrozen(x: number, y: number): boolean {
+    if (!this.inBounds(x, y)) return false;
+    return this.frozen[y * this.width + x] === 1;
+  }
+  /** 設定 / 取消結冰（霜系統用；不標 dirty——呼叫端自己決定重畫哪些 chunk） */
+  setFrozen(x: number, y: number, on: boolean): void {
+    if (!this.inBounds(x, y)) return;
+    this.frozen[y * this.width + x] = on ? 1 : 0;
+  }
+  /** (x,y) 的材質變體 0..2（世界外照座標雜湊） */
+  variantAt(x: number, y: number): number {
+    if (!this.inBounds(x, y)) return variantHash(x, y);
+    return this.variant[y * this.width + x];
+  }
+  /** 第 x 欄的深度層線（越界夾到邊欄） */
+  layersAt(x: number): { rock: number; deep: number; molten: number } {
+    const L = this.layers;
+    if (!L || this.width === 0) return { rock: this.rockY, deep: this.cavernY, molten: this.moltenY };
+    const cx = Math.max(0, Math.min(this.width - 1, Math.floor(x)));
+    return { rock: L.rock[cx], deep: L.deep[cx], molten: L.molten[cx] };
+  }
+
+  /**
+   * 把矩形 [x0, x0+w) × [y0, y0+h) 的各層複製進扁平暫存（批次讀取：光照、烘焙、地圖…）。
+   * 世界外的格：fg = STONE、其餘 0、variant 照座標雜湊（同 getter）。out 夠大就重用、不配置。
+   */
+  window(x0: number, y0: number, w: number, h: number, out?: TileWindow): TileWindow {
+    const n = w * h;
+    const win = out && out.fg.length >= n ? out : allocWindow(n);
+    win.x0 = x0; win.y0 = y0; win.w = w; win.h = h;
+    const W = this.width;
+    const ix0 = Math.max(x0, 0), ix1 = Math.min(x0 + w, W);
+    for (let r = 0; r < h; r++) {
+      const y = y0 + r, o = r * w;
+      if (y < 0 || y >= this.height || ix1 <= ix0) { fillOutside(win, o, x0, y, 0, w); continue; }
+      if (ix0 > x0) fillOutside(win, o, x0, y, 0, ix0 - x0);
+      const s = y * W + ix0, e = y * W + ix1, d = o + ix0 - x0;
+      win.fg.set(this.fg.subarray(s, e), d);
+      win.wall.set(this.wall.subarray(s, e), d);
+      win.liquid.set(this.liquid.subarray(s, e), d);
+      win.liquidType.set(this.liquidType.subarray(s, e), d);
+      win.frozen.set(this.frozen.subarray(s, e), d);
+      win.half.set(this.half.subarray(s, e), d);
+      win.variant.set(this.variant.subarray(s, e), d);
+      if (ix1 < x0 + w) fillOutside(win, o, x0, y, ix1 - x0, w);
+    }
+    return win;
   }
 
   /** 單向平台（物理用） */
@@ -178,9 +259,21 @@ export class World {
     this.touchLiquid(i);
     return true;
   }
-  /** tile index i 的液體已直接改寫（模擬熱路徑用）：標記 dirty / 已修改 */
+  /** 直接寫液體（模擬熱路徑用；不夾值、不標 dirty——寫完自己 touchLiquidAt；量 0 時種類請給 LIQ.NONE） */
+  setLiquidRaw(x: number, y: number, amount: number, type: number): void {
+    if (!this.inBounds(x, y)) return;
+    const i = y * this.width + x;
+    this.liquid[i] = amount;
+    this.liquidType[i] = type;
+  }
+  /** tile 鍵 i 的液體已直接改寫（模擬熱路徑用）：標記 dirty / 已修改 */
   touchLiquid(i: number): void {
-    const x = i % this.width, y = (i - x) / this.width;
+    const { x, y } = this.tileXY(i);
+    this.touchLiquidAt(x, y);
+  }
+  /** (x,y) 的液體已直接改寫：標記液體 dirty / 已修改 chunk */
+  touchLiquidAt(x: number, y: number): void {
+    if (!this.inBounds(x, y)) return;
     const ci = this.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK));
     this.liquidDirty.add(ci);
     this.liquidModified.add(ci);
@@ -217,9 +310,12 @@ export class World {
     return true;
   }
 
-  chunkIndex(cx: number, cy: number): number { return cy * this.chunksX + cx; }
-  chunkCoords(ci: number): { cx: number; cy: number } {
-    return { cx: ci % this.chunksX, cy: Math.floor(ci / this.chunksX) };
+  /** chunk 鍵（中央 = cy*chunksX + cx；見 coords.ts） */
+  chunkIndex(cx: number, cy: number): number { return chunkKey(this.chunksX, cx, cy); }
+  chunkCoords(ci: number): { cx: number; cy: number } { return chunkXY(this.chunksX, ci); }
+  /** 走過每個常駐 chunk（cy 外層、cx 內層；同 markAllDirty 的順序） */
+  forEachChunk(fn: (cx: number, cy: number) => void): void {
+    for (let cy = 0; cy < this.chunksY; cy++) for (let cx = 0; cx < this.chunksX; cx++) fn(cx, cy);
   }
 
   /** 取走並清空 dirty chunk 清單。 */
@@ -250,4 +346,15 @@ export class World {
     const dyc = ly === 0 && cy > 0 ? -1 : ly === CHUNK - 1 && cy < this.chunksY - 1 ? 1 : 0;
     if (dxc && dyc) this.dirty.add(ci + dxc + dyc * this.chunksX);
   }
+}
+
+/** window 的世界外格：fg = STONE、其餘 0、variant 照座標雜湊（列內 [from, to)） */
+function fillOutside(win: TileWindow, o: number, x0: number, y: number, from: number, to: number): void {
+  win.fg.fill(T.STONE, o + from, o + to);
+  win.wall.fill(0, o + from, o + to);
+  win.liquid.fill(0, o + from, o + to);
+  win.liquidType.fill(0, o + from, o + to);
+  win.frozen.fill(0, o + from, o + to);
+  win.half.fill(0, o + from, o + to);
+  for (let c = from; c < to; c++) win.variant[o + c] = variantHash(x0 + c, y);
 }

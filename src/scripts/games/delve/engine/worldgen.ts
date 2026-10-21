@@ -603,6 +603,7 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
   world.surface.set(surface); // 洞穴挖穿前的地形地表（HUD 深度用）
   const bands: GenBands = { surfaceLow, surfaceHigh, rockLow, rockHigh };
   const layers: GenLayers = { rock: rockLine, deep: deepLine, molten: moltenLine };
+  world.layers = layers;
   const bottom = height - 1;
   const cavernY = world.cavernY;
   const yIn = (rng: Rng, lo: number, hi: number): number => rng.int(Math.min(lo, hi - 1), Math.max(lo + 1, hi));
