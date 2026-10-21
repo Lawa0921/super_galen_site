@@ -23,6 +23,7 @@ import { FormationScene } from './scenes/formation';
 import { StatusScene } from './scenes/status';
 import { EquipScene } from './scenes/equip';
 import { HandbookScene } from './scenes/handbook';
+import { WorkshopScene } from './scenes/workshop';
 
 function safeStorage(): Storage | null {
   try { return window.localStorage; } catch { return null; }
@@ -62,6 +63,7 @@ export async function mountNext(): Promise<void> {
       case 'formation': return new FormationScene(ctx);
       case 'status': return new StatusScene(ctx);
       case 'equip': return new EquipScene(ctx);
+      case 'workshop': return new WorkshopScene(ctx);
       case 'handbook': return new HandbookScene(ctx);
     }
   };

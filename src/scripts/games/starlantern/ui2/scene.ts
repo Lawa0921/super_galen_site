@@ -6,7 +6,7 @@ import type { SettingsStore } from './settings';
 import type { Stage } from './stage';
 
 export type SceneName = 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate' | 'forge' | 'dungeon' | 'battle' | 'clear' | 'settings'
-  | 'formation' | 'status' | 'equip' | 'handbook';
+  | 'formation' | 'status' | 'equip' | 'workshop' | 'handbook';
 /** `prepare`: awaited before `enter`, behind the fade with input locked (a battle waits a moment for its pictures). */
 export interface Scene { enter(root: HTMLElement): void; exit(): void; onAction(a: UiAction): void; prepare?(): Promise<void> }
 export interface SceneCtx {

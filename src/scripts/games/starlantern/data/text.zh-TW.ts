@@ -412,6 +412,29 @@ export const T = {
       /** What the member a rune is moved from loses: 「諾艾兒・火之星彈：全體 → 單體」. */
       giver: (who: string, skill: string, lost: string[]) => (lost.length ? `${who}・${skill}：${lost.join('・')}` : `${who}・${skill}`),
       arrow: (before: string, after: string) => `${before} → ${after}`,
+      /** The workshop screen (plan 8g Task 4a). */
+      title: '技能工坊',
+      skillsHead: '技能',
+      slotsHead: '插槽',
+      runesHead: '符文',
+      now: '現在',
+      before: '之前',
+      after: '之後',
+      slot: (i: number) => `槽 ${i}`,
+      slotEmpty: '空',
+      slotLocked: (lv: number) => `Lv ${lv} 開放`,
+      noSlots: (lv: number) => `Lv ${lv} 才有第一個插槽`,
+      noSkills: '還沒有可以裝符文的技能',
+      remove: '拆下',
+      pick: (i: number) => `要裝進槽 ${i} 的符文`,
+      off: (why: string) => `未生效：${why}`,
+      emptyBag: '袋子裡沒有符文',
+      socketed: (label: string, skill: string) => `${skill}裝上了${label}`,
+      removed: (label: string) => `拆下了${label}，回到袋子`,
+      backToBag: (label: string) => `，${label}回到袋子`,
+      added: (line: string) => `＋${line}`,
+      lost: (line: string) => `−${line}`,
+      hint: '↑↓ 選擇　Enter 決定　Tab 切換欄　Q/E 換人　R/F 捲動卡片　Esc 返回',
     },
     /** The status screen's skill-tree tab. */
     tree: {
@@ -757,7 +780,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       giveFail: { invalid: '已經還給他了。', stock: '手上沒有這個碎片了。' } as Record<string, string>,
     },
     guild: {
-      formation: '編隊', recall: '召回', equip: '裝備', status: '狀態', tree: '技能樹', talent: '天賦',
+      formation: '編隊', recall: '召回', equip: '裝備', status: '狀態', tree: '技能樹', talent: '天賦', workshop: '技能工坊',
       recallAsk: (name: string) => `要讓 ${name} 回到隊伍嗎？`, swapWho: '要讓誰回公會待命？', swapOut: (name: string) => `${name} 回公會待命`, welcomeBack: (name: string) => `歡迎回來，${name}。`,
       roles: {
         noel: '後排。火、冰、雷攻擊；降低敵人能力、毒。', chizuru: '前排。全體攻擊；我方減傷。', liz: '前或後。多段攻擊；降低遇敵、素材掉落加成。',

@@ -19,7 +19,7 @@ const benchBobby = (g: Game) => {
   g.state.party = { ...g.state.party, grid: g.state.party.grid.map((c) => (c === 'bobby' ? null : c)) };
 };
 
-function setup(from?: 'formation' | 'status', lineup: readonly string[] = LEGACY_LINEUP, prep?: (g: Game) => void, story?: StoryMode, art: ArtIndex = NO_ART) {
+function setup(from?: 'formation' | 'status' | 'workshop', lineup: readonly string[] = LEGACY_LINEUP, prep?: (g: Game) => void, story?: StoryMode, art: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), memoryStorage(), undefined, 0, [...lineup] as never);
   prep?.(game);
   game.state.gold = 1000;
@@ -45,7 +45,23 @@ function setup(from?: 'formation' | 'status', lineup: readonly string[] = LEGACY
 describe('GuildScene', () => {
   it('lists the guild commands', () => {
     const { root } = setup();
-    expect([...root.querySelectorAll('.slx-cmd [role=option]')].map((o) => o.textContent)).toEqual(['編隊', T.ui2.guild.recall, '裝備', '狀態', '技能樹', '天賦', T.ui2.exchange.title, T.ui2.handbook.title, '離開']);
+    expect([...root.querySelectorAll('.slx-cmd [role=option]')].map((o) => o.textContent)).toEqual(['編隊', T.ui2.guild.recall, '裝備', '狀態', '技能樹', T.ui2.guild.workshop, '天賦', T.ui2.exchange.title, T.ui2.handbook.title, '離開']);
+  });
+
+  it('the guild opens the workshop', () => {
+    const { root, pick, go } = setup();
+    const labels = [...root.querySelectorAll('.slx-cmd [role=option]')].map((o) => o.textContent);
+    expect(labels.indexOf(T.ui2.guild.workshop)).toBe(labels.indexOf(T.ui2.guild.tree) + 1);
+    pick(T.ui2.guild.workshop);
+    expect(go).toHaveBeenCalledWith('workshop');
+  });
+
+  it('coming back from the workshop does not greet again', () => {
+    const rng = vi.fn(() => 0.5);
+    const { root } = setup('workshop', LEGACY_LINEUP, (g) => { Object.assign(g, { rng }); });
+    expect(rng).not.toHaveBeenCalled();
+    expect(root.querySelector<HTMLElement>('.slx-talk')!.hidden).toBe(true);
+    expect(root.querySelector('.slx-cmd [aria-selected=true]')!.textContent).toBe(T.ui2.guild.workshop);
   });
 
   it('the guild opens the handbook', () => {

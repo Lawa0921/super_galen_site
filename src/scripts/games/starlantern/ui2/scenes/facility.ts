@@ -12,7 +12,7 @@ import { NPC_FACILITY, playAndRecord, storyCtx } from '../story';
 import { Dialogue, MenuView, backControl, win, type Rich } from '../widgets';
 
 export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate' | 'forge';
-const RETURNING: SceneName[] = ['formation', 'status', 'equip', 'settings'];
+const RETURNING: SceneName[] = ['formation', 'status', 'equip', 'workshop', 'settings'];
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 
 /** Shared facility screen: scene art, NPC bust, place sign, gold, command window, dialogue and a stack of sub-windows. */

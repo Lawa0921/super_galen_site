@@ -3593,4 +3593,121 @@ test.describe('starlantern', () => {
     expect([saved.gold, saved.runes]).toEqual([70, { 'spread@magic': 1 }]);
     expect(w.errors).toEqual([]);
   });
+
+  test.describe('the skill workshop (plan 8g)', () => {
+    /** Every workshop window inside the stage and every row, card cell and foot line inside its own box, at this size. */
+    const inside = async (page: Page, vw: number, vh: number) => {
+      await page.setViewportSize({ width: vw, height: vh });
+      await page.waitForTimeout(150);
+      const screen = await page.locator('.slx-screen').boundingBox();
+      for (const box of await page.locator('.slx-workshop .slx-win').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, c: e.className }; }))) {
+        expect(box.x, `${box.c} at ${vw}`).toBeGreaterThanOrEqual(screen!.x - 0.5);
+        expect(box.y, `${box.c} at ${vw}`).toBeGreaterThanOrEqual(screen!.y - 0.5);
+        expect(box.x + box.w, `${box.c} at ${vw}`).toBeLessThanOrEqual(screen!.x + screen!.width + 0.5);
+        expect(box.y + box.h, `${box.c} at ${vw}`).toBeLessThanOrEqual(screen!.y + screen!.height + 0.5);
+      }
+      const over = await page.locator('.slx-workshop [role=option], .slx-ws-card p, .slx-ws-card td, .slx-ws-foot p')
+        .evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
+      expect(over, `wider than their box at ${vw}`).toEqual([]);
+    };
+
+    test('the skill workshop sockets a rune, after showing what it changes (plan 8g)', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const missing: string[] = [];
+      page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+      const w = await setup(page, 7);
+      // A save past its first boss: Noel recruited at Lv 20 knowing 火之星彈, a magic 擴散 in the bag.
+      await page.evaluate(() => {
+        const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+        s.runesOpen = true;
+        s.runes = { 'spread@magic': 1 };
+        s.party.recruited = [...s.party.recruited, 'noel'];
+        s.party.roster.noel = { ...s.party.roster.noel, level: 20, tree: { 'fire-star': 1 } };
+      });
+      await w.choose('.slx-town', '冒險者公會');
+      await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+      await w.choose('.slx-guild .slx-cmd', '技能工坊');
+      await expect(page.locator('.slx-workshop')).toBeVisible();
+      for (let i = 0; i < 4 && !((await page.locator('.slx-ws-name').textContent()) ?? '').includes('諾艾兒'); i++) await w.key('e');
+      await expect(page.locator('.slx-ws-name')).toContainText('諾艾兒');
+      await expect(page.locator('.slx-ws-skills [aria-selected=true]')).toHaveAttribute('data-id', 'fire-star');
+      await w.key('Enter');                                   // her slots
+      await w.key('Enter');                                   // slot 1's runes
+      await expect(page.locator('.slx-ws-runes [aria-selected=true]')).toHaveAttribute('data-id', 'bag:spread@magic');
+      const target = page.locator('.slx-ws-card tr[data-key=target]');
+      await expect(target.locator('td')).toHaveText(['單體', '全體']);
+      await expect(target).toHaveClass(/slx-changed/);
+      await expect(page.locator('.slx-ws-card tr[data-key=power] .slx-ws-after')).toHaveText('84（每個目標）');
+      for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+        await inside(page, vw, vh);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/workshop-${vw}.png` });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await w.key('Enter');                                   // socket it
+      await expect(page.locator('.slx-ws-foot')).toContainText('火之星彈裝上了擴散（魔法）');
+      await expect(page.locator('.slx-ws-skills [data-id=fire-star] .slx-right')).toHaveText('◆◇');
+      await w.key('Escape'); await w.key('Escape');           // the slots, the skills, the guild
+      await expect(page.locator('.slx-guild')).toBeVisible();
+      await expect(page.locator('.slx-talk')).toBeHidden();   // no new greeting
+      await expect(page.locator('.slx-guild .slx-cmd [aria-selected=true]')).toHaveText('技能工坊');
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-save') ?? '{}'));
+      expect([saved.party.roster.noel.sockets, saved.runes]).toEqual([{ 'fire-star': [{ id: 'spread', tier: 'magic' }] }, {}]);
+      expect(w.errors).toEqual([]);
+      expect(missing).toEqual([]);
+    });
+
+    test('the workshop card stays inside the stage at its fullest (plan 8g)', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const w = await setup(page, 7);
+      // Chizuru at Lv 35: 守之結界 with three runes (常駐 among them), 淨之結界 with 常駐 too (the two-barrier warning), and
+      // 除厄 in the bag, which adds a line.
+      await page.evaluate(() => {
+        const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+        s.runesOpen = true;
+        s.runes = { 'dispel@magic': 1 };
+        s.party.recruited = [...s.party.recruited, 'chizuru'];
+        s.party.roster.chizuru = {
+          ...s.party.roster.chizuru, level: 35, tree: { ward: 1, 'purify-ward': 1 },
+          sockets: { ward: [{ id: 'lasting', tier: 'common' }, { id: 'extend', tier: 'magic' }, { id: 'thrift', tier: 'magic' }], 'purify-ward': [{ id: 'lasting', tier: 'common' }] },
+        };
+      });
+      await w.choose('.slx-town', '冒險者公會');
+      await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+      await w.choose('.slx-guild .slx-cmd', '技能工坊');
+      for (let i = 0; i < 4 && !((await page.locator('.slx-ws-name').textContent()) ?? '').includes('千鶴'); i++) await w.key('e');
+      for (let i = 0; i < 4 && (await page.locator('.slx-ws-skills [aria-selected=true]').getAttribute('data-id')) !== 'ward'; i++) await w.key('ArrowDown');
+      await expect(page.locator('.slx-ws-skills [aria-selected=true]')).toHaveAttribute('data-id', 'ward');
+      await w.key('Enter');                                   // her slots
+      await w.key('ArrowDown'); await w.key('ArrowDown');
+      await w.key('Enter');                                   // slot 3's runes (節流 in it): 拆下, then the bag's 除厄
+      await w.key('ArrowDown');
+      await expect(page.locator('.slx-ws-runes [aria-selected=true]')).toHaveAttribute('data-id', 'bag:dispel@magic');
+      await expect(page.locator('.slx-ws-card')).toContainText('兩個常駐結界只會留下一個');
+      for (const [vw, vh] of [[1280, 720], [390, 844]] as const) {
+        await inside(page, vw, vh);
+        const foot = await page.locator('.slx-ws-foot').boundingBox();
+        const card = await page.locator('.slx-ws-card').boundingBox();
+        expect(foot!.y + foot!.height, `the foot shows whole at ${vw}`).toBeLessThanOrEqual(card!.y + card!.height + 0.5);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/workshop-full-${vw}.png` });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const body = page.locator('.slx-ws-card-body');
+      const room = await body.evaluate((b) => b.scrollHeight - b.clientHeight);
+      const down = page.locator('.slx-ws-card-frame > .slx-more-down');
+      const up = page.locator('.slx-ws-card-frame > .slx-more-up');
+      if (room > 1) {
+        await expect(down).toBeVisible();
+        await expect(up).toBeHidden();
+        await down.click();
+        await expect.poll(() => body.evaluate((b) => b.scrollTop)).toBeGreaterThan(0);
+        await expect(up).toBeVisible();
+        const top = await body.evaluate((b) => b.scrollTop);
+        if (top < room - 1) {
+          await w.key('f');
+          await expect.poll(() => body.evaluate((b) => b.scrollTop)).toBeGreaterThan(top);
+        }
+      } else await expect(down).toBeHidden();
+      expect(w.errors).toEqual([]);
+    });
+  });
 });
