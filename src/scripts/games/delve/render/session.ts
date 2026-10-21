@@ -15,6 +15,7 @@ import {
 import { decodeAnySave, encodeWorld, restoreSplit, type AnySave, type WorldData } from '../save/worldSave';
 import { createCharacter, decodeCharacter, DEFAULT_NICK, type DelveCharacter } from '../save/character';
 import { startDelve, type DelveHandle } from './main';
+import { fullMapPins } from './mapView';
 import { autostartPlan, helpSeen, HELP_KEY } from './model';
 import { SoundManager } from '../audio/SoundManager';
 import { TitleScene } from './titleScene';
@@ -35,7 +36,11 @@ const PROGRESS_CELLS = 20;
 const SECTION_W = 280, SECTION_H = 80;
 
 /** debug / e2e 鉤（唯一的型別宣告；tests/e2e/delve.spec.ts 也用這個） */
-export interface DelveDebug { game: DelveGame; handle: DelveHandle; save: () => Promise<void> }
+export interface DelveDebug {
+  game: DelveGame; handle: DelveHandle; save: () => Promise<void>;
+  /** 大地圖目前會畫的圖示（地標、解鎖的傳送碑、線索、標記） */
+  mapPins(): { icon: string; x: number; y: number; name: string }[];
+}
 declare global {
   interface Window { __delveDebug?: DelveDebug; __delveTitle?: TitleScene; __delveLive?: () => LiveCounts }
 }
@@ -279,7 +284,7 @@ export function bootDelve(root: HTMLElement): Session {
     root.dataset.phase = 'playing';
     setMenu(false);
     handle = startDelve({ root, canvas: canvas!, game, onMenu: () => setMenu(menu!.hidden), onMirror: (open) => setMirror(game, open), onRebirth: () => setRebirth(game) });
-    window.__delveDebug = { game, handle, save: saveNow };
+    window.__delveDebug = { game, handle, save: saveNow, mapPins: () => fullMapPins(game) };
     if (!helpSeen(storage)) setHelp(true);
     if (hasIndexedDB()) {
       stopAutosave = startAutosave({

@@ -1,8 +1,8 @@
 // mapModel.test.ts — 地圖的純邏輯：色表（全在色票上）、chunk 繪製（迷霧 / 揭露 / 邊緣抖動）、視圖縮放平移、小地圖取樣框、圖示 / 標籤
 import { describe, it, expect } from 'vitest';
 import {
-  buildMapLut, paintMapChunk, MAP_SCALES, zoomView, panView, screenToTileOnMap, tileToScreenOnMap, clampView, minimapSource,
-  mapIconBmp, MAP_ICONS, mapPins, mapLabels, type MapView,
+  buildMapLut, paintMapChunk, paintMapChunkAt, MAP_SCALES, zoomView, panView, screenToTileOnMap, tileToScreenOnMap, clampView, minimapView,
+  mapIconBmp, MAP_ICONS, mapPins, mapLabels, stonePins, type MapView,
 } from './mapModel';
 import { World } from '../engine/world';
 import { T, W } from '../engine/tiles';
@@ -39,7 +39,7 @@ describe('paintMapChunk', () => {
     const w = world(), ex = new ExploredMap(64, 64), lut = buildMapLut();
     ex.reveal(3, 3); ex.reveal(3, 22); ex.reveal(5, 25);
     const out = new Uint32Array(CHUNK * CHUNK);
-    paintMapChunk(out, w, ex, 0, 0, lut);
+    paintMapChunkAt(out, w, ex, 0, 0, lut);
     expect(out[3 * CHUNK + 3]).toBe(lut.sky);
     expect([lut.fg[T.STONE], lut.fgDark[T.STONE]]).toContain(out[22 * CHUNK + 3]);
     expect(out[25 * CHUNK + 5]).toBe(lut.wall[W.STONE_WALL]);
@@ -49,7 +49,7 @@ describe('paintMapChunk', () => {
     const w = world(), ex = new ExploredMap(64, 64), lut = buildMapLut();
     ex.reveal(10, 22);
     const out = new Uint32Array(CHUNK * CHUNK);
-    paintMapChunk(out, w, ex, 0, 0, lut);
+    paintMapChunkAt(out, w, ex, 0, 0, lut);
     const ring = [out[22 * CHUNK + 11], out[23 * CHUNK + 10]];
     expect(ring.some((v) => v === lut.fogEdge)).toBe(true);
     expect(out[22 * CHUNK + 14]).toBe(lut.fog);
@@ -57,9 +57,21 @@ describe('paintMapChunk', () => {
   it('世界邊界外的格 = 透明（0）', () => {
     const w = new World(40, 40), ex = new ExploredMap(40, 40), lut = buildMapLut();
     const out = new Uint32Array(CHUNK * CHUNK);
-    paintMapChunk(out, w, ex, 1, 1, lut);
+    paintMapChunkAt(out, w, ex, 1, 1, lut);
     expect(out[0]).toBe(lut.fog); // (32,32) 在世界內
     expect(out[CHUNK * CHUNK - 1]).toBe(0); // (63,63) 在世界外
+  });
+  it('直接吃 TileWindow + chunk 位元（沒常駐的欄由呼叫端 peek 後填進視窗）：與從世界讀的結果相同', () => {
+    const w = world(), ex = new ExploredMap(64, 64), lut = buildMapLut();
+    for (let x = 0; x < 40; x++) ex.reveal(x, 22);
+    const a = new Uint32Array(CHUNK * CHUNK), b = new Uint32Array(CHUNK * CHUNK);
+    paintMapChunkAt(a, w, ex, 0, 0, lut);
+    const win = w.window(-1, -1, CHUNK + 2, CHUNK + 2);
+    paintMapChunk(b, win, ex.chunkBits(0, 0), lut, w, { l: ex.chunkBits(-1, 0), r: ex.chunkBits(1, 0), u: ex.chunkBits(0, -1), d: ex.chunkBits(0, 1) });
+    expect(b).toEqual(a);
+    // 沒有位元 = 整塊迷霧
+    paintMapChunk(b, win, undefined, lut, w);
+    expect(b.every((v) => v === lut.fog || v === lut.fogEdge)).toBe(true);
   });
 });
 
@@ -82,17 +94,18 @@ describe('地圖視圖', () => {
     for (let i = 0; i < 20; i++) v = zoomView(v, 800, 600, 400, 300, -1);
     expect(v.scale).toBe(MAP_SCALES[0]);
   });
-  it('panView 依螢幕位移移動；clampView 讓世界留在畫面內', () => {
+  it('panView 依螢幕位移移動；clampView 讓中心留在探索範圍內', () => {
     const p = panView(v0, 40, -20);
     expect(p.cx).toBeCloseTo(80); expect(p.cy).toBeCloseTo(60);
-    const c = clampView({ cx: -500, cy: 9999, scale: 2 }, 4200, 1200, 800, 600);
+    const c = clampView({ cx: -500, cy: 9999, scale: 2 }, { x0: 0, x1: 4200 }, 1200, 800, 600);
     expect(c.cx).toBeGreaterThanOrEqual(0);
     expect(c.cy).toBeLessThanOrEqual(1200);
   });
-  it('minimapSource：以玩家為中心、夾在世界內', () => {
-    expect(minimapSource(100, 50, 120, 80, 2, 4200, 1200)).toEqual({ sx: 70, sy: 30, sw: 60, sh: 40 });
-    expect(minimapSource(5, 5, 120, 80, 1, 4200, 1200)).toEqual({ sx: 0, sy: 0, sw: 120, sh: 80 });
-    expect(minimapSource(4199, 1199, 120, 80, 3, 4200, 1200)).toEqual({ sx: 4160, sy: 1173, sw: 40, sh: 27 });
+  it('minimapView：以玩家為中心（水平不夾、負 x 也行）、垂直夾在世界內', () => {
+    expect(minimapView(100, 50, 120, 80, 2, 1200)).toEqual({ cx: 100.5, cy: 50.5, scale: 2 });
+    expect(minimapView(-5000, 50, 120, 80, 1, 1200)).toEqual({ cx: -4999.5, cy: 50.5, scale: 1 });
+    expect(minimapView(5, 5, 120, 80, 1, 1200).cy).toBe(40);
+    expect(minimapView(4199, 1199, 120, 80, 3, 1200).cy).toBeCloseTo(1200 - 40 / 3);
   });
 });
 
@@ -104,6 +117,14 @@ describe('地圖圖示 / 標籤', () => {
       for (const v of b.px) if (v >>> 24) { n++; expect(inPalette(Bmp.unpack(v))).toBe(true); }
       expect(n, k).toBeGreaterThan(8);
     }
+    expect(MAP_ICONS).toContain('waystone');
+  });
+  it('stonePins：解鎖的傳送碑 → waystone 圖示與名字', () => {
+    const pins = stonePins([{ id: 0, x: 10, y: 20, name: '出生地傳送碑' }, { id: 1, x: 6000, y: 30, name: '東境第 1 碑' }]);
+    expect(pins).toEqual([
+      { icon: 'waystone', x: 10, y: 20, name: '出生地傳送碑' },
+      { icon: 'waystone', x: 6000, y: 30, name: '東境第 1 碑' },
+    ]);
   });
   it('mapPins：只有發現過的地標才顯示；有探險家地圖時全部顯示（未發現的標成 ?）', () => {
     const fill = (v: number): Int16Array => new Int16Array(300).fill(v);
@@ -145,7 +166,7 @@ describe('地城在地圖上讀得出來', () => {
     const w = dungeonWorld(), ex = new ExploredMap(64, 64), lut = buildMapLut();
     for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) ex.reveal(x, y);
     const out = new Uint32Array(CHUNK * CHUNK);
-    paintMapChunk(out, w, ex, 0, 0, lut);
+    paintMapChunkAt(out, w, ex, 0, 0, lut);
     return { out, lut };
   };
   const lum = (v: number): number => { const [r, g, b] = unpack(v); return 0.299 * r + 0.587 * g + 0.114 * b; };

@@ -6,7 +6,8 @@ import { LIQ } from '../engine/liquidKind';
 import { Renderer } from './renderer';
 import { Hud } from './hud';
 import { FixedStepper, blockedMessage, hintText } from './model';
-import { MapCache, Minimap, FullMap } from './mapView';
+import { Minimap, FullMap } from './mapView';
+import { MapPages } from './mapPages';
 import { ExploreUi } from './journal';
 import { CalendarUi } from './calendarUi';
 import { LevelsUi } from './levelsUi';
@@ -57,7 +58,7 @@ export interface DelveHandle {
   game: DelveGame;
   renderer: Renderer;
   hud: Hud;
-  map: { cache: MapCache; minimap: Minimap; full: FullMap };
+  map: { pages: MapPages; minimap: Minimap; full: FullMap };
   ui: ExploreUi;
   /** 據點面板 / 居民面板 / 查房標籤 */
   settleUi: SettleUi;
@@ -107,15 +108,15 @@ export function startDelve(opts: StartOptions): DelveHandle {
   const settleUi = new SettleUi(root, game, renderer, renderer.atlas, (m) => hud.toast(m, 2400), () => hud.setInventory(true));
   const folkUi = new FolkUi(root, game, renderer, renderer.atlas, { onToast: (m, ms, prio) => hud.toast(m, ms ?? 2400, prio), onInventory: () => hud.setInventory(true) });
   const stoneUi = new WaystoneUi(root, game, renderer, (m) => hud.toast(m, 2000));
-  const mapCache = new MapCache(game);
-  renderer.onWorldDirty = (cis) => mapCache.markWorld(cis);
+  const mapPages = new MapPages(game);
+  renderer.onWorldDirty = (cis) => mapPages.markWorld(cis);
   const mmRoot = root.querySelector<HTMLElement>('#delve-minimap'), mmCanvas = root.querySelector<HTMLCanvasElement>('#delve-minimap-canvas');
   const mapRoot = root.querySelector<HTMLElement>('#delve-map'), mapCanvas = root.querySelector<HTMLCanvasElement>('#delve-map-canvas');
   if (!mmRoot || !mmCanvas || !mapRoot || !mapCanvas) throw new Error('delve: missing map elements');
-  const minimap = new Minimap(mmRoot, mmCanvas, mapCache, game);
+  const minimap = new Minimap(mmRoot, mmCanvas, mapPages, game);
   /** 選單暫停（session 控制）與地圖開啟（這裡控制）分開記 */
   let menuPaused = false;
-  const fullmap = new FullMap(mapRoot, mapCanvas, mapCache, game, {
+  const fullmap = new FullMap(mapRoot, mapCanvas, mapPages, game, {
     onClose: () => setMap(false),
     onToast: (m) => hud.toast(m),
   });
@@ -385,7 +386,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
     stoneUi.tick();
     calendar.tick();
     const tm = performance.now();
-    mapCache.update(fullmap.isOpen ? 64 : 16);
+    mapPages.update(fullmap.isOpen ? 64 : 16);
     if (fullmap.isOpen) fullmap.draw();
     else if ((frames & 3) === 0) minimap.draw();
     mapWork[frames % WINDOW] = performance.now() - tm;
@@ -414,7 +415,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
 
   const handle: DelveHandle = {
     game, renderer, hud, ui, settleUi, folkUi, stoneUi, calendar, sound, levels,
-    map: { cache: mapCache, minimap, full: fullmap },
+    map: { pages: mapPages, minimap, full: fullmap },
     stats: () => {
       const f = avg(gaps);
       return {

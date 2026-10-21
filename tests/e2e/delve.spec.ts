@@ -318,6 +318,74 @@ test.describe('delve', () => {
     expect(errors).toEqual([]);
   });
 
+  test('大地圖（無限世界）：傳到 x −600 走幾步 → 開 M → 玩家附近畫出探索過的地形（不是一片迷霧）；往西拖 → 中心夾在探索範圍、仍看得到地形；mapPins 只有解鎖的傳送碑', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=infinite-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game, x = -600;
+      g.teleport(x, g.world.surfaceAt(x) - 1); d.handle.renderer.snapCamera();
+    });
+    await page.keyboard.down('a');
+    await page.waitForTimeout(500);
+    await page.keyboard.up('a');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('KeyM');
+    await expect(page.locator('#delve-map')).toBeVisible();
+    /** 地圖 canvas 上「不是迷霧色、也不是背景」的像素數（中心玩家圖示附近 20 px 不算） */
+    const terrain = (): Promise<number> => page.evaluate(() => new Promise<number>((ok) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const c = document.querySelector<HTMLCanvasElement>('#delve-map-canvas')!, ctx = c.getContext('2d')!;
+        const W = c.width, H = c.height, data = ctx.getImageData(0, 0, W, H).data;
+        let n = 0;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          if (Math.abs(x - W / 2) < 20 && Math.abs(y - H / 2) < 20) continue;
+          const i = (y * W + x) * 4, r = data[i], gg = data[i + 1], b = data[i + 2];
+          // 迷霧 #0c0a12 / 迷霧邊 #2c2838
+          if ((r === 12 && gg === 10 && b === 18) || (r === 44 && gg === 40 && b === 56)) continue;
+          n++;
+        }
+        ok(n);
+      }));
+    }));
+    await expect.poll(terrain, { timeout: 5000 }).toBeGreaterThan(1000);
+    const v0 = await page.evaluate(() => window.__delveDebug!.handle.map.full.view.cx);
+    expect(v0).toBeLessThan(-550);
+    // 往右拖（地圖往西捲）約 100 格 → 到 x −700 一帶；中心夾在探索範圍內，畫面上仍有地形
+    const box = (await page.locator('#delve-map-canvas').boundingBox())!;
+    const sx = box.x + box.width / 2, sy = box.y + box.height / 2;
+    await page.mouse.move(sx, sy);
+    await page.mouse.down();
+    for (let k = 1; k <= 10; k++) await page.mouse.move(sx + k * 30, sy);
+    await page.mouse.up();
+    const after = await page.evaluate(() => {
+      const d = window.__delveDebug!;
+      const v = d.handle.map.full.view, c = document.querySelector<HTMLCanvasElement>('#delve-map-canvas')!;
+      return { cx: v.cx, halfW: c.width / 2 / v.scale, ext: d.handle.map.pages.exploredExtent() };
+    });
+    expect(after.cx).toBeLessThan(v0 - 10);
+    expect(after.ext).not.toBeNull();
+    expect(after.cx).toBeGreaterThanOrEqual(after.ext!.x0);
+    // x −700 在畫面內（中心左邊半個畫面以內）
+    expect(after.cx - after.halfW).toBeLessThanOrEqual(-700);
+    expect(await terrain()).toBeGreaterThan(1000);
+    await page.keyboard.press('KeyM');
+    // 傳送碑：解鎖東境第 1 碑 → mapPins 有它（waystone 圖示、名字），沒解鎖的西境第 1 碑沒有
+    const pins = await page.evaluate(() => {
+      const d = window.__delveDebug!;
+      d.game.stonesUnlocked.add(1);
+      return d.mapPins();
+    });
+    const stones = pins.filter((p) => p.icon === 'waystone');
+    expect(stones.map((p) => p.name)).toContain('東境第 1 碑');
+    expect(stones.map((p) => p.name)).toContain('出生地傳送碑');
+    expect(stones.map((p) => p.name)).not.toContain('西境第 1 碑');
+    expect(stones.length).toBe(2);
+    expect(errors).toEqual([]);
+  });
+
   test('瞄準腳下並按住挖掘 → 背包泥土增加', async ({ page }) => {
     await page.goto('/games/delve?seed=mine&autostart=1&fresh=1');
     await waitGame(page);
