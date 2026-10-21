@@ -14,7 +14,8 @@
 import type { TileWindow } from './world';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { SOLID_LUT, T } from './tiles';
-import { T_BASE } from './coords';
+import { T_BASE, T_OFF, T_Y } from './coords';
+import { CHUNK } from './constants';
 import { TileFlags } from './tileFlags';
 
 /**
@@ -175,23 +176,24 @@ export class LiquidSim {
   /** 所有活躍格（佇列 + 溢出區） */
   get activeCount(): number { return this.queuedCount + this.over[0].size + this.over[1].size + this.over[2].size; }
 
-  /** tile 鍵 → (this.kx, this.ky)。中央鍵（< T_BASE）就地解碼不配置物件，外圍鍵交給 world.tileXY */
+  /** tile 鍵 → (this.kx, this.ky)，就地解碼、不配置物件（與 coords.ts tileXY 同一套算術：中央 / 外圍兩段） */
   private keyXY(k: number): void {
     if (k < T_BASE) {
       const W = this.world.width, y = Math.floor(k / W);
       this.kx = k - y * W; this.ky = y;
       return;
     }
-    const p = this.world.tileXY(k);
-    this.kx = p.x; this.ky = p.y;
+    const r = k - T_BASE, y = r % T_Y;
+    this.kx = (r - y) / T_Y - T_OFF; this.ky = y;
   }
 
   /** 把 (x,y) 排入（有液體且還沒排入時；世界外沒有液體 → 不排） */
   private enqueue(x: number, y: number): void {
+    // 先看 inQ（TileFlags 任何座標都能讀，世界外恆 0）：大多數呼叫落在已排入的格，省兩次 getter
+    if (this.inQ.get(x, y)) return;
     const w = this.world;
     const t = w.getLiquidType(x, y);
     if (t === LIQ.NONE || w.getLiquid(x, y) === 0) return;
-    if (this.inQ.get(x, y)) return;
     this.inQ.set(x, y, 1);
     const k = w.idx(x, y);
     if (!this.qs[t - 1].push(k)) this.over[t - 1].push(k);
@@ -213,6 +215,7 @@ export class LiquidSim {
     }
   }
   /** 喚醒全世界的液體格 */
+  // TODO(Task 8)：無限世界的 [xMin, xMax) 是 ±X_LIMIT，這裡必須改成只掃常駐的欄
   wakeAll(): void { this.wakeRect(this.world.xMin, 0, this.world.xMax, this.world.height); }
 
   /**
@@ -220,7 +223,7 @@ export class LiquidSim {
    * 重新載入後由喚醒重新排入。
    */
   forgetColumn(cx: number): void {
-    const x0 = cx * 32, x1 = x0 + 32;
+    const x0 = cx * CHUNK, x1 = x0 + CHUNK;
     const keep = (k: number): boolean => { this.keyXY(k); return this.kx < x0 || this.kx >= x1; };
     for (const q of this.qs) q.filter(keep);
     for (const o of this.over) o.filter(keep);

@@ -2,7 +2,8 @@
 import { describe, it, expect } from 'vitest';
 import { World, LIQ } from './world';
 import { T } from './tiles';
-import { LiquidSim, LAVA_EVERY, HONEY_EVERY, RETIRE_AFTER } from './liquid';
+import { LiquidSim, LAVA_EVERY, HONEY_EVERY, RETIRE_AFTER, type LiquidWorld } from './liquid';
+import { tileKey, chunkOfX, T_BASE, X_LIMIT } from './coords';
 
 /** w×h 的石箱：外框一圈石頭，內部空氣 */
 function box(w: number, h: number): World {
@@ -317,6 +318,43 @@ describe('LiquidSim', () => {
     expect(sim.activeCount).toBe(5);
     sim.add(40, 4); // 已排入 → 不重複
     expect(sim.activeCount).toBe(5);
+  });
+
+  it('外圍座標的 tile 鍵：佇列鍵就地解碼回原座標（不呼叫 world.tileXY），forgetColumn 也認得', () => {
+    // 稀疏的無限世界替身：寬 4200 的鍵、x ∈ [−X_LIMIT, X_LIMIT)、y ≥ 12 是石頭
+    const H = 40, WD = 4200;
+    const fg = new Map<number, number>(), liq = new Map<number, number>(), lt = new Map<number, number>();
+    const inB = (x: number, y: number): boolean => x >= -X_LIMIT && x < X_LIMIT && y >= 0 && y < H;
+    const stub: LiquidWorld = {
+      width: WD, height: H, chunksX: Math.ceil(WD / 32), xMin: -X_LIMIT, xMax: X_LIMIT, onTileChange: null,
+      inBounds: inB, idx: (x, y) => tileKey(WD, x, y),
+      tileXY: () => { throw new Error('tileXY 不該被呼叫（會配置物件）'); },
+      window: () => { throw new Error('unused'); },
+      getFg: (x, y) => (!inB(x, y) || y >= 12 ? T.STONE : fg.get(tileKey(WD, x, y)) ?? T.AIR),
+      getLiquid: (x, y) => (inB(x, y) ? liq.get(tileKey(WD, x, y)) ?? 0 : 0),
+      getLiquidType: (x, y) => (inB(x, y) ? lt.get(tileKey(WD, x, y)) ?? LIQ.NONE : LIQ.NONE),
+      isFrozen: () => false,
+      isSolid: (x, y) => stub.getFg(x, y) !== T.AIR,
+      setLiquidRaw: (x, y, a, t) => { if (inB(x, y)) { liq.set(tileKey(WD, x, y), a); lt.set(tileKey(WD, x, y), t); } },
+      setLiquid: (x, y, a, t) => { stub.setLiquidRaw(x, y, a, a === 0 ? LIQ.NONE : t); return true; },
+      touchLiquidAt: () => {},
+      setFg: (x, y, id) => { fg.set(tileKey(WD, x, y), id); return true; },
+    };
+    const xs = [-1, -40, WD, 5000, X_LIMIT - 1, -(X_LIMIT - 1)];
+    const sim = new LiquidSim(stub);
+    for (const x of xs) { expect(tileKey(WD, x, 10)).toBeGreaterThanOrEqual(T_BASE); stub.setLiquid(x, 10, 255, LIQ.WATER); sim.add(x, 10); }
+    expect(sim.activeCount).toBe(xs.length);
+    sim.step(); // 每格往下落一格：解碼錯了就會去更新別的（沒有水的）格
+    for (const x of xs) {
+      expect(stub.getLiquid(x, 10)).toBe(0);
+      expect(stub.getLiquid(x, 11)).toBe(255);
+    }
+    const before = sim.activeCount;
+    expect(before).toBeGreaterThan(0);
+    sim.forgetColumn(chunkOfX(5000));
+    sim.forgetColumn(chunkOfX(-(X_LIMIT - 1)));
+    sim.wakeRect(5000, 11, 5001, 12); // 那欄的旗標已清 → 可以重新排入
+    expect(sim.activeCount).toBe(before - 1);
   });
 
   it('pour / take：倒水、舀水', () => {
