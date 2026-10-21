@@ -8,9 +8,9 @@ import { chainLength } from '../data/story/chains';
 import { SKILLS } from '../data/skills';
 import { HERO_ULTIMATES, RIN_DAWN, SKY_LANTERN, ULTIMATES } from '../data/ultimates';
 import { gainExp, newMember } from './party';
-import { CHARACTERS, rulesOf } from '../data/characters';
+import { CHARACTERS, CHARACTER_IDS, rulesOf } from '../data/characters';
 import { mulberry32 } from './rng';
-import { DEFAULT_CAPSTONE, DEFAULT_FIRST, INNATE, K, LEGACY_LEARN_LEVEL, NODES, P, TIER_GATE, TREES, V0, branchNodes } from '../data/trees';
+import { DEFAULT_CAPSTONE, DEFAULT_FIRST, INNATE, K, LEGACY_LEARN_LEVEL, NODES, P, TIER_GATE, TREES, V, branchNodes } from '../data/trees';
 import { makeCombatant, withNode } from './testing';
 import { BOARDS, DEFAULT_KEYSTONES, MEMORY_KEYSTONES, TALENT_PER, TALENT_SCALE, talentBlocker } from '../data/talents';
 import { ABYSS_UNLOCK, HERO_BUILDS, type HeroBuild } from '../data/hero';
@@ -879,7 +879,7 @@ describe('skill words follow their numbers (plan 8c)', () => {
 
 describe('pairs, mechanic knobs and the first-learned list (plan 8d Task 1)', () => {
   /** A B side for noel's tier-1 cell of branch 0 (the A side is the node standing there): a variant of the same skill. */
-  const fakeB = () => V0('test-star-b', '測試星', 'fire-star', '測試用的另一個版本', [{ powerPct: 101 }, { powerPct: 102 }, { powerPct: 103 }]);
+  const fakeB = () => V('test-star-b', 'fire-star', '測試星', [{ powerPct: 101 }, { powerPct: 102 }, { powerPct: 103 }], (m) => `測試用的另一個版本，威力 ${m.powerPct}%。`);
   const withFakePair = () => withNode('noel', 0, 1, P(TREES.noel.branches[0].nodes[1], fakeB()));
 
   it('a pair holds points on one side only', () => {
@@ -1108,7 +1108,7 @@ describe("Scarlet's and Safira's trees (plan 8d Task 7)", () => {
       if (node.kind !== 'variant') continue;
       expect(node.label, node.id).toBeTruthy();
       expect(node.say, node.id).toBeDefined();
-      expect(node.name ?? node.desc, node.id).toBeUndefined();
+      expect(node.name, node.id).toBeUndefined();
     }
   });
 
@@ -1189,5 +1189,20 @@ describe("Chizuru's and Selene's trees (plan 8d Task 5)", () => {
     expect(defaultTree('selene', 35)['moon-recall']).toBe(2);
     expect(defaultTree('selene', 35)).not.toHaveProperty('moon-arrow');
     for (const L of [5, 10, 20, 35, 50]) expect(defaultTree('selene', L), `Lv${L}`).not.toHaveProperty('selene-new-night');
+  });
+});
+
+describe('the reworked trees in the standard build (plan 8d Task 9)', () => {
+  it('each core mechanic is in the standard build by Lv5', () => {
+    // The skill that enters each companion's mechanic. Selene needs none: her moon is a passive of the fight (spec §8.6).
+    const core: Partial<Record<CharacterId, string>> = {
+      noel: 'fire-star', chizuru: 'ward', liz: 'fortune-strike', sylvie: 'aimed-shot', scarlet: 'flame-burst',
+      safira: 'blade-dance', bobby: 'turret', rin: 'rin-mark',
+    };
+    for (const [id, skill] of Object.entries(core) as [CharacterId, string][]) {
+      const m: Member = { ...newMember(id), level: 5, tree: defaultTree(id, 5) };
+      expect(learnedSkills(m), `${id} Lv5`).toContain(skill);
+    }
+    expect(Object.keys(core).sort()).toEqual(CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'selene').sort());
   });
 });

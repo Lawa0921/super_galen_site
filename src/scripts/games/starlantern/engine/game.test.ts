@@ -7,7 +7,7 @@ import { constRng, memoryStorage, plainItem, version8Save, withNode } from './te
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { P, TREES, V0 } from '../data/trees';
+import { P, TREES, V } from '../data/trees';
 import { mulberry32 } from './rng';
 import { rollPortals, validPortals } from './portals';
 import { DELTA, posKey, tileAt, type Dir } from './map';
@@ -1533,7 +1533,7 @@ describe('spending a skill point', () => {
 
 describe('changing a variant side (plan 8d Task 1)', () => {
   it('swapVariant works in town and the field, never in battle', () => {
-    const b = V0('test-star-b', '測試星', 'fire-star', '測試用的另一個版本', [{ powerPct: 101 }, { powerPct: 102 }, { powerPct: 103 }]);
+    const b = V('test-star-b', 'fire-star', '測試星', [{ powerPct: 101 }, { powerPct: 102 }, { powerPct: 103 }], (m) => `測試用的另一個版本，威力 ${m.powerPct}%。`);
     const restore = withNode('noel', 0, 1, P(TREES.noel.branches[0].nodes[1], b));
     try {
       const a = TREES.noel.branches[0].nodes[1].id;

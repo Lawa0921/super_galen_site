@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, DEFAULT_FIRST, INNATE, LEGACY_LEARN_LEVEL, NODES, P, TREES, V0, branchNodes, nodeDesc, nodeName, nodeText, tierNodes, treeName, type TreeNode } from './trees';
+import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, DEFAULT_FIRST, INNATE, LEGACY_LEARN_LEVEL, NODES, P, TREES, V, branchNodes, nodeDesc, nodeName, nodeText, tierNodes, treeName, type TreeNode } from './trees';
 import { withNode } from '../engine/testing';
 import { CHARACTERS, rulesOf } from './characters';
 import { SKILLS } from './skills';
@@ -50,7 +50,7 @@ describe('skill trees', () => {
     }));
     expect(problems()).toEqual([]);
     // The guard itself catches each kind of mistake.
-    const restore = withNode('noel', 0, 1, P(TREES.noel.branches[0].nodes[1], V0('test-star-b', '測試星', 'fire-star', '測試', [{ powerPct: 101 }])));
+    const restore = withNode('noel', 0, 1, P(TREES.noel.branches[0].nodes[1], V('test-star-b', 'fire-star', '測試星', [{ powerPct: 101 }], () => '測試。')));
     const before = { ...DEFAULT_FIRST };
     try {
       for (const [id, n] of [['rin', 'noel-star-twin'], ['noel', 'nope'], ['noel', 'test-star-b'], ['noel', 'blizzard'], ['hero', 'hero-slash']] as const) {
@@ -144,7 +144,7 @@ describe('skill trees', () => {
           expect(n.id).toBe(n.skill);
           expect(SKILLS[n.skill!], n.id).toBeDefined();
           expect(SKILLS[n.skill!].owner).toBe(id);
-          expect(n.name ?? n.desc ?? n.mods).toBeUndefined();
+          expect(n.name ?? n.mods).toBeUndefined();
         } else if (n.kind === 'mech') {
           // A mechanic node: a name, a knob, one value and one sentence a rank; no skill.
           expect(n.skill, n.id).toBeUndefined();
@@ -154,9 +154,9 @@ describe('skill trees', () => {
           expect(n.say, n.id).toBeDefined();
         } else {
           expect(actives.has(n.skill!) || (INNATE[id] ?? []).includes(n.skill!), `${n.id} -> ${n.skill}`).toBe(true);
-          // A plan 8d variant has a label and a sentence; a plan 8c one (V0) still has its name and words.
-          if (n.label !== undefined) expect(n.say, n.id).toBeDefined();
-          else { expect(n.name, n.id).toBeTruthy(); expect(n.desc, n.id).toBeTruthy(); }
+          // A variant has a label and a sentence (the plan 8c strengthening nodes, V0, are gone since plan 8d Task 9).
+          expect(n.label, n.id).toBeTruthy();
+          expect(n.say, n.id).toBeDefined();
         }
       }
     }
@@ -182,7 +182,7 @@ describe('skill trees', () => {
 
   it('a mod node deepens a buff or debuff only when its text says so', () => {
     for (const n of allNodes().filter((x) => x.kind === 'variant')) {
-      const says = /削弱|提升幅度/.test(n.desc ?? nodeText(n.id, 1));
+      const says = /削弱|提升幅度/.test(nodeText(n.id, 1));
       expect(n.mods!.some((m) => m.buffPct !== undefined), n.id).toBe(says);
       if (says) expect(SKILLS[n.skill!].effects.some((e) => e.kind === 'buff'), n.id).toBe(true);
     }
@@ -347,5 +347,52 @@ describe('node words (plan 8d)', () => {
       }
     }
     expect(checked).toBeGreaterThan(30);
+  });
+});
+
+describe('the reworked trees (plan 8d Task 9)', () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const fixture = JSON.parse(readFileSync(join(here, '..', 'engine', '__fixtures__', 'roster-8b.json'), 'utf8')) as
+    { SKILLS: Record<string, unknown>; trees: Record<string, { id: string; maxRank: number }[][]> };
+
+  it('no 8c strengthening node is left; every node is active, variant or mechanic', () => {
+    const old = Object.values(fixture.trees).flatMap((bs) => bs.flat()).filter((n) => !Object.prototype.hasOwnProperty.call(fixture.SKILLS, n.id));
+    expect(old).toHaveLength(55);
+    for (const n of old) expect(Object.prototype.hasOwnProperty.call(NODES, n.id), n.id).toBe(false);
+    for (const n of allNodes()) expect(['active', 'variant', 'mech'], n.id).toContain(n.kind);
+  });
+
+  it('every mechanic knob is read by the engine, and exactly one node turns it', () => {
+    const src = readFileSync(join(here, 'trees.ts'), 'utf8');
+    const union = /export type MechKnob =([^;]+);/.exec(src)![1];
+    const knobs = [...union.matchAll(/'([A-Za-z]+)'/g)].map((m) => m[1]);
+    expect(knobs.length).toBeGreaterThanOrEqual(17);
+    const engineDir = join(here, '..', 'engine');
+    const files = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? (e.name.startsWith('__') ? [] : files(join(dir, e.name))) : e.name.endsWith('.ts') && !e.name.endsWith('.test.ts') && e.name !== 'testing.ts' ? [join(dir, e.name)] : []);
+    const engine = files(engineDir).map((f) => readFileSync(f, 'utf8')).join('\n');
+    for (const k of knobs) {
+      expect(engine.includes(`'${k}'`), `${k} is read in engine/`).toBe(true);
+      expect(allNodes().filter((n) => n.kind === 'mech' && n.knob === k).map((n) => n.id), k).toHaveLength(1);
+    }
+    for (const n of allNodes().filter((x) => x.kind === 'mech')) expect(knobs, n.id).toContain(n.knob);
+  });
+
+  it('data/trees.ts writes no number by hand in its words', () => {
+    const src = readFileSync(join(here, 'trees.ts'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')   // comments
+      .replace(/\$\{[^}]*\}/g, '');                                     // what a template fills in
+    const literals = [...src.matchAll(/(['"`])((?:\\.|(?!\1)[^\\])*)\1/g)].map((m) => m[2]);
+    expect(literals.length).toBeGreaterThan(100);
+    const typed = literals.filter((s) => /\d+\s*(%|段|回合|次|層|枚|支)/.test(s));
+    expect(typed).toEqual([]);
+  });
+
+  it('each companion has one or two mechanic nodes (both sides of a pair count); the hero none', () => {
+    const mechs = (id: CharacterId) => TREES[id].branches.flatMap((b) => branchNodes(b)).filter((x) => x.node.kind === 'mech').length;
+    // Selene 盈月; Rin 名單 and 熟記 (her mark's cell became a mechanic node when the mark went innate, 8d Task 3 ruling 1).
+    expect(Object.fromEntries(ids.map((id) => [id, mechs(id)]))).toEqual({
+      noel: 2, chizuru: 2, liz: 2, sylvie: 2, scarlet: 2, selene: 1, safira: 2, bobby: 2, rin: 2, hero: 0,
+    });
   });
 });

@@ -14,7 +14,7 @@ import { T } from './text.zh-TW';
  * - active: a skill (`id === skill`; name and desc come from SKILLS).
  * - variant: another version of a skill of the same tree; `mods[r - 1]` is the complete rewrite at rank r, never stacked on
  *   the rank before it. A variant built by `V` carries `notes` on each mod (its label after the skill's name, its rule after
- *   the words); one built by `V0` (the plan 8c strengthening nodes, until plan 8d replaces them) has a name and desc instead.
+ *   the words). The plan 8c strengthening nodes (`V0`) are all gone since plan 8d Task 9.
  * - mech: a mechanic node, a knob of its owner's core mechanic: rank r reads `values[r - 1]` (progression `mechKnob`).
  *
  * Rules (engine/progression.ts applies them): a node at tier t >= 1 needs at least 1 rank in some node of the same branch's
@@ -29,10 +29,8 @@ export interface TreeNode {
   id: string; kind: NodeKind; maxRank: 1 | 2 | 3 | 4 | 5;
   /** The skill of an active or variant node; a mechanic node has none. */
   skill?: string;
-  /** A mechanic node's name, or a `V0` variant's. */
+  /** A mechanic node's name. */
   name?: string;
-  /** A `V0` variant's words (the plan 8c strengthening nodes). */
-  desc?: string;
   /** A variant's name after its skill's: 火之星彈・{label}. */
   label?: string;
   /**
@@ -76,9 +74,6 @@ export const K = (id: string, name: string, knob: MechKnob, values: number[], sa
   ({ id, kind: 'mech', name, knob, values, maxRank: values.length as Rank, say: (r) => say(values[r - 1]) });
 /** A pair: `a` is the A side (the standard build's), `b` the B side. */
 export const P = (a: TreeNode, b: TreeNode): TreeNode => ({ ...a, pair: b });
-/** A plan 8c strengthening node kept as it was (name, desc, numbers), as a variant without notes; plan 8d replaces them all. */
-export const V0 = (id: string, name: string, skill: string, desc: string, mods: SkillMod[]): TreeNode =>
-  ({ id, kind: 'variant', skill, maxRank: mods.length as Rank, name, desc, mods });
 const pct = (...v: number[]): SkillMod[] => v.map((powerPct) => ({ powerPct }));
 /** Power and the debuff riding on it, by the same percent. */
 const deepen = (...v: number[]): SkillMod[] => v.map((p) => ({ powerPct: p, buffPct: p }));
@@ -437,7 +432,7 @@ export const LEGACY_LEARN_LEVEL: Record<string, number> = {
   turret: 1, tinker: 2, barrier: 4,
 };
 
-/** A node's name: an active's skill; a variant's skill and label (火之星彈・連星), or a `V0` one's own; a mechanic's own. */
+/** A node's name: an active's skill; a variant's skill and label (火之星彈・連星); a mechanic's own. */
 export const nodeName = (id: string): string => {
   const n = NODES[id].node;
   if (n.kind === 'variant' && n.label !== undefined) return `${SKILLS[n.skill!].name}・${n.label}`;
@@ -448,8 +443,8 @@ export const treeName = (id: string): string => {
   const n = NODES[id].node;
   return n.kind === 'variant' && n.short !== undefined && n.label !== undefined ? `${n.short}・${n.label}` : nodeName(id);
 };
-export const nodeDesc = (id: string): string => NODES[id].node.desc ?? (NODES[id].node.skill ? SKILLS[NODES[id].node.skill!].desc : '');
-/** The rule of a variant or mechanic node at `rank` in one sentence; '' for an active, a `V0` variant or a rank out of range. */
+export const nodeDesc = (id: string): string => (NODES[id].node.skill ? SKILLS[NODES[id].node.skill!].desc : '');
+/** The rule of a variant or mechanic node at `rank` in one sentence; '' for an active or a rank out of range. */
 export const nodeText = (id: string, rank: number): string => {
   const n = NODES[id]?.node;
   return n?.say && Number.isInteger(rank) && rank >= 1 && rank <= n.maxRank ? n.say(rank) : '';

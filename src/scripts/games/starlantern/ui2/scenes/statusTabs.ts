@@ -436,7 +436,7 @@ function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
   const { node: n, tier } = NODES[treeView.cur];
   const rank = nodeRank(m, n.id);
   const head = [el('span', { class: 'slx-tree-info-name', text: nodeName(n) }), el('span', { text: t.kind[kindOf(n, tier)] }), el('span', { text: T.ui2.status.rank(rank, n.maxRank) })];
-  let desc = n.desc ?? '';
+  let desc = '';
   const change: HTMLElement[] = [];
   if (n.kind === 'active') {
     // The skill as this member casts it: tree ranks and worn powers, at the TP they pay (as on the skills page).
