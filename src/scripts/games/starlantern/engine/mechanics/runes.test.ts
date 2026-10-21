@@ -488,7 +488,7 @@ describe('lasting runes (plan 8e Task 7)', () => {
     for (const c of down.party) expect(c.auras).toEqual([{ stat: 'atk', pct: 15, turns: 0, src: 'safira' }]);
     // A fight opened from the party: the same, at once.
     const party = fullParty(['hero', 'safira', 'noel']);
-    party.roster.safira = { ...party.roster.safira, sockets: { 'war-dance': [lasting] } };
+    party.roster.safira = { ...party.roster.safira, tree: { ...party.roster.safira.tree, 'war-dance': 1 }, sockets: { 'war-dance': [lasting] } };
     const opened = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
     for (const c of opened.party) expect(c.auras?.[0]).toMatchObject({ stat: 'atk', src: 'safira' });
     const plainFight = createBattle({ party: fullParty(['hero', 'safira', 'noel']), enemyIds: ['slime'], inventory: {}, revealed: {} });
@@ -552,7 +552,7 @@ describe('lasting runes: review fixes (plan 8e Task 7 review)', () => {
 
   it('the TP held back comes back after the fight', () => {
     const party = fullParty(['hero', 'safira', 'noel']);
-    party.roster.safira = { ...party.roster.safira, sockets: { 'war-dance': [lasting] } };
+    party.roster.safira = { ...party.roster.safira, tree: { ...party.roster.safira.tree, 'war-dance': 1 }, sockets: { 'war-dance': [lasting] } };
     const full = party.roster.safira.tp;
     const fight = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
     const sf = fight.party.find((c) => c.key === 'safira')!;
@@ -569,7 +569,7 @@ describe('lasting runes: review fixes (plan 8e Task 7 review)', () => {
   it('only the TP the cap cut comes back: one entering below the fight max gets nothing back', () => {
     // Entering at 5 TP, under the fight's max: the cap cut nothing, so nothing returns.
     const party = fullParty(['hero', 'safira', 'noel']);
-    party.roster.safira = { ...party.roster.safira, tp: 5, sockets: { 'war-dance': [lasting] } };
+    party.roster.safira = { ...party.roster.safira, tp: 5, tree: { ...party.roster.safira.tree, 'war-dance': 1 }, sockets: { 'war-dance': [lasting] } };
     const fight = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
     const sf = fight.party.find((c) => c.key === 'safira')!;
     expect(sf.max.tp).toBeGreaterThan(5);
@@ -579,14 +579,40 @@ describe('lasting runes: review fixes (plan 8e Task 7 review)', () => {
     // Entering a little above it: just the part cut comes back.
     const over = fullParty(['hero', 'safira', 'noel']);
     const full = over.roster.safira.tp;
-    const capped = createBattle({ party: { ...over, roster: { ...over.roster, safira: { ...over.roster.safira, sockets: { 'war-dance': [lasting] } } } }, enemyIds: ['slime'], inventory: {}, revealed: {} })
+    const capped = createBattle({ party: { ...over, roster: { ...over.roster, safira: { ...over.roster.safira, tree: { ...over.roster.safira.tree, 'war-dance': 1 }, sockets: { 'war-dance': [lasting] } } } }, enemyIds: ['slime'], inventory: {}, revealed: {} })
       .party.find((c) => c.key === 'safira')!.max.tp;
-    over.roster.safira = { ...over.roster.safira, tp: capped + 2, sockets: { 'war-dance': [lasting] } };
+    over.roster.safira = { ...over.roster.safira, tp: capped + 2, tree: { ...over.roster.safira.tree, 'war-dance': 1 }, sockets: { 'war-dance': [lasting] } };
     expect(capped + 2).toBeLessThan(full);
     const f2 = createBattle({ party: over, enemyIds: ['slime'], inventory: {}, revealed: {} });
     const s2 = f2.party.find((c) => c.key === 'safira')!;
     expect(s2.tp).toBe(capped);
     s2.tp = capped - 4;
     expect(writeBack(over, f2).roster.safira.tp).toBe(capped - 4 + 2);
+  });
+});
+
+describe('plan 8e final review', () => {
+  it('a spread reprise aims at the first foe, in target order, that a hit landed on', () => {
+    const noel = () => member('noel', { runes: { 'fire-star': [R('spread', 'magic'), R('reprise')] } });
+    const [r1, r2] = play(makeBattle([noel()], [tough('e0'), tough('e1'), tough('e2')]), [{ noel: cast('fire-star') }, {}]);
+    expect(damage(r1.log).map((e) => e.target)).toEqual(['e0', 'e1', 'e2']);
+    expect(r1.reprises).toEqual([expect.objectContaining({ target: 'e0', round: 2 })]);
+    expect(damage(r2.log).map((e) => e.target)).toEqual(['e0']);
+    // e0 dodges (every draw 0.1, its evasion 50%): the reprise goes to e1.
+    const [d1] = play(makeBattle([noel()], [tough('e0', { x: { evasion: 50 } }), tough('e1'), tough('e2')]), [{ noel: cast('fire-star') }], constRng(0.1));
+    expect(d1.log).toContainEqual({ type: 'miss', target: 'e0' });
+    expect(d1.reprises).toEqual([expect.objectContaining({ target: 'e1' })]);
+  });
+
+  it('a lasting rune on a skill she has not learned does nothing', () => {
+    const lasting: RuneRef = { id: 'lasting', tier: 'magic' };
+    const safira = (ranks: Record<string, number>) => member('safira', { ranks, max: { ...MAX, tp: 100 }, tp: 100, runes: { 'war-dance': [lasting] } });
+    const unknown = makeBattle([safira({ 'blade-dance': 1 })], [tough('e0')]);
+    applyLasting(unknown);
+    expect([unknown.party[0].auras, unknown.party[0].max.tp]).toEqual([undefined, 100]);
+    expect(battleReservePct(unknown.party[0])).toBe(0);
+    const known = makeBattle([safira({ 'blade-dance': 1, 'war-dance': 1 })], [tough('e0')]);
+    applyLasting(known);
+    expect([known.party[0].auras?.length, known.party[0].max.tp]).toEqual([1, 70]);
   });
 });

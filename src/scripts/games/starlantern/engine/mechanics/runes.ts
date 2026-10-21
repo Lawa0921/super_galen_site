@@ -159,11 +159,14 @@ export function lastingTargets(def: SkillDef, c: Combatant, party: readonly Comb
   return def.target === 'allies' ? party.filter((m) => m.alive) : [c];
 }
 
-/** The skills of `c` with a working 常駐, in the order she learned them (innate first). */
+/**
+ * The skills of `c` she has learned (as `triggerSkill` reads it: any skill for a combatant without ranks) with a working
+ * 常駐, in the order she learned them (innate first).
+ */
 function lastingSkills(c: Combatant): { id: string; def: SkillDef; pct: number; reservePct: number }[] {
   if (!c.runes) return [];
   return treeSkills(c.defId as CharacterId).flatMap((id) => {
-    if (!c.runes?.[id]?.length) return [];
+    if (!c.runes?.[id]?.length || (c.ranks && skillRank(c.ranks, id) === 0 && !isInnate(c.defId, id))) return [];
     const def = skillFor(c, id);
     const l = def?.runeRules?.lasting;
     return def && l ? [{ id, def, pct: l.pct, reservePct: l.reservePct }] : [];

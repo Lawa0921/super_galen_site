@@ -444,13 +444,9 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       if (scatter) scatterCast(s, actor, def, act.target, ctx, rng);
       else {
         first = resolveTargets(s, actor, def.target, act.target, rng);
-        const before = ctx.lastHit;
-        for (const t of first) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
-        const landed = first.length === 1 && landedOn(ctx, before, first[0]);
-        // The first foe the cast struck (回聲 aims at it, plan 8e).
-        if (landed) ctx.struck = first[0].key;
+        castOn(actor, first, def, ctx);
         // 彈射 (plan 8e): after the first foe has had every effect, the damage goes on down the line, if a hit landed.
-        if (def.runeRules?.bounce && landed) bounceCast(s, actor, def, first[0], ctx);
+        if (def.runeRules?.bounce && first.length === 1 && ctx.struck === first[0].key) bounceCast(s, actor, def, first[0], ctx);
       }
       // 雙重詠唱 (plan 8e): the whole skill once more, paid already; one action for the mechanics.
       if (def.runeRules?.twice) twinCast(s, actor, def, raw, first, scatter, ctx, rng);
@@ -578,10 +574,19 @@ function twinCast(s: BattleState, actor: Combatant, cast: SkillDef, raw: SkillDe
         : resolveTargets(s, actor, def.target, undefined, rng);
   if (!targets.length) return;
   s.log.push(again);
-  const def2 = second();
-  const before = ctx.lastHit;
-  for (const t of targets) for (const eff of def2.effects) applyEffect(actor, t, eff, ctx);
-  if (!ctx.struck && targets.length === 1 && landedOn(ctx, before, targets[0])) ctx.struck = targets[0].key;
+  castOn(actor, targets, second(), ctx);
+}
+
+/**
+ * A cast's effects on each of its targets in turn; the first target a hit landed on, in target order, is the foe the cast
+ * struck (`ctx.struck`, which 回聲 aims at; plan 8e final review), unless the cast already has one.
+ */
+function castOn(actor: Combatant, targets: Combatant[], def: SkillDef, ctx: EffectContext): void {
+  for (const t of targets) {
+    const before = ctx.lastHit;
+    for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
+    if (!ctx.struck && landedOn(ctx, before, t)) ctx.struck = t.key;
+  }
 }
 
 /** Whether a hit landed on `t` since `before` was the context's last hit (each landed hit records a new one). */
@@ -802,9 +807,9 @@ export function writeBack(p: Party, s: BattleState): Party {
   const roster = { ...p.roster };
   for (const c of s.party) {
     const id = c.key as CharacterId;
-    // The TP 常駐 held back (plan 8e) comes back with the fight over, up to her max.
-    const held = c.reservedTp ?? 0;
-    roster[id] = { ...roster[id], hp: c.alive ? c.hp : 0, tp: held ? Math.min(c.max.tp + held, c.tp + held) : c.tp, limit: c.limit };
+    // The TP the 常駐 cap cut on entry (plan 8e) comes back with the fight over. She held at most the fight's max, so this
+    // never passes the TP she entered with.
+    roster[id] = { ...roster[id], hp: c.alive ? c.hp : 0, tp: c.tp + (c.reservedTp ?? 0), limit: c.limit };
   }
   return { ...p, roster };
 }
