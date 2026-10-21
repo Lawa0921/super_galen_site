@@ -61,6 +61,8 @@ export const pctOf = (base: number, pct: number | undefined): number => {
  *    relative values (tpDelta, powerDelta, turnsDelta) add; rules merge key by key;
  * 4. legendary powers last, one after another in the order worn;
  * 5. every `extra` (from the tree or a power) appended at the very end, so no powerPct or buffPct ever rescales it.
+ * 6. then the member's runes (plan 8e, engine/runes.ts applyRunes): on the skill of stages 1-4 in one patch, the
+ *    extras handed back after them; the abyss bonus (perform) and the caster's mechanic come after, in battle.
  */
 export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
   const power = mod.powerDelta === undefined ? mod.powerPct : (mod.powerPct ?? 100) + mod.powerDelta;

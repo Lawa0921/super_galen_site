@@ -135,3 +135,50 @@ describe("the hero's echo", () => {
     expect(heroHit(lifted)).toBeGreaterThan(heroHit(plain));
   });
 });
+
+describe("the hero's echo of a skill with runes (plan 8e Task 3)", () => {
+  const blood = { id: 'blood-price', tier: 'legendary' } as const;
+  const twin = { id: 'twin-cast', tier: 'legendary' } as const;
+
+  it('echo keeps her runes but not her trigger', () => {
+    const noel = P('noel', { runes: { 'fire-star': [{ id: 'spread', tier: 'magic' }, { id: 'on-crit', tier: 'magic' }] } });
+    const r = resolveRound(makeBattle([hero(), noel], [foe()]), { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' } }, constRng(0.5));
+    const rec = echoOf(r)!;
+    expect(rec.def.target).toBe('enemies');
+    expect((rec.def.effects[0] as { power: number }).power).toBe(84);
+    expect(rec.def.runeRules?.trigger).toBeUndefined();
+    expect(rec.def).not.toHaveProperty('runeRules');
+  });
+
+  it('echo pays the plain price of a blood-price skill', () => {
+    const noel = P('noel', { runes: { 'fire-star': [blood] } });
+    const r = resolveRound(makeBattle([hero(), noel], [foe()]), { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' } }, constRng(0.5));
+    // She paid HP, not TP (the foe her blow woke hits back too).
+    const struck = r.log.reduce((a, e) => a + (e.type === 'damage' && e.target === 'noel' ? e.amount : 0), 0);
+    expect(r.party[1].tp).toBe(99);
+    expect(r.party[1].hp).toBe(300 - Math.floor(300 * 0.12) - struck);
+    const rec = echoOf(r)!;
+    expect([rec.cost, rec.def.tp, rec.def.hpCost]).toEqual([4, 4, undefined]);
+    expect(rec.def).not.toHaveProperty('hpCost');
+    expect(rec.def.runeRules?.plain).toBeUndefined();
+    // The hero echoes it for 4 TP and no HP.
+    const s1 = makeBattle([hero(), P('noel')], [foe()], { round: 1, echo: rec });
+    const e = resolveRound(s1, { hero: { kind: 'echo', target: 'e0', rec } }, constRng(0.5));
+    const hit = e.log.reduce((a, x) => a + (x.type === 'damage' && x.target === 'hero' ? x.amount : 0), 0);
+    expect([e.party[0].tp, e.party[0].hp]).toEqual([99 - 4, 300 - hit]);
+  });
+
+  it('echo of a twin-cast skill is one cast at the single price', () => {
+    const noel = P('noel', { runes: { 'fire-star': [twin] } });
+    const r = resolveRound(makeBattle([hero(), noel], [foe()]), { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' } }, constRng(0.5));
+    expect(r.party[1].tp).toBe(99 - 8);
+    const rec = echoOf(r)!;
+    expect([rec.cost, rec.def.tp]).toEqual([4, 4]);
+    expect(rec.def.runeRules?.twice).toBeUndefined();
+    // Her TP discount counts once, on the plain price: 4 at -25% is 3.
+    const cheap = P('noel', { runes: { 'fire-star': [twin] }, x: { tpCost: 25 } });
+    const c = resolveRound(makeBattle([hero(), cheap], [foe()]), { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' } }, constRng(0.5));
+    expect(c.party[1].tp).toBe(99 - 6);
+    expect(echoOf(c)!.cost).toBe(3);
+  });
+});

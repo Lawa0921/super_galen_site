@@ -3,7 +3,7 @@ import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
 import { SAVE_VERSION, newGame, type GameState } from './state';
 import { STANDARD_LINEUP } from './party';
 import { socketable, validRuneFields } from './sockets';
-import type { RuneRef } from '../data/runes';
+import { RUNE_STACK, type RuneRef } from '../data/runes';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { mulberry32 } from './rng';
@@ -859,6 +859,25 @@ describe('rune fields in the save (plan 8e Task 2)', () => {
     });
     expect(junk.party.roster.noel.sockets).toEqual({ 'fire-star': [S('spread')] });
     expect(junk).not.toHaveProperty('runes');
+  });
+
+  it('past 99 of one rune the bag gives way, and no socketed rune is lost (a hand-edited save)', () => {
+    // Bag only: cut to 99.
+    expect(loadEdited(runeGame(), (raw) => { raw.runes = { 'spread@magic': 150, 'focus@rare': 2 }; }).runes).toEqual({ 'spread@magic': 99, 'focus@rare': 2 });
+    // 100 socketed, none in the bag: one on every skill every member knows at Lv50, the rest piled onto Noel's 火之星彈.
+    // At most one of a rune fits a skill, so every pile-up goes to the bag first, and the bag then gives way: no rune
+    // left in a slot is ever lost (every skill of every member, one each, is far below 99).
+    const g = runeGame();
+    for (const id of CHARACTER_IDS) g.party.roster[id] = { ...g.party.roster[id], level: 50, tree: defaultTree(id, 50) };
+    const pairs = CHARACTER_IDS.flatMap((id) => socketable(g.party.roster[id]).map((sk) => [id, sk] as const));
+    expect(pairs.length).toBeLessThan(RUNE_STACK);
+    const r = loadEdited(g, (raw) => {
+      for (const [id, sk] of pairs) raw.party.roster[id].sockets = { ...raw.party.roster[id].sockets, [sk]: [S('spread')] };
+      raw.party.roster.noel.sockets['fire-star'] = Array.from({ length: 100 - pairs.length + 1 }, () => S('spread'));
+    });
+    const left = CHARACTER_IDS.flatMap((id) => Object.values(r.party.roster[id].sockets ?? {}).flat()).filter((x) => x !== null);
+    expect(left).toHaveLength(pairs.length);
+    expect(r.runes).toEqual({ 'spread@magic': RUNE_STACK - pairs.length });
   });
 
   it('a clean rune field is left byte for byte', () => {

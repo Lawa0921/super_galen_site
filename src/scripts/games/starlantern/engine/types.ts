@@ -1,6 +1,6 @@
 import type { AilmentId } from './ailments';
 import type { DeviceKind } from './mech';
-import type { RuneRef } from '../data/runes';
+import type { RuneId, RuneRef } from '../data/runes';
 
 export type Element = 'phys' | 'fire' | 'ice' | 'thunder';
 export type StatKey = 'hp' | 'tp' | 'atk' | 'def' | 'mag' | 'res' | 'spd';
@@ -28,8 +28,12 @@ export type Effect =
   /**
    * `scatter`: each of its hits picks a living foe at random (battle.perform), whatever the skill's target. `aimPct`: each
    * of Sylvie's aim stacks on its foe adds this percent instead of AIM.dmgPct (her 一擊, plan 8d).
+   * Runes on the skill (plan 8e, engine/runes.ts applyRunes), every hit: `onHit`, an ailment's chance (點燃, 感電, 撕裂);
+   * `aftermath`, a crit brings the element's ailment (餘波); `armorBreak`, no armor or block (破甲); `drainPct`, that share
+   * of the damage heals the caster (吸血); `tpPerHit`, TP back to the caster (回氣).
    */
-  | { kind: 'damage'; power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean; hits?: number; crit?: 'always'; execute?: number; wounded?: number; scatter?: true; aimPct?: number }
+  | { kind: 'damage'; power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean; hits?: number; crit?: 'always'; execute?: number; wounded?: number; scatter?: true; aimPct?: number;
+      onHit?: { status: AilmentId; chance: number }[]; aftermath?: true; armorBreak?: true; drainPct?: number; tpPerHit?: number }
   /** `overflowPct`: what the heal spills past max HP becomes a shield, up to this percent of max HP (the hero's 滿溢, plan 8d). */
   | { kind: 'heal'; power: number; overflowPct?: number }
   | { kind: 'restore'; hp?: number; tp?: number }
@@ -110,6 +114,20 @@ export interface SkillDef {
   mech?: SkillMechTag;
   /** Rules a variant node writes on the whole skill (plan 8d), read by the mechanic modules. */
   rules?: Partial<SkillRules>;
+  /** What the skill's runes do in battle beyond its numbers (plan 8e, engine/runes.ts applyRunes); absent with no working rune. */
+  runeRules?: RuneRules;
+}
+/**
+ * A skill's rune rules (plan 8e): `bounce` (彈射), `trigger` (the trigger rune on it, with its id), `twice` (雙重詠唱),
+ * `wheel` (星燈輪轉), `sync` (同步), `reprise` (回聲), `lasting` (常駐). `plain`: with 雙重詠唱 or 血之代價 working, the
+ * skill's TP and HP cost without those two, which the hero's echo pays (plan 8e ruling 17).
+ */
+export interface RuneRules {
+  bounce?: { bounces: number; dropPct: number };
+  trigger?: { on: 'crit' | 'kill' | 'struck'; pct: number; rune: RuneId };
+  twice?: true; wheel?: true; sync?: number; reprise?: number;
+  lasting?: { pct: number; reservePct: number };
+  plain?: { tp: number; hpCost?: number };
 }
 /**
  * Rules a variant node changes on a skill as a whole (plan 8d ruling 7): each task adds its fields; `patchSkill` merges

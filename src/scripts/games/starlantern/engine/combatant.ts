@@ -2,6 +2,7 @@ import { ROW_MELEE } from './formation';
 import type { Rng } from './rng';
 import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
+import type { RuneRef } from '../data/runes';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import { AIM, BEAT, EMBER, MARK, type MechState } from './mech';
 import type { MechCue } from './mechanics/index';
@@ -37,6 +38,8 @@ export interface Combatant {
   weaponKind?: WeaponKind;
   /** Legendary powers worn (members only). */
   powers: string[];
+  /** Runes socketed per skill id (members only, plan 8e; `Member.sockets` without its empty slots). Absent: none. */
+  runes?: Record<string, RuneRef[]>;
   /** Keystone talents held (members only; engine/progression.keystonesOf). */
   keystones: KeystoneId[];
   /** Memory pieces held (members only; read through `memoriesOf`); the hero's Lantern Key lights up with them. */

@@ -22,6 +22,8 @@ import { COINS } from './mechanics/coins';
 import { payHp } from './mechanics/embers';
 import { echoDef, echoOf } from './mechanics/echo';
 import { T } from '../data/text.zh-TW';
+import type { RuneRef } from '../data/runes';
+import { applyRunes } from './runes';
 import { isInnate, keystonesOf, mechKnob, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
@@ -97,12 +99,25 @@ export function fromMember(m: Member, cell: number): Combatant {
   const c: Combatant = { ...fresh(), key: m.id, side: 'party', defId: m.id, name: def.name, max: statsOf(m), hp: m.hp, tp: m.tp,
     row, cell, melee: wk ? wk.melee : def.melee, ...(def.weaponMaster ? { attackScale: wk ? wk.scale : 'atk' as const } : {}),
     ...(kind ? { weaponKind: kind } : {}), weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0,
-    x, level: m.level, powers: powersOf(m), ranks: { ...m.tree }, keystones: keystonesOf(m),
+    x, level: m.level, powers: powersOf(m), ranks: { ...m.tree }, keystones: keystonesOf(m), ...runesOf(m),
     ...(m.memories !== undefined ? { memories: m.memories } : {}), ...(m.oath ? { oath: true as const } : {}), ...(m.oath ? { artId: artIdOf(m) } : {}) };
   // Memory keystones that are plain secondaries (added once, here; absent keystones leave x as it was).
   if (c.keystones.includes('teachers-gift')) c.x.tpCost = (c.x.tpCost ?? 0) + MEMORY_KEYSTONE_VALUES.tpCostPct;
   if (c.keystones.includes('fathers-face')) c.x.matFind = (c.x.matFind ?? 0) + MEMORY_KEYSTONE_VALUES.matFind;
   return c;
+}
+
+/**
+ * A member's socketed runes for battle (plan 8e): each skill's runes in slot order without the empty slots; only skills
+ * with a rune, and no `runes` key at all when there is none (a member without runes is the same object as before).
+ */
+function runesOf(m: Member): { runes?: Record<string, RuneRef[]> } {
+  const runes: Record<string, RuneRef[]> = {};
+  for (const [skill, cells] of Object.entries(m.sockets ?? {})) {
+    const refs = cells.filter((r): r is RuneRef => r !== null).map((r) => ({ id: r.id, tier: r.tier }));
+    if (refs.length) runes[skill] = refs;
+  }
+  return Object.keys(runes).length ? { runes } : {};
 }
 
 /** An enemy carries only its non-zero secondaries, like a member; a missing key reads as 0. */
@@ -260,19 +275,22 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
  * mastery, then every worn power that names it in the order worn; added effects (`extra`) last. The order is stated in engine/skills.ts `patchSkill`.
  * With nothing to rewrite it is `SKILLS[id]` itself. An unknown id is undefined.
  */
-export function skillFor(c: Pick<Combatant, 'powers' | 'ranks' | 'weaponKind'>, id: string): SkillDef | undefined {
+export function skillFor(c: Pick<Combatant, 'powers' | 'ranks' | 'weaponKind' | 'runes'>, id: string): SkillDef | undefined {
   const base = SKILLS[id];
   if (!base) return base;
+  // Runes come after all of it (spec §6.6 rule 1): on the skill without its extras, which they hand back last (plan 8e).
+  const runes = c.runes?.[id];
   // The tree's two stages (the active's own rank, then its mod nodes stacked into one) come from progression.treeMods only.
   const powers = (c.powers ?? []).map((p) => POWERS[p]).filter((p) => p && p.skill === id).map((p) => p.mod);
   const info = NODES[id];
   const mastered = c.weaponKind && info?.owner === 'hero' && WEAPON_KINDS[c.weaponKind].mastery.includes(info.branch)
     ? pctMod(id, 100 + WEAPON_MASTERY_PCT) : undefined;
   const mods = [...(c.ranks ? treeMods(c.ranks, id) : []), ...(mastered ? [mastered] : []), ...powers];
-  if (!mods.length) return knobWords(c, base);
+  if (!mods.length) return knobWords(c, runes?.length ? applyRunes(base, [], runes) : base);
   let def = base;
   const extra: Effect[] = [];
   for (const { extra: more, ...mod } of mods) { def = patchSkill(def, mod); extra.push(...(more ?? [])); }
+  if (runes?.length) return knobWords(c, applyRunes(def, extra, runes));
   return knobWords(c, extra.length ? patchSkill(def, { extra }) : def);
 }
 

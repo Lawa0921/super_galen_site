@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { castField, fieldCost, fieldSkills, fieldTargets, noDraw, packEquip, packUnequip } from './field';
 import { createBattle, fromMember, skillCost, skillFor } from './battle';
-import { applyEffect, patchSkill, type EffectContext } from './skills';
+import { applyEffect, healAmount, patchSkill, type EffectContext } from './skills';
 import { pctMod } from './progression';
 import { abyssPct } from './scaling';
 import { activeIds, statsOf, STANDARD_LINEUP } from './party';
@@ -349,5 +349,20 @@ describe('gear from the run pack', () => {
     expect(packEquip(s, pack, 'selene', 2)).toEqual({ ok: false, reason: 'invalid' });
     expect(packUnequip(s, pack, 'selene', 'head')).toEqual({ ok: false, reason: 'invalid' });
     expect(packEquip(s, pack, 'nobody' as CharacterId, 2)).toEqual({ ok: false, reason: 'invalid' });
+  });
+});
+
+describe('runes in the field (plan 8e Task 3)', () => {
+  it('a spread moonlight heals the whole party in the field', () => {
+    const s = game();
+    set(s, 'selene', { tree: { moonlight: 1 }, sockets: { moonlight: [{ id: 'spread', tier: 'magic' }] } });
+    for (const id of activeIds(s.party)) set(s, id, { hp: 1 });
+    expect(fieldTargets(s.party, 'selene', 'moonlight')).toEqual([]);
+    const each = healAmount(combatant(s, 'selene'), 72);
+    const r = castField(s, { caster: 'selene', skill: 'moonlight', depth: 1 });
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.gains.map((g) => g.id)).toEqual(activeIds(s.party));
+    for (const g of r.gains) expect(g.hp).toBe(Math.min(each, maxHp(s, g.id) - 1));
+    expect(r.cost).toBe(SKILLS.moonlight.tp);
   });
 });
