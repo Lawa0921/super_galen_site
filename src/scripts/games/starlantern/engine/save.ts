@@ -9,19 +9,19 @@ import { addGear, BAG_SIZE } from './loot/bag';
 import { itemSlot } from './loot/item';
 import { MAX_ILVL, MAX_REACHED } from './levels';
 import { MAX_LEVEL, SLOTS, slotsFor } from './party';
-import { memoriesOf, validBuild } from './progression';
+import { defaultTree, heroTree, memoriesOf, validBuild } from './progression';
 import { SAVE_VERSION, type GameState } from './state';
 import { isSceneId } from '../data/story/scenes';
 import { ABSORB_CAP, ABSORB_GAIN, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
-import { LEGACY_NODE_IDS } from '../data/trees';
 import type { CharacterId, ItemInstance, Member, Slot } from './types';
 
 export const SAVE_KEY = 'starlantern-save';
 export const BACKUP_KEY = 'starlantern-save-backup';
 
 export type SaveStorage = { getItem(k: string): string | null; setItem(k: string, v: string): void };
-export type LoadResult = { status: 'ok'; state: GameState } | { status: 'empty' } | { status: 'corrupt' } | { status: 'version' };
+/** `migrated`: the save was an older version, brought up to this one on the way in (its text is kept in BACKUP_KEY). */
+export type LoadResult = { status: 'ok'; state: GameState; migrated?: true } | { status: 'empty' } | { status: 'corrupt' } | { status: 'version' };
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const isCount = (v: unknown) => Number.isInteger(v) && (v as number) >= 0;
@@ -116,6 +116,7 @@ function isValid(d: Record<string, unknown>): boolean {
     if (!Number.isInteger(m.level) || (m.level as number) < 1 || (m.level as number) > MAX_LEVEL) return false;
     if (!isCount(m.exp) || !isCount(m.hp) || !isCount(m.tp)) return false;
     if (!validMemory(id, m)) return false;
+    if (m.freeRespec !== undefined && m.freeRespec !== true) return false;
     if (!validBuild(id, m.level as number, m.tree, m.talents, memoriesOf(m as Pick<Member, 'id' | 'memories'>))) return false;
   }
   // Every uid once, bag and worn together, and all of them below nextUid.
@@ -165,22 +166,24 @@ function dropUnknownBanters(data: Record<string, unknown>): void {
 }
 
 /**
- * Plan 8c ruling 1: a node a roster change replaced is renamed to its successor in every member's tree, ranks kept (only
- * when the new id is not there already; both present is left for validation). Anything but an object is left alone.
+ * Version 8 to 9 (plan 8d, spec §14): the skill trees were reworked, so every member's tree is spent again on the standard
+ * build for their level (the hero's on the balanced build, with his memories) and each gets one free respec at the inn.
+ * Talents, gear, memories and every other field are left alone. A member that is not an object with a known id and a
+ * whole level from 1 to MAX_LEVEL is left as it is, for the validation to refuse.
  */
-export function upgradeTreeIds(data: Record<string, unknown>): void {
-  const party = data.party;
-  if (!isObj(party) || !isObj(party.roster)) return;
-  for (const m of Object.values(party.roster)) {
-    if (!isObj(m) || !isObj(m.tree)) continue;
-    const tree = m.tree;
-    for (const [old, now] of Object.entries(LEGACY_NODE_IDS)) {
-      if (!has(tree, old)) continue;
-      // Both there (a save written mid-change): the new one stands, the old one goes.
-      if (!has(tree, now)) tree[now] = tree[old];
-      delete tree[old];
+export function migrate8to9(d: Record<string, unknown>): void {
+  const party = d.party;
+  if (isObj(party) && isObj(party.roster)) {
+    for (const m of Object.values(party.roster)) {
+      if (!isObj(m) || !CHARACTER_IDS.includes(m.id as CharacterId)) continue;
+      const level = m.level;
+      if (!Number.isInteger(level) || (level as number) < 1 || (level as number) > MAX_LEVEL) continue;
+      const id = m.id as CharacterId;
+      m.tree = id === 'hero' ? heroTree(level as number, 'balanced', memoriesOf(m as Pick<Member, 'id' | 'memories'>)) : defaultTree(id, level as number);
+      m.freeRespec = true;
     }
   }
+  d.version = 9;
 }
 
 export function loadGame(storage: SaveStorage): LoadResult {
@@ -190,14 +193,16 @@ export function loadGame(storage: SaveStorage): LoadResult {
   let data: unknown;
   try { data = JSON.parse(raw); } catch { backup(storage, raw); return { status: 'corrupt' }; }
   if (!isObj(data)) { backup(storage, raw); return { status: 'corrupt' }; }
+  // The migrations, oldest first; the text before them is backed up, like a save of another version, so it can come back.
+  const migrated = data.version === 8;
+  if (migrated) { backup(storage, raw); migrate8to9(data); }
   if (data.version !== SAVE_VERSION) { backup(storage, raw); return { status: 'version' }; }
   dropUnknownBanters(data);
-  upgradeTreeIds(data);
   if (!isValid(data)) { backup(storage, raw); return { status: 'corrupt' }; }
   const state = data as unknown as GameState;
   // The game never writes a codex id twice; a hand-edited save that does is tidied rather than refused.
   state.codex = [...new Set(state.codex)];
-  return { status: 'ok', state: convertGearStock(state) };
+  return { status: 'ok', state: convertGearStock(state), ...(migrated ? { migrated: true as const } : {}) };
 }
 
 /**

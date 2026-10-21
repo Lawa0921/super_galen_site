@@ -117,6 +117,7 @@ export const T = {
   notices: {
     'save-reset': '存檔無法讀取，已開始新遊戲', wipe: '全滅……冒險背包遺失在迷宮裡，身上的金幣也少了四分之一。',
     saved: '已存檔', 'save-failed': '存檔失敗：瀏覽器不允許儲存', lamp: '歸還之燈的光芒把隊伍帶回了城鎮。', banked: '平安回城，冒險背包裡的戰利品已經入庫。',
+    'tree-reworked': '技能樹改版了，技能點已依標準配點重新分配；下一次旅館重置免費。',
   },
   map: {
     returnTown: '回城', lamp: (n: number) => `歸還之燈 ×${n}`,
@@ -576,7 +577,9 @@ export const T = {
     inn: {
       rest: (cost: number) => `休息（${cost} G）`, revive: '復活', ask: (cost: number) => `住一晚要 ${cost} G，要休息嗎？`,
       respec: '重置配點', askRespec: (name: string, cost: number) => `要重置${name}的技能樹與天賦嗎？
-需要 ${cost} G，點數會全部退回。`,
+${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
+      /** The respec list's price for a member whose reset is free (the tree rework's, plan 8d). */
+      free: '免費',
       respecDone: (name: string) => `${name}的配點已重置，點數可以重新分配了。`, nothingToReset: '還沒有配過點，不需要重置。',
       /** The respec happened but its save did not: a reload would undo it (and give the gold back). */
       respecSaveFailed: (name: string) => `${name}的配點已重置，但存檔失敗了……瀏覽器不允許儲存。`,

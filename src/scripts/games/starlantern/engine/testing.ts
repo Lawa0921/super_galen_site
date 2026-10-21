@@ -4,6 +4,8 @@ import { EQUIPMENT } from '../data/equipment';
 import { STANDARD_LINEUP, partyWith } from './party';
 import { NODES, TREES, type TreeNode } from '../data/trees';
 import type { CharacterId, ItemInstance, Party } from './types';
+import { CHARACTER_IDS } from '../data/characters';
+import { newGame, type GameState } from './state';
 
 /** A plain common instance of a base (no affixes) at the base's own level, for fixtures. */
 export function plainItem(base: string, uid: number): ItemInstance {
@@ -58,4 +60,24 @@ export function withNode(owner: CharacterId, branch: number, tier: number, node:
   unindex(old);
   put(node);
   return () => { unindex(node); put(old); };
+}
+
+/**
+ * A version 8 save as plan 8c's build wrote one (plan 8d Task 2): everyone recruited, the hero at Lv30 with 4 memories, Noel
+ * at Lv20 wearing 群星之戒 (lg-noel, a legendary power), everyone else at Lv12; each tree holds 1 rank in tier 0 and 1 in
+ * tier 1 of every branch, under the ids of `trees8b` (engine/__fixtures__/roster-8b.json `trees`, strengthening nodes and
+ * since-renamed ids included). `state` is the same game as this build writes it, for comparing the fields a migration keeps.
+ */
+export function version8Save(trees8b: Record<string, { id: string }[][]>): { raw: string; state: GameState } {
+  const g = newGame();
+  g.party.recruited = [...CHARACTER_IDS];
+  for (const id of CHARACTER_IDS) {
+    const m = g.party.roster[id];
+    m.level = id === 'hero' ? 30 : id === 'noel' ? 20 : 12;
+    m.tree = Object.fromEntries(trees8b[id].flatMap((b) => [[b[0].id, 1], [b[1].id, 1]]));
+  }
+  g.party.roster.hero.memories = 4;
+  g.party.roster.noel.equip.ring1 = { ...plainItem('star-ring', g.nextUid), rarity: 'legendary', ilvl: 20, special: 'lg-noel' };
+  g.nextUid++;
+  return { raw: JSON.stringify({ ...g, version: 8 }), state: g };
 }

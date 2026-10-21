@@ -6,7 +6,7 @@ import type { Effect, SkillDef, UltimateDef } from '../engine/types';
 import { NO_ICON_YET_IDS } from '../render/artPaths';
 import { POWERS } from './gear';
 import { SKILLS } from './skills';
-import { LEGACY_NODE_IDS, NODES } from './trees';
+import { NODES } from './trees';
 import { HERO_ULTIMATES, RIN_DAWN, ULTIMATES } from './ultimates';
 
 /**
@@ -150,9 +150,13 @@ describe('the converged roster (plan 8c Task 7)', () => {
     }
     expect(companions()).toHaveLength(84);
     expect(new Set(companions().map((d) => d.id))).toEqual(new Set([...KEPT, ...changed.map((d) => d.id), ...Object.values(REPLACED)]));
-    // The save's rename table is these 15, each to a node of the same character.
-    expect(LEGACY_NODE_IDS).toEqual(REPLACED);
-    for (const [was, now] of Object.entries(LEGACY_NODE_IDS)) expect(NODES[now]?.owner, now).toBe(r.SKILLS[was].owner);
+    // Each of the 15 is gone and its successor is a node of the same character (a version 8 save's tree is respent on
+    // load since plan 8d, so the save no longer renames them).
+    for (const [was, now] of Object.entries(REPLACED)) {
+      expect(SKILLS[was], was).toBeUndefined();
+      expect(NODES[was], was).toBeUndefined();
+      expect(NODES[now]?.owner, now).toBe(r.SKILLS[was].owner);
+    }
   });
 
   it('each concept belongs to one character', () => {

@@ -14,7 +14,8 @@ import { SKILLS } from '../../src/scripts/games/starlantern/data/skills';
 import { TREES } from '../../src/scripts/games/starlantern/data/trees';
 import { STAT_CATEGORIES } from '../../src/scripts/games/starlantern/engine/stats';
 import { maxValue } from '../../src/scripts/games/starlantern/engine/loot/item';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { version8Save } from '../../src/scripts/games/starlantern/engine/testing';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
 
@@ -132,6 +133,54 @@ test.describe('starlantern', () => {
     await page.locator('.slx-title [data-id=cont]').click();
     await expect(page.locator('.slx-town .slx-talk')).toContainText('存檔無法讀取');
     await expect(page.locator('.slx-gold')).toHaveText('150 G');
+  });
+
+  test('an old save opens with the rework notice and a free respec (plan 8d)', async ({ page }) => {
+    await storySetting(page);
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    // A version 8 save as plan 8c's build wrote it: strengthening nodes in every tree, a legendary ring on Noel.
+    const trees = (JSON.parse(readFileSync('src/scripts/games/starlantern/engine/__fixtures__/roster-8b.json', 'utf8')) as { trees: Record<string, { id: string }[][]> }).trees;
+    const { raw } = version8Save(trees);
+    await page.goto('/games/starlantern');
+    await page.evaluate((r) => localStorage.setItem('starlantern-save', r), raw);
+    await page.reload();
+    await page.locator('.slx-title [data-id=cont]').click();
+    await expect(page.locator('.slx-town .slx-talk')).toContainText(T.notices['tree-reworked']);
+    const key = (k: string) => page.keyboard.press(k);
+    const closeTalk = async () => { for (let i = 0; i < 6 && (await page.locator('.slx-talk').isVisible()); i++) await key('z'); };
+    const choose = async (scope: string, label: string) => {
+      for (let i = 0; i < 12; i++) {
+        const cur = (await page.locator(`${scope} [aria-selected=true] .slx-label`).first().textContent()) ?? '';
+        if (cur.startsWith(label)) break;
+        await key('ArrowDown');
+      }
+      await key('Enter');
+    };
+    await closeTalk();
+    await choose('.slx-town', '旅館');
+    await expect(page.locator('.slx-inn')).toBeVisible(); await closeTalk();
+    await choose('.slx-inn', '重置配點');
+    const noel = page.locator('.slx-list [role=option]').filter({ hasText: CHARACTERS.noel.name });
+    await expect(noel.locator('.slx-right')).toHaveText(T.ui2.inn.free);
+    await expect(page.locator('.slx-list [role=option] .slx-right')).toHaveText(Array(10).fill(T.ui2.inn.free));
+    await choose('.slx-list', CHARACTERS.noel.name);
+    await expect(page.locator('.slx-inn .slx-confirm')).toContainText('這次免費');
+    const gold = await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.gold);
+    await key('ArrowUp'); await key('Enter');                                    // 是
+    await expect(page.locator('.slx-inn .slx-talk')).toContainText('配點已重置');
+    const after = await page.evaluate(() => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      return { gold: s.gold, noel: s.party.roster.noel, saved: JSON.parse(localStorage.getItem('starlantern-save') ?? 'null') };
+    });
+    expect(after.gold).toBe(gold);
+    expect(after.noel.tree).toEqual({ 'fire-star': 1 });
+    expect(after.noel).not.toHaveProperty('freeRespec');
+    expect(after.saved.version).toBe(9);
+    expect(after.saved.party.roster.noel).not.toHaveProperty('freeRespec');
+    expect(after.saved.party.roster.liz.freeRespec).toBe(true);
+    expect(errors).toEqual([]);
   });
 
   test('plays title → town with the keyboard only', async ({ page }) => {

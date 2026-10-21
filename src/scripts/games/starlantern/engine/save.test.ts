@@ -4,11 +4,15 @@ import { SAVE_VERSION, newGame } from './state';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { mulberry32 } from './rng';
-import { makeBattle, makeCombatant, memoryStorage, plainItem, fullParty } from './testing';
+import { makeBattle, makeCombatant, memoryStorage, plainItem, fullParty, version8Save } from './testing';
 import { Game } from './game';
-import { defaultTalents, defaultTree, validBuild } from './progression';
+import { defaultTalents, defaultTree, heroTree, memoriesOf, validBuild } from './progression';
 import { BOARDS } from '../data/talents';
-import { LEGACY_NODE_IDS, NODES, TIER_GATE, TREES } from '../data/trees';
+import { TREES } from '../data/trees';
+import { CHARACTER_IDS } from '../data/characters';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { CharacterId } from './types';
 import { ABSORB_CAP, ABSORB_GAIN } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
@@ -444,11 +448,11 @@ describe('save v5 skill trees and talents', () => {
     expect(status(lv(2, { [free]: 1, [liz[1].nodes[0].id]: 1, [liz[2].nodes[0].id]: 1 }))).toBe('corrupt'); // overspent
     expect(status(lv(50, { [liz[1].nodes[0].id]: 1 }))).toBe('corrupt');                        // free node missing
     // 17 points each way at Lv50 (26 earned): only the one-ultimate rule tells the two builds apart.
-    const b0 = { 'twin-slash': 3, 'triple-slash': 2, 'liz-twin-up': 2, 'liz-triple-up': 2, 'shadow-flurry': 1 };
+    const b0 = { 'twin-slash': 3, pickpocket: 2, 'liz-twin-up': 2, 'liz-triple-up': 2, jackpot: 1 };
     const b1 = { stealth: 1, 'treasure-sense': 1, 'smoke-bomb': 3, 'liz-smoke-up': 3 };
     expect(status(lv(50, { ...b0, ...b1, 'fortune-strike': 1 }))).toBe('corrupt');             // two ultimates
     expect(status(lv(50, { ...b0, ...b1 }))).toBe('ok');                                        // one ultimate
-    expect(status(lv(50, { ...b1, 'twin-slash': 3, 'triple-slash': 2, 'liz-twin-up': 2, 'liz-triple-up': 2, 'fortune-strike': 1 }))).toBe('ok');
+    expect(status(lv(50, { ...b1, 'twin-slash': 3, pickpocket: 2, 'liz-twin-up': 2, 'liz-triple-up': 2, 'fortune-strike': 1 }))).toBe('ok');
     expect(status(lv(50, { [free]: 1 }, { 'liz-t30': 1 }))).toBe('corrupt');                    // not adjacent
     expect(status(lv(50, { [free]: 1 }, { 'liz-t00': 5, 'liz-t01': 5, 'liz-t02': 5, 'liz-k0': 1, 'liz-k1': 1, 'liz-k2': 1 }))).toBe('corrupt'); // three keystones
     expect(status((g) => { delete (g.party.roster.liz as Partial<typeof g.party.roster.liz>).tree; })).toBe('corrupt');
@@ -582,7 +586,7 @@ describe('save v8 epic and starlit gear (plan 5g)', () => {
     const g = newGame();
     g.bag = [plainItem('iron-sword', 1), chizuru(2)];
     g.nextUid = 3;
-    expect(SAVE_VERSION).toBe(8);
+    expect(SAVE_VERSION).toBe(9);
     expect(saveGame(st, g)).toBe(true);
     expect(st.map.get(SAVE_KEY)).not.toContain('starlit');
     expect(loadGame(st)).toEqual({ status: 'ok', state: g });
@@ -644,79 +648,91 @@ describe('battle state is never saved (plan 8b)', () => {
   });
 });
 
-describe('old node ids (plan 8c)', () => {
-  /** A tree of `owner` at Lv 50 that holds every one of `ids`: each one's branch filled from the bottom as its tier needs. */
-  const holding = (owner: CharacterId, ids: string[]): Record<string, number> => {
-    const tree: Record<string, number> = { [TREES[owner].branches[0].nodes[0].id]: 1 };
-    for (const id of ids) {
-      const { branch, tier } = NODES[id];
-      const nodes = TREES[owner].branches[branch].nodes;
-      for (let t = 0; t <= tier; t++) {
-        // Branch 0's free first rank of its tier-0 node does not count toward a gate.
-        const below = () => nodes.slice(0, t).reduce((n, x) => n + (tree[x.id] ?? 0), 0) - (branch === 0 && t > 0 ? 1 : 0);
-        for (let u = 0; u < t && below() < TIER_GATE[t]; u++) tree[nodes[u].id] = nodes[u].maxRank;
-        tree[nodes[t].id] = Math.max(tree[nodes[t].id] ?? 0, 1);
-      }
-    }
-    return tree;
-  };
+describe('save version 9 (plan 8d)', () => {
+  const trees8b = () => (JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'roster-8b.json'), 'utf8')) as {
+    trees: Record<string, { id: string }[][]>;
+  }).trees;
 
-  it('a save that holds an old id beside its new one keeps the new one and drops the old (not corrupt)', () => {
-    const g = newGame();
-    g.party.roster.liz.level = 50;
-    g.party.roster.liz.tree = holding('liz', ['pickpocket']);
-    expect(validBuild('liz', 50, g.party.roster.liz.tree, {})).toBe(true);
-    const raw = JSON.parse(JSON.stringify(g));
-    const tree = raw.party.roster.liz.tree as Record<string, number>;
-    tree['triple-slash'] = 3;   // the old id beside the new one, with another rank
-    const r = loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) }));
-    expect(r.status).toBe('ok');
-    const t = (r as { state: typeof g }).state.party.roster.liz.tree;
-    expect(t.pickpocket).toBe(g.party.roster.liz.tree.pickpocket);
-    expect(t).not.toHaveProperty('triple-slash');
+  it('a version 8 save loads as version 9 with standard trees and one free respec', () => {
+    const { raw, state: g } = version8Save(trees8b());
+    // As plan 8c wrote it: strengthening nodes and since-renamed ids, which no tree of this build holds.
+    const old = JSON.parse(raw);
+    expect(old.version).toBe(8);
+    expect(old.party.roster.liz.tree).toEqual({ 'twin-slash': 1, 'triple-slash': 1, stealth: 1, 'treasure-sense': 1, quickstep: 1, 'liz-quick-up': 1 });
+    expect(old.party.roster.noel.tree).toHaveProperty('noel-fire-up', 1);
+    expect(old.party.roster.noel.equip.ring1.special).toBe('lg-noel');
+    const st = memoryStorage({ [SAVE_KEY]: raw });
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(`not loaded: ${r.status}`);
+    expect(r.migrated).toBe(true);
+    expect(r.state.version).toBe(9);
+    expect(r.state.version).toBe(SAVE_VERSION);
+    for (const id of CHARACTER_IDS) {
+      const m = r.state.party.roster[id], was = g.party.roster[id];
+      expect(m.tree, id).toEqual(id === 'hero' ? heroTree(30, 'balanced', 4) : defaultTree(id, was.level));
+      expect(m.freeRespec, id).toBe(true);
+      expect(validBuild(id, m.level, m.tree, m.talents, memoriesOf(m)), id).toBe(true);
+      // Every other field of the member exactly as it was (gear, level, memories, talents).
+      expect({ ...m, tree: undefined, freeRespec: undefined }, id).toEqual({ ...was, tree: undefined });
+    }
+    expect(r.state.party.roster.noel.equip).toEqual(g.party.roster.noel.equip);
+    for (const k of ['gold', 'inventory', 'bag', 'story', 'codex', 'dungeon', 'affinity', 'nextUid'] as const) {
+      expect(r.state[k as keyof typeof g], k).toEqual(g[k as keyof typeof g]);
+    }
+    expect({ ...r.state.party, roster: undefined }).toEqual({ ...g.party, roster: undefined });
+    // The text from before the migration is kept, so a player can go back to it.
+    expect(st.map.get(BACKUP_KEY)).toBe(raw);
+    // Saved again, it loads as it is: no second migration, no second free respec.
+    const again = memoryStorage();
+    saveGame(again, r.state);
+    expect(loadGame(again)).toEqual({ status: 'ok', state: r.state });
   });
 
-  it('a save that holds old node ids loads with them renamed', () => {
+  it('versions other than 8 and 9 are still refused', () => {
+    for (const version of [7, 10]) {
+      const raw = JSON.stringify({ ...newGame(), version });
+      const st = memoryStorage({ [SAVE_KEY]: raw });
+      expect(loadGame(st), String(version)).toEqual({ status: 'version' });
+      expect(st.map.get(BACKUP_KEY), String(version)).toBe(raw);
+    }
+  });
+
+  it('a version 8 save that is broken elsewhere is still corrupt, and backed up', () => {
+    const { raw } = version8Save(trees8b());
+    const bad = JSON.parse(raw);
+    bad.gold = -1;
+    const st = memoryStorage({ [SAVE_KEY]: JSON.stringify(bad) });
+    expect(loadGame(st)).toEqual({ status: 'corrupt' });
+    expect(st.map.get(BACKUP_KEY)).toBe(JSON.stringify(bad));
+    // A member the migration cannot read (a level out of range) is left for the validation, which refuses it.
+    const lv = JSON.parse(raw);
+    lv.party.roster.noel.level = 0;
+    expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(lv) }))).toEqual({ status: 'corrupt' });
+  });
+
+  it('freeRespec must be true or absent', () => {
+    for (const v of [false, 1, 'yes', null]) {
+      const g = JSON.parse(JSON.stringify(newGame()));
+      g.party.roster.noel.freeRespec = v;
+      expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })), String(v)).toEqual({ status: 'corrupt' });
+    }
     const g = newGame();
-    // Every rename plan 8c made, by name.
-    expect(LEGACY_NODE_IDS).toEqual({
-      'sacred-sake': 'purify-ward', 'thunder-thrust': 'exorcism-thrust', blessing: 'moon-recall', sanctuary: 'full-moon-night',
-      'triple-slash': 'pickpocket', 'shadow-flurry': 'jackpot', 'venom-edge': 'appraise',
-      'snare-shot': 'sunder-arrow', 'fire-arrow': 'scatter-shot', 'storm-volley': 'deluge-volley',
-      'guardian-roar': 'cover', fortress: 'atoning-flame', 'veil-dance': 'clap', sirocco: 'mirage-step',
-      'repair-kit': 'repair-drone',
-    });
-    const pairs = Object.entries(LEGACY_NODE_IDS);
-    const owners = [...new Set(pairs.map(([, now]) => NODES[now].owner))];
-    for (const owner of owners) {
-      const m = g.party.roster[owner];
-      m.level = 50;
-      m.tree = holding(owner, pairs.filter(([, now]) => NODES[now].owner === owner).map(([, now]) => now));
-      m.talents = {};
-      expect(validBuild(owner, 50, m.tree, m.talents), owner).toBe(true);
-    }
-    // As a build before plan 8c wrote it: every one of them under its old id, with its rank.
-    const raw = JSON.parse(JSON.stringify(g));
-    for (const [old, now] of pairs) {
-      const t = raw.party.roster[NODES[now].owner].tree;
-      expect(t[now], now).toBeGreaterThan(0);
-      t[old] = t[now];
-      delete t[now];
-    }
-    const r = loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) }));
-    expect(r.status).toBe('ok');
-    const st = (r as { state: typeof g }).state;
-    for (const [old, now] of pairs) {
-      const owner = NODES[now].owner;
-      expect(st.party.roster[owner].tree[now], `${old} -> ${now}`).toBe(g.party.roster[owner].tree[now]);
-      expect(st.party.roster[owner].tree, old).not.toHaveProperty(old);
-    }
-    for (const owner of owners) expect(st.party.roster[owner].tree, owner).toEqual(g.party.roster[owner].tree);
-    expect(pairs.length).toBeGreaterThanOrEqual(10);
-    // Everything else exactly as it was.
-    for (const k of ['gold', 'inventory', 'bag', 'story', 'affinity'] as const) expect(st[k as keyof typeof st], k).toEqual(g[k as keyof typeof g]);
-    for (const id of Object.keys(g.party.roster) as (keyof typeof g.party.roster)[]) {
-      expect({ ...st.party.roster[id], tree: undefined }, id).toEqual({ ...g.party.roster[id], tree: undefined });
-    }
+    g.party.roster.noel.freeRespec = true;
+    const st = memoryStorage();
+    saveGame(st, g);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+
+  it('a version 9 save is not migrated again', () => {
+    const g = newGame();
+    g.party.roster.noel.level = 3;
+    g.party.roster.noel.tree = { 'fire-star': 3 };   // a build the standard one never makes
+    expect(defaultTree('noel', 3)).not.toEqual(g.party.roster.noel.tree);
+    const st = memoryStorage();
+    saveGame(st, g);
+    const r = loadGame(st);
+    expect(r).toEqual({ status: 'ok', state: g });
+    expect(r).not.toHaveProperty('migrated');
+    expect(st.map.has(BACKUP_KEY)).toBe(false);
   });
 });

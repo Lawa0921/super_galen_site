@@ -39,7 +39,7 @@ import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type To
 import type { CharacterId, GearSlot, ItemInstance, Member, Pos, Slot } from './types';
 
 export type Phase = 'town' | 'map' | 'battle' | 'clear';
-export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp' | 'banked';
+export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp' | 'banked' | 'tree-reworked';
 export type MoveResult =
   | { kind: 'ignored' } | { kind: 'blocked' } | { kind: 'moved' } | { kind: 'battle' } | { kind: 'boss' }
   | { kind: 'entrance' }
@@ -148,6 +148,8 @@ export class Game {
     // count as seen and never replay late.
     const g = new Game(rng, storage, r.status === 'ok' ? settleBellkeeper(settleOpening(r.state)) : undefined, forgeSalt, START_LINEUP);
     if (r.status === 'corrupt' || r.status === 'version') g.notice = 'save-reset';
+    // An older save brought up to this version: the trees were respent on the standard build (plan 8d), so say so once.
+    if (r.status === 'ok' && r.migrated) g.notice = 'tree-reworked';
     g.rerolled = true;
     g.arrival = arrivalScenes(g.state, { chat: false });
     return g;

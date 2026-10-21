@@ -3,7 +3,10 @@ import { Game, type MoveResult } from './game';
 import { STORY_FIGHT_ROUNDS } from './battle';
 import { SAVE_KEY, loadGame, saveGame } from './save';
 import { SAVE_VERSION, newGame, START_ITEMS } from './state';
-import { constRng, memoryStorage, plainItem, withNode } from './testing';
+import { constRng, memoryStorage, plainItem, version8Save, withNode } from './testing';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { P, TREES, V0 } from '../data/trees';
 import { mulberry32 } from './rng';
 import { rollPortals, validPortals } from './portals';
@@ -1565,6 +1568,21 @@ describe('changing a variant side (plan 8d Task 1)', () => {
   });
 });
 
+describe('the tree rework on load (plan 8d Task 2)', () => {
+  it('booting a version 8 save says the tree was reworked', () => {
+    const fixture = join(dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'roster-8b.json');
+    const { raw } = version8Save((JSON.parse(readFileSync(fixture, 'utf8')) as { trees: Record<string, { id: string }[][]> }).trees);
+    const storage = memoryStorage({ [SAVE_KEY]: raw });
+    const g = Game.boot(calm(), storage);
+    expect(g.notice).toBe('tree-reworked');
+    expect(g.state.version).toBe(SAVE_VERSION);
+    expect(g.state.party.roster.noel.freeRespec).toBe(true);
+    // A version 9 save boots with no notice.
+    saveGame(storage, g.state);
+    expect(Game.boot(calm(), storage).notice).toBeNull();
+  });
+});
+
 describe('spending a talent point', () => {
   const lv6 = (g: Game) => { g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 6 }; };
   it('saves the spend in town: a reload keeps the new rank', () => {
@@ -2761,7 +2779,7 @@ describe('the arrival queue', () => {
     s.party = meet(s.party, 'liz', 1);
     s.party = meet(s.party, 'scarlet', 1);
     saveGame(storage, s);   // nothing new in the format: a save from before B1 is exactly this
-    expect(SAVE_VERSION).toBe(8);
+    expect(SAVE_VERSION).toBe(9);
     expect(loadGame(storage).status).toBe('ok');
     const g = Game.boot(calm(), storage);
     expect(g.notice).not.toBe('save-reset');

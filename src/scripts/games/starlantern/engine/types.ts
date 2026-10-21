@@ -160,6 +160,8 @@ export interface Member {
   absorbed?: AbsorbGain[];
   /** Rin's oath: set once she holds all seven pieces. */
   oath?: true;
+  /** One free respec at the inn, given by the tree rework (plan 8d, save version 9); the reset uses it up. */
+  freeRespec?: true;
 }
 export interface Party {
   /** 3x3 placement, cells 0-2 front, 3-5 middle, 6-8 back (see engine/formation.ts). */

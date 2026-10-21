@@ -6,7 +6,6 @@ import { SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { MATERIALS } from '../data/materials';
 import { REGIONS, type RegionId } from '../data/regions';
 import { SKILLS } from '../data/skills';
-import { LEGACY_NODE_IDS } from '../data/trees';
 import { allArtUrls, art } from './artPaths';
 
 /** Written by `python art-factory/starlantern/tools/gear_art.py plan-json` (plan 5d); null is a discarded cell. */
@@ -50,6 +49,15 @@ const cellsOf = (prefix: string): string[] =>
 /** Material icons already approved before plan 5d (monster materials, ancient gear, the old coin). */
 const MATERIALS_WITH_ART = ['moss', 'bat-wing', 'thorn-fang', 'crystal-shell', 'ice-crystal', 'lizard-scale', 'star-stone', 'dusk-cloth', 'old-coin', 'ancient-gear'];
 
+/** The skills plan 8c replaced, old → new (data/roster.test.ts holds the same list as spec §8 names it). */
+const REPLACED: Readonly<Record<string, string>> = {
+  'sacred-sake': 'purify-ward', 'thunder-thrust': 'exorcism-thrust', blessing: 'moon-recall', sanctuary: 'full-moon-night',
+  'triple-slash': 'pickpocket', 'shadow-flurry': 'jackpot', 'venom-edge': 'appraise',
+  'snare-shot': 'sunder-arrow', 'fire-arrow': 'scatter-shot', 'storm-volley': 'deluge-volley',
+  'guardian-roar': 'cover', fortress: 'atoning-flame', 'veil-dance': 'clap', sirocco: 'mirage-step',
+  'repair-kit': 'repair-drone',
+};
+
 describe('plan 5d gear art plan (art-factory/starlantern/gear-plan.json)', () => {
   it('roster ids come only from real id fields', () => {
     expect(idsIn([{ id: 'a' }, { id: 'b' }])).toEqual(['a', 'b']);
@@ -92,7 +100,7 @@ describe('plan 5d gear art plan (art-factory/starlantern/gear-plan.json)', () =>
     const urls = new Set(allArtUrls());
     const fromPlan5d = (id: string) => registry.assets[`icon-${id}`]?.batch?.startsWith('gear-5d-') ?? false;
     // Plan 8c ruling 2: a replaced skill keeps its cell (its icon is retired in step ⑨), and its successor waits for G3.
-    const replaced = new Set(Object.keys(LEGACY_NODE_IDS)), successors = new Set(Object.values(LEGACY_NODE_IDS));
+    const replaced = new Set(Object.keys(REPLACED)), successors = new Set(Object.values(REPLACED));
     const skills = Object.keys(SKILLS).filter((id) => (!urls.has(art.icon(id)) || fromPlan5d(id)) && !successors.has(id));
     expect(new Set(cells.filter((id) => !replaced.has(id)))).toEqual(new Set([...mats, ...skills]));
   });

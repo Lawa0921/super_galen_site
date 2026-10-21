@@ -9,7 +9,7 @@ import { rollPortals } from './portals';
 import { mulberry32, type Rng } from './rng';
 import type { CharacterId, Element, ItemInstance, Party } from './types';
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 /** What a new game carries. */
 export const START_ITEMS: Record<string, number> = { potion: 5, 'return-lamp': 1 };

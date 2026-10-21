@@ -123,6 +123,38 @@ describe('InnScene', () => {
     expect(r.game.notice).toBeNull();
   });
 
+  it('the respec list says free for a member who has one', () => {
+    const { game, s, root } = setup();
+    game.state.party.roster.scarlet.talents = { 'scarlet-t01': 1 };
+    game.state.party.roster.scarlet.freeRespec = true;
+    game.state.party.roster.noel = { ...game.state.party.roster.noel, level: 4, tree: { 'fire-star': 1, 'ice-star': 1 } };
+    s.onAction('down'); s.onAction('down'); s.onAction('confirm');   // 重置配點
+    const rows = [...root.querySelectorAll<HTMLElement>('.slx-list [role=option]')];
+    const right = (name: string) => rows.find((x) => x.textContent!.includes(name))!.querySelector('.slx-right')!.textContent;
+    expect(right('絲嘉蕾')).toBe('免費');
+    expect(right('諾艾兒')).toBe(`${25 * 4} G`);
+  });
+
+  it('the free respec is asked without a price, costs nothing and is used up', () => {
+    const r = setup();
+    r.game.state.party.roster.scarlet.talents = { 'scarlet-t01': 1 };
+    r.game.state.party.roster.scarlet.freeRespec = true;
+    r.s.onAction('down'); r.s.onAction('down'); r.s.onAction('confirm');   // 重置配點
+    const rows = [...r.root.querySelectorAll('.slx-list [role=option]')];
+    const at = rows.findIndex((x) => x.textContent!.includes('絲嘉蕾'));
+    const from = rows.findIndex((x) => x.getAttribute('aria-selected') === 'true');
+    for (let i = from; i < at; i++) r.s.onAction('down');
+    r.s.onAction('confirm');                                         // 絲嘉蕾
+    const ask = r.root.querySelector('.slx-confirm')!.textContent!;
+    expect(ask).toContain('免費');
+    expect(ask).not.toContain(' G');
+    const gold = r.game.state.gold;
+    r.s.onAction('up'); r.s.onAction('confirm');                     // 是
+    expect(r.game.state.party.roster.scarlet.talents).toEqual({});
+    expect(r.game.state.gold).toBe(gold);
+    expect(r.game.state.party.roster.scarlet).not.toHaveProperty('freeRespec');
+  });
+
   it('the respec list greys out members with nothing spent', () => {
     const { game, s, root } = setup();
     game.state.party.roster.scarlet.talents = { 'scarlet-t01': 1 };

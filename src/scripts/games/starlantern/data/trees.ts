@@ -358,18 +358,6 @@ for (const [owner, tree] of Object.entries(TREES) as [CharacterId, TreeDef][]) {
 }
 
 /** The old kit's learn levels, recorded here when the skills' own `learnLevel` field was removed. */
-/**
- * Node ids a roster change replaced (plan 8c ruling 1), old → new: a save that holds an old one loads with it renamed
- * (engine/save.ts `upgradeTreeIds`). The new node keeps the old one's place and maxRank, so every point stays valid.
- */
-export const LEGACY_NODE_IDS: Readonly<Record<string, string>> = {
-  'sacred-sake': 'purify-ward', 'thunder-thrust': 'exorcism-thrust', blessing: 'moon-recall', sanctuary: 'full-moon-night',
-  'triple-slash': 'pickpocket', 'shadow-flurry': 'jackpot', 'venom-edge': 'appraise',
-  'snare-shot': 'sunder-arrow', 'fire-arrow': 'scatter-shot', 'storm-volley': 'deluge-volley',
-  'guardian-roar': 'cover', fortress: 'atoning-flame', 'veil-dance': 'clap', sirocco: 'mirage-step',
-  'repair-kit': 'repair-drone',
-};
-
 export const LEGACY_LEARN_LEVEL: Record<string, number> = {
   'fire-star': 1, 'ice-star': 2, hex: 4, 'thunder-star': 6,
   sweep: 1, ward: 3, pierce: 5,

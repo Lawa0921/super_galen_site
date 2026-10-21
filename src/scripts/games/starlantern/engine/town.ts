@@ -219,19 +219,24 @@ export function hasSpent(m: Member): boolean {
 
 export const respecCost = (level: number): number => 25 * level;
 
+/** What the inn asks for `m`'s respec: nothing while the tree rework's free one is unused (plan 8d), else respecCost. */
+export const respecPrice = (m: Member): number => (m.freeRespec ? 0 : respecCost(m.level));
+
 /**
- * Resets a member's skill tree and talents together for gold. Refused when nothing has been spent, or when the member is
- * unknown. The points come back unspent; HP and TP are held to the new maximum.
+ * Resets a member's skill tree and talents together for gold (respecPrice: the tree rework's free one first). Refused when
+ * nothing has been spent, or when the member is unknown. The points come back unspent; HP and TP are held to the new
+ * maximum; a free respec is used up.
  */
 export function respec(s: GameState, memberId: CharacterId): TownResult {
   const m = s.party.roster[memberId];
   if (!m || !s.party.recruited.includes(memberId)) return fail('invalid');
   if (!hasSpent(m)) return fail('invalid');
-  const cost = respecCost(m.level);
+  const cost = respecPrice(m);
   if (s.gold < cost) return fail('gold');
   const n = structuredClone(s);
   n.gold -= cost;
   n.party.roster[memberId] = resetBuild(n.party.roster[memberId]);
+  delete n.party.roster[memberId].freeRespec;
   clampToMax(n.party.roster[memberId]);
   return { ok: true, state: n };
 }

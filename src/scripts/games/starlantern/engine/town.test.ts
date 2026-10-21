@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { newGame, START_ITEMS } from './state';
-import { buy, equip, innCost, isUnlocked, priceOf, junkTotals, respec, respecCost, rest, revive, reviveCost, sell, sellGear, sellJunk, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
+import { buy, equip, innCost, isUnlocked, priceOf, junkTotals, respec, respecCost, respecPrice, rest, revive, reviveCost, sell, sellGear, sellJunk, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
 import { statsOf, LEGACY_LINEUP } from './party';
 import { defaultTalents, defaultTree, newTree, raiseTalent, skillPointsLeft, talentPointsLeft, validBuild } from './progression';
 import type { Member } from './types';
@@ -234,6 +234,25 @@ describe('respec', () => {
     s.gold = gold;
     return s;
   };
+
+  it('the first respec after the rework is free, the next one is not', () => {
+    const m: Member = { ...spent(), freeRespec: true };
+    expect(respecPrice(m)).toBe(0);
+    expect(respecPrice(spent())).toBe(respecCost(10));
+    // Free even with no gold at all.
+    const r = respec(gameWith(m, 0), 'scarlet');
+    if (!r.ok) throw new Error('free respec refused');
+    expect(r.state.gold).toBe(0);
+    const after = r.state.party.roster.scarlet;
+    expect(after.tree).toEqual(newTree('scarlet'));
+    expect(after).not.toHaveProperty('freeRespec');
+    expect(respecPrice(after)).toBe(respecCost(10));
+    // Spent again, the next reset costs 25 G a level.
+    const again = respec(gameWith({ ...after, tree: defaultTree('scarlet', 10) }, 300), 'scarlet');
+    if (!again.ok) throw new Error('second respec refused');
+    expect(again.state.gold).toBe(300 - 25 * 10);
+    expect(respec(gameWith({ ...after, tree: defaultTree('scarlet', 10) }, 249), 'scarlet')).toEqual({ ok: false, reason: 'gold' });
+  });
 
   it('respec costs 25 G per level and refunds every point', () => {
     const m = spent();
