@@ -1,4 +1,5 @@
 import type { CharacterId, Effect } from '../engine/types';
+import { MOON } from '../engine/mech';
 import type { SkillMod } from './gear';
 import { SKILLS } from './skills';
 
@@ -123,23 +124,26 @@ export const TREES: Record<CharacterId, TreeDef> = {
   chizuru: { branches: [
     { name: '槍舞', nodes: [
       A('sweep', 3),
-      V0('chizuru-sweep-up', '橫掃強化', 'sweep', '強化橫掃的威力', pct(110, 120, 135)),
+      V('chizuru-sweep-twin', 'sweep', '雙月', [60, 65, 72].map((powerPct) => ({ hits: 2, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
       A('spiral-spear', 3),
-      V0('chizuru-spiral-up', '旋槍節流', 'spiral-spear', '降低旋槍的 TP 消耗', tp(-1, -2, -3)),
+      P(
+        K('chizuru-thunder-ward', '雷之結界', 'barrierThunder', [20, 30, 40], (v) => `有結界時，每回合結束對全體敵人雷擊（威力 ${v}）。`),
+        K('chizuru-twin-ward', '重結界', 'barrierPair', [60, 80, 100], (v) => `可以同時有兩種結界，後放的那個效果 ${v}%。`),
+      ),
       A('thousand-spear', 1),
     ] },
     { name: '結界', nodes: [
       A('ward', 3),
-      V0('chizuru-ward-up', '結界延長', 'ward', '延長守之結界的持續回合', turns(4, 5, 6)),
+      V('chizuru-ward-long', 'ward', '久護', turns(4, 5, 6), (m) => `守之結界持續 ${m.turns} 回合。`),
       A('purify-ward', 3),
-      V0('chizuru-sake-up', '淨結強化', 'purify-ward', '強化淨之結界的回復量', pct(115, 130, 150)),
+      V('chizuru-purify-wake', 'purify-ward', '祓', [100, 115, 130].map((powerPct): SkillMod => ({ powerPct, rules: { wake: true } })), (m) => `也解除睡眠；回復威力 ${m.powerPct}%。`),
       A('great-barrier', 1),
     ] },
     { name: '突刺', nodes: [
       A('pierce', 3),
-      V0('chizuru-pierce-up', '貫槍強化', 'pierce', '強化貫槍的威力', pct(110, 120, 135)),
+      V('chizuru-pierce-twin', 'pierce', '連突', [60, 65, 72].map((powerPct) => ({ hits: 2, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
       A('exorcism-thrust', 3),
-      V0('chizuru-thrust-up', '破邪強化', 'exorcism-thrust', '強化破邪突的威力', pct(115, 130, 150)),
+      V('chizuru-release-keep', 'exorcism-thrust', '連解', [3, 2, 1].map((releaseKeep) => ({ rules: { releaseKeep } })), (m) => `解放後結界不消失，只少 ${m.rules!.releaseKeep} 回合。`),
       A('heaven-spear', 1),
     ] },
   ] },
@@ -215,23 +219,27 @@ export const TREES: Record<CharacterId, TreeDef> = {
   selene: { branches: [
     { name: '月光', nodes: [
       A('moonlight', 3),
-      V0('selene-moon-up', '月光強化', 'moonlight', '強化月光的回復量', pct(110, 120, 135)),
+      P(
+        V('selene-moon-bright', 'moonlight', '凝光', [125, 135, 150].map((powerPct) => ({ powerPct, tpDelta: 1 })), (m) => `回復威力 ${m.powerPct}%，TP +${m.tpDelta}。`),
+        V('selene-moon-wide', 'moonlight', '群照', [55, 60, 65].map((powerPct): SkillMod => ({ target: 'allies', powerPct })), (m) => `改為對我方全體，威力 ${m.powerPct}%。`),
+      ),
       A('moon-rain', 3),
-      V0('selene-rain-up', '月光雨強化', 'moon-rain', '強化月光雨的回復量', pct(115, 130, 150)),
+      K('selene-tide', '盈月', 'moonPct', [40, 50, 60], (v) => `月相的好處由 ${MOON.pct}% 變成 ${v}%。`),
       A('full-moon', 1),
     ] },
+    // 收回 sits at tier 2, open from Lv5 (plan 8d ruling 6); the standard build leaves it and the night to the player.
     { name: '祈禱', nodes: [
       A('cleanse', 1),
       A('rebirth', 1),
-      V0('selene-rebirth-up', '再生節流', 'rebirth', '降低月之再生的 TP 消耗', tp(-2, -4, -5)),
       { ...A('moon-recall', 3), rank: 'turns' },
+      V('selene-new-night', 'full-moon-night', '新月', [3, 4, 5].map((turns): SkillMod => ({ turns, rules: { phase: 'new' } })), (m) => `改停在新月，停 ${m.turns} 回合。`),
       A('full-moon-night', 1),
     ] },
     { name: '夢境', nodes: [
       A('dream', 1),
-      V0('selene-dream-up', '安眠節流', 'dream', '降低夢境的 TP 消耗', tp(-1, -2, -3)),
+      V('selene-dream-deep', 'dream', '深眠', turns(4, 5, 6), (m) => `睡眠持續 ${m.turns} 回合。`),
       A('moon-arrow', 3),
-      V0('selene-arrow-up', '月影強化', 'moon-arrow', '強化月影箭的威力', pct(115, 130, 150)),
+      V('selene-arrow-freeze', 'moon-arrow', '寒月', inflicting('freeze', 0.25, 0.35, 0.45), (m) => `命中時 ${chanceOf(m)}% 使目標凍結（頭目改冰緩）。`),
       A('lunar-eclipse', 1),
     ] },
   ] },

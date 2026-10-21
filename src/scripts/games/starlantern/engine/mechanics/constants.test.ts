@@ -18,7 +18,7 @@ describe('the mechanics numbers (plan 8c)', () => {
     expect(AIM).toEqual({ cap: 3, dmgPct: 10, critPct: 0, consumePct: 50 });
     expect(COINS).toEqual({ cap: 10, coinPowerPct: 15, gold: 2 });
     expect(BARRIER).toEqual({ releasePct: 10 });
-    expect({ ...MOON, order: [...MOON.order] }).toEqual({ order: ['first', 'full', 'waning', 'new'], healPct: 130, icePct: 130, sleepMul: 1.3, tpMul: 0.7 });
+    expect({ ...MOON, order: [...MOON.order] }).toEqual({ order: ['first', 'full', 'waning', 'new'], pct: 30 });
     expect(EMBER).toEqual({ sharePct: 50, capPct: 50 });
     expect(BEAT).toEqual({ max: 4, pctPer: 10 });
     expect(DEVICE).toEqual({ cap: 2, maxLevel: 3, levelPct: 25, coilShock: 0.3 });

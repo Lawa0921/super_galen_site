@@ -172,8 +172,12 @@ describe('skill trees', () => {
         expect(pcts, `${n.id} ${key}`).toHaveLength(n.maxRank);
         for (let i = 1; i < pcts.length; i++) expect(pcts[i], `${n.id} ${key}`).toBeGreaterThan(pcts[i - 1]);
       }
+      // A plan 8c TP cut falls with every rank; a plan 8d variant's TP change is its rule (凝光's +1), never rising.
       const tp = n.mods!.map((m) => m.tpDelta).filter((p) => p !== undefined) as number[];
-      for (let i = 1; i < tp.length; i++) expect(tp[i], n.id).toBeLessThan(tp[i - 1]);
+      for (let i = 1; i < tp.length; i++) {
+        if (n.label === undefined) expect(tp[i], n.id).toBeLessThan(tp[i - 1]);
+        else expect(tp[i], n.id).toBeLessThanOrEqual(tp[i - 1]);
+      }
     }
   });
 
@@ -258,8 +262,8 @@ describe('skill trees', () => {
     expect(NODES['flame-wave']).toMatchObject({ owner: 'noel', branch: 0, tier: 2 });
     expect(NODES.pickpocket).toMatchObject({ owner: 'liz', branch: 0, tier: 1 });
     expect(nodeName('sweep')).toBe(SKILLS.sweep.name);
-    expect(nodeName('chizuru-sweep-up')).toBe('橫掃強化');
-    expect(nodeDesc('chizuru-sweep-up')).toBeTruthy();
+    expect(nodeName('liz-twin-up')).toBe('雙刃強化');
+    expect(nodeDesc('liz-twin-up')).toBeTruthy();
     expect(nodeName('noel-star-twin')).toBe('火之星彈・連星');
     expect(nodeName('noel-calm')).toBe('冷靜');
     expect(NODES['noel-star-heavy']).toMatchObject({ owner: 'noel', branch: 0, tier: 1, pair: 'noel-star-twin' });
@@ -307,7 +311,7 @@ describe('node words (plan 8d)', () => {
   };
 
   it('node words name their own numbers', () => {
-    const owners = ['noel', 'rin'] as const;   // Task 9 widens this to every tree
+    const owners = ['noel', 'rin', 'chizuru', 'selene'] as const;   // Task 9 widens this to every tree
     let checked = 0;
     for (const id of owners) for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) {
       if (node.kind === 'active') continue;

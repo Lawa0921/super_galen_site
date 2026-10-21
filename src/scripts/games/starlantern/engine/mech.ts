@@ -31,6 +31,16 @@ export const COINS = { cap: 10, coinPowerPct: 15, gold: 2 } as const;
 /** Chizuru's barriers (spec §8.2, engine/mechanics/barrier.ts): +% power a release gains for each round the barrier had left. */
 export const BARRIER = { releasePct: 10 } as const;
 
+/** The moon's phases, in the order they come round (Selene, engine/mechanics/moon.ts). */
+export type MoonPhase = 'first' | 'full' | 'waning' | 'new';
+
+/**
+ * Selene's moon (spec §8.6, engine/mechanics/moon.ts): the phases in order, and `pct`, the good each phase does her in
+ * percent (her heal at the full moon, her ice at the waning moon, her sleep chance at the new moon: +pct; her TP at the first
+ * quarter: −pct). Her 盈月 node turns `pct` up (plan 8d Task 5). Kept here so the tree's words read it without the mechanics.
+ */
+export const MOON = { order: ['first', 'full', 'waning', 'new'] as readonly MoonPhase[], pct: 30 } as const;
+
 /** Scarlet's embers (spec §8.5, engine/mechanics/embers.ts): the share of HP lost kept, and the cap, both in percent. */
 export const EMBER = { sharePct: 50, capPct: 50 } as const;
 
@@ -52,8 +62,13 @@ export type BarrierKind = 'guard' | 'purify';
 /**
  * A barrier over the party: the skill that raised it, its kind and power (a guard's percent), the turns it has left, who
  * raised it (the ledger credits what it prevents to them) and its boost (the great barrier's multiplier; absent reads 1).
+ * Plan 8d: `pair`, the percent it works at as the later of two kinds (Chizuru's 重結界; absent reads 100); `wake`, a
+ * purifying barrier that also ends the party's sleep (her 祓).
  */
-export interface Barrier { skill: string; kind: BarrierKind; power: number; turns: number; src: string; boost?: number }
+export interface Barrier { skill: string; kind: BarrierKind; power: number; turns: number; src: string; boost?: number; pair?: number; wake?: true }
+
+/** What a barrier does now, in its own unit (a guard's percent, a purifying heal's power): power x boost x pair%. */
+export const barrierPower = (b: Barrier): number => (b.power * (b.boost ?? 1) * (b.pair ?? 100)) / 100;
 
 /** `beat.last` is the previous round's skill id, `'attack'`, `'defend'` or `'ultimate'`. */
 export type MechState =

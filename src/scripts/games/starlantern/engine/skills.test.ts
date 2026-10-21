@@ -226,10 +226,11 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
   });
 
   it('a modifier node rewrites its skill at its rank', () => {
-    const sweep = (SKILLS.sweep.effects[0] as { power: number }).power;
-    expect(dmg(caster({ sweep: 1, 'chizuru-sweep-up': 2 }), 'sweep')).toBe(pw(sweep, mod('chizuru-sweep-up', 2).powerPct!));
-    expect(skillCost(caster({ 'spiral-spear': 1, 'chizuru-spiral-up': 3 }), 'spiral-spear'))
-      .toBe(Math.max(1, SKILLS['spiral-spear'].tp + mod('chizuru-spiral-up', 3).tpDelta!));
+    // Plan 8c strengthening nodes still standing (Chizuru's gave way to her variants in plan 8d Task 5).
+    const aimed = (SKILLS['aimed-shot'].effects[0] as { power: number }).power;
+    expect(dmg(caster({ 'aimed-shot': 1, 'sylvie-aim-up': 2 }), 'aimed-shot')).toBe(pw(aimed, mod('sylvie-aim-up', 2).powerPct!));
+    expect(skillCost(caster({ 'heart-shot': 1, 'sylvie-heart-up': 3 }), 'heart-shot'))
+      .toBe(Math.max(1, SKILLS['heart-shot'].tp + mod('sylvie-heart-up', 3).tpDelta!));
   });
 
   it('the tree applies before worn powers', () => {

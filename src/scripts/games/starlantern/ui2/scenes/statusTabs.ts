@@ -306,6 +306,21 @@ export function cueFrame(cls: string, pane: HTMLElement, keep: (top: number) => 
   return el('div', { class: `slx-cue-frame ${cls}` }, [up, pane, down]);
 }
 
+/**
+ * Scrolls `pane` (only it: nothing around it moves) just enough to show `node` whole, and not at all when it already shows
+ * (plan 8d Task 5: a nudge of a few pixels used to hide the branch names at 1280). Scrolling up to it, `head` (its branch's
+ * name) comes along when the two fit on the pane together.
+ */
+export function revealIn(pane: HTMLElement, node: HTMLElement, head: HTMLElement | null): void {
+  const p = pane.getBoundingClientRect(), r = node.getBoundingClientRect();
+  if (r.top < p.top) {
+    const top = head && r.bottom - head.getBoundingClientRect().top <= p.bottom - p.top ? head.getBoundingClientRect().top : r.top;
+    pane.scrollTop = Math.max(0, pane.scrollTop - (p.top - top));
+  } else if (r.bottom > p.bottom) {
+    pane.scrollTop += Math.min(r.bottom - p.bottom, r.top - p.top);   // its top never leaves the pane
+  }
+}
+
 /** The cues of the cue frame around `pane`, brought up to date after a redraw has set its scroll position. */
 export function updateCues(pane: HTMLElement): void {
   const frame = pane.parentElement;
@@ -551,7 +566,8 @@ const tree: StatusTab = {
     cols.scrollTop = treeView.top;
     if (treeView.reveal) {
       treeView.reveal = false;
-      body.querySelector('.slx-tree-node.slx-row-cur')?.scrollIntoView?.({ block: 'nearest' });
+      const node = cols.querySelector<HTMLElement>('.slx-tree-node.slx-row-cur');
+      if (node) revealIn(cols, node, node.closest('.slx-tree-branch')?.querySelector<HTMLElement>('.slx-tree-branch-name') ?? null);
       treeView.top = cols.scrollTop;
     }
     updateCues(cols);

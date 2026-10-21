@@ -29,12 +29,12 @@ describe("Selene's moon", () => {
   });
 
   it('each phase helps only Selene', () => {
-    expect(first(castDef(at('full'), selene(), SKILLS.moonlight)).power).toBe(Math.round((120 * MOON.healPct) / 100));
+    expect(first(castDef(at('full'), selene(), SKILLS.moonlight)).power).toBe(Math.round((120 * (100 + MOON.pct)) / 100));
     expect(first(castDef(at('full'), P('hero'), SKILLS.moonlight)).power).toBe(120);   // not hers: unchanged
     expect(first(castDef(at('first'), selene(), SKILLS.moonlight)).power).toBe(120);
-    expect(first(castDef(at('waning'), selene(), SKILLS['moon-arrow'])).power).toBe(Math.round((130 * MOON.icePct) / 100));
-    expect(first(castDef(at('new'), selene(), SKILLS.dream)).chance).toBeCloseTo(Math.min(1, 0.6 * MOON.sleepMul), 10);
-    expect(castCost(at('first'), selene(), 'moon-rain')).toBe(Math.ceil(9 * MOON.tpMul));
+    expect(first(castDef(at('waning'), selene(), SKILLS['moon-arrow'])).power).toBe(Math.round((155 * (100 + MOON.pct)) / 100));   // 月影箭 155 (8d Task 5)
+    expect(first(castDef(at('new'), selene(), SKILLS.dream)).chance).toBeCloseTo(Math.min(1, 0.6 * (1 + MOON.pct / 100)), 10);
+    expect(castCost(at('first'), selene(), 'moon-rain')).toBe(Math.ceil((9 * (100 - MOON.pct)) / 100));
     expect(castCost(at('full'), selene(), 'moon-rain')).toBe(9);
     expect(castCost(at('first'), P('hero'), 'moon-rain')).toBe(9);
     expect(castCost(at('first'), selene(), 'moon-recall')).toBe(0);
@@ -56,6 +56,38 @@ describe("Selene's moon", () => {
     // A recall while it is held ends the hold.
     const held = round(round(at('new'), cast('full-moon-night')), cast('moon-recall'));
     expect(held.moon).toEqual({ phase: 'full' });   // back to first quarter, then the round's end moves on
+  });
+
+  it('the tide deepens every phase (plan 8d Task 5, 盈月)', () => {
+    const tide = (phase: MoonPhase) => { const c = selene({ ranks: { 'selene-tide': 1 } }); return { s: makeBattle([c, P('noel')], [foe()], { moon: { phase } }), c }; };
+    expect(MOON.pct).toBe(30);
+    const full = tide('full');
+    expect(first(castDef(full.s, full.c, SKILLS.moonlight)).power).toBe(168);          // pctOf(120, 140)
+    const nu = tide('new');
+    expect(first(castDef(nu.s, nu.c, SKILLS.dream)).chance).toBeCloseTo(0.84, 10);     // 0.6 x 1.4
+    const fq = tide('first');
+    expect(castCost(fq.s, fq.c, 'moon-rain')).toBe(6);                                 // ceil(9 x 0.6)
+    const wan = tide('waning');
+    expect(first(castDef(wan.s, wan.c, SKILLS['moon-arrow'])).power).toBe(217);        // pctOf(155, 140)
+    // Its higher ranks deepen it further; without it every phase is the 30% it was.
+    const t3 = selene({ ranks: { 'selene-tide': 3 } });
+    expect(first(castDef(makeBattle([t3], [foe()], { moon: { phase: 'full' } }), t3, SKILLS.moonlight)).power).toBe(192);   // pctOf(120, 160)
+    expect(castCost(makeBattle([t3], [foe()], { moon: { phase: 'first' } }), t3, 'moon-rain')).toBe(4);                      // ceil(9 x 0.4)
+    expect(first(castDef(at('full'), selene(), SKILLS.moonlight)).power).toBe(156);
+  });
+
+  it('the new-moon night holds the new moon (plan 8d Task 5, 新月之夜)', () => {
+    const night = selene({ ranks: { 'full-moon-night': 1, 'selene-new-night': 1 } });
+    let s = round(makeBattle([night, P('noel')], [foe()], { moon: { phase: 'full' } }), { selene: { kind: 'skill', skill: 'full-moon-night' } });
+    const phases = [s.moon!.phase];
+    for (let i = 0; i < 3; i++) { s = round(s); phases.push(s.moon!.phase); }
+    expect(phases).toEqual(['new', 'new', 'new', 'first']);
+    // Its ranks hold it longer: 4 round ends at rank 2.
+    const two = selene({ ranks: { 'full-moon-night': 1, 'selene-new-night': 2 } });
+    let s2 = round(makeBattle([two], [foe()], { moon: { phase: 'waning' } }), { selene: { kind: 'skill', skill: 'full-moon-night' } });
+    const p2 = [s2.moon!.phase];
+    for (let i = 0; i < 4; i++) { s2 = round(s2); p2.push(s2.moon!.phase); }
+    expect(p2).toEqual(['new', 'new', 'new', 'new', 'first']);
   });
 
   it('the field bar names the barrier and the moon', () => {

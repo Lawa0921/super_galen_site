@@ -62,16 +62,17 @@ function addBleed(t: Combatant, d: Dot): void {
 /**
  * Tries to inflict `status` on `t`. Poison and sleep draw once, always (their old sequence). The new four draw only when
  * their chance is above 0 and log nothing when it is not: burn and bleed need a hit on `t` in this action (`ctx.lastHit`),
- * and their tick is a share of it; a guarded foe cannot be frozen; a boss is chilled instead of frozen.
+ * and their tick is a share of it; a guarded foe cannot be frozen; a boss is chilled instead of frozen. `turns`: a sleep's
+ * rounds when a variant sets them (深眠, plan 8d); absent, SLEEP_TURNS.
  */
-export function inflictAilment(actor: Combatant, t: Combatant, status: AilmentId, chance: number, ctx: EffectContext): void {
+export function inflictAilment(actor: Combatant, t: Combatant, status: AilmentId, chance: number, ctx: EffectContext, turns?: number): void {
   if (status === 'poison' || status === 'sleep') {
     if (ctx.rng() < ailmentChance(t, status, chance)) {
       if (status === 'poison') {
         // The first poisoner keeps the credit while the poison lasts (the contribution ledger).
         if (!t.poison) t.poisonSrc = actor.key;
         t.poison = true;
-      } else t.sleep = SLEEP_TURNS;
+      } else t.sleep = turns ?? SLEEP_TURNS;
       ctx.log.push({ type: 'status', target: t.key, status });
     } else ctx.log.push({ type: 'resist', target: t.key });
     return;

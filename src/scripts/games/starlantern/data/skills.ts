@@ -132,7 +132,7 @@ const LIST: SkillDef[] = [
   { id: 'full-moon-night', name: '滿月之夜', owner: 'selene', tp: 14, target: 'self', desc: '今晚就讓月亮停一停呢。接下來 3 回合，月相停在滿月。',
     effects: [{ kind: 'moon', hold: 3 }] },
   { id: 'moon-arrow', name: '月影箭', owner: 'selene', tp: 5, target: 'enemy', desc: '冰屬性魔法攻擊',
-    effects: [{ kind: 'damage', power: 130, element: 'ice', scale: 'mag', melee: false }] },
+    effects: [{ kind: 'damage', power: 155, element: 'ice', scale: 'mag', melee: false }] },
   { id: 'lunar-eclipse', name: '月蝕', owner: 'selene', tp: 15, target: 'enemies', desc: '冰屬性全體魔法攻擊，可能使其睡眠',
     effects: [{ kind: 'damage', power: 120, element: 'ice', scale: 'mag', melee: false }, { kind: 'inflict', status: 'sleep', chance: 0.4 }] },
 

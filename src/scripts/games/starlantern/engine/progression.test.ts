@@ -5,6 +5,7 @@ import {
   heroMainBranch, heroTalents, heroTree, knobOf, memoriesOf, mechKnob, swapPair,
 } from './progression';
 import { chainLength } from '../data/story/chains';
+import { SKILLS } from '../data/skills';
 import { HERO_ULTIMATES, RIN_DAWN, SKY_LANTERN, ULTIMATES } from '../data/ultimates';
 import { gainExp, newMember } from './party';
 import { CHARACTERS, rulesOf } from '../data/characters';
@@ -787,7 +788,7 @@ describe('ranks of a skill with nothing to scale (plan 8c)', () => {
     expect(skillFor({ powers: [], ranks: { 'rin-veil': 3 } }, 'rin-veil')!.desc).toContain('4 回合');
     // The guard barrier's words name its percent and rounds as her ranks and nodes make them.
     expect(SKILLS.ward.desc).toContain('30%');
-    const ward = skillFor({ powers: [], ranks: { ward: 3, 'chizuru-ward-up': 2 } }, 'ward')!;
+    const ward = skillFor({ powers: [], ranks: { ward: 3, 'chizuru-ward-long': 2 } }, 'ward')!;
     expect(ward.effects).toEqual([{ kind: 'barrier', barrier: 'guard', power: 36, turns: 5 }]);
     expect(ward.desc).toContain('36%');
     expect(ward.desc).toContain('5 回合');
@@ -1011,5 +1012,65 @@ describe("Noel's and Rin's trees (plan 8d Task 3)", () => {
     for (const id of ['noel', 'rin'] as const) {
       for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) expect(node.id, id).not.toMatch(/-up$/);
     }
+  });
+});
+
+describe("Chizuru's and Selene's trees (plan 8d Task 5)", () => {
+  it("selene's prayer branch: recall at tier 2, open from Lv5", () => {
+    const b = TREES.selene.branches[1];
+    expect(b.nodes.map((n) => n.id)).toEqual(['cleanse', 'rebirth', 'moon-recall', 'selene-new-night', 'full-moon-night']);
+    expect([b.nodes[2].maxRank, b.nodes[2].rank]).toEqual([3, 'turns']);
+    expect(NODES['selene-rebirth-up']).toBeUndefined();
+    expect(canRaiseNode(at('selene', 5, { moonlight: 1, cleanse: 1, rebirth: 1 }), 'moon-recall')).toBeNull();
+    expect(canRaiseNode(at('selene', 5, { moonlight: 1, cleanse: 1 }), 'moon-recall')).toBe('req');
+    // The new-moon night is a variant of the full-moon night, a tier below it.
+    expect([NODES['selene-new-night'].node.kind, NODES['selene-new-night'].node.skill, NODES['selene-new-night'].tier]).toEqual(['variant', 'full-moon-night', 3]);
+  });
+
+  it('chizuru and selene hold no B side and no 8c node', () => {
+    for (const id of ['chizuru', 'selene'] as const) for (const L of [5, 10, 20, 35, 50]) {
+      for (const k of Object.keys(defaultTree(id, L))) {
+        const { node, branch, tier } = NODES[k];
+        expect(TREES[id].branches[branch].nodes[tier], `${id} Lv${L} ${k}`).toBe(node);   // an A side
+        expect(k, `${id} Lv${L}`).not.toMatch(/-up$/);
+      }
+    }
+    for (const id of ['chizuru', 'selene'] as const) {
+      for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) expect(node.id, id).not.toMatch(/-up$/);
+    }
+    // The pairs: 雷之結界／重結界 (Chizuru's 槍舞 tier 3), 凝光／群照 (Selene's 月光 tier 1).
+    expect([TREES.chizuru.branches[0].nodes[3].id, TREES.chizuru.branches[0].nodes[3].pair?.id]).toEqual(['chizuru-thunder-ward', 'chizuru-twin-ward']);
+    expect([TREES.selene.branches[0].nodes[1].id, TREES.selene.branches[0].nodes[1].pair?.id]).toEqual(['selene-moon-bright', 'selene-moon-wide']);
+  });
+
+  it("the tuned numbers of Chizuru's and Selene's nodes, and 月影箭's power (8d Task 5, retune.md)", () => {
+    const mods = (id: string) => NODES[id].node.mods!;
+    const vals = (id: string) => NODES[id].node.values!;
+    // 55/60/68 (plan) → 60/65/72: two hits lose a single hit's multistrike, and band 18b allPhys balanced d8 iron fell to
+    // 0.745 (< 0.75); at 60/65/72 it is 0.768.
+    expect(mods('chizuru-sweep-twin').map((m) => [m.hits, m.powerPct])).toEqual([[2, 60], [2, 65], [2, 72]]);
+    expect(mods('chizuru-pierce-twin').map((m) => [m.hits, m.powerPct])).toEqual([[2, 60], [2, 65], [2, 72]]);
+    expect([vals('chizuru-thunder-ward'), vals('chizuru-twin-ward')]).toEqual([[20, 30, 40], [60, 80, 100]]);
+    expect(mods('chizuru-ward-long').map((m) => m.turns)).toEqual([4, 5, 6]);
+    expect(mods('chizuru-purify-wake').map((m) => [m.powerPct, m.rules!.wake])).toEqual([[100, true], [115, true], [130, true]]);
+    expect(mods('chizuru-release-keep').map((m) => m.rules!.releaseKeep)).toEqual([3, 2, 1]);
+    expect(mods('selene-moon-bright').map((m) => [m.powerPct, m.tpDelta])).toEqual([[125, 1], [135, 1], [150, 1]]);
+    expect(mods('selene-moon-wide').map((m) => [m.target, m.powerPct])).toEqual([['allies', 55], ['allies', 60], ['allies', 65]]);
+    expect(vals('selene-tide')).toEqual([40, 50, 60]);
+    expect(mods('selene-new-night').map((m) => [m.turns, m.rules!.phase])).toEqual([[3, 'new'], [4, 'new'], [5, 'new']]);
+    expect(mods('selene-dream-deep').map((m) => m.turns)).toEqual([4, 5, 6]);
+    expect(mods('selene-arrow-freeze').map((m) => (m.extra![0] as { chance: number }).chance)).toEqual([0.25, 0.35, 0.45]);
+    // 月影箭 130 → 155: 寒月 took 月影強化's place (its +50% at rank 3), and Selene's Lv50 fell to −12% of 8b without it.
+    expect(SKILLS['moon-arrow'].effects[0]).toEqual({ kind: 'damage', power: 155, element: 'ice', scale: 'mag', melee: false });
+  });
+
+  it('the standard build does not chase recall: no early pull, and it reaches it only as the old 再生節流 points did (plan 8d ruling 6)', () => {
+    expect(DEFAULT_FIRST.selene).toBeUndefined();
+    for (const L of [5, 10, 20]) expect(defaultTree('selene', L), `Lv${L}`).not.toHaveProperty('moon-recall');
+    // From Lv35 the build's spare points land on it in the cell 再生節流 held (the sim casts neither): a build that spent
+    // them on 月影箭 instead put her Lv35 contribution at +57% over 8b (retune.md, Task 5).
+    expect(defaultTree('selene', 35)['moon-recall']).toBe(2);
+    expect(defaultTree('selene', 35)).not.toHaveProperty('moon-arrow');
+    for (const L of [5, 10, 20, 35, 50]) expect(defaultTree('selene', L), `Lv${L}`).not.toHaveProperty('selene-new-night');
   });
 });

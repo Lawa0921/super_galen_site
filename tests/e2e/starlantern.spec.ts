@@ -353,6 +353,11 @@ test.describe('starlantern', () => {
     p.recruited = [...ids, 'hero', 'rin'];
     p.grid = grid;
   }, [LEGACY_LINEUP, LEGACY_GRID.map((c) => (c === 'selene' ? 'hero' : c))] as const);
+  /** Every branch name of the tree page shows whole inside the columns (a reveal scroll must not hide them, 8d Task 5). */
+  const branchNamesShown = (page: Page) => page.locator('.slx-tree-cols').evaluate((c) => {
+    const box = c.getBoundingClientRect();
+    return [...c.querySelectorAll('.slx-tree-branch-name')].every((h) => { const r = h.getBoundingClientRect(); return r.top >= box.top - 0.5 && r.bottom <= box.bottom + 0.5; });
+  });
   /** Page the status screen with 下一位 until `name` shows, at most once round the recruited members. */
   const flipTo = async (page: Page, name: string) => {
     const recruited: number = await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.party.recruited.length);
@@ -985,6 +990,10 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('熱度上限 6。'));
     await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.nextMod('熱度上限 7。'));
     expect(await fits()).toEqual([]);
+    // 冷靜 already shows, so the cursor scrolls nothing: the columns stay at the top, every branch name whole (8d Task 5).
+    expect(await page.locator('.slx-tree-cols').evaluate((c) => c.scrollTop)).toBe(0);
+    expect(await branchNamesShown(page)).toBe(true);
+    await expect(page.locator('.slx-tree-frame .slx-more-up')).toBeHidden();
     await shot('tree-1280');
     // Scrolled down, the ▲ cue shows and covers no text: no node's name or rank, not the line above the columns.
     await page.locator('.slx-tree-cols').evaluate((c) => { c.scrollTop = 30; c.dispatchEvent(new Event('scroll')); });
@@ -1062,6 +1071,67 @@ test.describe('starlantern', () => {
       expect(await item.locator('.slx-label').evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), name).toBe(true);
       await shot(name);
     }
+    expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test("chizuru's and selene's trees show their pairs and new nodes (plan 8d Task 5)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => { if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${name}.png` }); } };
+    const w = await setup(page, 7);
+    await legacyRoster(page);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.party.roster.chizuru.level = 35;
+      g.state.party.roster.chizuru.tree = { sweep: 3, 'chizuru-sweep-twin': 2, 'spiral-spear': 1, 'chizuru-thunder-ward': 1, ward: 2, 'chizuru-ward-long': 1, 'purify-ward': 1, 'chizuru-purify-wake': 1 };
+      g.state.party.roster.selene.level = 35;
+      g.state.party.roster.selene.tree = { moonlight: 3, 'selene-moon-bright': 2, 'moon-rain': 1, 'selene-tide': 1, cleanse: 1, rebirth: 1, 'moon-recall': 1, dream: 1, 'selene-dream-deep': 1 };
+    });
+    /** No node row, name or pair tag of the tree spills out of its own width. */
+    const spills = () => page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node, .slx-tree-pair, .slx-tree-pair > *, .slx-tree-node .slx-skill-name')]
+      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className));
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+
+    await flipTo(page, CHARACTERS.chizuru.name);
+    const thunder = page.locator('.slx-tree-node[data-node=chizuru-thunder-ward]');
+    await expect(thunder).toContainText('雷之結界');
+    await expect(thunder).toContainText(T.ui2.tree.kind.mech);
+    await expect(thunder.locator('img')).toHaveCount(0);
+    await expect(page.locator('.slx-tree-node[data-node=chizuru-twin-ward]')).toHaveClass(/slx-node-swap/);
+    await expect(page.locator('.slx-tree-branch[data-branch="0"] .slx-tree-pair-tag')).toHaveText(T.ui2.tree.pairTag);
+    await expect(page.locator('.slx-tree-node[data-node=chizuru-sweep-twin]')).toContainText('橫掃・雙月');
+    await thunder.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('有結界時，每回合結束對全體敵人雷擊（威力 20）。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('chizuru-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('chizuru-tree-844');
+    await page.setViewportSize({ width: 1280, height: 720 });
+
+    await flipTo(page, CHARACTERS.selene.name);
+    // 收回 now sits at the prayer branch's tier 2, under 月之再生.
+    const prayer = page.locator('.slx-tree-branch[data-branch="1"] .slx-tree-node');
+    await expect(prayer.nth(2)).toHaveAttribute('data-node', 'moon-recall');
+    await expect(page.locator('.slx-tree-node[data-node=selene-moon-bright]')).toContainText('月光・凝光');
+    await expect(page.locator('.slx-tree-node[data-node=selene-moon-wide]')).toHaveClass(/slx-node-swap/);
+    await expect(page.locator('.slx-tree-node[data-node=selene-new-night]')).toContainText('滿月之夜・新月');
+    const tide = page.locator('.slx-tree-node[data-node=selene-tide]');
+    await tide.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('月相的好處由 30% 變成 40%。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('selene-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('selene-tree-844');
     expect(missing).toEqual([]);
     expect(w.errors).toEqual([]);
   });

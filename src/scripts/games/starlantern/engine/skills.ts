@@ -1,4 +1,4 @@
-import { addBuff, dealDamage, hitAmount, isWeak, roll, rollHit, stat, type BattleEvent, type Combatant } from './combatant';
+import { addBuff, dealDamage, hitAmount, isWeak, roll, rollHit, SLEEP_TURNS, stat, type BattleEvent, type Combatant } from './combatant';
 import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
@@ -12,6 +12,7 @@ import { AIM } from './mech';
 import { COINS } from './mechanics/coins';
 import { T } from '../data/text.zh-TW';
 import { overclock, placeDevice, tuneUp } from './mechanics/devices';
+import { raiseBarrier } from './mechanics/barrier';
 
 /**
  * `ledger`: the sim's contribution ledger (absent in the game); it reads the fight and never draws. `redirect`: set only
@@ -72,14 +73,24 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
       case 'taunt': return { ...e, turns: lasting(e.turns) };
       case 'expose': return { ...e, turns: lasting(e.turns) };
       case 'veil': return { ...e, turns: lasting(e.turns) };
-      case 'barrier': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns) };
+      // 祓 (plan 8d ruling 7): the purifying barrier it raises also wakes the party.
+      case 'barrier': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns), ...(mod.rules?.wake ? { wake: true as const } : {}) };
       case 'aim-lock': return { ...e, turns: lasting(e.turns) };
       case 'cover': return { ...e, turns: lasting(e.turns) };
       case 'riposte': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns) };
       case 'gauge': return { ...e, amount: pctOf(e.amount, power) };
-      // The moon's hold counts as its rounds (moon-recall's ranks hold the phase it steps back to).
-      case 'moon': return mod.turns !== undefined || mod.turnsDelta !== undefined ? { ...e, hold: lasting(e.hold ?? 0) } : { ...e };
-      case 'inflict': return { ...e, chance: e.status === 'poison' ? mod.chance ?? e.chance : e.chance };
+      // The moon's hold counts as its rounds (moon-recall's ranks hold the phase it steps back to; 新月之夜 holds the new
+      // moon, plan 8d ruling 7).
+      case 'moon': return {
+        ...e,
+        ...(mod.turns !== undefined || mod.turnsDelta !== undefined ? { hold: lasting(e.hold ?? 0) } : {}),
+        ...(mod.rules?.phase !== undefined ? { phase: mod.rules.phase } : {}),
+      };
+      // A sleep's rounds follow `turns` (深眠, plan 8d ruling 7); every other ailment keeps its own.
+      case 'inflict': return {
+        ...e, chance: e.status === 'poison' ? mod.chance ?? e.chance : e.chance,
+        ...(e.status === 'sleep' && (mod.turns !== undefined || mod.turnsDelta !== undefined) ? { turns: lasting(e.turns ?? SLEEP_TURNS) } : {}),
+      };
       // Rules that belong to the mark (plan 8d ruling 7): 不眨眼's crit damage, 轉印's jumps.
       case 'mark': return {
         ...e,
@@ -247,7 +258,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'inflict': {
       if (!target.alive) return;
-      inflictAilment(actor, target, eff.status, eff.chance, ctx);
+      inflictAilment(actor, target, eff.status, eff.chance, ctx, eff.turns);
       return;
     }
     case 'buff': {
@@ -298,10 +309,11 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       return;
     }
     case 'barrier': {
-      // Over the whole party, once (ruling 6), and only in a fight (ruling 7): it replaces any barrier up.
+      // Over the whole party, once (ruling 6), and only in a fight (ruling 7): it replaces any barrier up (with 重結界,
+      // only one of its own kind: engine/mechanics/barrier.ts).
       const s = ctx.battle;
       if (target !== actor || !s) return;
-      s.barriers = [{ skill: ctx.cast ?? '', kind: eff.barrier, power: eff.power, turns: eff.turns, src: actor.key }];
+      raiseBarrier(s, actor, eff, ctx.cast ?? '');
       return;
     }
     case 'barrier-boost': {
@@ -309,7 +321,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       if (target !== actor || !s) return;
       const b = s.barriers?.[0];
       if (!b) { ctx.log.push({ type: 'mech', actor: actor.key, cue: 'no-barrier' }); return; }
-      s.barriers = [{ ...b, boost: eff.mul, turns: b.turns + eff.turns }];
+      s.barriers = s.barriers!.map((x) => ({ ...x, boost: eff.mul, turns: x.turns + eff.turns }));   // both, under 重結界
       return;
     }
     case 'coins': {
@@ -357,7 +369,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       const m = ctx.battle?.moon;
       if (target !== actor || !m) return;
       const order = MOON.order;
-      m.phase = eff.step === -1 ? order[(order.indexOf(m.phase) + order.length - 1) % order.length] : 'full';
+      m.phase = eff.step === -1 ? order[(order.indexOf(m.phase) + order.length - 1) % order.length] : eff.phase ?? 'full';
       if (eff.hold) m.hold = { turns: eff.hold };
       else delete m.hold;
       return;

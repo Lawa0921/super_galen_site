@@ -30,7 +30,8 @@ export type Effect =
   | { kind: 'restore'; hp?: number; tp?: number }
   | { kind: 'revive'; hpPct: number }
   | { kind: 'cure' }
-  | { kind: 'inflict'; status: AilmentId; chance: number }
+  /** `turns`: a sleep's rounds when a variant sets them (Selene's 深眠, plan 8d); absent, the ailment's own. */
+  | { kind: 'inflict'; status: AilmentId; chance: number; turns?: number }
   | { kind: 'buff'; stat: BuffStat; pct: number; turns: number }
   | { kind: 'taunt'; turns: number }
   /** Bobby sets (or upgrades) a device that runs at every round's end for `turns` rounds (engine/mechanics/devices.ts). */
@@ -49,11 +50,15 @@ export type Effect =
   /** The caster is passed over by single attacks for `turns` round ends, and her next landed hit crits (Rin's veil). */
   | { kind: 'veil'; turns: number }
   /** A barrier over the party, replacing any other (Chizuru, engine/mechanics/barrier.ts): a guard's percent, or a purifying heal's power. */
-  | { kind: 'barrier'; barrier: 'guard' | 'purify'; power: number; turns: number }
+  /** `wake`: a purifying barrier that also ends the party's sleep (Chizuru's 祓, plan 8d). */
+  | { kind: 'barrier'; barrier: 'guard' | 'purify'; power: number; turns: number; wake?: true }
   /** The barrier up now is boosted `mul` times and lasts `turns` rounds longer; none up, nothing happens. */
   | { kind: 'barrier-boost'; mul: number; turns: number }
-  /** Selene's moon: one phase back (`step`), or else to the full moon; then that phase is held `hold` round ends. */
-  | { kind: 'moon'; step?: -1; hold?: number }
+  /**
+   * Selene's moon: one phase back (`step`), or else to the full moon (to the new moon with `phase`, her 新月之夜); then
+   * that phase is held `hold` round ends.
+   */
+  | { kind: 'moon'; step?: -1; hold?: number; phase?: 'new' }
   /** The caster's coins grow by `amount` (Liz, engine/mechanics/coins.ts). */
   | { kind: 'coins'; amount: number }
   /** The target's weak points are told, and its fall doubles the caster's coins (Liz's 估價). */
@@ -101,6 +106,12 @@ export interface SkillRules {
   markHops?: number;
   /** More 還有。 a round when this skill fells her mark (Rin's 追命). */
   again?: number;
+  /** A release that leaves the barrier up, this many rounds shorter (Chizuru's 連解). */
+  releaseKeep?: number;
+  /** Copied onto the skill's barrier effect: the purifying barrier also wakes the party (Chizuru's 祓). */
+  wake?: true;
+  /** Copied onto the skill's moon effect: the night holds the new moon instead (Selene's 新月之夜). */
+  phase?: 'new';
 }
 export interface UltimateDef {
   id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string;

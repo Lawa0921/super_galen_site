@@ -4,7 +4,7 @@ import type { Combatant } from '../combatant';
 import { newLedger } from '../ledger';
 import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
-import { castDef } from './index';
+import { castDef, fieldWords } from './index';
 
 const chizuru = (over: Partial<Combatant> = {}) => makeCombatant({
   key: 'chizuru', side: 'party', defId: 'chizuru', mech: { kind: 'barrier' },
@@ -79,5 +79,93 @@ describe("Chizuru's barriers", () => {
       return n;
     };
     expect(draws([{ skill: 'purify-ward', kind: 'purify', power: 30, turns: 5, src: 'chizuru' }])).toBe(draws([{ skill: 'ward', kind: 'guard', power: 30, turns: 5, src: 'chizuru' }]));
+  });
+});
+
+describe("Chizuru's barrier nodes (plan 8d Task 5)", () => {
+  /** A constant rng that counts its draws. */
+  const counting = (v: number) => { const f = Object.assign(() => { f.n += 1; return v; }, { n: 0 }); return f; };
+  const two = () => [foe(), foe({ key: 'e1' })];
+  const guard = (turns = 3): BattleState['barriers'] => [{ skill: 'ward', kind: 'guard', power: 30, turns, src: 'chizuru' }];
+
+  it('the thunder ward strikes every foe at round end, credited to Chizuru; no barrier, no strike and no draw', () => {
+    const c = chizuru({ ranks: { 'chizuru-thunder-ward': 1 } });
+    const l = newLedger();
+    const s = resolveRound(makeBattle([c, P('noel')], two(), { barriers: guard() }), {}, constRng(0.5), l);
+    const hits = s.log.filter((e) => e.type === 'damage' && e.element === 'thunder');
+    expect(hits.map((e) => (e as { target: string }).target)).toEqual(['e0', 'e1']);
+    const dealt = s.enemies.reduce((n, e) => n + e.max.hp - e.hp, 0);
+    expect(dealt).toBeGreaterThan(0);
+    expect(l.by.chizuru.damage).toBe(dealt);
+    // A stronger rank strikes harder.
+    const c3 = chizuru({ ranks: { 'chizuru-thunder-ward': 3 } });
+    const s3 = resolveRound(makeBattle([c3, P('noel')], two(), { barriers: guard() }), {}, constRng(0.5));
+    expect(s3.enemies[0].max.hp - s3.enemies[0].hp).toBeGreaterThan(s.enemies[0].max.hp - s.enemies[0].hp);
+    // Its word on the field bar.
+    expect(fieldWords(makeBattle([c], two(), { barriers: guard() })).map((w) => w.text)).toEqual(['守之結界・雷3']);
+    // No barrier up: nothing strikes, nothing is drawn beyond a plain round's draws.
+    const n = (ranks: Record<string, number>) => {
+      const rng = counting(0.5);
+      resolveRound(makeBattle([chizuru({ ranks }), P('noel')], two()), {}, rng);
+      return rng.n;
+    };
+    expect(n({ 'chizuru-thunder-ward': 1 })).toBe(n({}));
+    // With a barrier: exactly one hit's rolls a foe (variance; no crit, block or evasion stat to roll).
+    const m = (ranks: Record<string, number>) => {
+      const rng = counting(0.5);
+      resolveRound(makeBattle([chizuru({ ranks }), P('noel')], two(), { barriers: guard() }), {}, rng);
+      return rng.n;
+    };
+    expect(m({ 'chizuru-thunder-ward': 1 }) - m({})).toBe(2);
+  });
+
+  it('two kinds at once with the twin ward; the later one at its percent; the same kind replaces its own', () => {
+    const c = chizuru({ ranks: { ward: 1, 'purify-ward': 1, 'chizuru-twin-ward': 1 } });
+    let s = round(makeBattle([c, P('noel')], [foe()]), cast('ward'));
+    s = round(s, cast('purify-ward'));
+    expect(s.barriers?.map((b) => [b.kind, b.turns])).toEqual([['guard', 1], ['purify', 2]]);
+    expect(s.party[1].ward?.def).toBe(30);                                  // the earlier one whole
+    expect(s.barriers![1].pair).toBe(60);                                   // the later one at 60%
+    s = round(s, cast('ward'));
+    expect(s.barriers?.map((b) => b.kind)).toEqual(['purify', 'guard']);   // the old guard replaced: now the later one
+    expect(s.party[1].ward?.def).toBe(18);                                  // 30 x 60%
+    expect(s.barriers![0].pair).toBeUndefined();
+    // Without the node a new barrier still replaces the old.
+    const plain = round(round(makeBattle([chizuru(), P('noel')], [foe()]), cast('ward')), cast('purify-ward'));
+    expect(plain.barriers?.map((b) => b.kind)).toEqual(['purify']);
+    // The later purifying barrier heals at its percent.
+    const heal = (pair?: number) => {
+      const s0 = makeBattle([chizuru(), P('noel', { hp: 10 })], [foe()], { barriers: [{ skill: 'purify-ward', kind: 'purify', power: 30, turns: 3, src: 'chizuru', ...(pair ? { pair } : {}) }] });
+      return round(s0).party[1].hp - 10;
+    };
+    expect(heal(60)).toBe(Math.floor((18 / 100) * (30 * 2 + 10)));
+    expect(heal()).toBe(Math.floor((30 / 100) * (30 * 2 + 10)));
+  });
+
+  it('release keeps the barrier with 連解, short of its rounds', () => {
+    const c = chizuru({ ranks: { 'exorcism-thrust': 1, 'chizuru-release-keep': 1 } });
+    const s = round(makeBattle([c], [foe()], { barriers: guard(5) }), cast('exorcism-thrust'));
+    expect(s.barriers?.map((b) => b.turns)).toEqual([1]);                  // 5 − 3, then the round's end
+    const s2 = round(makeBattle([chizuru({ ranks: { 'exorcism-thrust': 1, 'chizuru-release-keep': 3 } })], [foe()], { barriers: guard(5) }), cast('exorcism-thrust'));
+    expect(s2.barriers?.map((b) => b.turns)).toEqual([3]);                 // 5 − 1, then the round's end
+    // Too few rounds left: it goes, as without the node.
+    expect(round(makeBattle([c], [foe()], { barriers: guard(3) }), cast('exorcism-thrust')).barriers ?? []).toEqual([]);
+    // The thrust is as strong as without the node.
+    const power = (x: Combatant) => { const st = makeBattle([x], [foe()], { barriers: guard(5) }); const d = castDef(st, x, SKILLS['exorcism-thrust']).effects[0]; return d.kind === 'damage' ? d.power : NaN; };
+    expect(power(c)).toBe(power(chizuru()));
+  });
+
+  it('祓 wakes the sleeping at round end; at power 100% it heals as without the node', () => {
+    const c = chizuru({ ranks: { 'purify-ward': 1, 'chizuru-purify-wake': 1 } });
+    let s = round(makeBattle([c, P('noel', { hp: 10, sleep: 2 })], [foe()]), cast('purify-ward'));
+    expect(s.barriers?.[0].wake).toBe(true);
+    expect(s.party[1].sleep).toBe(0);
+    expect(s.log).toContainEqual({ type: 'cure', target: 'noel' });
+    const plain = round(makeBattle([chizuru({ ranks: { 'purify-ward': 1 } }), P('noel', { hp: 10, sleep: 2 })], [foe()]), cast('purify-ward'));
+    expect(plain.party[1].sleep).toBe(1);                                 // slept through her turn, still asleep
+    expect(s.party[1].hp).toBe(plain.party[1].hp);
+    // Its ranks raise the heal.
+    s = round(makeBattle([chizuru({ ranks: { 'purify-ward': 1, 'chizuru-purify-wake': 3 } }), P('noel', { hp: 10 })], [foe()]), cast('purify-ward'));
+    expect(s.barriers?.[0].power).toBe(39);                                 // 30 x 130%
   });
 });

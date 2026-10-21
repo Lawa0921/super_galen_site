@@ -58,13 +58,14 @@ describe('StatusScene', () => {
     const orig = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = reveal;
     try {
-      for (const [id, label, node] of [['tree', '技能樹', '.slx-tree-node.slx-row-cur'], ['talent', '天賦', '.slx-talent-node.slx-row-cur']]) {
+      // The tree scrolls its own columns (statusTabs revealIn, tested with the columns' cues); the board scrolls into view.
+      for (const [id, label, node, into] of [['tree', '技能樹', '.slx-tree-node.slx-row-cur', false], ['talent', '天賦', '.slx-talent-node.slx-row-cur', true]] as const) {
         reveal.mockClear();
         const { root, tab, name } = setup(`tab:${id}`);
         expect(tab()).toBe(label);
         expect(name()).toContain('絲嘉蕾');
         expect(root.querySelector(node)).not.toBeNull();
-        expect(reveal).toHaveBeenCalled();
+        expect(reveal.mock.calls.length > 0, id).toBe(into);
       }
     } finally {
       if (orig) Element.prototype.scrollIntoView = orig; else delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
@@ -504,11 +505,13 @@ describe('StatusScene', () => {
   });
 
   it('the skills tab prices a skill as the tree rewrites it: a modifier node lowers its TP', () => {
-    const { root, s, game } = setup('chizuru');
-    game.state.party.roster.chizuru.tree = { sweep: 1, 'spiral-spear': 1, 'chizuru-spiral-up': 3 };
+    // A plan 8c TP cut still standing (Chizuru's 旋槍節流 gave way to her 雷之結界 in plan 8d Task 5).
+    const { root, s, game } = setup('sylvie', NO_ART, (g) => { g.state.party.recruited.push('sylvie'); });
+    game.state.party.roster.sylvie.tree = { 'aimed-shot': 1, 'heart-shot': 1, 'sylvie-heart-up': 3 };
     s.onAction('right'); s.onAction('right');
-    const want = Math.max(1, SKILLS['spiral-spear'].tp + NODES['chizuru-spiral-up'].node.mods![2].tpDelta!);
-    expect(root.querySelector('[data-skill=spiral-spear] .slx-skill-cost')!.textContent).toBe(T.ui2.status.tp(want));
+    const want = Math.max(1, SKILLS['heart-shot'].tp + NODES['sylvie-heart-up'].node.mods![2].tpDelta!);
+    expect(want).toBeLessThan(SKILLS['heart-shot'].tp);
+    expect(root.querySelector('[data-skill=heart-shot] .slx-skill-cost')!.textContent).toBe(T.ui2.status.tp(want));
   });
 
   it('tree nodes and the skills tab show the skill icon when published', () => {
@@ -1020,6 +1023,50 @@ describe('StatusScene', () => {
         s.onAction('confirm');                                  // a redraw
         expect(cols(root).scrollTop).toBe(200);
         expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([false, true]);
+      });
+
+      it('the cursor scrolls the columns only when its node is out of view, bringing its branch name along when both fit (8d Task 5)', () => {
+        sh.mockReturnValue(600); ch.mockReturnValue(200);
+        const into = vi.fn();
+        const orig = Element.prototype.scrollIntoView;
+        Element.prototype.scrollIntoView = into;
+        // On screen: the columns from 100 to 300; the cursor's node, and the name of its branch, where `at` says.
+        const at = { node: { top: 150, bottom: 180 }, head: { top: 130, bottom: 144 } };
+        const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+          const r = this.classList.contains('slx-tree-cols') ? { top: 100, bottom: 300 }
+            : this.classList.contains('slx-row-cur') ? at.node
+              : this.classList.contains('slx-tree-branch-name') && this.closest('.slx-tree-branch')?.querySelector('.slx-row-cur') ? at.head
+                : { top: 0, bottom: 0 };
+          return { ...r, left: 0, right: 0, width: 0, height: r.bottom - r.top, x: 0, y: r.top, toJSON: () => r } as DOMRect;
+        });
+        try {
+          const { root, s } = onTree(2);
+          // In view: no scroll at all (scrollIntoView used to nudge it, hiding the branch names at 1280).
+          s.onAction('down');
+          expect(cols(root).scrollTop).toBe(0);
+          // Below the columns: just enough to show it whole.
+          at.node = { top: 290, bottom: 330 };
+          s.onAction('down');
+          expect(cols(root).scrollTop).toBe(30);
+          // Above, its branch name just over it: both come into view.
+          cols(root).scrollTop = 80;
+          cols(root).dispatchEvent(new Event('scroll'));
+          at.node = { top: 75, bottom: 105 };
+          at.head = { top: 60, bottom: 74 };
+          s.onAction('up');
+          expect(cols(root).scrollTop).toBe(40);                // 80 − (100 − 60)
+          // Above, its branch name too far up to fit with it: the node alone, at the top.
+          cols(root).scrollTop = 300;
+          cols(root).dispatchEvent(new Event('scroll'));
+          at.node = { top: 80, bottom: 110 };
+          at.head = { top: -200, bottom: -186 };
+          s.onAction('up');
+          expect(cols(root).scrollTop).toBe(280);               // 300 − (100 − 80)
+          expect(into).not.toHaveBeenCalled();                  // nothing else on the page moves
+        } finally {
+          rect.mockRestore();
+          if (orig) Element.prototype.scrollIntoView = orig; else delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+        }
       });
     });
   });

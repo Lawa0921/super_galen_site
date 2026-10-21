@@ -11,6 +11,7 @@ import { REGIONS } from '../data/regions';
 import { HERO_ULTIMATES, RIN_DAWN, ULTIMATES, skyForm } from '../data/ultimates';
 import { POWERS } from '../data/gear';
 import { TREES } from '../data/trees';
+import { skillFor } from './battle';
 
 const P = (key: string, over: Partial<Combatant> = {}) => makeCombatant({ key, side: 'party', ...over });
 const E = (key: string, over: Partial<Combatant> = {}) => makeCombatant({ key, side: 'enemy', ...over });
@@ -187,6 +188,19 @@ describe('inflicting the new ailments', () => {
     applyEffect(P('p'), t, { kind: 'inflict', status: 'shock', chance: 1 }, c);
     expect(t.burn).toEqual({ tick: 28, turns: 3, src: 'p' });
     expect(t.shock).toBe(2);
+  });
+
+  it('deep sleep lasts as the variant says (plan 8d Task 5, 深眠)', () => {
+    const t = E('e0');
+    applyEffect(P('p'), t, { kind: 'inflict', status: 'sleep', chance: 1, turns: 5 }, ctx());
+    expect(t.sleep).toBe(5);
+    const u = E('e1');
+    applyEffect(P('p'), u, { kind: 'inflict', status: 'sleep', chance: 1 }, ctx());
+    expect(u.sleep).toBe(3);
+    // 深眠 writes its rounds onto 夢境's sleep; the moon's new-moon chance keeps them.
+    const deep = skillFor({ powers: [], ranks: { dream: 1, 'selene-dream-deep': 2 } }, 'dream')!;
+    expect(deep.effects).toContainEqual({ kind: 'inflict', status: 'sleep', chance: SKILLS.dream.effects[0].kind === 'inflict' ? SKILLS.dream.effects[0].chance : NaN, turns: 5 });
+    expect(deep.name).toBe('夢境・深眠');
   });
 
   it('elemental hits alone never inflict anything', () => {

@@ -169,8 +169,10 @@ export const T = {
     mark: '暗記',
     veil: '隱匿',
     /** The field bar (plan 8c Task 3): the barrier up, with its rounds; the moon now and next. */
-    ward: (n: number, boosted: boolean) => `守之結界${boosted ? '・加倍' : ''}${n}`,
-    purify: (n: number) => `淨之結界${n}`,
+    ward: (n: number, boosted: boolean, bolt = false) => `守之結界${boosted ? '・加倍' : ''}${bolt ? '・雷' : ''}${n}`,
+    purify: (n: number, bolt = false) => `淨之結界${bolt ? '・雷' : ''}${n}`,
+    /** Chizuru's 雷之結界 (plan 8d Task 5): the act line of its round-end strike. */
+    thunderWard: '雷之結界',
     moon: (now: string, next: string) => `月相：${now}→${next}`,
     phase: { first: '上弦', full: '滿月', waning: '下弦', new: '新月' },
     /** Liz's coins; a foe she appraised. Sylvie's aim on a foe (locked by the hunter's mark); a pinned foe. */

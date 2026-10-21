@@ -16,7 +16,7 @@ import { applyEffect, patchSkill, type EffectContext } from './skills';
 import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
 import { credit, lossOf, type Ledger } from './ledger';
-import type { Barrier } from './mech';
+import { barrierPower, type Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
 import { COINS } from './mechanics/coins';
 import { payHp } from './mechanics/embers';
@@ -513,15 +513,16 @@ function ringBell(s: BattleState, heroWasUp: boolean, ctx: EffectContext): void 
 }
 
 /**
- * The guard barrier on the party, mirrored as each living member's `ward` (plan 8c ruling 9): its percent, power x boost,
- * to def and res, with who raised it; the fallen and a party without a guard barrier carry none. Not a buff: it takes no
- * buff slot and never meets the strongest-kept rule. Draws nothing.
+ * The guard barrier on the party, mirrored as each living member's `ward` (plan 8c ruling 9): its percent (mech
+ * barrierPower: power x boost, x the 重結界 percent as the later of two; every guard barrier up, summed), to def and res,
+ * with who raised it; the fallen and a party without a guard barrier carry none. Not a buff: it takes no buff slot and
+ * never meets the strongest-kept rule. Draws nothing.
  */
 export function syncWards(s: BattleState): void {
-  const guard = (s.barriers ?? []).find((b) => b.kind === 'guard');
-  const pct = guard ? guard.power * (guard.boost ?? 1) : 0;
+  const guards = (s.barriers ?? []).filter((b) => b.kind === 'guard');
+  const pct = guards.reduce((n, b) => n + barrierPower(b), 0);
   for (const c of s.party) {
-    if (guard && c.alive) c.ward = { def: pct, res: pct, src: guard.src };
+    if (guards.length && c.alive) c.ward = { def: pct, res: pct, src: guards[0].src };
     else delete c.ward;
   }
 }
