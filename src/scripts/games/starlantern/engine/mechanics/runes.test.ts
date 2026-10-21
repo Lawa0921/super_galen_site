@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { LIMIT_PER_ACTION, resolveRound, type Action, type BattleState } from '../battle';
+import { LIMIT_PER_ACTION, createBattle, resolveRound, type Action, type BattleState } from '../battle';
 import { hitAmount, rollHit, type BattleEvent, type Combatant } from '../combatant';
 import { applyEffect, pctOf, type EffectContext } from '../skills';
 import { BARRIER } from '../mech';
 import { SKILLS } from '../../data/skills';
 import { mulberry32, type Rng } from '../rng';
-import { constRng, makeBattle, makeCombatant } from '../testing';
+import { constRng, fullParty, makeBattle, makeCombatant } from '../testing';
+import { applyLasting, battleReservePct, lastingTargets } from './runes';
+import { reservedTpPct } from '../sockets';
+import { stat } from '../combatant';
 import { castCost } from './index';
 import { echoOf } from './echo';
 import { skillFor } from '../battle';
@@ -462,5 +465,72 @@ describe('trigger runes: review fixes (plan 8e Task 6 review)', () => {
     const at = r.log.findIndex((e) => e.type === 'trigger');
     expect(r.log.slice(at).find((e) => e.type === 'heal')).toMatchObject({ target: 'noel' });
     expect(a.n).toBe(b.n);
+  });
+});
+
+describe('lasting runes (plan 8e Task 7)', () => {
+  const lasting: RuneRef = { id: 'lasting', tier: 'magic' };
+  const team = () => [
+    member('safira', { max: { ...MAX, tp: 100 }, tp: 100, runes: { 'war-dance': [lasting] } }),
+    member('noel'), member('rin'),
+  ];
+
+  it('a lasting war dance lifts the party all fight and reserves her TP', () => {
+    const s = makeBattle(team(), [tough('e0')]);
+    applyLasting(s);
+    for (const c of s.party) expect(c.auras, c.key).toEqual([{ stat: 'atk', pct: 15, turns: 0, src: 'safira' }]);
+    expect([s.party[0].max.tp, s.party[0].tp]).toEqual([70, 70]);
+    // Twenty rounds on, and after she falls, it stands.
+    const rounds = play(s, Array.from({ length: 20 }, () => ({})));
+    const last = rounds[rounds.length - 1];
+    for (const c of last.party) expect(c.auras).toEqual([{ stat: 'atk', pct: 15, turns: 0, src: 'safira' }]);
+    const down = resolveRound({ ...last, party: last.party.map((c) => (c.key === 'safira' ? { ...c, hp: 0, alive: false } : c)) }, {}, constRng(0.5));
+    for (const c of down.party) expect(c.auras).toEqual([{ stat: 'atk', pct: 15, turns: 0, src: 'safira' }]);
+    // A fight opened from the party: the same, at once.
+    const party = fullParty(['hero', 'safira', 'noel']);
+    party.roster.safira = { ...party.roster.safira, sockets: { 'war-dance': [lasting] } };
+    const opened = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    for (const c of opened.party) expect(c.auras?.[0]).toMatchObject({ stat: 'atk', src: 'safira' });
+    const plainFight = createBattle({ party: fullParty(['hero', 'safira', 'noel']), enemyIds: ['slime'], inventory: {}, revealed: {} });
+    const sf = (b: BattleState) => b.party.find((c) => c.key === 'safira')!;
+    expect(sf(opened).max.tp).toBe(Math.floor((sf(plainFight).max.tp * 70) / 100));
+  });
+
+  it('an aura and a buff: the stronger counts', () => {
+    const c = member('noel', { auras: [{ stat: 'atk', pct: 15, turns: 0, src: 'safira' }], buffs: [{ stat: 'atk', pct: 25, turns: 1, src: 'safira' }] });
+    expect(stat(c, 'atk')).toBe(Math.floor(MAX.atk * 1.25));
+    const s = resolveRound(makeBattle([c], [tough('e0')]), {}, constRng(0.5));
+    expect(s.party[0].buffs).toEqual([]);
+    expect(stat(s.party[0], 'atk')).toBe(Math.floor(MAX.atk * 1.15));
+    // Different ways: an aura of +24 and a debuff of −20 both count.
+    const both = member('noel', { auras: [{ stat: 'def', pct: 24, turns: 0, src: 'chizuru' }], buffs: [{ stat: 'def', pct: -20, turns: 2, src: 'e0' }] });
+    expect(stat(both, 'def')).toBe(Math.floor(MAX.def * 1.04));
+    // No aura: the same number as ever.
+    expect(stat(member('noel', { buffs: [{ stat: 'atk', pct: 25, turns: 1 }] }), 'atk')).toBe(Math.floor(MAX.atk * 1.25));
+  });
+
+  it('a lasting single-ally buff goes to the caster', () => {
+    const [safira, noel, rin] = team();
+    const party = [safira, noel, { ...rin, alive: false, hp: 0 }];
+    expect(lastingTargets({ ...SKILLS['war-dance'], target: 'ally' }, safira, party)).toEqual([safira]);
+    expect(lastingTargets({ ...SKILLS['war-dance'], target: 'self' }, safira, party)).toEqual([safira]);
+    expect(lastingTargets(SKILLS['war-dance'], safira, party)).toEqual([safira, noel]);
+  });
+
+  it('a lasting rune that no longer fits reserves nothing', () => {
+    expect(reservedTpPct({ sockets: { 'fire-star': [lasting] } })).toBe(30);
+    const noel = member('noel', { runes: { 'fire-star': [lasting] } });
+    const s = makeBattle([noel], [tough('e0')]);
+    applyLasting(s);
+    expect(battleReservePct(s.party[0])).toBe(0);
+    expect(s.party[0].max.tp).toBe(MAX.tp);
+    expect(s.party[0].auras).toBeUndefined();
+  });
+
+  it('no lasting rune, no aura and the same TP', () => {
+    const s = makeBattle([member('noel'), member('rin', { runes: { 'rin-needle': [{ id: 'regain', tier: 'magic' }] } })], [tough('e0')]);
+    const before = JSON.stringify(s);
+    applyLasting(s);
+    expect(JSON.stringify(s)).toBe(before);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createBattle, resolveRound, syncWards, type BattleState } from './battle';
 import { dealDamage, hitAmount, rollHit, stat, type BattleEvent, type Combatant, type DamageSpec, type HitRolls } from './combatant';
-import { credit, lossOf, newLedger, totalOf, type Ledger } from './ledger';
+import { credit, creditPrevented, lossOf, newLedger, totalOf, type Ledger } from './ledger';
 import { mulberry32 } from './rng';
 import { encounterTable } from './scaling';
 import { choose, partyAt, simBattle } from './sim';
@@ -361,5 +361,23 @@ describe('the contribution ledger', () => {
     expect(kept).toEqual(simBattle(partyAt(10), FIGHTS[0].enemyIds, false, 7919, scale));
     const plain = play(FIGHTS[0], newLedger());
     expect(Object.values(l.by).reduce((n, c) => n + c.damage, 0)).toBe(plain.s.enemies.reduce((n, e) => n + e.max.hp - e.hp, 0));
+  });
+});
+
+describe('a lasting guard in the ledger (plan 8e Task 7)', () => {
+  it('a lasting guard is credited what it prevents', () => {
+    const a = E('e0', { max: { hp: 100, tp: 0, atk: 60, def: 20, mag: 20, res: 20, spd: 10 } });
+    const buff = { stat: 'def' as const, pct: 24, turns: 3, src: 'chizuru' };
+    const aura = { ...buff, turns: 0 };
+    const prevented = (t: Combatant) => {
+      const l = newLedger();
+      creditPrevented(l, a, t, phys(), MID, hitAmount(a, t, phys(), MID).amount);
+      return of(l, 'chizuru').prevented;
+    };
+    const byBuff = prevented(P('noel', { buffs: [buff] }));
+    expect(byBuff).toBeGreaterThan(0);
+    expect(prevented(P('noel', { auras: [aura] }))).toBe(byBuff);
+    // Both, the same way: taking either away changes nothing, so neither is credited.
+    expect(prevented(P('noel', { buffs: [buff], auras: [aura] }))).toBe(0);
   });
 });

@@ -88,7 +88,8 @@ export const barrier: MechModule = {
     if (def.mech !== 'release' || !s.barriers?.length) return;
     // 連解: the barrier stays, this many rounds shorter (gone at 0).
     const keep = def.rules?.releaseKeep;
-    s.barriers = keep === undefined ? [] : s.barriers.map((b) => ({ ...b, turns: b.turns - keep })).filter((b) => b.turns > 0);
+    // A lasting barrier (常駐, plan 8e) is spent by a release, 連解 or not.
+    s.barriers = keep === undefined ? [] : s.barriers.filter((b) => !b.lasting).map((b) => ({ ...b, turns: b.turns - keep })).filter((b) => b.turns > 0);
     syncWards(s);
   },
   beforeTicks(s, ctx, rng) {
@@ -114,13 +115,15 @@ export const barrier: MechModule = {
   },
   roundEnd(s) {
     if (!s.barriers?.length) return;
-    s.barriers = s.barriers.map((b) => ({ ...b, turns: b.turns - 1 })).filter((b) => b.turns > 0);
+    // A lasting barrier (常駐, plan 8e) takes no round off.
+    s.barriers = s.barriers.map((b) => (b.lasting ? b : { ...b, turns: b.turns - 1 })).filter((b) => b.turns > 0);
   },
   fieldWords(s) {
     const bolt = thunderOf(s) !== undefined;
+    // A lasting barrier says 常駐 where the rounds would be.
     return (s.barriers ?? []).map((b) => b.kind === 'guard'
-      ? { tone: 'ward' as const, text: T.mech.ward(b.turns, (b.boost ?? 1) > 1, bolt) }
-      : { tone: 'purify' as const, text: T.mech.purify(b.turns, bolt) });
+      ? { tone: 'ward' as const, text: T.mech.ward(b.lasting ? T.mech.lasting : b.turns, (b.boost ?? 1) > 1, bolt) }
+      : { tone: 'purify' as const, text: T.mech.purify(b.lasting ? T.mech.lasting : b.turns, bolt) });
   },
   unusable(s, _c, def) {
     return def.effects.some((e) => e.kind === 'barrier-boost') && !s.barriers?.length ? T.mech.noBarrier : null;

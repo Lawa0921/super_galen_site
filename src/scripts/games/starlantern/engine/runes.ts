@@ -248,3 +248,8 @@ export function bounceNext(enemies: readonly Combatant[], from: string, hit: Rea
   }
   return undefined;
 }
+
+/** What the rune card adds after a rune's sentence on this skill (plan 8e Task 7): 常駐 on a barrier skill. */
+export function runeNote(def: SkillDef, id: RuneId): string | undefined {
+  return id === 'lasting' && def.effects.some((e) => e.kind === 'barrier') ? T.rune.lastingBarrier : undefined;
+}

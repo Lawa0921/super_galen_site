@@ -150,3 +150,12 @@ describe('repairing rune fields (plan 8e Task 2)', () => {
     expect(JSON.stringify(d)).toBe(before);
   });
 });
+
+describe('the TP a lasting rune holds back (plan 8e Task 7)', () => {
+  it('reservedTpPct sums the socketed lasting runes', () => {
+    expect(reservedTpPct({})).toBe(0);
+    expect(reservedTpPct({ sockets: { ward: [lasting] } })).toBe(30);
+    expect(reservedTpPct({ sockets: { ward: [lasting, null], 'war-dance': [null, lasting], 'iron-wall': [lasting] } })).toBe(90);
+    expect(reservedTpPct({ sockets: { ward: [spread] } })).toBe(0);
+  });
+});

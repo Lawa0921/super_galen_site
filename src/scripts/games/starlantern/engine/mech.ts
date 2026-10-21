@@ -73,7 +73,8 @@ export type BarrierKind = 'guard' | 'purify';
  * Plan 8d: `pair`, the percent it works at as the later of two kinds (Chizuru's 重結界; absent reads 100); `wake`, a
  * purifying barrier that also ends the party's sleep (her 祓).
  */
-export interface Barrier { skill: string; kind: BarrierKind; power: number; turns: number; src: string; boost?: number; pair?: number; wake?: true }
+/** `lasting`: raised by a 常駐 rune at the fight's start (plan 8e): it takes no round off, and a release or a new barrier ends it. */
+export interface Barrier { skill: string; kind: BarrierKind; power: number; turns: number; src: string; boost?: number; pair?: number; wake?: true; lasting?: true }
 
 /** What a barrier does now, in its own unit (a guard's percent, a purifying heal's power): power x boost x pair%. */
 export const barrierPower = (b: Barrier): number => (b.power * (b.boost ?? 1) * (b.pair ?? 100)) / 100;

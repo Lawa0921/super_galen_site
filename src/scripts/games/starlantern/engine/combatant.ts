@@ -42,6 +42,11 @@ export interface Combatant {
   runes?: Record<string, RuneRef[]>;
   /** 星燈輪轉 (plan 8e): how many times each skill with it has been cast this fight. */
   wheel?: Record<string, number>;
+  /**
+   * 常駐 (plan 8e Task 7): buffs that last the whole fight and take no buff slot (`turns` 0, never aged). Each way (up,
+   * down) of a stat counts the stronger of its buff and its aura.
+   */
+  auras?: Buff[];
   /** The round each trigger condition last fired for her (plan 8e: once a round each). */
   fired?: Partial<Record<'crit' | 'kill' | 'struck', number>>;
   /** Keystone talents held (members only; engine/progression.keystonesOf). */
@@ -130,9 +135,22 @@ export type BattleEvent =
 export const MAX_BUFFS = 3;
 export const SLEEP_TURNS = 3;
 
+/**
+ * A stat's buffs in percent: their sum (one a way, addBuff); with 常駐 auras (plan 8e), each way takes the stronger of its
+ * buff and its aura. With no aura, the sum as it ever was.
+ */
+function buffPct(c: Pick<Combatant, 'buffs' | 'auras'>, s: BuffStat): number {
+  const own = c.buffs.filter((b) => b.stat === s);
+  if (!c.auras?.length) return own.reduce((sum, b) => sum + b.pct, 0);
+  const aura = c.auras.filter((b) => b.stat === s);
+  const up = Math.max(own.filter((b) => b.pct > 0).reduce((sum, b) => sum + b.pct, 0), ...aura.filter((b) => b.pct > 0).map((b) => b.pct));
+  const down = Math.min(own.filter((b) => b.pct < 0).reduce((sum, b) => sum + b.pct, 0), ...aura.filter((b) => b.pct < 0).map((b) => b.pct));
+  return up + down;
+}
+
 export function stat(c: Combatant, s: BuffStat): number {
   // A chilled boss is slower, and a guard barrier's ward guards: both added to the buffs' percentages.
-  const pct = c.buffs.filter((b) => b.stat === s).reduce((sum, b) => sum + b.pct, 0) + (s === 'spd' && c.chill ? AILMENT.chillSpdPct : 0)
+  const pct = buffPct(c, s) + (s === 'spd' && c.chill ? AILMENT.chillSpdPct : 0)
     + (c.ward ? (s === 'def' ? c.ward.def : s === 'res' ? c.ward.res : 0) : 0);
   return Math.max(1, Math.floor(c.max[s] * Math.max(0.25, 1 + pct / 100)));
 }

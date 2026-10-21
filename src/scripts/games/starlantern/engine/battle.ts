@@ -21,7 +21,7 @@ import type { MoonPhase } from './mechanics/moon';
 import { COINS } from './mechanics/coins';
 import { payHp } from './mechanics/embers';
 import { echoDef, echoOf } from './mechanics/echo';
-import { runTriggers } from './mechanics/runes';
+import { applyLasting, runTriggers } from './mechanics/runes';
 import { T } from '../data/text.zh-TW';
 import type { RuneRef } from '../data/runes';
 import { applyRunes, bounceNext } from './runes';
@@ -210,6 +210,8 @@ export function createBattle(o: {
   if (k !== 1) s.partyScale = k;
   s.abyss = o.abyss ?? abyssPct(depth);
   initMechs(s);
+  // 常駐 (plan 8e): the lasting buffs and barriers go up, and the reserve comes off max TP.
+  applyLasting(s);
   return s;
 }
 

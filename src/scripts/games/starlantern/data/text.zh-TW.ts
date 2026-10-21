@@ -175,8 +175,10 @@ export const T = {
     mark: '暗記',
     veil: '隱匿',
     /** The field bar (plan 8c Task 3): the barrier up, with its rounds; the moon now and next. */
-    ward: (n: number, boosted: boolean, bolt = false) => `守之結界${boosted ? '・加倍' : ''}${bolt ? '・雷' : ''}${n}`,
-    purify: (n: number, bolt = false) => `淨之結界${bolt ? '・雷' : ''}${n}`,
+    ward: (n: number | string, boosted: boolean, bolt = false) => `守之結界${boosted ? '・加倍' : ''}${bolt ? '・雷' : ''}${n}`,
+    purify: (n: number | string, bolt = false) => `淨之結界${bolt ? '・雷' : ''}${n}`,
+    /** A lasting barrier's word in place of its rounds (常駐, plan 8e). */
+    lasting: '常駐',
     /** Chizuru's 雷之結界 (plan 8d Task 5): the act line of its round-end strike. */
     thunderWard: '雷之結界',
     moon: (now: string, next: string) => `月相：${now}→${next}`,
@@ -773,6 +775,8 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     },
     /** The battle log's act for 雙重詠唱's second cast and for a 回聲 (plan 8e Task 5). */
     again: (name: string) => `${name}（第二次）`,
+    /** After 常駐's sentence on a barrier skill (plan 8e Task 7). */
+    lastingBarrier: '再施放一次會換掉它。',
     reprise: (name: string) => `${name}的回聲`,
   },
   clear: { back: '繼續' },   // the Act 1 card's title and body are story copy: STORY.act1Card

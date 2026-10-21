@@ -5,13 +5,14 @@
  * battle.ts perform. The trigger runes (Task 6): `noteHit` queues them, `runTriggers` casts them after each action.
  * Nothing here draws but the hits of a reprise or a triggered cast.
  */
-import type { CharacterId, Element } from '../types';
+import type { CharacterId, Element, SkillDef } from '../types';
 import { applyEffect, patchSkill, pctOf, type EffectContext } from '../skills';
-import { castOnce, skillFor, type BattleState } from '../battle';
-import type { Combatant } from '../combatant';
+import { castOnce, skillFor, syncWards, type BattleState } from '../battle';
+import type { Buff, Combatant } from '../combatant';
+import { raiseBarrier } from './barrier';
 import type { Rng } from '../rng';
 import { isInnate, pctMod, skillRank, treeSkills } from '../progression';
-import { RUNES } from '../../data/runes';
+import { RESERVE_CAP, RUNES } from '../../data/runes';
 import { T } from '../../data/text.zh-TW';
 import type { MechModule } from './index';
 
@@ -148,4 +149,68 @@ export function runTriggers(s: BattleState, ctx: EffectContext, rng: Rng): void 
     castOnce(s, c, def, chosen, ctx, rng);
     delete ctx.cast;
   }
+}
+
+/**
+ * Who a lasting buff lasts on (plan 8e ruling 13): the caster for a self or single-ally buff, every standing member for a
+ * party buff.
+ */
+export function lastingTargets(def: SkillDef, c: Combatant, party: readonly Combatant[]): Combatant[] {
+  return def.target === 'allies' ? party.filter((m) => m.alive) : [c];
+}
+
+/** The skills of `c` with a working 常駐, in the order she learned them (innate first). */
+function lastingSkills(c: Combatant): { id: string; def: SkillDef; pct: number; reservePct: number }[] {
+  if (!c.runes) return [];
+  return treeSkills(c.defId as CharacterId).flatMap((id) => {
+    if (!c.runes?.[id]?.length) return [];
+    const def = skillFor(c, id);
+    const l = def?.runeRules?.lasting;
+    return def && l ? [{ id, def, pct: l.pct, reservePct: l.reservePct }] : [];
+  });
+}
+
+/** The max TP her working 常駐 runes hold back in this fight, in percent (at most RESERVE_CAP). */
+export function battleReservePct(c: Combatant): number {
+  return Math.min(RESERVE_CAP, lastingSkills(c).reduce((a, x) => a + x.reservePct, 0));
+}
+
+/**
+ * 常駐 at the fight's start (plan 8e Task 7), after the mechanics' init: in party order, each member's skills with a working
+ * 常駐 put their buffs on as auras (`lastingTargets`, at the rune's percent; one a stat and way, the stronger kept) and
+ * raise their barriers as lasting ones (at the rune's percent); then her max TP gives up her reserve. No TP is paid, no
+ * cast is logged, nothing is drawn.
+ */
+export function applyLasting(s: BattleState): void {
+  let raised = false;
+  for (const c of s.party) {
+    const list = lastingSkills(c);
+    if (!list.length) continue;
+    for (const { def, pct } of list) {
+      for (const e of def.effects) {
+        if (e.kind === 'buff' && e.pct > 0) {
+          for (const t of lastingTargets(def, c, s.party)) addAura(t, { stat: e.stat, pct: pctOf(e.pct, pct), turns: 0, src: c.key });
+        } else if (e.kind === 'barrier') {
+          raiseBarrier(s, c, { ...e, power: pctOf(e.power, pct) }, def.id);
+          const b = s.barriers![s.barriers!.length - 1];
+          s.barriers![s.barriers!.length - 1] = { ...b, lasting: true };
+          raised = true;
+        }
+      }
+    }
+    const reserve = battleReservePct(c);
+    if (reserve > 0) {
+      c.max = { ...c.max, tp: Math.floor((c.max.tp * (100 - reserve)) / 100) };
+      c.tp = Math.min(c.tp, c.max.tp);
+    }
+  }
+  if (raised) syncWards(s);
+}
+
+/** An aura on `t`: one a stat and way, the stronger kept. */
+function addAura(t: Combatant, a: Buff): void {
+  const list = t.auras ?? [];
+  const i = list.findIndex((x) => x.stat === a.stat && Math.sign(x.pct) === Math.sign(a.pct));
+  if (i < 0) t.auras = [...list, a];
+  else if (Math.abs(a.pct) > Math.abs(list[i].pct)) t.auras = list.map((x, j) => (j === i ? a : x));
 }

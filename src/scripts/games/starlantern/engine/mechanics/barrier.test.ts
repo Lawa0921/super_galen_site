@@ -5,6 +5,11 @@ import { newLedger } from '../ledger';
 import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
 import { castDef, fieldWords } from './index';
+import { applyLasting } from './runes';
+import { runeNote } from '../runes';
+import { pctOf } from '../skills';
+import { BARRIER } from '../mech';
+import { T } from '../../data/text.zh-TW';
 
 const chizuru = (over: Partial<Combatant> = {}) => makeCombatant({
   key: 'chizuru', side: 'party', defId: 'chizuru', mech: { kind: 'barrier' },
@@ -193,5 +198,33 @@ describe("Chizuru's barrier nodes (plan 8d Task 5)", () => {
     // Its ranks raise the heal.
     s = round(makeBattle([chizuru({ ranks: { 'purify-ward': 1, 'chizuru-purify-wake': 3 } }), P('noel', { hp: 10 })], [foe()]), cast('purify-ward'));
     expect(s.barriers?.[0].power).toBe(39);                                 // 30 x 130%
+  });
+});
+
+describe('a lasting barrier (plan 8e Task 7)', () => {
+  it('a lasting ward stands all fight until spent', () => {
+    const lasting = { id: 'lasting', tier: 'magic' } as const;
+    const s0 = makeBattle([chizuru({ runes: { ward: [lasting] } }), P('noel')], [foe({ sleep: 0, max: { hp: 99999, tp: 0, atk: 1, def: 20, mag: 1, res: 20, spd: 1 } })]);
+    applyLasting(s0);
+    expect(s0.barriers).toEqual([{ skill: 'ward', kind: 'guard', power: 18, turns: 3, src: 'chizuru', lasting: true }]);
+    expect(fieldWords(s0).map((w) => w.text).join()).toContain(T.mech.lasting);
+    // Ten rounds on, still up, never counting down.
+    let s = s0;
+    for (let i = 0; i < 10; i++) s = round(s);
+    expect(s.barriers).toEqual(s0.barriers);
+    // 破邪突 spends it at its own three rounds: +30%, and it is gone.
+    const thrust = castDef(s, s.party[0], SKILLS['exorcism-thrust']).effects[0] as { power: number };
+    expect(thrust.power).toBe(pctOf(150, 100 + BARRIER.releasePct * 3));
+    const spent = round(s, cast('exorcism-thrust'));
+    expect(spent.barriers ?? []).toEqual([]);
+    // Cast again, 守之結界 is a plain one: three rounds, and gone.
+    let again = round(s, cast('ward'));
+    expect(again.barriers).toEqual([{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru' }]);
+    for (let i = 0; i < 2; i++) again = round(again);
+    expect(again.barriers ?? []).toEqual([]);
+    // The card's note on a barrier skill with 常駐.
+    expect(runeNote(SKILLS.ward, 'lasting')).toBe('再施放一次會換掉它。');
+    expect(runeNote(SKILLS['war-dance'], 'lasting')).toBeUndefined();
+    expect(runeNote(SKILLS.ward, 'extend')).toBeUndefined();
   });
 });
