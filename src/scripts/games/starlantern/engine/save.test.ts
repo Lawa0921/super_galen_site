@@ -661,6 +661,21 @@ describe('old node ids (plan 8c)', () => {
     return tree;
   };
 
+  it('a save that holds an old id beside its new one keeps the new one and drops the old (not corrupt)', () => {
+    const g = newGame();
+    g.party.roster.liz.level = 50;
+    g.party.roster.liz.tree = holding('liz', ['pickpocket']);
+    expect(validBuild('liz', 50, g.party.roster.liz.tree, {})).toBe(true);
+    const raw = JSON.parse(JSON.stringify(g));
+    const tree = raw.party.roster.liz.tree as Record<string, number>;
+    tree['triple-slash'] = 3;   // the old id beside the new one, with another rank
+    const r = loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) }));
+    expect(r.status).toBe('ok');
+    const t = (r as { state: typeof g }).state.party.roster.liz.tree;
+    expect(t.pickpocket).toBe(g.party.roster.liz.tree.pickpocket);
+    expect(t).not.toHaveProperty('triple-slash');
+  });
+
   it('a save that holds old node ids loads with them renamed', () => {
     const g = newGame();
     // Every rename plan 8c made, by name.

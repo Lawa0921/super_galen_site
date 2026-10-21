@@ -50,8 +50,11 @@ export interface MechModule {
   watch?(s: BattleState, c: Combatant): unknown;
   /** After a party member's action (and `after`): one more action now, or null. It logs its own moment. */
   extraAction?(s: BattleState, c: Combatant, act: Action, ctx: EffectContext, seen: unknown): Action | null;
-  /** After a foe's action; `from` is where its events start in the log (Scarlet's 贖火 answers a blow on her). */
-  afterFoe?(s: BattleState, foe: Combatant, ctx: EffectContext, from: number): void;
+  /**
+   * After a foe's action; `from` is where its events start in the log, `idle` who was frozen or asleep as it began (Scarlet's
+   * 贖火 answers a blow on her, unless she could not stir).
+   */
+  afterFoe?(s: BattleState, foe: Combatant, ctx: EffectContext, from: number, idle: readonly string[]): void;
   /** At the round's end, before any tick (the purifying barrier heals and cures here). */
   beforeTicks?(s: BattleState, ctx: EffectContext, rng: Rng): void;
   /** At the round's end, after every tick: countdowns, clean-ups. */
@@ -137,8 +140,8 @@ export function whyNot(s: BattleState, c: Combatant, def: SkillDef): string | nu
 }
 
 /** After each foe's action. */
-export function afterFoe(s: BattleState, foe: Combatant, ctx: EffectContext, from: number): void {
-  for (const m of modules()) m.afterFoe?.(s, foe, ctx, from);
+export function afterFoe(s: BattleState, foe: Combatant, ctx: EffectContext, from: number, idle: readonly string[] = []): void {
+  for (const m of modules()) m.afterFoe?.(s, foe, ctx, from, idle);
 }
 
 /** At the start of endOfRound, before any tick. */

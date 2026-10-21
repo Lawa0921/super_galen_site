@@ -744,7 +744,7 @@ describe('memory keystones in battle', () => {
       return d && d.type === 'damage' ? d.amount : -1;
     };
     const plain = shot([]), held = shot(['blueprint']);
-    expect(Math.abs(held - plain * (1 + MV.turretPct / 100))).toBeLessThanOrEqual(1);
+    expect(Math.abs(held - plain * (1 + MV.devicePct / 100))).toBeLessThanOrEqual(1);
     expect(held).toBeGreaterThan(plain);
   });
 

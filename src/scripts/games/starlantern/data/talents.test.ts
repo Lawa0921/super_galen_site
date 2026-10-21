@@ -187,7 +187,7 @@ describe('memory keystones', () => {
     }
     expect(new Set(Object.values(MEMORY_KEYSTONES)).size).toBe(9);
     expect(MEMORY_KEYSTONE_VALUES).toEqual({
-      moonHealPct: 20, shrineDefPct: 15, shrineTurns: 3, troupeTurns: 1, fullHpPct: 30, tpCostPct: 20, turretPct: 30, matFind: 20,
+      moonHealPct: 20, shrineDefPct: 15, shrineTurns: 3, troupeTurns: 1, fullHpPct: 30, tpCostPct: 20, devicePct: 30, matFind: 20,
       friendGuardPct: 20, bellAtkPct: 50, bellTurns: 2,
     });
   });
@@ -202,7 +202,7 @@ describe('memory keystone words (6c Task 13)', () => {
     'troupe-step': [`${M.troupeTurns} 回合`],
     'carried-out': [`+${M.fullHpPct}%`],
     'teachers-gift': [`−${M.tpCostPct}%`],
-    blueprint: [`+${M.turretPct}%`],
+    blueprint: [`+${M.devicePct}%`],
     'fathers-face': [`+${M.matFind}`],
     'not-a-shield': [`−${M.friendGuardPct}%`],
     'unrung-bell': [`+${M.bellAtkPct}%`, `${M.bellTurns} 回合`],

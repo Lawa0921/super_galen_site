@@ -9,7 +9,7 @@ import { LIMIT_MAX, intentLabel, skillFor, type Action, type BattleState } from 
 import type { Combatant } from '../../engine/combatant';
 import { ailmentChips, type AilmentChip } from '../../engine/ailments';
 import { castCost, cueWord, fieldWords, foeWords, memberWords, whyNot, type MechCue, type MechWord } from '../../engine/mechanics/index';
-import { echoDef, echoOf } from '../../engine/mechanics/echo';
+import { ECHO, echoDef, echoOf } from '../../engine/mechanics/echo';
 import type { BattleEnd } from '../../engine/game';
 import { learnedSkills, ultimateFor } from '../../engine/progression';
 import type { CharacterId, Target } from '../../engine/types';
@@ -40,7 +40,7 @@ const WIN_MS = 1000;
 export const BATTLE_BOTTOM = 66;
 
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
-type Pending = { kind: 'attack' } | { kind: 'skill'; skill: string } | { kind: 'item'; item: string } | { kind: 'ultimate' } | { kind: 'echo' };
+type Pending = { kind: 'attack' } | { kind: 'skill'; skill: string } | { kind: 'item'; item: string } | { kind: 'ultimate' } | { kind: 'echo'; rec: NonNullable<BattleState['echo']> };
 
 /** Battle: message line on top, party bar below, a command window per member, target picking, playback and results. */
 export class BattleScene implements Scene {
@@ -180,7 +180,7 @@ export class BattleScene implements Scene {
     ];
     this.view = new MenuView(new Menu(list), {
       pick: (it) => { this.ctx.sfx.confirm(); this.command(it.id, actor); },
-      moved: () => this.ctx.sfx.cursor(),
+      moved: () => { this.ctx.sfx.cursor(); this.showNote(this.view?.menu.current()?.note); },
       cancel: () => this.back(),
     });
     this.cmd.replaceChildren(el('div', { class: 'slx-who', text: T.cmd.choose(actor.name) }), this.view.el);
@@ -235,7 +235,7 @@ export class BattleScene implements Scene {
     if (id === 'ultimate') { this.withTarget(ultimateFor(actor.defId as CharacterId, actor.ranks, actor).target, { kind: 'ultimate' }); return; }
     if (id === 'echo') {
       const rec = echoOf(this.state, this.state.round + 1);
-      if (rec) this.withTarget(echoDef(rec).target, { kind: 'echo' });
+      if (rec) this.withTarget(echoDef(rec).target, { kind: 'echo', rec });
       return;
     }
     if (id === 'skill') {
@@ -255,7 +255,7 @@ export class BattleScene implements Scene {
     const rec = echoOf(this.state, this.state.round + 1);
     if (!rec) return [{ id: 'echo', label: T.cmd.echo(), disabled: true }];
     const def = echoDef(rec);
-    return [{ id: 'echo', label: T.cmd.echo(def.name), right: T.cmd.tp(rec.cost), disabled: actor.tp < rec.cost, note: def.desc }];
+    return [{ id: 'echo', label: T.cmd.echo(def.name), right: T.cmd.tp(rec.cost), disabled: actor.tp < rec.cost, note: T.cmd.echoNote(ECHO.powerPct, def.desc) }];
   }
 
   private skillItems(actor: Combatant): MenuItem[] {
@@ -327,7 +327,7 @@ export class BattleScene implements Scene {
     if (p.kind === 'attack') this.choose({ kind: 'attack', target: target ?? this.state.enemies.find((e) => e.alive)?.key ?? 'e0' });
     else if (p.kind === 'skill') this.choose({ kind: 'skill', skill: p.skill, target });
     else if (p.kind === 'item') this.choose({ kind: 'item', item: p.item, target });
-    else if (p.kind === 'echo') this.choose(target ? { kind: 'echo', target } : { kind: 'echo' });
+    else if (p.kind === 'echo') this.choose(target ? { kind: 'echo', target, rec: p.rec } : { kind: 'echo', rec: p.rec });
     else this.choose(target ? { kind: 'ultimate', target } : { kind: 'ultimate' });
   }
 

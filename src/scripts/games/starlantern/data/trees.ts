@@ -23,7 +23,7 @@ export interface TreeBranch { name: string; nodes: TreeNode[] }
 export interface TreeDef { branches: TreeBranch[] }
 
 /**
- * Damage and heal power (turret power too) of an active node at rank 1-3, in percent; rank 1 is the skill as written.
+ * Damage and heal power (a device's too) of an active node at rank 1-3, in percent; rank 1 is the skill as written.
  * It never scales a buff's or debuff's percent: only a mod node whose text says so deepens one (`buffPct`).
  */
 export const ACTIVE_RANK_PCT = [100, 110, 120, 130, 140];

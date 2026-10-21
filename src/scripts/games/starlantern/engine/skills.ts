@@ -10,6 +10,7 @@ import { onLandedHit } from './mechanics/index';
 import { MOON } from './mechanics/moon';
 import { AIM } from './mech';
 import { COINS } from './mechanics/coins';
+import { T } from '../data/text.zh-TW';
 import { overclock, placeDevice, tuneUp } from './mechanics/devices';
 
 /**
@@ -22,7 +23,7 @@ import { overclock, placeDevice, tuneUp } from './mechanics/devices';
 export interface EffectContext {
   rng: Rng; itemBoost: boolean; revealed: Record<string, Element[]>; log: BattleEvent[];
   ledger?: Ledger;
-  redirect?: { pool: Combatant[] };
+  redirect?: { pool: Combatant[]; cover?: true };
   battle?: BattleState;
   /** The id of the skill being cast, while its effects resolve. */
   cast?: string;
@@ -41,7 +42,7 @@ export const pctOf = (base: number, pct: number | undefined): number => {
 /**
  * A skill as one mod rewrites it; the original is never touched. `target` and `hpCost` replace the skill's own (an hpCost
  * of 0 is kept, so the skill costs no HP); `hits` and `element` go to damage; `powerPct` (plus `powerDelta` points) scales
- * damage, heal and turret power, never a buff's percent; `buffPct` scales every buff and debuff percent; `turns` (plus
+ * damage, heal and device power, never a buff's percent; `buffPct` scales every buff and debuff percent; `turns` (plus
  * `turnsDelta`) goes to every effect that lasts; `chance` goes to poison inflicts only; `tpDelta` is added to a TP cost
  * (floored at 1); `extra` is appended as written.
  *
@@ -49,7 +50,7 @@ export const pctOf = (base: number, pct: number | undefined): number => {
  * one place it is stated):
  * 1. base: SKILLS[id];
  * 2. tree rank: the active node's ACTIVE_RANK_PCT on the skill's primary effect (progression.rankMod): powerPct for a
- *    damage, heal or turret skill, buffPct for a pure buff or debuff skill; a debuff riding on damage never scales;
+ *    damage, heal or device skill, buffPct for a pure buff or debuff skill; a debuff riding on damage never scales;
  * 3. tree modifiers: every mod node of the skill the member holds, folded into one mod by `stackMods` in tree order:
  *    absolute values (powerPct, buffPct, turns, chance, hpCost, hits, element, target) replace the earlier node's,
  *    relative values (tpDelta, powerDelta, turnsDelta; e.g. twin-turret's +60 points and +1 turn) add;
@@ -91,6 +92,9 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
       const was = (e as unknown as Record<string, unknown>)[f], is = now[f];
       if (typeof was === 'number' && typeof is === 'number' && was !== is) out.desc = out.desc.replace(say(was), say(is));
     }
+    // 收回's ranks hold the phase it steps back to: the words say for how many more round ends.
+    const held = (now as { hold?: number }).hold ?? 0;
+    if (e.kind === 'moon' && e.step === -1 && held > (e.hold ?? 0)) out.desc += T.mech.recallHold(held);
   });
   if (mod.target !== undefined) out.target = mod.target;
   if (mod.hpCost !== undefined) out.hpCost = mod.hpCost;

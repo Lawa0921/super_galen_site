@@ -34,8 +34,11 @@ export type Action =
   | { kind: 'item'; item: string; target?: string }
   | { kind: 'escape' }
   | { kind: 'ultimate'; target?: string }
-  /** The hero repeats a companion's last skill (engine/mechanics/echo.ts). */
-  | { kind: 'echo'; target?: string };
+  /**
+   * The hero repeats a companion's last skill (engine/mechanics/echo.ts); `rec` is the record the menu showed when he chose
+   * it (a later cast that round does not change what he repeats). Without it, the record standing when he acts.
+   */
+  | { kind: 'echo'; target?: string; rec?: NonNullable<BattleState['echo']> };
 export type Outcome = 'ongoing' | 'win' | 'lose' | 'fled';
 
 export interface BattleState {
@@ -308,19 +311,21 @@ function chooseEnemyActions(s: BattleState, rng: Rng, round: number): Map<string
  * target). Null for an area attack, or when nothing turns the blow. `round` is the round the blow falls in (the next one
  * for an intent planned ahead). Draws nothing.
  */
-export function forcedTarget(s: BattleState, enemy: Combatant, act: EnemyAction, round = s.round): { to: Combatant; pool: Combatant[] } | null {
+export function forcedTarget(s: BattleState, enemy: Combatant, act: EnemyAction, round = s.round): { to: Combatant; pool: Combatant[]; cover?: true } | null {
   const sk = act.kind === 'enemy-skill' ? enemyDef(s, enemy)?.skills[act.index] : undefined;
   if (!(act.kind === 'attack' || sk?.target === 'enemy')) return null;
   const melee = act.kind === 'attack' ? enemy.melee : skillIsMelee(sk?.effects ?? []);
-  const others = (who: Combatant) => reachable(s.party, melee).filter((c) => c !== who);
+  // A veiled member is passed over by single blows, so she is in no pool of what they would have done (plan 8c final).
+  const others = (who: Combatant) => reachable(s.party, melee).filter((c) => c !== who && !c.veil);
   const taunter = living(s.party).find((c) => c.taunt > 0);
   if (taunter) return { to: taunter, pool: others(taunter) };
   const ch = enemy.challenged;
   const by = ch && ch.round === round ? s.party.find((c) => c.key === ch.by && c.alive) : undefined;
   if (by) return { to: by, pool: others(by) };
   const meant = s.party.find((c) => c.key === act.target && c.alive);
-  const cover = meant ? living(s.party).find((c) => c !== meant && c.cover?.ally === meant.key) : undefined;
-  if (meant && cover) return { to: cover, pool: [meant] };
+  // A frozen or sleeping Scarlet stands in for no one (designer ruling, plan 8c final).
+  const cover = meant ? living(s.party).find((c) => c !== meant && c.cover?.ally === meant.key && !c.frozen && c.sleep === 0) : undefined;
+  if (meant && cover) return { to: cover, pool: [meant], cover: true };
   return null;
 }
 
@@ -345,7 +350,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     const forced = forcedTarget(s, actor, act as EnemyAction);
     const taunter = living(s.party).find((c) => c.taunt > 0);
     if (forced) {
-      if (ctx.ledger) ctx.redirect = { pool: forced.pool };
+      if (ctx.ledger) ctx.redirect = forced.cover ? { pool: forced.pool, cover: true } : { pool: forced.pool };
       act = { ...act, target: forced.to.key } as EnemyAction;
       sentTo = forced.to;
     } else if (taunter) act = { ...act, target: taunter.key } as EnemyAction;
@@ -403,7 +408,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       return null;
     case 'echo': {
       // The hero only: a companion's last plain skill, this round's or the last's, at 70% for the TP she paid.
-      const rec = actor.defId === 'hero' ? echoOf(s) : null;
+      const rec = actor.defId === 'hero' ? (act.rec ?? echoOf(s)) : null;
       if (!rec) return null;
       if (actor.tp < rec.cost) { s.log.push({ type: 'no-tp', actor: actor.key }); return null; }
       actor.tp -= rec.cost;
@@ -549,10 +554,12 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
       // What the mechanics need to see before the action (Rin's living marks: a felled foe leaves them at once).
       const seen = actor.side === 'party' ? watchAction(s, actor) : [];
       const from = s.log.length;
+      // Who could not stir as the foe's blow fell (a hit wakes a sleeper, so it is read before).
+      const idle = actor.side === 'enemy' ? s.party.filter((c) => c.frozen || c.sleep > 0).map((c) => c.key) : [];
       const def = perform(s, actor, act, ctx, rng);
       delete ctx.redirect;
       // What the foe's action set off on the party (Scarlet's 贖火 counter); that sets off nothing more.
-      if (actor.side === 'enemy') afterFoe(s, actor, ctx, from);
+      if (actor.side === 'enemy') afterFoe(s, actor, ctx, from, idle);
       if (actor.side === 'party' && actor.alive && act.kind !== 'ultimate' && act.kind !== 'escape') actor.limit = Math.min(LIMIT_MAX, actor.limit + gaugeGain(actor, LIMIT_PER_ACTION));
       if (actor.side === 'party') {
         const own = act as Action;

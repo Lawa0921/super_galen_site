@@ -22,7 +22,7 @@ const V = KEYSTONE_VALUES;
 
 /** Knobs of the memory keystones (6b Task 12); tuned in 20b. KEYSTONE_VALUES above stays as 6a froze it. */
 export const MEMORY_KEYSTONE_VALUES = {
-  moonHealPct: 20, shrineDefPct: 15, shrineTurns: 3, troupeTurns: 1, fullHpPct: 30, tpCostPct: 20, turretPct: 30, matFind: 20,
+  moonHealPct: 20, shrineDefPct: 15, shrineTurns: 3, troupeTurns: 1, fullHpPct: 30, tpCostPct: 20, devicePct: 30, matFind: 20,
   friendGuardPct: 20, bellAtkPct: 50, bellTurns: 2,
 };
 const M = MEMORY_KEYSTONE_VALUES;
@@ -40,7 +40,7 @@ export const KEYSTONES: Record<KeystoneId, { name: string; desc: string }> = {
   'troupe-step': { name: '你要繼續跳', desc: `團長推她出去的那一步，她替大家跳下去。她施放的增益多持續 ${M.troupeTurns} 回合` },
   'carried-out': { name: '先把人帶出去', desc: `危險還沒碰到人，她的箭就先到了。對滿血目標的傷害 +${M.fullHpPct}%` },
   'teachers-gift': { name: '平安就夠了', desc: `老師要的不是那本書，是她平安。她不再拿自己的記憶去換魔法。她的技能 TP 消耗 −${M.tpCostPct}%` },
-  blueprint: { name: '我來修好', desc: `構造圖拼齊了，每一顆齒輪都找到了自己的位置。裝置效果 +${M.turretPct}%` },
+  blueprint: { name: '我來修好', desc: `構造圖拼齊了，每一顆齒輪都找到了自己的位置。裝置效果 +${M.devicePct}%` },
   'fathers-face': { name: '父親的臉', desc: `估價是在家裡的小店學的。值得帶回家的東西，她一眼就認得。素材尋獲 +${M.matFind}` },
   'not-a-shield': { name: '不是盾，是朋友', desc: `她擋在前面，不是為了誓言，是她自己選的。挑釁中受到的傷害再 −${M.friendGuardPct}%` },
   'unrung-bell': { name: '不再鳴響的鐘', desc: `她不再等鐘響。洛恩倒下時，凜立刻對第一個活著的敵人普通攻擊一次，並得到攻擊 +${M.bellAtkPct}%，持續 ${M.bellTurns} 回合` },

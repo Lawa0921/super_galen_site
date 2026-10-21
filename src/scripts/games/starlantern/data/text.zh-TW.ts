@@ -133,6 +133,7 @@ export const T = {
     /** The hero's echo: what it repeats (「殘響」 alone, greyed, when there is nothing); the act's name in the log. */
     echo: (name?: string) => (name ? `殘響：${name}` : '殘響'),
     echoAct: (name: string) => `殘響・${name}`,
+    echoNote: (pct: number, desc: string) => `以 ${pct}% 的威力重現：${desc}`,
   },
   battle: {
     win: '勝利！', lose: '全滅……', fled: '成功逃跑', cont: '繼續', poison: '毒', sleep: '睡眠',
@@ -181,6 +182,8 @@ export const T = {
     noCoins: '沒有銅板',
     noBarrier: '沒有結界',
     noDevices: '沒有裝置',
+    /** 收回 above its first rank: the phase it steps back to stays this many round ends more. */
+    recallHold: (n: number) => `倒回的月相再停 ${n} 回合。`,
     /** Scarlet's embers, her cover (受護 on the one she covers), her 贖火's rounds; Safira's beat (the fourth is the finale's). */
     embers: (n: number) => `餘燼${n}`,
     cover: '代受',
@@ -356,6 +359,7 @@ export const T = {
       next: (what: 'power' | 'buff', a: number, b: number) => `下一級：${what === 'power' ? '威力' : '效果'} ${a}% → ${b}%`,
       now: (text: string) => `目前：${text}`,
       nextMod: (text: string) => `下一級：${text}`,
+      nextHold: (n: number) => `下一級：倒回的月相再停 ${n} 回合`,
       none: '未投入',
       /** A modifier rank's rewrite in short, e.g. 「威力 120%」「TP −2」「持續 5 回合」. */
       mod: (m: SkillMod): string => [

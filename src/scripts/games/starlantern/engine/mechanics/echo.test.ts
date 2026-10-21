@@ -33,6 +33,18 @@ describe("the hero's echo", () => {
     expect(echoOf(r)!.by).toBe('noel');
   });
 
+  it('he echoes what the menu showed when he chose it, though another companion casts before him that round', () => {
+    // Round 1 is over: Noel's fire star is on record. In round 2 Selene (faster) casts her moonlight before the hero acts.
+    const rec = { by: 'noel', round: 1, def: SKILLS['fire-star'], cost: SKILLS['fire-star'].tp };
+    const s0 = makeBattle([hero(), P('noel'), P('selene', { max: { ...MAX, spd: 90 } })], [foe()], { round: 1, echo: rec });
+    const acts = { selene: { kind: 'skill', skill: 'moonlight', target: 'noel' }, hero: { kind: 'echo', target: 'e0', rec } } as const;
+    const r = resolveRound(s0, acts, constRng(0.5));
+    expect(r.log).toContainEqual({ type: 'act', actor: 'hero', label: '殘響・火之星彈' });
+    expect(r.party[0].tp).toBe(99 - SKILLS['fire-star'].tp);
+    expect(r.log.filter((e) => e.type === 'damage' && e.target === 'e0')).toHaveLength(1);
+    expect(echoOf(r)!.def.id).toBe('moonlight');   // the record moved on; his choice did not
+  });
+
   it('short of TP he loses the turn, as with a skill', () => {
     const s0 = makeBattle([hero({ tp: 1 }), P('noel')], [foe()]);
     const r = resolveRound(s0, { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' }, hero: { kind: 'echo', target: 'e0' } }, constRng(0.5));

@@ -39,10 +39,11 @@ export const embers: MechModule = {
   pay(_s, c, def) {
     if (c.mech?.kind === 'embers' && def.mech === 'ember-power') c.mech.embers = 0;
   },
-  afterFoe(s, foe, ctx, from) {
+  afterFoe(s, foe, ctx, from, idle) {
     if (!foe.alive) return;
     for (const c of s.party) {
-      if (!c.alive || !c.riposte) continue;
+      // A frozen or sleeping Scarlet answers nothing (designer ruling, plan 8c final).
+      if (!c.alive || !c.riposte || idle.includes(c.key)) continue;
       const hit = s.log.slice(from).some((e) => (e.type === 'damage' || e.type === 'shield') && e.target === c.key);
       if (!hit) continue;
       ctx.log.push({ type: 'mech', actor: c.key, cue: 'counter' });

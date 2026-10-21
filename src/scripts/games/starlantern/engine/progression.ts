@@ -99,7 +99,7 @@ export function skillRank(ranks: unknown, skill: string): number {
 
 /**
  * The active node's own rank as a rewrite of the skill's primary effect, or undefined when it changes nothing (rank 0, or
- * 100%): a skill that deals damage, heals or sets a turret scales its power (`powerPct`; a debuff riding on it is left
+ * 100%): a skill that deals damage, heals or sets a device scales its power (`powerPct`; a debuff riding on it is left
  * alone); a pure buff or debuff skill scales its percent (`buffPct`). A skill with neither costs 1 TP less a rank (`tpDelta`),
  * or lasts a round longer a rank when its node says `rank: 'turns'` (`turnsDelta`).
  */
@@ -117,7 +117,7 @@ export function rankMod(ranks: Record<string, number>, skill: string): SkillMod 
 
 /**
  * `pct` percent as a rewrite of the skill's primary effect, or undefined when it changes nothing (100%, or a skill with
- * nothing to scale): damage, heal and turret skills scale their power (`powerPct`); a pure buff or debuff skill its percent.
+ * nothing to scale): damage, heal and device skills scale their power (`powerPct`); a pure buff or debuff skill its percent.
  */
 export function pctMod(skill: string, pct: number): SkillMod | undefined {
   if (pct === 100) return undefined;

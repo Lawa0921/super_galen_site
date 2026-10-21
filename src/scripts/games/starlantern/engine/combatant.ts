@@ -279,6 +279,9 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; led
     delete t.cover;
     delete t.riposte;
     delete t.challenged;
+    // Her marks and her aim end with her (their words go from the foes too).
+    if (t.mech?.kind === 'mark') t.mech.marks = [];
+    if (t.mech?.kind === 'aim') { t.mech.target = null; t.mech.stacks = 0; delete t.mech.lock; }
     clearAilments(t);
   }
   return lost;

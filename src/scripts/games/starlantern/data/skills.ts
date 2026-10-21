@@ -1,3 +1,4 @@
+import { AIM, BARRIER, COINS, DEVICE } from '../engine/mech';
 import type { SkillDef } from '../engine/types';
 
 const LIST: SkillDef[] = [
@@ -12,7 +13,7 @@ const LIST: SkillDef[] = [
 
   { id: 'sweep', name: '橫掃', owner: 'chizuru', tp: 5, target: 'enemies', desc: '攻擊全體敵人',
     effects: [{ kind: 'damage', power: 80, element: 'phys', scale: 'atk', melee: true }] },
-  { id: 'ward', name: '守之結界', owner: 'chizuru', tp: 6, target: 'self', desc: '失禮了。3 回合內，全隊的防禦與魔防提升 30%。結界同時只能有一個。',
+  { id: 'ward', name: '守之結界', owner: 'chizuru', tp: 6, target: 'self', desc: '失禮了。3 回合內，全隊的防禦與魔防提升 {e0.power}%。結界同時只能有一個。',
     effects: [{ kind: 'barrier', barrier: 'guard', power: 30, turns: 3 }] },
   { id: 'pierce', name: '貫槍', owner: 'chizuru', tp: 5, target: 'enemy', desc: '單體強力突刺',
     effects: [{ kind: 'damage', power: 170, element: 'phys', scale: 'atk', melee: true }] },
@@ -33,7 +34,7 @@ const LIST: SkillDef[] = [
 
   { id: 'provoke', name: '挑釁', owner: 'scarlet', tp: 3, target: 'self', desc: '3 回合內吸引敵人單體攻擊',
     effects: [{ kind: 'taunt', turns: 3 }] },
-  { id: 'flame-burst', name: '爆炎斬', owner: 'scarlet', tp: 3, hpCost: 0.15, target: 'enemy', desc: '消耗 15% HP 的火屬性重擊',
+  { id: 'flame-burst', name: '爆炎斬', owner: 'scarlet', tp: 3, hpCost: 0.15, target: 'enemy', desc: '消耗 {hpCost}% HP 的火屬性重擊',
     effects: [{ kind: 'damage', power: 220, element: 'fire', scale: 'atk', melee: true }] },
   { id: 'iron-wall', name: '鐵壁', owner: 'scarlet', tp: 4, target: 'self', desc: '自身防禦大幅提升',
     effects: [{ kind: 'buff', stat: 'def', pct: 40, turns: 3 }] },
@@ -78,16 +79,16 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'barrier', barrier: 'purify', power: 30, turns: 3 }] },
   { id: 'great-barrier', name: '大結界', owner: 'chizuru', tp: 12, target: 'self', desc: '以全身之力撐起：目前的結界效果加倍，並延長 3 回合。',
     effects: [{ kind: 'barrier-boost', mul: 2, turns: 3 }] },
-  { id: 'exorcism-thrust', name: '破邪突', owner: 'chizuru', tp: 6, target: 'enemy', mech: 'release', desc: '解放結界的一突：結界每剩 1 回合，威力多 10%。',
+  { id: 'exorcism-thrust', name: '破邪突', owner: 'chizuru', tp: 6, target: 'enemy', mech: 'release', desc: `解放結界的一突：結界每剩 1 回合，威力多 ${BARRIER.releasePct}%。`,
     effects: [{ kind: 'damage', power: 150, element: 'phys', scale: 'atk', melee: true }] },
-  { id: 'heaven-spear', name: '天之逆鉾', owner: 'chizuru', tp: 13, target: 'enemy', mech: 'release', desc: '單體極大突刺；可解放結界，結界每剩 1 回合，威力多 10%。',
+  { id: 'heaven-spear', name: '天之逆鉾', owner: 'chizuru', tp: 13, target: 'enemy', mech: 'release', desc: `單體極大突刺；可解放結界，結界每剩 1 回合，威力多 ${BARRIER.releasePct}%。`,
     effects: [{ kind: 'damage', power: 330, element: 'phys', scale: 'atk', melee: true }] },
 
   { id: 'jackpot', name: '一擲千金', owner: 'liz', tp: 12, target: 'enemies', mech: 'coin-hits', desc: '全部砸出去！手上每枚銅板，就朝隨機的敵人丟一下。',
     effects: [{ kind: 'damage', power: 40, element: 'phys', scale: 'atk', melee: true, hits: 1, scatter: true }] },
   { id: 'smoke-bomb', name: '煙霧彈', owner: 'liz', tp: 6, target: 'enemies', desc: '降低全體敵人攻擊',
     effects: [{ kind: 'buff', stat: 'atk', pct: -20, turns: 3 }] },
-  { id: 'fortune-strike', name: '大手筆', owner: 'liz', tp: 10, target: 'enemy', mech: 'coin-power', desc: '這一下花光所有銅板，每枚威力多 15%。很貴，但值得。',
+  { id: 'fortune-strike', name: '大手筆', owner: 'liz', tp: 10, target: 'enemy', mech: 'coin-power', desc: `這一下花光所有銅板，每枚威力多 ${COINS.coinPowerPct}%。很貴，但值得。`,
     effects: [{ kind: 'damage', power: 200, element: 'phys', scale: 'atk', melee: true }] },
   { id: 'quickstep', name: '疾步', owner: 'liz', tp: 3, target: 'self', desc: '自身速度提升',
     effects: [{ kind: 'buff', stat: 'spd', pct: 30, turns: 3 }] },
@@ -98,28 +99,28 @@ const LIST: SkillDef[] = [
 
   { id: 'heart-shot', name: '穿心箭', owner: 'sylvie', tp: 8, target: 'enemy', desc: '單體強力射擊',
     effects: [{ kind: 'damage', power: 210, element: 'phys', scale: 'atk', melee: false }] },
-  { id: 'starfall-arrow', name: '星墜一矢', owner: 'sylvie', tp: 13, target: 'enemy', mech: 'consume-aim', desc: '把瞄準全部放進這一箭：每層瞄準，威力多 50%。',
+  { id: 'starfall-arrow', name: '星墜一矢', owner: 'sylvie', tp: 13, target: 'enemy', mech: 'consume-aim', desc: `把瞄準全部放進這一箭：每層瞄準，威力多 ${AIM.consumePct}%。`,
     effects: [{ kind: 'damage', power: 260, element: 'phys', scale: 'atk', melee: false }] },
-  { id: 'sunder-arrow', name: '破甲箭', owner: 'sylvie', tp: 5, target: 'enemy', desc: '找到盔甲的縫。3 回合內，牠的防禦降低 30%。',
+  { id: 'sunder-arrow', name: '破甲箭', owner: 'sylvie', tp: 5, target: 'enemy', desc: '找到盔甲的縫。3 回合內，牠的防禦降低 {e1.pct}%。',
     effects: [{ kind: 'damage', power: 80, element: 'phys', scale: 'atk', melee: false }, { kind: 'buff', stat: 'def', pct: -30, turns: 3 }] },
-  { id: 'hunters-mark', name: '獵人標記', owner: 'sylvie', tp: 10, target: 'enemy', desc: '盯上牠了。4 回合內防禦降低 40%，瞄準直接 3 層，不會歸零。',
+  { id: 'hunters-mark', name: '獵人標記', owner: 'sylvie', tp: 10, target: 'enemy', desc: `盯上牠了。4 回合內防禦降低 {e1.pct}%，瞄準直接 ${AIM.cap} 層，不會歸零。`,
     effects: [{ kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: false }, { kind: 'buff', stat: 'def', pct: -40, turns: 4 }, { kind: 'aim-lock', turns: 4 }] },
   { id: 'scatter-shot', name: '散射', owner: 'sylvie', tp: 7, target: 'enemies', desc: '三支箭，射向隨機的敵人。',
     effects: [{ kind: 'damage', power: 70, element: 'phys', scale: 'atk', melee: false, hits: 3, scatter: true }] },
   { id: 'deluge-volley', name: '暴雨箭', owner: 'sylvie', tp: 15, target: 'enemies', desc: '箭像雨一樣落下：全體敵人 2 段。',
     effects: [{ kind: 'damage', power: 85, element: 'phys', scale: 'atk', melee: false, hits: 2 }] },
 
-  { id: 'cover', name: '代受', owner: 'scarlet', tp: 5, target: 'ally', desc: '3 回合內，衝著你來的單體攻擊全由我擋下，這是我的職責。',
+  { id: 'cover', name: '代受', owner: 'scarlet', tp: 5, target: 'ally', desc: '3 回合內，只要我還能動，衝著你來的單體攻擊全由我擋下，這是我的職責。',
     effects: [{ kind: 'cover', turns: 3 }] },
   { id: 'unbreakable', name: '不屈', owner: 'scarlet', tp: 10, target: 'self', desc: '4 回合內吸引敵人單體攻擊，並大幅提升自身防禦',
     effects: [{ kind: 'taunt', turns: 4 }, { kind: 'buff', stat: 'def', pct: 60, turns: 4 }] },
   { id: 'blaze-ring', name: '炎環斬', owner: 'scarlet', tp: 5, hpCost: 0.1, target: 'enemies', desc: '消耗 HP 的火屬性全體斬擊',
     effects: [{ kind: 'damage', power: 85, element: 'fire', scale: 'atk', melee: true }] },
-  { id: 'crimson-end', name: '紅蓮終焉', owner: 'scarlet', tp: 8, hpCost: 0.3, target: 'enemy', mech: 'ember-power', desc: '消耗 30% HP 的火屬性極大一擊，先拿餘燼支付，剩下的餘燼全化為威力。',
+  { id: 'crimson-end', name: '紅蓮終焉', owner: 'scarlet', tp: 8, hpCost: 0.3, target: 'enemy', mech: 'ember-power', desc: '消耗 {hpCost}% HP 的火屬性極大一擊，先拿餘燼支付，剩下的餘燼全化為威力。',
     effects: [{ kind: 'damage', power: 380, element: 'fire', scale: 'atk', melee: true }] },
   { id: 'shield-bash', name: '盾擊', owner: 'scarlet', tp: 4, target: 'enemy', desc: '舉盾正面撞上去，下一回合牠只能衝著我來。',
     effects: [{ kind: 'damage', power: 120, element: 'phys', scale: 'atk', melee: true }, { kind: 'challenge' }] },
-  { id: 'atoning-flame', name: '贖火', owner: 'scarlet', tp: 12, target: 'self', desc: '4 回合內，凡是打中我的敵人，我都以一記火焰還給牠。',
+  { id: 'atoning-flame', name: '贖火', owner: 'scarlet', tp: 12, target: 'self', desc: '4 回合內，只要我還能動，凡是打中我的敵人，我都以一記火焰還給牠。',
     effects: [{ kind: 'riposte', power: 80, turns: 4 }] },
 
   { id: 'moon-rain', name: '月光雨', owner: 'selene', tp: 9, target: 'allies', field: true, desc: '回復我方全體 HP',
@@ -145,7 +146,7 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'buff', stat: 'atk', pct: 35, turns: 4 }, { kind: 'buff', stat: 'spd', pct: 35, turns: 4 }] },
   { id: 'shadow-step', name: '影步斬', owner: 'safira', tp: 6, target: 'enemy', desc: '單體強力斬擊',
     effects: [{ kind: 'damage', power: 160, element: 'phys', scale: 'atk', melee: true }] },
-  { id: 'mirage-step', name: '蜃樓步', owner: 'safira', tp: 8, target: 'self', mech: 'cue-finale', desc: '跟上拍子囉，3 回合內速度提升 30%，下一步就是終幕。',
+  { id: 'mirage-step', name: '蜃樓步', owner: 'safira', tp: 8, target: 'self', mech: 'cue-finale', desc: '跟上拍子囉，3 回合內速度提升 {e0.pct}%，下一步就是終幕。',
     effects: [{ kind: 'buff', stat: 'spd', pct: 30, turns: 3 }] },
 
   { id: 'cannon', name: '加農砲', owner: 'bobby', tp: 7, target: 'enemy', desc: '單體強力砲擊',
@@ -158,7 +159,7 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'tune-up', levels: 1, turns: 3 }, { kind: 'cure' }] },
   { id: 'shock-mine', name: '電擊地雷', owner: 'bobby', tp: 7, target: 'self', desc: '埋好地雷，3 回合內每回合結束時電一下全體敵人。',
     effects: [{ kind: 'device', device: 'mine', power: 35, turns: 3 }] },
-  { id: 'tesla-coil', name: '特斯拉線圈', owner: 'bobby', tp: 15, target: 'self', desc: '架起特斯拉線圈，3 回合內每回合結束時雷擊全體敵人，有 30% 讓牠們感電。',
+  { id: 'tesla-coil', name: '特斯拉線圈', owner: 'bobby', tp: 15, target: 'self', desc: `架起特斯拉線圈，3 回合內每回合結束時雷擊全體敵人，有 ${Math.round(DEVICE.coilShock * 100)}% 讓牠們感電。`,
     effects: [{ kind: 'device', device: 'coil', power: 60, turns: 3 }] },
 
   { id: 'rin-needle', name: '飛針', owner: 'rin', tp: 3, target: 'enemy', desc: '連射 2 枚飛針',
@@ -225,4 +226,15 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'buff', stat: 'atk', pct: -20, turns: 4 }, { kind: 'buff', stat: 'def', pct: -20, turns: 4 }] },
 ];
 
-export const SKILLS: Record<string, SkillDef> = Object.fromEntries(LIST.map((s) => [s.id, s]));
+/**
+ * A description names its own numbers through tokens, so its words never drift from them: `{hpCost}` (the HP cost in
+ * percent) and `{eN.field}` (effect N's field; a percent unsigned). Mechanic numbers come from engine/mech.ts.
+ */
+function fill(d: SkillDef): SkillDef {
+  const desc = d.desc
+    .replace(/\{hpCost\}/g, () => String(Math.round((d.hpCost ?? 0) * 100)))
+    .replace(/\{e(\d)\.(\w+)\}/g, (_, i: string, f: string) => String(Math.abs((d.effects[Number(i)] as unknown as Record<string, number>)[f])));
+  return desc === d.desc ? d : { ...d, desc };
+}
+
+export const SKILLS: Record<string, SkillDef> = Object.fromEntries(LIST.map((s) => [s.id, fill(s)]));

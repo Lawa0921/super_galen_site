@@ -19,6 +19,12 @@ export const AIM = { cap: 3, dmgPct: 10, critPct: 0, consumePct: 50 } as const;
  */
 export const BEAT = { max: 4, pctPer: 10 } as const;
 
+/** Liz's coins (spec §8.3, engine/mechanics/coins.ts): the most she holds, +% power a coin, gold a coin left on a win. */
+export const COINS = { cap: 10, coinPowerPct: 15, gold: 2 } as const;
+
+/** Chizuru's barriers (spec §8.2, engine/mechanics/barrier.ts): +% power a release gains for each round the barrier had left. */
+export const BARRIER = { releasePct: 10 } as const;
+
 /** Scarlet's embers (spec §8.5, engine/mechanics/embers.ts): the share of HP lost kept, and the cap, both in percent. */
 export const EMBER = { sharePct: 50, capPct: 50 } as const;
 

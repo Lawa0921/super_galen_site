@@ -9,8 +9,9 @@ import type { Combatant } from '../combatant';
 import { pctOf } from '../skills';
 import { T } from '../../data/text.zh-TW';
 import type { MechModule } from './index';
+import { COINS } from '../mech';
 
-export const COINS = { cap: 10, coinPowerPct: 15, gold: 2 } as const;
+export { COINS };
 
 const coinsOf = (c: Combatant): number | null => (c.mech?.kind === 'coins' ? c.mech.coins : null);
 

@@ -10,8 +10,9 @@ import { syncWards } from '../battle';
 import { applyEffect, pctOf } from '../skills';
 import { T } from '../../data/text.zh-TW';
 import type { MechModule } from './index';
+import { BARRIER } from '../mech';
 
-export const BARRIER = { releasePct: 10 } as const;
+export { BARRIER };
 
 export const barrier: MechModule = {
   castDef(s, _c, def) {

@@ -175,7 +175,10 @@ export function upgradeTreeIds(data: Record<string, unknown>): void {
     if (!isObj(m) || !isObj(m.tree)) continue;
     const tree = m.tree;
     for (const [old, now] of Object.entries(LEGACY_NODE_IDS)) {
-      if (has(tree, old) && !has(tree, now)) { tree[now] = tree[old]; delete tree[old]; }
+      if (!has(tree, old)) continue;
+      // Both there (a save written mid-change): the new one stands, the old one goes.
+      if (!has(tree, now)) tree[now] = tree[old];
+      delete tree[old];
     }
   }
 }

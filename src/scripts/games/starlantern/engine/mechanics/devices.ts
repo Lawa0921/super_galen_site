@@ -28,7 +28,7 @@ const living = (cs: Combatant[]) => cs.filter((c) => c.alive);
 /** The power a device runs at: its skill's, +25% a level above the first, ×1.3 with blueprint (whole numbers only). */
 export function devicePower(c: Combatant, d: Device): number {
   const level = 100 + DEVICE.levelPct * (d.level - 1);
-  const blueprint = c.keystones.includes('blueprint') ? 100 + MEMORY_KEYSTONE_VALUES.turretPct : 100;
+  const blueprint = c.keystones.includes('blueprint') ? 100 + MEMORY_KEYSTONE_VALUES.devicePct : 100;
   return Math.round((d.power * level * blueprint) / 10000);
 }
 

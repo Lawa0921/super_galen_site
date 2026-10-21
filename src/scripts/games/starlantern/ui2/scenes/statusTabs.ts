@@ -385,6 +385,8 @@ export function nextRankText(skill: string, rank: number): string | null {
   if (!next) return null;
   if (next.powerPct !== undefined || next.buffPct !== undefined) return t.next(next.powerPct !== undefined ? 'power' : 'buff', ACTIVE_RANK_PCT[rank - 1], ACTIVE_RANK_PCT[rank]);
   if (next.tpDelta !== undefined) return t.nextMod(t.mod({ tpDelta: next.tpDelta - (now?.tpDelta ?? 0) }));
+  // 收回: its rounds are how long the recalled phase stays, said as such (the whole count at the next rank).
+  if (next.turnsDelta !== undefined && SKILLS[skill]?.effects.some((e) => e.kind === 'moon')) return t.nextHold(next.turnsDelta);
   if (next.turnsDelta !== undefined) return t.nextMod(t.mod({ turnsDelta: next.turnsDelta - (now?.turnsDelta ?? 0) }));
   return null;
 }

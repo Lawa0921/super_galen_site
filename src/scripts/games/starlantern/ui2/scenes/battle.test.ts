@@ -207,6 +207,13 @@ describe('BattleScene', () => {
     expect(listOf('洛恩')).toContainEqual(['殘響', 'true']);
     const some = listOf('洛恩', (g) => { g.battle!.echo = { by: 'noel', round: g.battle!.round, def: SKILLS['fire-star'], cost: 5 }; });
     expect(some).toContainEqual(['殘響：火之星彈', 'false']);
+    // On the command, the note says what it repeats and at what power.
+    {
+      const { root, s, heading } = setup((g) => { g.battle!.echo = { by: 'noel', round: g.battle!.round, def: SKILLS['fire-star'], cost: 5 }; }, {}, lineup);
+      expect(heading()).toBe(T.cmd.choose('洛恩'));
+      for (let k = 0; k < 9 && root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'echo'; k++) s.onAction('down');
+      expect(root.querySelector('.slx-bnote')?.textContent).toContain('70%');
+    }
     // Short of the TP Noel paid: greyed.
     const poor = listOf('洛恩', (g) => {
       g.battle!.echo = { by: 'noel', round: g.battle!.round, def: SKILLS['fire-star'], cost: 5 };

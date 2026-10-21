@@ -7,7 +7,6 @@ import { mulberry32 } from '../rng';
 import { SKILLS } from '../../data/skills';
 import { ENEMIES } from '../../data/enemies';
 import { castDef } from './index';
-import { COINS } from './coins';
 
 const liz = (coins: number, over: Partial<Combatant> = {}) => makeCombatant({
   key: 'liz', side: 'party', defId: 'liz', mech: { kind: 'coins', coins },
@@ -18,14 +17,13 @@ const foe = (key: string, over: Partial<Combatant> = {}) =>
 const coinsOf = (s: BattleState) => { const m = s.party.find((c) => c.key === 'liz')?.mech; return m?.kind === 'coins' ? m.coins : NaN; };
 const cast = (skill: string, target = 'e0'): Record<string, Action> => ({ liz: { kind: 'skill', skill, target } });
 const round = (s: BattleState, acts: Record<string, Action>, rng = constRng(0.5)) => resolveRound(s, acts, rng);
-const pct = (base: number, p: number) => Math.round((base * p) / 100);
 
 describe("Liz's coins", () => {
   it('every landed hit is a coin, up to ten', () => {
     expect(coinsOf(round(makeBattle([liz(0)], [foe('e0')]), cast('twin-slash')))).toBe(2);
     // A hit that is dodged earns nothing.
     expect(coinsOf(round(makeBattle([liz(0)], [foe('e0', { x: { evasion: 100 } })]), cast('twin-slash'), constRng(0)))).toBe(0);
-    expect(coinsOf(round(makeBattle([liz(9)], [foe('e0')]), cast('twin-slash')))).toBe(COINS.cap);
+    expect(coinsOf(round(makeBattle([liz(9)], [foe('e0')]), cast('twin-slash')))).toBe(10);
   });
 
   it('pickpocket takes two more', () => {
@@ -35,7 +33,7 @@ describe("Liz's coins", () => {
   it('the big spender is +15% a coin and spends them all', () => {
     const s = makeBattle([liz(7)], [foe('e0')]);
     const d = castDef(s, s.party[0], SKILLS['fortune-strike']).effects[0];
-    expect(d.kind === 'damage' && d.power).toBe(pct(200, 100 + COINS.coinPowerPct * 7));
+    expect(d.kind === 'damage' && d.power).toBe(410);   // 200 at +15% a coin, seven coins
     expect(SKILLS['fortune-strike'].name).toBe('大手筆');
     expect(coinsOf(round(s, cast('fortune-strike')))).toBe(1);   // spent, then the blow earns one
   });
@@ -77,8 +75,8 @@ describe("Liz's coins", () => {
     const counted = () => { n++; return 0.5; };
     const r = rewards(won, counted, false);
     const plain = rewards({ ...won, party: [liz(0)] }, (() => { let m = 0; return () => { m++; return 0.5; }; })(), false);
-    expect(r.coinGold).toBe(6 * COINS.gold);
-    expect(r.gold).toBe(plain.gold + 6 * COINS.gold);
+    expect(r.coinGold).toBe(12);   // 2 gold a coin
+    expect(r.gold).toBe(plain.gold + 12);
     let m = 0;
     rewards({ ...won, party: [liz(0)] }, () => { m++; return 0.5; }, false);
     expect(n).toBe(m);   // the coins draw nothing

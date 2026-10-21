@@ -1,22 +1,35 @@
 import { describe, expect, it } from 'vitest';
 import { resolveRound, turnOrder, type Action, type BattleState } from '../battle';
-import { hitAmount, rollHit, type Combatant, type HitRolls } from '../combatant';
+import { dealDamage, hitAmount, rollHit, type Combatant, type HitRolls } from '../combatant';
 import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
-import { castDef } from './index';
-import { AIM } from './aim';
+import { castDef, foeWords } from './index';
 
 const sylvie = (aim: { target: string | null; stacks: number; lock?: number } = { target: null, stacks: 0 }, over: Partial<Combatant> = {}) => makeCombatant({
   key: 'sylvie', side: 'party', defId: 'sylvie', melee: false, mech: { kind: 'aim', ...aim },
   max: { hp: 200, tp: 99, atk: 40, def: 20, mag: 20, res: 20, spd: 50 }, ...over,
 });
 const foe = (key: string, over: Partial<Combatant> = {}) =>
-  makeCombatant({ key, side: 'enemy', sleep: 9, max: { hp: 99999, tp: 0, atk: 20, def: 20, mag: 20, res: 20, spd: 1 }, ...over });
+  makeCombatant({ key, side: 'enemy', sleep: 9, max: { hp: 99999, tp: 0, atk: 1, def: 20, mag: 20, res: 20, spd: 1 }, ...over });   // harmless: she outlives every test
 const aimOf = (s: BattleState) => { const m = s.party.find((c) => c.key === 'sylvie')?.mech; return m?.kind === 'aim' ? { target: m.target, stacks: m.stacks, ...(m.lock ? { lock: m.lock } : {}) } : null; };
 const act = (a: Action): Record<string, Action> => ({ sylvie: a });
 const round = (s: BattleState, acts: Record<string, Action>, rng = constRng(0.5)) => resolveRound(s, acts, rng);
 const shot = { power: 100, element: 'phys' as const, scale: 'atk' as const, melee: false };
 const R: HitRolls = { variance: 1, crit: false, blocked: false };
+
+describe("an owner's words go when she falls (plan 8c final)", () => {
+  it("Rin's mark and Sylvie's aim end with them", () => {
+    const rin = makeCombatant({ key: 'rin', side: 'party', defId: 'rin', hp: 5, mech: { kind: 'mark', marks: ['e0'], cap: 1 } });
+    const syl = makeCombatant({ key: 'sylvie', side: 'party', defId: 'sylvie', hp: 5, mech: { kind: 'aim', target: 'e0', stacks: 3, lock: 2 } });
+    const s = makeBattle([rin, syl], [makeCombatant({ key: 'e0', side: 'enemy' })]);
+    expect(foeWords(s, s.enemies[0]).map((w) => w.text)).toEqual(['暗記', '瞄準3・鎖定']);
+    dealDamage(rin, 99);
+    dealDamage(syl, 99);
+    expect(rin.mech).toEqual({ kind: 'mark', marks: [], cap: 1 });
+    expect(syl.mech).toEqual({ kind: 'aim', target: null, stacks: 0 });
+    expect(foeWords(s, s.enemies[0])).toEqual([]);
+  });
+});
 
 describe("Sylvie's aim", () => {
   it('aim builds on the same target and resets on another', () => {
@@ -33,22 +46,18 @@ describe("Sylvie's aim", () => {
     s = round(s, act({ kind: 'attack', target: 'e0' }));
     expect(aimOf(s)).toEqual({ target: 'e0', stacks: 1 });
     for (let i = 0; i < 4; i++) s = round(s, act({ kind: 'attack', target: 'e0' }));
-    expect(aimOf(s)).toEqual({ target: 'e0', stacks: AIM.cap });
+    expect(aimOf(s)).toEqual({ target: 'e0', stacks: 3 });   // the cap
   });
 
   it('each stack is more damage and more crit on that target only', () => {
     const t = foe('e0');
     const base = hitAmount(sylvie({ target: 'e0', stacks: 0 }), t, shot, R).amount;
-    expect(hitAmount(sylvie({ target: 'e0', stacks: 2 }), t, shot, R).amount).toBe(Math.max(1, Math.floor(hitAmount(sylvie(), t, shot, R).amount * (1 + (AIM.dmgPct * 2) / 100))));
+    expect(hitAmount(sylvie({ target: 'e0', stacks: 2 }), t, shot, R).amount).toBe(Math.max(1, Math.floor(hitAmount(sylvie(), t, shot, R).amount * 1.2)));   // 10% a stack
     expect(hitAmount(sylvie({ target: 'e1', stacks: 2 }), t, shot, R).amount).toBe(base);
-    // Crit: each stack adds AIM.critPct points on that foe (tuned to 0 in Task 4: then no crit roll is added either).
+    // Crit: none a stack (tuned to 0 in Task 4), so no crit roll is added either.
     const draws = (stacks: number) => { let n = 0; rollHit(sylvie({ target: 'e0', stacks }), t, shot, () => { n++; return 0.5; }); return n; };
-    if (AIM.critPct > 0) {
-      const crit = (v: number) => { let i = 0; return rollHit(sylvie({ target: 'e0', stacks: 2 }), t, shot, () => (i++ === 0 ? 0.5 : v))?.crit; };
-      expect(crit((AIM.critPct * 2) / 100 - 0.01)).toBe(true);
-      expect(crit((AIM.critPct * 2) / 100 + 0.01)).toBe(false);
-      expect(draws(2)).toBe(2);
-    } else expect(draws(2)).toBe(draws(0));
+    expect(draws(2)).toBe(draws(0));
+    expect(rollHit(sylvie({ target: 'e0', stacks: 3 }), t, shot, () => 0.001)?.crit).toBe(false);
     let n = 0;
     expect(rollHit(sylvie({ target: 'e1', stacks: 2 }), t, shot, () => { n++; return 0.01; })?.crit).toBe(false);
     expect(n).toBe(1);   // no aim there: no crit chance, no crit roll
@@ -57,7 +66,7 @@ describe("Sylvie's aim", () => {
   it('starfall spends the stacks for 50% each', () => {
     const s = makeBattle([sylvie({ target: 'e0', stacks: 3 })], [foe('e0')]);
     const d = castDef(s, s.party[0], SKILLS['starfall-arrow']).effects[0];
-    expect(d.kind === 'damage' && d.power).toBe(Math.round((260 * (100 + AIM.consumePct * 3)) / 100));
+    expect(d.kind === 'damage' && d.power).toBe(650);   // 260 at +50% a stack: x2.5
     const after = round(s, act({ kind: 'skill', skill: 'starfall-arrow', target: 'e0' }));
     expect(aimOf(after)).toEqual({ target: 'e0', stacks: 1 });   // spent to 0, then this shot is one on the same target
   });

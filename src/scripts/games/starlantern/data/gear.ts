@@ -73,7 +73,7 @@ export function affixRange(key: AnyStat, ilvl: number): [number, number] {
 /** How a power rewrites the skill it names (applied by the battle engine). */
 export interface SkillMod {
   hits?: number; target?: Target; element?: Element; hpCost?: number; turns?: number; chance?: number;
-  /** Scales damage, heal and turret power. Never a buff's or debuff's percent: that is `buffPct`. */
+  /** Scales damage, heal and device power. Never a buff's or debuff's percent: that is `buffPct`. */
   powerPct?: number;
   /** Scales the percent of every buff and debuff the skill applies (not ones added by `extra`). */
   buffPct?: number;

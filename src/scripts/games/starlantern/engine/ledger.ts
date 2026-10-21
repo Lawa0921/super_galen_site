@@ -36,7 +36,7 @@ export function lossOf(t: Combatant, amount: number): number {
  * would have lost, rounded down to whole HP, to the target. An empty pool credits nothing. A shield is not a factor: it
  * is credited apart, by what it absorbs (combatant.dealDamage). Call it before the damage lands.
  */
-export function creditPrevented(l: Ledger, a: Combatant, t: Combatant, spec: DamageSpec, r: HitRolls, amount: number, redirect?: { pool: Combatant[] }): void {
+export function creditPrevented(l: Ledger, a: Combatant, t: Combatant, spec: DamageSpec, r: HitRolls, amount: number, redirect?: { pool: Combatant[]; cover?: true }): void {
   const actual = lossOf(t, amount);
   const spared = (who: Combatant, alt: Combatant, attacker: Combatant = a): number =>
     Math.max(0, lossOf(who, hitAmount(attacker, alt, spec, r).amount) - actual);
@@ -56,7 +56,9 @@ export function creditPrevented(l: Ledger, a: Combatant, t: Combatant, spec: Dam
   }
   const pool = (redirect?.pool ?? []).filter((c) => c !== t && c.alive);
   if (pool.length) {
-    const would = pool.reduce((n, c) => n + lossOf(c, hitAmount(a, c, spec, r).amount), 0);
+    // A cover spares its ally only what her own shield would not have caught (plan 8c final).
+    const lost = (c: Combatant) => lossOf(c, hitAmount(a, c, spec, r).amount) - (redirect?.cover ? Math.min(c.shield?.amount ?? 0, lossOf(c, hitAmount(a, c, spec, r).amount)) : 0);
+    const would = pool.reduce((n, c) => n + lost(c), 0);
     credit(l, t.key, 'prevented', Math.max(0, Math.floor(would / pool.length) - actual));
   }
 }

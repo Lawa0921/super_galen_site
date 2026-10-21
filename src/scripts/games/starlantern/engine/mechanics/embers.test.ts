@@ -167,6 +167,39 @@ describe("Scarlet's embers", () => {
     expect(u.party[2].hp).toBe(200);
   });
 
+  it("a cover credits only what the ally's own shield would not have caught", () => {
+    const soft = () => foe('e0', { max: { hp: 99999, tp: 0, atk: 60, def: 20, mag: 20, res: 20, spd: 99 } });
+    const credit = (shield?: number) => {
+      const l = newLedger();
+      const noel = P('noel', shield === undefined ? {} : { shield: { amount: shield, src: 'chizuru' } });
+      resolveRound(makeBattle([scarlet({ cover: { ally: 'noel', turns: 2 } }), noel], [soft()], { intents: { e0: { kind: 'attack', target: 'noel' } } }), {}, constRng(0.5), l);
+      return l.by.scarlet?.prevented ?? 0;
+    };
+    const full = credit();
+    expect(full).toBeGreaterThan(10);
+    expect(credit(999)).toBe(0);
+    expect(credit(10)).toBe(full - 10);
+  });
+
+  it('a frozen or sleeping Scarlet neither covers nor answers with 贖火', () => {
+    const soft = () => foe('e0', { max: { hp: 99999, tp: 0, atk: 60, def: 20, mag: 20, res: 20, spd: 99 } });
+    for (const over of [{ frozen: true }, { sleep: 3 }] as Partial<Combatant>[]) {
+      const r = round(makeBattle([scarlet({ cover: { ally: 'noel', turns: 2 }, ...over }), P('noel')], [soft()], { intents: { e0: { kind: 'attack', target: 'noel' } } }));
+      expect(r.party[1].hp, JSON.stringify(over)).toBeLessThan(200);
+      expect(r.party[0].hp, JSON.stringify(over)).toBe(200);
+      const hit = round(makeBattle([scarlet({ riposte: { power: 80, turns: 3 }, ...over })], [soft()], { intents: { e0: { kind: 'attack', target: 'scarlet' } } }));
+      expect(hit.log.filter((e) => e.type === 'mech' && e.cue === 'counter'), JSON.stringify(over)).toEqual([]);
+    }
+  });
+
+  it("a veiled Rin is in no taunt's or challenge's pool", () => {
+    const party = () => [scarlet({ taunt: 2 }), P('noel'), P('rin', { veil: 2 })];
+    const s = makeBattle(party(), [foe()]);
+    expect(forcedTarget(s, s.enemies[0], { kind: 'attack', target: 'noel' })!.pool.map((c) => c.key)).toEqual(['noel']);
+    const c = makeBattle([scarlet(), P('noel'), P('rin', { veil: 2 })], [foe('e0', { challenged: { by: 'scarlet', round: 1 } })], { round: 1 });
+    expect(forcedTarget(c, c.enemies[0], { kind: 'attack', target: 'noel' })!.pool.map((x) => x.key)).toEqual(['noel']);
+  });
+
   it('cover turns no area attack, and ends after three round ends', () => {
     const sweep: EnemyDef = { ...ENEMIES.slime, skills: [{ name: '掃射', chance: 1, target: 'enemies', effects: [{ kind: 'damage', power: 50, element: 'phys', scale: 'atk', melee: false }] }] };
     const s0 = makeBattle([scarlet({ cover: { ally: 'noel', turns: 3 } }), P('noel')], [foe('e0', { max: { hp: 99999, tp: 0, atk: 60, def: 20, mag: 20, res: 20, spd: 99 } })],

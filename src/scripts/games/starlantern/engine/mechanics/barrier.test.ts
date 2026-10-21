@@ -5,7 +5,6 @@ import { newLedger } from '../ledger';
 import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
 import { castDef } from './index';
-import { BARRIER } from './barrier';
 
 const chizuru = (over: Partial<Combatant> = {}) => makeCombatant({
   key: 'chizuru', side: 'party', defId: 'chizuru', mech: { kind: 'barrier' },
@@ -61,7 +60,7 @@ describe("Chizuru's barriers", () => {
   it('release spends the barrier for ten percent a round left', () => {
     const withWard = (turns: number) => makeBattle([chizuru()], [foe()], { barriers: [{ skill: 'ward', kind: 'guard', power: 30, turns, src: 'chizuru' }] });
     const power = (s: BattleState) => { const d = castDef(s, s.party[0], SKILLS['exorcism-thrust']).effects[0]; return d.kind === 'damage' ? d.power : NaN; };
-    expect(power(withWard(3))).toBe(Math.round((150 * (100 + BARRIER.releasePct * 3)) / 100));
+    expect(power(withWard(3))).toBe(195);   // 150 at +10% a round left
     expect(power(makeBattle([chizuru()], [foe()]))).toBe(150);
     const after = round(withWard(3), cast('exorcism-thrust'));
     expect(after.barriers ?? []).toEqual([]);
