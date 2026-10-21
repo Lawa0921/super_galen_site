@@ -448,12 +448,20 @@ describe('the words follow the runes: review fixes (plan 8g Task 2 review)', () 
       const hit = before.desc.match(/改為 ([0-9]+) 段，每段威力 ([0-9]+)%/);
       if (!hit || runeFits(before, 'heavy', [], before) !== null) continue;
       const after = at(skill, nid, ['heavy']);
-      expect(after.desc, nid).toContain(T.rune.foldedHits(1, Number(hit[1]) * Number(hit[2])));
+      // The whole power, 重擊's own percent in it, rounded as the engine rounds a power.
+      const heavy = RUNES.heavy.mod('magic').power!;
+      const n = Number(hit[1]), p = Number(hit[2]);
+      expect(after.desc, nid).toContain(T.rune.foldedHits(1, pctOf(n * p, heavy)));
+      // Pinned against the engine: per hit P% became one hit of n x P x 重擊.
+      const per = (before.effects.find((e) => e.kind === 'damage') as { power: number }).power;
+      const one = (after.effects.find((e) => e.kind === 'damage') as { power: number }).power;
+      expect(one, nid).toBe(pctOf(per * n, heavy));
       expect(after.desc, nid).not.toContain('每段威力');
       folded++;
     }
     expect(folded).toBeGreaterThanOrEqual(7);
-    expect(at('hero-slash', 'hero-slash-twin', ['heavy']).desc).toBe('單體近戰斬擊。合為 1 段，威力 116%。');
+    expect(at('hero-slash', 'hero-slash-twin', ['heavy']).desc).toBe(`單體近戰斬擊。${T.rune.foldedHits(1, pctOf(2 * 58, RUNES.heavy.mod('magic').power!))}。`);
+    expect(pctOf(2 * 58, RUNES.heavy.mod('magic').power!)).toBe(133);
     // The notes say the same words they always did.
     expect(at('hero-slash', 'hero-slash-twin').desc).toBe(`單體近戰斬擊。${T.rune.perHitNote(2, 58)}。`);
   });
@@ -482,8 +490,8 @@ describe('the words follow the runes: review fixes (plan 8g Task 2 review)', () 
 
   it("a shape rune that undoes a node's target change drops the node's sentence for it", () => {
     expect(at('moonlight', 'selene-moon-wide').desc).toBe('回復一名隊友 HP。改為對我方全體，威力 65%。');
-    expect(at('moonlight', 'selene-moon-wide', ['focus']).desc).toBe('回復一名隊友 HP。');
-    expect(at('flame-wave', 'noel-wave-focus', ['spread']).desc).toBe('火屬性全體魔法攻擊。');
+    expect(at('moonlight', 'selene-moon-wide', ['focus']).desc).toBe('回復一名隊友 HP。威力 65%。');
+    expect(at('flame-wave', 'noel-wave-focus', ['spread']).desc).toBe('火屬性全體魔法攻擊。威力 190%。');
     // A rune that takes the target elsewhere keeps it, its words rewritten.
     expect(at('flame-wave', 'noel-wave-focus', ['rime']).desc).toBe('冰屬性全體魔法攻擊。改為打單體，威力 190%。');
   });

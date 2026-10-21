@@ -4,6 +4,7 @@ import { SKILLS } from '../data/skills';
 import { CHARACTERS } from '../data/characters';
 import { T } from '../data/text.zh-TW';
 import { createBattle, fromMember, skillFor } from '../engine/battle';
+import { castCost } from '../engine/mechanics/index';
 import { Game } from '../engine/game';
 import { mulberry32 } from '../engine/rng';
 import { defaultTree } from '../engine/progression';
@@ -37,6 +38,12 @@ const learnOnly = (s: GameState, id: CharacterId, tree: Record<string, number>):
   s.party.roster[id] = { ...s.party.roster[id], tree };
 };
 const lineOf = (c: ReturnType<typeof compareCards>, key: string) => c.lines.find((l) => l.key === key);
+/** A fight opened from `s` with `id` on the field (in the hero's cell when she is not): the battle and her in it. */
+const battleOf = (s: GameState, id: CharacterId) => {
+  const grid = s.party.grid.includes(id) ? s.party.grid : s.party.grid.map((x) => (x === 'hero' ? id : x));
+  const b = createBattle({ party: { ...s.party, grid }, enemyIds: ['slime'], inventory: {}, revealed: {} });
+  return { s: b, c: b.party.find((x) => x.key === id)! };
+};
 
 describe('the skill card (plan 8g Task 3)', () => {
   it("the spec's card: 火之星彈 with 擴散（魔法）", () => {
@@ -78,7 +85,7 @@ describe('the skill card (plan 8g Task 3)', () => {
     expect(reservedTpPct(member(s, 'safira'))).toBe(RESERVE_CAP);
     const game = new Game(mulberry32(1), { getItem: () => null, setItem: () => undefined }, s);
     let checked = 0, refused = 0, moves = 0;
-    const seen = { lastingOwn: false, rinMark: false, warDance: false, neighbour: false, group: false, reserve: false };
+    const seen = { lastingOwn: false, rinMark: false, warDance: false, neighbour: false, group: false, reserve: false, blood: false, twin: false };
     for (const id of ids) {
       for (const skill of socketable(member(s, id))) {
         for (let slot = 0; slot < socketCount(member(s, id).level); slot++) {
@@ -96,12 +103,35 @@ describe('the skill card (plan 8g Task 3)', () => {
               const card = cardOf(member(game.state, id), skill)!;
               expect(card).toEqual(cardOf(member(preview.state, id), skill));
               expect(ch.changes).toBe(compareCards(cardOf(member(s, id), skill)!, card).changes);
+              // The card is what a fight opened now would cast.
+              const inBattle = battleOf(game.state, id);
+              const def = skillFor(inBattle.c, skill)!;
+              const dmg = def.effects.filter((e) => e.kind === 'damage') as { hits?: number; power: number; element: keyof typeof T.element }[];
+              const row = (k: string) => card.rows.find((r) => r.key === k)?.text;
+              expect(row('target')).toBe(W.target[def.target]);
+              if (dmg.length) {
+                expect(row('hits')).toBe([...new Set(dmg.map((e) => String(e.hits ?? 1)))].join(W.join));
+                expect(row('element')).toBe([...new Set(dmg.map((e) => T.element[e.element]))].join(W.join));
+                const power = [...new Set(dmg.map((e) => String(Math.round(e.power))))].join(W.join);
+                expect(row('power')).toBe(def.target === 'enemies' || def.target === 'allies' ? W.each(power) : power);
+              }
+              expect(row('tp'), `${id}.${skill} ${ch.source.ref.id}`).toBe(String(castCost(inBattle.s, inBattle.c, skill)));
+              if (ch.source.ref.id === 'blood-price' && slotStates(member(game.state, id), skill)[slot].state === 'on') {
+                seen.blood = true;
+                expect(row('tp')).toBe('0');
+                expect(row('hp')).toBeDefined();
+              }
+              if (ch.source.ref.id === 'twin-cast' && slotStates(member(game.state, id), skill)[slot].state === 'on') {
+                seen.twin = true;
+                expect(card.adds).toContain(W.add.twice);
+              }
               if (ch.source.kind === 'socket') {
                 moves++;
                 const from = ch.source.at;
                 const lines = compareCards(cardOf(member(s, from.id), from.skill)!, cardOf(member(game.state, from.id), from.skill)!);
                 const lost = [...lines.lines.filter((l) => l.changed).map((l) => W.arrow(l.before, l.after)), ...lines.removed];
-                expect(ch.giver).toBe(W.giver(CHARACTERS[from.id].name, skillFor(fromMember(member(s, from.id), 0), from.skill)!.name, lost));
+                const same = from.id === id && from.skill === skill;
+                expect(ch.giver).toBe(same ? undefined : W.giver(CHARACTERS[from.id].name, skillFor(fromMember(member(s, from.id), 0), from.skill)!.name, lost));
                 const worked = slotStates(member(s, from.id), from.skill)[from.slot].state === 'on';
                 const works = slotStates(member(game.state, id), skill)[slot].state === 'on';
                 const empty = !member(s, id).sockets?.[skill]?.[slot];
@@ -125,7 +155,7 @@ describe('the skill card (plan 8g Task 3)', () => {
         }
       }
     }
-    expect(seen).toEqual({ lastingOwn: true, rinMark: true, warDance: true, neighbour: true, group: true, reserve: true });
+    expect(seen).toEqual({ lastingOwn: true, rinMark: true, warDance: true, neighbour: true, group: true, reserve: true, blood: true, twin: true });
     expect(checked).toBeGreaterThan(300);
     expect(refused).toBeGreaterThan(100);
     expect(moves).toBeGreaterThan(20);
@@ -168,6 +198,37 @@ describe('the skill card (plan 8g Task 3)', () => {
     const spreadRow = list.find((c) => c.section === 'bag' && c.source.ref.id === 'spread')!;
     expect(spreadRow.source).toEqual({ kind: 'bag', ref: R('spread'), count: 1 });
     expect(spreadRow.owned).toEqual({ all: 2, bag: 1, socketed: 1 });
+  });
+
+  it('choices follow a state changed in place: the party, the bag, a fight in the field', () => {
+    const s = stateAt(20, ['noel'], { 'spread@magic': 1 });
+    const at: SocketAt = { id: 'noel', skill: 'fire-star', slot: 0 };
+    const first = runeChoices(s, at);
+    expect(Object.isFrozen(first)).toBe(true);
+    s.runes = { ...s.runes, 'drain@magic': 1 };
+    const bag = runeChoices(s, at);
+    expect(bag).not.toBe(first);
+    expect(bag.some((c) => c.source.ref.id === 'drain')).toBe(true);
+    s.party = { ...s.party, roster: { ...s.party.roster, noel: { ...member(s, 'noel'), sockets: { 'ice-star': [R('focus')] } } } };
+    const party = runeChoices(s, at);
+    expect(party).not.toBe(bag);
+    expect(party.some((c) => c.section === 'move' && c.source.ref.id === 'focus')).toBe(true);
+    // A rune a fight hands out while the workshop is open in the field: the same state object, a new bag.
+    const g = new Game(mulberry32(1), { getItem: () => null, setItem: () => undefined }, s);
+    g.phase = 'map';
+    const open = runeChoices(g.state, at);
+    (g as unknown as { giveRune: (r: RuneRef) => void }).giveRune(R('venom'));
+    expect(g.state).toBe(s);
+    const after = runeChoices(g.state, at);
+    expect(after).not.toBe(open);
+    expect(after.some((c) => c.source.ref.id === 'venom')).toBe(true);
+  });
+
+  it('a move between two slots of one skill names no giver', () => {
+    const s = ok(socketRune(stateAt(20, ['noel'], { 'spread@magic': 1 }), 'noel', 'fire-star', 0, R('spread')));
+    const own = runeChoices(s, { id: 'noel', skill: 'fire-star', slot: 1 }).find((c) => c.section === 'move')!;
+    expect(own.source).toEqual({ kind: 'socket', ref: R('spread'), at: { id: 'noel', skill: 'fire-star', slot: 0 } });
+    expect(own.giver).toBeUndefined();
   });
 
   it('choices are cached per state and slot', () => {
@@ -263,6 +324,13 @@ describe('the skill card (plan 8g Task 3)', () => {
     expect(after.sockets).toEqual({ 'flame-wave': [R('spread')] });
     expect(slotStates({ ...member(s, 'noel'), level: 4 }, 'fire-star')).toEqual([]);
     expect(slotStates({ ...member(s, 'noel'), level: 20 }, 'fire-star')).toHaveLength(2);
+  });
+
+  it('a revive shows the HP it brings back, in percent', () => {
+    const s = stateAt(20, ['selene']);
+    learn(s, 'selene', { rebirth: 1 });
+    const hpPct = (SKILLS.rebirth.effects.find((e) => e.kind === 'revive') as { hpPct: number }).hpPct;
+    expect(cardOf(member(s, 'selene'), 'rebirth')!.rows.find((r) => r.key === 'heal')?.text).toBe(W.pct(Math.round(hpPct * 100)));
   });
 
   it('the battle line', () => {

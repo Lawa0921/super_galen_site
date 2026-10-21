@@ -11,7 +11,7 @@ import {
   bagCount, moveRune, ownedCount, socketCount, socketRune, unsocketRune, type SocketAt, type SocketFail,
 } from '../engine/sockets';
 import type { GameState } from '../engine/state';
-import type { Effect, Member, SkillDef } from '../engine/types';
+import type { Effect, Member, Party, SkillDef } from '../engine/types';
 
 /**
  * The skill card (plan 8g Task 3, spec §6.8): one model of a skill as a member casts it, before and after a rune, read
@@ -106,7 +106,7 @@ export function cardOf(m: Member, skill: string): Card | undefined {
     const power = joined(dmg.map((e) => num(e.power)));
     rows.push({ key: 'power', text: all ? W.each(power) : power });
   }
-  const heals = def.effects.flatMap((e) => (e.kind === 'heal' ? [num(e.power)] : e.kind === 'revive' ? [W.pct(e.hpPct)] : []));
+  const heals = def.effects.flatMap((e) => (e.kind === 'heal' ? [num(e.power)] : e.kind === 'revive' ? [W.pct(Math.round(e.hpPct * 100))] : []));
   if (heals.length) rows.push({ key: 'heal', text: joined(heals) });
   const effects = def.effects.flatMap((e) => { const x = effectOf(e); return x ? [x] : []; });
   if (effects.length) {
@@ -193,19 +193,26 @@ function failWhy(reason: SocketFail | 'empty', s: GameState, at: SocketAt, ref: 
 }
 
 const TIER_RANK: readonly RuneTier[] = [...RUNE_TIERS, 'legendary'];
-const CACHE = new WeakMap<GameState, Map<string, RuneChoice[]>>();
+/**
+ * The choices, by what they read: the party and the bag. The game changes `state.party` and `state.runes` in place (a
+ * fight's runes, a level), each time to a new object, so a key on the state itself would go stale.
+ */
+const CACHE = new WeakMap<Party, WeakMap<object, Map<string, readonly RuneChoice[]>>>();
+const NO_RUNES = {};
 
 /**
  * The runes that could go into `at` (plan 8g ruling 5): the bag (one row a rune and tier), then every rune in another
  * slot of a recruited member, hers included. Each row is previewed by the engine: refused, `why` is the reason; taken
  * but greyed in that slot, `why` is the slot's; `changes` counts the card's changed rows and lines; `notes`, what the
  * rune says on this skill (runeNotes) and the two-barrier warning; a move names what its giver loses. Within each
- * section: the ones that work first, then the most changes, then RUNE_IDS order, then the higher tier. Cached per state
- * object and slot: a changed state is a new object.
+ * section: the ones that work first, then the most changes, then RUNE_IDS order, then the higher tier. Cached per party,
+ * bag and slot, and frozen: the caller must not sort or change it.
  */
-export function runeChoices(s: GameState, at: SocketAt): RuneChoice[] {
-  let bySlot = CACHE.get(s);
-  if (!bySlot) CACHE.set(s, (bySlot = new Map()));
+export function runeChoices(s: GameState, at: SocketAt): readonly RuneChoice[] {
+  let byBag = CACHE.get(s.party);
+  if (!byBag) CACHE.set(s.party, (byBag = new WeakMap()));
+  let bySlot = byBag.get(s.runes ?? NO_RUNES);
+  if (!bySlot) byBag.set(s.runes ?? NO_RUNES, (bySlot = new Map()));
   const key = `${at.id}:${at.skill}:${at.slot}`;
   const hit = bySlot.get(key);
   if (hit) return hit;
@@ -232,7 +239,8 @@ export function runeChoices(s: GameState, at: SocketAt): RuneChoice[] {
       const notes = def ? runeNotes(def, ref.id, others) : [];
       if (lastingBarrierLoss(fromMember(after, 0)) > lossNow) notes.push(W.barrierClash);
       const out: RuneChoice = { source, section, why, changes, notes, owned };
-      if (from) {
+      // A move within the skill itself takes nothing from anyone.
+      if (from && !(from.id === at.id && from.skill === at.skill)) {
         const giverNow = s.party.roster[from.id];
         const was = cardOf(giverNow, from.skill), is = cardOf(r.state.party.roster[from.id], from.skill);
         const cmp = was && is ? compareCards(was, is) : undefined;
@@ -260,8 +268,9 @@ export function runeChoices(s: GameState, at: SocketAt): RuneChoice[] {
     for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i];
     return 0;
   });
-  bySlot.set(key, out);
-  return out;
+  const frozen = Object.freeze(out.map((c) => Object.freeze(c)));
+  bySlot.set(key, frozen);
+  return frozen;
 }
 
 /** The battle menu's summary of a skill (plan 8g ruling 12): 「全體・威力 84・火」, a heal 「單體・回復 n」, else the target. */

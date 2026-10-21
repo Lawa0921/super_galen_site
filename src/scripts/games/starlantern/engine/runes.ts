@@ -4,7 +4,7 @@ import { HIT_DESC, SKILLS } from '../data/skills';
 import { T } from '../data/text.zh-TW';
 import type { AilmentId } from './ailments';
 import type { Combatant } from './combatant';
-import { ELEMENT_AILMENT, patchSkill } from './skills';
+import { ELEMENT_AILMENT, patchSkill, pctOf } from './skills';
 import type { Effect, Element, RuneRules, SkillDef, Target } from './types';
 
 /**
@@ -143,8 +143,8 @@ export const TARGET_WORDS: Partial<Record<string, [string, string][]>> = {
   'self>allies': [['自身', '我方全體']],
 };
 
-/** A variant's sentence that changes the target (「改為對我方全體，威力 65%。」, 「改為打單體……」). */
-const TARGET_NOTE = /改為[對打][^。]*。/g;
+/** A variant's clause that changes the target: 「改為對我方全體，」 of 「改為對我方全體，威力 65%。」 (the rest stays). */
+const TARGET_NOTE = /改為[對打][^，。]*[，。]/g;
 
 /** `desc` with the target words of `from` made `to`'s; a word already said the new way (牠們 for 牠) stays. */
 function targetWords(desc: string, from: Target, to: Target): string {
@@ -229,16 +229,17 @@ export function applyRunes(core: SkillDef, extra: Effect[], refs: readonly RuneR
     if (whole && out.desc === whole(a)) out.desc = whole(b);
     // A one-hit skill names no count of hits: its 「1 次」 is something else (轉印's jumps, 追命's 還有。).
     else if (a > 1) {
-      // 重擊 folds a variant's per-hit note into one hit at the whole power.
+      // 重擊 folds a variant's per-hit note into one hit at the whole power, the runes' own percent in it (rounded as
+      // the engine rounds a power).
       if (b === 1) {
-        out.desc = out.desc.replace(new RegExp(T.rune.perHitNote(a, '([0-9]+)'), 'g'), (_, p: string) => T.rune.foldedHits(b, a * Number(p)));
+        out.desc = out.desc.replace(new RegExp(T.rune.perHitNote(a, '([0-9]+)'), 'g'), (_, p: string) => T.rune.foldedHits(b, pctOf(a * Number(p), patch.powerPct)));
       }
       // A whole number only: 「2 次」 never matches inside 「12 次」.
       HIT_WORDS(a).forEach((w, i) => { out.desc = out.desc.replace(new RegExp(`(?<![0-9])${w}`, 'g'), HIT_WORDS(b)[i]); });
     }
   }
   // The target's and the element's words follow when they really changed (plan 8g ruling 14). A rune that takes the
-  // target back to the skill's own drops the variant's sentence that changed it (Task 2 review).
+  // target back to the skill's own drops the variant's clause that changed it (Task 2 reviews).
   if (out.target !== core.target) {
     if (out.target === SKILLS[core.id]?.target) out.desc = out.desc.replace(TARGET_NOTE, '');
     out.desc = targetWords(out.desc, core.target, out.target);
