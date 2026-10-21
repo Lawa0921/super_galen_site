@@ -744,7 +744,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     tag: {
       damage: '傷害', heal: '治療', buff: '增益', debuff: '減益', ailment: '異常', device: '裝置', single: '單體', all: '全體', self: '自身',
       multi: '多段', melee: '近戰', ranged: '遠程', attack: '武技', spell: '法術', phys: '物理', fire: '火', ice: '冰', thunder: '雷', tp: '消耗 TP',
-    } as Record<Tag, string>,
+    } satisfies Record<Tag, string>,
     why: {
       /** 「需要：單體＋傷害，或單體＋治療」: each list is one way to fit, its tags all needed. */
       needs: (ways: string[]) => `需要：${ways.join('，或')}`,

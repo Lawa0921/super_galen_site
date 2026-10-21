@@ -156,7 +156,11 @@ const LIST: RuneDef[] = [
     text: (t) => `每次施放 ${at('venom', 'chance', t)}% 機率中毒。`,
     mod: (t) => ({ inflict: { status: 'poison', chance: at('venom', 'chance', t) / 100 } }) },
   { id: 'aftermath', name: '餘波', group: 'ailment', needs: [['damage']],
-    text: (t) => `暴擊時附帶該屬性的異常（物理是流血，頭目減半、抗性照算）${unlessFull('威力', at('aftermath', 'effect', t))}${tpPlus('aftermath')}。`,
+    // The skill's power leads, so it never reads as the ailment's; a boss halves the chance (engine/ailments ailmentChance).
+    text: (t) => {
+      const p = at('aftermath', 'effect', t);
+      return `${p === 100 ? '' : `這招威力 ${p}%，`}暴擊時附帶這招屬性的異常（物理是流血，頭目的機率減半、抗性照算）${tpPlus('aftermath')}。`;
+    },
     mod: (t) => ({ aftermath: true, effect: at('aftermath', 'effect', t), tpFlat: fixed('aftermath', 'tpFlat') }) },
   trigger('on-crit', '暴擊觸發', 'crit', '她的任何一擊暴擊時', [['damage'], ['buff']]),
   trigger('on-kill', '擊倒觸發', 'kill', '她擊倒敵人時', [['damage'], ['buff']]),
@@ -193,7 +197,7 @@ const LIST: RuneDef[] = [
     text: () => `每次施放，屬性依${ELEMENT_WORD.fire}、${ELEMENT_WORD.ice}、${ELEMENT_WORD.thunder}輪替${tpPlus('starwheel')}。`,
     mod: () => ({ element: 'wheel', tpFlat: fixed('starwheel', 'tpFlat') }) },
   { id: 'blood-price', name: '血之代價', group: 'legendary', needs: [['tp']],
-    text: (t) => `不消耗 TP，改為消耗「TP×${at('blood-price', 'bloodPct', t)}%」的最大 HP。`,
+    text: (t) => `不消耗 TP，每 1 TP 改付最大 HP 的 ${at('blood-price', 'bloodPct', t)}%。`,
     mod: (t) => ({ bloodPct: at('blood-price', 'bloodPct', t) }) },
   { id: 'sync', name: '同步', group: 'legendary', needs: [],
     text: (t) => `施放後，下一位施放技能的隊友本回合技能威力 +${at('sync', 'sync', t)}%。`, mod: (t) => ({ sync: at('sync', 'sync', t) }) },

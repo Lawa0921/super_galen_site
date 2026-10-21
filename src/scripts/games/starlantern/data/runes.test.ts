@@ -60,6 +60,10 @@ describe('the rune catalogue (plan 8e Task 1)', () => {
     expect(RUNES.flame.text('magic')).toBe('屬性改為火，威力 105%；TP +1。');
     expect(RUNES.thrift.text('magic')).toBe('TP −35%；威力與效果 80%。');
     expect(RUNES['twin-cast'].text('legendary')).toBe('這招連續施放兩次；TP 兩倍。');
+    // 餘波 puts the skill's own power first, so it never reads as the ailment's; what a boss halves is its chance.
+    expect(RUNES.aftermath.text('common')).toBe('暴擊時附帶這招屬性的異常（物理是流血，頭目的機率減半、抗性照算）；TP +1。');
+    expect(RUNES.aftermath.text('magic')).toBe('這招威力 105%，暴擊時附帶這招屬性的異常（物理是流血，頭目的機率減半、抗性照算）；TP +1。');
+    expect(RUNES['blood-price'].text('legendary')).toBe('不消耗 TP，每 1 TP 改付最大 HP 的 3%。');
   });
 
   it('data/runes.ts writes no number by hand', () => {
@@ -102,6 +106,41 @@ describe('the rune catalogue (plan 8e Task 1)', () => {
     expect(group('trigger')).toEqual(['on-crit', 'on-kill', 'on-struck']);
     expect(group('economy')).toEqual(['regain', 'thrift', 'charge', 'drain']);
     expect(group('support')).toEqual(['extend', 'share', 'lasting', 'dispel', 'armor-break']);
+    // The whole table (spec §6.4/§6.7 and plan 8e's rune table), written out: a change to any number is a decision made here.
+    expect(RUNE_NUMBERS).toEqual({
+      spread: { tier: { power: [55, 60, 65, 70] }, fixed: {} },
+      focus: { tier: { power: [160, 170, 180, 190] }, fixed: {} },
+      bounce: { tier: { dropPct: [35, 30, 25, 20] }, fixed: { bounces: 2 } },
+      multistrike: { tier: { power: [70, 75, 80, 85] }, fixed: { hits: 1 } },
+      heavy: { tier: { power: [110, 115, 120, 125] }, fixed: {} },
+      flame: { tier: { effect: [100, 105, 110, 115] }, fixed: { tpFlat: 1 } },
+      rime: { tier: { effect: [100, 105, 110, 115] }, fixed: { tpFlat: 1 } },
+      thunderclap: { tier: { effect: [100, 105, 110, 115] }, fixed: { tpFlat: 1 } },
+      ignite: { tier: { chance: [30, 35, 40, 45] }, fixed: {} },
+      jolt: { tier: { chance: [30, 35, 40, 45] }, fixed: {} },
+      tear: { tier: { chance: [30, 35, 40, 45] }, fixed: {} },
+      frostbite: { tier: { chance: [20, 25, 30, 35] }, fixed: {} },
+      venom: { tier: { chance: [25, 30, 35, 40] }, fixed: {} },
+      aftermath: { tier: { effect: [100, 105, 110, 115] }, fixed: { tpFlat: 1 } },
+      'on-crit': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },
+      'on-kill': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },
+      'on-struck': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },
+      regain: { tier: { tpPerHit: [1, 1, 1, 2], power: [80, 85, 90, 90] }, fixed: {} },
+      thrift: { tier: { effect: [75, 80, 85, 90] }, fixed: { tpPct: -35 } },
+      charge: { tier: { effect: [130, 140, 150, 160] }, fixed: { tpPct: 60 } },
+      drain: { tier: { drainPct: [6, 8, 10, 12] }, fixed: { tpFlat: 1 } },
+      extend: { tier: { turns: [1, 2, 3, 4] }, fixed: { tpFlat: 2 } },
+      share: { tier: { effect: [40, 50, 60, 70] }, fixed: {} },
+      lasting: { tier: { pct: [50, 60, 70, 80] }, fixed: { reservePct: 30 } },
+      dispel: { tier: { effect: [100, 105, 110, 115] }, fixed: { tpFlat: 2 } },
+      'armor-break': { tier: { effect: [100, 105, 110, 115] }, fixed: { tpPct: 20 } },
+      'twin-cast': { tier: {}, fixed: { tpPct: 100 } },
+      starwheel: { tier: {}, fixed: { tpFlat: 1 } },
+      'blood-price': { tier: { bloodPct: [3] }, fixed: {} },
+      sync: { tier: { sync: [30] }, fixed: {} },
+      'spill-shield': { tier: { overflowPct: [30] }, fixed: {} },
+      reprise: { tier: { reprise: [50] }, fixed: {} },
+    });
     // The table's numbers, spot checked at each end.
     expect(RUNES.spread.mod('common')).toEqual({ shape: 'spread', power: 55 });
     expect(RUNES.focus.mod('epic')).toEqual({ shape: 'focus', power: 190 });

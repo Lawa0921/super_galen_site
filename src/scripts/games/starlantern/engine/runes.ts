@@ -78,7 +78,8 @@ export function runeFits(def: SkillDef, rune: RuneId, others: readonly RuneId[],
   const tags = new Set<Tag>(skillTags(rune === 'extend' ? core : def));
   if (own === 'ailment') for (const o of others) if (GIVES[o]) tags.add(GIVES[o]!);
   if (needs.some((way) => way.every((t) => tags.has(t)))) return null;
-  const hint = own === 'ailment' && needs.some((way) => way.some((t) => ELEMENT_TAGS.includes(t)));
+  // The hint only where an element rune could help: they need a damage skill themselves.
+  const hint = own === 'ailment' && tags.has('damage') && needs.some((way) => way.some((t) => ELEMENT_TAGS.includes(t)));
   return { kind: 'needs', needs: needs.map((way) => [...way]), ...(hint ? { hint: true as const } : {}) };
 }
 

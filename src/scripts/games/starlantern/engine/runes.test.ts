@@ -37,6 +37,9 @@ describe('rune tags and fit (plan 8e Task 1)', () => {
     // Only the ailment runes take an element from an element rune; the hint marks the need an element rune can meet.
     expect(runeFits(aimed, 'ignite', [])).toEqual({ kind: 'needs', needs: [['fire', 'damage']], hint: true });
     expect(runeFits(aimed, 'tear', [])).toBeNull();
+    // No hint when an element rune could not help: 灼焰 needs a damage skill, so a heal gets the plain need.
+    expect(runeFits(SKILLS.moonlight, 'ignite', [])).toEqual({ kind: 'needs', needs: [['fire', 'damage']] });
+    expect(runeWhy(runeFits(SKILLS.moonlight, 'ignite', [])!)).toBe('需要：火＋傷害');
     expect(runeFits(star, 'tear', [])).toEqual({ kind: 'needs', needs: [['phys', 'damage']] });
     // Any skill takes 受擊觸發 and 同步; groups that do not exclude stand side by side.
     expect(runeFits(SKILLS.cleanse, 'on-struck', [])).toBeNull();
