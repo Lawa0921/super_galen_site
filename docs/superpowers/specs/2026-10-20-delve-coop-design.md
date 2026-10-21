@@ -4,6 +4,7 @@
 - 路徑縮寫：`delve/` = `src/scripts/games/delve/`，`tetris/net/` = `src/scripts/games/tetris/net/`
 - 標記：**【使用者決定】** = 擁有者已拍板，不再討論；**【建造者決定／提案】** = 本稿作者的選擇，實作者可在不違反【使用者決定】的前提下調整，但要在 PR 說明理由。
 - 先備研究：`reports/網頁版泰拉瑞亞技術研究.md`（host 權威、三通道、`TileReq → 套用 → 廣播`、里程碑 M4）。
+- 修訂：**2026-10-21 因無限世界修訂**（PR #299；`docs/superpowers/specs/2026-10-21-delve-infinite-world-design.md` §6 C11）。改了 §4 三列、§5.2 編輯日誌、§5.3 客人世界、§5.4 訊息、§5.5 第 6 點、§5.6、§6 M-B 測試、§7 R4／R10，並新增 §10。其餘不變；行號以 2026-10-20 為準，可能過期。
 
 ---
 
@@ -70,9 +71,9 @@ tetris 的 deterministic lockstep **不適用**，原因有四：浮點物理沒
 | 存檔格式 | `SAVE_FORMAT = 9`（`delve/save/serialize.ts:72`）。二進位格式是 `MAGIC + header JSON + 被改過的 chunk（fg+wall 各 1024 B）`（`:502-520`），gzip 後存進 IDB `delve/saves`，key 是 `slot`（`delve/save/storage.ts:4-6,93`） | 世界的差量格式可以直接拿來當晚加入快照 |
 | header 裡屬於玩家的欄位 | `player`、`inventory`、`combat{hp,maxHp,mana,equipment,equipGear}`、`vitals`、`appearance`、`vanity`、`levels`、`extra.codex`、`extra.fishLog`、`folk.buffs`、`bed`、`explored`、`markers`、`discovery`（`:105-158`） | 都要搬進角色檔，或搬進「每角色在這個世界的紀錄」 |
 | header 裡屬於世界的欄位 | `chunks`、`chests`、`unlocked`、`keysUsed`、`liquids`、`drops`、`bossActive`、`env`、`settle`、`halves`、`folk.world`、`folk.quests`、`scoutMarks`、`perkDays`、`scouted`、`extra.minedIce`、`extra.rng`、`combat.bosses`、`combat.kills`、`combat.peaceful` | 留在世界檔 |
-| 世界尺寸 | `CHUNK=32`、`4200×1200`（`delve/engine/constants.ts:3-5`），共 132×38 = 5016 個 chunk。完整 fg+wall 約 10 MB | 不能送整個世界，只送種子加差量 |
-| 世界生成 | `GEN_VERSION=7`（`constants.ts:11`），由 seed 決定，在主執行緒跑 | 客人用 seed 自己重建世界，再貼上差量。要用 chunk 雜湊驗證生成結果一致 |
-| 世界變更追蹤 | `modifiedChunks`、`liquidModified`、`dirty`、`onTileChange`（`delve/engine/world.ts:52-62`）。`setFg` 會呼叫 `onTileChange`（`:143-158`），但這個 hook 已被液體佔用（`delve/engine/liquid.ts:130`） | 需要另外加一個「編輯日誌」，不能搶這個 hook |
+| 世界尺寸（2026-10-21 因無限世界修訂） | `CHUNK=32`，垂直固定 `WORLD_H=1200`（38 個 chunk），水平 ±1,000,000 格（`X_LIMIT`，`delve/engine/coords.ts`）。儲存單位是 32 格寬、全高的區塊欄（`delve/engine/column.ts`），依每位玩家的位置載入、停放或卸載（`delve/engine/streaming.ts`、`DelveGame.updateLoadedArea`） | 沒有「整個世界」可以送。客人按欄自己生成，房主只送改過或不一致的 chunk |
+| 世界生成（同上修訂） | 中央 x∈[0, 4200) 仍由舊生成器（`GEN_VERSION=7`）一次產生，1a 的中央欄固定常駐。中央以外由 `delve/engine/chunkgen` 的 `OuterGen` 逐欄產生，內容只由 (seed, x, y) 決定，跟載入順序無關 | 客人用 seed 產生中央；外圍欄等進入自己的載入半徑才生成，再逐 chunk 用雜湊驗證，不符就向房主要整塊（5.6） |
+| 世界變更追蹤（同上修訂） | `modifiedChunks`、`liquidModified`、`dirty`、`onTileChange`（`delve/engine/world.ts`），都以 chunk 鍵記錄（`chunkKey`：中央等於舊 index，外圍另一段）。卸載的欄如果有改過的 chunk，就停放（parked）。`World.readChunk(cx,cy)` 和 `writeChunk(cx,cy,ChunkData)` 是網路形狀的整塊讀寫。`onTileChange` 已被液體佔用（`delve/engine/liquid.ts`） | 需要另外加一個以 chunk 鍵分組、每個 chunk 有 rev 的「編輯日誌」，不能搶這個 hook。整塊補送直接用 readChunk／writeChunk |
 | 輸入 | `setMoveX/Jump/Up/Drop/Aim/Mining/Use`、`selectSlot`，全部寫在單例欄位上（`game.ts:723-750`） | 要改成每個 actor 各有一份 `PlayerInput` |
 | 模擬迴圈 | `step(dt)`（`game.ts:752-843`）依序跑：液體、死亡、睡覺、單一玩家的移動／技能／生命值、挖掘、攻擊、使用、實體、據點、NPC | 要拆成世界階段加每個 actor 的階段 |
 | 事件 | 只有一個 `events[]`，`drainEvents()` 取出（`game.ts:535,1767`），共約 60 種，都沒有 pid（`:102-218`） | 要加 `pid`，並分成公開事件和私人事件 |
@@ -140,13 +141,13 @@ class DelveGame {
 - `liquids.blocked` 和 `playerOverlaps` 改成檢查任何一個 actor。
 - 睡覺：所有活著的 actor 都在床上（`sleepReady` 旗標）才開始倒數 `sleepT`。HUD 顯示「等待其他人 1/3」。
 - 事件：`DelveEvent` 加上 `pid?`。依類型分成**私人事件**（pickup、blocked、select、xp、levelup、hurt、talk、trade、quest、bubble、craft 等，只送給該 pid）和**公開事件**（mine、place、kill、hit、boss、liquid、lightning、sleep、door、chest 等，廣播給所有人）。`drainEvents(pid = localPid)` 只回傳本地需要的事件，房主另外用 `drainAll()` 拿到全部再分送。
-- **世界編輯日誌**：`World` 新增 `edits: EditJournal`。`setFg`、`setWall`、`setHalf`、箱子內容、`unlocked` 有變動時都推一筆 `[x, y, fg, wall, half]`。液體不走這裡，走 `liquidModified` 加上給網路用的另一份 dirty set，因為 `drainLiquidDirty` 已經被 renderer 拿去用了（`delve/render/renderer.ts:380`）。這樣門、樹倒、黑曜石反應、震地這類間接編輯都會自動被捕捉。
+- **世界編輯日誌（2026-10-21 因無限世界修訂）**：`World` 新增 `edits: EditJournal`，以 **chunk 鍵**（`World.chunkIndex(cx, cy)`）分組。`setFg`、`setWall`、`setHalf` 每改一格，就記一筆**改完之後的狀態** `[x, y, fg, wall, half]`，該 chunk 的 `rev` 加 1。箱子內容和 `unlocked` 的變動記成該 chunk 的箱子項目（tile 鍵）。同一批裡同一格只留最後狀態；整批超過上限時，之後被改到的 chunk 改標「整塊」，由消費端用 `readChunk` 整塊送。`writeChunk` 也標成整塊。液體和結冰不走這裡，走 `liquidModified` 加上給網路用的另一份 dirty set，因為 `drainLiquidDirty` 已經被 renderer 拿去用了（`delve/render/renderer.ts`）。門、樹倒、黑曜石反應、震地這類間接編輯都經過 `setFg`，所以會自動被記到。
 - **指令匯流排**：UI 目前直接呼叫 `game.craft()`、`takeChestSlot()`、`buy()`、`forge()`、`learnSkill()` 等方法。改成透過 `game.exec(cmd)` 呼叫，`cmd = {op, args}`，`op` 只能是白名單裡的公開方法，並綁定 pid。solo 和 host 直接執行；replica 會把指令送給房主，等 `ack` 回來。這是讓背包權威放在房主身上的唯一入口。
 
 ### 5.3 房主模擬與客人預測／內插
 
 - **房主（host）**：跑完整的 `DelveGame`（mode `host`），所有 actor 都在裡面。房主是唯一能修改世界、怪物、掉落物、NPC、箱子，以及**所有已連線角色的物品**的人。
-- **客人（replica）**：跑一個 `DelveGame`（mode `replica`）。世界由 seed 重建再套上快照。它**只積分本地 actor 的移動**（`stepPlayer`，對照本地的世界副本），其他東西全部照房主送來的快照內插。
+- **客人（replica）**：跑一個 `DelveGame`（mode `replica`）。世界由 seed 按欄生成（中央一次產生，外圍等進入自己的載入半徑才生成），再逐 chunk 套上房主的資料（5.6；2026-10-21 因無限世界修訂）。它**只積分本地 actor 的移動**（`stepPlayer`，對照本地的世界副本），其他東西全部照房主送來的快照內插。
   - **【建造者決定／提案】** 移動採客戶端權威，跟先備研究一致：客人每秒 20 次回報 `ps`。房主檢查兩件事：位移速度不能超過 `RUN_SPEED` 乘以技能和飾品上限再加容差，以及身體不能卡在實心方塊裡。不合理時送 `teleport` 把客人拉回去。Co-op 不需要 Gambetta 式的重播和修正。
   - 被擊退時，房主算出 `knock{vx, vy}` 送給客人，由客人套到自己的 body 上。傳送、回城、旅行、重生也都是房主送 `teleport`。
   - 攻擊、挖掘、使用：客人在本地立刻播放揮擊動畫和挖掘裂紋（純外觀預測）。命中、破壞和產生掉落物都由房主根據該 actor 的 `input`（以 `ps` 裡的 `mine`、`use`、`aim`、`slot` 驅動）判定，大約晚半個 RTT。
@@ -160,15 +161,16 @@ class DelveGame {
 | 通道 | 設定 | 用途 |
 |------|------|------|
 | `ctrl` | 可靠、有序 | 握手、指令和 ack、tile 編輯、私人事件、角色同步、look、聊天、ping |
-| `bulk` | 可靠、有序、二進位 | 晚加入快照、液體 chunk、補送 chunk。切成 ≤ 16 KB 的片段，用 `bufferedAmount` 控流，不讓它堵住 `ctrl` |
+| `bulk` | 可靠、有序、二進位 | 加入快照、按需補送的 chunk、液體 chunk（2026-10-21 因無限世界修訂）。切成 ≤ 16 KB 的片段，用 `bufferedAmount` 控流，不讓它堵住 `ctrl` |
 | `state` | `ordered:false, maxRetransmits:0` | `ps`（客人送房主）、`ws`（房主送客人）的位置快照，舊的就丟掉 |
 
 **訊息**（v1 用 JSON，`bulk` 用二進位；**【建造者決定／提案】** 量化成二進位留到 M-D）：
-- 握手：客人送 `hello{proto, build, charId, nick, character}`。房主回 `welcome{pid, worldId, seed, genVersion, w, h, time, tick, peaceful, players[]}`，或回 `reject{reason:'full'|'proto'|'gen'|'charInUse'|'closed'}`。`build` 不一致（網站在 session 中途重新部署）就拒絕。
+- 握手：客人送 `hello{proto, build, charId, nick, character}`。房主回 `welcome{pid, worldId, seed, genVersion, outerGenVersion, bounds, w, h, time, tick, peaceful, players[]}`，或回 `reject{reason:'full'|'proto'|'gen'|'charInUse'|'closed'}`。`build` 不一致（網站在 session 中途重新部署）就拒絕。
 - 快照：在 `bulk` 上送 `snap{meta}` 加資料片段，客人套用完回 `ready` → 房主開始送差量（見 5.6）。
 - 穩態：
   - `state`：客人送 `ps{seq, x, y, vx, vy, flags, facing, aim, mine, use, slot}`，20 Hz。房主送 `ws{tick, time, players[], enemies[], drops[], proj[], npcs[]}`，15 Hz，只含該客人 `ACTIVE` 範圍內的東西（興趣管理）。
-  - `ctrl` 房主送客人：`tiles{tick, edits[]}`（每個 tick 批次一次）、`ev[]`（私人事件）、`pub[]`（公開事件，用來播音效和特效）、`ack{seq, ok, reason}`、`char{rev, delta 或完整角色}`、`chk{rev, character}`、`look{pid, look}`、`teleport`、`knock`、`bye{reason}`。
+  - （2026-10-21 因無限世界修訂）興趣範圍就是該客人的**載入欄**，也就是 `engine/streaming.ts` 的 `LOAD_COLS` 規則套在他的位置上。這個範圍由房主自己從 actor 位置算出，客人不用回報。`tiles` 和 `liq` 只送這個範圍內的 chunk。客人送 `sum{cx, sums[]}`（剛生成的那一欄每個 chunk 的雜湊），房主在 `bulk` 回 `chunk{key, rev, data, chests}`（見 5.6）。
+  - `ctrl` 房主送客人：`tiles{tick, batches[{chunk, rev, tiles, chests, full}]}`（每個 tick 批次一次，以 chunk 鍵分組）、`ev[]`（私人事件）、`pub[]`（公開事件，用來播音效和特效）、`ack{seq, ok, reason}`、`char{rev, delta 或完整角色}`、`chk{rev, character}`、`look{pid, look}`、`teleport`、`knock`、`bye{reason}`。
   - `ctrl` 客人送房主：`cmd{seq, op, args}`、`look`、`chat`、`bye`。
   - `bulk` 房主送客人：`liq{chunks, rle}`（重用 `encodeLiquidRle`，`serialize.ts:271`），只送該客人興趣範圍內 dirty 的液體 chunk，5 Hz。
 - 存活偵測：重用 `tetris/net/silence.ts:8-11`（10 秒開始警示、30 秒判定斷線）的常數和文案函式。
@@ -191,15 +193,16 @@ class DelveGame {
 3. 房主以該 actor 的身分執行既有的 `tryPlace` 邏輯，檢查可觸及距離（`canReach` 多給 +1.5 格的延遲容差）、房主那份客人背包裡有沒有這個物品、支撐、會不會跟身體重疊。
 4. 成功時，編輯日誌會產生 `tiles` 並廣播給所有人（包括發起的客人），再回 `ack{seq, ok:true}`。失敗時回 `ack{seq, ok:false, reason}`，客人還原 `pending[seq]` 並顯示既有的 `blocked` 文案。
 5. 挖掘不做樂觀破壞。房主那邊的 `elapsed` 到達 `need` 時，廣播破壞和 `drops` 生成。
-6. 兩個人同時編輯同一格：以房主收到的順序為準。每個 chunk 帶 `rev`，客人丟掉比目前 rev 舊的 `tiles`。
+6. 兩個人同時編輯同一格：以房主收到的順序為準。每個 chunk（以 chunk 鍵識別）都帶 `rev`，客人丟掉 rev 不大於目前值的 `tiles`。還沒載入的 chunk 直接丟掉，正在等整塊回覆的 chunk 則先暫存（5.6；2026-10-21 因無限世界修訂）。
 
-### 5.6 晚加入快照
+### 5.6 加入與按 chunk 同步（2026-10-21 因無限世界修訂）
 
 1. 房主收到 `hello`，驗證角色後呼叫 `addActor(pid, character, world.visits[charId] ?? 新紀錄)`，回 `welcome`。
-2. 房主呼叫 `snapshotWorld(game)`，**跟 M-A 的世界檔是同一個函式**，內容是被改過的 chunk、`liquidModified` chunk 的液體 RLE、箱子、`unlocked`、`halves`、`env`、據點和 NPC 的世界狀態，再加上該角色的 `visit`（迷霧和標記）。gzip 後在 `bulk` 上分片送出，同時附上 **5016 個 chunk 的 FNV-1a 雜湊表**（約 20 KB）。
-3. 客人呼叫 `generateWorld(seed, {w, h})`，套用快照，再逐 chunk 比對雜湊。雜湊不符的 chunk（例如 Safari 和 V8 數學函式有差異）用 `need{chunks}` 向房主要完整資料。
-4. 房主在快照的那個 tick T 之後，把產生的 `tiles` 和 `liq` **先暫存**。客人回 `ready` 後依序補送，客人用 chunk rev 去重。
-5. 量級推算：500 個被改過的 chunk 原始約 1 MB，gzip 後約 150–250 KB，以 16 KB 分片大約 1–3 秒送完，加上客人自己生成世界的時間（尚未量測，是 M-B 的待辦）。
+2. 房主呼叫 `snapshotWorld(game)`。它跟 M-A 世界檔共用序列化函式，但**只送世界層級的狀態**：`unlocked`、`keysUsed`、`env`、據點和 NPC 的世界狀態、任務、傳送碑解鎖，再加上該角色的 `visit`（迷霧和標記）。**不送 chunk，也不送全世界的雜湊表。**
+3. 客人用 seed 產生中央（1a 跟房主一樣一次產生）。之後每一欄**進入客人自己的載入半徑**時（規則跟 `engine/streaming.ts` 相同），才由 `OuterGen` 生成。每生成一欄，客人就送一次 `sum{cx, sums}`，內容是那一欄 38 個 chunk 各自六層的 FNV-1a。
+4. 房主先確保那一欄常駐。房主本來就會載入每位玩家周圍的欄，所以遠方停放的 chunk 這時會蓋回來。接著逐 chunk 比對：雜湊相同就不送；不同就在 `bulk` 回 `chunk{key, rev, data（六層 RLE）, chests}`。不同的原因可能是房主改過（包括停放中的 chunk），也可能是跨瀏覽器生成有差異（R4），兩種走同一條路。
+5. 一致性：回覆之後的編輯照常用 `tiles` 送。客人在等某個 chunk 的回覆時收到的 `tiles` 先暫存，套上整塊以後，只補 rev 比整塊新的那幾筆。客人卸載一欄時直接丟掉，不停放；下次載入時重新送 `sum`。
+6. 量級推算：每欄的 `sum` 約 160 B。一個改過的 chunk 六層共 6 KB，RLE 加 gzip 後約 0.3–1 KB。正常走路每秒新進入約 1 欄。1b 烘焙之後，舊世界的中央全部算「改過的」，所以客人走進中央時才陸續下載。無限世界 C7 提到的幾 MB 會分散在走動過程中，不用一進房就一次下載。
 
 ### 5.7 物品分享／交易與防複製
 
@@ -247,7 +250,7 @@ class DelveGame {
   - 一個 `DelveGame` 裡有 2 個 actor：怪物鎖定較近的那一個；任一玩家在活躍範圍內怪物就活躍；睡覺要求全員在床上。
   - host 加 2 個 replica 透過 loopback：客人 A 放置方塊，房主和客人 B 的 tile 都一致。
   - 被拒絕的放置會回滾。
-  - 晚加入的客人，chunk 雜湊表跟房主完全一致。
+  - （2026-10-21 因無限世界修訂）客人載入欄內的每個 chunk 都跟房主一致，包括房主改過後停放的遠方 chunk，以及客人走過去才生成的外圍欄。
   - 防複製不變式：存入箱子後斷線，物品總數「箱子 + 最後一次 chk」等於 1。丟出的物品被另一位撿走，數量守恆。
   - 在 `state` 通道注入 30% 丟包，最終位置仍然收斂。
 - 驗收：全套 vitest 綠燈，單機模式行為不變，既有測試零修改或只有機械性修改。
@@ -271,13 +274,13 @@ class DelveGame {
 | R1 | 沒有 TURN，對稱型 NAT 或部分行動網路連不上（研究引用的數字約 17.7%） | v1 接受。失敗時給明確文案。M-D 以後才評估 TURN 憑證 API |
 | R2 | 分頁切到背景時，rAF 會停、主執行緒計時器會被節流 | 依 U8／U9：連線中改由 Worker 計時器的訊息驅動 `step`，背景不渲染；心跳走 DataChannel 訊息並用寬鬆逾時。M-C 實測各瀏覽器背景 10 分鐘以上；失敗則把模擬搬進 Worker |
 | R3 | `game.ts` 3765 行的大型重構會讓既有測試大量回歸 | 用相容 getter，一個系統一個 PR，每一步都跑全套 vitest |
-| R4 | 跨瀏覽器（Safari／JSC）的世界生成結果不一致 | chunk 雜湊表加 `need` 補送 |
+| R4 | 跨瀏覽器（Safari／JSC）的世界生成結果不一致 | 每欄載入時送 chunk 雜湊，不符就整塊補送（5.6；2026-10-21 因無限世界修訂） |
 | R5 | 斷線或崩潰時的複製或遺失窗口 | 跨邊界操作立即 checkpoint，世界在 2 秒防抖內存檔，並用測試把現有行為固定下來 |
 | R6 | 液體洪水打爆頻寬 | 興趣範圍、5 Hz、`bufferedAmount` 背壓；落後太多時改送整個 chunk 覆蓋 |
 | R7 | 房主長時間輪詢信令吃掉 Upstash 配額 | 「開放加入」是手動開關，3 秒一次，閒置自動關閉 |
 | R8 | 遷移時丟資料 | 先寫 `.v9.bak` 再轉換，並用固定 fixture 測試 |
 | R9 | 跟平行分支 `race`（`Appearance` 加欄位）以及 `serialize.ts` 衝突 | M-A 開工前先合併 race 分支，角色檔直接收 `appearance` 整包 |
-| R10 | 玩家分散時，房主 CPU 要同時跑 4 個活躍區（怪物和液體） | 量測後再決定上限，必要時限制客人和房主的最大距離 |
+| R10 | 玩家分散時，房主 CPU 要同時跑 4 個活躍區（怪物和液體）；記憶體也要讓每位玩家周圍的欄都常駐（2026-10-21 因無限世界修訂） | 量測後再決定上限，必要時限制客人和房主的最大距離 |
 | R11 | UI 直接呼叫 game 方法的地方很多（folkUi、settleUi、levelsUi、wardrobe、hud…） | `exec` 白名單，用 grep 盤點後逐一改；replica 模式下，不在白名單的呼叫直接 throw |
 
 ## 8. 原待答問題的處置
@@ -301,4 +304,13 @@ class DelveGame {
 - chunk 雜湊演算法、角色鎖的實作方式、`visits` 的 LRU 上限。
 - 角色選單和大廳的版面（走 delve 現有的 titleUi 風格，禁止 `!important` 和行內樣式）。
 - 是否把 `MultiChannelTransport` 抽回 `tetris/net/` 共用。
-- M-B 要不要再拆成 B1（actor 化，不碰網路）和 B2（NetHost／NetGuest 加 loopback）。
+- M-B 要不要再拆成 B1（actor 化，不碰網路）和 B2（NetHost／NetGuest 加 loopback）。（已拆：M-B1 多玩家引擎、M-B2 編輯日誌加 `exec` 加 `tossSlot`、M-B3 loopback、NetHost／NetGuest、`snapshotWorld` 與 checkpoint）
+
+## 10. Claude 代為決定（2026-10-21 因無限世界修訂；擁有者可推翻）
+
+- D1 同步單位是 **chunk 鍵**（`engine/coords.ts`：中央等於舊 index，外圍另一段）。編輯日誌、`rev`、`tiles`、`chunk` 回覆都以它為鍵。廢除「5016 個 chunk 的雜湊表」。
+- D2 **按需同步**：客人按欄生成，每生成一欄就送一次雜湊，房主只回不同的 chunk。「房主改過的」和「生成有差異的」走同一條路，房主不用另外維護清單，也不用預先送。
+- D3 **興趣範圍就是載入欄**，由房主從 actor 位置用同一套串流規則算出，不另外傳訊息。房主為了模擬本來就讓每位玩家周圍的欄常駐，所以客人要的 chunk 一定能讀到。
+- D4 **客人不停放**：客人的世界副本裡，卸載的欄直接丟掉，回來時重新比對。只有房主的世界會停放並存檔。
+- D5 日誌記的是**改完之後的狀態**，所以同一格可以合併，套用時跟順序無關。超過上限就改標整塊，記憶體因此有上限：單機沒有人取的時候，只會留下有界的 chunk 鍵集合。結冰跟著液體走。
+- D6 1a 的中央仍由舊生成器在客人端一次產生；1b 烘焙之後，中央會自然變成「改過的 chunk」，走 D2。
