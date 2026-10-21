@@ -20,6 +20,7 @@ import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMat
 import { itemWeight, type DropSource } from './loot/item';
 import { grantRune, rollRune, runeRng, spotRuneRng } from './loot/runes';
 import { RUNE_DROP } from '../data/runeEconomy';
+import { buyRune, sellRunes, type RuneTradeFail } from './runeTrade';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
 import { CHARACTERS } from '../data/characters';
 import { MAX_ACTIVE } from './formation';
@@ -73,6 +74,8 @@ export type MoveResult =
 export interface RuneGold { rune: RuneRef; gold: number }
 /** The rune a chest or vault held (plan 8f): `rune` went into the bag, or `runeGold` says it was paid as gold. */
 export type RuneFind = { rune?: RuneRef; runeGold?: RuneGold };
+/** A rune a fight paid as gold; `at` is its place among the fight's runes, found and paid together (drop order). */
+export interface BattleRuneGold extends RuneGold { at: number }
 /**
  * The pack cannot take the pick-up, which stays where it is until something is discarded. `item`/`qty` are the materials
  * of a chest or vault kept shut for weight (absent when only waiting gear is short); `need` is the weight over the limit
@@ -97,7 +100,7 @@ export interface BattleEnd {
   /** Runes the fight dropped into the bag, in order (plan 8f); absent when none. */
   runes?: RuneRef[];
   /** Runes paid as gold for want of room (RUNE_STACK); their gold is in `state.gold`, not in `gold` or the run pack. */
-  runeGold?: RuneGold[];
+  runeGold?: BattleRuneGold[];
 }
 
 /** Turn a floor's boss tile into stairs down. */
@@ -721,12 +724,13 @@ export class Game {
    * elite rate and rolls on the elite row, the escorts like ordinary foes; an ordinary foe draws at the monster rate. A foe
    * still standing at the end of a fight to last out drops nothing (as battleGear).
    */
-  private battleRunes(b: BattleState, elite: boolean): { runes: RuneRef[]; gold: RuneGold[] } {
-    const out: { runes: RuneRef[]; gold: RuneGold[] } = { runes: [], gold: [] };
+  private battleRunes(b: BattleState, elite: boolean): { runes: RuneRef[]; gold: BattleRuneGold[] } {
+    const out: { runes: RuneRef[]; gold: BattleRuneGold[] } = { runes: [], gold: [] };
     const give = (r: RuneRef) => {
+      const at = out.runes.length + out.gold.length;
       const f = this.giveRune(r);
       if (f.rune) out.runes.push(f.rune);
-      if (f.runeGold) out.gold.push(f.runeGold);
+      if (f.runeGold) out.gold.push({ ...f.runeGold, at });
     };
     if (!this.state.runesOpen) {
       if (b.boss) {
@@ -852,6 +856,18 @@ export class Game {
   unsocketRune(id: CharacterId, skill: string, slot: number): { ok: true } | { ok: false; reason: 'invalid' | 'empty' } {
     if (this.phase !== 'town' && this.phase !== 'map') return { ok: false, reason: 'invalid' };
     return this.runesMoved(unsocketRune(this.state, id, skill, slot));
+  }
+
+  /** Buy runes at Orik's (engine/runeTrade buyRune): town only (plan 8f ruling 14), saved at once; a failed save leaves a notice. */
+  buyRune(r: RuneRef, qty = 1): { ok: true } | { ok: false; reason: RuneTradeFail | 'phase' } {
+    if (this.phase !== 'town') return { ok: false, reason: 'phase' };
+    return this.runesMoved(buyRune(this.state, r, qty));
+  }
+
+  /** Sell runes from the bag to Orik (engine/runeTrade sellRunes): when and saved as `buyRune`. */
+  sellRune(r: RuneRef, qty: number): { ok: true } | { ok: false; reason: RuneTradeFail | 'phase' } {
+    if (this.phase !== 'town') return { ok: false, reason: 'phase' };
+    return this.runesMoved(sellRunes(this.state, r, qty));
   }
 
   private runesMoved<R extends string>(r: { ok: true; state: GameState } | { ok: false; reason: R }): { ok: true } | { ok: false; reason: R } {

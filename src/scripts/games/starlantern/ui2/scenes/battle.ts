@@ -586,9 +586,18 @@ export class BattleScene implements Scene {
         const icon = gearIconUrl(this.ctx.art, it);
         lines.push({ text: icon ? [{ text: gearLabel(it), cls: 'slx-loot-name', icon }] : gearLabel(it), cls: `slx-loot-gear ${rarityClass(it)}` });
       }
-      // Runes after the gear, each once, in its tier's colour (plan 8f); one past the stack says the gold it became.
-      for (const r of end.runes ?? []) lines.push({ text: T.rune.got(T.rune.label(r.id, r.tier)), cls: `slx-loot-rune ${rarityClass({ rarity: r.tier })}` });
-      for (const { rune: r, gold } of end.runeGold ?? []) lines.push({ text: T.rune.overStack(T.rune.label(r.id, r.tier), RUNE_STACK, gold), cls: `slx-loot-rune ${rarityClass({ rarity: r.tier })}` });
+      // Runes after the gear, each once and in the order they dropped, in its tier's colour (plan 8f); one past the stack
+      // says the gold it became, where it fell.
+      const kept = [...(end.runes ?? [])];
+      const paid = end.runeGold ?? [];
+      const total = kept.length + paid.length;
+      for (let at = 0; at < total; at++) {
+        const g = paid.find((x) => x.at === at);
+        const r = g ? g.rune : kept.shift();
+        if (!r) continue;
+        const label = T.rune.label(r.id, r.tier);
+        lines.push({ text: g ? T.rune.overStack(label, RUNE_STACK, g.gold) : T.rune.got(label), cls: `slx-loot-rune ${rarityClass({ rarity: r.tier })}` });
+      }
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
       for (const [id, n] of Object.entries(end.left)) lines.push({ text: T.battle.leftBehind(itemName(id), n) });
       for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it, gearIconUrl(this.ctx.art, it))]), cls: 'slx-loot-left' });

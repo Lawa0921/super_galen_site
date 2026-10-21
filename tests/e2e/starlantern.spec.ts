@@ -3481,6 +3481,9 @@ test.describe('starlantern', () => {
       await page.waitForTimeout(150);
       const rows = await page.locator('.slx-result-lines p').evaluateAll((ps) => ps.map((p) => ({ t: p.textContent, over: p.scrollWidth > p.clientWidth })));
       expect(rows.filter((r) => r.over), `rows wider than the result at ${vw}`).toEqual([]);
+      // The result window itself sits inside the screen.
+      const box = (await page.locator('.slx-result').boundingBox())!;
+      expect([box.x >= 0, box.y >= 0, box.x + box.width <= vw + 0.5, box.y + box.height <= vh + 0.5], `the result inside ${vw}x${vh}`).toEqual([true, true, true, true]);
       await expect(rune).toHaveCount(1);
     }
     await w.key('Enter');
@@ -3488,5 +3491,62 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-loot-rune')).toHaveCount(0);   // told on the result alone, not again on the map
     expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.runes)).toEqual({ 'spread@magic': 1 });
     expect(w.errors).toEqual([]);
+  });
+
+  test('the shop sells and buys runes (plan 8f)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404 && r.request().resourceType() === 'image') missing.push(r.url()); });
+    const w = await setup(page, 7);
+    // A save past its first boss: runes open, 500 G and a rare 彈射 in the bag.
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.runesOpen = true;
+      g.state.gold = 500;
+      g.state.runes = { 'bounce@rare': 1 };
+    });
+    const gold = () => page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.gold as number);
+    await w.choose('.slx-town', '道具店');
+    await expect(page.locator('.slx-shop')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-shop .slx-cmd [data-id=runes]').click();
+    const list = page.locator('.slx-rune-list');
+    await expect(list.locator('[role=option]')).toHaveCount(5);
+    await expect(list.locator('[data-id="buy:spread@common"] .slx-right')).toHaveText('100 G　持有 0');
+    await expect(list.locator('[data-id="sell:bounce@rare"] .slx-right')).toHaveText('收購 150 G　持有 1');
+    const fits = async (where: string) => {
+      const rows = await page.locator('.slx-rune-page [role=option], .slx-rune-info p').evaluateAll((els) => els.map((e) => ({ t: e.textContent, over: e.scrollWidth > e.clientWidth + 0.5 })));
+      expect(rows.filter((r) => r.over), `rows wider than their box at ${where}`).toEqual([]);
+      const page_ = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
+      expect(page_.sw, `the page scrolls sideways at ${where}`).toBeLessThanOrEqual(page_.cw);
+      const box = await page.locator('.slx-rune-page').boundingBox();
+      const vp = page.viewportSize()!;
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(vp.width + 0.5);
+    };
+    await fits('1280');
+    if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/rune-shop-1280.png` });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(150);
+    await fits('390');
+    if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/rune-shop-390.png` });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // Buy one 擴散 (100 G), then sell the 彈射 back (150 G).
+    await list.locator('[data-id="buy:spread@common"]').click();
+    await expect(page.locator('.slx-qty')).toBeVisible();
+    await w.key('Enter');
+    await expect.poll(gold).toBe(400);
+    await w.closeTalk();
+    await expect(list.locator('[data-id="buy:spread@common"] .slx-right')).toHaveText('100 G　持有 1');
+    await list.locator('[data-id="sell:bounce@rare"]').click();
+    await expect(page.locator('.slx-qty')).toBeVisible();
+    await w.key('Enter');
+    await expect.poll(gold).toBe(550);
+    await w.closeTalk();
+    await expect(list.locator('[data-id="sell:bounce@rare"]')).toHaveCount(0);
+    // Both trades were saved at once.
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-save') ?? '{}'));
+    expect([saved.gold, saved.runes, saved.runesOpen]).toEqual([550, { 'spread@common': 1 }, true]);
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
   });
 });

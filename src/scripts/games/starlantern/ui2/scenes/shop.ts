@@ -18,17 +18,24 @@ import { gearLabel, invested, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { GEAR_ROWS, MenuView, QtyView, confirmBox, win } from '../widgets';
+import { RUNES, RUNE_IDS, RUNE_STACK, parseRuneKey, runeKey, type RuneRef, type RuneTier } from '../../data/runes';
+import { runeBuyMax, runeBuyPrice, runeSellMax, runeSellPrice, runeStock } from '../../engine/runeTrade';
+import { bagCount, ownedCount } from '../../engine/sockets';
 import { FacilityScene } from './facility';
+
+/** The order rune tiers are listed in (data/runes RUNE_TIERS, then legendary). */
+const TIER_ORDER: readonly RuneTier[] = ['common', 'magic', 'rare', 'epic', 'legendary'];
 
 export class ShopScene extends FacilityScene {
   constructor(ctx: SceneCtx, cps?: number) { super(ctx, 'shop', cps); }
 
   protected commands(): MenuItem[] {
-    return [{ id: 'buy', label: T.ui2.shop.buy }, { id: 'sell', label: T.ui2.shop.sell }];
+    return [{ id: 'buy', label: T.ui2.shop.buy }, { id: 'sell', label: T.ui2.shop.sell }, { id: 'runes', label: T.ui2.shop.runes }];
   }
 
   protected onCommand(id: string): void {
     if (id === 'buy') this.buyList();
+    else if (id === 'runes') this.runeList();
     else this.sellList();
   }
 
@@ -253,5 +260,92 @@ export class ShopScene extends FacilityScene {
       cancel: () => this.pop(),
     }, 12);
     this.push({ el: win('slx-list slx-shop-list', [v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  /**
+   * The rune rows (plan 8f Task 4): first what Orik sells (one grey line before runes are open), then every rune in the bag
+   * by RUNE_IDS and tier. 持有 is `ownedCount` (bag and sockets, plan 8f ruling 13); only the bag's can be sold.
+   */
+  private runeRows(): MenuItem[] {
+    const s = this.ctx.game.state;
+    const stock = runeStock(s);
+    const top: MenuItem[] = stock.length
+      ? stock.map((r) => ({ id: `buy:${runeKey(r)}`, label: T.rune.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }), right: T.rune.buyRight(runeBuyPrice(s, r)!, ownedCount(s, r)) }))
+      : [{ id: 'closed', label: T.rune.fail.closed, disabled: true }];
+    const order = (r: RuneRef) => RUNE_IDS.indexOf(r.id) * 10 + TIER_ORDER.indexOf(r.tier);
+    const bag = Object.entries(s.runes ?? {}).filter(([, n]) => n > 0).map(([k]) => parseRuneKey(k)).filter((r): r is RuneRef => r !== null).sort((a, b) => order(a) - order(b));
+    return [...top, ...bag.map((r) => ({ id: `sell:${runeKey(r)}`, label: T.rune.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }), right: T.rune.sellRight(runeSellPrice(r), ownedCount(s, r)) }))];
+  }
+
+  /** A rune row's detail: what it does at this tier, the bag's count, and how many are socketed (they must come out first). */
+  private describeRune(id: string): HTMLElement[] {
+    const r = parseRuneKey(id.slice(id.indexOf(':') + 1));
+    if (!r) return [el('p', { class: 'slx-desc', text: T.rune.fail.closed })];
+    const s = this.ctx.game.state;
+    const bag = bagCount(s, r);
+    const worn = ownedCount(s, r) - bag;
+    return [
+      el('p', { class: `slx-name-line ${rarityClass({ rarity: r.tier })}`, text: T.rune.label(r.id, r.tier) }),
+      el('p', { text: RUNES[r.id].text(r.tier) }),
+      el('p', { text: T.rune.bag(bag) }),
+      ...(worn > 0 ? [el('p', { class: 'slx-desc', text: T.rune.socketedNote(worn) })] : []),
+    ];
+  }
+
+  private runeList(): void {
+    const info = win('slx-info slx-mat-info slx-rune-info');
+    const show = () => { const c = v.menu.current(); info.replaceChildren(...(c ? this.describeRune(c.id) : [])); };
+    const firstOpen = (items: MenuItem[]) => Math.max(0, items.findIndex((it) => !it.disabled));
+    const reload = () => {
+      const rows = this.runeRows();
+      v.menu.items.splice(0, v.menu.items.length, ...rows);
+      if (v.menu.cursor >= rows.length || rows[v.menu.cursor]?.disabled) v.menu.setCursor(firstOpen(rows));
+      v.render(); show();
+    };
+    const rows = this.runeRows();
+    const v: MenuView = new MenuView(new Menu(rows, firstOpen(rows)), {
+      pick: (it) => {
+        const r = parseRuneKey(it.id.slice(it.id.indexOf(':') + 1));
+        if (r) this.askRuneQty(r, it.id.startsWith('buy:') ? 'buy' : 'sell', reload);
+      },
+      moved: () => { this.ctx.sfx.cursor(); show(); },
+      cancel: () => { info.remove(); this.pop(); },
+    }, 12);
+    show();
+    // One flex row holds the list and its detail, as the materials page does.
+    this.push({ el: el('div', { class: 'slx-mat-page slx-rune-page' }, [win('slx-list slx-shop-list slx-rune-list', [v.el]), info]), onAction: (a) => v.onAction(a) });
+  }
+
+  /** Why a rune trade was refused, in words (engine/runeTrade RuneTradeFail; gold and the rest read as T.reasons). */
+  private runeFail(reason: string): void {
+    const F = T.rune.fail;
+    this.ctx.sfx.error();
+    void this.say(reason === 'closed' ? F.closed : reason === 'full' ? F.full(RUNE_STACK) : reason === 'stock' ? F.stock : T.reasons[reason] ?? T.reasons.invalid);
+  }
+
+  /** The quantity box for a rune: buying stops at runeBuyMax (gold and the stack), selling at the bag's count. */
+  private askRuneQty(r: RuneRef, mode: 'buy' | 'sell', after: () => void): void {
+    const g = this.ctx.game;
+    const st = g.state;
+    const max = mode === 'buy' ? runeBuyMax(st, r) : runeSellMax(st, r);
+    if (max < 1) {
+      this.runeFail(mode === 'sell' ? 'stock' : !st.runesOpen ? 'closed' : ownedCount(st, r) >= RUNE_STACK ? 'full' : 'gold');
+      return;
+    }
+    const price = mode === 'buy' ? runeBuyPrice(st, r) ?? 0 : runeSellPrice(r);
+    const label = T.rune.label(r.id, r.tier);
+    const q = new QtyView(max, {
+      change: () => this.ctx.sfx.cursor(),
+      done: (n) => {
+        this.pop();
+        const gold = g.state.gold;
+        const res = mode === 'buy' ? g.buyRune(r, n) : g.sellRune(r, n);
+        if (!res.ok) { this.runeFail(res.reason); return; }
+        this.refresh(); after();
+        void this.say(mode === 'buy' ? T.ui2.shop.bought(label, n) : T.ui2.shop.sold(label, n, g.state.gold - gold), 'happy');
+      },
+      cancel: () => this.pop(),
+    }, price);
+    this.push({ el: q.el, onAction: (a) => q.onAction(a) });
   }
 }

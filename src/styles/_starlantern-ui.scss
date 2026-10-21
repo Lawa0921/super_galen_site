@@ -861,17 +861,19 @@ $slx-framed: (magic, rare, epic, legendary, unique, set);
   .slx-pm-weak, .slx-pm-crit, .slx-pm-resist, .slx-pm-miss, .slx-pm-cue { animation: none; }
 }
 // Gear in loot lines: the name in its rarity colour; the rarer pieces glow, and battle results slide each piece in.
+// A rune line (plan 8f) does the same: a legendary rune glows and slides in like legendary gear.
 .slx-gear-drop.slx-rarity-legendary, .slx-gear-drop.slx-rarity-unique, .slx-gear-drop.slx-rarity-set,
-.slx-loot-gear.slx-rarity-legendary, .slx-loot-gear.slx-rarity-unique, .slx-loot-gear.slx-rarity-set { text-shadow: 0 0 6px currentColor; }
+.slx-loot-gear.slx-rarity-legendary, .slx-loot-gear.slx-rarity-unique, .slx-loot-gear.slx-rarity-set,
+.slx-loot-rune.slx-rarity-legendary { text-shadow: 0 0 6px currentColor; }
 // A starlit piece (plan 5g; ui2/loot.ts rarityClass) keeps its rarity colour and glows cyan-white instead of the legend glow.
 // Text styling only: no frame, halo or pseudo-element drawing (the ui-starlit overlay art is the drawn look, once published).
 $slx-starlit: #bff6ff;
 .slx-starlit, .slx-bag-cell.slx-starlit, .slx-doll-slot.slx-starlit, .slx-gear-drop.slx-starlit, .slx-loot-gear.slx-starlit { text-shadow: 0 0 3px $slx-starlit, 0 0 6px rgba(191, 246, 255, 0.55); }
 .slx-line-starlit { color: $slx-starlit; }
-.slx-result .slx-loot-gear { animation: slx-loot-in 0.35s ease-out both; }
+.slx-result .slx-loot-gear, .slx-result .slx-loot-rune { animation: slx-loot-in 0.35s ease-out both; }
 .slx-result .slx-loot-left { color: $slx-dim; }
 @keyframes slx-loot-in { from { translate: -8px 0; opacity: 0; } to { translate: 0 0; opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .slx-result .slx-loot-gear { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .slx-result .slx-loot-gear, .slx-result .slx-loot-rune { animation: none; } }
 // Drop light pillar (lootFx.showPillar): a column of the best piece's rarity colour (currentColor from .slx-rarity-*) rising
 // from where the loot is, Diablo-style. Gradients and animation only, like the element flashes; it shows no object.
 // The pillar element is a point at the foot of the beam, placed by its host (below). Width and height are custom

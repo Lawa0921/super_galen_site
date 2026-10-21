@@ -3730,7 +3730,7 @@ describe('rune drops (plan 8f Task 2)', () => {
     const gold = g.state.gold;
     const end = beatBoss(g);
     expect(end).not.toHaveProperty('runes');
-    expect(end.runeGold).toEqual([{ rune: r, gold: RUNE_SELL[r.tier] }]);
+    expect(end.runeGold).toEqual([{ rune: r, gold: RUNE_SELL[r.tier], at: 0 }]);
     expect(g.state.gold).toBe(gold + RUNE_SELL[r.tier]);
     expect([end.gold, g.run!.loot.gold]).toEqual([plain.gold, free.run!.loot.gold]);
     expect(g.state.runes).toEqual({ [keyOf(r)]: 99 });
@@ -3812,5 +3812,67 @@ describe('rune drops at bosses (plan 8f Task 3 review of Task 2)', () => {
     expect(g.state.runesOpen).toBe(true);
     expect(g.state.runes).toEqual({ 'spread@magic': 1 });
     expect(g.run!.runeDraws).toBe(0);
+  });
+});
+
+describe('trading runes in the game (plan 8f Task 4)', () => {
+  it('runes are traded in town only', () => {
+    const spread = { id: 'spread', tier: 'common' } as const;
+    const bounce = { id: 'bounce', tier: 'rare' } as const;
+    const stock = (g: Game) => { g.state.runesOpen = true; g.state.gold = 500; g.state.runes = { 'bounce@rare': 1 }; return g; };
+    const fieldStorage = memoryStorage();
+    const field = stock(inMap(1, calm(), fieldStorage));
+    const saved = fieldStorage.map.get(SAVE_KEY);
+    expect(field.buyRune(spread, 1)).toEqual({ ok: false, reason: 'phase' });
+    expect(field.sellRune(bounce, 1)).toEqual({ ok: false, reason: 'phase' });
+    field.encounter = 99;
+    field.phase = 'battle';
+    expect(field.buyRune(spread, 1)).toEqual({ ok: false, reason: 'phase' });
+    expect(field.sellRune(bounce, 1)).toEqual({ ok: false, reason: 'phase' });
+    expect([field.state.gold, field.state.runes, fieldStorage.map.get(SAVE_KEY)]).toEqual([500, { 'bounce@rare': 1 }, saved]);
+    // In town: done and saved at once.
+    const storage = memoryStorage();
+    const g = stock(new Game(calm(), storage, undefined, 0, HERO_LINEUP));
+    expect(g.buyRune(spread, 2)).toEqual({ ok: true });
+    expect([g.state.gold, g.state.runes]).toEqual([300, { 'bounce@rare': 1, 'spread@common': 2 }]);
+    expect(Game.boot(calm(), storage).state.runes).toEqual({ 'bounce@rare': 1, 'spread@common': 2 });
+    expect(g.sellRune(bounce, 1)).toEqual({ ok: true });
+    const back = Game.boot(calm(), storage).state;
+    expect([back.gold, back.runes]).toEqual([450, { 'spread@common': 2 }]);
+    expect(g.notice).toBeNull();
+    expect(g.buyRune(spread, 5)).toEqual({ ok: false, reason: 'gold' });
+    expect(g.sellRune(bounce, 1)).toEqual({ ok: false, reason: 'stock' });
+    // A failed save says so and keeps the trade.
+    const full = stock(new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, HERO_LINEUP));
+    expect(full.buyRune(spread, 1)).toEqual({ ok: true });
+    expect([full.notice, full.state.gold]).toEqual(['save-failed', 400]);
+  });
+});
+
+describe("the order of a fight's runes (plan 8f Task 4, review of Task 3)", () => {
+  it('a fight lists its runes in drop order, the ones paid as gold too', () => {
+    const saved = RUNE_DROP.monster;
+    RUNE_DROP.monster = 1;
+    try {
+      const g = inMap(1, mulberry32(5));
+      g.state.runesOpen = true;
+      g.encounter = 99;
+      expect(DIRS.map((d) => g.phase === 'map' && g.move(d).kind).includes('battle')).toBe(true);
+      const n = g.battle!.enemies.length;
+      expect(n).toBeGreaterThan(1);
+      const rng = mulberry32(mix(g.run!.seed ^ RUNE_SALT, g.run!.runeDraws));
+      const want = Array.from({ length: n }, () => { rng(); return rollRune(rng, 'monster', depthLevel(1), 'plain'); });
+      const key = (r: RuneRef) => `${r.id}@${r.tier}`;
+      const fullKey = key(want[1]);
+      g.state.runes = { [fullKey]: 99 };
+      const end = killAll(g);
+      const paid = want.map((r, at) => ({ rune: r, gold: RUNE_SELL[r.tier], at })).filter((x) => key(x.rune) === fullKey);
+      const found = want.filter((r) => key(r) !== fullKey);
+      expect(paid.map((x) => x.at)).toContain(1);
+      expect(end.runeGold).toEqual(paid);
+      expect(end.runes ?? []).toEqual(found);
+    } finally {
+      RUNE_DROP.monster = saved;
+    }
   });
 });

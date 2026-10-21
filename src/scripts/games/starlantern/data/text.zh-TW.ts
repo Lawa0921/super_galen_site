@@ -676,7 +676,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     banked: (viaLamp: boolean, list: string) => `${home(viaLamp)}帶回了：${list}。`,
     bankedLost: (n: number, list: string) => `背包已滿（${n} 件），沒能帶回：${list}。`,
     shop: {
-      buy: '購買', sell: '販賣', owned: (n: number) => `持有 ${n}`, bagFull: (n: number) => `背包已滿（${n} 件）`, needs: (text: string) => `需要 ${text}`,
+      buy: '購買', sell: '販賣', runes: '符文', owned: (n: number) => `持有 ${n}`, bagFull: (n: number) => `背包已滿（${n} 件）`, needs: (text: string) => `需要 ${text}`,
       bought: (name: string, n: number) => `${name} ×${n}，謝謝惠顧！`, sold: (name: string, n: number, g: number) => `收下 ${name} ×${n}，這是 ${g} G。`,
       unlocked: (names: string) => `託你的福，現在可以做出 ${names} 了！`, nothing: '沒有可以賣的素材。',
       pages: { mats: '素材', gear: '裝備' }, nothingGear: '沒有可以賣的裝備。', marked: '已標記',
@@ -774,6 +774,10 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       same: RUNE_SAME,
       group: RUNE_GROUP,
       reserve: (cap: number) => `常駐保留的 TP 上限已經到 ${cap}%`,
+      /** Trading runes (plan 8f, engine/runeTrade RuneTradeFail); `gold` uses T.reasons.gold. */
+      closed: '打倒第一位頭目之後才有符文',
+      full: (n: number) => `這個符文已經 ${n} 個了`,
+      stock: '袋子裡沒有這麼多',
     },
     /** The battle log's act for 雙重詠唱's second cast and for a 回聲 (plan 8e Task 5). */
     again: (name: string) => `${name}（第二次）`,
@@ -786,6 +790,12 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     got: (label: string) => `得到符文：${label}`,
     /** A rune found with `n` (RUNE_STACK) already owned: paid as its sell price instead (plan 8f ruling 7). */
     overStack: (label: string, n: number, gold: number) => `${label}已經 ${n} 個，換成 ${gold} G`,
+    /** The shop's rune rows (plan 8f): 「100 G　持有 3」 to buy, 「收購 25 G　持有 3」 to sell; 持有 counts the socketed ones too. */
+    buyRight: (price: number, owned: number) => `${price} G　持有 ${owned}`,
+    sellRight: (price: number, owned: number) => `收購 ${price} G　持有 ${owned}`,
+    /** How many are in the bag: only these can be sold or fused. */
+    bag: (n: number) => `袋子 ${n}`,
+    socketedNote: (k: number) => `其中 ${k} 個鑲嵌中，先拆下才能賣或合成`,
   },
   clear: { back: '繼續' },   // the Act 1 card's title and body are story copy: STORY.act1Card
   /** The finale's closing card; its text is the finale scene's summary. */

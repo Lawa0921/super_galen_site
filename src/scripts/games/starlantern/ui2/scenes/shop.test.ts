@@ -14,6 +14,8 @@ import { art } from '../../render/artPaths';
 import { priceOf } from '../../engine/town';
 import { ShopScene } from './shop';
 import { GEAR_ROWS } from '../widgets';
+import { RUNES } from '../../data/runes';
+import { runeBuyMax } from '../../engine/runeTrade';
 
 /** Scroll the goods list down by `n` rows with the wheel (locked rows cannot take the cursor). */
 const scrollGoods = (root: HTMLElement, n: number) => {
@@ -451,5 +453,87 @@ describe('ShopScene: townsfolk perks', () => {
     expect(cut).toBeLessThan(priceOf(plain.game.state, 'potion')!);
     pick('購買');
     expect(label(root)).toContain(`${cut} G`);
+  });
+});
+
+describe('the rune shop (plan 8f Task 4)', () => {
+  const rows = (root: HTMLElement) => [...topLayer(root)!.querySelectorAll('[role=option]')].map((o) => ({
+    id: o.getAttribute('data-id'), label: o.querySelector('.slx-label')!.textContent, right: o.querySelector('.slx-right')?.textContent ?? '',
+    disabled: o.getAttribute('aria-disabled') === 'true', cls: o.querySelector('.slx-label')!.className,
+  }));
+  const info = (root: HTMLElement) => root.querySelector('.slx-rune-info')?.textContent ?? '';
+
+  it('the rune list shows the stock and the bag', () => {
+    const { game, root, pick, s } = setup(450);
+    game.state.runesOpen = true;
+    game.state.runes = { 'bounce@rare': 1 };
+    game.state.party.roster.noel = { ...game.state.party.roster.noel, sockets: { 'fire-star': [{ id: 'bounce', tier: 'rare' }] } };
+    pick('符文');
+    const list = rows(root);
+    expect(list.map((r) => r.label)).toEqual(['擴散（普通）', '連擊（普通）', '節流（普通）', '延長（普通）', '彈射（稀有）']);
+    expect(list[0].right).toBe('100 G　持有 0');
+    expect(list[0].cls).toContain('slx-rarity-common');
+    expect(list[4].right).toBe('收購 150 G　持有 2');   // the bag's one and Noel's socketed one
+    expect(list[4].cls).toContain('slx-rarity-rare');
+    // The detail: what the rune does at this tier, the bag's count, and the socketed ones.
+    expect(info(root)).toContain('擴散（普通）');
+    for (let i = 0; i < 4; i++) s.onAction('down');
+    expect(info(root)).toContain('彈射（稀有）');
+    expect(info(root)).toContain(RUNES.bounce.text('rare'));
+    expect(info(root)).toContain('袋子 1');
+    expect(info(root)).toContain('其中 1 個鑲嵌中，先拆下才能賣或合成');
+    // Buying: the quantity box stops at runeBuyMax.
+    pick('擴散（普通）');
+    const want = runeBuyMax(game.state, { id: 'spread', tier: 'common' });
+    expect(want).toBe(4);
+    s.onAction('up');
+    expect(root.querySelector('.slx-qty-n')!.textContent).toBe(`× ${want}`);
+    s.onAction('confirm');
+    expect(game.state.runes).toEqual({ 'bounce@rare': 1, 'spread@common': 4 });
+    expect(game.state.gold).toBe(50);
+    expect(rows(root)[0].right).toBe('100 G　持有 4');
+    // Selling the bag's rare 彈射: the socketed one stays.
+    for (let i = 0; i < 6 && root.querySelector('.slx-talk:not([hidden])'); i++) s.onAction('confirm');
+    pick('彈射（稀有）');
+    expect(root.querySelector('.slx-qty-n')!.textContent).toBe('× 1');
+    s.onAction('confirm');
+    expect(game.state.gold).toBe(200);
+    expect(game.state.runes).toEqual({ 'spread@common': 4 });
+    expect(game.state.party.roster.noel.sockets).toEqual({ 'fire-star': [{ id: 'bounce', tier: 'rare' }] });
+    expect(rows(root).map((r) => r.label)).toEqual(['擴散（普通）', '連擊（普通）', '節流（普通）', '延長（普通）', '擴散（普通）']);
+  });
+
+  it('before the first boss the shop has no runes, but buys what the bag holds', () => {
+    const { game, root, pick } = setup(1000);
+    pick('符文');
+    const list = rows(root);
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ label: '打倒第一位頭目之後才有符文', disabled: true });
+    pick('打倒第一位頭目之後才有符文');   // a disabled row does nothing
+    expect(game.state.gold).toBe(1000);
+    // A rune already in the bag (an old save, a hand-edit) can still be sold.
+    const t = setup(0);
+    t.game.state.runes = { 'focus@magic': 2 };
+    t.pick('符文');
+    const held = rows(t.root);
+    expect(held.map((r) => r.label)).toEqual(['打倒第一位頭目之後才有符文', '集中（魔法）']);
+    expect(held[1].right).toBe('收購 60 G　持有 2');
+  });
+
+  it('a rune that cannot be bought says why', () => {
+    const poor = setup(50);
+    poor.game.state.runesOpen = true;
+    poor.pick('符文');
+    poor.pick('擴散（普通）');
+    expect(poor.root.querySelector('.slx-qty')).toBeNull();
+    expect(poor.root.querySelector('.slx-talk .slx-text')!.textContent).toBe('金錢不足');
+    const full = setup(1000);
+    full.game.state.runesOpen = true;
+    full.game.state.runes = { 'spread@common': 99 };
+    full.pick('符文');
+    full.pick('擴散（普通）');
+    expect(full.root.querySelector('.slx-qty')).toBeNull();
+    expect(full.root.querySelector('.slx-talk .slx-text')!.textContent).toBe('這個符文已經 99 個了');
+    expect(full.sfx.error).toHaveBeenCalled();
   });
 });

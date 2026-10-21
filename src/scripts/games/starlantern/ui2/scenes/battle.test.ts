@@ -799,7 +799,7 @@ describe('BattleScene loot and stat cues', () => {
     const spread = { id: 'spread' as const, tier: 'magic' as const };
     const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: { moss: 1 }, levelUps: [], left: {},
       gear: [gearOf(1, 'iron-sword', 'rare')], gearLeft: [], runes: [spread, { id: 'twin-cast' as const, tier: 'legendary' as const }],
-      runeGold: [{ rune: spread, gold: 60 }] };
+      runeGold: [{ rune: spread, gold: 60, at: 1 }] };
     vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
     for (let i = 0; i < 5; i++) s.onAction('down');
     s.onAction('confirm');
@@ -816,6 +816,9 @@ describe('BattleScene loot and stat cues', () => {
     expect(texts.indexOf('得到符文：擴散（魔法）')).toBeGreaterThan(texts.indexOf('鐵劍・稀有'));
     expect(texts.indexOf('擴散（魔法）已經 99 個，換成 60 G')).toBeLessThan(texts.findIndex((t) => t!.includes('發光苔')));
     expect(texts.filter((t) => t!.includes('擴散（魔法）'))).toHaveLength(2);
+    // In the order they dropped: the one paid as gold stands where it fell, between the two found.
+    expect(ps.filter((p) => p.classList.contains('slx-loot-rune')).map((p) => p.textContent))
+      .toEqual(['得到符文：擴散（魔法）', '擴散（魔法）已經 99 個，換成 60 G', '得到符文：雙重詠唱（傳說）']);
   });
 
   it('a win without runes shows no rune line (plan 8f Task 3)', async () => {

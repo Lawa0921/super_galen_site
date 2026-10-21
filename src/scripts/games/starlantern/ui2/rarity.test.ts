@@ -302,3 +302,16 @@ describe('mechanic colours (plan 8c)', () => {
     expect(z('.slx-pm-cue')).toBeGreaterThan(z('.slx-pm-fxa'));
   });
 });
+
+describe('rune lines in loot (plan 8f Task 4, review of Task 3)', () => {
+  it('a legendary rune line glows and slides in like gear', () => {
+    const rule = (needle: string) => [...scss.matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter(([, sel]) => sel.split(',').map((x) => x.trim()).includes(needle)).map(([, , body]) => body);
+    expect(rule('.slx-loot-rune.slx-rarity-legendary').join('')).toMatch(/text-shadow: 0 0 6px currentColor/);
+    expect(rule('.slx-loot-rune.slx-rarity-legendary')).toEqual(rule('.slx-loot-gear.slx-rarity-legendary'));
+    expect(rule('.slx-result .slx-loot-rune').join('')).toMatch(/animation: slx-loot-in/);
+    expect(rule('.slx-result .slx-loot-rune')).toEqual(rule('.slx-result .slx-loot-gear'));
+    const still = scss.match(/@media \(prefers-reduced-motion: reduce\) \{ ([^{}]*)\{ animation: none; \} \}/g) ?? [];
+    expect(still.some((m) => m.includes('.slx-result .slx-loot-rune'))).toBe(true);
+    expect(scss).not.toMatch(/!important/);
+  });
+});
