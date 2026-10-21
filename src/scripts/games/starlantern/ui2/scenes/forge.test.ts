@@ -1294,7 +1294,7 @@ describe('the rune tab (plan 8f Task 5)', () => {
     (t.root.querySelector('.slx-cmd [data-id=runes]') as HTMLElement).click();
     const rows = () => [...t.root.querySelectorAll('.slx-forge-list [role=option]')].map((o) => ({
       id: o.getAttribute('data-id'), label: o.querySelector('.slx-label')!.textContent, right: o.querySelector('.slx-right')?.textContent ?? '',
-      disabled: o.getAttribute('aria-disabled') === 'true',
+      disabled: o.getAttribute('aria-disabled') === 'true', lack: !!o.querySelector('.slx-right.slx-lack'),
     }));
     const info = () => t.root.querySelector('.slx-rune-fuse-info')?.textContent ?? '';
     return { ...t, rows, info };
@@ -1303,16 +1303,27 @@ describe('the rune tab (plan 8f Task 5)', () => {
   it('the rune tab lists what can be fused', () => {
     const t = runeTab({ 'spread@common': 3, 'bounce@magic': 1, 'twin-cast@legendary': 1 }, { 'essence-common': 2, 'essence-magic': 2 });
     expect(t.rows()).toEqual([
-      { id: 'fuse:spread@common', label: '擴散（普通）', right: '持有 3', disabled: false },
-      { id: 'fuse:bounce@magic', label: '彈射（魔法）', right: '袋子裡沒有這麼多', disabled: true },
+      { id: 'fuse:spread@common', label: '擴散（普通）', right: '持有 3', disabled: false, lack: false },
+      { id: 'fuse:bounce@magic', label: '彈射（魔法）', right: '袋子 1／需要 3', disabled: false, lack: true },
     ]);
     expect(t.info()).toContain('3 個擴散（普通）＋30 G＋普通精華 → 擴散（魔法）');
     expect(t.info()).toContain('袋子 3');
     expect(t.info()).toContain(RUNES.spread.text('magic'));
     // The essences used up: the 擴散 row greys too, naming the essence.
     const dry = runeTab({ 'spread@common': 3 }, {});
-    expect(dry.rows()[0]).toMatchObject({ right: '缺少普通精華', disabled: true });
-    expect(runeTab({ 'spread@common': 3 }, { 'essence-common': 1 }, 29).rows()[0]).toMatchObject({ right: '金錢不足', disabled: true });
+    expect(dry.rows()[0]).toMatchObject({ right: '缺少普通精華', lack: true });
+    expect(runeTab({ 'spread@common': 3 }, { 'essence-common': 1 }, 29).rows()[0]).toMatchObject({ right: '金錢不足', lack: true });
+    // A row that cannot be fused still takes the cursor: its recipe and bag count are worth reading, and the detail
+    // says why; Enter says it again and asks nothing (as 製作's rows that the stores cannot cover).
+    t.s.onAction('down');
+    expect(t.info()).toContain('3 個彈射（魔法）＋80 G＋魔法精華 → 彈射（稀有）');
+    expect(t.info()).toContain('袋子 1');
+    expect(t.root.querySelector('.slx-rune-fuse-info .slx-lack')!.textContent).toBe('袋子 1／需要 3');
+    t.s.onAction('confirm');
+    expect(t.root.querySelector('.slx-confirm')).toBeNull();
+    expect(t.sfx.error).toHaveBeenCalled();
+    expect(t.line()).toBe('袋子 1／需要 3');
+    expect(t.game.state.runes).toEqual({ 'spread@common': 3, 'bounce@magic': 1, 'twin-cast@legendary': 1 });
   });
 
   it('fusing asks first, then makes the rune and saves', () => {
@@ -1335,7 +1346,7 @@ describe('the rune tab (plan 8f Task 5)', () => {
     expect(t.line()).toContain('擴散（魔法）');
     expect(Game.boot(constRng(0.5), t.game.storage!).state.runes).toEqual({ 'spread@common': 1, 'spread@magic': 1 });
     // One 擴散（普通） is left: its row stays, greyed for want of three.
-    expect(t.rows()[0]).toMatchObject({ id: 'fuse:spread@common', disabled: true, right: '袋子裡沒有這麼多' });
+    expect(t.rows()[0]).toMatchObject({ id: 'fuse:spread@common', lack: true, right: '袋子 1／需要 3' });
   });
 
   it('with nothing to fuse the tab says how fusion works', () => {

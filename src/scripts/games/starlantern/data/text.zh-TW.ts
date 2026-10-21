@@ -781,6 +781,8 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       /** Fusion (plan 8f Task 5): an epic or legendary rune, and the essence it lacks by name. */
       top: '這一階不能再合成',
       essence: (name: string) => `缺少${name}`,
+      /** A fusion short of runes in the bag: 「袋子 2／需要 3」. */
+      fuseStock: (have: number, need: number) => `袋子 ${have}／需要 ${need}`,
     },
     /** The battle log's act for 雙重詠唱's second cast and for a 回聲 (plan 8e Task 5). */
     again: (name: string) => `${name}（第二次）`,

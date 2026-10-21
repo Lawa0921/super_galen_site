@@ -587,9 +587,9 @@ export function fusePage(h: ForgeHost): void {
 }
 
 /** Why a rune fusion cannot go, in words (engine/runeTrade RuneFuseFail; gold and the rest read as T.reasons). */
-function runeFuseWhy(r: RuneRef, reason: RuneFuseFail | 'phase'): string {
+function runeFuseWhy(s: GameState, r: RuneRef, reason: RuneFuseFail | 'phase'): string {
   const F = T.rune.fail;
-  if (reason === 'stock') return F.stock;
+  if (reason === 'stock') return F.fuseStock(bagCount(s, r), RUNE_FUSE_IN);
   if (reason === 'essence') return F.essence(MATERIALS[fuseCostOf(r)!.essence]?.name ?? '');
   if (reason === 'full') return F.full(RUNE_STACK);
   if (reason === 'top') return F.top;
@@ -604,10 +604,11 @@ function runeFuseLine(r: RuneRef): string {
 
 /**
  * 符文合成 (plan 8f Task 5): every rune in the bag that can fuse higher, one row each, 「擴散（普通）」 with 「持有 4」 on
- * the right (持有 counts the socketed ones, plan 8f ruling 13). A row the bag cannot pay for is greyed with the reason in
- * place of 持有 (the 262px forge list has no room for both beside the label): too few in the bag, the gold, the essence by
- * name, or the next tier full. The detail follows the cursor: the fusion as one
- * line, the bag's count, the socketed note and what the next tier does. Enter asks first (否 under the cursor), then
+ * the right (持有 counts the socketed ones, plan 8f ruling 13). A row the bag cannot pay for shows the reason in place of
+ * 持有, in `slx-lack` (the 262px forge list has no room for both beside the label): 袋子 2／需要 3, the gold, the essence by
+ * name, or the next tier full. Such a row still takes the cursor, as 製作's rows do, so its recipe and bag count can be
+ * read; Enter on it says why and asks nothing. The detail follows the cursor: the fusion as one line, the bag's count,
+ * the reason when it cannot go, the socketed note and what the next tier does. Enter asks first (否 under the cursor), then
  * fuses; the list stays open for the next one. With nothing to fuse, the tab says how fusion works.
  */
 export function runeFusePage(h: ForgeHost): void {
@@ -615,12 +616,12 @@ export function runeFusePage(h: ForgeHost): void {
   const R = T.rune;
   const fusable = (): RuneRef[] => bagRunes(game.state).filter((r) => fuseCostOf(r) !== undefined);
   if (!fusable().length) { void h.say(R.fuseEmpty); return; }
-  const blocked = (r: RuneRef): string | undefined => { const f = fuseRunes(game.state, r); return f.ok ? undefined : runeFuseWhy(r, f.reason); };
+  const blocked = (r: RuneRef): string | undefined => { const f = fuseRunes(game.state, r); return f.ok ? undefined : runeFuseWhy(game.state, r, f.reason); };
   const rows = (): MenuItem[] => fusable().map((r) => {
     const why = blocked(r);
     return {
       id: `fuse:${runeKey(r)}`, label: R.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }),
-      ...(why ? { disabled: true, right: why, note: why } : { right: T.ui2.shop.owned(ownedCount(game.state, r)) }),
+      ...(why ? { right: why, rightClass: 'slx-lack' } : { right: T.ui2.shop.owned(ownedCount(game.state, r)) }),
     };
   });
   const refOf = (id?: string): RuneRef | null => (id ? parseRuneKey(id.slice(id.indexOf(':') + 1)) : null);
@@ -631,10 +632,12 @@ export function runeFusePage(h: ForgeHost): void {
     if (!r || !c) { info.replaceChildren(); return; }
     const bag = bagCount(game.state, r);
     const worn = ownedCount(game.state, r) - bag;
+    const why = blocked(r);
     info.replaceChildren(
       el('p', { class: `slx-name-line ${rarityClass({ rarity: r.tier })}`, text: R.label(r.id, r.tier) }),
       el('p', { text: runeFuseLine(r) }),
       el('p', { text: R.bag(bag) }),
+      ...(why ? [el('p', { class: 'slx-lack', text: why })] : []),
       ...(worn > 0 ? [el('p', { class: 'slx-desc', text: R.socketedNote(worn) })] : []),
       el('p', { class: 'slx-desc', text: RUNES[c.to.id].text(c.to.tier) }),
     );
@@ -642,21 +645,22 @@ export function runeFusePage(h: ForgeHost): void {
   const sync = () => {
     const next = rows();
     v.menu.items.splice(0, v.menu.items.length, ...next);
-    const here = v.menu.items[v.menu.cursor];
-    if (!here || here.disabled) { const k = next.findIndex((x) => !x.disabled); if (k >= 0) v.menu.setCursor(k); }
+    if (v.menu.cursor >= next.length) v.menu.setCursor(Math.max(0, next.length - 1));
     v.render(); show();
   };
   const run = (r: RuneRef) => {
     const res = game.fuseRune(r);
-    if (!res.ok) { h.ctx.sfx.error(); void h.say(runeFuseWhy(r, res.reason)); return; }
+    if (!res.ok) { h.ctx.sfx.error(); void h.say(runeFuseWhy(game.state, r, res.reason)); return; }
     if (fusable().length) sync(); else { info.remove(); h.pop(true); }
     h.afterAct(res, (out) => [{ text: R.fused(R.label(out.id, out.tier)), cls: rarityClass({ rarity: out.tier }) }]);
   };
-  const first = rows();
-  const v: MenuView = new MenuView(new Menu(first, Math.max(0, first.findIndex((x) => !x.disabled))), {
+  const v: MenuView = new MenuView(new Menu(rows()), {
     pick: (item) => {
       const r = refOf(item.id);
-      if (!r || item.disabled) return;
+      if (!r) return;
+      // A row that cannot be fused says why and asks nothing (as 製作's rows the stores cannot cover).
+      const why = blocked(r);
+      if (why) { h.ctx.sfx.error(); void h.say(why); return; }
       const box = confirmBox(R.askFuse(runeFuseLine(r)), (yes) => {
         h.pop(!yes);
         if (yes) run(r);

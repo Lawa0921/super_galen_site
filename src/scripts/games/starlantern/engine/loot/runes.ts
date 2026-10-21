@@ -45,7 +45,7 @@ export function rollRune(rng: Rng, source: DropSource, depthLv: number, cond: Co
   return { id: pick(rng, NORMAL_RUNES), tier };
 }
 
-/** A fresh rng for one battle's rune drops, on the rune stream (never `game.rng`, `lootRng` or `memoryRng`). */
+/** A fresh rng for one battle's rune drops, on the rune stream alone (never the game's, the loot's or the memories' stream). */
 export function runeRng(run: Run): Rng {
   return mulberry32(mix(run.seed ^ RUNE_SALT, run.runeDraws++));
 }

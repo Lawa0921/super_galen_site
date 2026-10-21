@@ -315,3 +315,14 @@ describe('rune lines in loot (plan 8f Task 4, review of Task 3)', () => {
     expect(scss).not.toMatch(/!important/);
   });
 });
+
+describe("the shop's 收購 heading (plan 8f Task 6, review of Task 5)", () => {
+  it('reads as a heading, not as a greyed-out item', () => {
+    const rules = [...scss.matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter(([, sel]) => sel.replace(/\/\/.*$/gm, '').split(',').map((x) => x.trim()).includes('.slx-opt .slx-label.slx-list-head'));
+    expect(rules).toHaveLength(1);
+    const body = rules[0][2];
+    expect(body).toMatch(/color: \$slx-gold/);
+    expect(body).toMatch(/border-bottom/);
+    expect(body).not.toMatch(/!important/);
+  });
+});
