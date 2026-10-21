@@ -3645,7 +3645,7 @@ test.describe('starlantern', () => {
       await page.setViewportSize({ width: 1280, height: 720 });
       await w.key('Enter');                                   // socket it
       await expect(page.locator('.slx-ws-foot')).toContainText('火之星彈裝上了擴散（魔法）');
-      await expect(page.locator('.slx-ws-skills [data-id=fire-star] .slx-right')).toHaveText('◆◇');
+      await expect(page.locator('.slx-ws-skills [data-id=fire-star] .slx-right')).toHaveText('◆○');
       await w.key('Escape'); await w.key('Escape');           // the slots, the skills, the guild
       await expect(page.locator('.slx-guild')).toBeVisible();
       await expect(page.locator('.slx-talk')).toBeHidden();   // no new greeting
@@ -3659,17 +3659,18 @@ test.describe('starlantern', () => {
     test('the workshop card stays inside the stage at its fullest (plan 8g)', async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 720 });
       const w = await setup(page, 7);
-      // Chizuru at Lv 35: 守之結界 with three runes (常駐 among them), 淨之結界 with 常駐 too (the two-barrier warning), and
-      // 除厄 in the bag, which adds a line.
+      // Chizuru at Lv 35: 守之結界 with three runes (常駐 and 除厄 among them), 淨之結界 with 常駐 too (the two-barrier
+      // warning); Sylvie holds 雙重詠唱, whose move into 守之結界's third slot adds a line, takes one away and names her loss.
       await page.evaluate(() => {
         const s = (window as unknown as Dbg).__starlanternDebug.game.state;
         s.runesOpen = true;
-        s.runes = { 'dispel@magic': 1 };
-        s.party.recruited = [...s.party.recruited, 'chizuru'];
+        s.runes = { 'thrift@magic': 1 };
+        s.party.recruited = [...s.party.recruited, 'chizuru', 'sylvie'];
         s.party.roster.chizuru = {
           ...s.party.roster.chizuru, level: 35, tree: { ward: 1, 'purify-ward': 1 },
-          sockets: { ward: [{ id: 'lasting', tier: 'common' }, { id: 'extend', tier: 'magic' }, { id: 'thrift', tier: 'magic' }], 'purify-ward': [{ id: 'lasting', tier: 'common' }] },
+          sockets: { ward: [{ id: 'lasting', tier: 'common' }, { id: 'extend', tier: 'magic' }, { id: 'dispel', tier: 'magic' }], 'purify-ward': [{ id: 'lasting', tier: 'common' }] },
         };
+        s.party.roster.sylvie = { ...s.party.roster.sylvie, level: 20, tree: { 'aimed-shot': 1 }, sockets: { 'aimed-shot': [{ id: 'twin-cast', tier: 'legendary' }] } };
       });
       await w.choose('.slx-town', '冒險者公會');
       await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
@@ -3679,9 +3680,11 @@ test.describe('starlantern', () => {
       await expect(page.locator('.slx-ws-skills [aria-selected=true]')).toHaveAttribute('data-id', 'ward');
       await w.key('Enter');                                   // her slots
       await w.key('ArrowDown'); await w.key('ArrowDown');
-      await w.key('Enter');                                   // slot 3's runes (節流 in it): 拆下, then the bag's 除厄
-      await w.key('ArrowDown');
-      await expect(page.locator('.slx-ws-runes [aria-selected=true]')).toHaveAttribute('data-id', 'bag:dispel@magic');
+      await w.key('Enter');                                   // slot 3's runes (除厄 in it): 拆下, the bag, then the others'
+      const move = 'move:sylvie:aimed-shot:0';
+      for (let i = 0; i < 12 && (await page.locator('.slx-ws-runes [aria-selected=true]').getAttribute('data-id')) !== move; i++) await w.key('ArrowDown');
+      await expect(page.locator('.slx-ws-runes [aria-selected=true]')).toHaveAttribute('data-id', move);
+      await expect(page.locator('.slx-ws-giver')).toContainText('希爾薇');
       await expect(page.locator('.slx-ws-card')).toContainText('兩個常駐結界只會留下一個');
       for (const [vw, vh] of [[1280, 720], [390, 844]] as const) {
         await inside(page, vw, vh);
@@ -3693,20 +3696,64 @@ test.describe('starlantern', () => {
       await page.setViewportSize({ width: 1280, height: 720 });
       const body = page.locator('.slx-ws-card-body');
       const room = await body.evaluate((b) => b.scrollHeight - b.clientHeight);
+      expect(room, 'the fullest card needs its ▼').toBeGreaterThan(1);
       const down = page.locator('.slx-ws-card-frame > .slx-more-down');
       const up = page.locator('.slx-ws-card-frame > .slx-more-up');
-      if (room > 1) {
-        await expect(down).toBeVisible();
-        await expect(up).toBeHidden();
-        await down.click();
-        await expect.poll(() => body.evaluate((b) => b.scrollTop)).toBeGreaterThan(0);
-        await expect(up).toBeVisible();
-        const top = await body.evaluate((b) => b.scrollTop);
-        if (top < room - 1) {
-          await w.key('f');
-          await expect.poll(() => body.evaluate((b) => b.scrollTop)).toBeGreaterThan(top);
-        }
-      } else await expect(down).toBeHidden();
+      await expect(down).toBeVisible();
+      await expect(up).toBeHidden();
+      await down.click();
+      await expect.poll(() => body.evaluate((b) => b.scrollTop)).toBeGreaterThan(0);
+      await expect(up).toBeVisible();
+      const top = await body.evaluate((b) => b.scrollTop);
+      if (top < room - 1) {
+        await w.key('f');
+        await expect.poll(() => body.evaluate((b) => b.scrollTop)).toBeGreaterThan(top);
+      }
+      expect(w.errors).toEqual([]);
+    });
+
+    test('the workshop moves a rune between members, by mouse (plan 8g)', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const w = await setup(page, 7);
+      // Noel at Lv 20 knowing 火之星彈; Sylvie with 彈射 in 瞄準射擊's first slot; a magic 擴散 in the bag.
+      await page.evaluate(() => {
+        const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+        s.runesOpen = true;
+        s.runes = { 'spread@magic': 1 };
+        s.party.recruited = [...s.party.recruited, 'noel', 'sylvie'];
+        s.party.roster.noel = { ...s.party.roster.noel, level: 20, tree: { 'fire-star': 1 } };
+        s.party.roster.sylvie = { ...s.party.roster.sylvie, level: 20, tree: { 'aimed-shot': 1 }, sockets: { 'aimed-shot': [{ id: 'bounce', tier: 'magic' }] } };
+      });
+      await w.choose('.slx-town', '冒險者公會');
+      await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+      await page.locator('.slx-guild .slx-cmd [data-id=workshop]').click();
+      await expect(page.locator('.slx-workshop')).toBeVisible();
+      const next = page.locator('.slx-ws-head .slx-status-arrow').last();
+      for (let i = 0; i < 4 && !((await page.locator('.slx-ws-name').textContent()) ?? '').includes('諾艾兒'); i++) await next.click();
+      await expect(page.locator('.slx-ws-name')).toContainText('諾艾兒');
+      await page.locator('.slx-ws-skills [data-id=fire-star]').click();
+      await page.locator('.slx-ws-slots [data-id="slot:0"]').click();
+      const runes = page.locator('.slx-ws-runes');
+      await expect(runes.locator('[data-id="head:others"]')).toHaveText('從別人身上移過來');
+      const row = runes.locator('[data-id="move:sylvie:aimed-shot:0"]');
+      await expect(row.locator('.slx-right')).toHaveText('希爾薇');
+      await row.hover();
+      await expect(page.locator('.slx-ws-giver')).toContainText('希爾薇・瞄準射擊');
+      await expect(page.locator('.slx-ws-card tr[data-key=target] td')).toHaveText(['單體', '單體']);
+      for (const [vw, vh] of [[1280, 720], [390, 844]] as const) {
+        await inside(page, vw, vh);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/workshop-move-${vw}.png` });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await row.click();
+      await expect(page.locator('.slx-ws-foot')).toContainText('從希爾薇・瞄準射擊移過來：彈射（魔法）');
+      const sockets = await page.evaluate(() => {
+        const r = (window as unknown as Dbg).__starlanternDebug.game.state.party.roster;
+        return [r.noel.sockets, r.sylvie.sockets ?? null];
+      });
+      expect(sockets).toEqual([{ 'fire-star': [{ id: 'bounce', tier: 'magic' }] }, null]);
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-save') ?? '{}'));
+      expect(saved.party.roster.noel.sockets).toEqual({ 'fire-star': [{ id: 'bounce', tier: 'magic' }] });
       expect(w.errors).toEqual([]);
     });
   });

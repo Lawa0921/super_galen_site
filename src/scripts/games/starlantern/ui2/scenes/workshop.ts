@@ -25,6 +25,14 @@ const SKILL_ROWS = 13;
 const RUNE_ROWS = 12;
 
 const label = (r: RuneRef): string => T.rune.label(r.id, r.tier);
+/** A rune row's id: `bag:<key>`, or `move:<member>:<skill>:<slot>` for a rune in someone's slot. */
+const rowOf = (c: RuneChoice): string =>
+  (c.source.kind === 'bag' ? `bag:${runeKey(c.source.ref)}` : `move:${c.source.at.id}:${c.source.at.skill}:${c.source.at.slot}`);
+/** A card value in a cell: each of its 「／」 parts kept on one line (「84（每個目標）」 never breaks). */
+const cell = (cls: string, text: string): HTMLElement => {
+  const parts = text.split(W.join);
+  return el('td', { class: cls }, parts.flatMap((p, i) => [...(i ? [W.join] : []), el('span', { class: 'slx-nb', text: p })]));
+};
 
 /**
  * The skill workshop (plan 8g, spec §6.8): a member's skills on the left, the card of the skill under the cursor in the
@@ -52,8 +60,13 @@ export class WorkshopScene implements Scene {
   private skill = '';
   private slot = 0;
   private focus: Focus = 'skills';
-  /** The rune row under the cursor, by id: kept while the list changes under it. */
+  /** The rune row under the cursor, by id and by place: kept while the list changes under it, else held in its range. */
   private runeCur = '';
+  private runeIdx = 0;
+  /** The rune row a touch tap picked: a second tap on it does it (plan 8g ruling 11). Any other action clears it. */
+  private armed = '';
+  /** What pressed the rune row being clicked: a touch tap only picks the row the first time. */
+  private pressedBy = '';
   /** What the last action did, or why it was refused; cleared by the next move. */
   private msg = '';
   private refused = '';
@@ -102,6 +115,7 @@ export class WorkshopScene implements Scene {
   exit(): void {}
 
   onAction(a: UiAction): void {
+    this.armed = '';
     if (a !== 'confirm') { this.refused = ''; }
     switch (a) {
       case 'prev': case 'next': this.page(a === 'next' ? 1 : -1); return;
@@ -125,8 +139,10 @@ export class WorkshopScene implements Scene {
   /** Who Q/E pass over: everyone recruited, or in the labyrinth the members on the field (the bench is in town). */
   private get members(): CharacterId[] {
     const p = this.game.state.party;
-    return this.game.phase === 'map' ? activeIds(p) : p.recruited;
+    return this.field ? activeIds(p) : p.recruited;
   }
+  /** In the labyrinth: the map phase with a run (as the equipment screen reads it). */
+  private get field(): boolean { return this.game.phase === 'map' && !!this.game.run; }
   private get skills(): string[] { return socketable(this.member); }
   /** Her open slots on every skill (socketCount). */
   private get open(): number { return socketCount(this.member.level); }
@@ -184,6 +200,7 @@ export class WorkshopScene implements Scene {
   private openRunes(): void {
     this.focus = 'runes';
     this.runeCur = '';
+    this.runeIdx = 0;
     this.msg = '';
     this.cardTop = 0;
     this.render();
@@ -198,14 +215,14 @@ export class WorkshopScene implements Scene {
     else this.ctx.go(this.ctx.from ?? 'guild');
   }
 
-  /** The bag rows of the slot's choices (the moves come with plan 8g Task 4b). */
-  private choices(): RuneChoice[] {
+  /** The slot's choices: the bag, then what the others hold (runeChoices' order). */
+  private choices(): readonly RuneChoice[] {
     if (!this.game.state.runesOpen || !this.skill || this.slot >= this.open) return [];
-    return runeChoices(this.game.state, this.at).filter((c) => c.section === 'bag');
+    return runeChoices(this.game.state, this.at);
   }
 
   private choiceOf(rowId: string): RuneChoice | undefined {
-    return this.choices().find((c) => `bag:${runeKey(c.source.ref)}` === rowId);
+    return this.choices().find((c) => rowOf(c) === rowId);
   }
 
   /** The rune now in the picked slot. */
@@ -230,9 +247,19 @@ export class WorkshopScene implements Scene {
     if (!choice) { this.refuse(''); return; }
     if (choice.why !== null) { this.refuse(choice.why); return; }
     const ref = choice.source.ref;
+    const back = held ? W.backToBag(label(held)) : '';
+    if (choice.source.kind === 'socket') {
+      const from = choice.source.at;
+      const giver = this.game.state.party.roster[from.id];
+      const skill = skillFor(fromMember(giver, 0), from.skill)?.name ?? from.skill;
+      const r = g.moveRune(from, this.at);
+      if (!r.ok) { this.refuse(this.failWords(r.reason)); return; }
+      this.done(W.moved(label(ref), CHARACTERS[from.id].name, skill) + back);
+      return;
+    }
     const r = g.socketRune(this.id, this.skill, this.slot, ref);
     if (!r.ok) { this.refuse(this.failWords(r.reason)); return; }
-    this.done(W.socketed(label(ref), name) + (held ? W.backToBag(label(held)) : ''));
+    this.done(W.socketed(label(ref), name) + back);
   }
 
   private failWords(reason: SocketFail | 'empty'): string {
@@ -294,9 +321,9 @@ export class WorkshopScene implements Scene {
     );
   }
 
-  /** ◆ a working rune, ◇ an empty slot or one whose rune does nothing; slots not open yet are not drawn. */
+  /** ◆ a working rune, ◇ a rune that does nothing, ○ an empty slot; slots not open yet are not drawn (controller ruling). */
   private dots(skill: string): string {
-    return slotStates(this.member, skill).map((s) => (s.state === 'on' ? '◆' : '◇')).join('');
+    return slotStates(this.member, skill).map((s) => (s.state === 'on' ? '◆' : s.state === 'off' ? '◇' : '○')).join('');
   }
 
   private renderSkills(): void {
@@ -384,24 +411,50 @@ export class WorkshopScene implements Scene {
     const held = this.held();
     const open = !!this.game.state.runesOpen;
     const choices = this.choices();
+    const row = (c: RuneChoice): MenuItem => ({
+      id: rowOf(c),
+      label: label(c.source.ref),
+      cls: `slx-rarity-${c.source.ref.tier}${c.why !== null ? ' slx-ws-unfit' : ''}`,
+      // The bag's count, or for a rune in someone's slot who holds it.
+      right: c.source.kind === 'bag' ? T.rune.bag(c.source.count) : CHARACTERS[c.source.at.id].name,
+      ...(c.why !== null ? { rightClass: 'slx-lack' } : {}),
+    });
+    const moves = choices.filter((c) => c.section === 'move');
     const items: MenuItem[] = [
       ...(held ? [{ id: 'remove', label: W.remove }] : []),
-      ...choices.map((c): MenuItem => ({
-        id: `bag:${runeKey(c.source.ref)}`,
-        label: label(c.source.ref),
-        cls: `slx-rarity-${c.source.ref.tier}${c.why !== null ? ' slx-ws-unfit' : ''}`,
-        right: T.rune.bag(c.source.kind === 'bag' ? c.source.count : c.owned.bag),
-        ...(c.why !== null ? { rightClass: 'slx-lack' } : {}),
-      })),
+      ...choices.filter((c) => c.section === 'bag').map(row),
+      ...(moves.length ? [{ id: 'head:others', label: W.fromOthers, disabled: true, cls: 'slx-list-head' }] : []),
+      ...moves.map(row),
     ];
     const key = `${this.id}|${this.skill}|${this.slot}|${items.map((it) => `${it.id}:${it.right}:${it.cls ?? ''}`).join(',')}`;
-    const idx = Math.max(0, items.findIndex((it) => it.id === this.runeCur));
+    // The same row when it is still there; else the same place, held in the list's range (a heading passes the cursor on).
+    const same = items.findIndex((it) => it.id === this.runeCur);
+    const idx = same >= 0 ? same : Math.min(this.runeIdx, Math.max(0, items.length - 1));
     if (!this.runeView || key !== this.runeKeyOf) {
       this.runeKeyOf = key;
       this.runeView = items.length ? new MenuView(new Menu(items, idx), {
-        pick: () => this.act(),
+        pick: (it) => {
+          // A touch tap on a row not picked yet only picks it (and previews it); the second tap on it does it.
+          const touch = this.pressedBy === 'touch';
+          this.pressedBy = '';
+          if (touch && this.armed !== it.id) {
+            this.armed = it.id;
+            this.runeCur = it.id;
+            this.runeIdx = this.runeView?.menu.cursor ?? 0;
+            this.refused = '';
+            this.msg = '';
+            this.cardTop = 0;
+            this.ctx.sfx.cursor();
+            this.renderCard();
+            return;
+          }
+          this.armed = '';
+          this.act();
+        },
         moved: () => {
+          this.armed = '';
           this.runeCur = this.runeView?.menu.current()?.id ?? '';
+          this.runeIdx = this.runeView?.menu.cursor ?? 0;
           this.refused = '';
           this.msg = '';
           this.cardTop = 0;
@@ -409,6 +462,9 @@ export class WorkshopScene implements Scene {
           this.renderCard();
         },
       }, RUNE_ROWS) : null;
+      // What pressed a row: read by `pick` above (a click event may carry no pointerType: Safari).
+      this.runeView?.el.addEventListener('pointerdown', (e) => { this.pressedBy = e.pointerType; }, true);
+      this.runeView?.el.addEventListener('click', (e) => { this.pressedBy = (e as PointerEvent).pointerType || this.pressedBy; }, true);
       const empty = !open ? T.rune.fail.closed : choices.length ? '' : W.emptyBag;
       this.slotsWin.replaceChildren(el('div', { class: 'slx-ws-runes' }, [
         el('div', { class: 'slx-area-head', text: W.pick(this.slot + 1) }),
@@ -417,13 +473,15 @@ export class WorkshopScene implements Scene {
       ]));
     } else this.runeView.render();
     this.runeCur = this.runeView?.menu.current()?.id ?? '';
+    this.runeIdx = Math.max(0, this.runeView?.menu.cursor ?? 0);
   }
 
   /** What the rune row under the cursor would do: the engine's own result on a copy of the state. */
   private preview(): { after: Member; choice?: RuneChoice } | null {
     if (this.focus !== 'runes' || !this.runeCur) return null;
     const choice = this.runeCur === 'remove' ? undefined : this.choiceOf(this.runeCur);
-    const act: RuneAction | null = this.runeCur === 'remove' ? { kind: 'remove' } : choice ? { kind: 'bag', ref: choice.source.ref } : null;
+    const act: RuneAction | null = this.runeCur === 'remove' ? { kind: 'remove' }
+      : choice?.source.kind === 'socket' ? { kind: 'move', from: choice.source.at } : choice ? { kind: 'bag', ref: choice.source.ref } : null;
     if (!act) return null;
     const r = previewOf(this.game.state, this.at, act);
     return r.ok ? { after: r.state.party.roster[this.id], choice } : { after: this.member, choice };
@@ -437,13 +495,19 @@ export class WorkshopScene implements Scene {
     if (now) {
       const p = this.preview();
       const after = p ? cardOf(p.after, this.skill) : undefined;
-      out.push(el('div', { class: 'slx-ws-card-name' }, [el('b', { text: (after ?? now).name }), el('span', { class: 'slx-ws-tags', text: now.tags.map((t) => `［${t}］`).join('') })]));
+      // In a preview the name and tags are the after card's: ［單體］ never stands beside a target of 全體.
+      const shown = after ?? now;
+      out.push(el('div', { class: 'slx-ws-card-name' }, [
+        el('b', { text: shown.name }),
+        el('span', { class: 'slx-ws-tags' }, shown.tags.map((t) => el('span', { class: 'slx-ws-tag', text: `［${t}］` }))),
+      ]));
       out.push(after ? this.table(now, after) : this.single(now));
       const ref = p?.choice?.source.ref;
       if (ref) out.push(el('p', { class: `slx-ws-rune-text slx-rarity-${ref.tier}` }, [el('b', { text: label(ref) }), el('span', { text: RUNES[ref.id].text(ref.tier) })]));
       for (const n of p?.choice?.notes ?? []) if (n !== W.barrierClash) out.push(el('p', { class: 'slx-ws-note', text: n }));
       // Ruling 10, now and in the preview: the barriers her lasting runes raise that a fight's start would replace.
       if (lastingBarrierLoss(fromMember(p?.after ?? m, 0)) > 0) out.push(el('p', { class: 'slx-ws-warn', text: W.barrierClash }));
+      if (p?.choice?.giver) out.push(el('p', { class: 'slx-ws-giver', text: p.choice.giver }));
       const own = p?.choice?.owned;
       if (own) out.push(el('p', { class: 'slx-ws-owned', text: W.owned(own.all, own.bag, own.socketed) }));
       if (!why && p?.choice?.why) why = p.choice.why;
@@ -457,7 +521,7 @@ export class WorkshopScene implements Scene {
 
   /** The card alone: one column, 現在. */
   private single(card: Card): HTMLElement {
-    const rows = card.rows.map((r) => el('tr', { attrs: { 'data-key': r.key } }, [el('th', { text: W.row[r.key] }), el('td', { class: 'slx-ws-now', text: r.text })]));
+    const rows = card.rows.map((r) => el('tr', { attrs: { 'data-key': r.key } }, [el('th', { text: W.row[r.key] }), cell('slx-ws-now', r.text)]));
     return el('div', {}, [
       el('table', { class: 'slx-ws-table' }, [el('thead', {}, [el('tr', {}, [el('th'), el('th', { text: W.now })])]), el('tbody', {}, rows)]),
       ...(card.adds.length ? [el('ul', { class: 'slx-ws-adds' }, card.adds.map((a) => el('li', { text: a })))] : []),
@@ -468,7 +532,7 @@ export class WorkshopScene implements Scene {
   private table(before: Card, after: Card): HTMLElement {
     const c = compareCards(before, after);
     const rows = c.lines.map((l) => el('tr', { class: l.changed ? 'slx-changed' : '', attrs: { 'data-key': l.key } }, [
-      el('th', { text: l.label }), el('td', { class: 'slx-ws-before', text: l.before }), el('td', { class: 'slx-ws-after', text: l.after }),
+      el('th', { text: l.label }), cell('slx-ws-before', l.before), cell('slx-ws-after', l.after),
     ]));
     const adds = [
       ...c.kept.map((a) => el('li', { text: a })),

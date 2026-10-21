@@ -129,7 +129,7 @@ describe('the skill card (plan 8g Task 3)', () => {
                 moves++;
                 const from = ch.source.at;
                 const lines = compareCards(cardOf(member(s, from.id), from.skill)!, cardOf(member(game.state, from.id), from.skill)!);
-                const lost = [...lines.lines.filter((l) => l.changed).map((l) => W.arrow(l.before, l.after)), ...lines.removed];
+                const lost = [...lines.lines.filter((l) => l.changed).map((l) => W.arrow(l.before, l.after)), ...lines.removed.map(W.lost)];
                 const same = from.id === id && from.skill === skill;
                 expect(ch.giver).toBe(same ? undefined : W.giver(CHARACTERS[from.id].name, skillFor(fromMember(member(s, from.id), 0), from.skill)!.name, lost));
                 const worked = slotStates(member(s, from.id), from.skill)[from.slot].state === 'on';

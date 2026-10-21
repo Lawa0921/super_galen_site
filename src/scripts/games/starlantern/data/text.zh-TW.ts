@@ -426,6 +426,9 @@ export const T = {
       noSlots: (lv: number) => `Lv ${lv} 才有第一個插槽`,
       noSkills: '還沒有可以裝符文的技能',
       remove: '拆下',
+      /** The rune list's heading over the runes in other slots, and what a move says (plan 8g Task 4b). */
+      fromOthers: '從別人身上移過來',
+      moved: (label: string, who: string, skill: string) => `從${who}・${skill}移過來：${label}`,
       pick: (i: number) => `要裝進槽 ${i} 的符文`,
       off: (why: string) => `未生效：${why}`,
       emptyBag: '袋子裡沒有符文',

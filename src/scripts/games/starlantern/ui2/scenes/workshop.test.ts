@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { CHARACTERS } from '../../data/characters';
 import { RUNE_SLOT_LEVELS, type RuneRef } from '../../data/runes';
 import { SKILLS } from '../../data/skills';
+import { RESERVE_CAP } from '../../data/runes';
 import { T } from '../../data/text.zh-TW';
 import { fromMember, skillFor } from '../../engine/battle';
 import { Game } from '../../engine/game';
@@ -88,7 +89,7 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     expect(w.foot()).toContain(W.socketed(label(R('spread')), SKILLS['fire-star'].name));
     expect(w.focus()).toBe('slots');
     expect(w.slots()[0].getAttribute('aria-selected')).toBe('true');
-    expect(w.skills()[0].querySelector('.slx-right')!.textContent).toBe('◆◇');
+    expect(w.skills()[0].querySelector('.slx-right')!.textContent).toBe('◆○');
     // Saved at once in town.
     expect(JSON.parse(w.storage.getItem(SAVE_KEY)!).party.roster.noel.sockets).toEqual({ 'fire-star': [R('spread')] });
   });
@@ -146,7 +147,7 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     }, 'noel:flame-wave');
     const m = w.game.state.party.roster.noel;
     const why = runeWhy(runeFits(skillFor(fromMember(m, 0), 'flame-wave')!, 'spread', [])!);
-    expect(w.skills().find((r) => r.dataset.id === 'flame-wave')!.querySelector('.slx-right')!.textContent).toBe('◇◇');
+    expect(w.skills().find((r) => r.dataset.id === 'flame-wave')!.querySelector('.slx-right')!.textContent).toBe('◇○');
     expect(w.panel()).toContain(label(R('spread')));
     expect(w.panel()).toContain(W.off(why));
     expect(m.sockets).toEqual({ 'flame-wave': [R('spread')] });
@@ -186,7 +187,10 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     };
     const town = setup(() => undefined, 'hero');
     walks(town, town.game.state.party.recruited);
-    const field = setup((g) => { g.phase = 'map'; }, 'hero');
+    const field = setup((g) => { g.phase = 'map'; Object.assign(g, { run: {} }); }, 'hero');
+    // The map phase with no run (between screens) is not the labyrinth: everyone recruited.
+    const between = setup((g) => { g.phase = 'map'; }, 'hero');
+    walks(between, between.game.state.party.recruited);
     const active = activeIds(field.game.state.party);
     expect(active).not.toContain('sylvie');
     walks(field, active);
@@ -221,5 +225,123 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     expect(w.root.querySelector('.slx-ws-card')!.textContent).toContain(W.barrierClash);
     // Her TP held in battle on the title row.
     expect(w.root.querySelector('.slx-ws-head')!.textContent).toContain(reserveLine(w.game.state.party.roster.chizuru)!);
+  });
+});
+
+describe('WorkshopScene: moves, mouse and touch (plan 8g Task 4b)', () => {
+  /** Noel (火之星彈) and Sylvie (瞄準射擊) at Lv 20, runes open, 彈射 in Sylvie's first slot. */
+  const pair = (bag: Record<string, number> = {}, noelSockets?: Record<string, (RuneRef | null)[]>) => (g: Game) => {
+    noel(20, bag)(g);
+    const s = g.state.party.roster.sylvie;
+    g.state.party.roster.sylvie = { ...s, level: 20, tree: { 'aimed-shot': 1 }, sockets: { 'aimed-shot': [R('bounce')] } };
+    if (noelSockets) g.state.party.roster.noel.sockets = noelSockets;
+  };
+  const tap = (node: HTMLElement, pointerType: string) => {
+    node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType }));
+    node.dispatchEvent(new PointerEvent('click', { bubbles: true, pointerType }));
+  };
+  const runeRow = (w: ReturnType<typeof setup>, id: string) => w.runes().find((r) => r.dataset.id === id)!;
+  const moveId = 'move:sylvie:aimed-shot:0';
+  /** ↓ until the rune cursor is on `id` (at most once round the list). */
+  const downTo = (w: ReturnType<typeof setup>, id: string) => {
+    for (let i = 0; i < 30 && w.runeCur() !== id; i++) w.press('down');
+    expect(w.runeCur()).toBe(id);
+  };
+
+  it('move from another member, and the card says what she loses', () => {
+    const w = setup(pair({ 'spread@magic': 1 }), 'noel:fire-star');
+    w.press('confirm', 'confirm');
+    const ids = w.runes().map((r) => r.dataset.id);
+    expect(ids).toEqual(['bag:spread@magic', 'head:others', moveId]);
+    expect(runeRow(w, 'head:others').textContent).toContain(W.fromOthers);
+    expect(runeRow(w, 'head:others').getAttribute('aria-disabled')).toBe('true');
+    expect(runeRow(w, moveId).querySelector('.slx-right')!.textContent).toBe(CHARACTERS.sylvie.name);
+    w.press('down');
+    expect(w.runeCur()).toBe(moveId);                                 // the heading takes no cursor
+    const aimed = skillFor(fromMember(w.game.state.party.roster.sylvie, 0), 'aimed-shot')!.name;
+    expect(w.root.querySelector('.slx-ws-giver')!.textContent).toContain(`${CHARACTERS.sylvie.name}・${aimed}`);
+    w.press('confirm');
+    expect(w.game.state.party.roster.noel.sockets).toEqual({ 'fire-star': [R('bounce')] });
+    expect(w.game.state.party.roster.sylvie.sockets).toBeUndefined();
+    expect(w.foot()).toContain(W.moved(label(R('bounce')), CHARACTERS.sylvie.name, aimed));
+  });
+
+  it('a refused move says why', () => {
+    // Noel already holds 90% in 常駐; one more from Sylvie would pass the cap.
+    const w = setup((g) => {
+      noel(35, {}, { 'fire-star': 1, 'ice-star': 1, 'thunder-star': 1, hex: 1 })(g);
+      g.state.party.roster.noel.sockets = { 'ice-star': [R('lasting', 'common')], 'thunder-star': [R('lasting', 'common')], hex: [R('lasting', 'common')] };
+      const s = g.state.party.roster.sylvie;
+      g.state.party.roster.sylvie = { ...s, level: 20, tree: { 'aimed-shot': 1 }, sockets: { 'aimed-shot': [R('lasting', 'common')] } };
+    }, 'noel:fire-star');
+    w.press('confirm', 'confirm');
+    const id = 'move:sylvie:aimed-shot:0';
+    downTo(w, id);
+    expect(w.foot()).toContain(T.rune.fail.reserve(RESERVE_CAP));
+    const before = JSON.stringify(w.game.state.party);
+    w.press('confirm');
+    expect(w.sfx.error).toHaveBeenCalled();
+    expect(JSON.stringify(w.game.state.party)).toBe(before);
+    expect(w.foot()).toContain(T.rune.fail.reserve(RESERVE_CAP));
+  });
+
+  it('a move into a filled slot sends the old rune to the bag', () => {
+    const w = setup(pair({}, { 'fire-star': [R('drain')] }), 'noel:fire-star');
+    w.press('confirm', 'confirm');
+    expect(w.runes().map((r) => r.dataset.id)).toEqual(['remove', 'head:others', moveId]);
+    w.press('down', 'confirm');
+    expect(w.game.state.party.roster.noel.sockets).toEqual({ 'fire-star': [R('bounce')] });
+    expect(w.game.state.runes).toEqual({ 'drain@magic': 1 });
+    expect(w.foot()).toContain(W.backToBag(label(R('drain'))));
+  });
+
+  it('hover previews, a touch needs a second tap', () => {
+    const w = setup(noel(20, { 'spread@magic': 1, 'drain@magic': 1 }), 'noel:fire-star');
+    w.press('confirm', 'confirm');
+    const first = w.runeCur()!;
+    const other = w.runes().find((r) => r.dataset.id !== first && r.getAttribute('aria-disabled') !== 'true')!.dataset.id!;
+    const before = JSON.stringify(w.game.state);
+    runeRow(w, other).dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+    expect(w.runeCur()).toBe(other);
+    expect(JSON.stringify(w.game.state)).toBe(before);
+    const target = () => w.row('target')!.querySelector('.slx-ws-after')?.textContent;
+    expect(target()).toBe(other === 'bag:spread@magic' ? '全體' : '單體');
+    // A touch: the first tap only moves there; a second tap on that row does it.
+    tap(runeRow(w, 'bag:spread@magic'), 'touch');
+    expect(w.runeCur()).toBe('bag:spread@magic');
+    expect(JSON.stringify(w.game.state)).toBe(before);
+    w.press('down');                                                    // another action: the tap no longer counts
+    tap(runeRow(w, 'bag:spread@magic'), 'touch');
+    expect(JSON.stringify(w.game.state)).toBe(before);
+    tap(runeRow(w, 'bag:spread@magic'), 'touch');
+    expect(w.game.state.party.roster.noel.sockets).toEqual({ 'fire-star': [R('spread')] });
+    // A mouse click does it at once.
+    w.press('down', 'confirm');                                         // slot 2's runes
+    tap(runeRow(w, 'bag:drain@magic'), 'mouse');
+    expect(w.game.state.party.roster.noel.sockets).toEqual({ 'fire-star': [R('spread'), R('drain')] });
+  });
+
+  it('the cursor stays in the list when it shrinks', () => {
+    const inList = (w: ReturnType<typeof setup>) => {
+      const rows = w.runes();
+      const cur = w.runeCur();
+      expect(rows.some((r) => r.dataset.id === cur)).toBe(true);
+    };
+    const w = setup(pair({ 'drain@magic': 1, 'spread@magic': 1 }), 'noel:fire-star');
+    w.press('confirm', 'confirm');
+    downTo(w, 'bag:drain@magic');
+    w.press('confirm');                                                 // the bag's only 吸血 goes in
+    expect(w.game.state.party.roster.noel.sockets).toEqual({ 'fire-star': [R('drain')] });
+    w.press('down', 'confirm');                                         // slot 2's runes
+    inList(w);
+    downTo(w, moveId);
+    w.press('confirm');                                                 // Sylvie's row is gone after the move
+    expect(w.game.state.party.roster.sylvie.sockets).toBeUndefined();
+    w.press('up', 'confirm');                                           // slot 1's runes again
+    inList(w);
+    expect(w.runes().some((r) => r.dataset.id === moveId)).toBe(false);
+    // To a member with fewer skills and back: nothing breaks.
+    w.press('cancel', 'cancel', 'next', 'prev', 'confirm', 'confirm');
+    inList(w);
   });
 });

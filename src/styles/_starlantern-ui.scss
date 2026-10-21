@@ -1213,9 +1213,10 @@ $slx-starlit: #bff6ff;
 .slx-ws-reserve { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: $slx-dim; }
 .slx-ws-title { margin-left: auto; flex: none; font-size: 16px; color: $slx-gold; }
 .slx-ws-skills, .slx-ws-card, .slx-ws-slots { top: 42px; bottom: 40px; padding: 4px 6px; display: flex; flex-direction: column; }
-.slx-ws-skills { left: 6px; width: 140px; }
-.slx-ws-card { left: 160px; right: 188px; }
-.slx-ws-slots { right: 6px; width: 168px; }
+// About 128 / 324 / 148 wide, 14px apart (the frames are border-box).
+.slx-ws-skills { left: 6px; width: 128px; }
+.slx-ws-card { left: 148px; right: 168px; }
+.slx-ws-slots { right: 6px; width: 148px; }
 .slx-ws-skills:not(.slx-area-on), .slx-ws-slots:not(.slx-area-on) { border-color: #8a7444; }
 .slx-ws-skills .slx-opt, .slx-ws-runes .slx-opt { padding-right: 4px; }
 .slx-workshop .slx-opt .slx-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1239,8 +1240,10 @@ $slx-starlit: #bff6ff;
 .slx-ws-card-body p { margin: 3px 0 0; white-space: normal; overflow-wrap: anywhere; }
 .slx-ws-card-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; color: $slx-gold; }
 .slx-ws-tags { font-size: 10px; color: $slx-dim; }
+// Each tag and each part of a card value stays on one line: 「消耗 TP」, 「84（每個目標）」.
+.slx-ws-tag, .slx-ws-table .slx-nb { white-space: nowrap; }
 .slx-ws-table { width: 100%; margin-top: 2px; border-collapse: collapse; table-layout: fixed; font-size: 11px; line-height: 14px; }
-.slx-ws-table th { width: 70px; text-align: left; font-weight: normal; color: $slx-dim; }
+.slx-ws-table th { width: 58px; text-align: left; font-weight: normal; color: $slx-dim; }
 .slx-ws-table thead th { font-size: 10px; color: $slx-dim; }
 .slx-ws-table td { overflow-wrap: anywhere; }
 .slx-ws-table tr.slx-changed td.slx-ws-after { color: $slx-gold; }
@@ -1253,8 +1256,9 @@ $slx-starlit: #bff6ff;
 .slx-ws-rune-text b { font-weight: normal; margin-right: 4px; }
 .slx-ws-rune-text span { color: $slx-ink; }
 .slx-ws-note, .slx-ws-owned { font-size: 11px; line-height: 14px; color: $slx-dim; }
+.slx-ws-giver { font-size: 11px; line-height: 14px; color: #ffb36b; }
 .slx-ws-warn { font-size: 11px; line-height: 14px; color: #ffb36b; }
-.slx-ws-foot { flex: none; min-height: 28px; margin-top: 2px; padding-top: 2px; border-top: 1px solid rgba(232, 196, 106, 0.35); font-size: 10px; line-height: 12px; }
+.slx-ws-foot { flex: none; min-height: 12px; margin-top: 2px; padding-top: 2px; border-top: 1px solid rgba(232, 196, 106, 0.35); font-size: 10px; line-height: 12px; }
 .slx-ws-foot p { margin: 0; white-space: normal; overflow-wrap: anywhere; }
 .slx-ws-why { color: $slx-down; }
 .slx-ws-msg { color: $slx-up; }

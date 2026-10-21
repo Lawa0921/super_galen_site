@@ -204,8 +204,8 @@ const NO_RUNES = {};
  * The runes that could go into `at` (plan 8g ruling 5): the bag (one row a rune and tier), then every rune in another
  * slot of a recruited member, hers included. Each row is previewed by the engine: refused, `why` is the reason; taken
  * but greyed in that slot, `why` is the slot's; `changes` counts the card's changed rows and lines; `notes`, what the
- * rune says on this skill (runeNotes) and the two-barrier warning; a move names what its giver loses. Within each
- * section: the ones that work first, then the most changes, then RUNE_IDS order, then the higher tier. Cached per party,
+ * rune says on this skill (runeNotes) and the two-barrier warning; a move names what its giver loses (her changed
+ * rows, then her lost 附加 lines marked −), unless it stays on the same skill. Within each section: the ones that work first, then the most changes, then RUNE_IDS order, then the higher tier. Cached per party,
  * bag and slot, and frozen: the caller must not sort or change it.
  */
 export function runeChoices(s: GameState, at: SocketAt): readonly RuneChoice[] {
@@ -244,7 +244,7 @@ export function runeChoices(s: GameState, at: SocketAt): readonly RuneChoice[] {
         const giverNow = s.party.roster[from.id];
         const was = cardOf(giverNow, from.skill), is = cardOf(r.state.party.roster[from.id], from.skill);
         const cmp = was && is ? compareCards(was, is) : undefined;
-        const lost = cmp ? [...cmp.lines.filter((l) => l.changed).map((l) => W.arrow(l.before, l.after)), ...cmp.removed] : [];
+        const lost = cmp ? [...cmp.lines.filter((l) => l.changed).map((l) => W.arrow(l.before, l.after)), ...cmp.removed.map(W.lost)] : [];
         out.giver = W.giver(CHARACTERS[from.id].name, skillFor(fromMember(giverNow, 0), from.skill)?.name ?? from.skill, lost);
       }
       return out;
