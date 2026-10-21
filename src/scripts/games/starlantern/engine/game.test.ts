@@ -3775,3 +3775,42 @@ describe('rune drops (plan 8f Task 2)', () => {
     expect(g.state.runesOpen).toBe(true);
   });
 });
+
+describe('rune drops at bosses (plan 8f Task 3 review of Task 2)', () => {
+  it('a boss fight drops the same gear and memory pieces, runes open or not', () => {
+    const play = (open: boolean) => {
+      const g = new Game(mulberry32(17), null, undefined, 0, HERO_LINEUP);
+      g.state.dungeon.reached.iron = 5;
+      if (open) g.state.runesOpen = true;
+      expect(g.depart({ region: 'iron', condition: 'plain' }, 5)).toEqual({ ok: true });
+      expect(stepOnto(g, g.map().boss!)).toEqual({ kind: 'boss' });
+      const end = killAll(g);
+      const run = g.run!;
+      return { g, end, run, next: g.rng() };
+    };
+    const shut = play(false);
+    const open = play(true);
+    expect(shut.end.runes).toEqual([{ id: 'spread', tier: 'magic' }]);   // this one opens runes
+    expect(open.end.runes).toHaveLength(1);
+    expect([shut.run.runeDraws, open.run.runeDraws]).toEqual([0, 1]);
+    const { runes: _a, ...was } = shut.end;
+    const { runes: _b, ...now } = open.end;
+    expect(now).toEqual(was);
+    expect(open.end.gear).toHaveLength(2);
+    expect([open.end.gear, open.end.fragments]).toEqual([shut.end.gear, shut.end.fragments]);
+    expect([open.run.loot, open.run.lootDraws, open.run.memoryDraws, open.next]).toEqual([shut.run.loot, shut.run.lootDraws, shut.run.memoryDraws, shut.next]);
+    expect([open.g.state.story, open.g.state.dungeon.bossKills, open.g.state.gold]).toEqual([shut.g.state.story, shut.g.state.dungeon.bossKills, shut.g.state.gold]);
+  });
+
+  it('the story boss opens runes too, as the game turns to its clear card', () => {
+    const g = inMap(3);
+    expect(g.state.runesOpen).toBeUndefined();
+    expect(stepOnto(g, g.map().boss!)).toEqual({ kind: 'boss' });
+    const end = killAll(g);
+    expect([g.phase, g.cleared]).toEqual(['clear', 'act1']);
+    expect(end.runes).toEqual([{ id: 'spread', tier: 'magic' }]);
+    expect(g.state.runesOpen).toBe(true);
+    expect(g.state.runes).toEqual({ 'spread@magic': 1 });
+    expect(g.run!.runeDraws).toBe(0);
+  });
+});

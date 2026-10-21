@@ -7,7 +7,7 @@ import { ITEMS } from './items';
 import { MATERIALS } from './materials';
 import { SETS } from './gear';
 import type { RegionId } from './regions';
-import type { Tag } from './runes';
+import { RUNES, type RuneId, type RuneTier, type Tag } from './runes';
 import { CHARACTERS } from './characters';
 import type { MaterialUse } from '../engine/forge/uses';
 import type { MaterialKind } from '../engine/types';
@@ -780,6 +780,12 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     /** After 常駐's sentence on a barrier skill (plan 8e Task 7). */
     lastingBarrier: '再施放一次會換掉它。',
     reprise: (name: string) => `${name}的回聲`,
+    /** A rune as every screen names it (plan 8f): 「擴散（魔法）」, the tier in the gear's rarity words. */
+    label: (id: RuneId, tier: RuneTier) => `${RUNES[id].name}（${RARITY[tier]}）`,
+    /** A rune found in a fight, a chest or a vault. */
+    got: (label: string) => `得到符文：${label}`,
+    /** A rune found with `n` (RUNE_STACK) already owned: paid as its sell price instead (plan 8f ruling 7). */
+    overStack: (label: string, n: number, gold: number) => `${label}已經 ${n} 個，換成 ${gold} G`,
   },
   clear: { back: '繼續' },   // the Act 1 card's title and body are story copy: STORY.act1Card
   /** The finale's closing card; its text is the finale scene's summary. */

@@ -3,6 +3,7 @@ import { floorOf } from '../../engine/dungeon/run';
 import type { Content } from '../../engine/dungeon/rooms';
 import { altarAt } from '../../engine/events';
 import { chestHasGear, RARE_MATERIALS } from '../../engine/loot/drops';
+import { RUNE_DROP } from '../../data/runeEconomy';
 import { Game } from '../../engine/game';
 import { DELTA, tileAt, type Dir, type Tile } from '../../engine/map';
 import { statsOf, LEGACY_LINEUP } from '../../engine/party';
@@ -488,5 +489,75 @@ describe('gear from chests and the vault', () => {
     expect(game.run!.loot.gear.map((g) => g.uid)).toEqual([8]);
     expect(text()).toContain('打開寶箱');
     expect(game.run!.opened.has(`${game.floor}:${at.x},${at.y}`)).toBe(true);
+  });
+});
+
+describe('runes from chests and the vault (plan 8f Task 3)', () => {
+  const gearOf = (uid: number, base: string, rarity: ItemInstance['rarity']): ItemInstance => ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0 });
+
+  it('a chest or vault with a rune says so', () => {
+    const { game, s, root, pick, plant, text, talking } = setup();
+    const { dir } = plant('chest');
+    vi.spyOn(game, 'move').mockReturnValueOnce({ kind: 'chest', item: 'old-coin', qty: 2, rune: { id: 'bounce', tier: 'rare' } });
+    s.onAction(dir);
+    expect(text()).toContain('打開寶箱');
+    expect(text()).toContain('得到符文：彈射（稀有）');
+    const line = [...root.querySelectorAll('.slx-talk .slx-text .slx-loot-rune')];
+    expect(line.map((x) => x.textContent)).toEqual(['得到符文：彈射（稀有）']);
+    expect(line[0].classList.contains('slx-rarity-rare')).toBe(true);
+
+    for (let i = 0; i < 6 && talking(); i++) s.onAction('confirm');
+    expect(talking()).toBe(false);
+    game.run!.keys.add(game.floor);
+    const v = plant('vault');
+    s.onAction(v.dir);
+    vi.spyOn(game, 'openVault').mockReturnValueOnce({ kind: 'vault', loot: { 'old-coin': 6 }, gear: [], runeGold: { rune: { id: 'spread', tier: 'magic' }, gold: 60 } });
+    pick('開啟');
+    expect(text()).toContain('打開寶庫');
+    expect(text()).toContain('擴散（魔法）已經 99 個，換成 60 G');
+    expect(text()).not.toContain('得到符文');
+  });
+
+  it("a chest's rune is told once, also when its gear waits and is taken later", () => {
+    const saved = RUNE_DROP.chest;
+    RUNE_DROP.chest = 1;
+    try {
+      const { game, s, root, pick, text } = setup();
+      game.state.runesOpen = true;
+      game.state.bag = Array.from({ length: 59 }, (_, i) => gearOf(1000 + i, 'cloth-robe', 'common'));
+      game.run!.loot.gear.push(gearOf(7, 'leather-vest', 'common'));   // 59 + 1: full
+      const { dir, at } = (() => {
+        const m = game.map();
+        for (let y = 1; y < m.height - 1; y++) for (let x = 1; x < m.width - 1; x++) {
+          if (tileAt(m, { x, y }) !== 'floor' || !chestHasGear(game.run!, game.floor, { x, y })) continue;
+          const d = DIRS.find((k) => tileAt(m, { x: x - DELTA[k].x, y: y - DELTA[k].y }) === 'floor');
+          if (!d) continue;
+          game.pos = { x: x - DELTA[d].x, y: y - DELTA[d].y };
+          m.tiles[y][x] = 'chest';
+          return { dir: d, at: { x, y } };
+        }
+        throw new Error('no chest cell');
+      })();
+      game.run!.gearRolls[`chest:${game.floor}:${at.x},${at.y}`] = gearOf(10, 'wooden-staff', 'magic');
+      s.onAction(dir);
+      const keys = Object.keys(game.state.runes ?? {});
+      expect(keys).toHaveLength(1);
+      const runeLines = () => [...root.querySelectorAll('.slx-loot-rune')].map((x) => x.textContent);
+      // The chest opened: its rune is told in the full window that heads the waiting gear, once.
+      expect(root.querySelector('.slx-full')!.textContent).toContain('打開寶箱');
+      expect(runeLines()).toHaveLength(1);
+      expect(runeLines()[0]).toMatch(/^得到符文：/);
+      pick('皮背心');
+      pick('是');
+      expect(text()).toContain('撿起了 木杖・魔法');
+      expect(text()).not.toContain('得到符文');
+      expect(runeLines()).toEqual([]);
+      // Nothing waits in the emptied chest any more: there is nothing to tell again.
+      expect(game.pos).toEqual(at);
+      expect(game.pickUpHere()).toBeNull();
+      expect(Object.values(game.state.runes!)).toEqual([1]);
+    } finally {
+      RUNE_DROP.chest = saved;
+    }
   });
 });

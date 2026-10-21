@@ -20,6 +20,7 @@ import { battleLines, fragmentLines, levelUpLines } from '../battleText';
 import { fragmentItem } from '../../engine/story/fragments';
 import { gearIconUrl } from '../gearArt';
 import { fillRich, gearLabel, gearPart, rarityClass } from '../loot';
+import { RUNE_STACK } from '../../data/runes';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
@@ -585,6 +586,9 @@ export class BattleScene implements Scene {
         const icon = gearIconUrl(this.ctx.art, it);
         lines.push({ text: icon ? [{ text: gearLabel(it), cls: 'slx-loot-name', icon }] : gearLabel(it), cls: `slx-loot-gear ${rarityClass(it)}` });
       }
+      // Runes after the gear, each once, in its tier's colour (plan 8f); one past the stack says the gold it became.
+      for (const r of end.runes ?? []) lines.push({ text: T.rune.got(T.rune.label(r.id, r.tier)), cls: `slx-loot-rune ${rarityClass({ rarity: r.tier })}` });
+      for (const { rune: r, gold } of end.runeGold ?? []) lines.push({ text: T.rune.overStack(T.rune.label(r.id, r.tier), RUNE_STACK, gold), cls: `slx-loot-rune ${rarityClass({ rarity: r.tier })}` });
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
       for (const [id, n] of Object.entries(end.left)) lines.push({ text: T.battle.leftBehind(itemName(id), n) });
       for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it, gearIconUrl(this.ctx.art, it))]), cls: 'slx-loot-left' });

@@ -3439,4 +3439,54 @@ test.describe('starlantern', () => {
     await shot('18-scarlet-story-fight');
     expect(w.errors).toEqual([]);
   });
+
+  test('the first boss names its rune on the result, once, inside a phone screen (plan 8f)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const w = await setup(page, 7);
+    await depart(page, w);
+    // A boss put next to the party on depth 1: stepping on it starts a boss fight, the first this save has won.
+    const key: string = await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const m = g.map();
+      const D: [string, number, number][] = [['ArrowUp', 0, -1], ['ArrowDown', 0, 1], ['ArrowLeft', -1, 0], ['ArrowRight', 1, 0]];
+      for (const [k, dx, dy] of D) {
+        const x = g.pos.x + dx, y = g.pos.y + dy;
+        if (m.tiles[y]?.[x] !== 'floor') continue;
+        m.tiles[y][x] = 'boss';
+        m.boss = { x, y };
+        g.encounter = 0;
+        return k;
+      }
+      return '';
+    });
+    expect(key).not.toBe('');
+    await w.closeTalk();
+    await page.keyboard.press(key);
+    for (let i = 0; i < 14 && !(await page.locator('.slx-battle').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.battle.boss)).toBe(true);
+    await page.evaluate(() => { for (const e of (window as unknown as Dbg).__starlanternDebug.game.battle.enemies) { e.hp = 0; e.alive = false; } });
+    for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) { await w.key('ArrowUp'); await w.key('Enter'); }   // 全員攻擊
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-result')).toContainText('勝利');
+    const rune = page.locator('.slx-result .slx-loot-rune');
+    await expect(rune).toHaveCount(1);
+    await expect(rune).toHaveText('得到符文：擴散（魔法）');
+    await expect(rune).toHaveClass(/slx-rarity-magic/);
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.runesOpen)).toBe(true);
+    for (const [vw, vh] of [[390, 844], [1280, 720]] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      await page.waitForTimeout(150);
+      const rows = await page.locator('.slx-result-lines p').evaluateAll((ps) => ps.map((p) => ({ t: p.textContent, over: p.scrollWidth > p.clientWidth })));
+      expect(rows.filter((r) => r.over), `rows wider than the result at ${vw}`).toEqual([]);
+      await expect(rune).toHaveCount(1);
+    }
+    await w.key('Enter');
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    await expect(page.locator('.slx-loot-rune')).toHaveCount(0);   // told on the result alone, not again on the map
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.runes)).toEqual({ 'spread@magic': 1 });
+    expect(w.errors).toEqual([]);
+  });
 });

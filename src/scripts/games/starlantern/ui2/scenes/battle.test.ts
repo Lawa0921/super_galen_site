@@ -794,6 +794,72 @@ describe('BattleScene loot and stat cues', () => {
     expect(line('獵弓').textContent).toBe('背包已滿，留下了 獵弓・魔法');
   });
 
+  it('the result names each rune found (plan 8f Task 3)', async () => {
+    const { game, s, root } = setup();
+    const spread = { id: 'spread' as const, tier: 'magic' as const };
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: { moss: 1 }, levelUps: [], left: {},
+      gear: [gearOf(1, 'iron-sword', 'rare')], gearLeft: [], runes: [spread, { id: 'twin-cast' as const, tier: 'legendary' as const }],
+      runeGold: [{ rune: spread, gold: 60 }] };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    const ps = [...root.querySelectorAll('.slx-result-lines p')];
+    const texts = ps.map((p) => p.textContent);
+    const got = ps.find((p) => p.textContent === '得到符文：擴散（魔法）')!;
+    expect(got.classList.contains('slx-loot-rune')).toBe(true);
+    expect(got.classList.contains('slx-rarity-magic')).toBe(true);
+    expect(ps.find((p) => p.textContent === '得到符文：雙重詠唱（傳說）')!.classList.contains('slx-rarity-legendary')).toBe(true);
+    const paid = ps.find((p) => p.textContent === '擴散（魔法）已經 99 個，換成 60 G')!;
+    expect(paid.classList.contains('slx-loot-rune')).toBe(true);
+    // After the gear, before the materials; each rune once.
+    expect(texts.indexOf('得到符文：擴散（魔法）')).toBeGreaterThan(texts.indexOf('鐵劍・稀有'));
+    expect(texts.indexOf('擴散（魔法）已經 99 個，換成 60 G')).toBeLessThan(texts.findIndex((t) => t!.includes('發光苔')));
+    expect(texts.filter((t) => t!.includes('擴散（魔法）'))).toHaveLength(2);
+  });
+
+  it('a win without runes shows no rune line (plan 8f Task 3)', async () => {
+    const { s, root } = setup((g) => { for (const e of g.battle!.enemies) e.hp = 1; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    expect(root.querySelector('.slx-result')!.textContent).toContain('勝利');
+    expect(root.querySelector('.slx-loot-rune')).toBeNull();
+  });
+
+  it('the first boss names its rune once, behind the victory banner (plan 8f Task 3)', async () => {
+    vi.useFakeTimers();
+    try {
+      const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
+      game.state.dungeon.reached.iron = 5;
+      expect(game.depart({ region: 'iron', condition: 'plain' }, 5)).toEqual({ ok: true });
+      const at = game.map().boss!;
+      const from = [[0, 1], [0, -1], [1, 0], [-1, 0]].map(([dx, dy]) => ({ x: at.x + dx, y: at.y + dy })).find((p) => game.map().tiles[p.y]?.[p.x] === 'floor')!;
+      game.pos = from;
+      const dir = at.x > from.x ? 'right' : at.x < from.x ? 'left' : at.y > from.y ? 'down' : 'up';
+      expect(game.move(dir)).toEqual({ kind: 'boss' });
+      for (const e of game.battle!.enemies) e.hp = 1;
+      const root = document.createElement('div');
+      const go = vi.fn();
+      const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: false });
+      s.enter(root);
+      await vi.advanceTimersByTimeAsync(1500);
+      s.onAction('up');   // 全員攻擊, the last command
+      s.onAction('confirm');
+      for (let t = 0; t < 200 && !root.querySelector('.slx-result'); t++) await vi.advanceTimersByTimeAsync(50);
+      await vi.advanceTimersByTimeAsync(3000);
+      const lines = () => [...root.querySelectorAll('.slx-loot-rune')].map((p) => p.textContent);
+      expect(root.querySelectorAll('.slx-result')).toHaveLength(1);
+      expect(lines()).toEqual(['得到符文：擴散（魔法）']);
+      expect(game.state.runesOpen).toBe(true);
+      s.onAction('confirm');
+      expect(go).toHaveBeenCalledWith('dungeon');
+      expect(lines()).toEqual(['得到符文：擴散（魔法）']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('the best drop raises one pillar and plays loot once', async () => {
     const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
     game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');

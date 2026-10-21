@@ -11,7 +11,8 @@ import { BAG_SIZE } from '../../engine/loot/bag';
 import { itemWeight } from '../../engine/loot/item';
 import { fragmentItem } from '../../engine/story/fragments';
 import { fragmentLines } from '../battleText';
-import type { FullResult, MoveResult } from '../../engine/game';
+import type { FullResult, MoveResult, RuneFind } from '../../engine/game';
+import { RUNE_STACK } from '../../data/runes';
 import type { ItemInstance, Pos } from '../../engine/types';
 import { ART_BASE } from '../../render/artPaths';
 import type { ArtIndex } from '../../render/textures';
@@ -83,6 +84,14 @@ export function chestLine(r: ChestResult, idx?: ArtIndex): Rich {
   return [T.map.chest(itemName(r.item), r.qty), ...(r.gear ? ['、', gearPart(r.gear, idx && gearIconUrl(idx, r.gear))] : []), ...(r.fragments ?? []).flatMap((g) => ['、', fragmentName(fragmentItem(g) ?? '') ?? ''])];
 }
 const leaveItem = (): MenuItem => ({ id: 'leave', label: T.ui2.event.leave });
+
+/** The line for the rune a chest or vault held (plan 8f), in its tier's colour; null when it held none. */
+export function runeLine(r: RuneFind): Rich | null {
+  if (r.rune) return [{ text: T.rune.got(T.rune.label(r.rune.id, r.rune.tier)), cls: `slx-loot-rune ${rarityClass({ rarity: r.rune.tier })}` }];
+  const g = r.runeGold;
+  if (g) return [{ text: T.rune.overStack(T.rune.label(g.rune.id, g.rune.tier), RUNE_STACK, g.gold), cls: `slx-loot-rune ${rarityClass({ rarity: g.rune.tier })}` }];
+  return null;
+}
 
 export type StairsResult = Extract<MoveResult, { kind: 'stairs' }>;
 
@@ -161,7 +170,7 @@ function openVault(host: EventHost, at: Pos): void {
  */
 export function showPickUp(host: EventHost, r: MoveResult | null, vault = false): void {
   const { ctx } = host;
-  const full = (f: FullResult, opened?: Rich) => host.push(fullLayer(host, f, () => showPickUp(host, ctx.game.pickUpHere(), vault), opened));
+  const full = (f: FullResult, opened?: Rich, more: Rich[] = []) => host.push(fullLayer(host, f, () => showPickUp(host, ctx.game.pickUpHere(), vault), opened, more));
   if (r?.kind === 'full') { ctx.sfx.error(); full(r); return; }
   if (r?.kind === 'vault' || r?.kind === 'chest') {
     ctx.sfx.chest?.();
@@ -169,8 +178,10 @@ export function showPickUp(host: EventHost, r: MoveResult | null, vault = false)
     const said = r.kind === 'vault'
       ? fillRich(T.ui2.event.vault.opened, joinParts([...Object.entries(r.loot).map(([id, n]) => `${itemName(id)} ×${n}`), ...r.gear.map((it) => gearOf(host, it))]))
       : chestLine(r, ctx.art);
-    if (r.waiting) { full(r.waiting, said); return; }
-    host.say(said);
+    // The rune comes with the result of the opening alone, so it is told once: a retry for waiting gear never repeats it.
+    const rune = runeLine(r);
+    if (r.waiting) { full(r.waiting, said, rune ? [rune] : []); return; }
+    host.say(rune ? [...said, '\n', ...rune] : said);
     host.drop(r.kind === 'vault' ? r.gear : r.gear ? [r.gear] : []);
     return;
   }
@@ -207,15 +218,15 @@ function carriedItems(host: EventHost): Record<string, number> {
  *   none, nothing is offered but 放棄.
  * Once both fit, `retry` takes the pick-up (Game.pickUpHere through showPickUp; still not fitting opens this window again);
  * without it the line says to step on it again. `opened` is the loot line of a chest or vault that opened while its gear
- * stayed behind.
+ * stayed behind; `more` the lines after it (its rune, plan 8f).
  */
-export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, opened?: Rich): Layer {
+export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, opened?: Rich, more: Rich[] = []): Layer {
   const F = T.ui2.event.full;
   const { ctx } = host;
   const g = ctx.game;
   const gear = g.run?.loot.gear ?? [];
   const stuck = !!r.bag && gear.length === 0;   // no slot can be freed from here
-  const body: HTMLElement[] = opened ? [richLine(opened)] : [];
+  const body: HTMLElement[] = [...(opened ? [richLine(opened)] : []), ...more.map((m) => richLine(m))];
   if (r.bag && r.gear) body.push(richLine(fillRich(F.bagDesc, [gearOf(host, r.gear)])));
   if (r.need > 0 && r.item) body.push(line(F.desc(itemName(r.item), r.qty ?? 1, Number(fmtWeight(r.need)))));
   else if (r.need > 0 && r.gear) body.push(richLine(fillRich((name) => F.gearHeavy(name, Number(fmtWeight(r.need))), [gearOf(host, r.gear)])));
