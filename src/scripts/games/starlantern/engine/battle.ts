@@ -514,15 +514,15 @@ function ringBell(s: BattleState, heroWasUp: boolean, ctx: EffectContext): void 
 
 /**
  * The guard barrier on the party, mirrored as each living member's `ward` (plan 8c ruling 9): its percent (mech
- * barrierPower: power x boost, x the 重結界 percent as the later of two; every guard barrier up, summed), to def and res,
- * with who raised it; the fallen and a party without a guard barrier carry none. Not a buff: it takes no buff slot and
- * never meets the strongest-kept rule. Draws nothing.
+ * barrierPower: power x boost, x the 重結界 percent when it is the later of two kinds; only one guard ever stands), to def
+ * and res, with who raised it; the fallen and a party without a guard barrier carry none. Not a buff: it takes no buff slot
+ * and never meets the strongest-kept rule. Draws nothing.
  */
 export function syncWards(s: BattleState): void {
-  const guards = (s.barriers ?? []).filter((b) => b.kind === 'guard');
-  const pct = guards.reduce((n, b) => n + barrierPower(b), 0);
+  const guard = (s.barriers ?? []).find((b) => b.kind === 'guard');
+  const pct = guard ? barrierPower(guard) : 0;
   for (const c of s.party) {
-    if (guards.length && c.alive) c.ward = { def: pct, res: pct, src: guards[0].src };
+    if (guard && c.alive) c.ward = { def: pct, res: pct, src: guard.src };
     else delete c.ward;
   }
 }

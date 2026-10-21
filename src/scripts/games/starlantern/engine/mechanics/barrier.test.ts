@@ -119,6 +119,32 @@ describe("Chizuru's barrier nodes (plan 8d Task 5)", () => {
     expect(m({ 'chizuru-thunder-ward': 1 }) - m({})).toBe(2);
   });
 
+  it('the thunder is ambient: it wakes no sleeper, tells a weakness, gives no keystone TP, and strikes with Chizuru down', () => {
+    const c = chizuru({ ranks: { 'chizuru-thunder-ward': 1 }, tp: 10, keystones: ['crit-tp', 'weak-tp', 'kill-tp'] });
+    const weak = foe({ weak: ['thunder'], defId: 'golem' });
+    const s = resolveRound(makeBattle([c, P('noel')], [weak], { barriers: guard() }), {}, constRng(0.5));
+    expect(s.enemies[0].hp).toBeLessThan(s.enemies[0].max.hp);
+    expect(s.enemies[0].sleep).toBe(8);                                     // 9, less its own lost turn: still asleep (深眠 holds)
+    expect(s.revealed.golem).toContain('thunder');
+    expect(s.party[0].tp).toBe(10);                                         // weak-tp would have paid
+    expect(s.log.some((e) => e.type === 'tp' && e.target === 'chizuru')).toBe(false);
+    // Down, her barrier still stands for its rounds, and it still strikes, credited to her.
+    const l = newLedger();
+    const down = resolveRound(makeBattle([chizuru({ ranks: { 'chizuru-thunder-ward': 1 }, alive: false, hp: 0 }), P('noel')], two(), { barriers: guard() }), {}, constRng(0.5), l);
+    const dealt = down.enemies.reduce((n, e) => n + e.max.hp - e.hp, 0);
+    expect(dealt).toBeGreaterThan(0);
+    expect(l.by.chizuru.damage).toBe(dealt);
+    expect(down.barriers?.map((b) => b.turns)).toEqual([2]);
+  });
+
+  it('the guard on the party is its one guard barrier (only one guard ever stands)', () => {
+    // Two guards cannot stand at once (a new one replaces its own kind); a hand-built state with two reads the first.
+    const s = round(makeBattle([chizuru(), P('noel')], [foe()], { barriers: [
+      { skill: 'ward', kind: 'guard', power: 30, turns: 3, src: 'chizuru' }, { skill: 'ward', kind: 'guard', power: 20, turns: 3, src: 'chizuru', pair: 60 },
+    ] }));
+    expect(s.party[1].ward?.def).toBe(30);
+  });
+
   it('two kinds at once with the twin ward; the later one at its percent; the same kind replaces its own', () => {
     const c = chizuru({ ranks: { ward: 1, 'purify-ward': 1, 'chizuru-twin-ward': 1 } });
     let s = round(makeBattle([c, P('noel')], [foe()]), cast('ward'));

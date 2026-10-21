@@ -160,7 +160,7 @@ export function stackMods(mods: SkillMod[]): SkillMod {
   return out;
 }
 
-function reveal(revealed: Record<string, Element[]>, defId: string, el: Element): void {
+export function reveal(revealed: Record<string, Element[]>, defId: string, el: Element): void {
   const list = revealed[defId] ?? (revealed[defId] = []);
   if (!list.includes(el)) list.push(el);
 }
