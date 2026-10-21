@@ -7,7 +7,8 @@ import { newRun, GLIMMER_SALT } from '../dungeon/run';
 import { FORGE_SALT } from '../forge/cost';
 import { STANDARD_LINEUP } from '../party';
 import { mulberry32, type Rng } from '../rng';
-import { bagCount, ownedCount } from '../sockets';
+import { bagCount, ownedCount, socketable, validRuneFields } from '../sockets';
+import { defaultTree } from '../progression';
 import { newGame, type GameState } from '../state';
 import { ABSORB_SALT } from '../story/fragments';
 import { MEMORY_SALT } from '../story/memories';
@@ -99,6 +100,10 @@ describe('rune drops (plan 8f Task 1)', () => {
     const legend = elite.filter(isLegendary).length / N;
     expect(legend).toBeGreaterThan(0.015);
     expect(legend).toBeLessThan(0.025);
+    const boss = roll('boss', 20).filter(isLegendary).length / N;
+    expect(boss).toBeGreaterThan(0.07);
+    expect(boss).toBeLessThan(0.09);
+    expect(roll('monster', 20).some(isLegendary)).toBe(false);
     const seen = new Set<RuneId>(elite.filter((r) => !isLegendary(r)).map((r) => r.id));
     for (const id of NORMAL_RUNES) expect(seen.has(id)).toBe(true);
     const highShare = (rs: RuneRef[]) => {
@@ -164,11 +169,17 @@ describe('the rune bag and its stack (plan 8f Task 1)', () => {
   });
 
   it("ownedCount counts the bag and every member's sockets", () => {
+    // A state the save would keep: Noel and Liz (benched, not on the field) know the skills and have the slots.
     const s = newGame(undefined, 0, STANDARD_LINEUP);
     expect(s.party.recruited).not.toContain('liz');
-    s.party.roster.noel = { ...s.party.roster.noel, sockets: { 'fire-star': [spreadMagic, { id: 'spread', tier: 'rare' }] } };
-    s.party.roster.liz = { ...s.party.roster.liz, sockets: { 'twin-slash': [null, spreadMagic] } };
+    s.party.roster.noel = { ...s.party.roster.noel, level: 35, tree: defaultTree('noel', 35) };
+    s.party.roster.liz = { ...s.party.roster.liz, level: 20, tree: { 'twin-slash': 1, stealth: 1 } };
+    const [first, second] = socketable(s.party.roster.noel);
+    expect(second).toBeDefined();
+    s.party.roster.noel.sockets = { [first]: [spreadMagic], [second]: [null, { id: 'spread', tier: 'rare' }] };
+    s.party.roster.liz.sockets = { 'twin-slash': [null, spreadMagic] };
     const g: GameState = { ...s, runes: { 'spread@magic': 2, 'spread@common': 5 } };
+    expect(validRuneFields(JSON.parse(JSON.stringify(g)))).toBe(true);
     expect(ownedCount(g, spreadMagic)).toBe(4);
     expect(ownedCount(g, { id: 'spread', tier: 'rare' })).toBe(1);
     expect(ownedCount(g, { id: 'spread', tier: 'common' })).toBe(5);

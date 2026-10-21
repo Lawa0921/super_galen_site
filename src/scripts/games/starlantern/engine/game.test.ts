@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Game, type MoveResult } from './game';
+import { Game, type BattleEnd, type MoveResult } from './game';
 import { STORY_FIGHT_ROUNDS } from './battle';
 import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
 import { SAVE_VERSION, newGame, START_ITEMS } from './state';
@@ -26,7 +26,7 @@ import { ABYSS, ABYSS_UNLOCK } from '../data/hero';
 import { CONDITIONS } from '../data/conditions';
 import { BAG_SIZE } from './loot/bag';
 import { MAX_ILVL, MAX_REACHED } from './levels';
-import { BOSS_LEGENDARY, chestHasGear, GEAR_CHANCE, RARE_MATERIALS, rollBossGear, STARLIT_CHANCE } from './loot/drops';
+import { BOSS_LEGENDARY, chestHasGear, GEAR_CHANCE, mix, RARE_MATERIALS, rollBossGear, STARLIT_CHANCE } from './loot/drops';
 import { itemLevel, itemWeight, rollItem } from './loot/item';
 import { MATERIALS } from '../data/materials';
 import { buy, unequip } from './town';
@@ -37,6 +37,10 @@ import { ACT_DEPTHS, FINALE_BOSS, FINALE_DEPTH, type SceneId } from '../data/sto
 import { STORY } from '../data/story.zh-TW';
 import { chainLength } from '../data/story/chains';
 import { SKILLS } from '../data/skills';
+import { RUNE_DROP, RUNE_SELL } from '../data/runeEconomy';
+import type { RuneRef } from '../data/runes';
+import { rollRune, RUNE_SALT, spotRuneRng } from './loot/runes';
+import { depthLevel } from './levels';
 
 vi.mock('./portals', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./portals')>();
@@ -3547,5 +3551,227 @@ describe('gear and rows in the labyrinth (6f Task 3)', () => {
     const inTown = town.state.party.grid.map((c) => (c === 'liz' ? 'bobby' : c));
     expect(town.setFormation(inTown)).toEqual({ ok: true });
     expect(activeIds(town.state.party)).toContain('bobby');
+  });
+});
+
+describe('rune drops (plan 8f Task 2)', () => {
+  const ironBoss = (rng = calm()) => {
+    const g = new Game(rng, null, undefined, 0, LEGACY_LINEUP);
+    g.state.dungeon.reached.iron = 5;
+    return g;
+  };
+  /** Into iron depth 5 and onto its boss; returns the fight's end. */
+  const beatBoss = (g: Game): BattleEnd => {
+    expect(g.depart({ region: 'iron', condition: 'plain' }, 5)).toEqual({ ok: true });
+    expect(stepOnto(g, g.map().boss!)).toEqual({ kind: 'boss' });
+    return killAll(g);
+  };
+  const lampHome = (g: Game) => { g.state.inventory['return-lamp'] = 1; expect(g.useReturnLamp()).toBe(true); };
+  /** Runs `body` with RUNE_DROP overwritten by `over`, then puts it back. */
+  const withDrops = <T,>(over: Partial<typeof RUNE_DROP>, body: () => T): T => {
+    const saved = { ...RUNE_DROP };
+    Object.assign(RUNE_DROP, over);
+    try { return body(); } finally { Object.assign(RUNE_DROP, saved); }
+  };
+  /** The next ordinary fight: a move that starts one, from a full encounter meter. */
+  const nextFight = (g: Game): boolean => {
+    g.encounter = 99;
+    for (const dir of DIRS) {
+      const r = g.move(dir);
+      if (r.kind === 'battle') return true;
+      if (r.kind !== 'blocked') return false;
+    }
+    return false;
+  };
+  const MAGIC_SPREAD: RuneRef = { id: 'spread', tier: 'magic' };
+  const keyOf = (r: RuneRef) => `${r.id}@${r.tier}`;
+
+  it('no rune drops before the first boss, and none of their draws', () => {
+    withDrops({ monster: 1, elite: 1, chest: 1 }, () => {
+      const g = inMap(1, mulberry32(3));
+      expect(nextFight(g)).toBe(true);
+      const end = killAll(g);
+      expect(end.outcome).toBe('win');
+      expect(end).not.toHaveProperty('runes');
+      expect(end).not.toHaveProperty('runeGold');
+      stepOnto(g, plantAt(g, 'elite'));
+      expect(killAll(g)).not.toHaveProperty('runes');
+      const chest = stepOnto(g, plainChest(g));
+      expect(chest.kind).toBe('chest');
+      expect(chest).not.toHaveProperty('rune');
+      expect(g.run!.runeDraws).toBe(0);
+      expect(g.state.runes).toBeUndefined();
+      expect(g.state.runesOpen).toBeUndefined();
+    });
+  });
+
+  it('the first boss gives a magic spread and opens runes', () => {
+    const g = ironBoss();
+    const gold = g.state.gold;
+    const end = beatBoss(g);
+    expect(end.runes).toEqual([MAGIC_SPREAD]);
+    expect(end).not.toHaveProperty('runeGold');
+    expect(g.state.runes).toEqual({ 'spread@magic': 1 });
+    expect(g.state.runesOpen).toBe(true);
+    expect(g.run!.runeDraws).toBe(0);
+    expect(g.state.gold).toBe(gold);
+  });
+
+  it('an old save past its first boss opens runes on its next boss', () => {
+    const g = ironBoss();
+    g.state.dungeon.bossKills = { 'iron:5': 3, 'mainline:3': 1 };
+    const first = beatBoss(g);
+    expect(first.runes).toEqual([MAGIC_SPREAD]);
+    expect([g.state.runesOpen, g.run!.runeDraws]).toEqual([true, 0]);
+    lampHome(g);
+    const next = beatBoss(g);
+    expect(next.runes).toHaveLength(1);
+    expect(g.run!.runeDraws).toBe(1);
+    // The boss's own roll: one rollRune on the boss row from this run's first rune draw, no drop draw before it.
+    const want = rollRune(mulberry32(mix(g.run!.seed ^ RUNE_SALT, 0)), 'boss', depthLevel(5), 'plain');
+    expect(next.runes).toEqual([want]);
+  });
+
+  it('rune drops leave every other drop as it was', () => {
+    withDrops({ monster: 1, elite: 1, chest: 1 }, () => {
+      const play = (open: boolean) => {
+        const g = new Game(mulberry32(41), null, undefined, 0, LEGACY_LINEUP);
+        if (open) g.state.runesOpen = true;
+        expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+        const ends: BattleEnd[] = [];
+        for (let i = 0; i < 4; i++) if (nextFight(g)) ends.push(killAll(g));
+        stepOnto(g, plantAt(g, 'elite'));
+        ends.push(killAll(g));
+        const chest = stepOnto(g, chestWhere(g, true));
+        const run = g.run!;
+        return { g, ends, chest, run, next: g.rng() };
+      };
+      const shut = play(false);
+      const open = play(true);
+      expect(shut.ends.length).toBeGreaterThanOrEqual(3);
+      expect(open.ends.length).toBe(shut.ends.length);
+      const strip = (e: BattleEnd) => { const { runes: _r, runeGold: _g, ...rest } = e; return rest; };
+      open.ends.forEach((e, i) => {
+        const was = shut.ends[i];
+        expect([e.exp, e.gold, e.coinGold, e.drops, e.left, e.gear, e.gearLeft, e.fragments]).toEqual([was.exp, was.gold, was.coinGold, was.drops, was.left, was.gear, was.gearLeft, was.fragments]);
+        expect(strip(e)).toEqual(was);
+      });
+      expect(open.ends.every((e) => (e.runes?.length ?? 0) > 0)).toBe(true);
+      expect(shut.ends.some((e) => e.runes)).toBe(false);
+      const { rune: _r, runeGold: _g, ...chestRest } = open.chest as Extract<MoveResult, { kind: 'chest' }>;
+      expect(chestRest).toEqual(shut.chest);
+      expect((open.chest as Extract<MoveResult, { kind: 'chest' }>).rune).toBeDefined();
+      expect([open.run.loot, open.run.lootDraws, open.run.memoryDraws, open.next]).toEqual([shut.run.loot, shut.run.lootDraws, shut.run.memoryDraws, shut.next]);
+      expect([open.g.state.gold, open.g.state.inventory, open.g.state.party]).toEqual([shut.g.state.gold, shut.g.state.inventory, shut.g.state.party]);
+      expect(open.run.runeDraws).toBe(open.ends.length);
+    });
+  });
+
+  it('ordinary fights roll each foe once, elites at their own rate', () => {
+    withDrops({ monster: 1, elite: 1 }, () => {
+      const g = inMap(1, mulberry32(5));
+      g.state.runesOpen = true;
+      expect(nextFight(g)).toBe(true);
+      const foes = g.battle!.enemies.length;
+      expect(foes).toBeGreaterThan(1);
+      expect(killAll(g).runes).toHaveLength(foes);
+      // The elite fight: one stream; each foe in order a drop draw and then its roll, the first on the elite row.
+      stepOnto(g, plantAt(g, 'elite'));
+      const n = g.battle!.enemies.length;
+      expect(n).toBeGreaterThan(1);
+      const rng = mulberry32(mix(g.run!.seed ^ RUNE_SALT, g.run!.runeDraws));
+      const want = Array.from({ length: n }, (_, i) => { rng(); return rollRune(rng, i === 0 ? 'elite' : 'monster', depthLevel(1), 'plain'); });
+      expect(killAll(g).runes).toEqual(want);
+      expect(g.run!.runeDraws).toBe(2);
+    });
+    // The elite's own rune never rolls common (the elite row has none).
+    withDrops({ elite: 1, monster: 0 }, () => {
+      for (let seed = 1; seed <= 20; seed++) {
+        const g = inMap(1, mulberry32(seed));
+        g.state.runesOpen = true;
+        stepOnto(g, plantAt(g, 'elite'));
+        const runes = killAll(g).runes!;
+        expect(runes).toHaveLength(1);
+        expect(runes[0].tier).not.toBe('common');
+      }
+    });
+  });
+
+  it("a chest's rune is fixed by its spot and paid once", () => {
+    withDrops({ chest: 1 }, () => {
+      const g = inMap(1);
+      g.state.runesOpen = true;
+      const at = plainChest(g);
+      const room = () => capacity(g.state.party) - carried(g.state, g.run!);
+      g.run!.loot.items['star-stone'] = Math.floor(room() * 2);   // full to within half a unit
+      expect(stepOnto(g, at).kind).toBe('full');
+      expect(g.state.runes).toBeUndefined();
+      delete g.run!.loot.items['star-stone'];
+      const rng = spotRuneRng(g.run!, 1, at);
+      rng();
+      const want = rollRune(rng, 'chest', depthLevel(1), 'plain');
+      const opened = stepOnto(g, at) as Extract<MoveResult, { kind: 'chest' }>;
+      expect(opened.kind).toBe('chest');
+      expect(opened.rune).toEqual(want);
+      expect(g.state.runes).toEqual({ [keyOf(want)]: 1 });
+      expect(stepOnto(g, at)).toEqual({ kind: 'moved' });
+      expect(g.state.runes).toEqual({ [keyOf(want)]: 1 });
+      expect(g.run!.runeDraws).toBe(0);
+    });
+  });
+
+  it('a boss rune past 99 pays gold', () => {
+    const open = () => { const g = ironBoss(); g.state.runesOpen = true; return g; };
+    const free = open();
+    const plain = beatBoss(free);
+    const r = plain.runes![0];
+    const g = open();
+    g.state.runes = { [keyOf(r)]: 99 };
+    const gold = g.state.gold;
+    const end = beatBoss(g);
+    expect(end).not.toHaveProperty('runes');
+    expect(end.runeGold).toEqual([{ rune: r, gold: RUNE_SELL[r.tier] }]);
+    expect(g.state.gold).toBe(gold + RUNE_SELL[r.tier]);
+    expect([end.gold, g.run!.loot.gold]).toEqual([plain.gold, free.run!.loot.gold]);
+    expect(g.state.runes).toEqual({ [keyOf(r)]: 99 });
+    // A wipe takes its quarter of all the gold, this too, and no more.
+    const held = g.state.gold;
+    expect(nextFight(g)).toBe(true);
+    for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+    g.submitRound({});
+    expect([g.phase, g.state.gold]).toEqual(['town', Math.floor(held * 0.75)]);
+  });
+
+  it("a vault's rune comes from its own spot", () => {
+    withDrops({ vault: 1 }, () => {
+      const g = inMap(1);
+      g.state.runesOpen = true;
+      const at = plantAt(g, 'vault');
+      g.run!.keys.add(1);
+      // openVault only works where the party stands (contentAt), so the spot is `at`; the roll is keyed by it.
+      expect(stepOnto(g, at).kind).toBe('event');
+      const rng = spotRuneRng(g.run!, 1, at);
+      rng();
+      const want = rollRune(rng, 'vault', depthLevel(1), 'plain');
+      expect(want.tier).not.toBe('common');
+      const r = g.openVault(at) as Extract<MoveResult, { kind: 'vault' }>;
+      expect(r.kind).toBe('vault');
+      expect(r.rune).toEqual(want);
+      expect(g.state.runes).toEqual({ [keyOf(want)]: 1 });
+      expect(g.openVault(at)).toBeNull();
+      expect(g.state.runes).toEqual({ [keyOf(want)]: 1 });
+    });
+  });
+
+  it('a wipe keeps the runes found', () => {
+    const g = ironBoss();
+    beatBoss(g);
+    expect(g.state.runes).toEqual({ 'spread@magic': 1 });
+    expect(nextFight(g)).toBe(true);
+    for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+    g.submitRound({});
+    expect(g.phase).toBe('town');
+    expect(g.state.runes).toEqual({ 'spread@magic': 1 });
+    expect(g.state.runesOpen).toBe(true);
   });
 });

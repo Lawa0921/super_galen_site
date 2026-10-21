@@ -18,6 +18,8 @@ import { SPECIALS } from '../data/gear';
 import { applyAutoJunk, BAG_SIZE, mintUid } from './loot/bag';
 import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMaterial, type DropCtx } from './loot/drops';
 import { itemWeight, type DropSource } from './loot/item';
+import { grantRune, rollRune, runeRng, spotRuneRng } from './loot/runes';
+import { RUNE_DROP } from '../data/runeEconomy';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
 import { CHARACTERS } from '../data/characters';
 import { MAX_ACTIVE } from './formation';
@@ -53,7 +55,7 @@ export type MoveResult =
    * A chest's materials, and its gear when it holds any (`chestHasGear`). Gear that does not fit stays in the opened chest:
    * `waiting` says why (as a `full` result), and `pickUpHere` takes it once there is room.
    */
-  | { kind: 'chest'; item: string; qty: number; gear?: ItemInstance; waiting?: FullResult; fragments?: FragmentGain[] }
+  | ({ kind: 'chest'; item: string; qty: number; gear?: ItemInstance; waiting?: FullResult; fragments?: FragmentGain[] } & RuneFind)
   /** Gear that waited in an opened chest or vault, taken now. */
   | { kind: 'pickup'; gear: ItemInstance }
   /** Stepped onto a fountain, merchant, altar or vault: the screen offers its choice (useFountain, buy, altar, openVault). */
@@ -66,7 +68,11 @@ export type MoveResult =
   | { kind: 'stairs'; floor: number; level: number; warn: boolean; rescue: boolean }
   | FullResult
   /** An opened vault: its materials always; its gear in `gear`, or in `waiting` when it does not fit (see `chest`). */
-  | { kind: 'vault'; loot: Record<string, number>; gear: ItemInstance[]; waiting?: FullResult; fragments?: FragmentGain[] };
+  | ({ kind: 'vault'; loot: Record<string, number>; gear: ItemInstance[]; waiting?: FullResult; fragments?: FragmentGain[] } & RuneFind);
+/** A rune paid as gold: the player already owned RUNE_STACK of it (plan 8f ruling 7). The gold went straight to `state.gold`. */
+export interface RuneGold { rune: RuneRef; gold: number }
+/** The rune a chest or vault held (plan 8f): `rune` went into the bag, or `runeGold` says it was paid as gold. */
+export type RuneFind = { rune?: RuneRef; runeGold?: RuneGold };
 /**
  * The pack cannot take the pick-up, which stays where it is until something is discarded. `item`/`qty` are the materials
  * of a chest or vault kept shut for weight (absent when only waiting gear is short); `need` is the weight over the limit
@@ -88,6 +94,10 @@ export interface BattleEnd {
   fragments?: FragmentGain[];
   /** The part of `gold` that was Liz's left-over coins (plan 8c); absent or 0 when none. */
   coinGold?: number;
+  /** Runes the fight dropped into the bag, in order (plan 8f); absent when none. */
+  runes?: RuneRef[];
+  /** Runes paid as gold for want of room (RUNE_STACK); their gold is in `state.gold`, not in `gold` or the run pack. */
+  runeGold?: RuneGold[];
 }
 
 /** Turn a floor's boss tile into stairs down. */
@@ -488,7 +498,7 @@ export class Game {
     run.opened.add(id);
     delete run.rolls[`frag:${id}`];
     for (const [item, qty] of Object.entries(loot)) this.grant(item, qty);
-    const extra = frags.length ? { fragments: frags } : {};
+    const extra = { ...(frags.length ? { fragments: frags } : {}), ...this.spotRune(at, 'vault') };
     const r = this.offerGear(id, gear);
     if (r.waiting) return { kind: 'vault', loot, gear: [], waiting: r.waiting, ...extra };
     this.map().tiles[at.y][at.x] = 'floor';
@@ -603,6 +613,7 @@ export class Game {
     const rw = rewards(b, this.rng, hasPassive(this.state.party, 'dropBoost'), CONDITIONS[this.run!.condition].dropMul);
     this.run!.loot.gold += rw.gold;
     const found = this.battleGear(b, elite !== null);
+    const runes = this.battleRunes(b, elite !== null);
     const drops = { ...rw.drops };
     if (found.rare) drops[found.rare] = (drops[found.rare] ?? 0) + 1;
     const taken: Record<string, number> = {};
@@ -670,7 +681,7 @@ export class Game {
       this.phase = 'clear';
     }
     else this.phase = 'map';
-    return { battle: b, end: { outcome: 'win', ...rw, drops: taken, levelUps: awarded.results.filter((x) => x.levels > 0), left, gear, gearLeft, ...(met ? { met } : {}), ...(fragments.length ? { fragments } : {}) } };
+    return { battle: b, end: { outcome: 'win', ...rw, drops: taken, levelUps: awarded.results.filter((x) => x.levels > 0), left, gear, gearLeft, ...(met ? { met } : {}), ...(fragments.length ? { fragments } : {}), ...(runes.runes.length ? { runes: runes.runes } : {}), ...(runes.gold.length ? { runeGold: runes.gold } : {}) } };
   }
 
   /**
@@ -701,6 +712,62 @@ export class Game {
       if (rng() < GEAR_CHANCE.monster) gear.push(rollGear(rng, this.dropCtx('monster')));
     }
     return { gear, rare };
+  }
+
+  /**
+   * The runes a won fight drops (plan 8f rulings 1, 5, 12), from the rune stream alone. Before runes are open nothing is
+   * drawn: a boss then opens them and gives a magic 擴散, any other fight nothing. After: one stream for the fight; a boss
+   * rolls its one rune with no drop draw (no other foe of a boss fight rolls); in an elite fight the first foe draws at the
+   * elite rate and rolls on the elite row, the escorts like ordinary foes; an ordinary foe draws at the monster rate. A foe
+   * still standing at the end of a fight to last out drops nothing (as battleGear).
+   */
+  private battleRunes(b: BattleState, elite: boolean): { runes: RuneRef[]; gold: RuneGold[] } {
+    const out: { runes: RuneRef[]; gold: RuneGold[] } = { runes: [], gold: [] };
+    const give = (r: RuneRef) => {
+      const f = this.giveRune(r);
+      if (f.rune) out.runes.push(f.rune);
+      if (f.runeGold) out.gold.push(f.runeGold);
+    };
+    if (!this.state.runesOpen) {
+      if (b.boss) {
+        this.state.runesOpen = true;
+        give({ id: 'spread', tier: 'magic' });
+      }
+      return out;
+    }
+    const run = this.run!;
+    const rng = runeRng(run);
+    const roll = (source: DropSource) => give(rollRune(rng, source, depthLevel(this.floor), run.condition));
+    if (b.boss) { roll('boss'); return out; }
+    for (let i = 0; i < b.enemies.length; i++) {
+      const first = elite && i === 0;
+      if (!first && b.survive && b.enemies[i].alive) continue;
+      if (rng() < (first ? RUNE_DROP.elite : RUNE_DROP.monster)) roll(first ? 'elite' : 'monster');
+    }
+    return out;
+  }
+
+  /**
+   * The rune of the chest or vault at `at`, once runes are open (plan 8f rulings 3, 12): one drop draw and then its roll,
+   * on the spot's own stream, so a chest kept shut for weight rolls the same when it opens. Called once, as it opens.
+   */
+  private spotRune(at: Pos, source: 'chest' | 'vault'): RuneFind {
+    if (!this.state.runesOpen) return {};
+    const run = this.run!;
+    const rng = spotRuneRng(run, this.floor, at);
+    if (rng() >= RUNE_DROP[source]) return {};
+    return this.giveRune(rollRune(rng, source, depthLevel(this.floor), run.condition));
+  }
+
+  /**
+   * One rune into the bag, or, when RUNE_STACK of it are owned, its sell price straight into `state.gold` (plan 8f rulings
+   * 4, 7): neither rides in the run pack, so a wipe keeps them; only a town save writes them down.
+   */
+  private giveRune(r: RuneRef): RuneFind {
+    const g = grantRune(this.state, r);
+    this.state.gold = g.state.gold;
+    if (g.state.runes) this.state.runes = g.state.runes;
+    return g.gold ? { runeGold: { rune: r, gold: g.gold } } : { rune: r };
   }
 
   private dropCtx(source: DropSource): DropCtx {
@@ -1176,7 +1243,7 @@ export class Game {
     run.opened.add(id);
     delete run.rolls[`frag:${id}`];
     for (const [it, n] of Object.entries(loot)) this.grant(it, n);
-    const extra = frags.length ? { fragments: frags } : {};
+    const extra = { ...(frags.length ? { fragments: frags } : {}), ...this.spotRune(this.pos, 'chest') };
     if (!gear) return { kind: 'chest', item, qty, ...extra };
     return { kind: 'chest', item, qty, ...extra, ...this.offerGear(id, gear) };
   }

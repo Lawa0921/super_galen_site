@@ -189,9 +189,10 @@ export function validRuneFields(d: Record<string, unknown>): boolean {
 /**
  * Brings a save's rune fields within the rules in place (plan 8e ruling 19: repaired, never corrupt), so that
  * `validRuneFields(d)` holds after; fields that keep the rules are not touched at all. A runes-open flag that is not
- * `true` goes (plan 8f). A bag or sockets field that is no object goes; bag keys that are unknown or not whole counts go; a slot that is no rune is emptied; a rune in the wrong
- * place (a skill she does not know or a passive, past her slots, a second of its id or group, a 常駐 past the cap in
- * learned order) goes back to the bag; past RUNE_STACK of one rune, the bag gives way.
+ * `true` goes (plan 8f). A bag or sockets field that is no object goes; bag keys that are unknown or not whole counts
+ * go; a slot that is no rune is emptied; a rune in the wrong place (a skill she does not know or a passive, past her
+ * slots, a second of its id or group, a 常駐 past the cap in learned order) goes back to the bag; past RUNE_STACK of
+ * one rune, the bag gives way.
  */
 export function repairRuneFields(d: Record<string, unknown>): void {
   if (d.runesOpen !== undefined && d.runesOpen !== true) delete d.runesOpen;
