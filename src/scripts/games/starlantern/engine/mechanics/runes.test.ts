@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { resolveRound, type Action, type BattleState } from '../battle';
-import { rollHit, type BattleEvent, type Combatant } from '../combatant';
+import { hitAmount, rollHit, type BattleEvent, type Combatant } from '../combatant';
+import { applyEffect, pctOf, type EffectContext } from '../skills';
+import { BARRIER } from '../mech';
+import { SKILLS } from '../../data/skills';
 import { mulberry32, type Rng } from '../rng';
 import { constRng, makeBattle, makeCombatant } from '../testing';
 import { castCost } from './index';
@@ -8,6 +11,7 @@ import { echoOf } from './echo';
 import { skillFor } from '../battle';
 import { T } from '../../data/text.zh-TW';
 import type { RuneId, RuneRef } from '../../data/runes';
+import type { Effect } from '../types';
 
 const R = (id: RuneId, tier: RuneRef['tier'] = 'legendary'): RuneRef => ({ id, tier });
 const MAX = { hp: 300, tp: 99, atk: 40, def: 20, mag: 60, res: 20, spd: 10 };
@@ -174,5 +178,82 @@ describe('runes on every cast (plan 8e Task 5)', () => {
     expect([r.party[0].hp, r.party[0].tp]).toEqual([1, 0]);
     const mid = resolveRound(makeBattle([noel(100)], [tough('e0')]), { noel: cast('fire-star', 'e0') }, constRng(0.5));
     expect(mid.party[0].hp).toBe(76);
+  });
+});
+
+describe('runes on every cast: review fixes (plan 8e Task 5 review)', () => {
+  const fast = (key: string, spd: number, over: Partial<Combatant> = {}) => member(key, { ...over, max: { ...MAX, spd } });
+
+  it("a reprise strikes at the cast's own power, not the sync's", () => {
+    const team = [fast('noel', 90, { runes: { 'fire-star': [R('sync')] } }), fast('liz', 80, { runes: { 'twin-slash': [R('reprise')] } })];
+    const r = resolveRound(makeBattle(team, [tough('e0')]), { noel: cast('fire-star', 'e0'), liz: cast('twin-slash', 'e0') }, constRng(0.5));
+    // Her cast was lifted (the sync is used up), but the reprise it leaves is 50% of 雙刃's own 60.
+    expect(r.sync).toBeUndefined();
+    expect((r.reprises![0].effects[0] as { power: number }).power).toBe(pctOf(60, 50));
+  });
+
+  it('only a skill the sync can lift uses it up: a damage or heal skill', () => {
+    const team = () => [fast('noel', 90, { runes: { 'fire-star': [R('sync')] } }), fast('rin', 80), fast('liz', 70)];
+    const acts = { noel: cast('fire-star', 'e0'), rin: cast('rin-veil'), liz: cast('twin-slash', 'e0') };
+    const lifted = resolveRound(makeBattle(team(), [tough('e0')]), acts, constRng(0.5));
+    const plain = resolveRound(makeBattle([fast('noel', 90), fast('rin', 80), fast('liz', 70)], [tough('e0')]), acts, constRng(0.5));
+    const lizHit = (log: BattleEvent[]) => damage(log.slice(log.findIndex((e) => e.type === 'act' && e.actor === 'liz')))[0].amount;
+    // Rin's veil is neither: it leaves the sync for Liz.
+    expect(lizHit(lifted.log)).toBeGreaterThan(lizHit(plain.log));
+  });
+
+  it('aftermath and a once-a-cast ailment of its kind are one try on a crit, against a boss too', () => {
+    const sure = (c: Combatant): Effect[] => skillFor(c, 'ice-star')!.effects.map((e) => (e.kind === 'damage' ? { ...e, crit: 'always' as const } : e));
+    const both = member('noel', { runes: { 'ice-star': [R('aftermath', 'magic'), R('frostbite', 'magic')] } });
+    const alone = member('noel', { runes: { 'ice-star': [R('aftermath', 'magic')] } });
+    const cast1 = (c: Combatant, t: Combatant, effects: readonly Effect[]) => {
+      const rng = counting(constRng(0.5));
+      const ctx: EffectContext = { rng, itemBoost: false, revealed: {}, log: [] };
+      for (const e of effects) applyEffect(c, t, e, ctx);
+      return { n: rng.n, log: ctx.log };
+    };
+    for (const boss of [false, true]) {
+      const a = cast1(both, tough('e0', { frozen: undefined, boss }), sure(both));
+      const b = cast1(alone, tough('e0', { frozen: undefined, boss }), sure(alone));
+      expect(a.n, `boss ${boss}`).toBe(b.n);
+      expect(a.log.filter((e) => e.type === 'status')).toHaveLength(1);
+    }
+    // Without a crit, 凍結 tries on its own once.
+    const calm = cast1(both, tough('e0', { frozen: undefined }), skillFor(both, 'ice-star')!.effects);
+    const bare = cast1(member('noel'), tough('e0', { frozen: undefined }), skillFor(member('noel'), 'ice-star')!.effects);
+    expect(calm.n - bare.n).toBe(1);
+  });
+
+  it('no skill puts an ailment before its damage, so 餘波 always tries first', () => {
+    for (const [id, def] of Object.entries(SKILLS)) {
+      const firstDamage = def.effects.findIndex((e) => e.kind === 'damage');
+      if (firstDamage < 0) continue;
+      expect(def.effects.slice(0, firstDamage).some((e) => e.kind === 'inflict'), id).toBe(false);
+    }
+  });
+
+  it('twin-cast pays the mechanic again: 一擲千金 throws what she holds now, none when it ran out', () => {
+    const liz = (coins: number) => member('liz', { mech: { kind: 'coins', coins }, runes: { jackpot: [R('twin-cast')] } });
+    // One coin, dodged: none left, so the second throw has nothing to throw.
+    const dry = resolveRound(makeBattle([liz(1)], [tough('e0', { x: { evasion: 50 } })]), { liz: cast('jackpot') }, constRng(0.1));
+    expect(dry.log.filter((e) => e.type === 'miss')).toHaveLength(1);
+    expect(damage(dry.log)).toHaveLength(0);
+    expect(acts(dry.log, 'liz')).toEqual(['一擲千金', '一擲千金（第二次）']);
+    expect(dry.party[0].mech).toMatchObject({ coins: 0 });
+    // Two coins that land come back one a hit: the second throw spends those two again.
+    const wet = resolveRound(makeBattle([liz(2)], [tough('e0')]), { liz: cast('jackpot') }, constRng(0.5));
+    expect(damage(wet.log)).toHaveLength(4);
+    expect(wet.party[0].mech).toMatchObject({ coins: 2 });
+  });
+
+  it('twin-cast pays the mechanic again: 天之逆鉾 releases the barrier once, the second strike has none', () => {
+    const chizuru = member('chizuru', { mech: { kind: 'barrier' }, runes: { 'heaven-spear': [R('twin-cast')] } });
+    const ward = { skill: 'ward', kind: 'guard' as const, power: 30, turns: 3, src: 'chizuru' };
+    const r = resolveRound(makeBattle([chizuru], [tough('e0')], { barriers: [ward] }), { chizuru: cast('heaven-spear', 'e0') }, constRng(0.5));
+    const [first, second] = damage(r.log).map((e) => e.amount);
+    expect(r.barriers ?? []).toEqual([]);
+    const at = (power: number) => hitAmount(chizuru, tough('e0'), { power, element: 'phys', scale: 'atk', melee: true }, { variance: 1, crit: false, blocked: false }).amount;
+    expect(second).toBe(at(330));
+    expect(first).toBe(at(pctOf(330, 100 + BARRIER.releasePct * 3)));
   });
 });

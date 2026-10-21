@@ -37,6 +37,11 @@ export interface EffectContext {
   lastHit?: { target: string; amount: number };
   /** The first foe the skill being cast has struck (plan 8e: 回聲 aims at it, whatever a bounce reaches after). */
   struck?: string;
+  /**
+   * The ailments 餘波 has tried this action, as `${target}:${status}` (plan 8e Task 5 review): a once-a-cast ailment of
+   * the same kind on the same target is then not tried again (one try, the sure one: spec §6.6 rule 3).
+   */
+  afterTried?: string[];
 }
 
 /** A power's percentage of a number, rounded half away from zero so a debuff (-37.5) rounds as deep as a buff (37.5). */
@@ -251,6 +256,7 @@ function runeHit(actor: Combatant, target: Combatant, eff: Extract<Effect, { kin
   // 餘波 on a crit makes the hit's own ailment of that kind sure (one try, the higher chance: spec §6.6 rule 3), and is
   // tried on its own only when the hit carries no such ailment.
   const after = eff.aftermath && crit ? ELEMENT_AILMENT[eff.element] : undefined;
+  if (after) (ctx.afterTried ??= []).push(`${target.key}:${after}`);
   for (const a of eff.onHit ?? []) inflictAilment(actor, target, a.status, a.status === after ? 1 : a.chance, ctx);
   if (after && !eff.onHit?.some((a) => a.status === after) && target.alive) inflictAilment(actor, target, after, 1, ctx);
 }
@@ -339,6 +345,8 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'inflict': {
       if (!target.alive) return;
+      // 餘波 already tried this ailment on this target, for sure, in this cast (plan 8e Task 5 review).
+      if (ctx.afterTried?.includes(`${target.key}:${eff.status}`)) return;
       inflictAilment(actor, target, eff.status, eff.chance, ctx, eff.turns);
       return;
     }

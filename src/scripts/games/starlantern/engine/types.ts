@@ -128,6 +128,8 @@ export interface RuneRules {
   twice?: true; wheel?: true; sync?: number; reprise?: number;
   lasting?: { pct: number; reservePct: number };
   plain?: { tp: number; hpCost?: number };
+  /** Battle only (engine/mechanics/runes.ts castDef): 回聲's hit, the cast's damage at `reprise`%, before any 同步. */
+  repriseHit?: Effect[];
 }
 /**
  * Rules a variant node changes on a skill as a whole (plan 8d ruling 7): each task adds its fields; `patchSkill` merges

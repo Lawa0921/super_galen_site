@@ -379,6 +379,7 @@ function checkOutcome(s: BattleState): boolean {
  */
 function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ctx: EffectContext, rng: Rng): CastDef | null {
   delete ctx.lastHit;   // burn and bleed ride only on a hit of this action
+  delete ctx.afterTried;   // 餘波's tries of this action (plan 8e)
   delete ctx.paid;
   delete ctx.coverBlow;
   let sentTo: Combatant | undefined;   // a challenger or a cover is reached wherever she stands
@@ -422,6 +423,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       const bonus = def.abyss && s.abyss ? pctMod(def.id, 100 + s.abyss) : undefined;
       if (bonus) def = patchSkill(def, bonus);
       // Then the caster's mechanic (Noel's heat): the skill as she casts it now, at the TP she pays now.
+      const raw = def;
       def = castDef(s, actor, def);
       const cost = castCost(s, actor, act.skill);
       if (actor.tp < cost) { s.log.push({ type: 'no-tp', actor: actor.key }); return null; }
@@ -446,7 +448,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
         if (def.runeRules?.bounce && landed) bounceCast(s, actor, def, first[0], ctx);
       }
       // 雙重詠唱 (plan 8e): the whole skill once more, paid already; one action for the mechanics.
-      if (def.runeRules?.twice) twinCast(s, actor, def, first, scatter, ctx, rng);
+      if (def.runeRules?.twice) twinCast(s, actor, def, raw, first, scatter, ctx, rng);
       delete ctx.cast;
       return def;
     }
@@ -519,16 +521,25 @@ function bounceCast(s: BattleState, actor: Combatant, def: SkillDef, first: Comb
  * on another fallen ally, or nothing; a whole side or herself as usual. It never bounces. A scatter skill scatters anew.
  * With no one to cast on, nothing happens and nothing is logged.
  */
-function twinCast(s: BattleState, actor: Combatant, def: SkillDef, first: Combatant[], scatter: boolean, ctx: EffectContext, rng: Rng): void {
+function twinCast(s: BattleState, actor: Combatant, cast: SkillDef, raw: SkillDef, first: Combatant[], scatter: boolean, ctx: EffectContext, rng: Rng): void {
   const allies = actor.side === 'party' ? s.party : s.enemies;
   const foes = actor.side === 'party' ? s.enemies : s.party;
-  const again = { type: 'act' as const, actor: actor.key, label: T.rune.again(def.name) };
+  const again = { type: 'act' as const, actor: actor.key, label: T.rune.again(cast.name) };
+  // The mechanic is paid again (controller ruling, Task 5 review): the second cast is the skill as her resource stands
+  // now (一擲千金 throws the coins she holds now, 天之逆鉾 finds no barrier left to release), and spends it again.
+  const second = (): SkillDef => {
+    const def = castDef(s, actor, raw);
+    payMech(s, actor, def, ctx);
+    delete ctx.afterTried;
+    return def;
+  };
   if (scatter) {
     if (!living(foes).length) return;
     s.log.push(again);
-    scatterCast(s, actor, def, undefined, ctx, rng);
+    scatterCast(s, actor, second(), undefined, ctx, rng);
     return;
   }
+  const def = cast;
   const one = (t: Combatant | undefined): Combatant[] => (t ? [t] : []);
   const targets = def.target === 'enemy' ? one(first[0]?.alive ? first[0] : living(foes)[0])
     : def.target === 'ally' ? one(first[0]?.alive ? first[0] : living(allies).sort((a, b) => a.hp / a.max.hp - b.hp / b.max.hp)[0])
@@ -536,8 +547,9 @@ function twinCast(s: BattleState, actor: Combatant, def: SkillDef, first: Combat
         : resolveTargets(s, actor, def.target, undefined, rng);
   if (!targets.length) return;
   s.log.push(again);
+  const def2 = second();
   const before = ctx.lastHit;
-  for (const t of targets) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
+  for (const t of targets) for (const eff of def2.effects) applyEffect(actor, t, eff, ctx);
   if (!ctx.struck && targets.length === 1 && landedOn(ctx, before, targets[0])) ctx.struck = targets[0].key;
 }
 

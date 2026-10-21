@@ -19,6 +19,12 @@ export const runes: MechModule = {
       const el = WHEEL[(c.wheel?.[def.id] ?? 0) % WHEEL.length];
       def = { ...def, effects: def.effects.map((e) => (e.kind === 'damage' ? { ...e, element: el } : e)) };
     }
+    // 回聲's hit is this cast's damage at its own power, before any sync lifts it (Task 5 review).
+    if (def.runeRules?.reprise !== undefined) {
+      const pct = def.runeRules.reprise;
+      const repriseHit = def.effects.flatMap((e) => (e.kind === 'damage' ? [{ ...e, power: pctOf(e.power, pct) }] : []));
+      def = { ...def, runeRules: { ...def.runeRules, repriseHit } };
+    }
     // 同步: another ally's skill while the sync stands is that much stronger, its damage and its heals.
     const sync = s.sync;
     if (sync && c.side === 'party' && c.key !== sync.by) {
@@ -28,16 +34,15 @@ export const runes: MechModule = {
   },
   after(s, c, act, def, ctx) {
     if (act.kind !== 'skill' || !def) return;
-    // The sync goes with the first other ally's skill it lifted.
-    if (s.sync && c.key !== s.sync.by) delete s.sync;
+    // The sync goes with the first other ally's skill it lifted: one with damage or a heal (a buff leaves it waiting).
+    if (s.sync && c.key !== s.sync.by && def.effects.some((e) => e.kind === 'damage' || e.kind === 'heal')) delete s.sync;
     const rules = 'runeRules' in def ? def.runeRules : undefined;
     if (!rules) return;
     if (rules.wheel) c.wheel = { ...c.wheel, [def.id]: (c.wheel?.[def.id] ?? 0) + 1 };
     if (rules.sync !== undefined) s.sync = { pct: rules.sync, by: c.key };
     // 回聲: only a cast that struck a foe leaves one, aimed at the first foe it struck.
-    if (rules.reprise !== undefined && ctx.struck) {
-      const effects = def.effects.flatMap((e) => (e.kind === 'damage' ? [{ ...e, power: pctOf(e.power, rules.reprise!) }] : []));
-      s.reprises = [...(s.reprises ?? []), { by: c.key, target: ctx.struck, round: s.round + 1, name: def.name, effects }];
+    if (rules.reprise !== undefined && rules.repriseHit && ctx.struck) {
+      s.reprises = [...(s.reprises ?? []), { by: c.key, target: ctx.struck, round: s.round + 1, name: def.name, effects: rules.repriseHit }];
     }
   },
   roundEnd(s, ctx) {
